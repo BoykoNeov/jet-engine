@@ -94,6 +94,14 @@ class Engine:
         a0 = (gas.gamma * gas.R * flight.T0) ** 0.5    # local speed of sound, m/s
         V0 = flight.M0 * a0
         state0 = FlowState(Tt=Tt0, pt=pt0, mdot=mdot, far=0.0)
+
+        # Sanity check, runs every call (the contract-#4 habit). NOT a
+        # conservation law: station 0 manufactures totals from statics, so there
+        # is nothing yet to conserve -- stopping the flow can only raise T and p.
+        # The real conservation asserts begin at the inlet/compressor as the
+        # isentropic-leg check Tt_out/Tt_in == (pt_out/pt_in)**g. See SPEC.md
+        # § Conservation checks.
+        assert Tt0 >= flight.T0 and pt0 >= flight.p0, "ram must not cool/depressurize"
         return state0, V0
 
     def run(self, flight: FlightCondition, mdot: float) -> EngineResult:
