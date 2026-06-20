@@ -64,13 +64,37 @@ class Engine:
         self.gas = gas
         self.components = components  # ordered (station_label, component) pairs
 
-    def freestream(self, flight: FlightCondition) -> Tuple[FlowState, float]:
-        """Station 0 totals + flight velocity V0 from ambient conditions and M0.
+    def freestream(self, flight: FlightCondition, mdot: float) -> Tuple[FlowState, float]:
+        """Station 0: freestream totals + flight velocity V0. Returns (state0, V0).
 
-        Physical justification: <derive Tt0, pt0 (totals from static + Mach) and
-        V0 = M0 * sound speed>. Returns (state0, V0). See SPEC.md § Station 0.
+        Governing equations (SPEC.md § Station 0), with g = (gamma-1)/gamma so
+        that 1/g = gamma/(gamma-1):
+
+            Tt0 = T0 * (1 + (gamma-1)/2 * M0^2)
+            pt0 = p0 * (1 + (gamma-1)/2 * M0^2) ** (1/g)
+            V0  = M0 * sqrt(gamma * R * T0)
+
+        Physical justification: a *total* (stagnation) quantity is what the gas
+        would reach if brought to rest isentropically, so it already folds in the
+        flow's kinetic energy. Standing on the engine, the air arrives at V0 and
+        is stopped; that kinetic energy reappears as a rise in temperature and
+        pressure -- the ram effect -- and Tt0/pt0 capture exactly that stopped
+        state. The shared factor (1 + (gamma-1)/2 * M0^2) is the compressibility
+        bookkeeping for "how much does stopping the flow heat/pressurize it."
+        This is *why* an ideal inlet (station 2) need only preserve these totals:
+        the ram compression already lives here. V0 is the real flight speed, and
+        thrust later is the engine throwing mass out faster than V0.
         """
-        raise NotImplementedError("freestream: derive Tt0, pt0, V0 (SPEC.md § Station 0)")
+        gas = self.gas
+        # The compressibility factor appears in BOTH the Tt and pt relations --
+        # compute it once.
+        stag = 1.0 + 0.5 * (gas.gamma - 1.0) * flight.M0 ** 2
+        Tt0 = flight.T0 * stag
+        pt0 = flight.p0 * stag ** (1.0 / gas.g)        # 1/g = gamma/(gamma-1)
+        a0 = (gas.gamma * gas.R * flight.T0) ** 0.5    # local speed of sound, m/s
+        V0 = flight.M0 * a0
+        state0 = FlowState(Tt=Tt0, pt=pt0, mdot=mdot, far=0.0)
+        return state0, V0
 
     def run(self, flight: FlightCondition, mdot: float) -> EngineResult:
         """Propagate the flow 0 -> 9 and compute performance.
