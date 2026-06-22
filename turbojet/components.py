@@ -19,7 +19,10 @@ from .gas import FlowState, Gas
 class Component:
     """Base class: a component maps one FlowState to the next.
 
-    Pure by contract — no hidden state between calls (SPEC.md contract #3).
+    Pure by contract — no hidden state between calls (SPEC.md contract #3). The
+    shared signature is apply(state, gas); the Turbine deliberately diverges (it
+    also takes the shaft-balance delta_Tt) because it cannot run free-standing —
+    see Turbine below.
     """
 
     def apply(self, s: FlowState, gas: Gas) -> FlowState:
@@ -70,21 +73,29 @@ class Burner(Component):
 class Turbine(Component):
     """Station 4 -> 5. THE KEYSTONE: its work is *set* by the compressor it drives.
 
-    The turbine has no free pressure ratio; its delta-Tt comes from the shaft
+    The turbine has no free pressure ratio. Its delta-Tt is fixed by the shaft
     balance against the compressor (with the (1+f) mass-flow factor and
-    mechanical efficiency = 1). Keep that coupling explicit. Physical
-    justification: <derive the shaft balance, then the isentropic expansion that
-    gives pt5>. See SPEC.md § Station 5 and § The shaft balance.
+    mechanical efficiency = 1) and is supplied by the engine at call time — note
+    the diverging `apply` signature below. Physical justification: <derive the
+    shaft balance, then the isentropic expansion that gives pt5>. See SPEC.md
+    § Station 5 and § The shaft balance.
+
+    Design note (resolved): the engine, not the turbine, owns the shaft balance.
+    The turbine takes no constructor load — it just expands by a given delta_Tt.
+    This keeps every component pure and puts the coupling equation where it can be
+    seen (Engine.run), at the cost of one component whose signature differs.
     """
 
-    def __init__(self, compressor: Compressor):
-        # The load this turbine must drive. How the compressor's actual work
-        # (delta-Tt) reaches this component is a design choice left to the
-        # implementer — see docs/plans/rung1-context.md.
-        self.compressor = compressor
+    def apply(self, s: FlowState, gas: Gas, delta_Tt: float) -> FlowState:
+        """Expand from station 4 by a *given* total-temperature drop delta_Tt.
 
-    def apply(self, s: FlowState, gas: Gas) -> FlowState:
-        raise NotImplementedError("Turbine: solve shaft balance -> Tt5, pt5 (SPEC.md § Station 5)")
+        delta_Tt = (Tt3 - Tt2) / (1 + f) is computed by the engine, which alone
+        holds the compressor inlet/exit states and f. The signature deliberately
+        diverges from the other components' apply(state, gas): the turbine cannot
+        run free-standing, and saying so in the type keeps the shaft coupling
+        visible. Then: Tt5 = Tt4 - delta_Tt, and pt5 = pt4 * (Tt5/Tt4)**(1/g).
+        """
+        raise NotImplementedError("Turbine: Tt5 = Tt4 - delta_Tt, then pt5 (SPEC.md § Station 5)")
 
 
 class Nozzle(Component):

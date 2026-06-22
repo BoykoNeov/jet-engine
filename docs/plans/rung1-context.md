@@ -11,19 +11,34 @@
 ## Decisions made during scaffolding
 - Spec kept as `SPEC.md` (not folded into CLAUDE.md — too large; the best
   practice is to point, not embed). CLAUDE.md is a concise pointer.
-- Components are pure `apply(state, gas) -> state`. The turbine holds a
-  reference to the compressor it drives so the shaft balance stays explicit
-  (per spec § Architecture). *How* the work is communicated is left open as a
-  deliberate design exercise.
+- Components are pure `apply(state, gas) -> state`. The shaft balance is owned by
+  the *engine*, not the turbine: `Engine.run` computes the required ΔTt and passes
+  it to `Turbine.apply(state, gas, delta_Tt)`. This keeps every component pure and
+  puts the coupling equation where it can be read (per spec § Architecture). See
+  the resolved design note below.
 - `FlowState` carries only totals (`Tt, pt, mdot, far`). Static exit quantities
   (`M9, T9, V9`) are surfaced on `EngineResult`, since `FlowState` is totals-only.
 - The validation test is dependency-free (`python tests/test_validation.py`) and
   also pytest-discoverable.
 
-## Open design question (left for the implementer)
-How the turbine receives the compressor's work / required ΔTt — e.g. store the
-compressor's in/out states on the object, or have `build_turbojet` pass the
-ΔTt directly. Keep the coupling explicit either way (SPEC.md § The shaft balance).
+## Design decision — turbine↔compressor coupling (resolved)
+**Chosen: loose coupling, engine-mediated (design A).** `Engine.run` computes
+`delta_Tt = (Tt3 - Tt2)/(1 + f)` from the states it already holds and passes it to
+`Turbine.apply(state, gas, delta_Tt)`. The turbine takes no constructor load.
+
+Why, over the alternatives:
+- *Tight* (`Turbine(compressor)`): the turbine at station 4 doesn't have Tt2, so it
+  would need the compressor to remember its in/out states — breaking purity
+  (contract #3) — or need Tt2 plumbed in anyway, saving nothing.
+- *Loose, config-per-run* (build `Turbine(delta_Tt=…)` inside `run`): keeps a uniform
+  `apply(state, gas)` signature, but its only payoff is a generic component loop —
+  which we reject because it would bury the keystone. Leaves a half-built turbine.
+- *Loose, call-argument* (chosen): one diverging signature, zero indirection, the
+  coupling equation visible in `run`. The divergence *documents* that the turbine is
+  shaft-locked.
+
+The shaft balance must stay an explicit, named, asserted step in `run` (not a generic
+loop) so the coupling is visible (SPEC.md § The shaft balance, line 159).
 
 ## Validation case (from SPEC.md — do not re-derive, just match to ~0.1%)
 **Inputs:** T0=250 K, p0=50 kPa, M0=0.85, pi_c=10, Tt4=1500 K,
