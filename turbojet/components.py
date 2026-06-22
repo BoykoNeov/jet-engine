@@ -32,13 +32,32 @@ class Component:
 class Inlet(Component):
     """Station 0 -> 2. Ideal diffuser with full pressure recovery.
 
-    Physical justification: <derive — why an ideal inlet gives Tt2 = Tt0 and
-    pt2 = pt0, given that ram compression already lives in the station-0 totals>.
-    See SPEC.md § Station 2.
+    Governing equations (SPEC.md § Station 2):  Tt2 = Tt0,  pt2 = pt0.
+
+    Physical justification (two distinct reasons, only one of them an idealization):
+    - Tt2 = Tt0 holds for ANY inlet: a duct that adds no heat and does no shaft
+      work conserves total temperature (steady-flow energy equation with
+      q = w = 0 => Tt constant). This is not an assumption, it is general.
+    - pt2 = pt0 is the rung-1 *ideal* assumption: full pressure recovery, i.e.
+      no entropy generation. A real inlet loses total pressure to friction and
+      shocks (pt2 < pt0); we set that loss to zero here.
+    The ram compression that raised T and p was already booked into the
+    station-0 totals (stopping the flow). An ideal inlet just hands those totals
+    to the compressor face untouched -- which is exactly why the cycle can run
+    in totals and only worry about static at the nozzle exit.
     """
 
     def apply(self, s: FlowState, gas: Gas) -> FlowState:
-        raise NotImplementedError("Inlet: derive Tt2, pt2 (SPEC.md § Station 2)")
+        # Ideal diffuser: totals pass through unchanged; no mass or fuel added.
+        out = FlowState(Tt=s.Tt, pt=s.pt, mdot=s.mdot, far=s.far)
+
+        # Conservation checks, every call (contract #4, SPEC.md § Conservation checks).
+        # Isentropic leg: Tt_out/Tt_in == (pt_out/pt_in)**g. Written in general
+        # form (not hardcoded to 1 == 1) so it stays exact in rung 1 and becomes
+        # a REAL check once rung-2 pressure-recovery losses tilt this leg.
+        assert abs(out.Tt / s.Tt - (out.pt / s.pt) ** gas.g) < 1e-9, "inlet leg not isentropic"
+        assert out.mdot == s.mdot and out.far == s.far, "ideal inlet adds no mass or fuel"
+        return out
 
 
 class Compressor(Component):

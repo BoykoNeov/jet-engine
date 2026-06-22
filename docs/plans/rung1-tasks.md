@@ -12,7 +12,7 @@ Mirrors the SPEC.md deliverables. Check off as each lands with passing numbers.
 ## Physics (to do — derive before coding each)
 - [ ] `FlowState`, `Gas`, and the five components, each with a one-line physical comment
 - [x] Station 0 freestream (Tt0, pt0, V0) — worked example; `Engine.freestream`, green in `tests/test_stations.py`
-- [ ] Inlet (Tt2, pt2)
+- [x] Inlet (Tt2, pt2) — ideal full-recovery; green in `tests/test_stations.py`
 - [ ] Compressor (pt3, Tt3) + primary hand-check passes
 - [ ] Burner (pt4, f)
 - [ ] Turbine — shaft balance (Tt5, pt5)

@@ -12,6 +12,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from turbojet.components import Inlet  # noqa: E402
 from turbojet.engine import Engine, FlightCondition  # noqa: E402
 from turbojet.gas import Gas  # noqa: E402
 
@@ -37,17 +38,23 @@ def test_station0_freestream():
     assert state0.far == 0.0
 
 
+def test_station2_inlet():
+    """Inlet (ideal): Tt2 == Tt0, pt2 == pt0 (SPEC.md table: 286.1 K, 80.19 kPa)."""
+    engine = Engine(GAS, components=[])
+    state0, _ = engine.freestream(FLIGHT, mdot=MDOT)
+    state2 = Inlet().apply(state0, GAS)
+
+    # Spec table values...
+    assert _close(state2.Tt, 286.1), f"Tt2: got {state2.Tt}"
+    assert _close(state2.pt / 1000.0, 80.19), f"pt2: got {state2.pt / 1000.0}"
+    # ...and the defining property: an ideal inlet preserves the station-0 totals.
+    assert state2.Tt == state0.Tt and state2.pt == state0.pt
+    assert state2.mdot == state0.mdot and state2.far == state0.far
+
+
 # --- TEMPLATE for the next stations (uncomment + fill in as you derive each) ---
 #
-# def test_station2_inlet():
-#     """Inlet (ideal): Tt2 == Tt0, pt2 == pt0 (SPEC.md table: 286.1 K, 80.19 kPa)."""
-#     engine = Engine(GAS, components=[])
-#     state0, _ = engine.freestream(FLIGHT, mdot=MDOT)
-#     state2 = Inlet().apply(state0, GAS)
-#     assert _close(state2.Tt, 286.1)
-#     assert _close(state2.pt / 1000.0, 80.19)
-#
-# ... and so on for compressor (552.4 K / 801.9 kPa), burner (f=0.02304),
+# ... compressor (552.4 K / 801.9 kPa), burner (f=0.02304),
 # turbine (1239.7 K / 411.5 kPa), nozzle (M9=2.033, T9=678.8 K, V9=1061.6 m/s).
 
 
