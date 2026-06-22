@@ -63,15 +63,42 @@ class Inlet(Component):
 class Compressor(Component):
     """Station 2 -> 3. Isentropic compression at a fixed pressure ratio pi_c.
 
-    Physical justification: <derive — the isentropic relation linking pt and Tt
-    across the compressor>. See SPEC.md § Station 3.
+    Governing equations (SPEC.md § Station 3), with g = (gamma-1)/gamma:
+        pt3 = pi_c * pt2
+        Tt3 = Tt2 * pi_c ** g        # isentropic
+
+    Physical justification: a compressor adds shaft work to the flow but trades
+    no heat with its surroundings (adiabatic); in rung 1 it does so reversibly,
+    so the process is isentropic (delta_s = 0). For a calorically perfect gas,
+    constant entropy locks temperature to pressure: integrating
+    T ds = cp dT - (R T / p) dp = 0 gives T * p**(-(gamma-1)/gamma) = const, i.e.
+    Tt3/Tt2 = (pt3/pt2)**g. So the pressure ratio pi_c is the design knob (a
+    fixed-geometry machine at design speed delivers a set pt3/pt2) and the
+    temperature rise is *not* free -- it is forced by isentropy. The work per
+    unit mass this leg books, cp*(Tt3 - Tt2), is exactly what the turbine must
+    repay across the shaft downstream (SPEC.md § The shaft balance).
     """
 
     def __init__(self, pi_c: float):
         self.pi_c = pi_c  # pressure ratio pt3 / pt2
 
     def apply(self, s: FlowState, gas: Gas) -> FlowState:
-        raise NotImplementedError("Compressor: derive pt3, Tt3 (SPEC.md § Station 3)")
+        # Pressure ratio is the design input; the temperature ratio follows from
+        # isentropy (it is not independently chosen).
+        pt3 = self.pi_c * s.pt
+        Tt3 = s.Tt * self.pi_c ** gas.g
+        out = FlowState(Tt=Tt3, pt=pt3, mdot=s.mdot, far=s.far)
+
+        # Conservation checks, every call (contract #4, SPEC.md § Conservation checks).
+        # Isentropic leg: Tt_out/Tt_in == (pt_out/pt_in)**g. NOT a tautology -- it
+        # cross-checks the Tt-update line against the pt-update line, so a typo in
+        # one but not the other fires it. (It cannot catch a wrong pi_c, since both
+        # sides derive from pi_c; the spec-value test guards that.) Written in
+        # general form so it stays exact in rung 1 and becomes a REAL check once
+        # rung-2 isentropic efficiency < 1 tilts this leg.
+        assert abs(out.Tt / s.Tt - (out.pt / s.pt) ** gas.g) < 1e-9, "compressor leg not isentropic"
+        assert out.mdot == s.mdot and out.far == s.far, "ideal compressor adds no mass or fuel"
+        return out
 
 
 class Burner(Component):
