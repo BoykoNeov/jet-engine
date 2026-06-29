@@ -12,13 +12,14 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from turbojet.components import Compressor, Inlet  # noqa: E402
+from turbojet.components import Burner, Compressor, Inlet  # noqa: E402
 from turbojet.engine import Engine, FlightCondition  # noqa: E402
 from turbojet.gas import Gas  # noqa: E402
 
 GAS = Gas(gamma=1.4, cp=1004.0, R=287.0, hPR=42.8e6)
 FLIGHT = FlightCondition(T0=250.0, p0=50_000.0, M0=0.85)
 PI_C = 10.0
+TT4 = 1500.0
 MDOT = 1.0
 REL_TOL = 1e-3  # "~0.1%"
 
@@ -87,9 +88,31 @@ def test_station3_compressor():
     assert _close(eta_from_states, 0.4821), f"eta_th: got {eta_from_states}"
 
 
+def test_station4_burner():
+    """Burner (ideal): f=0.02304, pt4 == pt3 (801.9 kPa), Tt4=1500 K, and mass
+    grows by the fuel: mdot4 == mdot3*(1+f) (SPEC.md table + § Conservation).
+
+    The mdot assertion is the one that exercises the new mass-growth line -- the
+    others pass even if that line were forgotten.
+    """
+    engine = Engine(GAS, components=[])
+    state0, _ = engine.freestream(FLIGHT, mdot=MDOT)
+    state2 = Inlet().apply(state0, GAS)
+    state3 = Compressor(PI_C).apply(state2, GAS)
+    state4 = Burner(TT4).apply(state3, GAS)
+
+    # Spec table values.
+    assert _close(state4.far, 0.02304), f"f: got {state4.far}"
+    assert _close(state4.pt / 1000.0, 801.9), f"pt4: got {state4.pt / 1000.0}"
+    assert state4.Tt == TT4, f"Tt4: got {state4.Tt}"
+    # Defining properties: ideal burner holds pt; fuel mass joins the stream.
+    assert state4.pt == state3.pt, "ideal burner: pt4 == pt3"
+    assert _close(state4.mdot, state3.mdot * (1.0 + state4.far)), f"mdot4: got {state4.mdot}"
+
+
 # --- TEMPLATE for the next stations (uncomment + fill in as you derive each) ---
 #
-# ... burner (f=0.02304), turbine (1239.7 K / 411.5 kPa),
+# ... turbine (1239.7 K / 411.5 kPa),
 # nozzle (M9=2.033, T9=678.8 K, V9=1061.6 m/s).
 
 

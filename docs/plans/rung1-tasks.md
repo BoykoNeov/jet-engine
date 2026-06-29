@@ -14,7 +14,7 @@ Mirrors the SPEC.md deliverables. Check off as each lands with passing numbers.
 - [x] Station 0 freestream (Tt0, pt0, V0) — worked example; `Engine.freestream`, green in `tests/test_stations.py`
 - [x] Inlet (Tt2, pt2) — ideal full-recovery; green in `tests/test_stations.py`
 - [x] Compressor (pt3, Tt3) + primary hand-check passes — green in `tests/test_stations.py`
-- [ ] Burner (pt4, f)
+- [x] Burner (pt4, f) — ideal, no loss; f=0.02304, mass grows by (1+f); green in `tests/test_stations.py`
 - [ ] Turbine — shaft balance (Tt5, pt5)
 - [ ] Nozzle — fully expanded (M9, T9, V9)
 - [ ] Engine chains components and solves the shaft balance

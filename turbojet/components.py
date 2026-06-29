@@ -104,16 +104,67 @@ class Compressor(Component):
 class Burner(Component):
     """Station 3 -> 4. Heat addition up to the turbine-inlet temperature Tt4.
 
-    Sets the fuel-air ratio f from an energy balance; an ideal burner has no
-    total-pressure loss. Physical justification: <derive the energy balance that
-    yields f, and why pt4 = pt3>. See SPEC.md § Station 4.
+    Governing equations (SPEC.md § Station 4):
+        pt4 = pt3                                # ideal: no combustor loss
+        f   = cp (Tt4 - Tt3) / (hPR - cp Tt4)    # energy balance -> fuel-air ratio
+
+    Physical justification:
+    - f from a steady-flow energy balance across the burner. The control volume is
+      adiabatic to its surroundings, so ALL the fuel's chemical energy (hPR per kg
+      of fuel) goes into the gas:
+            mdot_air*cp*Tt3 + mdot_fuel*hPR = (mdot_air + mdot_fuel)*cp*Tt4
+      Divide by mdot_air and set f = mdot_fuel/mdot_air; solving for f gives the
+      closed form above. Tt4 is the design knob (material limit on the turbine
+      blades); f is what it costs in fuel to reach it. The (hPR - cp*Tt4) in the
+      denominator says fuel gets "expensive" as Tt4 approaches the adiabatic flame
+      ceiling hPR/cp -- you must burn ever more fuel for each extra kelvin because
+      that fuel's own mass must also be heated to Tt4.
+    - pt4 = pt3 is the rung-1 *ideal* assumption: no combustor friction or Rayleigh
+      (heat-addition) total-pressure loss. A real burner drops pt a few percent.
+    - This leg is NOT isentropic -- adding heat necessarily raises entropy. That is
+      exactly why SPEC.md § Conservation checks lists the isentropic-leg check for
+      the inlet, compressor, turbine and nozzle but deliberately OMITS the burner:
+      pt is held here only because we idealize the loss away, not because ds = 0.
+      So we do not wire the (pt_out/pt_in)^g check on this leg.
+
+    Rung-1 scope: the cold-air-standard approximation reuses one constant cp for
+    air and combustion products alike, and a single burner is the only fuel source.
     """
 
     def __init__(self, Tt4: float):
         self.Tt4 = Tt4  # turbine-inlet (peak) total temperature, K
 
     def apply(self, s: FlowState, gas: Gas) -> FlowState:
-        raise NotImplementedError("Burner: derive pt4, f, far (SPEC.md § Station 4)")
+        # Rung-1 guard: a single burner is the only fuel source, so the gas arrives
+        # as dry air and the energy balance below may book the inlet stream as pure
+        # air (s.mdot == mdot_air). Revisit this if reheat/an afterburner lands.
+        assert s.far == 0.0, "rung-1 burner assumes dry air at entry (far == 0)"
+
+        pt4 = s.pt  # ideal burner: heat added at constant total pressure
+        # Fuel-air ratio from the energy balance (see docstring derivation).
+        f = gas.cp * (self.Tt4 - s.Tt) / (gas.hPR - gas.cp * self.Tt4)
+        # Fuel mass joins the stream: mdot4 = mdot_air*(1 + f). far carries f
+        # downstream, where the turbine's shaft balance needs the (1 + f) factor.
+        mdot4 = s.mdot * (1.0 + f)
+        out = FlowState(Tt=self.Tt4, pt=pt4, mdot=mdot4, far=f)
+
+        # Conservation checks, every call (contract #4, SPEC.md § Conservation checks).
+        # These are the spec's TWO burner checks -- mass growth and the energy
+        # balance. f is solved FROM the energy balance, so a clean run satisfies it;
+        # like the compressor's isentropic check it is not a tautology but a
+        # cross-check -- a typo in the Tt4, mdot, or far line (but not all of them)
+        # fires it.
+        assert abs(out.mdot - s.mdot * (1.0 + out.far)) < 1e-9 * s.mdot, (
+            "burner mass: mdot_out != mdot_in*(1 + f)"
+        )
+        mdot_fuel = out.mdot - s.mdot
+        lhs = s.mdot * gas.cp * s.Tt + mdot_fuel * gas.hPR
+        rhs = out.mdot * gas.cp * out.Tt
+        assert abs(lhs - rhs) < 1e-6 * rhs, "burner energy balance violated"
+        # Defining ideal property; near-tautological in rung 1, but a REAL check
+        # once rung-2 combustor pressure loss tilts pt4 below pt3.
+        assert out.pt == s.pt, "ideal burner adds no total-pressure loss"
+        return out
 
 
 class Turbine(Component):
