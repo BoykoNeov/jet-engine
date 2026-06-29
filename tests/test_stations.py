@@ -137,10 +137,14 @@ def test_station5_turbine():
     assert _close(state5.pt / 1000.0, 411.5), f"pt5: got {state5.pt / 1000.0}"
     assert state5.mdot == state4.mdot and state5.far == state4.far
 
-    # Shaft balance, both sides. This is a CROSS-CHECK, not physics validation:
-    # both sides trace back to the same delta_Tt, so it only confirms the turbine
-    # APPLIED delta_Tt faithfully (didn't mangle it) -- the 1239.7 above is what
-    # actually validates the (Tt3-Tt2)/(1+f) formula.
+    # Shaft balance, both sides -- a GENUINE plumbing check, not a tautology. The
+    # two sides are computed differently: compressor_work reads Tt3-Tt2 straight
+    # from the states, while turbine_work comes from the turbine's OUTPUT (Tt5) and
+    # re-applies the (1+f) factor. So this fires on a missing/wrong (1+f) in the
+    # delta_Tt above: dropping the /(1+f) gives Tt5=1233.7 -> turbine_work=272.4 vs
+    # compressor_work=266.3, residual 6.1 K (verified empirically). It is blind only
+    # to (a) a uniformly-wrong f -- the two (1+f) factors cancel, so the burner test
+    # guards f -- and (b) the pressure side, which the pt5 spec value guards.
     compressor_work = state3.Tt - state2.Tt
     turbine_work = (1.0 + state5.far) * (state4.Tt - state5.Tt)
     assert abs(turbine_work - compressor_work) < 1e-9, (
