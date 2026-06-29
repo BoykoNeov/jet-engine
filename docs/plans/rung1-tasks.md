@@ -15,7 +15,7 @@ Mirrors the SPEC.md deliverables. Check off as each lands with passing numbers.
 - [x] Inlet (Tt2, pt2) — ideal full-recovery; green in `tests/test_stations.py`
 - [x] Compressor (pt3, Tt3) + primary hand-check passes — green in `tests/test_stations.py`
 - [x] Burner (pt4, f) — ideal, no loss; f=0.02304, mass grows by (1+f); green in `tests/test_stations.py`
-- [ ] Turbine — shaft balance (Tt5, pt5)
+- [x] Turbine — shaft balance (Tt5=1239.7 K, pt5=411.5 kPa); delta_Tt=(Tt3-Tt2)/(1+f); green in `tests/test_stations.py`
 - [ ] Nozzle — fully expanded (M9, T9, V9)
 - [ ] Engine chains components and solves the shaft balance
 - [ ] Performance: specific thrust, TSFC, eta_th, eta_p, eta_o

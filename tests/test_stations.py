@@ -12,7 +12,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from turbojet.components import Burner, Compressor, Inlet  # noqa: E402
+from turbojet.components import Burner, Compressor, Inlet, Turbine  # noqa: E402
 from turbojet.engine import Engine, FlightCondition  # noqa: E402
 from turbojet.gas import Gas  # noqa: E402
 
@@ -110,10 +110,47 @@ def test_station4_burner():
     assert _close(state4.mdot, state3.mdot * (1.0 + state4.far)), f"mdot4: got {state4.mdot}"
 
 
-# --- TEMPLATE for the next stations (uncomment + fill in as you derive each) ---
+def test_station5_turbine():
+    """Turbine (ideal, the keystone): Tt5=1239.7 K, pt5=411.5 kPa (SPEC.md table).
+
+    The shaft balance is the physics under test: delta_Tt = (Tt3 - Tt2)/(1 + f),
+    so Tt5 = Tt4 - delta_Tt. The ABSOLUTE spec values are the real guard here --
+    every in-component assert is structurally exact (mass is trivially preserved;
+    pt5 is derived from Tt5 so the isentropic leg holds for any delta_Tt). Dropping
+    the (1 + f) factor, for instance, gives Tt5=1233.7 K (~0.5%), which 1239.7
+    catches but the in-component asserts do not.
+    """
+    engine = Engine(GAS, components=[])
+    state0, _ = engine.freestream(FLIGHT, mdot=MDOT)
+    state2 = Inlet().apply(state0, GAS)
+    state3 = Compressor(PI_C).apply(state2, GAS)
+    state4 = Burner(TT4).apply(state3, GAS)
+
+    # The engine owns this coupling (it holds Tt2, Tt3, f); compute it explicitly
+    # here so the per-station test exercises the same delta_Tt Engine.run will pass.
+    delta_Tt = (state3.Tt - state2.Tt) / (1.0 + state4.far)
+    state5 = Turbine().apply(state4, GAS, delta_Tt)
+
+    # Spec table values -- the PRIMARY guard (the only check that fails on a wrong
+    # delta_Tt formula, e.g. a missing (1 + f)).
+    assert _close(state5.Tt, 1239.7), f"Tt5: got {state5.Tt}"
+    assert _close(state5.pt / 1000.0, 411.5), f"pt5: got {state5.pt / 1000.0}"
+    assert state5.mdot == state4.mdot and state5.far == state4.far
+
+    # Shaft balance, both sides. This is a CROSS-CHECK, not physics validation:
+    # both sides trace back to the same delta_Tt, so it only confirms the turbine
+    # APPLIED delta_Tt faithfully (didn't mangle it) -- the 1239.7 above is what
+    # actually validates the (Tt3-Tt2)/(1+f) formula.
+    compressor_work = state3.Tt - state2.Tt
+    turbine_work = (1.0 + state5.far) * (state4.Tt - state5.Tt)
+    assert abs(turbine_work - compressor_work) < 1e-9, (
+        f"shaft does not close: turbine {turbine_work} != compressor {compressor_work}"
+    )
+
+
+# --- TEMPLATE for the next station (uncomment + fill in as you derive it) ---
 #
-# ... turbine (1239.7 K / 411.5 kPa),
-# nozzle (M9=2.033, T9=678.8 K, V9=1061.6 m/s).
+# ... nozzle (M9=2.033, T9=678.8 K, V9=1061.6 m/s).
 
 
 def _run_all():

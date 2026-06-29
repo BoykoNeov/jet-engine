@@ -170,17 +170,36 @@ class Burner(Component):
 class Turbine(Component):
     """Station 4 -> 5. THE KEYSTONE: its work is *set* by the compressor it drives.
 
-    The turbine has no free pressure ratio. Its delta-Tt is fixed by the shaft
-    balance against the compressor (with the (1+f) mass-flow factor and
-    mechanical efficiency = 1) and is supplied by the engine at call time — note
-    the diverging `apply` signature below. Physical justification: <derive the
-    shaft balance, then the isentropic expansion that gives pt5>. See SPEC.md
-    § Station 5 and § The shaft balance.
+    Governing equations (SPEC.md § Station 5 and § The shaft balance), with
+    g = (gamma-1)/gamma:
+        Tt5 = Tt4 - delta_Tt,  delta_Tt = (Tt3 - Tt2) / (1 + f)   # shaft balance
+        pt5 = pt4 * (Tt5/Tt4) ** (1/g)                            # isentropic
+
+    Physical justification:
+    - delta_Tt is NOT a free design choice -- it is forced by the shaft. Compressor
+      and turbine share one spool, so with mechanical efficiency = 1 every watt the
+      turbine pulls from the gas is spent driving the compressor:
+            mdot_air*cp*(Tt3 - Tt2) = (mdot_air + mdot_fuel)*cp*(Tt4 - Tt5)
+      Divide by mdot_air*cp and use (mdot_air + mdot_fuel)/mdot_air = 1 + f:
+            Tt4 - Tt5 = (Tt3 - Tt2) / (1 + f).
+      The (1 + f) divides because the turbine works a HEAVIER stream than the
+      compressor (it also pushes the burnt fuel mass), so it needs a slightly
+      smaller temperature drop to make the same power. This one line is what makes
+      the engine a machine: it sets Tt5, which sets the enthalpy left for the
+      nozzle, which sets V9, which sets thrust -- almost everything cascades from
+      here (SPEC.md § The shaft balance).
+    - pt5 from isentropy: an ideal turbine is adiabatic and reversible, so ds = 0.
+      For a calorically perfect gas constant entropy locks T to p exactly as in the
+      compressor, Tt5/Tt4 = (pt5/pt4)**g, solved for pt5. The expansion is the
+      compression run backwards: pressure falls so that the gas can give up the
+      delta_Tt the shaft demands.
 
     Design note (resolved): the engine, not the turbine, owns the shaft balance.
     The turbine takes no constructor load — it just expands by a given delta_Tt.
     This keeps every component pure and puts the coupling equation where it can be
-    seen (Engine.run), at the cost of one component whose signature differs.
+    seen (Engine.run), at the cost of one component whose signature differs. The
+    shaft-CLOSURE assertion therefore lives in Engine.run (it needs Tt2/Tt3, which
+    the turbine never sees); here we check only what the turbine itself owns.
     """
 
     def apply(self, s: FlowState, gas: Gas, delta_Tt: float) -> FlowState:
@@ -192,7 +211,31 @@ class Turbine(Component):
         run free-standing, and saying so in the type keeps the shaft coupling
         visible. Then: Tt5 = Tt4 - delta_Tt, and pt5 = pt4 * (Tt5/Tt4)**(1/g).
         """
-        raise NotImplementedError("Turbine: Tt5 = Tt4 - delta_Tt, then pt5 (SPEC.md § Station 5)")
+        # The shaft hands down a temperature drop; the turbine just expands by it.
+        Tt5 = s.Tt - delta_Tt
+        # Isentropic expansion fixes pt5 from the temperature ratio (1/g = gamma/
+        # (gamma-1), the same exponent the compressor used, run the other way).
+        pt5 = s.pt * (Tt5 / s.Tt) ** (1.0 / gas.g)
+        # The turbine moves no mass across its own boundary: the (1 + f) stream that
+        # entered leaves intact (f already booked at the burner), so carry far through.
+        out = FlowState(Tt=Tt5, pt=pt5, mdot=s.mdot, far=s.far)
+
+        # Conservation checks, every call (contract #4, SPEC.md § Conservation checks).
+        # The shaft-CLOSURE check is the engine's job (it needs Tt2/Tt3); these are
+        # the turbine's own invariants.
+        # (1) The only NON-tautological guard available here: a turbine extracts
+        #     work, so Tt must fall. Catches a sign error or a bad delta_Tt handed
+        #     in -- neither of the structural checks below can (both derive pt5 from
+        #     Tt5, so they hold for ANY delta_Tt).
+        assert delta_Tt > 0.0, "turbine must extract work: Tt5 < Tt4 (delta_Tt > 0)"
+        # (2) Isentropic leg: Tt_out/Tt_in == (pt_out/pt_in)**g. Exact-by-construction
+        #     in rung 1 (pt5 is derived from Tt5), so it cannot catch a wrong delta_Tt
+        #     -- the spec-value test guards that. Written in general form so it becomes
+        #     a REAL check once rung-2 turbine efficiency < 1 tilts this leg.
+        assert abs(out.Tt / s.Tt - (out.pt / s.pt) ** gas.g) < 1e-9, "turbine leg not isentropic"
+        # (3) No mass or fuel crosses the turbine boundary.
+        assert out.mdot == s.mdot and out.far == s.far, "turbine adds no mass or fuel"
+        return out
 
 
 class Nozzle(Component):
