@@ -26,6 +26,8 @@ Mirrors the SPEC.md deliverables. Check off as each lands with passing numbers.
 - [x] Validation test green to ~0.1% (`tests/test_validation.py`: both cases pass)
 
 ## Artifacts
-- [ ] Run prints the full station table
-- [ ] T–s diagram (stations 0,2,3,4,5,9; isentropic legs vertical, p=const as curves)
+- [x] Run prints the full station table (`main.py` → `print_station_table`)
+- [x] T–s diagram (stations 0,2,3,4,5,9; isentropic legs vertical, p=const as curves) —
+      `main.py` → `plot_ts_diagram`, written to `ts_diagram.png`. Closed Brayton loop:
+      0/9 drawn STATIC so the heat-rejection leg (9→0 at p0) exists as the 2nd const-p curve
 - [ ] NOTES.md — plain-language explanation of each station + what the shaft balance buys
