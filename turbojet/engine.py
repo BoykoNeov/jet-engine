@@ -1,12 +1,10 @@
 """Assemble components into an engine, solve the shaft balance, score performance.
 
-RUNG-1 TEACHING NOTE: the method bodies here are unimplemented on purpose (see
-components.py). The design choice for the shaft balance is settled: the *engine*
-computes the compressor's work and hands it to the turbine as a delta_Tt at call
-time (Turbine.apply(state, gas, delta_Tt)), so the coupling is solved *explicitly*
-here rather than hidden inside the turbine (SPEC.md § The shaft balance). The
-dataclasses below are interface only — they say what a run produces, not how the
-physics works.
+RUNG 2 — the engine now owns the dual-cp, mechanical-efficiency shaft balance and
+the pressure-thrust term, and reports TWO thermal efficiencies (see
+docs/rung2-spec.md § Performance). The shaft coupling is still solved EXPLICITLY
+here: the engine computes the compressor's work and hands the turbine a delta_Tt
+at call time (Turbine.apply(state, gas, delta_Tt)).
 """
 from __future__ import annotations
 
@@ -28,11 +26,24 @@ class FlightCondition:
 
 @dataclass
 class Performance:
-    """Top-level cycle outputs (SPEC.md § Performance)."""
+    """Top-level cycle outputs (docs/rung2-spec.md § Performance).
+
+    Two thermal efficiencies are reported because rung 2 splits a definitional
+    knot (the rung-1 NOTES flagged it):
+      - eta_brayton = 1 - Tt2/Tt3: the cold-Brayton identity (= 1 - 1/pi_c^gc).
+        This is the rung-1 number (0.4821) and the primary hand-check. Once the
+        legs tilt it is no longer the true thermal efficiency — kept for the
+        hand-check and table continuity.
+      - eta_thermal = [(1+f)V9^2 - V0^2]/(2 f hPR): the REAL thermal efficiency
+        (kinetic energy added to the jet per unit fuel power). Anchors Mattingly's
+        eta_T; = 0.5477 in the ideal limit. Under THIS definition the textbook
+        cascade eta_overall = eta_thermal * eta_propulsive holds exactly.
+    """
 
     specific_thrust: float   # F / mdot, N·s/kg
     tsfc: float              # kg/(N·s)
-    eta_thermal: float
+    eta_brayton: float       # 1 - Tt2/Tt3 (Brayton identity; rung-1 hand-check)
+    eta_thermal: float       # KE/fuel; the real thermal efficiency
     eta_propulsive: float
     eta_overall: float
 
@@ -42,8 +53,8 @@ class EngineResult:
     """Everything one run produces: the station table plus performance.
 
     Station states are totals only (FlowState). The nozzle-exit static quantities
-    (M9, T9, V9) and the flight velocity V0 are surfaced here because they are not
-    total quantities and so do not live on a FlowState.
+    (M9, T9, V9, p9) and the flight velocity V0 are surfaced here because they are
+    not total quantities and so do not live on a FlowState.
     """
 
     stations: Dict[str, FlowState]   # keyed "0", "2", "3", "4", "5", "9"
@@ -52,6 +63,7 @@ class EngineResult:
     V9: float   # exhaust velocity, m/s
     M9: float   # exhaust Mach number
     T9: float   # exhaust static temperature, K
+    p9: float   # exhaust static pressure, Pa (= p0 when fully expanded)
 
 
 class Engine:
@@ -59,51 +71,44 @@ class Engine:
 
     `run` chains the components and owns the shaft balance: it computes the
     turbine's required delta_Tt from the compressor/inlet states it already holds
-    and passes it to the turbine (keeping the coupling explicit). Performance
-    scoring uses the resulting station table plus the freestream/exit velocities.
+    (using the dual-cp, mechanical-efficiency balance) and passes it to the
+    turbine. Performance scoring uses the resulting station table plus the
+    freestream/exit velocities and the exit pressure.
     """
 
-    def __init__(self, gas: Gas, components: List[Tuple[str, Component]]):
+    def __init__(self, gas: Gas, components: List[Tuple[str, Component]], eta_m: float = 1.0):
         self.gas = gas
         self.components = components  # ordered (station_label, component) pairs
+        self.eta_m = eta_m           # shaft mechanical efficiency (<= 1)
 
     def freestream(self, flight: FlightCondition, mdot: float) -> Tuple[FlowState, float]:
         """Station 0: freestream totals + flight velocity V0. Returns (state0, V0).
 
-        Governing equations (SPEC.md § Station 0), with g = (gamma-1)/gamma so
-        that 1/g = gamma/(gamma-1):
+        Governing equations (SPEC.md § Station 0), COLD-section properties (the
+        freestream is fresh air), with gc = (gamma_c-1)/gamma_c so 1/gc =
+        gamma_c/(gamma_c-1):
 
-            Tt0 = T0 * (1 + (gamma-1)/2 * M0^2)
-            pt0 = p0 * (1 + (gamma-1)/2 * M0^2) ** (1/g)
-            V0  = M0 * sqrt(gamma * R * T0)
+            Tt0 = T0 * (1 + (gamma_c-1)/2 * M0^2)
+            pt0 = p0 * (1 + (gamma_c-1)/2 * M0^2) ** (1/gc)
+            V0  = M0 * sqrt(gamma_c * R_c * T0)
 
-        Physical justification: a *total* (stagnation) quantity is what the gas
-        would reach if brought to rest isentropically, so it already folds in the
-        flow's kinetic energy. Standing on the engine, the air arrives at V0 and
-        is stopped; that kinetic energy reappears as a rise in temperature and
-        pressure -- the ram effect -- and Tt0/pt0 capture exactly that stopped
-        state. The shared factor (1 + (gamma-1)/2 * M0^2) is the compressibility
-        bookkeeping for "how much does stopping the flow heat/pressurize it."
-        This is *why* an ideal inlet (station 2) need only preserve these totals:
-        the ram compression already lives here. V0 is the real flight speed, and
-        thrust later is the engine throwing mass out faster than V0.
+        Physical justification (unchanged from rung 1): a TOTAL quantity is what
+        the gas reaches if brought to rest isentropically, so it already folds in
+        the flow's kinetic energy. Standing on the engine, air arrives at V0 and is
+        stopped; that KE reappears as the ram rise in Tt0/pt0. An ideal inlet then
+        only preserves these totals; a real one (rung 2) drops pt by the recovery.
         """
         gas = self.gas
-        # The compressibility factor appears in BOTH the Tt and pt relations --
-        # compute it once.
-        stag = 1.0 + 0.5 * (gas.gamma - 1.0) * flight.M0 ** 2
+        # The compressibility factor appears in BOTH the Tt and pt relations.
+        stag = 1.0 + 0.5 * (gas.gamma_c - 1.0) * flight.M0 ** 2
         Tt0 = flight.T0 * stag
-        pt0 = flight.p0 * stag ** (1.0 / gas.g)        # 1/g = gamma/(gamma-1)
-        a0 = (gas.gamma * gas.R * flight.T0) ** 0.5    # local speed of sound, m/s
+        pt0 = flight.p0 * stag ** (1.0 / gas.g_c)        # 1/gc = gamma_c/(gamma_c-1)
+        a0 = (gas.gamma_c * gas.R_c * flight.T0) ** 0.5  # local speed of sound, m/s
         V0 = flight.M0 * a0
         state0 = FlowState(Tt=Tt0, pt=pt0, mdot=mdot, far=0.0)
 
-        # Sanity check, runs every call (the contract-#4 habit). NOT a
-        # conservation law: station 0 manufactures totals from statics, so there
-        # is nothing yet to conserve -- stopping the flow can only raise T and p.
-        # The real conservation asserts begin at the inlet/compressor as the
-        # isentropic-leg check Tt_out/Tt_in == (pt_out/pt_in)**g. See SPEC.md
-        # § Conservation checks.
+        # Sanity check, every call. NOT a conservation law: station 0 manufactures
+        # totals from statics, so stopping the flow can only raise T and p.
         assert Tt0 >= flight.T0 and pt0 >= flight.p0, "ram must not cool/depressurize"
         return state0, V0
 
@@ -111,15 +116,16 @@ class Engine:
         """Propagate the flow 0 -> 9 and compute performance.
 
         Chains each component (a pure transform), collecting the station table.
-        The turbine is the one coupled step: solve the shaft balance HERE and
-        pass the result in (design A), e.g.
+        The turbine is the one coupled step: solve the dual-cp + eta_m shaft
+        balance HERE and pass the result in, e.g.
 
-            delta_Tt = (s3.Tt - s2.Tt) / (1.0 + s4.far)   # compressor work / unit core flow
+            f = s4.far
+            delta_Tt = cpc*(s3.Tt - s2.Tt) / (eta_m*(1 + f)*cpt)
             s5 = turbine.apply(s4, gas, delta_Tt)
-            assert abs((1 + s5.far)*(s4.Tt - s5.Tt) - (s3.Tt - s2.Tt)) < 1e-6  # shaft closes
+            assert eta_m*(1+f)*cpt*(s4.Tt - s5.Tt) ~= cpc*(s3.Tt - s2.Tt)  # shaft closes
 
         Then convert to static at the nozzle exit and score performance (specific
-        thrust, TSFC, efficiencies). See SPEC.md § The shaft balance, § Performance.
+        thrust with the pressure term, TSFC, efficiencies). See docs/rung2-spec.md.
         """
         gas = self.gas
 
@@ -128,72 +134,74 @@ class Engine:
         stations: Dict[str, FlowState] = {"0": state}
 
         # Nozzle-exit statics, filled when the flow reaches station 9.
-        M9 = T9 = V9 = None
+        M9 = T9 = V9 = p9 = None
 
-        # Walk the components in flow order. Two of the five diverge from the bare
-        # apply(state, gas) and are handled explicitly here -- which is the whole
-        # point of letting the ENGINE own the awkward bits (SPEC.md § Architecture):
-        #   - Turbine: its work is not free. The engine computes the shaft delta_Tt
-        #     from the compressor/inlet states it already holds and hands it in.
-        #   - Nozzle: it returns a NozzleExit (totals + statics), not a FlowState.
+        # Walk the components in flow order. Turbine and Nozzle diverge from the
+        # bare apply(state, gas) and are handled explicitly (the engine owns the
+        # awkward bits — SPEC.md § Architecture).
         for label, component in self.components:
             if isinstance(component, Turbine):
-                # THE SHAFT BALANCE, solved out in the open. The turbine works the
-                # heavier (1 + f) stream, so it needs a smaller drop than the
-                # compressor's rise to make the same power (SPEC.md § The shaft balance).
+                # THE SHAFT BALANCE (dual cp + mechanical efficiency), in the open.
                 # state here is station 4, which carries f as its far.
                 f = state.far
-                delta_Tt = (stations["3"].Tt - stations["2"].Tt) / (1.0 + f)
                 s4 = state
+                delta_Tt = (
+                    gas.cp_c * (stations["3"].Tt - stations["2"].Tt)
+                    / (self.eta_m * (1.0 + f) * gas.cp_t)
+                )
                 state = component.apply(state, gas, delta_Tt)
-                # Shaft CLOSURE check (the engine's job -- it alone holds Tt2/Tt3).
+                # Shaft CLOSURE check (engine-owned — it alone holds Tt2/Tt3).
                 # Computed two independent ways: turbine power from the turbine's
-                # OUTPUT Tt5 (re-applying 1 + f), compressor power straight from the
-                # states. So a dropped (1 + f) in delta_Tt above genuinely fires this.
-                compressor_work = stations["3"].Tt - stations["2"].Tt
-                turbine_work = (1.0 + state.far) * (s4.Tt - state.Tt)
-                assert abs(turbine_work - compressor_work) < 1e-6, (
-                    f"shaft does not close: turbine {turbine_work} != compressor {compressor_work}"
+                # OUTPUT Tt5 (re-applying eta_m, 1+f, cpt), compressor power from the
+                # cold states. A dropped factor in delta_Tt fires this.
+                compressor_power = gas.cp_c * (stations["3"].Tt - stations["2"].Tt)
+                turbine_power = self.eta_m * (1.0 + state.far) * gas.cp_t * (s4.Tt - state.Tt)
+                assert abs(turbine_power - compressor_power) < 1e-6 * compressor_power, (
+                    f"shaft does not close: turbine {turbine_power} != compressor {compressor_power}"
                 )
             elif isinstance(component, Nozzle):
                 exit = component.apply(state, gas)
-                state = exit.state            # station-9 TOTALS go on the table
-                M9, T9, V9 = exit.M9, exit.T9, exit.V9   # statics ride out to the result
+                state = exit.state             # station-9 TOTALS go on the table
+                M9, T9, V9, p9 = exit.M9, exit.T9, exit.V9, exit.p9  # statics ride out
             else:
                 state = component.apply(state, gas)
             stations[label] = state
 
-        # --- Performance (SPEC.md § Performance) ---
-        # Specific thrust is per unit AIR mass flow (mdot is a free scale): the
-        # engine throws (1 + f) kg out at V9 for every 1 kg of air it took in at V0.
-        # Pressure-thrust term is zero because the nozzle is fully expanded (p9 = p0).
+        # --- Performance (docs/rung2-spec.md § Performance) ---
         f = stations["4"].far
-        specific_thrust = (1.0 + f) * V9 - V0
-        # TSFC: fuel burned per unit thrust. f is fuel per unit air; F/mdot_air is
-        # thrust per unit air; the air cancels.
+        # Specific thrust per unit AIR mass flow. The PRESSURE-THRUST term
+        # (1+f)*Rt*T9*(1 - p0/p9)/V9 vanishes when p9 == p0 (fully expanded),
+        # recovering rung-1's (1+f)*V9 - V0. It is the static-pressure imbalance
+        # A9*(p9-p0)/mdot rewritten via the ideal gas law.
+        pressure_thrust = (1.0 + f) * gas.R_t * T9 * (1.0 - flight.p0 / p9) / V9
+        specific_thrust = (1.0 + f) * V9 - V0 + pressure_thrust
+        # TSFC: fuel per unit thrust (air cancels).
         tsfc = f / specific_thrust
-        # Ideal-Brayton thermal efficiency. 1 - Tt2/Tt3 == 1 - 1/pi_c^g (the primary
-        # hand-check); it is the fraction of added heat the cycle turns into net work.
-        eta_thermal = 1.0 - stations["2"].Tt / stations["3"].Tt
-        # Propulsive efficiency: useful thrust power / kinetic power dumped into the
-        # jet. Denominator is 1/2[(1+f)V9^2 - V0^2] -- note (1+f)*V9**2, NOT
-        # ((1+f)*V9)**2 (the (1+f) weights the mass, the square is on the velocity).
-        eta_propulsive = (specific_thrust * V0) / (0.5 * ((1.0 + f) * V9 ** 2 - V0 ** 2))
+
+        # eta_brayton: the cold-Brayton identity 1 - Tt2/Tt3 == 1 - 1/pi_c^gc.
+        # Rung-1 value (0.4821) and the primary hand-check; no longer the true
+        # thermal efficiency once losses tilt the legs.
+        eta_brayton = 1.0 - stations["2"].Tt / stations["3"].Tt
+        # Net kinetic energy added to the jet, per unit air mass.
+        ke_net = (1.0 + f) * V9 ** 2 - V0 ** 2
+        # eta_thermal: the REAL thermal efficiency — KE added per unit fuel power.
+        eta_thermal = ke_net / (2.0 * f * gas.hPR)
+        # Propulsive efficiency: useful thrust power / KE dumped into the jet.
+        eta_propulsive = (specific_thrust * V0) / (0.5 * ke_net)
         # Overall efficiency: thrust power per unit chemical power in.
-        # NOTE (a deliberate convention clash, not a bug): the textbook cascade
-        # eta_o = eta_th * eta_p holds only when eta_th is the PROPULSION thermal
-        # efficiency, (KE added to the jet)/(fuel power) = 0.5477 here. SPEC's
-        # eta_thermal above is instead the ideal-Brayton CYCLE efficiency
-        # 1 - Tt2/Tt3 = 0.4821 (a different quantity -- ram compression and the
-        # open-cycle heat accounting split the two conventions apart). So
-        # eta_o (0.2231) != eta_thermal * eta_propulsive (0.1963); it DOES equal
-        # 0.5477 * eta_propulsive. We report eta_thermal per the spec table and do
-        # NOT assert the cascade against it.
         eta_overall = (specific_thrust * V0) / (f * gas.hPR)
+
+        # CASCADE CLOSURE (a free consistency check + the teaching payoff): under
+        # the KE-based eta_thermal, the textbook cascade holds EXACTLY (it is an
+        # algebraic identity, F cancels), unlike under eta_brayton in rung 1.
+        assert abs(eta_overall - eta_thermal * eta_propulsive) < 1e-9 * eta_overall, (
+            "efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE definition"
+        )
 
         performance = Performance(
             specific_thrust=specific_thrust,
             tsfc=tsfc,
+            eta_brayton=eta_brayton,
             eta_thermal=eta_thermal,
             eta_propulsive=eta_propulsive,
             eta_overall=eta_overall,
@@ -206,24 +214,47 @@ class Engine:
             V9=V9,
             M9=M9,
             T9=T9,
+            p9=p9,
         )
 
 
-def build_turbojet(gas: Gas, pi_c: float, Tt4: float, p_ambient: float) -> Engine:
+def build_turbojet(
+    gas: Gas,
+    pi_c: float,
+    Tt4: float,
+    p_ambient: float,
+    *,
+    pi_d: float = 1.0,
+    eta_c: float = 1.0,
+    eta_b: float = 1.0,
+    pi_b: float = 1.0,
+    eta_t: float = 1.0,
+    eta_m: float = 1.0,
+    pi_n: float = 1.0,
+    p_exit: float | None = None,
+) -> Engine:
     """Factory: wire the five components into a single-spool turbojet.
 
-    Order: Inlet -> Compressor(pi_c) -> Burner(Tt4) -> Turbine() ->
-    Nozzle(p_ambient). The turbine takes no constructor load: the shaft coupling
-    is mediated by Engine.run, which supplies its delta_Tt per call. See SPEC.md
-    § Architecture.
+    Order: Inlet -> Compressor -> Burner -> Turbine -> Nozzle. Rung-2 loss
+    parameters are keyword-only and default to IDEAL (1.0 / fully-expanded), so the
+    no-keyword call is the rung-1 ideal engine — this is the reduce-to-ideal gate
+    (docs/rung2-spec.md § Verification gates).
+
+    - pi_d:   inlet net total-pressure recovery (= pi_d_max * ram_recovery(M0),
+              folded in at the design Mach; use components.ram_recovery()).
+    - eta_c, eta_t: compressor/turbine isentropic efficiencies.
+    - eta_b, pi_b:  burner combustion efficiency and total-pressure ratio.
+    - pi_n:   nozzle total-pressure ratio.
+    - p_exit: specified nozzle exit static pressure (default p_ambient -> fully
+              expanded). Set p_exit != p_ambient for an under/over-expanded nozzle
+              (then specific thrust carries the pressure term).
+    - eta_m:  shaft mechanical efficiency (lives on the Engine — it owns the shaft).
     """
-    # Ordered (station_label, component) pairs. The labels become the keys of the
-    # station table and fix its print order (0 is seeded by Engine.run's freestream).
     components: List[Tuple[str, Component]] = [
-        ("2", Inlet()),
-        ("3", Compressor(pi_c)),
-        ("4", Burner(Tt4)),
-        ("5", Turbine()),
-        ("9", Nozzle(p_ambient)),
+        ("2", Inlet(pi_d)),
+        ("3", Compressor(pi_c, eta_c)),
+        ("4", Burner(Tt4, eta_b, pi_b)),
+        ("5", Turbine(eta_t)),
+        ("9", Nozzle(p_ambient, pi_n, p_exit)),
     ]
-    return Engine(gas, components)
+    return Engine(gas, components, eta_m=eta_m)

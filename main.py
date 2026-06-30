@@ -1,9 +1,12 @@
-"""Run the rung-1 validation case: print the full station table and draw the T-s diagram.
+"""Run the cycle and draw the T-s diagram.
 
     python main.py
 
-Requires the components in turbojet/ to be implemented. The plot needs
-matplotlib (`pip install -r requirements.txt`).
+Rung 2 payoff: run the ideal turbojet AND a real-components version at the SAME
+design point, print both station tables, and overlay them on one T-s diagram so
+the "isentropic" legs visibly TILT RIGHT (entropy generated) once losses are on.
+
+Requires the components in turbojet/ and matplotlib (`pip install -r requirements.txt`).
 """
 import math
 
@@ -17,55 +20,50 @@ from turbojet.gas import Gas  # noqa: E402
 
 TS_DIAGRAM_PATH = "ts_diagram.png"
 
+# Design point (the rung-1 validation case) — shared by both runs below.
+FLIGHT = FlightCondition(T0=250.0, p0=50_000.0, M0=0.85)
+PI_C = 10.0
+TT4 = 1500.0
 
-def print_station_table(result):
-    """Print Tt, pt (and far) at every station so the numbers can be watched.
+# Real-components losses (single gas, fully expanded — so the only difference from
+# the ideal run is the entropy each component generates, which is what tilts the
+# legs). The dual-cp gas effect is a separate teaching point (NOTES.md) exercised
+# by the Mattingly anchor in tests/test_rung2.py.
+REAL_LOSSES = dict(pi_d=0.97, eta_c=0.88, eta_b=0.99, pi_b=0.96,
+                   eta_t=0.90, eta_m=0.99, pi_n=0.98)
 
-    Pure formatting over an EngineResult — the physics lives in the engine.
-    """
+
+def print_station_table(title, result):
+    """Print Tt, pt (and far) at every station so the numbers can be watched."""
+    print(f"\n{title}")
     print(f"{'Station':>8} {'Tt [K]':>10} {'pt [kPa]':>10} {'far':>9}")
     print("-" * 40)
     for label, s in result.stations.items():
         print(f"{label:>8} {s.Tt:>10.1f} {s.pt / 1000:>10.2f} {s.far:>9.5f}")
-    print()
-    print(f"V0 = {result.V0:7.1f} m/s    V9 = {result.V9:7.1f} m/s    M9 = {result.M9:.3f}")
     p = result.performance
+    print(f"V0 = {result.V0:7.1f} m/s    V9 = {result.V9:7.1f} m/s    M9 = {result.M9:.3f}")
     print(f"Specific thrust = {p.specific_thrust:.1f} N·s/kg    TSFC = {p.tsfc:.3e} kg/(N·s)")
-    print(f"eta_th = {p.eta_thermal:.4f}    eta_p = {p.eta_propulsive:.4f}    eta_o = {p.eta_overall:.4f}")
+    print(f"eta_brayton = {p.eta_brayton:.4f}   eta_thermal = {p.eta_thermal:.4f}   "
+          f"eta_p = {p.eta_propulsive:.4f}   eta_o = {p.eta_overall:.4f}")
 
 
-def plot_ts_diagram(result, gas, flight):
-    """T-s diagram of the ideal turbojet cycle — the payoff artifact (SPEC.md).
+def _cycle_points(result, flight):
+    """The six cycle points as {label: (s, T)} in (entropy, temperature) space.
 
-    The cycle draws as a CLOSED Brayton loop with two isentropic legs (vertical)
-    and two constant-pressure legs (curves), exactly as the spec asks:
-
-        0 -> 2 -> 3   left isentrope  (ram + compression), s held fixed
-        3 -> 4        top curve       (combustion) at constant p = pt3
-        4 -> 5 -> 9   right isentrope (turbine + nozzle), s held fixed
-        9 -> 0        bottom curve    (heat rejection) at constant p = p0
-
-    WHY 0 and 9 are STATIC while 2..5 are total: an ideal nozzle conserves the
-    totals, so in pure total coordinates station 9 collapses onto station 5 and
-    the loop has only ONE constant-pressure leg (the burner). The second leg --
-    heat rejection -- exists only as the STATIC closure 9 -> 0 at ambient p0,
-    joining the static exhaust (T9, p0) back to the static freestream (T0, p0).
-    Drawing 0 and 9 static also makes the physics visible: the 0->2 rise IS the
-    ram heating, and the 5->9 drop IS the nozzle expansion -- both read straight
-    off the isentropes as temperature changes.
-
-    Entropy uses s(T, p) = cp ln(T/Tref) - R ln(p/pref) with the datum at the
-    freestream static state, so station 0 sits at s = 0 (SPEC.md deliverables).
+    Totals for the internal stations 2..5; STATIC for the freestream (0) and the
+    fully-expanded exhaust (9, p9 = p0) — see the rung-1 note below on why 0 and 9
+    are static. Entropy datum is the station-0 static state (s0 = 0). This uses a
+    SINGLE gas (cp_c == cp_t here), so one s(T,p) is exact; a dual-cp cycle would
+    need a section-aware entropy with a combustion datum offset (deferred — it
+    would muddy the diagram without changing the leg-tilt lesson).
     """
-    Tref, pref = flight.T0, flight.p0  # entropy datum: station-0 static -> s0 = 0
+    gas, Tref, pref = Gas(), flight.T0, flight.p0
 
     def s(T, p):
-        return gas.cp * math.log(T / Tref) - gas.R * math.log(p / pref)
+        return gas.cp_c * math.log(T / Tref) - gas.R_c * math.log(p / pref)
 
-    # The six cycle points as (label, T, p): totals for the internal stations,
-    # STATIC for the freestream (0) and the fully-expanded exhaust (9, p9 = p0).
     st = result.stations
-    points = [
+    pts = [
         ("0", flight.T0, flight.p0),
         ("2", st["2"].Tt, st["2"].pt),
         ("3", st["3"].Tt, st["3"].pt),
@@ -73,62 +71,88 @@ def plot_ts_diagram(result, gas, flight):
         ("5", st["5"].Tt, st["5"].pt),
         ("9", result.T9, flight.p0),
     ]
-    coords = {label: (s(T, p), T) for label, T, p in points}
+    return {label: (s(T, p), T) for label, T, p in pts}
 
-    def pressure_curve(p, T_start, T_end, n=80):
-        """Sample a constant-pressure leg: T sweeps start->end, s = s(T, p).
 
-        Endpoints reuse the station temperatures so each curve meets the
-        isentrope points exactly and the loop closes with no visible gap.
-        """
-        ts = [T_start + (T_end - T_start) * i / (n - 1) for i in range(n)]
-        return [s(T, p) for T in ts], ts
+def plot_ts_diagram(ideal, real, flight):
+    """Overlay the ideal cycle (vertical "isentropic" legs) and the real cycle
+    (legs tilted right by entropy generation) — the rung-2 payoff artifact.
 
-    fig, ax = plt.subplots(figsize=(8, 6))
+    Each cycle draws as a closed Brayton loop: two work legs (0->2->3 and
+    4->5->9) and two constant-pressure legs (combustion 3->4, heat rejection
+    9->0). WHY 0 and 9 are STATIC while 2..5 are total (carried from rung 1): in
+    pure total coordinates an ideal nozzle conserves the totals, so station 9
+    collapses onto 5 and the heat-rejection leg vanishes; drawing 0 and 9 static
+    (at ambient p0) restores the closure 9->0 and makes the ram rise (0->2) and
+    nozzle expansion (5->9) read straight off the legs.
 
-    # Isentropic legs: connect the station points directly. They share s to
-    # within ~0.4 J/(kg.K) -- a sub-pixel slant from cp = 1004.0 disagreeing with
-    # gamma*R/(gamma-1) = 1004.5 (the same rounded-constant artifact noted in the
-    # Nozzle), NOT a physics bug. Plotting the honest (s, T) is the "show the
-    # work" choice; the drift is invisible at this scale.
-    for leg in (["0", "2", "3"], ["4", "5", "9"]):
-        ax.plot([coords[l][0] for l in leg], [coords[l][1] for l in leg],
-                color="tab:blue", lw=2, zorder=2)
+    The lesson: the ideal work legs are vertical (s constant); the real ones lean
+    right because every real component generates entropy (compressor/turbine
+    irreversibility, inlet/burner/nozzle pressure loss). The loop also encloses
+    less area and ends hotter — that lost area is thrust the losses cost.
+    """
+    ci = _cycle_points(ideal, flight)
+    cr = _cycle_points(real, flight)
 
-    # Constant-pressure legs as curves (combustion at pt3, heat rejection at p0).
-    s_comb, T_comb = pressure_curve(st["3"].pt, st["3"].Tt, st["4"].Tt)
-    ax.plot(s_comb, T_comb, color="tab:red", lw=2, zorder=2,
-            label=f"combustion  (p = {st['3'].pt / 1000:.0f} kPa)")
-    s_rej, T_rej = pressure_curve(flight.p0, result.T9, flight.T0)
-    ax.plot(s_rej, T_rej, color="tab:green", lw=2, zorder=2,
-            label=f"heat rejection  (p = {flight.p0 / 1000:.0f} kPa)")
+    fig, ax = plt.subplots(figsize=(8.5, 6.5))
 
-    # Mark and label the six stations.
-    for label, (sv, T) in coords.items():
-        ax.scatter([sv], [T], color="black", zorder=3)
-        ax.annotate(f"  {label}", (sv, T), fontsize=11, fontweight="bold",
-                    va="center")
+    def draw(coords, color, ls, lw, label, alpha):
+        # Work legs (would be vertical if isentropic).
+        for leg in (["0", "2", "3"], ["4", "5", "9"]):
+            ax.plot([coords[l][0] for l in leg], [coords[l][1] for l in leg],
+                    color=color, ls=ls, lw=lw, alpha=alpha, zorder=2)
+        # Combustion leg 3->4 and heat-rejection leg 9->0 as smooth curves. The
+        # cp*ln(T) term is the isobaric shape; a linear residual makes the curve
+        # land EXACTLY on the true endpoint. For an isobar (ideal burner, both
+        # heat-rejection points at p0) the residual is ~0. For the REAL burner
+        # pt4 = pi_b*pt3 < pt3, so the residual is the pressure-loss entropy
+        # -R*ln(pt4/pt3) — drawing it is what makes that loss visible (the leg ends
+        # further right) instead of silently hidden.
+        cp = Gas().cp_c
+        for a, b in (("3", "4"), ("9", "0")):
+            (sa, Ta), (sb, Tb) = coords[a], coords[b]
+            residual = sb - (sa + cp * math.log(Tb / Ta))  # = -R*ln(pb/pa)
+            ts = [Ta + (Tb - Ta) * i / 79 for i in range(80)]
+            ss = [sa + cp * math.log(T / Ta) + residual * (T - Ta) / (Tb - Ta) for T in ts]
+            ax.plot(ss, ts, color=color, ls=ls, lw=lw, alpha=alpha, zorder=2)
+        ax.plot([], [], color=color, ls=ls, lw=lw, label=label)  # legend proxy
+        for lbl, (sv, T) in coords.items():
+            ax.scatter([sv], [T], color=color, s=28, zorder=3, alpha=alpha)
 
-    ax.set_xlabel("entropy  s - s0  [J/(kg·K)]")
+    draw(ci, "tab:blue", "--", 1.8, "ideal (isentropic legs)", 0.7)
+    draw(cr, "tab:red", "-", 2.2, "real (legs tilt right)", 1.0)
+
+    # Label the real-cycle stations (the ones that moved).
+    for lbl, (sv, T) in cr.items():
+        ax.annotate(f"  {lbl}", (sv, T), fontsize=11, fontweight="bold", va="center")
+
+    ax.set_xlabel("entropy  s − s0  [J/(kg·K)]")
     ax.set_ylabel("temperature  T  [K]")
-    ax.set_title("Ideal turbojet — T–s diagram\n"
-                 f"(M0={flight.M0}, π_c={st['3'].pt / st['2'].pt:.0f}, "
-                 f"Tt4={st['4'].Tt:.0f} K)")
+    ax.set_title("Turbojet T–s diagram — ideal vs real components\n"
+                 f"(M0={flight.M0}, π_c={PI_C:.0f}, Tt4={TT4:.0f} K; "
+                 "real: η_c=0.88, η_t=0.90, π losses)")
     ax.legend(loc="upper left")
     ax.grid(True, alpha=0.3)
     fig.tight_layout()
     fig.savefig(TS_DIAGRAM_PATH, dpi=120)
     plt.close(fig)
-    print(f"\nT–s diagram written to {TS_DIAGRAM_PATH}")
+    print(f"\nT–s diagram (ideal vs real) written to {TS_DIAGRAM_PATH}")
 
 
 def main():
-    gas = Gas()
-    flight = FlightCondition(T0=250.0, p0=50_000.0, M0=0.85)
-    engine = build_turbojet(gas, pi_c=10.0, Tt4=1500.0, p_ambient=flight.p0)
-    result = engine.run(flight, mdot=1.0)
-    print_station_table(result)
-    plot_ts_diagram(result, gas, flight)
+    gas = Gas()  # single cold-air-standard gas for the design-point comparison
+    ideal = build_turbojet(gas, PI_C, TT4, FLIGHT.p0).run(FLIGHT, mdot=1.0)
+    real = build_turbojet(gas, PI_C, TT4, FLIGHT.p0, **REAL_LOSSES).run(FLIGHT, mdot=1.0)
+
+    print_station_table("IDEAL turbojet (rung-1 validation case)", ideal)
+    print_station_table("REAL components (same design point, with losses)", real)
+
+    dF = 100.0 * (real.performance.specific_thrust / ideal.performance.specific_thrust - 1.0)
+    dS = 100.0 * (real.performance.tsfc / ideal.performance.tsfc - 1.0)
+    print(f"\nLosses cost: specific thrust {dF:+.1f}%, TSFC {dS:+.1f}% "
+          "(less thrust, burned harder).")
+
+    plot_ts_diagram(ideal, real, FLIGHT)
 
 
 if __name__ == "__main__":

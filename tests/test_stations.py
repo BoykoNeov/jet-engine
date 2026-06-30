@@ -16,7 +16,7 @@ from turbojet.components import Burner, Compressor, Inlet, Nozzle, Turbine  # no
 from turbojet.engine import Engine, FlightCondition  # noqa: E402
 from turbojet.gas import Gas  # noqa: E402
 
-GAS = Gas(gamma=1.4, cp=1004.0, R=287.0, hPR=42.8e6)
+GAS = Gas()  # defaults == rung-1 cold-air-standard gas (hot == cold)
 FLIGHT = FlightCondition(T0=250.0, p0=50_000.0, M0=0.85)
 PI_C = 10.0
 TT4 = 1500.0
@@ -80,7 +80,7 @@ def test_station3_compressor():
     # Tt2/Tt3 == 1/pi_c^g to machine precision), so assert it TIGHT -- a failure
     # beyond float epsilon means Tt3 was not computed via the isentropic relation.
     eta_from_states = 1.0 - state2.Tt / state3.Tt
-    eta_closed_form = 1.0 - 1.0 / (PI_C ** GAS.g)
+    eta_closed_form = 1.0 - 1.0 / (PI_C ** GAS.g_c)
     assert abs(eta_from_states - eta_closed_form) < 1e-9, (
         f"compression-leg bug: {eta_from_states} != {eta_closed_form}"
     )

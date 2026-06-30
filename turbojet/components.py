@@ -1,21 +1,46 @@
 """The five turbojet components, each a pure transform: state_in -> state_out.
 
-RUNG-1 TEACHING NOTE
---------------------
-The bodies below are intentionally left unimplemented. Filling each one in is the
-point of the exercise: for every station, first write the governing equation and
-a one-line physical justification (*why* it holds), THEN implement it. The
-station equations live in SPEC.md § Station equations — derive them, don't copy
-them blindly.
+RUNG 2 — real components. Rung 1 made every process ideal (isentropic, no loss);
+rung 2 lets each one generate entropy and uses the dual-section gas (cold 0->3,
+hot 4->9). The derivations and the *why* of every new term live in
+docs/rung2-spec.md § Station equations — read that before this. Two efficiency
+*kinds* show up and must not be conflated (docs/rung2-spec.md § The two efficiency
+kinds):
 
-Wire the conservation assertions (SPEC.md § Conservation checks) directly into
-these bodies so they run on every execution, not as separate tests.
+  - isentropic efficiency (eta_c, eta_t): the real machine hits the same PRESSURE
+    as the ideal one but at a worse TEMPERATURE. Defined against an IDEAL SUBSTATE
+    (Tt3s, Tt5s) computed at the actual pressure ratio.
+  - specified total-pressure ratio (pi_d, pi_b, pi_n): a flat fractional pt drop,
+    given as an input like pi_c. No substate, no temperature coupling.
+
+Both kinds collapse to rung 1 when set to 1 — which is the reduce-to-ideal gate.
+
+Conservation asserts run on every call (contract #4). The rung-1 isentropic-leg
+check Tt_out/Tt_in == (pt_out/pt_in)^g becomes, for eta < 1, a check on the ideal
+SUBSTATE plus an entropy-generation INEQUALITY on the actual temperature.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 
 from .gas import FlowState, Gas
+
+
+def ram_recovery(M0: float) -> float:
+    """Inlet total-pressure recovery eta_r vs flight Mach (MIL-E-5008B correlation).
+
+    eta_r = 1                       for M0 <= 1   (subsonic: no shock loss modeled)
+          = 1 - 0.075*(M0-1)^1.35   for 1 <= M0 <= 5
+          = 800/(M0^4 + 935)        for M0 > 5
+    The design-point inlet pressure ratio is pi_d = pi_d_max * eta_r(M0). At
+    M0 <= 1 (e.g. the rung-1 case at M0=0.85) eta_r = 1, so the reduce-to-ideal
+    gate is untouched. See docs/rung2-spec.md § What rung 2 adds.
+    """
+    if M0 <= 1.0:
+        return 1.0
+    if M0 <= 5.0:
+        return 1.0 - 0.075 * (M0 - 1.0) ** 1.35
+    return 800.0 / (M0 ** 4 + 935.0)
 
 
 class Component:
@@ -32,210 +57,191 @@ class Component:
 
 
 class Inlet(Component):
-    """Station 0 -> 2. Ideal diffuser with full pressure recovery.
+    """Station 0 -> 2. Real diffuser: total temperature preserved, total pressure lost.
 
-    Governing equations (SPEC.md § Station 2):  Tt2 = Tt0,  pt2 = pt0.
+    Governing equations (docs/rung2-spec.md § Station 2):
+        Tt2 = Tt0                 # any adiabatic, work-free duct conserves Tt
+        pt2 = pi_d * pt0          # SPECIFIED pressure ratio (recovery loss)
 
-    Physical justification (two distinct reasons, only one of them an idealization):
-    - Tt2 = Tt0 holds for ANY inlet: a duct that adds no heat and does no shaft
-      work conserves total temperature (steady-flow energy equation with
-      q = w = 0 => Tt constant). This is not an assumption, it is general.
-    - pt2 = pt0 is the rung-1 *ideal* assumption: full pressure recovery, i.e.
-      no entropy generation. A real inlet loses total pressure to friction and
-      shocks (pt2 < pt0); we set that loss to zero here.
-    The ram compression that raised T and p was already booked into the
-    station-0 totals (stopping the flow). An ideal inlet just hands those totals
-    to the compressor face untouched -- which is exactly why the cycle can run
-    in totals and only worry about static at the nozzle exit.
+    Physical justification:
+    - Tt2 = Tt0 holds for ANY inlet (rung 1 and rung 2 alike): no heat, no shaft
+      work => total temperature constant. Not an idealization.
+    - pt2 = pi_d * pt0 is the rung-2 change. A real inlet loses total pressure to
+      friction and shocks, so pi_d <= 1 (rung 1 was the pi_d = 1 special case).
+      pi_d is the DESIGN-POINT net recovery: pi_d = pi_d_max * ram_recovery(M0),
+      a flight-condition input folded in once at the design Mach (off-design,
+      where M0 varies against fixed geometry, is a later rung). It is a SPECIFIED
+      ratio, not efficiency-driven — so there is no ideal substate here and the
+      leg is no longer isentropic; we assert the ratio exactly and pt2 <= pt0.
     """
 
-    def apply(self, s: FlowState, gas: Gas) -> FlowState:
-        # Ideal diffuser: totals pass through unchanged; no mass or fuel added.
-        out = FlowState(Tt=s.Tt, pt=s.pt, mdot=s.mdot, far=s.far)
+    def __init__(self, pi_d: float = 1.0):
+        self.pi_d = pi_d  # design-point net total-pressure recovery pt2/pt0
 
-        # Conservation checks, every call (contract #4, SPEC.md § Conservation checks).
-        # Isentropic leg: Tt_out/Tt_in == (pt_out/pt_in)**g. Written in general
-        # form (not hardcoded to 1 == 1) so it stays exact in rung 1 and becomes
-        # a REAL check once rung-2 pressure-recovery losses tilt this leg.
-        assert abs(out.Tt / s.Tt - (out.pt / s.pt) ** gas.g) < 1e-9, "inlet leg not isentropic"
-        assert out.mdot == s.mdot and out.far == s.far, "ideal inlet adds no mass or fuel"
+    def apply(self, s: FlowState, gas: Gas) -> FlowState:
+        # Total temperature passes through; total pressure drops by the recovery.
+        out = FlowState(Tt=s.Tt, pt=self.pi_d * s.pt, mdot=s.mdot, far=s.far)
+
+        # Conservation checks, every call (contract #4).
+        assert out.Tt == s.Tt, "adiabatic inlet conserves total temperature"
+        # SPECIFIED ratio — assert exactly (like the burner/nozzle pressure legs),
+        # NOT the isentropic relation (a real inlet generates entropy: pt drops at
+        # constant Tt). Exact-by-construction here, but it guards the pt-update line.
+        assert abs(out.pt - self.pi_d * s.pt) < 1e-9 * s.pt, "inlet pt2 != pi_d*pt0"
+        assert out.pt <= s.pt * (1.0 + 1e-12), "recovery cannot raise total pressure"
+        assert out.mdot == s.mdot and out.far == s.far, "inlet adds no mass or fuel"
         return out
 
 
 class Compressor(Component):
-    """Station 2 -> 3. Isentropic compression at a fixed pressure ratio pi_c.
+    """Station 2 -> 3. Real compression: pressure ratio pi_c, isentropic eff eta_c.
 
-    Governing equations (SPEC.md § Station 3), with g = (gamma-1)/gamma:
-        pt3 = pi_c * pt2
-        Tt3 = Tt2 * pi_c ** g        # isentropic
+    Governing equations (docs/rung2-spec.md § Station 3), with gc = (gamma_c-1)/gamma_c:
+        pt3  = pi_c * pt2
+        Tt3s = Tt2 * pi_c ** gc           # IDEAL exit temperature at this pressure
+        Tt3  = Tt2 + (Tt3s - Tt2)/eta_c   # ACTUAL exit: hotter (eta_c <= 1)
 
-    Physical justification: a compressor adds shaft work to the flow but trades
-    no heat with its surroundings (adiabatic); in rung 1 it does so reversibly,
-    so the process is isentropic (delta_s = 0). For a calorically perfect gas,
-    constant entropy locks temperature to pressure: integrating
-    T ds = cp dT - (R T / p) dp = 0 gives T * p**(-(gamma-1)/gamma) = const, i.e.
-    Tt3/Tt2 = (pt3/pt2)**g. So the pressure ratio pi_c is the design knob (a
-    fixed-geometry machine at design speed delivers a set pt3/pt2) and the
-    temperature rise is *not* free -- it is forced by isentropy. The work per
-    unit mass this leg books, cp*(Tt3 - Tt2), is exactly what the turbine must
-    repay across the shaft downstream (SPEC.md § The shaft balance).
+    Physical justification: the compressor reaches pt3 either way — the pressure
+    ratio is the design knob. With eta_c < 1 it must spend MORE temperature rise
+    to get there, so Tt3 > Tt3s. The gap (Tt3 - Tt3s) is wasted work the turbine
+    must STILL repay across the shaft — losses cost fuel. The ideal substate Tt3s
+    is the rung-1 isentropic result (Tt3s = Tt2*pi_c^gc); eta_c is how far the real
+    machine falls short of it. At eta_c = 1, Tt3 = Tt3s and this is rung 1 exactly.
+    Cold-section properties (gc) apply: this is fresh air, pre-combustion.
     """
 
-    def __init__(self, pi_c: float):
-        self.pi_c = pi_c  # pressure ratio pt3 / pt2
+    def __init__(self, pi_c: float, eta_c: float = 1.0):
+        self.pi_c = pi_c      # pressure ratio pt3 / pt2 (design knob)
+        self.eta_c = eta_c    # isentropic (adiabatic) efficiency, <= 1
 
     def apply(self, s: FlowState, gas: Gas) -> FlowState:
-        # Pressure ratio is the design input; the temperature ratio follows from
-        # isentropy (it is not independently chosen).
+        gc = gas.g_c
         pt3 = self.pi_c * s.pt
-        Tt3 = s.Tt * self.pi_c ** gas.g
+        Tt3s = s.Tt * self.pi_c ** gc                  # ideal substate
+        Tt3 = s.Tt + (Tt3s - s.Tt) / self.eta_c        # actual, >= ideal
         out = FlowState(Tt=Tt3, pt=pt3, mdot=s.mdot, far=s.far)
 
-        # Conservation checks, every call (contract #4, SPEC.md § Conservation checks).
-        # Isentropic leg: Tt_out/Tt_in == (pt_out/pt_in)**g. NOT a tautology -- it
-        # cross-checks the Tt-update line against the pt-update line, so a typo in
-        # one but not the other fires it. (It cannot catch a wrong pi_c, since both
-        # sides derive from pi_c; the spec-value test guards that.) Written in
-        # general form so it stays exact in rung 1 and becomes a REAL check once
-        # rung-2 isentropic efficiency < 1 tilts this leg.
-        assert abs(out.Tt / s.Tt - (out.pt / s.pt) ** gas.g) < 1e-9, "compressor leg not isentropic"
-        assert out.mdot == s.mdot and out.far == s.far, "ideal compressor adds no mass or fuel"
+        # Conservation checks, every call (contract #4).
+        # (1) The IDEAL SUBSTATE is isentropic: Tt3s/Tt2 == (pt3/pt2)^gc. This is
+        #     the rung-1 leg check, moved onto the substate so it stays valid for
+        #     eta_c < 1. Cross-checks the Tt3s line against the pt3 line.
+        assert abs(Tt3s / s.Tt - (pt3 / s.pt) ** gc) < 1e-9, "compressor substate not isentropic"
+        # (2) Entropy generated: the real exit is no cooler than the ideal one.
+        #     Exact equality at eta_c = 1; a strict gap for eta_c < 1. This is the
+        #     check that actually exercises eta_c (the substate check cannot see it).
+        assert Tt3 >= Tt3s - 1e-9 * Tt3s, "compressor must generate entropy: Tt3 >= Tt3s"
+        assert out.mdot == s.mdot and out.far == s.far, "compressor adds no mass or fuel"
         return out
 
 
 class Burner(Component):
-    """Station 3 -> 4. Heat addition up to the turbine-inlet temperature Tt4.
+    """Station 3 -> 4. Heat addition to Tt4, with combustion + pressure loss.
 
-    Governing equations (SPEC.md § Station 4):
-        pt4 = pt3                                # ideal: no combustor loss
-        f   = cp (Tt4 - Tt3) / (hPR - cp Tt4)    # energy balance -> fuel-air ratio
+    Governing equations (docs/rung2-spec.md § Station 4):
+        pt4 = pi_b * pt3                                       # combustor pressure loss
+        f   = (cpt*Tt4 - cpc*Tt3) / (eta_b*hPR - cpt*Tt4)     # dual-cp energy balance
 
     Physical justification:
-    - f from a steady-flow energy balance across the burner. The control volume is
-      adiabatic to its surroundings, so ALL the fuel's chemical energy (hPR per kg
-      of fuel) goes into the gas:
-            mdot_air*cp*Tt3 + mdot_fuel*hPR = (mdot_air + mdot_fuel)*cp*Tt4
-      Divide by mdot_air and set f = mdot_fuel/mdot_air; solving for f gives the
-      closed form above. Tt4 is the design knob (material limit on the turbine
-      blades); f is what it costs in fuel to reach it. The (hPR - cp*Tt4) in the
-      denominator says fuel gets "expensive" as Tt4 approaches the adiabatic flame
-      ceiling hPR/cp -- you must burn ever more fuel for each extra kelvin because
-      that fuel's own mass must also be heated to Tt4.
-    - pt4 = pt3 is the rung-1 *ideal* assumption: no combustor friction or Rayleigh
-      (heat-addition) total-pressure loss. A real burner drops pt a few percent.
-    - This leg is NOT isentropic -- adding heat necessarily raises entropy. That is
-      exactly why SPEC.md § Conservation checks lists the isentropic-leg check for
-      the inlet, compressor, turbine and nozzle but deliberately OMITS the burner:
-      pt is held here only because we idealize the loss away, not because ds = 0.
-      So we do not wire the (pt_out/pt_in)^g check on this leg.
-
-    Rung-1 scope: the cold-air-standard approximation reuses one constant cp for
-    air and combustion products alike, and a single burner is the only fuel source.
+    - f from a steady-flow energy balance that now spans the cold->hot hand-off and
+      books incomplete combustion via eta_b:
+            mdot_air*cpc*Tt3 + eta_b*mdot_fuel*hPR = (mdot_air + mdot_fuel)*cpt*Tt4
+      Divide by mdot_air, set f = mdot_fuel/mdot_air, solve -> the f above. The
+      products are HOT-section gas (cpt) and the fuel chemical energy is discounted
+      by eta_b < 1. At cpc = cpt and eta_b = 1 this is rung-1's
+      f = cp(Tt4 - Tt3)/(hPR - cp*Tt4).
+    - pt4 = pi_b * pt3: a real combustor drops total pressure (friction + Rayleigh
+      heat-addition loss), pi_b <= 1. SPECIFIED ratio, asserted exactly.
+    - This leg is NOT isentropic (adding heat raises entropy), so — as in rung 1 —
+      there is no (pt/pt)^g check here; pt is set by pi_b, not by ds = 0.
     """
 
-    def __init__(self, Tt4: float):
-        self.Tt4 = Tt4  # turbine-inlet (peak) total temperature, K
+    def __init__(self, Tt4: float, eta_b: float = 1.0, pi_b: float = 1.0):
+        self.Tt4 = Tt4      # turbine-inlet (peak) total temperature, K
+        self.eta_b = eta_b  # combustion efficiency, <= 1
+        self.pi_b = pi_b    # combustor total-pressure ratio pt4/pt3, <= 1
 
     def apply(self, s: FlowState, gas: Gas) -> FlowState:
-        # Rung-1 guard: a single burner is the only fuel source, so the gas arrives
-        # as dry air and the energy balance below may book the inlet stream as pure
-        # air (s.mdot == mdot_air). Revisit this if reheat/an afterburner lands.
-        assert s.far == 0.0, "rung-1 burner assumes dry air at entry (far == 0)"
+        # Rung guard: a single burner is the only fuel source, so the gas arrives
+        # as dry air (far == 0) and the balance may book s.mdot as pure air.
+        assert s.far == 0.0, "burner assumes dry air at entry (far == 0)"
 
-        pt4 = s.pt  # ideal burner: heat added at constant total pressure
-        # Fuel-air ratio from the energy balance (see docstring derivation).
-        f = gas.cp * (self.Tt4 - s.Tt) / (gas.hPR - gas.cp * self.Tt4)
-        # Fuel mass joins the stream: mdot4 = mdot_air*(1 + f). far carries f
-        # downstream, where the turbine's shaft balance needs the (1 + f) factor.
+        pt4 = self.pi_b * s.pt
+        # Dual-cp energy balance (see docstring): cpc on the incoming air, cpt on
+        # the hot products and the eta_b-discounted fuel-heating ceiling.
+        f = (gas.cp_t * self.Tt4 - gas.cp_c * s.Tt) / (self.eta_b * gas.hPR - gas.cp_t * self.Tt4)
         mdot4 = s.mdot * (1.0 + f)
         out = FlowState(Tt=self.Tt4, pt=pt4, mdot=mdot4, far=f)
 
-        # Conservation checks, every call (contract #4, SPEC.md § Conservation checks).
-        # These are the spec's TWO burner checks -- mass growth and the energy
-        # balance. f is solved FROM the energy balance, so a clean run satisfies it;
-        # like the compressor's isentropic check it is not a tautology but a
-        # cross-check -- a typo in the Tt4, mdot, or far line (but not all of them)
-        # fires it.
+        # Conservation checks, every call (contract #4).
         assert abs(out.mdot - s.mdot * (1.0 + out.far)) < 1e-9 * s.mdot, (
             "burner mass: mdot_out != mdot_in*(1 + f)"
         )
+        # Energy balance with dual cp + eta_b. f is solved FROM this, so a clean
+        # run satisfies it; it cross-checks the Tt4 / mdot / far lines.
         mdot_fuel = out.mdot - s.mdot
-        lhs = s.mdot * gas.cp * s.Tt + mdot_fuel * gas.hPR
-        rhs = out.mdot * gas.cp * out.Tt
+        lhs = s.mdot * gas.cp_c * s.Tt + self.eta_b * mdot_fuel * gas.hPR
+        rhs = out.mdot * gas.cp_t * out.Tt
         assert abs(lhs - rhs) < 1e-6 * rhs, "burner energy balance violated"
-        # Defining ideal property; near-tautological in rung 1, but a REAL check
-        # once rung-2 combustor pressure loss tilts pt4 below pt3.
-        assert out.pt == s.pt, "ideal burner adds no total-pressure loss"
+        # SPECIFIED pressure ratio (near-tautological, but guards the pt4 line and
+        # becomes load-bearing once pi_b < 1 tilts pt4 below pt3).
+        assert abs(out.pt - self.pi_b * s.pt) < 1e-9 * s.pt, "burner pt4 != pi_b*pt3"
         return out
 
 
 class Turbine(Component):
     """Station 4 -> 5. THE KEYSTONE: its work is *set* by the compressor it drives.
 
-    Governing equations (SPEC.md § Station 5 and § The shaft balance), with
-    g = (gamma-1)/gamma:
-        Tt5 = Tt4 - delta_Tt,  delta_Tt = (Tt3 - Tt2) / (1 + f)   # shaft balance
-        pt5 = pt4 * (Tt5/Tt4) ** (1/g)                            # isentropic
+    Governing equations (docs/rung2-spec.md § Station 5 and § The shaft balance),
+    with gt = (gamma_t-1)/gamma_t. The engine computes delta_Tt from the dual-cp,
+    mechanical-efficiency shaft balance and hands it in:
+        delta_Tt = cpc*(Tt3 - Tt2) / (eta_m*(1 + f)*cpt)   # (engine-owned)
+        Tt5  = Tt4 - delta_Tt
+        Tt5s = Tt4 - delta_Tt/eta_t                         # IDEAL drop for this work
+        pt5  = pt4 * (Tt5s/Tt4) ** (1/gt)                   # isentropic from substate
 
     Physical justification:
-    - delta_Tt is NOT a free design choice -- it is forced by the shaft. Compressor
-      and turbine share one spool, so with mechanical efficiency = 1 every watt the
-      turbine pulls from the gas is spent driving the compressor:
-            mdot_air*cp*(Tt3 - Tt2) = (mdot_air + mdot_fuel)*cp*(Tt4 - Tt5)
-      Divide by mdot_air*cp and use (mdot_air + mdot_fuel)/mdot_air = 1 + f:
-            Tt4 - Tt5 = (Tt3 - Tt2) / (1 + f).
-      The (1 + f) divides because the turbine works a HEAVIER stream than the
-      compressor (it also pushes the burnt fuel mass), so it needs a slightly
-      smaller temperature drop to make the same power. This one line is what makes
-      the engine a machine: it sets Tt5, which sets the enthalpy left for the
-      nozzle, which sets V9, which sets thrust -- almost everything cascades from
-      here (SPEC.md § The shaft balance).
-    - pt5 from isentropy: an ideal turbine is adiabatic and reversible, so ds = 0.
-      For a calorically perfect gas constant entropy locks T to p exactly as in the
-      compressor, Tt5/Tt4 = (pt5/pt4)**g, solved for pt5. The expansion is the
-      compression run backwards: pressure falls so that the gas can give up the
-      delta_Tt the shaft demands.
+    - delta_Tt is NOT free — the shaft sets it (see Engine.run / docs § shaft
+      balance). The turbine here just expands by the given drop.
+    - eta_t < 1 means the real expansion yields LESS pressure drop per unit work:
+      to reach pt5 the gas would isentropically have to fall to a LOWER temperature
+      Tt5s < Tt5. So pt5 is fixed by the ideal substate Tt5s, and the actual exit
+      Tt5 sits above it — that gap is the turbine's entropy generation. At
+      eta_t = 1, Tt5s = Tt5 and pt5 = pt4*(Tt5/Tt4)^(1/gt), which is rung 1.
+      Hot-section properties (gt) apply: this is combustion gas.
 
-    Design note (resolved): the engine, not the turbine, owns the shaft balance.
-    The turbine takes no constructor load — it just expands by a given delta_Tt.
-    This keeps every component pure and puts the coupling equation where it can be
-    seen (Engine.run), at the cost of one component whose signature differs. The
-    shaft-CLOSURE assertion therefore lives in Engine.run (it needs Tt2/Tt3, which
-    the turbine never sees); here we check only what the turbine itself owns.
+    Design note (unchanged from rung 1): the ENGINE owns the shaft balance and the
+    closure assert (it needs Tt2/Tt3, which the turbine never sees). The turbine's
+    apply diverges from the bare (state, gas) to take delta_Tt — saying in the type
+    that it cannot run free-standing.
     """
+
+    def __init__(self, eta_t: float = 1.0):
+        self.eta_t = eta_t  # isentropic (adiabatic) efficiency, <= 1
 
     def apply(self, s: FlowState, gas: Gas, delta_Tt: float) -> FlowState:
         """Expand from station 4 by a *given* total-temperature drop delta_Tt.
 
-        delta_Tt = (Tt3 - Tt2) / (1 + f) is computed by the engine, which alone
-        holds the compressor inlet/exit states and f. The signature deliberately
-        diverges from the other components' apply(state, gas): the turbine cannot
-        run free-standing, and saying so in the type keeps the shaft coupling
-        visible. Then: Tt5 = Tt4 - delta_Tt, and pt5 = pt4 * (Tt5/Tt4)**(1/g).
+        delta_Tt comes from the engine's dual-cp + eta_m shaft balance (it alone
+        holds the compressor states and f). Then Tt5 = Tt4 - delta_Tt, the ideal
+        substate Tt5s = Tt4 - delta_Tt/eta_t, and pt5 = pt4*(Tt5s/Tt4)**(1/gt).
         """
-        # The shaft hands down a temperature drop; the turbine just expands by it.
-        Tt5 = s.Tt - delta_Tt
-        # Isentropic expansion fixes pt5 from the temperature ratio (1/g = gamma/
-        # (gamma-1), the same exponent the compressor used, run the other way).
-        pt5 = s.pt * (Tt5 / s.Tt) ** (1.0 / gas.g)
-        # The turbine moves no mass across its own boundary: the (1 + f) stream that
-        # entered leaves intact (f already booked at the burner), so carry far through.
+        gt = gas.g_t
+        Tt5 = s.Tt - delta_Tt                          # actual exit
+        Tt5s = s.Tt - delta_Tt / self.eta_t            # ideal substate (lower, eta_t<=1)
+        pt5 = s.pt * (Tt5s / s.Tt) ** (1.0 / gt)       # isentropic from the substate
         out = FlowState(Tt=Tt5, pt=pt5, mdot=s.mdot, far=s.far)
 
-        # Conservation checks, every call (contract #4, SPEC.md § Conservation checks).
-        # The shaft-CLOSURE check is the engine's job (it needs Tt2/Tt3); these are
-        # the turbine's own invariants.
-        # (1) The only NON-tautological guard available here: a turbine extracts
-        #     work, so Tt must fall. Catches a sign error or a bad delta_Tt handed
-        #     in -- neither of the structural checks below can (both derive pt5 from
-        #     Tt5, so they hold for ANY delta_Tt).
-        assert delta_Tt > 0.0, "turbine must extract work: Tt5 < Tt4 (delta_Tt > 0)"
-        # (2) Isentropic leg: Tt_out/Tt_in == (pt_out/pt_in)**g. Exact-by-construction
-        #     in rung 1 (pt5 is derived from Tt5), so it cannot catch a wrong delta_Tt
-        #     -- the spec-value test guards that. Written in general form so it becomes
-        #     a REAL check once rung-2 turbine efficiency < 1 tilts this leg.
-        assert abs(out.Tt / s.Tt - (out.pt / s.pt) ** gas.g) < 1e-9, "turbine leg not isentropic"
-        # (3) No mass or fuel crosses the turbine boundary.
+        # Conservation checks, every call (contract #4).
+        # (1) A turbine extracts work: Tt must fall. Catches a sign error or a bad
+        #     delta_Tt handed in (the structural checks below derive pt5 from Tt5s,
+        #     so they hold for any delta_Tt).
+        assert delta_Tt > 0.0, "turbine must extract work: delta_Tt > 0"
+        # (2) Ideal SUBSTATE is isentropic: Tt5s/Tt4 == (pt5/pt4)^gt (rung-1 leg
+        #     check, moved onto the substate so it survives eta_t < 1).
+        assert abs(Tt5s / s.Tt - (out.pt / s.pt) ** gt) < 1e-9, "turbine substate not isentropic"
+        # (3) Entropy generated: the actual exit is no cooler than the ideal one.
+        #     The check that actually exercises eta_t.
+        assert Tt5 >= Tt5s - 1e-9 * abs(Tt5s), "turbine must generate entropy: Tt5 >= Tt5s"
         assert out.mdot == s.mdot and out.far == s.far, "turbine adds no mass or fuel"
         return out
 
@@ -244,89 +250,76 @@ class Turbine(Component):
 class NozzleExit:
     """The nozzle's output. Diverges from the other components' bare FlowState.
 
-    Like the Turbine diverges its INPUT signature (it takes the shaft delta_Tt
-    because it cannot run free-standing), the Nozzle diverges its OUTPUT type: its
-    whole job is the drop from totals to STATIC, and the static exit quantities
-    (M9, T9, V9) are not total quantities, so they do not fit on a FlowState. The
-    type says so. Engine.run unpacks this: state -> stations["9"], the statics ->
-    EngineResult (SPEC.md § Station 9; docs/plans/rung1-plan.md step 6).
+    Its job is the drop from totals to STATIC, and the static exit quantities
+    (M9, T9, V9, p9) are not total quantities, so they ride here rather than on a
+    FlowState. p9 is carried because the ENGINE needs it for the pressure-thrust
+    term when the nozzle is not fully expanded (p9 != p0). Engine.run unpacks this.
     """
 
-    state: FlowState   # station-9 TOTALS (Tt9 = Tt5, pt9 = pt5)
+    state: FlowState   # station-9 TOTALS (Tt9 = Tt5, pt9 = pi_n*pt5)
     M9: float          # exit Mach number
     T9: float          # exit STATIC temperature, K
     V9: float          # exit velocity, m/s
+    p9: float          # exit STATIC pressure, Pa (= p_exit)
 
 
 class Nozzle(Component):
-    """Station 5 -> 9. Ideal and fully expanded (p9 = p0): totals are conserved.
+    """Station 5 -> 9. Real nozzle: pi_n loss, expand to a SPECIFIED exit pressure.
 
-    Converts the remaining total enthalpy into exhaust velocity; this is where we
-    drop from totals to static. Physical justification, in the order the equations
-    are solved:
-    - Tt9 = Tt5, pt9 = pt5: an ideal nozzle adds no heat and does no shaft work, so
-      Tt is conserved; being also reversible (no entropy generation) it conserves pt
-      too. So the totals just pass through -- the nozzle does not create energy, it
-      only TRADES pressure for velocity.
-    - M9 from the fully-expanded condition p9 = p0: the gas keeps expanding until its
-      static pressure matches ambient, so all of pt9 is spent. Inverting the
-      isentropic total/static pressure relation pt9/p9 = (1 + (g-1)/2 M9^2)^(1/g)
-      [written with gamma] for M9 gives M9 = sqrt( ((pt9/p9)^g - 1) / ((gamma-1)/2) ).
-      A bigger pt9/p9 ratio buys a faster exhaust -- this is the ratio the whole
-      cycle was built to maximize.
-    - T9 from M9: static temperature is the total minus the kinetic share,
-      T9 = Tt9 / (1 + (gamma-1)/2 M9^2). The flow cooled because its thermal energy
-      became directed kinetic energy.
-    - V9 = M9 * sqrt(gamma R T9): velocity is Mach times the LOCAL speed of sound,
-      which is set by the static (cooled) temperature, not the total. This V9 is the
-      number thrust is built on -- the engine throwing mass out faster than V0.
-    See SPEC.md § Station 9.
+    Governing equations (docs/rung2-spec.md § Station 9), hot-section gt/gamma_t/Rt:
+        Tt9 = Tt5                                  # adiabatic: Tt conserved
+        pt9 = pi_n * pt5                           # SPECIFIED nozzle pressure loss
+        p9  : given (default p9 = p_ambient -> fully expanded)
+        M9  = sqrt( ((pt9/p9)^gt - 1) / ((gamma_t-1)/2) )
+        T9  = Tt9 / (1 + (gamma_t-1)/2 * M9^2)
+        V9  = M9 * sqrt(gamma_t * Rt * T9)
+
+    Physical justification:
+    - Tt9 = Tt5: no heat, no shaft work. pt9 = pi_n*pt5: a real nozzle loses total
+      pressure (pi_n <= 1), a SPECIFIED ratio.
+    - The nozzle expands to whatever back-pressure it is TOLD, p9. When p9 = p0 all
+      of pt9 is spent (fully expanded — the rung-1 case, the default). When p9 > p0
+      (e.g. Mattingly Example 7.1: p9 = 2*p0) the jet leaves still pressurized and a
+      PRESSURE-THRUST term appears in F/mdot (booked by the engine). p9 is an INPUT,
+      so this is straight-line — no choke detection (deferred). gt/gamma_t/Rt are
+      hot-section: this is combustion gas.
     """
 
-    def __init__(self, p_ambient: float):
-        self.p_ambient = p_ambient  # p0, Pa — the fully-expanded back pressure
+    def __init__(self, p_ambient: float, pi_n: float = 1.0, p_exit: float | None = None):
+        self.p_ambient = p_ambient                                # p0, Pa
+        self.pi_n = pi_n                                          # nozzle pt ratio, <= 1
+        self.p_exit = p_ambient if p_exit is None else p_exit     # p9; default fully expanded
 
     def apply(self, s: FlowState, gas: Gas) -> NozzleExit:
-        # Totals pass through an ideal (adiabatic, reversible) nozzle untouched.
-        Tt9, pt9 = s.Tt, s.pt
-        p9 = self.p_ambient                       # fully expanded: p9 = p0
+        gt, gamma, R = gas.g_t, gas.gamma_t, gas.R_t
+        Tt9 = s.Tt
+        pt9 = self.pi_n * s.pt                      # specified nozzle pressure loss
+        p9 = self.p_exit                            # expand to the specified back-pressure
 
-        # (gamma-1)/2 appears in both the M9 and T9 relations -- compute once.
-        half_gm1 = 0.5 * (gas.gamma - 1.0)
-        # Invert the isentropic pt/p relation for M9 (g = (gamma-1)/gamma, so the
-        # (pt9/p9)**g term is (1 + (gamma-1)/2 M9^2)).
-        M9 = (((pt9 / p9) ** gas.g - 1.0) / half_gm1) ** 0.5
-        T9 = Tt9 / (1.0 + half_gm1 * M9 ** 2)      # static = total minus kinetic share
-        a9 = (gas.gamma * gas.R * T9) ** 0.5       # local speed of sound at the EXIT
+        half_gm1 = 0.5 * (gamma - 1.0)
+        # Invert the isentropic pt/p relation for M9 (hot-section gt and gamma).
+        M9 = (((pt9 / p9) ** gt - 1.0) / half_gm1) ** 0.5
+        T9 = Tt9 / (1.0 + half_gm1 * M9 ** 2)       # static = total minus kinetic share
+        a9 = (gamma * R * T9) ** 0.5                # local speed of sound at the EXIT
         V9 = M9 * a9
 
-        # Station-9 state is totals only (FlowState convention); statics ride on the
-        # NozzleExit. Ideal nozzle moves no mass and adds no fuel, so carry both.
         out = FlowState(Tt=Tt9, pt=pt9, mdot=s.mdot, far=s.far)
 
-        # Conservation checks, every call (contract #4, SPEC.md § Conservation checks).
-        # (1) Design assumption made literal: fully expanded means p9 == p0. Trivial
-        #     here (we set p9 = p_ambient), but it documents WHY the pressure-thrust
-        #     term vanishes in F/mdot = (1+f)V9 - V0.
-        assert p9 == self.p_ambient, "fully expanded: p9 must equal ambient"
-        # (2) Static<->total isentropic relation pt9/p9 == (Tt9/T9)**(1/g). Exact by
-        #     construction (M9, T9 are derived to satisfy it), so assert TIGHT -- a
-        #     failure beyond float epsilon means the static drop was computed wrong.
-        assert abs(pt9 / p9 - (Tt9 / T9) ** (1.0 / gas.g)) < 1e-9, "nozzle static drop not isentropic"
-        # (3) No mass or fuel crosses the nozzle boundary.
-        assert out.mdot == s.mdot and out.far == s.far, "ideal nozzle adds no mass or fuel"
-        # (4) The one NON-tautological check: the steady-flow energy split -- total
-        #     enthalpy splits into static enthalpy + kinetic energy, cp*Tt9 == cp*T9 +
-        #     V9^2/2. This actually exercises the conversion (it does NOT derive V9
-        #     from itself). Tolerance is loose ON PURPOSE: the rung-1 data is slightly
-        #     inconsistent -- cp = 1004.0 J/(kg K) but gamma*R/(gamma-1) = 1004.5, a
-        #     ~0.05% mismatch -- so this leg carries a real ~600 J/kg residual that is
-        #     a rounded-constant artifact, NOT a physics bug (contract: explain
-        #     surprises). It would be exact only if cp and (gamma, R) agreed.
-        enthalpy_total = gas.cp * Tt9
-        enthalpy_static_plus_ke = gas.cp * T9 + 0.5 * V9 ** 2
+        # Conservation checks, every call (contract #4).
+        # (1) SPECIFIED nozzle pressure ratio.
+        assert abs(out.pt - self.pi_n * s.pt) < 1e-9 * s.pt, "nozzle pt9 != pi_n*pt5"
+        # (2) Static<->total isentropic relation pt9/p9 == (Tt9/T9)^(1/gt). Exact by
+        #     construction (M9, T9 derived to satisfy it) — assert TIGHT.
+        assert abs(pt9 / p9 - (Tt9 / T9) ** (1.0 / gt)) < 1e-9, "nozzle static drop not isentropic"
+        assert out.mdot == s.mdot and out.far == s.far, "nozzle adds no mass or fuel"
+        # (3) The NON-tautological check: total enthalpy splits into static + kinetic,
+        #     cpt*Tt9 == cpt*T9 + V9^2/2. Loose tolerance ON PURPOSE — the hot-section
+        #     constants carry the same kind of rounded-constant mismatch noted in
+        #     rung 1 (cpt vs gamma_t*Rt/(gamma_t-1)), a sub-0.1% residual, not a bug.
+        enthalpy_total = gas.cp_t * Tt9
+        enthalpy_static_plus_ke = gas.cp_t * T9 + 0.5 * V9 ** 2
         assert abs(enthalpy_static_plus_ke - enthalpy_total) <= 1e-3 * enthalpy_total, (
             f"nozzle energy split off by more than the constant mismatch: "
             f"{enthalpy_static_plus_ke} vs {enthalpy_total}"
         )
-        return NozzleExit(state=out, M9=M9, T9=T9, V9=V9)
+        return NozzleExit(state=out, M9=M9, T9=T9, V9=V9, p9=p9)

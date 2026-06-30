@@ -16,7 +16,10 @@ from turbojet.engine import FlightCondition, build_turbojet  # noqa: E402
 from turbojet.gas import Gas  # noqa: E402
 
 # --- Inputs (SPEC.md § Validation case) ---
-GAS = Gas(gamma=1.4, cp=1004.0, R=287.0, hPR=42.8e6)
+# Gas() defaults ARE the rung-1 cold-air-standard gas (hot section == cold,
+# gamma=1.4, cp=1004, R=287), so this case doubles as the rung-2 reduce-to-ideal
+# gate (docs/rung2-spec.md § Verification gates).
+GAS = Gas()
 FLIGHT = FlightCondition(T0=250.0, p0=50_000.0, M0=0.85)
 PI_C = 10.0
 TT4 = 1500.0
@@ -39,7 +42,7 @@ EXPECTED = {
     "V0_ms": 269.4,
     "specific_thrust": 816.6,
     "tsfc": 2.821e-5,
-    "eta_thermal": 0.4821,
+    "eta_brayton": 0.4821,   # rung-1 "eta_th" is the Brayton identity 1 - Tt2/Tt3
     "eta_propulsive": 0.4073,
     "eta_overall": 0.2231,
 }
@@ -69,7 +72,7 @@ def test_validation_case():
         "V0_ms": result.V0,
         "specific_thrust": perf.specific_thrust,
         "tsfc": perf.tsfc,
-        "eta_thermal": perf.eta_thermal,
+        "eta_brayton": perf.eta_brayton,
         "eta_propulsive": perf.eta_propulsive,
         "eta_overall": perf.eta_overall,
     }
@@ -89,7 +92,7 @@ def test_primary_hand_check():
     st = result.stations
 
     eta_from_states = 1.0 - st["2"].Tt / st["3"].Tt
-    eta_closed_form = 1.0 - 1.0 / (PI_C ** GAS.g)
+    eta_closed_form = 1.0 - 1.0 / (PI_C ** GAS.g_c)
     assert _close(eta_from_states, eta_closed_form), (
         f"compression-leg bug: {eta_from_states} != {eta_closed_form}"
     )

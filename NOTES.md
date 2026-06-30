@@ -227,3 +227,96 @@ multiply the reported `η_th` and `η_p` and expect `η_o`.
 *All six stations and the shaft balance are derived. The companion artifacts are the
 station table (`python main.py`) and the T–s diagram (`ts_diagram.png`), where these
 same numbers are drawn as a closed Brayton loop.*
+
+---
+---
+
+# Rung 2 — Real Components, in plain language
+
+Rung 1 was the *ideal* engine: every squeeze and expansion perfect, no pressure
+lost anywhere, one gas throughout. Rung 2 makes each component **real** — it now
+*generates entropy* — and, as a package deal, splits the gas into a cold half and
+a hot half. The formal derivations are in `docs/rung2-spec.md`; this is the
+plain-language version. The one-picture summary: on the T–s diagram the
+"isentropic" work legs stop being vertical and **lean to the right**.
+
+## The two ways a component can be "real"
+There are exactly two new effects, and keeping them apart is the whole game:
+
+1. **Isentropic efficiency** (`η_c` compressor, `η_t` turbine). The real machine
+   reaches the *same pressure* as the ideal one, but at a *worse temperature*. A
+   real compressor wastes some work as extra heat, so it ends up **hotter** than
+   the ideal `Tt3`; a real turbine gets **less pressure drop** for the same work.
+   We measure this against an *ideal substate* (`Tt3s`, `Tt5s`) — the
+   rung-1 isentropic answer — and `η` is how far the real machine falls short.
+
+2. **A specified pressure-ratio loss** (`π_d` inlet, `π_b` burner, `π_n` nozzle).
+   A flat fractional total-pressure drop you simply *state* as an input, exactly
+   like the compressor's `πc`. No temperature coupling — friction and shock loss
+   bleeding off `pt`.
+
+Set all of them to 1 and rung 2 collapses *exactly* back to rung 1 — that's the
+**reduce-to-ideal check**, the rung-2 analog of the primary hand-check.
+
+## Why "real gas" rides in with "real components"
+Once you stop idealizing the components, the textbooks stop idealizing the gas
+too — and for a good reason. Hot combustion products are heavier and floppier than
+cold air: their `cp` is higher (≈1239 vs 1004 J/kg·K) and `γ` lower (≈1.3 vs 1.4).
+So rung 2 carries **two gases**: a *cold* one upstream of the burner (stations
+0→3) and a *hot* one downstream (4→9). The burner is the hand-off. (One rung short
+of the full truth, where `cp` varies continuously with temperature.)
+
+## What changes in the shaft balance
+Same idea as rung 1 — turbine repays the compressor — but now with two `cp`s and a
+**mechanical efficiency** `η_m` for the friction in the shaft itself:
+
+```
+η_m · (1 + f) · cpt · (Tt4 − Tt5)  =  cpc · (Tt3 − Tt2)
+```
+
+The turbine works the hot, heavy stream (`cpt`, `1+f`) and loses a sliver to
+friction (`η_m`), so the temperature drop it needs shifts accordingly. The engine
+still solves this out in the open and asserts it closes on every run.
+
+## The thermal-efficiency fix — and the trap from rung 1, resolved
+Remember the trap at the end of the rung-1 notes: `η_o ≠ η_th × η_p`, because the
+rung-1 "thermal efficiency" was the Brayton identity `1 − Tt2/Tt3`, not the real
+thing. **Rung 2 fixes this.** We now report *two* numbers:
+
+- `eta_brayton = 1 − Tt2/Tt3` — kept only because it's the rung-1 table value and
+  the hand-check. **Watch it mislead you:** with a leaky compressor the air comes
+  out *hotter* (`Tt3` rises), so `1 − Tt2/Tt3` goes *up* (0.482 → 0.514 in
+  `main.py`) — as if losses *helped*. They didn't. This number moves the wrong way.
+- `eta_thermal = [(1+f)V9² − V0²] / (2·f·hPR)` — the **real** thermal efficiency,
+  the kinetic energy actually added to the jet per unit fuel burned. It correctly
+  *drops* with losses (0.548 → 0.481), and in the ideal limit it's 0.5477 (not
+  0.4821 — genuinely a different quantity).
+
+The payoff: under this honest definition the textbook cascade **`η_o = η_thermal ·
+η_p` now holds exactly** — the very identity rung 1 had to apologize for. The code
+asserts it on every run.
+
+## The under-expanded nozzle (a small extra)
+Rung 1's nozzle always expanded fully to ambient (`p9 = p0`). Rung 2 lets you
+*specify* the exit pressure. When `p9 ≠ p0` (the jet leaves still pressurized) the
+thrust picks up a **pressure term** — `(1+f)·Rt·T9·(1 − p0/p9)/V9` — on top of the
+momentum term. It vanishes when `p9 = p0`, so the default is still the rung-1 case.
+(Detecting a *choked* nozzle and solving for `p9` is a later rung; here `p9` is
+just an input.)
+
+## Did we get it right? The external anchor
+Rung 1 checked itself against a spec table. Rung 2 checks against a real textbook:
+**Mattingly's *Elements of Propulsion*, Example 7.1** — a Mach-2 turbojet with
+adiabatic efficiencies, pressure losses, dual gas, and an under-expanded nozzle.
+The book inputs *polytropic* efficiencies; we use *isentropic* ones, so the test
+converts between them (exact for this kind of gas). Every headline number —
+fuel-air ratio, exit Mach and velocity, specific thrust, TSFC, all three
+efficiencies — reproduces to **better than 0.02%** (`tests/test_rung2.py`). That a
+single textbook example bundles real components *and* real gas *and* a non-ideal
+nozzle is the lesson restated: in the real world they all arrive together.
+
+---
+*Rung 2 is wired and anchored. `python main.py` now prints the ideal and real
+cycles side by side and overlays them on the T–s diagram (`ts_diagram.png`), where
+the real cycle's work legs visibly tilt right — the entropy every real component
+generates, drawn to scale.*
