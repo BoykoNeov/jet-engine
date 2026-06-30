@@ -13,7 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, List, Tuple
 
-from .components import Component
+from .components import Burner, Compressor, Component, Inlet, Nozzle, NozzleExit, Turbine
 from .gas import FlowState, Gas
 
 
@@ -121,7 +121,92 @@ class Engine:
         Then convert to static at the nozzle exit and score performance (specific
         thrust, TSFC, efficiencies). See SPEC.md § The shaft balance, § Performance.
         """
-        raise NotImplementedError("Engine.run: chain components, solve shaft balance, score performance")
+        gas = self.gas
+
+        # Station 0: manufacture the freestream totals + flight velocity.
+        state, V0 = self.freestream(flight, mdot)
+        stations: Dict[str, FlowState] = {"0": state}
+
+        # Nozzle-exit statics, filled when the flow reaches station 9.
+        M9 = T9 = V9 = None
+
+        # Walk the components in flow order. Two of the five diverge from the bare
+        # apply(state, gas) and are handled explicitly here -- which is the whole
+        # point of letting the ENGINE own the awkward bits (SPEC.md § Architecture):
+        #   - Turbine: its work is not free. The engine computes the shaft delta_Tt
+        #     from the compressor/inlet states it already holds and hands it in.
+        #   - Nozzle: it returns a NozzleExit (totals + statics), not a FlowState.
+        for label, component in self.components:
+            if isinstance(component, Turbine):
+                # THE SHAFT BALANCE, solved out in the open. The turbine works the
+                # heavier (1 + f) stream, so it needs a smaller drop than the
+                # compressor's rise to make the same power (SPEC.md § The shaft balance).
+                # state here is station 4, which carries f as its far.
+                f = state.far
+                delta_Tt = (stations["3"].Tt - stations["2"].Tt) / (1.0 + f)
+                s4 = state
+                state = component.apply(state, gas, delta_Tt)
+                # Shaft CLOSURE check (the engine's job -- it alone holds Tt2/Tt3).
+                # Computed two independent ways: turbine power from the turbine's
+                # OUTPUT Tt5 (re-applying 1 + f), compressor power straight from the
+                # states. So a dropped (1 + f) in delta_Tt above genuinely fires this.
+                compressor_work = stations["3"].Tt - stations["2"].Tt
+                turbine_work = (1.0 + state.far) * (s4.Tt - state.Tt)
+                assert abs(turbine_work - compressor_work) < 1e-6, (
+                    f"shaft does not close: turbine {turbine_work} != compressor {compressor_work}"
+                )
+            elif isinstance(component, Nozzle):
+                exit = component.apply(state, gas)
+                state = exit.state            # station-9 TOTALS go on the table
+                M9, T9, V9 = exit.M9, exit.T9, exit.V9   # statics ride out to the result
+            else:
+                state = component.apply(state, gas)
+            stations[label] = state
+
+        # --- Performance (SPEC.md § Performance) ---
+        # Specific thrust is per unit AIR mass flow (mdot is a free scale): the
+        # engine throws (1 + f) kg out at V9 for every 1 kg of air it took in at V0.
+        # Pressure-thrust term is zero because the nozzle is fully expanded (p9 = p0).
+        f = stations["4"].far
+        specific_thrust = (1.0 + f) * V9 - V0
+        # TSFC: fuel burned per unit thrust. f is fuel per unit air; F/mdot_air is
+        # thrust per unit air; the air cancels.
+        tsfc = f / specific_thrust
+        # Ideal-Brayton thermal efficiency. 1 - Tt2/Tt3 == 1 - 1/pi_c^g (the primary
+        # hand-check); it is the fraction of added heat the cycle turns into net work.
+        eta_thermal = 1.0 - stations["2"].Tt / stations["3"].Tt
+        # Propulsive efficiency: useful thrust power / kinetic power dumped into the
+        # jet. Denominator is 1/2[(1+f)V9^2 - V0^2] -- note (1+f)*V9**2, NOT
+        # ((1+f)*V9)**2 (the (1+f) weights the mass, the square is on the velocity).
+        eta_propulsive = (specific_thrust * V0) / (0.5 * ((1.0 + f) * V9 ** 2 - V0 ** 2))
+        # Overall efficiency: thrust power per unit chemical power in.
+        # NOTE (a deliberate convention clash, not a bug): the textbook cascade
+        # eta_o = eta_th * eta_p holds only when eta_th is the PROPULSION thermal
+        # efficiency, (KE added to the jet)/(fuel power) = 0.5477 here. SPEC's
+        # eta_thermal above is instead the ideal-Brayton CYCLE efficiency
+        # 1 - Tt2/Tt3 = 0.4821 (a different quantity -- ram compression and the
+        # open-cycle heat accounting split the two conventions apart). So
+        # eta_o (0.2231) != eta_thermal * eta_propulsive (0.1963); it DOES equal
+        # 0.5477 * eta_propulsive. We report eta_thermal per the spec table and do
+        # NOT assert the cascade against it.
+        eta_overall = (specific_thrust * V0) / (f * gas.hPR)
+
+        performance = Performance(
+            specific_thrust=specific_thrust,
+            tsfc=tsfc,
+            eta_thermal=eta_thermal,
+            eta_propulsive=eta_propulsive,
+            eta_overall=eta_overall,
+        )
+
+        return EngineResult(
+            stations=stations,
+            performance=performance,
+            V0=V0,
+            V9=V9,
+            M9=M9,
+            T9=T9,
+        )
 
 
 def build_turbojet(gas: Gas, pi_c: float, Tt4: float, p_ambient: float) -> Engine:
@@ -132,4 +217,13 @@ def build_turbojet(gas: Gas, pi_c: float, Tt4: float, p_ambient: float) -> Engin
     is mediated by Engine.run, which supplies its delta_Tt per call. See SPEC.md
     § Architecture.
     """
-    raise NotImplementedError("build_turbojet: wire the five components together")
+    # Ordered (station_label, component) pairs. The labels become the keys of the
+    # station table and fix its print order (0 is seeded by Engine.run's freestream).
+    components: List[Tuple[str, Component]] = [
+        ("2", Inlet()),
+        ("3", Compressor(pi_c)),
+        ("4", Burner(Tt4)),
+        ("5", Turbine()),
+        ("9", Nozzle(p_ambient)),
+    ]
+    return Engine(gas, components)

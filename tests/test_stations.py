@@ -12,7 +12,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from turbojet.components import Burner, Compressor, Inlet, Turbine  # noqa: E402
+from turbojet.components import Burner, Compressor, Inlet, Nozzle, Turbine  # noqa: E402
 from turbojet.engine import Engine, FlightCondition  # noqa: E402
 from turbojet.gas import Gas  # noqa: E402
 
@@ -152,9 +152,30 @@ def test_station5_turbine():
     )
 
 
-# --- TEMPLATE for the next station (uncomment + fill in as you derive it) ---
-#
-# ... nozzle (M9=2.033, T9=678.8 K, V9=1061.6 m/s).
+def test_station9_nozzle():
+    """Nozzle (ideal, fully expanded p9 = p0): M9=2.033, T9=678.8 K, V9=1061.6 m/s
+    (SPEC.md table). This is where the cycle drops from totals to static.
+
+    The spec values are the PRIMARY guard. The in-component asserts are either
+    exact-by-construction (the static<->total isentropic leg, since M9/T9 are
+    derived to satisfy it) or loose-by-necessity (the energy split, ~0.05% off
+    because cp=1004.0 disagrees with gamma*R/(gamma-1)=1004.5) -- neither pins the
+    absolute numbers, so the table does.
+    """
+    # Feed the nozzle the spec's station-5 totals directly, so this test stands
+    # alone (the full 0->5 chain is already guarded by the tests above).
+    from turbojet.gas import FlowState  # local import: only this test needs it
+    state5 = FlowState(Tt=1239.7, pt=411_500.0, mdot=1.0, far=0.02304)
+
+    exit = Nozzle(p_ambient=FLIGHT.p0).apply(state5, GAS)
+
+    # Spec table values -- the real guard on M9, T9, V9.
+    assert _close(exit.M9, 2.033), f"M9: got {exit.M9}"
+    assert _close(exit.T9, 678.8), f"T9: got {exit.T9}"
+    assert _close(exit.V9, 1061.6), f"V9: got {exit.V9}"
+    # Defining properties: ideal nozzle conserves totals and moves no mass/fuel.
+    assert exit.state.Tt == state5.Tt and exit.state.pt == state5.pt
+    assert exit.state.mdot == state5.mdot and exit.state.far == state5.far
 
 
 def _run_all():

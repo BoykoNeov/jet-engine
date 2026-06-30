@@ -13,6 +13,8 @@ these bodies so they run on every execution, not as separate tests.
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from .gas import FlowState, Gas
 
 
@@ -238,16 +240,93 @@ class Turbine(Component):
         return out
 
 
+@dataclass
+class NozzleExit:
+    """The nozzle's output. Diverges from the other components' bare FlowState.
+
+    Like the Turbine diverges its INPUT signature (it takes the shaft delta_Tt
+    because it cannot run free-standing), the Nozzle diverges its OUTPUT type: its
+    whole job is the drop from totals to STATIC, and the static exit quantities
+    (M9, T9, V9) are not total quantities, so they do not fit on a FlowState. The
+    type says so. Engine.run unpacks this: state -> stations["9"], the statics ->
+    EngineResult (SPEC.md § Station 9; docs/plans/rung1-plan.md step 6).
+    """
+
+    state: FlowState   # station-9 TOTALS (Tt9 = Tt5, pt9 = pt5)
+    M9: float          # exit Mach number
+    T9: float          # exit STATIC temperature, K
+    V9: float          # exit velocity, m/s
+
+
 class Nozzle(Component):
     """Station 5 -> 9. Ideal and fully expanded (p9 = p0): totals are conserved.
 
     Converts the remaining total enthalpy into exhaust velocity; this is where we
-    drop from totals to static. Physical justification: <derive M9, then T9, then
-    V9 from the fully-expanded condition>. See SPEC.md § Station 9.
+    drop from totals to static. Physical justification, in the order the equations
+    are solved:
+    - Tt9 = Tt5, pt9 = pt5: an ideal nozzle adds no heat and does no shaft work, so
+      Tt is conserved; being also reversible (no entropy generation) it conserves pt
+      too. So the totals just pass through -- the nozzle does not create energy, it
+      only TRADES pressure for velocity.
+    - M9 from the fully-expanded condition p9 = p0: the gas keeps expanding until its
+      static pressure matches ambient, so all of pt9 is spent. Inverting the
+      isentropic total/static pressure relation pt9/p9 = (1 + (g-1)/2 M9^2)^(1/g)
+      [written with gamma] for M9 gives M9 = sqrt( ((pt9/p9)^g - 1) / ((gamma-1)/2) ).
+      A bigger pt9/p9 ratio buys a faster exhaust -- this is the ratio the whole
+      cycle was built to maximize.
+    - T9 from M9: static temperature is the total minus the kinetic share,
+      T9 = Tt9 / (1 + (gamma-1)/2 M9^2). The flow cooled because its thermal energy
+      became directed kinetic energy.
+    - V9 = M9 * sqrt(gamma R T9): velocity is Mach times the LOCAL speed of sound,
+      which is set by the static (cooled) temperature, not the total. This V9 is the
+      number thrust is built on -- the engine throwing mass out faster than V0.
+    See SPEC.md § Station 9.
     """
 
     def __init__(self, p_ambient: float):
         self.p_ambient = p_ambient  # p0, Pa — the fully-expanded back pressure
 
-    def apply(self, s: FlowState, gas: Gas) -> FlowState:
-        raise NotImplementedError("Nozzle: derive M9, T9, V9 (SPEC.md § Station 9)")
+    def apply(self, s: FlowState, gas: Gas) -> NozzleExit:
+        # Totals pass through an ideal (adiabatic, reversible) nozzle untouched.
+        Tt9, pt9 = s.Tt, s.pt
+        p9 = self.p_ambient                       # fully expanded: p9 = p0
+
+        # (gamma-1)/2 appears in both the M9 and T9 relations -- compute once.
+        half_gm1 = 0.5 * (gas.gamma - 1.0)
+        # Invert the isentropic pt/p relation for M9 (g = (gamma-1)/gamma, so the
+        # (pt9/p9)**g term is (1 + (gamma-1)/2 M9^2)).
+        M9 = (((pt9 / p9) ** gas.g - 1.0) / half_gm1) ** 0.5
+        T9 = Tt9 / (1.0 + half_gm1 * M9 ** 2)      # static = total minus kinetic share
+        a9 = (gas.gamma * gas.R * T9) ** 0.5       # local speed of sound at the EXIT
+        V9 = M9 * a9
+
+        # Station-9 state is totals only (FlowState convention); statics ride on the
+        # NozzleExit. Ideal nozzle moves no mass and adds no fuel, so carry both.
+        out = FlowState(Tt=Tt9, pt=pt9, mdot=s.mdot, far=s.far)
+
+        # Conservation checks, every call (contract #4, SPEC.md § Conservation checks).
+        # (1) Design assumption made literal: fully expanded means p9 == p0. Trivial
+        #     here (we set p9 = p_ambient), but it documents WHY the pressure-thrust
+        #     term vanishes in F/mdot = (1+f)V9 - V0.
+        assert p9 == self.p_ambient, "fully expanded: p9 must equal ambient"
+        # (2) Static<->total isentropic relation pt9/p9 == (Tt9/T9)**(1/g). Exact by
+        #     construction (M9, T9 are derived to satisfy it), so assert TIGHT -- a
+        #     failure beyond float epsilon means the static drop was computed wrong.
+        assert abs(pt9 / p9 - (Tt9 / T9) ** (1.0 / gas.g)) < 1e-9, "nozzle static drop not isentropic"
+        # (3) No mass or fuel crosses the nozzle boundary.
+        assert out.mdot == s.mdot and out.far == s.far, "ideal nozzle adds no mass or fuel"
+        # (4) The one NON-tautological check: the steady-flow energy split -- total
+        #     enthalpy splits into static enthalpy + kinetic energy, cp*Tt9 == cp*T9 +
+        #     V9^2/2. This actually exercises the conversion (it does NOT derive V9
+        #     from itself). Tolerance is loose ON PURPOSE: the rung-1 data is slightly
+        #     inconsistent -- cp = 1004.0 J/(kg K) but gamma*R/(gamma-1) = 1004.5, a
+        #     ~0.05% mismatch -- so this leg carries a real ~600 J/kg residual that is
+        #     a rounded-constant artifact, NOT a physics bug (contract: explain
+        #     surprises). It would be exact only if cp and (gamma, R) agreed.
+        enthalpy_total = gas.cp * Tt9
+        enthalpy_static_plus_ke = gas.cp * T9 + 0.5 * V9 ** 2
+        assert abs(enthalpy_static_plus_ke - enthalpy_total) <= 1e-3 * enthalpy_total, (
+            f"nozzle energy split off by more than the constant mismatch: "
+            f"{enthalpy_static_plus_ke} vs {enthalpy_total}"
+        )
+        return NozzleExit(state=out, M9=M9, T9=T9, V9=V9)

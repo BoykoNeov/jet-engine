@@ -16,11 +16,14 @@ Mirrors the SPEC.md deliverables. Check off as each lands with passing numbers.
 - [x] Compressor (pt3, Tt3) + primary hand-check passes — green in `tests/test_stations.py`
 - [x] Burner (pt4, f) — ideal, no loss; f=0.02304, mass grows by (1+f); green in `tests/test_stations.py`
 - [x] Turbine — shaft balance (Tt5=1239.7 K, pt5=411.5 kPa); delta_Tt=(Tt3-Tt2)/(1+f); green in `tests/test_stations.py`
-- [ ] Nozzle — fully expanded (M9, T9, V9)
-- [ ] Engine chains components and solves the shaft balance
-- [ ] Performance: specific thrust, TSFC, eta_th, eta_p, eta_o
-- [ ] Conservation assertions wired into components (run every time)
-- [ ] Validation test green to ~0.1%
+- [x] Nozzle — fully expanded (M9=2.033, T9=678.8 K, V9=1061.5 m/s); diverges its
+      return type (NozzleExit: totals + statics); green in `tests/test_stations.py`
+- [x] Engine chains components and solves the shaft balance — `Engine.run` owns the
+      delta_Tt + shaft-closure assert; `build_turbojet` wires the five components
+- [x] Performance: specific thrust=816.6, TSFC=2.821e-5, eta_th=0.4821, eta_p=0.4073,
+      eta_o=0.2231 (note: eta_o != eta_th*eta_p — eta_th is Brayton, not propulsion)
+- [x] Conservation assertions wired into components (run every time)
+- [x] Validation test green to ~0.1% (`tests/test_validation.py`: both cases pass)
 
 ## Artifacts
 - [ ] Run prints the full station table
