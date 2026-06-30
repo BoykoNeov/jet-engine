@@ -113,10 +113,11 @@ def test_station4_burner():
 def test_station5_turbine():
     """Turbine (ideal, the keystone): Tt5=1239.7 K, pt5=411.5 kPa (SPEC.md table).
 
-    The shaft balance is the physics under test: delta_Tt = (Tt3 - Tt2)/(1 + f),
-    so Tt5 = Tt4 - delta_Tt. The ABSOLUTE spec values are the real guard here --
-    every in-component assert is structurally exact (mass is trivially preserved;
-    pt5 is derived from Tt5 so the isentropic leg holds for any delta_Tt). Dropping
+    The shaft balance is the physics under test: rung 3 hands the turbine an
+    ENTHALPY drop delta_h = (h_c(Tt3) - h_c(Tt2))/(1 + f), and Tt5 = T_from_h_t(
+    h_t(Tt4) - delta_h). The ABSOLUTE spec values are the real guard here -- every
+    in-component assert is structurally exact (mass is trivially preserved; pt5 is
+    derived from the substate so the isentropic leg holds for any delta_h). Dropping
     the (1 + f) factor, for instance, gives Tt5=1233.7 K (~0.5%), which 1239.7
     catches but the in-component asserts do not.
     """
@@ -127,12 +128,12 @@ def test_station5_turbine():
     state4 = Burner(TT4).apply(state3, GAS)
 
     # The engine owns this coupling (it holds Tt2, Tt3, f); compute it explicitly
-    # here so the per-station test exercises the same delta_Tt Engine.run will pass.
-    delta_Tt = (state3.Tt - state2.Tt) / (1.0 + state4.far)
-    state5 = Turbine().apply(state4, GAS, delta_Tt)
+    # here so the per-station test exercises the same delta_h Engine.run will pass.
+    delta_h = (GAS.h_c(state3.Tt) - GAS.h_c(state2.Tt)) / (1.0 + state4.far)
+    state5 = Turbine().apply(state4, GAS, delta_h)
 
     # Spec table values -- the PRIMARY guard (the only check that fails on a wrong
-    # delta_Tt formula, e.g. a missing (1 + f)).
+    # delta_h formula, e.g. a missing (1 + f)).
     assert _close(state5.Tt, 1239.7), f"Tt5: got {state5.Tt}"
     assert _close(state5.pt / 1000.0, 411.5), f"pt5: got {state5.pt / 1000.0}"
     assert state5.mdot == state4.mdot and state5.far == state4.far

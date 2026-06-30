@@ -400,3 +400,138 @@ lesson restated in code: for turbines, polytropic is the knob the math wants.
 turbine, the reduce-to-ideal gate untouched, the `T–s` diagram left alone (the
 `η`-vs-`e` story is a table, not a leg-tilt). The deferred seams — variable
 `cp(T)`, off-design, the choked nozzle, the afterburner — stay deferred.*
+
+---
+---
+
+# Rung 3 — Variable `cp(T)`, in plain language
+
+Every rung so far froze the gas's heat capacity: `cp`, `γ`, `R` were constants
+(rung 2 used two sets of them, cold and hot, but each set was still frozen). Rung 3
+lets **`cp` vary with temperature** — a *thermally-perfect* gas. It's still an
+ideal gas (`p = ρRT`, `R` fixed per section), but now `cp = cp(T)`, so `γ = γ(T)`
+too. This is the rung where the tidy algebra of the first three finally breaks, and
+the model has to grow up into the **gas-table** method that real cycle codes use.
+
+## Why constant `cp` ever worked
+Air's `cp` really does climb with temperature — about 1004 J/(kg·K) at 300 K, ~1100
+at 800 K, past 1200 by 1500 K — because hot molecules wake up extra vibrational modes to
+soak energy into. So why did three rungs of constant `cp` give good answers? Because
+over any *one* leg the temperature swing is modest and a well-chosen average `cp`
+covers it; rung 2's trick of one cold value and one hot value was exactly that —
+two averages bracketing the burner. It works until you want the numbers to be
+*right* across a 200→1800 K cycle with one coherent gas, and then the averaging
+seams start to show.
+
+## What `h(T)` and `pr(T)` buy
+Once `cp` varies you can't write `(energy) = cp·(temperature)` anymore, because
+*which* `cp`? The honest replacement is to integrate. Two functions carry the whole
+load:
+
+- **Enthalpy** `h(T) = ∫cp dT` — the gas's heat content. Every "energy" in the
+  cycle (compressor work, the burner balance, the shaft, the jet's kinetic energy)
+  becomes a *difference in `h`*, no `cp` in sight.
+- **The entropy function** `φ(T) = ∫cp/T dT`, packaged as **reduced pressure**
+  `pr(T) = exp(φ(T)/R)`. This is the clever one. For *any* two states,
+  `Δs = φ(T2) − φ(T1) − R·ln(p2/p1)`. Set `Δs = 0` (isentropic) and it collapses to
+
+  ```
+  p2/p1 = pr(T2)/pr(T1)
+  ```
+
+  So **every** isentropic pressure↔temperature step in the engine — ram, compressor
+  substate, turbine substate, nozzle expansion — is one `pr` ratio. `pr` is a
+  pure lookup that *replaces* the power law. (And `cp(T) > 0` makes `h` and `pr`
+  strictly increasing, so we can always invert them: `T_from_h`, `T_from_pr`.)
+
+## Why the isentropic power law had to go
+The familiar `Tt3 = Tt2·πc^((γ−1)/γ)` is **only** true for constant `cp`. It is the
+closed-form solution of `p2/p1 = pr(T2)/pr(T1)` in the special case `pr(T) = T^(cp/R)`.
+The moment `cp` bends with temperature, `pr` is no longer a clean power of `T`, the
+exponent stops being a single number, and the formula quietly lies. The gas-table
+form `T = T_from_pr(pr(T1)·π)` is what's actually exact — the power law was the
+training-wheels version all along.
+
+The visible payoff is the **gas-table effect**. Compress air `πc = 10` from 300 K:
+the constant-`cp` law says `300·10^0.2857 = 579 K`; the real gas table says **~574 K**.
+Why cooler? Climbing pressure heats the gas, and the hotter it gets the *more* `cp`
+it has, so the same compression work shows up as a *smaller* temperature rise. In
+the full cycle (`python main.py`, the rung-3 table) at `πc = 10`, `Tt4 = 1500 K`,
+compared against the **rung-2 frozen-`cp` dual gas** — the baseline you just left,
+`cp_c = 1004`, `cp_t = 1239`:
+
+| | rung-2 frozen `cp` | rung-3 `cp(T)` |
+|---|---|---|
+| `Tt3` (compressor exit) | 552.4 K | **548.6 K** (cooler — cold-air `cp` rises with T) |
+| `f` (fuel-air) | 0.0318 | **0.0279** (*less* fuel — see below) |
+| `Tt5` (turbine exit) | 1290.9 K | **1294.5 K** (about the same) |
+
+The `Tt3` row is the pure cold-section effect (both columns are cold air; only `cp`
+differs). The fuel row repays a closer look, because it runs *opposite* to a naive
+guess. Rung 2 had to **pick** one hot `cp`, and it froze `cp_t = 1239` — but that's a
+value the real `cp(T)` only reaches near the turbine inlet (~1240 K). Averaged across
+the burner's whole enthalpy climb the true `cp` is lower (~1130), so the frozen value
+*overstated* how much heat the products carry, and therefore overstated the fuel.
+Thawing `cp` into `cp(T)` corrects that, and the cycle needs slightly **less** fuel.
+That's the rung's lesson in one number: freezing `cp` forces you to choose a
+representative value that is never right across the whole range; integrating removes
+the guess. (Against the rung-1 *single* gas, where `cp_t` is an even-less-realistic
+1004, the comparison would flip — which is exactly why the honest baseline is rung 2.)
+
+None of these is a new *kind* of physics — it's the same Brayton cycle, told with
+the honest gas. (That's also why the T–s diagram is left alone: variable `cp`
+curves the isobars a little but doesn't tilt a leg, so it rides as a table, not a
+new picture.)
+
+## The trap that shaped the code — keep the constant-`cp` branch closed-form
+Here's the subtlety that's worth the most. Rungs 1–2 reproduce their tables *to the
+digit* using `γ = 1.4` (exponent `(γ−1)/γ = 0.28571`) and a **rounded** `R = 287`.
+But the gas-table exponent in the constant-`cp` limit is `R/cp = 287/1004 = 0.28586`
+— and those differ by ~0.05%, because `287` isn't exactly `(γ−1)/γ·cp = 286.86`.
+So if you route a *constant-`cp`* gas through the new integral machinery, it lands
+~3e-4 off the old answer — enough to break "to the digit" and threaten the rung-2
+anchor.
+
+The fix is a fork hidden inside the `Gas`: a **calorically-perfect section keeps the
+exact closed forms** (`h = cp·T`, `pr = T^(1/g)`), while a **thermally-perfect
+section integrates**. Reduce-to-ideal then picks the closed-form branch and the old
+tables come back bit-for-bit. Most components never see the fork — the compressor,
+burner, and turbine work in totals only, and their `pr`-ratio / enthalpy-ratio forms
+collapse to the rung-2 algebra *exactly* (the rounded `R` never enters). The fork
+only bites at the **two velocity↔enthalpy stations, the freestream and the nozzle**,
+where stopping or accelerating the flow couples `cp` to `γ` and `R` — there the
+constant-`cp` path keeps the `γ`-based closed form, and the variable-`cp` path uses
+the enthalpy split `V² = 2(h(Tt) − h(T))`. (We even built a test that *requires* a
+flat-`cp` polynomial to miss the closed-form answer by ~3e-4 — proof the integral
+path is genuinely `pr = exp(φ/R)` and not secretly the power law in disguise.)
+
+## Did we get it right?
+The air model is NASA's 7-coefficient polynomial fit (a mole-weighted N₂/O₂/Ar
+mixture), and it's pinned against published gas tables three ways, all to **≤0.11%**:
+
+- **Çengel & Boles 9-89** (an air Brayton cycle): isentropic compression 295 K → 564.9 K,
+  expansion 1240 K → 689.6 K, cycle efficiency 0.301 — matched.
+- **Mattingly Examples 2.7 / 2.8** (the project's anchor book's *own* gas-table
+  examples): a compression (627.6 K) and a nozzle (2377.7 °R, `P2/P1 = 0.376`) —
+  matched. Mattingly uses the identical `pr = exp(φ/R)` formalism, so the design is
+  confirmed against the chosen book — just at the *process* level.
+
+**An honest scope note.** Those anchors are all single-gas **air**, so they pin the
+air `cp(T)` end-to-end but pin **nothing** in the hot products — there is no worked
+variable-`cp` *turbojet* in the standard texts to match thrust against (Çengel is a
+power cycle; Mattingly's turbojets are constant-`cp`). So the products are modeled as
+a fixed-composition lean-combustion mixture and the products coefficients **float**
+(they land `cp_t` near the rung-2 ~1239 neighborhood on their own, via the
+temperature dependence — not by tuning). The turbojet *topology* is still anchored
+by reduce-to-ideal, and the variable-`cp` path through it by the dual-section
+discriminating check. Anchoring the products to the digit needs a reacting-gas
+source — which is the *next* rung.
+
+---
+*Rung 3 swaps the frozen gas for `cp(T)` behind a four-function property interface
+(`h`, `pr`, and their inverses), rewrites every `cp·T` and `π^g` through it, and
+keeps the constant-`cp` branch closed-form so the prior tables survive untouched.
+`python main.py` prints the constant-vs-variable cycle side by side. The deferred
+seams — reacting/variable-composition products, off-design, the choked nozzle, the
+afterburner — stay deferred, now behind a cleaner seam: the next gas upgrade is just
+a new `Gas` behind the same four functions.*

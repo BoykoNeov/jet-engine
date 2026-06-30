@@ -84,27 +84,47 @@ class Engine:
     def freestream(self, flight: FlightCondition, mdot: float) -> Tuple[FlowState, float]:
         """Station 0: freestream totals + flight velocity V0. Returns (state0, V0).
 
-        Governing equations (SPEC.md § Station 0), COLD-section properties (the
-        freestream is fresh air), with gc = (gamma_c-1)/gamma_c so 1/gc =
-        gamma_c/(gamma_c-1):
+        Governing equations (docs/rung3-variable-cp.md § Station 0), COLD-section
+        properties (the freestream is fresh air). Station 0 is ONE of the two
+        velocity<->enthalpy coupling stations (the other is the nozzle), so it is
+        one of the only two places the rounded-R trap forces a CPG/TPG branch:
 
+          CPG (bit-for-bit rung 1, gamma-only so the rounded R never enters):
             Tt0 = T0 * (1 + (gamma_c-1)/2 * M0^2)
             pt0 = p0 * (1 + (gamma_c-1)/2 * M0^2) ** (1/gc)
             V0  = M0 * sqrt(gamma_c * R_c * T0)
+          TPG (variable cp): stagnation ENTHALPY + the pr ratio set the totals:
+            V0  = M0 * sqrt(gamma_c(T0) * R_c * T0)
+            Tt0 = T_from_h_c( h_c(T0) + V0^2/2 )
+            pt0 = p0 * pr_c(Tt0)/pr_c(T0)
 
-        Physical justification (unchanged from rung 1): a TOTAL quantity is what
-        the gas reaches if brought to rest isentropically, so it already folds in
-        the flow's kinetic energy. Standing on the engine, air arrives at V0 and is
-        stopped; that KE reappears as the ram rise in Tt0/pt0. An ideal inlet then
-        only preserves these totals; a real one (rung 2) drops pt by the recovery.
+        Physical justification: a TOTAL quantity is what the gas reaches if brought
+        to rest isentropically, so it already folds in the flow's kinetic energy.
+        Standing on the engine, air arrives at V0 and is stopped; that KE reappears
+        as the ram rise. The general statement is that stopping the flow conserves
+        stagnation enthalpy (h(Tt0) = h(T0) + V0^2/2) and entropy (the pr ratio sets
+        pt0); at constant cp these collapse to the gamma-only closed form, EXCEPT
+        that rung-1's rounded R=287 makes gamma*R/cp differ from gamma-1 by ~0.05%,
+        which the pt0 exponent 1/gc=3.5 amplifies to ~0.18% — so the CPG branch keeps
+        the closed form to stay exact (see docs/rung3-variable-cp.md § the trap). An
+        ideal inlet then only preserves these totals; a real one drops pt by the
+        recovery.
         """
         gas = self.gas
-        # The compressibility factor appears in BOTH the Tt and pt relations.
-        stag = 1.0 + 0.5 * (gas.gamma_c - 1.0) * flight.M0 ** 2
-        Tt0 = flight.T0 * stag
-        pt0 = flight.p0 * stag ** (1.0 / gas.g_c)        # 1/gc = gamma_c/(gamma_c-1)
-        a0 = (gas.gamma_c * gas.R_c * flight.T0) ** 0.5  # local speed of sound, m/s
-        V0 = flight.M0 * a0
+        if gas.cold_is_cpg:
+            # CPG: gamma-only closed form. The compressibility factor appears in BOTH
+            # the Tt and pt relations.
+            stag = 1.0 + 0.5 * (gas.gamma_c - 1.0) * flight.M0 ** 2
+            Tt0 = flight.T0 * stag
+            pt0 = flight.p0 * stag ** (1.0 / gas.g_c)        # 1/gc = gamma_c/(gamma_c-1)
+            a0 = (gas.gamma_c * gas.R_c * flight.T0) ** 0.5  # local speed of sound, m/s
+            V0 = flight.M0 * a0
+        else:
+            # TPG: stagnation enthalpy + pr ratio. gamma at the LOCAL static T0.
+            a0 = (gas.gamma_c_at(flight.T0) * gas.R_c * flight.T0) ** 0.5
+            V0 = flight.M0 * a0
+            Tt0 = gas.T_from_h_c(gas.h_c(flight.T0) + 0.5 * V0 ** 2)
+            pt0 = flight.p0 * gas.pr_c(Tt0) / gas.pr_c(flight.T0)
         state0 = FlowState(Tt=Tt0, pt=pt0, mdot=mdot, far=0.0)
 
         # Sanity check, every call. NOT a conservation law: station 0 manufactures
@@ -120,9 +140,9 @@ class Engine:
         balance HERE and pass the result in, e.g.
 
             f = s4.far
-            delta_Tt = cpc*(s3.Tt - s2.Tt) / (eta_m*(1 + f)*cpt)
-            s5 = turbine.apply(s4, gas, delta_Tt)
-            assert eta_m*(1+f)*cpt*(s4.Tt - s5.Tt) ~= cpc*(s3.Tt - s2.Tt)  # shaft closes
+            delta_h = (h_c(s3.Tt) - h_c(s2.Tt)) / (eta_m*(1 + f))
+            s5 = turbine.apply(s4, gas, delta_h)
+            assert eta_m*(1+f)*(h_t(s4.Tt) - h_t(s5.Tt)) ~= h_c(s3.Tt) - h_c(s2.Tt)  # shaft closes
 
         Then convert to static at the nozzle exit and score performance (specific
         thrust with the pressure term, TSFC, efficiencies). See docs/rung2-spec.md.
@@ -141,21 +161,22 @@ class Engine:
         # awkward bits — SPEC.md § Architecture).
         for label, component in self.components:
             if isinstance(component, Turbine):
-                # THE SHAFT BALANCE (dual cp + mechanical efficiency), in the open.
-                # state here is station 4, which carries f as its far.
+                # THE SHAFT BALANCE (enthalpy + mechanical efficiency), in the open.
+                # state here is station 4, which carries f as its far. The rung-2
+                # cp*delta_Tt is promoted to delta_h (docs/rung3-variable-cp.md).
                 f = state.far
                 s4 = state
-                delta_Tt = (
-                    gas.cp_c * (stations["3"].Tt - stations["2"].Tt)
-                    / (self.eta_m * (1.0 + f) * gas.cp_t)
+                delta_h = (
+                    (gas.h_c(stations["3"].Tt) - gas.h_c(stations["2"].Tt))
+                    / (self.eta_m * (1.0 + f))
                 )
-                state = component.apply(state, gas, delta_Tt)
+                state = component.apply(state, gas, delta_h)
                 # Shaft CLOSURE check (engine-owned — it alone holds Tt2/Tt3).
                 # Computed two independent ways: turbine power from the turbine's
-                # OUTPUT Tt5 (re-applying eta_m, 1+f, cpt), compressor power from the
-                # cold states. A dropped factor in delta_Tt fires this.
-                compressor_power = gas.cp_c * (stations["3"].Tt - stations["2"].Tt)
-                turbine_power = self.eta_m * (1.0 + state.far) * gas.cp_t * (s4.Tt - state.Tt)
+                # OUTPUT Tt5 (re-applying eta_m, 1+f, h_t), compressor power from the
+                # cold states. A dropped factor in delta_h fires this.
+                compressor_power = gas.h_c(stations["3"].Tt) - gas.h_c(stations["2"].Tt)
+                turbine_power = self.eta_m * (1.0 + state.far) * (gas.h_t(s4.Tt) - gas.h_t(state.Tt))
                 assert abs(turbine_power - compressor_power) < 1e-6 * compressor_power, (
                     f"shaft does not close: turbine {turbine_power} != compressor {compressor_power}"
                 )

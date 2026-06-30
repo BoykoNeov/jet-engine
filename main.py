@@ -80,6 +80,45 @@ def print_polytropic_table(gas, flight):
           f"converted-eta engine\nagrees on specific thrust to {dF:.0e} N·s/kg — one machine, two knobs.")
 
 
+def print_variable_cp_table(flight):
+    """Rung-3 payoff: rung-2's FROZEN cp vs rung-3's variable cp(T), same design point.
+
+    Rung 3 builds on rung 2, so the honest baseline is the rung-2 DUAL gas (frozen
+    cp_c=1004 cold, cp_t=1239 hot) — the one you just left — NOT the rung-1 single
+    gas (against which the fuel comparison would flip sign and mislead). Hold the
+    ideal design point fixed and only thaw cp into cp(T):
+      - cp climbs with T (printed below), so the SAME compressor pressure work is a
+        SMALLER temperature rise -> Tt3 lands COOLER than the frozen-cp answer;
+      - rung 2 had to PICK one hot cp; it froze cp_t=1239, a value cp(T) only reaches
+        near the turbine inlet (~1240 K). Averaged across the burner's enthalpy climb
+        the true cp is lower (~1130), so freezing it OVERstated the products' heat and
+        thus the fuel -> variable cp(T) needs LESS fuel (far falls).
+    cp(T) is a numbers/curvature effect, not a leg-tilt, so it rides as a table (the
+    T-s diagram is left alone).
+    """
+    frozen_gas = Gas(gamma_t=1.3, cp_t=1239.0, R_t=285.9)   # the rung-2 dual gas
+    vary_gas = Gas.thermally_perfect()                       # NASA air (cold) + lean products (hot)
+    frozen = build_turbojet(frozen_gas, PI_C, TT4, flight.p0).run(flight, 1.0)
+    vary = build_turbojet(vary_gas, PI_C, TT4, flight.p0).run(flight, 1.0)
+
+    print("\nVariable cp(T) (rung 3): rung-2 frozen cp vs thermally-perfect cp(T), same design point")
+    print(f"{'Station':>8} {'Tt frozen':>10} {'Tt cp(T)':>9}  {'pt frozen':>10} {'pt cp(T)':>9}")
+    print("-" * 52)
+    for label in ("0", "2", "3", "4", "5", "9"):
+        c, t = frozen.stations[label], vary.stations[label]
+        print(f"{label:>8} {c.Tt:>10.1f} {t.Tt:>9.1f}  {c.pt / 1000:>10.2f} {t.pt / 1000:>9.2f}")
+    cp_c3, cp_c8 = vary_gas.cp_c_at(300.0), vary_gas.cp_c_at(800.0)
+    cp_t3, cp_t15 = vary_gas.cp_t_at(300.0), vary_gas.cp_t_at(1500.0)
+    avg_cp_t = vary_gas.h_t(TT4) / TT4                       # burner enthalpy-average cp
+    print(f"cp(T) varies (rung 1-2 froze it): cold air {cp_c3:.0f}->{cp_c8:.0f} over 300->800 K; "
+          f"hot products {cp_t3:.0f}->{cp_t15:.0f} over 300->1500 K.")
+    print(f"Gas-table effect at pi_c={PI_C:.0f}: Tt3 {frozen.stations['3'].Tt:.1f} -> "
+          f"{vary.stations['3'].Tt:.1f} K (cooler).")
+    print(f"Frozen cp_t=1239 vs true burner-average {avg_cp_t:.0f} J/(kg·K) -> far "
+          f"{frozen.stations['4'].far:.5f} -> {vary.stations['4'].far:.5f} (less fuel), "
+          f"F/mdot {frozen.performance.specific_thrust:.1f} -> {vary.performance.specific_thrust:.1f} N·s/kg.")
+
+
 def _cycle_points(result, flight):
     """The six cycle points as {label: (s, T)} in (entropy, temperature) space.
 
@@ -186,6 +225,8 @@ def main():
           "(less thrust, burned harder).")
 
     print_polytropic_table(gas, FLIGHT)
+
+    print_variable_cp_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

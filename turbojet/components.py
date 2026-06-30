@@ -1,11 +1,18 @@
 """The five turbojet components, each a pure transform: state_in -> state_out.
 
-RUNG 2 — real components. Rung 1 made every process ideal (isentropic, no loss);
-rung 2 lets each one generate entropy and uses the dual-section gas (cold 0->3,
-hot 4->9). The derivations and the *why* of every new term live in
-docs/rung2-spec.md § Station equations — read that before this. Two efficiency
-*kinds* show up and must not be conflated (docs/rung2-spec.md § The two efficiency
-kinds):
+RUNG 3 — variable cp(T). Rung 2 made each process real (entropy-generating) on a
+dual-section CALORICALLY-perfect gas; rung 3 lets cp vary with temperature, so the
+internal components (Compressor 2->3, Burner 3->4, Turbine 4->5) are rewritten in
+the gas-table PROPERTY forms: cp*T -> h(T), pi^g -> ratios of pr(T) (see
+docs/rung3-variable-cp.md § Station equations). The compressor/burner/turbine work
+in totals only (no velocity), so each reduces to its rung-2 closed form BIT-FOR-BIT
+on a calorically-perfect (CPG) section — the reduce-to-ideal gate is untouched. The
+two velocity<->enthalpy coupling stations (freestream and Nozzle) are the only ones
+where the rounded-R trap forces an explicit CPG/TPG branch (see the Nozzle and
+engine.freestream). The derivations and the *why* of every term live in
+docs/rung2-spec.md and docs/rung3-variable-cp.md § Station equations — read those
+before this. Two efficiency *kinds* show up and must not be conflated
+(docs/rung2-spec.md § The two efficiency kinds):
 
   - isentropic efficiency (eta_c, eta_t): the real machine hits the same PRESSURE
     as the ideal one but at a worse TEMPERATURE. Defined against an IDEAL SUBSTATE
@@ -102,22 +109,29 @@ class Compressor(Component):
     Pass one or neither (neither => ideal); a non-default eta_c AND an e_c is
     contradictory (they are alternatives, not composable) and raises.
 
-    Governing equations (docs/rung2-spec.md § Station 3, docs/rung2b-polytropic.md
-    § Derivation), with gc = (gamma_c-1)/gamma_c:
-        pt3  = pi_c * pt2
-        Tt3s = Tt2 * pi_c ** gc                # IDEAL exit temperature at this pressure
-        Tt3  = Tt2 + (Tt3s - Tt2)/eta_c        # ISENTROPIC knob: actual exit (hotter)
-        Tt3  = Tt2 * pi_c ** (gc / e_c)        # POLYTROPIC knob: actual exit, DIRECT
+    Governing equations (docs/rung3-variable-cp.md § Station 3,
+    docs/rung2b-polytropic.md § Derivation), cold-section property functions h_c/pr_c:
+        pt3   = pi_c * pt2
+        Tt3s  = T_from_pr_c( pr_c(Tt2) * pi_c )            # IDEAL substate at pt3 (pr ratio)
+      ISENTROPIC knob (eta on ENTHALPY, not delta-T):
+        h3    = h_c(Tt2) + (h_c(Tt3s) - h_c(Tt2))/eta_c
+        Tt3   = T_from_h_c(h3)
+      POLYTROPIC knob:
+        Tt3   = T_from_pr_c( pr_c(Tt2) * pi_c ** (1/e_c) ) # native: pr exponent carries loss
 
     Physical justification: the compressor reaches pt3 either way — the pressure
-    ratio is the design knob. A real machine spends MORE temperature rise to get
+    ratio is the design knob. The IDEAL substate Tt3s is the temperature a perfect
+    (isentropic) compression to pt3 would reach; the gas-table relation says that is
+    one pr ratio, pr(Tt3s) = pr(Tt2)*pi_c. A real machine spends MORE work to get
     there, so Tt3 > Tt3s; the gap is wasted work the turbine must STILL repay across
-    the shaft (losses cost fuel). The isentropic knob measures that gap against the
-    substate Tt3s; the polytropic knob folds it into the exponent gc/e_c (the
-    per-stage relation, integrated), so Tt3 comes out DIRECTLY and Tt3s is just a
-    diagnostic. The two are an exact conversion of each other (asserted below). At
-    eta_c = 1 (or e_c = 1), Tt3 = Tt3s and this is rung 1 exactly. Cold-section
-    properties (gc) apply: this is fresh air, pre-combustion.
+    the shaft (losses cost fuel). The isentropic efficiency is fundamentally an
+    ENTHALPY ratio (ideal work / actual work) — rung 2's Tt3 = Tt2 + (Tt3s-Tt2)/eta_c
+    was the constant-cp shadow of h3 = h2 + (h(Tt3s)-h2)/eta_c. The polytropic knob
+    folds the loss into the pr exponent pi_c^(1/e_c) (the per-stage relation,
+    integrated), so Tt3 comes out DIRECTLY and Tt3s is just a diagnostic. At eta_c=1
+    (or e_c=1), Tt3 = Tt3s and this is rung 1 exactly. Cold-section properties apply:
+    this is fresh air, pre-combustion. On a CPG section every line collapses to the
+    rung-2 closed form bit-for-bit (pr_c uses gc; the h-ratio cancels cp).
     """
 
     def __init__(self, pi_c: float, eta_c: float = 1.0, e_c: float | None = None):
@@ -130,38 +144,47 @@ class Compressor(Component):
         self.e_c = e_c        # polytropic (small-stage) efficiency, <= 1 (None => use eta_c)
 
     def apply(self, s: FlowState, gas: Gas) -> FlowState:
-        gc = gas.g_c
         pt3 = self.pi_c * s.pt
-        Tt3s = s.Tt * self.pi_c ** gc                  # ideal substate (both knobs)
+        # IDEAL substate at pt3 via the gas-table pr ratio (both knobs).
+        Tt3s = gas.T_from_pr_c(gas.pr_c(s.Tt) * self.pi_c)
         if self.e_c is not None:
-            # POLYTROPIC (rung 2b): actual exit DIRECTLY from the integrated
-            # per-stage relation — no substate needed for Tt3 (gc/e_c carries the loss).
-            Tt3 = s.Tt * self.pi_c ** (gc / self.e_c)
+            # POLYTROPIC (rung 2b): actual exit DIRECTLY — pi_c^(1/e_c) carries the loss.
+            Tt3 = gas.T_from_pr_c(gas.pr_c(s.Tt) * self.pi_c ** (1.0 / self.e_c))
         else:
-            # ISENTROPIC (rung 2): actual exit measured against the ideal substate.
-            Tt3 = s.Tt + (Tt3s - s.Tt) / self.eta_c    # actual, >= ideal
+            # ISENTROPIC (rung 2): efficiency on ENTHALPY, then invert h_c for Tt3.
+            h3 = gas.h_c(s.Tt) + (gas.h_c(Tt3s) - gas.h_c(s.Tt)) / self.eta_c
+            Tt3 = gas.T_from_h_c(h3)
         out = FlowState(Tt=Tt3, pt=pt3, mdot=s.mdot, far=s.far)
 
         # Conservation checks, every call (contract #4).
-        # (1) The IDEAL SUBSTATE is isentropic: Tt3s/Tt2 == (pt3/pt2)^gc. This is
-        #     the rung-1 leg check, moved onto the substate so it stays valid for
-        #     eta_c < 1. Cross-checks the Tt3s line against the pt3 line.
-        assert abs(Tt3s / s.Tt - (pt3 / s.pt) ** gc) < 1e-9, "compressor substate not isentropic"
+        # (1) The IDEAL SUBSTATE is isentropic: pr(Tt3s)/pr(Tt2) == pi_c. This is the
+        #     rung-1 leg check in pr form, on the substate so it stays valid for
+        #     eta_c < 1. Cross-checks the Tt3s line against the pt3 line. Exact by
+        #     construction (Tt3s was solved from exactly this).
+        assert abs(gas.pr_c(Tt3s) / gas.pr_c(s.Tt) - self.pi_c) < 1e-9 * self.pi_c, (
+            "compressor substate not isentropic"
+        )
         # (2) Entropy generated: the real exit is no cooler than the ideal one.
         #     Exact equality at eta_c = 1; a strict gap for eta_c < 1. This exercises
         #     eta_c AND rejects an invalid e_c > 1 (which would imply Tt3 < Tt3s), so
         #     the polytropic knob needs no separate range guard.
         assert Tt3 >= Tt3s - 1e-9 * Tt3s, "compressor must generate entropy: Tt3 >= Tt3s"
         # (3) Polytropic cross-check (rung 2b): the implied isentropic efficiency
-        #     read off the realized states must equal the closed-form e_c -> eta_c
-        #     conversion. Validates the conversion formula on every run — the same
-        #     gate the equivalence test asserts once to 1e-9, here checked continuously.
+        #     (an ENTHALPY ratio) read off the realized states. On a CPG section it
+        #     must equal the closed-form e_c -> eta_c conversion (checked to 1e-9, the
+        #     same gate the equivalence test pins once). On a TPG section that closed
+        #     form does not exist, so assert the enthalpy-ratio efficiency is a valid
+        #     (0, 1] (docs/rung3-variable-cp.md § Performance).
         if self.e_c is not None:
-            eta_c_implied = (Tt3s - s.Tt) / (Tt3 - s.Tt)
-            eta_c_closed = (self.pi_c ** gc - 1.0) / (self.pi_c ** (gc / self.e_c) - 1.0)
-            assert abs(eta_c_implied - eta_c_closed) < 1e-9 * eta_c_closed, (
-                "compressor implied eta_c != closed-form polytropic conversion"
-            )
+            eta_c_implied = (gas.h_c(Tt3s) - gas.h_c(s.Tt)) / (gas.h_c(Tt3) - gas.h_c(s.Tt))
+            if gas.cold_is_cpg:
+                gc = gas.g_c
+                eta_c_closed = (self.pi_c ** gc - 1.0) / (self.pi_c ** (gc / self.e_c) - 1.0)
+                assert abs(eta_c_implied - eta_c_closed) < 1e-9 * eta_c_closed, (
+                    "compressor implied eta_c != closed-form polytropic conversion"
+                )
+            else:
+                assert 0.0 < eta_c_implied <= 1.0 + 1e-9, "compressor implied eta_c out of (0,1]"
         assert out.mdot == s.mdot and out.far == s.far, "compressor adds no mass or fuel"
         return out
 
@@ -169,22 +192,24 @@ class Compressor(Component):
 class Burner(Component):
     """Station 3 -> 4. Heat addition to Tt4, with combustion + pressure loss.
 
-    Governing equations (docs/rung2-spec.md § Station 4):
+    Governing equations (docs/rung3-variable-cp.md § Station 4):
         pt4 = pi_b * pt3                                       # combustor pressure loss
-        f   = (cpt*Tt4 - cpc*Tt3) / (eta_b*hPR - cpt*Tt4)     # dual-cp energy balance
+        f   = (h_t(Tt4) - h_c(Tt3)) / (eta_b*hPR - h_t(Tt4))  # enthalpy energy balance
 
     Physical justification:
     - f from a steady-flow energy balance that now spans the cold->hot hand-off and
       books incomplete combustion via eta_b:
-            mdot_air*cpc*Tt3 + eta_b*mdot_fuel*hPR = (mdot_air + mdot_fuel)*cpt*Tt4
+            mdot_air*h_c(Tt3) + eta_b*mdot_fuel*hPR = (mdot_air + mdot_fuel)*h_t(Tt4)
       Divide by mdot_air, set f = mdot_fuel/mdot_air, solve -> the f above. The
-      products are HOT-section gas (cpt) and the fuel chemical energy is discounted
-      by eta_b < 1. At cpc = cpt and eta_b = 1 this is rung-1's
-      f = cp(Tt4 - Tt3)/(hPR - cp*Tt4).
+      products are HOT-section gas (h_t) and the fuel chemical energy is discounted
+      by eta_b < 1. THE BURNER IS THE ONE PLACE ENTHALPY CROSSES SECTIONS (hot
+      h_t(Tt4) minus cold h_c(Tt3)), so both sections must share the SAME enthalpy
+      datum h(0)=0 — see turbojet/gas.py _antideriv_h. At h = cp*T (CPG) this is
+      rung-2's f = (cpt*Tt4 - cpc*Tt3)/(eta_b*hPR - cpt*Tt4) bit-for-bit.
     - pt4 = pi_b * pt3: a real combustor drops total pressure (friction + Rayleigh
       heat-addition loss), pi_b <= 1. SPECIFIED ratio, asserted exactly.
     - This leg is NOT isentropic (adding heat raises entropy), so — as in rung 1 —
-      there is no (pt/pt)^g check here; pt is set by pi_b, not by ds = 0.
+      there is no pr-ratio check here; pt is set by pi_b, not by ds = 0.
     """
 
     def __init__(self, Tt4: float, eta_b: float = 1.0, pi_b: float = 1.0):
@@ -198,9 +223,10 @@ class Burner(Component):
         assert s.far == 0.0, "burner assumes dry air at entry (far == 0)"
 
         pt4 = self.pi_b * s.pt
-        # Dual-cp energy balance (see docstring): cpc on the incoming air, cpt on
-        # the hot products and the eta_b-discounted fuel-heating ceiling.
-        f = (gas.cp_t * self.Tt4 - gas.cp_c * s.Tt) / (self.eta_b * gas.hPR - gas.cp_t * self.Tt4)
+        # Enthalpy energy balance (see docstring): h_c on the incoming air, h_t on
+        # the hot products and the eta_b-discounted fuel-heating ceiling. Cross-section
+        # enthalpy difference -> both sections share the h(0)=0 datum.
+        f = (gas.h_t(self.Tt4) - gas.h_c(s.Tt)) / (self.eta_b * gas.hPR - gas.h_t(self.Tt4))
         mdot4 = s.mdot * (1.0 + f)
         out = FlowState(Tt=self.Tt4, pt=pt4, mdot=mdot4, far=f)
 
@@ -208,11 +234,11 @@ class Burner(Component):
         assert abs(out.mdot - s.mdot * (1.0 + out.far)) < 1e-9 * s.mdot, (
             "burner mass: mdot_out != mdot_in*(1 + f)"
         )
-        # Energy balance with dual cp + eta_b. f is solved FROM this, so a clean
+        # Energy balance in enthalpy with eta_b. f is solved FROM this, so a clean
         # run satisfies it; it cross-checks the Tt4 / mdot / far lines.
         mdot_fuel = out.mdot - s.mdot
-        lhs = s.mdot * gas.cp_c * s.Tt + self.eta_b * mdot_fuel * gas.hPR
-        rhs = out.mdot * gas.cp_t * out.Tt
+        lhs = s.mdot * gas.h_c(s.Tt) + self.eta_b * mdot_fuel * gas.hPR
+        rhs = out.mdot * gas.h_t(out.Tt)
         assert abs(lhs - rhs) < 1e-6 * rhs, "burner energy balance violated"
         # SPECIFIED pressure ratio (near-tautological, but guards the pt4 line and
         # becomes load-bearing once pi_b < 1 tilts pt4 below pt3).
@@ -226,37 +252,39 @@ class Turbine(Component):
     Two efficiency knobs, mutually exclusive (docs/rung2b-polytropic.md § API):
     ISENTROPIC eta_t (rung 2) or POLYTROPIC e_t (rung 2b). Pass one or neither.
 
-    Governing equations (docs/rung2-spec.md § Station 5 and § The shaft balance,
-    docs/rung2b-polytropic.md § Derivation), with gt = (gamma_t-1)/gamma_t. The
-    engine computes delta_Tt from the dual-cp, mechanical-efficiency shaft balance
+    Governing equations (docs/rung3-variable-cp.md § Station 5 and § The shaft
+    balance, docs/rung2b-polytropic.md § Derivation), hot-section h_t/pr_t. The
+    engine computes delta_h from the enthalpy, mechanical-efficiency shaft balance
     (INDEPENDENT of turbine efficiency) and hands it in:
-        delta_Tt = cpc*(Tt3 - Tt2) / (eta_m*(1 + f)*cpt)   # (engine-owned)
-        Tt5  = Tt4 - delta_Tt                               # actual exit (shaft-set)
+        delta_h = (h_c(Tt3) - h_c(Tt2)) / (eta_m*(1 + f))   # (engine-owned)
+        Tt5  = T_from_h_t( h_t(Tt4) - delta_h )             # actual exit (shaft-set)
       ISENTROPIC knob:
-        Tt5s = Tt4 - delta_Tt/eta_t                         # IDEAL drop for this work
-        pt5  = pt4 * (Tt5s/Tt4) ** (1/gt)                   # isentropic from substate
+        h5s  = h_t(Tt4) - delta_h/eta_t                     # IDEAL-work enthalpy
+        Tt5s = T_from_h_t(h5s);  pt5 = pt4 * pr_t(Tt5s)/pr_t(Tt4)
       POLYTROPIC knob (Tt5 already known, so pt5 comes DIRECTLY):
-        pt5  = pt4 * (Tt5/Tt4) ** (1/(e_t*gt))              # per-stage relation, integrated
-        Tt5s = Tt4 * (pt5/pt4) ** gt                        # diagnostic substate at pt5
+        pt5  = pt4 * (pr_t(Tt5)/pr_t(Tt4)) ** (1/e_t)       # per-stage relation, integrated
+        Tt5s = T_from_pr_t( pr_t(Tt4)*(pt5/pt4) )           # diagnostic substate at pt5
 
     Physical justification:
-    - delta_Tt is NOT free — the shaft sets it (see Engine.run / docs § shaft
-      balance). The turbine here just expands by the given drop.
+    - delta_h is NOT free — the shaft sets it (see Engine.run / docs § shaft
+      balance). The turbine here just gives up that enthalpy; Tt5 follows by
+      inverting h_t. The rung-2 delta_Tt = cpc*(Tt3-Tt2)/(eta_m*(1+f)*cpt) was the
+      constant-cp shadow of this enthalpy balance.
     - eta_t < 1 means the real expansion yields LESS pressure drop per unit work:
       to reach pt5 the gas would isentropically have to fall to a LOWER temperature
-      Tt5s < Tt5. So pt5 is fixed by the ideal substate Tt5s, and the actual exit
-      Tt5 sits above it — that gap is the turbine's entropy generation. At
-      eta_t = 1, Tt5s = Tt5 and pt5 = pt4*(Tt5/Tt4)^(1/gt), which is rung 1.
-      Hot-section properties (gt) apply: this is combustion gas.
+      Tt5s < Tt5. So pt5 is fixed by the ideal substate Tt5s (one pr ratio), and the
+      actual exit Tt5 sits above it — that gap is the turbine's entropy generation.
+      At eta_t = 1, Tt5s = Tt5 and pt5 = pt4*pr_t(Tt5)/pr_t(Tt4), which is rung 1.
+      Hot-section properties apply: this is combustion gas.
     - The POLYTROPIC knob needs no substate to get pt5: with Tt5 fixed by the shaft,
-      the per-stage relation maps Tt5 -> pt5 directly (this is why polytropic is the
-      natural TURBINE knob — no provisional pass to recover tau_t; see rung2b doc).
-      Tt5s then falls out of pt5 as a diagnostic, and the implied eta_t is asserted
-      to match the closed-form conversion.
+      the per-stage pr relation maps Tt5 -> pt5 directly (this is why polytropic is
+      the natural TURBINE knob — no provisional pass to recover tau_t; see rung2b
+      doc). Tt5s then falls out of pt5 as a diagnostic. On a CPG section every line
+      collapses to the rung-2 closed form bit-for-bit.
 
     Design note (unchanged from rung 1): the ENGINE owns the shaft balance and the
     closure assert (it needs Tt2/Tt3, which the turbine never sees). The turbine's
-    apply diverges from the bare (state, gas) to take delta_Tt — saying in the type
+    apply diverges from the bare (state, gas) to take delta_h — saying in the type
     that it cannot run free-standing.
     """
 
@@ -267,51 +295,59 @@ class Turbine(Component):
         self.eta_t = eta_t  # isentropic (adiabatic) efficiency, <= 1
         self.e_t = e_t      # polytropic (small-stage) efficiency, <= 1 (None => use eta_t)
 
-    def apply(self, s: FlowState, gas: Gas, delta_Tt: float) -> FlowState:
-        """Expand from station 4 by a *given* total-temperature drop delta_Tt.
+    def apply(self, s: FlowState, gas: Gas, delta_h: float) -> FlowState:
+        """Expand from station 4 by a *given* enthalpy drop delta_h.
 
-        delta_Tt comes from the engine's dual-cp + eta_m shaft balance (it alone
+        delta_h comes from the engine's enthalpy + eta_m shaft balance (it alone
         holds the compressor states and f) and is INDEPENDENT of turbine efficiency,
-        so Tt5 = Tt4 - delta_Tt is known before any knob. ISENTROPIC: substate
-        Tt5s = Tt4 - delta_Tt/eta_t, then pt5 = pt4*(Tt5s/Tt4)**(1/gt). POLYTROPIC:
-        pt5 = pt4*(Tt5/Tt4)**(1/(e_t*gt)) directly, then Tt5s back out of pt5.
+        so Tt5 = T_from_h_t(h_t(Tt4) - delta_h) is known before any knob. ISENTROPIC:
+        ideal-work enthalpy h5s = h_t(Tt4) - delta_h/eta_t -> Tt5s -> pt5 from the pr
+        ratio. POLYTROPIC: pt5 = pt4*(pr_t(Tt5)/pr_t(Tt4))**(1/e_t) directly, then
+        Tt5s back out of pt5.
         """
-        gt = gas.g_t
-        Tt5 = s.Tt - delta_Tt                          # actual exit (shaft-set, knob-free)
+        Tt5 = gas.T_from_h_t(gas.h_t(s.Tt) - delta_h)  # actual exit (shaft-set, knob-free)
         if self.e_t is not None:
-            # POLYTROPIC (rung 2b): pt5 DIRECTLY from the integrated per-stage
+            # POLYTROPIC (rung 2b): pt5 DIRECTLY from the integrated per-stage pr
             # relation (Tt5 is already known), then the substate Tt5s follows from pt5.
-            pt5 = s.pt * (Tt5 / s.Tt) ** (1.0 / (self.e_t * gt))
-            Tt5s = s.Tt * (pt5 / s.pt) ** gt           # diagnostic substate at this pressure
+            pt5 = s.pt * (gas.pr_t(Tt5) / gas.pr_t(s.Tt)) ** (1.0 / self.e_t)
+            Tt5s = gas.T_from_pr_t(gas.pr_t(s.Tt) * (pt5 / s.pt))   # diagnostic substate
         else:
-            # ISENTROPIC (rung 2): substate from the work, pt5 from the substate.
-            Tt5s = s.Tt - delta_Tt / self.eta_t        # ideal substate (lower, eta_t<=1)
-            pt5 = s.pt * (Tt5s / s.Tt) ** (1.0 / gt)   # isentropic from the substate
+            # ISENTROPIC (rung 2): ideal-work enthalpy -> substate, pt5 from the pr ratio.
+            h5s = gas.h_t(s.Tt) - delta_h / self.eta_t  # ideal-work enthalpy (lower, eta_t<=1)
+            Tt5s = gas.T_from_h_t(h5s)
+            pt5 = s.pt * gas.pr_t(Tt5s) / gas.pr_t(s.Tt)
         out = FlowState(Tt=Tt5, pt=pt5, mdot=s.mdot, far=s.far)
 
         # Conservation checks, every call (contract #4).
-        # (1) A turbine extracts work: Tt must fall. Catches a sign error or a bad
-        #     delta_Tt handed in (the structural checks below derive pt5 from Tt5s,
-        #     so they hold for any delta_Tt).
-        assert delta_Tt > 0.0, "turbine must extract work: delta_Tt > 0"
-        # (2) Ideal SUBSTATE is isentropic: Tt5s/Tt4 == (pt5/pt4)^gt (rung-1 leg
-        #     check, moved onto the substate so it survives eta_t < 1). Holds by
+        # (1) A turbine extracts work: enthalpy must fall. Catches a sign error or a
+        #     bad delta_h handed in (the structural checks below derive pt5 from the
+        #     substate, so they hold for any delta_h).
+        assert delta_h > 0.0, "turbine must extract work: delta_h > 0"
+        # (2) Ideal SUBSTATE is isentropic: pr(Tt5s)/pr(Tt4) == pt5/pt4 (rung-1 leg
+        #     check in pr form, on the substate so it survives eta_t < 1). Holds by
         #     construction in BOTH modes (the polytropic mode derives Tt5s from pt5).
-        assert abs(Tt5s / s.Tt - (out.pt / s.pt) ** gt) < 1e-9, "turbine substate not isentropic"
+        assert abs(gas.pr_t(Tt5s) / gas.pr_t(s.Tt) - out.pt / s.pt) < 1e-9 * (out.pt / s.pt), (
+            "turbine substate not isentropic"
+        )
         # (3) Entropy generated: the actual exit is no cooler than the ideal one.
         #     Exercises eta_t AND rejects an invalid e_t > 1 (which would lift Tt5s
         #     above Tt5), so the polytropic knob needs no separate range guard.
         assert Tt5 >= Tt5s - 1e-9 * abs(Tt5s), "turbine must generate entropy: Tt5 >= Tt5s"
-        # (4) Polytropic cross-check (rung 2b): the implied isentropic efficiency
-        #     must equal the closed-form e_t -> eta_t conversion. tau_t = Tt5/Tt4 is
-        #     known here (the shaft set it), so no provisional pass is needed.
+        # (4) Polytropic cross-check (rung 2b): the implied isentropic efficiency (an
+        #     ENTHALPY ratio). On a CPG section it must equal the closed-form e_t ->
+        #     eta_t conversion (tau_t = Tt5/Tt4 is known — the shaft set it — so no
+        #     provisional pass is needed). On a TPG section that closed form does not
+        #     exist, so assert the enthalpy-ratio efficiency is a valid (0, 1].
         if self.e_t is not None:
-            tau_t = Tt5 / s.Tt
-            eta_t_implied = (s.Tt - Tt5) / (s.Tt - Tt5s)
-            eta_t_closed = (1.0 - tau_t) / (1.0 - tau_t ** (1.0 / self.e_t))
-            assert abs(eta_t_implied - eta_t_closed) < 1e-9 * eta_t_closed, (
-                "turbine implied eta_t != closed-form polytropic conversion"
-            )
+            eta_t_implied = (gas.h_t(s.Tt) - gas.h_t(Tt5)) / (gas.h_t(s.Tt) - gas.h_t(Tt5s))
+            if gas.hot_is_cpg:
+                tau_t = Tt5 / s.Tt
+                eta_t_closed = (1.0 - tau_t) / (1.0 - tau_t ** (1.0 / self.e_t))
+                assert abs(eta_t_implied - eta_t_closed) < 1e-9 * eta_t_closed, (
+                    "turbine implied eta_t != closed-form polytropic conversion"
+                )
+            else:
+                assert 0.0 < eta_t_implied <= 1.0 + 1e-9, "turbine implied eta_t out of (0,1]"
         assert out.mdot == s.mdot and out.far == s.far, "turbine adds no mass or fuel"
         return out
 
@@ -336,13 +372,20 @@ class NozzleExit:
 class Nozzle(Component):
     """Station 5 -> 9. Real nozzle: pi_n loss, expand to a SPECIFIED exit pressure.
 
-    Governing equations (docs/rung2-spec.md § Station 9), hot-section gt/gamma_t/Rt:
+    Governing equations (docs/rung3-variable-cp.md § Station 9), hot-section
+    properties. Station 9 is the second velocity<->enthalpy coupling station, so —
+    like the freestream — it is one of the only two places the rounded-R trap forces
+    a CPG/TPG branch:
         Tt9 = Tt5                                  # adiabatic: Tt conserved
         pt9 = pi_n * pt5                           # SPECIFIED nozzle pressure loss
         p9  : given (default p9 = p_ambient -> fully expanded)
+      CPG (bit-for-bit rung 2, gamma,R-based so the rounded R never collides with cp):
         M9  = sqrt( ((pt9/p9)^gt - 1) / ((gamma_t-1)/2) )
-        T9  = Tt9 / (1 + (gamma_t-1)/2 * M9^2)
-        V9  = M9 * sqrt(gamma_t * Rt * T9)
+        T9  = Tt9 / (1 + (gamma_t-1)/2 * M9^2);   V9 = M9 * sqrt(gamma_t * Rt * T9)
+      TPG (variable cp):
+        T9  = T_from_pr_t( pr_t(Tt9) * (p9/pt9) )  # isentropic total->static, pr ratio
+        V9  = sqrt( 2*(h_t(Tt9) - h_t(T9)) )       # KE IS the enthalpy drop
+        a9  = sqrt( gamma_t(T9) * Rt * T9 );       M9 = V9/a9   # gamma at LOCAL T9
 
     Physical justification:
     - Tt9 = Tt5: no heat, no shaft work. pt9 = pi_n*pt5: a real nozzle loses total
@@ -351,8 +394,13 @@ class Nozzle(Component):
       of pt9 is spent (fully expanded — the rung-1 case, the default). When p9 > p0
       (e.g. Mattingly Example 7.1: p9 = 2*p0) the jet leaves still pressurized and a
       PRESSURE-THRUST term appears in F/mdot (booked by the engine). p9 is an INPUT,
-      so this is straight-line — no choke detection (deferred). gt/gamma_t/Rt are
-      hot-section: this is combustion gas.
+      so this is straight-line — no choke detection (deferred).
+    - With gamma = gamma(T) the honest TPG statements are: the total->static
+      expansion is isentropic (the pr ratio gives T9), the energy that appears as
+      kinetic IS the enthalpy drop (V9^2 = 2(h(Tt9)-h(T9))), and the Mach number needs
+      the LOCAL sound speed a9 = sqrt(gamma(T9)*Rt*T9). The energy-split assert is
+      then EXACT by construction (it was loose in rung 2 only because cp*T carried the
+      rounded-constant residual).
     """
 
     def __init__(self, p_ambient: float, pi_n: float = 1.0, p_exit: float | None = None):
@@ -361,34 +409,46 @@ class Nozzle(Component):
         self.p_exit = p_ambient if p_exit is None else p_exit     # p9; default fully expanded
 
     def apply(self, s: FlowState, gas: Gas) -> NozzleExit:
-        gt, gamma, R = gas.g_t, gas.gamma_t, gas.R_t
+        R = gas.R_t
         Tt9 = s.Tt
         pt9 = self.pi_n * s.pt                      # specified nozzle pressure loss
         p9 = self.p_exit                            # expand to the specified back-pressure
 
-        half_gm1 = 0.5 * (gamma - 1.0)
-        # Invert the isentropic pt/p relation for M9 (hot-section gt and gamma).
-        M9 = (((pt9 / p9) ** gt - 1.0) / half_gm1) ** 0.5
-        T9 = Tt9 / (1.0 + half_gm1 * M9 ** 2)       # static = total minus kinetic share
-        a9 = (gamma * R * T9) ** 0.5                # local speed of sound at the EXIT
-        V9 = M9 * a9
+        if gas.hot_is_cpg:
+            # CPG: invert the isentropic pt/p relation for M9 (hot-section gt, gamma).
+            gt, gamma = gas.g_t, gas.gamma_t
+            half_gm1 = 0.5 * (gamma - 1.0)
+            M9 = (((pt9 / p9) ** gt - 1.0) / half_gm1) ** 0.5
+            T9 = Tt9 / (1.0 + half_gm1 * M9 ** 2)   # static = total minus kinetic share
+            a9 = (gamma * R * T9) ** 0.5            # local speed of sound at the EXIT
+            V9 = M9 * a9
+        else:
+            # TPG: T9 from the pr ratio, V9 from the enthalpy split, a9 from gamma(T9).
+            T9 = gas.T_from_pr_t(gas.pr_t(Tt9) * (p9 / pt9))
+            V9 = (2.0 * (gas.h_t(Tt9) - gas.h_t(T9))) ** 0.5
+            a9 = (gas.gamma_t_at(T9) * R * T9) ** 0.5
+            M9 = V9 / a9
 
         out = FlowState(Tt=Tt9, pt=pt9, mdot=s.mdot, far=s.far)
 
         # Conservation checks, every call (contract #4).
         # (1) SPECIFIED nozzle pressure ratio.
         assert abs(out.pt - self.pi_n * s.pt) < 1e-9 * s.pt, "nozzle pt9 != pi_n*pt5"
-        # (2) Static<->total isentropic relation pt9/p9 == (Tt9/T9)^(1/gt). Exact by
-        #     construction (M9, T9 derived to satisfy it) — assert TIGHT.
-        assert abs(pt9 / p9 - (Tt9 / T9) ** (1.0 / gt)) < 1e-9, "nozzle static drop not isentropic"
+        # (2) Static<->total isentropic relation pr(Tt9)/pr(T9) == pt9/p9. Exact by
+        #     construction in BOTH branches (T9 derived to satisfy it) — assert TIGHT.
+        assert abs(gas.pr_t(Tt9) / gas.pr_t(T9) - pt9 / p9) < 1e-9 * (pt9 / p9), (
+            "nozzle static drop not isentropic"
+        )
         assert out.mdot == s.mdot and out.far == s.far, "nozzle adds no mass or fuel"
         # (3) The NON-tautological check: total enthalpy splits into static + kinetic,
-        #     cpt*Tt9 == cpt*T9 + V9^2/2. Loose tolerance ON PURPOSE — the hot-section
-        #     constants carry the same kind of rounded-constant mismatch noted in
-        #     rung 1 (cpt vs gamma_t*Rt/(gamma_t-1)), a sub-0.1% residual, not a bug.
-        enthalpy_total = gas.cp_t * Tt9
-        enthalpy_static_plus_ke = gas.cp_t * T9 + 0.5 * V9 ** 2
-        assert abs(enthalpy_static_plus_ke - enthalpy_total) <= 1e-3 * enthalpy_total, (
+        #     h(Tt9) == h(T9) + V9^2/2. On a TPG section V9 came from EXACTLY this drop,
+        #     so it is exact — assert TIGHT. On a CPG section the hot-section constants
+        #     carry the same rounded-constant mismatch noted in rung 1 (cpt vs
+        #     gamma_t*Rt/(gamma_t-1)), a sub-0.1% residual, so the tolerance stays loose.
+        split_tol = 1e-3 if gas.hot_is_cpg else 1e-9
+        enthalpy_total = gas.h_t(Tt9)
+        enthalpy_static_plus_ke = gas.h_t(T9) + 0.5 * V9 ** 2
+        assert abs(enthalpy_static_plus_ke - enthalpy_total) <= split_tol * enthalpy_total, (
             f"nozzle energy split off by more than the constant mismatch: "
             f"{enthalpy_static_plus_ke} vs {enthalpy_total}"
         )
