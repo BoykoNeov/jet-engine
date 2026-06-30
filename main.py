@@ -47,6 +47,39 @@ def print_station_table(title, result):
           f"eta_p = {p.eta_propulsive:.4f}   eta_o = {p.eta_overall:.4f}")
 
 
+def print_polytropic_table(gas, flight):
+    """Rung-2b knob made visible: polytropic e vs the isentropic eta it IMPLIES.
+
+    Feed the SAME per-stage quality e_c = e_t = 0.90 to both machines and the
+    implied isentropic efficiencies straddle it — eta_c < e < eta_t — with the
+    split widening as pressure ratio climbs (docs/rung2b-polytropic.md § The
+    asymmetry: diverging isobars make a compressor look worse, a turbine better).
+    The T-s diagram can't carry this (it is not a leg-tilt effect), so it rides
+    here as a table — the "show the work" contract for the new knob.
+    """
+    e, gc = 0.9, gas.g_c
+    print("\nPolytropic knob (rung 2b): implied isentropic eta at e_c = e_t = 0.90")
+    print(f"{'pi_c':>6} {'eta_c':>8} {'e':>6} {'eta_t':>8}    (eta_c < e < eta_t)")
+    print("-" * 48)
+    for pi_c in (2.0, 10.0, 30.0):
+        eta_c = (pi_c ** gc - 1.0) / (pi_c ** (gc / e) - 1.0)
+        tau_t = build_turbojet(gas, pi_c, TT4, flight.p0, e_c=e, e_t=e).run(
+            flight, 1.0).stations["5"].Tt / TT4
+        eta_t = (1.0 - tau_t) / (1.0 - tau_t ** (1.0 / e))
+        print(f"{pi_c:>6.0f} {eta_c:>8.4f} {e:>6.2f} {eta_t:>8.4f}")
+
+    # Equivalence made visible: the design-point engine specified via e and via the
+    # CONVERTED eta is the same machine (the gate tests/test_polytropic.py pins to 1e-9).
+    eta_c = (PI_C ** gc - 1.0) / (PI_C ** (gc / e) - 1.0)
+    poly = build_turbojet(gas, PI_C, TT4, flight.p0, e_c=e, e_t=e).run(flight, 1.0)
+    tau_t = poly.stations["5"].Tt / TT4
+    eta_t = (1.0 - tau_t) / (1.0 - tau_t ** (1.0 / e))
+    iso = build_turbojet(gas, PI_C, TT4, flight.p0, eta_c=eta_c, eta_t=eta_t).run(flight, 1.0)
+    dF = abs(poly.performance.specific_thrust - iso.performance.specific_thrust)
+    print(f"At pi_c={PI_C:.0f}, e=0.90 implies eta_c={eta_c:.4f}, eta_t={eta_t:.4f}; the "
+          f"converted-eta engine\nagrees on specific thrust to {dF:.0e} N·s/kg — one machine, two knobs.")
+
+
 def _cycle_points(result, flight):
     """The six cycle points as {label: (s, T)} in (entropy, temperature) space.
 
@@ -151,6 +184,8 @@ def main():
     dS = 100.0 * (real.performance.tsfc / ideal.performance.tsfc - 1.0)
     print(f"\nLosses cost: specific thrust {dF:+.1f}%, TSFC {dS:+.1f}% "
           "(less thrust, burned harder).")
+
+    print_polytropic_table(gas, FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

@@ -226,9 +226,11 @@ def build_turbojet(
     *,
     pi_d: float = 1.0,
     eta_c: float = 1.0,
+    e_c: float | None = None,
     eta_b: float = 1.0,
     pi_b: float = 1.0,
     eta_t: float = 1.0,
+    e_t: float | None = None,
     eta_m: float = 1.0,
     pi_n: float = 1.0,
     p_exit: float | None = None,
@@ -242,7 +244,10 @@ def build_turbojet(
 
     - pi_d:   inlet net total-pressure recovery (= pi_d_max * ram_recovery(M0),
               folded in at the design Mach; use components.ram_recovery()).
-    - eta_c, eta_t: compressor/turbine isentropic efficiencies.
+    - eta_c, eta_t: compressor/turbine ISENTROPIC efficiencies (rung 2).
+    - e_c, e_t:     compressor/turbine POLYTROPIC efficiencies (rung 2b). Mutually
+              exclusive with the matching isentropic knob — pass eta_c OR e_c (and
+              eta_t OR e_t), never both (docs/rung2b-polytropic.md § API).
     - eta_b, pi_b:  burner combustion efficiency and total-pressure ratio.
     - pi_n:   nozzle total-pressure ratio.
     - p_exit: specified nozzle exit static pressure (default p_ambient -> fully
@@ -252,9 +257,9 @@ def build_turbojet(
     """
     components: List[Tuple[str, Component]] = [
         ("2", Inlet(pi_d)),
-        ("3", Compressor(pi_c, eta_c)),
+        ("3", Compressor(pi_c, eta_c, e_c)),
         ("4", Burner(Tt4, eta_b, pi_b)),
-        ("5", Turbine(eta_t)),
+        ("5", Turbine(eta_t, e_t)),
         ("9", Nozzle(p_ambient, pi_n, p_exit)),
     ]
     return Engine(gas, components, eta_m=eta_m)

@@ -94,31 +94,52 @@ class Inlet(Component):
 
 
 class Compressor(Component):
-    """Station 2 -> 3. Real compression: pressure ratio pi_c, isentropic eff eta_c.
+    """Station 2 -> 3. Real compression: pressure ratio pi_c, plus ONE efficiency knob.
 
-    Governing equations (docs/rung2-spec.md § Station 3), with gc = (gamma_c-1)/gamma_c:
+    Two efficiency knobs, mutually exclusive (docs/rung2b-polytropic.md § API):
+      - ISENTROPIC eta_c (rung 2): actual exit measured against an ideal substate.
+      - POLYTROPIC  e_c   (rung 2b): the per-stage efficiency, native in the path.
+    Pass one or neither (neither => ideal); a non-default eta_c AND an e_c is
+    contradictory (they are alternatives, not composable) and raises.
+
+    Governing equations (docs/rung2-spec.md § Station 3, docs/rung2b-polytropic.md
+    § Derivation), with gc = (gamma_c-1)/gamma_c:
         pt3  = pi_c * pt2
-        Tt3s = Tt2 * pi_c ** gc           # IDEAL exit temperature at this pressure
-        Tt3  = Tt2 + (Tt3s - Tt2)/eta_c   # ACTUAL exit: hotter (eta_c <= 1)
+        Tt3s = Tt2 * pi_c ** gc                # IDEAL exit temperature at this pressure
+        Tt3  = Tt2 + (Tt3s - Tt2)/eta_c        # ISENTROPIC knob: actual exit (hotter)
+        Tt3  = Tt2 * pi_c ** (gc / e_c)        # POLYTROPIC knob: actual exit, DIRECT
 
     Physical justification: the compressor reaches pt3 either way — the pressure
-    ratio is the design knob. With eta_c < 1 it must spend MORE temperature rise
-    to get there, so Tt3 > Tt3s. The gap (Tt3 - Tt3s) is wasted work the turbine
-    must STILL repay across the shaft — losses cost fuel. The ideal substate Tt3s
-    is the rung-1 isentropic result (Tt3s = Tt2*pi_c^gc); eta_c is how far the real
-    machine falls short of it. At eta_c = 1, Tt3 = Tt3s and this is rung 1 exactly.
-    Cold-section properties (gc) apply: this is fresh air, pre-combustion.
+    ratio is the design knob. A real machine spends MORE temperature rise to get
+    there, so Tt3 > Tt3s; the gap is wasted work the turbine must STILL repay across
+    the shaft (losses cost fuel). The isentropic knob measures that gap against the
+    substate Tt3s; the polytropic knob folds it into the exponent gc/e_c (the
+    per-stage relation, integrated), so Tt3 comes out DIRECTLY and Tt3s is just a
+    diagnostic. The two are an exact conversion of each other (asserted below). At
+    eta_c = 1 (or e_c = 1), Tt3 = Tt3s and this is rung 1 exactly. Cold-section
+    properties (gc) apply: this is fresh air, pre-combustion.
     """
 
-    def __init__(self, pi_c: float, eta_c: float = 1.0):
+    def __init__(self, pi_c: float, eta_c: float = 1.0, e_c: float | None = None):
+        # Mutually exclusive knobs: a non-default isentropic eta_c alongside a
+        # polytropic e_c is contradictory (they are alternatives, not composable).
+        if e_c is not None and eta_c != 1.0:
+            raise ValueError("Compressor: set eta_c (isentropic) OR e_c (polytropic), not both")
         self.pi_c = pi_c      # pressure ratio pt3 / pt2 (design knob)
         self.eta_c = eta_c    # isentropic (adiabatic) efficiency, <= 1
+        self.e_c = e_c        # polytropic (small-stage) efficiency, <= 1 (None => use eta_c)
 
     def apply(self, s: FlowState, gas: Gas) -> FlowState:
         gc = gas.g_c
         pt3 = self.pi_c * s.pt
-        Tt3s = s.Tt * self.pi_c ** gc                  # ideal substate
-        Tt3 = s.Tt + (Tt3s - s.Tt) / self.eta_c        # actual, >= ideal
+        Tt3s = s.Tt * self.pi_c ** gc                  # ideal substate (both knobs)
+        if self.e_c is not None:
+            # POLYTROPIC (rung 2b): actual exit DIRECTLY from the integrated
+            # per-stage relation — no substate needed for Tt3 (gc/e_c carries the loss).
+            Tt3 = s.Tt * self.pi_c ** (gc / self.e_c)
+        else:
+            # ISENTROPIC (rung 2): actual exit measured against the ideal substate.
+            Tt3 = s.Tt + (Tt3s - s.Tt) / self.eta_c    # actual, >= ideal
         out = FlowState(Tt=Tt3, pt=pt3, mdot=s.mdot, far=s.far)
 
         # Conservation checks, every call (contract #4).
@@ -127,9 +148,20 @@ class Compressor(Component):
         #     eta_c < 1. Cross-checks the Tt3s line against the pt3 line.
         assert abs(Tt3s / s.Tt - (pt3 / s.pt) ** gc) < 1e-9, "compressor substate not isentropic"
         # (2) Entropy generated: the real exit is no cooler than the ideal one.
-        #     Exact equality at eta_c = 1; a strict gap for eta_c < 1. This is the
-        #     check that actually exercises eta_c (the substate check cannot see it).
+        #     Exact equality at eta_c = 1; a strict gap for eta_c < 1. This exercises
+        #     eta_c AND rejects an invalid e_c > 1 (which would imply Tt3 < Tt3s), so
+        #     the polytropic knob needs no separate range guard.
         assert Tt3 >= Tt3s - 1e-9 * Tt3s, "compressor must generate entropy: Tt3 >= Tt3s"
+        # (3) Polytropic cross-check (rung 2b): the implied isentropic efficiency
+        #     read off the realized states must equal the closed-form e_c -> eta_c
+        #     conversion. Validates the conversion formula on every run — the same
+        #     gate the equivalence test asserts once to 1e-9, here checked continuously.
+        if self.e_c is not None:
+            eta_c_implied = (Tt3s - s.Tt) / (Tt3 - s.Tt)
+            eta_c_closed = (self.pi_c ** gc - 1.0) / (self.pi_c ** (gc / self.e_c) - 1.0)
+            assert abs(eta_c_implied - eta_c_closed) < 1e-9 * eta_c_closed, (
+                "compressor implied eta_c != closed-form polytropic conversion"
+            )
         assert out.mdot == s.mdot and out.far == s.far, "compressor adds no mass or fuel"
         return out
 
@@ -191,13 +223,21 @@ class Burner(Component):
 class Turbine(Component):
     """Station 4 -> 5. THE KEYSTONE: its work is *set* by the compressor it drives.
 
-    Governing equations (docs/rung2-spec.md § Station 5 and § The shaft balance),
-    with gt = (gamma_t-1)/gamma_t. The engine computes delta_Tt from the dual-cp,
-    mechanical-efficiency shaft balance and hands it in:
+    Two efficiency knobs, mutually exclusive (docs/rung2b-polytropic.md § API):
+    ISENTROPIC eta_t (rung 2) or POLYTROPIC e_t (rung 2b). Pass one or neither.
+
+    Governing equations (docs/rung2-spec.md § Station 5 and § The shaft balance,
+    docs/rung2b-polytropic.md § Derivation), with gt = (gamma_t-1)/gamma_t. The
+    engine computes delta_Tt from the dual-cp, mechanical-efficiency shaft balance
+    (INDEPENDENT of turbine efficiency) and hands it in:
         delta_Tt = cpc*(Tt3 - Tt2) / (eta_m*(1 + f)*cpt)   # (engine-owned)
-        Tt5  = Tt4 - delta_Tt
+        Tt5  = Tt4 - delta_Tt                               # actual exit (shaft-set)
+      ISENTROPIC knob:
         Tt5s = Tt4 - delta_Tt/eta_t                         # IDEAL drop for this work
         pt5  = pt4 * (Tt5s/Tt4) ** (1/gt)                   # isentropic from substate
+      POLYTROPIC knob (Tt5 already known, so pt5 comes DIRECTLY):
+        pt5  = pt4 * (Tt5/Tt4) ** (1/(e_t*gt))              # per-stage relation, integrated
+        Tt5s = Tt4 * (pt5/pt4) ** gt                        # diagnostic substate at pt5
 
     Physical justification:
     - delta_Tt is NOT free — the shaft sets it (see Engine.run / docs § shaft
@@ -208,6 +248,11 @@ class Turbine(Component):
       Tt5 sits above it — that gap is the turbine's entropy generation. At
       eta_t = 1, Tt5s = Tt5 and pt5 = pt4*(Tt5/Tt4)^(1/gt), which is rung 1.
       Hot-section properties (gt) apply: this is combustion gas.
+    - The POLYTROPIC knob needs no substate to get pt5: with Tt5 fixed by the shaft,
+      the per-stage relation maps Tt5 -> pt5 directly (this is why polytropic is the
+      natural TURBINE knob — no provisional pass to recover tau_t; see rung2b doc).
+      Tt5s then falls out of pt5 as a diagnostic, and the implied eta_t is asserted
+      to match the closed-form conversion.
 
     Design note (unchanged from rung 1): the ENGINE owns the shaft balance and the
     closure assert (it needs Tt2/Tt3, which the turbine never sees). The turbine's
@@ -215,20 +260,33 @@ class Turbine(Component):
     that it cannot run free-standing.
     """
 
-    def __init__(self, eta_t: float = 1.0):
+    def __init__(self, eta_t: float = 1.0, e_t: float | None = None):
+        # Mutually exclusive knobs (see Compressor): isentropic vs polytropic.
+        if e_t is not None and eta_t != 1.0:
+            raise ValueError("Turbine: set eta_t (isentropic) OR e_t (polytropic), not both")
         self.eta_t = eta_t  # isentropic (adiabatic) efficiency, <= 1
+        self.e_t = e_t      # polytropic (small-stage) efficiency, <= 1 (None => use eta_t)
 
     def apply(self, s: FlowState, gas: Gas, delta_Tt: float) -> FlowState:
         """Expand from station 4 by a *given* total-temperature drop delta_Tt.
 
         delta_Tt comes from the engine's dual-cp + eta_m shaft balance (it alone
-        holds the compressor states and f). Then Tt5 = Tt4 - delta_Tt, the ideal
-        substate Tt5s = Tt4 - delta_Tt/eta_t, and pt5 = pt4*(Tt5s/Tt4)**(1/gt).
+        holds the compressor states and f) and is INDEPENDENT of turbine efficiency,
+        so Tt5 = Tt4 - delta_Tt is known before any knob. ISENTROPIC: substate
+        Tt5s = Tt4 - delta_Tt/eta_t, then pt5 = pt4*(Tt5s/Tt4)**(1/gt). POLYTROPIC:
+        pt5 = pt4*(Tt5/Tt4)**(1/(e_t*gt)) directly, then Tt5s back out of pt5.
         """
         gt = gas.g_t
-        Tt5 = s.Tt - delta_Tt                          # actual exit
-        Tt5s = s.Tt - delta_Tt / self.eta_t            # ideal substate (lower, eta_t<=1)
-        pt5 = s.pt * (Tt5s / s.Tt) ** (1.0 / gt)       # isentropic from the substate
+        Tt5 = s.Tt - delta_Tt                          # actual exit (shaft-set, knob-free)
+        if self.e_t is not None:
+            # POLYTROPIC (rung 2b): pt5 DIRECTLY from the integrated per-stage
+            # relation (Tt5 is already known), then the substate Tt5s follows from pt5.
+            pt5 = s.pt * (Tt5 / s.Tt) ** (1.0 / (self.e_t * gt))
+            Tt5s = s.Tt * (pt5 / s.pt) ** gt           # diagnostic substate at this pressure
+        else:
+            # ISENTROPIC (rung 2): substate from the work, pt5 from the substate.
+            Tt5s = s.Tt - delta_Tt / self.eta_t        # ideal substate (lower, eta_t<=1)
+            pt5 = s.pt * (Tt5s / s.Tt) ** (1.0 / gt)   # isentropic from the substate
         out = FlowState(Tt=Tt5, pt=pt5, mdot=s.mdot, far=s.far)
 
         # Conservation checks, every call (contract #4).
@@ -237,11 +295,23 @@ class Turbine(Component):
         #     so they hold for any delta_Tt).
         assert delta_Tt > 0.0, "turbine must extract work: delta_Tt > 0"
         # (2) Ideal SUBSTATE is isentropic: Tt5s/Tt4 == (pt5/pt4)^gt (rung-1 leg
-        #     check, moved onto the substate so it survives eta_t < 1).
+        #     check, moved onto the substate so it survives eta_t < 1). Holds by
+        #     construction in BOTH modes (the polytropic mode derives Tt5s from pt5).
         assert abs(Tt5s / s.Tt - (out.pt / s.pt) ** gt) < 1e-9, "turbine substate not isentropic"
         # (3) Entropy generated: the actual exit is no cooler than the ideal one.
-        #     The check that actually exercises eta_t.
+        #     Exercises eta_t AND rejects an invalid e_t > 1 (which would lift Tt5s
+        #     above Tt5), so the polytropic knob needs no separate range guard.
         assert Tt5 >= Tt5s - 1e-9 * abs(Tt5s), "turbine must generate entropy: Tt5 >= Tt5s"
+        # (4) Polytropic cross-check (rung 2b): the implied isentropic efficiency
+        #     must equal the closed-form e_t -> eta_t conversion. tau_t = Tt5/Tt4 is
+        #     known here (the shaft set it), so no provisional pass is needed.
+        if self.e_t is not None:
+            tau_t = Tt5 / s.Tt
+            eta_t_implied = (s.Tt - Tt5) / (s.Tt - Tt5s)
+            eta_t_closed = (1.0 - tau_t) / (1.0 - tau_t ** (1.0 / self.e_t))
+            assert abs(eta_t_implied - eta_t_closed) < 1e-9 * eta_t_closed, (
+                "turbine implied eta_t != closed-form polytropic conversion"
+            )
         assert out.mdot == s.mdot and out.far == s.far, "turbine adds no mass or fuel"
         return out
 

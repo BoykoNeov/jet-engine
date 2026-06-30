@@ -37,9 +37,10 @@ rung-2 contract and the derivation handout, mirroring `SPEC.md` for rung 1.
 - **Choked convergent nozzle** — choke *detection* + a branch between
   "exit = ambient" and "exit M=1, exit p > ambient." That is new control flow and
   a new failure surface; a *specified* `P9` is not. Later rung.
-- **Polytropic efficiency** as the knob (we use *isentropic* `η_c, η_t`; see the
-  conversion below), **variable `cp(T)`**, reacting/dissociating gas, off-design,
-  afterburner.
+- **Polytropic efficiency** as the knob — rung 2 uses *isentropic* `η_c, η_t` (see
+  the conversion below). *(Now lifted in rung 2b: `e_c, e_t` are a first-class knob
+  alongside the isentropic one — see `docs/rung2b-polytropic.md`.)*
+- **Variable `cp(T)`**, reacting/dissociating gas, off-design, afterburner.
 
 ---
 
@@ -251,8 +252,10 @@ the physically-correct thermal efficiency *restores* it. Assert it.
 η_t = (1 − τt) / (1 − τt^(1/e_t)) = (1 − τt) / (1 − π_t^gt)   # τt from the shaft balance
 ```
 The code stays isentropic (the chosen rung-2 knob); we convert the book's `e`
-once to feed the anchor test. Polytropic efficiency as a *first-class* knob is a
-later sub-rung.
+once to feed the anchor test. *(Rung 2b makes `e_c, e_t` a first-class knob that
+needs no conversion — see `docs/rung2b-polytropic.md`. There the turbine relation
+runs native, so the anchor drops its provisional pass; this rung-2 conversion is
+kept as the cross-check the rung-2b components assert on every run.)*
 
 ---
 

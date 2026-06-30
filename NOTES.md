@@ -320,3 +320,83 @@ nozzle is the lesson restated: in the real world they all arrive together.
 cycles side by side and overlays them on the T–s diagram (`ts_diagram.png`), where
 the real cycle's work legs visibly tilt right — the entropy every real component
 generates, drawn to scale.*
+
+---
+---
+
+# Rung 2b — Polytropic Efficiency, in plain language
+
+Rung 2 measured a compressor or turbine's quality with an **isentropic
+efficiency** `η`: compare the real machine to one perfect machine spanning the
+*whole* pressure ratio. Rung 2b adds the engineer's *other* yardstick —
+**polytropic efficiency** `e` — as an equal, first-class input. The formal
+derivation is in `docs/rung2b-polytropic.md`; this is the plain-language version.
+
+## Two ways to grade the same machine
+Picture compressing air in one big squeeze versus a hundred tiny squeezes back to
+back. Isentropic efficiency `η` grades the *one big squeeze* against a single ideal
+one. Polytropic efficiency `e` grades *each tiny stage* — it's the efficiency of an
+infinitesimal step, assumed the same for every step. So `e` is really a property of
+the **blade technology**, while `η` is a property of *this machine at this pressure
+ratio*. Quote a compressor's `η` and you must also say what `πc` it was measured
+at; quote its `e` and the number travels to any pressure ratio. That portability is
+the whole reason `e` earns its own knob.
+
+In the code, `e` goes straight into the forward path: a compressor at polytropic
+`e_c` lands at `Tt3 = Tt2·πc^(gc/e_c)` directly — the loss is baked into the
+exponent, no "ideal substate" needed to get there. (The substate is still computed,
+but now only as a cross-check.) For the turbine it's even cleaner, and that's a
+genuine payoff: because the *shaft* already fixed the turbine's temperature drop,
+`pt5` follows from `e_t` in one line — `pt5 = pt4·(Tt5/Tt4)^(1/(e_t·gt))`. The
+rung-2 anchor had to run a throwaway "provisional pass" just to discover the drop
+before it could convert the book's `e_t` into an `η_t`; with `e_t` first-class, that
+dance disappears. Polytropic is the *natural* knob for a turbine.
+
+## The surprise — same `e`, but `η_c < e < η_t`
+Here's the part worth slowing down for. Feed **the same** polytropic efficiency to
+both machines — `e_c = e_t = 0.90` — and ask what isentropic efficiency each one
+*shows*. They don't both read 0.90. They straddle it:
+
+```
+η_c = 0.864   <   e = 0.90   <   η_t = 0.910      (at πc = 10)
+```
+
+The compressor looks **worse** than its per-stage quality; the turbine looks
+**better**. Same blades, opposite-signed gap. Why? On a T–s diagram the
+constant-pressure lines **fan apart** as the gas gets hotter. In the compressor,
+each stage's friction dumps heat that makes the *next* stage start hotter, where the
+isobars are wider — so the little ideal steps add up to *more* work than one ideal
+big squeeze, and the machine grades out **below** `e` (a *preheat penalty*). In the
+turbine the very same reheat is a **gift**: heat lost to friction early is still hot
+gas the later stages get to expand and harvest, so the machine beats its per-stage
+number (the classic *reheat effect*).
+
+And the gap is set by pressure ratio — it grows as you stack more stages and
+collapses to nothing in the single-stage limit:
+
+| `πc` | `η_c` (gap below 0.90) | `η_t` (gap above 0.90) |
+|---|---|---|
+| ~1 | 0.900 (0.000) | 0.900 (0.000) |
+| 5 | 0.876 (0.025) | 0.906 (0.006) |
+| 10 | 0.864 (0.036) | 0.910 (0.010) |
+| 40 | 0.840 (0.060) | 0.923 (0.023) |
+
+So `η` and `e` are not two names for one number — they're the same machine seen at
+two scales, and the spread between them *is* the pressure ratio. That's why a real
+data sheet quotes `e`: it's the part that doesn't move.
+
+## Did we get it right?
+Two checks, both exact rather than approximate. First, a polytropic machine at
+`e=0.9` and an isentropic one at the **converted** `η` are not just close — they're
+algebraically the *same engine*, agreeing on every station and every performance
+number to ~1e-9 (`tests/test_polytropic.py`). Second, the Mattingly Example 7.1
+anchor is re-run feeding `e_c = e_t = 0.9` **directly** — no conversion, no
+provisional pass — and reproduces the book. The contrast between the two anchor
+tests (the rung-2 one's provisional-pass detour vs. this one's single line) is the
+lesson restated in code: for turbines, polytropic is the knob the math wants.
+
+---
+*Rung 2b is a small, contained sub-rung: one extra parameter on the compressor and
+turbine, the reduce-to-ideal gate untouched, the `T–s` diagram left alone (the
+`η`-vs-`e` story is a table, not a leg-tilt). The deferred seams — variable
+`cp(T)`, off-design, the choked nozzle, the afterburner — stay deferred.*

@@ -44,7 +44,9 @@ textbook case. All boxes below land green.
       (and the `eta_brayton` wrong-way surprise), the anchor.
 
 ## Deferred (seams kept)
-- [ ] Polytropic efficiency as a first-class knob.
+- [x] Polytropic efficiency as a first-class knob — **done (rung 2b)**, see
+      `docs/rung2b-polytropic.md` + `tests/test_polytropic.py`. `e_c/e_t` native in
+      the compressor/turbine forward path; isentropic `η_c/η_t` kept alongside.
 - [ ] Variable `cp(T)` (thermally perfect → reacting gas).
 - [ ] Choked convergent nozzle (choke detection + pressure-thrust branch).
 - [ ] Off-design / component maps; afterburner.
