@@ -709,3 +709,120 @@ separate factory, so every prior table survives untouched. `python main.py` prin
 Fork-A-vs-Fork-B panel. Next, on this absolute-enthalpy substrate: high-temperature
 dissociation and the `Kp` equilibrium solve (rung 6, which also restores `a7`), then
 off-design, the choked nozzle, the afterburner.*
+
+---
+
+# Rung 6 — High-Temperature Dissociation, in plain language
+
+Every rung so far burned to a **fixed recipe** of finished products — `CH₂ + 1.5 O₂ →
+CO₂ + H₂O`, full stop. But real flames at their hottest don't finish the job: above
+~2000 K the products **tear partly back apart**. Some `CO₂` splits into `CO + ½O₂`, some
+water into `OH`, `H₂`, even lone `O` and `H` atoms. Rung 6 stops assuming the recipe and
+**computes** it — the composition is whatever **chemical equilibrium** says it is at the
+local temperature and pressure. This is the last thing the burner was still faking, and
+it's the payoff the rung-5 notes promised.
+
+## The honest headline (again): the cycle barely moves
+Just like rungs 4 and 5, tracking the truer physics **barely changes the engine's
+numbers** — the fuel/air ratio shifts by well under a percent and thrust by a hair. And
+the size of even that tiny shift is *steeply* temperature-dependent, which is itself the
+lesson: at the `main.py` panel's `Tt4 = 1500 K` it's a mere **+0.02 %**, but at the hotter
+`Tt4 = 1800 K` supersonic anchor it grows to **+0.15 %** — because dissociation is a
+hot-end effect, and even 1800 K is near the metallurgical ceiling. Run it hotter still and
+it would climb further. There's a beautiful reason it stays this small, worth slowing down
+for: dissociation is suppressed **twice over** exactly where the engine runs:
+
+- **The engine runs lean.** With spare oxygen around, Le Chatelier pushes `CO₂⇌CO+½O₂`
+  back to the left — the excess O₂ crowds out the split.
+- **The engine runs at high pressure.** Splitting one molecule into one-and-a-half makes
+  *more* molecules, and squeezing a gas fights any reaction that makes more molecules. At
+  the combustor's ~8-13 bar, dissociation is stomped flat.
+
+Add the fact that turbine blades cap `Tt4` **below** where dissociation really bites, and
+station 4 sits in a triple-safe corner. So the cycle inherits rung 5's numbers almost
+exactly. **The drama is elsewhere.**
+
+## Where the drama actually is: the flame temperature finally drops
+Rung 5 left a loose end: our no-dissociation **adiabatic flame temperature** came out
+~2375 K at stoichiometric, but real kerosene-air flames top out ~2250 K. We were *high on
+purpose* — and rung 6 pays it off. Tearing `CO₂`/`H₂O` apart **absorbs** heat (it's the
+combustion reaction run backwards), so it caps the peak. Turn dissociation on and the
+stoichiometric flame temperature falls **~115 K, from 2375 to 2259 K** — right into the
+real band (`python main.py` prints the drop). That missing 115 K was never a bug; it was
+the physics we hadn't modeled yet. Now we do.
+
+The contrast *is* the lesson: dissociation is a **near-stoichiometric, ~1-atm** phenomenon
+(a flame in open air), and the engine deliberately runs **lean, high-pressure, and
+temperature-capped** — as far from that corner as it can get. So the same physics that
+rewrites the flame temperature leaves the cycle alone.
+
+## The mechanism — one more NASA constant, and a pressure knob
+To know *which way* `CO₂⇌CO+½O₂` wants to go, you need the **Gibbs free energy** `ΔG° =
+ΔH° − TΔS°`, and the equilibrium constant `Kp = exp(−ΔG°/RuT)`. Rung 5 installed the
+absolute-**enthalpy** half (`ΔH°`, via the formation constant `a6`). Rung 6 adds the
+absolute-**entropy** half: the seventh NASA coefficient `a7`, derived from each species'
+tabulated standard entropy exactly the way `a6` was derived from its formation enthalpy
+(no new columns transcribed, so no fresh chance to fat-finger one). That's *why* Fork B
+had to come first — you cannot compute equilibrium from sensible "how hot" numbers alone;
+the formation energies **are** the driving force.
+
+The one piece of algebra worth seeing is the **pressure factor**. Equilibrium isn't just
+a ratio of concentrations — because dissociation changes the molecule count, it carries a
+`(p/p°)^Δν` term:
+
+```
+Kp(T) = Πᵢ (xᵢ)^νᵢ · (p/p°)^Δν
+```
+
+That `(p/p°)^Δν` is the whole reason high combustor pressure suppresses dissociation, and
+`main.py` shows it live: hold a stoichiometric flame at 2300 K and squeeze it — the `CO`
+fraction falls from 11 % at 1 atm to 5 % at 13 atm. Get this factor wrong and you get a
+plausible-looking but wrong flame; it's the classic trap, so we reproduce a published
+equilibrium point before trusting the solver (below).
+
+## One subtlety we had to get exactly right: which zero for enthalpy
+There are two consistent ways to place the enthalpy "zero," and they differ by ~1 % in the
+burner. The equilibrium constant `Kp` **demands** the textbook formation scale (elements =
+0 at 25 °C) — anything else gives the wrong reaction `ΔG°` and a ~20 %-wrong `Kp`. But the
+cycle's energy bookkeeping (from rungs 4-5) lives on a different zero, and switching *that*
+would break the promise that rung 6 reduces to rung 5. The resolution is clean once you see
+it: **`Kp` is a datum-free physical constant** — computing it correctly needs the formation
+scale, but its *output* is just mole numbers, which carry no zero at all. So the model keeps
+**one** energy datum (rung 5's), feeds it the datum-free composition, and computes `Kp` on
+the formation scale off to the side. We prove there's no hidden seam with a standing test:
+in the cold-flame limit the rung-6 fuel/air ratio snaps back to rung 5's to one part in a
+million — a leaked datum would show up as a constant 1 % gap, and it doesn't. (This is the
+same split rung 5 already used: production energy on one scale, the flame-temperature
+diagnostic on the formation scale.)
+
+## Kept deliberately simple, with the seams marked
+We model the C/H/O dissociation set — `CO, H₂, OH, O, H` beside the finished products — and
+**freeze** the equilibrium composition at the burner, carrying it unchanged through turbine
+and nozzle. Two honest omissions, each its own future rung: **thermal NOx** (`N₂+O₂⇌NO`) is
+left out because in reality it's rate-limited, not equilibrium, and it's a pollutant-
+formation story of its own; and **re-equilibrating the expansion** (the classic "frozen vs
+equilibrium nozzle flow" contrast, where recombination gives heat back) is deferred because
+at our lean, high-pressure station 4 there's almost nothing to recombine — but it's
+genuinely rich and deserves its own treatment.
+
+## Did we get it right?
+Three ways. **(1)** The independent physics anchor: our solver reproduces the well-known
+**CEA methane-air flame temperature** — 2231.7 K against CEA's ~2226 K — with textbook
+dissociation-product fractions, using the exact same machinery the cycle uses. **(2)** The
+formation and entropy self-checks land each species' enthalpy and entropy on its tabulated
+value at 25 °C to the last digit, and the derived `a7` matches GRI-Mech's own tabulated
+constant. **(3)** The reduce-to-rung-5 gate: turn the flame cold and the whole cycle snaps
+back to Fork B to one part in a million — dissociation adds *only* what dissociation should.
+
+---
+*Rung 6 replaces the burner's fixed recipe with a chemical-equilibrium solve: five
+dissociation reactions, element conservation, and `Kp(T) = exp(−ΔG°/RuT)` on the absolute
+entropy `a7` (derived like rung 5's `a6`). The products dissociate, but at the engine's
+lean, high-pressure, temperature-capped station 4 the cycle barely moves (+0.15 % on far);
+the drama is the adiabatic flame temperature, which finally falls ~115 K into the real
+band. The cycle delta is steeply Tt4-dependent (+0.02 % at the 1500 K panel, +0.15 % at the
+1800 K anchor) — a hot-end effect. `Gas.reacting_equilibrium()` is a separate factory, so
+every prior table survives to the digit. `python main.py` prints the Fork-B-vs-equilibrium
+panel, the flame-temperature drop, and the pressure-suppression line. Still deferred: thermal NOx and equilibrium-vs-
+frozen nozzle flow (both ride this same `a6`+`a7`+`Kp` substrate); off-design, the choked
+nozzle, the afterburner.*

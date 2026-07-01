@@ -251,23 +251,33 @@ class Burner(Component):
         assert s.far == 0.0, "burner assumes dry air at entry (far == 0)"
 
         pt4 = self.pi_b * s.pt
-        h3 = gas.h_c(s.Tt)                          # cold-air enthalpy in (f-independent)
 
-        # FIXED-POINT solve of f = g(f). Seeded from f=0 (composition = pure air), so
-        # the first pass IS the rung-3 frozen-composition estimate; subsequent passes
-        # re-evaluate h_t at the updated composition. h_t(Tt4, f) crosses the cold->hot
-        # section boundary -> both share the h(0)=0 datum (see docstring).
-        f = 0.0
-        for _ in range(self._FP_MAX):
-            h4 = gas.h_t(self.Tt4, f)               # hot-products enthalpy at the current f
-            f_new = (h4 - h3) / (self.eta_b * gas.hPR - h4)
-            converged = abs(f_new - f) <= self._FP_TOL * f_new
-            f = f_new
-            if converged:
-                break
+        if gas.equilibrium:
+            # RUNG 6 — dissociating products. The rung-4/5 fixed point f=(h4-h3)/(eta_b
+            # hPR - h4) is DERIVED from complete combustion; with dissociation hPR is
+            # not the true release, so it is replaced by a ROOT-FIND (bisection) on the
+            # scale-B absolute-enthalpy balance, the equilibrium composition re-solved at
+            # each trial f (docs/rung6-spec.md § Station 4). The equilibrium f is a small
+            # (+~0.15%) correction to the Fork-B f — negligible at the lean, high-pressure
+            # design point, exactly measured in docs/plans/rung6-anchor-equilibrium.md.
+            f = self._solve_equilibrium(s.Tt, pt4, gas)
         else:
-            # STANDING conservation assert (rung-4 gate 3): the contraction must close.
-            assert False, f"burner fixed point f=g(f) did not converge in {self._FP_MAX} steps"
+            h3 = gas.h_c(s.Tt)                      # cold-air enthalpy in (f-independent)
+            # FIXED-POINT solve of f = g(f). Seeded from f=0 (composition = pure air), so
+            # the first pass IS the rung-3 frozen-composition estimate; subsequent passes
+            # re-evaluate h_t at the updated composition. h_t(Tt4, f) crosses the cold->hot
+            # section boundary -> both share the h(0)=0 datum (see docstring).
+            f = 0.0
+            for _ in range(self._FP_MAX):
+                h4 = gas.h_t(self.Tt4, f)           # hot-products enthalpy at the current f
+                f_new = (h4 - h3) / (self.eta_b * gas.hPR - h4)
+                converged = abs(f_new - f) <= self._FP_TOL * f_new
+                f = f_new
+                if converged:
+                    break
+            else:
+                # STANDING conservation assert (rung-4 gate 3): the contraction must close.
+                assert False, f"burner fixed point f=g(f) did not converge in {self._FP_MAX} steps"
 
         mdot4 = s.mdot * (1.0 + f)
         out = FlowState(Tt=self.Tt4, pt=pt4, mdot=mdot4, far=f)
@@ -276,31 +286,77 @@ class Burner(Component):
         assert abs(out.mdot - s.mdot * (1.0 + out.far)) < 1e-9 * s.mdot, (
             "burner mass: mdot_out != mdot_in*(1 + f)"
         )
-        # Energy balance in enthalpy with eta_b, at the CONVERGED f (h_t evaluated at
-        # the burned-gas composition). f is solved FROM this, so a converged run
-        # satisfies it; it cross-checks the Tt4 / mdot / far lines and the fixed point.
         mdot_fuel = out.mdot - s.mdot
-        lhs = s.mdot * h3 + self.eta_b * mdot_fuel * gas.hPR
-        rhs = out.mdot * gas.h_t(out.Tt, f)
-        assert abs(lhs - rhs) < 1e-6 * rhs, "burner energy balance violated"
-        # FORK B (rung 5): the SAME f, re-derived on ABSOLUTE (formation) enthalpies.
-        # For a Fork-B gas hPR was SET to the LHV derived from formation enthalpies, so
-        # the solve above is already the derived-heat-release balance. Here we (1) check
-        # the LHV fell out at the calibration value and (2) close the absolute balance
-        # Σ N h̄(react) = Σ N h̄(prod) + loss explicitly — the formation bookkeeping shown
-        # and checked on every run (rung-5 gate 2/4; docs/rung5-fork-b.md § Station 4).
-        if gas.fork_b:
-            assert abs(gas.lhv - gas.hPR) < 1e-6 * gas.hPR, "Fork B: derived LHV != hPR slot"
-            react_abs = s.mdot * gas.h_c_abs(s.Tt) + mdot_fuel * gas.hf_fuel_mass
-            prod_abs = out.mdot * gas.h_t_abs(out.Tt, f)
-            loss = (1.0 - self.eta_b) * mdot_fuel * gas.lhv     # incomplete-combustion loss
-            assert abs(react_abs - (prod_abs + loss)) < 1e-6 * rhs, (
-                "Fork B absolute-enthalpy balance: Σ N h̄ react != Σ N h̄ prod + loss"
+
+        if gas.equilibrium:
+            # RUNG 6 closure: FREEZE the station-4 equilibrium mixture for the whole
+            # downstream cycle, then close the SCALE-B absolute-enthalpy balance on it
+            # (per mol air) — the datum that reduces to Fork B when dissociation is off.
+            comp = gas.freeze_equilibrium(f, self.Tt4, pt4)
+            n_fuel = gas.n_fuel_per_air(f)
+            react_abs = gas.h_air_abs_B(s.Tt) + n_fuel * gas.hf_fuel_molar
+            prod_abs = gas.h_products_abs_B(comp, self.Tt4)
+            loss = (1.0 - self.eta_b) * n_fuel * gas.lhv_molar
+            assert abs(react_abs - (prod_abs + loss)) < 1e-6 * abs(prod_abs), (
+                "rung-6 equilibrium burner balance: h_air + n_f*hf != Σ n_i h_i + loss"
             )
+            # Atom conservation (C/H/O) is a standing assert inside the equilibrium solve.
+        else:
+            # Energy balance in enthalpy with eta_b, at the CONVERGED f (h_t evaluated at
+            # the burned-gas composition). f is solved FROM this, so a converged run
+            # satisfies it; it cross-checks the Tt4 / mdot / far lines and the fixed point.
+            h3 = gas.h_c(s.Tt)
+            lhs = s.mdot * h3 + self.eta_b * mdot_fuel * gas.hPR
+            rhs = out.mdot * gas.h_t(out.Tt, f)
+            assert abs(lhs - rhs) < 1e-6 * rhs, "burner energy balance violated"
+            # FORK B (rung 5): the SAME f, re-derived on ABSOLUTE (formation) enthalpies.
+            # For a Fork-B gas hPR was SET to the LHV derived from formation enthalpies, so
+            # the solve above is already the derived-heat-release balance. Here we (1) check
+            # the LHV fell out at the calibration value and (2) close the absolute balance
+            # Σ N h̄(react) = Σ N h̄(prod) + loss explicitly — the formation bookkeeping shown
+            # and checked on every run (rung-5 gate 2/4; docs/rung5-fork-b.md § Station 4).
+            if gas.fork_b:
+                assert abs(gas.lhv - gas.hPR) < 1e-6 * gas.hPR, "Fork B: derived LHV != hPR slot"
+                react_abs = s.mdot * gas.h_c_abs(s.Tt) + mdot_fuel * gas.hf_fuel_mass
+                prod_abs = out.mdot * gas.h_t_abs(out.Tt, f)
+                loss = (1.0 - self.eta_b) * mdot_fuel * gas.lhv     # incomplete-combustion loss
+                assert abs(react_abs - (prod_abs + loss)) < 1e-6 * rhs, (
+                    "Fork B absolute-enthalpy balance: Σ N h̄ react != Σ N h̄ prod + loss"
+                )
         # SPECIFIED pressure ratio (near-tautological, but guards the pt4 line and
         # becomes load-bearing once pi_b < 1 tilts pt4 below pt3).
         assert abs(out.pt - self.pi_b * s.pt) < 1e-9 * s.pt, "burner pt4 != pi_b*pt3"
         return out
+
+    def _solve_equilibrium(self, Tt3: float, pt4: float, gas: Gas) -> float:
+        """Root-find f on the rung-6 SCALE-B absolute-enthalpy balance (per mol air):
+
+            h_air_B(Tt3) + n_fuel*hf_fuel  =  Σ_i n_i(f)*h_i_B(Tt4)  +  (1-eta_b)*n_fuel*LHV
+
+        with n_i(f) the CHEMICAL-EQUILIBRIUM composition at (f, Tt4, pt4) — dissociation
+        included — re-solved every trial. Bisection on f in [0, f_stoich): the balance
+        residual (react - prod - loss) rises through zero with f (more fuel -> hotter/
+        more product enthalpy), so a bracketed root is guaranteed. See docs/rung6-spec.md.
+        """
+        h_air = gas.h_air_abs_B(Tt3)
+        lo, hi = 0.0, gas.f_stoich_lean * (1.0 - 1e-6)     # lean bracket (rich is out of scope)
+        f = 0.5 * (lo + hi)
+        for _ in range(self._FP_MAX):
+            f = 0.5 * (lo + hi)
+            comp = gas.equilibrium_composition(f, self.Tt4, pt4)
+            n_fuel = gas.n_fuel_per_air(f)
+            res = (h_air + n_fuel * gas.hf_fuel_molar
+                   - gas.h_products_abs_B(comp, self.Tt4)
+                   - (1.0 - self.eta_b) * n_fuel * gas.lhv_molar)
+            if hi - lo <= self._FP_TOL * (f + 1e-12):
+                break
+            if res < 0.0:                              # reactant enthalpy below product -> more fuel
+                lo = f
+            else:
+                hi = f
+        else:
+            assert False, f"rung-6 burner root-find did not bracket in {self._FP_MAX} steps"
+        return f
 
 
 class Turbine(Component):

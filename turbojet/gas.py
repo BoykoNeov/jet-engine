@@ -91,6 +91,25 @@ _SPECIES = {
     "H2O": (18.01528,
             (4.19864056, -2.03643410e-3, 6.52040211e-6, -5.48797062e-9, 1.77197817e-12),
             (3.03399249, 2.17691804e-3, -1.64072518e-7, -9.70419870e-11, 1.68200992e-14)),
+    # RUNG 6 — the five dissociation species (CO, H2, OH, O, H). Same GRI-Mech 3.0
+    # source as the five above; unused by rungs 1-5 (frozen/Fork-A/Fork-B never form
+    # them). Certified by the a6/a7 self-checks + the CEA methane-AFT equilibrium
+    # anchor (docs/plans/rung6-anchor-equilibrium.md § 1, 4).
+    "CO": (28.0101,
+           (3.57953347, -6.10353680e-4, 1.01681433e-6, 9.07005884e-10, -9.04424499e-13),
+           (2.71518561, 2.06252743e-3, -9.98825771e-7, 2.30053008e-10, -2.03647716e-14)),
+    "H2": (2.01588,
+           (2.34433112, 7.98052075e-3, -1.94781510e-5, 2.01572094e-8, -7.37611761e-12),
+           (3.33727920, -4.94024731e-5, 4.99456778e-7, -1.79566394e-10, 2.00255376e-14)),
+    "OH": (17.00734,
+           (3.99201543, -2.40131752e-3, 4.61793841e-6, -3.88113333e-9, 1.36411470e-12),
+           (3.09288767, 5.48429716e-4, 1.26505228e-7, -8.79461556e-11, 1.17412376e-14)),
+    "O": (15.9994,
+          (3.16826710, -3.27931884e-3, 6.64306396e-6, -6.12806624e-9, 2.11265971e-12),
+          (2.56942078, -8.59741137e-5, 4.19484589e-8, -1.00177799e-11, 1.22833691e-15)),
+    "H": (1.00794,
+          (2.50000000, 7.05332819e-13, -1.99591964e-15, 2.30081632e-18, -9.27732332e-22),
+          (2.50000001, -2.30842973e-11, 1.61561948e-14, -4.73515235e-18, 4.98197357e-22)),
 }
 
 # Cold section = dry air (mole fractions). R_air falls out at ~287.1, consistent
@@ -139,8 +158,21 @@ _M_CH2 = 12.011 + 2 * 1.008
 
 # Standard molar enthalpies of formation at 298.15 K, J/mol (CODATA/JANAF).
 # Elements are the reference datum (0); H2O is GAS (vapour) -> LHV, not liquid.
+# The five dissociation species (CO/H2/OH/O/H) are added for rung 6; H2 is an
+# element (0). OH carries ~1.5 kJ/mol literature spread (docs/plans/rung6-anchor § 1).
 _T_REF = 298.15
-_HF298 = {"N2": 0.0, "O2": 0.0, "Ar": 0.0, "CO2": -393520.0, "H2O": -241826.0}
+_HF298 = {"N2": 0.0, "O2": 0.0, "Ar": 0.0, "CO2": -393520.0, "H2O": -241826.0,
+          "CO": -110527.0, "H2": 0.0, "OH": 38987.0, "O": 249180.0, "H": 217998.0}
+
+# RUNG 6 — standard molar ENTROPIES at 298.15 K, J/(mol K) (CODATA/JANAF). The twin
+# of _HF298: rung 5 derived the formation constant a6 from _HF298; rung 6 derives the
+# absolute-entropy constant a7 from _S298 (a7 = S/Ru - antideriv_phi(A_low, 298.15)),
+# so g0(T)=h0-T*s0 -> Kp. Consumed ONLY by the equilibrium/Kp solve, never downstream
+# pr (the additive a7 cancels in every pr ratio, as a6 cancels in enthalpy diffs).
+_S298 = {"N2": 191.609, "O2": 205.152, "Ar": 154.846, "CO2": 213.785, "H2O": 188.835,
+         "CO": 197.660, "H2": 130.680, "OH": 183.708, "O": 161.058, "H": 114.716}
+
+_P_REF = 100000.0        # standard-state pressure, 1 bar (the Kp (p/p0)^dnu factor)
 
 # Fuel formation enthalpy is the ONE calibration input (it carries the same
 # information hPR did). Default pinned so the DERIVED LHV of CH2 + 1.5 O2 -> CO2
@@ -431,6 +463,237 @@ class _ReactingSection:
         return self._for(far).R
 
 
+# --------------------------------------------------------------------------- #
+# RUNG 6 — high-temperature dissociation + chemical equilibrium. The complete- #
+# combustion _products_composition(f) is replaced (for the equilibrium gas) by #
+# a T,p-coupled equilibrium solve: 3 element balances (C,H,O) + 5 reaction Kp   #
+# relations for the 8 reacting mole numbers. Kp needs g0=h0-T*s0 on absolute    #
+# enthalpy (a6) AND absolute entropy (a7). See docs/rung6-spec.md and           #
+# docs/plans/rung6-anchor-equilibrium.md. The datum rule (anchor § 2b): the Kp  #
+# solve uses SCALE A (a6-at-298.15, formation) — REQUIRED, not a choice, or the #
+# reaction dG0 is wrong; the cycle-burner energy balance uses SCALE B (0K-      #
+# sensible + formation, production Fork B) so it reduces to Fork B exactly. Only #
+# the datum-free composition (mole numbers) crosses between them.               #
+# --------------------------------------------------------------------------- #
+
+# The five basis dissociation reactions (products positive), {species: nu}.
+#   CO2 -> CO + 1/2 O2 ; H2O -> H2 + 1/2 O2 ; H2O -> OH + 1/2 H2 ; 1/2 O2 -> O ; 1/2 H2 -> H
+_REACTIONS = (
+    {"CO2": -1.0, "CO": 1.0, "O2": 0.5},
+    {"H2O": -1.0, "H2": 1.0, "O2": 0.5},
+    {"H2O": -1.0, "OH": 1.0, "H2": 0.5},
+    {"O2": -0.5, "O": 1.0},
+    {"H2": -0.5, "H": 1.0},
+)
+_SP_REACT = ("CO2", "H2O", "CO", "H2", "OH", "O", "H", "O2")   # the 8 unknowns (N2/Ar inert)
+_ELEM = {"CO2": (1, 0, 2), "H2O": (0, 2, 1), "CO": (1, 0, 1), "H2": (0, 2, 0),
+         "OH": (0, 1, 1), "O": (0, 0, 1), "H": (0, 1, 0), "O2": (0, 0, 2)}   # (C,H,O)
+
+
+def _sens_h(sp: str, T: float) -> float:
+    """int_0^T (cp/Ru) dT' for one species (dimensionless), across the 1000 K join.
+    Molar sensible enthalpy = Ru * this (0 K datum, as _TPGSection.h uses per mass)."""
+    A_low, A_high = _SPECIES[sp][1], _SPECIES[sp][2]
+    if T <= _T_BREAK:
+        return _antideriv_h(A_low, T)
+    return (_antideriv_h(A_low, _T_BREAK)
+            + _antideriv_h(A_high, T) - _antideriv_h(A_high, _T_BREAK))
+
+
+def _sens_phi(sp: str, T: float) -> float:
+    """int (cp/Ru)/T' dT' for one species (dimensionless), across the join. Molar
+    sensible entropy = Ru * this; absolute adds Ru*a7."""
+    A_low, A_high = _SPECIES[sp][1], _SPECIES[sp][2]
+    if T <= _T_BREAK:
+        return _antideriv_phi(A_low, T)
+    return (_antideriv_phi(A_low, _T_BREAK)
+            + _antideriv_phi(A_high, T) - _antideriv_phi(A_high, _T_BREAK))
+
+
+def _a6_of(sp: str) -> float:
+    """Formation constant: H(298.15)=dHf => a6 = dHf/Ru - antideriv_h(A_low, 298.15)."""
+    return _HF298[sp] / _Ru - _antideriv_h(_SPECIES[sp][1], _T_REF)
+
+
+def _a7_of(sp: str) -> float:
+    """Absolute-entropy constant: S(298.15)=S298 => a7 = S298/Ru - antideriv_phi(A_low,298.15)."""
+    return _S298[sp] / _Ru - _antideriv_phi(_SPECIES[sp][1], _T_REF)
+
+
+def _h_molar_A(sp: str, T: float) -> float:
+    """SCALE A absolute molar enthalpy (a6-at-298.15, formation), J/mol. Kp + AFT only."""
+    return _Ru * (_sens_h(sp, T) + _a6_of(sp))
+
+
+def _s_molar(sp: str, T: float) -> float:
+    """Absolute standard-state molar entropy s0(T) at p0=1 bar, J/(mol K). Kp only."""
+    return _Ru * (_sens_phi(sp, T) + _a7_of(sp))
+
+
+def _g_molar(sp: str, T: float) -> float:
+    """Absolute standard-state Gibbs energy g0(T)=h0-T*s0, J/mol (scale A). Kp only."""
+    return _h_molar_A(sp, T) - T * _s_molar(sp, T)
+
+
+def _h_molar_B(sp: str, T: float) -> float:
+    """SCALE B absolute molar enthalpy (0K-sensible + formation), J/mol. The burner's
+    ENERGY-balance datum — matches production Fork B so the cycle reduces to it exactly."""
+    return _Ru * _sens_h(sp, T) + _HF298[sp]
+
+
+def _lnKp(rxn: dict, T: float) -> float:
+    """ln Kp(T) = -dG0(T)/(Ru T), dG0 = sum nu*g0 (scale A, datum-free reaction constant)."""
+    dG0 = sum(nu * _g_molar(sp, T) for sp, nu in rxn.items())
+    return -dG0 / (_Ru * T)
+
+
+def _gauss_solve(A, b):
+    """Solve A x = b by Gaussian elimination with partial pivoting (small dense system)."""
+    n = len(A)
+    M = [row[:] + [b[i]] for i, row in enumerate(A)]
+    for c in range(n):
+        piv_row = max(range(c, n), key=lambda r: abs(M[r][c]))
+        M[c], M[piv_row] = M[piv_row], M[c]
+        piv = M[c][c]
+        for r in range(n):
+            if r != c and M[r][c] != 0.0:
+                fac = M[r][c] / piv
+                for k in range(c, n + 1):
+                    M[r][k] -= fac * M[c][k]
+    return [M[i][n] / M[i][i] for i in range(n)]
+
+
+def _equil_solve(bC: float, bH: float, bO: float, n_inert: float,
+                 T: float, p: float) -> dict:
+    """Core equilibrium solve: mole numbers of the 8 reacting species at (T, p) given
+    C/H/O atom totals and inert moles. Damped Newton in y=ln(n) (keeps n>0), seeded
+    from complete combustion; 3 element balances (C,H,O) + 5 reaction Kp equations.
+
+    Reaction eq r:  sum_i nu_ri (y_i - ln n_tot) + dnu_r ln(p/p0) - lnKp_r = 0,
+    with n_tot including the inert species so mole FRACTIONS x_i = n_i/n_tot are right.
+    Basis-agnostic (any hydrocarbon C_bC H_bH), so tests reuse it for the methane anchor.
+    """
+    # Complete-combustion seed (lean): C->CO2, H->H2O, leftover O2; radicals tiny.
+    seed = {"CO2": max(bC, 1e-12), "H2O": max(bH / 2.0, 1e-12),
+            "CO": 1e-8, "H2": 1e-8, "OH": 1e-8, "O": 1e-9, "H": 1e-9,
+            "O2": max((bO - 2.0 * bC - bH / 2.0) / 2.0, 1e-8)}
+    y = {s: math.log(seed[s]) for s in _SP_REACT}
+    lnKp = [_lnKp(r, T) for r in _REACTIONS]
+    lnpr = math.log(p / _P_REF)
+
+    converged = False
+    for _ in range(200):
+        nv = {s: math.exp(y[s]) for s in _SP_REACT}
+        ntot = sum(nv.values()) + n_inert
+        F = [sum(_ELEM[s][k] * nv[s] for s in _SP_REACT) - b
+             for k, b in enumerate((bC, bH, bO))]
+        for r, K in zip(_REACTIONS, lnKp):
+            dnu = sum(r.values())
+            F.append(sum(nu * (y[s] - math.log(ntot)) for s, nu in r.items()) + dnu * lnpr - K)
+        # Jacobian dF/dy (y_j = ln n_j; dn_j/dy_j = n_j).
+        J = [[0.0] * 8 for _ in range(8)]
+        for j, sj in enumerate(_SP_REACT):
+            for k in range(3):                       # element rows
+                J[k][j] = _ELEM[sj][k] * nv[sj]
+        for ri, r in enumerate(_REACTIONS):          # reaction rows
+            dnu = sum(r.values())
+            for j, sj in enumerate(_SP_REACT):
+                J[3 + ri][j] = r.get(sj, 0.0) - dnu * (nv[sj] / ntot)
+        dy = _gauss_solve(J, [-v for v in F])
+        step = max(abs(d) for d in dy)
+        scale = 1.0 if step < 1.0 else 1.0 / step    # damping: cap the log-step at 1
+        for j, sj in enumerate(_SP_REACT):
+            y[sj] = max(y[sj] + scale * dy[j], -80.0)   # floor: n >= ~1e-35 (trace species)
+        if step * scale < 1e-13:
+            converged = True
+            break
+
+    # CONVERGENCE (rung-6 standing assert, the Newton twin of the burner's fixed-point
+    # `else: assert False`): the atom balances below can hold with the log-Kp residuals
+    # still open, so guard the FULL solve explicitly (measured ~10-20 steps, far under 200).
+    assert converged, f"equilibrium Newton did not converge in 200 steps at (T={T}, p={p})"
+
+    comp = {s: math.exp(y[s]) for s in _SP_REACT}
+    # ATOM CONSERVATION (rung-6 standing assert): the solver enforces C,H,O as
+    # equations, so a converged run closes them — this catches a non-converged solve.
+    assert abs(sum(_ELEM[s][0] * comp[s] for s in _SP_REACT) - bC) < 1e-9 * (bC + 1e-9), "C balance"
+    assert abs(sum(_ELEM[s][1] * comp[s] for s in _SP_REACT) - bH) < 1e-9 * (bH + 1e-9), "H balance"
+    assert abs(sum(_ELEM[s][2] * comp[s] for s in _SP_REACT) - bO) < 1e-9 * bO, "O balance"
+    return comp
+
+
+def _equilibrium_composition(f: float, T: float, p: float) -> dict:
+    """Equilibrium mole numbers per mol dry air at (f, T, p) for the (CH2)n fuel.
+    Returns the 8 reacting species + the inert N2/Ar. Wraps _equil_solve with the
+    (CH2)n atom basis: n_fuel=f*M_air/M_CH2 => C=n_fuel, H=2*n_fuel, O=2*x_O2."""
+    x = _air_mole_fractions()
+    n_fuel = f * _M_AIR / _M_CH2
+    comp = _equil_solve(n_fuel, 2.0 * n_fuel, 2.0 * x["O2"], x["N2"] + x["Ar"], T, p)
+    comp["N2"], comp["Ar"] = x["N2"], x["Ar"]
+    return comp
+
+
+class _EquilibriumSection:
+    """A hot section whose composition is the EQUILIBRIUM mixture at the burner's
+    (Tt4, pt4), FROZEN through the turbine and nozzle (rung 6, frozen-downstream).
+
+    Like _ReactingSection it delegates every property call to a memoized per-far
+    _TPGSection built via _mixture() (so R_t tracks the dissociation mole-count shift)
+    — but the composition comes from _equilibrium_composition(far, Tt4, pt4), so the
+    burner must freeze() it before any downstream call. The (Tt4, pt4) is baked in at
+    freeze time; downstream calls key on far alone (the frozen mixture is independent
+    of the evaluation T — the turbine asks at Tt5, the nozzle at T9). Reusing one Gas
+    across two burn configs with the same far but different (Tt4,pt4) trips the guard
+    (restores "pure function of far for a fixed burn config" — no hidden state).
+    """
+
+    is_cpg = False
+
+    def __init__(self):
+        self._cache: dict = {}          # far -> _TPGSection (frozen station-4 mixture)
+        self._comp: dict = {}           # far -> composition dict (diagnostics/asserts)
+        self._burn: Optional[Tuple[float, float]] = None   # (Tt4, pt4) of first freeze
+
+    def freeze(self, far: float, T_burn: float, p_burn: float) -> dict:
+        if self._burn is None:
+            self._burn = (T_burn, p_burn)
+        else:
+            assert (abs(self._burn[0] - T_burn) < 1e-9 * T_burn
+                    and abs(self._burn[1] - p_burn) < 1e-6 * p_burn), (
+                "equilibrium section: burn condition changed on a reused Gas "
+                f"(had {self._burn}, got {(T_burn, p_burn)})"
+            )
+        if far not in self._cache:
+            comp = _equilibrium_composition(far, T_burn, p_burn)
+            A_low, A_high, R = _mixture(comp)
+            self._cache[far] = _TPGSection((A_low, A_high), R)
+            self._comp[far] = comp
+        return self._comp[far]
+
+    def _for(self, far: float) -> _TPGSection:
+        sec = self._cache.get(far)
+        assert sec is not None, (
+            f"equilibrium hot section not frozen for far={far}: the burner must run "
+            "(freeze the station-4 mixture) before any downstream property call"
+        )
+        return sec
+
+    def cp(self, T: float, far: float = 0.0) -> float:
+        return self._for(far).cp(T)
+    def h(self, T: float, far: float = 0.0) -> float:
+        return self._for(far).h(T)
+    def pr(self, T: float, far: float = 0.0) -> float:
+        return self._for(far).pr(T)
+    def T_from_h(self, h: float, far: float = 0.0) -> float:
+        return self._for(far).T_from_h(h)
+    def T_from_pr(self, pr: float, far: float = 0.0) -> float:
+        return self._for(far).T_from_pr(pr)
+    def gamma_at(self, T: float, far: float = 0.0) -> float:
+        return self._for(far).gamma_at(T)
+    def R_at(self, far: float = 0.0) -> float:
+        return self._for(far).R
+
+
 @dataclass
 class Gas:
     """Dual-section gas. Each section is CPG (constant triple, default) or TPG (cp(T)).
@@ -482,10 +745,18 @@ class Gas:
     fork_b: bool = False
     hf_fuel_molar: Optional[float] = None    # fuel ΔHf298, J/mol (Fork B only)
 
+    # Equilibrium hot section (rung 6). When True the hot composition is the CHEMICAL-
+    # EQUILIBRIUM mixture at the burner's (Tt4, pt4) — dissociation included — frozen
+    # downstream. Implies fork_b (the burner works on absolute enthalpies). Set by the
+    # Gas.reacting_equilibrium() factory; every lower-rung path leaves it False.
+    equilibrium: bool = False
+
     def __post_init__(self):
         self._cold = (_TPGSection(self.cp_c_coeffs, self.R_c) if self.cp_c_coeffs
                       else _CPGSection(self.gamma_c, self.cp_c, self.R_c))
-        if self.reacting_hot:
+        if self.equilibrium:
+            self._hot = _EquilibriumSection()                # composition = equilibrium(f,T,p) (rung 6)
+        elif self.reacting_hot:
             self._hot = _ReactingSection()                   # composition tracks f (rung 4)
         elif self.cp_t_coeffs:
             self._hot = _TPGSection(self.cp_t_coeffs, self.R_t)   # frozen cp(T) (rung 3)
@@ -537,6 +808,25 @@ class Gas:
         lhv = _lhv_from_fuel(hf_fuel_molar)                       # DERIVED heating value
         return cls(R_c=R_c, R_t=R_t, hPR=lhv, cp_c_coeffs=(Alo_c, Ahi_c),
                    reacting_hot=True, fork_b=True, hf_fuel_molar=hf_fuel_molar)
+
+    @classmethod
+    def reacting_equilibrium(cls, hf_fuel_molar: float = _HF_FUEL_DEFAULT,
+                             f_design: float = 0.0) -> "Gas":
+        """Reacting hot section with CHEMICAL-EQUILIBRIUM (dissociating) products (rung 6).
+
+        Extends Fork B (Gas.reacting_forkb): same absolute-enthalpy burner, but the
+        products DISSOCIATE — the composition at the burner's (Tt4, pt4) is the chemical-
+        equilibrium mixture (CO2/H2O partly split into CO/H2/OH/O/H) solved from Kp(T),
+        then FROZEN through turbine + nozzle. Reduces to Fork B exactly in the cold-Tt4
+        limit (dissociation -> 0). hf_fuel_molar is the same single calibration input.
+        See docs/rung6-spec.md and docs/plans/rung6-anchor-equilibrium.md.
+        """
+        Alo_c, Ahi_c, R_c = _mixture(_AIR)
+        _, _, R_t = _mixture(_products_composition(f_design))     # representative (diagnostics)
+        lhv = _lhv_from_fuel(hf_fuel_molar)
+        return cls(R_c=R_c, R_t=R_t, hPR=lhv, cp_c_coeffs=(Alo_c, Ahi_c),
+                   reacting_hot=True, fork_b=True, equilibrium=True,
+                   hf_fuel_molar=hf_fuel_molar)
 
     # --- isentropic exponents (CPG closed-form helpers; used by station 0/9) ---
 
@@ -629,6 +919,43 @@ class Gas:
         """Absolute hot-products enthalpy = sensible h_t + product formation offset."""
         return self.h_t(T, far) + _formation_products_mass(far)
 
+    # --- Rung-6 equilibrium-burner interface (the BURNER alone uses it) ----------
+    # The burner root-finds f on the SCALE-B absolute-enthalpy balance (per mol air),
+    # with the equilibrium composition solved at each trial f. Scale B (0K-sensible +
+    # formation) is production Fork B's datum, so the cycle reduces to Fork B exactly
+    # when dissociation is off; the composition comes from the scale-A Kp solve (the
+    # only object crossing over is datum-free mole numbers). See docs/rung6-spec.md.
+
+    @property
+    def lhv_molar(self) -> float:
+        """Complete-combustion lower heating value per mol fuel, J/mol (the eta_b loss basis)."""
+        return self.lhv * _M_CH2_KG
+
+    @property
+    def f_stoich_lean(self) -> float:
+        """Lean stoichiometric fuel/air ratio — the burner's f-bracket upper bound."""
+        return _F_STOICH
+
+    def n_fuel_per_air(self, f: float) -> float:
+        """Mol of (CH2) burned per mol dry air at fuel/air ratio f."""
+        return f * _M_AIR / _M_CH2
+
+    def equilibrium_composition(self, f: float, T: float, p: float) -> dict:
+        """Chemical-equilibrium product mole numbers per mol air at (f, T, p)."""
+        return _equilibrium_composition(f, T, p)
+
+    def h_air_abs_B(self, T: float) -> float:
+        """Air absolute molar enthalpy per mol air, SCALE B (formation of air = 0)."""
+        return sum(x * _h_molar_B(s, T) for s, x in _air_mole_fractions().items())
+
+    def h_products_abs_B(self, comp: dict, T: float) -> float:
+        """Products absolute molar enthalpy per mol air, SCALE B, over a composition dict."""
+        return sum(n * _h_molar_B(s, T) for s, n in comp.items())
+
+    def freeze_equilibrium(self, f: float, T_burn: float, p_burn: float) -> dict:
+        """Freeze the station-4 equilibrium mixture for the whole downstream cycle."""
+        return self._hot.freeze(f, T_burn, p_burn)
+
     def unified(self) -> "Gas":
         """Return a copy with the hot section collapsed onto the cold section.
 
@@ -640,4 +967,4 @@ class Gas:
         """
         return replace(self, gamma_t=self.gamma_c, cp_t=self.cp_c, R_t=self.R_c,
                        cp_t_coeffs=self.cp_c_coeffs, reacting_hot=False,
-                       fork_b=False, hf_fuel_molar=None)
+                       fork_b=False, equilibrium=False, hf_fuel_molar=None)

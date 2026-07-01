@@ -9,6 +9,7 @@ the "isentropic" legs visibly TILT RIGHT (entropy generated) once losses are on.
 Requires the components in turbojet/ and matplotlib (`pip install -r requirements.txt`).
 """
 import math
+import sys
 
 import matplotlib
 
@@ -16,7 +17,10 @@ matplotlib.use("Agg")  # headless: render to a file, never pop a window (no plt.
 import matplotlib.pyplot as plt  # noqa: E402
 
 from turbojet.engine import FlightCondition, build_turbojet  # noqa: E402
-from turbojet.gas import Gas, _products_composition  # noqa: E402
+from turbojet.gas import (  # noqa: E402
+    Gas, _products_composition, _equilibrium_composition, _h_molar_A,
+    _HF_FUEL_DEFAULT, _M_AIR, _M_CH2, _F_STOICH, _air_mole_fractions,
+)
 
 TS_DIAGRAM_PATH = "ts_diagram.png"
 
@@ -196,6 +200,74 @@ def print_forkb_table(flight):
           f"MJ/kg sits below sensible {fb.h_t(TT4, rb.stations['4'].far) / 1e6:.3f} MJ/kg.")
 
 
+def _aft_ch2(f, p, dissociate):
+    """(CH2)n constant-p adiabatic flame temp per mol air, SCALE A (the physical datum,
+    docs/rung6-anchor § 2b). dissociate=False -> complete combustion (rung-5 value)."""
+    x = _air_mole_fractions()
+    n_fuel = f * _M_AIR / _M_CH2
+    H_react = n_fuel * _HF_FUEL_DEFAULT                  # air = 0 on scale A at 298.15
+    lo, hi = 800.0, 3200.0
+    for _ in range(100):
+        T = 0.5 * (lo + hi)
+        if dissociate:
+            comp = _equilibrium_composition(f, T, p)
+        else:
+            comp = {"CO2": n_fuel, "H2O": n_fuel, "O2": x["O2"] - 1.5 * n_fuel,
+                    "N2": x["N2"], "Ar": x["Ar"]}
+        H_prod = sum(comp[s] * _h_molar_A(s, T) for s in comp)
+        lo, hi = (lo, T) if H_prod > H_react else (T, hi)
+    return 0.5 * (lo + hi)
+
+
+def print_equilibrium_table(flight):
+    """Rung-6 payoff: chemical equilibrium — products DISSOCIATE at high temperature.
+
+    The headline mirrors rung 5's: at the cycle's station 4 the numbers barely move,
+    because dissociation is suppressed twice — LEAN combustion (excess O2) AND high
+    combustor pressure (mole-increasing reactions shift back). The drama lives in the
+    unconstrained ADIABATIC FLAME TEMPERATURE, which finally falls into the real band:
+      - the cycle: Fork B vs equilibrium is identical to ~0.15% on far (measured below);
+      - the diagnostic: stoichiometric AFT drops ~115 K (2375 -> ~2259 K), because
+        dissociating CO2/H2O ABSORBS heat, capping the peak — the gap rung 5 flagged.
+    """
+    fb = Gas.reacting_forkb()               # rung-5 Fork B: complete combustion
+    eq = Gas.reacting_equilibrium()         # rung-6 equilibrium: dissociating products
+    rb = build_turbojet(fb, PI_C, TT4, flight.p0).run(flight, 1.0)
+    re = build_turbojet(eq, PI_C, TT4, flight.p0).run(flight, 1.0)
+
+    print("\nEquilibrium (rung 6): Fork B (complete) vs dissociating products, same design point")
+    print(f"{'Station':>8} {'Tt B':>9} {'Tt eq':>9}  {'pt B':>9} {'pt eq':>9}")
+    print("-" * 50)
+    for label in ("0", "2", "3", "4", "5", "9"):
+        b, e = rb.stations[label], re.stations[label]
+        print(f"{label:>8} {b.Tt:>9.1f} {e.Tt:>9.1f}  {b.pt / 1000:>9.2f} {e.pt / 1000:>9.2f}")
+    fB, fE = rb.stations["4"].far, re.stations["4"].far
+    pt4 = re.stations["4"].pt
+    print(f"far: Fork B {fB:.6f} -> equilibrium {fE:.6f} (+{100*(fE-fB)/fB:.3f}%) — a tiny "
+          f"correction: at pt4={pt4/1e5:.1f} bar, lean, dissociation is doubly suppressed.")
+    comp = _equilibrium_composition(fE, TT4, pt4)
+    tot = sum(comp.values())
+    trace = {s: f"{100*comp[s]/tot:.4f}%" for s in ("CO", "OH", "O", "H", "H2")}
+    print(f"  station-4 dissociation products (frozen downstream): {trace}")
+
+    print("\n  Adiabatic flame temperature (the diagnostic that finally drops), 1 atm:")
+    print(f"  {'f':>8} {'no-dissoc (rung 5)':>18} {'equilibrium (rung 6)':>20} {'drop K':>8}")
+    for f in (0.030, 0.050, _F_STOICH * 0.999):
+        tf = _aft_ch2(f, 101325.0, dissociate=False)
+        te = _aft_ch2(f, 101325.0, dissociate=True)
+        tag = "  (≈stoich)" if f > 0.06 else ""
+        print(f"  {f:>8.4f} {tf:>18.1f} {te:>20.1f} {tf-te:>8.1f}{tag}")
+    print("  Stoich ~2259 K lands in the real kerosene-air band; the ~115 K gap IS "
+          "dissociation (endothermic), the rung-5 AFT overshoot explained.")
+
+    print("\n  The Kp (p/p0)^Δν factor, live — dissociation falls as pressure rises "
+          "(stoich, T=2300 K):")
+    f = _F_STOICH * 0.999
+    for p_atm in (1.0, 5.0, 13.0):
+        c = _equilibrium_composition(f, 2300.0, p_atm * 101325.0)
+        print(f"    p={p_atm:>5.1f} atm:  CO/(CO+CO2) = {c['CO']/(c['CO']+c['CO2']):.4f}")
+
+
 def _cycle_points(result, flight):
     """The six cycle points as {label: (s, T)} in (entropy, temperature) space.
 
@@ -289,6 +361,13 @@ def plot_ts_diagram(ideal, real, flight):
 
 
 def main():
+    # The tables carry unicode (Δ, ·, ≡, ≈); force UTF-8 so `python main.py` renders
+    # on any console (a stock Windows cp1252 console would otherwise crash on them).
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except (AttributeError, ValueError):
+        pass
+
     gas = Gas()  # single cold-air-standard gas for the design-point comparison
     ideal = build_turbojet(gas, PI_C, TT4, FLIGHT.p0).run(FLIGHT, mdot=1.0)
     real = build_turbojet(gas, PI_C, TT4, FLIGHT.p0, **REAL_LOSSES).run(FLIGHT, mdot=1.0)
@@ -308,6 +387,8 @@ def main():
     print_reacting_table(FLIGHT)
 
     print_forkb_table(FLIGHT)
+
+    print_equilibrium_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

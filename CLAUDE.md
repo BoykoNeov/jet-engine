@@ -14,7 +14,13 @@ an implicit `f = g(f)` fixed-point solve; **rung 5** is **Fork B — formation-e
 bookkeeping**: restores the NASA `a6` constant so enthalpies are absolute and the
 burner's heat release is **derived** (`hPR`/LHV falls out of the chemistry) instead of
 assumed — provably identical to rung 4 for complete combustion, but on the absolute
-scale rung-6 dissociation needs.
+scale rung-6 dissociation needs; **rung 6** adds **high-temperature dissociation +
+chemical equilibrium**: the products (`CO₂`/`H₂O`) partly split into `CO/H₂/OH/O/H`, set
+by a `Kp(T) = exp(−ΔG°/RuT)` solve (adds the absolute-entropy constant `a7`, derived like
+`a6`). The cycle barely moves (a steeply Tt4-dependent delta on `f`: +0.02 % at the 1500 K
+`main.py` panel, +0.15 % at the 1800 K anchor — station 4 is lean, high-pressure,
+metallurgically capped), but the adiabatic-flame-temperature diagnostic finally falls
+~115 K (2375→2259 K) into the real band.
 
 **The deliverable is understanding, not the tool.** The code is the medium that
 forces every thermodynamic assumption into the open. Optimize the work for
@@ -35,9 +41,13 @@ teaching, not for features or polish.
 - **`docs/rung5-fork-b.md`** — rung-5 contract + handout: the `a6` restoration, the
   derived-heat-release burner, the exact reduce-to-rung-4 theorem, the datum invariant,
   the rung-6 (`a7` + `Kp`) seam.
+- **`docs/rung6-spec.md`** — rung-6 contract + handout: the five dissociation species +
+  reactions, the `Kp` standard-state `(p/p°)^Δν` factor, the `a7` derivation, the
+  one-energy-datum split (composition on scale A, burner energy on scale B), the nested
+  root-find burner, frozen-downstream, the verification gates.
 - `docs/plans/` — living plan/tasks (rungs 1–3), plus `rung2-anchor-mattingly.md`,
-  `rung3-anchor-cengel.md`, `rung4-anchor-mattingly.md`, and
-  `rung5-anchor-formation.md` (the verified textbook / formation-enthalpy anchor data).
+  `rung3-anchor-cengel.md`, `rung4-anchor-mattingly.md`, `rung5-anchor-formation.md`, and
+  `rung6-anchor-equilibrium.md` (the verified textbook / formation / CEA-equilibrium anchor data).
 
 ## Working contract (from SPEC.md — these override convenience)
 - **Derive before you code.** For each station, write the governing equation and
@@ -48,20 +58,24 @@ teaching, not for features or polish.
   hidden state (Turbine and Nozzle diverge their signatures by design).
 - **Conservation checks are assertions**, run on every execution (not as
   separate tests). See SPEC.md / docs/rung2-spec.md § Conservation checks.
-- **Current scope (rung 5):** ideal + real components (isentropic `η_c/η_t` **or**
+- **Current scope (rung 6):** ideal + real components (isentropic `η_c/η_t` **or**
   polytropic `e_c/e_t`, mutually exclusive; pressure ratios `π_d/π_b/π_n`, `η_b`,
   `η_m`, dual cold/hot gas, specified exit pressure) on a **thermally-perfect** gas
   (`cp = cp(T)`; calorically-perfect sections kept as the closed-form branch) — with
   the hot section a **reacting** gas whose composition (and `cp_t/R_t/γ_t`) tracks
   `f` via explicit `(CH₂)ₙ` lean-complete-combustion stoichiometry, solved through an
-  implicit `f = g(f)` burner. Now **Fork B** (rung 5): enthalpies carry each species'
-  **formation** enthalpy (NASA `a6`, absolute datum, elements = 0 at 298.15 K) and the
-  burner derives its heat release (`LHV` falls out) from an absolute-enthalpy balance —
-  bit-identical to Fork A for complete combustion, only the burner sees `a6`. Fork A
-  (`Gas.reacting()`, fixed `hPR`) is kept beside Fork B (`Gas.reacting_forkb()`). Still
-  deferred — keep the seams: **high-temperature dissociation + rich combustion and the
-  `Kp` equilibrium solve (restore `a7`) = rung 6**, off-design / component maps, a
-  *choked* convergent nozzle, afterburner.
+  implicit `f = g(f)` burner. **Fork B** (rung 5): enthalpies carry each species'
+  **formation** enthalpy (NASA `a6`, absolute datum) and the burner derives its heat
+  release. Now **rung 6 — chemical equilibrium** (`Gas.reacting_equilibrium()`): the hot
+  composition at the burner is the **dissociation-equilibrium** mixture (add `CO/H₂/OH/O/H`;
+  5 reactions; `Kp = exp(−ΔG°/RuT)` with the `(p/p°)^Δν` factor, on `a7` derived like `a6`),
+  **frozen** through turbine + nozzle; the burner is a **root-find on `f`** over the absolute
+  balance (composition re-solved each trial). `Kp` uses the formation scale (scale A, required),
+  the burner energy the production scale (scale B, reduces to Fork B); only the datum-free
+  composition crosses between. Fork A/B (`Gas.reacting()`/`reacting_forkb()`) kept beside it.
+  Still deferred — keep the seams: **thermal NOx (`N₂+O₂⇌NO`, Zeldovich) and equilibrium-vs-
+  frozen nozzle flow = rung 7+**, off-design / component maps, a *choked* convergent nozzle,
+  afterburner.
 - **Stop and explain surprises.** If a number looks off, reason about the
   physics rather than silently moving on.
 
@@ -74,17 +88,23 @@ teaching, not for features or polish.
 - `turbojet/gas.py` — `FlowState`, dual-section `Gas` (cold/hot, `unified()`); the
   CPG closed-form / TPG NASA-integral property interface (`h/pr/T_from_*/cp_*_at`,
   hot methods carry `far`) and the `Gas.thermally_perfect()` (frozen products),
-  `Gas.reacting()` (composition-tracks-`f`, Fork A) and `Gas.reacting_forkb()` (Fork B,
-  formation enthalpies) factories; `_products_composition(f)` + `_ReactingSection`
-  (memoized per-`f` `_TPGSection`). Fork B adds `_HF298`/`_formation_products_mass(f)`/
-  `_lhv_from_fuel` and the burner-only absolute interface `lhv/hf_fuel_mass/
-  hf_products_mass/h_c_abs/h_t_abs` (the `a6` formation constant, cancels in every
-  difference → only the burner uses it).
+  `Gas.reacting()` (composition-tracks-`f`, Fork A), `Gas.reacting_forkb()` (Fork B,
+  formation enthalpies) and `Gas.reacting_equilibrium()` (rung 6, dissociation) factories;
+  `_products_composition(f)` + `_ReactingSection` (memoized per-`f` `_TPGSection`). Fork B
+  adds `_HF298`/`_formation_products_mass(f)`/`_lhv_from_fuel` and the burner-only absolute
+  interface (`a6` cancels in every difference → only the burner uses it). Rung 6 adds
+  `_S298`/`_a7_of` (absolute entropy), `_g_molar`/`_lnKp` + the `_equil_solve`/
+  `_equilibrium_composition` Newton solver, `_EquilibriumSection` (freezes the station-4
+  mixture, keyed on `far` with a burn-config guard), and the burner interface
+  `equilibrium_composition/h_air_abs_B/h_products_abs_B/freeze_equilibrium` (scale-B energy;
+  scale-A `_h_molar_A`/`_g_molar` for `Kp`/AFT only).
 - `turbojet/components.py` — `Inlet, Compressor, Burner, Turbine, Nozzle` in `h`/`pr`
   form (+ loss params, `ram_recovery(M0)`, the polytropic `e_c/e_t` knob; the Nozzle
   branches CPG/TPG — the velocity↔enthalpy trap). The `Burner` runs the implicit
   `f = g(f)` fixed point (Fork B: `hPR` := derived LHV, plus a standing absolute-enthalpy
-  balance assert); `Turbine`/`Nozzle` hot-section calls thread `far` (sensible `h`, so
+  balance assert), OR — for an equilibrium gas — `_solve_equilibrium` (a root-find on `f`
+  over the scale-B absolute balance, equilibrium composition per trial, then freezes the
+  station-4 mixture); `Turbine`/`Nozzle` hot-section calls thread `far` (sensible `h`, so
   bit-for-bit rung 4 — the `a6` offset cancels in their differences).
 - `turbojet/engine.py` — chains components, solves the `Δh` + `η_m` shaft balance,
   scores performance (two thermal efficiencies + cascade check); freestream branches
@@ -102,9 +122,14 @@ teaching, not for features or polish.
 - `tests/test_forkb.py` — rung-5: exact reduce-to-rung-4 (Fork B ≡ Fork A to machine
   precision), derived LHV = Mattingly `hPR`, formation self-check, absolute-balance
   closure + fuel-enthalpy live-knob, test-only adiabatic-flame-temperature plausibility.
+- `tests/test_rung6.py` — rung-6: anti-seam reduce-to-rung-5 (cold-`Tt4` limit, `f` == Fork B
+  to ~1e-6), CEA methane-AFT equilibrium anchor + pressure-suppression, formation/entropy
+  self-checks, the equilibrium-AFT drop (test-only, scale A), station-4 delta bounded, the
+  burn-config guard.
 - `main.py` — runs ideal vs real at one design point: tables + overlaid T–s diagram,
   plus the rung-2-frozen-`cp` vs rung-3-`cp(T)` table, the rung-4 frozen-vs-reacting
-  + `f`-sweep table, and the rung-5 Fork-A-vs-Fork-B (derived-`hPR`) panel.
+  + `f`-sweep table, the rung-5 Fork-A-vs-Fork-B (derived-`hPR`) panel, and the rung-6
+  Fork-B-vs-equilibrium panel (AFT drop + dissociation-vs-pressure).
 
 ## Commands
 - Run the model:  `python main.py`
