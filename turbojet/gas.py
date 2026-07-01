@@ -1,5 +1,13 @@
 """Working-fluid model and the flow state that travels through the engine.
 
+RUNG 4 — reacting products: the hot-section composition (and thus cp_t, R_t,
+gamma_t) tracks the fuel/air ratio f. Rung 3 let cp vary with T but froze the
+products at one lean mixture; rung 4 computes the product mole numbers from f by
+explicit (CH2)n lean-complete-combustion stoichiometry and mole-weights the SAME
+NASA-7 species, so the property functions gain an f argument on the hot section.
+The rung-3 frozen paths (Gas(), Gas.thermally_perfect()) are untouched — the
+reacting gas is a separate Gas.reacting() path. See docs/rung4-reacting-products.md.
+
 RUNG 3 — variable cp(T): the thermally-perfect gas. Rungs 1-2 modeled each
 section as *calorically* perfect (constant gamma, cp, R). Rung 3 lets cp vary
 with temperature (still an ideal gas p = rho R T, R constant per section, but
@@ -98,8 +106,79 @@ _AIR = {"N2": 0.7808, "O2": 0.2095, "Ar": 0.0093}
 # The products are UNANCHORED (no external number pins them — Cengel/Mattingly are
 # single-gas air); the composition is fixed and stated plainly. The temperature
 # dependence alone lands cp_t(T) in the rung-2 cp_t~=1239 neighborhood (cp rises
-# ~1241 @1240 K to ~1311 @1800 K); R_t ~= 287.1 falls out of the molar mass.
+# ~1241 @1240 K to ~1311 @1800 K); R_t ~= 287.1 falls out of the molar mass. USED
+# ONLY by Gas.thermally_perfect() (rung 3); rung 4's Gas.reacting() computes the
+# composition from f instead (see _products_composition below).
 _PRODUCTS = {"N2": 150.74, "O2": 22.69, "Ar": 1.803, "CO2": 12.0, "H2O": 11.5}
+
+
+# --------------------------------------------------------------------------- #
+# RUNG 4 — reacting products: composition (and therefore cp_t, R_t, gamma_t)   #
+# tracks the fuel/air ratio f. Explicit lean-complete-combustion stoichiometry #
+# of a (CH2)n hydrocarbon (Jet-A ~= C12H23 ~= (CH2)n) in dry air:              #
+#     CH2 + 1.5 O2 -> CO2 + H2O   (per mol fuel), burned LEAN (f < f_stoich).  #
+# The product mole numbers are computed deterministically from f and fed to    #
+# the SAME _mixture() mole-weighting the frozen rung-3 gas uses — only the      #
+# composition now depends on f. See docs/rung4-reacting-products.md.           #
+# --------------------------------------------------------------------------- #
+
+# (CH2)n repeat unit molar mass, g/mol (C 12.011 + 2 H 1.008).
+_M_CH2 = 12.011 + 2 * 1.008
+
+
+def _air_mole_fractions() -> dict:
+    """Dry-air mole fractions renormalized to sum EXACTLY 1.
+
+    _AIR sums to 0.9996; the stoichiometry ("per 1 mol of dry air") needs a true
+    unit basis, so normalize first. This is load-bearing: the un-normalized 0.9996
+    base drifts the product fractions off Mattingly's Ex 6.3 values.
+    """
+    xsum = sum(_AIR.values())
+    return {s: v / xsum for s, v in _AIR.items()}
+
+
+# Mean molar mass of dry air, g/mol (~28.96), from the normalized fractions.
+_M_AIR = sum(x * _SPECIES[s][0] for s, x in _air_mole_fractions().items())
+
+# Stoichiometric fuel/air ratio: the f at which excess O2 hits zero. Solving
+# x_O2 - 1.5*n_fuel = 0 with n_fuel = f*M_air/M_CH2 gives f_stoich below (~0.0677,
+# vs Mattingly's f_max = 0.0676, 0.15%). Lean combustion (rung-4 scope) is f < this.
+_F_STOICH = (_air_mole_fractions()["O2"] / 1.5) * _M_CH2 / _M_AIR
+
+
+def _products_composition(f: float) -> dict:
+    """Lean-complete-combustion product mole numbers per 1 mol dry air, from f.
+
+    CH2 + 1.5 O2 -> CO2 + H2O, dry air oxidizer. n_fuel = f*M_air/M_CH2 is the mol
+    of (CH2) burned per mol of air (f = m_fuel/m_air => mol ratio scales by the mass
+    ratio M_air/M_CH2). N2 and Ar are inert and pass through; each mol fuel makes one
+    CO2 and one H2O and consumes 1.5 O2 from the air's 0.2095. Returns UNNORMALIZED
+    mole numbers (per mol air) — _mixture() normalizes. See docs/rung4 § the model.
+    """
+    x = _air_mole_fractions()
+    n_fuel = f * _M_AIR / _M_CH2                     # mol (CH2) per mol air
+    comp = {
+        "N2": x["N2"],                               # inert, passes through
+        "Ar": x["Ar"],                               # inert, passes through
+        "CO2": n_fuel,                               # 1 per mol fuel
+        "H2O": n_fuel,                               # 1 per mol fuel
+        "O2": x["O2"] - 1.5 * n_fuel,                # excess (lean => > 0)
+    }
+    # LEAN GUARD (rung-4 conservation assert): rich f is out of scope and must
+    # trip, not silently produce a negative O2 mole number.
+    assert comp["O2"] > 0.0, (
+        f"rich mixture f={f:.4f} >= f_stoich={_F_STOICH:.4f}: excess O2 <= 0 "
+        "(rich combustion / dissociation is rung 5, out of rung-4 scope)"
+    )
+    # ATOM CONSERVATION (built once per composition): C, H, O balance. Reactants
+    # per mol air: C = H/2 = n_fuel (from CH2), O = 2*x_O2 (from air O2). Products:
+    # C in CO2, H in H2O (2 each), O in 2*CO2 + H2O + 2*O2_excess.
+    assert abs(comp["CO2"] - n_fuel) < 1e-12, "C balance"
+    assert abs(2 * comp["H2O"] - 2 * n_fuel) < 1e-12, "H balance"
+    o_in = 2 * x["O2"]
+    o_out = 2 * comp["CO2"] + comp["H2O"] + 2 * comp["O2"]
+    assert abs(o_out - o_in) < 1e-12, "O balance"
+    return comp
 
 
 def _mixture(fractions: dict) -> Tuple[Tuple[float, ...], Tuple[float, ...], float]:
@@ -180,18 +259,23 @@ class _CPGSection:
         self.gamma, self._cp, self.R = gamma, cp, R
         self.g = (gamma - 1.0) / gamma           # isentropic exponent (gamma-1)/gamma
 
-    def cp(self, T: float) -> float:
+    # Every section method carries an ignored far=0.0 so the three section kinds
+    # share one interface (docs/rung4 § property interface): only _ReactingSection
+    # consults far. CPG/frozen-TPG are composition-independent, so they discard it.
+    def cp(self, T: float, far: float = 0.0) -> float:
         return self._cp                          # constant, by definition of CPG
-    def h(self, T: float) -> float:
+    def h(self, T: float, far: float = 0.0) -> float:
         return self._cp * T
-    def pr(self, T: float) -> float:
+    def pr(self, T: float, far: float = 0.0) -> float:
         return T ** (1.0 / self.g)               # T^(cp/R) in the closed-form limit
-    def T_from_h(self, h: float) -> float:
+    def T_from_h(self, h: float, far: float = 0.0) -> float:
         return h / self._cp
-    def T_from_pr(self, pr: float) -> float:
+    def T_from_pr(self, pr: float, far: float = 0.0) -> float:
         return pr ** self.g
-    def gamma_at(self, T: float) -> float:
+    def gamma_at(self, T: float, far: float = 0.0) -> float:
         return self.gamma
+    def R_at(self, far: float = 0.0) -> float:
+        return self.R
 
 
 class _TPGSection:
@@ -210,10 +294,13 @@ class _TPGSection:
     def _A(self, T: float) -> Tuple[float, ...]:
         return self.A_low if T <= _T_BREAK else self.A_high
 
-    def cp(self, T: float) -> float:
+    # Ignored far=0.0 on every public method — see _CPGSection note. A frozen-TPG
+    # section's cp(T) does not depend on composition; _ReactingSection is the one
+    # that picks a per-f _TPGSection and delegates.
+    def cp(self, T: float, far: float = 0.0) -> float:
         return self.R * _poly(self._A(T), T)
 
-    def h(self, T: float) -> float:
+    def h(self, T: float, far: float = 0.0) -> float:
         """int_0^T cp dT', datum h(0)=0, continuous across the 1000 K join."""
         if T <= _T_BREAK:
             return self.R * _antideriv_h(self.A_low, T)
@@ -228,24 +315,74 @@ class _TPGSection:
         p_break = _antideriv_phi(self.A_low, _T_BREAK)
         return p_break + _antideriv_phi(self.A_high, T) - _antideriv_phi(self.A_high, _T_BREAK)
 
-    def pr(self, T: float) -> float:
+    def pr(self, T: float, far: float = 0.0) -> float:
         return math.exp(self._Phi(T))
 
-    def T_from_h(self, h_target: float) -> float:
+    def T_from_h(self, h_target: float, far: float = 0.0) -> float:
         T = _solve(self.h, self.cp, h_target)                # dh/dT = cp(T)
         # Round-trip inverse — a STANDING conservation assert (rung-3 gate 2).
         assert abs(self.h(T) - h_target) <= 1e-6 * abs(h_target) + 1e-3, "T_from_h round-trip"
         return T
 
-    def T_from_pr(self, pr_target: float) -> float:
+    def T_from_pr(self, pr_target: float, far: float = 0.0) -> float:
         target = math.log(pr_target)                         # solve Phi(T) = ln(pr)
         T = _solve(self._Phi, lambda t: _poly(self._A(t), t) / t, target)  # dPhi/dT=(cp/R)/T
         assert abs(self._Phi(T) - target) <= 1e-9, "T_from_pr round-trip"
         return T
 
-    def gamma_at(self, T: float) -> float:
+    def gamma_at(self, T: float, far: float = 0.0) -> float:
         cp = self.cp(T)
         return cp / (cp - self.R)                            # gamma = cp/(cp - R)
+
+    def R_at(self, far: float = 0.0) -> float:
+        return self.R
+
+
+class _ReactingSection:
+    """A hot section whose composition — and thus cp(T), R, gamma(T) — tracks f.
+
+    RUNG 4. Each distinct f defines a lean-combustion product mixture
+    (_products_composition); mole-weighting it with _mixture() yields the very same
+    (A_low, A_high, R) a frozen _TPGSection takes, so this section just builds — and
+    MEMOIZES — one _TPGSection per f and delegates every property call to it. The
+    integral pr=exp(phi/R) machinery, the guarded-Newton inverses, and their standing
+    round-trip asserts are inherited UNCHANGED from _TPGSection; only the mixture
+    coefficients now depend on f (docs/rung4-reacting-products.md § the model).
+
+    Memoization: the burner's fixed point evaluates h(Tt4, f) at a few nearby f while
+    it converges, then the whole cycle downstream calls at ONE fixed f. Caching the
+    per-f _TPGSection (keyed on the exact float f, which is stored in FlowState.far
+    and threaded verbatim) makes those downstream calls free. Pure/deterministic: the
+    same f always maps to the same section — this is a memo cache, not hidden state.
+    """
+
+    is_cpg = False
+
+    def __init__(self):
+        self._cache: dict = {}
+
+    def _for(self, far: float) -> _TPGSection:
+        sec = self._cache.get(far)
+        if sec is None:
+            A_low, A_high, R = _mixture(_products_composition(far))
+            sec = _TPGSection((A_low, A_high), R)
+            self._cache[far] = sec
+        return sec
+
+    def cp(self, T: float, far: float = 0.0) -> float:
+        return self._for(far).cp(T)
+    def h(self, T: float, far: float = 0.0) -> float:
+        return self._for(far).h(T)
+    def pr(self, T: float, far: float = 0.0) -> float:
+        return self._for(far).pr(T)
+    def T_from_h(self, h: float, far: float = 0.0) -> float:
+        return self._for(far).T_from_h(h)
+    def T_from_pr(self, pr: float, far: float = 0.0) -> float:
+        return self._for(far).T_from_pr(pr)
+    def gamma_at(self, T: float, far: float = 0.0) -> float:
+        return self._for(far).gamma_at(T)
+    def R_at(self, far: float = 0.0) -> float:
+        return self._for(far).R
 
 
 @dataclass
@@ -286,11 +423,21 @@ class Gas:
     cp_c_coeffs: Optional[Tuple[Tuple[float, ...], Tuple[float, ...]]] = None
     cp_t_coeffs: Optional[Tuple[Tuple[float, ...], Tuple[float, ...]]] = None
 
+    # Reacting hot section (rung 4). When True the hot section's composition — and
+    # therefore cp_t/R_t/gamma_t — tracks the fuel/air ratio f; the R_t/gamma_t/cp_t
+    # scalars above then hold only REPRESENTATIVE values (at f_design) for diagnostics.
+    # Set by the Gas.reacting() factory; the frozen paths leave it False (untouched).
+    reacting_hot: bool = False
+
     def __post_init__(self):
         self._cold = (_TPGSection(self.cp_c_coeffs, self.R_c) if self.cp_c_coeffs
                       else _CPGSection(self.gamma_c, self.cp_c, self.R_c))
-        self._hot = (_TPGSection(self.cp_t_coeffs, self.R_t) if self.cp_t_coeffs
-                     else _CPGSection(self.gamma_t, self.cp_t, self.R_t))
+        if self.reacting_hot:
+            self._hot = _ReactingSection()                   # composition tracks f (rung 4)
+        elif self.cp_t_coeffs:
+            self._hot = _TPGSection(self.cp_t_coeffs, self.R_t)   # frozen cp(T) (rung 3)
+        else:
+            self._hot = _CPGSection(self.gamma_t, self.cp_t, self.R_t)  # constant cp (rungs 1-2)
 
     # --- classmethod factory: the thermally-perfect dual gas ------------------
 
@@ -301,6 +448,23 @@ class Gas:
         Alo_t, Ahi_t, R_t = _mixture(_PRODUCTS)
         return cls(R_c=R_c, R_t=R_t, hPR=hPR,
                    cp_c_coeffs=(Alo_c, Ahi_c), cp_t_coeffs=(Alo_t, Ahi_t))
+
+    @classmethod
+    def reacting(cls, f_design: float = 0.0, hPR: float = 42.8e6) -> "Gas":
+        """NASA-air cold section + REACTING hot section whose composition tracks f (rung 4).
+
+        The hot section is a _ReactingSection: at each f it builds the lean-combustion
+        product mixture (_products_composition) and mole-weights it (docs/rung4). The
+        R_t/gamma_t/cp_t scalars are set to REPRESENTATIVE values at f_design (used only
+        for diagnostics / .unified() — every live property call routes through the
+        f-parameterized interface, so f_design does not affect the cycle result). The
+        cold section is the same NASA air as thermally_perfect(); the burner writes the
+        converged f into FlowState.far, threaded to every hot-section call downstream.
+        """
+        Alo_c, Ahi_c, R_c = _mixture(_AIR)
+        _, _, R_t = _mixture(_products_composition(f_design))    # representative, at f_design
+        return cls(R_c=R_c, R_t=R_t, hPR=hPR,
+                   cp_c_coeffs=(Alo_c, Ahi_c), reacting_hot=True)
 
     # --- isentropic exponents (CPG closed-form helpers; used by station 0/9) ---
 
@@ -322,7 +486,11 @@ class Gas:
 
     @property
     def hot_is_cpg(self) -> bool:
-        return self.cp_t_coeffs is None
+        # A reacting hot section is NOT calorically perfect — it must route through
+        # the TPG/integral branch (Nozzle, freestream). Guarding on reacting_hot too
+        # is load-bearing: reacting sets no cp_t_coeffs, so without it the Nozzle would
+        # silently take the constant-gamma CPG branch and look plausible.
+        return self.cp_t_coeffs is None and not self.reacting_hot
 
     def cp_c_at(self, T: float) -> float:
         return self._cold.cp(T)
@@ -337,18 +505,27 @@ class Gas:
     def gamma_c_at(self, T: float) -> float:
         return self._cold.gamma_at(T)
 
-    def cp_t_at(self, T: float) -> float:
-        return self._hot.cp(T)
-    def h_t(self, T: float) -> float:
-        return self._hot.h(T)
-    def pr_t(self, T: float) -> float:
-        return self._hot.pr(T)
-    def T_from_h_t(self, h: float) -> float:
-        return self._hot.T_from_h(h)
-    def T_from_pr_t(self, pr: float) -> float:
-        return self._hot.T_from_pr(pr)
-    def gamma_t_at(self, T: float) -> float:
-        return self._hot.gamma_at(T)
+    # Hot-section property interface. Each carries far (default 0.0), the fuel/air
+    # ratio that fixes the reacting composition (rung 4). CPG/frozen-TPG sections
+    # ignore it, so the signature change is additive and reduce-to-ideal is untouched;
+    # a REACTING section selects its per-f mixture. Downstream of the burner, callers
+    # pass state.far (docs/rung4-reacting-products.md § property interface).
+    def cp_t_at(self, T: float, far: float = 0.0) -> float:
+        return self._hot.cp(T, far)
+    def h_t(self, T: float, far: float = 0.0) -> float:
+        return self._hot.h(T, far)
+    def pr_t(self, T: float, far: float = 0.0) -> float:
+        return self._hot.pr(T, far)
+    def T_from_h_t(self, h: float, far: float = 0.0) -> float:
+        return self._hot.T_from_h(h, far)
+    def T_from_pr_t(self, pr: float, far: float = 0.0) -> float:
+        return self._hot.T_from_pr(pr, far)
+    def gamma_t_at(self, T: float, far: float = 0.0) -> float:
+        return self._hot.gamma_at(T, far)
+    def R_t_at(self, far: float = 0.0) -> float:
+        """Hot-section gas constant. Constant for CPG/frozen-TPG (== R_t); for a
+        reacting section it decreases slightly with f (heavier products)."""
+        return self._hot.R_at(far)
 
     def unified(self) -> "Gas":
         """Return a copy with the hot section collapsed onto the cold section.
@@ -360,4 +537,4 @@ class Gas:
         tilt the turbine and nozzle legs and the digits would drift.
         """
         return replace(self, gamma_t=self.gamma_c, cp_t=self.cp_c, R_t=self.R_c,
-                       cp_t_coeffs=self.cp_c_coeffs)
+                       cp_t_coeffs=self.cp_c_coeffs, reacting_hot=False)

@@ -16,7 +16,7 @@ matplotlib.use("Agg")  # headless: render to a file, never pop a window (no plt.
 import matplotlib.pyplot as plt  # noqa: E402
 
 from turbojet.engine import FlightCondition, build_turbojet  # noqa: E402
-from turbojet.gas import Gas  # noqa: E402
+from turbojet.gas import Gas, _products_composition  # noqa: E402
 
 TS_DIAGRAM_PATH = "ts_diagram.png"
 
@@ -117,6 +117,47 @@ def print_variable_cp_table(flight):
     print(f"Frozen cp_t=1239 vs true burner-average {avg_cp_t:.0f} J/(kg·K) -> far "
           f"{frozen.stations['4'].far:.5f} -> {vary.stations['4'].far:.5f} (less fuel), "
           f"F/mdot {frozen.performance.specific_thrust:.1f} -> {vary.performance.specific_thrust:.1f} N·s/kg.")
+
+
+def print_reacting_table(flight):
+    """Rung-4 payoff: reacting products — the composition (and thus cp_t, R_t) TRACKS f.
+
+    Rung 3 froze the products at one lean mixture; rung 4 computes the product mole
+    numbers from f by (CH2)n lean-complete-combustion stoichiometry. Two views:
+      (1) at the design point, the reacting gas solves its own f (implicit burner)
+          against the composition it produces — vs the rung-3 frozen-composition run;
+      (2) an f-sweep (driven by Tt4): as more fuel burns, CO2/H2O rise, excess O2
+          falls, cp_t climbs (products are heavier heat sinks), and R_t rises slightly
+          (each mol fuel swaps 1.5 O2 for CO2 + light H2O, lowering the mean molar mass).
+    Composition(f) is a numbers effect, not a leg-tilt, so it rides as a table.
+    """
+    frozen = Gas.thermally_perfect()          # rung-3 fixed-composition lean products
+    react = Gas.reacting()                     # rung-4 composition(f)
+    rf = build_turbojet(frozen, PI_C, TT4, flight.p0).run(flight, 1.0)
+    rr = build_turbojet(react, PI_C, TT4, flight.p0).run(flight, 1.0)
+
+    print("\nReacting products (rung 4): rung-3 frozen composition vs composition(f), same design point")
+    print(f"{'Station':>8} {'Tt frozen':>10} {'Tt react':>9}  {'pt frozen':>10} {'pt react':>9}")
+    print("-" * 52)
+    for label in ("0", "2", "3", "4", "5", "9"):
+        c, t = rf.stations[label], rr.stations[label]
+        print(f"{label:>8} {c.Tt:>10.1f} {t.Tt:>9.1f}  {c.pt / 1000:>10.2f} {t.pt / 1000:>9.2f}")
+    print(f"far: frozen-composition {rf.stations['4'].far:.5f} -> reacting {rr.stations['4'].far:.5f}; "
+          f"F/mdot {rf.performance.specific_thrust:.1f} -> {rr.performance.specific_thrust:.1f} N·s/kg.")
+
+    print("\nf-sweep (rung 4): composition and cp_t track the fuel/air ratio (Tt4 drives f)")
+    print(f"{'Tt4 [K]':>8} {'far':>8} {'cp_t@Tt4':>9} {'CO2 %':>7} {'H2O %':>7} {'O2 %':>7} "
+          f"{'R_t':>7} {'F/mdot':>8}")
+    print("-" * 68)
+    for Tt4 in (1200.0, 1400.0, 1600.0, 1800.0):
+        r = build_turbojet(react, PI_C, Tt4, flight.p0).run(flight, 1.0)
+        f = r.stations["4"].far
+        comp = _products_composition(f)
+        tot = sum(comp.values())
+        print(f"{Tt4:>8.0f} {f:>8.5f} {react.cp_t_at(Tt4, f):>9.1f} "
+              f"{100 * comp['CO2'] / tot:>7.3f} {100 * comp['H2O'] / tot:>7.3f} "
+              f"{100 * comp['O2'] / tot:>7.3f} {react.R_t_at(f):>7.2f} "
+              f"{r.performance.specific_thrust:>8.1f}")
 
 
 def _cycle_points(result, flight):
@@ -227,6 +268,8 @@ def main():
     print_polytropic_table(gas, FLIGHT)
 
     print_variable_cp_table(FLIGHT)
+
+    print_reacting_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

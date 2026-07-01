@@ -5,6 +5,10 @@ the pressure-thrust term, and reports TWO thermal efficiencies (see
 docs/rung2-spec.md § Performance). The shaft coupling is still solved EXPLICITLY
 here: the engine computes the compressor's work and hands the turbine a delta_Tt
 at call time (Turbine.apply(state, gas, delta_Tt)).
+
+RUNG 4 — the two hot-section reads the engine still owns (the shaft-closure
+enthalpies and the pressure-thrust R_t) now pass the burned-gas fuel/air ratio f
+so a reacting gas uses the products composition; a CPG/frozen-TPG gas ignores it.
 """
 from __future__ import annotations
 
@@ -176,7 +180,8 @@ class Engine:
                 # OUTPUT Tt5 (re-applying eta_m, 1+f, h_t), compressor power from the
                 # cold states. A dropped factor in delta_h fires this.
                 compressor_power = gas.h_c(stations["3"].Tt) - gas.h_c(stations["2"].Tt)
-                turbine_power = self.eta_m * (1.0 + state.far) * (gas.h_t(s4.Tt) - gas.h_t(state.Tt))
+                turbine_power = self.eta_m * (1.0 + state.far) * (
+                    gas.h_t(s4.Tt, state.far) - gas.h_t(state.Tt, state.far))
                 assert abs(turbine_power - compressor_power) < 1e-6 * compressor_power, (
                     f"shaft does not close: turbine {turbine_power} != compressor {compressor_power}"
                 )
@@ -194,7 +199,7 @@ class Engine:
         # (1+f)*Rt*T9*(1 - p0/p9)/V9 vanishes when p9 == p0 (fully expanded),
         # recovering rung-1's (1+f)*V9 - V0. It is the static-pressure imbalance
         # A9*(p9-p0)/mdot rewritten via the ideal gas law.
-        pressure_thrust = (1.0 + f) * gas.R_t * T9 * (1.0 - flight.p0 / p9) / V9
+        pressure_thrust = (1.0 + f) * gas.R_t_at(f) * T9 * (1.0 - flight.p0 / p9) / V9
         specific_thrust = (1.0 + f) * V9 - V0 + pressure_thrust
         # TSFC: fuel per unit thrust (air cancels).
         tsfc = f / specific_thrust

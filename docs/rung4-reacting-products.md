@@ -225,8 +225,12 @@ composition. Rung 4 writes the substrate once; rung 5 adds the two ideas that sh
    production stoichiometry model. *(Not production code — a validation scaffold only.)*
 6. **`f`-sweep directional / physical checks.** As `f` rises (still lean): `Tt4` capacity,
    thrust, and TSFC move the right way; `cp_t`, CO₂/H₂O fractions rise, excess O₂ falls;
-   `R_t(f)` decreases slightly with `f` (heavier products). Round-trip inverses and
-   monotonicity (rung-3 gate 2) hold at the swept `f`.
+   `R_t(f)` **increases** slightly with `f` — each mol fuel swaps 1.5 O₂ for one CO₂ **and
+   one light H₂O**, so the mean molar mass *falls* and `R = R_u/M` rises. (This corrects an
+   earlier "decreases (heavier products)" reading; the measured `R_t=287.4` at `f=0.0338`
+   vs `R_air≈287.1`, and Mattingly's own `R(f)=1.9857/(28.97−0.946·f)`, both rise with `f`
+   — see `docs/plans/rung4-anchor-mattingly.md`.) Round-trip inverses and monotonicity
+   (rung-3 gate 2) hold at the swept `f`.
 
 ## Conservation asserts (rung-4 deltas)
 Carry over rung 3's, plus:

@@ -535,3 +535,100 @@ keeps the constant-`cp` branch closed-form so the prior tables survive untouched
 seams — reacting/variable-composition products, off-design, the choked nozzle, the
 afterburner — stay deferred, now behind a cleaner seam: the next gas upgrade is just
 a new `Gas` behind the same four functions.*
+
+---
+
+# Rung 4 — Reacting Products, in plain language
+
+Rung 3 let the heat capacity `cp` bend with temperature, but it still burned the
+*same* fixed puff of exhaust at every throttle setting — one frozen recipe of CO₂,
+water, leftover oxygen, and nitrogen. Rung 4 makes the **recipe itself depend on how
+much fuel you burn**. Push more fuel in and the burned gas genuinely changes: more
+CO₂ and water vapour, less spare oxygen, a heavier heat sink. That's the last thing
+still frozen in the working fluid, and it's the rung the ladder was pointed at.
+
+## Why the frozen recipe worked anyway
+Here's the honest surprise: at the design point, tracking the real composition barely
+moves the needle. The reacting run lands `far = 0.02781` where the rung-3 frozen
+mixture gave `0.02787`, and the thrust is identical to a decimal place. Frozen
+composition worked because a well-chosen lean mixture *is* close to the truth over the
+narrow band of fuel/air ratios a main burner actually runs (roughly 2–4%). The payoff
+of rung 4 isn't a big number change — it's that the composition is no longer a guess
+you have to *pick*. It falls out of the chemistry, and it moves correctly the moment
+you sweep the throttle: burn hotter and CO₂/H₂O climb, spare O₂ falls, `cp` rises
+(`python main.py` prints the sweep). You buy *honesty and reach*, not a design-point
+correction — and the reach is what rung 5 (dissociation) needs.
+
+## The chemistry, kept deliberately simple
+The fuel is idealised as `(CH₂)ₙ` (Jet-A is about C₁₂H₂₃, close enough), and it burns
+**lean and complete**: `CH₂ + 1.5 O₂ → CO₂ + H₂O`. Per mole of air you know exactly
+how much fuel went in (from `f`), so you know exactly how many moles of each product
+come out — nitrogen and argon ride through untouched, every mole of fuel makes one CO₂
+and one water and eats 1.5 oxygen. Feed those mole numbers to the *same* mole-weighting
+the frozen gas already used and you get `cp(T, f)`, `R(f)`, `γ(T, f)` for free. No new
+physics in the property layer — just a composition that now has an `f` in it. The
+stoichiometry checks out: the model's stoichiometric fuel/air ratio (where the spare
+oxygen hits zero) is `0.0677`, versus Mattingly's `0.0676`.
+
+*(A counter-intuitive detail worth stating: `R` goes* up *slightly with fuel, not down.
+"More/heavier products" sounds like it should raise the molar mass and lower `R`, but
+each mole of fuel swaps 1.5 O₂ for one CO₂ **and one light water molecule**, and the
+net mean molar mass drops a touch. Mattingly's own `R(f)` formula rises with `f` for
+the same reason. We assert the rise in the tests and flag it, because the tidy story is
+backwards.)*
+
+## Why the burner had to go implicit
+This is the one real mechanical change. In rung 3 the fuel balance was a one-liner: you
+knew the enthalpy of the products at the turbine-inlet temperature, so you solved for
+`f` in a single step. But now the products' enthalpy `h_t(Tt4, f)` **depends on `f`** —
+the very thing you're solving for sits on both sides of the equation: `f = g(f)`. You
+can't isolate it algebraically.
+
+The fix is the oldest trick for `f = g(f)`: guess, plug in, get a better guess, repeat.
+It converges because burning a little more fuel changes the products' `cp` by only a
+few percent, and that change enters weakly (through a `~f/(1+f)` weight), so each pass
+shrinks the error by about ten-fold — five or six passes and it's nailed. Reassuringly,
+this isn't our invention: it's Mattingly's own Eq. 6.36, right down to his footnote
+that "the solution … is iterative." And it degrades gracefully — hand it a non-reacting
+gas (constant or frozen `cp`) and `g` stops depending on `f`, so the loop lands on the
+old one-shot answer in two passes. The rung-1/2/3 tables never notice.
+
+## The datum trap we deliberately didn't spring (Fork A vs Fork B)
+There's a fork in the road here, and we took the simple branch on purpose. Every
+enthalpy in this model is measured from the same zero (`h(0) = 0`, "sensible" heat), and
+the fuel's chemical energy is booked as one fixed number, `hPR = 42.8 MJ/kg`. That's
+**Fork A**. The grown-up alternative — **Fork B** — gives every species an absolute
+*formation* enthalpy, so the heat released by combustion is *derived* from the chemistry
+instead of assumed. Fork B is the natural partner for dissociation (products tearing
+back apart at high temperature), so both belong to rung 5.
+
+Does Fork A cost us anything at rung 4? The burner is the *one* place two enthalpies
+measured on possibly-different datums get subtracted (hot products minus cold air), so
+it's the place to check. We solved the same burner two ways — our `h(0)=0` model and
+Mattingly's tables, which carry a real +32 Btu/lbm offset between products and air — and
+they agree on `f` to **0.17%**. So the cross-datum energy is negligible at lean fuel/air
+ratios, `hPR` needs no re-tuning, and Fork A is *validated*, not just assumed. Crucially,
+the property layer is written so Fork B is *additive* (bolt a formation enthalpy onto
+each species) rather than a rewrite — the seam is kept.
+
+## Did we get it right?
+The reacting machinery is anchored to Mattingly's own products example — **Example 6.3**,
+a turbine expansion of real combustion gas at `f = 0.0338`. Running our production
+stoichiometry, property functions, and turbine code reproduces his datum-independent
+results — `η_t = 0.9057`, `Tt5 = 2677.5 °R`, `π_t = 0.5650` — to **~0.02%**, tighter
+than the rung-3 air anchor. That single example exercises the whole new path: the
+`(CH₂)ₙ` stoichiometry, the mole-weighted `cp(T, f)`, and the `pr`-ratio expansion. A
+second, independent property model (Mattingly's Table 2.2 `f`-blend, built test-only)
+reproduces the same textbook enthalpies *to the digit*, so the anchor numbers are
+confirmed two ways before a line of production code trusted them.
+
+---
+*Rung 4 makes the exhaust recipe a function of the fuel/air ratio: explicit
+lean-combustion stoichiometry feeds the same mole-weighting rung 3 already had, so the
+hot-section property functions simply gain an `f` argument. The only structural change
+is the burner, which becomes an implicit `f = g(f)` fixed-point solve (Mattingly's own).
+The frozen paths are untouched — reacting is a separate `Gas.reacting()` — so every
+prior table survives to the digit. `python main.py` prints the frozen-vs-reacting
+comparison and an `f`-sweep. Still deferred, now on a composition substrate ready for
+them: formation-enthalpy bookkeeping and high-temperature dissociation (together, rung 5),
+off-design, the choked nozzle, the afterburner.*

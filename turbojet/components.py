@@ -1,5 +1,13 @@
 """The five turbojet components, each a pure transform: state_in -> state_out.
 
+RUNG 4 — reacting products. The hot-section property calls (Turbine, Nozzle, and
+the Burner's h_t) now thread the fuel/air ratio s.far, which fixes the reacting
+composition; CPG/frozen-TPG gases ignore it, so the changes are additive. The
+Burner also gains rung 4's load-bearing new mechanic: because h_t(Tt4, f) depends
+on f for a reacting gas, its fuel balance is implicit (f = g(f)) and solved by
+fixed-point iteration (it collapses to the rung-3 one-shot when h_t is
+f-independent). See docs/rung4-reacting-products.md § Station equations.
+
 RUNG 3 — variable cp(T). Rung 2 made each process real (entropy-generating) on a
 dual-section CALORICALLY-perfect gas; rung 3 lets cp vary with temperature, so the
 internal components (Compressor 2->3, Burner 3->4, Turbine 4->5) are rewritten in
@@ -192,25 +200,38 @@ class Compressor(Component):
 class Burner(Component):
     """Station 3 -> 4. Heat addition to Tt4, with combustion + pressure loss.
 
-    Governing equations (docs/rung3-variable-cp.md § Station 4):
-        pt4 = pi_b * pt3                                       # combustor pressure loss
-        f   = (h_t(Tt4) - h_c(Tt3)) / (eta_b*hPR - h_t(Tt4))  # enthalpy energy balance
+    Governing equations (docs/rung4-reacting-products.md § Station 4):
+        pt4 = pi_b * pt3                                          # combustor pressure loss
+        f   : solve  f = (h_t(Tt4,f) - h_c(Tt3)) / (eta_b*hPR - h_t(Tt4,f))  (fixed point)
 
     Physical justification:
     - f from a steady-flow energy balance that now spans the cold->hot hand-off and
       books incomplete combustion via eta_b:
-            mdot_air*h_c(Tt3) + eta_b*mdot_fuel*hPR = (mdot_air + mdot_fuel)*h_t(Tt4)
+            mdot_air*h_c(Tt3) + eta_b*mdot_fuel*hPR = (mdot_air + mdot_fuel)*h_t(Tt4,f)
       Divide by mdot_air, set f = mdot_fuel/mdot_air, solve -> the f above. The
       products are HOT-section gas (h_t) and the fuel chemical energy is discounted
       by eta_b < 1. THE BURNER IS THE ONE PLACE ENTHALPY CROSSES SECTIONS (hot
       h_t(Tt4) minus cold h_c(Tt3)), so both sections must share the SAME enthalpy
       datum h(0)=0 — see turbojet/gas.py _antideriv_h. At h = cp*T (CPG) this is
       rung-2's f = (cpt*Tt4 - cpc*Tt3)/(eta_b*hPR - cpt*Tt4) bit-for-bit.
+    - THE IMPLICIT SOLVE (rung 4's load-bearing new mechanic). For a REACTING gas
+      h_t(Tt4, f) depends on the composition, hence on f, so f appears on BOTH sides:
+      f = g(f). Over the lean range the products' cp differs from air's by only a few
+      percent and enters h_t through the ~f/(1+f) mass weight, so |g'(f)| << 1 — g is
+      a contraction and simple fixed-point iteration f_{k+1} = g(f_k) converges
+      linearly (factor ~0.1, a handful of steps). This is Mattingly's own Eq. 6.36 +
+      his Note "the value of h_t4 is a function of f ... the solution is iterative"
+      (docs/plans/rung4-anchor-mattingly.md). For a CPG/frozen-TPG gas h_t is
+      f-independent, so g is constant and the loop returns the rung-3 one-shot in two
+      passes (reduce-to-ideal untouched). The residual is a STANDING assert (gate 3).
     - pt4 = pi_b * pt3: a real combustor drops total pressure (friction + Rayleigh
       heat-addition loss), pi_b <= 1. SPECIFIED ratio, asserted exactly.
     - This leg is NOT isentropic (adding heat raises entropy), so — as in rung 1 —
       there is no pr-ratio check here; pt is set by pi_b, not by ds = 0.
     """
+
+    _FP_TOL = 1e-12      # fixed-point relative residual (well below the anchor tolerances)
+    _FP_MAX = 100        # step cap (measured ~11 steps to 1e-12 from a cold seed)
 
     def __init__(self, Tt4: float, eta_b: float = 1.0, pi_b: float = 1.0):
         self.Tt4 = Tt4      # turbine-inlet (peak) total temperature, K
@@ -223,10 +244,24 @@ class Burner(Component):
         assert s.far == 0.0, "burner assumes dry air at entry (far == 0)"
 
         pt4 = self.pi_b * s.pt
-        # Enthalpy energy balance (see docstring): h_c on the incoming air, h_t on
-        # the hot products and the eta_b-discounted fuel-heating ceiling. Cross-section
-        # enthalpy difference -> both sections share the h(0)=0 datum.
-        f = (gas.h_t(self.Tt4) - gas.h_c(s.Tt)) / (self.eta_b * gas.hPR - gas.h_t(self.Tt4))
+        h3 = gas.h_c(s.Tt)                          # cold-air enthalpy in (f-independent)
+
+        # FIXED-POINT solve of f = g(f). Seeded from f=0 (composition = pure air), so
+        # the first pass IS the rung-3 frozen-composition estimate; subsequent passes
+        # re-evaluate h_t at the updated composition. h_t(Tt4, f) crosses the cold->hot
+        # section boundary -> both share the h(0)=0 datum (see docstring).
+        f = 0.0
+        for _ in range(self._FP_MAX):
+            h4 = gas.h_t(self.Tt4, f)               # hot-products enthalpy at the current f
+            f_new = (h4 - h3) / (self.eta_b * gas.hPR - h4)
+            converged = abs(f_new - f) <= self._FP_TOL * f_new
+            f = f_new
+            if converged:
+                break
+        else:
+            # STANDING conservation assert (rung-4 gate 3): the contraction must close.
+            assert False, f"burner fixed point f=g(f) did not converge in {self._FP_MAX} steps"
+
         mdot4 = s.mdot * (1.0 + f)
         out = FlowState(Tt=self.Tt4, pt=pt4, mdot=mdot4, far=f)
 
@@ -234,11 +269,12 @@ class Burner(Component):
         assert abs(out.mdot - s.mdot * (1.0 + out.far)) < 1e-9 * s.mdot, (
             "burner mass: mdot_out != mdot_in*(1 + f)"
         )
-        # Energy balance in enthalpy with eta_b. f is solved FROM this, so a clean
-        # run satisfies it; it cross-checks the Tt4 / mdot / far lines.
+        # Energy balance in enthalpy with eta_b, at the CONVERGED f (h_t evaluated at
+        # the burned-gas composition). f is solved FROM this, so a converged run
+        # satisfies it; it cross-checks the Tt4 / mdot / far lines and the fixed point.
         mdot_fuel = out.mdot - s.mdot
-        lhs = s.mdot * gas.h_c(s.Tt) + self.eta_b * mdot_fuel * gas.hPR
-        rhs = out.mdot * gas.h_t(out.Tt)
+        lhs = s.mdot * h3 + self.eta_b * mdot_fuel * gas.hPR
+        rhs = out.mdot * gas.h_t(out.Tt, f)
         assert abs(lhs - rhs) < 1e-6 * rhs, "burner energy balance violated"
         # SPECIFIED pressure ratio (near-tautological, but guards the pt4 line and
         # becomes load-bearing once pi_b < 1 tilts pt4 below pt3).
@@ -305,17 +341,21 @@ class Turbine(Component):
         ratio. POLYTROPIC: pt5 = pt4*(pr_t(Tt5)/pr_t(Tt4))**(1/e_t) directly, then
         Tt5s back out of pt5.
         """
-        Tt5 = gas.T_from_h_t(gas.h_t(s.Tt) - delta_h)  # actual exit (shaft-set, knob-free)
+        # Hot-section gas: EVERY h_t/pr_t/T_from_*_t call threads s.far (station 4's
+        # fuel/air ratio) so a reacting gas uses the burned-products composition; for
+        # CPG/frozen-TPG far is ignored and this is bit-for-bit rung 3.
+        f = s.far
+        Tt5 = gas.T_from_h_t(gas.h_t(s.Tt, f) - delta_h, f)  # actual exit (shaft-set, knob-free)
         if self.e_t is not None:
             # POLYTROPIC (rung 2b): pt5 DIRECTLY from the integrated per-stage pr
             # relation (Tt5 is already known), then the substate Tt5s follows from pt5.
-            pt5 = s.pt * (gas.pr_t(Tt5) / gas.pr_t(s.Tt)) ** (1.0 / self.e_t)
-            Tt5s = gas.T_from_pr_t(gas.pr_t(s.Tt) * (pt5 / s.pt))   # diagnostic substate
+            pt5 = s.pt * (gas.pr_t(Tt5, f) / gas.pr_t(s.Tt, f)) ** (1.0 / self.e_t)
+            Tt5s = gas.T_from_pr_t(gas.pr_t(s.Tt, f) * (pt5 / s.pt), f)   # diagnostic substate
         else:
             # ISENTROPIC (rung 2): ideal-work enthalpy -> substate, pt5 from the pr ratio.
-            h5s = gas.h_t(s.Tt) - delta_h / self.eta_t  # ideal-work enthalpy (lower, eta_t<=1)
-            Tt5s = gas.T_from_h_t(h5s)
-            pt5 = s.pt * gas.pr_t(Tt5s) / gas.pr_t(s.Tt)
+            h5s = gas.h_t(s.Tt, f) - delta_h / self.eta_t  # ideal-work enthalpy (lower, eta_t<=1)
+            Tt5s = gas.T_from_h_t(h5s, f)
+            pt5 = s.pt * gas.pr_t(Tt5s, f) / gas.pr_t(s.Tt, f)
         out = FlowState(Tt=Tt5, pt=pt5, mdot=s.mdot, far=s.far)
 
         # Conservation checks, every call (contract #4).
@@ -326,7 +366,7 @@ class Turbine(Component):
         # (2) Ideal SUBSTATE is isentropic: pr(Tt5s)/pr(Tt4) == pt5/pt4 (rung-1 leg
         #     check in pr form, on the substate so it survives eta_t < 1). Holds by
         #     construction in BOTH modes (the polytropic mode derives Tt5s from pt5).
-        assert abs(gas.pr_t(Tt5s) / gas.pr_t(s.Tt) - out.pt / s.pt) < 1e-9 * (out.pt / s.pt), (
+        assert abs(gas.pr_t(Tt5s, f) / gas.pr_t(s.Tt, f) - out.pt / s.pt) < 1e-9 * (out.pt / s.pt), (
             "turbine substate not isentropic"
         )
         # (3) Entropy generated: the actual exit is no cooler than the ideal one.
@@ -339,7 +379,7 @@ class Turbine(Component):
         #     provisional pass is needed). On a TPG section that closed form does not
         #     exist, so assert the enthalpy-ratio efficiency is a valid (0, 1].
         if self.e_t is not None:
-            eta_t_implied = (gas.h_t(s.Tt) - gas.h_t(Tt5)) / (gas.h_t(s.Tt) - gas.h_t(Tt5s))
+            eta_t_implied = (gas.h_t(s.Tt, f) - gas.h_t(Tt5, f)) / (gas.h_t(s.Tt, f) - gas.h_t(Tt5s, f))
             if gas.hot_is_cpg:
                 tau_t = Tt5 / s.Tt
                 eta_t_closed = (1.0 - tau_t) / (1.0 - tau_t ** (1.0 / self.e_t))
@@ -409,7 +449,10 @@ class Nozzle(Component):
         self.p_exit = p_ambient if p_exit is None else p_exit     # p9; default fully expanded
 
     def apply(self, s: FlowState, gas: Gas) -> NozzleExit:
-        R = gas.R_t
+        # Hot-section gas at the burned-products composition (rung 4): R_t and gamma_t
+        # now depend on far, so read them at s.far (ignored by CPG/frozen-TPG).
+        f = s.far
+        R = gas.R_t_at(f)
         Tt9 = s.Tt
         pt9 = self.pi_n * s.pt                      # specified nozzle pressure loss
         p9 = self.p_exit                            # expand to the specified back-pressure
@@ -423,10 +466,11 @@ class Nozzle(Component):
             a9 = (gamma * R * T9) ** 0.5            # local speed of sound at the EXIT
             V9 = M9 * a9
         else:
-            # TPG: T9 from the pr ratio, V9 from the enthalpy split, a9 from gamma(T9).
-            T9 = gas.T_from_pr_t(gas.pr_t(Tt9) * (p9 / pt9))
-            V9 = (2.0 * (gas.h_t(Tt9) - gas.h_t(T9))) ** 0.5
-            a9 = (gas.gamma_t_at(T9) * R * T9) ** 0.5
+            # TPG/reacting: T9 from the pr ratio, V9 from the enthalpy split, a9 from
+            # gamma(T9) — all at the composition f (a no-op for frozen-TPG).
+            T9 = gas.T_from_pr_t(gas.pr_t(Tt9, f) * (p9 / pt9), f)
+            V9 = (2.0 * (gas.h_t(Tt9, f) - gas.h_t(T9, f))) ** 0.5
+            a9 = (gas.gamma_t_at(T9, f) * R * T9) ** 0.5
             M9 = V9 / a9
 
         out = FlowState(Tt=Tt9, pt=pt9, mdot=s.mdot, far=s.far)
@@ -436,7 +480,7 @@ class Nozzle(Component):
         assert abs(out.pt - self.pi_n * s.pt) < 1e-9 * s.pt, "nozzle pt9 != pi_n*pt5"
         # (2) Static<->total isentropic relation pr(Tt9)/pr(T9) == pt9/p9. Exact by
         #     construction in BOTH branches (T9 derived to satisfy it) — assert TIGHT.
-        assert abs(gas.pr_t(Tt9) / gas.pr_t(T9) - pt9 / p9) < 1e-9 * (pt9 / p9), (
+        assert abs(gas.pr_t(Tt9, f) / gas.pr_t(T9, f) - pt9 / p9) < 1e-9 * (pt9 / p9), (
             "nozzle static drop not isentropic"
         )
         assert out.mdot == s.mdot and out.far == s.far, "nozzle adds no mass or fuel"
@@ -446,8 +490,8 @@ class Nozzle(Component):
         #     carry the same rounded-constant mismatch noted in rung 1 (cpt vs
         #     gamma_t*Rt/(gamma_t-1)), a sub-0.1% residual, so the tolerance stays loose.
         split_tol = 1e-3 if gas.hot_is_cpg else 1e-9
-        enthalpy_total = gas.h_t(Tt9)
-        enthalpy_static_plus_ke = gas.h_t(T9) + 0.5 * V9 ** 2
+        enthalpy_total = gas.h_t(Tt9, f)
+        enthalpy_static_plus_ke = gas.h_t(T9, f) + 0.5 * V9 ** 2
         assert abs(enthalpy_static_plus_ke - enthalpy_total) <= split_tol * enthalpy_total, (
             f"nozzle energy split off by more than the constant mismatch: "
             f"{enthalpy_static_plus_ke} vs {enthalpy_total}"
