@@ -1042,3 +1042,84 @@ EI. Still deferred, all on this same substrate: a **rich primary / RQL** combust
 stoichiometry), **super-equilibrium O / prompt NO** (the Fenimore path), **finite-rate mix-out**
 (a secondary-zone Zeldovich instead of a frozen NO), and the rung-6 **equilibrium-vs-frozen
 nozzle** seam; plus off-design, the choked nozzle, the afterburner.*
+
+---
+
+# Rung 9 — Rich Primary / RQL: the Rich Flank of the NOx Bell, in plain language
+
+## The headline: the bell has two sides, and we'd only seen one
+Rung 8 resolved the hot primary zone and watched EI_NO climb into the ICAO band as the primary
+approached stoichiometric — but it held the primary **lean-to-stoich** (φ_p ≤ 1). It was climbing
+the *lean* side of a hill without seeing over the top. Rung 9 lets the primary run **rich** and
+shows the whole hill: the classic **NO-versus-equivalence-ratio bell**. EI_NO peaks right around
+stoichiometric and then **collapses** as the primary goes rich — and *that collapse is the entire
+reason a modern low-NOx combustor exists*.
+
+## Why going rich kills NO — two effects, both pointing the same way
+Thermal NO needs two things: a very hot gas, and free oxygen atoms to start the chain
+(`O + N₂ → NO + N`). Going rich past stoichiometric attacks **both**. First, the flame temperature
+**rolls over** — it peaks a hair rich of stoich (~φ 1.05) and then falls, because the extra fuel
+is unburnt ballast soaking up heat. Second, and more sharply, a rich mixture is **oxygen-starved**:
+there simply isn't enough O₂ to go around, so the atomic-O pool the Zeldovich initiation depends on
+crashes by orders of magnitude. Cooler *and* O-starved — the NO rate falls off a cliff. In our
+worked example a rich primary at φ_p = 1.4 makes about **1800× less NO** than the stoichiometric
+one, even though it burns exactly the same fuel.
+
+## This is why RQL burns rich on purpose
+Real engines exploit this directly with a **Rich-burn / Quick-Quench / Lean-burn (RQL)**
+combustor: burn the primary **rich** (low NO — cool and O-starved), then add air to finish lean.
+The catch is the transition: to get from rich to lean you must pass *through* stoichiometric — the
+top of the NO bell. So the quench has to be **quick**: mix the air in fast enough that the gas
+doesn't *dwell* at the peak and re-make the NO the rich primary so carefully avoided. "Quick" is
+the whole design. (Our model does the *ideal* — infinitely-fast — quench, so it freezes the low
+rich-primary NO cleanly; the finite-rate quench, where a *slow* mix spikes the NO, is the next
+rung. We say so plainly rather than claiming RQL is finished.)
+
+## What "rich" required in the code: almost nothing
+The satisfying part is how little had to change. The equilibrium solver was **already** capable of
+rich combustion — CO and H₂ were always among its unknowns, and two of its five reactions together
+*are* the water-gas shift (CO + H₂O ⇌ CO₂ + H₂) that governs rich products. The only thing that
+assumed lean was the solver's **starting guess**, which allocated all carbon to CO₂ and left over
+oxygen — nonsense when there isn't enough oxygen to begin with. So rung 9 is essentially a **new
+starting guess** for the rich case (water first, then carbon to CO, upgrade to CO₂ with whatever
+oxygen is left), branched on a single sign test. The lean starting guess is left **byte-for-byte
+untouched**, which is what makes "the model still contains rung 8 exactly" a *proof* rather than a
+hope — every earlier rung burns lean and never touches the new branch.
+
+## Where the model stops: soot
+The five reactions make only gases — no soot, no solid carbon. That's fine up to a point, and then
+it isn't: real rich flames start making soot around φ ≈ 1.8–2, and the equilibrium math itself goes
+singular when there's exactly enough carbon to consume all the oxygen (C/O = 1, which for this fuel
+is φ = 3). So we draw a hard line at **φ_p ≤ 2**: it covers the real rich-primary range with room to
+spare, sits at the practical soot limit, and stays well clear of the singularity. Past it the model
+would cheerfully return a soot-free answer that doesn't physically exist — so we don't return one,
+we stop with an assertion. Knowing where a model *stops being true* is part of the model.
+
+## Did we get it right?
+The rich equilibrium anchors to **NASA-CEA**: methane-air flame temperature peaks slightly rich at
+~2231 K (we get ~2238, the same ~7 K we've run high since rung 6 for deferring NO/N), and falls on
+both flanks. The rich products pass a **water-gas-shift self-check** to a part in a million — the
+thermodynamic tell that the solver found the *real* equilibrium, not merely an atom-balanced
+guess. The EI_NO bell peaks near stoichiometric in the ICAO band and collapses on the rich flank
+for the two physical reasons above. `T_mix` still returns to the same station 4 for *every* split —
+now the dilution air also burns out the rich CO and H₂, releasing their chemical energy on the way.
+And **reduce-to-rung-8 is bit-for-bit** because the lean path never changed: all 58 earlier tests
+stay green, and the cycle never moves — NO is still a trace diagnostic riding on top of it. What
+stays **un-anchored**, stated plainly: the **finite-rate quench** (the dwell-at-stoich spike) is
+the next seam, so this is "rich primary + ideal quench," not "RQL done"; **super-equilibrium O and
+prompt NO** are still deferred and matter *most* in the rich primary, so our rich flank is an
+equilibrium-O lower bound; and the EI band remains an order-of-magnitude landing zone, not a book
+digit. The bell's **shape** is the result — and the shape is right.
+
+---
+*Rung 9 lets the two-zone `Gas.zoned_nox` primary run **rich** (φ_p up to 2.0): the same rung-7
+Zeldovich integrator on a rich (CO/H₂-major) equilibrium pool, produced by a single **branched
+Newton seed** in `_equil_solve` (lean branch byte-identical → reduce-to-rung-8 is provable). The
+payoff is the **rich flank of the NO-vs-φ bell**: EI_NO peaks near stoich and collapses rich
+(~1800× lower at φ_p=1.4), which is *why* RQL combustors burn rich then quick-quench past the peak.
+NO is still trace, so every station is bit-for-bit rung 6 and the whole rung 1–8 suite stays green.
+`python main.py` prints the rung-9 RQL panel: the φ_p sweep across the bell, the rich CO/H₂, the
+AFT rollover, EI_NO peaking then collapsing, and T_mix returning to Tt4. Still deferred on this
+substrate: the **finite-rate quench** (a secondary-zone Zeldovich — the dwell-at-stoich NO spike),
+**super-equilibrium O / prompt (Fenimore) NO**, and the rung-6 **equilibrium-vs-frozen nozzle**
+seam; plus off-design, the choked nozzle, the afterburner.*

@@ -34,7 +34,16 @@ EI_NO climbs from the rung-7 mixed-out ~zero (8e-6 g/kg) into the measured **ICA
 (~16–21 g/kg at φ_p ≈ 0.9–1.0) — a ~6-order lift purely from *where* the chemistry is evaluated,
 **completing rung 7's inversion**. Still bit-for-bit rung 6 (a pure diagnostic); the from-Tt3
 flame temperature is the first quantity to expose the ~8 K scale-A/scale-B datum offset (noted,
-not chased — the cycle's sensible differences cancel it).
+not chased — the cycle's sensible differences cancel it); **rung 9** adds a **rich primary /
+RQL**: the same two-zone diagnostic with the primary allowed to run **rich** (φ_p up to 2.0),
+so the equilibrium pool carries major `CO`/`H₂` (a **branched Newton seed** in `_equil_solve`;
+lean branch byte-identical → reduce-to-rung-8 is provable). The payoff is the **rich flank of the
+NO-vs-φ bell**: EI_NO peaks near stoich (~21 g/kg, ICAO band) and **collapses rich** (~1800× lower
+at φ_p=1.4 — the AFT rolls over and the O-starved pool crashes `[O]`), which is *why* real
+low-NOx combustors burn rich then quick-quench past the peak. Mix-out is the **ideal
+(infinitely-fast) quench** (NO frozen); still bit-for-bit rung 6 (a pure diagnostic). Deferred:
+the **finite-rate quench** (dwell-at-stoich NO spike) is the next seam — this is "rich primary +
+ideal quench," not "RQL done."
 
 **The deliverable is understanding, not the tool.** The code is the medium that
 forces every thermodynamic assumption into the open. Optimize the work for
@@ -67,10 +76,15 @@ teaching, not for features or polish.
   diagnostic, the primary-AFT-from-Tt3 solve (scale A), the re-equilibrating mix-out, the
   frozen-NO freeze, the two-part reduce-to-rung-7 gate (exact same-`T_p` + physical), the
   φ_p ≤ 1 scope, the split-independent-`T_mix`-→-Tt4 + NO-mole-conservation gates.
+- **`docs/rung9-spec.md`** — rung-9 contract + handout: the rich primary (φ_p ≤ 2), the
+  branched `_equil_solve` seed (lean byte-identical → provable reduce-to-rung-8), the rich CO/H₂
+  equilibrium, the EI_NO bell (peaks near stoich, collapses rich), the ideal-quench framing +
+  finite-quench seam, the soot-bound guard, the CEA-rich-methane + WGS self-check gates.
 - `docs/plans/` — living plan/tasks (rungs 1–3), plus `rung2-anchor-mattingly.md`,
   `rung3-anchor-cengel.md`, `rung4-anchor-mattingly.md`, `rung5-anchor-formation.md`,
-  `rung6-anchor-equilibrium.md`, `rung7-anchor-nox.md`, and `rung8-anchor-zoning.md` (the verified
-  textbook / formation / CEA-equilibrium / Zeldovich-kinetics / ICAO-zoning anchor data).
+  `rung6-anchor-equilibrium.md`, `rung7-anchor-nox.md`, `rung8-anchor-zoning.md`, and
+  `rung9-anchor-rql.md` (the verified textbook / formation / CEA-equilibrium / Zeldovich-kinetics
+  / ICAO-zoning / rich-RQL anchor data).
 
 ## Working contract (from SPEC.md — these override convenience)
 - **Derive before you code.** For each station, write the governing equation and
@@ -81,7 +95,7 @@ teaching, not for features or polish.
   hidden state (Turbine and Nozzle diverge their signatures by design).
 - **Conservation checks are assertions**, run on every execution (not as
   separate tests). See SPEC.md / docs/rung2-spec.md § Conservation checks.
-- **Current scope (rung 8):** ideal + real components (isentropic `η_c/η_t` **or**
+- **Current scope (rung 9):** ideal + real components (isentropic `η_c/η_t` **or**
   polytropic `e_c/e_t`, mutually exclusive; pressure ratios `π_d/π_b/π_n`, `η_b`,
   `η_m`, dual cold/hot gas, specified exit pressure) on a **thermally-perfect** gas
   (`cp = cp(T)`; calorically-perfect sections kept as the closed-form branch) — with
@@ -110,10 +124,18 @@ teaching, not for features or polish.
   NO forms, then a **dilution / mix-out** (`_mixed_out_T`) that adds the rest of the air, **re-
   equilibrates the majors** (→ `T_mix` ≈ Tt4), and **freezes the NO moles**. A pure diagnostic
   (NO/N still never touch the cycle), so still **bit-for-bit rung 6**; EI_NO lifts from the
-  mixed-out ~zero into the **ICAO band**, completing rung 7's inversion. Still deferred — keep the
-  seams: a **rich primary / RQL** combustor (needs rich CO/H₂ stoichiometry, `φ > 1`),
-  **super-equilibrium `O` / prompt NO (Fenimore)**, **finite-rate mix-out** (a secondary-zone
-  Zeldovich instead of a frozen NO), and the rung-6 **equilibrium-vs-frozen nozzle flow**;
+  mixed-out ~zero into the **ICAO band**, completing rung 7's inversion. Now **rung 9 — rich
+  primary / RQL**: the same `zoned_nox` with the primary allowed to run **rich** (`φ_p ≤ 2.0`, the
+  soot bound), so the equilibrium pool carries major `CO`/`H₂`. The 8-species `_equil_solve` was
+  *already* complete rich (CO/H₂ are unknowns; reactions 1+2 span the water-gas shift) — the only
+  change is a **branched Newton seed** (lean branch **byte-identical** → reduce-to-rung-8 is
+  provable; rich branch = an O-limited seed). The payoff is the **rich flank of the NO-vs-φ bell**:
+  EI_NO peaks near stoich and **collapses rich** (~1800× lower at φ_p=1.4 — AFT rollover + O-starve),
+  which is *why* RQL burns rich then quick-quenches past the peak. Mix-out is the **ideal
+  (infinitely-fast) quench** (NO frozen); still a pure diagnostic, **bit-for-bit rung 6**. Still
+  deferred — keep the seams: the **finite-rate quench** (a secondary-zone Zeldovich — the
+  dwell-at-stoich NO spike, *the* next seam), **super-equilibrium `O` / prompt NO (Fenimore)**
+  (matters most in the rich primary), and the rung-6 **equilibrium-vs-frozen nozzle flow**;
   off-design / component maps, a *choked* convergent nozzle, afterburner.
 - **Stop and explain surprises.** If a number looks off, reason about the
   physics rather than silently moving on.
@@ -143,7 +165,11 @@ teaching, not for features or polish.
   decoupled diagnostic, so no cycle path is touched. Rung 8 adds `_h_air_molar_A` (scale-A air
   enthalpy), `_primary_aft` (from-Tt3 AFT), `_mixed_out_T` (re-equilibrating dilution), the
   `ZonedNOxState` dataclass, and `Gas.zoned_nox(far, Tt3, Tt4, p, φ_p, τ)` — all on the rung-6/7
-  primitives, still a pure diagnostic (no cycle path touched).
+  primitives, still a pure diagnostic (no cycle path touched). Rung 9 **branches the `_equil_solve`
+  seed** on the O-balance sign (lean = byte-identical rung-6 expression → provable reduce; rich =
+  an O-limited CO+H₂O seed), lifts the `zoned_nox` guard to `φ_p ≤ 2.0` (soot bound), and
+  otherwise reuses every rung-6/7/8 primitive unchanged — the rich primary just hands a
+  CO/H₂-major pool to the same integrator.
 - `turbojet/components.py` — `Inlet, Compressor, Burner, Turbine, Nozzle` in `h`/`pr`
   form (+ loss params, `ram_recovery(M0)`, the polytropic `e_c/e_t` knob; the Nozzle
   branches CPG/TPG — the velocity↔enthalpy trap). The `Burner` runs the implicit
@@ -180,14 +206,21 @@ teaching, not for features or polish.
   same `T_p`; physical `T_p ≈ Tt4` + O(1) mixed-out factor), cycle-untouched, EI_NO in the ICAO
   band vs mixed-out ~zero, split-independent `T_mix` → Tt4 + the frozen-majors discriminator,
   NO-mole conservation through dilution, φ_p T-sensitivity, φ_p ≤ 1 guard, primary-T `K`-check.
+- `tests/test_rung9.py` — rung-9: reduce-to-rung-8 (lean branch byte-identical, rung-8 same-`T_p`
+  identity, cycle-untouched by rich zoning), CEA rich-methane AFT anchor + AFT rollover, rich
+  CO/H₂-major + water-gas-shift self-check, the EI_NO bell (peaks near stoich, collapses on the
+  rich flank), split-independent rich `T_mix` → Tt4, soot-bound guard (φ_p ≤ 2), K-check/trace at
+  the rich primary T.
 - `main.py` — runs ideal vs real at one design point: tables + overlaid T–s diagram,
   plus the rung-2-frozen-`cp` vs rung-3-`cp(T)` table, the rung-4 frozen-vs-reacting
   + `f`-sweep table, the rung-5 Fork-A-vs-Fork-B (derived-`hPR`) panel, the rung-6
   Fork-B-vs-equilibrium panel (AFT drop + dissociation-vs-pressure), the rung-7 thermal-NOx
   panel (flame-T sweep: equilibrium vs kinetic vs `τ`, the ~500× T-sensitivity, the near-zero
-  station-4 number, the pressure-independence contrast), and the rung-8 zoning panel (φ_p sweep:
+  station-4 number, the pressure-independence contrast), the rung-8 zoning panel (φ_p sweep:
   primary AFT, EI_NO into the ICAO band vs the mixed-out ~zero, `T_mix` → Tt4, the dilution
-  NO-fraction drop at conserved EI_NO).
+  NO-fraction drop at conserved EI_NO), and the rung-9 RQL panel (φ_p sweep across the bell: rich
+  CO/H₂, the AFT rollover, EI_NO peaking near stoich then collapsing on the rich flank, `T_mix` →
+  Tt4).
 
 ## Commands
 - Run the model:  `python main.py`

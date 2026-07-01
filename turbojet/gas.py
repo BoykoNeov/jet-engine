@@ -586,11 +586,34 @@ def _equil_solve(bC: float, bH: float, bO: float, n_inert: float,
     Reaction eq r:  sum_i nu_ri (y_i - ln n_tot) + dnu_r ln(p/p0) - lnKp_r = 0,
     with n_tot including the inert species so mole FRACTIONS x_i = n_i/n_tot are right.
     Basis-agnostic (any hydrocarbon C_bC H_bH), so tests reuse it for the methane anchor.
+
+    RUNG 9 — the seed BRANCHES on the O-balance sign. The 8-species system (CO/H2 are
+    already unknowns; reactions 1+2 span the water-gas shift) is complete lean OR rich;
+    only the SEED must know which side it is on. Lean (`bO >= 2bC + bH/2`, the full-
+    oxidation O demand) keeps the byte-identical rung-6 expression, so every rung-1..8
+    path — all lean (cycle burner φ≈0.41) — takes an unchanged Newton trajectory and
+    reduce-to-rung-8 is bit-for-bit by construction. Rich (`bO <` that) swaps in an
+    O-limited seed: water first (H2O favored), all C→CO, then upgrade CO→CO2 with the
+    leftover O. The lean seed's `O2 = (bO−2bC−bH/2)/2` goes negative when rich (floored
+    to 1e-8) and grossly violates the O balance, so damped Newton is fragile there;
+    the O-limited seed converges cleanly to the φ_p≤2 soot bound (docs/rung9-spec.md).
     """
-    # Complete-combustion seed (lean): C->CO2, H->H2O, leftover O2; radicals tiny.
-    seed = {"CO2": max(bC, 1e-12), "H2O": max(bH / 2.0, 1e-12),
-            "CO": 1e-8, "H2": 1e-8, "OH": 1e-8, "O": 1e-9, "H": 1e-9,
-            "O2": max((bO - 2.0 * bC - bH / 2.0) / 2.0, 1e-8)}
+    if bO >= 2.0 * bC + bH / 2.0:
+        # LEAN — byte-identical to the rung-6 seed (C->CO2, H->H2O, leftover O2; radicals
+        # tiny). Untouched so the whole lean cycle keeps its exact Newton path (reduce gate).
+        seed = {"CO2": max(bC, 1e-12), "H2O": max(bH / 2.0, 1e-12),
+                "CO": 1e-8, "H2": 1e-8, "OH": 1e-8, "O": 1e-9, "H": 1e-9,
+                "O2": max((bO - 2.0 * bC - bH / 2.0) / 2.0, 1e-8)}
+    else:
+        # RICH (rung 9) — O-limited allocation, atom-conserving: water first (min(bH/2, bO)),
+        # then all C->CO, upgrade CO->CO2 with the O left over; any H beyond the O supply
+        # stays H2. O2 and radicals tiny (equilibrium O2 IS ~0 rich). See docs/rung9-spec.md.
+        n_h2o = min(bH / 2.0, bO)
+        o_left = bO - n_h2o
+        n_co2 = min(bC, max(o_left - bC, 0.0))   # leftover O upgrades CO->CO2
+        seed = {"CO2": max(n_co2, 1e-12), "H2O": max(n_h2o, 1e-12),
+                "CO": max(bC - n_co2, 1e-12), "H2": max(bH / 2.0 - n_h2o, 1e-12),
+                "OH": 1e-8, "O": 1e-9, "H": 1e-9, "O2": 1e-8}
     y = {s: math.log(seed[s]) for s in _SP_REACT}
     lnKp = [_lnKp(r, T) for r in _REACTIONS]
     lnpr = math.log(p / _P_REF)
@@ -904,7 +927,7 @@ class ZonedNOxState:
     like NOxState it never feeds the cycle. NO is set in the hot primary and FROZEN through
     the dilution that cools the gas to T_mix ≈ Tt4; EI_NO is a per-kg-fuel quantity set in
     the primary (dilution lowers the mole FRACTION, not the emission INDEX)."""
-    phi_primary: float   # primary equivalence ratio (≤ 1, lean-stoich scope)
+    phi_primary: float   # primary equivalence ratio (≤ 2, lean-to-rich RQL scope; rung 9)
     far_primary: float   # primary fuel/air ratio = phi_primary * f_stoich
     alpha: float         # fraction of the air routed to the primary (≤ 1)
     T_primary: float     # adiabatic primary flame temperature, K (from Tt3)
@@ -1216,10 +1239,21 @@ class Gas:
 
         NO is trace, so the cycle stays bit-for-bit rung 6 (NO/N never enter _equil_solve);
         only WHERE the chemistry is evaluated changes. The capped mixed-out Tt4 makes almost
-        no NO; the hot primary — averaged away at station 4 — is where it forms. Held
-        lean-to-stoich (phi_primary ≤ 1); a rich/RQL primary is the next seam."""
-        assert 0.0 < phi_primary <= 1.0 + 1e-9, \
-            f"phi_primary {phi_primary} outside (0, 1] — rung-8 holds a lean-to-stoich primary"
+        no NO; the hot primary — averaged away at station 4 — is where it forms.
+
+        RUNG 9 — the primary may now run RICH (phi_primary up to 2.0): the equilibrium pool
+        carries major CO/H2 (the rung-9 branched seed) and the extended-Zeldovich integrator
+        runs on it unchanged. This closes the RQL (rich-burn → quick-quench → lean-burn) story:
+        EI_NO forms a bell that PEAKS near stoichiometric (φ≈0.95, ~18 g/kg) and FALLS steeply
+        on the rich flank (φ=1.4 → ~0.007 g/kg) — the AFT rolls over and the O-starved pool
+        crashes [O]. That rich-side collapse is WHY real low-NOx combustors burn a rich primary.
+        The mix-out here is the IDEAL (infinitely-fast) quench: NO is simply frozen at the
+        primary value. Finite-rate quench (NO spiking as the gas dwells at stoich while mixing)
+        is the next seam. Held below soot onset (phi_primary ≤ 2.0; docs/rung9-spec.md)."""
+        assert 0.0 < phi_primary <= 2.0 + 1e-9, (
+            f"phi_primary {phi_primary} outside (0, 2] — the 5-species (no soot / no C(s)) "
+            "basis is valid only below soot onset (~φ2; graphite onset is φ3). Rich RQL scope."
+        )
         hf_fuel = self.hf_fuel_molar or _HF_FUEL_DEFAULT
         far_p = phi_primary * _F_STOICH
         alpha = far / far_p                              # fraction of the air in the primary

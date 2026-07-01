@@ -198,16 +198,19 @@ def test_temperature_sensitivity():
 
 
 # --------------------------------------------------------------------------- #
-# GATE 6 — φ_p ≤ 1 scope guard; the K-check binds at the primary T.            #
+# GATE 6 — φ_p scope guard; the K-check binds at the primary T.                #
+# NOTE: rung 8 held φ_p ≤ 1 (lean-stoich); rung 9 widened the guard to φ_p ≤ 2 #
+# (rich RQL primary, below soot onset). So 1.2/1.5 are now VALID; the guard now #
+# rejects only above the soot bound. Rich payoff gates live in test_rung9.py.  #
 # --------------------------------------------------------------------------- #
 def test_phi_primary_guard():
     g, Tt3, Tt4, far, p = _design_point()
-    for bad in (1.2, 1.5):
+    for bad in (2.5, 3.0):
         try:
             g.zoned_nox(far, Tt3, Tt4, p, bad, tau=_TAU)
         except AssertionError:
             continue
-        raise AssertionError(f"φ_p={bad} > 1 should have been rejected (lean-stoich scope)")
+        raise AssertionError(f"φ_p={bad} > 2 should have been rejected (soot-bound scope)")
 
 
 def test_kcheck_binds_at_primary_T():

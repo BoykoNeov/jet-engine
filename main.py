@@ -379,6 +379,58 @@ def print_zoning_table(flight):
     print("  away did. THIS is why real combustors fight peak flame T (lean-premixed, RQL).")
 
 
+def print_rql_table(flight):
+    """Rung-9 payoff: the RICH flank of the NOx bell — why RQL burns rich.
+
+    Rung 8 resolved the primary but held it LEAN-to-stoich (φ_p ≤ 1) — it could only climb the
+    lean side of the NO-vs-φ bell. Rung 9 lets the primary run RICH (φ_p up to 2.0): the
+    8-species equilibrium pool now carries MAJOR CO/H2 (a branched seed in _equil_solve — no
+    new species, reactions, or datum). Sweeping φ_p across the bell, EI_NO PEAKS near
+    stoichiometric and then COLLAPSES on the rich flank (the AFT rolls over and the O-starved
+    pool crashes [O]/[OH]). A rich primary is therefore a LOW-NOx regime — the whole reason a
+    Rich-burn/Quick-Quench/Lean-burn (RQL) combustor burns its primary rich. Mix-out here is
+    the IDEAL (infinitely-fast) quench (NO frozen at the primary value); the finite-rate quench
+    — NO spiking as the gas DWELLS at stoich while mixing — is the next seam.
+
+    Still a pure diagnostic: NO is trace, every cycle station is bit-for-bit rung 6.
+    """
+    eq = Gas.reacting_equilibrium()
+    real = build_turbojet(eq, PI_C, TT4, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+    st3, st4 = real.stations["3"], real.stations["4"]
+    Tt3, Tt4, far, p = st3.Tt, st4.Tt, st4.far, st4.pt
+    tau = 3e-3
+
+    print("\nRich primary / RQL (rung 9): the rich flank of the NOx bell — completes rung 7's")
+    print("inversion on the OTHER side. EI_NO peaks near stoich, then falls as the primary goes rich.")
+    print(f"  Design point: Tt3={Tt3:.0f} K, Tt4={Tt4:.0f} K, p={p/1e5:.1f} bar, overall "
+          f"far={far:.4f} (φ={far/_F_STOICH:.2f}), τ={tau*1e3:.0f} ms")
+    print(f"  {'φ_p':>5} {'AFT K':>7} {'xCO':>7} {'xH2':>7} {'NO_eq':>8} {'NO_kin':>9} "
+          f"{'EI_NO':>8} {'T_mix':>7}")
+    print(f"  {'':>5} {'(prim)':>7} {'%':>7} {'%':>7} {'ppm':>8} {'ppm':>9} {'g/kg':>8} {'K':>7}")
+    print("  " + "-" * 63)
+    best = (0.0, 0.0)
+    for phi_p in (0.8, 0.9, 1.0, 1.05, 1.1, 1.3, 1.5, 1.8, 2.0):
+        z = eq.zoned_nox(far, Tt3, Tt4, p, phi_p, tau=tau)
+        comp = _equilibrium_composition(z.far_primary, z.T_primary, p)
+        nt = sum(comp.values())
+        if z.ei_no > best[1]:
+            best = (phi_p, z.ei_no)
+        flank = "  <- peak" if phi_p == 1.0 else ("  rich, low-NOx" if phi_p >= 1.3 else "")
+        print(f"  {phi_p:>5.2f} {z.T_primary:>7.0f} {100*comp['CO']/nt:>7.2f} "
+              f"{100*comp['H2']/nt:>7.2f} {z.primary.ppm_eq:>8.0f} {z.ppm_primary:>9.1f} "
+              f"{z.ei_no:>8.3f} {z.T_mix:>7.0f}{flank}")
+    z_stoich = eq.zoned_nox(far, Tt3, Tt4, p, 1.0, tau=tau)
+    z_rich = eq.zoned_nox(far, Tt3, Tt4, p, 1.4, tau=tau)
+    print(f"  Peak EI_NO ≈ {best[1]:.0f} g/kg near φ_p≈{best[0]:.2f} (ICAO band); a RICH primary "
+          f"φ_p=1.4 cuts it to {z_rich.ei_no:.2f} g/kg")
+    print(f"  — {z_stoich.ei_no/z_rich.ei_no:.0f}× lower — even though it still burns ALL the fuel. "
+          "The rich pool's")
+    print("  CO/H2 (major, unoxidized) + rolled-over AFT starve the O/OH the Zeldovich rate needs.")
+    print("  THAT is why RQL burns rich, then quick-quenches PAST stoich (the NO peak) to lean.")
+    print("  T_mix still returns to ≈Tt4 for every φ_p — the CO/H2 oxidation energy releases on")
+    print("  re-equilibration (mix-out is the ideal, infinitely-fast quench; NO frozen).")
+
+
 def _cycle_points(result, flight):
     """The six cycle points as {label: (s, T)} in (entropy, temperature) space.
 
@@ -504,6 +556,8 @@ def main():
     print_nox_table(FLIGHT)
 
     print_zoning_table(FLIGHT)
+
+    print_rql_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 
