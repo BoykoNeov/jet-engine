@@ -629,6 +629,83 @@ hot-section property functions simply gain an `f` argument. The only structural 
 is the burner, which becomes an implicit `f = g(f)` fixed-point solve (Mattingly's own).
 The frozen paths are untouched — reacting is a separate `Gas.reacting()` — so every
 prior table survives to the digit. `python main.py` prints the frozen-vs-reacting
-comparison and an `f`-sweep. Still deferred, now on a composition substrate ready for
-them: formation-enthalpy bookkeeping and high-temperature dissociation (together, rung 5),
+comparison and an `f`-sweep. Now split off as its own step: formation-enthalpy
+bookkeeping (rung 5, below); high-temperature dissociation (rung 6); off-design, the
+choked nozzle, the afterburner still deferred.*
+
+---
+
+# Rung 5 — Fork B: Derived Heat Release, in plain language
+
+Rung 4 left a promissory note: the fuel's chemical energy was one typed-in number,
+`hPR = 42.8 MJ/kg`. Where does that number *come from*? Rung 5 answers it. Every species
+now carries its **formation enthalpy** — the energy locked in its chemical bonds,
+measured from a common zero (the elements at 25 °C). Burn `CH₂ + 1.5 O₂ → CO₂ + H₂O`
+and the heat released is just the bookkeeping difference: the bonds in the products hold
+*less* energy than the bonds in the fuel + air, and the surplus becomes heat. The heating
+value stops being an input and **falls out of the chemistry**.
+
+## The one honest surprise: the numbers don't move (and that's the point)
+Here is the twist. We derived the heating value from formation enthalpies, plugged it in,
+and the whole cycle came out **bit-for-bit identical** to rung 4 — same `f`, same `Tt5`,
+same thrust, to the last decimal. Not "close." *Identical.* That is not a bug; it is a
+small theorem. For complete combustion the energy released is *exactly* `f × LHV` for
+every `f`, so the fancy absolute-enthalpy balance is algebraically the rung-4 balance
+with `hPR` set to the derived LHV. Since we pinned the fuel's formation enthalpy to
+reproduce Mattingly's 42.8 MJ/kg, the two are the same number and nothing shifts.
+
+So what did we buy? Not digits — **structure**. Three things:
+- **The heating value is now explained, not asserted.** `42.8 MJ/kg` emerges from
+  `ΔHf(CO₂) = −393.5` and `ΔHf(H₂O) = −241.8 kJ/mol` plus one fuel calibration; it is no
+  longer a magic constant.
+- **Enthalpies now live on the absolute scale.** That is the scale the *next* rung needs:
+  to know whether `CO₂` wants to break into `CO + ½O₂` at high temperature, you need the
+  formation energies — the sensible "how hot" numbers can't tell you.
+- **Heat release is now composition-aware.** While the products stay fixed it makes no
+  difference; but the moment rung 6 lets them shift, the energy books follow for free.
+
+We are careful **not** to oversell "derived, not assumed": the fuel's formation enthalpy
+(`≈ −35 kJ/mol`) carries exactly the information `hPR` did — it *is* the calibration knob,
+just wearing chemistry's clothes. The win is that the release is now structural.
+
+## The mechanism — a constant we had dropped on purpose
+The NASA polynomials each have seven coefficients. Rungs 3–4 used only the first five —
+the ones that set the *shape* of `cp(T)`. The sixth, `a6`, is the **formation constant**,
+and we'd left it out because it cancels in every enthalpy *difference* — and the turbine
+and nozzle only ever use differences. Rung 5 restores it. The elegant consequence:
+because `a6` cancels in a difference, **only the burner** — the single place a hot enthalpy
+is subtracted from a cold one across the combustion hand-off — ever sees it. The turbine
+and nozzle stay bit-for-bit rung 4. We even *derived* each `a6` from the tabulated
+formation enthalpy rather than transcribe a new column, so there's no fresh chance to fat-
+finger a number, and elements land exactly at zero enthalpy at 25 °C by construction.
+
+## A physical check we can't fully cash yet
+With absolute enthalpies we can compute an **adiabatic flame temperature** — burn the
+fuel with no heat loss and no shaft work, and ask how hot the products get. Ours comes out
+around **2375 K** at stoichiometric. Real kerosene flames top out ~2250 K. We're *high* —
+on purpose. The gap is dissociation: at those temperatures `CO₂` and `H₂O` tear partly
+back apart, and tearing them apart *absorbs* heat, capping the peak. Our complete-
+combustion model can't see that. That missing 100-plus kelvin is exactly rung 6's job,
+and it's *why* Fork B had to come first: the equilibrium that lowers the flame temperature
+is driven by the very formation enthalpies we just installed.
+
+## Did we get it right?
+Three checks, all green. (1) The derived heating value reproduces Mattingly's assumed
+`hPR = 42.8 MJ/kg` to six figures. (2) Each species' absolute enthalpy equals its
+tabulated formation enthalpy at 25 °C by construction, and the elements sit at zero.
+(3) The reduce-to-rung-4 gate: a Fork-B engine matches a Fork-A engine to **machine
+precision** — the theorem above, made a standing test. And a live-knob test confirms the
+chemistry actually drives the burner: hand it a lower-energy fuel and it correctly burns
+*more* of it.
+
+---
+*Rung 5 restores the NASA formation constant `a6` that rungs 3–4 dropped, putting
+enthalpies on an absolute scale so the burner's heat release is derived from an
+energy balance rather than an assumed `hPR`. Because released energy is identically
+`f·LHV` for complete combustion, the cycle is unchanged to the digit — Fork B buys
+structure (explained heating value, the absolute scale rung 6 needs, composition-aware
+release), not new numbers, and only the burner touches `a6`. `Gas.reacting_forkb()` is a
+separate factory, so every prior table survives untouched. `python main.py` prints the
+Fork-A-vs-Fork-B panel. Next, on this absolute-enthalpy substrate: high-temperature
+dissociation and the `Kp` equilibrium solve (rung 6, which also restores `a7`), then
 off-design, the choked nozzle, the afterburner.*

@@ -125,6 +125,52 @@ _PRODUCTS = {"N2": 150.74, "O2": 22.69, "Ar": 1.803, "CO2": 12.0, "H2O": 11.5}
 # (CH2)n repeat unit molar mass, g/mol (C 12.011 + 2 H 1.008).
 _M_CH2 = 12.011 + 2 * 1.008
 
+# --------------------------------------------------------------------------- #
+# RUNG 5 — Fork B: formation-enthalpy bookkeeping. Rung 4 stayed Fork A (fixed  #
+# hPR, sensible h(0)=0 datum). Fork B carries each species' standard formation  #
+# enthalpy so the burner's heat release is DERIVED from an absolute-enthalpy    #
+# balance instead of assumed. The formation constant is exactly the NASA-7 a6   #
+# term (H/RuT = ...poly... + a6/T) that rungs 3/4 dropped; since _antideriv_h   #
+# is the polynomial part with NO constant, Ru*a6 is the additive formation      #
+# offset. It CANCELS in every enthalpy DIFFERENCE (turbine, nozzle), so only    #
+# the burner's cross-section subtraction sees it. See docs/rung5-fork-b.md and  #
+# docs/plans/rung5-anchor-formation.md.                                         #
+# --------------------------------------------------------------------------- #
+
+# Standard molar enthalpies of formation at 298.15 K, J/mol (CODATA/JANAF).
+# Elements are the reference datum (0); H2O is GAS (vapour) -> LHV, not liquid.
+_T_REF = 298.15
+_HF298 = {"N2": 0.0, "O2": 0.0, "Ar": 0.0, "CO2": -393520.0, "H2O": -241826.0}
+
+# Fuel formation enthalpy is the ONE calibration input (it carries the same
+# information hPR did). Default pinned so the DERIVED LHV of CH2 + 1.5 O2 -> CO2
+# + H2O(gas) equals Mattingly's assumed hPR = 42.8 MJ/kg (=> ~ -34.99 kJ/mol,
+# physically reasonable for a liquid-HC (CH2) unit). See rung5 anchor § 2.
+_HPR_MATTINGLY = 42.8e6                                   # J/kg
+_M_CH2_KG = _M_CH2 / 1000.0                               # kg/mol
+_HF_FUEL_DEFAULT = _HPR_MATTINGLY * _M_CH2_KG + _HF298["CO2"] + _HF298["H2O"]  # J/mol
+
+
+def _formation_products_mass(f: float) -> float:
+    """Mass-specific formation enthalpy of the lean-combustion products at f, J/kg.
+
+    Mole-weight the per-species ΔHf298 over the f-dependent composition and divide
+    by the product mass: hf_prod = Σ nᵢ ΔHf,i / Σ nᵢ Mᵢ. Only CO2 and H2O carry
+    formation (N2/O2/Ar are elements, 0). This is the additive offset the burner
+    adds to the SENSIBLE h_t to get the absolute (formation + sensible) enthalpy.
+    """
+    comp = _products_composition(f)
+    H = sum(comp[s] * _HF298[s] for s in comp)               # J per mol-air basis
+    m = sum(comp[s] * _SPECIES[s][0] / 1000.0 for s in comp)  # kg per mol-air basis
+    return H / m
+
+
+def _lhv_from_fuel(hf_fuel_molar: float) -> float:
+    """Derived lower heating value, J/kg. CH2 + 1.5 O2 -> CO2 + H2O(gas):
+    LHV = (ΔHf(CH2) − ΔHf(CO2) − ΔHf(H2O,gas)) / M_CH2  (reactants − products, O2=0).
+    """
+    return (hf_fuel_molar - _HF298["CO2"] - _HF298["H2O"]) / _M_CH2_KG
+
 
 def _air_mole_fractions() -> dict:
     """Dry-air mole fractions renormalized to sum EXACTLY 1.
@@ -429,6 +475,13 @@ class Gas:
     # Set by the Gas.reacting() factory; the frozen paths leave it False (untouched).
     reacting_hot: bool = False
 
+    # Fork B (rung 5). When True the burner DERIVES its heat release from formation
+    # enthalpies (absolute-enthalpy balance) instead of the assumed hPR; hf_fuel_molar
+    # is the single calibration input and hPR is set to the DERIVED LHV. Fork A leaves
+    # both untouched. See docs/rung5-fork-b.md.
+    fork_b: bool = False
+    hf_fuel_molar: Optional[float] = None    # fuel ΔHf298, J/mol (Fork B only)
+
     def __post_init__(self):
         self._cold = (_TPGSection(self.cp_c_coeffs, self.R_c) if self.cp_c_coeffs
                       else _CPGSection(self.gamma_c, self.cp_c, self.R_c))
@@ -465,6 +518,25 @@ class Gas:
         _, _, R_t = _mixture(_products_composition(f_design))    # representative, at f_design
         return cls(R_c=R_c, R_t=R_t, hPR=hPR,
                    cp_c_coeffs=(Alo_c, Ahi_c), reacting_hot=True)
+
+    @classmethod
+    def reacting_forkb(cls, hf_fuel_molar: float = _HF_FUEL_DEFAULT,
+                       f_design: float = 0.0) -> "Gas":
+        """Reacting hot section with FORMATION-ENTHALPY bookkeeping (rung 5, Fork B).
+
+        Same reacting composition as Gas.reacting() (rung 4), but the burner derives
+        its heat release from an absolute-enthalpy balance on formation enthalpies
+        rather than the assumed hPR. hf_fuel_molar (the fuel ΔHf298, the ONE calibration
+        input) DEFAULTS to the value that reproduces Mattingly's hPR = 42.8 MJ/kg — so
+        the derived LHV falls out at 42.8 and Fork B reproduces rung-4 Fork A EXACTLY
+        for complete combustion (docs/plans/rung5-anchor-formation.md § 3). hPR is set
+        to the derived LHV so downstream/diagnostics see the derived value.
+        """
+        Alo_c, Ahi_c, R_c = _mixture(_AIR)
+        _, _, R_t = _mixture(_products_composition(f_design))
+        lhv = _lhv_from_fuel(hf_fuel_molar)                       # DERIVED heating value
+        return cls(R_c=R_c, R_t=R_t, hPR=lhv, cp_c_coeffs=(Alo_c, Ahi_c),
+                   reacting_hot=True, fork_b=True, hf_fuel_molar=hf_fuel_molar)
 
     # --- isentropic exponents (CPG closed-form helpers; used by station 0/9) ---
 
@@ -527,6 +599,36 @@ class Gas:
         reacting section it decreases slightly with f (heavier products)."""
         return self._hot.R_at(far)
 
+    # --- Fork B absolute-enthalpy interface (rung 5; the BURNER alone uses it) ---
+    # These carry the formation offset a6 that the sensible h_c/h_t deliberately omit.
+    # Only the burner (the one cross-section enthalpy subtraction) needs absolute
+    # values; turbine/nozzle use enthalpy DIFFERENCES where the offset cancels, so
+    # they stay on the sensible interface, bit-for-bit rung 4.
+
+    @property
+    def lhv(self) -> float:
+        """Derived lower heating value, J/kg (Fork B). == hPR by construction; for a
+        non-Fork-B gas there is no fuel enthalpy, so fall back to the assumed hPR."""
+        return _lhv_from_fuel(self.hf_fuel_molar) if self.fork_b else self.hPR
+
+    @property
+    def hf_fuel_mass(self) -> float:
+        """Fuel formation enthalpy per unit fuel mass, J/kg (Fork B only)."""
+        assert self.fork_b and self.hf_fuel_molar is not None, "hf_fuel_mass: not Fork B"
+        return self.hf_fuel_molar / _M_CH2_KG
+
+    def hf_products_mass(self, far: float) -> float:
+        """Formation enthalpy of the products at far, per unit product mass, J/kg."""
+        return _formation_products_mass(far)
+
+    def h_c_abs(self, T: float) -> float:
+        """Absolute cold-air enthalpy = sensible (air is elements, formation 0)."""
+        return self.h_c(T)                              # air formation datum == 0
+
+    def h_t_abs(self, T: float, far: float) -> float:
+        """Absolute hot-products enthalpy = sensible h_t + product formation offset."""
+        return self.h_t(T, far) + _formation_products_mass(far)
+
     def unified(self) -> "Gas":
         """Return a copy with the hot section collapsed onto the cold section.
 
@@ -537,4 +639,5 @@ class Gas:
         tilt the turbine and nozzle legs and the digits would drift.
         """
         return replace(self, gamma_t=self.gamma_c, cp_t=self.cp_c, R_t=self.R_c,
-                       cp_t_coeffs=self.cp_c_coeffs, reacting_hot=False)
+                       cp_t_coeffs=self.cp_c_coeffs, reacting_hot=False,
+                       fork_b=False, hf_fuel_molar=None)

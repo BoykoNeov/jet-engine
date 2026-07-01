@@ -160,6 +160,42 @@ def print_reacting_table(flight):
               f"{r.performance.specific_thrust:>8.1f}")
 
 
+def print_forkb_table(flight):
+    """Rung-5 payoff: Fork B — heat release DERIVED from formation enthalpies.
+
+    Rung 4 ASSUMED hPR = 42.8 MJ/kg. Fork B carries each species' formation enthalpy,
+    so the LHV FALLS OUT of the chemistry and the burner's balance is on the absolute
+    (formation + sensible) scale. The headline is a NON-event by design: for complete
+    combustion the released energy is identically f*LHV, so Fork B reproduces the
+    rung-4 (Fork A) cycle to machine precision. The point is structural, not numeric:
+      - hPR is now EXPLAINED (derived), not typed in;
+      - enthalpies live on the absolute scale that rung-6 dissociation needs;
+      - the heat release will track composition automatically once products shift.
+    """
+    fa = Gas.reacting(hPR=42.8e6)          # rung-4 Fork A: assumed hPR
+    fb = Gas.reacting_forkb()              # rung-5 Fork B: DERIVED LHV
+    ra = build_turbojet(fa, PI_C, TT4, flight.p0).run(flight, 1.0)
+    rb = build_turbojet(fb, PI_C, TT4, flight.p0).run(flight, 1.0)
+
+    print("\nFork B (rung 5): assumed hPR (Fork A) vs DERIVED heat release, same design point")
+    print(f"  hPR: Fork A assumes {fa.hPR / 1e6:.4f} MJ/kg  ->  "
+          f"Fork B DERIVES {fb.lhv / 1e6:.4f} MJ/kg from formation enthalpies "
+          f"(fuel ΔHf = {fb.hf_fuel_molar / 1000:.2f} kJ/mol)")
+    print(f"{'Station':>8} {'Tt A':>9} {'Tt B':>9}  {'pt A':>9} {'pt B':>9}")
+    print("-" * 50)
+    for label in ("0", "2", "3", "4", "5", "9"):
+        a, b = ra.stations[label], rb.stations[label]
+        print(f"{label:>8} {a.Tt:>9.1f} {b.Tt:>9.1f}  {a.pt / 1000:>9.2f} {b.pt / 1000:>9.2f}")
+    df = abs(ra.stations["4"].far - rb.stations["4"].far)
+    print(f"far: Fork A {ra.stations['4'].far:.6f} vs Fork B {rb.stations['4'].far:.6f} "
+          f"(|Δ| = {df:.1e} — EXACT: released energy ≡ f·LHV for complete combustion).")
+    print("  Fork B buys structure, not digits: absolute-enthalpy scale for rung-6 "
+          "dissociation, and heat release that will track composition. Products carry")
+    print(f"  formation enthalpy {fb.hf_products_mass(rb.stations['4'].far) / 1e6:.3f} MJ/kg "
+          f"(vs air 0.000), so absolute h_t(Tt4) = {fb.h_t_abs(TT4, rb.stations['4'].far) / 1e6:.3f} "
+          f"MJ/kg sits below sensible {fb.h_t(TT4, rb.stations['4'].far) / 1e6:.3f} MJ/kg.")
+
+
 def _cycle_points(result, flight):
     """The six cycle points as {label: (s, T)} in (entropy, temperature) space.
 
@@ -270,6 +306,8 @@ def main():
     print_variable_cp_table(FLIGHT)
 
     print_reacting_table(FLIGHT)
+
+    print_forkb_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

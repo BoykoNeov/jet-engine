@@ -224,6 +224,13 @@ class Burner(Component):
       (docs/plans/rung4-anchor-mattingly.md). For a CPG/frozen-TPG gas h_t is
       f-independent, so g is constant and the loop returns the rung-3 one-shot in two
       passes (reduce-to-ideal untouched). The residual is a STANDING assert (gate 3).
+    - FORK B (rung 5): heat release DERIVED, not assumed. A Fork-B gas carries each
+      species' formation enthalpy; hPR is SET to the LHV that falls out of them, so the
+      identical fixed point now solves the absolute-enthalpy balance Σ N h̄(react) =
+      Σ N h̄(prod) (η_b booking incomplete-combustion loss). Because the released
+      chemical energy is IDENTICALLY f·LHV for complete combustion, this is rung-4
+      Fork A with hPR := LHV — the solve/asserts are unchanged bar the extra Fork-B
+      closure check. See docs/rung5-fork-b.md § The load-bearing result.
     - pt4 = pi_b * pt3: a real combustor drops total pressure (friction + Rayleigh
       heat-addition loss), pi_b <= 1. SPECIFIED ratio, asserted exactly.
     - This leg is NOT isentropic (adding heat raises entropy), so — as in rung 1 —
@@ -276,6 +283,20 @@ class Burner(Component):
         lhs = s.mdot * h3 + self.eta_b * mdot_fuel * gas.hPR
         rhs = out.mdot * gas.h_t(out.Tt, f)
         assert abs(lhs - rhs) < 1e-6 * rhs, "burner energy balance violated"
+        # FORK B (rung 5): the SAME f, re-derived on ABSOLUTE (formation) enthalpies.
+        # For a Fork-B gas hPR was SET to the LHV derived from formation enthalpies, so
+        # the solve above is already the derived-heat-release balance. Here we (1) check
+        # the LHV fell out at the calibration value and (2) close the absolute balance
+        # Σ N h̄(react) = Σ N h̄(prod) + loss explicitly — the formation bookkeeping shown
+        # and checked on every run (rung-5 gate 2/4; docs/rung5-fork-b.md § Station 4).
+        if gas.fork_b:
+            assert abs(gas.lhv - gas.hPR) < 1e-6 * gas.hPR, "Fork B: derived LHV != hPR slot"
+            react_abs = s.mdot * gas.h_c_abs(s.Tt) + mdot_fuel * gas.hf_fuel_mass
+            prod_abs = out.mdot * gas.h_t_abs(out.Tt, f)
+            loss = (1.0 - self.eta_b) * mdot_fuel * gas.lhv     # incomplete-combustion loss
+            assert abs(react_abs - (prod_abs + loss)) < 1e-6 * rhs, (
+                "Fork B absolute-enthalpy balance: Σ N h̄ react != Σ N h̄ prod + loss"
+            )
         # SPECIFIED pressure ratio (near-tautological, but guards the pt4 line and
         # becomes load-bearing once pi_b < 1 tilts pt4 below pt3).
         assert abs(out.pt - self.pi_b * s.pt) < 1e-9 * s.pt, "burner pt4 != pi_b*pt3"
