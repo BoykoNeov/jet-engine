@@ -87,13 +87,22 @@ def test_reduce_exact_same_Tp_still_holds():
 
 
 def test_cycle_untouched_by_rich_zoning():
-    # Running zoned_nox at RICH φ_p is a pure diagnostic — the cycle far is bit-for-bit rung 6.
-    g, Tt3, Tt4, far, p = _design_point()
-    far_before = far
+    # Running zoned_nox at RICH φ_p is a pure diagnostic — it must not mutate the gas. Prove it
+    # by re-running the cycle on the SAME g after the rich zoned calls (same burn config, so the
+    # _EquilibriumSection reuse guard won't fire) and demanding a bit-for-bit-identical station-4.
+    g = Gas.reacting_equilibrium()
+    losses = dict(_LOSSES)
+
+    def run():
+        return build_turbojet(g, 10.0, 1500.0, _FLIGHT.p0, **losses).run(_FLIGHT, 50.0)
+
+    r1 = run()
+    st3, st4 = r1.stations["3"], r1.stations["4"]
+    far1, Tt3, Tt4, p = st4.far, st3.Tt, st4.Tt, st4.pt
     for phi_p in (0.9, 1.2, 1.6, 2.0):
-        g.zoned_nox(far, Tt3, Tt4, p, phi_p, tau=_TAU)
-    _, _, _, far_after, _ = _design_point()
-    assert far_after == far_before, "rich zoning perturbed the cycle far (must stay rung-6)"
+        g.zoned_nox(far1, Tt3, Tt4, p, phi_p, tau=_TAU)
+    far2 = run().stations["4"].far
+    assert far2 == far1, f"rich zoning perturbed the cycle far ({far2} vs {far1}) — must stay rung-6"
 
 
 # --------------------------------------------------------------------------- #
@@ -182,12 +191,19 @@ def test_rich_mixout_returns_to_Tt4_split_independent():
 
 
 def test_rich_dilution_drops_fraction_not_index():
-    # NO-mole conservation through the rich dilution: the mole FRACTION drops (dilution) but
-    # EI (per kg fuel) is set in the primary — unchanged by mix-out.
+    # NO-mole conservation through the rich dilution: the mole FRACTION drops (dilution) but the
+    # NO MOLES are conserved. Assert the freeze arithmetic directly — the NO moles per mol total
+    # air out of the mix (x_no_mix · ntot_mix) equal those set in the primary and scaled by α
+    # (α · x_no_primary · ntot_primary) — not the ei_no==primary.ei_no property tautology.
     g, Tt3, Tt4, far, p = _design_point()
     z = g.zoned_nox(far, Tt3, Tt4, p, 1.1, tau=_TAU)
     assert z.ppm_mix < z.ppm_primary, "dilution must drop the NO mole fraction"
-    assert z.ei_no == z.primary.ei_no, "EI is set in the primary (index ≠ concentration)"
+    ntot_prim = sum(_equilibrium_composition(z.far_primary, z.T_primary, p).values())
+    ntot_mix = sum(_equilibrium_composition(far, z.T_mix, p).values())
+    n_no_mix = z.x_no_mix * ntot_mix
+    n_no_prim = z.alpha * z.primary.x_no * ntot_prim
+    assert _close(n_no_mix, n_no_prim, rel=1e-9), \
+        f"NO moles not conserved through dilution: {n_no_mix} vs {n_no_prim}"
 
 
 # --------------------------------------------------------------------------- #

@@ -1063,7 +1063,10 @@ is unburnt ballast soaking up heat. Second, and more sharply, a rich mixture is 
 there simply isn't enough O₂ to go around, so the atomic-O pool the Zeldovich initiation depends on
 crashes by orders of magnitude. Cooler *and* O-starved — the NO rate falls off a cliff. In our
 worked example a rich primary at φ_p = 1.4 makes about **1800× less NO** than the stoichiometric
-one, even though it burns exactly the same fuel.
+one, even though it burns exactly the same fuel. (That factor is a **model lower bound**, not the
+real RQL benefit: our rich pool has only *equilibrium* O — super-equilibrium O and prompt NO,
+both strongest in the rich primary, are deferred, so the true reduction is smaller. The *shape*
+of the collapse is the result; the exact multiple is a floor.)
 
 ## This is why RQL burns rich on purpose
 Real engines exploit this directly with a **Rich-burn / Quick-Quench / Lean-burn (RQL)**

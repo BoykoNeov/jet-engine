@@ -38,8 +38,9 @@ not chased — the cycle's sensible differences cancel it); **rung 9** adds a **
 RQL**: the same two-zone diagnostic with the primary allowed to run **rich** (φ_p up to 2.0),
 so the equilibrium pool carries major `CO`/`H₂` (a **branched Newton seed** in `_equil_solve`;
 lean branch byte-identical → reduce-to-rung-8 is provable). The payoff is the **rich flank of the
-NO-vs-φ bell**: EI_NO peaks near stoich (~21 g/kg, ICAO band) and **collapses rich** (~1800× lower
-at φ_p=1.4 — the AFT rolls over and the O-starved pool crashes `[O]`), which is *why* real
+NO-vs-φ bell**: EI_NO peaks near stoich (~21 g/kg, ICAO band) and **collapses rich** (a *model
+lower bound* ~1800× lower at φ_p=1.4 — equilibrium-O only, super-eq/prompt NO deferred; the AFT
+rolls over and the O-starved pool crashes `[O]`), which is *why* real
 low-NOx combustors burn rich then quick-quench past the peak. Mix-out is the **ideal
 (infinitely-fast) quench** (NO frozen); still bit-for-bit rung 6 (a pure diagnostic). Deferred:
 the **finite-rate quench** (dwell-at-stoich NO spike) is the next seam — this is "rich primary +

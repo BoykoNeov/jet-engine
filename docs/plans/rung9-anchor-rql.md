@@ -94,8 +94,9 @@ p = 7.5 bar, τ = 3 ms**; φ_overall = 0.40) — the full bell:
 | 2.00 | 1736 | 17.86 | 13.20 | ~0 | ~0 | **~0** | 1517 |
 
 The bell peaks at φ_p ≈ 1.0 (**EI_NO ≈ 21 g/kg**, in the ICAO take-off band) and **collapses on
-the rich flank**: a rich primary at φ_p = 1.4 makes ~0.01 g/kg — **~1800× less NO** — even though
-it burns *all* the same fuel. CO/H₂ climb into the double digits (unoxidized fuel), the AFT rolls
+the rich flank**: a rich primary at φ_p = 1.4 makes ~0.01 g/kg — **~1800× less NO** (a *model
+lower bound* — equilibrium-O only; super-eq O / prompt NO deferred, § 5) — even though it burns
+*all* the same fuel. CO/H₂ climb into the double digits (unoxidized fuel), the AFT rolls
 over past φ≈1.05, and [O]/[OH] crash — the two effects that starve the Zeldovich rate. `T_mix` is
 **split-independent** (1517 K for *every* φ_p) and returns to ≈ Tt4: adding the rest of the air
 re-equilibrates the rich CO/H₂ back to lean products, releasing their oxidation energy so the
