@@ -845,6 +845,88 @@ def _thermal_no(comp: dict, T: float, p: float, tau: float, far: float,
                     char_time=(cNOe / (2.0 * R1) if R1 > 0.0 else math.inf), ei_no=ei)
 
 
+# --- Rung-8 two-zone (primary -> dilution) NOx helpers (all on rung-6/7 primitives) --- #
+def _h_air_molar_A(T: float) -> float:
+    """Scale-A molar enthalpy of 1 mol air at T (sum over air species, formation datum).
+    N2/O2/Ar carry zero formation enthalpy; the trace CO2 in air carries its ΔHf298. The
+    same absolute (scale-A) datum the rung-6 AFT diagnostic used — no new convention."""
+    return sum(x * _h_molar_A(s, T) for s, x in _air_mole_fractions().items())
+
+
+def _primary_aft(far_p: float, p: float, T_air: float, hf_fuel: float) -> float:
+    """Adiabatic flame temp of (fuel + 1 mol primary air), air PREHEATED to T_air.
+
+    Bisection on T so the equilibrium products' scale-A enthalpy equals the reactants':
+        Σ nᵢ(far_p, T)·h̄ᵢ_A(T) = h̄_air_A(T_air) + n_fuel·hf_fuel.
+    Rung-8: the primary burns all the fuel with only its share of the air, preheated to
+    the ACTUAL compressor-exit Tt3 (not 298 K). Preheating from Tt3 is what ties the
+    primary flame to the running cycle and makes the α→1 reduce-to-rung-7 gate exact
+    (docs/rung8-spec.md § reduce gate). Promotes the test-only rung-6 `_aft` helper to a
+    reusable primary-AFT — but starting from Tt3, not 298 K."""
+    n_fuel = far_p * _M_AIR / _M_CH2
+    H_react = _h_air_molar_A(T_air) + n_fuel * hf_fuel
+    lo, hi = 800.0, 3200.0
+    for _ in range(100):
+        T = 0.5 * (lo + hi)
+        comp = _equilibrium_composition(far_p, T, p)
+        H_prod = sum(comp[s] * _h_molar_A(s, T) for s in comp)
+        lo, hi = (lo, T) if H_prod > H_react else (T, hi)
+    return 0.5 * (lo + hi)
+
+
+def _mixed_out_T(comp_prim: dict, T_prim: float, alpha: float,
+                 far_ov: float, T_dilution: float, p: float) -> float:
+    """Mixed-out temperature after adding (1−α) mol dilution air at T_dilution to α mol
+    primary products and RE-EQUILIBRATING the major species at the overall far_ov.
+
+    Basis: 1 mol TOTAL air. Primary products are per-mol-PRIMARY-air, so scale by α.
+    Enthalpy is conserved; bisection on T_mix so the re-equilibrated pool's scale-A
+    enthalpy equals α·H_primary + (1−α)·H_dilution_air. Re-equilibrating (NOT freezing)
+    the dissociated primary majors RELEASES the stored dissociation energy, so T_mix
+    returns to ≈ Tt4 — the rung-8 conservation gate (docs/rung8-spec.md § mix-out). By
+    α·far_p = far_ov, α cancels in the balance, so T_mix is split-independent by
+    construction (the overall adiabatic flame temp from Tt3)."""
+    H_prim = alpha * sum(comp_prim[s] * _h_molar_A(s, T_prim) for s in comp_prim)
+    H_dil = (1.0 - alpha) * _h_air_molar_A(T_dilution)
+    H_mix = H_prim + H_dil
+    lo, hi = 700.0, 3200.0
+    for _ in range(100):
+        T = 0.5 * (lo + hi)
+        comp = _equilibrium_composition(far_ov, T, p)
+        H_prod = sum(comp[s] * _h_molar_A(s, T) for s in comp)
+        lo, hi = (lo, T) if H_prod > H_mix else (T, hi)
+    return 0.5 * (lo + hi)
+
+
+@dataclass
+class ZonedNOxState:
+    """Two-zone (primary → dilution) thermal-NO diagnostic (rung 8). A pure DIAGNOSTIC —
+    like NOxState it never feeds the cycle. NO is set in the hot primary and FROZEN through
+    the dilution that cools the gas to T_mix ≈ Tt4; EI_NO is a per-kg-fuel quantity set in
+    the primary (dilution lowers the mole FRACTION, not the emission INDEX)."""
+    phi_primary: float   # primary equivalence ratio (≤ 1, lean-stoich scope)
+    far_primary: float   # primary fuel/air ratio = phi_primary * f_stoich
+    alpha: float         # fraction of the air routed to the primary (≤ 1)
+    T_primary: float     # adiabatic primary flame temperature, K (from Tt3)
+    T_mix: float         # mixed-out temperature after dilution, K (≈ Tt4)
+    primary: NOxState    # the rung-7 NO diagnostic evaluated ON the hot primary pool
+    x_no_mix: float      # NO mole fraction after dilution (frozen moles / mixed total moles)
+
+    @property
+    def ei_no(self) -> float:
+        """Emission index, g NO / kg fuel — set in the primary, conserved through dilution
+        (α cancels: NO moles and fuel moles both scale with the primary air fraction)."""
+        return self.primary.ei_no
+
+    @property
+    def ppm_primary(self) -> float:
+        return self.primary.x_no * 1e6
+
+    @property
+    def ppm_mix(self) -> float:
+        return self.x_no_mix * 1e6
+
+
 @dataclass
 class Gas:
     """Dual-section gas. Each section is CPG (constant triple, default) or TPG (cp(T)).
@@ -1117,6 +1199,54 @@ class Gas:
         => this does NOT affect the cycle; it is a pure diagnostic (docs/rung7-spec.md)."""
         comp = _equilibrium_composition(far, T, p)
         return _thermal_no(comp, T, p, tau, far)
+
+    # --- Rung-8 two-zone combustor NOx diagnostic (DECOUPLED; never feeds the cycle) -----
+    def zoned_nox(self, far: float, Tt3: float, Tt4: float, p: float,
+                  phi_primary: float, tau: float = 3e-3) -> "ZonedNOxState":
+        """Two-zone (primary → dilution) thermal NOx (docs/rung8-spec.md). Runs the SAME
+        rung-7 extended-Zeldovich integrator on a HOT, near-stoichiometric PRIMARY zone
+        instead of the mixed-out station-4 pool, then dilutes back to Tt4:
+
+          1. air split — all the fuel + a fraction α of the air enter the primary at
+             far_p = phi_primary·f_stoich; α = far/far_p (≤ 1);
+          2. primary AFT — adiabatic flame temp from Tt3 (scale A, equilibrium products);
+          3. primary NO — rung-7 `_thermal_no` on the primary equilibrium pool at (T_p, p);
+          4. dilution — add the remaining air at Tt3, re-equilibrate the MAJORS (releases
+             the dissociation energy → T_mix ≈ Tt4), and FREEZE the NO moles.
+
+        NO is trace, so the cycle stays bit-for-bit rung 6 (NO/N never enter _equil_solve);
+        only WHERE the chemistry is evaluated changes. The capped mixed-out Tt4 makes almost
+        no NO; the hot primary — averaged away at station 4 — is where it forms. Held
+        lean-to-stoich (phi_primary ≤ 1); a rich/RQL primary is the next seam."""
+        assert 0.0 < phi_primary <= 1.0 + 1e-9, \
+            f"phi_primary {phi_primary} outside (0, 1] — rung-8 holds a lean-to-stoich primary"
+        hf_fuel = self.hf_fuel_molar or _HF_FUEL_DEFAULT
+        far_p = phi_primary * _F_STOICH
+        alpha = far / far_p                              # fraction of the air in the primary
+        assert alpha <= 1.0 + 1e-9, \
+            f"primary air fraction α={alpha:.4f} > 1 — overall mixture leaner than the primary"
+
+        T_p = _primary_aft(far_p, p, Tt3, hf_fuel)
+        comp_p = _equilibrium_composition(far_p, T_p, p)
+        nox = _thermal_no(comp_p, T_p, p, tau, far_p)    # rung-7 integrator, UNCHANGED
+
+        T_mix = _mixed_out_T(comp_p, T_p, alpha, far, Tt3, p)
+        # Standing conservation gate (LOOSE gross-error bound — the method does not know η_b, and
+        # a frozen-majors mix-out lands only ~40 K off here, WITHIN this band; the sharp
+        # split-independence + frozen-vs-re-equilibrated discriminators live in the tests, which
+        # ARE what catch that bug): the re-equilibrated mix-out must return to ≈ Tt4.
+        assert abs(T_mix - Tt4) < 0.05 * Tt4, \
+            f"mix-out T {T_mix:.1f} K did not return to Tt4={Tt4} K (re-equilibration gate)"
+
+        # Freeze the NO moles through dilution: NO moles per mol PRIMARY air = x_no·ntot_p;
+        # scale to the total-air basis by α; divide by the mixed pool's total moles per air.
+        ntot_p = sum(comp_p.values())
+        n_no_total = alpha * nox.x_no * ntot_p
+        ntot_mix = sum(_equilibrium_composition(far, T_mix, p).values())
+        x_no_mix = n_no_total / ntot_mix
+
+        return ZonedNOxState(phi_primary=phi_primary, far_primary=far_p, alpha=alpha,
+                             T_primary=T_p, T_mix=T_mix, primary=nox, x_no_mix=x_no_mix)
 
     def unified(self) -> "Gas":
         """Return a copy with the hot section collapsed onto the cold section.

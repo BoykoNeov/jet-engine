@@ -99,9 +99,15 @@ outputs:       T_p, EI_NO (set in primary), x_NO(τ), x_NO,mix, T_mix
 ## Verification gates (priority order)
 
 1. **Reduce-to-rung-7 (load-bearing).** At `α → 1` (φ_p = φ_overall, all air in the primary) the
-   primary AFT → Tt4 within η_b (adiabatic ⇒ exact), and `zoned_nox` EI_NO equals rung-7's
-   mixed-out `thermal_nox(far, Tt4, p)` EI_NO to ~1e-6. The whole rung 1–7 suite stays green,
-   untouched; the cycle is bit-for-bit rung 6.
+   two-zone diagnostic collapses to rung 7's single mixed-out pool — in **two** parts (the naive
+   "primary AFT → Tt4, exact to ~1e-6" is *wrong*: two effects push the primary AFT a few K above
+   Tt4). **Exact:** `zoned_nox` EI_NO equals `thermal_nox(far, T_p, p)` — the rung-7 integrator at
+   the *same* primary AFT `T_p` — to machine precision (certifies far_p, α, the mole-freeze
+   scaling). **Physical:** `T_p` lands just above Tt4 (a ~8 K scale-A/scale-B **datum** offset that
+   *survives* η_b = 1, plus a ~9 K η_b piece), and the zoned EI is within an **O(1) factor**
+   (~1.3–1.7) of the mixed-out `thermal_nox(far, Tt4, p)` — so it is reduce-to-rung-7, not
+   reduce-to-itself. The whole rung 1–7 suite stays green, untouched; the cycle is bit-for-bit
+   rung 6. (See docs/plans/rung8-anchor-zoning § 3 for the two-effect decomposition.)
 2. **EI_NO lands in the ICAO band.** Primary φ_p = 0.9–1.0 gives EI_NO in **single-digit-to-tens
    g/kg** (order-of-magnitude landing zone, not a book digit — the absolute Zeldovich rate is
    un-pinned, per rung 7). The mixed-out value is ~6 orders lower.
@@ -121,7 +127,9 @@ Carry over rung 6/7's, plus: the **φ_p ≤ 1 / α ≤ 1** scope guard; the **`T
 closure (re-equilibration gate); NO-mole conservation across dilution.
 
 ## Done when
-Reduce-to-rung-7 is exact (rungs 1–7 suites untouched, green; cycle bit-for-bit rung 6); EI_NO
+Reduce-to-rung-7 holds (exact in the same-`T_p` framing; physical to an O(1) factor vs the
+mixed-out Tt4 number — the primary AFT sits ~8 K + ~9 K above Tt4, datum + η_b; rungs 1–7 suites
+untouched, green; cycle bit-for-bit rung 6); EI_NO
 lands in the ICAO band at φ_p ≈ 1; the split-independent-`T_mix`-→-Tt4 gate, NO-mole
 conservation, T-sensitivity, and `K`-check/trace gates hold. `main.py` gains a rung-8 zoning
 panel (φ_p sweep: primary AFT, EI_NO into the band vs the mixed-out ~zero, T_mix returning to

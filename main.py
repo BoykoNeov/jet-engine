@@ -328,6 +328,57 @@ def print_nox_table(flight):
           "combustor pressure does NOT directly suppress NOx.")
 
 
+def print_zoning_table(flight):
+    """Rung-8 payoff: combustor zoning COMPLETES rung 7's inversion.
+
+    Rung 7 ended honestly: at the capped, lean, mixed-out station 4 (Tt4=1500 K, φ≈0.40)
+    thermal NO is ~zero (EI_NO ≈ 1e-5 g/kg), because "real NOx is a hot primary-zone effect
+    this single-Tt4 model does not resolve." Rung 8 resolves it — WITHOUT touching the cycle
+    (NO is still trace; every station is bit-for-bit rung 6). It runs the SAME rung-7
+    Zeldovich integrator on a two-zone combustor: a near-stoichiometric PRIMARY (φ_p ≤ 1,
+    AFT ≈ 2000–2450 K, where NO forms) then DILUTION air that cools the mixed-out gas back to
+    Tt4 while FREEZING the NO. EI_NO climbs from ~zero into the measured ICAO band (~13–20
+    g/kg at φ_p ≈ 0.9–1.0) — a ~6-order lift purely from resolving WHERE the chemistry runs.
+
+    The invariants on display: (1) T_mix is split-independent and returns to ≈ Tt4 (the
+    re-equilibration gate — enthalpy conserved, majors recombine); (2) dilution lowers the NO
+    mole FRACTION (primary → mix ppm) but NOT the EI (per kg fuel), the clean
+    concentration-vs-emission-index separation.
+    """
+    eq = Gas.reacting_equilibrium()
+    real = build_turbojet(eq, PI_C, TT4, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+    st3, st4 = real.stations["3"], real.stations["4"]
+    Tt3, Tt4, far, p = st3.Tt, st4.Tt, st4.far, st4.pt
+    tau = 3e-3
+
+    n_mixed = eq.thermal_nox(far, Tt4, p, tau=tau)          # the rung-7 mixed-out ~zero
+    print("\nCombustor zoning (rung 8): the primary-zone NOx effect — completes rung 7")
+    print(f"  Design point: Tt3={Tt3:.0f} K, Tt4={Tt4:.0f} K, p={p/1e5:.1f} bar, overall "
+          f"far={far:.4f} (φ={far/_F_STOICH:.2f}), τ={tau*1e3:.0f} ms")
+    print(f"  Mixed-out station 4 (rung 7): EI_NO = {n_mixed.ei_no:.2e} g/kg — essentially zero.")
+    print(f"  {'φ_p':>5} {'α_air':>7} {'far_p':>7} {'AFT K':>7} {'NO_eq':>8} {'NO_kin':>9} "
+          f"{'EI_NO':>8} {'T_mix':>7} {'NO_mix':>8}")
+    print(f"  {'':>5} {'':>7} {'':>7} {'(prim)':>7} {'ppm':>8} {'ppm':>9} {'g/kg':>8} "
+          f"{'K':>7} {'ppm':>8}")
+    print("  " + "-" * 74)
+    for phi_p in (0.7, 0.8, 0.9, 1.0):
+        z = eq.zoned_nox(far, Tt3, Tt4, p, phi_p, tau=tau)
+        print(f"  {phi_p:>5.2f} {z.alpha:>7.4f} {z.far_primary:>7.5f} {z.T_primary:>7.0f} "
+              f"{z.primary.ppm_eq:>8.0f} {z.ppm_primary:>9.1f} {z.ei_no:>8.2f} "
+              f"{z.T_mix:>7.0f} {z.ppm_mix:>8.0f}")
+    z1 = eq.zoned_nox(far, Tt3, Tt4, p, 1.0, tau=tau)
+    z07 = eq.zoned_nox(far, Tt3, Tt4, p, 0.7, tau=tau)
+    print(f"  Primary φ_p 0.7→1.0 lifts the AFT {z07.T_primary:.0f}→{z1.T_primary:.0f} K "
+          f"(+{z1.T_primary-z07.T_primary:.0f} K) and swings EI_NO {z1.ei_no/z07.ei_no:.0f}× "
+          "— the rung-7 exp-in-T rate showing through.")
+    print(f"  At φ_p≈1 EI_NO ≈ {z1.ei_no:.0f} g/kg (ICAO take-off band 18–64), vs the mixed-out "
+          f"{n_mixed.ei_no:.0e} — a ~{math.log10(z1.ei_no/n_mixed.ei_no):.0f}-order lift.")
+    print("  T_mix is IDENTICAL across the sweep and returns to ≈Tt4 (majors re-equilibrate on")
+    print("  dilution); NO_mix < NO_kin (fraction diluted) but EI_NO is conserved (moles fixed).")
+    print("  The capped mixed-out turbine inlet never made the NO — a hot zone you averaged")
+    print("  away did. THIS is why real combustors fight peak flame T (lean-premixed, RQL).")
+
+
 def _cycle_points(result, flight):
     """The six cycle points as {label: (s, T)} in (entropy, temperature) space.
 
@@ -451,6 +502,8 @@ def main():
     print_equilibrium_table(FLIGHT)
 
     print_nox_table(FLIGHT)
+
+    print_zoning_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

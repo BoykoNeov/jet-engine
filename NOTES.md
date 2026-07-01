@@ -934,3 +934,111 @@ sensitivity), the honest near-zero station-4 number, and the pressure-independen
 Still deferred, all on this same substrate: super-equilibrium O / prompt NO (a richer radical
 pool and the Fenimore path), combustor zoning (to make station-4 NOx engine-realistic), and the
 rung-6 equilibrium-vs-frozen nozzle seam; plus off-design, the choked nozzle, the afterburner.*
+
+---
+
+# Rung 8 — Combustor Zoning: the Primary-Zone NOx Effect, in plain language
+
+## The headline: the zero was an averaging artifact
+Rung 7 ended on an honest anticlimax — at the real turbine inlet (station 4), thermal NO was
+essentially nil, a few ten-thousandths of a ppm — and pointed at the reason: *real NOx is made
+in a hot primary zone this single-`Tt4` model averages away.* Rung 8 stops pointing and
+**resolves that zone**, and the near-zero jumps into the measured band. The lesson **completes
+rung 7's inversion**: it was never the capped, mixed-out 1500 K turbine inlet that made the NO —
+it was a ~2400 K zone upstream that you blended into the average before you looked. Same
+integrator, same chemistry, same substrate; the *only* thing that changed is **where** the
+chemistry is evaluated.
+
+## What a real combustor actually does
+A gas-turbine combustor does not burn its fuel uniformly at Tt4. It burns nearly all of it in a
+compact **primary zone** with only *part* of the air, close to stoichiometric, at ~2000–2450 K —
+the peak flame temperature. Then it dumps in the rest of the air as **dilution**, cooling the
+mixed-out gas down to the metallurgical Tt4 the blades can survive. NO is made in that hot
+primary during the millisecond before the dilution air quenches it — and once made it is
+kinetically frozen (rung 7), so the dilution cools the gas but **cannot un-make the NO**. Our
+model is the simplest honest version of this: split the air (fraction α to the primary with all
+the fuel), burn the primary adiabatically from the actual compressor-exit Tt3, run the rung-7
+Zeldovich integrator there, then add the remaining air and mix out — freezing the NO.
+
+## The result: ~6 orders of magnitude, purely from *where*
+At this design point (Tt3≈584 K, Tt4=1500 K, 7.5 bar), a near-stoichiometric primary (φ_p ≈
+0.9–1.0) reaches ~2360–2440 K and makes **EI_NO ≈ 16–21 g NO / kg fuel** — squarely inside the
+ICAO take-off band (18–64 g/kg for real turbofans). The *same* far, evaluated mixed-out at Tt4,
+gave ~8×10⁻⁶ g/kg. That is a **~6-order-of-magnitude lift with no new physics** — just resolving
+the zone instead of the average. And the temperature sensitivity from rung 7 shows through
+undiluted: dropping the primary from φ_p=1.0 to 0.7 (AFT 2442→2068 K, −374 K) collapses EI_NO
+**30×**. This is *why* every low-NOx combustor architecture — lean-premixed, staged, RQL — is a
+fight against **peak flame temperature**, not against the average the cycle designed to the blade
+limit.
+
+## The conservation gate: mixing back to the same station 4
+There is a check that makes the whole two-zone picture trustworthy: the **mixed-out temperature
+is split-independent**. Whether you route 57 % or 40 % of the air through the primary, `T_mix`
+comes out identical (≈1517 K here) — because enthalpy is conserved and the total fuel and total
+air are fixed, so *how* you divided the air can't change the mixed-out state. And that `T_mix`
+returns to ≈ Tt4 — the zoned combustor mixes back to the very station 4 the cycle already
+computed. This only works because the majors **re-equilibrate** on dilution: the dissociated
+primary products (CO, H₂, OH, O, H) recombine as the gas cools and *release* their stored
+dissociation energy back into heat. If you instead **froze** that dissociated composition
+through the mix-out, the energy stays trapped in the bonds and the gas lands ~60 K cooler,
+missing Tt4 — the discriminating test that proves the re-equilibration is real, not cosmetic.
+
+## Concentration is not emission: the dilution wrinkle
+Dilution air drops the NO **mole fraction** — from ~1250 ppm in the primary down to ~530 ppm
+mixed-out at φ_p=1.0 — which looks like it "reduced the NOx." It didn't. All the fuel and all
+the NO were made in the primary; the dilution only spread the same NO *moles* through more gas.
+The **emission index** (grams of NO per kg of fuel — what an ICAO measurement reports, and what
+the environment sees) is set entirely in the primary and is **unchanged by dilution**. Watching
+the ppm fall while the EI holds is the clean separation between a *concentration* and an
+*emission index*, and it's exactly why you can't dilute your way out of a NOx problem.
+
+## One honest surprise: an 8 K datum crack, found by looking from Tt3
+Computing the primary flame temperature *from Tt3* (not from 298 K, as every earlier
+flame-temperature diagnostic did) exposed something the cycle had been quietly hiding. On the
+**formation datum** (scale A — the physically-correct, CEA-matching one this model uses for
+adiabatic flame temperatures), the true adiabatic flame temperature of the burner's fuel/air is
+~1508 K, about **8 K above** the 1500 K the cycle labels Tt4. That gap is *not* a bug in rung 8;
+it is the Fork-B burner's **energy datum** (scale B — a 0 K-sensible + formation-enthalpy
+reference) differing from the formation datum, and the two disagree because the mole count
+changes across combustion so the per-species offset doesn't cancel. Downstream it is invisible —
+the turbine and nozzle work on *sensible* enthalpy differences where the offset cancels exactly,
+which is why the cycle is still bit-for-bit correct — but a *from-Tt3 flame temperature* is the
+first quantity that straddles reactants and products on one absolute scale, so it is the first to
+see it. We note it, keep scale A (the honest flame temperature drives the honest NO rate), and
+leave Fork B's datum alone — chasing 8 K into the burner would re-litigate a rung-5 invariant for
+a number the cycle never uses.
+
+## Did we get it right?
+The load-bearing check is **reduce-to-rung-7**, in two honest halves. (1) *Exact:* send all the
+air to the primary (α→1) and the two-zone diagnostic becomes the rung-7 single pool — the zoned
+EI_NO equals `thermal_nox` evaluated at the *same* primary flame temperature to machine
+precision, which certifies the air split, the fuel bookkeeping, and the mole-freeze scaling are
+all right. (2) *Physical:* at α→1 the primary flame temperature really does land just above Tt4
+(the 8 K datum offset plus a ~9 K combustion-efficiency piece), and the zoned EI is within an
+O(1) factor of the honest rung-7 mixed-out number — so it is genuinely *reduce-to-rung-7*, not
+reduce-to-itself. The rest of the gates hold: EI_NO lands in the ICAO band at φ_p≈1; `T_mix` is
+split-independent and re-equilibrates back to Tt4 (with the frozen-majors contrast to prove it);
+the NO **moles** are conserved through dilution while the fraction falls; EI_NO rises >10× with
+primary φ_p; and rung 7's thermo-kinetic K-check still binds at the hotter primary temperature.
+Every rung 1–7 test stays green, untouched — the cycle never moved. What stays **un-anchored**,
+stated plainly: we cap the primary at φ_p ≤ 1 (our stoichiometry is lean-complete-combustion), so
+a **rich** primary and the real **rich-quench-lean (RQL)** low-NOx combustor are the next seam;
+super-equilibrium O and prompt (Fenimore) NO are still deferred, so even the resolved primary
+under-counts the true flame-front rate; and the EI_NO *band* is an order-of-magnitude landing
+zone, not a to-the-digit anchor (the absolute Zeldovich rate is un-pinned, per rung 7). Our
+in-band landing is therefore partly the lean-stoich cap standing in for rich + super-equilibrium
+O — the right orders of magnitude for the right reason, honestly fenced.
+
+---
+*Rung 8 makes rung 7's "real NOx is a hot primary-zone effect" concrete **without touching the
+cycle**: a two-zone (near-stoichiometric primary → dilution) combustor diagnostic
+(`Gas.zoned_nox`) that runs the **same** rung-7 Zeldovich integrator on a hot primary pool
+instead of the mixed-out station 4. A reusable primary-AFT solve (from Tt3, scale A) and a
+re-equilibrating mix-out step ride entirely on the rung-6/7 primitives; NO is still trace, so
+every station is bit-for-bit rung 6 and the whole rung 1–7 suite stays green. `python main.py`
+prints the zoning panel: the φ_p sweep lifting EI_NO from the mixed-out ~zero into the ICAO band,
+the split-independent `T_mix` returning to Tt4, and the dilution NO-fraction drop at conserved
+EI. Still deferred, all on this same substrate: a **rich primary / RQL** combustor (rich CO/H₂
+stoichiometry), **super-equilibrium O / prompt NO** (the Fenimore path), **finite-rate mix-out**
+(a secondary-zone Zeldovich instead of a frozen NO), and the rung-6 **equilibrium-vs-frozen
+nozzle** seam; plus off-design, the choked nozzle, the afterburner.*

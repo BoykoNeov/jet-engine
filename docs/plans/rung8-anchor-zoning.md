@@ -99,31 +99,51 @@ zone. The T-sensitivity is on display: φ_p 0.7 → 1.0 (AFT 2044 → 2427 K, +3
 
 ---
 
-## 3. The reduce-to-rung-7 gate (exact to within η_b)
+## 3. The reduce-to-rung-7 gate (exact same-T_p; physical to within ~two effects)
 
 At `α → 1` (all air in the primary) the primary far = the overall far, so the two-zone
-diagnostic must collapse to rung 7's single, mixed-out `thermal_nox(far, Tt4, p)`. The primary
-AFT at full air is the load-bearing check:
+diagnostic must collapse to rung 7's single, mixed-out pool. The primary AFT at full air is the
+load-bearing check — but read the gap **correctly**, because it decomposes into *two* effects,
+not one:
 
 ```
-primary AFT at α = 1 : 1508.2 K
-burner-set Tt4        : 1500.0 K   → gap 8.2 K = η_b (0.99) effect
+primary AFT at α = 1, η_b = 0.99 : 1516.9 K   → gap 16.9 K vs Tt4
+primary AFT at α = 1, η_b = 1.0  : 1508.0 K   → gap  8.0 K vs Tt4  (SURVIVES η_b = 1)
+burner-set Tt4                    : 1500.0 K
 ```
 
-The gap is **exactly** the combustion-efficiency loss: the cycle burner needs ~1 % *more* fuel
-to reach 1500 K (1 % of the heat is "lost"), so a truly **adiabatic** burn at that same far runs
-~8 K hotter. Set η_b = 1 and the two coincide to the bisection tolerance. This is the rung-8
-analogue of rung-6's cold-Tt4 reduce-to-rung-5 seam: **the model contains its predecessor as a
-limit.** (Test gate: at α→1 the zoned EI_NO must equal the rung-7 mixed-out EI_NO to ~1e-6.)
+- **The ~9 K η_b piece** (16.9 − 8.0): the cycle burner spends ~1 % *more* fuel to reach 1500 K
+  (1 % of the heat is "lost" to `η_b = 0.99`), so a truly **adiabatic** burn at that same,
+  slightly richer far runs ~9 K hotter. This piece *does* vanish at η_b = 1.
+- **The ~8 K datum piece** (the residual at η_b = 1): the primary AFT is computed on the
+  **formation datum** (scale A, `_h_molar_A` — the physically-correct, CEA-matching one), while
+  the cycle burner sets Tt4 on **scale B** (`_h_molar_B`, a 0 K-sensible + formation reference).
+  The two datums differ by a per-species 0 K→298 sensible offset that does **not** cancel across
+  combustion (the mole count changes), so scale-A AFT sits ~8 K above the scale-B Tt4 *for the
+  same far* — and this **survives η_b = 1**. It is not a bug: downstream the cycle works on
+  *sensible* differences where the offset cancels exactly (the cycle is bit-for-bit correct), and
+  a from-Tt3 flame temperature is simply the first quantity to straddle reactants and products on
+  one absolute scale and see it (docs/rung8-spec.md; NOTES.md § the 8 K datum crack).
+
+So "set η_b = 1 and the AFT coincides with Tt4" is **wrong** — only the η_b piece closes; the
+~8 K datum offset remains. The correct, exact gate is therefore stated on the **flame
+temperature itself**, not on Tt4: at α → 1 the zoned EI_NO equals `thermal_nox(far, T_p, p)` — the
+rung-7 integrator at the *same* primary AFT `T_p` — to machine precision (that certifies the air
+split, the fuel bookkeeping, and the mole-freeze scaling). The *physical* reduce is then the
+weaker claim that `T_p` lands just above Tt4 (the two effects above) and the zoned EI is within an
+**O(1) factor** of the honest rung-7 mixed-out `thermal_nox(far, Tt4, p)` — dwarfed by NO's
+exp-in-T sensitivity at ~1500 K, so the ratio is ~1.3–1.7, not 1e-6. This is the rung-8 analogue
+of rung-6's cold-Tt4 reduce-to-rung-5 seam: **the model contains its predecessor as a limit.**
 
 ---
 
 ## 4. The invariants (discriminating checks, not book digits)
 
-- **Mix-out temperature is split-independent.** `T_mix = 1508 K` for *every* φ_p in the table.
-  Enthalpy is conserved and the fuel is fixed, so the mixed-out state does not depend on *how*
-  the air was divided — only on total fuel + total air. And `T_mix ≈ Tt4` (within the η_b gap of
-  §3): the zoned combustor mixes back to the same station-4 the cycle already computed. This is
+- **Mix-out temperature is split-independent.** `T_mix ≈ 1508–1517 K` (the η_b = 1 vs 0.99
+  values of § 3) for *every* φ_p in the table. Enthalpy is conserved and the fuel is fixed, so the
+  mixed-out state does not depend on *how* the air was divided — only on total fuel + total air.
+  And `T_mix ≈ Tt4` (within the ~8 K datum + ~9 K η_b gap of § 3): the zoned combustor mixes back
+  to the same station-4 the cycle already computed. This is
   the central conservation gate — it only holds because the majors **re-equilibrate** on mix-out
   (freezing the dissociated primary composition would trap its energy and miss Tt4).
 - **NO-mole conservation through dilution.** Dilution drops the NO *mole fraction* (NO_kin →
