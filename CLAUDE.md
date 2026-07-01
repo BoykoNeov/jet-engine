@@ -42,9 +42,19 @@ NO-vs-φ bell**: EI_NO peaks near stoich (~21 g/kg, ICAO band) and **collapses r
 lower bound* ~1800× lower at φ_p=1.4 — equilibrium-O only, super-eq/prompt NO deferred; the AFT
 rolls over and the O-starved pool crashes `[O]`), which is *why* real
 low-NOx combustors burn rich then quick-quench past the peak. Mix-out is the **ideal
-(infinitely-fast) quench** (NO frozen); still bit-for-bit rung 6 (a pure diagnostic). Deferred:
-the **finite-rate quench** (dwell-at-stoich NO spike) is the next seam — this is "rich primary +
-ideal quench," not "RQL done."
+(infinitely-fast) quench** (NO frozen); still bit-for-bit rung 6 (a pure diagnostic); **rung 10**
+resolves that quench in **time** — the **finite-rate quench**: a `τ_q` knob on `zoned_nox` runs a
+secondary-zone Zeldovich along a cooling/mixing trajectory whose local `far` sweeps
+`far_p → f_stoich → far_overall`, so a **rich** primary's temperature **rises through the stoich
+peak** (2110→2453 K at φ_p=1.5) and NO is **re-made** as the gas dwells at stoich. EI_NO rises
+monotonically with `τ_q` (φ_p=1.5: 0.0013 → ~3.3 g/kg at 3 ms, ~2500×) and the rung-9 rich-flank
+collapse **fills back in** to a ~φ_p-independent ~3 g/kg floor — a rich primary is low-NOx **only
+if the quench is fast**, the whole RQL tension. Uses a **separate clamp-free integrator** (super-eq
+NO on cooling must not be capped — Heywood; dropped on principle, *proved dormant* here at
+`max_a=0.677<1`). `τ_q=None` (default) is the exact rung-9 ideal quench, so still **bit-for-bit rung
+6** (a pure diagnostic). Deferred: **super-equilibrium O / prompt (Fenimore) NO** and the rung-6
+**equilibrium-vs-frozen nozzle** seam (where the dropped clamp earns its keep) are the next seams;
+`τ_q` + the linear mixing schedule stay knobs (no jets-in-crossflow model).
 
 **The deliverable is understanding, not the tool.** The code is the medium that
 forces every thermodynamic assumption into the open. Optimize the work for
@@ -81,11 +91,16 @@ teaching, not for features or polish.
   branched `_equil_solve` seed (lean byte-identical → provable reduce-to-rung-8), the rich CO/H₂
   equilibrium, the EI_NO bell (peaks near stoich, collapses rich), the ideal-quench framing +
   finite-quench seam, the soot-bound guard, the CEA-rich-methane + WGS self-check gates.
+- **`docs/rung10-spec.md`** — rung-10 contract + handout: the finite-rate quench (the `τ_q` knob +
+  linear mixing schedule), the τ_q-independent quench trajectory (fast chemistry = f(β)), the
+  clamp-free `_quench_no` integrator + the equilibrium-clamp trap (correct-on-principle,
+  dormant-on-numbers, `max_a` guarded), the exact reduce-to-rung-9 short-circuit, the smoking-gun
+  T(β) rise + NO-spike-vs-τ_q + re-filled-rich-flank gates.
 - `docs/plans/` — living plan/tasks (rungs 1–3), plus `rung2-anchor-mattingly.md`,
   `rung3-anchor-cengel.md`, `rung4-anchor-mattingly.md`, `rung5-anchor-formation.md`,
-  `rung6-anchor-equilibrium.md`, `rung7-anchor-nox.md`, `rung8-anchor-zoning.md`, and
-  `rung9-anchor-rql.md` (the verified textbook / formation / CEA-equilibrium / Zeldovich-kinetics
-  / ICAO-zoning / rich-RQL anchor data).
+  `rung6-anchor-equilibrium.md`, `rung7-anchor-nox.md`, `rung8-anchor-zoning.md`,
+  `rung9-anchor-rql.md`, and `rung10-anchor-quench.md` (the verified textbook / formation /
+  CEA-equilibrium / Zeldovich-kinetics / ICAO-zoning / rich-RQL / finite-quench anchor data).
 
 ## Working contract (from SPEC.md — these override convenience)
 - **Derive before you code.** For each station, write the governing equation and
@@ -96,7 +111,7 @@ teaching, not for features or polish.
   hidden state (Turbine and Nozzle diverge their signatures by design).
 - **Conservation checks are assertions**, run on every execution (not as
   separate tests). See SPEC.md / docs/rung2-spec.md § Conservation checks.
-- **Current scope (rung 9):** ideal + real components (isentropic `η_c/η_t` **or**
+- **Current scope (rung 10):** ideal + real components (isentropic `η_c/η_t` **or**
   polytropic `e_c/e_t`, mutually exclusive; pressure ratios `π_d/π_b/π_n`, `η_b`,
   `η_m`, dual cold/hot gas, specified exit pressure) on a **thermally-perfect** gas
   (`cp = cp(T)`; calorically-perfect sections kept as the closed-form branch) — with
@@ -133,11 +148,23 @@ teaching, not for features or polish.
   provable; rich branch = an O-limited seed). The payoff is the **rich flank of the NO-vs-φ bell**:
   EI_NO peaks near stoich and **collapses rich** (~1800× lower at φ_p=1.4 — AFT rollover + O-starve),
   which is *why* RQL burns rich then quick-quenches past the peak. Mix-out is the **ideal
-  (infinitely-fast) quench** (NO frozen); still a pure diagnostic, **bit-for-bit rung 6**. Still
-  deferred — keep the seams: the **finite-rate quench** (a secondary-zone Zeldovich — the
-  dwell-at-stoich NO spike, *the* next seam), **super-equilibrium `O` / prompt NO (Fenimore)**
-  (matters most in the rich primary), and the rung-6 **equilibrium-vs-frozen nozzle flow**;
-  off-design / component maps, a *choked* convergent nozzle, afterburner.
+  (infinitely-fast) quench** (NO frozen); still a pure diagnostic, **bit-for-bit rung 6**. Now
+  **rung 10 — the finite-rate quench**: the same `zoned_nox` gains a **quench-time knob `τ_q`**
+  (`Gas.zoned_nox(..., tau_q=<s>)`; `None` = the exact rung-9 ideal quench). A finite `τ_q`
+  resolves the dilution in **time**: as air is added **linearly** over `τ_q`, the local `far`
+  sweeps `far_p → f_stoich → far_overall`, so a **rich** primary's temperature **rises through the
+  stoich peak** and NO is **re-made** as the gas dwells there (`_quench_no`, a **separate
+  clamp-free** integrator on a τ_q-independent trajectory `_quench_trajectory`; the equilibrium cap
+  is dropped — super-eq NO on cooling must not be capped, Heywood — and *proved dormant* here at
+  `max_a=0.677<1`). EI_NO rises monotonically with `τ_q` and the rung-9 rich-flank collapse
+  **re-fills** to a ~φ_p-independent floor — a rich primary is low-NOx **only if the quench is
+  fast**. `_thermal_no` stays byte-identical (its reduce gates need the exact capped trajectory);
+  the reduce is a **short-circuit** (`τ_q=None`), so still a pure diagnostic, **bit-for-bit rung
+  6**. Still deferred — keep the seams: **super-equilibrium `O` / prompt NO (Fenimore)** (matters
+  most in the rich primary *and* the stoich crossing — even the finite quench is an equilibrium-O
+  lower bound), the rung-6 **equilibrium-vs-frozen nozzle flow** (where the dropped clamp earns its
+  keep), and a **physical mixing model** (jets-in-crossflow) to retire the `τ_q`/linear-schedule
+  knobs; off-design / component maps, a *choked* convergent nozzle, afterburner.
 - **Stop and explain surprises.** If a number looks off, reason about the
   physics rather than silently moving on.
 
@@ -170,7 +197,13 @@ teaching, not for features or polish.
   seed** on the O-balance sign (lean = byte-identical rung-6 expression → provable reduce; rich =
   an O-limited CO+H₂O seed), lifts the `zoned_nox` guard to `φ_p ≤ 2.0` (soot bound), and
   otherwise reuses every rung-6/7/8 primitive unchanged — the rich primary just hands a
-  CO/H₂-major pool to the same integrator.
+  CO/H₂-major pool to the same integrator. Rung 10 adds `_quench_trajectory` (the τ_q-independent
+  fast-chemistry dilution path — `_mixed_out_T` at partial air over β∈[0,1]) and `_quench_no` (a
+  **separate clamp-free** RK4 NO integrator over it, extensive NO, K-check/trace bound at every β;
+  returns `max_a` for the clamp-dormancy guard), extends `ZonedNOxState` (`tau_q`/`ei_no_quenched`/
+  `x_no_quenched`/`T_peak`/`max_a_quench`, all `None` for the ideal quench) and gives `zoned_nox` a
+  `tau_q=None` param that **short-circuits to the exact rung-9 path**; `_thermal_no` is byte-
+  identical (its reduce gates need the exact capped trajectory). Still a pure diagnostic.
 - `turbojet/components.py` — `Inlet, Compressor, Burner, Turbine, Nozzle` in `h`/`pr`
   form (+ loss params, `ram_recovery(M0)`, the polytropic `e_c/e_t` knob; the Nozzle
   branches CPG/TPG — the velocity↔enthalpy trap). The `Burner` runs the implicit
@@ -212,6 +245,12 @@ teaching, not for features or polish.
   CO/H₂-major + water-gas-shift self-check, the EI_NO bell (peaks near stoich, collapses on the
   rich flank), split-independent rich `T_mix` → Tt4, soot-bound guard (φ_p ≤ 2), K-check/trace at
   the rich primary T.
+- `tests/test_rung10.py` — rung-10: reduce-to-rung-9 (exact `τ_q=None` short-circuit; quench fields
+  `None`; finite quench additive; cycle-untouched), the smoking-gun T(β) rise through the stoich
+  peak (rich) vs monotone fall (lean/stoich), the NO spike monotone in `τ_q`, the re-filled rich
+  flank (~φ_p-independent floor), the clamp-dormancy `max_a < 1` guard, K-check along the
+  trajectory, the soot-bound + `τ_q > 0` guards. (Cached design point + reusable trajectory to
+  keep the equilibrium-heavy sweeps fast.)
 - `main.py` — runs ideal vs real at one design point: tables + overlaid T–s diagram,
   plus the rung-2-frozen-`cp` vs rung-3-`cp(T)` table, the rung-4 frozen-vs-reacting
   + `f`-sweep table, the rung-5 Fork-A-vs-Fork-B (derived-`hPR`) panel, the rung-6
@@ -219,9 +258,10 @@ teaching, not for features or polish.
   panel (flame-T sweep: equilibrium vs kinetic vs `τ`, the ~500× T-sensitivity, the near-zero
   station-4 number, the pressure-independence contrast), the rung-8 zoning panel (φ_p sweep:
   primary AFT, EI_NO into the ICAO band vs the mixed-out ~zero, `T_mix` → Tt4, the dilution
-  NO-fraction drop at conserved EI_NO), and the rung-9 RQL panel (φ_p sweep across the bell: rich
+  NO-fraction drop at conserved EI_NO), the rung-9 RQL panel (φ_p sweep across the bell: rich
   CO/H₂, the AFT rollover, EI_NO peaking near stoich then collapsing on the rich flank, `T_mix` →
-  Tt4).
+  Tt4), and the rung-10 finite-quench panel (a `τ_q` sweep at a rich primary: T rising through the
+  stoich peak, the EI_NO spike vs `τ_q`, and the re-filled rich flank vs the rung-9 ideal quench).
 
 ## Commands
 - Run the model:  `python main.py`

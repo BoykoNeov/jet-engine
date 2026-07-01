@@ -1126,3 +1126,94 @@ AFT rollover, EI_NO peaking then collapsing, and T_mix returning to Tt4. Still d
 substrate: the **finite-rate quench** (a secondary-zone Zeldovich — the dwell-at-stoich NO spike),
 **super-equilibrium O / prompt (Fenimore) NO**, and the rung-6 **equilibrium-vs-frozen nozzle**
 seam; plus off-design, the choked nozzle, the afterburner.*
+
+---
+
+# Rung 10 — The Finite-Rate Quench: the RQL Hazard, in plain language
+
+## The headline: rung 9's rich win was on credit — the quench has to pay for it
+Rung 9 said a rich primary is low-NOx and left it there. But it cheated on *one* thing: it froze
+the NO the instant the primary was done, as if the dilution air appeared everywhere at once. Real
+mixing takes time. And here is the trap — as the quench air blends in, the gas doesn't jump from
+rich straight to lean; it passes **through stoichiometric**, the exact top of the NO bell. So the
+rich primary that so carefully sat *off* the peak now slides **up and over it** on the way down,
+and the Zeldovich clock — which never stopped — makes NO the whole time it dwells there. Rung 10
+puts a stopwatch on the quench (a mixing time `τ_q`) and asks: how much of rung 9's rich win
+survives?
+
+## The smoking gun: a rich flame gets *hotter* while it's being put out
+The load-bearing picture is a temperature that goes the "wrong" way. A rich primary at φ_p=1.5
+burns at ~2110 K. Start diluting it and — for a while — it gets **hotter**, peaking at ~2453 K as
+the local mixture crosses φ≈1.05 (slightly-rich stoichiometric, where the flame temperature
+maxes), before finally falling to the mixed-out Tt4. A lean or stoichiometric primary starts at
+the top and only cools; only a **rich** primary climbs through the peak. That up-and-over
+excursion — plus the flood of atomic O right at stoich — is the NO spike. If the model showed a
+rich primary cooling straight down, it would be wrong; the *rise* is the check.
+
+## The result: a slow quench un-does the rich win, an order of magnitude at a time
+At φ_p=1.5 the rung-9 ideal quench reads 0.0013 g/kg. Give the quench a finite time and the NO
+comes back:
+
+| quench time `τ_q` | EI_NO | vs the ideal quench |
+|---|---|---|
+| ideal (instant) | 0.0013 g/kg | 1× |
+| 0.1 ms | 0.11 | ~80× |
+| 1 ms | 1.1 | ~830× |
+| 3 ms | 3.3 | ~2500× |
+| 10 ms | 10.6 | ~8000× |
+
+Three orders of magnitude, re-made purely by quenching *slowly*. This is the RQL design tension in
+one column: the rich primary buys you a low-NOx start, and a lazy quench spends all of it. "Quick"
+in quick-quench is not a slogan — it is the entire mechanism. Sweep the whole bell and the rich
+flank that *collapsed* to zero in rung 9 gets **filled back in** to a nearly flat ~3 g/kg floor
+under a 3 ms quench, because every rich mixture passes through the *same* stoich peak and dwells
+there about equally. A rich primary is low-NOx **only if the quench is fast**.
+
+## One honest surprise: the clamp we had to drop never actually fired
+Rung 7's integrator capped NO at its local equilibrium — sensible when NO is climbing toward a
+fixed ceiling at one temperature. On a *cooling* path that cap is a bug: as the gas chills, its
+equilibrium NO drops *below* the NO already present, and that surplus is real — it freezes
+(Heywood's super-equilibrium NO). A cap would delete it and hand back a too-low number with every
+assertion still smugly green. So the quench integrator drops the cap; the reverse-rate form
+self-limits (it runs *backwards* when NO overshoots equilibrium). The surprise: **at this engine's
+lean design point the cap never would have fired anyway.** Because the overall mixture is so lean
+(φ≈0.40), the cold mixed-out gas is oxygen-rich and its equilibrium NO stays *high* — above the
+frozen NO — the whole way down. Measured, the NO never gets past 68% of local equilibrium
+(`max_a = 0.677 < 1`) anywhere in the sweep. We dropped the cap **on principle** — it is wrong for
+a cooling path, and a dormant-but-wrong assumption is exactly the kind this project exists to drag
+into the light — and then *proved it dormant* with a guarded number, so if a future, hotter
+operating point ever crosses into the super-equilibrium regime, the test will say so instead of
+lying quietly. (Where it *will* bite: the near-stoichiometric exhaust cooling in the still-open
+nozzle seam.)
+
+## Did we get it right?
+The reduce-to-rung-9 is **exact by construction**, not by luck: `τ_q=None` short-circuits to the
+literal rung-9 code before any quench math runs, so every existing call — the whole rung 1–9 suite
+— stays bit-for-bit, and the four new quench outputs simply read `None`. The finite quench is
+opt-in and additive; the cycle never moves (NO is still a trace diagnostic). The trajectory's
+K-check stays in band at *every* temperature the quench visits, now down to the cold mixed-out
+~1518 K that rung 7's single-point check never saw. What stays **un-anchored**, said plainly: `τ_q`
+and the linear mixing schedule are knobs (we model the *time at stoich*, not the jets-in-crossflow
+that set it); **super-equilibrium O and prompt NO** are still deferred and matter *most* right here,
+in the rich primary and the radical-rich stoich crossing, so even this spike is an equilibrium-O
+**lower bound**; and the EI band is still an order-of-magnitude landing zone. The **shape** — the
+temperature that rises while the flame is quenched, the spike that grows with dwell time, the rich
+flank that re-fills — is the result, and the shape is right.
+
+---
+*Rung 10 resolves rung 9's **ideal (infinitely-fast) quench** into a **finite-rate** one: pass
+`Gas.zoned_nox(..., tau_q=<seconds>)` and the NO is re-integrated (clamp-free) along a
+cooling/mixing trajectory whose local fuel/air ratio sweeps `far_p → f_stoich → far_overall`, so a
+rich primary's temperature rises through the stoichiometric NO-bell peak and the Zeldovich rate
+re-makes NO as the gas **dwells at stoich**. EI_NO rises monotonically with `τ_q` (φ_p=1.5:
+0.0013 → ~3.3 g/kg at 3 ms) and the rung-9 rich-flank collapse fills back to a ~φ_p-independent
+floor — a rich primary is low-NOx **only if the quench is fast**. The fast chemistry (majors + T)
+is a function of the mix fraction alone, so the trajectory is `τ_q`-independent and built once; the
+equilibrium clamp is dropped (super-equilibrium NO freezes on cooling — Heywood) and proved dormant
+here (`max_a = 0.677 < 1`, a guarded number). `τ_q=None` is the exact rung-9 path, so every station
+is bit-for-bit rung 6 and the whole rung 1–9 suite stays green. `python main.py` prints the rung-10
+finite-quench panel: the T-rises-through-the-peak, the EI_NO-vs-`τ_q` spike, and the re-filled bell.
+Still deferred on this substrate: **super-equilibrium O / prompt (Fenimore) NO**, the rung-6
+**equilibrium-vs-frozen nozzle** seam (where the dropped clamp earns its keep), and a **physical
+mixing model** to retire the `τ_q`/linear-schedule knobs; plus off-design, the choked nozzle, the
+afterburner.*

@@ -20,7 +20,8 @@ from turbojet.engine import FlightCondition, build_turbojet  # noqa: E402
 from turbojet.gas import (  # noqa: E402
     Gas, _products_composition, _equilibrium_composition, _h_molar_A,
     _HF_FUEL_DEFAULT, _M_AIR, _M_CH2, _F_STOICH, _air_mole_fractions,
-    _equilibrium_no_fraction,
+    _equilibrium_no_fraction, _primary_aft, _thermal_no,
+    _quench_trajectory, _quench_no,
 )
 
 TS_DIAGRAM_PATH = "ts_diagram.png"
@@ -431,6 +432,73 @@ def print_rql_table(flight):
     print("  re-equilibration (mix-out is the ideal, infinitely-fast quench; NO frozen).")
 
 
+def print_finite_quench_table(flight):
+    """Rung-10 payoff: the FINITE-rate quench — the RQL hazard, quantified.
+
+    Rung 9's mix-out was the IDEAL (infinitely-fast) quench: NO frozen at the primary value, so
+    a rich primary read as low-NOx. But a real quench mixes over a finite time τ_q, and while it
+    does the LOCAL mixture sweeps far_p → f_stoich → far_overall — through STOICHIOMETRIC, the
+    peak of the NO bell. So a rich primary's temperature RISES through the stoich peak on the way
+    down, and the extended-Zeldovich rate RE-MAKES NO along that path (a clamp-free integrator —
+    super-equilibrium NO on cooling must not be capped). A SLOW quench dwells at stoich and
+    re-makes the NO the rich primary avoided; a FAST quench escapes past the peak. "A rich
+    primary is low-NOx" is therefore CONTINGENT on a fast quench — the whole RQL design tension.
+
+    Still a pure diagnostic: NO is trace, every cycle station is bit-for-bit rung 6 (the finite
+    quench is opt-in via τ_q; τ_q=None is the exact rung-9 ideal quench).
+    """
+    eq = Gas.reacting_equilibrium()
+    real = build_turbojet(eq, PI_C, TT4, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+    st3, st4 = real.stations["3"], real.stations["4"]
+    Tt3, Tt4, far, p = st3.Tt, st4.Tt, st4.far, st4.pt
+    hf = eq.hf_fuel_molar or _HF_FUEL_DEFAULT
+    # Finite-quench resolution: EI is within ~0.3% of the 240-point anchor by ngrid=80, and a
+    # 240-point trajectory is ~25 s (each point re-equilibrates the diluting majors). Use 80 here
+    # to keep `python main.py` interactive; the production default (240) stays anchor-exact.
+    ng = 80
+
+    print("\nFinite-rate quench (rung 10): the RQL hazard — NO re-made as the gas dwells at stoich")
+    print("while the quench air mixes in. Rung 9's rich-flank collapse holds ONLY if the quench is fast.")
+    print(f"  Design point: Tt3={Tt3:.0f} K, Tt4={Tt4:.0f} K, p={p/1e5:.1f} bar, overall "
+          f"far={far:.4f} (φ={far/_F_STOICH:.2f})")
+
+    # (1) The τ_q sweep at a RICH primary (φ_p=1.5): T rises through the stoich peak, and the NO
+    #     spike grows with τ_q. Build the (τ_q-independent) trajectory ONCE and reuse it.
+    phi_p = 1.5
+    far_p = phi_p * _F_STOICH
+    alpha = far / far_p
+    T_p = _primary_aft(far_p, p, Tt3, hf)
+    comp_p = _equilibrium_composition(far_p, T_p, p)
+    nox = _thermal_no(comp_p, T_p, p, 3e-3, far_p)
+    n0 = alpha * nox.x_no * sum(comp_p.values())
+    tab = _quench_trajectory(comp_p, T_p, alpha, far, Tt3, p, ngrid=ng)   # built ONCE, reused
+    T_peak = max(r["T"] for r in tab)
+    ei9 = nox.ei_no
+    print(f"\n  A rich primary φ_p={phi_p}: AFT={T_p:.0f} K RISES to a stoich peak of {T_peak:.0f} K")
+    print(f"  as it quenches (rung-9 ideal-quench EI_NO = {ei9:.4f} g/kg — NO frozen at the primary).")
+    print(f"  {'τ_q ms':>8} {'EI_NO g/kg':>11} {'×rung9':>9}   quench speed")
+    print("  " + "-" * 46)
+    for tau_q in (0.01e-3, 0.1e-3, 0.3e-3, 1e-3, 3e-3, 10e-3):
+        q = _quench_no(comp_p, T_p, alpha, far, Tt3, p, n0, tau_q, tab=tab)
+        tag = "fast (RQL target)" if tau_q <= 0.3e-3 else ("slow — NO re-made" if tau_q >= 3e-3 else "")
+        print(f"  {tau_q*1e3:>8.3f} {q['ei']:>11.4g} {q['ei']/ei9:>8.0f}×   {tag}")
+
+    # (2) The bell with a finite quench: the rung-9 rich-flank collapse is FILLED BACK IN.
+    print("\n  The bell re-filled — rung-9 ideal vs a 3 ms quench (the rich flank comes back):")
+    print(f"  {'φ_p':>5} {'ideal EI':>10} {'quench 3ms':>11}   note")
+    print("  " + "-" * 46)
+    for phi in (0.9, 1.0, 1.1, 1.3, 1.5, 1.8):
+        z = eq.zoned_nox(far, Tt3, Tt4, p, phi, tau_q=3e-3, quench_ngrid=ng)
+        note = ("peak (already at stoich)" if phi == 1.0
+                else ("rich: collapsed → re-filled" if phi >= 1.3 else ""))
+        print(f"  {phi:>5.2f} {z.ei_no:>10.4g} {z.ei_no_quenched:>11.4g}   {note}")
+    print("  The ideal rich flank (φ_p≥1.3) collapses to ≈0; a finite quench fills it to a")
+    print("  ~φ_p-independent ~3 g/kg floor — every rich mix passes the SAME stoich peak. The")
+    print("  'quick' in quick-quench is the whole game: only a sub-ms quench keeps the rich win.")
+    print(f"  (Clamp dormant here: max [NO]/[NO]_e = {z.max_a_quench:.3f} < 1 — NO stays sub-equilibrium;")
+    print("  the dropped clamp is correct-on-principle, dormant-on-numbers at this lean point.)")
+
+
 def _cycle_points(result, flight):
     """The six cycle points as {label: (s, T)} in (entropy, temperature) space.
 
@@ -558,6 +626,8 @@ def main():
     print_zoning_table(FLIGHT)
 
     print_rql_table(FLIGHT)
+
+    print_finite_quench_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

@@ -921,6 +921,125 @@ def _mixed_out_T(comp_prim: dict, T_prim: float, alpha: float,
     return 0.5 * (lo + hi)
 
 
+# --- Rung-10 finite-rate quench (secondary-zone Zeldovich in the cooling gas) --------- #
+def _quench_trajectory(comp_prim: dict, T_prim: float, alpha: float, far_ov: float,
+                       T_dilution: float, p: float, ngrid: int = 240) -> list:
+    """Fast-chemistry dilution trajectory for the finite quench (rung 10).
+
+    Rung 9's mix-out is the IDEAL (infinitely-fast) quench: NO frozen at the primary value.
+    Here the quench air is added over a finite time, so we resolve the mix in a parameter
+    β ∈ [0,1] (dilution fraction). The air present at β is a(β)=α+β(1−α) mol per mol
+    TOTAL(final) air, so the LOCAL fuel/air ratio far_local = far_ov/a sweeps far_p → far_ov
+    — through STOICHIOMETRIC for a rich primary (the peak of the NO bell). At each β the
+    majors + T are instantaneous equilibrium (the rung-8 re-equilibrating `_mixed_out_T` on
+    the CURRENT air, basis 1 mol current air), so [O],[N2],[H],[NO]_e and T are functions of
+    β ALONE; NO is the one SLOW variable integrated separately (`_quench_no`). `V` is the
+    pool volume on the FINAL basis (a·ntot_local mol → V), so extensive NO moles ↔ conc.
+
+    The rung-7 K-check + trace guards bind along the WHOLE trajectory (every T the quench
+    visits), not just the primary — the transcribed rates stay tied to the a6/a7 thermo."""
+    tab = []
+    for i in range(ngrid):
+        b = i / (ngrid - 1)
+        a = alpha + b * (1.0 - alpha)                 # mol current-air / mol total-final-air
+        far_local = far_ov / a                        # far_p (β=0) → far_ov (β=1)
+        alpha_local = alpha / a                        # fraction of CURRENT air that is primary
+        T_local = _mixed_out_T(comp_prim, T_prim, alpha_local, far_local, T_dilution, p)
+        comp_local = _equilibrium_composition(far_local, T_local, p)
+        ntot_local = sum(comp_local.values())          # moles per mol current-air
+        conc = p / (_Ru * T_local)                     # total molar conc, mol/m^3
+        cO = comp_local.get("O", 0.0) / ntot_local * conc
+        cN2 = comp_local["N2"] / ntot_local * conc
+        cH = comp_local.get("H", 0.0) / ntot_local * conc
+        x_no_e = _equilibrium_no_fraction(comp_local, T_local)
+        cNOe = x_no_e * conc
+        V = a * ntot_local * _Ru * T_local / p         # volume on the FINAL (total-air) basis
+        kr = _kcheck_ratio(T_local)                    # K-check binds at EVERY trajectory T
+        assert 0.90 < kr < 1.15, f"quench K-check off: ratio {kr:.4f} at T={T_local:.1f}"
+        assert x_no_e < 0.02, f"NO not trace on quench path (x_NO_e={x_no_e:.4g}) at T={T_local:.1f}"
+        tab.append(dict(a=a, T=T_local, cO=cO, cN2=cN2, cH=cH, cNOe=cNOe,
+                        ntot_local=ntot_local, V=V))
+    return tab
+
+
+def _quench_no(comp_prim: dict, T_prim: float, alpha: float, far_ov: float,
+               T_dilution: float, p: float, n_no_initial: float, tau_q: float,
+               nsteps: int = 2000, ngrid: int = 240, tab: Optional[list] = None) -> dict:
+    """Finite-rate quench NO integrator (rung 10). CLAMP-FREE by design.
+
+    Integrates the extended-Zeldovich rate (the SAME reverse-rate one-equation form as
+    `_thermal_no`) along the `_quench_trajectory` cooling/mixing path, starting from the
+    primary's kinetic NO (`n_no_initial`, the rung-9 frozen value). Two differences from
+    `_thermal_no`, both load-bearing:
+
+      * NO is EXTENSIVE — moles per mol total-final-air. Mixing dilution air changes the
+        volume (V(β)) but conserves NO moles; only chemistry (the Zeldovich rate) changes
+        them. So we integrate dn_NO/dt = rate([NO]=n_NO/V)·V.
+      * The cNO≤cNOe CAP IS DROPPED. On a cooling path NO is legitimately
+        super-equilibrium and frozen (Heywood); the cap would delete exactly that NO — a
+        plausible-but-wrong low number with the asserts still green. The (1−a²) factor
+        already goes NEGATIVE when a=[NO]/[NO]_e>1 (super-eq NO decomposes) and the
+        Arrhenius constants freeze it out as T falls, so the form self-limits. This is a
+        SEPARATE integrator; `_thermal_no` stays byte-identical (its rung-6..9 reduce gates
+        depend on its exact capped RK4 trajectory). See docs/rung10-spec.md § the clamp trap.
+
+    A slow quench dwells near the stoichiometric crossing (the NO-bell peak) and RE-MAKES
+    the NO a rich primary avoided; a fast quench escapes past the peak — the RQL hazard.
+
+    The trajectory (majors + T as a function of β alone) is τ_q-INDEPENDENT — the fast
+    chemistry doesn't know how fast the mixing is — so a caller sweeping τ_q at fixed φ_p can
+    build it ONCE and pass it as `tab` (the main.py panel / tests do this; a bare `zoned_nox`
+    call rebuilds it)."""
+    if tab is None:
+        tab = _quench_trajectory(comp_prim, T_prim, alpha, far_ov, T_dilution, p, ngrid=ngrid)
+
+    def interp(key: str, tfrac: float) -> float:
+        x = tfrac * (len(tab) - 1)
+        i = min(int(x), len(tab) - 2)
+        w = x - i
+        return tab[i][key] * (1.0 - w) + tab[i + 1][key] * w
+
+    max_a = 0.0   # max [NO]/[NO]_e over the path: <1 ⇒ clamp dormant; >1 ⇒ super-eq regime
+
+    def dn_dt(tfrac: float, n_no: float) -> float:
+        nonlocal max_a
+        cNOe = interp("cNOe", tfrac)
+        if cNOe <= 0.0:
+            return 0.0
+        T = interp("T", tfrac); V = interp("V", tfrac)
+        cO = interp("cO", tfrac); cN2 = interp("cN2", tfrac); cH = interp("cH", tfrac)
+        R1 = _k_zeldovich("1f", T) * cO * cN2
+        R2 = _k_zeldovich("2r", T) * cNOe * cO
+        R3 = _k_zeldovich("3r", T) * cNOe * cH
+        beta = R1 / (R2 + R3) if (R2 + R3) > 0.0 else 0.0
+        a = (n_no / V) / cNOe
+        max_a = max(max_a, a)
+        return 2.0 * R1 * (1.0 - a * a) / (1.0 + beta * a) * V     # d(n_NO)/dt = rate·V
+
+    n_no = n_no_initial
+    dt = tau_q / nsteps
+    t = 0.0
+    for _ in range(nsteps):
+        tf = min(t / tau_q, 1.0)
+        tf2 = min((t + 0.5 * dt) / tau_q, 1.0)
+        tf3 = min((t + dt) / tau_q, 1.0)
+        k1 = dn_dt(tf, n_no)
+        k2 = dn_dt(tf2, n_no + 0.5 * dt * k1)
+        k3 = dn_dt(tf2, n_no + 0.5 * dt * k2)
+        k4 = dn_dt(tf3, n_no + dt * k3)
+        n_no += dt / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4)
+        if n_no < 0.0:
+            n_no = 0.0                                  # guard negatives ONLY (no eq cap)
+        t += dt
+
+    ntot_mix = tab[-1]["a"] * tab[-1]["ntot_local"]     # moles per mol total-final-air (=ntot(far_ov,T_mix))
+    x_no_mix = n_no / ntot_mix
+    n_fuel = far_ov * _M_AIR / _M_CH2
+    ei = 1000.0 * (n_no * _M_NO) / (n_fuel * _M_CH2_KG) if n_fuel > 0.0 else 0.0
+    T_peak = max(r["T"] for r in tab)
+    return dict(ei=ei, x_no_mix=x_no_mix, n_no=n_no, T_peak=T_peak, max_a=max_a)
+
+
 @dataclass
 class ZonedNOxState:
     """Two-zone (primary → dilution) thermal-NO diagnostic (rung 8). A pure DIAGNOSTIC —
@@ -934,11 +1053,25 @@ class ZonedNOxState:
     T_mix: float         # mixed-out temperature after dilution, K (≈ Tt4)
     primary: NOxState    # the rung-7 NO diagnostic evaluated ON the hot primary pool
     x_no_mix: float      # NO mole fraction after dilution (frozen moles / mixed total moles)
+    # RUNG 10 — finite-rate quench (all None for the IDEAL quench, tau_q=None → bit-for-bit
+    # rung 9). Set only when zoned_nox is called with a finite tau_q.
+    tau_q: Optional[float] = None          # quench (dilution-mixing) time, s
+    ei_no_quenched: Optional[float] = None # EI_NO re-made along the finite quench, g NO/kg fuel
+    x_no_quenched: Optional[float] = None  # NO mole fraction frozen at the end of the finite quench
+    T_peak: Optional[float] = None         # peak T along the quench path (> T_primary for a rich primary)
+    max_a_quench: Optional[float] = None   # max [NO]/[NO]_e along the path; <1 ⇒ clamp dormant
 
     @property
     def ei_no(self) -> float:
         """Emission index, g NO / kg fuel — set in the primary, conserved through dilution
-        (α cancels: NO moles and fuel moles both scale with the primary air fraction)."""
+        (α cancels: NO moles and fuel moles both scale with the primary air fraction).
+
+        This is the IDEAL-quench (rung 9) EI. For the finite quench (rung 10) use
+        `ei_no_quenched`, which RE-MAKES NO at the stoichiometric crossing the dilution passes
+        through. At the lean main.py design point `ei_no_quenched ≥ ei_no` because NO stays
+        BELOW equilibrium the whole way (max_a_quench < 1 — the documented dormancy); in
+        GENERAL the dropped clamp permits NO to DECREASE where the inherited NO is
+        super-equilibrium on the cooling path (a>1), so ≥ is not guaranteed off this point."""
         return self.primary.ei_no
 
     @property
@@ -1225,7 +1358,9 @@ class Gas:
 
     # --- Rung-8 two-zone combustor NOx diagnostic (DECOUPLED; never feeds the cycle) -----
     def zoned_nox(self, far: float, Tt3: float, Tt4: float, p: float,
-                  phi_primary: float, tau: float = 3e-3) -> "ZonedNOxState":
+                  phi_primary: float, tau: float = 3e-3,
+                  tau_q: Optional[float] = None,
+                  quench_ngrid: int = 240, quench_nsteps: int = 2000) -> "ZonedNOxState":
         """Two-zone (primary → dilution) thermal NOx (docs/rung8-spec.md). Runs the SAME
         rung-7 extended-Zeldovich integrator on a HOT, near-stoichiometric PRIMARY zone
         instead of the mixed-out station-4 pool, then dilutes back to Tt4:
@@ -1248,8 +1383,26 @@ class Gas:
         on the rich flank (φ=1.4 → ~0.007 g/kg) — the AFT rolls over and the O-starved pool
         crashes [O]. That rich-side collapse is WHY real low-NOx combustors burn a rich primary.
         The mix-out here is the IDEAL (infinitely-fast) quench: NO is simply frozen at the
-        primary value. Finite-rate quench (NO spiking as the gas dwells at stoich while mixing)
-        is the next seam. Held below soot onset (phi_primary ≤ 2.0; docs/rung9-spec.md)."""
+        primary value. Held below soot onset (phi_primary ≤ 2.0; docs/rung9-spec.md).
+
+        RUNG 10 — the FINITE-RATE quench (docs/rung10-spec.md). Pass a finite `tau_q` (the
+        quench/dilution-mixing time, s) to resolve the quench in TIME instead of collapsing it
+        to an instant. As the dilution air mixes in over `tau_q`, the LOCAL mixture sweeps
+        far_p → f_stoich → far_ov — through STOICHIOMETRIC — so a RICH primary's temperature
+        RISES through the NO-bell peak on the way down, and the extended-Zeldovich rate RE-MAKES
+        NO along that path (a clamp-free integrator; super-equilibrium NO on cooling must not be
+        capped — Heywood). A SLOW quench dwells at stoich and re-makes the NO the rich primary
+        avoided; a FAST quench escapes past the peak — the whole point of "quick"-quench. The
+        rung-9 rich-flank collapse is thus CONTINGENT on a fast quench (`ei_no_quenched` fills
+        the rich flank back in). `tau_q=None` (default) is the IDEAL quench — the EXACT rung-9
+        path, so every existing call stays bit-for-bit rung 9 (hence bit-for-bit rung 6).
+
+        `quench_ngrid`/`quench_nsteps` are the finite-quench numerical resolution (trajectory
+        points / RK4 steps) — pure cost/accuracy knobs, only used when `tau_q` is finite. The 240
+        default reproduces the anchor's worked example (docs/plans/rung10-anchor-quench.md); EI_NO
+        is within ~0.1 % by ngrid≈120 and the SHAPE (T_peak, monotonicity) by ngrid≈32, so tests
+        and `main.py` pass a smaller ngrid to stay interactive (a 240-point trajectory is ~25 s —
+        each point re-equilibrates the diluting majors via a bisection `_mixed_out_T`)."""
         assert 0.0 < phi_primary <= 2.0 + 1e-9, (
             f"phi_primary {phi_primary} outside (0, 2] — the 5-species (no soot / no C(s)) "
             "basis is valid only below soot onset (~φ2; graphite onset is φ3). Rich RQL scope."
@@ -1279,8 +1432,23 @@ class Gas:
         ntot_mix = sum(_equilibrium_composition(far, T_mix, p).values())
         x_no_mix = n_no_total / ntot_mix
 
-        return ZonedNOxState(phi_primary=phi_primary, far_primary=far_p, alpha=alpha,
-                             T_primary=T_p, T_mix=T_mix, primary=nox, x_no_mix=x_no_mix)
+        state = ZonedNOxState(phi_primary=phi_primary, far_primary=far_p, alpha=alpha,
+                              T_primary=T_p, T_mix=T_mix, primary=nox, x_no_mix=x_no_mix)
+        if tau_q is None:
+            return state                                 # IDEAL quench — bit-for-bit rung 9
+
+        # RUNG 10 — finite-rate quench: re-integrate NO (clamp-free) through the cooling/mixing
+        # trajectory, starting from the primary's frozen NO (n_no_total). A pure diagnostic —
+        # NO/N still never enter _equil_solve, so the cycle stays bit-for-bit rung 6.
+        assert tau_q > 0.0, f"tau_q {tau_q} must be positive (or None for the ideal quench)"
+        q = _quench_no(comp_p, T_p, alpha, far, Tt3, p, n_no_total, tau_q,
+                       nsteps=quench_nsteps, ngrid=quench_ngrid)
+        state.tau_q = tau_q
+        state.ei_no_quenched = q["ei"]
+        state.x_no_quenched = q["x_no_mix"]
+        state.T_peak = q["T_peak"]
+        state.max_a_quench = q["max_a"]
+        return state
 
     def unified(self) -> "Gas":
         """Return a copy with the hot section collapsed onto the cold section.
