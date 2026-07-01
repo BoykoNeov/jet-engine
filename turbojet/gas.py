@@ -110,6 +110,16 @@ _SPECIES = {
     "H": (1.00794,
           (2.50000000, 7.05332819e-13, -1.99591964e-15, 2.30081632e-18, -9.27732332e-22),
           (2.50000001, -2.30842973e-11, 1.61561948e-14, -4.73515235e-18, 4.98197357e-22)),
+    # RUNG 7 — thermal NOx: NO and the N atom (the extended Zeldovich mechanism). Same
+    # GRI-Mech 3.0 source; INERT to rungs 1-6 (nothing references them — _equil_solve
+    # uses its fixed 8-species C/H/O basis, _mixture only the composition it is handed).
+    # Certified by the a6/a7 self-check + the thermo-kinetic K-check (docs/plans/rung7-anchor-nox.md).
+    "NO": (30.0061,
+           (4.21859896, -4.63988124e-3, 1.10443049e-5, -9.34055507e-9, 2.80554874e-12),
+           (3.26071234, 1.19101135e-3, -4.29122646e-7, 6.94481463e-11, -4.03295681e-15)),
+    "N": (14.0067,
+          (2.50000000, 0.0, 0.0, 0.0, 0.0),
+          (2.41594290, 1.74890650e-4, -1.19023690e-7, 3.02262450e-11, -2.03609820e-15)),
 }
 
 # Cold section = dry air (mole fractions). R_air falls out at ~287.1, consistent
@@ -162,7 +172,10 @@ _M_CH2 = 12.011 + 2 * 1.008
 # element (0). OH carries ~1.5 kJ/mol literature spread (docs/plans/rung6-anchor § 1).
 _T_REF = 298.15
 _HF298 = {"N2": 0.0, "O2": 0.0, "Ar": 0.0, "CO2": -393520.0, "H2O": -241826.0,
-          "CO": -110527.0, "H2": 0.0, "OH": 38987.0, "O": 249180.0, "H": 217998.0}
+          "CO": -110527.0, "H2": 0.0, "OH": 38987.0, "O": 249180.0, "H": 217998.0,
+          # Rung 7 (JANAF). ΔHf°(NO) carries a real ~1 kJ/mol literature spread — GRI-Mech
+          # assumes ~91.27 vs our JANAF 90.291; the K-check confirms JANAF (rung7-anchor § 1).
+          "NO": 90291.0, "N": 472680.0}
 
 # RUNG 6 — standard molar ENTROPIES at 298.15 K, J/(mol K) (CODATA/JANAF). The twin
 # of _HF298: rung 5 derived the formation constant a6 from _HF298; rung 6 derives the
@@ -170,7 +183,8 @@ _HF298 = {"N2": 0.0, "O2": 0.0, "Ar": 0.0, "CO2": -393520.0, "H2O": -241826.0,
 # so g0(T)=h0-T*s0 -> Kp. Consumed ONLY by the equilibrium/Kp solve, never downstream
 # pr (the additive a7 cancels in every pr ratio, as a6 cancels in enthalpy diffs).
 _S298 = {"N2": 191.609, "O2": 205.152, "Ar": 154.846, "CO2": 213.785, "H2O": 188.835,
-         "CO": 197.660, "H2": 130.680, "OH": 183.708, "O": 161.058, "H": 114.716}
+         "CO": 197.660, "H2": 130.680, "OH": 183.708, "O": 161.058, "H": 114.716,
+         "NO": 210.758, "N": 153.30}    # rung 7 (JANAF)
 
 _P_REF = 100000.0        # standard-state pressure, 1 bar (the Kp (p/p0)^dnu factor)
 
@@ -694,6 +708,143 @@ class _EquilibriumSection:
         return self._for(far).R
 
 
+# --------------------------------------------------------------------------- #
+# RUNG 7 — thermal NOx: the extended Zeldovich mechanism (kinetically-limited). #
+# NO is a TRACE (ppm) species, so it is a DECOUPLED diagnostic layer on top of  #
+# the rung-6 cycle — the cycle stays bit-for-bit rung 6. Unlike the major       #
+# species, NO does NOT reach equilibrium in a combustor: it is rate-limited,    #
+# kinetically frozen far below its equilibrium value at realistic residence     #
+# times (the lesson INVERTS rung 6). See docs/rung7-spec.md and                 #
+# docs/plans/rung7-anchor-nox.md. Everything here reads the FROZEN rung-6 pool   #
+# (O, O2, OH, H, N2) and reuses the scale-A _g_molar (a6+a7) substrate for Kp —  #
+# NO/N are NEVER added to _equil_solve (keeps reduce-to-rung-6 automatic).       #
+# --------------------------------------------------------------------------- #
+
+# Extended Zeldovich mechanism (Hanson & Salimian 1984, as tabulated in Turns):
+#   1: O + N2 <=> NO + N   2: N + O2 <=> NO + O   3: N + OH <=> NO + H
+# k = A * T^n * exp(-theta/T), native cm^3/mol/s -> SI m^3/(mol s) via *1e-6.
+# Every reaction is mole-conserving (Dnu=0), so Kc=Kp with NO (p/p0) factor.
+_ZELDOVICH = {
+    "1f": (1.8e14, 0.0, 38370.0), "1r": (3.8e13, 0.0, 425.0),
+    "2f": (1.8e10, 1.0, 4680.0),  "2r": (3.8e9, 1.0, 20820.0),
+    "3f": (7.1e13, 0.0, 450.0),   "3r": (1.7e14, 0.0, 24560.0),
+}
+_M_NO = _SPECIES["NO"][0] / 1000.0     # kg/mol
+
+
+def _k_zeldovich(key: str, T: float) -> float:
+    """Zeldovich rate constant k(T) in SI m^3/(mol s)."""
+    A, n, theta = _ZELDOVICH[key]
+    return A * (T ** n) * math.exp(-theta / T) * 1e-6
+
+
+def _kp_no(T: float) -> float:
+    """Kp(1/2 N2 + 1/2 O2 <=> NO) = exp(-dG0/RuT), dG0 = g(NO) - 1/2 g(N2) - 1/2 g(O2).
+    Dnu=0 => NO (p/p0) factor: equilibrium NO is PRESSURE-INDEPENDENT (inverts rung 6)."""
+    dG0 = _g_molar("NO", T) - 0.5 * _g_molar("N2", T) - 0.5 * _g_molar("O2", T)
+    return math.exp(-dG0 / (_Ru * T))
+
+
+def _equilibrium_no_fraction(comp: dict, T: float) -> float:
+    """Superimposed equilibrium NO mole fraction from the frozen rung-6 mixture `comp`
+    (mole numbers per mol air). NO is trace: it does NOT perturb `comp`. x_NO_e =
+    Kp_NO * sqrt(x_N2 x_O2) using that mixture's own N2/O2 (N is negligible, ~1e-5 of NO)."""
+    ntot = sum(comp.values())
+    return _kp_no(T) * math.sqrt(comp["N2"] / ntot * comp["O2"] / ntot)
+
+
+def _kcheck_ratio(T: float) -> float:
+    """Thermo-kinetic K-check: (k1f k2f)/(k1r k2r) vs Kc(N2+O2<=>2NO)=exp(-dG0/RuT),
+    dG0 = 2 g(NO) - g(N2) - g(O2). Reactions 1+2 sum to N2+O2<=>2NO, so detailed
+    balance ties the transcribed RATE CONSTANTS to the a6/a7 THERMO (N cancels). The
+    ratio is dimensionless (the 1e-6 SI factor cancels). Measured ~1.035-1.044."""
+    kc_rate = ((_k_zeldovich("1f", T) * _k_zeldovich("2f", T))
+               / (_k_zeldovich("1r", T) * _k_zeldovich("2r", T)))
+    dG0 = 2 * _g_molar("NO", T) - _g_molar("N2", T) - _g_molar("O2", T)
+    return kc_rate / math.exp(-dG0 / (_Ru * T))
+
+
+@dataclass
+class NOxState:
+    """Thermal-NO diagnostic at one (frozen pool, T, p, tau). A pure DIAGNOSTIC — it
+    never feeds the cycle. Mole fractions; rates in mol/m^3/s; EI in g NO / kg fuel."""
+    x_no: float          # kinetic NO mole fraction after residence time tau
+    x_no_eq: float       # equilibrium NO mole fraction (the ceiling)
+    initial_rate: float  # d[NO]/dt at t=0 = 2 k1f [O]_e [N2]_e, mol/m^3/s
+    char_time: float     # tau_NO = [NO]_e / initial_rate, s (>> residence => frozen)
+    ei_no: float         # emission index, g NO / kg fuel
+
+    @property
+    def ppm(self) -> float:
+        return self.x_no * 1e6
+
+    @property
+    def ppm_eq(self) -> float:
+        return self.x_no_eq * 1e6
+
+    @property
+    def fraction_of_equil(self) -> float:
+        return self.x_no / self.x_no_eq
+
+
+def _thermal_no(comp: dict, T: float, p: float, tau: float, far: float,
+                nsteps: int = 4000) -> NOxState:
+    """Kinetic NO after residence time tau on the frozen pool `comp` at (T, p).
+
+    One-equation extended-Zeldovich model (Heywood/Turns), QSS on N, REVERSE-RATE form
+    for R2/R3 so equilibrium [N] is never needed (uses the pool's own O, H):
+        d[NO]/dt = 2 R1 (1 - a^2)/(1 + a R1/(R2+R3)),  a = [NO]/[NO]_e
+        R1 = k1f[O][N2],  R2 = k2r[NO]_e[O],  R3 = k3r[NO]_e[H]
+    a=0 -> rate=2 R1 (initial rate); a->1 -> rate=0 (saturates at [NO]_e, so tau->inf
+    recovers the equilibrium NO — an internal consistency gate). RK4 from [NO]=0.
+    """
+    # K-CHECK (rung-7 standing assert, on every diagnostic run): the transcribed rate
+    # constants must agree with the a6/a7 thermo at the evaluation T (the twin of rung 6's
+    # atom-balance assert). A gross transcription slip is orders of magnitude off.
+    kr = _kcheck_ratio(T)
+    assert 0.90 < kr < 1.15, f"Zeldovich K-check off: ratio {kr:.4f} at T={T}"
+
+    ntot = sum(comp.values())
+    conc = p / (_Ru * T)                         # total molar concentration, mol/m^3
+    x = {s: comp[s] / ntot for s in comp}
+    cO = x.get("O", 0.0) * conc
+    cN2 = x["N2"] * conc
+    cH = x.get("H", 0.0) * conc
+    x_no_eq = _equilibrium_no_fraction(comp, T)
+    cNOe = x_no_eq * conc
+    # TRACE guard (rung-7): NO must be trace for the decoupled-diagnostic assumption.
+    assert x_no_eq < 0.02, f"NO not trace (x_NO_e={x_no_eq:.4g}) — decoupling invalid"
+
+    R1 = _k_zeldovich("1f", T) * cO * cN2
+    R2 = _k_zeldovich("2r", T) * cNOe * cO
+    R3 = _k_zeldovich("3r", T) * cNOe * cH
+    beta = R1 / (R2 + R3) if (R2 + R3) > 0.0 else 0.0
+
+    def rate(cNO: float) -> float:
+        a = cNO / cNOe
+        return 2.0 * R1 * (1.0 - a * a) / (1.0 + beta * a)
+
+    dt = tau / nsteps
+    cNO = 0.0
+    for _ in range(nsteps):
+        k1 = rate(cNO)
+        k2 = rate(cNO + 0.5 * dt * k1)
+        k3 = rate(cNO + 0.5 * dt * k2)
+        k4 = rate(cNO + dt * k3)
+        cNO += dt / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4)
+        if cNO > cNOe:
+            cNO = cNOe                           # clamp: never overshoot equilibrium
+    # STANDING assert: the integrator stays in [0, [NO]_e].
+    assert -1e-12 <= cNO <= cNOe * (1.0 + 1e-9), f"kinetic NO out of [0,eq]: {cNO} vs {cNOe}"
+
+    x_no = cNO / conc
+    # Emission index, g NO / kg fuel: NO moles per mol air = x_no*ntot; fuel mass = n_fuel*M_CH2.
+    n_fuel = far * _M_AIR / _M_CH2
+    ei = 1000.0 * (x_no * ntot * _M_NO) / (n_fuel * _M_CH2_KG) if n_fuel > 0.0 else 0.0
+    return NOxState(x_no=x_no, x_no_eq=x_no_eq, initial_rate=2.0 * R1,
+                    char_time=(cNOe / (2.0 * R1) if R1 > 0.0 else math.inf), ei_no=ei)
+
+
 @dataclass
 class Gas:
     """Dual-section gas. Each section is CPG (constant triple, default) or TPG (cp(T)).
@@ -955,6 +1106,17 @@ class Gas:
     def freeze_equilibrium(self, f: float, T_burn: float, p_burn: float) -> dict:
         """Freeze the station-4 equilibrium mixture for the whole downstream cycle."""
         return self._hot.freeze(f, T_burn, p_burn)
+
+    # --- Rung-7 thermal-NOx diagnostic (DECOUPLED; never feeds the cycle) ---------
+    def thermal_nox(self, far: float, T: float, p: float, tau: float = 3e-3) -> "NOxState":
+        """Thermal-NO diagnostic on the equilibrium pool at (far, T, p) after residence
+        time tau (default 3 ms, a typical gas-turbine primary-zone residence — an
+        UN-ANCHORED knob, stated like the specified exit pressure). Solves the rung-6
+        equilibrium composition (scale-A, datum-free mole numbers), superimposes
+        equilibrium NO, and integrates the extended Zeldovich mechanism. Trace species
+        => this does NOT affect the cycle; it is a pure diagnostic (docs/rung7-spec.md)."""
+        comp = _equilibrium_composition(far, T, p)
+        return _thermal_no(comp, T, p, tau, far)
 
     def unified(self) -> "Gas":
         """Return a copy with the hot section collapsed onto the cold section.

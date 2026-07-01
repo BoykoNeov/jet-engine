@@ -20,7 +20,13 @@ by a `Kp(T) = exp(−ΔG°/RuT)` solve (adds the absolute-entropy constant `a7`,
 `a6`). The cycle barely moves (a steeply Tt4-dependent delta on `f`: +0.02 % at the 1500 K
 `main.py` panel, +0.15 % at the 1800 K anchor — station 4 is lean, high-pressure,
 metallurgically capped), but the adiabatic-flame-temperature diagnostic finally falls
-~115 K (2375→2259 K) into the real band.
+~115 K (2375→2259 K) into the real band; **rung 7** adds **thermal NOx**: the extended
+Zeldovich mechanism (`O+N₂⇌NO+N`, …) as a **kinetically-limited** trace diagnostic on the
+frozen rung-6 pool — the lesson **inverts rung 6** (major species reach equilibrium; NO does
+*not* — at a ~3 ms residence it is frozen at a few % of equilibrium, and its rate is
+exponentially T-sensitive, ~500× over 2000→2400 K). NO is trace, so the cycle stays
+**bit-for-bit rung 6**; NOx rides as a diagnostic (a thermo-kinetic `K`-check binds the rate
+constants to the `a6`/`a7` substrate).
 
 **The deliverable is understanding, not the tool.** The code is the medium that
 forces every thermodynamic assumption into the open. Optimize the work for
@@ -45,9 +51,14 @@ teaching, not for features or polish.
   reactions, the `Kp` standard-state `(p/p°)^Δν` factor, the `a7` derivation, the
   one-energy-datum split (composition on scale A, burner energy on scale B), the nested
   root-find burner, frozen-downstream, the verification gates.
+- **`docs/rung7-spec.md`** — rung-7 contract + handout: the two new species (`NO`, `N`), the
+  extended Zeldovich mechanism, the thermo-kinetic `K`-check, the superimposed equilibrium-NO
+  layer, the one-equation kinetic integrator + residence-time knob `τ`, the decoupled-trace
+  diagnostic, the lesson inversion, the gates.
 - `docs/plans/` — living plan/tasks (rungs 1–3), plus `rung2-anchor-mattingly.md`,
-  `rung3-anchor-cengel.md`, `rung4-anchor-mattingly.md`, `rung5-anchor-formation.md`, and
-  `rung6-anchor-equilibrium.md` (the verified textbook / formation / CEA-equilibrium anchor data).
+  `rung3-anchor-cengel.md`, `rung4-anchor-mattingly.md`, `rung5-anchor-formation.md`,
+  `rung6-anchor-equilibrium.md`, and `rung7-anchor-nox.md` (the verified textbook / formation /
+  CEA-equilibrium / Zeldovich-kinetics anchor data).
 
 ## Working contract (from SPEC.md — these override convenience)
 - **Derive before you code.** For each station, write the governing equation and
@@ -58,7 +69,7 @@ teaching, not for features or polish.
   hidden state (Turbine and Nozzle diverge their signatures by design).
 - **Conservation checks are assertions**, run on every execution (not as
   separate tests). See SPEC.md / docs/rung2-spec.md § Conservation checks.
-- **Current scope (rung 6):** ideal + real components (isentropic `η_c/η_t` **or**
+- **Current scope (rung 7):** ideal + real components (isentropic `η_c/η_t` **or**
   polytropic `e_c/e_t`, mutually exclusive; pressure ratios `π_d/π_b/π_n`, `η_b`,
   `η_m`, dual cold/hot gas, specified exit pressure) on a **thermally-perfect** gas
   (`cp = cp(T)`; calorically-perfect sections kept as the closed-form branch) — with
@@ -73,9 +84,18 @@ teaching, not for features or polish.
   balance (composition re-solved each trial). `Kp` uses the formation scale (scale A, required),
   the burner energy the production scale (scale B, reduces to Fork B); only the datum-free
   composition crosses between. Fork A/B (`Gas.reacting()`/`reacting_forkb()`) kept beside it.
-  Still deferred — keep the seams: **thermal NOx (`N₂+O₂⇌NO`, Zeldovich) and equilibrium-vs-
-  frozen nozzle flow = rung 7+**, off-design / component maps, a *choked* convergent nozzle,
-  afterburner.
+  Now **rung 7 — thermal NOx** (`Gas.thermal_nox(far, T, p, τ)`): a **decoupled trace
+  diagnostic** on the frozen rung-6 pool — the extended **Zeldovich** mechanism (add `NO`/`N`;
+  Hanson–Salimian rate constants), a **superimposed equilibrium-NO** layer (`½N₂+½O₂⇌NO`,
+  `Δν=0` ⇒ no `(p/p°)` factor, on the existing `a6`/`a7` `_g_molar`), and a one-equation
+  **kinetic integrator** (QSS-`N`, reverse-rate form) over a **residence-time knob `τ`**. NO is
+  trace, so the **cycle is bit-for-bit rung 6** (NO/N never enter `_equil_solve`); a
+  thermo-kinetic **`K`-check** binds the rate constants to the thermochemistry. The lesson
+  **inverts rung 6** (major species reach equilibrium; NO does not — frozen far below it).
+  Still deferred — keep the seams: **super-equilibrium `O` / prompt NO (Fenimore), combustor
+  zoning** (rich-primary → dilution, to make station-4 NOx engine-realistic), and the rung-6
+  **equilibrium-vs-frozen nozzle flow**; off-design / component maps, a *choked* convergent
+  nozzle, afterburner.
 - **Stop and explain surprises.** If a number looks off, reason about the
   physics rather than silently moving on.
 
@@ -97,7 +117,11 @@ teaching, not for features or polish.
   `_equilibrium_composition` Newton solver, `_EquilibriumSection` (freezes the station-4
   mixture, keyed on `far` with a burn-config guard), and the burner interface
   `equilibrium_composition/h_air_abs_B/h_products_abs_B/freeze_equilibrium` (scale-B energy;
-  scale-A `_h_molar_A`/`_g_molar` for `Kp`/AFT only).
+  scale-A `_h_molar_A`/`_g_molar` for `Kp`/AFT only). Rung 7 adds `NO`/`N` to the data dicts
+  (inert to rungs 1–6), the `_ZELDOVICH` rate constants + `_k_zeldovich`, `_kp_no`/
+  `_equilibrium_no_fraction` (superimposed NO), the `_kcheck_ratio` self-check, the `NOxState`
+  dataclass + `_thermal_no` kinetic integrator, and `Gas.thermal_nox(far, T, p, τ)` — a
+  decoupled diagnostic, so no cycle path is touched.
 - `turbojet/components.py` — `Inlet, Compressor, Burner, Turbine, Nozzle` in `h`/`pr`
   form (+ loss params, `ram_recovery(M0)`, the polytropic `e_c/e_t` knob; the Nozzle
   branches CPG/TPG — the velocity↔enthalpy trap). The `Burner` runs the implicit
@@ -126,10 +150,16 @@ teaching, not for features or polish.
   to ~1e-6), CEA methane-AFT equilibrium anchor + pressure-suppression, formation/entropy
   self-checks, the equilibrium-AFT drop (test-only, scale A), station-4 delta bounded, the
   burn-config guard.
+- `tests/test_rung7.py` — rung-7: reduce-to-rung-6 (NO/N never enter `_equil_solve`, cycle
+  unchanged), the thermo-kinetic `K`-check, the `τ→∞` equilibrium asymptote, NO/N
+  formation/entropy self-checks + GRI cross-check, magnitude + kinetic freezing (`τ_NO ≫`
+  residence), T-sensitivity, equilibrium-NO pressure-independence.
 - `main.py` — runs ideal vs real at one design point: tables + overlaid T–s diagram,
   plus the rung-2-frozen-`cp` vs rung-3-`cp(T)` table, the rung-4 frozen-vs-reacting
-  + `f`-sweep table, the rung-5 Fork-A-vs-Fork-B (derived-`hPR`) panel, and the rung-6
-  Fork-B-vs-equilibrium panel (AFT drop + dissociation-vs-pressure).
+  + `f`-sweep table, the rung-5 Fork-A-vs-Fork-B (derived-`hPR`) panel, the rung-6
+  Fork-B-vs-equilibrium panel (AFT drop + dissociation-vs-pressure), and the rung-7 thermal-NOx
+  panel (flame-T sweep: equilibrium vs kinetic vs `τ`, the ~500× T-sensitivity, the near-zero
+  station-4 number, the pressure-independence contrast).
 
 ## Commands
 - Run the model:  `python main.py`

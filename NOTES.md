@@ -826,3 +826,111 @@ every prior table survives to the digit. `python main.py` prints the Fork-B-vs-e
 panel, the flame-temperature drop, and the pressure-suppression line. Still deferred: thermal NOx and equilibrium-vs-
 frozen nozzle flow (both ride this same `a6`+`a7`+`Kp` substrate); off-design, the choked
 nozzle, the afterburner.*
+
+---
+
+# Rung 7 — Thermal NOx: Kinetically-Limited NO, in plain language
+
+Every rung so far asked *what mixture is the gas*, and answered with **equilibrium** — the
+composition chemistry settles into, given enough time. Rung 7 asks a different question:
+*how much of a pollutant actually forms*, and the answer is the first one in the whole ladder
+that is **not** set by equilibrium. Thermal **nitric oxide** (NO) — the "NOx" an engine is
+regulated on — forms so *slowly* that in a combustor it never gets close to its equilibrium
+amount. This is the rung where **kinetics** (rates, and a residence *time*) enters, and its
+lesson is a clean **inversion of rung 6**.
+
+## The headline: the lesson flips
+- **Rung 6:** the major species (CO₂, H₂O, and their dissociation fragments) *do* reach
+  equilibrium — fast reactions, plenty of time. The cycle barely moved; the drama was the
+  flame temperature.
+- **Rung 7:** NO does **not** reach equilibrium. At a realistic combustor residence time
+  (~3 ms) it stalls at just a **few percent** of its equilibrium value. The one reaction that
+  makes it is a bottleneck, and the gas is out the door long before it finishes.
+
+So the same modelling substrate now teaches the opposite point: *knowing the equilibrium
+composition is not enough — sometimes the rate is everything.*
+
+## Why NO is so slow: one stubborn reaction
+Thermal NO forms by the **extended Zeldovich mechanism**, three reactions, but the whole thing
+is gated by the first one:
+
+```
+O + N₂ → NO + N     (slow: it must crack the triple bond in N₂)
+N + O₂ → NO + O      (fast — the N atom made above is consumed instantly)
+N + OH → NO + H      (fast)
+```
+
+Breaking the N₂ triple bond costs an enormous **activation energy** (~319 kJ/mol), so the first
+step's rate constant carries a brutal `exp(−38370/T)`. The nitrogen atom it produces is so
+reactive it's gone the instant it appears (we treat it as **quasi-steady** — never accumulating),
+which collapses the three reactions into a single rate for NO. The telling number is the
+**characteristic time** to reach equilibrium NO: about **90 ms at 2300 K**, and nearly a
+**full second at 2100 K** — against a combustor residence of a few ms. NO simply runs out of
+time. (`main.py` shows it directly: hold a 2300 K flame and stretch the residence — NO climbs
+from ~17 ppm at 0.5 ms toward its 3083 ppm equilibrium, reaching it only past ~1 second.)
+
+## The payoff: NO is exponentially temperature-sensitive
+Because that `exp(−38370/T)` sits on the rate (and the oxygen-atom pool feeding it is itself
+steeply temperature-dependent), the NO formation rate is savagely sensitive to temperature —
+about **30× for every 200 K**, a ~500× swing from 2000 to 2400 K (the `main.py` sweep). This
+is *the* number, and it explains a real engineering fact: it is the **peak flame temperature**,
+not the turbine-blade limit alone, that governs NOx. You can cap the *mixed-out* turbine-inlet
+temperature all you like (metallurgy already forces that), but if the flame has a hot
+near-stoichiometric zone, NO pours out of it. That is exactly why modern low-NOx combustors
+chase *temperature* — lean-premixed burning, staging — rather than anything about the shaft or
+the nozzle.
+
+## The cycle doesn't move — and station 4 makes almost none
+NO is a **trace** species (parts per million), so it neither steals meaningful heat nor changes
+the mole count: the cycle stays **bit-for-bit rung 6**, and NO rides as a pure **diagnostic**
+layered on top (the same way rung 6's flame-temperature drop was a diagnostic beside an
+unmoved cycle). And at *this* engine's station 4 — capped at Tt4, running lean, and taken at
+the **mixed-out** average — thermal NO is essentially nil (a few *ten-thousandths* of a ppm at
+the 1500 K panel point). That's honest, and it flags the model's edge: real engine NOx is made
+in the combustor's **hot primary zone**, near stoichiometric and far above the mixed-out Tt4,
+during the millisecond before dilution air quenches it. This single-`Tt4`, mixed-out cycle
+model doesn't resolve that zone — so the *diagnostic* (evaluated at flame temperature) carries
+the physics, while the *station-4 number* honestly reports "not here." Resolving the primary
+zone (a rich-front → dilution model) is a stated next rung.
+
+## A second, quieter inversion — pressure
+Rung 6's dissociation was **suppressed by pressure**: splitting molecules makes *more*
+molecules, and squeezing fights that (`(p/p°)^Δν`). NO is different — `½N₂ + ½O₂ ⇌ NO`
+conserves the molecule count (`Δν = 0`), so **equilibrium NO carries no pressure factor at
+all**. High combustor pressure, which stomped dissociation flat, does **not** directly save you
+from NOx. A small thing, but it's the same knob giving opposite answers for two different
+chemistries — worth noticing.
+
+## Did we get it right?
+The clever check ties the *new* kinetics back to the *already-verified* thermodynamics. The
+first two Zeldovich reactions sum to `N₂ + O₂ ⇌ 2 NO`, and thermodynamics demands that the
+rate constants and the equilibrium constant agree: `k1f·k2f/(k1r·k2r)` must equal
+`exp(−ΔG°/RuT)`, computed from the very same formation/entropy constants (`a6`, `a7`) rung 6
+installed — needing only NO's thermochemistry (the nitrogen atom cancels). They agree to
+**~4 %** across the whole flame band (a gross transcription slip would be off by orders of
+magnitude), which certifies the transcribed **rate constants and NO's formation data
+together** — rung 7's version of rung 6's derived-vs-tabulated check. Two more internal gates
+back it: stretch the residence time to infinity and the kinetic integrator must recover the
+independently-computed equilibrium NO (it does, exactly); and equilibrium NO at a stoichiometric
+2300 K flame lands ~3000 ppm, squarely in the known band. Two honest wrinkles, stated rather
+than papered over: (1) NO's enthalpy of formation has a real ~1 kJ/mol literature spread — we
+take JANAF's 90.29 kJ/mol, and the K-check confirms that pick over GRI-Mech's slightly higher
+value; (2) unlike every rung 2–6 anchor, the *absolute* NO formation **rate** has no local
+textbook digit to match here. What's hard-certified is the rate constants and NO thermochemistry
+*relatively*, through the K-check; the absolute rate rests on order-of-magnitude literature
+(~34 ppm forms in the first millisecond at 2300 K) fenced by a two-sided sanity gate — not the
+0.02 %-to-the-book agreement the earlier rungs enjoy. Pinning it to a specific worked example
+*read from the text* is a clean future tightening.
+
+---
+*Rung 7 adds thermal NO as the first **kinetically-limited** quantity and the first with a
+**time** in it (a residence-time knob, stated like the specified exit pressure was). Two new
+species (NO, N) join the data tables inertly; the extended Zeldovich mechanism, a superimposed
+equilibrium-NO layer, and a one-equation kinetic integrator ride on the rung-6 frozen pool and
+the `a6`+`a7`/`Kp` substrate — NO never enters the equilibrium solve, so every rung 1–6 table
+survives untouched and the cycle is bit-for-bit rung 6. `python main.py` prints the NOx panel:
+the flame-temperature sweep (equilibrium vs kinetic vs residence, the ~500× temperature
+sensitivity), the honest near-zero station-4 number, and the pressure-independence contrast.
+Still deferred, all on this same substrate: super-equilibrium O / prompt NO (a richer radical
+pool and the Fenimore path), combustor zoning (to make station-4 NOx engine-realistic), and the
+rung-6 equilibrium-vs-frozen nozzle seam; plus off-design, the choked nozzle, the afterburner.*

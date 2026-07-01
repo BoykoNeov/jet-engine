@@ -20,6 +20,7 @@ from turbojet.engine import FlightCondition, build_turbojet  # noqa: E402
 from turbojet.gas import (  # noqa: E402
     Gas, _products_composition, _equilibrium_composition, _h_molar_A,
     _HF_FUEL_DEFAULT, _M_AIR, _M_CH2, _F_STOICH, _air_mole_fractions,
+    _equilibrium_no_fraction,
 )
 
 TS_DIAGRAM_PATH = "ts_diagram.png"
@@ -268,6 +269,65 @@ def print_equilibrium_table(flight):
         print(f"    p={p_atm:>5.1f} atm:  CO/(CO+CO2) = {c['CO']/(c['CO']+c['CO2']):.4f}")
 
 
+def print_nox_table(flight):
+    """Rung-7 payoff: thermal NOx — kinetically-limited NO (the lesson INVERTS rung 6).
+
+    Rung 6: the major species DO reach equilibrium (cycle barely moves; drama in the AFT
+    drop). Rung 7: NO does NOT — at realistic residence times it is kinetically frozen far
+    below its equilibrium value, and it is EXPONENTIALLY temperature-sensitive. NO is trace
+    (ppm), so it is a DECOUPLED diagnostic: the cycle stays bit-for-bit rung 6. Two views,
+    mirroring how rung 6 showed the AFT diagnostic separately from the cycle f-delta:
+      (1) a stoich FLAME-TEMPERATURE sweep carrying the drama (equilibrium NO, the kinetic
+          freezing at tau=3 ms, the characteristic time tau_NO >> residence, the ~exp(-38370/T)
+          T-sensitivity);
+      (2) the honest STATION-4 mixed-out number at the (capped, lean) design point — where
+          thermal NO is negligible, because real engine NOx is a hot primary-zone effect this
+          single-Tt4 cycle model does not resolve (a stated seam).
+    """
+    eq = Gas.reacting_equilibrium()
+    fst = _F_STOICH * 0.999
+    tau = 3e-3                                   # 3 ms: typical primary-zone residence (a knob)
+
+    print("\nThermal NOx (rung 7): kinetically-limited NO — the lesson inverts rung 6")
+    print(f"  Stoich (CH2)n flame sweep, 1 atm, residence tau = {tau*1e3:.0f} ms:")
+    print(f"  {'T [K]':>7} {'x_O ppm':>9} {'NO_eq ppm':>10} {'NO_kin ppm':>11} "
+          f"{'kin/eq %':>9} {'tau_NO ms':>10} {'rate rel':>9}")
+    print("  " + "-" * 70)
+    rate_ref = eq.thermal_nox(fst, 2000.0, 101325.0, tau=tau).initial_rate   # 2000 K reference
+    for T in (1800.0, 2000.0, 2200.0, 2400.0):
+        n = eq.thermal_nox(fst, T, 101325.0, tau=tau)
+        comp = _equilibrium_composition(fst, T, 101325.0)
+        xO = comp["O"] / sum(comp.values()) * 1e6
+        print(f"  {T:>7.0f} {xO:>9.1f} {n.ppm_eq:>10.0f} {n.ppm:>11.2f} "
+              f"{100*n.fraction_of_equil:>9.2f} {n.char_time*1e3:>10.1f} {n.initial_rate/rate_ref:>9.3f}")
+    print("  NO is frozen at a few % of equilibrium (tau_NO >> ms residence); the initial")
+    print("  rate explodes ~30x per 200 K — it is PEAK FLAME TEMPERATURE, not the capped")
+    print("  mixed-out Tt4, that governs NOx (why NOx, not just blade metal, caps the flame).")
+
+    print(f"\n  Kinetic NO climbs toward equilibrium as residence grows (stoich, 2300 K, 1 atm):")
+    print(f"  {'tau [ms]':>9} {'NO_kin ppm':>11} {'% of equil':>11}")
+    for tau_ms in (0.5, 1.0, 3.0, 10.0, 100.0, 1000.0):
+        n = eq.thermal_nox(fst, 2300.0, 101325.0, tau=tau_ms * 1e-3)
+        print(f"  {tau_ms:>9.1f} {n.ppm:>11.1f} {100*n.fraction_of_equil:>11.2f}")
+
+    # The honest cycle number: the (capped, lean, mixed-out) turbine inlet makes almost none.
+    re = build_turbojet(eq, PI_C, TT4, flight.p0).run(flight, 1.0)
+    st4 = re.stations["4"]
+    n4 = eq.thermal_nox(st4.far, st4.Tt, st4.pt, tau=tau)
+    print(f"\n  Station 4 (this design point: Tt4={st4.Tt:.0f} K, {st4.pt/1e5:.1f} bar, lean "
+          f"far={st4.far:.4f}): equilibrium NO {n4.ppm_eq:.0f} ppm, but kinetic NO only "
+          f"{n4.ppm:.2e} ppm\n  ({100*n4.fraction_of_equil:.4f}% of equil, EI_NO={n4.ei_no:.2e} "
+          "g/kg) — too cool AND kinetically frozen. Real NOx is a hot primary-zone effect.")
+
+    # Pressure inverts rung 6: dissociation was p-suppressed; equilibrium NO is Dnu=0.
+    print("\n  Contrast rung 6: equilibrium NO carries NO (p/p0) factor (Dnu=0). At a LEAN "
+          "f=0.030, 2000 K,")
+    xs = [_equilibrium_no_fraction(_equilibrium_composition(0.030, 2000.0, p * 101325.0), 2000.0)
+          for p in (1.0, 13.0)]
+    print(f"  NO_eq is {xs[0]*1e6:.0f} ppm at 1 atm vs {xs[1]*1e6:.0f} ppm at 13 atm — high "
+          "combustor pressure does NOT directly suppress NOx.")
+
+
 def _cycle_points(result, flight):
     """The six cycle points as {label: (s, T)} in (entropy, temperature) space.
 
@@ -389,6 +449,8 @@ def main():
     print_forkb_table(FLIGHT)
 
     print_equilibrium_table(FLIGHT)
+
+    print_nox_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 
