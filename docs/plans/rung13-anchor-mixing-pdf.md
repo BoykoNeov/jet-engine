@@ -18,7 +18,7 @@ delivers, robustly: the emissions minimum **pinned AT `C_opt`** (perfect mixing 
 mean); and at *extreme* segregation ⟨EI⟩ **descends again** — the β-PDF goes **bimodal** (mass to
 pure-air `ξ→0` and the rich cap, both off the stoich peak), **real physics, not an artifact**. So
 composition variance pins the optimum *location*; the dwell effect (rung 12) makes the
-over-penetration *climb*; **carrying the PDF through the quench (rung 14) combines them** into the
+over-penetration *climb*; **carrying the PDF through the quench (rung 15) combines them** into the
 full bowl. This separation is a sharper teaching point than "rung 13 reproduces rung 12 with a PDF."
 
 Every number was re-derived **before any production code** (project discipline); the worked example
@@ -58,7 +58,7 @@ framing both explains the mechanism correctly and justifies the lean-mean choice
 > than rung 12's finite bulk minimum. That is a **modeling boundary, not a physics claim**: primary-
 > history / bulk NO is **out of scope** here. Carrying the resolved PDF **through** the rung-12
 > quench (so the bulk contributes its finite NO and the PDF rides the trajectory) is the natural
-> **rung-14 seam**. The **certified** content is the optimum **pinned AT the Holdeman group
+> **rung-15 seam**. The **certified** content is the optimum **pinned AT the Holdeman group
 > `C_opt`** with **both immediate flanks rising**, and the **`(H/S)²` shift** — recovered from a
 > *continuous* PDF. (The over-penetration **climb** is *not* here — that is rung-12's dwell effect;
 > see the mechanism separation above.)
@@ -172,8 +172,8 @@ Holdeman optimum *location*, from a continuous PDF.
 > quench chain, so it **structurally cannot** climb: past the hump the over-penetration flank
 > **descends** (`J = 25 → 144`: 0.855 → 0.252) as the PDF goes bimodal. **Composition variance pins
 > the optimum location; the dwell effect makes the climb; combining them (the PDF through the quench)
-> is the rung-14 seam.** (Scope, §0: the minimum is ≈ 0 because this rung drops the finite-quench
-> bulk NO; that bulk floor is the rung-14 addition.)
+> is the rung-15 seam.** (Scope, §0: the minimum is ≈ 0 because this rung drops the finite-quench
+> bulk NO; that bulk floor is the rung-15 addition.)
 
 **(d) The optimum sits AT the Holdeman group — shrink `S`, it MOVES as `(H/S)²`:**
 
@@ -244,7 +244,7 @@ a limit of one parameter. So only **two** legitimate reduces are claimed, and ex
   quench dwell chain, so the optimum minimum is the **well-mixed lean value ≈ 0**, not a finite
   bulk. Primary-history / bulk NO is **out of scope**; the "optimum makes ≈ 0 NO" is a modeling
   boundary, not a physics claim. **Carrying the PDF through the rung-12 quench** (bulk + the resolved
-  spread riding the trajectory) is the immediate **rung-14 seam**.
+  spread riding the trajectory) is the immediate **rung-15 seam**.
 - **The β-PDF is a PRESUMED shape**, not a *transported* PDF — its width `g(C)` is still a modeled
   function of the Holdeman group, not solved from a PDF-transport / mixing-frequency equation. It
   resolves the mixture-fraction *distribution* (rung 12 resolved only two points of it) but does not

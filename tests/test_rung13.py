@@ -8,7 +8,7 @@ DWELL effect (an absolute, growing τ_core — a TIME mechanism). Rung 13 isolat
 mechanism and drops the quench chain, so it structurally CANNOT reproduce that climb — it pins the
 optimum LOCATION (min at C_opt) but the far-over-penetration flank DESCENDS (the humped ⟨EI⟩(g)).
 Composition variance pins the optimum; the dwell effect makes the climb; combining them (the PDF
-through the quench) is the rung-14 seam.
+through the quench) is the rung-15 seam.
 
 The lesson, framed CORRECTLY (not generic "convexity/Jensen"): the NO-vs-φ bell is convex on its
 flanks but CONCAVE at the peak, so NO global convexity exists. What is true: NO is sharply PEAKED at
@@ -188,7 +188,7 @@ def test_emissions_minimum_pinned_at_c_opt_flanks_rise():
     # effect (an absolute, growing τ_core), a TIME mechanism rung 13 deliberately drops. Composition
     # variance ALONE pins the optimum LOCATION; the far-over-penetration flank instead DESCENDS (the
     # humped ⟨EI⟩(g) — tested in `test_mean_ei_is_humped_in_g` below). Combining both mechanisms
-    # (the PDF through the quench) is the rung-14 seam.
+    # (the PDF through the quench) is the rung-15 seam.
     g, Tt3, Tt4, far, p = _design_point()
     bell = _bell(g, Tt3, p)
     xibar = far / (1.0 + far)

@@ -18,7 +18,7 @@ emissions minimum **pinned AT `C_opt`** (perfect mixing → uniform lean → ≈
 flanks rising** (the convexity jump); and at *extreme* segregation ⟨EI⟩ **descends again** (the
 β-PDF goes bimodal — real physics). So **composition variance pins the optimum location; the dwell
 effect (rung 12) makes the over-penetration climb; combining them (the PDF through the quench) is
-rung 14.** This replaces rung-12's segregation *parameterisation*, not its dwell mechanism —
+rung 15.** This replaces rung-12's segregation *parameterisation*, not its dwell mechanism —
 complementary, not a superset.
 
 **The lesson, framed correctly (this is NOT "convexity/Jensen").** The NO-vs-φ bell is convex on
@@ -37,7 +37,7 @@ and **drops** the rungs 10–12 finite-quench dwell chain. So the optimum minimu
 (primary-history / bulk NO is out of scope). The **certified** content is the optimum **pinned AT
 the Holdeman group `C_opt`** with **both immediate flanks rising**, and the **`(H/S)²` shift** —
 recovered from a *continuous* PDF (the over-penetration climb is rung-12's dwell effect, absent
-here). Carrying the PDF **through** the rung-12 quench is the **rung-14 seam**.
+here). Carrying the PDF **through** the rung-12 quench is the **rung-15 seam**.
 
 > **Read `docs/rung12-spec.md` first**, and `docs/plans/rung13-anchor-mixing-pdf.md` (numbers-
 > before-code: the β-PDF closure, the **regime-aware quadrature** that makes mean-preservation exact
@@ -89,7 +89,7 @@ here). Carrying the PDF **through** the rung-12 quench is the **rung-14 seam**.
   **`g→0` delta** (well-mixed point value). No knob turns the PDF into the two-stream model.
 - **Model the finite-quench bulk.** Rung 13 isolates composition variance on the **ideal** bell; the
   rungs 10–12 dwell chain is dropped, so the optimum minimum is the well-mixed lean value ≈ 0, not a
-  finite bulk. Bulk / primary-history NO is **out of scope** — the rung-14 seam.
+  finite bulk. Bulk / primary-history NO is **out of scope** — the rung-15 seam.
 - **Transport the PDF.** The β shape is **presumed**; its width `g(C)` is still a *modeled* function
   of the Holdeman group, not solved from a PDF-transport / mixing-frequency equation. It resolves the
   mixture-fraction *distribution* (rung 12 resolved only two points) but does not predict its shape.
@@ -189,10 +189,10 @@ separation from rung-12's dwell); `NOTES.md` gains a rung-13 section (the resolv
 streams; the correct "peaked-at-stoich" framing; composition vs dwell; the mean-preserving
 quadrature); `CLAUDE.md` scope +
 rung table + deferred seams updated (resolved mixing PDF **done** — with the PDF-through-quench
-integration (rung-14 seam), super-equilibrium O / prompt NO, and the frozen-vs-equilibrium nozzle
-still carved out).
+integration (rung-15 seam), super-equilibrium O / prompt NO, and the frozen-vs-equilibrium nozzle
+still carved out at rung-13 time — the nozzle was subsequently taken as **rung 14**).
 
-## The rung-14+ seam (keep it additive)
+## The rung-15+ seam (keep it additive)
 Rung 13 resolves the mixing field as a *presumed* PDF on the *ideal* bell. Next seams, all still
 additive on this substrate: (a) **the PDF through the finite quench** — carry the resolved mixture-
 fraction distribution through the rung-12 `_quench_no` trajectory (bulk + spread both dwelling), so
@@ -200,6 +200,6 @@ the optimum minimum is the finite bulk NO rather than the isolated well-mixed �
 seam); (b) **a transported / CFD PDF** — solve the PDF shape from a mixing-frequency / PDF-transport
 equation rather than presuming β and modeling `g(C)`; (c) **super-equilibrium O / prompt (Fenimore)
 NO** — the richer radical pool in exactly the near-stoich pockets this PDF now resolves, above the
-equilibrium-O lower bound; (d) the still-open **equilibrium-vs-frozen nozzle expansion** (rung-6
-seam). Only *how the PDF is obtained*, *what it rides through*, *on what radical pool*, and *how the
-nozzle freezes* changes.
+equilibrium-O lower bound; (d) the **equilibrium-vs-frozen nozzle expansion** (the rung-6 cycle-side
+seam — **taken as rung 14**, `docs/rung14-spec.md`). Only *how the PDF is obtained*, *what it rides
+through*, *on what radical pool*, and *how the nozzle freezes* changes.

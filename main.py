@@ -648,7 +648,7 @@ def print_mixing_pdf_table(flight):
     lean → ≈0), both immediate flanks lifting by ORDERS. This ISOLATES the COMPOSITION mechanism and
     drops the finite-quench dwell chain, so — unlike rung 12 — it CANNOT climb on the over-penetration
     flank: past a hump ⟨EI⟩(g) descends (the β-PDF goes bimodal). Composition variance pins the
-    optimum LOCATION; the DWELL effect (rung 12) makes the climb; combining them is rung 14. Still a
+    optimum LOCATION; the DWELL effect (rung 12) makes the climb; combining them is rung 15. Still a
     pure diagnostic: bit-for-bit rung 6 (opt-in via `pdf`).
     """
     eq = Gas.reacting_equilibrium()
@@ -709,8 +709,60 @@ def print_mixing_pdf_table(flight):
     print("  → ≈0 NO. Both immediate flanks lift by orders (segregation). But UNLIKE rung 12 the far")
     print("  over-penetration flank DESCENDS, not climbs — ⟨EI⟩(g) is humped (the β-PDF goes bimodal to")
     print("  pure-air + rich, both off the stoich peak). Composition variance pins the optimum LOCATION;")
-    print("  rung-12's DWELL effect makes the climb; carrying the PDF through the quench (rung 14) unites")
-    print("  them. (The ≈0 minimum here drops the bulk NO floor — that is the same rung-14 scope boundary.)")
+    print("  rung-12's DWELL effect makes the climb; carrying the PDF through the quench (rung 15) unites")
+    print("  them. (The ≈0 minimum here drops the bulk NO floor — that is the same rung-15 scope boundary.)")
+
+
+def print_nozzle_flow_table(flight):
+    """Rung-14 payoff: EQUILIBRIUM-vs-FROZEN NOZZLE FLOW — the rung-6 cycle-side seam, and where
+    rung-10's dropped equilibrium clamp finally earns its keep.
+
+    The production nozzle FREEZES the station-4 mixture through the expansion. Real nozzle flow lies
+    between FROZEN (chemistry infinitely slow) and EQUILIBRIUM/SHIFTING (infinitely fast): as the
+    exhaust cools, CO/H₂/OH/O/H recombine to CO₂/H₂O, releasing chemical energy → a higher V9. Two
+    complementary lessons, both mirroring the rung-10 clamp:
+      • THRUST (major species) — the bracket is DORMANT at the cool lean design point (dissociation
+        ≈ 0) and EARNS ITS KEEP hot (a Tt4 sweep: ~0.006% → ~0.44%).
+      • NO / THE CLAMP — on the SAME cooling path equilibrium NO COLLAPSES, so the frozen exhaust NO
+        is wildly super-equilibrium and rung 7's DROPPED clamp fires (max_a ≫ 1, vs rung 10's 0.677).
+    A pure diagnostic: bit-for-bit rung 6 (the production nozzle stays frozen).
+    """
+    print("\nEquilibrium-vs-frozen nozzle flow (rung 14): the production nozzle FREEZES the station-4")
+    print("mixture; a real nozzle lets it re-equilibrate as it cools — CO/H₂/OH/O/H recombine and give")
+    print("back thrust. Frozen = a LOWER bound, equilibrium = an UPPER bound; the real nozzle sits between.")
+
+    # (1) The THRUST bracket — a Tt4 sweep: dormant at the design point, earns its keep hot.
+    print("\n  Thrust bracket (Tt4 sweep, real-loss cycle) — V9 recovered by a shifting expansion:")
+    print(f"  {'Tt4 [K]':>8} {'CO/(CO+CO2)':>12} {'V9 froz':>9} {'V9 equil':>9} {'ΔV9 m/s':>8} {'ΔV9 %':>8}")
+    print("  " + "-" * 62)
+    for Tt4 in (1500.0, 1800.0, 2000.0, 2200.0):
+        eq = Gas.reacting_equilibrium()          # fresh gas per burn condition (the section freezes Tt4)
+        r = build_turbojet(eq, PI_C, Tt4, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+        st4, st9 = r.stations["4"], r.stations["9"]
+        nf = eq.nozzle_flow(st4.far, st4.Tt, st4.pt, st9.Tt, st9.pt, r.p9)
+        print(f"  {Tt4:>8.0f} {nf.co_fraction_entry:>12.2e} {nf.V9_frozen:>9.2f} "
+              f"{nf.V9_equilibrium:>9.2f} {nf.dV9:>8.3f} {nf.dV9_frac*100:>7.4f}%")
+    print("  At the metallurgically-capped design point (Tt4=1500 K, lean φ≈0.4) dissociation is ~5e-6")
+    print("  and the bracket is DORMANT (~0.006%) — like the clamp, negligible HERE. A hot combustor")
+    print("  dissociates ~1% of the carbon; recombination in the nozzle then buys ~0.4% more exhaust")
+    print("  velocity. (ΔV9 is the nozzle quantity; the specific-THRUST gain is ~1.2–1.35× larger via")
+    print("  the M0=0.85 ram term — ΔF/F = ΔV9/(V9−V0/(1+f)).) The real nozzle sits between the bounds.")
+
+    # (2) The CLAMP corollary — the design-point exhaust, cooling through the nozzle.
+    eq = Gas.reacting_equilibrium()
+    real = build_turbojet(eq, PI_C, TT4, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+    st3, st4, st9 = real.stations["3"], real.stations["4"], real.stations["9"]
+    zn = eq.zoned_nox(st4.far, st3.Tt, st4.Tt, st4.pt, phi_primary=1.0, tau=3e-3)   # ICAO-band exhaust NO
+    nf = eq.nozzle_flow(st4.far, st4.Tt, st4.pt, st9.Tt, st9.pt, real.p9, x_no_frozen=zn.x_no_mix)
+    print(f"\n  The dropped clamp earns its keep (design point: Tt9={st9.Tt:.0f} K → T9={nf.T9_frozen:.0f} K):")
+    print(f"  equilibrium NO collapses {nf.x_no_e_entry*1e6:.0f} → {nf.x_no_e_exit*1e6:.2f} ppm on cooling "
+          f"({nf.no_collapse_ratio:.0f}× — frozen-NO-independent).")
+    print(f"  A realistic zoned exhaust carries EI_NO≈{zn.ei_no:.0f} g/kg ({zn.x_no_mix*1e6:.0f} ppm), FROZEN")
+    print(f"  through the nozzle → it is {nf.max_a:.0f}× super-equilibrium at the exit (max_a={nf.max_a:.0f}).")
+    print("  Rung 7's cNO≤cNOe clamp would DELETE that surplus — a plausible-but-wrong low number with")
+    print("  every assert green. Rung 10 DROPPED the clamp and proved it DORMANT on the combustor quench")
+    print("  (max_a=0.677<1); HERE, in the near-stoich exhaust-cooling rung 10 flagged, it FIRES. That is")
+    print("  the whole reason the clamp was dropped 'on principle' — this nozzle is where it bites.")
 
 
 def _cycle_points(result, flight):
@@ -848,6 +900,8 @@ def main():
     print_unmixedness_table(FLIGHT)
 
     print_mixing_pdf_table(FLIGHT)
+
+    print_nozzle_flow_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

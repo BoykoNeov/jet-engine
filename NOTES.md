@@ -1490,13 +1490,93 @@ sharp notch → the well-mixed lean value ≈0), both immediate flanks lifting b
 **shifting as `(H/S)²`**. A **mechanism separation**: this isolates the **composition** mechanism and
 drops the dwell chain, so it pins the optimum but **cannot climb** — the far over-penetration flank
 **descends** (⟨EI⟩(g) is humped: the β-PDF goes bimodal). Rung-12's over-penetration climb was the
-**dwell** effect; combining them (the PDF through the quench) is the **rung-14** seam. `pdf` is
+**dwell** effect; combining them (the PDF through the quench) is the **rung-15** seam. `pdf` is
 **mutually exclusive** with `unmixedness` and **requires** `mixing`; `pdf=None` keeps the exact
 rung-12 path (bit-for-bit rung 6), and `g→0` gives the well-mixed point value. The quadrature is
 mean-preserving (a `u=ξ^a` change of variable across the lean-mean singularity) and **asserts**
 `⟨ξ⟩≈ξ̄` every run. `python main.py` prints the rung-13 panel: the peaked×off-mean mechanism (lean vs
 stoich columns, the sign flip), and the `J`-sweep (notch at `C_opt`, flanks up, the humped far flank).
-Still deferred on this substrate: the **PDF through the finite quench** (rung-14 — where composition
+Still deferred on this substrate: the **PDF through the finite quench** (rung-15 — where composition
 and dwell combine and the ≈0 floor becomes finite bulk NO), a **transported/CFD PDF**,
 **super-equilibrium O / prompt (Fenimore) NO** (richest in exactly the near-stoich pockets this PDF
-resolves), the rung-6 **equilibrium-vs-frozen nozzle**; plus off-design, the choked nozzle, the afterburner.*
+resolves), the rung-6 **equilibrium-vs-frozen nozzle** (taken next, rung 14); plus off-design, the
+choked nozzle, the afterburner.*
+
+---
+
+# Rung 14 — Equilibrium-vs-Frozen Nozzle Flow, in plain language
+
+## The headline: the nozzle we froze on purpose, and the clamp we dropped on principle
+Rungs 7–13 were a NOx diagnostic ladder that never touched the cycle. Rung 14 turns back to the
+**cycle itself** and re-opens a seam rung 6 named and then set aside: the nozzle **freezes** the
+station-4 chemistry, but a real nozzle lets it **shift**. As the exhaust expands and cools, the CO,
+H₂, OH, O and H that dissociation made can **recombine** back to CO₂ and H₂O, and that releases
+chemical energy. Freeze the composition and that energy stays locked; let it re-equilibrate and it
+comes back as **thrust**. So the truth is a bracket: **frozen is a lower bound, equilibrium an upper
+bound, and the real nozzle sits between.**
+
+## The result: dormant here, real there — exactly like the clamp
+Sweep the combustor temperature and compute both bounds (real-loss cycle, fully expanded):
+
+| Tt4 (K) | dissociated carbon (CO/(CO+CO₂)) | ΔV9 (equil − frozen) |
+|---|---|---|
+| 1500 (design) | 5×10⁻⁶ | +0.07 m/s (**+0.006%**) |
+| 1800 | 2.5×10⁻⁴ | +0.62 m/s (+0.05%) |
+| 2000 | 1.9×10⁻³ | +2.05 m/s (+0.16%) |
+| 2200 | 1.1×10⁻² | +6.47 m/s (**+0.46%**) |
+
+At the metallurgically-capped, lean, high-pressure design point dissociation is suppressed twice
+(rung 6's own lesson), so there is nothing to recombine and the bracket is **negligible** — freezing
+the nozzle costs essentially nothing *here*. Push the combustor hot and ~1% of the carbon dissociates;
+recombination then buys ~half a percent of exhaust velocity. The frozen-vs-equilibrium distinction is
+a **hot-exhaust** effect, and rung 6 was right to defer it at this cool design point.
+
+## The mechanism, kept honest: a common physical entry
+Both bounds start from the **same physical gas** — the frozen station-4 mixture at the nozzle-entry
+total state — so they share a stagnation enthalpy and the recombination benefit shows up cleanly as a
+higher V9, not as a shifted entry temperature. The one new piece of thermodynamics is the **mixture
+entropy** (`Σ nᵢ[s0ᵢ(T) − Ru·ln(xᵢ·p/p0)]`, on rung 6's absolute-entropy constant `a7`); each
+expansion conserves it, and for the *frozen* branch the mixing term cancels so it reproduces the
+production nozzle to machine precision — the load-bearing reduce. The shifting branch re-equilibrates
+at every step and uses **absolute** enthalpy so the recombination energy appears. No new chemistry —
+just reversible-adiabatic bookkeeping over the rung-6 equilibrium solver, now run at nozzle-exit
+temperatures the cycle never reaches.
+
+## The honest surprise: the dropped clamp finally fires
+Rung 10 dropped the `cNO≤cNOe` equilibrium cap because super-equilibrium NO freezes on a cooling
+path, and then proved it **dormant** at this engine (max_a = 0.677 < 1) — while flagging that it *would*
+bite "in the near-stoich exhaust cooling in the still-open nozzle seam." **This is that seam, and the
+clamp fires.** On the way down the nozzle equilibrium NO **collapses ~120×** (Kp_NO drops steeply with
+T): NO the combustor made and froze is suddenly wildly out of equilibrium. Feed the diagnostic the
+realistic zoned exhaust NO (ICAO band, ~530 ppm) and it comes out **250× super-equilibrium** at the
+exit — rung 7's clamp would have deleted essentially all of it, handing back a plausible-but-wrong
+low number with every assertion still green. That is the whole reason the clamp was dropped on
+principle in rung 10, now shown to matter with a guarded number.
+
+## Did we get it right?
+The frozen bound reproduces the production nozzle **to machine precision** (~5×10⁻¹² m/s) through one
+shared expansion routine, and forcing the equilibrium solver to return the frozen mixture makes the
+shifting bound equal the frozen bound **bit-for-bit** — so the ONLY thing separating the two brackets
+is the composition shift. The bracket collapses when dissociation → 0 (a cool combustor), the
+equilibrium bound is always faster and hotter at exit (recombination is exothermic), and the gap grows
+monotonically with combustor temperature. It stays a **pure diagnostic** — the production nozzle is
+still frozen, so the cycle is bit-for-bit rung 6 and the whole rung 1–13 suite stays green. What
+stays **un-anchored**, said plainly: there is no bespoke published digit for this exact (CH₂)ₙ/air,
+lean, ~7.5-bar case (the anchor is rung 6's CEA-verified composition + the signed Hill-&-Peterson /
+Sutton trend + the machine-precision reduce); the **real** finite-rate nozzle flow *between* the two
+bounds, a **shifting turbine**, and **super-equilibrium O / prompt NO** in the exhaust are all still
+deferred (the clamp corollary is an equilibrium-O lower bound). The **shape** — a bracket that is
+dormant at the cool design point and earns its keep hot, and a clamp that was dormant on the combustor
+quench and fires on the nozzle cooling path — is the result, and it is the exact mirror of rung 10.
+
+---
+*Rung 14 re-opens the rung-6 nozzle seam: `Gas.nozzle_flow(far, Tt4, pt4, Tt9, pt9, p9, x_no_frozen=None)`
+returns the `[V9_frozen, V9_equilibrium]` thrust bracket — the production (frozen) nozzle vs a
+shifting-equilibrium expansion that lets CO/H₂/OH/O/H recombine on cooling. Negligible at the lean
+design point (~0.006%), it earns its keep hot (~0.46% at Tt4=2200 K). The corollary re-uses the NO
+thermochemistry: equilibrium NO collapses ~120× down the nozzle, so a realistic zoned exhaust is
+max_a≈250 super-equilibrium at the exit and rung-10's dropped clamp fires (vs its dormant 0.677). A
+pure diagnostic — the cycle stays bit-for-bit rung 6. `python main.py` prints the rung-14 panel (the
+Tt4 thrust-bracket sweep + the dropped-clamp collapse). Still deferred: finite-rate nozzle chemistry
+(the real flow between the bounds), a shifting turbine, super-equilibrium O / prompt NO, and the
+rung-15 PDF-through-quench; plus off-design, the choked nozzle, the afterburner.*

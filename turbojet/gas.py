@@ -1081,7 +1081,7 @@ def _ideal_bell_ei(far_local: float, p: float, Tt3: float, hf_fuel: float, tau: 
     Returns 0 outside the valid window: φ>2 (soot bound — the 5-species basis is invalid AND the
     O-starved pool makes ≈0 NO anyway) or too lean to burn (flame pinned at the cold bracket edge,
     `_primary_aft` raises). NO finite quench here — this ISOLATES composition variance on the ideal
-    bell (carrying it through the finite quench is the rung-14 seam)."""
+    bell (carrying it through the finite quench is the rung-15 seam)."""
     phi = far_local / _F_STOICH
     if far_local <= 0.0 or phi > 2.0 + 1e-9:
         return 0.0
@@ -1181,6 +1181,127 @@ def _pdf_mean_ei(far_overall: float, Tt3: float, p: float, hf_fuel: float, tau: 
     bell = _bell_interpolator(p, Tt3, hf_fuel, tau, n_bell=n_bell)
     nodes, w = _beta_pdf_nodes_weights(xibar, g_seg, n_quad=n_quad)
     return sum(wi * bell(x) for wi, x in zip(w, nodes))
+
+
+# --------------------------------------------------------------------------- #
+# RUNG 14 — equilibrium-vs-frozen NOZZLE FLOW (the rung-6 cycle-side seam).     #
+# The production nozzle FREEZES the station-4 equilibrium mixture through the   #
+# whole expansion (rungs 6-13, `_EquilibriumSection`). Real nozzle flow lies    #
+# between FROZEN (chemistry infinitely slow — composition fixed) and            #
+# EQUILIBRIUM / SHIFTING (chemistry infinitely fast — composition = eq(T,p) at  #
+# every point). As the exhaust expands and cools, the dissociated radicals      #
+# CO/H₂/OH/O/H RECOMBINE to CO₂/H₂O, releasing chemical energy that partly       #
+# converts to kinetic energy → a HIGHER V9 → more thrust. So equilibrium is an   #
+# UPPER bound on nozzle performance and frozen a LOWER one; the real nozzle sits #
+# between. This is a pure DIAGNOSTIC beside the cycle (like the rung-7..13 NOx   #
+# layer): the production nozzle stays FROZEN, so the cycle is bit-for-bit rung 6.#
+# See docs/rung14-spec.md and docs/plans/rung14-anchor-nozzle.md.               #
+# --------------------------------------------------------------------------- #
+
+_T_EXIT_FLOOR = 500.0   # nozzle-exit bisection floor, K. The equilibrium Newton diverges below
+                        # ~500 K (radical mole numbers underflow the log-space floor); every real
+                        # exit sits >700 K and bisection never probes below its lower bound, so
+                        # this is a bracket GUARD (like `_primary_aft`), not an operating limit.
+
+
+def _mix_entropy_molar(comp: dict, T: float, p: float) -> float:
+    """Absolute mixture entropy per mol dry air, J/(mol·air K), at (T, p):
+
+        S = Σ_i n_i [ s0_i(T) − Ru·ln(x_i · p/p0) ],   x_i = n_i/n_tot.
+
+    s0_i is the absolute standard-state entropy `_s_molar` (the a7 constant, rung 6); the
+    −Ru·ln(x_i·p/p0) term is the partial-pressure/mixing correction (p0 = _P_REF = 1 bar). For a
+    FIXED composition the Σ n_i·(−Ru·ln x_i) mixing part is invariant, so an isentropic drop
+    collapses to the pr-ratio relation (== the frozen production nozzle); for a SHIFTING mixture
+    the mole fractions change and the mixing term is live (docs/rung14-spec.md § the entropy)."""
+    ntot = sum(comp.values())
+    S = 0.0
+    for sp, n in comp.items():
+        if n <= 0.0:
+            continue
+        S += n * (_s_molar(sp, T) - _Ru * math.log((n / ntot) * p / _P_REF))
+    return S
+
+
+def _mix_mass_per_air(comp: dict) -> float:
+    """Mixture mass per mol dry air, kg. INVARIANT under recombination (atoms conserved), so the
+    frozen and equilibrium exits share it — the two V9 = √(2 ΔH/m) denominators are identical."""
+    return sum(n * _SPECIES[sp][0] / 1000.0 for sp, n in comp.items())
+
+
+def _mix_h_abs_B(comp: dict, T: float) -> float:
+    """Absolute (scale-B: 0K-sensible + formation) mixture enthalpy per mol air, J/mol·air."""
+    return sum(n * _h_molar_B(sp, T) for sp, n in comp.items())
+
+
+def _expand_nozzle(comp_entry: dict, far: float, Tt9: float, pt9: float, p9: float,
+                   shifting: bool) -> Tuple[float, float, dict]:
+    """One reversible-adiabatic (isentropic) nozzle expansion of the exhaust from the entry TOTAL
+    state (Tt9, pt9) to the back-pressure p9. Returns (T9, V9, comp9). Rung 14.
+
+    COMMON PHYSICAL ENTRY (the fair-bracket choice, advisor-confirmed): BOTH modes start from the
+    SAME gas — the frozen station-4 mixture `comp_entry` at (Tt9, pt9) — so the stagnation enthalpy
+    H_entry and entropy S_entry are IDENTICAL and the recombination benefit shows up as V9, not as
+    a shifted entry state. We do NOT re-equilibrate the entry: that would lower H_entry (eq is more
+    recombined) and bracket two DIFFERENT gases. The sliver of entry irreversibility from switching
+    chemistry on at the throat is the stated 'infinite-rate-at-the-nozzle' approximation (spec §).
+
+      FROZEN      (shifting=False): composition held = comp_entry → reduces to the production
+                  nozzle's pr-ratio expansion EXACTLY (the fixed-comp mixing term cancels).
+      EQUILIBRIUM (shifting=True) : composition = _equilibrium_composition(far, T, p9) at each T.
+
+    Isentropic: solve T9 with S_mix(comp(T9), T9, p9) = S_mix(comp_entry, Tt9, pt9). Then
+    V9 = √(2·(H_entry − H_abs(comp9, T9))/m) on ABSOLUTE (scale-B) enthalpy so the recombination
+    (formation) energy appears, with m the recombination-invariant mass per mol air."""
+    S_entry = _mix_entropy_molar(comp_entry, Tt9, pt9)
+    H_entry = _mix_h_abs_B(comp_entry, Tt9)
+    m = _mix_mass_per_air(comp_entry)
+
+    def comp_at(T: float) -> dict:
+        return _equilibrium_composition(far, T, p9) if shifting else comp_entry
+
+    # S(T) rises with T at fixed p (higher s0, and the shift toward dissociation only adds moles),
+    # so bisect on the entropy residual: at p9 < pt9 the gas is over-entropic at Tt9, cool it to
+    # bring S back to S_entry (⇒ T9 < Tt9 — the expansion trades enthalpy for kinetic energy).
+    lo, hi = _T_EXIT_FLOOR, Tt9
+    for _ in range(200):
+        T = 0.5 * (lo + hi)
+        if _mix_entropy_molar(comp_at(T), T, p9) > S_entry:
+            hi = T
+        else:
+            lo = T
+        if hi - lo <= 1e-13 * T:     # near-machine, so frozen reproduces the production nozzle exactly
+            break
+    T9 = 0.5 * (lo + hi)
+    # Bracket guard (post-loop, like `_primary_aft`): a root pinned at the cold floor means the
+    # expansion wanted a colder exit than the equilibrium solve can resolve. Never happens here
+    # (every exit sits >700 K), but guard it rather than trust a bracket edge.
+    assert T9 > _T_EXIT_FLOOR + 1.0, \
+        f"nozzle exit T={T9:.1f} K pinned at the {_T_EXIT_FLOOR:.0f} K bracket floor (far={far:.4f})"
+    comp9 = comp_at(T9)
+    V9 = math.sqrt(2.0 * (H_entry - _mix_h_abs_B(comp9, T9)) / m)
+    return T9, V9, comp9
+
+
+def _nozzle_clamp_diag(comp_entry: dict, Tt9: float, T9: float,
+                       x_no_frozen: Optional[float]) -> dict:
+    """The dropped-clamp corollary (rung 14; docs/rung14-spec.md § where the clamp earns its keep).
+
+    On the nozzle cooling path the COMPOSITION is frozen, but the equilibrium NO mole fraction
+    x_NO_e = Kp_NO(T)·√(x_N2·x_O2) COLLAPSES as T falls (Kp_NO = exp(−ΔG°/RuT) is steeply
+    T-dependent). So exhaust NO frozen at the combustor value becomes SUPER-EQUILIBRIUM (a =
+    [NO]/[NO]_e > 1): rung 7's cNO≤cNOe clamp would DELETE it — a plausible-but-wrong low number
+    with every assert still green. Rung 10 DROPPED that clamp (super-eq NO freezes on cooling —
+    Heywood) and proved it DORMANT on the combustor quench (max_a=0.677<1). HERE it fires (a≫1) —
+    this is exactly the near-stoich exhaust-cooling regime rung 10 flagged. x_NO_e is monotone in
+    T (frozen x_N2/x_O2), so the coldest point T9 gives the trajectory-max a. The COLLAPSE RATIO is
+    frozen-NO-independent (the certifiable core); max_a needs a frozen exhaust NO — the caller
+    passes the physically-realistic rung-8 zoned (ICAO-band) value."""
+    xe_entry = _equilibrium_no_fraction(comp_entry, Tt9)
+    xe_exit = _equilibrium_no_fraction(comp_entry, T9)     # coldest → smallest x_NO_e → max a
+    return dict(x_no_e_entry=xe_entry, x_no_e_exit=xe_exit,
+                no_collapse_ratio=xe_entry / xe_exit,
+                max_a=(x_no_frozen / xe_exit) if x_no_frozen is not None else None)
 
 
 @dataclass
@@ -1321,7 +1442,7 @@ class MixingPDF:
     quench chain, so it structurally CANNOT climb: it pins the optimum LOCATION (min AT C_opt) but
     the far-over-penetration flank DESCENDS (the humped ⟨EI⟩(g), below). Composition variance pins
     the optimum; the dwell effect makes the climb; combining them (the PDF through the quench) is
-    rung 14. This replaces the segregation parameterisation, NOT the dwell — complementary, not a
+    rung 15. This replaces the segregation parameterisation, NOT the dwell — complementary, not a
     superset.
 
     THE LESSON (framed correctly — NOT generic "convexity/Jensen"). The NO-vs-φ bell is convex on
@@ -1345,7 +1466,7 @@ class MixingPDF:
     HONEST SCOPE: this ISOLATES composition variance on the IDEAL bell — the finite-quench dwell
     chain (rungs 10–12) is dropped, so the optimum minimum is the well-mixed LEAN value ≈0 (a
     modeling boundary, NOT a physics claim; bulk / primary-history NO is out of scope). Carrying the
-    PDF THROUGH the rung-12 quench is the rung-14 seam. `pdf=None` (default) is the exact rung-12
+    PDF THROUGH the rung-12 quench is the rung-15 seam. `pdf=None` (default) is the exact rung-12
     path; g→0 is the point value. Like the rung-9..12 knobs, S/k_g/g_max are order-of-magnitude;
     C_opt≈2.5 is Holdeman's value — what is CERTIFIED is the optimum pinned AT C_opt (both flanks
     up), the (H/S)² shift, and the SIGN of the effect (and its reversal at a stoich mean)."""
@@ -1438,6 +1559,52 @@ class ZonedNOxState:
     @property
     def ppm_mix(self) -> float:
         return self.x_no_mix * 1e6
+
+
+@dataclass
+class NozzleFlowState:
+    """Frozen-vs-equilibrium nozzle-flow diagnostic (rung 14; docs/rung14-spec.md). A pure
+    diagnostic BESIDE the cycle — the production nozzle stays FROZEN, so the cycle is bit-for-bit
+    rung 6. Velocities m/s, temperatures K, mole fractions dimensionless; compositions are mole
+    numbers per mol dry air.
+
+    THE THRUST BRACKET (major species): V9_frozen ≤ V9(real) ≤ V9_equilibrium. The gap `dV9` is the
+    recombination energy a shifting expansion recovers (CO/H₂/OH/O/H → CO₂/H₂O on cooling). It is
+    NEGLIGIBLE at the cool lean design point (dissociation ≈ 0) and grows with combustor temperature.
+    THE CLAMP COROLLARY (NO): on the same cooling path equilibrium NO collapses (`no_collapse_ratio`),
+    so any realistic frozen exhaust NO is super-equilibrium and rung 7's dropped clamp would fire
+    (`max_a` ≫ 1, vs rung 10's dormant 0.677 — see `_nozzle_clamp_diag`)."""
+    # --- the thrust bracket (major species) ---
+    T9_frozen: float                  # frozen exit static temperature (== production nozzle), K
+    T9_equilibrium: float             # shifting-equilibrium exit static temperature, K (> frozen)
+    V9_frozen: float                  # frozen exhaust velocity (== production nozzle), m/s
+    V9_equilibrium: float             # shifting-equilibrium exhaust velocity, m/s (≥ frozen)
+    co_fraction_entry: float          # CO/(CO+CO2) at the nozzle entry — the dissociation content
+    comp_entry: dict                  # frozen station-4 mixture (mole numbers per mol air)
+    comp_exit_eq: dict                # shifted equilibrium exit mixture
+    # --- the dropped-clamp corollary (NO) ---
+    x_no_e_entry: float               # equilibrium NO mole fraction at the nozzle entry (Tt9)
+    x_no_e_exit: float                # equilibrium NO at the exit (T9_frozen) — collapsed
+    no_collapse_ratio: float          # x_no_e_entry / x_no_e_exit (frozen-NO-independent)
+    x_no_frozen: Optional[float] = None   # the caller's frozen exhaust NO (e.g. rung-8 zoned); None if absent
+    max_a: Optional[float] = None     # x_no_frozen / x_no_e_exit; > 1 ⇒ the dropped clamp fires
+
+    @property
+    def dV9(self) -> float:
+        """Extra exhaust velocity a shifting (equilibrium) expansion recovers over frozen, m/s."""
+        return self.V9_equilibrium - self.V9_frozen
+
+    @property
+    def dV9_frac(self) -> float:
+        """`dV9` as a fraction of the frozen exhaust VELOCITY. The specific-THRUST delta is modestly
+        larger — ΔF/F = ΔV9/(V9 − V0/(1+f)), so the flight ram term (V0) lifts it ~1.2–1.35× at
+        M0=0.85 (≈0.56% vs the ≈0.46% velocity fraction at the hot anchor)."""
+        return self.dV9 / self.V9_frozen
+
+    @property
+    def clamp_fires(self) -> bool:
+        """Would rung 7's dropped NO clamp fire on the nozzle cooling path? (max_a > 1.)"""
+        return self.max_a is not None and self.max_a > 1.0
 
 
 @dataclass
@@ -1795,7 +1962,7 @@ class Gas:
         drops the finite-quench dwell chain, so it pins the optimum but CANNOT climb — the far-over-
         penetration flank DESCENDS (the humped ⟨EI⟩(g), β-PDF going bimodal). Rung-12's over-
         penetration climb was the DWELL effect; combining both (the PDF through the quench) is the
-        rung-14 seam (and the min ≈0 here — dropping the bulk floor — is that scope boundary).
+        rung-15 seam (and the min ≈0 here — dropping the bulk floor — is that scope boundary).
         `pdf=None` (default) is the exact rung-12 path; g→0 is the well-mixed point value. NO still
         trace → cycle bit-for-bit rung 6. `ei_no_quenched` still holds the mean-field bulk reference.
 
@@ -1889,7 +2056,7 @@ class Gas:
             # well-mixed value AT C_opt (g=0 ⇒ delta ⇒ point value) with both flanks lifting: the
             # optimum LOCATION from a continuous distribution. Isolates the COMPOSITION mechanism
             # (drops the dwell chain) ⇒ it pins the optimum but does NOT climb — the far flank
-            # descends (humped ⟨EI⟩(g)); the climb is rung-12's dwell (rung-14 combines them). A pure
+            # descends (humped ⟨EI⟩(g)); the climb is rung-12's dwell (rung-15 combines them). A pure
             # diagnostic: NO/N still never enter _equil_solve, cycle bit-for-bit rung 6.
             C = pdf.C(mixing)
             g_seg = pdf.segregation(C)
@@ -1920,6 +2087,50 @@ class Gas:
         state.ei_no_unmixed = (1.0 - w) * q["ei"] + w * qc["ei"]   # ei_no_quenched (q) is the mean-field bulk
         state.max_a_quench = max(state.max_a_quench, qc["max_a"])   # dormancy gate spans BOTH streams
         return state
+
+    # --- Rung-14 equilibrium-vs-frozen nozzle-flow diagnostic (DECOUPLED; never feeds the cycle) ---
+    def nozzle_flow(self, far: float, Tt4: float, pt4: float,
+                    Tt9: float, pt9: float, p9: float,
+                    x_no_frozen: Optional[float] = None) -> "NozzleFlowState":
+        """Frozen-vs-equilibrium nozzle-flow diagnostic (rung 14; docs/rung14-spec.md).
+
+        The production nozzle FREEZES the station-4 equilibrium mixture through the whole expansion
+        (rungs 6-13). This DIAGNOSTIC re-runs the hot expansion two ways from the SAME physical entry
+        gas — the frozen station-4 mixture at the nozzle-entry TOTAL state (Tt9, pt9) — expanding
+        isentropically to the back-pressure p9 (pass the run's Tt9=Tt5, pt9=π_n·pt5, p9=p_exit):
+
+          FROZEN      — composition held at the station-4 mixture (== the production nozzle, exact).
+          EQUILIBRIUM — composition RE-EQUILIBRATES at each (T, p): CO/H₂/OH/O/H recombine on cooling,
+                        releasing chemical energy → a higher exit velocity (the UPPER bound).
+
+        Returns the [V9_frozen, V9_equilibrium] thrust bracket (the real nozzle sits between; the gap
+        is negligible at the cool lean design point and grows with combustor T) plus the dropped-clamp
+        corollary: pass a frozen exhaust NO (`x_no_frozen`, e.g. the rung-8 zoned mole fraction) to get
+        `max_a` — on the cooling path equilibrium NO collapses, so the frozen NO is super-equilibrium
+        and rung 7's clamp would fire (max_a ≫ 1, vs rung 10's dormant 0.677).
+
+        A pure diagnostic: it only READS (far, Tt4, pt4, Tt9, pt9, p9) and touches no cycle path, so
+        the cycle stays bit-for-bit rung 6. Requires the equilibrium (rung-6) gas."""
+        assert self.equilibrium, \
+            "nozzle_flow: needs the rung-6 equilibrium gas (Gas.reacting_equilibrium())"
+        assert p9 <= pt9 * (1.0 + 1e-12), \
+            f"nozzle_flow: back-pressure p9={p9:.0f} Pa exceeds pt9={pt9:.0f} Pa (cannot expand to it)"
+        comp_entry = _equilibrium_composition(far, Tt4, pt4)     # the FROZEN station-4 mixture
+
+        T9f, V9f, _ = _expand_nozzle(comp_entry, far, Tt9, pt9, p9, shifting=False)
+        T9e, V9e, comp9 = _expand_nozzle(comp_entry, far, Tt9, pt9, p9, shifting=True)
+
+        nCO, nCO2 = comp_entry.get("CO", 0.0), comp_entry.get("CO2", 0.0)
+        co_frac = nCO / (nCO + nCO2) if (nCO + nCO2) > 0.0 else 0.0
+
+        clamp = _nozzle_clamp_diag(comp_entry, Tt9, T9f, x_no_frozen)   # clamp rides the FROZEN exit
+        return NozzleFlowState(
+            T9_frozen=T9f, T9_equilibrium=T9e, V9_frozen=V9f, V9_equilibrium=V9e,
+            co_fraction_entry=co_frac, comp_entry=comp_entry, comp_exit_eq=comp9,
+            x_no_e_entry=clamp["x_no_e_entry"], x_no_e_exit=clamp["x_no_e_exit"],
+            no_collapse_ratio=clamp["no_collapse_ratio"],
+            x_no_frozen=x_no_frozen, max_a=clamp["max_a"],
+        )
 
     def unified(self) -> "Gas":
         """Return a copy with the hot section collapsed onto the cold section.
