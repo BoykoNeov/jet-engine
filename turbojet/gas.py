@@ -1497,6 +1497,78 @@ class MixingPDF:
 
 
 @dataclass
+class QuenchPDF:
+    """Rung-15 PDF-THROUGH-QUENCH config — carries rung-13's resolved mixture-fraction β-PDF THROUGH the
+    rung-10/12 finite-quench dwell chain, so the two mixing mechanisms finally COMBINE: the COMPOSITION
+    variance (rung 13, which pinned the optimum LOCATION but on the ideal bell dropped the quench → its
+    optimum collapsed to ≈0) AND the DWELL (rung 12, an absolute off-optimum-growing residence → the
+    over-penetration flank CLIMBS). Rides ON a `JetMixing` (needs J and H for the Holdeman group
+    C=(S/H)√J AND the derived τ_mean for the floor), MUTUALLY EXCLUSIVE with both `pdf` and
+    `unmixedness` (three closures of the SAME variance physics).
+
+    THE CONSTRUCTION (additive — mean-field FLOOR + resolved composition FLUCTUATION × dwell):
+        <EI>_15 = EI_bulk_quench(τ_mean)          # term 1: rung-11 mean field (the FINITE floor, all C)
+                + D(u) · <EI_bell>(g)             # term 2: rung-13 β-PDF integral × a rung-12 dwell
+    with g(C)=min(g_max, k_g·|ln(C/C_opt)|) (rung-13 segregation), u(C)=|ln(C/C_opt)| (rung-12
+    unmixedness), and the dwell factor D(u)=τ_res·(1+b_u·u)/τ_ref — τ_core(u)/τ_ref, an ABSOLUTE
+    off-optimum-growing residence (rung-12 core_dwell) rescaling the reference-τ bell EI to the pocket's
+    actual lingering dwell (exact while EI ∝ τ, the dormant clamp). τ_ref is the zoned_nox residence
+    `tau` at which the bell is built (so the two stay locked).
+
+    DISTINGUISHABLE FROM BOTH PARENTS: the finite floor + the climbing far flank are NOT rung 13 (whose
+    optimum is ≈0 and whose far flank descends as the β-PDF goes bimodal); the STOICH-MEAN SIGN REVERSAL
+    (term 2 samples the NONLINEAR, peaked bell) is NOT reproducible by rung-12's lumped dwell — the
+    discriminator that catches the naïve "dwell-only PDF through the quench" trap (which, because
+    EI_quench(τ) is LINEAR, collapses to rung-12's mean and rides the wrong sign; docs/rung15-spec.md).
+    `pdf_quench=None` is the exact rung-13 path; at C_opt (g→0) <EI> = the finite bulk quench NO
+    (ei_no_quenched), NOT ≈0.
+
+    Like the rung-9..13 knobs, S/k_g/g_max/τ_res/b_u are order-of-magnitude; C_opt≈2.5 is Holdeman's
+    value; b_u=3 (larger than rung-12's default) pins the min AT C_opt because term 2's <EI_bell> is a
+    weaker lever than rung-12's EI(τ_core) (docs/plans/rung15-anchor-pdf-quench.md §2c). Certified: the
+    finite floor, the min AT C_opt (both flanks up, far flank CLIMBING), the (H/S)² shift, the sign
+    reversal."""
+    S: float = 0.0625          # dilution-jet spacing, m (forms the Holdeman group with H and J)
+    C_opt: float = 2.5         # Holdeman uniformity optimum of C=(S/H)√J (segregation + dwell minimum)
+    k_g: float = 0.3           # β-PDF segregation sensitivity to |ln(C/C_opt)| (rung-13 width)
+    g_max: float = 0.3         # cap on the segregation (0<g_max<1; rung-13 bimodal bound)
+    tau_res: float = 2.5e-3    # under-mixed-pocket dwell AT the optimum, s (absolute residence; rung 12)
+    b_u: float = 3.0           # off-optimum dwell growth (pins the min at C_opt; > rung-12's default)
+    n_bell: int = 200          # reference-bell grid points (EI(ξ) built ONCE, interpolated; rung 13)
+    n_quad: int = 200          # β-PDF quadrature nodes (rung 13)
+
+    def __post_init__(self):
+        for name, v in (("S", self.S), ("C_opt", self.C_opt), ("tau_res", self.tau_res)):
+            assert v > 0.0, f"QuenchPDF.{name}={v} must be positive"
+        assert self.k_g >= 0.0, f"QuenchPDF.k_g={self.k_g} must be ≥ 0 (0 ⇒ g≡0 ⇒ floor only)"
+        assert self.b_u >= 0.0, f"QuenchPDF.b_u={self.b_u} must be ≥ 0"
+        assert 0.0 < self.g_max < 1.0, f"QuenchPDF.g_max={self.g_max} must be in (0,1)"
+        assert self.n_bell > 1 and self.n_quad > 1, "QuenchPDF grid sizes (n_bell, n_quad) must be > 1"
+
+    def C(self, mixing: "JetMixing") -> float:
+        """The Holdeman momentum-flux/geometry group C=(S/H)√J (identical to MixingPDF/Unmixedness.C —
+        the same jet that set τ_q). Uses the paired JetMixing's H and J."""
+        return (self.S / mixing.H) * math.sqrt(mixing.J)
+
+    def _u(self, C: float) -> float:
+        """The unmixedness u(C)=|ln(C/C_opt)| — the KINKED L1 distance from the Holdeman optimum (0 at
+        C_opt), driving BOTH the β-PDF width g and the dwell growth (rung-12 + rung-13 kinks, unified)."""
+        return abs(math.log(C / self.C_opt))
+
+    def segregation(self, C: float) -> float:
+        """The rung-13 β-PDF segregation width g(C)=min(g_max, k_g·u) — KINKED at C_opt (0 there),
+        capped at g_max. Sets term 2's composition variance (the nonlinear-bell integral)."""
+        return min(self.g_max, self.k_g * self._u(C))
+
+    def dwell_factor(self, C: float, tau_ref: float) -> float:
+        """The dwell factor D(u)=τ_res·(1+b_u·u)/τ_ref — the segregated pocket's ABSOLUTE residence
+        τ_core(u)=τ_res·(1+b_u·u) (rung-12 core_dwell, GROWS off-optimum, survives J→∞) relative to the
+        bell's reference residence τ_ref. Rescales the reference-τ bell EI to the pocket's lingering
+        dwell (EI ∝ τ, dormant clamp). Its off-optimum growth is what makes the far flank CLIMB."""
+        return self.tau_res * (1.0 + self.b_u * self._u(C)) / tau_ref
+
+
+@dataclass
 class ZonedNOxState:
     """Two-zone (primary → dilution) thermal-NO diagnostic (rung 8). A pure DIAGNOSTIC —
     like NOxState it never feeds the cycle. NO is set in the hot primary and FROZEN through
@@ -1536,8 +1608,16 @@ class ZonedNOxState:
     # distribution rather than two lumps (the far-over-penetration flank descends — the humped
     # ⟨EI⟩(g); the over-penetration climb is rung-12's dwell effect, absent here).
     pdf: Optional["MixingPDF"] = None      # the β-PDF config used
-    g_seg: Optional[float] = None          # the segregation width g(C) (0 at C_opt)
+    g_seg: Optional[float] = None          # the segregation width g(C) (0 at C_opt); reused by rung 15
     ei_no_pdf: Optional[float] = None      # ⟨EI⟩ over the β-PDF of the ideal bell, g/kg — min AT C_opt
+    # RUNG 15 — the PDF THROUGH the finite quench (composition variance AND dwell, COMBINED). Set when
+    # zoned_nox is called with a `pdf_quench` config (requires `mixing`, mutually exclusive with `pdf`
+    # and `unmixedness`); None otherwise. `ei_no_quenched` holds term 1 (the rung-11 mean-field bulk
+    # quench, the FINITE floor rung 13 lacked); `ei_no_pdf_quench` = term1 + term2 — the combined result
+    # (min AT C_opt with a FINITE floor, far flank CLIMBING — distinguishable from BOTH rung 12 and 13).
+    pdf_quench: Optional["QuenchPDF"] = None  # the PDF-through-quench config used (C_holdeman/g_seg reused)
+    ei_no_pdf_excess: Optional[float] = None  # term 2 = D(u)·⟨EI_bell⟩(g), g/kg — resolved composition×dwell
+    ei_no_pdf_quench: Optional[float] = None  # term1 + term2, g/kg — the combined result (the finite floor)
 
     @property
     def ei_no(self) -> float:
@@ -1887,6 +1967,7 @@ class Gas:
                   mixing: Optional["JetMixing"] = None,
                   unmixedness: Optional["Unmixedness"] = None,
                   pdf: Optional["MixingPDF"] = None,
+                  pdf_quench: Optional["QuenchPDF"] = None,
                   quench_ngrid: int = 240, quench_nsteps: int = 2000) -> "ZonedNOxState":
         """Two-zone (primary → dilution) thermal NOx (docs/rung8-spec.md). Runs the SAME
         rung-7 extended-Zeldovich integrator on a HOT, near-stoichiometric PRIMARY zone
@@ -1966,6 +2047,21 @@ class Gas:
         `pdf=None` (default) is the exact rung-12 path; g→0 is the well-mixed point value. NO still
         trace → cycle bit-for-bit rung 6. `ei_no_quenched` still holds the mean-field bulk reference.
 
+        RUNG 15 — the PDF THROUGH the finite quench (docs/rung15-spec.md). Pass a `pdf_quench` (a
+        `QuenchPDF` config; REQUIRES `mixing`, MUTUALLY EXCLUSIVE with `pdf` and `unmixedness`) to
+        finally COMBINE the two mixing mechanisms rungs 12–13 kept isolated: the COMPOSITION variance
+        (rung 13) AND the DWELL (rung 12). Additive — `ei_no_pdf_quench` = term1 + term2 where term1 =
+        `ei_no_quenched` (the rung-11 mean-field bulk quench, the FINITE floor rung 13 dropped) and
+        term2 = D(u)·⟨EI_bell⟩(g) (the rung-13 β-PDF integral over the ideal bell, reused verbatim,
+        scaled by an off-optimum-growing dwell factor D(u)=τ_res(1+b_u·u)/tau — τ_core/τ_ref, rescaling
+        the reference-τ bell EI to the pocket's lingering dwell; EI ∝ τ, dormant clamp). The result: the
+        ≈0 rung-13 optimum floor BECOMES the finite bulk quench NO (at C_opt, g→0 ⇒ term2→0 ⇒
+        ei_no_pdf_quench = ei_no_quenched, NOT ≈0), the min is PINNED AT C_opt (J_min=J_opt, (H/S)²
+        shift), BOTH flanks lift, and the far over-penetration flank CLIMBS again (the dwell restored,
+        surviving J→∞) — distinguishable from BOTH parents. The nonlinear bell keeps the STOICH-MEAN
+        SIGN REVERSAL (the discriminator a lumped-dwell rung-12-in-disguise fails). `pdf_quench=None`
+        (default) is the exact rung-13 path. NO still trace → cycle bit-for-bit rung 6.
+
         `quench_ngrid`/`quench_nsteps` are the finite-quench numerical resolution (trajectory
         points / RK4 steps) — pure cost/accuracy knobs, only used when `tau_q` is finite. The 240
         default reproduces the anchor's worked example (docs/plans/rung10-anchor-quench.md); EI_NO
@@ -1988,9 +2084,13 @@ class Gas:
             "pdf (rung-13 resolved mixing PDF) REQUIRES a `mixing` config — it needs the jet's J and "
             "duct H for the Holdeman group C=(S/H)√J that sets the β-PDF segregation width g(C)."
         )
-        assert not (pdf is not None and unmixedness is not None), (
-            "pass EITHER unmixedness (rung-12 two-stream) OR pdf (rung-13 continuous β-PDF) — they "
-            "are two closures of the SAME variance physics, mutually exclusive."
+        assert not (pdf_quench is not None and mixing is None), (
+            "pdf_quench (rung-15 PDF through the quench) REQUIRES a `mixing` config — it needs the jet's "
+            "J and duct H for the Holdeman group C=(S/H)√J AND the derived τ_mean for the mean-field floor."
+        )
+        assert sum(x is not None for x in (unmixedness, pdf, pdf_quench)) <= 1, (
+            "pass AT MOST ONE of unmixedness (rung-12 two-stream) / pdf (rung-13 β-PDF on the ideal bell) "
+            "/ pdf_quench (rung-15 β-PDF THROUGH the quench) — three closures of the SAME variance physics."
         )
         hf_fuel = (self.hf_fuel_molar if self.hf_fuel_molar is not None
                    else _HF_FUEL_DEFAULT)   # 0.0 is a valid ΔHf (elements are the datum)
@@ -2065,6 +2165,31 @@ class Gas:
             state.g_seg = g_seg
             state.ei_no_pdf = _pdf_mean_ei(far, Tt3, p, hf_fuel, tau, g_seg,
                                            n_bell=pdf.n_bell, n_quad=pdf.n_quad)
+            return state
+
+        if pdf_quench is not None:
+            # RUNG 15 — the PDF THROUGH the finite quench: carry rung-13's resolved β-PDF through the
+            # rung-10/12 dwell chain, COMBINING the composition variance with the dwell. Additive:
+            #   term 1 = ei_no_quenched  (the rung-11 mean-field bulk quench q["ei"] — the FINITE floor
+            #            rung 13 lacked, present at all C);
+            #   term 2 = D(u)·⟨EI_bell⟩(g)  (the rung-13 β-PDF integral over the IDEAL bell — reused
+            #            verbatim — scaled by the off-optimum-growing dwell factor D(u)=τ_res(1+b_u·u)/τ,
+            #            rescaling the reference-τ bell EI to the pocket's actual lingering dwell; EI ∝ τ,
+            #            the dormant clamp). The bell reference IS the residence `tau`, so the two lock.
+            # At C_opt (g→0) term 2 → 0 and ⟨EI⟩ = the FINITE bulk NO (NOT rung-13's ≈0); off-optimum the
+            # NONLINEAR bell keeps the STOICH-MEAN SIGN REVERSAL (a lumped-dwell rung 12 cannot) and the
+            # dwell growth makes the far flank CLIMB. A pure diagnostic: NO/N never enter _equil_solve, so
+            # the cycle stays bit-for-bit rung 6.
+            C = pdf_quench.C(mixing)
+            g_seg = pdf_quench.segregation(C)
+            bell_mean_ei = _pdf_mean_ei(far, Tt3, p, hf_fuel, tau, g_seg,
+                                        n_bell=pdf_quench.n_bell, n_quad=pdf_quench.n_quad)
+            term2 = pdf_quench.dwell_factor(C, tau) * bell_mean_ei
+            state.pdf_quench = pdf_quench
+            state.C_holdeman = C
+            state.g_seg = g_seg
+            state.ei_no_pdf_excess = term2
+            state.ei_no_pdf_quench = q["ei"] + term2       # term1 (ei_no_quenched) + term2
             return state
 
         if unmixedness is None:

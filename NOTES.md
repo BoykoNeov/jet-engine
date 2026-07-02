@@ -1458,7 +1458,7 @@ two different truths:
 - **Dwell** (rung 12) says *why over-penetration keeps getting worse* — the stranded pocket lingers.
 
 Bundling them — carrying the resolved PDF **through** the finite quench so the distribution both
-samples the peak *and* dwells — is exactly the next rung (14). That the composition-only model can't
+samples the peak *and* dwells — is exactly rung 15. That the composition-only model can't
 climb isn't a weakness; it's the model telling us the climb was never a composition effect.
 
 ## Did we get it right?
@@ -1580,3 +1580,79 @@ pure diagnostic — the cycle stays bit-for-bit rung 6. `python main.py` prints 
 Tt4 thrust-bracket sweep + the dropped-clamp collapse). Still deferred: finite-rate nozzle chemistry
 (the real flow between the bounds), a shifting turbine, super-equilibrium O / prompt NO, and the
 rung-15 PDF-through-quench; plus off-design, the choked nozzle, the afterburner.*
+
+---
+
+# Rung 15 — The PDF Through the Finite Quench: Composition Variance AND Dwell, Combined, in plain language
+
+## The headline: stop isolating the two mechanisms — combine them
+Rung 12 gave us the **dwell** effect (a stranded pocket lingers and keeps re-making NO — the reason the
+over-penetration flank *climbs*), and rung 13 gave us the resolved **composition** β-PDF (the reason the
+optimum sits **at** `C_opt`). But rung 13 bought that clean composition lesson by **dropping the
+quench** — it integrated the *ideal*, instantly-quenched bell — so its optimum collapsed to a physically
+silly **≈ 0** and its far flank **descended**. Rung 15 stops isolating and **combines**: carry the
+resolved β-PDF **through** the finite quench. The result is one equation, two terms:
+
+> **⟨EI⟩₁₅ = a mean-field FLOOR + a resolved composition FLUCTUATION × a dwell.**
+> Term 1 is the rung-11 bulk quench — what a perfectly-mixed jet makes as it cools through stoich. Term
+> 2 is rung-13's β-PDF integral over the bell, **scaled by an off-optimum-growing dwell** (a pocket that
+> lingers longer, on an absolute clock, the further the jet is from the optimum).
+
+Zero term 2 and you are back to rung 11 (pure mean field); drop term 1 and you are back to rung 13
+(composition on the ideal bell, ≈ 0 optimum). The rung is the **pairing**.
+
+## The result: the ≈0 floor becomes finite bulk NO, and the descending flank climbs again
+Sweep the jet. At `C_opt` the mixing is perfect, term 2 vanishes, and the NO is the **finite bulk quench
+value** (≈ 1 g/kg) — **not** rung-13's ≈ 0. That is the headline: the modeling-boundary ≈ 0 of rung 13
+becomes a real, finite, mean-field floor. Step to either flank and the average lifts. And on the far
+over-penetration flank — where rung 13 *descended* toward zero (its β-PDF going bimodal) — rung 15
+**climbs back up**, because the stranded pockets now **dwell** (the rung-12 mechanism, restored). The
+over-flank is deliberately **non-monotone**: right next to `C_opt` the composition convexity jump
+dominates (rung-13's sharp shoulder), and far out the dwell climb takes over (rung-12's). You can see
+**both parents' fingerprints in one curve** — that wiggle is the two mechanisms handing off, not noise.
+
+## The tell that it is really composition (not rung 12 in a wig)
+There is a seductive wrong way to do this: integrate a *quench-resolved* EI over a **dwell-time**
+distribution. It **silently rebuilds rung 12** — because the quench EI is essentially **linear in
+dwell** (NO ∝ residence, the clamp dormant), a distribution integrated against a linear function is just
+its mean, so the "resolved distribution" does no work and all the motion comes from the dwell term (which
+*is* rung-12's core dwell). Worse, the variance there rides a mildly *concave* function, so a spread
+slightly **lowers** NO — the **wrong sign**. The fix, and the whole reason term 2 keeps the *nonlinear*
+bell, is the **stoich-mean sign reversal**: segregation **raises** the bell integral when the mean is
+lean but **lowers** it when the mean is at stoich (mass moves off the peak). A dwell-only construction
+**cannot** reverse. The panel prints the lean and stoich columns side by side — the sign flip is the
+certificate that term 2 is genuine composition work, i.e. rung 15 is not rung 12 in disguise.
+
+## Did we get it right?
+Two exact reduces. `pdf_quench=None` runs the literal rung-13 code (the whole rung 1–14 suite stays
+bit-for-bit; the cycle never moves — NO is still a trace diagnostic, opt-in). And at `C_opt` (`g→0`) term
+2 vanishes and ⟨EI⟩₁₅ equals the finite bulk quench NO (`ei_no_quenched`) to five figures — the **new**
+reduce that separates rung 15 from rung-13's ≈ 0. The minimum sits **at** `C_opt` and shifts as `(H/S)²`
+with the jet spacing (the kink pins it), both flanks lift, and the far flank climbs. What stays honest,
+said plainly: the dwell rescaling `EI_pocket = EI_bell·(τ_core/τ_ref)` is a **linearisation** — exact
+only while NO ∝ residence (the clamp dormant, which holds here); the β-PDF is **presumed** and both its
+width `g(C)` and the dwell `τ_core(C)` are **modelled** on the Holdeman group, not transported; and
+`b_u = 3` (a touch stiffer than rung-12's dwell) is what pins the min at `C_opt`, because term 2's bell
+integral is a weaker lever than rung-12's lumped core. What's certified is the **finite floor**, the min
+**at `C_opt`** (both flanks up, far flank **climbing**), the `(H/S)²` shift, and the **sign reversal** —
+the one combination no single parent shows.
+
+---
+*Rung 15 carries rung-13's resolved β-PDF **through** the rung-10/12 finite quench: pass
+`Gas.zoned_nox(..., mixing=JetMixing(J=...), pdf_quench=QuenchPDF(S=<jet spacing>))` and
+`ei_no_pdf_quench = ei_no_quenched + D(u)·⟨EI_bell⟩(g(C))` — term 1 the rung-11 mean-field bulk quench
+(the finite floor), term 2 the rung-13 β-PDF integral over the ideal bell scaled by the off-optimum
+dwell factor `D(u) = τ_res·(1+b_u·u)/τ` (`τ_core/τ_ref`, an absolute residence that grows off-optimum and
+survives `J→∞`). The ≈ 0 rung-13 optimum **becomes the finite bulk NO** (at `C_opt`, `g→0` ⇒
+`ei_no_pdf_quench = ei_no_quenched`), the min is pinned **AT `C_opt`** (`J_min=J_opt`, `(H/S)²` shift),
+both flanks lift, and the far over-penetration flank **CLIMBS** again (the restored dwell) where rung-13
+descends — a non-monotone over-flank that shows **both** parents' fingerprints. The nonlinear bell keeps
+the **stoich-mean sign reversal** that a naïve dwell-only "PDF through the quench" (which collapses to
+rung 12 and rides the wrong sign) cannot. `pdf_quench` **requires** `mixing` and is **mutually
+exclusive** with `pdf` and `unmixedness`; `pdf_quench=None` keeps the exact rung-13 path (bit-for-bit
+rung 6). `python main.py` prints the rung-15 panel: the `J`-sweep (finite floor + climbing far flank vs
+rung-13's descent) and the sign-reversal columns. Still deferred on this substrate: the **full per-pocket
+trajectory** (replace the bell×dwell-ratio linearisation — matters once a pocket goes super-equilibrium),
+a **transported/CFD PDF**, **super-equilibrium O / prompt (Fenimore) NO** (richest in the near-stoich
+pockets this PDF now resolves and dwell-weights), and the finite-Damköhler nozzle flow between the
+rung-14 bounds; plus off-design, the choked nozzle, the afterburner.*

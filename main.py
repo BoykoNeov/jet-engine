@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 from turbojet.engine import FlightCondition, build_turbojet  # noqa: E402
 from turbojet.gas import (  # noqa: E402
-    Gas, JetMixing, Unmixedness, MixingPDF, _products_composition, _equilibrium_composition, _h_molar_A,
+    Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, _products_composition, _equilibrium_composition, _h_molar_A,
     _HF_FUEL_DEFAULT, _M_AIR, _M_CH2, _F_STOICH, _air_mole_fractions,
     _equilibrium_no_fraction, _primary_aft, _thermal_no,
     _quench_trajectory, _quench_no, _bell_interpolator, _beta_pdf_nodes_weights,
@@ -765,6 +765,102 @@ def print_nozzle_flow_table(flight):
     print("  the whole reason the clamp was dropped 'on principle' — this nozzle is where it bites.")
 
 
+def print_pdf_quench_table(flight):
+    """Rung-15 payoff: the PDF THROUGH the finite quench — the two mixing mechanisms COMBINED.
+
+    Rungs 12–13 kept the mechanisms isolated: rung 12 had the DWELL (the over-penetration flank climbs)
+    with a two-lump split; rung 13 had the resolved COMPOSITION β-PDF (the optimum pinned AT C_opt) but
+    on the ideal bell — dropping the quench, so its optimum collapsed to ≈0 and its far flank descended.
+    Rung 15 is the additive combination: ⟨EI⟩₁₅ = EI_bulk_quench(τ_mean) [the rung-11 mean-field FLOOR]
+    + D(u)·⟨EI_bell⟩(g) [the rung-13 β-PDF integral × a rung-12 dwell]. The ≈0 rung-13 floor BECOMES
+    the finite bulk NO, and the descending far flank CLIMBS again — while the nonlinear bell keeps the
+    STOICH-MEAN SIGN REVERSAL a lumped-dwell rung 12 cannot. Still a pure diagnostic: bit-for-bit rung 6.
+    """
+    eq = Gas.reacting_equilibrium()
+    real = build_turbojet(eq, PI_C, TT4, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+    st3, st4 = real.stations["3"], real.stations["4"]
+    Tt3, Tt4, far, p = st3.Tt, st4.Tt, st4.far, st4.pt
+    hf = eq.hf_fuel_molar if eq.hf_fuel_molar is not None else _HF_FUEL_DEFAULT
+    xibar = far / (1.0 + far)
+    ng = 80
+
+    print("\nPDF through the finite quench (rung 15): rungs 12–13 isolated the two mixing mechanisms —")
+    print("the DWELL (rung 12: the far flank climbs) and the resolved COMPOSITION β-PDF (rung 13: the")
+    print("optimum pinned AT C_opt, but ≈0 because it dropped the quench). Rung 15 COMBINES them: the ≈0")
+    print("floor becomes the finite bulk NO, and the descending rung-13 far flank climbs again.")
+    print(f"  Design point: Tt3={Tt3:.0f} K, Tt4={Tt4:.0f} K, p={p/1e5:.1f} bar, overall "
+          f"far={far:.4f} (φ={far/_F_STOICH:.2f}, LEAN); ξ̄={xibar:.4f}")
+
+    # Build the shared τ-independent quench trajectory ONCE (the mean-field floor per J reuses it) and
+    # the ideal bell ONCE (J-independent) — a J-sweep then re-weights both without rebuilding.
+    phi_p = 1.5
+    far_p = phi_p * _F_STOICH
+    alpha = far / far_p
+    T_p = _primary_aft(far_p, p, Tt3, hf)
+    comp_p = _equilibrium_composition(far_p, T_p, p)
+    nox = _thermal_no(comp_p, T_p, p, 3e-3, far_p)
+    n0 = alpha * nox.x_no * sum(comp_p.values())
+    tab = _quench_trajectory(comp_p, T_p, alpha, far, Tt3, p, ngrid=ng)
+    bell = _bell_interpolator(p, Tt3, hf, 3e-3, n_bell=200)
+
+    def floor_ei(J):                                        # term 1 — the rung-11 mean-field bulk quench
+        m = JetMixing(J=J, C_e=0.20, shape_n=2.0)
+        return _quench_no(comp_p, T_p, alpha, far, Tt3, p, n0, m.tau_q, tab=tab, schedule=m.schedule)["ei"]
+
+    def bell_pdf(g_seg):                                    # ⟨EI_bell⟩(g) — the rung-13 integral (term 2 core)
+        if g_seg <= 1e-9:
+            return bell(xibar)
+        nodes, w = _beta_pdf_nodes_weights(xibar, g_seg, n_quad=200)
+        return sum(wi * bell(x) for x, wi in zip(nodes, w))
+
+    # The J-sweep: rung-13 (ideal bell, ≈0 min + descending far flank) vs rung-15 (finite floor + climb).
+    qp = QuenchPDF(S=0.0625)
+    J_opt = _j_opt_from(qp)
+    print(f"\n  J-sweep (S={qp.S} m → uniformity J_opt={J_opt:.0f}, C_opt={qp.C_opt}); rich primary φ_p={phi_p}:")
+    print(f"  {'J':>5} {'C':>6} {'g':>6} {'EI floor':>9} {'⟨EI⟩13':>8} {'⟨EI⟩15':>8}   note")
+    print("  " + "-" * 60)
+    rows = []
+    for J in (4.0, 9.0, 16.0, 25.0, 36.0, 49.0, 100.0, 225.0, 400.0):
+        C = qp.C(JetMixing(J=J))
+        g_seg = qp.segregation(C)
+        floor = floor_ei(J)
+        ei13 = bell_pdf(g_seg)                              # rung-13 ideal-bell PDF (no floor, no dwell)
+        ei15 = floor + qp.dwell_factor(C, 3e-3) * ei13      # rung-15 = floor + D(u)·⟨EI_bell⟩
+        rows.append((J, ei15))
+        note = ("OPTIMUM (g→0)" if abs(J - J_opt) < 1e-9 else "under" if J < J_opt else "over")
+        print(f"  {J:>5.0f} {C:>6.2f} {g_seg:>6.3f} {floor:>9.4g} {ei13:>8.4g} {ei15:>8.4g}   {note}")
+    imin = min(range(len(rows)), key=lambda i: rows[i][1])
+    print(f"  The rung-15 minimum is a FINITE floor ({rows[imin][1]:.3g} g/kg) pinned AT J={rows[imin][0]:.0f}")
+    print("  (C=C_opt) — NOT rung-13's ≈0. Both immediate flanks lift; and the far over-penetration flank")
+    print("  CLIMBS again (J=100→400: the dwell restored, surviving strong jets) where rung-13's ⟨EI⟩13")
+    print("  DESCENDS (bimodal PDF). The over-flank is non-monotone: the composition convexity jump near")
+    print("  C_opt hands off to the dwell climb far out — BOTH parents' fingerprints, in one curve.")
+
+    # The discriminator: term 2's nonlinear bell reverses sign at a stoich mean (a lumped dwell cannot).
+    xistoich = _F_STOICH / (1.0 + _F_STOICH)
+
+    def bell_pdf_at(mean_xi, g_seg):
+        if g_seg <= 1e-9:
+            return bell(mean_xi)
+        nodes, w = _beta_pdf_nodes_weights(mean_xi, g_seg, n_quad=200)
+        return sum(wi * bell(x) for x, wi in zip(nodes, w))
+
+    print(f"\n  Why it is NOT rung 12 in disguise — the STOICH-MEAN SIGN REVERSAL (term 2's nonlinear bell):")
+    print(f"  {'g':>6} {'⟨EI_bell⟩ lean':>15} {'⟨EI_bell⟩ stoich':>17}")
+    print("  " + "-" * 40)
+    for g_seg in (0.0, 0.05, 0.10, 0.20):
+        print(f"  {g_seg:>6.2f} {bell_pdf_at(xibar, g_seg):>15.4g} {bell_pdf_at(xistoich, g_seg):>17.4g}")
+    print("  Segregation RAISES the bell integral at a LEAN mean but LOWERS it at a STOICH mean (mass off")
+    print("  the peak). A dwell-only 'PDF through the quench' rides the ~linear EI_quench, so its variance")
+    print("  has the WRONG sign and cannot reverse — this reversal certifies term 2 is genuine composition")
+    print("  work. (Carrying the FULL per-pocket trajectory, not the bell×dwell-ratio, is the rung-16 seam.)")
+
+
+def _j_opt_from(cfg):
+    """The uniformity optimum J_opt where C=(S/H)√J_opt = C_opt (H=0.10, the JetMixing default)."""
+    return (cfg.C_opt * JetMixing(J=1.0).H / cfg.S) ** 2
+
+
 def _cycle_points(result, flight):
     """The six cycle points as {label: (s, T)} in (entropy, temperature) space.
 
@@ -902,6 +998,8 @@ def main():
     print_mixing_pdf_table(FLIGHT)
 
     print_nozzle_flow_table(FLIGHT)
+
+    print_pdf_quench_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 
