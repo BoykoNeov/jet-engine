@@ -888,13 +888,24 @@ def _primary_aft(far_p: float, p: float, T_air: float, hf_fuel: float) -> float:
     reusable primary-AFT — but starting from Tt3, not 298 K."""
     n_fuel = far_p * _M_AIR / _M_CH2
     H_react = _h_air_molar_A(T_air) + n_fuel * hf_fuel
+
+    def H_prod_at(T: float) -> float:                    # products' scale-A enthalpy, ↑ in T
+        comp = _equilibrium_composition(far_p, T, p)
+        return sum(comp[s] * _h_molar_A(s, T) for s in comp)
+
     lo, hi = 800.0, 3200.0
     for _ in range(100):
         T = 0.5 * (lo + hi)
-        comp = _equilibrium_composition(far_p, T, p)
-        H_prod = sum(comp[s] * _h_molar_A(s, T) for s in comp)
-        lo, hi = (lo, T) if H_prod > H_react else (T, hi)
-    return 0.5 * (lo + hi)
+        lo, hi = (lo, T) if H_prod_at(T) > H_react else (T, hi)
+        if hi - lo < 1e-6:                               # ~31 iters to 1e-6 K; below any anchor
+            break
+    T = 0.5 * (lo + hi)
+    # Bracket guard (post-loop, not an endpoint eval — `_equilibrium_composition` DIVERGES at the
+    # cold 800 K edge, so we can't probe there; a root outside [800,3200] instead pins the bisection
+    # against an edge, which this catches). Any real flame sits well inside.
+    assert 801.0 < T < 3199.0, \
+        f"_primary_aft: flame temp {T:.1f} K pinned at [800,3200] K bracket edge (far_p={far_p:.4f})"
+    return T
 
 
 def _mixed_out_T(comp_prim: dict, T_prim: float, alpha: float,
@@ -912,13 +923,22 @@ def _mixed_out_T(comp_prim: dict, T_prim: float, alpha: float,
     H_prim = alpha * sum(comp_prim[s] * _h_molar_A(s, T_prim) for s in comp_prim)
     H_dil = (1.0 - alpha) * _h_air_molar_A(T_dilution)
     H_mix = H_prim + H_dil
+
+    def H_prod_at(T: float) -> float:                    # re-equilibrated pool enthalpy, ↑ in T
+        comp = _equilibrium_composition(far_ov, T, p)
+        return sum(comp[s] * _h_molar_A(s, T) for s in comp)
+
     lo, hi = 700.0, 3200.0
     for _ in range(100):
         T = 0.5 * (lo + hi)
-        comp = _equilibrium_composition(far_ov, T, p)
-        H_prod = sum(comp[s] * _h_molar_A(s, T) for s in comp)
-        lo, hi = (lo, T) if H_prod > H_mix else (T, hi)
-    return 0.5 * (lo + hi)
+        lo, hi = (lo, T) if H_prod_at(T) > H_mix else (T, hi)
+        if hi - lo < 1e-6:                               # ~31 iters to 1e-6 K; below any anchor
+            break
+    T = 0.5 * (lo + hi)
+    # Bracket guard (post-loop; cold-edge eval diverges — see `_primary_aft`).
+    assert 701.0 < T < 3199.0, \
+        f"_mixed_out_T: mix temp {T:.1f} K pinned at [700,3200] K bracket edge (far_ov={far_ov:.4f})"
+    return T
 
 
 # --- Rung-10 finite-rate quench (secondary-zone Zeldovich in the cooling gas) --------- #
@@ -1407,7 +1427,8 @@ class Gas:
             f"phi_primary {phi_primary} outside (0, 2] — the 5-species (no soot / no C(s)) "
             "basis is valid only below soot onset (~φ2; graphite onset is φ3). Rich RQL scope."
         )
-        hf_fuel = self.hf_fuel_molar or _HF_FUEL_DEFAULT
+        hf_fuel = (self.hf_fuel_molar if self.hf_fuel_molar is not None
+                   else _HF_FUEL_DEFAULT)   # 0.0 is a valid ΔHf (elements are the datum)
         far_p = phi_primary * _F_STOICH
         alpha = far / far_p                              # fraction of the air in the primary
         assert alpha <= 1.0 + 1e-9, \

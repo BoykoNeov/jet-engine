@@ -84,7 +84,7 @@ def _reusable_traj(g, far, Tt3, p, phi_p, ngrid=_NG):
     if phi_p not in _TRAJ_CACHE:
         far_p = phi_p * _F_STOICH
         alpha = far / far_p
-        hf = g.hf_fuel_molar or _HF_FUEL_DEFAULT
+        hf = g.hf_fuel_molar if g.hf_fuel_molar is not None else _HF_FUEL_DEFAULT
         T_p = _primary_aft(far_p, p, Tt3, hf)
         comp = _equilibrium_composition(far_p, T_p, p)
         nox = _thermal_no(comp, T_p, p, _TAU, far_p)

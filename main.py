@@ -451,7 +451,7 @@ def print_finite_quench_table(flight):
     real = build_turbojet(eq, PI_C, TT4, flight.p0, **REAL_LOSSES).run(flight, 1.0)
     st3, st4 = real.stations["3"], real.stations["4"]
     Tt3, Tt4, far, p = st3.Tt, st4.Tt, st4.far, st4.pt
-    hf = eq.hf_fuel_molar or _HF_FUEL_DEFAULT
+    hf = eq.hf_fuel_molar if eq.hf_fuel_molar is not None else _HF_FUEL_DEFAULT
     # Finite-quench resolution: EI is within ~0.3% of the 240-point anchor by ngrid=80, and a
     # 240-point trajectory is ~25 s (each point re-equilibrates the diluting majors). Use 80 here
     # to keep `python main.py` interactive; the production default (240) stays anchor-exact.

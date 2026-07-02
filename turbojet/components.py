@@ -340,7 +340,6 @@ class Burner(Component):
         """
         h_air = gas.h_air_abs_B(Tt3)
         lo, hi = 0.0, gas.f_stoich_lean * (1.0 - 1e-6)     # lean bracket (rich is out of scope)
-        f = 0.5 * (lo + hi)
         for _ in range(self._FP_MAX):
             f = 0.5 * (lo + hi)
             comp = gas.equilibrium_composition(f, self.Tt4, pt4)
@@ -355,7 +354,7 @@ class Burner(Component):
             else:
                 hi = f
         else:
-            assert False, f"rung-6 burner root-find did not bracket in {self._FP_MAX} steps"
+            assert False, f"rung-6 burner root-find did not converge in {self._FP_MAX} steps"
         return f
 
 
@@ -533,6 +532,9 @@ class Nozzle(Component):
         Tt9 = s.Tt
         pt9 = self.pi_n * s.pt                      # specified nozzle pressure loss
         p9 = self.p_exit                            # expand to the specified back-pressure
+        assert p9 <= pt9, (                         # else the "expansion" would need compression
+            f"nozzle back-pressure p9={p9:.0f} Pa exceeds total pressure pt9={pt9:.0f} Pa "
+            "— the nozzle cannot expand to it (raise pi_n / lower p_exit)")
 
         if gas.hot_is_cpg:
             # CPG: invert the isentropic pt/p relation for M9 (hot-section gt, gamma).
