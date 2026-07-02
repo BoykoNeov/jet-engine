@@ -1312,3 +1312,95 @@ seam. `python main.py` prints the rung-11 jet-mixing panel: the derived-`τ_q` `
 schedule-shape contrast. Still deferred on this substrate: the **unmixedness / Holdeman optimum**
 (rung 12), **super-equilibrium O / prompt (Fenimore) NO**, the rung-6 **equilibrium-vs-frozen
 nozzle**; plus off-design, the choked nozzle, the afterburner.*
+
+---
+
+# Rung 12 — Spatial Unmixedness: the Variance that Turns the Curve Back Up, in plain language
+
+## The headline: rung 11's "stronger jet, always better" was a mean-field lie
+Rung 11 crank the jet and NO fell — monotonically, forever. We said so out loud that this was a
+**ceiling**, not the truth: a mean-field model (one well-mixed core) has no way to know that an
+*over*-penetrating jet is *also* bad. Real dilution jets have an **optimum**. Push too little air in
+and it hugs the wall, leaving a hot core it never reaches; push too *hard* and it slams across to the
+far wall (or opposed jets collide in the middle), leaving a hot core the air overshot. **Both** ways,
+some gas ends up in a near-stoichiometric pocket that **misses the fast jet mixing and lingers** —
+dwelling right at the NO-bell peak, re-making the NO the rich primary had avoided. The mean field
+averages that pocket away. Rung 12 puts it back.
+
+## The fix: give the quench two streams, and make the CORE worse two ways off the optimum
+The smallest honest model of "some gas mixes slower than the average" is **two streams**: a
+mean-field **bulk** that quenches at the rung-11 jet time `τ_mean(J)` (the still-falling reference —
+it depends on the jet, not on how uniform the mixing is), and an under-mixed **core** (mass fraction
+`w`) that misses the jet and lingers. The total NO is the mass-weighted sum. Away from the Holdeman
+optimum `C_opt≈2.5`, **both** parts of the core get worse:
+**more** gas ends up segregated (the fraction `w(C)` rises) and it **lingers longer** (the core dwell
+`τ_core(C)` grows). At `C_opt` the jets tile the cross-section perfectly, `w=0`, and the two-stream
+total sits exactly on the mean-field curve.
+
+Two things had to be right, and the naïve versions get **both backwards**:
+
+- *How the core lingers.* The tempting move is a "spread" of quench times around the mean (convexity
+  would then add NO). But in this regime NO piles up as **rate × dwell**, so `EI ∝ τ_q` (the rung-10
+  table: `EI/τ_q` is flat-to-falling, *not* convex) — a mean-preserving spread adds **nothing, or
+  the wrong sign**. And if the core's dwell were a *multiple* of the jet time, it would **vanish** as
+  the jet time does (`∝1/√J → 0`) and the curve would stay monotone. The core must dwell on an
+  **absolute** clock — the dilution-zone residence — so its penalty stays finite (and *grows*) as
+  the jet strengthens. That is what lets the total turn back up.
+- *Where the bottom lands.* If the unmixedness rose **smoothly** (a parabola) from the optimum, the
+  bottom would drift to a **stronger** jet than `C_opt` — just past the optimum the mean-field bulk
+  is still getting cleaner faster than the little core penalty grows. To pin the minimum **at** the
+  Holdeman optimum, the unmixedness has a **kink** at `C_opt` (it grows like `|ln(C/C_opt)|`, not its
+  square). The kink gives the segregated fraction a real slope right at `C_opt`, so the moment you
+  leave the optimum the core penalty out-runs the penetration benefit and the curve turns up. In
+  plain terms: the kink *is* the statement that an emissions optimum **exists** at the uniformity
+  point — if penetration always won, there'd be no bottom at all.
+
+## The result: the NO-vs-J curve finally has a bottom — and it sits AT the Holdeman optimum
+At the design point, with a rich `φ_p=1.5` primary and the default unmixedness (`S=0.0625 m`,
+`τ_res=2.5 ms`), EI_NO falls from ~2.4 g/kg at a weak jet (`J=4`) down to a **minimum ~1.0 at `J=16`**
+— exactly the Holdeman uniformity optimum `C=(S/H)√J=C_opt=2.5` — then **climbs to ~2.2** at `J=100`,
+even as the mean-field bulk keeps falling to 0.42. The un-mixed core, which lingers *longer* the
+further you push from the optimum, is what lifts the total. That is the recovered **Holdeman
+optimum**: a bottom at `C_opt`, with both flanks going up. Be square about what's *earned* here: we
+*placed* the kink at Holdeman's empirical `C_opt≈2.5`, so the model **reproduces** an emissions
+optimum there rather than **predicting** 2.5 from first principles — a calibrated result at this
+tower's altitude (like `C_e`, `τ_q`). What the model genuinely delivers is the *shape*: a two-sided
+turn-up that a mean field cannot make, and a min that rides the Holdeman group as `(H/S)²`.
+
+And it is genuinely the Holdeman *group*, not a bare dip in `J`. Shrink the jet spacing `S` (so you
+need a deeper-penetrating, stronger jet for the same uniformity) and the whole optimum **moves to
+higher `J`** — landing on `J_opt=(C_opt·H/S)²` for every spacing, so it shifts **exactly as `(H/S)²`**
+(16 → 25 when `S` goes 0.0625 → 0.05 m). That shift is the fingerprint: the min lives on the Holdeman
+group, not on `J` alone.
+
+## Did we get it right?
+The reduce is **exact by construction**: `unmixedness=None` runs the literal rung-11 code (the whole
+rung 1–11 suite stays bit-for-bit), and switching the variance off (`k_u=0` ⇒ `w≡0`) collapses the
+two-stream total back onto the mean-field bulk at *every* `J`, to the last bit. At a jet whose group
+is exactly `C_opt`, `w=0`, so the optimum point sits *precisely* on the rung-11 curve — a clean seam.
+The cycle never moves (NO is still a trace diagnostic, opt-in via `unmixedness`), and the clamp we
+dropped in rung 10 stays dormant on the core too (`max_a≈0.04–0.07≪1`). What stays **un-anchored**,
+said plainly: the absolute knobs (`S`, `τ_res`, `k_u`, `b_u`, `w_max`) are order-of-magnitude, like
+`C_e`/`τ_q` before them; the *pin* at `C_opt` is a modeling choice (the kink), disclosed — and the
+total EI is *not* a function of `C` alone (the bulk rides `J`), it's the optimum *location* that
+lands on the group. What's certified is the **turn-up**, the **minimum at `C_opt`**, and its
+**`(H/S)²` shift** — not a book NO. This is a **two-stream** closure — the minimal variance model —
+not a resolved mixing PDF; that (and super-equilibrium/prompt NO, which lives in exactly this
+under-mixed core) is the rung-13 seam.
+
+---
+*Rung 12 adds the **spatial-variance** layer rung 11 deferred: pass `Gas.zoned_nox(...,
+mixing=JetMixing(J=...), unmixedness=Unmixedness(S=<jet spacing>))` and the quench splits into a
+mean-field **bulk** (quenched at the rung-11 jet time `τ_mean∝1/√J`, the still-falling reference)
+plus an under-mixed **core** (fraction `w(C)=min(w_max, k_u·|ln(C/C_opt)|)`, quenched at an
+**absolute** dwell `τ_core(C)=τ_res·(1+b_u·|ln(C/C_opt)|)`; the bulk stays the mean-field reference).
+The CORE worsens **two ways** away from the **Holdeman group** `C=(S/H)√J` — its fraction AND its
+dwell both grow off `C_opt≈2.5` — and the **kinked** unmixedness pins the bottom AT `C_opt`. So `ei_no_unmixed=(1−w)·EI(τ_mean)+w·EI(τ_core)` **falls to a
+minimum at `C_opt` then rises**: the recovered **Holdeman dilution-jet optimum**, `J_min=J_opt`
+**shifting as `(H/S)²`** with the spacing. The core dwell is an **absolute** clock (not the vanishing
+jet time), which is why the turn-up survives strong jets. `unmixedness` **requires** `mixing`;
+`unmixedness=None` keeps the exact rung-11 mean field (bit-for-bit rung 6), and `k_u=0` reduces to the
+mean-field bulk to the last bit. `python main.py` prints the rung-12 panel: the turn-up `J`-sweep
+(bulk vs two-stream) and the `(H/S)²` optimum shift. Still deferred on this substrate: a **resolved
+mixing PDF** (>2 streams), **super-equilibrium O / prompt (Fenimore) NO** (richest in this under-mixed
+core), the rung-6 **equilibrium-vs-frozen nozzle**; plus off-design, the choked nozzle, the afterburner.*

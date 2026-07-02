@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 from turbojet.engine import FlightCondition, build_turbojet  # noqa: E402
 from turbojet.gas import (  # noqa: E402
-    Gas, JetMixing, _products_composition, _equilibrium_composition, _h_molar_A,
+    Gas, JetMixing, Unmixedness, _products_composition, _equilibrium_composition, _h_molar_A,
     _HF_FUEL_DEFAULT, _M_AIR, _M_CH2, _F_STOICH, _air_mole_fractions,
     _equilibrium_no_fraction, _primary_aft, _thermal_no,
     _quench_trajectory, _quench_no,
@@ -569,6 +569,71 @@ def print_jet_mixing_table(flight):
     print("  other way; the shape is a residual choice, so the SIGN of 'conservative' rides on it).")
 
 
+def print_unmixedness_table(flight):
+    """Rung-12 payoff: SPATIAL UNMIXEDNESS — the variance layer that turns the curve back up.
+
+    Rung 11 was MEAN-FIELD (one well-mixed core), so its J-sweep is MONOTONE: a stronger jet only
+    ever re-makes less NO. Real dilution jets have an OPTIMUM at the Holdeman group C=(S/H)√J≈2.5 —
+    UNDER- and OVER-penetration BOTH leave a hot near-stoich core that MISSES the fast jet and
+    lingers. Rung 12 adds that core as a SECOND stream (the bulk stays the mean-field reference); off-
+    optimum the CORE worsens two ways — its fraction w(C) AND its dwell τ_core grow, kinked at C_opt.
+    EI_NO = (1−w)·EI(τ_mean) + w·EI(τ_core): it FALLS to a minimum AT C_opt then RISES — the Holdeman
+    optimum, recovered as an EMISSIONS optimum. Still a pure diagnostic: bit-for-bit rung 6 (opt-in
+    via `unmixedness`).
+    """
+    eq = Gas.reacting_equilibrium()
+    real = build_turbojet(eq, PI_C, TT4, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+    st3, st4 = real.stations["3"], real.stations["4"]
+    Tt3, Tt4, far, p = st3.Tt, st4.Tt, st4.far, st4.pt
+    ng = 80
+
+    print("\nSpatial unmixedness (rung 12): the variance rung 11 missed. A mean field says 'stronger")
+    print("jet → less NO' forever; a real jet has an OPTIMUM. Give the quench TWO streams and the NO-")
+    print("vs-J curve turns back UP — the Holdeman dilution-jet optimum, recovered AT C_opt≈2.5.")
+    print(f"  Design point: Tt3={Tt3:.0f} K, Tt4={Tt4:.0f} K, p={p/1e5:.1f} bar, overall "
+          f"far={far:.4f} (φ={far/_F_STOICH:.2f})")
+
+    # (1) The turn-up: mean-field bulk (rung 11, still falling) vs the two-stream total (turns up AT C_opt).
+    u = Unmixedness(S=0.0625)          # J_opt=(C_opt·H/S)²=16 — the uniformity optimum, mid-sweep
+    J_opt = (u.C_opt * JetMixing(J=1.0).H / u.S) ** 2
+    print(f"\n  Rich primary φ_p=1.5; unmixedness S={u.S} m (H=0.10 → uniformity J_opt={J_opt:.0f}), "
+          f"τ_res={u.tau_res*1e3:.1f} ms, C_opt={u.C_opt}:")
+    print(f"  {'J':>5} {'C':>6} {'w_core':>7} {'EI bulk':>8} {'EI 2-stream':>12}   note")
+    print("  " + "-" * 58)
+    rows = []
+    for J in (4.0, 9.0, 16.0, 25.0, 36.0, 49.0, 64.0, 100.0):
+        s = eq.zoned_nox(far, Tt3, Tt4, p, 1.5, mixing=JetMixing(J=J, C_e=0.20, shape_n=2.0),
+                         unmixedness=u, quench_ngrid=ng)
+        rows.append((J, s.ei_no_unmixed))
+        note = ("under-penetrates" if J < J_opt else "OPTIMUM (w→0)" if abs(J - J_opt) < 1e-9
+                else "over-penetrates")
+        print(f"  {J:>5.0f} {s.C_holdeman:>6.2f} {s.w_core:>7.3f} {s.ei_no_quenched:>8.4g} "
+              f"{s.ei_no_unmixed:>12.4g}   {note}")
+    imin = min(range(len(rows)), key=lambda i: rows[i][1])
+    print(f"  EI_NO falls THEN rises — the minimum lands AT J={rows[imin][0]:.0f} (C=C_opt=2.5), the")
+    print("  recovered Holdeman optimum. The mean-field 'EI bulk' (rung 11) is still falling at J=100")
+    print("  — the un-mixed CORE (which misses the jet, quenches at an ABSOLUTE dwell so it survives")
+    print("  strong jets, and lingers LONGER the further from C_opt) is what turns the TOTAL back up.")
+
+    # (2) The optimum sits AT the Holdeman GROUP C_opt: shrink S → J_opt moves → the EI-min moves WITH it.
+    print(f"\n  The optimum sits AT the Holdeman group C=(S/H)√J=C_opt — shrink S and it moves ((H/S)²):")
+    print(f"  {'S (m)':>7} {'J_opt':>6} {'EI-min at J':>12}")
+    print("  " + "-" * 30)
+    for S in (0.0625, 0.0500):
+        uu = Unmixedness(S=S)
+        eis = []
+        for J in (9.0, 16.0, 25.0, 36.0, 49.0, 64.0, 100.0):
+            s = eq.zoned_nox(far, Tt3, Tt4, p, 1.5, mixing=JetMixing(J=J, C_e=0.20, shape_n=2.0),
+                             unmixedness=uu, quench_ngrid=ng)
+            eis.append((J, s.ei_no_unmixed))
+        Jmin = min(eis, key=lambda e: e[1])[0]
+        Jopt = (uu.C_opt * 0.10 / S) ** 2
+        print(f"  {S:>7.4f} {Jopt:>6.0f} {Jmin:>12.0f}")
+    print("  The EI-min lands ON J_opt for both spacings — the kinked unmixedness PINS it at C_opt, so")
+    print("  the emissions optimum shifts as (H/S)² exactly (16→25). 'A stronger jet is better' holds")
+    print("  ONLY up to the Holdeman optimum; past it, over-penetration strands a hot core and NO climbs.")
+
+
 def _cycle_points(result, flight):
     """The six cycle points as {label: (s, T)} in (entropy, temperature) space.
 
@@ -700,6 +765,8 @@ def main():
     print_finite_quench_table(FLIGHT)
 
     print_jet_mixing_table(FLIGHT)
+
+    print_unmixedness_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

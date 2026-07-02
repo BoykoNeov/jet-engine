@@ -1117,6 +1117,88 @@ class JetMixing:
 
 
 @dataclass
+class Unmixedness:
+    """Rung-12 spatial-unmixedness (two-stream) model — the VARIANCE layer rung 11 deferred.
+    It rides ON a `JetMixing` (which supplies J and the duct height H) and finally makes the
+    NO-vs-J curve TURN BACK UP, recovering the classic Holdeman dilution-jet optimum AT C_opt.
+
+    Rung 11 was MEAN-FIELD: one well-mixed core diluting on a mean β(t), so its J-sweep is
+    monotone (a stronger jet only ever re-makes LESS NO). But a real dilution jet has an
+    OPTIMUM at the Holdeman group C=(S/H)√J ≈ C_opt≈2.5 (a *uniformity* criterion): UNDER-
+    penetration (low C) leaves the jet near the wall and the core un-mixed; OVER-penetration
+    (high C) slams the air onto the far wall / collides jets in the centre — BOTH leave a hot,
+    near-stoichiometric core that misses the fast jet mixing and lingers. That un-mixed core is
+    a spatial-VARIANCE effect a mean field cannot represent (docs/rung11-spec.md § the ceiling).
+
+    THE MODEL (a two-stream split, mass-weighted; the CORE carries the off-optimum penalty, TWO WAYS):
+        * a BULK fraction (1−w) quenched at the rung-11 jet time τ_mean(J)=H/(C_e√J·U_c) — the
+          mean-field flow (∝1/√J: what a mean field says, monotone-falling — the fixed REFERENCE,
+          NOT a function of C_opt);
+        * an UNDER-MIXED CORE fraction w that MISSES the jet and lingers, quenched at a dwell
+          τ_core(C)=τ_res·(1+b_u·u) — an ABSOLUTE residence (~τ_res, NOT the vanishing jet time,
+          so its NO penalty survives J→∞) that GROWS off-optimum (a worse-placed jet strands the
+          pocket longer). So off-optimum the core worsens TWO ways: more gas segregates (w↑) AND it
+          lingers longer (τ_core↑);
+        * the unmixedness u(C)=|ln(C/C_opt)| drives both — the segregated fraction
+          w(C)=min(w_max, k_u·u) and the core dwell — and is KINKED at C_opt (an L1 distance, →0
+          at C_opt on BOTH flanks; under- and over-penetration penalised alike).
+
+        EI_total = (1−w)·EI(τ_mean) + w·EI(τ_core)
+
+    THE PIN (why the min lands AT C_opt, not above it). With a SMOOTH (parabolic) w the turn-up
+    would drift to a stronger jet than C_opt — the still-falling mean-field bulk pulls it right.
+    The KINK gives w a non-zero slope at C_opt, so the turn-up starts THERE the moment the
+    unmixedness beats the penetration benefit: k_u·[EI(τ_core)−EI(τ_mean)] > EI(τ_mean) at C_opt.
+    That inequality is exactly the condition an emissions optimum EXISTS at the uniformity optimum
+    (if penetration always won, there would be no optimum). So the EI-min pins at C_opt for ALL S
+    ⇒ J_min = J_opt = (C_opt·H/S)², which shifts EXACTLY as (H/S)² — the Holdeman group made
+    literal (docs/plans/rung12-anchor-unmixedness.md §1).
+
+    THE PAYOFF (docs/rung12-spec.md gates): EI_NO(J) FALLS then RISES — an interior minimum AT
+    C_opt, the recovered Holdeman optimum — and its location shifts as (H/S)² with the spacing.
+    `unmixedness=None` (default) is the exact rung-11 mean-field path; k_u=0 is bit-for-bit rung 11
+    at every J. Like C_e/τ_q, the ABSOLUTE knobs (S, τ_res, k_u, b_u, w_max) are order-of-magnitude
+    / un-anchored — what is certified is the TURN-UP, the optimum AT C_opt, and the (H/S)² shift."""
+    S: float = 0.0625          # dilution-jet spacing, m (cross-stream spacing of adjacent jets)
+    C_opt: float = 2.5         # Holdeman uniformity optimum of C=(S/H)√J (best cross-plane mixing)
+    tau_res: float = 2.5e-3    # core dwell AT the optimum, s (the absolute dilution-zone residence)
+    k_u: float = 2.5           # core-fraction sensitivity to unmixedness (the kink that PINS the min at C_opt)
+    b_u: float = 1.0           # core-dwell growth off-optimum (keeps the over-penetration flank rising)
+    w_max: float = 0.7         # cap on the segregated core fraction (0<w_max≤1)
+
+    def __post_init__(self):
+        for name, v in (("S", self.S), ("C_opt", self.C_opt), ("tau_res", self.tau_res),
+                        ("w_max", self.w_max)):
+            assert v > 0.0, f"Unmixedness.{name}={v} must be positive"
+        assert self.k_u >= 0.0, f"Unmixedness.k_u={self.k_u} must be ≥ 0 (0 ⇒ reduce to rung 11)"
+        assert self.b_u >= 0.0, f"Unmixedness.b_u={self.b_u} must be ≥ 0"
+        assert self.w_max <= 1.0, f"Unmixedness.w_max={self.w_max} must be ≤ 1 (a mass fraction)"
+
+    def C(self, mixing: "JetMixing") -> float:
+        """The Holdeman momentum-flux/geometry group C=(S/H)√J — jet penetration ∝ √J scaled by
+        the spacing/height ratio. Uses the paired JetMixing's H and J (the same jet that set τ_q)."""
+        return (self.S / mixing.H) * math.sqrt(mixing.J)
+
+    def _u(self, C: float) -> float:
+        """The unmixedness u(C)=|ln(C/C_opt)| — an L1 (KINKED) distance from the Holdeman optimum,
+        0 at C_opt, symmetric in ln C. The kink (non-zero slope at C_opt) is what pins the EI-min
+        AT C_opt rather than at a stronger jet (a smooth parabola would let it drift; class § THE PIN)."""
+        return abs(math.log(C / self.C_opt))
+
+    def core_fraction(self, C: float) -> float:
+        """The un-mixed (segregated) core mass fraction w(C)=min(w_max, k_u·u) — the UNMIXEDNESS.
+        Zero at C_opt (perfect tiling), rising on BOTH flanks (kinked → non-zero slope at C_opt,
+        so the turn-up starts at C_opt). Capped at w_max."""
+        return min(self.w_max, self.k_u * self._u(C))
+
+    def core_dwell(self, C: float) -> float:
+        """The under-mixed core's quench dwell τ_core(C)=τ_res·(1+b_u·u) — an ABSOLUTE residence
+        (does NOT ride the vanishing jet time τ_mean∝1/√J, so its NO penalty survives J→∞) that
+        GROWS off-optimum (a worse-placed jet strands the pocket longer). =τ_res at C_opt."""
+        return self.tau_res * (1.0 + self.b_u * self._u(C))
+
+
+@dataclass
 class ZonedNOxState:
     """Two-zone (primary → dilution) thermal-NO diagnostic (rung 8). A pure DIAGNOSTIC —
     like NOxState it never feeds the cycle. NO is set in the hot primary and FROZEN through
@@ -1139,6 +1221,15 @@ class ZonedNOxState:
     # RUNG 11 — the physical jet-entrainment mixing model. Set (with tau_q = the DERIVED
     # τ_q=H/(C_e√J·U_c)) when zoned_nox is called with a `mixing` config; None otherwise.
     mixing: Optional[JetMixing] = None     # the jet-in-crossflow config that DERIVED tau_q + schedule
+    # RUNG 12 — spatial unmixedness (the two-stream variance layer). Set when zoned_nox is called
+    # with an `unmixedness` config (requires `mixing`); all None for the rung-11 mean field.
+    # `ei_no_quenched` then holds the mean-field BULK (rung-11) EI and `ei_no_unmixed` the two-
+    # stream total — the one that TURNS BACK UP in J, recovering the Holdeman optimum.
+    unmixedness: Optional["Unmixedness"] = None  # the variance config that split bulk/core
+    C_holdeman: Optional[float] = None     # the Holdeman group C=(S/H)√J at this J
+    w_core: Optional[float] = None         # the un-mixed core mass fraction w(C) (0 at C_opt)
+    ei_no_unmixed: Optional[float] = None  # two-stream EI_NO, g/kg — (1−w)·EI(τ_mean)+w·EI(τ_core)
+    ei_no_core: Optional[float] = None     # the lingering core's EI_NO at τ_core(C) (the penalty source)
 
     @property
     def ei_no(self) -> float:
@@ -1440,6 +1531,7 @@ class Gas:
                   phi_primary: float, tau: float = 3e-3,
                   tau_q: Optional[float] = None,
                   mixing: Optional["JetMixing"] = None,
+                  unmixedness: Optional["Unmixedness"] = None,
                   quench_ngrid: int = 240, quench_nsteps: int = 2000) -> "ZonedNOxState":
         """Two-zone (primary → dilution) thermal NOx (docs/rung8-spec.md). Runs the SAME
         rung-7 extended-Zeldovich integrator on a HOT, near-stoichiometric PRIMARY zone
@@ -1488,6 +1580,19 @@ class Gas:
         OPTIMUM (a variance effect — deferred to rung 12). `mixing=None` (default) keeps the
         exact rung-9/10 paths, so every existing call is untouched.
 
+        RUNG 12 — SPATIAL UNMIXEDNESS (docs/rung12-spec.md). Pass an `unmixedness` (an
+        `Unmixedness` config; REQUIRES `mixing`) to add the two-stream VARIANCE layer rung 11
+        deferred, finally making the NO-vs-J curve TURN BACK UP and recovering the Holdeman
+        dilution-jet optimum AT C_opt≈2.5. The flow splits into a mean-field BULK (fraction 1−w,
+        quenched at the rung-11 jet time τ_mean — the still-falling reference) and an UNDER-MIXED
+        CORE (fraction w=w(C), quenched at an ABSOLUTE dwell τ_core(C)=τ_res·(1+b_u·u) that misses
+        the fast jet and grows off-optimum). The unmixedness u(C)=|ln(C/C_opt)| is KINKED at the
+        Holdeman group C_opt (both w and τ_core →0-penalty there), so `ei_no_unmixed` = (1−w)·
+        EI(τ_mean)+w·EI(τ_core) FALLS to an interior minimum AT C_opt then RISES — the min pinned
+        at C_opt (J_min=J_opt, shifting as (H/S)²). `unmixedness=None` (default) is the exact
+        rung-11 mean field; k_u=0 is bit-for-bit rung 11. NO is still trace → cycle bit-for-bit
+        rung 6. `ei_no_quenched` still holds the mean-field BULK (the monotone reference).
+
         `quench_ngrid`/`quench_nsteps` are the finite-quench numerical resolution (trajectory
         points / RK4 steps) — pure cost/accuracy knobs, only used when `tau_q` is finite. The 240
         default reproduces the anchor's worked example (docs/plans/rung10-anchor-quench.md); EI_NO
@@ -1501,6 +1606,10 @@ class Gas:
         assert not (tau_q is not None and mixing is not None), (
             "pass EITHER tau_q (rung-10 free time + linear schedule) OR mixing (rung-11 "
             "jet-entrainment: DERIVES τ_q + a decelerating schedule) — they are mutually exclusive."
+        )
+        assert not (unmixedness is not None and mixing is None), (
+            "unmixedness (rung-12 spatial variance) REQUIRES a `mixing` config — it needs the jet's "
+            "J and duct H for the Holdeman group C=(S/H)√J and the mean-field bulk τ_mean."
         )
         hf_fuel = (self.hf_fuel_molar if self.hf_fuel_molar is not None
                    else _HF_FUEL_DEFAULT)   # 0.0 is a valid ΔHf (elements are the datum)
@@ -1543,14 +1652,39 @@ class Gas:
         else:
             tau_q_eff, schedule = tau_q, None                        # rung 10: the free-time path
         assert tau_q_eff > 0.0, f"tau_q {tau_q_eff} must be positive (or None for the ideal quench)"
+
+        # Rung 12 shares ONE τ_q-independent trajectory between the mean-field bulk and the
+        # under-mixed core (both traverse the same β-path, differ only in τ). The mean-field-only
+        # path (unmixedness=None) lets _quench_no build its own tab → byte-identical rung 10/11.
+        tab = (_quench_trajectory(comp_p, T_p, alpha, far, Tt3, p, ngrid=quench_ngrid)
+               if unmixedness is not None else None)
         q = _quench_no(comp_p, T_p, alpha, far, Tt3, p, n_no_total, tau_q_eff,
-                       nsteps=quench_nsteps, ngrid=quench_ngrid, schedule=schedule)
+                       nsteps=quench_nsteps, ngrid=quench_ngrid, tab=tab, schedule=schedule)
         state.tau_q = tau_q_eff
         state.mixing = mixing
-        state.ei_no_quenched = q["ei"]
+        state.ei_no_quenched = q["ei"]                    # the MEAN-FIELD (rung-11) bulk EI
         state.x_no_quenched = q["x_no_mix"]
         state.T_peak = q["T_peak"]
         state.max_a_quench = q["max_a"]
+        if unmixedness is None:
+            return state                                  # rung 10/11 mean field — untouched
+
+        # RUNG 12 — the under-mixed CORE (spatial variance): the SAME cooling trajectory, but the
+        # core misses the jet and quenches at an ABSOLUTE residence τ_core(C)=τ_res·(1+b_u·u) (NOT
+        # the vanishing jet time, so its NO penalty survives J→∞) that GROWS off-optimum. Mass-weight
+        # bulk/core by the KINKED segregated fraction w(C)=k_u·|ln(C/C_opt)|, whose non-zero slope at
+        # C_opt PINS the EI-min AT the Holdeman optimum (J_min=J_opt, shifting as (H/S)²) → EI_NO
+        # turns back up. A pure diagnostic: NO/N still never enter _equil_solve, cycle bit-for-bit rung 6.
+        C = unmixedness.C(mixing)
+        w = unmixedness.core_fraction(C)
+        qc = _quench_no(comp_p, T_p, alpha, far, Tt3, p, n_no_total, unmixedness.core_dwell(C),
+                        nsteps=quench_nsteps, ngrid=quench_ngrid, tab=tab, schedule=schedule)
+        state.unmixedness = unmixedness
+        state.C_holdeman = C
+        state.w_core = w
+        state.ei_no_core = qc["ei"]                    # the lingering-core EI at τ_core(C)
+        state.ei_no_unmixed = (1.0 - w) * q["ei"] + w * qc["ei"]   # ei_no_quenched (q) is the mean-field bulk
+        state.max_a_quench = max(state.max_a_quench, qc["max_a"])   # dormancy gate spans BOTH streams
         return state
 
     def unified(self) -> "Gas":

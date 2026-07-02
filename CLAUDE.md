@@ -12,7 +12,7 @@ teaching, not for features or polish.
 
 The model is built in cumulative **rungs** — each adds one physical effect and is
 anchored to a published case. All rungs are live; the current scope is
-**rung 11**. Each rung's full derivation, assumptions, and verification gates live
+**rung 12**. Each rung's full derivation, assumptions, and verification gates live
 in its spec (last column) — this table is the one-line map, not the handout.
 
 | Rung | Adds (one-line hook) | Spec |
@@ -29,11 +29,13 @@ in its spec (last column) — this table is the one-line map, not the handout.
 | 9  | **Rich primary / RQL** — primary allowed rich (`φ_p ≤ 2`, the soot bound); the NO-vs-φ **bell** peaks near stoich and collapses rich. Mix-out = the ideal (infinitely-fast) quench. | `docs/rung9-spec.md` |
 | 10 | **Finite-rate quench** — a `τ_q` knob resolves the dilution in time: a rich primary's T rises through the stoich peak and **re-makes** NO. Low-NOx *only if the quench is fast*. `τ_q=None` = the exact rung-9 ideal quench. | `docs/rung10-spec.md` |
 | 11 | **Physical mixing** — a `JetMixing(J,…)` config **derives** `τ_q = H/(C_e·√J·U_c)` from the jet momentum-flux ratio + a decelerating **entrainment** schedule, retiring rung-10's `τ_q`/linear knobs. EI_NO falls **monotonically** in `J` ("quick quench" = strong jet). **Mean-field** ⇒ no mixing *optimum* (the variance seam, rung 12). `mixing=None` = exact rung 10. | `docs/rung11-spec.md` |
+| 12 | **Spatial unmixedness** — an `Unmixedness(S,…)` config (rides on `mixing`) splits the quench into a mean-field **bulk** (`τ_mean∝1/√J`, the still-falling reference) + an under-mixed **core** whose fraction `w(C)` AND dwell `τ_core(C)` both grow off-optimum (kinked in the Holdeman group `C=(S/H)√J`). EI_NO **turns back up** with the minimum pinned **AT `C_opt≈2.5`** — the recovered **Holdeman optimum**, `J_min=J_opt` shifting as `(H/S)²`. `unmixedness=None` = exact rung 11. | `docs/rung12-spec.md` |
 
-Rungs 7–11 are **pure diagnostics** — NO/N never enter the cycle solve, so the cycle
+Rungs 7–12 are **pure diagnostics** — NO/N never enter the cycle solve, so the cycle
 stays **bit-for-bit rung 6**. Each rung's verified anchor data (textbook / formation /
-CEA-equilibrium / Zeldovich-kinetics / ICAO-zoning / rich-RQL / finite-quench / jet-mixing) lives
-in `docs/plans/rungN-anchor-*.md`; `docs/plans/` also holds the living plan/tasks (rungs 1–3).
+CEA-equilibrium / Zeldovich-kinetics / ICAO-zoning / rich-RQL / finite-quench / jet-mixing /
+unmixedness) lives in `docs/plans/rungN-anchor-*.md`; `docs/plans/` also holds the living
+plan/tasks (rungs 1–3).
 
 ## Working contract (from SPEC.md — these override convenience)
 - **Derive before you code.** For each station, write the governing equation and
@@ -44,23 +46,23 @@ in `docs/plans/rungN-anchor-*.md`; `docs/plans/` also holds the living plan/task
   hidden state (Turbine and Nozzle diverge their signatures by design).
 - **Conservation checks are assertions**, run on every execution (not as
   separate tests). See SPEC.md / docs/rung2-spec.md § Conservation checks.
-- **Current scope (rung 11):** all rungs above are cumulative and live (see § The
+- **Current scope (rung 12):** all rungs above are cumulative and live (see § The
   rungs). The **cycle solve** is a thermally-perfect, reacting, dissociation-
   equilibrium gas (`Gas.reacting_equilibrium()`) run through ideal + real components
   (isentropic `η_c/η_t` **or** polytropic `e_c/e_t`, mutually exclusive; `π_d/π_b/π_n`,
   `η_b`, `η_m`; dual cold/hot gas; specified exit pressure). The burner is a root-find
   on `f` over the scale-B absolute balance (equilibrium composition re-solved each trial,
-  then frozen through turbine + nozzle). Rungs 7–11 add the **NOx diagnostics**
+  then frozen through turbine + nozzle). Rungs 7–12 add the **NOx diagnostics**
   (`Gas.thermal_nox` / `Gas.zoned_nox`) *beside* the cycle, never inside it — hence
   bit-for-bit rung 6. Fork A/B (`Gas.reacting()` / `reacting_forkb()`) and the frozen-
   products `Gas.thermally_perfect()` are kept alongside. **Deferred seams** (kept open on
-  purpose): the **spatial-unmixedness / dilution-jet mixing optimum** (rung 11's mean-field
-  quench is monotone in `J` and cannot contain the Holdeman `(S/H)√J` optimum — that needs a
-  two-stream/variance model, the immediate rung-12 seam); super-equilibrium `O` / prompt
-  (Fenimore) NO (matters most in the rich primary *and* the stoich crossing — even the finite
-  quench is an equilibrium-O lower bound); the rung-6 **equilibrium-vs-frozen nozzle flow**
-  (where rung-10's dropped equilibrium clamp earns its keep); off-design / component maps, a
-  *choked* convergent nozzle, afterburner.
+  purpose): a **resolved mixing PDF** — rung 12's two-stream (bulk+core) variance recovers the
+  Holdeman `(S/H)√J` optimum but parameterises the segregation `w(C)`; predicting it from the jet
+  field needs >2 streams / a mixture-fraction PDF (the immediate rung-13 seam); super-equilibrium
+  `O` / prompt (Fenimore) NO (matters most in the rich primary, the stoich crossing, *and* the
+  rung-12 under-mixed core — even the two-stream spike is an equilibrium-O lower bound); the rung-6
+  **equilibrium-vs-frozen nozzle flow** (where rung-10's dropped equilibrium clamp earns its keep);
+  off-design / component maps, a *choked* convergent nozzle, afterburner.
 - **Stop and explain surprises.** If a number looks off, reason about the
   physics rather than silently moving on.
 
@@ -108,7 +110,18 @@ in `docs/plans/rungN-anchor-*.md`; `docs/plans/` also holds the living plan/task
   `schedule`** (β decoupled from time — `schedule=None` ⇒ byte-identical rung 10), and gives
   `zoned_nox` a `mixing=` param **mutually exclusive with `tau_q`** that derives the quench from
   the jet (`mixing=None` ⇒ exact rung-9/10 path). `ZonedNOxState` records the `mixing` config used.
-  Mean-field ⇒ the `J`-sweep is monotone (no mixing optimum — the rung-12 variance seam).
+  Mean-field ⇒ the `J`-sweep is monotone (no mixing optimum — the rung-12 variance seam). Rung 12
+  adds the `Unmixedness` config (jet spacing `S` + `C_opt`/`tau_res`/`k_u`/`b_u`/`w_max`; a Holdeman-
+  group `C(mixing)=(S/H)√J`, a KINKED `_u(C)=|ln(C/C_opt)|`, a `core_fraction(C)=min(w_max,k_u·_u)`
+  and a growing `core_dwell(C)=tau_res·(1+b_u·_u)`, both 0-penalty at `C_opt`) and gives `zoned_nox`
+  an `unmixedness=` param (**requires `mixing`**) that splits the quench into a mean-field **bulk**
+  (`_quench_no` at the derived `τ_mean` — the monotone reference) + an under-mixed **core** (a *second*
+  `_quench_no` on the SAME shared trajectory at the **absolute** `core_dwell(C)`), mass-weighted by
+  `w(C)` → `ei_no_unmixed` **turns back up** in `J` with the minimum pinned **AT `C_opt`** (the kink;
+  `J_min=J_opt`, shifting as `(H/S)²`). `ei_no_quenched` still holds the mean-field bulk.
+  `unmixedness=None` ⇒ exact rung 11; `k_u=0` ⇒ bit-for-bit the bulk. `ZonedNOxState` records
+  `unmixedness`/`C_holdeman`/`w_core`/`ei_no_unmixed`/`ei_no_core`; the `max_a<1` dormancy gate now
+  spans both streams. No new chemistry/integrator — only a second stream.
 - `turbojet/components.py` — `Inlet, Compressor, Burner, Turbine, Nozzle` in `h`/`pr`
   form (+ loss params, `ram_recovery(M0)`, the polytropic `e_c/e_t` knob; the Nozzle
   branches CPG/TPG — the velocity↔enthalpy trap, plus a back-pressure guard `p9 ≤ pt9`). The
@@ -162,6 +175,14 @@ in `docs/plans/rungN-anchor-*.md`; `docs/plans/` also holds the living plan/task
   discriminator (decelerating `shape_n>1` re-makes less than linear at fixed `J`, stoich crossing
   at low β), cycle-untouched, clamp dormancy, `mixing`/`tau_q` mutual exclusivity + `JetMixing`
   positivity guards, K-check along the trajectory. (Reuses the cached-design-point + trajectory.)
+- `tests/test_rung12.py` — rung-12: two-level reduce-to-rung-11 (`unmixedness=None` exact; `k_u=0`
+  == the mean-field bulk bit-for-bit at every `J`; `C=C_opt` ⇒ total = bulk) + a helper-vs-
+  production `zoned_nox` pin, the **turn-up** (non-monotone `J`-sweep: falls then rises, interior
+  min — the bulk still falling proves the variance turns it up), the optimum **AT `C_opt`**
+  (`J_min==J_opt`, shifting exactly as `(H/S)²`), the core penalty **surviving strong jets +
+  growing off-optimum** (min dwell at `C_opt`), the kinked `w(C)` (0 at `C_opt`, both flanks,
+  non-zero slope), cycle-untouched, clamp dormancy over both streams, require-`mixing` +
+  `Unmixedness` positivity/range guards. (Reuses cached DP + trajectory.)
 - `main.py` — runs ideal vs real at one design point: tables + overlaid T–s diagram,
   plus the rung-2-frozen-`cp` vs rung-3-`cp(T)` table, the rung-4 frozen-vs-reacting
   + `f`-sweep table, the rung-5 Fork-A-vs-Fork-B (derived-`hPR`) panel, the rung-6
@@ -173,9 +194,11 @@ in `docs/plans/rungN-anchor-*.md`; `docs/plans/` also holds the living plan/task
   CO/H₂, the AFT rollover, EI_NO peaking near stoich then collapsing on the rich flank, `T_mix` →
   Tt4), the rung-10 finite-quench panel (a `τ_q` sweep at a rich primary: T rising through the
   stoich peak, the EI_NO spike vs `τ_q`, and the re-filled rich flank vs the rung-9 ideal quench),
-  and the rung-11 jet-mixing panel (a `J`-sweep: the derived `τ_q` and EI_NO falling monotonically
+  the rung-11 jet-mixing panel (a `J`-sweep: the derived `τ_q` and EI_NO falling monotonically
   as jet momentum rises, plus the schedule-shape contrast — decelerating entrainment vs rung-10's
-  linear — at fixed `J`).
+  linear — at fixed `J`), and the rung-12 unmixedness panel (a `J`-sweep: the mean-field bulk still
+  falling vs the two-stream total that **turns back up** with its minimum pinned **at `C_opt`** — the
+  recovered Holdeman optimum — plus the `(H/S)²` optimum shift when the jet spacing `S` shrinks).
 
 ## Commands
 - Run the model:  `python main.py`
