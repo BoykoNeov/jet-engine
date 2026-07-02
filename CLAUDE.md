@@ -2,105 +2,37 @@
 
 A station-by-station model of a single-spool turbojet (Brayton cycle). It takes
 flight + design conditions and produces the gas state at every station, the
-thrust, the efficiencies, and a T–s diagram. **Rung 1** is the ideal cycle;
-**rung 2** adds real components (isentropic efficiencies + pressure losses) and a
-dual-section (cold/hot) gas, anchored to a published textbook case; **rung 2b**
-adds polytropic efficiency `e_c/e_t` as a first-class knob beside the isentropic one;
-**rung 3** upgrades the working fluid from calorically perfect (constant `cp`) to
-thermally perfect (`cp = cp(T)`, gas-table `h`/`pr` property functions); **rung 4**
-makes the hot-section **composition track the fuel/air ratio** `f` (explicit `(CH₂)ₙ`
-lean-combustion stoichiometry → `cp_t/R_t/γ_t = f(T,f)`), which turns the burner into
-an implicit `f = g(f)` fixed-point solve; **rung 5** is **Fork B — formation-enthalpy
-bookkeeping**: restores the NASA `a6` constant so enthalpies are absolute and the
-burner's heat release is **derived** (`hPR`/LHV falls out of the chemistry) instead of
-assumed — provably identical to rung 4 for complete combustion, but on the absolute
-scale rung-6 dissociation needs; **rung 6** adds **high-temperature dissociation +
-chemical equilibrium**: the products (`CO₂`/`H₂O`) partly split into `CO/H₂/OH/O/H`, set
-by a `Kp(T) = exp(−ΔG°/RuT)` solve (adds the absolute-entropy constant `a7`, derived like
-`a6`). The cycle barely moves (a steeply Tt4-dependent delta on `f`: +0.02 % at the 1500 K
-`main.py` panel, +0.15 % at the 1800 K anchor — station 4 is lean, high-pressure,
-metallurgically capped), but the adiabatic-flame-temperature diagnostic finally falls
-~115 K (2375→2259 K) into the real band; **rung 7** adds **thermal NOx**: the extended
-Zeldovich mechanism (`O+N₂⇌NO+N`, …) as a **kinetically-limited** trace diagnostic on the
-frozen rung-6 pool — the lesson **inverts rung 6** (major species reach equilibrium; NO does
-*not* — at a ~3 ms residence it is frozen at a few % of equilibrium, and its rate is
-exponentially T-sensitive, ~500× over 2000→2400 K). NO is trace, so the cycle stays
-**bit-for-bit rung 6**; NOx rides as a diagnostic (a thermo-kinetic `K`-check binds the rate
-constants to the `a6`/`a7` substrate); **rung 8** adds **combustor zoning**: the same rung-7
-Zeldovich integrator run on a **two-zone** (near-stoichiometric **primary** → **dilution**)
-combustor instead of the mixed-out station 4. NO is set in a hot primary (AFT ≈ 2000–2450 K,
-from Tt3, scale A) and **frozen** through the dilution that cools the mixed-out gas back to Tt4;
-EI_NO climbs from the rung-7 mixed-out ~zero (8e-6 g/kg) into the measured **ICAO band**
-(~16–21 g/kg at φ_p ≈ 0.9–1.0) — a ~6-order lift purely from *where* the chemistry is evaluated,
-**completing rung 7's inversion**. Still bit-for-bit rung 6 (a pure diagnostic); the from-Tt3
-flame temperature is the first quantity to expose the ~8 K scale-A/scale-B datum offset (noted,
-not chased — the cycle's sensible differences cancel it); **rung 9** adds a **rich primary /
-RQL**: the same two-zone diagnostic with the primary allowed to run **rich** (φ_p up to 2.0),
-so the equilibrium pool carries major `CO`/`H₂` (a **branched Newton seed** in `_equil_solve`;
-lean branch byte-identical → reduce-to-rung-8 is provable). The payoff is the **rich flank of the
-NO-vs-φ bell**: EI_NO peaks near stoich (~21 g/kg, ICAO band) and **collapses rich** (a *model
-lower bound* ~1800× lower at φ_p=1.4 — equilibrium-O only, super-eq/prompt NO deferred; the AFT
-rolls over and the O-starved pool crashes `[O]`), which is *why* real
-low-NOx combustors burn rich then quick-quench past the peak. Mix-out is the **ideal
-(infinitely-fast) quench** (NO frozen); still bit-for-bit rung 6 (a pure diagnostic); **rung 10**
-resolves that quench in **time** — the **finite-rate quench**: a `τ_q` knob on `zoned_nox` runs a
-secondary-zone Zeldovich along a cooling/mixing trajectory whose local `far` sweeps
-`far_p → f_stoich → far_overall`, so a **rich** primary's temperature **rises through the stoich
-peak** (2110→2453 K at φ_p=1.5) and NO is **re-made** as the gas dwells at stoich. EI_NO rises
-monotonically with `τ_q` (φ_p=1.5: 0.0013 → ~3.3 g/kg at 3 ms, ~2500×) and the rung-9 rich-flank
-collapse **fills back in** to a ~φ_p-independent ~3 g/kg floor — a rich primary is low-NOx **only
-if the quench is fast**, the whole RQL tension. Uses a **separate clamp-free integrator** (super-eq
-NO on cooling must not be capped — Heywood; dropped on principle, *proved dormant* here at
-`max_a=0.677<1`). `τ_q=None` (default) is the exact rung-9 ideal quench, so still **bit-for-bit rung
-6** (a pure diagnostic). Deferred: **super-equilibrium O / prompt (Fenimore) NO** and the rung-6
-**equilibrium-vs-frozen nozzle** seam (where the dropped clamp earns its keep) are the next seams;
-`τ_q` + the linear mixing schedule stay knobs (no jets-in-crossflow model).
+thrust, the efficiencies, and a T–s diagram.
 
 **The deliverable is understanding, not the tool.** The code is the medium that
 forces every thermodynamic assumption into the open. Optimize the work for
 teaching, not for features or polish.
 
-## Read this first
-- **`SPEC.md`** — rung-1 contract + thermodynamics handout: station equations,
-  shaft balance, the frozen ideal assumptions, the validation case.
-- **`docs/rung2-spec.md`** — rung-2 contract + handout: efficiencies, dual gas,
-  the reworked asserts, the two thermal efficiencies, the verification gates.
-- **`docs/rung2b-polytropic.md`** — rung-2b contract + handout: polytropic `e_c/e_t`
-  as a first-class knob, the `η_c < e < η_t` asymmetry, the equivalence gate.
-- **`docs/rung3-variable-cp.md`** — rung-3 contract + handout: the `h`/`pr` property
-  interface, the closed-form-CPG-branch trap, station equations in enthalpy form.
-- **`docs/rung4-reacting-products.md`** — rung-4 contract + handout: `(CH₂)ₙ`
-  stoichiometry, the `f`-parameterized properties, the implicit burner, the
-  Fork-A/Fork-B datum split.
-- **`docs/rung5-fork-b.md`** — rung-5 contract + handout: the `a6` restoration, the
-  derived-heat-release burner, the exact reduce-to-rung-4 theorem, the datum invariant,
-  the rung-6 (`a7` + `Kp`) seam.
-- **`docs/rung6-spec.md`** — rung-6 contract + handout: the five dissociation species +
-  reactions, the `Kp` standard-state `(p/p°)^Δν` factor, the `a7` derivation, the
-  one-energy-datum split (composition on scale A, burner energy on scale B), the nested
-  root-find burner, frozen-downstream, the verification gates.
-- **`docs/rung7-spec.md`** — rung-7 contract + handout: the two new species (`NO`, `N`), the
-  extended Zeldovich mechanism, the thermo-kinetic `K`-check, the superimposed equilibrium-NO
-  layer, the one-equation kinetic integrator + residence-time knob `τ`, the decoupled-trace
-  diagnostic, the lesson inversion, the gates.
-- **`docs/rung8-spec.md`** — rung-8 contract + handout: the two-zone (primary → dilution)
-  diagnostic, the primary-AFT-from-Tt3 solve (scale A), the re-equilibrating mix-out, the
-  frozen-NO freeze, the two-part reduce-to-rung-7 gate (exact same-`T_p` + physical), the
-  φ_p ≤ 1 scope, the split-independent-`T_mix`-→-Tt4 + NO-mole-conservation gates.
-- **`docs/rung9-spec.md`** — rung-9 contract + handout: the rich primary (φ_p ≤ 2), the
-  branched `_equil_solve` seed (lean byte-identical → provable reduce-to-rung-8), the rich CO/H₂
-  equilibrium, the EI_NO bell (peaks near stoich, collapses rich), the ideal-quench framing +
-  finite-quench seam, the soot-bound guard, the CEA-rich-methane + WGS self-check gates.
-- **`docs/rung10-spec.md`** — rung-10 contract + handout: the finite-rate quench (the `τ_q` knob +
-  linear mixing schedule), the τ_q-independent quench trajectory (fast chemistry = f(β)), the
-  clamp-free `_quench_no` integrator + the equilibrium-clamp trap (correct-on-principle,
-  dormant-on-numbers, `max_a` guarded), the exact reduce-to-rung-9 short-circuit, the smoking-gun
-  T(β) rise + NO-spike-vs-τ_q + re-filled-rich-flank gates.
-- `docs/plans/` — living plan/tasks (rungs 1–3), plus `rung2-anchor-mattingly.md`,
-  `rung3-anchor-cengel.md`, `rung4-anchor-mattingly.md`, `rung5-anchor-formation.md`,
-  `rung6-anchor-equilibrium.md`, `rung7-anchor-nox.md`, `rung8-anchor-zoning.md`,
-  `rung9-anchor-rql.md`, and `rung10-anchor-quench.md` (the verified textbook / formation /
-  CEA-equilibrium / Zeldovich-kinetics / ICAO-zoning / rich-RQL / finite-quench anchor data).
+## The rungs
+
+The model is built in cumulative **rungs** — each adds one physical effect and is
+anchored to a published case. All rungs are live; the current cycle scope is
+**rung 10**. Each rung's full derivation, assumptions, and verification gates live
+in its spec (last column) — this table is the one-line map, not the handout.
+
+| Rung | Adds (one-line hook) | Spec |
+|------|----------------------|------|
+| 1  | The **ideal** Brayton cycle: frozen, calorically-perfect, lossless. | `SPEC.md` |
+| 2  | **Real components** — isentropic `η_c/η_t`, pressure losses `π_d/π_b/π_n`, `η_b`, `η_m`; dual cold/hot gas. Anchored to a textbook case. | `docs/rung2-spec.md` |
+| 2b | **Polytropic** `e_c/e_t` as a first-class knob beside the isentropic one (the `η_c < e < η_t` asymmetry). | `docs/rung2b-polytropic.md` |
+| 3  | **Thermally-perfect** gas — `cp = cp(T)` via NASA `h`/`pr` gas-table property functions (CPG kept as the closed-form branch). | `docs/rung3-variable-cp.md` |
+| 4  | **Reacting products** — hot composition tracks `f` via `(CH₂)ₙ` lean stoichiometry (`cp_t/R_t/γ_t = f(T,f)`); the burner becomes an implicit `f = g(f)` solve. | `docs/rung4-reacting-products.md` |
+| 5  | **Fork B** — NASA `a6` restored → absolute enthalpies, so the burner heat release (LHV) is **derived**, not assumed. Provably ≡ rung 4 for complete combustion. | `docs/rung5-fork-b.md` |
+| 6  | **Chemical equilibrium** — dissociation (`CO/H₂/OH/O/H`), 5 reactions, `Kp = exp(−ΔG°/RuT)` (adds `a7`). Cycle barely moves; the AFT diagnostic drops ~115 K into the real band. | `docs/rung6-spec.md` |
+| 7  | **Thermal NOx** — extended Zeldovich as a kinetically-limited trace diagnostic on the frozen rung-6 pool. **Inverts rung 6**: NO does *not* equilibrate (frozen at a few % of it). | `docs/rung7-spec.md` |
+| 8  | **Combustor zoning** — the rung-7 integrator on a two-zone (near-stoich **primary** → **dilution**) combustor. EI_NO lifts from the mixed-out ~zero into the **ICAO band**. | `docs/rung8-spec.md` |
+| 9  | **Rich primary / RQL** — primary allowed rich (`φ_p ≤ 2`, the soot bound); the NO-vs-φ **bell** peaks near stoich and collapses rich. Mix-out = the ideal (infinitely-fast) quench. | `docs/rung9-spec.md` |
+| 10 | **Finite-rate quench** — a `τ_q` knob resolves the dilution in time: a rich primary's T rises through the stoich peak and **re-makes** NO. Low-NOx *only if the quench is fast*. `τ_q=None` = the exact rung-9 ideal quench. | `docs/rung10-spec.md` |
+
+Rungs 7–10 are **pure diagnostics** — NO/N never enter the cycle solve, so the cycle
+stays **bit-for-bit rung 6**. Each rung's verified anchor data (textbook / formation /
+CEA-equilibrium / Zeldovich-kinetics / ICAO-zoning / rich-RQL / finite-quench) lives in
+`docs/plans/rungN-anchor-*.md`; `docs/plans/` also holds the living plan/tasks (rungs 1–3).
 
 ## Working contract (from SPEC.md — these override convenience)
 - **Derive before you code.** For each station, write the governing equation and
@@ -111,60 +43,22 @@ teaching, not for features or polish.
   hidden state (Turbine and Nozzle diverge their signatures by design).
 - **Conservation checks are assertions**, run on every execution (not as
   separate tests). See SPEC.md / docs/rung2-spec.md § Conservation checks.
-- **Current scope (rung 10):** ideal + real components (isentropic `η_c/η_t` **or**
-  polytropic `e_c/e_t`, mutually exclusive; pressure ratios `π_d/π_b/π_n`, `η_b`,
-  `η_m`, dual cold/hot gas, specified exit pressure) on a **thermally-perfect** gas
-  (`cp = cp(T)`; calorically-perfect sections kept as the closed-form branch) — with
-  the hot section a **reacting** gas whose composition (and `cp_t/R_t/γ_t`) tracks
-  `f` via explicit `(CH₂)ₙ` lean-complete-combustion stoichiometry, solved through an
-  implicit `f = g(f)` burner. **Fork B** (rung 5): enthalpies carry each species'
-  **formation** enthalpy (NASA `a6`, absolute datum) and the burner derives its heat
-  release. Now **rung 6 — chemical equilibrium** (`Gas.reacting_equilibrium()`): the hot
-  composition at the burner is the **dissociation-equilibrium** mixture (add `CO/H₂/OH/O/H`;
-  5 reactions; `Kp = exp(−ΔG°/RuT)` with the `(p/p°)^Δν` factor, on `a7` derived like `a6`),
-  **frozen** through turbine + nozzle; the burner is a **root-find on `f`** over the absolute
-  balance (composition re-solved each trial). `Kp` uses the formation scale (scale A, required),
-  the burner energy the production scale (scale B, reduces to Fork B); only the datum-free
-  composition crosses between. Fork A/B (`Gas.reacting()`/`reacting_forkb()`) kept beside it.
-  Now **rung 7 — thermal NOx** (`Gas.thermal_nox(far, T, p, τ)`): a **decoupled trace
-  diagnostic** on the frozen rung-6 pool — the extended **Zeldovich** mechanism (add `NO`/`N`;
-  Hanson–Salimian rate constants), a **superimposed equilibrium-NO** layer (`½N₂+½O₂⇌NO`,
-  `Δν=0` ⇒ no `(p/p°)` factor, on the existing `a6`/`a7` `_g_molar`), and a one-equation
-  **kinetic integrator** (QSS-`N`, reverse-rate form) over a **residence-time knob `τ`**. NO is
-  trace, so the **cycle is bit-for-bit rung 6** (NO/N never enter `_equil_solve`); a
-  thermo-kinetic **`K`-check** binds the rate constants to the thermochemistry. The lesson
-  **inverts rung 6** (major species reach equilibrium; NO does not — frozen far below it).
-  Now **rung 8 — combustor zoning** (`Gas.zoned_nox(far, Tt3, Tt4, p, φ_p, τ)`): the same rung-7
-  `_thermal_no` run on a **two-zone** combustor — a near-stoichiometric **primary** (`φ_p ≤ 1`;
-  adiabatic flame temp solved from Tt3 on scale A via `_primary_aft`; equilibrium products) where
-  NO forms, then a **dilution / mix-out** (`_mixed_out_T`) that adds the rest of the air, **re-
-  equilibrates the majors** (→ `T_mix` ≈ Tt4), and **freezes the NO moles**. A pure diagnostic
-  (NO/N still never touch the cycle), so still **bit-for-bit rung 6**; EI_NO lifts from the
-  mixed-out ~zero into the **ICAO band**, completing rung 7's inversion. Now **rung 9 — rich
-  primary / RQL**: the same `zoned_nox` with the primary allowed to run **rich** (`φ_p ≤ 2.0`, the
-  soot bound), so the equilibrium pool carries major `CO`/`H₂`. The 8-species `_equil_solve` was
-  *already* complete rich (CO/H₂ are unknowns; reactions 1+2 span the water-gas shift) — the only
-  change is a **branched Newton seed** (lean branch **byte-identical** → reduce-to-rung-8 is
-  provable; rich branch = an O-limited seed). The payoff is the **rich flank of the NO-vs-φ bell**:
-  EI_NO peaks near stoich and **collapses rich** (~1800× lower at φ_p=1.4 — AFT rollover + O-starve),
-  which is *why* RQL burns rich then quick-quenches past the peak. Mix-out is the **ideal
-  (infinitely-fast) quench** (NO frozen); still a pure diagnostic, **bit-for-bit rung 6**. Now
-  **rung 10 — the finite-rate quench**: the same `zoned_nox` gains a **quench-time knob `τ_q`**
-  (`Gas.zoned_nox(..., tau_q=<s>)`; `None` = the exact rung-9 ideal quench). A finite `τ_q`
-  resolves the dilution in **time**: as air is added **linearly** over `τ_q`, the local `far`
-  sweeps `far_p → f_stoich → far_overall`, so a **rich** primary's temperature **rises through the
-  stoich peak** and NO is **re-made** as the gas dwells there (`_quench_no`, a **separate
-  clamp-free** integrator on a τ_q-independent trajectory `_quench_trajectory`; the equilibrium cap
-  is dropped — super-eq NO on cooling must not be capped, Heywood — and *proved dormant* here at
-  `max_a=0.677<1`). EI_NO rises monotonically with `τ_q` and the rung-9 rich-flank collapse
-  **re-fills** to a ~φ_p-independent floor — a rich primary is low-NOx **only if the quench is
-  fast**. `_thermal_no` stays byte-identical (its reduce gates need the exact capped trajectory);
-  the reduce is a **short-circuit** (`τ_q=None`), so still a pure diagnostic, **bit-for-bit rung
-  6**. Still deferred — keep the seams: **super-equilibrium `O` / prompt NO (Fenimore)** (matters
-  most in the rich primary *and* the stoich crossing — even the finite quench is an equilibrium-O
-  lower bound), the rung-6 **equilibrium-vs-frozen nozzle flow** (where the dropped clamp earns its
-  keep), and a **physical mixing model** (jets-in-crossflow) to retire the `τ_q`/linear-schedule
-  knobs; off-design / component maps, a *choked* convergent nozzle, afterburner.
+- **Current scope (rung 10):** all rungs above are cumulative and live (see § The
+  rungs). The **cycle solve** is a thermally-perfect, reacting, dissociation-
+  equilibrium gas (`Gas.reacting_equilibrium()`) run through ideal + real components
+  (isentropic `η_c/η_t` **or** polytropic `e_c/e_t`, mutually exclusive; `π_d/π_b/π_n`,
+  `η_b`, `η_m`; dual cold/hot gas; specified exit pressure). The burner is a root-find
+  on `f` over the scale-B absolute balance (equilibrium composition re-solved each trial,
+  then frozen through turbine + nozzle). Rungs 7–10 add the **NOx diagnostics**
+  (`Gas.thermal_nox` / `Gas.zoned_nox`) *beside* the cycle, never inside it — hence
+  bit-for-bit rung 6. Fork A/B (`Gas.reacting()` / `reacting_forkb()`) and the frozen-
+  products `Gas.thermally_perfect()` are kept alongside. **Deferred seams** (kept open on
+  purpose): super-equilibrium `O` / prompt (Fenimore) NO (matters most in the rich primary
+  *and* the stoich crossing — even the finite quench is an equilibrium-O lower bound); the
+  rung-6 **equilibrium-vs-frozen nozzle flow** (where rung-10's dropped equilibrium clamp
+  earns its keep); a **physical mixing model** (jets-in-crossflow) to retire the `τ_q` /
+  linear-schedule knobs; off-design / component maps, a *choked* convergent nozzle,
+  afterburner.
 - **Stop and explain surprises.** If a number looks off, reason about the
   physics rather than silently moving on.
 
@@ -203,15 +97,18 @@ teaching, not for features or polish.
   returns `max_a` for the clamp-dormancy guard), extends `ZonedNOxState` (`tau_q`/`ei_no_quenched`/
   `x_no_quenched`/`T_peak`/`max_a_quench`, all `None` for the ideal quench) and gives `zoned_nox` a
   `tau_q=None` param that **short-circuits to the exact rung-9 path**; `_thermal_no` is byte-
-  identical (its reduce gates need the exact capped trajectory). Still a pure diagnostic.
+  identical (its reduce gates need the exact capped trajectory). Still a pure diagnostic. The
+  bisection AFT helpers (`_primary_aft`/`_mixed_out_T`) early-break at 1e-6 K and guard against
+  bracket-edge pinning post-loop (the equilibrium solver diverges at the cold edge, so the guard
+  can't probe endpoints).
 - `turbojet/components.py` — `Inlet, Compressor, Burner, Turbine, Nozzle` in `h`/`pr`
   form (+ loss params, `ram_recovery(M0)`, the polytropic `e_c/e_t` knob; the Nozzle
-  branches CPG/TPG — the velocity↔enthalpy trap). The `Burner` runs the implicit
-  `f = g(f)` fixed point (Fork B: `hPR` := derived LHV, plus a standing absolute-enthalpy
-  balance assert), OR — for an equilibrium gas — `_solve_equilibrium` (a root-find on `f`
-  over the scale-B absolute balance, equilibrium composition per trial, then freezes the
-  station-4 mixture); `Turbine`/`Nozzle` hot-section calls thread `far` (sensible `h`, so
-  bit-for-bit rung 4 — the `a6` offset cancels in their differences).
+  branches CPG/TPG — the velocity↔enthalpy trap, plus a back-pressure guard `p9 ≤ pt9`). The
+  `Burner` runs the implicit `f = g(f)` fixed point (Fork B: `hPR` := derived LHV, plus a
+  standing absolute-enthalpy balance assert), OR — for an equilibrium gas — `_solve_equilibrium`
+  (a root-find on `f` over the scale-B absolute balance, equilibrium composition per trial, then
+  freezes the station-4 mixture); `Turbine`/`Nozzle` hot-section calls thread `far` (sensible `h`,
+  so bit-for-bit rung 4 — the `a6` offset cancels in their differences).
 - `turbojet/engine.py` — chains components, solves the `Δh` + `η_m` shaft balance,
   scores performance (two thermal efficiencies + cascade check); freestream branches
   CPG/TPG.
