@@ -1217,3 +1217,98 @@ Still deferred on this substrate: **super-equilibrium O / prompt (Fenimore) NO**
 **equilibrium-vs-frozen nozzle** seam (where the dropped clamp earns its keep), and a **physical
 mixing model** to retire the `τ_q`/linear-schedule knobs; plus off-design, the choked nozzle, the
 afterburner.*
+
+---
+
+# Rung 11 — The Physical Mixing Model: a Jet-Entrainment Quench, in plain language
+
+## The headline: "quick quench" was a wish — now it's a jet you can design
+Rung 10 proved a rich primary is low-NOx *only if the quench is fast*, and then left "fast" as a
+number you dial in (`τ_q`) with the air blended in on a straight line. But nothing in the engine
+sets a quench time by decree — the dilution air comes in through **holes in the liner, as jets
+punching into a hot crossflow**, and how fast those jets penetrate and stir the hot gas is what
+sets the quench. Rung 11 asks the obvious next question: **what actually sets `τ_q`?** — and answers
+it with the one dimensionless group that governs a jet in a crossflow, the **momentum-flux ratio**
+`J = ρ_j U_j² / (ρ_c U_c²)`. A high-`J` jet is a hard, fast jet: it drives deep across the duct and
+mixes the hot core out quickly. So `τ_q` stops being a knob and becomes **derived**:
+`τ_q = H/(C_e·√J·U_c)`. "Quick quench" is no longer a wish — it's "**use a high-momentum jet**."
+
+## The result: crank the jet, drop the NO — monotonically
+Sweep the jet strength at the rich primary (φ_p=1.5) and the re-made NO falls straight down as the
+jet gets stronger:
+
+| momentum ratio `J` | derived `τ_q` | EI_NO | the jet |
+|---|---|---|---|
+| 4 | 3.3 ms | 2.1 g/kg | weak — mixes slow |
+| 25 | 1.3 ms | 0.83 | — |
+| 100 | 0.67 ms | 0.42 | strong (the RQL target) |
+
+A stronger jet shortens the quench, the gas spends less time crossing the stoichiometric peak, and
+less NO is re-made — a clean **monotone** "more momentum → less NO." The `τ_q` rung 10 swept by hand
+is now **read straight off the jet design**, and it lands right where real RQL quench zones live:
+sub-millisecond to a few milliseconds.
+
+## The quieter result: the straight line was pessimistic — *if* entrainment decelerates
+Rung 10 added the dilution air *linearly* in time. Real entrainment likely isn't linear — a fresh
+jet entrains **fast** where the shear and the concentration gradient are steepest, then **slows** as
+the gas mixes out. That matters because the stoichiometric crossing — where the NO is made — happens
+**early**, at only ~16 % of the way through the mix. A decelerating jet blows *through* that early
+crossing fast and dwells there less, so at the same `τ_q` it re-makes **less** NO. So **if
+entrainment decelerates** (as gradient-collapse suggests), rung 10's straight line **over-counted**
+the spike — by ~2× here. But be honest about the sign: that conclusion rides on the *shape*, which
+is itself a modeling choice — an *accelerating* schedule (`n<1`) would go the other way and make
+*more* NO than linear. So "rung 10 was conservative" is a *contingent* claim, not a bare fact:
+contingent on decelerating entrainment, and inside a shape uncertainty (~2×) that is small next to
+the orders-of-magnitude pull of `τ_q`/`J`. (The linear schedule isn't wrong so much as the
+*constant-entrainment limit* — the `n=1` member of the family, which is exactly why `n=1` reduces to
+rung 10 bit-for-bit.)
+
+One tidy consequence worth naming: in `τ_q = H/(C_e·√J·U_c)`, the crossflow speed `U_c` **cancels**.
+Because the jet velocity is `U_j = U_c·√(J·ρ_c/ρ_j)`, the group `√J·U_c` is really `∝ U_j`, so the
+derived quench time is `τ_q ∝ H/U_j` — **duct height over jet velocity**, independent of how fast the
+core is moving. So "sweep `J` at fixed `U_c`" is physically "**sweep the jet velocity**": it is the
+*jet's* momentum, not the crossflow's, that sets how quickly the hot core is stirred out.
+
+## The honest ceiling: this model can only go one way
+Here is the line rung 11 deliberately does **not** cross, stated plainly: this is a **mean-field**
+model. It treats the gas as one well-mixed core diluting on an average schedule, so it can only ever
+say "faster jet → less NO." It **cannot** find the real dilution-jet **optimum** — the fact that an
+*over*-penetrating jet is also bad, because it slams the cold air into the far wall and leaves a hot,
+near-stoichiometric core sitting *un*-mixed. That's a **spatial-variance** effect (some gas dwells at
+stoich far longer than the average), and a mean-field model has no variance by definition. The famous
+Holdeman mixing criterion `(S/H)√J ≈ 2.5` is a *uniformity* rule, not a rate — so we deliberately do
+**not** bolt it on here; dressing a mean-field model in optimum-finding clothing would be incoherent.
+The optimum is real, and it is **rung 12**: give the quench at least two streams (a lingering core
+plus the bulk) and the NO-vs-`J` curve will finally turn back up on the far side.
+
+## Did we get it right?
+The reduce is **exact by construction, twice over**: `mixing=None` runs the literal rung-10 code, so
+the whole rung 1–10 suite stays bit-for-bit; and a jet with `shape_n=1` (constant entrainment)
+reproduces rung 10's linear quench at the *derived* `τ_q` to the last bit (the schedule returns the
+identity exactly at `n=1`). The cycle never moves — NO is still a trace diagnostic, opt-in via
+`mixing`. What stays **un-anchored**, said plainly: the *absolute* `τ_q` rides on order-of-magnitude
+choices (`C_e ~ 0.1`, the duct `H`, the bulk velocity `U_c`), so what's certified is the **√J
+scaling** and the **monotone direction**, not a book quench time; the entrainment *shape* (the
+`decelerating` exponent) is a residual modeling choice the NO is only mildly sensitive to (~2×),
+next to the orders-of-magnitude pull of `τ_q`/`J`. And `super-equilibrium O / prompt NO` is still
+deferred — the spike remains an equilibrium-O **lower bound**. The **shape** is the result: `τ_q`
+falls as `1/√J`, the NO falls monotonically with jet strength, and a realistic entrainment makes
+*less* NO than the straight line. That direction is right; the optimum waits for rung 12.
+
+---
+*Rung 11 replaces rung 10's two quench knobs with **jet-in-crossflow physics**: pass
+`Gas.zoned_nox(..., mixing=JetMixing(J=<momentum-flux ratio>))` and the quench time is **derived**
+`τ_q = H/(C_e·√J·U_c)` (a stronger jet penetrates and entrains faster → shorter quench) and the
+dilution air is added on a **decelerating entrainment** schedule `β(t)=1−(1−t/τ_q)^n` instead of
+rung 10's linear one. EI_NO falls **monotonically** as `J` rises — "quick quench" quantified as "a
+high-momentum jet" — and *if* entrainment decelerates (gradient-collapse), it clears the early
+stoich crossing faster than the linear schedule, so rung 10 over-predicted the spike by ~2× (a
+claim contingent on the shape — an accelerating schedule would go the other way). `mixing` and `tau_q` are
+mutually exclusive; `mixing=None` keeps the exact rung-9/10 paths (bit-for-bit rung 6), and a
+`shape_n=1` jet reduces to the rung-10 linear quench to the last bit. This is a **mean-field** model —
+one well-mixed core — so the `J`-sweep is monotone with **no mixing optimum**; the optimum is a
+spatial-variance effect (an over-penetrating jet leaves an un-mixed hot core), the explicit **rung-12**
+seam. `python main.py` prints the rung-11 jet-mixing panel: the derived-`τ_q` `J`-sweep and the
+schedule-shape contrast. Still deferred on this substrate: the **unmixedness / Holdeman optimum**
+(rung 12), **super-equilibrium O / prompt (Fenimore) NO**, the rung-6 **equilibrium-vs-frozen
+nozzle**; plus off-design, the choked nozzle, the afterburner.*

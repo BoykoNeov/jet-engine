@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 from turbojet.engine import FlightCondition, build_turbojet  # noqa: E402
 from turbojet.gas import (  # noqa: E402
-    Gas, _products_composition, _equilibrium_composition, _h_molar_A,
+    Gas, JetMixing, _products_composition, _equilibrium_composition, _h_molar_A,
     _HF_FUEL_DEFAULT, _M_AIR, _M_CH2, _F_STOICH, _air_mole_fractions,
     _equilibrium_no_fraction, _primary_aft, _thermal_no,
     _quench_trajectory, _quench_no,
@@ -499,6 +499,76 @@ def print_finite_quench_table(flight):
     print("  the dropped clamp is correct-on-principle, dormant-on-numbers at this lean point.)")
 
 
+def print_jet_mixing_table(flight):
+    """Rung-11 payoff: the PHYSICAL mixing model — a jet-entrainment quench.
+
+    Rung 10 resolved the quench in time but left "how fast" a FREE knob (τ_q) with an arbitrary
+    LINEAR schedule. Rung 11 asks what SETS the quench rate: the dilution air enters through JETS
+    IN CROSSFLOW, and the mixing rate scales with the jet momentum-flux ratio J = ρ_j U_j²/(ρ_c
+    U_c²). So τ_q = H/(C_e·√J·U_c) is DERIVED from J (a stronger jet penetrates and entrains
+    faster → shorter quench), and the linear schedule becomes a decelerating ENTRAINMENT shape.
+    "Quick quench" = a high-momentum jet, quantified: EI_NO falls MONOTONICALLY as J rises.
+
+    A MEAN-FIELD model (one well-mixed core): it derives the quench RATE but has NO mixing
+    optimum — an over-penetrating jet leaving an un-mixed hot core is a spatial-VARIANCE effect,
+    deferred to rung 12. Still a pure diagnostic: bit-for-bit rung 6 (opt-in via `mixing`).
+    """
+    eq = Gas.reacting_equilibrium()
+    real = build_turbojet(eq, PI_C, TT4, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+    st3, st4 = real.stations["3"], real.stations["4"]
+    Tt3, Tt4, far, p = st3.Tt, st4.Tt, st4.far, st4.pt
+    hf = eq.hf_fuel_molar if eq.hf_fuel_molar is not None else _HF_FUEL_DEFAULT
+    ng = 80
+
+    print("\nPhysical mixing (rung 11): what SETS the quench rate — jets in crossflow. τ_q is no")
+    print("longer a free knob; it is DERIVED from the jet momentum-flux ratio J. 'Quick' = strong jet.")
+    print(f"  Design point: Tt3={Tt3:.0f} K, Tt4={Tt4:.0f} K, p={p/1e5:.1f} bar, overall "
+          f"far={far:.4f} (φ={far/_F_STOICH:.2f})")
+
+    # Build the (τ_q-independent) trajectory ONCE for the rich primary and reuse it across the
+    # J-sweep and the schedule-shape contrast (both only change the β↔t map, not the trajectory).
+    phi_p = 1.5
+    far_p = phi_p * _F_STOICH
+    alpha = far / far_p
+    T_p = _primary_aft(far_p, p, Tt3, hf)
+    comp_p = _equilibrium_composition(far_p, T_p, p)
+    nox = _thermal_no(comp_p, T_p, p, 3e-3, far_p)
+    n0 = alpha * nox.x_no * sum(comp_p.values())
+    tab = _quench_trajectory(comp_p, T_p, alpha, far, Tt3, p, ngrid=ng)   # built ONCE, reused
+
+    # (1) The J-sweep: a stronger jet → shorter derived τ_q → escapes the stoich peak → less NO.
+    print(f"\n  Rich primary φ_p={phi_p}: derive τ_q from J (H=0.10 m, U_c=75 m/s, C_e=0.20; "
+          "decelerating n=2):")
+    print(f"  {'J':>5} {'τ_q ms':>8} {'EI_NO g/kg':>11}   jet")
+    print("  " + "-" * 44)
+    for J in (4.0, 9.0, 16.0, 25.0, 49.0, 100.0):
+        m = JetMixing(J=J, C_e=0.20, shape_n=2.0)
+        q = _quench_no(comp_p, T_p, alpha, far, Tt3, p, n0, m.tau_q, tab=tab, schedule=m.schedule)
+        tag = "weak — mixes slow" if J <= 4 else ("strong (RQL target)" if J >= 49 else "")
+        print(f"  {J:>5.0f} {m.tau_q*1e3:>8.3f} {q['ei']:>11.4g}   {tag}")
+    print("  EI_NO falls MONOTONICALLY as J rises — a strong jet quenches fast and escapes the")
+    print("  stoich peak. No optimum: a mean-field model has no unmixedness (that is rung 12).")
+
+    # (2) The schedule-shape contrast at fixed J (same derived τ_q): a decelerating entrainment
+    #     clears the EARLY/low-β stoich crossing faster than rung-10's linear schedule.
+    J = 25.0
+    tq = JetMixing(J=J, C_e=0.20).tau_q   # C_e matches the shape rows below (τ_q depends only on J,H,U_c,C_e)
+    print(f"\n  Schedule shape at J={J:.0f} (τ_q={tq*1e3:.3f} ms fixed; stoich crossing is at LOW β):")
+    print(f"  {'shape n':>8} {'EI_NO g/kg':>11}   entrainment")
+    print("  " + "-" * 44)
+    for n_shape in (0.5, 1.0, 2.0, 3.0):
+        m = JetMixing(J=J, C_e=0.20, shape_n=n_shape)
+        q = _quench_no(comp_p, T_p, alpha, far, Tt3, p, n0, m.tau_q, tab=tab, schedule=m.schedule)
+        kind = ("accelerating" if n_shape < 1 else "LINEAR (rung 10)" if n_shape == 1
+                else "decelerating (real)")
+        print(f"  {n_shape:>8.1f} {q['ei']:>11.4g}   {kind}")
+    print("  A DECELERATING entrainment (n>1: fast near the jet, slowing as the gradient collapses)")
+    print("  clears the early stoich crossing faster → LESS NO than the linear schedule. So IF")
+    print("  entrainment decelerates (as gradient-collapse suggests), rung 10's linear schedule")
+    print("  over-predicted the spike by ~2× — within the shape uncertainty (n=0.5 would go the")
+    print("  other way; the shape is a residual choice, so the SIGN of 'conservative' rides on it).")
+
+
 def _cycle_points(result, flight):
     """The six cycle points as {label: (s, T)} in (entropy, temperature) space.
 
@@ -628,6 +698,8 @@ def main():
     print_rql_table(FLIGHT)
 
     print_finite_quench_table(FLIGHT)
+
+    print_jet_mixing_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

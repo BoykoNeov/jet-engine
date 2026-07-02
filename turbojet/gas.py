@@ -47,7 +47,7 @@ that reproduces rung 1 exactly, so the reduce-to-ideal gate just uses `Gas()`.
 """
 import math
 from dataclasses import dataclass, replace
-from typing import Optional, Tuple
+from typing import Callable, Optional, Tuple
 
 
 @dataclass
@@ -984,8 +984,9 @@ def _quench_trajectory(comp_prim: dict, T_prim: float, alpha: float, far_ov: flo
 
 def _quench_no(comp_prim: dict, T_prim: float, alpha: float, far_ov: float,
                T_dilution: float, p: float, n_no_initial: float, tau_q: float,
-               nsteps: int = 2000, ngrid: int = 240, tab: Optional[list] = None) -> dict:
-    """Finite-rate quench NO integrator (rung 10). CLAMP-FREE by design.
+               nsteps: int = 2000, ngrid: int = 240, tab: Optional[list] = None,
+               schedule: Optional[Callable[[float], float]] = None) -> dict:
+    """Finite-rate quench NO integrator (rung 10; schedule-aware for rung 11). CLAMP-FREE.
 
     Integrates the extended-Zeldovich rate (the SAME reverse-rate one-equation form as
     `_thermal_no`) along the `_quench_trajectory` cooling/mixing path, starting from the
@@ -1009,7 +1010,16 @@ def _quench_no(comp_prim: dict, T_prim: float, alpha: float, far_ov: float,
     The trajectory (majors + T as a function of β alone) is τ_q-INDEPENDENT — the fast
     chemistry doesn't know how fast the mixing is — so a caller sweeping τ_q at fixed φ_p can
     build it ONCE and pass it as `tab` (the main.py panel / tests do this; a bare `zoned_nox`
-    call rebuilds it)."""
+    call rebuilds it).
+
+    RUNG 11 — `schedule` decouples the DILUTION FRACTION β from time. Rung 10's β = t/τ_q
+    (linear) doubled the time fraction as the β index; a physical jet-entrainment schedule
+    remaps it, β = schedule(t/τ_q). We index the trajectory on β = schedule(tfrac) but still
+    step `dt` in REAL time for the Zeldovich accumulation — conflating the two (rung 10 got
+    away with it only because its schedule was the identity) would silently reproduce rung-10
+    behaviour under a rung-11 label. `schedule=None` (default) is the identity → BYTE-IDENTICAL
+    rung 10 (its rung-6..10 reduce gates depend on the exact capped trajectory). See
+    docs/rung11-spec.md / `JetMixing`."""
     if tab is None:
         tab = _quench_trajectory(comp_prim, T_prim, alpha, far_ov, T_dilution, p, ngrid=ngrid)
 
@@ -1036,17 +1046,20 @@ def _quench_no(comp_prim: dict, T_prim: float, alpha: float, far_ov: float,
         max_a = max(max_a, a)
         return 2.0 * R1 * (1.0 - a * a) / (1.0 + beta * a) * V     # d(n_NO)/dt = rate·V
 
+    # β↔time map: identity (β = t/τ_q, rung-10 linear) unless a rung-11 mixing schedule
+    # remaps it. When schedule is None the calls below are byte-identical to rung 10.
+    sched = schedule if schedule is not None else (lambda x: x)
     n_no = n_no_initial
     dt = tau_q / nsteps
     t = 0.0
     for _ in range(nsteps):
-        tf = min(t / tau_q, 1.0)
-        tf2 = min((t + 0.5 * dt) / tau_q, 1.0)
-        tf3 = min((t + dt) / tau_q, 1.0)
-        k1 = dn_dt(tf, n_no)
-        k2 = dn_dt(tf2, n_no + 0.5 * dt * k1)
-        k3 = dn_dt(tf2, n_no + 0.5 * dt * k2)
-        k4 = dn_dt(tf3, n_no + dt * k3)
+        b1 = sched(min(t / tau_q, 1.0))
+        b2 = sched(min((t + 0.5 * dt) / tau_q, 1.0))
+        b3 = sched(min((t + dt) / tau_q, 1.0))
+        k1 = dn_dt(b1, n_no)
+        k2 = dn_dt(b2, n_no + 0.5 * dt * k1)
+        k3 = dn_dt(b2, n_no + 0.5 * dt * k2)
+        k4 = dn_dt(b3, n_no + dt * k3)
         n_no += dt / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4)
         if n_no < 0.0:
             n_no = 0.0                                  # guard negatives ONLY (no eq cap)
@@ -1058,6 +1071,49 @@ def _quench_no(comp_prim: dict, T_prim: float, alpha: float, far_ov: float,
     ei = 1000.0 * (n_no * _M_NO) / (n_fuel * _M_CH2_KG) if n_fuel > 0.0 else 0.0
     T_peak = max(r["T"] for r in tab)
     return dict(ei=ei, x_no_mix=x_no_mix, n_no=n_no, T_peak=T_peak, max_a=max_a)
+
+
+@dataclass
+class JetMixing:
+    """Rung-11 jet-in-crossflow mixing config — the PHYSICAL dilution-air entrainment model
+    that retires rung 10's free τ_q + linear-schedule knobs (docs/rung11-spec.md). A MEAN-FIELD
+    model: a single well-mixed core diluting on a mean β(t); it derives the quench RATE from jet
+    momentum but CANNOT produce a mixing OPTIMUM (that is a spatial-variance effect — an
+    over-penetrating jet leaves an un-mixed hot near-stoich core — deferred to rung 12). So the
+    J-sweep is MONOTONE by construction, not by accident.
+
+    The one design knob is the momentum-flux ratio J = ρ_j U_j²/(ρ_c U_c²); H/U_c/C_e/shape_n are
+    order-of-magnitude / un-anchored (like α, φ_p, τ), so the ABSOLUTE τ_q is un-pinned — what is
+    certified is the √J SCALING and the monotone direction (docs/plans/rung11-anchor-mixing.md)."""
+    J: float                # jet-to-crossflow momentum-flux ratio (THE design knob)
+    H: float = 0.10         # dilution-zone duct height, m (the cross-stream mixing length)
+    U_c: float = 75.0       # bulk crossflow velocity, m/s
+    C_e: float = 0.15       # entrainment constant, O(0.1); folds penetration + entrainment + ρ ratio
+    shape_n: float = 2.0    # entrainment schedule exponent (1 = linear/rung-10; >1 decelerating)
+
+    def __post_init__(self):
+        for name, v in (("J", self.J), ("H", self.H), ("U_c", self.U_c),
+                        ("C_e", self.C_e), ("shape_n", self.shape_n)):
+            assert v > 0.0, f"JetMixing.{name}={v} must be positive"
+
+    @property
+    def tau_q(self) -> float:
+        """Derived quench time τ_q = H/(C_e·√J·U_c) — monotone-DECREASING in J (a higher-momentum
+        jet penetrates and entrains faster; penetration ∝ √J). 'Quick quench' = high jet momentum.
+        For physical J∈[4,100] this lands in the RQL sub-ms–few-ms quench band."""
+        return self.H / (self.C_e * math.sqrt(self.J) * self.U_c)
+
+    def schedule(self, tfrac: float) -> float:
+        """The entrainment schedule β(t/τ_q) = 1 − (1 − t/τ_q)^shape_n — reaches β=1 EXACTLY at
+        tfrac=1 (no endpoint trap). shape_n=1 ⇒ β=tfrac (linear = constant entrainment = rung 10,
+        the reduce); shape_n>1 ⇒ concave/decelerating (fast near the jet where shear + gradient are
+        strong, slowing as the concentration difference collapses).
+
+        shape_n==1 returns the IDENTITY exactly (not 1−(1−x)^1, which drifts a ULP) so a
+        JetMixing(shape_n=1) is BYTE-IDENTICAL to the rung-10 linear path at the derived τ_q."""
+        if self.shape_n == 1.0:
+            return tfrac
+        return 1.0 - (1.0 - tfrac) ** self.shape_n
 
 
 @dataclass
@@ -1080,6 +1136,9 @@ class ZonedNOxState:
     x_no_quenched: Optional[float] = None  # NO mole fraction frozen at the end of the finite quench
     T_peak: Optional[float] = None         # peak T along the quench path (> T_primary for a rich primary)
     max_a_quench: Optional[float] = None   # max [NO]/[NO]_e along the path; <1 ⇒ clamp dormant
+    # RUNG 11 — the physical jet-entrainment mixing model. Set (with tau_q = the DERIVED
+    # τ_q=H/(C_e√J·U_c)) when zoned_nox is called with a `mixing` config; None otherwise.
+    mixing: Optional[JetMixing] = None     # the jet-in-crossflow config that DERIVED tau_q + schedule
 
     @property
     def ei_no(self) -> float:
@@ -1380,6 +1439,7 @@ class Gas:
     def zoned_nox(self, far: float, Tt3: float, Tt4: float, p: float,
                   phi_primary: float, tau: float = 3e-3,
                   tau_q: Optional[float] = None,
+                  mixing: Optional["JetMixing"] = None,
                   quench_ngrid: int = 240, quench_nsteps: int = 2000) -> "ZonedNOxState":
         """Two-zone (primary → dilution) thermal NOx (docs/rung8-spec.md). Runs the SAME
         rung-7 extended-Zeldovich integrator on a HOT, near-stoichiometric PRIMARY zone
@@ -1417,6 +1477,17 @@ class Gas:
         the rich flank back in). `tau_q=None` (default) is the IDEAL quench — the EXACT rung-9
         path, so every existing call stays bit-for-bit rung 9 (hence bit-for-bit rung 6).
 
+        RUNG 11 — the PHYSICAL jet-entrainment quench (docs/rung11-spec.md). Pass a `mixing`
+        (a `JetMixing` config) INSTEAD of `tau_q` to DERIVE the quench from jet-in-crossflow
+        physics: τ_q = H/(C_e·√J·U_c) from the momentum-flux ratio J (so "quick quench" = a
+        high-momentum jet), and a decelerating ENTRAINMENT schedule β(t)=1−(1−t/τ_q)^n instead
+        of rung 10's linear one. `mixing` and `tau_q` are MUTUALLY EXCLUSIVE (assert one-or-the-
+        other; like the isentropic/polytropic knob). EI_NO_quenched falls MONOTONICALLY as J
+        rises (a stronger jet escapes the stoich peak faster → less re-made NO). This is a
+        MEAN-FIELD model (one well-mixed core): it derives the quench RATE but has no mixing
+        OPTIMUM (a variance effect — deferred to rung 12). `mixing=None` (default) keeps the
+        exact rung-9/10 paths, so every existing call is untouched.
+
         `quench_ngrid`/`quench_nsteps` are the finite-quench numerical resolution (trajectory
         points / RK4 steps) — pure cost/accuracy knobs, only used when `tau_q` is finite. The 240
         default reproduces the anchor's worked example (docs/plans/rung10-anchor-quench.md); EI_NO
@@ -1426,6 +1497,10 @@ class Gas:
         assert 0.0 < phi_primary <= 2.0 + 1e-9, (
             f"phi_primary {phi_primary} outside (0, 2] — the 5-species (no soot / no C(s)) "
             "basis is valid only below soot onset (~φ2; graphite onset is φ3). Rich RQL scope."
+        )
+        assert not (tau_q is not None and mixing is not None), (
+            "pass EITHER tau_q (rung-10 free time + linear schedule) OR mixing (rung-11 "
+            "jet-entrainment: DERIVES τ_q + a decelerating schedule) — they are mutually exclusive."
         )
         hf_fuel = (self.hf_fuel_molar if self.hf_fuel_molar is not None
                    else _HF_FUEL_DEFAULT)   # 0.0 is a valid ΔHf (elements are the datum)
@@ -1455,16 +1530,23 @@ class Gas:
 
         state = ZonedNOxState(phi_primary=phi_primary, far_primary=far_p, alpha=alpha,
                               T_primary=T_p, T_mix=T_mix, primary=nox, x_no_mix=x_no_mix)
-        if tau_q is None:
+        if tau_q is None and mixing is None:
             return state                                 # IDEAL quench — bit-for-bit rung 9
 
-        # RUNG 10 — finite-rate quench: re-integrate NO (clamp-free) through the cooling/mixing
+        # RUNG 10/11 — finite-rate quench: re-integrate NO (clamp-free) through the cooling/mixing
         # trajectory, starting from the primary's frozen NO (n_no_total). A pure diagnostic —
-        # NO/N still never enter _equil_solve, so the cycle stays bit-for-bit rung 6.
-        assert tau_q > 0.0, f"tau_q {tau_q} must be positive (or None for the ideal quench)"
-        q = _quench_no(comp_p, T_p, alpha, far, Tt3, p, n_no_total, tau_q,
-                       nsteps=quench_nsteps, ngrid=quench_ngrid)
-        state.tau_q = tau_q
+        # NO/N still never enter _equil_solve, so the cycle stays bit-for-bit rung 6. Rung 10 = a
+        # free `tau_q` + linear schedule; rung 11 = `mixing` DERIVES τ_q (=H/(C_e√J·U_c)) and a
+        # decelerating entrainment schedule (mixing=None ⇒ schedule=None ⇒ byte-identical rung 10).
+        if mixing is not None:
+            tau_q_eff, schedule = mixing.tau_q, mixing.schedule      # rung 11: derived from jet J
+        else:
+            tau_q_eff, schedule = tau_q, None                        # rung 10: the free-time path
+        assert tau_q_eff > 0.0, f"tau_q {tau_q_eff} must be positive (or None for the ideal quench)"
+        q = _quench_no(comp_p, T_p, alpha, far, Tt3, p, n_no_total, tau_q_eff,
+                       nsteps=quench_nsteps, ngrid=quench_ngrid, schedule=schedule)
+        state.tau_q = tau_q_eff
+        state.mixing = mixing
         state.ei_no_quenched = q["ei"]
         state.x_no_quenched = q["x_no_mix"]
         state.T_peak = q["T_peak"]
