@@ -1404,3 +1404,99 @@ mean-field bulk to the last bit. `python main.py` prints the rung-12 panel: the 
 (bulk vs two-stream) and the `(H/S)²` optimum shift. Still deferred on this substrate: a **resolved
 mixing PDF** (>2 streams), **super-equilibrium O / prompt (Fenimore) NO** (richest in this under-mixed
 core), the rung-6 **equilibrium-vs-frozen nozzle**; plus off-design, the choked nozzle, the afterburner.*
+
+---
+
+# Rung 13 — The Resolved Mixing PDF: Composition Variance, Isolated from Dwell, in plain language
+
+## The headline: replace the two hand-tuned lumps with the whole distribution — and learn something
+Rung 12 modelled "some gas mixes slower than average" with the crudest honest thing: **two lumps**, a
+bulk and a core, with the segregated fraction `w(C)` and the core dwell tuned by hand. The obvious
+next move is to stop lumping and resolve the **whole distribution** of local mixture: a continuous
+**β-PDF** of mixture fraction, the standard object turbulent-combustion models use, fixed by its mean
+and **one** width — the **segregation** `g`. Ride that width on the same Holdeman kink `g(C)`,
+integrate the ideal NO bell over the distribution, and see what a *continuous* variance says. What it
+says turns out to be sharper than "rung 12 with a PDF" — it **separates two mechanisms** that rung 12
+had bundled.
+
+## The lesson, said correctly: it is NOT "the bell is convex, so Jensen"
+It is tempting to say "average-of-EI beats EI-of-average because EI is convex." **That's wrong**: the
+NO-vs-φ bell is convex on its flanks but **concave at its peak** — there is no global convexity to
+lean on. The true statement is more specific and more useful: **NO is sharply peaked at stoich, so
+spreading the local mixture around a fixed mean raises the average NO whenever that mean is OFF the
+peak** — the stoich-ward tail of the spread reaches up onto the peak while the mean itself sits low in
+a wing. Our combustor mean is **lean** (the dilution zone conserves mass, so the mean mixture is just
+the overall lean value), so segregation **raises** NO. The tell that this framing is the right one:
+put the mean **at stoich** and the sign **reverses** — now spreading moves mass *off* the peak and
+*lowers* the average. A blind "convexity always raises it" claim would get that backwards. The panel
+prints both columns side by side so you can watch the sign flip.
+
+## The result: a sharp optimum pinned AT C_opt — but the over-penetration climb is GONE
+Sweep the jet. At the Holdeman optimum `C_opt` the mixing is perfect (`g=0`), the distribution
+collapses to a spike at the lean mean, and the NO is the **well-mixed lean value ≈ 0** — a sharp
+**notch**. Step to *either* side and segregation lifts the average by **four to five orders of
+magnitude** (the convexity jump, localized). That notch, pinned at `C_opt` and shifting as `(H/S)²`
+with the jet spacing, is the recovered Holdeman optimum **location** — now from a continuous PDF, no
+lumps.
+
+But — and this is the honest surprise — the curve does **not** climb back up on the far
+over-penetration flank the way rung 12's did. Past a point it **descends** again. That is real
+physics, not a bug: as the segregation grows large the β-PDF goes **bimodal**, piling its mass at
+pure air (`ξ→0`) and rich (both *off* the stoich peak), so the average NO falls. So ⟨EI⟩ vs the
+segregation is **humped** — it peaks at *moderate* unmixedness, not extreme.
+
+## Why the climb is missing — and why that's the point (two mechanisms, separated)
+Rung 12's over-penetration climb came from the **dwell** effect: an under-mixed pocket that lingers on
+an **absolute** clock, re-making NO the longer it sits — a **time** mechanism, and rung 12 built it in
+deliberately (the absolute `τ_core`). Rung 13 isolates the **composition** mechanism — the mixture
+variance — and **drops the quench chain entirely** (the bell it integrates is the *ideal*,
+instantly-quenched primary). With no dwell, there is nothing to make the climb; composition variance
+can only pin the optimum *location* and lift the immediate flanks. So the two rungs are telling us
+two different truths:
+
+- **Composition variance** (rung 13) says *where* the optimum is — at `C_opt`, both flanks up.
+- **Dwell** (rung 12) says *why over-penetration keeps getting worse* — the stranded pocket lingers.
+
+Bundling them — carrying the resolved PDF **through** the finite quench so the distribution both
+samples the peak *and* dwells — is exactly the next rung (14). That the composition-only model can't
+climb isn't a weakness; it's the model telling us the climb was never a composition effect.
+
+## Did we get it right?
+Two exact reduces, and no false third one. `pdf=None` runs the literal rung-12 code (the whole rung
+1–12 suite stays bit-for-bit; the cycle never moves — NO is still a trace diagnostic, opt-in via
+`pdf`). And `g→0` collapses the PDF to a spike, giving the well-mixed point value exactly — the value
+the notch pins to at `C_opt`. We **do not** claim a bit-for-bit reduce to the two-stream model: a
+continuous PDF is a *different* closure, not two lumps plus a knob. The one piece of real numerical
+care is **mean-preservation**: a presumed β-PDF exists to hold the mean fixed while the variance
+varies, but a lean mean makes the density blow up (integrably) at `ξ→0`, and a naïve grid quietly
+integrates at the *wrong* mean (a 35–95% error in the one number that must be exact). A change of
+variable `u=ξ^a` cancels the singularity so the mean is preserved to machine precision — and the code
+**asserts** `⟨ξ⟩≈ξ̄` on every call. That assertion is the deliverable as much as the number is. What
+stays un-anchored, said plainly: `S`, `k_g`, `g_max` are order-of-magnitude, and the β shape is
+**presumed**, not transported — its width `g(C)` is still modelled on the Holdeman group, not solved
+from a mixing equation. What's certified is the optimum pinned at `C_opt` (both flanks up), the
+`(H/S)²` shift, the humped variance response, and the sign of the effect (and its stoich-mean
+reversal) — not a book NO.
+
+---
+*Rung 13 replaces rung-12's parameterised **segregation** with a continuous **β-PDF of mixture
+fraction**: pass `Gas.zoned_nox(..., mixing=JetMixing(J=...), pdf=MixingPDF(S=<jet spacing>))` and
+`ei_no_pdf = ∫ EI_bell(φ(ξ))·P_β(ξ; ξ̄, g(C)) dξ` integrates the **ideal** primary NO bell over the
+distribution, its width the segregation `g(C)=min(g_max, k_g·|ln(C/C_opt)|)` — the same kinked
+Holdeman distance as rung-12's `w`. The lesson framed right: NO is **peaked at stoich**, so
+segregation **raises** the mean whenever the mean is **off-stoich** (our lean dilution mean),
+**reversing** at a stoich mean — not generic convexity. The emissions minimum pins **AT `C_opt`** (a
+sharp notch → the well-mixed lean value ≈0), both immediate flanks lifting by orders, `J_min=J_opt`
+**shifting as `(H/S)²`**. A **mechanism separation**: this isolates the **composition** mechanism and
+drops the dwell chain, so it pins the optimum but **cannot climb** — the far over-penetration flank
+**descends** (⟨EI⟩(g) is humped: the β-PDF goes bimodal). Rung-12's over-penetration climb was the
+**dwell** effect; combining them (the PDF through the quench) is the **rung-14** seam. `pdf` is
+**mutually exclusive** with `unmixedness` and **requires** `mixing`; `pdf=None` keeps the exact
+rung-12 path (bit-for-bit rung 6), and `g→0` gives the well-mixed point value. The quadrature is
+mean-preserving (a `u=ξ^a` change of variable across the lean-mean singularity) and **asserts**
+`⟨ξ⟩≈ξ̄` every run. `python main.py` prints the rung-13 panel: the peaked×off-mean mechanism (lean vs
+stoich columns, the sign flip), and the `J`-sweep (notch at `C_opt`, flanks up, the humped far flank).
+Still deferred on this substrate: the **PDF through the finite quench** (rung-14 — where composition
+and dwell combine and the ≈0 floor becomes finite bulk NO), a **transported/CFD PDF**,
+**super-equilibrium O / prompt (Fenimore) NO** (richest in exactly the near-stoich pockets this PDF
+resolves), the rung-6 **equilibrium-vs-frozen nozzle**; plus off-design, the choked nozzle, the afterburner.*

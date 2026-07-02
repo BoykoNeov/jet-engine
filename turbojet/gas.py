@@ -1073,6 +1073,116 @@ def _quench_no(comp_prim: dict, T_prim: float, alpha: float, far_ov: float,
     return dict(ei=ei, x_no_mix=x_no_mix, n_no=n_no, T_peak=T_peak, max_a=max_a)
 
 
+def _ideal_bell_ei(far_local: float, p: float, Tt3: float, hf_fuel: float, tau: float) -> float:
+    """Rung-9 IDEAL primary EI_NO (g NO/kg fuel) at a LOCAL fuel/air ratio — the bell EI(φ),
+    sampled for the rung-13 PDF closure (docs/rung13-spec.md). Runs the same primitives as the
+    zoned primary (`_primary_aft` → `_equilibrium_composition` → `_thermal_no`) at the local φ.
+
+    Returns 0 outside the valid window: φ>2 (soot bound — the 5-species basis is invalid AND the
+    O-starved pool makes ≈0 NO anyway) or too lean to burn (flame pinned at the cold bracket edge,
+    `_primary_aft` raises). NO finite quench here — this ISOLATES composition variance on the ideal
+    bell (carrying it through the finite quench is the rung-14 seam)."""
+    phi = far_local / _F_STOICH
+    if far_local <= 0.0 or phi > 2.0 + 1e-9:
+        return 0.0
+    try:
+        T_p = _primary_aft(far_local, p, Tt3, hf_fuel)
+    except AssertionError:
+        return 0.0                      # too lean to burn (cold-bracket-edge flame)
+    comp = _equilibrium_composition(far_local, T_p, p)
+    return _thermal_no(comp, T_p, p, tau, far_local).ei_no
+
+
+def _beta_pdf_nodes_weights(xibar: float, g_seg: float, n_quad: int = 200):
+    """Regime-aware, mean-preserving quadrature of a β-PDF of mixture fraction ξ (docs/rung13-spec.md
+    §quadrature). Mean ξ̄, normalized variance (segregation) g∈(0,1): σ²=g·ξ̄·(1−ξ̄), shape params
+    a=ξ̄·(1/g−1), b=(1−ξ̄)·(1/g−1). Returns (nodes ξ_i, normalized weights w_i).
+
+    A LEAN mean gives a<1, so P_β∝ξ^(a−1) has an integrable SINGULARITY at ξ→0 that a naive uniform-
+    in-ξ midpoint rule mis-weights (⟨ξ⟩ drifts off ξ̄, the integral never converges). REGIME-AWARE
+    fix: for a<1 substitute u=ξ^a (uniform-in-u — the Jacobian cancels ξ^(a−1) EXACTLY, leaving the
+    bounded weight (1−ξ)^(b−1), b≥1); for a≥1 (near-delta, no singularity) window a uniform-in-ξ grid
+    over [0, ξ̄+8σ]. The mean AND variance are ASSERTED against their targets — that check is the
+    deliverable more than the number is."""
+    inv = 1.0 / g_seg - 1.0
+    a, b = xibar * inv, (1.0 - xibar) * inv
+    assert a > 0.0 and b >= 1.0, (
+        f"β-PDF shape (a={a:.3f}, b={b:.3f}) outside a>0,b≥1 — the quadrature needs a non-singular "
+        f"(1−ξ) tail (b≥1 holds for a lean mean until g≈0.49, well past g_max)."
+    )
+    if a < 1.0:                          # singular lean-mean regime — u=ξ^a cancels ξ^(a−1)
+        u = [(i + 0.5) / n_quad for i in range(n_quad)]
+        nodes = [uu ** (1.0 / a) for uu in u]
+        logw = [(b - 1.0) * math.log(1.0 - x) for x in nodes]
+    else:                                # near-delta (a≥1): bounded density, CENTER the window on the
+        # mass (a ±8σ band around the exact mean ξ̄), not [0, …] — otherwise as g→0 the peak narrows
+        # to a sliver near ξ̄ while the nodes stay spread over [0, ξ̄], mis-resolving it (⟨ξ⟩ drifts,
+        # the assertion fires). Centering keeps ~constant nodes-per-σ at every g down to the delta floor.
+        sigma = math.sqrt(g_seg * xibar * (1.0 - xibar))
+        lo = max(1e-12, xibar - 8.0 * sigma)
+        hi = min(1.0 - 1e-12, xibar + 8.0 * sigma)
+        nodes = [lo + (hi - lo) * (i + 0.5) / n_quad for i in range(n_quad)]
+        logw = [(a - 1.0) * math.log(x) + (b - 1.0) * math.log(1.0 - x) for x in nodes]
+    m = max(logw)
+    ww = [math.exp(l - m) for l in logw]
+    s = sum(ww)
+    w = [x / s for x in ww]
+
+    # mean-preservation gate (THE deliverable): the closure must integrate at the specified mean.
+    mean_xi = sum(wi * x for wi, x in zip(w, nodes))
+    var_xi = sum(wi * (x - xibar) ** 2 for wi, x in zip(w, nodes))
+    var_tgt = g_seg * xibar * (1.0 - xibar)
+    assert abs(mean_xi - xibar) <= 0.01 * xibar, (
+        f"β-PDF quadrature drifted the mean: ⟨ξ⟩={mean_xi:.6f} vs ξ̄={xibar:.6f} (>1%) — "
+        f"the mean-preserving closure must integrate at ξ̄."
+    )
+    assert abs(var_xi - var_tgt) <= 0.05 * var_tgt, (
+        f"β-PDF quadrature variance off target: {var_xi:.3e} vs {var_tgt:.3e} (>5%)."
+    )
+    return nodes, w
+
+
+def _bell_interpolator(p: float, Tt3: float, hf_fuel: float, tau: float, n_bell: int = 200):
+    """Build the IDEAL primary bell EI(ξ) ONCE on a fixed fine ξ-grid (ξ from ~0 up to the φ=2 soot
+    bound) and return a smooth linear interpolator ξ↦EI. The bell is equilibrium-heavy, so a J-sweep
+    reuses ONE bell (EI(ξ) is smooth) rather than re-solving per PDF node."""
+    xi_max = (2.0 * _F_STOICH) / (1.0 + 2.0 * _F_STOICH)
+    xi_ref = [xi_max * (i + 0.5) / n_bell for i in range(n_bell)]
+    ei_ref = [_ideal_bell_ei(x / (1.0 - x), p, Tt3, hf_fuel, tau) for x in xi_ref]
+
+    def bell(xi: float) -> float:
+        if xi <= xi_ref[0]:
+            return ei_ref[0]
+        if xi >= xi_ref[-1]:
+            return 0.0                  # beyond φ=2 (soot-rich) ⇒ EI≈0
+        lo, hi = 0, n_bell - 1
+        while hi - lo > 1:
+            mid = (lo + hi) // 2
+            if xi_ref[mid] <= xi:
+                lo = mid
+            else:
+                hi = mid
+        t = (xi - xi_ref[lo]) / (xi_ref[hi] - xi_ref[lo])
+        return ei_ref[lo] + t * (ei_ref[hi] - ei_ref[lo])
+
+    return bell
+
+
+def _pdf_mean_ei(far_overall: float, Tt3: float, p: float, hf_fuel: float, tau: float,
+                 g_seg: float, n_bell: int = 200, n_quad: int = 200) -> float:
+    """⟨EI⟩ = ∫₀¹ EI_bell(φ(ξ))·P_β(ξ; ξ̄, g) dξ — the rung-13 resolved-mixing-PDF closure
+    (docs/rung13-spec.md). A mean-preserving β-PDF of mixture fraction ξ=far/(1+far) at the OVERALL
+    mean ξ̄=far_overall/(1+far_overall). g→0 ⇒ a delta at ξ̄ ⇒ the well-mixed point value. Builds the
+    equilibrium-heavy bell once (`_bell_interpolator`) and integrates it against the regime-aware,
+    mean-preserving quadrature (`_beta_pdf_nodes_weights`)."""
+    xibar = far_overall / (1.0 + far_overall)
+    if g_seg <= 1e-9:
+        return _ideal_bell_ei(far_overall, p, Tt3, hf_fuel, tau)   # delta ⇒ well-mixed point value
+    bell = _bell_interpolator(p, Tt3, hf_fuel, tau, n_bell=n_bell)
+    nodes, w = _beta_pdf_nodes_weights(xibar, g_seg, n_quad=n_quad)
+    return sum(wi * bell(x) for wi, x in zip(w, nodes))
+
+
 @dataclass
 class JetMixing:
     """Rung-11 jet-in-crossflow mixing config — the PHYSICAL dilution-air entrainment model
@@ -1199,6 +1309,73 @@ class Unmixedness:
 
 
 @dataclass
+class MixingPDF:
+    """Rung-13 resolved-mixing-PDF config — a mean-preserving β-PDF of mixture fraction that
+    replaces rung-12's parameterised SEGREGATION (w(C)) with a CONTINUOUS distribution. Rides ON a
+    `JetMixing` (needs J and the duct height H for the Holdeman group C=(S/H)√J) and is MUTUALLY
+    EXCLUSIVE with `unmixedness` (two closures of the SAME segregation physics).
+
+    A MECHANISM SEPARATION (the sharp result — NOT a rung-12 "turn-up" reproduction). Rung-12's
+    over-penetration CLIMB came from the DWELL effect (an absolute, off-optimum-growing τ_core
+    surviving J→∞ — a TIME mechanism). This rung isolates the COMPOSITION mechanism and DROPS the
+    quench chain, so it structurally CANNOT climb: it pins the optimum LOCATION (min AT C_opt) but
+    the far-over-penetration flank DESCENDS (the humped ⟨EI⟩(g), below). Composition variance pins
+    the optimum; the dwell effect makes the climb; combining them (the PDF through the quench) is
+    rung 14. This replaces the segregation parameterisation, NOT the dwell — complementary, not a
+    superset.
+
+    THE LESSON (framed correctly — NOT generic "convexity/Jensen"). The NO-vs-φ bell is convex on
+    its flanks but CONCAVE at the peak, so there is no global convexity to invoke. The honest
+    statement: NO production is sharply PEAKED at stoich, so spreading the local φ around a fixed
+    mean (unmixedness) RAISES the mean NO whenever the mean is OFF-stoich — the stoich-ward tail
+    samples the peak while the mean itself sits in a low-EI wing — most strongly the leaner the
+    mean, and it REVERSES sign at a stoich mean (spreading then moves mass OFF the peak, lowering
+    NO). Our combustor mean is LEAN (the dilution zone conserves mass ⇒ the mean mixture fraction
+    is the OVERALL value, and the Holdeman group is a dilution-jet quantity), so segregation raises
+    NO and the optimum is where segregation is least (C_opt).
+
+    THE MODEL: ⟨EI⟩ = ∫ EI_bell(φ(ξ))·P_β(ξ; ξ̄, g) dξ — ξ̄ the overall mixture fraction, the width
+    the SEGREGATION g(C)=min(g_max, k_g·|ln(C/C_opt)|), the SAME kinked L1 distance from C_opt that
+    drove rung-12's w(C). g=0 at C_opt (⇒ a delta ⇒ the well-mixed point value); rising (kinked) on
+    both flanks; capped at g_max. So ⟨EI⟩(g(C)) collapses to the well-mixed value AT C_opt (a sharp
+    notch) with BOTH immediate flanks lifting by orders — the Holdeman optimum LOCATION from a
+    CONTINUOUS PDF, J_min=J_opt shifting as (H/S)². (⟨EI⟩(g) is HUMPED — peak at low g, descending as
+    the β-PDF goes bimodal — so the far-over-penetration flank descends, per the separation above.)
+
+    HONEST SCOPE: this ISOLATES composition variance on the IDEAL bell — the finite-quench dwell
+    chain (rungs 10–12) is dropped, so the optimum minimum is the well-mixed LEAN value ≈0 (a
+    modeling boundary, NOT a physics claim; bulk / primary-history NO is out of scope). Carrying the
+    PDF THROUGH the rung-12 quench is the rung-14 seam. `pdf=None` (default) is the exact rung-12
+    path; g→0 is the point value. Like the rung-9..12 knobs, S/k_g/g_max are order-of-magnitude;
+    C_opt≈2.5 is Holdeman's value — what is CERTIFIED is the optimum pinned AT C_opt (both flanks
+    up), the (H/S)² shift, and the SIGN of the effect (and its reversal at a stoich mean)."""
+    S: float = 0.0625          # dilution-jet spacing, m (forms the Holdeman group with H and J)
+    C_opt: float = 2.5         # Holdeman uniformity optimum of C=(S/H)√J (the segregation minimum)
+    k_g: float = 0.3           # segregation sensitivity to the kinked distance |ln(C/C_opt)|
+    g_max: float = 0.3         # cap on the segregation (0<g_max<1; past the ⟨EI⟩(g) hump ⇒ far flank descends)
+    n_bell: int = 200          # fixed reference-bell grid points (EI(ξ) built ONCE, interpolated)
+    n_quad: int = 200          # β-PDF quadrature nodes
+
+    def __post_init__(self):
+        for name, v in (("S", self.S), ("C_opt", self.C_opt)):
+            assert v > 0.0, f"MixingPDF.{name}={v} must be positive"
+        assert self.k_g >= 0.0, f"MixingPDF.k_g={self.k_g} must be ≥ 0 (0 ⇒ g≡0 ⇒ well-mixed point)"
+        assert 0.0 < self.g_max < 1.0, f"MixingPDF.g_max={self.g_max} must be in (0,1)"
+        assert self.n_bell > 1 and self.n_quad > 1, "MixingPDF grid sizes (n_bell, n_quad) must be > 1"
+
+    def C(self, mixing: "JetMixing") -> float:
+        """The Holdeman momentum-flux/geometry group C=(S/H)√J (identical to Unmixedness.C — the
+        same jet that set τ_q). Uses the paired JetMixing's H and J."""
+        return (self.S / mixing.H) * math.sqrt(mixing.J)
+
+    def segregation(self, C: float) -> float:
+        """The β-PDF segregation width g(C)=min(g_max, k_g·|ln(C/C_opt)|) — KINKED at C_opt (0 there,
+        rising on BOTH flanks with a non-zero slope, so the emissions minimum pins AT C_opt), capped
+        at g_max. g→0 ⇒ a delta at ξ̄ ⇒ the well-mixed point value EI(φ_overall)."""
+        return min(self.g_max, self.k_g * abs(math.log(C / self.C_opt)))
+
+
+@dataclass
 class ZonedNOxState:
     """Two-zone (primary → dilution) thermal-NO diagnostic (rung 8). A pure DIAGNOSTIC —
     like NOxState it never feeds the cycle. NO is set in the hot primary and FROZEN through
@@ -1230,6 +1407,16 @@ class ZonedNOxState:
     w_core: Optional[float] = None         # the un-mixed core mass fraction w(C) (0 at C_opt)
     ei_no_unmixed: Optional[float] = None  # two-stream EI_NO, g/kg — (1−w)·EI(τ_mean)+w·EI(τ_core)
     ei_no_core: Optional[float] = None     # the lingering core's EI_NO at τ_core(C) (the penalty source)
+    # RUNG 13 — the resolved mixing PDF (replaces rung-12's parameterised SEGREGATION with a
+    # continuous distribution; drops the dwell). Set when zoned_nox is called with a `pdf` config
+    # (requires `mixing`, mutually exclusive with `unmixedness`); None otherwise. `ei_no_quenched`
+    # still holds the mean-field bulk reference; `ei_no_pdf` is the β-PDF integral over the IDEAL
+    # bell — a sharp emissions minimum PINNED AT C_opt (both flanks up), from a continuous
+    # distribution rather than two lumps (the far-over-penetration flank descends — the humped
+    # ⟨EI⟩(g); the over-penetration climb is rung-12's dwell effect, absent here).
+    pdf: Optional["MixingPDF"] = None      # the β-PDF config used
+    g_seg: Optional[float] = None          # the segregation width g(C) (0 at C_opt)
+    ei_no_pdf: Optional[float] = None      # ⟨EI⟩ over the β-PDF of the ideal bell, g/kg — min AT C_opt
 
     @property
     def ei_no(self) -> float:
@@ -1532,6 +1719,7 @@ class Gas:
                   tau_q: Optional[float] = None,
                   mixing: Optional["JetMixing"] = None,
                   unmixedness: Optional["Unmixedness"] = None,
+                  pdf: Optional["MixingPDF"] = None,
                   quench_ngrid: int = 240, quench_nsteps: int = 2000) -> "ZonedNOxState":
         """Two-zone (primary → dilution) thermal NOx (docs/rung8-spec.md). Runs the SAME
         rung-7 extended-Zeldovich integrator on a HOT, near-stoichiometric PRIMARY zone
@@ -1593,6 +1781,24 @@ class Gas:
         rung-11 mean field; k_u=0 is bit-for-bit rung 11. NO is still trace → cycle bit-for-bit
         rung 6. `ei_no_quenched` still holds the mean-field BULK (the monotone reference).
 
+        RUNG 13 — the RESOLVED MIXING PDF (docs/rung13-spec.md). Pass a `pdf` (a `MixingPDF` config;
+        REQUIRES `mixing`, MUTUALLY EXCLUSIVE with `unmixedness`) to replace rung-12's parameterised
+        SEGREGATION with a CONTINUOUS mean-preserving β-PDF of mixture fraction. `ei_no_pdf` =
+        ∫ EI_bell(φ(ξ))·P_β(ξ; ξ̄, g(C)) dξ integrates the IDEAL primary bell over the distribution,
+        its width the segregation g(C)=min(g_max, k_g·|ln(C/C_opt)|) (the same kinked Holdeman
+        distance as rung-12's w). The lesson, stated correctly: NO is sharply PEAKED at stoich, so
+        segregation RAISES the mean NO whenever the mean is OFF-stoich (our lean dilution mean),
+        reversing sign at a stoich mean — NOT generic "convexity". ⟨EI⟩(g(C)) collapses to the well-
+        mixed lean value AT C_opt (g=0 ⇒ delta) with BOTH immediate flanks lifting — the Holdeman
+        optimum LOCATION recovered from a continuous PDF (J_min=J_opt, shifting as (H/S)²). A
+        MECHANISM SEPARATION, not a rung-12 reproduction: this isolates the COMPOSITION mechanism and
+        drops the finite-quench dwell chain, so it pins the optimum but CANNOT climb — the far-over-
+        penetration flank DESCENDS (the humped ⟨EI⟩(g), β-PDF going bimodal). Rung-12's over-
+        penetration climb was the DWELL effect; combining both (the PDF through the quench) is the
+        rung-14 seam (and the min ≈0 here — dropping the bulk floor — is that scope boundary).
+        `pdf=None` (default) is the exact rung-12 path; g→0 is the well-mixed point value. NO still
+        trace → cycle bit-for-bit rung 6. `ei_no_quenched` still holds the mean-field bulk reference.
+
         `quench_ngrid`/`quench_nsteps` are the finite-quench numerical resolution (trajectory
         points / RK4 steps) — pure cost/accuracy knobs, only used when `tau_q` is finite. The 240
         default reproduces the anchor's worked example (docs/plans/rung10-anchor-quench.md); EI_NO
@@ -1610,6 +1816,14 @@ class Gas:
         assert not (unmixedness is not None and mixing is None), (
             "unmixedness (rung-12 spatial variance) REQUIRES a `mixing` config — it needs the jet's "
             "J and duct H for the Holdeman group C=(S/H)√J and the mean-field bulk τ_mean."
+        )
+        assert not (pdf is not None and mixing is None), (
+            "pdf (rung-13 resolved mixing PDF) REQUIRES a `mixing` config — it needs the jet's J and "
+            "duct H for the Holdeman group C=(S/H)√J that sets the β-PDF segregation width g(C)."
+        )
+        assert not (pdf is not None and unmixedness is not None), (
+            "pass EITHER unmixedness (rung-12 two-stream) OR pdf (rung-13 continuous β-PDF) — they "
+            "are two closures of the SAME variance physics, mutually exclusive."
         )
         hf_fuel = (self.hf_fuel_molar if self.hf_fuel_molar is not None
                    else _HF_FUEL_DEFAULT)   # 0.0 is a valid ΔHf (elements are the datum)
@@ -1666,6 +1880,26 @@ class Gas:
         state.x_no_quenched = q["x_no_mix"]
         state.T_peak = q["T_peak"]
         state.max_a_quench = q["max_a"]
+
+        if pdf is not None:
+            # RUNG 13 — the RESOLVED MIXING PDF (replaces rung-12's parameterised SEGREGATION with a
+            # continuous distribution): integrate the IDEAL primary bell EI(φ) over a mean-preserving
+            # β-PDF of mixture fraction whose single width is the segregation g(C)=min(g_max,
+            # k_g·|ln(C/C_opt)|) — KINKED at the Holdeman optimum, so ⟨EI⟩(g(C)) collapses to the
+            # well-mixed value AT C_opt (g=0 ⇒ delta ⇒ point value) with both flanks lifting: the
+            # optimum LOCATION from a continuous distribution. Isolates the COMPOSITION mechanism
+            # (drops the dwell chain) ⇒ it pins the optimum but does NOT climb — the far flank
+            # descends (humped ⟨EI⟩(g)); the climb is rung-12's dwell (rung-14 combines them). A pure
+            # diagnostic: NO/N still never enter _equil_solve, cycle bit-for-bit rung 6.
+            C = pdf.C(mixing)
+            g_seg = pdf.segregation(C)
+            state.pdf = pdf
+            state.C_holdeman = C
+            state.g_seg = g_seg
+            state.ei_no_pdf = _pdf_mean_ei(far, Tt3, p, hf_fuel, tau, g_seg,
+                                           n_bell=pdf.n_bell, n_quad=pdf.n_quad)
+            return state
+
         if unmixedness is None:
             return state                                  # rung 10/11 mean field — untouched
 

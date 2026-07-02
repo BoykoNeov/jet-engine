@@ -18,10 +18,10 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 from turbojet.engine import FlightCondition, build_turbojet  # noqa: E402
 from turbojet.gas import (  # noqa: E402
-    Gas, JetMixing, Unmixedness, _products_composition, _equilibrium_composition, _h_molar_A,
+    Gas, JetMixing, Unmixedness, MixingPDF, _products_composition, _equilibrium_composition, _h_molar_A,
     _HF_FUEL_DEFAULT, _M_AIR, _M_CH2, _F_STOICH, _air_mole_fractions,
     _equilibrium_no_fraction, _primary_aft, _thermal_no,
-    _quench_trajectory, _quench_no,
+    _quench_trajectory, _quench_no, _bell_interpolator, _beta_pdf_nodes_weights,
 )
 
 TS_DIAGRAM_PATH = "ts_diagram.png"
@@ -634,6 +634,85 @@ def print_unmixedness_table(flight):
     print("  ONLY up to the Holdeman optimum; past it, over-penetration strands a hot core and NO climbs.")
 
 
+def print_mixing_pdf_table(flight):
+    """Rung-13 payoff: the RESOLVED MIXING PDF — the continuous distribution that replaces rung-12's
+    two hand-tuned streams, and a MECHANISM SEPARATION.
+
+    Rung 12 split the flow into two lumps (bulk + core). Rung 13 resolves the whole mixture-fraction
+    distribution as a mean-preserving β-PDF whose ONE width — the segregation g(C) — rides the same
+    Holdeman kink. Integrating the IDEAL bell EI(φ) over it, ⟨EI⟩ = ∫ EI(φ(ξ))·P_β(ξ;ξ̄,g) dξ.
+
+    The lesson, stated correctly (NOT "convexity/Jensen"): NO is sharply PEAKED at stoich, so
+    segregation RAISES the mean NO whenever the mean is OFF-stoich (our lean dilution mean) — and
+    REVERSES sign at a stoich mean. So the emissions minimum pins AT C_opt (perfect mixing → uniform
+    lean → ≈0), both immediate flanks lifting by ORDERS. This ISOLATES the COMPOSITION mechanism and
+    drops the finite-quench dwell chain, so — unlike rung 12 — it CANNOT climb on the over-penetration
+    flank: past a hump ⟨EI⟩(g) descends (the β-PDF goes bimodal). Composition variance pins the
+    optimum LOCATION; the DWELL effect (rung 12) makes the climb; combining them is rung 14. Still a
+    pure diagnostic: bit-for-bit rung 6 (opt-in via `pdf`).
+    """
+    eq = Gas.reacting_equilibrium()
+    real = build_turbojet(eq, PI_C, TT4, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+    st3, st4 = real.stations["3"], real.stations["4"]
+    Tt3, Tt4, far, p = st3.Tt, st4.Tt, st4.far, st4.pt
+    hf = eq.hf_fuel_molar if eq.hf_fuel_molar is not None else _HF_FUEL_DEFAULT
+    xibar = far / (1.0 + far)
+
+    print("\nResolved mixing PDF (rung 13): rung 12 used TWO hand-tuned streams; resolve the WHOLE")
+    print("mixture-fraction distribution as a mean-preserving β-PDF instead. Integrating the ideal NO")
+    print("bell over it, the emissions minimum pins AT the Holdeman optimum from a CONTINUOUS PDF — but")
+    print("the over-penetration CLIMB is gone: that was rung-12's DWELL effect, which this drops.")
+    print(f"  Design point: Tt3={Tt3:.0f} K, Tt4={Tt4:.0f} K, p={p/1e5:.1f} bar, overall "
+          f"far={far:.4f} (φ={far/_F_STOICH:.2f}, LEAN); ξ̄={xibar:.4f}")
+
+    # Build the IDEAL bell ONCE (J-independent) — the J-sweep just re-weights it by the PDF.
+    bell = _bell_interpolator(p, Tt3, hf, 3e-3, n_bell=200)
+
+    def pdf_ei(g_seg):
+        if g_seg <= 1e-9:
+            return bell(xibar)
+        nodes, w = _beta_pdf_nodes_weights(xibar, g_seg, n_quad=200)
+        return sum(wi * bell(x) for wi, x in zip(w, nodes))
+
+    # (1) The convexity jump + the sign reversal — the correct framing of the lesson.
+    ei_mean_lean = bell(xibar)
+    xistoich = _F_STOICH / (1.0 + _F_STOICH)
+    ei_mean_stoich = bell(xistoich)
+    print(f"\n  The mechanism — a PEAKED bell × an OFF-stoich mean (NOT generic convexity):")
+    print(f"  {'g (segregation)':>16} {'⟨EI⟩ lean mean':>15} {'⟨EI⟩ stoich mean':>17}")
+    print("  " + "-" * 52)
+    for g_seg in (0.0, 0.05, 0.10, 0.20):
+        nodes_s, w_s = (None, None) if g_seg <= 1e-9 else _beta_pdf_nodes_weights(xistoich, g_seg, n_quad=200)
+        ei_s = ei_mean_stoich if g_seg <= 1e-9 else sum(wi * bell(x) for wi, x in zip(w_s, nodes_s))
+        print(f"  {g_seg:>16.2f} {pdf_ei(g_seg):>15.4g} {ei_s:>17.4g}")
+    print(f"  LEAN mean (EI(mean)={ei_mean_lean:.2e}): segregation RAISES ⟨EI⟩ by ~10⁴–10⁵× (the stoich-")
+    print(f"  ward tail samples the bell peak). STOICH mean (EI(mean)={ei_mean_stoich:.1f}): it LOWERS it")
+    print("  (mass moves OFF the peak) — the sign reversal that proves it is 'peaked×off-mean', not Jensen.")
+
+    # (2) The J-sweep: min PINNED at C_opt; both flanks up; the far flank DESCENDS (humped ⟨EI⟩(g)).
+    S = 0.0625
+    H = JetMixing(J=1.0).H
+    J_opt = (2.5 * H / S) ** 2
+    print(f"\n  J-sweep (S={S} m → uniformity J_opt={J_opt:.0f}, C_opt=2.5); ⟨EI⟩ over the β-PDF:")
+    print(f"  {'J':>5} {'C':>6} {'g(C)':>6} {'⟨EI⟩ (g/kg)':>12}   note")
+    print("  " + "-" * 60)
+    pdf = MixingPDF(S=S)
+    for J in (4.0, 9.0, 16.0, 25.0, 36.0, 49.0, 64.0, 100.0):
+        C = pdf.C(JetMixing(J=J))
+        g_seg = pdf.segregation(C)
+        ei = pdf_ei(g_seg)
+        note = ("OPTIMUM (g→0, ≈0)" if abs(J - J_opt) < 1e-9
+                else "under-penetrates" if J < J_opt
+                else "over-penetrates")
+        print(f"  {J:>5.0f} {C:>6.2f} {g_seg:>6.3f} {ei:>12.4g}   {note}")
+    print(f"  The minimum is a sharp NOTCH pinned AT J={J_opt:.0f} (C=C_opt): perfect mixing → uniform lean")
+    print("  → ≈0 NO. Both immediate flanks lift by orders (segregation). But UNLIKE rung 12 the far")
+    print("  over-penetration flank DESCENDS, not climbs — ⟨EI⟩(g) is humped (the β-PDF goes bimodal to")
+    print("  pure-air + rich, both off the stoich peak). Composition variance pins the optimum LOCATION;")
+    print("  rung-12's DWELL effect makes the climb; carrying the PDF through the quench (rung 14) unites")
+    print("  them. (The ≈0 minimum here drops the bulk NO floor — that is the same rung-14 scope boundary.)")
+
+
 def _cycle_points(result, flight):
     """The six cycle points as {label: (s, T)} in (entropy, temperature) space.
 
@@ -767,6 +846,8 @@ def main():
     print_jet_mixing_table(FLIGHT)
 
     print_unmixedness_table(FLIGHT)
+
+    print_mixing_pdf_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 
