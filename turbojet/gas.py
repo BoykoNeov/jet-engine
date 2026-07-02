@@ -1183,6 +1183,73 @@ def _pdf_mean_ei(far_overall: float, Tt3: float, p: float, hf_fuel: float, tau: 
     return sum(wi * bell(x) for wi, x in zip(w, nodes))
 
 
+def _pocket_quench_mean_ei(far_overall: float, Tt3: float, p: float, hf_fuel: float, tau_ref: float,
+                           tau_core: float, g_seg: float, n_bell: int = 120, n_quad: int = 160,
+                           quench_ngrid: int = 240, quench_nsteps: int = 2000):
+    """⟨EI_pocket_quench(ξ; τ_core)⟩ over a mean-preserving β-PDF — the rung-16 PER-POCKET
+    PDF-through-quench closure (docs/rung16-spec.md). The rung-16 upgrade of `_pdf_mean_ei`:
+    where rung 15 integrates the CONSTANT-T ideal bell and multiplies by a scalar dwell factor
+    D(u)=τ_core/τ_ref (a LINEARISATION, exact only while EI ∝ τ), rung 16 carries EACH rich-of-mean
+    pocket through its OWN finite quench — `_quench_no` on the pocket's cooling/mixing trajectory at
+    the dwell τ_core — so the dwell enters INSIDE the chemistry. A pocket that lingers COOLS as it
+    re-makes NO through the stoichiometric crossing, so ⟨EI⟩ is SUBLINEAR in τ_core (vs rung-15's
+    linear D(u)·EI): the cooling-limited dwell erodes the far-over-penetration flank.
+
+    Pocket bookkeeping (a mixture-fraction ξ ⇒ local far_local=ξ/(1−ξ), α=far_overall/far_local):
+      • RICH of the overall mean (far_local > far_overall), burnable, φ≤2 → its own `_quench_no`
+        (it dilutes DOWN through stoich toward the overall mean → the rung-10 re-making).
+      • LEAN of the mean / φ>2 / too-lean-to-burn → `_ideal_bell_ei` (0 above φ2 — the soot-bound
+        scope, IDENTICAL to rung-15's `_pdf_mean_ei`): a lean pocket only gets leaner on dilution,
+        never re-crosses stoich, so it has NO finite quench. Keeping this branch bit-identical to
+        rung 15 is what makes the reduce (pocket_quench→rung 15) and the φ>2 tail treatment exact.
+
+    Values are built on a fixed ξ-grid over the burnable window [0, ξ(φ=2)] and interpolated against
+    the regime-aware β-PDF quadrature (`_beta_pdf_nodes_weights`); the φ>2 tail is 0 (rung-15 scope).
+    g→0 ⇒ a delta at ξ̄ ⇒ the single pocket-at-the-mean quench (≈0 at a lean mean ⇒ the finite bulk
+    floor dominates). Returns (⟨EI⟩ g NO/kg fuel, max_a) — max_a folds into the clamp-dormancy gate."""
+    xibar = far_overall / (1.0 + far_overall)
+    xi_max = (2.0 * _F_STOICH) / (1.0 + 2.0 * _F_STOICH)          # ξ at the soot bound φ=2
+    xi_grid = [xi_max * (i + 0.5) / n_bell for i in range(n_bell)]
+    vals, max_a = [], 0.0
+    for xi in xi_grid:
+        far_local = xi / (1.0 - xi)
+        if far_local < far_overall or far_local / _F_STOICH > 2.0 + 1e-9 or far_local <= 0.0:
+            vals.append(_ideal_bell_ei(far_local, p, Tt3, hf_fuel, tau_ref))   # lean/tail: rung-15 bell
+            continue
+        try:
+            T_p = _primary_aft(far_local, p, Tt3, hf_fuel)
+        except AssertionError:
+            vals.append(0.0)                                       # too lean to burn (cold-edge flame)
+            continue
+        alpha = far_overall / far_local                           # ≤ 1 (rich-of-mean pocket)
+        comp = _equilibrium_composition(far_local, T_p, p)
+        n0 = alpha * _thermal_no(comp, T_p, p, tau_ref, far_local).x_no * sum(comp.values())
+        q = _quench_no(comp, T_p, alpha, far_overall, Tt3, p, n0, tau_core,
+                       nsteps=quench_nsteps, ngrid=quench_ngrid)
+        vals.append(q["ei"])
+        max_a = max(max_a, q["max_a"])
+
+    def qb(xi: float) -> float:
+        if xi <= xi_grid[0]:
+            return vals[0]
+        if xi >= xi_grid[-1]:
+            return 0.0                                            # φ>2 tail: rung-15 soot-bound scope
+        lo, hi = 0, n_bell - 1
+        while hi - lo > 1:
+            mid = (lo + hi) // 2
+            if xi_grid[mid] <= xi:
+                lo = mid
+            else:
+                hi = mid
+        t = (xi - xi_grid[lo]) / (xi_grid[hi] - xi_grid[lo])
+        return vals[lo] + t * (vals[hi] - vals[lo])
+
+    if g_seg <= 1e-9:
+        return qb(xibar), max_a                                  # delta ⇒ single pocket-at-the-mean
+    nodes, w = _beta_pdf_nodes_weights(xibar, g_seg, n_quad=n_quad)
+    return sum(wi * qb(x) for wi, x in zip(w, nodes)), max_a
+
+
 # --------------------------------------------------------------------------- #
 # RUNG 14 — equilibrium-vs-frozen NOZZLE FLOW (the rung-6 cycle-side seam).     #
 # The production nozzle FREEZES the station-4 equilibrium mixture through the   #
@@ -1569,6 +1636,83 @@ class QuenchPDF:
 
 
 @dataclass
+class PocketQuenchPDF:
+    """Rung-16 PER-POCKET PDF-through-quench config — RETIRES rung-15's one acknowledged
+    linearisation. Rung 15 (`QuenchPDF`) carried the composition β-PDF through the dwell as
+    term 2 = D(u)·⟨EI_bell⟩(g): the CONSTANT-T ideal bell × a SCALAR dwell factor D(u)=τ_core/τ_ref
+    — exact only while EI ∝ τ (the dormant clamp), which ignores that a lingering pocket COOLS.
+    Rung 16 carries EACH rich-of-mean pocket through its OWN finite quench (`_quench_no` at the
+    dwell τ_core), so the dwell enters INSIDE the chemistry. Same knobs, same rides-on-`JetMixing`,
+    same Holdeman group C=(S/H)√J; MUTUALLY EXCLUSIVE with `pdf`, `pdf_quench` AND `unmixedness`
+    (four closures of the SAME variance physics — a ≤1-of-four guard).
+
+    THE CONSTRUCTION (additive, mirroring rung 15 — only term 2's INTERNALS change):
+        ⟨EI⟩_16 = EI_bulk_quench(τ_mean)                      # term 1: rung-11 mean field (finite floor)
+                + ⟨EI_pocket_quench(ξ; τ_core(C))⟩_g          # term 2: PER-POCKET quench β-PDF integral
+    with g(C)=min(g_max, k_g·|ln(C/C_opt)|) (rung-13 segregation), τ_core(C)=τ_res·(1+b_u·|ln(C/C_opt)|)
+    (rung-12 absolute dwell, now applied INSIDE each pocket's quench, not as a ratio).
+
+    THE ROBUST LESSON (docs/rung16-spec.md; certified in tests/test_rung16.py):
+      • SUBLINEAR DWELL (the mechanism): because each pocket cools through its quench, term 2 grows
+        SUBLINEARLY in τ_core (far-flank term2 ratio ≈ ×1.30 across J=144→625 vs rung-15's ×1.51 =
+        the dwell ratio EXACTLY — the linearisation made visible).
+      • FAR-FLANK EROSION (the headline): the cooling-limited dwell erodes rung-15's over-penetration
+        secondary basin by ~18–32%, into NEAR-DEGENERACY with the sharp C_opt notch. The composition
+        excess still → 0 AT C_opt (g→0), both immediate flanks up (the notch survives).
+      • NOT CLAIMED: which of the two near-degenerate optima is GLOBALLY lowest — it flips sign across
+        the β-PDF quadrature (~5%), the φ>2 tail treatment, and the C_e regime (2%→21% over 0.20→0.15),
+        all comparable to the margin. Rung 16 quantifies the linearisation error; it does NOT relocate
+        the optimum. (Tests assert erosion/sublinearity/near-degeneracy — never a global-min location.)
+
+    `pocket_quench=None` is the exact rung-15 path; at C_opt (g→0) ⟨EI⟩_16 = the finite bulk quench NO
+    (ei_no_quenched), NOT ≈0. The clamp-free per-pocket integrator is the CAPABILITY (a pocket that
+    goes super-equilibrium rolls over) — DORMANT at the anchored design point (max_a≈0.79 < 1, like
+    rung 10's own 0.677); the rung-15↔16 difference here is COOLING within the dwell, not super-eq.
+
+    n_bell/n_quad default SMALLER than rung 15's (each n_bell node is a full `_quench_no` — the
+    diagnostic is ~n_bell× costlier than rung 15's single bell integral); the far-basin value is
+    converged only to ~5% (the near-degeneracy sits at that resolution)."""
+    S: float = 0.0625          # dilution-jet spacing, m (forms the Holdeman group with H and J)
+    C_opt: float = 2.5         # Holdeman uniformity optimum of C=(S/H)√J (segregation minimum)
+    k_g: float = 0.3           # β-PDF segregation sensitivity to |ln(C/C_opt)| (rung-13 width)
+    g_max: float = 0.3         # cap on the segregation (0<g_max<1; rung-13 bimodal bound)
+    tau_res: float = 2.5e-3    # under-mixed-pocket dwell AT the optimum, s (absolute; rung 12)
+    b_u: float = 3.0           # off-optimum dwell growth (rung-12 core_dwell slope)
+    n_bell: int = 120          # per-pocket ξ-grid points (each a full _quench_no — cost driver)
+    n_quad: int = 160          # β-PDF quadrature nodes (rung 13)
+
+    def __post_init__(self):
+        for name, v in (("S", self.S), ("C_opt", self.C_opt), ("tau_res", self.tau_res)):
+            assert v > 0.0, f"PocketQuenchPDF.{name}={v} must be positive"
+        assert self.k_g >= 0.0, f"PocketQuenchPDF.k_g={self.k_g} must be ≥ 0 (0 ⇒ g≡0 ⇒ floor only)"
+        assert self.b_u >= 0.0, f"PocketQuenchPDF.b_u={self.b_u} must be ≥ 0"
+        assert 0.0 < self.g_max < 1.0, f"PocketQuenchPDF.g_max={self.g_max} must be in (0,1)"
+        assert self.n_bell > 1 and self.n_quad > 1, "PocketQuenchPDF grid sizes must be > 1"
+
+    def C(self, mixing: "JetMixing") -> float:
+        """The Holdeman momentum-flux/geometry group C=(S/H)√J (identical to QuenchPDF.C — the same
+        jet that set τ_q). Uses the paired JetMixing's H and J."""
+        return (self.S / mixing.H) * math.sqrt(mixing.J)
+
+    def _u(self, C: float) -> float:
+        """The unmixedness u(C)=|ln(C/C_opt)| — the KINKED L1 distance from the Holdeman optimum (0 at
+        C_opt), driving BOTH the β-PDF width g and the dwell growth (rung-12 + rung-13 kinks)."""
+        return abs(math.log(C / self.C_opt))
+
+    def segregation(self, C: float) -> float:
+        """The rung-13 β-PDF segregation width g(C)=min(g_max, k_g·u) — KINKED at C_opt (0 there),
+        capped at g_max. Sets term 2's composition variance (the per-pocket quench integral width)."""
+        return min(self.g_max, self.k_g * self._u(C))
+
+    def core_dwell(self, C: float) -> float:
+        """The ABSOLUTE per-pocket dwell τ_core(C)=τ_res·(1+b_u·u) (rung-12 core_dwell) — GROWS
+        off-optimum, survives J→∞. Unlike rung 15's `dwell_factor` (a τ_core/τ_ref RATIO multiplying a
+        constant-T bell), rung 16 passes this τ_core straight INTO each pocket's `_quench_no`, so the
+        dwell acts through the cooling chemistry (⇒ SUBLINEAR, the rung-16 correction)."""
+        return self.tau_res * (1.0 + self.b_u * self._u(C))
+
+
+@dataclass
 class ZonedNOxState:
     """Two-zone (primary → dilution) thermal-NO diagnostic (rung 8). A pure DIAGNOSTIC —
     like NOxState it never feeds the cycle. NO is set in the hot primary and FROZEN through
@@ -1618,6 +1762,15 @@ class ZonedNOxState:
     pdf_quench: Optional["QuenchPDF"] = None  # the PDF-through-quench config used (C_holdeman/g_seg reused)
     ei_no_pdf_excess: Optional[float] = None  # term 2 = D(u)·⟨EI_bell⟩(g), g/kg — resolved composition×dwell
     ei_no_pdf_quench: Optional[float] = None  # term1 + term2, g/kg — the combined result (the finite floor)
+    # RUNG 16 — the PDF through the finite quench, PER POCKET (retires rung-15's linearised dwell). Set
+    # when zoned_nox is called with a `pocket_quench` config (requires `mixing`, ≤1-of-four with pdf/
+    # pdf_quench/unmixedness); None otherwise. `ei_no_quenched` still holds term 1 (the mean-field bulk
+    # floor); `ei_no_pocket_excess` is term 2 = ⟨EI_pocket_quench(ξ;τ_core)⟩_g (each rich pocket carried
+    # through its OWN quench — SUBLINEAR in τ_core, the cooling correction); `ei_no_pocket_quench` =
+    # term1 + term2 (erodes rung-15's far flank into near-degeneracy with the C_opt notch).
+    pocket_quench: Optional["PocketQuenchPDF"] = None  # the per-pocket PDF-through-quench config used
+    ei_no_pocket_excess: Optional[float] = None  # term 2 — the per-pocket quench β-PDF integral, g/kg
+    ei_no_pocket_quench: Optional[float] = None  # term1 + term2, g/kg — the combined result (rung 16)
 
     @property
     def ei_no(self) -> float:
@@ -1968,6 +2121,7 @@ class Gas:
                   unmixedness: Optional["Unmixedness"] = None,
                   pdf: Optional["MixingPDF"] = None,
                   pdf_quench: Optional["QuenchPDF"] = None,
+                  pocket_quench: Optional["PocketQuenchPDF"] = None,
                   quench_ngrid: int = 240, quench_nsteps: int = 2000) -> "ZonedNOxState":
         """Two-zone (primary → dilution) thermal NOx (docs/rung8-spec.md). Runs the SAME
         rung-7 extended-Zeldovich integrator on a HOT, near-stoichiometric PRIMARY zone
@@ -2088,9 +2242,14 @@ class Gas:
             "pdf_quench (rung-15 PDF through the quench) REQUIRES a `mixing` config — it needs the jet's "
             "J and duct H for the Holdeman group C=(S/H)√J AND the derived τ_mean for the mean-field floor."
         )
-        assert sum(x is not None for x in (unmixedness, pdf, pdf_quench)) <= 1, (
+        assert not (pocket_quench is not None and mixing is None), (
+            "pocket_quench (rung-16 PER-POCKET PDF through the quench) REQUIRES a `mixing` config — it "
+            "needs the jet's J and duct H for the Holdeman group C=(S/H)√J AND the derived τ_mean floor."
+        )
+        assert sum(x is not None for x in (unmixedness, pdf, pdf_quench, pocket_quench)) <= 1, (
             "pass AT MOST ONE of unmixedness (rung-12 two-stream) / pdf (rung-13 β-PDF on the ideal bell) "
-            "/ pdf_quench (rung-15 β-PDF THROUGH the quench) — three closures of the SAME variance physics."
+            "/ pdf_quench (rung-15 β-PDF THROUGH the quench, LINEARISED dwell) / pocket_quench (rung-16 "
+            "PER-POCKET quench) — four closures of the SAME variance physics."
         )
         hf_fuel = (self.hf_fuel_molar if self.hf_fuel_molar is not None
                    else _HF_FUEL_DEFAULT)   # 0.0 is a valid ΔHf (elements are the datum)
@@ -2190,6 +2349,36 @@ class Gas:
             state.g_seg = g_seg
             state.ei_no_pdf_excess = term2
             state.ei_no_pdf_quench = q["ei"] + term2       # term1 (ei_no_quenched) + term2
+            return state
+
+        if pocket_quench is not None:
+            # RUNG 16 — the PDF THROUGH the finite quench, PER POCKET (retires rung-15's linearised
+            # dwell). Rung 15 scaled the CONSTANT-T ideal bell by a scalar D(u)=τ_core/τ_ref (exact only
+            # while EI ∝ τ). Rung 16 carries EACH rich-of-mean β-PDF pocket through its OWN finite quench
+            # (`_quench_no` at the dwell τ_core(C)), so the dwell acts INSIDE the cooling chemistry.
+            # Additive, mirroring rung 15 — only term 2's internals change:
+            #   term 1 = ei_no_quenched  (the rung-11 mean-field bulk quench q["ei"] — the finite floor,
+            #            unchanged, present at all C);
+            #   term 2 = ⟨EI_pocket_quench(ξ; τ_core(C))⟩_g  (the β-PDF integral of the PER-POCKET quench;
+            #            lean-of-mean / φ>2 pockets reuse the rung-13 ideal bell — 0 above φ2 — since they
+            #            never re-cross stoich). Because a lingering pocket COOLS, term 2 is SUBLINEAR in
+            #            τ_core (vs rung-15's linear D(u)·EI) → the far-over-penetration flank ERODES into
+            #            near-degeneracy with the C_opt notch. At C_opt (g→0) term 2 → the single lean
+            #            pocket at ξ̄ ≈ 0 ⇒ ei_no_pocket_quench = the finite bulk floor.
+            # A pure diagnostic: NO/N never enter _equil_solve, so the cycle stays bit-for-bit rung 6.
+            C = pocket_quench.C(mixing)
+            g_seg = pocket_quench.segregation(C)
+            tau_core = pocket_quench.core_dwell(C)
+            excess, pocket_max_a = _pocket_quench_mean_ei(
+                far, Tt3, p, hf_fuel, tau, tau_core, g_seg,
+                n_bell=pocket_quench.n_bell, n_quad=pocket_quench.n_quad,
+                quench_ngrid=quench_ngrid, quench_nsteps=quench_nsteps)
+            state.pocket_quench = pocket_quench
+            state.C_holdeman = C
+            state.g_seg = g_seg
+            state.ei_no_pocket_excess = excess
+            state.ei_no_pocket_quench = q["ei"] + excess   # term1 (ei_no_quenched) + term2
+            state.max_a_quench = max(state.max_a_quench, pocket_max_a)   # dormancy gate spans pockets
             return state
 
         if unmixedness is None:

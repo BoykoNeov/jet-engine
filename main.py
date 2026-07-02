@@ -18,10 +18,11 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 from turbojet.engine import FlightCondition, build_turbojet  # noqa: E402
 from turbojet.gas import (  # noqa: E402
-    Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, _products_composition, _equilibrium_composition, _h_molar_A,
+    Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, _products_composition,
+    _equilibrium_composition, _h_molar_A,
     _HF_FUEL_DEFAULT, _M_AIR, _M_CH2, _F_STOICH, _air_mole_fractions,
     _equilibrium_no_fraction, _primary_aft, _thermal_no,
-    _quench_trajectory, _quench_no, _bell_interpolator, _beta_pdf_nodes_weights,
+    _quench_trajectory, _quench_no, _bell_interpolator, _beta_pdf_nodes_weights, _ideal_bell_ei,
 )
 
 TS_DIAGRAM_PATH = "ts_diagram.png"
@@ -856,6 +857,142 @@ def print_pdf_quench_table(flight):
     print("  work. (Carrying the FULL per-pocket trajectory, not the bell×dwell-ratio, is the rung-16 seam.)")
 
 
+def print_pocket_quench_table(flight):
+    """Rung-16 payoff: the PDF through the finite quench, PER POCKET — retiring rung-15's linearised dwell.
+
+    Rung 15's term 2 = D(u)·⟨EI_bell⟩ rescaled each pocket's CONSTANT-T bell NO by a SCALAR dwell ratio
+    D(u)=τ_core/τ_ref — exact only while EI ∝ τ, which IGNORES that a lingering pocket COOLS. Rung 16
+    carries EACH rich-of-mean pocket through its OWN finite quench (`_quench_no` at τ_core), so the dwell
+    acts INSIDE the cooling chemistry. The result is a REFINEMENT, not a reversal: term 2 grows
+    SUBLINEARLY in τ_core (the cooling), which ERODES rung-15's over-penetration far flank into
+    near-degeneracy with the C_opt notch. The composition excess still → 0 AT C_opt (the notch survives);
+    the global-min LOCATION is NOT claimed (it is within the quadrature/tail/C_e ambiguity). Pure
+    diagnostic: bit-for-bit rung 6.
+    """
+    eq = Gas.reacting_equilibrium()
+    real = build_turbojet(eq, PI_C, TT4, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+    st3, st4 = real.stations["3"], real.stations["4"]
+    Tt3, Tt4, far, p = st3.Tt, st4.Tt, st4.far, st4.pt
+    hf = eq.hf_fuel_molar if eq.hf_fuel_molar is not None else _HF_FUEL_DEFAULT
+    xibar = far / (1.0 + far)
+    ng, tau = 32, 3e-3                                      # coarse (illustrative panel) — SHAPE, not digits
+
+    print("\nPDF through the finite quench, PER POCKET (rung 16): rung 15 combined composition + dwell,")
+    print("but LINEARISED the dwell — it scaled a CONSTANT-T bell by D(u)=τ_core/τ_ref (exact only while")
+    print("EI ∝ τ). Rung 16 carries EACH pocket through its OWN quench, so the dwell acts INSIDE the")
+    print("cooling chemistry: term 2 goes SUBLINEAR and the far over-penetration flank ERODES.")
+    print(f"  Design point: Tt3={Tt3:.0f} K, Tt4={Tt4:.0f} K, p={p/1e5:.1f} bar, overall "
+          f"far={far:.4f} (φ={far/_F_STOICH:.2f}, LEAN); ξ̄={xibar:.4f}")
+
+    # term 1 — the rung-11 mean-field bulk quench pool + its shared trajectory (built ONCE)
+    phi_p = 1.5
+    far_p = phi_p * _F_STOICH
+    alpha = far / far_p
+    T_p = _primary_aft(far_p, p, Tt3, hf)
+    comp_p = _equilibrium_composition(far_p, T_p, p)
+    n0 = alpha * _thermal_no(comp_p, T_p, p, tau, far_p).x_no * sum(comp_p.values())
+    tab = _quench_trajectory(comp_p, T_p, alpha, far, Tt3, p, ngrid=ng)
+
+    def floor_ei(J):
+        m = JetMixing(J=J, C_e=0.20, shape_n=2.0)
+        return _quench_no(comp_p, T_p, alpha, far, Tt3, p, n0, m.tau_q, tab=tab, schedule=m.schedule)["ei"]
+
+    # term 2, rung 15 (LINEARISED) — the ideal bell × the scalar dwell factor
+    bell = _bell_interpolator(p, Tt3, hf, tau, n_bell=120)
+
+    def term2_15(qp, C):
+        g_seg = qp.segregation(C)
+        if g_seg <= 1e-9:
+            mb = bell(xibar)
+        else:
+            nodes, w = _beta_pdf_nodes_weights(xibar, g_seg, n_quad=120)
+            mb = sum(wi * bell(x) for x, wi in zip(nodes, w))
+        return qp.dwell_factor(C, tau) * mb
+
+    # term 2, rung 16 (PER POCKET) — the bank of per-pocket trajectories, built ONCE (τ_core-independent)
+    NB, NQ = 48, 80
+    xi_max = (2.0 * _F_STOICH) / (1.0 + 2.0 * _F_STOICH)
+    xi_grid = [xi_max * (i + 0.5) / NB for i in range(NB)]
+    bank = []
+    for xi in xi_grid:
+        fl = xi / (1.0 - xi)
+        if fl < far or fl / _F_STOICH > 2.0 + 1e-9 or fl <= 0.0:
+            bank.append(("b", _ideal_bell_ei(fl, p, Tt3, hf, tau)))
+            continue
+        try:
+            T_pk = _primary_aft(fl, p, Tt3, hf)
+        except AssertionError:
+            bank.append(("b", 0.0))
+            continue
+        al = far / fl
+        cp = _equilibrium_composition(fl, T_pk, p)
+        n0k = al * _thermal_no(cp, T_pk, p, tau, fl).x_no * sum(cp.values())
+        bank.append(("q", (cp, T_pk, al, n0k, _quench_trajectory(cp, T_pk, al, far, Tt3, p, ngrid=ng))))
+
+    def term2_16(pqp, C):
+        g_seg = pqp.segregation(C)
+        tau_core = pqp.core_dwell(C)
+        vals = []
+        for kind, payload in bank:
+            if kind == "q":
+                cp, T_pk, al, n0k, tabk = payload
+                vals.append(_quench_no(cp, T_pk, al, far, Tt3, p, n0k, tau_core, tab=tabk)["ei"])
+            else:
+                vals.append(payload)
+
+        def qb(x):
+            if x <= xi_grid[0]:
+                return vals[0]
+            if x >= xi_grid[-1]:
+                return 0.0
+            lo, hi = 0, NB - 1
+            while hi - lo > 1:
+                mid = (lo + hi) // 2
+                if xi_grid[mid] <= x:
+                    lo = mid
+                else:
+                    hi = mid
+            t = (x - xi_grid[lo]) / (xi_grid[hi] - xi_grid[lo])
+            return vals[lo] + t * (vals[hi] - vals[lo])
+
+        if g_seg <= 1e-9:
+            return qb(xibar)
+        nodes, w = _beta_pdf_nodes_weights(xibar, g_seg, n_quad=NQ)
+        return sum(wi * qb(x) for x, wi in zip(nodes, w))
+
+    qp = QuenchPDF(S=0.0625)
+    pqp = PocketQuenchPDF(S=0.0625)
+    J_opt = _j_opt_from(pqp)
+    print(f"\n  J-sweep (S={pqp.S} m → J_opt={J_opt:.0f}, C_opt={pqp.C_opt}); rich primary φ_p={phi_p}, C_e=0.20:")
+    print(f"  {'J':>5} {'C':>6} {'g':>6} {'EI floor':>9} {'⟨EI⟩15':>8} {'⟨EI⟩16':>8} {'erosion':>8}   note")
+    print("  " + "-" * 66)
+    for J in (16.0, 36.0, 64.0, 144.0, 225.0, 400.0, 625.0):
+        C = pqp.C(JetMixing(J=J))
+        g_seg = pqp.segregation(C)
+        floor = floor_ei(J)
+        ei15 = floor + term2_15(qp, C)
+        ei16 = floor + term2_16(pqp, C)
+        ero = "" if J <= J_opt + 1e-9 else f"{(ei15 - ei16) / ei15 * 100:+.0f}%"
+        note = "OPTIMUM (g→0)" if abs(J - J_opt) < 1e-9 else "under" if J < J_opt else "over"
+        print(f"  {J:>5.0f} {C:>6.2f} {g_seg:>6.3f} {floor:>9.4g} {ei15:>8.4g} {ei16:>8.4g} {ero:>8}   {note}")
+
+    # the mechanism + the flattened climb
+    C_lo, C_hi = pqp.C(JetMixing(J=144.0)), pqp.C(JetMixing(J=625.0))
+    r15 = term2_15(qp, C_hi) / term2_15(qp, C_lo)
+    r16 = term2_16(pqp, C_hi) / term2_16(pqp, C_lo)
+    e15_lo, e15_hi = floor_ei(144.0) + term2_15(qp, C_lo), floor_ei(625.0) + term2_15(qp, C_hi)
+    e16_lo, e16_hi = floor_ei(144.0) + term2_16(pqp, C_lo), floor_ei(625.0) + term2_16(pqp, C_hi)
+    print(f"\n  THE MECHANISM — term 2 vs dwell (J=144→625): rung-15 ×{r15:.2f} (LINEAR, = the dwell ratio)")
+    print(f"  vs rung-16 ×{r16:.2f} (SUBLINEAR — each pocket COOLS through its quench). That cooling erodes")
+    print(f"  the far flank: rung-15 CLIMBS ({e15_lo:.3g}→{e15_hi:.3g}, +{(e15_hi/e15_lo-1)*100:.0f}%) but")
+    print(f"  rung-16 is FLAT ({e16_lo:.3g}→{e16_hi:.3g}, {(e16_hi/e16_lo-1)*100:+.0f}%) — the over-penetration")
+    print("  basin erodes into near-degeneracy with the C_opt notch (which SURVIVES: term 2 → 0 at C_opt).")
+    print("  HONEST SCOPE: which of the two near-degenerate wells is the GLOBAL min is NOT claimed — it flips")
+    print("  sign across the β-PDF quadrature (~5%), the φ>2 tail, and the C_e regime (2%→21% over 0.20→0.15).")
+    print("  Rung 16 quantifies rung-15's linearisation error; it does not relocate the optimum. (Clamp")
+    print("  DORMANT here, max_a<1 — the difference is cooling, not super-eq rollover.)")
+
+
 def _j_opt_from(cfg):
     """The uniformity optimum J_opt where C=(S/H)√J_opt = C_opt (H=0.10, the JetMixing default)."""
     return (cfg.C_opt * JetMixing(J=1.0).H / cfg.S) ** 2
@@ -1000,6 +1137,8 @@ def main():
     print_nozzle_flow_table(FLIGHT)
 
     print_pdf_quench_table(FLIGHT)
+
+    print_pocket_quench_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

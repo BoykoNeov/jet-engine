@@ -1656,3 +1656,69 @@ trajectory** (replace the bell×dwell-ratio linearisation — matters once a poc
 a **transported/CFD PDF**, **super-equilibrium O / prompt (Fenimore) NO** (richest in the near-stoich
 pockets this PDF now resolves and dwell-weights), and the finite-Damköhler nozzle flow between the
 rung-14 bounds; plus off-design, the choked nozzle, the afterburner.*
+
+---
+
+# Rung 16 — The PDF Through the Quench, PER POCKET: retiring rung-15's linearised dwell, in plain language
+
+## The headline: rung 15 had one shortcut — take it out and see what it cost
+Rung 15 combined composition and dwell, but it took **one shortcut it told us about**: term 2 took each
+segregated pocket's NO **at its flame temperature** and just **multiplied by how long it lingers**
+(`× τ_core/τ_ref`). That is exact only if NO grows in strict proportion to time — which assumes the
+pocket **stays hot**. But a pocket that lingers is a pocket that is **mixing and cooling**. Rung 16
+removes the shortcut: it carries **each pocket through its own finite quench** — the same cooling-path
+integrator the bulk uses — so the dwell now acts *through the falling temperature*, not on top of a
+frozen one.
+
+> **⟨EI⟩₁₆ = the same mean-field FLOOR + each pocket's OWN quenched NO, averaged over the β-PDF.**
+> Only term 2's *insides* change: a constant-temperature bell × a dwell number becomes a real
+> per-pocket cooling calculation.
+
+## The result: the dwell penalty is weaker than we drew it — the far flank erodes
+The lesson is a **refinement, not a reversal**. Because each lingering pocket **cools**, the extra NO
+from extra dwell **saturates**: doubling the residence no longer doubles the NO. Concretely, across the
+over-penetration flank rung-15's term 2 grew **×1.51** (exactly its dwell factor — the straight-line
+assumption) while rung-16's grew only **×1.29**. That gap **erodes** the whole over-penetration flank by
+**18–32 %**: where rung 15 drew a flank that **climbs** as you over-mix (`+23 %` from `J=144` to `625`),
+rung 16 draws one that stays **flat** (`+1 %`). The sharp `C_opt` notch **survives** — at perfect mixing
+there is no segregation, so the correction vanishes and the number is still the finite bulk floor — but
+the deep basin off to the strong-jet side comes up **almost level with it**. Rung-15's crisp "the
+optimum is a sharp spike at `C_opt`" was **partly an artifact of the straight-line dwell**; strong jets
+cost far less NO than that linear penalty implied.
+
+## The honest part: we do NOT tell you which well wins
+Here is where we **refuse to over-claim**. Once the two wells — the `C_opt` notch and the eroded
+strong-jet basin — come within ~2 % of each other, *which one is globally lowest is not a fact this
+model can deliver*: the answer **flips sign** if you change the quadrature resolution (~5 %), how you
+treat the too-rich (`φ>2`, sooting, out-of-scope) tail of the distribution, or the jet-entrainment
+constant `C_e` (the margin swings from 2 % to 21 % between `C_e=0.20` and `0.15`). So the panel prints
+the **erosion** and the **flattened climb** — which are robust — and says plainly that the **global-min
+location is not claimed**. Rung 16 *quantifies rung-15's shortcut error*; it does not pretend to
+relocate the optimum. (And the clamp that would matter if a pocket went **super-equilibrium** stays
+**dormant** here — `max_a < 1` everywhere — so the whole difference is honest *cooling*, not a pocket
+running away. A hotter or longer-dwelling regime, where that clamp finally fires, is the next seam.)
+
+## Did we get it right?
+Two exact reduces. `pocket_quench=None` runs the literal rung-15 code (the whole rung 1–15 suite stays
+bit-for-bit; the cycle never moves — NO is still a trace, opt-in diagnostic). And at `C_opt` (`g→0`) the
+single lean pocket at the mean makes ≈ 0, so ⟨EI⟩₁₆ collapses to the finite bulk quench NO to four
+figures — the same reduce that separated rung 15 from rung-13's ≈ 0. What's certified is the
+**mechanism** (term 2 sublinear in dwell, `×1.29` vs `×1.51`), the **erosion** (`EI₁₆ < EI₁₅` on the
+whole far flank), and the **flattened climb** (rung-15 climbs, rung-16 doesn't) — and, deliberately,
+**no** claim about which well is the global minimum.
+
+---
+*Rung 16 carries rung-15's resolved β-PDF **through the finite quench, one pocket at a time**: pass
+`Gas.zoned_nox(..., mixing=JetMixing(J=...), pocket_quench=PocketQuenchPDF(S=<jet spacing>))` and
+`ei_no_pocket_quench = ei_no_quenched + ⟨EI_pocket_quench(ξ; τ_core(C))⟩_g` — term 1 the same rung-11
+mean-field floor, term 2 the β-PDF average of **each rich-of-mean pocket's own `_quench_no`** at the
+absolute dwell `τ_core = τ_res·(1+b_u·u)` (lean-of-mean / `φ>2` pockets reuse the rung-13 ideal bell —
+0 above `φ2` — since they never re-cross stoich). The per-pocket cooling makes term 2 **sublinear** in
+`τ_core`, **eroding** rung-15's over-penetration flank into near-degeneracy with the `C_opt` notch; the
+global-min location is **not claimed** (it flips across quadrature / `φ>2` tail / `C_e`). `pocket_quench`
+**requires** `mixing` and is **≤1-of-four** with `pdf_quench`/`pdf`/`unmixedness`; `pocket_quench=None`
+keeps the exact rung-15 path (bit-for-bit rung 6). `python main.py` prints the rung-16 panel: the
+`J`-sweep with the erosion column and the `×1.51`-vs-`×1.29` mechanism. Still deferred: a regime where
+the per-pocket clamp fires (super-equilibrium pockets, hotter `Tt4`), a **transported/CFD PDF**,
+**super-equilibrium O / prompt NO**, and the finite-Damköhler nozzle flow; plus off-design, the choked
+nozzle, the afterburner.*
