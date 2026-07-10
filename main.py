@@ -18,12 +18,12 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 from turbojet.engine import FlightCondition, build_turbojet  # noqa: E402
 from turbojet.gas import (  # noqa: E402
-    Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, PromptNO,
-    _products_composition, _equilibrium_composition, _h_molar_A,
+    Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
+    PromptNO, _products_composition, _equilibrium_composition, _h_molar_A,
     _HF_FUEL_DEFAULT, _M_AIR, _M_CH2, _F_STOICH, _air_mole_fractions,
     _equilibrium_no_fraction, _primary_aft, _thermal_no, _super_eq_o_multiplier,
     _quench_trajectory, _quench_no, _bell_interpolator, _beta_pdf_nodes_weights, _ideal_bell_ei,
-    _two_stream_ceiling, _transport_variance, _pdf_mean_ei,
+    _two_stream_ceiling, _transport_variance, _pdf_mean_ei, _spatial_segregation,
 )
 
 TS_DIAGRAM_PATH = "ts_diagram.png"
@@ -1370,6 +1370,84 @@ def print_ideal_bell_lift_table(flight):
     print("  The super-eq RATIO stays semi-empirical (rung 19); prompt stays a primary-only invariant EI.")
 
 
+def print_spatial_pdf_table(flight):
+    """Rung-22 payoff: the RESOLVED cross-plane / spatial PDF — the INVERSION of rung 18.
+
+    Rung 18's load-bearing result was NEGATIVE: a 0-D variance transport CANNOT derive the Holdeman C_opt
+    optimum (mean-field ω ⇒ monotone g(J)), so it had to IMPOSE the coverage ω(C) — the spacing S by hand.
+    Rung 22 resolves the y-z dilution cross-plane and C_opt EMERGES as an OUTPUT: the penetration
+    δ=k_p·√(S·H)·J^(1/4) couples S in, a fixed mixing length + far-wall reflection penalize
+    over-penetration, and the uniformity optimum is where δ fills half the height ⇒ (S/H)√J=1/(4k_p²),
+    S,H-independent. The g_min VALUE is geometry-independent (the collapse); only J_opt moves, as (H/S)².
+    Honest emissions: through the ideal bell, C_opt is only a LOCAL ⟨EI⟩ min (the derived floor sits just
+    below the hump peak — a narrow basin); the GLOBAL min is at max segregation. Pure diagnostic, rung 6.
+    """
+    eq = Gas.reacting_equilibrium()
+    real = build_turbojet(eq, PI_C, TT4, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+    st3, st4 = real.stations["3"], real.stations["4"]
+    far, Tt3, Tt4, p = st4.far, st3.Tt, st4.Tt, st4.pt
+    phi_p, tau = 1.5, 3e-3
+    ng, nb, nq = 24, 64, 160                               # coarse-ish (illustrative panel) — SHAPE, not digits
+    #                                                        (nq≥160 keeps the β-PDF mean-preserving on the
+    #                                                        over-penetration flank's larger g)
+    k_p = SpatialPDF().k_p
+    gceil = _two_stream_ceiling(far, phi_p)
+
+    print("\nResolved cross-plane / spatial PDF (rung 22): the INVERSION of rung 18. Rung 18 proved a 0-D")
+    print("variance transport CANNOT derive the Holdeman C_opt (mean-field ⇒ monotone g(J)); it had to")
+    print("IMPOSE the coverage ω(C) — the spacing S by hand. Rung 22 RESOLVES the y-z cross-plane and C_opt")
+    print("comes out as an OUTPUT: δ=k_p·√(S·H)·J^(1/4) couples S in; δ fills half-height ⇒ (S/H)√J=1/(4k_p²).")
+    print(f"\n  (1) THE COLLAPSE — vary S and H INDEPENDENTLY; g_min is geometry-independent, J_opt ∝ (H/S)²,")
+    print(f"      C_opt=1/(4·k_p²)={1.0/(4.0*k_p**2):.3f} an OUTPUT (Holdeman's ≈2.5). No C_opt is fed in.")
+    print(f"  {'S':>8} {'H':>6} {'J_opt':>7} {'C_opt(OUT)':>11} {'g_min':>8}  note")
+    print("  " + "-" * 62)
+    Js = [1.0 * (400.0) ** (i / 60) for i in range(61)]
+    notes = {(0.0625, 0.10): "baseline", (0.03125, 0.10): "halve S ⇒ J_opt ×4",
+             (0.125, 0.10): "double S ⇒ J_opt ÷4", (0.0625, 0.20): "double H ⇒ J_opt ×4",
+             (0.125, 0.20): "S/H fixed ⇒ unchanged"}
+    for (S, H), note in notes.items():
+        best = min(((_spatial_segregation(far, phi_p, S, H, J), J) for J in Js), key=lambda t: t[0])
+        gmin, Jo = best
+        print(f"  {S:8.4f} {H:6.2f} {Jo:7.2f} {(S/H)*(Jo**0.5):11.3f} {gmin:8.4f}  {note}")
+    print("  ⇒ the g_min VALUE is the same everywhere (the collapse); only the LOCATION J_opt shifts as (H/S)².")
+
+    # (2) the rung-18 tie: g_spatial < g_ceiling always.
+    print(f"\n  (2) g_spatial < g_ceiling={gceil:.4f} (rung-18 two-stream ceiling) — a partial-mix field is")
+    print("      LESS segregated than the two-δ extreme (the one thing rung 18 derived bounds the resolved g):")
+    sp = SpatialPDF(S=0.0625, n_bell=nb, n_quad=nq)
+    for J in (1, 16, 400):
+        st = eq.zoned_nox(far, Tt3, Tt4, p, phi_p, tau, mixing=JetMixing(J=float(J), H=0.10),
+                          spatial=sp, quench_ngrid=ng)
+        print(f"      J={J:>4}  g_spatial={st.g_spatial:.4f}  (< {gceil:.4f})")
+
+    # (3) emissions, honest: C_opt LOCAL min but GLOBAL min at max segregation.
+    print(f"\n  (3) EMISSIONS (honest): through the ideal bell, C_opt (J_opt=16) is only a LOCAL ⟨EI⟩ min;")
+    print("      the GLOBAL min is at max segregation (rung-13's descending far flank, spatialized):")
+    print(f"  {'J':>6} {'C':>6} {'g_spatial':>10} {'ei_no_spatial':>14}  flank")
+    print("  " + "-" * 52)
+    ei, g_floor = {}, None
+    for J in (9, 16, 25, 100, 400):                        # 9/25 the IMMEDIATE flanks (both up); 100/400 the far descent
+        st = eq.zoned_nox(far, Tt3, Tt4, p, phi_p, tau, mixing=JetMixing(J=float(J), H=0.10),
+                          spatial=sp, quench_ngrid=ng)
+        ei[J] = st.ei_no_spatial
+        if J == 16:
+            g_floor = st.g_spatial
+        C = (0.0625 / 0.10) * (J ** 0.5)
+        flank = "C_opt (local min)" if J == 16 else ("immediate flank ↑" if J in (9, 25)
+                                                     else "far over-pen ↓")
+        print(f"  {J:6d} {C:6.2f} {st.g_spatial:10.4f} {st.ei_no_spatial:14.4f}  {flank}")
+    amin = min(ei, key=ei.get)
+    print(f"  ⇒ local min AT J=16 (both immediate flanks up), but the GLOBAL min is at J={amin} (an ENDPOINT):")
+    print(f"     the derived floor g(C_opt)≈{g_floor:.3f} sits JUST below the ideal-bell hump peak")
+    print("     (≈0.021), so the C_opt basin is NARROW — which is WHY UNIFORMITY (g), not emissions, is the")
+    print("     headline. rung 18 was NOT wrong: it reported the real LOCAL behaviour.")
+
+    print("\n  HONEST SCOPE: the VALUE C_opt≈2.5 rides on the semi-empirical k_p (only the COLLAPSE + the")
+    print("  (H/S)² shift are derived); rung 22 derives the WIDTH g(C), NOT the DWELL (rung-16 kink imported);")
+    print("  the field is a Gaussian-plume cartoon feeding the β-PDF closure — a real PDF-transport/CFD")
+    print("  cross-plane (the full shape + the dwell spectrum + rung-17's firing MAGNITUDE) stays the ceiling.")
+
+
 def _j_opt_from(cfg):
     """The uniformity optimum J_opt where C=(S/H)√J_opt = C_opt (H=0.10, the JetMixing default)."""
     return (cfg.C_opt * JetMixing(J=1.0).H / cfg.S) ** 2
@@ -1526,6 +1604,8 @@ def main():
     print_super_eq_quench_table(FLIGHT)
 
     print_ideal_bell_lift_table(FLIGHT)
+
+    print_spatial_pdf_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

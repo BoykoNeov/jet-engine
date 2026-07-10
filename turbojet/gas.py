@@ -1385,6 +1385,94 @@ def _transport_variance(g_ceiling: float, omega: float, tau: float,
     return g
 
 
+def _spatial_segregation(far_overall: float, phi_primary: float, S: float, H: float, J: float,
+                         k_p: float = 0.316, k_y: float = 0.28, k_z: float = 0.28,
+                         ny: int = 48, nz: int = 48) -> float:
+    """Rung-22 RESOLVED cross-plane segregation g_spatial = Var[ξ]/(ξ̄(1−ξ̄)) — the width of the
+    mixture-fraction distribution over ONE dilution-cell cross-plane (docs/rung22-spec.md). This is
+    the SPATIAL/CFD-flavoured successor of rung-18's 0-D variance ODE: where rung 18 gets g from a
+    lumped decay dg/dt=−C_φ·ω(C)·g and had to IMPOSE the coverage ω(C) to place the optimum (its
+    load-bearing NEGATIVE result: a 0-D transport cannot DERIVE C_opt), rung 22 resolves the y-z
+    cross-plane and the Holdeman optimum C_opt EMERGES as an OUTPUT — the INVERSION of rung 18.
+
+    Geometry: one periodic cell, penetration y∈[0,H] (duct height) × span z∈[0,S] (jet spacing), a
+    single dilution jet entering from the wall y=0 at z=S/2. A Gaussian air plume delivers dilution:
+      • penetration  δ = k_p·√(S·H)·J^(1/4)   — jet-in-crossflow δ∝d_j·√J with a FIXED dilution mass
+        ratio d_j∝√(S·H)·J^(−1/4) (the jet diameter shrinks as J rises at fixed air mass), so the
+        SPACING S enters the penetration, NOT just the momentum ratio. THIS is what rung 18 could not
+        reach with a mean-field ω(J).
+      • spread = a FIXED MIXING LENGTH σ_y=k_y·H, σ_z=k_z·S — J-INDEPENDENT (does NOT grow with
+        penetration). This is what makes an OVER-penetration penalty survive: a jet that shoots past
+        mid-height REFLECTS off the far wall y=H (mirror images at BOTH walls keep mass in [0,H]),
+        piling air at the far wall and leaving the near wall rich → variance climbs again.
+    Mean-preserving: the air-delivery scale is root-found so ⟨ξ⟩=ξ̄ EXACTLY at every J (dilution just
+    redistributes a fixed total air). g is then the normalized spatial variance of the resolved field.
+
+    THE OPTIMUM IS AN OUTPUT. Minimizing g over J, uniformity is best where the jet fills half the
+    height, δ≈H/2 ⇒ k_p·√(S·H)·J^(1/4)=H/2 ⇒ (S/H)·√J = 1/(4·k_p²) — i.e. C=(S/H)√J is CONSTANT at
+    the optimum (S,H-independent), and J_opt shifts EXACTLY as (H/S)². The magnitude C_opt=1/(4k_p²)
+    rides on the semi-empirical penetration constant k_p (0.316 ⇒ C_opt≈2.5, Holdeman's); what is
+    DERIVED is the GROUP COLLAPSE + the (H/S)² scaling, not the number (the k_p-robustness gate).
+    No C_opt is fed in anywhere — only k_p, k_y, k_z. C_φ≈0.28 mixing lengths are order-of-magnitude.
+
+    A cartoon of ONE cross-plane, NOT a transported-PDF/CFD solve: it yields the WIDTH g(C) (fed
+    downstream through the SAME rung-13 ideal bell as rung 18, `_pdf_mean_ei`), not the DWELL spectrum
+    τ_core(C) (still the imported rung-16 kink) nor the full resolved-PDF SHAPE — those stay the
+    thinner deferred ceiling above rung 22 (docs/rung22-spec.md § deferred)."""
+    xibar = far_overall / (1.0 + far_overall)
+    far_p = phi_primary * _F_STOICH
+    xi_p = far_p / (1.0 + far_p)
+    assert xi_p > xibar, (
+        f"spatial segregation needs a RICH primary (φ_p={phi_primary}, ξ_p={xi_p:.4f}) richer than the "
+        f"overall mean (ξ̄={xibar:.4f}) — the RQL geometry (the jet dilutes DOWN to the mean)."
+    )
+    delta = k_p * math.sqrt(S * H) * J ** 0.25            # penetration ∝ √(S·H)·J^(1/4) (spacing enters)
+    sig_y, sig_z = k_y * H, k_z * S                       # fixed mixing length (J-independent → far-wall penalty)
+    # separable unit-mean plume factors ay(y)·az(z); mean of the outer product = mean(ay)·mean(az).
+    ys = [(i + 0.5) * H / ny for i in range(ny)]
+    zs = [(j + 0.5) * S / nz for j in range(nz)]
+    ay = [sum(math.exp(-((y - c) ** 2) / (2.0 * sig_y * sig_y))
+              for c in (-delta, delta, 2.0 * H - delta, 2.0 * H + delta))   # wall images at y=0 AND y=H
+          for y in ys]
+    az = [sum(math.exp(-((z - S / 2.0 - m * S) ** 2) / (2.0 * sig_z * sig_z))
+              for m in (-1, 0, 1))                                          # spanwise periodic images
+          for z in zs]
+    may, maz = sum(ay) / ny, sum(az) / nz
+    ayh = [a / may for a in ay]                           # unit spatial mean each ⇒ outer product unit mean
+    azh = [a / maz for a in az]
+    beta_bar = (xi_p - xibar) / xi_p                      # required MEAN air fraction (pins ⟨ξ⟩=ξ̄)
+
+    def _moments(s: float):
+        """(⟨ξ⟩, ⟨ξ²⟩) of the resolved field ξ=ξ_p·(1−clip(s·β̄·â, 0, 1)) at air scale s."""
+        sxi = sxi2 = 0.0
+        for a in ayh:
+            sa = s * beta_bar * a
+            for b in azh:
+                beta = sa * b
+                if beta > 1.0:
+                    beta = 1.0
+                elif beta < 0.0:
+                    beta = 0.0
+                xi = xi_p * (1.0 - beta)
+                sxi += xi
+                sxi2 += xi * xi
+        n = ny * nz
+        return sxi / n, sxi2 / n
+
+    lo, hi = 0.0, 5.0                                     # bisect the air scale so ⟨ξ⟩=ξ̄ (clip breaks separability)
+    for _ in range(50):
+        s = 0.5 * (lo + hi)
+        m, _ = _moments(s)
+        if m > xibar:                                     # too little air delivered ⇒ raise the scale
+            lo = s
+        else:
+            hi = s
+    s = 0.5 * (lo + hi)
+    mean, meansq = _moments(s)
+    var = max(meansq - mean * mean, 0.0)
+    return var / (xibar * (1.0 - xibar))
+
+
 # --------------------------------------------------------------------------- #
 # RUNG 14 — equilibrium-vs-frozen NOZZLE FLOW (the rung-6 cycle-side seam).     #
 # The production nozzle FREEZES the station-4 equilibrium mixture through the   #
@@ -1923,6 +2011,84 @@ class TransportedPDF:
 
 
 @dataclass
+class SpatialPDF:
+    """Rung-22 RESOLVED cross-plane / spatial-PDF config — the seam rungs 17 AND 18 both named as their
+    DEFERRED ceiling, done as the honest INVERSION of rung 18 (docs/rung22-spec.md). Rung 18's
+    load-bearing NEGATIVE result was that a 0-D variance transport CANNOT DERIVE the Holdeman C_opt
+    optimum: with any mean-field ω(J) the residual g(J) is monotone, so rung 18 had to IMPOSE the
+    coverage ω(C) peaked at C_opt (the spatial spacing S injected by hand). Rung 22 resolves the y-z
+    dilution cross-plane (`_spatial_segregation`) and C_opt EMERGES as an OUTPUT — the inversion.
+
+    Rides ON a `JetMixing` (needs J and H for the Holdeman group C=(S/H)√J), and is ≤1-of-SIX mutually
+    exclusive with `unmixedness`/`pdf`/`pdf_quench`/`pocket_quench`/`transported` (six closures of the
+    SAME variance physics). The delta over rung 18 is MINIMAL and that is the point: rung 18 got the
+    β-PDF width g from a lumped ODE, rung 22 gets the SAME g from a resolved cross-plane; BOTH feed the
+    identical rung-13 ideal bell (`_pdf_mean_ei`). Only the SOURCE of g changes — from imposed to derived.
+
+    THE SIGNATURE OF THE INVERSION: there is NO C_opt knob (contrast every rung-12..18 config, which
+    takes C_opt=2.5 as an input). Here C_opt=1/(4·k_p²) is a DERIVED PROPERTY (`C_opt()`), because the
+    optimum is where the penetration δ=k_p·√(S·H)·J^(1/4) fills half the duct height (δ≈H/2) ⇒
+    (S/H)√J=1/(4k_p²), S,H-independent — the collapse and the (H/S)² shift are OUTPUTS.
+
+    WHAT RUNG 22 DERIVES (certified; docs/rung22-spec.md gates):
+      • the GROUP COLLAPSE — g's minimum VALUE is geometry-independent; only J_opt moves, EXACTLY as
+        (H/S)² (halve S ⇒ J_opt ×4). The Holdeman group is an output of the cross-plane, not an input.
+      • g_spatial < g_ceiling ALWAYS — the resolved field's variance stays below rung-18's two-stream
+        ceiling (a partial-mix realization has less variance than the two-δ extreme). A cross-check
+        that links back to the DERIVED ceiling.
+    WHAT STAYS HONEST (concessions, stated loudly):
+      • the VALUE C_opt≈2.5 rides on the semi-empirical k_p (only the collapse + shift are derived);
+      • rung 22 derives the WIDTH g(C), NOT the DWELL τ_core(C) — that stays the imported rung-16 kink;
+        so this is a PARTIAL closure of the 'width AND dwell' seam (a derived dwell = residence time in
+        the resolved field = the thinner deferred ceiling);
+      • the EMISSIONS optimum is only LOCAL at C_opt: through the pure ideal bell, ⟨EI⟩'s GLOBAL min is
+        at MAX segregation (rung-13's descending far flank, spatialized), because the derived floor
+        g(C_opt)≈0.018 sits just BELOW the ideal-bell hump peak (~0.021) → a NARROW C_opt basin. This
+        is WHY the clean headline is UNIFORMITY (g collapses), not emissions. rung 18 was NOT wrong —
+        it reported the real LOCAL behaviour (both immediate flanks up); a wide-enough sweep exposes
+        the descending flank in either. To pin the emissions GLOBAL min back at C_opt you need the
+        rung-16 DWELL (which bakes C_opt in — circular here, hence deferred).
+
+    `spatial=None` (default) is the exact prior path; a pure diagnostic (NO/N never enter _equil_solve),
+    so bit-for-bit rung 6. Like the rung-9..18 knobs, S/k_y/k_z are order-of-magnitude; k_p is the one
+    that sets C_opt (Holdeman-calibrated to ≈2.5)."""
+    S: float = 0.0625          # dilution-jet spacing, m (forms the Holdeman group with H and J)
+    k_p: float = 0.316         # penetration constant — SETS C_opt=1/(4k_p²) as an OUTPUT (no C_opt knob!)
+    k_y: float = 0.28          # streamwise (penetration) mixing length / duct height H (fixed, J-independent)
+    k_z: float = 0.28          # spanwise mixing length / spacing S (fixed, J-independent)
+    ny: int = 48               # cross-plane penetration (y) grid — converged (32/48/64 agree)
+    nz: int = 48               # cross-plane span (z) grid
+    n_bell: int = 200          # ideal-bell grid points (EI(ξ) built ONCE, interpolated; rung 13)
+    n_quad: int = 200          # β-PDF quadrature nodes (rung 13)
+
+    def __post_init__(self):
+        for name, v in (("S", self.S), ("k_p", self.k_p), ("k_y", self.k_y), ("k_z", self.k_z)):
+            assert v > 0.0, f"SpatialPDF.{name}={v} must be positive"
+        assert self.ny > 1 and self.nz > 1 and self.n_bell > 1 and self.n_quad > 1, \
+            "SpatialPDF grid sizes (ny, nz, n_bell, n_quad) must be > 1"
+
+    def C(self, mixing: "JetMixing") -> float:
+        """The Holdeman momentum-flux/geometry group C=(S/H)√J (identical to MixingPDF/TransportedPDF.C
+        — the same jet that set τ_q). Uses the paired JetMixing's H and J."""
+        return (self.S / mixing.H) * math.sqrt(mixing.J)
+
+    def C_opt(self) -> float:
+        """The DERIVED uniformity optimum C_opt=1/(4·k_p²) (δ fills half-height at the optimum). NOT a
+        knob — the whole point of rung 22 is that this is an OUTPUT of the penetration law, not an input
+        (contrast every rung-12..18 config's C_opt=2.5 field). k_p=0.316 ⇒ C_opt≈2.5 (Holdeman's)."""
+        return 1.0 / (4.0 * self.k_p * self.k_p)
+
+    def segregation(self, mixing: "JetMixing", far_overall: float, phi_primary: float) -> float:
+        """The RESOLVED width g(C): the cross-plane variance (`_spatial_segregation`), with C_opt an
+        OUTPUT. Also returns the rung-18 two-stream ceiling as the cross-check bound. Returns
+        (g_spatial, g_ceiling) — g_spatial < g_ceiling always (a partial-mix field vs the two-δ extreme)."""
+        g_ceiling = _two_stream_ceiling(far_overall, phi_primary)
+        g = _spatial_segregation(far_overall, phi_primary, self.S, mixing.H, mixing.J,
+                                 k_p=self.k_p, k_y=self.k_y, k_z=self.k_z, ny=self.ny, nz=self.nz)
+        return g, g_ceiling
+
+
+@dataclass
 class PromptNO:
     """Rung-19 prompt-NO (Fenimore) config — De Soete's (1975) global-rate CORRECTION FACTOR
     reduced to its fitted, rich-peaking φ-shape (docs/rung19-spec.md). An IMPOSED trace channel
@@ -2060,6 +2226,17 @@ class ZonedNOxState:
     g_ceiling: Optional[float] = None      # DERIVED two-stream injection ceiling (ξ_p−ξ̄)/(1−ξ̄) from φ_p
     g_transported: Optional[float] = None  # the ODE-residual width g(C) (≤ g_ceiling; >0 at C_opt)
     ei_no_transported: Optional[float] = None  # ⟨EI⟩ over the β-PDF of the ideal bell at g_transported
+    # RUNG 22 — the RESOLVED cross-plane / spatial PDF (the INVERSION of rung 18). Set when zoned_nox is
+    # called with a `spatial` config (requires `mixing`, ≤1-of-SIX with the other five); None otherwise.
+    # The segregation width g(C) is now the variance of a RESOLVED y-z dilution cross-plane
+    # (`_spatial_segregation`) — and the Holdeman C_opt optimum EMERGES as an OUTPUT (no C_opt knob),
+    # inverting rung 18's negative result (a 0-D transport cannot derive it). g_spatial < g_ceiling
+    # always. Fed through the SAME rung-13 ideal bell as rung 18 — only the SOURCE of g changed (imposed
+    # → derived). `g_seg`/`g_ceiling`/`C_holdeman` reused. The emissions min at C_opt is only LOCAL (the
+    # derived floor sits just under the ideal-bell hump peak — a narrow basin); UNIFORMITY is the headline.
+    spatial: Optional["SpatialPDF"] = None  # the resolved cross-plane config used
+    g_spatial: Optional[float] = None      # the resolved-field width g(C) (< g_ceiling; min AT C_opt, an OUTPUT)
+    ei_no_spatial: Optional[float] = None  # ⟨EI⟩ over the β-PDF of the ideal bell at g_spatial
     # RUNG 19/20 — the two lower-bound-lifting channels (both off ⇒ bit-for-bit the prior rung).
     # super_eq_o lifts the [O] by m(T) inside the Zeldovich integrator; prompt ADDS the imposed De Soete
     # φ-bump `ei_no_prompt`. RUNG 19 lifted only the PRIMARY (folded into `primary.ei_no`/`x_no_mix`).
@@ -2538,6 +2715,7 @@ class Gas:
                   pdf_quench: Optional["QuenchPDF"] = None,
                   pocket_quench: Optional["PocketQuenchPDF"] = None,
                   transported: Optional["TransportedPDF"] = None,
+                  spatial: Optional["SpatialPDF"] = None,
                   super_eq_o: bool = False, prompt: Optional["PromptNO"] = None,
                   quench_ngrid: int = 240, quench_nsteps: int = 2000) -> "ZonedNOxState":
         """Two-zone (primary → dilution) thermal NOx (docs/rung8-spec.md). Runs the SAME
@@ -2685,11 +2863,16 @@ class Gas:
             "transported (rung-18 transported-variance closure) REQUIRES a `mixing` config — it needs the "
             "jet's J and duct H for the Holdeman group C=(S/H)√J that the imposed coverage ω(C) rides on."
         )
-        assert sum(x is not None for x in (unmixedness, pdf, pdf_quench, pocket_quench, transported)) <= 1, (
+        assert not (spatial is not None and mixing is None), (
+            "spatial (rung-22 resolved cross-plane PDF) REQUIRES a `mixing` config — it needs the jet's J "
+            "and duct H for the penetration δ∝√(S·H)·J^(1/4) whose optimum DERIVES the Holdeman group."
+        )
+        assert sum(x is not None for x in (unmixedness, pdf, pdf_quench, pocket_quench,
+                                           transported, spatial)) <= 1, (
             "pass AT MOST ONE of unmixedness (rung-12 two-stream) / pdf (rung-13 β-PDF on the ideal bell) "
             "/ pdf_quench (rung-15 β-PDF THROUGH the quench, LINEARISED dwell) / pocket_quench (rung-16 "
-            "PER-POCKET quench) / transported (rung-18 transported variance) — FIVE closures of the SAME "
-            "variance physics."
+            "PER-POCKET quench) / transported (rung-18 transported variance) / spatial (rung-22 RESOLVED "
+            "cross-plane variance) — SIX closures of the SAME variance physics."
         )
         # RUNG 21 — the rung-20 forbid guard is DISCHARGED (docs/rung21-spec.md). super_eq_o now
         # threads the SAME Westenberg m(T) lift through the ideal-bell composition integrals too —
@@ -2884,6 +3067,38 @@ class Gas:
             state.ei_no_transported = _pdf_mean_ei(far, Tt3, p, hf_fuel, tau, g_seg,
                                                    n_bell=transported.n_bell, n_quad=transported.n_quad,
                                                    super_eq_o=super_eq_o)   # rung 21: lift the ideal bell
+            return state
+
+        if spatial is not None:
+            # RUNG 22 — the RESOLVED cross-plane / spatial PDF (docs/rung22-spec.md) — the INVERSION of
+            # rung 18. Where rung 18 got the β-PDF width g from a 0-D variance ODE and had to IMPOSE the
+            # coverage ω(C) to place the optimum (its NEGATIVE result: 0-D cannot DERIVE C_opt), rung 22
+            # resolves the y-z dilution cross-plane (`_spatial_segregation`) and the Holdeman C_opt
+            # EMERGES as an OUTPUT: the penetration δ=k_p·√(S·H)·J^(1/4) couples the spacing S in, and the
+            # uniformity optimum is where δ fills half the height ⇒ (S/H)√J=1/(4k_p²), S,H-independent
+            # (J_opt shifts EXACTLY as (H/S)²). NO C_opt is fed in. The width g feeds the SAME rung-13
+            # ideal bell as rung 18 — only the SOURCE of g changed (imposed ODE → derived cross-plane).
+            #   • g_spatial < g_ceiling always (a partial-mix realization vs the two-δ extreme — the tie
+            #     back to rung-18's DERIVED ceiling);
+            #   • the emissions min at C_opt is only LOCAL (the derived floor ≈0.018 sits just under the
+            #     ideal-bell hump peak ≈0.021 ⇒ a narrow basin; the global ⟨EI⟩ min is at max segregation,
+            #     rung-13's descending far flank spatialized) — so UNIFORMITY (g), not emissions, is the
+            #     headline. rung 22 derives the WIDTH, not the DWELL (the rung-16 kink stays imported).
+            # A pure diagnostic: NO/N never enter _equil_solve, cycle bit-for-bit rung 6.
+            C = spatial.C(mixing)
+            g_seg, g_ceiling = spatial.segregation(mixing, far, phi_primary)
+            assert g_seg < g_ceiling + 1e-9, (
+                f"resolved-field g_spatial={g_seg:.4e} exceeded the two-stream ceiling g_ceiling="
+                f"{g_ceiling:.4e} — a partial-mix cross-plane must be LESS segregated than the two-δ extreme."
+            )
+            state.spatial = spatial
+            state.C_holdeman = C
+            state.g_ceiling = g_ceiling
+            state.g_spatial = g_seg
+            state.g_seg = g_seg
+            state.ei_no_spatial = _pdf_mean_ei(far, Tt3, p, hf_fuel, tau, g_seg,
+                                               n_bell=spatial.n_bell, n_quad=spatial.n_quad,
+                                               super_eq_o=super_eq_o)   # rung 21 lift threads through (same bell)
             return state
 
         if unmixedness is None:

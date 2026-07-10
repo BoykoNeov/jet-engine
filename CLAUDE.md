@@ -39,8 +39,9 @@ in its spec (last column) — this table is the one-line map, not the handout.
 | 19 | **Super-equilibrium O & prompt NO** — lifting the equilibrium-O **lower bound**. Every NO number since rung 7 read the rung-6 **equilibrium** `[O]` into the Zeldovich rate, so it is a **lower bound**. Two knobs on `thermal_nox`/`zoned_nox` (`super_eq_o=False`, `prompt=None`; both off ⇒ **bit-for-bit** the prior rung) lift it, and the load-bearing result is that **both contradict the naive "the rich primary explodes" intuition**, from opposite directions. **(1) super-eq O** — the Westenberg partial-equilibrium O closure (adds the 3-body `O+O+M⇌O₂+M`) sits **above** equilibrium O; the two share `[O₂]^0.5`, so their ratio is **dimensionless & T-only** `m(T)=(C2/C1)·T·exp((θ1−θ2)/T)∈[1.16,1.50]` (`_super_eq_o_multiplier`). We lift **our own** `comp["O"]` by `m(T)` inside the rung-7 integrator (`_thermal_no(…, o_multiplier=m)`); `m≡1` ⇒ rung 7. The one thing rung 19 **computes** cleanly (only `C2/C1, θ1−θ2` — no absolute-magnitude risk; the equilibrium-O **units gate** cross-validates the pool to ~5%). Lesson: it is **T-driven, not rich-driven** — φ-independent, **weakest** in the O₂-starved rich primary where thermal NO already dies. **(2) prompt NO** — an **imposed** De Soete (1975) φ-bump `EI_prompt=scale·max(f(φ,n),0)·exp(−Ea/RuT)` (`PromptNO` config; the burnt-pool `[O₂]^a·[FUEL]` **dropped** — it double-counts O₂ depletion & flips the shape lean-peaking). The rich-peak lives **only** in De Soete's fitted `f(φ)`. Lesson: prompt **survives where thermal dies** — prompt/thermal grows **monotonically rich** (0.24→455), and prompt is **~27× less T-sensitive** (single vs the double `k1f·[O]_eq` Arrhenius exp). Both stay **trace** (summed guard `x_NO<0.02`) ⇒ cycle bit-for-bit rung 6. **Two honest concessions** (rung-18-flavored, stated loudly): the prompt **magnitude is imposed** (a 0-D pool has no flame structure — only the φ-shape + the directional ratio are certified), and the super-eq **ratio is semi-empirical** (a full-equilibrium pool cannot self-yield super-eq O). φ>1.6 is De Soete extrapolation (clamped, flagged); constants **transcribed** (image-locked sources), not digit-verified. Lifts only the **primary** diagnostic (`ei_no`/`x_no_mix`/`ei_no_total`); threading through the quench is a **deferred seam**. `super_eq_o=False`+`prompt=None` ⇒ exact prior path. | `docs/rung19-spec.md` |
 | 20 | **Super-equilibrium O *through the quench*** — threading the rung-19 lower-bound lift **into** the finite-quench re-making, closing the seam where `ei_no_quenched`/`ei_no_pocket_quench` and the rung-17 clamp `a` still rode on **equilibrium O**. A `super_eq_o=` flag on `zoned_nox`/`exhaust_no_clamp`'s quench path lifts `[O]` by `m(T)` **inside** the `_quench_no` cooling chemistry (floored at the flame band, `m(max(T,1500 K))`; `super_eq_o=False` ⇒ **bit-for-bit** prior). The load-bearing result **INVERTS** the naive "strongest on the cooling pocket": the Zeldovich re-making peaks at the **hottest** stoich crossing (`T_peak≈2448 K`) where `m(T)` is at its **minimum** (`≈1.14`), and the cool tail (large `m`) makes negligible NO (and there `a>1` ⇒ destruction), so the effective lift is **modest & peak-concentrated** (`≈m(T_peak)`, **×1.17** on the bulk / ×1.16 per-pocket) — even **smaller** than the rung-19 primary lift (**×1.28**; the quench samples a *hotter* peak than the flame). The **certified spine**: the rung-17 `a` margins **RISE** because the **numerator** (kinetic re-made NO) lifts while the **denominator** `x_no_e(T9)=Kp_NO·√(x_N2·x_O2)` — a **thermodynamic** ceiling untouched by the O-atom closure — stays **bit-identical** (`a_bulk 3.27→3.83`, `a_pocket 11.06→12.87`); the rung-17 ordering + `a_mixed<1` survive. Clamp **still dormant at station 4** (`max_a 0.72→0.81<1`): super-eq O speeds *formation*, not the `[NO]_e` collapse — the burner-clamp lever is a **slow freeze** (a separate seam). **Prompt** rides the quench as an **invariant** per-kg-fuel EI (`ei_no_quenched_total`), kept **out** of `a` (imposed magnitude ⇒ no false precision through destruction chemistry). Scope **narrow, per-field consistent**: only the `_quench_no`-based fields (bulk/core/per-pocket/clamp) lift; the **ideal-bell PDF integrals** (rung 13 `ei_no_pdf` / rung 15 term 2 / rung 18) **deliberately** stay eq-O lower bounds — **forbidden** to combine with `super_eq_o` (`pdf_quench` would else be a half-lifted **hybrid**). Pure diagnostic ⇒ cycle bit-for-bit rung 6. `super_eq_o=False` ⇒ exact prior rung. | `docs/rung20-spec.md` |
 | 21 | **Super-equilibrium O through the IDEAL-BELL PDF integrals** — discharging the **last eq-O seam** rung 20 deliberately left open. Rung 20 lifted everything through `_quench_no` but kept the three **ideal-bell composition integrals** (`ei_no_pdf` rung 13, `ei_no_pdf_quench` **term 2** rung 15, `ei_no_transported` rung 18) on **equilibrium O** and **forbade** combining them with `super_eq_o` (because `ei_no_pdf_quench = term1+term2` would be a half-lifted **hybrid** — lifted term1 + eq-O term2). Rung 21 threads the **same** Westenberg `m(T)` through the ideal bell (`_bell_interpolator`/`_pdf_mean_ei` gain `super_eq_o=`; both the built bell AND the `g→0` delta short-circuit), so **both** `pdf_quench` terms lift and the hybrid **dissolves** — the rung-20 forbid guard is **removed** (`super_eq_o` now combines with **every** closure). The load-bearing result is the rung-20 **inversion generalized to composition variance**: the ideal bell EI(φ) is sharply **peaked near stoich** (φ≈0.97, `T_p≈2424 K`) where `m(T)` is at its **minimum** (`≈1.12`); the β-PDF integral is **EI-weighted** onto that peak, so the effective lift is **≈×1.15** — **below** the primary (**×1.28**), far below the deep-lean **point value** (**×1.91**, cool flame ⇒ big `m` but ≈0 EI), and it even **DECREASES with segregation** (×1.17→×1.14 as `g`: 0.005→0.30 — more variance ⇒ more stoich-peak weight ⇒ smaller fractional lift). The `pdf_quench` **composite** (×1.156) sits **between** term1 (bulk ×1.17) and term2 (bell ×1.14) — the measured proof both carry `m(T)`. A **shape-preserving CONSISTENCY lift**: the optimum **LOCATION** (pinned AT `C_opt`, where `g→0`), the `(H/S)²` shift and the stoich-mean **sign reversal** are **unmoved** (both eq-O and super-eq-O J-sweeps minimise AT `J_opt`); only the magnitude lifts. **Carried:** the super-eq **ratio** stays semi-empirical (rung 19); **prompt** stays a **primary-only** invariant EI (not injected into the composition integrals). No new species/config; a pure diagnostic ⇒ cycle bit-for-bit rung 6. `super_eq_o=False` ⇒ **bit-for-bit** rungs 13/15/18. | `docs/rung21-spec.md` |
+| 22 | **Resolved cross-plane / spatial PDF** — the **INVERSION of rung 18** (the deferred spatial/CFD-PDF seam rungs 17 & 18 both named). Rung 18's load-bearing **negative** result was that a **0-D** variance transport **cannot derive** the Holdeman `C_opt` optimum (mean-field `ω(J)` ⇒ **monotone** `g(J)`), so it had to **IMPOSE** the coverage `ω(C)` — the jet **spacing `S`** by hand. Rung 22 **resolves** the y-z dilution cross-plane (`_spatial_segregation`, pure-stdlib) and `C_opt` **EMERGES as an OUTPUT**: the penetration `δ=k_p·√(S·H)·J^(1/4)` couples `S` in (fixed dilution mass ratio ⇒ `d_j∝√(SH)J^(−1/4)`), a **fixed mixing-length** spread + **far-wall reflection** penalize over-penetration, and the uniformity best is where `δ` fills half the height ⇒ **`(S/H)√J=1/(4·k_p²)`**, `S,H`-independent. A `SpatialPDF(S,k_p,…)` config (rides on `mixing`, **≤1-of-SIX** with `unmixedness`/`pdf`/`pdf_quench`/`pocket_quench`/`transported`) feeds the resolved width through the **same** rung-13 ideal bell (`_pdf_mean_ei`) as rung 18 — **only the SOURCE of `g` changes** (imposed ODE → derived cross-plane). **Certified (the collapse):** the `g_min` **VALUE is geometry-independent** (`0.0182` across `2×`-independent `S`/`H`); only `J_opt` moves, **exactly as `(H/S)²`**; the argmin `C` = the closed form `1/(4k_p²)≈2.5`; **NO `C_opt` knob** (the signature of the inversion — `SpatialPDF(C_opt=…)` is a constructor error; `C_opt()` is a derived property); robust to `k_p`; `g_spatial < g_ceiling` always (the rung-18 two-stream ceiling **bounds** the resolved field). **Honest concessions (loud):** the **VALUE** `C_opt≈2.5` rides on the semi-empirical `k_p` (only the **collapse + `(H/S)²` shift** are derived, a *group* not a number); rung 22 derives the **WIDTH** `g(C)`, **NOT the DWELL** `τ_core(C)` (the rung-16 kink stays imported — a **partial** closure of "width AND dwell"); the **emissions** optimum at `C_opt` is only **LOCAL** — through the pure ideal bell the **GLOBAL** `⟨EI⟩` min is at **max segregation** (rung-13's descending far flank, spatialized), because the derived floor `g(C_opt)≈0.018` sits **just below** the ideal-bell `⟨EI⟩(g)` **hump peak ≈0.021** (a **narrow** basin) — which is **WHY uniformity (`g`), not emissions, is the headline** (rung 18 was **not** wrong: it reported the real **local** behaviour). The field is a **Gaussian-plume cartoon** feeding the β-PDF closure — a real PDF-transport/CFD cross-plane (the full **shape**, the **dwell spectrum**, and rung-17's firing **magnitude**) stays the deferred ceiling. `super_eq_o=True` threads the rung-21 `m(T)` lift through the shared bell; default `False`. Pure diagnostic ⇒ cycle bit-for-bit rung 6. `spatial=None` ⇒ exact prior rung. | `docs/rung22-spec.md` |
 
-Rungs 7–13, 15, 16, 17, 18, 19, 20 and 21 are **pure diagnostics** — NO/N never enter the cycle solve, so the cycle
+Rungs 7–13, 15, 16, 17, 18, 19, 20, 21 and 22 are **pure diagnostics** — NO/N never enter the cycle solve, so the cycle
 stays **bit-for-bit rung 6**. Rung 14 is *also* a pure diagnostic (`Gas.nozzle_flow` only reads the
 run's state; the production nozzle stays frozen), so the cycle is still bit-for-bit rung 6. Rung 17 is
 *also* a pure diagnostic (`Gas.exhaust_no_clamp` only reads the run's state and composes the rung-8/11/16
@@ -53,11 +54,14 @@ imposed prompt term — NO/N never enter `_equil_solve`), so the cycle stays bit
 existing `_quench_no` re-making — NO/N never enter `_equil_solve`), so the cycle stays bit-for-bit rung 6. Rung 21 is
 *also* a pure diagnostic (`zoned_nox(…, super_eq_o=…)` threads the same `m(T)` lift through the ideal-bell
 PDF integrals `ei_no_pdf`/`ei_no_pdf_quench` term 2/`ei_no_transported` — NO/N never enter `_equil_solve`),
-so the cycle stays bit-for-bit rung 6. Each
+so the cycle stays bit-for-bit rung 6. Rung 22 is *also* a pure diagnostic (`zoned_nox(…, spatial=…)` only
+adds a resolved cross-plane width `g_spatial` fed through the existing ideal bell — NO/N never enter
+`_equil_solve`), so the cycle stays bit-for-bit rung 6. Each
 rung's verified anchor data (textbook / formation / CEA-equilibrium / Zeldovich-kinetics / ICAO-zoning /
 rich-RQL / finite-quench / jet-mixing / unmixedness / mixing-PDF / frozen-vs-equilibrium-nozzle /
 PDF-through-quench / per-pocket-PDF-quench / super-equilibrium-exhaust / transported-variance /
-super-equilibrium-O-and-prompt / super-equilibrium-O-through-quench / ideal-bell-PDF-lift) lives in `docs/plans/rungN-anchor-*.md`; `docs/plans/` also holds the
+super-equilibrium-O-and-prompt / super-equilibrium-O-through-quench / ideal-bell-PDF-lift /
+resolved-spatial-PDF) lives in `docs/plans/rungN-anchor-*.md`; `docs/plans/` also holds the
 living plan/tasks (rungs 1–3).
 
 ## Working contract (from SPEC.md — these override convenience)
@@ -69,7 +73,7 @@ living plan/tasks (rungs 1–3).
   hidden state (Turbine and Nozzle diverge their signatures by design).
 - **Conservation checks are assertions**, run on every execution (not as
   separate tests). See SPEC.md / docs/rung2-spec.md § Conservation checks.
-- **Current scope (rung 21):** all rungs above are cumulative and live (see § The
+- **Current scope (rung 22):** all rungs above are cumulative and live (see § The
   rungs). The **cycle solve** is a thermally-perfect, reacting, dissociation-
   equilibrium gas (`Gas.reacting_equilibrium()`) run through ideal + real components
   (isentropic `η_c/η_t` **or** polytropic `e_c/e_t`, mutually exclusive; `π_d/π_b/π_n`,
@@ -119,16 +123,35 @@ living plan/tasks (rungs 1–3).
   and *decreasing* with segregation `g`). A **shape-preserving consistency lift**: the optimum LOCATION
   (AT `C_opt`), the `(H/S)²` shift and the stoich-mean sign reversal are unmoved. `super_eq_o=False` ⇒
   bit-for-bit rungs 13/15/18. Pure diagnostic, so bit-for-bit rung 6.
+  Rung 22 adds the **resolved-cross-plane / spatial-PDF diagnostic** (`zoned_nox(…, spatial=SpatialPDF(…))`)
+  — the **INVERSION of rung 18**. Where rung 18 proved a **0-D** variance transport **cannot derive** the
+  Holdeman `C_opt` (mean-field `ω(J)` ⇒ monotone `g(J)`, so it **imposed** the coverage `ω(C)` — the jet
+  spacing `S` by hand), rung 22 **resolves** the y-z dilution cross-plane (`_spatial_segregation`, pure
+  stdlib) and `C_opt` **EMERGES as an OUTPUT**: the penetration `δ=k_p·√(S·H)·J^(1/4)` couples `S` in, a
+  fixed mixing-length spread + far-wall reflection penalize over-penetration, and the uniformity best is
+  where `δ` fills half the height ⇒ `(S/H)√J=1/(4k_p²)`, `S,H`-independent. The resolved width feeds the
+  **same** rung-13 ideal bell as rung 18 (only the **source** of `g` changed, imposed → derived).
+  Certified: the `g_min` **VALUE** is geometry-independent (the collapse), `J_opt` shifts **exactly** as
+  `(H/S)²`, `C_opt`=`1/(4k_p²)` with **no `C_opt` knob** (the signature of the inversion), `g_spatial <
+  g_ceiling` (the rung-18 ceiling bounds it). Honest: the **value** `C_opt≈2.5` rides on the semi-empirical
+  `k_p` (only the collapse + the `(H/S)²` shift are derived, a *group* not a number); rung 22 derives the
+  **width** `g(C)`, **not** the **dwell** `τ_core(C)` (rung-16 kink imported — a **partial** closure); and
+  the **emissions** min at `C_opt` is only **LOCAL** (through the pure ideal bell the global `⟨EI⟩` min is
+  at max segregation — rung-13's descending far flank spatialized — because the derived floor `≈0.018`
+  sits just below the ideal-bell hump peak `≈0.021`, a narrow basin), so uniformity, not emissions, is the
+  headline. `spatial=None` ⇒ exact prior rung. Pure diagnostic, so bit-for-bit rung 6.
   Fork A/B
   (`Gas.reacting()` / `reacting_forkb()`) and the frozen-products `Gas.thermally_perfect()` are kept
   alongside. **Deferred seams** (kept open on purpose): **finite-rate nozzle chemistry** — rung 14
   gives the frozen↔equilibrium *bracket*, not the real Damköhler-number flow *between* the bounds (nor
-  a **shifting turbine**); a **spatial / transported-CFD PDF** (predict the cross-plane mixing *pattern*,
-  hence the β width `g(C)` **and** the dwell spectrum, from a PDF-transport / scalar-flux equation with
-  the jet **spacing `S`** — which rung 18 proves a **0-D** variance transport *cannot* reach, and which is
-  also what would let rung 17 claim a firing *magnitude*, not just a direction; rung 18 discharged the
-  0-D limit — the derived ceiling, the residual floor, the kink-non-genericity — but the spatial pattern
-  stays the ceiling); a regime where a **per-pocket clamp fires AT THE BURNER**
+  a **shifting turbine**); a **spatial / transported-CFD PDF** — rung 22 took the first step, **deriving**
+  the β width `g(C)` (hence the optimum LOCATION as an OUTPUT) from a resolved cross-plane with the jet
+  **spacing `S`** — the inversion of rung 18's 0-D negative result — but a **real** PDF-transport /
+  scalar-flux solve that predicts the full cross-plane **pattern** (the full resolved-PDF *shape*, not just
+  its variance `g`, **and** the **dwell spectrum** `τ_core(C)`, which rung 22 left as the imported rung-16
+  kink) stays the ceiling; that dwell spectrum is also what would let rung 17 claim a firing *magnitude*,
+  not just a direction (rung 22 is a Gaussian-plume **cartoon** feeding the β-PDF closure, so the value
+  `C_opt≈2.5` still rides on `k_p`); a regime where a **per-pocket clamp fires AT THE BURNER**
   (`max_a>1` at station 4, not just in the rung-14/17 nozzle where rung 17 already fires it) — the
   lever is a **slow-enough freeze on a cooling pocket** (a long dwell that freezes NO high while the
   local `[NO]_e` collapses), *not* a hotter `Tt4` alone (raising `Tt4` raises the terminal `[NO]_e`
@@ -311,6 +334,22 @@ living plan/tasks (rungs 1–3).
   `m(T)`). The effective lift is peak-concentrated at ≈×1.15 (EI-weighted onto the near-stoich bell peak
   where `m` is minimal), BELOW the primary ×1.28; `False` ⇒ byte-identical rungs 13/15/18. A pure
   diagnostic, so bit-for-bit rung 6.
+  Rung 22 adds the **resolved cross-plane / spatial PDF** — the INVERSION of rung 18: the module helper
+  `_spatial_segregation(far, φ_p, S, H, J, k_p, k_y, k_z, ny, nz)` (pure stdlib) builds a separable
+  Gaussian air plume over one dilution cell (penetration `y∈[0,H]` × span `z∈[0,S]`; penetration
+  `δ=k_p·√(S·H)·J^(1/4)` couples `S` in via the fixed-mass-ratio jet diameter; a **fixed mixing-length**
+  spread `σ_y=k_y·H, σ_z=k_z·S` + **both-wall mirror images** so over-penetration piles air at the far
+  wall; spanwise-periodic), **root-finds the air scale so `⟨ξ⟩=ξ̄` exactly** (mean-preserving), and
+  returns `g=Var[ξ]/(ξ̄(1−ξ̄))` — whose minimum over `J` collapses onto `C=(S/H)√J=1/(4k_p²)` as an
+  **OUTPUT**. The `SpatialPDF` config (rides on `JetMixing`, **≤1-of-six** with the other five closures;
+  knobs `S`/`k_p`/`k_y`/`k_z` + grids — **no `C_opt` field**, `C_opt()` is a derived property) computes
+  the width via `segregation(mixing, far, φ_p)` (returns `(g_spatial, g_ceiling)`), and `zoned_nox` gains
+  a `spatial=` param that feeds `g_spatial` through the **same** rung-13 ideal bell (`_pdf_mean_ei`,
+  `super_eq_o=` threads the rung-21 lift), asserting `g_spatial < g_ceiling`. `ZonedNOxState` gains
+  `spatial`/`g_spatial`/`ei_no_spatial` (`C_holdeman`/`g_ceiling`/`g_seg` reused). The emissions min at
+  `C_opt` is only **local** (the derived floor sits just below the ideal-bell hump peak); uniformity is
+  the headline. `spatial=None` ⇒ exact prior path; a pure diagnostic (NO/N never enter `_equil_solve`),
+  so bit-for-bit rung 6.
 - `turbojet/components.py` — `Inlet, Compressor, Burner, Turbine, Nozzle` in `h`/`pr`
   form (+ loss params, `ram_recovery(M0)`, the polytropic `e_c/e_t` knob; the Nozzle
   branches CPG/TPG — the velocity↔enthalpy trap, plus a back-pressure guard `p9 ≤ pt9`). The
@@ -461,6 +500,16 @@ living plan/tasks (rungs 1–3).
   inverted rung-20 gate), the **g→0 CONSISTENCY** (lifted `ei_no_pdf` at `C_opt` == the super-eq-O
   well-mixed point value), and **SHAPE PRESERVED** (eq-O and super-eq-O J-sweeps both minimise AT
   `J_opt` — a consistency lift, not a relocated optimum). (Reuses a cached DP + two bells built once.)
+- `tests/test_rung22.py` — rung-22: the reduce (`spatial=None` exact prior path + fields None; the
+  primary diagnostic `ei_no`/`x_no_mix` bit-identical), **THE COLLAPSE** (the load-bearing inversion: the
+  `g_min` VALUE geometry-independent across `2×`-independent `S`/`H`; `J_opt` shifts EXACTLY as `(H/S)²`;
+  the argmin `C` == the closed form `1/(4k_p²)`; **NO `C_opt` knob** — `SpatialPDF(C_opt=…)` is a
+  constructor error, `C_opt()` a derived property; robust to `k_p`), the **rung-18 tie** (`g_spatial <
+  g_ceiling` at under/at/over-penetration), the **EMISSIONS honesty** (`C_opt` a LOCAL `⟨EI⟩` min — both
+  immediate flanks up — but the GLOBAL min at max segregation over a wide `J`-sweep; the derived floor
+  sits just below the ideal-bell hump peak), grid convergence (`ny=nz∈{32,48,64}`), cycle-untouched, and
+  the guards (requires-`mixing` / ≤1-of-six / RQL `ξ_p>ξ̄` / `SpatialPDF` positivity). (Reuses a cached DP;
+  the collapse gates use the bell-free helper directly.)
 - `main.py` — runs ideal vs real at one design point: tables + overlaid T–s diagram,
   plus the rung-2-frozen-`cp` vs rung-3-`cp(T)` table, the rung-4 frozen-vs-reacting
   + `f`-sweep table, the rung-5 Fork-A-vs-Fork-B (derived-`hPR`) panel, the rung-6
@@ -529,7 +578,17 @@ living plan/tasks (rungs 1–3).
   the **hybrid-resolved** note (the `pdf_quench` composite ×1.156 sitting **between** term1 (bulk ×1.170)
   and term2 (bell ×1.144) — the measured proof both lift, rung 20's forbidden combination now valid);
   with the **honest scope**: a shape-preserving consistency lift (optimum LOCATION / `(H/S)²` shift /
-  sign reversal unmoved), the super-eq ratio semi-empirical, prompt a primary-only invariant EI).
+  sign reversal unmoved), the super-eq ratio semi-empirical, prompt a primary-only invariant EI),
+  and the rung-22 resolved-cross-plane / spatial-PDF panel (the INVERSION of rung 18 — **(1) THE COLLAPSE
+  table**: vary `S`/`H` independently, the `g_min` VALUE identical (`0.0182`) everywhere while `J_opt`
+  shifts EXACTLY as `(H/S)²`, `C_opt=1/(4k_p²)≈2.5` an OUTPUT with no `C_opt` fed in; **(2) the rung-18
+  tie** `g_spatial < g_ceiling=0.0675` at under/at/over-penetration; **(3) the honest emissions curve** —
+  `C_opt` (J=16) a LOCAL `⟨EI⟩` min (immediate flanks J=9/25 up) but the GLOBAL min at max segregation
+  (J=400, the far over-penetration flank descending below the narrow `C_opt` basin — the derived floor
+  `≈0.018` sits just below the ideal-bell hump peak `≈0.021`); with the **honest scope**: the VALUE
+  `C_opt≈2.5` rides on the semi-empirical `k_p` (only the collapse + `(H/S)²` shift derived), rung 22
+  derives the WIDTH not the DWELL (rung-16 kink imported), the field is a Gaussian-plume cartoon feeding
+  the β-PDF closure — a real PDF-transport/CFD cross-plane stays the ceiling).
 
 ## Commands
 - Run the model:  `python main.py`

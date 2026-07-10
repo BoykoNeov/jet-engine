@@ -1864,3 +1864,78 @@ equilibrium O, so every rung-17 `a` remains a lower bound), **detailed Fenimore*
 super-eq-O **radical-decay history** (both need new species / a relaxing pocket); plus the standing
 spatial/CFD PDF, the burner-side clamp-fires regime, the finite-Damköhler nozzle, off-design, the choked
 nozzle, and the afterburner.*
+
+---
+
+# Rung 22 — The resolved cross-plane / spatial PDF: the optimum becomes an OUTPUT, in plain language
+
+## The headline: rung 18 said "you can't derive the mixing optimum in 0-D" — so we resolved the space, and it fell out
+
+Rung 18 was an honest defeat. We tried to *derive* the dilution-mixing optimum `C_opt` (the Holdeman
+sweet-spot where the jets tile the duct best) from a lumped variance equation, and proved it **can't be
+done in zero dimensions**: any mean-field mixing rate makes the segregation fall smoothly with the jet
+strength `J` — monotone, no interior best. The optimum is *spatial* — it needs the jet **spacing `S`** — and
+a 0-D model has thrown the space away. So rung 18 had to *paint the optimum in by hand* (an imposed
+coverage `ω(C)` peaked at `C_opt`).
+
+Rung 22 supplies the missing ingredient: it **resolves the cross-plane**. Model one dilution cell as a
+2-D slice — penetration up from the wall (`y`, height `H`) × the span between jets (`z`, spacing `S`) — and
+let a dilution jet push air into it. Now `C_opt` **comes out on its own**, as an *output*, not an input.
+
+## Why the optimum now emerges (the one trick that makes it work)
+
+Three pieces of honest jet physics, no `C_opt` anywhere in the inputs:
+
+1. **The jet reaches deeper as it gets stronger, but the spacing sets how big it is.** Penetration
+   `δ = k_p·√(S·H)·J^(1/4)`. The `√J` is the textbook jet-in-crossflow law; the `√(S·H)` comes from
+   fixing how much air each jet carries (more spacing ⇒ fewer, fatter jets). *That* is how the spacing `S`
+   sneaks into the penetration — the thing a 0-D model could never see.
+2. **A jet that over-shoots hits the far wall and piles air there**, starving the near wall. We model the
+   spread as a *fixed* size (not growing with penetration) and bounce the plume off both walls — so
+   punching too hard is penalized, not rewarded.
+3. **Best uniformity is when the jet reaches half-way up.** Set `δ = H/2` and the algebra collapses to
+   `(S/H)·√J = 1/(4·k_p²)` — a constant that does **not** depend on `S` or `H` separately. That constant
+   *is* the Holdeman group `C`, and `1/(4k_p²) ≈ 2.5` with the standard penetration constant. **Derived.**
+
+The proof is the collapse: vary `S` and `H` independently by 2× and the *depth* of the mixing minimum is
+identical every time — only its *location* `J_opt` moves, and exactly as `(H/S)²`. The config has **no
+`C_opt` knob at all** (you literally can't pass one — it's a computed property). That absence is the whole
+point.
+
+## The honest part (three concessions, stated as loudly as the win)
+
+- **We derived the *group*, not the *number*.** `C_opt ≈ 2.5` still rides on the penetration constant `k_p`
+  (`C_opt = 1/4k_p²`). What's genuinely derived is that a *group* `(S/H)√J` collapses and shifts as
+  `(H/S)²` — the shape of Holdeman's law, calibrated in magnitude.
+- **We derived the *width*, not the *dwell*.** The mixing produces a spread of mixture strengths (the
+  β-PDF width `g`); pinning the *emissions* optimum also needs the *residence time* `τ_core`, and that's
+  still the imported rung-16 kink (which secretly knows `C_opt`). Deriving the dwell too is the next seam.
+- **The mixing optimum is NOT the emissions optimum.** Feed the derived width through the NO bell and the
+  best-*mixing* point is only a *local* NO minimum. The *global* NO minimum is at maximum segregation —
+  because at a lean average, un-mixing moves gas *off* the stoich NO-peak and lowers the average. (This is
+  rung 13's old lesson, now drawn in space.) The reason `C_opt` is only a shallow local dip: the
+  best-mixing width `≈0.018` sits *just below* the NO curve's hump at `≈0.021`, so the basin is narrow and
+  the far flank easily beats it. So **uniformity — not emissions — is the clean thing we derived**, and
+  rung 18 was never wrong: it reported that real local dip.
+
+## Did we get it right?
+The reduce is airtight: `spatial=None` runs the literal prior code and the whole rung 1–21 suite stays
+bit-for-bit; a spatial call leaves the primary NO number untouched and NO stays a trace opt-in diagnostic,
+so the **cycle never moves** (bit-for-bit rung 6). The collapse is machine-checked — geometry-independent
+minimum depth, `J_opt ∝ (H/S)²`, the argmin landing on `1/(4k_p²)`, no `C_opt` input, robust to `k_p` — and
+the resolved width always stays under rung-18's derived two-stream ceiling (a partial mix can't out-segregate
+the two-stream extreme). The concessions above are the rung-18-flavored honesty: say exactly which knob is
+still turned by hand (`k_p`, the dwell) and exactly how far the claim reaches (uniformity, locally).
+
+---
+*Rung 22 resolves the dilution cross-plane: pass `Gas.zoned_nox(..., mixing=JetMixing(J,H), spatial=SpatialPDF(S,...))`
+to get `g_spatial` (the resolved width, whose minimum over `J` collapses to `C_opt=1/(4k_p²)` as an OUTPUT)
+and `ei_no_spatial` (that width through the rung-13 ideal bell). `SpatialPDF` has no `C_opt` field —
+`C_opt()` is derived. It is ≤1-of-six with the other variance closures and requires `mixing`;
+`spatial=None` is the exact prior path (bit-for-bit rung 6). `python main.py` prints the rung-22 panel: the
+collapse table (`g_min` identical across geometries, `J_opt ∝ (H/S)²`), the `g_spatial < g_ceiling` tie,
+and the honest emissions curve (local min at `C_opt`, global min at max segregation). Still deferred: a
+real PDF-transport / CFD cross-plane that predicts the full mixing *pattern* (the resolved-PDF shape AND
+the dwell spectrum `τ_core(C)`, which is also what would let rung 17 claim a firing *magnitude*); plus the
+standing burner-side clamp-fires regime, the finite-Damköhler nozzle, off-design, the choked nozzle, and
+the afterburner.*
