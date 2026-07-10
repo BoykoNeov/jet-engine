@@ -993,6 +993,78 @@ def print_pocket_quench_table(flight):
     print("  DORMANT here, max_a<1 — the difference is cooling, not super-eq rollover.)")
 
 
+def print_exhaust_clamp_table(flight):
+    """Rung-17 payoff: the exhaust-NO clamp through the combustor-mixing-fidelity ladder.
+
+    A rung-14 corollary from the RICH side. Rung 14 fired the dropped clamp on the φ_p=1.0 MIXED-OUT
+    exhaust NO (a≈250) — the zoned-vs-unzoned axis. Rung 17 asks the same clamp question at the RICH
+    φ_p=1.5 RQL primary, through THREE levels of combustor-mixing fidelity, carried through the SAME
+    nozzle collapse to T9: MIXED-OUT (rung 8) reads DORMANT (a<1) — mixing-out HIDES the super-eq NO —
+    while the BULK QUENCH (rung 11) and PER-POCKET (rung 16) models FIRE. The load-bearing content: the
+    ORDERING a_mixed≤a_bulk≤a_pocket is STRUCTURAL (the quench only adds NO; the excess is additive) and
+    a_mixed<1 is robust — the FIRING (a>1) holds in-band but is NOT universal (a fast quench J→∞ drives
+    a_bulk→a_mixed<1, the rung-10 τ_q→0 reduce). The identity a_pocket/a_bulk = rung-16's station-4 gap
+    is algebra (the nozzle cancels); every magnitude rides on un-pinned scales. Pure diag: bit-for-bit rung 6.
+    """
+    eq = Gas.reacting_equilibrium()
+    real = build_turbojet(eq, PI_C, TT4, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+    st3, st4, st9 = real.stations["3"], real.stations["4"], real.stations["9"]
+    far, Tt3, Tt4, p = st4.far, st3.Tt, st4.Tt, st4.pt
+    J, phi_p = 225.0, 1.5
+    ng, ns = 32, 400                                       # coarse (illustrative panel) — SHAPE, not digits
+    pq = PocketQuenchPDF(S=0.0625, n_bell=40, n_quad=120)
+
+    print("\nExhaust-NO clamp through the mixing-fidelity ladder (rung 17): rung 14 fired the dropped")
+    print("clamp on the φ_p=1.0 MIXED-OUT exhaust NO. At the RICH φ_p=1.5 RQL primary the mixed-out NO is")
+    print("deceptively LOW — so the crude shortcut reads the clamp DORMANT — but the dilution re-making")
+    print("(rung 11) and the near-stoich β-PDF pockets (rung 16) put NO back, frozen super-eq in the nozzle.")
+
+    s = eq.exhaust_no_clamp(far, Tt3, Tt4, p, st9.Tt, st9.pt, real.p9, phi_primary=phi_p,
+                            mixing=JetMixing(J=J, C_e=0.20, shape_n=2.0), pocket_quench=pq,
+                            quench_ngrid=ng, quench_nsteps=ns)
+    print(f"\n  Design point (rich φ_p={phi_p}, J={J:.0f}): exhaust cools Tt9={st9.Tt:.0f} K → T9={s.T9:.0f} K,")
+    print(f"  equilibrium NO collapses {s.no_collapse_ratio:.0f}× → the common clamp denominator x_no_e(T9).")
+    print(f"  {'mixing-fidelity model':>26} {'exhaust x_no':>13} {'a=[NO]/[NO]_e(T9)':>18}  verdict")
+    print("  " + "-" * 70)
+    print(f"  {'MIXED-OUT (rung 8)':>26} {s.x_no_mixed_out:>13.3e} {s.a_mixed_out:>18.3f}  "
+          f"{'DORMANT — hides the NO' if s.a_mixed_out < 1 else 'fires'}")
+    print(f"  {'BULK QUENCH (rung 11)':>26} {s.x_no_bulk_quench:>13.3e} {s.a_bulk_quench:>18.3f}  "
+          f"{'FIRES — re-making' if s.a_bulk_quench > 1 else 'dormant'}")
+    print(f"  {'PER-POCKET (rung 16)':>26} {s.x_no_pocket:>13.3e} {s.a_pocket:>18.3f}  "
+          f"{'FIRES — segregation lifts the mean' if s.a_pocket > 1 else 'dormant'}")
+    print(f"  The ladder is MONOTONE in fidelity: a_mixed<1<a_bulk<a_pocket. The pocket/bulk ratio "
+          f"{s.gap_pocket_over_bulk:.2f} =")
+    print(f"  rung-16's station-4 gap EXACTLY (the nozzle denominator cancels — algebra, a witnessed no-op).")
+
+    # The rung-14 contrast — the SAME mixed-out-through-the-nozzle construction at φ_p=1.0 vs 1.5.
+    def a_mixed(phi):
+        zn = eq.zoned_nox(far, Tt3, Tt4, p, phi, 3e-3)
+        return eq.nozzle_flow(far, Tt4, p, st9.Tt, st9.pt, real.p9, x_no_frozen=zn.x_no_mix).max_a
+
+    a10, a15 = a_mixed(1.0), a_mixed(1.5)
+    print(f"\n  The rung-14 contrast (same mixed-out-through-the-nozzle construction): φ_p=1.0 → a={a10:.0f}")
+    print(f"  (FIRES, rung 14) but φ_p=1.5 → a={a15:.3f} (DORMANT). The RICH primary hides the NO the")
+    print(f"  mixed-out model never made — the same dropped-clamp lesson from the other side.")
+
+    # Scale-sensitivity — the ORDERING is structural; the magnitudes move (firing in-band, not universal).
+    print("\n  Scale-sensitivity (C_e sweep, J=225) — the ORDERING is structural; magnitudes + the gap move:")
+    print(f"  {'C_e':>6} {'a_mixed':>8} {'a_bulk':>8} {'a_pocket':>9} {'gap':>6}   ladder holds?")
+    for C_e in (0.15, 0.20):
+        sc = s if C_e == 0.20 else eq.exhaust_no_clamp(
+            far, Tt3, Tt4, p, st9.Tt, st9.pt, real.p9, phi_primary=phi_p,
+            mixing=JetMixing(J=J, C_e=C_e, shape_n=2.0), pocket_quench=pq,
+            quench_ngrid=ng, quench_nsteps=ns)
+        ok = "YES" if sc.ladder_monotone and sc.a_mixed_out < 1 else "NO"
+        print(f"  {C_e:>6.2f} {sc.a_mixed_out:>8.3f} {sc.a_bulk_quench:>8.2f} {sc.a_pocket:>9.2f} "
+              f"{sc.gap_pocket_over_bulk:>6.2f}   {ok}")
+    print("  HONEST SCOPE: the ORDERING (structural) + mixed-out dormancy are the certified claim. The")
+    print("  FIRING (a>1) is IN-BAND, not universal — a fast quench (J→∞) drives a_bulk→a_mixed<1 (the")
+    print("  rung-10 τ_q→0 reduce). a_bulk, a_pocket AND the gap ride on un-pinned scales (C_e, τ_res, H,")
+    print(f"  J); the clamp is DORMANT at station 4 (max_a={s.max_a_quench:.2f}) — the super-equilibrium is a")
+    print("  NOZZLE effect. Rung 17 is a synthesis of rungs 11/16/14, not new physics: it shows the crude")
+    print("  mixed-out shortcut is UNCONSERVATIVE across the rich RQL operating band.")
+
+
 def _j_opt_from(cfg):
     """The uniformity optimum J_opt where C=(S/H)√J_opt = C_opt (H=0.10, the JetMixing default)."""
     return (cfg.C_opt * JetMixing(J=1.0).H / cfg.S) ** 2
@@ -1139,6 +1211,8 @@ def main():
     print_pdf_quench_table(FLIGHT)
 
     print_pocket_quench_table(FLIGHT)
+
+    print_exhaust_clamp_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

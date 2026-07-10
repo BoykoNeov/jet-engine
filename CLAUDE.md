@@ -12,7 +12,7 @@ teaching, not for features or polish.
 
 The model is built in cumulative **rungs** — each adds one physical effect and is
 anchored to a published case. All rungs are live; the current scope is
-**rung 16**. Each rung's full derivation, assumptions, and verification gates live
+**rung 17**. Each rung's full derivation, assumptions, and verification gates live
 in its spec (last column) — this table is the one-line map, not the handout.
 
 | Rung | Adds (one-line hook) | Spec |
@@ -34,14 +34,17 @@ in its spec (last column) — this table is the one-line map, not the handout.
 | 14 | **Equilibrium-vs-frozen nozzle** — the rung-6 *cycle-side* seam. The production nozzle **freezes** the station-4 mixture; `Gas.nozzle_flow(…)` brackets it against a **shifting-equilibrium** expansion (CO/H₂/OH/O/H **recombine** on cooling → more V9). Frozen = lower bound, equilibrium = upper. **Dormant** at the lean design point (~0.006%), **earns its keep hot** (~0.46% at Tt4=2200 K). Corollary: on the same cooling path equilibrium NO **collapses**, so rung-10's **dropped clamp** finally **fires** (max_a≫1, vs its dormant 0.677). Pure diagnostic ⇒ cycle bit-for-bit rung 6. | `docs/rung14-spec.md` |
 | 15 | **PDF through the finite quench** — rung-13's resolved β-PDF **carried through** the rung-10/12 dwell chain, so the two mixing mechanisms **combine**. A `QuenchPDF(S,…)` config (rides on `mixing`, mutually exclusive with `pdf`/`unmixedness`) gives `ei_no_pdf_quench = ei_no_quenched + D(u)·⟨EI_bell⟩(g)`: term 1 the rung-11 mean-field **bulk quench** (the **finite floor**), term 2 the rung-13 β-PDF integral over the ideal bell scaled by an off-optimum-growing dwell `D(u)=τ_res(1+b_u·u)/τ`. The **≈0 rung-13 optimum floor becomes finite bulk NO** (at `C_opt`, `g→0` ⇒ `=ei_no_quenched`), the min stays pinned **AT `C_opt`** (`(H/S)²` shift), and the rung-13 **descending** far flank **CLIMBS** again (dwell restored) — a non-monotone over-flank showing **both** parents. The nonlinear bell keeps the **stoich-mean sign reversal** a dwell-only closure can't. `pdf_quench=None` = exact rung 13. | `docs/rung15-spec.md` |
 | 16 | **PDF through the quench, PER POCKET** — retires rung-15's one acknowledged **linearisation** (term 2 = `D(u)·⟨EI_bell⟩`, a **constant-T** bell × a **scalar** dwell ratio). A `PocketQuenchPDF(S,…)` config (rides on `mixing`, ≤1-of-four with `pdf_quench`/`pdf`/`unmixedness`) carries **each rich-of-mean β-PDF pocket through its OWN finite quench** (`_quench_no` at `τ_core(C)`), so the dwell acts **inside** the cooling chemistry: `ei_no_pocket_quench = ei_no_quenched + ⟨EI_pocket_quench(ξ;τ_core)⟩_g`. Because a lingering pocket **cools**, term 2 is **SUBLINEAR** in `τ_core` (far-flank ≈×1.3 vs rung-15's LINEAR ×1.51 = the dwell ratio (grid-dependent)), which **ERODES** rung-15's over-penetration far flank ~18–32% into **near-degeneracy** with the `C_opt` notch (which **survives** — the composition excess still →0 at `C_opt`). The honest headline is the **cooling-limited erosion**, NOT a relocated optimum: the global-min **location is NOT claimed** (it flips sign across the β-PDF quadrature ~5%, the φ>2 tail, and the `C_e` regime 2%→21%). Clamp **dormant** (`max_a<1`) — the difference is cooling, not super-eq rollover. `pocket_quench=None` = exact rung 15. | `docs/rung16-spec.md` |
+| 17 | **Exhaust-NO clamp through the mixing-fidelity ladder** — a rung-14 corollary *from the rich side*. `Gas.exhaust_no_clamp(…)` carries the exhaust NO from **three** combustor-mixing-fidelity models through the **same** rung-14 nozzle collapse to `T9` and reads the dropped-clamp margin `a=[NO]/[NO]_e(T9)`: **MIXED-OUT** (rung 8, `x_no_mix`) reads **DORMANT** (`a≈0.02`) at the RICH `φ_p=1.5` primary — mixing-out **HIDES** the super-eq NO; **BULK QUENCH** (rung 11, `x_no_quenched`) **FIRES** (`a≈3.4`, the re-making); **PER-POCKET** (rung 16) **FIRES harder** (`a≈13.6`, segregation lifts the mean). The **load-bearing** claim splits: the **ORDERING** `a_mixed≤a_bulk≤a_pocket` is **STRUCTURAL** (the quench only *adds* NO; the per-pocket excess is additive) and `a_mixed<1` is robust — *these* are certified; the **FIRING** (`a_bulk,a_pocket>1`) holds **in-band** but is **NOT universal** (a fast quench `J→∞` drives `a_bulk→a_mixed<1`, the rung-10 `τ_q→0` reduce). The **identity** `a_pocket/a_bulk ≡` rung-16's station-4 gap is **algebra**, not a test (the nozzle denominator cancels — a *witnessed no-op*, stated not gated). Every firing magnitude *and the gap* ride on un-pinned scales (`C_e`, `τ_res`, `H`, `J`; the gap moves ~23% over `C_e 0.15→0.20`). **Contrast rung 14** (which fires on the `φ_p=1.0` mixed-out number, `a≈250` — the *zoned-vs-unzoned* axis): rung 17 is the *mixing-fidelity* axis, the same dropped-clamp lesson from the rich side where the mixed-out shortcut is **unconservative**. Clamp **dormant at station 4** (`max_a<1` — super-eq is a *nozzle* effect). No new chemistry/config: it composes rung-8/11/16 + rung-14 outputs. | `docs/rung17-spec.md` |
 
-Rungs 7–13, 15 and 16 are **pure diagnostics** — NO/N never enter the cycle solve, so the cycle
+Rungs 7–13, 15, 16 and 17 are **pure diagnostics** — NO/N never enter the cycle solve, so the cycle
 stays **bit-for-bit rung 6**. Rung 14 is *also* a pure diagnostic (`Gas.nozzle_flow` only reads the
-run's state; the production nozzle stays frozen), so the cycle is still bit-for-bit rung 6. Each
-rung's verified anchor data (textbook / formation / CEA-equilibrium / Zeldovich-kinetics / ICAO-
-zoning / rich-RQL / finite-quench / jet-mixing / unmixedness / mixing-PDF / frozen-vs-equilibrium-
-nozzle / PDF-through-quench / per-pocket-PDF-quench) lives in `docs/plans/rungN-anchor-*.md`;
-`docs/plans/` also holds the living plan/tasks (rungs 1–3).
+run's state; the production nozzle stays frozen), so the cycle is still bit-for-bit rung 6. Rung 17 is
+*also* a pure diagnostic (`Gas.exhaust_no_clamp` only reads the run's state and composes the rung-8/11/16
++ rung-14 outputs), so the cycle stays bit-for-bit rung 6. Each rung's verified anchor data (textbook /
+formation / CEA-equilibrium / Zeldovich-kinetics / ICAO-zoning / rich-RQL / finite-quench / jet-mixing /
+unmixedness / mixing-PDF / frozen-vs-equilibrium-nozzle / PDF-through-quench / per-pocket-PDF-quench /
+super-equilibrium-exhaust) lives in `docs/plans/rungN-anchor-*.md`; `docs/plans/` also holds the living
+plan/tasks (rungs 1–3).
 
 ## Working contract (from SPEC.md — these override convenience)
 - **Derive before you code.** For each station, write the governing equation and
@@ -52,7 +55,7 @@ nozzle / PDF-through-quench / per-pocket-PDF-quench) lives in `docs/plans/rungN-
   hidden state (Turbine and Nozzle diverge their signatures by design).
 - **Conservation checks are assertions**, run on every execution (not as
   separate tests). See SPEC.md / docs/rung2-spec.md § Conservation checks.
-- **Current scope (rung 16):** all rungs above are cumulative and live (see § The
+- **Current scope (rung 17):** all rungs above are cumulative and live (see § The
   rungs). The **cycle solve** is a thermally-perfect, reacting, dissociation-
   equilibrium gas (`Gas.reacting_equilibrium()`) run through ideal + real components
   (isentropic `η_c/η_t` **or** polytropic `e_c/e_t`, mutually exclusive; `π_d/π_b/π_n`,
@@ -65,17 +68,25 @@ nozzle / PDF-through-quench / per-pocket-PDF-quench) lives in `docs/plans/rungN-
   (`zoned_nox(…, pdf_quench=QuenchPDF(…))`) — combining the rung-13 composition β-PDF with the
   rung-10/12 dwell; rung 16 adds the **per-pocket PDF-through-quench diagnostic**
   (`zoned_nox(…, pocket_quench=PocketQuenchPDF(…))`) — carrying each β-PDF pocket through its OWN
-  `_quench_no`, retiring rung-15's linearised dwell (both still bit-for-bit rung 6). Fork A/B
+  `_quench_no`, retiring rung-15's linearised dwell; rung 17 adds the **exhaust-NO clamp ladder**
+  (`Gas.exhaust_no_clamp(…)`) — carrying three combustor-mixing-fidelity exhaust-NO models (rung-8
+  mixed-out, rung-11 bulk quench, rung-16 per-pocket) through the **same** rung-14 nozzle collapse to
+  show the mixed-out shortcut reads the dropped clamp **dormant** at the rich primary while the fuller
+  models **fire** (all still bit-for-bit rung 6). Fork A/B
   (`Gas.reacting()` / `reacting_forkb()`) and the frozen-products `Gas.thermally_perfect()` are kept
   alongside. **Deferred seams** (kept open on purpose): **finite-rate nozzle chemistry** — rung 14
   gives the frozen↔equilibrium *bracket*, not the real Damköhler-number flow *between* the bounds (nor
   a **shifting turbine**); a **transported/CFD PDF** (predict the β width `g(C)` and the dwell spectrum
-  from a mixing equation rather than modeling them); a regime where the rung-16 **per-pocket clamp
-  actually fires** (hotter `Tt4` / longer dwell — a pocket going super-equilibrium, the rung-14
-  exhaust-NO corollary); super-equilibrium `O` / prompt (Fenimore) NO (matters most in the rich
+  from a mixing equation rather than modeling them — which is also what would let rung 17 claim a
+  firing *magnitude*, not just a direction); a regime where a **per-pocket clamp fires AT THE BURNER**
+  (`max_a>1` at station 4, not just in the rung-14/17 nozzle where rung 17 already fires it) — the
+  lever is a **slow-enough freeze on a cooling pocket** (a long dwell that freezes NO high while the
+  local `[NO]_e` collapses), *not* a hotter `Tt4` alone (raising `Tt4` raises the terminal `[NO]_e`
+  and *lowers* the ratio); super-equilibrium `O` / prompt (Fenimore) NO (matters most in the rich
   primary, the stoich crossing, the rung-12 under-mixed core, the near-stoich pockets the rung-13/15/16
-  PDF resolves *and* dwell-weights, *and* the rung-14 exhaust-NO clamp corollary — all equilibrium-O
-  lower bounds); off-design / component maps, a *choked* convergent nozzle, afterburner.
+  PDF resolves *and* dwell-weights, *and* the rung-14/17 exhaust-NO clamp corollary — all equilibrium-O
+  lower bounds, so every rung-17 `a` is a lower bound too); off-design / component maps, a *choked*
+  convergent nozzle, afterburner.
 - **Stop and explain surprises.** If a number looks off, reason about the
   physics rather than silently moving on.
 
@@ -192,7 +203,18 @@ nozzle / PDF-through-quench / per-pocket-PDF-quench) lives in `docs/plans/rungN-
   difference is cooling, not super-eq rollover. `ZonedNOxState` records `pocket_quench`/
   `ei_no_pocket_excess`/`ei_no_pocket_quench` (`C_holdeman`/`g_seg` reused). `pocket_quench=None` ⇒
   exact rung 15. No new chemistry/integrator — only per-pocket reuse of the rung-10 `_quench_no` + the
-  rung-13 β-PDF quadrature (so ~`n_bell`× costlier than rung 15's single bell).
+  rung-13 β-PDF quadrature (so ~`n_bell`× costlier than rung 15's single bell). Rung 17 adds the
+  **cycle-side exhaust-NO clamp ladder**: the `ExhaustNOxClampState` dataclass (the three margins
+  `a_mixed_out`/`a_bulk_quench`/`a_pocket` + the common `x_no_e_exit`/`no_collapse_ratio`, the three
+  numerators, the transparency pair `ei_no_quenched`/`ei_no_pocket_quench` and their ratio
+  `gap_pocket_over_bulk`, `max_a_quench`, and the `hides_super_eq`/`ladder_monotone` predicates) and
+  `Gas.exhaust_no_clamp(far, Tt3, Tt4, p, Tt9, pt9, p9, phi_primary, mixing, pocket_quench, tau,
+  quench_ngrid, quench_nsteps)` — it calls `zoned_nox` **three ways** (rung 8/11/16) for the numerators
+  and `nozzle_flow` **once** (rung 14) for the common denominator `x_no_e(T9)`, then forms `a_i =
+  x_i/x_no_e(T9)`. The per-pocket mole fraction is `κ·⟨EI⟩_pocket` with `κ=x_no_bulk/ei_no_quenched`
+  (`x_no ∝ EI` at fixed far), which is exactly why the nozzle is a no-op on the pocket/bulk ratio.
+  **No new chemistry/config** — it only READS state (through the untouched rung-8/11/16 + rung-14
+  machinery), so the cycle is bit-for-bit rung 6. Requires the equilibrium gas + both configs.
 - `turbojet/components.py` — `Inlet, Compressor, Burner, Turbine, Nozzle` in `h`/`pr`
   form (+ loss params, `ram_recovery(M0)`, the polytropic `e_c/e_t` knob; the Nozzle
   branches CPG/TPG — the velocity↔enthalpy trap, plus a back-pressure guard `p9 ≤ pt9`). The
@@ -290,6 +312,17 @@ nozzle / PDF-through-quench / per-pocket-PDF-quench) lives in `docs/plans/rungN-
   positivity/range guards + the kinked `g(C)`/`u(C)`/`core_dwell`. **DELIBERATELY asserts NO global-min
   LOCATION** (it is within the quadrature/tail/`C_e` ambiguity — contrast rung-15's `argmin==J_opt`
   GATE 3). (Reuses a cached DP + a shared trajectory + a per-pocket bank built once.)
+- `tests/test_rung17.py` — rung-17: **THE LADDER** (load-bearing: `a_mixed<1<a_bulk<a_pocket` — three
+  independent physics composing at the rich `φ_p=1.5` primary, both headline predicates `hides_super_eq`/
+  `ladder_monotone` hold), the **rung-14 contrast** (the same mixed-out-through-the-nozzle construction
+  FIRES at `φ_p=1.0` but is DORMANT at `φ_p=1.5`, `a10>100·a15`), the **identity witnessed not gated**
+  (`a_pocket/a_bulk == gap_pocket_over_bulk == ei_no_pocket_quench/ei_no_quenched` to machine precision —
+  documented as algebra, the nozzle no-op), **scale-sensitivity** (the ORDERING holds structurally at
+  `C_e∈{0.15,0.20}` while `a_bulk` AND the gap MOVE >5%, `a_mixed_out` scale-independent — firing in-band),
+  **reduce-to-components** (`x_no_bulk`/`ei_no_quenched`/`a_bulk`/`ei_no_pocket_quench` are the rung-11/14/16
+  values bit-for-bit — it composes, never recomputes), cycle-untouched, clamp dormancy at station 4
+  (`max_a_quench<1`), and the guards (requires-equilibrium-gas / requires-both-configs / back-pressure).
+  (Reuses a cached DP + cached clamp results per `C_e`.)
 - `main.py` — runs ideal vs real at one design point: tables + overlaid T–s diagram,
   plus the rung-2-frozen-`cp` vs rung-3-`cp(T)` table, the rung-4 frozen-vs-reacting
   + `f`-sweep table, the rung-5 Fork-A-vs-Fork-B (derived-`hPR`) panel, the rung-6
@@ -320,7 +353,13 @@ nozzle / PDF-through-quench / per-pocket-PDF-quench) lives in `docs/plans/rungN-
   panel (a `J`-sweep: `⟨EI⟩15` vs `⟨EI⟩16` with the **erosion %** column — rung-15's LINEAR far-flank
   **climb** vs rung-16's SUBLINEAR **flat** far flank, `×1.51` vs `≈×1.3` term-2 growth — the
   cooling-limited erosion into near-degeneracy with the `C_opt` notch; with the **honest scope** stated
-  loudly: the global-min location is NOT claimed, the clamp is dormant).
+  loudly: the global-min location is NOT claimed, the clamp is dormant), and the rung-17 exhaust-NO
+  clamp-ladder panel (the rich `φ_p=1.5` design point: the three-model ladder MIXED-OUT `a≈0.02`
+  **DORMANT** → BULK-QUENCH `a≈3.4` **FIRES** → PER-POCKET `a≈13.6` **FIRES harder**, all through the
+  same nozzle collapse; the **rung-14 contrast** `φ_p=1.0→a≈250` vs `φ_p=1.5→a≈0.02`; a `C_e` sweep
+  showing the **ordering is structural** while magnitudes move; with the **honest scope** stated loudly:
+  the identity is algebra, the firing is in-band not universal (fast quench → dormant), no magnitude is
+  pinned, the clamp is dormant at station 4, and rung 17 is a synthesis of rungs 11/16/14 — not new physics).
 
 ## Commands
 - Run the model:  `python main.py`

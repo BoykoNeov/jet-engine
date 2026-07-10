@@ -1841,6 +1841,69 @@ class NozzleFlowState:
 
 
 @dataclass
+class ExhaustNOxClampState:
+    """Rung-17 combustor-mixing-fidelity ladder of the exhaust-NO clamp margin (docs/rung17-spec.md).
+
+    A pure DIAGNOSTIC composing rung 16 (the per-pocket exhaust NO) with rung 14 (the nozzle cooling
+    collapse) at a RICH RQL primary — the cycle stays bit-for-bit rung 6. It asks ONE question three
+    ways: carry the exhaust NO from three combustor-mixing-fidelity models through the SAME rung-14
+    nozzle collapse to T9 and read the dropped-clamp margin a=[NO]/[NO]_e(T9):
+
+      MIXED-OUT   (rung 8,  x_no_mix)        — the standard shortcut; at a RICH primary it reads
+                                               DORMANT (a<1): mixing-out HIDES the super-eq NO.
+      BULK QUENCH (rung 11, x_no_quenched)   — the dilution re-making restored; FIRES (a>1).
+      PER-POCKET  (rung 16, β-PDF segregation) — the segregation-raised mean; FIRES harder.
+
+    The LOAD-BEARING content splits in two (different strengths — do NOT bundle them):
+      (a) the ORDERING a_mixed ≤ a_bulk ≤ a_pocket is STRUCTURAL — the clamp-free quench only ADDS NO to
+          the mixed-out pool (x_no_quenched ≥ x_no_mix in the dormant regime) and the per-pocket excess
+          is additive (x_no_pocket = x_no_bulk + κ·⟨EI⟩_pocket, ⟨EI⟩ ≥ 0). Plus a_mixed<1 is robust (a
+          rich primary makes ≈0 NO). THIS is the certified claim.
+      (b) the FIRING (a_bulk>1, a_pocket>1) is the UN-PINNED threshold: it holds across the RQL J-band
+          but is NOT universal — as the quench gets FAST (J→∞) x_no_quenched→x_no_mix (the rung-10
+          τ_q→0 reduce: fast quench = ideal quench = mixed-out) so a_bulk→a_mixed<1 (dormant). Every
+          firing MAGNITUDE and the gap ride on un-pinned mixing scales (C_e, τ_res, H, J).
+    So the HEADLINE — mixing-out HIDES super-eq NO the fuller models reveal — rides on the IN-BAND
+    firing, and that in-band firing IS the lesson (not a universal claim; docs/rung17-spec.md § scope).
+    The pocket/bulk RATIO equals rung-16's station-4 gap EXACTLY — the nozzle denominator x_no_e(T9) is
+    COMMON and cancels, so the nozzle is a NO-OP on the ratio (a SYNTHESIS of rungs 11/16/14, not new
+    physics; STATED, not gated).
+
+    CONTRAST rung 14 (docs/rung14-spec.md): rung 14 fires on the φ_p=1.0 mixed-out number (a≈250) — the
+    ZONED-vs-UNZONED axis. Rung 17 is the MIXING-FIDELITY axis at the RICH φ_p=1.5 primary, where the
+    mixed-out number is deceptively DORMANT (a≈0.02). NOT a contradiction — the same lesson from the
+    other side: what NO actually leaves the engine depends on how faithfully the combustor mixing is
+    modeled; the crude mixed-out shortcut is UNCONSERVATIVE exactly where the primary runs rich."""
+    phi_primary: float               # the rich RQL primary equivalence ratio (the regime that hides NO)
+    T9: float                        # frozen nozzle-exit static temperature, K (the cooling endpoint)
+    x_no_e_exit: float               # equilibrium NO at T9 — the COMMON clamp denominator (rung 14)
+    no_collapse_ratio: float         # x_no_e(Tt9)/x_no_e(T9) — the cooling collapse (frozen-NO-independent)
+    # the three exhaust-NO models (mole fractions) and their clamp margins a=[NO]/[NO]_e(T9):
+    x_no_mixed_out: float            # rung-8 mixed-out exhaust NO
+    x_no_bulk_quench: float          # rung-11 mean-field bulk-quench exhaust NO
+    x_no_pocket: float               # rung-16 per-pocket β-PDF-mean exhaust NO (= κ·ei_no_pocket_quench)
+    a_mixed_out: float               # x_no_mixed_out/x_no_e_exit  (< 1 ⇒ mixing-out HIDES the super-eq NO)
+    a_bulk_quench: float             # x_no_bulk_quench/x_no_e_exit (> 1 ⇒ the quench re-making fires it)
+    a_pocket: float                  # x_no_pocket/x_no_e_exit     (> 1, larger ⇒ segregation raises it more)
+    # station-4 quantities behind the pocket rung (transparency; the gap is rung-16's, itself scale-dependent):
+    ei_no_quenched: float            # rung-11 bulk-quench EI (term 1), g NO/kg fuel
+    ei_no_pocket_quench: float       # rung-16 per-pocket EI (term1+term2), g NO/kg fuel
+    gap_pocket_over_bulk: float      # ei_no_pocket_quench/ei_no_quenched ≡ a_pocket/a_bulk (nozzle cancels)
+    max_a_quench: float              # rung-16 STATION-4 clamp dormancy (max [NO]/[NO]_e over the pockets)
+
+    @property
+    def hides_super_eq(self) -> bool:
+        """The rung-17 headline: does mixing-out HIDE the super-equilibrium exhaust NO the fuller
+        models reveal? (mixed-out dormant AND the bulk quench fires.)"""
+        return self.a_mixed_out < 1.0 < self.a_bulk_quench
+
+    @property
+    def ladder_monotone(self) -> bool:
+        """The load-bearing direction: a_mixed_out < a_bulk_quench < a_pocket (fidelity → more NO)."""
+        return self.a_mixed_out < self.a_bulk_quench < self.a_pocket
+
+
+@dataclass
 class Gas:
     """Dual-section gas. Each section is CPG (constant triple, default) or TPG (cp(T)).
 
@@ -2444,6 +2507,73 @@ class Gas:
             x_no_e_entry=clamp["x_no_e_entry"], x_no_e_exit=clamp["x_no_e_exit"],
             no_collapse_ratio=clamp["no_collapse_ratio"],
             x_no_frozen=x_no_frozen, max_a=clamp["max_a"],
+        )
+
+    # --- Rung-17 combustor-mixing-fidelity ladder of the dropped-clamp margin (DECOUPLED) --------- #
+    def exhaust_no_clamp(self, far: float, Tt3: float, Tt4: float, p: float,
+                         Tt9: float, pt9: float, p9: float,
+                         phi_primary: float, mixing: "JetMixing",
+                         pocket_quench: "PocketQuenchPDF",
+                         tau: float = 3e-3,
+                         quench_ngrid: int = 240, quench_nsteps: int = 2000) -> "ExhaustNOxClampState":
+        """Rung-17 combustor-mixing-fidelity ladder of the dropped-clamp margin (docs/rung17-spec.md).
+
+        Composes rung 16 (the per-pocket exhaust NO) with rung 14 (the nozzle cooling collapse) at a
+        RICH RQL primary. Carries THREE mixing-fidelity models of the exhaust NO — mixed-out (rung 8),
+        mean-field bulk quench (rung 11), per-pocket β-PDF mean (rung 16) — through the SAME rung-14
+        nozzle expansion to T9, and reads the dropped-clamp margin a=[NO]/[NO]_e(T9) for each.
+
+        THE HEADLINE: at a rich primary the MIXED-OUT number reads DORMANT (a<1) — mixing-out HIDES the
+        super-equilibrium exhaust NO — while the fuller models FIRE (a>1). This is the counterpoint to
+        rung 14's φ_p=1.0 clamp corollary (which fires ON the mixed-out number, a≈250): the same lesson
+        from the RICH side, where the crude mixed-out shortcut is deceptively low. The ORDERING
+        a_mixed≤a_bulk≤a_pocket is STRUCTURAL (the quench only ADDS NO; the per-pocket excess is
+        additive) and a_mixed<1 is robust — that is the certified claim. The FIRING (a_bulk,a_pocket>1)
+        holds across the RQL J-band but is NOT universal: a fast enough quench (J→∞) drives
+        x_no_quenched→x_no_mix (the rung-10 τ_q→0 reduce) so even a_bulk→a_mixed<1 (dormant). Every
+        firing magnitude and the gap ride on un-pinned mixing scales (C_e, τ_res, H, J). The
+        a_pocket/a_bulk ratio equals rung-16's station-4 gap by construction (the x_no_e(T9) denominator
+        is common and cancels — a stated synthesis, not new physics).
+
+        A pure diagnostic: it only READS state (through zoned_nox + nozzle_flow, both untouched) and
+        feeds the cycle nothing, so the cycle stays bit-for-bit rung 6. Requires the equilibrium
+        (rung-6) gas and both a `mixing` and a `pocket_quench` (the bulk and per-pocket rungs need the
+        jet). Pass the run's Tt9=Tt5, pt9=π_n·pt5, p9=p_exit (same as nozzle_flow)."""
+        assert self.equilibrium, \
+            "exhaust_no_clamp: needs the rung-6 equilibrium gas (Gas.reacting_equilibrium())"
+        assert mixing is not None and pocket_quench is not None, \
+            "exhaust_no_clamp: needs both a JetMixing and a PocketQuenchPDF (the bulk + per-pocket rungs)"
+
+        # The three exhaust-NO models — read straight off the rung-8/11/16 diagnostics, untouched.
+        zn_mixed = self.zoned_nox(far, Tt3, Tt4, p, phi_primary, tau)                  # rung 8 (no quench)
+        zn_bulk = self.zoned_nox(far, Tt3, Tt4, p, phi_primary, tau, mixing=mixing,
+                                 quench_ngrid=quench_ngrid, quench_nsteps=quench_nsteps)  # rung 11 (bulk quench)
+        zn_pkt = self.zoned_nox(far, Tt3, Tt4, p, phi_primary, tau,
+                                mixing=mixing, pocket_quench=pocket_quench,
+                                quench_ngrid=quench_ngrid, quench_nsteps=quench_nsteps)   # rung 16 (per-pocket)
+        x_no_mixed = zn_mixed.x_no_mix
+        x_no_bulk = zn_bulk.x_no_quenched
+        # x_no ∝ EI at fixed overall far (same n_tot and n_fuel per mol air), so κ = x_no/EI is COMMON to
+        # the bulk and every pocket → the per-pocket β-PDF-mean mole fraction is κ·⟨EI⟩_pocket. That same
+        # proportionality is exactly WHY the nozzle is a no-op on the pocket/bulk ratio: a_pocket/a_bulk =
+        # ⟨EI⟩_pocket/EI_bulk = rung-16's station-4 gap. A STATED identity, not a gate — the x_no_e(T9)
+        # denominator cancels by construction, so no computation could make it false (docs/rung17-spec.md).
+        kappa = x_no_bulk / zn_bulk.ei_no_quenched
+        x_no_pkt = kappa * zn_pkt.ei_no_pocket_quench
+
+        # ONE rung-14 nozzle expansion → T9, the COMMON denominator x_no_e(T9), and the collapse ratio.
+        nf = self.nozzle_flow(far, Tt4, p, Tt9, pt9, p9, x_no_frozen=x_no_bulk)
+        xe = nf.x_no_e_exit                              # the common clamp denominator for all three
+
+        return ExhaustNOxClampState(
+            phi_primary=phi_primary, T9=nf.T9_frozen, x_no_e_exit=xe,
+            no_collapse_ratio=nf.no_collapse_ratio,
+            x_no_mixed_out=x_no_mixed, x_no_bulk_quench=x_no_bulk, x_no_pocket=x_no_pkt,
+            a_mixed_out=x_no_mixed / xe, a_bulk_quench=nf.max_a, a_pocket=x_no_pkt / xe,
+            ei_no_quenched=zn_bulk.ei_no_quenched,
+            ei_no_pocket_quench=zn_pkt.ei_no_pocket_quench,
+            gap_pocket_over_bulk=zn_pkt.ei_no_pocket_quench / zn_bulk.ei_no_quenched,
+            max_a_quench=zn_pkt.max_a_quench,
         )
 
     def unified(self) -> "Gas":
