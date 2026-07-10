@@ -12,7 +12,7 @@ teaching, not for features or polish.
 
 The model is built in cumulative **rungs** — each adds one physical effect and is
 anchored to a published case. All rungs are live; the current scope is
-**rung 17**. Each rung's full derivation, assumptions, and verification gates live
+**rung 18**. Each rung's full derivation, assumptions, and verification gates live
 in its spec (last column) — this table is the one-line map, not the handout.
 
 | Rung | Adds (one-line hook) | Spec |
@@ -35,16 +35,19 @@ in its spec (last column) — this table is the one-line map, not the handout.
 | 15 | **PDF through the finite quench** — rung-13's resolved β-PDF **carried through** the rung-10/12 dwell chain, so the two mixing mechanisms **combine**. A `QuenchPDF(S,…)` config (rides on `mixing`, mutually exclusive with `pdf`/`unmixedness`) gives `ei_no_pdf_quench = ei_no_quenched + D(u)·⟨EI_bell⟩(g)`: term 1 the rung-11 mean-field **bulk quench** (the **finite floor**), term 2 the rung-13 β-PDF integral over the ideal bell scaled by an off-optimum-growing dwell `D(u)=τ_res(1+b_u·u)/τ`. The **≈0 rung-13 optimum floor becomes finite bulk NO** (at `C_opt`, `g→0` ⇒ `=ei_no_quenched`), the min stays pinned **AT `C_opt`** (`(H/S)²` shift), and the rung-13 **descending** far flank **CLIMBS** again (dwell restored) — a non-monotone over-flank showing **both** parents. The nonlinear bell keeps the **stoich-mean sign reversal** a dwell-only closure can't. `pdf_quench=None` = exact rung 13. | `docs/rung15-spec.md` |
 | 16 | **PDF through the quench, PER POCKET** — retires rung-15's one acknowledged **linearisation** (term 2 = `D(u)·⟨EI_bell⟩`, a **constant-T** bell × a **scalar** dwell ratio). A `PocketQuenchPDF(S,…)` config (rides on `mixing`, ≤1-of-four with `pdf_quench`/`pdf`/`unmixedness`) carries **each rich-of-mean β-PDF pocket through its OWN finite quench** (`_quench_no` at `τ_core(C)`), so the dwell acts **inside** the cooling chemistry: `ei_no_pocket_quench = ei_no_quenched + ⟨EI_pocket_quench(ξ;τ_core)⟩_g`. Because a lingering pocket **cools**, term 2 is **SUBLINEAR** in `τ_core` (far-flank ≈×1.3 vs rung-15's LINEAR ×1.51 = the dwell ratio (grid-dependent)), which **ERODES** rung-15's over-penetration far flank ~18–32% into **near-degeneracy** with the `C_opt` notch (which **survives** — the composition excess still →0 at `C_opt`). The honest headline is the **cooling-limited erosion**, NOT a relocated optimum: the global-min **location is NOT claimed** (it flips sign across the β-PDF quadrature ~5%, the φ>2 tail, and the `C_e` regime 2%→21%). Clamp **dormant** (`max_a<1`) — the difference is cooling, not super-eq rollover. `pocket_quench=None` = exact rung 15. | `docs/rung16-spec.md` |
 | 17 | **Exhaust-NO clamp through the mixing-fidelity ladder** — a rung-14 corollary *from the rich side*. `Gas.exhaust_no_clamp(…)` carries the exhaust NO from **three** combustor-mixing-fidelity models through the **same** rung-14 nozzle collapse to `T9` and reads the dropped-clamp margin `a=[NO]/[NO]_e(T9)`: **MIXED-OUT** (rung 8, `x_no_mix`) reads **DORMANT** (`a≈0.02`) at the RICH `φ_p=1.5` primary — mixing-out **HIDES** the super-eq NO; **BULK QUENCH** (rung 11, `x_no_quenched`) **FIRES** (`a≈3.4`, the re-making); **PER-POCKET** (rung 16) **FIRES harder** (`a≈13.6`, segregation lifts the mean). The **load-bearing** claim splits: the **ORDERING** `a_mixed≤a_bulk≤a_pocket` is **STRUCTURAL** (the quench only *adds* NO; the per-pocket excess is additive) and `a_mixed<1` is robust — *these* are certified; the **FIRING** (`a_bulk,a_pocket>1`) holds **in-band** but is **NOT universal** (a fast quench `J→∞` drives `a_bulk→a_mixed<1`, the rung-10 `τ_q→0` reduce). The **identity** `a_pocket/a_bulk ≡` rung-16's station-4 gap is **algebra**, not a test (the nozzle denominator cancels — a *witnessed no-op*, stated not gated). Every firing magnitude *and the gap* ride on un-pinned scales (`C_e`, `τ_res`, `H`, `J`; the gap moves ~23% over `C_e 0.15→0.20`). **Contrast rung 14** (which fires on the `φ_p=1.0` mixed-out number, `a≈250` — the *zoned-vs-unzoned* axis): rung 17 is the *mixing-fidelity* axis, the same dropped-clamp lesson from the rich side where the mixed-out shortcut is **unconservative**. Clamp **dormant at station 4** (`max_a<1` — super-eq is a *nozzle* effect). No new chemistry/config: it composes rung-8/11/16 + rung-14 outputs. | `docs/rung17-spec.md` |
+| 18 | **Transported-variance closure** — the deferred "transported PDF" seam, done as its **honest LIMIT**. A `TransportedPDF(S,…)` config (rides on `mixing`, ≤1-of-**five** with `unmixedness`/`pdf`/`pdf_quench`/`pocket_quench`) replaces rung-13's imposed kink `g(C)=k_g·|ln(C/C_opt)|` with the **residual of a variance DECAY ODE** `dg/dt=−C_φ·ω(C)·g` (`_transport_variance`, backward-Euler, `C_φ≈2` anchored) from a **DERIVED two-stream ceiling** `g_ceiling=(ξ_p−ξ̄)/(1−ξ̄)` (`_two_stream_ceiling`, from `φ_p` — NOT a knob), fed through the **rung-13 ideal bell** (`_pdf_mean_ei`). **The load-bearing result is NEGATIVE**: a 0-D transport **CANNOT derive** the `C_opt` optimum — a genuine ODE with any **mean-field** `ω(J)` (or `τ_q(J)∝1/√J`) gives a **monotone/flat** `g(J)`, no interior optimum; the optimum appears **only** once `ω` is given a **SPATIAL** coverage `ω(C=(S/H)√J)` peaked at `C_opt` — i.e. once the jet **spacing `S`** is injected (rung-11's *"mean-field ⇒ no mixing optimum"* made literal). So the coverage `ω(C)` is an **explicitly imposed** spatial closure (the honest successor of the kink), and a **spatial/CFD PDF** stays the deferred ceiling. What transport **legitimately adds** (certified): the **DERIVED ceiling** (exposes `g_max=0.3` as **4.4× too large**), the **RESIDUAL floor** `g(C_opt)=g_ceiling·exp(−Da_opt)>0` (perfect mixing never reached ⇒ the emissions optimum is **elevated** off the well-mixed value, not the kink's touch-the-floor ≈0), and **KINK-is-non-generic** (the imposed corner has one-sided slopes `±k_g/C_opt`; any analytic mixing rate rounds it — the EIbell ratio one step off `J_opt`: kink **×5.8e4** vs transported **×1.05** — the *sharpness* was the artifact, not the location). Reduce: `Da_opt→∞` (perfect mixing) recovers the kinked notch (the well-mixed point value); `g_ceiling→0` = point value. `transported=None` = exact rung 17. Shape-only on `g` (the dwell `τ_core` stays the rung-16 kink — the "also transport the dwell" seam declined). | `docs/rung18-spec.md` |
 
-Rungs 7–13, 15, 16 and 17 are **pure diagnostics** — NO/N never enter the cycle solve, so the cycle
+Rungs 7–13, 15, 16, 17 and 18 are **pure diagnostics** — NO/N never enter the cycle solve, so the cycle
 stays **bit-for-bit rung 6**. Rung 14 is *also* a pure diagnostic (`Gas.nozzle_flow` only reads the
 run's state; the production nozzle stays frozen), so the cycle is still bit-for-bit rung 6. Rung 17 is
 *also* a pure diagnostic (`Gas.exhaust_no_clamp` only reads the run's state and composes the rung-8/11/16
-+ rung-14 outputs), so the cycle stays bit-for-bit rung 6. Each rung's verified anchor data (textbook /
-formation / CEA-equilibrium / Zeldovich-kinetics / ICAO-zoning / rich-RQL / finite-quench / jet-mixing /
-unmixedness / mixing-PDF / frozen-vs-equilibrium-nozzle / PDF-through-quench / per-pocket-PDF-quench /
-super-equilibrium-exhaust) lives in `docs/plans/rungN-anchor-*.md`; `docs/plans/` also holds the living
-plan/tasks (rungs 1–3).
++ rung-14 outputs), so the cycle stays bit-for-bit rung 6. Rung 18 is *also* a pure diagnostic
+(`zoned_nox(…, transported=…)` only adds a transported-width PDF integral over the existing ideal bell —
+NO/N never enter `_equil_solve`), so the cycle stays bit-for-bit rung 6. Each rung's verified anchor data
+(textbook / formation / CEA-equilibrium / Zeldovich-kinetics / ICAO-zoning / rich-RQL / finite-quench /
+jet-mixing / unmixedness / mixing-PDF / frozen-vs-equilibrium-nozzle / PDF-through-quench /
+per-pocket-PDF-quench / super-equilibrium-exhaust / transported-variance) lives in
+`docs/plans/rungN-anchor-*.md`; `docs/plans/` also holds the living plan/tasks (rungs 1–3).
 
 ## Working contract (from SPEC.md — these override convenience)
 - **Derive before you code.** For each station, write the governing equation and
@@ -55,7 +58,7 @@ plan/tasks (rungs 1–3).
   hidden state (Turbine and Nozzle diverge their signatures by design).
 - **Conservation checks are assertions**, run on every execution (not as
   separate tests). See SPEC.md / docs/rung2-spec.md § Conservation checks.
-- **Current scope (rung 17):** all rungs above are cumulative and live (see § The
+- **Current scope (rung 18):** all rungs above are cumulative and live (see § The
   rungs). The **cycle solve** is a thermally-perfect, reacting, dissociation-
   equilibrium gas (`Gas.reacting_equilibrium()`) run through ideal + real components
   (isentropic `η_c/η_t` **or** polytropic `e_c/e_t`, mutually exclusive; `π_d/π_b/π_n`,
@@ -72,13 +75,21 @@ plan/tasks (rungs 1–3).
   (`Gas.exhaust_no_clamp(…)`) — carrying three combustor-mixing-fidelity exhaust-NO models (rung-8
   mixed-out, rung-11 bulk quench, rung-16 per-pocket) through the **same** rung-14 nozzle collapse to
   show the mixed-out shortcut reads the dropped clamp **dormant** at the rich primary while the fuller
-  models **fire** (all still bit-for-bit rung 6). Fork A/B
+  models **fire** (all still bit-for-bit rung 6); rung 18 adds the **transported-variance diagnostic**
+  (`zoned_nox(…, transported=TransportedPDF(…))`) — replacing rung-13's imposed kink with the residual of
+  a variance-decay ODE from a **derived** two-stream ceiling, and proving (the load-bearing **negative**
+  result) that a 0-D transport **cannot derive** the `C_opt` optimum (mean-field `ω` ⇒ monotone `g(J)`;
+  the optimum needs the spatial spacing `S`), so the coverage `ω(C)` stays an **imposed** spatial closure.
+  Fork A/B
   (`Gas.reacting()` / `reacting_forkb()`) and the frozen-products `Gas.thermally_perfect()` are kept
   alongside. **Deferred seams** (kept open on purpose): **finite-rate nozzle chemistry** — rung 14
   gives the frozen↔equilibrium *bracket*, not the real Damköhler-number flow *between* the bounds (nor
-  a **shifting turbine**); a **transported/CFD PDF** (predict the β width `g(C)` and the dwell spectrum
-  from a mixing equation rather than modeling them — which is also what would let rung 17 claim a
-  firing *magnitude*, not just a direction); a regime where a **per-pocket clamp fires AT THE BURNER**
+  a **shifting turbine**); a **spatial / transported-CFD PDF** (predict the cross-plane mixing *pattern*,
+  hence the β width `g(C)` **and** the dwell spectrum, from a PDF-transport / scalar-flux equation with
+  the jet **spacing `S`** — which rung 18 proves a **0-D** variance transport *cannot* reach, and which is
+  also what would let rung 17 claim a firing *magnitude*, not just a direction; rung 18 discharged the
+  0-D limit — the derived ceiling, the residual floor, the kink-non-genericity — but the spatial pattern
+  stays the ceiling); a regime where a **per-pocket clamp fires AT THE BURNER**
   (`max_a>1` at station 4, not just in the rung-14/17 nozzle where rung 17 already fires it) — the
   lever is a **slow-enough freeze on a cooling pocket** (a long dwell that freezes NO high while the
   local `[NO]_e` collapses), *not* a hotter `Tt4` alone (raising `Tt4` raises the terminal `[NO]_e`
@@ -214,7 +225,17 @@ plan/tasks (rungs 1–3).
   x_i/x_no_e(T9)`. The per-pocket mole fraction is `κ·⟨EI⟩_pocket` with `κ=x_no_bulk/ei_no_quenched`
   (`x_no ∝ EI` at fixed far), which is exactly why the nozzle is a no-op on the pocket/bulk ratio.
   **No new chemistry/config** — it only READS state (through the untouched rung-8/11/16 + rung-14
-  machinery), so the cycle is bit-for-bit rung 6. Requires the equilibrium gas + both configs.
+  machinery), so the cycle is bit-for-bit rung 6. Requires the equilibrium gas + both configs. Rung 18
+  adds the **transported-variance closure**: the `TransportedPDF` config (rides on `JetMixing`,
+  **≤1-of-five** with the other four; knobs `S`/`C_opt`/`C_phi=2.0`/`Da_opt`/`w_cov`/`tau_mix` + grids;
+  a `coverage_omega(C)` = the IMPOSED spatial `ω(C)` and a `segregation(C,far,φ_p)` that returns the
+  transported width + derived ceiling), the module helpers `_two_stream_ceiling(far,φ_p)` (the DERIVED
+  ceiling `(ξ_p−ξ̄)/(1−ξ̄)`, asserts `φ_p>φ_overall`) and `_transport_variance(g_ceiling,ω,τ,C_φ,nsteps)`
+  (backward-Euler integration of `dg/dt=−C_φ·ω·g` — positivity-preserving; the negative-result gate drives
+  it with mean-field `ω(J)` to show monotone `g(J)`), the `ZonedNOxState` fields
+  `transported`/`g_ceiling`/`g_transported`/`ei_no_transported`, and a `transported=` param on `zoned_nox`
+  that feeds the transported width through the rung-13 ideal bell (`_pdf_mean_ei`). `transported=None` ⇒
+  exact prior path; a pure diagnostic (NO/N never enter `_equil_solve`), so bit-for-bit rung 6.
 - `turbojet/components.py` — `Inlet, Compressor, Burner, Turbine, Nozzle` in `h`/`pr`
   form (+ loss params, `ram_recovery(M0)`, the polytropic `e_c/e_t` knob; the Nozzle
   branches CPG/TPG — the velocity↔enthalpy trap, plus a back-pressure guard `p9 ≤ pt9`). The
@@ -323,6 +344,16 @@ plan/tasks (rungs 1–3).
   values bit-for-bit — it composes, never recomputes), cycle-untouched, clamp dormancy at station 4
   (`max_a_quench<1`), and the guards (requires-equilibrium-gas / requires-both-configs / back-pressure).
   (Reuses a cached DP + cached clamp results per `C_e`.)
+- `tests/test_rung18.py` — rung-18: three reduces (`transported=None` prior path untouched + fields None;
+  `Da_opt→∞` perfect-mixing recovers the well-mixed point value = the kinked notch; `g_ceiling→0` point
+  value), **THE NEGATIVE RESULT** (`_transport_variance` with mean-field `ω(J)` const/√J/J ⇒ monotone/flat
+  `g(J)`, NO interior optimum; the spatial `ω(C)` ⇒ an interior optimum AT `J_opt=16` — the optimum ⟺ the
+  spatial `S`), the **DERIVED ceiling** (`==(ξ_p−ξ̄)/(1−ξ̄)` from `φ_p`, `<g_max=0.3` by >4×, J/C_e-
+  independent; the `φ_p>φ_overall` RQL guard), the **RESIDUAL floor** (`g(C_opt)>0` ⇒ `ei_no_transported`
+  elevated well above the point value, min AT `C_opt` with both flanks up), **KINK-non-genericity** (the
+  transported width's one-sided slopes →0 vs the kink corner; the basin rounds `O(1)` one step off `J_opt`
+  while the kinked ideal-bell notch dives `≫10³×`), cycle-untouched, and the guards (requires-`mixing` /
+  ≤1-of-five / `TransportedPDF` positivity). (Reuses a cached DP.)
 - `main.py` — runs ideal vs real at one design point: tables + overlaid T–s diagram,
   plus the rung-2-frozen-`cp` vs rung-3-`cp(T)` table, the rung-4 frozen-vs-reacting
   + `f`-sweep table, the rung-5 Fork-A-vs-Fork-B (derived-`hPR`) panel, the rung-6
@@ -359,7 +390,14 @@ plan/tasks (rungs 1–3).
   same nozzle collapse; the **rung-14 contrast** `φ_p=1.0→a≈250` vs `φ_p=1.5→a≈0.02`; a `C_e` sweep
   showing the **ordering is structural** while magnitudes move; with the **honest scope** stated loudly:
   the identity is algebra, the firing is in-band not universal (fast quench → dormant), no magnitude is
-  pinned, the clamp is dormant at station 4, and rung 17 is a synthesis of rungs 11/16/14 — not new physics).
+  pinned, the clamp is dormant at station 4, and rung 17 is a synthesis of rungs 11/16/14 — not new physics),
+  and the rung-18 transported-variance panel (the **DERIVED** two-stream ceiling `0.0675` vs rung-13's
+  free `g_max=0.3` at 4.4×; the **NEGATIVE-RESULT** table — the real variance ODE giving monotone/flat
+  `g(J)` for mean-field `ω(J)` const/√J/J vs an interior optimum AT `J_opt` only for the spatial `ω(C)`,
+  the optimum appearing **only** once `S` enters; and the **shape** — the transported width's smooth
+  ELEVATED basin vs the imposed kink diving to the well-mixed floor at `C_opt`, the residual floor
+  `g(C_opt)>0`; with the **honest scope**: the optimum LOCATION is imposed (0-D can't derive it — the
+  spatial/CFD PDF stays the ceiling), only the ceiling/floor/sharpness are what transport buys).
 
 ## Commands
 - Run the model:  `python main.py`

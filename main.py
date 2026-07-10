@@ -18,11 +18,12 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 from turbojet.engine import FlightCondition, build_turbojet  # noqa: E402
 from turbojet.gas import (  # noqa: E402
-    Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, _products_composition,
-    _equilibrium_composition, _h_molar_A,
+    Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF,
+    _products_composition, _equilibrium_composition, _h_molar_A,
     _HF_FUEL_DEFAULT, _M_AIR, _M_CH2, _F_STOICH, _air_mole_fractions,
     _equilibrium_no_fraction, _primary_aft, _thermal_no,
     _quench_trajectory, _quench_no, _bell_interpolator, _beta_pdf_nodes_weights, _ideal_bell_ei,
+    _two_stream_ceiling, _transport_variance, _pdf_mean_ei,
 )
 
 TS_DIAGRAM_PATH = "ts_diagram.png"
@@ -1065,6 +1066,89 @@ def print_exhaust_clamp_table(flight):
     print("  mixed-out shortcut is UNCONSERVATIVE across the rich RQL operating band.")
 
 
+def print_transported_variance_table(flight):
+    """Rung-18 payoff: the TRANSPORTED-variance closure — what a 0-D variance equation CAN and CANNOT
+    derive. Rungs 12-17 IMPOSE the β-PDF width as a kinked g(C)=k_g·|ln(C/C_opt)|. Rung 18 solves g(C)
+    from a variance DECAY ODE dg/dt=−C_φ·ω(C)·g out of a DERIVED two-stream ceiling, through the
+    rung-13 ideal bell. The load-bearing result is NEGATIVE: a 0-D transport CANNOT derive the C_opt
+    optimum (mean-field ω(J) ⇒ monotone g(J); only a SPATIAL ω(C=(S/H)√J) gives an optimum — the
+    spacing S injected). What it DOES add: the DERIVED ceiling (g_max=0.3 was ~4.4× too big), the
+    RESIDUAL floor (optimum elevated off the well-mixed value), and the SMOOTH basin vs the kink corner.
+    Pure diagnostic: bit-for-bit rung 6.
+    """
+    eq = Gas.reacting_equilibrium()
+    real = build_turbojet(eq, PI_C, TT4, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+    st3, st4 = real.stations["3"], real.stations["4"]
+    Tt3, Tt4, far, p = st3.Tt, st4.Tt, st4.far, st4.pt
+    hf = eq.hf_fuel_molar if eq.hf_fuel_molar is not None else _HF_FUEL_DEFAULT
+    xibar = far / (1.0 + far)
+    tau, phi_p = 3e-3, 1.5
+    NB, NQ = 48, 80
+    cfg = TransportedPDF(S=0.0625, n_bell=NB, n_quad=NQ)
+    kink = MixingPDF(S=0.0625, n_bell=NB, n_quad=NQ)
+    J_opt = _j_opt_from(cfg)
+
+    print("\nTransported-variance closure (rung 18): the deferred 'transported PDF' seam — derive g(C)")
+    print("from a mixture-fraction variance equation instead of imposing the kink. The HONEST result is")
+    print("a LIMIT: a 0-D transport CANNOT derive the C_opt optimum (it is irreducibly SPATIAL — the")
+    print("rung-11/12 variance seam). What it CAN add: a DERIVED ceiling, a RESIDUAL floor, a smooth basin.")
+
+    g_ceiling = _two_stream_ceiling(far, phi_p)
+    point = _ideal_bell_ei(far, p, Tt3, hf, tau)
+    print(f"\n  Design point: Tt3={Tt3:.0f} K, Tt4={Tt4:.0f} K, overall far={far:.4f} (φ={far/_F_STOICH:.2f},"
+          f" LEAN); rich primary φ_p={phi_p}")
+    print(f"  DERIVED two-stream ceiling g_ceiling=(ξ_p−ξ̄)/(1−ξ̄)={g_ceiling:.4f} — set by φ_p, NOT a knob;")
+    print(f"  rung-13's free g_max=0.30 is {0.30/g_ceiling:.1f}× larger (which is what let rung-13's ⟨EI⟩(g)")
+    print(f"  reach its humped/descending regime). Residual floor g(C_opt)=g_ceiling·exp(−Da_opt)="
+          f"{g_ceiling*math.exp(-cfg.Da_opt):.4f} > 0.")
+
+    # (1) THE NEGATIVE RESULT — a genuine variance ODE: mean-field ω(J) monotone vs spatial ω(C) optimum.
+    print("\n  (1) THE NEGATIVE RESULT — integrate the REAL variance ODE, read g at the combustor exit:")
+    print(f"  {'J':>5} {'C':>6} {'ω const':>10} {'ω∝√J':>10} {'ω∝J':>10} {'ω(C) spatial':>13}")
+    Js = (4.0, 9.0, 16.0, 25.0, 49.0, 100.0, 225.0, 625.0)
+    H = JetMixing(J=1.0).H
+    cols = {"const": lambda J: 250.0, "sqrtJ": lambda J: 250.0 * math.sqrt(J / 16.0),
+            "linJ": lambda J: 250.0 * (J / 16.0)}
+    grids = {k: [] for k in cols}
+    gcov = []
+    for J in Js:
+        C = (cfg.S / H) * math.sqrt(J)
+        for k, om in cols.items():
+            grids[k].append(_transport_variance(g_ceiling, om(J), cfg.tau_mix, c_phi=2.0))
+        gcov.append(_transport_variance(g_ceiling, cfg.coverage_omega(C), cfg.tau_mix, c_phi=cfg.C_phi))
+        print(f"  {J:>5.0f} {C:>6.2f} {grids['const'][-1]:>10.4f} {grids['sqrtJ'][-1]:>10.4f} "
+              f"{grids['linJ'][-1]:>10.4f} {gcov[-1]:>13.4f}")
+
+    def argmin_note(vals):
+        i = min(range(len(vals)), key=lambda k: vals[k])
+        if (max(vals) - min(vals)) <= 1e-4 * max(vals):
+            return "FLAT — no optimum"
+        return (f"interior min J={Js[i]:.0f}" if 0 < i < len(vals) - 1
+                else f"monotone (min J={Js[i]:.0f}) — no optimum")
+    print(f"  mean-field: const → {argmin_note(grids['const'])}; √J → {argmin_note(grids['sqrtJ'])};"
+          f" J → {argmin_note(grids['linJ'])}")
+    print(f"  spatial ω(C): {argmin_note(gcov)} — the optimum appears ONLY once S enters via C=(S/H)√J.")
+
+    # (2) the SHAPE — the smooth elevated basin vs the kink notch, through the SAME ideal bell.
+    print(f"\n  (2) THE SHAPE (S={cfg.S} m → J_opt={J_opt:.0f}); transported g vs the imposed kink,"
+          " through the ideal bell:")
+    print(f"  {'J':>5} {'C':>6} {'g_kink':>7} {'g_tr':>7} {'⟨EI⟩kink':>9} {'⟨EI⟩tr':>8}   note")
+    print("  " + "-" * 64)
+    for J in (9.0, 16.0, 25.0, 49.0, 100.0, 225.0):
+        C = cfg.C(JetMixing(J=J))
+        gk = kink.segregation(C)
+        gt, _ = cfg.segregation(C, far, phi_p)
+        eik = _pdf_mean_ei(far, Tt3, p, hf, tau, max(gk, 1e-12), n_bell=NB, n_quad=NQ)
+        eit = _pdf_mean_ei(far, Tt3, p, hf, tau, gt, n_bell=NB, n_quad=NQ)
+        note = "← C_opt: kink DIVES to floor; transp ELEVATED" if abs(J - J_opt) < 1 else ""
+        print(f"  {J:>5.0f} {C:>6.2f} {gk:>7.4f} {gt:>7.4f} {eik:>9.5f} {eit:>8.5f}   {note}")
+    print(f"  The kink TOUCHES the well-mixed floor (≈{point:.1e}) at C_opt (g→0); the transported basin")
+    print("  sits ELEVATED (residual unmixedness). Both minima are AT C_opt — but the LOCATION is IMPOSED")
+    print("  via ω(C) (proven in panel 1), while the SHARPNESS was the kink's artifact (any mixing rate")
+    print("  rounds a corner). Transport tightens the closure (derived ceiling + residual floor) without")
+    print("  over-claiming the one thing 0-D cannot reach: the spatial/CFD PDF stays the deferred ceiling.")
+
+
 def _j_opt_from(cfg):
     """The uniformity optimum J_opt where C=(S/H)√J_opt = C_opt (H=0.10, the JetMixing default)."""
     return (cfg.C_opt * JetMixing(J=1.0).H / cfg.S) ** 2
@@ -1213,6 +1297,8 @@ def main():
     print_pocket_quench_table(FLIGHT)
 
     print_exhaust_clamp_table(FLIGHT)
+
+    print_transported_variance_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

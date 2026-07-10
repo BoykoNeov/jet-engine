@@ -1250,6 +1250,51 @@ def _pocket_quench_mean_ei(far_overall: float, Tt3: float, p: float, hf_fuel: fl
     return sum(wi * qb(x) for wi, x in zip(w, nodes)), max_a
 
 
+def _two_stream_ceiling(far_overall: float, phi_primary: float) -> float:
+    """Rung-18 DERIVED injection ceiling g_ceiling = (ξ_p − ξ̄)/(1 − ξ̄) — the maximum normalized
+    variance of a two-delta PDF on {0 (dilution air), ξ_p (rich-primary products)} at the fixed
+    overall mean ξ̄ (docs/rung18-spec.md). Set by the PRIMARY RICHNESS φ_p, NOT a free knob — the one
+    quantity rung 18 DERIVES rather than fits (it exposes rung-13's g_max=0.3 as ~4.4× too large).
+
+    A two-delta at {0, ξ_p} with mean ξ̄ carries mass ξ̄/ξ_p at ξ_p; its variance is ξ̄(ξ_p−ξ̄), so the
+    normalized segregation g=σ²/[ξ̄(1−ξ̄)]=(ξ_p−ξ̄)/(1−ξ̄). Requires φ_p>φ_overall (a rich primary
+    diluting down to a leaner mean — the RQL geometry); asserts g_ceiling∈(0,1)."""
+    xibar = far_overall / (1.0 + far_overall)
+    far_p = phi_primary * _F_STOICH
+    xi_p = far_p / (1.0 + far_p)
+    g_ceiling = (xi_p - xibar) / (1.0 - xibar)
+    assert 0.0 < g_ceiling < 1.0, (
+        f"two-stream ceiling g={g_ceiling:.4f} outside (0,1): the primary (φ_p={phi_primary}, "
+        f"ξ_p={xi_p:.4f}) must be RICHER than the overall mean (ξ̄={xibar:.4f}) — the RQL geometry."
+    )
+    return g_ceiling
+
+
+def _transport_variance(g_ceiling: float, omega: float, tau: float,
+                        c_phi: float = 2.0, nsteps: int = 400) -> float:
+    """Rung-18 transported segregation: integrate the mixture-fraction variance DECAY ODE
+    dg/dt = −C_φ·ω·g over the residence [0, τ] from the injection ceiling g_ceiling
+    (docs/rung18-spec.md). ω is the turbulent mixing frequency, C_φ≈2 the canonical
+    mechanical-to-scalar timescale ratio (scalar dissipation). Returns the residual width g(τ).
+
+    Analytic for constant ω (g_ceiling·exp(−C_φ·ω·τ)), but INTEGRATED numerically so the
+    negative-result gate (docs/rung18-spec.md §1) can drive it with ANY ω(J)/ω(C): a MEAN-FIELD
+    ω(J) gives a monotone/flat g(J) (no interior optimum — the rung-11/12 variance seam); an
+    interior optimum appears ONLY once ω is given a SPATIAL coverage dependence ω(C=(S/H)√J) — i.e.
+    once the jet spacing S is injected. So this ODE cannot DERIVE the Holdeman optimum; the optimum
+    LOCATION is imposed through the caller's coverage ω(C)."""
+    dt = tau / nsteps
+    g = g_ceiling
+    denom = 1.0 + c_phi * omega * dt            # backward (implicit) Euler on the linear decay —
+    for _ in range(nsteps):                     # unconditionally stable AND positivity-preserving for
+        g /= denom                              # any dt (forward Euler would go negative at C_φ·ω·dt>1)
+    assert 0.0 < g <= g_ceiling + 1e-12, (
+        f"transported variance g={g:.4e} left (0, g_ceiling={g_ceiling:.4e}] — the decay ODE must "
+        f"stay bounded by the injection ceiling (check C_φ·ω·τ ≥ 0 and dt small enough)."
+    )
+    return g
+
+
 # --------------------------------------------------------------------------- #
 # RUNG 14 — equilibrium-vs-frozen NOZZLE FLOW (the rung-6 cycle-side seam).     #
 # The production nozzle FREEZES the station-4 equilibrium mixture through the   #
@@ -1713,6 +1758,81 @@ class PocketQuenchPDF:
 
 
 @dataclass
+class TransportedPDF:
+    """Rung-18 TRANSPORTED-variance config — the honest LIMIT of the deferred 'transported PDF' seam
+    (docs/rung18-spec.md). Rungs 12–17 IMPOSE the β-PDF width as a kinked g(C)=min(g_max, k_g·|ln(C/
+    C_opt)|). This config instead solves g(C) as the residual of a mixture-fraction variance DECAY ODE
+    dg/dt=−C_φ·ω(C)·g (`_transport_variance`) from a DERIVED two-stream ceiling (`_two_stream_ceiling`),
+    then feeds it through the rung-13 IDEAL BELL (`_pdf_mean_ei`). Rides ON a `JetMixing` (needs J and H
+    for the Holdeman group C=(S/H)√J), and is ≤1-of-FIVE mutually exclusive with `unmixedness`/`pdf`/
+    `pdf_quench`/`pocket_quench` (five closures of the SAME variance physics).
+
+    THE LOAD-BEARING RESULT IS NEGATIVE (and stronger for it). A 0-D variance transport CANNOT DERIVE
+    the C_opt optimum: with any MEAN-FIELD ω(J) (or the trajectory τ_q(J)∝1/√J) the residual g(J) is
+    MONOTONE/FLAT — no interior optimum (the optimum needs ω peaked at a specific PENETRATION, i.e. the
+    SPATIAL spacing S via C=(S/H)√J, absent from the mean-field trajectory). This is rung-11's own
+    result: 'mean-field ⇒ no mixing optimum (the variance seam, rung 12)'. So the coverage
+    ω(C)=ω_opt·exp(−ln²(C/C_opt)/2w_cov²) below is an EXPLICITLY IMPOSED spatial closure — the honest
+    successor of rung-13's kinked g(C), NOT a derivation. A transported/CFD PDF that predicts the
+    spatial pattern (and rung-17's firing MAGNITUDE) stays the DEFERRED ceiling.
+
+    WHAT TRANSPORT LEGITIMATELY ADDS (certified; docs/rung18-spec.md gates):
+      • a DERIVED two-stream ceiling g_ceiling=(ξ_p−ξ̄)/(1−ξ̄) from φ_p (NOT a free knob) — exposes
+        rung-13's g_max=0.3 as ~4.4× too large (φ_p=1.5 ⇒ g_ceiling=0.0675);
+      • a RESIDUAL floor g(C_opt)=g_ceiling·exp(−Da_opt)>0 (perfect mixing never reached ⇒ the emissions
+        optimum is ELEVATED off the well-mixed value, not the kink's touch-the-floor ≈0);
+      • KINK-is-non-generic — the transported g is SMOOTH (both one-sided slopes →0 at C_opt) vs the
+        imposed corner (±k_g/C_opt); the sharpness of the pin was the artifact, not its location;
+      • the canonical C_φ≈2 scalar-dissipation decay law.
+
+    `transported=None` (default) is the exact prior path; Da_opt→∞ ⇒ g(C_opt)→0 ⇒ the kinked notch (the
+    well-mixed point value — the reduce). Like the rung-9..16 knobs, S/Da_opt/w_cov are order-of-
+    magnitude; C_opt≈2.5 is Holdeman's, C_φ=2 is anchored; g_ceiling is DERIVED. Certified: the derived
+    ceiling, the residual floor, the smoothness (kink-non-genericity), and the NEGATIVE result (optimum
+    ⟺ the spatial ω(C))."""
+    S: float = 0.0625          # dilution-jet spacing, m (forms the Holdeman group with H and J)
+    C_opt: float = 2.5         # Holdeman uniformity optimum of C=(S/H)√J (the coverage peak)
+    C_phi: float = 2.0         # scalar-dissipation constant (mechanical-to-scalar timescale ratio; anchored)
+    Da_opt: float = 2.0        # optimum Damköhler C_φ·ω_opt·τ (e-folds of variance the best jet decays)
+    w_cov: float = 1.0         # coverage width in ln(C/C_opt) (sets the basin breadth; IMPOSED spatial)
+    tau_mix: float = 2.5e-3    # mixing residence for the ODE, s (folds into Da; g depends only on the product)
+    n_bell: int = 200          # ideal-bell grid points (EI(ξ) built ONCE, interpolated; rung 13)
+    n_quad: int = 200          # β-PDF quadrature nodes (rung 13)
+    n_ode: int = 400           # variance-ODE integration steps
+
+    def __post_init__(self):
+        for name, v in (("S", self.S), ("C_opt", self.C_opt), ("C_phi", self.C_phi),
+                        ("Da_opt", self.Da_opt), ("w_cov", self.w_cov), ("tau_mix", self.tau_mix)):
+            assert v > 0.0, f"TransportedPDF.{name}={v} must be positive"
+        assert self.n_bell > 1 and self.n_quad > 1 and self.n_ode > 1, \
+            "TransportedPDF grid sizes (n_bell, n_quad, n_ode) must be > 1"
+
+    def C(self, mixing: "JetMixing") -> float:
+        """The Holdeman momentum-flux/geometry group C=(S/H)√J (identical to MixingPDF/PocketQuenchPDF.C
+        — the same jet that set τ_q). Uses the paired JetMixing's H and J."""
+        return (self.S / mixing.H) * math.sqrt(mixing.J)
+
+    def coverage_omega(self, C: float) -> float:
+        """The IMPOSED spatial coverage ω(C)=ω_opt·exp(−ln²(C/C_opt)/2w_cov²), peaked at C_opt (best
+        cross-plane tiling ⇒ fastest scalar dissipation). SMOOTH (analytic max ⇒ zero slope at C_opt),
+        NOT the kink. ω_opt is folded via Da_opt=C_φ·ω_opt·τ_mix, so this returns ω_opt·(the coverage
+        shape). This is the one thing a 0-D transport CANNOT derive (the spatial S enters here); it is
+        the explicit successor of rung-13's kinked g(C)."""
+        omega_opt = self.Da_opt / (self.C_phi * self.tau_mix)     # from Da_opt = C_φ·ω_opt·τ_mix
+        lnr = math.log(C / self.C_opt)
+        return omega_opt * math.exp(-lnr * lnr / (2.0 * self.w_cov * self.w_cov))
+
+    def segregation(self, C: float, far_overall: float, phi_primary: float) -> float:
+        """The TRANSPORTED width g(C): integrate dg/dt=−C_φ·ω(C)·g from the DERIVED two-stream ceiling.
+        A smooth basin (min AT C_opt, from the imposed coverage) ELEVATED off zero by the residual
+        g(C_opt)=g_ceiling·exp(−Da_opt)>0. Returns (g, g_ceiling)."""
+        g_ceiling = _two_stream_ceiling(far_overall, phi_primary)
+        g = _transport_variance(g_ceiling, self.coverage_omega(C), self.tau_mix,
+                                c_phi=self.C_phi, nsteps=self.n_ode)
+        return g, g_ceiling
+
+
+@dataclass
 class ZonedNOxState:
     """Two-zone (primary → dilution) thermal-NO diagnostic (rung 8). A pure DIAGNOSTIC —
     like NOxState it never feeds the cycle. NO is set in the hot primary and FROZEN through
@@ -1771,6 +1891,17 @@ class ZonedNOxState:
     pocket_quench: Optional["PocketQuenchPDF"] = None  # the per-pocket PDF-through-quench config used
     ei_no_pocket_excess: Optional[float] = None  # term 2 — the per-pocket quench β-PDF integral, g/kg
     ei_no_pocket_quench: Optional[float] = None  # term1 + term2, g/kg — the combined result (rung 16)
+    # RUNG 18 — the TRANSPORTED-variance closure (what 0-D CAN/CANNOT derive). Set when zoned_nox is
+    # called with a `transported` config (requires `mixing`, ≤1-of-five with the other four); None
+    # otherwise. The segregation width g(C) is no longer the imposed kink but the residual of a variance
+    # ODE dg/dt=−C_φ·ω(C)·g from a DERIVED two-stream ceiling — a smooth basin ELEVATED off the
+    # well-mixed value (the residual floor g(C_opt)>0). The `C_opt` LOCATION still rides on the IMPOSED
+    # spatial coverage ω(C) (a 0-D transport cannot derive it — the rung-11/12 variance seam). Fed
+    # through the rung-13 ideal bell. `ei_no_pdf` is NOT set here (different closure); `g_seg` reused.
+    transported: Optional["TransportedPDF"] = None  # the transported-variance config used
+    g_ceiling: Optional[float] = None      # DERIVED two-stream injection ceiling (ξ_p−ξ̄)/(1−ξ̄) from φ_p
+    g_transported: Optional[float] = None  # the ODE-residual width g(C) (≤ g_ceiling; >0 at C_opt)
+    ei_no_transported: Optional[float] = None  # ⟨EI⟩ over the β-PDF of the ideal bell at g_transported
 
     @property
     def ei_no(self) -> float:
@@ -2185,6 +2316,7 @@ class Gas:
                   pdf: Optional["MixingPDF"] = None,
                   pdf_quench: Optional["QuenchPDF"] = None,
                   pocket_quench: Optional["PocketQuenchPDF"] = None,
+                  transported: Optional["TransportedPDF"] = None,
                   quench_ngrid: int = 240, quench_nsteps: int = 2000) -> "ZonedNOxState":
         """Two-zone (primary → dilution) thermal NOx (docs/rung8-spec.md). Runs the SAME
         rung-7 extended-Zeldovich integrator on a HOT, near-stoichiometric PRIMARY zone
@@ -2309,10 +2441,15 @@ class Gas:
             "pocket_quench (rung-16 PER-POCKET PDF through the quench) REQUIRES a `mixing` config — it "
             "needs the jet's J and duct H for the Holdeman group C=(S/H)√J AND the derived τ_mean floor."
         )
-        assert sum(x is not None for x in (unmixedness, pdf, pdf_quench, pocket_quench)) <= 1, (
+        assert not (transported is not None and mixing is None), (
+            "transported (rung-18 transported-variance closure) REQUIRES a `mixing` config — it needs the "
+            "jet's J and duct H for the Holdeman group C=(S/H)√J that the imposed coverage ω(C) rides on."
+        )
+        assert sum(x is not None for x in (unmixedness, pdf, pdf_quench, pocket_quench, transported)) <= 1, (
             "pass AT MOST ONE of unmixedness (rung-12 two-stream) / pdf (rung-13 β-PDF on the ideal bell) "
             "/ pdf_quench (rung-15 β-PDF THROUGH the quench, LINEARISED dwell) / pocket_quench (rung-16 "
-            "PER-POCKET quench) — four closures of the SAME variance physics."
+            "PER-POCKET quench) / transported (rung-18 transported variance) — FIVE closures of the SAME "
+            "variance physics."
         )
         hf_fuel = (self.hf_fuel_molar if self.hf_fuel_molar is not None
                    else _HF_FUEL_DEFAULT)   # 0.0 is a valid ΔHf (elements are the datum)
@@ -2442,6 +2579,29 @@ class Gas:
             state.ei_no_pocket_excess = excess
             state.ei_no_pocket_quench = q["ei"] + excess   # term1 (ei_no_quenched) + term2
             state.max_a_quench = max(state.max_a_quench, pocket_max_a)   # dormancy gate spans pockets
+            return state
+
+        if transported is not None:
+            # RUNG 18 — the TRANSPORTED-variance closure (docs/rung18-spec.md). The β-PDF width g(C) is
+            # no longer the imposed kink but the residual of a variance DECAY ODE dg/dt=−C_φ·ω(C)·g
+            # (`_transport_variance`) from a DERIVED two-stream ceiling (`_two_stream_ceiling`, from φ_p),
+            # fed through the SAME rung-13 ideal bell (`_pdf_mean_ei`). What it adds vs rung 13's kink:
+            #   • g_ceiling is DERIVED from φ_p (not the free g_max=0.3, ~4.4× too large);
+            #   • g(C_opt)=g_ceiling·exp(−Da_opt) > 0 — a RESIDUAL floor (perfect mixing never reached),
+            #     so the emissions optimum is ELEVATED off the well-mixed value (not the kink's ≈0);
+            #   • g(C) is SMOOTH (both one-sided slopes →0 at C_opt) — the kink's sharpness was the artifact.
+            # The C_opt LOCATION still rides on the IMPOSED spatial coverage ω(C) — a 0-D transport CANNOT
+            # derive it (mean-field ω(J) ⇒ monotone g(J); the optimum needs the spatial S — the rung-11/12
+            # variance seam). A pure diagnostic: NO/N never enter _equil_solve, cycle bit-for-bit rung 6.
+            C = transported.C(mixing)
+            g_seg, g_ceiling = transported.segregation(C, far, phi_primary)
+            state.transported = transported
+            state.C_holdeman = C
+            state.g_ceiling = g_ceiling
+            state.g_transported = g_seg
+            state.g_seg = g_seg
+            state.ei_no_transported = _pdf_mean_ei(far, Tt3, p, hf_fuel, tau, g_seg,
+                                                   n_bell=transported.n_bell, n_quad=transported.n_quad)
             return state
 
         if unmixedness is None:

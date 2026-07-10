@@ -1722,3 +1722,72 @@ keeps the exact rung-15 path (bit-for-bit rung 6). `python main.py` prints the r
 the per-pocket clamp fires (super-equilibrium pockets, hotter `Tt4`), a **transported/CFD PDF**,
 **super-equilibrium O / prompt NO**, and the finite-Damköhler nozzle flow; plus off-design, the choked
 nozzle, the afterburner.*
+
+---
+
+# Rung 18 — The transported-variance closure: what a 0-D variance equation can and cannot derive, in plain language
+
+## The headline: we tried to DERIVE the mixing width — and found the honest limit
+Every rung since 12 has **imposed** the segregation by hand: the β-PDF width was
+`g(C) = k_g·|ln(C/C_opt)|`, a sharp **corner** pinned on the textbook Holdeman optimum `C_opt≈2.5`. The
+long-promised next step was to **derive** that width from a real mixing equation instead of drawing it.
+Rung 18 does the honest version of that — and the load-bearing result is a **negative** one, which is
+worth more than the tidy answer we hoped for.
+
+> **You cannot get the mixing optimum out of a 0-D variance equation. The `C_opt` sweet spot is a
+> *spatial* fact — it needs the jet *spacing* — and a lumped, well-stirred model simply doesn't contain
+> the geometry. So the optimum's *location* must still be put in by hand; what transport genuinely buys
+> you is elsewhere.**
+
+## Why the optimum can't be derived (the machine-checked proof)
+Write down the actual variance equation — segregation is created when the jet injects fresh air, and
+**decays** as turbulence mixes it, `dg/dt = −C_φ·ω·g` (with `C_φ≈2`, the standard mixing constant). Now
+integrate it along the jet's own history and read the leftover segregation at the combustor exit. Do it
+with **any** mixing rate that depends only on the jet strength `J` (constant, `∝√J`, `∝J`): the leftover
+`g` comes out **monotone** in `J` (or dead **flat**) — it just slides one way. **No bump, no sweet
+spot.** An interior optimum appears **only** when you let the mixing rate peak at a particular
+*penetration* — i.e. when you write `ω = ω(C=(S/H)√J)` and thereby smuggle in the jet **spacing `S`**.
+That is exactly the project's own rung-11 lesson said out loud: *a mean-field model has no mixing
+optimum.* A 0-D transport relaxation is still mean-field, so it can't have one either. The Holdeman
+optimum is a **uniformity** criterion about how jets tile a cross-plane — irreducibly spatial. The panel
+prints all four columns so you can watch the optimum appear the instant `S` enters, and only then.
+
+## What transport DOES buy you (three real things)
+1. **A derived ceiling, not a fitted one.** The *most* segregated the flow can be is two streams — rich
+   primary at `ξ_p`, cold air at `ξ=0` — and the biggest variance that allows, at the fixed lean mean, is
+   `g_ceiling = (ξ_p−ξ̄)/(1−ξ̄)`. Plug in the rich primary (`φ_p=1.5`) and it's **0.0675**. That single
+   number, which *comes from the combustor* rather than a knob, exposes rung-13's hand-picked `g_max=0.3`
+   as **4.4× too large** — and that oversize was exactly what let rung-13's curve wander into its weird
+   "far flank descends" regime.
+2. **A residual floor — perfect mixing is never reached.** However hard the best jet mixes, the decay
+   leaves `g(C_opt) = g_ceiling·e^{−Da} > 0`. So the emissions optimum sits **elevated off** the
+   well-mixed value, instead of the kink's fiction of diving clean to zero at `C_opt`.
+3. **The kink was never physical.** A corner needs a special mechanism; **any** smooth mixing rate rounds
+   it off. Through the same ideal bell, the imposed kink **dives ~5·10⁴×** one step off the optimum
+   (it touches the floor), while the transported width barely moves (**~1.05×**). The optimum's *sharpness*
+   was the artifact — its *location* was always imposed, and still is.
+
+## Did we get it right?
+The reduces are clean. `transported=None` runs the literal prior code (the whole rung 1–17 suite stays
+bit-for-bit; the cycle never moves — NO is still a trace, opt-in diagnostic). Turn the best-jet mixing up
+to perfect (`Da_opt→∞`) and the transported basin **sharpens right back into the kinked notch** — so the
+old imposed model is just the *infinitely-fast-mixing limit* of this one. What's certified: the **derived
+ceiling** (matches `(ξ_p−ξ̄)/(1−ξ̄)`, beats `g_max` by 4.4×), the **residual floor** (optimum elevated,
+not touching zero), the **smoothness** (rounded basin vs the corner), and — the headline — the **negative
+result** (mean-field `ω` ⇒ no optimum; only spatial `ω(C)` gives one). We do **not** claim to have derived
+the optimum; we proved a 0-D model *can't*, and said so.
+
+---
+*Rung 18 replaces the imposed kink with a transported width: pass
+`Gas.zoned_nox(..., mixing=JetMixing(J=...), transported=TransportedPDF(S=<jet spacing>))` and
+`ei_no_transported = _pdf_mean_ei(far, …, g(C))`, where `g(C)` is the residual of the variance ODE
+`dg/dt=−C_φ·ω(C)·g` from the **derived** ceiling `(ξ_p−ξ̄)/(1−ξ̄)`. The coverage `ω(C)=ω_opt·
+exp(−ln²(C/C_opt)/2w_cov²)` is an **explicitly imposed** spatial closure (the honest successor of the
+kink) — the negative-result gate proves a mean-field `ω` can't produce the optimum, so a **spatial/CFD
+PDF** that predicts the cross-plane pattern (and hence rung-17's firing *magnitude*) stays the deferred
+ceiling. `transported` **requires** `mixing` and is **≤1-of-five** with
+`unmixedness`/`pdf`/`pdf_quench`/`pocket_quench`; `transported=None` keeps the exact prior path
+(bit-for-bit rung 6). `python main.py` prints the rung-18 panel: the negative-result table (mean-field
+monotone vs spatial optimum) and the derived-ceiling / residual-floor / smooth-basin shape. Still
+deferred: the **spatial/CFD PDF**, **super-equilibrium O / prompt NO**, the burner-side clamp-fires
+regime, and the finite-Damköhler nozzle flow; plus off-design, the choked nozzle, the afterburner.*
