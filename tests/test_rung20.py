@@ -23,8 +23,9 @@ Gates (priority order):
    x_no_e_exit is bit-IDENTICAL; the ordering a_mixed<a_bulk<a_pocket and a_mixed<1 survive.
 5. PROMPT-THROUGH INVARIANCE — ei_no_quenched_total = ei_no_quenched + ei_no_prompt, prompt riding the
    dilution UNCHANGED (per-kg-fuel invariant); prompt is kept OUT of the clamp `a`.
-6. FORBID guard — super_eq_o + {pdf, pdf_quench, transported} raises (no half-lifted hybrid); combines
-   OK with mixing / unmixedness / pocket_quench.
+6. (SUPERSEDED BY RUNG 21) super_eq_o + {pdf, pdf_quench, transported} — rung 20 FORBADE this (a
+   half-lifted hybrid); rung 21 lifts the ideal bell too, so this gate is CONSCIOUSLY INVERTED to assert
+   the combination now SUCCEEDS. super_eq_o still combines OK with mixing / unmixedness / pocket_quench.
 7. THE FLOOR is load-bearing — raw m(T) DIVERGES below the flame band (m(1200 K)>2); the T-floor keeps
    the lifted quench in [1,2] (m(1500 K)<2), so the standing 1≤m≤2 trajectory assert holds.
 
@@ -203,9 +204,14 @@ def test_prompt_rides_the_quench_invariant():
 
 
 # --------------------------------------------------------------------------- #
-# GATE 6 — FORBID guard: no half-lifted hybrid with the ideal-bell closures.    #
+# GATE 6 — (SUPERSEDED BY RUNG 21) the ideal-bell closures + super_eq_o.         #
+# Rung 20 FORBADE this (a half-lifted hybrid: lifted term1 + eq-O term2). Rung   #
+# 21 (docs/rung21-spec.md) THREADS m(T) through the ideal bell too, so BOTH      #
+# terms lift and the combination is now VALID. This gate is CONSCIOUSLY INVERTED #
+# (see docs/rung21-spec.md §note): the calls that used to raise must now succeed.#
+# The positive lift/consistency gates live in tests/test_rung21.py.             #
 # --------------------------------------------------------------------------- #
-def test_forbid_super_eq_o_with_ideal_bell_closures():
+def test_super_eq_o_now_combines_with_ideal_bell_closures():
     d = _dp()
     common = dict(mixing=_mix(), super_eq_o=True, quench_ngrid=_NG, quench_nsteps=_NSTEPS)
     for name, cfg in [("pdf", dict(pdf=MixingPDF(S=0.0625, C_opt=2.5, k_g=0.3, g_max=0.3))),
@@ -214,9 +220,11 @@ def test_forbid_super_eq_o_with_ideal_bell_closures():
                       ("transported", dict(transported=TransportedPDF(S=0.0625, C_opt=2.5)))]:
         try:
             d["g"].zoned_nox(d["far"], d["Tt3"], d["Tt4"], d["p"], _PHI_P, _TAU, **cfg, **common)
-        except AssertionError:
-            continue
-        raise AssertionError(f"super_eq_o + {name} must be forbidden (would half-lift a hybrid field)")
+        except AssertionError as e:
+            raise AssertionError(
+                f"RUNG 21 lifted the ideal bell too — super_eq_o + {name} must now SUCCEED "
+                f"(no half-lifted hybrid): {e}"
+            )
 
 
 def test_super_eq_o_combines_with_quench_closures():

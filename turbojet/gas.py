@@ -1213,13 +1213,20 @@ def _beta_pdf_nodes_weights(xibar: float, g_seg: float, n_quad: int = 200):
     return nodes, w
 
 
-def _bell_interpolator(p: float, Tt3: float, hf_fuel: float, tau: float, n_bell: int = 200):
+def _bell_interpolator(p: float, Tt3: float, hf_fuel: float, tau: float, n_bell: int = 200,
+                       super_eq_o: bool = False):
     """Build the IDEAL primary bell EI(ξ) ONCE on a fixed fine ξ-grid (ξ from ~0 up to the φ=2 soot
     bound) and return a smooth linear interpolator ξ↦EI. The bell is equilibrium-heavy, so a J-sweep
-    reuses ONE bell (EI(ξ) is smooth) rather than re-solving per PDF node."""
+    reuses ONE bell (EI(ξ) is smooth) rather than re-solving per PDF node.
+
+    RUNG 21 — `super_eq_o` lifts EVERY bell node's [O] by the Westenberg m(T_p) (default False ⇒
+    byte-identical to rungs 13/15/18: the eq-O lower bound). The lift is peak-concentrated: it is
+    smallest (~×1.12) at the near-stoich bell PEAK where T_p is hottest and m is minimal, and largest
+    on the cool lean/rich flanks where the EI is negligible (docs/plans/rung21-anchor-ideal-bell-lift.md)."""
     xi_max = (2.0 * _F_STOICH) / (1.0 + 2.0 * _F_STOICH)
     xi_ref = [xi_max * (i + 0.5) / n_bell for i in range(n_bell)]
-    ei_ref = [_ideal_bell_ei(x / (1.0 - x), p, Tt3, hf_fuel, tau) for x in xi_ref]
+    ei_ref = [_ideal_bell_ei(x / (1.0 - x), p, Tt3, hf_fuel, tau, super_eq_o=super_eq_o)
+              for x in xi_ref]
 
     def bell(xi: float) -> float:
         if xi <= xi_ref[0]:
@@ -1240,16 +1247,23 @@ def _bell_interpolator(p: float, Tt3: float, hf_fuel: float, tau: float, n_bell:
 
 
 def _pdf_mean_ei(far_overall: float, Tt3: float, p: float, hf_fuel: float, tau: float,
-                 g_seg: float, n_bell: int = 200, n_quad: int = 200) -> float:
+                 g_seg: float, n_bell: int = 200, n_quad: int = 200,
+                 super_eq_o: bool = False) -> float:
     """⟨EI⟩ = ∫₀¹ EI_bell(φ(ξ))·P_β(ξ; ξ̄, g) dξ — the rung-13 resolved-mixing-PDF closure
     (docs/rung13-spec.md). A mean-preserving β-PDF of mixture fraction ξ=far/(1+far) at the OVERALL
     mean ξ̄=far_overall/(1+far_overall). g→0 ⇒ a delta at ξ̄ ⇒ the well-mixed point value. Builds the
     equilibrium-heavy bell once (`_bell_interpolator`) and integrates it against the regime-aware,
-    mean-preserving quadrature (`_beta_pdf_nodes_weights`)."""
+    mean-preserving quadrature (`_beta_pdf_nodes_weights`).
+
+    RUNG 21 — `super_eq_o` threads the Westenberg m(T) lift through the bell (BOTH the g→0 delta
+    short-circuit AND the built bell, so the reduce stays consistent in the limit); default False ⇒
+    the eq-O lower bound, bit-for-bit rungs 13/15/18. The effective lift is peak-concentrated at
+    ≈×1.14–1.17 (EI-weighted onto the near-stoich bell peak, where m is minimal), BELOW the primary
+    ×1.28 — the rung-20 inversion generalized to composition variance (docs/rung21-spec.md)."""
     xibar = far_overall / (1.0 + far_overall)
-    if g_seg <= 1e-9:
-        return _ideal_bell_ei(far_overall, p, Tt3, hf_fuel, tau)   # delta ⇒ well-mixed point value
-    bell = _bell_interpolator(p, Tt3, hf_fuel, tau, n_bell=n_bell)
+    if g_seg <= 1e-9:                                              # delta ⇒ well-mixed point value
+        return _ideal_bell_ei(far_overall, p, Tt3, hf_fuel, tau, super_eq_o=super_eq_o)
+    bell = _bell_interpolator(p, Tt3, hf_fuel, tau, n_bell=n_bell, super_eq_o=super_eq_o)
     nodes, w = _beta_pdf_nodes_weights(xibar, g_seg, n_quad=n_quad)
     return sum(wi * bell(x) for wi, x in zip(w, nodes))
 
@@ -2677,14 +2691,15 @@ class Gas:
             "PER-POCKET quench) / transported (rung-18 transported variance) — FIVE closures of the SAME "
             "variance physics."
         )
-        assert not (super_eq_o and (pdf is not None or pdf_quench is not None or transported is not None)), (
-            "RUNG 20 — super_eq_o threads the lower-bound lift ONLY through the _quench_no re-making "
-            "(the mean-field bulk `ei_no_quenched`, the rung-12 core, the rung-16 per-pocket, and the "
-            "rung-17 clamp). The ideal-bell composition integrals — pdf (rung 13), pdf_quench (rung-15 "
-            "term 2), transported (rung 18) — DELIBERATELY stay equilibrium-O lower bounds (docs/"
-            "rung20-spec.md): pdf_quench would become a half-lifted HYBRID (lifted term1 + eq-O term2). "
-            "Combine super_eq_o with mixing / unmixedness / pocket_quench only."
-        )
+        # RUNG 21 — the rung-20 forbid guard is DISCHARGED (docs/rung21-spec.md). super_eq_o now
+        # threads the SAME Westenberg m(T) lift through the ideal-bell composition integrals too —
+        # pdf (rung 13), pdf_quench term 2 (rung 15), transported (rung 18) — via the `super_eq_o`
+        # kwarg on `_pdf_mean_ei`/`_bell_interpolator`. pdf_quench is no longer a half-lifted HYBRID:
+        # term1 (`ei_no_quenched`, lifted by rung 20) AND term2 (the β-PDF integral, lifted here) now
+        # BOTH carry m(T), so the sum is internally consistent. The ideal-bell lift is peak-concentrated
+        # at ≈×1.14–1.17 (EI-weighted onto the near-stoich peak where m is minimal), BELOW the primary
+        # ×1.28 — the rung-20 inversion generalized to composition variance. No forbid: super_eq_o
+        # combines with every closure. (The prompt term stays primary-only, its magnitude imposed.)
         hf_fuel = (self.hf_fuel_molar if self.hf_fuel_molar is not None
                    else _HF_FUEL_DEFAULT)   # 0.0 is a valid ΔHf (elements are the datum)
         far_p = phi_primary * _F_STOICH
@@ -2786,7 +2801,8 @@ class Gas:
             state.C_holdeman = C
             state.g_seg = g_seg
             state.ei_no_pdf = _pdf_mean_ei(far, Tt3, p, hf_fuel, tau, g_seg,
-                                           n_bell=pdf.n_bell, n_quad=pdf.n_quad)
+                                           n_bell=pdf.n_bell, n_quad=pdf.n_quad,
+                                           super_eq_o=super_eq_o)   # rung 21: lift the ideal bell
             return state
 
         if pdf_quench is not None:
@@ -2805,7 +2821,8 @@ class Gas:
             C = pdf_quench.C(mixing)
             g_seg = pdf_quench.segregation(C)
             bell_mean_ei = _pdf_mean_ei(far, Tt3, p, hf_fuel, tau, g_seg,
-                                        n_bell=pdf_quench.n_bell, n_quad=pdf_quench.n_quad)
+                                        n_bell=pdf_quench.n_bell, n_quad=pdf_quench.n_quad,
+                                        super_eq_o=super_eq_o)      # rung 21: lift term 2's ideal bell
             term2 = pdf_quench.dwell_factor(C, tau) * bell_mean_ei
             state.pdf_quench = pdf_quench
             state.C_holdeman = C
@@ -2865,7 +2882,8 @@ class Gas:
             state.g_transported = g_seg
             state.g_seg = g_seg
             state.ei_no_transported = _pdf_mean_ei(far, Tt3, p, hf_fuel, tau, g_seg,
-                                                   n_bell=transported.n_bell, n_quad=transported.n_quad)
+                                                   n_bell=transported.n_bell, n_quad=transported.n_quad,
+                                                   super_eq_o=super_eq_o)   # rung 21: lift the ideal bell
             return state
 
         if unmixedness is None:

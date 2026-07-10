@@ -1290,8 +1290,84 @@ def print_super_eq_quench_table(flight):
 
     print("\n  HONEST SCOPE: the super-eq RATIO stays semi-empirical (rung 19) ⇒ the lifted a is")
     print("  better-justified but NOT pinned. Prompt rides the quench as an INVARIANT per-kg-fuel EI")
-    print("  (kept OUT of a — imposed magnitude). The ideal-bell PDF integrals (rung 13/15/18) DELIBERATELY")
-    print("  stay equilibrium-O lower bounds (forbidden to combine — no half-lifted hybrid).")
+    print("  (kept OUT of a — imposed magnitude). The ideal-bell PDF integrals (rung 13/15/18) stay")
+    print("  equilibrium-O here — RUNG 21 lifts them consistently (see the next panel).")
+
+
+def print_ideal_bell_lift_table(flight):
+    """Rung-21 payoff: super-equilibrium O through the IDEAL-BELL PDF integrals — the last eq-O seam.
+
+    Rung 20 lifted everything through _quench_no but LEFT the three ideal-bell composition integrals
+    (ei_no_pdf r13, ei_no_pdf_quench term2 r15, ei_no_transported r18) on equilibrium O, FORBIDDING the
+    combination because ei_no_pdf_quench = term1+term2 would be a HALF-LIFTED HYBRID. Rung 21 threads the
+    same m(T) through the ideal bell so BOTH terms lift — the hybrid dissolves. The load-bearing result is
+    the rung-20 INVERSION generalized: the bell EI(φ) is PEAKED near stoich (hottest ⇒ m smallest), the
+    β-PDF integral is EI-weighted onto that peak, so the lift is ≈×1.15 — BELOW the primary ×1.28 and even
+    DECREASING with segregation. Pure diagnostic: NO stays trace, cycle bit-for-bit rung 6.
+    """
+    eq = Gas.reacting_equilibrium()
+    real = build_turbojet(eq, PI_C, TT4, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+    st3, st4 = real.stations["3"], real.stations["4"]
+    far, Tt3, Tt4, p = st4.far, st3.Tt, st4.Tt, st4.pt
+    hf = eq.hf_fuel_molar if eq.hf_fuel_molar is not None else _HF_FUEL_DEFAULT
+    J, phi_p, tau = 36.0, 1.5, 3e-3                        # J=36: a moderate over-penetration flank (g>0)
+    ng, nb, nq = 24, 80, 100                               # coarse (illustrative panel) — SHAPE, not digits
+    mix = JetMixing(J=J)
+    xibar = far / (1.0 + far)
+
+    print("\nSuper-equilibrium O through the IDEAL-BELL PDF integrals (rung 21): rung 20 lifted everything")
+    print("through _quench_no but LEFT the composition integrals (pdf r13 / pdf_quench-term2 r15 /")
+    print("transported r18) on equilibrium O — a FORBIDDEN combination (a half-lifted hybrid). Rung 21")
+    print("threads m(T) through the ideal bell too, so BOTH pdf_quench terms lift and the hybrid dissolves.")
+    print(f"\n  Design point (lean mean φ≈{far/_F_STOICH:.2f}, rich primary φ_p={phi_p}, J={J:.0f}, g>0).")
+
+    def run(**kw):
+        return eq.zoned_nox(far, Tt3, Tt4, p, phi_p, tau, mixing=mix, quench_ngrid=ng, **kw)
+
+    pd = dict(pdf=MixingPDF(S=0.0625, n_bell=nb, n_quad=nq))
+    qp = dict(pdf_quench=QuenchPDF(S=0.0625, n_bell=nb, n_quad=nq))
+    tp = dict(transported=TransportedPDF(S=0.0625, n_bell=nb, n_quad=nq))
+    p0, pL = run(**pd), run(super_eq_o=True, **pd)
+    q0, qL = run(**qp), run(super_eq_o=True, **qp)
+    t0, tL = run(**tp), run(super_eq_o=True, **tp)
+    b0, bL = run(), run(super_eq_o=True)                   # the rung-20 bulk term1, for the composite check
+
+    print("\n  (1) the effective ideal-bell lift (EI in g NO/kg fuel):")
+    print(f"  {'field':>28} {'eq-O':>9} {'super-eq-O':>11} {'factor':>7}")
+    print("  " + "-" * 58)
+    print(f"  {'ei_no_pdf (rung 13)':>28} {p0.ei_no_pdf:>9.4f} {pL.ei_no_pdf:>11.4f}"
+          f" {pL.ei_no_pdf/p0.ei_no_pdf:>7.3f}")
+    print(f"  {'ei_no_pdf_quench (rung 15)':>28} {q0.ei_no_pdf_quench:>9.4f} {qL.ei_no_pdf_quench:>11.4f}"
+          f" {qL.ei_no_pdf_quench/q0.ei_no_pdf_quench:>7.3f}")
+    print(f"  {'ei_no_transported (rung 18)':>28} {t0.ei_no_transported:>9.4f} {tL.ei_no_transported:>11.4f}"
+          f" {tL.ei_no_transported/t0.ei_no_transported:>7.3f}")
+
+    # (2) WHY it is peak-concentrated — the point value / peak / primary spread.
+    lift_point = (_ideal_bell_ei(far, p, Tt3, hf, tau, super_eq_o=True)
+                  / _ideal_bell_ei(far, p, Tt3, hf, tau, super_eq_o=False))
+    fl_p = phi_p * _F_STOICH
+    lift_primary = (_ideal_bell_ei(fl_p, p, Tt3, hf, tau, super_eq_o=True)
+                    / _ideal_bell_ei(fl_p, p, Tt3, hf, tau, super_eq_o=False))
+    lift_pdf = pL.ei_no_pdf / p0.ei_no_pdf
+    print(f"\n  (2) WHY it is PEAK-CONCENTRATED — the bell EI is peaked near stoich (hottest ⇒ m smallest):")
+    print(f"  {'deep-lean point value (g→0, φ≈'+format(far/_F_STOICH,'.2f')+')':>40}  lift ×{lift_point:.2f}"
+          f"   (cool flame ⇒ m LARGE, but EI≈0)")
+    print(f"  {'primary flame (φ_p='+format(phi_p,'.1f')+')':>40}  lift ×{lift_primary:.2f}"
+          f"   (rung 19)")
+    print(f"  {'EI-weighted ⟨EI⟩_pdf (the number that counts)':>40}  lift ×{lift_pdf:.2f}"
+          f"   (SMALLEST — onto the stoich peak)")
+    print("  The naive 'the bell spans cool deep-lean pockets where m→1.9' is WRONG: those carry ≈0 EI.")
+
+    # (3) the HYBRID resolved — the composite pdf_quench sits between its two terms.
+    lift_composite = qL.ei_no_pdf_quench / q0.ei_no_pdf_quench
+    lift_bulk = bL.ei_no_quenched / b0.ei_no_quenched
+    print(f"\n  (3) the HYBRID RESOLVED — pdf_quench composite ×{lift_composite:.3f} sits BETWEEN term1")
+    print(f"  (bulk quench ×{lift_bulk:.3f}, rung 20) and term2 (ideal bell ×{lift_pdf:.3f}, rung 21) —")
+    print("  the measured proof BOTH terms now carry m(T). rung 20's forbidden combination is now VALID.")
+
+    print("\n  HONEST SCOPE: a shape-preserving CONSISTENCY lift — the optimum LOCATION (pinned AT C_opt),")
+    print("  the (H/S)² shift and the stoich-mean sign reversal are UNMOVED; only the magnitude lifts ≈×1.15.")
+    print("  The super-eq RATIO stays semi-empirical (rung 19); prompt stays a primary-only invariant EI.")
 
 
 def _j_opt_from(cfg):
@@ -1448,6 +1524,8 @@ def main():
     print_super_eq_prompt_table(FLIGHT)
 
     print_super_eq_quench_table(FLIGHT)
+
+    print_ideal_bell_lift_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 
