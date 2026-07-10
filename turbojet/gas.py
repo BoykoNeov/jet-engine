@@ -1459,8 +1459,11 @@ def _spatial_segregation(far_overall: float, phi_primary: float, S: float, H: fl
         n = ny * nz
         return sxi / n, sxi2 / n
 
-    lo, hi = 0.0, 5.0                                     # bisect the air scale so ⟨ξ⟩=ξ̄ (clip breaks separability)
-    for _ in range(50):
+    lo, hi = 0.0, 50.0                                    # bisect the air scale so ⟨ξ⟩=ξ̄ (clip breaks separability;
+    #                                                       the ceiling clears the over-penetration flank, where the
+    #                                                       far-wall-reflected plume needs s≈5–6 to reach the mean —
+    #                                                       the mean-preservation assert below is the hard guarantee)
+    for _ in range(60):
         s = 0.5 * (lo + hi)
         m, _ = _moments(s)
         if m > xibar:                                     # too little air delivered ⇒ raise the scale
@@ -1469,6 +1472,10 @@ def _spatial_segregation(far_overall: float, phi_primary: float, S: float, H: fl
             hi = s
     s = 0.5 * (lo + hi)
     mean, meansq = _moments(s)
+    assert abs(mean - xibar) <= 0.01 * xibar, (        # the conservation check (same as _beta_pdf_nodes_weights):
+        f"spatial field drifted the mean: ⟨ξ⟩={mean:.6f} vs ξ̄={xibar:.6f} (>1%) — the mean-preserving "
+        f"closure must integrate at ξ̄ (bisection s pinned near the ceiling {hi}? raise it or coarsen the plume)."
+    )
     var = max(meansq - mean * mean, 0.0)
     return var / (xibar * (1.0 - xibar))
 

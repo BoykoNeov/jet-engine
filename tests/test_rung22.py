@@ -104,9 +104,8 @@ def test_reduce_primary_diagnostic_bit_identical():
     """A spatial call touches only the rung-22 fields; the PRIMARY diagnostic (ei_no / x_no_mix) is
     bit-identical to a mixing-only call — rung 22 adds a closure, never perturbs the primary."""
     dp = _design_point()
-    base = _run(dp, 16, None) if False else dp["g"].zoned_nox(
-        dp["far"], dp["Tt3"], dp["Tt4"], dp["p"], _PHI_P, tau=_TAU, mixing=_mix(16),
-        quench_ngrid=24, quench_nsteps=200)
+    base = dp["g"].zoned_nox(dp["far"], dp["Tt3"], dp["Tt4"], dp["p"], _PHI_P, tau=_TAU,
+                             mixing=_mix(16), quench_ngrid=24, quench_nsteps=200)
     st = _run(dp, 16, _cfg())
     assert st.ei_no == base.ei_no and st.x_no_mix == base.x_no_mix
 
@@ -237,6 +236,24 @@ def test_derived_floor_sits_below_the_hump_peak():
     g_star = gs[max(range(len(gs)), key=lambda i: ei[i])]
     assert g_floor < g_star, f"derived floor {g_floor:.4f} must sit below the hump peak {g_star:.4f} (narrow basin)"
     assert g_star - g_floor < 0.01, f"floor {g_floor:.4f} sits JUST below peak {g_star:.4f} (why the basin is narrow)"
+
+
+# --------------------------------------------------------------------------------------------------
+# GATE 4b — super_eq_o threads the rung-21 lift through the shared ideal bell.
+# --------------------------------------------------------------------------------------------------
+
+def test_super_eq_o_lifts_through_the_shared_bell():
+    """`spatial` shares rung-18's `_pdf_mean_ei`, so `super_eq_o=True` threads the rung-21 Westenberg
+    m(T) lift through it too — ei_no_spatial lifts above the equilibrium-O lower bound (default False)."""
+    dp = _design_point()
+    base = _run(dp, 16, _cfg())
+    lifted = dp["g"].zoned_nox(dp["far"], dp["Tt3"], dp["Tt4"], dp["p"], _PHI_P, tau=_TAU,
+                               mixing=_mix(16), spatial=_cfg(), super_eq_o=True,
+                               quench_ngrid=24, quench_nsteps=200)
+    assert lifted.ei_no_spatial > base.ei_no_spatial, \
+        f"super_eq_o must lift the ideal-bell integral: {lifted.ei_no_spatial:.4f} > {base.ei_no_spatial:.4f}"
+    assert 1.0 < lifted.ei_no_spatial / base.ei_no_spatial < 1.3, \
+        "the peak-concentrated bell lift should be modest (~×1.15, rung 21), not runaway"
 
 
 # --------------------------------------------------------------------------------------------------
