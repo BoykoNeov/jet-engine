@@ -1215,6 +1215,85 @@ def print_super_eq_prompt_table(flight):
     print("    the lift lives in Westenberg's fitted constants (cross-validated to ~5%, the units gate).")
 
 
+def print_super_eq_quench_table(flight):
+    """Rung-20 payoff: super-equilibrium O THROUGH the quench — lifting the finite-quench lower bound.
+
+    Rung 19 lifted the equilibrium-O lower bound only on the PRIMARY (ei_no/x_no_mix). The finite-quench
+    fields (ei_no_quenched, ei_no_pocket_quench) and the rung-17 clamp margins a still RE-MADE NO on
+    equilibrium O — still lower bounds. Rung 20 threads the same Westenberg m(T) lift INSIDE the
+    _quench_no re-making. The load-bearing result INVERTS the naive headline: because the Zeldovich
+    re-making peaks at the HOTTEST stoich crossing where m(T) is at its MINIMUM, the lift is MODEST &
+    PEAK-CONCENTRATED (≈m(T_peak)) — even SMALLER than the primary lift. The certified spine: the
+    rung-17 a-margins RISE (numerator lifts) while the thermodynamic denominator x_no_e(T9) does NOT.
+    Pure diagnostic: NO stays trace, cycle bit-for-bit rung 6.
+    """
+    eq = Gas.reacting_equilibrium()
+    real = build_turbojet(eq, PI_C, TT4, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+    st3, st4, st9 = real.stations["3"], real.stations["4"], real.stations["9"]
+    far, Tt3, Tt4, p = st4.far, st3.Tt, st4.Tt, st4.pt
+    J, phi_p, tau = 225.0, 1.5, 3e-3
+    ng, ns = 24, 200                                       # coarse (illustrative panel) — SHAPE, not digits
+    mix = JetMixing(J=J, C_e=0.20, shape_n=2.0)
+    pq = PocketQuenchPDF(S=0.0625, n_bell=24, n_quad=96)
+
+    print("\nSuper-equilibrium O THROUGH the quench (rung 20): rung 19 lifted the equilibrium-O lower")
+    print("bound only on the PRIMARY. The finite-quench fields RE-MADE NO on equilibrium O — still lower")
+    print("bounds. Rung 20 threads the m(T) lift INSIDE the _quench_no re-making, closing that seam.")
+    print(f"\n  Design point (rich φ_p={phi_p}, J={J:.0f}): quench cools through the stoich crossing.")
+
+    # (1) the effective lift — bulk quench + per-pocket, eq-O vs super-eq-O.
+    b0 = eq.zoned_nox(far, Tt3, Tt4, p, phi_p, tau, mixing=mix, quench_ngrid=ng, quench_nsteps=ns)
+    bL = eq.zoned_nox(far, Tt3, Tt4, p, phi_p, tau, mixing=mix, super_eq_o=True,
+                      quench_ngrid=ng, quench_nsteps=ns)
+    p0 = eq.zoned_nox(far, Tt3, Tt4, p, phi_p, tau, mixing=mix, pocket_quench=pq,
+                      quench_ngrid=ng, quench_nsteps=ns)
+    pL = eq.zoned_nox(far, Tt3, Tt4, p, phi_p, tau, mixing=mix, pocket_quench=pq, super_eq_o=True,
+                      quench_ngrid=ng, quench_nsteps=ns)
+    # the PRIMARY lift (rung 19, ideal quench) for the contrast.
+    z0 = eq.zoned_nox(far, Tt3, Tt4, p, phi_p, tau)
+    zL = eq.zoned_nox(far, Tt3, Tt4, p, phi_p, tau, super_eq_o=True)
+    print("\n  (1) the effective lift (EI in g NO/kg fuel):")
+    print(f"  {'field':>26} {'eq-O':>9} {'super-eq-O':>11} {'factor':>7}")
+    print("  " + "-" * 56)
+    print(f"  {'ei_no_quenched (bulk)':>26} {b0.ei_no_quenched:>9.4f} {bL.ei_no_quenched:>11.4f}"
+          f" {bL.ei_no_quenched/b0.ei_no_quenched:>7.3f}")
+    print(f"  {'ei_no_pocket_quench (r16)':>26} {p0.ei_no_pocket_quench:>9.4f} {pL.ei_no_pocket_quench:>11.4f}"
+          f" {pL.ei_no_pocket_quench/p0.ei_no_pocket_quench:>7.3f}")
+    print(f"  {'primary ei_no (rung 19)':>26} {z0.ei_no:>9.4f} {zL.ei_no:>11.4f}"
+          f" {zL.ei_no/z0.ei_no:>7.3f}")
+
+    # (2) WHY the quench lift is SMALLER — the re-making peaks where m is smallest.
+    print(f"\n  (2) the quench lift ({bL.ei_no_quenched/b0.ei_no_quenched:.3f}) is SMALLER than the primary"
+          f" lift ({zL.ei_no/z0.ei_no:.3f}) because the")
+    print(f"  Zeldovich re-making peaks at the HOTTEST crossing T_peak={b0.T_peak:.0f} K (hotter than the")
+    print(f"  flame T_p={z0.T_primary:.0f} K), and m(T) is SMALLEST where hottest: m(T_peak)="
+          f"{_super_eq_o_multiplier(b0.T_peak):.3f} vs m(T_p)={_super_eq_o_multiplier(z0.T_primary):.3f}.")
+    print(f"  The cool tail carries large m (m({Tt4:.0f} K)={_super_eq_o_multiplier(Tt4):.3f}) but makes"
+          f" NEGLIGIBLE NO — the lift is PEAK-concentrated.")
+
+    # (3) the certified spine — the rung-17 a-margins rise, the denominator does not.
+    c0 = eq.exhaust_no_clamp(far, Tt3, Tt4, p, st9.Tt, st9.pt, real.p9, phi_primary=phi_p,
+                             mixing=mix, pocket_quench=pq, quench_ngrid=ng, quench_nsteps=ns)
+    cL = eq.exhaust_no_clamp(far, Tt3, Tt4, p, st9.Tt, st9.pt, real.p9, phi_primary=phi_p,
+                             mixing=mix, pocket_quench=pq, super_eq_o=True, quench_ngrid=ng, quench_nsteps=ns)
+    print("\n  (3) the CERTIFIED SPINE — the rung-17 clamp margins a=[NO]/[NO]_e(T9) rise, denominator fixed:")
+    print(f"  {'margin':>22} {'eq-O':>9} {'super-eq-O':>11}")
+    print(f"  {'a_mixed_out':>22} {c0.a_mixed_out:>9.4f} {cL.a_mixed_out:>11.4f}   (primary lift; stays ≪1)")
+    print(f"  {'a_bulk_quench':>22} {c0.a_bulk_quench:>9.3f} {cL.a_bulk_quench:>11.3f}")
+    print(f"  {'a_pocket':>22} {c0.a_pocket:>9.3f} {cL.a_pocket:>11.3f}")
+    print(f"  {'denom x_no_e(T9)':>22} {c0.x_no_e_exit:>9.3e} {cL.x_no_e_exit:>11.3e}   "
+          f"{'← BIT-IDENTICAL' if c0.x_no_e_exit == cL.x_no_e_exit else '← MOVED (bug)'}")
+    print("  The numerators lift (kinetic NO); the denominator is a THERMODYNAMIC ceiling Kp_NO·√(x_N2·x_O2)")
+    print("  — NOT set by the O-atom closure — so every a rises by a BOUNDED factor. rung 17's a were lower")
+    print(f"  bounds. But the clamp still does NOT fire at station 4: max_a={cL.max_a_quench:.2f}<1 — super-eq O")
+    print("  speeds FORMATION, not the [NO]_e collapse, so it is not the burner-clamp lever (a slow freeze is).")
+
+    print("\n  HONEST SCOPE: the super-eq RATIO stays semi-empirical (rung 19) ⇒ the lifted a is")
+    print("  better-justified but NOT pinned. Prompt rides the quench as an INVARIANT per-kg-fuel EI")
+    print("  (kept OUT of a — imposed magnitude). The ideal-bell PDF integrals (rung 13/15/18) DELIBERATELY")
+    print("  stay equilibrium-O lower bounds (forbidden to combine — no half-lifted hybrid).")
+
+
 def _j_opt_from(cfg):
     """The uniformity optimum J_opt where C=(S/H)√J_opt = C_opt (H=0.10, the JetMixing default)."""
     return (cfg.C_opt * JetMixing(J=1.0).H / cfg.S) ** 2
@@ -1367,6 +1446,8 @@ def main():
     print_transported_variance_table(FLIGHT)
 
     print_super_eq_prompt_table(FLIGHT)
+
+    print_super_eq_quench_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

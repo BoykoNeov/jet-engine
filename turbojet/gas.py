@@ -773,6 +773,12 @@ _M_NO = _SPECIES["NO"][0] / 1000.0     # kg/mol
 # --------------------------------------------------------------------------- #
 _WESTENBERG_C1, _WESTENBERG_TH1 = 3.970e5, 31090.0   # equilibrium-O correlation (θ in K)
 _WESTENBERG_C2, _WESTENBERG_TH2 = 36.64, 27123.0     # partial-equilibrium-O correlation
+# RUNG 20 — flame-band floor for the super-eq O lift THROUGH the quench. m(T)=A·T·exp(B/T) with
+# B=θ1-θ2≈3967 K DIVERGES as T→0 (m(1500 K)≈1.9, m(1200 K)≈3), so lifting [O] on a cooling quench
+# path that reaches T_mix≈Tt4 would inject an out-of-band multiplier. The Westenberg partial-eq
+# closure is a FLAME model (T≳1500 K) anyway, so we freeze m at m(max(T, floor)) below the band —
+# which also keeps the standing 1≤m≤2 assert honest along the whole trajectory. (docs/rung20-spec.md)
+_SUPER_EQ_T_FLOOR = 1500.0
 
 
 def _super_eq_o_multiplier(T: float) -> float:
@@ -1034,7 +1040,8 @@ def _quench_trajectory(comp_prim: dict, T_prim: float, alpha: float, far_ov: flo
 def _quench_no(comp_prim: dict, T_prim: float, alpha: float, far_ov: float,
                T_dilution: float, p: float, n_no_initial: float, tau_q: float,
                nsteps: int = 2000, ngrid: int = 240, tab: Optional[list] = None,
-               schedule: Optional[Callable[[float], float]] = None) -> dict:
+               schedule: Optional[Callable[[float], float]] = None,
+               super_eq_o: bool = False) -> dict:
     """Finite-rate quench NO integrator (rung 10; schedule-aware for rung 11). CLAMP-FREE.
 
     Integrates the extended-Zeldovich rate (the SAME reverse-rate one-equation form as
@@ -1087,6 +1094,16 @@ def _quench_no(comp_prim: dict, T_prim: float, alpha: float, far_ov: float,
             return 0.0
         T = interp("T", tfrac); V = interp("V", tfrac)
         cO = interp("cO", tfrac); cN2 = interp("cN2", tfrac); cH = interp("cH", tfrac)
+        if super_eq_o:                          # rung 20: lift [O] by m(T) INSIDE the re-making (the
+            # deferred rung-19 seam — the finite-quench NO rode on equilibrium O). m(T) multiplies cO
+            # so it scales R1 (formation) AND R2 (reverse) alike, exactly as _thermal_no's o_multiplier
+            # does on the primary. Floor T at the flame band (m diverges as T→0 on the cool tail).
+            m = _super_eq_o_multiplier(max(T, _SUPER_EQ_T_FLOOR))
+            assert 1.0 <= m <= 2.0, (
+                f"quench super-eq O multiplier m={m:.3f} at T={T:.0f} K outside [1,2] — the "
+                "Westenberg partial-eq closure is a flame model (floored at T≳1500 K)"
+            )
+            cO *= m
         R1 = _k_zeldovich("1f", T) * cO * cN2
         R2 = _k_zeldovich("2r", T) * cNOe * cO
         R3 = _k_zeldovich("3r", T) * cNOe * cH
@@ -1122,7 +1139,8 @@ def _quench_no(comp_prim: dict, T_prim: float, alpha: float, far_ov: float,
     return dict(ei=ei, x_no_mix=x_no_mix, n_no=n_no, T_peak=T_peak, max_a=max_a)
 
 
-def _ideal_bell_ei(far_local: float, p: float, Tt3: float, hf_fuel: float, tau: float) -> float:
+def _ideal_bell_ei(far_local: float, p: float, Tt3: float, hf_fuel: float, tau: float,
+                   super_eq_o: bool = False) -> float:
     """Rung-9 IDEAL primary EI_NO (g NO/kg fuel) at a LOCAL fuel/air ratio — the bell EI(φ),
     sampled for the rung-13 PDF closure (docs/rung13-spec.md). Runs the same primitives as the
     zoned primary (`_primary_aft` → `_equilibrium_composition` → `_thermal_no`) at the local φ.
@@ -1139,7 +1157,11 @@ def _ideal_bell_ei(far_local: float, p: float, Tt3: float, hf_fuel: float, tau: 
     except AssertionError:
         return 0.0                      # too lean to burn (cold-bracket-edge flame)
     comp = _equilibrium_composition(far_local, T_p, p)
-    return _thermal_no(comp, T_p, p, tau, far_local).ei_no
+    # RUNG 20 — super_eq_o lifts this local bell's [O] by m(T_p) (default False ⇒ rung-13/15/18
+    # ideal-bell integrals are UNTOUCHED, staying equilibrium-O lower bounds). Only the rung-16
+    # per-pocket lean/tail branch passes True, keeping ei_no_pocket_quench internally consistent.
+    m = _super_eq_o_multiplier(max(T_p, _SUPER_EQ_T_FLOOR)) if super_eq_o else 1.0
+    return _thermal_no(comp, T_p, p, tau, far_local, o_multiplier=m).ei_no
 
 
 def _beta_pdf_nodes_weights(xibar: float, g_seg: float, n_quad: int = 200):
@@ -1234,7 +1256,8 @@ def _pdf_mean_ei(far_overall: float, Tt3: float, p: float, hf_fuel: float, tau: 
 
 def _pocket_quench_mean_ei(far_overall: float, Tt3: float, p: float, hf_fuel: float, tau_ref: float,
                            tau_core: float, g_seg: float, n_bell: int = 120, n_quad: int = 160,
-                           quench_ngrid: int = 240, quench_nsteps: int = 2000):
+                           quench_ngrid: int = 240, quench_nsteps: int = 2000,
+                           super_eq_o: bool = False):
     """⟨EI_pocket_quench(ξ; τ_core)⟩ over a mean-preserving β-PDF — the rung-16 PER-POCKET
     PDF-through-quench closure (docs/rung16-spec.md). The rung-16 upgrade of `_pdf_mean_ei`:
     where rung 15 integrates the CONSTANT-T ideal bell and multiplies by a scalar dwell factor
@@ -1263,7 +1286,8 @@ def _pocket_quench_mean_ei(far_overall: float, Tt3: float, p: float, hf_fuel: fl
     for xi in xi_grid:
         far_local = xi / (1.0 - xi)
         if far_local < far_overall or far_local / _F_STOICH > 2.0 + 1e-9 or far_local <= 0.0:
-            vals.append(_ideal_bell_ei(far_local, p, Tt3, hf_fuel, tau_ref))   # lean/tail: rung-15 bell
+            vals.append(_ideal_bell_ei(far_local, p, Tt3, hf_fuel, tau_ref,   # lean/tail: rung-15 bell
+                                       super_eq_o=super_eq_o))                # (lifted with the pocket)
             continue
         try:
             T_p = _primary_aft(far_local, p, Tt3, hf_fuel)
@@ -1272,9 +1296,12 @@ def _pocket_quench_mean_ei(far_overall: float, Tt3: float, p: float, hf_fuel: fl
             continue
         alpha = far_overall / far_local                           # ≤ 1 (rich-of-mean pocket)
         comp = _equilibrium_composition(far_local, T_p, p)
-        n0 = alpha * _thermal_no(comp, T_p, p, tau_ref, far_local).x_no * sum(comp.values())
+        # RUNG 20 — lift the pocket's initial [O] (m at its OWN flame T_p) AND its quench re-making,
+        # so every EI in the β-PDF integral carries the same closure (no half-eq-O hybrid).
+        m0 = _super_eq_o_multiplier(max(T_p, _SUPER_EQ_T_FLOOR)) if super_eq_o else 1.0
+        n0 = alpha * _thermal_no(comp, T_p, p, tau_ref, far_local, o_multiplier=m0).x_no * sum(comp.values())
         q = _quench_no(comp, T_p, alpha, far_overall, Tt3, p, n0, tau_core,
-                       nsteps=quench_nsteps, ngrid=quench_ngrid)
+                       nsteps=quench_nsteps, ngrid=quench_ngrid, super_eq_o=super_eq_o)
         vals.append(q["ei"])
         max_a = max(max_a, q["max_a"])
 
@@ -2019,12 +2046,15 @@ class ZonedNOxState:
     g_ceiling: Optional[float] = None      # DERIVED two-stream injection ceiling (ξ_p−ξ̄)/(1−ξ̄) from φ_p
     g_transported: Optional[float] = None  # the ODE-residual width g(C) (≤ g_ceiling; >0 at C_opt)
     ei_no_transported: Optional[float] = None  # ⟨EI⟩ over the β-PDF of the ideal bell at g_transported
-    # RUNG 19 — the two lower-bound-lifting channels ON THE PRIMARY (both off ⇒ bit-for-bit the prior
-    # rung). super_eq_o lifts the primary [O] by m(T_p) inside the rung-7 integrator (folded into
-    # `primary.ei_no`/`x_no_mix`); prompt ADDS the imposed De Soete φ-bump `ei_no_prompt` beside it.
-    # They lift ONLY the primary diagnostic (ei_no / x_no_mix) — the finite-quench/PDF fields stay
-    # equilibrium-O (threading the lift through the quench is a deferred seam; docs/rung19-spec.md).
-    super_eq_o: bool = False               # whether the primary [O] was super-eq-lifted
+    # RUNG 19/20 — the two lower-bound-lifting channels (both off ⇒ bit-for-bit the prior rung).
+    # super_eq_o lifts the [O] by m(T) inside the Zeldovich integrator; prompt ADDS the imposed De Soete
+    # φ-bump `ei_no_prompt`. RUNG 19 lifted only the PRIMARY (folded into `primary.ei_no`/`x_no_mix`).
+    # RUNG 20 threads super_eq_o THROUGH the finite-quench re-making too: `ei_no_quenched`, the rung-12
+    # core, the rung-16 per-pocket, and the rung-17 clamp now carry the SAME m(T)-lift along the cooling
+    # path (`super_eq_o` here is the single flag for both). The lift is bounded & peak-concentrated
+    # (≈m(T_peak)) — the ideal-bell composition integrals (pdf/pdf_quench/transported) DELIBERATELY stay
+    # equilibrium-O (forbidden to combine — see the zoned_nox guard; docs/rung20-spec.md).
+    super_eq_o: bool = False               # whether the [O] was super-eq-lifted (primary AND, rung 20, the quench)
     o_multiplier: float = 1.0              # the m(T_p) applied to the primary O (1.0 ⇒ rung 7 baseline)
     prompt: Optional["PromptNO"] = None    # the imposed prompt-NO config, if any
     ei_no_prompt: float = 0.0              # additive primary prompt EI, g NO/kg fuel (0.0 ⇒ thermal only)
@@ -2035,6 +2065,21 @@ class ZonedNOxState:
         equilibrium-O lower bound (`ei_no`) lifted the two certified ways — the T-driven super-eq-O
         factor already in `ei_no` via the lifted [O], plus the IMPOSED additive prompt bump."""
         return self.ei_no + self.ei_no_prompt
+
+    @property
+    def ei_no_quenched_total(self) -> Optional[float]:
+        """RUNG 20 — total finite-quench EI = re-made thermal (`ei_no_quenched`, super-eq-O-lifted when
+        super_eq_o) + the invariant prompt (`ei_no_prompt`), g NO/kg fuel; None for the ideal quench.
+
+        Prompt rides the quench UNCHANGED: EI is per-kg-fuel and prompt is a flame-front phenomenon set
+        at the primary, so dilution lowers its mole fraction but not its emission index. We ADD it here
+        rather than inject prompt moles into `_quench_no`'s cooling chemistry ON PURPOSE — prompt's
+        MAGNITUDE is imposed (rung-19 concession), so running an un-certified number through Zeldovich
+        destruction would be false precision. (This is why prompt is kept OUT of the rung-17 clamp `a`,
+        which stays a certified-thermal margin.) docs/rung20-spec.md."""
+        if self.ei_no_quenched is None:
+            return None
+        return self.ei_no_quenched + self.ei_no_prompt
 
     @property
     def ei_no(self) -> float:
@@ -2632,6 +2677,14 @@ class Gas:
             "PER-POCKET quench) / transported (rung-18 transported variance) — FIVE closures of the SAME "
             "variance physics."
         )
+        assert not (super_eq_o and (pdf is not None or pdf_quench is not None or transported is not None)), (
+            "RUNG 20 — super_eq_o threads the lower-bound lift ONLY through the _quench_no re-making "
+            "(the mean-field bulk `ei_no_quenched`, the rung-12 core, the rung-16 per-pocket, and the "
+            "rung-17 clamp). The ideal-bell composition integrals — pdf (rung 13), pdf_quench (rung-15 "
+            "term 2), transported (rung 18) — DELIBERATELY stay equilibrium-O lower bounds (docs/"
+            "rung20-spec.md): pdf_quench would become a half-lifted HYBRID (lifted term1 + eq-O term2). "
+            "Combine super_eq_o with mixing / unmixedness / pocket_quench only."
+        )
         hf_fuel = (self.hf_fuel_molar if self.hf_fuel_molar is not None
                    else _HF_FUEL_DEFAULT)   # 0.0 is a valid ΔHf (elements are the datum)
         far_p = phi_primary * _F_STOICH
@@ -2699,8 +2752,17 @@ class Gas:
         # path (unmixedness=None) lets _quench_no build its own tab → byte-identical rung 10/11.
         tab = (_quench_trajectory(comp_p, T_p, alpha, far, Tt3, p, ngrid=quench_ngrid)
                if unmixedness is not None else None)
+        # RUNG 20 — super_eq_o lifts the [O] INSIDE this re-making by m(T) along the cooling path
+        # (default False ⇒ byte-identical rung 10/11). So `ei_no_quenched` (the mean-field bulk) and,
+        # below, the rung-12 core / rung-16 per-pocket carry the same lift the rung-19 primary already
+        # did — closing the "finite-quench fields ride on equilibrium O" lower-bound seam. The lift is
+        # MODEST & PEAK-CONCENTRATED: the Zeldovich re-making peaks at the hottest stoich crossing where
+        # m(T) is at its MINIMUM (~1.14), so the effective lift ≈ m(T_peak) — even smaller than the
+        # rung-19 primary lift (docs/rung20-spec.md). The NO ceiling [NO]_e is a THERMODYNAMIC quantity,
+        # untouched, so the rung-14/17 clamp DENOMINATOR is unchanged: only the numerator (and hence a) rises.
         q = _quench_no(comp_p, T_p, alpha, far, Tt3, p, n_no_total, tau_q_eff,
-                       nsteps=quench_nsteps, ngrid=quench_ngrid, tab=tab, schedule=schedule)
+                       nsteps=quench_nsteps, ngrid=quench_ngrid, tab=tab, schedule=schedule,
+                       super_eq_o=super_eq_o)
         state.tau_q = tau_q_eff
         state.mixing = mixing
         state.ei_no_quenched = q["ei"]                    # the MEAN-FIELD (rung-11) bulk EI
@@ -2773,7 +2835,8 @@ class Gas:
             excess, pocket_max_a = _pocket_quench_mean_ei(
                 far, Tt3, p, hf_fuel, tau, tau_core, g_seg,
                 n_bell=pocket_quench.n_bell, n_quad=pocket_quench.n_quad,
-                quench_ngrid=quench_ngrid, quench_nsteps=quench_nsteps)
+                quench_ngrid=quench_ngrid, quench_nsteps=quench_nsteps,
+                super_eq_o=super_eq_o)          # rung 20: lift each pocket's re-making (see the bulk q above)
             state.pocket_quench = pocket_quench
             state.C_holdeman = C
             state.g_seg = g_seg
@@ -2817,7 +2880,8 @@ class Gas:
         C = unmixedness.C(mixing)
         w = unmixedness.core_fraction(C)
         qc = _quench_no(comp_p, T_p, alpha, far, Tt3, p, n_no_total, unmixedness.core_dwell(C),
-                        nsteps=quench_nsteps, ngrid=quench_ngrid, tab=tab, schedule=schedule)
+                        nsteps=quench_nsteps, ngrid=quench_ngrid, tab=tab, schedule=schedule,
+                        super_eq_o=super_eq_o)   # rung 20: lift the lingering core's re-making too
         state.unmixedness = unmixedness
         state.C_holdeman = C
         state.w_core = w
@@ -2875,7 +2939,7 @@ class Gas:
                          Tt9: float, pt9: float, p9: float,
                          phi_primary: float, mixing: "JetMixing",
                          pocket_quench: "PocketQuenchPDF",
-                         tau: float = 3e-3,
+                         tau: float = 3e-3, super_eq_o: bool = False,
                          quench_ngrid: int = 240, quench_nsteps: int = 2000) -> "ExhaustNOxClampState":
         """Rung-17 combustor-mixing-fidelity ladder of the dropped-clamp margin (docs/rung17-spec.md).
 
@@ -2896,6 +2960,14 @@ class Gas:
         a_pocket/a_bulk ratio equals rung-16's station-4 gap by construction (the x_no_e(T9) denominator
         is common and cancels — a stated synthesis, not new physics).
 
+        RUNG 20 — `super_eq_o=True` lifts the equilibrium-O LOWER BOUND on all three numerators (the
+        mixed-out via the rung-19 primary [O] lift, the bulk/per-pocket via the rung-20 quench re-making
+        lift). The shared denominator x_no_e(T9) is a thermodynamic ceiling, UNCHANGED, so every margin a
+        RISES — this is the discharge of the rung-17 "every a is a lower bound" caveat. The lift is
+        modest (~m(T_peak)≈1.14 through the quench), so the ORDERING and the in-band firing survive; the
+        clamp still does NOT fire at station 4 (max_a_quench<1 — super-eq O is not the burner-clamp lever;
+        a slow-enough freeze is, a separate seam). super_eq_o=False (default) ⇒ bit-for-bit rung 17.
+
         A pure diagnostic: it only READS state (through zoned_nox + nozzle_flow, both untouched) and
         feeds the cycle nothing, so the cycle stays bit-for-bit rung 6. Requires the equilibrium
         (rung-6) gas and both a `mixing` and a `pocket_quench` (the bulk and per-pocket rungs need the
@@ -2906,11 +2978,16 @@ class Gas:
             "exhaust_no_clamp: needs both a JetMixing and a PocketQuenchPDF (the bulk + per-pocket rungs)"
 
         # The three exhaust-NO models — read straight off the rung-8/11/16 diagnostics, untouched.
-        zn_mixed = self.zoned_nox(far, Tt3, Tt4, p, phi_primary, tau)                  # rung 8 (no quench)
-        zn_bulk = self.zoned_nox(far, Tt3, Tt4, p, phi_primary, tau, mixing=mixing,
+        # RUNG 20 — super_eq_o lifts the equilibrium-O LOWER BOUND on all three numerators: the mixed-out
+        # via the rung-19 primary [O] lift, the bulk/per-pocket via the rung-20 quench re-making lift. The
+        # common denominator x_no_e(T9) is a THERMODYNAMIC ceiling (Kp_NO·√(x_N2·x_O2)), NOT set by the
+        # O-atom closure, so it is UNCHANGED — every margin a rises, confirming rung 17's a were lower
+        # bounds. The lift is bounded (~m(T_peak)≈1.14 on the quench), so the firing/ordering are robust.
+        zn_mixed = self.zoned_nox(far, Tt3, Tt4, p, phi_primary, tau, super_eq_o=super_eq_o)  # rung 8
+        zn_bulk = self.zoned_nox(far, Tt3, Tt4, p, phi_primary, tau, mixing=mixing, super_eq_o=super_eq_o,
                                  quench_ngrid=quench_ngrid, quench_nsteps=quench_nsteps)  # rung 11 (bulk quench)
         zn_pkt = self.zoned_nox(far, Tt3, Tt4, p, phi_primary, tau,
-                                mixing=mixing, pocket_quench=pocket_quench,
+                                mixing=mixing, pocket_quench=pocket_quench, super_eq_o=super_eq_o,
                                 quench_ngrid=quench_ngrid, quench_nsteps=quench_nsteps)   # rung 16 (per-pocket)
         x_no_mixed = zn_mixed.x_no_mix
         x_no_bulk = zn_bulk.x_no_quenched

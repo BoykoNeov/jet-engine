@@ -37,8 +37,9 @@ in its spec (last column) — this table is the one-line map, not the handout.
 | 17 | **Exhaust-NO clamp through the mixing-fidelity ladder** — a rung-14 corollary *from the rich side*. `Gas.exhaust_no_clamp(…)` carries the exhaust NO from **three** combustor-mixing-fidelity models through the **same** rung-14 nozzle collapse to `T9` and reads the dropped-clamp margin `a=[NO]/[NO]_e(T9)`: **MIXED-OUT** (rung 8, `x_no_mix`) reads **DORMANT** (`a≈0.02`) at the RICH `φ_p=1.5` primary — mixing-out **HIDES** the super-eq NO; **BULK QUENCH** (rung 11, `x_no_quenched`) **FIRES** (`a≈3.4`, the re-making); **PER-POCKET** (rung 16) **FIRES harder** (`a≈13.6`, segregation lifts the mean). The **load-bearing** claim splits: the **ORDERING** `a_mixed≤a_bulk≤a_pocket` is **STRUCTURAL** (the quench only *adds* NO; the per-pocket excess is additive) and `a_mixed<1` is robust — *these* are certified; the **FIRING** (`a_bulk,a_pocket>1`) holds **in-band** but is **NOT universal** (a fast quench `J→∞` drives `a_bulk→a_mixed<1`, the rung-10 `τ_q→0` reduce). The **identity** `a_pocket/a_bulk ≡` rung-16's station-4 gap is **algebra**, not a test (the nozzle denominator cancels — a *witnessed no-op*, stated not gated). Every firing magnitude *and the gap* ride on un-pinned scales (`C_e`, `τ_res`, `H`, `J`; the gap moves ~23% over `C_e 0.15→0.20`). **Contrast rung 14** (which fires on the `φ_p=1.0` mixed-out number, `a≈250` — the *zoned-vs-unzoned* axis): rung 17 is the *mixing-fidelity* axis, the same dropped-clamp lesson from the rich side where the mixed-out shortcut is **unconservative**. Clamp **dormant at station 4** (`max_a<1` — super-eq is a *nozzle* effect). No new chemistry/config: it composes rung-8/11/16 + rung-14 outputs. | `docs/rung17-spec.md` |
 | 18 | **Transported-variance closure** — the deferred "transported PDF" seam, done as its **honest LIMIT**. A `TransportedPDF(S,…)` config (rides on `mixing`, ≤1-of-**five** with `unmixedness`/`pdf`/`pdf_quench`/`pocket_quench`) replaces rung-13's imposed kink `g(C)=k_g·|ln(C/C_opt)|` with the **residual of a variance DECAY ODE** `dg/dt=−C_φ·ω(C)·g` (`_transport_variance`, backward-Euler, `C_φ≈2` anchored) from a **DERIVED two-stream ceiling** `g_ceiling=(ξ_p−ξ̄)/(1−ξ̄)` (`_two_stream_ceiling`, from `φ_p` — NOT a knob), fed through the **rung-13 ideal bell** (`_pdf_mean_ei`). **The load-bearing result is NEGATIVE**: a 0-D transport **CANNOT derive** the `C_opt` optimum — a genuine ODE with any **mean-field** `ω(J)` (or `τ_q(J)∝1/√J`) gives a **monotone/flat** `g(J)`, no interior optimum; the optimum appears **only** once `ω` is given a **SPATIAL** coverage `ω(C=(S/H)√J)` peaked at `C_opt` — i.e. once the jet **spacing `S`** is injected (rung-11's *"mean-field ⇒ no mixing optimum"* made literal). So the coverage `ω(C)` is an **explicitly imposed** spatial closure (the honest successor of the kink), and a **spatial/CFD PDF** stays the deferred ceiling. What transport **legitimately adds** (certified): the **DERIVED ceiling** (exposes `g_max=0.3` as **4.4× too large**), the **RESIDUAL floor** `g(C_opt)=g_ceiling·exp(−Da_opt)>0` (perfect mixing never reached ⇒ the emissions optimum is **elevated** off the well-mixed value, not the kink's touch-the-floor ≈0), and **KINK-is-non-generic** (the imposed corner has one-sided slopes `±k_g/C_opt`; any analytic mixing rate rounds it — the EIbell ratio one step off `J_opt`: kink **×5.8e4** vs transported **×1.05** — the *sharpness* was the artifact, not the location). Reduce: `Da_opt→∞` (perfect mixing) recovers the kinked notch (the well-mixed point value); `g_ceiling→0` = point value. `transported=None` = exact rung 17. Shape-only on `g` (the dwell `τ_core` stays the rung-16 kink — the "also transport the dwell" seam declined). | `docs/rung18-spec.md` |
 | 19 | **Super-equilibrium O & prompt NO** — lifting the equilibrium-O **lower bound**. Every NO number since rung 7 read the rung-6 **equilibrium** `[O]` into the Zeldovich rate, so it is a **lower bound**. Two knobs on `thermal_nox`/`zoned_nox` (`super_eq_o=False`, `prompt=None`; both off ⇒ **bit-for-bit** the prior rung) lift it, and the load-bearing result is that **both contradict the naive "the rich primary explodes" intuition**, from opposite directions. **(1) super-eq O** — the Westenberg partial-equilibrium O closure (adds the 3-body `O+O+M⇌O₂+M`) sits **above** equilibrium O; the two share `[O₂]^0.5`, so their ratio is **dimensionless & T-only** `m(T)=(C2/C1)·T·exp((θ1−θ2)/T)∈[1.16,1.50]` (`_super_eq_o_multiplier`). We lift **our own** `comp["O"]` by `m(T)` inside the rung-7 integrator (`_thermal_no(…, o_multiplier=m)`); `m≡1` ⇒ rung 7. The one thing rung 19 **computes** cleanly (only `C2/C1, θ1−θ2` — no absolute-magnitude risk; the equilibrium-O **units gate** cross-validates the pool to ~5%). Lesson: it is **T-driven, not rich-driven** — φ-independent, **weakest** in the O₂-starved rich primary where thermal NO already dies. **(2) prompt NO** — an **imposed** De Soete (1975) φ-bump `EI_prompt=scale·max(f(φ,n),0)·exp(−Ea/RuT)` (`PromptNO` config; the burnt-pool `[O₂]^a·[FUEL]` **dropped** — it double-counts O₂ depletion & flips the shape lean-peaking). The rich-peak lives **only** in De Soete's fitted `f(φ)`. Lesson: prompt **survives where thermal dies** — prompt/thermal grows **monotonically rich** (0.24→455), and prompt is **~27× less T-sensitive** (single vs the double `k1f·[O]_eq` Arrhenius exp). Both stay **trace** (summed guard `x_NO<0.02`) ⇒ cycle bit-for-bit rung 6. **Two honest concessions** (rung-18-flavored, stated loudly): the prompt **magnitude is imposed** (a 0-D pool has no flame structure — only the φ-shape + the directional ratio are certified), and the super-eq **ratio is semi-empirical** (a full-equilibrium pool cannot self-yield super-eq O). φ>1.6 is De Soete extrapolation (clamped, flagged); constants **transcribed** (image-locked sources), not digit-verified. Lifts only the **primary** diagnostic (`ei_no`/`x_no_mix`/`ei_no_total`); threading through the quench is a **deferred seam**. `super_eq_o=False`+`prompt=None` ⇒ exact prior path. | `docs/rung19-spec.md` |
+| 20 | **Super-equilibrium O *through the quench*** — threading the rung-19 lower-bound lift **into** the finite-quench re-making, closing the seam where `ei_no_quenched`/`ei_no_pocket_quench` and the rung-17 clamp `a` still rode on **equilibrium O**. A `super_eq_o=` flag on `zoned_nox`/`exhaust_no_clamp`'s quench path lifts `[O]` by `m(T)` **inside** the `_quench_no` cooling chemistry (floored at the flame band, `m(max(T,1500 K))`; `super_eq_o=False` ⇒ **bit-for-bit** prior). The load-bearing result **INVERTS** the naive "strongest on the cooling pocket": the Zeldovich re-making peaks at the **hottest** stoich crossing (`T_peak≈2448 K`) where `m(T)` is at its **minimum** (`≈1.14`), and the cool tail (large `m`) makes negligible NO (and there `a>1` ⇒ destruction), so the effective lift is **modest & peak-concentrated** (`≈m(T_peak)`, **×1.17** on the bulk / ×1.16 per-pocket) — even **smaller** than the rung-19 primary lift (**×1.28**; the quench samples a *hotter* peak than the flame). The **certified spine**: the rung-17 `a` margins **RISE** because the **numerator** (kinetic re-made NO) lifts while the **denominator** `x_no_e(T9)=Kp_NO·√(x_N2·x_O2)` — a **thermodynamic** ceiling untouched by the O-atom closure — stays **bit-identical** (`a_bulk 3.27→3.83`, `a_pocket 11.06→12.87`); the rung-17 ordering + `a_mixed<1` survive. Clamp **still dormant at station 4** (`max_a 0.72→0.81<1`): super-eq O speeds *formation*, not the `[NO]_e` collapse — the burner-clamp lever is a **slow freeze** (a separate seam). **Prompt** rides the quench as an **invariant** per-kg-fuel EI (`ei_no_quenched_total`), kept **out** of `a` (imposed magnitude ⇒ no false precision through destruction chemistry). Scope **narrow, per-field consistent**: only the `_quench_no`-based fields (bulk/core/per-pocket/clamp) lift; the **ideal-bell PDF integrals** (rung 13 `ei_no_pdf` / rung 15 term 2 / rung 18) **deliberately** stay eq-O lower bounds — **forbidden** to combine with `super_eq_o` (`pdf_quench` would else be a half-lifted **hybrid**). Pure diagnostic ⇒ cycle bit-for-bit rung 6. `super_eq_o=False` ⇒ exact prior rung. | `docs/rung20-spec.md` |
 
-Rungs 7–13, 15, 16, 17, 18 and 19 are **pure diagnostics** — NO/N never enter the cycle solve, so the cycle
+Rungs 7–13, 15, 16, 17, 18, 19 and 20 are **pure diagnostics** — NO/N never enter the cycle solve, so the cycle
 stays **bit-for-bit rung 6**. Rung 14 is *also* a pure diagnostic (`Gas.nozzle_flow` only reads the
 run's state; the production nozzle stays frozen), so the cycle is still bit-for-bit rung 6. Rung 17 is
 *also* a pure diagnostic (`Gas.exhaust_no_clamp` only reads the run's state and composes the rung-8/11/16
@@ -46,11 +47,13 @@ run's state; the production nozzle stays frozen), so the cycle is still bit-for-
 (`zoned_nox(…, transported=…)` only adds a transported-width PDF integral over the existing ideal bell —
 NO/N never enter `_equil_solve`), so the cycle stays bit-for-bit rung 6. Rung 19 is *also* a pure
 diagnostic (`thermal_nox`/`zoned_nox(…, super_eq_o=…, prompt=…)` only lift the primary [O] and add an
-imposed prompt term — NO/N never enter `_equil_solve`), so the cycle stays bit-for-bit rung 6. Each
+imposed prompt term — NO/N never enter `_equil_solve`), so the cycle stays bit-for-bit rung 6. Rung 20 is
+*also* a pure diagnostic (`zoned_nox`/`exhaust_no_clamp(…, super_eq_o=…)` only lift `[O]` inside the
+existing `_quench_no` re-making — NO/N never enter `_equil_solve`), so the cycle stays bit-for-bit rung 6. Each
 rung's verified anchor data (textbook / formation / CEA-equilibrium / Zeldovich-kinetics / ICAO-zoning /
 rich-RQL / finite-quench / jet-mixing / unmixedness / mixing-PDF / frozen-vs-equilibrium-nozzle /
 PDF-through-quench / per-pocket-PDF-quench / super-equilibrium-exhaust / transported-variance /
-super-equilibrium-O-and-prompt) lives in `docs/plans/rungN-anchor-*.md`; `docs/plans/` also holds the
+super-equilibrium-O-and-prompt / super-equilibrium-O-through-quench) lives in `docs/plans/rungN-anchor-*.md`; `docs/plans/` also holds the
 living plan/tasks (rungs 1–3).
 
 ## Working contract (from SPEC.md — these override convenience)
@@ -62,7 +65,7 @@ living plan/tasks (rungs 1–3).
   hidden state (Turbine and Nozzle diverge their signatures by design).
 - **Conservation checks are assertions**, run on every execution (not as
   separate tests). See SPEC.md / docs/rung2-spec.md § Conservation checks.
-- **Current scope (rung 19):** all rungs above are cumulative and live (see § The
+- **Current scope (rung 20):** all rungs above are cumulative and live (see § The
   rungs). The **cycle solve** is a thermally-perfect, reacting, dissociation-
   equilibrium gas (`Gas.reacting_equilibrium()`) run through ideal + real components
   (isentropic `η_c/η_t` **or** polytropic `e_c/e_t`, mutually exclusive; `π_d/π_b/π_n`,
@@ -89,7 +92,17 @@ living plan/tasks (rungs 1–3).
   carried, two ways that **both** refute the naive "rich primary explodes" intuition: a **computed**
   T-driven Westenberg super-eq-O multiplier `m(T)∈[1.16,1.50]` (weakest when rich) and an **imposed**
   rich-specific De Soete prompt φ-bump (survives where thermal dies; ~27× less T-sensitive). Both lift
-  only the **primary** diagnostic and stay trace, so bit-for-bit rung 6.
+  only the **primary** diagnostic and stay trace, so bit-for-bit rung 6;
+  rung 20 adds the **super-equilibrium-O-through-the-quench diagnostic** (`zoned_nox`/`exhaust_no_clamp(…,
+  super_eq_o=…)`) — threading the rung-19 lift **into** the `_quench_no` finite-quench re-making, so
+  `ei_no_quenched`/`ei_no_pocket_quench` and the rung-17 clamp `a` (which still rode on **equilibrium O**)
+  finally carry it. The load-bearing result **inverts** the intuition a third time: the lift is
+  **modest & peak-concentrated** (`≈m(T_peak)≈1.14`, even **smaller** than the primary lift) because the
+  Zeldovich re-making peaks at the hottest crossing where `m(T)` is minimal; the rung-17 `a` **rise**
+  (numerator lifts, the thermodynamic denominator `x_no_e(T9)` untouched) — discharging the "every `a`
+  is a lower bound" caveat — but the clamp stays **dormant at station 4** (super-eq O is not the
+  burner-clamp lever). Narrow, per-field-consistent scope; the ideal-bell PDF integrals stay eq-O
+  (forbidden to combine); prompt rides as an invariant EI. Pure diagnostic, so bit-for-bit rung 6.
   Fork A/B
   (`Gas.reacting()` / `reacting_forkb()`) and the frozen-products `Gas.thermally_perfect()` are kept
   alongside. **Deferred seams** (kept open on purpose): **finite-rate nozzle chemistry** — rung 14
@@ -103,14 +116,17 @@ living plan/tasks (rungs 1–3).
   (`max_a>1` at station 4, not just in the rung-14/17 nozzle where rung 17 already fires it) — the
   lever is a **slow-enough freeze on a cooling pocket** (a long dwell that freezes NO high while the
   local `[NO]_e` collapses), *not* a hotter `Tt4` alone (raising `Tt4` raises the terminal `[NO]_e`
-  and *lowers* the ratio); **threading the rung-19 super-eq-O / prompt lift THROUGH the quench** — rung
-  19 discharged the equilibrium-O lower bound only on the **primary** diagnostic (`ei_no`/`x_no_mix`); the
-  finite-quench / PDF / per-pocket fields (`ei_no_quenched`, `ei_no_pocket_quench`, …) and the rung-14/17
-  exhaust-NO clamp still ride on **equilibrium O**, so every rung-17 `a` remains a lower bound (a slow
-  cooling pocket carrying super-eq O is exactly the through-the-quench seam); **detailed Fenimore**
+  and *lowers* the ratio) — and rung 20 shows super-eq O is **not** that lever (it speeds *formation*,
+  not the `[NO]_e` collapse, so `max_a` stays <1 at station 4); the **ideal-bell PDF lifts** — rung 20
+  threaded the super-eq-O lift only through the `_quench_no`-based fields (bulk/core/per-pocket/clamp);
+  the composition integrals `ei_no_pdf` (rung 13), `ei_no_pdf_quench` term 2 (rung 15) and
+  `ei_no_transported` (rung 18) **deliberately stay equilibrium-O lower bounds** (forbidden to combine —
+  a `pdf_quench` lift would be a half-lifted hybrid), so lifting *those* consistently is a next seam;
+  **detailed Fenimore**
   (`CH+N₂→HCN→…`) and **super-equilibrium-O radical-decay history** (both need new species / a relaxing
-  pocket — rung 19 kept the prompt magnitude *imposed* and the super-eq ratio *semi-empirical* precisely
-  because a 0-D pool cannot derive them); off-design / component maps, a *choked* convergent nozzle,
+  pocket — rung 19 kept the prompt magnitude *imposed* and the super-eq ratio *semi-empirical*, and rung
+  20 carried that same semi-empirical ratio through the quench, precisely because a 0-D pool cannot
+  derive them); off-design / component maps, a *choked* convergent nozzle,
   afterburner.
 - **Stop and explain surprises.** If a number looks off, reason about the
   physics rather than silently moving on.
@@ -260,6 +276,16 @@ living plan/tasks (rungs 1–3).
   `ei_no_prompt` + `ei_no_total`, and `super_eq_o=False`/`prompt=None` params on `thermal_nox`/`zoned_nox`
   (both off ⇒ the exact prior code path). A **summed** trace guard spans both channels; the lift acts only
   on the **primary** diagnostic; a pure diagnostic (NO/N never enter `_equil_solve`), so bit-for-bit rung 6.
+  Rung 20 threads that same super-eq-O lift **through the finite quench**: a `_SUPER_EQ_T_FLOOR=1500 K`
+  flame-band floor (`m(T)=A·T·exp(B/T)` diverges as `T→0`), a `super_eq_o=` param on `_quench_no`
+  (lifts `[O]` by `m(max(T,floor))` INSIDE the cooling `dn_dt`, a standing `1≤m≤2` trajectory assert;
+  `False` ⇒ byte-identical rung 10/11/12/16), threaded through `_ideal_bell_ei`/`_pocket_quench_mean_ei`
+  (each pocket's initial `_thermal_no` + its own `_quench_no` + the lean/tail bell — no half-eq-O
+  pocket), and a `super_eq_o=` param on `zoned_nox`/`exhaust_no_clamp` that lifts the bulk/core/per-pocket
+  quench + all three clamp numerators (the thermodynamic denominator `x_no_e(T9)` untouched). `zoned_nox`
+  **forbids** `super_eq_o` with `pdf`/`pdf_quench`/`transported` (the ideal-bell integrals stay eq-O — no
+  hybrid); `ZonedNOxState` gains an `ei_no_quenched_total` property (adds the invariant prompt). The lift
+  is modest & peak-concentrated (`≈m(T_peak)`); a pure diagnostic, so bit-for-bit rung 6.
 - `turbojet/components.py` — `Inlet, Compressor, Burner, Turbine, Nozzle` in `h`/`pr`
   form (+ loss params, `ram_recovery(M0)`, the polytropic `e_c/e_t` knob; the Nozzle
   branches CPG/TPG — the velocity↔enthalpy trap, plus a back-pressure guard `p9 ≤ pt9`). The
@@ -388,6 +414,17 @@ living plan/tasks (rungs 1–3).
   0.24→455 across φ_p 0.8→1.5), the **T-sensitivity discriminator** (thermal ×584 / prompt ×21 > 10×), the
   **summed trace guard** (both channels `Σ x_NO<0.02`), and the `PromptNO` positivity/calibratable-`phi_ref`
   guards. (Reuses a cached DP.)
+- `tests/test_rung20.py` — rung-20: the LOAD-BEARING reduce (`super_eq_o=False` ⇒ bit-for-bit the prior
+  rung — a direct `_quench_no` reduce + the bulk/per-pocket/clamp fields identical), **THE MODEST
+  PEAK-CONCENTRATED LIFT** (the bulk-quench lift `∈(1.10,1.25)`, `≥ m(T_peak)` — a formation-weighted
+  average of a T-decreasing `m` floored at the hottest point — and **strictly `<` the rung-19 primary
+  lift**, `T_peak>T_primary`), **CLAMP DORMANT** (`max_a_quench<1` with the lift — super-eq O is not the
+  burner-clamp lever), **THE CERTIFIED SPINE** (the rung-17 `a_bulk`/`a_pocket` **rise** while the
+  denominator `x_no_e_exit` is **bit-identical**; ordering + `a_mixed<1` + the rung-17 predicates survive),
+  **prompt-through invariance** (`ei_no_quenched_total = ei_no_quenched + ei_no_prompt`, `None` for the
+  ideal quench), the **FORBID guard** (`super_eq_o` + `{pdf,pdf_quench,transported}` raises; combines OK
+  with `mixing`/`unmixedness`/`pocket_quench`), and the **load-bearing FLOOR** (raw `m(1200 K)>2`, floored
+  `m(1500 K)<2` — the standing `1≤m≤2` trajectory assert). (Reuses a cached DP + cached clamps per flag.)
 - `main.py` — runs ideal vs real at one design point: tables + overlaid T–s diagram,
   plus the rung-2-frozen-`cp` vs rung-3-`cp(T)` table, the rung-4 frozen-vs-reacting
   + `f`-sweep table, the rung-5 Fork-A-vs-Fork-B (derived-`hPR`) panel, the rung-6
@@ -439,7 +476,16 @@ living plan/tasks (rungs 1–3).
   T-only Westenberg multiplier, φ-independent, decreasing → the 'T-driven not rich' first fail); and the
   **T-sensitivity discriminator** thermal ×584 (double exp) vs prompt ×21 (single) ≈ 28× milder; with the
   **two concessions stated loudly**: the prompt magnitude is IMPOSED (only the φ-shape + directional ratio
-  certified), the super-eq ratio is semi-empirical (cross-validated to ~5%, the units gate)).
+  certified), the super-eq ratio is semi-empirical (cross-validated to ~5%, the units gate)),
+  and the rung-20 super-eq-O-through-the-quench panel (the finite-quench lower bound lifted — the
+  **effective-lift table** (`ei_no_quenched` **×1.17**, `ei_no_pocket_quench` ×1.16, vs the rung-19
+  **primary** ×1.28), the **why-it-inverts** note (the re-making peaks at the hottest crossing `T_peak`
+  where `m(T)` is MINIMAL, so the quench lift is peak-concentrated and *smaller* than the primary), and
+  the **certified-spine** clamp table (`a_bulk 3.27→3.83`, `a_pocket 11.06→12.87` rising while the
+  thermodynamic denominator `x_no_e(T9)` is **bit-identical**, the clamp still dormant at station 4
+  `max_a<1`); with the **honest scope**: the super-eq ratio stays semi-empirical (the lifted `a` is
+  better-justified but not pinned), prompt rides as an invariant EI kept OUT of `a`, and the ideal-bell
+  PDF integrals deliberately stay eq-O lower bounds (forbidden to combine — no half-lifted hybrid)).
 
 ## Commands
 - Run the model:  `python main.py`
