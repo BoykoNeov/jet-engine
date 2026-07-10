@@ -18,10 +18,10 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 from turbojet.engine import FlightCondition, build_turbojet  # noqa: E402
 from turbojet.gas import (  # noqa: E402
-    Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF,
+    Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, PromptNO,
     _products_composition, _equilibrium_composition, _h_molar_A,
     _HF_FUEL_DEFAULT, _M_AIR, _M_CH2, _F_STOICH, _air_mole_fractions,
-    _equilibrium_no_fraction, _primary_aft, _thermal_no,
+    _equilibrium_no_fraction, _primary_aft, _thermal_no, _super_eq_o_multiplier,
     _quench_trajectory, _quench_no, _bell_interpolator, _beta_pdf_nodes_weights, _ideal_bell_ei,
     _two_stream_ceiling, _transport_variance, _pdf_mean_ei,
 )
@@ -1149,6 +1149,72 @@ def print_transported_variance_table(flight):
     print("  over-claiming the one thing 0-D cannot reach: the spatial/CFD PDF stays the deferred ceiling.")
 
 
+def print_super_eq_prompt_table(flight):
+    """Rung-19 payoff: super-equilibrium O & prompt NO — LIFTING the equilibrium-O lower bound. Every
+    NO number since rung 7 read the rung-6 EQUILIBRIUM [O], so it is a LOWER BOUND. Two lifts, and the
+    load-bearing result is that BOTH contradict the naive "the rich primary explodes" intuition:
+      • super-eq O — a COMPUTED, T-DRIVEN Westenberg multiplier m(T)∈[1.16,1.50] on the primary [O]
+        (φ-independent; WEAKEST in the O2-starved rich primary — the opposite of "rich explosion");
+      • prompt NO — an IMPOSED, rich-specific De Soete φ-bump that SURVIVES where thermal dies
+        (prompt/thermal grows monotonically rich) and is ~27× less T-sensitive (single vs double exp).
+    Pure diagnostic: NO stays trace, cycle bit-for-bit rung 6. TWO honest concessions, stated loudly.
+    """
+    eq = Gas.reacting_equilibrium()
+    real = build_turbojet(eq, PI_C, TT4, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+    st3, st4 = real.stations["3"], real.stations["4"]
+    Tt3, Tt4, far, p = st3.Tt, st4.Tt, st4.far, st4.pt
+    tau = 3e-3
+    prompt = PromptNO()
+
+    print("\nSuper-equilibrium O & prompt NO (rung 19): every NO number since rung 7 read the rung-6")
+    print("EQUILIBRIUM [O], so it is a LOWER BOUND. Two lifts — and BOTH refute 'the rich primary")
+    print("explodes': super-eq O is T-driven (weakest when rich); prompt SURVIVES where thermal dies.")
+    print(f"\n  Design point: Tt3={Tt3:.0f} K, Tt4={Tt4:.0f} K, overall far={far:.4f} (φ={far/_F_STOICH:.2f}, LEAN).")
+
+    # (1) the φ_p sweep — thermal (equilibrium-O), super-eq-lifted, prompt, and the prompt/thermal ratio.
+    print("\n  (1) φ_p sweep — the two lifts on the primary (EI in g NO/kg fuel):")
+    print(f"  {'φ_p':>5} {'T_p':>7} {'EI_therm':>9} {'m(T_p)':>7} {'EI_superO':>10} {'EI_prompt':>10}"
+          f" {'EI_total':>9} {'p/therm':>8}")
+    print("  " + "-" * 74)
+    for phi_p in (0.8, 1.0, 1.1, 1.2, 1.3, 1.5):
+        base = eq.zoned_nox(far, Tt3, Tt4, p, phi_p, tau=tau)
+        lift = eq.zoned_nox(far, Tt3, Tt4, p, phi_p, tau=tau, super_eq_o=True)
+        prm = eq.zoned_nox(far, Tt3, Tt4, p, phi_p, tau=tau, prompt=prompt)
+        ratio = prm.ei_no_prompt / base.ei_no if base.ei_no > 0 else float("inf")
+        total = lift.ei_no + prm.ei_no_prompt
+        print(f"  {phi_p:>5.2f} {base.T_primary:>7.0f} {base.ei_no:>9.4f} {lift.o_multiplier:>7.3f}"
+              f" {lift.ei_no:>10.4f} {prm.ei_no_prompt:>10.4f} {total:>9.4f} {ratio:>8.2f}")
+    print("  super-eq O: a MODEST T-driven lift (m falls as T rises), and its ABSOLUTE size COLLAPSES on")
+    print("  the rich flank WITH thermal — it does NOT rescue the rich primary. prompt/thermal RISES")
+    print("  monotonically rich (thermal dies, prompt persists): prompt is the rich-specific lift.")
+
+    # (2) super-eq O is T-DRIVEN not rich — the m(T) correlation, φ-independent.
+    print("\n  (2) super-eq O multiplier m(T)=(C2/C1)·T·exp((θ1−θ2)/T) — Westenberg partial-eq/eq O:")
+    print(f"  {'T (K)':>7} " + " ".join(f"{T:>7.0f}" for T in (1800, 2000, 2200, 2400, 3000)))
+    print(f"  {'m(T)':>7} " + " ".join(f"{_super_eq_o_multiplier(T):>7.3f}" for T in
+                                        (1800, 2000, 2200, 2400, 3000)))
+    print("  DIMENSIONLESS (the shared [O2]^0.5 cancels) ⇒ a pure function of T, IDENTICAL across φ;")
+    print("  DECREASING in T (→1 as T→∞). The lift is T-driven, NOT rich-driven — the intuition's first fail.")
+
+    # (3) the T-sensitivity discriminator — thermal (double exp) vs prompt (single exp).
+    far_s = _F_STOICH
+    t_rise = (eq.thermal_nox(far_s, 2400.0, p, tau=tau).ei_no
+              / eq.thermal_nox(far_s, 2000.0, p, tau=tau).ei_no)
+    p_rise = prompt.ei_prompt(1.0, 2400.0) / prompt.ei_prompt(1.0, 2000.0)
+    print(f"\n  (3) T-sensitivity 2000→2400 K at stoich: thermal ×{t_rise:.0f} (DOUBLE exp: k1f·[O]_eq)"
+          f" vs prompt ×{p_rise:.0f} (SINGLE exp)")
+    print(f"  ⇒ prompt is ~{t_rise/p_rise:.0f}× MILDER — the quantitative face of 'survives where thermal dies'.")
+
+    print("\n  TWO honest concessions (stated loudly; docs/rung19-spec.md § the concessions):")
+    print(f"  • prompt MAGNITUDE is IMPOSED — a 0-D burnt pool has no flame structure to derive it; the")
+    print(f"    scale is back-solved from a REFERENCE EI≈{prompt.peak_ei:.0f} g/kg at (φ={prompt.phi_ref},"
+          f" T={prompt.T_ref:.0f} K), so the delivered peak lands near ~{prompt.peak_ei:.0f} g/kg — but a")
+    print("    hotter primary (T_p>T_ref) nudges it up (single exp). Only the φ-SHAPE + the directional")
+    print("    prompt/thermal ratio are certified. De Soete valid φ≤1.6 — the deep-rich flank is flagged.")
+    print("  • super-eq O RATIO is semi-empirical — a full-equilibrium pool cannot self-yield super-eq O;")
+    print("    the lift lives in Westenberg's fitted constants (cross-validated to ~5%, the units gate).")
+
+
 def _j_opt_from(cfg):
     """The uniformity optimum J_opt where C=(S/H)√J_opt = C_opt (H=0.10, the JetMixing default)."""
     return (cfg.C_opt * JetMixing(J=1.0).H / cfg.S) ** 2
@@ -1299,6 +1365,8 @@ def main():
     print_exhaust_clamp_table(FLIGHT)
 
     print_transported_variance_table(FLIGHT)
+
+    print_super_eq_prompt_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

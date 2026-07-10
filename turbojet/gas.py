@@ -754,6 +754,37 @@ _ZELDOVICH = {
 }
 _M_NO = _SPECIES["NO"][0] / 1000.0     # kg/mol
 
+# --------------------------------------------------------------------------- #
+# RUNG 19 — super-equilibrium O (lifting the equilibrium-O lower bound).       #
+# Every NO number since rung 7 reads the rung-6 EQUILIBRIUM [O] into the       #
+# Zeldovich rate, so it is a LOWER BOUND. Fluent (Theory Guide §9.1.3) offers  #
+# a PARTIAL-EQUILIBRIUM O closure (Westenberg 1971, adds the 3-body            #
+# O+O+M⇌O2+M) that sits ABOVE equilibrium O. Both share the same [O2]^0.5, so  #
+# their RATIO is dimensionless and T-ONLY — no absolute-magnitude sourcing:    #
+#   [O]_eq = C1·T^-0.5·[O2]^0.5·exp(-θ1/T),  [O]_pe = C2·T^+0.5·[O2]^0.5·exp(-θ2/T)  #
+#   m(T) = [O]_pe/[O]_eq = (C2/C1)·T·exp((θ1-θ2)/T)  ∈ [1.16,1.50] over 1800-2400 K   #
+# We lift OUR OWN rung-6 comp["O"] by m(T) inside the rung-7 integrator; m≡1   #
+# ⇒ bit-for-bit rung 7. The lift is T-DRIVEN (φ-independent) — WEAKEST in the  #
+# O2-depleted rich primary, so it does NOT match the naive "rich explosion"    #
+# intuition. Constants TRANSCRIBED from the standard published forms (image-   #
+# locked sources), NOT digit-verified; cross-validated by the equilibrium-O    #
+# units gate (Westenberg [O]_eq / comp["O"] ∈ [0.94,0.99], test_rung19).       #
+# See docs/rung19-spec.md and docs/plans/rung19-anchor-superequilibrium-prompt.md §B.  #
+# --------------------------------------------------------------------------- #
+_WESTENBERG_C1, _WESTENBERG_TH1 = 3.970e5, 31090.0   # equilibrium-O correlation (θ in K)
+_WESTENBERG_C2, _WESTENBERG_TH2 = 36.64, 27123.0     # partial-equilibrium-O correlation
+
+
+def _super_eq_o_multiplier(T: float) -> float:
+    """Super-equilibrium O multiplier m(T)=[O]_pe/[O]_eq=(C2/C1)·T·exp((θ1-θ2)/T) — the Westenberg
+    partial-equilibrium O over equilibrium O (the shared [O2]^0.5 cancels ⇒ DIMENSIONLESS, T-ONLY).
+    ∈ [1.16,1.50] over the flame band, DECREASING in T (→1 as T→∞: the partial-eq pool relaxes to
+    equilibrium once the fast H-atom shuffle equilibrates). φ-INDEPENDENT: the lift is T-driven, NOT
+    rich-driven — it is WEAKEST in the O2-starved rich primary, where thermal NO has already died.
+    m≡1 recovers rung 7 exactly (super_eq_o=False). Rung 19; docs/rung19-spec.md."""
+    return (_WESTENBERG_C2 / _WESTENBERG_C1) * T * math.exp(
+        (_WESTENBERG_TH1 - _WESTENBERG_TH2) / T)
+
 
 def _k_zeldovich(key: str, T: float) -> float:
     """Zeldovich rate constant k(T) in SI m^3/(mol s)."""
@@ -795,7 +826,17 @@ class NOxState:
     x_no_eq: float       # equilibrium NO mole fraction (the ceiling)
     initial_rate: float  # d[NO]/dt at t=0 = 2 k1f [O]_e [N2]_e, mol/m^3/s
     char_time: float     # tau_NO = [NO]_e / initial_rate, s (>> residence => frozen)
-    ei_no: float         # emission index, g NO / kg fuel
+    ei_no: float         # emission index, g NO / kg fuel (thermal, m-lifted if super_eq_o)
+    # RUNG 19 — the two lower-bound-lifting channels (both 1.0/0.0 for the rung-7 baseline).
+    o_multiplier: float = 1.0    # super-eq O multiplier m(T) applied to [O] (1.0 ⇒ bit-for-bit rung 7)
+    ei_no_prompt: float = 0.0    # ADDITIVE prompt (Fenimore) EI, g NO/kg fuel (0.0 ⇒ thermal only)
+
+    @property
+    def ei_no_total(self) -> float:
+        """Total EI = thermal (m-lifted) + prompt, g NO/kg fuel. Rung 19: the equilibrium-O
+        lower bound lifted two ways — a COMPUTED T-driven super-eq-O factor already folded into
+        `ei_no` (via the lifted [O]), plus the IMPOSED additive prompt bump `ei_no_prompt`."""
+        return self.ei_no + self.ei_no_prompt
 
     @property
     def ppm(self) -> float:
@@ -811,7 +852,7 @@ class NOxState:
 
 
 def _thermal_no(comp: dict, T: float, p: float, tau: float, far: float,
-                nsteps: int = 4000) -> NOxState:
+                nsteps: int = 4000, o_multiplier: float = 1.0) -> NOxState:
     """Kinetic NO after residence time tau on the frozen pool `comp` at (T, p).
 
     One-equation extended-Zeldovich model (Heywood/Turns), QSS on N, REVERSE-RATE form
@@ -820,6 +861,13 @@ def _thermal_no(comp: dict, T: float, p: float, tau: float, far: float,
         R1 = k1f[O][N2],  R2 = k2r[NO]_e[O],  R3 = k3r[NO]_e[H]
     a=0 -> rate=2 R1 (initial rate); a->1 -> rate=0 (saturates at [NO]_e, so tau->inf
     recovers the equilibrium NO — an internal consistency gate). RK4 from [NO]=0.
+
+    RUNG 19 — `o_multiplier` (default 1.0 ⇒ byte-identical rung 7) lifts the pool's [O] by the
+    super-equilibrium factor m(T) (`_super_eq_o_multiplier`) BEFORE forming R1/R2. In the
+    kinetically-limited (frozen) regime the NO stays far below the [NO]_e ceiling, so the rate ∝
+    [O] and x_no scales ~linearly with m — a faster FORMATION, not a higher equilibrium (the
+    ceiling [NO]_e is a thermodynamic quantity, independent of the O-atom closure, so the clamp
+    still binds at the same value). super_eq_o thus lifts the equilibrium-O lower bound.
     """
     # K-CHECK (rung-7 standing assert, on every diagnostic run): the transcribed rate
     # constants must agree with the a6/a7 thermo at the evaluation T (the twin of rung 6's
@@ -830,7 +878,7 @@ def _thermal_no(comp: dict, T: float, p: float, tau: float, far: float,
     ntot = sum(comp.values())
     conc = p / (_Ru * T)                         # total molar concentration, mol/m^3
     x = {s: comp[s] / ntot for s in comp}
-    cO = x.get("O", 0.0) * conc
+    cO = x.get("O", 0.0) * conc * o_multiplier   # rung 19: super-eq O lift (m=1.0 ⇒ rung 7)
     cN2 = x["N2"] * conc
     cH = x.get("H", 0.0) * conc
     x_no_eq = _equilibrium_no_fraction(comp, T)
@@ -865,7 +913,8 @@ def _thermal_no(comp: dict, T: float, p: float, tau: float, far: float,
     n_fuel = far * _M_AIR / _M_CH2
     ei = 1000.0 * (x_no * ntot * _M_NO) / (n_fuel * _M_CH2_KG) if n_fuel > 0.0 else 0.0
     return NOxState(x_no=x_no, x_no_eq=x_no_eq, initial_rate=2.0 * R1,
-                    char_time=(cNOe / (2.0 * R1) if R1 > 0.0 else math.inf), ei_no=ei)
+                    char_time=(cNOe / (2.0 * R1) if R1 > 0.0 else math.inf), ei_no=ei,
+                    o_multiplier=o_multiplier)
 
 
 # --- Rung-8 two-zone (primary -> dilution) NOx helpers (all on rung-6/7 primitives) --- #
@@ -1833,6 +1882,74 @@ class TransportedPDF:
 
 
 @dataclass
+class PromptNO:
+    """Rung-19 prompt-NO (Fenimore) config — De Soete's (1975) global-rate CORRECTION FACTOR
+    reduced to its fitted, rich-peaking φ-shape (docs/rung19-spec.md). An IMPOSED trace channel
+    ADDED beside thermal NO; it is the RICH-SPECIFIC lift of the equilibrium-O lower bound (the
+    complement of super-eq O, which is T-driven and modest — the naive 'rich explosion' intuition
+    fails BOTH ways, and prompt SURVIVES where thermal dies on the rich flank).
+
+      EI_prompt(φ,T) = scale · max(f(φ,n), 0) · exp(−Ea/RuT)
+        f(φ,n) = 4.75 + 0.0819·n − 23.2·φ + 32·φ² − 12.2·φ³      (De Soete, valid φ∈[0.6,1.6])
+
+    THE MAGNITUDE IS IMPOSED, not derived — a 0-D burnt pool has no flame structure (thin-zone
+    fuel loading, flame-front residence) to anchor the absolute g/kg, so the `scale` is back-solved
+    from a REFERENCE-POINT EI `peak_ei` imposed at (`phi_ref`, `T_ref`). `T_ref` is set to a
+    REALISTIC near-peak primary AFT (~2400 K) so the reference is physical and the DELIVERED prompt
+    peak lands near `peak_ei` (~2 g/kg, the ~1–5 g/kg literature band). NOTE the delivered EI still
+    tracks the LOCAL primary T: because prompt carries exp(−Ea/RuT), a hotter primary (T_p > T_ref)
+    nudges the delivered EI ABOVE `peak_ei` — `peak_ei` is the reference value, not a hard cap. This
+    is HARDER than rung 7's band and is the rung-18-flavored concession: only the φ-SHAPE and the
+    directional prompt/thermal ratio are certified, NOT the number. (An imposed closure — rung-7 honesty.)
+
+    The burnt-pool [O2]^a·[FUEL] factors of the full De Soete rate are DROPPED (they double-count O2
+    depletion on an already-burnt pool and flip the shape lean-peaking — check_prompt_no.py); the
+    rich-peak lives ONLY in De Soete's fitted f(φ). f<0 past φ≈1.65 ⇒ CLAMPED at 0: φ>1.6 is out of
+    De Soete's validity, so the deep-rich flank up to the soot bound φ=2 is OUTSIDE the prompt model
+    (flagged, not modelled). `prompt=None` ⇒ no additive term (code-path-identical to the prior rung).
+
+    THE T-SENSITIVITY DISCRIMINATOR: prompt carries a SINGLE Arrhenius exp; thermal a DOUBLE
+    (k1f·[O]_eq, itself ∝exp). Measured 2000→2400 K at stoich: thermal ×566, prompt ×21 — prompt is
+    ~27× milder, the quantitative face of 'survives where thermal dies'."""
+    peak_ei: float = 2.0       # IMPOSED reference prompt EI at (phi_ref, T_ref), g NO/kg fuel — the magnitude concession
+    n_carbon: float = 12.0     # fuel carbon number (C12 Jet-A surrogate on the per-(CH2) basis; a modeling choice)
+    Ea: float = 303474.0       # De Soete activation energy, J/mol (Fluent modified De Soete; transcribed)
+    T_ref: float = 2400.0      # reference flame T at which peak_ei is imposed, K (a realistic near-peak primary AFT)
+    phi_ref: float = 1.24      # f(φ) cubic-maximum location (where the reference EI is imposed)
+    phi_valid_max: float = 1.6 # De Soete φ-validity ceiling; above this f(φ) is extrapolation (flagged)
+
+    def __post_init__(self):
+        for name, v in (("peak_ei", self.peak_ei), ("n_carbon", self.n_carbon),
+                        ("Ea", self.Ea), ("T_ref", self.T_ref), ("phi_ref", self.phi_ref)):
+            assert v > 0.0, f"PromptNO.{name}={v} must be positive"
+        assert self.f_correction(self.phi_ref) > 0.0, \
+            f"PromptNO.phi_ref={self.phi_ref} sits where f(φ)≤0 — cannot calibrate the scale there"
+
+    def f_correction(self, phi: float) -> float:
+        """De Soete's fitted correction factor f(φ,n)=4.75+0.0819n−23.2φ+32φ²−12.2φ³ — a cubic in φ
+        peaking slightly rich (~φ=1.24) and going NEGATIVE past φ≈1.65 (the validity ceiling). This
+        is where the rich-peaking prompt SHAPE lives; the magnitude is the imposed `scale`."""
+        n = self.n_carbon
+        return 4.75 + 0.0819 * n - 23.2 * phi + 32.0 * phi ** 2 - 12.2 * phi ** 3
+
+    @property
+    def scale(self) -> float:
+        """The imposed EI prefactor, back-solved so EI_prompt(phi_ref, T_ref) == peak_ei. Makes the
+        one un-derivable magnitude TRANSPARENT (a physical reference EI ~2 g/kg at a realistic primary
+        AFT) rather than an opaque pre-exponential. This is the rung-19 concession made legible."""
+        return self.peak_ei / (self.f_correction(self.phi_ref)
+                               * math.exp(-self.Ea / (_Ru * self.T_ref)))
+
+    def ei_prompt(self, phi: float, T: float) -> float:
+        """Imposed prompt EI, g NO/kg fuel = scale·max(f(φ),0)·exp(−Ea/RuT). Clamped ≥0 (f<0 for
+        φ>~1.65 ⇒ no negative prompt). Equals `peak_ei` at (phi_ref, T_ref) and rises above it where
+        the local primary T exceeds T_ref (the single exp; `peak_ei` is the reference, not a cap). The
+        SINGLE exp is why prompt is far less T-sensitive than the double-exp thermal — 'survives
+        where thermal dies'."""
+        return self.scale * max(self.f_correction(phi), 0.0) * math.exp(-self.Ea / (_Ru * T))
+
+
+@dataclass
 class ZonedNOxState:
     """Two-zone (primary → dilution) thermal-NO diagnostic (rung 8). A pure DIAGNOSTIC —
     like NOxState it never feeds the cycle. NO is set in the hot primary and FROZEN through
@@ -1902,6 +2019,22 @@ class ZonedNOxState:
     g_ceiling: Optional[float] = None      # DERIVED two-stream injection ceiling (ξ_p−ξ̄)/(1−ξ̄) from φ_p
     g_transported: Optional[float] = None  # the ODE-residual width g(C) (≤ g_ceiling; >0 at C_opt)
     ei_no_transported: Optional[float] = None  # ⟨EI⟩ over the β-PDF of the ideal bell at g_transported
+    # RUNG 19 — the two lower-bound-lifting channels ON THE PRIMARY (both off ⇒ bit-for-bit the prior
+    # rung). super_eq_o lifts the primary [O] by m(T_p) inside the rung-7 integrator (folded into
+    # `primary.ei_no`/`x_no_mix`); prompt ADDS the imposed De Soete φ-bump `ei_no_prompt` beside it.
+    # They lift ONLY the primary diagnostic (ei_no / x_no_mix) — the finite-quench/PDF fields stay
+    # equilibrium-O (threading the lift through the quench is a deferred seam; docs/rung19-spec.md).
+    super_eq_o: bool = False               # whether the primary [O] was super-eq-lifted
+    o_multiplier: float = 1.0              # the m(T_p) applied to the primary O (1.0 ⇒ rung 7 baseline)
+    prompt: Optional["PromptNO"] = None    # the imposed prompt-NO config, if any
+    ei_no_prompt: float = 0.0              # additive primary prompt EI, g NO/kg fuel (0.0 ⇒ thermal only)
+
+    @property
+    def ei_no_total(self) -> float:
+        """Total primary EI = thermal (super-eq-O-lifted) + prompt, g NO/kg fuel (rung 19). The
+        equilibrium-O lower bound (`ei_no`) lifted the two certified ways — the T-driven super-eq-O
+        factor already in `ei_no` via the lifted [O], plus the IMPOSED additive prompt bump."""
+        return self.ei_no + self.ei_no_prompt
 
     @property
     def ei_no(self) -> float:
@@ -2297,15 +2430,44 @@ class Gas:
         return self._hot.freeze(f, T_burn, p_burn)
 
     # --- Rung-7 thermal-NOx diagnostic (DECOUPLED; never feeds the cycle) ---------
-    def thermal_nox(self, far: float, T: float, p: float, tau: float = 3e-3) -> "NOxState":
+    def thermal_nox(self, far: float, T: float, p: float, tau: float = 3e-3,
+                    super_eq_o: bool = False, prompt: Optional["PromptNO"] = None,
+                    phi: Optional[float] = None) -> "NOxState":
         """Thermal-NO diagnostic on the equilibrium pool at (far, T, p) after residence
         time tau (default 3 ms, a typical gas-turbine primary-zone residence — an
         UN-ANCHORED knob, stated like the specified exit pressure). Solves the rung-6
         equilibrium composition (scale-A, datum-free mole numbers), superimposes
         equilibrium NO, and integrates the extended Zeldovich mechanism. Trace species
-        => this does NOT affect the cycle; it is a pure diagnostic (docs/rung7-spec.md)."""
+        => this does NOT affect the cycle; it is a pure diagnostic (docs/rung7-spec.md).
+
+        RUNG 19 — lift the equilibrium-O LOWER BOUND two ways (docs/rung19-spec.md):
+          super_eq_o=True  — lift the pool's [O] by the Westenberg partial-equilibrium
+                             multiplier m(T)=`_super_eq_o_multiplier(T)` inside the integrator
+                             (a T-driven ~1.16–1.50× factor). super_eq_o=False ⇒ m=1 ⇒ bit-for-bit
+                             rung 7.
+          prompt=PromptNO() — ADD the imposed De Soete prompt (Fenimore) EI at the local φ
+                             (defaults to far/f_stoich): `ei_no_prompt`, an additive rich-peaking
+                             bump. prompt=None ⇒ no term. Both off ⇒ the exact prior code path.
+        The SUMMED trace guard spans both channels (thermal-lifted + prompt); NO stays trace, so
+        the cycle is untouched."""
         comp = _equilibrium_composition(far, T, p)
-        return _thermal_no(comp, T, p, tau, far)
+        m = _super_eq_o_multiplier(T) if super_eq_o else 1.0
+        assert 1.0 <= m <= 2.0, (
+            f"super-eq O multiplier m={m:.3f} at T={T:.0f} K outside the flame-band bound [1,2] — "
+            "the Westenberg partial-eq/eq ratio is a FLAME model (T≳1500 K)"
+        )
+        nox = _thermal_no(comp, T, p, tau, far, o_multiplier=m)
+        if prompt is not None:
+            phi_local = phi if phi is not None else far / _F_STOICH
+            nox.ei_no_prompt = prompt.ei_prompt(phi_local, T)
+        # SUMMED trace guard (rung 19): thermal (m-lifted) + prompt must stay trace. x_no ∝ EI at
+        # fixed far, so convert the prompt EI to a mole fraction via the thermal x_no/EI ratio.
+        x_no_prompt = (nox.ei_no_prompt / nox.ei_no * nox.x_no) if nox.ei_no > 0.0 else 0.0
+        assert nox.x_no + x_no_prompt < 0.02, (
+            f"summed NO not trace (x_NO_thermal+prompt={nox.x_no + x_no_prompt:.4g}) — "
+            "decoupling invalid"
+        )
+        return nox
 
     # --- Rung-8 two-zone combustor NOx diagnostic (DECOUPLED; never feeds the cycle) -----
     def zoned_nox(self, far: float, Tt3: float, Tt4: float, p: float,
@@ -2317,6 +2479,7 @@ class Gas:
                   pdf_quench: Optional["QuenchPDF"] = None,
                   pocket_quench: Optional["PocketQuenchPDF"] = None,
                   transported: Optional["TransportedPDF"] = None,
+                  super_eq_o: bool = False, prompt: Optional["PromptNO"] = None,
                   quench_ngrid: int = 240, quench_nsteps: int = 2000) -> "ZonedNOxState":
         """Two-zone (primary → dilution) thermal NOx (docs/rung8-spec.md). Runs the SAME
         rung-7 extended-Zeldovich integrator on a HOT, near-stoichiometric PRIMARY zone
@@ -2411,6 +2574,24 @@ class Gas:
         SIGN REVERSAL (the discriminator a lumped-dwell rung-12-in-disguise fails). `pdf_quench=None`
         (default) is the exact rung-13 path. NO still trace → cycle bit-for-bit rung 6.
 
+        RUNG 19 — lift the equilibrium-O LOWER BOUND on the PRIMARY (docs/rung19-spec.md). Every NO
+        number since rung 7 read the rung-6 EQUILIBRIUM [O], so it is a lower bound. Two knobs lift it,
+        and the load-bearing result is that BOTH contradict the naive "the rich primary explodes"
+        intuition, from opposite directions:
+          super_eq_o=True  — lift the primary [O] by the Westenberg partial-equilibrium multiplier
+                             m(T_p)∈[1.16,1.50] inside the rung-7 integrator. T-DRIVEN, not rich-driven
+                             (φ-independent; WEAKEST in the O2-starved rich primary). super_eq_o=False
+                             ⇒ m=1 ⇒ bit-for-bit the prior rung.
+          prompt=PromptNO() — ADD the imposed De Soete prompt (Fenimore) φ-bump `ei_no_prompt` at
+                             phi_primary. RICH-SPECIFIC: it SURVIVES where thermal dies (prompt/thermal
+                             grows monotonically rich, 0.4→455 across φ=1.0→1.5), and is ~27× less
+                             T-sensitive (single vs double Arrhenius exp). prompt=None ⇒ no term.
+        Both act ONLY on the primary diagnostic (`ei_no`/`x_no_mix`, and `ei_no_total`=`ei_no`+prompt);
+        the finite-quench/PDF fields stay equilibrium-O (threading the lift THROUGH the quench is a
+        deferred seam). The SUMMED trace guard spans both channels; NO stays trace ⇒ cycle bit-for-bit
+        rung 6. The prompt MAGNITUDE is IMPOSED (a 0-D pool has no flame structure); only the φ-shape
+        and the directional prompt/thermal ratio are certified (docs/rung19-spec.md § the concessions).
+
         `quench_ngrid`/`quench_nsteps` are the finite-quench numerical resolution (trajectory
         points / RK4 steps) — pure cost/accuracy knobs, only used when `tau_q` is finite. The 240
         default reproduces the anchor's worked example (docs/plans/rung10-anchor-quench.md); EI_NO
@@ -2460,7 +2641,25 @@ class Gas:
 
         T_p = _primary_aft(far_p, p, Tt3, hf_fuel)
         comp_p = _equilibrium_composition(far_p, T_p, p)
-        nox = _thermal_no(comp_p, T_p, p, tau, far_p)    # rung-7 integrator, UNCHANGED
+        # RUNG 19 — lift the equilibrium-O LOWER BOUND on the PRIMARY (super_eq_o=False, prompt=None
+        # ⇒ m=1, no prompt ⇒ the integrator call is byte-identical to the prior rung). super-eq O is
+        # a T-driven m(T_p)~1.16–1.50× on the primary [O]; prompt is the imposed De Soete φ-bump at
+        # phi_primary. Both act ONLY on the primary diagnostic (nox / x_no_mix); the finite-quench
+        # and PDF fields below stay equilibrium-O (the through-the-quench lift is a deferred seam).
+        m_p = _super_eq_o_multiplier(T_p) if super_eq_o else 1.0
+        assert 1.0 <= m_p <= 2.0, (
+            f"super-eq O multiplier m={m_p:.3f} at primary T={T_p:.0f} K outside the flame-band "
+            "bound [1,2] — the Westenberg partial-eq/eq ratio is a FLAME model (T≳1500 K)"
+        )
+        nox = _thermal_no(comp_p, T_p, p, tau, far_p, o_multiplier=m_p)   # rung 7/19 integrator
+        ei_no_prompt = prompt.ei_prompt(phi_primary, T_p) if prompt is not None else 0.0
+        nox.ei_no_prompt = ei_no_prompt
+        # SUMMED trace guard (rung 19): the primary thermal (m-lifted) + prompt must stay trace.
+        x_no_prompt_p = (ei_no_prompt / nox.ei_no * nox.x_no) if nox.ei_no > 0.0 else 0.0
+        assert nox.x_no + x_no_prompt_p < 0.02, (
+            f"summed primary NO not trace (x_NO_thermal+prompt={nox.x_no + x_no_prompt_p:.4g}) — "
+            "decoupling invalid"
+        )
 
         T_mix = _mixed_out_T(comp_p, T_p, alpha, far, Tt3, p)
         # Standing conservation gate (LOOSE gross-error bound — the method does not know η_b, and
@@ -2478,7 +2677,9 @@ class Gas:
         x_no_mix = n_no_total / ntot_mix
 
         state = ZonedNOxState(phi_primary=phi_primary, far_primary=far_p, alpha=alpha,
-                              T_primary=T_p, T_mix=T_mix, primary=nox, x_no_mix=x_no_mix)
+                              T_primary=T_p, T_mix=T_mix, primary=nox, x_no_mix=x_no_mix,
+                              super_eq_o=super_eq_o, o_multiplier=m_p, prompt=prompt,
+                              ei_no_prompt=ei_no_prompt)
         if tau_q is None and mixing is None:
             return state                                 # IDEAL quench — bit-for-bit rung 9
 

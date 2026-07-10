@@ -1791,3 +1791,76 @@ ceiling. `transported` **requires** `mixing` and is **≤1-of-five** with
 monotone vs spatial optimum) and the derived-ceiling / residual-floor / smooth-basin shape. Still
 deferred: the **spatial/CFD PDF**, **super-equilibrium O / prompt NO**, the burner-side clamp-fires
 regime, and the finite-Damköhler nozzle flow; plus off-design, the choked nozzle, the afterburner.*
+
+---
+
+# Rung 19 — Super-equilibrium O & prompt NO: lifting the equilibrium-O lower bound, in plain language
+
+## The headline: every NO number we ever printed was a floor — and lifting it kills the obvious intuition twice
+Since rung 7, every scrap of NO came from one shortcut: read the **equilibrium** oxygen-atom concentration
+`[O]` out of the burnt pool and feed it to the Zeldovich rate. Real flames run **hotter on O** than
+equilibrium — the fast radical shuffle overshoots — so **every NO number we have ever quoted is a lower
+bound.** Rung 19 finally lifts it, two ways. And the payoff is not "NO goes up"; it's that the naive
+story everyone tells — *"the hot rich primary is where NOx explodes"* — **fails in both channels**, from
+opposite directions.
+
+> **Super-equilibrium O is driven by *temperature*, not richness — so it is *weakest* exactly in the rich
+> primary. Prompt NO is the genuinely rich-specific effect — but it doesn't explode either; it *survives*,
+> filling in the flank right where the thermal channel has already collapsed to zero.**
+
+## Channel 1 — super-equilibrium O: a clean, computed lift (that refuses to help the rich primary)
+Fluent offers a "partial-equilibrium" O closure (Westenberg) that adds the slow three-body
+`O+O+M⇌O₂+M` step and sits **above** equilibrium O. The lovely thing: both the equilibrium and the
+partial-equilibrium forms carry the **same** `√[O₂]`, so when you take their ratio it **cancels** — and
+you're left with a pure, dimensionless function of temperature:
+
+  `m(T) = (C2/C1)·T·exp((θ₁−θ₂)/T)`,  which runs **1.50× at 1800 K down to 1.16× at 2400 K**.
+
+So we don't need to source any absolute rate constant (the scary, image-locked numbers) — only a **ratio**.
+We multiply *our own* `[O]` by `m(T)` inside the unchanged rung-7 integrator; set `m≡1` and it is
+**bit-for-bit rung 7**. A units cross-check confirms our equilibrium `[O]` reproduces the standard
+Westenberg correlation to ~5%, so the lift rides on a trustworthy base. The lesson lands immediately: `m`
+depends on **T alone** — identical at φ=0.8 and φ=2.0 — and it *shrinks* as things get hotter. In the
+O₂-starved rich primary, where thermal NO is already dying, super-eq O lifts almost **nothing**. The first
+half of the intuition is wrong: super-eq O is a *temperature* effect, not a *richness* effect.
+
+## Channel 2 — prompt (Fenimore) NO: the rich-specific lift that survives, not explodes
+Prompt NO forms in the flame front by a different path (CH radicals attacking N₂). De Soete (1975) fit its
+global rate; the rich-peaking shape lives entirely in one correction factor
+`f(φ) = 4.75 + 0.0819n − 23.2φ + 32φ² − 12.2φ³`, which peaks slightly rich (~φ=1.24) and goes negative
+past φ≈1.65 (we clamp it — that flank is outside De Soete's validity). We deliberately **drop** the rate's
+`[O₂]^a·[fuel]` factors: on an already-burnt 0-D pool they double-count the O₂ depletion and, worse, flip
+the shape to peak *lean* — backwards. So prompt is written as an **imposed** bump,
+`EI_prompt = scale·max(f(φ),0)·exp(−Ea/RuT)`, with the magnitude back-solved from a **reference** EI
+(~2 g/kg imposed at φ=1.24 and a realistic ~2400 K primary AFT); the *delivered* peak lands near that,
+though a hotter primary nudges it up (it's a reference, not a cap).
+Now watch the flank: as the primary goes rich, **thermal NO collapses** (20.7 → 0.001 g/kg from φ=1.0 to
+1.5) while prompt barely moves — the prompt/thermal ratio climbs **0.24 → 455**. Just rich of stoich,
+prompt is *the only thing keeping NO off zero.* And because prompt carries a **single** Arrhenius exp while
+thermal carries a **double** (`k1f·[O]_eq`), prompt is ~**27× less temperature-sensitive** — the
+quantitative face of "survives where thermal dies."
+
+## Did we get it right? — two clean reduces, two honest concessions
+The reduce is airtight: `super_eq_o=False, prompt=None` runs the literal prior code
+(`o_multiplier=1.0`, no added term) — the whole rung 1–18 suite stays bit-for-bit, and since NO is still a
+trace opt-in diagnostic, the **cycle never moves** (bit-for-bit rung 6). What we **do not** claim, loudly:
+the prompt **magnitude is imposed** — a 0-D pool has no flame-front structure to derive it, so only the
+φ-*shape* and the directional prompt/thermal *ratio* are certified, not the g/kg number (this is harder
+than rung 7's "order-of-magnitude band"). And the super-eq **ratio is semi-empirical** — a
+full-equilibrium pool *cannot* self-yield super-equilibrium O; the lift lives in Westenberg's fitted
+constants. Both are the rung-18-flavored honesty: state exactly which knob is turned by hand.
+
+---
+*Rung 19 lifts the equilibrium-O lower bound on the primary: pass
+`Gas.zoned_nox(..., super_eq_o=True)` to multiply the primary `[O]` by the Westenberg `m(T)` inside the
+rung-7 integrator, and/or `prompt=PromptNO()` to add the imposed De Soete φ-bump `ei_no_prompt` (read
+`ei_no_total = ei_no + ei_no_prompt`). `thermal_nox` takes the same two knobs. Both act **only** on the
+primary diagnostic (`ei_no`/`x_no_mix`) and stay under a **summed** trace guard; `super_eq_o=False` +
+`prompt=None` is the exact prior path (bit-for-bit rung 6). `python main.py` prints the rung-19 panel: the
+φ_p sweep (thermal vs super-eq-lifted vs prompt, the prompt/thermal ratio climbing rich), the `m(T)` table
+(T-driven, φ-independent), and the thermal-×584 / prompt-×21 T-sensitivity split. Still deferred: threading
+the lift **through the quench** (the finite-quench / per-pocket / rung-17 clamp fields still ride on
+equilibrium O, so every rung-17 `a` remains a lower bound), **detailed Fenimore** (`CH+N₂→HCN`) and the
+super-eq-O **radical-decay history** (both need new species / a relaxing pocket); plus the standing
+spatial/CFD PDF, the burner-side clamp-fires regime, the finite-Damköhler nozzle, off-design, the choked
+nozzle, and the afterburner.*
