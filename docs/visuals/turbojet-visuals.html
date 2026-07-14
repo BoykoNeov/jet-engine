@@ -1,0 +1,1349 @@
+<title>Turbojet Cycle Simulator — The Model, Made Visible</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* ================= tokens ================= */
+:root {
+  color-scheme: light;
+  --bg: #f7f6f1;
+  --surface: #fdfdfb;
+  --ink: #1a1b1f;
+  --ink-2: #54565e;
+  --muted: #8b8d95;
+  --grid: #e6e5dd;
+  --axis: #c6c5bd;
+  --border: rgba(20,21,26,.12);
+  --accent: #e8950c;          /* flame amber — graphics only on light */
+  --accent-ink: #92580a;      /* text-safe amber */
+  --glow: rgba(232,149,12,.14);
+  --s-blue: #2a78d6;
+  --s-aqua: #1baf7a;
+  --s-yellow: #d18e00;
+  --s-violet: #4a3aa7;
+  --s-red: #e34948;
+  --chip-cycle: #2a78d6;
+  --chip-diag: #92580a;
+  --chip-neg: #4a3aa7;
+  --code-bg: rgba(20,21,26,.05);
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --bg: #0f1115;
+    --surface: #171a20;
+    --ink: #eceae3;
+    --ink-2: #a9acb4;
+    --muted: #7d808a;
+    --grid: #252a33;
+    --axis: #3a3f4a;
+    --border: rgba(255,255,255,.10);
+    --accent: #f5a524;
+    --accent-ink: #f0b04c;
+    --glow: rgba(245,165,36,.10);
+    --s-blue: #3987e5;
+    --s-aqua: #199e70;
+    --s-yellow: #c98500;
+    --s-violet: #9085e9;
+    --s-red: #e66767;
+    --chip-cycle: #3987e5;
+    --chip-diag: #f0b04c;
+    --chip-neg: #9085e9;
+    --code-bg: rgba(255,255,255,.06);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f1115;
+  --surface: #171a20;
+  --ink: #eceae3;
+  --ink-2: #a9acb4;
+  --muted: #7d808a;
+  --grid: #252a33;
+  --axis: #3a3f4a;
+  --border: rgba(255,255,255,.10);
+  --accent: #f5a524;
+  --accent-ink: #f0b04c;
+  --glow: rgba(245,165,36,.10);
+  --s-blue: #3987e5;
+  --s-aqua: #199e70;
+  --s-yellow: #c98500;
+  --s-violet: #9085e9;
+  --s-red: #e66767;
+  --chip-cycle: #3987e5;
+  --chip-diag: #f0b04c;
+  --chip-neg: #9085e9;
+  --code-bg: rgba(255,255,255,.06);
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f7f6f1;
+  --surface: #fdfdfb;
+  --ink: #1a1b1f;
+  --ink-2: #54565e;
+  --muted: #8b8d95;
+  --grid: #e6e5dd;
+  --axis: #c6c5bd;
+  --border: rgba(20,21,26,.12);
+  --accent: #e8950c;
+  --accent-ink: #92580a;
+  --glow: rgba(232,149,12,.14);
+  --s-blue: #2a78d6;
+  --s-aqua: #1baf7a;
+  --s-yellow: #d18e00;
+  --s-violet: #4a3aa7;
+  --s-red: #e34948;
+  --chip-cycle: #2a78d6;
+  --chip-diag: #92580a;
+  --chip-neg: #4a3aa7;
+  --code-bg: rgba(20,21,26,.05);
+}
+
+/* ================= base ================= */
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.mono { font-family: "Cascadia Mono", Consolas, "SF Mono", monospace; }
+h1, h2, h3 { font-family: Charter, Cambria, Georgia, serif; line-height: 1.15; text-wrap: balance; margin: 0; }
+p { max-width: 68ch; }
+a { color: var(--accent-ink); }
+code { font-family: "Cascadia Mono", Consolas, monospace; font-size: .88em; background: var(--code-bg); padding: .08em .35em; border-radius: 4px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+section { padding: 72px 0 24px; }
+.eyebrow {
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--accent-ink); margin: 0 0 10px;
+}
+.section-head h2 { font-size: clamp(26px, 3.4vw, 36px); }
+.section-head .lede { color: var(--ink-2); margin: 14px 0 0; font-size: 17px; }
+
+/* ================= nav ================= */
+nav.top {
+  position: sticky; top: 0; z-index: 40;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+nav.top .row { display: flex; align-items: center; gap: 18px; padding: 10px 24px; max-width: 1080px; margin: 0 auto; }
+nav.top .brand { font-family: Charter, Cambria, Georgia, serif; font-size: 15px; font-weight: 700; margin-right: auto; white-space: nowrap; }
+nav.top .brand .amber { color: var(--accent-ink); }
+nav.top a.lnk { font-family: "Cascadia Mono", Consolas, monospace; font-size: 12px; letter-spacing: .04em; color: var(--ink-2); text-decoration: none; padding: 4px 2px; }
+nav.top a.lnk:hover { color: var(--accent-ink); }
+@media (max-width: 760px) { nav.top a.lnk { display: none; } }
+
+/* ================= hero ================= */
+header.hero { padding: 56px 0 8px; }
+.hero h1 { font-size: clamp(32px, 5vw, 52px); }
+.hero .sub { color: var(--ink-2); font-size: 18px; margin: 16px 0 0; max-width: 64ch; }
+.hero .sub b { color: var(--ink); }
+
+.engine-card {
+  margin: 34px 0 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+#engine-canvas { display: block; width: 100%; height: auto; }
+.engine-strip {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 10px 16px 12px; border-top: 1px solid var(--border);
+}
+.station-chip {
+  font-family: "Cascadia Mono", Consolas, monospace; font-size: 12px;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: transparent; color: var(--ink-2);
+  padding: 5px 10px; cursor: pointer;
+}
+.station-chip:hover, .station-chip.active { color: var(--ink); border-color: var(--accent); }
+.station-readout { margin-left: auto; font-family: "Cascadia Mono", Consolas, monospace; font-size: 12.5px; color: var(--ink-2); min-height: 1.4em; }
+.station-readout b { color: var(--ink); font-weight: 600; }
+.heat-legend { display: flex; align-items: center; gap: 8px; font-family: "Cascadia Mono", Consolas, monospace; font-size: 11px; color: var(--muted); }
+.heat-legend .bar { width: 110px; height: 8px; border-radius: 4px;
+  background: linear-gradient(90deg,#4a7fc1,#8a8f96,#c07f2e,#f0a02c,#ffd978,#fff3c9); }
+
+/* ================= stat tiles ================= */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 26px 0; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+.tile .k { font-family: "Cascadia Mono", Consolas, monospace; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.tile .v { font-size: 27px; font-weight: 650; margin-top: 2px; }
+.tile .v small { font-size: 14px; font-weight: 400; color: var(--ink-2); }
+.tile .d { font-family: "Cascadia Mono", Consolas, monospace; font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+
+/* ================= charts ================= */
+.fig {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 18px 18px 10px; margin: 26px 0;
+}
+.fig .fig-title { font-weight: 650; font-size: 15.5px; }
+.fig .fig-sub { color: var(--ink-2); font-size: 13.5px; margin-top: 2px; max-width: 78ch; }
+.fig .legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 10px 0 2px; font-size: 12.5px; color: var(--ink-2); }
+.fig .legend .sw { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+.chart-box { position: relative; }
+.chart-box svg { display: block; width: 100%; height: auto; }
+.chart-box svg text { font-family: "Cascadia Mono", Consolas, monospace; fill: var(--muted); }
+.tip {
+  position: absolute; pointer-events: none; z-index: 5; display: none;
+  background: color-mix(in srgb, var(--surface) 94%, var(--ink) 6%);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 7px 10px; font-family: "Cascadia Mono", Consolas, monospace; font-size: 12px;
+  color: var(--ink-2); box-shadow: 0 4px 18px rgba(0,0,0,.18); white-space: nowrap;
+}
+.tip b { color: var(--ink); font-weight: 600; }
+.tip .row { display: flex; align-items: center; gap: 7px; }
+.tip .dot { width: 8px; height: 8px; border-radius: 50%; }
+details.tbl { margin: 6px 0 8px; }
+details.tbl summary { cursor: pointer; font-family: "Cascadia Mono", Consolas, monospace; font-size: 12px; color: var(--muted); }
+details.tbl .scroll { overflow-x: auto; }
+details.tbl table { border-collapse: collapse; font-family: "Cascadia Mono", Consolas, monospace; font-size: 12px; margin-top: 8px; }
+details.tbl th, details.tbl td { padding: 4px 12px 4px 0; text-align: right; border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
+details.tbl th { color: var(--muted); font-weight: 500; }
+details.tbl td:first-child, details.tbl th:first-child { text-align: left; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 880px) { .two-col { grid-template-columns: 1fr; } }
+
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin: 10px 0 0; }
+.seg button {
+  font-family: "Cascadia Mono", Consolas, monospace; font-size: 12.5px;
+  background: transparent; color: var(--ink-2); border: none; padding: 7px 14px; cursor: pointer;
+}
+.seg button.active { background: var(--code-bg); color: var(--ink); font-weight: 600; }
+
+/* ================= station table ================= */
+.stable-scroll { overflow-x: auto; }
+table.stable { border-collapse: collapse; width: 100%; font-family: "Cascadia Mono", Consolas, monospace; font-size: 13px; }
+table.stable th, table.stable td { padding: 7px 14px 7px 0; text-align: right; border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
+table.stable th { color: var(--muted); font-weight: 500; font-size: 12px; }
+table.stable td:first-child, table.stable th:first-child { text-align: left; }
+table.stable .lbl { color: var(--ink-2); }
+
+/* ================= rung ladder ================= */
+.rungs { display: flex; flex-direction: column; gap: 0; margin-top: 28px; border-top: 1px solid var(--border); }
+.rung { border-bottom: 1px solid var(--border); }
+.rung > button {
+  display: grid; grid-template-columns: 56px 1fr auto; gap: 14px; align-items: baseline;
+  width: 100%; text-align: left; background: none; border: none; color: inherit;
+  padding: 13px 6px; cursor: pointer; font: inherit;
+}
+.rung > button:hover { background: var(--code-bg); }
+.rung .num { font-family: "Cascadia Mono", Consolas, monospace; font-size: 14px; color: var(--accent-ink); font-weight: 600; }
+.rung .hook { font-size: 15px; }
+.rung .hook b { font-weight: 650; }
+.rung .chip {
+  font-family: "Cascadia Mono", Consolas, monospace; font-size: 10.5px; letter-spacing: .06em;
+  text-transform: uppercase; border-radius: 20px; padding: 2px 9px; white-space: nowrap;
+  border: 1px solid var(--border); color: var(--ink-2);
+}
+.rung .chip.cycle { color: var(--chip-cycle); border-color: color-mix(in srgb, var(--chip-cycle) 45%, transparent); }
+.rung .chip.diag { color: var(--chip-diag); border-color: color-mix(in srgb, var(--chip-diag) 45%, transparent); }
+.rung .chip.neg { color: var(--chip-neg); border-color: color-mix(in srgb, var(--chip-neg) 45%, transparent); }
+.rung .body { display: none; padding: 0 6px 16px 70px; color: var(--ink-2); font-size: 14.5px; max-width: 82ch; }
+.rung.open .body { display: block; }
+.rung .body .spec { font-family: "Cascadia Mono", Consolas, monospace; font-size: 12px; color: var(--muted); display: block; margin-top: 6px; }
+@media (max-width: 640px) {
+  .rung > button { grid-template-columns: 40px 1fr; }
+  .rung .chip { display: none; }
+  .rung .body { padding-left: 46px; }
+}
+
+/* ================= callouts / notes ================= */
+.note {
+  border-left: 3px solid var(--accent); background: var(--glow);
+  border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 22px 0; font-size: 14.5px; color: var(--ink-2);
+  max-width: 78ch;
+}
+.note b { color: var(--ink); }
+
+footer { border-top: 1px solid var(--border); margin-top: 70px; padding: 26px 0 44px; color: var(--muted); font-size: 13px; }
+footer code { font-size: 12px; }
+</style>
+
+<nav class="top" aria-label="sections">
+  <div class="row">
+    <span class="brand">Turbojet Cycle Simulator <span class="amber">— visuals</span></span>
+    <a class="lnk" href="#engine">engine</a>
+    <a class="lnk" href="#cycle">cycle</a>
+    <a class="lnk" href="#combustor">combustor</a>
+    <a class="lnk" href="#mixing">mixing</a>
+    <a class="lnk" href="#inversions">inversions</a>
+    <a class="lnk" href="#rungs">rungs</a>
+  </div>
+</nav>
+
+<header class="hero wrap" id="engine">
+  <p class="eyebrow">A station-by-station Brayton-cycle model &middot; 22 cumulative rungs</p>
+  <h1>The model, made visible</h1>
+  <p class="sub">One single-spool turbojet, built one physical effect at a time — from the ideal
+  cycle to dissociation equilibrium, Zeldovich NOx kinetics, and a resolved dilution cross-plane.
+  <b>Every number below is computed by the model itself.</b></p>
+
+  <div class="engine-card">
+    <canvas id="engine-canvas" aria-label="Animated cutaway of the turbojet: flow particles colored by local total temperature move through inlet, compressor, combustor, turbine, and nozzle"></canvas>
+    <div class="engine-strip">
+      <span id="station-chips"></span>
+      <span class="heat-legend"><span>250 K</span><span class="bar"></span><span>2500 K</span></span>
+      <span class="station-readout" id="station-readout">hover a station</span>
+    </div>
+  </div>
+  <div class="tiles" id="hero-tiles"></div>
+</header>
+
+<section class="wrap" id="cycle">
+  <div class="section-head">
+    <p class="eyebrow">Rungs 1–6 · the cycle</p>
+    <h2>Ideal vs real: the legs tilt right</h2>
+    <p class="lede">The rung-1 ideal cycle has vertical isentropic legs. Turn on rung-2's real
+    components — η<sub>c</sub>=0.88, η<sub>t</sub>=0.90, pressure losses — and every leg leans
+    right: that lean is entropy generated, and the lost loop area is thrust the losses cost.</p>
+  </div>
+  <div class="fig">
+    <div class="fig-title">T–s diagram — the same design point, two machines</div>
+    <div class="fig-sub">M<sub>0</sub>=0.85, π<sub>c</sub>=10, T<sub>t4</sub>=1500 K. Hover the station points.</div>
+    <div class="legend" id="ts-legend"></div>
+    <div class="chart-box" id="ts-chart"></div>
+    <details class="tbl" id="ts-table"></details>
+  </div>
+  <div class="fig">
+    <div class="fig-title">Station table</div>
+    <div class="fig-sub">Total temperature and pressure at every station — the numbers you watch propagate.</div>
+    <div class="stable-scroll"><table class="stable" id="station-table"></table></div>
+  </div>
+</section>
+
+<section class="wrap" id="combustor">
+  <div class="section-head">
+    <p class="eyebrow">Rungs 7–10, 19 · the combustor story</p>
+    <h2>The NO bell, and the quench that re-makes it</h2>
+    <p class="lede">Thermal NO lives in a narrow, hot window near stoichiometric. Resolve the
+    primary zone (rung 8) and EI_NO jumps six orders into the ICAO band; run the primary rich
+    (rung 9) and it collapses again — that is why RQL combustors burn rich. But the quench back
+    to lean must cross the peak of the bell…</p>
+  </div>
+
+  <div class="fig">
+    <div class="fig-title">EI_NO vs primary equivalence ratio — the bell</div>
+    <div class="fig-sub">Log scale: the lean flank climbs with flame temperature, the rich flank
+    collapses as the O-starved pool crashes [O]. Rung 19 adds two honest lifts: super-equilibrium O
+    (T-driven — weakest exactly where the pool is rich) and De Soete prompt NO (which survives
+    where thermal dies).</div>
+    <div class="legend" id="bell-legend"></div>
+    <div class="chart-box" id="bell-chart"></div>
+    <details class="tbl" id="bell-table"></details>
+  </div>
+
+  <div class="two-col">
+    <div class="fig">
+      <div class="fig-title">Primary flame temperature vs φ<sub>p</sub></div>
+      <div class="fig-sub">The AFT rolls over just rich of stoich — the bell's engine.</div>
+      <div class="chart-box" id="aft-chart"></div>
+      <details class="tbl" id="aft-table"></details>
+    </div>
+    <div class="fig">
+      <div class="fig-title">The quench path: T(β) through dilution</div>
+      <div class="fig-sub">A rich primary (φ<sub>p</sub>=1.4) <b>heats up</b> on its way to lean —
+      it must cross stoichiometric, the bell's peak. A lean primary just cools. The moving dot is
+      the mixing pocket.</div>
+      <div class="legend" id="quenchT-legend"></div>
+      <div class="chart-box" id="quenchT-chart"></div>
+      <details class="tbl" id="quenchT-table"></details>
+    </div>
+  </div>
+
+  <div class="fig">
+    <div class="fig-title">What a slow quench costs — EI_NO vs quench time τ<sub>q</sub></div>
+    <div class="fig-sub">The ideal (infinitely fast) quench freezes the rich primary's tiny NO.
+    Every extra millisecond spent near the stoich crossing re-makes NO — "low-NOx <i>only if the
+    quench is fast</i>."</div>
+    <div class="legend" id="tauq-legend"></div>
+    <div class="chart-box" id="tauq-chart"></div>
+    <details class="tbl" id="tauq-table"></details>
+  </div>
+</section>
+
+<section class="wrap" id="mixing">
+  <div class="section-head">
+    <p class="eyebrow">Rungs 11–13, 22 · the mixing optimum</p>
+    <h2>Mean-field mixing has no optimum. Variance does.</h2>
+    <p class="lede">Derive the quench time from the dilution jets (rung 11) and EI_NO falls
+    monotonically with jet momentum — stronger jet, faster quench, less NO, no optimum. Only when
+    the model carries <b>spatial variance</b> (rungs 12–13) does the curve turn back up, and the
+    minimum pins itself at the Holdeman group C<sub>opt</sub>≈2.5 that combustor designers
+    actually use.</p>
+  </div>
+
+  <div class="fig">
+    <div class="fig-title">EI_NO vs jet momentum-flux ratio J — three closures</div>
+    <div class="fig-sub">Mean-field bulk (rung 11) falls forever. The two-stream unmixedness model
+    (rung 12) turns back up. The resolved β-PDF (rung 13) puts a sharp notch exactly at
+    J<sub>opt</sub>=16, where C=(S/H)√J = C<sub>opt</sub>.</div>
+    <div class="legend" id="jsweep-legend"></div>
+    <div class="chart-box" id="jsweep-chart"></div>
+    <details class="tbl" id="jsweep-table"></details>
+  </div>
+
+  <div class="fig">
+    <div class="fig-title">Rung 22 — the optimum becomes an <i>output</i></div>
+    <div class="fig-sub">Resolve the dilution cross-plane and compute the segregation g for three
+    different combustor geometries. Plotted against J they disagree; replot against the Holdeman
+    group C=(S/H)√J and they collapse onto one curve with its minimum at C≈2.5 — <b>no
+    C<sub>opt</sub> was fed in anywhere</b>.</div>
+    <div class="seg" role="group" aria-label="x axis variable">
+      <button id="spatial-J" class="active">x = J (raw momentum)</button>
+      <button id="spatial-C">x = C = (S/H)√J</button>
+    </div>
+    <div class="legend" id="spatial-legend"></div>
+    <div class="chart-box" id="spatial-chart"></div>
+    <details class="tbl" id="spatial-table"></details>
+  </div>
+</section>
+
+<section class="wrap" id="inversions">
+  <div class="section-head">
+    <p class="eyebrow">Rungs 14, 17, 19–21 · three inversions</p>
+    <h2>Where the intuition fails</h2>
+    <p class="lede">The last rungs are a study in honest surprises: the "rich primary explodes"
+    intuition fails from both directions, and the mixed-out shortcut every simple model takes
+    turns out to <i>hide</i> super-equilibrium NO in the exhaust.</p>
+  </div>
+
+  <div class="two-col">
+    <div class="fig">
+      <div class="fig-title">Super-equilibrium O is T-driven, not rich-driven</div>
+      <div class="fig-sub">The Westenberg multiplier m(T) on equilibrium [O] <b>shrinks</b> as the
+      gas gets hotter — so it is smallest exactly where NO is actually made (the ~2450 K stoich
+      crossing), and the effective lift is modest (~×1.15–1.28).</div>
+      <div class="chart-box" id="m-chart"></div>
+      <details class="tbl" id="m-table"></details>
+    </div>
+    <div class="fig">
+      <div class="fig-title">Prompt NO survives where thermal dies</div>
+      <div class="fig-sub">Ratio of prompt to thermal EI across the primary sweep — it grows
+      monotonically rich (thermal collapses with [O]; prompt rides De Soete's fitted φ-bump with a
+      single, ~27× milder Arrhenius exponential).</div>
+      <div class="chart-box" id="ratio-chart"></div>
+      <details class="tbl" id="ratio-table"></details>
+    </div>
+  </div>
+
+  <div class="fig" id="ladder-fig">
+    <div class="fig-title">The exhaust-NO clamp ladder (rung 17)</div>
+    <div class="fig-sub">Carry three mixing-fidelity models of the same rich (φ<sub>p</sub>=1.5)
+    combustor through the same nozzle cooling to T<sub>9</sub>, and read
+    a = [NO]/[NO]<sub>eq</sub>(T<sub>9</sub>). The mixed-out shortcut reads <b>dormant</b> (a≪1);
+    the bulk quench and per-pocket models <b>fire</b> — the exhaust really is super-equilibrium,
+    and averaging the combustor away hides it. Rung 20's super-eq O lifts every numerator; the
+    thermodynamic denominator never moves.</div>
+    <div class="legend" id="ladder-legend"></div>
+    <div class="chart-box" id="ladder-chart"></div>
+    <details class="tbl" id="ladder-table"></details>
+  </div>
+
+  <div class="note"><b>The negative result that earns its keep (rung 18):</b> a 0-D variance
+  transport with any mean-field mixing rate ω(J) gives a monotone g(J) — <b>no interior
+  optimum</b>. The Holdeman optimum appears only once the jet <i>spacing</i> S enters the rate.
+  Rung 22 then inverts this honestly: resolve the cross-plane, and C<sub>opt</sub> emerges as an
+  output.</div>
+</section>
+
+<section class="wrap" id="rungs">
+  <div class="section-head">
+    <p class="eyebrow">The full ladder</p>
+    <h2>22 rungs, one physical effect each</h2>
+    <p class="lede">Each rung is cumulative, anchored to a published case, and reduces bit-for-bit
+    to the rung below when its knob is off. Click a rung to expand.</p>
+  </div>
+  <div class="rungs" id="rung-list"></div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>Every curve on this page was computed by the model in this repository —
+    <code>extract_data.py</code> runs the actual <code>turbojet</code> package (CPG cycle,
+    equilibrium gas, Zeldovich integrator, quench, β-PDF and spatial closures) at the rung-1
+    design point (M<sub>0</sub>=0.85, π<sub>c</sub>=10, T<sub>t4</sub>=1500 K). Sweep grids are
+    reduced vs the production defaults for speed; the verification gates live in
+    <code>tests/</code>, not here.</p>
+  </div>
+</footer>
+
+<script>
+"use strict";
+const DATA = {"design": {"T0": 250.0, "p0": 50000.0, "M0": 0.85, "pi_c": 10.0, "Tt4": 1500.0, "losses": {"pi_d": 0.97, "eta_c": 0.88, "eta_b": 0.99, "pi_b": 0.96, "eta_t": 0.9, "eta_m": 0.99, "pi_n": 0.98}, "tau_ms": 3.0}, "ideal": {"stations": {"0": {"Tt": 286.125, "pt": 80190.9, "far": 0.0}, "2": {"Tt": 286.125, "pt": 80190.9, "far": 0.0}, "3": {"Tt": 552.421, "pt": 801909.0, "far": 0.0}, "4": {"Tt": 1500.0, "pt": 801909.0, "far": 0.0230389}, "5": {"Tt": 1239.7, "pt": 411543.0, "far": 0.0230389}, "9": {"Tt": 1239.7, "pt": 411543.0, "far": 0.0230389}}, "V0": 269.398, "V9": 1061.5, "M9": 2.03252, "T9": 678.83, "specific_thrust": 816.562, "tsfc": 2.82146e-05, "eta_brayton": 0.482053, "eta_thermal": 0.547719, "eta_propulsive": 0.407304, "eta_overall": 0.223088, "points": {"0": [0.0, 250.0], "2": [-0.067484, 286.12], "3": [-0.39642, 552.42], "4": [1002.5, 1500.0], "5": [1002.6, 1239.7], "9": [1002.9, 678.83]}, "legs": [[[0.0, 250.0], [-0.067484, 286.12], [-0.39642, 552.42]], [[1002.5, 1500.0], [1002.6, 1239.7], [1002.9, 678.83]], [[-0.39642, 552.42], [28.377, 568.48], [56.348, 584.54], [83.562, 600.6], [110.06, 616.66], [135.87, 632.72], [161.04, 648.78], [185.59, 664.85], [209.55, 680.91], [232.96, 696.97], [255.83, 713.03], [278.2, 729.09], [300.07, 745.15], [321.48, 761.21], [342.45, 777.27], [362.98, 793.33], [383.1, 809.39], [402.83, 825.45], [422.18, 841.51], [441.16, 857.57], [459.79, 873.63], [478.08, 889.69], [496.04, 905.76], [513.69, 921.82], [531.03, 937.88], [548.08, 953.94], [564.84, 970.0], [581.33, 986.06], [597.55, 1002.1], [613.51, 1018.2], [629.22, 1034.2], [644.7, 1050.3], [659.93, 1066.4], [674.94, 1082.4], [689.73, 1098.5], [704.3, 1114.5], [718.67, 1130.6], [732.83, 1146.7], [746.79, 1162.7], [760.57, 1178.8], [774.15, 1194.8], [787.56, 1210.9], [800.79, 1227.0], [813.84, 1243.0], [826.73, 1259.1], [839.46, 1275.2], [852.03, 1291.2], [864.44, 1307.3], [876.7, 1323.3], [888.81, 1339.4], [900.78, 1355.5], [912.6, 1371.5], [924.29, 1387.6], [935.84, 1403.6], [947.27, 1419.7], [958.56, 1435.8], [969.73, 1451.8], [980.78, 1467.9], [991.7, 1483.9], [1002.5, 1500.0]], [[1002.9, 678.83], [992.1, 671.56], [981.17, 664.29], [970.13, 657.03], [958.96, 649.76], [947.66, 642.49], [936.24, 635.22], [924.69, 627.95], [913.0, 620.68], [901.17, 613.42], [889.2, 606.15], [877.09, 598.88], [864.83, 591.61], [852.42, 584.34], [839.86, 577.07], [827.13, 569.81], [814.24, 562.54], [801.18, 555.27], [787.95, 548.0], [774.55, 540.73], [760.96, 533.46], [747.19, 526.2], [733.22, 518.93], [719.06, 511.66], [704.7, 504.39], [690.13, 497.12], [675.34, 489.85], [660.33, 482.59], [645.09, 475.32], [629.62, 468.05], [613.91, 460.78], [597.94, 453.51], [581.72, 446.24], [565.24, 438.98], [548.47, 431.71], [531.43, 424.44], [514.08, 417.17], [496.44, 409.9], [478.47, 402.63], [460.18, 395.37], [441.56, 388.1], [422.57, 380.83], [403.23, 373.56], [383.5, 366.29], [363.38, 359.02], [342.84, 351.76], [321.88, 344.49], [300.47, 337.22], [278.59, 329.95], [256.23, 322.68], [233.36, 315.41], [209.95, 308.15], [185.99, 300.88], [161.43, 293.61], [136.27, 286.34], [110.45, 279.07], [83.958, 271.8], [56.745, 264.54], [28.773, 257.27], [0.0, 250.0]]]}, "real": {"stations": {"0": {"Tt": 286.125, "pt": 80190.9, "far": 0.0}, "2": {"Tt": 286.125, "pt": 77785.2, "far": 0.0}, "3": {"Tt": 588.734, "pt": 777852.0, "far": 0.0}, "4": {"Tt": 1500.0, "pt": 746738.0, "far": 0.0223881}, "5": {"Tt": 1201.03, "pt": 310921.0, "far": 0.0223881}, "9": {"Tt": 1201.03, "pt": 304702.0, "far": 0.0223881}}, "V0": 269.398, "V9": 986.488, "M9": 1.8384, "T9": 716.629, "specific_thrust": 739.175, "tsfc": 3.02879e-05, "eta_brayton": 0.514, "eta_thermal": 0.481298, "eta_propulsive": 0.431784, "eta_overall": 0.207817, "points": {"0": [0.0, 250.0], "2": [8.6743, 286.12], "3": [72.264, 588.73], "4": [1023.0, 1500.0], "5": [1051.3, 1201.0], "9": [1057.3, 716.63]}, "legs": [[[0.0, 250.0], [8.6743, 286.12], [72.264, 588.73]], [[1023.0, 1500.0], [1051.3, 1201.0], [1057.3, 716.63]], [[72.264, 588.73], [98.463, 604.18], [124.0, 619.62], [148.92, 635.07], [173.25, 650.51], [197.01, 665.96], [220.22, 681.41], [242.92, 696.85], [265.13, 712.3], [286.87, 727.74], [308.15, 743.19], [329.0, 758.63], [349.44, 774.08], [369.47, 789.52], [389.12, 804.97], [408.4, 820.41], [427.33, 835.86], [445.91, 851.3], [464.16, 866.75], [482.09, 882.19], [499.71, 897.64], [517.04, 913.08], [534.08, 928.53], [550.84, 943.97], [567.34, 959.42], [583.57, 974.86], [599.55, 990.31], [615.29, 1005.8], [630.79, 1021.2], [646.06, 1036.6], [661.1, 1052.1], [675.93, 1067.5], [690.55, 1083.0], [704.97, 1098.4], [719.19, 1113.9], [733.21, 1129.3], [747.05, 1144.8], [760.7, 1160.2], [774.18, 1175.7], [787.48, 1191.1], [800.62, 1206.5], [813.59, 1222.0], [826.39, 1237.4], [839.05, 1252.9], [851.55, 1268.3], [863.9, 1283.8], [876.1, 1299.2], [888.17, 1314.7], [900.09, 1330.1], [911.88, 1345.5], [923.54, 1361.0], [935.07, 1376.4], [946.47, 1391.9], [957.75, 1407.3], [968.91, 1422.8], [979.95, 1438.2], [990.87, 1453.7], [1001.7, 1469.1], [1012.4, 1484.6], [1023.0, 1500.0]], [[1057.3, 716.63], [1046.2, 708.72], [1034.9, 700.81], [1023.5, 692.9], [1012.0, 684.99], [1000.3, 677.08], [988.52, 669.18], [976.59, 661.27], [964.51, 653.36], [952.28, 645.45], [939.9, 637.54], [927.37, 629.63], [914.68, 621.72], [901.82, 613.81], [888.8, 605.9], [875.61, 597.99], [862.24, 590.09], [848.69, 582.18], [834.96, 574.27], [821.04, 566.36], [806.92, 558.45], [792.6, 550.54], [778.07, 542.63], [763.33, 534.72], [748.37, 526.81], [733.18, 518.9], [717.76, 511.0], [702.1, 503.09], [686.19, 495.18], [670.02, 487.27], [653.59, 479.36], [636.89, 471.45], [619.91, 463.54], [602.63, 455.63], [585.05, 447.72], [567.15, 439.82], [548.93, 431.91], [530.38, 424.0], [511.47, 416.09], [492.21, 408.18], [472.56, 400.27], [452.53, 392.36], [432.08, 384.45], [411.21, 376.54], [389.9, 368.63], [368.12, 360.73], [345.87, 352.82], [323.1, 344.91], [299.81, 337.0], [275.97, 329.09], [251.55, 321.18], [226.51, 313.27], [200.84, 305.36], [174.49, 297.45], [147.44, 289.54], [119.63, 281.64], [91.033, 273.73], [61.596, 265.82], [31.27, 257.91], [0.0, 250.0]]]}, "eq_design": {"Tt3": 583.505, "Tt4": 1500.0, "far": 0.0271792, "p": 747441.0, "phi_overall": 0.401605}, "bell": [{"phi": 0.6, "T_p": 1895.43, "ei": 0.0489978, "ppm_eq": 3627.15, "ppm_kin": 1.84263, "T_mix": 1516.94, "xco": 5.44592e-05, "xh2": 1.29618e-05, "ei_lift": 0.0694982, "ei_prompt": 0.0083743, "m": 1.41847}, {"phi": 0.7, "T_p": 2068.03, "ei": 0.693789, "ppm_eq": 5032.59, "ppm_kin": 30.2254, "T_mix": 1516.94, "xco": 0.000317995, "xh2": 6.56306e-05, "ei_lift": 0.901093, "ei_prompt": 0.0591782, "m": 1.29959}, {"phi": 0.8, "T_p": 2224.53, "ei": 4.7792, "ppm_eq": 5921.57, "ppm_kin": 236.151, "T_mix": 1516.94, "xco": 0.0013608, "xh2": 0.000253771, "ei_lift": 5.81444, "ei_prompt": 0.291529, "m": 1.22146}, {"phi": 0.9, "T_p": 2356.13, "ei": 15.994, "ppm_eq": 5679.8, "ppm_kin": 881.184, "T_mix": 1516.94, "xco": 0.00463903, "xh2": 0.000818002, "ei_lift": 18.4545, "ei_prompt": 0.973882, "m": 1.17107}, {"phi": 0.95, "T_p": 2406.94, "ei": 21.0781, "ppm_eq": 4952.64, "ppm_kin": 1219.16, "T_mix": 1516.94, "xco": 0.00804438, "xh2": 0.00141224, "ei_lift": 23.7874, "ei_prompt": 1.51864, "m": 1.15455}, {"phi": 1.0, "T_p": 2441.54, "ei": 20.7432, "ppm_eq": 3803.38, "ppm_kin": 1254.63, "T_mix": 1516.94, "xco": 0.0135479, "xh2": 0.00242521, "ei_lift": 23.0443, "ei_prompt": 2.07878, "m": 1.14411}, {"phi": 1.05, "T_p": 2452.05, "ei": 13.9767, "ppm_eq": 2436.39, "ppm_kin": 880.229, "T_mix": 1516.94, "xco": 0.0221168, "xh2": 0.00417588, "ei_lift": 15.4666, "ei_prompt": 2.40343, "m": 1.14106}, {"phi": 1.1, "T_p": 2435.24, "ei": 6.42208, "ppm_eq": 1319.2, "ppm_kin": 419.325, "T_mix": 1516.94, "xco": 0.0337659, "xh2": 0.00696754, "ei_lift": 7.17869, "ei_prompt": 2.31005, "m": 1.14597}, {"phi": 1.2, "T_p": 2360.9, "ei": 0.826349, "ppm_eq": 353.16, "ppm_kin": 57.4842, "T_mix": 1516.94, "xco": 0.0594875, "xh2": 0.0152726, "ei_lift": 0.956973, "ei_prompt": 1.54619, "m": 1.16945}, {"phi": 1.3, "T_p": 2276.05, "ei": 0.0964689, "ppm_eq": 104.547, "ppm_kin": 7.09672, "T_mix": 1516.94, "xco": 0.0827138, "xh2": 0.0262062, "ei_lift": 0.115439, "ei_prompt": 0.856322, "m": 1.20031}, {"phi": 1.4, "T_p": 2191.92, "ei": 0.0112949, "ppm_eq": 33.3294, "ppm_kin": 0.873826, "T_mix": 1516.94, "xco": 0.102599, "xh2": 0.0391518, "ei_lift": 0.0139465, "ei_prompt": 0.405329, "m": 1.23591}, {"phi": 1.5, "T_p": 2110.11, "ei": 0.00131081, "ppm_eq": 11.0317, "ppm_kin": 0.106155, "T_mix": 1516.94, "xco": 0.119585, "xh2": 0.0535518, "ei_lift": 0.00167247, "ei_prompt": 0.149674, "m": 1.27627}, {"phi": 1.6, "T_p": 2030.81, "ei": 0.000147637, "ppm_eq": 3.70197, "ppm_kin": 0.0124662, "T_mix": 1516.94, "xco": 0.134255, "xh2": 0.0688706, "ei_lift": 0.000195139, "ei_prompt": 0.0243371, "m": 1.32187}, {"phi": 1.7, "T_p": 1953.91, "ei": 1.58148e-05, "ppm_eq": 1.23812, "ppm_kin": 0.00138756, "T_mix": 1516.94, "xco": 0.147128, "xh2": 0.0846642, "ei_lift": 2.17202e-05, "ei_prompt": 0.0, "m": 1.37345}, {"phi": 1.8, "T_p": 1879.24, "ei": 1.58157e-06, "ppm_eq": 0.407131, "ppm_kin": 0.000143756, "T_mix": 1516.94, "xco": 0.158614, "xh2": 0.100601, "ei_lift": 2.26469e-06, "ei_prompt": 0.0, "m": 1.43194}, {"phi": 1.9, "T_p": 1806.62, "ei": 1.45109e-07, "ppm_eq": 0.130108, "ppm_kin": 1.36282e-05, "T_mix": 1516.94, "xco": 0.169027, "xh2": 0.116445, "ei_lift": 2.17448e-07, "ei_prompt": 0.0, "m": 1.49852}, {"phi": 2.0, "T_p": 1735.89, "ei": 1.20074e-08, "ppm_eq": 0.0399807, "ppm_kin": 1.16248e-06, "T_mix": 1516.94, "xco": 0.178601, "xh2": 0.132035, "ei_lift": 1.8907e-08, "ei_prompt": 0.0, "m": 1.57461}], "quench": {"rich": {"phi": 1.4, "T_primary": 2191.92, "rows": [{"beta": 0.0, "T": 2191.9, "xnoe_ppm": 33.33}, {"beta": 0.0125, "T": 2227.2, "xnoe_ppm": 53.65}, {"beta": 0.025, "T": 2260.7, "xnoe_ppm": 84.67}, {"beta": 0.0375, "T": 2292.6, "xnoe_ppm": 131.4}, {"beta": 0.05, "T": 2322.7, "xnoe_ppm": 201.2}, {"beta": 0.0625, "T": 2351.1, "xnoe_ppm": 304.5}, {"beta": 0.075, "T": 2377.4, "xnoe_ppm": 456.5}, {"beta": 0.0875, "T": 2401.4, "xnoe_ppm": 677.7}, {"beta": 0.1, "T": 2422.1, "xnoe_ppm": 993.6}, {"beta": 0.1125, "T": 2438.4, "xnoe_ppm": 1427.0}, {"beta": 0.125, "T": 2448.8, "xnoe_ppm": 1980.0}, {"beta": 0.1375, "T": 2452.3, "xnoe_ppm": 2615.0}, {"beta": 0.15, "T": 2449.0, "xnoe_ppm": 3267.0}, {"beta": 0.1625, "T": 2440.1, "xnoe_ppm": 3878.0}, {"beta": 0.175, "T": 2427.1, "xnoe_ppm": 4412.0}, {"beta": 0.1875, "T": 2411.2, "xnoe_ppm": 4858.0}, {"beta": 0.2, "T": 2393.2, "xnoe_ppm": 5216.0}, {"beta": 0.2125, "T": 2373.8, "xnoe_ppm": 5494.0}, {"beta": 0.225, "T": 2353.6, "xnoe_ppm": 5702.0}, {"beta": 0.2375, "T": 2332.8, "xnoe_ppm": 5847.0}, {"beta": 0.25, "T": 2311.8, "xnoe_ppm": 5940.0}, {"beta": 0.2625, "T": 2290.5, "xnoe_ppm": 5988.0}, {"beta": 0.275, "T": 2269.3, "xnoe_ppm": 5998.0}, {"beta": 0.2875, "T": 2248.2, "xnoe_ppm": 5977.0}, {"beta": 0.3, "T": 2227.3, "xnoe_ppm": 5930.0}, {"beta": 0.3125, "T": 2206.7, "xnoe_ppm": 5861.0}, {"beta": 0.325, "T": 2186.3, "xnoe_ppm": 5776.0}, {"beta": 0.3375, "T": 2166.2, "xnoe_ppm": 5676.0}, {"beta": 0.35, "T": 2146.5, "xnoe_ppm": 5565.0}, {"beta": 0.3625, "T": 2127.1, "xnoe_ppm": 5446.0}, {"beta": 0.375, "T": 2108.2, "xnoe_ppm": 5321.0}, {"beta": 0.3875, "T": 2089.5, "xnoe_ppm": 5190.0}, {"beta": 0.4, "T": 2071.3, "xnoe_ppm": 5057.0}, {"beta": 0.4125, "T": 2053.4, "xnoe_ppm": 4921.0}, {"beta": 0.425, "T": 2035.9, "xnoe_ppm": 4785.0}, {"beta": 0.4375, "T": 2018.8, "xnoe_ppm": 4648.0}, {"beta": 0.45, "T": 2002.0, "xnoe_ppm": 4512.0}, {"beta": 0.4625, "T": 1985.6, "xnoe_ppm": 4378.0}, {"beta": 0.475, "T": 1969.5, "xnoe_ppm": 4245.0}, {"beta": 0.4875, "T": 1953.8, "xnoe_ppm": 4114.0}, {"beta": 0.5, "T": 1938.4, "xnoe_ppm": 3985.0}, {"beta": 0.5125, "T": 1923.3, "xnoe_ppm": 3859.0}, {"beta": 0.525, "T": 1908.5, "xnoe_ppm": 3736.0}, {"beta": 0.5375, "T": 1894.1, "xnoe_ppm": 3616.0}, {"beta": 0.55, "T": 1880.0, "xnoe_ppm": 3499.0}, {"beta": 0.5625, "T": 1866.1, "xnoe_ppm": 3385.0}, {"beta": 0.575, "T": 1852.6, "xnoe_ppm": 3275.0}, {"beta": 0.5875, "T": 1839.3, "xnoe_ppm": 3167.0}, {"beta": 0.6, "T": 1826.3, "xnoe_ppm": 3063.0}, {"beta": 0.6125, "T": 1813.5, "xnoe_ppm": 2962.0}, {"beta": 0.625, "T": 1801.0, "xnoe_ppm": 2864.0}, {"beta": 0.6375, "T": 1788.8, "xnoe_ppm": 2770.0}, {"beta": 0.65, "T": 1776.8, "xnoe_ppm": 2678.0}, {"beta": 0.6625, "T": 1765.0, "xnoe_ppm": 2589.0}, {"beta": 0.675, "T": 1753.5, "xnoe_ppm": 2504.0}, {"beta": 0.6875, "T": 1742.2, "xnoe_ppm": 2421.0}, {"beta": 0.7, "T": 1731.1, "xnoe_ppm": 2341.0}, {"beta": 0.7125, "T": 1720.2, "xnoe_ppm": 2264.0}, {"beta": 0.725, "T": 1709.5, "xnoe_ppm": 2189.0}, {"beta": 0.7375, "T": 1699.1, "xnoe_ppm": 2117.0}, {"beta": 0.75, "T": 1688.8, "xnoe_ppm": 2048.0}, {"beta": 0.7625, "T": 1678.7, "xnoe_ppm": 1981.0}, {"beta": 0.775, "T": 1668.8, "xnoe_ppm": 1916.0}, {"beta": 0.7875, "T": 1659.0, "xnoe_ppm": 1854.0}, {"beta": 0.8, "T": 1649.5, "xnoe_ppm": 1793.0}, {"beta": 0.8125, "T": 1640.1, "xnoe_ppm": 1735.0}, {"beta": 0.825, "T": 1630.9, "xnoe_ppm": 1679.0}, {"beta": 0.8375, "T": 1621.8, "xnoe_ppm": 1625.0}, {"beta": 0.85, "T": 1612.9, "xnoe_ppm": 1573.0}, {"beta": 0.8625, "T": 1604.1, "xnoe_ppm": 1523.0}, {"beta": 0.875, "T": 1595.5, "xnoe_ppm": 1474.0}, {"beta": 0.8875, "T": 1587.1, "xnoe_ppm": 1428.0}, {"beta": 0.9, "T": 1578.8, "xnoe_ppm": 1382.0}, {"beta": 0.9125, "T": 1570.6, "xnoe_ppm": 1339.0}, {"beta": 0.925, "T": 1562.5, "xnoe_ppm": 1297.0}, {"beta": 0.9375, "T": 1554.6, "xnoe_ppm": 1256.0}, {"beta": 0.95, "T": 1546.9, "xnoe_ppm": 1217.0}, {"beta": 0.9625, "T": 1539.2, "xnoe_ppm": 1180.0}, {"beta": 0.975, "T": 1531.7, "xnoe_ppm": 1143.0}, {"beta": 0.9875, "T": 1524.2, "xnoe_ppm": 1108.0}, {"beta": 1.0, "T": 1516.9, "xnoe_ppm": 1074.0}]}, "lean": {"phi": 0.9, "T_primary": 2356.13, "rows": [{"beta": 0.0, "T": 2356.1, "xnoe_ppm": 5680.0}, {"beta": 0.0125, "T": 2340.1, "xnoe_ppm": 5803.0}, {"beta": 0.025, "T": 2323.8, "xnoe_ppm": 5893.0}, {"beta": 0.0375, "T": 2307.4, "xnoe_ppm": 5953.0}, {"beta": 0.05, "T": 2290.9, "xnoe_ppm": 5987.0}, {"beta": 0.0625, "T": 2274.4, "xnoe_ppm": 5998.0}, {"beta": 0.075, "T": 2258.0, "xnoe_ppm": 5990.0}, {"beta": 0.0875, "T": 2241.7, "xnoe_ppm": 5965.0}, {"beta": 0.1, "T": 2225.5, "xnoe_ppm": 5924.0}, {"beta": 0.1125, "T": 2209.4, "xnoe_ppm": 5871.0}, {"beta": 0.125, "T": 2193.5, "xnoe_ppm": 5808.0}, {"beta": 0.1375, "T": 2177.8, "xnoe_ppm": 5735.0}, {"beta": 0.15, "T": 2162.3, "xnoe_ppm": 5655.0}, {"beta": 0.1625, "T": 2147.0, "xnoe_ppm": 5569.0}, {"beta": 0.175, "T": 2132.0, "xnoe_ppm": 5477.0}, {"beta": 0.1875, "T": 2117.1, "xnoe_ppm": 5381.0}, {"beta": 0.2, "T": 2102.5, "xnoe_ppm": 5282.0}, {"beta": 0.2125, "T": 2088.1, "xnoe_ppm": 5180.0}, {"beta": 0.225, "T": 2073.9, "xnoe_ppm": 5076.0}, {"beta": 0.2375, "T": 2059.9, "xnoe_ppm": 4971.0}, {"beta": 0.25, "T": 2046.2, "xnoe_ppm": 4866.0}, {"beta": 0.2625, "T": 2032.7, "xnoe_ppm": 4760.0}, {"beta": 0.275, "T": 2019.4, "xnoe_ppm": 4654.0}, {"beta": 0.2875, "T": 2006.3, "xnoe_ppm": 4548.0}, {"beta": 0.3, "T": 1993.5, "xnoe_ppm": 4443.0}, {"beta": 0.3125, "T": 1980.8, "xnoe_ppm": 4339.0}, {"beta": 0.325, "T": 1968.4, "xnoe_ppm": 4236.0}, {"beta": 0.3375, "T": 1956.2, "xnoe_ppm": 4134.0}, {"beta": 0.35, "T": 1944.2, "xnoe_ppm": 4034.0}, {"beta": 0.3625, "T": 1932.3, "xnoe_ppm": 3935.0}, {"beta": 0.375, "T": 1920.7, "xnoe_ppm": 3838.0}, {"beta": 0.3875, "T": 1909.3, "xnoe_ppm": 3742.0}, {"beta": 0.4, "T": 1898.0, "xnoe_ppm": 3649.0}, {"beta": 0.4125, "T": 1886.9, "xnoe_ppm": 3557.0}, {"beta": 0.425, "T": 1876.1, "xnoe_ppm": 3467.0}, {"beta": 0.4375, "T": 1865.3, "xnoe_ppm": 3379.0}, {"beta": 0.45, "T": 1854.8, "xnoe_ppm": 3293.0}, {"beta": 0.4625, "T": 1844.4, "xnoe_ppm": 3209.0}, {"beta": 0.475, "T": 1834.2, "xnoe_ppm": 3127.0}, {"beta": 0.4875, "T": 1824.2, "xnoe_ppm": 3046.0}, {"beta": 0.5, "T": 1814.3, "xnoe_ppm": 2968.0}, {"beta": 0.5125, "T": 1804.6, "xnoe_ppm": 2892.0}, {"beta": 0.525, "T": 1795.0, "xnoe_ppm": 2817.0}, {"beta": 0.5375, "T": 1785.5, "xnoe_ppm": 2745.0}, {"beta": 0.55, "T": 1776.3, "xnoe_ppm": 2674.0}, {"beta": 0.5625, "T": 1767.1, "xnoe_ppm": 2605.0}, {"beta": 0.575, "T": 1758.1, "xnoe_ppm": 2538.0}, {"beta": 0.5875, "T": 1749.2, "xnoe_ppm": 2472.0}, {"beta": 0.6, "T": 1740.5, "xnoe_ppm": 2409.0}, {"beta": 0.6125, "T": 1731.9, "xnoe_ppm": 2347.0}, {"beta": 0.625, "T": 1723.4, "xnoe_ppm": 2286.0}, {"beta": 0.6375, "T": 1715.1, "xnoe_ppm": 2228.0}, {"beta": 0.65, "T": 1706.8, "xnoe_ppm": 2170.0}, {"beta": 0.6625, "T": 1698.7, "xnoe_ppm": 2115.0}, {"beta": 0.675, "T": 1690.7, "xnoe_ppm": 2061.0}, {"beta": 0.6875, "T": 1682.8, "xnoe_ppm": 2008.0}, {"beta": 0.7, "T": 1675.1, "xnoe_ppm": 1957.0}, {"beta": 0.7125, "T": 1667.4, "xnoe_ppm": 1907.0}, {"beta": 0.725, "T": 1659.8, "xnoe_ppm": 1859.0}, {"beta": 0.7375, "T": 1652.4, "xnoe_ppm": 1812.0}, {"beta": 0.75, "T": 1645.0, "xnoe_ppm": 1766.0}, {"beta": 0.7625, "T": 1637.8, "xnoe_ppm": 1721.0}, {"beta": 0.775, "T": 1630.7, "xnoe_ppm": 1678.0}, {"beta": 0.7875, "T": 1623.6, "xnoe_ppm": 1636.0}, {"beta": 0.8, "T": 1616.7, "xnoe_ppm": 1595.0}, {"beta": 0.8125, "T": 1609.8, "xnoe_ppm": 1555.0}, {"beta": 0.825, "T": 1603.0, "xnoe_ppm": 1517.0}, {"beta": 0.8375, "T": 1596.4, "xnoe_ppm": 1479.0}, {"beta": 0.85, "T": 1589.8, "xnoe_ppm": 1442.0}, {"beta": 0.8625, "T": 1583.3, "xnoe_ppm": 1407.0}, {"beta": 0.875, "T": 1576.8, "xnoe_ppm": 1372.0}, {"beta": 0.8875, "T": 1570.5, "xnoe_ppm": 1338.0}, {"beta": 0.9, "T": 1564.2, "xnoe_ppm": 1306.0}, {"beta": 0.9125, "T": 1558.1, "xnoe_ppm": 1274.0}, {"beta": 0.925, "T": 1552.0, "xnoe_ppm": 1243.0}, {"beta": 0.9375, "T": 1545.9, "xnoe_ppm": 1213.0}, {"beta": 0.95, "T": 1540.0, "xnoe_ppm": 1184.0}, {"beta": 0.9625, "T": 1534.1, "xnoe_ppm": 1155.0}, {"beta": 0.975, "T": 1528.3, "xnoe_ppm": 1127.0}, {"beta": 0.9875, "T": 1522.6, "xnoe_ppm": 1100.0}, {"beta": 1.0, "T": 1516.9, "xnoe_ppm": 1074.0}]}, "tau_sweep": [{"tau_q_ms": 0.3, "ei": 0.347727, "T_peak": 2452.22}, {"tau_q_ms": 0.5, "ei": 0.571609, "T_peak": 2452.22}, {"tau_q_ms": 1.0, "ei": 1.12989, "T_peak": 2452.22}, {"tau_q_ms": 2.0, "ei": 2.24028, "T_peak": 2452.22}, {"tau_q_ms": 3.0, "ei": 3.34235, "T_peak": 2452.22}, {"tau_q_ms": 5.0, "ei": 5.52117, "T_peak": 2452.22}], "ideal_ei": 0.0112949}, "jsweep": {"S": 0.0625, "H": 0.1, "C_opt": 2.5, "J_opt": 16.0, "point_val": 1.28106e-05, "rows": [{"J": 4.0, "C": 1.25, "tau_q_ms": 3.33333, "ei_bulk": 2.0559, "ei_unmixed": 2.4407, "w_core": 0.7, "g": 0.207944, "ei_pdf": 0.372557}, {"J": 6.0, "C": 1.53093, "tau_q_ms": 2.72166, "ei_bulk": 1.68094, "ei_unmixed": 2.11158, "w_core": 0.7, "g": 0.147124, "ei_pdf": 0.505433}, {"J": 9.0, "C": 1.875, "tau_q_ms": 2.22222, "ei_bulk": 1.37409, "ei_unmixed": 1.80243, "w_core": 0.7, "g": 0.0863046, "ei_pdf": 0.739345}, {"J": 12.0, "C": 2.16506, "tau_q_ms": 1.9245, "ei_bulk": 1.19088, "ei_unmixed": 1.39754, "w_core": 0.359603, "g": 0.0431523, "ei_pdf": 1.03576}, {"J": 16.0, "C": 2.5, "tau_q_ms": 1.66667, "ei_bulk": 1.03204, "ei_unmixed": 1.03204, "w_core": 0.0, "g": 0.0, "ei_pdf": 1.28106e-05}, {"J": 20.0, "C": 2.79508, "tau_q_ms": 1.49071, "ei_bulk": 0.923543, "ei_unmixed": 1.14461, "w_core": 0.278929, "g": 0.0334715, "ei_pdf": 1.11898}, {"J": 25.0, "C": 3.125, "tau_q_ms": 1.33333, "ei_bulk": 0.826438, "ei_unmixed": 1.41817, "w_core": 0.557859, "g": 0.0669431, "ei_pdf": 0.854217}, {"J": 36.0, "C": 3.75, "tau_q_ms": 1.11111, "ei_bulk": 0.68922, "ei_unmixed": 1.72315, "w_core": 0.7, "g": 0.12164, "ei_pdf": 0.586791}, {"J": 49.0, "C": 4.375, "tau_q_ms": 0.952381, "ei_bulk": 0.591132, "ei_unmixed": 1.85863, "w_core": 0.7, "g": 0.167885, "ei_pdf": 0.45272}, {"J": 64.0, "C": 5.0, "tau_q_ms": 0.833333, "ei_bulk": 0.517526, "ei_unmixed": 1.97919, "w_core": 0.7, "g": 0.207944, "ei_pdf": 0.372557}, {"J": 100.0, "C": 6.25, "tau_q_ms": 0.666667, "ei_bulk": 0.414419, "ei_unmixed": 2.18618, "w_core": 0.7, "g": 0.274887, "ei_pdf": 0.278495}, {"J": 144.0, "C": 7.5, "tau_q_ms": 0.555556, "ei_bulk": 0.345643, "ei_unmixed": 2.35954, "w_core": 0.7, "g": 0.3, "ei_pdf": 0.250224}, {"J": 225.0, "C": 9.375, "tau_q_ms": 0.444444, "ei_bulk": 0.276837, "ei_unmixed": 2.57582, "w_core": 0.7, "g": 0.3, "ei_pdf": 0.250224}, {"J": 400.0, "C": 12.5, "tau_q_ms": 0.333333, "ei_bulk": 0.208001, "ei_unmixed": 2.8598, "w_core": 0.7, "g": 0.3, "ei_pdf": 0.250224}]}, "m_of_T": [{"T": 1500, "m": 1.94904}, {"T": 1550, "m": 1.84931}, {"T": 1600, "m": 1.76223}, {"T": 1650, "m": 1.68577}, {"T": 1700, "m": 1.61828}, {"T": 1750, "m": 1.55843}, {"T": 1800, "m": 1.50513}, {"T": 1850, "m": 1.45749}, {"T": 1900, "m": 1.41475}, {"T": 1950, "m": 1.37629}, {"T": 2000, "m": 1.34158}, {"T": 2050, "m": 1.31018}, {"T": 2100, "m": 1.2817}, {"T": 2150, "m": 1.25582}, {"T": 2200, "m": 1.23225}, {"T": 2250, "m": 1.21076}, {"T": 2300, "m": 1.19112}, {"T": 2350, "m": 1.17316}, {"T": 2400, "m": 1.15672}, {"T": 2450, "m": 1.14165}, {"T": 2500, "m": 1.12783}, {"T": 2550, "m": 1.11514}, {"T": 2600, "m": 1.1035}, {"T": 2650, "m": 1.0928}, {"T": 2700, "m": 1.08298}, {"T": 2750, "m": 1.07396}, {"T": 2800, "m": 1.06568}], "prompt_shape": [{"phi": 0.6, "f": 0.6976}, {"phi": 0.62, "f": 0.741998}, {"phi": 0.64, "f": 0.793843}, {"phi": 0.66, "f": 0.852549}, {"phi": 0.68, "f": 0.91753}, {"phi": 0.7, "f": 0.9882}, {"phi": 0.72, "f": 1.06397}, {"phi": 0.74, "f": 1.14427}, {"phi": 0.76, "f": 1.22849}, {"phi": 0.78, "f": 1.31607}, {"phi": 0.8, "f": 1.4064}, {"phi": 0.82, "f": 1.49891}, {"phi": 0.84, "f": 1.59301}, {"phi": 0.86, "f": 1.68812}, {"phi": 0.88, "f": 1.78364}, {"phi": 0.9, "f": 1.879}, {"phi": 0.92, "f": 1.97361}, {"phi": 0.94, "f": 2.06688}, {"phi": 0.96, "f": 2.15822}, {"phi": 0.98, "f": 2.24706}, {"phi": 1.0, "f": 2.3328}, {"phi": 1.02, "f": 2.41486}, {"phi": 1.04, "f": 2.49266}, {"phi": 1.06, "f": 2.5656}, {"phi": 1.08, "f": 2.63311}, {"phi": 1.1, "f": 2.6946}, {"phi": 1.12, "f": 2.74948}, {"phi": 1.14, "f": 2.79716}, {"phi": 1.16, "f": 2.83707}, {"phi": 1.18, "f": 2.86861}, {"phi": 1.2, "f": 2.8912}, {"phi": 1.22, "f": 2.90425}, {"phi": 1.24, "f": 2.90719}, {"phi": 1.26, "f": 2.89941}, {"phi": 1.28, "f": 2.88035}, {"phi": 1.3, "f": 2.8494}, {"phi": 1.32, "f": 2.80599}, {"phi": 1.34, "f": 2.74953}, {"phi": 1.36, "f": 2.67944}, {"phi": 1.38, "f": 2.59512}, {"phi": 1.4, "f": 2.496}, {"phi": 1.42, "f": 2.38149}, {"phi": 1.44, "f": 2.251}, {"phi": 1.46, "f": 2.10394}, {"phi": 1.48, "f": 1.93974}, {"phi": 1.5, "f": 1.7578}, {"phi": 1.52, "f": 1.55754}, {"phi": 1.54, "f": 1.33838}, {"phi": 1.56, "f": 1.09972}, {"phi": 1.58, "f": 0.840994}, {"phi": 1.6, "f": 0.5616}, {"phi": 1.62, "f": 0.260958}, {"phi": 1.64, "f": 0.0}, {"phi": 1.66, "f": 0.0}, {"phi": 1.68, "f": 0.0}, {"phi": 1.7, "f": 0.0}, {"phi": 1.72, "f": 0.0}, {"phi": 1.74, "f": 0.0}, {"phi": 1.76, "f": 0.0}, {"phi": 1.78, "f": 0.0}, {"phi": 1.8, "f": 0.0}, {"phi": 1.82, "f": 0.0}, {"phi": 1.84, "f": 0.0}, {"phi": 1.86, "f": 0.0}, {"phi": 1.88, "f": 0.0}, {"phi": 1.9, "f": 0.0}, {"phi": 1.92, "f": 0.0}, {"phi": 1.94, "f": 0.0}, {"phi": 1.96, "f": 0.0}, {"phi": 1.98, "f": 0.0}, {"phi": 2.0, "f": 0.0}], "spatial": {"k_p": 0.316, "C_opt": 2.503605191475725, "g_ceiling": 0.0674847, "curves": [{"S": 0.0625, "H": 0.1, "rows": [{"J": 2.0, "C": 0.883883, "g": 0.0387196}, {"J": 3.0, "C": 1.08253, "g": 0.0344579}, {"J": 4.0, "C": 1.25, "g": 0.0311792}, {"J": 5.5, "C": 1.46575, "g": 0.0275508}, {"J": 7.5, "C": 1.71163, "g": 0.0241415}, {"J": 10.0, "C": 1.97642, "g": 0.0209431}, {"J": 13.0, "C": 2.25347, "g": 0.0187515}, {"J": 16.0, "C": 2.5, "g": 0.0181352}, {"J": 20.0, "C": 2.79508, "g": 0.0188848}, {"J": 25.0, "C": 3.125, "g": 0.0212162}, {"J": 32.0, "C": 3.53553, "g": 0.0249414}, {"J": 42.0, "C": 4.05046, "g": 0.0298209}, {"J": 56.0, "C": 4.67707, "g": 0.0361158}, {"J": 75.0, "C": 5.41266, "g": 0.0413899}, {"J": 100.0, "C": 6.25, "g": 0.0442857}, {"J": 140.0, "C": 7.3951, "g": 0.047187}, {"J": 200.0, "C": 8.83883, "g": 0.0496787}, {"J": 280.0, "C": 10.4583, "g": 0.0504758}, {"J": 400.0, "C": 12.5, "g": 0.0485994}]}, {"S": 0.03125, "H": 0.1, "rows": [{"J": 2.0, "C": 0.441942, "g": 0.044279}, {"J": 3.0, "C": 0.541266, "g": 0.043194}, {"J": 4.0, "C": 0.625, "g": 0.04227}, {"J": 5.5, "C": 0.732877, "g": 0.0410227}, {"J": 7.5, "C": 0.855816, "g": 0.0393031}, {"J": 10.0, "C": 0.988212, "g": 0.0364622}, {"J": 13.0, "C": 1.12673, "g": 0.0335666}, {"J": 16.0, "C": 1.25, "g": 0.0311792}, {"J": 20.0, "C": 1.39754, "g": 0.0286246}, {"J": 25.0, "C": 1.5625, "g": 0.02613}, {"J": 32.0, "C": 1.76777, "g": 0.0234363}, {"J": 42.0, "C": 2.02523, "g": 0.0204461}, {"J": 56.0, "C": 2.33854, "g": 0.0184125}, {"J": 75.0, "C": 2.70633, "g": 0.0185098}, {"J": 100.0, "C": 3.125, "g": 0.0212162}, {"J": 140.0, "C": 3.69755, "g": 0.0264281}, {"J": 200.0, "C": 4.41942, "g": 0.0335305}, {"J": 280.0, "C": 5.22913, "g": 0.040568}, {"J": 400.0, "C": 6.25, "g": 0.0442857}]}, {"S": 0.0625, "H": 0.05, "rows": [{"J": 2.0, "C": 1.76777, "g": 0.0234363}, {"J": 3.0, "C": 2.16506, "g": 0.0192794}, {"J": 4.0, "C": 2.5, "g": 0.0181352}, {"J": 5.5, "C": 2.93151, "g": 0.0196935}, {"J": 7.5, "C": 3.42327, "g": 0.023939}, {"J": 10.0, "C": 3.95285, "g": 0.0288511}, {"J": 13.0, "C": 4.50694, "g": 0.0344091}, {"J": 16.0, "C": 5.0, "g": 0.0391711}, {"J": 20.0, "C": 5.59017, "g": 0.0421034}, {"J": 25.0, "C": 6.25, "g": 0.0442857}, {"J": 32.0, "C": 7.07107, "g": 0.0464445}, {"J": 42.0, "C": 8.10093, "g": 0.0485733}, {"J": 56.0, "C": 9.35414, "g": 0.0501993}, {"J": 75.0, "C": 10.8253, "g": 0.0503119}, {"J": 100.0, "C": 12.5, "g": 0.0485994}, {"J": 140.0, "C": 14.7902, "g": 0.0451218}, {"J": 200.0, "C": 17.6777, "g": 0.0368065}, {"J": 280.0, "C": 20.9165, "g": 0.0244302}, {"J": 400.0, "C": 25.0, "g": 0.0229347}]}]}, "ladder": {"eq_o": {"a_mixed": 0.0158161, "a_bulk": 3.34028, "a_pocket": 11.7571, "collapse": 119.814}, "super_eq_o": {"a_mixed": 0.0201798, "a_bulk": 3.90835, "a_pocket": 13.5808, "collapse": 119.814}}};
+
+/* ============================================================ helpers */
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const fmt = (v, sig = 3) => {
+  if (v === null || v === undefined) return "–";
+  const a = Math.abs(v);
+  if (a !== 0 && (a < 1e-3 || a >= 1e5)) return v.toExponential(Math.max(0, sig - 2)).replace("e", "e");
+  const digits = a >= 100 ? 0 : a >= 10 ? 1 : a >= 1 ? 2 : 3;
+  return v.toLocaleString("en-US", { maximumFractionDigits: digits });
+};
+const el = (tag, attrs = {}, parent = null) => {
+  const ns = "http://www.w3.org/2000/svg";
+  const node = ["svg","g","path","line","circle","rect","text","polyline"].includes(tag)
+    ? document.createElementNS(ns, tag) : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+  if (parent) parent.appendChild(node);
+  return node;
+};
+
+/* re-render charts when the theme flips (colors are read at build time) */
+const rebuilders = [];
+new MutationObserver(() => rebuilders.forEach(fn => fn()))
+  .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+if (matchMedia("(prefers-color-scheme: dark)").addEventListener)
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => rebuilders.forEach(fn => fn()));
+
+/* ============================================================ chart lib */
+function scaleFactory(kind, dmin, dmax, rmin, rmax) {
+  if (kind === "log") {
+    const l0 = Math.log10(dmin), l1 = Math.log10(dmax);
+    const f = v => rmin + (Math.log10(v) - l0) / (l1 - l0) * (rmax - rmin);
+    f.invert = r => Math.pow(10, l0 + (r - rmin) / (rmax - rmin) * (l1 - l0));
+    return f;
+  }
+  const f = v => rmin + (v - dmin) / (dmax - dmin) * (rmax - rmin);
+  f.invert = r => dmin + (r - rmin) / (rmax - rmin) * (dmax - dmin);
+  return f;
+}
+function niceTicks(min, max, n = 5) {
+  const span = max - min, step0 = span / n, mag = Math.pow(10, Math.floor(Math.log10(step0)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => span / s <= n + 1) || mag * 10;
+  const t = [];
+  for (let v = Math.ceil(min / step) * step; v <= max + 1e-9 * span; v += step) t.push(+v.toFixed(10));
+  return t;
+}
+function logTicks(min, max) {
+  const t = [];
+  for (let e = Math.floor(Math.log10(min)); e <= Math.ceil(Math.log10(max)); e++) {
+    const v = Math.pow(10, e);
+    if (v >= min / 1.001 && v <= max * 1.001) t.push(v);
+  }
+  return t;
+}
+const sup = e => String(e).split("").map(c => c === "-" ? "⁻" : "⁰¹²³⁴⁵⁶⁷⁸⁹"[+c]).join("");
+const fmtTick = v => {
+  const a = Math.abs(v);
+  if (a !== 0 && (a < 1e-2 || a >= 1e5)) {
+    const e = Math.round(Math.log10(a));
+    const mant = a / Math.pow(10, e);
+    return (Math.abs(mant - 1) < .01 ? "" : fmt(mant, 2) + "·") + "10" + sup(e);
+  }
+  return fmt(v, 3);
+};
+const fmtExp = v => {
+  const a = Math.abs(v);
+  if (a !== 0 && (a < 1e-2 || a >= 1e5)) {
+    const e = Math.floor(Math.log10(a)), mant = v / Math.pow(10, e);
+    return (Math.abs(mant - 1) < .01 ? "" : fmt(mant, 2) + "×") + "10" + sup(e);
+  }
+  return fmt(v, 3);
+};
+
+/*
+ * lineChart(container, options) — hover crosshair + tooltip + optional table twin.
+ * series: [{name, color, data:[[x,y],...], dash?, width?, marker?, labelAt?:'end'|'max'|'min'|'none'}]
+ */
+function lineChart(box, opt) {
+  box.innerHTML = "";
+  const W = opt.width || 720, Hpx = opt.height || 330;
+  const m = Object.assign({ t: 16, r: 24, b: 44, l: 62 }, opt.margin || {});
+  const svg = el("svg", { viewBox: `0 0 ${W} ${Hpx}`, role: "img", "aria-label": opt.aria || "" }, box);
+  const iw = W - m.l - m.r, ih = Hpx - m.t - m.b;
+
+  const allX = opt.series.flatMap(s => s.data.map(d => d[0]));
+  const allY = opt.series.flatMap(s => s.data.map(d => d[1])).filter(v => opt.yScale !== "log" || v > 0);
+  const xmin = opt.xMin ?? Math.min(...allX), xmax = opt.xMax ?? Math.max(...allX);
+  let ymin = opt.yMin ?? Math.min(...allY), ymax = opt.yMax ?? Math.max(...allY);
+  if (opt.yScale !== "log") { const pad = (ymax - ymin) * .08 || 1; if (opt.yMin === undefined) ymin -= pad; if (opt.yMax === undefined) ymax += pad; }
+  const X = scaleFactory(opt.xScale || "lin", xmin, xmax, m.l, m.l + iw);
+  const Y = scaleFactory(opt.yScale || "lin", ymin, ymax, m.t + ih, m.t);
+
+  const xticks = opt.xTicks || (opt.xScale === "log" ? logTicks(xmin, xmax) : niceTicks(xmin, xmax, 6));
+  const yticks = opt.yTicks || (opt.yScale === "log" ? logTicks(ymin, ymax) : niceTicks(ymin, ymax, 5));
+  const grid = css("--grid"), axis = css("--axis"), muted = css("--muted"), ink2 = css("--ink-2");
+
+  for (const t of yticks) {
+    el("line", { x1: m.l, x2: m.l + iw, y1: Y(t), y2: Y(t), stroke: grid, "stroke-width": 1 }, svg);
+    el("text", { x: m.l - 8, y: Y(t) + 4, "text-anchor": "end", "font-size": 12 }, svg).textContent = fmtTick(t);
+  }
+  for (const t of xticks) {
+    el("line", { x1: X(t), x2: X(t), y1: m.t + ih, y2: m.t + ih + 4, stroke: axis }, svg);
+    el("text", { x: X(t), y: m.t + ih + 18, "text-anchor": "middle", "font-size": 12 }, svg).textContent = fmtTick(t);
+  }
+  el("line", { x1: m.l, x2: m.l + iw, y1: m.t + ih, y2: m.t + ih, stroke: axis }, svg);
+  if (opt.xLabel) el("text", { x: m.l + iw / 2, y: Hpx - 6, "text-anchor": "middle", "font-size": 12.5, fill: ink2 }, svg).textContent = opt.xLabel;
+  if (opt.yLabel) {
+    const t = el("text", { x: 14, y: m.t + ih / 2, "font-size": 12.5, fill: ink2,
+      transform: `rotate(-90 14 ${m.t + ih / 2})`, "text-anchor": "middle" }, svg);
+    t.textContent = opt.yLabel;
+  }
+
+  (opt.bands || []).forEach(b => {
+    el("rect", { x: m.l, width: iw, y: Y(b.y1), height: Math.max(0, Y(b.y0) - Y(b.y1)),
+      fill: css("--glow") }, svg);
+    if (b.label) el("text", { x: m.l + iw - 6, y: Y(b.y1) + 13, "text-anchor": "end", "font-size": 10.5,
+      fill: css("--accent-ink") }, svg).textContent = b.label;
+  });
+  (opt.vlines || []).forEach(v => {
+    el("line", { x1: X(v.x), x2: X(v.x), y1: m.t, y2: m.t + ih, stroke: css("--accent"),
+      "stroke-width": 1, "stroke-dasharray": "1 4", "stroke-linecap": "round", opacity: .9 }, svg);
+    if (v.label) el("text", {
+      x: X(v.x) + (v.anchor === "end" ? -5 : 5),
+      y: v.labelPos === "bottom" ? m.t + ih - 7 : m.t + 12,
+      "font-size": 11, fill: css("--accent-ink"),
+      ...(v.anchor ? { "text-anchor": v.anchor } : {}) }, svg).textContent = v.label;
+  });
+  (opt.hlines || []).forEach(v => {
+    el("line", { x1: m.l, x2: m.l + iw, y1: Y(v.y), y2: Y(v.y), stroke: css("--accent"),
+      "stroke-width": 1, "stroke-dasharray": "1 4", "stroke-linecap": "round", opacity: .9 }, svg);
+    if (v.label) el("text", { x: m.l + 6, y: Y(v.y) - 5, "font-size": 10.5, fill: css("--accent-ink") }, svg).textContent = v.label;
+  });
+
+  const pathOf = data => data.map((d, i) => (i ? "L" : "M") + X(d[0]).toFixed(1) + " " + Y(d[1]).toFixed(1)).join("");
+  const clampLogData = s => opt.yScale === "log" ? s.data.map(d => [d[0], Math.max(d[1], ymin)]) : s.data;
+  for (const s of opt.series) {
+    el("path", { d: pathOf(clampLogData(s)), fill: "none", stroke: s.color,
+      "stroke-width": s.width || 2, "stroke-linejoin": "round", "stroke-linecap": "round",
+      ...(s.dash ? { "stroke-dasharray": s.dash } : {}) }, svg);
+    if (s.marker) for (const d of clampLogData(s))
+      el("circle", { cx: X(d[0]), cy: Y(d[1]), r: 3, fill: s.color, stroke: css("--surface"), "stroke-width": 2 }, svg);
+    if (s.labelAt !== "none") {
+      const data = clampLogData(s);
+      let pt = data[data.length - 1];
+      if (s.labelAt === "max") pt = data.reduce((a, b) => (b[1] > a[1] ? b : a));
+      if (s.labelAt === "min") pt = data.reduce((a, b) => (b[1] < a[1] ? b : a));
+      const tx = Math.min(X(pt[0]) + 6, m.l + iw - 4);
+      el("text", { x: tx, y: Y(pt[1]) + (s.labelDy ?? -6), "font-size": 12, fill: s.color,
+        "font-weight": 600, "text-anchor": s.labelAnchor || "start" }, svg).textContent = s.name;
+    }
+  }
+  (opt.annotations || []).forEach(a => {
+    el("text", { x: X(a.x) + (a.dx || 0), y: Y(a.y) + (a.dy || 0), "font-size": 11.5,
+      fill: a.color || ink2, "text-anchor": a.anchor || "start" }, svg).textContent = a.text;
+  });
+
+  /* hover: crosshair + tooltip (nearest x across shared domain) */
+  const tip = el("div", { class: "tip" }, box);
+  const cross = el("line", { y1: m.t, y2: m.t + ih, stroke: axis, "stroke-width": 1, opacity: 0 }, svg);
+  const dots = opt.series.map(s => el("circle", { r: 4, fill: s.color, stroke: css("--surface"), "stroke-width": 2, opacity: 0 }, svg));
+  const hit = el("rect", { x: m.l, y: m.t, width: iw, height: ih, fill: "transparent" }, svg);
+  svg.setAttribute("tabindex", "0");
+  let hoverIdx = -1;
+  const xsRef = opt.series[0].data.map(d => d[0]);
+  function showAt(idx) {
+    hoverIdx = idx;
+    const xv = xsRef[idx];
+    cross.setAttribute("x1", X(xv)); cross.setAttribute("x2", X(xv)); cross.setAttribute("opacity", .6);
+    let html = `<b>${opt.xTipLabel || opt.xLabel || "x"} = ${fmtExp(xv)}</b>`;
+    opt.series.forEach((s, i) => {
+      const d = s.data.find(p => Math.abs(p[0] - xv) < 1e-9) || s.data[Math.min(idx, s.data.length - 1)];
+      if (!d) { dots[i].setAttribute("opacity", 0); return; }
+      dots[i].setAttribute("cx", X(d[0])); dots[i].setAttribute("cy", Y(Math.max(d[1], opt.yScale === "log" ? ymin : -Infinity)));
+      dots[i].setAttribute("opacity", 1);
+      html += `<div class="row"><span class="dot" style="background:${s.color}"></span>${s.name}: <b>${fmtExp(d[1])}${opt.yUnit ? " " + opt.yUnit : ""}</b></div>`;
+    });
+    tip.innerHTML = html; tip.style.display = "block";
+    const bb = box.getBoundingClientRect(), fx = X(xv) / W * bb.width;
+    tip.style.left = Math.min(fx + 14, bb.width - tip.offsetWidth - 6) + "px";
+    tip.style.top = "12px";
+  }
+  function hide() { hoverIdx = -1; cross.setAttribute("opacity", 0); dots.forEach(d => d.setAttribute("opacity", 0)); tip.style.display = "none"; }
+  hit.addEventListener("mousemove", e => {
+    const bb = svg.getBoundingClientRect();
+    const px = (e.clientX - bb.left) / bb.width * W;
+    const xv = X.invert(px);
+    let best = 0, bd = Infinity;
+    xsRef.forEach((v, i) => { const d = Math.abs(X(v) - X(Math.max(xmin, Math.min(xmax, xv)))); if (d < bd) { bd = d; best = i; } });
+    showAt(best);
+  });
+  hit.addEventListener("mouseleave", hide);
+  svg.addEventListener("keydown", e => {
+    if (e.key === "ArrowRight") { showAt(Math.min(xsRef.length - 1, hoverIdx < 0 ? 0 : hoverIdx + 1)); e.preventDefault(); }
+    if (e.key === "ArrowLeft") { showAt(Math.max(0, hoverIdx < 0 ? 0 : hoverIdx - 1)); e.preventDefault(); }
+    if (e.key === "Escape") hide();
+  });
+  svg.addEventListener("blur", hide);
+  return { svg, X, Y, W, H: Hpx, m };
+}
+
+function legend(elId, series) {
+  const box = document.getElementById(elId);
+  if (!box) return;
+  box.innerHTML = series.map(s =>
+    `<span><span class="sw" style="background:${s.color};${s.dash ? "opacity:.75" : ""}"></span>${s.name}</span>`).join("");
+}
+function tableTwin(id, caption, headers, rows) {
+  const d = document.getElementById(id);
+  if (!d) return;
+  d.innerHTML = `<summary>data table — ${caption}</summary><div class="scroll"><table>
+    <tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr>
+    ${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`).join("")}</table></div>`;
+}
+
+/* ============================================================ hero tiles */
+(function tiles() {
+  const I = DATA.ideal, R = DATA.real;
+  const box = document.getElementById("hero-tiles");
+  const t = (k, v, d) => `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div><div class="d">${d}</div></div>`;
+  box.innerHTML =
+    t("Specific thrust", `${fmt(R.specific_thrust, 4)} <small>N·s/kg</small>`,
+      `ideal ${fmt(I.specific_thrust, 4)} → losses cost ${fmt(100 * (R.specific_thrust / I.specific_thrust - 1), 2)}%`) +
+    t("TSFC", `${(R.tsfc * 1e6).toFixed(1)} <small>mg/(N·s)</small>`,
+      `ideal ${(I.tsfc * 1e6).toFixed(1)} → +${fmt(100 * (R.tsfc / I.tsfc - 1), 2)}% fuel per N`) +
+    t("Thermal efficiency", `${(100 * R.eta_thermal).toFixed(1)}<small>%</small>`,
+      `ideal ${(100 * I.eta_thermal).toFixed(1)}% (KE added per unit fuel power)`) +
+    t("Exhaust velocity", `${fmt(R.V9, 4)} <small>m/s</small>`,
+      `V0 ${fmt(R.V0, 3)} m/s → M9 = ${R.M9.toFixed(2)}`);
+})();
+
+/* ============================================================ engine canvas */
+(function engine() {
+  const canvas = document.getElementById("engine-canvas");
+  const ctx = canvas.getContext("2d");
+  const ST = DATA.real.stations;
+  /* axial positions (canvas-normalized) of stations + the primary-zone hot spot */
+  const SX = { "0": .045, "2": .205, "3": .425, "4": .585, "5": .705, "9": .875 };
+  const Tnodes = [
+    [0, 250], [SX["2"], ST["2"].Tt], [SX["3"], ST["3"].Tt],
+    [.475, 2450],                               /* primary zone (rung 8's point) */
+    [SX["4"], ST["4"].Tt], [SX["5"], ST["5"].Tt], [SX["9"], DATA.real.T9], [1.18, 420]];
+  const Tof = x => {
+    for (let i = 1; i < Tnodes.length; i++) if (x <= Tnodes[i][0]) {
+      const [x0, t0] = Tnodes[i - 1], [x1, t1] = Tnodes[i];
+      return t0 + (t1 - t0) * (x - x0) / (x1 - x0);
+    }
+    return Tnodes[Tnodes.length - 1][1];
+  };
+  /* heat colormap 250..2500 K */
+  const stops = [[250, [74,127,193]], [600, [125,138,150]], [950, [180,122,52]],
+    [1400, [235,157,40]], [1900, [252,193,84]], [2500, [255,243,201]]];
+  const heat = T => {
+    T = Math.max(250, Math.min(2500, T));
+    for (let i = 1; i < stops.length; i++) if (T <= stops[i][0]) {
+      const [t0, c0] = stops[i - 1], [t1, c1] = stops[i], u = (T - t0) / (t1 - t0);
+      return `rgb(${c0.map((c, k) => Math.round(c + (c1[k] - c) * u)).join(",")})`;
+    }
+  };
+  /* duct geometry: outer wall + centerbody radius as fraction of rMax, vs x */
+  const lerpN = (nodes, x) => {
+    for (let i = 1; i < nodes.length; i++) if (x <= nodes[i][0]) {
+      const [x0, r0] = nodes[i - 1], [x1, r1] = nodes[i];
+      return r0 + (r1 - r0) * (x - x0) / (x1 - x0);
+    }
+    return nodes[nodes.length - 1][1];
+  };
+  const outN = [[.13, .96], [.20, .90], [.42, .84], [.60, .86], [.70, .80], [.79, .62], [.875, .46]];
+  const hubN = [[.155, 0], [.21, .34], [.42, .46], [.47, .40], [.60, .40], [.70, .34], [.80, .10], [.84, 0]];
+  const rOut = x => (x < .13 || x > .875) ? null : lerpN(outN, x);
+  const rHub = x => (x < .155 || x > .84) ? 0 : lerpN(hubN, x);
+  /* axial speed profile (canvas widths / s) */
+  const vN = [[0, .105], [.20, .085], [.42, .055], [.60, .085], [.70, .105], [.875, .30], [1.2, .27]];
+  const vOf = x => lerpN(vN, x);
+
+  let W = 0, H = 0, cy = 0, rMax = 0, dpr = 1;
+  function resize() {
+    const w = canvas.clientWidth || canvas.parentElement.clientWidth;
+    dpr = Math.min(devicePixelRatio || 1, 2);
+    W = w; H = Math.max(240, Math.min(360, w * .34));
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    canvas.style.height = H + "px";
+    cy = H * .52; rMax = H * .335;
+  }
+  resize();
+  addEventListener("resize", () => { resize(); if (REDUCED) frame(0); });
+
+  const NP = 190;
+  const parts = Array.from({ length: NP }, () => ({
+    x: Math.random() * 1.2, u: Math.random(), side: Math.random() < .5 ? -1 : 1,
+    jit: (Math.random() - .5) * .012, sz: .8 + Math.random() * 1.4
+  }));
+
+  let hoverStation = null;
+  function drawEngine(t) {
+    const ink = css("--ink"), ink2 = css("--ink-2"), mutedC = css("--muted"), surf = css("--surface");
+    ctx.clearRect(0, 0, W, H);
+    ctx.lineWidth = 1.5; ctx.lineJoin = "round";
+
+    /* combustor glow (behind everything) */
+    const gx = .50 * W, flick = REDUCED ? 1 : (1 + .07 * Math.sin(t * .006) + .04 * Math.sin(t * .013 + 2));
+    for (const s of [-1, 1]) {
+      const gy = cy + s * rMax * .42;
+      const g = ctx.createRadialGradient(gx, gy, 2, gx, gy, rMax * 1.05 * flick);
+      g.addColorStop(0, "rgba(255,190,80,.50)");
+      g.addColorStop(.4, "rgba(245,140,30,.22)");
+      g.addColorStop(1, "rgba(245,140,30,0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(gx - rMax * 1.6, gy - rMax * 1.2, rMax * 3.2, rMax * 2.4);
+    }
+
+    /* particles */
+    for (const p of parts) {
+      const T = Tof(p.x);
+      let y;
+      if (p.x < .13 || p.x > .875) {
+        const spread = p.x > .875 ? .46 + (p.x - .875) * .5 : .96;
+        y = cy + p.side * (p.u * spread * rMax) + p.jit * H;
+      } else {
+        const ro = rOut(p.x) - .05, rh = rHub(p.x) + .04;
+        y = cy + p.side * (rh + p.u * Math.max(0.02, ro - rh)) * rMax + p.jit * H;
+      }
+      const fade = p.x > 1.0 ? Math.max(0, 1 - (p.x - 1.0) / .2) : 1;
+      ctx.globalAlpha = .85 * fade;
+      ctx.fillStyle = heat(T);
+      const stretch = 1 + vOf(p.x) * 26;
+      ctx.fillRect(p.x * W, y, p.sz * stretch, p.sz);
+    }
+    ctx.globalAlpha = 1;
+
+    /* nacelle outer + inner walls */
+    ctx.strokeStyle = ink; ctx.lineWidth = 2;
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      outN.forEach(([x, r], i) => { const px = x * W, py = cy + s * r * rMax; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); });
+      ctx.stroke();
+      /* cowl thickness line */
+      ctx.beginPath();
+      outN.forEach(([x, r], i) => { const px = x * W, py = cy + s * (r * rMax + 5); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); });
+      ctx.strokeStyle = mutedC; ctx.lineWidth = 1; ctx.stroke();
+      ctx.strokeStyle = ink; ctx.lineWidth = 2;
+    }
+    /* centerbody */
+    ctx.beginPath();
+    hubN.forEach(([x, r], i) => { const px = x * W, py = cy - r * rMax; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); });
+    for (let i = hubN.length - 1; i >= 0; i--) { const [x, r] = hubN[i]; ctx.lineTo(x * W, cy + r * rMax); }
+    ctx.closePath();
+    ctx.fillStyle = surf; ctx.globalAlpha = .92; ctx.fill(); ctx.globalAlpha = 1;
+    ctx.strokeStyle = ink; ctx.stroke();
+
+    /* compressor blades (7 rows) + turbine blades (2 rows) */
+    const blades = (x0, x1, rows, leanDir) => {
+      for (let i = 0; i < rows; i++) {
+        const x = x0 + (x1 - x0) * (i + .5) / rows;
+        const lean = (i % 2 ? -1 : 1) * leanDir * .012;
+        const rh = rHub(x), ro = rOut(x) - .05;
+        for (const s of [-1, 1]) {
+          ctx.beginPath();
+          ctx.moveTo((x - lean) * W, cy + s * rh * rMax);
+          ctx.lineTo((x + lean) * W, cy + s * ro * rMax);
+          ctx.strokeStyle = i % 2 ? mutedC : ink2; ctx.lineWidth = i % 2 ? 1.4 : 2.2;
+          ctx.stroke();
+        }
+      }
+    };
+    blades(.225, .415, 7, 1);
+    blades(.615, .695, 3, -1);
+
+    /* combustor liner */
+    ctx.strokeStyle = ink2; ctx.lineWidth = 1.6;
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(.435 * W, cy + s * rMax * .62);
+      ctx.quadraticCurveTo(.445 * W, cy + s * rMax * .22, .48 * W, cy + s * rMax * .22);
+      ctx.lineTo(.585 * W, cy + s * rMax * .26);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(.45 * W, cy + s * rMax * .70);
+      ctx.lineTo(.585 * W, cy + s * rMax * .58);
+      ctx.stroke();
+      /* fuel injector */
+      ctx.fillStyle = ink;
+      ctx.fillRect(.437 * W - 2, cy + s * rMax * .42 - 2.5, 9, 5);
+    }
+
+    /* station markers */
+    ctx.setLineDash([2, 5]);
+    for (const [lbl, x] of Object.entries(SX)) {
+      const active = hoverStation === lbl;
+      ctx.strokeStyle = active ? css("--accent") : mutedC;
+      ctx.lineWidth = active ? 1.6 : 1;
+      ctx.beginPath(); ctx.moveTo(x * W, cy - rMax * 1.06); ctx.lineTo(x * W, cy + rMax * 1.06); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = active ? css("--accent-ink") : mutedC;
+      ctx.font = `${active ? 700 : 500} 12px Cascadia Mono, Consolas, monospace`;
+      ctx.textAlign = "center";
+      ctx.fillText(lbl, x * W, cy - rMax * 1.06 - 6);
+      ctx.setLineDash([2, 5]);
+    }
+    ctx.setLineDash([]);
+
+    /* part names */
+    ctx.fillStyle = mutedC; ctx.font = "11px Cascadia Mono, Consolas, monospace"; ctx.textAlign = "center";
+    const names = [[.155, "inlet"], [.32, "compressor"], [.51, "combustor"], [.655, "turbine"], [.80, "nozzle"]];
+    for (const [x, n] of names) ctx.fillText(n, x * W, cy + rMax * 1.06 + 16);
+  }
+
+  let last = 0;
+  function frame(t) {
+    const dt = Math.min(50, t - last) / 1000; last = t;
+    if (!REDUCED) for (const p of parts) {
+      p.x += vOf(p.x) * dt * 1.15;
+      if (p.x > 1.2) { p.x = -.01; p.u = Math.random(); p.side = Math.random() < .5 ? -1 : 1; }
+    }
+    drawEngine(t);
+    if (!REDUCED) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  rebuilders.push(() => { if (REDUCED) frame(0); });
+
+  /* station chips + readout */
+  const chips = document.getElementById("station-chips");
+  const read = document.getElementById("station-readout");
+  const stName = { "0": "freestream", "2": "compressor face", "3": "compressor exit", "4": "turbine inlet", "5": "turbine exit", "9": "nozzle exit" };
+  for (const lbl of Object.keys(SX)) {
+    const b = document.createElement("button");
+    b.className = "station-chip"; b.textContent = lbl;
+    const show = () => {
+      hoverStation = lbl;
+      document.querySelectorAll(".station-chip").forEach(c => c.classList.toggle("active", c === b));
+      const s = ST[lbl];
+      read.innerHTML = `<b>${lbl}</b> ${stName[lbl]} — Tt <b>${fmt(s.Tt, 4)} K</b> · pt <b>${fmt(s.pt / 1000, 4)} kPa</b>${s.far ? ` · f <b>${s.far.toFixed(4)}</b>` : ""}`;
+      if (REDUCED) drawEngine(0);
+    };
+    b.addEventListener("mouseenter", show);
+    b.addEventListener("focus", show);
+    b.addEventListener("click", show);
+    chips.appendChild(b);
+  }
+})();
+
+/* ============================================================ T-s diagram */
+function buildTS() {
+  const box = document.getElementById("ts-chart");
+  box.innerHTML = "";
+  const W = 720, H = 400, m = { t: 18, r: 26, b: 46, l: 62 };
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img",
+    "aria-label": "Temperature–entropy diagram of the ideal and real turbojet cycles" }, box);
+  const allPts = [...DATA.ideal.legs.flat(), ...DATA.real.legs.flat()];
+  const smin = Math.min(...allPts.map(p => p[0])) - 40, smax = Math.max(...allPts.map(p => p[0])) + 60;
+  const tmin = 150, tmax = Math.max(...allPts.map(p => p[1])) + 90;
+  const X = scaleFactory("lin", smin, smax, m.l, W - m.r);
+  const Y = scaleFactory("lin", tmin, tmax, H - m.b, m.t);
+  const grid = css("--grid"), axis = css("--axis"), ink2 = css("--ink-2");
+  for (const t of niceTicks(tmin, tmax, 6)) {
+    el("line", { x1: m.l, x2: W - m.r, y1: Y(t), y2: Y(t), stroke: grid }, svg);
+    el("text", { x: m.l - 8, y: Y(t) + 4, "text-anchor": "end", "font-size": 12 }, svg).textContent = t;
+  }
+  for (const s of niceTicks(smin, smax, 7)) {
+    el("text", { x: X(s), y: H - m.b + 18, "text-anchor": "middle", "font-size": 12 }, svg).textContent = s;
+    el("line", { x1: X(s), x2: X(s), y1: H - m.b, y2: H - m.b + 4, stroke: axis }, svg);
+  }
+  el("line", { x1: m.l, x2: W - m.r, y1: H - m.b, y2: H - m.b, stroke: axis }, svg);
+  el("text", { x: m.l + (W - m.l - m.r) / 2, y: H - 6, "text-anchor": "middle", "font-size": 12.5, fill: ink2 }, svg)
+    .textContent = "entropy  s − s₀  [J/(kg·K)]";
+  const yl = el("text", { x: 14, y: m.t + (H - m.t - m.b) / 2, "font-size": 12.5, fill: ink2,
+    transform: `rotate(-90 14 ${m.t + (H - m.t - m.b) / 2})`, "text-anchor": "middle" }, svg);
+  yl.textContent = "temperature  T  [K]";
+
+  const cIdeal = css("--s-blue"), cReal = css("--s-red");
+  const drawLoop = (run, color, dash, width) => {
+    const g = el("g", {}, svg);
+    for (const leg of run.legs) {
+      const d = leg.map((p, i) => (i ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1)).join("");
+      const path = el("path", { d, fill: "none", stroke: color, "stroke-width": width,
+        "stroke-linecap": "round", ...(dash ? { "stroke-dasharray": dash } : {}) }, g);
+      if (!REDUCED) {
+        const len = path.getTotalLength();
+        path.style.strokeDasharray = dash ? dash : `${len}`;
+        if (!dash) { path.style.strokeDashoffset = `${len}`; path.style.transition = "stroke-dashoffset 1.6s ease-out"; }
+      }
+    }
+    return g;
+  };
+  drawLoop(DATA.ideal, cIdeal, "5 5", 1.8);
+  const gReal = drawLoop(DATA.real, cReal, null, 2.4);
+  if (!REDUCED) {
+    const io = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) {
+        gReal.querySelectorAll("path").forEach(p => p.style.strokeDashoffset = "0");
+        io.disconnect();
+      }
+    }, { threshold: .4 });
+    io.observe(box);
+  }
+
+  /* station points + hover */
+  const tip = el("div", { class: "tip" }, box);
+  const pts = [];
+  for (const [run, color, name] of [[DATA.ideal, cIdeal, "ideal"], [DATA.real, cReal, "real"]])
+    for (const [lbl, p] of Object.entries(run.points)) pts.push({ lbl, p, color, name, run });
+  for (const q of pts) {
+    el("circle", { cx: X(q.p[0]), cy: Y(q.p[1]), r: 4, fill: q.color, stroke: css("--surface"), "stroke-width": 2 }, svg);
+    if (q.name === "real")
+      el("text", { x: X(q.p[0]) + 8, y: Y(q.p[1]) + 4, "font-size": 11.5, fill: css("--ink"), "font-weight": 700 }, svg)
+        .textContent = q.lbl;
+  }
+  const hit = el("rect", { x: 0, y: 0, width: W, height: H, fill: "transparent" }, svg);
+  hit.addEventListener("mousemove", e => {
+    const bb = svg.getBoundingClientRect();
+    const px = (e.clientX - bb.left) / bb.width * W, py = (e.clientY - bb.top) / bb.height * H;
+    let best = null, bd = 400;
+    for (const q of pts) { const d = (X(q.p[0]) - px) ** 2 + (Y(q.p[1]) - py) ** 2; if (d < bd) { bd = d; best = q; } }
+    if (!best) { tip.style.display = "none"; return; }
+    const st = best.lbl === "0" ? { Tt: DATA.design.T0, pt: DATA.design.p0 }
+      : best.lbl === "9" ? { Tt: best.run.T9, pt: DATA.design.p0 } : best.run.stations[best.lbl];
+    tip.innerHTML = `<div class="row"><span class="dot" style="background:${best.color}"></span><b>station ${best.lbl}</b> (${best.name})</div>` +
+      `T = <b>${fmt(best.p[1], 4)} K</b> · s−s₀ = <b>${fmt(best.p[0], 3)}</b> J/(kg·K)` +
+      (best.lbl === "0" || best.lbl === "9" ? `<br>static point (p = p₀)` : `<br>pt = <b>${fmt(st.pt / 1000, 4)} kPa</b>`);
+    tip.style.display = "block";
+    const bw = box.getBoundingClientRect().width;
+    tip.style.left = Math.min(px / W * bw + 14, bw - tip.offsetWidth - 8) + "px";
+    tip.style.top = Math.max(4, py / H * box.getBoundingClientRect().height - 40) + "px";
+  });
+  hit.addEventListener("mouseleave", () => tip.style.display = "none");
+}
+legend("ts-legend", [{ name: "ideal (isentropic legs)", color: css("--s-blue"), dash: 1 }, { name: "real (legs tilt right)", color: css("--s-red") }]);
+buildTS();
+rebuilders.push(() => { buildTS(); legend("ts-legend", [{ name: "ideal (isentropic legs)", color: css("--s-blue"), dash: 1 }, { name: "real (legs tilt right)", color: css("--s-red") }]); });
+tableTwin("ts-table", "cycle points (s, T)", ["station", "s ideal", "T ideal [K]", "s real", "T real [K]"],
+  Object.keys(DATA.ideal.points).map(k => [k, fmt(DATA.ideal.points[k][0], 4), fmt(DATA.ideal.points[k][1], 4),
+    fmt(DATA.real.points[k][0], 4), fmt(DATA.real.points[k][1], 4)]));
+
+/* station table */
+(function stationTable() {
+  const t = document.getElementById("station-table");
+  const order = ["0", "2", "3", "4", "5", "9"];
+  const lbl = { "0": "freestream", "2": "after inlet", "3": "after compressor", "4": "after burner", "5": "after turbine", "9": "nozzle exit" };
+  t.innerHTML = `<tr><th>station</th><th></th><th>Tt ideal [K]</th><th>Tt real [K]</th><th>pt ideal [kPa]</th><th>pt real [kPa]</th><th>far</th></tr>` +
+    order.map(k => {
+      const i = DATA.ideal.stations[k], r = DATA.real.stations[k];
+      return `<tr><td><b>${k}</b></td><td class="lbl">${lbl[k]}</td><td>${fmt(i.Tt, 4)}</td><td>${fmt(r.Tt, 4)}</td>
+        <td>${fmt(i.pt / 1000, 4)}</td><td>${fmt(r.pt / 1000, 4)}</td><td>${r.far ? r.far.toFixed(4) : "0"}</td></tr>`;
+    }).join("");
+})();
+
+/* ============================================================ bell charts */
+function buildBell() {
+  const rows = DATA.bell;
+  const sers = [
+    { name: "thermal (equilibrium O)", color: css("--s-blue"), data: rows.map(r => [r.phi, r.ei]), labelAt: "max", labelDy: -8 },
+    { name: "+ super-eq O (rung 19)", color: css("--s-violet"), data: rows.map(r => [r.phi, r.ei_lift]), dash: "6 4", labelAt: "none" },
+    { name: "prompt (De Soete)", color: css("--s-yellow"), data: rows.map(r => [r.phi, r.ei_prompt]).filter(d => d[1] > 0), labelAt: "end", labelDy: -8, labelAnchor: "end" },
+  ];
+  legend("bell-legend", sers);
+  lineChart(document.getElementById("bell-chart"), {
+    series: sers, xLabel: "primary equivalence ratio φp", xTipLabel: "φp",
+    yLabel: "EI_NO  [g NO / kg fuel]", yScale: "log", yMin: 1e-8, yMax: 80, yUnit: "g/kg",
+    height: 360,
+    bands: [{ y0: 18, y1: 64, label: "ICAO take-off band" }],
+    vlines: [{ x: 1.0, label: "stoich", labelPos: "bottom" }],
+    aria: "Emission index of NO versus primary equivalence ratio, log scale, showing a bell peaked near stoichiometric",
+  });
+  tableTwin("bell-table", "EI_NO vs φp", ["φp", "T_primary [K]", "EI thermal", "EI +super-eq O", "EI prompt", "m(T)"],
+    rows.map(r => [r.phi, fmt(r.T_p, 4), fmt(r.ei), fmt(r.ei_lift), fmt(r.ei_prompt), fmt(r.m, 3)]));
+
+  lineChart(document.getElementById("aft-chart"), {
+    series: [{ name: "AFT", color: css("--s-red"), data: rows.map(r => [r.phi, r.T_p]), labelAt: "none" }],
+    xLabel: "φp", yLabel: "primary flame T  [K]", height: 280, yUnit: "K",
+    vlines: [{ x: 1.05, label: "rollover" }],
+    aria: "Adiabatic flame temperature versus primary equivalence ratio, peaking slightly rich of stoichiometric",
+  });
+  tableTwin("aft-table", "AFT vs φp", ["φp", "T_primary [K]", "x_CO", "x_H2"],
+    rows.map(r => [r.phi, fmt(r.T_p, 4), fmt(r.xco), fmt(r.xh2)]));
+}
+buildBell();
+rebuilders.push(buildBell);
+
+/* ============================================================ quench charts */
+function buildQuench() {
+  const q = DATA.quench;
+  const sers = [
+    { name: `rich φp=${q.rich.phi} — rises through stoich`, color: css("--s-red"),
+      data: q.rich.rows.map(r => [r.beta, r.T]), labelAt: "none" },
+    { name: `lean φp=${q.lean.phi} — just cools`, color: css("--s-blue"),
+      data: q.lean.rows.map(r => [r.beta, r.T]), labelAt: "none" },
+  ];
+  legend("quenchT-legend", sers);
+  const ch = lineChart(document.getElementById("quenchT-chart"), {
+    series: sers, xLabel: "dilution fraction β", xTipLabel: "β",
+    yLabel: "local T  [K]", height: 280, yUnit: "K",
+    aria: "Temperature along the quench path: the rich primary heats through a peak before cooling; the lean primary cools monotonically",
+  });
+  /* animated mixing-pocket marker on the rich path */
+  if (!REDUCED) {
+    const dot = el("circle", { r: 5, fill: css("--s-red"), stroke: css("--surface"), "stroke-width": 2 }, ch.svg);
+    const rich = q.rich.rows;
+    let t0 = null;
+    (function anim(ts) {
+      if (!document.body.contains(dot)) return;
+      if (!t0) t0 = ts;
+      const u = ((ts - t0) % 5200) / 5200;
+      const idx = Math.min(rich.length - 1, u * (rich.length - 1));
+      const i = Math.floor(idx), fr = idx - i;
+      const r0 = rich[i], r1 = rich[Math.min(i + 1, rich.length - 1)];
+      const b = r0.beta + (r1.beta - r0.beta) * fr, T = r0.T + (r1.T - r0.T) * fr;
+      dot.setAttribute("cx", ch.X(b)); dot.setAttribute("cy", ch.Y(T));
+      requestAnimationFrame(anim);
+    })(0);
+  }
+  tableTwin("quenchT-table", "T(β) along the quench", ["β", "T rich [K]", "T lean [K]", "NO_eq rich [ppm]"],
+    q.rich.rows.filter((_, i) => i % 8 === 0).map((r, i) => {
+      const l = q.lean.rows[Math.min(i * 8, q.lean.rows.length - 1)];
+      return [r.beta.toFixed(2), fmt(r.T, 4), fmt(l.T, 4), fmt(r.xnoe_ppm, 3)];
+    }));
+
+  const ts = DATA.quench.tau_sweep;
+  const s2 = [{ name: "EI_NO after finite quench", color: css("--s-red"), marker: true,
+    data: ts.map(r => [r.tau_q_ms, r.ei]), labelAt: "none" }];
+  legend("tauq-legend", [...s2, { name: `ideal quench floor (${fmtExp(DATA.quench.ideal_ei)})`, color: css("--accent") }]);
+  lineChart(document.getElementById("tauq-chart"), {
+    series: s2, xLabel: "quench time τq  [ms]", xTipLabel: "τq [ms]",
+    yLabel: "EI_NO  [g/kg]", yScale: "log", yMin: 5e-3, yMax: 10, height: 300, yUnit: "g/kg",
+    hlines: [{ y: DATA.quench.ideal_ei, label: "ideal (instant) quench — NO frozen at the rich primary value" }],
+    aria: "Emission index of NO versus quench time on a log scale: slower quenches re-make orders of magnitude more NO than the ideal instantaneous quench",
+  });
+  tableTwin("tauq-table", "EI vs τq (φp=1.4)", ["τq [ms]", "EI_NO [g/kg]", "T_peak [K]"],
+    ts.map(r => [r.tau_q_ms, fmt(r.ei), fmt(r.T_peak, 4)]));
+}
+buildQuench();
+rebuilders.push(buildQuench);
+
+/* ============================================================ J-sweep */
+function buildJsweep() {
+  const js = DATA.jsweep;
+  const sers = [
+    { name: "rung 11 · mean-field bulk", color: css("--s-blue"), data: js.rows.map(r => [r.J, r.ei_bulk]), labelAt: "end", labelDy: 14, labelAnchor: "end" },
+    { name: "rung 12 · two-stream unmixedness", color: css("--s-yellow"), data: js.rows.map(r => [r.J, r.ei_unmixed]), labelAt: "end", labelDy: -8, labelAnchor: "end" },
+    { name: "rung 13 · resolved β-PDF", color: css("--s-violet"), data: js.rows.map(r => [r.J, r.ei_pdf]), marker: true, labelAt: "none" },
+  ];
+  legend("jsweep-legend", sers);
+  lineChart(document.getElementById("jsweep-chart"), {
+    series: sers, xScale: "log", yScale: "log",
+    xLabel: "jet momentum-flux ratio J", xTipLabel: "J",
+    yLabel: "EI_NO  [g/kg]", yMin: 5e-6, yMax: 8, height: 380, yUnit: "g/kg",
+    vlines: [{ x: js.J_opt, label: `J_opt = ${js.J_opt}  (C = C_opt ≈ ${fmt(js.C_opt, 2)})` }],
+    aria: "Emission index versus jet momentum ratio for three closures: the mean-field curve falls monotonically, the two-stream curve turns back up, and the beta-PDF curve has a deep notch at the optimum",
+  });
+  tableTwin("jsweep-table", "EI_NO vs J (φp=1.5)", ["J", "C=(S/H)√J", "τq [ms]", "bulk", "two-stream", "β-PDF"],
+    js.rows.map(r => [r.J, fmt(r.C, 3), fmt(r.tau_q_ms, 3), fmt(r.ei_bulk), fmt(r.ei_unmixed), fmt(r.ei_pdf)]));
+}
+buildJsweep();
+rebuilders.push(buildJsweep);
+
+/* ============================================================ rung-22 spatial collapse */
+const spatialState = { mode: "J" };
+function buildSpatial(animateFrom) {
+  const box = document.getElementById("spatial-chart");
+  box.innerHTML = "";
+  const sp = DATA.spatial;
+  const colors = [css("--s-blue"), css("--s-yellow"), css("--s-aqua")];
+  const sers = sp.curves.map((c, i) => ({
+    name: `S=${c.S} m, H=${c.H} m  (S/H=${fmt(c.S / c.H, 3)})`, color: colors[i], rows: c.rows,
+  }));
+  legend("spatial-legend", sers);
+  const W = 720, H = 360, m = { t: 18, r: 26, b: 46, l: 62 };
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img",
+    "aria-label": "Segregation versus J or the Holdeman group C: three geometry curves collapse onto one when plotted against C" }, box);
+  const allG = sers.flatMap(s => s.rows.map(r => r.g));
+  const gHi = Math.max(...allG) * 1.12;
+  const Y = scaleFactory("lin", 0, gHi, H - m.b, m.t);
+  const Jx = scaleFactory("log", 2, 400, m.l, W - m.r);
+  const allC = sers.flatMap(s => s.rows.map(r => r.C));
+  const Cx = scaleFactory("log", Math.min(...allC), Math.max(...allC), m.l, W - m.r);
+  const grid = css("--grid"), axis = css("--axis"), ink2 = css("--ink-2");
+  for (const t of niceTicks(0, gHi, 5)) {
+    el("line", { x1: m.l, x2: W - m.r, y1: Y(t), y2: Y(t), stroke: grid }, svg);
+    el("text", { x: m.l - 8, y: Y(t) + 4, "text-anchor": "end", "font-size": 12 }, svg).textContent = fmtTick(t);
+  }
+  el("line", { x1: m.l, x2: W - m.r, y1: H - m.b, y2: H - m.b, stroke: axis }, svg);
+  const xAxisG = el("g", {}, svg);
+  const yl = el("text", { x: 14, y: m.t + (H - m.t - m.b) / 2, "font-size": 12.5, fill: ink2,
+    transform: `rotate(-90 14 ${m.t + (H - m.t - m.b) / 2})`, "text-anchor": "middle" }, svg);
+  yl.textContent = "segregation g = Var[ξ] / (ξ̄(1−ξ̄))";
+  const xlab = el("text", { x: m.l + (W - m.l - m.r) / 2, y: H - 6, "text-anchor": "middle", "font-size": 12.5, fill: ink2 }, svg);
+  const vOpt = el("line", { y1: m.t, y2: H - m.b, stroke: css("--accent"), "stroke-dasharray": "1 4",
+    "stroke-linecap": "round", opacity: 0 }, svg);
+  const vOptText = el("text", { y: m.t + 12, "font-size": 10.5, fill: css("--accent-ink"), opacity: 0 }, svg);
+  vOptText.textContent = `C_opt = 1/(4k_p²) ≈ ${fmt(sp.C_opt, 3)} — an OUTPUT`;
+  const gmin = Math.min(...allG);
+  const minLine = el("line", { x1: m.l, x2: W - m.r, y1: Y(gmin), y2: Y(gmin), stroke: css("--accent"),
+    "stroke-dasharray": "1 4", "stroke-linecap": "round", opacity: .8 }, svg);
+  el("text", { x: m.l + 6, y: Y(gmin) + 15, "font-size": 10.5, fill: css("--accent-ink") }, svg)
+    .textContent = `g_min ≈ ${fmt(gmin, 3)} — geometry-independent`;
+  const paths = sers.map(s => el("path", { fill: "none", stroke: s.color, "stroke-width": 2,
+    "stroke-linejoin": "round" }, svg));
+  const markers = sers.map(s => s.rows.map(() => el("circle", { r: 2.6, fill: s.color, stroke: css("--surface"), "stroke-width": 1.5 }, svg)));
+
+  function xTicksFor(mode) {
+    xAxisG.innerHTML = "";
+    const ticks = mode === "J" ? [2, 5, 10, 20, 50, 100, 200, 400] : [0.5, 1, 2, 2.5, 5, 10, 20];
+    const sc = mode === "J" ? Jx : Cx;
+    for (const t of ticks) {
+      if (mode === "C" && (t < Math.min(...allC) || t > Math.max(...allC))) continue;
+      el("line", { x1: sc(t), x2: sc(t), y1: H - m.b, y2: H - m.b + 4, stroke: axis }, xAxisG);
+      el("text", { x: sc(t), y: H - m.b + 18, "text-anchor": "middle", "font-size": 12 }, xAxisG).textContent = t;
+    }
+  }
+  function render(u) { /* u: 0 = J positions, 1 = C positions */
+    sers.forEach((s, si) => {
+      const pts = s.rows.map(r => [Jx(r.J) + (Cx(r.C) - Jx(r.J)) * u, Y(r.g)]);
+      paths[si].setAttribute("d", pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(""));
+      pts.forEach((p, pi) => { markers[si][pi].setAttribute("cx", p[0]); markers[si][pi].setAttribute("cy", p[1]); });
+    });
+    vOpt.setAttribute("x1", Cx(sp.C_opt)); vOpt.setAttribute("x2", Cx(sp.C_opt));
+    vOpt.setAttribute("opacity", u * .95);
+    vOptText.setAttribute("x", Cx(sp.C_opt) + 6); vOptText.setAttribute("opacity", u);
+  }
+  const target = spatialState.mode === "J" ? 0 : 1;
+  xTicksFor(spatialState.mode);
+  xlab.textContent = spatialState.mode === "J"
+    ? "jet momentum-flux ratio J — the three geometries disagree"
+    : "Holdeman group C = (S/H)√J — they collapse";
+  if (animateFrom !== undefined && !REDUCED) {
+    const t0 = performance.now(), dur = 900, from = animateFrom;
+    (function step(ts) {
+      const u = Math.min(1, (ts - t0) / dur), e = u < .5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+      render(from + (target - from) * e);
+      if (u < 1) requestAnimationFrame(step);
+    })(t0);
+  } else render(target);
+
+  tableTwin("spatial-table", "g vs J per geometry",
+    ["J", ...sers.map(s => `C  (${s.name.split("  ")[0]})`), ...sers.map((s, i) => `g  curve ${i + 1}`)],
+    sp.curves[0].rows.map((r, i) => [r.J,
+      ...sp.curves.map(c => fmt(c.rows[i].C, 3)), ...sp.curves.map(c => fmt(c.rows[i].g, 3))]));
+}
+buildSpatial();
+rebuilders.push(() => buildSpatial());
+document.getElementById("spatial-J").addEventListener("click", e => {
+  if (spatialState.mode === "J") return;
+  spatialState.mode = "J";
+  document.getElementById("spatial-C").classList.remove("active"); e.target.classList.add("active");
+  buildSpatial(1);
+});
+document.getElementById("spatial-C").addEventListener("click", e => {
+  if (spatialState.mode === "C") return;
+  spatialState.mode = "C";
+  document.getElementById("spatial-J").classList.remove("active"); e.target.classList.add("active");
+  buildSpatial(0);
+});
+
+/* ============================================================ inversions */
+function buildInversions() {
+  lineChart(document.getElementById("m-chart"), {
+    series: [{ name: "m(T)", color: css("--s-violet"), data: DATA.m_of_T.map(r => [r.T, r.m]), labelAt: "none" }],
+    xLabel: "pool temperature T  [K]", xTipLabel: "T [K]", yLabel: "super-eq O multiplier m(T)",
+    height: 280, yMin: 1.0,
+    vlines: [{ x: 2448, label: "quench T_peak — where NO is made", anchor: "end" }],
+    aria: "The Westenberg super-equilibrium O multiplier decreases with temperature from about 1.5 to 1.1",
+  });
+  tableTwin("m-table", "m(T)", ["T [K]", "m(T)"], DATA.m_of_T.filter((_, i) => i % 2 === 0).map(r => [r.T, fmt(r.m, 4)]));
+
+  const rows = DATA.bell.filter(r => r.ei_prompt > 0 && r.ei > 0);
+  lineChart(document.getElementById("ratio-chart"), {
+    series: [{ name: "EI_prompt / EI_thermal", color: css("--s-yellow"),
+      data: rows.map(r => [r.phi, r.ei_prompt / r.ei]), labelAt: "none" }],
+    xLabel: "primary equivalence ratio φp", xTipLabel: "φp", yLabel: "prompt / thermal ratio",
+    yScale: "log", height: 280,
+    hlines: [{ y: 1, label: "equal" }],
+    aria: "Ratio of prompt to thermal NO emission index versus equivalence ratio, growing monotonically on the rich side",
+  });
+  tableTwin("ratio-table", "prompt vs thermal", ["φp", "EI thermal", "EI prompt", "ratio"],
+    rows.map(r => [r.phi, fmt(r.ei), fmt(r.ei_prompt), fmt(r.ei_prompt / r.ei)]));
+}
+buildInversions();
+rebuilders.push(buildInversions);
+
+/* ------- rung-17 ladder (horizontal log bars) ------- */
+function buildLadder() {
+  const fig = document.getElementById("ladder-fig");
+  if (!DATA.ladder) { fig.style.display = "none"; return; }
+  const box = document.getElementById("ladder-chart");
+  box.innerHTML = "";
+  const L = DATA.ladder;
+  const models = [
+    { key: "a_mixed", name: "mixed-out (rung 8) — the shortcut" },
+    { key: "a_bulk", name: "bulk quench (rung 11)" },
+    { key: "a_pocket", name: "per-pocket β-PDF (rung 16)" },
+  ];
+  const cEq = css("--s-blue"), cSup = css("--s-violet");
+  legend("ladder-legend", [{ name: "equilibrium O", color: cEq }, { name: "super-eq O (rung 20)", color: cSup }]);
+  const W = 720, rowH = 64, m = { t: 14, r: 30, b: 40, l: 250 };
+  const H = m.t + models.length * rowH + m.b;
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img",
+    "aria-label": "Dropped-clamp margin for three combustor models: mixed-out far below one, bulk quench and per-pocket well above one" }, box);
+  const vmax = Math.max(...models.flatMap(md => [L.eq_o[md.key], L.super_eq_o[md.key]]));
+  const X = scaleFactory("log", 0.005, vmax * 2.6, m.l, W - m.r);
+  for (const t of [0.01, 0.1, 1, 10]) {
+    el("line", { x1: X(t), x2: X(t), y1: m.t, y2: H - m.b, stroke: css("--grid") }, svg);
+    el("text", { x: X(t), y: H - m.b + 16, "text-anchor": "middle", "font-size": 12 }, svg).textContent = fmtTick(t);
+  }
+  el("line", { x1: X(1), x2: X(1), y1: m.t - 2, y2: H - m.b, stroke: css("--accent"), "stroke-width": 1.5, "stroke-dasharray": "1 4", "stroke-linecap": "round" }, svg);
+  el("text", { x: X(1), y: m.t - 3, "text-anchor": "middle", "font-size": 10.5, fill: css("--accent-ink") }, svg)
+    .textContent = "a = 1 — above this line the exhaust is super-equilibrium";
+  el("text", { x: m.l + (W - m.l - m.r) / 2, y: H - 6, "text-anchor": "middle", "font-size": 11.5, fill: css("--ink-2") }, svg)
+    .textContent = "clamp margin a = [NO] / [NO]eq(T₉)   (log)";
+  models.forEach((md, i) => {
+    const y0 = m.t + i * rowH;
+    el("text", { x: m.l - 12, y: y0 + rowH / 2 + 4, "text-anchor": "end", "font-size": 12, fill: css("--ink") }, svg)
+      .textContent = md.name;
+    [[L.eq_o[md.key], cEq, y0 + 10], [L.super_eq_o[md.key], cSup, y0 + 34]].forEach(([v, color, y]) => {
+      el("rect", { x: X(0.005), y, width: Math.max(2, X(Math.max(v, 0.005)) - X(0.005)), height: 18,
+        rx: 4, fill: color }, svg);
+      el("text", { x: X(Math.max(v, 0.005)) + 7, y: y + 13.5, "font-size": 11.5, fill: css("--ink"), "font-weight": 600 }, svg)
+        .textContent = fmt(v, 3);
+    });
+  });
+  tableTwin("ladder-table", "clamp margins a", ["model", "a (eq O)", "a (super-eq O)"],
+    models.map(md => [md.name, fmt(DATA.ladder.eq_o[md.key], 3), fmt(DATA.ladder.super_eq_o[md.key], 3)]));
+}
+buildLadder();
+rebuilders.push(buildLadder);
+
+/* ============================================================ rung ladder list */
+(function rungList() {
+  const RUNGS = [
+    ["1", "cycle", "The ideal Brayton cycle", "Frozen, calorically perfect, lossless — the closed-form baseline every later rung must reduce back to.", "SPEC.md"],
+    ["2", "cycle", "Real components", "Isentropic η_c/η_t, pressure losses π_d/π_b/π_n, η_b, η_m, dual cold/hot gas. Anchored to Mattingly Ex 7.1 — the legs tilt right.", "docs/rung2-spec.md"],
+    ["2b", "cycle", "Polytropic efficiencies", "e_c/e_t as a first-class knob beside the isentropic one; the η_c < e < η_t asymmetry from diverging isobars.", "docs/rung2b-polytropic.md"],
+    ["3", "cycle", "Thermally-perfect gas", "cp = cp(T) via NASA gas-table property functions; the compressor lands cooler, the burner needs less fuel.", "docs/rung3-variable-cp.md"],
+    ["4", "cycle", "Reacting products", "Hot composition tracks f via (CH₂)ₙ lean stoichiometry; the burner becomes an implicit f = g(f) solve.", "docs/rung4-reacting-products.md"],
+    ["5", "cycle", "Fork B — absolute enthalpies", "NASA a6 restored, so the heat release (LHV) is derived, not assumed. Provably ≡ rung 4 for complete combustion.", "docs/rung5-fork-b.md"],
+    ["6", "cycle", "Chemical equilibrium", "Dissociation (CO/H₂/OH/O/H), 5 reactions, Kp = exp(−ΔG°/RuT). The cycle barely moves; the flame-temperature diagnostic drops ~115 K into the real band.", "docs/rung6-spec.md"],
+    ["7", "diag", "Thermal NOx — Zeldovich", "A kinetically-limited trace diagnostic on the frozen equilibrium pool. Inverts rung 6: NO does not equilibrate — frozen at a few percent of it.", "docs/rung7-spec.md"],
+    ["8", "diag", "Combustor zoning", "A near-stoich primary → dilution. EI_NO lifts six orders from the mixed-out ~zero into the ICAO band — resolving where the chemistry runs.", "docs/rung8-spec.md"],
+    ["9", "diag", "Rich primary / RQL", "The primary allowed rich (φ_p ≤ 2): the NO bell peaks near stoich and collapses rich — why RQL combustors burn rich.", "docs/rung9-spec.md"],
+    ["10", "diag", "Finite-rate quench", "A τ_q knob resolves dilution in time: a rich primary heats through the stoich peak and re-makes NO. Low-NOx only if the quench is fast.", "docs/rung10-spec.md"],
+    ["11", "diag", "Physical jet mixing", "τ_q derived from the jet momentum-flux ratio J. EI_NO falls monotonically in J — mean-field mixing has no optimum.", "docs/rung11-spec.md"],
+    ["12", "diag", "Spatial unmixedness", "A bulk + under-mixed-core split, kinked in the Holdeman group C=(S/H)√J. EI_NO turns back up — the recovered Holdeman optimum at C_opt≈2.5.", "docs/rung12-spec.md"],
+    ["13", "diag", "Resolved mixing PDF", "A mean-preserving β-PDF of mixture fraction over the ideal bell. Composition variance pins the optimum's location; the over-penetration climb was rung 12's dwell.", "docs/rung13-spec.md"],
+    ["14", "diag", "Equilibrium-vs-frozen nozzle", "The thrust bracket: recombination on cooling buys exit velocity. Corollary — equilibrium NO collapses on cooling, so the exhaust is super-equilibrium (a≈250).", "docs/rung14-spec.md"],
+    ["15", "diag", "PDF through the quench", "Composition variance and dwell combined: the rung-13 ≈0 optimum floor becomes finite bulk NO; the far flank climbs again.", "docs/rung15-spec.md"],
+    ["16", "diag", "Per-pocket quench", "Each β-PDF pocket carried through its own cooling quench — the dwell goes sublinear and erodes rung 15's far flank. No global-minimum location is claimed.", "docs/rung16-spec.md"],
+    ["17", "diag", "Exhaust-NO clamp ladder", "Three mixing fidelities through the same nozzle collapse: mixed-out reads dormant (a≈0.02) where fuller models fire (a≈3–14). The shortcut is unconservative.", "docs/rung17-spec.md"],
+    ["18", "neg", "Transported variance — the negative result", "A genuine 0-D variance ODE with any mean-field rate gives monotone g(J): no optimum. The optimum needs the jet spacing S — the coverage stays an imposed spatial closure.", "docs/rung18-spec.md"],
+    ["19", "diag", "Super-eq O & prompt NO", "Both lifts of the equilibrium-O lower bound refute the 'rich primary explodes' intuition: super-eq O is T-driven (weakest rich); prompt survives where thermal dies.", "docs/rung19-spec.md"],
+    ["20", "diag", "Super-eq O through the quench", "The lift threaded into the re-making. It inverts again: the quench peaks where m(T) is minimal — modest ×1.17. The rung-17 margins rise; the denominator never moves.", "docs/rung20-spec.md"],
+    ["21", "diag", "Super-eq O through the PDF integrals", "The last eq-O seam discharged: the same m(T) through the ideal-bell integrals. EI-weighting onto the hot stoich peak makes the lift ≈×1.15 — shape-preserving.", "docs/rung21-spec.md"],
+    ["22", "neg", "Resolved spatial PDF — the inversion", "Resolve the dilution cross-plane and C_opt≈2.5 emerges as an output: g_min geometry-independent, J_opt shifting exactly as (H/S)², no C_opt knob anywhere.", "docs/rung22-spec.md"],
+  ];
+  const chipName = { cycle: "cycle", diag: "diagnostic", neg: "load-bearing result" };
+  const list = document.getElementById("rung-list");
+  for (const [num, kind, hook, body, spec] of RUNGS) {
+    const d = document.createElement("div");
+    d.className = "rung";
+    d.innerHTML = `<button aria-expanded="false">
+        <span class="num">${num}</span>
+        <span class="hook"><b>${hook}</b></span>
+        <span class="chip ${kind}">${chipName[kind]}</span>
+      </button>
+      <div class="body">${body}<span class="spec">${spec}</span></div>`;
+    d.querySelector("button").addEventListener("click", () => {
+      const open = d.classList.toggle("open");
+      d.querySelector("button").setAttribute("aria-expanded", open);
+    });
+    list.appendChild(d);
+  }
+})();
+</script>
