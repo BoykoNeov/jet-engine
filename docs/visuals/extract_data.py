@@ -5,7 +5,7 @@
 # Sweep grids are REDUCED vs the production defaults where noted -- these are
 # illustration curves (shape, not digits); the verification gates live in tests/.
 #
-#   python extract_data.py     (~5 min; the rung-17 ladder dominates)
+#   python extract_data.py     (~10 min; the rung-23 dwell sweep dominates, then the rung-17 ladder)
 #   python build.py            -> turbojet-visuals.html
 import sys, json, math, time
 from pathlib import Path
@@ -15,7 +15,8 @@ sys.path.insert(0, str(HERE.parents[1]))          # repo root -> import turbojet
 
 from turbojet.engine import FlightCondition, build_turbojet
 from turbojet.gas import (
-    Gas, JetMixing, Unmixedness, MixingPDF, PocketQuenchPDF, SpatialPDF, PromptNO,
+    Gas, JetMixing, Unmixedness, MixingPDF, PocketQuenchPDF, SpatialPDF,
+    SpatialDwellPDF, PromptNO,
     _super_eq_o_multiplier, _quench_trajectory, _equilibrium_composition,
     _F_STOICH, _HF_FUEL_DEFAULT, _bell_interpolator, _beta_pdf_nodes_weights,
     _ideal_bell_ei, _spatial_segregation, _two_stream_ceiling, _Ru,
@@ -235,6 +236,38 @@ try:
 except Exception as e:  # ladder is a nice-to-have; never sink the whole run
     mark(f"  ladder FAILED ({e!r}) -- omitting")
     OUT["ladder"] = None
+
+# --------------------------------------------------- 9. rung-23 dwell spectrum
+# Rung 22 derived the cross-plane WIDTH but imported rung-16's SCALAR dwell. Rung 23
+# develops that same cross-plane in TIME, so each pocket carries its OWN tau(xi) --
+# rich pockets are reached last, so they dwell longest. The MATCHED-MEAN twin (a scalar
+# <tau>_PDF: same g, same mean dwell) isolates ONLY the xi-tau correlation, so
+# corr_ratio = term2_corr/term2_meanfield > 1 means the correlation ADDS NO.
+# Mirrors main.py print_dwell_spectrum_table, EXCEPT n_quad: main.py's 56 nodes trip the
+# beta-PDF mean-preservation assert at J=36 (main.py's own grid steps 16 -> 64, over it).
+# Not a J-monotone effect -- g is NOT monotone in J: it COLLAPSES to g_min at C_opt (J=16,
+# rung 22's headline) and climbs back out, and the quadrature is hardest to converge on that
+# climb. 120 nodes hold every J here under 0.5% mean drift (56 -> ~0.5% and two ASSERTs).
+# One rule for ALL points on purpose: the correlation signal is only ~5%, so switching
+# quadrature between points would inject scatter comparable to the effect being plotted.
+# ~60 s per point: n_quad barely moves the cost (56 -> 120 was ~free), because the pockets that
+# dominate the bill are the few hot ones -- the cold/lean nodes leave the quench almost at once.
+mark("rung-23 derived dwell spectrum (correlated vs matched-mean twin)")
+dwell_cfg = SpatialDwellPDF(S=0.0625, ny=32, nz=32, nt=24, n_bell=40, n_quad=120)
+dwell_rows = []
+for J in (4.0, 9.0, 16.0, 36.0, 64.0, 144.0, 400.0):
+    m = JetMixing(J=J, C_e=0.20, U_c=75.0, H=0.10)
+    z = eq.zoned_nox(far, Tt3, Tt4, p, 1.5, tau=TAU, mixing=m,
+                     spatial_dwell=dwell_cfg, quench_ngrid=24)
+    dwell_rows.append(dict(
+        J=J, C=r(dwell_cfg.C(m)), g=r(z.g_spatial_dwell),
+        tau_mix_ms=r(m.tau_q * 1e3), tau_mean_ms=r(z.tau_mean_dwell * 1e3),
+        ei_corr=r(z.ei_no_spatial_dwell), ei_mean=r(z.ei_no_spatial_dwell_meanfield),
+        corr=r(z.corr_ratio), max_a=r(z.max_a_quench)))
+    mark(f"  J={J:.0f}  C={dwell_cfg.C(m):.2f}  corr/mean={z.corr_ratio:.4f}  "
+         f"max_a={z.max_a_quench:.3f}")
+OUT["dwell"] = dict(S=dwell_cfg.S, k_p=dwell_cfg.k_p,
+                    C_opt=1.0 / (4.0 * dwell_cfg.k_p ** 2), rows=dwell_rows)
 
 with open(HERE / "data.json", "w") as fh:
     json.dump(OUT, fh)
