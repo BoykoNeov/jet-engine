@@ -1271,7 +1271,7 @@ def _pdf_mean_ei(far_overall: float, Tt3: float, p: float, hf_fuel: float, tau: 
 def _pocket_quench_mean_ei(far_overall: float, Tt3: float, p: float, hf_fuel: float, tau_ref: float,
                            tau_core: float, g_seg: float, n_bell: int = 120, n_quad: int = 160,
                            quench_ngrid: int = 240, quench_nsteps: int = 2000,
-                           super_eq_o: bool = False):
+                           super_eq_o: bool = False, tau_of_xi=None):
     """⟨EI_pocket_quench(ξ; τ_core)⟩ over a mean-preserving β-PDF — the rung-16 PER-POCKET
     PDF-through-quench closure (docs/rung16-spec.md). The rung-16 upgrade of `_pdf_mean_ei`:
     where rung 15 integrates the CONSTANT-T ideal bell and multiplies by a scalar dwell factor
@@ -1288,6 +1288,13 @@ def _pocket_quench_mean_ei(far_overall: float, Tt3: float, p: float, hf_fuel: fl
         scope, IDENTICAL to rung-15's `_pdf_mean_ei`): a lean pocket only gets leaner on dilution,
         never re-crosses stoich, so it has NO finite quench. Keeping this branch bit-identical to
         rung 15 is what makes the reduce (pocket_quench→rung 15) and the φ>2 tail treatment exact.
+
+    RUNG 23 — `tau_of_xi` (a callable) replaces the SCALAR `tau_core` with a PER-POCKET dwell τ(ξ)
+    from the resolved cross-plane developed in time (`_spatial_dwell_field`): each rich pocket
+    quenches at its OWN derived dwell instead of one shared value. `tau_of_xi=None` (the default) is
+    the EXACT rung-16 scalar path (byte-identical). The whole point is the ξ–τ CORRELATION — rich
+    pockets are late-arriving ⇒ they dwell longer; the matched-mean reference (rung 23 passes a
+    CONSTANT `tau_of_xi` ≡ ⟨τ⟩_PDF) isolates that correlation as the certified new physics.
 
     Values are built on a fixed ξ-grid over the burnable window [0, ξ(φ=2)] and interpolated against
     the regime-aware β-PDF quadrature (`_beta_pdf_nodes_weights`); the φ>2 tail is 0 (rung-15 scope).
@@ -1314,7 +1321,8 @@ def _pocket_quench_mean_ei(far_overall: float, Tt3: float, p: float, hf_fuel: fl
         # so every EI in the β-PDF integral carries the same closure (no half-eq-O hybrid).
         m0 = _super_eq_o_multiplier(max(T_p, _SUPER_EQ_T_FLOOR)) if super_eq_o else 1.0
         n0 = alpha * _thermal_no(comp, T_p, p, tau_ref, far_local, o_multiplier=m0).x_no * sum(comp.values())
-        q = _quench_no(comp, T_p, alpha, far_overall, Tt3, p, n0, tau_core,
+        tau_pocket = tau_of_xi(xi) if tau_of_xi is not None else tau_core   # rung 23: per-pocket dwell
+        q = _quench_no(comp, T_p, alpha, far_overall, Tt3, p, n0, tau_pocket,
                        nsteps=quench_nsteps, ngrid=quench_ngrid, super_eq_o=super_eq_o)
         vals.append(q["ei"])
         max_a = max(max_a, q["max_a"])
@@ -1478,6 +1486,152 @@ def _spatial_segregation(far_overall: float, phi_primary: float, S: float, H: fl
     )
     var = max(meansq - mean * mean, 0.0)
     return var / (xibar * (1.0 - xibar))
+
+
+def _spatial_dwell_field(far_overall: float, phi_primary: float, S: float, H: float, J: float,
+                         tau_mix: float, k_p: float = 0.316, k_y: float = 0.28, k_z: float = 0.28,
+                         ny: int = 40, nz: int = 40, nt: int = 32):
+    """Rung-23 DERIVED DWELL SPECTRUM — the rung-22 resolved cross-plane DEVELOPED IN TIME, so each
+    pocket carries its OWN dwell τ(ξ) correlated with its terminal richness ξ (docs/rung23-spec.md).
+
+    Rung 22 resolved the y-z cross-plane and DERIVED the β-PDF WIDTH g(C) (`_spatial_segregation`),
+    but fed it through the per-pocket quench with the IMPORTED rung-16 KINKED scalar dwell
+    τ_core(C)=τ_res·(1+b_u·|ln(C/C_opt)|) — which BAKES C_opt in (rung 22's own honest concession:
+    the 'width AND dwell' seam is only PARTIALLY closed; docs/rung22-spec.md § deferred). Rung 23
+    closes the other half: the SAME cross-plane, watched as it MIXES OUT over the mixing time τ_mix,
+    yields the dwell of each pocket from FIRST PRINCIPLES — no C_opt, no τ_res, no b_u.
+
+    THE ONE GENUINELY NEW QUANTITY — the ξ–τ CORRELATION. The rich pockets are the LATE-ARRIVING
+    ones (the jet reaches them last), so dwell is CORRELATED with composition. Rung 16's scalar τ_core
+    is ONE dwell for ALL pockets (zero correlation, by construction). This is the physics rung 16
+    structurally cannot express, and its EFFECT on NO is a COMPUTATION, not an intuition: a longer
+    dwell means more time crossing stoich (more NO), but the correlated pocket is also richer, further
+    from stoich, cooling faster (rung-16's erosion, LESS NO) — the matched-mean experiment isolates it.
+
+    Time development (standard turbulent-mixing laws, EXPONENTS not fitted constants; both terminate
+    at τ_mix so the t=τ_mix field IS rung-22's exactly — the reduce/consistency anchor):
+      • σ(t) = σ_final·√(t/τ_mix)      turbulent diffusion (σ²∝D_t·t) — the fixed mixing length grown in
+      • δ(t) = δ_final·(t/τ_mix)^(1/3) jet-in-crossflow trajectory (y∝x^(1/3)) — penetration deepens in
+    Air delivered so far scales as (t/τ_mix); the air-scale s* is root-found ONCE at the terminal so
+    ⟨ξ⟩=ξ̄ exactly (the rung-22 mean-preserving contract), then reused along the development.
+
+    The per-cell dwell is the ARRIVAL-TIME DEFICIT τ_cell = ∫₀^τ_mix (1 − β(t)/β_final) dt — how long
+    the pocket lingers UN-diluted before the air reaches it (β = local air fraction, β_final its
+    terminal value). τ_cell ∈ [0, τ_mix]; a late-arriving (rich) cell has β(t)/β_final small for long
+    ⇒ a LARGE τ_cell. The ABSOLUTE scale τ_mix = H/(C_e·√J·U_c) is rung-11's derived quench time — so
+    ⟨τ⟩ ∝ 1/√J (monotone), and rung 23 DERIVES the correlation SHAPE, NOT the absolute magnitude/trend
+    (which rides on rung-11's un-anchored C_e/U_c — as rung-22's C_opt≈2.5 rides on k_p; the honest
+    concession). A locally-resolved mixing time (not one global τ_mix) is the thinner deferred ceiling.
+
+    Returns (g_spatial, tau_of_xi): g_spatial reproduces `_spatial_segregation` (the reduce), and
+    tau_of_xi is a monotone-binned interpolator τ(ξ) (idiomatic like `_bell_interpolator`) fed to the
+    per-pocket quench. A cartoon of ONE cross-plane developed under ONE global τ_mix — NOT a
+    transported-PDF/CFD solve with a locally-resolved mixing time; that stays the deferred ceiling."""
+    xibar = far_overall / (1.0 + far_overall)
+    far_p = phi_primary * _F_STOICH
+    xi_p = far_p / (1.0 + far_p)
+    assert xi_p > xibar, (
+        f"spatial dwell field needs a RICH primary (φ_p={phi_primary}, ξ_p={xi_p:.4f}) richer than the "
+        f"overall mean (ξ̄={xibar:.4f}) — the RQL geometry (the jet dilutes DOWN to the mean)."
+    )
+    assert tau_mix > 0.0, f"tau_mix={tau_mix} must be positive (the rung-11 mixing time H/(C_e√J·U_c))"
+    delta_f = k_p * math.sqrt(S * H) * J ** 0.25
+    sig_y_f, sig_z_f = k_y * H, k_z * S
+    beta_bar_full = (xi_p - xibar) / xi_p                 # terminal air fraction that pins ⟨ξ⟩=ξ̄
+    ys = [(i + 0.5) * H / ny for i in range(ny)]
+    zs = [(j + 0.5) * S / nz for j in range(nz)]
+
+    def _plume(frac):
+        """Unit-spatial-mean plume factors (ayh, azh) at fractional time t/τ_mix (σ, δ time-developed)."""
+        delta = delta_f * frac ** (1.0 / 3.0)
+        sig_y, sig_z = sig_y_f * math.sqrt(frac), sig_z_f * math.sqrt(frac)
+        ay = [sum(math.exp(-((y - c) ** 2) / (2.0 * sig_y * sig_y))
+                  for c in (-delta, delta, 2.0 * H - delta, 2.0 * H + delta))   # both-wall images
+              for y in ys]
+        az = [sum(math.exp(-((z - S / 2.0 - m * S) ** 2) / (2.0 * sig_z * sig_z))
+                  for m in (-1, 0, 1)) for z in zs]                             # spanwise periodic
+        may, maz = sum(ay) / ny, sum(az) / nz
+        return [a / may for a in ay], [a / maz for a in az]
+
+    ayh_f, azh_f = _plume(1.0)                            # the TERMINAL plume (== rung 22)
+
+    def _mean_terminal(s):
+        sxi = 0.0
+        for a in ayh_f:
+            sa = s * beta_bar_full * a
+            for b in azh_f:
+                sxi += xi_p * (1.0 - min(1.0, max(0.0, sa * b)))
+        return sxi / (ny * nz)
+
+    lo, hi = 0.0, 50.0                                    # root-find s* so the TERMINAL mean = ξ̄ (rung 22)
+    for _ in range(60):
+        s = 0.5 * (lo + hi)
+        if _mean_terminal(s) > xibar:
+            lo = s
+        else:
+            hi = s
+    s_star = 0.5 * (lo + hi)
+
+    # terminal β field (per cell) + terminal-field variance g_spatial (must match _spatial_segregation)
+    beta_fin = [[min(1.0, max(0.0, s_star * beta_bar_full * a * b)) for b in azh_f] for a in ayh_f]
+    sxi = sxi2 = 0.0
+    for i in range(ny):
+        for j in range(nz):
+            xi = xi_p * (1.0 - beta_fin[i][j])
+            sxi += xi
+            sxi2 += xi * xi
+    mean = sxi / (ny * nz)
+    assert abs(mean - xibar) <= 0.01 * xibar, (          # the rung-22 mean-preservation contract
+        f"spatial dwell field drifted the mean: ⟨ξ⟩={mean:.6f} vs ξ̄={xibar:.6f} (>1%) — the "
+        f"mean-preserving closure must integrate at ξ̄ (bisection s pinned near the ceiling?)."
+    )
+    g_spatial = max(sxi2 / (ny * nz) - mean * mean, 0.0) / (xibar * (1.0 - xibar))
+
+    # DWELL — integrate the arrival-time deficit τ_cell = ∫(1 − β(t)/β_final) dt over [0, τ_mix].
+    dt = tau_mix / nt
+    tau_cell = [[0.0] * nz for _ in range(ny)]
+    for k in range(nt):
+        frac = (k + 0.5) / nt
+        ayh, azh = _plume(frac)
+        bb = beta_bar_full * frac                         # air delivered so far grows with t
+        for i in range(ny):
+            sa = s_star * bb * ayh[i]
+            for j in range(nz):
+                beta_t = min(1.0, max(0.0, sa * azh[j]))
+                bf = beta_fin[i][j]
+                ratio = (beta_t / bf) if bf > 1e-12 else 1.0
+                tau_cell[i][j] += (1.0 - min(1.0, max(0.0, ratio))) * dt
+
+    # bin the (ξ_terminal, τ) cloud → a monotone interpolator τ(ξ) (flat-extrapolated at both ends)
+    cells = [(xi_p * (1.0 - beta_fin[i][j]), tau_cell[i][j]) for i in range(ny) for j in range(nz)]
+    xs = [c[0] for c in cells]
+    xlo, xhi = min(xs), max(xs)
+    span = max(xhi - xlo, 1e-12)
+    nb = max(8, ny // 2)
+    sums, cnts = [0.0] * nb, [0] * nb
+    for x, t in cells:
+        b = min(nb - 1, int((x - xlo) / span * nb))
+        sums[b] += t
+        cnts[b] += 1
+    centers = [xlo + (b + 0.5) / nb * span for b in range(nb) if cnts[b] > 0]
+    taus = [sums[b] / cnts[b] for b in range(nb) if cnts[b] > 0]
+
+    def tau_of_xi(xi: float) -> float:
+        if xi <= centers[0]:
+            return taus[0]
+        if xi >= centers[-1]:
+            return taus[-1]
+        klo, khi = 0, len(centers) - 1
+        while khi - klo > 1:
+            mid = (klo + khi) // 2
+            if centers[mid] <= xi:
+                klo = mid
+            else:
+                khi = mid
+        w = (xi - centers[klo]) / (centers[khi] - centers[klo])
+        return taus[klo] + w * (taus[khi] - taus[klo])
+
+    return g_spatial, tau_of_xi
 
 
 # --------------------------------------------------------------------------- #
@@ -2096,6 +2250,85 @@ class SpatialPDF:
 
 
 @dataclass
+class SpatialDwellPDF:
+    """Rung-23 DERIVED DWELL SPECTRUM — the PARTIAL closure rung 22 named, completed on the OTHER half.
+    Rung 22 (`SpatialPDF`) resolved the cross-plane and DERIVED the β-PDF WIDTH g(C), but fed it through
+    the per-pocket quench with the IMPORTED rung-16 kinked SCALAR dwell τ_core(C)=τ_res·(1+b_u·|ln(C/
+    C_opt)|) — which BAKES C_opt in (rung 22's own honest concession: 'width AND dwell', only the width
+    done). Rung 23 develops the SAME cross-plane in TIME (`_spatial_dwell_field`) and reads each pocket's
+    dwell τ(ξ) from first principles — NO C_opt, NO τ_res, NO b_u; the absolute scale is rung-11's OWN
+    τ_mix=mixing.tau_q. So SpatialDwellPDF adds NO new dwell knob: geometry from rung 22 (k_p/k_y/k_z),
+    time from rung 11 (τ_mix). Rides ON a `JetMixing`, ≤1-of-SEVEN mutually exclusive with the other six
+    closures (unmixedness/pdf/pdf_quench/pocket_quench/transported/spatial) — SEVEN closures of the SAME
+    variance physics. Like SpatialPDF, there is NO C_opt knob (C_opt()=1/(4k_p²) is a derived property).
+
+    THE ONE GENUINELY NEW QUANTITY — the ξ–τ CORRELATION. Rich pockets are the LATE-ARRIVING ones (the
+    jet reaches them last), so dwell CORRELATES with composition; rung-16's scalar τ_core is ONE dwell
+    for ALL pockets (zero correlation, by construction). This is the physics rung 16 structurally cannot
+    express, and its NO effect is a COMPUTATION (a longer dwell = more time crossing stoich = more NO;
+    but the correlated pocket is richer, further from stoich, cools faster = LESS NO — the two fight).
+
+    WHAT RUNG 23 CERTIFIES (docs/rung23-spec.md; tests/test_rung23.py):
+      • THE REDUCE — `spatial_dwell=None` ⇒ exact prior path; the terminal (t=τ_mix) field reproduces
+        rung-22's g_spatial (`_spatial_dwell_field` == `_spatial_segregation`), the consistency anchor.
+      • THE CORRELATION SIGN (the load-bearing positive) — the MATCHED-MEAN experiment (τ(ξ) spectrum vs
+        a scalar dwell = ⟨τ⟩_PDF, isolating ONLY the correlation) gives ei_no_spatial_dwell >
+        ei_no_spatial_dwell_meanfield: the correlation ADDS NO, ONE-SIGNED across τ_mix ×0.2–×5 (the
+        pockets stay formation-limited, max_a<1 — the Jensen concavity never wins), CONCENTRATED
+        under-penetration (~+5.8% at J=4 → ~+2.5% at C_opt → a ~+0.8% over-penetration floor; 32/24 grid).
+    WHAT STAYS HONEST (rung-18-flavored concessions, stated loudly):
+      • the correlation's absolute MAGNITUDE/off-optimum TREND rides on rung-11's un-anchored τ_mix
+        (∝1/√J) — only the SHAPE (sign + under-penetration concentration) is derived (as rung-22's
+        C_opt≈2.5 rides on k_p);
+      • the emissions C_opt pin is NOT recovered — the derived τ FALLS off-optimum (∝1/√J), it does NOT
+        grow like rung-16's kink, so the over-penetration flank is not lifted; but rung 16 ALREADY
+        declined the global-min LOCATION (its GATE 3), so this is not rung-23's discovery, just its
+        confirmation-from-first-principles. Whether the pin survives depends on whether the dwell GROWS
+        off-optimum (rung-16, imposed) or FALLS with the mixing time (rung-23, derived) — neither pinned;
+      • rung-16's τ_core and rung-23's ⟨τ⟩ diverge ~3×–70× and TREND OPPOSITE off-optimum, both
+        un-anchored — an HONEST split, not 'rung 16 is an artifact';
+      • ONE global τ_mix (a Gaussian-plume cartoon), NOT a locally-resolved mixing time — that (and the
+        full CFD-PDF shape, which would let rung 17 claim a firing MAGNITUDE) stays the deferred ceiling.
+
+    `spatial_dwell=None` is the exact prior path; a pure diagnostic (NO/N never enter _equil_solve), so
+    bit-for-bit rung 6. S/k_y/k_z order-of-magnitude; k_p sets C_opt=1/(4k_p²) (Holdeman ≈2.5)."""
+    S: float = 0.0625          # dilution-jet spacing, m (forms the Holdeman group with H and J)
+    k_p: float = 0.316         # penetration constant — SETS C_opt=1/(4k_p²) as an OUTPUT (no C_opt knob!)
+    k_y: float = 0.28          # streamwise (penetration) mixing length / duct height H (fixed, J-independent)
+    k_z: float = 0.28          # spanwise mixing length / spacing S (fixed, J-independent)
+    ny: int = 40               # cross-plane penetration (y) grid
+    nz: int = 40               # cross-plane span (z) grid
+    nt: int = 32               # time steps of the dwell integral (arrival-time deficit over [0, τ_mix])
+    n_bell: int = 120          # per-pocket ξ-grid points (each a full _quench_no — cost driver, rung 16)
+    n_quad: int = 160          # β-PDF quadrature nodes (rung 13)
+
+    def __post_init__(self):
+        for name, v in (("S", self.S), ("k_p", self.k_p), ("k_y", self.k_y), ("k_z", self.k_z)):
+            assert v > 0.0, f"SpatialDwellPDF.{name}={v} must be positive"
+        assert self.ny > 1 and self.nz > 1 and self.nt > 1 and self.n_bell > 1 and self.n_quad > 1, \
+            "SpatialDwellPDF grid sizes (ny, nz, nt, n_bell, n_quad) must be > 1"
+
+    def C(self, mixing: "JetMixing") -> float:
+        """The Holdeman momentum-flux/geometry group C=(S/H)√J (identical to SpatialPDF.C)."""
+        return (self.S / mixing.H) * math.sqrt(mixing.J)
+
+    def C_opt(self) -> float:
+        """The DERIVED uniformity optimum C_opt=1/(4·k_p²) (δ fills half-height). NOT a knob — the
+        rung-22 signature (contrast every rung-12..18 config's C_opt=2.5 field). k_p=0.316 ⇒ ≈2.5."""
+        return 1.0 / (4.0 * self.k_p * self.k_p)
+
+    def dwell_field(self, mixing: "JetMixing", far_overall: float, phi_primary: float):
+        """The resolved WIDTH g(C) AND the derived DWELL spectrum τ(ξ) (`_spatial_dwell_field`), the
+        cross-plane developed in time over rung-11's τ_mix=mixing.tau_q. Also returns the rung-18
+        two-stream ceiling (the cross-check bound). Returns (g_spatial, tau_of_xi, g_ceiling)."""
+        g_ceiling = _two_stream_ceiling(far_overall, phi_primary)
+        g_spatial, tau_of_xi = _spatial_dwell_field(
+            far_overall, phi_primary, self.S, mixing.H, mixing.J, mixing.tau_q,
+            k_p=self.k_p, k_y=self.k_y, k_z=self.k_z, ny=self.ny, nz=self.nz, nt=self.nt)
+        return g_spatial, tau_of_xi, g_ceiling
+
+
+@dataclass
 class PromptNO:
     """Rung-19 prompt-NO (Fenimore) config — De Soete's (1975) global-rate CORRECTION FACTOR
     reduced to its fitted, rich-peaking φ-shape (docs/rung19-spec.md). An IMPOSED trace channel
@@ -2244,6 +2477,18 @@ class ZonedNOxState:
     spatial: Optional["SpatialPDF"] = None  # the resolved cross-plane config used
     g_spatial: Optional[float] = None      # the resolved-field width g(C) (< g_ceiling; min AT C_opt, an OUTPUT)
     ei_no_spatial: Optional[float] = None  # ⟨EI⟩ over the β-PDF of the ideal bell at g_spatial
+    # RUNG 23 — the DERIVED DWELL spectrum through the per-pocket quench (the rung-16 analog of rung 22).
+    # The resolved cross-plane developed in TIME gives each pocket its OWN dwell τ(ξ) (rich = late = long),
+    # fed through the per-pocket quench. ei_no_spatial_dwell = term1 (ei_no_quenched floor) + term2
+    # (per-pocket quench with the CORRELATED τ(ξ)); the _meanfield twin uses a SCALAR ⟨τ⟩_PDF — the two
+    # differ ONLY by the ξ–τ correlation (the matched-mean isolation, the certified positive).
+    spatial_dwell: Optional["SpatialDwellPDF"] = None   # the derived-dwell config used
+    g_spatial_dwell: Optional[float] = None    # the resolved-field width (== g_spatial; the reduce anchor)
+    tau_mean_dwell: Optional[float] = None     # ⟨τ⟩_PDF — the β-PDF-mean dwell (the matched-mean scalar)
+    ei_no_spatial_dwell: Optional[float] = None            # term1 + term2(correlated τ(ξ))
+    ei_no_spatial_dwell_meanfield: Optional[float] = None  # term1 + term2(scalar ⟨τ⟩) — the reference
+    ei_no_spatial_dwell_excess: Optional[float] = None     # term2 with the correlated τ(ξ) (rich-pocket sum)
+    corr_ratio: Optional[float] = None         # term2_correlated / term2_meanfield (>1 ⇒ correlation ADDS NO)
     # RUNG 19/20 — the two lower-bound-lifting channels (both off ⇒ bit-for-bit the prior rung).
     # super_eq_o lifts the [O] by m(T) inside the Zeldovich integrator; prompt ADDS the imposed De Soete
     # φ-bump `ei_no_prompt`. RUNG 19 lifted only the PRIMARY (folded into `primary.ei_no`/`x_no_mix`).
@@ -2723,6 +2968,7 @@ class Gas:
                   pocket_quench: Optional["PocketQuenchPDF"] = None,
                   transported: Optional["TransportedPDF"] = None,
                   spatial: Optional["SpatialPDF"] = None,
+                  spatial_dwell: Optional["SpatialDwellPDF"] = None,
                   super_eq_o: bool = False, prompt: Optional["PromptNO"] = None,
                   quench_ngrid: int = 240, quench_nsteps: int = 2000) -> "ZonedNOxState":
         """Two-zone (primary → dilution) thermal NOx (docs/rung8-spec.md). Runs the SAME
@@ -2874,12 +3120,18 @@ class Gas:
             "spatial (rung-22 resolved cross-plane PDF) REQUIRES a `mixing` config — it needs the jet's J "
             "and duct H for the penetration δ∝√(S·H)·J^(1/4) whose optimum DERIVES the Holdeman group."
         )
+        assert not (spatial_dwell is not None and mixing is None), (
+            "spatial_dwell (rung-23 DERIVED dwell spectrum) REQUIRES a `mixing` config — it needs the jet's "
+            "J and duct H for the penetration δ∝√(S·H)·J^(1/4) AND the derived τ_mix=H/(C_e√J·U_c) that "
+            "sets the dwell's absolute scale (the cross-plane developed over the rung-11 mixing time)."
+        )
         assert sum(x is not None for x in (unmixedness, pdf, pdf_quench, pocket_quench,
-                                           transported, spatial)) <= 1, (
+                                           transported, spatial, spatial_dwell)) <= 1, (
             "pass AT MOST ONE of unmixedness (rung-12 two-stream) / pdf (rung-13 β-PDF on the ideal bell) "
             "/ pdf_quench (rung-15 β-PDF THROUGH the quench, LINEARISED dwell) / pocket_quench (rung-16 "
-            "PER-POCKET quench) / transported (rung-18 transported variance) / spatial (rung-22 RESOLVED "
-            "cross-plane variance) — SIX closures of the SAME variance physics."
+            "PER-POCKET quench, SCALAR dwell) / transported (rung-18 transported variance) / spatial "
+            "(rung-22 RESOLVED cross-plane WIDTH) / spatial_dwell (rung-23 RESOLVED cross-plane width AND "
+            "DERIVED dwell τ(ξ)) — SEVEN closures of the SAME variance physics."
         )
         # RUNG 21 — the rung-20 forbid guard is DISCHARGED (docs/rung21-spec.md). super_eq_o now
         # threads the SAME Westenberg m(T) lift through the ideal-bell composition integrals too —
@@ -3050,6 +3302,54 @@ class Gas:
             state.ei_no_pocket_excess = excess
             state.ei_no_pocket_quench = q["ei"] + excess   # term1 (ei_no_quenched) + term2
             state.max_a_quench = max(state.max_a_quench, pocket_max_a)   # dormancy gate spans pockets
+            return state
+
+        if spatial_dwell is not None:
+            # RUNG 23 — the DERIVED DWELL SPECTRUM through the per-pocket quench (docs/rung23-spec.md).
+            # The rung-16 analog of rung 22: where rung 16 quenched every pocket at ONE scalar dwell
+            # τ_core(C) (the imported kink, baking C_opt in) and rung 22 derived only the WIDTH g(C),
+            # rung 23 develops the SAME resolved cross-plane in TIME (`_spatial_dwell_field`, over rung-11's
+            # τ_mix=mixing.tau_q) so each pocket carries its OWN dwell τ(ξ) — rich pockets arrive LATE ⇒
+            # dwell LONG. Additive, mirroring rung 16 (only term 2's dwell source changes):
+            #   term 1 = ei_no_quenched  (q["ei"], the rung-11 mean-field bulk floor — unchanged);
+            #   term 2 = ⟨EI_pocket_quench(ξ; τ(ξ))⟩_g  (each pocket at its DERIVED dwell τ(ξ)).
+            # THE CERTIFIED POSITIVE — the ξ–τ CORRELATION, isolated by a MATCHED-MEAN twin: the same
+            # integral with a SCALAR ⟨τ⟩_PDF (the β-PDF mean of τ(ξ)) removes the correlation, so the two
+            # differ ONLY by it. corr_ratio>1 ⇒ the correlation ADDS NO (rich pockets dwell long, re-make
+            # more) — ONE-SIGNED across τ_mix ×0.2–×5 (formation-limited, max_a<1), the physics rung-16's
+            # scalar cannot express. HONEST (rung-18-flavored): the absolute magnitude/off-optimum TREND
+            # rides on rung-11's un-anchored τ_mix (∝1/√J), so the derived τ FALLS off-optimum and does
+            # NOT lift the over-penetration flank (the emissions C_opt pin is not recovered — but rung 16
+            # already declined the global-min LOCATION, its GATE 3). A pure diagnostic: NO/N never enter
+            # _equil_solve, cycle bit-for-bit rung 6.
+            C = spatial_dwell.C(mixing)
+            g_seg, tau_of_xi, g_ceiling = spatial_dwell.dwell_field(mixing, far, phi_primary)
+            assert g_seg < g_ceiling + 1e-9, (
+                f"resolved-field g_spatial={g_seg:.4e} exceeded the two-stream ceiling g_ceiling="
+                f"{g_ceiling:.4e} — a partial-mix cross-plane must be LESS segregated than the two-δ extreme."
+            )
+            xibar = far / (1.0 + far)
+            nodes, wts = _beta_pdf_nodes_weights(xibar, g_seg, n_quad=spatial_dwell.n_quad)
+            tau_mean = sum(wi * tau_of_xi(x) for wi, x in zip(wts, nodes))    # ⟨τ⟩_PDF (matched-mean scalar)
+            excess_corr, a_corr = _pocket_quench_mean_ei(     # term 2 with the CORRELATED τ(ξ)
+                far, Tt3, p, hf_fuel, tau, 0.0, g_seg, tau_of_xi=tau_of_xi,
+                n_bell=spatial_dwell.n_bell, n_quad=spatial_dwell.n_quad,
+                quench_ngrid=quench_ngrid, quench_nsteps=quench_nsteps, super_eq_o=super_eq_o)
+            excess_mean, a_mean = _pocket_quench_mean_ei(     # term 2 with the SCALAR ⟨τ⟩ (correlation off)
+                far, Tt3, p, hf_fuel, tau, tau_mean, g_seg,
+                n_bell=spatial_dwell.n_bell, n_quad=spatial_dwell.n_quad,
+                quench_ngrid=quench_ngrid, quench_nsteps=quench_nsteps, super_eq_o=super_eq_o)
+            state.spatial_dwell = spatial_dwell
+            state.C_holdeman = C
+            state.g_ceiling = g_ceiling
+            state.g_spatial_dwell = g_seg
+            state.g_seg = g_seg
+            state.tau_mean_dwell = tau_mean
+            state.ei_no_spatial_dwell_excess = excess_corr
+            state.ei_no_spatial_dwell = q["ei"] + excess_corr             # term1 + correlated term2
+            state.ei_no_spatial_dwell_meanfield = q["ei"] + excess_mean   # term1 + matched-mean term2
+            state.corr_ratio = (excess_corr / excess_mean) if excess_mean > 1e-30 else float("nan")
+            state.max_a_quench = max(state.max_a_quench, a_corr, a_mean)   # dormancy spans both twins
             return state
 
         if transported is not None:

@@ -19,11 +19,11 @@ import matplotlib.pyplot as plt  # noqa: E402
 from turbojet.engine import FlightCondition, build_turbojet  # noqa: E402
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
-    PromptNO, _products_composition, _equilibrium_composition, _h_molar_A,
+    SpatialDwellPDF, PromptNO, _products_composition, _equilibrium_composition, _h_molar_A,
     _HF_FUEL_DEFAULT, _M_AIR, _M_CH2, _F_STOICH, _air_mole_fractions,
     _equilibrium_no_fraction, _primary_aft, _thermal_no, _super_eq_o_multiplier,
     _quench_trajectory, _quench_no, _bell_interpolator, _beta_pdf_nodes_weights, _ideal_bell_ei,
-    _two_stream_ceiling, _transport_variance, _pdf_mean_ei, _spatial_segregation,
+    _two_stream_ceiling, _transport_variance, _pdf_mean_ei, _spatial_segregation, _spatial_dwell_field,
 )
 
 TS_DIAGRAM_PATH = "ts_diagram.png"
@@ -1448,6 +1448,73 @@ def print_spatial_pdf_table(flight):
     print("  cross-plane (the full shape + the dwell spectrum + rung-17's firing MAGNITUDE) stays the ceiling.")
 
 
+def print_dwell_spectrum_table(flight):
+    """Rung-23 payoff: the DERIVED DWELL SPECTRUM — completing rung-22's partial closure.
+
+    Rung 22 derived the cross-plane WIDTH g(C) but fed it through the per-pocket quench with the IMPORTED
+    rung-16 KINKED scalar dwell (baking C_opt in). Rung 23 develops the SAME cross-plane in TIME (over
+    rung-11's τ_mix) so each pocket carries its OWN dwell τ(ξ) — rich pockets arrive LATE ⇒ dwell LONG.
+    The one genuinely new quantity is the ξ–τ CORRELATION (rung-16's scalar τ_core has zero correlation),
+    isolated by a MATCHED-MEAN twin (τ(ξ) spectrum vs a scalar ⟨τ⟩): corr_ratio>1 ⇒ the correlation ADDS
+    NO, one-signed while formation-limited (max_a<1), concentrated under-penetration. Honest: the absolute
+    magnitude/trend rides on the un-anchored τ_mix; the emissions C_opt pin is NOT recovered (the derived τ
+    FALLS off-optimum — but rung 16 already declined the global-min location). Pure diagnostic, rung 6.
+    """
+    eq = Gas.reacting_equilibrium()
+    real = build_turbojet(eq, PI_C, TT4, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+    st3, st4 = real.stations["3"], real.stations["4"]
+    far, Tt3, Tt4, p = st4.far, st3.Tt, st4.Tt, st4.pt
+    phi_p, tau = 1.5, 3e-3
+    ng, nb, nq = 24, 40, 56
+    cfg = SpatialDwellPDF(S=0.0625, ny=32, nz=32, nt=24, n_bell=nb, n_quad=nq)
+
+    print("\nDerived dwell spectrum (rung 23): completing rung-22's PARTIAL closure. Rung 22 derived the")
+    print("cross-plane WIDTH g(C) but imported rung-16's KINKED scalar dwell (which bakes C_opt in). Rung 23")
+    print("develops the SAME cross-plane in TIME (over rung-11's τ_mix) so each pocket carries its OWN dwell")
+    print("τ(ξ) — rich pockets arrive LATE ⇒ dwell LONG. NO C_opt, NO τ_res, NO b_u; the scale is rung-11's τ_mix.")
+
+    print("\n  (1) THE ξ–τ CORRELATION (the certified positive) — the MATCHED-MEAN twin isolates it: term2 with")
+    print("      the correlated τ(ξ) vs term2 with a scalar ⟨τ⟩_PDF (same g, same mean dwell). corr_ratio>1 ⇒")
+    print("      rich pockets dwell long ⇒ ADD NO. Concentrated under-penetration, fading toward C_opt:")
+    print(f"  {'J':>5} {'C':>6} {'g':>7} {'τ_mix(ms)':>10} {'⟨τ⟩(ms)':>9} {'ei_corr':>9} {'ei_mean':>9} "
+          f"{'corr/mean':>9} {'max_a':>6}")
+    print("  " + "-" * 84)
+    for J in (4, 9, 16, 64, 400):
+        st = eq.zoned_nox(far, Tt3, Tt4, p, phi_p, tau, mixing=JetMixing(J=float(J), C_e=0.20, U_c=75.0, H=0.10),
+                          spatial_dwell=cfg, quench_ngrid=ng)
+        C = (0.0625 / 0.10) * (J ** 0.5)
+        taumix = JetMixing(J=float(J), C_e=0.20, U_c=75.0, H=0.10).tau_q
+        note = "under-pen" if J < 16 else ("C_opt" if J == 16 else "over-pen")
+        print(f"  {J:5d} {C:6.2f} {st.g_spatial_dwell:7.4f} {taumix*1e3:10.3f} {st.tau_mean_dwell*1e3:9.4f} "
+              f"{st.ei_no_spatial_dwell:9.4f} {st.ei_no_spatial_dwell_meanfield:9.4f} "
+              f"{st.corr_ratio:9.4f} {st.max_a_quench:6.3f}  {note}")
+    print("  ⇒ corr/mean > 1 EVERYWHERE (the correlation adds NO), largest under-penetration; max_a<1 (formation-")
+    print("    limited, so the sign never flips). This is the physics rung-16's SCALAR τ_core cannot express.")
+
+    # (2) the divergence — rung-16 imposed τ_core GROWS off-optimum; rung-23 derived ⟨τ⟩ FALLS ∝1/√J.
+    print("\n  (2) THE DIVERGENCE (honest) — rung-16's imposed τ_core GROWS off-optimum (|ln(C/C_opt)|); the")
+    print("      derived ⟨τ⟩ FALLS ∝1/√J (rung-11 mixing time). ~3×–70× apart, opposite-trending, BOTH un-anchored:")
+    cfg16 = PocketQuenchPDF(S=0.0625)
+    print(f"  {'J':>5} {'C':>6} {'rung16 τ_core(ms)':>17} {'rung23 ⟨τ⟩(ms)':>15} {'ratio':>7}")
+    print("  " + "-" * 54)
+    for J in (4, 16, 64, 400):
+        m = JetMixing(J=float(J), C_e=0.20, U_c=75.0, H=0.10)
+        C = cfg16.C(m)
+        t16 = cfg16.core_dwell(C)
+        g_s, tau_of = _spatial_dwell_field(far, phi_p, cfg.S, m.H, m.J, m.tau_q,
+                                           k_p=cfg.k_p, k_y=cfg.k_y, k_z=cfg.k_z, ny=32, nz=32, nt=24)
+        xibar = far / (1.0 + far)
+        nodes, wts = _beta_pdf_nodes_weights(xibar, g_s, n_quad=nq)
+        t23 = sum(wi * tau_of(x) for wi, x in zip(wts, nodes))
+        print(f"  {J:5d} {C:6.2f} {t16*1e3:17.4f} {t23*1e3:15.4f} {t16/t23:7.1f}")
+
+    print("\n  HONEST SCOPE: rung 23 derives the correlation's SHAPE (sign + under-penetration concentration);")
+    print("  the absolute MAGNITUDE/TREND rides on rung-11's un-anchored τ_mix (as rung-22's C_opt≈2.5 rides on")
+    print("  k_p). The emissions C_opt pin is NOT recovered (the derived τ falls off-optimum) — but rung 16")
+    print("  ALREADY declined the global-min location. A LOCALLY-resolved mixing time (each cell its own rate)")
+    print("  — plus the full CFD-PDF shape, which would let rung 17 claim a firing MAGNITUDE — stays the ceiling.")
+
+
 def _j_opt_from(cfg):
     """The uniformity optimum J_opt where C=(S/H)√J_opt = C_opt (H=0.10, the JetMixing default)."""
     return (cfg.C_opt * JetMixing(J=1.0).H / cfg.S) ** 2
@@ -1606,6 +1673,8 @@ def main():
     print_ideal_bell_lift_table(FLIGHT)
 
     print_spatial_pdf_table(FLIGHT)
+
+    print_dwell_spectrum_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 
