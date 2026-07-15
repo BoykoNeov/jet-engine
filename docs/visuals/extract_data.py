@@ -259,10 +259,17 @@ for J in (4.0, 9.0, 16.0, 36.0, 64.0, 144.0, 400.0):
     m = JetMixing(J=J, C_e=0.20, U_c=75.0, H=0.10)
     z = eq.zoned_nox(far, Tt3, Tt4, p, 1.5, tau=TAU, mixing=m,
                      spatial_dwell=dwell_cfg, quench_ngrid=24)
+    # corr_ratio is the TERM-2 ratio (excess_corr/excess_mean): the shared term-1 bulk-quench
+    # floor sits in both totals and divides out. Emit the floor and both term-2 values too, so
+    # the page's table reconciles to the plotted ratio instead of to totals/totals.
+    t2_corr = z.ei_no_spatial_dwell_excess
+    floor = z.ei_no_spatial_dwell - t2_corr                  # == the term-1 quench floor
+    t2_mean = z.ei_no_spatial_dwell_meanfield - floor
     dwell_rows.append(dict(
         J=J, C=r(dwell_cfg.C(m)), g=r(z.g_spatial_dwell),
         tau_mix_ms=r(m.tau_q * 1e3), tau_mean_ms=r(z.tau_mean_dwell * 1e3),
         ei_corr=r(z.ei_no_spatial_dwell), ei_mean=r(z.ei_no_spatial_dwell_meanfield),
+        floor=r(floor), t2_corr=r(t2_corr), t2_mean=r(t2_mean),
         corr=r(z.corr_ratio), max_a=r(z.max_a_quench)))
     mark(f"  J={J:.0f}  C={dwell_cfg.C(m):.2f}  corr/mean={z.corr_ratio:.4f}  "
          f"max_a={z.max_a_quench:.3f}")

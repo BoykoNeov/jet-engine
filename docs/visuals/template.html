@@ -410,14 +410,16 @@ footer code { font-size: 12px; }
     <div class="fig-sub">Rung 22 derived the cross-plane's <i>width</i> but still quenched every
     pocket for the same scalar time. Develop that cross-plane in <b>time</b> and each pocket gets
     its own dwell τ(ξ): the dilution jet reaches the rich pockets last, so they linger longest.
-    Plotted is the correlated model divided by a <b>matched-mean twin</b> — same variance, same
-    <i>mean</i> dwell ⟨τ⟩, correlation removed — which isolates the correlation and nothing else.
-    It sits <b>above 1 everywhere</b>: rich-dwells-long makes NO that one shared τ structurally
-    cannot express. The effect is largest under-penetration (≈+5.6%), decays through
-    C<sub>opt</sub>, and then <b>flattens onto a residual ≈+1% plateau</b> rather than dying — the
-    correlation stops shrinking, it never goes away. Every pocket here stays formation-limited
-    (max a&lt;1), which is why the sign never flips. Read the plateau's shape, not its ripple: that
-    wiggle is finer than the quadrature's own ~0.5% resolution.</div>
+    To isolate that, the model is run against a <b>matched-mean twin</b> — same variance, same
+    <i>mean</i> dwell ⟨τ⟩, correlation removed. Both carry the same bulk-quench floor, which
+    divides out, so what is plotted is the ratio of <b>the NO the correlation re-makes</b> (term 2)
+    — the correlation and nothing else. It sits <b>above 1 everywhere</b>: rich-dwells-long makes
+    NO that one shared τ structurally cannot express. The effect is largest under-penetration
+    (≈+5.6% of the re-made NO), decays through C<sub>opt</sub>, and then <b>flattens onto a
+    residual ≈+1% plateau</b> rather than dying — the correlation stops shrinking, it never goes
+    away. Every pocket here stays formation-limited (max a&lt;1), which is why the sign never
+    flips. Read the plateau's shape, not its ripple: that wiggle is finer than these reduced
+    illustration grids resolve.</div>
     <div class="chart-box" id="dwell-chart"></div>
     <details class="tbl" id="dwell-table"></details>
   </div>
@@ -1260,26 +1262,36 @@ function buildDwell() {
      frame, but the ratio must never clip out of the top either. */
   const hi = Math.max(...dw.rows.map(r => r.corr));
   lineChart(document.getElementById("dwell-chart"), {
-    series: [{ name: "correlated / matched-mean", color: css("--s-red"), marker: true,
+    /* corr_ratio is the TERM-2 ratio: the shared bulk-quench floor divides out of both twins.
+       Label it as such — totals/totals is a different (smaller) number the table also lists. */
+    series: [{ name: "re-made NO: correlated / matched-mean", color: css("--s-red"), marker: true,
       data: dw.rows.map(r => [r.C, r.corr]), labelAt: "none" }],
     xScale: "log", xLabel: "Holdeman group C = (S/H)√J", xTipLabel: "C",
     /* default log ticks give just 1 and 10 across this decade — echo the rung-22 chart's
        hand-picked C ticks so C_opt=2.5 is readable off the axis, not only off its label. */
     xTicks: [1.5, 2, 2.5, 5, 10],
-    yLabel: "correlated NO / matched-mean NO", yMin: 0.99, yMax: hi + (hi - 1) * 0.25, height: 300,
+    /* keep this SHORT: it is rotated into the axis height, and a long label clips at both ends.
+       The full statement of the quantity lives in the fig-sub and the table header. */
+    yLabel: "re-made NO: corr ÷ matched-mean", yMin: 0.99, yMax: hi + (hi - 1) * 0.25, height: 320,
     hlines: [{ y: 1.0, label: "1.0 — a single scalar dwell (rung 16): no correlation, by construction" }],
     /* label runs RIGHT of the line: C_opt sits a third across, so an "end" anchor walks a long
        label off the plot and into the y-axis title. */
     vlines: [{ x: dw.C_opt, label: `C_opt ≈ ${fmt(dw.C_opt, 3)} (rung 22's g_min)` }],
     aria: "The ratio of correlated to matched-mean NO versus the Holdeman group: above one at every point, about 1.056 under-penetration, decaying to a residual plateau near 1.01 that persists to the highest jet momentum",
   });
-  tableTwin("dwell-table", "the ξ–τ correlation (φp=1.5)",
-    ["J", "C=(S/H)√J", "g", "τ_mix [ms]", "⟨τ⟩ [ms]", "EI corr", "EI matched-mean", "ratio", "max a"],
+  /* The plotted ratio is term2_corr/term2_mean, so the floor and both term-2 values are listed:
+     dividing the EI totals gives a DIFFERENT (smaller) number, and a reader who tries it should
+     be able to see why rather than catch the page in a contradiction. */
+  tableTwin("dwell-table", "the ξ–τ correlation (φp=1.5) — EI total = floor + re-made",
+    ["J", "C=(S/H)√J", "g", "τ_mix [ms]", "⟨τ⟩ [ms]", "quench floor (term 1)",
+      "re-made corr (term 2)", "re-made matched-mean", "plotted ratio (term 2)",
+      "EI total corr", "EI total matched-mean", "max a"],
     /* fmt() derives its digits from magnitude, so it would round every ratio to 1.06/1.02 —
        the whole signal lives in the 3rd–4th decimal. Fixed digits here, in the table twin
        that IS the precision surface; the chart stays shape-only like its neighbours. */
     dw.rows.map(r => [r.J, fmt(r.C, 3), r.g.toFixed(4), fmt(r.tau_mix_ms, 3), r.tau_mean_ms.toFixed(4),
-      r.ei_corr.toFixed(4), r.ei_mean.toFixed(4), r.corr.toFixed(4), fmt(r.max_a, 3)]));
+      r.floor.toFixed(4), r.t2_corr.toFixed(4), r.t2_mean.toFixed(4), r.corr.toFixed(4),
+      r.ei_corr.toFixed(4), r.ei_mean.toFixed(4), fmt(r.max_a, 3)]));
 }
 buildDwell();
 rebuilders.push(buildDwell);
