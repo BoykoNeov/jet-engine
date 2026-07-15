@@ -1465,7 +1465,11 @@ def print_dwell_spectrum_table(flight):
     st3, st4 = real.stations["3"], real.stations["4"]
     far, Tt3, Tt4, p = st4.far, st3.Tt, st4.Tt, st4.pt
     phi_p, tau = 1.5, 3e-3
-    ng, nb, nq = 24, 40, 56
+    # n_quad=120 (not 56): the β-PDF mean-preservation assert fails on the C_opt-climb — g is
+    # non-monotone in J (collapses to g_min at C_opt≈2.5, climbs back), and the quadrature is
+    # hardest to converge on that climb, worst near J≈36. 56 only survives because the grid below
+    # steps 16→64 over that point; 120 holds every C (verified <0.5% drift including J=36).
+    ng, nb, nq = 24, 40, 120
     cfg = SpatialDwellPDF(S=0.0625, ny=32, nz=32, nt=24, n_bell=nb, n_quad=nq)
 
     print("\nDerived dwell spectrum (rung 23): completing rung-22's PARTIAL closure. Rung 22 derived the")
