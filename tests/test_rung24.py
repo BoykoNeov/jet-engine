@@ -94,6 +94,19 @@ def _zoned(J, **kw):
                              quench_nsteps=_NSTEPS, **kw)
 
 
+_EI_SWEEP_JS = [4, 9, 16, 36, 64]
+_EI_SWEEP = None
+
+
+def _ei_sweep():
+    """⟨EI⟩ over `_EI_SWEEP_JS`, computed ONCE — the per-pocket quench is ~a minute per point, and
+    two gates below read the same sweep (the monotone check and the not-claimed-global-min check)."""
+    global _EI_SWEEP
+    if _EI_SWEEP is None:
+        _EI_SWEEP = [_zoned(J, spatial_local=_cfg()).ei_no_spatial_local for J in _EI_SWEEP_JS]
+    return _EI_SWEEP
+
+
 # --------------------------------------------------------------------------- #
 # GATE 1 — the REDUCE: spatial_local=None is the prior path; g == rung 22's BY CONSTRUCTION.
 # --------------------------------------------------------------------------- #
@@ -254,8 +267,7 @@ def test_ei_stays_monotone_the_emissions_optimum_is_not_recovered():
 
     This is asserted on the ACTUAL per-pocket quench, not inferred from ⟨τ⟩: EI is nonlinear in τ
     and richness-weighted, so the inference had to be checked."""
-    Js = [4, 9, 16, 36, 64]
-    ei = [_zoned(J, spatial_local=_cfg()).ei_no_spatial_local for J in Js]
+    Js, ei = _EI_SWEEP_JS, _ei_sweep()
     for k in range(len(Js) - 1):
         assert ei[k] > ei[k + 1], (
             f"⟨EI⟩ turned up between J={Js[k]} and J={Js[k + 1]} ({ei[k]:.4f} → {ei[k + 1]:.4f}) — "
@@ -307,9 +319,8 @@ def test_does_not_claim_the_emissions_global_min_location():
     declines it too — but now having MEASURED the reason (the shape grows, the scale wins). What IS
     pinned at C_opt is the WIDTH g (rung 22's uniformity result) and now the dwell SHAPE F — NOT
     ⟨EI⟩. This test asserts the DISAGREEMENT: the two optima are in DIFFERENT places, deliberately."""
-    Js = [4, 9, 16, 36, 64]
+    Js, ei = _EI_SWEEP_JS, _ei_sweep()
     F = [_field(J)[2] for J in Js]
-    ei = [_zoned(J, spatial_local=_cfg()).ei_no_spatial_local for J in Js]
     assert Js[F.index(min(F))] == 16, "F's min moved off C_opt"
     assert Js[ei.index(min(ei))] != 16, (
         "⟨EI⟩'s min landed AT C_opt — that would be the emissions pin rung 24 explicitly does NOT "

@@ -1547,7 +1547,11 @@ def print_local_mixing_table(flight):
 
     print("\n  (1) THE FACTORIZATION — τ_mix CANCELS out of u=ω·τ_mix=σ²|∇ξ|²/(2var), so the shape is a PURE")
     print("      FIELD FUNCTIONAL and ⟨τ⟩(J) = τ_mix(J)·F(C) EXACTLY. Scale × shape, cleanly separated:")
-    print(f"  {'J':>5} {'C':>6} {'g (==r22)':>10} {'τ_mix(ms)':>10} {'F=⟨τ⟩/τ_mix':>12} {'⟨τ⟩(ms)':>9}")
+    # NOTE the two weightings, deliberately labelled apart: F_cell/⟨τ⟩_cell here are the SPATIAL
+    # cell-means (the grid-converged field functional the tests gate); panel (3) prints ⟨τ⟩_PDF, the
+    # β-PDF-weighted mean that actually feeds the chemistry. BOTH are U-shaped and min at C_opt, but
+    # they are different numbers (J=4: 0.392 vs 0.318) — never compare across the two tables.
+    print(f"  {'J':>5} {'C':>6} {'g (==r22)':>10} {'τ_mix(ms)':>10} {'F_cell':>12} {'⟨τ⟩_cell(ms)':>13}")
     print("  " + "-" * 60)
     for J in (1, 4, 9, 16, 36, 64, 144, 400):
         m = JetMixing(J=float(J), C_e=0.20, U_c=75.0, H=0.10)
@@ -1555,7 +1559,7 @@ def print_local_mixing_table(flight):
                                               k_p=cfg.k_p, k_y=cfg.k_y, k_z=cfg.k_z, ny=32, nz=32)
         C = (cfg.S / m.H) * (J ** 0.5)
         note = "  ← C_opt (F MINIMAL)" if J == 16 else ""
-        print(f"  {J:5d} {C:6.2f} {g_s:10.5f} {m.tau_q*1e3:10.3f} {F:12.4f} {m.tau_q*F*1e3:9.4f}{note}")
+        print(f"  {J:5d} {C:6.2f} {g_s:10.5f} {m.tau_q*1e3:10.3f} {F:12.4f} {m.tau_q*F*1e3:13.4f}{note}")
     print("  ⇒ F is U-SHAPED with its min AT C_opt — the off-optimum dwell GROWTH rung 16 IMPOSED as")
     print("    τ_res·(1+b_u|ln(C/C_opt)|), here DERIVED from the plume's own gradients. But ⟨τ⟩=τ_mix·F still")
     print("    FALLS monotonically: F's ~1.4× U loses to τ_mix's 20× 1/√J swing. THE SCALE SWAMPS THE SHAPE.")
@@ -1577,7 +1581,8 @@ def print_local_mixing_table(flight):
 
     print("\n  (3) THE NEGATIVE HEADLINE — on the REAL per-pocket chemistry (NOT inferred from ⟨τ⟩): ⟨EI⟩ stays")
     print("      MONOTONE, so the emissions C_opt pin is STILL NOT recovered:")
-    print(f"  {'J':>5} {'C':>6} {'F':>7} {'⟨τ⟩(ms)':>8} {'EI_local':>9} {'EI_meanfld':>10} {'corr':>6} {'max_a':>6}")
+    print(f"  {'J':>5} {'C':>6} {'F_cell':>7} {'⟨τ⟩_PDF(ms)':>12} {'EI_local':>9} {'EI_meanfld':>10} "
+          f"{'corr':>6} {'max_a':>6}")
     print("  " + "-" * 68)
     for J in (4, 9, 16, 36, 64):
         st = eq.zoned_nox(far, Tt3, Tt4, p, phi_p, tau,
@@ -1585,7 +1590,7 @@ def print_local_mixing_table(flight):
                           spatial_local=cfg, quench_ngrid=ng)
         C = (cfg.S / 0.10) * (J ** 0.5)
         note = "under-pen" if J < 16 else ("C_opt" if J == 16 else "over-pen")
-        print(f"  {J:5d} {C:6.2f} {st.f_shape:7.4f} {st.tau_mean_local*1e3:8.4f} {st.ei_no_spatial_local:9.4f} "
+        print(f"  {J:5d} {C:6.2f} {st.f_shape:7.4f} {st.tau_mean_local*1e3:12.4f} {st.ei_no_spatial_local:9.4f} "
               f"{st.ei_no_spatial_local_meanfield:10.4f} {st.corr_ratio_local:6.3f} {st.max_a_quench:6.3f}  {note}")
     print("  ⇒ ⟨EI⟩ falls MONOTONICALLY through C_opt — no emissions optimum, even with the rate localized.")
     print("    (corr>1 throughout ALSO re-derives rung-23's ξ–τ correlation from INDEPENDENT physics: gradient")
