@@ -1,17 +1,23 @@
-# Rung 25 investigation — "locally-resolved SCALE" — INVESTIGATED, **NOT SHIPPED**
+# The locally-resolved-SCALE investigation — INVESTIGATED, **NOT SHIPPED**
 
-> **Status.** This is a **negative-result record**, not a rung spec. Rung 25 was built and tested as
-> a prototype, returned a negative verdict (below), and was **deliberately not added to the ladder**.
-> The shipped ladder ends at **rung 24**. There is no `rung25-spec.md`, no `gas.py`/`main.py`/test
-> code, and no entry in the rung table — by design.
+> **Status.** This is a **negative-result record**, not a rung spec. This is the **mixing-ceiling
+> SCALE** attack: it was built and tested as a prototype, returned a negative verdict (below), and was
+> **deliberately not added to the ladder**. It is NOT a rung — it has no `*-spec.md`, no
+> `gas.py`/`main.py`/test code, and no entry in the rung table, by design.
+>
+> **NOTE on the "rung 25" name.** This investigation was originally filed as "rung 25" while that slot
+> was empty. The **shipped rung 25 is finite-rate nozzle chemistry** (`docs/rung25-spec.md`) — a
+> *different* subject. This file was renamed `mixing-scale-negative.md` so nothing else claims the
+> number; references below to "rung 25" mean **this locally-resolved-SCALE prototype**, not the
+> shipped rung 25.
 >
 > **Why this file exists:** so the negative result is not re-investigated from scratch. If you are
 > about to "attack the mixing ceiling with a locally-resolved SCALE," read this first — it was done.
 
-## What rung 25 was
+## What this investigation was
 The next attack on the standing **mixing-ceiling seam** after rung 24 ("localizes the RATE, not the
 SCALE"). Rung 24 resolved each cell's mixing *rate* but kept one global time *scale* `τ_mix`, whose
-~20× swing held `⟨EI⟩(J)` monotone. Rung 25 tried to localize the **SCALE**:
+~20× swing held `⟨EI⟩(J)` monotone. This prototype tried to localize the **SCALE**:
 
 - **A penetration-growing plume.** The jet centers penetrate as `δ = k_p·√(SH)·J^p` and the plume
   widths grow with them, `σ_y = k_y·H·f`, `σ_z = k_z·S·f`, `f = (J/J_opt)^p`. This replaces rung 24's

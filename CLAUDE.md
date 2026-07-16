@@ -11,7 +11,7 @@ teaching, not for features or polish.
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is
-anchored to a published case. All rungs are live; the current scope is **rung 24**.
+anchored to a published case. All rungs are live; the current scope is **rung 25**.
 
 **This table is the one-line map, not the handout.** Each rung's derivation,
 assumptions, honest concessions, reduce-to-prior contract and verification gates
@@ -44,6 +44,7 @@ live in its spec (last column) — read the spec before touching a rung.
 | 22 | **Resolved cross-plane / spatial PDF** — `SpatialPDF(S,k_p,…)`: the **INVERSION of rung 18**. Resolving the y-z cross-plane makes `C_opt` **EMERGE as an OUTPUT** (**no `C_opt` knob**). Certified: the `g_min` **collapse** + the `(H/S)²` shift. Uniformity, not emissions, is the headline. | `docs/rung22-spec.md` |
 | 23 | **Derived dwell spectrum** — `SpatialDwellPDF(S,k_p,…)` develops that cross-plane in **TIME**, so each pocket carries its OWN `τ(ξ)` (**no `C_opt`/`τ_res`/`b_u`**). The positive: the **ξ–τ correlation** rich-pockets-dwell-longest **ADDS NO** — physics rung-16's scalar `τ_core` structurally cannot express. | `docs/rung23-spec.md` |
 | 24 | **Locally-resolved mixing time** — `SpatialLocalPDF(S,k_p,…)`: each cell its OWN rate `ω=D_t\|∇ξ\|²/var` (**no new constant**). `τ_mix` **cancels** ⇒ `⟨τ⟩=τ_mix(J)·F(C)` **exactly**. **SPLIT answer**: `F(C)` is U-shaped, min **AT `C_opt`** — rung-16's imposed dwell growth **DERIVED** (kill-tested: `⟨\|∇ξ\|²⟩`, which carries no `g`, is maximal there). But **~40% vs a ~20× scale** ⇒ `⟨EI⟩` **stays monotone**: the emissions pin is **still not recovered**. **Localizes the RATE, not the SCALE.** | `docs/rung24-spec.md` |
+| 25 | **Finite-rate nozzle chemistry** — `FiniteRate(Da,…)` / `Gas.finite_rate_nozzle(…)`: the Damköhler flow BETWEEN rung-14's bounds, on the exact `dh=v·dp` spine (species-vector relaxation). **INVERTS the seam into a THREE-state picture**: the frozen-in station-4 mixture arrives **super-equilibrium**, so a real (irreversible) flow re-equilibrates the entry **irreversibly even at `Da→∞`**. **(F)** frozen (`Da→0`, the exact reduce); **(I)** irreversible-fast (`Da→∞`, the ATTAINABLE ceiling, closed form); **(R)** rung-14 reversible (a STRICT **UNREACHABLE** ceiling above I). **Reduces to FROZEN, deliberately NOT to equilibrium** — the **(R−I)** gap quantifies rung-14's named "sliver of entry irreversibility" (dormant lean, ~7% of the bracket hot). Keystone certified: integrator `Da→∞` ⇒ closed-form (I). | `docs/rung25-spec.md` |
 
 **The invariant that spans rungs 7–24: they are all pure diagnostics.** NO/N never
 enter `_equil_solve` and the production nozzle stays frozen, so **the cycle is
@@ -65,7 +66,7 @@ the living plan/tasks (rungs 1–3).
 - **Every new rung reduces to its predecessor**, exactly and by test (`X=None` ⇒
   the prior code path). This is the project's spine — see any `docs/rungN-spec.md`.
 
-**Current scope (rung 24).** The **cycle solve** is a thermally-perfect, reacting,
+**Current scope (rung 25).** The **cycle solve** is a thermally-perfect, reacting,
 dissociation-equilibrium gas (`Gas.reacting_equilibrium()`) through ideal + real
 components (isentropic `η_c/η_t` **or** polytropic `e_c/e_t`, mutually exclusive;
 `π_d/π_b/π_n`, `η_b`, `η_m`; dual cold/hot gas; specified exit pressure). The burner
@@ -75,8 +76,15 @@ then freezes the station-4 mixture through turbine + nozzle. Fork A/B
 are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle.
 
 ## Deferred seams (kept open on purpose)
-- **Finite-rate nozzle chemistry** — rung 14 gives the frozen↔equilibrium *bracket*,
-  not the real Damköhler flow *between* the bounds (nor a **shifting turbine**).
+- **Finite-rate nozzle chemistry** — **BUILT BY RUNG 25** (`docs/rung25-spec.md`,
+  `Gas.finite_rate_nozzle`). Rung 14 gave the frozen↔equilibrium *bracket*; rung 25 resolved
+  the Damköhler flow *between* on the `dh=v·dp` spine — and **inverted** it into a THREE-state
+  picture (the super-equilibrium frozen entry makes `Da→∞` land at an **irreversible-fast**
+  ceiling *strictly below* the reversible bound). **What rung 25 leaves open:** (a) **freeze-out**
+  — a `T`-dependent Arrhenius `τ_chem(T)` resolving *where* recombination quenches (constant-`Da`
+  cannot show it; the unanchored-Arrhenius trap); (b) a **shifting turbine** — it would deliver a
+  less-super-equilibrium entry and *shrink* rung-25's (R−I) entry-irreversibility gap (reopens the
+  shaft balance).
 - **A real spatial / transported-CFD PDF** — the standing ceiling. Rungs 22–24 took the
   first steps (deriving the width `g(C)`, the dwell spectrum `τ(ξ)`, and each cell's
   mixing *rate* from a resolved cross-plane), but they remain a Gaussian-plume **cartoon**
@@ -91,7 +99,9 @@ are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle
   is **still not pinned**. Rung 17 gains a sharper **direction**, not a magnitude:
   **magnitude rides on the SCALE, and localizing the RATE does not touch it.** What the seam
   actually needs is a locally-resolved *SCALE* + the full cross-plane pattern.
-  **INVESTIGATED BY "RUNG 25" — negative, NOT shipped** (`docs/rung25-investigation.md`). A
+  **INVESTIGATED (locally-resolved SCALE) — negative, NOT shipped, NOT a rung**
+  (`docs/mixing-scale-negative.md`; originally filed as "rung 25" while that slot was empty — the
+  shipped rung 25 is the *unrelated* finite-rate nozzle). A
   locally-resolved SCALE (a penetration-growing plume `δ∝J^p`, `σ∝f(J)`, + rung-16's finite-`τ_res`
   dwell cap) **does** finally turn `⟨EI⟩(J)` off monotone — the first time in the project — and the
   field even carries a real over-penetration penalty (`g` is U-shaped in `J`). **But** the turn's
@@ -120,11 +130,13 @@ are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle
   the CPG closed-form / TPG NASA-integral property interface (hot methods carry `far`);
   the gas factories (`thermally_perfect` / `reacting` / `reacting_forkb` /
   `reacting_equilibrium`); the `_equil_solve` Newton solver + frozen `_EquilibriumSection`;
-  and **every diagnostic** — `thermal_nox`, `zoned_nox`, `nozzle_flow`, `exhaust_no_clamp`
-  — plus their configs (`JetMixing`, `Unmixedness`, `MixingPDF`, `QuenchPDF`,
+  and **every diagnostic** — `thermal_nox`, `zoned_nox`, `nozzle_flow`, `exhaust_no_clamp`,
+  `finite_rate_nozzle` — plus their configs (`JetMixing`, `Unmixedness`, `MixingPDF`, `QuenchPDF`,
   `PocketQuenchPDF`, `TransportedPDF`, `PromptNO`, `SpatialPDF`, `SpatialDwellPDF`,
-  `SpatialLocalPDF`; the eight mixing closures are mutually exclusive) and helpers (`_quench_no`,
-  `_pdf_mean_ei`, `_pocket_quench_mean_ei`, `_spatial_segregation`, `_spatial_dwell_field`, `_spatial_local_field`, …).
+  `SpatialLocalPDF`; the eight mixing closures are mutually exclusive — plus `FiniteRate`, the rung-25
+  nozzle knob) and helpers (`_quench_no`, `_pdf_mean_ei`, `_pocket_quench_mean_ei`,
+  `_spatial_segregation`, `_spatial_dwell_field`, `_spatial_local_field`, and the rung-25
+  `_finite_rate_expand` / `_irreversible_fast_expand` / `_equilibrate_hp`, …).
 - `turbojet/components.py` — `Inlet, Compressor, Burner, Turbine, Nozzle` as pure
   `apply(state, gas)` in `h`/`pr` form (+ loss params, `ram_recovery(M0)`, the polytropic
   knob; the Nozzle branches CPG/TPG — the velocity↔enthalpy trap). The `Burner` runs the
@@ -136,9 +148,11 @@ are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle
   states its honest scope).
 - `tests/` — `test_stations.py` / `test_validation.py` (rung 1), `test_rung2.py`,
   `test_polytropic.py` (2b), `test_variable_cp.py` (3), `test_reacting.py` (4),
-  `test_forkb.py` (5), then **`test_rungN.py` for N = 6…24**. Every rung file carries that
+  `test_forkb.py` (5), then **`test_rungN.py` for N = 6…25**. Every rung file carries that
   rung's **reduce-to-prior** gate plus its load-bearing claims; the gates are named in the
-  rung's spec. Rungs 16, 23 and 24 **deliberately assert no emissions global-min location**.
+  rung's spec. Rungs 16, 23 and 24 **deliberately assert no emissions global-min location**;
+  rung 25 **reduces to rung-14 FROZEN but deliberately NOT to equilibrium** (the (R−I) gap is
+  the finding).
 - `docs/rungN-spec.md` — the derivation, assumptions, concessions and gates for rung N.
   `docs/plans/rungN-anchor-*.md` — that rung's verified anchor data.
 

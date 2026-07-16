@@ -1907,6 +1907,114 @@ def _nozzle_clamp_diag(comp_entry: dict, Tt9: float, T9: float,
                 max_a=(x_no_frozen / xe_exit) if x_no_frozen is not None else None)
 
 
+# --- Rung 25: FINITE-RATE nozzle chemistry (the Damköhler flow BETWEEN rung-14's bounds) --------- #
+
+def _cp_molar(sp: str, T: float) -> float:
+    """Molar heat capacity of one species, J/(mol·K) = Ru·(cp/Ru), low/high polynomial branch
+    (rung 25). The Σ n_i·cp_i denominator of the finite-rate dT update."""
+    A = _SPECIES[sp][1] if T <= _T_BREAK else _SPECIES[sp][2]
+    return _Ru * _poly(A, T)
+
+
+def _finite_rate_expand(comp_entry: dict, far: float, Tt9: float, pt9: float, p9: float,
+                        Da: float, nstep: int) -> Tuple[float, float, dict, float]:
+    """One FINITE-RATE nozzle expansion (rung 25; docs/rung25-spec.md): the Damköhler flow BETWEEN
+    rung-14's frozen (Da→0) and irreversible-fast (Da→∞) limits. Returns (T9, V9, comp9, dS).
+
+    Marches the exact `dh = v·dp` relation (energy + momentum — holds for ANY adiabatic frictionless
+    flow, reversible or not) down a GEOMETRIC pressure schedule p(s)=pt9·(p9/pt9)^s, s∈[0,1] (the
+    progress coordinate is LINEAR IN ln p — declared; sets interpolation shape only):
+      • composition — exact linear relaxation over the step, Δn=(1−e^{−Da·ds})(n_eq(T,p)−n), toward
+        LOCAL equilibrium _equilibrium_composition(far,T,p). Unconditionally stable for the stiff
+        relaxation (a raw explicit Da·(n_eq−n)/RK4 step BLOWS UP at large Da); conserves atoms exactly
+        (each element count is a linear invariant shared by n and n_eq).
+      • temperature — dh=v·dp integrated IMPLICITLY per step: bisect T1 on
+        H_abs(comp1,T1)−H_abs(comp0,T0)=½(v0+v1)·dp, v=n_tot·Ru·T/p (per mol air). Carries BOTH the
+        pressure-work cooling and the recombination reheat (the composition change is inside H_abs).
+        2nd-order; the Da→0 limit CONVERGES to the rung-14 frozen bound (gate 2).
+    V9=√(2(H_entry−H_exit)/m) on ABSOLUTE (scale-B) enthalpy so the recombination energy appears; dS=
+    S_exit−S_entry ≥ 0 is the finite-rate entropy production (2nd law). NEVER called at Da=0 or Da=∞ —
+    those dispatch to the exact (F)/(I) references."""
+    S_entry = _mix_entropy_molar(comp_entry, Tt9, pt9)
+    H_entry = _mix_h_abs_B(comp_entry, Tt9)
+    m = _mix_mass_per_air(comp_entry)
+    comp = dict(comp_entry)
+    T = Tt9
+    lnr = math.log(p9 / pt9)                              # < 0
+    ds = 1.0 / nstep
+    relax = 1.0 - math.exp(-Da * ds)                      # exact linear-relaxation fraction per step
+    sps = list(comp)
+    for k in range(nstep):
+        p0 = pt9 * math.exp(lnr * k * ds)
+        p1 = pt9 * math.exp(lnr * (k + 1) * ds)
+        dp = p1 - p0                                      # < 0 (expanding)
+        H0 = _mix_h_abs_B(comp, T)
+        v0 = sum(comp.values()) * _Ru * T / p0
+        base = H0 + 0.5 * v0 * dp
+        n_eq = _equilibrium_composition(far, T, p0)       # relaxation target at the step-start state
+        comp1 = {sp: comp[sp] + relax * (n_eq.get(sp, 0.0) - comp[sp]) for sp in sps}
+        ntot1 = sum(comp1.values())
+        # bisect T1 on the trapezoidal dh=v·dp residual (H_abs rises with T; the v-term is a weak slope).
+        # hi headroom covers a step where recombination reheat outruns the pressure-work cooling (bounded
+        # by the whole entry re-equilibration ~10s of K, so T+50 never clips the root — the coarse-step guard).
+        lo, hi = _T_EXIT_FLOOR, T + 50.0
+        for _ in range(200):
+            Tm = 0.5 * (lo + hi)
+            resid = _mix_h_abs_B(comp1, Tm) - base - 0.5 * (ntot1 * _Ru * Tm / p1) * dp
+            if resid > 0.0:
+                hi = Tm
+            else:
+                lo = Tm
+            if hi - lo <= 1e-11 * Tm:
+                break
+        T = 0.5 * (lo + hi)
+        assert T > _T_EXIT_FLOOR + 1.0, \
+            f"finite-rate exit T={T:.1f} K pinned at the {_T_EXIT_FLOOR:.0f} K floor (Da={Da}, far={far:.4f})"
+        comp = comp1
+    H_exit = _mix_h_abs_B(comp, T)
+    V9 = math.sqrt(2.0 * (H_entry - H_exit) / m)
+    dS = _mix_entropy_molar(comp, T, p9) - S_entry
+    return T, V9, comp, dS
+
+
+def _equilibrate_hp(far: float, H_target: float, p: float,
+                    T_lo: float, T_hi: float) -> Tuple[dict, float]:
+    """Constant-(H,p) adiabatic equilibration (rung 25): (comp*, T*) with comp*=eq(far,T*,p) and
+    H_abs(comp*,T*)=H_target. This is the entry RE-EQUILIBRATION of the super-equilibrium frozen
+    mixture — recombination reheats, so T* > the frozen-entry T. Bisect T* (H_abs rises with T)."""
+    lo, hi = T_lo, T_hi
+    for _ in range(200):
+        T = 0.5 * (lo + hi)
+        comp = _equilibrium_composition(far, T, p)
+        if _mix_h_abs_B(comp, T) > H_target:
+            hi = T
+        else:
+            lo = T
+        if hi - lo <= 1e-10 * T:
+            break
+    T = 0.5 * (lo + hi)
+    assert T > _T_EXIT_FLOOR + 1.0, \
+        f"const-(H,p) equilibration T={T:.1f} K pinned at the {_T_EXIT_FLOOR:.0f} K floor (far={far:.4f})"
+    return _equilibrium_composition(far, T, p), T
+
+
+def _irreversible_fast_expand(comp_entry: dict, far: float, Tt9: float, pt9: float,
+                              p9: float) -> Tuple[float, float, dict, float]:
+    """The IRREVERSIBLE-FAST ceiling (I) — the Da→∞ finite-rate limit, in CLOSED FORM (rung 25).
+    Rate-law-INDEPENDENT: (1) re-equilibrate the frozen super-equilibrium entry at constant (H, pt9)
+    → (comp*, T*); (2) reversible-shifting expand from (comp*, T*, pt9) to p9 (rung-14 machinery).
+
+    Because the const-(H) step conserves enthalpy, H_abs(comp*,T*)=H_abs(comp_entry,Tt9), so V9 is
+    measured from the SAME stagnation enthalpy as (F)/(R). This sits STRICTLY BELOW rung-14's
+    reversible bound (R): the entry re-equilibration is irreversible, an entropy source no rate can
+    remove. Returns (T9, V9, comp9, T_star). The KEYSTONE (gate 3): the marching integrator's Da→∞
+    asymptote converges to THIS closed form — certifying it as the true finite-rate endpoint."""
+    H_entry = _mix_h_abs_B(comp_entry, Tt9)
+    comp_star, T_star = _equilibrate_hp(far, H_entry, pt9, Tt9 - 100.0, Tt9 + 800.0)
+    T9, V9, comp9 = _expand_nozzle(comp_star, far, T_star, pt9, p9, shifting=True)
+    return T9, V9, comp9, T_star
+
+
 @dataclass
 class JetMixing:
     """Rung-11 jet-in-crossflow mixing config — the PHYSICAL dilution-air entrainment model
@@ -2801,6 +2909,77 @@ class ZonedNOxState:
     @property
     def ppm_mix(self) -> float:
         return self.x_no_mix * 1e6
+
+
+@dataclass
+class FiniteRate:
+    """Rung-25 finite-rate nozzle config (docs/rung25-spec.md): the Damköhler flow BETWEEN rung-14's
+    frozen and irreversible-fast limits.
+
+    `Da` is a NORMALIZED-SCHEDULE Damköhler number (τ_flow/τ_chem over the whole expansion), NOT an
+    Arrhenius-anchored chemical time — a CARTOON knob (like α, φ_p, τ_q). Da→0 = frozen, Da→∞ = the
+    irreversible-fast ceiling (I). A CONSTANT Da interpolates the bracket but CANNOT show FREEZE-OUT
+    (τ_chem(T) overtaking τ_flow as the gas cools and recombination stops) — that is the deferred
+    seam (a T-dependent τ_chem reintroduces an unanchored Arrhenius constant). `nstep` is the
+    pressure-march resolution (keep Da·ds ≲ 2 for stability of the exponential-relaxation step)."""
+    Da: float                 # normalized Damköhler number (THE knob); interior 0 < Da < ∞
+    nstep: int = 400          # pressure-march resolution
+
+    def __post_init__(self):
+        assert self.Da > 0.0, \
+            f"FiniteRate.Da={self.Da} must be positive (Da=0 and Da=∞ are the dispatched F/I bounds)"
+        assert self.nstep >= 10, f"FiniteRate.nstep={self.nstep} too coarse (need ≥ 10)"
+
+
+@dataclass
+class FiniteRateNozzleState:
+    """Rung-25 finite-rate nozzle diagnostic (docs/rung25-spec.md). A pure diagnostic BESIDE the
+    cycle — the production nozzle stays FROZEN, so the cycle is bit-for-bit rung 6. Velocities m/s,
+    temperatures K; compositions are mole numbers per mol dry air.
+
+    THE THREE-STATE PICTURE — V9_frozen ≤ V9_finite ≤ V9_irrev_fast ≤ V9_reversible:
+      (F) V9_frozen      — Da→0, rung-14 lower bound (== the production nozzle; the EXACT reduce).
+      (I) V9_irrev_fast  — Da→∞, the ATTAINABLE ceiling. The super-equilibrium frozen entry
+                           re-equilibrates IRREVERSIBLY (an entropy loss no rate removes), so it sits
+                           STRICTLY BELOW ...
+      (R) V9_reversible  — ... rung-14's reversible upper bound, an UNREACHABLE ceiling.
+    The finite-rate flow at the config's Da sits at V9_finite (between F and I). The gap (R−I),
+    `unreachable_gap`, is the entry-irreversibility 'sliver' rung 14 named and set aside: DORMANT lean
+    (both gaps → 0 at Tt4=1500) and earning its keep hot (~7% of the bracket at Tt4=2200)."""
+    Da: float
+    # --- the three reference states ---
+    T9_frozen: float                  # (F) frozen exit static T (== production nozzle), K
+    V9_frozen: float                  # (F) frozen exhaust velocity, m/s
+    T9_irrev_fast: float              # (I) irreversible-fast exit static T, K
+    V9_irrev_fast: float              # (I) attainable-ceiling exhaust velocity, m/s
+    T_star_entry: float               # reheated entry T after const-(H,pt9) re-equilibration, K (> Tt9)
+    T9_reversible: float              # (R) reversible-shift exit static T, K
+    V9_reversible: float              # (R) unreachable-ceiling exhaust velocity, m/s
+    # --- the finite-rate flow at the config's Da ---
+    T9_finite: float                  # finite-rate exit static T, K
+    V9_finite: float                  # finite-rate exhaust velocity, m/s (between F and I)
+    dS_finite: float                  # finite-rate entropy production, J/(mol·air·K) ≥ 0
+    co_fraction_entry: float          # CO/(CO+CO2) at the nozzle entry (the dissociation content)
+    co_fraction_finite_exit: float    # CO/(CO+CO2) at the finite-rate exit (recombination burnout)
+
+    @property
+    def attainable_gap(self) -> float:
+        """(I−F): the exhaust velocity a fast REAL nozzle can recover, m/s."""
+        return self.V9_irrev_fast - self.V9_frozen
+
+    @property
+    def unreachable_gap(self) -> float:
+        """(R−I): the reversible bound's UNREACHABLE margin — the entry re-equilibration
+        irreversibility, m/s. The 'sliver' rung 14 set aside; > 0 whenever the entry is
+        super-equilibrium. Its existence/sign are thermodynamically robust; the magnitude is not
+        certified (docs/rung25-spec.md)."""
+        return self.V9_reversible - self.V9_irrev_fast
+
+    @property
+    def finite_filled(self) -> float:
+        """Fraction of the ATTAINABLE bracket [F, I] the finite-rate flow reaches at this Da."""
+        g = self.V9_irrev_fast - self.V9_frozen
+        return (self.V9_finite - self.V9_frozen) / g if g > 0.0 else 0.0
 
 
 @dataclass
@@ -3787,6 +3966,53 @@ class Gas:
             x_no_e_entry=clamp["x_no_e_entry"], x_no_e_exit=clamp["x_no_e_exit"],
             no_collapse_ratio=clamp["no_collapse_ratio"],
             x_no_frozen=x_no_frozen, max_a=clamp["max_a"],
+        )
+
+    def finite_rate_nozzle(self, far: float, Tt4: float, pt4: float,
+                           Tt9: float, pt9: float, p9: float,
+                           finite_rate: "FiniteRate") -> "FiniteRateNozzleState":
+        """Finite-rate nozzle-flow diagnostic (rung 25; docs/rung25-spec.md).
+
+        Rung 14 bracketed the frozen production nozzle against a reversible shifting-equilibrium
+        expansion. This resolves the REAL flow BETWEEN them at a finite Damköhler number — and finds
+        the bracket is really a THREE-state picture:
+
+          (F) frozen (Da→0)      — == the production nozzle (rung-14 lower bound; the EXACT reduce).
+          (I) irreversible-fast  — the Da→∞ ATTAINABLE ceiling: the super-equilibrium frozen entry
+              (Da→∞)               re-equilibrates IRREVERSIBLY (an entropy loss no rate removes), so
+                                   it sits STRICTLY BELOW ...
+          (R) reversible-shift   — ... rung-14's reversible upper bound, an UNREACHABLE ceiling.
+
+        Returns the three references and the finite-rate flow at `finite_rate.Da` (`V9_finite`,
+        between F and I). Reduces to rung-14 FROZEN exactly; DELIBERATELY does not reduce to
+        equilibrium — the (R−I) entry-irreversibility gap (`unreachable_gap`) is the finding: dormant
+        lean, ~7% of the bracket hot. Pass the run's Tt9=Tt5, pt9=π_n·pt5, p9=p_exit.
+
+        A pure diagnostic: reads only (far, Tt4, pt4, Tt9, pt9, p9) and touches no cycle path, so the
+        cycle stays bit-for-bit rung 6. Requires the equilibrium (rung-6) gas."""
+        assert self.equilibrium, \
+            "finite_rate_nozzle: needs the rung-6 equilibrium gas (Gas.reacting_equilibrium())"
+        assert p9 <= pt9 * (1.0 + 1e-12), \
+            f"finite_rate_nozzle: back-pressure p9={p9:.0f} Pa exceeds pt9={pt9:.0f} Pa (cannot expand to it)"
+        comp_entry = _equilibrium_composition(far, Tt4, pt4)     # the FROZEN station-4 mixture
+
+        T9f, V9f, _ = _expand_nozzle(comp_entry, far, Tt9, pt9, p9, shifting=False)       # (F)
+        T9r, V9r, _ = _expand_nozzle(comp_entry, far, Tt9, pt9, p9, shifting=True)        # (R)
+        T9i, V9i, _, T_star = _irreversible_fast_expand(comp_entry, far, Tt9, pt9, p9)    # (I)
+        T9d, V9d, comp9d, dS = _finite_rate_expand(                                       # interior Da
+            comp_entry, far, Tt9, pt9, p9, finite_rate.Da, finite_rate.nstep)
+
+        def _co(c: dict) -> float:
+            a, b = c.get("CO", 0.0), c.get("CO2", 0.0)
+            return a / (a + b) if (a + b) > 0.0 else 0.0
+
+        return FiniteRateNozzleState(
+            Da=finite_rate.Da,
+            T9_frozen=T9f, V9_frozen=V9f,
+            T9_irrev_fast=T9i, V9_irrev_fast=V9i, T_star_entry=T_star,
+            T9_reversible=T9r, V9_reversible=V9r,
+            T9_finite=T9d, V9_finite=V9d, dS_finite=dS,
+            co_fraction_entry=_co(comp_entry), co_fraction_finite_exit=_co(comp9d),
         )
 
     # --- Rung-17 combustor-mixing-fidelity ladder of the dropped-clamp margin (DECOUPLED) --------- #

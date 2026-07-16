@@ -24,7 +24,7 @@ from turbojet.gas import (  # noqa: E402
     _equilibrium_no_fraction, _primary_aft, _thermal_no, _super_eq_o_multiplier,
     _quench_trajectory, _quench_no, _bell_interpolator, _beta_pdf_nodes_weights, _ideal_bell_ei,
     SpatialLocalPDF, _two_stream_ceiling, _transport_variance, _pdf_mean_ei, _spatial_segregation,
-    _spatial_dwell_field, _spatial_local_field,
+    _spatial_dwell_field, _spatial_local_field, FiniteRate,
 )
 
 TS_DIAGRAM_PATH = "ts_diagram.png"
@@ -766,6 +766,61 @@ def print_nozzle_flow_table(flight):
     print("  every assert green. Rung 10 DROPPED the clamp and proved it DORMANT on the combustor quench")
     print("  (max_a=0.677<1); HERE, in the near-stoich exhaust-cooling rung 10 flagged, it FIRES. That is")
     print("  the whole reason the clamp was dropped 'on principle' — this nozzle is where it bites.")
+
+
+def print_finite_rate_nozzle_table(flight):
+    """Rung-25 payoff: FINITE-RATE nozzle chemistry — the Damköhler flow BETWEEN rung-14's bounds,
+    which turns the two-bound bracket into a THREE-state picture.
+
+    Rung 14 gave FROZEN (Da→0) and reversible EQUILIBRIUM (Da→∞) and named the seam between them.
+    Resolving it, the physics refuses a clean two-bound interpolation: the nozzle is fed the
+    frozen-in station-4 mixture, which arrives SUPER-EQUILIBRIUM (equilibrated hot at Tt4, frozen to
+    Tt9). A REAL (irreversible) flow must re-equilibrate that entry, and that relaxation is
+    irreversible EVEN AT INFINITE RATE. So there are three states:
+      (F) frozen             — Da→0, rung-14 lower bound (the exact reduce).
+      (I) irreversible-fast  — Da→∞, the ATTAINABLE ceiling (closed form: const-(H,pt9) entry
+                               re-equilibration then reversible shifting). Sits STRICTLY BELOW ...
+      (R) reversible-shift   — ... rung-14's upper bound, a strict UNREACHABLE ceiling.
+    The (R−I) gap is the 'sliver of entry irreversibility' rung 14 named — dormant lean, ~7% of the
+    bracket hot. A pure diagnostic: bit-for-bit rung 6 (the production nozzle stays frozen).
+    """
+    print("\nFinite-rate nozzle chemistry (rung 25): the real Damköhler flow BETWEEN rung-14's bounds.")
+    print("It reveals a THREE-state picture — the super-equilibrium frozen entry re-equilibrates")
+    print("IRREVERSIBLY, so even infinitely-fast chemistry (I) falls SHORT of the reversible ceiling (R).")
+
+    # (1) The three-state ceilings — a Tt4 sweep: dormant lean, both gaps earn their keep hot.
+    print("\n  Three-state ceilings (Tt4 sweep, real-loss cycle):")
+    print(f"  {'Tt4 [K]':>8} {'V9 (F)':>9} {'V9 (I)':>9} {'V9 (R)':>9} "
+          f"{'attain I-F':>11} {'unreach R-I':>12}")
+    print("  " + "-" * 66)
+    for Tt4 in (1500.0, 1800.0, 2000.0, 2200.0):
+        eq = Gas.reacting_equilibrium()
+        r = build_turbojet(eq, PI_C, Tt4, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+        st4, st9 = r.stations["4"], r.stations["9"]
+        fr = eq.finite_rate_nozzle(st4.far, st4.Tt, st4.pt, st9.Tt, st9.pt, r.p9, FiniteRate(Da=3.0))
+        print(f"  {Tt4:>8.0f} {fr.V9_frozen:>9.2f} {fr.V9_irrev_fast:>9.2f} {fr.V9_reversible:>9.2f} "
+              f"{fr.attainable_gap/fr.V9_frozen*100:>10.4f}% {fr.unreachable_gap/fr.V9_frozen*100:>11.4f}%")
+    print("  Both gaps COLLAPSE at the cool lean design point (dissociation ~5e-6, no entry non-equilibrium)")
+    print("  and EARN THEIR KEEP hot — rung-14's own arc. The unreachable (R−I) gap is the entry")
+    print("  re-equilibration irreversibility: a genuine sliver lean, ~7% of the bracket at 2200 K.")
+
+    # (2) The interior Da sweep at the HOT anchor — the payoff curve filling the ATTAINABLE bracket.
+    print("\n  The finite-rate flow filling the attainable [F, I] bracket (Tt4=2200 K):")
+    print(f"  {'Da':>7} {'V9 finite':>10} {'attain-filled':>13} {'dS≥0':>9} {'CO exit':>10}")
+    print("  " + "-" * 54)
+    eq = Gas.reacting_equilibrium()
+    r = build_turbojet(eq, PI_C, 2200.0, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+    st4, st9 = r.stations["4"], r.stations["9"]
+    for Da in (0.3, 1.0, 3.0, 10.0, 30.0):
+        fr = eq.finite_rate_nozzle(st4.far, st4.Tt, st4.pt, st9.Tt, st9.pt, r.p9, FiniteRate(Da=Da))
+        print(f"  {Da:>7.1f} {fr.V9_finite:>10.3f} {fr.finite_filled:>12.3f}  "
+              f"{fr.dS_finite:>9.3e} {fr.co_fraction_finite_exit:>10.2e}")
+    print("  V9(Da) climbs monotonically toward the ATTAINABLE ceiling (I) — never the reversible (R).")
+    print("  Da is a CARTOON knob (a normalized Damköhler, not an Arrhenius τ_chem): the interior curve")
+    print("  rides on it; the three-state picture and the (R−I) gap do NOT. Entropy production dS≥0 (2nd")
+    print("  law) peaks at intermediate Da; freeze-out (τ_chem(T) quenching the recombination) is the")
+    print("  deferred seam. The entry irreversibility is a consequence of the FROZEN turbine — a shifting")
+    print("  turbine would shrink it (the rung-26 seam).")
 
 
 def print_pdf_quench_table(flight):
@@ -1806,6 +1861,8 @@ def main():
     print_dwell_spectrum_table(FLIGHT)
 
     print_local_mixing_table(FLIGHT)
+
+    print_finite_rate_nozzle_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 
