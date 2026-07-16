@@ -91,6 +91,16 @@ are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle
   is **still not pinned**. Rung 17 gains a sharper **direction**, not a magnitude:
   **magnitude rides on the SCALE, and localizing the RATE does not touch it.** What the seam
   actually needs is a locally-resolved *SCALE* + the full cross-plane pattern.
+  **INVESTIGATED BY "RUNG 25" — negative, NOT shipped** (`docs/rung25-investigation.md`). A
+  locally-resolved SCALE (a penetration-growing plume `δ∝J^p`, `σ∝f(J)`, + rung-16's finite-`τ_res`
+  dwell cap) **does** finally turn `⟨EI⟩(J)` off monotone — the first time in the project — and the
+  field even carries a real over-penetration penalty (`g` is U-shaped in `J`). **But** the turn's
+  location, depth, and even its *existence* ride on the **unanchored penetration exponent `p`**:
+  a clean interior min only at the hand-picked `p=1/4`; at the more standard `p≈1/2` `⟨EI⟩` is
+  monotone-down with no turn. So the SCALE alone still does **not** pin the emissions optimum — and
+  the real missing piece is an **anchored `δ(J)` law**, not a missing penalty. Do NOT re-run the
+  growing-σ-at-hand-picked-`p` construction; a new attempt is only worthwhile with an *anchored*
+  exponent or a real transported/CFD cross-plane field.
 - **A per-pocket clamp that fires AT THE BURNER** (`max_a>1` at station 4, not just in
   the rung-14/17 nozzle). The lever is a **slow-enough freeze on a cooling pocket**,
   *not* a hotter `Tt4` (which raises the terminal `[NO]_e` and *lowers* the ratio).
