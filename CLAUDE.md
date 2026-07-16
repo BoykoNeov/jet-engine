@@ -11,7 +11,7 @@ teaching, not for features or polish.
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is
-anchored to a published case. All rungs are live; the current scope is **rung 23**.
+anchored to a published case. All rungs are live; the current scope is **rung 24**.
 
 **This table is the one-line map, not the handout.** Each rung's derivation,
 assumptions, honest concessions, reduce-to-prior contract and verification gates
@@ -43,8 +43,9 @@ live in its spec (last column) — read the spec before touching a rung.
 | 21 | **Super-eq O through the IDEAL-BELL PDF integrals** — discharges the **last eq-O seam**; rung-20's hybrid dissolves and its forbid guard is removed. A **shape-preserving consistency lift** (location/shift/sign-reversal unmoved). | `docs/rung21-spec.md` |
 | 22 | **Resolved cross-plane / spatial PDF** — `SpatialPDF(S,k_p,…)`: the **INVERSION of rung 18**. Resolving the y-z cross-plane makes `C_opt` **EMERGE as an OUTPUT** (**no `C_opt` knob**). Certified: the `g_min` **collapse** + the `(H/S)²` shift. Uniformity, not emissions, is the headline. | `docs/rung22-spec.md` |
 | 23 | **Derived dwell spectrum** — `SpatialDwellPDF(S,k_p,…)` develops that cross-plane in **TIME**, so each pocket carries its OWN `τ(ξ)` (**no `C_opt`/`τ_res`/`b_u`**). The positive: the **ξ–τ correlation** rich-pockets-dwell-longest **ADDS NO** — physics rung-16's scalar `τ_core` structurally cannot express. | `docs/rung23-spec.md` |
+| 24 | **Locally-resolved mixing time** — `SpatialLocalPDF(S,k_p,…)`: each cell its OWN rate `ω=D_t\|∇ξ\|²/var` (**no new constant**). `τ_mix` **cancels** ⇒ `⟨τ⟩=τ_mix(J)·F(C)` **exactly**. **SPLIT answer**: `F(C)` is U-shaped, min **AT `C_opt`** — rung-16's imposed dwell growth **DERIVED** (kill-tested: `⟨\|∇ξ\|²⟩`, which carries no `g`, is maximal there). But **~40% vs a ~20× scale** ⇒ `⟨EI⟩` **stays monotone**: the emissions pin is **still not recovered**. **Localizes the RATE, not the SCALE.** | `docs/rung24-spec.md` |
 
-**The invariant that spans rungs 7–23: they are all pure diagnostics.** NO/N never
+**The invariant that spans rungs 7–24: they are all pure diagnostics.** NO/N never
 enter `_equil_solve` and the production nozzle stays frozen, so **the cycle is
 bit-for-bit rung 6** — every rung above 6 only *reads* the run's state. Each rung's
 verified anchor data lives in `docs/plans/rungN-anchor-*.md`; `docs/plans/` also holds
@@ -64,7 +65,7 @@ the living plan/tasks (rungs 1–3).
 - **Every new rung reduces to its predecessor**, exactly and by test (`X=None` ⇒
   the prior code path). This is the project's spine — see any `docs/rungN-spec.md`.
 
-**Current scope (rung 23).** The **cycle solve** is a thermally-perfect, reacting,
+**Current scope (rung 24).** The **cycle solve** is a thermally-perfect, reacting,
 dissociation-equilibrium gas (`Gas.reacting_equilibrium()`) through ideal + real
 components (isentropic `η_c/η_t` **or** polytropic `e_c/e_t`, mutually exclusive;
 `π_d/π_b/π_n`, `η_b`, `η_m`; dual cold/hot gas; specified exit pressure). The burner
@@ -76,14 +77,20 @@ are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle
 ## Deferred seams (kept open on purpose)
 - **Finite-rate nozzle chemistry** — rung 14 gives the frozen↔equilibrium *bracket*,
   not the real Damköhler flow *between* the bounds (nor a **shifting turbine**).
-- **A real spatial / transported-CFD PDF** — the standing ceiling. Rungs 22–23 took the
-  first steps (deriving the width `g(C)` **and** the dwell spectrum `τ(ξ)` from a
-  resolved cross-plane), but they are a Gaussian-plume **cartoon** feeding the β-PDF
-  closure: one global `τ_mix`, variance only — not the full cross-plane *pattern*. A
-  **locally-resolved mixing time** (each cell its own rate) is what a non-circular
-  emissions optimum would need, and what would let rung 17 claim a firing *magnitude*
-  rather than a direction. Hence `C_opt≈2.5` and the dwell magnitude still ride on
-  `k_p`/`τ_mix`.
+- **A real spatial / transported-CFD PDF** — the standing ceiling. Rungs 22–24 took the
+  first steps (deriving the width `g(C)`, the dwell spectrum `τ(ξ)`, and each cell's
+  mixing *rate* from a resolved cross-plane), but they remain a Gaussian-plume **cartoon**
+  feeding the β-PDF closure: the field's **PATTERN** is still the cartoon and the time
+  **SCALE** is still one global `τ_mix` — only the *relaxation* is locally resolved. Hence
+  `C_opt≈2.5` and the dwell magnitude still ride on `k_p`/`τ_mix`.
+  **CORRECTED BY RUNG 24** — this seam used to say a locally-resolved mixing time was what
+  a non-circular emissions optimum would need, and what would let rung 17 claim a firing
+  *magnitude*. Rung 24 **built it, and NEITHER followed.** It does derive an off-optimum
+  dwell **growth** (`F(C)`, min AT `C_opt`, gradient-located and kill-tested) — but at
+  **~40% against `τ_mix`'s ~20× swing**, so `⟨EI⟩` stays monotone and the emissions optimum
+  is **still not pinned**. Rung 17 gains a sharper **direction**, not a magnitude:
+  **magnitude rides on the SCALE, and localizing the RATE does not touch it.** What the seam
+  actually needs is a locally-resolved *SCALE* + the full cross-plane pattern.
 - **A per-pocket clamp that fires AT THE BURNER** (`max_a>1` at station 4, not just in
   the rung-14/17 nozzle). The lever is a **slow-enough freeze on a cooling pocket**,
   *not* a hotter `Tt4` (which raises the terminal `[NO]_e` and *lowers* the ratio).
@@ -105,9 +112,9 @@ are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle
   `reacting_equilibrium`); the `_equil_solve` Newton solver + frozen `_EquilibriumSection`;
   and **every diagnostic** — `thermal_nox`, `zoned_nox`, `nozzle_flow`, `exhaust_no_clamp`
   — plus their configs (`JetMixing`, `Unmixedness`, `MixingPDF`, `QuenchPDF`,
-  `PocketQuenchPDF`, `TransportedPDF`, `PromptNO`, `SpatialPDF`, `SpatialDwellPDF`; the
-  seven mixing closures are mutually exclusive) and helpers (`_quench_no`,
-  `_pdf_mean_ei`, `_pocket_quench_mean_ei`, `_spatial_segregation`, `_spatial_dwell_field`, …).
+  `PocketQuenchPDF`, `TransportedPDF`, `PromptNO`, `SpatialPDF`, `SpatialDwellPDF`,
+  `SpatialLocalPDF`; the eight mixing closures are mutually exclusive) and helpers (`_quench_no`,
+  `_pdf_mean_ei`, `_pocket_quench_mean_ei`, `_spatial_segregation`, `_spatial_dwell_field`, `_spatial_local_field`, …).
 - `turbojet/components.py` — `Inlet, Compressor, Burner, Turbine, Nozzle` as pure
   `apply(state, gas)` in `h`/`pr` form (+ loss params, `ram_recovery(M0)`, the polytropic
   knob; the Nozzle branches CPG/TPG — the velocity↔enthalpy trap). The `Burner` runs the
@@ -119,9 +126,9 @@ are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle
   states its honest scope).
 - `tests/` — `test_stations.py` / `test_validation.py` (rung 1), `test_rung2.py`,
   `test_polytropic.py` (2b), `test_variable_cp.py` (3), `test_reacting.py` (4),
-  `test_forkb.py` (5), then **`test_rungN.py` for N = 6…23**. Every rung file carries that
+  `test_forkb.py` (5), then **`test_rungN.py` for N = 6…24**. Every rung file carries that
   rung's **reduce-to-prior** gate plus its load-bearing claims; the gates are named in the
-  rung's spec. Rungs 16 and 23 **deliberately assert no emissions global-min location**.
+  rung's spec. Rungs 16, 23 and 24 **deliberately assert no emissions global-min location**.
 - `docs/rungN-spec.md` — the derivation, assumptions, concessions and gates for rung N.
   `docs/plans/rungN-anchor-*.md` — that rung's verified anchor data.
 

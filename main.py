@@ -23,7 +23,8 @@ from turbojet.gas import (  # noqa: E402
     _HF_FUEL_DEFAULT, _M_AIR, _M_CH2, _F_STOICH, _air_mole_fractions,
     _equilibrium_no_fraction, _primary_aft, _thermal_no, _super_eq_o_multiplier,
     _quench_trajectory, _quench_no, _bell_interpolator, _beta_pdf_nodes_weights, _ideal_bell_ei,
-    _two_stream_ceiling, _transport_variance, _pdf_mean_ei, _spatial_segregation, _spatial_dwell_field,
+    SpatialLocalPDF, _two_stream_ceiling, _transport_variance, _pdf_mean_ei, _spatial_segregation,
+    _spatial_dwell_field, _spatial_local_field,
 )
 
 TS_DIAGRAM_PATH = "ts_diagram.png"
@@ -1519,6 +1520,125 @@ def print_dwell_spectrum_table(flight):
     print("  — plus the full CFD-PDF shape, which would let rung 17 claim a firing MAGNITUDE — stays the ceiling.")
 
 
+def print_local_mixing_table(flight):
+    """RUNG 24 — the LOCALLY-RESOLVED mixing time (docs/rung24-spec.md).
+
+    Rungs 11–23 all ran on ONE GLOBAL τ_mix. Rung 23's §9 named this successor and hypothesized it
+    "could restore an off-optimum dwell GROWTH that pins the emissions optimum non-circularly". Rung 24
+    ASKS that. Each cell relaxes at its OWN gradient-derived rate ω=D_t|∇ξ|²/var (D_t=σ²/(2τ_mix) REUSED
+    — no new constant); the terminal field stays rung-22's, so g is identical BY CONSTRUCTION. τ_mix
+    CANCELS out of the rate ⇒ ⟨τ⟩ = τ_mix(J)·F(C) EXACTLY. The answer is a SPLIT: F(C) IS U-shaped with
+    its min AT C_opt (the derived dwell growth — rung 16 vindicated in SHAPE), but ~40% against τ_mix's
+    ~20× swing ⇒ ⟨EI⟩ stays MONOTONE (the emissions pin still not recovered — rung 23 vindicated in the
+    PRODUCT). Rung 24 localizes the RATE, not the SCALE. Pure diagnostic, cycle bit-for-bit rung 6.
+    """
+    eq = Gas.reacting_equilibrium()
+    real = build_turbojet(eq, PI_C, TT4, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+    st3, st4 = real.stations["3"], real.stations["4"]
+    far, Tt3, Tt4, p = st4.far, st3.Tt, st4.Tt, st4.pt
+    phi_p, tau = 1.5, 3e-3
+    ng, nb, nq = 24, 40, 160     # n_quad=160: 56 trips the KNOWN β-PDF guard on the C_opt climb (rung-23 §7)
+    cfg = SpatialLocalPDF(S=0.0625, ny=32, nz=32, n_bell=nb, n_quad=nq)
+
+    print("\nLocally-resolved mixing time (rung 24): the ceiling rungs 11–23 all deferred BY NAME. Every one of")
+    print("them ran ONE GLOBAL τ_mix; rung 23's §9 asked whether giving each cell its OWN rate would restore an")
+    print("off-optimum dwell GROWTH and pin the emissions optimum non-circularly. Rung 24 builds it and ASKS.")
+    print("ω = D_t·|∇ξ|²/var with D_t = σ²/(2τ_mix) — REUSED, so NO new constant, NO C_opt, NO τ_res, NO b_u.")
+
+    print("\n  (1) THE FACTORIZATION — τ_mix CANCELS out of u=ω·τ_mix=σ²|∇ξ|²/(2var), so the shape is a PURE")
+    print("      FIELD FUNCTIONAL and ⟨τ⟩(J) = τ_mix(J)·F(C) EXACTLY. Scale × shape, cleanly separated:")
+    print(f"  {'J':>5} {'C':>6} {'g (==r22)':>10} {'τ_mix(ms)':>10} {'F=⟨τ⟩/τ_mix':>12} {'⟨τ⟩(ms)':>9}")
+    print("  " + "-" * 60)
+    for J in (1, 4, 9, 16, 36, 64, 144, 400):
+        m = JetMixing(J=float(J), C_e=0.20, U_c=75.0, H=0.10)
+        g_s, tau_of, F = _spatial_local_field(far, phi_p, cfg.S, m.H, m.J, m.tau_q,
+                                              k_p=cfg.k_p, k_y=cfg.k_y, k_z=cfg.k_z, ny=32, nz=32)
+        C = (cfg.S / m.H) * (J ** 0.5)
+        note = "  ← C_opt (F MINIMAL)" if J == 16 else ""
+        print(f"  {J:5d} {C:6.2f} {g_s:10.5f} {m.tau_q*1e3:10.3f} {F:12.4f} {m.tau_q*F*1e3:9.4f}{note}")
+    print("  ⇒ F is U-SHAPED with its min AT C_opt — the off-optimum dwell GROWTH rung 16 IMPOSED as")
+    print("    τ_res·(1+b_u|ln(C/C_opt)|), here DERIVED from the plume's own gradients. But ⟨τ⟩=τ_mix·F still")
+    print("    FALLS monotonically: F's ~1.4× U loses to τ_mix's 20× 1/√J swing. THE SCALE SWAMPS THE SHAPE.")
+
+    print("\n  (2) THE KILL TEST (why the U is NOT circular) — ω carries an explicit 1/g (var=g·ξ̄(1−ξ̄)) and")
+    print("      rung 22 ALREADY mins g at C_opt, so 'argmin F == argmin g' is a TELL, not a confirmation.")
+    print("      ⟨|∇ξ|²⟩ carries NO g algebraically — and IT is maximal at C_opt. The gradients place it:")
+    print(f"  {'J':>5} {'C':>6} {'g':>9} {'⟨|∇ξ|²⟩ (g-free)':>17}")
+    print("  " + "-" * 42)
+    for J in (4, 9, 16, 36, 64):
+        m = JetMixing(J=float(J), C_e=0.20, U_c=75.0, H=0.10)
+        g_s, _, _ = _spatial_local_field(far, phi_p, cfg.S, m.H, m.J, m.tau_q, ny=32, nz=32)
+        gsq = _mean_grad_sq(far, phi_p, cfg.S, m.H, m.J)
+        note = "  ← C_opt (STEEPEST)" if J == 16 else ""
+        print(f"  {J:5d} {(cfg.S/m.H)*(J**0.5):6.2f} {g_s:9.5f} {gsq:17.4f}{note}")
+    print("  ⇒ At C_opt the residual structure sits at the plume's OWN scale σ (fine ⇒ steep ⇒ fast ⇒ SHORT")
+    print("    dwell); off-optimum the air piles into WALL-SCALE slabs (coarse ⇒ shallow ⇒ slow ⇒ LONG dwell).")
+    print("    HONEST: that fine-vs-coarse behaviour is a property of the FIXED-σ plume CARTOON, not a general law.")
+
+    print("\n  (3) THE NEGATIVE HEADLINE — on the REAL per-pocket chemistry (NOT inferred from ⟨τ⟩): ⟨EI⟩ stays")
+    print("      MONOTONE, so the emissions C_opt pin is STILL NOT recovered:")
+    print(f"  {'J':>5} {'C':>6} {'F':>7} {'⟨τ⟩(ms)':>8} {'EI_local':>9} {'EI_meanfld':>10} {'corr':>6} {'max_a':>6}")
+    print("  " + "-" * 68)
+    for J in (4, 9, 16, 36, 64):
+        st = eq.zoned_nox(far, Tt3, Tt4, p, phi_p, tau,
+                          mixing=JetMixing(J=float(J), C_e=0.20, U_c=75.0, H=0.10),
+                          spatial_local=cfg, quench_ngrid=ng)
+        C = (cfg.S / 0.10) * (J ** 0.5)
+        note = "under-pen" if J < 16 else ("C_opt" if J == 16 else "over-pen")
+        print(f"  {J:5d} {C:6.2f} {st.f_shape:7.4f} {st.tau_mean_local*1e3:8.4f} {st.ei_no_spatial_local:9.4f} "
+              f"{st.ei_no_spatial_local_meanfield:10.4f} {st.corr_ratio_local:6.3f} {st.max_a_quench:6.3f}  {note}")
+    print("  ⇒ ⟨EI⟩ falls MONOTONICALLY through C_opt — no emissions optimum, even with the rate localized.")
+    print("    (corr>1 throughout ALSO re-derives rung-23's ξ–τ correlation from INDEPENDENT physics: gradient")
+    print("     structure, not arrival time. Rich pockets dwell longest either way.)")
+
+    print("\n  THE ADJUDICATION: rung 23 left an explicit fork — does the off-optimum dwell GROW (rung-16,")
+    print("  imposed) or FALL (rung-23, derived)? 'Neither is pinned from data.' It resolves BOTH WAYS, in")
+    print("  DIFFERENT FACTORS: the SHAPE grows (rung 16 vindicated, and now DERIVED), the PRODUCT still falls")
+    print("  (rung 23 vindicated). Rung-16's kink is NOT an artifact — it is real and MIS-SCALED.")
+    print("  HONEST SCOPE: rung 24 localizes the RATE, not the SCALE — ⟨τ⟩'s magnitude still rides on rung-11's")
+    print("  un-anchored τ_mix and F's on rung-22's k_p. So rung-23 §9's hope that this lets rung 17 claim a")
+    print("  firing MAGNITUDE is NOT delivered (it buys a sharper DIRECTION only) — CORRECTED, not inherited.")
+
+
+def _mean_grad_sq(far_overall, phi_primary, S, H, J, k_p=0.316, k_y=0.28, k_z=0.28, ny=32, nz=32):
+    """⟨|∇ξ|²⟩ of the rung-22 terminal field — the rung-24 kill test's G-FREE witness (no variance
+    normalization anywhere, so it cannot inherit rung-22's g-minimum at C_opt). See rung24-spec §2."""
+    xibar = far_overall / (1.0 + far_overall)
+    far_p = phi_primary * _F_STOICH
+    xi_p = far_p / (1.0 + far_p)
+    delta = k_p * math.sqrt(S * H) * J ** 0.25
+    sig_y, sig_z = k_y * H, k_z * S
+    ys = [(i + 0.5) * H / ny for i in range(ny)]
+    zs = [(j + 0.5) * S / nz for j in range(nz)]
+    ay = [sum(math.exp(-((y - c) ** 2) / (2 * sig_y ** 2))
+              for c in (-delta, delta, 2 * H - delta, 2 * H + delta)) for y in ys]
+    az = [sum(math.exp(-((z - S / 2 - m * S) ** 2) / (2 * sig_z ** 2)) for m in (-1, 0, 1)) for z in zs]
+    may, maz = sum(ay) / ny, sum(az) / nz
+    ayh, azh = [a / may for a in ay], [a / maz for a in az]
+    beta_bar = (xi_p - xibar) / xi_p
+    lo, hi = 0.0, 50.0
+    for _ in range(60):
+        s = 0.5 * (lo + hi)
+        m_ = sum(xi_p * (1.0 - min(1.0, max(0.0, s * beta_bar * a * b)))
+                 for a in ayh for b in azh) / (ny * nz)
+        if m_ > xibar:
+            lo = s
+        else:
+            hi = s
+    s_star = 0.5 * (lo + hi)
+    xi = [[xi_p * (1.0 - min(1.0, max(0.0, s_star * beta_bar * a * b))) for b in azh] for a in ayh]
+    dy, dz = H / ny, S / nz
+    tot = 0.0
+    for i in range(ny):
+        im, ip = max(0, i - 1), min(ny - 1, i + 1)
+        for j in range(nz):
+            jm, jp = (j - 1) % nz, (j + 1) % nz
+            gy = (xi[ip][j] - xi[im][j]) / ((ip - im) * dy)
+            gz = (xi[i][jp] - xi[i][jm]) / (2 * dz)
+            tot += gy * gy + gz * gz
+    return tot / (ny * nz)
+
+
 def _j_opt_from(cfg):
     """The uniformity optimum J_opt where C=(S/H)√J_opt = C_opt (H=0.10, the JetMixing default)."""
     return (cfg.C_opt * JetMixing(J=1.0).H / cfg.S) ** 2
@@ -1679,6 +1799,8 @@ def main():
     print_spatial_pdf_table(FLIGHT)
 
     print_dwell_spectrum_table(FLIGHT)
+
+    print_local_mixing_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

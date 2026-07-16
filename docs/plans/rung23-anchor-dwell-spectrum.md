@@ -206,3 +206,22 @@ is an artifact."
   GROWTH that pins the emissions optimum non-circularly). This — plus the full resolved-PDF **shape** — is
   what would let rung 17 claim a firing **MAGNITUDE**, not just a direction. Rung 23 is a cartoon feeding
   the rung-16 β-PDF closure; the locally-resolved mixing time stays the ceiling.
+
+> **ANSWERED BY RUNG 24 — and this §9 got it HALF RIGHT** (`docs/rung24-spec.md`,
+> `docs/plans/rung24-anchor-local-mixing-time.md`). Rung 24 built the locally-resolved rate
+> (`ω=D_t|∇ξ|²/var`, no new constant) and ran the experiment this section proposed:
+> - **RIGHT:** the off-optimum dwell **GROWTH is restored, and non-circularly** — `⟨τ⟩=τ_mix(J)·F(C)`
+>   factorizes *exactly* (τ_mix cancels out of the rate), and the pure field functional `F(C)` **is U-shaped
+>   with its minimum AT `C_opt`**, gradient-located (kill-tested: `⟨|∇ξ|²⟩`, which carries no `g`, is
+>   maximal there). Rung-16's imposed kink is **real physics**, derived at last.
+> - **WRONG:** it does **NOT pin the emissions optimum.** `F`'s U is worth ~40% against `τ_mix`'s ~20×
+>   `1/√J` swing, so `⟨EI⟩(J)` stays **monotone** and the whole upgrade moves it **≤4%**. **The scale
+>   swamps the shape.**
+> - **ALSO WRONG:** it does **NOT** let rung 17 claim a firing **MAGNITUDE**. Magnitude rides on the
+>   **SCALE**, and a locally-resolved *rate* does not touch it — rung 24 localizes the RATE, not the SCALE.
+>   A sharper **direction** is all it buys.
+>
+> So the rung-16-vs-23 fork this anchor left open (§5: *"neither is pinned from data"*) resolves **BOTH
+> ways in different factors**: the shape grows (rung 16), the product falls (rung 23). Rung-23's negative
+> **survives**, now for a measured reason. The remaining ceiling is a locally-resolved **SCALE** + the full
+> cross-plane **pattern**.

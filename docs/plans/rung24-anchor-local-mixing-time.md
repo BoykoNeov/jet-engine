@@ -114,7 +114,13 @@ Gaussian-plume CARTOON, not a general turbulent-mixing law** — exactly the alt
 The **derived off-optimum dwell GROWTH** — the qualitative shape rung 16 **imposed** as
 `τ_core=τ_res(1+b_u|ln(C/C_opt)|)`, now **derived from the plume's own gradients**.
 
-**Grid-converged** (`proto2.py`; `F` at J = 1, 4, 9, 16, 36, 64, 144, 400):
+> **TWO weightings, one letter — read the labels.** `F_cell = ⟨τ⟩_cells/τ_mix` is the **spatial
+> cell-mean** (this §3, and the shipped `state.f_shape`); `F_pdf = ⟨τ⟩_PDF/τ_mix` is the **β-PDF-weighted**
+> mean that actually feeds the chemistry (§4's table, `state.tau_mean_local/τ_mix`). **Both are U-shaped with
+> their minimum at J=16**, but they are different numbers (at J=4: **0.392** vs **0.318**) — do not compare
+> across the two tables. `tests/test_rung24.py` gates `F_cell` (the grid-converged one).
+
+**Grid-converged** (`proto2.py`; `F_cell` at J = 1, 4, 9, 16, 36, 64, 144, 400):
 
 | grid | `F` values | argmin |
 |------|-----------|--------|
@@ -157,10 +163,10 @@ Not inferred from `⟨τ⟩`: the **actual per-pocket quench** run with rung-24'
 
 - **`⟨EI⟩₂₄` is MONOTONE-DECREASING in J** — argmin at the sweep max (J=144), **NOT `C_opt`**. Same as
   rung 23's. **The emissions optimum is NOT recovered.**
-- **WHY, quantified — the factorization does the explaining.** `⟨τ⟩ = τ_mix(J)·F(C)`: `F`'s U is worth
-  **~1.5×** over this sweep (~39% over the full J=1–400), while `τ_mix ∝ 1/√J` swings **6×** here (**~20×**
-  over J=1–400). **The scale swamps the shape.** The derived growth is real and in the right place — and
-  still an order of magnitude too weak to turn `⟨EI⟩` around.
+- **WHY, quantified — the factorization does the explaining.** `⟨τ⟩ = τ_mix(J)·F(C)`: `F_pdf`'s U is worth
+  **~1.5×** over this sweep (`F_cell` **~39%** over the full J=1–400), while `τ_mix ∝ 1/√J` swings **6×**
+  here (**~20×** over J=1–400). **The scale swamps the shape.** The derived growth is real and in the right
+  place — and still an order of magnitude too weak to turn `⟨EI⟩` around.
 - **The whole locally-resolved upgrade moves `⟨EI⟩` by ≤ ~4%** (−4.2% … +0.6% vs rung 23). Formation-limited
   throughout (`max_a<1`), as in rungs 16/23.
 
@@ -188,7 +194,11 @@ says lean cells dwell long too. Resolved (`proto6.py`, 32×32):
   the richest bin vs ~0.40 ms near the mean — so `τ` is a **tight function of ξ exactly where NO is made**,
   and a **wide average only where it doesn't matter**.
 - **Rung-23's correlation is CORROBORATED from an INDEPENDENT mechanism.** Rich pockets dwell longest here
-  too — but via **gradient structure**, not arrival time. Two unrelated constructions, same sign.
+  too — but via **gradient structure**, not arrival time. Two unrelated constructions, same sign. Confirmed
+  on the **shipped** path (`corr_ratio_local`, 32×32/`n_quad=160`): **1.038** (J=4) → 1.033 → **1.026**
+  (`C_opt`) → 1.019 → 1.016 → **1.009** (J=64) — `>1` throughout and **concentrated under-penetration**,
+  the same sign *and the same shape* as rung-23's independent 1.058 → 1.008. A rung-23 result **re-derived
+  from different physics**, not inherited.
 
 ---
 

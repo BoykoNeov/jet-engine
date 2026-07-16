@@ -51,6 +51,19 @@ scalar dwell `=⟨τ⟩_PDF` (same `g`, same mean dwell, correlation the only di
   rate) — plus the full resolved-PDF **shape** — stays the deferred ceiling; that is also what would let
   rung 17 claim a firing **MAGNITUDE**, not just a direction.
 
+> **RUNG 24 BUILT THAT LOCALLY-RESOLVED MIXING TIME AND SETTLED THIS** (`docs/rung24-spec.md`). Half of the
+> hope above was right and half was wrong, so it is **corrected here rather than left standing**:
+> **RIGHT** — the derived dwell **does** grow off-optimum after all: `τ_mix` cancels out of a local rate, so
+> `⟨τ⟩ = τ_mix(J)·F(C)` **exactly**, and the field functional `F(C)` is **U-shaped with its minimum AT
+> `C_opt`** (gradient-located, kill-tested). **WRONG** — that growth is ~40% against `τ_mix`'s ~20× swing, so
+> **`⟨EI⟩` stays monotone and the emissions `C_opt` pin is still NOT recovered** (rung 23's negative
+> **survives**, now measured rather than assumed), and it does **NOT** give rung 17 a firing **MAGNITUDE** —
+> magnitude rides on the **SCALE**, which localizing the **RATE** does not touch.
+> So this spec's fork — *"whether the dwell GROWS (rung-16, imposed) or FALLS (rung-23, derived) — neither is
+> pinned"* — resolves **BOTH WAYS in different factors**: the **shape** grows (rung 16 vindicated *and
+> derived*), the **product** falls (rung 23 vindicated). **Rung-16's kink is real and MIS-SCALED**, not an
+> artifact — the reading this spec already leaned toward, now with a number behind it.
+
 > **Read `docs/rung22-spec.md`** (the width it completes, the cross-plane it develops), **`docs/rung16-spec.md`**
 > (the per-pocket quench — the vehicle), and **`docs/plans/rung23-anchor-dwell-spectrum.md`**
 > (numbers-before-code: the matched-mean table, the τ_mix-sign check, the divergence). This file states only

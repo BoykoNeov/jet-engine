@@ -1634,6 +1634,158 @@ def _spatial_dwell_field(far_overall: float, phi_primary: float, S: float, H: fl
     return g_spatial, tau_of_xi
 
 
+def _spatial_local_field(far_overall: float, phi_primary: float, S: float, H: float, J: float,
+                         tau_mix: float, k_p: float = 0.316, k_y: float = 0.28, k_z: float = 0.28,
+                         ny: int = 48, nz: int = 48):
+    """Rung-24 LOCALLY-RESOLVED MIXING TIME — the rung-22/23 cross-plane where each cell relaxes at
+    its OWN gradient-derived rate, instead of all of them sharing rung-11's ONE global τ_mix
+    (docs/rung24-spec.md). The seam rung 23 §9 named by hand.
+
+    THE CONSTRUCTION — SAME ENDPOINT, DIFFERENT PATHS. The TERMINAL field is rung-22's EXACTLY
+    (β_final untouched), so g is IDENTICAL BY CONSTRUCTION — not to a tolerance (contrast rung-23's
+    `_spatial_dwell_field`, which re-derives it through a time development and matches to <1%). Only
+    the PATH to that endpoint differs: each cell relaxes at its own ω, renormalized to complete at
+    τ_mix (so the endpoint, hence g, is preserved):
+        β(t) = β_final·(1 − e^(−ω t))/(1 − e^(−ω τ_mix))
+        τ_cell = ∫₀^{τ_mix}(1 − β/β_final)dt = τ_mix·[1 − 1/E + 1/u],  u = ω·τ_mix, E = 1 − e^(−u)
+    ANALYTIC — no time-stepping (rung 23 needed `nt` quadrature steps; rung 24 does not). Bounded:
+    u→∞ (fast local mixing) ⇒ τ_cell→0; u→0 (stagnant cell) ⇒ τ_cell→τ_mix/2.
+
+    THE RATE is the standard turbulent mixing frequency ω=χ/(2·var) (rung-18's OWN form) made LOCAL
+    in the numerator — the scalar-dissipation field rung 23 deferred:
+        ω(y,z) = D_t·|∇ξ|²/⟨(ξ−ξ̄)²⟩,     D_t = σ_final²/(2·τ_mix)      ← REUSED. NO NEW CONSTANT.
+
+    THE EXACT FACTORIZATION (why this is worth a rung). τ_mix CANCELS out of u:
+    u = ω·τ_mix = σ_final²·|∇ξ|²/(2·var) — no τ_mix anywhere. So the shape is a PURE FIELD FUNCTIONAL
+    and ⟨τ⟩(J) = τ_mix(J)·F(C) EXACTLY: scale × shape, cleanly separated. Rung 23 has F≈const (one
+    shared schedule ⇒ ⟨τ⟩∝1/√J, monotone); F(C) is rung 24's derived content, and it is U-SHAPED with
+    its minimum AT C_opt — the off-optimum dwell GROWTH rung 16 IMPOSED as τ_res·(1+b_u|ln(C/C_opt)|),
+    here DERIVED from the plume's own gradients (no C_opt, no τ_res, no b_u).
+
+    WHY a local rate can differ from rung 23 AT ALL (the structural point): rung-23's arrival deficit
+    ∫(1−β(t)/β_final)dt is a RATIO, normalized by each cell's OWN terminal value — so a stagnant region
+    that barely receives air has a LOW β_final too, and its ratio still reaches 1 on schedule. The
+    "this region never mixes" penalty NORMALIZES AWAY. A local RATE is absolute.
+
+    THE NON-CIRCULARITY (the kill test — docs/plans/rung24-anchor-local-mixing-time.md §2): ω carries
+    an explicit 1/g (var=g·ξ̄(1−ξ̄)) and rung 22 ALREADY mins g at C_opt, so "argmin F == argmin g" is a
+    TELL, not a confirmation. Certified: ⟨|∇ξ|²⟩ — which carries NO g algebraically — is MAXIMAL at
+    C_opt, and F computed against a FROZEN reference variance still mins there. The gradients locate
+    C_opt; the 1/g coupling AMPLIFIES the U (39% vs 28.6% depth) but does NOT create it. WHY the
+    best-mixed field is also the steepest-gradient one: at C_opt the jet fills to mid-height so the
+    residual structure sits at the plume's OWN scale σ (fine ⇒ steep); off-optimum the air piles into
+    WALL-SCALE slabs (coarse ⇒ shallow). That fine-vs-coarse behaviour is a property of the FIXED-σ
+    Gaussian-plume CARTOON, not a general turbulent-mixing law — the same altitude as rung-22's
+    "C_opt≈2.5 rides on k_p".
+
+    THE HONEST NEGATIVE (the headline): F's U is worth ~39% over J=1–400, while the global τ_mix∝1/√J
+    swings ~20×. THE SCALE SWAMPS THE SHAPE — ⟨EI⟩(J) stays MONOTONE, so the emissions C_opt pin is
+    STILL not recovered. Rung 24 localizes the RATE, not the SCALE. The rung-16-vs-23 fork resolves
+    BOTH ways in different factors: the shape grows (rung 16, vindicated and now derived), the product
+    still falls (rung 23, vindicated). Rung-16's kink is real and MIS-SCALED, not an artifact.
+
+    Returns (g_spatial, tau_of_xi, F_shape): g_spatial == `_spatial_segregation` by construction,
+    tau_of_xi a monotone-binned interpolator (idiomatic like `_bell_interpolator` / rung 23's), and
+    F_shape = ⟨τ⟩_cells/τ_mix the pure field functional. τ(ξ) is a TIGHT function of ξ only over the
+    NO-relevant RICH branch (§5): the LEAN far-wall plateau is also flat ⇒ also slow ⇒ also long-dwell,
+    but lean pockets take `_ideal_bell_ei`, which IGNORES τ entirely — so that long dwell is INERT."""
+    xibar = far_overall / (1.0 + far_overall)
+    far_p = phi_primary * _F_STOICH
+    xi_p = far_p / (1.0 + far_p)
+    assert xi_p > xibar, (
+        f"spatial local field needs a RICH primary (φ_p={phi_primary}, ξ_p={xi_p:.4f}) richer than the "
+        f"overall mean (ξ̄={xibar:.4f}) — the RQL geometry (the jet dilutes DOWN to the mean)."
+    )
+    assert tau_mix > 0.0, f"tau_mix={tau_mix} must be positive (the rung-11 mixing time H/(C_e√J·U_c))"
+    delta = k_p * math.sqrt(S * H) * J ** 0.25
+    sig_y, sig_z = k_y * H, k_z * S
+    ys = [(i + 0.5) * H / ny for i in range(ny)]
+    zs = [(j + 0.5) * S / nz for j in range(nz)]
+    ay = [sum(math.exp(-((y - c) ** 2) / (2.0 * sig_y * sig_y))
+              for c in (-delta, delta, 2.0 * H - delta, 2.0 * H + delta))   # both-wall images
+          for y in ys]
+    az = [sum(math.exp(-((z - S / 2.0 - m * S) ** 2) / (2.0 * sig_z * sig_z))
+              for m in (-1, 0, 1)) for z in zs]                             # spanwise periodic
+    may, maz = sum(ay) / ny, sum(az) / nz
+    ayh, azh = [a / may for a in ay], [a / maz for a in az]
+    beta_bar = (xi_p - xibar) / xi_p
+
+    def _mean_at(s):
+        t = 0.0
+        for a in ayh:
+            sa = s * beta_bar * a
+            for b in azh:
+                t += xi_p * (1.0 - min(1.0, max(0.0, sa * b)))
+        return t / (ny * nz)
+
+    lo, hi = 0.0, 50.0                                    # the rung-22 mean-preserving air scale
+    for _ in range(60):
+        s = 0.5 * (lo + hi)
+        if _mean_at(s) > xibar:
+            lo = s
+        else:
+            hi = s
+    s_star = 0.5 * (lo + hi)
+    xi = [[xi_p * (1.0 - min(1.0, max(0.0, s_star * beta_bar * a * b))) for b in azh] for a in ayh]
+    mean = sum(sum(r) for r in xi) / (ny * nz)
+    assert abs(mean - xibar) <= 0.01 * xibar, (          # the rung-22 mean-preservation contract
+        f"spatial local field drifted the mean: ⟨ξ⟩={mean:.6f} vs ξ̄={xibar:.6f} (>1%) — the "
+        f"mean-preserving closure must integrate at ξ̄ (bisection s pinned near the ceiling?)."
+    )
+    meansq = sum(v * v for r in xi for v in r) / (ny * nz)
+    var = max(meansq - mean * mean, 0.0)
+    g_spatial = var / (xibar * (1.0 - xibar))
+
+    # THE LOCAL RATE + the analytic dwell. u = ω·τ_mix = σ_y²·|∇ξ|²/(2·var) — τ_mix CANCELS.
+    dy, dz = H / ny, S / nz
+    cells = []
+    tsum = 0.0
+    for i in range(ny):
+        im, ip = max(0, i - 1), min(ny - 1, i + 1)        # zero-gradient (wall) in y
+        for j in range(nz):
+            jm, jp = (j - 1) % nz, (j + 1) % nz           # periodic in z
+            gy = (xi[ip][j] - xi[im][j]) / ((ip - im) * dy)
+            gz = (xi[i][jp] - xi[i][jm]) / (2.0 * dz)
+            u = sig_y * sig_y * (gy * gy + gz * gz) / (2.0 * max(var, 1e-30))
+            if u < 1e-8:
+                t = 0.5 * tau_mix                         # stagnant limit (u→0)
+            else:
+                E = 1.0 - math.exp(-u)
+                t = tau_mix * (1.0 - 1.0 / E + 1.0 / u)
+            cells.append((xi[i][j], t))
+            tsum += t
+    F_shape = (tsum / (ny * nz)) / tau_mix                # the PURE field functional (τ_mix-free)
+
+    xs = [c[0] for c in cells]
+    xlo, xhi = min(xs), max(xs)
+    span = max(xhi - xlo, 1e-12)
+    nb = max(8, ny // 2)
+    sums, cnts = [0.0] * nb, [0] * nb
+    for x, t in cells:
+        b = min(nb - 1, int((x - xlo) / span * nb))
+        sums[b] += t
+        cnts[b] += 1
+    centers = [xlo + (b + 0.5) / nb * span for b in range(nb) if cnts[b] > 0]
+    taus = [sums[b] / cnts[b] for b in range(nb) if cnts[b] > 0]
+
+    def tau_of_xi(x: float) -> float:
+        if x <= centers[0]:
+            return taus[0]
+        if x >= centers[-1]:
+            return taus[-1]
+        klo, khi = 0, len(centers) - 1
+        while khi - klo > 1:
+            mid = (klo + khi) // 2
+            if centers[mid] <= x:
+                klo = mid
+            else:
+                khi = mid
+        w = (x - centers[klo]) / (centers[khi] - centers[klo])
+        return taus[klo] + w * (taus[khi] - taus[klo])
+
+    return g_spatial, tau_of_xi, F_shape
+
+
 # --------------------------------------------------------------------------- #
 # RUNG 14 — equilibrium-vs-frozen NOZZLE FLOW (the rung-6 cycle-side seam).     #
 # The production nozzle FREEZES the station-4 equilibrium mixture through the   #
@@ -2329,6 +2481,96 @@ class SpatialDwellPDF:
 
 
 @dataclass
+class SpatialLocalPDF:
+    """Rung-24 LOCALLY-RESOLVED MIXING TIME — the ceiling every rung since 11 deferred BY NAME, taken
+    one step (docs/rung24-spec.md). Rungs 11–23 all ran on ONE GLOBAL τ_mix=H/(C_e√J·U_c); rung 23's §9
+    named the successor and its hypothesis: a scalar-dissipation field giving each cell its OWN rate
+    "could restore an off-optimum dwell GROWTH that pins the emissions optimum non-circularly". Rung 24
+    ASKS that question. The answer is a SPLIT — and the headline is the NEGATIVE half.
+
+    Each cell relaxes at its own gradient-derived ω = D_t|∇ξ|²/var (rung-18's OWN ω=χ/2var form, made
+    LOCAL in the numerator), with D_t=σ_final²/(2τ_mix) REUSED — so SpatialLocalPDF adds NO new constant
+    and NO new knob: geometry from rung 22 (k_p/k_y/k_z), time scale from rung 11 (τ_mix). The terminal
+    field is rung-22's EXACTLY ⇒ g is IDENTICAL BY CONSTRUCTION (not to a tolerance). Rides ON a
+    `JetMixing`, ≤1-of-EIGHT mutually exclusive with the other seven closures (unmixedness/pdf/
+    pdf_quench/pocket_quench/transported/spatial/spatial_dwell) — EIGHT closures of the SAME variance
+    physics. Like SpatialPDF/SpatialDwellPDF there is NO C_opt knob (C_opt()=1/(4k_p²) is derived).
+
+    THE EXACT FACTORIZATION (the rung's spine). τ_mix CANCELS out of u=ω·τ_mix=σ²|∇ξ|²/(2var), so the
+    shape is a PURE FIELD FUNCTIONAL and ⟨τ⟩(J) = τ_mix(J)·F(C) EXACTLY — scale × shape, separated.
+    Rung 23 has F≈const (one shared schedule ⇒ ⟨τ⟩∝1/√J). F(C) is rung 24's derived content.
+
+    WHAT RUNG 24 CERTIFIES (docs/rung24-spec.md; tests/test_rung24.py):
+      • THE REDUCE — `spatial_local=None` ⇒ exact prior path; g IDENTICAL to SpatialPDF's by construction.
+      • THE POSITIVE — F(C) is U-SHAPED with its minimum AT C_opt: the off-optimum dwell GROWTH rung 16
+        IMPOSED (τ_res·(1+b_u|ln(C/C_opt)|)), here DERIVED from gradients (no C_opt/τ_res/b_u).
+        Grid-converged 32→96; J_opt shifts as (H/S)² (64→16→4 as S doubles twice) — rung-22's signature,
+        inherited by the DWELL. NON-CIRCULAR (the kill test): ω carries an explicit 1/g and rung 22
+        already mins g at C_opt, so "argmin F == argmin g" is a TELL — but ⟨|∇ξ|²⟩, which carries NO g,
+        is MAXIMAL at C_opt, and F against a FROZEN variance still mins there. Gradients locate it; the
+        1/g coupling amplifies (39% vs 28.6% depth) but does not create it.
+      • THE NEGATIVE (THE HEADLINE) — ⟨EI⟩(J) stays MONOTONE-decreasing ⇒ the emissions C_opt pin is
+        STILL NOT recovered. F's U is worth ~39% against τ_mix's ~20× swing: THE SCALE SWAMPS THE SHAPE.
+        The whole upgrade moves ⟨EI⟩ by ≤~4% vs rung 23. Certified on the real chemistry, not inferred.
+      • THE ADJUDICATION — the rung-16-vs-23 fork resolves BOTH ways, in DIFFERENT FACTORS: the SHAPE
+        grows off-optimum (rung 16 vindicated, and derived); the PRODUCT still falls (rung 23 vindicated).
+        Rung-16's kink is NOT an artifact — it is real and MIS-SCALED (b_u put the growth in the only
+        factor rung 16 had, at a magnitude that made it dominate).
+    WHAT STAYS HONEST (loud):
+      • RUNG 24 LOCALIZES THE RATE, NOT THE SCALE. ⟨τ⟩'s magnitude still rides on rung-11's un-anchored
+        τ_mix and F's on rung-22's k_p/k_y/k_z. So rung-23 §9's hope that a locally-resolved mixing time
+        lets rung 17 claim a firing MAGNITUDE is NOT delivered — it buys a sharper DIRECTION only. That
+        wording is CORRECTED, not inherited.
+      • the fine-vs-coarse gradient story (why the best-mixed field is the steepest) is a property of the
+        FIXED-σ Gaussian-plume CARTOON, not a general mixing law — rung-22's altitude.
+      • τ(ξ) is a TIGHT function only over the NO-relevant RICH branch; the LEAN far-wall plateau is also
+        flat ⇒ also long-dwell, but lean pockets take `_ideal_bell_ei`, which IGNORES τ — so it is INERT.
+      • at S>H the F-minimum at C_opt is LOCAL, not global: the cartoon's deep-over-penetration plume
+        WRAPS (δ>H, both-wall images) and re-uniformizes — visible in g too, so an INHERITED rung-22
+        boundary, not a rung-24 result.
+      • still a local rate on ONE frozen cross-plane PATTERN — the field's shape is the Gaussian-plume
+        cartoon; only its RELAXATION is now locally resolved. A transported-PDF/CFD solve stays the ceiling.
+
+    `spatial_local=None` is the exact prior path; a pure diagnostic (NO/N never enter _equil_solve), so
+    bit-for-bit rung 6. S/k_y/k_z order-of-magnitude; k_p sets C_opt=1/(4k_p²) (Holdeman ≈2.5)."""
+    S: float = 0.0625          # dilution-jet spacing, m (forms the Holdeman group with H and J)
+    k_p: float = 0.316         # penetration constant — SETS C_opt=1/(4k_p²) as an OUTPUT (no C_opt knob!)
+    k_y: float = 0.28          # streamwise (penetration) mixing length / duct height H (fixed, J-independent)
+    k_z: float = 0.28          # spanwise mixing length / spacing S (fixed, J-independent)
+    ny: int = 48               # cross-plane penetration (y) grid  (F stable to 3 decimals 32→96)
+    nz: int = 48               # cross-plane span (z) grid
+    n_bell: int = 120          # per-pocket ξ-grid points (each a full _quench_no — cost driver, rung 16)
+    n_quad: int = 160          # β-PDF quadrature nodes (rung 13)
+    # NO `nt` — rung-24's dwell is ANALYTIC (τ_cell = τ_mix[1 − 1/E + 1/u]); rung 23 needed the
+    # time-stepped arrival-time-deficit quadrature, rung 24 integrates it in closed form.
+
+    def __post_init__(self):
+        for name, v in (("S", self.S), ("k_p", self.k_p), ("k_y", self.k_y), ("k_z", self.k_z)):
+            assert v > 0.0, f"SpatialLocalPDF.{name}={v} must be positive"
+        assert self.ny > 1 and self.nz > 1 and self.n_bell > 1 and self.n_quad > 1, \
+            "SpatialLocalPDF grid sizes (ny, nz, n_bell, n_quad) must be > 1"
+
+    def C(self, mixing: "JetMixing") -> float:
+        """The Holdeman momentum-flux/geometry group C=(S/H)√J (identical to SpatialPDF.C)."""
+        return (self.S / mixing.H) * math.sqrt(mixing.J)
+
+    def C_opt(self) -> float:
+        """The DERIVED uniformity optimum C_opt=1/(4·k_p²) (δ fills half-height). NOT a knob — the
+        rung-22 signature. k_p=0.316 ⇒ ≈2.5. Rung 24's F(C) mins HERE, derived from gradients."""
+        return 1.0 / (4.0 * self.k_p * self.k_p)
+
+    def local_field(self, mixing: "JetMixing", far_overall: float, phi_primary: float):
+        """The resolved WIDTH g (== rung 22's, by construction), the LOCALLY-RESOLVED dwell spectrum
+        τ(ξ), the pure field functional F=⟨τ⟩/τ_mix, and the rung-18 two-stream ceiling.
+        Returns (g_spatial, tau_of_xi, F_shape, g_ceiling)."""
+        g_ceiling = _two_stream_ceiling(far_overall, phi_primary)
+        g_spatial, tau_of_xi, F_shape = _spatial_local_field(
+            far_overall, phi_primary, self.S, mixing.H, mixing.J, mixing.tau_q,
+            k_p=self.k_p, k_y=self.k_y, k_z=self.k_z, ny=self.ny, nz=self.nz)
+        return g_spatial, tau_of_xi, F_shape, g_ceiling
+
+
+@dataclass
 class PromptNO:
     """Rung-19 prompt-NO (Fenimore) config — De Soete's (1975) global-rate CORRECTION FACTOR
     reduced to its fitted, rich-peaking φ-shape (docs/rung19-spec.md). An IMPOSED trace channel
@@ -2489,6 +2731,21 @@ class ZonedNOxState:
     ei_no_spatial_dwell_meanfield: Optional[float] = None  # term1 + term2(scalar ⟨τ⟩) — the reference
     ei_no_spatial_dwell_excess: Optional[float] = None     # term2 with the correlated τ(ξ) (rich-pocket sum)
     corr_ratio: Optional[float] = None         # term2_correlated / term2_meanfield (>1 ⇒ correlation ADDS NO)
+    # RUNG 24 — the LOCALLY-RESOLVED mixing time (each cell its OWN gradient-derived rate ω=D_t|∇ξ|²/var,
+    # instead of rungs 11–23's ONE global τ_mix). The terminal field is rung-22's EXACTLY ⇒ g identical BY
+    # CONSTRUCTION. τ_mix CANCELS out of u, so ⟨τ⟩ = τ_mix(J)·F_shape(C) EXACTLY — and `f_shape` is the
+    # rung's derived content: U-SHAPED, min AT C_opt (the off-optimum dwell GROWTH rung 16 imposed, here
+    # DERIVED). But F's ~39% U loses to τ_mix's ~20× swing ⇒ `ei_no_spatial_local` stays MONOTONE in J:
+    # the emissions C_opt pin is STILL not recovered (the certified NEGATIVE headline). Rung 24 localizes
+    # the RATE, not the SCALE.
+    spatial_local: Optional["SpatialLocalPDF"] = None   # the locally-resolved-rate config used
+    g_spatial_local: Optional[float] = None    # the resolved-field width (== g_spatial, BY CONSTRUCTION)
+    f_shape: Optional[float] = None            # F=⟨τ⟩/τ_mix — the PURE field functional (U-shaped, min AT C_opt)
+    tau_mean_local: Optional[float] = None     # ⟨τ⟩_PDF at the locally-resolved rates (= τ_mix·F, β-PDF-weighted)
+    ei_no_spatial_local: Optional[float] = None            # term1 + term2(locally-resolved τ(ξ))
+    ei_no_spatial_local_meanfield: Optional[float] = None  # term1 + term2(scalar ⟨τ⟩) — the matched-mean twin
+    ei_no_spatial_local_excess: Optional[float] = None     # term2 with the locally-resolved τ(ξ)
+    corr_ratio_local: Optional[float] = None   # term2_correlated / term2_meanfield at the local rates
     # RUNG 19/20 — the two lower-bound-lifting channels (both off ⇒ bit-for-bit the prior rung).
     # super_eq_o lifts the [O] by m(T) inside the Zeldovich integrator; prompt ADDS the imposed De Soete
     # φ-bump `ei_no_prompt`. RUNG 19 lifted only the PRIMARY (folded into `primary.ei_no`/`x_no_mix`).
@@ -2969,6 +3226,7 @@ class Gas:
                   transported: Optional["TransportedPDF"] = None,
                   spatial: Optional["SpatialPDF"] = None,
                   spatial_dwell: Optional["SpatialDwellPDF"] = None,
+                  spatial_local: Optional["SpatialLocalPDF"] = None,
                   super_eq_o: bool = False, prompt: Optional["PromptNO"] = None,
                   quench_ngrid: int = 240, quench_nsteps: int = 2000) -> "ZonedNOxState":
         """Two-zone (primary → dilution) thermal NOx (docs/rung8-spec.md). Runs the SAME
@@ -3125,13 +3383,19 @@ class Gas:
             "J and duct H for the penetration δ∝√(S·H)·J^(1/4) AND the derived τ_mix=H/(C_e√J·U_c) that "
             "sets the dwell's absolute scale (the cross-plane developed over the rung-11 mixing time)."
         )
+        assert not (spatial_local is not None and mixing is None), (
+            "spatial_local (rung-24 LOCALLY-RESOLVED mixing time) REQUIRES a `mixing` config — it needs the "
+            "jet's J and duct H for the penetration δ∝√(S·H)·J^(1/4), and τ_mix=H/(C_e√J·U_c) for the dwell's "
+            "absolute SCALE (τ_mix cancels out of the local rate u, but ⟨τ⟩=τ_mix·F still rides on it)."
+        )
         assert sum(x is not None for x in (unmixedness, pdf, pdf_quench, pocket_quench,
-                                           transported, spatial, spatial_dwell)) <= 1, (
+                                           transported, spatial, spatial_dwell, spatial_local)) <= 1, (
             "pass AT MOST ONE of unmixedness (rung-12 two-stream) / pdf (rung-13 β-PDF on the ideal bell) "
             "/ pdf_quench (rung-15 β-PDF THROUGH the quench, LINEARISED dwell) / pocket_quench (rung-16 "
             "PER-POCKET quench, SCALAR dwell) / transported (rung-18 transported variance) / spatial "
             "(rung-22 RESOLVED cross-plane WIDTH) / spatial_dwell (rung-23 RESOLVED cross-plane width AND "
-            "DERIVED dwell τ(ξ)) — SEVEN closures of the SAME variance physics."
+            "DERIVED dwell τ(ξ), ONE global τ_mix) / spatial_local (rung-24 the same cross-plane with a "
+            "LOCALLY-RESOLVED mixing rate per cell) — EIGHT closures of the SAME variance physics."
         )
         # RUNG 21 — the rung-20 forbid guard is DISCHARGED (docs/rung21-spec.md). super_eq_o now
         # threads the SAME Westenberg m(T) lift through the ideal-bell composition integrals too —
@@ -3302,6 +3566,57 @@ class Gas:
             state.ei_no_pocket_excess = excess
             state.ei_no_pocket_quench = q["ei"] + excess   # term1 (ei_no_quenched) + term2
             state.max_a_quench = max(state.max_a_quench, pocket_max_a)   # dormancy gate spans pockets
+            return state
+
+        if spatial_local is not None:
+            # RUNG 24 — the LOCALLY-RESOLVED MIXING TIME (docs/rung24-spec.md). Rungs 11–23 all ran on ONE
+            # GLOBAL τ_mix; rung-23's §9 named this successor by hand and hypothesized it "could restore an
+            # off-optimum dwell GROWTH that pins the emissions optimum non-circularly". Rung 24 ASKS that.
+            # Each cell relaxes at its OWN gradient-derived rate ω=D_t|∇ξ|²/var (rung-18's ω=χ/2var, made
+            # local; D_t=σ²/(2τ_mix) REUSED — no new constant), renormalized to complete at τ_mix, so the
+            # TERMINAL field — hence g — is rung-22's EXACTLY, BY CONSTRUCTION. Same structure as rung 23
+            # (only the dwell SOURCE changes): term1 = ei_no_quenched (rung-11 bulk floor, unchanged);
+            # term2 = ⟨EI_pocket_quench(ξ; τ(ξ))⟩_g at the LOCALLY-RESOLVED τ(ξ), with the matched-mean twin.
+            #
+            # THE SPLIT ANSWER. POSITIVE: τ_mix CANCELS out of u, so ⟨τ⟩ = τ_mix(J)·F(C) EXACTLY, and the
+            # pure field functional F(C) is U-SHAPED with its min AT C_opt — the off-optimum dwell GROWTH
+            # rung 16 IMPOSED, here DERIVED from gradients (non-circular: ⟨|∇ξ|²⟩, which carries no g, is
+            # MAXIMAL at C_opt — the kill test, anchor §2). NEGATIVE (THE HEADLINE): F's ~39% U loses to
+            # τ_mix's ~20× 1/√J swing, so ⟨EI⟩(J) stays MONOTONE — the emissions C_opt pin is STILL not
+            # recovered, and the whole upgrade moves ⟨EI⟩ ≤~4%. THE SCALE SWAMPS THE SHAPE; rung 24
+            # localizes the RATE, not the SCALE. So the rung-16-vs-23 fork resolves BOTH ways in different
+            # factors: the shape grows (rung 16 vindicated, derived), the product falls (rung 23 vindicated)
+            # — rung-16's kink is real and MIS-SCALED, not an artifact. A pure diagnostic: NO/N never enter
+            # _equil_solve, cycle bit-for-bit rung 6.
+            C = spatial_local.C(mixing)
+            g_seg, tau_of_xi, f_shape, g_ceiling = spatial_local.local_field(mixing, far, phi_primary)
+            assert g_seg < g_ceiling + 1e-9, (
+                f"resolved-field g_spatial={g_seg:.4e} exceeded the two-stream ceiling g_ceiling="
+                f"{g_ceiling:.4e} — a partial-mix cross-plane must be LESS segregated than the two-δ extreme."
+            )
+            xibar = far / (1.0 + far)
+            nodes, wts = _beta_pdf_nodes_weights(xibar, g_seg, n_quad=spatial_local.n_quad)
+            tau_mean = sum(wi * tau_of_xi(x) for wi, x in zip(wts, nodes))    # ⟨τ⟩_PDF (matched-mean scalar)
+            excess_corr, a_corr = _pocket_quench_mean_ei(     # term 2 at the LOCALLY-RESOLVED τ(ξ)
+                far, Tt3, p, hf_fuel, tau, 0.0, g_seg, tau_of_xi=tau_of_xi,
+                n_bell=spatial_local.n_bell, n_quad=spatial_local.n_quad,
+                quench_ngrid=quench_ngrid, quench_nsteps=quench_nsteps, super_eq_o=super_eq_o)
+            excess_mean, a_mean = _pocket_quench_mean_ei(     # term 2 with the SCALAR ⟨τ⟩ (correlation off)
+                far, Tt3, p, hf_fuel, tau, tau_mean, g_seg,
+                n_bell=spatial_local.n_bell, n_quad=spatial_local.n_quad,
+                quench_ngrid=quench_ngrid, quench_nsteps=quench_nsteps, super_eq_o=super_eq_o)
+            state.spatial_local = spatial_local
+            state.C_holdeman = C
+            state.g_ceiling = g_ceiling
+            state.g_spatial_local = g_seg
+            state.g_seg = g_seg
+            state.f_shape = f_shape
+            state.tau_mean_local = tau_mean
+            state.ei_no_spatial_local_excess = excess_corr
+            state.ei_no_spatial_local = q["ei"] + excess_corr             # term1 + locally-resolved term2
+            state.ei_no_spatial_local_meanfield = q["ei"] + excess_mean   # term1 + matched-mean term2
+            state.corr_ratio_local = (excess_corr / excess_mean) if excess_mean > 1e-30 else float("nan")
+            state.max_a_quench = max(state.max_a_quench, a_corr, a_mean)   # dormancy spans both twins
             return state
 
         if spatial_dwell is not None:
