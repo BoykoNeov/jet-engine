@@ -53,7 +53,7 @@ in `[F, I]`; the reversible bound `R` sits a small but real distance **above** t
 ## (2) THE KEYSTONE — the integrator's `Da→∞` asymptote == the closed-form (I)
 
 The closed-form irreversible-fast ceiling (I) is a **rate-law-independent** reference. The marching
-integrator, pushed to large `Da` (with `Da·ds` held ≲ 0.25 for stability), converges to it:
+integrator, pushed to large `Da` (fully pinning the composition to local equilibrium), converges to it:
 
 ```
   Tt4=2200:  closed-form (I) = 1412.5755
@@ -131,9 +131,17 @@ The interior integrator marches along a **geometric pressure schedule** `p(s) = 
   2nd-order; the frozen limit converges as (4).
 - The `Da→∞` closed form (I) and both rung-14 bounds (F, R) are computed directly (no marching).
 
+**Stability.** The shipped scheme is **unconditionally stable in `Da`**: the composition step is the
+exact linear-relaxation fraction `relax = 1 − e^{−Da·ds} ∈ [0,1]` for any `Da`, and the trapezoid
+energy is solved implicitly — so even `Da = 10⁸` at `nstep = 400` is well-behaved (`dS = +0.017`,
+`V9` below the reversible ceiling). The **only** error is the trapezoid truncation, 2nd-order in
+`1/nstep`; below `nstep ≈ 50` it overshoots (the exit creeps past the reversible ceiling, `dS < 0`),
+so `FiniteRate` requires `nstep ≥ 100` and `_finite_rate_expand` asserts `dS ≥ −5e-3` as the
+coarse-grid net. `Da = ∞` is never marched — it dispatches to the closed-form (I).
+
 **Rejected alternatives (recorded so they are not re-tried):** forward-Euler on `dh=v·dp` is only
 1st-order (needs ~25 600 steps for the frozen bound); RK4 is stiff-unstable at large `Da`; operator
 splitting (isentropic-frozen ⊕ const-p react) mis-allocates recombination energy between reheat and
-KE and plateaus ~0.5 m/s short of (I) with a residual splitting entropy that does not vanish. The
-marching integrator is NEVER run at `Da=∞` (dispatch to the closed form); its stable envelope is
-`Da·ds ≲ 2`.
+KE and plateaus ~0.5 m/s short of (I) with a residual splitting entropy that does not vanish; and an
+explicit predictor-corrector on the target is unstable as `relax → 1` (this is where the spurious
+`Da·ds`-instability lived — the shipped *implicit* scheme does not have it).

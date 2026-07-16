@@ -1909,11 +1909,9 @@ def _nozzle_clamp_diag(comp_entry: dict, Tt9: float, T9: float,
 
 # --- Rung 25: FINITE-RATE nozzle chemistry (the Damköhler flow BETWEEN rung-14's bounds) --------- #
 
-def _cp_molar(sp: str, T: float) -> float:
-    """Molar heat capacity of one species, J/(mol·K) = Ru·(cp/Ru), low/high polynomial branch
-    (rung 25). The Σ n_i·cp_i denominator of the finite-rate dT update."""
-    A = _SPECIES[sp][1] if T <= _T_BREAK else _SPECIES[sp][2]
-    return _Ru * _poly(A, T)
+_DS_FLOOR = -5e-3   # 2nd-law tolerance, J/(mol·air·K). At the config minimum nstep (100) the worst
+                    # trapezoid-truncation dS is ~−1e-3 (frozen limit, 2nd-order → 0); this floor clears
+                    # that yet catches a pathologically coarse grid (nstep≈10 ⇒ dS≈−0.1). See below.
 
 
 def _finite_rate_expand(comp_entry: dict, far: float, Tt9: float, pt9: float, p9: float,
@@ -1974,6 +1972,13 @@ def _finite_rate_expand(comp_entry: dict, far: float, Tt9: float, pt9: float, p9
     H_exit = _mix_h_abs_B(comp, T)
     V9 = math.sqrt(2.0 * (H_entry - H_exit) / m)
     dS = _mix_entropy_molar(comp, T, p9) - S_entry
+    # 2nd law (a conservation assert, run every execution — project contract): a relaxation toward
+    # equilibrium can only PRODUCE entropy, so dS ≥ 0 physically. A meaningfully-negative dS here means
+    # the trapezoidal grid is too coarse (truncation overshoots — the exit even creeps past the reversible
+    # ceiling) — refuse it rather than return a non-physical number. Well-resolved at nstep ≥ 100.
+    assert dS > _DS_FLOOR, \
+        f"finite-rate dS={dS:.3e} < 0 (2nd law violated) — nstep={nstep} too coarse (trapezoid " \
+        f"truncation); increase nstep (≥ 100 is well-resolved here)."
     return T, V9, comp, dS
 
 
@@ -2921,14 +2926,18 @@ class FiniteRate:
     irreversible-fast ceiling (I). A CONSTANT Da interpolates the bracket but CANNOT show FREEZE-OUT
     (τ_chem(T) overtaking τ_flow as the gas cools and recombination stops) — that is the deferred
     seam (a T-dependent τ_chem reintroduces an unanchored Arrhenius constant). `nstep` is the
-    pressure-march resolution (keep Da·ds ≲ 2 for stability of the exponential-relaxation step)."""
+    pressure-march resolution; the scheme is unconditionally stable in Da (see the `nstep` field)."""
     Da: float                 # normalized Damköhler number (THE knob); interior 0 < Da < ∞
-    nstep: int = 400          # pressure-march resolution
+    nstep: int = 400          # pressure-march resolution (≥ 100). The exp-relaxation step is
+                              # UNCONDITIONALLY stable in Da (relax∈[0,1]); nstep sets only the
+                              # trapezoid-energy accuracy (2nd-order).
 
     def __post_init__(self):
         assert self.Da > 0.0, \
             f"FiniteRate.Da={self.Da} must be positive (Da=0 and Da=∞ are the dispatched F/I bounds)"
-        assert self.nstep >= 10, f"FiniteRate.nstep={self.nstep} too coarse (need ≥ 10)"
+        assert self.nstep >= 100, \
+            f"FiniteRate.nstep={self.nstep} too coarse (need ≥ 100 — below it the trapezoid truncation " \
+            f"gives a non-physical 2nd-law violation)"
 
 
 @dataclass

@@ -48,7 +48,11 @@ Written per mol dry air (mass `m` is recombination-invariant, atoms conserved):
 
 The temperature update carries **both** terms — the pressure work cools, the recombination reheats:
 `dT = [ (n_tot·Ru·T/p)·dp − Σ_i h_i·dn_i ] / Σ_i n_i·cp_i`. Dropping the `Σ h_i dn_i` term would
-silently give the frozen temperature at every `Da`.
+silently give the frozen temperature at every `Da`. **The shipped code realizes this IMPLICITLY** —
+it does not evaluate this explicit `dT`; it bisects `T1` on the integrated energy balance
+`H_abs(comp1,T1) − H_abs(comp0,T0) = ½(v0+v1)·dp` (the trapezoidal `dh=v·dp`), whose `Σ n_i cp_i`
+and `Σ h_i dn_i` are both inside `H_abs`. The implicit form is 2nd-order and stable where the
+explicit Euler step is not (the frozen-limit convergence, gate 2, is the proof).
 
 **Why the limits reduce (thermodynamics, not luck):**
 - **(F) `Da→0`, fixed composition:** `T ds = dh − v dp = 0` — **isentropic**, matches rung-14 frozen.
@@ -136,8 +140,9 @@ certified.**
    suite are bit-for-bit unchanged. The frozen dispatch `V9_frozen` equals rung-14's exactly.
 2. **REDUCE — integrator `Da→0` → (F)**, convergent 2nd-order in `1/nstep` (§ above; `<3e-3` at
    nstep=400).
-3. **THE KEYSTONE — integrator `Da→∞` asymptote == closed-form (I)** (`<0.1 m/s` at `Tt4=2200`,
-   `Da·ds≲0.25`). This certifies (I) as the true finite-rate endpoint.
+3. **THE KEYSTONE — integrator at large `Da` (composition pinned) asymptotes to closed-form (I)**
+   (`<0.15 m/s` at `Tt4=2200`, `nstep≥1200`; residual is trapezoid truncation). This certifies (I)
+   as the true finite-rate endpoint.
 4. **THE THREE-STATE ORDERING** — `V9_F ≤ V9_I ≤ V9_R` with **both** gaps `> 0` hot, and the interior
    `V9(Da)` **monotone-increasing**, strictly inside `[V9_F, V9_I]`.
 5. **DORMANT LEAN, EARNS ITS KEEP HOT** — both gaps → 0 at `Tt4=1500` (`<0.01%`) and grow monotonically

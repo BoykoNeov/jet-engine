@@ -136,6 +136,20 @@ def test_entropy_production_nonneg():
     assert abs(dS0) < 1e-3, f"dS should → 0 as Da→0: {dS0}"
 
 
+def test_second_law_guard_rejects_coarse_grid():
+    """A pathologically coarse grid overshoots (trapezoid truncation ⇒ dS < 0, the exit even creeps
+    past the reversible ceiling) — the 2nd-law conservation assert must REFUSE it, not return garbage.
+    The shipped scheme is STABLE in Da (no explicit-pinning instability): even Da=1e6 is fine at
+    nstep=400 — so the guard is the coarse-grid net, and large Da at a good grid is NOT refused."""
+    d = _dp(2200.0)
+    ce = _equilibrium_composition(d["far"], d["Tt4"], d["pt4"])
+    with pytest.raises(AssertionError):    # nstep=10: dS ≈ −0.1 (trapezoid truncation), non-physical
+        _finite_rate_expand(ce, d["far"], d["Tt9"], d["pt9"], d["p9"], 1e-4, 10)
+    # cranking Da at a WELL-RESOLVED grid is safe (stable) and stays below the reversible ceiling
+    _, V9, _, dS = _finite_rate_expand(ce, d["far"], d["Tt9"], d["pt9"], d["p9"], 1e6, 400)
+    assert dS > 0.0 and V9 < _nozzle(2200.0, Da=3.0).V9_reversible
+
+
 # --- GATE 7: ATOM CONSERVATION (the vector-relaxation free invariant) --------------------------- #
 
 def test_atoms_conserved():
@@ -176,6 +190,9 @@ def test_guards():
         FiniteRate(Da=0.0)
     with pytest.raises(AssertionError):
         FiniteRate(Da=-1.0)
+    # nstep must be well-resolved (below 100 the trapezoid truncation goes non-physical)
+    with pytest.raises(AssertionError):
+        FiniteRate(Da=3.0, nstep=99)
     # requires the equilibrium gas
     with pytest.raises(AssertionError):
         Gas.thermally_perfect().finite_rate_nozzle(
