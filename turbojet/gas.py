@@ -2020,6 +2020,117 @@ def _irreversible_fast_expand(comp_entry: dict, far: float, Tt9: float, pt9: flo
     return T9, V9, comp9, T_star
 
 
+# --- Rung 26: FREEZE-OUT — an ANCHORED recombination clock over rung-25's exact integrator -------- #
+#
+# Rung 25's scalar Da is a normalized cartoon that slides the whole expansion uniformly. Rung 26
+# promotes it to a LOCAL Da(T,p)=τ_res/τ_chem(T,p) from an anchored recombination clock, so the
+# relaxation SHUTS OFF partway down the nozzle (freeze-out) — and the shut-off point MOVES with Tt4.
+# The ONLY structural change to the integrator is Da → Da_local(s); everything else is byte-identical
+# to _finite_rate_expand (gate 2 is bit-for-bit). See docs/rung26-spec.md.
+
+# GRI-Mech 3.0, verbatim: H+OH+M <=> H2O+M   2.200E+22  -2.000  0.00  (cm^6/mol^2/s, cal/mol). The
+# dominant three-body radical sink — the SAME mechanism gas.py:94 already cites for the dissociation
+# species' NASA polynomials, so ZERO new unanchored constants. Ea=0 EXACTLY ⇒ k(T)=A·T^n with NO
+# Arrhenius exponential; n<0 ⇒ k ACCELERATES as T falls, OPPOSING freeze-out (which is density-driven).
+_K_HOHM_A = 2.200e22    # pre-exponential A, cm^6/(mol^2 s)  [CHEMKIN three-body units]
+_N_HOHM = -2.0          # temperature exponent n (< 0)
+
+
+def _tau_chem_recomb(comp: dict, T: float, p: float, *,
+                     kill_T: Optional[float] = None,
+                     kill_M: Optional[float] = None) -> float:
+    """Anchored recombination clock (rung 26; docs/rung26-spec.md). The OH-consumption relaxation time
+    of the GRI-Mech 3.0 termolecular sink H+OH+M → H2O+M:
+
+        τ_chem = 1 / ( k(T)·[OH]·[M] ),   k(T)=A·T^n (Ea=0),  [OH]=x_OH·c_tot,  [M]=c_tot
+        c_tot = p/(Ru·T)  converted to mol/cm^3 to match the CHEMKIN cm^6/mol^2/s units.
+
+    A three-body rate is k[X][Y][M], so τ_chem carries a DENSITY² law (c_tot²∝(p/T)²). That collapse —
+    AGAINST an opposing k(T) that RISES on cooling — is what freezes the flow (the kill test certifies
+    which term wins). Returns seconds; +inf when x_OH ≤ 0 (no radical to recombine ⇒ infinitely slow ⇒
+    frozen). A single representative reaction is a single-timescale surrogate for the recombination
+    network — an order-of-magnitude clock, disclosed.
+
+    KILL-TEST hooks (the mechanism certification, § kill test): `kill_T` pins T in k(T) only (density
+    alone drives); `kill_M` pins the density c_tot in the [OH]·[M] term only (temperature alone). Each
+    leaves the OTHER dependence live. Run on a STANDALONE clock with x_OH HELD FIXED — the marched
+    integrator moves x_OH, so it does not isolate the two."""
+    ntot = sum(comp.values())
+    x_oh = comp.get("OH", 0.0) / ntot if ntot > 0.0 else 0.0
+    if x_oh <= 0.0:
+        return float("inf")
+    c_tot = p / (_Ru * T) / 1.0e6                    # mol/m^3 → mol/cm^3 (CHEMKIN units)
+    Tk = T if kill_T is None else kill_T             # k(T) temperature   (kill_T pins it)
+    c_M = c_tot if kill_M is None else kill_M         # density in [OH]·[M] (kill_M pins it)
+    k = _K_HOHM_A * Tk ** _N_HOHM                     # Ea=0 ⇒ pure power law, no exp
+    return 1.0 / (k * x_oh * c_M * c_M)              # [OH]·[M] = x_oh·c_M·c_M (density²)
+
+
+def _freeze_out_expand(comp_entry: dict, far: float, Tt9: float, pt9: float, p9: float,
+                       da_local_fn: Callable[[dict, float, float], float], nstep: int
+                       ) -> Tuple[float, float, dict, float, float, float, float]:
+    """One FREEZE-OUT nozzle expansion (rung 26; docs/rung26-spec.md): rung-25's `_finite_rate_expand`
+    loop DUPLICATED VERBATIM, with the scalar `Da` promoted to a per-step `Da_local = da_local_fn(comp,
+    T, p)`. That single change lets the relaxation SHUT OFF partway down the nozzle (freeze-out). Every
+    other line — the exact exponential relaxation, the implicit-trapezoid dh=v·dp energy bisection, the
+    atom-conservation and 2nd-law asserts — is byte-identical to rung 25. When `da_local_fn` returns a
+    CONSTANT, this reproduces `_finite_rate_expand(Da)` to the ULP (the reduce gate; the drift tripwire
+    for the duplicated loop).
+
+    Returns (T9, V9, comp9, dS, s_freeze, Da_entry, Da_exit). `s_freeze` ∈ [0,1] is the progress
+    coordinate where `Da_local` first crosses below 1 — the freeze point (0 = frozen from entry, 1 =
+    relaxing throughout the nozzle). Duplication is deliberate (gate 1 keeps rung 25 literally
+    untouched); gate 2 is the tripwire that catches any drift."""
+    S_entry = _mix_entropy_molar(comp_entry, Tt9, pt9)
+    H_entry = _mix_h_abs_B(comp_entry, Tt9)
+    m = _mix_mass_per_air(comp_entry)
+    comp = dict(comp_entry)
+    T = Tt9
+    lnr = math.log(p9 / pt9)                              # < 0
+    ds = 1.0 / nstep
+    sps = list(comp)
+    s_freeze = 1.0                                        # default: never crosses ⇒ relaxes throughout
+    frozen = False
+    Da_entry = da_local_fn(comp, T, pt9)
+    for k in range(nstep):
+        p0 = pt9 * math.exp(lnr * k * ds)
+        p1 = pt9 * math.exp(lnr * (k + 1) * ds)
+        dp = p1 - p0                                      # < 0 (expanding)
+        Da_local = da_local_fn(comp, T, p0)               # <-- THE only change vs rung 25 (scalar Da)
+        if not frozen and Da_local < 1.0:                 # first sub-unity crossing = the freeze point
+            s_freeze = k * ds
+            frozen = True
+        relax = 1.0 - math.exp(-Da_local * ds)            # exact linear-relaxation fraction per step
+        H0 = _mix_h_abs_B(comp, T)
+        v0 = sum(comp.values()) * _Ru * T / p0
+        base = H0 + 0.5 * v0 * dp
+        n_eq = _equilibrium_composition(far, T, p0)       # relaxation target at the step-start state
+        comp1 = {sp: comp[sp] + relax * (n_eq.get(sp, 0.0) - comp[sp]) for sp in sps}
+        ntot1 = sum(comp1.values())
+        lo, hi = _T_EXIT_FLOOR, T + 50.0
+        for _ in range(200):
+            Tm = 0.5 * (lo + hi)
+            resid = _mix_h_abs_B(comp1, Tm) - base - 0.5 * (ntot1 * _Ru * Tm / p1) * dp
+            if resid > 0.0:
+                hi = Tm
+            else:
+                lo = Tm
+            if hi - lo <= 1e-11 * Tm:
+                break
+        T = 0.5 * (lo + hi)
+        assert T > _T_EXIT_FLOOR + 1.0, \
+            f"freeze-out exit T={T:.1f} K pinned at the {_T_EXIT_FLOOR:.0f} K floor (far={far:.4f})"
+        comp = comp1
+    H_exit = _mix_h_abs_B(comp, T)
+    V9 = math.sqrt(2.0 * (H_entry - H_exit) / m)
+    dS = _mix_entropy_molar(comp, T, p9) - S_entry
+    assert dS > _DS_FLOOR, \
+        f"freeze-out dS={dS:.3e} < 0 (2nd law violated) — nstep={nstep} too coarse (trapezoid " \
+        f"truncation); increase nstep (≥ 100 is well-resolved here)."
+    Da_exit = da_local_fn(comp, T, p9)
+    return T, V9, comp, dS, s_freeze, Da_entry, Da_exit
+
+
 @dataclass
 class JetMixing:
     """Rung-11 jet-in-crossflow mixing config — the PHYSICAL dilution-air entrainment model
@@ -2989,6 +3100,69 @@ class FiniteRateNozzleState:
         """Fraction of the ATTAINABLE bracket [F, I] the finite-rate flow reaches at this Da."""
         g = self.V9_irrev_fast - self.V9_frozen
         return (self.V9_finite - self.V9_frozen) / g if g > 0.0 else 0.0
+
+
+@dataclass
+class FreezeOut:
+    """Rung-26 freeze-out config (docs/rung26-spec.md): an ANCHORED recombination clock over rung-25's
+    exact integrator, so the relaxation SHUTS OFF partway down the nozzle (freeze-out) and its point
+    MOVES with Tt4 — the physics a constant Da structurally cannot express.
+
+    `L` is the ONE geometric knob (residence length ≈ 0.5 m; τ_res = L/(0.6·V9_frozen)); the chemistry
+    is anchored to GRI-Mech 3.0 (`_tau_chem_recomb`, zero new constants). `rate_scale` (default 1.0 =
+    anchored) scales Da_local to DRIVE the limit gates/sweeps: →0 ⇒ Da_local→0 ⇒ frozen (F); →∞ ⇒
+    irreversible-fast (I). It does NOT give the bit-for-bit rung-25 reduce — it scales Da_local but the
+    schedule still varies with T,p; that reduce needs a CONSTANT Da_local (the reduce gate). `nstep` is
+    the pressure-march resolution (≥ 100), as rung 25."""
+    L: float = 0.5            # residence length, m (THE geometric knob; sets τ_res, hence the location)
+    nstep: int = 400          # pressure-march resolution (≥ 100), as rung 25
+    rate_scale: float = 1.0   # dimensionless Da_local multiplier for the limit gates (1.0 = anchored)
+
+    def __post_init__(self):
+        assert self.L > 0.0, f"FreezeOut.L={self.L} must be positive"
+        assert self.nstep >= 100, \
+            f"FreezeOut.nstep={self.nstep} too coarse (need ≥ 100 — below it the trapezoid truncation " \
+            f"gives a non-physical 2nd-law violation)"
+        assert self.rate_scale > 0.0, f"FreezeOut.rate_scale={self.rate_scale} must be positive"
+
+
+@dataclass
+class FreezeOutNozzleState:
+    """Rung-26 freeze-out diagnostic (docs/rung26-spec.md). A pure diagnostic BESIDE the cycle — the
+    production nozzle stays FROZEN, so the cycle is bit-for-bit rung 6.
+
+    Adds NO new bound: the freeze-out flow lands inside rung-25's [V9_frozen, V9_irrev_fast]. What it
+    resolves is WHERE the relaxation shuts off (`s_freeze`) — and that point MOVES with Tt4 (the rung).
+    The freeze is certified in COMPOSITION space (`s_freeze`, the frozen-in exit CO/(CO+CO2)); the V9
+    bracket is sub-percent hot, so `V9_freeze` is a tiny wiggle inside [F, I] — its ordering holds but
+    its magnitude is not the finding. Velocities m/s, temperatures K; compositions mole numbers per
+    mol dry air."""
+    # --- rung-25 F/I reference bounds ---
+    T9_frozen: float                  # (F) frozen exit static T (== production nozzle), K
+    V9_frozen: float                  # (F) frozen exhaust velocity, m/s
+    T9_irrev_fast: float              # (I) irreversible-fast exit static T, K
+    V9_irrev_fast: float              # (I) attainable-ceiling exhaust velocity, m/s
+    # --- the freeze-out flow at the anchored (local) Da schedule ---
+    T9_freeze: float                  # freeze-out exit static T, K
+    V9_freeze: float                  # freeze-out exhaust velocity, m/s (inside [F, I])
+    dS_freeze: float                  # freeze-out entropy production, J/(mol·air·K) ≥ 0
+    s_freeze: float                   # progress coord where Da_local crosses 1 (0 = frozen from entry)
+    Da_entry: float                   # Da_local at the nozzle entry
+    Da_exit: float                    # Da_local at the exit
+    co_fraction_entry: float          # CO/(CO+CO2) at the nozzle entry (the dissociation content)
+    co_fraction_freeze_exit: float    # CO/(CO+CO2) frozen in at the freeze-out exit (what a downstream
+                                      # calc would read) — the load-bearing observable, not V9
+
+    @property
+    def frozen_from_entry(self) -> bool:
+        """True when Da_local < 1 at the entry — the flow never switches on (dormant lean)."""
+        return self.Da_entry < 1.0
+
+    @property
+    def bracket_filled(self) -> float:
+        """Fraction of the attainable bracket [F, I] the freeze-out flow reaches (sub-percent hot)."""
+        g = self.V9_irrev_fast - self.V9_frozen
+        return (self.V9_freeze - self.V9_frozen) / g if g > 0.0 else 0.0
 
 
 @dataclass
@@ -4022,6 +4196,57 @@ class Gas:
             T9_reversible=T9r, V9_reversible=V9r,
             T9_finite=T9d, V9_finite=V9d, dS_finite=dS,
             co_fraction_entry=_co(comp_entry), co_fraction_finite_exit=_co(comp9d),
+        )
+
+    def freeze_out_nozzle(self, far: float, Tt4: float, pt4: float,
+                          Tt9: float, pt9: float, p9: float,
+                          freeze_out: "FreezeOut") -> "FreezeOutNozzleState":
+        """Freeze-out nozzle-flow diagnostic (rung 26; docs/rung26-spec.md).
+
+        Rung 25 resolved the finite-rate flow between rung-14's bounds with a single normalized `Da`,
+        a cartoon that slides the whole expansion uniformly and CANNOT show freeze-out. This replaces
+        it with a LOCAL Da(T,p)=τ_res/τ_chem(T,p) from an ANCHORED recombination clock (GRI-Mech 3.0's
+        H+OH+M sink; zero new constants), so the relaxation SHUTS OFF partway down the nozzle — and the
+        shut-off point `s_freeze` MOVES with Tt4 (the rung): lean it never switches on (frozen from
+        entry, Da_local<1 throughout), hot it crosses mid-expansion and later as Tt4 climbs.
+
+        Reports rung-25's (F)/(I) bounds and the freeze-out flow (`V9_freeze` inside [F, I], `s_freeze`,
+        `Da_local` entry/exit, frozen-in exit CO). Adds NO new bound; resolves WHERE within the bracket
+        the flow freezes. τ_res is pinned to the FROZEN/cycle V9 (not the freeze-out output — that would
+        be a fixed-point coupling). The freeze EXISTS/is-ABSENT/MOVES are the certified claims; the
+        LOCATION rides on the geometric knob `L` and is disclaimed (docs/rung26-spec.md § NOT claimed).
+
+        A pure diagnostic: reads only (far, Tt4, pt4, Tt9, pt9, p9) and touches no cycle path, so the
+        cycle stays bit-for-bit rung 6. Requires the equilibrium (rung-6) gas."""
+        assert self.equilibrium, \
+            "freeze_out_nozzle: needs the rung-6 equilibrium gas (Gas.reacting_equilibrium())"
+        assert p9 <= pt9 * (1.0 + 1e-12), \
+            f"freeze_out_nozzle: back-pressure p9={p9:.0f} Pa exceeds pt9={pt9:.0f} Pa (cannot expand to it)"
+        comp_entry = _equilibrium_composition(far, Tt4, pt4)     # the FROZEN station-4 mixture
+
+        T9f, V9f, _ = _expand_nozzle(comp_entry, far, Tt9, pt9, p9, shifting=False)       # (F)
+        T9i, V9i, _, _ = _irreversible_fast_expand(comp_entry, far, Tt9, pt9, p9)         # (I)
+
+        tau_res = freeze_out.L / (0.6 * V9f)     # pinned to FROZEN V9 (no fixed-point coupling)
+        rs = freeze_out.rate_scale
+
+        def _da_local(comp: dict, T: float, p: float) -> float:
+            # Da_local = rate_scale · τ_res / τ_chem(T,p; comp). τ_chem→∞ (x_OH≤0) ⇒ Da_local→0 (frozen).
+            return rs * tau_res / _tau_chem_recomb(comp, T, p)
+
+        T9d, V9d, comp9d, dS, s_freeze, Da_entry, Da_exit = _freeze_out_expand(
+            comp_entry, far, Tt9, pt9, p9, _da_local, freeze_out.nstep)
+
+        def _co(c: dict) -> float:
+            a, b = c.get("CO", 0.0), c.get("CO2", 0.0)
+            return a / (a + b) if (a + b) > 0.0 else 0.0
+
+        return FreezeOutNozzleState(
+            T9_frozen=T9f, V9_frozen=V9f,
+            T9_irrev_fast=T9i, V9_irrev_fast=V9i,
+            T9_freeze=T9d, V9_freeze=V9d, dS_freeze=dS,
+            s_freeze=s_freeze, Da_entry=Da_entry, Da_exit=Da_exit,
+            co_fraction_entry=_co(comp_entry), co_fraction_freeze_exit=_co(comp9d),
         )
 
     # --- Rung-17 combustor-mixing-fidelity ladder of the dropped-clamp margin (DECOUPLED) --------- #

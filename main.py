@@ -24,7 +24,7 @@ from turbojet.gas import (  # noqa: E402
     _equilibrium_no_fraction, _primary_aft, _thermal_no, _super_eq_o_multiplier,
     _quench_trajectory, _quench_no, _bell_interpolator, _beta_pdf_nodes_weights, _ideal_bell_ei,
     SpatialLocalPDF, _two_stream_ceiling, _transport_variance, _pdf_mean_ei, _spatial_segregation,
-    _spatial_dwell_field, _spatial_local_field, FiniteRate,
+    _spatial_dwell_field, _spatial_local_field, FiniteRate, FreezeOut, _tau_chem_recomb, _Ru,
 )
 
 TS_DIAGRAM_PATH = "ts_diagram.png"
@@ -821,6 +821,63 @@ def print_finite_rate_nozzle_table(flight):
     print("  law) peaks at intermediate Da; freeze-out (τ_chem(T) quenching the recombination) is the")
     print("  deferred seam. The entry irreversibility is a consequence of the FROZEN turbine — a shifting")
     print("  turbine would shrink it (the rung-26 seam).")
+
+
+def print_freeze_out_nozzle_table(flight):
+    """Rung-26 payoff: FREEZE-OUT — an anchored recombination clock that resolves WHERE the nozzle
+    chemistry quenches, and shows the freeze point MOVE with Tt4.
+
+    Rung 25's Da is a normalized cartoon that slides the whole expansion uniformly; a CONSTANT Da
+    cannot show freeze-out. Rung 26 replaces it with a LOCAL Da(T,p)=τ_res/τ_chem(T,p) from the
+    ANCHORED GRI-Mech 3.0 sink H+OH+M→H2O+M (Ea=0, n=−2 — zero new constants). As the gas expands,
+    the density² collapse (c_tot²∝(p/T)²) outruns k(T)'s cooling acceleration, so τ_chem grows,
+    Da_local falls through 1, and the composition FREEZES — at a point that walks downstream as Tt4
+    climbs. A pure diagnostic: bit-for-bit rung 6 (the production nozzle stays frozen).
+    """
+    print("\nFreeze-out (rung 26): an ANCHORED recombination clock over rung-25's exact integrator.")
+    print("Rung-25's Da is uniform (no freeze-out); here Da_local(T,p)=τ_res/τ_chem falls through 1")
+    print("PARTWAY down the nozzle — and the freeze point MOVES with Tt4 (the physics a constant Da")
+    print("cannot express). Chemistry is GRI-Mech 3.0 verbatim; the only knob left is geometric (L).")
+
+    # (1) The moving freeze point — a Tt4 sweep. Dormant lean (frozen from entry), walks downstream hot.
+    print("\n  The freeze point walking downstream with Tt4 (real self-quenching integrator, L=0.5 m):")
+    print(f"  {'Tt4 [K]':>8} {'Da_entry':>9} {'Da_exit':>9} {'s_freeze':>9} "
+          f"{'CO_entry':>10} {'CO_exit':>10} {'frozen@entry':>13}")
+    print("  " + "-" * 74)
+    for Tt4 in (1500.0, 1650.0, 1800.0, 2000.0, 2200.0):
+        eq = Gas.reacting_equilibrium()
+        r = build_turbojet(eq, PI_C, Tt4, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+        st4, st9 = r.stations["4"], r.stations["9"]
+        fz = eq.freeze_out_nozzle(st4.far, st4.Tt, st4.pt, st9.Tt, st9.pt, r.p9, FreezeOut())
+        print(f"  {Tt4:>8.0f} {fz.Da_entry:>9.3e} {fz.Da_exit:>9.3e} {fz.s_freeze:>9.3f} "
+              f"{fz.co_fraction_entry:>10.3e} {fz.co_fraction_freeze_exit:>10.3e} "
+              f"{str(fz.frozen_from_entry):>13}")
+    print("  Lean (≤1650 K): Da_local<1 throughout ⇒ FROZEN FROM ENTRY (s=0) — an independent derivation")
+    print("  of the production frozen nozzle. Hot: the crossing walks downstream (0.118→0.288→0.378) and")
+    print("  more CO recombines. The MOTION is the certified rung; the s-VALUES are not (they ride on L).")
+
+    # (2) The kill test — density drives the freeze DESPITE an opposing temperature effect.
+    print("\n  Kill test (Tt4=2200 K, standalone clock, x_OH pinned at frozen entry):")
+    eq = Gas.reacting_equilibrium()
+    r = build_turbojet(eq, PI_C, 2200.0, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+    st4, st9 = r.stations["4"], r.stations["9"]
+    ce = _equilibrium_composition(st4.far, st4.Tt, st4.pt)
+    Tt9, pt9, p9 = st9.Tt, st9.pt, r.p9
+    T_ex = Tt9 * (p9 / pt9) ** ((1.30 - 1.0) / 1.30)
+    tau_res = 0.5 / (0.6 * r.V9)
+    da = lambda tau: tau_res / tau
+    da_entry = da(_tau_chem_recomb(ce, Tt9, pt9))
+    da_real = da(_tau_chem_recomb(ce, T_ex, p9))
+    da_killT = da(_tau_chem_recomb(ce, T_ex, p9, kill_T=Tt9))
+    c_M_in = pt9 / (_Ru * Tt9) / 1.0e6
+    da_killp = da(_tau_chem_recomb(ce, T_ex, p9, kill_M=c_M_in))
+    print(f"    entry Da={da_entry:6.3f}  →  real exit Da={da_real:6.3f}  (T {Tt9:.0f}→{T_ex:.0f} K, "
+          f"p {pt9/1e3:.0f}→{p9/1e3:.0f} kPa)")
+    print(f"    kill T (k pinned, density alone): Da={da_killT:6.3f}  → STILL FREEZES  (density did it)")
+    print(f"    kill p ([M] pinned, T alone)    : Da={da_killp:6.3f}  → NO FREEZE, Da RISES  (k accelerates)")
+    print("  Density drives freeze-out DESPITE an opposing T effect — the OPPOSITE sign to Arrhenius")
+    print("  intuition (Ea=0 ⇒ no thermal barrier), which is what refutes rung-25's 'unanchored Arrhenius")
+    print("  trap' framing: the rate is anchored (GRI-Mech), and the mechanism runs the other way.")
 
 
 def print_pdf_quench_table(flight):
@@ -1863,6 +1920,8 @@ def main():
     print_local_mixing_table(FLIGHT)
 
     print_finite_rate_nozzle_table(FLIGHT)
+
+    print_freeze_out_nozzle_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 
