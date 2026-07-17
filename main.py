@@ -25,6 +25,7 @@ from turbojet.gas import (  # noqa: E402
     _quench_trajectory, _quench_no, _bell_interpolator, _beta_pdf_nodes_weights, _ideal_bell_ei,
     SpatialLocalPDF, _two_stream_ceiling, _transport_variance, _pdf_mean_ei, _spatial_segregation,
     _spatial_dwell_field, _spatial_local_field, FiniteRate, FreezeOut, _tau_chem_recomb, _Ru,
+    NOFreezeOut, _tau_no_destroy,
 )
 
 TS_DIAGRAM_PATH = "ts_diagram.png"
@@ -878,6 +879,64 @@ def print_freeze_out_nozzle_table(flight):
     print("  Density drives freeze-out DESPITE an opposing T effect — the OPPOSITE sign to Arrhenius")
     print("  intuition (Ea=0 ⇒ no thermal barrier), which is what refutes rung-25's 'unanchored Arrhenius")
     print("  trap' framing: the rate is anchored (GRI-Mech), and the mechanism runs the other way.")
+
+
+def print_no_freeze_out_table(flight):
+    """Rung-27 payoff: NO FREEZE-OUT — is the frozen-NO assumption every NO number has carried since
+    rung 7 (and the rung-14/17 clamp reads OFF) actually EARNED?
+
+    Rung 26 showed the MAJOR pool freezes only partway down. Rung 27 applies the SAME anchored-clock /
+    local-Da machinery to a NO clock built from rung 7's OWN Zeldovich reverse rates (zero new
+    constants) and finds the assumption is DERIVED: Da_NO≪1 from ENTRY at every Tt4 (frozen from entry
+    everywhere — unlike the major pool). The kill test INVERTS rung 26's: this clock is Arrhenius
+    (k CRATERS on cooling) AND bimolecular, so both its factors AGREE — both DRIVE freezing (vs rung
+    26's density-DESPITE-temperature). A pure diagnostic: bit-for-bit rung 6.
+    """
+    print("\nNO freeze-out (rung 27): is the frozen-NO ASSUMPTION (rung 7 → rung 14/17's clamp) EARNED?")
+    print("Rung 26 showed the MAJOR pool freezes only PARTWAY down. The SAME machinery on a NO clock from")
+    print("rung 7's OWN Zeldovich reverse rates (zero new constants): exhaust NO is FROZEN FROM ENTRY at")
+    print("EVERY Tt4 (Da_NO≪1) — the assumption is DERIVED, on an upper bound (radical-rich frozen pool).")
+
+    # (1) frozen from entry at every Tt4 + the narrowing separation vs rung 26's recombination clock.
+    print("\n  Frozen from entry at every Tt4 — the Da_NO-vs-Da_recomb separation NARROWS hot (L=0.5 m):")
+    print(f"  {'Tt4 [K]':>8} {'Da_NO@in':>9} {'Da_NO@ex':>9} {'Da_recomb@in':>13} {'separation':>11} "
+          f"{'max_a':>7} {'==frozen':>9}")
+    print("  " + "-" * 78)
+    for Tt4 in (1500.0, 1650.0, 1800.0, 2000.0, 2200.0):
+        eq = Gas.reacting_equilibrium()
+        r = build_turbojet(eq, PI_C, Tt4, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+        st3, st4, st9 = r.stations["3"], r.stations["4"], r.stations["9"]
+        s = eq.no_freeze_out_nozzle(st4.far, st3.Tt, st4.Tt, st4.pt, st9.Tt, st9.pt, r.p9, 1.0,
+                                    NOFreezeOut())
+        fz = eq.freeze_out_nozzle(st4.far, st4.Tt, st4.pt, st9.Tt, st9.pt, r.p9, FreezeOut())
+        sep = fz.Da_entry / s.Da_entry
+        matches = abs(s.max_a - s.max_a_frozen) / s.max_a_frozen < 1e-2
+        print(f"  {Tt4:>8.0f} {s.Da_entry:>9.3e} {s.Da_exit:>9.3e} {fz.Da_entry:>13.3e} {sep:>11.2e} "
+              f"{s.max_a:>7.1f} {str(matches):>9}")
+    print("  Da_NO<1 EVERYWHERE (3–9 orders clear) at every Tt4 — the frozen-NO assumption HOLDS, unlike")
+    print("  rung 26's major pool (frozen only lean, relaxes hot). The clamp max_a == its rung-14/17")
+    print("  frozen value to the ≪1 margin: the firing is EARNED. Separation collapses hot (steeply")
+    print("  Arrhenius NO vs Ea=0 recombination) but never crosses — no moving freeze point is claimed.")
+
+    # (2) The kill test — the two terms AGREE (both drive): the INVERSION of rung 26.
+    print("\n  Kill test (Tt4=2200 K, standalone NO clock on the frozen pool) — the INVERSION of rung 26:")
+    eq = Gas.reacting_equilibrium()
+    r = build_turbojet(eq, PI_C, 2200.0, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+    st3, st4, st9 = r.stations["3"], r.stations["4"], r.stations["9"]
+    s = eq.no_freeze_out_nozzle(st4.far, st3.Tt, st4.Tt, st4.pt, st9.Tt, st9.pt, r.p9, 1.0, NOFreezeOut())
+    ce = _equilibrium_composition(st4.far, st4.Tt, st4.pt)
+    Tt9, pt9, p9, T9 = st9.Tt, st9.pt, r.p9, s.T9_frozen
+    t_in = _tau_no_destroy(ce, Tt9, pt9)
+    t_killT = _tau_no_destroy(ce, T9, p9, kill_T=Tt9)          # k pinned → density alone
+    t_killc = _tau_no_destroy(ce, T9, p9, kill_c=pt9 / (_Ru * Tt9))  # c_tot pinned → T alone
+    print(f"    net τ_NO growth (T {Tt9:.0f}→{T9:.0f} K, p {pt9/1e3:.0f}→{p9/1e3:.0f} kPa): "
+          f"×{_tau_no_destroy(ce, T9, p9)/t_in:.2e}  → Da_NO {s.Da_entry:.2e}→{s.Da_exit:.2e}")
+    print(f"    kill T (k pinned, density alone): τ ×{t_killT/t_in:6.2f}  → DRIVES freezing")
+    print(f"    kill p (c_tot pinned, T alone)  : τ ×{t_killc/t_in:6.2e}  → DRIVES freezing (Arrhenius k craters)")
+    print("  BOTH terms AGREE — both drive. Rung 26 had them OPPOSE (density won DESPITE a k that rose on")
+    print("  cooling, Ea=0). Here the NO reverse rates carry a large barrier (θ≈20820/24560 K), so k joins")
+    print("  density: same nozzle, two anchored clocks, OPPOSITE mechanism structure. NO freezes BECAUSE")
+    print("  of temperature; the majors freeze DESPITE it.")
 
 
 def print_pdf_quench_table(flight):
@@ -1922,6 +1981,8 @@ def main():
     print_finite_rate_nozzle_table(FLIGHT)
 
     print_freeze_out_nozzle_table(FLIGHT)
+
+    print_no_freeze_out_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

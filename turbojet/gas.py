@@ -2066,6 +2066,43 @@ def _tau_chem_recomb(comp: dict, T: float, p: float, *,
     return 1.0 / (k * x_oh * c_M * c_M)              # [OH]·[M] = x_oh·c_M·c_M (density²)
 
 
+def _tau_no_destroy(comp: dict, T: float, p: float, *,
+                    kill_T: Optional[float] = None,
+                    kill_c: Optional[float] = None) -> float:
+    """Anchored super-equilibrium NO-destruction clock (rung 27; docs/rung27-spec.md). The relaxation
+    time of super-equilibrium exhaust NO back toward its LOCAL equilibrium, on the extended-Zeldovich
+    REVERSE reactions (NO+O→N+O2, NO+H→N+OH) — rung 7's OWN Hanson & Salimian constants (`_ZELDOVICH`
+    2r/3r, already K-checked against the a6/a7 thermo by `_kcheck_ratio`; ZERO new constants, as rung 26):
+
+        τ_NO = 1 / ( 2 ( k2r·[O] + k3r·[H] ) ) = 1 / ( 2 c_tot ( k2r·x_O + k3r·x_H ) )
+
+    This is the a≫1 (super-equilibrium) limit of the full rung-7 rate `2R1(1−a²)/(1+βa)` — it is
+    [NO]_e- AND a-INDEPENDENT (the [NO]_e in the reverse rates cancels the a in the linearised
+    numerator), so the freeze answer does NOT depend on which frozen NO level is fed in. That is the
+    clamp-relevant regime: exhaust NO arrives SUPER-equilibrium (rung 14/17), so its fate is
+    destruction, not formation.
+
+    CONTRAST rung-26's recombination clock — the whole point of the rung. That clock is Ea=0
+    (accelerates on cooling) and termolecular (c_tot²); THIS one is Arrhenius (θ_2r=20820, θ_3r=24560 K
+    ⇒ k CRATERS on cooling) and bimolecular (c_tot¹). Both its factors AGREE — both DRIVE freezing —
+    so the kill test INVERTS rung 26's (where density won DESPITE an opposing k). Returns seconds;
+    +inf when [O]=[H]=0. Evaluated on the FROZEN (radical-rich) pool ⇒ the FASTEST possible relaxation
+    ⇒ Da_NO is an UPPER bound (the same bounding logic rung 26 used for x_OH).
+
+    KILL-TEST hooks: `kill_T` pins T in the rate constants only (density alone drives); `kill_c` pins
+    the total concentration in [O],[H] only (temperature alone drives). Each leaves the OTHER live."""
+    ntot = sum(comp.values())
+    if ntot <= 0.0:
+        return float("inf")
+    c_tot = p / (_Ru * T)                             # mol/m³ (SI — _k_zeldovich returns SI)
+    c_use = c_tot if kill_c is None else kill_c        # density in [O],[H]  (kill_c pins it)
+    Tk = T if kill_T is None else kill_T               # rate-constant temperature (kill_T pins it)
+    cO = comp.get("O", 0.0) / ntot * c_use
+    cH = comp.get("H", 0.0) / ntot * c_use
+    denom = 2.0 * (_k_zeldovich("2r", Tk) * cO + _k_zeldovich("3r", Tk) * cH)
+    return 1.0 / denom if denom > 0.0 else float("inf")
+
+
 def _freeze_out_expand(comp_entry: dict, far: float, Tt9: float, pt9: float, p9: float,
                        da_local_fn: Callable[[dict, float, float], float], nstep: int
                        ) -> Tuple[float, float, dict, float, float, float, float]:
@@ -2129,6 +2166,67 @@ def _freeze_out_expand(comp_entry: dict, far: float, Tt9: float, pt9: float, p9:
         f"truncation); increase nstep (≥ 100 is well-resolved here)."
     Da_exit = da_local_fn(comp, T, p9)
     return T, V9, comp, dS, s_freeze, Da_entry, Da_exit
+
+
+def _no_freeze_out_expand(comp_entry: dict, far: float, Tt9: float, pt9: float, p9: float,
+                          x_no_entry: float,
+                          da_no_fn: Callable[[dict, float, float], float], nstep: int
+                          ) -> Tuple[float, float, float, float, float, float]:
+    """One NO FREEZE-OUT march (rung 27; docs/rung27-spec.md). NO is a TRACE diagnostic riding on the
+    FROZEN major pool, so — unlike rung-26's `_freeze_out_expand`, which marches the whole reacting
+    vector on the dh=v·dp energy spine — this marches a SINGLE scalar (the NO mole fraction) along
+    rung-14's FROZEN isentropic nozzle path, relaxing it toward the LOCAL equilibrium NO at the
+    anchored destruction rate `Da_NO_local(s) = da_no_fn(comp,T,p)`:
+
+        x_no ← x_no + (1 − exp(−Da_NO_local·ds))·(x_NO_e(T) − x_no)
+
+    `Da_NO_local → 0` ⇒ no relaxation ⇒ NO stays FROZEN at `x_no_entry` (the reduce: exit == entry, and
+    the clamp `max_a` == rung 14/17's, bit-for-bit). `Da_NO_local → ∞` ⇒ NO tracks x_NO_e down ⇒
+    `max_a → 1` (the clamp goes dormant — the counterpoint). The FINDING is that the anchored `Da_NO ≪ 1`
+    EVERYWHERE (frozen from entry at every Tt4), so the first branch is the physical one and the
+    frozen-NO assumption carried since rung 7 is DERIVED, not assumed.
+
+    The frozen isentropic temperature at each step is solved by the SAME entropy bisection as rung-14's
+    `_expand_nozzle` frozen branch (identical bracket/tol), so the exit T9 — hence the clamp denominator
+    x_NO_e(T9) — matches `nozzle_flow` bit-for-bit (the reduce hinge). `max_a` is tracked over the whole
+    trajectory (equilibrium NO is monotone in T, so a frozen NO peaks at the cold exit; a relaxed one
+    may peak earlier). Returns (T9, x_no_exit, x_no_e_exit, max_a, Da_entry, Da_exit)."""
+    S_entry = _mix_entropy_molar(comp_entry, Tt9, pt9)
+    lnr = math.log(p9 / pt9)                              # < 0
+    ds = 1.0 / nstep
+
+    def _frozen_T(p: float) -> float:
+        # frozen-composition isentropic T at pressure p — byte-identical to `_expand_nozzle(shifting=
+        # False)`'s bisection (same bracket [floor, Tt9], same 1e-13 tol), so the exit T9 matches.
+        lo, hi = _T_EXIT_FLOOR, Tt9
+        for _ in range(200):
+            Tm = 0.5 * (lo + hi)
+            if _mix_entropy_molar(comp_entry, Tm, p) > S_entry:
+                hi = Tm
+            else:
+                lo = Tm
+            if hi - lo <= 1e-13 * Tm:
+                break
+        return 0.5 * (lo + hi)
+
+    x_no = x_no_entry
+    Da_entry = da_no_fn(comp_entry, Tt9, pt9)
+    max_a = 0.0
+    for k in range(nstep):
+        p0 = pt9 * math.exp(lnr * k * ds)
+        T0 = Tt9 if k == 0 else _frozen_T(p0)
+        x_no_e0 = _equilibrium_no_fraction(comp_entry, T0)
+        if x_no_e0 > 0.0:
+            max_a = max(max_a, x_no / x_no_e0)           # trajectory a, BEFORE this step's relax
+        Da_local = da_no_fn(comp_entry, T0, p0)
+        relax = 1.0 - math.exp(-Da_local * ds)           # exact linear relaxation over the step
+        x_no += relax * (x_no_e0 - x_no)
+    T9 = _frozen_T(p9)
+    x_no_e_exit = _equilibrium_no_fraction(comp_entry, T9)
+    if x_no_e_exit > 0.0:
+        max_a = max(max_a, x_no / x_no_e_exit)           # the cold exit — where a frozen NO peaks
+    Da_exit = da_no_fn(comp_entry, T9, p9)
+    return T9, x_no, x_no_e_exit, max_a, Da_entry, Da_exit
 
 
 @dataclass
@@ -3163,6 +3261,77 @@ class FreezeOutNozzleState:
         """Fraction of the attainable bracket [F, I] the freeze-out flow reaches (sub-percent hot)."""
         g = self.V9_irrev_fast - self.V9_frozen
         return (self.V9_freeze - self.V9_frozen) / g if g > 0.0 else 0.0
+
+
+@dataclass
+class NOFreezeOut:
+    """Rung-27 NO-freeze-out config (docs/rung27-spec.md): the same anchored-clock / local-Da machinery
+    as rung 26, applied to EXHAUST NO instead of the major recombining pool — to test whether the
+    frozen-NO assumption every NO number has carried since rung 7 (and the rung-14/17 clamp corollary
+    reads off) is actually EARNED.
+
+    `L` is the ONE geometric knob (residence length; τ_res = L/(0.6·V9_frozen), pinned to the frozen
+    V9 exactly as rung 26); the chemistry is anchored to rung 7's OWN Zeldovich reverse rates
+    (`_tau_no_destroy`, zero new constants). `rate_scale` (default 1.0 = anchored) scales Da_NO to drive
+    the two limit gates: →0 ⇒ Da_NO→0 ⇒ NO fully FROZEN (the reduce: max_a == rung 14/17's); →∞ ⇒ NO
+    tracks equilibrium ⇒ max_a→1 (the clamp goes DORMANT). The FINDING is that the anchored Da_NO ≪ 1
+    everywhere, so the frozen branch is physical. `nstep` is the march resolution."""
+    L: float = 0.5            # residence length, m (THE geometric knob; sets τ_res — as rung 26)
+    nstep: int = 400          # NO-relaxation march resolution
+    rate_scale: float = 1.0   # dimensionless Da_NO multiplier for the limit gates (1.0 = anchored)
+
+    def __post_init__(self):
+        assert self.L > 0.0, f"NOFreezeOut.L={self.L} must be positive"
+        assert self.nstep >= 100, f"NOFreezeOut.nstep={self.nstep} too coarse (need ≥ 100)"
+        assert self.rate_scale > 0.0, f"NOFreezeOut.rate_scale={self.rate_scale} must be positive"
+
+
+@dataclass
+class NOFreezeOutNozzleState:
+    """Rung-27 NO-freeze-out diagnostic (docs/rung27-spec.md). A pure diagnostic BESIDE the cycle —
+    reads only the handed-in state, so the cycle is bit-for-bit rung 6.
+
+    Adds NO new bound: NO is trace and never perturbs the flow. What it resolves is whether the frozen
+    exhaust NO relaxes through the nozzle — and the finding is that it does NOT: `Da_NO ≪ 1` from entry
+    at every Tt4 (`frozen_from_entry` True everywhere, UNLIKE rung 26's major pool which is
+    frozen-from-entry only lean), so the rung-14/17 clamp firing is EARNED. Mole fractions
+    dimensionless; temperatures K. The clamp `max_a` on the marched NO is reported beside `max_a_frozen`
+    (rung 14/17's fully-frozen number) — the two are equal to the anchored ≪1 margin."""
+    T9_frozen: float          # frozen nozzle exit static T (== nozzle_flow's T9_frozen), K
+    Da_entry: float           # Da_NO at the nozzle entry — ≪ 1 ⇒ frozen from entry (the finding)
+    Da_exit: float            # Da_NO at the exit (falls further — the kill test AGREE-both-drive)
+    x_no_frozen: float        # entry exhaust NO fed through (the rung-8 zoned mole fraction)
+    x_no_relaxed: float       # exit NO after the anchored march (≈ x_no_frozen — it barely moves)
+    x_no_e_entry: float       # equilibrium NO at the entry
+    x_no_e_exit: float        # equilibrium NO at the exit (collapsed — the clamp denominator)
+    max_a: float              # max [NO]/[NO]_e over the RELAXED march (the real clamp margin)
+    max_a_frozen: float       # max [NO]/[NO]_e if NO were fully frozen (== rung 14/17's number)
+
+    @property
+    def frozen_from_entry(self) -> bool:
+        """True when Da_NO < 1 at the entry — NO never relaxes. TRUE at EVERY Tt4 (the rung): the
+        frozen-NO assumption carried since rung 7 is DERIVED, on an upper bound, not assumed."""
+        return self.Da_entry < 1.0
+
+    @property
+    def clamp_fires(self) -> bool:
+        """Does the dropped-NO clamp fire on the MARCHED NO (max_a > 1)? Rung 14/17 read this off the
+        frozen assumption; rung 27 shows the anchored (marched) NO fires it too — the firing is EARNED."""
+        return self.max_a > 1.0
+
+    @property
+    def relaxed_fraction(self) -> float:
+        """How far exhaust NO relaxed toward equilibrium over the nozzle: 0 = fully frozen (the anchored
+        finding), 1 = fully equilibrated (rate_scale → ∞). ≈ 0 at the anchored rate."""
+        num = self.x_no_frozen - self.x_no_relaxed
+        den = self.x_no_frozen - self.x_no_e_exit
+        return num / den if abs(den) > 0.0 else 0.0
+
+    @property
+    def no_collapse_ratio(self) -> float:
+        """x_NO_e(entry)/x_NO_e(exit) — the cooling collapse of equilibrium NO that makes the frozen NO
+        super-equilibrium (frozen-NO-independent; the rung-14 quantity)."""
+        return self.x_no_e_entry / self.x_no_e_exit if self.x_no_e_exit > 0.0 else float("inf")
 
 
 @dataclass
@@ -4247,6 +4416,63 @@ class Gas:
             T9_freeze=T9d, V9_freeze=V9d, dS_freeze=dS,
             s_freeze=s_freeze, Da_entry=Da_entry, Da_exit=Da_exit,
             co_fraction_entry=_co(comp_entry), co_fraction_freeze_exit=_co(comp9d),
+        )
+
+    def no_freeze_out_nozzle(self, far: float, Tt3: float, Tt4: float, pt4: float,
+                             Tt9: float, pt9: float, p9: float, phi_primary: float,
+                             no_freeze_out: "NOFreezeOut") -> "NOFreezeOutNozzleState":
+        """NO-freeze-out nozzle diagnostic (rung 27; docs/rung27-spec.md, docs/plans/rung27-anchor-*.md).
+
+        Every NO number since rung 7 ASSUMES the station-4 exhaust NO freezes through the nozzle; the
+        rung-14/17 dropped-clamp corollary reads `max_a = x_no_frozen/x_no_e(T9) ≫ 1` OFF that
+        assumption. Rung 26 then showed the MAJOR pool freezes only partway down. This asks the same of
+        NO — and, applying rung-26's anchored-clock / local-Da machinery to a `_tau_no_destroy` clock
+        built from rung 7's OWN Zeldovich reverse rates (zero new constants), finds the assumption is
+        EARNED: `Da_NO ≪ 1` from entry at EVERY Tt4 (`frozen_from_entry` everywhere, unlike the major
+        pool), so the clamp firing is derived, on an upper bound (the frozen radical-rich pool = the
+        fastest possible relaxation). The kill test INVERTS rung 26's: this clock is Arrhenius +
+        bimolecular, so its two factors AGREE — both DRIVE freezing (vs rung 26's OPPOSE).
+
+        Marches the rung-8 zoned exhaust NO along rung-14's FROZEN nozzle path, relaxing it toward local
+        equilibrium at the anchored rate. Reports the marched clamp `max_a` beside `max_a_frozen` (rung
+        14/17's fully-frozen number) — equal to the ≪1 anchored margin. `rate_scale→0` recovers
+        `max_a_frozen` bit-for-bit (the reduce); `→∞` drives `max_a→1` (clamp dormant). NO LOCATION /
+        moving-freeze-point is claimed (rung 26's headline has no analogue: NO is frozen from entry
+        everywhere); the honest trend is that the Da_NO-vs-Da_recomb separation NARROWS with Tt4.
+
+        A pure diagnostic: reads only (far, Tt3, Tt4, pt4, Tt9, pt9, p9, phi_primary) — through
+        `zoned_nox` and `nozzle_flow`, both untouched — and feeds the cycle nothing, so the cycle stays
+        bit-for-bit rung 6. Requires the equilibrium (rung-6) gas. Pass Tt9=Tt5, pt9=π_n·pt5, p9=p_exit."""
+        assert self.equilibrium, \
+            "no_freeze_out_nozzle: needs the rung-6 equilibrium gas (Gas.reacting_equilibrium())"
+        assert p9 <= pt9 * (1.0 + 1e-12), \
+            f"no_freeze_out_nozzle: back-pressure p9={p9:.0f} Pa exceeds pt9={pt9:.0f} Pa (cannot expand to it)"
+        comp_entry = _equilibrium_composition(far, Tt4, pt4)     # the FROZEN station-4 mixture
+
+        # The clamp-relevant frozen exhaust NO: the rung-8 zoned (near-stoich primary) mole fraction —
+        # what rungs 14/17 carry through the nozzle, and what arrives SUPER-equilibrium.
+        zn = self.zoned_nox(far, Tt3, Tt4, pt4, phi_primary)
+        x_no_frozen = zn.x_no_mix
+
+        # Rung-14 reference: the frozen exit T9 and the fully-frozen clamp max_a (the number rung 14/17
+        # read off the assumption). nozzle_flow is UNTOUCHED — this only reads it.
+        nf = self.nozzle_flow(far, Tt4, pt4, Tt9, pt9, p9, x_no_frozen=x_no_frozen)
+
+        tau_res = no_freeze_out.L / (0.6 * nf.V9_frozen)         # pinned to FROZEN V9 (as rung 26)
+        rs = no_freeze_out.rate_scale
+
+        def _da_no(comp: dict, T: float, p: float) -> float:
+            # Da_NO = rate_scale · τ_res / τ_NO(T,p; comp). τ_NO→∞ ([O]=[H]=0) ⇒ Da_NO→0 (frozen).
+            return rs * tau_res / _tau_no_destroy(comp, T, p)
+
+        T9, x_no_relaxed, _x_no_e_exit, max_a, Da_entry, Da_exit = _no_freeze_out_expand(
+            comp_entry, far, Tt9, pt9, p9, x_no_frozen, _da_no, no_freeze_out.nstep)
+
+        return NOFreezeOutNozzleState(
+            T9_frozen=nf.T9_frozen, Da_entry=Da_entry, Da_exit=Da_exit,
+            x_no_frozen=x_no_frozen, x_no_relaxed=x_no_relaxed,
+            x_no_e_entry=nf.x_no_e_entry, x_no_e_exit=nf.x_no_e_exit,
+            max_a=max_a, max_a_frozen=nf.max_a,
         )
 
     # --- Rung-17 combustor-mixing-fidelity ladder of the dropped-clamp margin (DECOUPLED) --------- #
