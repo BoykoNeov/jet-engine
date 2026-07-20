@@ -152,9 +152,29 @@ are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle
   (**transitional, and NOT fast despite the high `p`** — the residence is short too), but that span rides on
   an **un-anchored** turbine `τ_res`, so leading with it would make this a `τ_res`-style **negative** rather
   than a rung. A real attempt needs turbine passage geometry (blade-row count + the same choked-flow seam
-  `docs/tau-res-negative.md` named). (b) the **`π_c` axis** — whether "earned at design" is `π_c`-robust is
-  unchecked (rung 28's β margin got exactly this treatment and inverted). (c) **feeding the shifted station
-  5 into the production cycle** — a **re-foundation** (it re-anchors every rung's numbers), **not a rung**.
+  `docs/tau-res-negative.md` named). (b) ~~the **`π_c` axis**~~ — **CLOSED, CONFIRMATION + SHARPENING, NOT a
+  rung** (`docs/rung29-pi-c-margin.md`, below); what remains on that family is the **`M0` / flight axis**.
+  (c) **feeding the shifted station 5 into the production cycle** — a **re-foundation** (it re-anchors every
+  rung's numbers), **not a rung**.
+- **"Earned at design" at higher/lower `π_c`** — **CHECKED, CONFIRMATION + SHARPENING, NOT a rung**
+  (`docs/rung29-pi-c-margin.md`). Rung 29 shipped its verdict from one `π_c`. Re-measured over `π_c` 2→80:
+  the verdict **holds everywhere** — the design-point bound never exceeds **0.0107%** (**9.4×** under the
+  threshold) and the earned/not-earned boundary `Tt4*` stays above **1846 K** (never within 346 K of design).
+  But **unlike rung 28's β the worry did NOT invert**: `π_c` is **weak, non-monotone and double-edged** —
+  `Tt4*` is **bowl-shaped** with an **interior** worst case near `π_c`≈15, and the runnable ceiling rises
+  faster than `Tt4*` moves, so the not-earned band **widens 2.7×**. Rung 29 did **not** sample a favourable
+  `π_c`: its `π_c`=10 sits essentially **at** the design-point maximum (0.010668% vs 0.010672% at ≈10.5,
+  resolved to 8 digits — the solver bisects to 1e-13, gate 2's 1e-6 is a loose assert, not its accuracy).
+  **The substantive result is the SHARPENING of rung 29's own finding**: `RATIO ≠ ENERGY` replaced the
+  super-eq ratio with the radical **inventory** — but the inventory is itself **incomplete**. Along `π_c`
+  inventory **falls** 3.4× (pressure suppresses dissociation) while the shift **rises**: the *same* failure,
+  committed by the replacement. The complete currency is **`ENERGY = INVENTORY × COMPLETION`** — the
+  **recombined** inventory, completion climbing 36.5%→99.995% as a larger `delta_h` runs deeper and colder.
+  The two channels are **comparable and opposed** on `π_c` (3.4× vs 2.7×) hence the interior turnover, and
+  **the same** on `Tt4` where inventory swings two orders and dominates — which is why rung 29's `Tt4`-axis
+  claim **stands untouched**. Disclaimed: the product law is quoted **only at the cool design point**
+  (`x_O+x_H+x_OH` omits `CO→CO₂` — flat to ±4% at `Tt4`=1500, varies 2× at 2100); the `π_c`≈10.5 peak
+  *location* is not claimed as physical; **`M0` untouched**.
 - **β at higher `π_c` / hotter cycles** — **CHECKED, CONFIRMATION, NOT a rung** (`docs/rung28-beta-margin.md`).
   Rung 28 filed its `β<1` bound as its one factor-not-orders margin. Re-measured on the axis it named, and
   the worry **INVERTS**: β is **exactly pressure-invariant** (`c_tot²` cancels — every `R` is a product of
@@ -255,7 +275,11 @@ are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle
   solver reproduces that closed form — **without which the reduce gate is a tautology**; it
   **deliberately asserts no rate and no freeze location** (the turbine `τ_res` is un-anchored) — only the
   *rate-independent* bound, the earned/not-earned split across the band, and the **ratio-vs-inventory
-  anti-correlation** (the rung). `(R−I)→0` is **NOT** gated: it is structural.
+  anti-correlation** (the rung). `(R−I)→0` is **NOT** gated: it is structural. `test_rung29.py` also
+  carries the **`π_c`-margin** gates (`docs/rung29-pi-c-margin.md`): `π_c`-robustness of the design-point
+  verdict + the `1800 < Tt4* < 2200` boundary bracket, the **two opposed channels** (inventory ↓,
+  completion ↑), a **forbid** on the β-style "higher `π_c` is protective" reading, and the sharpening —
+  **entry inventory alone FAILS on the `π_c` axis**.
 - `docs/rungN-spec.md` — the derivation, assumptions, concessions and gates for rung N.
   `docs/plans/rungN-anchor-*.md` — that rung's verified anchor data.
 

@@ -33,14 +33,36 @@ REAL_LOSSES = dict(pi_d=0.97, eta_c=0.88, eta_b=0.99, pi_b=0.96,
                    eta_t=0.90, eta_m=0.99, pi_n=0.98)
 
 
-def _run(Tt4):
+def _run(Tt4, pi_c=PI_C):
     """Design-point run at Tt4 + the shaft-set delta_h the Engine hands its Turbine."""
     gas = Gas.reacting_equilibrium()
-    r = build_turbojet(gas, PI_C, Tt4, FLIGHT.p0, **REAL_LOSSES).run(FLIGHT, 1.0)
+    r = build_turbojet(gas, pi_c, Tt4, FLIGHT.p0, **REAL_LOSSES).run(FLIGHT, 1.0)
     far = r.stations["4"].far
     delta_h = (gas.h_c(r.stations["3"].Tt) - gas.h_c(r.stations["2"].Tt)) / (
         REAL_LOSSES["eta_m"] * (1.0 + far))
     return gas, r, far, delta_h
+
+
+_BRACKET_CACHE = {}
+
+
+def _bracket(Tt4, pi_c):
+    """The shifting-turbine bracket at (Tt4, pi_c), memoised (the pi_c gates re-read points)."""
+    key = (Tt4, pi_c)
+    if key not in _BRACKET_CACHE:
+        gas, r, far, delta_h = _run(Tt4, pi_c)
+        s4 = r.stations["4"]
+        _BRACKET_CACHE[key] = (gas, far, gas.shifting_turbine(far, s4.Tt, s4.pt, delta_h))
+    return _BRACKET_CACHE[key]
+
+
+def _completion(Tt4, pi_c):
+    """Fraction of the entry radical inventory that equilibrium at the FROZEN exit state wants gone —
+    how much of the pool the expansion actually asks for (docs/rung29-pi-c-margin.md)."""
+    _, far, st = _bracket(Tt4, pi_c)
+    c5 = _equilibrium_composition(far, st.T5_frozen, st.p5_frozen)
+    inv5 = sum(c5.get(s, 0.0) for s in ("O", "H", "OH")) / sum(c5.values())
+    return 1.0 - inv5 / st.radical_inventory
 
 
 def test_reduce_to_prior_frozen_is_the_shipped_turbine():
@@ -155,6 +177,84 @@ def test_direction_recombination_reheats():
         assert st.dT5 > 0.0, f"Tt4={Tt4}: shifting exit should be warmer"
         assert st.dp5_fraction > 0.0, f"Tt4={Tt4}: shifting exit should be at higher pressure"
         assert st.delta_h == delta_h
+
+
+# ---------------------------------------------------------------------------------------------
+# The pi_c margin — rung 29's "one design point" concession, re-checked on the axis it named.
+# A CONFIRMATION plus a SHARPENING, not a rung: docs/rung29-pi-c-margin.md.
+# ---------------------------------------------------------------------------------------------
+
+PI_C_SCAN = (2.0, 5.0, 10.0, 20.0, 80.0)
+
+
+def test_earned_at_design_is_pi_c_robust():
+    """The verdict survives the pi_c axis, with margin — and the boundary stays far above design.
+
+    "Earned at design" was shipped from a single pi_c=10. Over pi_c 2..80 the design-point bound
+    never exceeds ~0.0107% (9x under the 1e-3 threshold), and the earned/not-earned boundary Tt4*
+    is bracketed 1800 < Tt4* < 2200 everywhere -- measured where dT5 ~ 1 K, well clear of any
+    solver-noise question, so "far above the design point" cannot drift into an artifact.
+    """
+    for pi_c in PI_C_SCAN:
+        _, _, st = _bracket(1500.0, pi_c)
+        assert st.frozen_turbine_earned, f"pi_c={pi_c}: design point should stay EARNED"
+        assert abs(st.dT5_fraction) < 2e-4, \
+            f"pi_c={pi_c}: design bound drifted: dT5/T5 = {st.dT5_fraction:.3e} (expected <=1.07e-4)"
+        # The boundary bracket: still earned at 1800 K, no longer earned at 2200 K, at EVERY pi_c.
+        assert _bracket(1800.0, pi_c)[2].frozen_turbine_earned, \
+            f"pi_c={pi_c}: Tt4=1800 K should still be earned (Tt4* > 1800)"
+        assert not _bracket(2200.0, pi_c)[2].frozen_turbine_earned, \
+            f"pi_c={pi_c}: Tt4=2200 K should NOT be earned (Tt4* < 2200)"
+
+
+def test_pi_c_channels_oppose():
+    """The mechanism: raising pi_c CUTS the inventory but RAISES how much of it is spent.
+
+    (a) higher pt4 suppresses dissociation (more moles on the dissociated side), so the entry
+        radical inventory falls monotonically; (b) higher pi_c means a larger shaft-set delta_h,
+        hence a deeper and colder expansion, so equilibrium at the exit asks for a monotonically
+        larger FRACTION of that pool. Two opposed, comparable channels -- which is what makes the
+        shift's pi_c dependence non-monotone.
+    """
+    inv = [_bracket(1500.0, p)[2].radical_inventory for p in PI_C_SCAN]
+    comp = [_completion(1500.0, p) for p in PI_C_SCAN]
+    assert all(a > b for a, b in zip(inv, inv[1:])), \
+        f"entry radical inventory should FALL with pi_c (pressure suppresses dissociation): {inv}"
+    assert all(a < b for a, b in zip(comp, comp[1:])), \
+        f"completion should RISE with pi_c (deeper, colder expansion): {comp}"
+    # Comparable magnitudes -- neither channel is a rounding correction to the other.
+    assert 2.0 < inv[0] / inv[-1] < 6.0
+    assert 2.0 < comp[-1] / comp[0] < 4.0
+
+
+def test_pi_c_is_not_simply_protective():
+    """FORBID the beta-style reading. Unlike rung 28's beta -- which fell monotonically in pi_c --
+    the shift TURNS OVER: it rises from pi_c=2 to ~10 and falls again out to 80. Asserted at
+    Tt4=1800, where the turnover is a 1.9x effect and no solver-noise question arises.
+    """
+    lo = _bracket(1800.0, 2.0)[2].dT5_fraction
+    mid = _bracket(1800.0, 10.0)[2].dT5_fraction
+    hi = _bracket(1800.0, 80.0)[2].dT5_fraction
+    assert lo < mid, f"shift should RISE from pi_c=2 to 10 (so pi_c is not protective): {lo} {mid}"
+    assert hi < mid, f"shift should FALL from pi_c=10 to 80 (an INTERIOR maximum): {hi} {mid}"
+    assert mid / lo > 1.5, f"the low-side rise should be substantial, not marginal: {mid / lo}"
+
+
+def test_inventory_alone_fails_on_the_pi_c_axis():
+    """THE SHARPENING. Rung 29 proposed the absolute radical INVENTORY as the currency that the
+    super-eq RATIO failed to be. On the Tt4 axis that reads correctly (inventory swings two orders
+    and dominates). On the pi_c axis it does not: inventory FALLS while the shift RISES -- the same
+    failure mode, now committed by the replacement. The complete currency is inventory x COMPLETION
+    (the RECOMBINED inventory), which is what the two opposed channels above multiply out to.
+    """
+    _, _, lo = _bracket(1500.0, 2.0)
+    _, _, hi = _bracket(1500.0, 10.0)
+    assert hi.radical_inventory < lo.radical_inventory, "inventory should fall from pi_c=2 to 10"
+    assert hi.dT5_fraction > lo.dT5_fraction, "yet the shift should RISE -- inventory alone fails"
+    # The recombined inventory does track it: it rises over the same span, unlike the entry pool.
+    rec_lo = lo.radical_inventory * _completion(1500.0, 2.0)
+    rec_hi = hi.radical_inventory * _completion(1500.0, 10.0)
+    assert rec_hi > rec_lo, f"recombined inventory should RISE with the shift: {rec_lo} {rec_hi}"
 
 
 if __name__ == "__main__":

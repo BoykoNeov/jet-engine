@@ -120,6 +120,21 @@ merely different, they are anti-correlated over the operating band. That is a cr
 correction, not a local one: every rung from 25 up quotes the ratio at the lean end, which
 is precisely where it overstates what a shifting flow could take away.
 
+### SHARPENED: `ENERGY = INVENTORY × COMPLETION`
+
+The `π_c` check (`docs/rung29-pi-c-margin.md`) found that **the inventory is itself an incomplete
+currency** — the same failure this section diagnoses for the ratio, one step milder. Along `π_c` at
+fixed `Tt4`, the entry inventory **falls** 3.4× (higher `pt4` suppresses dissociation) while the shift
+**rises**: they anti-correlate. What actually sets the shift is the **recombined** inventory —
+`inventory × completion`, where completion is the fraction the expansion asks for, and it climbs
+36.5% → 99.995% over `π_c` 2→80 because a larger `delta_h` runs deeper and colder. The two channels
+are **comparable and opposed** on this axis, so their product turns over in the interior.
+
+The `Tt4` claim above is **untouched**: there both channels move the same way and the inventory swings
+two orders, so it dominates and reads correctly. The `π_c` axis is simply the one that can tell the two
+apart. (The product law is quoted only at the cool design point — `x_O+x_H+x_OH` omits `CO→CO₂`, which
+is why `ΔT5/Δinventory` is flat to ±4% at `Tt4`=1500 but varies 2× at 2100.)
+
 ### What is NOT a finding
 
 **That a fully-shifted entry collapses rung-25's `(R−I)` gap to zero.** Measured
@@ -145,8 +160,12 @@ banked in the turbine.
   is nevertheless bit-for-bit the shipped `Turbine.apply` at `η_t = 1` (gate 1).
 - **No rate, therefore no location.** The bound says how far the turbine *could* shift, not
   how far it *does*. Deferred deliberately (below).
-- **One design point.** `π_c = 10`, `M0 = 0.85`. Whether "earned at design / bites hot"
-  survives the `π_c` axis is unchecked — a seam, flagged not chased.
+- **One design point.** `π_c = 10`, `M0 = 0.85`. The `π_c` axis is now **CHECKED**
+  (`docs/rung29-pi-c-margin.md`): "earned at design" holds at every `π_c` from 2 to 80 with a
+  **9.4×** margin, and the boundary `Tt4*` stays above **1846 K** everywhere. `π_c` is a **weak,
+  non-monotone, double-edged** knob — *not* protective the way rung 28's `β` turned out to be. That
+  check also **sharpens the finding below**: the inventory is an *incomplete* currency. The **`M0` /
+  flight axis is still untouched.**
 - **Cycle untouched.** A pure diagnostic beside the cycle: the production turbine still
   freezes, so the cycle remains **bit-for-bit rung 6** and the rungs-7–28 invariant holds
   (gate 3).
@@ -188,8 +207,10 @@ banked in the turbine.
   turbine does not even reach the bound at the design point. A genuine attempt needs a real
   turbine passage geometry — which drags in the blade-row count and the same choked-flow
   seam `docs/tau-res-negative.md` already named.
-- **The `π_c` axis** — rung 28's `β` margin got exactly this treatment
-  (`docs/rung28-beta-margin.md`) and the worry inverted. Whether "earned at design" is
-  `π_c`-robust is open.
+- ~~**The `π_c` axis**~~ — **CLOSED** (`docs/rung29-pi-c-margin.md`). Unlike rung 28's `β`, the worry
+  did **not** invert: it **confirmed**, at 9.4× margin, with `π_c` weak and non-monotone (the
+  boundary is bowl-shaped, worst case **interior** near `π_c`≈15; the not-earned band *widens* 2.7×
+  with `π_c`). The substantive by-product is the **sharpening** above. What remains open on this
+  family is the **`M0` / flight axis**.
 - **Feeding the shifted station 5 into the production cycle** — that is a re-foundation
   (it re-anchors every rung's numbers), not a rung.
