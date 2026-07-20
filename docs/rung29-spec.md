@@ -202,17 +202,30 @@ banked in the turbine.
 
 ## Deferred
 
-- **A finite-rate turbine march.** The natural next step — and deliberately *not* taken.
-  The rung-26 anchored clock read at turbine conditions gives `τ_chem(4)` = 9.1e-4 s
-  (`Tt4`=1500) to 5.7e-5 s (2400), which against a turbine passage residence of ~5e-5 to
-  5e-4 s puts `Da_turb` between 0.05 and 8.8 — i.e. **transitional**, neither frozen nor
-  equilibrated, and *not* fast despite the high pressure (the residence time is short too).
-  But that whole span rides on a turbine `τ_res` that is **un-anchored** and swings a full
-  order of magnitude across defensible guesses. Leading with it would make this a
-  `τ_res`-style negative rather than a rung. It is a **supporting sketch only**: the real
-  turbine does not even reach the bound at the design point. A genuine attempt needs a real
-  turbine passage geometry — which drags in the blade-row count and the same choked-flow
-  seam `docs/tau-res-negative.md` already named.
+- ~~**A finite-rate turbine march.**~~ — **INVESTIGATED, NEGATIVE, NOT a rung**
+  (`docs/turbine-march-negative.md`). The natural next step: march the Damköhler flow *between* `F` and
+  `S` the way rung 25 marched it between rung-14's nozzle bounds. It was built (probe) and returned a
+  negative — **and the reason is structural, deeper than the un-anchored `τ_res` cited below**. Rung 25
+  became a rung despite its un-anchored rate because its `Da→∞` **irreversible-fast ceiling (I)** is a
+  rate-independent closed form sitting *strictly below* the reversible bound — the super-equilibrium
+  nozzle entry makes a real flow relax irreversibly even at infinite rate. **That dodge cannot be
+  repeated here:** the turbine entry is station 4, the *fresh burner exit*, which is **at equilibrium by
+  construction** (`comp_entry = _equilibrium_composition(far, Tt4, pt4)`), so a `Da→∞` march stays on the
+  equilibrium manifold and lands *exactly* on `S` — **`I_turb ≡ S`, no third state, no `(R−I)` sliver**
+  (`dS(I_turb)` = machine-zero at every `Tt4` vs the nozzle's `+4.3e-4 → +4.1e-2`, from exact closed
+  forms). The march is a **plain two-state interpolation** `F→S` whose only new degree of freedom (the
+  interior landing) rides on **two** un-anchored knobs: `τ_res` (below) **and** — worse than the nozzle —
+  an **ambiguous progress coordinate**, because the work-limited endpoint leaves `p5` unknown so there is
+  no natural schedule to march on. The rung-26 clock at turbine conditions gives `τ_chem(4)` = 9.1e-4 s
+  (`Tt4`=1500) to 5.7e-5 s (2400) ⇒ `Da_turb` = 0.05…8.8 (transitional, *not* fast despite the pressure —
+  the residence is short too), but that span rides on the un-anchored `τ_res`; it is a **supporting
+  sketch only**. **The positive by-products** (in the doc): rung 25's `(R−I)` gap is **manufactured by
+  the freeze, not intrinsic to expansion** (localized to the one turbine→nozzle handoff); rung 29's `S`
+  is **attainable**, the genuine `Da→∞` limit, not an unreachable ceiling like rung 25's `R`; and — the
+  rate-independent statement worth carrying — since `F≈S` at design, the whole `[F,S]` interior is
+  negligible **regardless of either knob**, so the march **cannot overturn "freeze earned at design."**
+  A genuine rung would need a real turbine passage geometry to anchor *both* knobs at once — the blade-row
+  count and the same choked-flow seam `docs/tau-res-negative.md` already named.
 - ~~**The `π_c` axis**~~ — **CLOSED** (`docs/rung29-pi-c-margin.md`). Unlike rung 28's `β`, the worry
   did **not** invert: it **confirmed**, at 9.4× margin, with `π_c` weak and non-monotone (the
   boundary is bowl-shaped, worst case **interior** near `π_c`≈15; the not-earned band *widens* 2.7×

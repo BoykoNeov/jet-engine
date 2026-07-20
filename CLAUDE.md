@@ -147,12 +147,22 @@ are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle
   distance from equilibrium (correct, and what rungs 25–28 need for **rate** questions) but is **not** a
   proxy for exploitable **enthalpy**, which scales with the absolute radical **INVENTORY**; the two
   **anti-correlate** across the band (ratio ÷33, inventory ×121, shift ×174), so the ratio is loudest
-  exactly where the shift is most negligible. **What rung 29 leaves open:** (a) a **finite-rate turbine
-  march** — deliberately not taken; the rung-26 clock at turbine conditions gives `Da_turb`=0.05–8.8
-  (**transitional, and NOT fast despite the high `p`** — the residence is short too), but that span rides on
-  an **un-anchored** turbine `τ_res`, so leading with it would make this a `τ_res`-style **negative** rather
-  than a rung. A real attempt needs turbine passage geometry (blade-row count + the same choked-flow seam
-  `docs/tau-res-negative.md` named). (b) ~~the **`π_c` axis**~~ — **CLOSED** (`docs/rung29-pi-c-margin.md`);
+  exactly where the shift is most negligible. **What rung 29 leaves open:** (a) ~~a **finite-rate turbine
+  march**~~ — **CLOSED, NEGATIVE, NOT a rung** (`docs/turbine-march-negative.md`). Built (probe): march the
+  Damköhler flow between `F` and `S` as rung 25 did for the nozzle. Negative for a reason **deeper than the
+  un-anchored `τ_res`** — the rung-25 dodge (a rate-independent `Da→∞` ceiling *strictly below* the
+  reversible bound) **cannot repeat**: the turbine entry (station 4, fresh burner exit) is **at equilibrium
+  by construction**, so `Da→∞` stays on the equilibrium manifold and lands *exactly* on `S` — **`I_turb ≡ S`,
+  no third state, no `(R−I)` gap** (`dS(I_turb)`=machine-zero vs the nozzle's `+4.3e-4→+4.1e-2`, exact closed
+  forms). The march is a plain `F→S` interpolation whose only new DoF rides on **two** un-anchored knobs:
+  `τ_res` (`Da_turb`=0.05–8.8, transitional, NOT fast despite the high `p`) **and** — worse than the nozzle —
+  an **ambiguous progress coordinate** (work-limited ⇒ `p5` unknown ⇒ no natural schedule). By-products:
+  rung 25's `(R−I)` is **manufactured by the freeze, not intrinsic to expansion** (one turbine→nozzle
+  handoff); rung 29's `S` is **attainable** (the genuine `Da→∞` limit), not an unreachable ceiling; and
+  since `F≈S` at design the whole `[F,S]` band is negligible **regardless of either knob**, so the march
+  **cannot overturn "freeze earned at design."** A real rung needs turbine passage geometry (blade-row count
+  + the choked-flow seam `docs/tau-res-negative.md` named) to anchor both knobs. **Do NOT re-run** the
+  geometric-`p` scalar-`Da` march with a hand-picked `p_floor`. (b) ~~the **`π_c` axis**~~ — **CLOSED** (`docs/rung29-pi-c-margin.md`);
   ~~the **`M0` / flight axis**~~ — **CLOSED** (`docs/rung29-M0-margin.md`, below); both the
   CONFIRMATION+SHARPENING/CORRECTION checks, NOT rungs. (c) **feeding the shifted station 5 into the
   production cycle** — a **re-foundation** (it re-anchors every rung's numbers), **not a rung**.
