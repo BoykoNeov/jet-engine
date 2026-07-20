@@ -5,7 +5,12 @@ engine cutaway (flow particles colored by local total temperature), the
 ideal-vs-real T–s diagram, the NOx bell + finite-quench story (rungs 7–10, 19),
 the mixing-optimum J-sweeps (rungs 11–13), the rung-22 J→C collapse animation,
 the rung-23 ξ–τ correlation, the rung-17/20 exhaust-NO clamp ladder, and the
-click-to-expand 23-rung map.
+click-to-expand 28-rung map.
+
+The computed panels cover rungs 1–23. Rungs 24–28 (the locally-resolved mixing
+time, and the finite-rate / freeze-out / NO-freeze-out / coupled-march nozzle
+chain) appear in the rung map only — they are not plotted here. Their numbers
+live in `main.py`'s per-rung panels and in `tests/`.
 
 **Every curve is computed by the model in this repository** — nothing is
 sketched. Open `turbojet-visuals.html` in a browser (it is fully offline,

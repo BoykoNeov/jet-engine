@@ -280,10 +280,11 @@ footer code { font-size: 12px; }
 </nav>
 
 <header class="hero wrap" id="engine">
-  <p class="eyebrow">A station-by-station Brayton-cycle model &middot; 23 cumulative rungs</p>
+  <p class="eyebrow">A station-by-station Brayton-cycle model &middot; 28 cumulative rungs</p>
   <h1>The model, made visible</h1>
   <p class="sub">One single-spool turbojet, built one physical effect at a time — from the ideal
-  cycle to dissociation equilibrium, Zeldovich NOx kinetics, and a resolved dilution cross-plane.
+  cycle to dissociation equilibrium, Zeldovich NOx kinetics, a resolved dilution cross-plane, and
+  a nozzle whose chemistry freezes out on an anchored clock.
   <b>Every number below is computed by the model itself.</b></p>
 
   <div class="engine-card">
@@ -483,7 +484,7 @@ footer code { font-size: 12px; }
 <section class="wrap" id="rungs">
   <div class="section-head">
     <p class="eyebrow">The full ladder</p>
-    <h2>23 rungs, one physical effect each</h2>
+    <h2>28 rungs, one physical effect each</h2>
     <p class="lede">Each rung is cumulative, anchored to a published case, and reduces bit-for-bit
     to the rung below when its knob is off. Click a rung to expand.</p>
   </div>
@@ -1395,6 +1396,11 @@ rebuilders.push(buildLadder);
     ["21", "diag", "Super-eq O through the PDF integrals", "The last eq-O seam discharged: the same m(T) through the ideal-bell integrals. EI-weighting onto the hot stoich peak makes the lift ≈×1.15 — shape-preserving.", "docs/rung21-spec.md"],
     ["22", "neg", "Resolved spatial PDF — the inversion", "Resolve the dilution cross-plane and C_opt≈2.5 emerges as an output: g_min geometry-independent, J_opt shifting exactly as (H/S)², no C_opt knob anywhere.", "docs/rung22-spec.md"],
     ["23", "diag", "The derived dwell spectrum", "The same cross-plane developed in time, so each pocket carries its own dwell τ(ξ) — rich pockets are reached last by the jet, so they dwell longest. That ξ–τ correlation adds NO: physics a scalar τ_core structurally cannot express.", "docs/rung23-spec.md"],
+    ["24", "neg", "Locally-resolved mixing time — the split result", "Every cell gets its own rate ω = D_t|∇ξ|²/var, no new constant, and τ_mix cancels exactly. It does derive rung 16's imposed dwell growth — F(C) is U-shaped with its minimum AT C_opt. But ~40% against a ~20× scale, so ⟨EI⟩ stays monotone: localizing the RATE does not touch the SCALE, and the emissions optimum is still not pinned.", "docs/rung24-spec.md"],
+    ["25", "diag", "Finite-rate nozzle chemistry", "The Damköhler flow between rung 14's frozen and equilibrium bounds, on the exact dh = v·dp spine. It inverts the seam into three states: the frozen-in mixture arrives super-equilibrium, so a real flow re-equilibrates irreversibly even at Da→∞ — the attainable ceiling (I) sits strictly below rung 14's reversible bound (R).", "docs/rung25-spec.md"],
+    ["26", "diag", "Freeze-out — the moving freeze point", "Rung 25's scalar Da promoted to a local Da(T,p) from an anchored GRI-Mech 3.0 H+OH+M clock — zero new constants — so the relaxation shuts off partway down the nozzle and the freeze point moves with Tt4. It refutes rung 25's own framing of this seam twice: the rate is anchored, not an unanchored Arrhenius, and freeze-out is density-driven against an opposing temperature effect.", "docs/rung26-spec.md"],
+    ["27", "diag", "NO freeze-out — the assumption earned", "The same anchored-clock machinery applied to exhaust NO, using rung 7's own Zeldovich reverse rates. The frozen-NO assumption every NO number has carried since rung 7 turns out to be earned: Da_NO ≪ 1 from entry at every Tt4, on an upper bound. The kill test inverts rung 26's — this clock is Arrhenius and bimolecular, so both factors agree and both drive.", "docs/rung27-spec.md"],
+    ["28", "diag", "The rung-26-coupled NO march", "Rung 27's clock read on rung 26's relaxing pool. Its verdict is confirmed and both its stated reasons are corrected: coupling also brings rung 26's exothermic heat release, which lifts T and — this clock being Arrhenius — speeds NO destruction, so there are two opposing channels, not one. The conclusion survives structurally: depletion is unbounded, heat release saturates.", "docs/rung28-spec.md"],
   ];
   const chipName = { cycle: "cycle", diag: "diagnostic", neg: "load-bearing result" };
   const list = document.getElementById("rung-list");
