@@ -63,6 +63,24 @@ a robustness property rung 26's clock (whose `x_OH` *is* the whole radical pool)
 clock depends on `[O],[H]` — **the very radicals rung 26's clock destroys** — so the two rungs
 interlock (§ deferred).
 
+> ### ⚠ ERRATUM (rung 28) — this justification is FALSE at the entry; the bound survives for another reason
+>
+> The sentence below ("the clamp-relevant regime: exhaust NO arrives SUPER-equilibrium … its fate is
+> destruction, not formation") is **wrong where this rung needs it**. At the nozzle **entry**,
+> `a = x_no_frozen/x_no_e(Tt9)` measures **0.61 / 0.31 / 0.45** at `Tt4 = 1800 / 2200 / 2400 K` — NO
+> arrives **SUB**-equilibrium and its initial drift is **formation**. It becomes super-equilibrium only
+> as the gas **cools** (`a` = 7.5–250 at the exit, which *is* where rungs 14/17 read the clamp — there
+> the sentence holds). But **freeze-from-entry is decided exactly where it fails.**
+>
+> **Rung 27's numbers and verdict are UNAFFECTED.** `docs/rung28-spec.md` § "the β repair" supplies the
+> justification that actually works: with `β = R1/(R2+R3)` and `u = βa`,
+> `τ_exact/τ_surrogate = (1+u)²/[(1+u)²−(1−β²)] > 1` for **all** `a` whenever `β < 1` (measured ≤ 0.51
+> across the band). So this clock is a uniform **upper bound on the rate in BOTH regimes** — formation
+> and destruction alike — which is precisely what the bound claim needed. See `_tau_no_exact`.
+>
+> Rung 28 also finds the **"3–9 order" entry margin below is band-specific**: extended to `Tt4=2400 K`
+> the entry `Da_NO` reaches `2.1e-2` — still frozen, but ~1.7 orders clear, not 3.
+
 **2. The local Damköhler number (the switch).** Identical to rung 26, on the same `τ_res`:
 
 ```
@@ -166,10 +184,17 @@ radicals rung 26 destroys — is the load-bearing subtlety and the seam to the c
 
 ## Deferred (kept additive)
 
-- **The rung-26-coupled march** — NO riding the *relaxing* pool, so `[O],[H]` deplete under it. This
+- **The rung-26-coupled march** — ~~NO riding the *relaxing* pool, so `[O],[H]` deplete under it. This
   can only *slow* NO further (radical-poorer ⇒ larger `τ_NO`), moving the answer **deeper into frozen**;
   it is a secondary refinement, not the load-bearing claim (which stands on the radical-rich upper
-  bound). Needs rung 26's marched composition threaded into the NO clock.
+  bound). Needs rung 26's marched composition threaded into the NO clock.~~
+  **BUILT BY RUNG 28** (`docs/rung28-spec.md`) — and the word **"only" was WRONG**. Coupling to rung 26
+  couples to *all* of rung 26, **including its exothermic heat release**, which lifts `T` above the
+  frozen isentrope and — this clock being Arrhenius — **SPEEDS** NO destruction. Two **opposing**
+  channels, not one. The **conclusion above is confirmed** (net deeper into frozen at every in-band
+  `Tt4`), but for a reason rung 27 did not give: depletion is **unbounded** while heat release
+  **saturates** (bounded by the finite frozen-in chemical enthalpy). The opposing channel is not
+  negligible — it cancels ~**half** the depletion at the hot edge and makes the net trend non-monotone.
 - **A resolved `τ_res`** (inherited from rung 26) — retire `L`; here the margin is so large it is moot.
 - **Detailed Fenimore / prompt-NO freeze** — a different (formation) channel; out of scope.
 

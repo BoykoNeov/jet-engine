@@ -11,7 +11,7 @@ teaching, not for features or polish.
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is
-anchored to a published case. All rungs are live; the current scope is **rung 27**.
+anchored to a published case. All rungs are live; the current scope is **rung 28**.
 
 **This table is the one-line map, not the handout.** Each rung's derivation,
 assumptions, honest concessions, reduce-to-prior contract and verification gates
@@ -47,8 +47,9 @@ live in its spec (last column) — read the spec before touching a rung.
 | 25 | **Finite-rate nozzle chemistry** — `FiniteRate(Da,…)` / `Gas.finite_rate_nozzle(…)`: the Damköhler flow BETWEEN rung-14's bounds, on the exact `dh=v·dp` spine (species-vector relaxation). **INVERTS the seam into a THREE-state picture**: the frozen-in station-4 mixture arrives **super-equilibrium**, so a real (irreversible) flow re-equilibrates the entry **irreversibly even at `Da→∞`**. **(F)** frozen (`Da→0`, the exact reduce); **(I)** irreversible-fast (`Da→∞`, the ATTAINABLE ceiling, closed form); **(R)** rung-14 reversible (a STRICT **UNREACHABLE** ceiling above I). **Reduces to FROZEN, deliberately NOT to equilibrium** — the **(R−I)** gap quantifies rung-14's named "sliver of entry irreversibility" (dormant lean, ~7% of the bracket hot). Keystone certified: integrator `Da→∞` ⇒ closed-form (I). | `docs/rung25-spec.md` |
 | 26 | **Freeze-out** — `FreezeOut(L,…)` / `Gas.freeze_out_nozzle(…)`: rung-25's scalar `Da` promoted to a **local** `Da(T,p)=τ_res/τ_chem(T,p)` from an **ANCHORED** GRI-Mech 3.0 clock (`H+OH+M`, `Ea=0`, `n=−2` — **zero new constants**), so the relaxation **shuts off partway down the nozzle** and the freeze point **MOVES with `Tt4`** (frozen-from-entry ≤1650 K → `s_freeze` walks 0.12→0.29→0.38 hot). **Refutes rung-25's own seam framing on BOTH counts**: the rate is anchored (not the "unanchored-Arrhenius trap"), and freeze-out is **density-driven** (`c_tot²∝(p/T)²`) **against an opposing `T` effect** (`k` *accelerates* on cooling — kill-tested, opposite sign to Arrhenius). Adds **no new bound** (lands inside rung-25's `[F,I]`); the **moving freeze point is the finding**, `s_freeze`/location disclaimed (rides on the one geometric knob `L`). Reduce: constant `Da_local` ⇒ rung-25 `_finite_rate_expand` **bit-for-bit**. | `docs/rung26-spec.md` |
 | 27 | **NO freeze-out** — `NOFreezeOut(L,…)` / `Gas.no_freeze_out_nozzle(…)`: rung-26's anchored-clock/local-`Da` machinery applied to **exhaust NO** via a `_tau_no_destroy` clock from **rung 7's OWN Zeldovich reverse rates** (`NO+O`, `NO+H` — **zero new constants**, already K-checked), asking whether the **frozen-NO assumption every NO number has carried since rung 7** (and the rung-14/17 clamp reads OFF) is EARNED. **It is: `Da_NO≪1` from ENTRY at every `Tt4`** (3–9 orders clear — frozen-from-entry *everywhere*, unlike rung-26's major pool), on an **upper bound** (radical-rich frozen pool = fastest possible relaxation), robust to the NO level (the super-eq clock is `[NO]_e`- and `a`-independent). **The kill test INVERTS rung 26's**: this clock is **Arrhenius** (`θ≈20820/24560 K` ⇒ `k` *craters* on cooling) AND **bimolecular** (`c¹`), so its two factors **AGREE — both DRIVE** (vs rung-26's density-DESPITE-temperature). A **CONFIRMATION** that retires the clamp corollary's last premise; **no moving freeze point** (rung-26's headline has no analogue — `s_freeze_NO≡0`), the honest trend is the Da_NO-vs-Da_recomb **separation narrowing** with `Tt4` (3.7e7→2.2e3, no crossing). Reduce: `Da_NO≡0` ⇒ rung-14/17 clamp `max_a` **bit-for-bit**. | `docs/rung27-spec.md` |
+| 28 | **The rung-26-coupled NO march** — `CoupledNOFreezeOut(L,…)` / `Gas.coupled_no_freeze_out_nozzle(…)`: rung-27's NO clock read on rung-26's **relaxing** pool (one-way, pool→NO). Rung 27's **verdict is CONFIRMED and BOTH its reasons are CORRECTED**. (a) "**can ONLY slow NO further**" is one-sided — coupling to rung 26 couples to its **exothermic heat release**, which lifts `T` and (this clock being **Arrhenius**) **SPEEDS** NO destruction: **two OPPOSING channels**, decomposed by running one clock on two **hybrid trajectories**. `net<1` everywhere (conclusion holds) but `ch2>1` always, `|ln ch2/ln ch1|` rising **monotonically 0.003→0.48** — the opposing channel cancels **~half** the depletion hot. The win is **STRUCTURAL**: depletion **UNBOUNDED** (`ch1→0`) vs heat release **SATURATING** (capped by finite frozen-in chemical enthalpy) — certified over 6 orders of `pool_rate_scale`. (b) The **β repair** — rung 27 justified its `a≫1` clock with "NO arrives super-equilibrium", **false at the ENTRY** (`a`=0.31–0.61 hot; NO arrives **SUB**-eq and tries to FORM) where freeze-from-entry is decided. What holds is **`β=R1/(R2+R3)<1`** ⇒ `τ_ex/τ_surr=(1+u)²/[(1+u)²−(1−β²)]>1` for **all `a`** ⇒ an upper bound on the rate in **BOTH** regimes. **Rung 27's numbers are unaffected**; only its reasoning is repaired. Headline **structurally unreachable** (entry `Da_NO` bit-for-bit rung 27's — path-independent). Disclaimed: the net **turnaround location** (rides on `L`), **β<1 as a theorem** (margin ~0.51 hot — a factor 2, the honest weak point). Reduce: `couple=False` ⇒ rung 27 **bit-for-bit** (structural, via `_frozen_no_trajectory`). | `docs/rung28-spec.md` |
 
-**The invariant that spans rungs 7–27: they are all pure diagnostics.** NO/N never
+**The invariant that spans rungs 7–28: they are all pure diagnostics.** NO/N never
 enter `_equil_solve` and the production nozzle stays frozen, so **the cycle is
 bit-for-bit rung 6** — every rung above 6 only *reads* the run's state. Each rung's
 verified anchor data lives in `docs/plans/rungN-anchor-*.md`; `docs/plans/` also holds
@@ -68,7 +69,7 @@ the living plan/tasks (rungs 1–3).
 - **Every new rung reduces to its predecessor**, exactly and by test (`X=None` ⇒
   the prior code path). This is the project's spine — see any `docs/rungN-spec.md`.
 
-**Current scope (rung 27).** The **cycle solve** is a thermally-perfect, reacting,
+**Current scope (rung 28).** The **cycle solve** is a thermally-perfect, reacting,
 dissociation-equilibrium gas (`Gas.reacting_equilibrium()`) through ideal + real
 components (isentropic `η_c/η_t` **or** polytropic `e_c/e_t`, mutually exclusive;
 `π_d/π_b/π_n`, `η_b`, `η_m`; dual cold/hot gas; specified exit pressure). The burner
@@ -105,9 +106,21 @@ are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle
   **upper bound**. The kill test **INVERTS rung 26's** (Arrhenius + bimolecular ⇒ the two terms AGREE,
   both DRIVE, vs rung-26's density-DESPITE-temperature). A **confirmation** that retires the rung-14/17
   clamp corollary's last premise; **no moving freeze point** (`s_freeze_NO≡0`), the honest trend is the
-  separation narrowing with `Tt4`. Reduce: `Da_NO≡0` ⇒ the rung-14/17 clamp `max_a` bit-for-bit. **What
-  rung 27 leaves open:** the **rung-26-coupled march** (NO riding the *relaxing* pool — can only push
-  deeper into frozen; a secondary refinement).
+  separation narrowing with `Tt4`. Reduce: `Da_NO≡0` ⇒ the rung-14/17 clamp `max_a` bit-for-bit.
+- **The rung-26-coupled NO march** — **BUILT BY RUNG 28** (`docs/rung28-spec.md`,
+  `Gas.coupled_no_freeze_out_nozzle`, `docs/plans/rung28-anchor-coupled-no-march.md`). Rung 27 named this
+  seam and predicted it "can **only** slow NO further … a secondary refinement". Rung 28 built it and
+  **confirmed the verdict while correcting BOTH stated reasons**. (a) "Only" is wrong: rung-26
+  recombination is **exothermic**, so coupling also **lifts `T`**, and this clock being **Arrhenius**
+  that **SPEEDS** NO destruction — **two opposing channels**. The conclusion survives (`net<1` at every
+  in-band `Tt4`) but for a different reason: depletion is **UNBOUNDED**, heat release **SATURATES**. The
+  opposing channel is **not** negligible (cancels ~half the depletion hot; makes the net trend
+  non-monotone). (b) The **β repair**: rung 27's "NO arrives super-equilibrium" premise is **false at the
+  entry** (`a`=0.31–0.61) — exactly where freeze-from-entry is decided; the bound holds because **β<1**,
+  which covers **both** regimes. Rung 27's *numbers* are untouched. **What rung 28 leaves open:** a
+  **coupled formation clock** (the `a≫1` surrogate *bounds* the sub-eq entry but does not *describe* it;
+  moot while `Da_NO≪1`); **β at higher `π_c`/hotter cycles** (the one margin here that is a factor, ~0.51,
+  not orders).
 - **A real spatial / transported-CFD PDF** — the standing ceiling. Rungs 22–24 took the
   first steps (deriving the width `g(C)`, the dwell spectrum `τ(ξ)`, and each cell's
   mixing *rate* from a resolved cross-plane), but they remain a Gaussian-plume **cartoon**
@@ -154,15 +167,18 @@ are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle
   the gas factories (`thermally_perfect` / `reacting` / `reacting_forkb` /
   `reacting_equilibrium`); the `_equil_solve` Newton solver + frozen `_EquilibriumSection`;
   and **every diagnostic** — `thermal_nox`, `zoned_nox`, `nozzle_flow`, `exhaust_no_clamp`,
-  `finite_rate_nozzle`, `freeze_out_nozzle`, `no_freeze_out_nozzle` — plus their configs (`JetMixing`,
+  `finite_rate_nozzle`, `freeze_out_nozzle`, `no_freeze_out_nozzle`, `coupled_no_freeze_out_nozzle` —
+  plus their configs (`JetMixing`,
   `Unmixedness`, `MixingPDF`, `QuenchPDF`, `PocketQuenchPDF`, `TransportedPDF`, `PromptNO`, `SpatialPDF`,
   `SpatialDwellPDF`, `SpatialLocalPDF`; the eight mixing closures are mutually exclusive — plus
-  `FiniteRate`, the rung-25 nozzle knob, `FreezeOut`, the rung-26 freeze-out knob, and `NOFreezeOut`,
-  the rung-27 NO-freeze-out knob) and helpers
+  `FiniteRate`, the rung-25 nozzle knob, `FreezeOut`, the rung-26 freeze-out knob, `NOFreezeOut`,
+  the rung-27 NO-freeze-out knob, and `CoupledNOFreezeOut`, the rung-28 coupled-march knob) and helpers
   (`_quench_no`, `_pdf_mean_ei`, `_pocket_quench_mean_ei`, `_spatial_segregation`,
   `_spatial_dwell_field`, `_spatial_local_field`, the rung-25 `_finite_rate_expand` /
   `_irreversible_fast_expand` / `_equilibrate_hp`, the rung-26 `_tau_chem_recomb` /
-  `_freeze_out_expand`, and the rung-27 `_tau_no_destroy` / `_no_freeze_out_expand`, …).
+  `_freeze_out_expand` (which takes the rung-28 pure-observer `record=`), the rung-27 `_tau_no_destroy` /
+  `_no_freeze_out_expand`, and the rung-28 `_tau_no_exact` / `_frozen_no_trajectory` /
+  `_coupled_no_march`, …).
 - `turbojet/components.py` — `Inlet, Compressor, Burner, Turbine, Nozzle` as pure
   `apply(state, gas)` in `h`/`pr` form (+ loss params, `ram_recovery(M0)`, the polytropic
   knob; the Nozzle branches CPG/TPG — the velocity↔enthalpy trap). The `Burner` runs the
@@ -174,7 +190,7 @@ are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle
   states its honest scope).
 - `tests/` — `test_stations.py` / `test_validation.py` (rung 1), `test_rung2.py`,
   `test_polytropic.py` (2b), `test_variable_cp.py` (3), `test_reacting.py` (4),
-  `test_forkb.py` (5), then **`test_rungN.py` for N = 6…27**. Every rung file carries that
+  `test_forkb.py` (5), then **`test_rungN.py` for N = 6…28**. Every rung file carries that
   rung's **reduce-to-prior** gate plus its load-bearing claims; the gates are named in the
   rung's spec. Rungs 16, 23 and 24 **deliberately assert no emissions global-min location**;
   rung 25 **reduces to rung-14 FROZEN but deliberately NOT to equilibrium** (the (R−I) gap is
@@ -182,7 +198,10 @@ are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle
   `Da_local`** and **deliberately asserts no freeze LOCATION** — only its *existence*, its *absence
   lean*, and its *motion with `Tt4`* (the moving freeze point is the finding); rung 27 **reduces to
   the rung-14/17 clamp `max_a` bit-for-bit at `Da_NO≡0`** and **deliberately asserts no moving freeze
-  point** — only that NO is *frozen from entry at every `Tt4`* and the kill-test *inversion* of rung 26.
+  point** — only that NO is *frozen from entry at every `Tt4`* and the kill-test *inversion* of rung 26;
+  rung 28 **reduces to rung 27 bit-for-bit at `couple=False`** and **deliberately asserts no net-turnaround
+  location** (it rides on `L`) — only the *monotone* channel ratio, the *unbounded-vs-saturating*
+  asymmetry, and `β<1` (whose ~0.51 hot margin it asserts as a disclosed weak point, not a comfort).
 - `docs/rungN-spec.md` — the derivation, assumptions, concessions and gates for rung N.
   `docs/plans/rungN-anchor-*.md` — that rung's verified anchor data.
 

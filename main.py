@@ -25,7 +25,7 @@ from turbojet.gas import (  # noqa: E402
     _quench_trajectory, _quench_no, _bell_interpolator, _beta_pdf_nodes_weights, _ideal_bell_ei,
     SpatialLocalPDF, _two_stream_ceiling, _transport_variance, _pdf_mean_ei, _spatial_segregation,
     _spatial_dwell_field, _spatial_local_field, FiniteRate, FreezeOut, _tau_chem_recomb, _Ru,
-    NOFreezeOut, _tau_no_destroy,
+    NOFreezeOut, _tau_no_destroy, CoupledNOFreezeOut, _tau_no_exact,
 )
 
 TS_DIAGRAM_PATH = "ts_diagram.png"
@@ -937,6 +937,79 @@ def print_no_freeze_out_table(flight):
     print("  cooling, Ea=0). Here the NO reverse rates carry a large barrier (θ≈20820/24560 K), so k joins")
     print("  density: same nozzle, two anchored clocks, OPPOSITE mechanism structure. NO freezes BECAUSE")
     print("  of temperature; the majors freeze DESPITE it.")
+
+
+def print_coupled_no_march_table(flight):
+    """Rung-28 payoff: the COUPLED march — rung 27's verdict CONFIRMED, both its reasons CORRECTED.
+
+    Rung 27 deferred this with "coupling can ONLY slow NO further". Building it shows that is one-sided:
+    coupling to rung 26 couples to ALL of rung 26, including its EXOTHERMIC heat release, which lifts T
+    and — this clock being Arrhenius — SPEEDS NO destruction. Two OPPOSING channels. The conclusion
+    survives anyway, for a reason rung 27 did not give: depletion is UNBOUNDED, heat release SATURATES.
+    And rung 27's OTHER justification (NO arrives super-equilibrium) is false at the entry — the bound
+    holds because β<1, not because a≫1. A pure diagnostic: bit-for-bit rung 6, rungs 26/27 untouched.
+    """
+    print("\nCoupled NO march (rung 28): rung 27's VERDICT confirmed — both its REASONS corrected.")
+    print("Rung 27 said the coupling 'can ONLY slow NO further'. But rung-26 recombination is EXOTHERMIC,")
+    print("so it also LIFTS T — and an Arrhenius NO clock SPEEDS UP. Two opposing channels, decomposed")
+    print("by running the same clock on the two hybrid trajectories (frozen/coupled T × frozen/coupled comp).")
+
+    band = (1500.0, 1650.0, 1800.0, 2000.0, 2200.0, 2400.0)
+    states = []
+    for Tt4 in band:
+        eq = Gas.reacting_equilibrium()
+        r = build_turbojet(eq, PI_C, Tt4, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+        st3, st4, st9 = r.stations["3"], r.stations["4"], r.stations["9"]
+        states.append((Tt4, eq.coupled_no_freeze_out_nozzle(
+            st4.far, st3.Tt, st4.Tt, st4.pt, st9.Tt, st9.pt, r.p9, 1.0, CoupledNOFreezeOut())))
+
+    # (1) The two channels, and the fact that the OPPOSING one is not a footnote.
+    print("\n  The two channels at the nozzle exit (Da_NO relative to rung 27's), anchored, L=0.5 m:")
+    print(f"  {'Tt4 [K]':>8} {'s_frz pool':>11} {'dT_exit':>8} {'ch1 depl':>9} {'ch2 heat':>9} "
+          f"{'net':>8} {'|ln2/ln1|':>10} {'deeper':>7}")
+    print("  " + "-" * 78)
+    for Tt4, s in states:
+        print(f"  {Tt4:>8.0f} {s.s_freeze_pool:>11.3f} {s.T9_pool-s.T9_frozen:>8.1f} "
+              f"{s.depletion_factor:>9.4f} {s.heat_release_factor:>9.4f} {s.net_factor:>8.4f} "
+              f"{s.channel_ratio:>10.3f} {str(s.deeper_frozen):>7}")
+    print("  net<1 EVERYWHERE ⇒ rung 27's CONCLUSION (deeper into frozen) is CONFIRMED. But ch2>1 always,")
+    print("  and |ln ch2/ln ch1| rises MONOTONICALLY 0.003→0.48: at the hot edge the opposing channel")
+    print("  cancels ~HALF the depletion. 'Can ONLY slow NO further' is wrong as a MECHANISM. The net")
+    print("  even turns non-monotone (deepest ~2200–2300 K) — that turnaround rides on L and is NOT claimed.")
+    print("  INTERLOCK: the coupling bites exactly where rung 26's pool is alive (s_freeze 0→0.39).")
+
+    # (2) Why depletion wins: UNBOUNDED vs SATURATING — the structural argument.
+    print("\n  Why depletion wins — drive the pool rate up (Tt4=2200 K): ch1 runs away, ch2 hits a wall:")
+    eq = Gas.reacting_equilibrium()
+    r = build_turbojet(eq, PI_C, 2200.0, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+    st3, st4, st9 = r.stations["3"], r.stations["4"], r.stations["9"]
+    args = (st4.far, st3.Tt, st4.Tt, st4.pt, st9.Tt, st9.pt, r.p9, 1.0)
+    print(f"  {'pool rate':>10} {'ch1 depl':>10} {'ch2 heat':>10} {'net':>10}")
+    print("  " + "-" * 44)
+    for rs in (1.0, 1e1, 1e2, 1e3, 1e4, 1e6):
+        s = eq.coupled_no_freeze_out_nozzle(*args, CoupledNOFreezeOut(pool_rate_scale=rs))
+        print(f"  {rs:>10.0e} {s.depletion_factor:>10.4f} {s.heat_release_factor:>10.4f} "
+              f"{s.net_factor:>10.4f}")
+    print("  ch1 → 0 with NO floor (τ_NO∝1/[O],[H], and equilibrium radicals crater on cooling);")
+    print("  ch2 SATURATES (heat release is capped by the FINITE frozen-in chemical enthalpy). So at any")
+    print("  chemistry faster than anchored, depletion wins by orders — the verdict is STRUCTURAL.")
+
+    # (3) The β repair — rung 27's bound is right, its stated reason is false at the entry.
+    print("\n  The β repair — rung 27's clock is an a≫1 limit, but NO arrives SUB-equilibrium:")
+    print(f"  {'Tt4 [K]':>8} {'a @entry':>9} {'a @exit':>9} {'sub-eq in':>10} {'β max':>8} "
+          f"{'τex/τsurr':>10} {'bound OK':>9}")
+    print("  " + "-" * 70)
+    for Tt4, s in states:
+        print(f"  {Tt4:>8.0f} {s.a_entry:>9.3f} {s.a_exit:>9.2f} {str(s.sub_equilibrium_entry):>10} "
+              f"{s.beta_max:>8.3f} {s.tau_ratio_min:>10.4f} {str(s.surrogate_bounds_rate):>9}")
+    print("  Rung 27 justified its a≫1 clock with 'exhaust NO arrives SUPER-equilibrium'. At the ENTRY it")
+    print("  does NOT (a=0.31–0.61 hot — NO is BELOW the ceiling and tries to FORM); it goes super-eq only")
+    print("  as the gas COOLS, at the exit where the clamp is read. Since freeze-FROM-ENTRY is decided at")
+    print("  the entry, the premise fails where it is needed. What holds instead is β=R1/(R2+R3) < 1:")
+    print("    τ_exact/τ_surr = (1+u)²/[(1+u)²−(1−β²)] > 1  for ALL a,  u=βa")
+    print("  ⇒ the surrogate is an UPPER bound on the RATE in BOTH regimes (formation and destruction).")
+    print("  Rung 27's NUMBERS are unaffected — only its reasoning is repaired. HONEST MARGIN: β rises to")
+    print("  ~0.51 hot, HALF the β=1 threshold — a factor 2, not orders (the weak point, disclosed).")
 
 
 def print_pdf_quench_table(flight):
@@ -1983,6 +2056,8 @@ def main():
     print_freeze_out_nozzle_table(FLIGHT)
 
     print_no_freeze_out_table(FLIGHT)
+
+    print_coupled_no_march_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 
