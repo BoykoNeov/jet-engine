@@ -1074,6 +1074,58 @@ def print_shifting_turbine_table(flight):
     print("  needed to get there (1.9% in Tt5) and that the design point sits ~170× short of needing it.")
 
 
+def print_choked_nozzle_table(flight):
+    """Rung-30 payoff: is FULL EXPANSION earned? — the convergent nozzle chokes.
+
+    Every thrust number since rung 2 expands the nozzle fully to p0, which at the design point
+    means M9 = 1.86 — SUPERSONIC, i.e. silently a converging-diverging nozzle. A fixed
+    CONVERGENT nozzle (the standard subsonic choice, and the fixed throat rung 31 needs) can
+    reach only M9 = 1 and then chokes, leaving the jet underexpanded. Bracket the two the way
+    rung 29 bracketed the turbine. A pure diagnostic: the production nozzle stays ideal, so the
+    cycle remains bit-for-bit rung 6.
+    """
+    print("\nThe choked convergent nozzle (rung 30): is FULL EXPANSION — assumed since rung 2 — EARNED?")
+    print("The shipped nozzle expands fully to p0 (M9 = 1.86, SUPERSONIC — physically a C-D nozzle).")
+    print("A fixed convergent nozzle chokes at M9 = 1 and leaves the jet UNDEREXPANDED (p9 = p* > p0).")
+
+    ideal = build_turbojet(Gas.reacting_equilibrium(), PI_C, TT4, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+    gas = Gas.reacting_equilibrium()
+    conv = build_turbojet(gas, PI_C, TT4, flight.p0, nozzle_convergent=True, **REAL_LOSSES).run(flight, 1.0)
+    f = conv.stations["4"].far
+    R = gas.R_t_at(f)
+    p0 = flight.p0
+
+    mom_i = (1.0 + f) * ideal.V9 - ideal.V0                 # ideal: p9 = p0, no pressure term
+    mom_c = (1.0 + f) * conv.V9 - conv.V0
+    p_thrust = (1.0 + f) * R * conv.T9 * (1.0 - p0 / conv.p9) / conv.V9
+
+    print(f"\n  Design point Tt4={TT4:.0f} K, pi_c={PI_C:.0f}, M0={flight.M0}: nozzle entry pt9/p0 = "
+          f"{conv.stations['9'].pt / p0:.2f} (critical ~1.85 -> CHOKED)")
+    print(f"  {'quantity':>26} {'ideal (full exp)':>18} {'choked convergent':>18}")
+    print("  " + "-" * 64)
+    print(f"  {'exit pressure p9 [kPa]':>26} {ideal.p9/1000:>18.2f} {conv.p9/1000:>18.2f}")
+    print(f"  {'exit Mach M9':>26} {ideal.M9:>18.4f} {conv.M9:>18.4f}")
+    print(f"  {'exit velocity V9 [m/s]':>26} {ideal.V9:>18.2f} {conv.V9:>18.2f}")
+    print(f"  {'momentum thrust [N·s/kg]':>26} {mom_i:>18.2f} {mom_c:>18.2f}")
+    print(f"  {'pressure thrust [N·s/kg]':>26} {0.0:>18.2f} {p_thrust:>18.2f}")
+    print(f"  {'specific thrust [N·s/kg]':>26} {ideal.performance.specific_thrust:>18.2f} "
+          f"{conv.performance.specific_thrust:>18.2f}")
+    print(f"  {'TSFC [kg/(N·s)]':>26} {ideal.performance.tsfc:>18.4e} {conv.performance.tsfc:>18.4e}")
+
+    drop = (ideal.performance.specific_thrust - conv.performance.specific_thrust)
+    recov = p_thrust / (mom_i - mom_c)
+    print(f"\n  FULL EXPANSION IS NOT EARNED here: specific thrust falls {drop:.1f} N·s/kg "
+          f"({100*drop/ideal.performance.specific_thrust:.1f}%), TSFC rises "
+          f"{100*(conv.performance.tsfc/ideal.performance.tsfc-1):.1f}%.")
+    print(f"  THE FINDING — the pressure term rescues most of it: V9 drops "
+          f"{100*(ideal.V9-conv.V9)/ideal.V9:.0f}% and momentum thrust {100*(mom_i-mom_c)/mom_i:.0f}%, but")
+    print(f"  exhausting into p0 < p* turns the static-pressure excess into +{p_thrust:.0f} N·s/kg of")
+    print(f"  DIRECT pressure thrust — recovering {100*recov:.0f}% of the momentum deficit. That gap between")
+    print("  '51% loss' and '6.6% loss' is why high-PR engines fit C-D / variable nozzles, and it is the")
+    print("  pressure-thrust term the cycle has carried honestly since rung 2. (Production stays on the")
+    print("  ideal nozzle -> cycle unmoved; rung 31 uses this choke to PIN the fixed-throat off-design flow.)")
+
+
 def print_pdf_quench_table(flight):
     """Rung-15 payoff: the PDF THROUGH the finite quench — the two mixing mechanisms COMBINED.
 
@@ -2122,6 +2174,8 @@ def main():
     print_coupled_no_march_table(FLIGHT)
 
     print_shifting_turbine_table(FLIGHT)
+
+    print_choked_nozzle_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

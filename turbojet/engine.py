@@ -260,6 +260,7 @@ def build_turbojet(
     eta_m: float = 1.0,
     pi_n: float = 1.0,
     p_exit: float | None = None,
+    nozzle_convergent: bool = False,
 ) -> Engine:
     """Factory: wire the five components into a single-spool turbojet.
 
@@ -279,6 +280,10 @@ def build_turbojet(
     - p_exit: specified nozzle exit static pressure (default p_ambient -> fully
               expanded). Set p_exit != p_ambient for an under/over-expanded nozzle
               (then specific thrust carries the pressure term).
+    - nozzle_convergent: RUNG 30. If True the nozzle is a fixed CONVERGENT nozzle that
+              choke-detects (ignores p_exit): the flow decides p9 (sonic p* if choked,
+              else p_ambient). Default False keeps the ideal/specified-p_exit nozzle, so
+              the cycle stays bit-for-bit rung 6. See docs/rung30-spec.md.
     - eta_m:  shaft mechanical efficiency (lives on the Engine — it owns the shaft).
     """
     components: List[Tuple[str, Component]] = [
@@ -286,6 +291,6 @@ def build_turbojet(
         ("3", Compressor(pi_c, eta_c, e_c)),
         ("4", Burner(Tt4, eta_b, pi_b)),
         ("5", Turbine(eta_t, e_t)),
-        ("9", Nozzle(p_ambient, pi_n, p_exit)),
+        ("9", Nozzle(p_ambient, pi_n, p_exit, convergent=nozzle_convergent)),
     ]
     return Engine(gas, components, eta_m=eta_m)

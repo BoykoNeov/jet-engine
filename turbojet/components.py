@@ -485,8 +485,65 @@ class NozzleExit:
     p9: float          # exit STATIC pressure, Pa (= p_exit)
 
 
+def _sonic_throat(gas: Gas, Tt9: float, pt9: float, far: float) -> tuple[float, float, float]:
+    """RUNG 30. The M=1 (choking) exit state of a convergent nozzle: (T*, p*, V*).
+
+    A convergent nozzle can accelerate the flow only to Mach 1 at its throat, and the
+    throat IS the exit. At M=1 the exit velocity equals the local speed of sound; writing
+    that in totals->static isentropic form (hot-section h_t/pr_t at the composition far):
+
+        V*^2 = 2*( h_t(Tt9) - h_t(T*) )                 # energy: KE is the enthalpy drop
+        V*   = a(T*) = sqrt( gamma_t(T*) * R_t * T* )   # sonic condition M9 = 1
+
+    Eliminate V* -> one equation in T*:
+
+        h_t(Tt9) - h_t(T*)  =  1/2 * gamma_t(T*) * R_t * T*
+
+    As T* falls the LHS (enthalpy drop) RISES and the RHS (sonic KE) FALLS, so the residual
+    is monotone and the root is unique — an inner BISECTION on T* in (Tt9/2, Tt9). Then
+    p* = pt9 * pr_t(T*)/pr_t(Tt9) (isentropic). This is the TPG velocity<->enthalpy trap in a
+    new guise; on a self-consistent CPG gas it reproduces the closed form T*/Tt = 2/(gamma+1),
+    p*/pt = (2/(gamma+1))^(gamma/(gamma-1)) to machine precision (docs/rung30-spec.md gate 2).
+    """
+    R = gas.R_t_at(far)
+    h_tt = gas.h_t(Tt9, far)
+
+    def resid(T: float) -> float:
+        return (h_tt - gas.h_t(T, far)) - 0.5 * gas.gamma_t_at(T, far) * R * T
+
+    lo, hi = 0.5 * Tt9, Tt9                 # T*/Tt ~ 0.85-0.87; safely bracketed
+    flo = resid(lo)                          # > 0 (big drop), resid(hi) < 0 (no drop)
+    assert flo > 0.0 >= resid(hi), "sonic-throat bracket does not straddle M=1"
+    for _ in range(200):
+        mid = 0.5 * (lo + hi)
+        fm = resid(mid)
+        if flo * fm <= 0.0:
+            hi = mid
+        else:
+            lo, flo = mid, fm
+        if hi - lo <= 1e-13 * Tt9:
+            break
+    Tstar = 0.5 * (lo + hi)
+    pstar = pt9 * gas.pr_t(Tstar, far) / gas.pr_t(Tt9, far)
+    Vstar = (2.0 * (h_tt - gas.h_t(Tstar, far))) ** 0.5
+    return Tstar, pstar, Vstar
+
+
 class Nozzle(Component):
     """Station 5 -> 9. Real nozzle: pi_n loss, expand to a SPECIFIED exit pressure.
+
+    RUNG 30 — the CHOKED CONVERGENT nozzle (convergent=True). The default (convergent=False)
+    is UNCHANGED: it expands to the specified p_exit (default p0 -> fully expanded), which
+    models an ideal / converging-diverging nozzle and keeps the cycle bit-for-bit rung 6. A
+    convergent nozzle has no diverging section, so its exit is its minimum area and the flow
+    DECIDES the exit state rather than being told a back-pressure:
+      - available pressure ratio pt9/p0 BELOW the critical ratio -> subsonic, reaches p9 = p0
+        (identical to the default nozzle: the reduce-to-prior branch);
+      - pt9/p0 ABOVE the critical ratio -> CHOKES at M9 = 1, exit pinned at the sonic pressure
+        p* > p0 (underexpanded); the residual (p9 - p0) leaves as PRESSURE THRUST, not velocity.
+    See docs/rung30-spec.md and _sonic_throat above. No new solver downstream: the engine's
+    specific-thrust formula already carries the pressure term (validated underexpanded by
+    Mattingly Example 7.1, p9 = 2*p0).
 
     Governing equations (docs/rung3-variable-cp.md § Station 9), hot-section
     properties. Station 9 is the second velocity<->enthalpy coupling station, so —
@@ -519,10 +576,12 @@ class Nozzle(Component):
       rounded-constant residual).
     """
 
-    def __init__(self, p_ambient: float, pi_n: float = 1.0, p_exit: float | None = None):
+    def __init__(self, p_ambient: float, pi_n: float = 1.0, p_exit: float | None = None,
+                 convergent: bool = False):
         self.p_ambient = p_ambient                                # p0, Pa
         self.pi_n = pi_n                                          # nozzle pt ratio, <= 1
         self.p_exit = p_ambient if p_exit is None else p_exit     # p9; default fully expanded
+        self.convergent = convergent                              # RUNG 30: fixed convergent (choke-aware)
 
     def apply(self, s: FlowState, gas: Gas) -> NozzleExit:
         # Hot-section gas at the burned-products composition (rung 4): R_t and gamma_t
@@ -531,7 +590,33 @@ class Nozzle(Component):
         R = gas.R_t_at(f)
         Tt9 = s.Tt
         pt9 = self.pi_n * s.pt                      # specified nozzle pressure loss
-        p9 = self.p_exit                            # expand to the specified back-pressure
+
+        # RUNG 30: a CONVERGENT nozzle lets the FLOW decide p9. Find the sonic (M=1) throat
+        # and choke-detect against ambient. If choked, the exit is pinned there (underexpanded,
+        # p9 = p* > p0). If subcritical, p9 = p0 and we fall through to the shared expansion
+        # (bit-for-bit the default nozzle at that condition — the reduce-to-prior branch).
+        if self.convergent:
+            Tstar, pstar, Vstar = _sonic_throat(gas, Tt9, pt9, f)
+            if pstar > self.p_ambient:              # CHOKED: exit at the sonic throat
+                p9, T9, V9 = pstar, Tstar, Vstar
+                a9 = (gas.gamma_t_at(T9, f) * R * T9) ** 0.5
+                M9 = V9 / a9                        # == 1 by construction
+                out = FlowState(Tt=Tt9, pt=pt9, mdot=s.mdot, far=s.far)
+                # Shared conservation checks (contract #4), plus the choke-specific ones.
+                assert abs(out.pt - self.pi_n * s.pt) < 1e-9 * s.pt, "nozzle pt9 != pi_n*pt5"
+                assert abs(gas.pr_t(Tt9, f) / gas.pr_t(T9, f) - pt9 / p9) < 1e-9 * (pt9 / p9), (
+                    "nozzle static drop not isentropic")
+                assert abs(M9 - 1.0) < 1e-9, "choked convergent nozzle must exit at M9 = 1"
+                assert p9 > self.p_ambient, "choked nozzle is underexpanded: p9 > p0"
+                split_tol = 1e-3 if gas.hot_is_cpg else 1e-9
+                enthalpy_total = gas.h_t(Tt9, f)
+                assert abs(gas.h_t(T9, f) + 0.5 * V9 ** 2 - enthalpy_total) <= split_tol * enthalpy_total, (
+                    "choked nozzle energy split off by more than the constant mismatch")
+                assert out.mdot == s.mdot and out.far == s.far, "nozzle adds no mass or fuel"
+                return NozzleExit(state=out, M9=M9, T9=T9, V9=V9, p9=p9)
+            p9 = self.p_ambient                     # subcritical: expand fully to ambient
+        else:
+            p9 = self.p_exit                         # expand to the specified back-pressure
         assert p9 <= pt9, (                         # else the "expansion" would need compression
             f"nozzle back-pressure p9={p9:.0f} Pa exceeds total pressure pt9={pt9:.0f} Pa "
             "— the nozzle cannot expand to it (raise pi_n / lower p_exit)")
