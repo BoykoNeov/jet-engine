@@ -50,6 +50,12 @@ The `s` frame inherited from rung 26 is a *pressure* schedule. It cannot carry a
   `∫ĝ ds` **does not exist** without an **entry cutoff**, i.e. an entry Mach `M_e` and hence an entry
   plane. The cycle carries no such quantity. *(Confirmed numerically: the near-entry residence
   fraction grows without limit under grid refinement.)*
+
+  **The cutoff does not merely normalize — it RESURRECTS the motion.** If one declines to cut off,
+  `∫ĝ → ∞` ⇒ `ĝ_norm → 0` everywhere ⇒ `Da_local → 0` everywhere ⇒ **frozen-from-entry at every
+  `Tt4`, motion identically zero** — the degenerate answer. So the tempting escape ("the divergent
+  near-entry region is harmless, since the gas equilibrates there anyway") **fails**: without the
+  cutoff the result collapses to the trivial one, and with it the surviving motion rides on `M_e`.
 - **Throat zero.** `a = v̂/V` is minimal at the throat, so `|da/ds| → 0` and `ĝ` has a spurious zero
   there. The throat is real and resolved: `s_throat ≈ 0.333 / 0.300 / 0.278` at
   `Tt4 = 1500/1800/2200`, with `a_exit/a_min ≈ 1.56 / 1.74 / 1.92`.
@@ -90,6 +96,11 @@ Refining the march and shape grids together:
 
 **Converged**, to ≈0.127 and ≈0.114 — a **~11% cross-cutoff spread**. So the entry-relative motion
 is real, not a normalization artifact.
+
+**A free thermodynamic validation.** Every reshaped march ran through `_freeze_out_expand`'s own
+2nd-law (`dS > _DS_FLOOR`) and atom-conservation assertions **without tripping**. So the injected
+shape yields a **thermodynamically consistent** path — not merely a numerically finite one — which
+is stronger evidence than "the probe ran" that these numbers are not an artifact.
 
 ## The positive by-products — rung 26 CONFIRMED, its disclaimed magnitude refined
 
