@@ -240,6 +240,26 @@ are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle
   the real missing piece is an **anchored `δ(J)` law**, not a missing penalty. Do NOT re-run the
   growing-σ-at-hand-picked-`p` construction; a new attempt is only worthwhile with an *anchored*
   exponent or a real transported/CFD cross-plane field.
+  **INVESTIGATED (the anchored `δ(J)` law, via a jet-in-crossflow trajectory) — negative, NOT shipped,
+  NOT a rung** (`docs/mixing-jicf-anchor-negative.md`). Anchor the penetration exponent with the published
+  JICF trajectory `y/rd=A(x/rd)^m` (`m≈0.28` Pratte-Baines / `0.33` Hasselbrink-Mungal). **Two findings.**
+  (1) **PENETRATION axis — CONFIRMS rung 22.** Any *bent*-trajectory exponent (`m>0`) **breaks** the
+  measured Holdeman `(S/H)√J` collapse (the g-optimum drifts 27–30% per 2× geometry); only `δ∝rd` (the
+  momentum-**depth** scaling, `m=0` — rung-22's own law) is consistent. **Deflated honestly:** `g` depends
+  on `δ/H` **by construction**, so "collapse ⟺ `p=1/4`" is *algebra*, not data pulled out — the correct
+  claim is a **ruling-out** of the bent forms, not "data anchors `m=0`" (and it is a *depth* scaling, not a
+  near-field claim — the near field is `m≈1/2`). This defuses the SCALE-negative's `p≈1/2` pessimism, but
+  only on the penetration axis. (2) **EMISSIONS axis — still NOT pinned.** Holding penetration at the
+  collapse-consistent `p=1/4`, the emissions turn's *location* is penetration-anchored and grid-robustly
+  **stable at `C≈3.12`** across the cap (×0.4–2) and `c_D` (×0.5–2), BUT its *existence* rides on a
+  **SECOND** un-anchored mixing exponent — the **spread/entrainment** growth `p_σ` (`p_σ=0` flat, `0.25`
+  turns, `0.5` erases it), which JICF **trajectory** scaling does not supply; and the **global** min sits at
+  a max-segregation **endpoint** in 6/7 configs (rung-22's concession — the SCALE-negative's "clean U" only
+  looked clean because its `J`-grid excluded that endpoint). **Anchoring penetration MOVES the free
+  parameter from penetration to spread; it does not eliminate it.** So the seam needs **BOTH** exponents
+  anchored (or the full CFD **pattern**). Do NOT re-run the JICF-penetration + growing-σ-at-hand-picked-`p_σ`
+  construction; a new attempt needs an **anchored spread/entrainment law** (murkier than the trajectory for
+  a *confined* jet) or a real transported/CFD cross-plane pattern.
 - **A per-pocket clamp that fires AT THE BURNER** (`max_a>1` at station 4, not just in
   the rung-14/17 nozzle). The lever is a **slow-enough freeze on a cooling pocket**,
   *not* a hotter `Tt4` (which raises the terminal `[NO]_e` and *lowers* the ratio).
