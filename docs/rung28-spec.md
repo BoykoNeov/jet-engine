@@ -48,6 +48,11 @@ Measured at the nozzle exit, anchored rate (`Da_NO(exit)` relative to rung 27's)
 | 2200 | 0.382 | 1.130 | **0.432** | 0.127 |
 | 2400 | 0.379 | 1.594 | **0.604** | **0.481** |
 
+*Consistency check:* the two channels compose **multiplicatively** — `ch1 · ch2 = net` to 4 significant
+figures (0.3821 × 1.1302 = 0.4318 at 2200 K). The clock is a product of a composition factor and a
+temperature factor, so the hybrid decomposition is exact rather than an approximation, and there is no
+significant cross-term hiding in the split.
+
 **Rung 27's CONCLUSION holds** (`net < 1` everywhere — deeper into frozen). **Its MECHANISM does not:**
 the opposing channel is real, grows **monotonically**, and cancels **~half** the depletion effect at the
 hot edge. It even makes the **net trend non-monotone** in `Tt4` (deepest ~2200–2300 K, reversing by
