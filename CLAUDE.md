@@ -11,7 +11,7 @@ teaching, not for features or polish.
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is
-anchored to a published case. All rungs are live; the current scope is **rung 28**.
+anchored to a published case. All rungs are live; the current scope is **rung 29**.
 
 **This table is the one-line map, not the handout.** Each rung's derivation,
 assumptions, honest concessions, reduce-to-prior contract and verification gates
@@ -49,7 +49,9 @@ live in its spec (last column) — read the spec before touching a rung.
 | 27 | **NO freeze-out** — `NOFreezeOut(L,…)` / `Gas.no_freeze_out_nozzle(…)`: rung-26's anchored-clock/local-`Da` machinery applied to **exhaust NO** via a `_tau_no_destroy` clock from **rung 7's OWN Zeldovich reverse rates** (`NO+O`, `NO+H` — **zero new constants**, already K-checked), asking whether the **frozen-NO assumption every NO number has carried since rung 7** (and the rung-14/17 clamp reads OFF) is EARNED. **It is: `Da_NO≪1` from ENTRY at every `Tt4`** (3–9 orders clear — frozen-from-entry *everywhere*, unlike rung-26's major pool), on an **upper bound** (radical-rich frozen pool = fastest possible relaxation), robust to the NO level (the super-eq clock is `[NO]_e`- and `a`-independent). **The kill test INVERTS rung 26's**: this clock is **Arrhenius** (`θ≈20820/24560 K` ⇒ `k` *craters* on cooling) AND **bimolecular** (`c¹`), so its two factors **AGREE — both DRIVE** (vs rung-26's density-DESPITE-temperature). A **CONFIRMATION** that retires the clamp corollary's last premise; **no moving freeze point** (rung-26's headline has no analogue — `s_freeze_NO≡0`), the honest trend is the Da_NO-vs-Da_recomb **separation narrowing** with `Tt4` (3.7e7→2.2e3, no crossing). Reduce: `Da_NO≡0` ⇒ rung-14/17 clamp `max_a` **bit-for-bit**. | `docs/rung27-spec.md` |
 | 28 | **The rung-26-coupled NO march** — `CoupledNOFreezeOut(L,…)` / `Gas.coupled_no_freeze_out_nozzle(…)`: rung-27's NO clock read on rung-26's **relaxing** pool (one-way, pool→NO). Rung 27's **verdict is CONFIRMED and BOTH its reasons are CORRECTED**. (a) "**can ONLY slow NO further**" is one-sided — coupling to rung 26 couples to its **exothermic heat release**, which lifts `T` and (this clock being **Arrhenius**) **SPEEDS** NO destruction: **two OPPOSING channels**, decomposed by running one clock on two **hybrid trajectories**. `net<1` everywhere (conclusion holds) but `ch2>1` always, `|ln ch2/ln ch1|` rising **monotonically 0.003→0.48** — the opposing channel cancels **~half** the depletion hot. The win is **STRUCTURAL**: depletion **UNBOUNDED** (`ch1→0`) vs heat release **SATURATING** (capped by finite frozen-in chemical enthalpy) — certified over 6 orders of `pool_rate_scale`. (b) The **β repair** — rung 27 justified its `a≫1` clock with "NO arrives super-equilibrium", **false at the ENTRY** (`a`=0.31–0.61 hot; NO arrives **SUB**-eq and tries to FORM) where freeze-from-entry is decided. What holds is **`β=R1/(R2+R3)<1`** ⇒ `τ_ex/τ_surr=(1+u)²/[(1+u)²−(1−β²)]>1` for **all `a`** ⇒ an upper bound on the rate in **BOTH** regimes. **Rung 27's numbers are unaffected**; only its reasoning is repaired. Headline **structurally unreachable** (entry `Da_NO` bit-for-bit rung 27's — path-independent). Disclaimed: the net **turnaround location** (rides on `L`), **β<1 as a theorem** (margin ~0.51 hot — a factor 2, the honest weak point). Reduce: `couple=False` ⇒ rung 27 **bit-for-bit** (structural, via `_frozen_no_trajectory`). | `docs/rung28-spec.md` |
 
-**The invariant that spans rungs 7–28: they are all pure diagnostics.** NO/N never
+| 29 | **The shifting turbine** — `Gas.shifting_turbine(…)` / `_work_limited_expand(…)`: the question every rung since 6 skipped — is **FREEZING the turbine** earned? Brackets the turbine the way rung 14 bracketed the nozzle (frozen vs fully-shifting) but on a **WORK-limited** endpoint, the one structural novelty: the shaft fixes `delta_h` (compressor + `f` only), so a shifting turbine reopens **NO shaft fixed point** — it moves where the flow *ends up*. Two unknowns `(T5,p5)`, two equations (work-limited `H_abs` drop + reversible `S`), on **absolute** enthalpy (composition changes ⇒ formation enthalpy no longer cancels). **Zero knobs, no rate ⇒ the verdict is RATE-INDEPENDENT.** Verdict: **EARNED at design** (`ΔT5/T5`=0.011% at `Tt4`=1500 — an order below the cycle's own `η_t`/`π_b` precision) and **BITES HOT** (1.86% / `Δp5`=0.47% at 2400, a **174×** growth) ⇒ the freeze is a **design-point fact, not a structural one**. The rung is the **inversion: RATIO ≠ ENERGY** — rungs 25–28 justify the super-eq entry with a *ratio* (`x_frozen/x_eq`, 10–100×), correct for **kinetic** distance but **not** a proxy for exploitable **enthalpy**, which scales with the absolute radical **INVENTORY**; across the band ratio **÷33** while inventory **×121** and shift **×174** — the ratio is **loudest exactly where the shift is most negligible** (109× of ~3e-5 is still nothing). A **cross-rung correction**. Disclaimed: `(R−I)→0` on a shifted entry is **STRUCTURAL, not a finding** (an entry at equilibrium has no super-eq left to relax — a tautology); `η_t=1` **by nature** (reversible ⇒ isentropic, same concession rung 14 makes); the rate **deferred** (turbine `τ_res` un-anchored — `Da_turb`=0.05–8.8, a *supporting sketch* only, and notably **not fast despite high `p`**). Reduce: frozen branch **delegates** to `Turbine.apply` at `η_t=1` ⇒ **bit-for-bit by construction**. | `docs/rung29-spec.md` |
+
+**The invariant that spans rungs 7–29: they are all pure diagnostics.** NO/N never
 enter `_equil_solve` and the production nozzle stays frozen, so **the cycle is
 bit-for-bit rung 6** — every rung above 6 only *reads* the run's state. Each rung's
 verified anchor data lives in `docs/plans/rungN-anchor-*.md`; `docs/plans/` also holds
@@ -69,7 +71,7 @@ the living plan/tasks (rungs 1–3).
 - **Every new rung reduces to its predecessor**, exactly and by test (`X=None` ⇒
   the prior code path). This is the project's spine — see any `docs/rungN-spec.md`.
 
-**Current scope (rung 28).** The **cycle solve** is a thermally-perfect, reacting,
+**Current scope (rung 29).** The **cycle solve** is a thermally-perfect, reacting,
 dissociation-equilibrium gas (`Gas.reacting_equilibrium()`) through ideal + real
 components (isentropic `η_c/η_t` **or** polytropic `e_c/e_t`, mutually exclusive;
 `π_d/π_b/π_n`, `η_b`, `η_m`; dual cold/hot gas; specified exit pressure). The burner
@@ -107,9 +109,8 @@ are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle
   Do NOT re-run the reshape-on-the-`ln p`-frame construction; a new attempt needs a **real `A(x)`
   geometry** (physical entry plane + throat area, hence `ṁ` threaded in and the *choked* nozzle
   seam); (b) a **`T`-dependent
-  freeze-out of exhaust NO** — **BUILT BY RUNG 27** (below); (c) a **shifting turbine** — a
-  less-super-equilibrium entry *shrinks* rung-25's (R−I) gap and *moves* the freeze point (reopens the
-  shaft balance).
+  freeze-out of exhaust NO** — **BUILT BY RUNG 27** (below); (c) a **shifting turbine** — **BUILT BY
+  RUNG 29** (below).
 - **NO freeze-out** — **BUILT BY RUNG 27** (`docs/rung27-spec.md`, `Gas.no_freeze_out_nozzle`,
   `docs/plans/rung27-anchor-no-freeze-out.md`). Rung 26 named this seam ("Zeldovich is slow, may freeze
   earlier than the recombination clock"). Rung 27 applied rung-26's anchored-clock/local-`Da` machinery
@@ -133,6 +134,27 @@ are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle
   which covers **both** regimes. Rung 27's *numbers* are untouched. **What rung 28 leaves open:** a
   **coupled formation clock** (the `a≫1` surrogate *bounds* the sub-eq entry but does not *describe* it;
   moot while `Da_NO≪1`).
+- **The shifting turbine** — **BUILT BY RUNG 29** (`docs/rung29-spec.md`, `Gas.shifting_turbine`,
+  `docs/plans/rung29-anchor-shifting-turbine.md`). Rungs 14/25/26 all named this seam and all predicted the
+  same thing: a less-super-equilibrium entry *shrinks* rung-25's (R−I) gap and *moves* the freeze point.
+  Rung 29 built it as a zero-knob **bracket** (the turbine analogue of rung 14) and the prediction is
+  **technically right but the wrong headline**: `(R−I)→0` on a shifted entry is **STRUCTURAL, a tautology**
+  (an entry pinned at equilibrium has nothing left to relax irreversibly), not a measurement. What the
+  bracket actually establishes is that **freezing the turbine is EARNED at the design point** (`ΔT5/T5`
+  =0.011%, an order below the cycle's own `η_t`/`π_b` precision) and **NOT hot** (1.86% at `Tt4`=2400) —
+  **rate-independently**, since the bound is the instant-chemistry reversible limit. And the reason all
+  three rungs expected a bigger effect is the rung: **RATIO ≠ ENERGY** — `x_frozen/x_eq` measures *kinetic*
+  distance from equilibrium (correct, and what rungs 25–28 need for **rate** questions) but is **not** a
+  proxy for exploitable **enthalpy**, which scales with the absolute radical **INVENTORY**; the two
+  **anti-correlate** across the band (ratio ÷33, inventory ×121, shift ×174), so the ratio is loudest
+  exactly where the shift is most negligible. **What rung 29 leaves open:** (a) a **finite-rate turbine
+  march** — deliberately not taken; the rung-26 clock at turbine conditions gives `Da_turb`=0.05–8.8
+  (**transitional, and NOT fast despite the high `p`** — the residence is short too), but that span rides on
+  an **un-anchored** turbine `τ_res`, so leading with it would make this a `τ_res`-style **negative** rather
+  than a rung. A real attempt needs turbine passage geometry (blade-row count + the same choked-flow seam
+  `docs/tau-res-negative.md` named). (b) the **`π_c` axis** — whether "earned at design" is `π_c`-robust is
+  unchecked (rung 28's β margin got exactly this treatment and inverted). (c) **feeding the shifted station
+  5 into the production cycle** — a **re-foundation** (it re-anchors every rung's numbers), **not a rung**.
 - **β at higher `π_c` / hotter cycles** — **CHECKED, CONFIRMATION, NOT a rung** (`docs/rung28-beta-margin.md`).
   Rung 28 filed its `β<1` bound as its one factor-not-orders margin. Re-measured on the axis it named, and
   the worry **INVERTS**: β is **exactly pressure-invariant** (`c_tot²` cancels — every `R` is a product of
@@ -192,7 +214,8 @@ are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle
   the gas factories (`thermally_perfect` / `reacting` / `reacting_forkb` /
   `reacting_equilibrium`); the `_equil_solve` Newton solver + frozen `_EquilibriumSection`;
   and **every diagnostic** — `thermal_nox`, `zoned_nox`, `nozzle_flow`, `exhaust_no_clamp`,
-  `finite_rate_nozzle`, `freeze_out_nozzle`, `no_freeze_out_nozzle`, `coupled_no_freeze_out_nozzle` —
+  `finite_rate_nozzle`, `freeze_out_nozzle`, `no_freeze_out_nozzle`, `coupled_no_freeze_out_nozzle`,
+  `shifting_turbine` —
   plus their configs (`JetMixing`,
   `Unmixedness`, `MixingPDF`, `QuenchPDF`, `PocketQuenchPDF`, `TransportedPDF`, `PromptNO`, `SpatialPDF`,
   `SpatialDwellPDF`, `SpatialLocalPDF`; the eight mixing closures are mutually exclusive — plus
@@ -202,8 +225,8 @@ are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle
   `_spatial_dwell_field`, `_spatial_local_field`, the rung-25 `_finite_rate_expand` /
   `_irreversible_fast_expand` / `_equilibrate_hp`, the rung-26 `_tau_chem_recomb` /
   `_freeze_out_expand` (which takes the rung-28 pure-observer `record=`), the rung-27 `_tau_no_destroy` /
-  `_no_freeze_out_expand`, and the rung-28 `_tau_no_exact` / `_frozen_no_trajectory` /
-  `_coupled_no_march`, …).
+  `_no_freeze_out_expand`, the rung-28 `_tau_no_exact` / `_frozen_no_trajectory` /
+  `_coupled_no_march`, and the rung-29 `_work_limited_expand`, …).
 - `turbojet/components.py` — `Inlet, Compressor, Burner, Turbine, Nozzle` as pure
   `apply(state, gas)` in `h`/`pr` form (+ loss params, `ram_recovery(M0)`, the polytropic
   knob; the Nozzle branches CPG/TPG — the velocity↔enthalpy trap). The `Burner` runs the
@@ -215,7 +238,7 @@ are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle
   states its honest scope).
 - `tests/` — `test_stations.py` / `test_validation.py` (rung 1), `test_rung2.py`,
   `test_polytropic.py` (2b), `test_variable_cp.py` (3), `test_reacting.py` (4),
-  `test_forkb.py` (5), then **`test_rungN.py` for N = 6…28**. Every rung file carries that
+  `test_forkb.py` (5), then **`test_rungN.py` for N = 6…29**. Every rung file carries that
   rung's **reduce-to-prior** gate plus its load-bearing claims; the gates are named in the
   rung's spec. Rungs 16, 23 and 24 **deliberately assert no emissions global-min location**;
   rung 25 **reduces to rung-14 FROZEN but deliberately NOT to equilibrium** (the (R−I) gap is
@@ -226,7 +249,13 @@ are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle
   point** — only that NO is *frozen from entry at every `Tt4`* and the kill-test *inversion* of rung 26;
   rung 28 **reduces to rung 27 bit-for-bit at `couple=False`** and **deliberately asserts no net-turnaround
   location** (it rides on `L`) — only the *monotone* channel ratio, the *unbounded-vs-saturating*
-  asymmetry, and `β<1` (whose ~0.51 hot margin it asserts as a disclosed weak point, not a comfort).
+  asymmetry, and `β<1` (whose ~0.51 hot margin it asserts as a disclosed weak point, not a comfort);
+  rung 29 **reduces to `Turbine.apply` at `η_t=1` bit-for-bit (`==`) BY CONSTRUCTION** (the frozen branch
+  *delegates* rather than re-solving) and carries a **second** gate that the independent work-limited
+  solver reproduces that closed form — **without which the reduce gate is a tautology**; it
+  **deliberately asserts no rate and no freeze location** (the turbine `τ_res` is un-anchored) — only the
+  *rate-independent* bound, the earned/not-earned split across the band, and the **ratio-vs-inventory
+  anti-correlation** (the rung). `(R−I)→0` is **NOT** gated: it is structural.
 - `docs/rungN-spec.md` — the derivation, assumptions, concessions and gates for rung N.
   `docs/plans/rungN-anchor-*.md` — that rung's verified anchor data.
 

@@ -1012,6 +1012,68 @@ def print_coupled_no_march_table(flight):
     print("  ~0.51 hot, HALF the β=1 threshold — a factor 2, not orders (the weak point, disclosed).")
 
 
+def print_shifting_turbine_table(flight):
+    """Rung-29 payoff: is the FROZEN TURBINE earned? — and why the super-eq RATIO misled us.
+
+    Every rung since 6 freezes the station-4 mixture through the turbine; rungs 14/25 then read that
+    frozen pool at the nozzle entry and build the whole (R−I) gap on its super-equilibrium. Rung 29
+    brackets the turbine the way rung 14 bracketed the nozzle — frozen vs fully-shifting at the SAME
+    shaft-set delta_h. Zero knobs, no rate, so the verdict is RATE-INDEPENDENT: no τ_res can make a
+    real turbine exceed the bound. A pure diagnostic — the production turbine still freezes, so the
+    cycle stays bit-for-bit rung 6.
+    """
+    print("\nThe shifting turbine (rung 29): is FREEZING the turbine — assumed since rung 6 — EARNED?")
+    print("Bracket it like rung 14 bracketed the nozzle: frozen vs fully-shifting, same shaft work.")
+    print("The endpoint is WORK-limited, not pressure-limited: the shaft fixes delta_h (compressor + f")
+    print("only), so a shifting turbine reopens NO shaft fixed point — it moves where the flow ENDS UP.")
+
+    band = (1500.0, 1800.0, 2100.0, 2400.0)
+    states = []
+    for Tt4 in band:
+        eq = Gas.reacting_equilibrium()
+        r = build_turbojet(eq, PI_C, Tt4, flight.p0, **REAL_LOSSES).run(flight, 1.0)
+        st2, st3, st4 = r.stations["2"], r.stations["3"], r.stations["4"]
+        delta_h = (eq.h_c(st3.Tt) - eq.h_c(st2.Tt)) / (REAL_LOSSES["eta_m"] * (1.0 + st4.far))
+        states.append((Tt4, eq.shifting_turbine(st4.far, st4.Tt, st4.pt, delta_h)))
+
+    # (1) The verdict: the MAXIMUM shift, at four burner temperatures.
+    print("\n  The bound (instant chemistry, reversible — nothing real can exceed it):")
+    print(f"  {'Tt4 [K]':>8} {'T5 frozen':>10} {'T5 shift':>10} {'dT5 [K]':>9} {'dT5/T5':>10} "
+          f"{'dp5/p5':>10} {'earned':>7}")
+    print("  " + "-" * 70)
+    for Tt4, s in states:
+        print(f"  {Tt4:>8.0f} {s.T5_frozen:>10.2f} {s.T5_shifting:>10.2f} {s.dT5:>9.2f} "
+              f"{s.dT5_fraction*100:>9.4f}% {s.dp5_fraction*100:>9.4f}% "
+              f"{str(s.frozen_turbine_earned):>7}")
+    print("  At the design point the freeze is EARNED OUTRIGHT: the maximum conceivable shift moves Tt5")
+    print("  by 0.011% — an order BELOW the cycle's own modelling error (eta_t, pi_b are quoted to ~1%).")
+    print("  Hot it BITES: 1.9% in Tt5 and 0.47% in pt5 by 2400 K, a 174× growth. So 'the turbine is")
+    print("  frozen' is a DESIGN-POINT fact, not a structural one — every rung from 6 up inherits that.")
+
+    # (2) THE RUNG: ratio ≠ energy. The two currencies move in OPPOSITE directions.
+    print("\n  Why we expected the opposite — RATIO ≠ ENERGY:")
+    print(f"  {'Tt4 [K]':>8} {'super-eq ratio':>15} {'radical inventory':>18} {'dT5/T5':>10}")
+    print("  " + "-" * 55)
+    for Tt4, s in states:
+        print(f"  {Tt4:>8.0f} {s.super_eq_ratio_max:>14.1f}× {s.radical_inventory:>18.3e} "
+              f"{s.dT5_fraction*100:>9.4f}%")
+    r0, r1 = states[0][1], states[-1][1]
+    print(f"  Across the band the RATIO falls ÷{r0.super_eq_ratio_max/r1.super_eq_ratio_max:.0f} while the "
+          f"INVENTORY rises ×{r1.radical_inventory/r0.radical_inventory:.0f} and the SHIFT rises "
+          f"×{r1.dT5_fraction/r0.dT5_fraction:.0f}.")
+    print("  Rungs 25–28 justify the super-equilibrium entry with a RATIO (x_frozen/x_eq, [NO]/[NO]_e —")
+    print("  10×, 100×, '3–9 orders'). That ratio is CORRECT for what it measures — KINETIC distance from")
+    print("  equilibrium, which is what a RATE question needs. But it is NOT a proxy for exploitable")
+    print("  ENTHALPY, which scales with the ABSOLUTE radical INVENTORY (x·n) — and the two ANTI-correlate.")
+    print("  109× of almost nothing is still almost nothing: at the lean design point the radicals are")
+    print("  ~3e-5 in mole fraction, so complete recombination releases essentially no heat. The ratio is")
+    print("  LOUDEST exactly where the shift is most NEGLIGIBLE. A cross-rung correction, not a local one.")
+    print("\n  NOT a finding: that a fully-shifted entry collapses rung-25's (R−I) gap to zero. That is")
+    print("  STRUCTURAL — an entry pinned at equilibrium has no super-equilibrium left to relax")
+    print("  irreversibly, so (R−I)→0 is a tautology. What is worth carrying is the SIZE of the move")
+    print("  needed to get there (1.9% in Tt5) and that the design point sits ~170× short of needing it.")
+
+
 def print_pdf_quench_table(flight):
     """Rung-15 payoff: the PDF THROUGH the finite quench — the two mixing mechanisms COMBINED.
 
@@ -2058,6 +2120,8 @@ def main():
     print_no_freeze_out_table(FLIGHT)
 
     print_coupled_no_march_table(FLIGHT)
+
+    print_shifting_turbine_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

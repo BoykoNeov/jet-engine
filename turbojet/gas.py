@@ -1806,6 +1806,16 @@ _T_EXIT_FLOOR = 500.0   # nozzle-exit bisection floor, K. The equilibrium Newton
                         # exit sits >700 K and bisection never probes below its lower bound, so
                         # this is a bracket GUARD (like `_primary_aft`), not an operating limit.
 
+_SHIFT_EARNED_TOL = 1e-3  # rung 29: the |ΔT5/T5| below which freezing the turbine is called EARNED.
+                        # 0.1% is a DECLARED threshold, not a derived one — chosen an order below the
+                        # cycle's own modelling error (eta_t, pi_b are quoted to ~1%), so a shift under
+                        # it cannot matter beside losses already accepted. See docs/rung29-spec.md.
+
+_P_TURB_FLOOR = 1.0e3   # turbine-exit bisection floor, Pa (rung 29). The work-limited expansion
+                        # bisects on p5; every real station 5 sits >3 bar (the shaft takes only a
+                        # fraction of the available drop), so like `_T_EXIT_FLOOR` this is a bracket
+                        # GUARD that the search never approaches, not an operating limit.
+
 
 def _mix_entropy_molar(comp: dict, T: float, p: float) -> float:
     """Absolute mixture entropy per mol dry air, J/(mol·air K), at (T, p):
@@ -2417,6 +2427,84 @@ def _coupled_no_march(clock_traj: list, ref_traj: list, x_no_entry: float,
         max_a = max(max_a, x_no / x_no_e_ref_exit)        # the cold exit — where a frozen NO peaks
     Da_exit = da_no_fn(comp_clock_ex, T_clock_ex, p_ex)
     return T9_ref, x_no, x_no_e_ref_exit, max_a, Da_entry, Da_exit
+
+
+# --- Rung 29: THE SHIFTING TURBINE — a zero-knob WORK-LIMITED bracket 4→5 ------------------------- #
+#
+# Every rung since 6 has FROZEN the station-4 mixture through the turbine. Rungs 14/25 then read that
+# frozen pool at the nozzle entry and found it SUPER-EQUILIBRIUM — the premise the whole (R−I)
+# entry-irreversibility gap rests on. This asks whether the freeze itself is EARNED, by bracketing the
+# turbine the way rung 14 bracketed the nozzle: frozen vs fully-shifting, no rate, no knob.
+#
+# The endpoint is WORK-LIMITED, not pressure-limited — that is the one structural difference from the
+# nozzle bracket and the reason it needs its own solver. The shaft sets `delta_h` (it depends only on
+# the compressor and f), so BOTH expansions must give up the SAME enthalpy; what differs is where they
+# end up. Two unknowns (T5, p5), two equations:
+#
+#     H_abs(comp(T5,p5), T5) = H_abs(comp4, Tt4) − delta_h·m      (work-limited: the shaft's drop)
+#     S_mix(comp(T5,p5), T5, p5) = S_mix(comp4, Tt4, pt4)         (reversible: the ideal bracket)
+#
+# on ABSOLUTE (scale-B) enthalpy — the composition changes, so the formation enthalpy no longer
+# cancels out of the work balance the way it does for a frozen gas. See docs/rung29-spec.md.
+
+
+def _work_limited_expand(comp_entry: dict, far: float, Tt4: float, pt4: float,
+                         work_molar: float, shifting: bool) -> Tuple[float, float, dict]:
+    """One reversible, WORK-LIMITED turbine expansion from (Tt4, pt4). Returns (T5, p5, comp5).
+
+    Outer bisection on p5, inner bisection on T5 at constant entropy. Monotone and so safely
+    bracketed: expanding to a LOWER p5 extracts MORE work, so the enthalpy residual falls through
+    the target exactly once.
+
+      FROZEN      (shifting=False): composition held = comp_entry. NOT solved here — it delegates to
+                  the closed form below, which is the shipped `Turbine.apply` at eta_t=1 (see
+                  `Gas.shifting_turbine`); this branch exists only so the two bounds share one
+                  signature. Kept as a solver path for the gate that the two agree.
+      EQUILIBRIUM (shifting=True) : composition = _equilibrium_composition(far, T, p) at each (T, p) —
+                  the pool relaxes instantly, the MAXIMUM shift a real turbine could ever show.
+
+    Reversible by construction, so this is the eta_t=1 bracket — the turbine analogue of rung 14's
+    reversible nozzle bound. A real eta_t<1 adds a SEPARATE (and much larger) entropy source that does
+    not touch the chemistry question this brackets (docs/rung29-spec.md § the eta_t concession)."""
+    S_entry = _mix_entropy_molar(comp_entry, Tt4, pt4)
+    H_target = _mix_h_abs_B(comp_entry, Tt4) - work_molar
+
+    def comp_at(T: float, p: float) -> dict:
+        return _equilibrium_composition(far, T, p) if shifting else comp_entry
+
+    def T_isentropic_at(p: float) -> float:
+        # S rises with T at fixed p, so bisect the entropy residual (same construction as
+        # `_expand_nozzle`, at the running p rather than a fixed back-pressure).
+        lo, hi = _T_EXIT_FLOOR, Tt4
+        for _ in range(200):
+            T = 0.5 * (lo + hi)
+            if _mix_entropy_molar(comp_at(T, p), T, p) > S_entry:
+                hi = T
+            else:
+                lo = T
+            if hi - lo <= 1e-13 * T:
+                break
+        return 0.5 * (lo + hi)
+
+    lo_p, hi_p = _P_TURB_FLOOR, pt4
+    for _ in range(200):
+        p = 0.5 * (lo_p + hi_p)
+        T = T_isentropic_at(p)
+        if _mix_h_abs_B(comp_at(T, p), T) > H_target:
+            hi_p = p            # not enough work extracted yet — expand further
+        else:
+            lo_p = p
+        if hi_p - lo_p <= 1e-12 * p:
+            break
+    p5 = 0.5 * (lo_p + hi_p)
+    T5 = T_isentropic_at(p5)
+    # Bracket guards (post-loop, like `_expand_nozzle`): a root pinned at either edge means the shaft
+    # asked for more work than the expansion can deliver down to the floor pressure.
+    assert T5 > _T_EXIT_FLOOR + 1.0, \
+        f"turbine exit T={T5:.1f} K pinned at the {_T_EXIT_FLOOR:.0f} K floor (far={far:.4f})"
+    assert p5 > _P_TURB_FLOOR * 1.01, \
+        f"turbine exit p={p5:.1f} Pa pinned at the {_P_TURB_FLOOR:.0f} Pa floor (far={far:.4f})"
+    return T5, p5, comp_at(T5, p5)
 
 
 @dataclass
@@ -3674,6 +3762,67 @@ class CoupledNOFreezeOutState:
 
 
 @dataclass
+class ShiftingTurbineState:
+    """Rung-29 shifting-turbine bracket (docs/rung29-spec.md). A pure diagnostic BESIDE the cycle — the
+    production turbine still FREEZES the station-4 mixture, so the cycle is bit-for-bit rung 6. What
+    this reports is how far the cycle WOULD move if the turbine were allowed to shift.
+
+    THE VERDICT: the frozen turbine is EARNED at the design point and BITES HOT. The bound is the
+    MAXIMUM shift (instant chemistry, reversible), and at Tt4=1500 K it moves Tt5 by 0.011%; by
+    Tt4=2400 K it moves it by 1.9% and Δpt5 by 0.47%. Rate-independent — no τ_res, no knob.
+
+    THE INVERSION — RATIO ≠ ENERGY. Rungs 25–28 justify the super-equilibrium entry with a RATIO
+    ([NO]/[NO]_e, x_frozen/x_eq ≈ 10–100×), and that ratio is a correct measure of KINETIC
+    super-equilibrium. But it is NOT a proxy for exploitable cycle enthalpy, which scales with the
+    absolute radical INVENTORY (x·n) — and the two move in OPPOSITE directions across the Tt4 band:
+
+        Tt4 = 1500 K:  super-eq ratio ~109× (H)  →  ΔTt5 = +0.011%   (biggest ratio, smallest shift)
+        Tt4 = 2400 K:  super-eq ratio ~3.3× (H)  →  ΔTt5 = +1.86%    (smallest ratio, biggest shift)
+
+    So the ratio is loudest exactly where the shift is most negligible. A dilute pool can be enormously
+    super-equilibrium and still carry no energy worth recovering.
+
+    WHAT IS NOT A FINDING: that a fully-shifted entry collapses rung-25's (R−I) gap to zero. That is
+    STRUCTURAL — an entry pinned at equilibrium has no super-equilibrium left to irreversibly relax, so
+    (R−I)→0 is a tautology, not a measurement. The finding is the SIZE of the move needed to get there
+    (1.9% in Tt5) and that the design point sits ~170× short of needing it. Temperatures K, pressures
+    Pa; compositions mole numbers per mol dry air."""
+    # --- the two bounds, both at the SAME shaft-set work (the work-limited endpoint) ---
+    T5_frozen: float              # (F) frozen-composition exit total T, K == the shipped Turbine (eta_t=1)
+    p5_frozen: float              # (F) frozen-composition exit total p, Pa == the shipped Turbine
+    T5_shifting: float            # (S) fully-shifting exit total T, K — WARMER (recombination reheats)
+    p5_shifting: float            # (S) fully-shifting exit total p, Pa — HIGHER (less pressure drop needed)
+    delta_h: float                # the shaft-set enthalpy drop both expansions gave up, J/kg
+    # --- the super-equilibrium content of the FROZEN pool at station 5 (rung 25's premise, measured) ---
+    super_eq_ratio_max: float     # max over {CO,OH,O,H,H2} of x_frozen/x_eq at (T5_frozen, p5_frozen)
+    radical_inventory: float      # (x_O + x_H + x_OH) of the frozen pool — what the shift can EXPLOIT
+
+    @property
+    def dT5(self) -> float:
+        """The bound's exit-temperature move, K. Positive: a shifting turbine RECOMBINES on the way
+        down, and that heat release lands as a warmer exit for the same shaft work."""
+        return self.T5_shifting - self.T5_frozen
+
+    @property
+    def dT5_fraction(self) -> float:
+        """ΔT5/T5 — the headline. 1.1e-4 at Tt4=1500 K; 1.9e-2 at Tt4=2400 K."""
+        return self.dT5 / self.T5_frozen
+
+    @property
+    def dp5_fraction(self) -> float:
+        """Δp5/p5. The shifting expansion reaches the same work at a HIGHER exit pressure (the chemical
+        energy pays part of the shaft's bill), which is what would propagate to the nozzle and thrust."""
+        return (self.p5_shifting - self.p5_frozen) / self.p5_frozen
+
+    @property
+    def frozen_turbine_earned(self) -> bool:
+        """Is freezing the turbine defensible here? True when even the MAXIMUM (instant-chemistry,
+        reversible) shift moves the exit temperature by less than `_SHIFT_EARNED_TOL` (0.1%). True at
+        the design point, FALSE by Tt4 ≈ 2100 K — the honest boundary of every rung from 6 up."""
+        return abs(self.dT5_fraction) < _SHIFT_EARNED_TOL
+
+
+@dataclass
 class NozzleFlowState:
     """Frozen-vs-equilibrium nozzle-flow diagnostic (rung 14; docs/rung14-spec.md). A pure
     diagnostic BESIDE the cycle — the production nozzle stays FROZEN, so the cycle is bit-for-bit
@@ -4657,6 +4806,71 @@ class Gas:
             x_no_e_entry=clamp["x_no_e_entry"], x_no_e_exit=clamp["x_no_e_exit"],
             no_collapse_ratio=clamp["no_collapse_ratio"],
             x_no_frozen=x_no_frozen, max_a=clamp["max_a"],
+        )
+
+    def shifting_turbine(self, far: float, Tt4: float, pt4: float,
+                         delta_h: float) -> "ShiftingTurbineState":
+        """Shifting-turbine bracket, station 4 → 5 (rung 29; docs/rung29-spec.md).
+
+        Every rung since 6 FREEZES the station-4 mixture through the turbine; rungs 14/25 then read
+        that frozen pool at the nozzle entry and call it super-equilibrium — the premise the whole
+        (R−I) entry-irreversibility gap rests on. This asks whether the freeze itself is EARNED, by
+        bracketing the turbine the way rung 14 bracketed the nozzle: frozen vs fully-shifting, at the
+        SAME shaft-set `delta_h`. Zero knobs, no rate, no τ_res.
+
+        The endpoint is WORK-LIMITED, not pressure-limited — the shaft fixes the enthalpy drop (it
+        depends only on the compressor and f, so a shifting turbine reopens NO shaft fixed point), and
+        what the chemistry changes is where the expansion ENDS UP. Pass the run's own
+        `delta_h = (h_c(Tt3) − h_c(Tt2))/(η_m·(1+f))`, i.e. exactly what `Engine.run` hands the Turbine.
+
+        Verdict: the frozen turbine is EARNED at the design point (ΔT5/T5 = 1.1e-4 at Tt4=1500 K) and
+        BITES HOT (1.9e-2 at Tt4=2400 K). The inversion worth carrying is RATIO ≠ ENERGY — see
+        `ShiftingTurbineState`. A pure diagnostic: the cycle stays bit-for-bit rung 6.
+        """
+        comp_entry = _equilibrium_composition(far, Tt4, pt4)
+        m = _mix_mass_per_air(comp_entry)
+
+        # (F) FROZEN — DELEGATED to the shipped turbine path, not re-solved. At eta_t=1 `Turbine.apply`
+        # is exactly `T5 = T_from_h_t(h_t(Tt4) − delta_h)` and `p5 = pt4·pr_t(T5)/pr_t(Tt4)`, so taking
+        # those two lines verbatim makes the reduce-to-rung-3/6 gate hold BY CONSTRUCTION rather than by
+        # numerical agreement — the bound cannot drift from the cycle it is bracketing.
+        T5_frozen = self.T_from_h_t(self.h_t(Tt4, far) - delta_h, far)
+        p5_frozen = pt4 * self.pr_t(T5_frozen, far) / self.pr_t(Tt4, far)
+
+        # (S) FULLY SHIFTING — the same work, taken with the pool at local equilibrium throughout.
+        T5_shifting, p5_shifting, _ = _work_limited_expand(
+            comp_entry, far, Tt4, pt4, delta_h * m, shifting=True)
+
+        # The super-equilibrium content of the FROZEN pool at station 5 — rung 25's premise, measured
+        # in BOTH currencies so the ratio-vs-inventory inversion is readable off one state object.
+        comp_eq5 = _equilibrium_composition(far, T5_frozen, p5_frozen)
+        n_f, n_e = sum(comp_entry.values()), sum(comp_eq5.values())
+        ratio_max = 0.0
+        for sp in ("CO", "OH", "O", "H", "H2"):
+            x_e = comp_eq5.get(sp, 0.0) / n_e
+            if x_e > 0.0:
+                ratio_max = max(ratio_max, (comp_entry.get(sp, 0.0) / n_f) / x_e)
+        inventory = sum(comp_entry.get(sp, 0.0) for sp in ("O", "H", "OH")) / n_f
+
+        # Conservation checks, every call (contract #4).
+        # (1) Recombination RELEASES energy, so at equal work the shifting exit cannot be cooler and
+        #     cannot need a deeper pressure drop. This is the direction of the whole bracket.
+        assert T5_shifting >= T5_frozen - 1e-9 * T5_frozen, \
+            "shifting turbine exit must not be COOLER than frozen at equal work (recombination reheats)"
+        assert p5_shifting >= p5_frozen - 1e-9 * p5_frozen, \
+            "shifting turbine exit must not be at LOWER pressure than frozen at equal work"
+        # (2) Both expansions gave up the SAME shaft work — the work-limited endpoint, verified on
+        #     ABSOLUTE enthalpy (the composition changes, so formation enthalpy does not cancel).
+        w_shift = (_mix_h_abs_B(comp_entry, Tt4)
+                   - _mix_h_abs_B(_equilibrium_composition(far, T5_shifting, p5_shifting),
+                                  T5_shifting)) / m
+        assert abs(w_shift - delta_h) < 1e-6 * delta_h, \
+            f"shifting expansion did not extract the shaft work: {w_shift} != {delta_h}"
+
+        return ShiftingTurbineState(
+            T5_frozen=T5_frozen, p5_frozen=p5_frozen,
+            T5_shifting=T5_shifting, p5_shifting=p5_shifting,
+            delta_h=delta_h, super_eq_ratio_max=ratio_max, radical_inventory=inventory,
         )
 
     def finite_rate_nozzle(self, far: float, Tt4: float, pt4: float,
