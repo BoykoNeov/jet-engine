@@ -484,7 +484,7 @@ footer code { font-size: 12px; }
 <section class="wrap" id="rungs">
   <div class="section-head">
     <p class="eyebrow">The full ladder</p>
-    <h2>28 rungs, one physical effect each</h2>
+    <h2>29 rungs, one physical effect each</h2>
     <p class="lede">Each rung is cumulative, anchored to a published case, and reduces bit-for-bit
     to the rung below when its knob is off. Click a rung to expand.</p>
   </div>
@@ -1401,6 +1401,7 @@ rebuilders.push(buildLadder);
     ["26", "diag", "Freeze-out — the moving freeze point", "Rung 25's scalar Da promoted to a local Da(T,p) from an anchored GRI-Mech 3.0 H+OH+M clock — zero new constants — so the relaxation shuts off partway down the nozzle and the freeze point moves with Tt4. It refutes rung 25's own framing of this seam twice: the rate is anchored, not an unanchored Arrhenius, and freeze-out is density-driven against an opposing temperature effect.", "docs/rung26-spec.md"],
     ["27", "diag", "NO freeze-out — the assumption earned", "The same anchored-clock machinery applied to exhaust NO, using rung 7's own Zeldovich reverse rates. The frozen-NO assumption every NO number has carried since rung 7 turns out to be earned: Da_NO ≪ 1 from entry at every Tt4, on an upper bound. The kill test inverts rung 26's — this clock is Arrhenius and bimolecular, so both factors agree and both drive.", "docs/rung27-spec.md"],
     ["28", "diag", "The rung-26-coupled NO march", "Rung 27's clock read on rung 26's relaxing pool. Its verdict is confirmed and both its stated reasons are corrected: coupling also brings rung 26's exothermic heat release, which lifts T and — this clock being Arrhenius — speeds NO destruction, so there are two opposing channels, not one. The conclusion survives structurally: depletion is unbounded, heat release saturates.", "docs/rung28-spec.md"],
+    ["29", "diag", "The shifting turbine — ratio ≠ energy", "The question every rung since 6 skipped: is freezing the turbine earned? Brackets the turbine the way rung 14 bracketed the nozzle, but on a work-limited endpoint — the shaft fixes the enthalpy drop, so the chemistry moves where the flow ends up, not how much work it gives. Zero knobs and no rate, so the verdict is rate-independent: earned at the design point (ΔT5/T5 = 0.011%) and not hot (1.86% at Tt4 = 2400). The rung is the inversion — rungs 25–28 justify the super-equilibrium entry with a ratio, which correctly measures kinetic distance from equilibrium but is not a proxy for exploitable enthalpy. That scales with the absolute radical inventory, and the two anti-correlate: across the band the ratio falls 33× while the inventory rises 121× and the shift rises 174×. The ratio is loudest exactly where the shift is most negligible.", "docs/rung29-spec.md"],
   ];
   const chipName = { cycle: "cycle", diag: "diagnostic", neg: "load-bearing result" };
   const list = document.getElementById("rung-list");
