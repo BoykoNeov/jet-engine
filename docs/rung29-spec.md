@@ -165,7 +165,13 @@ banked in the turbine.
   **9.4×** margin, and the boundary `Tt4*` stays above **1846 K** everywhere. `π_c` is a **weak,
   non-monotone, double-edged** knob — *not* protective the way rung 28's `β` turned out to be. That
   check also **sharpens the finding below**: the inventory is an *incomplete* currency. The **`M0` /
-  flight axis is still untouched.**
+  flight axis is now CHECKED too** (`docs/rung29-M0-margin.md`): "earned at design" holds at every
+  runnable `M0` from 0.3 to 3.0 with an **8.8×** margin (worst case low-`M0` **takeoff**, not cruise),
+  and — the clean **opposite** of `π_c` — the shift is **monotone-protective**, no turnover. The two
+  axes **unify** on one `INVENTORY × COMPLETION` surface: the shift turns over only where the axis
+  drives `delta_h` (hence completion) steeply, which `π_c` does through `τ_c` and `M0` does not through
+  its datum shift — a **correction** to how that check framed the unification (headroom is not the
+  discriminator; the `delta_h` swing is).
 - **Cycle untouched.** A pure diagnostic beside the cycle: the production turbine still
   freezes, so the cycle remains **bit-for-bit rung 6** and the rungs-7–28 invariant holds
   (gate 3).
@@ -210,7 +216,16 @@ banked in the turbine.
 - ~~**The `π_c` axis**~~ — **CLOSED** (`docs/rung29-pi-c-margin.md`). Unlike rung 28's `β`, the worry
   did **not** invert: it **confirmed**, at 9.4× margin, with `π_c` weak and non-monotone (the
   boundary is bowl-shaped, worst case **interior** near `π_c`≈15; the not-earned band *widens* 2.7×
-  with `π_c`). The substantive by-product is the **sharpening** above. What remains open on this
-  family is the **`M0` / flight axis**.
+  with `π_c`). The substantive by-product is the **sharpening** above.
+- ~~**The `M0` / flight axis**~~ — **CLOSED** (`docs/rung29-M0-margin.md`). The clean **opposite** of
+  `π_c`: the shift is **monotone-protective** (the bracket's `β`-like axis, no turnover), earned at
+  every runnable `M0` from 0.3 to 3.0 with an **8.8×** margin, worst case low-`M0` **takeoff**. Same
+  `INVENTORY × COMPLETION` currency read where it is **lopsided** (completion near-saturated because
+  `M0` drives `delta_h` only weakly — a datum shift, not a work climb). It **corrects** the `π_c` doc's
+  unification: the turnover discriminator is the **`delta_h` swing**, not completion headroom (proven
+  by the `π_c = 2` control, still monotone with headroom). And the flight axis is **double-edged**:
+  protective per point, yet ram heating shrinks the earned **operating band** ×2.1 while the
+  not-earned band widens ×1.7. Both `π_c`-family concessions are now closed; what remains is the
+  finite-rate turbine march (above) and feeding station 5 back into the cycle (below).
 - **Feeding the shifted station 5 into the production cycle** — that is a re-foundation
   (it re-anchors every rung's numbers), not a rung.

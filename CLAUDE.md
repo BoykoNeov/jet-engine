@@ -152,10 +152,10 @@ are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle
   (**transitional, and NOT fast despite the high `p`** — the residence is short too), but that span rides on
   an **un-anchored** turbine `τ_res`, so leading with it would make this a `τ_res`-style **negative** rather
   than a rung. A real attempt needs turbine passage geometry (blade-row count + the same choked-flow seam
-  `docs/tau-res-negative.md` named). (b) ~~the **`π_c` axis**~~ — **CLOSED, CONFIRMATION + SHARPENING, NOT a
-  rung** (`docs/rung29-pi-c-margin.md`, below); what remains on that family is the **`M0` / flight axis**.
-  (c) **feeding the shifted station 5 into the production cycle** — a **re-foundation** (it re-anchors every
-  rung's numbers), **not a rung**.
+  `docs/tau-res-negative.md` named). (b) ~~the **`π_c` axis**~~ — **CLOSED** (`docs/rung29-pi-c-margin.md`);
+  ~~the **`M0` / flight axis**~~ — **CLOSED** (`docs/rung29-M0-margin.md`, below); both the
+  CONFIRMATION+SHARPENING/CORRECTION checks, NOT rungs. (c) **feeding the shifted station 5 into the
+  production cycle** — a **re-foundation** (it re-anchors every rung's numbers), **not a rung**.
 - **"Earned at design" at higher/lower `π_c`** — **CHECKED, CONFIRMATION + SHARPENING, NOT a rung**
   (`docs/rung29-pi-c-margin.md`). Rung 29 shipped its verdict from one `π_c`. Re-measured over `π_c` 2→80:
   the verdict **holds everywhere** — the design-point bound never exceeds **0.0107%** (**9.4×** under the
@@ -174,7 +174,23 @@ are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle
   **the same** on `Tt4` where inventory swings two orders and dominates — which is why rung 29's `Tt4`-axis
   claim **stands untouched**. Disclaimed: the product law is quoted **only at the cool design point**
   (`x_O+x_H+x_OH` omits `CO→CO₂` — flat to ±4% at `Tt4`=1500, varies 2× at 2100); the `π_c`≈10.5 peak
-  *location* is not claimed as physical; **`M0` untouched**.
+  *location* is not claimed as physical; **`M0` now CHECKED below**.
+- **"Earned at design" at higher/lower flight Mach `M0`** — **CHECKED, CONFIRMATION + CORRECTION, NOT a
+  rung** (`docs/rung29-M0-margin.md`). Rung 29's LAST "one design point" concession (after `π_c`). Over
+  `M0` 0.3→3.0 (fixed ambient, `π_c`=10): the verdict **holds with an 8.8× margin** (design bound ≤0.0113%),
+  and — the clean **opposite** of `π_c` — the shift is **monotone-protective**, no turnover (the bracket's
+  `β`-like axis), worst case low-`M0` **takeoff** not cruise. Same `INVENTORY × COMPLETION` currency, read
+  where it is **LOPSIDED**: `M0` suppresses inventory ×4.7 (ram `pt4`) but completion is **near-saturated**
+  (86→100%, ×1.16), so inventory dominates monotonically. **The result CORRECTS the `π_c` doc's unification**:
+  the turnover discriminator is **NOT completion "headroom" but the `delta_h` SWING** that drives it — `π_c`
+  swings `delta_h` ×11 (compressor `τ_c`, a work climb), `M0` only ×2–3 (a ram-temperature *datum* shift),
+  so completion can never outpace inventory on `M0`. Proven by a **`π_c`=2 control**: with completion
+  headroom restored (33→61%) the `M0` sweep is **still monotone**. The flight axis is **double-edged** in a
+  way `π_c` is not: protective per point, yet ram heating lifts the burner-squeeze **floor** faster than the
+  boundary, shrinking the earned **operating band ×2.1** while the not-earned band widens ×1.7 (earned
+  fraction 69%→39%). Disclaimed: **fixed ambient** — this is the `M0` axis, **not a flight envelope** (real
+  high-Mach flies thinner, lower `p0`); "supersonic cruise is safe" NOT claimed. `CO` caveat **worse** here
+  (`pt4`≈17 MPa at `M0`=3 ⇒ +7.3% currency-law drift vs `π_c`'s ±4%). `η_t`=1 and no rate, unchanged.
 - **β at higher `π_c` / hotter cycles** — **CHECKED, CONFIRMATION, NOT a rung** (`docs/rung28-beta-margin.md`).
   Rung 28 filed its `β<1` bound as its one factor-not-orders margin. Re-measured on the axis it named, and
   the worry **INVERTS**: β is **exactly pressure-invariant** (`c_tot²` cancels — every `R` is a product of
@@ -279,7 +295,11 @@ are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle
   carries the **`π_c`-margin** gates (`docs/rung29-pi-c-margin.md`): `π_c`-robustness of the design-point
   verdict + the `1800 < Tt4* < 2200` boundary bracket, the **two opposed channels** (inventory ↓,
   completion ↑), a **forbid** on the β-style "higher `π_c` is protective" reading, and the sharpening —
-  **entry inventory alone FAILS on the `π_c` axis**.
+  **entry inventory alone FAILS on the `π_c` axis**. And the **`M0`-margin** gates
+  (`docs/rung29-M0-margin.md`): `M0`-robustness of the verdict (8.8× margin), the **monotone-protective**
+  differentiator (sign-flip of `π_c`, asserted hot at `Tt4`=2100), the **lopsided** channels (completion
+  near-saturated), the **`delta_h`-swing-not-headroom** correction (the `π_c`=2 control stays monotone),
+  and the **envelope band squeeze** (floor/`Tt4*`/ceiling all rise, earned operating band shrinks).
 - `docs/rungN-spec.md` — the derivation, assumptions, concessions and gates for rung N.
   `docs/plans/rungN-anchor-*.md` — that rung's verified anchor data.
 

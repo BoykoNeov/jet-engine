@@ -158,9 +158,15 @@ not-earned band widens 2.7× with `π_c`). And the currency needs one more facto
 the recombined inventory — `INVENTORY × COMPLETION` — which the `Tt4` axis cannot distinguish from
 inventory alone, and the `π_c` axis can, because there the two factors oppose.**
 
-**What is still not claimed.** The `M0` / flight axis is untouched, `η_t` remains 1 by the nature of a
-reversible bracket, and the whole plane is still the *bound*, not a rate — the deferred finite-rate
-turbine march (`docs/rung29-spec.md` § Deferred) is unaffected by any of this.
+**What is still not claimed.** `η_t` remains 1 by the nature of a reversible bracket, and the whole
+plane is still the *bound*, not a rate — the deferred finite-rate turbine march (`docs/rung29-spec.md`
+§ Deferred) is unaffected by any of this. The **`M0` / flight axis** — the other axis this doc left
+open — is now **CHECKED** (`docs/rung29-M0-margin.md`), and it is the clean **opposite** of `π_c`:
+monotone-protective, no turnover. It **confirms the `INVENTORY × COMPLETION` currency directly** (the
+recombined inventory tracks the shift across all of `M0`) and pins down what makes an axis turn over vs
+stay monotone: not whether completion has *headroom* but whether the axis drives `delta_h` — and hence
+completion — steeply enough for it to outpace the inventory suppression. `π_c` does (×11, via `τ_c`);
+`M0` does not (×2–3, a ram-datum shift), which the `π_c = 2` control confirms is decisive over headroom.
 
 ## Gates
 

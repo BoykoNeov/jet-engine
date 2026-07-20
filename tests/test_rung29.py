@@ -257,6 +257,163 @@ def test_inventory_alone_fails_on_the_pi_c_axis():
     assert rec_hi > rec_lo, f"recombined inventory should RISE with the shift: {rec_lo} {rec_hi}"
 
 
+# ---------------------------------------------------------------------------------------------
+# The M0 / flight-axis margin — rung 29's LAST "one design point" concession (after the pi_c
+# check), re-checked on the axis it named. A CONFIRMATION plus a CORRECTION to the pi_c doc's
+# unification framing, not a rung: docs/rung29-M0-margin.md.
+#
+# Verdict, opposite of pi_c: the shift is MONOTONE-PROTECTIVE in M0 (no interior turnover), the
+# bracket's beta-like axis. Same INVENTORY x COMPLETION currency, read where it is lopsided
+# (completion near-saturated). The discriminator between turnover (pi_c) and monotone (M0) is the
+# delta_h SWING, not completion headroom -- proven by the pi_c=2 control. And the flight axis is
+# double-edged: protective per point, yet ram heating shrinks the earned OPERATING band.
+# ---------------------------------------------------------------------------------------------
+
+M0_SCAN = (0.3, 0.85, 1.6, 2.5, 3.0)
+_M0_CACHE = {}
+
+
+def _run_M0(Tt4, M0, pi_c=PI_C):
+    """A run at (Tt4, M0, pi_c), same ambient/losses -- or None if the cycle does not solve
+    (the low-M0 ram edge and the high-Tt4 equilibrium-burner ceiling; neither is the turbine)."""
+    try:
+        gas = Gas.reacting_equilibrium()
+        flight = FlightCondition(T0=FLIGHT.T0, p0=FLIGHT.p0, M0=M0)
+        r = build_turbojet(gas, pi_c, Tt4, FLIGHT.p0, **REAL_LOSSES).run(flight, 1.0)
+        far = r.stations["4"].far
+        s2, s3, s4 = r.stations["2"], r.stations["3"], r.stations["4"]
+        delta_h = (gas.h_c(s3.Tt) - gas.h_c(s2.Tt)) / (REAL_LOSSES["eta_m"] * (1.0 + far))
+        return gas, far, s4.Tt, s4.pt, delta_h
+    except Exception:
+        return None
+
+
+def _bracket_M0(Tt4, M0, pi_c=PI_C):
+    key = (Tt4, M0, pi_c)
+    if key not in _M0_CACHE:
+        out = _run_M0(Tt4, M0, pi_c)
+        if out is None:
+            _M0_CACHE[key] = None
+        else:
+            gas, far, tt4, pt4, delta_h = out
+            _M0_CACHE[key] = (gas, far, delta_h, gas.shifting_turbine(far, tt4, pt4, delta_h))
+    return _M0_CACHE[key]
+
+
+def _completion_M0(Tt4, M0, pi_c=PI_C):
+    gas, far, _, st = _bracket_M0(Tt4, M0, pi_c)
+    c5 = _equilibrium_composition(far, st.T5_frozen, st.p5_frozen)
+    inv5 = sum(c5.get(s, 0.0) for s in ("O", "H", "OH")) / sum(c5.values())
+    return 1.0 - inv5 / st.radical_inventory
+
+
+def test_M0_helper_reproduces_the_certified_flight_anchor():
+    """Gate the new _bracket_M0 helper against the certified FLIGHT path -- my own gate-2 principle:
+    an independent code path must reproduce the anchor, else the RELATIVE monotonicity gates below
+    could read 'monotone' on wrong numbers (a wiring bug in FlightCondition/delta_h would survive
+    them). _bracket_M0(1500, M0=0.85) builds the SAME flight condition (T0=250, p0=50 kPa, M0=0.85),
+    pi_c and losses as the shipped _bracket(1500, 10), so the two must agree bit-for-bit AND hit the
+    rung-29 anchor 0.01067%.
+    """
+    ref = _bracket(1500.0, PI_C)[2]        # certified FLIGHT path (M0=0.85)
+    got = _bracket_M0(1500.0, 0.85)[3]     # the M0 helper at the same point
+    assert got.dT5_fraction == ref.dT5_fraction, \
+        f"M0 helper must reproduce the FLIGHT path bit-for-bit: {got.dT5_fraction} != {ref.dT5_fraction}"
+    assert got.T5_frozen == ref.T5_frozen and got.T5_shifting == ref.T5_shifting, \
+        "M0 helper must reproduce the FLIGHT exit state bit-for-bit"
+    assert abs(got.dT5_fraction * 100 - 0.01067) < 5e-5, \
+        f"must hit the rung-29 anchor 0.01067%: {got.dT5_fraction*100:.5f}%"
+
+
+def test_earned_at_design_is_M0_robust():
+    """The verdict survives the M0 axis, with MORE margin than pi_c -- and the worst case is
+    low-M0 takeoff, not the design cruise point.
+
+    Over M0 0.3..3.0 the design-point (Tt4=1500) bound never exceeds ~0.0113% (8.8x under the 1e-3
+    threshold), and the earned/not-earned boundary is bracketed 1800 < Tt4* < 2200 everywhere.
+    """
+    for M0 in M0_SCAN:
+        st = _bracket_M0(1500.0, M0)[3]
+        assert st.frozen_turbine_earned, f"M0={M0}: design point should stay EARNED"
+        assert abs(st.dT5_fraction) < 2e-4, \
+            f"M0={M0}: design bound drifted: dT5/T5 = {st.dT5_fraction:.3e} (expected <=1.13e-4)"
+        assert _bracket_M0(1800.0, M0)[3].frozen_turbine_earned, \
+            f"M0={M0}: Tt4=1800 K should still be earned (Tt4* > 1800)"
+        assert not _bracket_M0(2200.0, M0)[3].frozen_turbine_earned, \
+            f"M0={M0}: Tt4=2200 K should NOT be earned (Tt4* < 2200)"
+
+
+def test_M0_shift_is_monotone_protective():
+    """THE DIFFERENTIATOR, sign-flipped from pi_c's turnover. Unlike pi_c -- whose shift humped with
+    an interior maximum -- the M0 shift falls MONOTONICALLY (the bracket's beta-like axis). Asserted
+    at a HOT Tt4=2100 (a 2.1x swing) so no low-Tt4 solver-noise question arises.
+    """
+    fr = [_bracket_M0(2100.0, M0)[3].dT5_fraction for M0 in M0_SCAN]
+    assert all(a > b for a, b in zip(fr, fr[1:])), \
+        f"shift must fall monotonically in M0 (protective, NOT a turnover): {fr}"
+    assert fr[0] / fr[-1] > 1.8, f"the fall should be substantial across the axis: {fr[0]/fr[-1]}"
+
+
+def test_M0_channels_are_lopsided():
+    """The mechanism: the SAME two channels as pi_c (inventory down, completion up), but LOPSIDED --
+    completion is near-saturated, so inventory dominates and the axis is monotone. The RECOMBINED
+    inventory (inv x completion) falls monotonically and tracks the shift.
+    """
+    inv = [_bracket_M0(1500.0, M0)[3].radical_inventory for M0 in M0_SCAN]
+    comp = [_completion_M0(1500.0, M0) for M0 in M0_SCAN]
+    assert all(a > b for a, b in zip(inv, inv[1:])), f"inventory should FALL with M0: {inv}"
+    assert all(a < b for a, b in zip(comp, comp[1:])), f"completion should RISE with M0: {comp}"
+    # Lopsided: inventory swings much harder than completion (that is WHY M0 is monotone).
+    inv_swing = inv[0] / inv[-1]
+    comp_swing = comp[-1] / comp[0]
+    assert inv_swing > 3.0 * comp_swing, \
+        f"inventory must dominate completion on M0 (lopsided): inv {inv_swing:.2f}x vs comp {comp_swing:.2f}x"
+    rec = [i * c for i, c in zip(inv, comp)]
+    assert all(a > b for a, b in zip(rec, rec[1:])), f"recombined inventory should track the shift: {rec}"
+
+
+def test_delta_h_swing_not_headroom_is_the_discriminator():
+    """THE CORRECTION to the pi_c doc's unification. The tempting reading -- 'M0 is monotone because
+    completion is already saturated at pi_c=10' -- is wrong. Re-run the M0 sweep at pi_c=2, where
+    delta_h is small and completion starts with headroom (~33%): it is STILL monotone. Headroom alone
+    does not restore the turnover; the weak delta_h swing on M0 (a datum shift, not a work climb) is
+    why. So the discriminator is the delta_h swing (the completion DRIVER), not the headroom.
+    """
+    # Completion genuinely has room at pi_c=2 (unlike pi_c=10's ~86%), so 'saturated' cannot explain it.
+    comp_lo = _completion_M0(1500.0, 0.3, pi_c=2.0)
+    assert comp_lo < 0.5, f"pi_c=2 should leave completion headroom at low M0: {comp_lo}"
+    fr2 = [_bracket_M0(1500.0, M0, pi_c=2.0)[3].dT5_fraction for M0 in (0.3, 0.85, 1.6, 2.5)]
+    assert all(a > b for a, b in zip(fr2, fr2[1:])), \
+        f"even with completion headroom, the M0 sweep at pi_c=2 stays monotone (no turnover): {fr2}"
+    # And the delta_h swing on M0 really is weak (a datum shift), so completion cannot outpace inventory.
+    dh_lo = _bracket_M0(1500.0, 0.3)[2]
+    dh_hi = _bracket_M0(1500.0, 3.0)[2]
+    assert dh_hi / dh_lo < 4.0, \
+        f"M0's delta_h swing must be weak vs pi_c's ~11x (why completion cannot win): {dh_hi/dh_lo:.2f}x"
+
+
+def test_M0_envelope_band_squeeze():
+    """The flight axis is DOUBLE-EDGED in a way pi_c is not: protective per point, yet ram heating
+    lifts the burner-squeeze FLOOR faster than the boundary, shrinking the earned OPERATING band.
+    Cheap point-checks of the three edges (no bisection):
+      - floor RISES:   a low Tt4 runs at low M0 but not at high M0 (ram heats Tt3 toward Tt4);
+      - Tt4* RISES:    a Tt4 above design is not-earned at low M0 but earned at high M0 (protective);
+      - ceiling RISES: a high Tt4 fails the burner balance at design M0 but runs at high M0.
+    """
+    # floor rises: Tt4=1200 runnable at M0=0.3, not at M0=3.0.
+    assert _run_M0(1200.0, 0.3) is not None, "Tt4=1200 should run at M0=0.3 (floor below it)"
+    assert _run_M0(1200.0, 3.0) is None, "Tt4=1200 should NOT run at M0=3.0 (ram-lifted floor above it)"
+    # Tt4* rises (protective): Tt4=1900 not-earned at M0=0.3, earned at M0=3.0.
+    assert not _bracket_M0(1900.0, 0.3)[3].frozen_turbine_earned, \
+        "Tt4=1900 should NOT be earned at M0=0.3 (Tt4* < 1900)"
+    assert _bracket_M0(1900.0, 3.0)[3].frozen_turbine_earned, \
+        "Tt4=1900 SHOULD be earned at M0=3.0 (Tt4* > 1900 -- protective)"
+    # ceiling rises: Tt4=2500 fails at design M0=0.85, runs at M0=2.5.
+    assert _run_M0(2500.0, 0.85) is None, "Tt4=2500 should fail the burner balance at M0=0.85"
+    assert _run_M0(2500.0, 2.5) is not None, \
+        "Tt4=2500 SHOULD run at M0=2.5 (higher pt4 suppresses dissociation, burner closes hotter)"
+
+
 if __name__ == "__main__":
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):
