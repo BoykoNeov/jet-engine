@@ -93,7 +93,20 @@ are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle
   shuts the relaxation off partway down the nozzle and the freeze point **MOVES with `Tt4`** (the
   finding); it adds no new bound (lands inside rung-25's `[F,I]`), reduces to rung-25 `_finite_rate_expand`
   bit-for-bit at constant `Da_local`. **What rung 26 leaves open:** (a) a **resolved `τ_res`** from the
-  nozzle area-schedule (retire the last geometric knob `L`, *pin* the location); (b) a **`T`-dependent
+  nozzle area-schedule (retire the last geometric knob `L`, *pin* the location) — **INVESTIGATED,
+  NEGATIVE on BOTH counts, NOT shipped and NOT a rung** (`docs/tau-res-negative.md`). The conical
+  `dt=dx/V` reshape does give a normalized shape `ĝ(s)∝|da/ds|/(√a·V)` in which `ṁ` and `tanθ`
+  cancel — but the shape is **moot**: the march starts from *stagnation*, so `ĝ∝s^{-7/4}` and the
+  normalization **does not converge** without an **entry Mach `M_e`**. So deriving the distribution
+  **ADDS** a geometric knob rather than retiring `L`, and the answer is **more** sensitive to `M_e`
+  than rung 26 ever was to `L` (at `Tt4=1500`, `s_freeze≈s_e` at both cutoffs — the location is
+  *slaved to the cutoff*). **The positive by-product: rung 26 is CONFIRMED** (freeze motion exists
+  and rises with `Tt4` under both cutoffs; lean still frozen-from-entry) with its **disclaimed**
+  magnitude refined ~3× (span 0.378→≈0.12, grid-converged, ~11% cross-cutoff) — and the hot case,
+  which the uniform cartoon pushed *past* its throat, now freezes upstream of it like the others.
+  Do NOT re-run the reshape-on-the-`ln p`-frame construction; a new attempt needs a **real `A(x)`
+  geometry** (physical entry plane + throat area, hence `ṁ` threaded in and the *choked* nozzle
+  seam); (b) a **`T`-dependent
   freeze-out of exhaust NO** — **BUILT BY RUNG 27** (below); (c) a **shifting turbine** — a
   less-super-equilibrium entry *shrinks* rung-25's (R−I) gap and *moves* the freeze point (reopens the
   shaft balance).
