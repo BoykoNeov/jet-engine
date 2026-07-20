@@ -2135,14 +2135,42 @@ def _tau_no_exact(comp: dict, T: float, p: float, x_no: float) -> Tuple[float, f
     which is what rung 27's bound claim needed, and what its "arrives super-equilibrium" premise did NOT
     actually supply (that premise is false at the entry; see `_tau_no_destroy` § ERRATUM).
 
-    β<1 is EMPIRICAL on this band, NOT a theorem — and the margin is the honest weak point of this
-    repair. Max β over the nozzle path measures 0.103 → 0.261 → 0.512 → 0.513 as Tt4 goes 1500 → 1800 →
-    2200 → 2400 K: it RISES with Tt4 (the same direction as rung 27's narrowing separation) and reaches
-    HALF of the β=1 threshold at the hot end — a factor 2, not orders. (The path max sits at the hot
-    entry; by the exit β has fallen to 0.01–0.20.) It stays < 1 everywhere the cycle runs, and the cycle
-    has NO solution past ~2500 K (the rung-6 burner balance assert fires), so no crossing to β>1 is
-    reachable — but unlike the freeze margin (3–9 orders) this one is NOT comfortable, and a hotter or
-    higher-π_c cycle is where it would be worth re-checking. Stated, not buried.
+    β<1 is EMPIRICAL, NOT a theorem, and remains the honest weak point of this repair. Max β over the
+    nozzle path measures 0.103 → 0.261 → 0.512 → 0.513 as Tt4 goes 1500 → 1800 → 2200 → 2400 K: it
+    RISES with Tt4 and reaches HALF of the β=1 threshold — a factor 2, not orders. (The path max sits
+    at the hot entry; by the exit β has fallen to 0.01–0.20.)
+
+    HARDENED (docs/rung28-beta-margin.md) — rung 28 named "β at higher π_c / hotter cycles" as the seam
+    to re-check. It was checked, and the margin is *structurally* better than the raw factor-2 suggests:
+
+      (i) β is EXACTLY PRESSURE-INVARIANT. Every term is a product of TWO concentrations
+          (R1=k1f[O][N2], R2=k2r[NO]_e[O], R3=k3r[NO]_e[H]), so c_tot² cancels top and bottom:
+              β = k1f·x_O·x_N2 / ( x_NOe·(k2r·x_O + k3r·x_H) )
+          — mole fractions and T-only rate constants. Measured flat to 8 digits (0.51234156) over a
+          160× pressure span. So π_c has NO direct channel into β at all.
+      (ii) Its two INDIRECT channels BOTH push β DOWN. Raising π_c raises Tt3, which cuts `far`
+          (composition channel, weak: β 0.512→0.473 at Tt4=2200 over π_c 10→80) and cuts Tt9 by
+          extracting more turbine work (temperature channel, dominant: 0.512→0.315). Net in-cycle β
+          FALLS monotonically with π_c, 0.512→0.278. **Higher π_c is PROTECTIVE, not threatening** —
+          the opposite of what the seam feared. (`Da_NO` at entry falls with π_c too: rung 27's
+          freeze verdict hardens on the same axis.)
+      (iii) β does NOT saturate in T — the 0.512→0.513 flatness at 2200→2400 K is a coincidence of
+          the runnable boundary curving, not a plateau. On a fixed mixture β climbs monotonically and
+          crosses 1 near 3200–4100 K, i.e. **1.6–1.9× above the hottest reachable nozzle-entry Tt9**
+          (~1840–2200 K). The crossing is characterised by a TEMPERATURE, and that temperature is far
+          off the map: the cycle has no solution past ~2450–2500 K of Tt4 (the rung-6 burner balance
+          assert fires) long before β can approach 1.
+      (iv) The max over the WHOLE runnable (Tt4, π_c) plane is **0.5444**, at Tt4=2300 K / π_c=8 — an
+          INTERIOR max on a flat diagonal ridge, not the hot corner and not a scan edge. β is
+          non-monotone in BOTH axes: it TURNS OVER below π_c≈8 because π_c's two channels compete
+          with opposite signs there (falling π_c raises `far`, pushing β down, while it raises Tt9,
+          pushing β up — the composition channel wins at low π_c). 0.5444 is the number to quote,
+          slightly ABOVE the 0.513 rung 28 shipped, so the correction is not purely favourable.
+
+    So the honest statement is no longer "0.51 and rising with nowhere checked" but "≤ 0.545 over the
+    entire runnable plane, pressure-inert by construction, and pushed DOWN by the one knob the seam
+    suspected." Still a factor rather than orders, and still not a theorem — but the seam is closed on
+    the axis it named. Gated by `test_beta_*` in tests/test_rung28.py.
 
     Returns (τ_exact, β, a); (inf, 0, 0) when the rate degenerates ([NO]_e, R1 or R2+R3 ≤ 0)."""
     ntot = sum(comp.values())

@@ -259,14 +259,93 @@ def test_exact_tau_ratio_matches_the_closed_form():
 
 def test_beta_margin_is_disclosed_not_comfortable():
     """β RISES with Tt4 and reaches ~half the β=1 threshold — the honest weak point, asserted so it
-    cannot silently drift into a violation."""
+    cannot silently drift into a violation.
+
+    HARDENED (docs/rung28-beta-margin.md): forbids the FALSE COMFORT that β plateaus — it does not;
+    it crosses 1 off-cycle near 3200 K. The margin is a temperature headroom, not a plateau. (The
+    whole-PLANE bound is a separate gate, `test_beta_plane_maximum_is_interior` — this one only
+    walks BAND at the default π_c.)"""
     betas = []
     for Tt4 in BAND:
         eq, r, a = _run(Tt4)
         betas.append(eq.coupled_no_freeze_out_nozzle(*a, CoupledNOFreezeOut()).beta_max)
     assert betas[0] < 0.15, f"β small lean, got {betas[0]}"
     assert betas[-1] > 0.3, f"β must be materially larger hot (the disclosed margin), got {betas[-1]}"
-    assert max(betas) < 1.0, f"β must never reach 1 on the runnable band, got {max(betas)}"
+    assert max(betas) < 0.6, f"β must stay under the measured plane bound, got {max(betas)}"
+
+    # NOT a plateau: on a fixed mixture β climbs without limit and passes 1 off-cycle.
+    eq, r, a = _run(2200.0)
+    far, _Tt3, Tt4, pt4, _Tt9, pt9, _p9, _phi = a
+    comp = _equilibrium_composition(far, Tt4, pt4)
+    seq = [_tau_no_exact(comp, T, pt9, 1e-4)[1] for T in (1600.0, 2000.0, 2400.0, 2800.0, 3200.0)]
+    assert all(y > x for x, y in zip(seq, seq[1:])), f"β must climb monotonically in T, got {seq}"
+    assert seq[-1] > 1.0, f"β must exceed 1 off-cycle (~3200 K) — not a plateau, got {seq[-1]}"
+
+
+def test_beta_plane_maximum_is_interior():
+    """The whole-runnable-plane bound on β — the number the hardening quotes (0.5444).
+
+    β is non-monotone in BOTH axes, and it TURNS OVER below π_c≈8 (as π_c falls, `far` rises —
+    pushing β down — while Tt9 rises, pushing it up; the low-π_c composition channel wins). So the
+    max is INTERIOR, not an artifact of where the scan stopped. This gate walks the ridge and its
+    surroundings on both sides so neither the bound nor its interiority can silently drift."""
+    RIDGE = ((2300.0, 8.0), (2325.0, 10.0))
+    LOW = ((2300.0, 4.0), (2200.0, 4.0), (2300.0, 6.0))     # the low-π_c flank (the turnover side)
+    HIGH = ((2300.0, 13.0), (2400.0, 20.0), (2450.0, 25.0))  # the high-π_c / hot flank
+
+    def beta_at(Tt4, pic):
+        eq = Gas.reacting_equilibrium()
+        r = build_turbojet(eq, pic, Tt4, FLIGHT.p0, **REAL_LOSSES).run(FLIGHT, 1.0)
+        s3, s4, s9 = r.stations["3"], r.stations["4"], r.stations["9"]
+        return eq.coupled_no_freeze_out_nozzle(
+            s4.far, s3.Tt, s4.Tt, s4.pt, s9.Tt, s9.pt, r.p9, 1.0, CoupledNOFreezeOut()).beta_max
+
+    ridge = [beta_at(*pt) for pt in RIDGE]
+    low = [beta_at(*pt) for pt in LOW]
+    high = [beta_at(*pt) for pt in HIGH]
+    peak = max(ridge + low + high)
+    assert peak < 0.6, f"β must stay under the quoted plane bound with room, got {peak}"
+    assert peak == max(ridge), f"the max must sit ON the ridge, not on a flank: {ridge}/{low}/{high}"
+    assert peak > 0.5, f"the ridge must actually be sampled, got {peak}"
+    # interiority: the ridge strictly beats BOTH flanks, so the max is not a scan-edge artifact.
+    assert max(low) < min(ridge), \
+        f"ridge must beat the LOW-π_c flank (β turns over below π_c≈8), got {ridge} vs {low}"
+    assert max(high) < min(ridge), \
+        f"ridge must beat the high-π_c/hot flank, got {ridge} vs {high}"
+
+
+def test_beta_is_exactly_pressure_invariant():
+    """β's c_tot² cancels EXACTLY — R1, R2, R3 are each a product of two concentrations, so
+    β = k1f·x_O·x_N2 / (x_NOe·(k2r·x_O + k3r·x_H)) depends on mole fractions and T only.
+    This is why π_c has no DIRECT channel into the bound at all (docs/rung28-beta-margin.md)."""
+    eq, r, a = _run(2200.0)
+    far, _Tt3, Tt4, pt4, Tt9, pt9, _p9, _phi = a
+    comp = _equilibrium_composition(far, Tt4, pt4)
+    ref = _tau_no_exact(comp, Tt9, pt9, 1e-4)[1]
+    assert 0.0 < ref < 1.0
+    for scale in (0.25, 4.0, 40.0, 160.0):
+        beta = _tau_no_exact(comp, Tt9, pt9 * scale, 1e-4)[1]
+        assert math.isclose(beta, ref, rel_tol=1e-12), \
+            f"β must be pressure-invariant; at {scale}× p got {beta} vs {ref}"
+
+
+def test_beta_falls_with_pressure_ratio():
+    """The seam rung 28 filed was "β at higher π_c" — and the answer INVERTS the worry: both of
+    π_c's indirect channels (lower `far`, lower Tt9) push β DOWN, so a higher-π_c cycle is
+    PROTECTIVE. Entry Da_NO falls with π_c too, so rung 27 hardens on the same axis."""
+    Tt4 = 2200.0
+    out = []
+    for pic in (10.0, 40.0):
+        eq = Gas.reacting_equilibrium()
+        r = build_turbojet(eq, pic, Tt4, FLIGHT.p0, **REAL_LOSSES).run(FLIGHT, 1.0)
+        s3, s4, s9 = r.stations["3"], r.stations["4"], r.stations["9"]
+        cp = eq.coupled_no_freeze_out_nozzle(
+            s4.far, s3.Tt, s4.Tt, s4.pt, s9.Tt, s9.pt, r.p9, 1.0, CoupledNOFreezeOut())
+        out.append((cp.beta_max, cp.Da_entry))
+    assert out[1][0] < out[0][0], f"β must FALL with π_c (protective), got {out[0][0]}→{out[1][0]}"
+    assert out[1][0] < 0.8 * out[0][0], f"and materially so, got {out[0][0]}→{out[1][0]}"
+    assert out[1][1] < out[0][1], f"entry Da_NO must fall with π_c too, got {out[0][1]}→{out[1][1]}"
+    assert out[1][1] < 1.0, "still frozen from entry at high π_c"
 
 
 # ------------------------------------------- gate 8: NO does not actually move -------------------- #

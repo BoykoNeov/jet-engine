@@ -123,6 +123,18 @@ separation) and reaches **half** the β=1 threshold at the hot end — a factor 
 balance assert fires), so no crossing is reachable — but a hotter or higher-`π_c` cycle is where this
 would want re-checking. Gated (`test_beta_margin_is_disclosed_not_comfortable`), not buried.
 
+> **RE-CHECKED — see `docs/rung28-beta-margin.md`.** That seam was pursued and the worry **inverts**.
+> β is **exactly pressure-invariant** (`c_tot²` cancels: every `R` is a product of two concentrations,
+> so `β = k1f·x_O·x_N2 / (x_NOe·(k2r·x_O + k3r·x_H))` — flat to 8 digits over 160× in `p`), so `π_c` has
+> **no direct channel**; and both its indirect channels (lower `far`, lower `Tt9`) push β **DOWN**
+> (`0.512→0.278` over `π_c` 10→80). Higher `π_c` is **protective**, and entry `Da_NO` falls with it too.
+> Two honest corrections *against* this section: the `0.512→0.513` flatness is **not** a plateau (β
+> climbs monotonically in T, crossing 1 near ~3200 K), and the true whole-plane max is **0.5444**
+> (`Tt4=2300`, `π_c=8` — an *interior* max; β turns over below `π_c≈8`) — slightly **above** the 0.513
+> quoted here. The margin is best stated as a
+> **temperature headroom**: the β=1 crossing sits **1.6–1.9× above** the hottest reachable nozzle entry.
+> Still empirical, not a theorem; what is excluded is specifically the pressure route.
+
 ## A third, smaller correction — the entry margin is band-specific
 
 Rung 27 quotes a **"3–9 order"** entry margin. That is measured on **its** band (topping at 2200 K).
@@ -202,4 +214,8 @@ than what they replace, because neither depends on the regime being what rung 27
   `[NO]_e`-independence that makes the present clock robust. Moot while `Da_NO ≪ 1`.
 - **A resolved `τ_res`** (inherited from rungs 26/27) — retire `L`. Would also pin the net turnaround
   this rung disclaims.
-- **β at higher `π_c` / hotter cycles** — the one margin here that is a factor rather than orders.
+- ~~**β at higher `π_c` / hotter cycles**~~ — **CLOSED on the axis named** (`docs/rung28-beta-margin.md`):
+  β is exactly pressure-invariant and `π_c` pushes it **down** through both indirect channels; plane max
+  **0.544**; the β=1 crossing is a temperature 1.6–1.9× above the hottest reachable nozzle entry. Still
+  empirical, not a theorem — a genuinely hotter *nozzle entry* (not reachable at these component
+  efficiencies) would still want re-checking.

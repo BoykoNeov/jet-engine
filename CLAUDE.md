@@ -132,8 +132,20 @@ are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle
   entry** (`a`=0.31–0.61) — exactly where freeze-from-entry is decided; the bound holds because **β<1**,
   which covers **both** regimes. Rung 27's *numbers* are untouched. **What rung 28 leaves open:** a
   **coupled formation clock** (the `a≫1` surrogate *bounds* the sub-eq entry but does not *describe* it;
-  moot while `Da_NO≪1`); **β at higher `π_c`/hotter cycles** (the one margin here that is a factor, ~0.51,
-  not orders).
+  moot while `Da_NO≪1`).
+- **β at higher `π_c` / hotter cycles** — **CHECKED, CONFIRMATION, NOT a rung** (`docs/rung28-beta-margin.md`).
+  Rung 28 filed its `β<1` bound as its one factor-not-orders margin. Re-measured on the axis it named, and
+  the worry **INVERTS**: β is **exactly pressure-invariant** (`c_tot²` cancels — every `R` is a product of
+  *two* concentrations, so `β = k1f·x_O·x_N2/(x_NOe·(k2r·x_O+k3r·x_H))`, flat to 8 digits over 160× in `p`),
+  so π_c has **no direct channel at all**, and both its indirect channels (lower `far`, lower `Tt9`) push β
+  **DOWN** — `0.512→0.278` over π_c 10→80. **Higher π_c is PROTECTIVE**, and entry `Da_NO` falls with it too
+  (rung 27 hardens on the same axis). The shipped `0.512→0.513` flatness is **NOT** a plateau (β climbs
+  monotonically in T and crosses 1 near ~3200 K) — but the crossing is a **temperature**, sitting **1.6–1.9×
+  above** the hottest reachable nozzle entry, and the cycle stops solving (`Tt4≥2450–2500`) long before.
+  Whole-plane max **0.5444** at `Tt4=2300/π_c=8` — an **INTERIOR** max on a flat diagonal ridge (β **turns
+  over** below `π_c≈8`, where the two channels compete with opposite signs), and slightly **above** the
+  0.513 rung 28 quoted, so the correction is not purely favourable. Still **empirical, not a theorem**;
+  what is now excluded is specifically the pressure route.
 - **A real spatial / transported-CFD PDF** — the standing ceiling. Rungs 22–24 took the
   first steps (deriving the width `g(C)`, the dwell spectrum `τ(ξ)`, and each cell's
   mixing *rate* from a resolved cross-plane), but they remain a Gaussian-plume **cartoon**
