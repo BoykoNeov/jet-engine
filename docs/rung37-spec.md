@@ -19,10 +19,14 @@ and the other breaks:
 >
 > **Heat-soak is NOT a fast clock** (`τ_soak = m·c/hA ≈ 1–20 s ~ τ_spool`): it **CORRECTS** the
 > concession. A second STATE — the metal temperature `Tm` — carries **thermal memory**, so the
-> transient is `E(r, θ₀)`, a function of the thermal history and **not of `r` alone**. The surge news
-> is *good* (rung 34/35's adiabatic combustor is the conservative **worst case**); the cost is the
-> **acceleration-time lag** (the primary CRS/Walsh-Fletcher effect) and the **hot reslam** (a
-> re-acceleration from hot metal recovers the worst-case excursion — the "bodie").
+> transient is `E(r, θ₀)`, a function of the thermal history and **not of `r` alone**. The **primary**
+> cost is the **acceleration-time lag** (the CRS/Walsh-Fletcher headline). For **surge**, the modeled
+> combustor gas-path sink is *protective* — `cold < hot-reslam < adiabatic`, so heat soak is **never
+> worse** than the no-soak baseline; a hot reslam is merely **less protected** than a cold first-accel,
+> not a hazard above it. **NOTE (the honest scope):** this is the **opposite sign** to the operational
+> reslam/"bodie" surge hazard, which is heat soakage moving the working line *toward* surge — an effect
+> that lives in a channel this rung does **not** model (compressor-side soak / tip-clearance), so this
+> rung's combustor channel does not reproduce it.
 
 Like every rung 7→36 this is a **diagnostic beside the cycle**: a separate entry point
 (`CombustorTransient`, subclassing `SpoolTransient`), both effects **default OFF** and reduce to
@@ -79,12 +83,11 @@ peak excursion (finite plenum)  =  E0 (rung 35)  to machine zero,  INDEPENDENT o
 ```
 
 Measured (fast gas, `Tt4` 1100→1400, three surge shapes, `r_v ∈ {0.03, 0.1}`): `peak − E0 =
-−0.0000%` in every cell. **So volume-filling confirms `E0`** — there is *no peak cushion at `r → 0`*
-(a finite-plenum cushion appears on the finite-`r` peak, `∝ τ_fill/τ_spool`, once `ν` moves during
-the fill; it vanishes as the clock separates). The **load-bearing content is the decoupling itself**:
-`max|ṁ_c + ṁ_fuel − ṁ_NGV|/ṁ_NGV ≈ 18%` during the fill — a genuinely new degree of freedom the
-rigid coupling could not represent. This is the anti-tautology hook: not "a fast clock relaxes fast"
-(vacuous), but "the peak survives a finite combustor **and** the compressor unlocks from the NGV."
+−0.0000%` in every cell. **So volume-filling confirms `E0`** — the `r → 0` peak is unmoved, full stop.
+The **load-bearing content is the decoupling itself**: `max|ṁ_c + ṁ_fuel − ṁ_NGV|/ṁ_NGV ≈ 22%`
+during the fill — a genuinely new degree of freedom the rigid coupling could not represent. This is the
+anti-tautology hook: not "a fast clock relaxes fast" (vacuous), but "the peak survives a finite
+combustor **and** the compressor unlocks from the NGV."
 
 ---
 
@@ -108,7 +111,7 @@ NGV-continuity root-find with `Tt4,turb` in the choke and the turbine.
 **Equilibrium ⇒ `Tm = Tt4,burner` ⇒ `Q ≡ 0`.** So heat-soak **never moves the running line** — it is a
 **purely transient** effect (a clean structural reduce: the rung-35 equilibrium is untouched).
 
-### The finding — CORRECTION: `E(r) → E(r, θ₀)`, the reslam, and the accel-lag
+### The finding — CORRECTION: `E(r) → E(r, θ₀)`, history-dependence, and the accel-lag
 
 Heat-soak makes the transient depend on the **initial metal state** `θ₀`, not on `r` alone:
 
@@ -126,9 +129,14 @@ Heat-soak makes the transient depend on the **initial metal state** `θ₀`, not
   | surge_pressure       | 13.062%             | 11.827%          | 12.436%    |
   | surge_tilted         | 11.389%             | 10.333%          | 10.835%    |
 
-- **The hot RESLAM is the hazard.** A re-acceleration from **hot** metal (as after a chop-and-slam)
-  has little heat sink, so its excursion sits **just below the adiabatic worst case** — well above the
-  cold first-accel. `E` genuinely depends on `θ₀`; a single-state `E(r)` structurally cannot express it.
+- **History-dependence: a hot reslam is LESS protected than a cold accel.** A re-acceleration from
+  **hot** metal (as after a chop-and-slam) has little heat sink, so its excursion sits **just below the
+  adiabatic** value — above the cold first-accel but still below the no-soak baseline. `E` genuinely
+  depends on `θ₀`; a single-state `E(r)` structurally cannot express it. **This is NOT the operational
+  bodie surge hazard** — that hazard is the *opposite sign* (heat soakage reducing surge margin) and
+  lives in an **unmodeled compressor-side channel** (tip-clearance / compressor heat soak). This rung's
+  combustor gas-path sink only ever *helps* surge; a hot reslam is the least-helped case, not a
+  above-baseline hazard. The overlap with the real bodie is the **history-dependence**, not the sign.
 
 - **The PRIMARY effect is the ACCEL-TIME LAG.** The cold metal steals turbine work, so a cold
   acceleration is **~2.5× slower** (`t_accel ≈ 5.55` vs adiabatic `2.15` at `G=0.1, r_m=3`) and grows
@@ -213,7 +221,9 @@ response of a twin-spool turbofan*, 1971; CRS *Gas Turbine Theory* Ch. 9): a con
 compressor and turbine whose pressure is a state driven by the compressor/turbine mass-flow imbalance.
 The **heat-soak** method is the standard transient-performance heat-soakage model (CRS Ch. 9; Walsh &
 Fletcher, *Gas Turbine Performance*, transient chapter): a lumped metal thermal capacitance that lags
-the gas, slows the acceleration, and makes a **hot reslam** (bodie) more surge-critical than a cold
-first acceleration. The **reduce** (both OFF ⇒ rung 35, and the two equilibria == rung 35 via the
+the gas, slows the acceleration, and makes the transient **thermal-history-dependent**. (The texts'
+**hot reslam / bodie** surge hazard — a re-accel from a hot engine being more surge-critical — is driven
+by the **compressor-side** soak / tip-clearance channel, *not* modeled here; this rung's combustor
+gas-path sink is the opposite, protective sign — see § Effect 2.) The **reduce** (both OFF ⇒ rung 35, and the two equilibria == rung 35 via the
 independent closures) is the rigorous, non-tautological anchor — two code paths onto one operating
 point, exactly as rungs 31–36 did for their solves.

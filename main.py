@@ -1459,7 +1459,9 @@ def print_combustor_dynamics_table(flight):
     plenum, tau_fill << tau_spool) CONFIRMS the concession — the r->0 peak surge excursion is unmoved
     (== rung-35 E0), its content the STRUCTURAL mdot_c != mdot_NGV decoupling; heat-soak (a metal state
     Tm, tau_soak ~ tau_spool) CORRECTS it — a second STATE makes E = E(r, theta0), history-dependent
-    (cold < hot-reslam < adiabatic, surge PROTECTED; the cost is the accel-time LAG and the RESLAM).
+    (cold < hot-reslam < adiabatic — the modeled combustor sink is surge-PROTECTED; the cost is the
+    accel-time LAG. NOTE: this is the OPPOSITE sign to the operational bodie hazard, which is an unmodeled
+    compressor-side channel — so this rung does not reproduce it).
     Both effects default OFF => rung 34/35 bit-for-bit; design run stays rung-6 exact. See docs/rung37-spec.md.
     """
     print("\nCombustor dynamics (rung 37): rung 34 bundled two internal clocks into 'faster clocks below")
@@ -1497,11 +1499,13 @@ def print_combustor_dynamics_table(flight):
         ta = f"{d['t_accel']:.2f}" if d["t_accel"] is not None else ">s_end"
         print(f"  {tag:>12} {d['E_surge']*100:>8.2f}% {ta:>9}")
     print("  cold < hot-reslam < adiabatic: the cold metal's heat sink depresses Tt4_turb -> colder NGV ->")
-    print("  more airflow -> AWAY from surge, so rung 34/35's adiabatic is the conservative WORST case. The")
-    print("  cost is the accel-time LAG (cold ~2.5x slower) and the hot RESLAM (bodie: recovers the worst")
-    print("  case). E = E(r, theta0), history-dependent — NOT a function of r alone. Reduce: both OFF =>")
-    print("  rung 34/35 bit-for-bit (exact dispatch); soak equilibrium == rung 35 (Q=0 at steady). Sign")
-    print("  shape/knob-robust; magnitudes disclaimed. Cycle: rung-6 exact.")
+    print("  more airflow -> AWAY from surge, so this modeled combustor sink is surge-PROTECTIVE (rung 34/35's")
+    print("  adiabatic no-soak case is the CEILING); a hot reslam is just the least-protected case. The primary")
+    print("  cost is the accel-time LAG (cold ~2.5x slower). E = E(r, theta0), history-dependent — NOT a function")
+    print("  of r alone. HONEST SCOPE: this is the OPPOSITE sign to the operational bodie/reslam surge hazard")
+    print("  (heat soak moving the working line TOWARD surge — an UNMODELED compressor-side channel); this rung")
+    print("  does not reproduce it. Reduce: both OFF => rung 34/35 bit-for-bit (exact dispatch); soak equilibrium")
+    print("  == rung 35 (Q=0 at steady). Sign shape/knob-robust; magnitudes disclaimed. Cycle: rung-6 exact.")
 
 
 def print_pdf_quench_table(flight):

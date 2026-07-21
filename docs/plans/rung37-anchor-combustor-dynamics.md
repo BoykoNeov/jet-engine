@@ -42,9 +42,12 @@ m·c·dTm/dt = hA·(Tt4,burner − Tm)  ⇒  dTm/ds = (Tt4,burner − Tm)/r_m , 
 ```
 
 The documented consequences: heat-soak **steals turbine work → slows the acceleration** (the
-thrust-response lag, the primary transient-performance effect), and — because the metal retains its
-temperature — a **hot reslam** (a re-acceleration from a hot engine, the "bodie") is more
-surge-critical than a cold first acceleration.
+thrust-response lag, the primary transient-performance effect), and it makes the transient depend on
+the **thermal history** (a hot reslam differs from a cold first accel). **Scope note:** the *operational*
+reslam/"bodie" surge hazard — a re-acceleration from a hot engine being more surge-critical — is driven
+by **compressor-side** heat soak / tip-clearance moving the working line *toward* surge; that channel is
+**not modeled here**. This rung models only the **combustor gas-path** sink, whose surge effect is the
+*opposite* sign (protective — see finding 2).
 
 ## Part B — reduce + finding data
 
@@ -86,13 +89,15 @@ Acceleration `Tt4` 1100→1400, `G=0.15`, `r_m=3.0`, `surge_flow`:
 |--------------------|----------------|--------------------------|
 | adiabatic (rung 35)| 10.16%         | 2.15                     |
 | cold first-accel   |  8.75%         | 6.65   (~3× slower)      |
-| hot reslam (bodie) |  9.42%         | 2.00   (≈ adiabatic)     |
+| hot reslam         |  9.42%         | 2.00   (≈ adiabatic)     |
 
 Ordering `cold < hot-reslam < adiabatic` — the cold metal's heat sink depresses `Tt4,turb` → colder
-NGV passes **more** corrected flow → higher `φ` → **away** from surge (channel a wins). rung-34/35's
-adiabatic combustor is the conservative **worst case**; a hot reslam recovers most of it. The
-**primary** cost is the accel-time **lag** (cold ~3× slower; `t_accel → >s_end` as `r_m` grows). `E =
-E(r, θ₀)` — history-dependent, not a function of `r` alone.
+NGV passes **more** corrected flow → higher `φ` → **away** from surge (channel a wins). So the modeled
+combustor sink is surge-**protective**: rung-34/35's adiabatic (no-soak) case is the **ceiling**, and a
+hot reslam is merely the **least-protected** case (history-dependence), **not** a hazard above baseline.
+The **primary** cost is the accel-time **lag** (cold ~3× slower; `t_accel → >s_end` as `r_m` grows). `E =
+E(r, θ₀)` — history-dependent, not a function of `r` alone. **(The operational bodie surge hazard is the
+opposite sign, in the unmodeled compressor-side channel — see the method note above.)**
 
 **Sign robustness** (the load-bearing claims). `cold < hot-reslam < adiabatic` holds across every
 `G ∈ {0.05, 0.10, 0.15, 0.20} × r_m ∈ {1, 3, 5, 10} ×` 3 shapes in the probe (channel a always wins
@@ -101,10 +106,12 @@ in `G`.
 
 ## What this anchor deliberately does NOT establish
 
-- No **magnitude** of the plenum path-cushion, the heat-soak surge protection, or the accel-lag — all
-  ride on the disclaimed `r_v`, `G`, `r_m` (the `I`/`L`/`τ_res` concession, twice). Only the peak =
-  `E0` identity, the `ṁ_c≠ṁ_NGV` existence, and the two signs (`cold<hot<adiabatic`, accel-lag) are
-  load-bearing.
+- No **magnitude** of the heat-soak surge protection or the accel-lag — both ride on the disclaimed
+  `r_v`, `G`, `r_m` (the `I`/`L`/`τ_res` concession, twice). Only the peak = `E0` identity, the
+  `ṁ_c≠ṁ_NGV` existence, and the two signs (`cold<hot<adiabatic`, accel-lag) are load-bearing.
+- No claim about the **operational bodie/reslam surge hazard** — that is the *opposite* sign (heat
+  soakage reducing surge margin) and lives in an **unmodeled compressor-side** channel (tip-clearance /
+  compressor heat soak); the modeled combustor gas-path sink only ever *helps* surge.
 - No **combined** 3-state (`ν, pt4, Tm`) model — the effects are exhibited separately (the contrast is
   the point); the interaction is a further seam.
 - No **energy-storage** plenum (`Tt4` is quasi-steady in the volume), no distributed/flow-varying
