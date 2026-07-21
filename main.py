@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 from turbojet.engine import (  # noqa: E402
     FlightCondition, build_turbojet, OffDesignMatcher, MapMatcher, ComponentMap, SpoolTransient,
+    CombustorTransient,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -1449,6 +1450,60 @@ def print_surge_line_table(flight):
     print("  claimed; only the trend is. Constant-flow SM is a weak sign-check only. Cycle: rung-6 exact.")
 
 
+def print_combustor_dynamics_table(flight):
+    """Rung 37 — THE TWO INTERNAL CLOCKS: volume-filling CONFIRMS, heat-soak CORRECTS.
+
+    Rungs 34-36 made the shaft the only dynamic element; rung 34 bundled the omitted internal clocks
+    into one concession ("no combustor volume-filling, no heat soak ... faster clocks below tau_spool,
+    they do not change the r framing"). Rung 37 tests both and they SPLIT: volume-filling (a combustor
+    plenum, tau_fill << tau_spool) CONFIRMS the concession — the r->0 peak surge excursion is unmoved
+    (== rung-35 E0), its content the STRUCTURAL mdot_c != mdot_NGV decoupling; heat-soak (a metal state
+    Tm, tau_soak ~ tau_spool) CORRECTS it — a second STATE makes E = E(r, theta0), history-dependent
+    (cold < hot-reslam < adiabatic, surge PROTECTED; the cost is the accel-time LAG and the RESLAM).
+    Both effects default OFF => rung 34/35 bit-for-bit; design run stays rung-6 exact. See docs/rung37-spec.md.
+    """
+    print("\nCombustor dynamics (rung 37): rung 34 bundled two internal clocks into 'faster clocks below")
+    print("tau_spool, they do not change the r framing'. They SPLIT — volume-filling CONFIRMS it (a fast")
+    print("clock, peak unmoved), heat-soak CORRECTS it (tau_soak ~ tau_spool: a second STATE, E=E(r,theta0)).")
+
+    gas = Gas.thermally_perfect()          # fast gas: the transient physics is gas-independent
+    shape = ComponentMap.surge_flow()
+    eng = build_turbojet(gas, PI_C, TT4, flight.p0, nozzle_convergent=True, **REAL_LOSSES)
+    LO, HI = 1100.0, 1400.0
+
+    # EFFECT 1 — the PLENUM: peak == E0 (CONFIRMATION), independent of the fill clock; the split.
+    print(f"\n  VOLUME-FILLING — frozen-spool fuel step Tt4 {LO:.0f}->{HI:.0f}, plenum clock r_v=tau_fill/tau_spool:")
+    print(f"  {'r_v':>6} {'E0 (rung35)':>12} {'plenum peak':>12} {'peak-E0':>10} {'mdot split':>11}")
+    print("  " + "-" * 54)
+    for r_v in (0.03, 0.1):
+        ct = CombustorTransient(eng, flight, 1.0, comp_map=shape, plenum_ratio=r_v)
+        r = ct.plenum_frozen_peak(flight, LO, HI, shape)
+        print(f"  {r_v:>6.2f} {r['E0']*100:>11.4f}% {r['peak']*100:>11.4f}% "
+              f"{r['peak_minus_E0']*100:>+9.5f}% {r['split_max']*100:>10.1f}%")
+    print("  The peak lands on rung-35's E0 to machine zero, INDEPENDENT of r_v (a frozen-spool map fact) —")
+    print("  volume-filling CONFIRMS the concession. Its content is STRUCTURAL: the ~22% mdot_c != mdot_NGV")
+    print("  split is the FIRST rung where the two mass flows differ (rung 34 tied them: pt4 = pi_b*pi_c*pt2).")
+
+    # EFFECT 2 — HEAT-SOAK: cold < hot-reslam < adiabatic; the accel-time LAG.
+    ct = CombustorTransient(eng, flight, 1.0, comp_map=shape, soak_gain=0.15, soak_ratio=3.0)
+    ad = ct.adiabatic_excursion(flight, LO, HI, shape)
+    cold = ct.soak_excursion(flight, LO, HI, "cold", shape)
+    hot = ct.soak_excursion(flight, LO, HI, "hot", shape)
+    print(f"\n  HEAT-SOAK — accel Tt4 {LO:.0f}->{HI:.0f} (G=0.15, r_m=tau_soak/tau_spool=3.0). E = peak surge")
+    print(f"  excursion; t_accel = nondim time to 99% of the speed rise (the thrust-response lag):")
+    print(f"  {'theta0':>12} {'E_surge':>9} {'t_accel':>9}")
+    print("  " + "-" * 32)
+    for tag, d in (("adiabatic", ad), ("cold accel", cold), ("hot reslam", hot)):
+        ta = f"{d['t_accel']:.2f}" if d["t_accel"] is not None else ">s_end"
+        print(f"  {tag:>12} {d['E_surge']*100:>8.2f}% {ta:>9}")
+    print("  cold < hot-reslam < adiabatic: the cold metal's heat sink depresses Tt4_turb -> colder NGV ->")
+    print("  more airflow -> AWAY from surge, so rung 34/35's adiabatic is the conservative WORST case. The")
+    print("  cost is the accel-time LAG (cold ~2.5x slower) and the hot RESLAM (bodie: recovers the worst")
+    print("  case). E = E(r, theta0), history-dependent — NOT a function of r alone. Reduce: both OFF =>")
+    print("  rung 34/35 bit-for-bit (exact dispatch); soak equilibrium == rung 35 (Q=0 at steady). Sign")
+    print("  shape/knob-robust; magnitudes disclaimed. Cycle: rung-6 exact.")
+
+
 def print_pdf_quench_table(flight):
     """Rung-15 payoff: the PDF THROUGH the finite quench — the two mixing mechanisms COMBINED.
 
@@ -2511,6 +2566,8 @@ def main():
     print_fuel_metering_table(FLIGHT)
 
     print_surge_line_table(FLIGHT)
+
+    print_combustor_dynamics_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

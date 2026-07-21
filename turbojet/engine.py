@@ -1760,3 +1760,389 @@ class SpoolTransient(MapMatcher):
                     ratio=E0 / SM_N, reaches_surge=E0 >= SM_N,
                     phi_step=phi_step, phi_surge=cmap.phi_surge,
                     phi_step_le_surge=phi_step <= cmap.phi_surge)
+
+
+class CombustorTransient(SpoolTransient):
+    """RUNG 37. The two INTERNAL clocks rung 34 bundled into one concession — split by physics.
+
+    Rungs 34-36 treated every component below the rotor as quasi-steady; the shaft was the only
+    dynamic state. Rung 34 filed the omission as one sentence ("no combustor volume-filling, no heat
+    soak ... faster clocks below tau_spool, they do not change the r framing"). Rung 37 tests both
+    claims and they split (docs/rung37-spec.md):
+
+      * VOLUME-FILLING (a combustor plenum, tau_fill ~ ms << tau_spool) CONFIRMS the concession: the
+        r->0 peak surge excursion is unmoved (== rung-35 E0 to machine zero), independent of the fill
+        clock. Its content is STRUCTURAL — the FIRST rung where compressor mass flow != NGV mass flow
+        (the plenum stores the difference); rung 34 tied them rigidly (pt4 = pi_b*pi_c*pt2).
+
+      * HEAT-SOAK (a metal state Tm, tau_soak ~ s ~ tau_spool) CORRECTS it: a genuine SECOND STATE
+        carries thermal memory, so E = E(r, theta0) — history-dependent, NOT a function of r alone.
+        Surge is PROTECTED (cold < hot-reslam < adiabatic; rung 34/35's adiabatic is the conservative
+        WORST case); the cost is the acceleration-time LAG and the hot RESLAM (bodie).
+
+    Both effects DEFAULT OFF and reduce to rung 35 by EXACT DISPATCH (not a stiff limit): the OFF
+    switches never build the extra state, so `equilibrium`/`integrate` are literally rung 34/35 and
+    the rung 31-36 suites pass unchanged. Modeled SEPARATELY (each with the other off) — the contrast
+    is the point; the combined 3-state model is a further seam.
+
+    Usage:
+        design = build_turbojet(gas, pi_c=10, Tt4=1500, p0, **losses, nozzle_convergent=True)
+        # volume-filling: plenum clock r_v = tau_fill/tau_spool
+        ct = CombustorTransient(design, FLIGHT, 1.0, comp_map=cmap, plenum_ratio=0.05)
+        ct.plenum_frozen_peak(FLIGHT, 1100., 1400.)      # -> peak == E0 (rung 35), + the mdot split
+        # heat-soak: gain G, clock r_m = tau_soak/tau_spool
+        ct = CombustorTransient(design, FLIGHT, 1.0, comp_map=cmap, soak_gain=0.1, soak_ratio=3.0)
+        ct.soak_excursion(FLIGHT, 1100., 1400., theta0="cold")   # -> E_surge, t_accel (thrust lag)
+    """
+
+    def __init__(self, design_engine: "Engine", flight_design: FlightCondition,
+                 mdot_design: float = 1.0, comp_map: "ComponentMap | None" = None,
+                 plenum_ratio: float = 0.0, soak_gain: float = 0.0, soak_ratio: float = 0.0):
+        super().__init__(design_engine, flight_design, mdot_design, comp_map)
+        assert plenum_ratio >= 0.0 and soak_gain >= 0.0 and soak_ratio >= 0.0, \
+            "rung-37 clock ratios / gain must be non-negative"
+        assert soak_gain == 0.0 or soak_ratio > 0.0, "heat-soak (soak_gain>0) needs soak_ratio>0"
+        self.plenum_ratio = plenum_ratio     # r_v = tau_fill/tau_spool at design (0 => plenum OFF)
+        self.soak_gain = soak_gain           # G = hA/(mdot4*cp) heat-extraction gain (0 => soak OFF)
+        self.soak_ratio = soak_ratio         # r_m = tau_soak/tau_spool (metal clock)
+        # Plenum ODE coefficient K: dpt4/ds = K*(mdot_c + mdot_fuel - mdot_NGV). Fixed at the design
+        # station-4 state so the linearized drain rate is 1/r_v at design (tau_fill/tau_spool = r_v),
+        # and tau_fill rides slightly off-design exactly as a real fixed volume V would.
+        s4 = self.ref.stations["4"]
+        self.pt4_d = s4.pt
+        self.mdot4_d = self.mdot_air_design * (1.0 + s4.far)
+        self._plenum_K = (self.pt4_d / (plenum_ratio * self.mdot4_d)) if plenum_ratio > 0.0 else 0.0
+
+    # ===================================================================================
+    # EFFECT 1 — the combustor PLENUM (volume-filling). pt4 becomes a STATE; the compressor
+    # unlocks from the NGV (mdot_c != mdot_NGV, the plenum stores the difference).
+    # ===================================================================================
+
+    def _pic_of_m(self, cmap: "ComponentMap", n: float, Tt2: float, m: float):
+        """The forward speed line's compressor pressure ratio (and phi, tau_c, Tt3, eta_c) at
+        corrected flow m and speed n — the arithmetic `_close_compressor` uses, read as pi_c(m)."""
+        phi = m / n
+        tau_c = self._tau_c_forward(cmap, n, m)
+        Tt3 = Tt2 * tau_c
+        eta_c = cmap.eta_c_at(self.eta_c, phi, n)
+        h2, h3 = self.gas.h_c(Tt2), self.gas.h_c(Tt3)
+        Tt3s = self.gas.T_from_h_c(h2 + eta_c * (h3 - h2))
+        return self.gas.pr_c(Tt3s) / self.gas.pr_c(Tt2), phi, tau_c, Tt3, eta_c
+
+    _PHI_FLOOR = 0.3    # compressor operates on the STABLE (negatively-sloped) branch phi >= floor;
+    #                     below it pi_c(m) turns back UP (the stalled branch, past the eta-island
+    #                     peak at phi ~ 0.2). 0.3 clears the peak yet still covers deep-throttle
+    #                     near-surge operating points (phi ~ 0.45) the low-speed balance can need.
+
+    def _pic_band(self, cmap: "ComponentMap", n: float, Tt2: float):
+        """The achievable pi_c band on the STABLE branch at speed n: (m_lo, pic_max) at the phi-floor,
+        (m_hi, pic_min) at the positive-work ceiling. pi_c is monotone-DECREASING in m HERE (above the
+        island peak), so a back-pressure whose required pi_c sits inside (pic_min, pic_max) has a
+        unique operating flow. Below the floor the characteristic is stalled and non-monotone."""
+        m_lo, m_hi = self._PHI_FLOOR * n, min(2.5, cmap.phi_max() * n)
+        return m_lo, self._pic_of_m(cmap, n, Tt2, m_lo)[0], m_hi, self._pic_of_m(cmap, n, Tt2, m_hi)[0]
+
+    def _compressor_from_backpressure(self, cmap: "ComponentMap", n: float, Tt2: float,
+                                      pt2: float, pt4: float) -> dict:
+        """Run the compressor from the plenum BACK-PRESSURE: given the required pi_c = pt4/(pi_b*pt2),
+        invert the forward speed line pi_c(n,m) for the corrected flow m. This is a THIRD use of the
+        map — not forward (rung 34), not inverted-for-n (rung 32), but inverted-for-m at a given pi_c.
+        pi_c is monotone-DECREASING in m on the operable surge side, so it brackets and bisects."""
+        pi_c_req = pt4 / (self.pi_b * pt2)
+        m_lo, pic_max, m_hi, pic_min = self._pic_band(cmap, n, Tt2)
+        rlo = pic_max - pi_c_req
+        rhi = pic_min - pi_c_req
+        assert rlo > 0.0 > rhi, (
+            f"rung-37 plenum back-pressure invert does not bracket at n={n:.4f}, "
+            f"pt4={pt4:.0f} (pi_c_req={pi_c_req:.4f} outside band [{pic_min:.3f},{pic_max:.3f}]).")
+        m = _illinois(lambda mm: self._pic_of_m(cmap, n, Tt2, mm)[0] - pi_c_req,
+                      m_lo, m_hi, rlo, rhi, tol=1e-11)
+        _, phi, tau_c, Tt3, eta_c = self._pic_of_m(cmap, n, Tt2, m)
+        return dict(m=m, phi=phi, tau_c=tau_c, Tt3=Tt3, eta_c=eta_c, pi_c=pi_c_req)
+
+    def _plenum_state(self, flight: FlightCondition, nu: float, pt4: float, mdot_fuel: float,
+                      cmap: "ComponentMap") -> dict:
+        """The decoupled instant at (nu, pt4, mdot_fuel). Returns the compressor AIR delivery mdot_c,
+        the NGV TOTAL drain mdot_NGV (they DIFFER off equilibrium), Tt4 (burner output), pi_c, phi,
+        the power residual Phi = dnu/ds, and dpt4/ds = K*(mdot_c + mdot_fuel - mdot_NGV).
+
+        The shaft power is computed HONESTLY with the two DISTINCT mass flows: the turbine passes
+        mdot_NGV, the compressor mdot_c — unlike rung 34/35 where they are equal by the rigid coupling.
+        """
+        pi_d = self.pi_d_max * ram_recovery(flight.M0)
+        state0, V0 = self._fs_engine.freestream(flight, self.mdot_air_design)
+        Tt2, pt2 = state0.Tt, pi_d * state0.pt
+        n = nu * (self.Tt2_d / Tt2) ** 0.5
+        c = self._compressor_from_backpressure(cmap, n, Tt2, pt2, pt4)
+        Tt3, pi_c, phi = c["Tt3"], c["pi_c"], c["phi"]
+        mdot_c = c["m"] * self.mdot_corr_d * pt2 / Tt2 ** 0.5             # compressor AIR
+        f = mdot_fuel / mdot_c
+        Tt4 = self._tt4_from_f(Tt3, f)
+        wgas = self._working_gas(f, Tt4, pt4)
+        mdot_ngv = self.A4 * pt4 * choked_mfp(wgas, Tt4, f) / Tt4 ** 0.5   # NGV TOTAL drain
+        # turbine on mdot_ngv (choked geometry is pt-independent; use the choked branch — the plenum
+        # findings are choked). P_t scales with the TURBINE mass (mdot_ngv), P_c with mdot_c.
+        nu_t = nu * (self.Tt4_d / Tt4) ** 0.5
+        eta_t = cmap.eta_t_at(self.eta_t, nu_t)
+        pi_t, tau_t, Tt5 = self._solve_turbine(wgas, Tt4, f, eta_t=eta_t)
+        Pt = self.eta_m * mdot_ngv * (wgas.h_t(Tt4, f) - wgas.h_t(Tt5, f))
+        Pc = mdot_c * (wgas.h_c(Tt3) - wgas.h_c(Tt2))
+        Phi = (Pt - Pc) / (self.P_ref * nu)
+        dpt4_ds = self._plenum_K * (mdot_c + mdot_fuel - mdot_ngv)
+        return dict(nu=nu, pt4=pt4, Tt4=Tt4, pi_c=pi_c, phi=phi, f=f, mdot_c=mdot_c,
+                    mdot_ngv=mdot_ngv, Phi=Phi, dpt4_ds=dpt4_ds, tau_t=tau_t, Tt3=Tt3)
+
+    def _plenum_pt4_at(self, flight: FlightCondition, nu: float, mdot_fuel: float,
+                       cmap: "ComponentMap") -> float:
+        """The steady plenum pressure at fixed (nu, mdot_fuel): dpt4/ds = 0 <=> mdot_c+mdot_fuel =
+        mdot_NGV. Root-find pt4 on that mass balance (mdot_NGV rises ~linearly in pt4 while mdot_c
+        FALLS as the back-pressure loads the compressor, so the residual is monotone-decreasing)."""
+        def bal(pt4: float) -> float:
+            s = self._plenum_state(flight, nu, pt4, mdot_fuel, cmap)
+            return s["mdot_c"] + mdot_fuel - s["mdot_ngv"]
+        # Bracket pt4 by the compressor FLOW band, bounded like rung 35 so f <= f_cap (below f_cap the
+        # low-flow endpoint sends f -> huge and the burner inverse fails). pt4 = pi_c(m)*pi_b*pt2 with
+        # pi_c monotone-decreasing in m, so high flow -> low pt4 (bal>0), the f_cap flow -> high pt4
+        # (bal<0). mdot_c falls and mdot_ngv rises with pt4, so `bal` is monotone-decreasing.
+        f_cap = 0.05
+        pi_d = self.pi_d_max * ram_recovery(flight.M0)
+        state0, _ = self._fs_engine.freestream(flight, self.mdot_air_design)
+        Tt2, pt2 = state0.Tt, pi_d * state0.pt
+        n = nu * (self.Tt2_d / Tt2) ** 0.5
+        # Low-flow (high-pt4) bound: the LARGER of the stable-branch phi-floor and the f_cap flow
+        # (below either, the invert leaves the monotone branch or f -> huge and the burner fails).
+        m_fcap = mdot_fuel * Tt2 ** 0.5 / (f_cap * self.mdot_corr_d * pt2)   # flow where f = f_cap
+        m_min = max(self._PHI_FLOOR * n, m_fcap)
+        m_max = min(2.5, cmap.phi_max() * n)
+        assert m_min < m_max, f"rung-37 plenum: flow floor above the map ceiling at nu={nu:.4f}"
+        # Nudge the endpoints strictly INSIDE the band so the invert (called by `bal`) never lands on
+        # the band edge, where a last-bit rounding of pi_c_req vs the recomputed edge trips its assert.
+        lo = self._pic_of_m(cmap, n, Tt2, m_max)[0] * self.pi_b * pt2 * (1.0 + 1e-9)
+        hi = self._pic_of_m(cmap, n, Tt2, m_min)[0] * self.pi_b * pt2 * (1.0 - 1e-9)
+        blo, bhi = bal(lo), bal(hi)
+        assert blo > 0.0 > bhi, (
+            f"rung-37 plenum mass balance does not bracket at nu={nu:.4f}: b[lo]={blo:.3e}, b[hi]={bhi:.3e}")
+        return _illinois(bal, lo, hi, blo, bhi, tol=self._N_TOL)
+
+    def equilibrium_plenum(self, flight: FlightCondition, mdot_fuel: float,
+                           cmap: "ComponentMap | None" = None) -> dict:
+        """The plenum EQUILIBRIUM (dnu/ds = 0 AND dpt4/ds = 0) at fixed FUEL. The non-tautological
+        REDUCE: it reproduces rung 35's `equilibrium_fuel` — through the BACK-PRESSURE closure (a
+        different code path than rung 35's NGV-continuity root-find). Nested: for each nu, pt4 closes
+        the mass balance; the outer solve finds the nu where the power balances."""
+        cmap = cmap if cmap is not None else self.comp_map
+        assert self.plenum_ratio > 0.0, "equilibrium_plenum needs a plenum: plenum_ratio>0."
+
+        def resid(nu: float) -> float:
+            pt4 = self._plenum_pt4_at(flight, nu, mdot_fuel, cmap)
+            return self._plenum_state(flight, nu, pt4, mdot_fuel, cmap)["Phi"]
+        nu = self._find_equilibrium_nu(resid)
+        pt4 = self._plenum_pt4_at(flight, nu, mdot_fuel, cmap)
+        return self._plenum_state(flight, nu, pt4, mdot_fuel, cmap)
+
+    def plenum_frozen_peak(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                           cmap: "ComponentMap | None" = None, ds_frac: float = 1.0 / 15.0) -> dict:
+        """THE PLENUM FINDING (rung 37). At r->0 (frozen spool nu0) a fuel step Tt4_lo->Tt4_hi fills
+        the plenum; the PEAK surge excursion still lands on rung-35's algebraic E0 (CONFIRMATION),
+        INDEPENDENT of the fill clock r_v. The structural content is the mass-flow SPLIT (mdot_c !=
+        mdot_NGV) the plenum stores — the first rung where the two differ. Returns E0, the plenum
+        peak, and max|mdot_c+mdot_fuel-mdot_NGV|/mdot_NGV."""
+        cmap = cmap if cmap is not None else self.comp_map
+        assert self.plenum_ratio > 0.0, "plenum_frozen_peak needs a plenum: plenum_ratio>0."
+        mf_lo = self._fuel_for_Tt4(flight, Tt4_lo, cmap)
+        mf_hi = self._fuel_for_Tt4(flight, Tt4_hi, cmap)
+        eq_lo = self.equilibrium_fuel(flight, mf_lo, cmap)          # rung-35 running-line start
+        nu0, pc_lo = eq_lo["nu"], eq_lo["pi_c"]
+        E0 = self.constant_speed_excursion_fuel(flight, Tt4_lo, Tt4_hi, cmap)["E_surge0"]
+        pt4 = self._plenum_pt4_at(flight, nu0, mf_lo, cmap)         # steady plenum at the start
+
+        def dpt4(pt4v: float) -> float:
+            return self._plenum_state(flight, nu0, pt4v, mf_hi, cmap)["dpt4_ds"]
+
+        r_v = self.plenum_ratio
+        ds = r_v * ds_frac
+        n_steps = int(round(10.0 * r_v / ds))
+        E_peak, split_max = 0.0, 0.0
+        for i in range(n_steps + 1):
+            s = self._plenum_state(flight, nu0, pt4, mf_hi, cmap)
+            E_peak = max(E_peak, s["pi_c"] / pc_lo - 1.0)
+            split_max = max(split_max, abs(s["mdot_c"] + mf_hi - s["mdot_ngv"]) / s["mdot_ngv"])
+            if i == n_steps:
+                break
+            k1 = s["dpt4_ds"]
+            k2 = dpt4(pt4 + 0.5 * ds * k1)
+            k3 = dpt4(pt4 + 0.5 * ds * k2)
+            k4 = dpt4(pt4 + ds * k3)
+            pt4 = pt4 + ds / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4)
+        return dict(E0=E0, peak=E_peak, peak_minus_E0=E_peak - E0, split_max=split_max,
+                    nu0=nu0, r_v=r_v)
+
+    # ===================================================================================
+    # EFFECT 2 — HEAT-SOAK. A metal state Tm between burner-exit and turbine-inlet:
+    #   Tt4_turb = Tt4_burner - G*(Tt4_burner - Tm) ;  dTm/ds = (Tt4_burner - Tm)/r_m.
+    # Mass flows stay COUPLED (the NGV-continuity closure holds), so only the TEMPERATURE lags.
+    # ===================================================================================
+
+    def _close_compressor_fuel_soak(self, Tt2: float, pt2: float, cmap: "ComponentMap",
+                                    n: float, mdot_fuel: float, Tm: float) -> dict:
+        """rung-35 `_close_compressor_fuel` with the metal heat sink between burner-exit and the NGV:
+        Tt4_turb = Tt4_burner - G*(Tt4_burner - Tm) feeds the choke and the turbine. Root-finds m on
+        the same NGV-continuity residual (mass flows stay coupled; only Tt4 is depressed)."""
+        G = self.soak_gain
+
+        def eval_m(m: float) -> dict:
+            phi = m / n
+            tau_c = self._tau_c_forward(cmap, n, m)
+            Tt3 = Tt2 * tau_c
+            eta_c = cmap.eta_c_at(self.eta_c, phi, n)
+            h2, h3 = self.gas.h_c(Tt2), self.gas.h_c(Tt3)
+            Tt3s = self.gas.T_from_h_c(h2 + eta_c * (h3 - h2))
+            pi_c = self.gas.pr_c(Tt3s) / self.gas.pr_c(Tt2)
+            pt4 = self.pi_b * pi_c * pt2
+            mdot_air = m * self.mdot_corr_d * pt2 / Tt2 ** 0.5
+            f = mdot_fuel / mdot_air
+            Tt4_b = self._tt4_from_f(Tt3, f)
+            Tt4_t = Tt4_b - G * (Tt4_b - Tm)                        # metal heat sink
+            wgas = self._working_gas(f, Tt4_t, pt4)
+            mdot4 = self.A4 * pt4 * choked_mfp(wgas, Tt4_t, f) / Tt4_t ** 0.5
+            mdot_air_ngv = mdot4 / (1.0 + f)
+            m_imp = (mdot_air_ngv * Tt2 ** 0.5 / pt2) / self.mdot_corr_d
+            return dict(m=m, m_imp=m_imp, phi=phi, tau_c=tau_c, eta_c=eta_c, Tt3=Tt3, Tt4_b=Tt4_b,
+                        Tt4_t=Tt4_t, pi_c=pi_c, pt4=pt4, f=f, wgas=wgas, mdot4=mdot4, mdot_air=mdot_air)
+
+        f_cap = 0.05
+        lo = mdot_fuel * Tt2 ** 0.5 / (f_cap * self.mdot_corr_d * pt2)
+        hi = min(2.5, cmap.phi_max() * n)
+
+        def g(m: float) -> float:
+            return m - eval_m(m)["m_imp"]
+        glo, ghi = g(lo), g(hi)
+        assert glo < 0.0 < ghi, (
+            f"rung-37 heat-soak closure does not bracket at n={n:.4f}, mdot_fuel={mdot_fuel:.5f} "
+            f"(g[{lo:.3f}]={glo:.3e}, g[{hi:.3f}]={ghi:.3e}).")
+        return eval_m(_illinois(g, lo, hi, glo, ghi, tol=1e-11))
+
+    def _instant_soak(self, flight: FlightCondition, nu: float, mdot_fuel: float, Tm: float,
+                      cmap: "ComponentMap | None" = None) -> dict:
+        """The heat-soak instant at (nu, mdot_fuel, Tm). The turbine + power + thrust reuse rung 34's
+        `_instant_tail` (mass flows are coupled; only Tt4_turb is depressed). Adds Tt4_burner (for
+        dTm/ds) and the metal derivative dTm/ds = (Tt4_burner - Tm)/r_m."""
+        cmap = cmap if cmap is not None else self.comp_map
+        pi_d = self.pi_d_max * ram_recovery(flight.M0)
+        state0, V0 = self._fs_engine.freestream(flight, self.mdot_air_design)
+        Tt2, pt2 = state0.Tt, pi_d * state0.pt
+        n = nu * (self.Tt2_d / Tt2) ** 0.5
+        comp = self._close_compressor_fuel_soak(Tt2, pt2, cmap, n, mdot_fuel, Tm)
+        out = self._instant_tail(flight, nu, comp["Tt4_t"], comp, n, Tt2, pt2, V0, cmap)
+        out["Tt4_burner"] = comp["Tt4_b"]
+        out["dTm_ds"] = (comp["Tt4_b"] - Tm) / self.soak_ratio
+        return out
+
+    def equilibrium_soak(self, flight: FlightCondition, mdot_fuel: float,
+                         cmap: "ComponentMap | None" = None) -> dict:
+        """The heat-soak EQUILIBRIUM at fixed FUEL. The REDUCE: at steady state dTm/ds = 0 => Tm =
+        Tt4_burner => Q = 0 => Tt4_turb = Tt4_burner, so it reproduces rung 35's `equilibrium_fuel`
+        EXACTLY — heat-soak is a purely TRANSIENT effect and never moves the running line."""
+        cmap = cmap if cmap is not None else self.comp_map
+        assert self.soak_gain > 0.0, "equilibrium_soak needs heat-soak: soak_gain>0."
+
+        def resid(nu: float) -> float:
+            # metal in equilibrium with the gas: at fixed nu, Q=0 <=> Tm = Tt4_burner. Iterate.
+            Tm = 1500.0
+            for _ in range(60):
+                inst = self._instant_soak(flight, nu, mdot_fuel, Tm, cmap)
+                if abs(inst["Tt4_burner"] - Tm) <= 1e-10 * Tm:
+                    Tm = inst["Tt4_burner"]
+                    break
+                Tm = inst["Tt4_burner"]
+            return self._instant_soak(flight, nu, mdot_fuel, Tm, cmap)["Phi"]
+        nu = self._find_equilibrium_nu(resid)
+        Tm = 1500.0
+        for _ in range(60):
+            inst = self._instant_soak(flight, nu, mdot_fuel, Tm, cmap)
+            if abs(inst["Tt4_burner"] - Tm) <= 1e-10 * Tm:
+                break
+            Tm = inst["Tt4_burner"]
+        return self._instant_soak(flight, nu, mdot_fuel, Tm, cmap)
+
+    def soak_excursion(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                       theta0: str = "cold", cmap: "ComponentMap | None" = None,
+                       ds: float = 0.05, s_end: float = 12.0) -> dict:
+        """THE HEAT-SOAK FINDING (rung 37). March the two-state (nu, Tm) transient for a fuel step
+        mf(Tt4_lo)->mf(Tt4_hi) from an initial metal state theta0:
+
+            "cold" — metal at Tt4_lo (a first acceleration from a cold engine): heat sink ACTIVE,
+                     Tt4_turb depressed -> more airflow -> AWAY from surge -> excursion REDUCED, and
+                     the accel is SLOW (metal steals turbine work — the thrust-response lag).
+            "hot"  — metal at Tt4_hi (a re-acceleration from a hot engine, the bodie/RESLAM): little
+                     heat sink -> excursion NEAR the adiabatic (rung-35) worst case, accel ~fast.
+
+        Returns E_surge (peak, running-line-referenced) and t_accel (nondim time to reach 99% of the
+        speed rise). Ordering cold < hot-reslam < adiabatic is the load-bearing SIGN (robust)."""
+        cmap = cmap if cmap is not None else self.comp_map
+        assert self.soak_gain > 0.0, "soak_excursion needs heat-soak: soak_gain>0."
+        grid = [Tt4_lo + (Tt4_hi - Tt4_lo) * k / 8.0 for k in range(9)]
+        rl = self.running_line(flight, grid, cmap)
+        nus = [p[0] for p in rl]
+        pcs = [p[1] for p in rl]
+        nu0 = self.equilibrium(flight, Tt4_lo, cmap)["nu"]
+        nu_final = self.equilibrium(flight, Tt4_hi, cmap)["nu"]
+        mf_hi = self._fuel_for_Tt4(flight, Tt4_hi, cmap)
+        Tm = Tt4_lo if theta0 == "cold" else Tt4_hi
+
+        def deriv(nu_: float, Tm_: float):
+            inst = self._instant_soak(flight, nu_, mf_hi, Tm_, cmap)
+            return inst["Phi"], inst["dTm_ds"], inst
+
+        nu, s = nu0, 0.0
+        E_surge, t_accel = 0.0, None
+        n_steps = int(round(s_end / ds))
+        for i in range(n_steps + 1):
+            k1n, k1m, inst = deriv(nu, Tm)
+            E_surge = max(E_surge, inst["pi_c"] / self._interp(nus, pcs, nu) - 1.0)
+            if t_accel is None and nu >= nu0 + 0.99 * (nu_final - nu0):
+                t_accel = s
+            if i == n_steps:
+                break
+            k2n, k2m, _ = deriv(nu + 0.5 * ds * k1n, Tm + 0.5 * ds * k1m)
+            k3n, k3m, _ = deriv(nu + 0.5 * ds * k2n, Tm + 0.5 * ds * k2m)
+            k4n, k4m, _ = deriv(nu + ds * k3n, Tm + ds * k3m)
+            nu = nu + ds / 6.0 * (k1n + 2 * k2n + 2 * k3n + k4n)
+            Tm = Tm + ds / 6.0 * (k1m + 2 * k2m + 2 * k3m + k4m)
+            s += ds
+        return dict(theta0=theta0, E_surge=E_surge, t_accel=t_accel, nu0=nu0, nu_final=nu_final)
+
+    def adiabatic_excursion(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                            cmap: "ComponentMap | None" = None, ds: float = 0.05,
+                            s_end: float = 12.0) -> dict:
+        """The G=0 (adiabatic) reference for `soak_excursion`: the rung-35 fuel-control step response
+        (no metal). E_surge here is rung-35's E_surge0 (the peak occurs at the frozen-spool instant)."""
+        cmap = cmap if cmap is not None else self.comp_map
+        grid = [Tt4_lo + (Tt4_hi - Tt4_lo) * k / 8.0 for k in range(9)]
+        rl = self.running_line(flight, grid, cmap)
+        nus = [p[0] for p in rl]
+        pcs = [p[1] for p in rl]
+        nu0 = self.equilibrium(flight, Tt4_lo, cmap)["nu"]
+        nu_final = self.equilibrium(flight, Tt4_hi, cmap)["nu"]
+        mf_hi = self._fuel_for_Tt4(flight, Tt4_hi, cmap)
+
+        def Phi(nu_: float) -> float:
+            return self._instant_fuel(flight, nu_, mf_hi, cmap)["Phi"]
+
+        nu, s = nu0, 0.0
+        E_surge, t_accel = 0.0, None
+        n_steps = int(round(s_end / ds))
+        for i in range(n_steps + 1):
+            inst = self._instant_fuel(flight, nu, mf_hi, cmap)
+            E_surge = max(E_surge, inst["pi_c"] / self._interp(nus, pcs, nu) - 1.0)
+            if t_accel is None and nu >= nu0 + 0.99 * (nu_final - nu0):
+                t_accel = s
+            if i == n_steps:
+                break
+            k1 = inst["Phi"]
+            k2 = Phi(nu + 0.5 * ds * k1)
+            k3 = Phi(nu + 0.5 * ds * k2)
+            k4 = Phi(nu + ds * k3)
+            nu = nu + ds / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4)
+            s += ds
+        return dict(theta0="adiabatic", E_surge=E_surge, t_accel=t_accel, nu0=nu0, nu_final=nu_final)
