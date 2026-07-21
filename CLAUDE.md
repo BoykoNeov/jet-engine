@@ -11,7 +11,7 @@ teaching, not for features or polish.
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is
-anchored to a published case. All rungs are live; the current scope is **rung 34**.
+anchored to a published case. All rungs are live; the current scope is **rung 35**.
 
 **This table is the one-line map, not the handout.** Each rung's derivation,
 assumptions, honest concessions, reduce-to-prior contract and verification gates
@@ -61,10 +61,13 @@ live in its spec (last column) — read the spec before touching a rung.
 
 | 34 | **The spool transient — `N` becomes a STATE, not an output** — `SpoolTransient.equilibrium/integrate(…)` / `_instant(…)` / `_close_compressor(…)`: rungs 31–33 solved **steady** points, each closed by the shaft **power balance** `η_m·P_t=P_c`. Rung 34 unbalances it — a real spool has inertia `I`, so a fuel change drives a net torque and `N` accelerates. **The shaft balance becomes an ODE** (`I·ω·dω/dt=η_m·P_t−P_c`) and `N` — which rungs 31–33 *computed* — becomes the **STATE** carrying the engine's memory. **The first DYNAMIC rung** (all prior were fixed points). **The structural novelty: the compressor map runs FORWARD** (rungs 31–32 ran it backward): given corrected speed `n(N,Tt2)` and trial flow `m`, the Euler speed line gives `τ_c=1+(τ_c,d−1)ψ(φ)n²` **directly**, and — the key simplification — the **NGV choke closes `m` on EITHER branch with NO shaft balance** (`pt4=π_b·π_c·pt2` doesn't involve the turbine, so mass continuity `ṁ(1+f)=A4·pt4·MFP*/√Tt4` is one equation in `m`); the turbine expansion is then rung-31 geometry `(★)` when choked, nozzle-continuity when subsonic (rung 33 dispatch, reused). The leftover power drives `dν/ds=Φ(ν,Tt4)` in **nondimensional time** `s=t/τ_spool`, `τ_spool=I·ω_d²/P_ref`. **THE FINDING is a CORRECTION of the obvious framing** (advisor): "the trajectory shape is `I`-independent, `I` only sets the clock" is a **TAUTOLOGY** in a 1-state model (dimensional analysis — the project's rung-29-gate-2 / rung-33-gate-4 anti-tautology bar rejects it). `I` is load-bearing **only when a SECOND clock competes**: ramp `Tt4` over a finite `τ_fuel` and the peak **excursion above the running line** (toward lower surge margin) is `E(r)`, `r=τ_fuel/τ_spool` — **max at `r→0`** (the constant-`N` displacement, an **algebraic map property**, `+5.4%`), **vanishing as `r→∞`** (stays on the line), knee at `r≈1`. *That* is why real engines **schedule fuel ramps**, and it is the honest home for `I`. **The map needed a fix** (a genuine sub-finding): rung 32's loading law `ψ=1−σ(φ−1)²` **peaks** at design, giving the **wrong speed-line slope** on the surge side; rung 34 adds a **linear slope `l`** (`dψ/dφ|_1=−l`, default 0 ⇒ rung 32 **bit-for-bit**) so `π_c` **rises toward low flow** and the accel excursion is physical. Direction **shape-robust** (accel `+`/decel `−` across 3 surge maps; magnitude **disclaimed**, **no surge line drawn** — inherited rung-32 concession). **Spool-down/windmilling** (the rung-33 handshake): cut fuel ⇒ `dν/ds<0`, `N` coasts down, the nozzle **unchokes**, the branch flips **choked→subsonic** at `M9≈1` (continuous), and the trajectory approaches rung-33's **thrust-neutral idle** (a too-fast chop instead hits the **flameout boundary** — the integrator stops, the decel analogue of accel-toward-surge). **Reduce**: `dν/ds=0` ⇒ the equilibrium reproduces `OffDesignMatcher.match` (flat map, rung 31) / `MapMatcher.match` (shaped, rung 32) — via the **forward closure ONLY** (never calls the matchers ⇒ non-circular), machine-zero at design, ≤1e-8 on the sweep incl. a subsonic point; a genuinely different closure onto one point. **Separate entry point** (subclasses `MapMatcher`; default `run(…)` untouched ⇒ cycle **bit-for-bit rung 6**). Disclaimed: `I`+`ω_d` = **one disclaimed clock group** (only `ν(s)` and `r` claimed, wall-clock illustrative — the `L`/`τ_res` concession); quasi-steady components (no combustor volume-filling / heat-soak — faster clocks *below* `τ_spool`, a further seam); `Tt4(t)` control (a true `ṁ_fuel(t)` schedule with `Tt4` an output is a further seam); isentropic knobs / NGV-choke / single-spool (inherited rungs 31–33). | `docs/rung34-spec.md` |
 
-**The invariant that spans rungs 7–30: they are all pure diagnostics** (rungs 31–34 are the
+| 35 | **Fuel is the control — `Tt4` becomes an OUTPUT** — `SpoolTransient.equilibrium_fuel/integrate_fuel(…)` / `_close_compressor_fuel(…)` / `_tt4_from_f(…)`: rung 34 commanded `Tt4(t)` by fiat — its one filed concession. Rung 35 meters **FUEL** (`ṁ_fuel`) instead, and `Tt4` falls out of the burner balance against the airflow the spool can **currently** pump. **The make-or-break**: command the fuel *mass flow*, not the ratio `f` — if you command `f` then `Tt4=burner(Tt3,f)` and it's a re-labeling; the physics is `f=ṁ_fuel/ṁ_air` **spiking because `ṁ_air` LAGS**. The structural novelty is the burner running **FORWARD** (`_tt4_from_f`, the exact inverse of the shipped `f`-solve): the trial corrected flow `m` fixes `ṁ_air`, so `f` and `Tt4` are OUTPUTS, and the NGV-choke consistency `g(m)=0` closes it (Tt4 floating — no shaft balance, rung 34's move). **THE RUNG is a cross-rung CORRECTION of rung 34** (the rung-28/29/32 move): at a frozen spool a fuel step **starves the airflow** (the hot NGV passes less corrected mass as `Tt4` rises, `(1+f)` rises), so `Tt4` **OVERSHOOTS** its steady endpoint — a **turbine-inlet-temperature (TIT) excursion**, a *second* acceleration limit commanding `Tt4` structurally HID — **and that over-temperature amplifies the airflow deficit**, so it also **ENLARGES** rung 34's surge excursion. **The two acceleration limits (surge + TIT) are COUPLED, not independent**: `E_surge(fuel) > E_Tt4` at every `r=τ_fuel/τ_spool`, gap **MAX at `r→0`** (4.77% vs 5.39%→10.16%) and **VANISHING as `r→∞`** (0.11% at r=3) — rung 34 **under-counted** the surge excursion a fuel-metered engine sees. Sign **shape-robust** across 3 surge maps (magnitude **disclaimed**, rung-32 methodology). The **new axis** `E_temp` (TIT overshoot, monotone in `r`, `r→0`=algebraic map property) is on these maps **larger** than the surge excursion — the accel is TIT-limited before surge-limited (*why fuel schedules are temperature-limited too*). **Reduce — CONTROL-INVARIANCE (non-tautological)**: a steady point is the same however named, so commanding `ṁ_fuel=f_eq·ṁ_air,eq` of a Tt4-point reproduces it (`ν,π_c,τ_t,ṁ_air` machine-zero at design, `Tt4_out==Tt4`) via the **forward-burner closure** — a genuinely different code path than the pinned-`Tt4` one; plus **`r→∞` convergence** (the dynamical reduce), **Tt4-control UNTOUCHED** ⇒ rung 34 bit-for-bit, and the **instant-level inverse** (`Tt4(f)` inverts the burner `f`-solve — the fuel↔`Tt4` analogue of rung 34 gate 6). **Separate entry point** (subclasses `SpoolTransient`; default `run(…)` untouched ⇒ cycle **bit-for-bit rung 6**). Disclaimed: **reacting-gas fuel control deferred** (the forward burner is built for the non-equilibrium gas; the finding is gas-independent, the reacting reduce is the Tt4-control path); no surge line / no TIT-redline number (which limit binds first is map-dependent); `ṁ_fuel(t)` metering-unit schedule with both ends free is a further seam; combustor volume-filling / heat-soak / two-spool inherited from rung 34. | `docs/rung35-spec.md` |
+
+**The invariant that spans rungs 7–30: they are all pure diagnostics** (rungs 31–35 are the
 **STRUCTURAL rungs** — they compute a *new* off-design operating point: rung 32 with the component
 map, rung 33 on the **subsonic-nozzle branch** below unchoke, rung 34 the **dynamic** point where
-`N` is a *state* not an output — but through **separate entry points**
+`N` is a *state* not an output, rung 35 the same transient with **fuel** as the control and `Tt4` an
+**output** — but through **separate entry points**
 (`OffDesignMatcher`, `MapMatcher`, `SpoolTransient`) that leave the default path untouched). NO/N
 never enter `_equil_solve`, the production nozzle stays frozen AND ideally-expanded
 (`convergent=False`), and the default `build_turbojet(…).run(…)` design run is unchanged, so
@@ -88,7 +91,7 @@ the living plan/tasks (rungs 1–3).
 - **Every new rung reduces to its predecessor**, exactly and by test (`X=None` ⇒
   the prior code path). This is the project's spine — see any `docs/rungN-spec.md`.
 
-**Current scope (rung 34).** The **cycle solve** is a thermally-perfect, reacting,
+**Current scope (rung 35).** The **cycle solve** is a thermally-perfect, reacting,
 dissociation-equilibrium gas (`Gas.reacting_equilibrium()`) through ideal + real
 components (isentropic `η_c/η_t` **or** polytropic `e_c/e_t`, mutually exclusive;
 `π_d/π_b/π_n`, `η_b`, `η_m`; dual cold/hot gas; specified exit pressure). The burner
@@ -114,7 +117,15 @@ the compressor map **forward** + NGV-choke to close the flow with **no shaft bal
 `dν/ds` in nondimensional time. Its equilibrium reduces to the rung 31/32 running line via that forward
 closure; the finding is the two-timescale ratio `τ_fuel/τ_spool` (not the tautological "`I`-independent
 shape"), and it hands off to rung 33's subsonic branch on spool-down. Separate entry point; default run
-still rung-6 exact.
+still rung-6 exact. Rung 35 (`SpoolTransient.equilibrium_fuel/integrate_fuel`) closes rung 34's one filed
+concession — it meters **fuel** (`ṁ_fuel`) instead of commanding `Tt4`, running the burner **forward**
+(`_tt4_from_f`) so `Tt4` is an **output** floating against the lagging airflow. It is a **cross-rung
+correction of rung 34**: a fuel step at a frozen spool starves the airflow, so `Tt4` **overshoots** (a TIT
+excursion — a second acceleration limit) **and** that over-temperature amplifies the airflow deficit, so
+fuel control **enlarges** the surge excursion (`E_surge(fuel) > E_Tt4`, gap max at `r→0`, vanishing as
+`r→∞`) — the two limits are **coupled**. Reduce: **control-invariance** (`equilibrium_fuel` of a Tt4-point's
+fuel reproduces it via the forward-burner closure, machine-zero at design) + Tt4-control untouched ⇒ rung 34
+bit-for-bit. Separate entry point; default run still rung-6 exact.
 
 ## Deferred seams (kept open on purpose)
 - **Finite-rate nozzle chemistry** — **BUILT BY RUNG 25** (`docs/rung25-spec.md`,
@@ -374,11 +385,26 @@ still rung-6 exact.
   the running line is `E(r)`, max at `r→0` (an algebraic map property), vanishing as `r→∞` (why fuel ramps
   are scheduled). Reduce: the equilibrium reproduces rung 31 (flat map) / rung 32 (shaped) via the forward
   closure only (non-circular). **What rung 34 leaves open:** (a) **combustor volume-filling / heat-soak
-  dynamics** — faster clocks *below* `τ_spool` (the shaft is the only dynamic element here); (b) a true
-  **`ṁ_fuel(t)` fuel-metering schedule** with `Tt4` an output (rung 34 controls `Tt4(t)` directly); (c) a
+  dynamics** — faster clocks *below* `τ_spool` (the shaft is the only dynamic element here); (b) ~~a true
+  **`ṁ_fuel(t)` fuel-metering schedule** with `Tt4` an output~~ — **BUILT BY RUNG 35** (below); (c) a
   **surge line** (rung 32's standing concession — would turn the excursion into a surge-margin number);
   (d) **two-spool / multi-shaft** dynamics; (e) feeding the marched `N(t)` into the production cycle — a
   re-foundation, not a rung.
+- **Fuel metering — `Tt4` an OUTPUT** — **BUILT BY RUNG 35** (`docs/rung35-spec.md`,
+  `SpoolTransient.equilibrium_fuel/integrate_fuel`, `_close_compressor_fuel`, `_tt4_from_f`,
+  `docs/plans/rung35-anchor-fuel-metering.md`). Rung 34 named this seam and filed it as its `Tt4(t)`-control
+  concession. Rung 35 meters **fuel** (`ṁ_fuel`, the *mass flow* — commanding the ratio `f` would be a
+  re-labeling), runs the burner **forward** so `Tt4` floats against the **lagging** airflow, and closes the
+  compressor by NGV-choke consistency with **no shaft balance** (rung 34's move). **A cross-rung CORRECTION
+  of rung 34**: a fuel step at a frozen spool starves the airflow, so `Tt4` **overshoots** (a TIT excursion —
+  a second acceleration limit rung 34's fiat-`Tt4` HID) **and** the over-temperature amplifies the airflow
+  deficit, so fuel control **ENLARGES** the surge excursion (`E_surge(fuel) > E_Tt4`, gap max at `r→0`,
+  vanishing as `r→∞`) — the surge and TIT limits are **coupled**, and rung 34 under-counted surge. Sign
+  shape-robust; magnitude disclaimed. Reduce: **control-invariance** (the fuel of a Tt4-point reproduces it
+  via the forward-burner closure, machine-zero at design) + Tt4-control untouched ⇒ rung 34 bit-for-bit.
+  **What rung 35 leaves open:** reacting-gas fuel control (the forward burner is built for the non-equilibrium
+  gas — the finding is gas-independent); a true `ṁ_fuel(t)` metering-unit schedule with both ends free and a
+  fuel-metering-valve model; and rung 34's remaining seams (surge line, volume-filling/heat-soak, two-spool).
 
 ## Conventions
 - **SI units throughout** (K, Pa, kg/s, m/s, J/kg). Convert kPa → Pa internally.
@@ -437,13 +463,21 @@ still rung-6 exact.
   `ComponentMap` gained a **linear loading slope `l`** (default 0 ⇒ rung 32 bit-for-bit) so the forward
   speed line has the physical surge-side slope; `SpoolTransient` overrides `_solve_turbine` with an
   Illinois version (same root, faster — a marched trajectory calls it thousands of times). The
-  module-level `_illinois` is the shared fast bracketed root-finder.
+  module-level `_illinois` is the shared fast bracketed root-finder. And rung 35's **fuel-control**
+  methods on `SpoolTransient`: `_tt4_from_f` (the burner run FORWARD — `Tt4` from `f`, the exact inverse
+  of `_solve_f`), `_close_compressor_fuel` (mirrors `_close_compressor` but with `ṁ_fuel` imposed and
+  `Tt4` floating — the airflow lag), and `_instant_fuel`/`equilibrium_fuel`/`integrate_fuel`/
+  `ramp_excursion_fuel`/`constant_speed_excursion_fuel` (the fuel-control instant, running line and the
+  finding — `E_surge` vs rung 34's `E`, plus the new `E_temp` TIT-overshoot axis). The turbine/power/thrust
+  tail of `_instant` was factored into a shared `_instant_tail` (bit-for-bit — both controls use it), and
+  the equilibrium-`ν` bracket into `_find_equilibrium_nu` (shared by both controls, so `equilibrium` stays
+  bit-for-bit rung 34).
 - `main.py` — the design-point run: ideal-vs-real tables, the overlaid T–s diagram, and
   **one panel per rung** (each panel demonstrates that rung's load-bearing claim and
   states its honest scope).
 - `tests/` — `test_stations.py` / `test_validation.py` (rung 1), `test_rung2.py`,
   `test_polytropic.py` (2b), `test_variable_cp.py` (3), `test_reacting.py` (4),
-  `test_forkb.py` (5), then **`test_rungN.py` for N = 6…34**. Every rung file carries that
+  `test_forkb.py` (5), then **`test_rungN.py` for N = 6…35**. Every rung file carries that
   rung's **reduce-to-prior** gate plus its load-bearing claims; the gates are named in the
   rung's spec. Rungs 16, 23 and 24 **deliberately assert no emissions global-min location**;
   rung 25 **reduces to rung-14 FROZEN but deliberately NOT to equilibrium** (the (R−I) gap is
@@ -518,6 +552,19 @@ still rung-6 exact.
   **spool-down** crosses `choked→subsonic` at `M9≈1` toward thrust-neutral idle. It **deliberately makes no
   surge-margin claim** (no surge line — inherited rung 32) and quotes `I`/`ω_d`/`τ_spool` only as one
   disclaimed clock group.
+  Rung 35 **reduces** by **control-invariance** (the non-tautological gate): `equilibrium_fuel` at the fuel
+  `ṁ_fuel=f_eq·ṁ_air,eq` of a Tt4-control point reproduces that point (`ν,π_c,τ_t,ṁ_air`; `Tt4_out==Tt4`)
+  via the **forward-burner closure** — machine-zero at design, tight on a throttle sweep; two closures onto
+  one point. Plus the Tt4-control path reduces to rung 32 **unchanged** (so rung 34 is bit-for-bit) and the
+  design run is bit-for-bit rung 6. Its finding gates (fast gas — gas-independent): fuel control **enlarges**
+  the surge excursion (`E_surge_fuel > E_Tt4`, gap **max at `r→0`**, **shrinking** toward `r→∞` — the
+  correction of rung 34), **shape-robust in sign** across ≥3 surge maps; the **TIT overshoot** `E_temp>0`,
+  monotone in `r`, its `r→0` limit the algebraic map property; both axes bounded by their `r→0` limits. And
+  the **instant-level inverse** (the fuel↔`Tt4` analogue of rung 34 gate 6): the forward burner `Tt4(f)`
+  inverts the burner `f`-solve to machine zero, and the fuel closure recovers a Tt4-instant off the running
+  line. It **deliberately claims only the sign** of the correction and the **existence** of the overshoot
+  (magnitudes disclaimed, rung-32 methodology), **no surge line / no TIT-redline number**, and **defers
+  reacting-gas fuel control** (the finding is gas-independent).
 - `docs/rungN-spec.md` — the derivation, assumptions, concessions and gates for rung N.
   `docs/plans/rungN-anchor-*.md` — that rung's verified anchor data.
 

@@ -1348,6 +1348,57 @@ def print_spool_transient_table(flight):
     print(f"  idle (sp. thrust {traj[0].sp_thrust:.0f} -> {traj[-1].sp_thrust:.0f} N·s/kg). Cycle: rung-6 exact.")
 
 
+def print_fuel_metering_table(flight):
+    """Rung 35 — FUEL is the control; Tt4 is an OUTPUT (the fuel-metering picture).
+
+    Rung 34 commanded Tt4(t) by fiat. A real engine meters FUEL, and Tt4 falls out of the burner
+    balance against the airflow the spool can CURRENTLY pump. At a frozen spool a fuel step drives
+    the airflow DOWN (the NGV passes less corrected mass as Tt4 rises, (1+f) rises), so f spikes and
+    Tt4 OVERSHOOTS its steady endpoint before N catches up — the turbine-inlet-temperature (TIT)
+    excursion, a SECOND acceleration limit that commanding Tt4 structurally HIDES. And because the
+    over-temperature amplifies the airflow deficit, it also ENLARGES rung 34's surge excursion: the
+    two acceleration limits are COUPLED, not independent — a cross-rung correction of rung 34.
+    Separate entry point; the design run stays rung-6 exact. See docs/rung35-spec.md.
+    """
+    print("\nFuel metering (rung 35): rung 34 commanded Tt4; a real engine meters FUEL and Tt4 is an")
+    print("OUTPUT. At a frozen spool a fuel step starves the airflow, so f = mdot_fuel/mdot_air SPIKES")
+    print("and Tt4 OVERSHOOTS — a second acceleration limit (turbine life) that commanding Tt4 hid.")
+
+    gas = Gas.thermally_perfect()          # fast gas: the transient physics is gas-independent
+    shape = ComponentMap.surge_flow()
+    st = SpoolTransient(build_turbojet(gas, PI_C, TT4, flight.p0, nozzle_convergent=True,
+                                       **REAL_LOSSES), flight, 1.0, comp_map=shape)
+    LO, HI = 1100.0, 1400.0
+
+    # Reduce: control-invariance — the fuel whose steady point is Tt4 reproduces that exact point.
+    eqT = st.equilibrium(flight, HI, shape)
+    eqF = st.equilibrium_fuel(flight, eqT["f"] * eqT["mdot_air"], shape)
+    print(f"\n  Reduce (control-invariance): fuel = f_eq*mdot_air of the Tt4={HI:.0f} point returns the")
+    print(f"  SAME running-line instant (nu {eqT['nu']:.6f} vs {eqF['nu']:.6f}, pi_c {eqT['pi_c']:.4f} vs "
+          f"{eqF['pi_c']:.4f}, Tt4_out={eqF['Tt4']:.3f}) — a different closure onto one point.")
+
+    # THE FINDING: fuel control ENLARGES the surge excursion, AND exposes the TIT overshoot.
+    cs = st.constant_speed_excursion_fuel(flight, LO, HI, shape)
+    e0T = st.constant_speed_excursion(flight, LO, HI, shape)
+    print(f"\n  THE FINDING — acceleration Tt4 {LO:.0f}->{HI:.0f}, excursions vs r = tau_fuel/tau_spool.")
+    print(f"  E_surge/E_temp are referenced to the running line at the CURRENT speed (E_temp is the")
+    print(f"  E_surge analogue); Tt4_pk is the ABSOLUTE peak turbine-inlet temperature (a redline is absolute):")
+    print(f"  {'r':>6} {'E_surge Tt4':>13} {'E_surge fuel':>13} {'gap':>7} {'E_temp':>8} {'Tt4_pk (K)':>11}")
+    print("  " + "-" * 62)
+    print(f"  {'0*':>6} {e0T*100:>12.2f}% {cs['E_surge0']*100:>12.2f}% "
+          f"{(cs['E_surge0']-e0T)*100:>6.2f}% {cs['E_temp0']*100:>7.1f}% {cs['Tt4_peak']:>11.0f}")
+    for r in (0.3, 1.0, 3.0):
+        eT = st.ramp_excursion(flight, LO, HI, r, shape, s_settle=4.0, ds=0.1)["E"]
+        ef = st.ramp_excursion_fuel(flight, LO, HI, r, shape, s_settle=4.0, ds=0.1)
+        print(f"  {r:>6.1f} {eT*100:>12.2f}% {ef['E_surge']*100:>12.2f}% "
+              f"{(ef['E_surge']-eT)*100:>6.2f}% {ef['E_temp']*100:>7.1f}% {ef['Tt4_peak']:>11.0f}")
+    print(f"  (* r->0 algebraic limit, no integration.) The r->0 peak Tt4={cs['Tt4_peak']:.0f} K is "
+          f"+{(cs['Tt4_peak']/HI-1)*100:.0f}% OVER the {HI:.0f} K target — a TIT excursion commanding")
+    print("  Tt4 hid. Fuel control also lifts the surge excursion ABOVE rung 34's: the two limits are")
+    print("  COUPLED. Magnitude claim rests on the r->0 STEP (both are steps, unconfounded); the r->inf")
+    print("  vanishing is the trend. Sign shape-robust across surge maps; magnitude disclaimed. Cycle: rung-6 exact.")
+
+
 def print_pdf_quench_table(flight):
     """Rung-15 payoff: the PDF THROUGH the finite quench — the two mixing mechanisms COMBINED.
 
@@ -2406,6 +2457,8 @@ def main():
     print_subsonic_matching_table(FLIGHT)
 
     print_spool_transient_table(FLIGHT)
+
+    print_fuel_metering_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

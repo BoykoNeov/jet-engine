@@ -1245,6 +1245,16 @@ class SpoolTransient(MapMatcher):
         n = nu * (self.Tt2_d / Tt2) ** 0.5                     # corrected speed at this nu
 
         comp = self._close_compressor(Tt4, Tt2, pt2, cmap, n)
+        return self._instant_tail(flight, nu, Tt4, comp, n, Tt2, pt2, V0, cmap)
+
+    def _instant_tail(self, flight: FlightCondition, nu: float, Tt4: float, comp: dict,
+                      n: float, Tt2: float, pt2: float, V0: float,
+                      cmap: "ComponentMap") -> dict:
+        """The turbine + nozzle dispatch + power imbalance + thrust, given a CLOSED compressor
+        state `comp`. Shared by the Tt4-control instant (`_instant`, comp from `_close_compressor`)
+        and the rung-35 FUEL-control instant (`_instant_fuel`, comp from `_close_compressor_fuel`,
+        which floats Tt4). Everything below the closure is identical arithmetic on either control,
+        so `_instant` stays bit-for-bit rung 34."""
         f, pt4, wgas = comp["f"], comp["pt4"], comp["wgas"]
         Tt3, pi_c, tau_c = comp["Tt3"], comp["pi_c"], comp["tau_c"]
         mdot_air, mdot4 = comp["mdot_air"], comp["mdot4"]
@@ -1305,10 +1315,17 @@ class SpoolTransient(MapMatcher):
         def resid(nu: float) -> float:
             return self._instant(flight, nu, Tt4, cmap)["Phi"]
 
-        # Phi is monotone-decreasing in nu (P_c rises with speed, P_t is Tt4-pinned), so the
-        # equilibrium is unique. At extreme nu the instant falls off the operable map (the nozzle
-        # cannot expand, or the closure fails to bracket); march both ends IN until evaluable —
-        # below equilibrium the engine is over-fuelled (Phi>0), above it under-fuelled (Phi<0).
+        return self._instant(flight, self._find_equilibrium_nu(resid), Tt4, cmap)
+
+    def _find_equilibrium_nu(self, resid) -> float:
+        """Root-find the shaft speed nu where the power balances (Phi(nu)=0). Shared by the
+        Tt4-control `equilibrium` and the rung-35 fuel-control `equilibrium_fuel` — same monotone
+        bracket, so `equilibrium` stays bit-for-bit rung 34.
+
+        Phi is monotone-DECREASING in nu (P_c rises with speed, P_t is Tt4-pinned on the choked
+        branch), so the equilibrium is unique. At extreme nu the instant falls off the operable
+        map (the nozzle cannot expand, or the closure fails to bracket); march both ends IN until
+        evaluable — below equilibrium over-fuelled (Phi>0), above it under-fuelled (Phi<0)."""
         lo, flo = None, None
         nu = 0.30
         while nu < 1.6:
@@ -1324,8 +1341,7 @@ class SpoolTransient(MapMatcher):
             except AssertionError:
                 nu -= 0.02
         assert lo is not None and hi is not None and flo > 0.0 > fhi, (
-            f"rung-34 equilibrium does not bracket at Tt4={Tt4:.0f} "
-            f"(Phi[{lo}]={flo}, Phi[{hi}]={fhi})")
+            f"rung-34 equilibrium does not bracket (Phi[{lo}]={flo}, Phi[{hi}]={fhi})")
 
         # Interior off-map points (the low-nu subsonic dip inside the bracket) get a big-positive
         # sentinel so the monotone Illinois is pushed UP toward the evaluable running-line zero.
@@ -1334,8 +1350,7 @@ class SpoolTransient(MapMatcher):
                 return resid(nu)
             except AssertionError:
                 return 1e9
-        return self._instant(flight, _illinois(resid_safe, lo, hi, flo, fhi, tol=self._N_TOL),
-                             Tt4, cmap)
+        return _illinois(resid_safe, lo, hi, flo, fhi, tol=self._N_TOL)
 
     # --- the running line (nu, pi_c) vs Tt4, for the excursion metric --------------------
 
@@ -1444,3 +1459,190 @@ class SpoolTransient(MapMatcher):
         nu0, pc_lo = eq["nu"], eq["pi_c"]
         pc_hi = self._instant(flight, nu0, Tt4_hi, cmap)["pi_c"]
         return pc_hi / pc_lo - 1.0
+
+    # === RUNG 35. Fuel is the CONTROL; Tt4 is an OUTPUT. ==================================
+    # Rung 34 commanded Tt4(t) by fiat. A real engine meters FUEL, and Tt4 falls out of the
+    # burner balance against the airflow the spool can currently pump. At a frozen spool a fuel
+    # step drives the airflow DOWN (the NGV passes less corrected mass as Tt4 rises, and (1+f)
+    # rises), so f = mdot_fuel/mdot_air SPIKES and Tt4 OVERSHOOTS its steady endpoint before N
+    # catches up — the turbine-inlet-temperature excursion, a SECOND acceleration limit that
+    # commanding Tt4 structurally hides. Same two-clock r = tau_fuel/tau_spool story.
+
+    def _tt4_from_f(self, Tt3: float, f: float) -> float:
+        """Forward burner: Tt4 as the OUTPUT of the fuel-air ratio f (the inverse of `_solve_f`).
+        The same enthalpy balance the shipped Burner closes for f, solved instead for Tt4:
+
+            h4*(1 + f) = h_c(Tt3) + f*eta_b*hPR   =>   Tt4 = T_from_h_t(h4, f)
+
+        Implemented for the NON-equilibrium gas — the finding runs on the fast gas (gas-independent
+        dynamics, matching rungs 32-34), and the reduce to rung 34 on the reacting gas is the
+        Tt4-control flag path, untouched. A reacting-gas fuel control would root-find Tt4 on the
+        rung-6 scale-B balance; deferred (it does not change the r framing)."""
+        assert not self.gas.equilibrium, (
+            "rung-35 fuel control needs the forward burner Tt4(f), built for the non-equilibrium "
+            "gas; use Tt4-control (equilibrium/integrate) for the reacting-gas cycle.")
+        h4 = (self.gas.h_c(Tt3) + f * self.eta_b * self.gas.hPR) / (1.0 + f)
+        return self.gas.T_from_h_t(h4, f)
+
+    def _close_compressor_fuel(self, Tt2: float, pt2: float, cmap: "ComponentMap",
+                               n: float, mdot_fuel: float) -> dict:
+        """Close the compressor at corrected speed n with FUEL imposed — Tt4 FLOATS (rung 35).
+
+        Mirrors `_close_compressor`, but the burner runs FORWARD. The trial corrected flow m fixes
+        the compressor-face airflow directly (the corrected-flow definition), so f = mdot_fuel/
+        mdot_air is direct and Tt4 = burner(Tt3, f) is an OUTPUT. The NGV then implies an airflow
+        from that (pt4, Tt4, f); consistency (trial m == NGV-implied m) closes m. This is where the
+        airflow LAG lives: at low airflow f rises, Tt4 rises, and the throttle tightens further."""
+        def eval_m(m: float) -> dict:
+            phi = m / n
+            tau_c = self._tau_c_forward(cmap, n, m)
+            Tt3 = Tt2 * tau_c
+            eta_c = cmap.eta_c_at(self.eta_c, phi, n)
+            h2, h3 = self.gas.h_c(Tt2), self.gas.h_c(Tt3)
+            Tt3s = self.gas.T_from_h_c(h2 + eta_c * (h3 - h2))
+            pi_c = self.gas.pr_c(Tt3s) / self.gas.pr_c(Tt2)
+            pt4 = self.pi_b * pi_c * pt2
+            # m fixes mdot_air (corrected-flow definition, the exact inverse of the m_imp line);
+            # FUEL is imposed => f and Tt4 are OUTPUTS (the inversion vs the pinned-Tt4 closure).
+            mdot_air = m * self.mdot_corr_d * pt2 / Tt2 ** 0.5
+            f = mdot_fuel / mdot_air
+            Tt4 = self._tt4_from_f(Tt3, f)
+            wgas = self._working_gas(f, Tt4, pt4)
+            mdot4 = self.A4 * pt4 * choked_mfp(wgas, Tt4, f) / Tt4 ** 0.5
+            mdot_air_ngv = mdot4 / (1.0 + f)
+            m_imp = (mdot_air_ngv * Tt2 ** 0.5 / pt2) / self.mdot_corr_d
+            return dict(m=m, m_imp=m_imp, phi=phi, tau_c=tau_c, eta_c=eta_c, Tt3=Tt3, Tt4=Tt4,
+                        pi_c=pi_c, pt4=pt4, f=f, wgas=wgas, mdot4=mdot4, mdot_air=mdot_air)
+
+        # g(m) = m - m_imp(m) increasing: higher m -> higher airflow -> lower f/Tt4 AND lower pi_c
+        # (phi past 1, or the surge-side slope) -> lower pt4 -> lower NGV-implied airflow -> lower
+        # m_imp. The floor caps f at a physical ceiling (f <= f_cap) so the forward burner and the
+        # gas stay in-range; the root sits well above it (operating f ~ 0.02-0.03).
+        f_cap = 0.05
+        lo = mdot_fuel * Tt2 ** 0.5 / (f_cap * self.mdot_corr_d * pt2)
+        hi = min(2.5, cmap.phi_max() * n)
+
+        def g(m: float) -> float:
+            return m - eval_m(m)["m_imp"]
+        glo, ghi = g(lo), g(hi)
+        assert glo < 0.0 < ghi, (
+            f"rung-35 fuel compressor closure does not bracket at n={n:.4f}, "
+            f"mdot_fuel={mdot_fuel:.5f} (g[{lo:.3f}]={glo:.3e}, g[{hi:.3f}]={ghi:.3e}).")
+        return eval_m(_illinois(g, lo, hi, glo, ghi, tol=1e-11))
+
+    def _instant_fuel(self, flight: FlightCondition, nu: float, mdot_fuel: float,
+                      cmap: "ComponentMap | None" = None) -> dict:
+        """The quasi-steady instant at (nu, mdot_fuel) — Tt4 is an OUTPUT. Same shaft-ODE right
+        side Phi as `_instant`, but closed by the fuel-control compressor (airflow lag)."""
+        cmap = cmap if cmap is not None else self.comp_map
+        pi_d = self.pi_d_max * ram_recovery(flight.M0)
+        state0, V0 = self._fs_engine.freestream(flight, self.mdot_air_design)
+        Tt2, pt2 = state0.Tt, pi_d * state0.pt
+        n = nu * (self.Tt2_d / Tt2) ** 0.5
+        comp = self._close_compressor_fuel(Tt2, pt2, cmap, n, mdot_fuel)
+        return self._instant_tail(flight, nu, comp["Tt4"], comp, n, Tt2, pt2, V0, cmap)
+
+    def equilibrium_fuel(self, flight: FlightCondition, mdot_fuel: float,
+                         cmap: "ComponentMap | None" = None) -> dict:
+        """Find the shaft speed nu where the power balances at fixed FUEL (Phi=0). The REDUCE:
+        with mdot_fuel = f_eq*mdot_air_eq of a Tt4-control point, this returns the SAME running-line
+        instant (control-invariance) — via the fuel closure, a genuinely different code path."""
+        def resid(nu: float) -> float:
+            return self._instant_fuel(flight, nu, mdot_fuel, cmap)["Phi"]
+        return self._instant_fuel(flight, self._find_equilibrium_nu(resid), mdot_fuel, cmap)
+
+    def _fuel_for_Tt4(self, flight: FlightCondition, Tt4: float,
+                      cmap: "ComponentMap | None" = None) -> float:
+        """The steady fuel mass flow whose running-line equilibrium IS the Tt4-control point at
+        Tt4 — mdot_fuel = f_eq*mdot_air_eq. Pins the two control modes to the SAME steady endpoint
+        (no new knob), so E_surge (fuel) and rung 34's E (Tt4) are apples-to-apples."""
+        eq = self.equilibrium(flight, Tt4, cmap)
+        return eq["f"] * eq["mdot_air"]
+
+    def integrate_fuel(self, flight: FlightCondition, fuel_schedule, nu0: float,
+                       s_end: float, ds: float, cmap: "ComponentMap | None" = None) -> list:
+        """RK4-march dnu/ds = Phi(nu, mdot_fuel(s)) — the fuel-controlled transient. `fuel_schedule
+        (s) -> mdot_fuel`. Tt4 is an OUTPUT recorded per point (it can overshoot the steady value)."""
+        def Phi(nu: float, mf: float) -> float:
+            return self._instant_fuel(flight, nu, mf, cmap)["Phi"]
+
+        pts, nu, s = [], nu0, 0.0
+        n_steps = int(round(s_end / ds))
+        for i in range(n_steps + 1):
+            mf = float(fuel_schedule(s))
+            try:
+                inst = self._instant_fuel(flight, nu, mf, cmap)
+            except AssertionError:
+                break
+            pts.append(TransientPoint(
+                s=s, nu=nu, Tt4=inst["Tt4"], branch=inst["branch"], pi_c=inst["pi_c"],
+                tau_c=inst["tau_c"], mdot_air=inst["mdot_air"], f=inst["f"],
+                tau_t=inst["tau_t"], Phi=inst["Phi"], sp_thrust=inst["sp_thrust"],
+                M9=inst["M9"], pt9_over_p0=inst["pt9_over_p0"]))
+            if i == n_steps:
+                break
+            try:
+                k1 = inst["Phi"]
+                k2 = Phi(nu + 0.5 * ds * k1, float(fuel_schedule(s + 0.5 * ds)))
+                k3 = Phi(nu + 0.5 * ds * k2, float(fuel_schedule(s + 0.5 * ds)))
+                k4 = Phi(nu + ds * k3, float(fuel_schedule(s + ds)))
+            except AssertionError:
+                break
+            nu = max(0.2, nu + ds / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4))
+            s += ds
+        return pts
+
+    def ramp_excursion_fuel(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                            r: float, cmap: "ComponentMap | None" = None,
+                            s_settle: float = 8.0, ds: float = 0.02) -> dict:
+        """THE FINDING (rung 35). Peak excursions for a FUEL ramp between the fuel levels whose
+        steady points are Tt4_lo and Tt4_hi (an acceleration), over nondimensional duration
+        r = tau_fuel/tau_spool. Returns BOTH axes on the ONE trajectory:
+
+            E_surge = max_t [pi_c(t)/pi_c_rl(nu(t)) - 1]   (surge axis; compare to rung 34's E)
+            E_temp  = max_t [Tt4(t)/Tt4_rl(nu(t)) - 1]     (the NEW TIT overshoot — Tt4 floats)
+
+        E_surge is expected ABOVE rung 34's Tt4-control E at the same r (the over-temperature
+        amplifies the airflow deficit): the two acceleration limits are COUPLED, not independent."""
+        cmap = cmap if cmap is not None else self.comp_map
+        grid = [Tt4_lo + (Tt4_hi - Tt4_lo) * k / 8.0 for k in range(9)]
+        rl = self.running_line(flight, grid, cmap)
+        nus = [p[0] for p in rl]
+        pcs = [p[1] for p in rl]
+        tts = [p[2] for p in rl]                       # steady Tt4 along the running line vs nu
+        mf_lo = self._fuel_for_Tt4(flight, Tt4_lo, cmap)
+        mf_hi = self._fuel_for_Tt4(flight, Tt4_hi, cmap)
+        nu0 = self.equilibrium(flight, Tt4_lo, cmap)["nu"]
+
+        def schedule(s: float) -> float:
+            if s <= 0.0:
+                return mf_lo
+            if s >= r:
+                return mf_hi
+            return mf_lo + (mf_hi - mf_lo) * (s / r)
+
+        traj = self.integrate_fuel(flight, schedule, nu0, r + s_settle, ds, cmap)
+        E_surge, E_temp, Tt4_peak = 0.0, 0.0, Tt4_lo
+        for p in traj:
+            pc_rl = self._interp(nus, pcs, p.nu)
+            tt_rl = self._interp(nus, tts, p.nu)
+            E_surge = max(E_surge, p.pi_c / pc_rl - 1.0)
+            E_temp = max(E_temp, p.Tt4 / tt_rl - 1.0)     # running-line-referenced (E_surge analogue)
+            Tt4_peak = max(Tt4_peak, p.Tt4)               # ABSOLUTE peak Tt4 (the TIT-redline number)
+        return dict(r=r, E_surge=E_surge, E_temp=E_temp, Tt4_peak=Tt4_peak, nu0=nu0, traj=traj)
+
+    def constant_speed_excursion_fuel(self, flight: FlightCondition, Tt4_lo: float,
+                                      Tt4_hi: float, cmap: "ComponentMap | None" = None) -> dict:
+        """The r -> 0 limit of BOTH excursions: NO integration. Spool frozen at nu0=nu_eq(Tt4_lo),
+        fuel jumps to mf_hi = f_eq(Tt4_hi)*mdot_air_eq(Tt4_hi). E_surge0 and E_temp0 are pure
+        algebraic map properties — the largest possible excursions, certifying the step response is
+        a map fact and the dynamical content is the ratio r (rung 34's argument, both axes). Both
+        are referenced to the running line at the FROZEN speed nu0 (= Tt4_lo), so E_temp0 is the
+        E_surge analogue; Tt4_peak is the ABSOLUTE turbine-inlet temperature (compare to a redline)."""
+        cmap = cmap if cmap is not None else self.comp_map
+        eq_lo = self.equilibrium(flight, Tt4_lo, cmap)
+        nu0, pc_lo = eq_lo["nu"], eq_lo["pi_c"]
+        mf_hi = self._fuel_for_Tt4(flight, Tt4_hi, cmap)
+        inst = self._instant_fuel(flight, nu0, mf_hi, cmap)
+        return dict(E_surge0=inst["pi_c"] / pc_lo - 1.0, E_temp0=inst["Tt4"] / Tt4_lo - 1.0,
+                    Tt4_peak=inst["Tt4"], Tt4_target=Tt4_hi)
