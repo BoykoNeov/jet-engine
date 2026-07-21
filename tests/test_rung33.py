@@ -35,6 +35,7 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from turbojet.gas import Gas  # noqa: E402
+from turbojet.components import ram_recovery  # noqa: E402
 from turbojet.engine import (  # noqa: E402
     FlightCondition, build_turbojet, OffDesignMatcher, MapMatcher,
 )
@@ -92,7 +93,9 @@ def test_dispatch_and_boundary_continuity():
             if prev is not None and prev.branch == "choked":
                 crossed = True
                 # continuity: no jump in pi_c / tau_t across the branch change, M9 just below 1.
-                assert abs(od.pi_c - prev.pi_c) < 0.15 * prev.pi_c
+                # The physical adjacent-step jump is only ~1.6-3% (a ~10-20 K throttle step), so a
+                # tight bound catches a genuine discontinuity (gate 4 pins the VALUES rigorously).
+                assert abs(od.pi_c - prev.pi_c) < 0.05 * prev.pi_c
                 assert abs(od.tau_t - prev.tau_t) < 1e-3 * prev.tau_t
                 assert 0.90 < od.M9 < 1.0
         prev = od
@@ -123,40 +126,87 @@ def test_the_rung_cpg_tau_t_varies():
     assert abs(hot - warm) < 1e-9, f"CPG choked tau_t must stay constant, got {abs(hot-warm):.2e}"
 
 
-# --------------------------------------------------------------------------- gate 4 (anchor)
-def test_nontautological_algebraic_mfp():
-    """GATE 4 — the matched subsonic point satisfies TEXTBOOK compressible flow to machine zero.
+def _indep_cpg_subsonic(m, gas, Tt4, p0):
+    """INDEPENDENT closed-form CPG solve of the subsonic match (★★) — a SECOND code path.
 
-    On a self-consistent CPG gas, check the solver's operating point against the closed-form
-    algebraic mass-flow parameters (two independent code paths, one point):
-      - the NGV throat passes the sonic MFP* = sqrt(g/R)(2/(g+1))^((g+1)/(2(g-1)));
-      - the nozzle passes MFP(M9) = sqrt(g/R)·M9·(1+eps M9^2)^(-(g+1)/(2(g-1)));
-      - M9 satisfies the isentropic pt9/p0 = (1+eps M9^2)^(g/(g-1)).
+    No _sonic_throat, no Nozzle.apply, no equilibrium: pure calorically-perfect algebra
+    (Mattingly's dual-mode ratio method on the gas the textbook assumes). For a trial pi_t:
+      tau_t = 1 - eta_t(1 - pi_t^((gt-1)/gt))                    # CPG isentropic turbine
+      shaft (nested one-shot f) -> Tt3 -> pi_c = (1+eta_c(tau_c-1))^(gc/(gc-1))
+      pt4 = pi_b pi_c pt2 ;  pt9 = pi_n pi_t pt4
+      M9 from the isentropic pt9/p0 ; MFP(M9), MFP* closed form
+    root-find pi_t on mdot_NGV = mdot_noz. Returns (pi_t, pi_c, tau_t, M9). This is what makes
+    gate 4 non-tautological — it ties the subsonic OPERATING POINT to the textbook, two paths.
+    """
+    gc, cpc, gt_, cpt, Rt = gas.gamma_c, gas.cp_c, gas.gamma_t, gas.cp_t, gas.R_t
+    hpr, eta_c, eta_t, eta_m, eta_b = gas.hPR, REAL["eta_c"], REAL["eta_t"], REAL["eta_m"], REAL["eta_b"]
+    pi_b, pi_n = REAL["pi_b"], REAL["pi_n"]
+    tau_r = 1.0 + 0.5 * (gc - 1.0) * FLIGHT.M0 ** 2
+    Tt2 = FLIGHT.T0 * tau_r
+    pt2 = REAL["pi_d"] * ram_recovery(FLIGHT.M0) * p0 * tau_r ** (gc / (gc - 1.0))
+    eps = 0.5 * (gt_ - 1.0)
+    exp_mfp = (gt_ + 1.0) / (2.0 * (gt_ - 1.0))
+    MFP_star = (gt_ / Rt) ** 0.5 * (2.0 / (gt_ + 1.0)) ** exp_mfp
+
+    def op(pi_t):
+        tau_t = 1.0 - eta_t * (1.0 - pi_t ** ((gt_ - 1.0) / gt_))
+        Tt5 = tau_t * Tt4
+        f = 0.0
+        for _ in range(80):                                        # CPG one-shot burner, nested f
+            Tt3 = Tt2 + eta_m * (1.0 + f) * cpt * (Tt4 - Tt5) / cpc
+            f_new = (cpt * Tt4 - cpc * Tt3) / (eta_b * hpr - cpt * Tt4)
+            if abs(f_new - f) <= 1e-14 * (f_new + 1e-30):
+                break
+            f = f_new
+        Tt3s = Tt2 + eta_c * (Tt3 - Tt2)
+        pi_c = (Tt3s / Tt2) ** (gc / (gc - 1.0))
+        pt4 = pi_b * pi_c * pt2
+        pt9 = pi_n * pi_t * pt4
+        M9 = (((pt9 / p0) ** ((gt_ - 1.0) / gt_) - 1.0) / eps) ** 0.5
+        MFP_M9 = (gt_ / Rt) ** 0.5 * M9 * (1.0 + eps * M9 ** 2) ** (-exp_mfp)
+        mdot_ngv = m.A4 * pt4 * MFP_star / Tt4 ** 0.5
+        mdot_noz = m.A8 * pt9 * MFP_M9 / (tau_t * Tt4) ** 0.5
+        return pi_c, tau_t, M9, mdot_ngv - mdot_noz
+
+    lo, hi = 0.15, 0.9995
+    rlo = op(lo)[3]
+    for _ in range(200):
+        mid = 0.5 * (lo + hi)
+        rm = op(mid)[3]
+        if rlo * rm <= 0.0:
+            hi = mid
+        else:
+            lo, rlo = mid, rm
+        if hi - lo <= 1e-13:
+            break
+    pi_t = 0.5 * (lo + hi)
+    pi_c, tau_t, M9, _ = op(pi_t)
+    return pi_t, pi_c, tau_t, M9
+
+
+# --------------------------------------------------------------------------- gate 4 (anchor)
+def test_nontautological_independent_solve():
+    """GATE 4 — an INDEPENDENT CPG closed-form solve of (★★) reproduces the shipped solver.
+
+    The rigorous, non-tautological anchor (mirrors rung 31 gate 2). The subsonic-branch code —
+    the pi_t root-find on the sonic-throat/Nozzle machinery — has no reduce-to-prior of its own
+    (gate 1 is a CHOKED point that returns before dispatch). So we solve the SAME operating point
+    a second, entirely separate way: pure CPG closed-form algebra (_indep_cpg_subsonic, no
+    _sonic_throat/Nozzle), and assert the two paths land on the same (pi_t, pi_c, tau_t, M9) to
+    machine zero. Two code paths, one operating point — this is what pins the subsonic VALUES to
+    the textbook (a 1% pi_c drift in the shipped solve would be caught here, where gates 1/2 miss it).
     """
     gas = _cpg_gas()
     m = OffDesignMatcher(build_turbojet(gas, PI_C, TT4, FLIGHT.p0, nozzle_convergent=True, **REAL),
                          FLIGHT, 1.0)
-    gt, R = gas.gamma_t, gas.R_t
-    eps = 0.5 * (gt - 1.0)
-    exp_mfp = (gt + 1.0) / (2.0 * (gt - 1.0))
-    for Tt4 in (560, 520, 480):
+    for Tt4 in (580, 540, 500, 460):
         od = m.match(FLIGHT, float(Tt4))
         assert od.branch == "subsonic"
-        f = od.stations["4"].far
-        pt4, Tt4_ = od.stations["4"].pt, od.stations["4"].Tt
-        pt9, Tt9 = od.stations["9"].pt, od.stations["9"].Tt
-        mdot4 = od.mdot_air * (1.0 + f)
-        # (a) isentropic pt9/p0 <-> M9 (p9 = p0, fully expanded on the subsonic branch)
-        pr_from_M9 = (1.0 + eps * od.M9 ** 2) ** (gt / (gt - 1.0))
-        assert abs(pr_from_M9 - pt9 / FLIGHT.p0) < 1e-9 * (pt9 / FLIGHT.p0), "pt9/p0 != isentropic(M9)"
-        # (b) nozzle passes the algebraic subsonic MFP(M9)
-        mfp_alg = (gt / R) ** 0.5 * od.M9 * (1.0 + eps * od.M9 ** 2) ** (-exp_mfp)
-        mfp_solver = mdot4 * Tt9 ** 0.5 / (m.A8 * pt9)
-        assert abs(mfp_alg - mfp_solver) < 1e-9 * mfp_alg, "nozzle MFP(M9) != closed form"
-        # (c) NGV passes the sonic MFP* (still choked)
-        mfp_star_alg = (gt / R) ** 0.5 * (2.0 / (gt + 1.0)) ** exp_mfp
-        mfp_star_solver = mdot4 * Tt4_ ** 0.5 / (m.A4 * pt4)
-        assert abs(mfp_star_alg - mfp_star_solver) < 1e-9 * mfp_star_alg, "NGV MFP* != closed form"
+        pi_t_i, pi_c_i, tau_t_i, M9_i = _indep_cpg_subsonic(m, gas, float(Tt4), FLIGHT.p0)
+        assert abs(od.pi_t - pi_t_i) < 1e-9, f"Tt4={Tt4}: pi_t {od.pi_t} vs indep {pi_t_i}"
+        assert abs(od.pi_c - pi_c_i) < 1e-9 * pi_c_i, f"Tt4={Tt4}: pi_c {od.pi_c} vs indep {pi_c_i}"
+        assert abs(od.tau_t - tau_t_i) < 1e-9, f"Tt4={Tt4}: tau_t {od.tau_t} vs indep {tau_t_i}"
+        assert abs(od.M9 - M9_i) < 1e-9, f"Tt4={Tt4}: M9 {od.M9} vs indep {M9_i}"
 
 
 # --------------------------------------------------------------------------- gate 5 (envelope)

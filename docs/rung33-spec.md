@@ -135,11 +135,17 @@ dispatches to `_match_subsonic` if it is not. So:
 3. **THE RUNG (CPG `τ_t` VARIES).** On a CPG gas the subsonic `τ_t` varies measurably with throttle
    (and monotonically, rising toward 1), while the **choked** branch on the same CPG gas holds
    `τ_t` constant to machine zero — the inversion of rung 31.
-4. **NON-TAUTOLOGICAL ANCHOR.** On a self-consistent CPG gas the matched subsonic point satisfies
-   the **textbook** compressible-flow relations to machine zero: the isentropic `pt9/p0 =
-   (1+ε M9²)^(γ/(γ−1))`, the nozzle `MFP(M9) = √(γ/R)·M9·(1+ε M9²)^(−(γ+1)/(2(γ−1)))`, and the NGV
-   sonic `MFP*`. Two code paths (the `_sonic_throat`/`Nozzle` solver vs the algebraic closed forms),
-   one operating point — without this the reduce gate only exercises the boundary.
+4. **NON-TAUTOLOGICAL ANCHOR.** An **independent CPG closed-form solve of `(★★)`** reproduces the
+   shipped solver's operating point `(π_t, π_c, τ_t, M9)` to machine zero. This is the rigorous gate,
+   and it matters here specifically: gate 1 (reduce-to-design) is a *choked* point that returns
+   **before** the subsonic dispatch, so the subsonic solve — the actual new code — has no
+   reduce-to-prior of its own. The independent path is pure calorically-perfect algebra
+   (`τ_t = 1 − η_t(1 − π_t^((γ−1)/γ))` → shaft → `π_c = [1+η_c(τ_c−1)]^(γc/(γc−1))` → `M9` from the
+   isentropic `pt9/p0` → the `MFP(M9)`/`MFP*` closed forms → root-find `π_t` on the mass balance)
+   with **no `_sonic_throat` and no `Nozzle.apply`**. Two genuinely separate code paths, one
+   operating point — it ties the deep-subsonic *values* to the textbook (a 1% `π_c` drift in the
+   shipped solve is caught here, where gates 1/2 miss it). The isentropic / `MFP(M9)` identities the
+   shipped point satisfies are kept only as a secondary consistency check, not the anchor.
 5. **ENVELOPE.** The subsonic branch is monotone (`π_c, M9`, specific thrust fall with `Tt4`),
    bounded above by unchoke and below by thrust-neutral idle (SUB-IDLE raised, not force-fit).
 6. **HOMOGENEITY (the framing).** Scaling `p0` leaves the subsonic ratios `π_c, τ_t, M9` invariant:
@@ -172,7 +178,10 @@ dispatches to `_match_subsonic` if it is not. So:
 - **The method** — Mattingly *Elements of Propulsion* Ch. 8's **dual matching mode** (choked vs
   subsonic nozzle); the subsonic branch replaces the sonic `MFP*` with the compressible-flow
   `MFP(M9)` at the told back-pressure `p9 = p0`. Same textbook family as the rung-2/30/31 anchors.
-- **The CPG self-consistency gate** (gate 4, the rigorous anchor): the subsonic matching solver, run
-  on a self-consistent calorically-perfect gas, satisfies the textbook algebraic `MFP(M9)` /
-  isentropic relations to machine precision — the non-tautological check that the `_sonic_throat`
-  matching *is* the textbook subsonic ratio method on the gas the textbook assumes.
+- **The CPG independent-solve gate** (gate 4, the rigorous anchor): an **independent** closed-form
+  solve of `(★★)` on a self-consistent calorically-perfect gas — pure algebra, no `_sonic_throat`,
+  no `Nozzle.apply` — reproduces the shipped solver's `(π_t, π_c, τ_t, M9)` to machine precision.
+  Two separate code paths onto one operating point: the non-tautological check that the
+  `_sonic_throat`/`Nozzle` matching *is* the textbook subsonic ratio method on the gas the textbook
+  assumes (and the only anchor tying the deep-subsonic values to anything, since gate 1 never
+  executes the subsonic path).

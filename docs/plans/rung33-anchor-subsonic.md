@@ -23,20 +23,33 @@ The two mass flows (NGV = nozzle) give the subsonic match constraint `(★★)`:
 π_t/√τ_t  =  A4·MFP*(Tt4) / ( A8·π_n·MFP(M9) ) ,     M9 = M9(pt9/p0)
 ```
 
-### Gate 4 — the `_sonic_throat`/`Nozzle` solver satisfies these to machine zero on a CPG gas
+### Gate 4 — an INDEPENDENT CPG closed-form solve of `(★★)` reproduces the shipped solver
 
 Self-consistent CPG dual gas (`R_t = (γ_t−1)/γ_t·cp_t`, `γ_c=1.4, cp_c=1004, γ_t=1.3,
-cp_t=1239`), design `π_c=10, Tt4=1500, M0=0.85`, real losses. At each matched subsonic point
-(`Tt4 = 560, 520, 480`):
+cp_t=1239`), design `π_c=10, Tt4=1500, M0=0.85`, real losses. A second solver, written entirely in
+closed-form calorically-perfect algebra — **no `_sonic_throat`, no `Nozzle.apply`** — root-finds
+`π_t` on the same `(★★)` mass balance:
 
-- the isentropic `pt9/p0 = (1+ε M9²)^(γ/(γ−1))` holds to **< 1e-9**;
-- the nozzle passes the algebraic `MFP(M9)` to **< 1e-9**;
-- the NGV passes the sonic `MFP*` to **< 1e-9**.
+```
+τ_t   = 1 − η_t(1 − π_t^((γ_t−1)/γ_t))                         # CPG isentropic turbine
+Tt3   = Tt2 + η_m(1+f)·cp_t(Tt4−Tt5)/cp_c ,  f one-shot        # shaft balance (nested f)
+π_c   = [1 + η_c(Tt3s/Tt2 − 1)]^(γ_c/(γ_c−1)) ,  Tt3s = Tt2+η_c(Tt3−Tt2)
+M9    = √( 2/(γ_t−1)·[(pt9/p0)^((γ_t−1)/γ_t) − 1] ) ,  pt9 = π_n π_t π_b π_c pt2
+mdot_NGV = A4·pt4·MFP*(Tt4)/√Tt4  =  A8·pt9·MFP(M9)/√Tt9 = mdot_noz   # root
+```
 
-Two entirely different code paths — the shipped solver (`_sonic_throat` → `Nozzle.apply` → the
-`(★★)` bisection on `π_t`) and the closed-form algebraic `MFP` formulas — land on the same
-operating point. On the gas the textbook assumes, the subsonic matching solver *is* the textbook
-dual-mode ratio method.
+At each matched subsonic point (`Tt4 = 580, 540, 500, 460`) the independent solve reproduces the
+shipped solver's `π_t, π_c, τ_t, M9` to **machine zero** (`Δπ_t = 0`, `Δπ_c ≈ 1e-15`). Two
+genuinely separate code paths — the shipped `_sonic_throat`/`Nozzle`/`(★★)`-bisection and the
+closed-form algebra — onto one operating point.
+
+**Why this is the load-bearing gate here.** Gate 1 (reduce-to-design) is a *choked* point: it
+returns before the subsonic dispatch and never runs `_match_subsonic`. So the subsonic solve has
+no reduce-to-prior anchor and only a loose boundary-continuity check. This independent solve is the
+only thing that ties the deep-subsonic operating-point *values* to the textbook — verified by
+injecting a 1% `π_c` error into the shipped `_subsonic_operating`: this gate fails (`reldiff = 1e-2`)
+where gates 1 and 2 pass. On the gas the textbook assumes, the subsonic matching solver *is* the
+textbook dual-mode ratio method.
 
 ## Part B — the reacting-gas running line across the unchoke boundary (the finding)
 

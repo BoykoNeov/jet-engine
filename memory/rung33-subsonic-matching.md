@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 58610487-9be4-499a-bab0-3ad35df1eac6
-  modified: 2026-07-21T09:12:31.756Z
+  modified: 2026-07-21T10:29:06.133Z
 ---
 
 SHIPPED rung 33 = **the subsonic-nozzle matching branch**. Closes the seam rung 31 named
@@ -42,8 +42,14 @@ net-drag) — guarded it in `_match_subsonic` (compute sp_thrust, assert >0) rat
 the shared `_score`.
 
 **Reduce:** choked path left **LITERALLY unchanged** ⇒ choked points bit-for-bit rung 31 (31/32
-suites pass unchanged, 14/14 — the bit-for-bit witness). Gate 4 (non-tautological): matched
-subsonic point satisfies textbook `MFP(M9)`/isentropic/`MFP*` to <1e-9 on CPG (two paths, one point).
+suites pass unchanged, 14/14 — the bit-for-bit witness). **Gate 4 (advisor's load-bearing catch):**
+my first gate 4 (checking the shipped point satisfies textbook `MFP(M9)`/isentropic identities) was
+**TAUTOLOGICAL** — those are algebraic identities the Nozzle satisfies by construction, and gate 1
+(reduce-to-design) is a CHOKED point that returns before dispatch, so the subsonic solve had NO
+independent anchor. Fixed to an **independent CPG closed-form solve of (★★)** (pure algebra, no
+`_sonic_throat`/`Nozzle`) reproducing the shipped `(π_t,π_c,τ_t,M9)` to machine zero — verified it
+catches a 1% `π_c` corruption gates 1/2 miss. Precedent: mirrors rung 31 gate 2 / rung 29's "without
+which the reduce gate is a tautology". Advisor caught this post-commit; fixed in a follow-up commit.
 
 **Out of scope:** subsonic + component map — `MapMatcher` overrides `match`, stays choked-only.
 NGV assumed choked. Spool-down/windmilling **transient dynamics** below idle = next seam (now that
