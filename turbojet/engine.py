@@ -409,29 +409,35 @@ class OffDesignMatcher:
     # --- the turbine operating point: pinned by the two choke constraints -------------
 
     def _tau_t_of_pi_t(self, gas: Gas, Tt4: float, f: float,
-                       pi_t: float) -> Tuple[float, float]:
+                       pi_t: float, eta_t: float | None = None) -> Tuple[float, float]:
         """Turbine temperature ratio from its ISENTROPIC-efficiency map, given pi_t.
 
         This is the inverse read of the shipped Turbine: pi_t -> ideal substate Tt5s (one pr
         ratio) -> ideal work -> actual work via eta_t -> Tt5. Returns (tau_t, Tt5).
+
+        `eta_t` defaults to the fixed design value (rung 31); rung 32's MapMatcher passes a
+        per-trial map value here so the choke solve uses the map-consistent turbine efficiency.
         """
+        eta_t = self.eta_t if eta_t is None else eta_t
         Tt5s = gas.T_from_pr_t(gas.pr_t(Tt4, f) * pi_t, f)      # pr_t(Tt5s)/pr_t(Tt4) = pi_t
         dh_ideal = gas.h_t(Tt4, f) - gas.h_t(Tt5s, f)
-        Tt5 = gas.T_from_h_t(gas.h_t(Tt4, f) - self.eta_t * dh_ideal, f)
+        Tt5 = gas.T_from_h_t(gas.h_t(Tt4, f) - eta_t * dh_ideal, f)
         return Tt5 / Tt4, Tt5
 
-    def _solve_turbine(self, gas: Gas, Tt4: float, f: float) -> Tuple[float, float, float]:
+    def _solve_turbine(self, gas: Gas, Tt4: float, f: float,
+                       eta_t: float | None = None) -> Tuple[float, float, float]:
         """Solve pi_t from the MFP-ratio constraint (★):  pi_t/sqrt(tau_t) = A4·MFP4/(A8·pi_n·MFP9).
 
         Left side rises monotonically with pi_t (less expansion -> higher tau_t AND pi_t), so
         a single bisection on pi_t in (0, 1) finds the unique choke-consistent turbine point.
-        `gas` carries the station-4 mixture frozen at this trial condition. Returns
+        `gas` carries the station-4 mixture frozen at this trial condition. `eta_t` defaults to
+        the fixed design value (rung 31); rung 32 passes a per-trial map value. Returns
         (pi_t, tau_t, Tt5).
         """
         MFP4 = choked_mfp(gas, Tt4, f)
 
         def resid(pi_t: float) -> float:
-            tau_t, Tt5 = self._tau_t_of_pi_t(gas, Tt4, f, pi_t)
+            tau_t, Tt5 = self._tau_t_of_pi_t(gas, Tt4, f, pi_t, eta_t)
             MFP9 = choked_mfp(gas, Tt5, f)                       # at the turbine-exit total Tt9=Tt5
             rhs = self.A4 * MFP4 / (self.A8 * self.pi_n * MFP9)
             return pi_t / tau_t ** 0.5 - rhs
@@ -449,7 +455,7 @@ class OffDesignMatcher:
             if hi - lo <= self._TOL:
                 break
         pi_t = 0.5 * (lo + hi)
-        tau_t, Tt5 = self._tau_t_of_pi_t(gas, Tt4, f, pi_t)
+        tau_t, Tt5 = self._tau_t_of_pi_t(gas, Tt4, f, pi_t, eta_t)
         return pi_t, tau_t, Tt5
 
     # --- the burner f-solve (reuses the shipped burner formulas) -----------------------
@@ -537,4 +543,258 @@ class OffDesignMatcher:
             pi_c=pi_c, tau_c=s3.Tt / s2.Tt, tau_t=tau_t, pi_t=pi_t,
             mdot_air=mdot_air, mdot_ratio=mdot_air / self.mdot_air_design,
             nozzle_choked=nozzle_choked,
+        )
+
+
+# =====================================================================================
+# RUNG 32 — COMPONENT-MAP MATCHING: the map re-labels the choke-pinned work
+# =====================================================================================
+
+@dataclass
+class ComponentMap:
+    """RUNG 32. Representative analytic compressor + turbine maps (docs/rung32-spec.md).
+
+    A DISCLOSED-shape parametric closure (the rungs 12-24 methodology): the load-bearing claims
+    are verified shape-robust across several of these; the magnitudes are disclaimed. All
+    coefficients default to 0 -> the FLAT map, which makes MapMatcher reduce to rung 31
+    bit-for-bit (eta held at design, N a passive diagnostic).
+
+    Compressor efficiency ISLAND (concentric-ellipse contours peaking at the design point
+    phi = n = 1, the standard peak-at-design calibration):
+        eta_c = eta_c_design - a*(phi-1)^2 - b*(n-1)^2 - c*(phi-1)*(n-1)
+    with phi the flow coefficient (∝ Ca/U ∝ corrected flow / corrected speed) and n the
+    corrected speed. This is the ONLY place the compressor map bites the running line (via
+    pi_c = [1+eta_c(tau_c-1)]^(gc/(gc-1))).
+
+    Compressor SPEED LINES (from Euler work Δh_c = ψ·U^2 + a loading law ψ(phi)) — these are
+    what supply N:
+        (tau_c-1)/(tau_c-1)_d = ψ(phi)·n^2 ,  ψ(phi) = 1 - sigma*(phi-1)^2 ,  phi = m/n
+    The choke pins (tau_c, m); inverting for n places the pinned point on its speed line. At
+    sigma = 0 this collapses to n = sqrt[(tau_c-1)/(tau_c-1)_d] (map-free); sigma != 0 is the
+    map's genuine speed-line content.
+
+    Turbine map (choked -> fixed corrected flow, so indexed by corrected speed alone; real
+    turbine maps are FLAT near design, hence a_t small):
+        eta_t = eta_t_design - a_t*(nu_t-1)^2 ,  nu_t the turbine corrected speed.
+    """
+
+    a: float = 0.0        # compressor eta island curvature in flow coefficient phi
+    b: float = 0.0        # compressor eta island curvature in corrected speed n
+    c: float = 0.0        # compressor eta island cross curvature
+    sigma: float = 0.0    # compressor speed-line loading-law curvature (0 => flat loading)
+    a_t: float = 0.0      # turbine eta curvature in corrected speed (small: turbine maps are flat)
+
+    @classmethod
+    def flat(cls) -> "ComponentMap":
+        """The FLAT map: every eta held at its design value, sigma=0. Reduces MapMatcher to rung 31."""
+        return cls()
+
+    # Three representative shapes (moderated so eta_c stays in a believable band). The
+    # load-bearing claims are asserted ACROSS all three; the droop MAGNITUDE is disclaimed.
+    @classmethod
+    def flow_dominated(cls) -> "ComponentMap":
+        return cls(a=0.25, b=0.05, c=0.0, sigma=0.3, a_t=0.02)
+
+    @classmethod
+    def pressure_dominated(cls) -> "ComponentMap":
+        return cls(a=0.05, b=0.20, c=0.0, sigma=0.3, a_t=0.02)
+
+    @classmethod
+    def tilted(cls) -> "ComponentMap":
+        return cls(a=0.12, b=0.12, c=0.08, sigma=0.6, a_t=0.02)
+
+    def is_flat(self) -> bool:
+        return self.a == self.b == self.c == self.sigma == self.a_t == 0.0
+
+    def eta_c_at(self, base: float, flowcoef: float, n: float) -> float:
+        """Compressor efficiency read off the island at (flow coefficient, corrected speed)."""
+        return (base - self.a * (flowcoef - 1.0) ** 2 - self.b * (n - 1.0) ** 2
+                - self.c * (flowcoef - 1.0) * (n - 1.0))
+
+    def eta_t_at(self, base: float, nu_t: float) -> float:
+        """Turbine efficiency read off the (near-flat) map at the turbine corrected speed."""
+        return base - self.a_t * (nu_t - 1.0) ** 2
+
+    def solve_n(self, m: float, tau_c: float, tau_c_d: float) -> float:
+        """SPEED-LINE INVERSION: find the corrected speed n whose speed line holds the pinned
+        (m, tau_c).  Solve (tau_c-1)/(tau_c_d-1) = [1 - sigma*(m/n - 1)^2]*n^2 for n by bisection.
+        Monotone in n over the physical bracket; at design (m=1, tau_c=tau_c_d) returns n=1.
+        """
+        target = (tau_c - 1.0) / (tau_c_d - 1.0)
+
+        def g(n: float) -> float:
+            return (1.0 - self.sigma * (m / n - 1.0) ** 2) * n * n - target
+
+        lo, hi = 0.1, 2.0
+        flo, fhi = g(lo), g(hi)
+        assert flo < 0.0 < fhi, f"speed-line bracket fails for (m={m}, tau_c={tau_c}): {flo}, {fhi}"
+        for _ in range(200):
+            mid = 0.5 * (lo + hi)
+            fm = g(mid)
+            if flo * fm <= 0.0:
+                hi = mid
+            else:
+                lo, flo = mid, fm
+            if hi - lo <= 1e-14:
+                break
+        return 0.5 * (lo + hi)
+
+
+@dataclass
+class MapOffDesignResult(OffDesignResult):
+    """A matched off-design point WITH the component map (docs/rung32-spec.md).
+
+    Extends OffDesignResult with the map read-offs. eta_c/eta_t are now OUTPUTS (the map value at
+    the operating point, no longer held at design); n_corr is the compressor corrected speed
+    (design=1), N_ratio = N/N_design the physical shaft-speed ratio, flowcoef the flow coefficient,
+    nu_t the turbine corrected speed. N carries no absolute rpm (that needs blade geometry).
+    """
+
+    eta_c: float = 0.0    # compressor efficiency at the operating point (map OUTPUT)
+    eta_t: float = 0.0    # turbine efficiency at the operating point (map OUTPUT; ~design, flat map)
+    n_corr: float = 0.0   # compressor CORRECTED speed (N/sqrt(Tt2)) / design
+    N_ratio: float = 0.0  # physical shaft-speed ratio N/N_design (single spool)
+    flowcoef: float = 0.0 # compressor flow coefficient phi = m/n (design=1)
+    nu_t: float = 0.0     # turbine corrected speed (N/sqrt(Tt4)) / design
+
+
+class MapMatcher(OffDesignMatcher):
+    """RUNG 32. Off-design matching WITH representative component maps.
+
+    Subclasses the rung-31 OffDesignMatcher and reuses its choke machinery unchanged (the design
+    capture A4/A8, _solve_turbine, _solve_f, _working_gas). The ONE addition: the component
+    efficiencies eta_c, eta_t are no longer held at design but read from a ComponentMap at the
+    operating point, and the shaft speed N is attached from the compressor speed lines. The
+    running line's WORK schedule tau_c(Tt4) stays choke-pinned (map-free); the map moves pi_c, mdot
+    (via eta_c) and labels the line with N. Flat map => rung 31 bit-for-bit. See docs/rung32-spec.md.
+
+    Usage:
+        design = build_turbojet(gas, pi_c=10, Tt4=1500, p0, **losses, nozzle_convergent=True)
+        mm = MapMatcher(design, FLIGHT_design, 1.0, comp_map=ComponentMap.flow_dominated())
+        od = mm.match(FLIGHT_od, Tt4_od)          # -> MapOffDesignResult (eta_c, N are OUTPUTS)
+    """
+
+    _ETA_TOL = 1e-11      # outer secant tolerance on the map efficiencies
+    _ETA_MAX = 80         # outer secant step cap (positive-feedback edge guard)
+
+    def __init__(self, design_engine: "Engine", flight_design: FlightCondition,
+                 mdot_design: float = 1.0, comp_map: "ComponentMap | None" = None):
+        super().__init__(design_engine, flight_design, mdot_design)
+        self.comp_map = comp_map if comp_map is not None else ComponentMap.flat()
+        # Design references for the map coordinates (corrected flow/speed normalization).
+        s2, s3, s4 = self.ref.stations["2"], self.ref.stations["3"], self.ref.stations["4"]
+        self.Tt2_d = s2.Tt
+        self.mdot_corr_d = self.mdot_air_design * self.Tt2_d ** 0.5 / s2.pt
+        self.tau_c_d = s3.Tt / s2.Tt
+        self.Tt4_d = s4.Tt
+
+    def _operating_point(self, flight: FlightCondition, Tt4: float, Tt2: float, pt2: float,
+                         cmap: "ComponentMap", eta_c: float, eta_t: float) -> dict:
+        """Rung-31 inner joint (f, pt4) fixed point with FIXED (eta_c, eta_t), plus the map coords.
+
+        This IS OffDesignMatcher.match's inner loop (turbine pinned by the choke, shaft sets the
+        compressor work, compressor inverse -> pi_c), run at the passed efficiencies; then it reads
+        off the map coordinates (corrected flow m, corrected speed n, flow coefficient, turbine
+        corrected speed nu_t). Returns everything the outer secant and the final rebuild need.
+        """
+        f, pt4 = self.f_design, self.pi_b * self.pi_c_design * pt2
+        pi_c = pi_t = tau_t = Tt5 = Tt3 = tau_c = None
+        for _ in range(self._MAX):
+            wgas = self._working_gas(f, Tt4, pt4)
+            pi_t, tau_t, Tt5 = self._solve_turbine(wgas, Tt4, f, eta_t=eta_t)
+            dh_c = self.eta_m * (1.0 + f) * (wgas.h_t(Tt4, f) - wgas.h_t(Tt5, f))
+            Tt3 = wgas.T_from_h_c(wgas.h_c(Tt2) + dh_c)
+            tau_c = Tt3 / Tt2
+            h2, h3 = wgas.h_c(Tt2), wgas.h_c(Tt3)
+            Tt3s = wgas.T_from_h_c(h2 + eta_c * (h3 - h2))         # ideal substate at fixed eta_c
+            pi_c = wgas.pr_c(Tt3s) / wgas.pr_c(Tt2)
+            pt4_new = self.pi_b * pi_c * pt2
+            f_new = self._solve_f(Tt3, pt4_new, Tt4)
+            done = (abs(f_new - f) <= self._TOL * (f_new + 1e-30)
+                    and abs(pt4_new - pt4) <= self._TOL * pt4_new)
+            f, pt4 = f_new, pt4_new
+            if done:
+                break
+        # Map coordinates at the converged operating point.
+        wgas = self._working_gas(f, Tt4, pt4)
+        mdot4 = self.A4 * pt4 * choked_mfp(wgas, Tt4, f) / Tt4 ** 0.5
+        mdot_air = mdot4 / (1.0 + f)
+        m = (mdot_air * Tt2 ** 0.5 / pt2) / self.mdot_corr_d       # corrected-flow ratio
+        n = cmap.solve_n(m, tau_c, self.tau_c_d)                   # corrected speed (speed-line inversion)
+        flowcoef = m / n
+        N_ratio = n * (Tt2 / self.Tt2_d) ** 0.5                    # single shaft: N/N_d
+        nu_t = N_ratio * (self.Tt4_d / Tt4) ** 0.5                 # turbine corrected speed
+        return dict(f=f, pt4=pt4, pi_c=pi_c, pi_t=pi_t, tau_c=tau_c, tau_t=tau_t, Tt3=Tt3, Tt5=Tt5,
+                    mdot_air=mdot_air, m=m, n=n, flowcoef=flowcoef, N_ratio=N_ratio, nu_t=nu_t)
+
+    def match(self, flight: FlightCondition, Tt4: float,
+              comp_map: "ComponentMap | None" = None) -> MapOffDesignResult:
+        """Match at (flight, Tt4) against the fixed hardware AND the component map.
+
+        pi_c, mdot AND (eta_c, eta_t, N) are OUTPUTS. The outer solve drives the efficiencies to be
+        self-consistent with the map (eta = eta_map(operating_point(eta))) by a SECANT iteration on
+        eta_c (the dominant, POSITIVE-feedback coupling), with eta_t — nearly constant — substituted
+        alongside. Flat map => the outer solve is inert and this reduces to rung 31.
+        """
+        cmap = comp_map if comp_map is not None else self.comp_map
+        gas = self.gas
+        pi_d = self.pi_d_max * ram_recovery(flight.M0)
+        state0, V0 = self._fs_engine.freestream(flight, self.mdot_air_design)
+        Tt2, pt2 = state0.Tt, pi_d * state0.pt
+
+        # Outer secant on eta_c; eta_t substituted (it barely moves — the turbine map is flat).
+        eta_c, eta_t = self.eta_c, self.eta_t
+        eta_c_prev = R_prev = None
+        op = None
+        for _ in range(self._ETA_MAX):
+            op = self._operating_point(flight, Tt4, Tt2, pt2, cmap, eta_c, eta_t)
+            eta_c_tgt = cmap.eta_c_at(self.eta_c, op["flowcoef"], op["n"])
+            eta_t_tgt = cmap.eta_t_at(self.eta_t, op["nu_t"])
+            R = eta_c_tgt - eta_c                                  # fixed-point residual g(eta_c)-eta_c
+            if abs(R) <= self._ETA_TOL and abs(eta_t_tgt - eta_t) <= self._ETA_TOL:
+                eta_t = eta_t_tgt
+                break
+            if eta_c_prev is None or abs(R - R_prev) < 1e-300:
+                eta_c_next = eta_c_tgt                             # first step: plain substitution
+            else:
+                eta_c_next = eta_c - R * (eta_c - eta_c_prev) / (R - R_prev)   # secant on R(eta_c)
+            eta_c_next = min(max(eta_c_next, 0.3), 1.0)            # keep physical
+            eta_c_prev, R_prev = eta_c, R
+            eta_c, eta_t = eta_c_next, eta_t_tgt
+        else:
+            raise AssertionError(
+                f"rung-32 map match did not converge at Tt4={Tt4} (positive-feedback edge; "
+                f"last |R|={abs(R):.2e}). Moderate the map coefficients or the throttle.")
+
+        # Direction / physicality (contract #7).
+        assert op["pi_c"] > 1.0 and 0.0 < op["tau_t"] < 1.0 and op["pt4"] > pt2, \
+            "rung-32 map match unphysical"
+
+        # Rebuild the cycle FORWARD with the map-consistent (pi_c, eta_c, eta_t) at the derived mdot.
+        # This fires every shipped conservation assert on the map operating point.
+        f, pt4, mdot_air = op["f"], op["pt4"], op["mdot_air"]
+        rgas = Gas.reacting_equilibrium(hf_fuel_molar=self.hf_fuel_molar) \
+            if self.gas.equilibrium else self.gas
+        state0, V0 = self._fs_engine.freestream(flight, mdot_air)
+        s2 = Inlet(pi_d).apply(state0, rgas)
+        s3 = Compressor(op["pi_c"], eta_c).apply(s2, rgas)
+        s4 = Burner(Tt4, self.eta_b, self.pi_b).apply(s3, rgas)
+        dh_turb = (rgas.h_c(s3.Tt) - rgas.h_c(s2.Tt)) / (self.eta_m * (1.0 + s4.far))
+        s5 = Turbine(eta_t).apply(s4, rgas, dh_turb)
+        nozzle = Nozzle(self.p_ambient, self.pi_n, convergent=True)
+        exit = nozzle.apply(s5, rgas)
+        nozzle_choked = exit.p9 > self.p_ambient + 1e-6
+
+        stations = {"0": state0, "2": s2, "3": s3, "4": s4, "5": s5, "9": exit.state}
+        perf = _score(rgas, stations, V0, exit.M9, exit.T9, exit.V9, exit.p9,
+                      flight.p0, rgas.hPR)
+        thrust = mdot_air * perf.specific_thrust
+        return MapOffDesignResult(
+            stations=stations, performance=perf, V0=V0, V9=exit.V9, M9=exit.M9,
+            T9=exit.T9, p9=exit.p9, thrust=thrust, Tt4=Tt4, M0=flight.M0,
+            pi_c=op["pi_c"], tau_c=s3.Tt / s2.Tt, tau_t=op["tau_t"], pi_t=op["pi_t"],
+            mdot_air=mdot_air, mdot_ratio=mdot_air / self.mdot_air_design,
+            nozzle_choked=nozzle_choked,
+            eta_c=eta_c, eta_t=eta_t, n_corr=op["n"], N_ratio=op["N_ratio"],
+            flowcoef=op["flowcoef"], nu_t=op["nu_t"],
         )

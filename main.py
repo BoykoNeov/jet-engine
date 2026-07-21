@@ -16,7 +16,9 @@ import matplotlib
 matplotlib.use("Agg")  # headless: render to a file, never pop a window (no plt.show)
 import matplotlib.pyplot as plt  # noqa: E402
 
-from turbojet.engine import FlightCondition, build_turbojet, OffDesignMatcher  # noqa: E402
+from turbojet.engine import (  # noqa: E402
+    FlightCondition, build_turbojet, OffDesignMatcher, MapMatcher, ComponentMap,
+)
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
     SpatialDwellPDF, PromptNO, _products_composition, _equilibrium_composition, _h_molar_A,
@@ -1184,6 +1186,65 @@ def print_offdesign_table(flight):
     print("  maps earn the eta curvature; the subsonic-nozzle mode is deferred).")
 
 
+def print_component_map_table(flight):
+    """Rung-32 payoff: COMPONENT-MAP MATCHING — the map re-labels the choke-pinned work.
+
+    Rung 31 closed with 'a pumping characteristic WITHOUT a compressor map'. That over-claimed by
+    holding eta_c/eta_t at design. Rung 32 puts a representative compressor + turbine map on the
+    matcher: the WORK schedule tau_c(Tt4) stays choke-pinned (map-free), but the map droops eta_c
+    off-design, so pi_c and mdot fall BELOW rung 31's constant-eta line — a first-order correction.
+    The turbine barely moves (its corrected speed is pinned on a single spool). A diagnostic beside
+    the cycle; flat map => rung 31 bit-for-bit. See docs/rung32-spec.md.
+    """
+    print("\nComponent-map matching (rung 32): rung 31 said the running line needs NO compressor map.")
+    print("That over-claimed — it held eta at design. A real map droops eta_c off-design, so pi_c and")
+    print("mdot fall BELOW rung 31's line. The choke pins the WORK tau_c (map-free); the map moves pi_c.")
+
+    design = build_turbojet(Gas.reacting_equilibrium(), PI_C, TT4, flight.p0,
+                            nozzle_convergent=True, **REAL_LOSSES)
+    mm = MapMatcher(design, flight, 1.0)
+    base = OffDesignMatcher(build_turbojet(Gas.reacting_equilibrium(), PI_C, TT4, flight.p0,
+                                           nozzle_convergent=True, **REAL_LOSSES), flight, 1.0)
+
+    # Reduce-to-rung-31: flat map returns the rung-31 running line exactly.
+    flat = ComponentMap.flat()
+    r0 = mm.match(flight, TT4, flat)
+    print(f"\n  Reduce-to-rung-31: flat map at design returns pi_c = {r0.pi_c:.6f}, N/N_d = "
+          f"{r0.N_ratio:.6f} — rung 31 bit-for-bit (the spine).")
+
+    # The finding: a peaked map (three shapes) droops pi_c/mdot; work tau_c stays map-free.
+    cmap = ComponentMap.flow_dominated()
+    print(f"\n  Running line with a peaked compressor map (flow-dominated shape); pi_c is the OUTPUT:")
+    print(f"  {'Tt4':>6} {'pi_c(r31)':>9} {'pi_c(map)':>9} {'dpi_c':>7} {'dmdot':>7} "
+          f"{'eta_c':>7} {'tau_c rel':>9} {'N/Nd':>6}")
+    print("  " + "-" * 66)
+    for Tt4 in (1500.0, 1300.0, 1100.0, 900.0):
+        mo = mm.match(flight, Tt4, cmap)
+        ro = base.match(flight, Tt4)
+        dpc = 100.0 * (mo.pi_c - ro.pi_c) / ro.pi_c
+        dmd = 100.0 * (mo.mdot_air - ro.mdot_air) / ro.mdot_air
+        tcr = abs(mo.tau_c - ro.tau_c) / ro.tau_c
+        print(f"  {Tt4:>6.0f} {ro.pi_c:>9.4f} {mo.pi_c:>9.4f} {dpc:>6.2f}% {dmd:>6.2f}% "
+              f"{mo.eta_c:>7.4f} {tcr:>9.1e} {mo.N_ratio:>6.3f}")
+
+    # Shape robustness of the SIGN, and the turbine-pinned sub-finding.
+    droops = []
+    for shape in (ComponentMap.flow_dominated(), ComponentMap.pressure_dominated(),
+                  ComponentMap.tilted()):
+        mo = mm.match(flight, 900.0, shape)
+        ro = base.match(flight, 900.0)
+        droops.append(100.0 * (mo.pi_c - ro.pi_c) / ro.pi_c)
+    steep = mm.match(flight, 900.0, ComponentMap(a=0.25, b=0.05, sigma=0.3, a_t=0.5))
+
+    print("\n  THE FINDING — rung 31's 'without a map' over-claimed. The work tau_c is choke-pinned")
+    print(f"  (map-free to ~1e-6), but the map droops eta_c so pi_c/mdot fall below rung 31's line —")
+    print(f"  SAME SIGN across 3 map shapes at Tt4=900: dpi_c = "
+          f"{droops[0]:.1f}% / {droops[1]:.1f}% / {droops[2]:.1f}% (magnitude shape-dependent, DISCLAIMED).")
+    print(f"  SUB-FINDING — the turbine barely moves: its corrected speed nu_t = {steep.nu_t:.4f} stays")
+    print(f"  ~1% from design (single-spool N/sqrt(Tt4)), so |d eta_t| = {abs(steep.eta_t-0.90):.1e} even for a")
+    print(f"  STEEP turbine map — the compressor is where the map bites. (No surge line modeled.)")
+
+
 def print_pdf_quench_table(flight):
     """Rung-15 payoff: the PDF THROUGH the finite quench — the two mixing mechanisms COMBINED.
 
@@ -2236,6 +2297,8 @@ def main():
     print_choked_nozzle_table(FLIGHT)
 
     print_offdesign_table(FLIGHT)
+
+    print_component_map_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 
