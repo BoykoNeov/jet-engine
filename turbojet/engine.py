@@ -12,7 +12,7 @@ so a reacting gas uses the products composition; a CPG/frozen-TPG gas ignores it
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Dict, List, Tuple
 
 from .components import (
@@ -785,6 +785,7 @@ class ComponentMap:
     sigma: float = 0.0    # compressor speed-line loading-law curvature (0 => flat loading)
     a_t: float = 0.0      # turbine eta curvature in corrected speed (small: turbine maps are flat)
     l: float = 0.0        # RUNG 34: linear loading slope (0 => rung-32 parabola; >0 => surge-realistic)
+    phi_surge: float = 0.0  # RUNG 36: stall flow coefficient (surge line). 0 => NO surge line (off).
 
     @classmethod
     def flat(cls) -> "ComponentMap":
@@ -840,7 +841,19 @@ class ComponentMap:
         return 1.0 + u
 
     def is_flat(self) -> bool:
+        # phi_surge is a PURE DIAGNOSTIC (surge line) — it never touches psi/eta/the running line,
+        # so it is deliberately NOT part of flatness: a flat map WITH a surge floor still reduces
+        # MapMatcher to rung 31 bit-for-bit (rung 36 adds no cycle knob).
         return self.a == self.b == self.c == self.sigma == self.a_t == self.l == 0.0
+
+    def with_phi_surge(self, phi_surge: float) -> "ComponentMap":
+        """RUNG 36. A copy of this map carrying a surge line at stall flow coefficient phi_surge.
+        The surge floor is the ONE disclosed constant rung 36 imposes (the loading-law peak
+        1 - l/(2 sigma) lands at phi < 0 for the surge-realistic shapes, so there is no free
+        in-range stall point to inherit — it must be imposed). Its LEVEL is disclaimed; only the
+        SIGN of the margin schedule it induces is load-bearing (and rides on the running-line
+        phi_op, not on this constant)."""
+        return replace(self, phi_surge=phi_surge)
 
     def eta_c_at(self, base: float, flowcoef: float, n: float) -> float:
         """Compressor efficiency read off the island at (flow coefficient, corrected speed)."""
@@ -1646,3 +1659,104 @@ class SpoolTransient(MapMatcher):
         inst = self._instant_fuel(flight, nu0, mf_hi, cmap)
         return dict(E_surge0=inst["pi_c"] / pc_lo - 1.0, E_temp0=inst["Tt4"] / Tt4_lo - 1.0,
                     Tt4_peak=inst["Tt4"], Tt4_target=Tt4_hi)
+
+    # === RUNG 36. The SURGE LINE — the excursion gets a boundary to be measured against. ===
+    # Rungs 32/34/35 reported the excursion as a distance ABOVE THE RUNNING LINE and deliberately
+    # drew NO surge line (a representative efficiency island is not a stability boundary; any margin
+    # number rides on where you draw the line). Rung 36 imposes ONE disclosed constant — a stall
+    # flow coefficient phi_surge (ComponentMap.with_phi_surge) — because the map's own loading-law
+    # peak 1 - l/(2 sigma) lands at phi < 0 for the surge-realistic shapes (no free in-range stall
+    # point to inherit). The magnitude of every margin is therefore DISCLAIMED (rung-32 methodology).
+    # What survives as load-bearing is a SIGN: the surge-margin SCHEDULE is thin at LOW power, its
+    # sign inherited from the running-line phi_op(Tt4) — which the choked hardware DETERMINES (rung
+    # 31/32), not from the imposed floor. Pure diagnostic: the surge line never touches the running
+    # line or the transient (E, nu(s) unchanged); it only MEASURES against them. Off (phi_surge=0)
+    # => bit-for-bit rung 34/35. See docs/rung36-spec.md.
+
+    def _pi_c_map(self, cmap: "ComponentMap", n: float, phi: float, Tt2: float) -> float:
+        """Compressor pressure ratio at an ARBITRARY map point (corrected speed n, flow coeff phi)
+        — the SAME forward speed-line + efficiency-island arithmetic `_close_compressor` uses at the
+        operating point. At phi = phi_op it reproduces the shipped pi_c bit-for-bit (gate: two code
+        paths, one pi_c), so the surge margin is measured on the very map that sets the running line."""
+        tau_c = 1.0 + (self.tau_c_d - 1.0) * cmap.psi(phi) * n * n
+        assert tau_c > 1.0, (
+            f"surge-margin map point does no work (tau_c<=1) at n={n:.4f}, phi={phi:.4f} — "
+            f"phi below the loading-law positive-work edge.")
+        Tt3 = Tt2 * tau_c
+        eta_c = cmap.eta_c_at(self.eta_c, phi, n)
+        h2, h3 = self.gas.h_c(Tt2), self.gas.h_c(Tt3)
+        Tt3s = self.gas.T_from_h_c(h2 + eta_c * (h3 - h2))
+        return self.gas.pr_c(Tt3s) / self.gas.pr_c(Tt2)
+
+    def surge_margin(self, flight: FlightCondition, Tt4: float,
+                     cmap: "ComponentMap | None" = None) -> dict:
+        """Steady surge margin at the running-line point for Tt4. Two definitions (both thin@low):
+
+            SM_N    (constant SPEED)  = pi_c(n0, phi_surge)/pi_c_op - 1        [same speed line n0]
+            SM_flow (constant FLOW, CRS default) = pi_c(n_s, phi_surge)/pi_c_op - 1,
+                                        n_s = phi_op*n0/phi_surge              [surge at same corr. flow]
+
+        SM_N is the PRIMARY currency: it is exactly what a frozen-spool (r->0) fuel step consumes
+        (the operating point jumps in pi_c at constant n0). SM_flow is reported to show the sign is
+        definition-robust. The MAGNITUDE of either is disclaimed (rides on phi_surge); the falling
+        SCHEDULE (thin at low power) is the load-bearing sign — CRS Ch. 9: the equilibrium running
+        line approaches the surge line at low corrected speed."""
+        cmap = cmap if cmap is not None else self.comp_map
+        assert cmap.phi_surge > 0.0, (
+            "surge_margin needs a surge line: build the map with .with_phi_surge(phi_surge).")
+        eq = self.equilibrium(flight, float(Tt4), cmap)
+        assert eq["branch"] == "choked", (
+            f"surge margin is a choked-branch diagnostic (rung 31/32 hardware); Tt4={Tt4:.0f} is "
+            f"{eq['branch']} (below nozzle unchoke). The subsonic-branch surge line is out of scope.")
+        n, phi_op, pc_op, Tt2 = eq["n"], eq["flowcoef"], eq["pi_c"], eq["Tt2"]
+        phi_s = cmap.phi_surge
+        assert phi_s < phi_op, (
+            f"steady point already at/over surge at Tt4={Tt4:.0f}: phi_op={phi_op:.4f} <= "
+            f"phi_surge={phi_s:.4f}. The running line must sit clear of the surge line.")
+        pc_surge_N = self._pi_c_map(cmap, n, phi_s, Tt2)
+        n_s = phi_op * n / phi_s                            # speed line whose surge point has flow m_op
+        pc_surge_flow = self._pi_c_map(cmap, n_s, phi_s, Tt2)
+        return dict(Tt4=float(Tt4), nu=eq["nu"], n=n, phi_op=phi_op, phi_surge=phi_s, pi_c=pc_op,
+                    SM_N=pc_surge_N / pc_op - 1.0, SM_flow=pc_surge_flow / pc_op - 1.0,
+                    branch=eq["branch"])
+
+    def surge_margin_schedule(self, flight: FlightCondition, Tt4_grid,
+                              cmap: "ComponentMap | None" = None) -> list:
+        """The surge-margin schedule SM(Tt4) along the running line (choked points only). The
+        FINDING: SM falls monotonically as Tt4 drops — tightest margin at part power (rung 36)."""
+        out = []
+        for Tt4 in Tt4_grid:
+            eq = self.equilibrium(flight, float(Tt4), cmap if cmap is not None else self.comp_map)
+            if eq["branch"] != "choked":
+                continue
+            out.append(self.surge_margin(flight, float(Tt4), cmap))
+        return out
+
+    def acceleration_binding(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                             cmap: "ComponentMap | None" = None) -> dict:
+        """THE RUNG-36 COMPOUNDING — confirmation + sharpening (NOT relocation). For a full-throttle
+        burst to Tt4_hi starting from Tt4_lo, compare the r->0 constant-N excursion E0 (rung 34)
+        against the steady surge margin SM_N at the START. Both are pi_c ratios at the FROZEN speed
+        nu0 to the SAME denominator pc_lo, so surge occurs IFF E0 >= SM_N — equivalently, iff the
+        stepped operating point's flow coefficient phi_step falls at/below phi_surge (the airtight
+        currency-equivalence, exposed for the gate).
+
+        E0 rises AND SM_N falls as the start power drops (BOTH ingredients point low, REINFORCING), so
+        E0/SM_N rises monotonically toward the low-power end: the low-power burst is most surge-
+        critical on BOTH axes. This does NOT relocate the binding constraint — rung 34's E0 is ALREADY
+        largest at low power (argmax unchanged); the surge line's UNIQUE contribution is SM_N, the
+        margin the excursion consumes (new info, not a rescale of E). The CROSSING (where E0/SM_N
+        reaches 1) rides on the disclaimed phi_surge and is NOT claimed; only the monotone RISE of the
+        ratio (the reinforcing sharpening) is load-bearing."""
+        cmap = cmap if cmap is not None else self.comp_map
+        eq_lo = self.equilibrium(flight, float(Tt4_lo), cmap)
+        nu0, pc_lo = eq_lo["nu"], eq_lo["pi_c"]
+        inst_hi = self._instant(flight, nu0, float(Tt4_hi), cmap)   # frozen-spool step (rung 34)
+        E0 = inst_hi["pi_c"] / pc_lo - 1.0
+        phi_step = inst_hi["flowcoef"]
+        sm = self.surge_margin(flight, float(Tt4_lo), cmap)
+        SM_N = sm["SM_N"]
+        return dict(Tt4_lo=float(Tt4_lo), Tt4_hi=float(Tt4_hi), nu0=nu0, E0=E0, SM_N=SM_N,
+                    ratio=E0 / SM_N, reaches_surge=E0 >= SM_N,
+                    phi_step=phi_step, phi_surge=cmap.phi_surge,
+                    phi_step_le_surge=phi_step <= cmap.phi_surge)

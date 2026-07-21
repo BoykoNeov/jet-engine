@@ -11,7 +11,7 @@ teaching, not for features or polish.
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is
-anchored to a published case. All rungs are live; the current scope is **rung 35**.
+anchored to a published case. All rungs are live; the current scope is **rung 36**.
 
 **This table is the one-line map, not the handout.** Each rung's derivation,
 assumptions, honest concessions, reduce-to-prior contract and verification gates
@@ -62,18 +62,22 @@ live in its spec (last column) — read the spec before touching a rung.
 | 34 | **The spool transient — `N` becomes a STATE, not an output** — `SpoolTransient.equilibrium/integrate(…)` / `_instant(…)` / `_close_compressor(…)`: rungs 31–33 solved **steady** points, each closed by the shaft **power balance** `η_m·P_t=P_c`. Rung 34 unbalances it — a real spool has inertia `I`, so a fuel change drives a net torque and `N` accelerates. **The shaft balance becomes an ODE** (`I·ω·dω/dt=η_m·P_t−P_c`) and `N` — which rungs 31–33 *computed* — becomes the **STATE** carrying the engine's memory. **The first DYNAMIC rung** (all prior were fixed points). **The structural novelty: the compressor map runs FORWARD** (rungs 31–32 ran it backward): given corrected speed `n(N,Tt2)` and trial flow `m`, the Euler speed line gives `τ_c=1+(τ_c,d−1)ψ(φ)n²` **directly**, and — the key simplification — the **NGV choke closes `m` on EITHER branch with NO shaft balance** (`pt4=π_b·π_c·pt2` doesn't involve the turbine, so mass continuity `ṁ(1+f)=A4·pt4·MFP*/√Tt4` is one equation in `m`); the turbine expansion is then rung-31 geometry `(★)` when choked, nozzle-continuity when subsonic (rung 33 dispatch, reused). The leftover power drives `dν/ds=Φ(ν,Tt4)` in **nondimensional time** `s=t/τ_spool`, `τ_spool=I·ω_d²/P_ref`. **THE FINDING is a CORRECTION of the obvious framing** (advisor): "the trajectory shape is `I`-independent, `I` only sets the clock" is a **TAUTOLOGY** in a 1-state model (dimensional analysis — the project's rung-29-gate-2 / rung-33-gate-4 anti-tautology bar rejects it). `I` is load-bearing **only when a SECOND clock competes**: ramp `Tt4` over a finite `τ_fuel` and the peak **excursion above the running line** (toward lower surge margin) is `E(r)`, `r=τ_fuel/τ_spool` — **max at `r→0`** (the constant-`N` displacement, an **algebraic map property**, `+5.4%`), **vanishing as `r→∞`** (stays on the line), knee at `r≈1`. *That* is why real engines **schedule fuel ramps**, and it is the honest home for `I`. **The map needed a fix** (a genuine sub-finding): rung 32's loading law `ψ=1−σ(φ−1)²` **peaks** at design, giving the **wrong speed-line slope** on the surge side; rung 34 adds a **linear slope `l`** (`dψ/dφ|_1=−l`, default 0 ⇒ rung 32 **bit-for-bit**) so `π_c` **rises toward low flow** and the accel excursion is physical. Direction **shape-robust** (accel `+`/decel `−` across 3 surge maps; magnitude **disclaimed**, **no surge line drawn** — inherited rung-32 concession). **Spool-down/windmilling** (the rung-33 handshake): cut fuel ⇒ `dν/ds<0`, `N` coasts down, the nozzle **unchokes**, the branch flips **choked→subsonic** at `M9≈1` (continuous), and the trajectory approaches rung-33's **thrust-neutral idle** (a too-fast chop instead hits the **flameout boundary** — the integrator stops, the decel analogue of accel-toward-surge). **Reduce**: `dν/ds=0` ⇒ the equilibrium reproduces `OffDesignMatcher.match` (flat map, rung 31) / `MapMatcher.match` (shaped, rung 32) — via the **forward closure ONLY** (never calls the matchers ⇒ non-circular), machine-zero at design, ≤1e-8 on the sweep incl. a subsonic point; a genuinely different closure onto one point. **Separate entry point** (subclasses `MapMatcher`; default `run(…)` untouched ⇒ cycle **bit-for-bit rung 6**). Disclaimed: `I`+`ω_d` = **one disclaimed clock group** (only `ν(s)` and `r` claimed, wall-clock illustrative — the `L`/`τ_res` concession); quasi-steady components (no combustor volume-filling / heat-soak — faster clocks *below* `τ_spool`, a further seam); `Tt4(t)` control (a true `ṁ_fuel(t)` schedule with `Tt4` an output is a further seam); isentropic knobs / NGV-choke / single-spool (inherited rungs 31–33). | `docs/rung34-spec.md` |
 
 | 35 | **Fuel is the control — `Tt4` becomes an OUTPUT** — `SpoolTransient.equilibrium_fuel/integrate_fuel(…)` / `_close_compressor_fuel(…)` / `_tt4_from_f(…)`: rung 34 commanded `Tt4(t)` by fiat — its one filed concession. Rung 35 meters **FUEL** (`ṁ_fuel`) instead, and `Tt4` falls out of the burner balance against the airflow the spool can **currently** pump. **The make-or-break**: command the fuel *mass flow*, not the ratio `f` — if you command `f` then `Tt4=burner(Tt3,f)` and it's a re-labeling; the physics is `f=ṁ_fuel/ṁ_air` **spiking because `ṁ_air` LAGS**. The structural novelty is the burner running **FORWARD** (`_tt4_from_f`, the exact inverse of the shipped `f`-solve): the trial corrected flow `m` fixes `ṁ_air`, so `f` and `Tt4` are OUTPUTS, and the NGV-choke consistency `g(m)=0` closes it (Tt4 floating — no shaft balance, rung 34's move). **THE RUNG is a cross-rung CORRECTION of rung 34** (the rung-28/29/32 move): at a frozen spool a fuel step **starves the airflow** (the hot NGV passes less corrected mass as `Tt4` rises, `(1+f)` rises), so `Tt4` **OVERSHOOTS** its steady endpoint — a **turbine-inlet-temperature (TIT) excursion**, a *second* acceleration limit commanding `Tt4` structurally HID — **and that over-temperature amplifies the airflow deficit**, so it also **ENLARGES** rung 34's surge excursion. **The two acceleration limits (surge + TIT) are COUPLED, not independent**: `E_surge(fuel) > E_Tt4` at every `r=τ_fuel/τ_spool`, gap **MAX at `r→0`** (4.77% vs 5.39%→10.16%) and **VANISHING as `r→∞`** (0.11% at r=3) — rung 34 **under-counted** the surge excursion a fuel-metered engine sees. Sign **shape-robust** across 3 surge maps (magnitude **disclaimed**, rung-32 methodology). The **new axis** `E_temp` (TIT overshoot, monotone in `r`, `r→0`=algebraic map property) is on these maps **larger** than the surge excursion — the accel is TIT-limited before surge-limited (*why fuel schedules are temperature-limited too*). **Reduce — CONTROL-INVARIANCE (non-tautological)**: a steady point is the same however named, so commanding `ṁ_fuel=f_eq·ṁ_air,eq` of a Tt4-point reproduces it (`ν,π_c,τ_t,ṁ_air` machine-zero at design, `Tt4_out==Tt4`) via the **forward-burner closure** — a genuinely different code path than the pinned-`Tt4` one; plus **`r→∞` convergence** (the dynamical reduce), **Tt4-control UNTOUCHED** ⇒ rung 34 bit-for-bit, and the **instant-level inverse** (`Tt4(f)` inverts the burner `f`-solve — the fuel↔`Tt4` analogue of rung 34 gate 6). **Separate entry point** (subclasses `SpoolTransient`; default `run(…)` untouched ⇒ cycle **bit-for-bit rung 6**). Disclaimed: **reacting-gas fuel control deferred** (the forward burner is built for the non-equilibrium gas; the finding is gas-independent, the reacting reduce is the Tt4-control path); no surge line / no TIT-redline number (which limit binds first is map-dependent); `ṁ_fuel(t)` metering-unit schedule with both ends free is a further seam; combustor volume-filling / heat-soak / two-spool inherited from rung 34. | `docs/rung35-spec.md` |
+| 36 | **The surge line — the excursion gets a boundary to be measured against** — surge methods on `SpoolTransient` (`surge_margin(…)` / `surge_margin_schedule(…)` / `acceleration_binding(…)` / `_pi_c_map(…)`) + `ComponentMap.with_phi_surge(…)`: rungs 32/34/35 all reported the transient excursion as a distance **above the running line** and all filed the same concession — **no surge line** (a representative efficiency island is not a stability boundary; any margin number rides on where you draw it). Rung 36 draws it and turns it into a **cross-rung CONFIRMATION + SHARPENING** (the rung-28 / rung-29-margin move): the excursion was **half a surge statement** — surge risk is the excursion measured against the **surge margin**, and the margin is **not constant along the running line**. **The honest problem, faced head-on**: the **zero-new-constant** hope (stall at the map's loading-law peak `φ=1−l/(2σ)`) is **DEAD** — it lands at `φ<0` for all three surge shapes (`ψ` is monotone-rising across `φ>0`, no in-range stall point to inherit), so a stall flow coefficient **`φ_surge` must be IMPOSED** as a disclosed constant — exactly the free parameter rung 32 objected to. **So the rung lives or dies on one question: does a shape-robust SIGN survive it?** It does, for a structural reason: `SM(Tt4)` = `π_c(φ_surge)/π_c(φ_op(Tt4))−1` on one speed line — the imposed floor sets the **level**, but the **trend** rides on the running-line flow coefficient **`φ_op(Tt4)`, which the choked hardware DETERMINES** (rung 31/32), not the floor. **THE RUNG (the headline): surge margin is THIN AT LOW POWER** (`φ_op` walks 1.00→0.81 down toward the fixed stall floor as throttled — **CRS Ch. 9**: the equilibrium running line approaches the surge line at low corrected speed), a genuinely new surge-margin object whose **sign is robust to the imposed floor**, across **3 shapes × imposed `φ_surge` × an `n`-slope on the floor** (incl. `k<0`); plus the **currency equivalence** below. **The COMPOUNDING — confirmation + sharpening, NOT relocation**: the rung-34 constant-speed excursion `E0` and `SM_N` share a **currency** (both `π_c` ratios at frozen `n0` to the same denominator), so a step reaches surge **iff `E0≥SM_N` ⟺ `φ_step≤φ_surge`** (airtight, gated). `E0` **rises** AND `SM_N` **falls** as start power drops (BOTH point low, **reinforcing**), so `E0/SM_N` rises **monotonically** toward the low-power end — the low-power burst is most surge-critical on **BOTH** axes. This **confirms and sharpens** rung 34's implicit worst case rather than moving it: rung 34's `E0` (`constant_speed_excursion`) is **already** largest for the low-power burst (`argmax` unchanged — **no relocation**; relocation would need the schedules to point *opposite* ways, which a steeply speed-dependent real surge line *could* do). The surge line's **unique** contribution is `SM_N` — new information varying independently of the ramp ratio `r`, turning "excursion above the running line" into "fraction of the stability margin consumed" (**not** a rescale of `E`). **The anti-overclaim discipline (rung 32's warning, ENFORCED)**: `E0` is floor-**independent**, so the **crossing** into surge slides with the disclaimed `φ_surge` (`Tt4_lo=700`: `E0=0.098` fixed, `SM_N=0.109`@`φ_s=0.55` **no surge** vs `0.073`@`0.65` **surge**) — the crossing is **deliberately NOT gated**; only the **monotone rise** of `E0/SM_N` and the **sign** of the `SM` schedule are load-bearing (magnitudes disclaimed, rungs 12–24/32 methodology). **Pure diagnostic** (like rungs 7–30): the surge line **never touches** the running line or the transient (`E`, `ν(s)` unchanged — it only *measures*), `_pi_c_map(n,φ_op)` reproduces the shipped `π_c` **bit-for-bit** (two paths, one `π_c`), and **surge off (`φ_surge=0`) ⇒ rung 34/35 bit-for-bit** (the field is read only by the surge methods; the rung 31–35 suites pass unchanged). Separate entry point; default `run(…)` untouched ⇒ cycle **bit-for-bit rung 6**. Disclaimed: every margin **magnitude** and the **crossing** (ride on `φ_surge`); constant `φ_surge` in `n` (sign robust to a mild slope); constant-speed is primary (the transient's currency; constant-flow only for sign-robustness); **no bleed valve / variable stator** (the devices that raise `φ_surge` at low speed — rung 36 exhibits the margin they protect); choked branch only (subsonic surge margin out of scope); isentropic/NGV-choke/single-spool inherited. | `docs/rung36-spec.md` |
 
-**The invariant that spans rungs 7–30: they are all pure diagnostics** (rungs 31–35 are the
-**STRUCTURAL rungs** — they compute a *new* off-design operating point: rung 32 with the component
+**The invariant that spans rungs 7–30 (and now 36): they are all pure diagnostics** (rungs 31–35 are
+the **STRUCTURAL rungs** — they compute a *new* off-design operating point: rung 32 with the component
 map, rung 33 on the **subsonic-nozzle branch** below unchoke, rung 34 the **dynamic** point where
 `N` is a *state* not an output, rung 35 the same transient with **fuel** as the control and `Tt4` an
 **output** — but through **separate entry points**
-(`OffDesignMatcher`, `MapMatcher`, `SpoolTransient`) that leave the default path untouched). NO/N
+(`OffDesignMatcher`, `MapMatcher`, `SpoolTransient`) that leave the default path untouched). Rung 36
+is a **pure diagnostic again** — a **surge line** that *measures* the rung-34/35 transient against a
+stability boundary without ever perturbing it (`E`, `ν(s)`, the running line unchanged; surge off ⇒
+rung 34/35 bit-for-bit). NO/N
 never enter `_equil_solve`, the production nozzle stays frozen AND ideally-expanded
 (`convergent=False`), and the default `build_turbojet(…).run(…)` design run is unchanged, so
 **the cycle is bit-for-bit rung 6** — every rung above 6 only *reads* the run's design-point
 state (rungs 31–34 match a new operating point *beside* it — rung 33 the subsonic-nozzle
-branch). Each rung's
+branch; rung 36 reads the rung-34 running line/transient *beside* it). Each rung's
 verified anchor data lives in `docs/plans/rungN-anchor-*.md`; `docs/plans/` also holds
 the living plan/tasks (rungs 1–3).
 
@@ -125,7 +129,18 @@ excursion — a second acceleration limit) **and** that over-temperature amplifi
 fuel control **enlarges** the surge excursion (`E_surge(fuel) > E_Tt4`, gap max at `r→0`, vanishing as
 `r→∞`) — the two limits are **coupled**. Reduce: **control-invariance** (`equilibrium_fuel` of a Tt4-point's
 fuel reproduces it via the forward-burner closure, machine-zero at design) + Tt4-control untouched ⇒ rung 34
-bit-for-bit. Separate entry point; default run still rung-6 exact.
+bit-for-bit. Separate entry point; default run still rung-6 exact. Rung 36 (surge methods on
+`SpoolTransient` + `ComponentMap.with_phi_surge`) is a **pure diagnostic again**: it draws the **surge
+line** rungs 32/34/35 declined and turns their above-running-line excursion into a real **surge margin**.
+The zero-new-constant hope (stall at the loading-law peak) is dead (`φ<0`), so a stall flow coefficient
+`φ_surge` is **imposed** — but the load-bearing result is a **sign** immune to it: surge margin is **thin
+at low power** (the running-line `φ_op(Tt4)` walks toward the fixed floor — choked-hardware determined,
+CRS Ch. 9). Because the rung-34 constant-speed excursion `E0` and the margin `SM_N` share a currency
+(`E0≥SM_N ⇔ φ_step≤φ_surge`), the low-power burst is most surge-critical on **both** axes (`E0↑` AND
+`SM_N↓`) — a **confirmation + sharpening** of rung 34's implicit worst case (`E0` was already largest
+there; **no relocation**), with `SM_N` the genuinely new info (not a rescale of `E`). The **crossing**
+into surge is disclaimed (rides on `φ_surge`); only the trend is gated. Surge off (`φ_surge=0`) ⇒ rung 34/35 bit-for-bit;
+default run still rung-6 exact.
 
 ## Deferred seams (kept open on purpose)
 - **Finite-rate nozzle chemistry** — **BUILT BY RUNG 25** (`docs/rung25-spec.md`,
@@ -354,9 +369,10 @@ bit-for-bit. Separate entry point; default run still rung-6 exact.
   12–24 methodology, shapes disclosed / claims shape-robust / magnitudes disclaimed); **no surge line** ⇒ the
   CRS surge-margin payoff deliberately NOT made. Reduce: the **flat map** ⇒ `MapMatcher` == rung-31
   `OffDesignMatcher` **bit-for-bit** (machine-zero at design). **What rung 32 leaves open:** a **real
-  hardware/CFD map** with a surge line (would earn the surge-margin claim); the transient/spool-dynamics seam
-  (c above, now that `N` exists). (The subsonic-nozzle branch is **BUILT BY RUNG 33**, below — but subsonic
-  + component map stays OUT OF SCOPE: `MapMatcher` overrides `match` and stays choked-only.)
+  hardware/CFD map** with a surge line (would earn a surge-margin *magnitude* — the *representative* surge
+  line + margin **sign** is **BUILT BY RUNG 36**, below); the transient/spool-dynamics seam (c above, now
+  that `N` exists). (The subsonic-nozzle branch is **BUILT BY RUNG 33**, below — but subsonic + component
+  map stays OUT OF SCOPE: `MapMatcher` overrides `match` and stays choked-only.)
 - **The subsonic-nozzle matching branch** — **BUILT BY RUNG 33** (`docs/rung33-spec.md`,
   `OffDesignMatcher._match_subsonic`, `docs/plans/rung33-anchor-subsonic.md`). Rung 31 named this seam (it
   flagged the nozzle-unchoke boundary `Tt4≈600` and deferred "Mattingly's dual mode"). Rung 33 built it: below
@@ -386,10 +402,10 @@ bit-for-bit. Separate entry point; default run still rung-6 exact.
   are scheduled). Reduce: the equilibrium reproduces rung 31 (flat map) / rung 32 (shaped) via the forward
   closure only (non-circular). **What rung 34 leaves open:** (a) **combustor volume-filling / heat-soak
   dynamics** — faster clocks *below* `τ_spool` (the shaft is the only dynamic element here); (b) ~~a true
-  **`ṁ_fuel(t)` fuel-metering schedule** with `Tt4` an output~~ — **BUILT BY RUNG 35** (below); (c) a
-  **surge line** (rung 32's standing concession — would turn the excursion into a surge-margin number);
-  (d) **two-spool / multi-shaft** dynamics; (e) feeding the marched `N(t)` into the production cycle — a
-  re-foundation, not a rung.
+  **`ṁ_fuel(t)` fuel-metering schedule** with `Tt4` an output~~ — **BUILT BY RUNG 35** (below); (c) ~~a
+  **surge line** (rung 32's standing concession — would turn the excursion into a surge-margin number)~~
+  — **BUILT BY RUNG 36** (`docs/rung36-spec.md`, below); (d) **two-spool / multi-shaft** dynamics;
+  (e) feeding the marched `N(t)` into the production cycle — a re-foundation, not a rung.
 - **Fuel metering — `Tt4` an OUTPUT** — **BUILT BY RUNG 35** (`docs/rung35-spec.md`,
   `SpoolTransient.equilibrium_fuel/integrate_fuel`, `_close_compressor_fuel`, `_tt4_from_f`,
   `docs/plans/rung35-anchor-fuel-metering.md`). Rung 34 named this seam and filed it as its `Tt4(t)`-control
@@ -404,7 +420,31 @@ bit-for-bit. Separate entry point; default run still rung-6 exact.
   via the forward-burner closure, machine-zero at design) + Tt4-control untouched ⇒ rung 34 bit-for-bit.
   **What rung 35 leaves open:** reacting-gas fuel control (the forward burner is built for the non-equilibrium
   gas — the finding is gas-independent); a true `ṁ_fuel(t)` metering-unit schedule with both ends free and a
-  fuel-metering-valve model; and rung 34's remaining seams (surge line, volume-filling/heat-soak, two-spool).
+  fuel-metering-valve model; and rung 34's remaining seams (~~surge line~~ — **BUILT BY RUNG 36**;
+  volume-filling/heat-soak, two-spool).
+- **The surge line** — **BUILT BY RUNG 36** (`docs/rung36-spec.md`, surge methods on `SpoolTransient`
+  + `ComponentMap.with_phi_surge`, `docs/plans/rung36-anchor-surge-line.md`). Rungs 32, 34 and 35 all named
+  this seam and all declined it for the same reason (a representative efficiency island is not a stability
+  boundary; the margin rides on where you draw the line). Rung 36 draws it and turns the above-running-line
+  excursion into a real **surge margin**. The **zero-new-constant** hope (stall at the loading-law peak
+  `φ=1−l/(2σ)`) is **DEAD** — it lands at `φ<0` for all three surge shapes, so a stall flow coefficient
+  `φ_surge` is **IMPOSED** (the free parameter rung 32 warned of). The rung survives because a **SIGN**
+  survives it: surge margin is **thin at LOW power** (the running-line `φ_op(Tt4)` walks toward the fixed
+  floor — choked-hardware determined, not floor-determined; **CRS Ch. 9**), sign-robust across shapes ×
+  imposed `φ_surge` × an `n`-slope on the floor, under both margin definitions (constant-flow a weak
+  sign-check only — its magnitude extrapolates absurdly). **The compounding (confirmation + sharpening,
+  NOT relocation)**: `E0` (rung-34 constant-speed excursion) and `SM_N` share a currency
+  (`E0≥SM_N ⇔ φ_step≤φ_surge`), and both point low (`E0↑`, `SM_N↓`, reinforcing), so the low-power burst is
+  worst on **both** axes — rung 34's `E0` was **already** largest there (`argmax` unchanged, no relocation),
+  and `SM_N` is the new info (not a rescale of `E`). **The crossing into surge is DISCLAIMED** (rides on
+  `φ_surge`; `E0` is floor-independent) — only the trend is gated. Pure diagnostic: surge off ⇒ rung 34/35 bit-for-bit;
+  `_pi_c_map` == the shipped `π_c`; default run rung-6 exact. **What rung 36 leaves open:** a **bleed valve /
+  variable stator** model (the devices that raise `φ_surge` at low speed — rung 36 exhibits the margin they
+  protect, does not model them); a **real hardware/CFD surge line** with a measured `(ṁ,π)` shape (rung 32's
+  standing "real map" concession — would earn a margin *magnitude*, and a steeply speed-dependent one
+  could *oppose* the `E0`/`SM_N` schedules and produce a genuine **relocation** that rung 36's parallel
+  representative maps do not); the **subsonic-branch** surge margin (choked branch only); **combustor
+  volume-filling / heat-soak** and **two-spool** dynamics (inherited from rung 34, still open).
 
 ## Conventions
 - **SI units throughout** (K, Pa, kg/s, m/s, J/kg). Convert kPa → Pa internally.
@@ -471,13 +511,20 @@ bit-for-bit. Separate entry point; default run still rung-6 exact.
   finding — `E_surge` vs rung 34's `E`, plus the new `E_temp` TIT-overshoot axis). The turbine/power/thrust
   tail of `_instant` was factored into a shared `_instant_tail` (bit-for-bit — both controls use it), and
   the equilibrium-`ν` bracket into `_find_equilibrium_nu` (shared by both controls, so `equilibrium` stays
-  bit-for-bit rung 34).
+  bit-for-bit rung 34). And rung 36's **surge line** — pure-diagnostic methods on `SpoolTransient`
+  (`surge_margin`/`surge_margin_schedule` — the steady margin `SM_N` (constant-speed, the transient's
+  currency) + `SM_flow` (CRS constant-flow) along the running line; `acceleration_binding` — the finding,
+  `E0/SM_N` for a burst; `_pi_c_map` — `π_c` at an arbitrary map point, the same forward arithmetic
+  `_close_compressor` uses, reproducing the shipped `π_c` bit-for-bit) reading the stall flow coefficient
+  `ComponentMap.phi_surge` (added as a field, default 0 ⇒ off ⇒ rung 34/35 bit-for-bit; set via
+  `with_phi_surge`; `is_flat` deliberately ignores it). The surge line never perturbs the running line or
+  transient — it only measures.
 - `main.py` — the design-point run: ideal-vs-real tables, the overlaid T–s diagram, and
   **one panel per rung** (each panel demonstrates that rung's load-bearing claim and
   states its honest scope).
 - `tests/` — `test_stations.py` / `test_validation.py` (rung 1), `test_rung2.py`,
   `test_polytropic.py` (2b), `test_variable_cp.py` (3), `test_reacting.py` (4),
-  `test_forkb.py` (5), then **`test_rungN.py` for N = 6…35**. Every rung file carries that
+  `test_forkb.py` (5), then **`test_rungN.py` for N = 6…36**. Every rung file carries that
   rung's **reduce-to-prior** gate plus its load-bearing claims; the gates are named in the
   rung's spec. Rungs 16, 23 and 24 **deliberately assert no emissions global-min location**;
   rung 25 **reduces to rung-14 FROZEN but deliberately NOT to equilibrium** (the (R−I) gap is
@@ -565,6 +612,22 @@ bit-for-bit. Separate entry point; default run still rung-6 exact.
   line. It **deliberately claims only the sign** of the correction and the **existence** of the overshoot
   (magnitudes disclaimed, rung-32 methodology), **no surge line / no TIT-redline number**, and **defers
   reacting-gas fuel control** (the finding is gas-independent).
+  Rung 36 **reduces** by the surge line being a **pure diagnostic**: with `phi_surge=0` the surge methods
+  add no cycle knob and the running line/transient are unperturbed (the rung 31–35 suites pass **unchanged**
+  — the bit-for-bit witness), and `_pi_c_map(n,φ_op)` reproduces the shipped `equilibrium` `π_c` to machine
+  zero (the non-tautological gate: the margin is measured on the running-line map itself, two code paths /
+  one `π_c`). Its finding gates (fast gas — gas-independent): **THE HEADLINE — the `SM` schedule is thin at
+  LOW power**, monotone-decreasing as `Tt4` falls, **sign-robust across ≥3 shapes × ≥3 imposed `φ_surge`**
+  (and, weak corroboration only, the constant-flow definition — whose *magnitude* extrapolates absurdly and
+  is not billed as independent; magnitude **disclaimed**); the **COMPOUNDING (confirmation + sharpening, NOT
+  relocation)** — `E0/SM_N` rises monotonically as start power falls (both `E0↑` and `SM_N↓`, reinforcing),
+  shape-robust, the low-power burst worst on **both** axes (rung 34's `E0` already largest there ⇒ `argmax`
+  unchanged, **no relocation**); the **currency equivalence** `reaches_surge == (φ_step≤φ_surge)` at every
+  point (`E0≥SM_N ⇔ φ_step≤φ_surge`, airtight);
+  and — the **anti-overclaim gate** — with `E0` fixed, varying `φ_surge` **FLIPS** `reaches_surge`, so the
+  test **asserts the crossing is floor-dependent** (rung 36 claims the trend, never the crossing, the exact
+  discipline rung 32's warning demands). It **deliberately gates no surge-margin magnitude and no crossing
+  location**, holds `φ_surge` constant in `n` (sign robust to a mild slope), and is **choked-branch only**.
 - `docs/rungN-spec.md` — the derivation, assumptions, concessions and gates for rung N.
   `docs/plans/rungN-anchor-*.md` — that rung's verified anchor data.
 

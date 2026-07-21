@@ -1399,6 +1399,56 @@ def print_fuel_metering_table(flight):
     print("  vanishing is the trend. Sign shape-robust across surge maps; magnitude disclaimed. Cycle: rung-6 exact.")
 
 
+def print_surge_line_table(flight):
+    """Rung 36 — THE SURGE LINE: the excursion gets a boundary to be measured against.
+
+    Rungs 32/34/35 reported the transient excursion as a distance ABOVE THE RUNNING LINE and drew NO
+    surge line (a representative efficiency island is not a stability boundary; any margin number
+    rides on where you draw it). Rung 36 imposes ONE disclosed constant — a stall flow coefficient
+    phi_surge (the map's loading-law peak lands at phi<0 for the surge shapes, so it can't be
+    inherited). The MAGNITUDE of every margin is disclaimed; what survives is a SIGN: surge margin is
+    thin at LOW power (the running-line phi_op walks down toward the fixed stall floor as throttled —
+    CRS Ch. 9). And because the rung-34 constant-speed excursion E0 and the margin SM_N share a
+    currency (both pi_c ratios at frozen speed), the low-power burst is most surge-critical on BOTH
+    axes: E0 rises AND SM_N falls there. This CONFIRMS + SHARPENS rung 34's implicit worst case (E0 was
+    already largest at low power), it does not relocate it. Pure diagnostic; design run stays rung-6
+    exact. See docs/rung36-spec.md.
+    """
+    print("\nSurge line (rung 36): rungs 32/34/35 measured the excursion ABOVE the running line but drew")
+    print("NO surge line. Rung 36 imposes a stall flow coeff phi_surge (disclaimed) and finds the SIGN")
+    print("that survives it: surge margin is THIN AT LOW POWER, so the binding accel is the low-power burst.")
+
+    gas = Gas.thermally_perfect()          # fast gas: the surge margin lives in the cold-section map
+    shape = ComponentMap.surge_flow()
+    st = SpoolTransient(build_turbojet(gas, PI_C, TT4, flight.p0, nozzle_convergent=True,
+                                       **REAL_LOSSES), flight, 1.0, comp_map=shape)
+    PHI_S = 0.65
+    cm = shape.with_phi_surge(PHI_S)
+
+    # THE SCHEDULE — SM thin at low power (phi_op walks toward the fixed floor).
+    print(f"\n  THE SCHEDULE (phi_surge={PHI_S}, DISCLAIMED level; the falling SIGN is the claim):")
+    print(f"  {'Tt4':>5} {'phi_op':>8} {'pi_c':>7} {'SM_N':>8} {'SM_flow':>9}")
+    print("  " + "-" * 40)
+    for sm in st.surge_margin_schedule(flight, [1500.0, 1300.0, 1100.0, 900.0, 800.0, 700.0], cm):
+        print(f"  {sm['Tt4']:>5.0f} {sm['phi_op']:>8.4f} {sm['pi_c']:>7.3f} "
+              f"{sm['SM_N']*100:>7.1f}% {sm['SM_flow']*100:>8.0f}%")
+
+    # THE COMPOUNDING — confirmation + sharpening: both axes agree the low-power burst is worst.
+    print(f"\n  THE COMPOUNDING (confirm+sharpen) - full-throttle burst to Tt4=1500. E0 = rung-34 constant-N excursion;")
+    print(f"  SM_N = steady margin at the START. Surge iff E0>=SM_N (== phi_step<=phi_surge, airtight):")
+    print(f"  {'Tt4_lo':>6} {'E0':>7} {'SM_N':>7} {'E0/SM_N':>8} {'verdict':>8}")
+    print("  " + "-" * 40)
+    for lo in (1400.0, 1200.0, 1000.0, 900.0, 800.0, 700.0):
+        b = st.acceleration_binding(flight, lo, 1500.0, cm)
+        assert b["reaches_surge"] == b["phi_step_le_surge"]      # currency equivalence, live
+        print(f"  {lo:>6.0f} {b['E0']*100:>6.1f}% {b['SM_N']*100:>6.1f}% {b['ratio']:>8.3f} "
+              f"{'SURGE' if b['reaches_surge'] else 'ok':>8}")
+    print("  E0/SM_N rises as start power falls (E0 UP and SM_N DOWN): low-power burst worst on BOTH axes.")
+    print("  Rung 34's E0 was ALREADY largest here (no relocation); SM_N is the new info (the margin consumed).")
+    print("  The CROSSING into SURGE rides on the disclaimed phi_surge (E0 is floor-independent) and is NOT")
+    print("  claimed; only the trend is. Constant-flow SM is a weak sign-check only. Cycle: rung-6 exact.")
+
+
 def print_pdf_quench_table(flight):
     """Rung-15 payoff: the PDF THROUGH the finite quench — the two mixing mechanisms COMBINED.
 
@@ -2459,6 +2509,8 @@ def main():
     print_spool_transient_table(FLIGHT)
 
     print_fuel_metering_table(FLIGHT)
+
+    print_surge_line_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 
