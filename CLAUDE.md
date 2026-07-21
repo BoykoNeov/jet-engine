@@ -11,7 +11,7 @@ teaching, not for features or polish.
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is
-anchored to a published case. All rungs are live; the current scope is **rung 29**.
+anchored to a published case. All rungs are live; the current scope is **rung 31**.
 
 **This table is the one-line map, not the handout.** Each rung's derivation,
 assumptions, honest concessions, reduce-to-prior contract and verification gates
@@ -53,10 +53,15 @@ live in its spec (last column) — read the spec before touching a rung.
 
 | 30 | **The choked convergent nozzle** — `Nozzle(convergent=True)` / `_sonic_throat(…)`: is **FULL EXPANSION** — assumed since rung 2 — EARNED? Every thrust number has expanded fully to `p0`, which at design means `M9`=**1.86 (SUPERSONIC)** — silently a **C-D** nozzle. A fixed **convergent** nozzle (the subsonic-engine choice, and the fixed throat **rung 31 needs**) can reach only `M9`=1 and **chokes**. Brackets the two like rung 29 bracketed the turbine; **zero new knobs, no rate**. The one novelty: a convergent nozzle lets the **FLOW decide `p9`** (not a told back-pressure) — a **choke test + branch**. The **TPG sonic throat** root-finds `h_t(Tt9)−h_t(T*)=½γ_t(T*)R_tT*` (the velocity↔enthalpy trap again); `p*=pt9·pr_t(T*)/pr_t(Tt9)`; CHOKED ⇔ `p*>p0`. **Verdict: NOT earned at design** — `pt9/p0`=6.29 (crit ~1.85), chokes hard (`p*`=170.85 kPa, **underexpanded 3.4×**), `V9` drops 38% and momentum thrust **51%**, yet specific thrust falls only **6.6%** (`798→746`, TSFC +7.1%). **The finding: the pressure term rescues 87%** of the momentum deficit (`+356` N·s/kg direct pressure thrust = **48%** of the choked total) — the gap between "51% loss" and "6.6% loss" is why high-PR engines fit C-D/variable nozzles, and it is the pressure-thrust term the cycle has carried honestly since rung 2. **Diagnostic beside the cycle** (default `convergent=False` = ideal expansion ⇒ cycle **bit-for-bit rung 6**). Reduce: subcritical convergent ⇒ full expansion `p9=p0`, `M9<1` **bit-for-bit**; sonic solver ⇒ CPG closed-form critical ratio (`p*/pt`=0.5283@γ=1.4) to machine precision on a self-consistent gas (gate 2, non-tautological). Disclaimed: **fixed throat AREA deferred to rung 31** (rung 30 supplies the choke physics, not the `A9` that pins off-design); convergent-only (no C-D/variable modelled — the shipped path *is* the C-D reference). | `docs/rung30-spec.md` |
 
-**The invariant that spans rungs 7–30: they are all pure diagnostics.** NO/N never
-enter `_equil_solve`, the production nozzle stays frozen AND ideally-expanded
-(`convergent=False`), so **the cycle is bit-for-bit rung 6** — every rung above 6 only
-*reads* the run's state. Each rung's
+| 31 | **Off-design matching — the operating point becomes an OUTPUT** — `OffDesignMatcher.match(…)` / `choked_mfp(…)` / `_score(…)`: every rung so far SPECIFIED `π_c`+`Tt4`; real hardware is FIXED. The **first STRUCTURAL rung** — `π_c` is no longer a knob but the **OUTPUT of a matching solve**. With the **turbine NGV + the rung-30 convergent nozzle both CHOKED**, two mass-flow-parameter constraints (`ṁ√Tt/(A·pt)=MFP*`, computed EXACTLY from rung-30's `_sonic_throat`, `pt`-independent) pin the turbine: `π_t/√τ_t=A4·MFP4/(A8·π_n·MFP9)` (★). **The inversion**: at design the shaft SETS turbine work (`π_c` in); off-design `τ_t` is pinned by the choke and the shaft instead hands back the **compressor** (`τ_c-1 ∝ Tt4/(τ_r·T0)`, `π_c=[1+η_c(τ_c-1)]^(γc/(γc-1))` OUT). Zero new knobs, no rate. **Verdict: the choked hardware STRIPS the compressor of freedom** — `π_c`, `ṁ`, thrust ride ONE fixed **running line** (pumping characteristics **WITHOUT a compressor map** — the choked downstream hardware *is* the map: `π_c` 10→4.0 as `Tt4` 1500→800). **The finding: `τ_t` DRIFTS** — the textbook says a choked-turbine/choked-nozzle pair holds `τ_t` EXACTLY constant, but that is a **CPG** statement; on the real gas the two sonic `MFP*` sit at different `T` so `τ_t` drifts **2.8%** over a 2:1 throttle (0.16% on the `M0` axis). **Kill-tested by a 3-gas ladder**: CPG 0.000% → `thermally_perfect` (var `cp(T)`, FROZEN comp) **+2.30%** → reacting +2.84%, so the **`γ_t(T)` CURVE drives 81%** (composition the minority ~19%) — clean because within a point both throats share the frozen comp so `R` cancels in `MFP4/MFP9`. Same species as rung 30's "0.03% is the physics, not error". **Reduce-BY-CONSTRUCTION** (the rung-29 move): matching at design returns `π_c`=10 (5e-10), all stations/`ṁ`/thrust — the design reference IS the rung-30 choked-convergent point (specific thrust 745.7); A4/A8 captured from it, the compressor inverse is the exact inverse of `Compressor.apply`. **Gate 2 (non-tautological)**: on a self-consistent CPG gas the sonic-throat matching reproduces Mattingly Ch-8 closed-form referencing (`τ_t`,`π_t` const to **machine zero**, the `Tt4/(τ_r T0)` slaving factor const, `π_c` closed form to 1e-14) — two code paths onto the same operating point. **Choked envelope**: throttle down → `pt9/p0` falls → nozzle **UNCHOKES near `Tt4`≈600** (`pt9/p0`<~1.85), the pin lost — the matcher **flags** `nozzle_choked=False` rather than lying; the subsonic-nozzle matching mode deferred. **Separate entry point** — the default `build_turbojet(…).run(…)` design path is untouched, so the production cycle stays **bit-for-bit rung 6**. Disclaimed: `η_c/η_t` held at design (the map curvature is **rung 32**); NGV choke ASSUMED (not an NGV passage); isentropic knobs only; the M0>1 inlet folds in `ram_recovery`. | `docs/rung31-spec.md` |
+
+**The invariant that spans rungs 7–30: they are all pure diagnostics** (rung 31 is the
+**first STRUCTURAL rung** — it computes a *new* off-design operating point — but through a
+**separate entry point** (`OffDesignMatcher`) that leaves the default path untouched). NO/N
+never enter `_equil_solve`, the production nozzle stays frozen AND ideally-expanded
+(`convergent=False`), and the default `build_turbojet(…).run(…)` design run is unchanged, so
+**the cycle is bit-for-bit rung 6** — every rung above 6 only *reads* the run's design-point
+state (rung 31 matches a new operating point *beside* it). Each rung's
 verified anchor data lives in `docs/plans/rungN-anchor-*.md`; `docs/plans/` also holds
 the living plan/tasks (rungs 1–3).
 
@@ -74,7 +79,7 @@ the living plan/tasks (rungs 1–3).
 - **Every new rung reduces to its predecessor**, exactly and by test (`X=None` ⇒
   the prior code path). This is the project's spine — see any `docs/rungN-spec.md`.
 
-**Current scope (rung 30).** The **cycle solve** is a thermally-perfect, reacting,
+**Current scope (rung 31).** The **cycle solve** is a thermally-perfect, reacting,
 dissociation-equilibrium gas (`Gas.reacting_equilibrium()`) through ideal + real
 components (isentropic `η_c/η_t` **or** polytropic `e_c/e_t`, mutually exclusive;
 `π_d/π_b/π_n`, `η_b`, `η_m`; dual cold/hot gas; specified exit pressure). The burner
@@ -84,6 +89,9 @@ then freezes the station-4 mixture through turbine + nozzle. Fork A/B
 are kept alongside. Everything from rung 7 up is a diagnostic *beside* the cycle —
 including rung 30's **choked convergent nozzle** (`Nozzle(convergent=True)`), offered as
 an alternative to the default ideally-expanded nozzle so the cycle stays rung-6 exact.
+Rung 31's **off-design matching** (`OffDesignMatcher`) is the first STRUCTURAL rung — it
+solves a *new* operating point (`π_c` becomes an OUTPUT) against the fixed rung-30 choked
+hardware — but on a **separate entry point**, so the default design run is still rung-6 exact.
 
 ## Deferred seams (kept open on purpose)
 - **Finite-rate nozzle chemistry** — **BUILT BY RUNG 25** (`docs/rung25-spec.md`,
@@ -280,15 +288,24 @@ an alternative to the default ideally-expanded nozzle so the cycle stays rung-6 
   the **pressure term rescues 87%** of the momentum deficit (raw `V9` drop would imply 51%). A **diagnostic
   beside the cycle** (default off ⇒ rung-6 exact); reduce: subcritical convergent ⇒ full expansion
   bit-for-bit, sonic solver ⇒ CPG closed-form critical ratio to machine precision.
-- **Off-design / component maps** — **NEXT (rung 31, planned).** The analytic (Mattingly *AEDsys*)
-  performance-analysis route: with the **choked turbine NGV + the now-choked convergent nozzle**
-  (rung 30) both choked, the turbine operating point is pinned and the compressor runs a unique
-  **running line** set by the choked hardware, not by map curvature — pumping characteristics without a
-  map, reducing to the design point when operated there. This is a **structural** rung (the operating
-  point becomes an *output* of a matching solve), unlike the rung-7–30 diagnostics; it needs rung 30's
-  choke physics **plus** a fixed throat **area** `A9` and the choked flow function
-  `ṁ√Tt/(A·pt)=const`. Component-map matching (Cohen–Rogers–Saravanamuttoo — real maps, earns the η
-  curvature rung 31 holds constant) is the natural **rung-32** follow-on. Afterburner is a further seam.
+- **Off-design matching** — **BUILT BY RUNG 31** (`docs/rung31-spec.md`, `OffDesignMatcher`,
+  `docs/plans/rung31-anchor-offdesign.md`). The analytic (Mattingly Ch-8 / *AEDsys*) performance-analysis
+  route, done on the project's own TPG machinery (not CPG referencing — chosen so the reduce is bit-for-bit,
+  the rung-29 delegation move): with the **choked turbine NGV + the rung-30 convergent nozzle** both choked,
+  two mass-flow-parameter constraints (`ṁ√Tt/(A·pt)=MFP*`, from `_sonic_throat`) pin the turbine and the
+  shaft balance **inverts** to hand back the compressor — `π_c` becomes an **OUTPUT** and the engine runs a
+  unique **running line** set by the choked hardware, **without a compressor map** (the choked downstream
+  hardware *is* the map), reducing to the design point when operated there. The **first STRUCTURAL** rung.
+  **The finding: `τ_t` DRIFTS** — the textbook "choked turbine ⇒ `τ_t` exactly constant" is a **CPG**
+  statement; on the real variable-`cp`/reacting gas the two sonic `MFP*` shift with `γ_t(T)` so `τ_t` drifts
+  ~2.8%/2:1-throttle (CPG holds it to machine zero — gate 2 reproduces Mattingly's closed-form referencing).
+  **Choked envelope**: throttling back **unchokes the nozzle near `Tt4`≈600** (`pt9/p0`<~1.85) — the pin is
+  lost and the matcher **flags** it rather than lying; the **subsonic-nozzle matching mode** past unchoke is
+  the natural extension (Mattingly's dual mode, deferred). **What rung 31 leaves open:** (a) **component-map
+  matching** (Cohen–Rogers–Saravanamuttoo — real `η_c/η_t`/`π` maps, earns the η **curvature** rung 31 holds
+  constant along the running line) — the natural **rung-32** follow-on; (b) the **subsonic-nozzle branch**
+  past unchoke; (c) **feeding the matched operating point into a transient/spool-dynamics** model (`N` from
+  `τ_c`, acceleration) — a further seam. Afterburner is a further seam still.
 
 ## Conventions
 - **SI units throughout** (K, Pa, kg/s, m/s, J/kg). Convert kPa → Pa internally.
@@ -318,16 +335,22 @@ an alternative to the default ideally-expanded nozzle so the cycle stays rung-6 
 - `turbojet/components.py` — `Inlet, Compressor, Burner, Turbine, Nozzle` as pure
   `apply(state, gas)` in `h`/`pr` form (+ loss params, `ram_recovery(M0)`, the polytropic
   knob; the Nozzle branches CPG/TPG — the velocity↔enthalpy trap — and carries rung 30's
-  `convergent=True` choke mode via the module-level `_sonic_throat` M=1 solver). The `Burner`
-  runs the implicit `f = g(f)` fixed point, or `_solve_equilibrium` for an equilibrium gas.
+  `convergent=True` choke mode via the module-level `_sonic_throat` M=1 solver; rung 31's
+  `choked_mfp` — the `pt`-independent sonic mass-flow parameter `ṁ√Tt/(A·pt)` — lives here too,
+  built on `_sonic_throat`). The `Burner` runs the implicit `f = g(f)` fixed point, or
+  `_solve_equilibrium` for an equilibrium gas.
 - `turbojet/engine.py` — chains the components, solves the `Δh` + `η_m` shaft balance,
-  scores performance (two thermal efficiencies + cascade check).
+  scores performance (`_score`, two thermal efficiencies + cascade check). Also home to rung
+  31's **`OffDesignMatcher`** — captures the fixed throat areas `A4/A8` from a design run, then
+  `match(flight, Tt4)` solves the off-design operating point (`π_c` is an OUTPUT) via the
+  two-choke MFP match + the compressor inverse; a **separate entry point**, the design `run`
+  is untouched.
 - `main.py` — the design-point run: ideal-vs-real tables, the overlaid T–s diagram, and
   **one panel per rung** (each panel demonstrates that rung's load-bearing claim and
   states its honest scope).
 - `tests/` — `test_stations.py` / `test_validation.py` (rung 1), `test_rung2.py`,
   `test_polytropic.py` (2b), `test_variable_cp.py` (3), `test_reacting.py` (4),
-  `test_forkb.py` (5), then **`test_rungN.py` for N = 6…30**. Every rung file carries that
+  `test_forkb.py` (5), then **`test_rungN.py` for N = 6…31**. Every rung file carries that
   rung's **reduce-to-prior** gate plus its load-bearing claims; the gates are named in the
   rung's spec. Rungs 16, 23 and 24 **deliberately assert no emissions global-min location**;
   rung 25 **reduces to rung-14 FROZEN but deliberately NOT to equilibrium** (the (R−I) gap is
@@ -359,6 +382,14 @@ an alternative to the default ideally-expanded nozzle so the cycle stays rung-6 
   rounded-R trap is why it must be self-consistent). It **deliberately carries no throat area** (the
   fixed-`A9` off-design pin is rung 31's) — only the *choke verdict* (full expansion NOT earned at
   design), the *pressure-term-rescues-87%* finding, and the *cycle-untouched* invariant.
+  Rung 31 **reduces BY CONSTRUCTION** (not `==` — the operating point is a root-find): matching at the
+  design flight + `Tt4` returns `π_c`, all stations, `ṁ`, thrust to ≤1e-9, because A4/A8 are captured
+  from that design run and the compressor inverse is the exact inverse of `Compressor.apply`. Its
+  **non-tautological gate 2** is the CPG closed-form referencing (`τ_t`/`π_t` const to machine zero, the
+  `Tt4/(τ_r T0)` slaving factor const, `π_c` closed form to 1e-14) — the sonic-throat matching *is*
+  Mattingly Ch-8 on the gas he assumes. It **deliberately holds `η_c/η_t` at design** (the map curvature
+  is rung 32) and **flags the nozzle-unchoke boundary** rather than quoting the invalid choked-branch match;
+  the finding gated is the **`τ_t` drift** (reacting ≠ constant, CPG == constant).
 - `docs/rungN-spec.md` — the derivation, assumptions, concessions and gates for rung N.
   `docs/plans/rungN-anchor-*.md` — that rung's verified anchor data.
 

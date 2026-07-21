@@ -16,7 +16,7 @@ import matplotlib
 matplotlib.use("Agg")  # headless: render to a file, never pop a window (no plt.show)
 import matplotlib.pyplot as plt  # noqa: E402
 
-from turbojet.engine import FlightCondition, build_turbojet  # noqa: E402
+from turbojet.engine import FlightCondition, build_turbojet, OffDesignMatcher  # noqa: E402
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
     SpatialDwellPDF, PromptNO, _products_composition, _equilibrium_composition, _h_molar_A,
@@ -1126,6 +1126,64 @@ def print_choked_nozzle_table(flight):
     print("  ideal nozzle -> cycle unmoved; rung 31 uses this choke to PIN the fixed-throat off-design flow.)")
 
 
+def print_offdesign_table(flight):
+    """Rung-31 payoff: OFF-DESIGN MATCHING — the operating point becomes an OUTPUT.
+
+    Every rung so far specified pi_c and Tt4. Real hardware is FIXED: with the turbine NGV
+    and the (rung-30) convergent nozzle both choked, the turbine is pinned and the shaft
+    balance hands BACK the compressor — pi_c is no longer a knob but a number the choked
+    hardware forces. This is the first STRUCTURAL rung. A separate entry point: the
+    production design run is untouched (bit-for-bit rung 6). See docs/rung31-spec.md.
+    """
+    print("\nOff-design matching (rung 31): with the turbine NGV + convergent nozzle both CHOKED,")
+    print("the compressor has NO freedom — pi_c is an OUTPUT slaved to Tt4/(tau_r·T0), not a knob.")
+
+    # Design REFERENCE = the choked-convergent (rung-30) design point (the fixed hardware).
+    design = build_turbojet(Gas.reacting_equilibrium(), PI_C, TT4, flight.p0,
+                            nozzle_convergent=True, **REAL_LOSSES)
+    m = OffDesignMatcher(design, flight, 1.0)
+    od0 = m.match(flight, TT4)
+    print(f"\n  Reduce-to-design: matching at the design point returns pi_c = {od0.pi_c:.6f} "
+          f"(input 10), mdot/mdot_R = {od0.mdot_ratio:.6f} — the spine holds by construction.")
+
+    print(f"\n  Running line — throttle sweep (M0={flight.M0}); pi_c is the OUTPUT:")
+    print(f"  {'Tt4 [K]':>7} {'pi_c':>7} {'tau_t':>9} {'mdot/mdotR':>11} {'F/mdot':>8} "
+          f"{'thrust':>8} {'nozzle':>7}")
+    print("  " + "-" * 62)
+    for Tt4 in (1500.0, 1300.0, 1100.0, 900.0, 700.0, 600.0):
+        od = m.match(flight, Tt4)
+        tag = "choked" if od.nozzle_choked else "UNCHOKE"
+        print(f"  {Tt4:>7.0f} {od.pi_c:>7.3f} {od.tau_t:>9.6f} {od.mdot_ratio:>11.4f} "
+              f"{od.performance.specific_thrust:>8.1f} {od.thrust:>8.1f} {tag:>7}")
+
+    # KILL-TEST the drift's driver: a 3-gas ladder (CPG / variable-cp frozen-comp / reacting),
+    # ALL measured over the SAME choked range 1500→800 (both choked). Within a point both throats
+    # carry the SAME frozen composition, so R cancels in MFP4/MFP9 — the drift is a gamma_t(T)-CURVE
+    # effect that only the frozen-composition gas can isolate.
+    def _drift(matcher):
+        h, c = matcher.match(flight, 1500.0).tau_t, matcher.match(flight, 800.0).tau_t
+        return 100.0 * (h - c) / h
+    cpg = Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=1.3,
+              cp_t=(1.3 - 1) / 1.3 * 1239.0 * 1.3 / (1.3 - 1),
+              R_t=(1.3 - 1) / 1.3 * 1239.0, hPR=42.8e6)
+    d_cpg = _drift(OffDesignMatcher(build_turbojet(cpg, PI_C, TT4, flight.p0,
+                                                   nozzle_convergent=True, **REAL_LOSSES), flight, 1.0))
+    d_tpg = _drift(OffDesignMatcher(build_turbojet(Gas.thermally_perfect(), PI_C, TT4, flight.p0,
+                                                   nozzle_convergent=True, **REAL_LOSSES), flight, 1.0))
+    d_react = _drift(m)                          # same reacting matcher, same 1500→800 range
+
+    print("\n  THE VERDICT — the choked hardware strips the compressor of freedom: pi_c and mdot")
+    print("  ride one fixed running line (a pumping characteristic WITHOUT a compressor map).")
+    print("  THE FINDING — the textbook says tau_t is EXACTLY constant, but that is a CPG statement.")
+    print(f"  On the real gas tau_t DRIFTS {d_react:.1f}% across the choked throttle range (1500→800 K).")
+    print(f"  Kill-test (3-gas ladder, drift over the SAME range): CPG {d_cpg:+.3f}%  |  variable-cp")
+    print(f"  frozen-composition {d_tpg:+.2f}%  |  reacting {d_react:+.2f}%. So the gamma_t(T) CURVE")
+    print(f"  drives {100*d_tpg/d_react:.0f}% of it (R cancels between the two throats), composition the rest —")
+    print("  same species as rung 30's '0.03% is the physics, not error'. Below Tt4≈600 the nozzle")
+    print("  UNCHOKES (pt9/p0 < ~1.85) and the pin is lost — flagged, not lied about (rung 32: component")
+    print("  maps earn the eta curvature; the subsonic-nozzle mode is deferred).")
+
+
 def print_pdf_quench_table(flight):
     """Rung-15 payoff: the PDF THROUGH the finite quench — the two mixing mechanisms COMBINED.
 
@@ -2176,6 +2234,8 @@ def main():
     print_shifting_turbine_table(FLIGHT)
 
     print_choked_nozzle_table(FLIGHT)
+
+    print_offdesign_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

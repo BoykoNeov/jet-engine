@@ -529,6 +529,28 @@ def _sonic_throat(gas: Gas, Tt9: float, pt9: float, far: float) -> tuple[float, 
     return Tstar, pstar, Vstar
 
 
+def choked_mfp(gas: Gas, Tt: float, far: float) -> float:
+    """RUNG 31. The sonic (M=1) mass-flow parameter of the hot gas: MFP* = ṁ·√Tt/(A·pt).
+
+    A choked throat passes a FIXED corrected mass flow per unit area. Writing ṁ = ρ*·V*·A at
+    the sonic throat and dividing by A·pt/√Tt (with ρ* = p*/(R_t·T*)):
+
+        MFP*(Tt, far) = ρ*·V*·√Tt / pt = (p*/(R_t·T*))·V*·√Tt / pt = (p*/pt)·V*·√Tt/(R_t·T*)
+
+    The key property: MFP* is PRESSURE-LEVEL-INDEPENDENT. The sonic throat state (T*, p*/pt, V*)
+    comes from ISENTROPIC ratios off (Tt, pt) — p*/pt = pr_t(T*)/pr_t(Tt) does not depend on the
+    pt level — so MFP* is a function of Tt and composition ALONE. That is exactly what lets it
+    serve as a fixed hardware constant off-design (rung 31's two choke constraints). Computed
+    EXACTLY from rung 30's _sonic_throat (no closed-form γ approximation); on a CPG gas it equals
+    the textbook √(γ/R)·(2/(γ+1))^((γ+1)/(2(γ-1))). See docs/rung31-spec.md.
+    """
+    # pt cancels in the ratio p*/pt, so any positive pt gives the same MFP*; use 1.0.
+    Tstar, pstar, Vstar = _sonic_throat(gas, Tt, 1.0, far)
+    R = gas.R_t_at(far)
+    rho_over_pt = pstar / (R * Tstar)          # = (p*/pt)/(R·T*), the pt-independent group
+    return rho_over_pt * Vstar * Tt ** 0.5
+
+
 class Nozzle(Component):
     """Station 5 -> 9. Real nozzle: pi_n loss, expand to a SPECIFIED exit pressure.
 

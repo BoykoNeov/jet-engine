@@ -15,7 +15,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, List, Tuple
 
-from .components import Burner, Compressor, Component, Inlet, Nozzle, NozzleExit, Turbine
+from .components import (
+    Burner, Compressor, Component, Inlet, Nozzle, NozzleExit, Turbine,
+    _sonic_throat, choked_mfp, ram_recovery,
+)
 from .gas import FlowState, Gas
 
 
@@ -194,44 +197,7 @@ class Engine:
             stations[label] = state
 
         # --- Performance (docs/rung2-spec.md § Performance) ---
-        f = stations["4"].far
-        # Specific thrust per unit AIR mass flow. The PRESSURE-THRUST term
-        # (1+f)*Rt*T9*(1 - p0/p9)/V9 vanishes when p9 == p0 (fully expanded),
-        # recovering rung-1's (1+f)*V9 - V0. It is the static-pressure imbalance
-        # A9*(p9-p0)/mdot rewritten via the ideal gas law.
-        pressure_thrust = (1.0 + f) * gas.R_t_at(f) * T9 * (1.0 - flight.p0 / p9) / V9
-        specific_thrust = (1.0 + f) * V9 - V0 + pressure_thrust
-        # TSFC: fuel per unit thrust (air cancels).
-        tsfc = f / specific_thrust
-
-        # eta_brayton: the cold-Brayton identity 1 - Tt2/Tt3 == 1 - 1/pi_c^gc.
-        # Rung-1 value (0.4821) and the primary hand-check; no longer the true
-        # thermal efficiency once losses tilt the legs.
-        eta_brayton = 1.0 - stations["2"].Tt / stations["3"].Tt
-        # Net kinetic energy added to the jet, per unit air mass.
-        ke_net = (1.0 + f) * V9 ** 2 - V0 ** 2
-        # eta_thermal: the REAL thermal efficiency — KE added per unit fuel power.
-        eta_thermal = ke_net / (2.0 * f * gas.hPR)
-        # Propulsive efficiency: useful thrust power / KE dumped into the jet.
-        eta_propulsive = (specific_thrust * V0) / (0.5 * ke_net)
-        # Overall efficiency: thrust power per unit chemical power in.
-        eta_overall = (specific_thrust * V0) / (f * gas.hPR)
-
-        # CASCADE CLOSURE (a free consistency check + the teaching payoff): under
-        # the KE-based eta_thermal, the textbook cascade holds EXACTLY (it is an
-        # algebraic identity, F cancels), unlike under eta_brayton in rung 1.
-        assert abs(eta_overall - eta_thermal * eta_propulsive) < 1e-9 * eta_overall, (
-            "efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE definition"
-        )
-
-        performance = Performance(
-            specific_thrust=specific_thrust,
-            tsfc=tsfc,
-            eta_brayton=eta_brayton,
-            eta_thermal=eta_thermal,
-            eta_propulsive=eta_propulsive,
-            eta_overall=eta_overall,
-        )
+        performance = _score(gas, stations, V0, M9, T9, V9, p9, flight.p0, gas.hPR)
 
         return EngineResult(
             stations=stations,
@@ -242,6 +208,33 @@ class Engine:
             T9=T9,
             p9=p9,
         )
+
+
+def _score(gas: Gas, stations: Dict[str, FlowState], V0: float, M9: float,
+           T9: float, V9: float, p9: float, p0: float, hPR: float) -> Performance:
+    """Score a station table into a Performance (docs/rung2-spec.md § Performance).
+
+    Extracted from Engine.run so the rung-31 off-design path scores IDENTICALLY. The
+    PRESSURE-THRUST term (1+f)*Rt*T9*(1-p0/p9)/V9 vanishes when p9 == p0 (fully expanded),
+    recovering rung-1's (1+f)*V9 - V0; it is the static-pressure imbalance A9*(p9-p0)/mdot
+    rewritten via the ideal gas law (and it is exactly what carries the choked-nozzle finding).
+    """
+    f = stations["4"].far
+    pressure_thrust = (1.0 + f) * gas.R_t_at(f) * T9 * (1.0 - p0 / p9) / V9
+    specific_thrust = (1.0 + f) * V9 - V0 + pressure_thrust
+    tsfc = f / specific_thrust
+    # eta_brayton: the cold-Brayton identity 1 - Tt2/Tt3 (rung-1 hand-check).
+    eta_brayton = 1.0 - stations["2"].Tt / stations["3"].Tt
+    ke_net = (1.0 + f) * V9 ** 2 - V0 ** 2
+    eta_thermal = ke_net / (2.0 * f * hPR)
+    eta_propulsive = (specific_thrust * V0) / (0.5 * ke_net)
+    eta_overall = (specific_thrust * V0) / (f * hPR)
+    # CASCADE CLOSURE (free consistency check): the KE-based cascade holds exactly.
+    assert abs(eta_overall - eta_thermal * eta_propulsive) < 1e-9 * eta_overall, (
+        "efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE definition")
+    return Performance(
+        specific_thrust=specific_thrust, tsfc=tsfc, eta_brayton=eta_brayton,
+        eta_thermal=eta_thermal, eta_propulsive=eta_propulsive, eta_overall=eta_overall)
 
 
 def build_turbojet(
@@ -294,3 +287,254 @@ def build_turbojet(
         ("9", Nozzle(p_ambient, pi_n, p_exit, convergent=nozzle_convergent)),
     ]
     return Engine(gas, components, eta_m=eta_m)
+
+
+# =====================================================================================
+# RUNG 31 — OFF-DESIGN MATCHING: the operating point becomes an OUTPUT
+# =====================================================================================
+
+@dataclass
+class OffDesignResult:
+    """One matched off-design operating point (docs/rung31-spec.md).
+
+    Unlike EngineResult, `pi_c` and `mdot_air` are OUTPUTS of the matching solve, not
+    inputs — the choked turbine NGV + choked nozzle pin the turbine and the shaft balance
+    hands back the compressor. `mdot_ratio = mdot_air/mdot_air_design` is the mass-flow
+    (thrust) lapse. `nozzle_choked=False` means the point fell off the modeled branch (the
+    nozzle unchoked — the matching assumption is void there; see the envelope concession).
+    """
+
+    stations: Dict[str, FlowState]
+    performance: Performance
+    V0: float
+    V9: float
+    M9: float
+    T9: float
+    p9: float
+    thrust: float        # absolute thrust F = mdot_air * specific_thrust, N
+    Tt4: float           # throttle setting (input)
+    M0: float            # flight Mach (input)
+    pi_c: float          # compressor pressure ratio — OUTPUT of the match
+    tau_c: float         # compressor temperature ratio Tt3/Tt2 — OUTPUT
+    tau_t: float         # turbine temperature ratio Tt5/Tt4 (drifts weakly off-design)
+    pi_t: float          # turbine pressure ratio pt5/pt4
+    mdot_air: float      # air mass flow — OUTPUT (set by the turbine choke)
+    mdot_ratio: float    # mdot_air / mdot_air_design — the flow/thrust lapse
+    nozzle_choked: bool  # False => outside the modeled choked branch
+
+
+class OffDesignMatcher:
+    """RUNG 31. Capture fixed hardware from a design run, then match off-design points.
+
+    The design REFERENCE is the choked-CONVERGENT design point (rung 30): the fixed nozzle
+    IS convergent, so its throat area A8 is well defined and the matching nozzle is choked.
+    The turbine NGV is ASSUMED choked and its corrected-flow group pinned as A4. Off-design,
+    those two choke constraints pin the turbine operating point and INVERT the compressor —
+    pi_c falls out of the shaft balance rather than being specified. See docs/rung31-spec.md.
+
+    Usage:
+        design = build_turbojet(gas, pi_c=10, Tt4=1500, p0, **losses, nozzle_convergent=True)
+        matcher = OffDesignMatcher(design, FLIGHT_design, mdot_design=1.0)
+        od = matcher.match(FLIGHT_od, Tt4_od)     # -> OffDesignResult (pi_c is an OUTPUT)
+    """
+
+    _TOL = 1e-13         # fixed-point / bisection relative tolerance
+    _MAX = 200
+
+    def __init__(self, design_engine: "Engine", flight_design: FlightCondition,
+                 mdot_design: float = 1.0):
+        self.gas = design_engine.gas
+        self.eta_m = design_engine.eta_m
+        self.flight_design = flight_design
+        self.mdot_air_design = mdot_design
+        # The equilibrium gas FREEZES its station-4 mixture at ONE (Tt4, pt4); off-design
+        # re-equilibrates at a new burn condition, so each trial needs a fresh gas frozen
+        # there (see _working_gas). Capture the single fuel calibration to rebuild them.
+        self.hf_fuel_molar = getattr(self.gas, "hf_fuel_molar", None)
+
+        # Pull the (fixed) component parameters off the design engine.
+        self.e_c = self.e_t = None
+        for label, c in design_engine.components:
+            if isinstance(c, Inlet):
+                self.pi_d_design = c.pi_d
+            elif isinstance(c, Compressor):
+                self.pi_c_design, self.eta_c, self.e_c = c.pi_c, c.eta_c, c.e_c
+            elif isinstance(c, Burner):
+                self.Tt4_design, self.eta_b, self.pi_b = c.Tt4, c.eta_b, c.pi_b
+            elif isinstance(c, Turbine):
+                self.eta_t, self.e_t = c.eta_t, c.e_t
+            elif isinstance(c, Nozzle):
+                self.p_ambient, self.pi_n, self.nozzle_convergent = (
+                    c.p_ambient, c.pi_n, c.convergent)
+        # Scope: isentropic knobs only (the compressor inverse below is the isentropic map).
+        assert self.e_c is None and self.e_t is None, (
+            "rung 31 off-design uses the isentropic eta_c/eta_t maps; polytropic is out of scope")
+        assert self.nozzle_convergent, (
+            "rung 31 matching needs the FIXED CONVERGENT nozzle (rung 30): build the design "
+            "engine with nozzle_convergent=True so its throat area A8 is defined")
+
+        # pi_d = pi_d_max * ram_recovery(M0); back out pi_d_max at the design Mach.
+        self.pi_d_max = self.pi_d_design / ram_recovery(flight_design.M0)
+
+        # Run the design cycle ONCE to capture the reference state + the two throat areas.
+        self.ref = design_engine.run(flight_design, mdot_design)
+        s4, s5 = self.ref.stations["4"], self.ref.stations["5"]
+        self.f_design = s4.far
+        Tt4_R, pt4_R = s4.Tt, s4.pt
+        Tt9_R, pt9_R = s5.Tt, self.pi_n * s5.pt      # Tt9 = Tt5; pt9 = pi_n * pt5
+        mdot4_R = mdot_design * (1.0 + self.f_design)   # total mass through both throats
+        gas = self.gas
+        # A = mdot*sqrt(Tt)/(pt*MFP*), the choked-throat geometry (MFP* is pt-independent).
+        self.A4 = mdot4_R * Tt4_R ** 0.5 / (pt4_R * choked_mfp(gas, Tt4_R, self.f_design))
+        self.A8 = mdot4_R * Tt9_R ** 0.5 / (pt9_R * choked_mfp(gas, Tt9_R, self.f_design))
+        # A bare engine only to reuse freestream (station-0 totals).
+        self._fs_engine = Engine(gas, [], eta_m=self.eta_m)
+
+    # --- a gas whose station-4 mixture is frozen at THIS trial burn condition ----------
+
+    def _working_gas(self, f: float, Tt4: float, pt4: float) -> Gas:
+        """A gas with the station-4 equilibrium mixture frozen at (f, Tt4, pt4).
+
+        The equilibrium gas pins its freeze to a single burn condition; off-design each
+        trial (f, pt4) is a NEW burn, so we hand back a FRESH gas frozen there. Non-
+        equilibrium gases carry no such state, so the shared design gas is returned as-is
+        (gate 2's CPG path re-uses it directly).
+        """
+        if not self.gas.equilibrium:
+            return self.gas
+        g = Gas.reacting_equilibrium(hf_fuel_molar=self.hf_fuel_molar)
+        g.freeze_equilibrium(f, Tt4, pt4)
+        return g
+
+    # --- the turbine operating point: pinned by the two choke constraints -------------
+
+    def _tau_t_of_pi_t(self, gas: Gas, Tt4: float, f: float,
+                       pi_t: float) -> Tuple[float, float]:
+        """Turbine temperature ratio from its ISENTROPIC-efficiency map, given pi_t.
+
+        This is the inverse read of the shipped Turbine: pi_t -> ideal substate Tt5s (one pr
+        ratio) -> ideal work -> actual work via eta_t -> Tt5. Returns (tau_t, Tt5).
+        """
+        Tt5s = gas.T_from_pr_t(gas.pr_t(Tt4, f) * pi_t, f)      # pr_t(Tt5s)/pr_t(Tt4) = pi_t
+        dh_ideal = gas.h_t(Tt4, f) - gas.h_t(Tt5s, f)
+        Tt5 = gas.T_from_h_t(gas.h_t(Tt4, f) - self.eta_t * dh_ideal, f)
+        return Tt5 / Tt4, Tt5
+
+    def _solve_turbine(self, gas: Gas, Tt4: float, f: float) -> Tuple[float, float, float]:
+        """Solve pi_t from the MFP-ratio constraint (★):  pi_t/sqrt(tau_t) = A4·MFP4/(A8·pi_n·MFP9).
+
+        Left side rises monotonically with pi_t (less expansion -> higher tau_t AND pi_t), so
+        a single bisection on pi_t in (0, 1) finds the unique choke-consistent turbine point.
+        `gas` carries the station-4 mixture frozen at this trial condition. Returns
+        (pi_t, tau_t, Tt5).
+        """
+        MFP4 = choked_mfp(gas, Tt4, f)
+
+        def resid(pi_t: float) -> float:
+            tau_t, Tt5 = self._tau_t_of_pi_t(gas, Tt4, f, pi_t)
+            MFP9 = choked_mfp(gas, Tt5, f)                       # at the turbine-exit total Tt9=Tt5
+            rhs = self.A4 * MFP4 / (self.A8 * self.pi_n * MFP9)
+            return pi_t / tau_t ** 0.5 - rhs
+
+        lo, hi = 0.02, 0.999
+        flo, fhi = resid(lo), resid(hi)
+        assert flo < 0.0 < fhi, "turbine choke-match bracket does not straddle the root"
+        for _ in range(self._MAX):
+            mid = 0.5 * (lo + hi)
+            fm = resid(mid)
+            if flo * fm <= 0.0:
+                hi = mid
+            else:
+                lo, flo = mid, fm
+            if hi - lo <= self._TOL:
+                break
+        pi_t = 0.5 * (lo + hi)
+        tau_t, Tt5 = self._tau_t_of_pi_t(gas, Tt4, f, pi_t)
+        return pi_t, tau_t, Tt5
+
+    # --- the burner f-solve (reuses the shipped burner formulas) -----------------------
+
+    def _solve_f(self, Tt3: float, pt4: float, Tt4: float) -> float:
+        gas = self.gas
+        if gas.equilibrium:
+            return Burner(Tt4, self.eta_b, self.pi_b)._solve_equilibrium(Tt3, pt4, gas)
+        h3 = gas.h_c(Tt3)
+        f = 0.0
+        for _ in range(self._MAX):
+            h4 = gas.h_t(Tt4, f)
+            f_new = (h4 - h3) / (self.eta_b * gas.hPR - h4)
+            if abs(f_new - f) <= self._TOL * (f_new + 1e-30):
+                return f_new
+            f = f_new
+        raise AssertionError("off-design burner f did not converge")
+
+    # --- match one operating point -----------------------------------------------------
+
+    def match(self, flight: FlightCondition, Tt4: float) -> OffDesignResult:
+        """Match the engine at (flight, Tt4) against the fixed hardware. pi_c is an OUTPUT."""
+        gas = self.gas
+        pi_d = self.pi_d_max * ram_recovery(flight.M0)
+
+        # Station 0/2: freestream totals + inlet loss (mdot label fixed later; intensive-only).
+        state0, V0 = self._fs_engine.freestream(flight, self.mdot_air_design)
+        Tt2, pt2 = state0.Tt, pi_d * state0.pt
+
+        # JOINT fixed point on (f, pt4): the turbine pin needs the station-4 frozen mixture,
+        # which needs (f, pt4); pt4 comes out of the compressor at the bottom of the loop.
+        # Both are weak corrections, so seeding from the design point converges in a few
+        # passes. The station-4 mixture is re-equilibrated (fresh frozen gas) each trial.
+        f, pt4 = self.f_design, self.pi_b * self.pi_c_design * pt2
+        pi_c = pi_t = tau_t = Tt5 = Tt3 = None
+        for _ in range(self._MAX):
+            wgas = self._working_gas(f, Tt4, pt4)                      # station-4 mix frozen here
+            pi_t, tau_t, Tt5 = self._solve_turbine(wgas, Tt4, f)       # turbine pinned by choke
+            # Shaft balance sets the COMPRESSOR enthalpy rise (turbine work is now pinned).
+            dh_c = self.eta_m * (1.0 + f) * (wgas.h_t(Tt4, f) - wgas.h_t(Tt5, f))
+            Tt3 = wgas.T_from_h_c(wgas.h_c(Tt2) + dh_c)
+            # Invert the compressor isentropic-efficiency map -> pi_c (the OUTPUT).
+            h2, h3 = wgas.h_c(Tt2), wgas.h_c(Tt3)
+            Tt3s = wgas.T_from_h_c(h2 + self.eta_c * (h3 - h2))        # ideal substate
+            pi_c = wgas.pr_c(Tt3s) / wgas.pr_c(Tt2)
+            pt4_new = self.pi_b * pi_c * pt2
+            f_new = self._solve_f(Tt3, pt4_new, Tt4)
+            done = (abs(f_new - f) <= self._TOL * (f_new + 1e-30)
+                    and abs(pt4_new - pt4) <= self._TOL * pt4_new)
+            f, pt4 = f_new, pt4_new
+            if done:
+                break
+
+        # Direction check (contract #4): a real running line pumps harder when hotter.
+        assert pi_c > 1.0 and 0.0 < tau_t < 1.0 and pt4 > pt2, "off-design match unphysical"
+
+        # Absolute mass flow from the turbine choke constant, then the flow lapse.
+        wgas = self._working_gas(f, Tt4, pt4)
+        mdot4 = self.A4 * pt4 * choked_mfp(wgas, Tt4, f) / Tt4 ** 0.5
+        mdot_air = mdot4 / (1.0 + f)
+
+        # Rebuild the cycle FORWARD with the real components at the derived pi_c and mdot_air.
+        # A FRESH gas (unfrozen) lets Burner.apply freeze the station-4 mixture itself. The
+        # rebuild reproduces the solved operating point AND fires every shipped conservation
+        # assert (compressor/burner/turbine/nozzle), so the match cannot silently drift.
+        rgas = Gas.reacting_equilibrium(hf_fuel_molar=self.hf_fuel_molar) \
+            if self.gas.equilibrium else self.gas
+        state0, V0 = self._fs_engine.freestream(flight, mdot_air)
+        s2 = Inlet(pi_d).apply(state0, rgas)
+        s3 = Compressor(pi_c, self.eta_c).apply(s2, rgas)
+        s4 = Burner(Tt4, self.eta_b, self.pi_b).apply(s3, rgas)
+        dh_turb = (rgas.h_c(s3.Tt) - rgas.h_c(s2.Tt)) / (self.eta_m * (1.0 + s4.far))
+        s5 = Turbine(self.eta_t).apply(s4, rgas, dh_turb)
+        nozzle = Nozzle(self.p_ambient, self.pi_n, convergent=True)
+        exit = nozzle.apply(s5, rgas)
+        nozzle_choked = exit.p9 > self.p_ambient + 1e-6
+
+        stations = {"0": state0, "2": s2, "3": s3, "4": s4, "5": s5, "9": exit.state}
+        perf = _score(rgas, stations, V0, exit.M9, exit.T9, exit.V9, exit.p9,
+                      flight.p0, rgas.hPR)
+        thrust = mdot_air * perf.specific_thrust
+        return OffDesignResult(
+            stations=stations, performance=perf, V0=V0, V9=exit.V9, M9=exit.M9,
+            T9=exit.T9, p9=exit.p9, thrust=thrust, Tt4=Tt4, M0=flight.M0,
+            pi_c=pi_c, tau_c=s3.Tt / s2.Tt, tau_t=tau_t, pi_t=pi_t,
+            mdot_air=mdot_air, mdot_ratio=mdot_air / self.mdot_air_design,
+            nozzle_choked=nozzle_choked,
+        )
