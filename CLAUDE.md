@@ -11,7 +11,7 @@ teaching, not for features or polish.
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is
-anchored to a published case. All rungs are live; the current scope is **rung 32**.
+anchored to a published case. All rungs are live; the current scope is **rung 33**.
 
 **This table is the one-line map, not the handout.** Each rung's derivation,
 assumptions, honest concessions, reduce-to-prior contract and verification gates
@@ -57,14 +57,17 @@ live in its spec (last column) — read the spec before touching a rung.
 
 | 32 | **Component-map matching — the map re-labels the choke-pinned work** — `MapMatcher.match(…)` / `ComponentMap` / `_operating_point(…)`: rung 31 closed with "a pumping characteristic **WITHOUT a compressor map**". Rung 32 puts a **representative compressor + turbine map** on the matcher (`η_c/η_t = f(mdot_corr, N_corr)`) and the result is a **cross-rung CORRECTION** (the rung-29/28 move): **rung 31 over-claimed by holding `η` at design.** The choked hardware sets the **work schedule `τ_c(Tt4)` map-free** (that part of rung 31 SURVIVES — `τ_c` matches to ~1e-4), but converting the work into `π_c`, `ṁ` and a **shaft speed `N`** needs the real map — and rung 31 never even computed `N`. **The structural novelty: `N` enters** (a compressor map is indexed by corrected speed; rung 31 traced the whole running line without it). **The finding: `π_c`/`ṁ` DROOP** — a peaked (peak-η-near-design) compressor map droops `η_c` off-design (throttle walks off the efficiency island), so `π_c`/`ṁ` fall **below** rung 31's constant-η line, **SAME SIGN across 3 map shapes**, gap growing with throttle (~−2% at `Tt4`=900; **magnitude shape-dependent, DISCLAIMED**). **Sub-finding (sharper than "turbine maps are flat"): the turbine barely moves for a STRUCTURAL reason** — on a single spool `nu_t=N/√Tt4` stays within **~1%** of design (N and √Tt4 fall together), so `|Δη_t|`~2e-5 **even for a 25×-steeper turbine map** vs `|Δη_c|`~1e-2 — **the compressor is where the map bites**, and rung 31's "hold `η_t` const" was nearly exact *because the turbine is pinned in corrected speed*. `N/N_d` falls monotonically (1→0.69) and its schedule is robust across the speed-line curvature `σ` (~few-% spread) — genuinely `σ`-dependent (NOT the tautological `√(τ_c−1)`), but **absolute rpm disclaimed** (needs blade geometry). **Representative-map closure** (rungs 12–24 methodology: shapes disclosed, load-bearing claims shape-robust, magnitudes disclaimed); **no surge line ⇒ no surge-margin claim** (the CRS payoff deliberately NOT made). The `η_c` feedback is POSITIVE (lower `η_c`→lower `π_c`→lower `φ,n`→lower `η_c`) ⇒ solved by a **secant** on `η_c` (a non-convergence assert guards the deep-throttle edge). **Reduce**: the **FLAT map** `{a=b=c=σ=a_t=0}` ⇒ `MapMatcher.match` == rung-31 `OffDesignMatcher.match` **bit-for-bit** (machine-zero at design, ≤1e-9 sweep; two code paths, one operating point) — `N` a passive diagnostic. **Separate entry point** (subclasses rung 31; default `run(…)` untouched ⇒ cycle **bit-for-bit rung 6**). Disclaimed: droop magnitude & absolute `N(Tt4)` (ride on the map); no surge line; `η_b/π_b/π_n` held at design; isentropic + choked-nozzle-branch only (inherited from rung 31). | `docs/rung32-spec.md` |
 
-**The invariant that spans rungs 7–30: they are all pure diagnostics** (rungs 31–32 are the
-**STRUCTURAL rungs** — they compute a *new* off-design operating point, rung 32 with the component
-map — but through **separate entry points** (`OffDesignMatcher`, `MapMatcher`) that leave the
-default path untouched). NO/N
+| 33 | **The subsonic-nozzle matching branch — the decoupling BREAKS** — `OffDesignMatcher._match_subsonic(…)` / the auto-dispatch in `.match(…)`: rung 31 flagged the nozzle-unchoke boundary (`Tt4≈600` at design) and **deferred** the second matching mode; rung 33 builds it. Below unchoke the nozzle is **SUBSONIC** (expands fully to `p0`, `M9<1`), so only the **NGV stays choked** — rung 31's two-choke pin `(★) π_t/√τ_t=A4·MFP4/(A8·π_n·MFP9)` (pure geometry ⇒ `τ_t,π_t` const) is **void**. The nozzle now passes the compressible-flow `MFP(M9)` with `M9=M9(pt9/p0)`, and `pt9/p0` moves with `π_c`, so `π_t` becomes the **equilibrating unknown** that matches NGV-choked supply to subsonic-nozzle demand: `resid(π_t)=ṁ_NGV−ṁ_noz=0` (★★), a 1-D root-find with the rung-31 `(f,pt4)` fixed point nested inside. Zero new knobs, no rate. **THE RUNG — the INVERSION of rung 31**: on the choked branch the coupling ran through the **`γ_t(T)` curve** (var-`cp`, 2nd order) so `τ_t` drifted on the reacting gas but was **machine-constant on CPG** (rung 31 gate 2); on the subsonic branch the coupling runs through **`π_c`** (structural, geometric, 1st order) so `τ_t` **VARIES even on a CPG gas** (~1.2% across the window, rising toward 1). The effect that **died on CPG** for the choked branch is **first-order and alive** on the subsonic branch — rung 31's "the turbine does not know the operating condition changed" holds **only while both throats choke**. **Framing correction** (advisor): the coupling is to the pressure **RATIO `π_c`** via `pt9/p0`, **NOT** ambient `p0` — the cycle is pressure-homogeneous (ratios `p0`-invariant to machine zero, gate 6). **Envelope — TWO boundaries**: bounded **ABOVE** by nozzle-unchoke and **BELOW** by **thrust-neutral idle** (as `Tt4` falls `π_c→1`, `(1+f)V9→V0`, net thrust→0 near `Tt4≈440`; below it the engine windmills — reported SUB-IDLE, not a drag point, and NOT left to trip the shared `_score` cascade). Window **widens at low ram** (CPG: unchokes at `Tt4≈820` at `M0≈0.10`) — the idle-descent regime. **Reduce**: the choked path is **left LITERALLY unchanged** (dispatch only fires when the rebuilt nozzle is subsonic) ⇒ all choked points **bit-for-bit rung 31** (the 31/32 suites pass unchanged, 14/14); at the boundary `M9→1` continuously. **Non-tautological gate 4**: on a self-consistent CPG gas the matched subsonic point satisfies the **textbook** `MFP(M9)`, isentropic `pt9/p0↔M9`, and sonic `MFP*` to **<1e-9** (solver vs closed-form, two paths, one point). **Separate entry point** (default `run(…)` untouched ⇒ cycle **bit-for-bit rung 6**). Disclaimed: `η_c/η_t` held at design (inherited from rung 31); **subsonic + component map OUT OF SCOPE** (`MapMatcher` overrides `match`, stays choked-only); NGV choke assumed; thrust-neutral is the modeled lower bound (spool-down/windmilling dynamics a separate time-dependent seam). | `docs/rung33-spec.md` |
+
+**The invariant that spans rungs 7–30: they are all pure diagnostics** (rungs 31–33 are the
+**STRUCTURAL rungs** — they compute a *new* off-design operating point: rung 32 with the component
+map, rung 33 on the **subsonic-nozzle branch** below unchoke — but through **separate entry points**
+(`OffDesignMatcher`, `MapMatcher`) that leave the default path untouched). NO/N
 never enter `_equil_solve`, the production nozzle stays frozen AND ideally-expanded
 (`convergent=False`), and the default `build_turbojet(…).run(…)` design run is unchanged, so
 **the cycle is bit-for-bit rung 6** — every rung above 6 only *reads* the run's design-point
-state (rungs 31–32 match a new operating point *beside* it). Each rung's
+state (rungs 31–33 match a new operating point *beside* it — rung 33 the subsonic-nozzle
+branch). Each rung's
 verified anchor data lives in `docs/plans/rungN-anchor-*.md`; `docs/plans/` also holds
 the living plan/tasks (rungs 1–3).
 
@@ -82,7 +85,7 @@ the living plan/tasks (rungs 1–3).
 - **Every new rung reduces to its predecessor**, exactly and by test (`X=None` ⇒
   the prior code path). This is the project's spine — see any `docs/rungN-spec.md`.
 
-**Current scope (rung 32).** The **cycle solve** is a thermally-perfect, reacting,
+**Current scope (rung 33).** The **cycle solve** is a thermally-perfect, reacting,
 dissociation-equilibrium gas (`Gas.reacting_equilibrium()`) through ideal + real
 components (isentropic `η_c/η_t` **or** polytropic `e_c/e_t`, mutually exclusive;
 `π_d/π_b/π_n`, `η_b`, `η_m`; dual cold/hot gas; specified exit pressure). The burner
@@ -98,7 +101,11 @@ hardware — but on a **separate entry point**, so the default design run is sti
 Rung 32's **component-map matching** (`MapMatcher` + `ComponentMap`) subclasses it: representative
 `η_c/η_t` maps + speed lines droop `π_c`/`ṁ` off-design and attach the shaft speed `N`, while the
 choke-pinned work `τ_c` stays map-free — the flat map reduces to rung 31 bit-for-bit, and the
-default run is untouched.
+default run is untouched. Rung 33's **subsonic-nozzle matching branch** (`OffDesignMatcher._match_subsonic`,
+auto-dispatched from `.match`) solves the *second* matching mode below the nozzle-unchoke boundary:
+only the NGV chokes, so `π_t` re-couples to `π_c` and the running line's `τ_t` **varies even on a CPG
+gas** (the inversion of rung 31's CPG-constant `τ_t`) — the choked path is left literally unchanged, so
+choked points stay bit-for-bit rung 31.
 
 ## Deferred seams (kept open on purpose)
 - **Finite-rate nozzle chemistry** — **BUILT BY RUNG 25** (`docs/rung25-spec.md`,
@@ -308,11 +315,11 @@ default run is untouched.
   ~2.8%/2:1-throttle (CPG holds it to machine zero — gate 2 reproduces Mattingly's closed-form referencing).
   **Choked envelope**: throttling back **unchokes the nozzle near `Tt4`≈600** (`pt9/p0`<~1.85) — the pin is
   lost and the matcher **flags** it rather than lying; the **subsonic-nozzle matching mode** past unchoke is
-  the natural extension (Mattingly's dual mode, deferred). **What rung 31 leaves open:** (a) ~~**component-map
-  matching**~~ — **BUILT BY RUNG 32** (`docs/rung32-spec.md`, `MapMatcher` + `ComponentMap`); (b) the
-  **subsonic-nozzle branch** past unchoke; (c) **feeding the matched operating point into a
-  transient/spool-dynamics** model (`N` from `τ_c`, acceleration) — a further seam. Afterburner is a further
-  seam still.
+  the natural extension (Mattingly's dual mode). **What rung 31 leaves open:** (a) ~~**component-map
+  matching**~~ — **BUILT BY RUNG 32** (`docs/rung32-spec.md`, `MapMatcher` + `ComponentMap`); (b) ~~the
+  **subsonic-nozzle branch** past unchoke~~ — **BUILT BY RUNG 33** (`docs/rung33-spec.md`, below); (c)
+  **feeding the matched operating point into a transient/spool-dynamics** model (`N` from `τ_c`,
+  acceleration) — a further seam. Afterburner is a further seam still.
 - **Component-map matching** — **BUILT BY RUNG 32** (`docs/rung32-spec.md`, `MapMatcher` + `ComponentMap`,
   `docs/plans/rung32-anchor-component-maps.md`). Rung 31 named this seam ("earns the η curvature rung 31
   holds constant along the running line"). Rung 32 built it and turned it into a **cross-rung CORRECTION**:
@@ -325,9 +332,27 @@ default run is untouched.
   for a steep turbine map) — the compressor is where the map bites. **Representative-map closure** (rungs
   12–24 methodology, shapes disclosed / claims shape-robust / magnitudes disclaimed); **no surge line** ⇒ the
   CRS surge-margin payoff deliberately NOT made. Reduce: the **flat map** ⇒ `MapMatcher` == rung-31
-  `OffDesignMatcher` **bit-for-bit** (machine-zero at design). **What rung 32 leaves open:** the subsonic-nozzle
-  branch (b above); a **real hardware/CFD map** with a surge line (would earn the surge-margin claim); the
-  transient/spool-dynamics seam (c above, now that `N` exists).
+  `OffDesignMatcher` **bit-for-bit** (machine-zero at design). **What rung 32 leaves open:** a **real
+  hardware/CFD map** with a surge line (would earn the surge-margin claim); the transient/spool-dynamics seam
+  (c above, now that `N` exists). (The subsonic-nozzle branch is **BUILT BY RUNG 33**, below — but subsonic
+  + component map stays OUT OF SCOPE: `MapMatcher` overrides `match` and stays choked-only.)
+- **The subsonic-nozzle matching branch** — **BUILT BY RUNG 33** (`docs/rung33-spec.md`,
+  `OffDesignMatcher._match_subsonic`, `docs/plans/rung33-anchor-subsonic.md`). Rung 31 named this seam (it
+  flagged the nozzle-unchoke boundary `Tt4≈600` and deferred "Mattingly's dual mode"). Rung 33 built it: below
+  unchoke only the **NGV chokes**, so rung 31's two-choke pin `(★)` is void; the nozzle passes the
+  compressible-flow `MFP(M9)` (`M9=M9(pt9/p0)`), `pt9/p0` moves with `π_c`, and `π_t` becomes the
+  **equilibrating unknown** matching NGV-choked supply to subsonic-nozzle demand `(★★)`. **The rung is the
+  INVERSION of rung 31**: the choked branch's `τ_t` coupling ran through the `γ_t(T)` curve (2nd order, died on
+  CPG); the subsonic branch's runs through `π_c` (structural, 1st order) so `τ_t` **VARIES even on a CPG gas**
+  — "the turbine does not know the operating condition changed" holds only while **both** throats choke.
+  Framing (advisor): the coupling is to the RATIO `π_c` via `pt9/p0`, **not** ambient `p0` (pressure-homogeneous,
+  gate 6). **Envelope — two boundaries**: nozzle-unchoke above, **thrust-neutral idle** below (`Tt4≈440`; below
+  it the engine windmills → SUB-IDLE). Reduce: choked path left literally unchanged ⇒ choked points bit-for-bit
+  rung 31 (31/32 suites pass unchanged); gate 4 (non-tautological): the matched subsonic point satisfies the
+  textbook `MFP(M9)`/isentropic relations to <1e-9 on a CPG gas. **What rung 33 leaves open:** subsonic +
+  component map (rung 32's `MapMatcher` stays choked-only); a subsonic-NGV mode (the NGV is assumed choked
+  throughout); spool-down/windmilling **transient dynamics** below thrust-neutral idle (the time-dependent seam,
+  now that both `N` and the subsonic branch exist).
 
 ## Conventions
 - **SI units throughout** (K, Pa, kg/s, m/s, J/kg). Convert kPa → Pa internally.
@@ -372,13 +397,18 @@ default run is untouched.
   point (a **secant** on `η_c` for the positive feedback) and attaches the shaft speed `N` via the
   speed-line inversion `_operating_point`; the flat map reduces it to `OffDesignMatcher` bit-for-bit.
   `_solve_turbine` gained an optional `eta_t=` (default = design, so rung 31 is untouched) so the
-  map can pass a per-trial turbine efficiency.
+  map can pass a per-trial turbine efficiency. And rung 33's **subsonic-nozzle branch**: `match`
+  auto-dispatches to **`_match_subsonic`** when the choked-branch rebuild leaves the nozzle unchoked —
+  a 1-D root-find (`_subsonic_operating`) on the turbine `π_t` matching NGV-choked supply to the
+  subsonic-nozzle demand (`OffDesignResult.branch` = `"choked"`/`"subsonic"`); the choked path is left
+  literally unchanged (dispatch only fires on unchoke), and `MapMatcher` — which overrides `match` —
+  does NOT inherit it (subsonic + map out of scope).
 - `main.py` — the design-point run: ideal-vs-real tables, the overlaid T–s diagram, and
   **one panel per rung** (each panel demonstrates that rung's load-bearing claim and
   states its honest scope).
 - `tests/` — `test_stations.py` / `test_validation.py` (rung 1), `test_rung2.py`,
   `test_polytropic.py` (2b), `test_variable_cp.py` (3), `test_reacting.py` (4),
-  `test_forkb.py` (5), then **`test_rungN.py` for N = 6…32**. Every rung file carries that
+  `test_forkb.py` (5), then **`test_rungN.py` for N = 6…33**. Every rung file carries that
   rung's **reduce-to-prior** gate plus its load-bearing claims; the gates are named in the
   rung's spec. Rungs 16, 23 and 24 **deliberately assert no emissions global-min location**;
   rung 25 **reduces to rung-14 FROZEN but deliberately NOT to equilibrium** (the (R−I) gap is
@@ -427,6 +457,18 @@ default run is untouched.
   speed** (`nu_t` within ~1%, `|Δη_t| ≪ |Δη_c|` even for a steep turbine map); `N` attaches, is monotone, and
   its schedule is robust across the speed-line `σ` (bounded spread — genuinely `σ`-dependent, **not** the
   tautological `√(τ_c−1)`). It **deliberately makes no surge-margin claim** (no surge line modeled).
+  Rung 33 **reduces by leaving the choked path LITERALLY unchanged** (dispatch only fires when the rebuilt
+  nozzle is subsonic) ⇒ all choked points bit-for-bit rung 31 (the **rung-31/32 suites pass unchanged**, the
+  bit-for-bit witness) + design reduces to `π_c`=10 branch=`"choked"`. Its non-tautological **gate 4**: on a
+  self-consistent CPG gas the matched subsonic point satisfies the **textbook** compressible-flow `MFP(M9)`,
+  the isentropic `pt9/p0↔M9`, and the sonic `MFP*` to **<1e-9** (the `_sonic_throat`/`Nozzle` solver vs the
+  closed forms, two paths, one point). Finding gates (fast **CPG** gas — gas-independent structural physics):
+  the subsonic **`τ_t` VARIES** with throttle (>1e-3 spread, monotone) while the CHOKED `τ_t` on the SAME CPG
+  gas is machine-constant (the **inversion** of rung 31 gate 2 asserted side-by-side); **boundary continuity**
+  (`M9→1`, no `π_c`/`τ_t` jump across the switch); the **envelope** (monotone; SUB-IDLE raised below
+  thrust-neutral idle); **homogeneity** (`π_c`/`τ_t`/`M9` `p0`-invariant to machine zero — the coupling is to
+  `π_c`, not `p0`). It **deliberately asserts no subsonic map** (`MapMatcher` stays choked-only) and reports
+  thrust-neutral idle as the modeled lower bound.
 - `docs/rungN-spec.md` — the derivation, assumptions, concessions and gates for rung N.
   `docs/plans/rungN-anchor-*.md` — that rung's verified anchor data.
 

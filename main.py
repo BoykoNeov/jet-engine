@@ -1182,8 +1182,8 @@ def print_offdesign_table(flight):
     print(f"  frozen-composition {d_tpg:+.2f}%  |  reacting {d_react:+.2f}%. So the gamma_t(T) CURVE")
     print(f"  drives {100*d_tpg/d_react:.0f}% of it (R cancels between the two throats), composition the rest —")
     print("  same species as rung 30's '0.03% is the physics, not error'. Below Tt4≈600 the nozzle")
-    print("  UNCHOKES (pt9/p0 < ~1.85) and the pin is lost — flagged, not lied about (rung 32: component")
-    print("  maps earn the eta curvature; the subsonic-nozzle mode is deferred).")
+    print("  UNCHOKES (pt9/p0 < ~1.85) and this two-choke pin is lost — the SUBSONIC-nozzle matching")
+    print("  branch (rung 33) takes over there; rung 32 earns the eta curvature the running line holds.")
 
 
 def print_component_map_table(flight):
@@ -1243,6 +1243,53 @@ def print_component_map_table(flight):
     print(f"  SUB-FINDING — the turbine barely moves: its corrected speed nu_t = {steep.nu_t:.4f} stays")
     print(f"  ~1% from design (single-spool N/sqrt(Tt4)), so |d eta_t| = {abs(steep.eta_t-0.90):.1e} even for a")
     print(f"  STEEP turbine map — the compressor is where the map bites. (No surge line modeled.)")
+
+
+def print_subsonic_matching_table(flight):
+    """Rung-33 payoff: the SUBSONIC-NOZZLE matching branch — the decoupling BREAKS.
+
+    Rung 31 pinned the turbine with TWO choked throats: (★) is pure geometry, so tau_t/pi_t are
+    constant (machine-const on CPG) — 'the turbine does not know the operating condition changed'.
+    That holds ONLY while both throats choke. Below the nozzle-unchoke boundary only the NGV stays
+    choked; the nozzle passes a SUBSONIC flow whose throughput MFP(M9) depends on pt9/p0, which moves
+    with pi_c. So pi_t re-couples to the compressor. THE RUNG (the inversion of rung 31): the coupling
+    is STRUCTURAL (through pi_c), not var-cp, so the subsonic tau_t VARIES even on a CPG gas — where
+    rung 31's choked tau_t was machine-constant. A separate entry point; the design run stays rung-6.
+    """
+    print("\nSubsonic-nozzle matching (rung 33): below Tt4~600 the nozzle UNCHOKES and rung 31's two-choke")
+    print("pin (star) is void — only the NGV chokes. pi_t becomes the unknown that matches the NGV-choked")
+    print("supply to the subsonic-nozzle demand MFP(M9). The clean rung-31 decoupling BREAKS.")
+
+    design = build_turbojet(Gas.reacting_equilibrium(), PI_C, TT4, flight.p0,
+                            nozzle_convergent=True, **REAL_LOSSES)
+    m = OffDesignMatcher(design, flight, 1.0)
+    print(f"\n  Running line across the boundary (M0={flight.M0}); branch is auto-dispatched:")
+    print(f"  {'Tt4 [K]':>7} {'branch':>9} {'pi_c':>7} {'tau_t':>9} {'M9':>7} {'F/mdot':>8} {'pt9/p0':>7}")
+    print("  " + "-" * 60)
+    for Tt4 in (700.0, 600.0, 560.0, 520.0, 480.0, 440.0, 420.0):
+        try:
+            od = m.match(flight, Tt4)
+            print(f"  {Tt4:>7.0f} {od.branch:>9} {od.pi_c:>7.3f} {od.tau_t:>9.6f} {od.M9:>7.4f} "
+                  f"{od.performance.specific_thrust:>8.1f} {od.stations['9'].pt/flight.p0:>7.3f}")
+        except AssertionError:
+            print(f"  {Tt4:>7.0f} {'SUB-IDLE':>9}  (net thrust <= 0: below thrust-neutral idle)")
+
+    # THE RUNG — the CPG contrast: choked tau_t machine-constant, subsonic tau_t VARIES.
+    g, cp = 1.3, 1239.0
+    cpg = Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp, R_t=(g - 1) / g * cp, hPR=42.8e6)
+    mc = OffDesignMatcher(build_turbojet(cpg, PI_C, TT4, flight.p0, nozzle_convergent=True,
+                                         **REAL_LOSSES), flight, 1.0)
+    ch = [mc.match(flight, t).tau_t for t in (1200.0, 800.0)]            # choked branch, CPG
+    # subsonic branch, CPG — the FULL window (unchoke down to thrust-neutral idle).
+    sub = [mc.match(flight, t).tau_t for t in (580.0, 540.0, 500.0, 460.0, 440.0)]
+    print("\n  THE RUNG — rung 31: 'the turbine does not know the operating condition changed' holds")
+    print("  ONLY while both throats choke. On a CPG gas the CHOKED tau_t is constant to machine zero")
+    print(f"  (spread {abs(ch[0]-ch[1]):.1e}, rung 31 gate 2), but the SUBSONIC tau_t VARIES "
+          f"{100*(max(sub)-min(sub))/max(sub):.2f}%")
+    print("  — the coupling runs through pi_c (STRUCTURAL, 1st order), not the gamma_t(T) curve that")
+    print("  drove rung 31's 2nd-order drift. So it SURVIVES CPG: the exact inversion of rung 31.")
+    print("  (Coupling is to pi_c via pt9/p0, NOT ambient p0 — the cycle is pressure-homogeneous.)")
+    print("  Envelope: bounded ABOVE by nozzle-unchoke, BELOW by thrust-neutral idle. Cycle: rung-6 exact.")
 
 
 def print_pdf_quench_table(flight):
@@ -2299,6 +2346,8 @@ def main():
     print_offdesign_table(FLIGHT)
 
     print_component_map_table(FLIGHT)
+
+    print_subsonic_matching_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

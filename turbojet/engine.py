@@ -320,7 +320,8 @@ class OffDesignResult:
     pi_t: float          # turbine pressure ratio pt5/pt4
     mdot_air: float      # air mass flow — OUTPUT (set by the turbine choke)
     mdot_ratio: float    # mdot_air / mdot_air_design — the flow/thrust lapse
-    nozzle_choked: bool  # False => outside the modeled choked branch
+    nozzle_choked: bool  # False => the nozzle is subsonic (rung 33 branch), not choked
+    branch: str = "choked"  # RUNG 33: "choked" | "subsonic" — which matching mode produced this
 
 
 class OffDesignMatcher:
@@ -533,6 +534,14 @@ class OffDesignMatcher:
         exit = nozzle.apply(s5, rgas)
         nozzle_choked = exit.p9 > self.p_ambient + 1e-6
 
+        # RUNG 33 — DISPATCH. If the choked-branch match leaves the nozzle SUBSONIC, the (★)
+        # two-choke pin is void (only the NGV stays choked). Re-solve on the subsonic branch
+        # rather than returning the (now invalid) choked-branch numbers — the rung-31 "flag,
+        # don't lie" ethos upgraded to "solve the second mode." The choked path above is left
+        # LITERALLY unchanged so rung 31's bit-for-bit reduce is preserved. See docs/rung33-spec.md.
+        if not nozzle_choked:
+            return self._match_subsonic(flight, Tt4)
+
         stations = {"0": state0, "2": s2, "3": s3, "4": s4, "5": s5, "9": exit.state}
         perf = _score(rgas, stations, V0, exit.M9, exit.T9, exit.V9, exit.p9,
                       flight.p0, rgas.hPR)
@@ -542,7 +551,169 @@ class OffDesignMatcher:
             T9=exit.T9, p9=exit.p9, thrust=thrust, Tt4=Tt4, M0=flight.M0,
             pi_c=pi_c, tau_c=s3.Tt / s2.Tt, tau_t=tau_t, pi_t=pi_t,
             mdot_air=mdot_air, mdot_ratio=mdot_air / self.mdot_air_design,
-            nozzle_choked=nozzle_choked,
+            nozzle_choked=nozzle_choked, branch="choked",
+        )
+
+    # =====================================================================================
+    # RUNG 33 — THE SUBSONIC-NOZZLE MATCHING BRANCH (below the nozzle-unchoke boundary)
+    # =====================================================================================
+    #
+    # Rung 31 pinned the turbine by TWO choked throats: (★) π_t/√τ_t = A4·MFP4/(A8·π_n·MFP9)
+    # is PURE GEOMETRY — τ_t, π_t are constant (CPG), "the turbine does not know the operating
+    # condition changed." Below the nozzle-unchoke boundary that decoupling BREAKS: only the NGV
+    # stays choked; the nozzle passes a SUBSONIC flow whose corrected throughput is no longer a
+    # fixed sonic MFP* but MFP(M9) with M9 set by the ACTUAL ratio pt9/p0 — and pt9/p0 moves with
+    # π_c as you throttle. So π_t is no longer geometry-pinned; it is the equilibrating unknown
+    # that makes the NGV-choked supply meet the subsonic-nozzle demand:
+    #
+    #     resid(π_t) = ṁ_NGV(π_t) − ṁ_nozzle,subsonic(π_t) = 0                        (★★)
+    #
+    # For each trial π_t: turbine map → τ_t, Tt5; shaft balance → Tt3 → invert compressor → π_c
+    # → pt4 → pt9 = π_n·π_t·pt4; ṁ_NGV = A4·pt4·MFP*(Tt4,f)/√Tt4; the nozzle (p9 = p0, fully
+    # expanded, M9 < 1) hands ρ9·V9 so ṁ_noz = A8·ρ9·V9. Nested (f, pt4) fixed point inside,
+    # exactly as the choked branch. THE RUNG: the coupling runs through π_c (structural), NOT
+    # through γ_t(T)/composition — so on a CPG gas the subsonic τ_t VARIES with throttle, the
+    # exact INVERSION of rung 31's choked τ_t (machine-constant on CPG). First-order structural
+    # coupling here vs rung 31's second-order variable-cp drift.
+
+    def _subsonic_operating(self, flight: FlightCondition, Tt4: float, Tt2: float,
+                            pt2: float, p0: float, pi_t: float) -> dict:
+        """Close the (f, pt4) fixed point + shaft + compressor inversion at a TRIAL pi_t, then
+        evaluate the SUBSONIC nozzle (p9 = p0). Returns everything the (★★) root-find and the
+        final rebuild need, including the mass-continuity residual ṁ_NGV − ṁ_noz.
+
+        This IS the rung-31 inner loop, but pi_t is an OUTER unknown (not pinned by the choke)
+        and the nozzle passes a pressure-ratio-dependent subsonic flow instead of a fixed MFP*.
+        """
+        f, pt4 = self.f_design, self.pi_b * self.pi_c_design * pt2
+        pi_c = tau_t = Tt5 = Tt3 = None
+        for _ in range(self._MAX):
+            wgas = self._working_gas(f, Tt4, pt4)
+            tau_t, Tt5 = self._tau_t_of_pi_t(wgas, Tt4, f, pi_t)      # turbine map at THIS pi_t
+            dh_c = self.eta_m * (1.0 + f) * (wgas.h_t(Tt4, f) - wgas.h_t(Tt5, f))
+            Tt3 = wgas.T_from_h_c(wgas.h_c(Tt2) + dh_c)               # shaft sets compressor rise
+            h2, h3 = wgas.h_c(Tt2), wgas.h_c(Tt3)
+            Tt3s = wgas.T_from_h_c(h2 + self.eta_c * (h3 - h2))       # ideal substate
+            pi_c = wgas.pr_c(Tt3s) / wgas.pr_c(Tt2)                   # compressor inverse -> pi_c
+            pt4_new = self.pi_b * pi_c * pt2
+            f_new = self._solve_f(Tt3, pt4_new, Tt4)
+            done = (abs(f_new - f) <= self._TOL * (f_new + 1e-30)
+                    and abs(pt4_new - pt4) <= self._TOL * pt4_new)
+            f, pt4 = f_new, pt4_new
+            if done:
+                break
+        wgas = self._working_gas(f, Tt4, pt4)
+        mdot4_ngv = self.A4 * pt4 * choked_mfp(wgas, Tt4, f) / Tt4 ** 0.5   # NGV choke supply
+        pt5 = pi_t * pt4
+        s5 = FlowState(Tt=Tt5, pt=pt5, mdot=1.0, far=f)
+        exit = Nozzle(self.p_ambient, self.pi_n, convergent=True).apply(s5, wgas)
+        rho9 = exit.p9 / (wgas.R_t_at(f) * exit.T9)
+        mdot4_noz = self.A8 * rho9 * exit.V9                          # subsonic-nozzle demand
+        return dict(f=f, pt4=pt4, pi_c=pi_c, tau_t=tau_t, Tt3=Tt3, Tt5=Tt5, pi_t=pi_t,
+                    mdot4_ngv=mdot4_ngv, mdot4_noz=mdot4_noz, M9=exit.M9, p9=exit.p9,
+                    pt9=self.pi_n * pt5, resid=mdot4_ngv - mdot4_noz)
+
+    def _match_subsonic(self, flight: FlightCondition, Tt4: float) -> OffDesignResult:
+        """Match on the SUBSONIC-nozzle branch: root-find (★★) for the turbine pressure ratio
+        pi_t so the NGV-choked mass flow equals the subsonic-nozzle throughput, then rebuild the
+        cycle FORWARD (firing every shipped conservation assert). See docs/rung33-spec.md.
+
+        Bracketing: resid(pi_t) is monotone-decreasing (more turbine expansion -> more compressor
+        work -> higher pt9 -> the nozzle passes more), so a low pi_t gives resid > 0 and a high one
+        resid < 0. The UPPER wall is the sub-idle limit: as pi_t -> 1 the turbine does less work,
+        pi_c -> 1 and pt9 falls toward p0 (M9 -> 0); once pt9 <= p0 the nozzle cannot expand and
+        the engine no longer self-sustains. If resid does not straddle zero below that wall the
+        point is SUB-IDLE — reported, not force-fit (contract: honest scope edge, not a bug).
+        """
+        gas = self.gas
+        pi_d = self.pi_d_max * ram_recovery(flight.M0)
+        state0, _V0 = self._fs_engine.freestream(flight, self.mdot_air_design)
+        Tt2, pt2 = state0.Tt, pi_d * state0.pt
+        p0 = flight.p0
+
+        def resid(pi_t: float) -> float:
+            return self._subsonic_operating(flight, Tt4, Tt2, pt2, p0, pi_t)["resid"]
+
+        # The self-sustaining window in pi_t is bounded at BOTH ends: pt9/p0 is non-monotone in
+        # pi_t (it peaks mid-range), so at low Tt4 the nozzle-can't-expand wall (pt9 <= p0, or the
+        # burner ceases to converge) cuts the range from below AND above. March each bracket in
+        # from its extreme until resid is evaluable; resid is monotone-decreasing between, so the
+        # low end is the most positive and the high end the most negative. If they do not straddle
+        # zero inside the physical window the point is SUB-IDLE — reported, not force-fit.
+        lo, rlo = None, None
+        pt = 0.15
+        while pt < 0.95:
+            try:
+                rlo = resid(pt); lo = pt; break
+            except AssertionError:      # over-expanded/no-burn wall at the low-pi_t end
+                pt += 0.02
+        hi, rhi = None, None
+        pt = 0.9995
+        while lo is not None and pt > lo:
+            try:
+                rhi = resid(pt); hi = pt; break
+            except AssertionError:      # nozzle p9 > pt9 wall at the high-pi_t end
+                pt -= 0.02
+        assert lo is not None and hi is not None and rlo * rhi < 0.0, (
+            f"rung-33 subsonic match does not bracket at Tt4={Tt4:.0f}, M0={flight.M0:.2f} "
+            f"(resid[{lo}]={rlo}, resid[{hi}]={rhi}) — SUB-IDLE: the engine does not "
+            f"self-sustain a subsonic-nozzle operating point here.")
+        for _ in range(self._MAX):
+            mid = 0.5 * (lo + hi)
+            rm = resid(mid)
+            if rlo * rm <= 0.0:
+                hi = mid
+            else:
+                lo, rlo = mid, rm
+            if hi - lo <= self._TOL:
+                break
+        pi_t = 0.5 * (lo + hi)
+        op = self._subsonic_operating(flight, Tt4, Tt2, pt2, p0, pi_t)
+        f, pt4, pi_c = op["f"], op["pt4"], op["pi_c"]
+
+        # Direction / physicality (same contract as the choked branch).
+        assert pi_c > 1.0 and 0.0 < op["tau_t"] < 1.0 and pt4 > pt2, "rung-33 subsonic match unphysical"
+
+        mdot4 = self.A4 * pt4 * choked_mfp(self._working_gas(f, Tt4, pt4), Tt4, f) / Tt4 ** 0.5
+        mdot_air = mdot4 / (1.0 + f)
+
+        # Rebuild FORWARD with the derived (pi_c, mdot_air) — reproduces the operating point and
+        # fires every shipped conservation assert. The convergent nozzle now takes the SUBSONIC
+        # branch itself (p9 = p0), so M9 < 1 by construction — the dispatch guard (advisor).
+        rgas = Gas.reacting_equilibrium(hf_fuel_molar=self.hf_fuel_molar) \
+            if self.gas.equilibrium else self.gas
+        state0, V0 = self._fs_engine.freestream(flight, mdot_air)
+        s2 = Inlet(pi_d).apply(state0, rgas)
+        s3 = Compressor(pi_c, self.eta_c).apply(s2, rgas)
+        s4 = Burner(Tt4, self.eta_b, self.pi_b).apply(s3, rgas)
+        dh_turb = (rgas.h_c(s3.Tt) - rgas.h_c(s2.Tt)) / (self.eta_m * (1.0 + s4.far))
+        s5 = Turbine(self.eta_t).apply(s4, rgas, dh_turb)
+        exit = Nozzle(self.p_ambient, self.pi_n, convergent=True).apply(s5, rgas)
+        assert exit.M9 < 1.0 + 1e-6, (
+            f"rung-33 subsonic branch must exit M9 < 1 (got {exit.M9:.4f}) — dispatch misfired")
+        assert not (exit.p9 > self.p_ambient + 1e-6), "rung-33 subsonic branch must be fully expanded (p9 = p0)"
+
+        # LOWER ENVELOPE: the subsonic branch ends at THRUST-NEUTRAL idle. Below it (1+f)V9 < V0
+        # and the engine produces net drag (it would windmill, not thrust) — a physical SUB-IDLE
+        # bound, reported cleanly here rather than left to trip the near-zero/negative-thrust
+        # efficiency cascade in the shared _score (which is left untouched). So the subsonic branch
+        # is bounded ABOVE by nozzle-unchoke and BELOW by thrust-neutral idle.
+        f9 = s4.far
+        pressure_thrust = (1.0 + f9) * rgas.R_t_at(f9) * exit.T9 * (1.0 - flight.p0 / exit.p9) / exit.V9
+        sp_thrust = (1.0 + f9) * exit.V9 - V0 + pressure_thrust
+        assert sp_thrust > 0.0, (
+            f"rung-33 subsonic match at Tt4={Tt4:.0f}, M0={flight.M0:.2f} has net thrust <= 0 "
+            f"— SUB-IDLE: below thrust-neutral idle the engine does not self-sustain useful thrust.")
+
+        stations = {"0": state0, "2": s2, "3": s3, "4": s4, "5": s5, "9": exit.state}
+        perf = _score(rgas, stations, V0, exit.M9, exit.T9, exit.V9, exit.p9, flight.p0, rgas.hPR)
+        thrust = mdot_air * perf.specific_thrust
+        return OffDesignResult(
+            stations=stations, performance=perf, V0=V0, V9=exit.V9, M9=exit.M9,
+            T9=exit.T9, p9=exit.p9, thrust=thrust, Tt4=Tt4, M0=flight.M0,
+            pi_c=pi_c, tau_c=s3.Tt / s2.Tt, tau_t=op["tau_t"], pi_t=pi_t,
+            mdot_air=mdot_air, mdot_ratio=mdot_air / self.mdot_air_design,
+            nozzle_choked=False, branch="subsonic",
         )
 
 
