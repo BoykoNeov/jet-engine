@@ -5,6 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: d6ed48ca-d67d-48f6-b698-b30b3ba4c4b9
+  modified: 2026-07-21T20:28:12.801Z
 ---
 
 **Standing authorization (2026-06-29):** the user said "always commit and push —
@@ -22,6 +23,13 @@ update**, or whenever the user says **"session end"**, always do all four, in or
    (`type: summary`, e.g. `feat: implement station N (...)`), including the doc
    updates.
 4. **Push to main** — push the `main` branch to `origin`.
+
+**The pre-commit test gate is `pytest --runslow`, NOT bare `pytest` (2026-07-21).**
+Bare `pytest` runs only the FAST subset and deselects the `slow`-tagged expensive
+FINDING / robustness gates (mixing-PDF sweeps, transient marches). The bit-for-bit
+reduce SPINE is kept in bare `pytest`, but the finding gates are not — so verify
+green with `pytest --runslow` (all 371, ~10–15 min) before step 3. See CLAUDE.md
+Commands + `conftest.py`.
 
 **Why:** the user wants a consistent wrap-up so memory, docs, and git stay in
 sync and nothing is lost between sessions. The action needs judgment (what to

@@ -2,7 +2,8 @@
 
 - [Session-end routine](session-end-routine.md) — at end of batch/planning, or "session end": update memory + docs, commit, push to main
 - [Git remote setup](git-remote-setup.md) — repo is github.com/BoykoNeov/jet-engine (public), branch main, origin over SSH
-- [Always commit and push](always-commit-and-push.md) — auto-commit + push green work to main without being asked
+- [Always commit and push](always-commit-and-push.md) — auto-commit + push green work to main without being asked; green-gate is `pytest --runslow` NOT bare pytest
+- [Test-suite speed policy](test-suite-speed-policy.md) — suite fast-by-default (~2.5min routine / ~10min full); bare pytest skips slow FINDING gates but KEEPS the reduce spine; commit gate = `pytest --runslow`; config in pytest.ini+conftest.py, no test file edited
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page published as artifact 56cde230…; update same URL, regenerate via extract_data.py + build.py
 - [Rung 25 finite-rate nozzle](rung25-finite-rate-nozzle.md) — SHIPPED rung 25 = finite-rate nozzle chemistry; inverted into a three-state picture (Da→∞ irreversible-fast ceiling below the reversible bound)
 - [Rung 26 freeze-out](rung26-freeze-out.md) — SHIPPED rung 26 = freeze-out; anchored local Da(T,p) clock, moving freeze point, density-driven, refuted rung-25's own seam framing

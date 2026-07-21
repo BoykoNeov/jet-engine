@@ -702,8 +702,26 @@ steady ⇒ heat-soak never moves the running line). Separate entry point; defaul
 
 ## Commands
 - Run the model:  `python main.py`
-- Run tests:      `pytest`  (or `python tests/test_rung2.py`, etc.)
-- Install deps:   `pip install -r requirements.txt`  (matplotlib only)
+- Run tests (fast, routine):  `pytest`  — the FAST subset (~2.5 min). The inherently-expensive
+  FINDING / robustness gates (the mixing-PDF per-pocket sweeps of rungs 16/20–24, the transient
+  marches) are tagged `slow` and **deselected** — BUT the bit-for-bit **reduce spine**
+  (`test_reduce_*`, `test_cycle_untouched_*`, `*_bit_for_bit`) is kept in the fast run, so routine
+  `pytest` still guards "each rung reduces to its predecessor, exactly and by test."
+- Run tests (full, every gate):  `pytest --runslow`  — all 371 tests (~10–15 min). **Use this at
+  commit / session-end / CI** — the fast subset is for quick iteration, not for signing off a rung.
+- Only the slow gates:  `pytest -m slow`   ·   One rung by hand:  `python tests/test_rung2.py`
+- Install deps:   `pip install -r requirements.txt`  (matplotlib + pytest + pytest-xdist)
+
+**Test-suite speed policy** (nothing about the gates changed — the full run is bit-for-bit what it
+always was; only *which run when* and *scheduling*): the suite is PARALLEL by default
+(`-n auto`, `pytest.ini`) and `conftest.py` (a) tags a test `slow` from its learned per-test
+duration (≥ 8 s, seeded so a cold checkout is already fast; `.pytest_cache` refines it) and
+deselects those unless `--runslow` — **except the reduce-spine gates, which are never slow-tagged**
+(`_is_spine`), so the every-time run always checks the invariant; and (b) reorders collection
+LONGEST-FIRST (interleaved so xdist's 2-per-worker seed can't stack the two longest poles) — LPT
+scheduling so the full-run wall clock approaches the single longest test (rung 24's ~6-min monotone
+scan) instead of a stacked tail. Was 49 min serial → now ~2.5 min routine / ~10–15 min full. The rung
+gates themselves are untouched (no test file edited; the derive/reduce spine is pristine).
 
 ## Stack
 Python (standard library) + matplotlib for the plot. No other dependencies.

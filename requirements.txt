@@ -1,1 +1,7 @@
+# Runtime — the model + the T-s plot
 matplotlib
+
+# Test suite. pytest.ini sets `addopts = -n auto`, so pytest-xdist is REQUIRED to run the
+# tests (parallel by default). See conftest.py / CLAUDE.md for the fast/slow run policy.
+pytest
+pytest-xdist
