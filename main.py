@@ -17,7 +17,7 @@ matplotlib.use("Agg")  # headless: render to a file, never pop a window (no plt.
 import matplotlib.pyplot as plt  # noqa: E402
 
 from turbojet.engine import (  # noqa: E402
-    FlightCondition, build_turbojet, OffDesignMatcher, MapMatcher, ComponentMap,
+    FlightCondition, build_turbojet, OffDesignMatcher, MapMatcher, ComponentMap, SpoolTransient,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -1292,6 +1292,62 @@ def print_subsonic_matching_table(flight):
     print("  Envelope: bounded ABOVE by nozzle-unchoke, BELOW by thrust-neutral idle. Cycle: rung-6 exact.")
 
 
+def print_spool_transient_table(flight):
+    """Rung-34 payoff: THE SPOOL TRANSIENT — N becomes a STATE, not an output.
+
+    Rungs 31-33 solved STEADY operating points, each closed by the shaft power balance. Rung 34
+    unbalances it: a real spool has inertia, so a fuel change drives a net torque and N accelerates.
+    The shaft balance becomes a DIFFERENTIAL equation and N — which rungs 31-33 computed — becomes
+    the STATE. The compressor map runs FORWARD (rungs 31-32 ran it backward), the NGV choke closes
+    the flow with NO shaft balance, and the leftover power drives dN/dt in nondimensional time
+    s = t/tau_spool. THE FINDING is NOT 'the shape is I-independent' (a tautology in a 1-state
+    model) — it is the two-timescale ratio r = tau_fuel/tau_spool: the acceleration excursion above
+    the running line is F(r), max at r->0 (an algebraic map property), vanishing as r->inf. That is
+    why real engines schedule fuel ramps. A separate entry point; the design run stays rung-6 exact.
+    See docs/rung34-spec.md.
+    """
+    print("\nSpool transient (rung 34): the shaft gets INERTIA, so N becomes a STATE that N-lags a fuel")
+    print("change. The compressor map runs FORWARD + NGV choke closes the flow with NO shaft balance;")
+    print("the leftover power drives dN/ds. Equilibrium (dN/ds=0) reduces to the rung 31/32 running line.")
+
+    gas = Gas.thermally_perfect()          # fast gas: the transient physics is gas-independent
+    shape = ComponentMap.surge_flow()
+    st = SpoolTransient(build_turbojet(gas, PI_C, TT4, flight.p0, nozzle_convergent=True,
+                                       **REAL_LOSSES), flight, 1.0, comp_map=shape)
+    base = OffDesignMatcher(build_turbojet(gas, PI_C, TT4, flight.p0, nozzle_convergent=True,
+                                           **REAL_LOSSES), flight, 1.0)
+
+    # Reduce: the equilibrium IS the steady running line (a different closure onto the same point).
+    d = st.equilibrium(flight, TT4, ComponentMap.flat())
+    print(f"\n  Reduce-to-rung-31: flat-map equilibrium at design returns pi_c = {d['pi_c']:.6f}, "
+          f"N/N_d = {d['nu']:.6f} — the running line is the transient's stable attractor.")
+
+    # THE FINDING: peak acceleration excursion above the running line vs r = tau_fuel/tau_spool.
+    E0 = st.constant_speed_excursion(flight, 1100.0, 1400.0, shape)
+    print(f"\n  THE FINDING — acceleration Tt4 1100->1400, peak excursion ABOVE the running line")
+    print(f"  (toward lower surge margin) vs the fuel/spool time ratio r = tau_fuel/tau_spool:")
+    print(f"  {'r = tau_fuel/tau_spool':>22} {'peak excursion':>15} {'E/E0':>7}")
+    print("  " + "-" * 48)
+    print(f"  {'0 (algebraic limit)':>22} {E0*100:>13.2f}% {1.000:>7.3f}")
+    for r in (0.2, 0.5, 1.0, 2.0, 5.0):
+        E = st.ramp_excursion(flight, 1100.0, 1400.0, r, shape, s_settle=5.0, ds=0.1)["E"]
+        print(f"  {r:>22.1f} {E*100:>13.2f}% {E/E0:>7.3f}")
+
+    # Spool-down: fuel cut, N coasts down and crosses the choked->subsonic (rung 33) boundary.
+    def sched(s):
+        return 900.0 if s <= 0 else (460.0 if s >= 6.0 else 900.0 - (900.0 - 460.0) * (s / 6.0))
+    nu0 = st.equilibrium(flight, 900.0, shape)["nu"]
+    traj = st.integrate(flight, sched, nu0, 21.0, 0.1, shape)
+    flip = next((p for i, p in enumerate(traj) if i and traj[i].branch != traj[i - 1].branch), None)
+
+    print("\n  Direction is shape-robust (accel + / decel - across 3 surge-realistic maps); the r->0")
+    print("  step excursion is a MAP property (E/E0->1), the DYNAMICAL content is the ratio — a slow")
+    print(f"  ramp (r=5) nearly stays on the line (E/E0={st.ramp_excursion(flight,1100.,1400.,5.,shape,s_settle=5.,ds=0.1)['E']/E0:.2f}). tau_spool=I·w_d^2/P_ref is the ONE disclaimed clock.")
+    print(f"  SPOOL-DOWN — fuel cut 900->460: N coasts {nu0:.3f} -> {traj[-1].nu:.3f}, and at s={flip.s:.1f} the")
+    print(f"  nozzle UNCHOKES (M9={flip.M9:.3f}), flipping onto rung 33's SUBSONIC branch toward thrust-neutral")
+    print(f"  idle (sp. thrust {traj[0].sp_thrust:.0f} -> {traj[-1].sp_thrust:.0f} N·s/kg). Cycle: rung-6 exact.")
+
+
 def print_pdf_quench_table(flight):
     """Rung-15 payoff: the PDF THROUGH the finite quench — the two mixing mechanisms COMBINED.
 
@@ -2348,6 +2404,8 @@ def main():
     print_component_map_table(FLIGHT)
 
     print_subsonic_matching_table(FLIGHT)
+
+    print_spool_transient_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

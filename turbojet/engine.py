@@ -22,6 +22,28 @@ from .components import (
 from .gas import FlowState, Gas
 
 
+def _illinois(f, a: float, b: float, fa: float, fb: float,
+              tol: float = 1e-10, maxit: int = 100) -> float:
+    """Regula-falsi (Illinois) root of f on [a, b] with f(a)*f(b) < 0.
+
+    Keeps the bracket (robust like bisection) but converges superlinearly — the Illinois
+    down-weighting of a retained endpoint kills false position's one-sided stalling. Used for
+    the rung-34 hot loops (thousands of instant evaluations per marched trajectory), where the
+    inner sonic-throat bisection makes plain bisection's ~48 iterations far too costly.
+    """
+    for _ in range(maxit):
+        c = (a * fb - b * fa) / (fb - fa)
+        fc = f(c)
+        if abs(b - a) <= tol or fc == 0.0:
+            return c
+        if fc * fb < 0.0:
+            a, fa = b, fb
+        else:
+            fa *= 0.5               # Illinois: down-weight the retained endpoint
+        b, fb = c, fc
+    return b
+
+
 @dataclass
 class FlightCondition:
     """Freestream / flight inputs (station 0)."""
@@ -739,10 +761,18 @@ class ComponentMap:
 
     Compressor SPEED LINES (from Euler work Δh_c = ψ·U^2 + a loading law ψ(phi)) — these are
     what supply N:
-        (tau_c-1)/(tau_c-1)_d = ψ(phi)·n^2 ,  ψ(phi) = 1 - sigma*(phi-1)^2 ,  phi = m/n
+        (tau_c-1)/(tau_c-1)_d = ψ(phi)·n^2 ,  ψ(phi) = 1 - sigma*(phi-1)^2 - l*(phi-1) ,  phi = m/n
     The choke pins (tau_c, m); inverting for n places the pinned point on its speed line. At
-    sigma = 0 this collapses to n = sqrt[(tau_c-1)/(tau_c-1)_d] (map-free); sigma != 0 is the
+    sigma = l = 0 this collapses to n = sqrt[(tau_c-1)/(tau_c-1)_d] (map-free); nonzero is the
     map's genuine speed-line content.
+
+    RUNG 34 — the LINEAR loading slope `l`. Rung 32 used the map BACKWARD (solve_n) near design,
+    where the parabola `1 - sigma*(phi-1)^2` (which PEAKS at phi=1) was adequate. Rung 34 runs the
+    speed line FORWARD, and the parabola's zero slope at design gives the WRONG sign on the low-flow
+    (surge) side — a real compressor speed line has psi RISING as flow falls (dpsi/dphi < 0), so the
+    pressure ratio climbs toward surge. The linear term `l > 0` supplies that monotone negative
+    slope (dpsi/dphi|_1 = -l). It DEFAULTS to 0, so every rung-32 map and gate is bit-for-bit
+    unchanged; the rung-34 surge-realistic shapes turn it on.
 
     Turbine map (choked -> fixed corrected flow, so indexed by corrected speed alone; real
     turbine maps are FLAT near design, hence a_t small):
@@ -754,10 +784,11 @@ class ComponentMap:
     c: float = 0.0        # compressor eta island cross curvature
     sigma: float = 0.0    # compressor speed-line loading-law curvature (0 => flat loading)
     a_t: float = 0.0      # turbine eta curvature in corrected speed (small: turbine maps are flat)
+    l: float = 0.0        # RUNG 34: linear loading slope (0 => rung-32 parabola; >0 => surge-realistic)
 
     @classmethod
     def flat(cls) -> "ComponentMap":
-        """The FLAT map: every eta held at its design value, sigma=0. Reduces MapMatcher to rung 31."""
+        """The FLAT map: every eta held at its design value, sigma=l=0. Reduces MapMatcher to rung 31."""
         return cls()
 
     # Three representative shapes (moderated so eta_c stays in a believable band). The
@@ -774,8 +805,42 @@ class ComponentMap:
     def tilted(cls) -> "ComponentMap":
         return cls(a=0.12, b=0.12, c=0.08, sigma=0.6, a_t=0.02)
 
+    # RUNG 34 — SURGE-REALISTIC shapes: the linear slope `l>0` makes the speed line's pressure ratio
+    # RISE toward low flow (toward surge), so a forward acceleration excursion is physical. Three
+    # disclosed shapes for the shape-robust sign of the excursion (magnitude disclaimed).
+    @classmethod
+    def surge_flow(cls) -> "ComponentMap":
+        return cls(a=0.20, b=0.05, c=0.0, sigma=0.1, l=0.7, a_t=0.02)
+
+    @classmethod
+    def surge_pressure(cls) -> "ComponentMap":
+        return cls(a=0.08, b=0.15, c=0.0, sigma=0.1, l=1.0, a_t=0.02)
+
+    @classmethod
+    def surge_tilted(cls) -> "ComponentMap":
+        return cls(a=0.14, b=0.10, c=0.06, sigma=0.2, l=0.85, a_t=0.02)
+
+    def psi(self, phi: float) -> float:
+        """Loading (work) coefficient at flow coefficient phi: psi(1)=1, slope -l at design."""
+        return 1.0 - self.sigma * (phi - 1.0) ** 2 - self.l * (phi - 1.0)
+
+    def phi_max(self, psi_floor: float = 0.1) -> float:
+        """The largest flow coefficient phi (> 1) at which psi(phi) >= psi_floor, i.e. the
+        speed line still does positive work (tau_c > 1). Beyond it the parabola+linear loading
+        law goes non-physical; the rung-34 forward compressor closure caps its flow search here.
+        Returns a large value when the loading is flat (sigma = l = 0 => psi == 1 always).
+        """
+        if self.sigma == 0.0 and self.l == 0.0:
+            return 5.0
+        rhs = 1.0 - psi_floor                          # solve sigma*u^2 + l*u = rhs, u = phi-1 > 0
+        if self.sigma == 0.0:
+            u = rhs / self.l
+        else:
+            u = (-self.l + (self.l ** 2 + 4.0 * self.sigma * rhs) ** 0.5) / (2.0 * self.sigma)
+        return 1.0 + u
+
     def is_flat(self) -> bool:
-        return self.a == self.b == self.c == self.sigma == self.a_t == 0.0
+        return self.a == self.b == self.c == self.sigma == self.a_t == self.l == 0.0
 
     def eta_c_at(self, base: float, flowcoef: float, n: float) -> float:
         """Compressor efficiency read off the island at (flow coefficient, corrected speed)."""
@@ -794,7 +859,7 @@ class ComponentMap:
         target = (tau_c - 1.0) / (tau_c_d - 1.0)
 
         def g(n: float) -> float:
-            return (1.0 - self.sigma * (m / n - 1.0) ** 2) * n * n - target
+            return self.psi(m / n) * n * n - target
 
         lo, hi = 0.1, 2.0
         flo, fhi = g(lo), g(hi)
@@ -969,3 +1034,413 @@ class MapMatcher(OffDesignMatcher):
             eta_c=eta_c, eta_t=eta_t, n_corr=op["n"], N_ratio=op["N_ratio"],
             flowcoef=op["flowcoef"], nu_t=op["nu_t"],
         )
+
+
+# =====================================================================================
+# RUNG 34 — THE SPOOL TRANSIENT: N becomes a STATE, not an output
+# =====================================================================================
+#
+# Rungs 31-33 solved STEADY operating points, each closed by the shaft POWER BALANCE
+# (eta_m*P_t = P_c). Rung 34 unbalances it: a real spool has rotational inertia, so a
+# fuel change drives a net torque and N accelerates. The shaft balance becomes a
+# DIFFERENTIAL equation and N — which rungs 31-33 computed — becomes the STATE variable.
+#
+# Model: QUASI-STEADY components (choked throats + combustion are acoustically fast) with
+# ONE dynamic element, the shaft:
+#
+#     I*w*(dw/dt) = eta_m*P_turbine(N,Tt4) - P_compressor(N,Tt4)              (SHAFT ODE)
+#
+# The structural novelty: the compressor map runs FORWARD (rungs 31-32 ran it backward).
+# Given the corrected speed n(N,Tt2) and a trial corrected flow m, the Euler speed line
+# gives tau_c = 1 + (tau_c_d-1)*psi(m/n)*n^2 directly (the exact inverse of rung 32's
+# solve_n). The compressor operating point is then closed by the NGV choke ALONE — on
+# EITHER branch, since pt4 = pi_b*pi_c*pt2 does not involve the turbine — so mass
+# continuity ma*(1+f) = A4*pt4*MFP*(Tt4,f)/sqrt(Tt4) is one equation in the one unknown m.
+# NO shaft balance. The turbine expansion is whatever the downstream hardware demands:
+# rung-31 geometry (star) when the nozzle is choked, nozzle continuity when it is subsonic
+# (rung 33) — dispatched exactly as rung 33's match(). The leftover power imbalance drives
+# the shaft ODE; its equilibrium (dN/dt=0) reproduces the rung 31/32 running line (the
+# reduce), reached by a genuinely different closure. See docs/rung34-spec.md.
+
+
+@dataclass
+class TransientPoint:
+    """One instant of a marched spool trajectory (nondimensional time s = t/tau_spool)."""
+
+    s: float             # nondimensional time t/tau_spool
+    nu: float            # N/N_d — the STATE
+    Tt4: float           # fuel schedule (control input) at this instant
+    branch: str          # "choked" | "subsonic"
+    pi_c: float          # compressor pressure ratio (forward-map output)
+    tau_c: float
+    mdot_air: float
+    f: float
+    tau_t: float
+    Phi: float           # dnu/ds at this instant (the RHS; 0 on the running line)
+    sp_thrust: float     # specific thrust, N·s/kg (may be <=0 below thrust-neutral idle)
+    M9: float
+    pt9_over_p0: float
+
+
+class SpoolTransient(MapMatcher):
+    """RUNG 34. The shaft becomes a STATE: N evolves under the net power imbalance.
+
+    Subclasses rung 32's MapMatcher to inherit the fixed hardware (A4/A8), the ComponentMap
+    and the design references, but uses a DIFFERENT closure — the compressor map FORWARD +
+    NGV-choke continuity, with NO shaft balance (that residual is the whole point). The shaft
+    ODE integrates in NONDIMENSIONAL time s = t/tau_spool (the physical time scale tau_spool =
+    I*w_d^2/P_ref rides on the disclaimed inertia I and design speed w_d — one clock group).
+
+    The equilibrium (dnu/ds = 0) reproduces the rung 31/32 matched point via the forward
+    closure — never by calling the steady matchers (that would make the reduce circular).
+
+    Usage:
+        design = build_turbojet(gas, pi_c=10, Tt4=1500, p0, **losses, nozzle_convergent=True)
+        st = SpoolTransient(design, FLIGHT, 1.0, comp_map=ComponentMap.flow_dominated())
+        st.equilibrium(FLIGHT, 1200.0)          # -> the running-line instant at Tt4=1200 (== rung 32)
+        st.integrate(FLIGHT, schedule, nu0=..., s_end=..., ds=...)   # -> [TransientPoint]
+    """
+
+    _N_TOL = 1e-12
+
+    def __init__(self, design_engine: "Engine", flight_design: FlightCondition,
+                 mdot_design: float = 1.0, comp_map: "ComponentMap | None" = None):
+        super().__init__(design_engine, flight_design, mdot_design, comp_map)
+        # Design shaft power (per unit air mass) for the nondimensionalization + P_ref.
+        s2, s3 = self.ref.stations["2"], self.ref.stations["3"]
+        self.Pc_spec_d = self.gas.h_c(s3.Tt) - self.gas.h_c(s2.Tt)     # J/kg air, design
+        self.P_ref = self.mdot_air_design * self.Pc_spec_d             # W, design shaft power
+
+    # --- a faster turbine choke solve (Illinois) — a marched trajectory calls it thousands ---
+    # of times. Same root as the inherited bisection to ~1e-11 (the reduce tolerances absorb the
+    # ~1e-11 difference); it OVERRIDES only for SpoolTransient, so rung 31/32 stay bit-for-bit.
+
+    def _solve_turbine(self, gas: Gas, Tt4: float, f: float,
+                       eta_t: float | None = None):
+        eta_t = self.eta_t if eta_t is None else eta_t
+        MFP4 = choked_mfp(gas, Tt4, f)
+
+        def resid(pi_t: float) -> float:
+            tau_t, Tt5 = self._tau_t_of_pi_t(gas, Tt4, f, pi_t, eta_t)
+            MFP9 = choked_mfp(gas, Tt5, f)
+            return pi_t / tau_t ** 0.5 - self.A4 * MFP4 / (self.A8 * self.pi_n * MFP9)
+
+        lo, hi = 0.02, 0.999
+        flo, fhi = resid(lo), resid(hi)
+        assert flo < 0.0 < fhi, "turbine choke-match bracket does not straddle the root"
+        pi_t = _illinois(resid, lo, hi, flo, fhi, tol=1e-11)
+        tau_t, Tt5 = self._tau_t_of_pi_t(gas, Tt4, f, pi_t, eta_t)
+        return pi_t, tau_t, Tt5
+
+    # --- the FORWARD compressor speed line (exact inverse of rung 32's solve_n) ----------
+
+    def _tau_c_forward(self, cmap: "ComponentMap", n: float, m: float) -> float:
+        """tau_c from the Euler speed line at corrected speed n and corrected flow m.
+
+        tau_c = 1 + (tau_c_d - 1)*psi(phi)*n^2 ,  phi = m/n.
+        This is the map run FORWARD; solve_n inverts exactly this equation for n (gate 6).
+        """
+        return 1.0 + (self.tau_c_d - 1.0) * cmap.psi(m / n) * n * n
+
+    # --- close the compressor at (n, Tt4) by the NGV choke ALONE (no shaft balance) ------
+
+    def _close_compressor(self, Tt4: float, Tt2: float, pt2: float,
+                          cmap: "ComponentMap", n: float) -> dict:
+        """Root-find the corrected flow m so NGV-choke mass continuity holds at speed n.
+
+        Branch-INDEPENDENT: pt4 = pi_b*pi_c*pt2 with pi_c from the forward map (no turbine),
+        so the NGV sonic mass flow closes m without knowing the turbine expansion. Returns the
+        full compressor+burner state (m, phi, tau_c, eta_c, pi_c, Tt3, pt4, f, mdot_air, mdot4).
+        """
+        def eval_m(m: float) -> dict:
+            phi = m / n
+            tau_c = self._tau_c_forward(cmap, n, m)
+            Tt3 = Tt2 * tau_c
+            eta_c = cmap.eta_c_at(self.eta_c, phi, n)
+            # pi_c via the enthalpy/pr inverse (exact inverse of Compressor.apply; cold-section
+            # h_c/pr_c are composition-free, so this needs no frozen hot gas).
+            h2, h3 = self.gas.h_c(Tt2), self.gas.h_c(Tt3)
+            Tt3s = self.gas.T_from_h_c(h2 + eta_c * (h3 - h2))
+            pi_c = self.gas.pr_c(Tt3s) / self.gas.pr_c(Tt2)
+            pt4 = self.pi_b * pi_c * pt2
+            f = self._solve_f(Tt3, pt4, Tt4)
+            wgas = self._working_gas(f, Tt4, pt4)
+            mdot4 = self.A4 * pt4 * choked_mfp(wgas, Tt4, f) / Tt4 ** 0.5
+            mdot_air = mdot4 / (1.0 + f)
+            m_imp = (mdot_air * Tt2 ** 0.5 / pt2) / self.mdot_corr_d
+            return dict(m=m, m_imp=m_imp, phi=phi, tau_c=tau_c, eta_c=eta_c, Tt3=Tt3,
+                        pi_c=pi_c, pt4=pt4, f=f, wgas=wgas, mdot4=mdot4, mdot_air=mdot_air)
+
+        # g(m) = m - m_imp(m) is monotone-increasing (higher m -> lower psi -> lower pi_c ->
+        # lower pt4 -> lower m_imp), so it brackets and bisects cleanly.
+        def g(m: float) -> float:
+            return m - eval_m(m)["m_imp"]
+
+        # Cap the flow search where the loading law still does positive work (tau_c > 1); beyond
+        # phi_max the parabola+linear psi goes negative and Tt3 = Tt2*tau_c would be non-physical.
+        lo, hi = 0.02, min(2.5, cmap.phi_max() * n)
+        glo, ghi = g(lo), g(hi)
+        assert glo < 0.0 < ghi, (
+            f"rung-34 compressor closure does not bracket at n={n:.4f}, Tt4={Tt4:.0f} "
+            f"(g[{lo:.3f}]={glo:.3e}, g[{hi:.3f}]={ghi:.3e}) — off the modeled speed-line region.")
+        return eval_m(_illinois(g, lo, hi, glo, ghi, tol=1e-11))
+
+    # --- the turbine on the SUBSONIC branch: pi_t from nozzle continuity -----------------
+
+    def _turbine_subsonic(self, wgas: Gas, Tt4: float, f: float, pt4: float,
+                          mdot4: float, eta_t: float):
+        """Root-find pi_t so the fully-expanded subsonic nozzle passes the NGV mass flow mdot4.
+
+        The compressor/NGV already fixed mdot4 (branch-independent), so only the nozzle side
+        varies with pi_t: resid(pi_t) = mdot4 - A8*rho9*V9 is monotone-DECREASING in pi_t (less
+        expansion -> higher pt9 -> the nozzle passes more). Returns (pi_t, tau_t, Tt5, exit).
+        """
+        def state_at(pi_t: float):
+            tau_t, Tt5 = self._tau_t_of_pi_t(wgas, Tt4, f, pi_t, eta_t)
+            s5 = FlowState(Tt=Tt5, pt=pi_t * pt4, mdot=mdot4, far=f)
+            exit = Nozzle(self.p_ambient, self.pi_n, convergent=True).apply(s5, wgas)
+            return tau_t, Tt5, exit
+
+        def resid(pi_t: float) -> float:
+            _, _, exit = state_at(pi_t)
+            rho9 = exit.p9 / (wgas.R_t_at(f) * exit.T9)
+            return mdot4 - self.A8 * rho9 * exit.V9
+
+        # March the high wall in from just below the choke boundary (there Nozzle gives p9=p*>p0
+        # and the sub-branch is invalid); low wall from deep expansion.
+        hi, rhi = None, None
+        pt = 0.9995
+        while pt > 0.05:
+            _, _, ex = state_at(pt)
+            if not (ex.p9 > self.p_ambient + 1e-6):     # nozzle subsonic here — valid
+                hi, rhi = pt, resid(pt); break
+            pt -= 0.01
+        lo, rlo = None, None
+        pt = 0.05
+        while hi is not None and pt < hi:
+            try:
+                rlo = resid(pt); lo = pt; break
+            except AssertionError:
+                pt += 0.01
+        assert lo is not None and hi is not None and rlo * rhi < 0.0, (
+            f"rung-34 subsonic turbine does not bracket at Tt4={Tt4:.0f}")
+        pi_t = _illinois(resid, lo, hi, rlo, rhi, tol=1e-11)
+        tau_t, Tt5, exit = state_at(pi_t)
+        return pi_t, tau_t, Tt5, exit
+
+    # --- one quasi-steady instant at (nu, Tt4): the flow + the power imbalance ------------
+
+    def _instant(self, flight: FlightCondition, nu: float, Tt4: float,
+                 cmap: "ComponentMap | None" = None) -> dict:
+        """The quasi-steady flow at shaft speed nu=N/N_d and fuel Tt4, and the net power that
+        drives dN/dt. NOT a matched steady point — the shaft is deliberately UNBALANCED here.
+
+        Phi = dnu/ds = (mdot_air*p_net_spec)/(P_ref*nu) is the SHAFT-ODE right side in
+        nondimensional time s = t/tau_spool; Phi=0 is the running line.
+        """
+        cmap = cmap if cmap is not None else self.comp_map
+        pi_d = self.pi_d_max * ram_recovery(flight.M0)
+        state0, V0 = self._fs_engine.freestream(flight, self.mdot_air_design)
+        Tt2, pt2 = state0.Tt, pi_d * state0.pt
+        n = nu * (self.Tt2_d / Tt2) ** 0.5                     # corrected speed at this nu
+
+        comp = self._close_compressor(Tt4, Tt2, pt2, cmap, n)
+        f, pt4, wgas = comp["f"], comp["pt4"], comp["wgas"]
+        Tt3, pi_c, tau_c = comp["Tt3"], comp["pi_c"], comp["tau_c"]
+        mdot_air, mdot4 = comp["mdot_air"], comp["mdot4"]
+
+        nu_t = nu * (self.Tt4_d / Tt4) ** 0.5
+        eta_t = cmap.eta_t_at(self.eta_t, nu_t)
+
+        # Assume choked; solve the rung-31 geometry (star), rebuild the nozzle, and DISPATCH
+        # exactly as rung 33 does (the convergent Nozzle decides choked vs subsonic).
+        pi_t, tau_t, Tt5 = self._solve_turbine(wgas, Tt4, f, eta_t=eta_t)
+        s5 = FlowState(Tt=Tt5, pt=pi_t * pt4, mdot=mdot_air, far=f)
+        exit = Nozzle(self.p_ambient, self.pi_n, convergent=True).apply(s5, wgas)
+        branch = "choked" if exit.p9 > self.p_ambient + 1e-6 else "subsonic"
+        if branch == "subsonic":
+            # Re-solve pi_t from nozzle continuity. In the thin M9->1 boundary layer the subsonic
+            # root COINCIDES with the choke pi_t (resid approaches 0 from above and never crosses),
+            # so the bracket fails; the two branches are continuous there (rung 33 gate 2), so fall
+            # back to the choked-star solution (its nozzle already read subsonic, p9=p0). Guard it:
+            # the fallback is only legitimate AT the boundary (choked-star M9 ~ 1); a genuine
+            # deep-subsonic bracket gap must RAISE, not hide under a "subsonic" label (advisor).
+            try:
+                pi_t, tau_t, Tt5, exit = self._turbine_subsonic(wgas, Tt4, f, pt4, mdot4, eta_t)
+            except AssertionError:
+                assert exit.M9 > 0.985, (
+                    f"rung-34 subsonic turbine failed to bracket AWAY from the M9->1 boundary "
+                    f"(choked-star M9={exit.M9:.4f}) at Tt4={Tt4:.0f}, nu={nu:.3f} — a real "
+                    f"subsonic-solve gap, not the continuous boundary fallback.")
+
+        # Power imbalance (per unit air mass). P_t already carries eta_m*(1+f).
+        Pt_spec = self.eta_m * (1.0 + f) * (wgas.h_t(Tt4, f) - wgas.h_t(Tt5, f))
+        Pc_spec = wgas.h_c(Tt3) - wgas.h_c(Tt2)
+        p_net_spec = Pt_spec - Pc_spec
+        # dnu/ds = (mdot_air * p_net_spec) / (P_ref * nu)   [nondimensional shaft ODE]
+        Phi = (mdot_air * p_net_spec) / (self.P_ref * nu)
+
+        # Specific thrust inline (avoid _score's cascade assert degenerating near zero thrust).
+        press_thrust = (1.0 + f) * wgas.R_t_at(f) * exit.T9 * (1.0 - flight.p0 / exit.p9) / exit.V9
+        sp_thrust = (1.0 + f) * exit.V9 - V0 + press_thrust
+
+        return dict(nu=nu, Tt4=Tt4, branch=branch, pi_c=pi_c, tau_c=tau_c, eta_c=comp["eta_c"],
+                    eta_t=eta_t, m=comp["m"], n=n, flowcoef=comp["phi"], mdot_air=mdot_air,
+                    f=f, pi_t=pi_t, tau_t=tau_t, Tt3=Tt3, Tt5=Tt5, nu_t=nu_t,
+                    p_net_spec=p_net_spec, Phi=Phi, sp_thrust=sp_thrust, thrust=mdot_air * sp_thrust,
+                    M9=exit.M9, pt9_over_p0=self.pi_n * pi_t * pt4 / flight.p0,
+                    Tt2=Tt2, pt2=pt2, V0=V0)
+
+    # --- the equilibrium: dnu/ds = 0 — reduces to the rung 31/32 running line ------------
+
+    def equilibrium(self, flight: FlightCondition, Tt4: float,
+                    cmap: "ComponentMap | None" = None) -> dict:
+        """Find the shaft speed nu where the power balances (Phi=0) — the running-line instant.
+
+        Phi is monotone-DECREASING in nu (P_c rises with speed, P_t is Tt4-pinned on the choked
+        branch), so it brackets and bisects. This is the REDUCE: the equilibrium point equals
+        OffDesignMatcher.match (flat map) / MapMatcher.match (shaped) — via the forward closure,
+        never by calling those matchers.
+        """
+        def resid(nu: float) -> float:
+            return self._instant(flight, nu, Tt4, cmap)["Phi"]
+
+        # Phi is monotone-decreasing in nu (P_c rises with speed, P_t is Tt4-pinned), so the
+        # equilibrium is unique. At extreme nu the instant falls off the operable map (the nozzle
+        # cannot expand, or the closure fails to bracket); march both ends IN until evaluable —
+        # below equilibrium the engine is over-fuelled (Phi>0), above it under-fuelled (Phi<0).
+        lo, flo = None, None
+        nu = 0.30
+        while nu < 1.6:
+            try:
+                flo = resid(nu); lo = nu; break
+            except AssertionError:
+                nu += 0.02
+        hi, fhi = None, None
+        nu = 1.60
+        while lo is not None and nu > lo:
+            try:
+                fhi = resid(nu); hi = nu; break
+            except AssertionError:
+                nu -= 0.02
+        assert lo is not None and hi is not None and flo > 0.0 > fhi, (
+            f"rung-34 equilibrium does not bracket at Tt4={Tt4:.0f} "
+            f"(Phi[{lo}]={flo}, Phi[{hi}]={fhi})")
+
+        # Interior off-map points (the low-nu subsonic dip inside the bracket) get a big-positive
+        # sentinel so the monotone Illinois is pushed UP toward the evaluable running-line zero.
+        def resid_safe(nu: float) -> float:
+            try:
+                return resid(nu)
+            except AssertionError:
+                return 1e9
+        return self._instant(flight, _illinois(resid_safe, lo, hi, flo, fhi, tol=self._N_TOL),
+                             Tt4, cmap)
+
+    # --- the running line (nu, pi_c) vs Tt4, for the excursion metric --------------------
+
+    def running_line(self, flight: FlightCondition, Tt4_grid,
+                     cmap: "ComponentMap | None" = None) -> list:
+        """The steady running line: [(nu, pi_c, Tt4)] at each Tt4 in the grid (equilibria)."""
+        out = []
+        for Tt4 in Tt4_grid:
+            eq = self.equilibrium(flight, float(Tt4), cmap)
+            out.append((eq["nu"], eq["pi_c"], float(Tt4)))
+        return sorted(out)               # sorted by nu (monotone in Tt4)
+
+    @staticmethod
+    def _interp(xs, ys, x: float) -> float:
+        """Linear interpolation of ys(xs) at x (xs sorted ascending); clamps at the ends."""
+        if x <= xs[0]:
+            return ys[0]
+        if x >= xs[-1]:
+            return ys[-1]
+        for i in range(1, len(xs)):
+            if x <= xs[i]:
+                t = (x - xs[i - 1]) / (xs[i] - xs[i - 1])
+                return ys[i - 1] + t * (ys[i] - ys[i - 1])
+        return ys[-1]
+
+    # --- march the shaft ODE in nondimensional time (RK4) --------------------------------
+
+    def integrate(self, flight: FlightCondition, schedule, nu0: float,
+                  s_end: float, ds: float, cmap: "ComponentMap | None" = None) -> list:
+        """RK4-march dnu/ds = Phi(nu, Tt4(s)) from s=0 to s_end. `schedule(s) -> Tt4`.
+
+        Returns [TransientPoint]. nu is clamped to a physical floor so a spool-down toward
+        sub-idle records the terminal state rather than throwing inside the integrator.
+        """
+        def Phi(nu: float, Tt4: float) -> float:
+            return self._instant(flight, nu, Tt4, cmap)["Phi"]
+
+        pts, nu, s = [], nu0, 0.0
+        n_steps = int(round(s_end / ds))
+        for i in range(n_steps + 1):
+            Tt4 = float(schedule(s))
+            try:
+                inst = self._instant(flight, nu, Tt4, cmap)
+            except AssertionError:
+                break                    # marched off the valid region (past sub-idle) — stop cleanly
+            pts.append(TransientPoint(
+                s=s, nu=nu, Tt4=Tt4, branch=inst["branch"], pi_c=inst["pi_c"],
+                tau_c=inst["tau_c"], mdot_air=inst["mdot_air"], f=inst["f"],
+                tau_t=inst["tau_t"], Phi=inst["Phi"], sp_thrust=inst["sp_thrust"],
+                M9=inst["M9"], pt9_over_p0=inst["pt9_over_p0"]))
+            if i == n_steps:
+                break
+            # RK4 step in s (stop if any sub-stage leaves the valid region).
+            try:
+                k1 = inst["Phi"]
+                k2 = Phi(nu + 0.5 * ds * k1, float(schedule(s + 0.5 * ds)))
+                k3 = Phi(nu + 0.5 * ds * k2, float(schedule(s + 0.5 * ds)))
+                k4 = Phi(nu + ds * k3, float(schedule(s + ds)))
+            except AssertionError:
+                break
+            nu = max(0.2, nu + ds / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4))
+            s += ds
+        return pts
+
+    # --- the finding: peak above-running-line excursion vs r = tau_fuel/tau_spool ---------
+
+    def ramp_excursion(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                       r: float, cmap: "ComponentMap | None" = None,
+                       s_settle: float = 8.0, ds: float = 0.02) -> dict:
+        """Peak excursion above the running line for a finite fuel ramp of nondimensional
+        duration r = tau_fuel/tau_spool (an ACCELERATION Tt4_lo -> Tt4_hi).
+
+        Starts on the running line at Tt4_lo, ramps Tt4 linearly over s in [0, r], holds, and
+        integrates to r + s_settle. Excursion E = max_t [pi_c(t)/pi_c_rl(nu(t)) - 1], the
+        constant-speed compressor-map distance toward surge (rung-32 concession: no surge line).
+        """
+        cmap = cmap if cmap is not None else self.comp_map
+        rl = self.running_line(flight, [Tt4_lo + (Tt4_hi - Tt4_lo) * k / 8.0 for k in range(9)], cmap)
+        nus = [p[0] for p in rl]
+        pcs = [p[1] for p in rl]
+        nu0 = self.equilibrium(flight, Tt4_lo, cmap)["nu"]
+
+        def schedule(s: float) -> float:
+            if s <= 0.0:
+                return Tt4_lo
+            if s >= r:
+                return Tt4_hi
+            return Tt4_lo + (Tt4_hi - Tt4_lo) * (s / r)
+
+        traj = self.integrate(flight, schedule, nu0, r + s_settle, ds, cmap)
+        E = 0.0
+        for p in traj:
+            pc_rl = self._interp(nus, pcs, p.nu)
+            E = max(E, p.pi_c / pc_rl - 1.0)
+        return dict(r=r, E=E, nu0=nu0, traj=traj)
+
+    def constant_speed_excursion(self, flight: FlightCondition, Tt4_lo: float,
+                                 Tt4_hi: float, cmap: "ComponentMap | None" = None) -> float:
+        """The r -> 0 limit of the excursion: NO integration. The spool is frozen at nu0 =
+        nu_eq(Tt4_lo) while the fuel jumps to Tt4_hi, so E0 = pi_c(nu0, Tt4_hi)/pi_c(nu0, Tt4_lo) - 1
+        — a pure ALGEBRAIC map property (the largest possible excursion), certifying that the
+        step response is a map fact and the dynamical content is the ratio r.
+        """
+        cmap = cmap if cmap is not None else self.comp_map
+        eq = self.equilibrium(flight, Tt4_lo, cmap)
+        nu0, pc_lo = eq["nu"], eq["pi_c"]
+        pc_hi = self._instant(flight, nu0, Tt4_hi, cmap)["pi_c"]
+        return pc_hi / pc_lo - 1.0
