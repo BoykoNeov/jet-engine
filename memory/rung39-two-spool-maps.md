@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: d3d7071a-b4a7-40a7-851b-e1a05e0090ed
-  modified: 2026-07-22T10:48:49.582Z
+  modified: 2026-07-22T10:55:32.589Z
 ---
 
 **Rung 39 (shipped 2026-07-22)** — `TwoSpoolMapMatcher` in `turbojet/engine.py`, spec
@@ -20,7 +20,10 @@ raises pressure and mass flow proportionally), so the map opens **exactly ONE ar
 `η_HPC` moves `π_LPC`, `η_LPC` leaves `π_HPC` **bit-for-bit zero**. The cascade **acquires a
 direction** rather than dissolving. Structural novelty = **two shaft speeds** ⇒ the slip
 `N_L/N_H`, an exact identity (=1) on CPG+flat maps, broken predominantly BY THE MAP — which
-**inverts** [[rung32-component-maps]] (there the map only re-labelled map-free work).
+**inverts** [[rung32-component-maps]] (there the map only re-labelled map-free work) **on CPG,
+and only there**: on the reacting gas the same flat maps already give 0.9835 at `Tt4`=900, so
+the map is the *dominant* channel (~3.4×), **not the sole** one. (The advisor caught me stating
+"the map CREATES it" unconditionally — contradicted by my own anchor table three lines away.)
 
 **Why:** two process lessons worth keeping, both about catching my own bad framing early.
 

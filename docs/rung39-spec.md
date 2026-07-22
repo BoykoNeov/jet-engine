@@ -163,18 +163,34 @@ digits. The two shafts throttle in lockstep, and nothing in the geometry can bre
 - the **map** breaks it by ~5.0% on the same CPG gas — **~3.4× the gas channel, the dominant
   of the two.**
 
-This **inverts rung 32's decomposition.** Rung 32's lesson was "the *work* is choke-pinned and
-map-free; the map only *re-labels* it into `pi_c`/`mdot`/`N`." Here the object of interest does
-not exist at all without the map: the slip is identically zero on the flat map, and the map
-**creates** it rather than re-labelling something already there.
+This **inverts rung 32's decomposition — on the CPG gas, and only there.** Rung 32's lesson was
+"the *work* is choke-pinned and map-free; the map only *re-labels* it into `pi_c`/`mdot`/`N`."
+On a **CPG** gas the slip-deviation does not exist at all without the map — it is identically
+zero on the flat map (B1), so there the map is the **sole** channel and genuinely *creates* the
+object rather than re-labelling something already there.
+
+**That statement must NOT be made unconditionally**, and the table above is why: on the
+**reacting** gas with the **same flat maps** the slip is already 0.9835 at `Tt4`=900 — a 1.5%
+deviation with **no map anywhere**. On the real gas the map is therefore the **dominant**
+channel (~3.4×), **not the sole** one. The honest scoping:
+
+> **CPG:** map = sole channel (the inversion of rung 32 is clean).
+> **Real gas:** map = dominant channel; the `cp(T)` curve alone already breaks the identity.
 
 ### B3 — the direction (empirical, shape-robust only)
 
 `N_L/N_H` falls **monotonically** with throttle across all 4 disclosed shape pairs (5.1%–7.5%
 at `Tt4`=900): **the LP spool falls away from the HP spool as the engine is throttled back.**
 That is the textbook twin-spool behaviour (at idle a twin-spool runs a high `N_H` and a much
-lower `N_L`), and it is the reason twin-spool engines self-protect against the low-power surge
-margin rung 36 exhibited on a single spool.
+lower `N_L`), and it is the reason twin-spool engines are said to self-protect against the
+low-power surge margin rung 36 exhibited on a single spool.
+
+**The idle comparison is DIRECTIONAL ONLY.** The modeled window stops at `Tt4`≈700 (nozzle
+unchoke), which is nowhere near idle, and real twin-spool slip at idle is far larger than the
+5.1%–7.5% measured here. The textbook observation anchors the **sign**; it does **not** anchor
+this rung's magnitude, which is disclaimed like every other representative-map number. Nor is
+the surge-protection consequence claimed — rung 36's surge machinery is single-spool, and
+whether the slip actually protects the LP spool is left to a two-spool surge rung.
 
 **This direction is NOT structural** — unlike B1 there is no cancellation guaranteeing its
 sign; it rides on the relative droop of the two maps. It is claimed as **sign-robust across

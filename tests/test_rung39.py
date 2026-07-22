@@ -307,7 +307,9 @@ def test_finding_a_weak_back_arrow():
 
     This is rung 32's "the turbine is pinned in corrected speed" transplanted onto the LP
     spool. Only the SIGN (it opens) and the order-of-magnitude weakness are gated; the exact
-    ratio is DISCLAIMED (measured 119x-548x; the bound asserted is a loose 50x).
+    ratio is DISCLAIMED. The asserted bound is a loose 50x against a measured 119x-548x --
+    loose BECAUSE the measured ratio rides on the fixed representative a_t=0.02 (a stiffer
+    turbine map would shrink it), NOT because 50x is a physically meaningful threshold.
     """
     d = 0.01
     for name, (mL, mH) in SHAPES_C.items():
