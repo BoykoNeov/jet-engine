@@ -2843,3 +2843,471 @@ class TwoSpoolMapMatcher(TwoSpoolMatcher):
             N_hp_ratio=c["NH"], slip=c["slip"], phi_lp=c["phi_L"], phi_hp=c["phi_H"],
             nu_hpt=c["nu_hpt"], nu_lpt=c["nu_lpt"],
         )
+
+
+# ======================================================================================
+# RUNG 40 — THE TWO-SHAFT TRANSIENT: the LEAD THRESHOLD
+# ======================================================================================
+#
+# Rung 34 made ONE shaft speed a STATE. Rung 39 supplied the second speed (rung 38 could
+# supply none), so the two-shaft transient is only now well-posed. Two states (nu_L, nu_H),
+# two shaft ODEs:
+#
+#       I_L * w_L * dw_L/dt = eta_m*P_LPT - P_LPC      I_H * w_H * dw_H/dt = eta_m*P_HPT - P_HPC
+#
+# Nondimensionalize on the HP spool clock tau_H = I_H*w_H,d^2/P_ref,H, s = t/tau_H:
+#
+#       dnu_H/ds = Phi_H                    dnu_L/ds = Phi_L / rho ,   rho = tau_L/tau_H
+#
+# so exactly ONE clock parameter survives -- and it is a RATIO, not a scale. This is the
+# resolution of rung 34's own tautology: there, `I` only set the clock and a SECOND clock
+# (tau_fuel) had to be IMPOSED before inertia became load-bearing. Here the second clock is
+# built in -- each spool is the other's clock.
+#
+# THE CLOSURE (rung 34's move, on two shafts). Given (nu_L, nu_H, Tt4), close the flow with
+# NO shaft balance: it is a 1-D root in the LP corrected flow m_L, because the chain is
+# causal --  m_L -> (LPC map forward) tau_LPC, pi_LPC, Tt25  ->  n_H = nu_H*sqrt(Tt25_d/Tt25)
+# ->  m_H = m_L*(mcorr_lp_d/mcorr_hp_d)*sqrt(Tt25/Tt2)/pi_LPC  ->  (HPC map forward) pt4
+# ->  f  ->  the HPT-NGV choke, which imposes mdot back. Both turbines then follow from
+# rung 38's (*) geometry alone, so the two power residuals are OUTPUTS, not constraints.
+# The efficiencies are read FORWARD off each map at the trial point -- so rung 39's
+# triangular eta fixed point (and its one-way arrow) does not arise here at all; that was
+# an artifact of solving the STEADY problem with eta unknown.
+#
+# THE OBJECT (the rung): which spool LEADS an acceleration. HP leads iff its FRACTIONAL
+# speed rate is the larger, so the threshold is a ratio of speed-normalized sensitivities
+#
+#   (dagger)   sigma_crit = [ (dPhi_L/dTt4)/nu_L ] / [ (dPhi_H/dTt4)/nu_H ]   on the running line
+#
+# and  HP leads <=> rho > sigma_crit.  sigma_crit is ALGEBRAIC (one frozen instant), yet it
+# is what the marched trajectory obeys.
+#
+# THE IDENTITY (the reduce spine, INHERITED from rung 39 B1). On the running line Phi=0, so
+# Pt = Pc on each shaft and the dmdot term drops out of dPhi/dTt4. With FLAT maps psi==1, so
+# tau_c depends on n alone and BOTH compressor specific works are frozen under a Tt4 step;
+# on CPG both turbine works carry the same (1+f)*cp_t*Tt4*[geometry] factor. What is left is
+#
+#   sigma_crit = (Pc_L/P_ref_L)/(Pc_H/P_ref_H) * (nu_H/nu_L) = nu_L^2/nu_H^2 * nu_H/nu_L = slip
+#
+# and rung 39 B1 pins slip == 1 exactly on CPG + flat maps. So sigma_crit == 1 is rung 39's
+# STEADY identity restated for the TRANSIENT -- not a new coincidence, a derived inheritance.
+
+
+@dataclass
+class TwoSpoolTransientPoint:
+    """One instant of a marched TWO-shaft trajectory (nondimensional time s = t/tau_H)."""
+
+    s: float
+    nu_lp: float          # N_L/N_L,d — STATE 1
+    nu_hp: float          # N_H/N_H,d — STATE 2
+    Tt4: float
+    slip: float           # nu_lp/nu_hp
+    pi_lpc: float
+    pi_hpc: float
+    phi_lp: float
+    phi_hp: float
+    mdot_air: float
+    f: float
+    Phi_lp: float         # rho*dnu_L/ds (the LP power residual; 0 on the running line)
+    Phi_hp: float         # dnu_H/ds
+    sp_thrust: float
+
+
+class TwoSpoolTransient(TwoSpoolMapMatcher):
+    """RUNG 40. BOTH shaft speeds become STATES: the two-shaft transient.
+
+    Subclasses rung 39's TwoSpoolMapMatcher for the fixed hardware (A4/A45/A8), both
+    ComponentMaps, the shared (*) choke solver and the burner f-solve. Rung 39's own
+    `match`/`_cascade_map` are left LITERALLY unchanged (the rung-33/39 discipline), so the
+    rung-39 suite still witnesses them bit-for-bit; this class uses a different closure --
+    the maps run FORWARD with NO shaft balance (rung 34's move), which is what makes the two
+    power residuals the ODE right-hand sides instead of constraints.
+
+    `rho` = tau_L/tau_H is the ONE surviving clock parameter (a RATIO). Like rung 34's `I`
+    it is a DISCLAIMED clock group -- doubled -- but unlike rung 34's it is load-bearing
+    without an imposed second clock, because it sets which spool leads.
+
+    Usage:
+        design = build_two_spool_turbojet(gas, 3, 6, 1500, p0, **losses, nozzle_convergent=True)
+        tt = TwoSpoolTransient(design, FLIGHT, 1.0, map_lp=..., map_hp=..., rho=2.0)
+        tt.equilibrium(FLIGHT, 1200.0)        # 2-D root -> reproduces rung 39's match
+        tt.lead_threshold(FLIGHT, 1200.0)     # sigma_crit (dagger)
+        tt.integrate(FLIGHT, schedule, nu0=(.., ..), s_end=.., ds=..)
+
+    lp_disabled=True dispatches to rung 34's SpoolTransient -- exact dispatch, no two-shaft
+    state is ever built (the rung 38/39 contract, one rung on).
+    """
+
+    _EQ_TOL = 1e-12
+    _EQ_MAX = 80
+
+    def __init__(self, design_engine, flight_design: FlightCondition,
+                 mdot_design: float = 1.0, map_lp: "ComponentMap | None" = None,
+                 map_hp: "ComponentMap | None" = None, rho: float = 1.0,
+                 lp_disabled: bool = False):
+        self.rho = rho
+        if lp_disabled:
+            # EXACT DISPATCH: no two-shaft state exists. The single remaining spool is the
+            # rung-34 SpoolTransient, carrying map_hp (its compressor plays the HPC role).
+            self.map_lp = map_lp if map_lp is not None else ComponentMap.flat()
+            self.map_hp = map_hp if map_hp is not None else ComponentMap.flat()
+            self._degenerate = SpoolTransient(design_engine, flight_design, mdot_design,
+                                              comp_map=self.map_hp)
+            return
+        super().__init__(design_engine, flight_design, mdot_design, map_lp, map_hp)
+
+        # Design shaft powers, PER SPOOL — the two nondimensionalizations.
+        s2, s25, s3 = (self.ref.stations["2"], self.ref.stations["25"],
+                       self.ref.stations["3"])
+        self.P_ref_lp = mdot_design * (self.gas.h_c(s25.Tt) - self.gas.h_c(s2.Tt))
+        self.P_ref_hp = mdot_design * (self.gas.h_c(s3.Tt) - self.gas.h_c(s25.Tt))
+
+    # --- the inlet state (shared by every entry point below) ----------------------------
+
+    def _inlet(self, flight: FlightCondition):
+        pi_d = self.pi_d_max * ram_recovery(flight.M0)
+        state0, V0 = self._fs_engine.freestream(flight, self.mdot_air_design)
+        return state0.Tt, pi_d * state0.pt, V0
+
+    # --- THE FORWARD CLOSURE: one root in m_L, no shaft balance --------------------------
+
+    def _close(self, nu_lp: float, nu_hp: float, Tt4: float, Tt2: float, pt2: float) -> dict:
+        """Close the flow at (nu_L, nu_H, Tt4) by the HPT-NGV choke ALONE.
+
+        Both compressor maps run FORWARD (rung 34's `_tau_c_forward`, applied per spool);
+        the HP face's corrected flow follows from the SAME physical air flow through the LP
+        face, so m_H is determined by m_L -- one unknown, one equation. NO shaft balance is
+        used anywhere here: that residual is the whole point of the rung.
+        """
+        gas = self.gas
+        n_lp = nu_lp * (self.Tt2_d / Tt2) ** 0.5
+        h2, pr2 = gas.h_c(Tt2), gas.pr_c(Tt2)
+
+        def ev(m_lp: float) -> dict:
+            phi_lp = m_lp / n_lp
+            tau_lpc = 1.0 + (self.tau_lpc_d - 1.0) * self.map_lp.psi(phi_lp) * n_lp * n_lp
+            Tt25 = Tt2 * tau_lpc
+            eta_lpc = self.map_lp.eta_c_at(self.eta_lpc, phi_lp, n_lp)
+            h25 = gas.h_c(Tt25)
+            pi_lpc = gas.pr_c(gas.T_from_h_c(h2 + eta_lpc * (h25 - h2))) / pr2
+            pt25 = pi_lpc * pt2
+            mdot_air = m_lp * self.mcorr_lp_d * pt2 / Tt2 ** 0.5
+
+            # Same physical air flow, referred to the HP face.
+            m_hp = (mdot_air * Tt25 ** 0.5 / pt25) / self.mcorr_hp_d
+            n_hp = nu_hp * (self.Tt25_d / Tt25) ** 0.5
+            phi_hp = m_hp / n_hp
+            tau_hpc = 1.0 + (self.tau_hpc_d - 1.0) * self.map_hp.psi(phi_hp) * n_hp * n_hp
+            Tt3 = Tt25 * tau_hpc
+            eta_hpc = self.map_hp.eta_c_at(self.eta_hpc, phi_hp, n_hp)
+            h3 = gas.h_c(Tt3)
+            pi_hpc = gas.pr_c(gas.T_from_h_c(h25 + eta_hpc * (h3 - h25))) / gas.pr_c(Tt25)
+            pt4 = self.pi_b * pi_hpc * pt25
+
+            f = self._solve_f(Tt3, pt4, Tt4)
+            wgas = self._working_gas(f, Tt4, pt4)
+            mdot4 = self.A4 * pt4 * choked_mfp(wgas, Tt4, f) / Tt4 ** 0.5
+            mdot_imp = mdot4 / (1.0 + f)
+            m_imp = (mdot_imp * Tt2 ** 0.5 / pt2) / self.mcorr_lp_d
+            return dict(m_lp=m_lp, m_imp=m_imp, m_hp=m_hp, phi_lp=phi_lp, phi_hp=phi_hp,
+                        Tt2=Tt2,
+                        n_lp=n_lp, n_hp=n_hp, tau_lpc=tau_lpc, tau_hpc=tau_hpc, Tt25=Tt25,
+                        Tt3=Tt3, pi_lpc=pi_lpc, pi_hpc=pi_hpc, pt4=pt4, f=f, wgas=wgas,
+                        eta_lpc=eta_lpc, eta_hpc=eta_hpc, mdot_air=mdot_imp, mdot4=mdot4)
+
+        def g(m: float) -> float:
+            return m - ev(m)["m_imp"]
+
+        # g is monotone-increasing (more flow -> lower psi -> lower pi_c -> lower pt4 ->
+        # less imposed flow), so it brackets cleanly. March the LOW wall IN: at very small
+        # m_lp the pressure ratio explodes and the reacting-gas equilibrium solve can fail
+        # there -- an off-map bracket artifact, not a physical bound (rung 34's move in
+        # `_find_equilibrium_nu`, applied to the flow axis).
+        hi = min(2.5, self.map_lp.phi_max() * n_lp)
+        ghi = g(hi)
+        lo, glo, m = None, None, 0.02
+        while m < hi:
+            try:
+                glo, lo = g(m), m
+                break
+            except AssertionError:
+                m += 0.02
+        assert lo is not None and glo < 0.0 < ghi, (
+            f"rung-40 two-shaft closure does not bracket at nu=({nu_lp:.4f},{nu_hp:.4f}), "
+            f"Tt4={Tt4:.0f} — off the modeled speed-line region.")
+        return ev(_illinois(g, lo, hi, glo, ghi, tol=1e-12))
+
+    # --- one quasi-steady instant: the flow + BOTH power residuals ------------------------
+
+    def _instant(self, flight: FlightCondition, nu_lp: float, nu_hp: float,
+                 Tt4: float) -> dict:
+        """The quasi-steady flow at (nu_L, nu_H, Tt4) and the TWO net powers driving the
+        two shaft ODEs. NOT a matched point — both shafts are deliberately UNBALANCED."""
+        Tt2, pt2, V0 = self._inlet(flight)
+        c = self._close(nu_lp, nu_hp, Tt4, Tt2, pt2)
+        wgas, f = c["wgas"], c["f"]
+
+        # Both turbines pinned by GEOMETRY (rung 38's (*) chained twice) — no shaft balance.
+        nu_hpt = nu_hp * (self.Tt4_d / Tt4) ** 0.5
+        eta_hpt = self.map_hp.eta_t_at(self.eta_hpt, nu_hpt)
+        pi_hpt, tau_hpt, Tt45 = self._solve_choked_turbine(
+            wgas, Tt4, f, self.A4, self.A45, 1.0, eta_hpt)
+        nu_lpt = nu_lp * (self.Tt45_d / Tt45) ** 0.5
+        eta_lpt = self.map_lp.eta_t_at(self.eta_lpt, nu_lpt)
+        pi_lpt, tau_lpt, Tt5 = self._solve_choked_turbine(
+            wgas, Tt45, f, self.A45, self.A8, self.pi_n, eta_lpt)
+
+        # Specific powers, per unit AIR mass, per shaft.
+        Pt_hp = self.eta_m * (1.0 + f) * (wgas.h_t(Tt4, f) - wgas.h_t(Tt45, f))
+        Pt_lp = self.eta_m * (1.0 + f) * (wgas.h_t(Tt45, f) - wgas.h_t(Tt5, f))
+        Pc_hp = wgas.h_c(c["Tt3"]) - wgas.h_c(c["Tt25"])
+        Pc_lp = wgas.h_c(c["Tt25"]) - wgas.h_c(Tt2)
+
+        Phi_hp = (c["mdot_air"] * (Pt_hp - Pc_hp)) / (self.P_ref_hp * nu_hp)
+        Phi_lp = (c["mdot_air"] * (Pt_lp - Pc_lp)) / (self.P_ref_lp * nu_lp)
+
+        s5 = FlowState(Tt=Tt5, pt=pi_lpt * pi_hpt * c["pt4"], mdot=c["mdot_air"], far=f)
+        exit = Nozzle(self.p_ambient, self.pi_n, convergent=True).apply(s5, wgas)
+        press = (1.0 + f) * wgas.R_t_at(f) * exit.T9 * (1.0 - flight.p0 / exit.p9) / exit.V9
+        sp_thrust = (1.0 + f) * exit.V9 - V0 + press
+
+        out = dict(c)
+        out.update(nu_lp=nu_lp, nu_hp=nu_hp, Tt4=Tt4, slip=nu_lp / nu_hp,
+                   Phi_lp=Phi_lp, Phi_hp=Phi_hp, Pt_lp=Pt_lp, Pt_hp=Pt_hp,
+                   Pc_lp=Pc_lp, Pc_hp=Pc_hp, Tt45=Tt45, Tt5=Tt5, tau_hpt=tau_hpt,
+                   tau_lpt=tau_lpt, pi_hpt=pi_hpt, pi_lpt=pi_lpt, eta_hpt=eta_hpt,
+                   eta_lpt=eta_lpt, nu_hpt=nu_hpt, nu_lpt=nu_lpt, sp_thrust=sp_thrust,
+                   M9=exit.M9, branch="choked" if exit.p9 > self.p_ambient + 1e-6
+                   else "subsonic")
+        return out
+
+    # --- the equilibrium: a 2-D root (rung 34's was 1-D) ---------------------------------
+
+    def equilibrium(self, flight: FlightCondition, Tt4: float,
+                    start: "tuple[float, float] | None" = None) -> dict:
+        """Solve Phi_L = Phi_H = 0 in (nu_L, nu_H) — the two-shaft running-line instant.
+
+        THE REDUCE: this reproduces rung 39's TwoSpoolMapMatcher.match at the same
+        (flight, Tt4) — through the FORWARD closure only, never by calling that matcher
+        (which would make the reduce circular). Newton with a numerical 2x2 Jacobian; the
+        equilibrium is a stable attractor (both eigenvalues negative — gate 5), so the
+        design point is a safe start.
+        """
+        Tt2, pt2, _ = self._inlet(flight)
+
+        def F(a, b):
+            c = self._close(a, b, Tt4, Tt2, pt2)
+            i = self._powers(c, flight, a, b, Tt4)
+            return i[0], i[1]
+
+        nl, nh = start if start is not None else (1.0, 1.0)
+        for _ in range(self._EQ_MAX):
+            fl, fh = F(nl, nh)
+            if max(abs(fl), abs(fh)) < self._EQ_TOL:
+                return self._instant(flight, nl, nh, Tt4)
+            h = 1e-6
+            al, ah = F(nl + h, nh)
+            bl, bh = F(nl, nh + h)
+            j11, j12 = (al - fl) / h, (bl - fl) / h
+            j21, j22 = (ah - fh) / h, (bh - fh) / h
+            det = j11 * j22 - j12 * j21
+            assert abs(det) > 1e-300, "rung-40 equilibrium Jacobian is singular"
+            dl = (-fl * j22 + fh * j12) / det
+            dh = (-j11 * fh + j21 * fl) / det
+            damp = min(1.0, 0.25 / max(abs(dl), abs(dh), 1e-30))
+            nl, nh = nl + damp * dl, nh + damp * dh
+        raise AssertionError(
+            f"rung-40 two-shaft equilibrium did not converge at Tt4={Tt4:.0f}")
+
+    def _powers(self, c: dict, flight: FlightCondition, nu_lp: float, nu_hp: float,
+                Tt4: float):
+        """(Phi_L, Phi_H) from an already-closed flow — the inner loop of `equilibrium`,
+        factored out so the Newton does not rebuild the nozzle/thrust tail each step."""
+        wgas, f = c["wgas"], c["f"]
+        nu_hpt = nu_hp * (self.Tt4_d / Tt4) ** 0.5
+        _, _, Tt45 = self._solve_choked_turbine(
+            wgas, Tt4, f, self.A4, self.A45, 1.0,
+            self.map_hp.eta_t_at(self.eta_hpt, nu_hpt))
+        nu_lpt = nu_lp * (self.Tt45_d / Tt45) ** 0.5
+        _, _, Tt5 = self._solve_choked_turbine(
+            wgas, Tt45, f, self.A45, self.A8, self.pi_n,
+            self.map_lp.eta_t_at(self.eta_lpt, nu_lpt))
+        Pt_hp = self.eta_m * (1.0 + f) * (wgas.h_t(Tt4, f) - wgas.h_t(Tt45, f))
+        Pt_lp = self.eta_m * (1.0 + f) * (wgas.h_t(Tt45, f) - wgas.h_t(Tt5, f))
+        Pc_hp = wgas.h_c(c["Tt3"]) - wgas.h_c(c["Tt25"])
+        Pc_lp = wgas.h_c(c["Tt25"]) - wgas.h_c(c["Tt2"])
+        return ((c["mdot_air"] * (Pt_lp - Pc_lp)) / (self.P_ref_lp * nu_lp),
+                (c["mdot_air"] * (Pt_hp - Pc_hp)) / (self.P_ref_hp * nu_hp))
+
+    # --- THE OBJECT: the lead threshold sigma_crit (dagger) ------------------------------
+
+    def lead_threshold(self, flight: FlightCondition, Tt4: float, d: float = 5.0,
+                       nu: "tuple[float, float] | None" = None) -> float:
+        """sigma_crit: the clock ratio at which NEITHER spool leads (dagger).
+
+            sigma_crit = [ (dPhi_L/dTt4)/nu_L ] / [ (dPhi_H/dTt4)/nu_H ]
+
+        HP leads an acceleration iff rho > sigma_crit. Evaluated at FROZEN speeds on the
+        running line (a purely algebraic instant), it is nonetheless what the marched
+        nonlinear trajectory obeys in the small-ramp limit (gate 6).
+
+        == 1 EXACTLY on flat maps + a CPG gas, inherited from rung 39's B1 slip identity
+        (see the module header derivation) — that is this rung's reduce spine, not its
+        finding. The finding is that BOTH the cp(T) gas curve and the maps move it off 1.
+        """
+        if nu is None:
+            od = self.match(flight, Tt4)
+            nu = (od.N_lp_ratio, od.N_hp_ratio)
+        ip = self._instant(flight, nu[0], nu[1], Tt4 + d)
+        im = self._instant(flight, nu[0], nu[1], Tt4 - d)
+        return (((ip["Phi_lp"] - im["Phi_lp"]) / nu[0])
+                / ((ip["Phi_hp"] - im["Phi_hp"]) / nu[1]))
+
+    # --- stability: the 2x2 Jacobian of the two-state flow -------------------------------
+
+    def jacobian(self, flight: FlightCondition, Tt4: float,
+                 nu: "tuple[float, float] | None" = None, h: float = 1e-6):
+        """d(dnu/ds)/d(nu) at (nu_L, nu_H) — the two-state analogue of rung 34's
+        'Phi decreasing through zero'. Returns [[a,b],[c,d]]."""
+        if nu is None:
+            od = self.match(flight, Tt4)
+            nu = (od.N_lp_ratio, od.N_hp_ratio)
+
+        def F(a, b):
+            i = self._instant(flight, a, b, Tt4)
+            return i["Phi_lp"] / self.rho, i["Phi_hp"]
+
+        fl, fh = F(nu[0], nu[1])
+        al, ah = F(nu[0] + h, nu[1])
+        bl, bh = F(nu[0], nu[1] + h)
+        return [[(al - fl) / h, (bl - fl) / h], [(ah - fh) / h, (bh - fh) / h]]
+
+    @staticmethod
+    def eigenvalues(J) -> "tuple[float, float]":
+        """Real parts of the 2x2 eigenvalues (both negative <=> a stable attractor)."""
+        tr = J[0][0] + J[1][1]
+        det = J[0][0] * J[1][1] - J[0][1] * J[1][0]
+        disc = tr * tr - 4.0 * det
+        if disc >= 0.0:
+            r = disc ** 0.5
+            return (0.5 * (tr - r), 0.5 * (tr + r))
+        return (0.5 * tr, 0.5 * tr)
+
+    # --- THE FINDING: the rho-band in which the inter-spool mode goes COMPLEX ------------
+    #
+    # Write the Jacobian at rho=1 as (a,b,c,d) = d(Phi_L,Phi_H)/d(nu_L,nu_H). At clock ratio
+    # rho the LP row carries 1/rho, so   J(rho) = [[a/rho, b/rho], [c, d]]   and
+    #
+    #     tr   = a/rho + d                    det  = (a*d - b*c)/rho
+    #     disc = tr^2 - 4*det = (a/rho - d)^2 + 4*b*c/rho
+    #
+    # STABILITY: tr<0 and det>0 hold for EVERY rho>0 as soon as a<0, d<0 and a*d>b*c -- the
+    # three conditions carry NO rho. Those signs are MEASURED (gate 5, 252 points, shape- and
+    # gas-robust), not derived; what IS derived is that, given them, rho cannot destabilize
+    # the pair. The clock ratio is powerless over stability.
+    #
+    # OSCILLATION: disc is NOT rho-free. (a/rho - d)^2 vanishes at rho = a/d (>0, both being
+    # negative), leaving disc = 4*b*c/rho there -- so whenever b*c < 0 a complex pair EXISTS,
+    # in a band around rho = a/d, and whenever b*c >= 0 the approach is monotone at every rho.
+    # Measured: b*c < 0 exactly when the LP compressor map is SHAPED (a flat LP map, including
+    # the hp-only pair, keeps b small and negative). The mode is MAP-CREATED -- the rung-39
+    # slip pattern again. Its strength |Im/Re| is maximal at rho = a/d, where it equals
+    # sqrt(-b*c/(a*d)); in the sampled maps that is <= 0.25 (heavily damped), a magnitude
+    # DISCLAIMED exactly like rung 39's slip depth.
+
+    def oscillatory_band(self, flight: FlightCondition, Tt4: float,
+                         nu: "tuple[float, float] | None" = None):
+        """The rho interval on which the two-shaft mode is COMPLEX, or None if there is none.
+
+        Returns (rho_lo, rho_hi) with rho_lo < a/d < rho_hi when b*c < 0; None when b*c >= 0
+        (then the approach is monotone at EVERY rho). Existence and the b*c sign are the
+        gated claims; the band's LOCATION rides on the representative maps and is disclaimed.
+        """
+        rho0, self.rho = self.rho, 1.0
+        try:
+            J = self.jacobian(flight, Tt4, nu=nu)
+        finally:
+            self.rho = rho0
+        a, b, c, d = J[0][0], J[0][1], J[1][0], J[1][1]
+        if b * c >= 0.0:
+            return None
+        # disc<0  <=>  a^2 u^2 - (2ad + 4|bc|) u + d^2 < 0,   u = 1/rho
+        A, B, C = a * a, 2.0 * a * d + 4.0 * abs(b * c), d * d
+        root = (B * B - 4.0 * A * C) ** 0.5
+        return (2.0 * A / (B + root), 2.0 * A / (B - root))
+
+    def damping_ratio_max(self, flight: FlightCondition, Tt4: float,
+                          nu: "tuple[float, float] | None" = None) -> float:
+        """max over rho of |Im/Re| for the two-shaft mode = sqrt(-b*c/(a*d)), attained at
+        rho = a/d. Zero when b*c >= 0. MAGNITUDE DISCLAIMED (rides on the maps)."""
+        rho0, self.rho = self.rho, 1.0
+        try:
+            J = self.jacobian(flight, Tt4, nu=nu)
+        finally:
+            self.rho = rho0
+        a, b, c, d = J[0][0], J[0][1], J[1][0], J[1][1]
+        return 0.0 if b * c >= 0.0 else (-b * c / (a * d)) ** 0.5
+
+    # --- march both shafts (RK4 on a 2-vector) -------------------------------------------
+
+    def integrate(self, flight: FlightCondition, schedule, nu0: "tuple[float, float]",
+                  s_end: float, ds: float) -> list:
+        """RK4-march (dnu_L/ds, dnu_H/ds) = (Phi_L/rho, Phi_H) with Tt4 = schedule(s).
+
+        Returns [TwoSpoolTransientPoint]. Marching off the modeled map region stops the
+        integration cleanly (rung 34's discipline) rather than throwing.
+        """
+        def der(a, b, T):
+            i = self._instant(flight, a, b, T)
+            return i["Phi_lp"] / self.rho, i["Phi_hp"], i
+
+        pts, (nl, nh), s = [], nu0, 0.0
+        for i_step in range(int(round(s_end / ds)) + 1):
+            Tt4 = float(schedule(s))
+            try:
+                k1l, k1h, inst = der(nl, nh, Tt4)
+            except AssertionError:
+                break
+            pts.append(TwoSpoolTransientPoint(
+                s=s, nu_lp=nl, nu_hp=nh, Tt4=Tt4, slip=nl / nh, pi_lpc=inst["pi_lpc"],
+                pi_hpc=inst["pi_hpc"], phi_lp=inst["phi_lp"], phi_hp=inst["phi_hp"],
+                mdot_air=inst["mdot_air"], f=inst["f"], Phi_lp=inst["Phi_lp"],
+                Phi_hp=inst["Phi_hp"], sp_thrust=inst["sp_thrust"]))
+            if i_step == int(round(s_end / ds)):
+                break
+            try:
+                k2l, k2h, _ = der(nl + .5*ds*k1l, nh + .5*ds*k1h, float(schedule(s + .5*ds)))
+                k3l, k3h, _ = der(nl + .5*ds*k2l, nh + .5*ds*k2h, float(schedule(s + .5*ds)))
+                k4l, k4h, _ = der(nl + ds*k3l, nh + ds*k3h, float(schedule(s + ds)))
+            except AssertionError:
+                break
+            nl = max(0.2, nl + ds / 6.0 * (k1l + 2*k2l + 2*k3l + k4l))
+            nh = max(0.2, nh + ds / 6.0 * (k1h + 2*k2h + 2*k3h + k4h))
+            s += ds
+        return pts
+
+    # --- THE FINDING: the marched slip excursion, and its sign vs rho --------------------
+
+    def slip_excursion(self, flight: FlightCondition, Tt4_lo: float, dTt4: float,
+                       r_ramp: float = 0.5, s_end: float = 3.0, ds: float = 0.02) -> float:
+        """Signed extremum of (slip - slip_steady(Tt4)) over a marched acceleration ramp.
+
+        NEGATIVE <=> the LP spool falls BEHIND its steady schedule <=> the HP spool LEADS.
+        Referenced to the RUNNING LINE (rung 34's discipline) so the steady slip schedule's
+        own drift with Tt4 is not mistaken for transient lead — an early probe that compared
+        against the STARTING slip read `hp-only` backwards for exactly that reason.
+        """
+        od_lo, od_hi = self.match(flight, Tt4_lo), self.match(flight, Tt4_lo + dTt4)
+        slip_lo, slip_hi = od_lo.slip, od_hi.slip
+        nu0 = (od_lo.N_lp_ratio, od_lo.N_hp_ratio)
+
+        def sched(t):
+            return Tt4_lo + dTt4 * min(1.0, t / r_ramp)
+
+        ext = 0.0
+        for p in self.integrate(flight, sched, nu0, s_end, ds):
+            u = (p.Tt4 - Tt4_lo) / dTt4
+            e = p.slip - (slip_lo + u * (slip_hi - slip_lo))
+            if abs(e) > abs(ext):
+                ext = e
+        return ext

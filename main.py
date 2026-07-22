@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 from turbojet.engine import (  # noqa: E402
     FlightCondition, build_turbojet, OffDesignMatcher, MapMatcher, ComponentMap, SpoolTransient,
     CombustorTransient, build_two_spool_turbojet, TwoSpoolMatcher, TwoSpoolMapMatcher,
-    ram_recovery,
+    TwoSpoolTransient, ram_recovery,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -1697,6 +1697,115 @@ def print_two_spool_map_table(flight):
     print("  the shapes; only the asymmetry, the identity and the slip SIGN are load-bearing.")
 
 
+def print_two_shaft_transient_table(flight):
+    """Rung 40 — THE TWO-SHAFT TRANSIENT: the LP map opens a COMPLEX mode.
+
+    Rung 39 named this seam "now well-posed" (rung 38 could supply no N at all; rung 39
+    supplies two). Both shaft speeds become STATES under two inertia ODEs; nondimensionalizing
+    on the HP clock leaves exactly ONE parameter, the clock RATIO rho = tau_L/tau_H. That is
+    the resolution of rung 34's tautology -- rung 34 had to IMPOSE a second clock (tau_fuel)
+    before inertia mattered; here each spool IS the other's clock. But "rho survives" is itself
+    dimensional analysis, so the content is what rho can and cannot DO, and it splits:
+    STABILITY is rho-free (the sign conditions a<0, d<0, ad>bc carry no rho -- measured over
+    252 points, zero violations), while OSCILLATION is not (disc = (a/rho-d)^2 + 4bc/rho
+    vanishes at rho = a/d). Whenever bc < 0 a COMPLEX inter-spool mode exists -- and bc < 0
+    exactly when the LP compressor map is SHAPED, with hp-only (HP shaped, LP FLAT) the
+    discriminator proving it is the LP map specifically. The mode is MAP-CREATED, rung 39's
+    slip pattern a third time. Much of the rest is INHERITED from rung 39 B1/B2 and says so.
+    """
+    print("\nTwo-shaft transient (rung 40): both shaft speeds become STATES. Nondimensionalizing")
+    print("leaves ONE parameter -- the clock RATIO rho = tau_L/tau_H -- and its power SPLITS:")
+    print("it can never destabilize the pair, but it decides whether the mode is real or COMPLEX.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    pi_lpc, pi_hpc = 3.0, 6.0
+    FLAT = ComponentMap.flat()
+    LP_S = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7)
+    HP_S = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    def tt(gas, mL, mH):
+        design = build_two_spool_turbojet(gas, pi_lpc, pi_hpc, TT4, flight.p0,
+                                          nozzle_convergent=True, **losses)
+        return TwoSpoolTransient(design, flight, 1.0, map_lp=mL, map_hp=mH)
+
+    # --- the reduce: the 2-D root lands on rung 39, through the FORWARD closure only.
+    t = tt(cpg(), LP_S, HP_S)
+    print("\n  REDUCE — the 2-D equilibrium (Phi_L = Phi_H = 0) vs rung 39's matched point")
+    print("  (via the forward closure ONLY -- it never calls the matcher, so this is non-circular):")
+    print(f"  {'Tt4':>6} {'d nu_L':>11} {'d nu_H':>11} {'d pi_LPC':>11} {'d pi_HPC':>11}")
+    print("  " + "-" * 56)
+    for Tt4 in (1500.0, 1300.0, 1200.0):
+        od, eq = t.match(flight, Tt4), t.equilibrium(flight, Tt4)
+        print(f"  {Tt4:6.0f} {eq['nu_lp']/od.N_lp_ratio-1:11.2e} "
+              f"{eq['nu_hp']/od.N_hp_ratio-1:11.2e} {eq['pi_lpc']/od.pi_lpc-1:11.2e} "
+              f"{eq['pi_hpc']/od.pi_hpc-1:11.2e}")
+
+    # --- sigma_crit: the lead threshold. The ==1 identity is INHERITED from rung 39 B1.
+    print("\n  sigma_crit (the LEAD THRESHOLD: HP leads iff rho > sigma_crit), at Tt4=1100.")
+    print("  == 1 on flat+CPG is rung 39's B1 slip identity restated for the transient")
+    print("  (on the running line sigma_crit reduces to the steady slip) -- INHERITED, the")
+    print("  reduce spine, NOT this rung's finding:")
+    rows = [("CPG + flat maps", cpg(), FLAT, FLAT),
+            ("thermally_perfect + flat", Gas.thermally_perfect(), FLAT, FLAT),
+            ("reacting + flat", Gas.reacting_equilibrium(), FLAT, FLAT),
+            ("CPG + shaped maps", cpg(), LP_S, HP_S)]
+    print(f"  {'configuration':>26} {'sigma_crit - 1':>16}   channel")
+    print("  " + "-" * 66)
+    for label, gas, mL, mH in rows:
+        dev = tt(gas, mL, mH).lead_threshold(flight, 1100.0, d=25.0) - 1.0
+        ch = ("the IDENTITY" if abs(dev) < 1e-11 else
+              "the cp(T) gas curve" if mL.is_flat() else "the MAP")
+        print(f"  {label:>26} {dev:16.4e}   {ch}")
+    print("  => the map channel is ~5.8x the gas channel: DOMINANT, not sole (rung 39 B2's shape).")
+
+    lp_only = tt(cpg(), LP_S, FLAT).lead_threshold(flight, 1100.0)
+    hp_only = tt(cpg(), FLAT, HP_S).lead_threshold(flight, 1100.0)
+    print(f"\n  A REFUTED hypothesis, kept visible: 'the map favours the LP spool' is FALSE --")
+    print(f"  shaping only the LP map gives sigma_crit = {lp_only:.4f} (< 1), only the HP map "
+          f"{hp_only:.4f} (> 1).")
+    print("  Both signs are reachable, so only the EXISTENCE of a material shift is claimed.")
+
+    # --- THE FINDING: stability is rho-free; the complex mode is created by the LP map.
+    print("\n  THE FINDING — J(rho) = [[a/rho, b/rho], [c, d]] on the running line, Tt4=1200:")
+    print("    tr = a/rho + d,  det = (ad-bc)/rho,  disc = (a/rho - d)^2 + 4bc/rho")
+    print("  STABILITY needs a<0, d<0, ad>bc -- three conditions with NO rho in them, so the")
+    print("  clock ratio can NEVER destabilize the pair. OSCILLATION is different: disc kills")
+    print("  its first term at rho = a/d, so bc<0 => a COMPLEX band exists.")
+    print(f"\n  {'shapes':>12} {'b':>10} {'b*c':>11} {'ad-bc':>9} {'band (rho)':>20} "
+          f"{'|Im/Re|max':>11}")
+    print("  " + "-" * 78)
+    for name, mL, mH in (("flat", FLAT, FLAT), ("hp-only", FLAT, HP_S),
+                         ("lp-only", LP_S, FLAT), ("flow/press", LP_S, HP_S)):
+        tx = tt(cpg(), mL, mH)
+        od = tx.match(flight, 1200.0)
+        nu = (od.N_lp_ratio, od.N_hp_ratio)
+        tx.rho = 1.0
+        J = tx.jacobian(flight, 1200.0, nu=nu)
+        bc = J[0][1] * J[1][0]
+        band = tx.oscillatory_band(flight, 1200.0, nu=nu)
+        bs = "none" if band is None else f"[{band[0]:.3f}, {band[1]:.3f}]"
+        print(f"  {name:>12} {J[0][1]:10.4f} {bc:11.4e} {J[0][0]*J[1][1]-bc:9.4f} {bs:>20} "
+              f"{tx.damping_ratio_max(flight, 1200.0, nu=nu):11.3f}")
+    print("\n  hp-only is the DISCRIMINATOR: its HP map IS shaped, yet no band appears -- so the")
+    print("  mechanism is the LP map SPECIFICALLY, not shaping in general. A shaped LP map flips")
+    print("  b = dPhi_L/dnu_H from small-negative to large-positive; with c<0 always, that")
+    print("  antisymmetric cross-coupling is what makes the pair complex. The mode is MAP-CREATED")
+    print("  -- rung 39's slip pattern a third time.")
+    print("  |Im/Re| <= 0.25 here (no visible ringing) is a DISCLAIMED MAGNITUDE, not a verdict:")
+    print("  existence + sign + mechanism are gated, the number rides on the representative maps.")
+    print("\n  SCOPE (a negative, stated plainly): sigma_crit's authority is FIRST-INSTANT only.")
+    print("  The finite-ramp slip excursion is SCHEDULE-SLAVED -- dominated by slip_ss(Tt4) moving")
+    print("  while the speeds lag -- so the marched threshold is NOT sigma_crit (0.60x / 1.40x).")
+    print("  Oscillation claim scoped to INTER-SPOOL (rung 37's shaft+metal pair is not audited).")
+    print("  Reduce: lp_disabled => rung 34 SpoolTransient bit-for-bit. Cycle stays rung-6 exact.")
+
+
 def print_pdf_quench_table(flight):
     """Rung-15 payoff: the PDF THROUGH the finite quench — the two mixing mechanisms COMBINED.
 
@@ -2765,6 +2874,8 @@ def main():
     print_two_spool_matching_table(FLIGHT)
 
     print_two_spool_map_table(FLIGHT)
+
+    print_two_shaft_transient_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

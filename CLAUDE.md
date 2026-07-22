@@ -11,7 +11,7 @@ teaching, not for features or polish.
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is
-anchored to a published case. All rungs are live; the current scope is **rung 39**.
+anchored to a published case. All rungs are live; the current scope is **rung 40**.
 
 **This table is the one-line map, not the handout.** Each rung's derivation,
 assumptions, honest concessions, reduce-to-prior contract and verification gates
@@ -69,6 +69,8 @@ live in its spec (last column) — read the spec before touching a rung.
 
 | 39 | **Two-spool + component maps — the cascade acquires a DIRECTION** — `TwoSpoolMapMatcher` (subclasses rung 38's `TwoSpoolMatcher`) / `_cascade_map(…)` / `_hp_eta_loop(…)` / `_lp_eta_loop(…)`: rung 38 closed by **predicting its own successor would break it** ("a real map … would very likely reintroduce the coupling … the two spools DO need a joint solve"). **The prediction is WRONG, and how it is wrong is the rung** — the **rung-28 shape** (verdict confirmed, stated reason refuted). **THE ALGEBRA**: refer the HPT-NGV choke to the HP compressor face; since `pt4 = π_b·π_HPC·π_LPC·pt2` and `pt25 = π_LPC·pt2`, the ratio `pt4/pt25 = π_b·π_HPC` and **`π_LPC` CANCELS** ⇒ `ṁ_corr,25 = A4·π_b·π_HPC·MFP*(Tt4,f)·√(Tt25/Tt4)/(1+f)` **(†)** — the LPC raises pressure and mass flow **proportionally**, so the HP core sees the same **corrected** flow whatever the LP spool delivers, and no modeled loss between 25 and 4 reintroduces it. `Tt25`/`Tt3` come from rung 38's **energy** cascade (which reads no compressor efficiency), so the HP compressor's whole map coordinate pair is a **closed fixed point in `π_HPC` alone** and cannot see `η_LPC`. The LP face does **not** cancel — `ṁ_corr,2 = A4·π_b·π_HPC·π_LPC·MFP*·√(Tt2/Tt4)/(1+f)` **(‡)** carries `π_HPC`. **THE FINDING: the map opens EXACTLY ONE arrow (HP→LP)** — `η_HPC → π_LPC` is real (**−1.5e-4 … −6.7e-4**, negative at every shape × throttle) while `η_LPC → π_HPC` is **EXACTLY ZERO (bit-for-bit)**, gas-independent (holds on the reacting gas too). So rung 38's **verdict SURVIVES** (the two compressor pressure ratios are still **never** a joint 2×2 solve — the solve stays strictly triangular); it merely **acquires an order** (HP first, LP onto it), the *opposite* of the order rung 38's energy cascade runs in. **Not a tautology**: the gated claim is the **ASYMMETRY** (one specified arrow opens with a measured sign, the other stays shut for a provable algebraic reason), and the closed leaf is a **code-level guarantee** — the solve is built triangular (`_hp_eta_loop` writes **(†)** in closed form and runs *before* `_lp_eta_loop`) precisely so it is exact; a jointly-iterated implementation leaves ~1e-15 residue and could not make the claim at all (measured at the probe stage). The **one channel that DOES re-open it** is a representative **turbine** map (`η_LPC→φ_L→n_L→ν_LPT→η_LPT→Tt5→Tt25→π_HPC`) at **8e-7…2.3e-6** — **119×–548× weaker**, which is **rung 32's own sub-finding** ("the turbine is pinned in corrected speed") transplanted onto the LP spool; sign + order-of-magnitude gated, **ratio disclaimed**. **THE STRUCTURAL NOVELTY: TWO shaft speeds** (rung 32 attached one `N`; rung 38 computes **none**), hence the **SLIP `N_L/N_H`** — the natural two-spool diagnostic. **B1 (structural)**: with both NGVs choked both shaft works are `η_m·(1+f)·cp_t·Tt4·[pure geometry]`, so **`(1+f)` AND `Tt4` both cancel** in `N_L/N_H` ⇒ on a CPG gas with flat maps **slip ≡ 1 EXACTLY at every throttle**, verified `f`-independently (forced `f` at 0.5×/1×/2×/4×). **B2**: exactly two channels break it, separated by the **rung-31-gate-5 mirror** — the `cp(T)` gas curve (**1.5%** at `Tt4`=900, on the *same* flat maps) and the **map** (**5.0%** on the *same* CPG gas), the map **~3.4× the larger** but **not the sole** one (an initial "100% map content" reading was refuted by this table). This **INVERTS rung 32's decomposition — on the CPG gas, and only there**: there the work was choke-pinned and map-free and the map only **re-labelled** it; on CPG the slip-deviation **does not exist without the map** (identically zero on the flat map), so the map is the **sole** channel and genuinely *creates* it. **NOT unconditional**: on the reacting gas the same flat maps already give 0.9835 at `Tt4`=900, so on the real gas the map is the **dominant** channel, not the only one. **B3 (empirical, sign only)**: `N_L/N_H` falls **monotonically** with throttle across all shape pairs (5.1%–7.5% at `Tt4`=900) — **the LP spool falls away from the HP spool**, the textbook twin-spool behaviour (idle runs high `N_H`, much lower `N_L`); **NOT structural** (no cancellation guarantees the sign — it rides on relative map droop), magnitude **disclaimed**. **Reduce — the full LADDER**: FLAT maps ⇒ rung 38 `TwoSpoolMatcher` **bit-for-bit** (`==` on the reacting gas — targeted, not promised, and it landed); `lp_disabled=True` **exact dispatch** ⇒ rung 32 `MapMatcher` (shaped) and rung 31 `OffDesignMatcher` (flat), both bit-for-bit. **Non-tautological gate**: an INDEPENDENT bare-math CPG two-spool **map** cascade (no `Gas`/`Component`/`ComponentMap`/`TwoSpoolMapMatcher`; own bisections, own speed-line inversions, efficiency fixed points by **damped substitution** not the shipped secant) reproduces `(π_LPC, π_HPC, η_LPC, η_HPC, n_L, n_H)` across a throttle sweep — the only anchor tying the *map* cascade down, since the flat reduce holds every `η` at design and the `lp_disabled` reduce never enters the two-spool path. Separate entry point; default `run(…)` untouched ⇒ cycle **bit-for-bit rung 6**. Disclaimed: representative maps (every magnitude rides on the shapes — rung-32 methodology); the slip **direction** is empirical, not structural; the back-arrow **ratio**; fully-choked branch / both NGVs choked / steady only / one `η_m` / no bypass / **no surge line on either spool** (inherited or deferred). | `docs/rung39-spec.md` |
 
+| 40 | **The two-shaft transient — the LP map opens a COMPLEX mode** — `TwoSpoolTransient` (subclasses rung 39's `TwoSpoolMapMatcher`) / `_close(…)` / `_instant(…)` / `equilibrium(…)` / `lead_threshold(…)` / `oscillatory_band(…)`: rung 39 named this seam and called it **newly well-posed** ("rung 38 could supply no `N` at all; rung 39 supplies two"). BOTH shaft speeds become **STATES** under two inertia ODEs; nondimensionalizing on the HP clock `τ_H` leaves exactly **ONE** parameter, the clock **RATIO** `ρ=τ_L/τ_H`. That is the **resolution of rung 34's own tautology** — rung 34 had to *impose* a second clock (`τ_fuel`) before inertia became load-bearing; a two-shaft engine has it built in (**each spool is the other's clock**). The closure is **rung 34's move on two shafts**: a **1-D root in `m_L`** (LPC map forward → `Tt25` → `n_H` → the corrected-flow transfer `m_H` → HPC map forward → `pt4` → `f` → the HPT-NGV choke imposes `ṁ` back), with **NO shaft balance** — so both power residuals are OUTPUTS. Rung 39's triangular η-cascade/one-way-arrow **does not arise** (the transient reads η **forward** off each map; that apparatus was a *steady*-η-fixed-point artifact). **HONEST ACCOUNTING — much of this rung is INHERITED and the spec says so**: the turbine work split `Pt_L/Pt_H` is `Tt4`-invariant to **4.7e-15** (rung 39 B1's `(1+f)`/`Tt4` cancellation); the lead threshold `σ_crit=[(∂Φ_L/∂Tt4)/ν_L]/[(∂Φ_H/∂Tt4)/ν_H]` (**HP leads ⟺ `ρ>σ_crit`**) **≡1 on flat maps + CPG** because on the running line it *reduces to the steady slip*, which B1 pins at 1 — a **derived inheritance** and this rung's **reduce SPINE, not its finding**; and the two channels that break it (`cp(T)` curve **+4.3e-2**, map **+2.5e-1**, map ~5.8× dominant **but not sole**) are rung 39 B2's shape. A **refuted hypothesis kept visible**: "the map favours the LP spool" is **FALSE** — `lp-only` shaping gives `σ_crit`<1 (0.73–0.95), `hp-only` >1 (1.22–1.28); both signs reachable, so only the *existence* of a shift is claimed. **THE FINDING (new, two-spool-specific) — `ρ`'s power SPLITS.** Write `J(ρ)=[[a/ρ, b/ρ],[c,d]]`: **STABILITY is `ρ`-FREE** — `tr<0` and `det>0` hold for **every** `ρ>0` as soon as `a<0, d<0, ad>bc`, three conditions **containing no `ρ`** (the signs are **MEASURED** — 252 `(shape,Tt4,ρ,gas)` points, 7 shapes × 3 throttles × `ρ`∈[0.05,100] × 2 gases, **zero violations**, worst eigenvalue **−0.011**; the `ρ`-freeness is algebra *on top*, so the composite is **not** billed as "provable"). But **OSCILLATION is NOT**: `disc=(a/ρ−d)²+4bc/ρ` kills its first term at `ρ=a/d`, so **`bc<0` ⇒ a COMPLEX inter-spool mode exists** in a band around `a/d`, and `bc≥0` ⇒ monotone at every `ρ`. **THE MECHANISM: `bc<0` iff the LP compressor map is SHAPED** — a shaped LP map flips `b=∂Φ_L/∂ν_H` from small-negative to large-positive (with `c<0` always), and **`hp-only` is the DISCRIMINATOR** (HP shaped, LP **flat** ⇒ `bc=+3e-4`, **no band**), proving it is the **LP map specifically**, not shaping in general. The mode is **MAP-CREATED** — rung 39's slip pattern a **third** time. Verified on the solver: `flow/press` at `Tt4`=1200 predicts `ρ∈[1.233,2.082]` (centre 1.602) and the Jacobian is complex inside / real outside. **Magnitude DISCLAIMED**: `|Im/Re|_max=√(−bc/(ad))` ≤ **0.25** in the sampled maps (no visible ringing) — **reported, not gated**, per rung-32/36/39 methodology; "it does not ring on *these* maps" is **not** "hunting is impossible", and the rung deliberately does **not** make "treating the shafts as independent is EARNED" its headline. **Scope: INTER-SPOOL** (rung 37's shaft+metal Jacobian is not audited, so "first oscillatory mode in the project" is NOT claimed). **A NEGATIVE stated plainly**: `σ_crit`'s authority is **FIRST-INSTANT only** — two dynamic claims were probed and **withdrawn**, "σ_crit predicts the marched crossover" (**tautological**: from `Φ=0`, `Φ(Tt4+dT)≈dT·∂Φ/∂Tt4`, so the condition collapses to `ρ=σ_crit` *by definition*) and "σ_crit is the amplitude→0 limit of the marched `ρ*`" (**refuted**: `ρ*/σ_crit`→0.60 / 1.40, not 1) — because the running-line-referenced ramp excursion is **SCHEDULE-SLAVED** (dominated by `slip_ss(Tt4)` moving while the speeds lag; negative at the first step for *every* `ρ`). **Reduce**: the **2-D** equilibrium (`Φ_L=Φ_H=0`, damped Newton from the design start — rung 34's was a 1-D bracket) reproduces rung 39's `match` to **≤1e-12** on CPG **and** reacting, via the **forward closure only** (never calling the matcher ⇒ non-circular); `lp_disabled=True` **exact dispatch** ⇒ rung 34 `SpoolTransient` **bit-for-bit** (`==`); rung 39's `match`/`_cascade_map` left **literally unchanged** ⇒ the rung-39 suite still witnesses them bit-for-bit. **Non-tautological gate**: an INDEPENDENT bare-math CPG two-shaft closure (no `Gas`/`Component`/`ComponentMap`/`TwoSpoolTransient`; own CPG thermodynamics, own bisections, own forward speed lines, own 2-D Newton) reproduces `(ν_L,ν_H,π_LPC,π_HPC)` **and `σ_crit` ON SHAPED MAPS** (~1.2) — the shaped value is what ties the object down, since reproducing the ≡1 identity would only re-check the reduce. Separate entry point; default `run(…)` untouched ⇒ cycle **bit-for-bit rung 6**. Disclaimed: `ρ` is a **disclaimed clock group, DOUBLED** (`I_L,I_H,ω_L,d,ω_H,d` unmodelled, no wall-clock time); every magnitude rides on the representative maps (band location, `|Im/Re|`, the `σ_crit` shift); fully-choked branch / both NGVs choked / one `η_m` / no bypass / `Tt4` control (not rung-35 fuel) / **no surge line on either spool** — all inherited. | `docs/rung40-spec.md` |
+
 **The invariant that spans rungs 7–30 (and now 36): they are all pure diagnostics** (rungs 31–35 are
 the **STRUCTURAL rungs** — they compute a *new* off-design operating point: rung 32 with the component
 map, rung 33 on the **subsonic-nozzle branch** below unchoke, rung 34 the **dynamic** point where
@@ -96,6 +98,10 @@ via a separate factory). Rung 39 is **structural again, on that same second shaf
 `TwoSpoolMapMatcher` puts a `ComponentMap` on each spool, so both compressor efficiencies AND
 both shaft speeds become OUTPUTS — but through a separate entry point that reduces to rung 38
 **bit-for-bit** on flat maps and, via `lp_disabled` exact dispatch, to rungs 32/31 as well.
+Rung 40 is **structural-in-time on that second shaft**: `TwoSpoolTransient` promotes BOTH shaft
+speeds to *dynamic states* (the two-shaft analogue of rung 34, which rung 39 made well-posed),
+marching them beside the cycle through a separate entry point that reduces to rung 39 by a 2-D
+equilibrium solve and to rung 34 bit-for-bit by exact dispatch.
 Each rung's verified anchor data lives in `docs/plans/rungN-anchor-*.md`; `docs/plans/` also holds
 the living plan/tasks (rungs 1–3).
 
@@ -209,7 +215,24 @@ channel and genuinely *creates* the object) — but **NOT unconditionally**: on 
 the same flat maps already give 0.9835 at `Tt4`=900, so the map is the **dominant** channel
 (~3.4×), not the only one. Reduce: flat
 maps ⇒ rung 38 bit-for-bit; `lp_disabled` ⇒ rung 32 (shaped) / rung 31 (flat) by exact dispatch.
-Separate entry point; default run still rung-6 exact.
+Separate entry point; default run still rung-6 exact. Rung 40 (`TwoSpoolTransient`) builds the
+seam rung 39 declared well-posed: BOTH shaft speeds become **STATES** under two inertia ODEs,
+closed **forward** with no shaft balance (a 1-D root in `m_L`), so nondimensionalizing leaves
+exactly one parameter — the clock **RATIO** `ρ=τ_L/τ_H`, the second clock rung 34 had to impose
+(**each spool is the other's clock**). **Much of the rung is INHERITED and it says so**: the
+turbine-split invariance and the lead threshold's `σ_crit≡1` identity are rung 39 **B1** restated
+for the transient (on the running line `σ_crit` *reduces to the steady slip*), and its two
+breaking channels (`cp(T)` +4.3e-2, map +2.5e-1) are **B2**'s shape. **The new finding is that
+`ρ`'s power SPLITS**: it can **never** destabilize the pair (`a<0, d<0, ad>bc` carry **no `ρ`** —
+252 points, zero violations) yet it **decides whether the mode is real or COMPLEX**
+(`disc=(a/ρ−d)²+4bc/ρ` vanishes at `ρ=a/d`). **`bc<0` iff the LP compressor map is SHAPED**, with
+`hp-only` (HP shaped, LP flat, no band) the **discriminator** — so the complex inter-spool mode is
+**MAP-CREATED**, rung 39's slip pattern a third time; `|Im/Re|≤0.25` is **disclaimed, not
+"negligible"**. A **negative** is stated plainly: `σ_crit` is **first-instant only** — the
+finite-ramp excursion is **schedule-slaved**, and two dynamic claims were probed and withdrawn
+(one tautological, one refuted by measurement). Reduce: the **2-D** equilibrium ⇒ rung 39 (≤1e-12,
+forward closure only ⇒ non-circular); `lp_disabled` ⇒ rung 34 **bit-for-bit**. Separate entry
+point; default run still rung-6 exact.
 
 ## Deferred seams (kept open on purpose)
 - **Finite-rate nozzle chemistry** — **BUILT BY RUNG 25** (`docs/rung25-spec.md`,
@@ -578,12 +601,36 @@ Separate entry point; default run still rung-6 exact.
   only *re-labelled* map-free work in rung 32); on the **real** gas the `cp(T)` curve alone already breaks
   the identity, so the map is the **dominant** channel, not the only one.
   Reduce: flat maps ⇒ rung 38 bit-for-bit; `lp_disabled` ⇒ rung 32/31 by exact dispatch.
-  **What rung 39 leaves open:** the **two-shaft transient** (now well-posed — rung 38 could
-  supply no `N` at all; rung 39 supplies two); a **two-spool surge line / surge margin** (rung
+  **What rung 39 leaves open:** ~~the **two-shaft transient**~~ — **BUILT BY RUNG 40** (below);
+  a **two-spool surge line / surge margin** (rung
   36's machinery is single-spool — and whether the slip *protects* the LP spool at low power, the
   textbook twin-spool rationale, is exactly the claim this rung declines to make); the
   **subsonic/unchoked** LP branch (still rung 38's, now with the map on top); a **real
   hardware/CFD map** (rung 32's standing concession, doubled).
+- **The two-shaft transient** — **BUILT BY RUNG 40** (`docs/rung40-spec.md`, `TwoSpoolTransient`,
+  `docs/plans/rung40-anchor-two-shaft-transient.md`). Rungs 34, 37, 38 and 39 all named this seam;
+  rung 39 made it **well-posed** by supplying the two shaft speeds rung 38 could not. Rung 40
+  makes both speeds **STATES** under two inertia ODEs, closed **forward** with no shaft balance
+  (a 1-D root in `m_L`), leaving exactly one parameter — the clock **RATIO** `ρ=τ_L/τ_H`, the
+  second clock rung 34 had to impose. **Honest accounting: much of the rung is INHERITED** —
+  the turbine-split invariance and the `σ_crit≡1` identity are rung 39 B1 restated for the
+  transient (on the running line `σ_crit` *reduces to the steady slip*), and its two breaking
+  channels are B2's shape. **The new finding is that `ρ`'s power SPLITS**: it can **never**
+  destabilize the pair (the sign conditions `a<0, d<0, ad>bc` carry **no `ρ`** — measured over
+  252 points, zero violations) but it **decides whether the mode is real or COMPLEX**
+  (`disc=(a/ρ−d)²+4bc/ρ` vanishes at `ρ=a/d`). **`bc<0` iff the LP compressor map is SHAPED** —
+  with `hp-only` (HP shaped, LP flat, **no band**) the discriminator proving it is the **LP map
+  specifically**. The mode is **MAP-CREATED**, rung 39's slip pattern a third time; its strength
+  (`|Im/Re|≤0.25`) is **disclaimed, not billed as negligible**. A **negative** is stated plainly:
+  `σ_crit`'s authority is **first-instant only** (the finite-ramp excursion is schedule-slaved;
+  two candidate dynamic claims were probed and withdrawn — one tautological, one refuted).
+  Reduce: the 2-D equilibrium ⇒ rung 39 (≤1e-12, forward closure only); `lp_disabled` ⇒ rung 34
+  bit-for-bit. **What rung 40 leaves open:** a **two-spool surge line** (still rung 36's
+  single-spool machinery — and now there are *two* compressors and a complex mode to measure
+  against it); the **subsonic/unchoked LP branch** in transient; **fuel metering** on two shafts
+  (rung 35's control, not carried over); rung 37's **internal clocks** on two shafts (and the
+  audit of *its* shaft+metal Jacobian for complex modes, which this rung scoped around); a
+  **real hardware/CFD map** (rung 32's standing concession, doubled).
 
 ## Conventions
 - **SI units throughout** (K, Pa, kg/s, m/s, J/kg). Convert kPa → Pa internally.
@@ -696,12 +743,24 @@ Separate entry point; default run still rung-6 exact.
   the four efficiencies, both corrected speeds `n_lp`/`n_hp`, both `N` ratios, and `slip`.
   `lp_disabled=True` dispatches to a `MapMatcher` (rung 32), which itself reduces to rung 31 on
   a flat map — one dispatch completing the whole ladder.
+  And rung 40's **`TwoSpoolTransient`** (subclasses `TwoSpoolMapMatcher`; rung 39's own
+  `match`/`_cascade_map` are again left **literally unchanged**, so the rung-39 suite still
+  witnesses them bit-for-bit): the two-shaft transient. `_close(…)` is the **forward** closure —
+  a **1-D root in `m_L`** (LPC map forward → `Tt25` → `n_H` → the corrected-flow transfer `m_H`
+  → HPC map forward → `pt4` → `f` → the HPT-NGV choke imposes `ṁ` back) with **no shaft
+  balance**, so `_instant(…)` returns BOTH power residuals `Φ_L, Φ_H` as the two ODE right-hand
+  sides (`dν_H/ds=Φ_H`, `dν_L/ds=Φ_L/ρ`, `s=t/τ_H`). `equilibrium(…)` is a **2-D** damped Newton
+  (rung 34's was a 1-D bracket) reproducing rung 39's `match`; `integrate(…)` RK4-marches the
+  2-vector; `lead_threshold(…)` is `σ_crit`; `jacobian`/`eigenvalues`/**`oscillatory_band`**/
+  **`damping_ratio_max`** carry the finding (the band is `None` exactly when `b·c≥0`).
+  `lp_disabled=True` builds no two-shaft state at all — `__init__` holds a rung-34
+  `SpoolTransient` and forwards to it (exact dispatch, the rung 38/39 contract one rung on).
 - `main.py` — the design-point run: ideal-vs-real tables, the overlaid T–s diagram, and
   **one panel per rung** (each panel demonstrates that rung's load-bearing claim and
   states its honest scope).
 - `tests/` — `test_stations.py` / `test_validation.py` (rung 1), `test_rung2.py`,
   `test_polytropic.py` (2b), `test_variable_cp.py` (3), `test_reacting.py` (4),
-  `test_forkb.py` (5), then **`test_rungN.py` for N = 6…39**. Every rung file carries that
+  `test_forkb.py` (5), then **`test_rungN.py` for N = 6…40**. Every rung file carries that
   rung's **reduce-to-prior** gate plus its load-bearing claims; the gates are named in the
   rung's spec. Rungs 16, 23 and 24 **deliberately assert no emissions global-min location**;
   rung 25 **reduces to rung-14 FROZEN but deliberately NOT to equilibrium** (the (R−I) gap is
@@ -862,6 +921,29 @@ Separate entry point; default run still rung-6 exact.
   (arrow strength, back-arrow ratio, slip depth all ride on the representative shapes), does
   **not** claim the slip DIRECTION is structural (only B1's identity is), and makes **no
   two-spool surge-margin claim**.
+  Rung 40 **reduces two ways**: the **2-D** equilibrium (`Φ_L=Φ_H=0`, damped Newton from the
+  design start) reproduces rung 39's `TwoSpoolMapMatcher.match` to **≤1e-12** on CPG **and** the
+  reacting gas — through the **forward closure only**, never calling that matcher, so the reduce
+  is **non-circular** (rung 34's discipline); and `lp_disabled=True` **exact dispatch** ⇒ rung 34
+  `SpoolTransient` **bit-for-bit** (`==`), no two-shaft state built. Its **non-tautological gate
+  3** is an INDEPENDENT bare-math CPG two-shaft closure (no `Gas`/`Component`/`ComponentMap`/
+  `TwoSpoolTransient`; own CPG thermodynamics, own bisections, own forward speed lines, own 2-D
+  Newton) reproducing `(ν_L, ν_H, π_LPC, π_HPC)` **and `σ_crit` ON SHAPED MAPS** — the shaped
+  value is the load-bearing part, since reproducing the `≡1` identity would only re-check the
+  reduce. Finding gates: **gate 4** — the `σ_crit` identity (labelled **INHERITED** from rung 39
+  B1) + its two channels with the map the larger + the **REFUTATION** that the shift *direction*
+  is shape-dependent (`lp-only`<1<`hp-only`); **gate 5** — STABILITY, the measured signs
+  `a<0, d<0, ad>bc` at every sampled point hence both eigenvalues negative at every `ρ`∈[0.05,100]
+  (the `ρ`-freeness is asserted as algebra *on top of* the measured signs, so the composite is
+  never billed "provable"); **gate 6** — THE COMPLEX MODE, `b·c<0` for **every** shaped-LP pair
+  and `b·c≥0` for **every** flat-LP pair (incl. `hp-only`, the discriminator), the returned band
+  genuinely bracketing the discriminant's sign change — **existence + sign + mechanism only**, the
+  band LOCATION and `|Im/Re|` deliberately **NOT** gated; **gate 7** — SCOPE, asserted as a
+  *deliberate NON-convergence* (`|ρ*/σ_crit−1|>0.2`) so the withdrawn "σ_crit predicts the ramp"
+  claim cannot silently creep back. It **deliberately claims no** magnitude, does **not** claim
+  the two shafts are dynamically independent (that negative is *not* the headline), scopes the
+  oscillation claim to **INTER-SPOOL** (rung 37's shaft+metal Jacobian unaudited), and makes **no
+  two-spool surge-margin claim**.
 - `docs/rungN-spec.md` — the derivation, assumptions, concessions and gates for rung N.
   `docs/plans/rungN-anchor-*.md` — that rung's verified anchor data.
 
@@ -872,7 +954,7 @@ Separate entry point; default run still rung-6 exact.
   marches) are tagged `slow` and **deselected** — BUT the bit-for-bit **reduce spine**
   (`test_reduce_*`, `test_cycle_untouched_*`, `*_bit_for_bit`) is kept in the fast run, so routine
   `pytest` still guards "each rung reduces to its predecessor, exactly and by test."
-- Run tests (full, every gate):  `pytest --runslow`  — all 387 tests (~10–15 min). **Use this at
+- Run tests (full, every gate):  `pytest --runslow`  — all 396 tests (~10–15 min). **Use this at
   commit / session-end / CI** — the fast subset is for quick iteration, not for signing off a rung.
 - Only the slow gates:  `pytest -m slow`   ·   One rung by hand:  `python tests/test_rung2.py`
 - Install deps:   `pip install -r requirements.txt`  (matplotlib + pytest + pytest-xdist)
