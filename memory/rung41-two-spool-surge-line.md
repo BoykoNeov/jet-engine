@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 91b50966-21e9-44e9-bb34-66409239bb67
-  modified: 2026-07-22T15:06:14.996Z
+  modified: 2026-07-22T15:28:55.545Z
 ---
 
 **Rung 41 (shipped 2026-07-22) = the two-spool surge line** — the seam rungs 39 AND 40 both
@@ -45,6 +45,14 @@ whole +0.44% residual is the fuel fraction (`hPR`×1000 ⇒ `f`→1e-5 ⇒ resid
   framing (rung-40 discipline).
 - **Ratio, not gap.** "The margin gap widens with throttle" is FALSE — both margins tend to
   zero, so the absolute gap peaks mid-throttle. The floor-fair measure is `SM_L/SM_H`.
+- **Matching the map SHAPE is not a controlled comparison.** I wrote "matched shapes + a common
+  floor, so only the running line differs" — wrong, and the advisor caught it *in a rung whose
+  whole point is fixing rung 36's over-attribution*. The two spools still carry different
+  **design pressure ratios** (3 vs 6), so `SM_L < SM_H` **already holds at the design point**
+  where `φ_L=φ_H=1` and there is no exposure difference at all — that level offset is `π_LPC`
+  alone. Only the **collapsing ratio** is a running-line statement. General lesson: before
+  attributing an ordering to the effect you are studying, check it at the point where that
+  effect is *identically zero*.
 - **Declined deliberately:** "the slip protects the LP spool" (the textbook twin-spool
   rationale) — that is a **rigid-shaft counterfactual this model does not run**. What is shown
   is the complementary truth: the LP is the **exposed** spool. Also: `slip` is a speed ratio,
