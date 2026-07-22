@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 from turbojet.engine import (  # noqa: E402
     FlightCondition, build_turbojet, OffDesignMatcher, MapMatcher, ComponentMap, SpoolTransient,
     CombustorTransient, build_two_spool_turbojet, TwoSpoolMatcher, TwoSpoolMapMatcher,
-    TwoSpoolTransient, TwoSpoolBleedMatcher, ram_recovery,
+    TwoSpoolTransient, TwoSpoolBleedMatcher, TwoSpoolFuelTransient, ram_recovery,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -2105,6 +2105,147 @@ def print_interstage_bleed_table(flight):
     print("  a bleed SCHEDULE b(n_L); variable stators (they move phi_surge -- still open).")
     print("  Reduce: bleed=0 => rung 39 bit-for-bit by exact dispatch. Cycle stays rung-6 exact.")
 
+
+def print_two_shaft_fuel_table(flight):
+    """Rung 43 — TWO-SHAFT FUEL METERING: the two spools sit at DIFFERENT points in ONE loop.
+
+    Rung 35's control (meter mdot_fuel, let Tt4 float) on rung 40's two-shaft plant. The
+    two-shaft content is a question one shaft structurally cannot ask: f = mdot_fuel/mdot_air
+    is set at the LP FACE, but the Tt4 it produces is metered back through the HP-FED NGV
+    choke -- so "which spool's lag governs the overshoot?" answers NEITHER. Freezing either
+    spool makes the overshoot WORSE, and the share of the relief trades with rho.
+    """
+    print("\nTwo-shaft fuel metering (rung 43): rung 35's control on rung 40's plant. Fuel is")
+    print("metered and Tt4 FLOATS against the airflow two lagging spools can currently pump.")
+    print("Rung 35's TIT-overshoot finding re-measures unchanged and is INHERITED, not this")
+    print("rung's finding. What is new is a question ONE shaft cannot ask:")
+    print("    f   = mdot_fuel / mdot_air        <- the LP FACE sets the airflow")
+    print("    Tt4 = burner(Tt3, f)                 (Tt4 floats up as the LP lag spikes f)")
+    print("    md4 = A4 pt4 MFP*(Tt4)/sqrt(Tt4)  <- the HP-FED NGV CHOKE meters it back")
+    print("The two spools sit at DIFFERENT points in the ONE overshoot loop, so with two clocks")
+    print("there is a RATIO rho = tau_L/tau_H and the question is: which spool's lag governs it?")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0)
+    LO, HI = 1250.0, 1450.0          # rung 35's own step -- apples-to-apples
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    def ft(rho=1.0):
+        design = build_two_spool_turbojet(cpg(), 3.0, 6.0, TT4, flight.p0,
+                                          nozzle_convergent=True, **losses)
+        return TwoSpoolFuelTransient(design, flight, 1.0, map_lp=LP, map_hp=HP, rho=rho)
+
+    # --- the reduce, first: a steady point is the same however it is NAMED.
+    print("\n  REDUCE -- CONTROL-INVARIANCE (the non-tautological gate). Feed the fuel of a rung-40")
+    print("  Tt4-control point to the FUEL solver: it must return that point, via the forward")
+    print("  BURNER (Tt4 an OUTPUT) -- a genuinely different code path. Two closures, one point:")
+    f0 = ft()
+    print(f"  {'Tt4':>6} {'d nu_L':>10} {'d nu_H':>10} {'d Tt4':>10} {'d pi_LPC':>10}")
+    print("  " + "-" * 50)
+    for Tt4 in (1500.0, 1300.0, 1100.0):
+        eq = f0.equilibrium(flight, Tt4)
+        fq = f0.equilibrium_fuel(flight, eq["f"] * eq["mdot_air"])
+        print(f"  {Tt4:6.0f} {fq['nu_lp']/eq['nu_lp']-1:+10.2e} {fq['nu_hp']/eq['nu_hp']-1:+10.2e} "
+              f"{fq['Tt4']/Tt4-1:+10.2e} {fq['pi_lpc']/eq['pi_lpc']-1:+10.2e}")
+    print("  => machine zero. This also KILLS, empirically, the framing this rung was proposed")
+    print("     with -- 'fuel metering breaks rung 39's (dagger) and re-couples LP into the HP")
+    print("     core'. If both controls land on the SAME manifold, the knob cannot change the")
+    print("     coupling. (It was a category error anyway: (dagger) is a STEADY eta-fixed-point")
+    print("     artifact that does not arise in the transient closure at all.)")
+
+    # --- THE FINDING: channel isolation. Freeze one spool at a time.
+    print("\n  THE FINDING -- CHANNEL ISOLATION (rung 41's move, applied to the transient): march")
+    print("  the fuel ramp with ONE spool's speed HELD at its initial value. Tt4_peak [K]:")
+    print(f"  {'rho':>5} {'r':>5} {'both free':>10} {'LP frozen':>10} {'HP frozen':>10} "
+          f"{'d_LP':>8} {'d_HP':>8}")
+    print("  " + "-" * 60)
+    for r in (0.25, 1.0):
+        for rho in (0.5, 1.0, 2.0):
+            fc = ft(rho).freeze_channels(flight, LO, HI, r=r)
+            print(f"  {rho:5.1f} {r:5.2f} {fc['both']:10.1f} {fc['lp']:10.1f} {fc['hp']:10.1f} "
+                  f"{fc['d_lp']:+8.1f} {fc['d_hp']:+8.1f}")
+    print("  => (1) freezing EITHER spool makes the overshoot WORSE, 6/6 -- both spools' motion")
+    print("         RELIEVES it. Neither is a bystander.")
+    print("     (2) the SHARE of the relief TRADES with rho: as the LP spool slows, the LP")
+    print("         channel weakens and the HP channel strengthens.")
+    print("     THAT is why no single spool's clock can govern the overshoot -- the responsibility")
+    print("     for quenching it is SHARED and rho-DEPENDENT. Direction only: d_LP and d_HP do")
+    print("     NOT sum to the total and are not calibrated weights.")
+
+    # --- the bounded positive: monotone in rho, ceilinged by the LP-frozen march.
+    print("\n  THE POSITIVE, AND ITS CEILING. X = Tt4_peak - Tt4_target rises monotonically with")
+    print("  rho (a heavier LP spool worsens the TIT excursion -- the LP-face lag is what spikes")
+    print("  f). It is BOUNDED, and the bound is STRUCTURAL: rho multiplies ONLY the LP ODE")
+    print("  (dnu_L/ds = Phi_L/rho), so rho -> infinity IS the LP-frozen system:")
+    print(f"  {'r':>5} " + "".join(f"{('rho='+str(x)):>9}" for x in (0.25, 1, 4, 8, 32, 128))
+          + f"{'LP-frozen':>11}")
+    print("  " + "-" * 72)
+    for r in (0.25, 1.0):
+        row = "".join(f"{ft(rho).ramp_excursion_fuel(flight, LO, HI, r)['X']:9.1f}"
+                      for rho in (0.25, 1.0, 4.0, 8.0, 32.0, 128.0))
+        ceil = ft(1.0).ramp_excursion_fuel(flight, LO, HI, r, freeze="lp")["X"]
+        print(f"  {r:5.2f} " + row + f"{ceil:11.1f}")
+    a = ft(0.25).ramp_excursion_fuel(flight, LO, HI, 0.25, freeze="lp")["X"]
+    b = ft(50.0).ramp_excursion_fuel(flight, LO, HI, 0.25, freeze="lp")["X"]
+    print(f"  => X(rho) converges UPWARD onto the LP-frozen march, which is rho-independent")
+    print(f"     BIT-FOR-BIT ({a!r} == {b!r} at rho = 0.25 vs 50: {a == b}). So the worst TIT")
+    print("     excursion a heavy LP spool can produce is computable WITHOUT marching it.")
+
+    # --- THE NEGATIVE: the currencies are circular.
+    print("\n  THE NEGATIVE, STATED PLAINLY -- there is NO effective clock ratio r_eff = r/rho^q")
+    print("  (q=0 => 'the HP clock governs', q=1 => 'the slow spool rate-limits'). The reason it")
+    print("  APPEARED to exist is a trap worth recording: THE CURRENCIES ARE CIRCULAR -- the")
+    print("  fitted exponent reads back whichever spool sits in the excursion's DENOMINATOR:")
+    pts = []
+    for rho in (0.25, 1.0, 4.0, 8.0):
+        fx = ft(rho)
+        for r in (0.25, 0.5, 1.0, 2.0):
+            e = fx.ramp_excursion_fuel(flight, LO, HI, r)
+            if e["complete"]:
+                pts.append((r, rho, e))
+    print(f"  {'currency':>10} {'denominator':>21} {'best q':>8} {'residual':>10}")
+    print("  " + "-" * 53)
+    qs = {}
+    for key, den in (("E_temp_H", "nu_H running line"), ("X", "none (spool-neutral)"),
+                     ("E_temp_L", "nu_L running line")):
+        q, s = TwoSpoolFuelTransient.collapse_exponent(pts, key)
+        qs[key] = (q, s)
+        print(f"  {key:>10} {den:>21} {q:8.2f} {s:10.3f}")
+    r0 = TwoSpoolFuelTransient.collapse_exponent(pts, "X", q=0.0)[1]
+    r1 = TwoSpoolFuelTransient.collapse_exponent(pts, "X", q=1.0)[1]
+    print("  => the HP-REFERENCED currency reads far below the spool-neutral one. So E_temp's")
+    print("     q ~ 0 was NEVER evidence that 'the HP clock governs' -- it was the reference")
+    print("     reading itself back. Only X is spool-neutral, which is why every magnitude")
+    print("     above is quoted in X: THE DATA SELECTED THE INSTRUMENT, not the answer it")
+    print(f"     gave. And even on X there is NO collapse: the best exponent cuts the spread")
+    print(f"     ~{r0/qs['X'][1]:.1f}x vs q=0 but bottoms out at {100*qs['X'][1]:.0f}% -- points a real clock would put")
+    print("     on ONE curve still differ by about a seventh. On the other shape pairs q*(X)")
+    print("     and q*(E_temp_L) can TIE (press/flow: 0.45 = 0.45), so only the HP-vs-neutral")
+    print("     separation is claimed -- not a strict three-way ordering.")
+
+    print("\n  DELIBERATELY NOT CLAIMED (each was written, probed, and withdrawn):")
+    print("    - 'it rides on the geometric-mean composite clock sqrt(det) ~ rho^(-1/2)'. DROPPED:")
+    print("      sqrt(det)*sqrt(rho) = const IS a true rung-40 Jacobian identity, but it is not")
+    print(f"      connected to the overshoot -- q*(X)={qs['X'][0]:.2f} is the MIDPOINT of the two")
+    print(f"      circular currencies ({qs['E_temp_H'][0]:.2f}, {qs['E_temp_L'][0]:.2f}), "
+          "an averaging artifact, not evidence for 1/2.")
+    print(f"    - 'q=1 is refuted in every currency'. FALSE: on X, q=0 ({r0:.2f}) fits WORSE than")
+    print(f"      q=1 ({r1:.2f}). Nothing about the exponent is currency-independent.")
+    print("    - 'the overshoot is irreducibly two-dimensional'. OVERCLAIM: only POWER-LAW")
+    print("      collapses were tested. The honest statement is that rung 35's single-clock r")
+    print("      framing does not extend to two shafts via any effective clock ratio.")
+    print("\n  NOT claimed: any magnitude (all ride on rho -- a disclaimed clock group, DOUBLED --")
+    print("  on the two representative maps and on the fuel step); a surge-SURVIVAL claim (no")
+    print("  surge line on either spool in transient); a TIT redline. Reduce: lp_disabled => rung")
+    print("  35 bit-for-bit; Tt4-control untouched => rung 40 bit-for-bit. Cycle stays rung-6 exact.")
+
+
 def print_pdf_quench_table(flight):
     """Rung-15 payoff: the PDF THROUGH the finite quench — the two mixing mechanisms COMBINED.
 
@@ -3179,6 +3320,8 @@ def main():
     print_two_spool_surge_table(FLIGHT)
 
     print_interstage_bleed_table(FLIGHT)
+
+    print_two_shaft_fuel_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

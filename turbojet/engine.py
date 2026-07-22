@@ -3313,6 +3313,15 @@ class TwoSpoolTransient(TwoSpoolMapMatcher):
         two shaft ODEs. NOT a matched point — both shafts are deliberately UNBALANCED."""
         Tt2, pt2, V0 = self._inlet(flight)
         c = self._close(nu_lp, nu_hp, Tt4, Tt2, pt2)
+        return self._instant_tail(flight, c, nu_lp, nu_hp, Tt4, V0)
+
+    def _instant_tail(self, flight: FlightCondition, c: dict, nu_lp: float, nu_hp: float,
+                      Tt4: float, V0: float) -> dict:
+        """The turbine / power / thrust tail of `_instant`, shared with rung 43's FUEL
+        control (which reaches the same tail with Tt4 an OUTPUT of the closure rather than
+        an input). Factored exactly as rung 35 factored `SpoolTransient._instant_tail`;
+        the rung-40 suite passing unchanged is the bit-for-bit witness."""
+        Tt2 = c["Tt2"]
         wgas, f = c["wgas"], c["f"]
 
         # Both turbines pinned by GEOMETRY (rung 38's (*) chained twice) — no shaft balance.
@@ -3369,10 +3378,14 @@ class TwoSpoolTransient(TwoSpoolMapMatcher):
             return i[0], i[1]
 
         nl, nh = start if start is not None else (1.0, 1.0)
+        best = None
         for _ in range(self._EQ_MAX):
             fl, fh = F(nl, nh)
-            if max(abs(fl), abs(fh)) < self._EQ_TOL:
+            res = max(abs(fl), abs(fh))
+            if res < self._EQ_TOL:
                 return self._instant(flight, nl, nh, Tt4)
+            if best is None or res < best[0]:
+                best = (res, nl, nh)
             h = 1e-6
             al, ah = F(nl + h, nh)
             bl, bh = F(nl, nh + h)
@@ -3384,6 +3397,18 @@ class TwoSpoolTransient(TwoSpoolMapMatcher):
             dh = (-j11 * fh + j21 * fl) / det
             damp = min(1.0, 0.25 / max(abs(dl), abs(dh), 1e-30))
             nl, nh = nl + damp * dl, nh + damp * dh
+        # NOISE-FLOOR ACCEPTANCE (added in rung 43, and BIT-FOR-BIT SAFE BY CONSTRUCTION).
+        # `_EQ_TOL` is ABSOLUTE, but the residual's noise floor is GAS-dependent: on CPG it
+        # is ~1e-14 (so the primary return above always fires), while on the REACTING gas the
+        # equilibrium sub-solve inside `_close` leaves ~1e-10 in Phi. There the Newton
+        # converges physically in ~5 iterations and then spins on noise it can never get
+        # below — raising at Tt4=1300/1400 while 1500/1450/1200 happened to squeak under
+        # (non-monotone in Tt4: a solver artifact, not physics). This branch is reached ONLY
+        # by inputs that previously RAISED — every input that returns does so at the identical
+        # iteration with identical (nu_L, nu_H) — so rungs 40/41/42 are untouched.
+        # The bound is not delicate: the initial residual is ~6e-2 against a ~1e-10 floor.
+        if best is not None and best[0] < 1e-8:
+            return self._instant(flight, best[1], best[2], Tt4)
         raise AssertionError(
             f"rung-40 two-shaft equilibrium did not converge at Tt4={Tt4:.0f}")
 
@@ -3893,3 +3918,398 @@ class TwoSpoolBleedMatcher(TwoSpoolMapMatcher):
         finally:
             self.bleed = b_save
         return out
+
+
+# =============================================================================
+# RUNG 43. TWO-SHAFT FUEL METERING — the two spools sit at DIFFERENT points in
+# ONE overshoot loop.
+#
+# Rung 35 metered FUEL on one shaft (Tt4 an OUTPUT, floating against the lagging
+# airflow). Rungs 39/40 built the two-shaft plant but kept rung 34's commanded
+# Tt4; rung 40 filed "fuel metering on two shafts" as an open seam. Rung 43
+# carries rung 35's control onto rung 40's plant.
+#
+# Rung 35's finding (the TIT overshoot, and its coupling to the surge excursion)
+# re-measures unchanged here and is labelled INHERITED. The two-shaft content is
+# a question one shaft structurally could not ask, because the overshoot loop
+# puts the two spools at DIFFERENT points:
+#
+#     f     = mdot_fuel / mdot_air       <- the LP FACE sets the airflow
+#     Tt4   = burner(Tt3, f)                (Tt4 floats up as the LP lags)
+#     mdot4 = A4*pt4*MFP*(Tt4)/sqrt(Tt4) <- the HP-FED NGV CHOKE meters it back
+#
+# so the natural question "which spool's lag governs the overshoot?" has the
+# answer NEITHER -- and why is the rung. Freezing EITHER spool worsens the
+# overshoot; the share of the relief trades with rho; and the rho -> infinity
+# ceiling IS the LP-frozen march (rho multiplies only the LP ODE), which is
+# rho-independent bit-for-bit.
+#
+# DELIBERATELY NOT CLAIMED: any effective clock ratio r/rho^q. The referenced
+# currencies are CIRCULAR (the fitted exponent reads back whichever spool sits
+# in the denominator: E_temp_H -> 0.05 on every shape, vs 0.35-0.45 for the
+# spool-neutral X and 0.45-0.65 for E_temp_L), and even on X there is no collapse
+# (a ~14-15% residual -- the best exponent cuts the spread ~4.9x vs q=0 but still
+# leaves points a seventh apart, and the exponent achieving it is currency-dependent). See
+# docs/rung43-spec.md for the withdrawn claims, kept visible.
+#
+# Rung 40's `_close`/`equilibrium`/`integrate` are left LITERALLY unchanged, so
+# the rung-40 suite still witnesses them bit-for-bit. Separate entry point; the
+# default run(...) design path is untouched => the cycle stays bit-for-bit rung 6.
+# =============================================================================
+
+class TwoSpoolFuelTransient(TwoSpoolTransient):
+    """RUNG 43. Rung 35's FUEL control on rung 40's two-shaft plant.
+
+    Usage:
+        design = build_two_spool_turbojet(gas, 3, 6, 1500, p0, **losses,
+                                          nozzle_convergent=True)
+        ft = TwoSpoolFuelTransient(design, FLIGHT, 1.0, map_lp=..., map_hp=...,
+                                   rho=2.0)
+        mf = ft.fuel_for_Tt4(FLIGHT, 1450.0)
+        ft.equilibrium_fuel(FLIGHT, mf)        # == rung 40's Tt4 point (gate 1)
+        ft.ramp_excursion_fuel(FLIGHT, 1250., 1450., r=0.5)
+        ft.freeze_channels(FLIGHT, 1250., 1450., r=0.25)     # THE MECHANISM
+
+    lp_disabled=True forwards to rung 35's SpoolTransient fuel path (exact
+    dispatch, the rung 38/39/40 contract).
+    """
+
+    # --- helpers -------------------------------------------------------------------
+
+    @staticmethod
+    def _interp(xs, ys, x: float) -> float:
+        """Linear interpolation on a sorted grid (the two-spool chain does not inherit
+        SpoolTransient's copy -- TwoSpoolMatcher is deliberately not a subclass of it)."""
+        if x <= xs[0]:
+            return ys[0]
+        if x >= xs[-1]:
+            return ys[-1]
+        for i in range(len(xs) - 1):
+            if xs[i] <= x <= xs[i + 1]:
+                t = (x - xs[i]) / (xs[i + 1] - xs[i])
+                return ys[i] + t * (ys[i + 1] - ys[i])
+        return ys[-1]
+
+    # --- rung 35's forward burner, on the two-spool matcher ------------------------
+
+    def _tt4_from_f(self, Tt3: float, f: float) -> float:
+        """Forward burner: Tt4 as the OUTPUT of f (the exact inverse of `_solve_f`).
+
+        Same enthalpy balance the shipped Burner closes for f, solved for Tt4:
+            h4*(1+f) = h_c(Tt3) + f*eta_b*hPR   =>   Tt4 = T_from_h_t(h4, f)
+
+        Built for the NON-equilibrium gas -- rung 35's concession, carried verbatim:
+        the finding is gas-independent, and the REACTING reduce is the Tt4-control
+        path (bit-for-bit rung 40)."""
+        assert not self.gas.equilibrium, (
+            "rung-43 fuel control needs the forward burner Tt4(f), built for the "
+            "non-equilibrium gas; use Tt4-control (equilibrium/integrate, rung 40) "
+            "for the reacting-gas two-spool cycle.")
+        h4 = (self.gas.h_c(Tt3) + f * self.eta_b * self.gas.hPR) / (1.0 + f)
+        return self.gas.T_from_h_t(h4, f)
+
+    # --- THE FORWARD CLOSURE with FUEL imposed: one root in m_L, no shaft balance --
+
+    def _close_fuel(self, nu_lp: float, nu_hp: float, mdot_fuel: float,
+                    Tt2: float, pt2: float) -> dict:
+        """Rung 40's `_close` with the burner run FORWARD -- Tt4 FLOATS.
+
+        f = mdot_fuel / mdot_air with mdot_air the LP-FACE airflow, so f and Tt4 are
+        OUTPUTS of the trial flow; the HP-fed NGV choke then implies an airflow and
+        consistency closes m_L. Still ONE unknown, still NO shaft balance (both power
+        residuals stay OUTPUTS -- that is what makes them the two ODE right-hand
+        sides). This is where the two-shaft airflow LAG lives."""
+        gas = self.gas
+        n_lp = nu_lp * (self.Tt2_d / Tt2) ** 0.5
+        h2, pr2 = gas.h_c(Tt2), gas.pr_c(Tt2)
+
+        def ev(m_lp: float) -> dict:
+            phi_lp = m_lp / n_lp
+            tau_lpc = 1.0 + (self.tau_lpc_d - 1.0) * self.map_lp.psi(phi_lp) * n_lp * n_lp
+            Tt25 = Tt2 * tau_lpc
+            eta_lpc = self.map_lp.eta_c_at(self.eta_lpc, phi_lp, n_lp)
+            h25 = gas.h_c(Tt25)
+            pi_lpc = gas.pr_c(gas.T_from_h_c(h2 + eta_lpc * (h25 - h2))) / pr2
+            pt25 = pi_lpc * pt2
+            mdot_air = m_lp * self.mcorr_lp_d * pt2 / Tt2 ** 0.5
+
+            # Same physical air flow, referred to the HP face (rung 40).
+            m_hp = (mdot_air * Tt25 ** 0.5 / pt25) / self.mcorr_hp_d
+            n_hp = nu_hp * (self.Tt25_d / Tt25) ** 0.5
+            phi_hp = m_hp / n_hp
+            tau_hpc = 1.0 + (self.tau_hpc_d - 1.0) * self.map_hp.psi(phi_hp) * n_hp * n_hp
+            Tt3 = Tt25 * tau_hpc
+            eta_hpc = self.map_hp.eta_c_at(self.eta_hpc, phi_hp, n_hp)
+            h3 = gas.h_c(Tt3)
+            pi_hpc = gas.pr_c(gas.T_from_h_c(h25 + eta_hpc * (h3 - h25))) / gas.pr_c(Tt25)
+            pt4 = self.pi_b * pi_hpc * pt25
+
+            # THE INVERSION vs rung 40: fuel imposed => f and Tt4 are OUTPUTS.
+            f = mdot_fuel / mdot_air
+            Tt4 = self._tt4_from_f(Tt3, f)
+            wgas = self._working_gas(f, Tt4, pt4)
+            mdot4 = self.A4 * pt4 * choked_mfp(wgas, Tt4, f) / Tt4 ** 0.5
+            mdot_imp = mdot4 / (1.0 + f)
+            m_imp = (mdot_imp * Tt2 ** 0.5 / pt2) / self.mcorr_lp_d
+            return dict(m_lp=m_lp, m_imp=m_imp, m_hp=m_hp, phi_lp=phi_lp, phi_hp=phi_hp,
+                        Tt2=Tt2, n_lp=n_lp, n_hp=n_hp, tau_lpc=tau_lpc, tau_hpc=tau_hpc,
+                        Tt25=Tt25, Tt3=Tt3, Tt4=Tt4, pi_lpc=pi_lpc, pi_hpc=pi_hpc,
+                        pt4=pt4, f=f, wgas=wgas, eta_lpc=eta_lpc, eta_hpc=eta_hpc,
+                        mdot_air=mdot_imp, mdot_air_face=mdot_air, mdot4=mdot4)
+
+        def g(m: float) -> float:
+            return m - ev(m)["m_imp"]
+
+        # Bracket by scanning UP from the rich wall and taking the FIRST sign change.
+        # Rung 40's global high wall (min(2.5, phi_max*n_L)) is safe ONLY because Tt4 is
+        # pinned there: with Tt4 floating, far past the root the mixture goes lean, the
+        # HP map leaves its physical branch (pi_HPC -> 0.01 at phi_L ~ 2) and the
+        # sonic-throat solve fails, so a wall-to-wall bracket can straddle nonsense. g
+        # rises monotonically through the physical root, so the first crossing is the
+        # right one. (Rung 40's own `_close` is untouched -- this is a consequence of
+        # the CONTROL change, not a fix to rung 40.)
+        f_cap, f_floor = 0.065, 0.004
+        lo0 = mdot_fuel * Tt2 ** 0.5 / (f_cap * self.mcorr_lp_d * pt2)
+        hi0 = mdot_fuel * Tt2 ** 0.5 / (f_floor * self.mcorr_lp_d * pt2)
+        cap = min(2.5, self.map_lp.phi_max() * n_lp, hi0)
+        step = 0.04
+        lo = hi = glo = ghi = None
+        m = max(lo0, 0.02)
+        while m < cap:
+            try:
+                gm = g(m)
+            except AssertionError:
+                m += step
+                continue
+            if gm < 0.0:
+                lo, glo = m, gm
+            elif lo is not None:
+                hi, ghi = m, gm
+                break
+            m += step
+        assert lo is not None and hi is not None, (
+            f"rung-43 fuel closure does not bracket at nu=({nu_lp:.4f},{nu_hp:.4f}), "
+            f"mdot_fuel={mdot_fuel:.5f} - off the modeled speed-line region.")
+        return ev(_illinois(g, lo, hi, glo, ghi, tol=1e-12))
+
+    # --- one quasi-steady instant: the flow + BOTH power residuals -----------------
+
+    def _instant_fuel(self, flight: FlightCondition, nu_lp: float, nu_hp: float,
+                      mdot_fuel: float) -> dict:
+        """The quasi-steady instant at (nu_L, nu_H, mdot_fuel) -- Tt4 is an OUTPUT.
+        Same tail (turbines / powers / thrust) as rung 40's `_instant`."""
+        Tt2, pt2, V0 = self._inlet(flight)
+        c = self._close_fuel(nu_lp, nu_hp, mdot_fuel, Tt2, pt2)
+        return self._instant_tail(flight, c, nu_lp, nu_hp, c["Tt4"], V0)
+
+    # --- the equilibrium: a 2-D root at fixed FUEL ---------------------------------
+
+    def equilibrium_fuel(self, flight: FlightCondition, mdot_fuel: float,
+                         start=None) -> dict:
+        """Solve Phi_L = Phi_H = 0 in (nu_L, nu_H) at fixed FUEL.
+
+        THE REDUCE (gate 1, non-tautological): with mdot_fuel = f_eq*mdot_air_eq of a
+        rung-40 Tt4-control point this returns THAT point -- via the forward-BURNER
+        closure, a genuinely different code path. Control-invariance: a steady point
+        is the same however it is named."""
+        if getattr(self, "_degenerate", None) is not None:
+            return self._degenerate.equilibrium_fuel(flight, mdot_fuel)
+
+        def F(a, b):
+            i = self._instant_fuel(flight, a, b, mdot_fuel)
+            return i["Phi_lp"], i["Phi_hp"]
+
+        nl, nh = start if start is not None else (1.0, 1.0)
+        for _ in range(self._EQ_MAX):
+            fl, fh = F(nl, nh)
+            if max(abs(fl), abs(fh)) < self._EQ_TOL:
+                return self._instant_fuel(flight, nl, nh, mdot_fuel)
+            h = 1e-6
+            al, ah = F(nl + h, nh)
+            bl, bh = F(nl, nh + h)
+            j11, j12 = (al - fl) / h, (bl - fl) / h
+            j21, j22 = (ah - fh) / h, (bh - fh) / h
+            det = j11 * j22 - j12 * j21
+            assert abs(det) > 1e-300, "rung-43 fuel equilibrium Jacobian is singular"
+            dl = (-fl * j22 + fh * j12) / det
+            dh = (-j11 * fh + j21 * fl) / det
+            damp = min(1.0, 0.25 / max(abs(dl), abs(dh), 1e-30))
+            nl, nh = nl + damp * dl, nh + damp * dh
+        # No noise-floor acceptance is needed here (unlike rung 40's `equilibrium`, which
+        # carries one): the fuel path REFUSES an equilibrium gas outright (`_tt4_from_f`),
+        # so this loop only ever runs on the non-equilibrium gases, whose residual floor is
+        # ~1e-14 -- comfortably under the absolute `_EQ_TOL`. If a reacting-gas forward
+        # burner is ever built (the deferred concession, rung 35's carried verbatim), copy
+        # rung 40's `best`-tracking branch across with it.
+        raise AssertionError(
+            f"rung-43 fuel equilibrium did not converge at mdot_fuel={mdot_fuel:.5f}")
+
+    def fuel_for_Tt4(self, flight: FlightCondition, Tt4: float) -> float:
+        """The steady fuel flow whose running-line equilibrium IS rung 40's Tt4 point
+        (mdot_fuel = f_eq*mdot_air_eq). Pins the two control modes to the SAME steady
+        endpoint -- no new knob, so the excursions are apples-to-apples (rung 35)."""
+        eq = self.equilibrium(flight, Tt4)
+        return eq["f"] * eq["mdot_air"]
+
+    # --- the march -----------------------------------------------------------------
+
+    def integrate_fuel(self, flight: FlightCondition, fuel_schedule, nu0,
+                       s_end: float, ds: float, freeze=None) -> list:
+        """RK4-march (dnu_L/ds, dnu_H/ds) = (Phi_L/rho, Phi_H) under a FUEL schedule.
+        Tt4 is an OUTPUT recorded per point (it can overshoot the steady value).
+
+        `freeze` in {None, 'lp', 'hp'} holds that spool's speed at its initial value --
+        the CHANNEL ISOLATION behind the finding (rung 41's `surge_margin_channels`
+        move, applied to the transient). freeze='lp' removes rho from the system
+        entirely (rho multiplies only the LP ODE): the rho -> infinity ceiling."""
+        if getattr(self, "_degenerate", None) is not None:
+            assert freeze is None, "rung-43 channel isolation needs two spools"
+            return self._degenerate.integrate_fuel(flight, fuel_schedule, nu0, s_end, ds)
+
+        def der(a, b, mf):
+            i = self._instant_fuel(flight, a, b, mf)
+            da = 0.0 if freeze == "lp" else i["Phi_lp"] / self.rho
+            db = 0.0 if freeze == "hp" else i["Phi_hp"]
+            return da, db, i
+
+        pts, (a, b), s = [], nu0, 0.0
+        for _ in range(int(round(s_end / ds)) + 1):
+            mf = float(fuel_schedule(s))
+            try:
+                k1a, k1b, inst = der(a, b, mf)
+            except AssertionError:
+                break
+            pts.append(dict(s=s, nu_lp=a, nu_hp=b, Tt4=inst["Tt4"], f=inst["f"],
+                            pi_lpc=inst["pi_lpc"], pi_hpc=inst["pi_hpc"],
+                            phi_lp=inst["phi_lp"], phi_hp=inst["phi_hp"],
+                            mdot_air=inst["mdot_air"], sp_thrust=inst["sp_thrust"],
+                            branch=inst["branch"]))
+            try:
+                mfm = float(fuel_schedule(s + ds / 2))
+                k2a, k2b, _ = der(a + ds / 2 * k1a, b + ds / 2 * k1b, mfm)
+                k3a, k3b, _ = der(a + ds / 2 * k2a, b + ds / 2 * k2b, mfm)
+                k4a, k4b, _ = der(a + ds * k3a, b + ds * k3b,
+                                  float(fuel_schedule(s + ds)))
+            except AssertionError:
+                break
+            a += ds / 6 * (k1a + 2 * k2a + 2 * k3a + k4a)
+            b += ds / 6 * (k1b + 2 * k2b + 2 * k3b + k4b)
+            s += ds
+        return pts
+
+    # --- the excursions ------------------------------------------------------------
+
+    def ramp_excursion_fuel(self, flight: FlightCondition, Tt4_lo: float,
+                            Tt4_hi: float, r: float, freeze=None,
+                            s_settle: float = 8.0, ds: float = 0.02) -> dict:
+        """A FUEL ramp of nondimensional duration r = tau_fuel/tau_H (the HP clock
+        sets s). Reports the overshoot in the SPOOL-NEUTRAL currency
+
+            X = Tt4_peak - Tt4_hi
+
+        because the running-line-referenced currencies are CIRCULAR -- they read back
+        whichever spool sits in the denominator (spec section THE NEGATIVE).
+        E_temp_H/E_temp_L are returned too, but ONLY so the circularity itself can be
+        gated."""
+        mf_lo = self.fuel_for_Tt4(flight, Tt4_lo)
+        mf_hi = self.fuel_for_Tt4(flight, Tt4_hi)
+        eq0 = self.equilibrium(flight, Tt4_lo)
+        nu0 = (eq0["nu_lp"], eq0["nu_hp"])
+
+        def schedule(s: float) -> float:
+            if s <= 0.0:
+                return mf_lo
+            if s >= r:
+                return mf_hi
+            return mf_lo + (mf_hi - mf_lo) * (s / r)
+
+        s_end = r + s_settle
+        traj = self.integrate_fuel(flight, schedule, nu0, s_end, ds, freeze=freeze)
+        assert traj, "rung-43 fuel ramp produced no trajectory"
+        complete = traj[-1]["s"] >= s_end - 2.5 * ds
+        grid = [Tt4_lo + (Tt4_hi - Tt4_lo) * k / 8.0 for k in range(9)]
+        rl = [self.equilibrium(flight, T) for T in grid]
+        nl = sorted((p["nu_lp"], p["Tt4"]) for p in rl)
+        nh = sorted((p["nu_hp"], p["Tt4"]) for p in rl)
+        xs_l, ys_l = [x for x, _ in nl], [y for _, y in nl]
+        xs_h, ys_h = [x for x, _ in nh], [y for _, y in nh]
+        E_tH = E_tL = 0.0
+        peak = Tt4_lo
+        for p in traj:
+            peak = max(peak, p["Tt4"])
+            E_tH = max(E_tH, p["Tt4"] / self._interp(xs_h, ys_h, p["nu_hp"]) - 1.0)
+            E_tL = max(E_tL, p["Tt4"] / self._interp(xs_l, ys_l, p["nu_lp"]) - 1.0)
+        return dict(r=r, rho=self.rho, Tt4_peak=peak, X=peak - Tt4_hi,
+                    E_temp_H=E_tH, E_temp_L=E_tL, complete=complete, traj=traj)
+
+    def constant_speed_excursion_fuel(self, flight: FlightCondition, Tt4_lo: float,
+                                      Tt4_hi: float) -> dict:
+        """The r -> 0 limit: BOTH spools frozen at the low-power equilibrium, fuel
+        jumps. No integration -- a pure algebraic map property, hence EXACTLY rho-free
+        (rung 34/35's argument, doubled). It is the r_eff -> 0 endpoint of the ramp
+        family, not a separate object."""
+        eq0 = self.equilibrium(flight, Tt4_lo)
+        mf_hi = self.fuel_for_Tt4(flight, Tt4_hi)
+        inst = self._instant_fuel(flight, eq0["nu_lp"], eq0["nu_hp"], mf_hi)
+        return dict(Tt4_peak=inst["Tt4"], E_temp=inst["Tt4"] / Tt4_lo - 1.0,
+                    E_lp=inst["pi_lpc"] / eq0["pi_lpc"] - 1.0,
+                    E_hp=inst["pi_hpc"] / eq0["pi_hpc"] - 1.0, f=inst["f"])
+
+    # --- THE MECHANISM -------------------------------------------------------------
+
+    def freeze_channels(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                        r: float, s_settle: float = 8.0, ds: float = 0.02) -> dict:
+        """THE FINDING. March the same fuel ramp three ways -- both spools free, LP
+        frozen, HP frozen -- and compare the peak Tt4.
+
+        Freezing EITHER spool makes the overshoot WORSE: both sit in the one loop (f is
+        set at the LP face, Tt4 is metered at the HP-fed NGV throat) and both relieve
+        it. The SHARE trades with rho. SIGN/EXISTENCE only -- d_lp and d_hp do not sum
+        to the total and are NOT calibrated weights.
+
+        The LP-frozen march is the rho -> infinity CEILING and is rho-independent
+        bit-for-bit, since rho multiplies only the LP ODE."""
+        out = {}
+        for tag, fz in (("both", None), ("lp", "lp"), ("hp", "hp")):
+            out[tag] = self.ramp_excursion_fuel(
+                flight, Tt4_lo, Tt4_hi, r, freeze=fz,
+                s_settle=s_settle, ds=ds)["Tt4_peak"]
+        out["d_lp"] = out["lp"] - out["both"]
+        out["d_hp"] = out["hp"] - out["both"]
+        out["r"], out["rho"] = r, self.rho
+        return out
+
+    # --- the WITHDRAWN claim, kept measurable (gate 9) ------------------------------
+
+    @staticmethod
+    def collapse_exponent(points, key: str, nb: int = 6, q: "float | None" = None):
+        """Best-fit q for a would-be effective clock ratio r_eff = r/rho^q, by
+        minimizing the mean relative spread of `key` within bins of common r_eff.
+
+        `points` = [(r, rho, dict), ...]. Returns (q_star, spread_star); pass an explicit
+        `q=` to EVALUATE that exponent instead of optimizing (so the single-spool clocks
+        q=0 and q=1 can be scored on the same metric).
+
+        This exists so the WITHDRAWN claim stays measurable and asserted-against: the
+        fitted q DIFFERS across currencies (E_temp_H ~ 0.05 on every shape, vs ~0.35-0.45
+        for the spool-neutral X and 0.45-0.65 for E_temp_L) because the REFERENCED
+        currencies read back their own denominator -- and even on X the residual is
+        ~14-15% -- the best exponent cuts the spread ~4.9x vs the q=0 endpoint but still
+        leaves points a seventh apart, and the exponent achieving it is currency-dependent.
+        Rung 43 claims NO effective clock; this method is the guard, not a result."""
+        import math as _m
+
+        def spread(q: float) -> float:
+            rows = sorted((r / rho ** q, d[key]) for (r, rho, d) in points)
+            lo, hi = _m.log(rows[0][0]), _m.log(rows[-1][0])
+            bins = [[] for _ in range(nb)]
+            for x, y in rows:
+                k = min(nb - 1, int((_m.log(x) - lo) / max(hi - lo, 1e-12) * nb))
+                bins[k].append(y)
+            sp = [(max(b) - min(b)) / abs(sum(b) / len(b)) for b in bins if len(b) > 1]
+            return sum(sp) / len(sp) if sp else float("nan")
+
+        if q is not None:
+            return q, spread(q)
+        return min(((i / 20.0, spread(i / 20.0)) for i in range(0, 25)),
+                   key=lambda t: t[1] if t[1] == t[1] else 9e9)
