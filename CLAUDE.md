@@ -11,7 +11,7 @@ teaching, not for features or polish.
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is
-anchored to a published case. All rungs are live; the current scope is **rung 40**.
+anchored to a published case. All rungs are live; the current scope is **rung 42**.
 
 **This table is the one-line map, not the handout.** Each rung's derivation,
 assumptions, honest concessions, reduce-to-prior contract and verification gates
@@ -72,6 +72,7 @@ live in its spec (last column) — read the spec before touching a rung.
 | 40 | **The two-shaft transient — the LP map opens a COMPLEX mode** — `TwoSpoolTransient` (subclasses rung 39's `TwoSpoolMapMatcher`) / `_close(…)` / `_instant(…)` / `equilibrium(…)` / `lead_threshold(…)` / `oscillatory_band(…)`: rung 39 named this seam and called it **newly well-posed** ("rung 38 could supply no `N` at all; rung 39 supplies two"). BOTH shaft speeds become **STATES** under two inertia ODEs; nondimensionalizing on the HP clock `τ_H` leaves exactly **ONE** parameter, the clock **RATIO** `ρ=τ_L/τ_H`. That is the **resolution of rung 34's own tautology** — rung 34 had to *impose* a second clock (`τ_fuel`) before inertia became load-bearing; a two-shaft engine has it built in (**each spool is the other's clock**). The closure is **rung 34's move on two shafts**: a **1-D root in `m_L`** (LPC map forward → `Tt25` → `n_H` → the corrected-flow transfer `m_H` → HPC map forward → `pt4` → `f` → the HPT-NGV choke imposes `ṁ` back), with **NO shaft balance** — so both power residuals are OUTPUTS. Rung 39's triangular η-cascade/one-way-arrow **does not arise** (the transient reads η **forward** off each map; that apparatus was a *steady*-η-fixed-point artifact). **HONEST ACCOUNTING — much of this rung is INHERITED and the spec says so**: the turbine work split `Pt_L/Pt_H` is `Tt4`-invariant to **4.7e-15** (rung 39 B1's `(1+f)`/`Tt4` cancellation); the lead threshold `σ_crit=[(∂Φ_L/∂Tt4)/ν_L]/[(∂Φ_H/∂Tt4)/ν_H]` (**HP leads ⟺ `ρ>σ_crit`**) **≡1 on flat maps + CPG** because on the running line it *reduces to the steady slip*, which B1 pins at 1 — a **derived inheritance** and this rung's **reduce SPINE, not its finding**; and the two channels that break it (`cp(T)` curve **+4.3e-2**, map **+2.5e-1**, map ~5.8× dominant **but not sole**) are rung 39 B2's shape. A **refuted hypothesis kept visible**: "the map favours the LP spool" is **FALSE** — `lp-only` shaping gives `σ_crit`<1 (0.73–0.95), `hp-only` >1 (1.22–1.28); both signs reachable, so only the *existence* of a shift is claimed. **THE FINDING (new, two-spool-specific) — `ρ`'s power SPLITS.** Write `J(ρ)=[[a/ρ, b/ρ],[c,d]]`: **STABILITY is `ρ`-FREE** — `tr<0` and `det>0` hold for **every** `ρ>0` as soon as `a<0, d<0, ad>bc`, three conditions **containing no `ρ`** (the signs are **MEASURED** — 252 `(shape,Tt4,ρ,gas)` points, 7 shapes × 3 throttles × `ρ`∈[0.05,100] × 2 gases, **zero violations**, worst eigenvalue **−0.011**; the `ρ`-freeness is algebra *on top*, so the composite is **not** billed as "provable"). But **OSCILLATION is NOT**: `disc=(a/ρ−d)²+4bc/ρ` kills its first term at `ρ=a/d`, so **`bc<0` ⇒ a COMPLEX inter-spool mode exists** in a band around `a/d`, and `bc≥0` ⇒ monotone at every `ρ`. **THE MECHANISM: `bc<0` iff the LP compressor map is SHAPED** — a shaped LP map flips `b=∂Φ_L/∂ν_H` from small-negative to large-positive (with `c<0` always), and **`hp-only` is the DISCRIMINATOR** (HP shaped, LP **flat** ⇒ `bc=+3e-4`, **no band**), proving it is the **LP map specifically**, not shaping in general. The mode is **MAP-CREATED** — rung 39's slip pattern a **third** time. Verified on the solver: `flow/press` at `Tt4`=1200 predicts `ρ∈[1.233,2.082]` (centre 1.602) and the Jacobian is complex inside / real outside. **Magnitude DISCLAIMED**: `|Im/Re|_max=√(−bc/(ad))` ≤ **0.25** in the sampled maps (no visible ringing) — **reported, not gated**, per rung-32/36/39 methodology; "it does not ring on *these* maps" is **not** "hunting is impossible", and the rung deliberately does **not** make "treating the shafts as independent is EARNED" its headline. **Scope: INTER-SPOOL** (rung 37's shaft+metal Jacobian is not audited, so "first oscillatory mode in the project" is NOT claimed). **A NEGATIVE stated plainly**: `σ_crit`'s authority is **FIRST-INSTANT only** — two dynamic claims were probed and **withdrawn**, "σ_crit predicts the marched crossover" (**tautological**: from `Φ=0`, `Φ(Tt4+dT)≈dT·∂Φ/∂Tt4`, so the condition collapses to `ρ=σ_crit` *by definition*) and "σ_crit is the amplitude→0 limit of the marched `ρ*`" (**refuted**: `ρ*/σ_crit`→0.60 / 1.40, not 1) — because the running-line-referenced ramp excursion is **SCHEDULE-SLAVED** (dominated by `slip_ss(Tt4)` moving while the speeds lag; negative at the first step for *every* `ρ`). **Reduce**: the **2-D** equilibrium (`Φ_L=Φ_H=0`, damped Newton from the design start — rung 34's was a 1-D bracket) reproduces rung 39's `match` to **≤1e-12** on CPG **and** reacting, via the **forward closure only** (never calling the matcher ⇒ non-circular); `lp_disabled=True` **exact dispatch** ⇒ rung 34 `SpoolTransient` **bit-for-bit** (`==`); rung 39's `match`/`_cascade_map` left **literally unchanged** ⇒ the rung-39 suite still witnesses them bit-for-bit. **Non-tautological gate**: an INDEPENDENT bare-math CPG two-shaft closure (no `Gas`/`Component`/`ComponentMap`/`TwoSpoolTransient`; own CPG thermodynamics, own bisections, own forward speed lines, own 2-D Newton) reproduces `(ν_L,ν_H,π_LPC,π_HPC)` **and `σ_crit` ON SHAPED MAPS** (~1.2) — the shaped value is what ties the object down, since reproducing the ≡1 identity would only re-check the reduce. Separate entry point; default `run(…)` untouched ⇒ cycle **bit-for-bit rung 6**. Disclaimed: `ρ` is a **disclaimed clock group, DOUBLED** (`I_L,I_H,ω_L,d,ω_H,d` unmodelled, no wall-clock time); every magnitude rides on the representative maps (band location, `|Im/Re|`, the `σ_crit` shift); fully-choked branch / both NGVs choked / one `η_m` / no bypass / `Tt4` control (not rung-35 fuel) / **no surge line on either spool** — all inherited. | `docs/rung40-spec.md` |
 
 | 41 | **The two-spool surge line — the exposure SPLITS between the spools** — surge methods on `TwoSpoolMapMatcher` (`surge_margin(…)` / `surge_margin_schedule(…)` / `running_line_map(…)` / `flow_coefficient_turn(…)` / `_pi_c_spool(…)` / `critical_flow_turn_pi(…)`) + `SpoolTransient.surge_margin_channels(…)`: rungs 39 **and** 40 both closed by naming this seam in nearly the same words ("rung 36's machinery is single-spool — and now there are **two** compressors"). Rung 41 draws rung 36's line on both. **THE FINDING: the two-spool running line does not HALVE the low-power surge problem — it CONCENTRATES it on the LP compressor.** Over a 2:1 throttle `φ_L` falls **~29%** while `φ_H` falls **~7%** and is *bounded* (it **turns back up**); the excursion ratio is **3.8×–4.3×** across four shape pairs. **THE CAUSE is rung 39's `(†)` cancellation, and it is CLOSED FORM, not a sign**: the HP face sees only its **own** pressure ratio (`pt4/pt25=π_b·π_HPC`), the LP face carries the **PRODUCT** `(‡)`, so writing `φ ∝ Π_face/x_face` with `π=[1+η_c(τ_c−1)]^k` gives `s_H=dlnφ_H/dlnx_H = k(1−π_HPC^(−1/k))−1` — containing **NO LP quantity** — and `s_L = k(1−π_LPC^(−1/k)) + k(1−π_HPC^(−1/k))/τ_LPC − 1`. Both land within **0.013** of the measured sensitivity; **dropping `π_HPC` from `s_L` misses by 0.81–1.00** (60–100× worse) **and gets the SIGN wrong** — the shielding certified quantitatively, not as an observed ordering. **THE COROLLARY — a LIVE zero-new-constant anchor** (rung 36's was **DEAD**: its loading-law peak landed at `φ<0`): `s_H=0` ⇒ **`1+η_c(τ_c−1)=γ_c` ⟺ `π_c*=γ_c^(γ_c/(γ_c−1))`** = 3.2467 at `γ_c`=1.4 — `η_c`, the shaft constant, `cp_t/cp_c`, `τ_HPT` and the design split **all drop out**; **`γ_c` ALONE**. Verified invariant to `η_HPC` (0.80/0.95), `η_HPT`, `η_LPC`, `γ_t`, `cp_t` (the last two **bit-identical** — hot-section knobs cannot enter a cold-section form), three design splits and two flight conditions, **while `Tt4*` moves 666→1171 K (1.76×) and `π*` moves only 1.5%** (3.286→3.337, all of it the fuel fraction): *the closest approach is at a **pressure ratio**, not a throttle setting*. **KILL TEST**: the whole **+0.44%** residual is the **fuel fraction** (`f` enters both `K` and the choked flow ⇒ `(★)` is exact with `f` frozen) — raising `hPR` ×1000 drives `f`→1e-5 and the residual **monotonically to +0.000%**, linearly in `f`. Three regimes: design `π_face` **below** `π*` ⇒ the face walks **AWAY** from surge when throttled (verified at a 6×3 split, `φ_H` 1.000→1.157); **above** ⇒ walks in, bottoms at `π*`, walks back out **if** the choked envelope reaches (at 1.5×12 or `M0`=0.40 it rails out — `flow_coefficient_turn` returns `RAIL` rather than inventing a minimum). **WHAT `(★)` IS NOT — and the payoff of that**: it is the stationary point of the running-line **FLOW COEFFICIENT** (incidence/geometry), **NOT** a margin extremum — `SM_N` keeps falling past it on **both** spools and every sampled shape (gated as a **deliberate divergence** so the tempting reading cannot creep in). Rung 36's currency equivalence `E0≥SM_N ⟺ φ_step≤φ_surge` is a **CONSTANT-SPEED** statement; along a **varying-speed running line** flow-coefficient proximity and pressure-ratio margin are **DIFFERENT SCHEDULES**, and the HP spool is the clean exhibit where they diverge. **THE CROSS-RUNG CORRECTION of rung 36 (the rung-28 shape)**: `(★)` is **SURFACED by, not created by** the two-spool work — the same turn sits **INSIDE rung 36's OWN choked envelope** (`π_c`=10 single spool, `Tt4`≈620, still choked; rung 36 simply never plotted that low). Its **gated verdict SURVIVES** (`SM_N` still monotone-thin at low power past the turn, all three surge shapes — **no rung-36 test changes**) but its stated **MECHANISM** ("the trend is set by `φ_op(Tt4)`") was **SINGLE-CHANNEL**: freezing one coordinate at a time separates the **φ-walk** (~56% of the log-decay) from the **SPEED-LINE FLATTENING** (`τ_c−1 ∝ n²`, ~48%), and **below `π*` the φ channel REVERSES** while the speed-line channel keeps consuming margin — at deep throttle the flattening speed line is the **only** channel still thinning it. Rung 36's *conclusion* is untouched: both channels are choke-determined hence **floor-independent**, so its sign-robustness argument survives. **THE MARGINS**: with **matched** shapes and a **common** floor, `SM_L<SM_H` everywhere and `SM_L/SM_H` falls **monotonically to under a third** (3 shapes × 3 floors); at `φ_surge`=0.70 the LP running line **crosses** a line the HP never approaches. **The gated content is the RATIO's COLLAPSE, and the spec names why**: matching the map *shape* does **not** match the **design split**, so `SM_L<SM_H` **already holds AT DESIGN** (`tilted`: 0.3165 vs 0.5186 at `Tt4`=1500, where `φ_L=φ_H=1` and there is no exposure difference) purely because `π_LPC`=3 < `π_HPC`=6 — that level offset is a **design-split artifact, NOT exposure**, and is not attributed to it (in a rung about fixing rung 36's over-attribution). Only the falling **ratio** is the running-line statement; the absolute **gap** is not even monotone (it peaks near `Tt4`≈1300, both margins tending to zero). The **flow-coefficient** headline is unaffected — `φ_L`/`φ_H` are both normalized to 1 at design. **A framing PROBED AND WITHDRAWN** (written, then removed): "the HP running line collapses across flight conditions and the LP's does not" is **VACUOUS** — `τ_LPC−1=K_L·x_L` and `x_H=x_L/τ_LPC` put `x_L` and `x_H` in **BIJECTION**, so the whole matched state is a **one-parameter family** and *both* collapse on *either* ratio; what separates the spools is *which pressure ratios enter the sensitivity*, hence the gate above. **Reduce**: `phi_surge` is the **rung-36 field reused** (no new knob) and read **only** by the surge methods ⇒ a floor-carrying map leaves rung 39 `match` and rung 40 `equilibrium` **bit-for-bit** (`==`); the rung 31–40 suites pass **unchanged** (72/72). **Non-tautological**: `_pi_c_spool` at the operating `(n,φ)` reproduces the shipped `π` on **each** spool (≤1e-9 — two code paths, one `π`, per spool), and the sensitivity gate above. Separate entry point; default `run(…)` untouched ⇒ cycle **bit-for-bit rung 6**. Disclaimed: **two** imposed `φ_surge` (rung 36's cost doubled) ⇒ every margin **magnitude** and every **crossing**; `(★)` is a **CPG + flat-map** statement (shaped maps shift it −3.0%, the variable-`cp` gas +2.5%) and the *turnaround phenomenon* rides on the analytic speed line (a real front-stage-stalling map may not reproduce it); the turn's `Tt4` **location**; which spool binds at **unmatched** shapes/floors (with `press/flow` at design `SM_L>SM_H`); **"the slip protects the LP spool" is NOT claimed** — that is a rigid-shaft **counterfactual this model does not run**, and `slip` is a *speed ratio*, not a surge-proximity measure (`φ_L` is); steady / fully-choked / both NGVs choked / no bypass / one `η_m` / **no bleed valve or variable stator** — inherited or deferred, as are the **transient** surge line (rung 40's complex mode measured against a boundary) and the **subsonic LP branch**. | `docs/rung41-spec.md` |
+| 42 | **Interstage bleed — the valve is a degree of freedom on ONE spool** — `TwoSpoolBleedMatcher` (subclasses rung 39's `TwoSpoolMapMatcher`) / `_cascade_bleed(…)` / `_lp_eta_loop_bleed(…)` / `bleed_trade(…)`: rungs 36 **and** 41 both closed with the SAME standing concession ("no bleed valve / variable stator — this rung exhibits the margin they protect, it does not model them"), and rung 41 additionally **LOCATED** the exposure on the **LP** compressor. Rung 42 fits the device there — a fraction `b` extracted at station 25 and dumped overboard. **The structural novelty: the project's first STEADY mass EXTRACTION** — the first shaft whose compressor and turbine pass **different air** (rung 37's `ṁ_c≠ṁ_NGV` was *transient storage*; the `(1+f)` fuel addition is common to **both** shafts). `b` enters exactly **THREE** places — (1) the **LP shaft balance** `h_c(Tt25)−h_c(Tt2)=η_m(1−b)(1+f)·Δh_LPT` ⇒ **`Tt25` falls** (the one place it touches the energy cascade); (2) the **LP face referral** `(‡-b)` picks up an explicit **`1/(1−b)`**; (3) the **thrust books** (dumped air keeps full ram drag, returns no exhaust momentum) — **and NOT the fourth**: rung 39's `(†)` refers the HPT-NGV choke through `pt4/pt25=π_b·π_HPC` and **both sides are core flow**, so it carries **no `b`**, and the HP shaft balance cancels `(1−b)`, and both turbine pins `(★-HP)/(★-LP)` are untouched (bleed is upstream of station 4). **The structural claim in rung 39's register**: `b` reaches the HP spool **ONLY through the shared `Tt25`**, never through the HP face's own flow referral — which is why `_hp_eta_loop` is reused **VERBATIM** (its **body** is `b`-free; its **arguments** are not), a **code-level** guarantee. **THE FINDING: bleed is a genuinely NEW degree of freedom on the LP spool and NOT on the HP spool.** `x_L=Tt4/Tt2` is built from two **INPUTS**, so it is **EXACTLY** bleed-invariant (`==`) ⇒ the entire **+8–12%** move in `φ_L` is displacement **OFF** the running line: the LP running line becomes a **FAMILY indexed by `b`**. The HP compressor stays on **ONE curve** — take the bled point's `x_H`, root-find the `b=0` **throttle** setting with the same `x_H`, and `φ_H` matches to **0.01–0.016%** (vs the LP's 8–12% at the same `x_L` — a **~700–1300×** contrast, with `Tt4'` differing ~4% so it is a real statement about the real gas, not CPG algebra). Opening the valve does not give the HP a new freedom; it only **SLIDES** it along the line the throttle slides it along. **HONEST ACCOUNTING — much of the HP story is INHERITED and the spec says so** (the rung-40 register): because the HP only slides along its own curve, its whole response **IS** rung 41's closed form `s_H=k(1−π_HPC^(−1/k))−1` — including the turn at `π*`. **What is NEW is PERTURBATION-INDEPENDENCE, and it could have failed**: "throttle-derived `s_H` == valve-derived `s_H`" says the HP response depends on `x_H` **alone, regardless of how that `x_H` was reached** — algebra only on CPG at frozen `f`, because on the shipped gas the HP loop reads `(Tt4, Tt25, f)` **separately**. Measured: **≤0.004 absolute** across a 2.4:1 throttle (0.4039/0.4023 → −0.1410/−0.1369). **`π*` SURFACES A THIRD TIME** (rung 40's move with the slip pattern): since `s_H=0` at `π*=γ_c^(γ_c/(γ_c−1))`, bleed has **exactly zero** first-order HP effect there and **REVERSES SIGN** below it — bracketed between `π_HPC`=3.26878 (`dlnφ_H`=+7.0e-6) and 3.23391 (−1.98e-5), interpolating to **+0.40%**, the *same* fuel-fraction residual rung 41's own kill test isolated (**+0.44%**). Its **location** is inherited; that a **second, independent perturbation sweeps through it** is new. **A HYPOTHESIS WRITTEN DOWN AND REFUTED** (rung 40's convention — kept visible, not dropped): the rung was proposed as *"bleed protects the LP **at the HP spool's expense**"* — the textbook trade — and it is **FALSE**: above `π*` the HP flow coefficient **RISES too** (just 10–100× less), below it falls by ~1e-4. The growing selectivity ratio (8.4 → 659) is the **HP denominator passing through zero** — `dlnφ_L` is nearly constant (~0.022) throughout — **not** "infinite selectivity". **SELF-TARGETING, stated in φ-SPACE and NOT in relative margin** (the tempting relative-`SM_L` version, +23%→+53%, is **CONFOUNDED**: the **absolute** `ΔSM_L` **SHRINKS** 0.056→0.018 pp and only its collapsing base makes the ratio grow — gating it would repeat this project's own **rung-41 lesson**): in rung 41's surge-proximity currency `Δφ_L` is nearly **CONSTANT** (±1% over a 1.76:1 throttle) while `Δφ_H` **collapses ×8** toward its zero at `π*`, so a fixed absolute increment into a **shrinking** LP gap closes **17%→46%** of `(φ_op−φ_surge)` on the LP spool and **1.8%→0.25%** on the HP — robust across shapes × three imposed floors. **THE TRADE**: thrust **−10.0%→−14.7%** and TSFC **+6.3%→+14.6%** at `b`=0.10 as the throttle comes back — the valve gets **more selective AND more expensive together**, *which is why real bleed is SCHEDULED, not left open*; and bleed lowers `π_LPC` hence `pt4`, so it **SHRINKS the choked envelope** (lowest runnable `Tt4` 605→630 K over `b`=0→0.15) — the inherited guard bites sooner and **flags**, it does not lie. **Reduce — EXACT DISPATCH** (rungs 38/39/40's contract): `bleed==0.0` forwards `match` to rung 39's **verbatim** ⇒ **bit-for-bit** (`==`) on the fast gas **and** the **reacting** gas; rung 39's `_cascade_map`/`_lp_eta_loop` left **LITERALLY unchanged** (the rung 31–41 suites pass **unchanged**, 84/84). Separate entry point; default `run(…)` untouched ⇒ cycle **bit-for-bit rung 6**. Disclaimed: `b` is an **imposed device setting** (a valve position, not a fudge — but every magnitude rides on it, on the two representative maps and on the two imposed `φ_surge` floors inherited from rungs 36/41); a **fixed `b`, not a schedule** `b(n_L)`; bleed moves `φ_op`, **not `φ_surge`** (the **variable-stator** half of the seam is untouched); **overboard dump with zero recovery** and no bleed-duct loss; **steady only** ⇒ **no surge-SURVIVAL claim** (`E0` vs `SM_N` needs rung 41's deferred transient surge line); **customer/cooling bleed at station 3 NOT modelled**; fully-choked / both NGVs choked / one `η_m` / no bypass / isentropic — inherited. | `docs/rung42-spec.md` |
 
 **The invariant that spans rungs 7–30 (and now 36 and 41): they are all pure diagnostics** (rungs 31–35 are
 the **STRUCTURAL rungs** — they compute a *new* off-design operating point: rung 32 with the component
@@ -108,6 +109,12 @@ again, on that second shaft** — the **two-spool surge line**: it *measures* ru
 line against a stability boundary on **each** compressor without ever perturbing it (a
 `phi_surge`-carrying map leaves rung 39's `match` and rung 40's `equilibrium` bit-for-bit), and it
 reaches back to **correct rung 36's stated mechanism** while leaving rung 36's gates untouched.
+Rung 42 is **structural again, on that same second shaft** — `TwoSpoolBleedMatcher` fits the
+**bleed valve** rungs 36 and 41 both deferred, onto the spool rung 41 showed is exposed, and
+solves a *new* operating point beside the cycle (the first **steady mass extraction**: the LP
+compressor and LP turbine pass different air). It is structural in the rung-31/32 sense but its
+*finding* is about a **degree of freedom** — the valve gives the LP spool one and the HP spool
+none — and it reduces to rung 39 **bit-for-bit** by exact dispatch at `bleed=0`.
 Each rung's verified anchor data lives in `docs/plans/rungN-anchor-*.md`; `docs/plans/` also holds
 the living plan/tasks (rungs 1–3).
 
@@ -125,7 +132,7 @@ the living plan/tasks (rungs 1–3).
 - **Every new rung reduces to its predecessor**, exactly and by test (`X=None` ⇒
   the prior code path). This is the project's spine — see any `docs/rungN-spec.md`.
 
-**Current scope (rung 41).** The **cycle solve** is a thermally-perfect, reacting,
+**Current scope (rung 42).** The **cycle solve** is a thermally-perfect, reacting,
 dissociation-equilibrium gas (`Gas.reacting_equilibrium()`) through ideal + real
 components (isentropic `η_c/η_t` **or** polytropic `e_c/e_t`, mutually exclusive;
 `π_d/π_b/π_n`, `η_b`, `η_m`; dual cold/hot gas; specified exit pressure). The burner
@@ -255,7 +262,27 @@ gated verdict **survives**, but its single-channel mechanism is corrected — th
 the **speed-line flattening** (~48%) are comparable and below `π*` the φ channel **reverses**.
 Reduce: `phi_surge` is the rung-36 field reused, read only by the surge methods ⇒ rung 39/40
 bit-for-bit; the rung 31–40 suites pass unchanged. Separate entry point; default run still
-rung-6 exact.
+rung-6 exact. Rung 42 (`TwoSpoolBleedMatcher`) fits the **bleed valve** rungs 36 and 41 both
+deferred, onto the spool rung 41 located: a fraction `b` extracted at station 25 and dumped —
+the project's **first steady mass extraction** (LPC and LPT pass different air). `b` enters
+exactly **three** places (the LP shaft balance ⇒ `Tt25` falls; the LP face referral ⇒ an explicit
+`1/(1−b)`; the thrust books) and **not the fourth** — rung 39's `(†)` is core flow on both sides
+and carries no `b`, so `_hp_eta_loop` is reused **verbatim**. **The finding: bleed is a genuinely
+NEW degree of freedom on the LP spool and NOT on the HP spool** — `x_L=Tt4/Tt2` is *exactly*
+bleed-invariant, so all of `Δφ_L` (+8–12%) is displacement **off** the LP running line (which
+becomes a family in `b`), while the HP stays on **one curve** (`φ_H(x_H)` invariant to 0.01–0.016%,
+a ~1000× contrast) — the valve only *slides* it where the throttle slides it. **Inherited (and
+said so)**: the HP response is therefore rung 41's `s_H`, `π*` sign-reversal included. **New**:
+**perturbation-independence** — valve-derived `s_H` == throttle-derived closed form to ≤0.004,
+which could have failed (the real-gas HP loop reads `Tt4, Tt25, f` separately). `π*` **surfaces a
+third time** at **+0.40%**, the same fuel-fraction residual rung 41's kill test isolated. The
+proposed "**bleed protects LP at the HP's expense**" is **refuted and kept visible** (the HP is
+*helped* above `π*`, 10–100× less). **Self-targeting stated in φ-space** (the relative-`SM`
+version is confounded — absolute `ΔSM_L` shrinks): `Δφ_L` near-constant, `Δφ_H` ×8 down, so the
+fraction of the shrinking gap closed rises 17%→46% (LP) and falls 1.8%→0.25% (HP). The trade:
+thrust −10.0%→−14.7%, TSFC +6.3%→+14.6%, and the choked envelope shrinks. Reduce: `bleed=0` ⇒
+rung 39 **bit-for-bit** by exact dispatch (fast and reacting gas); the rung 31–41 suites pass
+unchanged (84/84). Separate entry point; default run still rung-6 exact.
 
 ## Deferred seams (kept open on purpose)
 - **Finite-rate nozzle chemistry** — **BUILT BY RUNG 25** (`docs/rung25-spec.md`,
@@ -678,10 +705,48 @@ rung-6 exact.
   (~48%) are comparable, and below `π*` the φ channel **reverses**. Reduce: `phi_surge` is the
   rung-36 field reused, read only by the surge methods ⇒ rung 39/40 **bit-for-bit**.
   **What rung 41 leaves open:** the **transient** two-spool surge line (rung 40's complex mode
-  measured against the boundary); the **subsonic/unchoked LP** branch's margin; a **bleed valve /
-  variable stator** (now located on the spool where they actually live); a **real hardware/CFD
-  surge line** (rung 32/36's standing concession, doubled); and the **rigid-shaft counterfactual**
-  that would settle whether the slip *protects* the LP spool.
+  measured against the boundary); the **subsonic/unchoked LP** branch's margin; ~~a **bleed
+  valve**~~ — **BUILT BY RUNG 42** (below; the **variable stator** half is still open); a **real
+  hardware/CFD surge line** (rung 32/36's standing concession, doubled); and the **rigid-shaft
+  counterfactual** that would settle whether the slip *protects* the LP spool.
+- **The bleed valve** — **BUILT BY RUNG 42** (`docs/rung42-spec.md`, `TwoSpoolBleedMatcher`,
+  `docs/plans/rung42-anchor-interstage-bleed.md`). Rungs 36 **and** 41 both filed the same
+  concession ("no bleed valve / variable stator — this rung exhibits the margin they protect, it
+  does not model them"), and rung 41 **located** the exposure on the LP compressor. Rung 42 fits
+  the valve there: a fraction `b` extracted at station 25 and dumped — the project's **first
+  STEADY mass EXTRACTION** (the first shaft whose compressor and turbine pass different air;
+  rung 37's `ṁ_c≠ṁ_NGV` was transient storage, and `(1+f)` is common to both shafts). `b` enters
+  exactly **three** places — the LP shaft balance (`η_m(1−b)(1+f)`, so `Tt25` falls), the LP face
+  referral `(‡-b)` (an explicit `1/(1−b)`), the thrust books — and **NOT the fourth**: rung 39's
+  `(†)` is core flow on both sides and carries no `b`, so `_hp_eta_loop` is reused **verbatim**
+  (its body is `b`-free, its arguments are not — rung 39's leaf, one rung on).
+  **THE FINDING: bleed is a genuinely NEW degree of freedom on the LP spool and NOT on the HP
+  spool.** `x_L=Tt4/Tt2` is **exactly** bleed-invariant (both are *inputs*), so the whole
+  `+8–12%` in `φ_L` is displacement **OFF** the running line — the LP line becomes a **family**
+  indexed by `b`; the HP stays on **one curve** (`φ_H(x_H)` bleed-invariant to **0.01–0.016%**, a
+  **~1000×** contrast), so the valve only **slides** it along the line the throttle slides it
+  along. **INHERITED and the spec says so** (rung-40 register): the HP response is therefore rung
+  41's closed-form `s_H`, sign reversal at `π*` included. **NEW: perturbation-independence** —
+  valve-derived `s_H` == throttle-derived closed form to **≤0.004** over a 2.4:1 throttle, which
+  **could have failed** (on the real gas the HP loop reads `Tt4, Tt25, f` **separately**; only CPG
+  at frozen `f` makes it one-parameter in `x_H`). `π*` **surfaces a THIRD time**: `dφ_H/db`
+  crosses zero bracketing `π*` at **+0.40%** — the *same* fuel-fraction residual rung 41's own
+  kill test isolated (+0.44%). **A hypothesis REFUTED and kept visible** (rung 40's convention):
+  "bleed protects LP **at the HP's expense**" is **FALSE** — above `π*` the HP is *helped* too,
+  just 10–100× less; below it, hurt by ~1e-4. **Self-targeting, stated in φ-space** (the
+  relative-`SM` version is **confounded** — absolute `ΔSM_L` *shrinks*; this project's own rung-41
+  lesson): `Δφ_L` is near-**constant** (±1%) while `Δφ_H` collapses **×8**, so the fraction of the
+  shrinking `(φ_op−φ_surge)` gap closed **rises 17%→42%** on LP and **falls 1.8%→0.4%** on HP.
+  **The trade**: thrust −10.0%→−14.7%, TSFC +6.3%→+14.6% as throttled — more selective *and* more
+  expensive together (*why bleed is scheduled*); and it **shrinks the choked envelope** (605→630 K).
+  Reduce — **exact dispatch**: `bleed=0` forwards `match` to rung 39 **bit-for-bit** (`==`, fast
+  **and** reacting gas); rung 39's `_cascade_map`/`_lp_eta_loop` left **literally unchanged** (the
+  rung 31–41 suites pass unchanged, 84/84). **What rung 42 leaves open:** the **variable stator**
+  (it moves `φ_surge` itself — the other half of the seam); a bleed **schedule** `b(n_L)` and
+  bleed **during a transient** (the surge-*survival* claim, `E0` vs `SM_N`, needs rung 41's
+  deferred transient surge line); **customer/cooling bleed** at station 3 (a different sink);
+  bleed-duct losses / partial momentum recovery; and the inherited fully-choked / both-NGVs-choked
+  / no-bypass / one-`η_m` scope.
 
 ## Conventions
 - **SI units throughout** (K, Pa, kg/s, m/s, J/kg). Convert kPa → Pa internally.
@@ -818,12 +883,26 @@ rung-6 exact.
   **speed-line-flattening** channel — the rung-41 correction of rung 36's stated mechanism,
   added to the rung-36 class without touching anything it reads. `phi_surge` is the **rung-36
   field reused** (no new knob) and is read ONLY by these methods, so rungs 39/40 are bit-for-bit.
+  And rung 42's **interstage bleed** — **`TwoSpoolBleedMatcher`** (subclasses rung 39's
+  `TwoSpoolMapMatcher`; rung 39's `match`/`_cascade_map`/`_lp_eta_loop` are again left
+  **literally unchanged**, so the rung 39/40/41 suites still witness them bit-for-bit) +
+  **`TwoSpoolBleedResult`**: a `bleed` fraction extracted at station 25. `_cascade_bleed`
+  is rung 39's triangular cascade with exactly two differences — the LP shaft balance carries
+  `(1−b)` (so `Tt25` falls) and the LP efficiency loop is `_lp_eta_loop_bleed`, whose `(‡-b)`
+  picks up `1/(1−b)`. **`_hp_eta_loop` is called VERBATIM** — `(†)` is core flow on both sides
+  and carries no `b`, so its body is `b`-free while its arguments are not; that reuse *is* the
+  structural claim, in rung 39's leaf register. The forward rebuild books the extraction
+  explicitly (`replace(s25, mdot=(1−b)·mdot)`), so every shipped conservation assert downstream
+  still fires — on the core flow, which is what they should see. `bleed_trade(…)` opens the
+  valve at a **FIXED `Tt4`** (the controlled comparison: the valve sets `b`, not the throttle)
+  and returns both flow coefficients, both margins and the thrust/TSFC trade. `bleed == 0.0`
+  forwards `match` to rung 39's verbatim — exact dispatch, bit-for-bit.
 - `main.py` — the design-point run: ideal-vs-real tables, the overlaid T–s diagram, and
   **one panel per rung** (each panel demonstrates that rung's load-bearing claim and
   states its honest scope).
 - `tests/` — `test_stations.py` / `test_validation.py` (rung 1), `test_rung2.py`,
   `test_polytropic.py` (2b), `test_variable_cp.py` (3), `test_reacting.py` (4),
-  `test_forkb.py` (5), then **`test_rungN.py` for N = 6…41**. Every rung file carries that
+  `test_forkb.py` (5), then **`test_rungN.py` for N = 6…42**. Every rung file carries that
   rung's **reduce-to-prior** gate plus its load-bearing claims; the gates are named in the
   rung's spec. Rungs 16, 23 and 24 **deliberately assert no emissions global-min location**;
   rung 25 **reduces to rung-14 FROZEN but deliberately NOT to equilibrium** (the (R−I) gap is
@@ -1033,6 +1112,30 @@ rung-6 exact.
   **deliberately gates no** margin magnitude, no crossing, no `Tt4` turn location, no ordering at
   unmatched shapes/floors, and **no slip-protection claim** (the rigid-shaft counterfactual is
   not run); steady + choked-branch only.
+  Rung 42 **reduces** by **exact dispatch**: `bleed=0.0` forwards `match` to rung 39's verbatim,
+  so a bleed matcher with the valve shut is `TwoSpoolMapMatcher` **bit-for-bit** (`==` on
+  `π_LPC`, `π_HPC`, both `φ`, both `η`, `ṁ`, thrust) across four shape pairs × four throttles on
+  the fast gas **and** on the **reacting** gas — plus the rung 31–41 suites passing **unchanged**
+  (84/84) as the standing witness that rung 39's cascade was not touched. Its **non-tautological**
+  gates are (2) **THE ASYMMETRY** — `x_L` **exactly** bleed-invariant (`==`) with `φ_L` moving
+  >5%, against the bled HP point landing on the `b=0` running line at the **same `x_H`** to
+  <5e-4 in `φ_H` (a >100× contrast, asserted as a ratio), plus the mass-extraction identity
+  `ṁ_core == (1−b)·ṁ_air`; and (3) **PERTURBATION-INDEPENDENCE** — valve-derived `s_H` equals
+  rung 41's **throttle**-derived closed form to <0.01 absolute at every point of the CPG+flat
+  band, with a **guard against spurious exactness** (`worst > 1e-6`) so the gate cannot pass by
+  the two paths being secretly the same. Finding gates: (4) **`π*` A THIRD TIME** — `dφ_H/db`
+  **changes sign** and the crossing **brackets** `π*`, asserted beside the CONTRAST that the LP
+  response never reverses (existence + sign + bracket only; the exact crossing **disclaimed**);
+  (5) **SELF-TARGETING in φ-SPACE** — `Δφ_L` near-constant (spread <10%) while `Δφ_H` falls ≥5×,
+  hence the fraction of `(φ_op−φ_surge)` closed **monotone rising** on LP and **monotone falling**
+  on HP, 2 shapes × 3 floors — deliberately gated in φ-space, with the confounded relative-`SM`
+  version **not** gated (the rung-41 lesson, enforced); (6) the **TRADE + ENVELOPE** (thrust and
+  TSFC monotone in `b`, the penalty **growing** with throttle-down, the choked band shrinking);
+  (7) **THE REFUTED HYPOTHESIS kept visible** — `dφ_H/db > 0` at design across two gases × four
+  shapes, so "bleed penalises the HP spool" is asserted **false** rather than quietly dropped.
+  It **deliberately gates no** magnitude (all ride on `b`, the maps and the two imposed floors),
+  **no bleed schedule**, **no variable stator** (bleed moves `φ_op`, never `φ_surge`), and **no
+  surge-SURVIVAL claim** (`E0` vs `SM_N` needs the deferred transient); steady + choked-branch only.
 - `docs/rungN-spec.md` — the derivation, assumptions, concessions and gates for rung N.
   `docs/plans/rungN-anchor-*.md` — that rung's verified anchor data.
 
@@ -1043,7 +1146,7 @@ rung-6 exact.
   marches) are tagged `slow` and **deselected** — BUT the bit-for-bit **reduce spine**
   (`test_reduce_*`, `test_cycle_untouched_*`, `*_bit_for_bit`) is kept in the fast run, so routine
   `pytest` still guards "each rung reduces to its predecessor, exactly and by test."
-- Run tests (full, every gate):  `pytest --runslow`  — all 396 tests (~10–15 min). **Use this at
+- Run tests (full, every gate):  `pytest --runslow`  — all 420 tests (~10–15 min). **Use this at
   commit / session-end / CI** — the fast subset is for quick iteration, not for signing off a rung.
 - Only the slow gates:  `pytest -m slow`   ·   One rung by hand:  `python tests/test_rung2.py`
 - Install deps:   `pip install -r requirements.txt`  (matplotlib + pytest + pytest-xdist)

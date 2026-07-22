@@ -3579,3 +3579,313 @@ class TwoSpoolTransient(TwoSpoolMapMatcher):
             if abs(e) > abs(ext):
                 ext = e
         return ext
+
+
+# ======================================================================================
+# RUNG 42 — INTERSTAGE BLEED: the device that acts on the spool rung 41 exposed
+# ======================================================================================
+#
+# Rungs 36 and 41 both closed with the SAME standing concession, in nearly the same words:
+# "no bleed valve / variable stator -- the devices that raise the margin at low speed; this
+# rung exhibits the margin they protect, it does not model them." Rung 41 additionally
+# LOCATED the exposure: over a 2:1 throttle phi_L falls ~29% while phi_H falls ~7% and is
+# bounded. A handling-bleed valve at station 25 is exactly the device that acts there.
+#
+# THE MODEL. A fraction b of the LPC exit flow is extracted between the LPC and the HPC and
+# dumped overboard. Per unit INLET air mdot_2, the core carries (1-b):
+#
+#     LPC pumps  mdot_2            LPT expands  mdot_2*(1-b)*(1+f)
+#     HPC pumps  mdot_2*(1-b)      HPT expands  mdot_2*(1-b)*(1+f)
+#
+# This is the project's first STEADY mass EXTRACTION -- the first shaft whose compressor and
+# turbine pass different air (rung 37's mdot_c != mdot_NGV was transient storage, and the
+# (1+f) fuel addition has been there since rung 1 and is common to both shafts). The split
+# is on the LP shaft ALONE, and that asymmetry is the whole rung.
+#
+# WHERE b ENTERS -- exactly three places, and NOT the fourth:
+#
+#   (1) The LP shaft balance:  h_c(Tt25) - h_c(Tt2) = eta_m*(1-b)*(1+f)*dh_LPT.  The LP
+#       turbine drives its compressor with less air than the compressor pumps, so Tt25 FALLS.
+#       This is the ONE place b enters the energy cascade.
+#   (2) The LP face flow referral: mdot_2 = mdot_core/(1-b), so rung 39's (ddagger) picks up
+#       an explicit 1/(1-b):
+#             (ddagger-b)  mdot_corr,2 = A4*pi_b*pi_HPC*pi_LPC*MFP* * sqrt(Tt2/Tt4)
+#                                         / [ (1+f)*(1-b) ]
+#   (3) The thrust bookkeeping: the dumped air was still captured, so it carries full ram
+#       drag and contributes no exhaust momentum (see `match`).
+#
+#   NOT the HP face. Rung 39's (dagger) refers the HPT-NGV choke to station 25 through
+#   pt4/pt25 = pi_b*pi_HPC, and BOTH sides of that referral are core flow:
+#             (dagger)  mdot_corr,25 = A4*pi_b*pi_HPC*MFP* * sqrt(Tt25/Tt4)/(1+f)
+#   carries NO b. Nor does the HP shaft balance -- HPC and HPT both see (1-b)*mdot_2, so it
+#   cancels and Tt3 - Tt25 is bleed-invariant. Nor do the two turbine pins (*-HP)/(*-LP):
+#   they are ratios of choked MFPs passing the SAME core flow, and bleed is upstream of
+#   station 4, so tau_HPT, tau_LPT, Tt45/Tt4, Tt5/Tt45 are untouched.
+#
+# THE STRUCTURAL CLAIM, in rung 39's register (and it is the reason `_hp_eta_loop` below is
+# reused VERBATIM): b reaches the HP spool ONLY through the shared Tt25 -- never through the
+# HP face's own flow referral. The HP loop's BODY is b-free; its ARGUMENTS are not. That is
+# the exact analogue of rung 39's leaf ("eta_HPC is a leaf; everything geometric reaches
+# both"), and it is a code-level guarantee, not a numerical coincidence.
+#
+# WHAT IT DOES *NOT* SETTLE. Both faces carry COMPETING channels, so no sign is derivable
+# from the above:
+#   LP:  the explicit 1/(1-b) pushes m_L UP, while the falling Tt25 lowers pi_LPC and pushes
+#        it back DOWN (and lowers n_L with it).
+#   HP:  Tt3 - Tt25 is bleed-invariant, so tau_HPC = 1 + const/Tt25 RISES as Tt25 falls, and
+#        (dagger) has pi_HPC UP against sqrt(Tt25) DOWN.
+# The signs are MEASURED (docs/rung42-spec.md), at FIXED Tt4 -- the controlled comparison
+# for a device that sets b and not the throttle.
+#
+# SCOPE. Bleed lowers pi_LPC hence pt4, so it SHRINKS the choked envelope: the nozzle-choked
+# guard (inherited from rung 38) bites at a higher Tt4 with the valve open. And bleed moves
+# the operating point phi_op; it does NOT move the stall floor phi_surge -- that is the
+# variable-stator half of the seam, still open.
+
+
+@dataclass
+class TwoSpoolBleedResult(TwoSpoolMapResult):
+    """A matched two-spool point with the interstage bleed valve open (docs/rung42-spec.md).
+
+    `performance` is CORE-referenced (specific thrust per unit air through the burner), so at
+    bleed=0 it is bit-for-bit rung 39's. `st_inlet` is the honest per-INLET-air specific
+    thrust and `thrust` the absolute force, both carrying the dumped air's ram drag.
+    """
+
+    bleed: float = 0.0        # extraction fraction at station 25 (0 = valve shut)
+    mdot_core: float = 0.0    # air through HPC/burner/turbines = (1-b)*mdot_air
+    st_inlet: float = 0.0     # F / mdot_INLET = (1-b)*specific_thrust_core - b*V0
+    tsfc_inlet: float = 0.0   # mdot_fuel / F, with F carrying the bleed drag
+
+
+class TwoSpoolBleedMatcher(TwoSpoolMapMatcher):
+    """RUNG 42. Two-spool map matching WITH an interstage (station-25) bleed valve.
+
+    Usage:
+        m = TwoSpoolBleedMatcher(design, FLIGHT, 1.0, map_lp=..., map_hp=..., bleed=0.08)
+        od = m.match(FLIGHT, Tt4)          # -> TwoSpoolBleedResult
+
+    The valve is SHUT at the design point by construction: the hardware (A4, A45, A8, both
+    maps' design references) is captured from a bleed-free design run, exactly as a real
+    handling-bleed valve is closed at the design condition and opened off-design.
+
+    REDUCE -- exact dispatch (rungs 38/39/40's contract): bleed == 0.0 forwards `match` to
+    rung 39's `TwoSpoolMapMatcher.match` verbatim, so a bleed matcher with the valve shut is
+    rung 39 BIT-FOR-BIT (the bleed cascade is never entered). Rung 39's `_cascade_map` and
+    `_lp_eta_loop` are left LITERALLY unchanged (the rung-33/39/40 discipline), so the rung-39
+    and rung-41 suites still witness them.
+    """
+
+    def __init__(self, design_engine, flight_design: FlightCondition,
+                 mdot_design: float = 1.0, map_lp: "ComponentMap | None" = None,
+                 map_hp: "ComponentMap | None" = None, bleed: float = 0.0,
+                 lp_disabled: bool = False):
+        super().__init__(design_engine, flight_design, mdot_design,
+                         map_lp=map_lp, map_hp=map_hp, lp_disabled=lp_disabled)
+        self.bleed = float(bleed)
+        assert 0.0 <= self.bleed < 0.5, (
+            "rung-42 bleed fraction must be in [0, 0.5): b>=0.5 starves the core and the "
+            "choked branch is long gone by then")
+
+    # --- the LP efficiency fixed point, with the extraction in its flow referral ---------
+
+    def _lp_eta_loop_bleed(self, wgas: Gas, Tt2: float, Tt4: float, f: float, Tt25: float,
+                           MFP4: float, pi_hpc: float, cmap: "ComponentMap", bleed: float):
+        """Rung 39's `_lp_eta_loop` with (ddagger-b): the LP face passes mdot_core/(1-b).
+
+        The ONLY difference from the rung-39 body is the /(1-bleed) on m -- rung 39's own
+        method is left untouched so its gates keep witnessing it bit-for-bit.
+        """
+        h2, h25, pr2 = wgas.h_c(Tt2), wgas.h_c(Tt25), wgas.pr_c(Tt2)
+        tau_lpc = Tt25 / Tt2
+        eta, eta_prev, R_prev = self.eta_lpc, None, None
+        for _ in range(self._ETA_MAX):
+            pi = wgas.pr_c(wgas.T_from_h_c(h2 + eta * (h25 - h2))) / pr2
+            # (ddagger-b): carries pi_hpc (rung 39's ONE arrow) AND the extraction 1/(1-b).
+            m = (self.A4 * self.pi_b * pi_hpc * pi * MFP4 * (Tt2 / Tt4) ** 0.5
+                 / ((1.0 + f) * (1.0 - bleed))) / self.mcorr_lp_d
+            n = cmap.solve_n(m, tau_lpc, self.tau_lpc_d)
+            tgt = cmap.eta_c_at(self.eta_lpc, m / n, n)
+            R = tgt - eta
+            if abs(R) <= self._ETA_TOL:
+                return eta, pi, m, n
+            eta, eta_prev, R_prev = self._secant(eta, eta_prev, R, R_prev, tgt), eta, R
+        raise AssertionError(
+            f"rung-42 LP efficiency secant did not converge at Tt4={Tt4}, b={bleed}; "
+            "moderate the LP map coefficients, the bleed or the throttle.")
+
+    # --- the cascade with the extraction ------------------------------------------------
+
+    def _cascade_bleed(self, wgas: Gas, Tt2: float, pt2: float, Tt4: float, f: float) -> dict:
+        """Rung 39's triangular cascade with the station-25 extraction.
+
+        Differences from `_cascade_map`, and ONLY these:
+          * the LP shaft balance carries (1-b)                        -> Tt25 falls
+          * the LP eta loop uses (ddagger-b)                          -> m_L picks up 1/(1-b)
+        `_hp_eta_loop` is called VERBATIM -- its body is b-free ((dagger) carries no b). Both
+        turbine pins and the HP shaft balance are untouched for the same reason.
+        """
+        b = self.bleed
+        MFP4 = choked_mfp(wgas, Tt4, f)
+        eta_hpt, eta_lpt = self.eta_hpt, self.eta_lpt
+        out = None
+        for _ in range(self._TURB_MAX):
+            pi_hpt, tau_hpt, Tt45 = self._solve_choked_turbine(
+                wgas, Tt4, f, self.A4, self.A45, 1.0, eta_hpt)
+            pi_lpt, tau_lpt, Tt5 = self._solve_choked_turbine(
+                wgas, Tt45, f, self.A45, self.A8, self.pi_n, eta_lpt)
+
+            # ENERGY. (1) the LP balance: the LPT drives mdot_2 with (1-b)*mdot_2*(1+f) of gas.
+            dh_lpt = self.eta_m * (1.0 - b) * (1.0 + f) * (wgas.h_t(Tt45, f) - wgas.h_t(Tt5, f))
+            Tt25 = wgas.T_from_h_c(wgas.h_c(Tt2) + dh_lpt)
+            # The HP balance: (1-b) cancels (both sides are core flow) -> bleed-INVARIANT form.
+            dh_hpt = self.eta_m * (1.0 + f) * (wgas.h_t(Tt4, f) - wgas.h_t(Tt45, f))
+            Tt3 = wgas.T_from_h_c(wgas.h_c(Tt25) + dh_hpt)
+
+            # THE TRIANGLE, unchanged in shape: HP closes on itself (VERBATIM rung 39 -- the
+            # structural claim), THEN LP closes onto pi_HPC with the extraction in its flow.
+            eta_hpc, pi_hpc, m_H, n_H = self._hp_eta_loop(
+                wgas, Tt4, f, Tt25, Tt3, MFP4, self.map_hp)
+            eta_lpc, pi_lpc, m_L, n_L = self._lp_eta_loop_bleed(
+                wgas, Tt2, Tt4, f, Tt25, MFP4, pi_hpc, self.map_lp, b)
+
+            NL = n_L * (Tt2 / self.Tt2_d) ** 0.5
+            NH = n_H * (Tt25 / self.Tt25_d) ** 0.5
+            nu_hpt = NH * (self.Tt4_d / Tt4) ** 0.5
+            nu_lpt = NL * (self.Tt45_d / Tt45) ** 0.5
+
+            out = dict(pi_hpt=pi_hpt, tau_hpt=tau_hpt, Tt45=Tt45, pi_lpt=pi_lpt,
+                       tau_lpt=tau_lpt, Tt5=Tt5, pi_lpc=pi_lpc, Tt25=Tt25, pi_hpc=pi_hpc,
+                       Tt3=Tt3, eta_lpc=eta_lpc, eta_hpc=eta_hpc, eta_hpt=eta_hpt,
+                       eta_lpt=eta_lpt, m_L=m_L, m_H=m_H, n_L=n_L, n_H=n_H, NL=NL, NH=NH,
+                       phi_L=m_L / n_L, phi_H=m_H / n_H, nu_hpt=nu_hpt, nu_lpt=nu_lpt,
+                       slip=NL / NH)
+
+            t_hpt = self.map_hp.eta_t_at(self.eta_hpt, nu_hpt)
+            t_lpt = self.map_lp.eta_t_at(self.eta_lpt, nu_lpt)
+            if abs(t_hpt - eta_hpt) <= self._ETA_TOL and abs(t_lpt - eta_lpt) <= self._ETA_TOL:
+                return out
+            eta_hpt, eta_lpt = t_hpt, t_lpt
+        raise AssertionError(
+            f"rung-42 turbine-efficiency loop did not converge at Tt4={Tt4}; moderate a_t.")
+
+    # --- match one operating point with the valve open ----------------------------------
+
+    def match(self, flight: FlightCondition, Tt4: float):
+        """Match at (flight, Tt4) with the bleed valve at self.bleed.
+
+        REDUCE: bleed == 0 dispatches to rung 39's match verbatim (bit-for-bit).
+        """
+        if self.bleed == 0.0:
+            return super().match(flight, Tt4)
+
+        b = self.bleed
+        pi_d = self.pi_d_max * ram_recovery(flight.M0)
+        state0, V0 = self._fs_engine.freestream(flight, self.mdot_air_design)
+        Tt2, pt2 = state0.Tt, pi_d * state0.pt
+
+        f, pt4 = self.f_design, self.pi_b * self.pi_hpc_design * self.pi_lpc_design * pt2
+        c = None
+        for _ in range(self._MAX):
+            wgas = self._working_gas(f, Tt4, pt4)
+            c = self._cascade_bleed(wgas, Tt2, pt2, Tt4, f)
+            pt4_new = self.pi_b * c["pi_hpc"] * c["pi_lpc"] * pt2
+            f_new = self._solve_f(c["Tt3"], pt4_new, Tt4)
+            done = (abs(f_new - f) <= self._TOL * (f_new + 1e-30)
+                    and abs(pt4_new - pt4) <= self._TOL * pt4_new)
+            f, pt4 = f_new, pt4_new
+            if done:
+                break
+
+        pi_lpc, pi_hpc = c["pi_lpc"], c["pi_hpc"]
+        assert pi_lpc > 1.0 and pi_hpc > 1.0 and 0.0 < c["tau_hpt"] < 1.0 \
+            and 0.0 < c["tau_lpt"] < 1.0, "rung-42 bleed match unphysical"
+
+        wgas = self._working_gas(f, Tt4, pt4)
+        mdot_core = self.A4 * pt4 * choked_mfp(wgas, Tt4, f) / Tt4 ** 0.5 / (1.0 + f)
+        mdot_air = mdot_core / (1.0 - b)          # what the INLET ingests
+
+        # Rebuild FORWARD. The extraction is booked EXPLICITLY at station 25 (the one place
+        # mass leaves the flowpath), so every shipped conservation assert downstream still
+        # fires -- on the core flow, which is what they should see.
+        rgas = Gas.reacting_equilibrium(hf_fuel_molar=self.hf_fuel_molar) \
+            if self.gas.equilibrium else self.gas
+        state0, V0 = self._fs_engine.freestream(flight, mdot_air)
+        s2 = Inlet(pi_d).apply(state0, rgas)
+        s25 = Compressor(pi_lpc, c["eta_lpc"]).apply(s2, rgas)
+        s25c = replace(s25, mdot=(1.0 - b) * s25.mdot)      # <- THE BLEED EXTRACTION
+        s3 = Compressor(pi_hpc, c["eta_hpc"]).apply(s25c, rgas)
+        s4 = Burner(Tt4, self.eta_b, self.pi_b).apply(s3, rgas)
+        dh_hpt_reb = (rgas.h_c(s3.Tt) - rgas.h_c(s25.Tt)) / (self.eta_m * (1.0 + s4.far))
+        s45 = Turbine(c["eta_hpt"]).apply(s4, rgas, dh_hpt_reb)
+        # (1) again, in the rebuild: the LPT drives mdot_2 while passing (1-b)*mdot_2*(1+f).
+        dh_lpt_reb = (rgas.h_c(s25.Tt) - rgas.h_c(s2.Tt)) / (
+            self.eta_m * (1.0 - b) * (1.0 + s4.far))
+        s5 = Turbine(c["eta_lpt"]).apply(s45, rgas, dh_lpt_reb)
+        exit = Nozzle(self.p_ambient, self.pi_n, convergent=True).apply(s5, rgas)
+
+        # SCOPE GUARD (inherited). Bleed lowers pi_LPC hence pt4, so this bites SOONER.
+        assert exit.p9 > self.p_ambient + 1e-6, (
+            f"rung-42 bleed match at Tt4={Tt4:.0f}, b={b:.3f}, M0={flight.M0:.2f}: nozzle "
+            "UNCHOKED -- OUT OF SCOPE (docs/rung38-spec.md 'Scope'). Opening the valve shrinks "
+            "the choked envelope; the LP spool's own subsonic branch is still a follow-on.")
+
+        stations = {"0": state0, "2": s2, "25": s25, "3": s3, "4": s4, "45": s45,
+                    "5": s5, "9": exit.state}
+        perf = _score(rgas, stations, V0, exit.M9, exit.T9, exit.V9, exit.p9,
+                      flight.p0, rgas.hPR)
+        # (3) THRUST. The dumped air was captured, so it carries FULL ram drag and returns no
+        # exhaust momentum (an overboard dump with no recovery -- the conservative reading;
+        # a real duct into the nacelle/bypass recovers some). Per unit INLET air:
+        #     F/mdot_2 = (1-b)*[(1+f)V9 + pressure - V0] - b*V0
+        st_inlet = (1.0 - b) * perf.specific_thrust - b * V0
+        thrust = mdot_air * st_inlet
+        return TwoSpoolBleedResult(
+            stations=stations, performance=perf, V0=V0, V9=exit.V9, M9=exit.M9,
+            T9=exit.T9, p9=exit.p9, thrust=thrust, Tt4=Tt4,
+            M0=flight.M0, pi_lpc=pi_lpc, pi_hpc=pi_hpc, tau_lpc=s25.Tt / s2.Tt,
+            tau_hpc=s3.Tt / s25.Tt, tau_hpt=c["tau_hpt"], pi_hpt=c["pi_hpt"],
+            tau_lpt=c["tau_lpt"], pi_lpt=c["pi_lpt"], mdot_air=mdot_air,
+            mdot_ratio=mdot_air / self.mdot_air_design,
+            eta_lpc=c["eta_lpc"], eta_hpc=c["eta_hpc"], eta_hpt=c["eta_hpt"],
+            eta_lpt=c["eta_lpt"], n_lp=c["n_L"], n_hp=c["n_H"], N_lp_ratio=c["NL"],
+            N_hp_ratio=c["NH"], slip=c["slip"], phi_lp=c["phi_L"], phi_hp=c["phi_H"],
+            nu_hpt=c["nu_hpt"], nu_lpt=c["nu_lpt"],
+            bleed=b, mdot_core=mdot_core, st_inlet=st_inlet,
+            tsfc_inlet=(1.0 - b) * s4.far / st_inlet,
+        )
+
+    # --- the trade, at FIXED Tt4 (the controlled comparison) ----------------------------
+
+    def bleed_trade(self, flight: FlightCondition, Tt4: float,
+                    bleeds=(0.0, 0.05, 0.10)) -> list:
+        """Open the valve at a FIXED throttle and read what moves.
+
+        THE CONTROLLED COMPARISON (docs/rung42-spec.md): bleed sets b, not the throttle, so
+        the clean "open the valve, nothing else moves" reading holds Tt4. Comparing at fixed
+        THRUST instead folds in a throttle change and mixes the device's effect with the
+        running line's -- a different, and separately reported, question.
+
+        Returns one dict per b with both flow coefficients, both margins (when both maps
+        carry a surge floor) and the thrust/TSFC trade, all at the same Tt4.
+        """
+        b_save = self.bleed
+        out = []
+        try:
+            for b in bleeds:
+                self.bleed = float(b)
+                od = self.match(flight, float(Tt4))
+                row = dict(bleed=float(b), Tt4=float(Tt4), phi_lp=od.phi_lp,
+                           phi_hp=od.phi_hp, n_lp=od.n_lp, n_hp=od.n_hp,
+                           pi_lpc=od.pi_lpc, pi_hpc=od.pi_hpc,
+                           Tt25=od.stations["25"].Tt, slip=od.slip,
+                           mdot_air=od.mdot_air, thrust=od.thrust,
+                           st_inlet=getattr(od, "st_inlet", od.performance.specific_thrust),
+                           tsfc=getattr(od, "tsfc_inlet", od.performance.tsfc))
+                if self.map_lp.phi_surge > 0.0 and self.map_hp.phi_surge > 0.0:
+                    sm = self.surge_margin(flight, float(Tt4))
+                    row["SM_lp"], row["SM_hp"] = sm["SM_lp"], sm["SM_hp"]
+                out.append(row)
+        finally:
+            self.bleed = b_save
+        return out

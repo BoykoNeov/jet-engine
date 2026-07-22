@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 from turbojet.engine import (  # noqa: E402
     FlightCondition, build_turbojet, OffDesignMatcher, MapMatcher, ComponentMap, SpoolTransient,
     CombustorTransient, build_two_spool_turbojet, TwoSpoolMatcher, TwoSpoolMapMatcher,
-    TwoSpoolTransient, ram_recovery,
+    TwoSpoolTransient, TwoSpoolBleedMatcher, ram_recovery,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -1952,6 +1952,157 @@ def print_two_spool_surge_table(flight):
     print("  Reduce: a phi_surge-carrying map leaves rung 39/40 bit-for-bit. Cycle stays rung-6 exact.")
 
 
+
+def print_interstage_bleed_table(flight):
+    """Rung 42 — INTERSTAGE BLEED: the valve is a degree of freedom on ONE spool.
+
+    Rungs 36 and 41 both closed with the same concession ("no bleed valve / variable stator --
+    this rung exhibits the margin they protect, it does not model them"), and rung 41 located
+    the exposure on the LP compressor. Fitting the valve shows it is a NEW degree of freedom
+    on the LP spool and NOT on the HP spool: x_L = Tt4/Tt2 is EXACTLY bleed-invariant, so the
+    whole dphi_L is displacement OFF the running line, while the HP -- whose corrected-flow
+    referral (dagger) carries no b -- only SLIDES ALONG its own line, so its whole response is
+    rung 41's closed-form s_H, including the sign reversal at pi*.
+    """
+    print("\nInterstage bleed (rung 42): the device rungs 36 and 41 both deferred, fitted to the")
+    print("spool rung 41 showed is exposed. A fraction b is extracted at station 25 and dumped --")
+    print("the project's FIRST steady mass EXTRACTION (one shaft whose compressor and turbine pass")
+    print("different air). Comparison held at FIXED Tt4: the valve sets b, not the throttle.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0)
+    FLAT = ComponentMap()
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    def bm(gas, mL, mH, b, floor=None):
+        if floor is not None:
+            mL, mH = mL.with_phi_surge(floor), mH.with_phi_surge(floor)
+        design = build_two_spool_turbojet(gas, 3.0, 6.0, TT4, flight.p0,
+                                          nozzle_convergent=True, **losses)
+        return TwoSpoolBleedMatcher(design, flight, 1.0, map_lp=mL, map_hp=mH, bleed=b)
+
+    # --- WHERE b ENTERS: three places, and not the fourth.
+    print("\n  WHERE b ENTERS -- exactly three places:")
+    print("    (1) the LP shaft balance   h_c(Tt25)-h_c(Tt2) = eta_m(1-b)(1+f)dh_LPT   => Tt25 FALLS")
+    print("    (2) the LP face referral   (ddagger-b): mdot_corr,2 picks up an explicit 1/(1-b)")
+    print("    (3) the thrust books       the dumped air keeps full ram drag, returns no momentum")
+    print("  and NOT the HP face: rung 39's (dagger) mdot_corr,25 = A4 pi_b pi_HPC MFP* "
+          "sqrt(Tt25/Tt4)/(1+f)")
+    print("  is core flow on BOTH sides, so it carries NO b -- which is why _hp_eta_loop is reused")
+    print("  VERBATIM. Its BODY is b-free; its ARGUMENTS are not (rung 39's leaf, one rung on).")
+
+    # --- THE ASYMMETRY: LP displaced OFF its line, HP only slides ALONG its own.
+    gas = Gas.thermally_perfect()
+    print("\n  THE ASYMMETRY -- open the valve at a FIXED Tt4 (shapes flow/press, b = 0.10):")
+    print(f"  {'Tt4':>6} {'x_L':>8} {'dphi_L':>9} {'x_H':>8} {'dphi_H':>9} {'ratio':>8} "
+          f"{'dF':>8} {'dTSFC':>8}")
+    print("  " + "-" * 70)
+    shut, opn = bm(gas, LP, HP, 0.0), bm(gas, LP, HP, 0.10)
+    for Tt4 in (1500.0, 1300.0, 1100.0, 900.0):
+        a, c = shut.match(flight, Tt4), opn.match(flight, Tt4)
+        xLa, xLc = Tt4 / a.stations["2"].Tt, Tt4 / c.stations["2"].Tt
+        dL, dH = c.phi_lp / a.phi_lp - 1.0, c.phi_hp / a.phi_hp - 1.0
+        print(f"  {Tt4:6.0f} {xLa:8.4f} {100*dL:+8.3f}% {Tt4/a.stations['25'].Tt:8.4f} "
+              f"{100*dH:+8.3f}% {dL/dH:8.1f} {100*(c.thrust/a.thrust-1):+7.2f}% "
+              f"{100*(c.tsfc_inlet/a.performance.tsfc-1):+7.2f}%")
+        assert xLa == xLc                       # x_L is built from two INPUTS: bleed cannot move it
+    print("  => x_L is EXACTLY bleed-invariant (both Tt4 and Tt2 are inputs), so the whole dphi_L")
+    print("     is displacement OFF the LP running line: the LP line becomes a FAMILY indexed by b.")
+
+    print("\n  ...and the HP stays on ONE curve. Take the bled point's x_H, find the b=0 THROTTLE")
+    print("  setting with the SAME x_H, compare phi_H (CPG, flat maps, b = 0.10):")
+    cshut, copn = bm(cpg(), FLAT, FLAT, 0.0), bm(cpg(), FLAT, FLAT, 0.10)
+    print(f"  {'Tt4':>6} {'Tt4* (b=0)':>11} {'x_H':>9} {'HP dphi':>10} {'LP dphi (same x_L)':>20}")
+    print("  " + "-" * 62)
+    for Tt4 in (1400.0, 1100.0, 900.0):
+        c = copn.match(flight, Tt4)
+        target = Tt4 / c.stations["25"].Tt
+        lo, hi = Tt4, Tt4 * 1.3
+        for _ in range(60):
+            mid = 0.5 * (lo + hi)
+            o = cshut.match(flight, mid)
+            if mid / o.stations["25"].Tt - target <= 0.0:
+                lo = mid
+            else:
+                hi = mid
+        o = cshut.match(flight, 0.5 * (lo + hi))
+        a = cshut.match(flight, Tt4)
+        print(f"  {Tt4:6.0f} {0.5*(lo+hi):11.2f} {target:9.5f} "
+              f"{100*(c.phi_hp/o.phi_hp-1):+9.4f}% {100*(c.phi_lp/a.phi_lp-1):+19.2f}%")
+    print("  => the HP leaves its running line by ~0.01% while the LP is displaced ~11% -- a")
+    print("     ~1000x contrast. Bleed gives the LP spool a new freedom; the HP it merely slides.")
+
+    # --- INHERITED: the HP response IS rung 41's s_H, and it reverses sign at pi*.
+    print("\n  SO THE HP RESPONSE IS RUNG 41's (INHERITED, and the spec says so): s_H measured by")
+    print("  opening the VALVE vs rung 41's closed form measured on the THROTTLE --")
+    print("  perturbation-independence, which could have failed (the HP loop reads Tt4, Tt25 and f")
+    print("  SEPARATELY on the real gas; only CPG at frozen f makes it one-parameter in x_H):")
+    k = 1.4 / 0.4
+    pi_star = 1.4 ** k
+    cdb = bm(cpg(), FLAT, FLAT, 0.02)
+    print(f"  {'Tt4':>6} {'pi_HPC':>8} {'s_H (valve)':>12} {'s_H closed':>11} {'diff':>9} "
+          f"{'dln phi_L':>10}")
+    print("  " + "-" * 62)
+    for Tt4 in (1500.0, 1300.0, 1100.0, 900.0, 800.0, 790.0, 780.0, 750.0, 700.0):
+        a, c = cshut.match(flight, Tt4), cdb.match(flight, Tt4)
+        xa, xc = Tt4 / a.stations["25"].Tt, Tt4 / c.stations["25"].Tt
+        sm = math.log(c.phi_hp / a.phi_hp) / math.log(xc / xa)
+        sc = k * (1.0 - a.pi_hpc ** (-1.0 / k)) - 1.0
+        mark = "  <- pi*" if 780.0 <= Tt4 <= 790.0 else ""
+        print(f"  {Tt4:6.0f} {a.pi_hpc:8.5f} {sm:12.4f} {sc:11.4f} {sm-sc:+9.4f} "
+              f"{math.log(c.phi_lp/a.phi_lp):+10.5f}{mark}")
+    print(f"  => agreement to <=0.004 over a 2.4:1 throttle. And since s_H = 0 at")
+    print(f"     pi* = gamma_c^(gamma_c/(gamma_c-1)) = {pi_star:.5f}, the bleed response passes")
+    print("     through ZERO there and REVERSES SIGN below it -- bracketed above between")
+    print("     Tt4 = 790 (pi_HPC = 3.2688, +) and 780 (3.2339, -). The crossing interpolates to")
+    print("     pi_HPC ~ 3.260, i.e. +0.40%: the SAME fuel-fraction residual rung 41's own kill")
+    print("     test isolated (+0.44%). pi* SURFACES A THIRD TIME -- its LOCATION is inherited,")
+    print("     that a second, independent perturbation sweeps through it is new.")
+    print("     The growing ratio is the HP denominator passing through zero (dln phi_L is nearly")
+    print("     constant ~0.022 throughout) -- NOT 'infinite selectivity'.")
+
+    # --- SELF-TARGETING, stated in phi-space (NOT in relative margin).
+    print("\n  SELF-TARGETING -- stated in phi-SPACE (rung 41's surge-proximity currency), because")
+    print("  the relative-margin version is CONFOUNDED (absolute dSM_L SHRINKS 0.056 -> 0.018 pp;")
+    print("  only its collapsing base makes the relative gain 'grow' -- this project's own rung-41")
+    print("  lesson).  b = 0.10, matched imposed floor phi_surge = 0.55:")
+    fshut, fopn = bm(cpg(), LP, HP, 0.0, floor=0.55), bm(cpg(), LP, HP, 0.10, floor=0.55)
+    print(f"  {'Tt4':>6} {'phi_L':>8} {'gap_L':>7} {'dphi_L':>8} {'frac':>7} | "
+          f"{'phi_H':>8} {'gap_H':>7} {'dphi_H':>9} {'frac':>7}")
+    print("  " + "-" * 76)
+    for Tt4 in (1500.0, 1300.0, 1100.0, 950.0, 900.0):
+        a, c = fshut.match(flight, Tt4), fopn.match(flight, Tt4)
+        gL, gH = a.phi_lp - 0.55, a.phi_hp - 0.55
+        dL, dH = c.phi_lp - a.phi_lp, c.phi_hp - a.phi_hp
+        print(f"  {Tt4:6.0f} {a.phi_lp:8.4f} {gL:7.4f} {dL:+8.4f} {100*dL/gL:6.1f}% | "
+              f"{a.phi_hp:8.4f} {gH:7.4f} {dH:+9.5f} {100*dH/gH:6.2f}%")
+    print("  => dphi_L is nearly CONSTANT (+-1%) while dphi_H collapses ~8x. A fixed absolute")
+    print("     increment into a SHRINKING LP gap => the fraction closed RISES on the LP spool")
+    print("     (17% -> 42%) and FALLS on the HP (1.8% -> 0.4%). That is the honest sense in")
+    print("     which the device is SELF-TARGETING.")
+
+    # --- the trade and the envelope.
+    print("\n  THE TRADE. Thrust falls 10.0% -> 14.7% and TSFC rises 6.3% -> 14.6% (b = 0.10) as")
+    print("  the throttle comes back: the valve gets MORE SELECTIVE and MORE EXPENSIVE together --")
+    print("  which is why real bleed is SCHEDULED, not simply left open. And bleed lowers pi_LPC")
+    print("  hence pt4, so it SHRINKS the choked envelope (lowest runnable Tt4 605 -> 630 K over")
+    print("  b = 0 -> 0.15): the inherited nozzle-choke guard bites sooner. It flags, it never lies.")
+
+    print("\n  A HYPOTHESIS, REFUTED and kept visible (rung 40's convention): this rung was")
+    print("  proposed as 'bleed protects the LP AT THE HP SPOOL'S EXPENSE'. FALSE -- above pi* the")
+    print("  HP flow coefficient RISES too, just 10-100x less; below pi* it falls, by ~1e-4. The")
+    print("  textbook trade is not what the choked two-spool hardware does.")
+    print("\n  NOT claimed: any magnitude (all ride on b, the representative maps and the two")
+    print("  imposed floors); a surge-SURVIVAL claim (E0 vs SM_N needs the transient, deferred);")
+    print("  a bleed SCHEDULE b(n_L); variable stators (they move phi_surge -- still open).")
+    print("  Reduce: bleed=0 => rung 39 bit-for-bit by exact dispatch. Cycle stays rung-6 exact.")
+
 def print_pdf_quench_table(flight):
     """Rung-15 payoff: the PDF THROUGH the finite quench — the two mixing mechanisms COMBINED.
 
@@ -3024,6 +3175,8 @@ def main():
     print_two_shaft_transient_table(FLIGHT)
 
     print_two_spool_surge_table(FLIGHT)
+
+    print_interstage_bleed_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 
