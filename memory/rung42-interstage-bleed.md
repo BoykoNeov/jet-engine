@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: f9d11eca-fdd5-434a-a997-0f554c97a7a1
-  modified: 2026-07-22T16:16:43.587Z
+  modified: 2026-07-22T16:54:39.504Z
 ---
 
 **Rung 42 (shipped 2026-07-22) = the interstage bleed valve** — `TwoSpoolBleedMatcher` in
@@ -46,3 +46,21 @@ on both sides and carries no `b` — so `_hp_eta_loop` is reused **verbatim** an
 Reduce = **exact dispatch** ([[rung38-two-spool-matching]]'s contract, fourth use):
 `bleed == 0.0` forwards `match` to rung 39's verbatim ⇒ bit-for-bit on the fast **and**
 reacting gas; rung 31–41 suites pass unchanged (84/84).
+
+**Two post-commit corrections the advisor caught (fixed in a follow-up commit) — both worth
+generalizing:**
+
+4. **A "first X" claim must be stated in the dimension that is actually new.** I shipped "the
+   first shaft whose compressor and turbine pass **different air**" — **false**: `(1+f)` has
+   made the LPC pass `ṁ₂` and the LPT `ṁ₂(1+f)` since rung 38. The true novelty is that mass
+   **LEAVES** the flowpath (so the two *compressors* differ), not that a flow *changes* along
+   it. This project holds "first X" claims to a high bar (rung 37 scoped its own carefully to
+   the *transient* excess over `(1+f)`), so imprecision here reads as a lapse. **When writing
+   "the first rung where X", name the exact axis and check the nearest prior thing that
+   already looks like X.**
+5. **When a rung breaks a deliberate methodological streak, say so in the spec.** Rungs
+   38/39/40 each ship an independent bare-math CPG cascade *because* their reduce never enters
+   the new code. Rung 42's reduce dispatches away too — but it ships without one. That is
+   defensible (the HP side is anchored transitively; the LP magnitudes are disclaimed and its
+   load-bearing claim is a shape plus an input identity) — but it was defensible **by
+   accident** until written down. **Silent streak-breaks are the thing to catch.**

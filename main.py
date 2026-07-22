@@ -1966,8 +1966,10 @@ def print_interstage_bleed_table(flight):
     """
     print("\nInterstage bleed (rung 42): the device rungs 36 and 41 both deferred, fitted to the")
     print("spool rung 41 showed is exposed. A fraction b is extracted at station 25 and dumped --")
-    print("the project's FIRST steady mass EXTRACTION (one shaft whose compressor and turbine pass")
-    print("different air). Comparison held at FIXED Tt4: the valve sets b, not the throttle.")
+    print("the project's FIRST steady mass EXTRACTION -- the first time mass LEAVES the flowpath,")
+    print("so the two COMPRESSORS pass different air. (NOT 'compressor and turbine differ': (1+f)")
+    print("has done that since rung 2. What is new is mass leaving, not mass changing.)")
+    print("Comparison held at FIXED Tt4: the valve sets b, not the throttle.")
 
     losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
                   eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)

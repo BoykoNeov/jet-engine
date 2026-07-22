@@ -3597,10 +3597,14 @@ class TwoSpoolTransient(TwoSpoolMapMatcher):
 #     LPC pumps  mdot_2            LPT expands  mdot_2*(1-b)*(1+f)
 #     HPC pumps  mdot_2*(1-b)      HPT expands  mdot_2*(1-b)*(1+f)
 #
-# This is the project's first STEADY mass EXTRACTION -- the first shaft whose compressor and
-# turbine pass different air (rung 37's mdot_c != mdot_NGV was transient storage, and the
-# (1+f) fuel addition has been there since rung 1 and is common to both shafts). The split
-# is on the LP shaft ALONE, and that asymmetry is the whole rung.
+# This is the project's first STEADY mass EXTRACTION -- the first time mass LEAVES the
+# flowpath, so the two COMPRESSORS pass different air (mdot_LPC = mdot_2, mdot_HPC =
+# (1-b)*mdot_2). Every prior flow change was fuel ADDITION; rung 37's mdot_c != mdot_NGV was
+# transient storage. Stated precisely because the obvious gloss is WRONG: "the first shaft
+# whose compressor and turbine pass different air" is false -- (1+f) has made the LPC pass
+# mdot_2 and the LPT mdot_2*(1+f) since the two-spool engine was built. The novelty is not a
+# flow CHANGING along the path but mass LEAVING it, and leaving BETWEEN THE TWO COMPRESSORS
+# -- so the split is on the LP shaft ALONE, and that asymmetry is the whole rung.
 #
 # WHERE b ENTERS -- exactly three places, and NOT the fourth:
 #

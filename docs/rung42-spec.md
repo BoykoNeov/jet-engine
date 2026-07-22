@@ -49,10 +49,17 @@ LPC pumps  ṁ₂             LPT expands  ṁ₂(1−b)(1+f)
 HPC pumps  ṁ₂(1−b)        HPT expands  ṁ₂(1−b)(1+f)
 ```
 
-This is the project's first **steady mass EXTRACTION** — the first shaft whose compressor and
-turbine pass **different air**. (Rung 37's `ṁ_c ≠ ṁ_NGV` was *transient storage*; the `(1+f)`
-fuel addition has been there since rung 1 and is common to **both** shafts.) The split is on
-the **LP shaft alone**, and that asymmetry is the whole rung.
+This is the project's first **steady mass EXTRACTION** — the first time mass *leaves* the
+flowpath, so the two **compressors** pass different air (`ṁ_LPC = ṁ₂`, `ṁ_HPC = (1−b)ṁ₂`).
+Every prior flow change was fuel **addition**, and rung 37's `ṁ_c ≠ ṁ_NGV` was *transient
+storage*.
+
+**Stated precisely, because the obvious gloss is wrong.** It is tempting to say "the first
+shaft whose compressor and turbine pass different air" — that is **false**: `(1+f)` has made
+the LPC pass `ṁ₂` and the LPT pass `ṁ₂(1+f)` since the two-spool engine was built. The novelty
+is not that a flow *changes* along the path but that mass *leaves* it, and that it leaves
+**between the two compressors**, so the split is on the **LP shaft alone**. That asymmetry is
+the whole rung.
 
 `b` enters exactly **three** places:
 
@@ -224,6 +231,28 @@ matcher with the valve shut is rung 39 **bit-for-bit** (`==`, verified on the fa
 the reacting gas). Rung 39's `_cascade_map` and `_lp_eta_loop` are left **literally
 unchanged** (the rung-33/39/40 discipline), so the rung-39, rung-40 and rung-41 suites still
 witness them. The default single-spool design run is untouched ⇒ **bit-for-bit rung 6**.
+
+### Why rung 42 carries no independent bare-math gate (a deliberate break in the streak)
+
+Rungs 38, 39 and 40 each ship an **independent bare-math CPG cascade**, for a stated reason:
+their reduce path never enters the new code, so nothing else ties the new numbers down. Rung
+42 is in exactly that position — `bleed = 0` dispatches away, so the `b > 0` cascade has **no
+reduce anchor of its own** — and it deliberately ships **without** one. The reason is that
+the load-bearing content is already anchored by other means:
+
+* **The HP side is anchored transitively, twice.** Gate 2 lands the bled point **on the
+  `b = 0` HP running line** (to 0.01–0.016 %), and that line is exactly what rung 39's own
+  bare-math gate ties down; gate 3 then pins the HP *response* to rung 41's **closed form**,
+  which is independent arithmetic, not this solver.
+* **Every LP-side `b > 0` magnitude is disclaimed** — the `π_LPC` drop, the thrust penalty,
+  the `+8–12 %` displacement all ride on `b` and on the representative maps.
+* **The one load-bearing LP claim is a SHAPE, not a magnitude.** "`Δφ_L` is near-constant
+  while `Δφ_H` collapses" and "`x_L` is exactly invariant" survive a uniform magnitude error;
+  the second is an **identity in the inputs**, checkable by inspection.
+
+Recorded here rather than left implicit, because it *is* a break in a deliberate streak. A
+~30-line bare-math `b > 0` cascade reproducing `(π_LPC, π_HPC, φ_L, φ_H)` would close it, and
+is the natural first addition if any `b > 0` **magnitude** is ever promoted to load-bearing.
 
 ---
 
