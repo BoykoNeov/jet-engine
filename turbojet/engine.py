@@ -2146,3 +2146,402 @@ class CombustorTransient(SpoolTransient):
             nu = nu + ds / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4)
             s += ds
         return dict(theta0="adiabatic", E_surge=E_surge, t_accel=t_accel, nu0=nu0, nu_final=nu_final)
+
+
+# =====================================================================================
+# RUNG 38 — TWO-SPOOL MATCHING: the triangular cascade (no simultaneous solve)
+# =====================================================================================
+#
+# Rungs 31-37 are all single-spool. A two-spool turbojet (no bypass) splits the compression
+# into an LPC/LPT shaft and an HPC/HPT shaft, mechanically independent. The station layout:
+#     0 -> 2 -> 25 -> 3 -> 4 -> 45 -> 5 -> 9
+#          LPC  HPC  burn HPT  LPT  nozzle
+# See docs/rung38-spec.md for the full derivation. THE FINDING: with both turbine NGVs (A4,
+# A45) and the nozzle (A8) choked, the rung-31 (*) mass-flow-compatibility trick applies
+# TWICE, chained: tau_HPT is pinned by (A4, A45) alone, tau_LPT by (A45, A8) alone -- both
+# independent of either compressor. The two shaft balances then TRIANGULARIZE (not a 2x2
+# solve): the LP balance needs only the flight Tt2 and the (now-known) turbine temperatures,
+# so pi_LPC solves stand-alone; the HP balance needs pi_LPC's exit temperature Tt25, so
+# pi_HPC solves onto it. The only feedback between the spools is the shared scalar `f`
+# (weak, equilibrium-gas-only -- the same outer loop rung 31 already runs). This is a
+# NO-COMPRESSOR-MAP model artifact (rung-31-before-rung-32's own shape), not a physical law;
+# "two-spool + maps" would very likely reintroduce the coupling (see the spec's honesty
+# section). Scope: the fully-choked branch ONLY -- nozzle-unchoke is a rung-33-shaped
+# follow-on, deliberately not attempted here (it relocates one throat upstream onto the LP
+# spool and is a genuinely different solve, not a free reuse of `_match_subsonic`).
+
+
+def build_two_spool_turbojet(
+    gas: Gas,
+    pi_lpc: float,
+    pi_hpc: float,
+    Tt4: float,
+    p_ambient: float,
+    *,
+    pi_d: float = 1.0,
+    eta_lpc: float = 1.0,
+    eta_hpc: float = 1.0,
+    eta_b: float = 1.0,
+    pi_b: float = 1.0,
+    eta_hpt: float = 1.0,
+    eta_lpt: float = 1.0,
+    eta_m: float = 1.0,
+    pi_n: float = 1.0,
+    p_exit: float | None = None,
+    nozzle_convergent: bool = False,
+) -> "TwoSpoolEngine":
+    """Factory: wire a plain (no-bypass) two-spool turbojet, LPC+LPT / HPC+HPT.
+
+    Order: Inlet -> LPC -> HPC -> Burner -> HPT -> LPT -> Nozzle (docs/rung38-spec.md).
+    Isentropic knobs only (rung-31 parity; no polytropic e_c/e_t here). Loss parameters
+    default to IDEAL exactly as build_turbojet's do; this factory is a SEPARATE entry
+    point, so it never touches Engine.run or build_turbojet.
+    """
+    components: List[Tuple[str, Component]] = [
+        ("2", Inlet(pi_d)),
+        ("25", Compressor(pi_lpc, eta_lpc)),
+        ("3", Compressor(pi_hpc, eta_hpc)),
+        ("4", Burner(Tt4, eta_b, pi_b)),
+        ("45", Turbine(eta_hpt)),
+        ("5", Turbine(eta_lpt)),
+        ("9", Nozzle(p_ambient, pi_n, p_exit, convergent=nozzle_convergent)),
+    ]
+    return TwoSpoolEngine(gas, components, eta_m=eta_m)
+
+
+class TwoSpoolEngine:
+    """The two-spool design-point cycle: chains the components, closing BOTH shaft balances.
+
+    Deliberately NOT a subclass of Engine, and does not call Engine.run -- so the
+    single-shaft-balance logic every rung-6-and-below cycle depends on is never touched
+    (docs/rung38-spec.md "Reduce-to-prior contract"). Each shaft is closed exactly the way
+    Engine.run closes its one shaft (enthalpy + eta_m balance, then the closure assert),
+    just applied twice: HP (25->3 drives 4->45) and LP (2->25 drives 45->5).
+    """
+
+    def __init__(self, gas: Gas, components: List[Tuple[str, Component]], eta_m: float = 1.0):
+        self.gas = gas
+        self.components = components   # ordered (station_label, component) pairs
+        self.eta_m = eta_m
+        self._fs_engine = Engine(gas, [], eta_m=eta_m)   # freestream reuse only
+
+    def run(self, flight: FlightCondition, mdot: float) -> EngineResult:
+        gas = self.gas
+        state, V0 = self._fs_engine.freestream(flight, mdot)
+        stations: Dict[str, FlowState] = {"0": state}
+        by_label = dict(self.components)
+
+        state = by_label["2"].apply(state, gas); stations["2"] = state
+        state = by_label["25"].apply(state, gas); stations["25"] = state
+        state = by_label["3"].apply(state, gas); stations["3"] = state
+        state = by_label["4"].apply(state, gas); stations["4"] = state
+        f, s4 = state.far, state
+
+        # HP shaft: HPT (station 45) drives the HPC (25 -> 3) ALONE.
+        dh_hpc = gas.h_c(stations["3"].Tt) - gas.h_c(stations["25"].Tt)
+        s45 = by_label["45"].apply(s4, gas, dh_hpc / (self.eta_m * (1.0 + f)))
+        turbine_power_hp = self.eta_m * (1.0 + s45.far) * (
+            gas.h_t(s4.Tt, s45.far) - gas.h_t(s45.Tt, s45.far))
+        assert abs(turbine_power_hp - dh_hpc) < 1e-6 * dh_hpc, "HP shaft does not close"
+        stations["45"] = s45
+
+        # LP shaft: LPT (station 5) drives the LPC (2 -> 25) ALONE.
+        dh_lpc = gas.h_c(stations["25"].Tt) - gas.h_c(stations["2"].Tt)
+        s5 = by_label["5"].apply(s45, gas, dh_lpc / (self.eta_m * (1.0 + f)))
+        turbine_power_lp = self.eta_m * (1.0 + s5.far) * (
+            gas.h_t(s45.Tt, s5.far) - gas.h_t(s5.Tt, s5.far))
+        assert abs(turbine_power_lp - dh_lpc) < 1e-6 * dh_lpc, "LP shaft does not close"
+        stations["5"] = s5
+
+        exit = by_label["9"].apply(s5, gas)
+        stations["9"] = exit.state
+
+        performance = _score(gas, stations, V0, exit.M9, exit.T9, exit.V9, exit.p9,
+                              flight.p0, gas.hPR)
+        return EngineResult(stations=stations, performance=performance, V0=V0,
+                             V9=exit.V9, M9=exit.M9, T9=exit.T9, p9=exit.p9)
+
+
+@dataclass
+class TwoSpoolResult:
+    """One matched two-spool off-design operating point (docs/rung38-spec.md).
+
+    pi_lpc/pi_hpc are OUTPUTS of the triangular cascade, exactly as pi_c is in rung 31's
+    OffDesignResult (which this reduces to bit-for-bit when the LP spool is disabled).
+    """
+
+    stations: Dict[str, FlowState]
+    performance: Performance
+    V0: float
+    V9: float
+    M9: float
+    T9: float
+    p9: float
+    thrust: float          # absolute thrust F = mdot_air * specific_thrust, N
+    Tt4: float              # throttle setting (input)
+    M0: float               # flight Mach (input)
+    pi_lpc: float           # LP compressor pressure ratio -- OUTPUT
+    pi_hpc: float           # HP compressor pressure ratio -- OUTPUT
+    tau_lpc: float          # Tt25/Tt2
+    tau_hpc: float          # Tt3/Tt25
+    tau_hpt: float          # Tt45/Tt4 -- pinned by geometry (*-HP)
+    pi_hpt: float           # pt45/pt4
+    tau_lpt: float          # Tt5/Tt45 -- pinned by geometry (*-LP)
+    pi_lpt: float           # pt5/pt45
+    mdot_air: float         # air mass flow -- OUTPUT (set by the HPT-NGV choke)
+    mdot_ratio: float       # mdot_air / mdot_air_design
+
+
+class TwoSpoolMatcher:
+    """RUNG 38. Two-spool (LPC+HPC, no bypass) off-design matching.
+
+    Usage:
+        design = build_two_spool_turbojet(gas, pi_lpc=3, pi_hpc=6, Tt4=1500, p0,
+                                           **losses, nozzle_convergent=True)
+        matcher = TwoSpoolMatcher(design, FLIGHT_design, mdot_design=1.0)
+        od = matcher.match(FLIGHT_od, Tt4_od)   # -> TwoSpoolResult (pi_lpc, pi_hpc OUTPUTS)
+
+    lp_disabled=True is the REDUCE path (docs/rung38-spec.md "Reduce-to-prior contract"):
+    `design_engine` is then a PLAIN single-spool Engine (from build_turbojet), no LPC/LPT/A45
+    is ever built, and every .match() call is forwarded verbatim to an internally-held
+    OffDesignMatcher -- exact dispatch, not a knob-to-zero limit.
+    """
+
+    _TOL = 1e-13
+    _MAX = 200
+
+    def __init__(self, design_engine, flight_design: FlightCondition,
+                 mdot_design: float = 1.0, lp_disabled: bool = False):
+        if lp_disabled:
+            # Exact dispatch: the two-spool machinery below is never entered.
+            self._degenerate = OffDesignMatcher(design_engine, flight_design, mdot_design)
+            return
+        self._degenerate = None
+
+        self.gas = design_engine.gas
+        self.eta_m = design_engine.eta_m
+        self.flight_design = flight_design
+        self.mdot_air_design = mdot_design
+        self.hf_fuel_molar = getattr(self.gas, "hf_fuel_molar", None)
+
+        by_label = dict(design_engine.components)
+        lpc, hpc = by_label["25"], by_label["3"]
+        burner, hpt, lpt, nozzle = by_label["4"], by_label["45"], by_label["5"], by_label["9"]
+        self.pi_lpc_design, self.eta_lpc, e_lpc = lpc.pi_c, lpc.eta_c, lpc.e_c
+        self.pi_hpc_design, self.eta_hpc, e_hpc = hpc.pi_c, hpc.eta_c, hpc.e_c
+        self.Tt4_design, self.eta_b, self.pi_b = burner.Tt4, burner.eta_b, burner.pi_b
+        self.eta_hpt, e_hpt = hpt.eta_t, hpt.e_t
+        self.eta_lpt, e_lpt = lpt.eta_t, lpt.e_t
+        self.p_ambient, self.pi_n, self.nozzle_convergent = (
+            nozzle.p_ambient, nozzle.pi_n, nozzle.convergent)
+        # Scope: isentropic knobs only (rung-31 parity).
+        assert e_lpc is None and e_hpc is None and e_hpt is None and e_lpt is None, (
+            "rung 38 two-spool matching uses isentropic eta_c/eta_t maps only; "
+            "polytropic is out of scope")
+        assert self.nozzle_convergent, (
+            "rung 38 matching needs the FIXED CONVERGENT nozzle (rung 30): build the design "
+            "engine with nozzle_convergent=True so its throat area A8 is defined")
+
+        pi_d_design = by_label["2"].pi_d
+        self.pi_d_max = pi_d_design / ram_recovery(flight_design.M0)
+
+        # Run the design cycle ONCE to capture the reference state + the THREE throat areas.
+        self.ref = design_engine.run(flight_design, mdot_design)
+        s4, s45, s5 = self.ref.stations["4"], self.ref.stations["45"], self.ref.stations["5"]
+        self.f_design = s4.far
+        gas = self.gas
+        mdot4_R = mdot_design * (1.0 + self.f_design)   # total mass through every throat
+        self.A4 = mdot4_R * s4.Tt ** 0.5 / (s4.pt * choked_mfp(gas, s4.Tt, self.f_design))
+        self.A45 = mdot4_R * s45.Tt ** 0.5 / (s45.pt * choked_mfp(gas, s45.Tt, self.f_design))
+        Tt9_R, pt9_R = s5.Tt, self.pi_n * s5.pt      # Tt9 = Tt5; pt9 = pi_n * pt5
+        self.A8 = mdot4_R * Tt9_R ** 0.5 / (pt9_R * choked_mfp(gas, Tt9_R, self.f_design))
+        self._fs_engine = Engine(gas, [], eta_m=self.eta_m)
+
+    # --- a gas whose station-4 mixture is frozen at THIS trial burn condition ----------
+
+    def _working_gas(self, f: float, Tt4: float, pt4: float) -> Gas:
+        """See OffDesignMatcher._working_gas -- identical need, same solution."""
+        if not self.gas.equilibrium:
+            return self.gas
+        g = Gas.reacting_equilibrium(hf_fuel_molar=self.hf_fuel_molar)
+        g.freeze_equilibrium(f, Tt4, pt4)
+        return g
+
+    # --- the shared (*) mechanism: one choked-throat-pair pins one turbine's tau ------
+
+    def _solve_choked_turbine(self, gas: Gas, Tt_in: float, f: float,
+                              A_in: float, A_out: float, pi_loss: float,
+                              eta: float) -> Tuple[float, float, float]:
+        """Bisect pi_t so pi_t/sqrt(tau_t) = A_in*MFP(Tt_in)/(A_out*pi_loss*MFP(Tt_out)).
+
+        THE (*) TRICK (docs/rung38-spec.md), parameterized so it serves BOTH turbines:
+        (*-HP) is A_in=A4, A_out=A45, pi_loss=1 (no loss modeled in the inter-turbine
+        duct); (*-LP) is A_in=A45, A_out=A8, pi_loss=pi_n (the nozzle's real loss).
+        Same monotone bracket/tolerance as OffDesignMatcher._solve_turbine. Returns
+        (pi_t, tau_t, Tt_out).
+        """
+        MFP_in = choked_mfp(gas, Tt_in, f)
+
+        def tau_of(pi_t: float) -> Tuple[float, float]:
+            Tt_outs = gas.T_from_pr_t(gas.pr_t(Tt_in, f) * pi_t, f)
+            dh_ideal = gas.h_t(Tt_in, f) - gas.h_t(Tt_outs, f)
+            Tt_out = gas.T_from_h_t(gas.h_t(Tt_in, f) - eta * dh_ideal, f)
+            return Tt_out / Tt_in, Tt_out
+
+        def resid(pi_t: float) -> float:
+            tau_t, Tt_out = tau_of(pi_t)
+            MFP_out = choked_mfp(gas, Tt_out, f)
+            rhs = A_in * MFP_in / (A_out * pi_loss * MFP_out)
+            return pi_t / tau_t ** 0.5 - rhs
+
+        lo, hi = 0.02, 0.999
+        flo, fhi = resid(lo), resid(hi)
+        assert flo < 0.0 < fhi, "rung-38 turbine choke-match bracket does not straddle the root"
+        for _ in range(self._MAX):
+            mid = 0.5 * (lo + hi)
+            fm = resid(mid)
+            if flo * fm <= 0.0:
+                hi = mid
+            else:
+                lo, flo = mid, fm
+            if hi - lo <= self._TOL:
+                break
+        pi_t = 0.5 * (lo + hi)
+        tau_t, Tt_out = tau_of(pi_t)
+        return pi_t, tau_t, Tt_out
+
+    # --- the burner f-solve (reuses the shipped burner formulas) -----------------------
+
+    def _solve_f(self, Tt3: float, pt4: float, Tt4: float) -> float:
+        gas = self.gas
+        if gas.equilibrium:
+            return Burner(Tt4, self.eta_b, self.pi_b)._solve_equilibrium(Tt3, pt4, gas)
+        h3 = gas.h_c(Tt3)
+        f = 0.0
+        for _ in range(self._MAX):
+            h4 = gas.h_t(Tt4, f)
+            f_new = (h4 - h3) / (self.eta_b * gas.hPR - h4)
+            if abs(f_new - f) <= self._TOL * (f_new + 1e-30):
+                return f_new
+            f = f_new
+        raise AssertionError("rung-38 off-design burner f did not converge")
+
+    # --- the triangular cascade at a FIXED (Tt2, Tt4, f) --------------------------------
+
+    def _cascade(self, wgas: Gas, Tt2: float, Tt4: float, f: float) -> dict:
+        """Steps 1-4 of docs/rung38-spec.md, at a FIXED scalar f (the one shared state).
+
+        Exposed as its own method (rather than inlined in match()'s loop) so the
+        triangularity finding is directly testable: Step 3 (pi_lpc) below reads ONLY
+        self.eta_lpc/A45/A8/eta_lpt/eta_m and (Tt2, Tt4, f) -- never self.eta_hpc or
+        self.pi_hpc_design. That is a code-level guarantee, not just a numerical
+        coincidence (docs/rung38-spec.md gate 3).
+        """
+        # Step 1 (*-HP): tau_HPT from (A4, A45) alone.
+        pi_hpt, tau_hpt, Tt45 = self._solve_choked_turbine(
+            wgas, Tt4, f, self.A4, self.A45, 1.0, self.eta_hpt)
+        # Step 2 (*-LP): tau_LPT from (A45, A8) alone -- needs the nozzle choked.
+        pi_lpt, tau_lpt, Tt5 = self._solve_choked_turbine(
+            wgas, Tt45, f, self.A45, self.A8, self.pi_n, self.eta_lpt)
+
+        # Step 3: LP shaft balance -> pi_LPC. NO reference to the HP spool.
+        dh_lpt = self.eta_m * (1.0 + f) * (wgas.h_t(Tt45, f) - wgas.h_t(Tt5, f))
+        Tt25 = wgas.T_from_h_c(wgas.h_c(Tt2) + dh_lpt)
+        h2, h25 = wgas.h_c(Tt2), wgas.h_c(Tt25)
+        Tt25s = wgas.T_from_h_c(h2 + self.eta_lpc * (h25 - h2))
+        pi_lpc = wgas.pr_c(Tt25s) / wgas.pr_c(Tt2)
+
+        # Step 4: HP shaft balance -> pi_HPC. Needs Tt25, just solved in Step 3.
+        dh_hpt = self.eta_m * (1.0 + f) * (wgas.h_t(Tt4, f) - wgas.h_t(Tt45, f))
+        Tt3 = wgas.T_from_h_c(wgas.h_c(Tt25) + dh_hpt)
+        h25b, h3 = wgas.h_c(Tt25), wgas.h_c(Tt3)
+        Tt3s = wgas.T_from_h_c(h25b + self.eta_hpc * (h3 - h25b))
+        pi_hpc = wgas.pr_c(Tt3s) / wgas.pr_c(Tt25)
+
+        return dict(pi_hpt=pi_hpt, tau_hpt=tau_hpt, Tt45=Tt45, pi_lpt=pi_lpt, tau_lpt=tau_lpt,
+                    Tt5=Tt5, pi_lpc=pi_lpc, Tt25=Tt25, pi_hpc=pi_hpc, Tt3=Tt3)
+
+    # --- match one operating point -----------------------------------------------------
+
+    def match(self, flight: FlightCondition, Tt4: float):
+        """Match the two-spool engine at (flight, Tt4). pi_lpc, pi_hpc are OUTPUTS.
+
+        lp_disabled -> forwards to the held OffDesignMatcher (returns an OffDesignResult).
+        Otherwise runs the triangular cascade (docs/rung38-spec.md) and returns a
+        TwoSpoolResult. Scope: the nozzle must stay choked (see the spec's "Scope" section);
+        unchoke raises rather than mis-solving.
+        """
+        if self._degenerate is not None:
+            return self._degenerate.match(flight, Tt4)
+
+        gas = self.gas
+        pi_d = self.pi_d_max * ram_recovery(flight.M0)
+        state0, V0 = self._fs_engine.freestream(flight, self.mdot_air_design)
+        Tt2, pt2 = state0.Tt, pi_d * state0.pt
+
+        # JOINT fixed point on the scalar (f, pt4) -- the ONE place the two spools share
+        # state (docs/rung38-spec.md "the one place the spools still talk"). Everything
+        # else below is the triangular cascade, no 2x2 solve.
+        f, pt4 = self.f_design, self.pi_b * self.pi_hpc_design * self.pi_lpc_design * pt2
+        c = None
+        for _ in range(self._MAX):
+            wgas = self._working_gas(f, Tt4, pt4)
+            c = self._cascade(wgas, Tt2, Tt4, f)
+
+            pt4_new = self.pi_b * c["pi_hpc"] * c["pi_lpc"] * pt2
+            f_new = self._solve_f(c["Tt3"], pt4_new, Tt4)
+            done = (abs(f_new - f) <= self._TOL * (f_new + 1e-30)
+                    and abs(pt4_new - pt4) <= self._TOL * pt4_new)
+            f, pt4 = f_new, pt4_new
+            if done:
+                break
+
+        pi_lpc, pi_hpc = c["pi_lpc"], c["pi_hpc"]
+        pi_hpt, pi_lpt = c["pi_hpt"], c["pi_lpt"]
+        tau_hpt, tau_lpt = c["tau_hpt"], c["tau_lpt"]
+        Tt3 = c["Tt3"]
+        assert pi_lpc > 1.0 and pi_hpc > 1.0 and 0.0 < tau_hpt < 1.0 and 0.0 < tau_lpt < 1.0, (
+            "rung-38 two-spool match unphysical")
+
+        wgas = self._working_gas(f, Tt4, pt4)
+        mdot4 = self.A4 * pt4 * choked_mfp(wgas, Tt4, f) / Tt4 ** 0.5
+        mdot_air = mdot4 / (1.0 + f)
+
+        # Rebuild FORWARD with the real components -- fires every shipped conservation
+        # assert (both compressors/burner/both turbines/nozzle), exactly rung 31's discipline.
+        rgas = Gas.reacting_equilibrium(hf_fuel_molar=self.hf_fuel_molar) \
+            if self.gas.equilibrium else self.gas
+        state0, V0 = self._fs_engine.freestream(flight, mdot_air)
+        s2 = Inlet(pi_d).apply(state0, rgas)
+        s25 = Compressor(pi_lpc, self.eta_lpc).apply(s2, rgas)
+        s3 = Compressor(pi_hpc, self.eta_hpc).apply(s25, rgas)
+        s4 = Burner(Tt4, self.eta_b, self.pi_b).apply(s3, rgas)
+        dh_hpt_reb = (rgas.h_c(s3.Tt) - rgas.h_c(s25.Tt)) / (self.eta_m * (1.0 + s4.far))
+        s45 = Turbine(self.eta_hpt).apply(s4, rgas, dh_hpt_reb)
+        dh_lpt_reb = (rgas.h_c(s25.Tt) - rgas.h_c(s2.Tt)) / (self.eta_m * (1.0 + s4.far))
+        s5 = Turbine(self.eta_lpt).apply(s45, rgas, dh_lpt_reb)
+        nozzle = Nozzle(self.p_ambient, self.pi_n, convergent=True)
+        exit = nozzle.apply(s5, rgas)
+        nozzle_choked = exit.p9 > self.p_ambient + 1e-6
+
+        # SCOPE GUARD (docs/rung38-spec.md "Scope"): unchoke relocates rung 33's inversion
+        # one throat upstream onto the LP spool -- a genuinely different solve, not built
+        # here. Flag, don't lie.
+        assert nozzle_choked, (
+            f"rung-38 two-spool match at Tt4={Tt4:.0f}, M0={flight.M0:.2f}: nozzle UNCHOKED "
+            "-- OUT OF SCOPE (docs/rung38-spec.md 'Scope'). The LP turbine's geometric tau_LPT "
+            "pin (*-LP) is only valid while the nozzle stays choked; a rung-33-shaped follow-on "
+            "would resolve the LP spool's own subsonic branch.")
+
+        stations = {"0": state0, "2": s2, "25": s25, "3": s3, "4": s4, "45": s45,
+                    "5": s5, "9": exit.state}
+        perf = _score(rgas, stations, V0, exit.M9, exit.T9, exit.V9, exit.p9,
+                      flight.p0, rgas.hPR)
+        thrust = mdot_air * perf.specific_thrust
+        return TwoSpoolResult(
+            stations=stations, performance=perf, V0=V0, V9=exit.V9, M9=exit.M9,
+            T9=exit.T9, p9=exit.p9, thrust=thrust, Tt4=Tt4, M0=flight.M0,
+            pi_lpc=pi_lpc, pi_hpc=pi_hpc, tau_lpc=s25.Tt / s2.Tt, tau_hpc=s3.Tt / s25.Tt,
+            tau_hpt=tau_hpt, pi_hpt=pi_hpt, tau_lpt=tau_lpt, pi_lpt=pi_lpt,
+            mdot_air=mdot_air, mdot_ratio=mdot_air / self.mdot_air_design,
+        )

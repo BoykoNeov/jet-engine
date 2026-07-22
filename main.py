@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 from turbojet.engine import (  # noqa: E402
     FlightCondition, build_turbojet, OffDesignMatcher, MapMatcher, ComponentMap, SpoolTransient,
-    CombustorTransient,
+    CombustorTransient, build_two_spool_turbojet, TwoSpoolMatcher,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -1508,6 +1508,80 @@ def print_combustor_dynamics_table(flight):
     print("  == rung 35 (Q=0 at steady). Sign shape/knob-robust; magnitudes disclaimed. Cycle: rung-6 exact.")
 
 
+def print_two_spool_matching_table(flight):
+    """Rung 38 — TWO-SPOOL MATCHING: the triangular cascade (no simultaneous solve).
+
+    Rungs 31-37 are all single-spool. A two-spool turbojet (LPC+LPT / HPC+HPT, no bypass) adds a
+    THIRD choked throat that does not exist in any single-spool rung: the LP-turbine NGV (the
+    inter-turbine duct, station 45, area A45), between the HP turbine's exit and the LP turbine's
+    inlet. With all three throats (A4, A45, A8) choked, rung 31's (*) mass-flow trick applies
+    TWICE, chained: tau_HPT is pinned by (A4, A45) alone, tau_LPT by (A45, A8) alone -- both
+    independent of either compressor. THE FINDING (corrected from an initial over-claim -- see
+    docs/rung38-spec.md "the precise claim"): this is NOT "the LP spool solves independent of the
+    HP spool" (eta_HPT demonstrably moves pi_LPC, since it shapes the shared Tt45). What IS airtight
+    is narrower: each compressor's OWN isentropic efficiency is a terminal leaf that cannot reach the
+    OTHER spool's pressure ratio -- so the two compressor ratios are never bound by a joint (2x2)
+    solve, a NO-COMPRESSOR-MAP model artifact (rung-31-before-rung-32's own shape). Scope: fully-
+    choked branch only; nozzle-unchoke is a rung-33-shaped follow-on, deliberately not attempted.
+    """
+    print("\nTwo-spool matching (rung 38): a THIRD choked throat (the LP-turbine NGV, A45) appears --")
+    print("rung 31's (*) mass-flow trick chains TWICE: tau_HPT from (A4,A45), tau_LPT from (A45,A8),")
+    print("both independent of either compressor. The two compressor RATIOS are not a 2x2 solve.")
+
+    gas = Gas.reacting_equilibrium()
+    pi_lpc, pi_hpc = 3.0, 6.0
+    two_spool_losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                            eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    design = build_two_spool_turbojet(gas, pi_lpc, pi_hpc, TT4, flight.p0,
+                                      nozzle_convergent=True, **two_spool_losses)
+    m = TwoSpoolMatcher(design, flight, 1.0)
+
+    print(f"\n  Running line (M0={flight.M0}), design pi_LPC={pi_lpc}, pi_HPC={pi_hpc}:")
+    print(f"  {'Tt4 [K]':>7} {'pi_LPC':>8} {'pi_HPC':>8} {'tau_HPT':>9} {'tau_LPT':>9} {'mdot/mdot_R':>11} {'F/mdot':>8}")
+    print("  " + "-" * 68)
+    for Tt4 in (1500.0, 1300.0, 1100.0, 900.0, 700.0):
+        od = m.match(flight, Tt4)
+        print(f"  {Tt4:>7.0f} {od.pi_lpc:>8.4f} {od.pi_hpc:>8.4f} {od.tau_hpt:>9.6f} {od.tau_lpt:>9.6f} "
+              f"{od.mdot_ratio:>11.4f} {od.performance.specific_thrust:>8.1f}")
+    try:
+        m.match(flight, 600.0)
+    except AssertionError:
+        print("  600      nozzle UNCHOKES here -- OUT OF SCOPE (flagged, not solved; rung-33-shaped follow-on)")
+
+    # THE FINDING — measured directly on the cascade, at a FIXED (Tt2, Tt4, f) so the outer
+    # f-loop's own (separately disclosed) cross-talk cannot confound the reading.
+    state0, _ = m._fs_engine.freestream(flight, m.mdot_air_design)
+    Tt2, pt2 = state0.Tt, m.pi_d_max * state0.pt
+    f = 0.02
+    pt4 = m.pi_b * m.pi_hpc_design * m.pi_lpc_design * pt2
+    wgas = m._working_gas(f, TT4, pt4)
+    base = m._cascade(wgas, Tt2, TT4, f)
+
+    def perturbed(attr, value):
+        saved = getattr(m, attr)
+        setattr(m, attr, value)
+        c = m._cascade(wgas, Tt2, TT4, f)
+        setattr(m, attr, saved)
+        return c["pi_lpc"] != base["pi_lpc"], c["pi_hpc"] != base["pi_hpc"]
+
+    print("\n  THE FINDING — perturb ONE component parameter at fixed (Tt2, Tt4, f); does pi_LPC / pi_HPC move?")
+    print(f"  {'parameter':>10} {'moves pi_LPC?':>14} {'moves pi_HPC?':>14}  role")
+    print("  " + "-" * 62)
+    for attr, label, role in (
+        ("eta_hpc", "eta_HPC", "HP compressor's OWN pressure-inversion leaf"),
+        ("eta_lpc", "eta_LPC", "LP compressor's OWN pressure-inversion leaf"),
+        ("eta_hpt", "eta_HPT", "energy-path (shapes the shared Tt45)"),
+        ("eta_lpt", "eta_LPT", "energy-path (shapes the shared Tt25 via Tt5)"),
+    ):
+        moves_lpc, moves_hpc = perturbed(attr, 0.55)
+        print(f"  {label:>10} {str(moves_lpc):>14} {str(moves_hpc):>14}  {role}")
+    print("  Each compressor's OWN efficiency is a dead end for the OTHER spool -- so the two")
+    print("  compressor ratios are never a joint (2x2) solve. This is narrower than 'the spools")
+    print("  don't talk' (eta_HPT/eta_LPT legitimately move BOTH -- an initial over-claim, corrected).")
+    print("  Reduce: lp_disabled=True dispatches (not limits) to rung 31's OffDesignMatcher bit-for-bit.")
+    print("  Scope: isentropic knobs only, no compressor maps yet; cycle stays rung-6 exact.")
+
+
 def print_pdf_quench_table(flight):
     """Rung-15 payoff: the PDF THROUGH the finite quench — the two mixing mechanisms COMBINED.
 
@@ -2572,6 +2646,8 @@ def main():
     print_surge_line_table(FLIGHT)
 
     print_combustor_dynamics_table(FLIGHT)
+
+    print_two_spool_matching_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 
