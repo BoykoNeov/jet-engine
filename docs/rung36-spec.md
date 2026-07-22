@@ -60,6 +60,20 @@ that. Only a **trend / sign** can. It does survive, for a structural reason:
 > hardware** (rung 31/32), *not* by the imposed floor. The floor cannot flip a sign it does not
 > control.
 
+> **CORRECTED BY RUNG 41 — the verdict stands, the attribution does not** (`docs/rung41-spec.md`
+> § "The cross-rung CORRECTION of rung 36"). The trend is **not** set by `φ_op` alone. `φ_op` is
+> not even monotone: it **turns around** at the closed-form pressure ratio
+> `π_c* = γ_c^(γ_c/(γ_c−1)) ≈ 3.25`, and for *this* `π_c = 10` engine that turn sits at
+> `Tt4 ≈ 620` — **inside this rung's own choked envelope**, just below the bottom of the range
+> plotted here. Freezing one coordinate at a time (`SpoolTransient.surge_margin_channels`)
+> shows **two comparable channels**: the `φ`-walk above (~56 % of the log-decay) *and* the
+> **speed line flattening** (`τ_c−1 ∝ n²`, ~48 %) — and below `π_c*` the `φ` channel
+> **reverses** while the speed-line channel keeps consuming margin. **The conclusion of this
+> section is untouched**: both channels are choked-hardware-determined, hence floor-independent,
+> so the sign really is robust to the imposed `φ_surge`, and `SM_N` really is monotone-thin at
+> low power (re-measured past the turn — no gate here changes). Only the single-channel *reason*
+> was wrong.
+
 Measured (fast `thermally_perfect` gas): across **3 map shapes × imposed `φ_surge ∈ {0.55,…,0.75}`
 × a speed-slope `k` on `φ_surge(n)` including negative `k`** — every cell gives **the same sign**,
 `SM` thin at low power. And it holds under **both** margin definitions (constant-speed and the
@@ -108,8 +122,10 @@ that absurd high-power extrapolation coming back to earth. **Constant-speed carr
 ## The finding: the SM schedule is thin at low power — and BOTH acceleration axes agree the low-power burst is worst (confirmation + sharpening, NOT relocation)
 
 **The headline is the schedule itself.** `SM_N(Tt4)` is thin at part power (widest at design), and
-the sign of that schedule is **robust to the imposed `φ_surge`** because it rides on the choke-pinned
-`φ_op(Tt4)`, not the floor. That is the new, structural, load-bearing result — a surge-margin object
+the sign of that schedule is **robust to the imposed `φ_surge`** because it rides on the
+choke-pinned running line, not the floor. (Rung 41 corrects *which* choke-pinned quantity: the
+`φ_op` walk **and** the speed-line flattening, in comparable measure — see the correction box
+above. The robustness argument is unaffected, since both are floor-independent.) That is the new, structural, load-bearing result — a surge-margin object
 the cycle did not previously carry — together with the **currency equivalence** below.
 
 The **compounding with the excursion** is a **sharpening**, not a relocation. For a full-throttle

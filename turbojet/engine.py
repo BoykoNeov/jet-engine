@@ -1761,6 +1761,59 @@ class SpoolTransient(MapMatcher):
                     phi_step=phi_step, phi_surge=cmap.phi_surge,
                     phi_step_le_surge=phi_step <= cmap.phi_surge)
 
+    # === RUNG 41 (the correction of rung 36's stated MECHANISM). ===
+    # Rung 36 shipped the right verdict -- SM_N is monotone-thin at low power -- with a
+    # SINGLE-CHANNEL attribution: "the trend is set by phi_op(Tt4), the running-line flow
+    # coefficient." Rung 41 finds that phi_op is NOT monotone: it TURNS AROUND at the
+    # closed-form pressure ratio pi* = gamma_c^(gamma_c/(gamma_c-1)) (TwoSpoolMapMatcher.
+    # critical_flow_turn_pi), and for a pi_c=10 single spool that turn sits INSIDE rung 36's
+    # own choked envelope. The margin nonetheless keeps thinning, so the attribution cannot
+    # be the whole story. Freezing one coordinate at a time separates the two channels:
+    #
+    #   phi-WALK channel   : n frozen at design, phi_op(Tt4) live  -- rung 36's stated cause
+    #   SPEED-LINE channel : phi frozen at design, n(Tt4) live     -- tau_c-1 ~ n^2, so the
+    #                        pi_c gap between the running line and the floor COLLAPSES with n
+    #
+    # Measured (docs/rung41-spec.md): the two are COMPARABLE (~53%/47% of the log-decay), and
+    # BELOW pi* the phi channel REVERSES while the speed channel keeps thinning -- so at deep
+    # throttle the speed line is the only channel still consuming margin. Rung 36's CONCLUSION
+    # is untouched (both channels are choked-hardware-determined, hence floor-independent: its
+    # sign-robustness argument survives); only its single-channel reason is corrected.
+
+    def surge_margin_channels(self, flight: FlightCondition, Tt4: float,
+                              cmap: "ComponentMap | None" = None,
+                              Tt4_ref: float | None = None) -> dict:
+        """RUNG 41. Decompose rung 36's SM_N(Tt4) into its phi-walk and speed-line channels.
+
+        Each channel freezes ONE running-line coordinate at its value at Tt4_ref (the design
+        Tt4 by default) and lets the other move, re-evaluating the SAME `_pi_c_map` arithmetic
+        the shipped margin uses. The product of the two channel decays reproduces the full
+        decay up to a small interaction term -- the decomposition is diagnostic, not exact.
+        """
+        cmap = cmap if cmap is not None else self.comp_map
+        assert cmap.phi_surge > 0.0, (
+            "surge_margin_channels needs a surge line: build the map with .with_phi_surge(.).")
+        ref = self.equilibrium(flight, float(Tt4_ref if Tt4_ref is not None else self.Tt4_d),
+                               cmap)
+        n_d, phi_d = ref["n"], ref["flowcoef"]
+
+        eq = self.equilibrium(flight, float(Tt4), cmap)
+        assert eq["branch"] == "choked", (
+            f"surge-margin channels are a choked-branch diagnostic; Tt4={Tt4:.0f} is "
+            f"{eq['branch']}.")
+        n, phi, Tt2 = eq["n"], eq["flowcoef"], eq["Tt2"]
+        phi_s = cmap.phi_surge
+
+        def sm(n_use: float, phi_use: float) -> float:
+            return (self._pi_c_map(cmap, n_use, phi_s, Tt2)
+                    / self._pi_c_map(cmap, n_use, phi_use, Tt2) - 1.0)
+
+        return dict(Tt4=float(Tt4), n=n, phi_op=phi, pi_c=eq["pi_c"],
+                    SM_N=sm(n, phi),            # the shipped rung-36 margin
+                    SM_phi_walk=sm(n_d, phi),   # n frozen at design: rung 36's stated cause
+                    SM_speed_line=sm(n, phi_d),  # phi frozen at design: the omitted cause
+                    SM_ref=sm(n_d, phi_d))
+
 
 class CombustorTransient(SpoolTransient):
     """RUNG 37. The two INTERNAL clocks rung 34 bundled into one concession — split by physics.
@@ -2843,6 +2896,221 @@ class TwoSpoolMapMatcher(TwoSpoolMatcher):
             N_hp_ratio=c["NH"], slip=c["slip"], phi_lp=c["phi_L"], phi_hp=c["phi_H"],
             nu_hpt=c["nu_hpt"], nu_lpt=c["nu_lpt"],
         )
+
+    # ==================================================================================
+    # RUNG 41 — THE TWO-SPOOL SURGE LINE: the exposure SPLITS between the spools
+    # ==================================================================================
+    #
+    # Rung 36 drew a surge line on ONE compressor and found the margin thin at low power.
+    # Rungs 39/40 both closed by naming the two-spool surge line as an open seam: "rung
+    # 36's machinery is single-spool -- and now there are TWO compressors." Rung 41 draws
+    # it on both, and the object it exposes is a SPLIT with a structural cause.
+    #
+    # THE SPLIT. Rung 39's (dagger) cancellation is what does it. The HP compressor's face
+    # sees ONLY its own pressure ratio -- pt4/pt25 = pi_b*pi_HPC, pi_LPC cancels -- so with
+    # the HPT NGV choked its corrected flow, its speed line and hence its flow coefficient
+    # close on the SINGLE internal ratio x_H = Tt4/Tt25:
+    #
+    #     tau_HPC - 1 = K * x_H          (HP shaft balance + geometric tau_HPT)
+    #     n_H^2 * psi(phi_H) = x_H/x_H,d (speed line)
+    #     m_H  ~  pi_HPC / sqrt(x_H)     (the choke, MFP* being Tt-independent on CPG)
+    #
+    # Three equations, one parameter. So the HP running line is ONE CURVE in its own map,
+    # with NO flight-condition dependence at all -- and x_H is an INTERNAL ratio whose
+    # denominator Tt25 tracks Tt4, so it spans a narrow range. The LP face carries the
+    # PRODUCT pi_LPC*pi_HPC (rung 39's (ddagger)) and rides x_L = Tt4/Tt2, whose denominator
+    # is FIXED by the flight condition -- a wide range, two pressure ratios' worth of
+    # sensitivity. Measured over a 2:1 throttle: phi_L falls ~34%, phi_H ~7%. The LP
+    # compressor takes essentially the whole excursion; the HP is shielded.
+    #
+    # THE CLOSED FORM (the live zero-new-constant anchor rung 36's DEAD one never got --
+    # its loading-law-peak criterion landed at phi < 0). phi ~ pi(x)/x on a face facing a
+    # choked NGV, with pi = [1 + eta_c*(tau_c-1)]^k, k = gamma_c/(gamma_c-1). Stationarity
+    # d(phi)/dx = 0 gives k*eta*K*x = 1 + eta*K*x, i.e. 1 + eta*K*x = k/(k-1) = gamma_c:
+    #
+    #     (star)   1 + eta_c*(tau_c - 1) = gamma_c   <=>   pi_c* = gamma_c^(gamma_c/(gamma_c-1))
+    #
+    # eta_c, K, cp_t/cp_c, tau_HPT and the design pressure-ratio split ALL drop out: pi_c*
+    # depends on gamma_c ALONE (= 3.2467 at gamma_c = 1.4). Exact in the f-frozen limit; the
+    # measured turn sits +0.44% high in the (star) form and the WHOLE residual is the fuel
+    # fraction (kill test: hPR x1000 => f -> 1e-5 => the offset vanishes, linearly in f).
+    #
+    # WHAT (star) IS AND IS NOT. It is the stationary point of the running-line FLOW
+    # COEFFICIENT -- an incidence/geometry fact. It is NOT a minimum of the surge margin:
+    # SM_N keeps falling past it on BOTH spools and every sampled shape, because the speed
+    # line FLATTENS (tau_c-1 ~ n^2) and that channel does not reverse. The worst pressure-
+    # ratio margin is still at idle (rung 36's verdict, confirmed on two spools). That
+    # divergence is the payoff, not a caveat: rung 36's currency equivalence
+    # (E0 >= SM_N <=> phi_step <= phi_surge) is a CONSTANT-SPEED statement, and along a
+    # varying-speed running line flow-coefficient proximity and pressure-ratio margin are
+    # DIFFERENT SCHEDULES. See SpoolTransient.surge_margin_channels for the correction of
+    # rung 36's stated mechanism that follows from it. (star) is SURFACED by the two-spool
+    # work, not created by it -- it holds for a single spool too, inside rung 36's own
+    # choked envelope; the HP compressor is simply a compressor whose design pressure ratio
+    # sits near pi*. See docs/rung41-spec.md.
+
+    def critical_flow_turn_pi(self) -> float:
+        """(star): the pressure ratio at which a choked-NGV compressor's running-line flow
+        coefficient is STATIONARY -- pi_c* = gamma_c^(gamma_c/(gamma_c-1)), gamma_c ALONE.
+
+        A CPG statement (it uses the cold-section gamma as a constant) and a flat-map one
+        (psi == 1, eta constant); on shaped maps and on a variable-cp gas it shifts by a few
+        percent -- disclaimed, rung-32 methodology. Below pi* a throttled face walks AWAY
+        from surge in flow coefficient; above it, toward.
+        """
+        g = self.gas.gamma_c
+        return g ** (g / (g - 1.0))
+
+    def _pi_c_spool(self, cmap: "ComponentMap", tau_d: float, eta_base: float,
+                    n: float, phi: float, Tt_in: float) -> float:
+        """Rung 36's `_pi_c_map`, parameterized by spool: the compressor pressure ratio at an
+        ARBITRARY map point (n, phi), using the SAME forward speed-line + efficiency-island
+        arithmetic `_hp_eta_loop`/`_lp_eta_loop` use. At the operating (n, phi) it reproduces
+        the shipped pi bit-for-bit on each spool (the gate: two code paths, one pi)."""
+        tau = 1.0 + (tau_d - 1.0) * cmap.psi(phi) * n * n
+        assert tau > 1.0, (
+            f"surge-margin map point does no work (tau<=1) at n={n:.4f}, phi={phi:.4f} — "
+            f"phi below the loading-law positive-work edge.")
+        Tt_out = Tt_in * tau
+        eta = cmap.eta_c_at(eta_base, phi, n)
+        h_in, h_out = self.gas.h_c(Tt_in), self.gas.h_c(Tt_out)
+        Tts = self.gas.T_from_h_c(h_in + eta * (h_out - h_in))
+        return self.gas.pr_c(Tts) / self.gas.pr_c(Tt_in)
+
+    def surge_margin(self, flight: FlightCondition, Tt4: float) -> dict:
+        """Constant-speed surge margin on BOTH spools at the running-line point for Tt4.
+
+            SM = pi_c(n0, phi_surge)/pi_c,op - 1        on each spool's own speed line n0
+
+        Rung 36's primary currency (what a frozen-spool fuel step consumes), doubled. Each
+        spool reads the stall flow coefficient off its OWN map (`map_lp.phi_surge`,
+        `map_hp.phi_surge`) -- TWO imposed constants now, the disclosed cost doubled. Every
+        margin MAGNITUDE is disclaimed; what is load-bearing is the SPLIT (phi_L takes the
+        excursion, phi_H is shielded and bounded) and, at matched map shapes + a common floor,
+        the COLLAPSE of the RATIO SM_L/SM_H with throttle. Note the ORDERING's level is partly
+        a design-split artifact -- SM_L < SM_H already holds at the design point because
+        pi_LPC < pi_HPC, not because the LP is more exposed there; only the ratio's fall is a
+        running-line statement, and the absolute gap is NOT monotone (it peaks mid-throttle,
+        both margins tending to zero)."""
+        ml, mh = self.map_lp, self.map_hp
+        assert ml.phi_surge > 0.0 and mh.phi_surge > 0.0, (
+            "two-spool surge_margin needs a surge line on BOTH maps: build each with "
+            ".with_phi_surge(phi_surge).")
+        od = self.match(flight, float(Tt4))
+        Tt2, Tt25 = od.stations["2"].Tt, od.stations["25"].Tt
+        assert ml.phi_surge < od.phi_lp and mh.phi_surge < od.phi_hp, (
+            f"steady point already at/over surge at Tt4={Tt4:.0f}: phi=({od.phi_lp:.4f},"
+            f"{od.phi_hp:.4f}) vs floors ({ml.phi_surge:.4f},{mh.phi_surge:.4f}).")
+        sl = self._pi_c_spool(ml, self.tau_lpc_d, self.eta_lpc, od.n_lp, ml.phi_surge, Tt2)
+        sh = self._pi_c_spool(mh, self.tau_hpc_d, self.eta_hpc, od.n_hp, mh.phi_surge, Tt25)
+        SM_lp, SM_hp = sl / od.pi_lpc - 1.0, sh / od.pi_hpc - 1.0
+        return dict(Tt4=float(Tt4), x_lp=Tt4 / Tt2, x_hp=Tt4 / Tt25,
+                    phi_lp=od.phi_lp, phi_hp=od.phi_hp, n_lp=od.n_lp, n_hp=od.n_hp,
+                    pi_lpc=od.pi_lpc, pi_hpc=od.pi_hpc, slip=od.slip,
+                    SM_lp=SM_lp, SM_hp=SM_hp,
+                    binding="lp" if SM_lp <= SM_hp else "hp")
+
+    def _pi_c_spool_shipped(self, od, spool: str) -> float:
+        """The `_pi_c_spool` reproduction of the SHIPPED pi at the operating point (the
+        reduce gate: the margin is measured on the very map that sets the running line)."""
+        if spool == "lp":
+            return self._pi_c_spool(self.map_lp, self.tau_lpc_d, self.eta_lpc,
+                                    od.n_lp, od.phi_lp, od.stations["2"].Tt)
+        return self._pi_c_spool(self.map_hp, self.tau_hpc_d, self.eta_hpc,
+                                od.n_hp, od.phi_hp, od.stations["25"].Tt)
+
+    def surge_margin_schedule(self, flight: FlightCondition, Tt4_grid) -> list:
+        """[surge_margin(Tt4)] along the running line, skipping points off the choked branch."""
+        out = []
+        for Tt4 in Tt4_grid:
+            try:
+                out.append(self.surge_margin(flight, float(Tt4)))
+            except AssertionError:
+                continue
+        return out
+
+    def running_line_map(self, flight: FlightCondition, Tt4_grid) -> list:
+        """The two running lines in map coordinates -- (x, phi, n, pi) per spool. The object
+        behind the SPLIT and behind the flight-collapse gate (phi_H collapses on x_H = Tt4/Tt25
+        across flight conditions; phi_L rides x_L = Tt4/Tt2 and does not)."""
+        out = []
+        for Tt4 in Tt4_grid:
+            try:
+                od = self.match(flight, float(Tt4))
+            except AssertionError:
+                continue
+            Tt2, Tt25 = od.stations["2"].Tt, od.stations["25"].Tt
+            out.append(dict(Tt4=float(Tt4), x_lp=Tt4 / Tt2, x_hp=Tt4 / Tt25,
+                            phi_lp=od.phi_lp, phi_hp=od.phi_hp, n_lp=od.n_lp,
+                            n_hp=od.n_hp, pi_lpc=od.pi_lpc, pi_hpc=od.pi_hpc))
+        return out
+
+    def flow_coefficient_turn(self, flight: FlightCondition, spool: str = "hp",
+                              Tt4_hi: float | None = None, Tt4_lo: float = 350.0,
+                              coarse: float = 10.0) -> dict:
+        """Locate the running-line flow-coefficient STATIONARY point (star) on one spool.
+
+        Coarse-scans Tt4 down the choked branch, then golden-sections the interior minimum.
+        Returns kind='MIN' with (Tt4_star, pi_star, star_form = 1+eta_c*(tau_c-1)) and the
+        closed form for comparison; kind='RAIL' when the minimum is not interior to the
+        runnable band (the turn is out of the choked envelope -- e.g. a design pressure ratio
+        far above pi*, or one already BELOW it, where the face walks away from surge from the
+        design point on).
+        """
+        assert spool in ("hp", "lp")
+        cf = self.critical_flow_turn_pi()
+        cache: dict = {}
+
+        def od_at(T: float):
+            key = round(float(T), 6)
+            if key not in cache:
+                cache[key] = self.match(flight, key)
+            return cache[key]
+
+        def phi(T: float) -> float:
+            o = od_at(T)
+            return o.phi_hp if spool == "hp" else o.phi_lp
+
+        Ts, vals = [], []
+        T = float(Tt4_hi if Tt4_hi is not None else self.Tt4_design)
+        while T > Tt4_lo:
+            try:
+                vals.append(phi(T)); Ts.append(T)
+            except AssertionError:
+                break
+            T -= coarse
+        assert len(vals) >= 3, "flow_coefficient_turn: runnable band too short to scan"
+        i = min(range(len(vals)), key=lambda j: vals[j])
+        if i == 0 or i == len(vals) - 1:
+            return dict(kind="RAIL", spool=spool, Tt4_star=Ts[i], phi_star=vals[i],
+                        pi_star=None, star_form=None, closed_form=cf,
+                        band=(Ts[-1], Ts[0]))
+
+        a, b = Ts[i + 1], Ts[i - 1]                 # Ts DESCENDS, so a < b
+        gr = (5.0 ** 0.5 - 1.0) / 2.0
+        c, d = b - gr * (b - a), a + gr * (b - a)
+        fc, fd = phi(c), phi(d)
+        for _ in range(90):
+            if b - a < 1e-5:
+                break
+            if fc < fd:
+                b, d, fd = d, c, fc
+                c = b - gr * (b - a); fc = phi(c)
+            else:
+                a, c, fc = c, d, fd
+                d = a + gr * (b - a); fd = phi(d)
+        Tstar = 0.5 * (a + b)
+        o = od_at(Tstar)
+        if spool == "hp":
+            pi_s, tau, eta = o.pi_hpc, o.stations["3"].Tt / o.stations["25"].Tt, self.eta_hpc
+            phi_s = o.phi_hp
+        else:
+            pi_s, tau, eta = o.pi_lpc, o.stations["25"].Tt / o.stations["2"].Tt, self.eta_lpc
+            phi_s = o.phi_lp
+        return dict(kind="MIN", spool=spool, Tt4_star=Tstar, phi_star=phi_s, pi_star=pi_s,
+                    star_form=1.0 + eta * (tau - 1.0), closed_form=cf,
+                    gamma_c=self.gas.gamma_c, far=o.stations["4"].far,
+                    band=(Ts[-1], Ts[0]))
 
 
 # ======================================================================================

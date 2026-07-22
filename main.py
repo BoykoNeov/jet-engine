@@ -1806,6 +1806,152 @@ def print_two_shaft_transient_table(flight):
     print("  Reduce: lp_disabled => rung 34 SpoolTransient bit-for-bit. Cycle stays rung-6 exact.")
 
 
+def print_two_spool_surge_table(flight):
+    """Rung 41 — THE TWO-SPOOL SURGE LINE: the exposure SPLITS between the spools.
+
+    Rungs 39 and 40 both closed by naming this seam in the same words ("rung 36's machinery is
+    single-spool -- and now there are TWO compressors"). Drawing it on both shows the two-spool
+    running line does not HALVE the low-power surge problem, it CONCENTRATES it on the LP
+    compressor: rung 39's (dagger) cancellation shields the HP face (it sees only its OWN
+    pressure ratio) while the LP face carries the PRODUCT. That asymmetry is closed-form, and
+    its corollary is the zero-new-constant critical pressure ratio rung 36's DEAD anchor never
+    got: pi* = gamma_c^(gamma_c/(gamma_c-1)). It is an INCIDENCE fact, not a margin extremum --
+    and that divergence is what corrects rung 36's stated mechanism.
+    """
+    print("\nTwo-spool surge line (rung 41): drawing rung 36's line on BOTH compressors. The")
+    print("two-spool running line does not halve the low-power surge problem -- it CONCENTRATES")
+    print("it on the LP spool, and the reason is closed-form.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    single = dict(pi_d=0.97, eta_c=0.90, eta_b=0.99, pi_b=0.96, eta_t=0.92,
+                  eta_m=0.99, pi_n=0.98)
+    TILTED = ComponentMap(a=0.14, b=0.10, c=0.06, sigma=0.2, l=0.85)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    def mm(gas, mL=None, mH=None, pl=3.0, ph=6.0):
+        design = build_two_spool_turbojet(gas, pl, ph, TT4, flight.p0,
+                                          nozzle_convergent=True, **losses)
+        return TwoSpoolMapMatcher(design, flight, 1.0, map_lp=mL, map_hp=mH)
+
+    # --- THE SPLIT: the LP takes the excursion, the HP is shielded and BOUNDED.
+    m = mm(Gas.thermally_perfect(), TILTED, TILTED)
+    print("\n  THE SPLIT — the two running lines in map coordinates (matched `tilted` shape):")
+    print(f"  {'Tt4':>6} {'phi_L':>8} {'phi_H':>8} {'pi_LPC':>8} {'pi_HPC':>8}")
+    print("  " + "-" * 42)
+    for r in m.running_line_map(flight, [1500, 1300, 1100, 900, 800, 750]):
+        print(f"  {r['Tt4']:6.0f} {r['phi_lp']:8.4f} {r['phi_hp']:8.4f} "
+              f"{r['pi_lpc']:8.4f} {r['pi_hpc']:8.4f}")
+    print("  => phi_L falls ~29%, phi_H ~7% and TURNS BACK UP. The LP takes the excursion.")
+
+    # --- WHY: the sensitivity of each face is closed-form in the pressure ratios it SEES.
+    print("\n  WHY — each face's flow-coefficient sensitivity, closed form (CPG, flat maps):")
+    print("    s_H = k(1 - pi_HPC^(-1/k)) - 1                     <- pi_HPC ALONE (rung 39 (dagger))")
+    print("    s_L = k(1 - pi_LPC^(-1/k)) + k(1 - pi_HPC^(-1/k))/tau_LPC - 1   <- the PRODUCT")
+    mc = mm(cpg())
+    k = 1.4 / 0.4
+    print(f"  {'Tt4':>6} {'s_H':>8} {'pred':>8} {'s_L':>8} {'pred':>8} {'pred w/o pi_HPC':>16}")
+    print("  " + "-" * 60)
+    for Tt4 in (1400.0, 1200.0, 1000.0, 850.0, 750.0):
+        a, b = mc.match(flight, Tt4 - 4.0), mc.match(flight, Tt4 + 4.0)
+        c = mc.match(flight, Tt4)
+
+        def _lg(o, hp):
+            x = o.Tt4 / (o.stations["25"].Tt if hp else o.stations["2"].Tt)
+            return math.log(o.phi_hp if hp else o.phi_lp), math.log(x)
+        (ya, xa), (yb, xb) = _lg(a, True), _lg(b, True)
+        sH = (yb - ya) / (xb - xa)
+        (ya, xa), (yb, xb) = _lg(a, False), _lg(b, False)
+        sL = (yb - ya) / (xb - xa)
+        tauL = c.stations["25"].Tt / c.stations["2"].Tt
+        sHp = k * (1.0 - c.pi_hpc ** (-1.0 / k)) - 1.0
+        sLp = (k * (1.0 - c.pi_lpc ** (-1.0 / k))
+               + k * (1.0 - c.pi_hpc ** (-1.0 / k)) / tauL - 1.0)
+        sLn = k * (1.0 - c.pi_lpc ** (-1.0 / k)) - 1.0
+        print(f"  {Tt4:6.0f} {sH:8.4f} {sHp:8.4f} {sL:8.4f} {sLp:8.4f} {sLn:16.4f}")
+    print("  => both predictions land within ~0.013. DROPPING pi_HPC from s_L misses by ~0.8-1.0")
+    print("     AND gets the SIGN wrong: the LP face cannot be written without the HP's ratio,")
+    print("     while the HP's needs no LP quantity at all. The shielding, quantified.")
+
+    # --- (star): the closed form, and its fuel-fraction kill test.
+    print("\n  THE CLOSED FORM (star) — s_H = 0 gives 1 + eta_c(tau_c-1) = gamma_c, i.e.")
+    print(f"    pi_c* = gamma_c^(gamma_c/(gamma_c-1)) = {mc.critical_flow_turn_pi():.5f}  "
+          "(gamma_c ALONE).")
+    print("  The turn's location in Tt4 moves by ~76%; its location in PRESSURE RATIO does not:")
+    print(f"  {'case':>16} {'Tt4*':>8} {'pi*':>9} {'1+eta(tau-1)':>14} {'vs gamma_c':>12}")
+    print("  " + "-" * 64)
+    for label, kw in (("split 3x6", dict()), ("split 4.5x4", dict(pl=4.5, ph=4.0)),
+                      ("split 2.25x8", dict(pl=2.25, ph=8.0))):
+        t = mm(cpg(), **kw).flow_coefficient_turn(flight, "hp")
+        print(f"  {label:>16} {t['Tt4_star']:8.1f} {t['pi_star']:9.4f} "
+              f"{t['star_form']:14.5f} {100*(t['star_form']/1.4-1):11.3f}%")
+    t = mm(cpg()).flow_coefficient_turn(FlightCondition(T0=250.0, p0=50_000.0, M0=1.60), "hp")
+    print(f"  {'M0=1.60':>16} {t['Tt4_star']:8.1f} {t['pi_star']:9.4f} "
+          f"{t['star_form']:14.5f} {100*(t['star_form']/1.4-1):11.3f}%")
+    print("  eta_HPC (0.80/0.95), eta_HPT, gamma_t and cp_t all drop out -- verified in the gates.")
+    print("\n  KILL TEST — the whole +0.44% residual is the FUEL FRACTION (f enters K and the")
+    print("  choked flow; (star) is exact with f frozen). Raise hPR so f -> 0:")
+    print(f"  {'hPR':>10} {'f':>9} {'1+eta(tau-1)':>14} {'residual':>10}")
+    print("  " + "-" * 46)
+    for hPR in (42.8e6, 4.28e8, 4.28e10):
+        g, cp = 1.3, 1239.0
+        gas = Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                  R_t=(g - 1.0) / g * cp, hPR=hPR)
+        t = mm(gas).flow_coefficient_turn(flight, "hp")
+        print(f"  {hPR:10.3g} {t['far']:9.5f} {t['star_form']:14.5f} "
+              f"{100*(t['star_form']/1.4-1):9.3f}%")
+
+    # --- the margins, and the deliberate divergence.
+    print("\n  THE MARGINS — matched shape on both spools, COMMON imposed floor phi_surge=0.55")
+    print("  (rung 36's one disclosed constant, DOUBLED -- every magnitude disclaimed):")
+    ms = mm(Gas.thermally_perfect(), TILTED.with_phi_surge(0.55), TILTED.with_phi_surge(0.55))
+    print(f"  {'Tt4':>6} {'SM_L':>8} {'SM_H':>8} {'SM_L/SM_H':>11} {'phi_H':>8}")
+    print("  " + "-" * 46)
+    for r in ms.surge_margin_schedule(flight, [1500, 1300, 1100, 900, 800, 750]):
+        print(f"  {r['Tt4']:6.0f} {r['SM_lp']:8.4f} {r['SM_hp']:8.4f} "
+              f"{r['SM_lp']/r['SM_hp']:11.4f} {r['phi_hp']:8.4f}")
+    print("  => the RATIO collapses (0.61 -> 0.13): THAT is the running-line divergence, and it")
+    print("     is what is gated. The ORDERING's LEVEL is partly a DESIGN-SPLIT artifact --")
+    print("     SM_L < SM_H already at Tt4=1500 where phi_L = phi_H = 1, purely because")
+    print("     pi_LPC=3 < pi_HPC=6 (a smaller design pressure ratio gives a smaller margin at")
+    print("     the same flow-coefficient gap). Not over-attributed to exposure.")
+    print("     NOTE also the deliberate DIVERGENCE:")
+    print("     phi_H TURNS UP past pi* while SM_H keeps FALLING -- so (star) is an INCIDENCE")
+    print("     fact, NOT a margin extremum. The worst margin is still at idle, on both spools.")
+
+    # --- the cross-rung correction of rung 36.
+    print("\n  THE CORRECTION OF RUNG 36 (the rung-28 shape: verdict confirmed, reason corrected).")
+    print("  (star) is SURFACED by this rung, not created by it -- the same turn sits INSIDE rung")
+    print("  36's OWN choked envelope (pi_c=10 single spool). Freezing one coordinate at a time:")
+    d1 = build_turbojet(Gas.thermally_perfect(), 10.0, TT4, flight.p0,
+                        nozzle_convergent=True, **single)
+    cm = ComponentMap.surge_flow().with_phi_surge(0.55)
+    st = SpoolTransient(d1, flight, 1.0, comp_map=cm)
+    print(f"  {'Tt4':>6} {'pi_c':>8} {'phi_op':>9} {'SM_N':>8} {'SM(phi-walk)':>13} "
+          f"{'SM(speed-line)':>15}")
+    print("  " + "-" * 64)
+    for Tt4 in (1500.0, 1100.0, 900.0, 800.0, 700.0, 650.0, 600.0):
+        try:
+            c = st.surge_margin_channels(flight, Tt4, cm)
+        except AssertionError:
+            break
+        print(f"  {Tt4:6.0f} {c['pi_c']:8.4f} {c['phi_op']:9.5f} {c['SM_N']:8.4f} "
+              f"{c['SM_phi_walk']:13.4f} {c['SM_speed_line']:15.4f}")
+    print("  => phi_op TURNS UP at the bottom (crossing pi*), and the phi-walk channel turns with")
+    print("     it -- yet SM_N keeps falling, because the SPEED LINE FLATTENS (tau_c-1 ~ n^2) and")
+    print("     that channel does not reverse. Rung 36's VERDICT survives (SM_N still monotone,")
+    print("     no rung-36 test changes); its stated MECHANISM ('the trend is set by phi_op') was")
+    print("     SINGLE-CHANNEL -- the two are comparable (~56%/48% of the log decay). Both are")
+    print("     choke-determined, so rung 36's floor-robustness conclusion is untouched.")
+    print("\n  NOT claimed: 'the slip protects the LP spool' (the rigid-shaft counterfactual is")
+    print("  not run); which spool binds at UNMATCHED shapes/floors; any margin magnitude.")
+    print("  Reduce: a phi_surge-carrying map leaves rung 39/40 bit-for-bit. Cycle stays rung-6 exact.")
+
+
 def print_pdf_quench_table(flight):
     """Rung-15 payoff: the PDF THROUGH the finite quench — the two mixing mechanisms COMBINED.
 
@@ -2876,6 +3022,8 @@ def main():
     print_two_spool_map_table(FLIGHT)
 
     print_two_shaft_transient_table(FLIGHT)
+
+    print_two_spool_surge_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 
