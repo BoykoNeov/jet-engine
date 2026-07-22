@@ -2545,3 +2545,301 @@ class TwoSpoolMatcher:
             tau_hpt=tau_hpt, pi_hpt=pi_hpt, tau_lpt=tau_lpt, pi_lpt=pi_lpt,
             mdot_air=mdot_air, mdot_ratio=mdot_air / self.mdot_air_design,
         )
+
+
+# =====================================================================================
+# RUNG 39 — TWO-SPOOL + COMPONENT MAPS: the cascade acquires a DIRECTION
+# =====================================================================================
+#
+# Rung 38 predicted its own successor would break it: "a real map ... would very likely
+# reintroduce the coupling ... the two spools' operating points DO need a joint solve."
+# That prediction is WRONG, and how it is wrong is the rung (docs/rung39-spec.md).
+#
+# THE ALGEBRA. The HPT NGV choke fixes the corrected flow at station 4; refer it to the
+# HP compressor face at station 25. Since pt4 = pi_b*pi_HPC*pi_LPC*pt2 and pt25 =
+# pi_LPC*pt2, the ratio pt4/pt25 = pi_b*pi_HPC -- pi_LPC CANCELS:
+#
+#   mdot_corr,25 = A4 * pi_b * pi_HPC * MFP*(Tt4,f) * sqrt(Tt25/Tt4) / (1+f)          (dagger)
+#   mdot_corr,2  = A4 * pi_b * pi_HPC * pi_LPC * MFP*(Tt4,f) * sqrt(Tt2/Tt4) / (1+f)  (ddagger)
+#
+# The LP compressor raises pressure and mass flow PROPORTIONALLY, so the HP core sees the
+# same CORRECTED flow whatever the LP spool delivers -- and no modeled loss between 25 and 4
+# reintroduces pi_LPC. Tt25/Tt3 come from rung 38's ENERGY cascade (no compressor efficiency
+# anywhere), so the HP compressor's whole map coordinate pair is a closed fixed point in
+# pi_HPC alone. It cannot see eta_LPC. The LP face (ddagger) DOES carry pi_HPC.
+#
+# So the map opens EXACTLY ONE arrow, HP -> LP: the cascade is not dissolved into a 2x2, it
+# acquires a DIRECTION (HP solved first, LP onto it). Rung 38's VERDICT survives; rung 38's
+# stated REASON for expecting it to fail is refuted -- the rung-28 shape.
+#
+# The solve below is written triangular ON PURPOSE, with (dagger)/(ddagger) in exactly those
+# closed forms, so the closed leaf is a CODE-LEVEL guarantee (bit-for-bit) rather than the
+# ~1e-15 noise a jointly-iterated implementation would leave behind.
+
+
+@dataclass
+class TwoSpoolMapResult(TwoSpoolResult):
+    """A matched two-spool point WITH component maps (docs/rung39-spec.md).
+
+    Extends TwoSpoolResult with the per-spool map read-offs. The four efficiencies are now
+    OUTPUTS; n_lp/n_hp are the two CORRECTED speeds and N_lp_ratio/N_hp_ratio the two physical
+    shaft-speed ratios -- objects no predecessor has (rung 38 computed no speed at all). `slip`
+    = N_lp_ratio/N_hp_ratio is the two-spool diagnostic: exactly 1 on a CPG gas with flat maps
+    (a structural identity), broken predominantly BY THE MAP. No absolute rpm (needs geometry).
+    """
+
+    eta_lpc: float = 0.0
+    eta_hpc: float = 0.0
+    eta_hpt: float = 0.0
+    eta_lpt: float = 0.0
+    n_lp: float = 0.0          # LPC corrected speed (design = 1)
+    n_hp: float = 0.0          # HPC corrected speed (design = 1)
+    N_lp_ratio: float = 0.0    # N_L / N_L,design
+    N_hp_ratio: float = 0.0    # N_H / N_H,design
+    slip: float = 0.0          # N_lp_ratio / N_hp_ratio -- THE two-spool diagnostic
+    phi_lp: float = 0.0        # LPC flow coefficient m/n
+    phi_hp: float = 0.0        # HPC flow coefficient m/n
+    nu_hpt: float = 0.0        # HP turbine corrected speed
+    nu_lpt: float = 0.0        # LP turbine corrected speed
+
+
+class TwoSpoolMapMatcher(TwoSpoolMatcher):
+    """RUNG 39. Two-spool off-design matching WITH a ComponentMap on EACH spool.
+
+    Subclasses rung 38's TwoSpoolMatcher for the fixed hardware (A4/A45/A8), the shared (*)
+    choke solver and the burner f-solve, all unchanged. rung 38's own `match`/`_cascade` are
+    left LITERALLY untouched (the rung-33 discipline), so the rung-38 suite still witnesses
+    them bit-for-bit; this class runs its own triangular map cascade instead.
+
+    Each spool carries its own map: `map_lp` supplies the LPC island/speed lines AND the LP
+    turbine's near-flat eta_t; `map_hp` likewise for the HP spool.
+
+    Usage:
+        design = build_two_spool_turbojet(gas, 3, 6, 1500, p0, **losses, nozzle_convergent=True)
+        mm = TwoSpoolMapMatcher(design, FLIGHT, 1.0,
+                                map_lp=ComponentMap.surge_flow(),
+                                map_hp=ComponentMap.surge_pressure())
+        od = mm.match(FLIGHT, 1200.0)     # -> TwoSpoolMapResult (both etas AND both N are OUTPUTS)
+
+    lp_disabled=True forwards to a MapMatcher (rung 32) -- which itself reduces to rung 31's
+    OffDesignMatcher bit-for-bit on a flat map, so one dispatch completes the whole ladder:
+    flat+disabled -> 31, shaped+disabled -> 32, flat two-spool -> 38, shaped two-spool -> 39.
+    """
+
+    _ETA_TOL = 1e-11      # per-spool efficiency secant tolerance (rung 32's)
+    _ETA_MAX = 80         # secant step cap (positive-feedback edge guard, rung 32's)
+    _TURB_MAX = 60        # outer turbine-efficiency loop cap (INERT when a_t == 0)
+
+    def __init__(self, design_engine, flight_design: FlightCondition,
+                 mdot_design: float = 1.0, map_lp: "ComponentMap | None" = None,
+                 map_hp: "ComponentMap | None" = None, lp_disabled: bool = False):
+        self.map_lp = map_lp if map_lp is not None else ComponentMap.flat()
+        self.map_hp = map_hp if map_hp is not None else ComponentMap.flat()
+        if lp_disabled:
+            # Exact dispatch (rung 38's contract, extended one rung): no LP hardware is built
+            # and the two-spool map cascade below is never entered. The single remaining
+            # compressor plays the HPC role, so it carries map_hp.
+            self._degenerate = MapMatcher(design_engine, flight_design, mdot_design,
+                                          comp_map=self.map_hp)
+            return
+        super().__init__(design_engine, flight_design, mdot_design)
+
+        # Per-FACE design references for the two sets of map coordinates.
+        s2, s25, s3 = (self.ref.stations["2"], self.ref.stations["25"],
+                       self.ref.stations["3"])
+        s4, s45 = self.ref.stations["4"], self.ref.stations["45"]
+        self.Tt2_d, self.Tt25_d = s2.Tt, s25.Tt
+        self.Tt4_d, self.Tt45_d = s4.Tt, s45.Tt
+        self.mcorr_lp_d = mdot_design * s2.Tt ** 0.5 / s2.pt       # LPC face (station 2)
+        self.mcorr_hp_d = mdot_design * s25.Tt ** 0.5 / s25.pt     # HPC face (station 25)
+        self.tau_lpc_d = s25.Tt / s2.Tt
+        self.tau_hpc_d = s3.Tt / s25.Tt
+
+    # --- the two efficiency fixed points: HP is CLOSED, LP reads pi_HPC ------------------
+
+    @staticmethod
+    def _secant(eta, eta_prev, R, R_prev, target):
+        """One rung-32 secant step on the fixed-point residual R(eta) = eta_map(eta) - eta."""
+        if eta_prev is None or abs(R - R_prev) < 1e-300:
+            nxt = target                                     # first step: plain substitution
+        else:
+            nxt = eta - R * (eta - eta_prev) / (R - R_prev)
+        return min(max(nxt, 0.3), 1.0)                        # keep physical
+
+    def _hp_eta_loop(self, wgas: Gas, Tt4: float, f: float, Tt25: float, Tt3: float,
+                     MFP4: float, cmap: "ComponentMap"):
+        """Solve (eta_HPC, pi_HPC) self-consistently on the HP map. CLOSED — reads NO LP
+        quantity, because the HP-face corrected flow (dagger) has no pi_LPC in it. THIS is
+        the code-level guarantee behind rung 39's bit-for-bit closed leaf.
+        """
+        h25, h3, pr25 = wgas.h_c(Tt25), wgas.h_c(Tt3), wgas.pr_c(Tt25)
+        tau_hpc = Tt3 / Tt25
+        eta, eta_prev, R_prev = self.eta_hpc, None, None
+        for _ in range(self._ETA_MAX):
+            pi = wgas.pr_c(wgas.T_from_h_c(h25 + eta * (h3 - h25))) / pr25
+            # (dagger): pi_LPC-FREE by construction.
+            m = (self.A4 * self.pi_b * pi * MFP4 * (Tt25 / Tt4) ** 0.5
+                 / (1.0 + f)) / self.mcorr_hp_d
+            n = cmap.solve_n(m, tau_hpc, self.tau_hpc_d)
+            tgt = cmap.eta_c_at(self.eta_hpc, m / n, n)
+            R = tgt - eta
+            if abs(R) <= self._ETA_TOL:
+                return eta, pi, m, n
+            eta, eta_prev, R_prev = self._secant(eta, eta_prev, R, R_prev, tgt), eta, R
+        raise AssertionError(
+            f"rung-39 HP efficiency secant did not converge at Tt4={Tt4} (last |R|={abs(R):.2e}); "
+            "moderate the HP map coefficients or the throttle.")
+
+    def _lp_eta_loop(self, wgas: Gas, Tt2: float, Tt4: float, f: float, Tt25: float,
+                     MFP4: float, pi_hpc: float, cmap: "ComponentMap"):
+        """Solve (eta_LPC, pi_LPC) on the LP map. Reads pi_HPC — (ddagger) carries it — which
+        is THE ONE new arrow the map opens (HP -> LP)."""
+        h2, h25, pr2 = wgas.h_c(Tt2), wgas.h_c(Tt25), wgas.pr_c(Tt2)
+        tau_lpc = Tt25 / Tt2
+        eta, eta_prev, R_prev = self.eta_lpc, None, None
+        for _ in range(self._ETA_MAX):
+            pi = wgas.pr_c(wgas.T_from_h_c(h2 + eta * (h25 - h2))) / pr2
+            # (ddagger): carries pi_hpc — the ONE arrow.
+            m = (self.A4 * self.pi_b * pi_hpc * pi * MFP4 * (Tt2 / Tt4) ** 0.5
+                 / (1.0 + f)) / self.mcorr_lp_d
+            n = cmap.solve_n(m, tau_lpc, self.tau_lpc_d)
+            tgt = cmap.eta_c_at(self.eta_lpc, m / n, n)
+            R = tgt - eta
+            if abs(R) <= self._ETA_TOL:
+                return eta, pi, m, n
+            eta, eta_prev, R_prev = self._secant(eta, eta_prev, R, R_prev, tgt), eta, R
+        raise AssertionError(
+            f"rung-39 LP efficiency secant did not converge at Tt4={Tt4} (last |R|={abs(R):.2e}); "
+            "moderate the LP map coefficients or the throttle.")
+
+    # --- the triangular map cascade at a FIXED (Tt2, pt2, Tt4, f) -----------------------
+
+    def _cascade_map(self, wgas: Gas, Tt2: float, pt2: float, Tt4: float, f: float) -> dict:
+        """Rung 38's Steps 1-4 with both maps live, TRIANGULAR by construction.
+
+        Order (docs/rung39-spec.md "The solve"):
+            geometry (*-HP, *-LP)  ->  ENERGY (Tt25, Tt3; map-free)
+              ->  HP eta loop (closed)  ->  LP eta loop (reads pi_HPC)
+        wrapped in an OUTER turbine-efficiency loop that is INERT when both a_t == 0 (eta_t_at
+        then returns its base, so the loop converges on its first pass and the closed leaf is
+        exact). Exposed as its own method so the finding is testable at a fixed (Tt2,pt2,Tt4,f)
+        — rung 38 gate-3's isolation protocol, so the outer f loop cannot confound it.
+        """
+        MFP4 = choked_mfp(wgas, Tt4, f)
+        eta_hpt, eta_lpt = self.eta_hpt, self.eta_lpt
+        out = None
+        for _ in range(self._TURB_MAX):
+            # Steps 1-2: both turbines pinned by geometry, at the current turbine efficiencies.
+            pi_hpt, tau_hpt, Tt45 = self._solve_choked_turbine(
+                wgas, Tt4, f, self.A4, self.A45, 1.0, eta_hpt)
+            pi_lpt, tau_lpt, Tt5 = self._solve_choked_turbine(
+                wgas, Tt45, f, self.A45, self.A8, self.pi_n, eta_lpt)
+
+            # ENERGY (map-free): the LP balance fixes Tt25, the HP balance fixes Tt3 onto it.
+            dh_lpt = self.eta_m * (1.0 + f) * (wgas.h_t(Tt45, f) - wgas.h_t(Tt5, f))
+            Tt25 = wgas.T_from_h_c(wgas.h_c(Tt2) + dh_lpt)
+            dh_hpt = self.eta_m * (1.0 + f) * (wgas.h_t(Tt4, f) - wgas.h_t(Tt45, f))
+            Tt3 = wgas.T_from_h_c(wgas.h_c(Tt25) + dh_hpt)
+
+            # THE TRIANGLE: HP closes on itself, THEN LP closes onto pi_HPC.
+            eta_hpc, pi_hpc, m_H, n_H = self._hp_eta_loop(
+                wgas, Tt4, f, Tt25, Tt3, MFP4, self.map_hp)
+            eta_lpc, pi_lpc, m_L, n_L = self._lp_eta_loop(
+                wgas, Tt2, Tt4, f, Tt25, MFP4, pi_hpc, self.map_lp)
+
+            # Two physical shaft speeds — the structural novelty (rung 38 computes none).
+            NL = n_L * (Tt2 / self.Tt2_d) ** 0.5
+            NH = n_H * (Tt25 / self.Tt25_d) ** 0.5
+            nu_hpt = NH * (self.Tt4_d / Tt4) ** 0.5
+            nu_lpt = NL * (self.Tt45_d / Tt45) ** 0.5
+
+            out = dict(pi_hpt=pi_hpt, tau_hpt=tau_hpt, Tt45=Tt45, pi_lpt=pi_lpt,
+                       tau_lpt=tau_lpt, Tt5=Tt5, pi_lpc=pi_lpc, Tt25=Tt25, pi_hpc=pi_hpc,
+                       Tt3=Tt3, eta_lpc=eta_lpc, eta_hpc=eta_hpc, eta_hpt=eta_hpt,
+                       eta_lpt=eta_lpt, m_L=m_L, m_H=m_H, n_L=n_L, n_H=n_H, NL=NL, NH=NH,
+                       phi_L=m_L / n_L, phi_H=m_H / n_H, nu_hpt=nu_hpt, nu_lpt=nu_lpt,
+                       slip=NL / NH)
+
+            # OUTER turbine-efficiency loop. With a_t == 0 these targets ARE the current
+            # values, so this returns on the first pass and the leaf above stays exact.
+            t_hpt = self.map_hp.eta_t_at(self.eta_hpt, nu_hpt)
+            t_lpt = self.map_lp.eta_t_at(self.eta_lpt, nu_lpt)
+            if abs(t_hpt - eta_hpt) <= self._ETA_TOL and abs(t_lpt - eta_lpt) <= self._ETA_TOL:
+                return out
+            eta_hpt, eta_lpt = t_hpt, t_lpt
+        raise AssertionError(
+            f"rung-39 turbine-efficiency loop did not converge at Tt4={Tt4}; moderate a_t.")
+
+    # --- match one operating point -------------------------------------------------------
+
+    def match(self, flight: FlightCondition, Tt4: float):
+        """Match the two-spool engine at (flight, Tt4) against the fixed hardware AND both maps.
+
+        pi_lpc, pi_hpc, all four efficiencies AND both shaft speeds are OUTPUTS. The outer
+        (f, pt4) fixed point is rung 38's, unchanged — the one place the two spools share
+        state. Scope (inherited, re-asserted): the nozzle must stay choked.
+        """
+        if self._degenerate is not None:
+            return self._degenerate.match(flight, Tt4)
+
+        pi_d = self.pi_d_max * ram_recovery(flight.M0)
+        state0, V0 = self._fs_engine.freestream(flight, self.mdot_air_design)
+        Tt2, pt2 = state0.Tt, pi_d * state0.pt
+
+        f, pt4 = self.f_design, self.pi_b * self.pi_hpc_design * self.pi_lpc_design * pt2
+        c = None
+        for _ in range(self._MAX):
+            wgas = self._working_gas(f, Tt4, pt4)
+            c = self._cascade_map(wgas, Tt2, pt2, Tt4, f)
+            pt4_new = self.pi_b * c["pi_hpc"] * c["pi_lpc"] * pt2
+            f_new = self._solve_f(c["Tt3"], pt4_new, Tt4)
+            done = (abs(f_new - f) <= self._TOL * (f_new + 1e-30)
+                    and abs(pt4_new - pt4) <= self._TOL * pt4_new)
+            f, pt4 = f_new, pt4_new
+            if done:
+                break
+
+        pi_lpc, pi_hpc = c["pi_lpc"], c["pi_hpc"]
+        assert pi_lpc > 1.0 and pi_hpc > 1.0 and 0.0 < c["tau_hpt"] < 1.0 \
+            and 0.0 < c["tau_lpt"] < 1.0, "rung-39 two-spool map match unphysical"
+
+        wgas = self._working_gas(f, Tt4, pt4)
+        mdot_air = self.A4 * pt4 * choked_mfp(wgas, Tt4, f) / Tt4 ** 0.5 / (1.0 + f)
+
+        # Rebuild FORWARD at the map-consistent efficiencies — fires every shipped
+        # conservation assert on the map operating point (rung 31/32/38 discipline).
+        rgas = Gas.reacting_equilibrium(hf_fuel_molar=self.hf_fuel_molar) \
+            if self.gas.equilibrium else self.gas
+        state0, V0 = self._fs_engine.freestream(flight, mdot_air)
+        s2 = Inlet(pi_d).apply(state0, rgas)
+        s25 = Compressor(pi_lpc, c["eta_lpc"]).apply(s2, rgas)
+        s3 = Compressor(pi_hpc, c["eta_hpc"]).apply(s25, rgas)
+        s4 = Burner(Tt4, self.eta_b, self.pi_b).apply(s3, rgas)
+        dh_hpt_reb = (rgas.h_c(s3.Tt) - rgas.h_c(s25.Tt)) / (self.eta_m * (1.0 + s4.far))
+        s45 = Turbine(c["eta_hpt"]).apply(s4, rgas, dh_hpt_reb)
+        dh_lpt_reb = (rgas.h_c(s25.Tt) - rgas.h_c(s2.Tt)) / (self.eta_m * (1.0 + s4.far))
+        s5 = Turbine(c["eta_lpt"]).apply(s45, rgas, dh_lpt_reb)
+        exit = Nozzle(self.p_ambient, self.pi_n, convergent=True).apply(s5, rgas)
+
+        # SCOPE GUARD (inherited from rung 38 — unchoke is still a rung-33-shaped follow-on).
+        assert exit.p9 > self.p_ambient + 1e-6, (
+            f"rung-39 two-spool map match at Tt4={Tt4:.0f}, M0={flight.M0:.2f}: nozzle UNCHOKED "
+            "-- OUT OF SCOPE (docs/rung38-spec.md 'Scope'). The LP turbine's geometric tau_LPT "
+            "pin (*-LP) is only valid while the nozzle stays choked.")
+
+        stations = {"0": state0, "2": s2, "25": s25, "3": s3, "4": s4, "45": s45,
+                    "5": s5, "9": exit.state}
+        perf = _score(rgas, stations, V0, exit.M9, exit.T9, exit.V9, exit.p9,
+                      flight.p0, rgas.hPR)
+        return TwoSpoolMapResult(
+            stations=stations, performance=perf, V0=V0, V9=exit.V9, M9=exit.M9,
+            T9=exit.T9, p9=exit.p9, thrust=mdot_air * perf.specific_thrust, Tt4=Tt4,
+            M0=flight.M0, pi_lpc=pi_lpc, pi_hpc=pi_hpc, tau_lpc=s25.Tt / s2.Tt,
+            tau_hpc=s3.Tt / s25.Tt, tau_hpt=c["tau_hpt"], pi_hpt=c["pi_hpt"],
+            tau_lpt=c["tau_lpt"], pi_lpt=c["pi_lpt"], mdot_air=mdot_air,
+            mdot_ratio=mdot_air / self.mdot_air_design,
+            eta_lpc=c["eta_lpc"], eta_hpc=c["eta_hpc"], eta_hpt=c["eta_hpt"],
+            eta_lpt=c["eta_lpt"], n_lp=c["n_L"], n_hp=c["n_H"], N_lp_ratio=c["NL"],
+            N_hp_ratio=c["NH"], slip=c["slip"], phi_lp=c["phi_L"], phi_hp=c["phi_H"],
+            nu_hpt=c["nu_hpt"], nu_lpt=c["nu_lpt"],
+        )

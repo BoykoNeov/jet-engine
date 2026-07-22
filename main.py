@@ -18,7 +18,8 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 from turbojet.engine import (  # noqa: E402
     FlightCondition, build_turbojet, OffDesignMatcher, MapMatcher, ComponentMap, SpoolTransient,
-    CombustorTransient, build_two_spool_turbojet, TwoSpoolMatcher,
+    CombustorTransient, build_two_spool_turbojet, TwoSpoolMatcher, TwoSpoolMapMatcher,
+    ram_recovery,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -1582,6 +1583,117 @@ def print_two_spool_matching_table(flight):
     print("  Scope: isentropic knobs only, no compressor maps yet; cycle stays rung-6 exact.")
 
 
+def print_two_spool_map_table(flight):
+    """Rung 39 — TWO-SPOOL + COMPONENT MAPS: the cascade acquires a DIRECTION.
+
+    Rung 38 predicted this rung would break it ("a real map ... would very likely reintroduce the
+    coupling ... the two spools DO need a joint solve"). The prediction is WRONG, and how it is
+    wrong is the rung. THE ALGEBRA: refer the HPT-NGV choke to the HP compressor face, and since
+    pt4/pt25 = pi_b*pi_HPC, pi_LPC CANCELS -- the LP compressor raises pressure and mass flow
+    PROPORTIONALLY, so the HP core sees the same CORRECTED flow whatever the LP spool delivers.
+    The HP map coordinates are therefore a closed fixed point in pi_HPC alone and cannot see
+    eta_LPC; the LP face does carry pi_HPC. So the map opens EXACTLY ONE arrow (HP -> LP): the
+    cascade is not dissolved into a 2x2, it acquires a DIRECTION. Rung 38's VERDICT survives;
+    rung 38's stated REASON for expecting it to fail is refuted -- the rung-28 shape.
+    STRUCTURAL NOVELTY: two shaft speeds (rung 38 computes none), hence the SLIP N_L/N_H --
+    exactly 1 on a CPG gas with flat maps (a structural identity: (1+f) and Tt4 both cancel),
+    broken PREDOMINANTLY BY THE MAP. That inverts rung 32's decomposition: there the map only
+    re-labelled map-free work; here the map CREATES the object.
+    """
+    print("\nTwo-spool + component maps (rung 39): rung 38 predicted a map would force a joint 2x2")
+    print("solve. It does not. pi_LPC CANCELS out of the HP compressor's corrected flow, so the map")
+    print("opens EXACTLY ONE arrow (HP -> LP): the cascade acquires a DIRECTION instead of dissolving.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    pi_lpc, pi_hpc = 3.0, 6.0
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    def matcher(gas, mL=None, mH=None):
+        design = build_two_spool_turbojet(gas, pi_lpc, pi_hpc, TT4, flight.p0,
+                                          nozzle_convergent=True, **losses)
+        return TwoSpoolMapMatcher(design, flight, 1.0, map_lp=mL, map_hp=mH)
+
+    map_lp = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7, a_t=0.0)
+    map_hp = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0, a_t=0.0)
+
+    # --- THE FINDING: the asymmetry, at a FIXED (Tt2, pt2, Tt4, f) (rung 38 gate-3's protocol).
+    m = matcher(cpg(), map_lp, map_hp)
+    Tt4_p = 1200.0
+    od0 = m.match(flight, Tt4_p)
+    state0, _ = m._fs_engine.freestream(flight, m.mdot_air_design)
+    Tt2 = state0.Tt
+    pt2 = m.pi_d_max * ram_recovery(flight.M0) * state0.pt
+    f = od0.stations["4"].far
+    pt4 = m.pi_b * od0.pi_hpc * od0.pi_lpc * pt2
+    wgas = m._working_gas(f, Tt4_p, pt4)
+    base = m._cascade_map(wgas, Tt2, pt2, Tt4_p, f)
+
+    def perturb(attr, delta=0.01):
+        saved = getattr(m, attr)
+        setattr(m, attr, saved - delta)
+        c = m._cascade_map(wgas, Tt2, pt2, Tt4_p, f)
+        setattr(m, attr, saved)
+        return (c["pi_lpc"] / base["pi_lpc"] - 1.0, c["pi_hpc"] / base["pi_hpc"] - 1.0)
+
+    print(f"\n  THE FINDING — perturb one efficiency by -0.01 at fixed (Tt2, pt2, Tt4={Tt4_p:.0f}, f);")
+    print("  compressor maps only (a_t = 0), so the reading is the pure structural one:")
+    print(f"  {'parameter':>10} {'d pi_LPC / pi':>15} {'d pi_HPC / pi':>15}  channel")
+    print("  " + "-" * 74)
+    for attr, label, role in (
+        ("eta_lpc", "eta_LPC", "own ratio only -- CANNOT reach pi_HPC (pi_LPC cancels)"),
+        ("eta_hpc", "eta_HPC", "own ratio AND pi_LPC -- THE ONE ARROW the map opens"),
+        ("eta_hpt", "eta_HPT", "energy path: moves BOTH (shapes the shared Tt45)"),
+        ("eta_lpt", "eta_LPT", "energy path: moves BOTH (shapes Tt25 via Tt5)"),
+    ):
+        dL, dH = perturb(attr)
+        sL = "EXACTLY 0" if dL == 0.0 else f"{dL:+.3e}"
+        sH = "EXACTLY 0" if dH == 0.0 else f"{dH:+.3e}"
+        print(f"  {label:>10} {sL:>15} {sH:>15}  {role}")
+    print("  eta_LPC -> pi_HPC is EXACTLY zero (bit-for-bit), by the (dagger) cancellation -- while")
+    print("  eta_HPC -> pi_LPC is real and negative. ONE arrow, not two: still strictly triangular.")
+
+    # --- the structural novelty: two speeds, hence the slip.
+    print("\n  THE STRUCTURAL NOVELTY — two shaft speeds (rung 38 computes none) => the SLIP N_L/N_H:")
+    print(f"  {'Tt4 [K]':>7} {'pi_LPC':>8} {'pi_HPC':>8} {'eta_LPC':>8} {'eta_HPC':>8} "
+          f"{'N_L/N_Ld':>9} {'N_H/N_Hd':>9} {'slip':>9}")
+    print("  " + "-" * 78)
+    ms = matcher(cpg(), map_lp, map_hp)
+    for Tt4 in (1500.0, 1300.0, 1100.0, 900.0):
+        od = ms.match(flight, Tt4)
+        print(f"  {Tt4:>7.0f} {od.pi_lpc:>8.4f} {od.pi_hpc:>8.4f} {od.eta_lpc:>8.5f} "
+              f"{od.eta_hpc:>8.5f} {od.N_lp_ratio:>9.5f} {od.N_hp_ratio:>9.5f} {od.slip:>9.6f}")
+    print("  The LP spool falls AWAY from the HP spool as the engine is throttled back -- the")
+    print("  textbook twin-spool behaviour (at idle a twin-spool runs high N_H, much lower N_L).")
+
+    # --- B1/B2: the slip identity and what breaks it.
+    print("\n  WHERE THE SLIP COMES FROM — slip == 1 is a STRUCTURAL identity, broken by two channels:")
+    print(f"  {'gas / map':>26} {'Tt4=1500':>10} {'1300':>10} {'1100':>10} {'900':>10}")
+    print("  " + "-" * 70)
+    for label, gas_fn, mL, mH in (
+        ("CPG, FLAT maps", cpg, None, None),
+        ("thermally-perfect, FLAT", Gas.thermally_perfect, None, None),
+        ("reacting, FLAT", Gas.reacting_equilibrium, None, None),
+        ("CPG, SHAPED maps", cpg, map_lp, map_hp),
+    ):
+        mm = matcher(gas_fn(), mL, mH)
+        row = "".join(f"{mm.match(flight, T).slip:>10.6f}"
+                      for T in (1500.0, 1300.0, 1100.0, 900.0))
+        print(f"  {label:>26} {row}")
+    print("  Both shaft works are eta_m*(1+f)*cp_t*Tt4*[pure geometry], so (1+f) AND Tt4 cancel in")
+    print("  N_L/N_H: on CPG + flat maps the slip is EXACTLY 1 at every throttle. The cp(T) gas curve")
+    print("  breaks it ~1.5% (the rung-31-gate-5 mirror); the MAP breaks it ~5% -- the larger channel.")
+    print("  That INVERTS rung 32, where the map only re-labelled map-free work: here the map CREATES")
+    print("  the object (it is identically zero without one). Reduce: FLAT maps => rung 38 bit-for-bit;")
+    print("  lp_disabled dispatches to rung 32 (shaped) / rung 31 (flat). Cycle stays rung-6 exact.")
+    print("  Disclaimed: representative maps -- every magnitude (arrow strength, slip depth) rides on")
+    print("  the shapes; only the asymmetry, the identity and the slip SIGN are load-bearing.")
+
+
 def print_pdf_quench_table(flight):
     """Rung-15 payoff: the PDF THROUGH the finite quench — the two mixing mechanisms COMBINED.
 
@@ -2648,6 +2760,8 @@ def main():
     print_combustor_dynamics_table(FLIGHT)
 
     print_two_spool_matching_table(FLIGHT)
+
+    print_two_spool_map_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

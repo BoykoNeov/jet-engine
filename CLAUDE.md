@@ -11,7 +11,7 @@ teaching, not for features or polish.
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is
-anchored to a published case. All rungs are live; the current scope is **rung 38**.
+anchored to a published case. All rungs are live; the current scope is **rung 39**.
 
 **This table is the one-line map, not the handout.** Each rung's derivation,
 assumptions, honest concessions, reduce-to-prior contract and verification gates
@@ -67,6 +67,8 @@ live in its spec (last column) — read the spec before touching a rung.
 
 | 38 | **Two-spool matching — the triangular cascade (no simultaneous solve)** — `build_two_spool_turbojet(…)` / `TwoSpoolEngine` / `TwoSpoolMatcher` (a separate class, NOT a subclass of `OffDesignMatcher`): the first **two-shaft** rung — a plain (no-bypass) turbojet, LPC+LPT on one shaft, HPC+HPT on the other, station layout `0→2→25→3→4→45→5→9`. Rungs 31–37 are all single-spool; this rung adds a **THIRD choked throat** that does not exist in any of them — the LP-turbine NGV / inter-turbine duct (station `45`, area `A45`), between the HP turbine's exit and the LP turbine's inlet. With all three throats (`A4`,`A45`,`A8`) choked, rung 31's `(★)` mass-flow-compatibility trick applies **TWICE, chained**: `τ_HPT` is pinned by `(A4,A45)` alone, `τ_LPT` by `(A45,A8)` alone — both **independent of either compressor**, giving `Tt4→Tt45→Tt5` purely from geometry. **THE FINDING (self-corrected mid-rung — an initial over-claim caught and fixed, not just disclosed):** the first framing — "the LP spool solves independent of the HP spool" — is **WRONG**: `η_HPT` (an HP-turbine parameter) demonstrably moves `π_LPC` too, because it shapes the shared `Tt45` that BOTH shaft balances read. What survives, precise and airtight: **each compressor's OWN isentropic efficiency is a terminal leaf** — `η_LPC` enters only the last algebraic step of the LP shaft balance (converting an already energy-fixed `ΔT` into a pressure ratio) and **cannot reach `π_HPC`**; symmetrically `η_HPC` cannot reach `π_LPC`. So the two compressor PRESSURE ratios are **never bound by a joint (2×2) solve** — `π_LPC` solves in full (Steps 1–3: `Tt4→(★-HP)→Tt45→(★-LP)→Tt5→`LP balance) strictly *before* `π_HPC` even begins (Step 4, onto `π_LPC`'s `Tt25` output) — while every turbine/geometry parameter (`A4,A45,A8,π_n,η_HPT,η_LPT`) legitimately reaches BOTH ratios. Verified directly on the exposed `_cascade` method, at a FIXED `(Tt2,Tt4,f)` so the outer `f`-loop's own (separately disclosed) cross-talk cannot confound the reading. **Framed as a NO-COMPRESSOR-MAP model artifact** (the rung-31-before-rung-32 shape, explicitly), not a physical law — a real compressor MAP (flow capacity = f(speed, pressure ratio)) would very likely reintroduce genuine 2×2 coupling, exactly as rung 32 corrected rung 31's own over-claim; "two-spool + maps" is the deferred seam this rung names as its own likely correction. **Scope: the fully-choked branch only** — nozzle-unchoke is flagged (`AssertionError`, "OUT OF SCOPE"), not solved: it would relocate rung 33's inversion one throat upstream onto the LP spool, a genuinely different solve, deliberately deferred to a rung-33-shaped follow-on. **Reduce — EXACT DISPATCH** (the rung-37 pattern, not a knob-to-zero): `lp_disabled=True` never builds an LPC/LPT/`A45` at all — `TwoSpoolMatcher.__init__` constructs a bare `OffDesignMatcher` around the supplied single-spool design and forwards every `.match()` call to it verbatim (bit-for-bit `==`, not a converged limit; a knob-based `π_LPC=1` degenerate would NOT reduce exactly, since `A45`'s geometric pin would generically not land on `τ_LPT=1`). **Non-tautological gate**: an independent bare-math CPG cascade (no `Gas`/`Component`/`TwoSpoolMatcher` calls, its own bisection) reproduces the shipped solver's `(π_LPC,π_HPC,τ_HPT,τ_LPT)` to machine zero across a throttle sweep — the only anchor tying the cascade's numbers down, since the `lp_disabled` reduce never enters the two-spool code path at all. Disclaimed: both NGVs **assumed** choked (rung-31 parity, not derived station-by-station); no compressor/turbine maps; one `η_m` for both shafts; no bypass/bleed/interstage-duct-loss/reheat; **steady only** — the two-shaft transient (two inertias, the natural two-spool rung-34 analogue) needs this matcher first and is deferred. Separate entry point; default `run(…)` untouched ⇒ cycle **bit-for-bit rung 6**. | `docs/rung38-spec.md` |
 
+| 39 | **Two-spool + component maps — the cascade acquires a DIRECTION** — `TwoSpoolMapMatcher` (subclasses rung 38's `TwoSpoolMatcher`) / `_cascade_map(…)` / `_hp_eta_loop(…)` / `_lp_eta_loop(…)`: rung 38 closed by **predicting its own successor would break it** ("a real map … would very likely reintroduce the coupling … the two spools DO need a joint solve"). **The prediction is WRONG, and how it is wrong is the rung** — the **rung-28 shape** (verdict confirmed, stated reason refuted). **THE ALGEBRA**: refer the HPT-NGV choke to the HP compressor face; since `pt4 = π_b·π_HPC·π_LPC·pt2` and `pt25 = π_LPC·pt2`, the ratio `pt4/pt25 = π_b·π_HPC` and **`π_LPC` CANCELS** ⇒ `ṁ_corr,25 = A4·π_b·π_HPC·MFP*(Tt4,f)·√(Tt25/Tt4)/(1+f)` **(†)** — the LPC raises pressure and mass flow **proportionally**, so the HP core sees the same **corrected** flow whatever the LP spool delivers, and no modeled loss between 25 and 4 reintroduces it. `Tt25`/`Tt3` come from rung 38's **energy** cascade (which reads no compressor efficiency), so the HP compressor's whole map coordinate pair is a **closed fixed point in `π_HPC` alone** and cannot see `η_LPC`. The LP face does **not** cancel — `ṁ_corr,2 = A4·π_b·π_HPC·π_LPC·MFP*·√(Tt2/Tt4)/(1+f)` **(‡)** carries `π_HPC`. **THE FINDING: the map opens EXACTLY ONE arrow (HP→LP)** — `η_HPC → π_LPC` is real (**−1.5e-4 … −6.7e-4**, negative at every shape × throttle) while `η_LPC → π_HPC` is **EXACTLY ZERO (bit-for-bit)**, gas-independent (holds on the reacting gas too). So rung 38's **verdict SURVIVES** (the two compressor pressure ratios are still **never** a joint 2×2 solve — the solve stays strictly triangular); it merely **acquires an order** (HP first, LP onto it), the *opposite* of the order rung 38's energy cascade runs in. **Not a tautology**: the gated claim is the **ASYMMETRY** (one specified arrow opens with a measured sign, the other stays shut for a provable algebraic reason), and the closed leaf is a **code-level guarantee** — the solve is built triangular (`_hp_eta_loop` writes **(†)** in closed form and runs *before* `_lp_eta_loop`) precisely so it is exact; a jointly-iterated implementation leaves ~1e-15 residue and could not make the claim at all (measured at the probe stage). The **one channel that DOES re-open it** is a representative **turbine** map (`η_LPC→φ_L→n_L→ν_LPT→η_LPT→Tt5→Tt25→π_HPC`) at **8e-7…2.3e-6** — **119×–548× weaker**, which is **rung 32's own sub-finding** ("the turbine is pinned in corrected speed") transplanted onto the LP spool; sign + order-of-magnitude gated, **ratio disclaimed**. **THE STRUCTURAL NOVELTY: TWO shaft speeds** (rung 32 attached one `N`; rung 38 computes **none**), hence the **SLIP `N_L/N_H`** — the natural two-spool diagnostic. **B1 (structural)**: with both NGVs choked both shaft works are `η_m·(1+f)·cp_t·Tt4·[pure geometry]`, so **`(1+f)` AND `Tt4` both cancel** in `N_L/N_H` ⇒ on a CPG gas with flat maps **slip ≡ 1 EXACTLY at every throttle**, verified `f`-independently (forced `f` at 0.5×/1×/2×/4×). **B2**: exactly two channels break it, separated by the **rung-31-gate-5 mirror** — the `cp(T)` gas curve (**1.5%** at `Tt4`=900, on the *same* flat maps) and the **map** (**5.0%** on the *same* CPG gas), the map **~3.4× the larger** but **not the sole** one (an initial "100% map content" reading was refuted by this table). This **INVERTS rung 32's decomposition**: there the work was choke-pinned and map-free and the map only **re-labelled** it; here the object **does not exist without the map** — identically zero on the flat map, so the map **CREATES** it. **B3 (empirical, sign only)**: `N_L/N_H` falls **monotonically** with throttle across all shape pairs (5.1%–7.5% at `Tt4`=900) — **the LP spool falls away from the HP spool**, the textbook twin-spool behaviour (idle runs high `N_H`, much lower `N_L`); **NOT structural** (no cancellation guarantees the sign — it rides on relative map droop), magnitude **disclaimed**. **Reduce — the full LADDER**: FLAT maps ⇒ rung 38 `TwoSpoolMatcher` **bit-for-bit** (`==` on the reacting gas — targeted, not promised, and it landed); `lp_disabled=True` **exact dispatch** ⇒ rung 32 `MapMatcher` (shaped) and rung 31 `OffDesignMatcher` (flat), both bit-for-bit. **Non-tautological gate**: an INDEPENDENT bare-math CPG two-spool **map** cascade (no `Gas`/`Component`/`ComponentMap`/`TwoSpoolMapMatcher`; own bisections, own speed-line inversions, efficiency fixed points by **damped substitution** not the shipped secant) reproduces `(π_LPC, π_HPC, η_LPC, η_HPC, n_L, n_H)` across a throttle sweep — the only anchor tying the *map* cascade down, since the flat reduce holds every `η` at design and the `lp_disabled` reduce never enters the two-spool path. Separate entry point; default `run(…)` untouched ⇒ cycle **bit-for-bit rung 6**. Disclaimed: representative maps (every magnitude rides on the shapes — rung-32 methodology); the slip **direction** is empirical, not structural; the back-arrow **ratio**; fully-choked branch / both NGVs choked / steady only / one `η_m` / no bypass / **no surge line on either spool** (inherited or deferred). | `docs/rung39-spec.md` |
+
 **The invariant that spans rungs 7–30 (and now 36): they are all pure diagnostics** (rungs 31–35 are
 the **STRUCTURAL rungs** — they compute a *new* off-design operating point: rung 32 with the component
 map, rung 33 on the **subsonic-nozzle branch** below unchoke, rung 34 the **dynamic** point where
@@ -90,8 +92,11 @@ never enter `_equil_solve`, the production nozzle stays frozen AND ideally-expan
 state (rungs 31–34/37 match a new operating point *beside* it — rung 33 the subsonic-nozzle
 branch; rung 36 reads the rung-34 running line/transient *beside* it; rung 37 marches two extra
 internal-clock states *beside* it; rung 38 builds its OWN two-spool design point *beside* it,
-via a separate factory). Each rung's
-verified anchor data lives in `docs/plans/rungN-anchor-*.md`; `docs/plans/` also holds
+via a separate factory). Rung 39 is **structural again, on that same second shaft**:
+`TwoSpoolMapMatcher` puts a `ComponentMap` on each spool, so both compressor efficiencies AND
+both shaft speeds become OUTPUTS — but through a separate entry point that reduces to rung 38
+**bit-for-bit** on flat maps and, via `lp_disabled` exact dispatch, to rungs 32/31 as well.
+Each rung's verified anchor data lives in `docs/plans/rungN-anchor-*.md`; `docs/plans/` also holds
 the living plan/tasks (rungs 1–3).
 
 ## Working contract (from SPEC.md — these override convenience)
@@ -108,7 +113,7 @@ the living plan/tasks (rungs 1–3).
 - **Every new rung reduces to its predecessor**, exactly and by test (`X=None` ⇒
   the prior code path). This is the project's spine — see any `docs/rungN-spec.md`.
 
-**Current scope (rung 35).** The **cycle solve** is a thermally-perfect, reacting,
+**Current scope (rung 39).** The **cycle solve** is a thermally-perfect, reacting,
 dissociation-equilibrium gas (`Gas.reacting_equilibrium()`) through ideal + real
 components (isentropic `η_c/η_t` **or** polytropic `e_c/e_t`, mutually exclusive;
 `π_d/π_b/π_n`, `η_b`, `η_m`; dual cold/hot gas; specified exit pressure). The burner
@@ -183,7 +188,25 @@ rung-31-before-rung-32 shape), not a physical law. Scope: the fully-choked branc
 unchoke is flagged, not solved — a rung-33-shaped follow-on). Reduce — **exact dispatch**:
 `lp_disabled=True` never builds an LPC/LPT/`A45` at all; `TwoSpoolMatcher` forwards every
 `.match()` call to an internally-held `OffDesignMatcher`, bit-for-bit. Separate entry point;
-default run still rung-6 exact.
+default run still rung-6 exact. Rung 39 (`TwoSpoolMapMatcher`) builds the seam rung 38 named as
+its own likely correction — a `ComponentMap` on **each** spool — and **refutes rung 38's
+prediction while confirming its verdict** (the rung-28 shape). `π_LPC` **cancels** out of the HP
+compressor's corrected flow (`pt4/pt25 = π_b·π_HPC`: the LPC raises pressure and mass flow
+*proportionally*, so the HP core sees the same **corrected** flow whatever the LP spool
+delivers), so the HP map coordinates are a closed fixed point in `π_HPC` alone. The map
+therefore opens **exactly ONE arrow, HP→LP**: `η_HPC` moves `π_LPC` (−1.5e-4…−6.7e-4) while
+`η_LPC` leaves `π_HPC` **bit-for-bit unchanged**. The cascade is **not** dissolved into a 2×2 —
+it **acquires a direction** (HP solved first, LP onto it), and the closed leaf is a *code-level*
+guarantee because the solve is built triangular. A representative **turbine** map re-opens the
+leaf only at ~1e-6 (119×–548× weaker — rung 32's "turbine pinned in corrected speed", on the LP
+spool). The **structural novelty is two shaft speeds**, hence the **slip `N_L/N_H`**: exactly 1
+on a CPG gas with flat maps (`(1+f)` and `Tt4` both cancel — an identity, verified
+`f`-independently), broken ~1.5% by the `cp(T)` curve and ~5.0% by the map, and falling
+monotonically with throttle (the LP spool falls away from the HP spool — sign shape-robust,
+magnitude disclaimed). That **inverts rung 32**: there the map only *re-labelled* map-free work;
+here the object is identically zero without the map, so the map **creates** it. Reduce: flat
+maps ⇒ rung 38 bit-for-bit; `lp_disabled` ⇒ rung 32 (shaped) / rung 31 (flat) by exact dispatch.
+Separate entry point; default run still rung-6 exact.
 
 ## Deferred seams (kept open on purpose)
 - **Finite-rate nozzle chemistry** — **BUILT BY RUNG 25** (`docs/rung25-spec.md`,
@@ -528,9 +551,34 @@ default run still rung-6 exact.
   never a joint (2×2) solve — a no-compressor-map model artifact, not a physical law. Reduce —
   exact dispatch (`lp_disabled=True` ⇒ `OffDesignMatcher` bit-for-bit). **What rung 38 leaves
   open:** nozzle-unchoke on the LP spool (a rung-33-shaped follow-on, flagged not solved);
-  **two-spool + component maps** (the likely rung-31→32-style correction to this rung's own
-  finding); the **two-shaft transient** (two inertias, the natural two-spool rung-34 analogue,
-  needs this steady matcher first); a fan/bypass split (a different engine entirely).
+  ~~**two-spool + component maps**~~ — **BUILT BY RUNG 39** (below — and it **refuted** rung
+  38's own prediction: the coupling does NOT become a 2×2, it becomes one-way); the **two-shaft
+  transient** (two inertias, the natural two-spool rung-34 analogue, needs this steady matcher
+  first — and now rung 39's two *speeds* to be its states); a fan/bypass split (a different
+  engine entirely).
+- **Two-spool + component maps** — **BUILT BY RUNG 39** (`docs/rung39-spec.md`,
+  `TwoSpoolMapMatcher`, `docs/plans/rung39-anchor-two-spool-maps.md`). Rung 38 named this seam and
+  **predicted it would correct it** ("a real compressor MAP would very likely reintroduce genuine
+  2×2 coupling, exactly as rung 32 corrected rung 31"). Rung 39 built it and the prediction is
+  **WRONG** — the **rung-28 shape**: the *verdict* (no joint 2×2 between the compressor pressure
+  ratios) **SURVIVES**, the stated *reason for expecting it to fail* is **refuted**. `π_LPC`
+  **cancels** out of the HP compressor's corrected flow (`pt4/pt25 = π_b·π_HPC` — the LPC raises
+  pressure and mass flow proportionally), so the HP map coordinates close on `π_HPC` alone and
+  the map opens **exactly ONE arrow, HP→LP**: `η_HPC → π_LPC` real and negative, `η_LPC → π_HPC`
+  **bit-for-bit zero** (gas-independent). The cascade **acquires a direction** instead of
+  dissolving. A representative **turbine** map re-opens the leaf at ~1e-6 only (119×–548× weaker
+  — rung 32's "turbine pinned in corrected speed", on the LP spool; ratio disclaimed). The
+  **structural novelty** is **two shaft speeds** ⇒ the **slip `N_L/N_H`**: an exact identity
+  (=1) on CPG + flat maps (`(1+f)` and `Tt4` both cancel), broken ~1.5% by the `cp(T)` curve and
+  ~5.0% by the map, monotone-falling with throttle (LP falls away from HP; sign shape-robust,
+  magnitude disclaimed) — **inverting rung 32**, where the map only *re-labelled* map-free work.
+  Reduce: flat maps ⇒ rung 38 bit-for-bit; `lp_disabled` ⇒ rung 32/31 by exact dispatch.
+  **What rung 39 leaves open:** the **two-shaft transient** (now well-posed — rung 38 could
+  supply no `N` at all; rung 39 supplies two); a **two-spool surge line / surge margin** (rung
+  36's machinery is single-spool — and whether the slip *protects* the LP spool at low power, the
+  textbook twin-spool rationale, is exactly the claim this rung declines to make); the
+  **subsonic/unchoked** LP branch (still rung 38's, now with the map on top); a **real
+  hardware/CFD map** (rung 32's standing concession, doubled).
 
 ## Conventions
 - **SI units throughout** (K, Pa, kg/s, m/s, J/kg). Convert kPa → Pa internally.
@@ -629,12 +677,26 @@ default run still rung-6 exact.
   claim from the outer `(f, pt4)` fixed-point loop's own (separately disclosed) cross-talk.
   `lp_disabled=True` builds no two-spool state at all: `TwoSpoolMatcher.__init__` constructs and
   holds a plain `OffDesignMatcher`, and `.match()` forwards to it — the exact-dispatch reduce.
+  And rung 39's **`TwoSpoolMapMatcher`** (subclasses `TwoSpoolMatcher`; rung 38's own
+  `match`/`_cascade` are left **literally unchanged**, the rung-33 discipline, so the rung-38
+  suite still witnesses them bit-for-bit): a `ComponentMap` per spool (`map_lp` carries the LPC
+  island/speed lines **and** the LP turbine's `a_t`; `map_hp` likewise), per-FACE design
+  references (`mcorr_lp_d` at station 2, `mcorr_hp_d` at station **25**), and `_cascade_map`
+  — the **triangular** map cascade: geometry `(★-HP)/(★-LP)` → ENERGY (`Tt25`, `Tt3`; map-free)
+  → **`_hp_eta_loop`** (a secant on `η_HPC` closing on the `π_LPC`-FREE HP-face corrected flow
+  `(†)`, so it reads **no** LP quantity — the code-level guarantee behind the bit-for-bit closed
+  leaf) → **`_lp_eta_loop`** (a secant on `η_LPC` whose LP-face flow `(‡)` **carries `π_HPC`** —
+  the ONE arrow), wrapped in an outer turbine-efficiency loop that is **inert when `a_t == 0`**
+  (it returns on its first pass, which is what keeps the leaf exact). `TwoSpoolMapResult` adds
+  the four efficiencies, both corrected speeds `n_lp`/`n_hp`, both `N` ratios, and `slip`.
+  `lp_disabled=True` dispatches to a `MapMatcher` (rung 32), which itself reduces to rung 31 on
+  a flat map — one dispatch completing the whole ladder.
 - `main.py` — the design-point run: ideal-vs-real tables, the overlaid T–s diagram, and
   **one panel per rung** (each panel demonstrates that rung's load-bearing claim and
   states its honest scope).
 - `tests/` — `test_stations.py` / `test_validation.py` (rung 1), `test_rung2.py`,
   `test_polytropic.py` (2b), `test_variable_cp.py` (3), `test_reacting.py` (4),
-  `test_forkb.py` (5), then **`test_rungN.py` for N = 6…38**. Every rung file carries that
+  `test_forkb.py` (5), then **`test_rungN.py` for N = 6…39**. Every rung file carries that
   rung's **reduce-to-prior** gate plus its load-bearing claims; the gates are named in the
   rung's spec. Rungs 16, 23 and 24 **deliberately assert no emissions global-min location**;
   rung 25 **reduces to rung-14 FROZEN but deliberately NOT to equilibrium** (the (R−I) gap is
@@ -771,6 +833,30 @@ default run still rung-6 exact.
   rung's own spec caught and corrected before shipping), **not** a physical twin-spool-engine claim
   (the triangular result is a no-compressor-map artifact, disclosed as such), and **not** any
   nozzle-unchoke behavior (flagged, not solved).
+  Rung 39 **reduces three ways**: FLAT maps ⇒ rung 38 `TwoSpoolMatcher` **bit-for-bit** (`==` on
+  `π_LPC`, `π_HPC`, `τ_HPT`, `τ_LPT`, `ṁ`, thrust, on the **reacting** gas across a throttle
+  sweep — targeted, not promised, and it landed), and `lp_disabled=True` ⇒ rung 32 `MapMatcher`
+  (shaped) **and** rung 31 `OffDesignMatcher` (flat) by **exact dispatch**, completing the
+  ladder. Its non-tautological gate (gate 3, since the flat reduce holds every `η` at design and
+  the `lp_disabled` reduce never enters the two-spool path) is an INDEPENDENT bare-math CPG
+  two-spool **MAP** cascade — no `Gas`/`Component`/`ComponentMap`/`TwoSpoolMapMatcher`, its own
+  bisections, its own speed-line inversions, and efficiency fixed points by **damped
+  substitution** rather than the shipped secant — reproducing `(π_LPC, π_HPC, η_LPC, η_HPC,
+  n_L, n_H)` across a throttle sweep. Its finding gates: **gate 4 (THE ASYMMETRY**, on
+  `_cascade_map` at a FIXED `(Tt2, pt2, Tt4, f)`, `a_t=0`, ≥3 shape pairs × 3 throttles, CPG
+  **and** reacting) — `η_LPC` leaves `π_HPC` **bit-for-bit unchanged** (`==`) while `η_HPC`
+  **moves** `π_LPC` with a **negative** sign, plus the asserted CONTRAST that `η_HPT`/`η_LPT`
+  move **both** (so it cannot be misread as "the spools don't talk"); **gate 5** — a turbine map
+  **does** open the closed leaf but **>50×** weaker (a deliberately loose bound; measured
+  119×–548×, **ratio disclaimed**); **gate 6** — `slip ≡ 1` on CPG + flat maps at every throttle
+  **and under a forced `f`** (the `(1+f)`-cancellation, so the identity is structural, not a
+  design-point coincidence); **gate 7** — the rung-31-gate-5 **mirror** (the same flat maps drift
+  on the variable-`cp` gases) asserted beside the **dominance** (on the same CPG gas the map
+  channel exceeds the gas channel); **gate 8** — the slip is **monotone-decreasing** across ≥3
+  shape pairs (**sign only**; magnitude disclaimed). It **deliberately claims no** magnitude
+  (arrow strength, back-arrow ratio, slip depth all ride on the representative shapes), does
+  **not** claim the slip DIRECTION is structural (only B1's identity is), and makes **no
+  two-spool surge-margin claim**.
 - `docs/rungN-spec.md` — the derivation, assumptions, concessions and gates for rung N.
   `docs/plans/rungN-anchor-*.md` — that rung's verified anchor data.
 
@@ -781,7 +867,7 @@ default run still rung-6 exact.
   marches) are tagged `slow` and **deselected** — BUT the bit-for-bit **reduce spine**
   (`test_reduce_*`, `test_cycle_untouched_*`, `*_bit_for_bit`) is kept in the fast run, so routine
   `pytest` still guards "each rung reduces to its predecessor, exactly and by test."
-- Run tests (full, every gate):  `pytest --runslow`  — all 377 tests (~10–15 min). **Use this at
+- Run tests (full, every gate):  `pytest --runslow`  — all 387 tests (~10–15 min). **Use this at
   commit / session-end / CI** — the fast subset is for quick iteration, not for signing off a rung.
 - Only the slow gates:  `pytest -m slow`   ·   One rung by hand:  `python tests/test_rung2.py`
 - Install deps:   `pip install -r requirements.txt`  (matplotlib + pytest + pytest-xdist)
