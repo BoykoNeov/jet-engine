@@ -4401,3 +4401,122 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
             return q, spread(q)
         return min(((i / 20.0, spread(i / 20.0)) for i in range(0, 25)),
                    key=lambda t: t[1] if t[1] == t[1] else 9e9)
+
+    # --- RUNG 45: the TRANSIENT surge line ON THE FUEL PATH -------------------------
+
+    def _fuel_ramp_march(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                         r: float, s_settle: float, ds: float):
+        """RUNG 45. March a FUEL ramp whose steady endpoints are the fuel-equivalents of
+        Tt4_lo -> Tt4_hi (`fuel_for_Tt4`), from the running-line start there. Returns the
+        marched trajectory and a COMMANDED running-line phi lookup `steady(s, spool)` =
+        phi_steady(Tt4_cmd(s)), where Tt4_cmd(s) is the LINEAR Tt4 ramp the fuel command
+        corresponds to -- NOT the overshooting OUTPUT Tt4.
+
+        Referencing to the commanded SCHEDULE (not the output) is rung 44's discipline
+        ("strip the steady schedule's drift"): the overshoot is the transient, not part of
+        the schedule, and on the Tt4 path (command == output) this reduces to rung 44 EXACTLY.
+        Referencing to the output instead would fold rung 43's rho-monotone overshoot into the
+        baseline -- a moving-reference currency trap (the surge-axis echo of rung 43's
+        currency-circularity). A 9-point grid + linear interp (rung 43's `_interp`) keeps the
+        running line cheap. READ-ONLY: it marches `integrate_fuel` and writes nothing, so an
+        armed surge line is never touched (the rung-41 reduce, two rungs on)."""
+        assert getattr(self, "_degenerate", None) is None, (
+            "the fuel-path transient surge split is inherently two-shaft (rung 44's contract): "
+            "lp_disabled is not a reduce axis for a split BETWEEN spools.")
+        mf_lo = self.fuel_for_Tt4(flight, Tt4_lo)
+        mf_hi = self.fuel_for_Tt4(flight, Tt4_hi)
+        eq0 = self.equilibrium(flight, Tt4_lo)
+        nu0 = (eq0["nu_lp"], eq0["nu_hp"])
+
+        def sched(s: float) -> float:
+            if s <= 0.0:
+                return mf_lo
+            if s >= r:
+                return mf_hi
+            return mf_lo + (mf_hi - mf_lo) * (s / r)
+
+        traj = self.integrate_fuel(flight, sched, nu0, r + s_settle, ds)
+        lo, hi = min(Tt4_lo, Tt4_hi), max(Tt4_lo, Tt4_hi)
+        grid = [lo + (hi - lo) * k / 8.0 for k in range(9)]
+        rl = [self.equilibrium(flight, T) for T in grid]
+        ys_l = [p["phi_lp"] for p in rl]
+        ys_h = [p["phi_hp"] for p in rl]
+
+        def steady(s: float, spool: str) -> float:
+            u = min(1.0, s / r) if r > 0 else 1.0
+            Tt4_cmd = Tt4_lo + (Tt4_hi - Tt4_lo) * u
+            return (self._interp(grid, ys_l, Tt4_cmd) if spool == "lp"
+                    else self._interp(grid, ys_h, Tt4_cmd))
+
+        return traj, steady
+
+    def phi_excursion_fuel(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                           r: float = 0.5, s_settle: float = 6.0, ds: float = 0.02) -> dict:
+        """RUNG 45. Signed extremum of `phi(s) - phi_steady(Tt4_cmd(s))` per spool over a
+        marched FUEL ramp, referenced to the COMMANDED running line -- rung 44's `phi_excursion`
+        with fuel the control and Tt4 an OUTPUT. NEGATIVE <=> below the running line <=> TOWARD
+        surge.
+
+        Accel: both spools TOWARD surge (ext<0), the LP the larger magnitude
+        (|ext_lp| > |ext_hp|); decel is the mirror (ext>0 on both). The LP-eats-more DOMINANCE
+        COMPRESSES vs rung 44 (ratio ~1.2-1.7 vs 1.6-2.2) because the Tt4 overshoot loads the HP
+        transient lag, so this object gates only the ORDERING; the STRONG LP asymmetry is on the
+        raw `transient_surge_margin_fuel` (the LP crosses while the HP clears wide). Needs NO
+        surge line."""
+        traj, steady = self._fuel_ramp_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds)
+        ext_lp = ext_hp = 0.0
+        s_lp = s_hp = 0.0
+        min_phi_lp = min_phi_hp = float("inf")
+        Tt4_peak = Tt4_lo
+        for p in traj:
+            e_lp = p["phi_lp"] - steady(p["s"], "lp")
+            e_hp = p["phi_hp"] - steady(p["s"], "hp")
+            if abs(e_lp) > abs(ext_lp):
+                ext_lp, s_lp = e_lp, p["s"]
+            if abs(e_hp) > abs(ext_hp):
+                ext_hp, s_hp = e_hp, p["s"]
+            min_phi_lp = min(min_phi_lp, p["phi_lp"])
+            min_phi_hp = min(min_phi_hp, p["phi_hp"])
+            Tt4_peak = max(Tt4_peak, p["Tt4"])
+        return dict(ext_lp=ext_lp, ext_hp=ext_hp, s_lp=s_lp, s_hp=s_hp,
+                    min_phi_lp=min_phi_lp, min_phi_hp=min_phi_hp, Tt4_peak=Tt4_peak,
+                    ratio=abs(ext_lp) / abs(ext_hp) if ext_hp else float("inf"),
+                    npts=len(traj))
+
+    def transient_surge_margin_fuel(self, flight: FlightCondition, Tt4_lo: float,
+                                    Tt4_hi: float, r: float = 0.5, s_settle: float = 6.0,
+                                    ds: float = 0.02) -> dict:
+        """RUNG 45. March the FUEL ramp against the IMPOSED phi_surge and REPORT the crossing per
+        spool -- the fuel-path analogue of rung 44's `transient_surge_margin`, under the same
+        rung-36 discipline (report the crossing, gate the flip).
+
+        The RAW (reference-free) transient min phi is THE surge object: it is what crosses
+        phi_surge, and -- unlike the running-line-referenced excursion -- it is immune to the
+        moving-reference currency trap. Its rho-invariance is the load-bearing finding: the Tt4
+        overshoot (rung 43) is strongly rho-monotone yet does NOT reach `margin_min_lp` (an order
+        weaker than the TIT channel), so rung 44's "rho powerless over surge" SURVIVES the control
+        swap on the reference-free object. Fuel ALSO drives the raw min phi DEEPER than Tt4-control
+        at the same ramp rate (rung 35's enlargement, now on two shafts). The LP crosses while the
+        HP clears wide. `margin_min_*` may go NEGATIVE (crossing allowed); `crossed_*` flags it.
+        The crossing DEPTH is disclaimed (imposed phi_surge, ramp rate); the gated object is the
+        flip's SIGN (`margin_min_lp < steady_min_lp`). Needs armed phi_surge on BOTH maps."""
+        ml, mh = self.map_lp, self.map_hp
+        assert ml.phi_surge > 0.0 and mh.phi_surge > 0.0, (
+            "transient_surge_margin_fuel needs a surge line on BOTH maps: build each with "
+            ".with_phi_surge(phi_surge).")
+        traj, steady = self._fuel_ramp_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds)
+        tr_lp = tr_hp = float("inf")   # RAW transient min (phi - phi_surge)
+        st_lp = st_hp = float("inf")   # COMMANDED steady min (phi_steady - phi_surge)
+        min_phi_lp = min_phi_hp = float("inf")
+        for p in traj:
+            tr_lp = min(tr_lp, p["phi_lp"] - ml.phi_surge)
+            tr_hp = min(tr_hp, p["phi_hp"] - mh.phi_surge)
+            st_lp = min(st_lp, steady(p["s"], "lp") - ml.phi_surge)
+            st_hp = min(st_hp, steady(p["s"], "hp") - mh.phi_surge)
+            min_phi_lp = min(min_phi_lp, p["phi_lp"])
+            min_phi_hp = min(min_phi_hp, p["phi_hp"])
+        return dict(margin_min_lp=tr_lp, margin_min_hp=tr_hp,
+                    steady_min_lp=st_lp, steady_min_hp=st_hp,
+                    min_phi_lp=min_phi_lp, min_phi_hp=min_phi_hp,
+                    crossed_lp=tr_lp < 0.0, crossed_hp=tr_hp < 0.0,
+                    phi_surge_lp=ml.phi_surge, phi_surge_hp=mh.phi_surge, npts=len(traj))

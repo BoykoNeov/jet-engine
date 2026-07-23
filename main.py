@@ -2322,6 +2322,74 @@ def print_transient_surge_table(flight):
     print("  Tt4-control (fuel path is the extension). Cycle stays rung-6 exact.")
 
 
+def print_transient_fuel_surge_table(flight):
+    """Rung-45 payoff: rung 44's transient surge line on rung 43's FUEL-controlled plant.
+
+    Rung 44 measured the surge excursion with Tt4 COMMANDED (a clean ramp). On the FUEL path Tt4
+    is an OUTPUT that OVERSHOOTS (rung 43), and that overshoot is strongly rho-MONOTONE. THE
+    HEADLINE: the overshoot does NOT reach the reference-free surge object -- the raw transient
+    min phi stays rho-INVARIANT. The rho signal is real in the PLANT, absent from the SURGE
+    MARGIN; it surfaces only in reference-dependent currencies (a currency trap on the surge
+    axis). Fuel ENLARGES the approach (rung 35, two shafts) and COMPRESSES the LP-eats-more
+    excursion ratio. Pure diagnostic beside the cycle: reads integrate_fuel, bit-for-bit rung 6.
+    """
+    print("\nTransient surge on the FUEL path (rung 45): rung 44's diagnostic on rung 43's plant,")
+    print("where Tt4 FLOATS and OVERSHOOTS. The overshoot is rho-loud; the surge object is rho-quiet.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, TT4, flight.p0,
+                                      nozzle_convergent=True, **losses)
+
+    def ft(ml=LP, mh=HP, rho=1.0):
+        return TwoSpoolFuelTransient(design, flight, 1.0, map_lp=ml, map_hp=mh, rho=rho)
+
+    # --- THE HEADLINE: the currency trap.
+    print("\n  THE CURRENCY TRAP (flow/press, accel Tt4 1000->1400, r=0.5). Sweep rho: the Tt4 PEAK")
+    print("  (the plant) swings hard, the RAW min phi (the surge object) barely moves:")
+    print(f"  {'':>12}" + "".join(f"{('rho='+str(x)):>10}" for x in (0.2, 1.0, 5.0)))
+    peaks, mins = [], []
+    for r in (0.2, 1.0, 5.0):
+        e = ft(rho=r).phi_excursion_fuel(flight, 1000.0, 1400.0, r=0.5)
+        peaks.append(e["Tt4_peak"])
+        mins.append(e["min_phi_lp"])
+    print(f"  {'Tt4_peak:':>12}" + "".join(f"{p:10.1f}" for p in peaks) + "   <- ~12% (rho-LOUD)")
+    print(f"  {'min_phi_lp:':>12}" + "".join(f"{m:10.4f}" for m in mins) + "   <- <1% (rho-QUIET)")
+    print("  => rung 43's rho-monotone overshoot NEVER reaches the surge object. rung 44's 'rho")
+    print("     powerless over surge' SURVIVES on the reference-free object -- the currency you pick")
+    print("     (output-referenced excursion would read ~40%!) decides whether rho appears to matter.")
+
+    # --- FUEL ENLARGES the approach vs Tt4 control (rung 35 on two shafts).
+    print("\n  FUEL ENLARGES the approach (rung 35, two shafts). Same endpoints + ramp, raw min phi_lp:")
+    tt4 = TwoSpoolTransient(design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0)
+    print(f"  {'':>12}" + "".join(f"{('r='+str(x)):>10}" for x in (1.0, 0.5, 0.3)))
+    frow = "".join(f"{ft().phi_excursion_fuel(flight,1000.0,1400.0,r=r)['min_phi_lp']:10.4f}"
+                   for r in (1.0, 0.5, 0.3))
+    trow = "".join(f"{tt4.phi_excursion(flight,1000.0,400.0,r_ramp=r)['min_phi_lp']:10.4f}"
+                   for r in (1.0, 0.5, 0.3))
+    print(f"  {'fuel:':>12}" + frow + "   <- deeper toward surge (Tt4 overshoot amplifies)")
+    print(f"  {'Tt4-ctrl:':>12}" + trow)
+
+    # --- REPORT THE CROSSING, GATE THE FLIP (accel; the raw object is degenerate on a decel).
+    print("\n  REPORT THE CROSSING, GATE THE FLIP (rung 36, on the ACCEL). Arm phi_surge, floor in gap:")
+    fa = ft(LP.with_phi_surge(0.746), HP.with_phi_surge(0.55))
+    m = fa.transient_surge_margin_fuel(flight, 1000.0, 1400.0, r=0.3)
+    print(f"    steady min LP margin = {m['steady_min_lp']:+.4f}  (clears the phi_surge=0.746 floor)")
+    print(f"    transient min LP     = {m['margin_min_lp']:+.4f}  crossed_lp={m['crossed_lp']} "
+          f"crossed_hp={m['crossed_hp']}")
+    print("  The LP crosses while the HP clears wide (the strong asymmetry; the excursion RATIO")
+    print("  compresses to ~1.2-1.7 vs rung 44's 1.6-2.2). NO survival claim -- phi_surge imposed,")
+    print("  tripled. Reduce: reads integrate_fuel -> rung 43 bit-for-bit; cycle stays rung-6 exact.")
+
+
 def print_pdf_quench_table(flight):
     """Rung-15 payoff: the PDF THROUGH the finite quench — the two mixing mechanisms COMBINED.
 
@@ -3400,6 +3468,8 @@ def main():
     print_two_shaft_fuel_table(FLIGHT)
 
     print_transient_surge_table(FLIGHT)
+
+    print_transient_fuel_surge_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 
