@@ -19,7 +19,7 @@ teaching, not for features or polish.
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is
-anchored to a published case. All rungs are live; the current scope is **rung 43**.
+anchored to a published case. All rungs are live; the current scope is **rung 44**.
 
 **This table is the one-line map, not the handout.** Read a rung's spec (last
 column) before touching it — that is where the real content lives.
@@ -70,6 +70,7 @@ column) before touching it — that is where the real content lives.
 | 41 | **The two-spool surge line** — surge methods on `TwoSpoolMapMatcher`: the exposure **SPLITS onto the LP spool**. A **LIVE** zero-new-constant `π*=γc^(γc/(γc−1))`; corrects rung 36's mechanism, its verdict survives. | `docs/rung41-spec.md` |
 | 42 | **Interstage bleed** — `TwoSpoolBleedMatcher`: the project's **first STEADY mass extraction**. Bleed is a **new DoF on the LP spool and NOT the HP**; the "penalises HP" hypothesis is **refuted**. | `docs/rung42-spec.md` |
 | 43 | **Two-shaft fuel metering** — `TwoSpoolFuelTransient`: rung-35 control on rung-40's plant. The two spools sit at **DIFFERENT points in ONE overshoot loop**, so **NEITHER clock governs it**; the **currency-circularity** trap. | `docs/rung43-spec.md` |
+| 44 | **The transient two-spool surge line** — `phi_excursion`/`transient_surge_margin` on `TwoSpoolTransient`: the accel drives BOTH spools toward surge, the **LP eats ~1.6–2.2×** (rung 41 survives dynamically), but the excursion is **SCHEDULE-slaved** — `ρ`-invariant, ramp-rate-driven, **mode-independent**. Report the crossing, gate the flip. | `docs/rung44-spec.md` |
 
 ## Working contract (from SPEC.md — these override convenience)
 - **Derive before you code.** For each station, write the governing equation and
@@ -85,7 +86,7 @@ column) before touching it — that is where the real content lives.
 - **Every new rung reduces to its predecessor**, exactly and by test (`X=None` ⇒
   the prior code path). This is the project's spine — see any `docs/rungN-spec.md`.
 
-**Current scope (rung 43).** The **cycle solve** is a thermally-perfect, reacting,
+**Current scope (rung 44).** The **cycle solve** is a thermally-perfect, reacting,
 dissociation-equilibrium gas (`Gas.reacting_equilibrium()`) through ideal + real
 components (isentropic `η_c/η_t` **or** polytropic `e_c/e_t`, mutually exclusive;
 `π_d/π_b/π_n`, `η_b`, `η_m`; dual cold/hot gas; specified exit pressure). The burner
@@ -93,12 +94,13 @@ root-finds `f` over the scale-B absolute balance (re-solving equilibrium each tr
 then freezes the station-4 mixture through turbine + nozzle. Fork A/B and
 frozen-products gases are kept alongside. **Everything from rung 7 up is a diagnostic
 *beside* the cycle**, reached through **separate entry points** that leave the default
-`build_turbojet(…).run(…)` design run **bit-for-bit rung 6**. Rungs **31–43** are the
+`build_turbojet(…).run(…)` design run **bit-for-bit rung 6**. Rungs **31–44** are the
 STRUCTURAL / DYNAMIC rungs (a new off-design or transient operating point — the
 single-spool ladder `OffDesignMatcher → MapMatcher → SpoolTransient → CombustorTransient`
 and the two-spool ladder `TwoSpoolMatcher → TwoSpoolMapMatcher → TwoSpoolTransient →
-TwoSpoolBleedMatcher → TwoSpoolFuelTransient`); rungs **7–30, 36, 41** are pure
-diagnostics that only *read* the design-point state. Each rung reduces to its
+TwoSpoolBleedMatcher → TwoSpoolFuelTransient`, with rung 44's transient-surge methods on
+`TwoSpoolTransient`); rungs **7–30, 36, 41, 44** are pure
+diagnostics that only *read* the design-point / running-line state. Each rung reduces to its
 predecessor exactly and by test — the gates are named in its spec.
 
 ## Deferred seams — status map
@@ -110,7 +112,7 @@ closed vs open — keep it one line per entry.
 - Finite-rate nozzle chemistry → **rung 25**; freeze-out → **rung 26**; NO freeze-out → **rung 27**; coupled NO march → **rung 28**; the shifting turbine → **rung 29**.
 - The choked convergent nozzle → **rung 30**; off-design matching → **rung 31**; component-map matching → **rung 32**; the subsonic-nozzle branch → **rung 33**.
 - The spool transient → **rung 34**; fuel metering (`Tt4` output) → **rung 35**; the surge line → **rung 36**; the two combustor internal clocks → **rung 37**.
-- Two-spool matching → **rung 38**; two-spool + maps → **rung 39**; the two-shaft transient → **rung 40**; the two-spool surge line → **rung 41**; the bleed valve → **rung 42**; two-shaft fuel metering → **rung 43**.
+- Two-spool matching → **rung 38**; two-spool + maps → **rung 39**; the two-shaft transient → **rung 40**; the two-spool surge line → **rung 41**; the bleed valve → **rung 42**; two-shaft fuel metering → **rung 43**; the transient two-spool surge line → **rung 44**.
 
 **Investigated, NEGATIVE — not shipped, not a rung (these facts live only here + the doc):**
 - Resolved `τ_res` from the nozzle area-schedule (rung 26's seam a) — `docs/tau-res-negative.md` (shape moot; needs an entry Mach). Confirms rung 26.
@@ -128,9 +130,8 @@ closed vs open — keep it one line per entry.
 - **A per-pocket clamp that fires AT THE BURNER** (`max_a>1` at station 4) — lever is a slow-enough freeze on a cooling pocket (rungs 20/21 confirm it is not a hotter `Tt4`).
 - **Detailed Fenimore** (`CH+N₂→HCN`) and **super-eq-O radical-decay history** — need new species / a relaxing pocket a 0-D pool cannot derive.
 - **Reacting-gas fuel control** (rungs 35/43 defer — the forward burner asserts against an equilibrium gas; the finding is gas-independent).
-- **The transient two-spool surge line** (rung 40's complex mode measured against rung 41's boundary — rung 41 is steady-only) ⇒ no surge-**survival** claim yet.
 - **The subsonic / unchoked LP branch** in the two-spool solves (rung 38 flags, does not solve) and its **transient**.
-- **The variable stator** (moves `φ_surge` itself — rung 42 did the bleed half); a **bleed schedule** `b(n_L)`; **fuel + bleed together**; a **TIT redline**.
+- **The variable stator** (moves `φ_surge` itself — rung 42 did the bleed half); a **bleed schedule** `b(n_L)`; **fuel + bleed together**; a **TIT redline**; the **transient surge on the FUEL path** (rung 44 is `Tt4`-controlled; rung 35/43 fuel control is expected to enlarge the excursion).
 - **Rung 37's internal clocks on two shafts** and the combined 3-state; **customer/cooling bleed** at station 3.
 - **Afterburner**; a **real hardware/CFD map + surge line** (rung 32's standing concession, now doubled across two spools).
 - **Feeding any shifted/marched state into the production cycle** — a re-foundation (re-anchors every rung's numbers), not a rung.
@@ -168,12 +169,12 @@ A compact map — the per-rung method/finding detail lives in `docs/rungN-spec.m
   entry point** (the design `run` is untouched): single-spool `OffDesignMatcher` (31) → `MapMatcher` +
   `ComponentMap` (32) → `._match_subsonic` (33) → `SpoolTransient` (34, + fuel 35, + surge 36) →
   `CombustorTransient` (37); two-spool `build_two_spool_turbojet` / `TwoSpoolMatcher` (38) →
-  `TwoSpoolMapMatcher` (39) → `TwoSpoolTransient` (40, + surge methods 41) → `TwoSpoolBleedMatcher` (42)
-  → `TwoSpoolFuelTransient` (43). Each reduces to its predecessor (exact dispatch or the forward
+  `TwoSpoolMapMatcher` (39) → `TwoSpoolTransient` (40, + surge methods 41, + transient-surge methods 44)
+  → `TwoSpoolBleedMatcher` (42) → `TwoSpoolFuelTransient` (43). Each reduces to its predecessor (exact dispatch or the forward
   closure); the method names + reduce contracts are in each rung's spec.
 - `main.py` — the design-point run: ideal-vs-real tables, the overlaid T–s diagram, and **one panel
   per rung** (each demonstrates that rung's load-bearing claim and states its honest scope).
-- `tests/` — per-rung `test_rungN.py` (N = 1…43; plus the rung-1/2b/3/4/5 files). Every rung file
+- `tests/` — per-rung `test_rungN.py` (N = 1…44; plus the rung-1/2b/3/4/5 files). Every rung file
   carries that rung's **reduce-to-prior** gate plus its load-bearing claims — the gates are named in
   the spec. `test_claude_md_reference.py` is the size guard on this file.
 - `docs/rungN-spec.md` — the derivation, assumptions, concessions and gates for rung N.

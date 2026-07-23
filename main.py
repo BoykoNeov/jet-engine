@@ -2246,6 +2246,82 @@ def print_two_shaft_fuel_table(flight):
     print("  35 bit-for-bit; Tt4-control untouched => rung 40 bit-for-bit. Cycle stays rung-6 exact.")
 
 
+def print_transient_surge_table(flight):
+    """Rung 44 — THE TRANSIENT TWO-SPOOL SURGE LINE: the excursion is SCHEDULE-slaved, LP eats it.
+
+    Marches rung 40's trajectory against rung 41's imposed surge line. The accel drives BOTH
+    spools toward surge, the LP eating ~1.6-2.2x the HP's (rung 41 survives dynamically), but the
+    excursion is rho-INVARIANT, ramp-rate-driven, and MODE-INDEPENDENT -- rung 40's two exotic
+    objects (rho, the complex mode) are both surge-irrelevant. Sign-space only: phi_surge stays
+    imposed, so report the crossing, gate the flip -- no survival claim.
+    """
+    print("\nTransient two-spool surge line (rung 44): rungs 40 and 41 both deferred this in the")
+    print("same words -- march rung 40's trajectory against rung 41's line. On an ACCEL the fuel/Tt4")
+    print("step outruns the shaft inertia, so phi dips BELOW the steady running line -- toward surge.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0)
+    FLAT = ComponentMap.flat()
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    def tt(ml=LP, mh=HP, rho=1.0):
+        design = build_two_spool_turbojet(cpg(), 3.0, 6.0, TT4, flight.p0,
+                                          nozzle_convergent=True, **losses)
+        return TwoSpoolTransient(design, flight, 1.0, map_lp=ml, map_hp=mh, rho=rho)
+
+    # --- THE SPLIT SURVIVES DYNAMICALLY, and the mode is IRRELEVANT (hp-only is the tell).
+    print("\n  THE SPLIT, DYNAMIC (accel Tt4 1000->1400). ext = extremum of phi(s)-phi_steady(Tt4),")
+    print("  referenced to the running line. NEGATIVE = toward surge. hp-only (LP map FLAT) has NO")
+    print("  complex mode -- yet the LARGEST LP/HP ratio, so the asymmetry is NOT the mode:")
+    print(f"  {'shape pair':>12} {'ext_lp':>9} {'ext_hp':>9} {'|L/H|':>7} {'band?':>7} {'|Im/Re|':>8}")
+    print("  " + "-" * 56)
+    for name, (ml, mh) in (("flow/press", (LP, HP)), ("hp-only", (FLAT, HP))):
+        t = tt(ml, mh)
+        e = t.phi_excursion(flight, 1000.0, 400.0)
+        band = t.oscillatory_band(flight, 1200.0)
+        dr = t.damping_ratio_max(flight, 1200.0)
+        print(f"  {name:>12} {e['ext_lp']:+9.4f} {e['ext_hp']:+9.4f} {e['ratio']:7.2f} "
+              f"{('yes' if band else 'NONE'):>7} {dr:8.4f}")
+    print("  => both spools toward surge, LP eats ~1.9-2.2x. The MODE-IRRELEVANCE claim rests on the")
+    print("     DAMPING RATIO: every |Im/Re| < 0.25 (e-folds before a quarter cycle) -> the ring")
+    print("     cannot cross a line the steady point clears. The mode-free pair eating the MOST is")
+    print("     CORROBORATION (mode not necessary), not proof -- it also swaps LP shaped->flat.")
+
+    # --- SCHEDULE-SLAVED: rho-invariant but ramp-rate-driven.
+    print("\n  SCHEDULE-SLAVED (flow/press). Over a 25x rho range the excursion barely moves; over")
+    print("  the ramp rate it moves ~5x. rho (which spool LEADS) is powerless; the SLAM RATE governs:")
+    print(f"  {'':>14}" + "".join(f"{('rho='+str(x)):>9}" for x in (0.2, 1.0, 5.0)))
+    row = "".join(f"{tt(rho=r).phi_excursion(flight,1000.0,400.0)['ext_lp']:9.4f}"
+                  for r in (0.2, 1.0, 5.0))
+    print(f"  {'ext_lp:':>14}" + row + "   <- <2% spread")
+    t = tt()
+    print(f"  {'':>14}" + "".join(f"{('r='+str(x)):>9}" for x in (0.1, 0.5, 2.0)))
+    row = "".join(f"{t.phi_excursion(flight,1000.0,400.0,r_ramp=r,s_end=6.0)['ext_lp']:9.4f}"
+                  for r in (0.1, 0.5, 2.0))
+    print(f"  {'ext_lp:':>14}" + row + "   <- faster => deeper")
+
+    # --- REPORT THE CROSSING, GATE THE FLIP.
+    print("\n  REPORT THE CROSSING, GATE THE FLIP (rung 36's discipline). Arm phi_surge and place a")
+    print("  floor in the gap: the steady point CLEARS it, the transient CROSSES -- on the LP spool:")
+    ta = tt(LP.with_phi_surge(0.76), HP.with_phi_surge(0.55))
+    m = ta.transient_surge_margin(flight, 1000.0, 400.0, r_ramp=0.3)
+    print(f"    steady min LP margin = {m['steady_min_lp']:+.4f}  (clears the phi_surge=0.76 floor)")
+    print(f"    transient min LP     = {m['margin_min_lp']:+.4f}  crossed_lp={m['crossed_lp']} "
+          f"crossed_hp={m['crossed_hp']}")
+    print("  The crossing DEPTH rides on the imposed floor + the ramp (disclaimed); the flip's SIGN")
+    print("  (transient below steady, on the LP spool) is the gated object. NO survival claim.")
+    print("\n  NOT claimed: any magnitude (phi_surge imposed, DOUBLED; excursion depths ride on the")
+    print("  maps + the ramp); the mode's irrelevance is only at |Im/Re|<=0.164, not universal.")
+    print("  Reduce: the methods only READ -> rung 40 integrate/equilibrium/jacobian bit-for-bit;")
+    print("  Tt4-control (fuel path is the extension). Cycle stays rung-6 exact.")
+
+
 def print_pdf_quench_table(flight):
     """Rung-15 payoff: the PDF THROUGH the finite quench — the two mixing mechanisms COMBINED.
 
@@ -3322,6 +3398,8 @@ def main():
     print_interstage_bleed_table(FLIGHT)
 
     print_two_shaft_fuel_table(FLIGHT)
+
+    print_transient_surge_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

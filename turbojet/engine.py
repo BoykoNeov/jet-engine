@@ -3605,6 +3605,94 @@ class TwoSpoolTransient(TwoSpoolMapMatcher):
                 ext = e
         return ext
 
+    # --- RUNG 44: the TRANSIENT surge line — the phi excursion and the crossing -----------
+
+    def _ramp_march(self, flight: FlightCondition, Tt4_lo: float, dTt4: float,
+                    r_ramp: float, s_end: float, ds: float):
+        """RUNG 44. March a linear Tt4 ramp from the running-line start at Tt4_lo (nu0 = the
+        matched speeds there), Tt4 -> Tt4_lo+dTt4 over s in [0, r_ramp]. Returns the marched
+        points and a running-line-referenced steady-phi lookup (a cached rung-39 match, per
+        instantaneous Tt4). Shared by `phi_excursion` and `transient_surge_margin`.
+        READ-ONLY: it calls `integrate`/`match` and writes nothing — the surge line, if armed,
+        is never touched (the rung-41 reduce, one rung on)."""
+        od_lo = self.match(flight, Tt4_lo)
+        nu0 = (od_lo.N_lp_ratio, od_lo.N_hp_ratio)
+
+        def sched(t):
+            return Tt4_lo + dTt4 * min(1.0, t / r_ramp)
+
+        pts = self.integrate(flight, sched, nu0, s_end, ds)
+        cache: dict = {}
+
+        def steady(Tt4: float, spool: str) -> float:
+            key = round(Tt4, 3)
+            if key not in cache:
+                od = self.match(flight, Tt4)
+                cache[key] = (od.phi_lp, od.phi_hp)
+            return cache[key][0 if spool == "lp" else 1]
+
+        return pts, steady
+
+    def phi_excursion(self, flight: FlightCondition, Tt4_lo: float, dTt4: float,
+                      r_ramp: float = 0.5, s_end: float = 3.0, ds: float = 0.02) -> dict:
+        """RUNG 44. Signed extremum of `phi(s) - phi_steady(Tt4(s))` per spool over a marched
+        Tt4 ramp, referenced to the RUNNING LINE (the phi analogue of rung 40's
+        `slip_excursion`). NEGATIVE <=> phi dips BELOW the steady running line <=> TOWARD surge.
+
+        The acceleration case (dTt4 > 0) swings BOTH spools toward surge, the LP eating ~1.6-2.2x
+        the HP's (rung 41's steady exposure split, now transient); the excursion is
+        SCHEDULE-slaved -- rho-invariant, ramp-rate-driven -- and NOT the LP-map complex mode
+        (rung 44's finding). Every magnitude rides on the maps + the ramp; the SIGN and the
+        LP>HP ordering are the load-bearing content. Needs NO surge line (a pure running-line
+        statement)."""
+        pts, steady = self._ramp_march(flight, Tt4_lo, dTt4, r_ramp, s_end, ds)
+        ext_lp = ext_hp = 0.0
+        s_lp = s_hp = 0.0
+        min_phi_lp = min_phi_hp = float("inf")
+        for p in pts:
+            e_lp = p.phi_lp - steady(p.Tt4, "lp")
+            e_hp = p.phi_hp - steady(p.Tt4, "hp")
+            if abs(e_lp) > abs(ext_lp):
+                ext_lp, s_lp = e_lp, p.s
+            if abs(e_hp) > abs(ext_hp):
+                ext_hp, s_hp = e_hp, p.s
+            min_phi_lp = min(min_phi_lp, p.phi_lp)
+            min_phi_hp = min(min_phi_hp, p.phi_hp)
+        return dict(ext_lp=ext_lp, ext_hp=ext_hp, s_lp=s_lp, s_hp=s_hp,
+                    min_phi_lp=min_phi_lp, min_phi_hp=min_phi_hp,
+                    ratio=abs(ext_lp) / abs(ext_hp) if ext_hp else float("inf"),
+                    npts=len(pts))
+
+    def transient_surge_margin(self, flight: FlightCondition, Tt4_lo: float, dTt4: float,
+                               r_ramp: float = 0.5, s_end: float = 3.0,
+                               ds: float = 0.02) -> dict:
+        """RUNG 44. March the Tt4 ramp against the IMPOSED phi_surge and REPORT the crossing per
+        spool -- the transient analogue of the steady `surge_margin`, under the rung-36
+        discipline: REPORT the crossing, GATE the flip.
+
+        Unlike the steady `surge_margin` (which ASSERTS the point sits clear), this ALLOWS
+        phi < phi_surge and records it: `margin_min_*` = min_s (phi(s) - phi_surge) may go
+        NEGATIVE, and `crossed_*` flags it. The crossing DEPTH rides on the imposed phi_surge and
+        the ramp rate and is DISCLAIMED; the load-bearing object is that the transient min margin
+        sits BELOW the steady min margin at the same Tt4 (the flip's SIGN). Needs an armed surge
+        line on BOTH maps (phi_surge > 0)."""
+        ml, mh = self.map_lp, self.map_hp
+        assert ml.phi_surge > 0.0 and mh.phi_surge > 0.0, (
+            "transient_surge_margin needs a surge line on BOTH maps: build each with "
+            ".with_phi_surge(phi_surge).")
+        pts, steady = self._ramp_march(flight, Tt4_lo, dTt4, r_ramp, s_end, ds)
+        tr_lp = tr_hp = float("inf")   # transient min (phi - phi_surge)
+        st_lp = st_hp = float("inf")   # steady    min (phi_steady - phi_surge) at same Tt4
+        for p in pts:
+            tr_lp = min(tr_lp, p.phi_lp - ml.phi_surge)
+            tr_hp = min(tr_hp, p.phi_hp - mh.phi_surge)
+            st_lp = min(st_lp, steady(p.Tt4, "lp") - ml.phi_surge)
+            st_hp = min(st_hp, steady(p.Tt4, "hp") - mh.phi_surge)
+        return dict(margin_min_lp=tr_lp, margin_min_hp=tr_hp,
+                    steady_min_lp=st_lp, steady_min_hp=st_hp,
+                    crossed_lp=tr_lp < 0.0, crossed_hp=tr_hp < 0.0,
+                    phi_surge_lp=ml.phi_surge, phi_surge_hp=mh.phi_surge, npts=len(pts))
+
 
 # ======================================================================================
 # RUNG 42 — INTERSTAGE BLEED: the device that acts on the spool rung 41 exposed
