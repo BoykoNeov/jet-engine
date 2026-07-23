@@ -83,3 +83,68 @@ this failure mode. They are out of scope for this audit.
   looser bar.
 - Not a change to any *relative* tolerance. Those are the correct form and are why the
   bulk of the package is unaffected.
+
+## RESULT — CLOSED, NEGATIVE (2026-07-23). No code change.
+
+**All six `_ETA_TOL` sites are safe. The hypothesis is refuted at every one of them, and
+for a STRUCTURAL reason.** No fix was applied — an acceptance branch no input can reach
+is untestable dead code, exactly the bar rung 43's own fix was gated against.
+
+### The mechanism (this is the deliverable, not the sweep)
+
+The `_EQ_TOL` bug lived on a residual with **no float64 zero**: `Phi = eta_m*P_t - P_c`
+is a physical power imbalance built from equilibrium-noisy enthalpies (`h_t` of a working
+gas whose composition re-solves to ~1e-10 each Newton evaluation). `Phi=0` requires that
+noise to cancel, which it cannot, so it floored at ~1e-10 and spun to the cap.
+
+Every `_ETA_TOL` residual has the opposite structure: `R = eta_map(eta) - eta` — a
+**deterministic fixed-point-map minus the iterate**. For a fixed `eta`, `eta_map(eta)`
+returns the *same* value every call (the equilibrium solve is deterministic in its
+inputs), so `R(eta)` is a smooth deterministic function with an **exact float64 root**,
+and the secant lands on it. Crucially the one reacting-dependent input to the two-spool
+loops, `MFP4 = choked_mfp(wgas, Tt4, f)`, is computed **once outside** the loop — a
+loop-CONSTANT — so the equilibrium noise enters as a fixed offset that *shifts* the root,
+never as per-iteration jitter that *prevents* reaching it.
+
+### The evidence (probes in `M:\claud_projects\temp\solver_audit\`)
+
+Residual histories recorded with faithful high-cap copies that run PAST the natural exit
+(the shipped tol exits at the first iterate `<= 1e-11`, so an early-exit measurement reads
+the *threshold-crossing* residual, not the floor — a trap this audit fell into once and
+corrected):
+
+| Site | Loop | True floor `min|R|` | Notes |
+|---|---|---|---|
+| 2 | rung-39 `_hp_eta_loop` | **exactly 0.0** | shape-robust (tilted/flow/press/steep), gas-indep (tp≡re) |
+| 3 | rung-39 `_lp_eta_loop` | **exactly 0.0** | same |
+| 4 | rung-39 turbine outer loop | **~0 / <1e-16** | reaches `<=1e-11` by pass 3; `a_t>0` exercised |
+| 5 | rung-42 `_lp_eta_loop_bleed` | **exactly 0.0** | measured on reacting+bleed; the `1/(1-b)` is another loop-constant so gas-indep is *argued* from site-3 structure, not measured |
+| 6 | rung-42 turbine outer loop | **~0 (by identity)** | BYTE-IDENTICAL to site 4 (diff: only a comment + raise string); *argued*, not run |
+| 1 | rung-32 `MapMatcher.match` secant | **~1e-14, usually 0** | see below |
+
+**Site 1 is the only one with a non-trivial story, and it is still safe.** Its residual
+is NOT the clean fixed-point form: `_operating_point` runs an inner `(f,pt4)` loop and
+recomputes `choked_mfp`/`pr_c`/`T_from_h_c` (the cold `_solve`, `1e-11` *relative* tol)
+each outer step, so `R(eta_c)` carries ~1e-12 jitter and cannot always hit exactly 0.
+- **This floor is GAS-INDEPENDENT (`tp ~= re`)** — it is the cold-section `_solve`
+  relative tolerance leaking through, **NOT** the equilibrium sub-solve the todo
+  hypothesized. So the todo's specific mechanism is refuted here too; this is a distinct,
+  milder finding.
+- **The true floor is ~1e-14, three orders under the `1e-11` tol.** The secant converges
+  superlinearly to machine zero: a typical tail is `7.3e-5, 5.1e-7, 1.0e-11, 1.1e-16,
+  0.0` — the iterate *right after* a ~1e-11 value plunges to ~0, so it can never get
+  *stuck* above the tol. One input (`surge_pr`, `Tt4=1220`) settles into a period-3 limit
+  cycle, but at **~1e-14** — harmless against a `1e-11` bar.
+- **Early "9.99e-12 floor" readings were exit-residual artifacts.** The shipped match
+  exits at the first iterate `<=1e-11`; for a fast secant that iterate is often ~1e-11
+  (one step above the ~0 it would reach next), so the exit residual *clusters just under
+  the tol* across every shape — which reads as "thin margin" but is not one.
+- **The real match NEVER raises**: `RAISES=0` across 173 fine `Tt4` points x 4 shipped
+  shapes x 2 artificial steep/narrow shapes x 2 gases. If any input's floor exceeded
+  `1e-11`, the real (tol=`1e-11`, cap=80) match would have raised there. None did.
+
+The discriminator the audit was built to apply — *a raise that is non-monotone in `Tt4`*
+— never triggers, because there is no raise. The `_ETA_TOL=1e-11` bar sits comfortably
+above every site's floor. The fix shape (best-so-far acceptance after the loop, reachable
+only by inputs that previously raised) stays **on file** for a future steeper-map/CFD
+map that could genuinely floor a site above `1e-11`; it is deliberately NOT added now.

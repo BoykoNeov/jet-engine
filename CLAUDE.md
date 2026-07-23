@@ -842,16 +842,27 @@ bit-for-bit. Separate entry point; default run still rung-6 exact.
   doubled).
 
 ## Open engineering tasks (not rungs, not seams)
-- **Audit the iterative solvers for absolute-tolerance-below-noise-floor** —
-  `docs/plans/todo-solver-tolerance-audit.md`. Rung 43 found a **pre-existing** rung-40
-  defect: `_EQ_TOL`=1e-12 is an **absolute** residual test, but the residual's floor is
-  **gas-dependent** (~1e-14 CPG, ~1e-10 reacting), so the 2-D Newton converged physically
-  then spun to the cap and **raised** — non-monotone in `Tt4`, the tell that it is a solver
-  artifact. Latent for three rungs because rung 40's suite sampled around it. Rung 43's own
-  `equilibrium_fuel` is audited and safe; the six `_ETA_TOL`=1e-11 efficiency secants
-  (rungs 32/39/42) have the same *shape* and are **unaudited**. Fix shape: best-so-far
-  acceptance **after** the loop, reachable only by inputs that previously raised — never an
-  in-loop stagnation exit.
+- **Audit the iterative solvers for absolute-tolerance-below-noise-floor** — **CLOSED,
+  NEGATIVE** (`docs/plans/todo-solver-tolerance-audit.md`, no code change). Rung 43 found a
+  **pre-existing** rung-40 defect: `_EQ_TOL`=1e-12 is an **absolute** residual test, but the
+  residual's floor is **gas-dependent** (~1e-14 CPG, ~1e-10 reacting), so the 2-D Newton
+  converged physically then spun to the cap and **raised** — non-monotone in `Tt4`, the tell
+  that it is a solver artifact. This audit checked whether the six `_ETA_TOL`=1e-11
+  efficiency secants (rungs 32/39/42) share it. **They do NOT, for a structural reason:** the
+  `_EQ_TOL` residual is a physical power imbalance `Phi=eta_m*P_t-P_c` built from
+  equilibrium-noisy enthalpies, which has **no float64 zero** (floored ~1e-10, spun); every
+  `_ETA_TOL` residual is `R=eta_map(eta)-eta`, a **deterministic fixed-point-map minus the
+  iterate** with an **exact float64 root** (the one reacting input, `MFP4`, is a
+  loop-CONSTANT, so equilibrium noise shifts the root but never jitters it). Measured true
+  floors: 5 of 6 sites reach **exactly 0** (shape-robust, gas-indep); the one nonzero site
+  (rung-32 `MapMatcher.match`) floors at **~1e-14**, three orders under the tol, and is
+  **cold-`_solve`-relative-tol driven, gas-INDEPENDENT** — not the equilibrium mechanism the
+  todo hypothesized (refuted at all six). The real match **never raises** across 173 `Tt4` x
+  6 shapes x 2 gases. Early "~1e-11 floor" readings were **exit-residual artifacts** (the
+  secant exits at the first iterate `<=`tol, one superlinear step above the ~0 it reaches
+  next). No fix applied — a best-so-far branch no input reaches is untestable dead code. The
+  fix shape stays **on file** for a future steeper/CFD map that could genuinely floor a site
+  above 1e-11.
 
 ## Conventions
 - **SI units throughout** (K, Pa, kg/s, m/s, J/kg). Convert kPa → Pa internally.
