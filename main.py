@@ -2390,6 +2390,59 @@ def print_transient_fuel_surge_table(flight):
     print("  tripled. Reduce: reads integrate_fuel -> rung 43 bit-for-bit; cycle stays rung-6 exact.")
 
 
+def print_topping_governor_table(flight):
+    """Rung-46 payoff: the TIT TOPPING GOVERNOR -- the first fuel-side FEEDBACK.
+
+    Rung 43/45 left every fuel accel ending on 'no TIT limit is modelled'. Rung 46 clips the fuel
+    to hold Tt4 <= Tt4_max (a min-select, the standard accel-schedule limiter). The governor WORKS
+    (pins Tt4 at the redline). THE INVERSION: enforcing the TIT limit rebates surge margin on the
+    LATE, non-binding HP spool but MACHINE-ZERO on the EARLY, binding LP spool -- a two-shaft
+    SURGE-RELIEF SPLIT. The surge debit is paid on the early-ramp fuel (LP surge min at Tt4~1374,
+    upstream of the redline); the governor only trims LATE fuel, too late to claw it back."""
+    print("\nTIT topping governor (rung 46): clip fuel to hold Tt4 <= redline (the first fuel-side")
+    print("FEEDBACK). Enforcing the TIT limit SPLITS the surge relief -- it rebates the late HP spool")
+    print("but MISSES the early, binding LP one. Rung 35's coupled limits are SEQUENCED in time.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0)
+    design = build_two_spool_turbojet(Gas.thermally_perfect(), 3.0, 6.0, TT4, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    ft = TwoSpoolFuelTransient(design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0)
+
+    # --- THE MECHANISM: the LP surge min LEADS (low Tt4), the Tt4 peak LAGS.
+    tj, _ = ft._fuel_ramp_march(flight, 1000.0, 1400.0, 0.5, 2.0, 0.02)
+    lp = min(tj, key=lambda p: p["phi_lp"])
+    hp = min(tj, key=lambda p: p["phi_hp"])
+    pk = max(tj, key=lambda p: p["Tt4"])
+    print("\n  THE WINDOW (flow/press, accel Tt4 1000->1400, r=0.5). The limits are SEQUENCED:")
+    print(f"    LP surge min : s={lp['s']:.2f}  Tt4={lp['Tt4']:6.1f}  (DURING the ramp, below any redline)")
+    print(f"    HP surge min : s={hp['s']:.2f}  Tt4={hp['Tt4']:6.1f}  (LATE, inside the clip window)")
+    print(f"    Tt4 peak     : s={pk['s']:.2f}  Tt4={pk['Tt4']:6.1f}")
+
+    # --- THE SPLIT: enforce the redline, difference the surge object per spool.
+    print("\n  THE SPLIT (redline Tt4_max=1480, in the gap above the 1400 endpoint). relief>0 = safer:")
+    print(f"  {'shape':>12}{'relief_lp':>12}{'relief_hp':>12}{'held':>8}")
+    for name, (ml, mh) in (("flow/press", (LP, HP)),
+                           ("hp-only", (ComponentMap.flat(), HP))):
+        R = TwoSpoolFuelTransient(design, flight, 1.0, map_lp=ml, map_hp=mh, rho=1.0
+                                  ).topping_relief(flight, 1000.0, 1400.0, 1480.0, r=0.5, s_settle=2.0)
+        print(f"  {name:>12}{R['relief_lp']:>12.5f}{R['relief_hp']:>12.5f}{str(R['held']):>8}")
+    print("  => LP relief MACHINE-ZERO (the clip never reaches its early minimum), HP relief >0.")
+    print("     Holds even on hp-only (LP flat, NO complex mode) -- the pure WINDOW mechanism.")
+
+    # --- THE LEVER: fast ramp migrates the LP min INTO the clip window.
+    print("\n  THE LEVER (Tt4_max=1440): a FASTER ramp lifts the LP surge min above the redline ->")
+    print("  relief_lp switches ON (the governor becomes a modest LP-surge lever where it's needed):")
+    print(f"  {'':>12}" + "".join(f"{('r='+str(x)):>10}" for x in (0.5, 0.3, 0.15)))
+    row = "".join(f"{ft.topping_relief(flight,1000.0,1400.0,1440.0,r=r,s_settle=2.0)['relief_lp']:10.5f}"
+                  for r in (0.5, 0.3, 0.15))
+    print(f"  {'relief_lp:':>12}" + row)
+    print("  Tt4_max imposed -> no redline-level claim; the SPLIT sign is load-bearing. Reduce: dormant")
+    print("  (redline above the peak) -> rung 45/43 bit-for-bit; decel never fires; cycle rung-6 exact.")
+
+
 def print_pdf_quench_table(flight):
     """Rung-15 payoff: the PDF THROUGH the finite quench — the two mixing mechanisms COMBINED.
 
@@ -3470,6 +3523,8 @@ def main():
     print_transient_surge_table(FLIGHT)
 
     print_transient_fuel_surge_table(FLIGHT)
+
+    print_topping_governor_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

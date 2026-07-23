@@ -19,7 +19,7 @@ teaching, not for features or polish.
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is
-anchored to a published case. All rungs are live; the current scope is **rung 45**.
+anchored to a published case. All rungs are live; the current scope is **rung 46**.
 
 **This table is the one-line map, not the handout.** Read a rung's spec (last
 column) before touching it — that is where the real content lives.
@@ -72,6 +72,7 @@ column) before touching it — that is where the real content lives.
 | 43 | **Two-shaft fuel metering** — `TwoSpoolFuelTransient`: rung-35 control on rung-40's plant. The two spools sit at **DIFFERENT points in ONE overshoot loop**, so **NEITHER clock governs it**; the **currency-circularity** trap. | `docs/rung43-spec.md` |
 | 44 | **The transient two-spool surge line** — `phi_excursion`/`transient_surge_margin` on `TwoSpoolTransient`: the accel drives BOTH spools toward surge, the **LP eats ~1.6–2.2×** (rung 41 survives dynamically), but the excursion is **SCHEDULE-slaved** — `ρ`-invariant, ramp-rate-driven, **mode-independent**. Report the crossing, gate the flip. | `docs/rung44-spec.md` |
 | 45 | **The transient two-spool surge line on the FUEL path** — `phi_excursion_fuel`/`transient_surge_margin_fuel` on `TwoSpoolFuelTransient`: rung 43's `Tt4`-overshoot is `ρ`-MONOTONE yet **never reaches the reference-free surge object** (raw min `φ` `ρ`-invariant <2%) — a **currency trap on the surge axis**; fuel **ENLARGES** the approach (rung 35, two shafts) and **compresses** the LP-eats-more excursion ratio; ramp-rate still governs. | `docs/rung45-spec.md` |
+| 46 | **The TIT topping governor** — `integrate_fuel(Tt4_max=…)`/`topping_relief` on `TwoSpoolFuelTransient`: the **first fuel-side FEEDBACK**. Clipping fuel to hold `Tt4≤Tt4_max` **INVERTS** rung 35's coupled limits — it rebates surge on the **LATE non-binding HP** spool but **MACHINE-ZERO on the EARLY binding LP** one (the surge debit is paid on early-ramp fuel, **upstream** of the governor's late window); a two-shaft **surge-relief SPLIT** robust incl. mode-free hp-only; the LP rebate switches on **only in the fast-ramp limit**. | `docs/rung46-spec.md` |
 
 ## Working contract (from SPEC.md — these override convenience)
 - **Derive before you code.** For each station, write the governing equation and
@@ -87,7 +88,7 @@ column) before touching it — that is where the real content lives.
 - **Every new rung reduces to its predecessor**, exactly and by test (`X=None` ⇒
   the prior code path). This is the project's spine — see any `docs/rungN-spec.md`.
 
-**Current scope (rung 45).** The **cycle solve** is a thermally-perfect, reacting,
+**Current scope (rung 46).** The **cycle solve** is a thermally-perfect, reacting,
 dissociation-equilibrium gas (`Gas.reacting_equilibrium()`) through ideal + real
 components (isentropic `η_c/η_t` **or** polytropic `e_c/e_t`, mutually exclusive;
 `π_d/π_b/π_n`, `η_b`, `η_m`; dual cold/hot gas; specified exit pressure). The burner
@@ -95,12 +96,13 @@ root-finds `f` over the scale-B absolute balance (re-solving equilibrium each tr
 then freezes the station-4 mixture through turbine + nozzle. Fork A/B and
 frozen-products gases are kept alongside. **Everything from rung 7 up is a diagnostic
 *beside* the cycle**, reached through **separate entry points** that leave the default
-`build_turbojet(…).run(…)` design run **bit-for-bit rung 6**. Rungs **31–45** are the
+`build_turbojet(…).run(…)` design run **bit-for-bit rung 6**. Rungs **31–46** are the
 STRUCTURAL / DYNAMIC rungs (a new off-design or transient operating point — the
 single-spool ladder `OffDesignMatcher → MapMatcher → SpoolTransient → CombustorTransient`
 and the two-spool ladder `TwoSpoolMatcher → TwoSpoolMapMatcher → TwoSpoolTransient →
 TwoSpoolBleedMatcher → TwoSpoolFuelTransient`, with rung 44's transient-surge methods on
-`TwoSpoolTransient` and rung 45's on `TwoSpoolFuelTransient`); rungs **7–30, 36, 41, 44, 45** are pure
+`TwoSpoolTransient`, rung 45's on `TwoSpoolFuelTransient`, and rung 46's **fuel-side FEEDBACK**
+topping governor on it); rungs **7–30, 36, 41, 44, 45** are pure
 diagnostics that only *read* the design-point / running-line state. Each rung reduces to its
 predecessor exactly and by test — the gates are named in its spec.
 
@@ -113,7 +115,7 @@ closed vs open — keep it one line per entry.
 - Finite-rate nozzle chemistry → **rung 25**; freeze-out → **rung 26**; NO freeze-out → **rung 27**; coupled NO march → **rung 28**; the shifting turbine → **rung 29**.
 - The choked convergent nozzle → **rung 30**; off-design matching → **rung 31**; component-map matching → **rung 32**; the subsonic-nozzle branch → **rung 33**.
 - The spool transient → **rung 34**; fuel metering (`Tt4` output) → **rung 35**; the surge line → **rung 36**; the two combustor internal clocks → **rung 37**.
-- Two-spool matching → **rung 38**; two-spool + maps → **rung 39**; the two-shaft transient → **rung 40**; the two-spool surge line → **rung 41**; the bleed valve → **rung 42**; two-shaft fuel metering → **rung 43**; the transient two-spool surge line → **rung 44**; the transient surge on the FUEL path → **rung 45**.
+- Two-spool matching → **rung 38**; two-spool + maps → **rung 39**; the two-shaft transient → **rung 40**; the two-spool surge line → **rung 41**; the bleed valve → **rung 42**; two-shaft fuel metering → **rung 43**; the transient two-spool surge line → **rung 44**; the transient surge on the FUEL path → **rung 45**; the TIT topping governor (redline) → **rung 46**.
 
 **Investigated, NEGATIVE — not shipped, not a rung (these facts live only here + the doc):**
 - Resolved `τ_res` from the nozzle area-schedule (rung 26's seam a) — `docs/tau-res-negative.md` (shape moot; needs an entry Mach). Confirms rung 26.
@@ -132,7 +134,7 @@ closed vs open — keep it one line per entry.
 - **Detailed Fenimore** (`CH+N₂→HCN`) and **super-eq-O radical-decay history** — need new species / a relaxing pocket a 0-D pool cannot derive.
 - **Reacting-gas fuel control** (rungs 35/43 defer — the forward burner asserts against an equilibrium gas; the finding is gas-independent).
 - **The subsonic / unchoked LP branch** in the two-spool solves (rung 38 flags, does not solve) and its **transient**.
-- **The variable stator** (moves `φ_surge` itself — rung 42 did the bleed half); a **bleed schedule** `b(n_L)`; **fuel + bleed together**; a **TIT redline** (rung 45 confirmed fuel enlarges the surge approach but models no TIT limit).
+- **The variable stator** (moves `φ_surge` itself — rung 42 did the bleed half); a **bleed schedule** `b(n_L)`; **fuel + bleed together**; a **lagged/actuator topping governor** (`τ_gov` — rung 46's TIT redline is an idealised instantaneous min-select; a slow-enough governor could smear the clip window into the early LP surge point).
 - **Rung 37's internal clocks on two shafts** and the combined 3-state; **customer/cooling bleed** at station 3.
 - **Afterburner**; a **real hardware/CFD map + surge line** (rung 32's standing concession, now doubled across two spools).
 - **Feeding any shifted/marched state into the production cycle** — a re-foundation (re-anchors every rung's numbers), not a rung.
@@ -171,11 +173,12 @@ A compact map — the per-rung method/finding detail lives in `docs/rungN-spec.m
   `ComponentMap` (32) → `._match_subsonic` (33) → `SpoolTransient` (34, + fuel 35, + surge 36) →
   `CombustorTransient` (37); two-spool `build_two_spool_turbojet` / `TwoSpoolMatcher` (38) →
   `TwoSpoolMapMatcher` (39) → `TwoSpoolTransient` (40, + surge methods 41, + transient-surge methods 44)
-  → `TwoSpoolBleedMatcher` (42) → `TwoSpoolFuelTransient` (43, + transient-surge methods 45). Each reduces to its predecessor (exact dispatch or the forward
+  → `TwoSpoolBleedMatcher` (42) → `TwoSpoolFuelTransient` (43, + transient-surge methods 45, + the
+  fuel-side-FEEDBACK TIT topping governor `integrate_fuel(Tt4_max=…)`/`topping_relief` 46). Each reduces to its predecessor (exact dispatch or the forward
   closure); the method names + reduce contracts are in each rung's spec.
 - `main.py` — the design-point run: ideal-vs-real tables, the overlaid T–s diagram, and **one panel
   per rung** (each demonstrates that rung's load-bearing claim and states its honest scope).
-- `tests/` — per-rung `test_rungN.py` (N = 1…45; plus the rung-1/2b/3/4/5 files). Every rung file
+- `tests/` — per-rung `test_rungN.py` (N = 1…46; plus the rung-1/2b/3/4/5 files). Every rung file
   carries that rung's **reduce-to-prior** gate plus its load-bearing claims — the gates are named in
   the spec. `test_claude_md_reference.py` is the size guard on this file.
 - `docs/rungN-spec.md` — the derivation, assumptions, concessions and gates for rung N.
