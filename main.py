@@ -2443,6 +2443,63 @@ def print_topping_governor_table(flight):
     print("  (redline above the peak) -> rung 45/43 bit-for-bit; decel never fires; cycle rung-6 exact.")
 
 
+def print_lagged_governor_table(flight):
+    """Rung-47 payoff: the LAGGED topping governor (tau_gov) -- realism REFUTES rung 46's hope.
+
+    Rung 46's governor was an idealised INSTANTANEOUS min-select and closed on 'a slow-enough
+    governor could reach earlier into the LP surge point'. Rung 47 gives it a response lag (the
+    limiter-loop lag; the clip AMOUNT a 3rd state) and REFUTES that: a first-order lag is a
+    TRAILING-edge tool, it cannot reach the EARLY LP surge min. relief_lp stays 0 at moderate r,
+    and at fast r (where rung 46's instant governor DID reach the LP) the lag ERODES that relief
+    toward 0. The cost of realism: the lag BREAKS the redline hold (overshoot growing with tau_gov)
+    and erodes the HP rebate. tau_gov=None is bit-for-bit rung 46; cycle stays rung-6 exact."""
+    print("\nLagged topping governor (rung 47): give rung 46's governor a response lag tau_gov. A")
+    print("first-order lag is a TRAILING-edge tool -- it REFUTES rung 46's 'a slow governor reaches")
+    print("earlier into the LP surge point'. It breaks the redline hold and STILL misses the LP.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, TT4, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    ft = TwoSpoolFuelTransient(design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0)
+
+    # --- THE COST OF REALISM: overshoot grows, HP rebate erodes, relief_lp pinned at 0.
+    print("\n  THE COST OF REALISM (flow/press, accel 1000->1400, r=0.5, redline 1480). Sweep tau_gov:")
+    print(f"  {'tau_gov:':>12}" + "".join(f"{t:>10}" for t in ('inst', 0.05, 0.2, 0.8)))
+    ov, rlp, rhp = [], [], []
+    for tau in (None, 0.05, 0.2, 0.8):
+        o = ft.topping_relief(flight, 1000.0, 1400.0, 1480.0, r=0.5, s_settle=2.0, tau_gov=tau)
+        ov.append(o["overshoot"]); rlp.append(o["relief_lp"]); rhp.append(o["relief_hp"])
+    print(f"  {'overshoot:':>12}" + "".join(f"{v:10.1f}" for v in ov) + "   <- redline HOLD lost (grows)")
+    print(f"  {'relief_lp:':>12}" + "".join(f"{v:10.5f}" for v in rlp) + "   <- STILL 0 (misses early LP)")
+    print(f"  {'relief_hp:':>12}" + "".join(f"{v:10.5f}" for v in rhp) + "   <- HP rebate ERODES toward 0")
+
+    # --- THE LEVER, LAGGED: at fast r the lag ERODES rung 46's positive LP relief, never enhances.
+    print("\n  THE LEVER, LAGGED (r=0.15, redline 1440). rung 46's INSTANT governor reaches the LP")
+    print("  (relief_lp>0); if a lag 'reached earlier' it would EXCEED that. It ERODES it instead:")
+    print(f"  {'tau_gov:':>12}" + "".join(f"{t:>10}" for t in ('inst', 0.05, 0.2, 0.4)))
+    lev = "".join(f"{ft.topping_relief(flight,1000.0,1400.0,1440.0,r=0.15,s_settle=2.0,tau_gov=t)['relief_lp']:10.5f}"
+                  for t in (None, 0.05, 0.2, 0.4))
+    print(f"  {'relief_lp:':>12}" + lev + "   <- eroded toward 0, never enhanced")
+    print("  => neutral at moderate r, strictly WORSE at fast r -- in NO regime does the lag reach the")
+    print("     LP better than the ideal. You can't cure a leading-edge problem with a trailing-edge tool.")
+
+    # --- THE SECONDARY: the overshoot lives in the LOOP lag, not the valve.
+    tc = ft.topping_command_trace(flight, 1000.0, 1400.0, 1480.0, r=0.5, s_settle=2.0)
+    print(f"\n  WHERE THE LAG LIVES: the binding topping command is monotone-rising "
+          f"({tc['monotone_nondecreasing']}, {tc['n_engaged']} pts).")
+    print("  So a metering-VALVE lag is INERT (instant-up tracks it); the overshoot lives in the")
+    print("  sensing/LOOP lag. tau_gov=None -> rung 46 bit-for-bit; dormant/decel -> rung 45; cycle rung-6.")
+
+
 def print_pdf_quench_table(flight):
     """Rung-15 payoff: the PDF THROUGH the finite quench — the two mixing mechanisms COMBINED.
 
@@ -3525,6 +3582,8 @@ def main():
     print_transient_fuel_surge_table(FLIGHT)
 
     print_topping_governor_table(FLIGHT)
+
+    print_lagged_governor_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

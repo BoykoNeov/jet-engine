@@ -92,6 +92,9 @@ _SEED_SLOW = {
     "test_rung37": {"test_heat_soak_accel_time_lag",
                     "test_heat_soak_cold_below_hot_below_adiabatic",
                     "test_plenum_equilibrium_is_rung35"},
+    "test_rung47": {"test_lagged_governor_overshoots_erodes_hp_and_misses_lp",
+                    "test_overshoot_grows_and_hp_erodes_monotone_in_tau",
+                    "test_fast_ramp_lp_relief_eroded_by_lag_never_enhanced"},
 }
 
 

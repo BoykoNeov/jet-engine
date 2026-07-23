@@ -4274,7 +4274,8 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
     # --- the march -----------------------------------------------------------------
 
     def integrate_fuel(self, flight: FlightCondition, fuel_schedule, nu0,
-                       s_end: float, ds: float, freeze=None, Tt4_max=None) -> list:
+                       s_end: float, ds: float, freeze=None, Tt4_max=None,
+                       tau_gov=None) -> list:
         """RK4-march (dnu_L/ds, dnu_H/ds) = (Phi_L/rho, Phi_H) under a FUEL schedule.
         Tt4 is an OUTPUT recorded per point (it can overshoot the steady value).
 
@@ -4289,13 +4290,26 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
         -- a standard accel-schedule TIT limiter, a min-select on fuel. It FEEDS BACK (the
         applied fuel depends on the current spool state), the first fuel-side feedback in
         the ladder. `Tt4_max=None` leaves the march bit-for-bit rung 43 -- the clip branch
-        is never consulted, so `_instant_fuel` runs on the raw schedule exactly as before."""
+        is never consulted, so `_instant_fuel` runs on the raw schedule exactly as before.
+
+        `tau_gov` (RUNG 47) gives the governor a finite RESPONSE LAG -- the sensing /
+        limiter-loop lag of a real TIT limiter. It dispatches to `_integrate_fuel_lagged`
+        (a THIRD state, the clip amount). `tau_gov=None` is the idealised INSTANTANEOUS
+        min-select (bit-for-bit rung 46); the lag is meaningless without a redline, so
+        `tau_gov` requires `Tt4_max`. The applied fuel `mf` is recorded per point (a new
+        key; the rung-46 keys are byte-unchanged)."""
+        assert tau_gov is None or Tt4_max is not None, (
+            "rung-47 tau_gov is a governor lag -- it needs a redline (Tt4_max) to lag.")
         if getattr(self, "_degenerate", None) is not None:
             assert freeze is None, "rung-43 channel isolation needs two spools"
-            assert Tt4_max is None, (
-                "the rung-46 TIT topping governor is inherently two-shaft (its finding is "
-                "the rho-loud surge relief); lp_disabled is not a reduce axis for it.")
+            assert Tt4_max is None and tau_gov is None, (
+                "the rung-46/47 TIT topping governor is inherently two-shaft (its finding "
+                "is the rho-loud surge relief); lp_disabled is not a reduce axis for it.")
             return self._degenerate.integrate_fuel(flight, fuel_schedule, nu0, s_end, ds)
+
+        if Tt4_max is not None and tau_gov is not None:
+            return self._integrate_fuel_lagged(flight, fuel_schedule, nu0, s_end, ds,
+                                               freeze, Tt4_max, tau_gov)
 
         def der(a, b, mf):
             i = self._instant_fuel(flight, a, b, mf)
@@ -4304,30 +4318,93 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
                 i = self._instant_fuel(flight, a, b, mf)
             da = 0.0 if freeze == "lp" else i["Phi_lp"] / self.rho
             db = 0.0 if freeze == "hp" else i["Phi_hp"]
-            return da, db, i
+            return da, db, mf, i
 
         pts, (a, b), s = [], nu0, 0.0
         for _ in range(int(round(s_end / ds)) + 1):
             mf = float(fuel_schedule(s))
             try:
-                k1a, k1b, inst = der(a, b, mf)
+                k1a, k1b, mf_app, inst = der(a, b, mf)
             except AssertionError:
                 break
             pts.append(dict(s=s, nu_lp=a, nu_hp=b, Tt4=inst["Tt4"], f=inst["f"],
                             pi_lpc=inst["pi_lpc"], pi_hpc=inst["pi_hpc"],
                             phi_lp=inst["phi_lp"], phi_hp=inst["phi_hp"],
                             mdot_air=inst["mdot_air"], sp_thrust=inst["sp_thrust"],
-                            branch=inst["branch"]))
+                            branch=inst["branch"], mf=mf_app))
             try:
                 mfm = float(fuel_schedule(s + ds / 2))
-                k2a, k2b, _ = der(a + ds / 2 * k1a, b + ds / 2 * k1b, mfm)
-                k3a, k3b, _ = der(a + ds / 2 * k2a, b + ds / 2 * k2b, mfm)
-                k4a, k4b, _ = der(a + ds * k3a, b + ds * k3b,
-                                  float(fuel_schedule(s + ds)))
+                k2a, k2b, _, _ = der(a + ds / 2 * k1a, b + ds / 2 * k1b, mfm)
+                k3a, k3b, _, _ = der(a + ds / 2 * k2a, b + ds / 2 * k2b, mfm)
+                k4a, k4b, _, _ = der(a + ds * k3a, b + ds * k3b,
+                                     float(fuel_schedule(s + ds)))
             except AssertionError:
                 break
             a += ds / 6 * (k1a + 2 * k2a + 2 * k3a + k4a)
             b += ds / 6 * (k1b + 2 * k2b + 2 * k3b + k4b)
+            s += ds
+        return pts
+
+    def _integrate_fuel_lagged(self, flight: FlightCondition, fuel_schedule, nu0,
+                               s_end: float, ds: float, freeze, Tt4_max: float,
+                               tau_gov: float) -> list:
+        """RUNG 47. The TIT topping governor with a finite response lag `tau_gov` -- the
+        sensing / limiter-loop lag of a real temperature limiter (the DOMINANT lag in a
+        real TIT limiter, far larger than valve slew).
+
+        The clip AMOUNT (the fuel REDUCTION below the schedule) is a THIRD STATE `g` that
+        relaxes toward the instantaneous requirement with `tau_gov`:
+
+            required(nu, s) = max(0, schedule(s) - topping(nu, Tt4_max))   [0 unless the
+                               scheduled fuel would overshoot the redline at this flow]
+            dg/ds = (required - g) / tau_gov
+            mf_applied = schedule(s) - g
+
+        Because `required` GROWS after engagement while `g` TRAILS it, the applied fuel
+        stays ABOVE `topping` => Tt4 OVERSHOOTS the redline (the classic topping
+        overshoot), by an amount growing with `tau_gov`. Reduces: governor off (g == 0,
+        the schedule below topping) is rung 45; `tau_gov -> 0` (g == required, snapped) is
+        rung 46's instantaneous min-select; `tau_gov=None` never enters here at all.
+
+        `g` is NOT the applied fuel but the REDUCTION -- a clip on the schedule, not a
+        valve-position lag. A pure valve-position lag is INERT on the accel (the binding
+        topping command is monotone-rising, an instant-up valve tracks it), so the
+        overshoot lives HERE, in the loop lag -- see `topping_command_trace`."""
+        def required(a, b, mf_sched):
+            i = self._instant_fuel(flight, a, b, mf_sched)
+            if i["Tt4"] > Tt4_max:
+                return mf_sched - self._topping_fuel(flight, a, b, Tt4_max, mf_sched)
+            return 0.0
+
+        def der(a, b, g, s):
+            mf_sched = float(fuel_schedule(s))
+            mf = max(1e-9, mf_sched - g)
+            i = self._instant_fuel(flight, a, b, mf)
+            da = 0.0 if freeze == "lp" else i["Phi_lp"] / self.rho
+            db = 0.0 if freeze == "hp" else i["Phi_hp"]
+            dg = (required(a, b, mf_sched) - g) / tau_gov
+            return da, db, dg, mf, i
+
+        pts, (a, b), g, s = [], nu0, 0.0, 0.0
+        for _ in range(int(round(s_end / ds)) + 1):
+            try:
+                k1a, k1b, k1g, mf_app, inst = der(a, b, g, s)
+            except AssertionError:
+                break
+            pts.append(dict(s=s, nu_lp=a, nu_hp=b, Tt4=inst["Tt4"], f=inst["f"],
+                            pi_lpc=inst["pi_lpc"], pi_hpc=inst["pi_hpc"],
+                            phi_lp=inst["phi_lp"], phi_hp=inst["phi_hp"],
+                            mdot_air=inst["mdot_air"], sp_thrust=inst["sp_thrust"],
+                            branch=inst["branch"], mf=mf_app))
+            try:
+                k2a, k2b, k2g, _, _ = der(a + ds/2*k1a, b + ds/2*k1b, g + ds/2*k1g, s + ds/2)
+                k3a, k3b, k3g, _, _ = der(a + ds/2*k2a, b + ds/2*k2b, g + ds/2*k2g, s + ds/2)
+                k4a, k4b, k4g, _, _ = der(a + ds*k3a, b + ds*k3b, g + ds*k3g, s + ds)
+            except AssertionError:
+                break
+            a += ds / 6 * (k1a + 2 * k2a + 2 * k3a + k4a)
+            b += ds / 6 * (k1b + 2 * k2b + 2 * k3b + k4b)
+            g += ds / 6 * (k1g + 2 * k2g + 2 * k3g + k4g)
             s += ds
         return pts
 
@@ -4451,7 +4528,8 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
     # --- RUNG 45: the TRANSIENT surge line ON THE FUEL PATH -------------------------
 
     def _fuel_ramp_march(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
-                         r: float, s_settle: float, ds: float, Tt4_max=None):
+                         r: float, s_settle: float, ds: float, Tt4_max=None,
+                         tau_gov=None):
         """RUNG 45. March a FUEL ramp whose steady endpoints are the fuel-equivalents of
         Tt4_lo -> Tt4_hi (`fuel_for_Tt4`), from the running-line start there. Returns the
         marched trajectory and a COMMANDED running-line phi lookup `steady(s, spool)` =
@@ -4481,7 +4559,8 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
                 return mf_hi
             return mf_lo + (mf_hi - mf_lo) * (s / r)
 
-        traj = self.integrate_fuel(flight, sched, nu0, r + s_settle, ds, Tt4_max=Tt4_max)
+        traj = self.integrate_fuel(flight, sched, nu0, r + s_settle, ds, Tt4_max=Tt4_max,
+                                   tau_gov=tau_gov)
         lo, hi = min(Tt4_lo, Tt4_hi), max(Tt4_lo, Tt4_hi)
         grid = [lo + (hi - lo) * k / 8.0 for k in range(9)]
         rl = [self.equilibrium(flight, T) for T in grid]
@@ -4498,7 +4577,7 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
 
     def phi_excursion_fuel(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
                            r: float = 0.5, s_settle: float = 6.0, ds: float = 0.02,
-                           Tt4_max=None) -> dict:
+                           Tt4_max=None, tau_gov=None) -> dict:
         """RUNG 45. Signed extremum of `phi(s) - phi_steady(Tt4_cmd(s))` per spool over a
         marched FUEL ramp, referenced to the COMMANDED running line -- rung 44's `phi_excursion`
         with fuel the control and Tt4 an OUTPUT. NEGATIVE <=> below the running line <=> TOWARD
@@ -4513,8 +4592,10 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
 
         `Tt4_max` (RUNG 46) arms the topping governor on the marched trajectory -- the same
         surge object, now read off the TOPPED plant, so `topping_relief` can difference bare vs
-        topped. `Tt4_max=None` is bit-for-bit rung 45."""
-        traj, steady = self._fuel_ramp_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds, Tt4_max)
+        topped. `Tt4_max=None` is bit-for-bit rung 45. `tau_gov` (RUNG 47) gives that governor a
+        response lag; `tau_gov=None` is the instantaneous rung-46 min-select."""
+        traj, steady = self._fuel_ramp_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds, Tt4_max,
+                                             tau_gov)
         ext_lp = ext_hp = 0.0
         s_lp = s_hp = 0.0
         min_phi_lp = min_phi_hp = float("inf")
@@ -4536,7 +4617,7 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
 
     def transient_surge_margin_fuel(self, flight: FlightCondition, Tt4_lo: float,
                                     Tt4_hi: float, r: float = 0.5, s_settle: float = 6.0,
-                                    ds: float = 0.02, Tt4_max=None) -> dict:
+                                    ds: float = 0.02, Tt4_max=None, tau_gov=None) -> dict:
         """RUNG 45. March the FUEL ramp against the IMPOSED phi_surge and REPORT the crossing per
         spool -- the fuel-path analogue of rung 44's `transient_surge_margin`, under the same
         rung-36 discipline (report the crossing, gate the flip).
@@ -4553,12 +4634,14 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
         flip's SIGN (`margin_min_lp < steady_min_lp`). Needs armed phi_surge on BOTH maps.
 
         `Tt4_max` (RUNG 46) arms the topping governor: the raw surge object read off the TOPPED
-        plant. `Tt4_max=None` is bit-for-bit rung 45."""
+        plant. `Tt4_max=None` is bit-for-bit rung 45. `tau_gov` (RUNG 47) gives that governor a
+        response lag; `tau_gov=None` is the instantaneous rung-46 min-select."""
         ml, mh = self.map_lp, self.map_hp
         assert ml.phi_surge > 0.0 and mh.phi_surge > 0.0, (
             "transient_surge_margin_fuel needs a surge line on BOTH maps: build each with "
             ".with_phi_surge(phi_surge).")
-        traj, steady = self._fuel_ramp_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds, Tt4_max)
+        traj, steady = self._fuel_ramp_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds, Tt4_max,
+                                             tau_gov)
         tr_lp = tr_hp = float("inf")   # RAW transient min (phi - phi_surge)
         st_lp = st_hp = float("inf")   # COMMANDED steady min (phi_steady - phi_surge)
         min_phi_lp = min_phi_hp = float("inf")
@@ -4579,7 +4662,7 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
 
     def topping_relief(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
                        Tt4_max: float, r: float = 0.5, s_settle: float = 6.0,
-                       ds: float = 0.02) -> dict:
+                       ds: float = 0.02, tau_gov=None) -> dict:
         """RUNG 46. March the SAME accel FUEL ramp twice -- BARE (rung 43/45) and TOPPED (fuel
         clipped to hold Tt4 <= Tt4_max) -- and difference the surge object.
 
@@ -4596,15 +4679,45 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
 
         Magnitudes disclaimed (imposed maps/phi_surge, the fuel step, the Tt4 band, the redline);
         load-bearing are the RELIEF SIGN, that Tt4 is HELD at the redline, and the reduce
-        (Tt4_max above the bare peak => the clip never fires => bit-for-bit rung 45)."""
+        (Tt4_max above the bare peak => the clip never fires => bit-for-bit rung 45).
+
+        `tau_gov` (RUNG 47) gives the governor a finite response LAG. It changes only the TOPPED
+        march (the bare stays governor-off = rung 45), so the differential still isolates the
+        governor. With a lag the governor no longer holds the redline: `overshoot` =
+        Tt4_peak_top - Tt4_max goes POSITIVE (growing with `tau_gov`), `held` flips False, and
+        the HP relief ERODES; the LP relief stays 0 at moderate r (the lag acts on the trailing
+        edge, it cannot reach the early LP surge min -- the refutation of rung 46's next-seam
+        hope). `tau_gov=None` is the instantaneous rung-46 min-select (bit-for-bit)."""
         bare = self.phi_excursion_fuel(flight, Tt4_lo, Tt4_hi, r, s_settle, ds)
         top = self.phi_excursion_fuel(flight, Tt4_lo, Tt4_hi, r, s_settle, ds,
-                                      Tt4_max=Tt4_max)
+                                      Tt4_max=Tt4_max, tau_gov=tau_gov)
         return dict(
-            rho=self.rho, r=r, Tt4_max=Tt4_max,
+            rho=self.rho, r=r, Tt4_max=Tt4_max, tau_gov=tau_gov,
             Tt4_peak_bare=bare["Tt4_peak"], Tt4_peak_top=top["Tt4_peak"],
+            overshoot=top["Tt4_peak"] - Tt4_max,
             held=top["Tt4_peak"] <= Tt4_max + 1e-6,
             min_phi_lp_bare=bare["min_phi_lp"], min_phi_lp_top=top["min_phi_lp"],
             min_phi_hp_bare=bare["min_phi_hp"], min_phi_hp_top=top["min_phi_hp"],
             relief_lp=top["min_phi_lp"] - bare["min_phi_lp"],
             relief_hp=top["min_phi_hp"] - bare["min_phi_hp"])
+
+    # --- RUNG 47: the valve-vs-loop-lag CONTRAST -- why the overshoot lives in the loop --
+
+    def topping_command_trace(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                              Tt4_max: float, r: float = 0.5, s_settle: float = 6.0,
+                              ds: float = 0.02) -> dict:
+        """RUNG 47 (secondary). March the rung-46 INSTANTANEOUS topped accel and read the applied
+        fuel (the min-select topping set-point) at each ENGAGED point (where the clip fires, i.e.
+        Tt4 pinned at the redline). Returns the engaged `(s, mf)` command trace and whether it is
+        monotone NON-DECREASING.
+
+        This gates the valve-vs-loop-lag CONTRAST: a pure metering-VALVE-position lag is INERT on
+        the accel PRECISELY when this command rises monotonically -- an instant-up / lag-down
+        valve tracks a rising command with no lag, so a valve lag reduces to rung 46 here. The
+        topping OVERSHOOT therefore lives in the sensing / limiter-LOOP lag (`_integrate_fuel_lagged`
+        lags the clip AMOUNT), not in the valve. WHERE the lag lives decides whether it overshoots."""
+        traj, _ = self._fuel_ramp_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds, Tt4_max=Tt4_max)
+        eng = [(p["s"], p["mf"]) for p in traj if abs(p["Tt4"] - Tt4_max) < 1e-6]
+        monotone = all(eng[i][1] >= eng[i - 1][1] - 1e-12 for i in range(1, len(eng)))
+        return dict(engaged=eng, n_engaged=len(eng), monotone_nondecreasing=monotone,
+                    Tt4_max=Tt4_max, r=r)
