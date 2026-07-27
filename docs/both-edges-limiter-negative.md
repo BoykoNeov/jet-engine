@@ -258,6 +258,34 @@ genuinely different control object (feedback on the *protected variable*, where 
 feedback on TIT and rung 48's is feedforward on pressure), so it is a rung candidate, not a filter
 variation.
 
+## FOLLOW-UP — the named successor was BUILT, and it changed the answer to (W)
+
+`docs/rung49-spec.md` walks through the door named above. Both halves of this doc survive
+intact: Half 1's argument was always a statement about *proxy* signals, and it correctly
+identified the one class that escapes it — a φ floor **does** close its window inside the ramp
+(measured: `[0.120, 0.440]` and `[0.150, 0.350]` at `r`=0.5).
+
+But **Half 2's conclusion does not extend to that instrument.** The truncated-descent law was
+derived on rung 48's leg, whose release is structurally post-ramp — a **one-shot** arrest. Give
+a limiter an interior release edge and a **second, opposite-signed term appears**: the withheld
+fuel is handed back to a still-ramping plant and the descent **RE-OPENS**. So an LP φ-floor
+**debits the HP** even though it engages upstream of `s_hp*`, and the unwatched minimum
+relocates to one step *after* `s_rel`.
+
+**(W) is therefore answered — and the answer is YES, the closing edge does something.** The
+window is not empty; it was only empty for the family this doc closed. What survives verbatim
+is the *mechanism*: the credit term is exactly `min_{s ≤ s_eng} φ_bare − min φ_bare`, and rung
+49 reproduces its **exact zero** on a fresh instrument. What is corrected is the claim that the
+release edge is *causally downstream of a minimum already determined* — true only when the
+release lands in the settled region.
+
+One more thing this doc got right and is worth keeping: *"the ramp is the only clock."* Rung 49
+finds it governs the closing edge **instead of** the per-spool structure that governs the
+opening one — at `r`=2.0 the debit is 8× larger at `s_rel≈r` than at `s_rel≈s_hp*`. That is a
+**within-family** result: this doc's own 32/32 monotone-cell measurement shows rung 48's leg is
+immune to the release debit at ratios where the φ floor is not (`s_rel/r` = 1.16 vs 1.20), so
+*why that leg escapes* is left open by rung 49, not answered by it.
+
 ## Method note
 
 Probes: `M:\claud_projects\temp\rung49-probe\` — `probe_rates.py` (`κ_ss` monotonicity, `d(pt3)/ds`,

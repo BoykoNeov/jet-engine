@@ -2565,6 +2565,66 @@ def print_accel_schedule_table(flight):
     print("  schedule/decel -> rung 45; the two-leg min-select -> the single leg; cycle rung-6 exact.")
 
 
+def print_phi_limiter_table(flight):
+    """Rung-49 payoff: the phi / SURGE-MARGIN FEEDBACK limiter -- a limiter acts on a spool
+    through BOTH its edges, and the two edges answer to DIFFERENT clocks.
+
+    docs/both-edges-limiter-negative.md closed the whole pt3-FILTER family with one fact: every
+    proxy signal (pt3, Wf, n, and any filter of them) rises monotonically through the ramp, so
+    such a limiter's release edge is structurally POST-ramp and the closing edge can play no
+    part. It named the one escape -- phi has its minimum inside the ramp BY DEFINITION -- and
+    this rung walks through it. The floor DOES close inside the ramp, and the closing edge
+    turns out to carry the OPPOSITE sign: it re-opens the unwatched spool's descent."""
+    print("\nphi surge-margin limiter (rung 49): the first leg that watches the PROTECTED")
+    print("variable. Its window CLOSES INSIDE the ramp -- the object no pt3 filter can build --")
+    print("and that closing edge DEBITS the spool it is not watching.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, TT4, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    ft = TwoSpoolFuelTransient(design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0)
+
+    # --- THE SPLIT: one clip, two signs; and both window edges reported.
+    rows = ft.floor_sweep(flight, 1000.0, 1400.0, (0.7550, 0.7500, 0.7450, 0.7400),
+                          spool="lp", r=0.5, s_settle=2.0)
+    s_lp, s_hp = rows[0]["s_lp_bare"], rows[0]["s_hp_bare"]
+    print(f"\n  WATCHING THE LP (accel 1000->1400, r=0.5; bare minima s_lp*={s_lp:.2f}, "
+          f"s_hp*={s_hp:.2f}).")
+    print("  Every row engages UPSTREAM of s_hp* -- rung 48's law predicts a CREDIT on the HP:")
+    print(f"  {'phi_lim':>8}{'s_eng':>7}{'s_rel':>7}{'in ramp':>9}{'relief_lp':>12}"
+          f"{'relief_hp':>12}{'fuel_rm':>10}")
+    for x in rows:
+        print(f"  {x['phi_lim']:8.4f}{x['s_eng']:7.2f}{x['s_rel']:7.2f}"
+              f"{str(x['both_edges_inside_ramp']):>9}{x['relief_lp']:12.6f}"
+              f"{x['relief_hp']:12.6f}{x['fuel_removed']:10.5f}")
+    print("  => the WATCHED spool is credited and the OTHER one is DEBITED, by the same clip.")
+    print(f"     The unwatched minimum relocates to just AFTER s_rel (not to s_eng): that is")
+    print("     where the withheld fuel is handed back to a still-ramping plant.")
+
+    # --- THE DISCRIMINATOR, in miniature: push the release far past the ramp and the sign flips.
+    fast = ft.floor_sweep(flight, 1000.0, 1400.0, (0.7500,), spool="lp", r=0.15, s_settle=2.0)[0]
+    print(f"\n  THE CLOCK: at r=0.15 the SAME floor releases at s_rel={fast['s_rel']:.2f} = "
+          f"{fast['s_rel'] / 0.15:.1f}x the ramp,")
+    print(f"  far past the minima -- and the unwatched relief FLIPS to "
+          f"{fast['relief_hp']:+.6f}. The credit is")
+    print("  clocked by the spool's OWN minimum (rung 48); the debit by the RAMP END (rung 44)")
+    print("  -- a WITHIN-FAMILY result. So rung 48 is BOUNDED, not refuted: its credit term")
+    print("  survives verbatim and an HP floor reproduces its exact zero. Its own leg is")
+    print("  empirically immune to the debit; WHY is an open seam (the ratio does not transfer).")
+    print("  phi_lim rides rung 36/41's imposed phi_surge -> signs, not magnitudes.")
+    print("  Reduces: surge=None -> rungs 45/46/47/48 bit-for-bit; dormant floor/decel -> rung 45;")
+    print("  the min-select composite -> the single binding leg; cycle rung-6 exact.")
+
+
 def print_pdf_quench_table(flight):
     """Rung-15 payoff: the PDF THROUGH the finite quench — the two mixing mechanisms COMBINED.
 
@@ -3651,6 +3711,8 @@ def main():
     print_lagged_governor_table(FLIGHT)
 
     print_accel_schedule_table(FLIGHT)
+
+    print_phi_limiter_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

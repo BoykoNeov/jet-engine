@@ -308,6 +308,19 @@ composite is what a real accel schedule actually is.
   because the minimum is fixed at the engaged window's OPENING, the rule is an **EDGE** condition
   **necessarily** — the window's length, its fuel removed and its release edge are all causally
   downstream of an already-determined minimum.
+
+- **…AND THAT LAST SENTENCE IS BOUNDED BY RUNG 49** (`docs/rung49-spec.md`). The arrest-⇒-edge
+  argument holds **for this leg**, whose release is structurally post-ramp. Build a limiter whose
+  window closes INSIDE the ramp — the φ-feedback floor, the door named above — and a **second,
+  opposite-signed term appears at the RELEASE edge**: the withheld fuel is handed back to a
+  still-ramping plant and the unwatched spool's descent **re-opens**, relocating its minimum to
+  just after `s_rel`. So an LP φ-floor **DEBITS** the HP while engaging upstream of `s_hp*`, which
+  this rung's law alone would forbid. **What survives verbatim is the credit term** — rung 49
+  reproduces this rung's exact-zero crossing on a fresh instrument class, off a bare march. What is
+  bounded is the *universality*: this rung is the **one-shot-arrest special case**. THIS leg is
+  **empirically immune** to the release debit (φ monotone non-decreasing from `s_eng` to the end in
+  32/32 cells, that doc's own measurement) — but **why** is an open seam: rung 49 measures that the
+  ratio governing the debit within its own family does **not** transfer to this leg.
 - **No claim that the leg protects the redline** (finding 6) — it is a compressor-protection leg;
   the composite with rung 46's is what a real schedule is.
 - **Reacting-gas fuel control deferred** (rungs 35/43/45/46/47, verbatim) — the leg runs on the
