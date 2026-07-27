@@ -2500,6 +2500,71 @@ def print_lagged_governor_table(flight):
     print("  sensing/LOOP lag. tau_gov=None -> rung 46 bit-for-bit; dormant/decel -> rung 45; cycle rung-6.")
 
 
+def print_accel_schedule_table(flight):
+    """Rung-48 payoff: the Wf/pt3 ACCELERATION SCHEDULE -- the feedforward leg, and the
+    UNIFICATION of rungs 46/47.
+
+    Rungs 46/47 built the FEEDBACK leg (a TIT governor, then its lag) and found it rebates the
+    late HP spool but never the early LP one. Rung 48 adds the leg a real FADEC uses: cap Wf by
+    (1+m)*kappa_ss(n_H)*pt3, with kappa_ss READ OFF the plant's own running line (the shape is
+    DERIVED; the whole imposition is the one scalar m). Because Wf steps up while pt3 can only
+    rise as the spools spin up, this leg can engage EARLY -- and m maps continuously to an
+    ENGAGEMENT TIME that sweeps ACROSS both surge minima. The finding: a fuel-side limiter
+    rebates a spool IFF it engages UPSTREAM of THAT spool's own minimum. That one rule covers
+    rung 46 (late by construction) and rung 47 (a lag makes it later still)."""
+    print("\nWf/pt3 accel schedule (rung 48): the FEEDFORWARD leg -- cap fuel by the compressor")
+    print("delivery pressure. It watches the INPUT, not the output, so it can engage EARLY. Sweeping")
+    print("its margin m sweeps the ENGAGEMENT TIME across both surge minima -- and the relief per")
+    print("spool switches on IFF the clip lands UPSTREAM of that spool's own minimum.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, TT4, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    ft = TwoSpoolFuelTransient(design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0)
+
+    # --- THE WINDOW: the bare ratio is already far above the steady line UPSTREAM of the LP min.
+    tj, _ = ft._fuel_ramp_march(flight, 1000.0, 1400.0, 0.5, 2.0, 0.02)
+    acc0 = ft.accel_schedule(flight, 1000.0, 1400.0, 0.0)
+    s_lp = min(tj, key=lambda p: p["phi_lp"])["s"]
+
+    def ratio(p):
+        i = ft._instant_fuel(flight, p["nu_lp"], p["nu_hp"], p["mf"])
+        return p["mf"] / acc0.cap(i["n_hp"], i["pt4"] / ft.pi_b)
+
+    print("\n  THE WINDOW (flow/press, accel 1000->1400, r=0.5). The bare (Wf/pt3)/kappa_ss ratio")
+    print("  rises MONOTONICALLY and clears the steady line LONG before the LP surge min:")
+    print(f"  {'s:':>12}" + "".join(f"{p['s']:>9.2f}" for p in tj[:26:5]))
+    print(f"  {'ratio:':>12}" + "".join(f"{ratio(p):>9.3f}" for p in tj[:26:5])
+          + f"   <- LP surge min at s={s_lp:.2f}")
+
+    # --- THE CROSSING: sweep m, watch each spool's relief die at ITS OWN minimum.
+    rows = ft.engagement_sweep(flight, 1000.0, 1400.0, (0.15, 0.35, 0.42, 0.45, 0.48),
+                               r=0.5, s_settle=4.0)
+    print(f"\n  THE CROSSING (s_lp*={rows[0]['s_lp_bare']:.2f}, s_hp*={rows[0]['s_hp_bare']:.2f}). "
+          "relief>0 = safer; fuel_rm = fuel removed:")
+    print(f"  {'m':>6}{'s_eng':>8}{'relief_lp':>12}{'relief_hp':>12}{'fuel_rm':>10}{'nu_H end':>10}")
+    for x in rows:
+        print(f"  {x['margin']:6.2f}{x['s_eng']:8.2f}{x['relief_lp']:12.6f}"
+              f"{x['relief_hp']:12.6f}{x['fuel_removed']:10.5f}{x['nu_hp_end']:10.5f}")
+    print(f"  => relief_lp dies EXACTLY as s_eng passes s_lp*={rows[0]['s_lp_bare']:.2f} -- while "
+          "relief_hp is still")
+    print(f"     positive, dying only as s_eng reaches s_hp*={rows[0]['s_hp_bare']:.2f}. ONE rule, "
+          "TWO crossings.")
+    print("  NOT rung 44's ramp-rate lever: fuel is STILL being removed where the LP gets exactly")
+    print("  nothing, the endpoint is unmoved, and one clip splits the two spools. m and phi_surge")
+    print("  imposed -> no level claim. Reduces: accel=None -> rungs 45/46/47 bit-for-bit; a dormant")
+    print("  schedule/decel -> rung 45; the two-leg min-select -> the single leg; cycle rung-6 exact.")
+
+
 def print_pdf_quench_table(flight):
     """Rung-15 payoff: the PDF THROUGH the finite quench — the two mixing mechanisms COMBINED.
 
@@ -3584,6 +3649,8 @@ def main():
     print_topping_governor_table(FLIGHT)
 
     print_lagged_governor_table(FLIGHT)
+
+    print_accel_schedule_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 
