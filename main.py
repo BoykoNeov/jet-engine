@@ -19,7 +19,8 @@ import matplotlib.pyplot as plt  # noqa: E402
 from turbojet.engine import (  # noqa: E402
     FlightCondition, build_turbojet, OffDesignMatcher, MapMatcher, ComponentMap, SpoolTransient,
     CombustorTransient, build_two_spool_turbojet, TwoSpoolMatcher, TwoSpoolMapMatcher,
-    TwoSpoolTransient, TwoSpoolBleedMatcher, TwoSpoolFuelTransient, ram_recovery,
+    TwoSpoolTransient, TwoSpoolBleedMatcher, TwoSpoolFuelTransient, SurgeLimiter,
+    ram_recovery,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -2625,6 +2626,76 @@ def print_phi_limiter_table(flight):
     print("  the min-select composite -> the single binding leg; cycle rung-6 exact.")
 
 
+def print_release_edge_table(flight):
+    """Rung-50 payoff: the RELEASE EDGE, ISOLATED -- the closing edge relocates BOTH spools'
+    minima to itself, and a limiter's immunity is TIMING, not clip SHAPE.
+
+    Rung 49 could only move a limiter's release edge by moving phi_lim -- which drags the
+    ENGAGEMENT edge, the window length AND the clip depth along with it. So its clock result
+    was hedged, correctly, as WITHIN-FAMILY, and it left an open seam: why rung 48's own leg
+    escapes the release debit ("the clip SHAPE is the obvious suspect, but it is NOT measured
+    here"). This rung builds the instrument that decides both: a FORCED release time s_off,
+    an isolation diagnostic in the freeze='lp' tradition, which slides the closing edge ALONE
+    and TWO-SIDED with everything up to it bit-identical."""
+    print("\nThe release edge, ISOLATED (rung 50): force the leg to let go at s_off, with the")
+    print("engagement edge and the clip depth held FIXED -- the axis rung 49 could not build.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, TT4, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    ft = TwoSpoolFuelTransient(design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0)
+
+    # --- THE HEADLINE + THE DISCRIMINATOR: r=2.0 puts s_hp* and the ramp end 3.1x apart.
+    rows = ft.release_sweep(flight, 1000.0, 1400.0, (0.30, 0.66, 1.10, 1.56, 1.80, 2.06, 2.20),
+                            surge=SurgeLimiter(spool="lp", phi_lim=0.7725),
+                            r=2.0, s_settle=2.0)
+    s_lp, s_hp = rows[0]["s_lp_bare"], rows[0]["s_hp_bare"]
+    print(f"\n  WATCHING THE LP, phi_lim=0.7725, accel 1000->1400 at r=2.0 (bare minima "
+          f"s_lp*={s_lp:.2f}, s_hp*={s_hp:.2f};")
+    print("  the ramp end is 2.00, so the two candidate clocks sit 3.1x apart):")
+    print(f"  {'s_off':>7}{'s_eng':>7}{'s_rel':>7}{'relief_lp':>12}{'relief_hp':>12}"
+          f"{'s@minLP':>9}{'s@minHP':>9}{'fuel_rm':>10}")
+    for x in rows:
+        print(f"  {x['s_off']:7.2f}{x['s_eng']:7.2f}{x['s_rel']:7.2f}{x['relief_lp']:12.5f}"
+              f"{x['relief_hp']:12.5f}{x['s_min_lp']:9.2f}{x['s_min_hp']:9.2f}"
+              f"{x['fuel_removed']:10.5f}")
+    print("  => s_eng is IDENTICAL in every row, so this axis moves ONLY the release edge.")
+    print("     BOTH spools' minima sit AT the release point (the two exceptions are the law's")
+    print("     preconditions: row 1 releases upstream of s_hp*, row 7's LP credit branch wins).")
+    print("     The debit walks straight THROUGH s_hp* without noticing it and peaks with the")
+    print("     release near the RAMP END -- so rung 49's within-family clock hedge LIFTS.")
+    print("     And it is not a ramp-rate lever: the LAST row removes the MOST fuel for less")
+    print("     than half the peak debit (monotone removal, PEAKED debit).")
+
+    # --- THE SEAM: rung 48's own leg, clip shape unchanged, forced to release inside the ramp.
+    acc = ft.accel_schedule(flight, 1000.0, 1400.0, 0.25)
+    seam = ft.release_sweep(flight, 1000.0, 1400.0, (0.30, 0.44, 0.50, 9.90),
+                            accel=acc, r=0.5, s_settle=2.0)
+    print("\n  THE SEAM rung 49 left open -- rung 48's OWN leg (Wf/pt3, m=0.25) at r=0.5,")
+    print("  clip SHAPE unchanged, only WHEN it lets go:")
+    print(f"  {'s_off':>7}{'s_rel':>7}{'relief_lp':>12}{'relief_hp':>12}")
+    for x in seam:
+        print(f"  {x['s_off']:7.2f}{x['s_rel']:7.2f}{x['relief_lp']:12.5f}"
+              f"{x['relief_hp']:12.5f}")
+    print("  => left alone it releases POST-ramp and CREDITS both spools (rung 48's finding).")
+    print("     Forced inside the ramp the SAME leg DEBITS both. Its immunity is TIMING, not")
+    print("     clip SHAPE -- rung 49's named suspect is refuted and the seam closes.")
+    print("  s_off is an ISOLATION DIAGNOSTIC (freeze='lp' tradition), not a control law: it")
+    print("  licenses the reading of rungs 48/49's real legs. phi_lim/m ride rungs 36/41/48/49's")
+    print("  imposed constants -> signs, ordering and ds-convergence, not magnitudes.")
+    print("  Reduces: s_off=None -> rungs 43/45/46/47/48/49 bit-for-bit; a late s_off is inert;")
+    print("  an s_off before s_eng is float-for-float BARE; cycle rung-6 exact.")
+
+
 def print_pdf_quench_table(flight):
     """Rung-15 payoff: the PDF THROUGH the finite quench — the two mixing mechanisms COMBINED.
 
@@ -3713,6 +3784,8 @@ def main():
     print_accel_schedule_table(FLIGHT)
 
     print_phi_limiter_table(FLIGHT)
+
+    print_release_edge_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

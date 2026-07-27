@@ -4460,7 +4460,7 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
 
     def integrate_fuel(self, flight: FlightCondition, fuel_schedule, nu0,
                        s_end: float, ds: float, freeze=None, Tt4_max=None,
-                       tau_gov=None, accel=None, surge=None) -> list:
+                       tau_gov=None, accel=None, surge=None, s_off=None) -> list:
         """RK4-march (dnu_L/ds, dnu_H/ds) = (Phi_L/rho, Phi_H) under a FUEL schedule.
         Tt4 is an OUTPUT recorded per point (it can overshoot the steady value).
 
@@ -4498,9 +4498,32 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
         INSIDE the ramp (`docs/both-edges-limiter-negative.md` proved no pt3-filter can).
         That closing edge is NOT inert: it RE-OPENS the unwatched spool's descent, so this leg
         credits the spool it watches and DEBITS the other. `surge=None` leaves the leg
-        un-consulted => bit-for-bit rungs 45/46/47/48."""
+        un-consulted => bit-for-bit rungs 45/46/47/48.
+
+        `s_off` (RUNG 50) FORCES the min-select legs (`accel`, `surge`) to DISARM at s >= s_off,
+        regardless of what their own signals say. It is an ISOLATION DIAGNOSTIC, not a control
+        law -- the project ships several (rung 34/40's `freeze=`, which holds a spool's speed
+        against its own ODE; rung 41's `surge_margin_channels`) and this is one of them. It
+        exists because rungs 48/49 could only move a limiter's RELEASE edge by moving `phi_lim`
+        or `m`, which moves the ENGAGEMENT edge, the window length and the clip depth WITH it --
+        so rung 49 § 3's clock claim had to be hedged as within-family. `s_off` slides the
+        release edge alone, two-sided (earlier AND later than the natural release), with the
+        entire trajectory up to it BIT-IDENTICAL. It is a pure function of `s`, so it adds no
+        state and is RK4-legal: the march is already non-autonomous through `fuel_schedule(s)`,
+        and `s` is threaded into the sub-steps exactly as the schedule already is (a boolean
+        LATCH would flip between k1 and k4 and silently destroy the integrator's order --
+        rung 47 hit that and answered it with a continuous third state).
+
+        Pass `s_off` on the ds grid: the switch otherwise straddles a step and the
+        ds-convergence reading is not clean. `s_off=None` leaves the legs ungated =>
+        bit-for-bit rungs 45/46/47/48/49."""
         assert tau_gov is None or Tt4_max is not None, (
             "rung-47 tau_gov is a governor lag -- it needs a redline (Tt4_max) to lag.")
+        assert s_off is None or (accel is not None or surge is not None), (
+            "rung-50 s_off forces a min-select LEG to release early -- arm one (accel/surge). "
+            "The rung-46/47 topping governor is out of scope: its window is post-ramp by "
+            "construction, and the lagged path carries the clip amount as a STATE, so forcing "
+            "its release is a different instrument (it would have to zero that state).")
         if getattr(self, "_degenerate", None) is not None:
             assert freeze is None, "rung-43 channel isolation needs two spools"
             assert Tt4_max is None and tau_gov is None, (
@@ -4513,24 +4536,31 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
                 "the rung-49 phi floor is inherently two-shaft (its finding is the CREDIT on "
                 "the watched spool against the DEBIT on the other); lp_disabled is not a "
                 "reduce axis for a split BETWEEN spools.")
+            assert s_off is None, (
+                "the rung-50 forced release isolates a split BETWEEN spools (both minima "
+                "relocate to the release point); lp_disabled is not a reduce axis for it.")
             return self._degenerate.integrate_fuel(flight, fuel_schedule, nu0, s_end, ds)
 
         if Tt4_max is not None and tau_gov is not None:
             return self._integrate_fuel_lagged(flight, fuel_schedule, nu0, s_end, ds,
-                                               freeze, Tt4_max, tau_gov, accel, surge)
+                                               freeze, Tt4_max, tau_gov, accel, surge, s_off)
 
-        def der(a, b, mf):
+        def der(a, b, mf, s):
             # THE MIN-SELECT. Each cap is solved INDEPENDENTLY from the SCHEDULED fuel, so
             # arming one leg cannot perturb the other's bracket (two Illinois solves off
             # different brackets agree only to tolerance, not bit-for-bit -- and gate 3
             # demands bit-for-bit). Rung 46's path is untouched when accel is None.
             i = self._instant_fuel(flight, a, b, mf)
             caps = []
+            # RUNG 50: `armed` is a pure function of s -- no state, no latch (see the
+            # docstring). `s_off=None` short-circuits to True, so the rung-49 path is
+            # reached by the identical branch and stays bit-for-bit.
+            armed = s_off is None or s < s_off
             if Tt4_max is not None and i["Tt4"] > Tt4_max:
                 caps.append(self._topping_fuel(flight, a, b, Tt4_max, mf))
-            if accel is not None:
+            if accel is not None and armed:
                 caps.append(self._sched_fuel(flight, a, b, mf, accel))
-            if surge is not None:
+            if surge is not None and armed:
                 caps.append(self._surge_fuel(flight, a, b, mf, surge))
             caps = [c for c in caps if c < mf]     # a dormant leg returns mf itself
             if caps:
@@ -4544,7 +4574,7 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
         for _ in range(int(round(s_end / ds)) + 1):
             mf = float(fuel_schedule(s))
             try:
-                k1a, k1b, mf_app, inst = der(a, b, mf)
+                k1a, k1b, mf_app, inst = der(a, b, mf, s)
             except AssertionError:
                 break
             pts.append(dict(s=s, nu_lp=a, nu_hp=b, Tt4=inst["Tt4"], f=inst["f"],
@@ -4554,10 +4584,10 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
                             branch=inst["branch"], mf=mf_app, mf_sched=mf))
             try:
                 mfm = float(fuel_schedule(s + ds / 2))
-                k2a, k2b, _, _ = der(a + ds / 2 * k1a, b + ds / 2 * k1b, mfm)
-                k3a, k3b, _, _ = der(a + ds / 2 * k2a, b + ds / 2 * k2b, mfm)
+                k2a, k2b, _, _ = der(a + ds / 2 * k1a, b + ds / 2 * k1b, mfm, s + ds / 2)
+                k3a, k3b, _, _ = der(a + ds / 2 * k2a, b + ds / 2 * k2b, mfm, s + ds / 2)
                 k4a, k4b, _, _ = der(a + ds * k3a, b + ds * k3b,
-                                     float(fuel_schedule(s + ds)))
+                                     float(fuel_schedule(s + ds)), s + ds)
             except AssertionError:
                 break
             a += ds / 6 * (k1a + 2 * k2a + 2 * k3a + k4a)
@@ -4567,7 +4597,7 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
 
     def _integrate_fuel_lagged(self, flight: FlightCondition, fuel_schedule, nu0,
                                s_end: float, ds: float, freeze, Tt4_max: float,
-                               tau_gov: float, accel=None, surge=None) -> list:
+                               tau_gov: float, accel=None, surge=None, s_off=None) -> list:
         """RUNG 47. The TIT topping governor with a finite response lag `tau_gov` -- the
         sensing / limiter-loop lag of a real temperature limiter (the DOMINANT lag in a
         real TIT limiter, far larger than valve slew).
@@ -4599,9 +4629,10 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
         def der(a, b, g, s):
             mf_sched = float(fuel_schedule(s))
             mf = max(1e-9, mf_sched - g)
-            if accel is not None:                  # RUNG 48: the feedforward leg, min-selected
+            armed = s_off is None or s < s_off     # RUNG 50: the forced release (no state)
+            if accel is not None and armed:        # RUNG 48: the feedforward leg, min-selected
                 mf = min(mf, self._sched_fuel(flight, a, b, mf_sched, accel))
-            if surge is not None:                  # RUNG 49: the phi floor, min-selected
+            if surge is not None and armed:        # RUNG 49: the phi floor, min-selected
                 mf = min(mf, self._surge_fuel(flight, a, b, mf_sched, surge))
             i = self._instant_fuel(flight, a, b, mf)
             da = 0.0 if freeze == "lp" else i["Phi_lp"] / self.rho
@@ -4754,7 +4785,7 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
 
     def _fuel_ramp_march(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
                          r: float, s_settle: float, ds: float, Tt4_max=None,
-                         tau_gov=None, accel=None, surge=None):
+                         tau_gov=None, accel=None, surge=None, s_off=None):
         """RUNG 45. March a FUEL ramp whose steady endpoints are the fuel-equivalents of
         Tt4_lo -> Tt4_hi (`fuel_for_Tt4`), from the running-line start there. Returns the
         marched trajectory and a COMMANDED running-line phi lookup `steady(s, spool)` =
@@ -4785,7 +4816,7 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
             return mf_lo + (mf_hi - mf_lo) * (s / r)
 
         traj = self.integrate_fuel(flight, sched, nu0, r + s_settle, ds, Tt4_max=Tt4_max,
-                                   tau_gov=tau_gov, accel=accel, surge=surge)
+                                   tau_gov=tau_gov, accel=accel, surge=surge, s_off=s_off)
         lo, hi = min(Tt4_lo, Tt4_hi), max(Tt4_lo, Tt4_hi)
         grid = [lo + (hi - lo) * k / 8.0 for k in range(9)]
         rl = [self.equilibrium(flight, T) for T in grid]
@@ -5113,3 +5144,106 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
         44's ramp-rate lever. Read the split only where `nu_hp_end` is unmoved."""
         return [self.surge_relief(flight, Tt4_lo, Tt4_hi, SurgeLimiter(spool=spool, phi_lim=p),
                                   r, s_settle, ds) for p in floors]
+
+    # --- RUNG 50: the RELEASE EDGE, isolated ------------------------------------------
+
+    def release_relief(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                       s_off, surge: "SurgeLimiter" = None, accel: "AccelSchedule" = None,
+                       r: float = 0.5, s_settle: float = 4.0, ds: float = 0.02) -> dict:
+        """RUNG 50 (the finding method). March the SAME accel fuel ramp twice -- BARE and with
+        a min-select leg armed but FORCED to disarm at `s_off` -- and difference rung 45's
+        reference-free surge object, exactly as rungs 46/48/49's relief methods do.
+
+        WHY `s_off` AND NOT A LAG. Rungs 48/49 could move a limiter's release edge only by
+        moving `m`/`phi_lim`, which drags the ENGAGEMENT edge, the window length and the clip
+        depth along with it -- so rung 49 § 3's clock result had to be hedged as WITHIN-FAMILY.
+        `s_off` slides the release alone, TWO-SIDED (earlier and later than the natural
+        release), with everything up to it bit-identical. It is an isolation diagnostic in the
+        project's own tradition (`freeze='lp'` holds a spool's speed against its own ODE;
+        neither is a control law), and it is what makes the clock claim decidable.
+
+        THE FINDING: the release edge RELOCATES BOTH SPOOLS' MINIMA TO ITSELF -- `s_min_lp` /
+        `s_min_hp` == `s_rel` to a grid cell -- whenever the DIVE BRANCH WINS on that spool.
+        That is a conjunction of two measurable preconditions, and it IS the two-branch law
+        `min(rung-48's truncation at s_eng, the dive bottoming at s_rel)`:
+
+          (a) the release lands at or AFTER that spool's own bare minimum. Upstream of it the
+              re-opened dive merges into the still-ongoing bare descent and bottoms in the bare
+              basin instead;
+          (b) that spool's relief is NEGATIVE, i.e. the dive actually beats rung 48's
+              truncation branch. Where the credit branch wins the minimum sits back at the
+              arrest.
+
+        The depth of the re-opened dive is monotone in the DEFICIT at release and peaked in the
+        RAMP REMAINING -- set by the ramp end, NOT by either spool's own minimum. Forced early,
+        the leg DEBITS THE SPOOL IT WATCHES -- rung 49's watched-side identity is BOUNDED to the
+        unforced instrument, not broken by it.
+
+        `accel` carries the SEAM TEST: rung 48's leg is immune to the release debit only
+        because its natural release is post-ramp. Force it inside the ramp and it debits like
+        any other -- the immunity is TIMING, not clip SHAPE (rung 49's named suspect, refuted).
+
+        `s_off=None` reproduces the unforced leg exactly (rung 49 / rung 48)."""
+        assert surge is not None or accel is not None, (
+            "rung-50 release_relief needs a leg to release: pass surge= and/or accel=.")
+        assert s_off is None or s_off > 0.0, "rung-50 s_off is a release TIME on the march"
+        bare, _ = self._fuel_ramp_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds)
+        lim, _ = self._fuel_ramp_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds,
+                                       accel=accel, surge=surge, s_off=s_off)
+        assert bare and lim, "rung-50 release_relief produced no trajectory"
+
+        def raw_min(traj, key):
+            p = min(traj, key=lambda q: q[key])
+            return p[key], p["s"]
+
+        mpl_b, s_lp = raw_min(bare, "phi_lp")
+        mph_b, s_hp = raw_min(bare, "phi_hp")
+        mpl_l, s_lp_l = raw_min(lim, "phi_lp")
+        mph_l, s_hp_l = raw_min(lim, "phi_hp")
+        eng = [p for p in lim if p["mf"] < p["mf_sched"] * (1.0 - 1e-9)]
+        removed = 0.0
+        for i in range(1, len(lim)):
+            h = lim[i]["s"] - lim[i - 1]["s"]
+            removed += 0.5 * h * ((lim[i - 1]["mf_sched"] - lim[i - 1]["mf"])
+                                  + (lim[i]["mf_sched"] - lim[i]["mf"]))
+        # the INSTANTANEOUS fractional clip at the last engaged point -- the "deficit at
+        # release", the quantity the dive depth is monotone in at FIXED release time (and the
+        # quantity rung 49 § 4 refuted under a confound: it swept it TOGETHER with the timing).
+        last = eng[-1] if eng else None
+        deficit = ((last["mf_sched"] - last["mf"]) / last["mf_sched"]) if last else 0.0
+        watched = surge.spool if surge is not None else None
+        return dict(
+            s_off=s_off, r=r, rho=self.rho, ds=ds,
+            spool=watched, phi_lim=(surge.phi_lim if surge is not None else None),
+            margin=(accel.margin if accel is not None else None),
+            s_eng=eng[0]["s"] if eng else float("nan"),
+            s_rel=eng[-1]["s"] if eng else float("nan"), n_engaged=len(eng),
+            deficit_at_release=deficit,
+            s_lp_bare=s_lp, s_hp_bare=s_hp,
+            relief_lp=mpl_l - mpl_b, relief_hp=mph_l - mph_b,
+            relief_watched=((mpl_l - mpl_b) if watched == "lp" else (mph_l - mph_b))
+            if watched else None,
+            relief_other=((mph_l - mph_b) if watched == "lp" else (mpl_l - mpl_b))
+            if watched else None,
+            s_min_lp=s_lp_l, s_min_hp=s_hp_l,
+            min_phi_lp_bare=mpl_b, min_phi_lp_lim=mpl_l,
+            min_phi_hp_bare=mph_b, min_phi_hp_lim=mph_l,
+            fuel_removed=removed,
+            nu_hp_end=lim[-1]["nu_hp"], nu_hp_end_bare=bare[-1]["nu_hp"])
+
+    def release_sweep(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                      s_offs, surge: "SurgeLimiter" = None, accel: "AccelSchedule" = None,
+                      r: float = 0.5, s_settle: float = 4.0, ds: float = 0.02) -> list:
+        """RUNG 50. Sweep the FORCED release time at a FIXED leg -- the deconfounded axis.
+
+        Read `relief_hp` (or `relief_other`): it deepens monotonically as `s_off` walks
+        THROUGH the unwatched spool's own minimum without noticing it, peaks with the release
+        just inside the RAMP END, and collapses past it. That ordering is rung 49 § 3's clock
+        claim with the engagement edge and the clip depth held fixed -- the measurement rung 49
+        could not make.
+
+        Pass `s_offs` on the `ds` grid (the switch otherwise straddles a step). The
+        anti-deflation pair rides along: `fuel_removed` rises MONOTONICALLY across the sweep
+        while the debit is PEAKED, so the largest fuel removal is not the largest debit."""
+        return [self.release_relief(flight, Tt4_lo, Tt4_hi, so, surge=surge, accel=accel,
+                                    r=r, s_settle=s_settle, ds=ds) for so in s_offs]
