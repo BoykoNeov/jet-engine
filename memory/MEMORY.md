@@ -2,7 +2,7 @@
 
 - [Session-end routine](session-end-routine.md) — at end of batch/planning, or "session end": update memory + docs, commit, push to main
 - [Git remote setup](git-remote-setup.md) — repo is github.com/BoykoNeov/jet-engine (public), branch main, origin over SSH
-- [Always commit and push](always-commit-and-push.md) — auto-commit + push green work to main without being asked; green-gate is `pytest --runslow` NOT bare pytest
+- [Always commit and push](always-commit-and-push.md) — auto-commit + push green work to main without being asked; green-gate is `pytest --runslow` NOT bare pytest — but NEVER run the gate on a docs-only change
 - [CLAUDE.md is a reference](claude-md-is-a-reference.md) — CLAUDE.md must stay a compact one-line-per-rung index (detail → docs/rungN-spec.md); guard test tests/test_claude_md_reference.py enforces a size budget; bloated to ~200KB twice before
 - [Test-suite speed policy](test-suite-speed-policy.md) — suite fast-by-default (~2.5min routine / ~10min full); bare pytest skips slow FINDING gates but KEEPS the reduce spine; commit gate = `pytest --runslow`; config in pytest.ini+conftest.py, no test file edited
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page published as artifact 56cde230…; update same URL, regenerate via extract_data.py + build.py
@@ -38,3 +38,4 @@
 - [Turbine-march negative](turbine-march-negative.md) — rung 29's finite-rate-turbine-march seam NEGATIVE (docs/turbine-march-negative.md); I_turb≡S because turbine entry is at equilibrium, rung-25 dodge cannot repeat; two un-anchored knobs; NOT a rung
 - [Mixing JICF-anchor negative](mixing-jicf-anchor-negative.md) — the anchored-δ(J)/JICF-trajectory attack on the mixing ceiling NEGATIVE (docs/mixing-jicf-anchor-negative.md); confirms rung 22 (δ∝rd rules in, bent trajectory ruled out) but emissions optimum still not pinned — rides on a SECOND unanchored exponent (spread); NOT a rung
 - [pt3 sensor-lag negative](pt3-sensor-lag-negative.md) — rung 48's own next seam (lagged pt3 sensor) NEGATIVE: an effective-margin reparameterisation, release edge structurally post-ramp; CONFIRMS rung 48 + corrects its seam's SIGN (a sensor lag engages EARLIER); the 12%-gap-inside-my-own-ds-band lesson; NOT a rung
+- [Both-edges limiter negative](both-edges-limiter-negative.md) — the both-edges-inside-the-ramp limiter NEGATIVE for the WHOLE pt3-filter family (the ramp is the only clock); fuel-command rate limit = rung 44's lever by IDENTITY; by-product UPGRADES rung 48 to the truncated-descent law (clip ARRESTS the φ descent ⇒ EDGE not window, relief closed-form); live door = a φ/surge-margin FEEDBACK limiter; NOT a rung
