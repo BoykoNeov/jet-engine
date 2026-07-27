@@ -101,6 +101,27 @@ persists; the timing reading predicts exactly this. The crossing must therefore 
 `r`** — `s_lp*` moves with the ramp rate (0.240 at `r = 0.5`, 0.140 at `r = 0.15`) — never as a
 universal `s` threshold.
 
+## Table C2 — the HP crossing, demonstrated on a SLOW ramp (r = 2.0)
+
+At `r = 0.5` the ratio peak (1.4885) runs out of dial just as `s_eng` reaches `s_hp* = 0.40`, so
+the HP side shows a collapse (+0.000016) rather than a clean exact zero — weaker evidence than the
+LP side. A slower ramp separates the minima further and leaves dial to spare:
+
+| `r` | `s_lp*` | `s_hp*` | `m` | `s_eng` | past `s_hp*` | relief_lp | relief_hp | fuel_rm |
+|---|---|---|---|---|---|---|---|---|
+| 2.0 | 0.32 | 0.64 | 0.20 | 0.700 | **yes** | 0.000000 | **0.000000** | 0.00002 |
+| 1.0 | 0.28 | 0.50 | 0.30 | 0.440 | no | 0.000000 | +0.001217 | 0.00020 |
+
+The `r = 2.0` row is the HP-side analogue of the LP result: engagement strictly PAST the HP
+minimum, fuel still being removed, relief EXACTLY zero — and the march is bit-identical to bare
+through BOTH minima. Both crossings are therefore demonstrated at the mechanism level, not just
+the consequence.
+
+**Mechanism check (r = 0.5, gate 8b):** the first divergence between the limited and bare marches
+lands exactly at `s_eng` — 0.280 at `m = 0.42`, 0.320 at `m = 0.45`, 0.400 at `m = 0.48` — all
+downstream of `s_lp* = 0.240`. Nothing upstream of the LP minimum moves, which is why the
+switch-off is exact and not merely small.
+
 ## Table D — SHAPE ROBUSTNESS (r = 0.5)
 
 The crossing rule (`relief_lp > 0` iff `s_eng < s_lp*`, exactly 0 otherwise) holds on `tilted`

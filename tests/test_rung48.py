@@ -283,6 +283,59 @@ def test_engagement_crossing_lp_switches_off_exactly_at_s_lp():
     assert all(b[1] >= a[1] for a, b in zip(eng, eng[1:])), eng
 
 
+def test_downstream_clip_is_bit_identical_through_the_minimum():
+    """GATE 8b -- the MECHANISM behind gate 8's `relief_lp == 0.0`, not just its consequence.
+
+    "EXACTLY 0" is a strong claim: it says the limited march never differs from the bare one
+    ANYWHERE at or before the LP minimum, so the minimum itself is the same float. Gate 8 checks
+    the consequence (the differenced minima); this checks the cause -- the two trajectories are
+    bit-identical on every recorded key until the clip's first engagement, which lands DOWNSTREAM
+    of s_lp*. Without this, an upstream one-ULP perturbation that happened to leave min_phi_lp
+    rounding the same would pass gate 8 while the claim was false."""
+    ft = _ft()
+    bare, _ = ft._fuel_ramp_march(FLIGHT, LO, HI, R, SETTLE, DS)
+    s_lp = min(bare, key=lambda p: p["phi_lp"])["s"]
+    for m in (0.42, 0.45, 0.48):
+        acc = ft.accel_schedule(FLIGHT, LO, HI, m)
+        lim, _ = ft._fuel_ramp_march(FLIGHT, LO, HI, R, SETTLE, DS, None, None, acc)
+        first_diff = next((a["s"] for a, b in zip(bare, lim)
+                           if tuple(a[k] for k in KEYS) != tuple(b[k] for k in KEYS)), None)
+        s_eng = next((p["s"] for p in lim if p["mf"] < p["mf_sched"] * (1.0 - 1e-9)), None)
+        assert s_eng is not None and s_eng > s_lp, ("this gate needs a DOWNSTREAM clip", m)
+        assert first_diff is not None, ("...that genuinely moves the march", m)
+        assert first_diff > s_lp, (
+            "a downstream clip must leave the whole pre-minimum march BIT-IDENTICAL",
+            m, first_diff, s_lp)
+        assert abs(first_diff - s_eng) < 1e-9, (
+            "and the march must diverge exactly AT engagement, not before", m, first_diff, s_eng)
+
+
+def test_hp_crossing_demonstrated_on_a_slow_ramp():
+    """GATE 9b. At r=0.5 the ratio peak (~1.49) runs out of dial just as s_eng reaches s_hp*, so
+    the HP side there shows only a COLLAPSE (+0.000016), not a clean exact zero -- weaker evidence
+    than the LP side has. A SLOWER ramp separates them: at r=2.0, s_hp*=0.64 and m=0.20 engages at
+    s=0.70, strictly PAST it, with fuel still being removed. relief_hp is then EXACTLY 0 and the
+    march is bit-identical through BOTH minima. The crossing rule is thus demonstrated to the same
+    standard on both spools, not merely corroborated on the HP one."""
+    ft = _ft()
+    bare, _ = ft._fuel_ramp_march(FLIGHT, LO, HI, 2.0, SETTLE, DS)
+    s_lp = min(bare, key=lambda p: p["phi_lp"])["s"]
+    s_hp = min(bare, key=lambda p: p["phi_hp"])["s"]
+    acc = ft.accel_schedule(FLIGHT, LO, HI, 0.20)
+    lim, _ = ft._fuel_ramp_march(FLIGHT, LO, HI, 2.0, SETTLE, DS, None, None, acc)
+    s_eng = next((p["s"] for p in lim if p["mf"] < p["mf_sched"] * (1.0 - 1e-9)), None)
+    assert s_eng is not None and s_eng > s_hp > s_lp, (s_eng, s_hp, s_lp)
+    row = ft.schedule_relief(FLIGHT, LO, HI, acc, r=2.0, s_settle=SETTLE, ds=DS)
+    assert row["fuel_removed"] > 0.0, "fuel must genuinely be removed where the HP gets nothing"
+    assert row["relief_hp"] == 0.0 and row["relief_lp"] == 0.0, (
+        "past BOTH minima, both reliefs are exactly zero",
+        row["relief_lp"], row["relief_hp"])
+    first_diff = next((a["s"] for a, b in zip(bare, lim)
+                       if tuple(a[k] for k in KEYS) != tuple(b[k] for k in KEYS)), None)
+    assert first_diff is not None and first_diff > s_hp, (
+        "bit-identical through BOTH minima -- the mechanism, on the HP side too", first_diff)
+
+
 def test_engagement_crossing_hp_is_later_the_split():
     """GATE 9 / FINDING 2 (the split). The SAME instrument crosses the HP minimum LATER: at the
     margins where relief_lp is already exactly 0, relief_hp is STILL POSITIVE -- and it survives
@@ -388,6 +441,8 @@ if __name__ == "__main__":
                test_kappa_derived_from_running_line_and_pt3_identity,
                test_window_exists_ratio_rises_through_the_lp_minimum,
                test_engagement_crossing_lp_switches_off_exactly_at_s_lp,
+               test_downstream_clip_is_bit_identical_through_the_minimum,
+               test_hp_crossing_demonstrated_on_a_slow_ramp,
                test_engagement_crossing_hp_is_later_the_split,
                test_not_ramp_rate_lever_the_non_tautology,
                test_degeneracy_boundary_small_margin_is_the_ramp_rate_lever,

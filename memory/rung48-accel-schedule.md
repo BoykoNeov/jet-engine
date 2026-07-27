@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 1979c54f-103b-47ac-8082-1b7a3f31382e
-  modified: 2026-07-27T08:45:56.941Z
+  modified: 2026-07-27T09:10:25.101Z
 ---
 
 **SHIPPED rung 48** (2026-07-27) — the `Wf/pt3` **acceleration fuel schedule**:
@@ -43,6 +43,16 @@ above `κ_ss` at s=0.10, far upstream of the LP min. See [[rung47-lagged-topping
   exactly nothing. **A ramp-rate story cannot split two spools from the same removed fuel.**
 - **The honest boundary is gated, not hidden:** at small `m` the leg DOES degenerate into
   rung 44's ramp-rate lever (accel does not complete). Own gate, so it can't be folded in.
+- **Post-ship, the advisor caught two more.** (1) Gate an "EXACTLY 0" claim at the
+  MECHANISM, not the consequence: `relief_lp == 0.0` off two separate marches could in
+  principle survive an upstream ULP wobble. Checked directly — the limited march is
+  bit-identical to bare until its first engagement (divergence lands exactly at `s_eng`),
+  so the claim is earned. (2) It flagged that the HP crossing was only *corroborated* (at
+  r=0.5 the ratio peak runs out of dial just as `s_eng` reaches `s_hp*`, giving +0.000016
+  not an exact zero). Fixed by a SLOWER ramp: at r=2.0, `s_hp*`=0.64 and m=0.20 engages at
+  0.700, past it, fuel still removed, `relief_hp` EXACTLY 0, bit-identical through both
+  minima. **Both crossings now demonstrated to the same standard.** Lesson: when one side
+  of a symmetric claim has weaker evidence, move the config until it doesn't — or say so.
 - **Bit-for-bit lesson:** two Illinois solves off different brackets agree only to
   tolerance, so the min-select must compute EACH cap independently from the *scheduled*
   fuel — otherwise arming one leg perturbs the other's root in the last bits and the

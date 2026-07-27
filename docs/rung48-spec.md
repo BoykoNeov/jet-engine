@@ -22,7 +22,7 @@ Rung 48 walks through that door with the instrument a real FADEC actually uses �
 > falls to **EXACTLY 0** as `s_eng` passes `s_lp* = 0.24` (m ≈ 0.42) **while `relief_hp` is still
 > +0.0075**, and `relief_hp` dies only when `s_eng` reaches `s_hp* = 0.40` (m ≈ 0.48). **This is
 > NOT rung 44's ramp-rate lever in disguise**: the fuel removed varies SMOOTHLY and stays POSITIVE
-> through both crossings, and the settled endpoint is unmoved to 5 dp — at `m = 0.45` the SAME
+> through both crossings, and the settled endpoint is unmoved (bare to 5 dp for `m ≥ 0.25`) — at `m = 0.45` the SAME
 > clip removing the SAME fuel gives `relief_hp = +0.0034` and `relief_lp = 0.000000`, a per-spool
 > split at FIXED fuel-removed that no ramp-rate story can produce. Rung 46's finding is recovered
 > as the special case `s_eng > s_lp*` (a redline-triggered governor is late BY CONSTRUCTION), and
@@ -85,7 +85,7 @@ composite is bit-for-bit that leg's single-leg result — gate 3.
 doubled), the ramp band and rate are chosen. Rung 48 makes **no** claim about the absolute margin
 a real schedule carries. It delivers **signs and a crossing**: that `relief_lp` and `relief_hp`
 each switch on iff `s_eng` is upstream of that spool's own minimum, that the switch-off is EXACT
-(machine-zero) rather than gradual, that fuel-removed is smooth and positive through it, and that
+(the upstream march is bit-identical, not merely close) rather than gradual, that fuel-removed is smooth and positive through it, and that
 the endpoint is unmoved. The **rung-36 discipline holds: report the crossing, gate the flip.**
 
 ---
@@ -132,6 +132,19 @@ Read the two columns as two independent crossings **of the same instrument**:
 
 - `relief_lp` decays to EXACTLY zero as `s_eng` passes `s_lp* = 0.24` — and stays exactly zero.
 - `relief_hp` is still **+0.0075 there**, and dies only when `s_eng` reaches `s_hp* = 0.40`.
+
+**The "EXACTLY 0" is a MECHANISM statement, not a rounding.** A downstream-engaging march is
+**bit-identical to the bare one on every recorded key until its first engagement** — verified at
+`m = 0.42, 0.45, 0.48`, where the first divergence lands exactly at `s_eng` (0.280 / 0.320 /
+0.400), all downstream of `s_lp* = 0.24`. Nothing upstream of the minimum moved, so the minimum
+is the same float. That is why the switch-off is exact rather than merely small (gate 8b).
+
+**Both crossings are demonstrated to the SAME standard — but the HP one needs a slower ramp.** At
+`r = 0.5` the ratio peaks at 1.4885, which runs out of dial just as `s_eng` reaches `s_hp* = 0.40`:
+the HP side there shows a collapse to +0.000016, not a clean exact zero. At **`r = 2.0`** the minima
+separate further (`s_lp* = 0.32`, `s_hp* = 0.64`) and `m = 0.20` engages at `s = 0.700`, strictly
+PAST the HP minimum with fuel still being removed (0.00002): `relief_hp` is then **exactly 0**, and
+the march is bit-identical through BOTH minima (gate 9b). The rule is not an LP-only result.
 
 **One rule covers both, and covers rungs 46 and 47:** a fuel-side limiter rebates a spool iff it
 engages upstream of that spool's own surge minimum. Rung 46's split (HP rebated, LP machine-zero)
@@ -222,8 +235,14 @@ composite is what a real accel schedule actually is.
    at `s_lp*` (finding 1; the enabling measurement, gated as a sign not a level).
 8. `test_engagement_crossing_lp` — `relief_lp > 0` for every `m` with `s_eng < s_lp*` and
    **exactly 0** for every `m` with `s_eng > s_lp*` (finding 2, the headline).
+8b. `test_downstream_clip_is_bit_identical_through_the_minimum` — the MECHANISM behind gate 8:
+   a downstream clip leaves the whole pre-minimum march bit-identical, diverging exactly AT
+   engagement. Without it, gate 8 checks only the consequence.
 9. `test_engagement_crossing_hp_is_later` — at the `m` where `relief_lp` is exactly 0,
    `relief_hp > 0`; and `relief_hp` survives until `s_eng` reaches `s_hp*` (finding 2, the split).
+9b. `test_hp_crossing_demonstrated_on_a_slow_ramp` — at `r = 2.0`, `s_eng = 0.700 > s_hp* = 0.64`
+   with fuel still removed ⇒ `relief_hp` EXACTLY 0 and bit-identical through both minima. This is
+   what raises the HP side from corroborated to demonstrated.
 10. `test_not_ramp_rate_lever` — fuel removed is strictly positive and monotone-decreasing in `m`
     across the LP crossing while `relief_lp` goes exactly to 0, and `ν_H` at settle is unchanged
     to 1e-4 for `m ≥ 0.10` (finding 3, the non-tautology).
