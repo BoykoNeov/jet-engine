@@ -125,6 +125,7 @@ closed vs open — keep it one line per entry.
 - Finite-rate turbine march (rung 29's seam a) — `docs/turbine-march-negative.md` (`I_turb ≡ S`, entry at equilibrium; two un-anchored knobs).
 - Locally-resolved mixing **SCALE** — `docs/mixing-scale-negative.md` (the turn rides on the unanchored penetration exponent `p`).
 - Anchored `δ(J)` law via a JICF trajectory — `docs/mixing-jicf-anchor-negative.md` (confirms rung 22; emissions optimum rides on a SECOND unanchored exponent, spread).
+- Lagged/filtered `pt3` sensor on rung 48's leg — `docs/pt3-sensor-lag-negative.md` (an effective-margin reparameterisation: matched sub-grid engagement ⇒ same relief; the release edge is structurally post-ramp. CONFIRMS rung 48 + corrects its seam's SIGN — a sensor lag engages EARLIER).
 
 **Checked, CONFIRMATION / CORRECTION — not a rung (the rung-29/28 margin sweeps):**
 - "Earned at design" over `π_c` — `docs/rung29-pi-c-margin.md` (verdict holds ~9.4×; `π_c` NOT protective; `ENERGY = INVENTORY × COMPLETION`).
@@ -137,7 +138,7 @@ closed vs open — keep it one line per entry.
 - **Detailed Fenimore** (`CH+N₂→HCN`) and **super-eq-O radical-decay history** — need new species / a relaxing pocket a 0-D pool cannot derive.
 - **Reacting-gas fuel control** (rungs 35/43 defer — the forward burner asserts against an equilibrium gas; the finding is gas-independent).
 - **The subsonic / unchoked LP branch** in the two-spool solves (rung 38 flags, does not solve) and its **transient**.
-- **The variable stator** (moves `φ_surge` itself — rung 42 did the bleed half); a **bleed schedule** `b(n_L)`; **fuel + bleed together**; a **rate-limit** or a **sensor+actuator cascade** on the fuel path (rung 47 shut the *pure-lag* door; rung 48 answered the anticipation question with FEEDFORWARD — the open seam is now a **lagged/filtered `pt3` sensor**, i.e. whether the lag pushes `s_eng` past `s_lp*`: rung 48's crossing asked as a *sensor* question).
+- **The variable stator** (moves `φ_surge` itself — rung 42 did the bleed half); a **bleed schedule** `b(n_L)`; **fuel + bleed together**; a **rate-limit** or a **sensor+actuator cascade** on the fuel path (rung 47 shut the *pure-lag* door; rung 48 answered the anticipation question with FEEDFORWARD; the *pure* `pt3` sensor lag is now NEGATIVE above — the live seam is a limiter whose engagement AND release both land INSIDE the ramp, i.e. a **rate-limited or lead-lag/washout-filtered `pt3`**, which would put a second edge where a surge minimum lives).
 - **Rung 37's internal clocks on two shafts** and the combined 3-state; **customer/cooling bleed** at station 3.
 - **Afterburner**; a **real hardware/CFD map + surge line** (rung 32's standing concession, now doubled across two spools).
 - **Feeding any shifted/marched state into the production cycle** — a re-foundation (re-anchors every rung's numbers), not a rung.

@@ -268,9 +268,21 @@ composite is what a real accel schedule actually is.
 - **The `m → 0` corner IS the ramp-rate lever** (finding 4). The finding is stated only in the
   endpoint-preserving window and the corner is gated, not hidden.
 - **Quasi-steady `pt3`** — the limiter reads the same closure the plant runs on; no sensor lag, no
-  filtering, no rate limit on the cap. A lagged/filtered `pt3` sensor is the obvious next seam,
-  and rung 47's result says the interesting question is whether the lag pushes `s_eng` past
-  `s_lp*` — i.e. the SAME crossing, now as a *sensor* question.
+  filtering, no rate limit on the cap. **A lagged `pt3` sensor was investigated and is NEGATIVE**
+  — `docs/pt3-sensor-lag-negative.md`. This bullet originally guessed that the interesting question
+  was "whether the lag pushes `s_eng` **past** `s_lp*`"; **that had the sign backwards.** A
+  first-order lag on a *rising* `pt3` reads LOW, so the cap is LOWER and the leg engages **EARLIER**
+  — the opposite of rung 47's loop lag, because this one lags the limiter's *input measurement*
+  rather than its *output trigger*. The investigation is a **confirmation of this rung**, not an
+  extension of it: at matched sub-grid engagement the sensor and a constant `m'` give the same
+  `relief_lp` (to 0.0–0.4 %, at two `ds`), so the lag is an effective-margin reparameterisation;
+  and its one genuinely new degree of freedom — a release edge set independently of engagement — is
+  **structurally** inert, since finding 1's monotone ratio means the leg cannot release before the
+  ramp flattens while both minima are always inside the ramp. It also supplies a negative control
+  this rung lacked: at `m = 0.48, τ_p = 0.05` the lag removes 15× the fuel and moves engagement
+  0.400 → 0.280 yet leaves `relief_lp` EXACTLY 0, because 0.280 is still downstream of `s_lp*`.
+  **The live remainder of this seam is a limiter whose engagement AND release both land inside the
+  ramp** — a rate-limited or lead-lag/washout-filtered `pt3`, not a pure lag.
 - **No claim that the leg protects the redline** (finding 6) — it is a compressor-protection leg;
   the composite with rung 46's is what a real schedule is.
 - **Reacting-gas fuel control deferred** (rungs 35/43/45/46/47, verbatim) — the leg runs on the
