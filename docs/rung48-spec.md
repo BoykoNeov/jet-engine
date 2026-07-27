@@ -179,8 +179,14 @@ At `m = 0.05` the cap sits so close to the steady line that it binds essentially
 and never releases inside the window: `ν_H` at settle is **0.87246** (vs 0.95906) — the accel has
 not completed — and `Tt4_peak` collapses to 1243.7 K. The apparent relief there (+0.031) is
 substantially "the accel was de-fanged," the same confound rung 47 rejected the coupled
-single-valve lag for. **The admissible window at `r = 0.5` is `m ∈ [0.10, 0.45]`**, where the
+single-valve lag for. **The admissible window at `r = 0.5` is `m ∈ [0.15, 0.45]`**, where the
 endpoint is untouched; the finding is stated there and the `m → 0` corner is reported, not used.
+
+> **CORRECTED** (`docs/both-edges-limiter-negative.md`): this window was originally stated as
+> `m ∈ [0.10, 0.45]`, and its low end was too wide. Measured at `m = 0.10`: `ν_H_end = 0.95714`
+> against bare `0.95906` — a shift of **1.9e-3, ~4× gate 10's own 5e-4 tolerance.** `m = 0.10` was
+> never in the swept `MARGINS`, so no gate was affected; the honest window is `[0.15, 0.45]`, which
+> is what gate 10 actually tests. The headline crossing (`m` = 0.38–0.48) is untouched.
 
 ### 5. Fast-ramp corroboration — the minima COINCIDE, so the crossings coincide
 
@@ -245,7 +251,10 @@ composite is what a real accel schedule actually is.
    what raises the HP side from corroborated to demonstrated.
 10. `test_not_ramp_rate_lever` — fuel removed is strictly positive and monotone-decreasing in `m`
     across the LP crossing while `relief_lp` goes exactly to 0, and `ν_H` at settle is unchanged
-    to 1e-4 for `m ≥ 0.10` (finding 3, the non-tautology).
+    to **5e-4** over the swept `MARGINS = (0.15 … 0.48)` (finding 3, the non-tautology). *The
+    tolerance is 5e-4, not 1e-4: the longest in-window engagement (`m = 0.15`) moves the endpoint
+    by 0.012 %. Corrected from an earlier "1e-4 for `m ≥ 0.10`" here, which matched neither the
+    asserted tolerance nor the swept set — see `docs/both-edges-limiter-negative.md`.*
 11. `test_degeneracy_boundary` — at `m = 0.05` the accel does NOT complete (`ν_H` end below the
     bare endpoint by > 1e-2) (finding 4, the honest boundary — gated so it cannot be quietly
     folded into the finding).
@@ -281,8 +290,24 @@ composite is what a real accel schedule actually is.
   ramp flattens while both minima are always inside the ramp. It also supplies a negative control
   this rung lacked: at `m = 0.48, τ_p = 0.05` the lag removes 15× the fuel and moves engagement
   0.400 → 0.280 yet leaves `relief_lp` EXACTLY 0, because 0.280 is still downstream of `s_lp*`.
-  **The live remainder of this seam is a limiter whose engagement AND release both land inside the
-  ramp** — a rate-limited or lead-lag/washout-filtered `pt3`, not a pure lag.
+  That remainder — **a limiter whose engagement AND release both land inside the ramp** (a
+  rate-limited or lead-lag/washout-filtered `pt3`) — has since ALSO been investigated and is
+  **NEGATIVE**: `docs/both-edges-limiter-negative.md`. It closes the whole `pt3`-filter family at
+  once, structurally: **the ramp is the only clock in the system** — every candidate second edge is
+  manufactured by the fuel ramp flattening, while both surge minima are ramp-driven and hence
+  strictly inside the ramp. The live door is now a **φ / surge-margin FEEDBACK limiter** (the only
+  signal with a turnover upstream of a surge minimum is the surge variable itself).
+
+- **THE LAW OF THIS RUNG IS SHARPENED BY THAT INVESTIGATION** (same doc, and it is a strict upgrade,
+  not a correction): the crossing rule is a consequence of a **mechanism** — a clip **ARRESTS** the φ
+  descent immediately and permanently (verified in all 19 armed rows over `r` = 0.15/0.5/2.0), so the
+  limited march's minimum sits AT `s_eng`. Hence the relief is not merely signed but **closed-form,
+  from ONE bare march**: `relief = min_{s ≤ s_eng} φ_bare − min_s φ_bare` — exact in the `ds → 0`
+  limit (first-order convergent), and **identically 0 whenever `s_eng > s*`**, which *derives* this
+  rung's exact-zero crossing rather than fitting it. It also settles what this rung could not:
+  because the minimum is fixed at the engaged window's OPENING, the rule is an **EDGE** condition
+  **necessarily** — the window's length, its fuel removed and its release edge are all causally
+  downstream of an already-determined minimum.
 - **No claim that the leg protects the redline** (finding 6) — it is a compressor-protection leg;
   the composite with rung 46's is what a real schedule is.
 - **Reacting-gas fuel control deferred** (rungs 35/43/45/46/47, verbatim) — the leg runs on the
