@@ -4138,6 +4138,33 @@ class SurgeLimiter:
         return "phi_lp" if self.spool == "lp" else "phi_hp"
 
 
+def _release_weight(s: float, s_off, tau_rel) -> float:
+    """RUNG 51. The min-select leg's AUTHORITY at march coordinate `s` -- the weight the
+    applied clip carries (docs/rung51-spec.md).
+
+        w(s) = clamp( (s_off + tau_rel - s) / tau_rel , 0, 1 )
+
+    w == 1 while the leg is fully armed, fades LINEARLY to 0 across the release interval
+    [s_off, s_off+tau_rel], and is 0 after. `tau_rel` is the release RATE axis: rung 50's
+    `s_off` moves WHEN the withheld fuel is handed back, `tau_rel` moves HOW FAST.
+
+    A PURE FUNCTION OF `s` -- no state, no latch, so rung 50's RK4 argument carries verbatim
+    (the march is already non-autonomous through `fuel_schedule(s)`). That is the whole reason
+    this shape was chosen over an asymmetric fast-attack/slow-release LAG: a lag's release edge
+    is EMERGENT, so sweeping its time constant drags the release time with it and reinstates
+    exactly the confound `s_off` was built to kill; a lag also needs `max(g, required)` inside
+    the derivative at a STATE-DEPENDENT location; and an exponential never completes, so "the
+    release edge" would stop being a locatable object. The lag is rung 51's own next seam.
+
+    `tau_rel` falsy (None or 0.0) short-circuits to rung 50's STEP, returning exactly 1.0 or
+    0.0 -- the identical branch, so the reduce is bit-for-bit and not equal-to-tolerance."""
+    if s_off is None:
+        return 1.0
+    if not tau_rel:
+        return 1.0 if s < s_off else 0.0
+    return min(1.0, max(0.0, (s_off + tau_rel - s) / tau_rel))
+
+
 class TwoSpoolFuelTransient(TwoSpoolTransient):
     """RUNG 43. Rung 35's FUEL control on rung 40's two-shaft plant.
 
@@ -4460,7 +4487,8 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
 
     def integrate_fuel(self, flight: FlightCondition, fuel_schedule, nu0,
                        s_end: float, ds: float, freeze=None, Tt4_max=None,
-                       tau_gov=None, accel=None, surge=None, s_off=None) -> list:
+                       tau_gov=None, accel=None, surge=None, s_off=None,
+                       tau_rel=None) -> list:
         """RK4-march (dnu_L/ds, dnu_H/ds) = (Phi_L/rho, Phi_H) under a FUEL schedule.
         Tt4 is an OUTPUT recorded per point (it can overshoot the steady value).
 
@@ -4516,9 +4544,25 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
 
         Pass `s_off` on the ds grid: the switch otherwise straddles a step and the
         ds-convergence reading is not clean. `s_off=None` leaves the legs ungated =>
-        bit-for-bit rungs 45/46/47/48/49."""
+        bit-for-bit rungs 45/46/47/48/49.
+
+        `tau_rel` (RUNG 51) gives that forced release a finite RATE: instead of dropping at
+        `s_off`, the leg's clip is faded LINEARLY to zero across [`s_off`, `s_off`+`tau_rel`]
+        (`_release_weight`). Rung 50 moved WHEN the withheld fuel is handed back; this moves
+        HOW FAST, which is the axis that separates total deficit from deficit RATE -- rung 50's
+        own named next seam, and the one thing nothing it measured could separate. It requires
+        `s_off` (a rate needs a pinned trigger; without one the release time moves WITH the
+        rate and the confound rung 50 killed comes straight back). Like `s_off` it is a pure
+        function of `s`, so it costs no state. Pass BOTH `s_off` and `s_off+tau_rel` on the ds
+        grid. `tau_rel=None` (or 0.0) short-circuits to rung 50's step through the IDENTICAL
+        branch => bit-for-bit rungs 45/46/47/48/49/50."""
         assert tau_gov is None or Tt4_max is not None, (
             "rung-47 tau_gov is a governor lag -- it needs a redline (Tt4_max) to lag.")
+        assert tau_rel is None or s_off is not None, (
+            "rung-51 tau_rel is the RATE of a FORCED release -- it needs the release time "
+            "s_off to be pinned. A rate without a pinned trigger is the asymmetric LAG "
+            "(rung 51's own next seam), whose release edge moves WITH the rate.")
+        assert tau_rel is None or tau_rel >= 0.0, "rung-51 tau_rel is a fade DURATION"
         assert s_off is None or (accel is not None or surge is not None), (
             "rung-50 s_off forces a min-select LEG to release early -- arm one (accel/surge). "
             "The rung-46/47 topping governor is out of scope: its window is post-ramp by "
@@ -4539,11 +4583,15 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
             assert s_off is None, (
                 "the rung-50 forced release isolates a split BETWEEN spools (both minima "
                 "relocate to the release point); lp_disabled is not a reduce axis for it.")
+            assert tau_rel is None, (
+                "the rung-51 release RATE rides on rung 50's forced release, which isolates "
+                "a split BETWEEN spools; lp_disabled is not a reduce axis for it.")
             return self._degenerate.integrate_fuel(flight, fuel_schedule, nu0, s_end, ds)
 
         if Tt4_max is not None and tau_gov is not None:
             return self._integrate_fuel_lagged(flight, fuel_schedule, nu0, s_end, ds,
-                                               freeze, Tt4_max, tau_gov, accel, surge, s_off)
+                                               freeze, Tt4_max, tau_gov, accel, surge, s_off,
+                                               tau_rel)
 
         def der(a, b, mf, s):
             # THE MIN-SELECT. Each cap is solved INDEPENDENTLY from the SCHEDULED fuel, so
@@ -4552,16 +4600,24 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
             # demands bit-for-bit). Rung 46's path is untouched when accel is None.
             i = self._instant_fuel(flight, a, b, mf)
             caps = []
-            # RUNG 50: `armed` is a pure function of s -- no state, no latch (see the
-            # docstring). `s_off=None` short-circuits to True, so the rung-49 path is
-            # reached by the identical branch and stays bit-for-bit.
-            armed = s_off is None or s < s_off
+            # RUNG 50/51: the leg's AUTHORITY `w` is a pure function of s -- no state, no
+            # latch (see the docstring). `s_off=None` short-circuits to 1.0 and `tau_rel`
+            # falsy makes it the rung-50 step, so rungs 49/50 are reached by the identical
+            # branch and stay bit-for-bit.
+            w = _release_weight(s, s_off, tau_rel)
+
+            def faded(c):
+                """RUNG 51. `w == 1.0` returns the cap ITSELF (float-identical -- that is
+                what keeps the rung-50 reduce bit-for-bit); 0 < w < 1 hands back the
+                (1-w) share of the clip."""
+                return c if w >= 1.0 else mf + w * (c - mf)
+
             if Tt4_max is not None and i["Tt4"] > Tt4_max:
                 caps.append(self._topping_fuel(flight, a, b, Tt4_max, mf))
-            if accel is not None and armed:
-                caps.append(self._sched_fuel(flight, a, b, mf, accel))
-            if surge is not None and armed:
-                caps.append(self._surge_fuel(flight, a, b, mf, surge))
+            if accel is not None and w > 0.0:
+                caps.append(faded(self._sched_fuel(flight, a, b, mf, accel)))
+            if surge is not None and w > 0.0:
+                caps.append(faded(self._surge_fuel(flight, a, b, mf, surge)))
             caps = [c for c in caps if c < mf]     # a dormant leg returns mf itself
             if caps:
                 mf = min(caps)
@@ -4597,7 +4653,8 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
 
     def _integrate_fuel_lagged(self, flight: FlightCondition, fuel_schedule, nu0,
                                s_end: float, ds: float, freeze, Tt4_max: float,
-                               tau_gov: float, accel=None, surge=None, s_off=None) -> list:
+                               tau_gov: float, accel=None, surge=None, s_off=None,
+                               tau_rel=None) -> list:
         """RUNG 47. The TIT topping governor with a finite response lag `tau_gov` -- the
         sensing / limiter-loop lag of a real temperature limiter (the DOMINANT lag in a
         real TIT limiter, far larger than valve slew).
@@ -4629,11 +4686,16 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
         def der(a, b, g, s):
             mf_sched = float(fuel_schedule(s))
             mf = max(1e-9, mf_sched - g)
-            armed = s_off is None or s < s_off     # RUNG 50: the forced release (no state)
-            if accel is not None and armed:        # RUNG 48: the feedforward leg, min-selected
-                mf = min(mf, self._sched_fuel(flight, a, b, mf_sched, accel))
-            if surge is not None and armed:        # RUNG 49: the phi floor, min-selected
-                mf = min(mf, self._surge_fuel(flight, a, b, mf_sched, surge))
+            # RUNG 50/51: the forced release and its RATE -- both pure functions of s
+            w = _release_weight(s, s_off, tau_rel)
+
+            def faded(c):                          # RUNG 51 (float-identical at w == 1.0)
+                return c if w >= 1.0 else mf_sched + w * (c - mf_sched)
+
+            if accel is not None and w > 0.0:      # RUNG 48: the feedforward leg, min-selected
+                mf = min(mf, faded(self._sched_fuel(flight, a, b, mf_sched, accel)))
+            if surge is not None and w > 0.0:      # RUNG 49: the phi floor, min-selected
+                mf = min(mf, faded(self._surge_fuel(flight, a, b, mf_sched, surge)))
             i = self._instant_fuel(flight, a, b, mf)
             da = 0.0 if freeze == "lp" else i["Phi_lp"] / self.rho
             db = 0.0 if freeze == "hp" else i["Phi_hp"]
@@ -4785,7 +4847,7 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
 
     def _fuel_ramp_march(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
                          r: float, s_settle: float, ds: float, Tt4_max=None,
-                         tau_gov=None, accel=None, surge=None, s_off=None):
+                         tau_gov=None, accel=None, surge=None, s_off=None, tau_rel=None):
         """RUNG 45. March a FUEL ramp whose steady endpoints are the fuel-equivalents of
         Tt4_lo -> Tt4_hi (`fuel_for_Tt4`), from the running-line start there. Returns the
         marched trajectory and a COMMANDED running-line phi lookup `steady(s, spool)` =
@@ -4816,7 +4878,8 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
             return mf_lo + (mf_hi - mf_lo) * (s / r)
 
         traj = self.integrate_fuel(flight, sched, nu0, r + s_settle, ds, Tt4_max=Tt4_max,
-                                   tau_gov=tau_gov, accel=accel, surge=surge, s_off=s_off)
+                                   tau_gov=tau_gov, accel=accel, surge=surge, s_off=s_off,
+                                   tau_rel=tau_rel)
         lo, hi = min(Tt4_lo, Tt4_hi), max(Tt4_lo, Tt4_hi)
         grid = [lo + (hi - lo) * k / 8.0 for k in range(9)]
         rl = [self.equilibrium(flight, T) for T in grid]
@@ -5149,7 +5212,8 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
 
     def release_relief(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
                        s_off, surge: "SurgeLimiter" = None, accel: "AccelSchedule" = None,
-                       r: float = 0.5, s_settle: float = 4.0, ds: float = 0.02) -> dict:
+                       r: float = 0.5, s_settle: float = 4.0, ds: float = 0.02,
+                       tau_rel=None) -> dict:
         """RUNG 50 (the finding method). March the SAME accel fuel ramp twice -- BARE and with
         a min-select leg armed but FORCED to disarm at `s_off` -- and difference rung 45's
         reference-free surge object, exactly as rungs 46/48/49's relief methods do.
@@ -5183,13 +5247,19 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
         because its natural release is post-ramp. Force it inside the ramp and it debits like
         any other -- the immunity is TIMING, not clip SHAPE (rung 49's named suspect, refuted).
 
-        `s_off=None` reproduces the unforced leg exactly (rung 49 / rung 48)."""
+        `s_off=None` reproduces the unforced leg exactly (rung 49 / rung 48).
+
+        `tau_rel` (RUNG 51) fades the release over [`s_off`, `s_off`+`tau_rel`] instead of
+        stepping it -- the RATE axis rung 50 could not touch. `tau_rel=None` is bit-for-bit
+        rung 50. With a fade, `s_rel` (the LAST engaged point) reports the FAR end of the
+        release interval while `s_off` reports the trigger, so the two ends are both readable
+        off one row -- which is what decides whose clock the relocation law answers to."""
         assert surge is not None or accel is not None, (
             "rung-50 release_relief needs a leg to release: pass surge= and/or accel=.")
         assert s_off is None or s_off > 0.0, "rung-50 s_off is a release TIME on the march"
         bare, _ = self._fuel_ramp_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds)
         lim, _ = self._fuel_ramp_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds,
-                                       accel=accel, surge=surge, s_off=s_off)
+                                       accel=accel, surge=surge, s_off=s_off, tau_rel=tau_rel)
         assert bare and lim, "rung-50 release_relief produced no trajectory"
 
         def raw_min(traj, key):
@@ -5213,7 +5283,7 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
         deficit = ((last["mf_sched"] - last["mf"]) / last["mf_sched"]) if last else 0.0
         watched = surge.spool if surge is not None else None
         return dict(
-            s_off=s_off, r=r, rho=self.rho, ds=ds,
+            s_off=s_off, tau_rel=tau_rel, r=r, rho=self.rho, ds=ds,
             spool=watched, phi_lim=(surge.phi_lim if surge is not None else None),
             margin=(accel.margin if accel is not None else None),
             s_eng=eng[0]["s"] if eng else float("nan"),
@@ -5247,3 +5317,64 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
         while the debit is PEAKED, so the largest fuel removal is not the largest debit."""
         return [self.release_relief(flight, Tt4_lo, Tt4_hi, so, surge=surge, accel=accel,
                                     r=r, s_settle=s_settle, ds=ds) for so in s_offs]
+
+    # --- RUNG 51: the release RATE ----------------------------------------------------
+
+    def rate_sweep(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                   s_off: float, tau_rels, surge: "SurgeLimiter" = None,
+                   accel: "AccelSchedule" = None, r: float = 0.5,
+                   s_settle: float = 4.0, ds: float = 0.02) -> list:
+        """RUNG 51 (the finding method). Sweep the release RATE at a FIXED trigger `s_off`.
+
+        Rung 50 moved WHEN the withheld fuel is handed back and found the debit monotone in
+        the DEFICIT at fixed release. It could not move HOW FAST, and said so:
+
+            "A finite tau_rel would separate total deficit from deficit RATE -- and nothing
+             measured here separates them."
+
+        This is that axis. Everything up to `s_off` is BIT-IDENTICAL across the sweep (the
+        clip only starts fading there), so the trigger, the engagement edge and the whole
+        engaged window are held fixed while the hand-back rate alone varies.
+
+        DO NOT READ THE SWEEP ALONE. `fuel_removed` RISES with `tau_rel` (the clip is held
+        partially on for longer), so the sweep moves the deficit and the rate TOGETHER -- the
+        same confound rung 49 s 4 fell into.
+
+        THE GATE IS A TWO-SIDED BRACKET, not `deficit_curve`. Compare a faded row against the
+        two HARD releases at the two ENDS of its own fade interval (`release_relief` at `s_off`
+        and at `s_off+tau_rel`, `tau_rel=None`). Those two bound the faded march POINTWISE in
+        applied fuel and bound it in total `fuel_removed`, so a debit that is any monotone
+        functional of the fuel LEVEL -- or any function of the total DEFICIT -- must land
+        BETWEEN them. It lands OUTSIDE, shallower, on both spools => the debit answers to the
+        RATE, and rung 50 s 5's deficit law is BOUNDED to the instantaneous hand-back.
+
+        Only in the DEEP-dive regime: where the dive is shallow the faded row INTERPOLATES and
+        nothing is separable (see `docs/rung51-spec.md` s 2, gated as a negative).
+
+        Pass BOTH `s_off` and every `s_off + tau_rel` on the `ds` grid."""
+        assert all(t is None or t >= 0.0 for t in tau_rels), (
+            "rung-51 tau_rel is a fade DURATION on the march coordinate")
+        return [self.release_relief(flight, Tt4_lo, Tt4_hi, s_off, surge=surge, accel=accel,
+                                    r=r, s_settle=s_settle, ds=ds, tau_rel=t)
+                for t in tau_rels]
+
+    def deficit_curve(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                      s_off: float, floors, spool: str = "lp", r: float = 0.5,
+                      s_settle: float = 4.0, ds: float = 0.02) -> list:
+        """RUNG 51. Rung 50 s 5's fixed-release deficit->depth curve, rebuilt cleanly: rung 50
+        had to hand-pick `phi_lim` values whose NATURAL releases happened to coincide, whereas
+        `s_off` pins the release by construction, so sweeping the floor walks the deficit at a
+        genuinely FIXED (and hard) release. Every row is a rung-50 point (`tau_rel=None`).
+
+        NOT THE GATE FOR `rate_sweep`, AND KEPT BECAUSE FINDING THAT OUT WAS THE WORK. This
+        curve was rung 51's pre-registered gate -- drop the faded points onto it and see whether
+        they lie on or off. It is CONFOUNDED: at matched release-COMPLETION a faded run always
+        removes LESS fuel than the hard one (its clip is fading, not full), and rung 50 s 5
+        already says less deficit => shallower dive, so "shallower at matched completion" proves
+        nothing. The TWO-SIDED BRACKET in `rate_sweep`'s docstring replaced it.
+
+        What it is still good for: reading rung 50's own law on its own instrument, with the
+        release time pinned rather than hand-matched."""
+        return [self.release_relief(flight, Tt4_lo, Tt4_hi, s_off,
+                                    surge=SurgeLimiter(spool=spool, phi_lim=p),
+                                    r=r, s_settle=s_settle, ds=ds) for p in floors]

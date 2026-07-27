@@ -2696,6 +2696,83 @@ def print_release_edge_table(flight):
     print("  an s_off before s_eng is float-for-float BARE; cycle rung-6 exact.")
 
 
+def print_release_rate_table(flight):
+    """Rung-51 payoff: the release RATE -- the debit is NOT a functional of the applied-fuel
+    trajectory.
+
+    Rung 50 moved WHEN the withheld fuel is handed back and named its own seam: a finite tau_rel
+    would separate total deficit from deficit RATE, "and nothing measured here separates them."
+    This rung fades the clip linearly over [s_off, s_off+tau_rel] -- still a pure function of s,
+    so rung 50's RK4 argument carries verbatim, and the trigger stays PINNED (an asymmetric lag
+    would drag the release time back into the sweep, the confound s_off exists to kill).
+
+    The gate is a TWO-SIDED BRACKET: the two HARD releases at the fade's own two ends bound it
+    pointwise in applied fuel AND in total fuel removed. A monotone functional of the fuel level
+    would have to land between them."""
+    print("\nThe release RATE (rung 51): fade the clip over [s_off, s_off+tau_rel] instead of")
+    print("dropping it. Rung 50 moved WHEN the fuel comes back; this moves HOW FAST.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, TT4, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    ft = TwoSpoolFuelTransient(design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0)
+    lim = SurgeLimiter(spool="lp", phi_lim=0.7725)
+    K = dict(r=2.0, s_settle=2.0)
+
+    def show(tag, x):
+        print(f"  {tag:<26}{x['fuel_removed']:11.6f}{x['relief_lp']:12.5f}"
+              f"{x['relief_hp']:12.5f}{x['s_min_hp']:9.2f}")
+
+    print("\n  THE BRACKET (phi floor 0.7725, accel 1000->1400 at r=2.0). The faded row's fuel")
+    print("  is POINTWISE between the two hard rows, and so is its total removal:")
+    print(f"  {'placement':<26}{'fuel_rm':>11}{'relief_lp':>12}{'relief_hp':>12}{'s@minHP':>9}")
+    show("hard   s_off=1.56", ft.release_relief(flight, 1000.0, 1400.0, 1.56, surge=lim, **K))
+    show("FADED  1.56, tau_rel=0.20",
+         ft.release_relief(flight, 1000.0, 1400.0, 1.56, surge=lim, tau_rel=0.20, **K))
+    show("hard   s_off=1.76", ft.release_relief(flight, 1000.0, 1400.0, 1.76, surge=lim, **K))
+    print("  => the two HARD rows AGREE (postponing a step release over that interval does")
+    print("     essentially nothing) -- yet the faded row between them is ~1.5x SHALLOWER, on")
+    print("     BOTH spools. No monotone functional of the fuel LEVEL, and no function of the")
+    print("     TOTAL DEFICIT, can land outside a bracket it sits inside. The debit answers to")
+    print("     the RATE => rung 50's deficit law is BOUNDED to the instantaneous hand-back.")
+
+    print("\n  THE SCOPE (a negative, stated here and gated): at s_off=0.30 the same")
+    print("  construction INTERPOLATES -- deep dives only. There, rate and deficit are not")
+    print("  separable and nothing is claimed:")
+    print(f"  {'placement':<26}{'fuel_rm':>11}{'relief_lp':>12}{'relief_hp':>12}{'s@minHP':>9}")
+    show("hard   s_off=0.30", ft.release_relief(flight, 1000.0, 1400.0, 0.30, surge=lim, **K))
+    show("FADED  0.30, tau_rel=0.20",
+         ft.release_relief(flight, 1000.0, 1400.0, 0.30, surge=lim, tau_rel=0.20, **K))
+    show("hard   s_off=0.50", ft.release_relief(flight, 1000.0, 1400.0, 0.50, surge=lim, **K))
+
+    acc = ft.accel_schedule(flight, 1000.0, 1400.0, 0.15)
+    print("\n  CROSS-FAMILY (rung 48's Wf/pt3 leg, m=0.15) -- the violation flips the SIGN:")
+    print(f"  {'placement':<26}{'fuel_rm':>11}{'relief_lp':>12}{'relief_hp':>12}{'s@minHP':>9}")
+    show("hard   s_off=1.10", ft.release_relief(flight, 1000.0, 1400.0, 1.10, accel=acc, **K))
+    show("FADED  1.10, tau_rel=0.40",
+         ft.release_relief(flight, 1000.0, 1400.0, 1.10, accel=acc, tau_rel=0.40, **K))
+    show("hard   s_off=1.50", ft.release_relief(flight, 1000.0, 1400.0, 1.50, accel=acc, **K))
+    print("  => relief_lp is EXACTLY 0 throughout: rung 48's exact-zero law survives the rate")
+    print("     axis, three rungs on. NOT claimed: that a slow hand-back is a way to BUILD")
+    print("     immunity -- tau_rel fades a clip already forced off at an arbitrary time.")
+    print("  Also corrected here: rung 50's precondition (a) ('the release must land at or")
+    print("  after that spool's bare minimum') is MIS-STATED -- the crossover sits UPSTREAM of")
+    print("  it, and rung 50's own table already violated the condition. Its relocation")
+    print("  headline is untouched. NEXT SEAM: the asymmetric fast-attack/slow-release LAG,")
+    print("  deferred because its release edge is EMERGENT and moves with the rate.")
+    print("  Reduces: tau_rel=None or 0.0 -> rungs 43/45/46/47/48/49/50 bit-for-bit; tau_rel")
+    print("  without s_off ASSERTS; a trigger past the natural release is inert; cycle rung-6.")
+
+
 def print_pdf_quench_table(flight):
     """Rung-15 payoff: the PDF THROUGH the finite quench — the two mixing mechanisms COMBINED.
 
@@ -3786,6 +3863,8 @@ def main():
     print_phi_limiter_table(FLIGHT)
 
     print_release_edge_table(FLIGHT)
+
+    print_release_rate_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 
