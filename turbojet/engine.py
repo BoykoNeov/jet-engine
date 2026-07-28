@@ -786,6 +786,9 @@ class ComponentMap:
     a_t: float = 0.0      # turbine eta curvature in corrected speed (small: turbine maps are flat)
     l: float = 0.0        # RUNG 34: linear loading slope (0 => rung-32 parabola; >0 => surge-realistic)
     phi_surge: float = 0.0  # RUNG 36: stall flow coefficient (surge line). 0 => NO surge line (off).
+    vsv: float = 0.0      # RUNG 53: variable-stator setting AS THE SWIRL IT INDUCES, v = tan(alpha_1)
+    #                       (>0 closed / co-rotating pre-swirl, <0 opened past axial). 0 => the
+    #                       DESIGN setting, and every rung <= 52 expression is bit-for-bit.
 
     @classmethod
     def flat(cls) -> "ComponentMap":
@@ -822,29 +825,61 @@ class ComponentMap:
         return cls(a=0.14, b=0.10, c=0.06, sigma=0.2, l=0.85, a_t=0.02)
 
     def psi(self, phi: float) -> float:
-        """Loading (work) coefficient at flow coefficient phi: psi(1)=1, slope -l at design."""
-        return 1.0 - self.sigma * (phi - 1.0) ** 2 - self.l * (phi - 1.0)
+        """Loading (work) coefficient at flow coefficient phi: psi(1)=1, slope -l at design.
+
+        RUNG 53 — the VARIABLE STATOR, as an increment DERIVED from this map's own `l`. Euler
+        work with inlet swirl (rotor exit relative angle beta_2 set by the blade metal,
+        phi = Vx/U, v = tan alpha_1 the stator-induced pre-swirl):
+
+            Delta_h = U^2 * [1 - phi*(tan beta_2 + v)]
+
+        Normalised on the design work (phi_d = 1, v = 0) that is [1-phi*(t2+v)]/(1-t2); matching
+        its design slope to THIS map's dpsi/dphi|_1 = -l DERIVES t2 = l/(1+l), hence
+        1/(1-t2) = 1+l, and the stator enters as one extra term:
+
+            psi(phi, v) = [rung-34 law] - v*(1+l)*phi
+
+        so there is NO new constant -- v is a swept geometry coordinate and (1+l) is the map's
+        own. The parabolic sigma term is the NON-Euler loss curvature and is deliberately left
+        stator-inert (see docs/rung53-spec.md § Concessions). v == 0 returns early, so every
+        rung <= 52 call is bit-for-bit.
+        """
+        base = 1.0 - self.sigma * (phi - 1.0) ** 2 - self.l * (phi - 1.0)
+        if self.vsv == 0.0:
+            return base
+        return base - self.vsv * (1.0 + self.l) * phi
 
     def phi_max(self, psi_floor: float = 0.1) -> float:
         """The largest flow coefficient phi (> 1) at which psi(phi) >= psi_floor, i.e. the
         speed line still does positive work (tau_c > 1). Beyond it the parabola+linear loading
         law goes non-physical; the rung-34 forward compressor closure caps its flow search here.
         Returns a large value when the loading is flat (sigma = l = 0 => psi == 1 always).
+
+        RUNG 53: the swirl term -A*phi (A = v*(1+l)) is linear in phi, so it merely shifts the
+        SAME quadratic -- solve sigma*u^2 + (l+A)*u = (1-A) - psi_floor, u = phi-1. Inert at
+        A == 0 (early return below), and NOT exercised by rung 53 itself: the two-spool STEADY
+        cascade never calls phi_max (only the rung-34/40/43 forward transient closures do, and
+        the stator is a steady rung).
         """
-        if self.sigma == 0.0 and self.l == 0.0:
+        A = self.vsv * (1.0 + self.l)
+        if self.sigma == 0.0 and self.l == 0.0 and A == 0.0:
             return 5.0
-        rhs = 1.0 - psi_floor                          # solve sigma*u^2 + l*u = rhs, u = phi-1 > 0
+        rhs = 1.0 - A - psi_floor              # solve sigma*u^2 + (l+A)*u = rhs, u = phi-1 > 0
+        lin = self.l + A
         if self.sigma == 0.0:
-            u = rhs / self.l
+            u = rhs / lin
         else:
-            u = (-self.l + (self.l ** 2 + 4.0 * self.sigma * rhs) ** 0.5) / (2.0 * self.sigma)
+            u = (-lin + (lin ** 2 + 4.0 * self.sigma * rhs) ** 0.5) / (2.0 * self.sigma)
         return 1.0 + u
 
     def is_flat(self) -> bool:
         # phi_surge is a PURE DIAGNOSTIC (surge line) — it never touches psi/eta/the running line,
         # so it is deliberately NOT part of flatness: a flat map WITH a surge floor still reduces
         # MapMatcher to rung 31 bit-for-bit (rung 36 adds no cycle knob).
-        return self.a == self.b == self.c == self.sigma == self.a_t == self.l == 0.0
+        # RUNG 53's vsv IS part of flatness, by the same rule read the other way: it enters psi,
+        # so a swirled map is NOT flat and must not claim the rung-31 reduce.
+        return (self.a == self.b == self.c == self.sigma == self.a_t == self.l == 0.0
+                and self.vsv == 0.0)
 
     def with_phi_surge(self, phi_surge: float) -> "ComponentMap":
         """RUNG 36. A copy of this map carrying a surge line at stall flow coefficient phi_surge.
@@ -852,8 +887,64 @@ class ComponentMap:
         1 - l/(2 sigma) lands at phi < 0 for the surge-realistic shapes, so there is no free
         in-range stall point to inherit — it must be imposed). Its LEVEL is disclaimed; only the
         SIGN of the margin schedule it induces is load-bearing (and rides on the running-line
-        phi_op, not on this constant)."""
+        phi_op, not on this constant).
+
+        RUNG 53 re-reads this constant as an ANCHOR rather than a floor: it is the floor AT THE
+        DESIGN STATOR SETTING, and it pins the critical incidence tan_beta1_crit = 1/phi_surge
+        from which the floor's VARIATION with the stator is derived. See `phi_surge_at`."""
         return replace(self, phi_surge=phi_surge)
+
+    # --- RUNG 53: the variable stator ------------------------------------------------------
+
+    def with_vsv(self, vsv: float) -> "ComponentMap":
+        """RUNG 53. A copy of this map with its stators moved to setting `vsv` (= tan alpha_1,
+        the swirl the row induces; >0 closed, <0 opened past axial). The setting is a swept
+        geometry COORDINATE, not a fitted constant: both channels it drives (the loading law in
+        `psi`, the stall floor in `phi_surge_at`) are derived from this map's OWN `l` and
+        `phi_surge`. vsv == 0.0 is the design setting and every rung <= 52 path is bit-for-bit.
+        """
+        return replace(self, vsv=vsv)
+
+    def tan_beta1_crit(self) -> float:
+        """RUNG 53. The critical ROTOR RELATIVE INLET ANGLE at stall, tan(beta_1)_crit — read
+        off rungs 36/41's imposed floor, which is by definition the phi at which the DESIGN-set
+        stators (v=0, no pre-swirl) reach it: tan beta_1 = (1 - phi*v)/phi = 1/phi at v=0.
+
+        So T_c = 1/phi_surge: ZERO new constants. This is a property of the blade METAL, hence
+        stator-INVARIANT — which is exactly why it, and not phi, is the coordinate in which a
+        stator-moved surge boundary stands still (docs/rung53-spec.md § The headline).
+        """
+        assert self.phi_surge > 0.0, (
+            "tan_beta1_crit needs the rung-36 floor as its anchor: build the map with "
+            ".with_phi_surge(phi_surge).")
+        return 1.0 / self.phi_surge
+
+    def tan_beta1(self, phi: float) -> float:
+        """RUNG 53. Rotor relative inlet angle at flow coefficient phi and THIS stator setting:
+        the axial velocity is phi*U and the relative tangential velocity U - V_theta1 =
+        U*(1 - phi*v), so tan beta_1 = (1 - phi*v)/phi = 1/phi - v. Stall iff >= tan_beta1_crit.
+        """
+        return 1.0 / phi - self.vsv
+
+    def phi_surge_at(self) -> float:
+        """RUNG 53. The stall floor AT THIS STATOR SETTING — the rung's second derived channel.
+
+        Stall is a critical INCIDENCE, tan beta_1 >= T_c, and tan beta_1 = 1/phi - v, so the
+        floor is where 1/phi - v = T_c:
+
+            phi_surge(v) = 1/(T_c + v) = phi_surge(0) / (1 + v*phi_surge(0))
+
+        Closing the stators (v > 0) LOWERS the floor. Zero new constants: T_c is rungs 36/41's
+        own imposed floor read as an incidence (`tan_beta1_crit`), so only its VARIATION is new
+        and that variation is DERIVED. At v == 0 this returns `phi_surge` exactly.
+
+        NOTE the split of duties, deliberate so rung 41's readers stay literally unchanged:
+        the FIELD `phi_surge` is the design-setting ANCHOR (what rungs 36/41/44/45 read), this
+        METHOD is the live floor (what rung 53's diagnostics read). They coincide at v = 0.
+        """
+        if self.vsv == 0.0:
+            return self.phi_surge
+        return self.phi_surge / (1.0 + self.vsv * self.phi_surge)
 
     def eta_c_at(self, base: float, flowcoef: float, n: float) -> float:
         """Compressor efficiency read off the island at (flow coefficient, corrected speed)."""
@@ -5701,3 +5792,328 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
                     grid=grid, residual=residual, credit_spread=spread,
                     max_residual=max(abs(v) for row in residual for v in row),
                     max_main_effect=main, r=r, ds=ds)
+
+
+# ======================================================================================
+# RUNG 53 — THE VARIABLE STATOR: the first lever that MOVES THE SURGE FLOOR
+# ======================================================================================
+#
+# Every surge lever in this project so far moves the OPERATING POINT against a FIXED wall:
+# the throttle (36/41), the bleed valve (42), the ramp (44/45), the topping governor
+# (46/47), the Wf/pt3 schedule (48), the phi floor (49/50/51/52). Rung 42 named this rung
+# in its own header: "bleed moves the operating point phi_op; it does NOT move the stall
+# floor phi_surge -- that is the variable-stator half of the seam, still open."
+#
+# THE INSTRUMENT. The stator setting is expressed IN THE SWIRL IT INDUCES, v = tan alpha_1
+# (>0 closed / co-rotating pre-swirl, <0 opened past axial). It is a swept geometry
+# coordinate -- like `bleed`, `s_off`, `tau_rel` before it -- and BOTH channels it drives are
+# derived from constants the maps already carry, so the rung adds NONE:
+#
+#   WORK  (ComponentMap.psi)         psi(phi,v) = [rung-34 law] - v*(1+l)*phi
+#                                    from Euler with pre-swirl, t2 = l/(1+l) DERIVED from l
+#   FLOOR (ComponentMap.phi_surge_at) phi_surge(v) = phi_s0/(1 + v*phi_s0)
+#                                    from a critical INCIDENCE T_c = 1/phi_s0, DERIVED from
+#                                    rungs 36/41's own imposed floor
+#
+# THE STRUCTURE (P1). tau_c comes from rung 38's map-free ENERGY cascade and the face-referred
+# corrected flow m from rung 39's (dagger)/(ddagger), which carry no loading law. So v enters
+# the steady solve through `solve_n` ALONE: closing the stators unloads the compressor, n
+# RISES, and phi_op = m/n FALLS (m moves only second-hand, through the efficiency island).
+# The stator therefore adds NO new closure and NO new equation -- it is a MAP CHANGE, and the
+# reduce at v=0 is an IDENTITY of code path, not a dispatch (contrast rung 42, whose bleed
+# needed a whole new cascade). That is why this class overrides `match` not at all.
+#
+# THE HEADLINE (the rung). phi-margin M_phi = phi_op - phi_surge(v) and incidence margin
+# M_i = T_c - tan_beta1(phi_op, v) are BOTH reference-free and vanish on the SAME boundary
+# (tan beta_1 = 1/phi - v is monotone in phi). Yet at the design point
+#
+#     dM_phi/dv = -(1+l)/(2+l) + phi_s0^2  < 0     the phi-margin SHRINKS on closing
+#     dM_i/dv   = +1/(2+l)                 > 0     the incidence margin GROWS
+#
+# and the resolution is that MARGIN IS A DISTANCE, and distance is not invariant under a
+# lever-dependent coordinate change unless the BOUNDARY IS FIXED. For any lever x:
+#
+#     sign(dM_phi/dx) = sign(phi_op' + v'*phi_surge^2)
+#     sign(dM_i/dx)   = sign(phi_op' + v'*phi_op^2)
+#
+# At v' = 0 these are identical -- the Jacobian 1/phi_op^2 is strictly positive -- so a
+# FLOOR-FIXED lever can never split them, and that is precisely why every rung 36-52 was safe
+# reading surge in phi. In general they disagree IFF -phi_op'/v' lies in the open interval
+# (phi_surge^2, phi_op^2), whose WIDTH IS THE OPEN MARGIN ITSELF. For a floor-moving lever the
+# INCIDENCE currency is the correct one -- and it says what engineering practice says: closing
+# the stators buys margin. See docs/rung53-spec.md.
+#
+# SCOPE. The SWIRL/incidence channel only. A real VSV row also changes the compressor's own
+# flow CAPACITY (the stator throat) and rematches the stage stack against itself -- the
+# dominant effect in a real multistage machine. A lumped single-stage-equivalent map has
+# neither, and the capacity channel needs a NEW constant (area per unit setting). Refused, and
+# named as this rung's seam. Steady only: a SCHEDULED v(n) on the transient plant is a
+# different rung.
+
+
+class VariableStatorMatcher(TwoSpoolMapMatcher):
+    """RUNG 53. Two-spool map matching with a VARIABLE STATOR on each compressor.
+
+    Usage:
+        m = VariableStatorMatcher(design, FLIGHT, 1.0, map_lp=..., map_hp=..., vsv_lp=0.15)
+        od = m.match(FLIGHT, Tt4)              # -> rung 39's TwoSpoolMapResult, unchanged
+        m.stator_margin(FLIGHT, Tt4)           # BOTH currencies, per spool  <- the rung
+        m.stator_sweep(FLIGHT, Tt4, vs)        # two-sided sweep of one spool's setting
+        m.currency_split(FLIGHT, Tt4)          # the sign split + its interval law
+        m.throttle_currency(FLIGHT, Tt4_grid)  # the v=0 control: signs CANNOT split
+
+    The stators sit at their DESIGN setting at the design point by construction (rung 42's
+    valve-shut discipline): the hardware (A4, A45, A8) and both maps' design references are
+    captured from a v=0 design run, and only then are the stators moved.
+
+    REDUCE -- an IDENTITY, stronger than rung 42's dispatch: at vsv_lp == vsv_hp == 0.0 the
+    stored maps are the SAME OBJECTS that were passed in and `match` is rung 39's own method,
+    inherited unoverridden. There is no rung-53 code path to skip. Rungs 38-52 are untouched
+    (`psi`/`phi_max` return early at vsv == 0; `phi_surge` the FIELD still means the anchor,
+    so rung 41/44/45's readers are literally unchanged).
+    """
+
+    def __init__(self, design_engine, flight_design: FlightCondition,
+                 mdot_design: float = 1.0, map_lp: "ComponentMap | None" = None,
+                 map_hp: "ComponentMap | None" = None, vsv_lp: float = 0.0,
+                 vsv_hp: float = 0.0, lp_disabled: bool = False):
+        base_lp = map_lp if map_lp is not None else ComponentMap.flat()
+        base_hp = map_hp if map_hp is not None else ComponentMap.flat()
+        assert base_lp.vsv == 0.0 and base_hp.vsv == 0.0, (
+            "rung-53 VariableStatorMatcher takes the DESIGN-SETTING maps and moves the stators "
+            "itself (the design references must be captured at v=0). Pass vsv_lp/vsv_hp, not "
+            "a map that already carries .with_vsv(.).")
+        assert not (lp_disabled and (vsv_lp != 0.0 or vsv_hp != 0.0)), (
+            "rung-53 does not support lp_disabled with a moved stator: the degenerate path is "
+            "rung 32's single-spool matcher, whose surge objects are rung 36's, not this "
+            "rung's. Use the two-spool path (lp_disabled=False).")
+        super().__init__(design_engine, flight_design, mdot_design,
+                         map_lp=base_lp, map_hp=base_hp, lp_disabled=lp_disabled)
+
+        self.vsv_lp, self.vsv_hp = float(vsv_lp), float(vsv_hp)
+        self.map_lp_design, self.map_hp_design = base_lp, base_hp
+        self._ctor = (design_engine, flight_design, mdot_design, lp_disabled)
+        # Move the stators only NOW -- after the design capture above. At v == 0 the maps are
+        # left as the SAME OBJECTS, so the reduce is an identity and not a re-construction.
+        if not lp_disabled:
+            if self.vsv_lp != 0.0:
+                self.map_lp = base_lp.with_vsv(self.vsv_lp)
+            if self.vsv_hp != 0.0:
+                self.map_hp = base_hp.with_vsv(self.vsv_hp)
+
+    # NOTE: `match` is DELIBERATELY not overridden -- see the class docstring's reduce.
+
+    def at_setting(self, vsv_lp: float, vsv_hp: float) -> "VariableStatorMatcher":
+        """A sibling matcher: the SAME hardware and the same design references, stators moved.
+        Every sweep below goes through this, so a swept setting can never be confused with a
+        re-designed engine (rung 42's controlled comparison, at fixed Tt4)."""
+        de, fd, md, lpd = self._ctor
+        return VariableStatorMatcher(de, fd, md, map_lp=self.map_lp_design,
+                                     map_hp=self.map_hp_design, vsv_lp=vsv_lp,
+                                     vsv_hp=vsv_hp, lp_disabled=lpd)
+
+    # --- the two currencies at one operating point ----------------------------------------
+
+    _SPOOLS = ("lp", "hp")
+
+    def _spool_bits(self, spool: str):
+        if spool == "lp":
+            return self.map_lp, self.tau_lpc_d, self.eta_lpc, self.vsv_lp
+        return self.map_hp, self.tau_hpc_d, self.eta_hpc, self.vsv_hp
+
+    def stator_margin(self, flight: FlightCondition, Tt4: float) -> dict:
+        """RUNG 53's reading instrument: BOTH reference-free surge currencies, per spool.
+
+            phi-margin       M_phi = phi_op - phi_surge(v)          [the wall MOVES with v]
+            incidence margin M_i   = T_c - tan_beta1(phi_op, v)     [the wall is the METAL]
+
+        Both vanish together (M_phi > 0 <=> M_i > 0), so as a STALL TEST they are equivalent;
+        as a DISTANCE they are not, and that is the rung. `sm_n` is rung 41's constant-speed
+        pressure-ratio margin evaluated at the LIVE floor, reported for definition-robustness.
+
+        Needs a surge line on both maps (phi_surge > 0) — it is the incidence anchor too.
+        """
+        ml, mh = self.map_lp, self.map_hp
+        assert ml.phi_surge > 0.0 and mh.phi_surge > 0.0, (
+            "rung-53 stator_margin needs the rung-36 floor as its incidence anchor on BOTH "
+            "maps: build them with .with_phi_surge(phi_surge).")
+        od = self.match(flight, Tt4)
+        out = dict(Tt4=float(Tt4), vsv_lp=self.vsv_lp, vsv_hp=self.vsv_hp)
+        for spool, phi_op, n_op, Tt_in in (("lp", od.phi_lp, od.n_lp, od.stations["2"].Tt),
+                                           ("hp", od.phi_hp, od.n_hp, od.stations["25"].Tt)):
+            cmap, tau_d, eta_base, v = self._spool_bits(spool)
+            phi_s, T_c = cmap.phi_surge_at(), cmap.tan_beta1_crit()
+            assert phi_s < phi_op, (
+                f"rung-53 {spool.upper()} running line has crossed its OWN floor at "
+                f"Tt4={Tt4:.1f}, v={v:+.3f}: phi_op={phi_op:.4f} vs phi_surge(v)={phi_s:.4f}.")
+            pi_op = self._pi_c_spool(cmap, tau_d, eta_base, n_op, phi_op, Tt_in)
+            pi_s = self._pi_c_spool(cmap, tau_d, eta_base, n_op, phi_s, Tt_in)
+            out[spool] = dict(
+                vsv=v, phi_op=phi_op, n=n_op, m=phi_op * n_op,
+                phi_surge=phi_s, phi_surge_design=cmap.phi_surge,
+                m_phi=phi_op - phi_s,                      # currency A: distance in phi
+                tan_b1=cmap.tan_beta1(phi_op), tan_b1_crit=T_c,
+                m_i=T_c - cmap.tan_beta1(phi_op),           # currency B: distance in incidence
+                pi_op=pi_op, sm_n=pi_s / pi_op - 1.0)
+        return out
+
+    def stator_sweep(self, flight: FlightCondition, Tt4: float, vsv_grid,
+                     spool: str = "lp") -> list:
+        """Two-sided sweep of ONE spool's stator setting at FIXED throttle (rung 50's lesson:
+        an edge is measured two-sided or not at all). Each row carries both currencies on both
+        spools, so the OTHER spool's row is simultaneously P5's arrow measurement."""
+        assert spool in self._SPOOLS, f"spool must be 'lp' or 'hp', got {spool!r}"
+        rows = []
+        for v in vsv_grid:
+            sib = self.at_setting(float(v), 0.0) if spool == "lp" \
+                else self.at_setting(0.0, float(v))
+            r = sib.stator_margin(flight, Tt4)
+            rows.append(dict(vsv=float(v), swept=spool, lp=r["lp"], hp=r["hp"]))
+        return rows
+
+    _DV = 5e-4        # central-difference step in the stator setting (a pure coordinate)
+
+    def currency_split(self, flight: FlightCondition, Tt4: float, spool: str = "lp",
+                       dv: float | None = None) -> dict:
+        """THE HEADLINE, measured: the two currencies' derivatives in the stator setting, on
+        the spool whose stators move, by central difference about THIS matcher's setting.
+
+        Also returns the closed forms the derivation predicts at the design point
+        (dphi_op/dv = -(1+l)phi^2/D(phi), D = 2 + 2 sigma(phi-1) + l(2-phi); dM_i/dv = 1/(2+l)
+        at phi=1) and the INTERVAL test: the currencies disagree iff -phi_op'/v' lies in
+        (phi_surge^2, phi_op^2) -- an interval whose width is the open margin.
+        """
+        assert spool in self._SPOOLS, f"spool must be 'lp' or 'hp', got {spool!r}"
+        h = self._DV if dv is None else float(dv)
+        v0 = self.vsv_lp if spool == "lp" else self.vsv_hp
+        base = self.stator_margin(flight, Tt4)[spool]
+
+        def leg(v):
+            sib = self.at_setting(v, self.vsv_hp) if spool == "lp" \
+                else self.at_setting(self.vsv_lp, v)
+            return sib.stator_margin(flight, Tt4)[spool]
+
+        lo, hi = leg(v0 - h), leg(v0 + h)
+        d_phi = (hi["phi_op"] - lo["phi_op"]) / (2.0 * h)
+        d_m = (hi["m"] - lo["m"]) / (2.0 * h)
+        d_n = (hi["n"] - lo["n"]) / (2.0 * h)
+        dm_phi = (hi["m_phi"] - lo["m_phi"]) / (2.0 * h)
+        dm_i = (hi["m_i"] - lo["m_i"]) / (2.0 * h)
+        dsm_n = (hi["sm_n"] - lo["sm_n"]) / (2.0 * h)
+
+        cmap, _, _, _ = self._spool_bits(spool)
+        l, sg, phi, phi_s = cmap.l, cmap.sigma, base["phi_op"], base["phi_surge"]
+        D = 2.0 + 2.0 * sg * (phi - 1.0) + l * (2.0 - phi)
+        return dict(spool=spool, Tt4=float(Tt4), vsv=v0, dv=h,
+                    phi_op=phi, phi_surge=phi_s,
+                    d_phi_op=d_phi, d_m=d_m, d_n=d_n,
+                    # P1: the stator is a SPEED lever -- m moves only through the eta island.
+                    flow_vs_speed=abs(d_m / base["m"]) / abs(d_n / base["n"]),
+                    d_phi_op_closed=-(1.0 + l) * phi * phi / D,
+                    d_m_phi=dm_phi, d_m_i=dm_i, d_sm_n=dsm_n,
+                    d_m_i_closed_design=1.0 / (2.0 + l),
+                    split=(dm_phi < 0.0) != (dm_i < 0.0),
+                    # the interval law: disagree IFF -phi_op'/v' in (phi_s^2, phi_op^2)
+                    ratio=-d_phi, interval=(phi_s * phi_s, phi * phi),
+                    in_interval=phi_s * phi_s < -d_phi < phi * phi,
+                    floor_boundary=((1.0 + l) / (2.0 + l)) ** 0.5)
+
+    def throttle_currency(self, flight: FlightCondition, Tt4_grid, spool: str = "lp") -> list:
+        """THE CONTROL for the headline (and the gate that could kill it): at the DESIGN stator
+        setting the only live lever is the THROTTLE, which moves phi_op and leaves the floor
+        alone. Then M_i = T_c - 1/phi_op is a monotone reparameterisation of M_phi = phi_op -
+        phi_s0, so dM_i = dM_phi/phi_op^2 with a STRICTLY POSITIVE Jacobian: the two currencies
+        MUST agree in sign and differ only by that factor.
+
+        Each row reports the consecutive differences and the ratio dM_i/dM_phi against 1/phi^2.
+        A sign disagreement here would mean the moving floor is NOT the split's mechanism.
+        """
+        assert self.vsv_lp == 0.0 and self.vsv_hp == 0.0, (
+            "rung-53 throttle_currency is the v=0 control: run it on a design-setting matcher.")
+        pts = [self.stator_margin(flight, float(T))[spool] for T in Tt4_grid]
+        rows = []
+        for a, b, T in zip(pts, pts[1:], list(Tt4_grid)[1:]):
+            d_phi, d_i = b["m_phi"] - a["m_phi"], b["m_i"] - a["m_i"]
+            phi_mid = 0.5 * (a["phi_op"] + b["phi_op"])
+            d_sm = b["sm_n"] - a["sm_n"]
+            rows.append(dict(Tt4=float(T), spool=spool, d_m_phi=d_phi, d_m_i=d_i,
+                             d_sm_n=d_sm,
+                             signs_agree=(d_phi > 0.0) == (d_i > 0.0),
+                             all_three_agree=(d_phi > 0.0) == (d_i > 0.0) == (d_sm > 0.0),
+                             ratio=(d_i / d_phi if d_phi != 0.0 else float("nan")),
+                             jacobian=1.0 / (phi_mid * phi_mid), phi_mid=phi_mid))
+        return rows
+
+    # --- the payoff: the schedule the CORRECT currency makes derivable --------------------
+
+    _INC_TOL = 1e-12      # incidence residual tolerance for the schedule root
+    _INC_MAX = 80
+
+    def incidence_schedule(self, flight: FlightCondition, Tt4_grid, spool: str = "lp",
+                           v_hi: float = 1.0) -> list:
+        """RUNG 53's payoff object, and one the phi-currency cannot even express: the stator
+        schedule v*(Tt4) that holds the rotor INCIDENCE at its design value — which is what a
+        real VSV schedule is FOR.
+
+            solve   tan_beta1(phi_op(v), v) = 1/phi_op(v) - v = T_design      for v
+
+        `T_design` is READ (not assumed) off this matcher at the design setting and design
+        throttle, so the schedule inherits no constant of its own. Because closing the stators
+        lowers tan beta_1 monotonically (dM_i/dv > 0), the residual is monotone decreasing in v
+        and a bracketed secant is safe.
+
+        Along the returned schedule M_i is constant BY CONSTRUCTION (to `_INC_TOL`) while
+        M_phi is not — that contrast IS the headline, made operational: the phi-currency reports
+        a margin LOSS along a schedule that changes the true margin not at all.
+        """
+        assert spool in self._SPOOLS, f"spool must be 'lp' or 'hp', got {spool!r}"
+        de, fd, md, _ = self._ctor
+        T_design = self.at_setting(0.0, 0.0).stator_margin(fd, self.Tt4_d)[spool]["tan_b1"]
+
+        def read(v, Tt4):
+            sib = self.at_setting(v, 0.0) if spool == "lp" else self.at_setting(0.0, v)
+            return sib.stator_margin(flight, Tt4)[spool]
+
+        rows = []
+        for Tt4 in Tt4_grid:
+            Tt4 = float(Tt4)
+            bare = read(0.0, Tt4)
+            lo = 0.0
+            r_lo = bare["tan_b1"] - T_design            # > 0 below design power
+            v, r = lo, r_lo
+            if abs(r_lo) > self._INC_TOL:
+                # Ladder the upper bracket UP rather than starting at v_hi: a large trial
+                # setting unloads the speed line so far that `solve_n`'s own n-bracket fails
+                # (a map-validity edge, not a root-finding failure), so walk out gently.
+                hi, r_hi, cap = 0.05, None, float(v_hi)
+                while True:
+                    hi = min(hi, cap)
+                    r_hi = read(hi, Tt4)["tan_b1"] - T_design
+                    if r_hi < 0.0 or hi >= cap:
+                        break
+                    lo, r_lo, hi = hi, r_hi, 2.0 * hi
+                assert r_hi is not None and r_hi < 0.0, (
+                    f"rung-53 incidence schedule does not bracket at Tt4={Tt4:.0f} within "
+                    f"v <= {v_hi:.2f}: residual {r_lo:+.4e} at v={lo:.4f}. The design "
+                    f"incidence is unreachable this far off design — raise v_hi or narrow "
+                    f"the throttle grid.")
+                for _ in range(self._INC_MAX):
+                    v = 0.5 * (lo + hi)
+                    r = read(v, Tt4)["tan_b1"] - T_design
+                    if abs(r) <= self._INC_TOL or hi - lo <= 1e-14:
+                        break
+                    if r * r_lo > 0.0:
+                        lo, r_lo = v, r
+                    else:
+                        hi = v
+            at = read(v, Tt4)
+            rows.append(dict(Tt4=Tt4, spool=spool, vsv_star=v, residual=r,
+                             tan_b1=at["tan_b1"], tan_b1_design=T_design,
+                             phi_op=at["phi_op"], phi_op_bare=bare["phi_op"],
+                             phi_surge=at["phi_surge"],
+                             m_i=at["m_i"], m_i_bare=bare["m_i"],
+                             m_phi=at["m_phi"], m_phi_bare=bare["m_phi"],
+                             sm_n=at["sm_n"], sm_n_bare=bare["sm_n"], n=at["n"]))
+        return rows
+
+

@@ -20,7 +20,7 @@ from turbojet.engine import (  # noqa: E402
     FlightCondition, build_turbojet, OffDesignMatcher, MapMatcher, ComponentMap, SpoolTransient,
     CombustorTransient, build_two_spool_turbojet, TwoSpoolMatcher, TwoSpoolMapMatcher,
     TwoSpoolTransient, TwoSpoolBleedMatcher, TwoSpoolFuelTransient, SurgeLimiter,
-    AsymmetricLag, ram_recovery,
+    AsymmetricLag, VariableStatorMatcher, ram_recovery,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -2773,6 +2773,86 @@ def print_release_rate_table(flight):
     print("  without s_off ASSERTS; a trigger past the natural release is inert; cycle rung-6.")
 
 
+def print_variable_stator_table(flight):
+    """Rung-53 payoff: what a MARGIN IS, when the lever moves the wall.
+
+    Every surge lever up to rung 52 moves the operating point against a FIXED floor. The
+    variable stator moves the FLOOR -- and then two reference-free margins that vanish on the
+    SAME boundary disagree on whether closing the stators helped: the phi-distance shrinks, the
+    incidence distance grows. Only the coordinate in which the boundary is FIXED (incidence,
+    T_c = a property of the blade metal) measures a margin. Read there, the model says what
+    engineering practice says: closing the stators buys margin.
+
+    Both channels are DERIVED from constants the maps already carry -- psi's swirl term from the
+    map's own loading slope l (t2 = l/(1+l)), the floor law from rungs 36/41's own imposed
+    phi_surge read as an incidence. Zero new constants."""
+    print("\nThe VARIABLE STATOR (rung 53): the first lever that moves the SURGE FLOOR itself.")
+    print("Two channels, ONE setting v = tan(alpha_1), both derived from the map's own l and")
+    print("rung 36/41's own phi_surge:  psi -= v(1+l)phi   and   phi_surge(v) = phi_s0/(1+v phi_s0).")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR = 0.55
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, TT4, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    vs = VariableStatorMatcher(design, flight, 1.0, map_lp=LP, map_hp=HP)
+
+    print("\n  THE SPLIT (LP stators, fixed throttle Tt4=1500). Both margins are reference-free")
+    print("  and vanish TOGETHER; they move in OPPOSITE directions:")
+    print(f"  {'v':>7}{'phi_op':>9}{'floor(v)':>10}{'M_phi':>9}{'tan_b1':>9}{'M_i':>9}"
+          f"{'SM_N':>9}{'n_LP':>8}")
+    for row in vs.stator_sweep(flight, TT4, [-0.2, -0.1, 0.0, 0.1, 0.2, 0.3], spool="lp"):
+        d = row["lp"]
+        print(f"  {row['vsv']:+7.2f}{d['phi_op']:9.5f}{d['phi_surge']:10.5f}{d['m_phi']:9.5f}"
+              f"{d['tan_b1']:9.5f}{d['m_i']:9.5f}{d['sm_n']:9.5f}{d['n']:8.5f}")
+    cs = vs.currency_split(flight, TT4, spool="lp")
+    print(f"  => dM_phi/dv = {cs['d_m_phi']:+.5f}  (closed form -(1+l)/(2+l)+phi_s0^2 = "
+          f"{-(1 + LP.l) / (2 + LP.l) + FLOOR ** 2:+.5f})")
+    print(f"     dM_i/dv   = {cs['d_m_i']:+.5f}  (closed form 1/(2+l) = "
+          f"{1 / (2 + LP.l):+.5f})   SPLIT = {cs['split']}")
+
+    print("\n  WHY it is the FLOOR's fault, not a metric quirk. For any lever x,")
+    print("    sign(dM_phi/dx) = sign(phi' + v' phi_surge^2)   sign(dM_i/dx) = sign(phi' + v' phi_op^2)")
+    print("  so at v'=0 they differ only by the STRICTLY POSITIVE Jacobian 1/phi_op^2 and CANNOT")
+    print("  split. The control -- throttle alone, stators at design (all three currencies):")
+    print(f"  {'Tt4':>7}{'dM_phi':>11}{'dM_i':>11}{'dSM_N':>11}{'agree':>8}"
+          f"{'ratio':>9}{'1/phi^2':>10}")
+    for r in vs.throttle_currency(flight, [1500.0, 1300.0, 1100.0, 1000.0], spool="lp"):
+        print(f"  {r['Tt4']:7.0f}{r['d_m_phi']:+11.6f}{r['d_m_i']:+11.6f}{r['d_sm_n']:+11.6f}"
+              f"{str(r['all_three_agree']):>8}{r['ratio']:9.5f}{r['jacobian']:10.5f}")
+    print("  => a FLOOR-FIXED lever can never split them: rungs 36-52's phi-currency is BOUNDED,")
+    print("     not refuted -- and now licensed by derivation rather than by assumption.")
+
+    print("\n  THE PAYOFF the correct currency makes derivable: the schedule v*(Tt4) that holds")
+    print("  the rotor incidence AT ITS DESIGN VALUE (what a real VSV schedule is FOR).")
+    print(f"  {'Tt4':>7}{'v*':>8}{'phi_op':>9}{'M_i':>11}{'M_phi':>9}{'M_phi,bare':>12}"
+          f"{'SM_N':>9}{'N_L/N_Ld':>10}")
+    rows = vs.incidence_schedule(flight, [1500.0, 1300.0, 1100.0, 1000.0], spool="lp", v_hi=1.6)
+    for r in rows:
+        print(f"  {r['Tt4']:7.0f}{r['vsv_star']:8.4f}{r['phi_op']:9.5f}{r['m_i']:11.7f}"
+              f"{r['m_phi']:9.5f}{r['m_phi_bare']:12.5f}{r['sm_n']:9.5f}{r['n']:10.5f}")
+    print(f"  => M_i EXACTLY constant (to {abs(max(r['residual'] for r in rows)):.0e}) while M_phi")
+    print(f"     falls {(1 - rows[-1]['m_phi'] / rows[0]['m_phi']) * 100:.0f}% -- BELOW its own "
+          f"unscheduled value at every point. One trajectory,")
+    print("     one boundary, three reference-free distances, three verdicts.")
+
+    print("\n  HONEST SCOPE, two confidence levels. The CURRENCY result is coordinate algebra and")
+    print("  rides on no magnitude. The SCHEDULE's numbers do not: holding design incidence at")
+    print(f"  Tt4=1000 costs N_L +{(rows[-1]['n'] - 1.0) * 100:.0f}% here, because this lumped "
+          f"one-stage map has neither a")
+    print("  stator-row FLOW CAPACITY nor a stage stack to rematch -- the channels that carry the")
+    print("  real multistage benefit. That capacity channel needs a NEW constant: refused, and")
+    print("  named as this rung's seam. Read v* as the swirl a cartoon needs, not a VSV schedule.")
+
+
 def print_asymmetric_lag_table(flight):
     """Rung-52 payoff: the asymmetric fast-attack / slow-release LAG -- a self-releasing limiter
     PINS ITS OWN TRIGGER, and CANNOT DEBIT THE SPOOL IT WATCHES.
@@ -3952,6 +4032,8 @@ def main():
     print_release_rate_table(FLIGHT)
 
     print_asymmetric_lag_table(FLIGHT)
+
+    print_variable_stator_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 
