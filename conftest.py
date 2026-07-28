@@ -374,14 +374,10 @@ def pytest_collection_modifyitems(config, items):
             config.hook.pytest_deselected(items=deselected)
             items[:] = selected
 
-    # A FULL gate only counts as one if nothing narrowed it — no -m, no -k, no --affected, no
-    # --collect-only and no explicit path/nodeid argument. pytest_sessionfinish additionally
-    # requires that every collected item actually reported, then records it on success.
-    positional = [a for a in config.invocation_params.args if not a.startswith("-")]
-    config._was_full_gate = (full_gate and not config.option.markexpr
-                             and not config.option.keyword and not positional
-                             and not config.getoption("--collect-only"))
-    config._gate_item_count = len(items)
+    # NB: "was this a full gate?" is decided in pytest_sessionfinish, NOT here. Under xdist the
+    # WORKERS collect and this hook never runs on the controller — but the controller is the only
+    # process that may write the cache. Anything stashed on config here is therefore invisible to
+    # the recorder. (This bit us: the first green --runslow recorded nothing.)
 
     # LPT scheduling: get every multi-minute pole started at t=0 so the makespan approaches
     # the single longest test rather than a stacked tail. xdist hands items to workers in
@@ -457,10 +453,20 @@ def pytest_sessionfinish(session, exitstatus):
         stored.update(_RECORDED)           # last-seen wins; keeps durations for tests not run this time
         cache.set(_CACHE_KEY, stored)
     # A clean, unnarrowed `--runslow` pass is what resets the cadence clock AND becomes the
-    # baseline every later `--affected` run diffs against. It must have EXECUTED everything it
-    # collected — a `--collect-only` run, or one cut short, must never reset the clock.
-    ran_all = len(_SEEN) >= getattr(config, "_gate_item_count", 1 << 30)
-    if getattr(config, "_was_full_gate", False) and exitstatus == 0 and ran_all:
+    # baseline every later `--affected` run diffs against. Decided here, from the config alone,
+    # because this is the only hook that runs on the xdist CONTROLLER (see the note in
+    # pytest_collection_modifyitems). Every narrowing flag we know of disqualifies the run, and
+    # `_SEEN` must be non-empty so a `--collect-only` pass can never reset the clock. Unknown
+    # narrowing errs toward NOT recording — i.e. toward running the full gate sooner.
+    narrowed = (config.option.markexpr or config.option.keyword
+                or getattr(config.option, "lf", False)
+                or getattr(config.option, "failedfirst", False)
+                or getattr(config.option, "stepwise", False)
+                or config.getoption("--collect-only")
+                or list(config.args) != list(config.getini("testpaths")))
+    was_full = (config.getoption("--runslow") and not config.getoption("--affected")
+                and not narrowed)
+    if was_full and exitstatus == 0 and _SEEN:
         head = (_git("rev-parse", "HEAD") or "").strip()
         if head:
             cache.set(_FULL_GATE_KEY, {"sha": head, "when": time.strftime("%Y-%m-%d %H:%M:%S")})
