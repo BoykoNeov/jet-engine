@@ -4,8 +4,16 @@ The probes that fixed the currency and the mechanism **before** the predictions,
 predictions as written, and their scoring. Same discipline as rungs 37/44/46/49/56/57: probe
 first, pre-register only once the instrument is trusted, then score honestly.
 
-Everything below was run from `M:\claud_projects\temp\rung58` against the repo as of
-`634f8f4`, on the CPG gas, `FLIGHT = (250 K, 50 kPa, M0 0.85)`,
+Everything below was run from `M:\claud_projects\temp\rung58`. Probes A–C ran against the repo as of
+`634f8f4` (rung 57 shipped, no rung-58 code); probe D onward and **every § Scoring number**
+ran against the rung-58 tree, and the shipped `composite_credit` reproduces probe A exactly.
+
+**RESOLUTION — the probe tables below are the `ds = 0.01` reads; § Scoring and the spec are
+`ds = 0.005`.** That is why the stator credit reads `0.052715` here and `0.052727` there, and
+why `s*` is `0.23` here and `0.2336` there. Probe D § 2 is the convergence check that licenses
+publishing only the refined set.
+
+Common to every run: the CPG gas, `FLIGHT = (250 K, 50 kPa, M0 0.85)`,
 `π_LPC/π_HPC/Tt4 = 3/6/1500`, the rung-49 `REAL` losses, the rung-53/57 shapes
 `LP = (a .20, b .05, σ .1, l .7)`, `HP = (a .08, b .15, σ .1, l 1.0)`, both with
 `φ_surge = 0.55`, and the rung-45 accel ramp `Tt4 1000 → 1400` (`s_settle = 1.2`).
