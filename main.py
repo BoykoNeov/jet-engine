@@ -20,7 +20,7 @@ from turbojet.engine import (  # noqa: E402
     FlightCondition, build_turbojet, OffDesignMatcher, MapMatcher, ComponentMap, SpoolTransient,
     CombustorTransient, build_two_spool_turbojet, TwoSpoolMatcher, TwoSpoolMapMatcher,
     TwoSpoolTransient, TwoSpoolBleedMatcher, TwoSpoolFuelTransient, SurgeLimiter,
-    AsymmetricLag, VariableStatorMatcher, ram_recovery,
+    AsymmetricLag, VariableStatorMatcher, StageStackMatcher, ram_recovery,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -2954,6 +2954,130 @@ def print_throat_capacity_table(flight):
     print("     is reached INSIDE the envelope. It also defeats rung 53's monotone root ladder.")
 
 
+def print_stage_stack_table(flight):
+    """Rung-55 payoff: a lever that moves ROWS, and what it pays for them.
+
+    Rung 54 refuted flow capacity as the escape from rung 53's overspeed and named STAGE
+    REMATCHING as the real mechanism. Resolving each compressor into K stage blocks takes that
+    seam, and the general law it exposes is about POSITIONAL levers: one that acts on part of a
+    machine buys its relief from the part it does not act on, through whatever the parts share
+    (here, the shaft speed). So its cost collapses with position -- a front-row stator holds the
+    front stage's design incidence for +2.3 % N_L against rung 53's +66.7 %, and the collapse
+    FACTORISES as (1/K) x (v* ratio) -- and its benefit has an INTERIOR optimum in how much of
+    the machine it moves: relief peaks at 3-4 rows of 8 and then REVERSES, ending worse than
+    bare."""
+    print("\nThe STAGE STACK (rung 55): the compressor stops being ONE block. With all annuli")
+    print("sized so phi_k = 1 at design, the kinematics are DERIVED with no new constant:")
+    print("   phi_k = phi_1 (theta_k/theta_k,d)/(varpi_k/varpi_k,d),  n_k = n sqrt(theta_k,d/theta_k)")
+    print("and phi_1 = m/n EXACTLY -- the face phi every rung since 32 reads IS the FRONT stage's.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR = 0.55
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, TT4, flight.p0,
+                                      nozzle_convergent=True, **losses)
+
+    def mk(K_lp=1, K_hp=1, vs_lp=None):
+        return StageStackMatcher(design, flight, 1.0, map_lp=LP, map_hp=HP,
+                                 K_lp=K_lp, K_hp=K_hp, vsv_stages_lp=vs_lp)
+
+    m8 = mk(8, 8)
+
+    print("\n  ONE MACHINE, TWO OPPOSITE FAILURES (K=8) -- the front stalls while the rear chokes.")
+    print("  A lumped block has ONE phi and can represent neither end of it:")
+    for Tt4 in (1500.0, 800.0):
+        r = m8.stage_margin(flight, Tt4)
+        for sp in ("lp", "hp"):
+            s = r[sp]
+            print(f"   Tt4={Tt4:.0f} {sp.upper()}  phi_k = "
+                  + " ".join(f"{st['phi']:.3f}" for st in s["stages"])
+                  + f"   rear/front {s['rear_excess']*100:+5.1f}%")
+    print("  The LP FRONT stage is the worst incidence in the machine; the HP REAR runs ABOVE")
+    print("  design phi -- toward choke and negative incidence.")
+
+    print("\n  WHY THIS IS CONTENT, NOT A RE-READ (the non-tautology gate). The spread above is a")
+    print("  functional of the (tau_c, pi_c) rung 39 already solves. The RUNG is the feedback:")
+    print("  with a per-stage psi(phi_k) the work is no longer psi(phi_face)*n^2, so the stack")
+    print("  MOVES the running line. Marched vs lumped work at the SAME (m, n):")
+    print(f"  {'Tt4':>7}{'LP gap':>10}{'HP gap':>10}   (fraction of tau_c-1; EXACTLY 0 at K=1)")
+    for Tt4 in (1500.0, 1200.0, 1000.0, 800.0):
+        g = m8.work_gap(flight, Tt4)
+        print(f"  {Tt4:7.0f}{g['lp']['gap_frac']*100:9.2f}%{g['hp']['gap_frac']*100:9.2f}%")
+
+    print("\n  SO n RISES AND phi FALLS -- and rungs 36-53 are BOUNDED, not refuted: they read the")
+    print("  right object (the front stage) but the lumped solve placed it OPTIMISTICALLY.")
+    print(f"  {'Tt4':>7}{'d_n LP':>9}{'d_phi LP':>10}{'d_n HP':>9}{'d_phi HP':>10}"
+          f"{'d_thrust':>10}")
+    for r in m8.running_line_shift(flight, (1500.0, 1200.0, 1000.0, 800.0)):
+        print(f"  {r['Tt4']:7.0f}{r['lp']['d_n']*100:8.3f}%{r['lp']['d_phi']*100:9.3f}%"
+              f"{r['hp']['d_n']*100:8.3f}%{r['hp']['d_phi']*100:9.3f}%"
+              f"{r['d_thrust']*100:9.3f}%")
+    print("  Thrust barely moves: like rung 53's stator, the stack is paid in SHAFT SPEED.")
+
+    print("\n  THE HEADLINE -- rung 54's seam discharged. Hold the FRONT stage's design incidence")
+    print("  at Tt4=1000 with a FRONT-ROW-ONLY stator (what a real VSV is) instead of rung 53's")
+    print("  whole-machine lever. The cost FACTORISES into a positional leg and a setting leg:")
+    T = 1000.0
+    r53 = VariableStatorMatcher(design, flight, 1.0, map_lp=LP, map_hp=HP)
+    row53 = r53.incidence_schedule(flight, [T], spool="lp", v_hi=4.0)[0]
+    b53 = r53.at_setting(0.0, 0.0).match(flight, T)
+    s53 = r53.at_setting(row53["vsv_star"], 0.0).match(flight, T)
+    dN53 = (s53.N_lp_ratio - b53.N_lp_ratio) / b53.N_lp_ratio
+    print(f"   rung 53 (one lumped block, EVERY row moves): v* = {row53['vsv_star']:.4f}, "
+          f"dN_L = {dN53*100:+.2f}%")
+    print(f"  {'K':>4}{'v*front':>10}{'dN_L':>9}{'ratio':>9}{'v*ratio':>9}{'1/K':>8}"
+          f"{'(v*ratio)/K':>13}")
+    for K in (2, 4, 8, 16):
+        m = mk(K, 8, vs_lp=1)
+        row = m.stage_incidence_schedule(flight, [T], spool="lp", stage=0, v_hi=4.0)[0]
+        bare, sib = m.at_setting(0.0, 0.0), m.at_setting(row["vsv_star"], 0.0)
+        b, s = bare.match(flight, T), sib.match(flight, T)
+        dN = (s.N_lp_ratio - b.N_lp_ratio) / b.N_lp_ratio
+        vr = row["vsv_star"] / row53["vsv_star"]
+        print(f"  {K:4d}{row['vsv_star']:10.4f}{dN*100:8.2f}%{dN/dN53:9.4f}{vr:9.4f}"
+              f"{1.0/K:8.4f}{vr/K:13.4f}")
+    print("  The product law holds to 3 % over an 8x range in K. The 1/K leg is positional; the")
+    print("  SETTING leg is that a front-only lever does not FIGHT ITS OWN SPEED RISE.")
+
+    print("\n  AND THE HONEST HALF -- the same law read backwards. Shaft speed is the one thing")
+    print("  every stage shares, so relief taken at the front is PAID BY THE ROWS LEFT BEHIND.")
+    print("  Sweep how many of the 8 rows the stator moves (target unchanged):")
+    m0 = mk(8, 8, vs_lp=1)
+    bare0 = m0.at_setting(0.0, 0.0)
+    b0 = bare0.match(flight, T)
+    mi0 = bare0.stage_margin(flight, T)["lp"]["m_i_worst"]
+    print(f"  {'rows':>6}{'v*':>9}{'dN_L':>9}{'worst':>7}{'M_i worst':>11}{'relief':>9}"
+          f"{'per dN':>9}")
+    print(f"  {'0':>6}{'--':>9}{'--':>9}{0:7d}{mi0:11.4f}{'--':>9}{'--':>9}")
+    for rows in (1, 2, 3, 4, 5, 6):
+        m = mk(8, 8, vs_lp=rows)
+        m._V_SCAN = 0.01
+        row = m.stage_incidence_schedule(flight, [T], spool="lp", stage=0, v_hi=4.0)[0]
+        sib = m.at_setting(row["vsv_star"], 0.0)
+        sm = sib.stage_margin(flight, T)["lp"]
+        dN = (sib.match(flight, T).N_lp_ratio - b0.N_lp_ratio) / b0.N_lp_ratio
+        rel = (sm["m_i_worst"] - mi0) / mi0
+        print(f"  {rows:6d}{row['vsv_star']:9.4f}{dN*100:8.2f}%{sm['worst']:7d}"
+              f"{sm['m_i_worst']:11.4f}{rel*100:8.2f}%{rel/dN:9.2f}")
+    print("  THE OPTIMUM IS A COUNT -- and it is INTERIOR: relief peaks at 3-4 rows and then")
+    print("  REVERSES, ending worse than bare, as the worst stage migrates into the rows the")
+    print("  stator does NOT move. Two currencies, two optima: most relief at 4 rows, most")
+    print("  relief-per-speed at 1. Rung 53's coordinate law, a third time.")
+
+    print("\n  SCOPE: steady and two-spool. The stack ENTERS THE SOLVER, so unlike rung 54's")
+    print("  throat there is no free invariance -- the transient ladders (34/40/43 and the whole")
+    print("  limiter family) stay on the lumped loading law, and a test asserts it.")
+    print("  REDUCE: an IDENTITY at K = 1 -- no stack object is built and both efficiency loops")
+    print("  are the INHERITED rung-39 ones. Measured 0.000e+00 on every matched field.")
+
 def print_asymmetric_lag_table(flight):
     """Rung-52 payoff: the asymmetric fast-attack / slow-release LAG -- a self-releasing limiter
     PINS ITS OWN TRIGGER, and CANNOT DEBIT THE SPOOL IT WATCHES.
@@ -4137,6 +4261,8 @@ def main():
     print_variable_stator_table(FLIGHT)
 
     print_throat_capacity_table(FLIGHT)
+
+    print_stage_stack_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

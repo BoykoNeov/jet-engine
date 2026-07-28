@@ -6462,3 +6462,554 @@ class VariableStatorMatcher(TwoSpoolMapMatcher):
         return rows
 
 
+
+
+# ==========================================================================================
+# RUNG 55 — THE STAGE STACK: a compressor that is no longer ONE block
+# (docs/rung55-spec.md)
+#
+# Rung 54 refuted flow CAPACITY as the reason a real engine escapes rung 53's +26 % overspeed
+# -- structurally, by the BIND-NEVER-RELIEVE theorem -- and named the real mechanism as its
+# seam: STAGE REMATCHING. That needs the compressor to stop being one lumped block.
+#
+# WHAT A LUMPED BLOCK CANNOT HAVE. Every rung from 32 up reads ONE flow coefficient per
+# compressor, phi = m/n, at the FACE. In a real stack the stages are in series and the density
+# march through them is not the design march off design: at part throttle pi_c falls far faster
+# than sqrt(tau_c), so the REAR stages see too much volume flow (phi UP, toward choke) while
+# the FRONT stage sees the face value (phi DOWN, toward stall). That is the classic
+# "front stages stall, rear stages choke at part speed" -- and it is WHY a real VSV schedule
+# exists at all. One block has exactly one phi and so cannot have it.
+#
+# THE KINEMATICS (derived, no new constant). With all annuli sized so phi_k = 1 at design, and
+# theta_k / varpi_k the cumulative Tt / pt ratio at stage k's INLET,
+#
+#     phi_k = phi_1 * (theta_k/theta_k,d) / (varpi_k/varpi_k,d)     n_k = n*sqrt(theta_k,d/theta_k)
+#
+# because phi = Vx/U with Vx = mdot/(rho*A), rho = pt/(R*Tt), and U is proportional to N.
+# phi_1 = m/n EXACTLY -- so the face phi every earlier rung reads IS the front stage's, which
+# is why rungs 36-53 were reading the binding stage all along (a BOUNDING in rung 53's style,
+# not a refutation).
+#
+# WHY THIS IS CONTENT AND NOT A RE-READ. The spread above is a functional of the (tau_c, pi_c)
+# rung 39 already solves. The RUNG is the feedback: with a per-stage psi(phi_k) the machine's
+# work is no longer psi(phi_face)*n^2, so the stack changes tau_c(m, n) -- it MOVES the running
+# line. Measured at fixed (m, n): the marched stack is WEAKER than the lumped law by up to
+# 27 % of tau_c-1 (HP, K=8, Tt4=800; 36 % on `steep`), growing monotonically with throttle
+# depth, and EXACTLY 0.00e+00 at K = 1. See docs/plans/rung55-anchor-stage-stack.md.
+#
+# SCOPE, DECLARED UP FRONT. Unlike rung 54's throat, the stack ENTERS THE SOLVER, so there is
+# no free invariance. STEADY / TWO-SPOOL ONLY: the rung-34/40/43 transient closures call
+# psi/phi_max FORWARD and must never see a stack, or the blast radius is rungs 34-52. The
+# stack replaces the SPEED-LINE INVERSION ((m, tau_c) -> n) and nothing else; pi_c still comes
+# from rung 39's overall-eta island closure, untouched.
+# ==========================================================================================
+
+
+@dataclass
+class StageStack:
+    """RUNG 55. A `K`-stage series stack standing in for ONE spool's lumped compressor block.
+
+    It owns exactly one job: the SPEED-LINE INVERSION. Rung 32's `ComponentMap.solve_n` finds
+    the corrected speed `n` whose single lumped speed line holds the pinned `(m, tau_c)`; this
+    finds the `n` whose K-stage MARCH does. Everything else in the cascade is rung 39's.
+
+    The design ladder is captured from the SHIPPED design point (`tau_d`, `pi_d`, `eta_d`), so
+    the stack does NOT re-design the engine (rung 42's valve-shut / rung 53's design-capture
+    discipline): at design every `phi_k` = 1, every `n_k` = 1, `psi` = 1, and the march returns
+    `tau_d` EXACTLY, for every K and every split.
+
+    THE ONE DISCLOSED CHOICE is the WORK SPLIT -- how the design temperature rise is divided
+    between stages (rung 54's pattern: shape derived, split disclosed, verdict robust):
+        "dT"  equal Delta-Tt per stage (the default)
+        "tau" equal stage temperature ratio, tau_d**(1/K)
+    At design all stages have psi = 1, so "equal loading" is not a third split -- it IS "dT".
+
+    NO NEW CONSTANT. The per-stage isentropic efficiency `e_d` is the 1-D inversion that makes
+    the K-stage march reproduce the SHIPPED overall `pi_d` on the design ladder. Off design it
+    is carried at the live overall efficiency's ratio, `e = e_d * eta_live/eta_d`, so at K = 1
+    the internal ladder is the lumped one exactly.
+
+    AND IT REPRODUCES RUNG 2b, UNPROMPTED. `e_d` comes out ABOVE the lumped `eta_d` -- the
+    REHEAT effect -- and as K grows it converges (first order, halving per doubling) on
+    rung 2b's POLYTROPIC efficiency `e_c = ln(pi_d)/(kc*ln(tau_d))`. Nothing here was told
+    about polytropic efficiency: the stack is handed an isentropic design point and a stage
+    count, and the eta_c < e_c ordering rung 2b shipped falls out of the ladder. So the stack
+    interpolates rung 2 (K = 1, isentropic) to rung 2b (K -> infinity, polytropic), and that
+    is a free consistency check on the whole construction (gate 2b).
+
+    CPG PLACEMENT, disclosed (rung 41's (star) precedent): the internal pressure ladder uses
+    the cold-section gamma as a constant, via `kc = gamma_c/(gamma_c-1)`. The CYCLE's own
+    pressure ratio is untouched -- it is still rung 39's, off the real gas. At K = 1 the ladder
+    is never consulted (one stage, varpi = 1), so the reduce is exact whatever `kc` is.
+
+    THE STATOR, PER STAGE (rung 53's coordinate, now positional). `cmap` carries the setting
+    `v`; `vsv_stages` is how many FRONT stages actually carry it. `vsv_stages = K` is rung 53's
+    lumped lever (every stage moves) and is the default; `vsv_stages = 1` is what a real VSV
+    row is -- and the contrast between them is rung 55's headline.
+    """
+
+    K: int
+    cmap: ComponentMap
+    tau_d: float
+    pi_d: float
+    eta_d: float
+    kc: float = 3.5                     # gamma_c/(gamma_c-1); disclosed CPG placement
+    split: str = "dT"
+    vsv_stages: "int | None" = None     # None => all K (rung 53's lumped lever)
+
+    _E_TOL = 1e-14
+    _N_TOL = 1e-14
+    _P_FLOOR = 1e-6      # numerical guards on the internal ladders, far end of the
+    _T_FLOOR = 1e-3      # n-bracket only -- `solve_n` asserts both are inactive at its root
+
+    def __post_init__(self):
+        assert self.K >= 1, f"rung-55 stack needs K >= 1 stages, got {self.K}"
+        assert self.split in ("dT", "tau"), (
+            f"rung-55 work split must be 'dT' or 'tau' (disclosed choices), got {self.split!r}")
+        assert self.tau_d > 1.0 and self.pi_d > 1.0, (
+            "rung-55 stack needs a compressing design point")
+        if self.vsv_stages is None:
+            self.vsv_stages = self.K
+        assert 0 <= self.vsv_stages <= self.K, (
+            f"rung-55 vsv_stages must be in [0, K={self.K}], got {self.vsv_stages}")
+        self.cmap_axial = replace(self.cmap, vsv=0.0)    # the stages the stator does NOT move
+        self.theta_d = self._ladder_T(self.tau_d)
+        self.e_d = self._stage_eta(self.theta_d, self.pi_d)
+        self.varpi_d = self._ladder_p(self.theta_d, self.e_d)
+
+    # --- the design ladder -----------------------------------------------------------------
+
+    def _ladder_T(self, tau: float) -> list:
+        """Cumulative temperature ratio at each stage INLET (k = 0..K), on the disclosed split."""
+        if self.split == "tau":
+            r = tau ** (1.0 / self.K)
+            return [r ** k for k in range(self.K + 1)]
+        return [1.0 + (tau - 1.0) * k / self.K for k in range(self.K + 1)]
+
+    def _ladder_p(self, theta: list, e: float) -> list:
+        """Cumulative pressure ratio at each stage inlet, at per-stage isentropic efficiency e."""
+        vp = [1.0]
+        for k in range(self.K):
+            vp.append(vp[k] * (1.0 + e * (theta[k + 1] / theta[k] - 1.0)) ** self.kc)
+        return vp
+
+    def _stage_eta(self, theta: list, pi: float) -> float:
+        """The per-stage efficiency whose K-stage march reproduces the OVERALL pi on this
+        ladder. At K = 1 this returns the lumped efficiency EXACTLY -- one stage, one
+        [1+e(tau-1)]**kc, so the inversion is the identity. NOT a new constant: it is
+        determined by the shipped design (tau_d, pi_d). See the class docstring for why its
+        K -> infinity limit is rung 2b's polytropic efficiency."""
+        def overall(e: float) -> float:
+            vp = 1.0
+            for k in range(self.K):
+                vp *= (1.0 + e * (theta[k + 1] / theta[k] - 1.0)) ** self.kc
+            return vp
+
+        lo, hi = 0.05, 2.0
+        assert overall(lo) < pi < overall(hi), (
+            f"rung-55 per-stage efficiency does not bracket for K={self.K}, pi={pi:.4f}: "
+            f"[{overall(lo):.4f}, {overall(hi):.4f}]. Design point out of the stack's range.")
+        for _ in range(300):
+            mid = 0.5 * (lo + hi)
+            if overall(mid) < pi:
+                lo = mid
+            else:
+                hi = mid
+            if hi - lo <= self._E_TOL:
+                break
+        return 0.5 * (lo + hi)
+
+    # --- the march -------------------------------------------------------------------------
+
+    def psi_at(self, k: int, phi: float) -> float:
+        """Stage k's loading. The FRONT `vsv_stages` stages carry rung 53's setting; the rest
+        are at their design setting (`vsv` = 0), which is what a real front-block VSV is."""
+        return (self.cmap if k < self.vsv_stages else self.cmap_axial).psi(phi)
+
+    def vsv_at(self, k: int) -> float:
+        return self.cmap.vsv if k < self.vsv_stages else 0.0
+
+    def march(self, m: float, n: float, eta_live: float) -> dict:
+        """March the stack at a FIXED face (m, n) and return the total work plus every stage's
+        own coordinates. THE ONE PLACE the stack differs from a lumped block.
+
+        `clamped` counts stages whose internal pressure factor `1 + e(tau_k-1)` fell to the
+        floor -- a stage doing so much NEGATIVE work that it would drive the ladder pressure
+        through zero. That is the far, non-physical end of the n-bracket (rung 32's own bracket
+        reaches there too, harmlessly, because a lumped psi never raises a negative base to a
+        fractional power). `solve_n` ASSERTS the clamp is inactive at the root it returns, so
+        it can never silently shape a solved operating point.
+        """
+        e = self.e_d * (eta_live / self.eta_d)
+        th, vp = 1.0, 1.0
+        phis, n_ks, taus, clamped = [], [], [], 0
+        for k in range(self.K):
+            phi_k = (m / n) * (th / self.theta_d[k]) / (vp / self.varpi_d[k])
+            n_k = n * (self.theta_d[k] / th) ** 0.5
+            tau_kd = self.theta_d[k + 1] / self.theta_d[k]
+            tau_k = 1.0 + self.psi_at(k, phi_k) * n_k * n_k * (tau_kd - 1.0)
+            if tau_k < self._T_FLOOR:                  # stage doing catastrophic negative work
+                tau_k, clamped = self._T_FLOOR, clamped + 1
+            phis.append(phi_k)
+            n_ks.append(n_k)
+            taus.append(tau_k)
+            th *= tau_k
+            base = 1.0 + e * (tau_k - 1.0)
+            if base < self._P_FLOOR:
+                base, clamped = self._P_FLOOR, clamped + 1
+            vp *= base ** self.kc
+        return dict(tau=th, pi_internal=vp, phis=phis, n_ks=n_ks, taus=taus, e=e,
+                    clamped=clamped)
+
+    def tau_of(self, m: float, n: float, eta_live: float) -> float:
+        return self.march(m, n, eta_live)["tau"]
+
+    def lumped_tau(self, m: float, n: float) -> float:
+        """Rung 32's lumped law at the same (m, n) -- the control for the non-tautology gate."""
+        return 1.0 + self.cmap.psi(m / n) * n * n * (self.tau_d - 1.0)
+
+    def solve_n(self, m: float, tau_c: float, eta_live: float) -> float:
+        """SPEED-LINE INVERSION THROUGH THE STACK: find n whose K-stage march does the pinned
+        work tau_c at the pinned corrected flow m.
+
+        K == 1 DISPATCHES to rung 32's own `ComponentMap.solve_n` -- the same code, so the
+        reduce is bit-for-bit and not merely tight. (At K = 1 the march IS the lumped law
+        analytically; dispatching makes it identical to the last bit as well.)
+        """
+        if self.K == 1:
+            return self.cmap.solve_n(m, tau_c, self.tau_d)
+
+        def g(n: float) -> float:
+            return self.tau_of(m, n, eta_live) - tau_c
+
+        lo, hi = 0.1, 2.0
+        flo, fhi = g(lo), g(hi)
+        assert flo < 0.0 < fhi, (
+            f"rung-55 stack speed-line bracket fails for (m={m:.4f}, tau_c={tau_c:.4f}, "
+            f"K={self.K}): [{flo:.4e}, {fhi:.4e}]. The stack cannot reach this work -- a "
+            f"map-validity edge, exactly as rung 32's own bracket is.")
+        for _ in range(200):
+            mid = 0.5 * (lo + hi)
+            fm = g(mid)
+            if flo * fm <= 0.0:
+                hi = mid
+            else:
+                lo, flo = mid, fm
+            if hi - lo <= self._N_TOL:
+                break
+        n = 0.5 * (lo + hi)
+        assert self.march(m, n, eta_live)["clamped"] == 0, (
+            f"rung-55 stack root at n={n:.6f} sits in the clamped (non-physical) region for "
+            f"(m={m:.4f}, tau_c={tau_c:.4f}, K={self.K}) -- a map-validity edge.")
+        return n
+
+
+class StageStackMatcher(VariableStatorMatcher):
+    """RUNG 55. Two-spool map matching with each compressor resolved into `K` STAGE BLOCKS.
+
+    Usage:
+        m = StageStackMatcher(design, FLIGHT, 1.0, map_lp=..., map_hp=..., K_lp=8, K_hp=8)
+        od = m.match(FLIGHT, Tt4)                  # rung 39's TwoSpoolMapResult, unchanged
+        m.stage_margin(FLIGHT, Tt4)                # per-STAGE phi / incidence  <- the rung
+        m.work_gap(FLIGHT, Tt4)                    # the non-tautology gate, in-repo
+        m.running_line_shift(FLIGHT, Tt4_grid)     # P1: what the stack does to rungs 36-53
+        m.stage_incidence_schedule(FLIGHT, grid)   # P3: the FRONT-ONLY stator schedule
+
+    WHERE IT BITES, AND WHERE IT DOES NOT. The stack replaces rung 32's speed-line inversion
+    `ComponentMap.solve_n` with `StageStack.solve_n` inside rung 39's two efficiency loops --
+    and touches nothing else. The energy cascade (map-free, rung 38), the choke relations, the
+    burner `f` fixed point, the efficiency island, the rebuild-forward and every conservation
+    assert are rung 38/39's, entered unchanged.
+
+    THE REDUCE IS AN IDENTITY AT K = 1, like rung 53's and for the same reason: no stack object
+    is built when both `K` are 1, both efficiency loops are the INHERITED ones, and there is no
+    rung-55 code path to skip. Where a stack IS built on one spool only, the other spool's loop
+    is still literally rung 39's (`super()`), so a one-sided stack is a controlled experiment.
+    `StageStack.solve_n` ALSO dispatches to `ComponentMap.solve_n` at K = 1, so even a
+    hand-built one-stage stack is bit-for-bit.
+
+    SCOPE (inherited + this rung's, see docs/rung55-spec.md): STEADY and TWO-SPOOL only. The
+    transient ladders (rungs 34/40/43 and the whole limiter family 46-52) run their own forward
+    closures off `ComponentMap.psi`/`phi_max` and never construct a stack -- deliberately, and
+    asserted by test.
+    """
+
+    def __init__(self, design_engine, flight_design: FlightCondition,
+                 mdot_design: float = 1.0, map_lp: "ComponentMap | None" = None,
+                 map_hp: "ComponentMap | None" = None, vsv_lp: float = 0.0,
+                 vsv_hp: float = 0.0, K_lp: int = 1, K_hp: int = 1, split: str = "dT",
+                 vsv_stages_lp: "int | None" = None, vsv_stages_hp: "int | None" = None,
+                 lp_disabled: bool = False):
+        super().__init__(design_engine, flight_design, mdot_design, map_lp=map_lp,
+                         map_hp=map_hp, vsv_lp=vsv_lp, vsv_hp=vsv_hp, lp_disabled=lp_disabled)
+        self.K_lp, self.K_hp = int(K_lp), int(K_hp)
+        self.split = split
+        self.vsv_stages_lp, self.vsv_stages_hp = vsv_stages_lp, vsv_stages_hp
+        assert not (lp_disabled and (self.K_lp > 1 or self.K_hp > 1)), (
+            "rung-55 does not support lp_disabled with a stack: the degenerate path is rung "
+            "32's single-spool matcher. Use the two-spool path (lp_disabled=False).")
+        self.stack_lp = self.stack_hp = None
+        if lp_disabled:
+            return
+        kc = self.gas.gamma_c / (self.gas.gamma_c - 1.0)
+        if self.K_lp > 1:
+            self.stack_lp = StageStack(
+                K=self.K_lp, cmap=self.map_lp, tau_d=self.tau_lpc_d,
+                pi_d=self.pi_lpc_design, eta_d=self.eta_lpc, kc=kc, split=split,
+                vsv_stages=vsv_stages_lp)
+        if self.K_hp > 1:
+            self.stack_hp = StageStack(
+                K=self.K_hp, cmap=self.map_hp, tau_d=self.tau_hpc_d,
+                pi_d=self.pi_hpc_design, eta_d=self.eta_hpc, kc=kc, split=split,
+                vsv_stages=vsv_stages_hp)
+
+    def at_setting(self, vsv_lp: float, vsv_hp: float) -> "StageStackMatcher":
+        """Rung 53's controlled-comparison sibling, carrying THIS rung's stack description
+        (overridden so a swept stator setting cannot silently drop the stack)."""
+        de, fd, md, lpd = self._ctor
+        return StageStackMatcher(de, fd, md, map_lp=self.map_lp_design,
+                                 map_hp=self.map_hp_design, vsv_lp=vsv_lp, vsv_hp=vsv_hp,
+                                 K_lp=self.K_lp, K_hp=self.K_hp, split=self.split,
+                                 vsv_stages_lp=self.vsv_stages_lp,
+                                 vsv_stages_hp=self.vsv_stages_hp, lp_disabled=lpd)
+
+    def at_stages(self, K_lp: int, K_hp: int,
+                  vsv_stages_lp: "int | None" = None,
+                  vsv_stages_hp: "int | None" = None) -> "StageStackMatcher":
+        """A sibling on the SAME hardware and the same stator setting, resolved into a
+        different number of stages. Every K-sweep goes through this, so a swept resolution can
+        never be confused with a re-designed engine (rung 53's `at_setting` discipline, one
+        coordinate over)."""
+        de, fd, md, lpd = self._ctor
+        return StageStackMatcher(de, fd, md, map_lp=self.map_lp_design,
+                                 map_hp=self.map_hp_design, vsv_lp=self.vsv_lp,
+                                 vsv_hp=self.vsv_hp, K_lp=K_lp, K_hp=K_hp, split=self.split,
+                                 vsv_stages_lp=vsv_stages_lp, vsv_stages_hp=vsv_stages_hp,
+                                 lp_disabled=lpd)
+
+    # --- the ONE point of entry: rung 39's two efficiency loops, stack-aware ----------------
+
+    def _hp_eta_loop(self, wgas: Gas, Tt4: float, f: float, Tt25: float, Tt3: float,
+                     MFP4: float, cmap: "ComponentMap"):
+        """Rung 39's HP loop with the speed-line inversion taken through the stack. Identical
+        line for line except `solve_n`; falls back to rung 39's own method when unstacked."""
+        if self.stack_hp is None:
+            return super()._hp_eta_loop(wgas, Tt4, f, Tt25, Tt3, MFP4, cmap)
+        h25, h3, pr25 = wgas.h_c(Tt25), wgas.h_c(Tt3), wgas.pr_c(Tt25)
+        tau_hpc = Tt3 / Tt25
+        eta, eta_prev, R_prev = self.eta_hpc, None, None
+        for _ in range(self._ETA_MAX):
+            pi = wgas.pr_c(wgas.T_from_h_c(h25 + eta * (h3 - h25))) / pr25
+            m = (self.A4 * self.pi_b * pi * MFP4 * (Tt25 / Tt4) ** 0.5
+                 / (1.0 + f)) / self.mcorr_hp_d
+            n = self.stack_hp.solve_n(m, tau_hpc, eta)
+            tgt = cmap.eta_c_at(self.eta_hpc, m / n, n)
+            R = tgt - eta
+            if abs(R) <= self._ETA_TOL:
+                return eta, pi, m, n
+            eta, eta_prev, R_prev = self._secant(eta, eta_prev, R, R_prev, tgt), eta, R
+        raise AssertionError(
+            f"rung-55 HP stacked efficiency secant did not converge at Tt4={Tt4} "
+            f"(last |R|={abs(R):.2e}); moderate the HP map coefficients or the throttle.")
+
+    def _lp_eta_loop(self, wgas: Gas, Tt2: float, Tt4: float, f: float, Tt25: float,
+                     MFP4: float, pi_hpc: float, cmap: "ComponentMap"):
+        """Rung 39's LP loop, ditto. `(ddagger)` -- the one HP -> LP arrow -- is unchanged."""
+        if self.stack_lp is None:
+            return super()._lp_eta_loop(wgas, Tt2, Tt4, f, Tt25, MFP4, pi_hpc, cmap)
+        h2, h25, pr2 = wgas.h_c(Tt2), wgas.h_c(Tt25), wgas.pr_c(Tt2)
+        tau_lpc = Tt25 / Tt2
+        eta, eta_prev, R_prev = self.eta_lpc, None, None
+        for _ in range(self._ETA_MAX):
+            pi = wgas.pr_c(wgas.T_from_h_c(h2 + eta * (h25 - h2))) / pr2
+            m = (self.A4 * self.pi_b * pi_hpc * pi * MFP4 * (Tt2 / Tt4) ** 0.5
+                 / (1.0 + f)) / self.mcorr_lp_d
+            n = self.stack_lp.solve_n(m, tau_lpc, eta)
+            tgt = cmap.eta_c_at(self.eta_lpc, m / n, n)
+            R = tgt - eta
+            if abs(R) <= self._ETA_TOL:
+                return eta, pi, m, n
+            eta, eta_prev, R_prev = self._secant(eta, eta_prev, R, R_prev, tgt), eta, R
+        raise AssertionError(
+            f"rung-55 LP stacked efficiency secant did not converge at Tt4={Tt4} "
+            f"(last |R|={abs(R):.2e}); moderate the LP map coefficients or the throttle.")
+
+    # --- reading the stack ------------------------------------------------------------------
+
+    def _stack_of(self, spool: str):
+        assert spool in self._SPOOLS, f"spool must be 'lp' or 'hp', got {spool!r}"
+        return self.stack_lp if spool == "lp" else self.stack_hp
+
+    def stage_margin(self, flight: FlightCondition, Tt4: float) -> dict:
+        """RUNG 55's reading instrument: rung 53's incidence currency, NOW PER STAGE.
+
+        Every stage has its own `phi_k`, its own setting `v_k` (only the front `vsv_stages`
+        carry the stator), and hence its own `tan beta_1 = 1/phi_k - v_k` against the SAME
+        blade-metal critical angle `T_c` -- which is stator- AND stage-invariant, so rung 53's
+        law says it is the coordinate in which these are comparable at all.
+
+        Reports per stage, plus the two objects a lumped block cannot express:
+            `worst` -- the stage with the SMALLEST incidence margin (the one that stalls first)
+            `rear_excess` -- phi_K/phi_1 - 1, how far the LAST stage runs above the front
+                             (positive = the rear is being driven toward choke/negative
+                             incidence while the front is driven toward stall)
+        """
+        od = self.match(flight, Tt4)
+        out = dict(Tt4=float(Tt4), vsv_lp=self.vsv_lp, vsv_hp=self.vsv_hp,
+                   K_lp=self.K_lp, K_hp=self.K_hp, split=self.split)
+        for spool, phi_face, n_face, eta_live in (
+                ("lp", od.phi_lp, od.n_lp, od.eta_lpc),
+                ("hp", od.phi_hp, od.n_hp, od.eta_hpc)):
+            cmap, _, _, v = self._spool_bits(spool)
+            assert cmap.phi_surge > 0.0, (
+                "rung-55 stage_margin needs the rung-36 floor as its incidence anchor on both "
+                "maps: build them with .with_phi_surge(phi_surge).")
+            T_c = cmap.tan_beta1_crit()
+            stack = self._stack_of(spool)
+            m = phi_face * n_face
+            if stack is None:
+                phis, n_ks, vs = [phi_face], [n_face], [v]
+            else:
+                mr = stack.march(m, n_face, eta_live)
+                phis, n_ks = mr["phis"], mr["n_ks"]
+                vs = [stack.vsv_at(k) for k in range(stack.K)]
+            stages = []
+            for k, (phi_k, n_k, v_k) in enumerate(zip(phis, n_ks, vs)):
+                tb1 = 1.0 / phi_k - v_k
+                phi_s = cmap.phi_surge / (1.0 + v_k * cmap.phi_surge)
+                stages.append(dict(stage=k, phi=phi_k, n=n_k, vsv=v_k, tan_b1=tb1,
+                                   m_i=T_c - tb1, phi_surge=phi_s, m_phi=phi_k - phi_s))
+            worst = min(range(len(stages)), key=lambda i: stages[i]["m_i"])
+            out[spool] = dict(
+                vsv=v, phi_face=phi_face, n=n_face, m=m, tan_b1_crit=T_c, stages=stages,
+                worst=worst, m_i_worst=stages[worst]["m_i"],
+                m_i_face=T_c - (1.0 / phi_face - v),
+                rear_excess=phis[-1] / phis[0] - 1.0,
+                phi_front=phis[0], phi_rear=phis[-1])
+        return out
+
+    def work_gap(self, flight: FlightCondition, Tt4: float) -> dict:
+        """THE NON-TAUTOLOGY GATE, in-repo: at the SOLVED `(m, n)`, how much does the MARCHED
+        stack's work differ from the lumped law rungs 32-53 use? Exactly zero at K = 1 (the
+        march IS that law); non-zero and growing with throttle depth is what makes the stack
+        content rather than a re-read of `(tau_c, pi_c)`."""
+        od = self.match(flight, Tt4)
+        out = dict(Tt4=float(Tt4), K_lp=self.K_lp, K_hp=self.K_hp, split=self.split)
+        for spool, phi, n, eta_live in (("lp", od.phi_lp, od.n_lp, od.eta_lpc),
+                                        ("hp", od.phi_hp, od.n_hp, od.eta_hpc)):
+            stack = self._stack_of(spool)
+            cmap, tau_d, _, _ = self._spool_bits(spool)
+            m = phi * n
+            lumped = 1.0 + cmap.psi(m / n) * n * n * (tau_d - 1.0)
+            marched = lumped if stack is None else stack.tau_of(m, n, eta_live)
+            out[spool] = dict(m=m, n=n, tau_lumped=lumped, tau_marched=marched,
+                              gap=marched - lumped,
+                              gap_frac=(marched - lumped) / (lumped - 1.0))
+        return out
+
+    def running_line_shift(self, flight: FlightCondition, Tt4_grid) -> list:
+        """P1 -- WHAT THE STACK DOES TO RUNGS 36-53. The controlled comparison: this matcher
+        against its OWN K = 1 sibling (same hardware, same maps, same stator setting), at each
+        throttle. Because the face `phi` IS the front stage's, the shift in `phi_face` is a
+        direct statement about how the lumped solve placed the BINDING stage."""
+        base = self.at_stages(1, 1)
+        rows = []
+        for Tt4 in Tt4_grid:
+            Tt4 = float(Tt4)
+            a, b = base.match(flight, Tt4), self.match(flight, Tt4)
+            row = dict(Tt4=Tt4, K_lp=self.K_lp, K_hp=self.K_hp, split=self.split)
+            for spool, (n0, p0, pi0), (n1, p1, pi1) in (
+                    ("lp", (a.n_lp, a.phi_lp, a.pi_lpc), (b.n_lp, b.phi_lp, b.pi_lpc)),
+                    ("hp", (a.n_hp, a.phi_hp, a.pi_hpc), (b.n_hp, b.phi_hp, b.pi_hpc))):
+                row[spool] = dict(n_lumped=n0, n_stacked=n1, d_n=(n1 - n0) / n0,
+                                  phi_lumped=p0, phi_stacked=p1, d_phi=(p1 - p0) / p0,
+                                  pi_lumped=pi0, pi_stacked=pi1, d_pi=(pi1 - pi0) / pi0)
+            row["thrust_lumped"], row["thrust_stacked"] = a.thrust, b.thrust
+            row["d_thrust"] = (b.thrust - a.thrust) / a.thrust
+            rows.append(row)
+        return rows
+
+    # --- P3: the FRONT-ONLY stator schedule (rung 54's named seam, discharged) --------------
+
+    _INC_TOL = 1e-12
+    _INC_MAX = 200
+    _V_SCAN = 0.05        # coarse scan step used to BRACKET the schedule root (rung 54's fix
+    #                       for rung 53's doubling ladder, which can step over a turning point)
+
+    def stage_incidence_schedule(self, flight: FlightCondition, Tt4_grid,
+                                 spool: str = "lp", stage: int = 0,
+                                 v_hi: float = 4.0) -> list:
+        """RUNG 55's payoff, and rung 54's seam discharged: the stator schedule that holds ONE
+        STAGE's incidence at its design value -- with the stator moving only the front block.
+
+        Rung 53's `incidence_schedule` holds the (single, lumped) rotor's incidence by moving
+        the WHOLE machine, and pays `N_L` +66.7 % at `Tt4` = 1000 -- referenced to BARE AT THE
+        SAME THROTTLE, which is this rung's currency throughout because every comparison here is
+        lever-vs-lever at fixed throttle. (Rung 53 publishes +26 % for the same schedule,
+        referenced to the DESIGN point: N_L(v*) = 1.26006. Same number, named denominator --
+        rung 43's currency-circularity lesson.) A real VSV moves the front stages only: set
+        `vsv_stages_lp=1` and the same target is bought on the stage that actually needs it.
+        That comparison is P3, and the cost collapses ~29x.
+
+        The target incidence is READ off this matcher at the design setting and design
+        throttle (rung 53's discipline: the schedule inherits no constant of its own). The
+        bracket is found by a coarse SCAN and then bisected, so it is immune to the interior
+        turning point that defeats rung 53's doubling ladder (rung 54 P-C3).
+        """
+        assert spool in self._SPOOLS, f"spool must be 'lp' or 'hp', got {spool!r}"
+        _, fd, _, _ = self._ctor
+        base = self.at_setting(0.0, 0.0)
+        T_design = base.stage_margin(fd, self.Tt4_d)[spool]["stages"][stage]["tan_b1"]
+
+        def read(v, Tt4):
+            sib = self.at_setting(v, 0.0) if spool == "lp" else self.at_setting(0.0, v)
+            return sib.stage_margin(flight, Tt4)[spool]
+
+        def resid(v, Tt4):
+            return read(v, Tt4)["stages"][stage]["tan_b1"] - T_design
+
+        rows = []
+        for Tt4 in Tt4_grid:
+            Tt4 = float(Tt4)
+            bare = read(0.0, Tt4)
+            r0 = bare["stages"][stage]["tan_b1"] - T_design
+            v, r, reached = 0.0, r0, abs(r0) <= self._INC_TOL
+            if not reached:
+                lo, r_lo, hi, r_hi = 0.0, r0, None, None
+                x = self._V_SCAN
+                while x <= v_hi + 1e-12:
+                    try:
+                        rx = resid(x, Tt4)
+                    except AssertionError:
+                        break                       # map-validity edge: stop the scan here
+                    if rx * r_lo <= 0.0:
+                        hi, r_hi = x, rx
+                        break
+                    lo, r_lo = x, rx
+                    x += self._V_SCAN
+                if hi is not None:
+                    reached = True
+                    for _ in range(self._INC_MAX):
+                        v = 0.5 * (lo + hi)
+                        r = resid(v, Tt4)
+                        if abs(r) <= self._INC_TOL or hi - lo <= 1e-14:
+                            break
+                        if r * r_lo > 0.0:
+                            lo, r_lo = v, r
+                        else:
+                            hi = v
+                else:
+                    v, r = lo, r_lo
+            at = read(v, Tt4)
+            rows.append(dict(
+                Tt4=Tt4, spool=spool, stage=stage, reached=reached, vsv_star=v, residual=r,
+                vsv_stages=(self.vsv_stages_lp if spool == "lp" else self.vsv_stages_hp),
+                K=(self.K_lp if spool == "lp" else self.K_hp),
+                tan_b1=at["stages"][stage]["tan_b1"], tan_b1_design=T_design,
+                phi_stage=at["stages"][stage]["phi"],
+                phi_stage_bare=bare["stages"][stage]["phi"],
+                m_i=at["stages"][stage]["m_i"], m_i_bare=bare["stages"][stage]["m_i"],
+                m_i_worst=at["m_i_worst"], worst=at["worst"],
+                n=at["n"], n_bare=bare["n"], d_n=(at["n"] - bare["n"]) / bare["n"],
+                rear_excess=at["rear_excess"]))
+        return rows
