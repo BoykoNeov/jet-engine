@@ -19,7 +19,7 @@ teaching, not for features or polish.
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is anchored to a
-published case. All rungs are live; the current scope is **rung 55**. Read a rung's spec (last
+published case. All rungs are live; the current scope is **rung 56**. Read a rung's spec (last
 column) before touching it — that is where the real content lives.
 
 | Rung | Adds (one-line hook) | Spec |
@@ -80,6 +80,7 @@ column) before touching it — that is where the real content lives.
 | 53 | **The VARIABLE STATOR** — the **first lever that moves the surge FLOOR** (rung 42's named other half); both channels DERIVED, **zero new constants**. **HEADLINE: a margin is a DISTANCE, so a floor-moving lever makes it COORDINATE-DEPENDENT** — the `φ`-margin SHRINKS on closing while the incidence margin GROWS. Rungs 36–52's `φ`-currency **BOUNDED**; thrust-neutral, paid in **SHAFT SPEED**. | `docs/rung53-spec.md` |
 | 54 | **The stator-row THROAT** — rung 53's refused half; `A_th ∝ cos α₁` DERIVED off rung 53's OWN `v`, only the LEVEL needs one disclosed `C`, every verdict a **threshold ON** it. **HEADLINE: so is a CONSTRAINT'S SEVERITY** (the throat cuts the SETTING 30 %, the MARGIN 4 %) — an upstream throat can **BIND, NEVER RELIEVE** ⇒ capacity **cannot** buy back rung 53's overspeed. **CORRECTS rung 53's** turning-point concession. | `docs/rung54-spec.md` |
 | 55 | **The STAGE STACK** — `StageStack`/`StageStackMatcher`: the compressor stops being ONE block; kinematics DERIVED (`φ_1 ≡ m/n`, so rungs 36–53 read the FRONT stage all along — **BOUNDED**), `K` a resolution (increments halve). **HEADLINE: a POSITIONAL lever buys relief from the part it does not move** — a front-ROW stator holds design incidence for **+2.3 % `N_L` vs rung 53's +66.7 %**, cost factorising as `(1/K)×(v*ratio)`; and the row count has an **INTERIOR optimum** (peaks at 3–4 of 8, then REVERSES). Discharges rung 54's seam. | `docs/rung55-spec.md` |
+| 56 | **PER-ROW CAPACITY** — rung 54's throat per stage; the seam asked for a `C` per row, the ladder supplies all but one (`φ_k`=1 ⇒ a common design throat VELOCITY, so `ν_k = ν_1/√θ_k,d` is DERIVED, level disclosed). The profile FIGHTS the loading ⇒ the binding row **MIGRATES** (front near design, rear at part power). **HEADLINE: a resolved machine's two binding rows are DIFFERENT rows — different END *and* different SPOOL (machine-wide minima: incidence LP-front, capacity HP-rear) — and the one lever reaches only the wrong one**: a front-row stator restores the row that STALLS and DEBITS the row that CHOKES. **CORRECTS rung 54's** pure-LP exposure (HP rear `C*`=0.913). A LEVER'S COST is coordinate-dependent too. | `docs/rung56-spec.md` |
 
 ## Working contract (from SPEC.md — these override convenience)
 - **Derive before you code.** For each station, write the governing equation and
@@ -95,7 +96,7 @@ column) before touching it — that is where the real content lives.
 - **Every new rung reduces to its predecessor**, exactly and by test (`X=None` ⇒
   the prior code path). This is the project's spine — see any `docs/rungN-spec.md`.
 
-**Current scope (rung 55).** The **cycle solve** is a thermally-perfect, reacting,
+**Current scope (rung 56).** The **cycle solve** is a thermally-perfect, reacting,
 dissociation-equilibrium gas (`Gas.reacting_equilibrium()`) through ideal + real
 components (isentropic `η_c/η_t` **or** polytropic `e_c/e_t`, mutually exclusive;
 `π_d/π_b/π_n`, `η_b`, `η_m`; dual cold/hot gas; specified exit pressure). The burner
@@ -103,7 +104,7 @@ root-finds `f` over the scale-B absolute balance (re-solving equilibrium each tr
 then freezes the station-4 mixture through turbine + nozzle. Fork A/B and
 frozen-products gases are kept alongside. **Everything from rung 7 up is a diagnostic
 *beside* the cycle**, reached through **separate entry points** that leave the default
-`build_turbojet(…).run(…)` design run **bit-for-bit rung 6**. Rungs **31–55** are the
+`build_turbojet(…).run(…)` design run **bit-for-bit rung 6**. Rungs **31–56** are the
 STRUCTURAL / DYNAMIC rungs — a new off-design or transient operating point, reached through the
 two matcher ladders mapped in § Layout (`engine.py`); rungs **7–30, 36, 41, 44, 45** are pure
 diagnostics that only *read* the design-point / running-line state. Each rung reduces to its
@@ -113,7 +114,7 @@ predecessor exactly and by test — the gates are named in its spec.
 One line per seam — `BUILT` (detail in its rung's spec) · `NEGATIVE → doc` (investigated, not
 shipped, not a rung) · `OPEN` (not yet built). The live map of what is closed vs open.
 
-**BUILT — every seam numbered 25–55 was closed by the same-numbered rung.** The table above is its
+**BUILT — every seam numbered 25–56 was closed by the same-numbered rung.** The table above is its
 one-line hook, the derivation is in its spec. No per-seam list here: a numbered seam is closed, and
 must never be re-opened by mistake.
 
@@ -136,7 +137,7 @@ must never be re-opened by mistake.
 - **Detailed Fenimore** (`CH+N₂→HCN`) and **super-eq-O radical-decay history** — need new species / a relaxing pocket a 0-D pool cannot derive.
 - **Reacting-gas fuel control** (rungs 35/43 defer — the forward burner asserts against an equilibrium gas).
 - **The subsonic / unchoked LP branch** in the two-spool solves (rung 38 flags, does not solve) and its **transient**.
-- **PER-ROW CAPACITY** — rung 55's named seam: rung 54's throat channel per stage. `X_k` is a per-row quantity and rung 55's P4 drives the REAR rows to high `φ`, so the capacity margin should **bind at the back** while the incidence margin binds at the front — the two rungs' objects on one machine, in opposite places. Needs a `C` per row. Then **per-row BLADING** (rung 55's stages share one map, which is what keeps its positional claim clean *and* bounds it).
+- **PER-ROW BLADING** — rung 56's named seam: rungs 55/56's stages share ONE map (one `ψ`, one island, one `φ_surge`, one `T_c`), which is what keeps rung 55's positional claim clean *and* bounds both rungs. A real stack's rows differ by design, and the two constraints rung 56 separated are exactly what per-row blading would move independently. Needs a `ψ_k`/`T_c,k` law — and unlike rung 56's capacity profile, the ladder does **not** supply it.
 - A **stator schedule `v(n)` on the TRANSIENT plant** (the first lever that could move the wall *during* an accel — now with a row COUNT as well as a setting), and **stator + bleed together** (rung 53's saturation says the bleed takes over where the stator's authority ends).
 - A **bleed schedule** `b(n_L)`; **fuel + bleed together**.
 - **The lag's SHAPE and the two-lag CASCADE** — rung 52's named seam: a second-order / rate-limited *attack* (the valve, not the loop), and `tau_gov` + `lag` together (redline lag + surge lag on one plant — what a real FADEC runs). Rung 52's §3 non-factorization says the cascade should not be additive.
@@ -184,12 +185,14 @@ A compact map — the per-rung method/finding detail lives in `docs/rungN-spec.m
   `tan_beta1`), and rung 54's third channel `with_capacity` + the matcher's throat reads (post-hoc). Then
   `StageStack` + `StageStackMatcher` (55) — the compressor resolved into `K` stage blocks; it
   replaces the speed-line inversion ONLY (identity reduce at `K`=1), and the **transient** ladders
-  deliberately never see it.
+  deliberately never see it. Rung 56 hangs rung 54's throat off each ROW (`StageStack.capacities` /
+  `stage_capacity_margin`, the matcher's `stage_throat_margin` / `throat_walk`) — still
+  diagnostic-only, so its reduce is an INVARIANCE over the constant AND the disclosed profile.
   Each reduces to its predecessor (exact dispatch, an inherited identity, or the forward closure);
   **the method names + reduce contracts are in each rung's spec, not here.**
 - `main.py` — the design-point run: ideal-vs-real tables, the overlaid T–s diagram, and **one panel
   per rung** (each demonstrates that rung's load-bearing claim and states its honest scope).
-- `tests/` — per-rung `test_rungN.py` (N = 1…55; plus the rung-1/2b/3/4/5 files). Every rung file
+- `tests/` — per-rung `test_rungN.py` (N = 1…56; plus the rung-1/2b/3/4/5 files). Every rung file
   carries that rung's **reduce-to-prior** gate plus its load-bearing claims — the gates are named in
   the spec. `test_claude_md_reference.py` is the size guard on this file.
 - `docs/rungN-spec.md` — the derivation, assumptions, concessions and gates for rung N.

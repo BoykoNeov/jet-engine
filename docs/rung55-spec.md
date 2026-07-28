@@ -281,6 +281,9 @@ again: a referenced excursion reads back its own denominator, so the denominator
 - **One `K` per spool, uniform annulus sizing** (`φ_k` = 1 at every stage at design).
 - **No per-stage CAPACITY.** Rung 54's `capacity_margin` almost certainly lands on the REAR
   stage — the two rungs' objects meet there — but it needs a `C` per row. Named as the seam.
+  **BUILT BY RUNG 56**, and the guess above is half right: the rear at part power, the FRONT
+  near design (the design Mach profile fights the loading), and it needed only ONE constant —
+  the ladder supplies the other `K−1`. `docs/rung56-spec.md`.
 - **Inherited**: rung 39's gas and map closure, rung 38's choked-nozzle envelope, rungs 36/41's
   imposed `φ_s0` (still the incidence anchor), rung 32's disclosed map shapes.
 
@@ -312,7 +315,12 @@ imposed. It costs nothing and it exercises the ladder, the split and the design 
 
 ## The next seam
 
-**Per-row capacity — rung 54's channel, per stage.** `X(v) = m·sqrt(1+v²)` is a face quantity;
+**Per-row capacity — rung 54's channel, per stage. → TAKEN BY RUNG 56** (`docs/rung56-spec.md`):
+right at part power, **wrong near design**, and it did **not** need a `C` per row — the design
+ladder supplies the profile, leaving rung 54's single constant as the level. The two constraints
+turn out to separate by SPOOL as well as by end.
+
+`X(v) = m·sqrt(1+v²)` is a face quantity;
 in a stack each row has its own throat and its own `X_k`, and P4 says the REAR rows are the ones
 driven to high `φ`. Rung 54's `capacity_margin` should therefore **bind at the back** while its
 incidence margin binds at the front — the two rungs' objects on the same machine, in opposite

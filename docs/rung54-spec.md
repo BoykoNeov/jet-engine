@@ -201,6 +201,13 @@ and reported as such — of the five shapes only `flow/press` crosses inside the
 
 ## The exposure split, INHERITED
 
+> **⚠ CORRECTED BY RESOLUTION — rung 56 P5.** Everything below is a **FACE** statement and stays
+> true as one. Resolved onto rung 55's stage stack, the HP's *rear row* reads the opposite sign
+> in throttle (the face `M_c` rises 0.216 → 0.365 over `Tt4` 1200 → 800 while the rear row's
+> falls 0.216 → 0.164, `C*` = 0.913), so the machine's **capacity** exposure is the HP's even
+> though its **schedule's** demand is not. Rung-28 shape: the reasoning survives at the fidelity
+> it was made, the verdict does not survive resolution. See `docs/rung56-spec.md` § P5.
+
 The capacity ceiling is a **pure-LP** object. The HP schedule's demand *falls* monotonically
 (`X(v*)` 0.958 → 0.725 over `Tt4` 1400 → 800) and never approaches its throat at any throttle.
 Nothing new: rung 53's P7 needs `v*_LP ≈ 6.7 × v*_HP`, and the throat cost goes as `√(1+v²)`, so

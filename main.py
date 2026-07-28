@@ -3078,6 +3078,114 @@ def print_stage_stack_table(flight):
     print("  REDUCE: an IDENTITY at K = 1 -- no stack object is built and both efficiency loops")
     print("  are the INHERITED rung-39 ones. Measured 0.000e+00 on every matched field.")
 
+
+def print_per_row_capacity_table(flight):
+    """Rung-56 payoff: rung 54's throat channel, resolved onto rung 55's stack.
+
+    Rung 55 named the seam and predicted the rear row would bind. Half right -- and it does NOT
+    need a C per row: at design every row has the SAME throat velocity (phi_k = 1 => Vx_k = U)
+    while Tt_k climbs, so the design Mach profile is DERIVED off the stack's own ladder and only
+    the LEVEL stays disclosed. That derived profile FIGHTS the loading, so the binding row
+    MIGRATES -- front near design, rear at part power.
+
+    The headline is where the two constraints land: a resolved machine has TWO worst rows, at
+    opposite ENDS and on opposite SPOOLS -- and the one lever that exists reaches only the wrong
+    one. A front-row stator restores the row that STALLS and DEBITS the row that CHOKES."""
+    print("\nPER-ROW CAPACITY (rung 56): rung 54's throat, per stage. The seam asked for a C per")
+    print("row; the ladder supplies all but one. At design phi_k = 1 => Vx_k = U, so every row")
+    print("has the SAME throat velocity while Tt_k rises, and it is the total-referenced Mach")
+    print("   nu = M/sqrt(1+(g-1)/2 M^2)   that scales:  nu_k = nu_1/sqrt(theta_k,d)")
+    print("=> ONE disclosed LEVEL (the front row's C, rung 54's constant) and K-1 rows DERIVED.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR, CAP = 0.55, 0.90
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR).with_capacity(CAP)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR).with_capacity(CAP)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, TT4, flight.p0,
+                                      nozzle_convergent=True, **losses)
+
+    def mk(prof="derived", vl=0.0, vs_lp=None):
+        return StageStackMatcher(design, flight, 1.0, map_lp=LP, map_hp=HP, K_lp=8, K_hp=8,
+                                 cap_profile=prof, vsv_lp=vl, vsv_stages_lp=vs_lp)
+
+    m8 = mk()
+    print(f"\n  the DERIVED profile (C_front = {CAP:.2f} <=> design throat Mach "
+          f"{LP.design_throat_mach():.3f}):")
+    for sp, st in (("LP", m8.stack_lp), ("HP", m8.stack_hp)):
+        cs = st.capacities()
+        print(f"   {sp}  C_k = " + " ".join(f"{c:.3f}" for c in cs)
+              + f"   C_K/C_1 = {cs[-1]/cs[0]:.4f}   (the HP falls harder: bigger tau_d)")
+
+    print("\n  THE CONTEST -- the rear rows are DESIGNED with more capacity exactly where the")
+    print("  off-design march loads them hardest, so which end binds MIGRATES with throttle:")
+    grid = (1500.0, 1400.0, 1300.0, 1200.0, 1100.0, 1000.0, 900.0, 800.0)
+    print("     Tt4:      " + " ".join(f"{t:5.0f}" for t in grid))
+    for prof in ("derived", "uniform"):
+        mm = mk(prof)
+        for sp in ("lp", "hp"):
+            w = mm.throat_walk(flight, grid, sp)
+            print(f"   {prof:7s} {sp.upper()} binds row " + " ".join(
+                f"{r['binds']:5d}" for r in w))
+    print("  Strip the derived profile ('uniform') and the contest disappears: X_k alone decides")
+    print("  and the rear binds everywhere. The migration is the machine's own design Mach law.")
+
+    print("\n  THE HEADLINE -- the machine's two BINDING rows are different rows: different END")
+    print("  and different SPOOL. Minima taken over all 16 rows:")
+    for Tt4 in (1000.0, 800.0):
+        r = m8.stage_throat_margin(flight, Tt4)
+        lp, hp = r["lp"], r["hp"]
+        print(f"   Tt4={Tt4:.0f}  INCIDENCE worst: LP row {lp['inc_worst']} "
+              f"(M_i={lp['m_i_worst']:.4f}, vs HP's {hp['m_i_worst']:.4f})  |  "
+              f"CAPACITY worst: HP row {hp['binds']} "
+              f"(M_c={hp['m_c_worst']:.4f}, vs LP's {lp['m_c_worst']:.4f})")
+    print("  Per spool the ends agree (each front stalls first, each rear chokes first); the")
+    print("  CROSS-SPOOL half is the comparison above -- rungs 41/44/45/53 put the surge")
+    print("  exposure on the LP, and the CAPACITY exposure is the HP's. A lumped block has one")
+    print("  phi and one face and cannot express either half, let alone their separation.")
+
+    print("\n  RUNG 54 CORRECTED BY RESOLUTION -- it wrote 'the HP never approaches its throat at")
+    print("  any throttle'. True at the FACE -- and down the columns the face RELAXES with")
+    print("  throttle while the rear row TIGHTENS. Opposite signs on the same machine:")
+    print("     Tt4      face M_c ->    rear-row M_c ->      C*      [uniform rear]")
+    for Tt4 in (1200.0, 1000.0, 800.0):
+        r = m8.stage_throat_margin(flight, Tt4)["hp"]
+        u = mk("uniform").stage_throat_margin(flight, Tt4)["hp"]
+        print(f"    {Tt4:6.0f}      {r['m_c_face']:+.4f}          "
+              f"{r['stages'][-1]['m_c']:+.4f}          {r['stages'][-1]['c_min']:.4f}"
+              f"      {u['stages'][-1]['m_c']:+.4f}")
+    print("  Stated as a THRESHOLD ON the constant (rung 54's discipline): any HP row whose")
+    print("  design capacity fraction exceeds 0.913 is CHOKED at Tt4 = 800. A machine pays for")
+    print("  its rear rows' off-design capacity AT DESIGN, in the front row's Mach.")
+
+    print("\n  THE LEVER DEBITS THE ROW IT DOES NOT MOVE (front-row stator, LP, Tt4 = 1000) --")
+    print("  it reaches the rear only through the shaft speed they share:")
+    base = m8.stage_throat_margin(flight, 1000.0)["lp"]
+    print(f"     v      rear M_c    debit    front-only/lumped   dN ratio")
+    for v in (0.20, 0.3536, 0.60):
+        fr = mk(vl=v, vs_lp=1).stage_throat_margin(flight, 1000.0)["lp"]
+        lu = mk(vl=v).stage_throat_margin(flight, 1000.0)["lp"]
+        d_fr = base["stages"][-1]["m_c"] - fr["stages"][-1]["m_c"]
+        d_lu = base["stages"][-1]["m_c"] - lu["stages"][-1]["m_c"]
+        print(f"   {v:6.4f}   {fr['stages'][-1]['m_c']:+.5f}   {d_fr:+.5f}        "
+              f"{d_fr/d_lu:.4f}         "
+              f"{((fr['n']-base['n'])/base['n'])/((lu['n']-base['n'])/base['n']):.4f}")
+    print("  The SPEED ratio is nearly v-invariant; the THROAT ratio COLLAPSES. So a positional")
+    print("  lever's advantage is CURRENCY-DEPENDENT -- rung 53's law a fourth time, now about")
+    print("  the LEVER'S COST. (Pre-registered 'within 25 % of the dN ratio': REFUTED.)")
+
+    print("\n  SCOPE: DIAGNOSTIC ONLY, by rung 54's theorem -- the throat enters no solver, so a")
+    print("  choked row changes nothing that is solved (making it BIND would invert rung 31's")
+    print("  (*) and is a different rung). REDUCE: an INVARIANCE over the constant AND the")
+    print("  profile on a stack that DOES enter the solver, plus K=1 == rung 54 bit-for-bit.")
+
+
 def print_asymmetric_lag_table(flight):
     """Rung-52 payoff: the asymmetric fast-attack / slow-release LAG -- a self-releasing limiter
     PINS ITS OWN TRIGGER, and CANNOT DEBIT THE SPOOL IT WATCHES.
@@ -4263,6 +4371,8 @@ def main():
     print_throat_capacity_table(FLIGHT)
 
     print_stage_stack_table(FLIGHT)
+
+    print_per_row_capacity_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

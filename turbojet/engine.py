@@ -6503,6 +6503,72 @@ class VariableStatorMatcher(TwoSpoolMapMatcher):
 # stack replaces the SPEED-LINE INVERSION ((m, tau_c) -> n) and nothing else; pi_c still comes
 # from rung 39's overall-eta island closure, untouched.
 # ==========================================================================================
+#
+# ==========================================================================================
+# RUNG 56 -- PER-ROW CAPACITY: rung 54's throat channel, resolved onto rung 55's stack.
+# (docs/rung56-spec.md)
+#
+# Rung 55 named this as its seam: "X(v) = m*sqrt(1+v^2) is a FACE quantity; in a stack each row
+# has its own throat and its own X_k, and P4 says the REAR rows are driven to high phi ... It
+# needs a C per row."
+#
+# IT DOES NOT NEED K CONSTANTS -- THE STACK ALREADY KNOWS THE PROFILE. At design the stack sizes
+# every annulus so phi_k = 1, hence Vx_k = U_k; on a constant mean radius U_k = U, so EVERY row
+# has the SAME design throat velocity while Tt_k climbs the ladder. Writing
+# nu = V/sqrt(gamma*R*Tt) = M/sqrt(1+(g-1)/2*M^2) (the total-referenced Mach, which is what a
+# common velocity at differing Tt fixes),
+#
+#     nu_k = nu_1 / sqrt(theta_k,d)         M_k = nu_k/sqrt(1-(g-1)/2*nu_k^2)
+#     C_k  = MFP(M_k)/MFP(1)
+#
+# so ONE disclosed LEVEL (the front row's C -- rung 54's constant unchanged, since its row was
+# already "one row at the compressor face") and K-1 rows DERIVED off the stack's own design
+# temperature ladder. Rung 54's pattern exactly: SHAPE DERIVED, LEVEL DISCLOSED.
+#
+# AND THE DERIVED PROFILE FIGHTS THE SEAM. The rear rows come out designed with MORE capacity
+# margin (lower Mach) precisely where the off-design loading drives them hardest, so which end
+# binds is a CONTEST and not an inspection -- it is won by the loading at part power and by the
+# profile near design, with a derived crossover in between (P1). The naive "uniform" profile is
+# kept as the disclosed alternative, and unlike rung 55's work split it DOES carry the levels.
+#
+# DIAGNOSTIC-ONLY, INHERITED BY THEOREM. Rung 54 P1: the throat enters no solver, so it is a
+# post-hoc functional of the already-solved state and can only remove settings from the feasible
+# set, never relieve. That is unchanged here -- which is why rung 56's reduce is again an
+# INVARIANCE (over C AND over the profile), now on a stack that DOES enter the solver.
+# ==========================================================================================
+
+
+def _mfp_frac(M: float, gamma: float = 1.4) -> float:
+    """RUNG 56. MFP(M)/MFP(1) -- rung 54's own ratio, factored out so the per-row profile and
+    `ComponentMap.design_throat_mach` speak the same relation."""
+    e = -(gamma + 1.0) / (2.0 * (gamma - 1.0))
+    return (M * (1.0 + (gamma - 1.0) / 2.0 * M * M) ** e
+            / (1.0 + (gamma - 1.0) / 2.0) ** e)
+
+
+def _nu_of_M(M: float, gamma: float = 1.4) -> float:
+    """RUNG 56. The TOTAL-referenced Mach nu = V/sqrt(gamma*R*Tt) = M/sqrt(1+(g-1)/2*M^2).
+    It is nu, not M, that scales as 1/sqrt(Tt) at a common velocity -- which is the whole
+    content of the derived per-row profile."""
+    return M / (1.0 + (gamma - 1.0) / 2.0 * M * M) ** 0.5
+
+
+def _M_of_nu(nu: float, gamma: float = 1.4) -> float:
+    """RUNG 56. The inverse of `_nu_of_M`.
+
+    GUARDED. nu is bounded by sqrt(2/(gamma-1)) (the M -> infinity limit); past it the radicand
+    goes negative and `** 0.5` returns a complex number rather than raising. The shipped path
+    can never reach it -- nu_1 < nu(M=1) for any C < 1 and the ladder only divides it DOWN by
+    sqrt(theta_k,d) > 1 -- but `gamma_th` is a free constructor argument and a future rung may
+    hand the stack a profile of its own. Rung 54 P-C3's lesson: gate the latent defect, not
+    just the exercised path.
+    """
+    lim = 2.0 / (gamma - 1.0)
+    assert 0.0 <= nu * nu < lim, (
+        f"rung-56 total-referenced Mach out of range: nu={nu:.6f} must satisfy "
+        f"nu^2 < 2/(gamma-1) = {lim:.4f} at gamma={gamma}. nu is bounded by nu(M=1) for any "
+        f"design capacity fraction C < 1, so this means a profile was built by hand.")
+    return nu / (1.0 - (gamma - 1.0) / 2.0 * nu * nu) ** 0.5
 
 
 @dataclass
@@ -6556,6 +6622,13 @@ class StageStack:
     kc: float = 3.5                     # gamma_c/(gamma_c-1); disclosed CPG placement
     split: str = "dT"
     vsv_stages: "int | None" = None     # None => all K (rung 53's lumped lever)
+    cap_profile: str = "derived"        # RUNG 56: how rung 54's ONE constant spreads over the
+    #                                     rows -- "derived" (off this stack's OWN design
+    #                                     temperature ladder) or "uniform" (the same C on every
+    #                                     row). See `stage_capacity`.
+    gamma_th: float = 1.4               # RUNG 56: the gamma of the throat MFP relation. A
+    #                                     DISCLOSED CPG placement, rung 55's `kc` precedent;
+    #                                     it cannot touch the K = 1 reduce (theta_d[0] == 1).
 
     _E_TOL = 1e-14
     _N_TOL = 1e-14
@@ -6572,10 +6645,14 @@ class StageStack:
             self.vsv_stages = self.K
         assert 0 <= self.vsv_stages <= self.K, (
             f"rung-55 vsv_stages must be in [0, K={self.K}], got {self.vsv_stages}")
+        assert self.cap_profile in ("derived", "uniform"), (
+            f"rung-56 capacity profile must be 'derived' or 'uniform' (disclosed choices), "
+            f"got {self.cap_profile!r}")
         self.cmap_axial = replace(self.cmap, vsv=0.0)    # the stages the stator does NOT move
         self.theta_d = self._ladder_T(self.tau_d)
         self.e_d = self._stage_eta(self.theta_d, self.pi_d)
         self.varpi_d = self._ladder_p(self.theta_d, self.e_d)
+        self._C_ks = None                # RUNG 56: the per-row capacities, built on first read
 
     # --- the design ladder -----------------------------------------------------------------
 
@@ -6664,6 +6741,67 @@ class StageStack:
     def tau_of(self, m: float, n: float, eta_live: float) -> float:
         return self.march(m, n, eta_live)["tau"]
 
+    # --- RUNG 56: the THROAT, per row (docs/rung56-spec.md) ---------------------------------
+
+    def capacities(self) -> list:
+        """RUNG 56. Each row's DESIGN fraction of choking capacity, `C_k`.
+
+        The LEVEL is `cmap.capacity` -- rung 54's one disclosed constant, read as the FRONT
+        row's (rung 54's row was already "one row at the compressor face"). The PROFILE is
+        DERIVED off this stack's own design temperature ladder, because at design every row has
+        the same throat velocity (phi_k = 1 => Vx_k = U_k, and U_k = U on a constant mean
+        radius) while Tt_k rises: see the rung-56 banner above for nu_k = nu_1/sqrt(theta_k,d).
+
+        `k = 0` returns the disclosed constant EXACTLY rather than round-tripping it through
+        `design_throat_mach`'s bisection, so the K = 1 reduce to rung 54 is bit-for-bit and
+        independent of `gamma_th`.
+
+        `cap_profile = "uniform"` is the disclosed alternative -- rung 54's single constant
+        applied per row without the ladder. It is NOT robustness furniture: it carries the
+        LEVELS (rung 56 P4), and every level claim is disclaimed on it.
+        """
+        if self._C_ks is not None:
+            return self._C_ks
+        C1 = self.cmap.capacity
+        assert C1 > 0.0, (
+            "rung-56 per-row capacity needs rung 54's throat model: build the map with "
+            ".with_capacity(C), where C is now read as the FRONT row's design capacity "
+            "fraction.")
+        if self.cap_profile == "uniform":
+            self._C_ks = [C1] * self.K
+            return self._C_ks
+        nu1 = _nu_of_M(self.cmap.design_throat_mach(self.gamma_th), self.gamma_th)
+        self._C_ks = [C1] + [
+            _mfp_frac(_M_of_nu(nu1 / self.theta_d[k] ** 0.5, self.gamma_th), self.gamma_th)
+            for k in range(1, self.K)]
+        return self._C_ks
+
+    def stage_capacity(self, k: int) -> float:
+        return self.capacities()[k]
+
+    def stage_throat_ratio(self, k: int) -> float:
+        """RUNG 56. Rung 54's DERIVED area law `A_th(v)/A_th(0) = 1/sqrt(1+v^2)`, at the setting
+        THIS row actually carries -- which is the design setting for every row the front-block
+        stator does not move (`vsv_at`). That positional split is the whole point: rung 55's
+        lever spends the throat of the rows it moves, and reaches the rest only through `n`."""
+        v = self.vsv_at(k)
+        return 1.0 / (1.0 + v * v) ** 0.5
+
+    def stage_throat_loading(self, k: int, m_k: float) -> float:
+        """RUNG 56. `X_k = m_k * sqrt(1 + v_k^2)`, rung 54's currency per row.
+
+        `m_k = phi_k * n_k` EXACTLY -- the face identity `m = phi*n` holds at every station,
+        because phi_k = phi_1*(theta_k/theta_kd)/(varpi_k/varpi_kd) and n_k = n*sqrt(theta_kd/theta_k)
+        multiply to m*sqrt(theta_k/theta_kd)/(varpi_k/varpi_kd), which is the corrected flow
+        referred to stage k's own inlet. NO new constant: the march already computes both.
+        """
+        return m_k / self.stage_throat_ratio(k)
+
+    def stage_capacity_margin(self, k: int, m_k: float) -> float:
+        """RUNG 56. `M_c,k = 1 - C_k * X_k`; the row chokes iff <= 0. At K = 1 this is rung 54's
+        `ComponentMap.capacity_margin` to the last bit."""
+        return 1.0 - self.stage_capacity(k) * self.stage_throat_loading(k, m_k)
+
     def lumped_tau(self, m: float, n: float) -> float:
         """Rung 32's lumped law at the same (m, n) -- the control for the non-tautology gate."""
         return 1.0 + self.cmap.psi(m / n) * n * n * (self.tau_d - 1.0)
@@ -6739,11 +6877,12 @@ class StageStackMatcher(VariableStatorMatcher):
                  map_hp: "ComponentMap | None" = None, vsv_lp: float = 0.0,
                  vsv_hp: float = 0.0, K_lp: int = 1, K_hp: int = 1, split: str = "dT",
                  vsv_stages_lp: "int | None" = None, vsv_stages_hp: "int | None" = None,
-                 lp_disabled: bool = False):
+                 lp_disabled: bool = False, cap_profile: str = "derived"):
         super().__init__(design_engine, flight_design, mdot_design, map_lp=map_lp,
                          map_hp=map_hp, vsv_lp=vsv_lp, vsv_hp=vsv_hp, lp_disabled=lp_disabled)
         self.K_lp, self.K_hp = int(K_lp), int(K_hp)
         self.split = split
+        self.cap_profile = cap_profile   # RUNG 56
         self.vsv_stages_lp, self.vsv_stages_hp = vsv_stages_lp, vsv_stages_hp
         assert not (lp_disabled and (self.K_lp > 1 or self.K_hp > 1)), (
             "rung-55 does not support lp_disabled with a stack: the degenerate path is rung "
@@ -6756,12 +6895,12 @@ class StageStackMatcher(VariableStatorMatcher):
             self.stack_lp = StageStack(
                 K=self.K_lp, cmap=self.map_lp, tau_d=self.tau_lpc_d,
                 pi_d=self.pi_lpc_design, eta_d=self.eta_lpc, kc=kc, split=split,
-                vsv_stages=vsv_stages_lp)
+                vsv_stages=vsv_stages_lp, cap_profile=cap_profile)
         if self.K_hp > 1:
             self.stack_hp = StageStack(
                 K=self.K_hp, cmap=self.map_hp, tau_d=self.tau_hpc_d,
                 pi_d=self.pi_hpc_design, eta_d=self.eta_hpc, kc=kc, split=split,
-                vsv_stages=vsv_stages_hp)
+                vsv_stages=vsv_stages_hp, cap_profile=cap_profile)
 
     def at_setting(self, vsv_lp: float, vsv_hp: float) -> "StageStackMatcher":
         """Rung 53's controlled-comparison sibling, carrying THIS rung's stack description
@@ -6771,7 +6910,8 @@ class StageStackMatcher(VariableStatorMatcher):
                                  map_hp=self.map_hp_design, vsv_lp=vsv_lp, vsv_hp=vsv_hp,
                                  K_lp=self.K_lp, K_hp=self.K_hp, split=self.split,
                                  vsv_stages_lp=self.vsv_stages_lp,
-                                 vsv_stages_hp=self.vsv_stages_hp, lp_disabled=lpd)
+                                 vsv_stages_hp=self.vsv_stages_hp, lp_disabled=lpd,
+                                 cap_profile=self.cap_profile)
 
     def at_stages(self, K_lp: int, K_hp: int,
                   vsv_stages_lp: "int | None" = None,
@@ -6785,7 +6925,7 @@ class StageStackMatcher(VariableStatorMatcher):
                                  map_hp=self.map_hp_design, vsv_lp=self.vsv_lp,
                                  vsv_hp=self.vsv_hp, K_lp=K_lp, K_hp=K_hp, split=self.split,
                                  vsv_stages_lp=vsv_stages_lp, vsv_stages_hp=vsv_stages_hp,
-                                 lp_disabled=lpd)
+                                 lp_disabled=lpd, cap_profile=self.cap_profile)
 
     # --- the ONE point of entry: rung 39's two efficiency loops, stack-aware ----------------
 
@@ -6887,6 +7027,102 @@ class StageStackMatcher(VariableStatorMatcher):
                 rear_excess=phis[-1] / phis[0] - 1.0,
                 phi_front=phis[0], phi_rear=phis[-1])
         return out
+
+    # --- RUNG 56: rung 54's throat, PER ROW (docs/rung56-spec.md) ---------------------------
+
+    def stage_throat_margin(self, flight: FlightCondition, Tt4: float) -> dict:
+        """RUNG 56's reading instrument, and the whole rung in one call: rung 54's CAPACITY
+        currency per row, beside rung 53/55's INCIDENCE currency per row.
+
+        Per stage:  `C_k` (level disclosed, profile derived -- `StageStack.capacities`)
+                    `X_k = m_k*sqrt(1+v_k^2)`, `m_k = phi_k*n_k`      [rung 54's currency]
+                    `M_c,k = 1 - C_k*X_k`, chokes iff <= 0
+                    `m_i,k = T_c - (1/phi_k - v_k)`                   [rung 53's currency]
+
+        Per spool, the two objects a FACE read cannot have:
+            `binds`      -- the row with the smallest CAPACITY margin (chokes first)
+            `inc_worst`  -- the row with the smallest INCIDENCE margin (stalls first)
+        and rung 56's non-tautology number, which is a RESOLUTION gap and not a feedback one
+        (the channel enters no solver -- rung 54 P1, inherited):
+            `amplification` = (1 - M_c at the binding ROW) / (1 - M_c at the FACE)
+        i.e. how much of the throat loading rung 54's face read could not see. It is EXACTLY
+        1.0 at K = 1, where the binding row IS the face and every number below is rung 54's own
+        `throat_margin` to the last bit.
+
+        DIAGNOSTIC ONLY, by rung 54's theorem: nothing here enters a solver, so no `C` and no
+        profile can move a matched field (gate 1). Making the compressor row the BINDING throat
+        would invert rung 31's (star) and is a different, larger rung.
+        """
+        od = self.match(flight, Tt4)
+        out = dict(Tt4=float(Tt4), K_lp=self.K_lp, K_hp=self.K_hp, split=self.split,
+                   cap_profile=self.cap_profile)
+        for spool, phi_face, n_face, eta_live in (
+                ("lp", od.phi_lp, od.n_lp, od.eta_lpc),
+                ("hp", od.phi_hp, od.n_hp, od.eta_hpc)):
+            cmap, _, _, v = self._spool_bits(spool)
+            assert cmap.capacity > 0.0, (
+                "rung-56 stage_throat_margin needs rung 54's throat model on both maps: build "
+                "them with .with_capacity(C). C is read as the FRONT row's design capacity.")
+            assert cmap.phi_surge > 0.0, (
+                "rung-56 reports both currencies, so it needs the rung-36 floor as the "
+                "incidence anchor too: build the maps with .with_phi_surge(phi_surge).")
+            T_c = cmap.tan_beta1_crit()
+            stack = self._stack_of(spool)
+            m = phi_face * n_face
+            X_face, mc_face = cmap.throat_loading(m), cmap.capacity_margin(m)
+            if stack is None:                       # K = 1: rung 54's face read, verbatim
+                triples = [(0, phi_face, n_face, v, cmap.capacity,
+                            cmap.throat_ratio(), X_face, mc_face)]
+            else:
+                mr = stack.march(m, n_face, eta_live)
+                triples = []
+                for k, (phi_k, n_k) in enumerate(zip(mr["phis"], mr["n_ks"])):
+                    m_k = phi_k * n_k
+                    X_k = stack.stage_throat_loading(k, m_k)
+                    triples.append((k, phi_k, n_k, stack.vsv_at(k), stack.stage_capacity(k),
+                                    stack.stage_throat_ratio(k), X_k,
+                                    stack.stage_capacity_margin(k, m_k)))
+            stages = []
+            for k, phi_k, n_k, v_k, C_k, area_k, X_k, mc_k in triples:
+                stages.append(dict(stage=k, phi=phi_k, n=n_k, vsv=v_k, m_k=phi_k * n_k,
+                                   capacity=C_k, area=area_k, throat_loading=X_k, m_c=mc_k,
+                                   c_min=1.0 / X_k, chokes=mc_k <= 0.0,
+                                   m_i=T_c - (1.0 / phi_k - v_k)))
+            binds = min(range(len(stages)), key=lambda i: stages[i]["m_c"])
+            inc_worst = min(range(len(stages)), key=lambda i: stages[i]["m_i"])
+            out[spool] = dict(
+                vsv=v, m=m, n=n_face, capacity_front=cmap.capacity, tan_b1_crit=T_c,
+                stages=stages, binds=binds, m_c_worst=stages[binds]["m_c"],
+                x_worst=stages[binds]["throat_loading"], c_min_worst=stages[binds]["c_min"],
+                m_c_face=mc_face, x_face=X_face,
+                amplification=(1.0 - stages[binds]["m_c"]) / (1.0 - mc_face),
+                chokes=stages[binds]["m_c"] <= 0.0,
+                inc_worst=inc_worst, m_i_worst=stages[inc_worst]["m_i"],
+                rear_binds=(binds == len(stages) - 1),
+                front_binds=(binds == 0))
+        return out
+
+    def throat_walk(self, flight: FlightCondition, Tt4_grid, spool: str = "lp") -> list:
+        """RUNG 56 P1/P5 -- the binding row against THROTTLE, on one spool.
+
+        The derived profile designs the REAR rows with more capacity margin (lower Mach) while
+        the off-design march drives them to higher `X_k`; the two fight, so which end binds
+        MIGRATES with throttle. This walks it, and carries the incidence-worst row alongside so
+        the "two constraints, opposite ends" claim is read off ONE solve per throttle.
+        """
+        assert spool in self._SPOOLS, f"spool must be 'lp' or 'hp', got {spool!r}"
+        rows = []
+        for Tt4 in Tt4_grid:
+            r = self.stage_throat_margin(flight, float(Tt4))[spool]
+            rows.append(dict(
+                Tt4=float(Tt4), binds=r["binds"], m_c_worst=r["m_c_worst"],
+                m_c_face=r["m_c_face"], amplification=r["amplification"],
+                inc_worst=r["inc_worst"], m_i_worst=r["m_i_worst"], chokes=r["chokes"],
+                c_min_worst=r["c_min_worst"], m=r["m"], n=r["n"], vsv=r["vsv"],
+                capacities=[s["capacity"] for s in r["stages"]],
+                throat_loadings=[s["throat_loading"] for s in r["stages"]],
+                margins=[s["m_c"] for s in r["stages"]]))
+        return rows
 
     def work_gap(self, flight: FlightCondition, Tt4: float) -> dict:
         """THE NON-TAUTOLOGY GATE, in-repo: at the SOLVED `(m, n)`, how much does the MARCHED
