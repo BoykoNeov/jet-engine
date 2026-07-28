@@ -3476,7 +3476,20 @@ class TwoSpoolTransient(TwoSpoolMapMatcher):
                         eta_lpc=eta_lpc, eta_hpc=eta_hpc, mdot_air=mdot_imp, mdot4=mdot4)
 
         def g(m: float) -> float:
-            return m - ev(m)["m_imp"]
+            r = m - ev(m)["m_imp"]
+            # OFF-MAP GUARD (found by rung 57; docs/rung57-spec.md § The defect). The high
+            # wall below is min(2.5, phi_max_LP*n_L) -- the LP map's OWN limit -- and nothing
+            # bounds where that puts the HP FACE: at phi_L = 2.11 it lands at phi_H > 4, where
+            # psi_H < -3, tau_hpc < 0 and Tt3 goes NEGATIVE. `gas.pr_c()` then raises a float
+            # to a fractional power on a negative base and Python returns a COMPLEX, which
+            # reaches the bracket comparison below as a `TypeError` -- while every caller in
+            # the ladder catches `AssertionError` only. Converting it here changes NO number:
+            # a real-valued evaluation (which is every evaluation the shaped maps produce,
+            # nonsense high wall included) passes straight through.
+            assert isinstance(r, float) and r == r, (
+                f"off-map compressor trial at m_lp={m:.4f}: the loading law has gone "
+                f"non-physical (Tt3 < 0 => a complex pressure ratio).")
+            return r
 
         # g is monotone-increasing (more flow -> lower psi -> lower pi_c -> lower pt4 ->
         # less imposed flow), so it brackets cleanly. March the LOW wall IN: at very small
@@ -4512,7 +4525,14 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
                         mdot_air=mdot_imp, mdot_air_face=mdot_air, mdot4=mdot4)
 
         def g(m: float) -> float:
-            return m - ev(m)["m_imp"]
+            r = m - ev(m)["m_imp"]
+            # OFF-MAP GUARD -- rung 40's `_close` carries the same one and states the case in
+            # full. Here the scan below already catches AssertionError, so a trial that has
+            # gone complex is simply SKIPPED instead of crashing the bracket.
+            assert isinstance(r, float) and r == r, (
+                f"off-map compressor trial at m_lp={m:.4f}: the loading law has gone "
+                f"non-physical (Tt3 < 0 => a complex pressure ratio).")
+            return r
 
         # Bracket by scanning UP from the rich wall and taking the FIRST sign change.
         # Rung 40's global high wall (min(2.5, phi_max*n_L)) is safe ONLY because Tt4 is
@@ -7249,3 +7269,385 @@ class StageStackMatcher(VariableStatorMatcher):
                 n=at["n"], n_bare=bare["n"], d_n=(at["n"] - bare["n"]) / bare["n"],
                 rear_excess=at["rear_excess"]))
         return rows
+
+
+# =====================================================================================
+# RUNG 57 — the VARIABLE STATOR on the TRANSIENT plant (docs/rung57-spec.md)
+# =====================================================================================
+
+
+@dataclass(frozen=True)
+class StatorSchedule:
+    """RUNG 57. A variable-stator schedule `v(n)` in the CORRECTED SPEED of its own spool.
+
+        v(n) = v_max * S( (n_ref - n) / (n_ref - n_lo) )        S clipped to [0, 1]
+
+    CLOSED at low corrected speed, monotonically opening, and EXACTLY 0 at and above the
+    design speed `n_ref` -- which is not cosmetic: the whole hardware capture (A4/A45/A8,
+    mcorr_*_d, tau_*_d) is taken at v = 0 (rung 53's discipline), so a schedule holding a
+    nonzero setting at the design speed would silently contradict every design reference.
+    `__post_init__` ASSERTS it rather than relying on the algebra.
+
+    `shape`:
+      "smooth"  S(x) = x^2(3-2x) -- C1 at BOTH corners. THE DEFAULT, and it matters: the
+                schedule's kink lives in STATE space, so rung 50's "put the switch on the ds
+                grid" trick is unavailable (you cannot align a state-space corner with a time
+                grid). A C0 corner costs the RK4 march its order there.
+      "linear"  S(x) = x -- the C0 alternative, carried ONLY as a shape-robustness control.
+
+    Like `vsv` itself (rung 53), `s_off` (rung 50) and `bleed` (rung 42), this is a swept
+    geometry coordinate, not a fitted constant: it adds no physics beyond rung 53's three
+    derived channels, it only says WHERE on the map they are applied.
+    """
+
+    v_max: float
+    n_lo: float
+    n_ref: float = 1.0
+    shape: str = "smooth"
+
+    def __post_init__(self):
+        assert self.shape in ("smooth", "linear"), (
+            f"rung-57 StatorSchedule shape must be 'smooth' (C1, default) or 'linear' "
+            f"(C0 control), got {self.shape!r}")
+        assert self.n_lo < self.n_ref, (
+            f"rung-57 StatorSchedule needs n_lo < n_ref: got {self.n_lo} >= {self.n_ref}")
+        assert self(self.n_ref) == 0.0, (
+            "rung-57 StatorSchedule must be EXACTLY 0 at the design corrected speed n_ref -- "
+            "the hardware and both maps' design references are captured at v = 0.")
+
+    def __call__(self, n: float) -> float:
+        x = (self.n_ref - n) / (self.n_ref - self.n_lo)
+        x = 0.0 if x < 0.0 else (1.0 if x > 1.0 else x)
+        return self.v_max * (x * x * (3.0 - 2.0 * x) if self.shape == "smooth" else x)
+
+
+class ScheduledStatorTransient(TwoSpoolFuelTransient):
+    """RUNG 57. Rung 53's VARIABLE STATOR on rungs 43/45's FUEL-metered two-shaft plant --
+    the first lever that moves the surge FLOOR *during* an acceleration.
+
+    Every surge lever the transient ladder has carried (rungs 44-52) moves the OPERATING
+    POINT against a fixed wall, and every one of them was credited by a CLOCK: rung 48's
+    engagement time, rung 49's two edges, rung 50's relocation, rung 51's release rate, rung
+    52's self-pinned trigger. This class asks what happens when the lever moves the WALL.
+
+    Two ways to arm it, mutually exclusive per spool:
+
+      vsv_lp / vsv_hp                a CONSTANT setting -- rung 53's lever, transplanted.
+                                     Applied ONCE at construction, so `equilibrium` and
+                                     `fuel_for_Tt4` see it and the march starts on the
+                                     STATORED running line.
+      vsv_sched_lp / vsv_sched_hp    a `StatorSchedule` read off the live state at every
+                                     closure -- the thing a real engine implements.
+
+    Usage:
+        sc = StatorSchedule(v_max=0.20, n_lo=0.7557)
+        t  = ScheduledStatorTransient(design, FLIGHT, 1.0, map_lp=..., map_hp=...,
+                                      rho=1.0, vsv_sched_lp=sc)
+        t.stator_transient_margin(FLIGHT, 1000., 1400., r=0.5)   # both currencies, per spool
+        t.stator_credit(FLIGHT, 1000., 1400., r=0.5)             # credit + EROSION  <- the rung
+        t.credit_decomposition(FLIGHT, 1000., 1400., r=0.5)      # START / RAMP / FULL
+        t.arrow_toggle(FLIGHT, 1000., 1400., 0.20, spool="lp")   # rung 53's P5, transplanted
+
+    THE REDUCE, by dispatch AND by identity. With no schedule armed `_arm` returns on its
+    first line, so `_close`/`_close_fuel` run the inherited rung-40/43 bodies with the maps
+    untouched -- bit-for-bit rungs 43-52. And a schedule whose `v_max` is 0.0 returns 0.0 at
+    every n, at which point `_arm` hands back the SAME map object (`is`, not `==`), so the
+    swap machinery itself is witnessed inert rather than merely skipped.
+
+    CONCESSIONS (both disclosed, neither hidden in a docstring corner):
+      * The HP schedule reads `nu_H`, the HP SHAFT speed, not its corrected speed
+        `n_H = nu_H*sqrt(Tt25_d/Tt25)` -- because `Tt25` is an OUTPUT of the very root the
+        schedule has to be armed before. They coincide at the design point. The LP schedule
+        reads its TRUE corrected speed (`Tt2` is known before the root), and every
+        load-bearing claim below is LP-side, which is also where rungs 41/44/45 put the
+        exposure.
+      * `eta_c_at` is stator-INERT: the efficiency island still peaks at (phi, n) = (1, 1)
+        whatever the stators do. Rung 53 disclosed the sigma term's stator-inertia; this is a
+        SECOND one and it bites harder here, because a displaced running line puts eta_c
+        straight into pi_lpc. See docs/rung57-spec.md § Concessions for its sign.
+    """
+
+    def __init__(self, design_engine, flight_design: FlightCondition,
+                 mdot_design: float = 1.0, map_lp: "ComponentMap | None" = None,
+                 map_hp: "ComponentMap | None" = None, rho: float = 1.0,
+                 vsv_lp: float = 0.0, vsv_hp: float = 0.0,
+                 vsv_sched_lp: "StatorSchedule | None" = None,
+                 vsv_sched_hp: "StatorSchedule | None" = None,
+                 lp_disabled: bool = False):
+        base_lp = map_lp if map_lp is not None else ComponentMap.flat()
+        base_hp = map_hp if map_hp is not None else ComponentMap.flat()
+        assert base_lp.vsv == 0.0 and base_hp.vsv == 0.0, (
+            "rung-57 takes the DESIGN-SETTING maps and moves the stators itself (rung 53's "
+            "capture discipline). Pass vsv_lp/vsv_sched_lp, not a map already carrying "
+            ".with_vsv(.).")
+        assert not (vsv_lp != 0.0 and vsv_sched_lp is not None), (
+            "rung-57: a spool gets a CONSTANT setting or a SCHEDULE, not both -- they are the "
+            "two legs the rung differences.")
+        assert not (vsv_hp != 0.0 and vsv_sched_hp is not None), (
+            "rung-57: a spool gets a CONSTANT setting or a SCHEDULE, not both.")
+        assert not (lp_disabled and (vsv_lp or vsv_hp or vsv_sched_lp or vsv_sched_hp)), (
+            "rung-57's findings are per-SPOOL and inter-spool (it corrects rung 53's P5 "
+            "arrow); lp_disabled is not a reduce axis for them.")
+        super().__init__(design_engine, flight_design, mdot_design,
+                         map_lp=base_lp, map_hp=base_hp, rho=rho, lp_disabled=lp_disabled)
+        self.map_lp_design, self.map_hp_design = base_lp, base_hp
+        self.vsv_lp, self.vsv_hp = float(vsv_lp), float(vsv_hp)
+        self.vsv_sched_lp, self.vsv_sched_hp = vsv_sched_lp, vsv_sched_hp
+        self._ctor = (design_engine, flight_design, mdot_design, rho, lp_disabled)
+        # A CONSTANT setting is applied ONCE, here -- after the design capture above, exactly
+        # as rung 53 does it, so `equilibrium` sees the statored machine and the march starts
+        # on the STATORED running line. (Getting this wrong -- arming only the fuel closure --
+        # is the error probe E made and probe G caught; see the anchor doc.)
+        if not lp_disabled:
+            if self.vsv_lp != 0.0:
+                self.map_lp = base_lp.with_vsv(self.vsv_lp)
+            if self.vsv_hp != 0.0:
+                self.map_hp = base_hp.with_vsv(self.vsv_hp)
+
+    # --- arming the maps from the live state ------------------------------------------
+
+    def _is_armed(self) -> bool:
+        return self.vsv_sched_lp is not None or self.vsv_sched_hp is not None
+
+    def _arm(self, nu_lp: float, nu_hp: float, Tt2: float) -> None:
+        """Set both maps from the CURRENT state. A pure function of (nu_L, nu_H, Tt2) --
+        no history, no latch, so it is RK4-legal exactly as rung 50's `s`-threading was.
+        Returns immediately when nothing is scheduled: THE REDUCE."""
+        if not self._is_armed():
+            return
+        if self.vsv_sched_lp is not None:
+            v = self.vsv_sched_lp(nu_lp * (self.Tt2_d / Tt2) ** 0.5)
+            self.map_lp = (self.map_lp_design if v == 0.0
+                           else self.map_lp_design.with_vsv(v))
+        if self.vsv_sched_hp is not None:
+            v = self.vsv_sched_hp(nu_hp)          # see the class docstring's CONCESSIONS
+            self.map_hp = (self.map_hp_design if v == 0.0
+                           else self.map_hp_design.with_vsv(v))
+
+    def v_of(self, spool: str, nu_lp: float, nu_hp: float,
+             Tt2: "float | None" = None) -> float:
+        """The setting this machine holds at the given state -- constant or scheduled. The
+        READERS all go through this rather than through `self.map_*`, which `_arm` leaves at
+        whatever the LAST sub-step happened to be."""
+        if spool == "lp":
+            if self.vsv_sched_lp is None:
+                return self.vsv_lp
+            t2 = self.Tt2_d if Tt2 is None else Tt2
+            return self.vsv_sched_lp(nu_lp * (self.Tt2_d / t2) ** 0.5)
+        if self.vsv_sched_hp is None:
+            return self.vsv_hp
+        return self.vsv_sched_hp(nu_hp)
+
+    def _close(self, nu_lp, nu_hp, Tt4, Tt2, pt2):
+        self._arm(nu_lp, nu_hp, Tt2)
+        return super()._close(nu_lp, nu_hp, Tt4, Tt2, pt2)
+
+    def _close_fuel(self, nu_lp, nu_hp, mdot_fuel, Tt2, pt2):
+        self._arm(nu_lp, nu_hp, Tt2)
+        return super()._close_fuel(nu_lp, nu_hp, mdot_fuel, Tt2, pt2)
+
+    # --- siblings on the SAME hardware --------------------------------------------------
+
+    def at_stator(self, vsv_lp: float = 0.0, vsv_hp: float = 0.0,
+                  vsv_sched_lp=None, vsv_sched_hp=None) -> "ScheduledStatorTransient":
+        """A sibling on the SAME hardware and the same design references, stators re-armed --
+        rung 53's `at_setting`, one ladder on. Every difference below goes through this, so a
+        swept setting can never be confused with a re-designed engine."""
+        de, fd, md, rho, lpd = self._ctor
+        return ScheduledStatorTransient(
+            de, fd, md, map_lp=self.map_lp_design, map_hp=self.map_hp_design, rho=rho,
+            vsv_lp=vsv_lp, vsv_hp=vsv_hp, vsv_sched_lp=vsv_sched_lp,
+            vsv_sched_hp=vsv_sched_hp, lp_disabled=lpd)
+
+    # --- the march + the two currencies -------------------------------------------------
+
+    def _stator_march(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float, r: float,
+                      s_settle: float, ds: float, nu0=None):
+        """The rung-45 accel FUEL ramp on THIS machine. Deliberately NOT `_fuel_ramp_march`:
+        that one references the commanded running line and reads the FIELD `phi_surge`, which
+        rung 53 pinned to the DESIGN setting so rungs 41/44/45's readers stay literally
+        unchanged. Under a moving stator that field is the wrong wall, so rung 57 reads its
+        own (`ComponentMap.phi_surge_at`) through a march of its own. `nu0=None` starts on
+        THIS machine's own running line."""
+        mf_lo = self.fuel_for_Tt4(flight, Tt4_lo)
+        mf_hi = self.fuel_for_Tt4(flight, Tt4_hi)
+        if nu0 is None:
+            eq = self.equilibrium(flight, Tt4_lo)
+            nu0 = (eq["nu_lp"], eq["nu_hp"])
+
+        def sched(s: float) -> float:
+            if s <= 0.0:
+                return mf_lo
+            if s >= r:
+                return mf_hi
+            return mf_lo + (mf_hi - mf_lo) * (s / r)
+
+        return self.integrate_fuel(flight, sched, nu0, r + s_settle, ds), nu0
+
+    def _read(self, traj, v_of=None) -> dict:
+        """BOTH rung-53 currencies, per spool, minimised over a trajectory, with the wall read
+        at the LIVE setting:
+
+            phi-margin        M_phi = phi_op - phi_surge(v)      [the wall MOVES with v]
+            incidence margin  M_i   = T_c - tan_beta1(phi_op, v) [the wall is the METAL]
+
+        `v_of(spool, point)` defaults to THIS machine's own setting; pass one to read a
+        trajectory against a DIFFERENT machine's wall (the floor-only isolation leg)."""
+        if v_of is None:
+            def v_of(spool, p):
+                return self.v_of(spool, p["nu_lp"], p["nu_hp"])
+        out = {}
+        for spool, cmap, key in (("lp", self.map_lp_design, "phi_lp"),
+                                 ("hp", self.map_hp_design, "phi_hp")):
+            assert cmap.phi_surge > 0.0, (
+                f"rung-57 needs the rung-36 floor on the {spool.upper()} map as its incidence "
+                f"anchor: build it with .with_phi_surge(phi_surge).")
+            T_c = cmap.tan_beta1_crit()
+            m_phi = m_i = float("inf")
+            row = None
+            for p in traj:
+                v = v_of(spool, p)
+                phi = p[key]
+                a = phi - cmap.phi_surge / (1.0 + v * cmap.phi_surge)
+                b = T_c - (1.0 / phi - v)
+                if b < m_i:
+                    m_i, row = b, dict(s=p["s"], phi=phi, v=v, nu_lp=p["nu_lp"],
+                                       nu_hp=p["nu_hp"])
+                m_phi = min(m_phi, a)
+            out[spool] = dict(m_phi=m_phi, m_i=m_i, T_c=T_c, at=row,
+                              min_phi=min(p[key] for p in traj))
+        out["npts"] = len(traj)
+        return out
+
+    def stator_transient_margin(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                                r: float = 0.5, s_settle: float = 1.2,
+                                ds: float = 0.01) -> dict:
+        """RUNG 57's reading instrument: both surge currencies, per spool, minimised over a
+        marched accel ramp, against the wall THIS machine's stators actually put there."""
+        traj, nu0 = self._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds)
+        out = self._read(traj)
+        out.update(nu0_lp=nu0[0], nu0_hp=nu0[1], r=r)
+        return out
+
+    # --- THE RUNG: the credit, and how much of it the lever's own work channel eats ------
+
+    def stator_credit(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                      r: float = 0.5, s_settle: float = 1.2, ds: float = 0.01,
+                      spool: str = "lp") -> dict:
+        """THE FINDING (rung 57). March BARE and ARMED and split the incidence credit into
+
+            pointwise  the FLOOR channel alone -- the BARE trajectory read against THIS
+                       machine's wall. Tautological by construction, and that is the point:
+                       it is the reference the path term is measured against.
+            net        the real credit, ARMED trajectory against ARMED wall.
+            erosion    1 - net/pointwise -- the share the lever's own WORK channel eats by
+                       pushing the running line down as it lowers the wall.
+
+        For a CONSTANT setting `pointwise` is EXACTLY `v` (M_i = T_c - 1/phi + v with phi
+        frozen), so nothing is estimated, both legs carry the SAME setting, and `erosion` is a
+        clean floor-vs-work split. Rung 53's design-point closed form predicts the surviving
+        share as `1/(2+l)`.
+
+        FOR A SCHEDULE IT IS NOT THAT QUANTITY, and the returned `pointwise_exact` flag says
+        so. A schedule is a function of the STATE, and the armed machine does not run at the
+        bare machine's states (`nu0_L` alone moves 0.7557 -> 0.8166), so the pointwise leg is
+        referenced to the setting the schedule would command ON THE BARE TRAJECTORY while the
+        net leg carries the setting it actually commands. The difference between those two
+        settings IS the self-cancellation, so a scheduled `erosion` mixes the work channel
+        with it instead of isolating it. Use `credit_decomposition` for a schedule -- that is
+        what it is for -- and read `erosion` off a constant setting. Every erosion number rung
+        57 publishes is a constant-`v` one.
+        """
+        assert spool in ("lp", "hp"), f"spool must be 'lp' or 'hp', got {spool!r}"
+        bare = self.at_stator()
+        t_bare, nu0_b = bare._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds)
+        t_armed, nu0_a = self._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds)
+        base = bare._read(t_bare)[spool]
+        pw = self._read(t_bare)[spool]              # BARE trajectory, ARMED wall
+        net = self._read(t_armed)[spool]
+        c_net, c_pw = net["m_i"] - base["m_i"], pw["m_i"] - base["m_i"]
+        cmap = self.map_lp_design if spool == "lp" else self.map_hp_design
+        exact = (self.vsv_sched_lp is None) if spool == "lp" else (self.vsv_sched_hp is None)
+        return dict(spool=spool, r=r, bare=base["m_i"], armed=net["m_i"], pointwise=pw["m_i"],
+                    credit=c_net, credit_pointwise=c_pw, pointwise_exact=exact,
+                    erosion=(1.0 - c_net / c_pw) if c_pw else float("nan"),
+                    closed_form=1.0 / (2.0 + cmap.l),
+                    v_at_min=net["at"]["v"], s_at_min=net["at"]["s"],
+                    s_at_min_bare=base["at"]["s"], nu0_bare=nu0_b[0], nu0_armed=nu0_a[0],
+                    min_phi_bare=base["min_phi"], min_phi_armed=net["min_phi"],
+                    m_phi_bare=base["m_phi"], m_phi_armed=net["m_phi"])
+
+    def credit_decomposition(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                             r: float = 0.5, s_settle: float = 1.2, ds: float = 0.01,
+                             spool: str = "lp") -> dict:
+        """WHERE a state-fed schedule's credit is delivered. Three legs on one ramp:
+
+            START-ONLY  nu0 = the ARMED machine's running line, then march with the stators
+                        at their DESIGN setting. A state-fed schedule is already closed at
+                        the low speed the machine idles at, so it has acted before s = 0;
+                        this leg is that head start ALONE.
+            RAMP-ONLY   nu0 = the BARE running line, march with the schedule live.
+            FULL        both -- the machine as it actually runs.
+
+        FULL/RAMP-ONLY below 1 is the schedule's SELF-CANCELLATION: closing the stators raises
+        the speed the machine sits at for the same power, the schedule reads that higher speed
+        and opens back up. It is the one thing a constant setting cannot do."""
+        assert self._is_armed() or self.vsv_lp or self.vsv_hp, (
+            "rung-57 credit_decomposition needs an armed machine to decompose.")
+        bare = self.at_stator()
+        t_bare, nu0_b = bare._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds)
+        base = bare._read(t_bare)[spool]["m_i"]
+        eq = self.equilibrium(flight, Tt4_lo)
+        nu0_a = (eq["nu_lp"], eq["nu_hp"])
+        t_start, _ = bare._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds, nu0=nu0_a)
+        t_ramp, _ = self._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds, nu0=nu0_b)
+        t_full, _ = self._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds, nu0=nu0_a)
+        start = bare._read(t_start)[spool]["m_i"] - base
+        ramp = self._read(t_ramp)[spool]["m_i"] - base
+        full = self._read(t_full)[spool]["m_i"] - base
+        return dict(spool=spool, r=r, bare=base, start=start, ramp=ramp, full=full,
+                    share_start=start / full if full else float("nan"),
+                    share_ramp=ramp / full if full else float("nan"),
+                    self_cancel=full / ramp if ramp else float("nan"),
+                    nu0_bare=nu0_b[0], nu0_armed=nu0_a[0])
+
+    # --- rung 53's P5, transplanted onto the transient closure ---------------------------
+
+    def arrow_toggle(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                     v: float, spool: str = "lp", r: float = 0.5, s_settle: float = 1.2,
+                     ds: float = 0.01, state=None) -> dict:
+        """RUNG 53's P5, on the TRANSIENT closure. Take a physical state off the bare march
+        (its LP surge minimum), then toggle ONE spool's stator and re-close AT THAT SAME
+        STATE. Rung 53 proved the steady answer is EXACTLY +0.000e+00 in both directions
+        (`vsv_lp` cannot reach the HP at all; `vsv_hp` cannot reach the LP on a flat-eta
+        island). This measures the same toggle where the shaft speeds are STATES rather
+        than the solution of a balance.
+
+        Must be called on the BARE machine -- it builds both siblings itself.
+
+        `state=(nu_L, nu_H, mdot_fuel)` supplies the toggle point instead of marching for it.
+        That is REQUIRED for the eta-mediation control: the flat-eta and shaped-eta islands
+        have different running lines, so each finding its OWN minimum would compare two
+        toggles at two different states and the comparison would mean nothing. It also keeps
+        the control off `equilibrium`, which a flat-eta two-spool map cannot solve (the
+        off-map guard in rung 40's `_close`). `state=None` marches, as before."""
+        assert not self._is_armed() and not self.vsv_lp and not self.vsv_hp, (
+            "rung-57 arrow_toggle is a FIXED-STATE toggle: call it on the BARE machine, it "
+            "builds both siblings itself.")
+        Tt2, pt2, _ = self._inlet(flight)
+        if state is None:
+            traj, _ = self._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds)
+            p = min(traj, key=lambda q: q["phi_lp"])
+            state = (p["nu_lp"], p["nu_hp"], p["mf"])
+            s_at = p["s"]
+        else:
+            s_at = float("nan")
+        st = (state[0], state[1], state[2], Tt2, pt2)
+        a = self._close_fuel(*st)
+        sib = (self.at_stator(vsv_lp=v) if spool == "lp" else self.at_stator(vsv_hp=v))
+        b = sib._close_fuel(*st)
+        return dict(spool=spool, v=v, s=s_at, state=state,
+                    nu_lp=state[0], nu_hp=state[1],
+                    d_phi_lp=b["phi_lp"] - a["phi_lp"], d_phi_hp=b["phi_hp"] - a["phi_hp"],
+                    d_n_hp=b["n_hp"] - a["n_hp"], d_Tt25=b["Tt25"] - a["Tt25"],
+                    phi_lp=a["phi_lp"], phi_hp=a["phi_hp"])

@@ -21,6 +21,7 @@ from turbojet.engine import (  # noqa: E402
     CombustorTransient, build_two_spool_turbojet, TwoSpoolMatcher, TwoSpoolMapMatcher,
     TwoSpoolTransient, TwoSpoolBleedMatcher, TwoSpoolFuelTransient, SurgeLimiter,
     AsymmetricLag, VariableStatorMatcher, StageStackMatcher, ram_recovery,
+    ScheduledStatorTransient, StatorSchedule,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -4244,6 +4245,84 @@ def plot_ts_diagram(ideal, real, flight):
     print(f"\nT–s diagram (ideal vs real) written to {TS_DIAGRAM_PATH}")
 
 
+def print_stator_schedule_table(flight):
+    """Rung-57 payoff: rung 53's floor-moving lever, put inside an acceleration.
+
+    Rungs 46-52 spent seven rungs learning that a fuel-side limiter's credit is a CLOCK -- when
+    it engages relative to the spool's own surge minimum, when it releases, how fast. All of
+    those move the OPERATING POINT against a fixed wall. This one moves the WALL, and the clock
+    disappears: across a 20x ramp-rate range the margin swings 52 % while the share of the
+    stator's rotation that survives moves one point, and rung 53's DESIGN-POINT Jacobian
+    predicts that share to 3.9 % -- off design, out of equilibrium, mid-transient.
+
+    Two thirds of the rotation never arrives (the lever's own work channel), and a state-fed
+    SCHEDULE self-cancels 10-25 % because closing the stators raises the very speed it reads."""
+    print("\nTHE STATOR SCHEDULE ON THE TRANSIENT PLANT (rung 57): the first lever that moves the")
+    print("surge FLOOR *during* an accel. Rungs 46-52's levers all move the POINT, and every one")
+    print("of them was credited by a CLOCK. This one is credited by a MAP:")
+    print("   erosion = 1 - (net credit)/(pointwise credit)   <- the share the WORK channel eats")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR, V, LO, HI = 0.55, 0.20, 1000.0, 1400.0
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, TT4, flight.p0,
+                                      nozzle_convergent=True, **losses)
+
+    def mk(**kw):
+        return ScheduledStatorTransient(design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0, **kw)
+
+    rs = (0.1, 0.25, 0.5, 1.0, 2.0)
+    rows = [mk(vsv_lp=V).stator_credit(flight, LO, HI, r=r) for r in rs]
+
+    print(f"\n  A CONSTANT setting v = {V:.2f} on the LP spool, over a 20x range of ramp rate r:")
+    print(f"    {'r':>5} {'bare M_i':>10} {'credit':>9} {'credit/v':>9} {'erosion':>9}")
+    for r, d in zip(rs, rows):
+        print(f"    {r:5.2f} {d['bare']:+10.5f} {d['credit']:9.5f} {d['credit'] / V:9.5f} "
+              f"{d['erosion']:9.4f}")
+    bare = [d["bare"] for d in rows]
+    er = [d["erosion"] for d in rows]
+    cf = 1.0 - rows[0]["closed_form"]
+    print(f"    the MARGIN swings {100 * (max(bare) - min(bare)) / min(bare):.1f} %; the EROSION "
+          f"moves {100 * (max(er) - min(er)):.2f} points.")
+    print(f"    rung 53's design-point closed form 1 - 1/(2+l) = {cf:.4f}  "
+          f"(max error {100 * max(abs(e - cf) for e in er) / cf:.1f} %)")
+    print("    => the credit is a MAP property. A wall-moving lever has NO CLOCK.")
+
+    n_lo = mk().equilibrium(flight, LO)["nu_lp"]
+    sc = StatorSchedule(V, n_lo)
+    dec = [mk(vsv_sched_lp=sc).credit_decomposition(flight, LO, HI, r=r) for r in rs]
+    print(f"\n  And a state-fed SCHEDULE v(n) (closed at low speed, 0 at design speed n=1):")
+    print(f"    {'r':>5} {'FULL':>9} {'START-only':>11} {'RAMP-only':>10} {'share START':>12} "
+          f"{'FULL/RAMP':>10}")
+    for r, d in zip(rs, dec):
+        print(f"    {r:5.2f} {d['full']:+9.5f} {d['start']:+11.5f} {d['ramp']:+10.5f} "
+              f"{d['share_start']:12.3f} {d['self_cancel']:10.3f}")
+    print(f"    nu0_L rises {dec[0]['nu0_bare']:.4f} -> {dec[0]['nu0_armed']:.4f} when the "
+          f"stators close (rung 53: paid in SHAFT SPEED)")
+    print("    => the schedule READS that higher speed and opens back up: it SELF-CANCELS.")
+
+    st = mk().arrow_toggle(flight, LO, HI, V, spool="lp")
+    print(f"\n  CORRECTING rung 53's P5, at ONE fixed transient state:")
+    print(f"    v_LP = {V:.2f}  ->  d_phi_LP {st['d_phi_lp']:+.4e}   "
+          f"d_phi_HP {st['d_phi_hp']:+.4e}   d_Tt25 {st['d_Tt25']:+.2f} K")
+    print("    rung 53 measured d_phi_HP == +0.000e+00 EXACTLY on the STEADY cascade and called")
+    print("    the LP stator 'a pure-LP lever, bit-for-bit'. It is not, once the shaft speeds are")
+    print("    STATES: the steady balance re-solved n_H and absorbed the Tt25 shift; rung 40 took")
+    print("    that balance away. The break survives a FLAT-eta island, so it is NOT rung 53's")
+    print("    eta-mediated arrow -- it is the ENERGY channel, and d_Tt25 names it.")
+    print("\n  SCOPE: LP-side (the HP schedule reads shaft speed -- Tt25 is an output of the root")
+    print("  it must be armed before); eta_c_at is stator-inert; no head-to-head against the")
+    print("  fuel-side limiters (no common currency). See docs/rung57-spec.md § Concessions.")
+
+
 def main():
     # The tables carry unicode (Δ, ·, ≡, ≈); force UTF-8 so `python main.py` renders
     # on any console (a stock Windows cp1252 console would otherwise crash on them).
@@ -4373,6 +4452,8 @@ def main():
     print_stage_stack_table(FLIGHT)
 
     print_per_row_capacity_table(FLIGHT)
+
+    print_stator_schedule_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

@@ -214,6 +214,18 @@ has company.
 
 ## P5 — a rung-39 refinement: the stator's inter-spool arrow is η-MEDIATED ONLY
 
+> **⚠ CORRECTED BY RUNG 57 — `docs/rung57-spec.md`. Everything below is true, and true only of
+> the STEADY cascade.** Both exact zeros **break** on the transient plant (at a fixed state,
+> `v_LP = 0.20` gives `Δφ_HP` = −9.61e-03, `Δn_HP` = +1.53e-02, `ΔTt25` = −13.05 K), and
+> **neither break is η-mediated** — they survive the flat-η island that is this section's own
+> zeroing control. The zeros were the **SHAFT BALANCE's** doing, not the map's: the steady
+> cascade re-solves `n_H` and absorbs the stator's `Tt25` shift, and rung 40 removed that
+> balance to make the two power residuals the ODE right-hand sides. The arrow that opens is the
+> **ENERGY** channel. So *"a pure-LP lever, bit-for-bit"* holds as written **at steady state**;
+> on the transient it is an approximation good to ~14 % of the lever's own LP effect. Rung 57
+> also **extends** this rung the other way: the design-point Jacobian below predicts the
+> transient credit to 3.9 %, far off design.
+
 Rung 39 found the map opens exactly **one arrow, HP → LP**, because `π_LPC` cancels out of the
 HP-face corrected flow and the energy cascade is map-free. The stator inherits that structure and
 sharpens it:
