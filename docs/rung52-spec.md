@@ -127,6 +127,12 @@ The exact zero in the last column has **two** steps, and only the second is cont
    still climbing the clip has not caught up, so `φ_lp`'s deepest excursion sits near `s_eng` by
    construction — **rung 48's arrest law operating through the lag's own attack transient**.
 
+   **Precondition — this step is a property of a FIRST-ORDER attack.** "Undershoot largest
+   early" follows from `ġ = (required − g)/τ_att` starting at `g=0`; a *second-order* or
+   rate-limited attack can delay the undershoot and so relocate the watched spool's minimum
+   **off** `s_eng`. The CANNOT-debit result is therefore claimed for a first-order attack only —
+   a delayed-undershoot shape is **not covered**, and is exactly this rung's named next seam.
+
 Searched for a counter-case across **7 floors × 2 ramp rates**, plus all 5 `τ_att` of § 1:
 
 | r | φ_lim | `s_cross` | `s_min_lp` | credit spread |
@@ -289,7 +295,9 @@ structural mismatch between `required` and `_surge_fuel`'s min-select — is rul
   would have later crossings that *are* `τ_rel`-dependent. Not observed in any row here, and
   `n_recross` is reported on every row so it cannot go unnoticed.
 - **The lag is LINEAR and first-order in each direction.** No shape sweep was run; nothing is
-  claimed about the hand-back's functional form beyond attack-rate ≠ release-rate.
+  claimed about the hand-back's functional form beyond attack-rate ≠ release-rate. **§ 2's
+  CANNOT-debit headline inherits this**: its second step rides on the first-order attack's
+  undershoot-largest-early, so a delayed-undershoot attack shape is outside the claim.
 - **The instantaneous-limit order is ≈0.8, not 1**, and is reported as measured.
 - **`φ_lim` and `m` inherit rungs 36/41/48/49's imposed constants.** Magnitudes disclaimed;
   the signs, orderings, machine-zeros and convergences are the claims.

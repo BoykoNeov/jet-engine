@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: d496b940-18e7-41b3-9f76-145b15849d35
-  modified: 2026-07-28T01:34:49.706Z
+  modified: 2026-07-28T02:50:35.470Z
 ---
 
 Shipped **rung 52** (2026-07-28) — the asymmetric fast-attack / slow-release lag on rungs
@@ -35,7 +35,9 @@ and produced the mechanism instead. Surfacing that conflict (rather than switchi
 the request) was the right move — the advisor retracted and said to lead with it. **Careful
 detail it flagged**: the argument needs the *actual* `φ_lp` minimum, not `required`'s turnover —
 under a lag `φ_lp` dips *below* `φ_lim`, so they are different objects; the step that closes it
-is "the lag's undershoot is largest EARLY."
+is "the lag's undershoot is largest EARLY." That step is a **first-order-attack** property, so
+the CANNOT is scoped to that shape — a delayed-undershoot (2nd-order / rate-limited) attack is
+the named next seam, not covered.
 
 **Second finding**: the two clocks separate **one way**. `τ_att` owns the credit *exactly*
 (machine-zero spread over `τ_rel`); the debit is irreducibly **joint** (additive residual
