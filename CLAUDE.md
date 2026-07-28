@@ -125,6 +125,7 @@ must never be re-opened by mistake.
 - Anchored `δ(J)` law via a JICF trajectory — `docs/mixing-jicf-anchor-negative.md` (confirms rung 22; emissions optimum rides on a SECOND unanchored exponent, spread).
 - Lagged/filtered `pt3` sensor on rung 48's leg — `docs/pt3-sensor-lag-negative.md` (an effective-margin reparameterisation; release edge structurally post-ramp. CONFIRMS rung 48, corrects its seam's SIGN).
 - A limiter with BOTH edges inside the ramp (rate-limited / washout-filtered `pt3`) — `docs/both-edges-limiter-negative.md`. Closes the WHOLE `pt3`-filter family: **the ramp is the only clock**; fuel-command rate limit = rung 44's lever BY IDENTITY. By-product **UPGRADES rung 48's law** to the truncated-descent form (EDGE, not window).
+- **PER-ROW BLADING** (rung 56's seam) — `docs/per-row-blading-negative.md`. The ladder supplies `t₂,k`/split/`T_c,k` free; it does **not** supply the ANCHOR, and every sign answers to that. **OVER-DETERMINED** (machine size + front blade + monotone taper — proof); well-posed ⇒ capacity inert. **CORRECTS rung 55's** split-as-furniture framing: the split IS a blading law.
 
 **Checked, CONFIRMATION / CORRECTION — not a rung (the rung-29/28 margin sweeps):**
 - "Earned at design" over `π_c` — `docs/rung29-pi-c-margin.md` (verdict holds ~9.4×; `π_c` NOT protective; `ENERGY = INVENTORY × COMPLETION`).
@@ -137,7 +138,7 @@ must never be re-opened by mistake.
 - **Detailed Fenimore** (`CH+N₂→HCN`) and **super-eq-O radical-decay history** — need new species / a relaxing pocket a 0-D pool cannot derive.
 - **Reacting-gas fuel control** (rungs 35/43 defer — the forward burner asserts against an equilibrium gas).
 - **The subsonic / unchoked LP branch** in the two-spool solves (rung 38 flags, does not solve) and its **transient**.
-- **PER-ROW BLADING** — rung 56's named seam: rungs 55/56's stages share ONE map (one `ψ`, one island, one `φ_surge`, one `T_c`), which is what keeps rung 55's positional claim clean *and* bounds both rungs. A real stack's rows differ by design, and the two constraints rung 56 separated are exactly what per-row blading would move independently. Needs a `ψ_k`/`T_c,k` law — and unlike rung 56's capacity profile, the ladder does **not** supply it.
+- An **ANCHOR for the blading** (what its NEGATIVE isolated): a stress / tip-Mach limit pinning `U` from outside the stack, or an annulus law `Vx(k)` — either turns `U²∝1/S` from a free knob into a constraint, and only then is a monotone taper admissible.
 - A **stator schedule `v(n)` on the TRANSIENT plant** (the first lever that could move the wall *during* an accel — now with a row COUNT as well as a setting), and **stator + bleed together** (rung 53's saturation says the bleed takes over where the stator's authority ends).
 - A **bleed schedule** `b(n_L)`; **fuel + bleed together**.
 - **The lag's SHAPE and the two-lag CASCADE** — rung 52's named seam: a second-order / rate-limited *attack* (the valve, not the loop), and `tau_gov` + `lag` together (redline lag + surge lag on one plant — what a real FADEC runs). Rung 52's §3 non-factorization says the cascade should not be additive.
