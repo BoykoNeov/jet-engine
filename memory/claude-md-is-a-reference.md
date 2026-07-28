@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: 910011bc-f896-4434-8ff0-820ec360a406
-  modified: 2026-07-28T06:06:07.236Z
+  modified: 2026-07-28T13:16:42.947Z
 ---
 
 CLAUDE.md is a REFERENCE / index — one line per rung, one line per deferred-seam
@@ -28,6 +28,17 @@ forms — (1) the "Current scope" paragraph's matcher-ladder narration, (2) the
 again, check those three FIRST — a re-grown narration there is the bug, and the fix
 is deletion, not a bump.** Rows 1–48 are already at the ~230-char one-line budget;
 compressing them is shaving real content, not fixing bloat.
+
+**A ROW HAS A BUDGET: ≤350 bytes — name, HEADLINE, cross-rung verdict, nothing else.**
+No measured numbers, no mechanism, no class names (those are in the spec and § Layout).
+This is now stated in CLAUDE.md's own warning block. It was learned the hard way on
+2026-07-28: after the morning's re-compaction to 26,276 B the file was back to 29,791 B
+(209 B of headroom) within a day, because rungs 53–57's rows were written at **433–778 B**
+each — the table alone had become 53 % of the file while rungs 1–48 sat at ~250 B. The
+fix was to cut 49–57 back to hooks (→ 28,751 B). **So the third bloat cycle was not the
+three collapsed duplication sites re-growing — it was the TABLE ITSELF, one row at a
+time.** Write the row short at ship time; compacting later re-reads five specs to prove
+nothing was lost.
 
 **How to apply:** When adding a rung, add ONE table row + a couple of one-line status
 entries; put everything else in the spec. The mechanical backstop is

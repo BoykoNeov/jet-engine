@@ -5,10 +5,10 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 1c258a79-b4c7-4891-ab3d-022937f8d1a3
-  modified: 2026-07-28T12:16:15.660Z
+  modified: 2026-07-28T13:16:26.009Z
 ---
 
-The suite was **49 min serial** → **~5 min routine / ~22 min full** (2026-07-21), then the
+The suite was **49 min serial** → **~5 min routine / ~22–25 min full** (2026-07-21), then the
 per-rung cost was cut again with `--affected` (2026-07-28). All policy lives in `pytest.ini` +
 `conftest.py`; **no test file is edited**, so the derive/reduce spine stays pristine.
 
@@ -23,7 +23,7 @@ longest test, rung 24's `test_ei_stays_monotone` at ~518 s, is a hard per-test f
 - `pytest --affected` — ~6–16 min. **The per-rung ship gate.** Every fast test PLUS the slow
   gates of the modules the working diff can reach. Strict superset of `pytest`, strict subset
   of `--runslow`.
-- `pytest --runslow` — ~22 min. Everything. **Every 3rd rung** (the report header nags), at
+- `pytest --runslow` — ~22–25 min. Everything. **Every 3rd rung** (the report header nags), at
   session end, and whenever `--affected` escalates.
 
 **How `--affected` decides** (the load-bearing design choice): rung commits are **~99 % ADDITIVE**
