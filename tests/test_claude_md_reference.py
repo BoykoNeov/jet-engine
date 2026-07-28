@@ -15,10 +15,18 @@ If this test FAILS:
     genuine single line in the table — then and only then bump the budget below,
     deliberately, in the same commit that adds the content.
 
-The budget is generous relative to the compressed size (~22 KB / ~200 lines at
-rung 43): headroom for real one-line-per-rung growth, but ~10x tighter than the
+The budget is generous relative to the compressed size (~26 KB / ~205 lines at
+rung 54): headroom for real one-line-per-rung growth, but ~10x tighter than the
 essay-bloat it replaced, so an essay-explosion trips it an order of magnitude
 earlier than last time (which reached ~200 KB).
+
+On the shape of legitimate growth: after the rung-54 re-compaction, the rung
+TABLE is the only section that grows per rung (~250 bytes/row). The three other
+sites that used to grow in lockstep with it — the "Current scope" ladder
+narration, the § Layout `engine.py` method inventory, and the per-seam "Built"
+list — were each collapsed to a form that is invariant in the rung count, and
+they should stay that way. If this guard trips again, check those three FIRST:
+a re-grown narration there is the bug, and the fix is deletion, not a bump.
 """
 import os
 

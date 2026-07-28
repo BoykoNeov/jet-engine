@@ -18,10 +18,8 @@ teaching, not for features or polish.
 
 ## The rungs
 
-The model is built in cumulative **rungs** — each adds one physical effect and is
-anchored to a published case. All rungs are live; the current scope is **rung 54**.
-
-**This table is the one-line map, not the handout.** Read a rung's spec (last
+The model is built in cumulative **rungs** — each adds one physical effect and is anchored to a
+published case. All rungs are live; the current scope is **rung 54**. Read a rung's spec (last
 column) before touching it — that is where the real content lives.
 
 | Rung | Adds (one-line hook) | Spec |
@@ -75,12 +73,12 @@ column) before touching it — that is where the real content lives.
 | 46 | **The TIT topping governor** — the **first fuel-side FEEDBACK**. Holding `Tt4≤Tt4_max` rebates surge on the **LATE non-binding HP** spool but is **MACHINE-ZERO on the EARLY binding LP** one: a relief **SPLIT**, the debit paid upstream of the governor's window. INVERTS rung 35. | `docs/rung46-spec.md` |
 | 47 | **The lagged topping governor** (`τ_gov`; clip AMOUNT a 3rd state) — a first-order lag is a **TRAILING-edge** tool, so it cannot reach the EARLY LP min: `relief_lp=0` EXACTLY at moderate `r`, ERODED at fast `r`. **Cost of realism**: it breaks the redline hold (~55→190 K). | `docs/rung47-spec.md` |
 | 48 | **The `Wf/pt3` acceleration schedule** — the **FEEDFORWARD** min-select leg. **UNIFIES 46/47**: a fuel-side limiter rebates a spool **IFF it engages UPSTREAM of THAT spool's OWN surge minimum**; `m` is an ENGAGEMENT-TIME dial, NOT rung 44's ramp-rate lever. | `docs/rung48-spec.md` |
-| 49 | **The φ / surge-margin FEEDBACK limiter** — watches the **PROTECTED variable**; a clean sliding mode, first window with BOTH edges inside the ramp. **HEADLINE: a limiter acts on a spool through BOTH edges, on DIFFERENT clocks** — engagement credits (48), release **DEBITS**, so an LP floor debits the HP. Exposed spool = the **LATE** one (inverts 41/44/45). | `docs/rung49-spec.md` |
+| 49 | **The φ / surge-margin FEEDBACK limiter** — watches the **PROTECTED variable**; first window with BOTH edges inside the ramp. **HEADLINE: a limiter acts on a spool through BOTH edges, on DIFFERENT clocks** — engagement credits (48), release **DEBITS**, so an LP floor debits the HP; exposed spool = the **LATE** one (inverts 41/44/45). | `docs/rung49-spec.md` |
 | 50 | **The release edge, ISOLATED** (`s_off` — forced, stateless, two-sided) — the closing edge **RELOCATES BOTH SPOOLS' MINIMA TO ITSELF**, under the two-branch law `min(rung-48 truncation, the dive bottoming at s_rel)`. **THE SEAM CLOSES**: rung 48's immunity is **TIMING, not clip SHAPE**. | `docs/rung50-spec.md` |
 | 51 | **The release RATE** (`τ_rel`, a stateless fade) — **the debit is NOT a functional of the applied-fuel trajectory**: the two HARD releases at a fade's own ends bracket it pointwise, yet the faded run lands **OUTSIDE** both. The debit answers to the **RATE**. Scope gated as an explicit negative. | `docs/rung51-spec.md` |
-| 52 | **The asymmetric fast-attack / slow-release LAG** — the **realisable** limiter 50/51 forced. **REFUTES rung 51's deferral reason**: `τ_rel` is never *read* pre-crossing, so the leg **PINS ITS OWN TRIGGER**. **A self-releasing limiter CANNOT DEBIT THE SPOOL IT WATCHES** ⇒ rung 50's watched-side debit is an **ARTIFACT OF FORCING**; `τ_att` owns the credit, the debit **JOINT**. | `docs/rung52-spec.md` |
-| 53 | **The VARIABLE STATOR** — the **first lever that moves the surge FLOOR** (rung 42's named other half); both channels DERIVED from the map's own `l` and rungs 36/41's own `φ_surge` — **zero new constants**. **HEADLINE: a margin is a DISTANCE, and when the lever moves the boundary that distance is COORDINATE-DEPENDENT** — the `φ`-margin SHRINKS on closing while the incidence margin GROWS; only the coordinate whose boundary is FIXED measures a margin. Rungs 36–52's `φ`-currency **BOUNDED** (a floor-fixed lever *provably* cannot split them). Thrust-neutral, paid in **SHAFT SPEED**. | `docs/rung53-spec.md` |
-| 54 | **The stator-row THROAT** — rung 53's refused half. The cosine rule DERIVES `A_th ∝ cos α₁` off rung 53's OWN `v`; only the LEVEL needs one disclosed `C` (a design throat Mach), every verdict a **threshold ON** it. **HEADLINE: rung 53 — a MARGIN is coordinate-dependent; so is a CONSTRAINT'S SEVERITY** (the throat cuts the SETTING 30 %, the MARGIN 4 %). An upstream throat can **BIND, NEVER RELIEVE** (reduce = invariance over `C`) ⇒ capacity **cannot** buy back rung 53's overspeed. **CORRECTS rung 53**: the turning point IS reached (3/5 shapes) — the ceiling is the incidence PEAK, not an artifact. | `docs/rung54-spec.md` |
+| 52 | **The asymmetric fast-attack / slow-release LAG** — the **realisable** limiter 50/51 forced; `τ_rel` is never *read* pre-crossing, so the leg **PINS ITS OWN TRIGGER**. **HEADLINE: a self-releasing limiter CANNOT DEBIT THE SPOOL IT WATCHES** ⇒ rung 50's watched-side debit is an **ARTIFACT OF FORCING**. | `docs/rung52-spec.md` |
+| 53 | **The VARIABLE STATOR** — the **first lever that moves the surge FLOOR** (rung 42's named other half); both channels DERIVED, **zero new constants**. **HEADLINE: a margin is a DISTANCE, so a floor-moving lever makes it COORDINATE-DEPENDENT** — the `φ`-margin SHRINKS on closing while the incidence margin GROWS. Rungs 36–52's `φ`-currency **BOUNDED**; thrust-neutral, paid in **SHAFT SPEED**. | `docs/rung53-spec.md` |
+| 54 | **The stator-row THROAT** — rung 53's refused half; `A_th ∝ cos α₁` DERIVED off rung 53's OWN `v`, only the LEVEL needs one disclosed `C`, every verdict a **threshold ON** it. **HEADLINE: so is a CONSTRAINT'S SEVERITY** (the throat cuts the SETTING 30 %, the MARGIN 4 %) — an upstream throat can **BIND, NEVER RELIEVE** ⇒ capacity **cannot** buy back rung 53's overspeed. **CORRECTS rung 53's** turning-point concession. | `docs/rung54-spec.md` |
 
 ## Working contract (from SPEC.md — these override convenience)
 - **Derive before you code.** For each station, write the governing equation and
@@ -104,33 +102,19 @@ root-finds `f` over the scale-B absolute balance (re-solving equilibrium each tr
 then freezes the station-4 mixture through turbine + nozzle. Fork A/B and
 frozen-products gases are kept alongside. **Everything from rung 7 up is a diagnostic
 *beside* the cycle**, reached through **separate entry points** that leave the default
-`build_turbojet(…).run(…)` design run **bit-for-bit rung 6**. Rungs **31–53** are the
-STRUCTURAL / DYNAMIC rungs (a new off-design or transient operating point — the
-single-spool ladder `OffDesignMatcher → MapMatcher → SpoolTransient → CombustorTransient`
-and the two-spool ladder `TwoSpoolMatcher → TwoSpoolMapMatcher → TwoSpoolTransient →
-TwoSpoolBleedMatcher → TwoSpoolFuelTransient`, with rung 44's transient-surge methods on
-`TwoSpoolTransient`, rung 45's on `TwoSpoolFuelTransient`, rung 46's **fuel-side FEEDBACK**
-topping governor on it, rung 47's **response lag** `τ_gov` on that governor, rung 48's **feedforward** `Wf/pt3` leg
-beside it, rung 49's **φ-FEEDBACK** floor beside that, rung 50's **forced release** `s_off` across the
-last two, rung 51's **release RATE** `τ_rel` on that, and rung 52's **realisable** asymmetric
-lag beside the whole forced family; and rung 53's **variable stator** `VariableStatorMatcher`
-beside the *steady* two-spool matcher — the first **floor-moving** lever, off the fuel path
-entirely — with rung 54's **THROAT** a post-hoc read on it); rungs **7–30, 36, 41, 44, 45** are pure
+`build_turbojet(…).run(…)` design run **bit-for-bit rung 6**. Rungs **31–54** are the
+STRUCTURAL / DYNAMIC rungs — a new off-design or transient operating point, reached through the
+two matcher ladders mapped in § Layout (`engine.py`); rungs **7–30, 36, 41, 44, 45** are pure
 diagnostics that only *read* the design-point / running-line state. Each rung reduces to its
 predecessor exactly and by test — the gates are named in its spec.
 
 ## Deferred seams — status map
-One line per seam: `BUILT BY RUNG N` (detail in its spec) · `NEGATIVE → doc` (investigated,
-not shipped, not a rung) · `OPEN` (not yet built). This list is the live map of what is
-closed vs open — keep it one line per entry.
+One line per seam — `BUILT` (detail in its rung's spec) · `NEGATIVE → doc` (investigated, not
+shipped, not a rung) · `OPEN` (not yet built). The live map of what is closed vs open.
 
-**Built — each seam → the rung that closed it. The rung table above is the one-line hook for
-each; the derivation is in its spec. Listed here only so a seam is never re-opened by mistake:**
-- 25 finite-rate nozzle · 26 freeze-out · 27 NO freeze-out · 28 coupled NO march · 29 shifting turbine · 30 choked convergent nozzle.
-- 31 off-design matching · 32 component maps · 33 subsonic branch · 34 spool transient · 35 fuel metering (`Tt4` an output) · 36 surge line · 37 combustor internal clocks.
-- 38 two-spool matching · 39 two-spool + maps · 40 two-shaft transient · 41 two-spool surge line · 42 bleed valve · 43 two-shaft fuel metering · 44 transient surge · 45 transient surge on the FUEL path.
-- 46 TIT topping governor · 47 its lag `τ_gov` · 48 the `Wf/pt3` feedforward leg · 49 the **φ-FEEDBACK** limiter (the door the `pt3`-filter negative left open) · 50 the release edge ISOLATED (*why rung 48 escapes*) · 51 the release **RATE** `τ_rel` (deficit vs deficit-RATE) · 52 the asymmetric fast-attack/slow-release **LAG** — rung 51's own named seam, *refuting its deferral reason*: a realisable leg **pins its own trigger**.
-- 53 the **VARIABLE STATOR** — rung 42's named other half, and the **first floor-moving lever**: it **BOUNDS the `φ`-margin currency** every rung 36–52 scored surge in. · 54 the stator **THROAT** — rung 53's own refused half: **BIND, NEVER RELIEVE**; CORRECTS its turning-point concession.
+**BUILT — every seam numbered 25–54 was closed by the same-numbered rung.** The table above is its
+one-line hook, the derivation is in its spec. No per-seam list here: a numbered seam is closed, and
+must never be re-opened by mistake.
 
 **Investigated, NEGATIVE — not shipped, not a rung (these facts live only here + the doc):**
 - Resolved `τ_res` from the nozzle area-schedule (rung 26's seam a) — `docs/tau-res-negative.md` (shape moot; needs an entry Mach). Confirms rung 26.
@@ -138,7 +122,7 @@ each; the derivation is in its spec. Listed here only so a seam is never re-open
 - Locally-resolved mixing **SCALE** — `docs/mixing-scale-negative.md` (the turn rides on the unanchored penetration exponent `p`).
 - Anchored `δ(J)` law via a JICF trajectory — `docs/mixing-jicf-anchor-negative.md` (confirms rung 22; emissions optimum rides on a SECOND unanchored exponent, spread).
 - Lagged/filtered `pt3` sensor on rung 48's leg — `docs/pt3-sensor-lag-negative.md` (an effective-margin reparameterisation; release edge structurally post-ramp. CONFIRMS rung 48, corrects its seam's SIGN).
-- A limiter with BOTH edges inside the ramp (rate-limited / washout-filtered `pt3`) — `docs/both-edges-limiter-negative.md`. Closes the WHOLE `pt3`-filter family: **the ramp is the only clock**. Fuel-command rate limit = rung 44's lever BY IDENTITY. **By-product UPGRADES rung 48's law**: a clip ARRESTS the φ descent ⇒ min sits AT `s_eng` ⇒ `relief = min_{s≤s_eng} φ_bare − min φ_bare` (DERIVES the exact-zero) ⇒ EDGE not window.
+- A limiter with BOTH edges inside the ramp (rate-limited / washout-filtered `pt3`) — `docs/both-edges-limiter-negative.md`. Closes the WHOLE `pt3`-filter family: **the ramp is the only clock**; fuel-command rate limit = rung 44's lever BY IDENTITY. By-product **UPGRADES rung 48's law** to the truncated-descent form (EDGE, not window).
 
 **Checked, CONFIRMATION / CORRECTION — not a rung (the rung-29/28 margin sweeps):**
 - "Earned at design" over `π_c` — `docs/rung29-pi-c-margin.md` (verdict holds ~9.4×; `π_c` NOT protective; `ENERGY = INVENTORY × COMPLETION`).
@@ -151,9 +135,9 @@ each; the derivation is in its spec. Listed here only so a seam is never re-open
 - **Detailed Fenimore** (`CH+N₂→HCN`) and **super-eq-O radical-decay history** — need new species / a relaxing pocket a 0-D pool cannot derive.
 - **Reacting-gas fuel control** (rungs 35/43 defer — the forward burner asserts against an equilibrium gas).
 - **The subsonic / unchoked LP branch** in the two-spool solves (rung 38 flags, does not solve) and its **transient**.
-- **STAGE REMATCHING — the stage stack** — rung 54's named seam: it *refutes* capacity as the reason a real engine escapes rung 53's overspeed, and rematching is what actually does it (`K` stage blocks sharing `τ_c`, `K` a disclosed integer; the "front stalls / rear chokes" mechanism a lumped block cannot have). Then a **stator schedule `v(n)` on the TRANSIENT plant** (the first lever that could move the wall *during* an accel), and **stator + bleed together** (rung 53's saturation says the bleed takes over where the stator's authority runs out).
+- **STAGE REMATCHING — the stage stack** — rung 54's named seam, and the next rung: capacity is *refuted* as the reason a real engine escapes rung 53's overspeed, so rematching is what does it (`K` stage blocks sharing `τ_c`; the "front stalls / rear chokes" mechanism a lumped block cannot have). Then a **stator schedule `v(n)` on the TRANSIENT plant** (the first lever that could move the wall *during* an accel), and **stator + bleed together** (rung 53's saturation says the bleed takes over where the stator's authority ends).
 - A **bleed schedule** `b(n_L)`; **fuel + bleed together**.
-- **The lag's SHAPE and the two-lag CASCADE** — rung 52's named seam: a second-order / rate-limited *attack* (the valve, not the loop), and `tau_gov` + `lag` together (redline lag + surge lag on one plant — what a real FADEC runs), which rung 52 refuses as a different instrument. Its §3 non-factorization says the cascade should not be additive.
+- **The lag's SHAPE and the two-lag CASCADE** — rung 52's named seam: a second-order / rate-limited *attack* (the valve, not the loop), and `tau_gov` + `lag` together (redline lag + surge lag on one plant — what a real FADEC runs). Rung 52's §3 non-factorization says the cascade should not be additive.
 - **Rung 37's internal clocks on two shafts** and the combined 3-state; **customer/cooling bleed** at station 3.
 - **Afterburner**; a **real hardware/CFD map + surge line** (rung 32's standing concession, now doubled across two spools).
 - **Feeding any shifted/marched state into the production cycle** — a re-foundation (re-anchors every rung's numbers), not a rung.
@@ -174,11 +158,10 @@ A compact map — the per-rung method/finding detail lives in `docs/rungN-spec.m
   with the CPG closed-form / TPG NASA-integral property interface (hot methods carry `far`); the
   gas factories (`thermally_perfect` / `reacting` / `reacting_forkb` / `reacting_equilibrium`); the
   `_equil_solve` Newton + frozen `_EquilibriumSection`; and **every rung-7+ diagnostic** on `Gas`
-  (`thermal_nox`, `zoned_nox`, `nozzle_flow`, `exhaust_no_clamp`, `finite_rate_nozzle`,
-  `freeze_out_nozzle`, `no_freeze_out_nozzle`, `coupled_no_freeze_out_nozzle`, `shifting_turbine`)
-  with their configs (the mutually-exclusive mixing closures `JetMixing…SpatialLocalPDF`;
-  `FiniteRate`/`FreezeOut`/`NOFreezeOut`/`CoupledNOFreezeOut`) and helpers (`_quench_no`,
-  `_pdf_mean_ei`, `_finite_rate_expand`, `_freeze_out_expand`, `_work_limited_expand`, …).
+  (`thermal_nox`, `zoned_nox`, `nozzle_flow`, `exhaust_no_clamp`, and the nozzle/turbine marches
+  `finite_rate_` / `freeze_out_` / `no_freeze_out_` / `coupled_no_freeze_out_nozzle`,
+  `shifting_turbine`) with their configs — the mutually-exclusive mixing closures
+  `JetMixing…SpatialLocalPDF`, and `FiniteRate`/`FreezeOut`/`NOFreezeOut`/`CoupledNOFreezeOut`.
 - `turbojet/components.py` — `Inlet, Compressor, Burner, Turbine, Nozzle` as pure `apply(state, gas)`
   in `h`/`pr` form (+ loss params, `ram_recovery(M0)`, the polytropic knob). The Nozzle branches
   CPG/TPG and carries rung-30's `convergent=True` choke via the module-level `_sonic_throat`; rung-31's
@@ -186,28 +169,19 @@ A compact map — the per-rung method/finding detail lives in `docs/rungN-spec.m
   implicit `f = g(f)` fixed point, or `_solve_equilibrium` for an equilibrium gas.
 - `turbojet/engine.py` — chains the components, solves the `Δh` + `η_m` shaft balance, scores
   performance (`_score`). Home to the **off-design / transient matcher ladders**, each a **separate
-  entry point** (the design `run` is untouched): single-spool `OffDesignMatcher` (31) → `MapMatcher` +
-  `ComponentMap` (32) → `._match_subsonic` (33) → `SpoolTransient` (34, + fuel 35, + surge 36) →
-  `CombustorTransient` (37); two-spool `build_two_spool_turbojet` / `TwoSpoolMatcher` (38) →
-  `TwoSpoolMapMatcher` (39) → `TwoSpoolTransient` (40, + surge methods 41, + transient-surge methods 44)
-  → `TwoSpoolBleedMatcher` (42) → `TwoSpoolFuelTransient` (43, + transient-surge methods 45, + the
-  fuel-side-FEEDBACK TIT topping governor `integrate_fuel(Tt4_max=…)`/`topping_relief` 46, + its
-  **response lag** `integrate_fuel(…,tau_gov=…)`/`_integrate_fuel_lagged`/`topping_command_trace` 47,
-  + the **feedforward** `Wf/pt3` leg `AccelSchedule`/`accel_schedule`/`_sched_fuel`/`integrate_fuel(…,accel=…)`/
-  `schedule_relief`/`engagement_sweep` 48, + the **φ-FEEDBACK** floor `SurgeLimiter`/`_surge_fuel`/
-  `integrate_fuel(…,surge=…)`/`surge_relief`/`floor_sweep` 49, + the **forced release**
-  `integrate_fuel(…,s_off=…)`/`release_relief`/`release_sweep` 50, + its **RATE**
-  `integrate_fuel(…,tau_rel=…)`/`_release_weight`/`rate_sweep`/`deficit_curve` 51, + the
-  **realisable** asymmetric lag `AsymmetricLag`/`integrate_fuel(…,lag=…)`/`_integrate_fuel_asym`/
-  `lag_relief`/`lag_sweep`/`factorization_grid` 52). Off the fuel path, on the **steady** two-spool
-  matcher: `VariableStatorMatcher`/`at_setting`/`stator_margin`/`stator_sweep`/`currency_split`/
-  `throttle_currency`/`incidence_schedule` (53), with its two derived channels on `ComponentMap`
-  (`with_vsv`/`psi`'s swirl term/`phi_surge_at`/`tan_beta1`/`tan_beta1_crit`); and rung 54's THIRD
-  channel — `with_capacity`/`throat_ratio`/`throat_loading`/`capacity_margin` on the map,
-  `throat_margin`/`throat_sweep`/`authority_ceiling`/`schedule_throat` on the matcher (a pure
-  post-hoc read).
-  Each reduces to its predecessor (exact dispatch, an inherited identity, or the forward
-  closure); the method names + reduce contracts are in each rung's spec.
+  entry point** (the design `run` is untouched). Single-spool: `OffDesignMatcher` (31) → `MapMatcher`
+  + `ComponentMap` (32) → `._match_subsonic` (33) → `SpoolTransient` (34, + fuel 35, + surge 36) →
+  `CombustorTransient` (37). Two-spool: `build_two_spool_turbojet` / `TwoSpoolMatcher` (38) →
+  `TwoSpoolMapMatcher` (39) → `TwoSpoolTransient` (40, + surge 41, + transient surge 44) →
+  `TwoSpoolBleedMatcher` (42) → `TwoSpoolFuelTransient` (43, + transient surge 45) — then the whole
+  **fuel-side limiter family** as keywords on its `integrate_fuel`: TIT topping governor (46), its
+  lag `τ_gov` (47), the feedforward `Wf/pt3` `AccelSchedule` (48), the **φ-FEEDBACK** `SurgeLimiter`
+  (49), forced release `s_off` (50), its rate `τ_rel` (51), the realisable `AsymmetricLag` (52).
+  Off the fuel path, on the **steady** two-spool matcher: `VariableStatorMatcher` (53) — the first
+  **floor-moving** lever — with its derived channels on `ComponentMap` (`with_vsv`, `phi_surge_at`,
+  `tan_beta1`), and rung 54's third channel `with_capacity` + the matcher's throat reads (post-hoc).
+  Each reduces to its predecessor (exact dispatch, an inherited identity, or the forward closure);
+  **the method names + reduce contracts are in each rung's spec, not here.**
 - `main.py` — the design-point run: ideal-vs-real tables, the overlaid T–s diagram, and **one panel
   per rung** (each demonstrates that rung's load-bearing claim and states its honest scope).
 - `tests/` — per-rung `test_rungN.py` (N = 1…54; plus the rung-1/2b/3/4/5 files). Every rung file
