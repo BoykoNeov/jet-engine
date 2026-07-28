@@ -23,11 +23,25 @@ ONE override (`_is_spine`): the bit-for-bit REDUCE gates (`test_reduce_*`, `test
 (user's explicit choice, 2026-07-21). Only the expensive FINDING / robustness sweeps are deferred
 to `--runslow`. This is what keeps a fast routine run from silently dropping the reduce check.
 
-Parallelism (`-n auto --dist worksteal`, set in pytest.ini) is orthogonal: it speeds BOTH
-the fast and the full run. worksteal (not the default `load`) is chosen because the suite's
-durations are very uneven — a few multi-minute items among many sub-second ones — and
-work-stealing packs the long poles far better than static batching.
+Parallelism (`-n auto --dist load --maxschedchunk=1`, set in pytest.ini) is orthogonal: it
+speeds BOTH the fast and the full run. It is already at its floor — this box has 8 PHYSICAL
+cores behind 16 logical, and for these CPU-bound float loops an LPT pack of the measured
+durations onto 8 workers is 1581 s, which is the observed full-run wall clock. There is no
+scheduling slack left to reclaim, so the ONLY lever on the full gate's cost is running fewer
+tests. That is what `--affected` (below) is for.
+
+THE THIRD MODE — `--affected` (see § affected-set selection below):
+  * `pytest --affected`    -> every fast test, PLUS the slow gates of the modules the working
+                              diff can actually reach. A strict superset of `pytest` and a
+                              strict subset of `pytest --runslow`. ~330-940 s vs 1581 s.
+This is the per-rung SHIP gate; `--runslow` becomes a periodic (every 3rd rung) full gate.
 """
+import ast
+import os
+import re
+import subprocess
+import time
+
 import pytest
 
 SLOW_SECONDS = 8.0          # a test at/above this (call phase) is tagged `slow`
@@ -126,9 +140,198 @@ def _is_spine(nodeid: str) -> bool:
             or "bit_for_bit" in f or "bitforbit" in f)
 
 
+# ------------------------------------------------------------- § affected-set selection
+# The full gate is 1581 s and cannot be scheduled below that (see the module docstring), so the
+# only lever is to run fewer tests. `--affected` re-enables the SLOW gates for just the modules
+# the working diff can reach, and leaves every fast test in place. Two properties make the
+# risk acceptable: the reduce SPINE is never slow-tagged so it runs on EVERY invocation, and the
+# selector ESCALATES TO THE FULL GATE whenever it cannot reason about a change (below).
+#
+# HOW A CHANGE IS MAPPED (why this is not a coverage map): rung commits are ~99 % additive to
+# `engine.py` (+404/-2 for rung 57), so `git diff` answers "what existing code moved?" directly.
+# We diff the AST — top-level class/def SOURCE TEXT, old vs new — rather than line ranges,
+# because a line-range map orphans the banner comments between two newly-added classes and
+# escalates the whole module. Rules:
+#   * a top-level symbol in BOTH revisions whose source differs -> CHANGED (seeds the closure)
+#   * a top-level symbol only in the NEW revision               -> NEW; seeds NOTHING (no existing
+#       code can depend on it, and its own test file is picked up as a changed test file)
+#   * a top-level symbol only in the OLD revision (deleted)     -> CHANGED
+#   * any change to module-level STATEMENTS (imports, constants) -> escalate to the FULL gate
+# The seed is then closed in the CALLER direction to a fixpoint (a package symbol whose body
+# mentions a seeded name joins), and a test module is affected if it mentions any name in the
+# closed set. The closure is what makes `ComponentMap` correctly fan out to all of rungs 31-54
+# while rung 55's purely-additive `StageStack` reaches only `test_rung55`.
+#
+# BASELINE: the working tree is compared against the sha of the last PASSING full gate (recorded
+# in the pytest cache), not against HEAD. That is deliberate — it makes `--affected` CUMULATIVE
+# across the rungs that were affected-gated since the last full run, so a clean tree right after
+# a rung commit still selects that rung's changes instead of selecting nothing.
+_ROOT = os.path.dirname(os.path.abspath(__file__))
+_FULL_GATE_KEY = "affected/last-full-gate"
+_FULL_GATE_EVERY = 3                       # rung commits between full gates (user's cadence)
+
+_SYMBOL_MAPPED = ("turbojet/engine.py",)   # files we can map change -> symbol
+# Touching any of these means we cannot reason narrowly: gas.py/components.py are the CORE that
+# every rung reads (and have not been touched since rung 31), and the two config files define the
+# selection policy itself. Anything else under turbojet/ escalates too, via _affected_modules.
+_ESCALATE_FILES = ("turbojet/gas.py", "turbojet/components.py", "turbojet/__init__.py",
+                   "conftest.py", "pytest.ini")
+
+
+def _git(*args):
+    """Run git in the repo root. Returns stdout, or None on any failure (which escalates)."""
+    try:
+        r = subprocess.run(["git", "-C", _ROOT, *args], capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return r.stdout if r.returncode == 0 else None
+
+
+def _symbol_sources(src):
+    """({top-level name: source text}, [module-level statement dumps]), or (None, None)."""
+    try:
+        tree = ast.parse(src)
+    except (SyntaxError, ValueError):
+        return None, None
+    lines = src.splitlines()
+    syms, module_stmts = {}, []
+    for n in tree.body:
+        if isinstance(n, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            syms[n.name] = "\n".join(lines[n.lineno - 1:n.end_lineno])
+        else:
+            module_stmts.append(ast.dump(n))     # comments / blank lines are invisible to ast
+    return syms, module_stmts
+
+
+def _seed_symbols(old_src, new_src):
+    """Changed top-level symbol names, or None to signal 'escalate to the full gate'."""
+    old, old_mod = _symbol_sources(old_src)
+    new, new_mod = _symbol_sources(new_src)
+    if old is None or new is None or old_mod != new_mod:
+        return None                              # unparseable, or module-level statements moved
+    seed = {n for n, body in new.items() if n in old and old[n] != body}
+    return seed | (set(old) - set(new))          # deletions count as changes
+
+
+def _closure(seed):
+    """Fixpoint in the CALLER direction over the package's top-level symbols."""
+    bodies = {}
+    for rel in _SYMBOL_MAPPED + _ESCALATE_FILES:
+        if not rel.startswith("turbojet/"):
+            continue
+        try:
+            with open(os.path.join(_ROOT, rel), encoding="utf-8") as fh:
+                syms, _ = _symbol_sources(fh.read())
+        except OSError:
+            continue
+        bodies.update(syms or {})
+    cur = set(seed)
+    while True:
+        grown = set(cur)
+        for name, body in bodies.items():
+            if name not in grown and any(re.search(rf"\b{re.escape(s)}\b", body) for s in cur):
+                grown.add(name)
+        if grown == cur:
+            return cur
+        cur = grown
+
+
+def _baseline(config):
+    """The sha to diff against: the last passing full gate if it is still an ancestor of HEAD."""
+    since = config.getoption("--affected-since")
+    if since:
+        return since
+    cache = getattr(config, "cache", None)
+    rec = cache.get(_FULL_GATE_KEY, None) if cache is not None else None
+    sha = (rec or {}).get("sha")
+    if sha and _git("merge-base", "--is-ancestor", sha, "HEAD") is not None:
+        return sha
+    return "HEAD"
+
+
+def _affected_modules(config):
+    """Test-module basenames whose SLOW gates must run. None => escalate to the full gate.
+
+    Returns (modules, why) — `why` is a short human-readable line for the report header."""
+    base = _baseline(config)
+    diff = _git("diff", "--name-only", base)
+    if diff is None:
+        return None, f"cannot diff against {base!r} (not a git repo?)"
+    untracked = _git("ls-files", "--others", "--exclude-standard") or ""
+    changed = {p.strip().replace("\\", "/") for p in (diff + "\n" + untracked).splitlines()
+               if p.strip()}
+
+    seed, mods = set(), set()
+    for path in sorted(changed):
+        if path.startswith("tests/") and path.endswith(".py"):
+            mods.add(os.path.basename(path)[:-3])          # a changed test file is affected
+        elif path in _ESCALATE_FILES:
+            return None, f"{path} changed — the core / the policy itself"
+        elif path in _SYMBOL_MAPPED:
+            try:
+                with open(os.path.join(_ROOT, path), encoding="utf-8") as fh:
+                    new_src = fh.read()
+            except OSError:
+                return None, f"cannot read {path}"
+            old_src = _git("show", f"{base}:{path}")
+            s = _seed_symbols(old_src if old_src is not None else "", new_src)
+            if s is None:
+                return None, f"module-level statements changed in {path}"
+            seed |= s
+        elif path.startswith("turbojet/"):
+            return None, f"{path} changed — no symbol map for it"
+        # Everything else (docs/, main.py, memory/, CLAUDE.md) reaches no slow gate. That is the
+        # ACCEPTED RISK named in CLAUDE.md § Commands — main.py in particular is covered by no
+        # test at all, a pre-existing hole this selector neither creates nor closes.
+
+    closed = _closure(seed) if seed else set()
+    if closed:
+        for name in sorted(os.listdir(os.path.join(_ROOT, "tests"))):
+            if not (name.startswith("test_") and name.endswith(".py")):
+                continue
+            try:
+                with open(os.path.join(_ROOT, "tests", name), encoding="utf-8") as fh:
+                    src = fh.read()
+            except OSError:
+                continue
+            if any(re.search(rf"\b{re.escape(s)}\b", src) for s in closed):
+                mods.add(name[:-3])
+    why = (f"baseline {base[:12]} · {len(seed)} changed symbol(s) -> {len(closed)} in closure "
+           f"-> {len(mods)} module(s)")
+    return mods, why
+
+
+def _affected_for(config):
+    """Memoised (modules, why) for this session. Lazy because pytest_report_header runs BEFORE
+    pytest_collection_modifyitems, and both need the answer."""
+    info = getattr(config, "_affected_info", None)
+    if info is None:
+        info = _affected_modules(config)
+        config._affected_info = info
+    return info
+
+
+def _rungs_since_full_gate(config):
+    """(n rung commits, sha) since the last passing full gate — drives the cadence banner."""
+    cache = getattr(config, "cache", None)
+    rec = cache.get(_FULL_GATE_KEY, None) if cache is not None else None
+    sha = (rec or {}).get("sha")
+    if not sha or _git("merge-base", "--is-ancestor", sha, "HEAD") is None:
+        return None, sha
+    out = _git("log", "--oneline", "--extended-regexp", "--grep=^feat\\(rung", f"{sha}..HEAD")
+    return (len([l for l in out.splitlines() if l.strip()]) if out is not None else None), sha
+
+
 def pytest_addoption(parser):
     parser.addoption("--runslow", action="store_true", default=False,
                      help="run the slow gates too (default: the fast subset only)")
+    parser.addoption("--affected", action="store_true", default=False,
+                     help="every fast test PLUS the slow gates of the modules the working diff "
+                          "can reach (the per-rung ship gate). Escalates to the full gate if the "
+                          "diff touches the core or module-level statements.")
+    parser.addoption("--affected-since", action="store", default=None, metavar="REV",
+                     help="diff against REV instead of the last passing full gate")
 
 
 def pytest_configure(config):
@@ -149,14 +352,36 @@ def pytest_collection_modifyitems(config, items):
         if is_slow:
             item.add_marker(pytest.mark.slow)
 
-    if not config.getoption("--runslow") and not config.option.markexpr:
-        # respect an explicit `-m` expression (e.g. `-m slow`); otherwise drop the slow gates.
+    # --affected: keep every fast test, and keep a slow gate only if its module is reachable
+    # from the working diff. `affected is None` means the selector escalated -> behave as
+    # --runslow. Computed once and stashed so the report header can explain the selection.
+    affected = None
+    if config.getoption("--affected") and not config.option.markexpr:
+        affected, _why = _affected_for(config)
+
+    full_gate = config.getoption("--runslow") and not config.getoption("--affected")
+    if not full_gate and not config.option.markexpr:
+        # respect an explicit `-m` expression (e.g. `-m slow`); otherwise drop the slow gates —
+        # all of them for a bare `pytest`, the unreachable ones for `--affected`.
+        keep_slow = (lambda it: False) if not config.getoption("--affected") else (
+            (lambda it: True) if affected is None
+            else (lambda it: _module_of(it.nodeid) in affected))
         selected, deselected = [], []
         for item in items:
-            (deselected if item.get_closest_marker("slow") else selected).append(item)
+            drop = item.get_closest_marker("slow") and not keep_slow(item)
+            (deselected if drop else selected).append(item)
         if deselected:
             config.hook.pytest_deselected(items=deselected)
             items[:] = selected
+
+    # A FULL gate only counts as one if nothing narrowed it — no -m, no -k, no --affected, no
+    # --collect-only and no explicit path/nodeid argument. pytest_sessionfinish additionally
+    # requires that every collected item actually reported, then records it on success.
+    positional = [a for a in config.invocation_params.args if not a.startswith("-")]
+    config._was_full_gate = (full_gate and not config.option.markexpr
+                             and not config.option.keyword and not positional
+                             and not config.getoption("--collect-only"))
+    config._gate_item_count = len(items)
 
     # LPT scheduling: get every multi-minute pole started at t=0 so the makespan approaches
     # the single longest test rather than a stacked tail. xdist hands items to workers in
@@ -191,18 +416,51 @@ def pytest_collection_modifyitems(config, items):
 def pytest_runtest_logreport(report):
     if report.when == "call":
         _RECORDED[report.nodeid] = report.duration
+    _SEEN.add(report.nodeid)          # any phase — a skipped test never reaches `call`
 
 
 _RECORDED: dict = {}
+_SEEN: set = set()
 
 
-def pytest_sessionfinish(session):
+def pytest_report_header(config):
+    """Say out loud which gate is running, what it selected, and when the full one is due."""
+    lines = []
+    if config.getoption("--affected") and not config.option.markexpr:
+        affected, why = _affected_for(config)
+        if affected is None:
+            lines.append(f"gate: --affected ESCALATED TO FULL — {why}")
+        else:
+            shown = ", ".join(sorted(affected)) if affected else "(none)"
+            lines.append(f"gate: --affected — {why}")
+            lines.append(f"      slow gates re-enabled for: {shown}")
+    n, sha = _rungs_since_full_gate(config)
+    if sha is None:
+        lines.append("gate: no full `pytest --runslow` recorded yet — run one to start the clock")
+    elif n is not None and n >= _FULL_GATE_EVERY:
+        lines.append(f"gate: *** {n} rung commits since the last full gate ({sha[:12]}) — "
+                     f"cadence is every {_FULL_GATE_EVERY}; run `pytest --runslow` ***")
+    elif n is not None:
+        lines.append(f"gate: {n}/{_FULL_GATE_EVERY} rung commits since the full gate at {sha[:12]}")
+    return lines
+
+
+def pytest_sessionfinish(session, exitstatus):
     config = session.config
     cache = getattr(config, "cache", None)
-    if cache is None or not _RECORDED:
+    if cache is None:
         return
     if hasattr(config, "workerinput"):     # an xdist worker — the controller does the write
         return
-    stored = cache.get(_CACHE_KEY, {})
-    stored.update(_RECORDED)               # last-seen wins; keeps durations for tests not run this time
-    cache.set(_CACHE_KEY, stored)
+    if _RECORDED:
+        stored = cache.get(_CACHE_KEY, {})
+        stored.update(_RECORDED)           # last-seen wins; keeps durations for tests not run this time
+        cache.set(_CACHE_KEY, stored)
+    # A clean, unnarrowed `--runslow` pass is what resets the cadence clock AND becomes the
+    # baseline every later `--affected` run diffs against. It must have EXECUTED everything it
+    # collected — a `--collect-only` run, or one cut short, must never reset the clock.
+    ran_all = len(_SEEN) >= getattr(config, "_gate_item_count", 1 << 30)
+    if getattr(config, "_was_full_gate", False) and exitstatus == 0 and ran_all:
+        head = (_git("rev-parse", "HEAD") or "").strip()
+        if head:
+            cache.set(_FULL_GATE_KEY, {"sha": head, "when": time.strftime("%Y-%m-%d %H:%M:%S")})

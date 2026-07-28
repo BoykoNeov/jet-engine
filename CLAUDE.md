@@ -206,18 +206,19 @@ A compact map — the per-rung method/finding detail lives in `docs/rungN-spec.m
   living plan/tasks.
 
 ## Commands
-- Run the model:  `python main.py`
-- Run tests (fast, routine):  `pytest` — the FAST subset (~2.5 min). Inherently-expensive FINDING /
-  robustness gates are tagged `slow` and deselected, **but the bit-for-bit reduce spine
-  (`test_reduce_*`, `test_cycle_untouched_*`, `*_bit_for_bit`) is always kept.**
-- Run tests (full, every gate):  `pytest --runslow` — all tests (~10–15 min). **Use this at commit /
-  session-end / CI** — the fast subset is for iteration, not for signing off a rung.
-- Only the slow gates:  `pytest -m slow`   ·   One rung by hand:  `python tests/test_rung2.py`
-- Install deps:   `pip install -r requirements.txt`  (matplotlib + pytest + pytest-xdist)
+- Run the model: `python main.py` · Install: `pip install -r requirements.txt`
+- **Iterate: `pytest`** — the FAST subset (~5 min); expensive FINDING gates are `slow`-tagged out.
+  The reduce spine (`test_reduce_*`, `test_cycle_untouched_*`, `*_bit_for_bit`) is **NEVER**
+  slow-tagged and runs on **every** invocation — that is what makes the two gates below safe.
+- **Ship a rung: `pytest --affected`** (~6–16 min) — the fast subset PLUS the slow gates the diff
+  can reach (AST symbol-diff + caller closure, cumulative since the last full gate); self-escalates
+  to the full gate on a core / module-level change. **The rung green-gate.**
+- **Full gate: `pytest --runslow`** (~26 min) — everything. **Every 3rd rung** (the header nags),
+  at session end, and whenever `--affected` escalates. ACCEPTED RISK: a regression in an unreached
+  non-spine gate can hide for ≤3 rungs; `main.py` is covered by no test.
+- Only the slow gates: `pytest -m slow` · One rung by hand: `python tests/test_rung2.py`
 
-The speed policy (fast-by-default via a learned duration cache, longest-first scheduling, the
-never-slow-tagged reduce spine) lives in `conftest.py` + `pytest.ini` — no test file is edited, so
-the derive/reduce spine stays pristine.
+Policy + escalation rules live in `conftest.py` + `pytest.ini` — no test file is edited.
 
 ## Stack
 Python (standard library) + matplotlib for the plot. No other dependencies.
