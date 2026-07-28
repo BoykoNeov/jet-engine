@@ -241,12 +241,24 @@ By **dispatch and by identity**, and the second is the strong one:
 
 ## Concessions
 
-- **The fuel leg is ONE OBJECT, derived ONCE on the BARE machine, and this is not what a
-  FADEC does.** `accel_schedule` reads `self.equilibrium`, so a stator-armed machine derives a
-  different `κ_ss` table; letting each cell derive its own would make the leg itself differ
-  between cells and the second difference would isolate nothing. The matched-schedule variant
-  is a **different, confounded experiment** and is not this rung. Every reader takes the leg
-  as an argument so the choice is the caller's and is visible.
+- **The fuel leg is ONE OBJECT, derived ONCE on the BARE machine.** Letting each cell derive
+  its own would make the leg itself differ between cells and the second difference would
+  isolate nothing. Every reader takes the leg as an argument so the choice is the caller's and
+  is visible. **The discipline stands; its stated reason was FALSE — see the banner below.**
+
+  > **⚠ CORRECTED BY RUNG 59.** This bullet used to read *"a stator-armed machine derives a
+  > different `κ_ss` table … the matched-schedule variant is a different, confounded
+  > experiment and is not this rung."* It is not a different experiment. `κ_ss` is a function
+  > of `Tt4` **alone** — `A4` is choked so the corrected group is hardware, and `Tt3` is
+  > pinned by the map-free shaft balances (rung 31's `(★)`) — so a schedule's **ordinate**
+  > cannot see a stator on **either** spool, and its **abscissa** `n_H(Tt4)` is untouched by
+  > an **LP** stator (rung 39's one arrow: `π_LPC` cancels out of the HP face). **This rung
+  > ran an LP stator**, so the leg above already *is* the matched leg — identical not only in
+  > the table but in `s_eng`, the fuel removed and `s*` — and **every number in this spec is
+  > unconfounded**. The concession is discharged as VACUOUS, not as small. An **HP** stator
+  > does re-index the table (+3.3–6.7 %), and there an unmatched leg manufactures an
+  > interaction 48–96× too large and of the wrong sign on the statored spool. See
+  > `docs/rung59-spec.md`.
 - **The `+0.8 %` constant-setting floor is an `r = 0.5` number.** At the fastest ramp measured
   it goes **negative** (`−2.98 %` at `r = 0.10`): the residual plant-coupling channel has its
   own clock and its own sign. The order-of-magnitude split between a setting and a schedule is
@@ -290,6 +302,10 @@ in — and ask whether the interaction survives when the leg is matched to the p
 This rung refuses it as a confound *for isolating the mechanism*; with the mechanism now
 isolated and predictable from the leg-free marches, the confounded experiment becomes
 readable, because the prediction says what to subtract.
+
+> **✔ BUILT — rung 59, and it needed no subtraction.** There was nothing to subtract *on this
+> rung's machine*: the matched leg is bit-identical to the one used above. The seam was real
+> only on the **other** spool. `docs/rung59-spec.md`.
 
 Then, unchanged: **stator + bleed together** (rung 53's saturation), a **bleed schedule**
 `b(n_L)`, and the **lag SHAPE / two-lag cascade** (rung 52's own seam).

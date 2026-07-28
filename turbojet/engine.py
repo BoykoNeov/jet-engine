@@ -7810,11 +7810,19 @@ class ScheduledStatorTransient(TwoSpoolFuelTransient):
         the SIGN of the stator's own credit. `m_phi` is reported per cell and never
         differenced.
 
-        THE FUEL LEG MUST BE ONE OBJECT, DERIVED ONCE, AND PASSED IN. `accel_schedule` reads
-        `self.equilibrium`, so an armed machine derives a DIFFERENT kappa_ss table; letting
-        each cell derive its own would make the leg itself differ between cells and the second
-        difference would isolate nothing. The matched-schedule variant (what a real FADEC
-        burns in) is a different, confounded experiment and is NOT this rung.
+        THE FUEL LEG MUST BE ONE OBJECT, DERIVED ONCE, AND PASSED IN -- so that a leg which
+        differed between cells could never make the second difference isolate nothing. That
+        discipline stands.
+
+        ITS STATED REASON WAS FALSE, AND RUNG 59 CORRECTS IT. This docstring used to argue
+        that "an armed machine derives a DIFFERENT kappa_ss table", and refused the
+        matched-schedule variant as a confounded experiment on that basis. kappa_ss is a
+        function of Tt4 ALONE (choked A4 + the map-free shaft balances -- see
+        `_proof_chain`), so the table's ORDINATE cannot see a stator on either spool, and its
+        ABSCISSA n_H(Tt4) is untouched by an LP stator (rung 39's one arrow). Rung 58 ran an
+        LP stator: the leg derived here on the bare machine ALREADY IS the matched leg, to
+        machine precision, and the four cells below were never confounded. An HP stator DOES
+        re-index the table -- see `matched_credit` and docs/rung59-spec.md.
 
         `fuel_removed` and the two `nu_*_end` are the DEFLATION EXCLUSION (rung 48's move):
         if the leg's cost in the settled endpoint were itself stator-dependent, the
@@ -7914,3 +7922,179 @@ class ScheduledStatorTransient(TwoSpoolFuelTransient):
                                          "share", "v_bare", "v_fuel", "v_ratio",
                                          "relocation", "leg_cost_bare", "leg_cost_armed")}))
         return out
+
+    # --- RUNG 59: the MATCHED schedule -- the ORDINATE cannot see the stator --------------
+
+    def _proof_chain(self, flight: FlightCondition, Tt4: float) -> dict:
+        """RUNG 59. The three factors `kappa_ss` is BUILT from, at one steady point:
+
+            kappa_ss  =  f * mdot/pt3  =  pi_b * f(Tt3,Tt4) * MFP_A4 / [(1+f)*sqrt(Tt4)]
+
+        (i)  A4 is CHOKED (rungs 30/31), so the corrected group `mdot*(1+f)*sqrt(Tt4)/pt4`
+             is hardware -- gamma, R and the throat area -- and NOTHING the stators do can
+             reach it.
+        (ii) `Tt3` is pinned by the TWO SHAFT BALANCES, which are MAP-FREE with every throat
+             choked (rung 31's (*)): the stator changes the SPEED at which a temperature
+             ratio is bought and the EFFICIENCY it is bought at, not the ratio itself.
+
+        Hence `kappa_ss` is a function of `Tt4` ALONE -- a schedule's ORDINATE cannot see a
+        stator on EITHER spool, exactly. This reader returns the factors so the claim is
+        checked rather than asserted.
+
+        DOMAIN: a fully-choked machine on the CPG branch. Rung 33's unchoked nozzle branch
+        is the named boundary -- there `MFP_A4` is no longer the hardware group -- and on a
+        reacting gas `f` picks up composition dependence. Neither is claimed."""
+        eq = self.equilibrium(flight, Tt4)
+        pt3 = eq["pt4"] / self.pi_b
+        return dict(Tt4=Tt4, Tt25=eq["Tt25"], Tt3=eq["Tt3"], f=eq["f"],
+                    mfp=eq["mdot_air"] * (1.0 + eq["f"]) * Tt4 ** 0.5 / eq["pt4"],
+                    ratio=eq["mdot_air"] / pt3, n_hp=eq["n_hp"], nu_lp=eq["nu_lp"],
+                    kappa=eq["f"] * eq["mdot_air"] / pt3)
+
+    def schedule_invariance(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                            margin: float, n: int = 13) -> dict:
+        """RUNG 59, FIRST HALF. Derive rung 48's `Wf/pt3` schedule on THIS (stator-armed)
+        machine and on its bare sibling, and compare the two tables HALF BY HALF.
+
+        Rung 58 refused the matched-schedule variant as a confounded experiment, on the
+        stated premise that "an armed machine derives a DIFFERENT kappa_ss table". That
+        premise is FALSE in the ORDINATE -- exactly, on both spools, for the reason
+        `_proof_chain` derives -- and TRUE only in the ABSCISSA, and only for a stator on the
+        spool whose speed indexes the schedule. So:
+
+            LP stator   n_H(Tt4) untouched (rung 39's ONE ARROW: pi_LPC cancels out of the
+                        HP face)  =>  the table is BIT-IDENTICAL  =>  matching is a NO-OP.
+            HP stator   n_H(Tt4) moves     =>  the SAME CURVE, RE-INDEXED.
+
+        Returns the two tables, tuple-level identity verdicts for each half, and the
+        proof-chain residuals over the band."""
+        assert margin >= 0.0, "rung-59 inherits rung 48's above-the-steady-line margin"
+        bare = self.at_stator()
+        L_bare = bare.accel_schedule(flight, Tt4_lo, Tt4_hi, margin, n)
+        L_matched = self.accel_schedule(flight, Tt4_lo, Tt4_hi, margin, n)
+        chain = []
+        for k in range(n):
+            Tt4 = Tt4_lo + (Tt4_hi - Tt4_lo) * k / (n - 1.0)
+            a, b = bare._proof_chain(flight, Tt4), self._proof_chain(flight, Tt4)
+            chain.append(dict(Tt4=Tt4, **{f"d_{key}": (b[key] - a[key]) / a[key]
+                                          for key in ("Tt25", "Tt3", "f", "mfp", "ratio",
+                                                      "kappa", "n_hp", "nu_lp")}))
+        return dict(
+            bare=L_bare, matched=L_matched,
+            ordinate_identical=(L_matched.kappa == L_bare.kappa),
+            abscissa_identical=(L_matched.n_H == L_bare.n_H),
+            d_ordinate=max(abs(a - b) / b for a, b in zip(L_matched.kappa, L_bare.kappa)),
+            d_abscissa=max(abs(a - b) / b for a, b in zip(L_matched.n_H, L_bare.n_H)),
+            chain=chain)
+
+    @staticmethod
+    def _synthetic_leg(index: "AccelSchedule", values: "AccelSchedule") -> "AccelSchedule":
+        """RUNG 59's ISOLATION instrument: the ABSCISSA of one table carrying the ORDINATE
+        of the other. Running it against the two real legs splits `delta_match` into the
+        half that re-indexes and the half that re-values, with nothing else changed."""
+        assert index.margin == values.margin, (
+            "rung-59 splices two tables of ONE schedule margin -- a margin difference would "
+            "reintroduce the very leg-change the splice exists to exclude.")
+        return AccelSchedule(margin=values.margin, n_H=index.n_H, kappa=values.kappa)
+
+    def _clamp_audit(self, flight: FlightCondition, traj, leg: "AccelSchedule") -> dict:
+        """RUNG 59's standing BLOCKER check. `AccelSchedule.cap` CLAMPS at both ends of its
+        abscissa, so a leg consulted outside its own bracket is running on `kappa[0]` or
+        `kappa[-1]` -- the envelope edge, not the DERIVED shape (rung 48's `m -> 0` corner,
+        rung 58's `r = 2.0` dormancy). Rung 59 re-indexes that very abscissa, so this is
+        exactly the artifact that could counterfeit the finding: audited, never assumed."""
+        lo, hi = leg.n_H[0], leg.n_H[-1]
+        n_cut, n_all = [], []
+        for p in traj:
+            i = self._instant_fuel(flight, p["nu_lp"], p["nu_hp"], p["mf_sched"])
+            n_all.append(i["n_hp"])
+            if p["mf_sched"] - p["mf"] > 1e-15:
+                n_cut.append(i["n_hp"])
+        return dict(lo=lo, hi=hi, n_min=min(n_all), n_max=max(n_all), n_cuts=len(n_cut),
+                    cut_lo=(min(n_cut) if n_cut else float("nan")),
+                    cut_hi=(max(n_cut) if n_cut else float("nan")),
+                    clamped=sum(1 for x in n_cut if x < lo or x > hi))
+
+    def matched_credit(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                       margin: float, r: float = 0.5, s_settle: float = 1.2,
+                       ds: float = 0.005, spool: str = "lp", n: int = 13) -> dict:
+        """THE RUNG (59). Rung 58's composite re-run with the fuel leg MATCHED to the plant
+        it runs on -- what a FADEC actually burns in -- plus the splice that says which half
+        of the table carries the difference.
+
+        Rung 58 held ONE leg object across its four cells, because a leg that differed
+        between cells would make the second difference isolate nothing. That discipline is
+        right and is kept. What was wrong was its REASON: the matched leg is not a different
+        leg at all when the stator sits on the LP spool. `schedule_invariance` proves it.
+
+        THE ALGEBRA IS EXACT AND IS THE WHOLE LICENSE FOR THIS RUNG. The matched leg is
+        derived on the ARMED machine, so it is a no-op on the two BARE cells (`neither`,
+        `fuel`) by construction. Therefore
+
+            dI_matched - dI_bare_leg  =  M_i(both, L_A) - M_i(both, L_B)  =  delta_match
+
+        with NO residual term: `delta_match` is a FIRST difference on ONE machine, same
+        stator, same grid, same `T_c` off the design map. Rung 58's objection to matching
+        (the leg differing ACROSS cells) does not apply to it.
+
+        `abscissa_share` / `ordinate_share` splice the two tables (`_synthetic_leg`) and
+        re-run the armed cell against each: they must sum to 1, and which one is ~1 is the
+        rung's mechanism claim rather than a magnitude."""
+        assert spool in ("lp", "hp"), f"spool must be 'lp' or 'hp', got {spool!r}"
+        assert self._is_armed() or self.vsv_lp or self.vsv_hp, (
+            "rung-59 matched_credit differences an ARMED stator against its own bare "
+            "sibling -- call it on the machine carrying the stator leg.")
+        bare = self.at_stator()
+        inv = self.schedule_invariance(flight, Tt4_lo, Tt4_hi, margin, n)
+        L_B, L_A = inv["bare"], inv["matched"]
+        L_S = self._synthetic_leg(L_A, L_B)          # ARMED index, BARE values
+        L_C = self._synthetic_leg(L_B, L_A)          # BARE index, ARMED values
+
+        args = (flight, Tt4_lo, Tt4_hi, r, s_settle, ds, spool)
+        cells = {
+            "neither": bare._cell(*args, None, None, None),
+            "stator": self._cell(*args, None, None, None),
+            "fuel": bare._cell(*args, L_B, None, None),
+            "both_bare_leg": self._cell(*args, L_B, None, None),
+            "both_matched": self._cell(*args, L_A, None, None),
+            "both_reindexed": self._cell(*args, L_S, None, None),
+            "both_revalued": self._cell(*args, L_C, None, None),
+        }
+        # THE BLOCKER, on every cell that actually consults a leg.
+        audits = {}
+        for tag, leg in (("fuel", L_B), ("both_bare_leg", L_B), ("both_matched", L_A)):
+            mach = bare if tag == "fuel" else self
+            traj, _ = mach._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds, accel=leg)
+            a = mach._clamp_audit(flight, traj, leg)
+            audits[tag] = a
+            assert a["clamped"] == 0, (
+                f"rung-59: cell {tag!r} consults its schedule OUTSIDE the derived bracket "
+                f"[{a['lo']:.6f}, {a['hi']:.6f}] at {a['clamped']} of {a['n_cuts']} cutting "
+                f"points -- the cap is CLAMPED there, so the number is an envelope edge and "
+                f"not the derived shape. Widen the Tt4 band or lower the stator setting.")
+
+        credit_bare = cells["stator"]["m_i"] - cells["neither"]["m_i"]
+        dI_bare = (cells["both_bare_leg"]["m_i"] - cells["fuel"]["m_i"]) - credit_bare
+        dI_match = (cells["both_matched"]["m_i"] - cells["fuel"]["m_i"]) - credit_bare
+        d_match = cells["both_matched"]["m_i"] - cells["both_bare_leg"]["m_i"]
+        d_index = cells["both_reindexed"]["m_i"] - cells["both_bare_leg"]["m_i"]
+        d_value = cells["both_revalued"]["m_i"] - cells["both_bare_leg"]["m_i"]
+        return dict(
+            spool=spool, r=r, ds=ds, margin=margin, cells=cells, audits=audits,
+            ordinate_identical=inv["ordinate_identical"],
+            abscissa_identical=inv["abscissa_identical"],
+            d_ordinate=inv["d_ordinate"], d_abscissa=inv["d_abscissa"],
+            credit_bare=credit_bare, interaction_bare_leg=dI_bare,
+            interaction_matched=dI_match, delta_match=d_match,
+            delta_index=d_index, delta_value=d_value,
+            abscissa_share=(d_index / d_match if d_match else float("nan")),
+            ordinate_share=(d_value / d_match if d_match else float("nan")),
+            # rungs 43/45/49: the RAW second differences carry the claim; these are reported
+            # and never leaned on -- `credit_bare` is a denominator from another regime.
+            share_bare_leg=(dI_bare / credit_bare if credit_bare else float("nan")),
+            share_matched=(dI_match / credit_bare if credit_bare else float("nan")),
+            s_eng_bare_leg=cells["both_bare_leg"]["s_eng"],
+            s_eng_matched=cells["both_matched"]["s_eng"],
+            removed_bare_leg=cells["both_bare_leg"]["fuel_removed"],
+            removed_matched=cells["both_matched"]["fuel_removed"],
+            relocation=cells["both_matched"]["s"] - cells["both_bare_leg"]["s"])
