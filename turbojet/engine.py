@@ -789,6 +789,10 @@ class ComponentMap:
     vsv: float = 0.0      # RUNG 53: variable-stator setting AS THE SWIRL IT INDUCES, v = tan(alpha_1)
     #                       (>0 closed / co-rotating pre-swirl, <0 opened past axial). 0 => the
     #                       DESIGN setting, and every rung <= 52 expression is bit-for-bit.
+    capacity: float = 0.0   # RUNG 54: the stator row's DESIGN fraction of choking capacity,
+    #                       C = MFP(M_th0)/MFP(1) in (0,1). 0 => NO throat model (off), exactly
+    #                       as phi_surge=0 means no surge line. A PURE DIAGNOSTIC: it enters no
+    #                       solver, so it cannot move any matched number (rung 54 P1).
 
     @classmethod
     def flat(cls) -> "ComponentMap":
@@ -878,6 +882,9 @@ class ComponentMap:
         # MapMatcher to rung 31 bit-for-bit (rung 36 adds no cycle knob).
         # RUNG 53's vsv IS part of flatness, by the same rule read the other way: it enters psi,
         # so a swirled map is NOT flat and must not claim the rung-31 reduce.
+        # RUNG 54's capacity is NOT part of flatness, by the phi_surge rule: the throat is a pure
+        # diagnostic read off the SOLVED state and enters no solver (rung 54 P1), so a map with a
+        # throat model still reduces MapMatcher to rung 31 bit-for-bit.
         return (self.a == self.b == self.c == self.sigma == self.a_t == self.l == 0.0
                 and self.vsv == 0.0)
 
@@ -945,6 +952,100 @@ class ComponentMap:
         if self.vsv == 0.0:
             return self.phi_surge
         return self.phi_surge / (1.0 + self.vsv * self.phi_surge)
+
+    # --- RUNG 54: the stator-row THROAT (docs/rung54-spec.md) -------------------------------
+
+    def with_capacity(self, capacity: float) -> "ComponentMap":
+        """RUNG 54. A copy of this map carrying a THROAT MODEL of design capacity fraction
+        C = MFP(M_th0)/MFP(1) in (0,1) -- the fraction of its choking corrected flow the row
+        passes AT THE DESIGN POINT, equivalently its design throat Mach (see
+        `design_throat_mach`). This is rung 54's ONE disclosed constant; the AREA law it
+        multiplies is derived (`throat_ratio`). C = 0.0 means NO throat model, exactly as
+        phi_surge = 0.0 means no surge line -- and, like phi_surge, it never touches psi/eta/
+        the running line, so it cannot move a matched number (rung 54 P1).
+        """
+        assert 0.0 <= capacity < 1.0, (
+            f"rung-54 capacity is a design FRACTION of choking flow, C in [0,1): got {capacity}. "
+            f"C >= 1 would mean the row is already past choke at its own design point.")
+        return replace(self, capacity=capacity)
+
+    def throat_ratio(self) -> float:
+        """RUNG 54. The vane-row throat area at THIS setting, over its design-setting value --
+        DERIVED, zero new constants, off rung 53's OWN coordinate.
+
+        A cascade's throat is the minimum opening o between adjacent vanes; for pitch s and
+        metal exit angle alpha_1 from axial the standard cascade relation is o/s = cos alpha_1
+        (the same relation that fixes a row's exit angle from its throat). Rung 53's setting is
+        v = tan alpha_1, so
+
+            A_th(v)/A_th(0) = cos alpha_1 = 1/sqrt(1 + v^2)
+
+        THE ROTATION THAT BUYS INCIDENCE IS THE ROTATION THAT SPENDS THE THROAT: one coordinate,
+        and now three channels (psi, phi_surge_at, this). Note this is EVEN in v -- the throat is
+        maximal at the design setting and closes whichever way the vane turns. That coincidence
+        is INHERITED from rung 53's coordinate origin (v = 0 defined as zero swirl), not derived;
+        see docs/rung54-spec.md § Concessions.
+        """
+        return 1.0 / (1.0 + self.vsv * self.vsv) ** 0.5
+
+    def throat_loading(self, m: float) -> float:
+        """RUNG 54. The THROAT-referred corrected flow at this setting, normalised on design:
+
+            X(v) = m / (A_th(v)/A_th(0)) = m * sqrt(1 + v^2)
+
+        `m` is the FACE-referred corrected flow (design = 1) -- rung 53's own phi_op * n. The
+        face flow is NOT divided by the throat: annulus continuity gives Vx = mdot/(rho*A)
+        independent of alpha_1 (the vane TURNS the flow, it does not squeeze the annulus), so the
+        throat never touches phi = Vx/U. It only sets where the Mach peaks -- which is exactly
+        why this channel is diagnostic-only (rung 54 P1).
+        """
+        return m / self.throat_ratio()
+
+    def capacity_margin(self, m: float) -> float:
+        """RUNG 54's THIRD reference-free surge/limit currency: distance to the row CHOKING.
+
+            M_c = 1 - C * X(v)          choked <=> M_c <= 0
+
+        Its boundary (throat Mach = 1) is set by GEOMETRY and is stator-invariant in its own
+        coordinate, so by rung 53's law it is a legitimate margin -- unlike M_phi, whose wall
+        moves with the lever. Needs the throat model (C > 0).
+        """
+        assert self.capacity > 0.0, (
+            "rung-54 capacity_margin needs a throat model: build the map with "
+            ".with_capacity(C).")
+        return 1.0 - self.capacity * self.throat_loading(m)
+
+    def chokes(self, m: float) -> bool:
+        """RUNG 54. Does the row choke at this face-referred corrected flow and setting?"""
+        return self.capacity_margin(m) <= 0.0
+
+    def design_throat_mach(self, gamma: float = 1.4) -> float:
+        """RUNG 54. The disclosed constant READ PHYSICALLY: the design throat Mach M_th0 whose
+        MFP fraction is C, by inverting MFP(M)/MFP(1) with
+
+            MFP(M) ∝ M * (1 + (g-1)/2 * M^2)^(-(g+1)/(2(g-1))).
+
+        A reading helper only -- nothing in the model consumes it. It exists so the one
+        constant rung 54 adds is disclosed in units an engineer can judge (C = 0.80 <=>
+        M_th0 = 0.553), rather than as an abstract fraction.
+        """
+        assert self.capacity > 0.0, "no throat model: build the map with .with_capacity(C)."
+        e = -(gamma + 1.0) / (2.0 * (gamma - 1.0))
+        ref = (1.0 + (gamma - 1.0) / 2.0) ** e
+
+        def ratio(M):
+            return M * (1.0 + (gamma - 1.0) / 2.0 * M * M) ** e / ref
+
+        lo, hi = 1e-6, 1.0                     # MFP/MFP(1) is strictly increasing on (0,1]
+        for _ in range(200):
+            mid = 0.5 * (lo + hi)
+            if ratio(mid) < self.capacity:
+                lo = mid
+            else:
+                hi = mid
+            if hi - lo <= 1e-15:
+                break
+        return 0.5 * (lo + hi)
 
     def eta_c_at(self, base: float, flowcoef: float, n: float) -> float:
         """Compressor efficiency read off the island at (flow coefficient, corrected speed)."""
@@ -6062,6 +6163,14 @@ class VariableStatorMatcher(TwoSpoolMapMatcher):
         lowers tan beta_1 monotonically (dM_i/dv > 0), the residual is monotone decreasing in v
         and a bracketed secant is safe.
 
+        RUNG 54 BOUNDS THAT MONOTONICITY PREMISE. Where the incidence peak is INTERIOR (rung
+        54 P-C2 measures it on 3 of the 5 disclosed shapes), tan beta_1 turns back UP past the
+        peak, and this doubling ladder can step OVER the root and out the far side -- reporting
+        the schedule unreachable when it exists (measured: the `steep` shape at Tt4=1200, root
+        at v* = 0.909). This method is left as shipped, because rung 53's published table is
+        the flow/press shape where the premise HOLDS; rung 54's `_schedule_root` brackets off a
+        scan instead and is immune. Prefer `schedule_throat` on an unfamiliar map shape.
+
         Along the returned schedule M_i is constant BY CONSTRUCTION (to `_INC_TOL`) while
         M_phi is not — that contrast IS the headline, made operational: the phi-currency reports
         a margin LOSS along a schedule that changes the true margin not at all.
@@ -6114,6 +6223,242 @@ class VariableStatorMatcher(TwoSpoolMapMatcher):
                              m_i=at["m_i"], m_i_bare=bare["m_i"],
                              m_phi=at["m_phi"], m_phi_bare=bare["m_phi"],
                              sm_n=at["sm_n"], sm_n_bare=bare["sm_n"], n=at["n"]))
+        return rows
+
+    # ==================================================================================
+    # RUNG 54 — the stator-row THROAT (docs/rung54-spec.md)
+    #
+    # THE POINT OF ENTRY IS: THERE ISN'T ONE. `v` enters the steady solve through
+    # `solve_n` alone (rung 53's P1) and the throat enters NO solver, so X is a post-hoc
+    # functional of the ALREADY-SOLVED state. An upstream throat therefore cannot change
+    # the map from setting to incidence -- it can only remove settings from the feasible
+    # set. BIND, NEVER RELIEVE. Hence every method below is a pure read, and the reduce is
+    # an INVARIANCE OVER C (every matched field bit-identical for EVERY capacity), which is
+    # stronger than rung 53's identity at one setting.
+    # ==================================================================================
+
+    def throat_margin(self, flight: FlightCondition, Tt4: float) -> dict:
+        """RUNG 54's instrument: the THIRD reference-free currency, per spool, beside rung
+        53's two. Extends `stator_margin`'s row with the throat read-offs:
+
+            area  = A_th(v)/A_th(0) = 1/sqrt(1+v^2)      [DERIVED, cascade cosine rule]
+            X     = m * sqrt(1+v^2)                      [throat-referred corrected flow]
+            c_min = 1/X                                  [the DERIVED threshold on C: the row
+                                                          chokes here iff C >= c_min]
+            m_c   = 1 - C*X                              [the margin, needs the throat model]
+
+        `c_min` is reported ALWAYS and needs no constant -- that is how rung 54's claims stay
+        free of the one constant it adds. `m_c`/`choked` appear only when C > 0.
+        """
+        out = self.stator_margin(flight, Tt4)
+        for spool in self._SPOOLS:
+            cmap, _, _, _ = self._spool_bits(spool)
+            row = out[spool]
+            X = cmap.throat_loading(row["m"])
+            row.update(area=cmap.throat_ratio(), throat_loading=X, c_min=1.0 / X,
+                       capacity=cmap.capacity)
+            if cmap.capacity > 0.0:
+                row.update(m_c=cmap.capacity_margin(row["m"]),
+                           choked=cmap.chokes(row["m"]),
+                           throat_mach_design=cmap.design_throat_mach())
+        return out
+
+    def throat_sweep(self, flight: FlightCondition, Tt4: float, vsv_grid,
+                     spool: str = "lp") -> list:
+        """RUNG 54. TWO-SIDED sweep of the throat cost (rung 50's lesson again: an edge is
+        measured two-sided or not at all). The geometric cost 1/sqrt(1+v^2) is EXACTLY even
+        in v, so any measured asymmetry in X is the EFFICIENCY ISLAND's -- and vanishes
+        bit-for-bit on a flat island, where rung 53's P5 exact zero pins m."""
+        assert spool in self._SPOOLS, f"spool must be 'lp' or 'hp', got {spool!r}"
+        rows = []
+        for v in vsv_grid:
+            sib = self.at_setting(float(v), 0.0) if spool == "lp" \
+                else self.at_setting(0.0, float(v))
+            r = sib.throat_margin(flight, Tt4)[spool]
+            rows.append(dict(swept=spool, **r))     # r already carries `vsv` (the setting)
+        return rows
+
+    _V_STEP = 0.04        # stator-setting scan step for the ceiling walk
+    _V_MAX = 8.0
+
+    def _scan(self, flight: FlightCondition, Tt4: float, spool: str,
+              step: float | None = None, v_max: float | None = None) -> list:
+        """Walk the stator open->closed at fixed throttle until the SOLVE itself gives out,
+        recording the three currencies. The last surviving row IS rung 53's admitted
+        map-validity edge (`solve_n`'s speed-line bracket)."""
+        step = self._V_STEP if step is None else float(step)
+        v_max = self._V_MAX if v_max is None else float(v_max)
+        rows, v = [], 0.0
+        while v <= v_max + 1e-12:
+            try:
+                sib = self.at_setting(v, 0.0) if spool == "lp" else self.at_setting(0.0, v)
+                r = sib.throat_margin(flight, Tt4)[spool]
+            except AssertionError:
+                break
+            rows.append(dict(**r))                 # r already carries `vsv` (== v)
+            v += step
+        assert len(rows) >= 3, (
+            f"rung-54 scan died immediately at Tt4={Tt4:.1f} on the {spool.upper()}: the "
+            f"matcher is already infeasible at the design setting.")
+        return rows
+
+    @staticmethod
+    def _interp(rows, v, key):
+        for a, b in zip(rows, rows[1:]):
+            if a["vsv"] <= v <= b["vsv"]:
+                t = (v - a["vsv"]) / (b["vsv"] - a["vsv"])
+                return a[key] + t * (b[key] - a[key])
+        return rows[-1][key] if v >= rows[-1]["vsv"] else rows[0][key]
+
+    @staticmethod
+    def _cross(rows, key, target, rising):
+        for a, b in zip(rows, rows[1:]):
+            ya, yb = a[key], b[key]
+            if (rising and ya < target <= yb) or (not rising and ya > target >= yb):
+                return a["vsv"] + (target - ya) / (yb - ya) * (b["vsv"] - a["vsv"])
+        return None
+
+    def authority_ceiling(self, flight: FlightCondition, Tt4: float, spool: str = "lp",
+                          capacity: float | None = None) -> dict:
+        """RUNG 54's headline object: WHICH of the three ceilings stops the stator first, and
+        what that costs IN THE CURRENCY rather than in the coordinate.
+
+            v_ch    the THROAT      -- physics: C*X(v) = 1                (needs C)
+            v_peak  the INCIDENCE PEAK -- aerodynamics: argmax_v M_i(v)   (zero constants)
+            v_edge  the BRACKET     -- rung 53's admitted map-validity ARTIFACT
+
+        Reports `binds` (which comes first), and the retention
+
+            retained = [M_i(min(v_ch, v_peak)) - M_i(0)] / [M_i_peak - M_i(0)]
+
+        against the ACHIEVABLE PEAK, not against the artifact endpoint -- an operator would
+        never set past the peak, so `m_i_usable` clips there. (`m_i_at_throat` is the raw,
+        unclipped read, kept because the two differ exactly when the throat lands PAST the
+        peak.) `peak_interior` False means the walk ran to the edge without turning over --
+        rung 53's concession, which holds on some shapes and not others.
+        """
+        assert spool in self._SPOOLS, f"spool must be 'lp' or 'hp', got {spool!r}"
+        cmap, _, _, _ = self._spool_bits(spool)
+        C = cmap.capacity if capacity is None else float(capacity)
+        rows = self._scan(flight, Tt4, spool)
+        v_edge, m_i_0 = rows[-1]["vsv"], rows[0]["m_i"]
+
+        k = max(range(len(rows)), key=lambda i: rows[i]["m_i"])
+        interior = 0 < k < len(rows) - 1
+        if interior:                       # 3-point parabolic refinement of the grid argmax
+            a, b, c = rows[k - 1]["m_i"], rows[k]["m_i"], rows[k + 1]["m_i"]
+            den = a - 2.0 * b + c
+            h = rows[k + 1]["vsv"] - rows[k]["vsv"]
+            v_peak = rows[k]["vsv"] + (0.5 * h * (a - c) / den if den != 0.0 else 0.0)
+            m_i_peak = b - 0.125 * (a - c) ** 2 / den if den != 0.0 else b
+        else:
+            v_peak, m_i_peak = rows[k]["vsv"], rows[k]["m_i"]
+
+        v_ch = self._cross(rows, "throat_loading", 1.0 / C, rising=True) if C > 0.0 else None
+        out = dict(spool=spool, Tt4=float(Tt4), capacity=C,
+                   v_edge=v_edge, x_edge=rows[-1]["throat_loading"],
+                   c_edge=1.0 / rows[-1]["throat_loading"],
+                   v_peak=v_peak, m_i_peak=m_i_peak, peak_interior=interior,
+                   m_i_0=m_i_0, m_i_edge=rows[-1]["m_i"], v_ch=v_ch, n_scan=len(rows))
+        if v_ch is None:
+            out.update(binds="peak" if interior else "edge", m_i_at_throat=None,
+                       m_i_usable=m_i_peak, retained=1.0,
+                       throat_before_edge=False, setting_cut=0.0)
+            return out
+        v_use = min(v_ch, v_peak)
+        m_i_use = self._interp(rows, v_use, "m_i")
+        span = m_i_peak - m_i_0
+        out.update(binds=("throat" if v_ch <= min(v_peak, v_edge)
+                          else ("peak" if v_peak <= v_edge else "edge")),
+                   m_i_at_throat=self._interp(rows, min(v_ch, v_edge), "m_i"),
+                   m_i_usable=m_i_use,
+                   retained=(m_i_use - m_i_0) / span if span > 0.0 else 1.0,
+                   throat_before_edge=v_ch < v_edge,
+                   setting_cut=1.0 - min(v_ch, v_edge) / v_edge)
+        return out
+
+    def _schedule_root(self, flight: FlightCondition, Tt4: float, spool: str,
+                       scan: list, T_design: float) -> float | None:
+        """RUNG 54's own root for rung 53's schedule: the SMALLEST setting that restores the
+        design incidence (`tan_b1 == T_design`), bracketed off the scan and bisected.
+
+        Rung 53's `incidence_schedule` finds this by a DOUBLING ladder, justified in its
+        docstring by "closing the stators lowers tan beta_1 monotonically". Rung 54 measures
+        that the residual is NOT monotone on the shapes where the incidence peak is interior
+        (P-C2): past the peak tan_b1 turns back UP, so a doubling ladder can step over the
+        root and out the far side, and then reports the schedule unreachable when in fact it
+        exists. Bracketing off the scan is immune to that -- and where rung 53's ladder does
+        succeed the two roots agree (gated). The FIRST crossing is the meaningful one: the
+        least closure that buys design incidence.
+        """
+        lo = hi = None
+        for a, b in zip(scan, scan[1:]):
+            if a["tan_b1"] > T_design >= b["tan_b1"]:
+                lo, hi = a["vsv"], b["vsv"]
+                break
+        if lo is None:
+            return 0.0 if scan[0]["tan_b1"] <= T_design else None
+
+        def resid(v):
+            sib = self.at_setting(v, 0.0) if spool == "lp" else self.at_setting(0.0, v)
+            return sib.stator_margin(flight, Tt4)[spool]["tan_b1"] - T_design
+
+        for _ in range(self._INC_MAX):
+            mid = 0.5 * (lo + hi)
+            r = resid(mid)
+            if abs(r) <= self._INC_TOL or hi - lo <= 1e-14:
+                return mid
+            if r > 0.0:
+                lo = mid
+            else:
+                hi = mid
+        return 0.5 * (lo + hi)
+
+    def schedule_throat(self, flight: FlightCondition, Tt4_grid, spool: str = "lp") -> list:
+        """RUNG 54 on rung 53's payoff object: THE RACE. As power falls the schedule's demand
+        v*(Tt4) RISES while the flow m falls, so the schedule's throat loading X(v*) is a race
+        between the two, and its threshold C*(Tt4) = 1/X(v*) says which rows can fly it:
+
+            the schedule is throat-FEASIBLE at this throttle  <=>  C < C*(Tt4).
+
+        C* > 1 is the CONSTANT-FREE region: the schedule then asks LESS of the throat than the
+        design point itself, so EVERY row can fly it whatever its C. Rows where the schedule
+        does not EXIST (the incidence peak never reaches design incidence -- rung 54's
+        correction of rung 53's concession) are returned with vsv_star=None rather than
+        raising, because that is a finding and not a failure.
+        """
+        assert spool in self._SPOOLS, f"spool must be 'lp' or 'hp', got {spool!r}"
+        cmap, _, _, _ = self._spool_bits(spool)
+        T_design = self.at_setting(0.0, 0.0).stator_margin(
+            self._ctor[1], self.Tt4_d)[spool]["tan_b1"]
+        rows = []
+        for Tt4 in Tt4_grid:
+            Tt4 = float(Tt4)
+            scan = self._scan(flight, Tt4, spool)
+            v_edge = scan[-1]["vsv"]
+            tan_b1_min = min(r["tan_b1"] for r in scan)
+            v_star = self._schedule_root(flight, Tt4, spool, scan, T_design)
+            if v_star is None:
+                # the design incidence is UNREACHABLE at any feasible setting -- the schedule
+                # does not exist here. Rung 53's P7 assumed it always does.
+                rows.append(dict(Tt4=Tt4, spool=spool, vsv_star=None, exists=False,
+                                 tan_b1_min=tan_b1_min, tan_b1_design=T_design,
+                                 v_edge=v_edge, throat_loading=None, c_min=None))
+                continue
+            sib = self.at_setting(v_star, 0.0) if spool == "lp" \
+                else self.at_setting(0.0, v_star)
+            at = sib.stator_margin(flight, Tt4)[spool]
+            m_op = at["m"]
+            X = cmap.with_vsv(v_star).throat_loading(m_op)
+            row = dict(Tt4=Tt4, spool=spool, vsv_star=v_star, exists=True,
+                       tan_b1=at["tan_b1"], tan_b1_design=T_design,
+                       tan_b1_min=tan_b1_min, v_edge=v_edge, m=m_op,
+                       phi_op=at["phi_op"], n=at["n"], m_i=at["m_i"], m_phi=at["m_phi"],
+                       throat_loading=X, c_min=1.0 / X)
+            if cmap.capacity > 0.0:
+                row.update(m_c=1.0 - cmap.capacity * X,
+                           feasible=cmap.capacity * X < 1.0)
+            rows.append(row)
         return rows
 
 

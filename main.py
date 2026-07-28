@@ -2853,6 +2853,107 @@ def print_variable_stator_table(flight):
     print("  named as this rung's seam. Read v* as the swirl a cartoon needs, not a VSV schedule.")
 
 
+def print_throat_capacity_table(flight):
+    """Rung-54 payoff: what a CONSTRAINT costs, and in which coordinate.
+
+    Rung 53 refused the stator's flow-CAPACITY channel because it "needs a new constant (area
+    per unit setting)". The cascade cosine rule o/s = cos(alpha_1) derives the area law's SHAPE
+    off rung 53's OWN coordinate; only its LEVEL needs one disclosed number, and every verdict
+    is delivered as a THRESHOLD on that number.
+
+    Two results. (1) An upstream throat can only BIND, never RELIEVE -- it enters no solver, so
+    it cannot buy back rung 53's overspeed, and no area law could. (2) When it does bind it
+    costs the SETTING 30% and the MARGIN 4%: rung 53 showed a MARGIN is coordinate-dependent;
+    a CONSTRAINT'S SEVERITY is too."""
+    print("\nThe STATOR-ROW THROAT (rung 54): the half rung 53 refused. The rotation that buys")
+    print("incidence is the rotation that SPENDS THE THROAT -- one coordinate, now three")
+    print("channels:  A_th(v)/A_th(0) = cos(alpha_1) = 1/sqrt(1+v^2)   [DERIVED, no constant].")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR, C = 0.55, 0.90
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR).with_capacity(C)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR).with_capacity(C)
+    ST = ComponentMap(a=0.25, b=0.12, sigma=0.3, l=1.2).with_phi_surge(FLOOR).with_capacity(C)
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, TT4, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    vs = VariableStatorMatcher(design, flight, 1.0, map_lp=LP, map_hp=HP)
+    steep = VariableStatorMatcher(design, flight, 1.0, map_lp=ST, map_hp=ST)
+
+    print(f"\n  THE ONE CONSTANT, DISCLOSED: C = MFP(M_th0)/MFP(1) = {C:.2f}, i.e. a design "
+          f"throat Mach")
+    print(f"  M_th0 = {LP.design_throat_mach():.3f}. C=0 means no throat model, as phi_surge=0 "
+          f"means no surge line.")
+    print("  Everything load-bearing is reported as c_min = 1/X -- a threshold ON C, needing no C.")
+
+    print("\n  THE THROAT COST is TWO-SIDED (cos is even) while the incidence benefit is ONE-sided.")
+    print(f"  {'v':>7}{'area':>9}{'m':>9}{'X=m/area':>10}{'c_min':>9}{'M_c':>9}{'M_i':>9}")
+    for row in vs.throat_sweep(flight, TT4, [-0.4, -0.2, 0.0, 0.2, 0.4, 0.8], spool="lp"):
+        print(f"  {row['vsv']:+7.2f}{row['area']:9.5f}{row['m']:9.5f}"
+              f"{row['throat_loading']:10.5f}{row['c_min']:9.5f}{row['m_c']:9.5f}"
+              f"{row['m_i']:9.5f}")
+    print("  => the throat is MAXIMAL at the design setting and closes whichever way the vane")
+    print("     turns; only closing buys incidence. (That the peak sits AT design is inherited")
+    print("     from rung 53's coordinate origin, not derived -- see the spec's Concessions.)")
+
+    print("\n  THE HEADLINE: the throat cuts the SETTING hard and the MARGIN barely. Rung 53's")
+    print("  own saturation is what makes the limit cheap -- the amputated tail was worth little.")
+    print(f"  {'Tt4':>7}{'v_edge':>9}{'v_ch':>8}{'cut%':>7}{'M_i(0)':>9}{'M_i_peak':>10}"
+          f"{'M_i_use':>9}{'kept%':>7}{'binds':>8}")
+    for T in (1200.0, 1000.0, 800.0):
+        a = vs.authority_ceiling(flight, T, spool="lp")
+        print(f"  {T:7.0f}{a['v_edge']:9.2f}{a['v_ch']:8.3f}{a['setting_cut'] * 100:7.1f}"
+              f"{a['m_i_0']:9.5f}{a['m_i_peak']:10.5f}{a['m_i_usable']:9.5f}"
+              f"{a['retained'] * 100:7.1f}{a['binds']:>8}")
+    print("  => rung 53 conceded its ceiling was solve_n's bracket, 'a map-validity edge' -- an")
+    print("     ARTIFACT. Modelled, the throat beats it on every shape and throttle (20/20).")
+
+    print("\n  BIND, NEVER RELIEVE (a theorem, not a measurement). v enters the solve through")
+    print("  solve_n ALONE (rung 53 P1) and the throat enters NO solver, so X is a post-hoc read.")
+    bare = VariableStatorMatcher(design, flight, 1.0, vsv_lp=1.1,
+                                 map_lp=LP.with_capacity(0.0), map_hp=HP.with_capacity(0.0))
+    chk = VariableStatorMatcher(design, flight, 1.0, map_lp=LP, map_hp=HP, vsv_lp=1.1)
+    r = chk.throat_margin(flight, TT4)["lp"]
+    a1, a0 = chk.match(flight, TT4), bare.match(flight, TT4)
+    print(f"  At v=1.10, Tt4=1500 the row is CHOKED (M_c = {r['m_c']:+.5f}), and yet every matched")
+    print(f"  number is bit-identical to the no-throat run: thrust {a1.thrust == a0.thrust}, "
+          f"n_LP {a1.n_lp == a0.n_lp}, pi_LPC {a1.pi_lpc == a0.pi_lpc}.")
+    print("  => an upstream throat REMOVES SETTINGS FROM THE FEASIBLE SET; it cannot change the")
+    print("     map from setting to incidence. Rung 53's seam expected capacity to buy back its")
+    print("     +26% overspeed: REFUTED, structurally. The real mechanism is STAGE REMATCHING.")
+
+    print("\n  THE RACE, and a CONSTANT-FREE boundary. As power falls the schedule's demand v*")
+    print("  RISES while the flow m FALLS. c_min > 1 means the schedule asks LESS of the throat")
+    print("  than the DESIGN point -- feasible for EVERY row, whatever its C.")
+    print(f"  {'Tt4':>7}{'v*':>8}{'m':>9}{'X(v*)':>9}{'c_min':>9}{'feasible':>10}")
+    for r in vs.schedule_throat(flight, [1200.0, 1000.0, 900.0, 870.0, 860.0, 800.0],
+                                spool="lp"):
+        print(f"  {r['Tt4']:7.0f}{r['vsv_star']:8.3f}{r['m']:9.5f}{r['throat_loading']:9.5f}"
+              f"{r['c_min']:9.5f}{str(r['feasible']):>10}")
+    print("  => the crossing sits between Tt4 = 870 and 860: rung 53's ENTIRE published band")
+    print("     (1000..1500) is above it, so the channel it refused is inert over all of it.")
+
+    print("\n  AND A CORRECTION TO RUNG 53. Its Concessions say the incidence benefit 'does not")
+    print("  turn back ... the apparent turning point is NOT reached'. True where it measured;")
+    print("  false elsewhere -- on the steep shape the peak is INTERIOR and the schedule DIES:")
+    for tag, m in (("flow/press", vs), ("steep", steep)):
+        a = m.authority_ceiling(flight, 1000.0, spool="lp")
+        sch = m.schedule_throat(flight, [1000.0], spool="lp")[0]
+        star = f"{sch['vsv_star']:.3f}" if sch["exists"] else "NONE"
+        print(f"    {tag:>11}: peak_interior={str(a['peak_interior']):>5}  v_peak={a['v_peak']:.3f}"
+              f"  v_edge={a['v_edge']:.2f}  M_i_peak-M_i_edge={a['m_i_peak'] - a['m_i_edge']:+.5f}"
+              f"  v*(1000)={star}")
+    print("  => the rung-28 shape: rung 53's VERDICT (finite authority) survives, its REASON is")
+    print("     corrected -- the ceiling is the incidence PEAK, not a map-validity edge, and it")
+    print("     is reached INSIDE the envelope. It also defeats rung 53's monotone root ladder.")
+
+
 def print_asymmetric_lag_table(flight):
     """Rung-52 payoff: the asymmetric fast-attack / slow-release LAG -- a self-releasing limiter
     PINS ITS OWN TRIGGER, and CANNOT DEBIT THE SPOOL IT WATCHES.
@@ -4034,6 +4135,8 @@ def main():
     print_asymmetric_lag_table(FLIGHT)
 
     print_variable_stator_table(FLIGHT)
+
+    print_throat_capacity_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 
