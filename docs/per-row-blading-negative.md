@@ -98,19 +98,22 @@ A taper anchored on row 0 swings the design blade speed by **+29 % / −11 %** o
 probed. That is not the same engine — and because `φ_d` = 1 makes `Vx` = `U`, it moves every
 row's design Mach, hence rung 56's `C`. **Sweeping the taper at fixed `C` = 0.90 silently
 re-picks the throat each time.** Three anchors, and the results are not variations — they are
-different verdicts:
+different verdicts. **The first three rows are ENDPOINT-referenced** (to the sweep's `t` = −0.8)
+and are shown to establish that *the verdicts disagree*, which survives; their magnitudes are
+not claims — only the last row's are, and it is referenced to uniform blading (§4):
 
 | anchor | what is held | LP-front incidence | HP-rear capacity |
 |---|---|---|---|
 | **row 0** (`C` fixed) | front blade; `U` floats ±29 % | **−15 %** (debit) | **−17 %** (debit) |
 | **row 0** (`C` tracks `U`) | front blade; annulus | −15 % (debit) | **+463 %** (relief) |
 | **mean** (`U` pinned) | machine size | **+104 %** (relief) | ±1 % |
-| **row 0 + mean** (§4) | machine size AND front blade | +5…18 % (relief) | **< 1.7 %** |
+| **row 0 + mean** (§4) | machine size AND front blade | **+0.6…4.6 %** (relief) | **< 1.7 %** |
 
 Every sign, every magnitude, and even rung 56's binding-row **migration** flip with the anchor.
 The `+463 %` is a near-zero-denominator artifact against a design point (`C` → 0.99) that
 `ComponentMap.with_capacity`'s own `C < 1` assertion would refuse; the `+104 %` is the moved
-row's own limit moving — near-tautological.
+row's own limit moving — near-tautological. Both are why the endpoint-referenced rows are
+labelled above rather than quoted below.
 
 **This is the seam's real cost.** Rung 56 said the ladder does not supply a `ψ_k`/`T_c,k` law.
 It supplies both. What it does not supply is **what is held fixed**, and that is a *second*

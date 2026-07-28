@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: a6c0f441-e8a9-4f37-aad7-89832c7d6309
-  modified: 2026-07-28T08:47:36.827Z
+  modified: 2026-07-28T08:50:40.339Z
 ---
 
 **PER-ROW BLADING (rung 56's named seam) — investigated 2026-07-28, NEGATIVE, NOT a rung.**
@@ -42,8 +42,9 @@ design blade speed (±29 % over the range probed).
 **Two process lessons, both mine to keep.** (1) I nearly shipped a five-times-restated
 "coordinate-dependent SIGN" headline built on a `C`→0.99 endpoint that `with_capacity`'s own
 assertion would refuse — the advisor's blocking mean-anchor probe killed it. (2) I then quoted
-+5…18 % incidence referenced to an endpoint whose binding row had itself moved — [[rung43…]]'s
-currency-circularity trap, caught again by the advisor. Re-referenced to the uniform point it
++5…18 % incidence referenced to an endpoint whose binding row had itself moved —
+[[rung43-two-shaft-fuel-metering]]'s currency-circularity trap, caught again by the advisor.
+Re-referenced to the uniform point it
 is +0.6…4.6 %, and the negative got *stronger*.
 
 Related: [[rung56-per-row-capacity]], [[rung55-stage-stack]], [[rung54-stator-throat]],

@@ -77,6 +77,17 @@ binding stage all along (§ P1 below).
 
 ### The ONE disclosed choice: the WORK SPLIT
 
+> **⚠ REFRAMED — `docs/per-row-blading-negative.md` § 1.** The split is **not** free robustness
+> furniture: it is a **BLADING law**. Rung 53's own inversion, per row, gives
+> `Δh_k = U²(1 − t₂,k)` at design (`φ_k` = 1, `β₁` = 45° for every row), so a work split *is* a
+> choice of blade metal angles, `l_k = (1+l)·Δh₀/Δh_k − 1`. Scored at this rung's own shipped
+> design point: **`"dT"` ⇔ UNIFORM blades** (taper 0 — which is why a per-row `ψ_k` law read off
+> the split has exactly zero content there), and **`"tau"` ⇔ taper 0.50 LP / 0.64 HP, with the
+> HP at `w₂/w₁` = 0.7185 — outside de Haller's published 0.72.** Everything below stays true and
+> every verdict here survives (each was asserted across both splits); what changes is that the
+> split axis IS the blading axis, and its two shipped points are two hardware choices, one of
+> them marginally non-physical.
+
 How the design temperature rise divides between stages — `"dT"` (equal `ΔTt`, the default) or
 `"tau"` (equal stage `τ_c^{1/K}`). At design every stage has `ψ` = 1, so *equal loading* is not a
 third split, it **is** `"dT"`. Rung 54's pattern: **shape derived, split disclosed, verdict

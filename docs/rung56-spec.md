@@ -304,6 +304,21 @@ so rung 55's published lever does not trip it.
 
 ## The next seam
 
+> **⚠ CLOSED, NEGATIVE — `docs/per-row-blading-negative.md`. Do NOT re-open as written.** The
+> paragraph below is kept as the record of what was asked, but its last sentence is **false**:
+> the ladder *does* supply a `ψ_k`/`T_c,k` law, with zero new constants (at design `β₁` = 45° for
+> every row, so `Δh_k = U²(1 − t₂,k)` derives the metal angle, the work split and `l_k`; and a
+> row-invariant critical **diffusion** ratio anchored on rung 36's `φ_surge` derives `T_c,k`).
+> What it does **not** supply is the **ANCHOR** — what is held fixed while the blades change —
+> because a taper *sets the design blade speed*, `U²(t)/U²(0) = S(0)/S(t)`. Three anchors give
+> three different verdicts, including opposite signs on the capacity channel. And the request
+> itself is **over-determined**: holding the machine size *and* the front blade makes a monotone
+> front-low-turning / rear-high-turning stack **impossible** (proof in § 4 there, `K`-independent).
+> On the one well-posed anchor the capacity channel is **inert** (< 1.7 %) and the incidence
+> channel is +0.6…4.6 % and purely positional — so this rung's headline is *consistent with, and
+> not overturned by,* the obvious second lever. **What would revive it is an anchor supplied by
+> physics** (a stress / tip-Mach limit pinning `U`, or an annulus law `Vx(k)`), not a better taper.
+
 **PER-ROW BLADING.** Every claim above rides on all stages sharing one map — one `ψ`, one island,
 one `φ_surge`, one `T_c`. That is what keeps rung 55's positional claim clean *and* what bounds
 both rungs. A real stack's rows differ by design (front rows transonic and low-turning, rear rows
