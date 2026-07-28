@@ -158,6 +158,16 @@ the "acceleration" is a deceleration — and **above** its minimum `φ`, or it n
 **DISJOINT, by 0.0226.** The stator displaces the running line in `φ` by more than the ramp's
 own `φ` excursion, so no single floor is the same instrument on both machines.
 
+> **⚠ VERDICT CONFIRMED, DIAGNOSIS CORRECTED BY RUNG 60.** The disjointness is real and
+> reproduces, but it is a **symptom, not the disease** — and it is repairable. Re-referenced to
+> **incidence** (the one currency whose wall the stator does not move — this rung's own
+> currency finding) the gap shrinks **24×** at a constant setting and **closes entirely on the
+> `v_max = 0.20` schedule above**, so a single set point IS admissible on both machines. The
+> leg is *still* not composable, because a floor that binds **PINS its own coordinate**: the
+> second difference becomes a difference of SET POINTS with a derived value — exactly `v` for
+> a `φ` floor, exactly `0` for an incidence floor. **The by-product below was the disease,
+> filed here as a curiosity.** `docs/rung60-spec.md`.
+
 This is rung 53's law reaching a **limiter's set point**. Rung 53 made a MARGIN
 coordinate-dependent; rung 54 a CONSTRAINT'S SEVERITY; rung 56 a LEVER'S COST; rung 58 adds
 **a LIMITER'S COMPOSABILITY**. Rung 48's leg composes precisely because its cap `Wf/pt3` is
@@ -179,7 +189,9 @@ rung 57's erosion at **exactly zero**. Measured:
 | constant | 0.20000000000000084 | 0.2 | 8.3e−16 |
 
 and **identical at both floors (0.745, 0.750)**, which is what proves it is the pinning rather
-than a coincidence. Rung 57's whole second law — two thirds of the rotation never arrives,
+than a coincidence. **Rung 60 promotes this from by-product to mechanism**: it is not a corner
+of the `φ` leg but the general law that kills the whole floor family, and its other end — an
+incidence floor giving credit exactly **0** — is measured there on the same plant. Rung 57's whole second law — two thirds of the rotation never arrives,
 eaten by the lever's own WORK channel pushing the running line down — is **the work channel,
 and a limiter that floors `φ` forbids precisely it.**
 

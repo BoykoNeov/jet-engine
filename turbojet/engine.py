@@ -4343,6 +4343,84 @@ class SurgeLimiter:
         return "phi_lp" if self.spool == "lp" else "phi_hp"
 
 
+@dataclass(frozen=True)
+class IncidenceLimiter:
+    """RUNG 60. Rung 49's floor RE-REFERENCED to INCIDENCE -- the `matched phi floor` rung 58
+    asked for, and the only canonical way to build one (docs/rung60-spec.md).
+
+        M_i  =  T_c - (1/phi - v)  >=  m_lim          [the wall is the METAL]
+
+    WHY IT EXISTS. Rung 58 found a phi floor NOT COMPOSABLE with a variable stator at a fixed
+    set point: the admissible floor bands on the bare and statored machines are DISJOINT,
+    because rung 53's lever MOVES the phi wall by more than the ramp's own phi excursion. Its
+    proposed repair was to MATCH the set point per machine -- which is under-determined, since
+    a set point has no definition to re-run: matching at fixed phi-margin off the moved wall
+    and matching at fixed incidence give DIFFERENT floors, apart by exactly `v*sm/(1+sm)` in
+    the incidence coordinate (`matching_rules`). There is no second candidate for the
+    canonical rule: rung 58 proved `M_i` is the ONE currency whose wall the stator does not
+    move (T_c is the blade metal -- `tan_beta1_crit`), so an incidence set point is a single
+    number valid on every machine, and matching stops being a calibration choice and becomes a
+    CHANGE OF COORDINATE.
+
+    HOW IT RUNS. There is no new solve. At the live setting `v` the floor is EXACTLY the phi
+    floor `phi_lim = 1/(T_c + v - m_lim)`, so `at()` hands back a plain rung-49 `SurgeLimiter`
+    and `_surge_fuel` runs unchanged. That conversion is legal -- rather than a fixed point --
+    only because `v` is a function of the SHAFT STATE and not of the fuel (`_arm` takes
+    `(nu_lp, nu_hp, Tt2)`), so within a derivative call the floor is a constant and rung 49's
+    monotonicity bracket ("cutting fuel raises phi") carries verbatim.
+
+    On a CONSTANT stator setting the resolved floor is a scalar and this is a pure leg swap --
+    no new plant, which is why rung 60's load-bearing body runs there. On a SCHEDULE the set
+    point is state-fed, and that branch is reported as the extension it is.
+
+    WHAT IT DOES NOT BUY, which is rung 60's headline: re-referencing fixes the WALL, not the
+    leg. A floor that binds PINS its own coordinate, so `min M_i` on a leg-armed cell is the
+    SET POINT and not the march -- and the composite's second difference becomes a difference
+    of set points. See `floor_composite`.
+
+    `m_lim` is the SAME disclaimed rung-36 constant read as an incidence: use `from_phi` to
+    set it from a phi floor, or `from_margin` for a surge margin above the imposed line.
+    """
+    spool: str              # 'lp' | 'hp' -- WHICH spool's incidence is floored
+    m_lim: float            # the floor, in the incidence-margin currency M_i
+
+    def __post_init__(self):
+        assert self.spool in ("lp", "hp"), "rung-60 IncidenceLimiter watches 'lp' or 'hp'"
+
+    @classmethod
+    def from_phi(cls, cmap: "ComponentMap", spool: str, phi_lim: float,
+                 vsv: float = 0.0) -> "IncidenceLimiter":
+        """The incidence set point a given phi floor IS, at stator setting `vsv`. At the
+        design setting (vsv = 0, the default) this is the rung-49 floor read in rung 53's
+        coordinate -- the same instrument, renamed, which is what makes the two comparable."""
+        return cls(spool=spool, m_lim=cmap.tan_beta1_crit() - (1.0 / phi_lim - vsv))
+
+    @classmethod
+    def from_margin(cls, cmap: "ComponentMap", spool: str, sm: float) -> "IncidenceLimiter":
+        """The incidence set point of a floor at surge margin `sm` above the map's own
+        imposed (design-setting) surge line -- rung 49's `from_margin`, re-referenced."""
+        return cls.from_phi(cmap, spool, (1.0 + sm) * cmap.phi_surge)
+
+    def key(self) -> str:
+        return "phi_lp" if self.spool == "lp" else "phi_hp"
+
+    def phi_lim_at(self, T_c: float, v: float) -> float:
+        """The phi floor this incidence floor IS at setting `v`. Closing the stators (v > 0)
+        LOWERS it -- by exactly the amount rung 53 lowers the wall, which is the whole point:
+        the DISTANCE to the metal is held, not the flow coefficient."""
+        d = T_c + v - self.m_lim
+        assert d > 0.0, (
+            f"rung-60 incidence floor m_lim={self.m_lim:.6f} is at or above the critical "
+            f"incidence T_c={T_c:.6f} at v={v:.4f}: no phi realises it.")
+        return 1.0 / d
+
+    def at(self, T_c: float, v: float) -> "SurgeLimiter":
+        """The equivalent rung-49 leg at setting `v`. THE REDUCE: at v = 0.0 this is
+        `SurgeLimiter(spool, 1/(T_c - m_lim))`, float-identical to the hand-built rung-49
+        floor (x + 0.0 == x exactly), so the whole rung-49/58/59 path stays BIT-FOR-BIT."""
+        return SurgeLimiter(spool=self.spool, phi_lim=self.phi_lim_at(T_c, v))
+
+
 def _release_weight(s: float, s_off, tau_rel) -> float:
     """RUNG 51. The min-select leg's AUTHORITY at march coordinate `s` -- the weight the
     applied clip carries (docs/rung51-spec.md).
@@ -7693,7 +7771,10 @@ class ScheduledStatorTransient(TwoSpoolFuelTransient):
             if accel is not None:
                 g = p["mf_sched"] - accel.cap(i["n_hp"], i["pt4"] / self.pi_b)
             elif surge is not None:
-                g = surge.phi_lim - i[key]
+                # RUNG 60: an incidence floor is resolved to the phi floor it IS at the live
+                # setting, so `g` keeps ONE sign convention across all four legs. A rung-49
+                # `SurgeLimiter` passes through by IDENTITY -- bit-for-bit.
+                g = self._resolve_floor(surge, p["nu_lp"], p["nu_hp"]).phi_lim - i[key]
             else:
                 g = i["Tt4"] - Tt4_max
             out.append((p["s"], g))
@@ -8098,3 +8179,246 @@ class ScheduledStatorTransient(TwoSpoolFuelTransient):
             removed_bare_leg=cells["both_bare_leg"]["fuel_removed"],
             removed_matched=cells["both_matched"]["fuel_removed"],
             relocation=cells["both_matched"]["s"] - cells["both_bare_leg"]["s"])
+
+    # --- RUNG 60: the MATCHED phi FLOOR -- a floor PINS the currency it is read in ---------
+
+    def _resolve_floor(self, surge, nu_lp: float, nu_hp: float):
+        """RUNG 60. The rung-49 leg a min-select floor IS at the CURRENT stator setting.
+
+        A `SurgeLimiter` is returned BY IDENTITY (`is`, not `==`) -- so every rung-49/58/59
+        path reaches the identical object and stays bit-for-bit. An `IncidenceLimiter` is
+        converted through `at(T_c, v)`, which is legal rather than circular because `v` is a
+        function of the SHAFT STATE alone: rung 49's bracket ("cutting fuel raises phi") needs
+        the floor to be constant in the fuel, and it is.
+
+        The setting is read through `v_of`, i.e. against the DESIGN Tt2 -- the same convention
+        rungs 57/58 already use in `_read` and `_refine_min`. It is exact at the design flight
+        condition, which is where every claim is made."""
+        if not isinstance(surge, IncidenceLimiter):
+            return surge
+        cmap = self.map_lp_design if surge.spool == "lp" else self.map_hp_design
+        return surge.at(cmap.tan_beta1_crit(), self.v_of(surge.spool, nu_lp, nu_hp))
+
+    def _surge_fuel(self, flight: FlightCondition, nu_lp: float, nu_hp: float,
+                    mf_sched: float, surge) -> float:
+        """RUNG 60. Rung 49's set-point solve, on the floor RESOLVED at the live setting."""
+        return super()._surge_fuel(flight, nu_lp, nu_hp, mf_sched,
+                                   self._resolve_floor(surge, nu_lp, nu_hp))
+
+    def matching_rules(self, sm: float, v: float, spool: str = "lp") -> dict:
+        """RUNG 60. The two ways to MATCH a phi set point to a stator-armed machine, and the
+        DERIVED gap between them -- the proof that rung 58's proposed repair ("match the set
+        point") was never a well-posed instruction.
+
+            fixed phi-MARGIN off the moved wall     phi = (1+sm) / (T_c + v)
+            fixed INCIDENCE                         phi = 1 / (T_c + v - M_B)
+
+        with `M_B = T_c - 1/[(1+sm)*phi_surge]` the bare floor's own incidence margin. In the
+        incidence coordinate they are apart by
+
+            1/phi_inc  -  1/phi_rel   =   v * sm / (1 + sm)
+
+        exactly -- zero new constants, and zero at either v = 0 (no lever) or sm = 0 (the
+        floor ON the wall, where the two rules cannot disagree). A set point has no definition
+        to re-run, so nothing in the problem picks between them; only rung 58's currency
+        finding does, and it picks INCIDENCE."""
+        cmap = self.map_lp_design if spool == "lp" else self.map_hp_design
+        T_c = cmap.tan_beta1_crit()
+        phi_B = (1.0 + sm) * cmap.phi_surge
+        M_B = T_c - 1.0 / phi_B
+        phi_rel = (1.0 + sm) / (T_c + v)
+        phi_inc = 1.0 / (T_c + v - M_B)
+        gap = 1.0 / phi_inc - 1.0 / phi_rel
+        return dict(sm=sm, v=v, T_c=T_c, phi_bare=phi_B, m_bare=M_B,
+                    phi_rel=phi_rel, phi_inc=phi_inc, gap=gap,
+                    gap_closed_form=v * sm / (1.0 + sm),
+                    residual=gap - v * sm / (1.0 + sm))
+
+    def _band(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float, r: float,
+              s_settle: float, ds: float, spool: str) -> dict:
+        """RUNG 60. The ADMISSIBLE SET-POINT band of this machine, in BOTH coordinates.
+
+        A floor is an instrument only strictly between two limits (rung 58's § third finding):
+        it must sit BELOW the value at `s = 0`, or it binds from the start and the
+        "acceleration" is a deceleration, and ABOVE the ramp's own minimum, or it never binds.
+        The width of that band is the ramp's EXCURSION, and it is what a set point has to fit
+        inside on BOTH machines at once. ONE leg-free march -- both coordinates come off it."""
+        traj, _ = self._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds)
+        cmap = self.map_lp_design if spool == "lp" else self.map_hp_design
+        key, T_c = ("phi_lp" if spool == "lp" else "phi_hp"), cmap.tan_beta1_crit()
+        phis = [p[key] for p in traj]
+        mis = [T_c - (1.0 / p[key] - self.v_of(spool, p["nu_lp"], p["nu_hp"]))
+               for p in traj]
+        return dict(phi_0=phis[0], phi_min=min(phis), phi_exc=phis[0] - min(phis),
+                    m_0=mis[0], m_min=min(mis), m_exc=mis[0] - min(mis), T_c=T_c,
+                    v_0=self.v_of(spool, traj[0]["nu_lp"], traj[0]["nu_hp"]))
+
+    def set_point_bands(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                        r: float = 0.5, s_settle: float = 1.2, ds: float = 0.005,
+                        spool: str = "lp") -> dict:
+        """RUNG 60, FIRST HALF. Can ONE set point be the same instrument on the bare and the
+        statored machine -- in phi (rung 49's coordinate) and in incidence (rung 60's)?
+
+        Rung 58 measured the phi bands DISJOINT and stopped there. Re-referenced to incidence
+        the wall no longer moves, so the bands can only be pushed apart by the lever's own
+        CREDIT, and the gap collapses to an exact identity:
+
+            gap  =  M_min(armed) - M_0(bare)  =  CREDIT - EXCURSION
+
+        (both bands share the bare minimum as their origin). So a fixed incidence set point is
+        admissible IFF THE LEVER'S CREDIT IS SMALLER THAN THE RAMP'S OWN EXCURSION -- a
+        criterion, not a magnitude, and the identity is algebraic so it is stated as one. What
+        is measured is its two INPUTS, and they answer to different things: the credit is
+        rung 57's clock-free number, the excursion is the ramp's."""
+        assert spool in ("lp", "hp"), f"spool must be 'lp' or 'hp', got {spool!r}"
+        assert self._is_armed() or self.vsv_lp or self.vsv_hp, (
+            "rung-60 set_point_bands compares an ARMED machine with its own bare sibling -- "
+            "call it on the machine carrying the stator leg.")
+        args = (flight, Tt4_lo, Tt4_hi, r, s_settle, ds, spool)
+        b, a = self.at_stator()._band(*args), self._band(*args)
+        gap_phi = b["phi_min"] - a["phi_0"]        # > 0 => DISJOINT (bare band above armed)
+        gap_m = a["m_min"] - b["m_0"]              # > 0 => DISJOINT (armed band above bare)
+        credit, exc = a["m_min"] - b["m_min"], b["m_exc"]
+        return dict(
+            spool=spool, r=r, ds=ds, bare=b, armed=a,
+            gap_phi=gap_phi, gap_m=gap_m,
+            gap_phi_bands=gap_phi / min(b["phi_exc"], a["phi_exc"]),
+            gap_m_bands=gap_m / min(b["m_exc"], a["m_exc"]),
+            credit=credit, excursion=exc, criterion=credit - exc,
+            identity_residual=(credit - exc) - gap_m,
+            phi_admissible=gap_phi < 0.0, m_admissible=gap_m < 0.0,
+            overlap_lo=max(b["m_min"], a["m_min"]), overlap_hi=min(b["m_0"], a["m_0"]))
+
+    def composability_ladder(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                             legs=None, rates=None, r: float = 0.5, s_settle: float = 1.2,
+                             ds: float = 0.005, spool: str = "lp") -> list:
+        """RUNG 60. The threshold `credit < excursion` walked until it is CROSSED -- over a
+        ladder of stator legs at fixed ramp rate (`legs`, as rung 58's `interaction_sweep`
+        takes them), or over ramp rate at a fixed leg (`rates`).
+
+        The two axes are not equivalent, and that is the finding: the CREDIT is rung 57's
+        clock-free number and the EXCURSION is the ramp's, so the threshold is crossed by the
+        RAMP with the lever standing still. Called on the BARE machine, which builds every
+        sibling itself (rung 53's `at_setting` discipline)."""
+        assert not self._is_armed() and not self.vsv_lp and not self.vsv_hp, (
+            "rung-60 composability_ladder builds every stator sibling itself: call it on the "
+            "BARE machine so no leg can inherit a setting it did not declare.")
+        assert (legs is None) != (rates is None), (
+            "rung-60 composability_ladder walks ONE axis: pass `legs` [(tag, at_stator kw)] "
+            "at fixed r, or `rates` [(r, at_stator kw)] at a fixed leg -- not both. The "
+            "finding is that the two axes carry DIFFERENT halves of the criterion.")
+        out = []
+        for tag, kw, rr in ([(t, k, r) for t, k in legs] if legs is not None
+                            else [(f"r={x:g}", k, x) for x, k in rates]):
+            d = self.at_stator(**kw).set_point_bands(flight, Tt4_lo, Tt4_hi, rr, s_settle,
+                                                     ds, spool)
+            out.append(dict(tag=tag, r=rr, **{k: d[k] for k in
+                                              ("credit", "excursion", "criterion", "gap_m",
+                                               "gap_m_bands", "gap_phi", "gap_phi_bands",
+                                               "m_admissible", "phi_admissible")}))
+        return out
+
+    def _pin_audit(self, cell: dict, floor, spool: str) -> dict:
+        """RUNG 60's BLOCKER check, and the artifact most likely to counterfeit this rung --
+        rung 59's `_clamp_audit` one ladder on.
+
+        A floor that BINDS holds its own coordinate AT the set point, so that cell's minimum
+        is the SET POINT and not the march. Both failure shapes are reported rather than
+        assumed. All three of a floor's degenerate regimes are named:
+
+            pinned      the minimum IS the set point, to solver tolerance -- the tautology.
+            dormant     the leg removed no fuel at all, so the cell is bit-identical to its
+                        leg-free sibling (rung 58's `r = 2.0` envelope edge).
+            from_zero   the leg CUTS but has no upward crossing at all (`_s_eng` -> `nan`):
+                        either the set point sits ABOVE the value at `s = 0`, so the
+                        "acceleration" opens as a deceleration -- the usual cause and rung
+                        58's inadmissibility -- or it first binds past the last grid point.
+                        Either way there is no engagement inside the ramp, which is what the
+                        flag asserts; it does not discriminate between the two causes."""
+        cmap = self.map_lp_design if spool == "lp" else self.map_hp_design
+        T_c = cmap.tan_beta1_crit()
+        if isinstance(floor, IncidenceLimiter):
+            m_set = floor.m_lim                        # the floor IS in the currency
+        else:
+            m_set = T_c - (1.0 / floor.phi_lim - cell["v"])
+        res = cell["m_i"] - m_set
+        dormant = cell["fuel_removed"] <= 0.0
+        from_zero = (cell["s_eng"] != cell["s_eng"]) and not dormant       # nan and cutting
+        return dict(m_set=m_set, m_min=cell["m_i"], residual=res, pinned=abs(res) < 1e-9,
+                    dormant=dormant, from_zero=from_zero,
+                    admissible=not (dormant or from_zero),
+                    s_eng=cell["s_eng"], removed=cell["fuel_removed"])
+
+    def floor_composite(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                        floor, r: float = 0.5, s_settle: float = 1.2, ds: float = 0.005,
+                        spool: str = "lp") -> dict:
+        """THE RUNG (60). Rung 58's four-cell composite with a FLOOR leg -- rung 49's phi
+        floor, or rung 60's incidence floor, ONE object across all four cells -- and the proof
+        that NEITHER can carry it.
+
+        THE THEOREM, and it is derived before it is measured. `M_i = T_c - (1/phi - v)`. A
+        floor that binds holds its own coordinate at the set point, so on every leg-armed cell
+        the minimum is the SET POINT. The second difference is then a difference of set
+        points, and its value is the offset between the leg's coordinate and the currency --
+        the partial derivative of `M_i` with respect to the stator at FIXED leg coordinate:
+
+            leg floors phi    M_i(both) - M_i(fuel)  =  [T_c - 1/phi_lim + v] - [.. + 0] = v
+            leg floors M_i    M_i(both) - M_i(fuel)  =  m_lim - m_lim                   = 0
+
+        so a phi floor reports the FULL POINTWISE credit with rung 57's erosion annihilated,
+        and an incidence floor reports NO credit at all. Both are exact, neither is a
+        measurement, and RE-REFERENCING THE LEG MOVES THE TAUTOLOGY RATHER THAN REMOVING IT.
+        `pinned_prediction` is that derived value; the gate is that the measurement meets it
+        at machine precision, which is the OPPOSITE of the usual gate and is the point.
+
+        The third regime is no better: if the floor binds on the bare cell but the armed
+        machine clears it, `both` is bit-identical to `stator` and the difference is
+        `M_i(stator) - m_set` -- a property of the floor and one leg-FREE march, with no
+        armed-cell dynamics in it either. `audits` reports which regime each cell is in.
+
+        WHAT IS NOT TAUTOLOGICAL is the TIMING half: `s_eng` is a time, has no wall, and is
+        pinned by nothing. It is returned for both cells and it is where the composite with a
+        floor leg is actually readable -- rung 58's converse reading, which survives here
+        exactly because it is not a margin."""
+        assert spool in ("lp", "hp"), f"spool must be 'lp' or 'hp', got {spool!r}"
+        assert self._is_armed() or self.vsv_lp or self.vsv_hp, (
+            "rung-60 floor_composite differences an ARMED stator against its own bare "
+            "sibling -- call it on the machine carrying the stator leg.")
+        assert isinstance(floor, (SurgeLimiter, IncidenceLimiter)), (
+            "rung-60 floor_composite takes a FLOOR leg (rung 49's SurgeLimiter or rung 60's "
+            "IncidenceLimiter). A feedforward schedule is rung 58/59's composite -- it does "
+            "not pin, which is exactly the distinction this method exists to draw.")
+        bare = self.at_stator()
+        args = (flight, Tt4_lo, Tt4_hi, r, s_settle, ds, spool)
+        cells = {
+            "neither": bare._cell(*args, None, None, None),
+            "stator": self._cell(*args, None, None, None),
+            "fuel": bare._cell(*args, None, floor, None),
+            "both": self._cell(*args, None, floor, None),
+        }
+        audits = {"fuel": bare._pin_audit(cells["fuel"], floor, spool),
+                  "both": self._pin_audit(cells["both"], floor, spool)}
+        c_bare = cells["stator"]["m_i"] - cells["neither"]["m_i"]
+        c_fuel = cells["both"]["m_i"] - cells["fuel"]["m_i"]
+        # THE DERIVED VALUE the tautology must take, per regime.
+        if audits["fuel"]["pinned"] and audits["both"]["pinned"]:
+            regime = "both_pinned"
+            pred = (0.0 if isinstance(floor, IncidenceLimiter) else cells["both"]["v"])
+        elif audits["both"]["dormant"]:
+            regime = "armed_clears"
+            pred = cells["stator"]["m_i"] - audits["fuel"]["m_set"]
+        else:
+            regime = "mixed"
+            pred = float("nan")
+        return dict(
+            spool=spool, r=r, ds=ds, cells=cells, audits=audits, regime=regime,
+            floor=("incidence" if isinstance(floor, IncidenceLimiter) else "phi"),
+            admissible=audits["fuel"]["admissible"] and audits["both"]["admissible"],
+            credit_bare=c_bare, credit_fuel=c_fuel, interaction=c_fuel - c_bare,
+            pinned_prediction=pred, pinned_residual=c_fuel - pred,
+            # the half that is NOT pinned -- a time has no wall (rung 58's converse reading)
+            s_eng_bare=cells["fuel"]["s_eng"], s_eng_armed=cells["both"]["s_eng"],
+            d_s_eng=cells["both"]["s_eng"] - cells["fuel"]["s_eng"],
+            removed_bare=cells["fuel"]["fuel_removed"],
+            removed_armed=cells["both"]["fuel_removed"],
+            v_at_min=cells["both"]["v"])

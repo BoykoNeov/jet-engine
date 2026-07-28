@@ -316,6 +316,17 @@ currency-circular. So it needs its own probe and its own rung, and rung 59's res
 to expect: matching should annihilate most of rung 58's disjointness the way it annihilated
 most of the HP interaction.
 
+> **✔ BUILT — rung 60, and the expectation was RIGHT about the disjointness and WRONG about
+> what it would buy.** Matching does annihilate it (24× at a constant setting, entirely on
+> rung 58's own schedule), and the canonical matching rule turns out not to be a calibration
+> at all — a set point has no definition to re-run, so the two natural rules differ by exactly
+> `v·sm/(1+sm)`, and only rung 58's currency finding picks between them. But the repaired leg
+> is still not composable: a floor **PINS** the coordinate it watches, so the second difference
+> is a difference of set points (`= v` for `φ`, `= 0` for incidence, both exact). **The
+> state-fed worry was also avoidable**: the criterion `credit < excursion` leaves the constant
+> ladder admissible out to `v = 0.190`, so rung 60's body is a scalar floor and no new plant.
+> `docs/rung60-spec.md`.
+
 Then, unchanged: **stator + bleed together** (rung 53's saturation), a **bleed schedule**
 `b(n_L)`, and the **lag SHAPE / two-lag cascade** (rung 52's own seam).
 

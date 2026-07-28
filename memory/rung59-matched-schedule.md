@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: d1f0ca1e-029e-4a94-96cf-47bbc8ddf425
-  modified: 2026-07-28T18:14:07.169Z
+  modified: 2026-07-28T18:48:13.270Z
 ---
 
 Rung 59 (shipped 2026-07-28) took rung 58's own named seam — re-derive the `Wf/pt3` accel
@@ -30,6 +30,13 @@ variant as confounded *on that basis*. Rung 58 ran an **LP** stator, so its leg 
 the matched leg — identical in `s_eng`, fuel removed and `s*`, not just the margin. Its
 numbers were never confounded. Both sites corrected in place (rung 28's precedent). See
 [[rung58-composite-minselect]], [[rung53-variable-stator]], [[rung39-two-spool-maps]].
+
+**Scoring: P1 HIT · P2 HIT · P3 HIT · P4 MISS · P5 SPLIT.** P3 made the 100/0 isolation
+ramp-rate-INDEPENDENT (no clock — it is a property of a *table*, not a march). P4's miss beat
+its hit: at slow ramp the unmatched leg is DORMANT while the matched leg binds, so an
+unmatched schedule can report a limiter that **is not there**. P5 split — the abscissa share
+holds to the authority edge, but `Δ_match` has an INTERIOR MAXIMUM (rung 48/50's
+truncated-descent ceiling) even though the index shift is monotone.
 
 **Lessons worth keeping:**
 - **The surprise arrived as a suspected artifact.** The first probe showed the two tables

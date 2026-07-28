@@ -21,7 +21,7 @@ from turbojet.engine import (  # noqa: E402
     CombustorTransient, build_two_spool_turbojet, TwoSpoolMatcher, TwoSpoolMapMatcher,
     TwoSpoolTransient, TwoSpoolBleedMatcher, TwoSpoolFuelTransient, SurgeLimiter,
     AsymmetricLag, VariableStatorMatcher, StageStackMatcher, ram_recovery,
-    ScheduledStatorTransient, StatorSchedule,
+    ScheduledStatorTransient, StatorSchedule, IncidenceLimiter,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -4416,9 +4416,81 @@ def print_composite_minselect_table(flight):
     print("    => rung 53 made a MARGIN coordinate-dependent; this is the same fact reaching a")
     print("       LIMITER'S SET POINT. Rung 48's leg composes because Wf/pt3 is stator-invariant.")
 
-    print("\n  SCOPE: the fuel leg is ONE object derived on the BARE machine (a FADEC would match")
-    print("  it to the armed plant -- a different, confounded experiment); LP-side, M_i only, one")
+    print("\n  SCOPE: the fuel leg is ONE object derived on the BARE machine (rung 59 proves this")
+    print("  IS the matched leg for an LP stator); LP-side, M_i only, one")
     print("  gas. See docs/rung58-spec.md § Concessions.")
+
+
+def print_matched_floor_table(flight):
+    """Rung-60 payoff: rung 58's own next seam -- the MATCHED phi floor.
+
+    Rung 58 found a phi floor not composable with the stator (disjoint set-point bands) and
+    proposed matching the set point. Matching is under-determined; the canonical repair is a
+    CHANGE OF COORDINATE, to the one wall the stator does not move. It buys admissibility --
+    and nothing else, because a floor PINS the coordinate it watches, so the composite's
+    second difference is a difference of SET POINTS with a DERIVED value."""
+    print("\nTHE MATCHED phi FLOOR (rung 60): rung 58's refused repair, built -- and it answers")
+    print("the wrong question. A floor that binds holds its own coordinate AT the set point:")
+    print("   leg floors phi   ->  M_i(both) - M_i(fuel) = [T_c - 1/phi_lim + v] - [..+0] = v")
+    print("   leg floors M_i   ->  M_i(both) - M_i(fuel) = m_lim - m_lim               = 0")
+    print("   (LP spool, r = 0.5, ds = 0.01 -- the spec's tables are the ds = 0.005 grid)")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR, LO, HI, DS = 0.55, 1000.0, 1400.0, 0.01
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, TT4, flight.p0,
+                                      nozzle_convergent=True, **losses)
+
+    def mk(**kw):
+        return ScheduledStatorTransient(design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0, **kw)
+
+    print("\n  BOTH ENDS OF THE TAUTOLOGY, measured against the value they are DERIVED to take:")
+    print(f"    {'leg':>22} {'v':>5} {'regime':>13} {'M_i(both)-M_i(fuel)':>21} {'derived':>9}"
+          f" {'residual':>10}")
+    for tag, v, leg in ((" incidence M=0.509", 0.10, IncidenceLimiter(spool="lp", m_lim=0.509)),
+                        (" incidence M=0.518", 0.15, IncidenceLimiter(spool="lp", m_lim=0.518)),
+                        ("   phi floor 0.750", 0.15, SurgeLimiter(spool="lp", phi_lim=0.750))):
+        d = mk(vsv_lp=v).floor_composite(flight, LO, HI, leg, r=0.5, ds=DS)
+        print(f"    {tag:>22} {v:5.2f} {d['regime']:>13} {d['credit_fuel']:21.15f}"
+              f" {d['pinned_prediction']:9.3f} {d['pinned_residual']:+10.1e}")
+    print("    => a number reproduced to 1e-15 by an identity is not evidence about the machine.")
+    print("       Re-referencing MOVES the tautology; only a leg that RELOCATES a minimum")
+    print("       (rung 48's schedule) leaves the derivative to the plant.")
+
+    print("\n  WHAT IT DOES BUY -- ADMISSIBILITY. The set-point bands, in both coordinates:")
+    d = mk(vsv_lp=0.20).set_point_bands(flight, LO, HI, r=0.5, ds=DS)
+    print(f"    phi   gap {d['gap_phi']:+.6f}  = {100 * d['gap_phi_bands']:+6.1f} % of a band"
+          f"   admissible: {d['phi_admissible']}")
+    print(f"    M_i   gap {d['gap_m']:+.6f}  = {100 * d['gap_m_bands']:+6.1f} % of a band"
+          f"   admissible: {d['m_admissible']}")
+    print(f"    and the gap is an IDENTITY: credit {d['credit']:.6f} - excursion "
+          f"{d['excursion']:.6f} = {d['criterion']:+.6f}  (residual {d['identity_residual']:+.1e})")
+
+    print("\n  ... so composability has a CLOCK, and the clock is entirely the RAMP's:")
+    rows = mk().composability_ladder(flight, LO, HI,
+                                     rates=[(r, dict(vsv_lp=0.20)) for r in (0.15, 0.35, 0.5, 1.0)],
+                                     ds=DS)
+    print(f"    {'r':>6} {'credit':>10} {'excursion':>10} {'criterion':>11}  composable")
+    for row in rows:
+        print(f"    {row['r']:6.2f} {row['credit']:10.6f} {row['excursion']:10.6f} "
+              f"{row['criterion']:+11.6f}  {row['m_admissible']}")
+    cr = [row["credit"] for row in rows]
+    ex = [row["excursion"] for row in rows]
+    print(f"    credit spread {100 * (max(cr) / min(cr) - 1):.2f} %  (rung 57: a wall-moving "
+          f"lever has NO clock)")
+    print(f"    excursion spread {max(ex) / min(ex):.2f}x  -- the ramp's, and it is what crosses")
+    print("       the threshold with the lever's setting never touched.")
+
+    print("\n  SCOPE: the body is a CONSTANT setting, where the matched floor is a scalar and")
+    print("  there is no new plant; LP-side, M_i only, one gas. docs/rung60-spec.md.")
 
 
 def main():
@@ -4554,6 +4626,8 @@ def main():
     print_stator_schedule_table(FLIGHT)
 
     print_composite_minselect_table(FLIGHT)
+
+    print_matched_floor_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 
