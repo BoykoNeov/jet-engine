@@ -20,7 +20,7 @@ from turbojet.engine import (  # noqa: E402
     FlightCondition, build_turbojet, OffDesignMatcher, MapMatcher, ComponentMap, SpoolTransient,
     CombustorTransient, build_two_spool_turbojet, TwoSpoolMatcher, TwoSpoolMapMatcher,
     TwoSpoolTransient, TwoSpoolBleedMatcher, TwoSpoolFuelTransient, SurgeLimiter,
-    ram_recovery,
+    AsymmetricLag, ram_recovery,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -2773,6 +2773,91 @@ def print_release_rate_table(flight):
     print("  without s_off ASSERTS; a trigger past the natural release is inert; cycle rung-6.")
 
 
+def print_asymmetric_lag_table(flight):
+    """Rung-52 payoff: the asymmetric fast-attack / slow-release LAG -- a self-releasing limiter
+    PINS ITS OWN TRIGGER, and CANNOT DEBIT THE SPOOL IT WATCHES.
+
+    Rungs 50/51 forced a release (`s_off`, then a linear fade) because rung 49's family could not
+    pin one. Rung 51 deferred the realisable version -- an asymmetric lag -- on the grounds that
+    "a lag's release edge is EMERGENT, so sweeping the rate drags the release with it." That is
+    FALSE, and refutable in one line: tau_rel is never READ while required > g, so the whole
+    march up to the first crossing is bit-identical across a rate sweep.
+
+    Two payoffs follow. The watched spool's minimum sits upstream of that crossing (the lag's
+    undershoot is largest EARLY, so rung 48's arrest pins it at the engagement edge), so a
+    self-releasing leg cannot debit the spool it watches -- which BOUNDS rung 50's watched-side
+    debit to FORCED releases and RESTORES rung 49's identity. And the two constants do NOT
+    factor: tau_att owns the credit exactly, the debit is joint."""
+    print("\nThe asymmetric fast-attack/slow-release LAG (rung 52): the clip AMOUNT a state with")
+    print("TWO time constants. The physically-realisable limiter rungs 50/51 imitated by force.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, TT4, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    ft = TwoSpoolFuelTransient(design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0)
+    lim = SurgeLimiter(spool="lp", phi_lim=0.7725)
+    K = dict(r=2.0, s_settle=2.0)
+
+    print("\n  THE TRIGGER PINS ITSELF (phi floor 0.7725, accel 1000->1400 at r=2.0,")
+    print("  tau_att=0.02). Sweep the RELEASE constant over 20x -- the crossing does not move:")
+    print(f"  {'tau_rel':>9}{'s_cross':>9}{'s_rel(.01)':>12}{'credit_LP':>12}"
+          f"{'debit_HP':>12}{'fuel_rm':>11}")
+    base = None
+    for tr in (0.02, 0.10, 0.40):
+        x = ft.lag_relief(flight, 1000.0, 1400.0, AsymmetricLag(0.02, tr), surge=lim, **K)
+        base = base if base is not None else x
+        print(f"  {tr:9.2f}{x['s_cross']:9.2f}{x['s_rel_0.01']:12.2f}"
+              f"{x['relief_watched']:12.6f}{x['relief_other']:12.6f}{x['fuel_removed']:11.5f}")
+    print("  => s_cross IDENTICAL and credit_LP identical to MACHINE ZERO, while the hand-back")
+    print("     itself stretches out. tau_rel is never READ before the crossing, so the whole")
+    print("     pre-crossing march is bit-identical -- the leg pins its own trigger, which is")
+    print("     the property rung 50 had to FORCE with s_off. Rung 51's reason 1 is REFUTED.")
+    print("  => and the debit SHRINKS while fuel_rm RISES: more fuel removed, smaller debit.")
+    print("     Rung 51's headline, on a realisable leg (and far enough out it flips to CREDIT).")
+
+    print("\n  WHY THE CREDIT'S ZERO IS NOT A TAUTOLOGY: it needs the watched spool's own")
+    print("  minimum to sit UPSTREAM of the crossing. It does -- the lag's undershoot is")
+    print("  largest EARLY, while g is still climbing, so rung 48's arrest pins that minimum at")
+    print(f"  the engagement edge: s_min_LP={base['s_min_lp']:.2f} vs s_cross="
+          f"{base['s_cross']:.2f} (bare min at 0.32).")
+    print("  => A SELF-RELEASING LIMITER CANNOT DEBIT THE SPOOL IT WATCHES. Rung 50's")
+    print("     watched-side debit is an ARTIFACT OF FORCING; rung 49's identity is RESTORED")
+    print("     for every realisable leg, and rung 50's bound re-scoped to its own instrument.")
+
+    g = ft.factorization_grid(flight, 1000.0, 1400.0, (0.02, 0.20), (0.02, 0.10, 0.40),
+                              surge=lim, **K)
+    print("\n  DO THE TWO CLOCKS FACTOR? (the premise a real fast-attack/slow-release limiter")
+    print("  is DESIGNED on). Additive-separability residual on the DEBIT:")
+    print(f"  {'tau_att':>9}" + "".join(f"{tr:>12.2f}" for tr in g["tau_rels"]))
+    for i, ta in enumerate(g["tau_atts"]):
+        print(f"  {ta:9.2f}" + "".join(f"{v:+12.6f}" for v in g["residual"][i]))
+    print(f"  max residual {g['max_residual']:.6f} vs max main effect "
+          f"{g['max_main_effect']:.6f} -> {g['max_residual']/g['max_main_effect']:.0%}")
+    print("  => the interaction is the SAME ORDER as the main effects (and 70% at r=0.5), while")
+    print("     the credit spread is machine zero. THE TWO CLOCKS SEPARATE ONE WAY: tau_att owns")
+    print("     the credit EXACTLY, the debit is irreducibly JOINT. The design premise is HALF")
+    print("     TRUE -- and the half that fails is the PROTECTIVE one.")
+    print("  Rung 51's reason 2 was FORM-dependent: an asymmetric-RATE lag switches on")
+    print("  sign(required-g) and both branches share the vanishing numerator, so the RHS is a")
+    print("  KINK not a jump -- RK4-legal, and rung 47's latch hazard does not recur. Reason 3")
+    print("  STANDS (an exponential never completes): the release edge is DECLARED")
+    print("  fractional-of-schedule and every debit is reported at TWO epsilons.")
+    print("  phi_lim rides rungs 36/41/49's imposed constant -> signs, machine-zeros and the")
+    print("  ds/tau convergences are the claims, not magnitudes. NEXT SEAM: the lag's SHAPE, and")
+    print("  the two-lag cascade (tau_gov + lag) this rung refuses -- what a real FADEC runs.")
+    print("  Reduces: lag=None -> rungs 45/46/47/48/49/50/51 bit-for-bit; lag+s_off/tau_rel")
+    print("  ASSERTS (alternative instruments); lag+tau_gov ASSERTS; cycle rung-6 exact.")
+
+
 def print_pdf_quench_table(flight):
     """Rung-15 payoff: the PDF THROUGH the finite quench — the two mixing mechanisms COMBINED.
 
@@ -3865,6 +3950,8 @@ def main():
     print_release_edge_table(FLIGHT)
 
     print_release_rate_table(FLIGHT)
+
+    print_asymmetric_lag_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 
