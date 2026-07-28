@@ -21,7 +21,7 @@ teaching, not for features or polish.
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is anchored to a
-published case. All rungs are live; the current scope is **rung 57**. Read a rung's spec (last
+published case. All rungs are live; the current scope is **rung 58**. Read a rung's spec (last
 column) before touching it — that is where the real content lives.
 
 | Rung | Adds (one-line hook) | Spec |
@@ -84,6 +84,7 @@ column) before touching it — that is where the real content lives.
 | 55 | **The STAGE STACK** — the compressor stops being ONE block; kinematics DERIVED (rungs 36–53 read the FRONT stage all along — **BOUNDED**), `K` a resolution. **HEADLINE: a POSITIONAL lever buys relief from the part it does not move**; and the row count has an **INTERIOR optimum**. Discharges rung 54's seam. | `docs/rung55-spec.md` |
 | 56 | **PER-ROW CAPACITY** — rung 54's throat per row; the seam asked for a `C` per row and the ladder supplies every one but the level. The profile FIGHTS the loading ⇒ the binding row **MIGRATES** with power. **HEADLINE: a resolved machine's two binding rows are DIFFERENT rows — different END *and* different SPOOL — and the one lever reaches only the wrong one.** **CORRECTS rung 54's** pure-LP exposure; a LEVER'S COST is coordinate-dependent too. | `docs/rung56-spec.md` |
 | 57 | **The STATOR SCHEDULE on the TRANSIENT plant** — rung 53's floor-moving lever inside an accel. **HEADLINE: a wall-moving lever has NO CLOCK** — rung 53's *design-point* law still predicts it off design and out of equilibrium, so rungs 46–52's engagement-timing law is a **POINT**-mover property: their CLOCK now **BOUNDED** as rung 53 bounded their currency. **CORRECTS rung 53's P5.** | `docs/rung57-spec.md` |
+| 58 | **The COMPOSITE min-select** — the stator schedule BESIDE a fuel-side leg. **HEADLINE: two levers DO NOT SUPERPOSE**, and a pair composes only in coordinates neither moves — a `φ`-referenced leg **cannot compose at all**. **CONFIRMS rung 57** on the delivered credit; **EXTENDS rung 53** to composability. | `docs/rung58-spec.md` |
 
 ## Working contract (from SPEC.md — these override convenience)
 - **Derive before you code.** For each station, write the governing equation and
@@ -99,7 +100,7 @@ column) before touching it — that is where the real content lives.
 - **Every new rung reduces to its predecessor**, exactly and by test (`X=None` ⇒
   the prior code path). This is the project's spine — see any `docs/rungN-spec.md`.
 
-**Current scope (rung 57).** The **cycle solve** is a thermally-perfect, reacting,
+**Current scope (rung 58).** The **cycle solve** is a thermally-perfect, reacting,
 dissociation-equilibrium gas (`Gas.reacting_equilibrium()`) through ideal + real
 components (isentropic `η_c/η_t` **or** polytropic `e_c/e_t`, mutually exclusive;
 `π_d/π_b/π_n`, `η_b`, `η_m`; dual cold/hot gas; specified exit pressure). The burner
@@ -107,7 +108,7 @@ root-finds `f` over the scale-B absolute balance (re-solving equilibrium each tr
 then freezes the station-4 mixture through turbine + nozzle. Fork A/B and
 frozen-products gases are kept alongside. **Everything from rung 7 up is a diagnostic
 *beside* the cycle**, reached through **separate entry points** that leave the default
-`build_turbojet(…).run(…)` design run **bit-for-bit rung 6**. Rungs **31–57** are the
+`build_turbojet(…).run(…)` design run **bit-for-bit rung 6**. Rungs **31–58** are the
 STRUCTURAL / DYNAMIC rungs — a new off-design or transient operating point, reached through the
 two matcher ladders mapped in § Layout (`engine.py`); rungs **7–30, 36, 41, 44, 45** are pure
 diagnostics that only *read* the design-point / running-line state. Each rung reduces to its
@@ -117,7 +118,7 @@ predecessor exactly and by test — the gates are named in its spec.
 One line per seam — `BUILT` (detail in its rung's spec) · `NEGATIVE → doc` (investigated, not
 shipped, not a rung) · `OPEN` (not yet built). The live map of what is closed vs open.
 
-**BUILT — every seam numbered 25–56 was closed by the same-numbered rung.** The table above is its
+**BUILT — every seam numbered 25–58 was closed by the same-numbered rung.** The table above is its
 one-line hook, the derivation is in its spec. No per-seam list here: a numbered seam is closed, and
 must never be re-opened by mistake.
 
@@ -142,7 +143,7 @@ must never be re-opened by mistake.
 - **Reacting-gas fuel control** (rungs 35/43 defer — the forward burner asserts against an equilibrium gas).
 - **The subsonic / unchoked LP branch** in the two-spool solves (rung 38 flags, does not solve) and its **transient**.
 - An **ANCHOR for the blading** (what its NEGATIVE isolated): a stress / tip-Mach limit pinning `U` from outside the stack, or an annulus law `Vx(k)` — either turns `U²∝1/S` from a free knob into a constraint, and only then is a monotone taper admissible.
-- **Stator + bleed together** (rung 53's saturation says the bleed takes over where the stator's authority ends), and the **stator schedule beside the FUEL-side limiters on ONE plant** (rung 57's seam: one min-select leg clocked, one not — blocked on a currency, not code).
+- **Stator + bleed together** (rung 53's saturation says the bleed takes over where the stator's authority ends), and the **MATCHED schedule** (rung 58's seam: re-derive `κ_ss` on the armed machine — the confound rung 58 refuses, now readable because its mechanism predicts what to subtract).
 - A **bleed schedule** `b(n_L)`; **fuel + bleed together**.
 - **The lag's SHAPE and the two-lag CASCADE** — rung 52's named seam: a second-order / rate-limited *attack* (the valve, not the loop), and `tau_gov` + `lag` together (redline lag + surge lag on one plant — what a real FADEC runs). Rung 52's §3 non-factorization says the cascade should not be additive.
 - **Rung 37's internal clocks on two shafts** and the combined 3-state; **customer/cooling bleed** at station 3.
@@ -195,12 +196,14 @@ A compact map — the per-rung method/finding detail lives in `docs/rungN-spec.m
   Rung 57 returns rung 53's lever to the **transient** ladder: `StatorSchedule` +
   `ScheduledStatorTransient` (a `TwoSpoolFuelTransient`) arm the maps from the live state inside
   BOTH closures, with readers of their own — rungs 41/44/45 read the design-setting `phi_surge`
-  FIELD, which is the wrong wall once the stator moves.
+  FIELD, which is the wrong wall once the stator moves. Rung 58 arms ONE fuel-side leg beside it
+  (`_stator_march` grows `accel`/`surge`/`Tt4_max`; `composite_credit` / `engagement_shift` /
+  `interaction_sweep`) — two fuel legs are refused as min-select algebra.
   Each reduces to its predecessor (exact dispatch, an inherited identity, or the forward closure);
   **the method names + reduce contracts are in each rung's spec, not here.**
 - `main.py` — the design-point run: ideal-vs-real tables, the overlaid T–s diagram, and **one panel
   per rung** (each demonstrates that rung's load-bearing claim and states its honest scope).
-- `tests/` — per-rung `test_rungN.py` (N = 1…56; plus the rung-1/2b/3/4/5 files). Every rung file
+- `tests/` — per-rung `test_rungN.py` (N = 1…58; plus the rung-1/2b/3/4/5 files). Every rung file
   carries that rung's **reduce-to-prior** gate plus its load-bearing claims — the gates are named in
   the spec. `test_claude_md_reference.py` is the size guard on this file.
 - `docs/rungN-spec.md` — the derivation, assumptions, concessions and gates for rung N.

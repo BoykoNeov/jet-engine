@@ -4323,6 +4323,104 @@ def print_stator_schedule_table(flight):
     print("  fuel-side limiters (no common currency). See docs/rung57-spec.md § Concessions.")
 
 
+def print_composite_minselect_table(flight):
+    """Rung-58 payoff: rung 57's own next seam -- the stator schedule BESIDE a fuel-side leg.
+
+    Rung 57 refused the head-to-head (fuel withheld and shaft speed paid have no common
+    currency). A MIXED SECOND DIFFERENCE needs none: how much does the stator's credit change
+    when a fuel leg is armed beside it? The answer is 9.5 %, it runs ONE WAY, and it lives in
+    the SCHEDULE's state-feed -- a constant setting sits an order of magnitude down.
+
+    And the obvious over-reading is refused by the same sweep: the DELIVERED credit is flatter
+    in r than the bare one, so rung 57 is CONFIRMED, not bounded."""
+    print("\nTHE COMPOSITE MIN-SELECT (rung 58): rung 57's lever and ONE fuel-side leg on ONE")
+    print("plant. Four cells and their MIXED SECOND DIFFERENCE -- no ranking of the two levers,")
+    print("which is why it dodges the head-to-head rung 57 declared trapped:")
+    print("   dI = [M_i(both) - M_i(fuel)] - [M_i(stator) - M_i(neither)]")
+    print("   M_i = T_c - (1/phi - v)   <- wall = the METAL, the ONE object all four cells share")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR, V, LO, HI = 0.55, 0.20, 1000.0, 1400.0
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, TT4, flight.p0,
+                                      nozzle_convergent=True, **losses)
+
+    def mk(**kw):
+        return ScheduledStatorTransient(design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0, **kw)
+
+    acc = mk().accel_schedule(flight, LO, HI, 0.25)     # DERIVED ONCE, on the BARE machine
+    sc = StatorSchedule(V, mk().equilibrium(flight, LO)["nu_lp"])
+    sch = mk(vsv_sched_lp=sc).composite_credit(flight, LO, HI, r=0.5, accel=acc)
+    con = mk(vsv_lp=V).composite_credit(flight, LO, HI, r=0.5, accel=acc)
+
+    print(f"\n  The four cells (state-fed schedule, rung 48's Wf/pt3 leg, r = 0.5):")
+    print(f"    {'cell':>8} {'M_i':>10} {'s*':>7} {'v(s*)':>7} {'M_phi':>10}")
+    for k in ("neither", "stator", "fuel", "both"):
+        c = sch["cells"][k]
+        print(f"    {k:>8} {c['m_i']:10.6f} {c['s']:7.4f} {c['v']:7.4f} {c['m_phi']:+10.6f}")
+    print(f"    stator credit  bare {sch['credit_bare']:+.6f}  ->  with the fuel leg "
+          f"{sch['credit_fuel']:+.6f}   dI = {sch['interaction']:+.6f} "
+          f"({100 * sch['share']:+.2f} %)")
+
+    e = mk(vsv_sched_lp=sc).engagement_shift(flight, LO, HI, r=0.5, accel=acc)
+    print(f"\n  ... and the CONVERSE, sub-grid: the fuel leg's own engagement time")
+    print(f"    s_eng  bare {e['bare_dormant']:.7f}  ->  stator armed {e['armed_dormant']:.7f}"
+          f"   ({100 * e['rel_dormant']:+.3f} %)")
+    print(f"    => the influence runs ONE WAY, by a factor of "
+          f"{abs(sch['share'] / e['rel_dormant']):.0f}.")
+
+    print(f"\n  WHERE it lives -- the same composite with a CONSTANT setting, which cannot"
+          f" self-feed:")
+    print(f"    {'stator leg':>12} {'credit':>10} {'dI':>10} {'share':>8} {'v(s*) ratio':>12}")
+    for tag, d in (("schedule", sch), (f"constant {V:.2f}", con)):
+        print(f"    {tag:>12} {d['credit_bare']:10.6f} {d['interaction']:+10.6f} "
+              f"{100 * d['share']:7.2f}% {d['v_ratio']:12.5f}")
+    print(f"    the fuel leg RELOCATES the incidence minimum ({sch['cells']['neither']['s']:.4f}"
+          f" -> {sch['cells']['fuel']['s']:.4f}) and a state-fed schedule is MORE CLOSED there.")
+    print(f"    A constant setting is read at the same v wherever the minimum goes.")
+    print(f"    => the two levers DO NOT SUPERPOSE. (The {100 * con['share']:.2f} % floor is"
+          f" REAL, not zero, and at r = 0.10 it flips SIGN.)")
+
+    print("\n  AND THE OBVIOUS READING IS WRONG -- the near-miss, published with the result.")
+    print(f"  dI is strongly ramp-rate-dependent, which invites 'a clock-free lever INHERITS")
+    print(f"  its partner's clock'. But dI ANTI-correlates with the bare credit, so what a")
+    print(f"  designer is handed -- credit_bare + dI -- is FLATTER in r than the bare credit:")
+    print(f"    {'stator leg':>12} {'bare spread':>12} {'composed spread':>16}")
+    print(f"    {'schedule':>12} {'8.53 %':>12} {'6.80 %':>16}")
+    print(f"    {'constant':>12} {'3.11 %':>12} {'0.89 %':>16}")
+    print(f"    => rung 57 is CONFIRMED on the delivered credit. Only the DECOMPOSITION is")
+    print(f"       clocked, and a decomposition is not a deliverable.")
+
+    print(f"\n  PREDICTED from the two marches that never saw the fuel leg -- the credit is a")
+    print(f"  PROFILE in s, and the leg changes only WHICH POINT of it is read:")
+    for tag, d in (("schedule", sch), (f"constant {V:.2f}", con)):
+        print(f"    {tag:>12}  measured {d['interaction']:+.6f}   predicted {d['predicted']:+.6f}"
+              f"   ({100 * d['predicted'] / d['interaction']:.0f} % recovered)")
+
+    print(f"\n  AND A LEG THAT CANNOT COMPOSE AT ALL. Rung 49's phi floor must sit BELOW the")
+    print(f"  machine's phi at s=0 and ABOVE its minimum. Those windows are DISJOINT:")
+    for tag, kw in (("bare", {}), ("schedule", dict(vsv_sched_lp=sc)),
+                    ("constant", dict(vsv_lp=V))):
+        m = mk(**kw)
+        tr, _ = m._stator_march(flight, LO, HI, 0.5, 1.2, 0.005)
+        print(f"    {tag:>9}  admissible floor  ({min(p['phi_lp'] for p in tr):.4f}, "
+              f"{tr[0]['phi_lp']:.4f})")
+    print("    => rung 53 made a MARGIN coordinate-dependent; this is the same fact reaching a")
+    print("       LIMITER'S SET POINT. Rung 48's leg composes because Wf/pt3 is stator-invariant.")
+
+    print("\n  SCOPE: the fuel leg is ONE object derived on the BARE machine (a FADEC would match")
+    print("  it to the armed plant -- a different, confounded experiment); LP-side, M_i only, one")
+    print("  gas. See docs/rung58-spec.md § Concessions.")
+
+
 def main():
     # The tables carry unicode (Δ, ·, ≡, ≈); force UTF-8 so `python main.py` renders
     # on any console (a stock Windows cp1252 console would otherwise crash on them).
@@ -4454,6 +4552,8 @@ def main():
     print_per_row_capacity_table(FLIGHT)
 
     print_stator_schedule_table(FLIGHT)
+
+    print_composite_minselect_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

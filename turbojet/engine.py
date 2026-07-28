@@ -7462,13 +7462,18 @@ class ScheduledStatorTransient(TwoSpoolFuelTransient):
     # --- the march + the two currencies -------------------------------------------------
 
     def _stator_march(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float, r: float,
-                      s_settle: float, ds: float, nu0=None):
+                      s_settle: float, ds: float, nu0=None,
+                      accel=None, surge=None, Tt4_max=None):
         """The rung-45 accel FUEL ramp on THIS machine. Deliberately NOT `_fuel_ramp_march`:
         that one references the commanded running line and reads the FIELD `phi_surge`, which
         rung 53 pinned to the DESIGN setting so rungs 41/44/45's readers stay literally
         unchanged. Under a moving stator that field is the wrong wall, so rung 57 reads its
         own (`ComponentMap.phi_surge_at`) through a march of its own. `nu0=None` starts on
-        THIS machine's own running line."""
+        THIS machine's own running line.
+
+        RUNG 58 threads ONE fuel-side min-select leg through (`accel` / `surge` / `Tt4_max`).
+        All three default to None, which is `integrate_fuel`'s own default, so every rung-57
+        caller reaches the IDENTICAL march: THE REDUCE."""
         mf_lo = self.fuel_for_Tt4(flight, Tt4_lo)
         mf_hi = self.fuel_for_Tt4(flight, Tt4_hi)
         if nu0 is None:
@@ -7482,7 +7487,8 @@ class ScheduledStatorTransient(TwoSpoolFuelTransient):
                 return mf_hi
             return mf_lo + (mf_hi - mf_lo) * (s / r)
 
-        return self.integrate_fuel(flight, sched, nu0, r + s_settle, ds), nu0
+        return self.integrate_fuel(flight, sched, nu0, r + s_settle, ds,
+                                   Tt4_max=Tt4_max, accel=accel, surge=surge), nu0
 
     def _read(self, traj, v_of=None) -> dict:
         """BOTH rung-53 currencies, per spool, minimised over a trajectory, with the wall read
@@ -7651,3 +7657,260 @@ class ScheduledStatorTransient(TwoSpoolFuelTransient):
                     d_phi_lp=b["phi_lp"] - a["phi_lp"], d_phi_hp=b["phi_hp"] - a["phi_hp"],
                     d_n_hp=b["n_hp"] - a["n_hp"], d_Tt25=b["Tt25"] - a["Tt25"],
                     phi_lp=a["phi_lp"], phi_hp=a["phi_hp"])
+
+    # --- RUNG 58: the COMPOSITE -- this lever BESIDE a fuel-side one, on ONE plant --------
+
+    @staticmethod
+    def _one_leg(accel, surge, Tt4_max):
+        n = sum(x is not None for x in (accel, surge, Tt4_max))
+        assert n == 1, (
+            "rung-58 composes the stator with EXACTLY ONE fuel-side leg. Two fuel legs is "
+            "min-select algebra, not a composite: whenever one binds the other contributes "
+            "exactly zero, so the interaction term is trivially -credit(other) -- the "
+            "tautological-gate failure rungs 40/46 were caught by.")
+        return ("accel" if accel is not None else
+                "surge" if surge is not None else "topping")
+
+    def _leg_residual(self, flight: FlightCondition, traj, accel=None, surge=None,
+                      Tt4_max=None) -> list:
+        """RUNG 58. The armed leg's ENGAGEMENT residual `g(s)`, evaluated at the SCHEDULED
+        fuel on the marched states: `g > 0` exactly when the leg must cut, one sign
+        convention for all three legs.
+
+            accel     g = mf_sched - cap(n_H, pt3)          (rung 48, feedforward)
+            surge     g = phi_lim  - phi_spool              (rung 49, feedback on phi)
+            Tt4_max   g = Tt4       - Tt4_max               (rung 46, feedback on TIT)
+
+        WHY IT EXISTS. `mf < mf_sched` can only locate the engagement to a GRID CELL, and the
+        thing rung 58 has to measure -- whether a wall-moving lever re-times a point-moving
+        one -- is two parts in a thousand. `g` is CONTINUOUS and the march is bit-identical
+        to the unclipped one up to its first crossing, so interpolating it is exact there."""
+        self._one_leg(accel, surge, Tt4_max)
+        key = None if surge is None else surge.key()
+        out = []
+        for p in traj:
+            i = self._instant_fuel(flight, p["nu_lp"], p["nu_hp"], p["mf_sched"])
+            if accel is not None:
+                g = p["mf_sched"] - accel.cap(i["n_hp"], i["pt4"] / self.pi_b)
+            elif surge is not None:
+                g = surge.phi_lim - i[key]
+            else:
+                g = i["Tt4"] - Tt4_max
+            out.append((p["s"], g))
+        return out
+
+    @staticmethod
+    def _profile_credit(prof_bare, prof_armed):
+        """RUNG 58. The stator's credit as a PROFILE in `s` -- armed minus bare, point by
+        point -- returned as a linearly-interpolating callable. Both marches must be on the
+        same `s` grid, which `_stator_march` guarantees (same `ds`, same `s_end`)."""
+        xs = [a for a, _ in prof_bare]
+        ys = [b - a for (_, a), (_, b) in zip(prof_bare, prof_armed)]
+        assert len(prof_bare) == len(prof_armed), (
+            "rung-58 credit profile needs the two marches on ONE grid; one of them broke "
+            "out of the loop early (an off-map guard), so they cannot be differenced.")
+
+        def at(s: float) -> float:
+            if s <= xs[0]:
+                return ys[0]
+            if s >= xs[-1]:
+                return ys[-1]
+            for i in range(len(xs) - 1):
+                if xs[i] <= s <= xs[i + 1]:
+                    t = (s - xs[i]) / (xs[i + 1] - xs[i])
+                    return ys[i] + t * (ys[i + 1] - ys[i])
+            return ys[-1]
+
+        return at
+
+    @staticmethod
+    def _s_eng(residual):
+        """Sub-grid engagement time: the linearly-interpolated first upward zero of `g`."""
+        for (s0, g0), (s1, g1) in zip(residual, residual[1:]):
+            if g0 <= 0.0 < g1:
+                return s0 + (s1 - s0) * (0.0 - g0) / (g1 - g0)
+        return float("nan")
+
+    def _refine_min(self, traj, spool: str = "lp") -> dict:
+        """RUNG 58. The incidence minimum, PARABOLA-refined off the `ds` grid.
+
+        Rung 57 read `M_i` at grid points because its findings were per-trajectory levels.
+        Rung 58's mechanism is the RELOCATION of that minimum and the setting the schedule
+        commands THERE, and the relocation it leans on is one or two cells -- so the argmin
+        and `v` at it are both quantized by `ds` unless they are interpolated. Three-point
+        vertex on `M_i`, states linearly interpolated at the vertex."""
+        cmap = self.map_lp_design if spool == "lp" else self.map_hp_design
+        key = "phi_lp" if spool == "lp" else "phi_hp"
+        T_c = cmap.tan_beta1_crit()
+        ys = [T_c - (1.0 / p[key] - self.v_of(spool, p["nu_lp"], p["nu_hp"]))
+              for p in traj]
+        j = min(range(len(ys)), key=lambda k: ys[k])
+        if not 0 < j < len(ys) - 1:
+            return dict(s=traj[j]["s"], m_i=ys[j], grid_s=traj[j]["s"], cells=0.0,
+                        v=self.v_of(spool, traj[j]["nu_lp"], traj[j]["nu_hp"]))
+        y0, y1, y2 = ys[j - 1], ys[j], ys[j + 1]
+        den = y0 - 2.0 * y1 + y2
+        t = 0.5 * (y0 - y2) / den if den else 0.0        # vertex offset, in CELLS
+        h = traj[j + 1]["s"] - traj[j]["s"]
+        a, b, w = ((traj[j], traj[j + 1], t) if t >= 0.0
+                   else (traj[j - 1], traj[j], 1.0 + t))
+        nl = a["nu_lp"] + (b["nu_lp"] - a["nu_lp"]) * w
+        nh = a["nu_hp"] + (b["nu_hp"] - a["nu_hp"]) * w
+        return dict(s=traj[j]["s"] + t * h, m_i=y1 - 0.25 * (y0 - y2) * t,
+                    grid_s=traj[j]["s"], cells=t, v=self.v_of(spool, nl, nh))
+
+    def _cell(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float, r: float,
+              s_settle: float, ds: float, spool: str, accel, surge, Tt4_max) -> dict:
+        traj, nu0 = self._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds,
+                                       accel=accel, surge=surge, Tt4_max=Tt4_max)
+        d = self._read(traj)[spool]
+        rf = self._refine_min(traj, spool)
+        armed = accel is not None or surge is not None or Tt4_max is not None
+        removed = 0.0
+        for i in range(1, len(traj)):
+            hh = traj[i]["s"] - traj[i - 1]["s"]
+            removed += 0.5 * hh * ((traj[i - 1]["mf_sched"] - traj[i - 1]["mf"])
+                                   + (traj[i]["mf_sched"] - traj[i]["mf"]))
+        cmap = self.map_lp_design if spool == "lp" else self.map_hp_design
+        key = "phi_lp" if spool == "lp" else "phi_hp"
+        T_c = cmap.tan_beta1_crit()
+        prof = [(p["s"], T_c - (1.0 / p[key]
+                                - self.v_of(spool, p["nu_lp"], p["nu_hp"]))) for p in traj]
+        return dict(m_i=rf["m_i"], m_i_grid=d["m_i"], m_phi=d["m_phi"], s=rf["s"], prof=prof,
+                    v=rf["v"], s_grid=d["at"]["s"], min_phi=d["min_phi"], nu0=nu0[0],
+                    nu_lp_end=traj[-1]["nu_lp"], nu_hp_end=traj[-1]["nu_hp"],
+                    Tt4_peak=max(p["Tt4"] for p in traj), fuel_removed=removed,
+                    s_eng=(self._s_eng(self._leg_residual(flight, traj, accel, surge,
+                                                          Tt4_max))
+                           if armed else float("nan")),
+                    npts=len(traj))
+
+    def composite_credit(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                         r: float = 0.5, s_settle: float = 1.2, ds: float = 0.005,
+                         spool: str = "lp", accel=None, surge=None,
+                         Tt4_max=None) -> dict:
+        """THE RUNG (58). The stator lever and ONE fuel-side min-select leg on ONE plant --
+        four cells and their MIXED SECOND DIFFERENCE:
+
+            neither / stator / fuel / both        (`self` armed, `self.at_stator()` bare)
+
+            interaction  =  [M_i(both) - M_i(fuel)] - [M_i(stator) - M_i(neither)]
+
+        i.e. HOW MUCH THE STATOR'S CREDIT CHANGES WHEN A FUEL LEG IS ARMED BESIDE IT. No
+        ranking of the two levers is needed, which is exactly why this composite is
+        measurable where rung 57's Concessions declared a head-to-head TRAPPED: fuel withheld
+        and shaft speed paid have no common currency (rung 48's matched-accel-time trap, rung
+        43's currency circularity), but a second difference in ONE currency needs none.
+
+        THE CURRENCY IS `M_i`, NOT `M_φ`, and that is a finding rather than a convention.
+        `M_i = T_c - (1/phi - v)` has its wall at the METAL -- `T_c` off the DESIGN map, one
+        number, bit-identical in all four cells. `M_φ`'s wall `phi_surge/(1+v*phi_surge)`
+        MOVES with the stator (rung 53), so differencing four cells in it crosses two walls
+        and the non-additivity would be a coordinate artifact. Measured: the two disagree on
+        the SIGN of the stator's own credit. `m_phi` is reported per cell and never
+        differenced.
+
+        THE FUEL LEG MUST BE ONE OBJECT, DERIVED ONCE, AND PASSED IN. `accel_schedule` reads
+        `self.equilibrium`, so an armed machine derives a DIFFERENT kappa_ss table; letting
+        each cell derive its own would make the leg itself differ between cells and the second
+        difference would isolate nothing. The matched-schedule variant (what a real FADEC
+        burns in) is a different, confounded experiment and is NOT this rung.
+
+        `fuel_removed` and the two `nu_*_end` are the DEFLATION EXCLUSION (rung 48's move):
+        if the leg's cost in the settled endpoint were itself stator-dependent, the
+        interaction would just be rung 44's ramp-rate lever re-measured."""
+        assert spool in ("lp", "hp"), f"spool must be 'lp' or 'hp', got {spool!r}"
+        self._one_leg(accel, surge, Tt4_max)
+        assert self._is_armed() or self.vsv_lp or self.vsv_hp, (
+            "rung-58 composite_credit differences an ARMED stator against its own bare "
+            "sibling -- call it on the machine carrying the stator leg.")
+        bare = self.at_stator()
+        args = (flight, Tt4_lo, Tt4_hi, r, s_settle, ds, spool)
+        cells = {
+            "neither": bare._cell(*args, None, None, None),
+            "stator": self._cell(*args, None, None, None),
+            "fuel": bare._cell(*args, accel, surge, Tt4_max),
+            "both": self._cell(*args, accel, surge, Tt4_max),
+        }
+        c_bare = cells["stator"]["m_i"] - cells["neither"]["m_i"]
+        c_fuel = cells["both"]["m_i"] - cells["fuel"]["m_i"]
+        dI = c_fuel - c_bare
+        vb, va = cells["stator"]["v"], cells["both"]["v"]
+        # THE MECHANISM, predicted from the two FUEL-LEG-FREE marches alone. The stator's
+        # credit is a PROFILE in `s` (armed minus bare, point by point), not a scalar; the
+        # fuel leg does not change that profile, it changes WHICH POINT of it is read. So
+        # re-reading the no-leg profile at the RELOCATED minimum must reproduce the
+        # interaction -- from two trajectories that never saw the leg. If it does not, the
+        # channel is a genuine plant coupling and not the relocation.
+        prof = self._profile_credit(cells["neither"]["prof"], cells["stator"]["prof"])
+        p_bare, p_fuel = prof(cells["neither"]["s"]), prof(cells["both"]["s"])
+        return dict(
+            predicted=p_fuel - p_bare, profile_bare=p_bare, profile_fuel=p_fuel,
+            spool=spool, r=r, ds=ds, leg=self._one_leg(accel, surge, Tt4_max), cells=cells,
+            credit_bare=c_bare, credit_fuel=c_fuel, interaction=dI,
+            share=dI / c_bare if c_bare else float("nan"),
+            v_bare=vb, v_fuel=va, v_ratio=va / vb if vb else float("nan"),
+            relocation=cells["both"]["s"] - cells["stator"]["s"],
+            relocation_bare=cells["fuel"]["s"] - cells["neither"]["s"],
+            # the deflation exclusion -- the leg's own cost, with and without the stator
+            leg_cost_bare=cells["fuel"]["nu_hp_end"] - cells["neither"]["nu_hp_end"],
+            leg_cost_armed=cells["both"]["nu_hp_end"] - cells["stator"]["nu_hp_end"],
+            fuel_removed_bare=cells["fuel"]["fuel_removed"],
+            fuel_removed_armed=cells["both"]["fuel_removed"])
+
+    def engagement_shift(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                         r: float = 0.5, s_settle: float = 1.2, ds: float = 0.005,
+                         accel=None, surge=None, Tt4_max=None) -> dict:
+        """RUNG 58's CONVERSE reading: does the wall-moving lever re-time the point-moving
+        one? Sub-grid engagement time (`_leg_residual` + `_s_eng`) on the BARE and the ARMED
+        machine, on BOTH the limited march and the unlimited one (where `g` is defined
+        everywhere and no clip has yet perturbed the states).
+
+        This is the half of the composite that `composite_credit` cannot see: the credit is a
+        property of the stator, `s_eng` is a property of the fuel leg, and the rung's headline
+        is that the influence runs ONE WAY between them."""
+        self._one_leg(accel, surge, Tt4_max)
+        assert self._is_armed() or self.vsv_lp or self.vsv_hp, (
+            "rung-58 engagement_shift needs an ARMED stator to shift anything.")
+        bare = self.at_stator()
+        out = {}
+        for tag, mach in (("bare", bare), ("armed", self)):
+            for how, leg in (("limited", (accel, surge, Tt4_max)),
+                             ("dormant", (None, None, None))):
+                traj, _ = mach._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds,
+                                             accel=leg[0], surge=leg[1], Tt4_max=leg[2])
+                out[f"{tag}_{how}"] = mach._s_eng(
+                    mach._leg_residual(flight, traj, accel, surge, Tt4_max))
+        d_lim = out["armed_limited"] - out["bare_limited"]
+        d_dor = out["armed_dormant"] - out["bare_dormant"]
+        return dict(r=r, ds=ds, leg=self._one_leg(accel, surge, Tt4_max), **out,
+                    d_limited=d_lim, d_dormant=d_dor,
+                    rel_limited=d_lim / out["bare_limited"],
+                    rel_dormant=d_dor / out["bare_dormant"])
+
+    def interaction_sweep(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                          legs, r: float = 0.5, s_settle: float = 1.2, ds: float = 0.005,
+                          spool: str = "lp", accel=None, surge=None,
+                          Tt4_max=None) -> list:
+        """RUNG 58's MECHANISM sweep. `legs` is an iterable of `(tag, at_stator kwargs)`;
+        each is armed on a sibling of THIS machine (same hardware, same design references --
+        rung 53's `at_setting` discipline) and run through `composite_credit` against the
+        SAME fuel-leg object.
+
+        What it is for: a CONSTANT setting has no state-feed, so if the interaction is the
+        relocation acting THROUGH the schedule's state-feed, sweeping the schedule's knee
+        `n_lo` (its local slope at the minimum) must move the interaction while the constant
+        legs sit at a floor. Called on the bare machine -- it builds every sibling itself."""
+        assert not self._is_armed() and not self.vsv_lp and not self.vsv_hp, (
+            "rung-58 interaction_sweep builds every stator sibling itself: call it on the "
+            "BARE machine so no leg can inherit a setting it did not declare.")
+        out = []
+        for tag, kw in legs:
+            sib = self.at_stator(**kw)
+            d = sib.composite_credit(flight, Tt4_lo, Tt4_hi, r, s_settle, ds, spool,
+                                     accel=accel, surge=surge, Tt4_max=Tt4_max)
+            out.append(dict(tag=tag, **{k: d[k] for k in
+                                        ("credit_bare", "credit_fuel", "interaction",
+                                         "share", "v_bare", "v_fuel", "v_ratio",
+                                         "relocation", "leg_cost_bare", "leg_cost_armed")}))
+        return out
