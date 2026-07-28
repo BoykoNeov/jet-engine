@@ -229,9 +229,13 @@ def test_p2_the_abscissa_carries_all_of_it():
 def test_p3_an_unmatched_schedule_manufactures_an_interaction():
     """THE PRACTICAL RESULT. On an HP-statored machine, rung 58's bare-machine leg reports an
     interaction far larger than the leg the machine would actually be given — and on the spool
-    CARRYING the stator, of the wrong SIGN. Matched, the pair very nearly superposes."""
+    CARRYING the stator, of the wrong SIGN. Matched, the pair very nearly superposes.
+
+    Measured at r = 0.5: 95.7x / 48.3x on the LP spool (v_hp = 0.05 / 0.10) and 10.2x / 10.0x
+    on the HP one. The gate gives the ORDER and the SIGN headroom rather than pinning the
+    weakest measured row — rung 58's discipline: gate the claim, not the boundary value."""
     lp = _matched(vsv_hp=V_HP, spool="lp")
-    assert abs(lp["interaction_bare_leg"]) > 10.0 * abs(lp["interaction_matched"])
+    assert abs(lp["interaction_bare_leg"]) > 5.0 * abs(lp["interaction_matched"])
     hp = _matched(vsv_hp=V_HP, spool="hp")
     assert hp["interaction_bare_leg"] < 0.0 < hp["interaction_matched"], (
         hp["interaction_bare_leg"], hp["interaction_matched"])

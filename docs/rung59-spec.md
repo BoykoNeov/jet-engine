@@ -30,9 +30,24 @@ Two halves, and the split between them is the rung.
   `MFP = 2.962907072632e−05`, **the same number at `Tt4` = 1000, 1200 and 1400 and on every
   stator setting tried**.
 - **(ii) `Tt3` is pinned by the TWO SHAFT BALANCES**, which are map-free with every throat
-  choked (rung 31's `(★)`). A stator changes the *speed* at which a temperature ratio is
-  bought and the *efficiency* it is bought at — not the ratio. Measured: `dTt25`, `dTt3`, `df`
-  all `≤ 1e−13` across an LP constant, an LP schedule and an HP constant setting.
+  choked (rung 31's `(★)`, chained twice by rung 38). A stator changes the *speed* at which a
+  temperature ratio is bought — `nu_lp` moves **+9.6 %** — not the ratio. Measured: `dTt25`,
+  `dTt3`, `df` all `≤ 1e−13` across an LP constant, an LP schedule and an HP constant setting.
+- **(iii) `f` is pressure-independent on CPG.** `_solve_f(Tt3, pt4, Tt4)` reduces to
+  `(h4−h3)/(η_b·hPR − h4)` there, so an invariant `Tt3` gives an exactly invariant `f` even
+  though `pt4` moves 0.373 %.
+
+**And the invariance does NOT ride on rung 57's stator-inert efficiency.** That was the one
+way premise (ii) could have been the wrong reason, and it is ruled out structurally rather
+than numerically: in `_close`, `eta_lpc`/`eta_hpc` enter **only** the pressure chain
+(`pi_lpc`, `pi_hpc` → `pt4`) and have **no path to `Tt25` or `Tt3` at all**. The temperature
+side is `τ`-driven and the shaft balance pins `τ`; the efficiency side is where the −0.373 %
+went. So the finding would survive a fully stator-*sensitive* efficiency map — which is worth
+knowing, because that concession is still standing from rung 57.
+
+Read off the code, the ordinate identity is then two lines: `mdot4 = A4·pt4·MFP(f,Tt4)/√Tt4`
+gives `ṁ/pt4 = g(f, Tt4)` exactly (choked `A4`), and `f = f(Tt3, Tt4)` with `Tt3` pinned. The
+`κ_ss` invariance is not an emergent numerical coincidence; it is those two relations.
 
 So `κ_ss` is a function of `Tt4` alone. The stator moves the mass-flow **scale** (`ṁ` and
 `pt4` both by −0.373 % at `v = 0.20`) and the LP shaft speed (`nu_lp` by **+9.6 %**), and
@@ -107,6 +122,42 @@ reports it **with the wrong SIGN** (`−1.56e−02` unmatched vs `+1.52e−03` m
 So "the two levers do not superpose" is, on the HP branch, very largely an artifact of
 calibration mismatch rather than of physics. Matched, the pair very nearly *does* superpose.
 
+**And the ratio is a LOWER bound, because the matched interaction is at the grid noise
+floor.** Halving `ds` (0.005 → 0.0025) moves `Δ_match` by only **−0.299 %** — it is a real,
+resolved object — but it moves `ΔI_matched` from `−3.13e−04` to `−8.30e−05`, a factor 3.8
+*toward zero*, which is what a quantity indistinguishable from zero does under refinement. The
+ratio at the finer grid is 179×. The honest statement is therefore not "48× smaller" but
+**"matched, the interaction is not resolvable at this resolution, while unmatched it is 12
+orders above the noise"** — and the 48× / 95.7× figures are quoted as the coarse-grid
+measurement they are.
+
+### The ratio IS clocked, and at a slow ramp it INVERTS — the stronger form
+
+The `|ΔI|` ratio was pre-registered (P4) to stay above 10× across ramp rate. It does not, and
+the way it fails is worth more than the prediction was:
+
+| `r` | `ΔI` (bare leg) | `ΔI` (matched) | ratio |
+|---|---|---|---|
+| 0.25 | −3.2978e−02 | −5.0128e−03 | 6.6× |
+| 0.50 | −1.5139e−02 | −3.1330e−04 | 48.3× |
+| **1.00** | **+0.0000e+00 — DORMANT** | **+1.5322e−05 — BINDS** | *(envelope edge)* |
+
+At `r = 1.00` the ratio is not 0×; it is **undefined**, because the unmatched leg is
+`removed = 0.0` **exactly** — rung 58's `r = 2.0` dormancy, reappearing, and reported as the
+ENVELOPE EDGE it is rather than as a measurement.
+
+But the row is the strongest practical statement in the rung: **on a slow accel the
+bare-machine schedule never engages at all, while the machine's own schedule does.** An
+unmatched schedule does not merely mis-size the limiter's effect — at the slow end it misses
+the engagement entirely and reports a limiter that is not there. That follows directly from
+the re-indexing: the matched cap is 10–11 % lower at fixed `n_H`, so it binds on ramps where
+the bare one never reaches its own.
+
+**P4 is scored MISS as registered** — the 10× floor is `r`-dependent (6.6× at the fast end)
+and undefined at the slow one. The claim that survives is the SIGN and the ORDER at the
+measured `r`, and the gate is set at 5× to match what is claimed rather than at the weakest
+row.
+
 The mechanism is visible in the same rows: the re-indexed cap is **10–11 % lower at fixed
 `n_H`** (the matched table maps a given `n_H` to the `κ` of a *lower* `Tt4`), so the leg
 engages far earlier and cuts far harder — `s_eng` **0.2469 → 0.1247**, fuel removed
@@ -134,6 +185,24 @@ against each half:
 fuel removed**. This is the answer to the skeptic who reads `Δ_match` as *"you swapped in a
 tighter schedule, of course the margin moved"*: the schedule is tighter, and the entire reason
 it is tighter is that its index moved.
+
+**The split is UNCONDITIONAL over every axis swept**, which is why it is stated without a
+scope: `abscissa_share = 100.000 %` at all three HP settings (`v_hp` = 0.05, 0.10, 0.15,
+i.e. out to the authority edge), at all three ramp rates (`r` = 0.25, 0.50, 1.00), and it
+survives `ds`-halving. Unlike rung 58's interaction, which is strongly clocked, **this
+mechanism has no clock at all** — fitting, since it is a property of a *table*, not of a march.
+
+**But the mechanism's SIZE is not monotone in the setting, and the index shift is.** Along the
+`v_hp` ladder the abscissa shift rises cleanly — **3.321 % → 6.690 % → 10.096 %** — while
+`Δ_match` **turns over**: `+1.0548e−02 → +1.4826e−02 → +1.4693e−02`. There is an **interior
+maximum** between `v_hp` = 0.10 and 0.15.
+
+That is rung 48/50's truncated-descent law setting the ceiling, not a defect: re-indexing buys
+its effect by moving the engagement *upstream of the incidence minimum*, and once the clip
+arrests the `φ` descent essentially at the start of the ramp there is no descent left to
+arrest, so further re-indexing adds nothing. The same shape as rung 55's interior optimum in
+row count and rung 58's non-monotone share peaking near `r ≈ 0.25`. **`Δ_match` measures what
+the re-indexing DOES, not how far the index moved** — and only the latter is monotone.
 
 ### What did NOT recover — and it is reported, not buried
 
@@ -254,4 +323,9 @@ Then, unchanged: **stator + bleed together** (rung 53's saturation), a **bleed s
 
 `docs/plans/rung59-anchor-matched-schedule.md` — probes A–G (which fixed the mechanism and
 cleared the clamp blocker before any prediction was written), the five predictions as
-registered, and their scoring.
+registered, and their scoring:
+**P1 HIT · P2 HIT · P3 HIT · P4 MISS (informative — the slow-ramp dormancy inversion) ·
+P5 SPLIT: HIT on the mechanism, MISS on monotonicity.**
+It also records the three things the advisor got wrong (the bit-level gate, the
+rung-vs-negative rule) and the one real risk it caught (whether `Tt3`'s invariance rides on
+rung 57's stator-inert efficiency — ruled out structurally).

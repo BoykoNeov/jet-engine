@@ -70,7 +70,56 @@ can deliver.
 
 ## Scoring
 
-<!-- SCORING -->
+**P1 HIT · P2 HIT · P3 HIT · P4 MISS (informative) · P5 SPLIT — HIT on the mechanism, MISS on
+monotonicity.**
+
+**P1 — HIT.** `Δ_match` at machine zero on every LP variant: `−1.776e−15` (`v_max` 0.20),
+`−8.882e−16` (`v_max` 0.35), and likewise at the moved knee `n_lo = 0.85` and at
+`const v = 0.35`. Table deviations `≤ 7.8e−13` throughout.
+
+**P2 — HIT.** `ds` 0.005 → 0.0025 moves `Δ_match` by **−0.299 %** (`+1.482594e−02` →
+`+1.478166e−02`) and `abscissa_share` stays `100.000 %`. *By-product, folded into the spec:*
+`ΔI_matched` moves `−3.13e−04 → −8.30e−05`, a factor 3.8 **toward zero** — the matched
+interaction is at the grid noise floor, so the `|ΔI|` ratio is a LOWER bound (179× at the
+finer grid) and the spec now says so instead of quoting 48× flat.
+
+**P3 — HIT, and it removes a scope the spec would otherwise have needed.**
+`abscissa_share = 100.000 %` at `r` = 0.25, 0.50 **and** 1.00. The isolation is ramp-rate
+independent — the mechanism is a property of a *table*, not of a march, so unlike rung 58's
+interaction it has no clock.
+
+**P4 — MISS, as the registration warned it might be, and the miss carries more than the hit
+would have.** The `|ΔI|` ratio is `6.6×` at `r = 0.25` and `48.3×` at `r = 0.5`; at `r = 1.00`
+it is **undefined**, because the unmatched leg is `removed = 0.0` **exactly** — dormant — while
+the matched leg still binds (`ΔI_matched = +1.5322e−05`). Reported as rung 58's `r = 2.0`
+ENVELOPE EDGE, never as a `0×` ratio. The practical statement it yields is stronger than the
+prediction: *on a slow accel the bare-machine schedule never engages at all while the
+machine's own schedule does* — an unmatched schedule can report a limiter that is not there.
+The gate was set to `> 5×` (not the weakest measured row) to match the claim rather than the
+boundary.
+
+**P5 — SPLIT.** HIT on the mechanism: `abscissa_share = 100.000 %` at `v_hp` = 0.05, 0.10 and
+0.15, i.e. out to the authority edge. **MISS on monotonicity**: `Δ_match` goes
+`+1.0548e−02 → +1.4826e−02 → +1.4693e−02` and **turns over** between 0.10 and 0.15, while the
+index shift itself rises cleanly `3.321 % → 6.690 % → 10.096 %`. An interior maximum, and the
+reason is rung 48/50's truncated-descent ceiling: re-indexing buys its effect by engaging
+upstream of the incidence minimum, and once the clip arrests the descent at the ramp's start
+there is nothing left to arrest. `Δ_match` measures what the re-indexing DOES; only how far
+the index moved is monotone.
+
+### What the advisor got wrong, and what caught it
+
+- It proposed asserting **tuple equality** of the two tables at nonzero LP settings. Measured
+  `1.2e−13 … 7.8e−13` — `equilibrium`'s Newton converges to a tolerance. Corrected to a
+  tolerance gate, with bit-identity reserved for the `v = 0` reduce.
+- It pre-registered a **rung-vs-negative rule** ("`Δ_match` small ⇒ ship a negative doc") and
+  then retracted it when shown that the zero was an exact identity with a two-line proof plus
+  a per-spool split.
+- It flagged one real risk in the physics — that `Tt3`'s invariance might ride on rung 57's
+  **stator-inert efficiency** rather than on rung 31's `(★)`, which would have narrowed the
+  domain. Checked and **ruled out structurally**: in `_close`, `eta_lpc`/`eta_hpc` enter only
+  the pressure chain and have no path to `Tt25`/`Tt3`. The finding would survive a fully
+  stator-sensitive efficiency map.
 
 ## Shas
 
