@@ -26,14 +26,16 @@ to `--runslow`. This is what keeps a fast routine run from silently dropping the
 Parallelism (`-n auto --dist load --maxschedchunk=1`, set in pytest.ini) is orthogonal: it
 speeds BOTH the fast and the full run. It is already at its floor — this box has 8 PHYSICAL
 cores behind 16 logical, and for these CPU-bound float loops an LPT pack of the measured
-durations onto 8 workers is 1581 s, which is the observed full-run wall clock. There is no
-scheduling slack left to reclaim, so the ONLY lever on the full gate's cost is running fewer
-tests. That is what `--affected` (below) is for.
+durations onto 8 workers is 1581 s against an OBSERVED full run of 1331-1347 s (2026-07-28,
+two runs). The pack is already tighter than the 8-core model, so there is no scheduling slack
+left to reclaim: the ONLY lever on the full gate's cost is running fewer tests. That is what
+`--affected` (below) is for. The hard per-test floor is rung 24's `test_ei_stays_monotone`
+(~518 s), so no amount of selection takes the full gate below ~9 min.
 
 THE THIRD MODE — `--affected` (see § affected-set selection below):
   * `pytest --affected`    -> every fast test, PLUS the slow gates of the modules the working
                               diff can actually reach. A strict superset of `pytest` and a
-                              strict subset of `pytest --runslow`. ~330-940 s vs 1581 s.
+                              strict subset of `pytest --runslow`. ~330-940 s vs ~1340 s.
 This is the per-rung SHIP gate; `--runslow` becomes a periodic (every 3rd rung) full gate.
 """
 import ast

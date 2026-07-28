@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: d6ed48ca-d67d-48f6-b698-b30b3ba4c4b9
-  modified: 2026-07-21T20:28:12.801Z
+  modified: 2026-07-28T12:17:05.739Z
 ---
 
 **Standing authorization (2026-06-29):** the user said "always commit and push —
@@ -24,12 +24,15 @@ update**, or whenever the user says **"session end"**, always do all four, in or
    updates.
 4. **Push to main** — push the `main` branch to `origin`.
 
-**The pre-commit test gate is `pytest --runslow`, NOT bare `pytest` (2026-07-21).**
-Bare `pytest` runs only the FAST subset and deselects the `slow`-tagged expensive
-FINDING / robustness gates (mixing-PDF sweeps, transient marches). The bit-for-bit
-reduce SPINE is kept in bare `pytest`, but the finding gates are not — so verify
-green with `pytest --runslow` (all 371, ~10–15 min) before step 3. See CLAUDE.md
-Commands + `conftest.py`.
+**The pre-commit gate is `pytest --affected`, NOT bare `pytest` (2026-07-28).** Bare
+`pytest` runs only the FAST subset and deselects the `slow`-tagged expensive FINDING /
+robustness gates (mixing-PDF sweeps, transient marches). `--affected` (~6–16 min) adds
+back the slow gates the working diff can reach. **At SESSION END specifically, run the
+full `pytest --runslow` (~22 min)** — session end is one of the declared full-gate
+points, along with every 3rd rung and any `--affected` self-escalation. A green
+`--runslow` also re-seeds the baseline sha that `--affected` diffs against, so ending a
+session on one leaves the next session's gate accurate. See [[test-suite-speed-policy]],
+CLAUDE.md Commands + `conftest.py`.
 
 **Why:** the user wants a consistent wrap-up so memory, docs, and git stay in
 sync and nothing is lost between sessions. The action needs judgment (what to

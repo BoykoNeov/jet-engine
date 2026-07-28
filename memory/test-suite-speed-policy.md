@@ -1,46 +1,67 @@
 ---
 name: test-suite-speed-policy
-description: "Test suite is fast-by-default: bare pytest = ~2.5min FAST subset (deselects slow FINDING gates but KEEPS the reduce spine); pytest --runslow = all 371 (~10-15min, the commit gate). Config in pytest.ini + conftest.py; NO test file edited."
+description: "Three gates: pytest = ~5min FAST subset (iteration), pytest --affected = ~6-16min per-rung SHIP gate (slow gates only where the git diff can reach), pytest --runslow = ~22min full, every 3rd rung. Reduce spine runs on ALL three. Config in pytest.ini + conftest.py; NO test file edited."
 metadata: 
   node_type: memory
   type: project
   originSessionId: 1c258a79-b4c7-4891-ab3d-022937f8d1a3
-  modified: 2026-07-21T20:28:25.585Z
+  modified: 2026-07-28T12:16:15.660Z
 ---
 
-The full pytest suite was **49 min serial**; optimized to **~2.5 min routine / ~10–15 min full**
-(2026-07-21). Achieved WITHOUT editing any test file — the rung gates stay pristine (the
-derive/reduce spine is the project's whole point). All policy lives in `pytest.ini` + `conftest.py`.
+The suite was **49 min serial** → **~5 min routine / ~22 min full** (2026-07-21), then the
+per-rung cost was cut again with `--affected` (2026-07-28). All policy lives in `pytest.ini` +
+`conftest.py`; **no test file is edited**, so the derive/reduce spine stays pristine.
 
-**How it works:**
-- `pytest.ini`: `addopts = -n auto --dist load --maxschedchunk=1` — PARALLEL (16-way). Requires
-  `pytest-xdist` (added to requirements.txt).
-- `conftest.py`:
-  - **Fast/slow selection.** A test is `slow` if its LEARNED per-test call-duration ≥ 8 s (recorded
-    to `.pytest_cache` every run — master-only write to dodge the xdist race; seeded from a baseline
-    run so a cold checkout is already fast). Bare `pytest` DESELECTS slow; `--runslow` runs all;
-    `-m slow` runs only slow. The slow set is the expensive FINDING / robustness sweeps (mixing-PDF
-    per-pocket quench of rungs 16/20–24, transient marches).
-  - **The SPINE override (`_is_spine`) — user's explicit choice.** The bit-for-bit REDUCE gates
-    (`test_reduce_*`, `test_cycle_untouched_*`, `*_bit_for_bit`) are **NEVER slow-tagged** even when
-    expensive, so bare `pytest` ALWAYS guards "each rung reduces to its predecessor, exactly and by
-    test." This is why the fast default is ~2.5 min not ~1.2 min: rung 21's `test_reduce_super_eq_o_
-    false_is_bit_for_bit` (120 s) and rung 23's `test_cycle_untouched` (117 s) are the fast-default
-    floor. The user was offered fast-1.2min-spine-at-commit-only vs this, and chose spine-every-time.
-  - **LPT scheduling.** Collection is reordered LONGEST-FIRST, **interleaved from both ends**
-    ([longest, shortest, 2nd-longest, ...]) so xdist's initial 2-tests-per-worker seed can't stack
-    the two longest poles (365 s + 273 s) on one core. Pure scheduling hint — tests are
-    order-independent (parallel baseline proved it). Got the full run 13→10 min. The hard floor is
-    rung 24's `test_ei_stays_monotone` (~365 s, an aggregate 5-point J sweep whose monotone assert
-    needs all points — UNsplittable without coarsening its grid, a physics risk deliberately avoided).
+**THE WALL-CLOCK FLOOR IS PHYSICAL — measured 2026-07-28.** This box has **8 PHYSICAL cores
+behind 16 logical**. Total suite CPU is ~12.6 ks over 744 tests; an LPT pack onto 8 workers is
+1581 s, and the observed full run is 1331 s. **The schedule has no slack left** — do NOT try to
+tune scheduling further. The ONLY lever on gate cost is *running fewer tests*. (The single
+longest test, rung 24's `test_ei_stays_monotone` at ~518 s, is a hard per-test floor.)
 
-**THE COMMIT GATE IS `pytest --runslow`, NOT bare `pytest`.** Bare pytest skips the expensive FINDING
-gates. Updated [[session-end-routine]] + [[always-commit-and-push]] to require `--runslow` before any
-green-commit. (`.pytest_cache/` is gitignored — the learned-durations file is NOT committed; the seed
-in conftest is what a fresh clone relies on.)
+**The three gates** (see [[always-commit-and-push]] for which one gates a commit):
+- `pytest` — FAST subset, ~5 min. Slow-tagged FINDING gates deselected. ITERATION ONLY.
+- `pytest --affected` — ~6–16 min. **The per-rung ship gate.** Every fast test PLUS the slow
+  gates of the modules the working diff can reach. Strict superset of `pytest`, strict subset
+  of `--runslow`.
+- `pytest --runslow` — ~22 min. Everything. **Every 3rd rung** (the report header nags), at
+  session end, and whenever `--affected` escalates.
 
-**Advisor caught the load-bearing thing:** my duration-based slow-tag was silently sweeping up the
-reduce SPINE gates, and my standing "always commit green" memory would then push on a spine-skipped
-run. Fix = the spine override + the two memory edits. Don't tune the full-run scheduler further —
-diminishing returns past the 365 s single-test floor; grid-coarsening is the only way lower and it's
-a physics risk. See [[rung37-combustor-dynamics]] (the rung whose slow marches motivated this).
+**How `--affected` decides** (the load-bearing design choice): rung commits are **~99 % ADDITIVE**
+to `engine.py` (+404/−2 for rung 57), so `git diff` answers "what existing code moved?" directly
+— which is why this is **NOT** a coverage/testmon map (a coverage map is stale exactly when it
+matters, since new rung code has no coverage rows). It diffs the **AST** — top-level class/def
+SOURCE TEXT, old vs new — *not* line ranges: a line-range map orphans the banner comments between
+two newly-added classes and escalates the whole module (this was measured; v1 selected ~everything
+and saved 0 %). Rules: a symbol NEW in this revision seeds nothing; one that CHANGED (or was
+deleted) seeds a **caller-direction** closure to a fixpoint; a test module is affected if it names
+anything in that closure. Result: `ComponentMap` correctly fans out to all of rungs 31–54, while
+rung 55's purely-additive `StageStack` reaches only `test_rung55`.
+
+**Two properties make the reduced gate safe:**
+1. The **SPINE override** (`_is_spine`) — `test_reduce_*` / `test_cycle_untouched_*` /
+   `*_bit_for_bit` are NEVER slow-tagged, so they run on EVERY invocation of all three gates.
+   (User's explicit choice 2026-07-21; it is also the fast-default's ~250 s floor.)
+2. The selector **ESCALATES to the full gate** whenever it cannot reason: `gas.py` /
+   `components.py` / `__init__.py`, `conftest.py`, `pytest.ini`, module-level statements moved,
+   an unparseable file, or no git. Every failure path returns "full". (`gas.py`/`components.py`
+   have not been touched since rung 31, so this rarely fires.)
+
+**BASELINE = the last PASSING full gate's sha** (cached), not HEAD — so `--affected` is
+*cumulative* across the rungs gated since it, and a clean tree right after a rung commit still
+selects that rung's changes instead of selecting nothing.
+
+**The xdist trap that cost a debug cycle:** under `-n auto` the **WORKERS collect**, so
+`pytest_collection_modifyitems` never runs in the controller process — but the controller is the
+only process allowed to write the cache. Anything stashed on `config` during collection is
+invisible to `pytest_sessionfinish`. Decide controller-side facts in `sessionfinish` from the
+config alone. (`pytest_report_header` also runs BEFORE collection — compute lazily/memoised.)
+
+ACCEPTED RISKS the user signed off on: a regression in an unreached non-spine FINDING gate can
+hide for ≤3 rungs; and `main.py` is covered by **no test at all** (pre-existing, not introduced
+by the selector — changes to it select nothing).
+
+Advisor value here: it correctly talked me OUT of a coverage map and INTO the git-diff selector,
+and told me to check where removals cluster (they cluster in shared machinery — `ComponentMap`,
+the `_fuel_caps`/`integrate_fuel` chain — which is exactly what the closure must fan out from).
+But its "~800 s of scheduling loss to reclaim" was **wrong** and my core-count measurement killed
+it. See [[rung37-combustor-dynamics]] (the rung whose slow marches motivated the original policy).
