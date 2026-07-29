@@ -21,7 +21,7 @@ from turbojet.engine import (  # noqa: E402
     CombustorTransient, build_two_spool_turbojet, TwoSpoolMatcher, TwoSpoolMapMatcher,
     TwoSpoolTransient, TwoSpoolBleedMatcher, TwoSpoolFuelTransient, SurgeLimiter,
     AsymmetricLag, VariableStatorMatcher, StageStackMatcher, ram_recovery,
-    ScheduledStatorTransient, StatorSchedule, IncidenceLimiter,
+    ScheduledStatorTransient, StatorSchedule, IncidenceLimiter, StatorBleedMatcher,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -4493,6 +4493,74 @@ def print_matched_floor_table(flight):
     print("  there is no new plant; LP-side, M_i only, one gas. docs/rung60-spec.md.")
 
 
+def print_stator_bleed_table(flight):
+    """Rung-61 payoff: rungs 36/41's standing concession, BOTH halves on one machine.
+
+    The seam every spec since rung 53 has carried says 'the bleed takes over where the
+    stator's authority ends'. It does not. The valve can buy back the whole of the stator's
+    phi-debit -- exactly -- and most of the stator's BILL survives, because the phi-drop was
+    itself a partial rebate on the loading the stator removed."""
+    print("\nSTATOR + BLEED (rung 61): a compensating lever buys back the COORDINATE, not the")
+    print("BILL. b* is the valve setting that restores phi_op to its bare value exactly.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR = 0.55
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    m = StatorBleedMatcher(design, flight, 1.0, map_lp=LP, map_hp=HP)
+
+    print("\n  THE HEADLINE (LP spool, fixed throttle). The phi-debit goes; the overspeed stays:")
+    print(f"  {'Tt4':>6}{'v':>6}{'b*':>9}{'phi bare':>10}{'phi comp':>10}"
+          f"{'dn stator':>11}{'dn comp':>10}{'kept':>7}{'dF comp':>9}")
+    for Tt4, v in ((1500.0, 0.10), (1500.0, 0.20), (1500.0, 0.30),
+                   (1300.0, 0.20), (1100.0, 0.20), (1100.0, 0.30)):
+        c = m.compensated_point(flight, Tt4, v, "lp")
+        print(f"  {Tt4:6.0f}{v:6.2f}{c['b_star']:9.5f}{c['phi_bare']:10.5f}"
+              f"{c['phi_comp']:10.5f}{c['dn_stator']:+11.2%}{c['dn_comp']:+10.2%}"
+              f"{c['dn_comp'] / c['dn_stator']:7.0%}{c['dF_comp']:+9.2%}")
+    print("    => at v=0.30 the COMPENSATED point overspeeds the bare stator (kept > 100%):")
+    print("       undoing the lever is strictly WORSE than leaving it alone.")
+
+    print("\n  WHY -- the phi-drop was a REBATE. n solves tau_c = 1 + (tau_d-1)*psi(phi)*n^2,")
+    print("  and psi = base(phi) - v(1+l)phi. Restoring phi gives base(phi)'s rebate back:")
+    Tt4, v = 1500.0, 0.20
+    c = m.compensating_bleed(flight, Tt4, v, "lp", "phi")
+    print(f"  {'cell':>14}{'b':>9}{'phi':>10}{'n':>10}{'psi':>10}{'tau_c':>10}")
+    for tag, vv, bb in (("bare", 0.0, 0.0), ("stator", v, 0.0), ("compensated", v,
+                                                                 c["b_star"])):
+        sib = m.at_point(vv, 0.0, bb)
+        od = sib.match(flight, Tt4)
+        print(f"  {tag:>14}{bb:9.5f}{od.phi_lp:10.5f}{od.n_lp:10.5f}"
+              f"{sib.map_lp.psi(od.phi_lp):10.5f}{od.tau_lpc:10.5f}")
+    print("    => the compensated point is MORE unloaded than the stator-only one.")
+
+    print("\n  THE SEAM AS POSED, REFUTED: opening the valve SHRINKS the stator's authority")
+    print("  (it pre-spends the same incidence budget) -- it does not take over after it:")
+    print(f"  {'b':>7}{'v_edge':>10}{'M_i(v=0)':>11}{'M_i peak':>11}{'span left':>11}")
+    for r in m.authority_with_bleed(flight, 1500.0, (0.0, 0.05, 0.10, 0.15), "lp"):
+        print(f"  {r['bleed']:7.2f}{r['v_edge']:10.4f}{r['m_i_0']:11.5f}"
+              f"{r['m_i_peak']:11.5f}{r['span']:11.5f}")
+
+    print("\n  AND IT IS SPOOL-DEPENDENT. The two levers do not span the same space: the")
+    print("  stator acts on either spool, rung 42's valve on one. On the HP, b* never exists:")
+    for r in m.compensability(flight, [1500.0, 1300.0, 1100.0, 900.0], 0.20):
+        print(f"    Tt4={r['Tt4']:6.0f}  pi_HPC={r['pi_hpc']:7.4f}   b*_LP={r['b_lp']:.5f}"
+              f"   b*_HP = none ({r['why_hp']})")
+
+    print("\n  SCOPE: steady only; b* is a constructed point, not a control law; the compensable")
+    print("  range is capped by THIS rung's own b<0.45 and no ceiling is claimed. Magnitudes")
+    print("  ride on the two maps and the imposed floor. See docs/rung61-spec.md § Concessions.")
+
+
 def main():
     # The tables carry unicode (Δ, ·, ≡, ≈); force UTF-8 so `python main.py` renders
     # on any console (a stock Windows cp1252 console would otherwise crash on them).
@@ -4628,6 +4696,8 @@ def main():
     print_composite_minselect_table(FLIGHT)
 
     print_matched_floor_table(FLIGHT)
+
+    print_stator_bleed_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

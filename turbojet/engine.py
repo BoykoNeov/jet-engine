@@ -8422,3 +8422,299 @@ class ScheduledStatorTransient(TwoSpoolFuelTransient):
             removed_bare=cells["fuel"]["fuel_removed"],
             removed_armed=cells["both"]["fuel_removed"],
             v_at_min=cells["both"]["v"])
+
+
+# =============================================================================
+# RUNG 61. STATOR + BLEED TOGETHER — the two halves of rungs 36/41's standing
+# concession, on one steady machine.
+#
+# THE POINT OF ENTRY IS: THERE ISN'T A NEW ONE. Rung 53's stator enters the
+# solve ONLY by replacing the map object (`with_vsv`), and rung 42's valve
+# enters ONLY inside the cascade (the LP shaft balance and (ddagger-b)). The two
+# levers are CODE-ORTHOGONAL, so the composition needs no new solve: the MRO
+#
+#     StatorBleedMatcher -> TwoSpoolBleedMatcher -> VariableStatorMatcher
+#                        -> TwoSpoolMapMatcher
+#
+# runs rung 42's cascade against rung 53's maps and that is the whole plant.
+# Every method below is a READ on it.
+#
+# THE REDUCE IS TWO-AXIS, and stronger than either parent's alone:
+#     (v=0, b=0)  => rung 39 bit-for-bit  (bleed dispatches away, maps are the
+#                                          SAME OBJECTS, `match` is inherited)
+#     (v!=0, b=0) => rung 53 bit-for-bit  (the dispatch lands on rung 53's own
+#                                          inherited path -- an IDENTITY)
+#     (v=0, b!=0) => rung 42 bit-for-bit  (the cascade sees the design maps)
+# =============================================================================
+
+
+class StatorBleedMatcher(TwoSpoolBleedMatcher, VariableStatorMatcher):
+    """RUNG 61. Two-spool map matching with BOTH rung 53's variable stators and rung 42's
+    interstage bleed valve.
+
+    Usage:
+        m = StatorBleedMatcher(design, FLIGHT, 1.0, map_lp=..., map_hp=...,
+                               vsv_lp=0.20, bleed=0.10)
+        m.stator_margin(FLIGHT, Tt4)              # rung 53's instrument, now bled
+        m.compensating_bleed(FLIGHT, Tt4, 0.20)   # b*(v): the price of the stator's debit
+        m.compensated_point(FLIGHT, Tt4, 0.20)    # the full compensated row  <- the rung
+        m.compensability(FLIGHT, Tt4_grid)        # LP vs HP -- the HEADLINE
+        m.authority_with_bleed(FLIGHT, Tt4, bs)   # the seam AS POSED: takeover?
+
+    ORDER OF CONSTRUCTION matters and is enforced: the stator design references and the
+    hardware (A4, A45, A8) are captured from a v=0, b=0 design run -- both devices sit at
+    their design (neutral / shut) setting when the engine is designed, exactly as rungs 42
+    and 53 each require on their own.
+    """
+
+    def __init__(self, design_engine, flight_design: FlightCondition,
+                 mdot_design: float = 1.0, map_lp: "ComponentMap | None" = None,
+                 map_hp: "ComponentMap | None" = None, vsv_lp: float = 0.0,
+                 vsv_hp: float = 0.0, bleed: float = 0.0, lp_disabled: bool = False):
+        # Call rung 53's __init__ EXPLICITLY rather than co-operatively. Rung 42's __init__
+        # forwards a fixed argument list that carries no vsv, so a co-operative super()
+        # chain would silently leave the stators at the design setting -- a wrong number
+        # with no exception. This is the one place the two ladders do not compose.
+        VariableStatorMatcher.__init__(
+            self, design_engine, flight_design, mdot_design, map_lp=map_lp, map_hp=map_hp,
+            vsv_lp=vsv_lp, vsv_hp=vsv_hp, lp_disabled=lp_disabled)
+        self.bleed = float(bleed)
+        assert 0.0 <= self.bleed < 0.5, (
+            "rung-61 bleed fraction must be in [0, 0.5) (rung 42's bound).")
+        assert not (lp_disabled and self.bleed != 0.0), (
+            "rung-61 does not support lp_disabled with the valve open: the extraction is "
+            "BETWEEN the two compressors, so it has no meaning on a one-spool machine.")
+
+    # --- sibling constructors: rung 42's controlled comparison, in TWO coordinates -------
+
+    def at_setting(self, vsv_lp: float, vsv_hp: float) -> "StatorBleedMatcher":
+        """OVERRIDE of rung 53's sibling constructor, and it is load-bearing: every rung
+        53/54 reading instrument (`stator_sweep`, `currency_split`, `incidence_schedule`,
+        `_scan`, `authority_ceiling`, `schedule_throat`) routes through it. Rung 53's
+        version hard-constructs a `VariableStatorMatcher`, which would silently drop
+        `self.bleed` and run every sweep with the valve SHUT -- plausible numbers, wrong
+        machine."""
+        return self.at_point(vsv_lp, vsv_hp, self.bleed)
+
+    def at_point(self, vsv_lp: float, vsv_hp: float, bleed: float) -> "StatorBleedMatcher":
+        """The same hardware and the same design references at an arbitrary (v, b)."""
+        de, fd, md, lpd = self._ctor
+        return StatorBleedMatcher(de, fd, md, map_lp=self.map_lp_design,
+                                  map_hp=self.map_hp_design, vsv_lp=vsv_lp, vsv_hp=vsv_hp,
+                                  bleed=bleed, lp_disabled=lpd)
+
+    def at_bleed(self, bleed: float) -> "StatorBleedMatcher":
+        return self.at_point(self.vsv_lp, self.vsv_hp, bleed)
+
+    # --- the price of the stator's phi-debit ---------------------------------------------
+
+    _B_TOL = 1e-11        # absolute tolerance on the compensated coordinate
+    _B_MAX = 80
+    _B_CAP = 0.45         # rung 42's own bound, minus a hair
+    _B_STEP = 0.02
+
+    def _feasible(self, flight: FlightCondition, Tt4: float, v: float, spool: str,
+                  b: float):
+        """One trial: the margin row at (v, b), or None if the plant refuses it. Rung 42's
+        valve SHRINKS the choked envelope while rung 53's setting unloads the speed line,
+        so the feasible set is bounded on BOTH axes -- by different mechanisms."""
+        try:
+            sib = self.at_point(v, 0.0, b) if spool == "lp" else self.at_point(0.0, v, b)
+            return sib.stator_margin(flight, Tt4)[spool]
+        except AssertionError:
+            return None
+
+    def compensating_bleed(self, flight: FlightCondition, Tt4: float, v: float,
+                           spool: str = "lp", target: str = "phi") -> dict:
+        """b*(v): the bleed that BUYS BACK what closing the stator to `v` spent.
+
+        TWO targets, and rung 53's headline is exactly why they differ:
+
+            target="phi"    restore the POINT            phi_op(v,b*) == phi_op(0,0)
+            target="m_phi"  restore the REPORTED MARGIN  M_phi(v,b*) == M_phi(0,0)
+
+        The stator moved the FLOOR between those two instructions, so they are different
+        numbers and the gap IS the floor motion. Returns `b_star=None` with a `reason` when
+        the plant cannot deliver it -- which is the HP spool's normal answer, because rung
+        42's dphi_H/db passes through zero at pi* and reverses below it.
+        """
+        assert spool in self._SPOOLS, f"spool must be 'lp' or 'hp', got {spool!r}"
+        assert target in ("phi", "m_phi"), f"target must be 'phi' or 'm_phi', got {target!r}"
+        key = "phi_op" if target == "phi" else "m_phi"
+
+        bare = self._feasible(flight, Tt4, 0.0, spool, 0.0)
+        assert bare is not None, (
+            f"rung-61: the BARE machine is already infeasible at Tt4={Tt4:.1f}.")
+        goal = bare[key]
+
+        at0 = self._feasible(flight, Tt4, v, spool, 0.0)
+        if at0 is None:
+            return dict(spool=spool, Tt4=float(Tt4), vsv=float(v), target=target,
+                        b_star=None, reason="stator setting infeasible with the valve shut",
+                        goal=goal)
+        r0 = at0[key] - goal            # < 0 when the stator spent something to buy back
+
+        # Walk the valve open until the residual crosses or the plant refuses. Rung 42's
+        # envelope guard raises, so "ran out of valve" and "ran out of envelope" are
+        # DIFFERENT answers and are reported as such.
+        lo, r_lo, hi, r_hi, b = 0.0, r0, None, None, 0.0
+        while b < self._B_CAP:
+            b = min(b + self._B_STEP, self._B_CAP)
+            row = self._feasible(flight, Tt4, v, spool, b)
+            if row is None:
+                return dict(spool=spool, Tt4=float(Tt4), vsv=float(v), target=target,
+                            b_star=None, reason="choked envelope closed before the target",
+                            b_last=lo, resid_last=r_lo, goal=goal)
+            r = row[key] - goal
+            if (r_lo < 0.0 <= r) or (r_lo > 0.0 >= r):
+                hi, r_hi = b, r
+                break
+            lo, r_lo = b, r
+        if hi is None:
+            return dict(spool=spool, Tt4=float(Tt4), vsv=float(v), target=target,
+                        b_star=None, reason="valve authority exhausted (b >= cap)",
+                        b_last=lo, resid_last=r_lo, goal=goal)
+
+        r = r_hi
+        for _ in range(self._B_MAX):
+            mid = 0.5 * (lo + hi)
+            row = self._feasible(flight, Tt4, v, spool, mid)
+            assert row is not None, "rung-61 bisection stepped outside a bracketed interval"
+            r = row[key] - goal
+            if abs(r) <= self._B_TOL or hi - lo <= 1e-15:
+                lo = hi = mid
+                break
+            if (r < 0.0) == (r_lo < 0.0):
+                lo, r_lo = mid, r
+            else:
+                hi = mid
+        return dict(spool=spool, Tt4=float(Tt4), vsv=float(v), target=target,
+                    b_star=0.5 * (lo + hi), reason=None, goal=goal, resid=r,
+                    bare_phi=bare["phi_op"], bare_m_phi=bare["m_phi"], bare_m_i=bare["m_i"])
+
+    # --- the compensated point, in every currency ----------------------------------------
+
+    def compensated_point(self, flight: FlightCondition, Tt4: float, v: float,
+                          spool: str = "lp") -> dict:
+        """THE ROW. Bare (0,0) vs bare-stator (v,0) vs compensated (v,b*), carrying:
+
+          * the two exact identities the iso-phi locus forces -- rung 60's tautology reached
+            by a THIRD route (restoration, not pinning):
+                dM_i = v                    dM_phi = v*phi_s0^2/(1+v*phi_s0)
+          * the TRADE relocation (P5): rung 53's overspeed bill against rung 42's thrust one
+          * the OTHER spool's arrow (P6): rung 53's exact per-spool zero, under composition
+        """
+        c = self.compensating_bleed(flight, Tt4, v, spool, target="phi")
+        other = "hp" if spool == "lp" else "lp"
+        m0 = self.at_point(0.0, 0.0, 0.0)
+        r0, od0 = m0.stator_margin(flight, Tt4), m0.match(flight, Tt4)
+        sv = self.at_point(v, 0.0, 0.0) if spool == "lp" else self.at_point(0.0, v, 0.0)
+        rv, odv = sv.stator_margin(flight, Tt4), sv.match(flight, Tt4)
+
+        out = dict(spool=spool, Tt4=float(Tt4), vsv=float(v), b_star=c["b_star"],
+                   reason=c.get("reason"),
+                   phi_bare=r0[spool]["phi_op"], phi_stator=rv[spool]["phi_op"],
+                   m_i_bare=r0[spool]["m_i"], m_i_stator=rv[spool]["m_i"],
+                   m_phi_bare=r0[spool]["m_phi"], m_phi_stator=rv[spool]["m_phi"],
+                   n_bare=r0[spool]["n"], n_stator=rv[spool]["n"],
+                   thrust_bare=od0.thrust, thrust_stator=odv.thrust,
+                   phi_other_bare=r0[other]["phi_op"],
+                   d_phi_other_stator=rv[other]["phi_op"] - r0[other]["phi_op"])
+        if c["b_star"] is None:
+            return out
+        cm = self.at_point(v, 0.0, c["b_star"]) if spool == "lp" \
+            else self.at_point(0.0, v, c["b_star"])
+        rc, odc = cm.stator_margin(flight, Tt4), cm.match(flight, Tt4)
+        phi_s0 = (self.map_lp_design if spool == "lp" else self.map_hp_design).phi_surge
+        out.update(
+            phi_comp=rc[spool]["phi_op"], m_i_comp=rc[spool]["m_i"],
+            m_phi_comp=rc[spool]["m_phi"], n_comp=rc[spool]["n"], thrust_comp=odc.thrust,
+            # P3 -- the two identities
+            d_m_i=rc[spool]["m_i"] - r0[spool]["m_i"], d_m_i_pred=float(v),
+            d_m_phi=rc[spool]["m_phi"] - r0[spool]["m_phi"],
+            d_m_phi_pred=v * phi_s0 * phi_s0 / (1.0 + v * phi_s0),
+            # P5 -- the bill, relocated
+            dn_stator=rv[spool]["n"] / r0[spool]["n"] - 1.0,
+            dn_comp=rc[spool]["n"] / r0[spool]["n"] - 1.0,
+            dF_stator=odv.thrust / od0.thrust - 1.0,
+            dF_comp=odc.thrust / od0.thrust - 1.0,
+            # P6 -- the other spool, which rung 53's lever left bit-identical
+            phi_other_comp=rc[other]["phi_op"],
+            d_phi_other_comp=rc[other]["phi_op"] - r0[other]["phi_op"])
+        out["d_m_i_resid"] = out["d_m_i"] - out["d_m_i_pred"]
+        out["d_m_phi_resid"] = out["d_m_phi"] - out["d_m_phi_pred"]
+        return out
+
+    # --- THE HEADLINE: compensability is spool-dependent ---------------------------------
+
+    def compensability(self, flight: FlightCondition, Tt4_grid, v: float = 0.20) -> list:
+        """RUNG 61's headline object: b*(v) on BOTH spools across the throttle band.
+
+        The LP spool's valve authority is large and near-constant (rung 42: dphi_L ~ +0.078,
+        +/-1 % over a 1.76:1 throttle), so b*_LP is finite and mild. The HP spool's
+        authority passes through ZERO at pi* = gamma_c^(gamma_c/(gamma_c-1)) and REVERSES
+        below it, so b*_HP diverges toward pi* and is unreachable below: the HP stator's
+        phi-debit cannot be bought back at all.
+
+        NOT a fourth independent appearance of pi* -- it is rung 42's OWN crossing, read in
+        a new currency. Each row carries pi_hpc so the divergence can be located against it.
+        """
+        rows = []
+        for Tt4 in Tt4_grid:
+            Tt4 = float(Tt4)
+            row = dict(Tt4=Tt4, vsv=float(v))
+            try:
+                od = self.at_point(0.0, 0.0, 0.0).match(flight, Tt4)
+            except AssertionError:
+                continue
+            row["pi_hpc"], row["pi_lpc"] = od.pi_hpc, od.pi_lpc
+            for spool in self._SPOOLS:
+                c = self.compensating_bleed(flight, Tt4, v, spool, target="phi")
+                row[f"b_{spool}"] = c["b_star"]
+                row[f"why_{spool}"] = c.get("reason")
+                row[f"resid_{spool}"] = c.get("resid_last")
+            bl, bh = row["b_lp"], row["b_hp"]
+            row["ratio"] = (bh / bl) if (bl and bh) else None
+            rows.append(row)
+        return rows
+
+    # --- the seam AS POSED: does the valve TAKE OVER where the stator saturates? ----------
+
+    def authority_with_bleed(self, flight: FlightCondition, Tt4: float,
+                             bleeds=(0.0, 0.05, 0.10), spool: str = "lp") -> list:
+        """THE SEAM AS WRITTEN, scored. Six specs say 'the bleed takes over where the
+        stator's authority ends'. Rung 54's `authority_ceiling` is the instrument for the
+        stator's end; this runs it at several valve positions.
+
+        TAKEOVER predicts the ceiling is INDIFFERENT to the valve (the valve acts only
+        after it). Anything else refutes the sequencing picture.
+        """
+        rows = []
+        for b in bleeds:
+            a = self.at_bleed(float(b)).authority_ceiling(flight, Tt4, spool)
+            rows.append(dict(bleed=float(b), v_edge=a["v_edge"], v_peak=a["v_peak"],
+                             peak_interior=a["peak_interior"], m_i_0=a["m_i_0"],
+                             m_i_peak=a["m_i_peak"], m_i_edge=a["m_i_edge"],
+                             span=a["m_i_peak"] - a["m_i_0"], n_scan=a["n_scan"]))
+        return rows
+
+    # --- P4: two loci, and the coordinate-dependence of the PRICE -------------------------
+
+    def price_split(self, flight: FlightCondition, Tt4: float, v_grid,
+                    spool: str = "lp") -> list:
+        """P4: 'restore the point' and 'restore the reported margin' are different
+        instructions, and the gap between their prices is the floor motion the stator
+        caused. Rung 54 found a CONSTRAINT'S SEVERITY coordinate-dependent, rung 56 a
+        LEVER'S COST. This asks it of the PRICE OF UNDOING ONE LEVER WITH ANOTHER."""
+        phi_s0 = (self.map_lp_design if spool == "lp" else self.map_hp_design).phi_surge
+        rows = []
+        for v in v_grid:
+            v = float(v)
+            a = self.compensating_bleed(flight, Tt4, v, spool, target="phi")
+            c = self.compensating_bleed(flight, Tt4, v, spool, target="m_phi")
+            both = a["b_star"] is not None and c["b_star"] is not None
+            rows.append(dict(vsv=v, b_phi=a["b_star"], b_m_phi=c["b_star"],
+                             gap=(a["b_star"] - c["b_star"]) if both else None,
+                             floor_motion=v * phi_s0 * phi_s0 / (1.0 + v * phi_s0),
+                             why_phi=a.get("reason"), why_m_phi=c.get("reason")))
+        return rows
