@@ -333,6 +333,6 @@ the **station-3 customer bleed**, a different sink with a different arrow.
 ## Anchor
 
 `docs/plans/rung62-anchor-bleed-schedule.md` — the framing that was blocked before any code
-(§ 0), the five predictions as written before measuring, and their scoring:
-**three of nine wrong, and the two that produced this rung's content are P3 (refuted with
+(§ 0), the five predictions as written before measuring, scored as nine items:
+**three wrong, and the two that produced this rung's content are P3 (refuted with
 the opposite sign) and P5 (missed, and the miss restates as a monotonicity).**

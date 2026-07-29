@@ -87,6 +87,8 @@ scope hazard, and the ramp `Tt4` = 1000 → 1400 is inherited from rung 57 uncha
 
 ## 2. THE PREDICTIONS — written before the pair was measured
 
+Five predictions, scored below as **nine items** (P1 carries three sub-parts and P3 one).
+
 ### P1 — the LOOP-GAIN SIGN (the headline). **Written before probe B ran.**
 
 Rung 57's third law is a **self-cancellation**: `FULL/RAMP-ONLY` = 0.754–0.896, because
@@ -330,6 +332,7 @@ does so without re-claiming rung 57's published mechanism (§ 0).
 | P4 | adverse speed-cost interaction survives | **HIT** (12/12 rows) |
 | P5 | bleed's credit/setting ramp-invariant like the stator's | **MISSED** — strictly monotone, not invariant |
 
-**Three of nine scored wrong, and the two that produced the rung's content are P3 and P5.**
+**Three of the nine scored items are wrong, and the two that produced the rung's content
+are P3 (with its sub-part) and P5.**
 This is the same shape as rungs 61 (P5a refuted → the headline), 49 (both predicted signs
 wrong) and 42 (the hypothesis refuted by its own probe).

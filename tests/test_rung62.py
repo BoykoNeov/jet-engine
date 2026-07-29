@@ -164,6 +164,29 @@ def test_plant_forward_closure_reproduces_rung42_steady_match(Tt4, b):
             f"Tt4={Tt4} b={b} {name}: forward {got!r} vs rung-42 steady {want!r}")
 
 
+def test_plant_the_burner_sees_CORE_air_only():
+    """THE ONE PLACE THE BLEED CHANGES THE CONTROL and not just the flow. Every finding in
+    this rung runs through `_close_fuel`'s bleed branch, but the reduce gates above only
+    exercise its b == 0 dispatch — so without this the branch executes constantly and is
+    never asserted.
+
+    At a FIXED state and a FIXED metered fuel flow, the burner never sees the dumped air:
+    f is CORE-referenced (an exact identity), the face carries 1/(1-b) more, and the
+    mixture is therefore RICHER and the turbine entry HOTTER than with the valve shut."""
+    t0, tb = _bt(), _bt(bleed=0.10)
+    Tt2, pt2, _ = t0._inlet(FLIGHT)
+    mf = t0.fuel_for_Tt4(FLIGHT, 1200.0)
+    a = t0._close_fuel(0.85, 0.88, mf, Tt2, pt2)
+    b = tb._close_fuel(0.85, 0.88, mf, Tt2, pt2)
+    # f x CORE air recovers the metered fuel. This closes only AT the root (the returned
+    # `mdot_air` is the choke-IMPLIED core flow, and `f` was formed from the trial FACE
+    # flow), so it is asserted at the closure's own tolerance rather than bit-exactly.
+    assert abs(b["f"] * b["mdot_air"] / mf - 1.0) < 1e-9, "f is CORE-referenced"
+    assert abs(a["f"] * a["mdot_air"] / mf - 1.0) < 1e-9, "and so is the b=0 path"
+    assert abs(b["mdot_face"] / b["mdot_air"] - 1.0 / 0.9) < 1e-12   # the extraction, exact
+    assert b["f"] > a["f"] and b["Tt4"] > a["Tt4"], "same fuel, less air => richer, hotter"
+
+
 def test_plant_the_powers_touch_point_is_not_optional():
     """A DIRECT witness that `_powers` and `_instant_tail` agree under bleed — the two
     sites rung 40 split apart. If a future edit restores one and not the other, the
