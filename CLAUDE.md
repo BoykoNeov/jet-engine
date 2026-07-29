@@ -80,12 +80,12 @@ column) before touching it — that is where the real content lives.
 | 51 | **The release RATE** (`τ_rel`, a stateless fade) — **the debit is NOT a functional of the applied-fuel trajectory**: the two HARD releases at a fade's own ends bracket it pointwise, yet the faded run lands **OUTSIDE** both. It answers to the **RATE**. | `docs/rung51-spec.md` |
 | 52 | **The asymmetric fast-attack / slow-release LAG** — the **realisable** limiter 50/51 forced; `τ_rel` is never *read* pre-crossing, so the leg **PINS ITS OWN TRIGGER**. **HEADLINE: a self-releasing limiter CANNOT DEBIT THE SPOOL IT WATCHES** ⇒ rung 50's watched-side debit is an **ARTIFACT OF FORCING**. | `docs/rung52-spec.md` |
 | 53 | **The VARIABLE STATOR** — the **first lever that moves the surge FLOOR**; both channels DERIVED, **zero new constants**. **HEADLINE: a margin is a DISTANCE, so a floor-moving lever makes it COORDINATE-DEPENDENT** — which **BOUNDS** rungs 36–52's `φ`-currency. Thrust-neutral, paid in **SHAFT SPEED**. | `docs/rung53-spec.md` |
-| 54 | **The stator-row THROAT** — rung 53's refused half; the shape DERIVED, only the LEVEL disclosed, every verdict a **threshold ON** it. **HEADLINE: so is a CONSTRAINT'S SEVERITY** — an upstream throat can **BIND, NEVER RELIEVE**, so capacity cannot buy back rung 53's overspeed. **CORRECTS** its turning-point concession. | `docs/rung54-spec.md` |
+| 54 | **The stator-row THROAT** — rung 53's refused half; shape DERIVED, LEVEL disclosed, every verdict a **threshold ON** it. **HEADLINE: so is a CONSTRAINT'S SEVERITY** — an upstream throat can **BIND, NEVER RELIEVE**, so capacity cannot buy back rung 53's overspeed. **CORRECTS** its turning-point concession. | `docs/rung54-spec.md` |
 | 55 | **The STAGE STACK** — the compressor stops being ONE block; kinematics DERIVED (rungs 36–53 read the FRONT stage all along — **BOUNDED**), `K` a resolution. **HEADLINE: a POSITIONAL lever buys relief from the part it does not move**; and the row count has an **INTERIOR optimum**. Discharges rung 54's seam. | `docs/rung55-spec.md` |
-| 56 | **PER-ROW CAPACITY** — rung 54's throat per row; the seam asked for a `C` per row and the ladder supplies every one but the level. The profile FIGHTS the loading ⇒ the binding row **MIGRATES** with power. **HEADLINE: a resolved machine's two binding rows are DIFFERENT rows — different END *and* different SPOOL — and the one lever reaches only the wrong one.** **CORRECTS rung 54's** pure-LP exposure; a LEVER'S COST is coordinate-dependent too. | `docs/rung56-spec.md` |
-| 57 | **The STATOR SCHEDULE on the TRANSIENT plant** — rung 53's floor-moving lever inside an accel. **HEADLINE: a wall-moving lever has NO CLOCK** — rung 53's *design-point* law still predicts it off design and out of equilibrium, so rungs 46–52's engagement-timing law is a **POINT**-mover property: their CLOCK now **BOUNDED** as rung 53 bounded their currency. **CORRECTS rung 53's P5.** | `docs/rung57-spec.md` |
+| 56 | **PER-ROW CAPACITY** — rung 54's throat per ROW; the profile FIGHTS the loading ⇒ the binding row **MIGRATES** with power. **HEADLINE: a resolved machine's two binding rows are DIFFERENT rows — different END *and* different SPOOL — and the one lever reaches only the wrong one.** **CORRECTS rung 54's** pure-LP exposure. | `docs/rung56-spec.md` |
+| 57 | **The STATOR SCHEDULE on the TRANSIENT plant** — rung 53's lever inside an accel. **HEADLINE: a wall-moving lever has NO CLOCK** — its design-point law still predicts it off design, so rungs 46–52's engagement-timing law is a **POINT**-mover property: their CLOCK **BOUNDED** as rung 53 bounded their currency. **CORRECTS rung 53's P5.** | `docs/rung57-spec.md` |
 | 58 | **The COMPOSITE min-select** — the stator schedule BESIDE a fuel-side leg. **HEADLINE: two levers DO NOT SUPERPOSE**, and a pair composes only in coordinates neither moves — a `φ`-referenced leg **cannot compose at all**. **CONFIRMS rung 57** on the delivered credit; **EXTENDS rung 53** to composability. | `docs/rung58-spec.md` |
-| 59 | **The MATCHED schedule** — the fuel leg re-derived on the plant it runs on. **HEADLINE: a schedule's ORDINATE cannot see a stator, only its INDEX can**, so matching is **pure RE-INDEXING** — a no-op when the lever leaves the abscissa alone. Unmatched MANUFACTURES an interaction. **Discharges rung 58's concession as VACUOUS**; BOUNDS it to one spool. | `docs/rung59-spec.md` |
+| 59 | **The MATCHED schedule** — the fuel leg re-derived on the plant it runs on. **HEADLINE: a schedule's ORDINATE cannot see a stator, only its INDEX can**, so matching is **pure RE-INDEXING** — a no-op when the lever leaves the abscissa alone. Unmatched MANUFACTURES an interaction. **Discharges rung 58's concession as VACUOUS.** | `docs/rung59-spec.md` |
 | 60 | **The MATCHED `φ` FLOOR** — rung 58's refused repair. **HEADLINE: a floor PINS its own coordinate**, so re-referencing to the wall a stator cannot move buys ADMISSIBILITY but leaves a TAUTOLOGY (`=v` / `=0`, exact). A leg that SETS a minimum cannot compose, in ANY coordinate. **CORRECTS rung 58's diagnosis.** | `docs/rung60-spec.md` |
 
 ## Working contract (from SPEC.md — these override convenience)
@@ -132,6 +132,7 @@ must never be re-opened by mistake.
 - Lagged/filtered `pt3` sensor on rung 48's leg — `docs/pt3-sensor-lag-negative.md` (an effective-margin reparameterisation; CONFIRMS rung 48, corrects its seam's SIGN).
 - A limiter with BOTH edges inside the ramp — `docs/both-edges-limiter-negative.md`. Closes the WHOLE `pt3`-filter family (**the ramp is the only clock**); **UPGRADES rung 48's law** to truncated-descent.
 - **PER-ROW BLADING** (rung 56's seam) — `docs/per-row-blading-negative.md`. The ladder supplies the law but not the ANCHOR; **OVER-DETERMINED** (proof), well-posed ⇒ capacity inert. **CORRECTS rung 55.**
+- The **φ-RATE limiter** (rung 60's seam) — `docs/phi-rate-limiter-negative.md`. **Fuel's authority over `φ` INVERTS between the LEVEL and the DERIVATIVE**, so no fuel-side leg can arrest a descent (the rate DIVERGES from any target, both spools). BOUNDS rung 49's monotonicity — the one negative with a gate.
 
 **Checked, CONFIRMATION / CORRECTION — not a rung (the rung-29/28 margin sweeps):**
 - "Earned at design" over `π_c` — `docs/rung29-pi-c-margin.md` (verdict holds ~9.4×; `π_c` NOT protective; `ENERGY = INVENTORY × COMPLETION`).
@@ -146,7 +147,6 @@ must never be re-opened by mistake.
 - **The subsonic / unchoked LP branch** in the two-spool solves (rung 38 flags, does not solve) and its **transient**.
 - An **ANCHOR for the blading** (what its NEGATIVE isolated): a stress / tip-Mach limit pinning `U` from outside the stack, or an annulus law `Vx(k)` — turning `U²∝1/S` into a constraint.
 - **Stator + bleed together** (rung 53's saturation says the bleed takes over where the stator's authority ends).
-- A **RELOCATING limiter** (rung 60's seam): a `dφ/ds` cap — arrests the descent without fixing where it stops, so it should compose where every FLOOR cannot. New plant (needs a state).
 - A **bleed schedule** `b(n_L)`; **fuel + bleed together**.
 - **The lag's SHAPE and the two-lag CASCADE** — rung 52's named seam: a rate-limited *attack* (the valve, not the loop), and `tau_gov` + `lag` on one plant (what a real FADEC runs). Rung 52's §3 says the cascade should not be additive.
 - **Rung 37's internal clocks on two shafts** and the combined 3-state; **customer/cooling bleed** at station 3.
@@ -189,31 +189,27 @@ A compact map — the per-rung method/finding detail lives in `docs/rungN-spec.m
   lag `τ_gov` (47), the feedforward `Wf/pt3` `AccelSchedule` (48), the **φ-FEEDBACK** `SurgeLimiter`
   (49), forced release `s_off` (50), its rate `τ_rel` (51), the realisable `AsymmetricLag` (52).
   Off the fuel path, on the **steady** two-spool matcher: `VariableStatorMatcher` (53) — the first
-  **floor-moving** lever — with its derived channels on `ComponentMap` (`with_vsv`, `phi_surge_at`,
-  `tan_beta1`), and rung 54's third channel `with_capacity` + the matcher's throat reads (post-hoc). Then
-  `StageStack` + `StageStackMatcher` (55) — the compressor resolved into `K` stage blocks; it
-  replaces the speed-line inversion ONLY (identity reduce at `K`=1), and the **transient** ladders
-  deliberately never see it. Rung 56 hangs rung 54's throat off each ROW (`StageStack.capacities` /
-  `stage_capacity_margin`, the matcher's `stage_throat_margin` / `throat_walk`) — still
-  diagnostic-only, so its reduce is an INVARIANCE over the constant AND the disclosed profile.
-  Rung 57 returns rung 53's lever to the **transient** ladder: `StatorSchedule` +
-  `ScheduledStatorTransient` (a `TwoSpoolFuelTransient`) arm the maps from the live state inside
-  BOTH closures, with readers of their own — rungs 41/44/45 read the design-setting `phi_surge`
-  FIELD, which is the wrong wall once the stator moves. Rung 58 arms ONE fuel-side leg beside it
-  (`_stator_march` grows `accel`/`surge`/`Tt4_max`; `composite_credit` / `engagement_shift` /
-  `interaction_sweep`) — two fuel legs are refused as min-select algebra. Rung 59 re-derives that
-  leg ON the armed machine (`schedule_invariance` / `matched_credit`, with `_proof_chain`, the
-  `_synthetic_leg` splice and the `_clamp_audit` blocker) — no new plant, no new constant.
-  Rung 60 adds the one leg that is NOT composable: `IncidenceLimiter` (rung 49's floor
-  re-referenced to the stator-invariant wall) resolved per state by `_resolve_floor`, with
-  `set_point_bands` / `composability_ladder` / `floor_composite` and the `_pin_audit` blocker.
+  **floor-moving** lever — with its derived `ComponentMap` channels (`with_vsv`, `phi_surge_at`,
+  `tan_beta1`), plus rung 54's `with_capacity` + the matcher's throat reads. Then `StageStack` +
+  `StageStackMatcher` (55), the compressor resolved into `K` stage blocks (it replaces the
+  speed-line inversion ONLY; the **transient** ladders never see it), and rung 56's per-ROW throat
+  (`StageStack.capacities` / `stage_capacity_margin`, `stage_throat_margin` / `throat_walk`).
+  Rung 57 returns the stator to the **transient** ladder: `StatorSchedule` +
+  `ScheduledStatorTransient` (a `TwoSpoolFuelTransient`), arming both closures from the live state.
+  Rung 58 adds ONE fuel-side leg beside it (`_stator_march` grows `accel`/`surge`/`Tt4_max`;
+  `composite_credit` / `engagement_shift` / `interaction_sweep`); rung 59 re-derives that leg on the
+  armed machine (`schedule_invariance` / `matched_credit`); rung 60 adds the non-composable
+  `IncidenceLimiter` (`_resolve_floor`, `set_point_bands` / `composability_ladder` /
+  `floor_composite`).
   Each reduces to its predecessor (exact dispatch, an inherited identity, or the forward closure);
   **the method names + reduce contracts are in each rung's spec, not here.**
 - `main.py` — the design-point run: ideal-vs-real tables, the overlaid T–s diagram, and **one panel
   per rung** (each demonstrates that rung's load-bearing claim and states its honest scope).
 - `tests/` — per-rung `test_rungN.py` (N = 1…60; plus the rung-1/2b/3/4/5 files). Every rung file
   carries that rung's **reduce-to-prior** gate plus its load-bearing claims — the gates are named in
-  the spec. `test_claude_md_reference.py` is the size guard on this file.
+  the spec. `test_claude_md_reference.py` is the size guard on this file, and
+  `test_phi_rate_limiter_negative.py` is the only NEGATIVE carrying a gate (it BOUNDS rung 49's
+  bracket, which no per-rung gate watches — it owns no production code).
 - `docs/rungN-spec.md` — the derivation, assumptions, concessions and gates for rung N.
   `docs/plans/rungN-anchor-*.md` — that rung's verified anchor data. `docs/plans/` also holds the
   living plan/tasks.
@@ -226,7 +222,8 @@ A compact map — the per-rung method/finding detail lives in `docs/rungN-spec.m
 - **Ship a rung: `pytest --affected`** (~6–16 min) — the fast subset PLUS the slow gates the diff
   can reach (AST symbol-diff + caller closure, cumulative since the last full gate); self-escalates
   to the full gate on a core / module-level change. **The rung green-gate.**
-- **Full gate: `pytest --runslow`** (~22–25 min) — everything. **Every 3rd rung** (the header nags),
+- **Full gate: `pytest --runslow`** (**~39 min** at rung 60 — it GROWS with the ladder; the
+  22/25/39-min samples are rungs 57/57/60) — everything. **Every 3rd rung** (the header nags),
   at session end, and whenever `--affected` escalates. ACCEPTED RISK: a regression in an unreached
   non-spine gate can hide for ≤3 rungs; `main.py` is covered by no test.
 - Only the slow gates: `pytest -m slow` · One rung by hand: `python tests/test_rung2.py`
