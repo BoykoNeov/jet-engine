@@ -22,6 +22,7 @@ from turbojet.engine import (  # noqa: E402
     TwoSpoolTransient, TwoSpoolBleedMatcher, TwoSpoolFuelTransient, SurgeLimiter,
     AsymmetricLag, VariableStatorMatcher, StageStackMatcher, ram_recovery,
     ScheduledStatorTransient, StatorSchedule, IncidenceLimiter, StatorBleedMatcher,
+    ScheduledBleedTransient, BleedSchedule,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -4561,6 +4562,81 @@ def print_stator_bleed_table(flight):
     print("  ride on the two maps and the imposed floor. See docs/rung61-spec.md § Concessions.")
 
 
+def print_bleed_schedule_table(flight):
+    """Rung-62 payoff: rung 61's own seam, on the TRANSIENT plant.
+
+    A state-fed schedule closes a feedback loop on itself through the shaft speed it reads,
+    and the loop's SIGN is the sign of the lever's own dn/d(setting). Rung 57 measured its
+    stator schedule SURRENDERING authority to that loop; the same instrument gives a bleed
+    schedule the other sign. And the two loops, closing through ONE state, do not compose."""
+    print("\nBLEED SCHEDULE + STATOR SCHEDULE (rung 62): a state-fed schedule's LOOP has a")
+    print("SIGN. FULL/RAMP < 1 is self-cancellation (rung 57); > 1 is self-AMPLIFICATION.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR = 0.55
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    LO, HI, N_LO, V, B = 1000.0, 1400.0, 0.65, 0.20, 0.10
+    STAT = dict(vsv_sched_lp=StatorSchedule(V, N_LO))
+    BLED = dict(bleed_sched=BleedSchedule(B, N_LO))
+
+    def mk(**kw):
+        return ScheduledBleedTransient(design, flight, 1.0, map_lp=LP, map_hp=HP,
+                                       rho=1.0, **kw)
+
+    print("\n  Both loop-gain factors on the steady running line (neither reverses):")
+    print(f"    {'Tt4':>6} {'dn_L/db':>10} {'dn_L/dv':>10}")
+    for row in mk().loop_factors(flight, (1500.0, 1300.0, 1100.0, 900.0)):
+        print(f"    {row['Tt4']:6.0f} {row['dn_db']:+10.5f} {row['dn_dv']:+10.5f}")
+    print("    (bleed LOWERS the speed its schedule reads, the stator RAISES it -- and both")
+    print("     schedules open at LOW speed, so the two loop gains have opposite signs.)")
+
+    print("\n  The loop, per lever, over a 4x ramp-rate range:")
+    print(f"    {'lever':<22} {'r':>5} {'FULL/RAMP':>10} {'cmd RAMP':>9} {'cmd FULL':>9}")
+    for name, kw in ((f"stator  v_max={V:.2f}", STAT), (f"bleed   b_max={B:.2f}", BLED)):
+        for r in (0.25, 0.50, 1.00):
+            d = mk(**kw).loop_decomposition(flight, LO, HI, r=r)
+            print(f"    {name:<22} {r:5.2f} {d['self_cancel']:10.4f} "
+                  f"{d['cmd_ramp']:9.5f} {d['cmd_full']:9.5f}")
+    print("    The stator commands LESS of itself between the two legs; the bleed MORE.")
+
+    print("\n  The two loops share ONE state, and they do not compose. The stator schedule's")
+    print("  own surrender (1 - FULL/RAMP), by what is armed BESIDE it:")
+    t = mk()
+    cmd = mk(**BLED).commanded_level(flight, LO, HI, r=0.25)["at_min"]
+    print(f"    {'neighbour':<34} {'surrendered':>12}")
+    for name, nb in (("(none)", {}),
+                     (f"constant b = {cmd:.4f}  (matched)", dict(bleed=cmd)),
+                     (f"constant b = {B:.4f}  (MORE lever)", dict(bleed=B)),
+                     (f"SCHEDULE  b_max = {B:.2f}", BLED)):
+        d = t.marginal_loop(flight, LO, HI, lever=STAT, neighbour=nb, r=0.25)
+        print(f"    {name:<34} {d['surrendered']:+12.4f}")
+    print("    The schedule does ~3x the damage of a strictly LARGER constant valve, so it")
+    print("    is the LOOP and not the LEVEL. The mirror is inert: a stator schedule leaves")
+    print("    the bleed's amplification alone to within 0.7 %. A ONE-WAY arrow.")
+
+    print("\n  And rung 61's steady superposition does not survive the shaft balance's")
+    print("  removal -- the same two devices, additive to 2.3 % steady:")
+    print(f"    {'r':>5} {'c_stator':>10} {'c_bleed':>10} {'c_pair':>10} {'sum':>10} "
+          f"{'interaction':>12}")
+    for r in (0.25, 0.50, 1.00):
+        d = t.pair_interaction(flight, LO, HI, lever_a=STAT, lever_b=BLED, r=r)
+        print(f"    {r:5.2f} {d['credit_a']:+10.5f} {d['credit_b']:+10.5f} "
+              f"{d['credit_pair']:+10.5f} {d['credit_sum']:+10.5f} "
+              f"{d['interaction_frac']:+12.3f}")
+    print("    SCOPE: b(n_L) is an IMPOSED valve position, not a controlled one; n_lo is a")
+    print("    placement and the MAGNITUDE rides on it (the sign does not). Every rung-57")
+    print("    concession is inherited. See docs/rung62-spec.md.")
+
 def main():
     # The tables carry unicode (Δ, ·, ≡, ≈); force UTF-8 so `python main.py` renders
     # on any console (a stock Windows cp1252 console would otherwise crash on them).
@@ -4698,6 +4774,8 @@ def main():
     print_matched_floor_table(FLIGHT)
 
     print_stator_bleed_table(FLIGHT)
+
+    print_bleed_schedule_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

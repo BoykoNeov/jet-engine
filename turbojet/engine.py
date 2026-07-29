@@ -8718,3 +8718,618 @@ class StatorBleedMatcher(TwoSpoolBleedMatcher, VariableStatorMatcher):
                              floor_motion=v * phi_s0 * phi_s0 / (1.0 + v * phi_s0),
                              why_phi=a.get("reason"), why_m_phi=c.get("reason")))
         return rows
+
+
+# =============================================================================
+# RUNG 62. THE BLEED SCHEDULE beside the STATOR SCHEDULE, on the TRANSIENT plant
+# — rung 61's own named seam, both halves.
+#
+# THE POINT OF ENTRY: unlike rung 61, there IS one, and it is a new plant.
+# Rung 61 composed by MRO alone because both its parents sat on the STEADY
+# cascade. Rung 42's valve lives in `_cascade_bleed`, and rung 40 REMOVED that
+# shaft balance to make the two power residuals the ODE right-hand sides — so
+# the transient ladder never calls it. The valve is threaded through the FORWARD
+# closure at FIVE sites:
+#
+#     _close         m_hp referral x(1-b);  m_imp /(1-b)
+#     _close_fuel    the same, plus f = mdot_fuel / CORE air
+#     _powers        Pt_lp x(1-b); Phi_lp on FACE air, Phi_hp on CORE air
+#     _instant_tail  the same, plus rung 42's (3) thrust booking
+#     __init__       the design capture stays at b = 0 (rung 42's discipline)
+#
+# `_powers` is the one that bites. Rung 40 factored (Phi_L, Phi_H) OUT of
+# `_instant_tail` so the equilibrium Newton would not rebuild the nozzle each
+# step; left bleed-free it converges to 1e-12 ON A RESIDUAL THE PLANT DOES NOT
+# USE — n_L = 0.8720 against a true root of 0.8282, phi_L still agreeing to
+# 1e-3, and no exception anywhere. See docs/rung62-spec.md § 0.
+#
+# THE REDUCE IS TWO-AXIS, per CALL (the live b, not a constructor flag):
+#     (v=0, b=0)  => rungs 43-52 bit-for-bit  (both dispatches fall through)
+#     (v!=0, b=0) => rung 57 bit-for-bit      (rung 57's own body runs verbatim)
+#     (v=0, b!=0) => NO TRANSIENT ANCESTOR — validated instead against rung 42's
+#                    STEADY match through the forward closure only (rung 40's
+#                    own self-validation move), to 6.1e-12.
+# =============================================================================
+
+
+@dataclass
+class BleedSchedule:
+    """RUNG 62. A handling-bleed schedule `b(n_L)` in the LP corrected speed.
+
+        b(n) = b_max * S( (n_ref - n)/(n_ref - n_lo) )        S clipped to [0, 1]
+
+    OPEN at low corrected speed, closing monotonically, and EXACTLY 0 at and above the
+    design speed `n_ref` -- which is rung 42's *"the valve is SHUT at the design point by
+    construction"* and rung 53/57's hardware-capture discipline saying the same thing from
+    the other side: A4/A45/A8, mcorr_*_d and tau_*_d are all taken at b = 0, so a schedule
+    holding the valve open there would silently contradict every design reference.
+    `__post_init__` ASSERTS it rather than relying on the algebra.
+
+    DELIBERATELY the structural TWIN of rung 57's `StatorSchedule` -- same functional form,
+    same two shapes, same corner assertion. The two levers must differ in their PHYSICS and
+    in nothing else, or the rung's headline (their loop gains have opposite SIGNS) would be
+    comparing two schedule definitions rather than two devices.
+
+    `shape`:
+      "smooth"  S(x) = x^2(3-2x) -- C1 at BOTH corners. THE DEFAULT (rung 57's reason: the
+                kink lives in STATE space, where rung 50's put-the-switch-on-the-ds-grid
+                trick is structurally unavailable).
+      "linear"  S(x) = x -- the C0 shape-robustness control.
+
+    Like `bleed` itself (rung 42), `vsv` (rung 53) and `StatorSchedule` (rung 57), this is a
+    swept geometry coordinate and not a fitted constant: it adds no physics, it only says
+    WHERE on the running line the valve is applied.
+    """
+
+    b_max: float
+    n_lo: float
+    n_ref: float = 1.0
+    shape: str = "smooth"
+
+    def __post_init__(self):
+        assert self.shape in ("smooth", "linear"), (
+            f"rung-62 BleedSchedule shape must be 'smooth' (C1, default) or 'linear' "
+            f"(C0 control), got {self.shape!r}")
+        assert self.n_lo < self.n_ref, (
+            f"rung-62 BleedSchedule needs n_lo < n_ref: got {self.n_lo} >= {self.n_ref}")
+        assert 0.0 <= self.b_max < 0.5, (
+            "rung-42's own bound: b >= 0.5 starves the core and the choked branch is long "
+            f"gone by then; got b_max = {self.b_max}")
+        assert self(self.n_ref) == 0.0, (
+            "rung-62 BleedSchedule must be EXACTLY 0 at the design corrected speed n_ref -- "
+            "rung 42 captures the hardware with the valve SHUT.")
+
+    def __call__(self, n: float) -> float:
+        x = (self.n_ref - n) / (self.n_ref - self.n_lo)
+        x = 0.0 if x < 0.0 else (1.0 if x > 1.0 else x)
+        return self.b_max * (x * x * (3.0 - 2.0 * x) if self.shape == "smooth" else x)
+
+
+class ScheduledBleedTransient(ScheduledStatorTransient):
+    """RUNG 62. Rung 42's interstage bleed valve on rungs 43/57's transient plant, BESIDE
+    rung 57's variable stator -- rung 61's named seam, and the first time the ladder carries
+    two AIRFLOW levers on one accelerating machine.
+
+    Rung 61 put the same two devices on the STEADY matcher and found their credits additive
+    to <= 2.3 %. That near-additivity turns out to be the SHAFT BALANCE's doing: rung 40
+    removed it, and here the same pair is sub-additive by 9-29 %.
+
+    Two ways to arm the valve, mutually exclusive (rung 57's own two legs):
+
+      bleed          a CONSTANT position -- rung 42's lever, transplanted. Applied at
+                     construction, so `equilibrium` and `fuel_for_Tt4` see it and the march
+                     starts on the BLED running line.
+      bleed_sched    a `BleedSchedule` read off the live state at every closure -- the thing
+                     a real handling-bleed system implements.
+
+    Usage:
+        bs = BleedSchedule(b_max=0.10, n_lo=0.65)
+        sc = StatorSchedule(v_max=0.20, n_lo=0.65)
+        t  = ScheduledBleedTransient(design, FLIGHT, 1.0, map_lp=..., map_hp=...,
+                                     bleed_sched=bs, vsv_sched_lp=sc)
+        t.loop_decomposition(FLIGHT, 1000., 1400., r=0.5)    # START/RAMP/FULL  <- THE RUNG
+        t.loop_factors(FLIGHT, (1500., 1100.))               # dn_L/db and dn_L/dv, signed
+        t.marginal_loop(FLIGHT, 1000., 1400., r=0.5)         # a lever's loop BESIDE another
+        t.pair_interaction(FLIGHT, 1000., 1400., r=0.5)      # the four cells, credit + cost
+        t.clock_sweep(FLIGHT, 1000., 1400.)                  # the ramp-rate control
+
+    THE REDUCE, by exact dispatch and PER CALL. `b_of` is a pure function of the live state,
+    and every overridden closure returns to its rung-57 parent verbatim whenever that value
+    is 0.0 -- so a machine with the valve shut is rung 57 bit-for-bit, a machine with no
+    stator either is rungs 43-52 bit-for-bit, and a `BleedSchedule` with `b_max` = 0.0
+    dispatches away at every state rather than merely computing 1.0 factors.
+
+    CONCESSIONS (in addition to every one rung 57 lists, all inherited):
+      * The valve is an IMPOSED position, not a controlled one (rung 42's own disclaimer).
+        `b(n_L)` says where it sits; nothing schedules it against a measured margin.
+      * The bleed schedule reads the LP's TRUE corrected speed (Tt2 is known before the
+        root). There is no HP analogue and none is offered: the valve is a station-25
+        device and rung 42 showed it is a degree of freedom on the LP spool and NOT the HP.
+      * The dumped air carries FULL ram drag and returns no exhaust momentum -- rung 42's
+        (3), the conservative booking, inherited unchanged.
+    """
+
+    def __init__(self, design_engine, flight_design: FlightCondition,
+                 mdot_design: float = 1.0, map_lp: "ComponentMap | None" = None,
+                 map_hp: "ComponentMap | None" = None, rho: float = 1.0,
+                 vsv_lp: float = 0.0, vsv_hp: float = 0.0,
+                 vsv_sched_lp: "StatorSchedule | None" = None,
+                 vsv_sched_hp: "StatorSchedule | None" = None,
+                 bleed: float = 0.0, bleed_sched: "BleedSchedule | None" = None,
+                 lp_disabled: bool = False):
+        super().__init__(design_engine, flight_design, mdot_design, map_lp=map_lp,
+                         map_hp=map_hp, rho=rho, vsv_lp=vsv_lp, vsv_hp=vsv_hp,
+                         vsv_sched_lp=vsv_sched_lp, vsv_sched_hp=vsv_sched_hp,
+                         lp_disabled=lp_disabled)
+        assert not (bleed != 0.0 and bleed_sched is not None), (
+            "rung-62: the valve gets a CONSTANT position or a SCHEDULE, not both -- they "
+            "are the two legs the rung differences (rung 57's discipline).")
+        self.bleed, self.bleed_sched = float(bleed), bleed_sched
+        assert 0.0 <= self.bleed < 0.5, (
+            "rung-42 bleed fraction must be in [0, 0.5): b>=0.5 starves the core and the "
+            "choked branch is long gone by then")
+
+    # --- the live valve position: a pure function of state (rung 57's `_arm` discipline) -
+
+    def b_of(self, nu_lp: float, Tt2: "float | None" = None) -> float:
+        """The valve position this machine holds at the given state -- constant or
+        scheduled. No history, no latch, so it is RK4-legal exactly as rung 57's `_arm` and
+        rung 50's `s`-threading were. Every reader goes through this rather than through
+        `self.bleed`, which for a scheduled machine is 0.0 and means nothing."""
+        if self.bleed_sched is None:
+            return self.bleed
+        t2 = self.Tt2_d if Tt2 is None else Tt2
+        return self.bleed_sched(nu_lp * (self.Tt2_d / t2) ** 0.5)
+
+    def _armed_bleed(self) -> bool:
+        return self.bleed != 0.0 or self.bleed_sched is not None
+
+    def at_lever(self, vsv_lp: float = 0.0, vsv_hp: float = 0.0, vsv_sched_lp=None,
+                 vsv_sched_hp=None, bleed: float = 0.0,
+                 bleed_sched=None) -> "ScheduledBleedTransient":
+        """A sibling on the SAME hardware and the same design references, BOTH levers
+        re-armed -- rung 57's `at_stator` with the second device. Every difference this
+        class reports goes through it, so a swept setting can never be confused with a
+        re-designed engine."""
+        de, fd, md, rho, lpd = self._ctor
+        return ScheduledBleedTransient(
+            de, fd, md, map_lp=self.map_lp_design, map_hp=self.map_hp_design, rho=rho,
+            vsv_lp=vsv_lp, vsv_hp=vsv_hp, vsv_sched_lp=vsv_sched_lp,
+            vsv_sched_hp=vsv_sched_hp, bleed=bleed, bleed_sched=bleed_sched,
+            lp_disabled=lpd)
+
+    def at_stator(self, vsv_lp: float = 0.0, vsv_hp: float = 0.0, vsv_sched_lp=None,
+                  vsv_sched_hp=None) -> "ScheduledBleedTransient":
+        """Rung 57's sibling constructor, overridden so it carries THIS machine's valve.
+
+        Rung 57 hard-constructs `ScheduledStatorTransient`, and `stator_credit` /
+        `credit_decomposition` / `arrow_toggle` all route their BARE leg through it. Left
+        un-overridden, every one of those would have differenced an armed machine against a
+        VALVE-SHUT bare one and silently attributed the valve's whole effect to the stator.
+        This is rung 61's `at_setting` trap, one ladder over."""
+        return self.at_lever(vsv_lp=vsv_lp, vsv_hp=vsv_hp, vsv_sched_lp=vsv_sched_lp,
+                             vsv_sched_hp=vsv_sched_hp, bleed=self.bleed,
+                             bleed_sched=self.bleed_sched)
+
+    # --- (1) the Tt4-pinned closure ------------------------------------------------------
+
+    def _close(self, nu_lp, nu_hp, Tt4, Tt2, pt2):
+        b = self.b_of(nu_lp, Tt2)
+        if b == 0.0:
+            return super()._close(nu_lp, nu_hp, Tt4, Tt2, pt2)
+        self._arm(nu_lp, nu_hp, Tt2)
+        gas = self.gas
+        n_lp = nu_lp * (self.Tt2_d / Tt2) ** 0.5
+        h2, pr2 = gas.h_c(Tt2), gas.pr_c(Tt2)
+
+        def ev(m_lp: float) -> dict:
+            phi_lp = m_lp / n_lp
+            tau_lpc = 1.0 + (self.tau_lpc_d - 1.0) * self.map_lp.psi(phi_lp) * n_lp * n_lp
+            Tt25 = Tt2 * tau_lpc
+            eta_lpc = self.map_lp.eta_c_at(self.eta_lpc, phi_lp, n_lp)
+            h25 = gas.h_c(Tt25)
+            pi_lpc = gas.pr_c(gas.T_from_h_c(h2 + eta_lpc * (h25 - h2))) / pr2
+            pt25 = pi_lpc * pt2
+            mdot_face = m_lp * self.mcorr_lp_d * pt2 / Tt2 ** 0.5
+            mdot_core = (1.0 - b) * mdot_face          # THE EXTRACTION, at station 25
+
+            # Same physical CORE flow, referred to the HP face (rung 40's line, with (1-b)).
+            m_hp = (mdot_core * Tt25 ** 0.5 / pt25) / self.mcorr_hp_d
+            n_hp = nu_hp * (self.Tt25_d / Tt25) ** 0.5
+            phi_hp = m_hp / n_hp
+            tau_hpc = 1.0 + (self.tau_hpc_d - 1.0) * self.map_hp.psi(phi_hp) * n_hp * n_hp
+            Tt3 = Tt25 * tau_hpc
+            eta_hpc = self.map_hp.eta_c_at(self.eta_hpc, phi_hp, n_hp)
+            h3 = gas.h_c(Tt3)
+            pi_hpc = gas.pr_c(gas.T_from_h_c(h25 + eta_hpc * (h3 - h25))) / gas.pr_c(Tt25)
+            pt4 = self.pi_b * pi_hpc * pt25
+
+            f = self._solve_f(Tt3, pt4, Tt4)
+            wgas = self._working_gas(f, Tt4, pt4)
+            mdot4 = self.A4 * pt4 * choked_mfp(wgas, Tt4, f) / Tt4 ** 0.5
+            mdot_imp = mdot4 / (1.0 + f)               # CORE air the NGV choke imposes
+            m_imp = (mdot_imp / (1.0 - b) * Tt2 ** 0.5 / pt2) / self.mcorr_lp_d
+            return dict(m_lp=m_lp, m_imp=m_imp, m_hp=m_hp, phi_lp=phi_lp, phi_hp=phi_hp,
+                        Tt2=Tt2, n_lp=n_lp, n_hp=n_hp, tau_lpc=tau_lpc, tau_hpc=tau_hpc,
+                        Tt25=Tt25, Tt3=Tt3, pi_lpc=pi_lpc, pi_hpc=pi_hpc, pt4=pt4, f=f,
+                        wgas=wgas, eta_lpc=eta_lpc, eta_hpc=eta_hpc, mdot_air=mdot_imp,
+                        mdot4=mdot4, bleed=b, mdot_face=mdot_imp / (1.0 - b))
+
+        def g(m: float) -> float:
+            r = m - ev(m)["m_imp"]
+            # rung 57's off-map guard, inherited verbatim in its reasoning.
+            assert isinstance(r, float) and r == r, (
+                f"off-map compressor trial at m_lp={m:.4f}: the loading law has gone "
+                f"non-physical (Tt3 < 0 => a complex pressure ratio).")
+            return r
+
+        hi = min(2.5, self.map_lp.phi_max() * n_lp)
+        ghi = g(hi)
+        lo, glo, m = None, None, 0.02
+        while m < hi:
+            try:
+                glo, lo = g(m), m
+                break
+            except AssertionError:
+                m += 0.02
+        assert lo is not None and glo < 0.0 < ghi, (
+            f"rung-62 bled two-shaft closure does not bracket at "
+            f"nu=({nu_lp:.4f},{nu_hp:.4f}), Tt4={Tt4:.0f}, b={b:.4f} — off the modeled "
+            "speed-line region.")
+        return ev(_illinois(g, lo, hi, glo, ghi, tol=1e-12))
+
+    # --- (2) the FUEL closure: Tt4 an OUTPUT ---------------------------------------------
+
+    def _close_fuel(self, nu_lp, nu_hp, mdot_fuel, Tt2, pt2):
+        b = self.b_of(nu_lp, Tt2)
+        if b == 0.0:
+            return super()._close_fuel(nu_lp, nu_hp, mdot_fuel, Tt2, pt2)
+        self._arm(nu_lp, nu_hp, Tt2)
+        gas = self.gas
+        n_lp = nu_lp * (self.Tt2_d / Tt2) ** 0.5
+        h2, pr2 = gas.h_c(Tt2), gas.pr_c(Tt2)
+
+        def ev(m_lp: float) -> dict:
+            phi_lp = m_lp / n_lp
+            tau_lpc = 1.0 + (self.tau_lpc_d - 1.0) * self.map_lp.psi(phi_lp) * n_lp * n_lp
+            Tt25 = Tt2 * tau_lpc
+            eta_lpc = self.map_lp.eta_c_at(self.eta_lpc, phi_lp, n_lp)
+            h25 = gas.h_c(Tt25)
+            pi_lpc = gas.pr_c(gas.T_from_h_c(h2 + eta_lpc * (h25 - h2))) / pr2
+            pt25 = pi_lpc * pt2
+            mdot_face = m_lp * self.mcorr_lp_d * pt2 / Tt2 ** 0.5
+            mdot_core = (1.0 - b) * mdot_face
+
+            m_hp = (mdot_core * Tt25 ** 0.5 / pt25) / self.mcorr_hp_d
+            n_hp = nu_hp * (self.Tt25_d / Tt25) ** 0.5
+            phi_hp = m_hp / n_hp
+            tau_hpc = 1.0 + (self.tau_hpc_d - 1.0) * self.map_hp.psi(phi_hp) * n_hp * n_hp
+            Tt3 = Tt25 * tau_hpc
+            eta_hpc = self.map_hp.eta_c_at(self.eta_hpc, phi_hp, n_hp)
+            h3 = gas.h_c(Tt3)
+            pi_hpc = gas.pr_c(gas.T_from_h_c(h25 + eta_hpc * (h3 - h25))) / gas.pr_c(Tt25)
+            pt4 = self.pi_b * pi_hpc * pt25
+
+            # THE ONE PLACE THE BLEED CHANGES THE CONTROL, not just the flow: the burner
+            # never sees the dumped air, so a metered fuel flow makes a RICHER mixture.
+            f = mdot_fuel / mdot_core
+            Tt4 = self._tt4_from_f(Tt3, f)
+            wgas = self._working_gas(f, Tt4, pt4)
+            mdot4 = self.A4 * pt4 * choked_mfp(wgas, Tt4, f) / Tt4 ** 0.5
+            mdot_imp = mdot4 / (1.0 + f)
+            m_imp = (mdot_imp / (1.0 - b) * Tt2 ** 0.5 / pt2) / self.mcorr_lp_d
+            return dict(m_lp=m_lp, m_imp=m_imp, m_hp=m_hp, phi_lp=phi_lp, phi_hp=phi_hp,
+                        Tt2=Tt2, n_lp=n_lp, n_hp=n_hp, tau_lpc=tau_lpc, tau_hpc=tau_hpc,
+                        Tt25=Tt25, Tt3=Tt3, Tt4=Tt4, pi_lpc=pi_lpc, pi_hpc=pi_hpc,
+                        pt4=pt4, f=f, wgas=wgas, eta_lpc=eta_lpc, eta_hpc=eta_hpc,
+                        mdot_air=mdot_imp, mdot_air_face=mdot_face, mdot4=mdot4,
+                        bleed=b, mdot_face=mdot_imp / (1.0 - b))
+
+        def g(m: float) -> float:
+            r = m - ev(m)["m_imp"]
+            assert isinstance(r, float) and r == r, (
+                f"off-map compressor trial at m_lp={m:.4f}: the loading law has gone "
+                f"non-physical (Tt3 < 0 => a complex pressure ratio).")
+            return r
+
+        # rung 43's scan-up-from-the-rich-wall bracket. The f caps are CORE-referenced, so
+        # the FACE-flow walls they imply carry 1/(1-b) -- without it the scan starts inside
+        # the physical root at large b.
+        f_cap, f_floor = 0.065, 0.004
+        lo0 = mdot_fuel * Tt2 ** 0.5 / (f_cap * (1.0 - b) * self.mcorr_lp_d * pt2)
+        hi0 = mdot_fuel * Tt2 ** 0.5 / (f_floor * (1.0 - b) * self.mcorr_lp_d * pt2)
+        cap = min(2.5, self.map_lp.phi_max() * n_lp, hi0)
+        step = 0.04
+        lo = hi = glo = ghi = None
+        m = max(lo0, 0.02)
+        while m < cap:
+            try:
+                gm = g(m)
+            except AssertionError:
+                m += step
+                continue
+            if gm < 0.0:
+                lo, glo = m, gm
+            elif lo is not None:
+                hi, ghi = m, gm
+                break
+            m += step
+        assert lo is not None and hi is not None, (
+            f"rung-62 bled fuel closure does not bracket at nu=({nu_lp:.4f},{nu_hp:.4f}), "
+            f"mdot_fuel={mdot_fuel:.5f}, b={b:.4f} — off the modeled speed-line region.")
+        return ev(_illinois(g, lo, hi, glo, ghi, tol=1e-12))
+
+    # --- (3) the Newton's INNER power loop -----------------------------------------------
+
+    def _powers(self, c, flight, nu_lp, nu_hp, Tt4):
+        """THE TOUCH POINT THAT BITES. Rung 40 factored (Phi_L, Phi_H) out of
+        `_instant_tail` so the equilibrium Newton would not rebuild the nozzle each step.
+        Left bleed-free it converges to 1e-12 on a residual the PLANT does not use: n_L
+        comes back 5.3 % wrong with phi_L still agreeing to 1e-3 and no exception anywhere.
+        What catches it is the rung-42 cross-check, not any internal consistency."""
+        b = c.get("bleed", 0.0)
+        if b == 0.0:
+            return super()._powers(c, flight, nu_lp, nu_hp, Tt4)
+        wgas, f = c["wgas"], c["f"]
+        nu_hpt = nu_hp * (self.Tt4_d / Tt4) ** 0.5
+        _, _, Tt45 = self._solve_choked_turbine(
+            wgas, Tt4, f, self.A4, self.A45, 1.0,
+            self.map_hp.eta_t_at(self.eta_hpt, nu_hpt))
+        nu_lpt = nu_lp * (self.Tt45_d / Tt45) ** 0.5
+        _, _, Tt5 = self._solve_choked_turbine(
+            wgas, Tt45, f, self.A45, self.A8, self.pi_n,
+            self.map_lp.eta_t_at(self.eta_lpt, nu_lpt))
+        # HP: both sides are CORE flow, so (1-b) cancels -- rung 42's bleed-INVARIANT form.
+        Pt_hp = self.eta_m * (1.0 + f) * (wgas.h_t(Tt4, f) - wgas.h_t(Tt45, f))
+        Pc_hp = wgas.h_c(c["Tt3"]) - wgas.h_c(c["Tt25"])
+        # LP: the LPT passes CORE gas while the LPC pumps FACE air -- rung 42's (1).
+        Pt_lp = self.eta_m * (1.0 - b) * (1.0 + f) * (wgas.h_t(Tt45, f) - wgas.h_t(Tt5, f))
+        Pc_lp = wgas.h_c(c["Tt25"]) - wgas.h_c(c["Tt2"])
+        return ((c["mdot_face"] * (Pt_lp - Pc_lp)) / (self.P_ref_lp * nu_lp),
+                (c["mdot_air"] * (Pt_hp - Pc_hp)) / (self.P_ref_hp * nu_hp))
+
+    # --- (4) the turbine / power / thrust tail -------------------------------------------
+
+    def _instant_tail(self, flight, c, nu_lp, nu_hp, Tt4, V0):
+        b = c.get("bleed", 0.0)
+        if b == 0.0:
+            return super()._instant_tail(flight, c, nu_lp, nu_hp, Tt4, V0)
+        Tt2 = c["Tt2"]
+        wgas, f = c["wgas"], c["f"]
+
+        nu_hpt = nu_hp * (self.Tt4_d / Tt4) ** 0.5
+        eta_hpt = self.map_hp.eta_t_at(self.eta_hpt, nu_hpt)
+        pi_hpt, tau_hpt, Tt45 = self._solve_choked_turbine(
+            wgas, Tt4, f, self.A4, self.A45, 1.0, eta_hpt)
+        nu_lpt = nu_lp * (self.Tt45_d / Tt45) ** 0.5
+        eta_lpt = self.map_lp.eta_t_at(self.eta_lpt, nu_lpt)
+        pi_lpt, tau_lpt, Tt5 = self._solve_choked_turbine(
+            wgas, Tt45, f, self.A45, self.A8, self.pi_n, eta_lpt)
+
+        mdot_core, mdot_face = c["mdot_air"], c["mdot_face"]
+        Pt_hp = self.eta_m * (1.0 + f) * (wgas.h_t(Tt4, f) - wgas.h_t(Tt45, f))
+        Pc_hp = wgas.h_c(c["Tt3"]) - wgas.h_c(c["Tt25"])
+        Pt_lp = self.eta_m * (1.0 - b) * (1.0 + f) * (wgas.h_t(Tt45, f) - wgas.h_t(Tt5, f))
+        Pc_lp = wgas.h_c(c["Tt25"]) - wgas.h_c(Tt2)
+
+        Phi_hp = (mdot_core * (Pt_hp - Pc_hp)) / (self.P_ref_hp * nu_hp)
+        Phi_lp = (mdot_face * (Pt_lp - Pc_lp)) / (self.P_ref_lp * nu_lp)
+
+        s5 = FlowState(Tt=Tt5, pt=pi_lpt * pi_hpt * c["pt4"], mdot=mdot_core, far=f)
+        exit = Nozzle(self.p_ambient, self.pi_n, convergent=True).apply(s5, wgas)
+        press = (1.0 + f) * wgas.R_t_at(f) * exit.T9 * (1.0 - flight.p0 / exit.p9) / exit.V9
+        sp_thrust = (1.0 + f) * exit.V9 - V0 + press
+
+        out = dict(c)
+        out.update(nu_lp=nu_lp, nu_hp=nu_hp, Tt4=Tt4, slip=nu_lp / nu_hp,
+                   Phi_lp=Phi_lp, Phi_hp=Phi_hp, Pt_lp=Pt_lp, Pt_hp=Pt_hp,
+                   Pc_lp=Pc_lp, Pc_hp=Pc_hp, Tt45=Tt45, Tt5=Tt5, tau_hpt=tau_hpt,
+                   tau_lpt=tau_lpt, pi_hpt=pi_hpt, pi_lpt=pi_lpt, eta_hpt=eta_hpt,
+                   eta_lpt=eta_lpt, nu_hpt=nu_hpt, nu_lpt=nu_lpt, sp_thrust=sp_thrust,
+                   # rung 42's (3): the dumped air carries FULL ram drag and returns no
+                   # exhaust momentum. `sp_thrust` stays CORE-referenced (bit-for-bit at
+                   # b=0); this is the honest per-INLET-air figure beside it.
+                   sp_thrust_inlet=(1.0 - b) * sp_thrust - b * V0,
+                   M9=exit.M9, branch="choked" if exit.p9 > self.p_ambient + 1e-6
+                   else "subsonic")
+        return out
+
+    # --- THE RUNG: the LOOP a state-fed schedule closes on itself -----------------------
+
+    def _commanded(self, flight: FlightCondition, traj, s_at: float, lever: str) -> float:
+        """The setting the armed schedule COMMANDS at the given point of a trajectory --
+        the loop witnessed directly, rather than inferred from a ratio of credits. `Tt2` is
+        read from the flight condition, which is fixed along a ramp."""
+        p = min(traj, key=lambda q: abs(q["s"] - s_at))
+        Tt2 = self._inlet(flight)[0]
+        return (self.b_of(p["nu_lp"], Tt2) if lever == "bleed"
+                else self.v_of("lp", p["nu_lp"], p["nu_hp"], Tt2))
+
+    def _legs(self, flight: FlightCondition, reference, Tt4_lo: float, Tt4_hi: float,
+              r: float, s_settle: float, ds: float, spool: str) -> dict:
+        """Rung 57's START / RAMP / FULL, generalised to ANY reference machine.
+
+            START-ONLY  armed running line, REFERENCE march
+            RAMP-ONLY   reference running line, ARMED march
+            FULL        both -- the machine as it actually runs
+            self_cancel FULL / RAMP-ONLY
+
+        Rung 57 hard-wired the reference to the bare machine, which is right for the one
+        lever it carried. Here the reference is a parameter, because the rung's second
+        finding needs a NEIGHBOUR carried on BOTH sides of the difference (otherwise the
+        difference is the pair, not the lever).
+
+        `self_cancel` < 1 is rung 57's negative feedback; > 1 is AMPLIFICATION.
+        """
+        t_ref, nu0_r = reference._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds)
+        r_ref = reference._read(t_ref)[spool]
+        eq = self.equilibrium(flight, Tt4_lo)
+        nu0_a = (eq["nu_lp"], eq["nu_hp"])
+        t_start, _ = reference._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds,
+                                             nu0=nu0_a)
+        t_ramp, _ = self._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds, nu0=nu0_r)
+        t_full, _ = self._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds, nu0=nu0_a)
+        base = r_ref["m_i"]
+        r_ramp, r_full = self._read(t_ramp)[spool], self._read(t_full)[spool]
+        start = reference._read(t_start)[spool]["m_i"] - base
+        ramp, full = r_ramp["m_i"] - base, r_full["m_i"] - base
+        lever = "bleed" if self._armed_bleed() else "stator"
+        return dict(spool=spool, r=r, reference=base, start=start, ramp=ramp, full=full,
+                    self_cancel=full / ramp if ramp else float("nan"),
+                    surrendered=(1.0 - full / ramp) if ramp else float("nan"),
+                    share_start=start / full if full else float("nan"),
+                    # what the START term does NOT explain: the loop's own contribution
+                    loop=(full - ramp) - start,
+                    nu0_ref=nu0_r[0], nu0_armed=nu0_a[0],
+                    cmd_ramp=self._commanded(flight, t_ramp, r_ramp["at"]["s"], lever),
+                    cmd_full=self._commanded(flight, t_full, r_full["at"]["s"], lever),
+                    s_ref=r_ref["at"]["s"], s_ramp=r_ramp["at"]["s"],
+                    s_full=r_full["at"]["s"], lever=lever)
+
+    def loop_decomposition(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                           r: float = 0.5, s_settle: float = 1.2, ds: float = 0.01,
+                           spool: str = "lp") -> dict:
+        """THE HEADLINE (rung 62). Rung 57's decomposition against the BARE machine, for
+        whichever lever this one carries.
+
+        Rung 57 measured `FULL/RAMP` = 0.754-0.896 for a stator schedule and named the
+        mechanism: closing the stators raises the speed at fixed power, the schedule reads
+        the higher `n` and opens back up -- loop gain (dn/dv)(dv/dn) = (+)(-) < 0.
+
+        For a handling bleed BOTH factors flip one sign: rung 61 s 2 measures dn_L/db < 0
+        ("bleed's lower tau_c"), and an open-at-low-speed schedule has db/dn_L < 0. Product
+        POSITIVE, so this returns `self_cancel` > 1 -- the schedule AMPLIFIES itself.
+
+        `cmd_ramp` / `cmd_full` witness the loop directly: between the two legs the stator
+        schedule commands LESS of itself and the bleed schedule commands MORE."""
+        assert self._is_armed() or self.vsv_lp or self.vsv_hp or self._armed_bleed(), (
+            "rung-62 loop_decomposition needs an armed machine to decompose.")
+        return self._legs(flight, self.at_lever(), Tt4_lo, Tt4_hi, r, s_settle, ds, spool)
+
+    def marginal_loop(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                      lever: dict, neighbour: "dict | None" = None, r: float = 0.5,
+                      s_settle: float = 1.2, ds: float = 0.01, spool: str = "lp") -> dict:
+        """THE SECOND FINDING (rung 62). One lever's OWN loop, measured with a NEIGHBOUR
+        carried on both sides of the difference.
+
+        `lever` and `neighbour` are `at_lever` keyword dicts. The reference machine carries
+        the neighbour alone; the armed machine carries neighbour + lever. So the difference
+        is the lever by itself and `self_cancel` is ITS loop in that neighbour's presence.
+
+        Comparing a PAIR's composite `self_cancel` against the two singles' does NOT test
+        this -- the composite is a credit-weighted blend of two different quantities. That
+        distinction is why rung 62's P3 scored REFUTED rather than confirmed.
+
+        The control that makes the result mean anything is a CONSTANT neighbour at the same
+        commanded level: a constant position has no loop of its own, so if it moves the
+        answer far less than a schedule of the same authority does, the effect is the LOOP
+        and not the LEVEL."""
+        neighbour = dict(neighbour or {})
+        ref = self.at_lever(**neighbour)
+        armed = self.at_lever(**{**neighbour, **lever})
+        return armed._legs(flight, ref, Tt4_lo, Tt4_hi, r, s_settle, ds, spool)
+
+    def commanded_level(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                        r: float = 0.5, s_settle: float = 1.2, ds: float = 0.01,
+                        spool: str = "lp") -> dict:
+        """What this machine's schedule actually commands over the ramp -- the value at its
+        own surge minimum and the trajectory mean. This is what a level-matched CONSTANT
+        control has to be set to; without it, `marginal_loop`'s constant leg is comparing a
+        schedule against a strictly larger lever and proves nothing."""
+        traj, _ = self._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds)
+        rd = self._read(traj)[spool]
+        lever = "bleed" if self._armed_bleed() else "stator"
+        Tt2 = self._inlet(flight)[0]
+        vals = [(self.b_of(p["nu_lp"], Tt2) if lever == "bleed"
+                 else self.v_of("lp", p["nu_lp"], p["nu_hp"], Tt2)) for p in traj]
+        return dict(lever=lever,
+                    at_min=self._commanded(flight, traj, rd["at"]["s"], lever),
+                    mean=sum(vals) / len(vals), peak=max(vals), s_min=rd["at"]["s"])
+
+    # --- the two loop-gain FACTORS, on the steady running line ---------------------------
+
+    def loop_factors(self, flight: FlightCondition, Tt4_grid, db: float = 0.10,
+                     dv: float = 0.20) -> list:
+        """The two derivatives the headline's SIGN argument rests on, measured rather than
+        quoted: dn_L/db and dn_L/dv on the steady running line at each throttle.
+
+        The check that matters is that NEITHER REVERSES over the band -- rung 42's own
+        dphi_H/db passes through zero at pi* = 3.24674 and reverses below, so a sign
+        argument in this machine is not safe without looking."""
+        out = []
+        for Tt4 in Tt4_grid:
+            n0 = self.at_lever().equilibrium(flight, Tt4)["n_lp"]
+            nb = self.at_lever(bleed=db).equilibrium(flight, Tt4)["n_lp"]
+            nv = self.at_lever(vsv_lp=dv).equilibrium(flight, Tt4)["n_lp"]
+            out.append(dict(Tt4=Tt4, n_bare=n0, dn_db=(nb - n0) / db,
+                            dn_dv=(nv - n0) / dv,
+                            sign_bleed=-1 if nb < n0 else 1,
+                            sign_stator=1 if nv > n0 else -1))
+        return out
+
+    # --- the PAIR: four cells, credit AND cost -------------------------------------------
+
+    def pair_interaction(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                         lever_a: dict, lever_b: dict, r: float = 0.5,
+                         s_settle: float = 1.2, ds: float = 0.01,
+                         spool: str = "lp") -> dict:
+        """The four-cell interaction of two levers on ONE accelerating machine, in BOTH
+        currencies: the incidence credit `M_i` and the shaft-speed cost (peak `nu_L`).
+
+        Rung 61 ran this on the STEADY matcher and found the credits additive to <= 2.3 %
+        with an adverse SPEED interaction in all 30 rows. Here the credit interaction is
+        8x larger, and the reason is the shared speed STATE that a steady matcher re-solves.
+
+        The cost is returned RAW and the ratio is deliberately absent: `n_bleed` is negative
+        while `n_stator` is positive, so a normalised interaction would have a difference of
+        opposite-signed terms in its denominator -- rung 43's currency-circularity trap."""
+        cells = {}
+        for tag, kw in (("bare", {}), ("a", lever_a), ("b", lever_b),
+                        ("pair", {**lever_a, **lever_b})):
+            m = self.at_lever(**kw)
+            eq = m.equilibrium(flight, Tt4_lo)
+            traj, _ = m._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds,
+                                      nu0=(eq["nu_lp"], eq["nu_hp"]))
+            cells[tag] = (m._read(traj)[spool]["m_i"],
+                          max(p["nu_lp"] for p in traj))
+        c_a = cells["a"][0] - cells["bare"][0]
+        c_b = cells["b"][0] - cells["bare"][0]
+        c_p = cells["pair"][0] - cells["bare"][0]
+        n_a = cells["a"][1] - cells["bare"][1]
+        n_b = cells["b"][1] - cells["bare"][1]
+        n_p = cells["pair"][1] - cells["bare"][1]
+        s = c_a + c_b
+        return dict(spool=spool, r=r, credit_a=c_a, credit_b=c_b, credit_pair=c_p,
+                    credit_sum=s, interaction=c_p - s,
+                    interaction_frac=(c_p - s) / s if s else float("nan"),
+                    cost_a=n_a, cost_b=n_b, cost_pair=n_p,
+                    cost_interaction=n_p - (n_a + n_b))
+
+    # --- the ramp-rate control (NOT a finding: see docs/rung62-spec.md s 0) --------------
+
+    def clock_sweep(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                    lever: dict, setting: float, rates=(0.10, 0.25, 0.50, 1.00, 2.00),
+                    s_settle: float = 1.2, ds: float = 0.01, spool: str = "lp") -> list:
+        """Credit per unit CONSTANT setting against ramp rate -- rung 57's invariance test,
+        run on whichever lever `lever` arms.
+
+        Rung 57 measured 0.346-0.356 for a constant stator over a 20x range and called the
+        drift NOT monotone. This is the complementary case, and the signature to read is
+        MONOTONICITY, not the size of the swing: a wall-mover's floor channel contributes
+        exactly `v` whatever the trajectory does, while a point-mover's entire credit runs
+        through `phi` and inherits the trajectory's own ramp-rate dependence.
+
+        This CONFIRMS rung 57's published mechanism (its s 2 already says both channels are
+        algebraic in the instantaneous state) and is reported as a control, not a finding."""
+        bare = self.at_lever()
+        out = []
+        for r in rates:
+            t0, _ = bare._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds)
+            base = bare._read(t0)[spool]["m_i"]
+            m = self.at_lever(**lever)
+            eq = m.equilibrium(flight, Tt4_lo)
+            t, _ = m._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds,
+                                   nu0=(eq["nu_lp"], eq["nu_hp"]))
+            credit = m._read(t)[spool]["m_i"] - base
+            out.append(dict(r=r, bare=base, credit=credit, per_setting=credit / setting))
+        return out
