@@ -4,6 +4,16 @@
 not a measurement. Predictions are scored HIT / MISS after the sweep, and a MISS is published
 in place, as in rungs 51/58/63/64/65.
 
+> **SCORED — see `docs/rung66-spec.md` § 7. Read that before trusting anything below.**
+> The rung shipped, and this anchor's **central claim needed correcting**. § 2 below treats
+> `R_q C_g = 1` as a *locus* the clocks cannot move; it is an **IDENTITY** — both laws are
+> implicit functions of the same constraint, so the cross-gains are reciprocals by
+> construction and `det J ≡ 0` everywhere. The conclusion held; the reasoning was too weak,
+> and the *observable* was predicted wrongly (P2: the frozen state is GONE — rung 65's freeze
+> belonged to the manifold, not to the mode). § 3's stability floor below is also **wrong in
+> the unsafe direction**: the rates ADD, so the a-priori bound is `ds·(1/τ_g + 1/τ_v) ≤ 2`,
+> not `ds/min(τ) ≤ 2`. P1/P4/P5/P6 HIT, P3 MISS, P7/P8 displaced and not run.
+
 Rung 65's named next seam, and rung 52's own standing one, reached from the airflow side:
 **a lagged bleed VALVE beside a lagged FUEL leg.** Four states, two clocks.
 
