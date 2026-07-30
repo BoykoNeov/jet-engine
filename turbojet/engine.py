@@ -10742,15 +10742,17 @@ class TwoLagCascadeTransient(LaggedBleedTransient):
     solved as the simultaneous equilibrium of the two laws. THE ITERATION IS ITSELF THE
     DIAGNOSTIC: its contraction factor is `|R_q C_g|`, which the identity above pins at 1
     wherever BOTH laws ride -- so it converges only because a march OPENS DORMANT (`R == 0`,
-    hence `R_q == 0`, hence contraction 0 and one iteration). MEASURED, that is not a lucky
-    property of the anchored case but structural: the VALVE's equilibrium command already
-    satisfies `phi >= phi_lim` at the running line a march starts on, so `required(0) == 0`
-    exactly -- `ic_iters == 1`, residual exactly 0 -- for every start up to Tt4_lo = 1300 K and
-    every floor up to phi_lim = 0.84, i.e. across the whole admissible opening set. The
-    degeneracy therefore shows at s = 0 not as a stalled solve but as NON-UNIQUENESS OF THE
-    INITIAL CONDITION: the joint iteration lands on the `g = 0` member of a one-parameter
-    family because it starts there and that point is a fixed point. That is exactly what
-    `marginal_mode_cascade`'s `b0` sensitivity measures, and the assert is the backstop.
+    hence `R_q == 0`, hence contraction 0 and one iteration). MEASURED over six starts
+    (Tt4_lo in {1000, 1200, 1300} K x phi_lim in {0.80, 0.82, 0.84}), `required(0) == 0` at
+    EVERY one -- `ic_iters == 1`, residual exactly 0 -- but by TWO different mechanisms, and
+    the `b0` column separates them: at Tt4_lo = 1000 the valve is open and carries the floor
+    (`b0` = 0.037 / 0.062 / 0.087), while at 1200 and 1300 it is fully SHUT (`b0` = 0) and the
+    starting running line satisfies the floor unaided. So on this grid the degeneracy shows at
+    s = 0 not as a stalled solve but as NON-UNIQUENESS OF THE INITIAL CONDITION: the joint
+    iteration lands on the `g = 0` member of a one-parameter family because it starts there and
+    that point is a fixed point. That is what `marginal_mode_cascade`'s `b0` sensitivity
+    measures. Whether ANY admissible start opens with the fuel leg live is untested beyond
+    these six corners; the assert is the backstop if one does.
 
     Usage:
         lim  = BleedLimiter.from_margin(LP, b_max=0.10, sm=0.4545, tau=0.05)

@@ -74,8 +74,22 @@ exactly when `det J > 0`, and a failure to converge is the degeneracy announcing
 `s = 0`.
 
 On the anchored case the march opens dormant (`R(0) = 0`, `ic_iters = 1`, residual exactly 0),
-so the joint solve is not load-bearing *here* — but it is the correct initial condition and it
-is what a hotter `Tt4_lo` would need.
+so the joint solve is not load-bearing *here*. **The obvious escape was measured and it is not
+one.** The natural prediction — a hotter `Tt4_lo` opens with the floor already engaged, the
+march sits ON the degeneracy at `s = 0`, and the iteration stalls — is **FALSE** at every
+corner tested (`Tt4_lo ∈ {1000, 1200, 1300}` K × `φ_lim ∈ {0.80, 0.82, 0.84}`): `required(0)`
+is exactly 0 in all six, `ic_iters = 1`, residual 0. What the `b0` column shows is that the
+same outcome arrives by **two different mechanisms** — at 1000 K the valve is open and carries
+the floor (`b0` = 0.037 / 0.062 / 0.087), at 1200 and 1300 K it is fully SHUT (`b0` = 0) and
+the starting running line clears the floor unaided. Either way the fuel leg is dormant at
+`s = 0`.
+
+So the degeneracy's signature at `s = 0` is **not** a stalled solve but **non-uniqueness of the
+initial condition**: on the manifold the pair is a one-parameter family, and the iteration lands
+on the `g = 0` member because it starts there and that point is a fixed point. That is exactly
+the quantity § 5's `b0` instrument measures. The joint solve is therefore the *correct* initial
+condition rather than a *needed* one — no start on this grid exercises it, and whether any
+admissible start does is untested.
 
 ---
 
