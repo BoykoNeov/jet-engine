@@ -9694,10 +9694,16 @@ class BleedLimiter:
     the valve is a degree of freedom on the LP spool and NOT the HP, and the outer solve needs
     `phi` MONOTONE in `b`, which the choked-A4 argument gives for the LP face flow (it carries
     1/(1-b)) and does not give for the HP. The HP is READ throughout, never floored.
+
+    RUNG 65 adds `tau` -- the valve's BANDWIDTH, which is hardware exactly as `b_max` is.
+    `tau=None` is the INSTANTANEOUS valve of rung 64 (a pure function of the state, re-solved
+    at every sub-evaluation); `tau > 0` makes the position a THIRD STATE relaxing toward the
+    command above. The two are reached by different code paths, so the reduce is by dispatch.
     """
 
     phi_lim: float          # the floor, in the map's own flow-coefficient units
     b_max: float            # the valve's AUTHORITY -- hardware, not a control setting
+    tau: "float | None" = None   # RUNG 65: the valve's BANDWIDTH -- hardware too
 
     def __post_init__(self):
         assert self.phi_lim > 0.0, "rung-64 phi floor is a flow coefficient"
@@ -9706,16 +9712,27 @@ class BleedLimiter:
             "which is a DIFFERENT object from an absent one (that is `bleed_lim=None`), and "
             "b >= 0.5 is rung 42's own starved-core bound; got b_max = "
             f"{self.b_max}")
+        assert self.tau is None or self.tau > 0.0, (
+            "rung-65 tau is a time constant on the march coordinate; the INSTANTANEOUS valve "
+            "is rung 64 (tau=None), not tau=0. The two are different objects and rung 65's "
+            f"finding is that the difference does not vanish as tau -> 0; got tau = {self.tau}")
 
     @classmethod
-    def from_margin(cls, cmap: "ComponentMap", b_max: float, sm: float) -> "BleedLimiter":
+    def from_margin(cls, cmap: "ComponentMap", b_max: float, sm: float,
+                    tau: "float | None" = None) -> "BleedLimiter":
         """phi_lim = (1+sm)*phi_surge off the map's OWN imposed surge line -- rung 49's
         `from_margin`, so the two floors are set in identical units and rung 63 s 3's band
         edges are directly comparable set points."""
         assert cmap.phi_surge > 0.0, (
             "rung-64 from_margin needs a surge line: build the map with .with_phi_surge(.)")
         assert sm >= 0.0, "the rung-64 floor sits AT or ABOVE the surge line"
-        return cls(phi_lim=(1.0 + sm) * cmap.phi_surge, b_max=b_max)
+        return cls(phi_lim=(1.0 + sm) * cmap.phi_surge, b_max=b_max, tau=tau)
+
+    def lagged(self, tau: float) -> "BleedLimiter":
+        """RUNG 65. The SAME control law on a valve with finite bandwidth -- the only
+        difference between rung 64's object and rung 65's, so every comparison between them
+        holds `phi_lim` and `b_max` fixed by construction."""
+        return BleedLimiter(phi_lim=self.phi_lim, b_max=self.b_max, tau=tau)
 
 
 class LimitedBleedTransient(ScheduledBleedTransient):
@@ -9784,8 +9801,17 @@ class LimitedBleedTransient(ScheduledBleedTransient):
             "rung-64: the valve gets a CONSTANT position (42), a SCHEDULE (62) or a FLOOR "
             "(64) -- exactly one. They are the three legs this rung differences, and rung "
             "62's two-way assert is extended rather than replaced.")
+        assert bleed_lim is None or bleed_lim.tau is None or self._LAG_OK, (
+            "rung-64's valve is INSTANTANEOUS: it is a pure function of the state, re-solved "
+            "at every sub-evaluation. A limiter carrying `tau` is rung 65's LAGGED valve, "
+            "whose position is a THIRD STATE and needs `LaggedBleedTransient` to march it. "
+            "Silently dropping the lag here would make every rung-64 reader report a "
+            "bandwidth it never had.")
         self.bleed_lim = bleed_lim
         self._b_forced = None
+        self._b_state = None
+
+    _LAG_OK = False          # RUNG 65 flips this in the subclass that can march the state
 
     # --- the live valve position -----------------------------------------------------------
 
@@ -9793,9 +9819,15 @@ class LimitedBleedTransient(ScheduledBleedTransient):
         """Rung 62's state function, with ONE addition: while the outer solve is trialling a
         position, `_b_forced` IS the valve. Nothing else may set it, and it is always
         restored in a `finally` -- a leaked trial position would make the closure silently
-        report a state the plant never visited (rung 62's `_powers` failure mode exactly)."""
+        report a state the plant never visited (rung 62's `_powers` failure mode exactly).
+
+        RUNG 65 adds a SECOND override below it: `_b_state` is the LAGGED valve's position
+        carried as a march state. `_b_forced` wins, because the command solve trials positions
+        on a plant whose live state is the one being commanded away from."""
         if self._b_forced is not None:
             return self._b_forced
+        if self._b_state is not None:
+            return self._b_state
         return super().b_of(nu_lp, Tt2)
 
     def _armed_bleed(self) -> bool:
@@ -9904,7 +9936,7 @@ class LimitedBleedTransient(ScheduledBleedTransient):
     # --- the rung-64 cell: rung 61's currency, plus what the valve cost to get there --------
 
     def _bill_cell(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float, r: float,
-                   s_settle: float, ds: float) -> dict:
+                   s_settle: float, ds: float, keep_traj: bool = False) -> dict:
         """A marched cell in THE BILL's currency. Deliberately NOT rung 57's `_cell`: that one
         reports the two surge margins and the fuel a min-select leg removed, and this rung's
         question is what the AIRFLOW cost, in the currency rung 61 established is the real one
@@ -9934,7 +9966,9 @@ class LimitedBleedTransient(ScheduledBleedTransient):
         lo = d["lp"]["min_phi"]
         flat = [p["s"] for p in traj if p["phi_lp"] <= lo * (1.0 + 1e-12)]
         at = min(traj, key=lambda p: p["phi_lp"])
-        return dict(nu_at_min_lp=at["nu_lp"], s_at_min_lp=at["s"], b_at_min_lp=b[
+        return dict(traj=traj if keep_traj else None,   # RUNG 65 only -- None by default, so
+                    # every rung-64 caller gets a dict with the same numbers it always had.
+                    nu_at_min_lp=at["nu_lp"], s_at_min_lp=at["s"], b_at_min_lp=b[
                         min(range(len(traj)), key=lambda i: traj[i]["phi_lp"])],
                     plateau_span=max(flat) - min(flat), plateau_pts=len(flat),
                     min_phi_lp=d["lp"]["min_phi"], min_phi_hp=d["hp"]["min_phi"],
@@ -10134,3 +10168,484 @@ class LimitedBleedTransient(ScheduledBleedTransient):
                     removed_below_bare=cells["below_bare"]["fuel_removed"],
                     removed_below_armed=cells["below_armed"]["fuel_removed"])
 
+
+
+class LaggedBleedTransient(LimitedBleedTransient):
+    """RUNG 65. Rung 64's phi-referenced valve given a FINITE BANDWIDTH -- rung 64's own named
+    next seam, and the ladder's first lagged AIRFLOW lever (docs/rung65-spec.md).
+
+        b_cmd(state, Wf) = the smallest position in [0, b_max] holding phi_lp >= phi_lim
+        db/ds            = (b_cmd - b) / tau                      <- a THIRD STATE
+        the plant runs at `b`, THE STATE -- never at the command
+
+    HEADLINE: **an INSTANTANEOUS limiter is a SINGULAR limit.** What a lag costs (protection)
+    is smooth in `tau` and vanishes with it; what a lag RESTORES -- the second limiter's plant
+    that rung 64 s 3 found DELETED, and the minimum-location object rung 64 s 4 found
+    destroyed -- comes back whole at ANY tau > 0 and does not shrink as tau -> 0. The
+    trajectory converges to rung 64's; the STRUCTURE of the plant does not.
+
+    WHY, IN ONE LINE, AND IT IS THE WHOLE RUNG. Rung 64's deletion was `dphi/dWf == 0`: an
+    instantaneous valve re-pins `phi_lp` to `phi_lim` at ANY fuel, so rung 49's `_surge_fuel`
+    solves `G == 0` across its whole bracket and returns an arbitrary point of a continuum.
+    Under a lag the valve position is a STATE -- a CONSTANT inside any one derivative
+    evaluation -- so the plant a fuel leg sees is rung 42's imposed-valve plant EXACTLY, with
+    `dphi/dWf < 0` strictly. That statement contains no `tau`. The plant is repaired by the
+    lag's EXISTENCE, not by its size.
+
+    THE COMMAND IS INDEPENDENT OF THE LIVE POSITION, which is what makes this RK4-legal:
+    `b_cmd` is rung 64's root over trial positions at the current (state, fuel) and does not
+    read `b`, so `db/ds` is AFFINE in `b` -- Lipschitz with constant 1/tau, no latch, and
+    rung 47's hazard cannot recur. Its kinks (the dormant edge at b_cmd = 0, the saturation
+    edge at b_max) are kinks and not jumps: rung 52's argument, one lever over.
+
+    THE COMMAND IS READ AT THE APPLIED FUEL, not the scheduled one -- a real valve watches the
+    machine it is on. Rung 52 computes its `required` off the SCHEDULED fuel to keep two legs'
+    brackets identical; that reason does not transfer, because the valve is not min-selected
+    against anything. With no fuel-side leg armed the two are the same number.
+
+    A LAG IS A PURELY TRANSIENT OBJECT: at equilibrium the valve has caught up, so every
+    STEADY solve on this machine (`equilibrium`, `fuel_for_Tt4`, the running line the march
+    starts on) runs rung 64's INSTANTANEOUS valve. That is not a convenience -- it is what
+    makes `b(0) = b_cmd(0)` the right initial condition, and it is why a lagged march starts
+    on the SAME running line as the instantaneous one it is compared against.
+
+    Usage:
+        lim = BleedLimiter.from_margin(LP, b_max=0.10, sm=0.4545, tau=0.05)
+        t   = LaggedBleedTransient(design, FLIGHT, 1.0, map_lp=..., map_hp=..., bleed_lim=lim)
+        t.bandwidth_ceiling(FLIGHT, 1000., 1400., sm=0.4545)   # protection + the plateau
+        t.restored_plant(FLIGHT, 1000., 1400., sm=0.4545)      # rung 64 s 3, un-deleted
+        t.fuel_authority(FLIGHT, 1000., 1400., sm=0.4545)      # the discriminator
+
+    THE REDUCE HAS TWO ARMS AND THEY DISAGREE ON PURPOSE:
+      * `tau=None` (or `bleed_lim=None`) is rung 64 BIT-FOR-BIT, by dispatch -- the lagged
+        integrator is never entered and the state count is 2.
+      * `tau -> 0` CONVERGES to rung 64 and is not bit-for-bit: a different code path with a
+        third state. `bandwidth_ceiling` reports the deviation per `tau` so the convergence is
+        measured rather than asserted. It does NOT contradict the headline: the TRAJECTORY
+        converges while the fuel leg's well-posedness does not.
+
+    CONCESSIONS (in addition to every one rungs 62/63/64 list, all inherited):
+      * The lag is SYMMETRIC -- one constant. A real bleed valve opens and closes at different
+        rates, and rung 52 showed a min-select leg's asymmetry is where its trigger-pinning
+        lives. Named as this rung's next seam, not taken: `tau_close` is never read while
+        `b_cmd > b`, so rung 52's one-line argument already says what it would find, and a
+        second constant doubles a sweep over marches that each carry an outer root per
+        sub-evaluation.
+      * The valve lag and rungs 47/52's FUEL-side lag are not composed -- that is rung 52's
+        standing two-lag CASCADE seam, and it is asserted against rather than left to run.
+      * `tau` is a swept coordinate on the march's own `s`, like rungs 47/51/52's constants;
+        no attempt is made to anchor a real actuator's bandwidth.
+    """
+
+    _LAG_OK = True
+
+    def _lagged(self) -> bool:
+        return self.bleed_lim is not None and self.bleed_lim.tau is not None
+
+    # --- the plant: the closure runs at the STATE, never at the command ----------------------
+
+    def _close(self, nu_lp, nu_hp, Tt4, Tt2, pt2):
+        if self._lagged() and self._b_state is not None:
+            return super(LimitedBleedTransient, self)._close(nu_lp, nu_hp, Tt4, Tt2, pt2)
+        return super()._close(nu_lp, nu_hp, Tt4, Tt2, pt2)
+
+    def _close_fuel(self, nu_lp, nu_hp, mdot_fuel, Tt2, pt2):
+        """Inside the march (`_b_state` set) the valve IS the state, so this dispatches to
+        rung 63's closure and `b_of` hands back the state. Outside it -- every STEADY solve --
+        the lag is meaningless and rung 64's instantaneous root runs, which is what makes the
+        initial running line identical to the machine this rung is compared against."""
+        if self._lagged() and self._b_state is not None:
+            return super(LimitedBleedTransient, self)._close_fuel(
+                nu_lp, nu_hp, mdot_fuel, Tt2, pt2)
+        return super()._close_fuel(nu_lp, nu_hp, mdot_fuel, Tt2, pt2)
+
+    def b_at_point(self, flight: FlightCondition, p: dict) -> float:
+        """CORRECTS RUNG 64's comment. There, the valve is a pure function of the state, so
+        the position is RE-SOLVED at a recorded point rather than reconstructed. A LAGGED
+        position is not a function of the state -- it carries history -- so it must be
+        RECORDED, and re-solving it would silently hand back the command instead."""
+        if not self._lagged():
+            return super().b_at_point(flight, p)
+        assert "b" in p, (
+            "rung-65: a lagged valve's position is a march STATE and cannot be recovered from "
+            "a trajectory point that did not record it. This point came from a different "
+            "integrator.")
+        return p["b"]
+
+    def at_lever(self, vsv_lp: float = 0.0, vsv_hp: float = 0.0, vsv_sched_lp=None,
+                 vsv_sched_hp=None, bleed: float = 0.0, bleed_sched=None,
+                 bleed_lim=None) -> "LaggedBleedTransient":
+        """Rung 64's sibling constructor returning THIS class. The lag rides on `bleed_lim`
+        rather than on the machine precisely so this cannot become the FIFTH instance of the
+        trap rungs 61/62/63/64 each hit: there is no separate lag keyword for a sibling
+        constructor to drop."""
+        de, fd, md, rho, lpd = self._ctor
+        return LaggedBleedTransient(
+            de, fd, md, map_lp=self.map_lp_design, map_hp=self.map_hp_design, rho=rho,
+            vsv_lp=vsv_lp, vsv_hp=vsv_hp, vsv_sched_lp=vsv_sched_lp,
+            vsv_sched_hp=vsv_sched_hp, bleed=bleed, bleed_sched=bleed_sched,
+            bleed_lim=bleed_lim, lp_disabled=lpd)
+
+    # --- the march: a THIRD STATE ------------------------------------------------------------
+
+    def integrate_fuel(self, flight: FlightCondition, fuel_schedule, nu0,
+                       s_end: float, ds: float, freeze=None, Tt4_max=None,
+                       tau_gov=None, accel=None, surge=None, s_off=None,
+                       tau_rel=None, lag=None) -> list:
+        if not self._lagged():
+            return super().integrate_fuel(
+                flight, fuel_schedule, nu0, s_end, ds, freeze=freeze, Tt4_max=Tt4_max,
+                tau_gov=tau_gov, accel=accel, surge=surge, s_off=s_off, tau_rel=tau_rel,
+                lag=lag)
+        assert tau_gov is None and lag is None, (
+            "rung-65: a lagged VALVE beside a lagged FUEL leg (rung 47's tau_gov, rung 52's "
+            "AsymmetricLag) is the TWO-LAG CASCADE -- rung 52's own standing seam, on two "
+            "levers instead of one, and rung 65's next seam. It is four states and a second "
+            "clock; nothing here has measured it, so it is refused rather than run.")
+        assert s_off is None and tau_rel is None, (
+            "rung-65: rungs 50/51's FORCED release edges are an isolation instrument for a "
+            "leg that could not pin its own trigger. This valve pins its own (rung 52's "
+            "argument, one lever over), so forcing one would measure the forcing.")
+        return self._integrate_fuel_valve_lag(flight, fuel_schedule, nu0, s_end, ds,
+                                              freeze, Tt4_max, accel, surge)
+
+    def _integrate_fuel_valve_lag(self, flight: FlightCondition, fuel_schedule, nu0,
+                                  s_end: float, ds: float, freeze, Tt4_max,
+                                  accel, surge) -> list:
+        """RUNG 65's march. Rung 47/52's third-state pattern, moved from a fuel CLIP onto a
+        valve POSITION -- and the position is the first state in the ladder whose derivative
+        is driven by the closure's own root rather than by the state vector.
+
+        `b` and `b_cmd` are recorded per point (new keys; every rung-64 key is byte-unchanged)
+        so the TRACKING ERROR is readable straight off a trajectory, exactly as rung 52 made
+        `g`/`required` readable.
+
+        b(0) = b_cmd(0): the EQUILIBRIUM valve position at the running line the march starts
+        on. Starting at 0 would inject a startup transient into the early-ramp LP minimum --
+        which is the binding one (rungs 41/44) -- and every number this rung reports would be
+        measuring that instead of the lag."""
+        lim = self.bleed_lim
+        tau = lim.tau
+        # THE MODELLING FLOOR, found rather than assumed. `db/ds = (b_cmd - b)/tau` under an
+        # EXPLICIT RK4 needs z = ds/tau inside the stability region (|z| <~ 2.78 on the
+        # negative real axis). A first pre-check of this rung ran z = 5 and returned an
+        # `int b ds` 4.4x the grid-converged value -- an instability that looks exactly like a
+        # physical finding ("a fast valve bleeds more") and was published as a RETRACTION in
+        # docs/plans/rung65-anchor-lagged-valve.md s 3. It is asserted here so no future sweep
+        # can reproduce it silently. `tau` cannot be swept below ~ds/2.
+        assert ds / tau <= 2.0, (
+            f"rung-65: ds/tau = {ds/tau:.3f} is outside the explicit RK4 stability region for "
+            f"the valve state (ds = {ds}, tau = {tau}). Refine the grid or raise tau -- the "
+            "tau -> 0 limit is APPROACHED on this integrator and never reached.")
+        Tt2, pt2, _ = self._inlet(flight)
+        base_close = super(LimitedBleedTransient, self)._close_fuel
+
+        def command(a, h, mf):
+            """Rung 64's instantaneous root at THIS state and fuel. It does not read the live
+            position -- that is what makes db/ds affine in `b`."""
+            return self._solve_b(self._closer(base_close, a, h, mf, Tt2, pt2))[1]
+
+        def der(a, h, q, s):
+            mf_sched = float(fuel_schedule(s))
+            self._b_state = q
+            try:
+                # THE MIN-SELECT, rung 48/49's discipline verbatim: every cap is solved from
+                # the SCHEDULED fuel so arming one leg cannot perturb another's bracket.
+                caps = []
+                i = self._instant_fuel(flight, a, h, mf_sched)
+                if Tt4_max is not None and i["Tt4"] > Tt4_max:
+                    caps.append(self._topping_fuel(flight, a, h, Tt4_max, mf_sched))
+                if accel is not None:
+                    caps.append(self._sched_fuel(flight, a, h, mf_sched, accel))
+                if surge is not None:
+                    caps.append(self._surge_fuel(flight, a, h, mf_sched, surge))
+                caps = [c for c in caps if c < mf_sched]
+                mf = min(caps) if caps else mf_sched
+                if caps:
+                    i = self._instant_fuel(flight, a, h, mf)
+            finally:
+                self._b_state = None
+            cmd = command(a, h, mf)
+            da = 0.0 if freeze == "lp" else i["Phi_lp"] / self.rho
+            dh = 0.0 if freeze == "hp" else i["Phi_hp"]
+            return da, dh, (cmd - q) / tau, mf, i, cmd
+
+        a, h = nu0
+        if self._b0 is not None:
+            assert 0.0 <= self._b0 <= lim.b_max, (
+                f"rung-65 b0 is a valve POSITION: {self._b0} is outside [0, {lim.b_max}]")
+            q = self._b0
+        else:
+            q = command(a, h, float(fuel_schedule(0.0)))
+        pts, s = [], 0.0
+        for _ in range(int(round(s_end / ds)) + 1):
+            try:
+                k1a, k1h, k1q, mf_app, inst, cmd = der(a, h, q, s)
+            except AssertionError:
+                break
+            pts.append(dict(s=s, nu_lp=a, nu_hp=h, Tt4=inst["Tt4"], f=inst["f"],
+                            pi_lpc=inst["pi_lpc"], pi_hpc=inst["pi_hpc"],
+                            phi_lp=inst["phi_lp"], phi_hp=inst["phi_hp"],
+                            mdot_air=inst["mdot_air"], sp_thrust=inst["sp_thrust"],
+                            branch=inst["branch"], mf=mf_app,
+                            mf_sched=float(fuel_schedule(s)), b=q, b_cmd=cmd))
+            try:
+                mfm = float(fuel_schedule(s + ds / 2))
+                k2a, k2h, k2q, *_ = der(a + ds/2*k1a, h + ds/2*k1h, q + ds/2*k1q, s + ds/2)
+                k3a, k3h, k3q, *_ = der(a + ds/2*k2a, h + ds/2*k2h, q + ds/2*k2q, s + ds/2)
+                k4a, k4h, k4q, *_ = der(a + ds*k3a, h + ds*k3h, q + ds*k3q, s + ds)
+            except AssertionError:
+                break
+            a += ds / 6 * (k1a + 2 * k2a + 2 * k3a + k4a)
+            h += ds / 6 * (k1h + 2 * k2h + 2 * k3h + k4h)
+            q += ds / 6 * (k1q + 2 * k2q + 2 * k3q + k4q)
+            # THE POSITION IS PHYSICAL: a valve cannot open past its stop or shut past closed.
+            # The clamp is INERT while the command is interior (a bounded state chasing a
+            # bounded command from a bounded start) and it is the actuator's own hardware, not
+            # a solver tolerance -- so it is applied to the STATE and never to the command.
+            q = min(lim.b_max, max(0.0, q))
+            s += ds
+        return pts
+
+    # --- the initial position, as a per-MARCH isolation instrument ---------------------------
+
+    _b0 = None      # RUNG 65: an overridden initial valve position (see `_stator_march`)
+
+    def _stator_march(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float, r: float,
+                      s_settle: float, ds: float, nu0=None, accel=None, surge=None,
+                      Tt4_max=None, b0=None):
+        """Rung 57's march with ONE addition: `b0` overrides the lagged valve's INITIAL
+        POSITION. It is an ISOLATION DIAGNOSTIC of the kind the project already ships (rung
+        34/40's `freeze=`, rung 41's `surge_margin_channels`, rung 50's `s_off`) and NOT a
+        control setting -- which is why it is a per-march argument and not a machine keyword:
+        a sibling constructor cannot drop what it never carries.
+
+        It exists because rung 65 s 3's finding is that on a plant where a fuel floor and this
+        valve both ride, `b` is a CONSTANT OF THE MOTION. A constant of the motion is only
+        demonstrable by moving its value and watching everything else move with it.
+
+        `b0=None` is the physical initial condition (the equilibrium command) and leaves every
+        march bit-for-bit."""
+        prev, self._b0 = self._b0, b0
+        try:
+            return super()._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds, nu0=nu0,
+                                         accel=accel, surge=surge, Tt4_max=Tt4_max)
+        finally:
+            self._b0 = prev
+
+    # --- s 1/2: PROTECTION and its price, against BANDWIDTH -----------------------------------
+
+    def bandwidth_ceiling(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                          phi_lim: float, b_cap: float = 0.10,
+                          taus=(0.4, 0.2, 0.1, 0.05, 0.02, 0.01), r: float = 0.5,
+                          s_settle: float = 1.2, ds: float = 0.005) -> dict:
+        """RUNG 65, HALF ONE. The SAME control law at a sweep of bandwidths, against rung 64's
+        instantaneous valve on identical hardware.
+
+        Rung 64: the ceiling on the protected coordinate is `min phi` over the fully-open
+        march -- a property of `b_max`, the lever's AUTHORITY, which is hardware. This adds the
+        SECOND hardware axis: a valve that cannot reach its command in time does not deliver
+        its set point either, and it fails for a reason no control law can touch.
+
+        Reported per `tau`, all off ONE march each:
+          `undershoot`   min phi_lp - phi_lim   (<= 0; the protection the bandwidth costs)
+          `b_int`        the bleed actually committed  -- NOT monotone with `undershoot` in the
+                         direction a "lag is pure loss" reading expects, which is the point
+          `plateau_pts`  rung 64 s 4's destroyed argmin, and whether a lag restores it
+          `dev`          max |phi_lp(tau) - phi_lp(instantaneous)| on the SAME grid: the
+                         tau -> 0 arm of the reduce, MEASURED rather than asserted
+
+        THE SATURATED CASE IS NOT THE RIDING CASE and the two must not be read together: a
+        floor above the fully-open march's own minimum commands `b_max` throughout, so under a
+        lag it is a bare exponential approach with no feedback content at all and its
+        `plateau_pts == 1` for a reason that has nothing to do with tracking error. This method
+        reports `saturated` per cell so a reader cannot mix them."""
+        assert phi_lim > 0.0 and 0.0 < b_cap < 0.5
+        args = (flight, Tt4_lo, Tt4_hi, r, s_settle, ds)
+        shut = self.at_lever()._bill_cell(*args)
+        inst = self.at_lever(bleed_lim=BleedLimiter(phi_lim=phi_lim, b_max=b_cap)
+                             )._bill_cell(*args, keep_traj=True)
+        base = [p["phi_lp"] for p in inst["traj"]]
+        cells, rows = {"shut": shut, "inst": inst}, []
+        for tau in taus:
+            c = self.at_lever(bleed_lim=BleedLimiter(phi_lim=phi_lim, b_max=b_cap, tau=tau)
+                              )._bill_cell(*args, keep_traj=True)
+            cells[tau] = c
+            phis = [p["phi_lp"] for p in c["traj"]]
+            n = min(len(base), len(phis))
+            rows.append(dict(
+                tau=tau, min_phi_lp=c["min_phi_lp"], undershoot=c["min_phi_lp"] - phi_lim,
+                b_int=c["b_int"], b_peak=c["b_peak"], b_end=c["b_end"],
+                plateau_pts=c["plateau_pts"], plateau_span=c["plateau_span"],
+                s_at_min_lp=c["s_at_min_lp"], b_at_min_lp=c["b_at_min_lp"],
+                saturated=c["b_peak"] >= b_cap * (1.0 - 1e-12),
+                dev=max(abs(base[i] - phis[i]) for i in range(n)),
+                # the BILL, in rung 61's currency, against the valve-SHUT reference
+                d_nu_lp_end=c["nu_lp_end"] - shut["nu_lp_end"],
+                thrust_end_pct=(c["thrust_end"] / shut["thrust_end"] - 1.0) * 100.0,
+                thrust_int_pct=(c["thrust_int"] / shut["thrust_int"] - 1.0) * 100.0,
+                d_min_phi_hp=c["min_phi_hp"] - shut["min_phi_hp"],
+                max_track=max(abs(p["b"] - p["b_cmd"]) for p in c["traj"])))
+        for k in cells:
+            cells[k].pop("traj", None)
+        under = [x["undershoot"] for x in rows]
+        bint = [x["b_int"] for x in rows]
+        return dict(phi_lim=phi_lim, b_cap=b_cap, r=r, ds=ds, taus=tuple(taus),
+                    rows=rows, cells=cells,
+                    inst_min_phi=inst["min_phi_lp"], inst_b_int=inst["b_int"],
+                    inst_plateau_pts=inst["plateau_pts"],
+                    inst_d_min_phi_hp=inst["min_phi_hp"] - shut["min_phi_hp"],
+                    # monotone in the SWEEP ORDER the caller passed (taus descending)
+                    under_monotone=all(under[i] <= under[i + 1] for i in range(len(under) - 1)),
+                    bint_monotone=all(bint[i] <= bint[i + 1] for i in range(len(bint) - 1)),
+                    dev_shrinks=all(rows[i]["dev"] >= rows[i + 1]["dev"]
+                                    for i in range(len(rows) - 1)))
+
+    # --- s 3: THE MARGINAL MODE -- the degeneracy rung 64 s 3 found, CONSERVED ----------------
+
+    def _removed(self, traj) -> float:
+        """The fuel a min-select leg withheld over a march -- rung 57's `_cell` formula,
+        recomputed here because this rung needs it off a march carrying `b0`."""
+        out = 0.0
+        for i in range(1, len(traj)):
+            h = traj[i]["s"] - traj[i - 1]["s"]
+            out += 0.5 * h * ((traj[i - 1]["mf_sched"] - traj[i - 1]["mf"])
+                              + (traj[i]["mf_sched"] - traj[i]["mf"]))
+        return out
+
+    def marginal_mode(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                      sm: float, b_cap: float = 0.10, tau: float = 0.05,
+                      taus=(0.2, 0.01), d_b0: float = 0.01, r: float = 0.5,
+                      s_settle: float = 1.2, ds: float = 0.005) -> dict:
+        """RUNG 65, HALF TWO -- THE RUNG. Rung 64 s 3 on a valve with finite bandwidth.
+
+        RUNG 64 FOUND: an instantaneous valve re-pins `phi_lp` to `phi_lim` at ANY fuel, so
+        rung 49's `_surge_fuel` solves `G == 0` across its whole bracket and returns an
+        ARBITRARY POINT OF A CONTINUUM -- "a closed-loop lever does not disarm a second
+        limiter on the same variable, it DELETES that limiter's plant", and no number about
+        the residual is a result because its very existence is a roundoff coin flip.
+
+        A LAG REPAIRS THE SOLVE AND DOES NOT REMOVE THE CONTINUUM. Inside any one derivative
+        evaluation the valve is a CONSTANT (a state), so the fuel leg sees rung 42's
+        imposed-valve plant with `dphi/dWf < 0` strictly and returns a definite, reproducible
+        clip -- `fuel_authority` is the direct measurement. But the pair still regulates ONE
+        variable with TWO actuators, so wherever both ride, every `(b, Wf)` on the curve
+        `phi_lp = phi_lim` satisfies BOTH laws at once:
+
+            b_cmd(state, Wf(b))  ==  b     =>     db/ds == 0     for every tau
+
+        `b` is a CONSTANT OF THE MOTION. The continuum did not go away -- it moved out of the
+        solver and into the STATE, where it is a marginal (zero-eigenvalue) mode selected by
+        the initial condition and nothing else. `tau` multiplies a machine zero, so it cannot
+        reach it: the composite is tau-INVARIANT.
+
+        THE PROOF IS THE `b0` SWEEP, not the freeze. A frozen state could be a coincidence of
+        this one initial condition; a CONTINUUM means the frozen value MOVES one-for-one with
+        `b0` while both control laws stay exactly satisfied and the withheld fuel changes with
+        it. `laws_held` is what makes each member of the family legal rather than merely
+        reachable."""
+        cmap = self.map_lp_design
+        fuel = SurgeLimiter.from_margin(cmap, "lp", sm)
+        valve = BleedLimiter.from_margin(cmap, b_cap, sm, tau=tau)
+        m = self.at_lever(bleed_lim=valve)
+        args = (flight, Tt4_lo, Tt4_hi, r, s_settle, ds)
+
+        def run(mach, b0=None):
+            traj, _ = mach._stator_march(*args, surge=fuel, b0=b0)
+            rides = [p for p in traj if p["mf"] < p["mf_sched"]]
+            return dict(
+                b0=traj[0]["b"], b_end=traj[-1]["b"],
+                drift=max(abs(p["b"] - traj[0]["b"]) for p in traj),
+                dbds=max(abs(p["b_cmd"] - p["b"]) for p in traj) / mach.bleed_lim.tau,
+                removed=self._removed(traj), min_phi_lp=min(p["phi_lp"] for p in traj),
+                # BOTH laws, wherever the fuel leg rides: the floor is held EXACTLY and the
+                # valve sits strictly inside its stops (so neither is merely clamped).
+                laws_held=(max(abs(p["phi_lp"] - fuel.phi_lim) for p in rides) if rides
+                           else float("nan")),
+                interior=(min(p["b"] for p in rides) > 0.0
+                          and max(p["b"] for p in rides) < b_cap) if rides else False,
+                n_ride=len(rides), npts=len(traj))
+
+        nat = run(m)
+        b_nat = nat["b0"]
+        moved = {}
+        for lbl, x in (("lo", b_nat - d_b0), ("hi", b_nat + d_b0)):
+            assert 0.0 < x < b_cap, (
+                f"rung-65 b0 sweep leaves the valve's stops at {lbl}: {x:.6f} not in "
+                f"(0, {b_cap}). A clamped member is not a member of the continuum.")
+            moved[lbl] = run(m, b0=x)
+        # tau-INVARIANCE: the same initial condition at two bandwidths, 20x apart.
+        taucells = {t: run(self.at_lever(bleed_lim=valve.lagged(t))) for t in taus}
+        ts = list(taus)
+        return dict(sm=sm, tau=tau, taus=tuple(taus), b_cap=b_cap, d_b0=d_b0, r=r, ds=ds,
+                    phi_lim=fuel.phi_lim, natural=nat, moved=moved, taucells=taucells,
+                    b_natural=b_nat,
+                    # (i) the mode is MARGINAL: b does not move over the whole march
+                    frozen=max(nat["drift"], moved["lo"]["drift"], moved["hi"]["drift"]),
+                    # (ii) it is a CONTINUUM: the frozen value tracks b0 one-for-one and the
+                    #      withheld fuel moves with it, both laws still exactly satisfied
+                    db_db0=(moved["hi"]["b0"] - moved["lo"]["b0"]) / (2.0 * d_b0),
+                    dremoved=moved["hi"]["removed"] - moved["lo"]["removed"],
+                    laws_held=max(nat["laws_held"], moved["lo"]["laws_held"],
+                                  moved["hi"]["laws_held"]),
+                    interior=all(c["interior"] for c in (nat, moved["lo"], moved["hi"])),
+                    # (iii) tau is powerless over it
+                    tau_span=abs(taucells[ts[0]]["removed"] - taucells[ts[-1]]["removed"]),
+                    tau_span_rel=abs(taucells[ts[0]]["removed"] - taucells[ts[-1]]["removed"])
+                    / abs(taucells[ts[0]]["removed"]))
+
+    # --- the DISCRIMINATOR: is the fuel leg's own plant back? ---------------------------------
+
+    def fuel_authority(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                       sm: float, b_cap: float = 0.10, tau: float = 0.05,
+                       fracs=(1.0, 0.99, 0.98, 0.95, 0.90), r: float = 0.5,
+                       s_settle: float = 1.2, ds: float = 0.005) -> dict:
+        """RUNG 65's discriminator, and the ONE thing rung 64 s 3 could not measure.
+
+        `_surge_fuel` solves `G(w) = phi_lim - phi_lp(w) = 0` in the fuel. Rung 64 DERIVED that
+        an instantaneous valve makes `G == 0` across the whole bracket; what it could not do is
+        exhibit the repair, because on its own plant there is nothing to exhibit. Here the same
+        bracket is swept on BOTH plants at ONE state taken off an armed march:
+
+            INSTANTANEOUS  the valve re-solves at every trial fuel  =>  phi_lp is PINNED
+            LAGGED         the valve is a STATE, frozen inside the evaluation  =>  phi_lp
+                           falls monotonically with fuel, which is rung 49's own premise
+
+        The currency is the phi SPAN across the bracket -- the authority the fuel has over the
+        protected variable. NO WALL-CLOCK NUMBER IS REPORTED: rung 64 s 3 measured that a
+        deleted plant makes the leg GRIND (~1e3x a normal cell) and was explicit that no number
+        about the tangent residual is a result. Cost is machine- and load-dependent; the sign
+        structure of `G` is not."""
+        cmap = self.map_lp_design
+        fuel = SurgeLimiter.from_margin(cmap, "lp", sm)
+        valve = BleedLimiter.from_margin(cmap, b_cap, sm, tau=tau)
+        lag_m = self.at_lever(bleed_lim=valve)
+        traj, _ = lag_m._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds)
+        p = min(traj, key=lambda x: x["phi_lp"])          # where a fuel leg would bite hardest
+        assert 0.0 < p["b"] < b_cap, (
+            "rung-65's discriminator needs the valve RIDING at the probe state -- at a stop "
+            f"it is not a control law; got b = {p['b']:.6f} against [0, {b_cap}].")
+        inst_m = self.at_lever(bleed_lim=BleedLimiter(phi_lim=valve.phi_lim, b_max=b_cap))
+        mf = p["mf"]
+        out = {}
+        for name, mach, state in (("inst", inst_m, None), ("lagged", lag_m, p["b"])):
+            phis = []
+            for x in fracs:
+                mach._b_state = state
+                try:
+                    phis.append(mach._instant_fuel(flight, p["nu_lp"], p["nu_hp"],
+                                                   mf * x)["phi_lp"])
+                finally:
+                    mach._b_state = None
+            g = [fuel.phi_lim - v for v in phis]
+            out[name] = dict(phis=tuple(phis), G=tuple(g), span=max(phis) - min(phis),
+                             monotone=all(phis[i] <= phis[i + 1] for i in range(len(phis) - 1)),
+                             sign_change=(min(g) < 0.0 < max(g)), max_abs_G=max(abs(v) for v in g))
+        return dict(sm=sm, tau=tau, b_cap=b_cap, phi_lim=fuel.phi_lim, fracs=tuple(fracs),
+                    at=dict(s=p["s"], nu_lp=p["nu_lp"], nu_hp=p["nu_hp"], mf=mf, b=p["b"],
+                            phi_lp=p["phi_lp"]),
+                    inst=out["inst"], lagged=out["lagged"],
+                    # THE DISCRIMINATOR: the fuel's authority over `phi` on the two plants
+                    ratio=out["lagged"]["span"] / max(out["inst"]["span"], 1e-300),
+                    deleted=out["inst"]["span"] < 1e-9,
+                    restored=(out["lagged"]["span"] > 1e-4 and out["lagged"]["monotone"]))

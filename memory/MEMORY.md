@@ -52,6 +52,7 @@ these lines (the same rule CLAUDE.md lives under).
 - [Rung 62 bleed schedule](rung62-bleed-schedule.md) — a state-fed schedule's LOOP has a SIGN; two loops through one state do not compose; the _powers trap (Newton converging on a residual the plant does not use)
 - [Rung 63 fuel + bleed](rung63-fuel-bleed.md) — a fuel schedule's TABLE has two guards and only a MASS-extracting lever reaches them; I over-claimed the consequence 3x — check a quoted number was taken at THIS rung's settings
 - [Rung 64 phi bleed limiter](rung64-phi-bleed-limiter.md) — a limiter's LAW cannot buy PROTECTION, only its PRICE (the ceiling is b_max, i.e. hardware); two predictions refuted and both BECAME content; the discriminator-before-the-anchor move
+- [Rung 65 lagged valve](rung65-lagged-valve.md) — a lag repairs the SOLVE without removing the DEGENERACY; a § 0 pre-check that was itself RK4 instability; not every third state starts at zero
 
 ## Margin sweeps — confirmations, not rungs
 - [Rung 29 π_c margin](rung29-pi-c-margin.md) — verdict confirmed at 9.4× but π_c NOT protective; the ENERGY = INVENTORY × COMPLETION sharpening
