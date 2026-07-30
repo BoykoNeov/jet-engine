@@ -22,7 +22,7 @@ from turbojet.engine import (  # noqa: E402
     TwoSpoolTransient, TwoSpoolBleedMatcher, TwoSpoolFuelTransient, SurgeLimiter,
     AsymmetricLag, VariableStatorMatcher, StageStackMatcher, ram_recovery,
     ScheduledStatorTransient, StatorSchedule, IncidenceLimiter, StatorBleedMatcher,
-    ScheduledBleedTransient, BleedSchedule,
+    ScheduledBleedTransient, BleedSchedule, LimitedBleedTransient, BleedLimiter,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -4706,6 +4706,71 @@ def print_fuel_bleed_table(flight):
     print("    s_eng's magnitude rides on rung 48's disclaimed margin. docs/rung63-spec.md.")
 
 
+def print_bleed_limiter_table(flight):
+    """Rung-64 payoff: rung 63's own seam -- the valve CONTROLLED instead of imposed.
+
+    The question a controlled valve invites is "how much more protection does feedback buy?"
+    and the answer is NONE. `b = b_max` is itself an open-loop law and it attains the ceiling,
+    so the ceiling belongs to the valve's AUTHORITY -- hardware. What the loop buys is the
+    BILL, and that is measurable only at a coordinate matched exactly, which rung 60's
+    tautology supplies for free."""
+    print("\nphi-REFERENCED BLEED LIMITER (rung 64): a limiter's LAW cannot buy PROTECTION,")
+    print("only its PRICE. The ceiling is the lever's AUTHORITY; feedback buys the BILL.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR = 0.55
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    LO, HI, B, PHI = 1000.0, 1400.0, 0.10, 0.80
+    t = LimitedBleedTransient(design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0)
+
+    print("\n  THE CEILING -- and the top row is an OPEN-LOOP law that reaches it:")
+    c = t.authority_ceiling(flight, LO, HI, b_max=B)
+    print(f"    {'law':<26} {'min phi':>9} {'sm':>9} {'b at that min':>14}")
+    for key, name in (("shut", "valve SHUT"), ("schedule", f"SCHEDULE  b_max={B:.2f}"),
+                      ("full", f"CONSTANT  b = {B:.2f}"),
+                      ("over", f"FLOOR  phi_lim={c['phi_lim_over']:.4f}")):
+        r = c["cells"][key]
+        print(f"    {name:<26} {r['min_phi_lp']:9.6f} "
+              f"{r['min_phi_lp'] / FLOOR - 1.0:9.6f} {r['b_at_min_lp']:14.6f}")
+    print(f"    The over-set floor SATURATES and is VIOLATED by {c['over_deficit']:+.4f}, and it")
+    print(f"    lands BELOW the fully-open march ({c['over_vs_full']:+.3e}) -- so no law beats")
+    print("    b = b_max. The schedule's gap is PLACEMENT (it is not saturated at its own min).")
+
+    print("\n  THE BILL -- three laws of ONE lever, matched to the SAME min phi, in rung 61's")
+    print("  currency (the overspeed and the thrust, NOT the bleed integral):")
+    m = t.matched_bill(flight, LO, HI, phi_target=PHI, b_cap=B)
+    print(f"    match error {m['matched']:.1e};  b* = {m['b_star']:.5f}, "
+          f"b_max* = {m['bmax_star']:.5f}")
+    print(f"    {'law':<24} {'int b ds':>10} {'d nu_lp_end':>12} {'dF_end':>9} "
+          f"{'d int F':>9} {'d min phi_hp':>13}")
+    for key, name in (("constant", "1 constant   (blind)"),
+                      ("schedule", "2 schedule   (state-fed)"),
+                      ("floor", "3 phi FLOOR  (feedback)")):
+        q = m["bill"][key]
+        print(f"    {name:<24} {q['b_int']:10.6f} {q['d_nu_lp_end']:+12.6f} "
+              f"{q['thrust_end_pct']:+8.3f}% {q['thrust_int_pct']:+8.3f}% "
+              f"{q['d_min_phi_hp']:+13.3e}")
+    print(f"    The bill falls with the INFORMATION the law uses: floor/schedule = "
+          f"{m['b_ratio_sched']:.4f} in")
+    print("    bleed, and the closed loop's END thrust bill is machine-zero -- it")
+    print("    self-releases, so it has left the machine by settle. The honest comparator is")
+    print("    law 2 (a constant valve bleeds hardest where phi is already highest).")
+    print("    The state-fed laws DEBIT the HP; the state-blind one CREDITS it.")
+    print("    SCOPE: the valve is INSTANTANEOUS and unlagged; phi_lim rides on rung 36's")
+    print("    disclaimed phi_surge and b_max is rung 42's valve size, so the MAGNITUDES are")
+    print("    disclaimed and the ORDERING is the claim. See docs/rung64-spec.md.")
+
+
 def main():
     # The tables carry unicode (Δ, ·, ≡, ≈); force UTF-8 so `python main.py` renders
     # on any console (a stock Windows cp1252 console would otherwise crash on them).
@@ -4846,6 +4911,8 @@ def main():
 
     print_bleed_schedule_table(FLIGHT)
     print_fuel_bleed_table(FLIGHT)
+
+    print_bleed_limiter_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

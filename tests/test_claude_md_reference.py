@@ -16,9 +16,13 @@ If this test FAILS:
     deliberately, in the same commit that adds the content.
 
 The budget is generous relative to the compressed size (~26 KB / ~205 lines at
-rung 54): headroom for real one-line-per-rung growth, but ~10x tighter than the
-essay-bloat it replaced, so an essay-explosion trips it an order of magnitude
-earlier than last time (which reached ~200 KB).
+rung 54; 30.3 KB / 232 lines at rung 64): headroom for real one-line-per-rung
+growth, but ~7x tighter than the essay-bloat it replaced, so an essay-explosion
+trips it an order of magnitude earlier than last time (which reached ~200 KB).
+The bump at rung 64 was the first, and it bought ~2 rungs of headroom on purpose:
+a guard that forces a conscious decision every couple of rungs is working. If a
+bump ever buys many rungs at once, that is the essay failure mode wearing a
+budget's clothes.
 
 On the shape of legitimate growth: after the rung-54 re-compaction, the rung
 TABLE is the only section that grows per rung (~250 bytes/row). The three other
@@ -36,7 +40,7 @@ _CLAUDE_MD = os.path.join(_HERE, os.pardir, "CLAUDE.md")
 # Deliberate budget. Bytes is the primary guard (the failure mode is prose volume,
 # not line count); lines is a secondary sanity cap. Bump ONLY for real content
 # growth, never to make an essay fit — see the module docstring.
-MAX_BYTES = 30_000
+MAX_BYTES = 31_000     # bumped at rung 64 (30,274 B): one genuine row, deliberately
 MAX_LINES = 300
 
 

@@ -9663,3 +9663,468 @@ class ScheduledBleedTransient(ScheduledStatorTransient):
                     band=(free_ref["min_phi"] / cmap.phi_surge - 1.0,
                           free_arm["min_phi"] / cmap.phi_surge - 1.0),
                     rows=rows)
+
+
+@dataclass(frozen=True)
+class BleedLimiter:
+    """RUNG 64. The phi-REFERENCED BLEED LIMITER -- rung 63's named next seam, and the first
+    CLOSED LOOP on an AIRFLOW lever (docs/rung64-spec.md).
+
+        b  =  the smallest valve position in [0, b_max] that holds  phi_lp >= phi_lim
+
+    Every arming of this valve from rung 42 to 63 was OPEN LOOP: a constant position (42), or
+    a schedule `b(n_L)` read off the state (62). This one watches the PROTECTED VARIABLE, so
+    it is to rung 62 exactly what rung 49's `SurgeLimiter` is to rung 48's feedforward
+    `AccelSchedule` -- the same step, one lever over.
+
+    THE TWO CLAMPS ARE THE TWO REGIMES, and they are the rung:
+
+        b = 0        DORMANT   -- phi already clears the floor. The closure dispatches to
+                                  rung 63's parent BIT-FOR-BIT (not a 0.0 position).
+        0 < b < bmax RIDING    -- rung 60's tautology pins `min phi_lp == phi_lim` EXACTLY.
+        b = b_max    SATURATED -- the floor is VIOLATED. The first law in this family that
+                                  cannot deliver its own set point, and the regime that
+                                  proves the CEILING belongs to `b_max` and not to the law.
+
+    `phi_lim` is the SAME disclaimed scalar rung 36 imposed -- use `from_margin(cmap, ...)`
+    to set it as a margin above the map's own surge line. `b_max` is the lever's AUTHORITY
+    and is hardware: rung 42's valve size.
+
+    WATCHES THE LP AND ONLY THE LP, disclosed rather than parameterised. Rung 42 established
+    the valve is a degree of freedom on the LP spool and NOT the HP, and the outer solve needs
+    `phi` MONOTONE in `b`, which the choked-A4 argument gives for the LP face flow (it carries
+    1/(1-b)) and does not give for the HP. The HP is READ throughout, never floored.
+    """
+
+    phi_lim: float          # the floor, in the map's own flow-coefficient units
+    b_max: float            # the valve's AUTHORITY -- hardware, not a control setting
+
+    def __post_init__(self):
+        assert self.phi_lim > 0.0, "rung-64 phi floor is a flow coefficient"
+        assert 0.0 < self.b_max < 0.5, (
+            "rung-64 needs a valve with AUTHORITY: b_max = 0 is a limiter that cannot act, "
+            "which is a DIFFERENT object from an absent one (that is `bleed_lim=None`), and "
+            "b >= 0.5 is rung 42's own starved-core bound; got b_max = "
+            f"{self.b_max}")
+
+    @classmethod
+    def from_margin(cls, cmap: "ComponentMap", b_max: float, sm: float) -> "BleedLimiter":
+        """phi_lim = (1+sm)*phi_surge off the map's OWN imposed surge line -- rung 49's
+        `from_margin`, so the two floors are set in identical units and rung 63 s 3's band
+        edges are directly comparable set points."""
+        assert cmap.phi_surge > 0.0, (
+            "rung-64 from_margin needs a surge line: build the map with .with_phi_surge(.)")
+        assert sm >= 0.0, "the rung-64 floor sits AT or ABOVE the surge line"
+        return cls(phi_lim=(1.0 + sm) * cmap.phi_surge, b_max=b_max)
+
+
+class LimitedBleedTransient(ScheduledBleedTransient):
+    """RUNG 64. Rung 62's valve with the loop CLOSED on `phi_lp` -- rung 63's named seam.
+
+    HEADLINE: **a limiter's LAW cannot buy protection, only its PRICE.** The ceiling on the
+    protected coordinate is `min phi` over the FULLY-OPEN march, which is a property of
+    `b_max` -- the lever's AUTHORITY, i.e. hardware -- and `b = b_max` is itself an OPEN-LOOP
+    law. So feedback buys nothing on the coordinate. What it buys is the BILL: at a coordinate
+    matched EXACTLY (rung 60's pinning is the matching instrument), the closed loop pays a
+    fraction of what the open-loop laws pay in rung 61's own currency.
+
+    That INVERTS rung 61's sentence without contradicting it. Rung 61 compared two LEVERS
+    with nothing matched and found the compensating one bought back the COORDINATE and not
+    the BILL. This compares three LAWS of ONE lever at a matched coordinate; the sentences
+    invert because the matched quantity moved from the bill to the coordinate.
+
+    And it BOUNDS rungs 46-52 on a third axis. Rung 53 bounded that family's CURRENCY (a
+    margin is a distance, so a floor-moving lever makes it coordinate-dependent); rung 57
+    bounded its CLOCK (a wall-moving lever has none); this bounds its CEILING -- every credit
+    and debit those rungs measured was a property of the law, and the ceiling above them all
+    never was.
+
+    Usage:
+        lim = BleedLimiter.from_margin(LP, b_max=0.10, sm=0.4545)   # phi_lim = 0.80
+        t   = LimitedBleedTransient(design, FLIGHT, 1.0, map_lp=..., map_hp=...,
+                                    bleed_lim=lim)
+        t.authority_ceiling(FLIGHT, 1000., 1400., b_max=0.10)   # THE CEILING  <- probe A
+        t.matched_bill(FLIGHT, 1000., 1400., phi_target=0.80)   # THE BILL     <- the rung
+        t.floor_refusal(FLIGHT, 1000., 1400., sm=0.4545)        # vs rung 49's FUEL floor
+
+    STRUCTURALLY NEW: every lever from rung 42 to 63 is a function of the STATE VECTOR, which
+    is what made them RK4-legal. This one is a function of the CLOSURE'S OWN ROOT (`phi_lp` is
+    what the closure solves for). It stays RK4-legal for rung 50's reason -- no history and no
+    latch, the root re-solved from scratch at every sub-evaluation -- so it is still a pure
+    function of the state, merely an implicitly-defined one.
+
+    THE REDUCE, by exact dispatch and PER CALL. `bleed_lim=None` returns to rung 63 verbatim
+    at every state; a floor below every `phi` on the march dispatches to the rung-57
+    grandparent at every state rather than computing a 0.0 position.
+
+    CONCESSIONS (in addition to every one rungs 62/63 list, all inherited):
+      * The valve is INSTANTANEOUS and unlagged. Rungs 47/51/52 spent three rungs on what a
+        finite actuator does to a FUEL-side leg; nothing here repeats that, and the lag's
+        shape remains rung 52's open seam.
+      * `phi_lim` and `b_max` are both imposed. `phi_lim` rides on rung 36's disclaimed
+        `phi_surge` exactly as rung 49's does; `b_max` is rung 42's valve size. The MAGNITUDE
+        of every bill is therefore disclaimed -- the ORDERING and the SIGNS are the claims.
+      * The floor watches LP only (see `BleedLimiter`).
+    """
+
+    def __init__(self, design_engine, flight_design: FlightCondition,
+                 mdot_design: float = 1.0, map_lp: "ComponentMap | None" = None,
+                 map_hp: "ComponentMap | None" = None, rho: float = 1.0,
+                 vsv_lp: float = 0.0, vsv_hp: float = 0.0,
+                 vsv_sched_lp: "StatorSchedule | None" = None,
+                 vsv_sched_hp: "StatorSchedule | None" = None,
+                 bleed: float = 0.0, bleed_sched: "BleedSchedule | None" = None,
+                 bleed_lim: "BleedLimiter | None" = None, lp_disabled: bool = False):
+        super().__init__(design_engine, flight_design, mdot_design, map_lp=map_lp,
+                         map_hp=map_hp, rho=rho, vsv_lp=vsv_lp, vsv_hp=vsv_hp,
+                         vsv_sched_lp=vsv_sched_lp, vsv_sched_hp=vsv_sched_hp,
+                         bleed=bleed, bleed_sched=bleed_sched, lp_disabled=lp_disabled)
+        assert not (bleed_lim is not None
+                    and (bleed != 0.0 or bleed_sched is not None)), (
+            "rung-64: the valve gets a CONSTANT position (42), a SCHEDULE (62) or a FLOOR "
+            "(64) -- exactly one. They are the three legs this rung differences, and rung "
+            "62's two-way assert is extended rather than replaced.")
+        self.bleed_lim = bleed_lim
+        self._b_forced = None
+
+    # --- the live valve position -----------------------------------------------------------
+
+    def b_of(self, nu_lp: float, Tt2: "float | None" = None) -> float:
+        """Rung 62's state function, with ONE addition: while the outer solve is trialling a
+        position, `_b_forced` IS the valve. Nothing else may set it, and it is always
+        restored in a `finally` -- a leaked trial position would make the closure silently
+        report a state the plant never visited (rung 62's `_powers` failure mode exactly)."""
+        if self._b_forced is not None:
+            return self._b_forced
+        return super().b_of(nu_lp, Tt2)
+
+    def _armed_bleed(self) -> bool:
+        return super()._armed_bleed() or self.bleed_lim is not None
+
+    def _solve_b(self, closer):
+        """THE OUTER SOLVE: the smallest b in [0, b_max] holding phi_lp >= phi_lim.
+
+        ONE scalar bracketed root, no nested Newton and no 2x2. `phi_lp` is monotone
+        increasing in `b` because the choked A4 imposes the CORE flow and the FACE flow the
+        closure must find to feed it carries 1/(1-b) (`_close_fuel`'s `m_imp`), so both
+        clamps are decided by two evaluations and the root by `_illinois` between them.
+
+        Returns (closure, b, regime) -- the regime is reported, never inferred by a reader
+        comparing floats."""
+        lim = self.bleed_lim
+        c0 = closer(0.0)
+        if c0["phi_lp"] >= lim.phi_lim:
+            return c0, 0.0, "dormant"
+        c1 = closer(lim.b_max)
+        if c1["phi_lp"] <= lim.phi_lim:
+            return c1, lim.b_max, "saturated"
+
+        def f(b: float) -> float:
+            return closer(b)["phi_lp"] - lim.phi_lim
+
+        b = _illinois(f, 0.0, lim.b_max, c0["phi_lp"] - lim.phi_lim,
+                      c1["phi_lp"] - lim.phi_lim, tol=1e-13)
+        return closer(b), b, "riding"
+
+    def _closer(self, method, *args):
+        def closer(b: float):
+            self._b_forced = b
+            try:
+                return method(*args)
+            finally:
+                self._b_forced = None
+        return closer
+
+    def _close(self, nu_lp, nu_hp, Tt4, Tt2, pt2):
+        if self.bleed_lim is None:
+            return super()._close(nu_lp, nu_hp, Tt4, Tt2, pt2)
+        return self._solve_b(self._closer(
+            super()._close, nu_lp, nu_hp, Tt4, Tt2, pt2))[0]
+
+    def _close_fuel(self, nu_lp, nu_hp, mdot_fuel, Tt2, pt2):
+        if self.bleed_lim is None:
+            return super()._close_fuel(nu_lp, nu_hp, mdot_fuel, Tt2, pt2)
+        return self._solve_b(self._closer(
+            super()._close_fuel, nu_lp, nu_hp, mdot_fuel, Tt2, pt2))[0]
+
+    def b_at_point(self, flight: FlightCondition, p: dict) -> float:
+        """The committed valve position at a recorded trajectory point. The valve is a pure
+        function of the state, so this RE-SOLVES it exactly rather than reconstructing it --
+        which is what makes the bleed integral below a measurement and not an estimate."""
+        Tt2, pt2, _ = self._inlet(flight)
+        if self.bleed_lim is None:
+            return self.b_of(p["nu_lp"], Tt2)
+        return self._solve_b(self._closer(
+            super()._close_fuel, p["nu_lp"], p["nu_hp"], p["mf"], Tt2, pt2))[1]
+
+    # --- siblings on the SAME hardware ------------------------------------------------------
+
+    def at_lever(self, vsv_lp: float = 0.0, vsv_hp: float = 0.0, vsv_sched_lp=None,
+                 vsv_sched_hp=None, bleed: float = 0.0, bleed_sched=None,
+                 bleed_lim=None) -> "LimitedBleedTransient":
+        """Rung 63's sibling constructor with the THIRD arming mode threaded through.
+
+        THE FOURTH INSTANCE OF ONE TRAP (rung 61's `at_setting`, rung 62's `at_stator`, rung
+        63's `_isolating`): a sibling constructor that silently drops the newest lever turns
+        every inherited reader into an armed-vs-armed comparison that measures nothing while
+        returning a plausible number."""
+        de, fd, md, rho, lpd = self._ctor
+        return LimitedBleedTransient(
+            de, fd, md, map_lp=self.map_lp_design, map_hp=self.map_hp_design, rho=rho,
+            vsv_lp=vsv_lp, vsv_hp=vsv_hp, vsv_sched_lp=vsv_sched_lp,
+            vsv_sched_hp=vsv_sched_hp, bleed=bleed, bleed_sched=bleed_sched,
+            bleed_lim=bleed_lim, lp_disabled=lpd)
+
+    def at_stator(self, vsv_lp: float = 0.0, vsv_hp: float = 0.0, vsv_sched_lp=None,
+                  vsv_sched_hp=None) -> "LimitedBleedTransient":
+        return self.at_lever(vsv_lp=vsv_lp, vsv_hp=vsv_hp, vsv_sched_lp=vsv_sched_lp,
+                             vsv_sched_hp=vsv_sched_hp, bleed=self.bleed,
+                             bleed_sched=self.bleed_sched, bleed_lim=self.bleed_lim)
+
+    def _isolating(self, lever: dict, neighbour: "dict | None" = None):
+        """Rung 63's isolation gate, with the floor counted as an arming mode. Left
+        un-extended, a reader isolating the FLOOR against a valve-shut reference would pass
+        rung 63's assert while a reader carrying the floor as a NEIGHBOUR would fail it for
+        the wrong reason."""
+        neighbour = dict(neighbour or {})
+        assert lever, "rung-64 isolates a lever: pass one `at_lever` keyword"
+        for k in lever:
+            assert k not in neighbour, (
+                f"rung-64: {k!r} is the LEVER being isolated, so the reference sibling must "
+                f"not also carry it.")
+        ref = self.at_lever(**neighbour)
+        armed = self.at_lever(**{**neighbour, **lever})
+        want = (bool(neighbour.get("bleed")) or neighbour.get("bleed_sched") is not None
+                or neighbour.get("bleed_lim") is not None)
+        assert ref._armed_bleed() is want, (
+            "rung-64's reference sibling must carry the NEIGHBOUR's valve and nothing else; "
+            f"it reports armed={ref._armed_bleed()} against neighbour={want}.")
+        return ref, armed
+
+    # --- the rung-64 cell: rung 61's currency, plus what the valve cost to get there --------
+
+    def _bill_cell(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float, r: float,
+                   s_settle: float, ds: float) -> dict:
+        """A marched cell in THE BILL's currency. Deliberately NOT rung 57's `_cell`: that one
+        reports the two surge margins and the fuel a min-select leg removed, and this rung's
+        question is what the AIRFLOW cost, in the currency rung 61 established is the real one
+        (the overspeed and the thrust -- NOT the bleed integral, which rung 61 showed can move
+        while 73-102 % of the overspeed survives)."""
+        traj, nu0 = self._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds)
+        b = [self.b_at_point(flight, p) for p in traj]
+        ib = ith = 0.0
+        for i in range(1, len(traj)):
+            h = traj[i]["s"] - traj[i - 1]["s"]
+            ib += 0.5 * h * (b[i] + b[i - 1])
+            ith += 0.5 * h * (traj[i - 1]["sp_thrust"] * traj[i - 1]["mdot_air"]
+                              + traj[i]["sp_thrust"] * traj[i]["mdot_air"])
+        d = self._read(traj)
+        # THE PLATEAU. A floor that RIDES pins `phi_lp` to `phi_lim` over an INTERVAL, so the
+        # minimum's VALUE is a result (rung 60) and its LOCATION is not one: the argmin is
+        # decided by which point happens to sit one ulp lower. The three `*_at_min_lp` keys
+        # below are therefore reported as DIAGNOSTICS, never as results, and the span is what
+        # replaces them. Every rung-44-to-52 reader that reports WHERE a minimum sits is
+        # bounded by this on a floored plant -- see docs/rung64-spec.md s 4.
+        lo = d["lp"]["min_phi"]
+        flat = [p["s"] for p in traj if p["phi_lp"] <= lo * (1.0 + 1e-12)]
+        at = min(traj, key=lambda p: p["phi_lp"])
+        return dict(nu_at_min_lp=at["nu_lp"], s_at_min_lp=at["s"], b_at_min_lp=b[
+                        min(range(len(traj)), key=lambda i: traj[i]["phi_lp"])],
+                    plateau_span=max(flat) - min(flat), plateau_pts=len(flat),
+                    min_phi_lp=d["lp"]["min_phi"], min_phi_hp=d["hp"]["min_phi"],
+                    m_i_lp=d["lp"]["m_i"], m_i_hp=d["hp"]["m_i"],
+                    b_int=ib, b_peak=max(b), b_end=b[-1], thrust_int=ith,
+                    thrust_end=traj[-1]["sp_thrust"] * traj[-1]["mdot_air"],
+                    nu_lp_end=traj[-1]["nu_lp"], nu_hp_end=traj[-1]["nu_hp"],
+                    Tt4_peak=max(p["Tt4"] for p in traj),
+                    nu0_lp=nu0[0], nu0_hp=nu0[1], npts=len(traj))
+
+    # --- THE CEILING: what feedback does NOT buy --------------------------------------------
+
+    def authority_ceiling(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                          b_max: float, n_lo: float = 0.65, sm_over: float = 0.10,
+                          r: float = 0.5, s_settle: float = 1.2, ds: float = 0.005) -> dict:
+        """RUNG 64, HALF ONE. The ceiling on the protected coordinate belongs to `b_max`.
+
+        Four laws on identical hardware: valve SHUT, rung 62's SCHEDULE, constant `b = b_max`
+        (FULLY OPEN throughout), and a FLOOR set `sm_over` ABOVE the fully-open march's own
+        minimum -- i.e. deliberately unreachable.
+
+        `b = b_max` is ITSELF AN OPEN-LOOP LAW and it bounds every admissible b-history from
+        above, so the last row's `min_phi` cannot exceed the third's no matter what the loop
+        does. The over-set floor is the witness: it SATURATES and is VIOLATED, which is the
+        rung's point -- the first law in this family that cannot deliver its own set point,
+        and it fails on hardware, not on control."""
+        assert 0.0 < b_max < 0.5, "rung-64 ceiling needs rung 42's valve bound"
+        laws = {
+            "shut": self.at_lever(),
+            "schedule": self.at_lever(bleed_sched=BleedSchedule(b_max, n_lo)),
+            "full": self.at_lever(bleed=b_max),
+        }
+        args = (flight, Tt4_lo, Tt4_hi, r, s_settle, ds)
+        out = {k: m._bill_cell(*args) for k, m in laws.items()}
+        ceiling = out["full"]["min_phi_lp"]
+        over = ceiling * (1.0 + sm_over)
+        armed = self.at_lever(bleed_lim=BleedLimiter(phi_lim=over, b_max=b_max))
+        out["over"] = armed._bill_cell(*args)
+        cmap = self.map_lp_design
+        return dict(r=r, ds=ds, b_max=b_max, phi_surge=cmap.phi_surge, cells=out,
+                    ceiling=ceiling, phi_lim_over=over,
+                    gap_schedule=ceiling - out["schedule"]["min_phi_lp"],
+                    # the schedule is NOT saturated where it matters -- it commands less than
+                    # b_max at its OWN phi minimum, which is why a gap to the ceiling exists
+                    # at all, and why that gap is about PLACEMENT and not about feedback.
+                    b_at_sched_min=out["schedule"]["b_at_min_lp"],
+                    sched_saturated=out["schedule"]["b_at_min_lp"] >= b_max,
+                    # the witness: an over-set floor is VIOLATED, and by construction cannot
+                    # beat the fully-open march.
+                    violated=out["over"]["min_phi_lp"] < over,
+                    over_deficit=out["over"]["min_phi_lp"] - over,
+                    bounded_by_full=out["over"]["min_phi_lp"] <= ceiling,
+                    over_vs_full=out["over"]["min_phi_lp"] - ceiling)
+
+    # --- THE BILL: what feedback DOES buy ---------------------------------------------------
+
+    def _match_open_loop(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                         make, lo: float, hi: float, target: float, r: float,
+                         s_settle: float, ds: float, tol: float = 1e-7) -> float:
+        """The open-loop setting whose march has `min phi_lp` == target. An outer root over
+        MARCHES -- expensive by construction, and the only honest way to match: rung 60's
+        pinning gives the floor its coordinate for free, so an open-loop law must be DRIVEN
+        to the same one before any bill may be compared."""
+        def f(x: float) -> float:
+            return make(x)._bill_cell(flight, Tt4_lo, Tt4_hi, r, s_settle,
+                                      ds)["min_phi_lp"] - target
+
+        flo, fhi = f(lo), f(hi)
+        assert flo < 0.0 < fhi, (
+            f"rung-64 match does not bracket phi_lp = {target} on [{lo}, {hi}]: "
+            f"f(lo) = {flo:+.6f}, f(hi) = {fhi:+.6f}. A target above the FULLY-OPEN march's "
+            "own minimum is unreachable by ANY law -- that is `authority_ceiling`.")
+        return _illinois(f, lo, hi, flo, fhi, tol=tol)
+
+    def matched_bill(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                     phi_target: float, b_cap: float = 0.10, n_lo: float = 0.65,
+                     b_hi: float = 0.30, r: float = 0.5, s_settle: float = 1.2,
+                     ds: float = 0.005) -> dict:
+        """RUNG 64, HALF TWO -- THE RUNG. Three laws of ONE lever, matched to the SAME
+        `min phi_lp`, billed in rung 61's currency.
+
+            1 constant b       state-BLIND open loop        (rung 42)
+            2 schedule b(n_L)  state-FED   open loop        (rung 62)
+            3 phi floor        CLOSED loop on the protected variable   <- rung 64
+
+        which is the ladder's own information ordering, one lever over from the fuel side
+        (rung 42 / rung 48's feedforward / rung 49's feedback).
+
+        The match is EXACT for law 3 by rung 60's tautology and DRIVEN for laws 1 and 2 by
+        `_match_open_loop`, so the comparison holds the protected coordinate fixed and lets
+        only the price move. THE COMPARATOR IS LAW 2, not law 1: a constant bleed through a
+        transient is a straw man -- it bleeds hardest where `phi` is already highest.
+
+        Billed in rung 61's currency (`nu_*_end`, thrust) and NOT merely in `int b ds`,
+        because rung 61's own finding is that the two need not track: its compensating lever
+        bought back the coordinate while 73-102 % of the overspeed survived."""
+        args = (flight, Tt4_lo, Tt4_hi, r, s_settle, ds)
+        b_star = self._match_open_loop(flight, Tt4_lo, Tt4_hi,
+                                       lambda x: self.at_lever(bleed=x), 0.0, b_cap,
+                                       phi_target, r, s_settle, ds)
+        bmax_star = self._match_open_loop(
+            flight, Tt4_lo, Tt4_hi,
+            lambda x: self.at_lever(bleed_sched=BleedSchedule(x, n_lo)), 1e-9, b_hi,
+            phi_target, r, s_settle, ds)
+        cells = {
+            "shut": self.at_lever()._bill_cell(*args),
+            "constant": self.at_lever(bleed=b_star)._bill_cell(*args),
+            "schedule": self.at_lever(
+                bleed_sched=BleedSchedule(bmax_star, n_lo))._bill_cell(*args),
+            "floor": self.at_lever(bleed_lim=BleedLimiter(
+                phi_lim=phi_target, b_max=b_cap))._bill_cell(*args),
+        }
+        ref = cells["shut"]
+        bill = {}
+        for k in ("constant", "schedule", "floor"):
+            c = cells[k]
+            bill[k] = dict(
+                d_nu_lp_end=c["nu_lp_end"] - ref["nu_lp_end"],
+                d_nu_hp_end=c["nu_hp_end"] - ref["nu_hp_end"],
+                d_thrust_end=c["thrust_end"] - ref["thrust_end"],
+                thrust_end_pct=(c["thrust_end"] / ref["thrust_end"] - 1.0) * 100.0,
+                thrust_int_pct=(c["thrust_int"] / ref["thrust_int"] - 1.0) * 100.0,
+                d_min_phi_hp=c["min_phi_hp"] - ref["min_phi_hp"],
+                b_int=c["b_int"], b_peak=c["b_peak"])
+        return dict(r=r, ds=ds, phi_target=phi_target, b_cap=b_cap, n_lo=n_lo,
+                    b_star=b_star, bmax_star=bmax_star, cells=cells, bill=bill,
+                    matched=max(abs(cells[k]["min_phi_lp"] - phi_target)
+                                for k in ("constant", "schedule", "floor")),
+                    saturated=cells["floor"]["b_peak"] >= b_cap,
+                    b_ratio_const=cells["floor"]["b_int"] / cells["constant"]["b_int"],
+                    b_ratio_sched=cells["floor"]["b_int"] / cells["schedule"]["b_int"])
+
+    # --- rung 63 s 3's refusal, with BOTH objects now watching phi ---------------------------
+
+    def floor_refusal(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                      sm: float, b_cap: float = 0.10, d_sm: float = 0.01,
+                      r: float = 0.5, s_settle: float = 1.2, ds: float = 0.005) -> dict:
+        """RUNG 64's closing leg. Rung 63 s 3 found a `phi` FUEL floor and the IMPOSED valve
+        have no composable middle -- over a band the valve DISARMS the floor, above it the
+        valve's credit is exactly zero. With BOTH objects watching `phi_lp` the band
+        collapses, and the reason is stronger than disarming:
+
+            A CLOSED-LOOP LEVER DOES NOT DISARM A SECOND LIMITER ON THE SAME VARIABLE --
+            IT DELETES THAT LIMITER'S PLANT.
+
+        DERIVED, not measured. `_surge_fuel` solves `G(w) = phi_lim - phi(w) = 0` in the fuel
+        `w`, on its own stated premise that "phi falls MONOTONICALLY with fuel at fixed spool
+        speeds". Where this valve RIDES, it re-pins `phi_lp` to `phi_lim` at ANY fuel, so
+        `dphi/dWf = 0` and `G == 0` across the entire bracket: the leg's set-point solve is
+        DEGENERATE and returns an arbitrary point of a continuum. Its authority over `phi` is
+        not inverted (`docs/phi-rate-limiter-negative.md`) but ZERO.
+
+        WHAT MAY BE READ FROM THIS, AND WHAT MAY NOT. `removed_together` is NOT a result: at
+        exact tangency `_surge_fuel` decides between its dormant return and a 60-iteration
+        degenerate hunt on the SIGN OF ONE ULP of `phi_lim - phi_lp`, so its very existence is
+        a roundoff coin flip. What IS stable is (i) the leg's credit is EXACTLY zero and the
+        composite is its `m_i`-identical valve-alone march, and (ii) the CONTROL: a fuel floor
+        set strictly BELOW the valve's set point (`d_sm` lower) is exactly dormant, which is
+        what separates tangency chatter from a broken leg.
+
+        `s_eng` is deliberately NOT reported, for rung 63 s 3's reason: a floor violated from
+        `s = 0` has no upward crossing and `_s_eng` returns nan."""
+        assert 0.0 < d_sm <= sm, "rung-64's control floor sits strictly BELOW the valve's"
+        cmap = self.map_lp_design
+        fuel = SurgeLimiter.from_margin(cmap, "lp", sm)
+        below = SurgeLimiter.from_margin(cmap, "lp", sm - d_sm)
+        valve = BleedLimiter.from_margin(cmap, b_cap, sm)
+        args = (flight, Tt4_lo, Tt4_hi, r, s_settle, ds, "lp")
+        bare = self.at_lever()
+        armed = self.at_lever(bleed_lim=valve)
+        cells = {
+            "neither": bare._cell(*args, None, None, None),
+            "fuel": bare._cell(*args, None, fuel, None),
+            "valve": armed._cell(*args, None, None, None),
+            "both": armed._cell(*args, None, fuel, None),
+            "below_bare": bare._cell(*args, None, below, None),
+            "below_armed": armed._cell(*args, None, below, None),
+        }
+        return dict(sm=sm, d_sm=d_sm, phi_lim=fuel.phi_lim, phi_lim_below=below.phi_lim,
+                    r=r, ds=ds, b_cap=b_cap, cells=cells,
+                    removed_alone=cells["fuel"]["fuel_removed"],
+                    # reported for the record ONLY -- see the docstring. Not a result.
+                    removed_together=cells["both"]["fuel_removed"],
+                    # (i) THE CLAIM: the leg acts (or does not, by roundoff) and either way
+                    # buys nothing -- the composite IS the valve-alone march. To MACHINE
+                    # PRECISION and deliberately not to the bit: the degenerate solve returns
+                    # an arbitrary point of a continuum, so demanding bit-equality here would
+                    # be asserting on the same roundoff this method exists to expose.
+                    inert=(abs(cells["both"]["m_i"] - cells["valve"]["m_i"]) < 1e-14
+                           and abs(cells["both"]["min_phi"]
+                                   - cells["valve"]["min_phi"]) < 1e-14),
+                    credit=cells["both"]["m_i"] - cells["fuel"]["m_i"],
+                    # (ii) THE CONTROL: strictly below the valve's set point the leg is
+                    # exactly dormant on the armed plant while still biting on the bare one.
+                    control_dormant=(cells["below_armed"]["fuel_removed"] == 0.0
+                                     and cells["below_bare"]["fuel_removed"] > 0.0),
+                    removed_below_bare=cells["below_bare"]["fuel_removed"],
+                    removed_below_armed=cells["below_armed"]["fuel_removed"])
+
