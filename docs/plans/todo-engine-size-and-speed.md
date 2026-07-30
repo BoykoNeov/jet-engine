@@ -94,9 +94,8 @@ call sites and is on every path from rung 30 up.
 2. ~~`pytest -n auto`~~ — **ALREADY DONE.** `pytest.ini` runs `-n auto --dist load
    --maxschedchunk=1` with LPT ordering from learned durations. There is no parallelism win left
    to take. See the budget below.
-3. **PyPy** — unusually viable *because* there is **no numpy anywhere** in this repo. Pure
-   stdlib scalar float loops is PyPy's best case (typ. 5–15×, zero code change). matplotlib is
-   the friction, but `main.py` is its only consumer — the suite could run on PyPy.
+3. **PyPy** — ✅ **MEASURED** (see § Outcome of item 2 below). **5.1–5.3×** on the full gate,
+   zero code change, and — the load-bearing result — **bit-identical trajectories**.
 4. **Rust/PyO3 on `_sonic_throat` alone** — justified only after (1); the kernel is ~40 lines,
    so this is a targeted extension, not a rewrite.
 
@@ -174,6 +173,42 @@ times (cum 283 s of a 417 s profile). It does **not** get the same fix: its resi
 `_sonic_throat` calls came from *inside* its residual, so item 1 already gutted its cost. A
 secant there would change last bits on thirty rungs of anchored numbers for a much smaller win.
 Left open deliberately.
+
+## Outcome of item 2 — measured, not projected
+
+PyPy 3.11 (v7.3.23) installed **outside the repo** at `M:\claud_projects\temp\pypy`, with its own
+`cache_dir` so the two interpreters cannot poison each other's learned durations. **Not adopted** —
+nothing in the tree points at it; `requirements.txt` and `pytest.ini` are untouched.
+
+The first comparison (PyPy 1:55 vs CPython 13:17 ≈ 6.9×) was **confounded**: PyPy's `-n auto`
+resolved to 16 **logical** CPUs, CPython's to 8 **physical** ones. Re-run at matched worker counts:
+
+| workers | CPython 3.14 | PyPy 3.11 | ratio |
+|---|---|---|---|
+| `-n 8` | 13:17 (797 s) | **2:37** (157 s) | **5.08×** |
+| `-n 16` | 10:13 (613 s) | **1:55** (115 s) | **5.32×** |
+| single `_stator_march`, 1 thread | 2.32 s | 0.622 s | 3.74× |
+
+**5.1–5.3×, consistent at both worker counts** — the honest figure; the 6.9× was half interpreter,
+half worker count. It is *larger* on the whole gate than on one march (3.74×) because JIT warmup
+amortises across 973 tests instead of being paid once per process.
+
+**The result that matters: trajectories are BIT-IDENTICAL across interpreters.** A 341-point rung-66
+march compares exactly equal, float for float. For a project whose spine is anchored numbers and
+`*_bit_for_bit` gates, that is the precondition — without it the speed would be unusable.
+
+**Side finding, free and interpreter-independent.** `-n 16` (logical) beats `-n 8` (physical) by
+**1.30×** on CPython and 1.36× on PyPy. xdist's `-n auto` counts physical cores, so the stock gate
+leaves that on the table. `-n 16` is a one-flag change to `pytest.ini` — **not** taken here, because
+it trades headroom on a machine that is also being used interactively; noted as available.
+
+**Friction, both small.** (a) `tests/test_rung28.py` imports `main`, which imports matplotlib, so a
+bare PyPy gate errors at collection (953 passed, 1 error) until `pip install matplotlib` is run into
+PyPy — my earlier claim that "no test imports matplotlib" was wrong, it enters one level down.
+(b) The learned-duration cache is per-interpreter and must not be shared.
+
+**Combined with item 1:** the full gate went **28:18 → 1:55, ~14.8×**, with no algorithmic change
+beyond one closed-form root and no change to any anchored number.
 
 **A full Rust rewrite is refused on the project's own terms.** `CLAUDE.md`: *"The deliverable
 is understanding, not the tool."* The 42% prose ratio is the evidence — this is a document as
