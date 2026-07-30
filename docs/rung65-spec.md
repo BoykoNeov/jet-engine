@@ -170,9 +170,12 @@ the fuel leg has left it:
     b_cmd(state, Wf(b))  ==  b        ⇒        db/ds ≡ 0        for every τ
 
 Measured on the composite: `b_cmd − b` ≤ 2.7e−15, `b` drift ≤ 6.5e−16 end-to-end, and
-`fuel_removed` = 2.024341e−2 **identical to seven digits at `τ` = 0.2, 0.05, 0.01 and 0.002**
+`fuel_removed` = 2.024341e−2 **identical to seven digits at `τ` = 0.2, 0.05 and 0.01**
 (`τ`-span 1.03e−15 relative across a 20× range). `τ` multiplies a machine zero and cannot
-reach the mode.
+reach the mode. (A pre-check also saw the same seven digits at `τ` = 0.002 on a grid § 0's
+stability floor now forbids — legitimately, because on the composite `db/ds` is machine-zero
+so the stiff mode is never excited; it is not reproducible on the shipped plant and is not
+quoted as evidence.)
 
 > **A LAG REPAIRS THE SOLVE WITHOUT REMOVING THE DEGENERACY.** The redundancy of two loops on
 > one variable is CONSERVED — it moves out of the solver, where it was roundoff, and into the
@@ -189,8 +192,10 @@ moves with `b0` while both laws stay exactly satisfied:
 | `fuel_removed` | 1.326e−2 | 1.736e−2 | 2.070e−2 | 2.024e−2 | — | — | — |
 
 Every member at or below `b_cmd(0)` is exactly frozen, holds `φ_lp = φ_lim` to 1.3e−15 with the
-valve strictly interior, and withholds a **different** amount of fuel (a 53 % spread). Above it,
-the valve closes.
+valve strictly interior, and withholds a **different** amount of fuel — 1.326e−2 to 2.070e−2
+across the tabulated members, a 56 % spread. Above it, the valve closes. (The gate pins this
+as a ONE-SIDED RATIO on the ±0.01 pair — measured 1.166, asserted `> 1.10` — rather than as
+the tabulated extremes: the magnitude is a grid measurement, the materiality is the claim.)
 
 **The edge is derivable.** The valve's law is *the SMALLEST position holding the floor*. Above
 `b_cmd(0)` the valve is doing more than its own law asks, so its command sits below the live
@@ -269,7 +274,9 @@ Every one rungs 62/63/64 list, all inherited, plus:
 - **`φ_lim` and `b_max` remain imposed** (rung 64's concession, verbatim).
 - **The marginal mode is exhibited on ONE composite pair.** That a floor on `φ` plus a valve on
   `φ` are redundant is derived and general; that the edge is `b_cmd(0)` is derived from the
-  valve's minimality law; the 53 % spread in withheld fuel is a measurement on this grid.
+  valve's minimality law; the 56 % spread in withheld fuel across § 3's tabulated members
+  (1.326e−2 … 2.070e−2) is a measurement on this grid — the gate pins only that the spread is
+  material, as a one-sided ratio.
 
 ## What it does to its neighbours
 

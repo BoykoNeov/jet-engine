@@ -207,6 +207,12 @@ converging on rung 64's instantaneous 0.038249. The whole scored sweep (`τ` ≥
 `ds` = 0.005, so `z` ≤ 0.5) is grid-converged — checked at `τ` = 0.01 against `ds` = 0.001.
 **This is a modelling floor and is disclosed as one**: `τ` cannot be swept below ~`ds`/2.
 
+The artifact is now **unreachable**: `_integrate_fuel_valve_lag` asserts `ds/τ ≤ 2.0` before
+the march, and `tests/test_rung65.py` gate 7 pins the raise. The row above therefore cannot be
+reproduced on the shipped plant — which is the point. It is recorded here because it looked
+like a physical finding for the length of one probe, and a future rung adding a relaxation
+state should expect the same trap.
+
 ### P1 — HIT, and it restores what probe C appeared to kill
 
 | `τ` | `min φ_lp` | undershoot | `∫b ds` | `b` peak | `dev` |
@@ -269,8 +275,10 @@ On the composite at `τ` = 0.05, sweeping the initial position:
 
 Every member with `b0 ≤ b_cmd(0)` is **exactly frozen** for the whole march, holds
 `φ_lp = φ_lim` to 1.3e−15 with the valve strictly interior, and withholds a DIFFERENT amount of
-fuel — 1.33e−2 to 2.02e−2, a 53 % spread. `τ`-invariance across a 20× range: 1.03e−15
-relative.
+fuel — 1.33e−2 to 2.02e−2, a 53 % spread across THIS probe's endpoints (the natural member is
+the top one here). The spec's canonical pair is § 3's tabulated extremes, 1.326e−2 … 2.070e−2,
+a 56 % spread; the gate pins neither, only a one-sided ratio on the ±0.01 pair. `τ`-invariance
+across a 20× range: 1.03e−15 relative.
 
 **The upper edge is exactly `b_cmd(0)`, and it is derivable.** The valve's law is *the SMALLEST
 position holding the floor*. Above `b_cmd(0)` the valve is doing more than its own law asks, so

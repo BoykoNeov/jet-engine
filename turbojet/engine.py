@@ -9966,18 +9966,24 @@ class LimitedBleedTransient(ScheduledBleedTransient):
         lo = d["lp"]["min_phi"]
         flat = [p["s"] for p in traj if p["phi_lp"] <= lo * (1.0 + 1e-12)]
         at = min(traj, key=lambda p: p["phi_lp"])
-        return dict(traj=traj if keep_traj else None,   # RUNG 65 only -- None by default, so
-                    # every rung-64 caller gets a dict with the same numbers it always had.
-                    nu_at_min_lp=at["nu_lp"], s_at_min_lp=at["s"], b_at_min_lp=b[
-                        min(range(len(traj)), key=lambda i: traj[i]["phi_lp"])],
-                    plateau_span=max(flat) - min(flat), plateau_pts=len(flat),
-                    min_phi_lp=d["lp"]["min_phi"], min_phi_hp=d["hp"]["min_phi"],
-                    m_i_lp=d["lp"]["m_i"], m_i_hp=d["hp"]["m_i"],
-                    b_int=ib, b_peak=max(b), b_end=b[-1], thrust_int=ith,
-                    thrust_end=traj[-1]["sp_thrust"] * traj[-1]["mdot_air"],
-                    nu_lp_end=traj[-1]["nu_lp"], nu_hp_end=traj[-1]["nu_hp"],
-                    Tt4_peak=max(p["Tt4"] for p in traj),
-                    nu0_lp=nu0[0], nu0_hp=nu0[1], npts=len(traj))
+        out = dict(nu_at_min_lp=at["nu_lp"], s_at_min_lp=at["s"], b_at_min_lp=b[
+                       min(range(len(traj)), key=lambda i: traj[i]["phi_lp"])],
+                   plateau_span=max(flat) - min(flat), plateau_pts=len(flat),
+                   min_phi_lp=d["lp"]["min_phi"], min_phi_hp=d["hp"]["min_phi"],
+                   m_i_lp=d["lp"]["m_i"], m_i_hp=d["hp"]["m_i"],
+                   b_int=ib, b_peak=max(b), b_end=b[-1], thrust_int=ith,
+                   thrust_end=traj[-1]["sp_thrust"] * traj[-1]["mdot_air"],
+                   nu_lp_end=traj[-1]["nu_lp"], nu_hp_end=traj[-1]["nu_hp"],
+                   Tt4_peak=max(p["Tt4"] for p in traj),
+                   nu0_lp=nu0[0], nu0_hp=nu0[1], npts=len(traj))
+        # RUNG 65 needs the trajectory itself (the `tau -> 0` deviation is a per-point compare).
+        # The key is ADDED rather than defaulted to None, so an un-asking rung-62/63/64 caller
+        # gets a dict with exactly the keys it always had -- `test_the_clamp_is_invisible`
+        # iterates `.items()` on this dict and would otherwise be relying on a type filter to
+        # skip the new one, which is passing by luck rather than by contract.
+        if keep_traj:
+            out["traj"] = traj
+        return out
 
     # --- THE CEILING: what feedback does NOT buy --------------------------------------------
 

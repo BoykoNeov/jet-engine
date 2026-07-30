@@ -352,7 +352,13 @@ def test_the_degeneracy_is_CONSERVED_a_marginal_mode_with_an_edge():
         assert c["drift"] < 1e-12, c
         assert c["dbds"] < 1e-9, c
         assert c["laws_held"] < 1e-12 and c["interior"]
-    assert abs(nat["removed"] - lo["removed"]) > 1e-3, "a continuum, not one trajectory"
+    # A RATIO, not an absolute threshold: what makes the family GENUINE rather than a
+    # technicality is that its members withhold MATERIALLY different fuel, and only a
+    # scale-free floor pins that. ONE-SIDED on purpose -- the spec disclaims the magnitude
+    # ("a measurement on this grid"), so an upper bound would gate the grid, not the finding.
+    # Measured 1.166 between the natural member and one 0.01 below it.
+    ratio = nat["removed"] / lo["removed"]
+    assert ratio > 1.10, ratio
     assert mm["tau_span_rel"] < 1e-9, mm["tau_span_rel"]   # tau multiplies a machine zero
 
 
