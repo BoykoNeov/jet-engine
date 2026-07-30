@@ -79,6 +79,56 @@ On the reacting gas `γ_t` varies through the expansion, so the realized critica
 (1.8395 at the design point) legitimately differs from any single-`γ` closed form
 (1.8389 at `γ_t(T*)`) by ~0.03% — that difference *is* the variable-`cp` physics, not error.
 
+### The CPG branch is SOLVED, not searched (a later engineering change, not new physics)
+
+`_sonic_throat` now **dispatches on `gas.hot_is_cpg`**. Nothing above changes; what changes is
+that on a calorically-perfect hot section the equation above is recognised for what it is. With
+`h_t = cp·T` and `γ_t` constant, the residual is **exactly linear in `T*`**, so its root is
+closed-form:
+
+```
+h_t(Tt9) − cp·T*  =  ½·γ·R·T*        ⇒        T* = h_t(Tt9) / ( cp + ½·γ·R )
+```
+
+This is the *same equation*, not an approximation of it. The bisection was searching for a root
+it could have written down — and reaching it only to its `1e-13·Tt` stopping band, so the closed
+form is the **more** accurate of the two (measured: `1304.3478260869251` bisected vs
+`…869565` solved, 2.4e-14 relative).
+
+Two deliberate choices:
+
+- **The residual's own root, not the textbook `2/(γ+1)`.** They coincide *only* when
+  `cp = γR/(γ−1)` — which is precisely the self-consistency gate 2a exists to police (the
+  rounded-Mattingly-constants trap, § Concessions). The linear form reuses the already-computed
+  `h_t(Tt9)` and stays correct on a gas where the textbook form would not. The two differ by
+  1 ulp on a self-consistent gas.
+- **The TPG / reacting branch is UNCHANGED, byte for byte.** The real-gas path carries thirty
+  rungs of anchored design-point numbers (rung 14's equilibrium nozzle, every
+  `test_cycle_untouched_*`); leaving its loop untouched makes that whole family inert *by
+  construction* rather than by a 26-minute gate. There was no payoff there anyway — a full
+  `reacting_equilibrium` design run is 60 ms.
+
+**Why it was worth doing.** `_sonic_throat`/`choked_mfp` has 35 call sites and is on every path
+from rung 30 up; rungs 31–66 all run on CPG. Profiling one rung-66 `_stator_march` put **85–88%**
+of total runtime inside it, at **~45 residual evaluations per call** (298M `resid` evaluations in
+a single test). Memoisation was measured dead first (argument reuse 1.1×: 234 789 unique of
+269 242). Measured effect of the branch on the heaviest march arm: **12.52 s → 2.42 s, 5.2×**.
+
+**The numerical consequence, stated honestly.** Every CPG result downstream moves by 1–2 ulp
+(max 2.4e-15 relative over a 341-point march, on `nu_lp/nu_hp/phi_lp/phi_hp/Tt4/mf`). No row is
+bit-identical to the pre-change tree. This is safe for the reduce spine *by its structure*, not
+by luck: `test_reduce_*` / `*_bit_for_bit` compare two **code paths under the same solver**, so
+both sides move together. It would not be safe for any test pinning an absolute literal tighter
+than ~1e-14 — there are none.
+
+**What it cost the gate, and the repair.** Gate 2a below justified itself as *"two genuinely
+different code paths (enthalpy-integral bisection vs a closed form)"* — but it runs on a CPG gas,
+so after the branch **both sides would be closed forms** and the bisection would lose its only
+verification. The loop is therefore factored out as `_sonic_throat_bisect` and gate 2a is now a
+**three-way** agreement — bisection ≡ the linear root ≡ the textbook `2/(γ+1)` — which is
+strictly stronger than what it replaced: it still pins the solver, and it additionally pins the
+new branch to it.
+
 ---
 
 ## Result

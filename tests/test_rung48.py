@@ -186,14 +186,38 @@ def test_reduce_lp_disabled_asserts():
 
 def test_decel_never_fires_bit_for_bit_rung45():
     """CONTRACT 5. On a DECEL the fuel falls BELOW the running line, so Wf/pt3 stays under
-    kappa_ss and the leg cannot fire at any margin >= 0 => the bare rung-45 march."""
+    kappa_ss and the leg cannot fire at any margin >= 0 => the bare rung-45 march.
+
+    ROW 0 IS EXCLUDED, and the reason is float, not physics. The decel STARTS on the running
+    line at Tt4 = HI, which is also the band endpoint `acc` tabulates kappa_ss at. So at s = 0
+    the leg evaluates `cap = (1+0)*kappa_ss*pt3` with `kappa_ss = mf_ref/pt3_ref` read at that
+    very point and `pt3 == pt3_ref` — i.e. it computes `(a/b)*b` and compares it to `a`. In
+    exact arithmetic those are equal and `min` returns the schedule; in binary floating point
+    the round-trip is off by 0-3 ulp, and when it lands low the min-select "fires" by 3 ulp.
+
+    This is PRE-EXISTING and has nothing to do with the decel direction. Measured on the
+    unmodified pre-CPG-closed-form tree, this gate trips at HI = 1398, 1395 and 1350 and passes
+    at 1400, 1399, 1390, 1380 — it was a ~40% coincidence that HI = 1400 round-tripped exactly.
+    Rung 30's CPG sonic-throat closed form later moved the operands and re-rolled that die.
+    In every case the discrepancy is confined to row 0 alone: 225 of 226 rows are bit-identical.
+
+    So the bit-exactness is KEPT (not toleranced) and the comparison starts where the contract
+    actually speaks — from the first row on which the fuel HAS fallen below the running line.
+    The round-trip identity itself is not lost: GATE 6 owns it, at its honest 2e-3 tolerance
+    ("the m=0 cap must BE the steady fuel at that speed").
+    """
     ft = _ft()
     sched, nu0 = _ramp(ft, lo=HI, hi=LO)
     acc = ft.accel_schedule(FLIGHT, HI, LO, 0.0)        # the TIGHTEST schedule
     bare = ft.integrate_fuel(FLIGHT, sched, nu0, R + SETTLE, DS)
     dec = ft.integrate_fuel(FLIGHT, sched, nu0, R + SETTLE, DS, accel=acc)
-    _same(bare, dec)
-    assert all(p["mf"] == p["mf_sched"] for p in dec)
+    assert len(bare) == len(dec) > 1
+    _same(bare[1:], dec[1:])
+    assert all(p["mf"] == p["mf_sched"] for p in dec[1:])
+    # Row 0 is still gated -- as the ulp-scale artifact it is, not as an equality.
+    assert abs(dec[0]["mf"] / bare[0]["mf"] - 1.0) < 1e-12, (
+        "row 0 may differ only by the kappa_ss round-trip, never physically",
+        bare[0]["mf"], dec[0]["mf"])
 
 
 def test_cycle_untouched_by_accel_schedule_bit_for_bit_rung6():

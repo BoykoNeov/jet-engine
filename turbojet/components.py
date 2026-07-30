@@ -485,6 +485,40 @@ class NozzleExit:
     p9: float          # exit STATIC pressure, Pa (= p_exit)
 
 
+def _sonic_throat_bisect(gas: Gas, Tt9: float, far: float, h_tt: float, R: float) -> float:
+    """RUNG 30. The general (TPG / reacting) sonic-throat solve: bisect T* on the residual
+
+        h_t(Tt9, far) - h_t(T*, far)  -  1/2 * gamma_t(T*, far) * R_t * T*
+
+    which is monotone in T* (the enthalpy drop rises as T* falls, the sonic KE falls), so the
+    root is unique and a bracket suffices. Factored out of `_sonic_throat` when the CPG branch
+    became a closed form, for two reasons: the caller's dispatch reads as a dispatch, and rung
+    30's gate 2a can call THIS loop explicitly. That second reason is load-bearing — gate 2a
+    justifies itself as "two genuinely different code paths onto the same M=1 condition", and it
+    runs on a CPG gas, so without an explicit entry point it would have silently started
+    comparing the closed form against itself. See docs/rung30-spec.md.
+
+    `h_tt` and `R` are passed in rather than recomputed: they are loop invariants the caller
+    already holds, and sharing them keeps this byte-for-byte the loop that shipped at rung 30.
+    """
+    def resid(T: float) -> float:
+        return (h_tt - gas.h_t(T, far)) - 0.5 * gas.gamma_t_at(T, far) * R * T
+
+    lo, hi = 0.5 * Tt9, Tt9                 # T*/Tt ~ 0.85-0.87; safely bracketed
+    flo = resid(lo)                          # > 0 (big drop), resid(hi) < 0 (no drop)
+    assert flo > 0.0 >= resid(hi), "sonic-throat bracket does not straddle M=1"
+    for _ in range(200):
+        mid = 0.5 * (lo + hi)
+        fm = resid(mid)
+        if flo * fm <= 0.0:
+            hi = mid
+        else:
+            lo, flo = mid, fm
+        if hi - lo <= 1e-13 * Tt9:
+            break
+    return 0.5 * (lo + hi)
+
+
 def _sonic_throat(gas: Gas, Tt9: float, pt9: float, far: float) -> tuple[float, float, float]:
     """RUNG 30. The M=1 (choking) exit state of a convergent nozzle: (T*, p*, V*).
 
@@ -504,26 +538,33 @@ def _sonic_throat(gas: Gas, Tt9: float, pt9: float, far: float) -> tuple[float, 
     p* = pt9 * pr_t(T*)/pr_t(Tt9) (isentropic). This is the TPG velocity<->enthalpy trap in a
     new guise; on a self-consistent CPG gas it reproduces the closed form T*/Tt = 2/(gamma+1),
     p*/pt = (2/(gamma+1))^(gamma/(gamma-1)) to machine precision (docs/rung30-spec.md gate 2).
+
+    THE CPG BRANCH IS SOLVED, NOT SEARCHED. On a calorically-perfect hot section h_t = cp*T
+    and gamma_t is a constant, so the residual above is EXACTLY LINEAR in T and its root is
+    closed-form:
+
+        h_t(Tt9) - cp*T*  =  1/2 * gamma * R * T*    =>    T* = h_t(Tt9) / (cp + gamma*R/2)
+
+    which is the SAME equation, not an approximation of it — the bisection was searching for a
+    root it could have written down (and reaching it only to its 1e-13*Tt stopping band, so the
+    closed form is the MORE accurate of the two). The form used is the residual's own root
+    rather than the textbook 2/(gamma+1): it reuses the already-computed h_t(Tt9) and stays
+    correct if a CPG section is ever built with cp != gamma*R/(gamma-1) (the rounded-constants
+    trap that rung 30's gate 2a exists to avoid). Rungs 31-66 all run on CPG, where this turns
+    ~45 residual evaluations per call into none; the TPG / reacting branch (`_sonic_throat_bisect`
+    above) is UNCHANGED, so every anchored design-point number on the real-gas path is inert by
+    construction.
     """
     R = gas.R_t_at(far)
     h_tt = gas.h_t(Tt9, far)
 
-    def resid(T: float) -> float:
-        return (h_tt - gas.h_t(T, far)) - 0.5 * gas.gamma_t_at(T, far) * R * T
-
-    lo, hi = 0.5 * Tt9, Tt9                 # T*/Tt ~ 0.85-0.87; safely bracketed
-    flo = resid(lo)                          # > 0 (big drop), resid(hi) < 0 (no drop)
-    assert flo > 0.0 >= resid(hi), "sonic-throat bracket does not straddle M=1"
-    for _ in range(200):
-        mid = 0.5 * (lo + hi)
-        fm = resid(mid)
-        if flo * fm <= 0.0:
-            hi = mid
-        else:
-            lo, flo = mid, fm
-        if hi - lo <= 1e-13 * Tt9:
-            break
-    Tstar = 0.5 * (lo + hi)
+    if gas.hot_is_cpg:
+        Tstar = h_tt / (gas.cp_t_at(Tt9, far) + 0.5 * gas.gamma_t_at(Tt9, far) * R)
+        # The bracket the bisection asserted, kept as a check but paid for in arithmetic
+        # rather than in gas calls: a physical sonic throat sits at T*/Tt ~ 0.85-0.87.
+        assert 0.5 * Tt9 < Tstar < Tt9, "CPG sonic-throat root outside the physical bracket"
+    else:
+        Tstar = _sonic_throat_bisect(gas, Tt9, far, h_tt, R)
     pstar = pt9 * gas.pr_t(Tstar, far) / gas.pr_t(Tt9, far)
     Vstar = (2.0 * (h_tt - gas.h_t(Tstar, far))) ** 0.5
     return Tstar, pstar, Vstar

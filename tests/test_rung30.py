@@ -24,7 +24,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from turbojet.gas import Gas, FlowState  # noqa: E402
-from turbojet.components import Nozzle, _sonic_throat  # noqa: E402
+from turbojet.components import Nozzle, _sonic_throat, _sonic_throat_bisect  # noqa: E402
 from turbojet.engine import FlightCondition, build_turbojet  # noqa: E402
 
 FLIGHT = FlightCondition(T0=250.0, p0=50_000.0, M0=0.85)
@@ -62,11 +62,21 @@ def test_reduce_subcritical_is_full_expansion():
 
 
 def test_solver_reproduces_cpg_closed_form():
-    """GATE 2a — the sonic-throat bisection == the CPG closed form on a self-consistent gas.
+    """GATE 2a — a THREE-WAY agreement on the sonic throat of a self-consistent CPG gas:
 
-    T*/Tt = 2/(g+1), p*/pt = (2/(g+1))^(g/(g-1)). Exact only when cp == g*R/(g-1); the
-    Mattingly constants are rounded (the documented rounded-R trap), so use a gas where the
-    relation holds exactly and the two code paths must coincide to machine precision.
+        (i)   the shipped `_sonic_throat`      — now the CPG closed-form branch
+        (ii)  `_sonic_throat_bisect`           — the enthalpy-integral BISECTION, called DIRECTLY
+        (iii) the textbook  T*/Tt = 2/(g+1),  p*/pt = (2/(g+1))^(g/(g-1))
+
+    All three are exact only when cp == g*R/(g-1); the Mattingly constants are rounded (the
+    documented rounded-R trap), so use a gas where the relation holds exactly.
+
+    WHY (ii) IS CALLED DIRECTLY. This gate's whole non-tautology claim is "two genuinely
+    different code paths onto the same M=1 condition", and it runs on a CPG gas. Once
+    `_sonic_throat` learned to solve the CPG root in closed form, reaching the bisection through
+    the public entry point became impossible here — the gate would have gone on passing while
+    comparing a closed form against itself, testing nothing. Naming the loop and calling it is
+    what keeps the claim true. See docs/rung30-spec.md § "The CPG branch is SOLVED, not searched".
     """
     g, cp = 1.3, 1239.0
     R = (g - 1.0) / g * cp                       # self-consistent: cp == g*R/(g-1) exactly
@@ -80,6 +90,19 @@ def test_solver_reproduces_cpg_closed_form():
     # sonic identity: V* == a(T*).
     a = (gas.gamma_t_at(Tstar, 0.0) * R * Tstar) ** 0.5
     assert abs(Vstar - a) < 1e-9 * a, "sonic throat: V* != a(T*)"
+
+    # (ii) the BISECTION branch, reached explicitly — the arm the CPG closed form retired.
+    # It is held to the SAME 1e-9 the closed form is: the loop stops at 1e-13*Tt, so the two
+    # agree to ~1e-14 relative and the gate has ~5 decades of headroom (measured 2.4e-14).
+    Tstar_bis = _sonic_throat_bisect(gas, Tt9, 0.0, gas.h_t(Tt9, 0.0), gas.R_t_at(0.0))
+    assert abs(Tstar_bis - Tstar_cf) < 1e-9 * Tstar_cf, f"bisect T*: {Tstar_bis} vs {Tstar_cf}"
+    assert abs(Tstar_bis - Tstar) < 1e-9 * Tstar, (
+        "the CPG closed form and the bisection must find the SAME root", Tstar, Tstar_bis)
+    # ...and the closed form is the MORE accurate of the two: the bisection carries its own
+    # 1e-13*Tt stopping band, so it — not the closed form — is the one sitting off the root.
+    assert abs(Tstar - Tstar_cf) <= abs(Tstar_bis - Tstar_cf), (
+        "the solved CPG root must be at least as close to the closed form as the searched one",
+        Tstar, Tstar_bis, Tstar_cf)
 
 
 def test_solver_m9_is_one_on_reacting_gas():

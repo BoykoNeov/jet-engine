@@ -88,10 +88,9 @@ call sites and is on every path from rung 30 up.
 
 **Ladder, in effort order (Rust last):**
 
-1. **Fix the bisection** — ~2.7× measured, ~40 lines, no new dependency. Must be gated on the
-   full reduce spine: it changes last bits, so every `*_bit_for_bit` test is the real cost.
-   (A CPG-exact closed form would be bit-*different* from bisection; this is the blocker,
-   not the physics.)
+1. **Fix the bisection** — ✅ **DONE** (see § Outcome below). Measured **5.4×** on the march and
+   **28:18 → 13:09 (2.15×)** on the full gate — better than the 2.7× the secant experiment
+   projected, because the CPG root is *closed-form*, not merely faster to converge to.
 2. ~~`pytest -n auto`~~ — **ALREADY DONE.** `pytest.ini` runs `-n auto --dist load
    --maxschedchunk=1` with LPT ordering from learned durations. There is no parallelism win left
    to take. See the budget below.
@@ -103,17 +102,25 @@ call sites and is on every path from rung 30 up.
 
 ## Where the 28 minutes actually goes (measured full gate, 2026-07)
 
-973 passed in **1698 s (28:18)** wall — already under `-n auto` on **16 cores**.
+973 passed in **1698 s (28:18)** wall — already under `-n auto`.
 Learned durations (`.pytest_cache/v/durations/call`, 984 entries):
 
 | | |
 |---|---|
-| serial sum (total CPU) | **229 min** |
-| parallel wall clock | 28.3 min ⇒ **8.1× effective** on 16 workers |
+| workers | **8** — the machine is 8 physical / 16 logical, and xdist's `-n auto` counts PHYSICAL |
+| sum of learned durations | **229 min** |
+| parallel wall clock | 28.3 min |
 | longest single test | 374 s (6.2 min) — the LPT makespan floor |
 | top-10 tests' share of the sum | 20% (the load is broad, not pole-bound) |
 | **rung ≥ 30 files** (the `_sonic_throat` path) | **165 min — 72%** |
 | rungs 7–29 (mixing-PDF / NOx diagnostics) | 64 min — 28% |
+
+⚠ **The 229 min is NOT true serial CPU time, and no "effective parallelism" ratio should be
+computed from it.** Those durations were themselves learned *during 8-way parallel runs*, so each
+is inflated by memory-bandwidth and SMT contention. 229/28.3 = 8.1× on 8 workers would be >100%
+efficiency — an impossibility that is the tell. Read 229 min as an **upper bound** on serial time
+and use it only for *relative* shares between files (which are inflated alike). The wall-clock
+figures below are the load-bearing ones.
 
 Heaviest files: rung63 (1532 s), rung24 (1314 s), rung23 (886 s), rung59 (843 s), rung66 (681 s).
 
@@ -122,6 +129,51 @@ the only remaining lever is **less total CPU work** — which is exactly item (1
 `_sonic_throat` path would cut ~140 of the 165 structural minutes to ~52, i.e. serial sum
 229 → ~141 min, projecting a wall clock near **17–18 min**. Rungs 23/24 are untouched by it —
 they are mixing-PDF integrals in `gas.py`, a separate kernel.
+
+## Outcome of item 1 — measured, not projected
+
+`_sonic_throat` now dispatches on `gas.hot_is_cpg` to the residual's exact linear root
+`T* = h_t(Tt9)/(cp + ½γR)`; the TPG/reacting loop is factored out unchanged as
+`_sonic_throat_bisect`. Derivation, the two deliberate choices, and the gate repair are in
+`docs/rung30-spec.md` § "The CPG branch is SOLVED, not searched".
+
+| | before | after |
+|---|---|---|
+| heaviest rung-66 `_stator_march` | 12.52 s | **2.32 s — 5.38×** |
+| full gate (`pytest --runslow`, 16 cores) | 28:18 | **13:09 — 2.15×** |
+
+The gate beat the 17–18 min projection because the projection assumed a 2.7× secant; the CPG
+root is closed-form, so the ~45 residual evaluations per call go to **zero**, not to ~5.
+
+**Numerical consequence.** Every CPG result moves by 1–2 ulp (max 2.4e-15 relative over a
+341-point march). Safe for the reduce spine *by structure*: `test_reduce_*` / `*_bit_for_bit`
+compare two code paths under the **same** solver, so both sides move together.
+
+**What it exposed (worth more than the speed).** The gate came back `972 passed, 1 failed`, and
+the one failure was not a regression:
+
+- `test_rung48.py::test_decel_never_fires_bit_for_bit_rung45` compared a min-select against its
+  own reference point at margin 0, i.e. asserted `(a/b)·b == a` in binary floating point.
+- Measured on the **unmodified** tree, that gate trips at `HI` = 1398, 1395, 1350 and passes at
+  1400, 1399, 1390, 1380 — a **~40% pre-existing flake** that happened to be green at the one
+  start temperature the suite used. The change merely re-rolled the die.
+- In every case the discrepancy is confined to **row 0 alone** (225/226 rows bit-identical), on
+  both trees — so the contract holds everywhere it actually claims to.
+- Repaired by construction, not by tolerance: bit-exactness kept, comparison starts at row 1,
+  row 0 gated as the ulp artifact it is. Gate 6 already owned the round-trip identity at its
+  honest 2e-3 tolerance, so no coverage was lost.
+
+**Coverage repair.** Rung 30's gate 2a justified itself as *"two genuinely different code paths"*
+but ran on a CPG gas — after the branch it would have compared a closed form against itself and
+gone on passing. It is now a **three-way** agreement (bisection ≡ linear root ≡ textbook
+`2/(γ+1)`) with the bisection called explicitly, which is strictly stronger than what it replaced.
+
+**A second target, measured and declined.** `engine.py:_solve_choked_turbine` also bisects ~46
+times (cum 283 s of a 417 s profile). It does **not** get the same fix: its residual runs through
+`pr_t`, powers and `τ^0.5`, so it is not linear and has no closed form — and 4.6M of the 6.6M
+`_sonic_throat` calls came from *inside* its residual, so item 1 already gutted its cost. A
+secant there would change last bits on thirty rungs of anchored numbers for a much smaller win.
+Left open deliberately.
 
 **A full Rust rewrite is refused on the project's own terms.** `CLAUDE.md`: *"The deliverable
 is understanding, not the tool."* The 42% prose ratio is the evidence — this is a document as
