@@ -5,18 +5,23 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 1c258a79-b4c7-4891-ab3d-022937f8d1a3
-  modified: 2026-07-28T13:16:26.009Z
+  modified: 2026-07-30T20:27:11.127Z
 ---
 
 The suite was **49 min serial** → **~5 min routine / ~22–25 min full** (2026-07-21), then the
 per-rung cost was cut again with `--affected` (2026-07-28). All policy lives in `pytest.ini` +
 `conftest.py`; **no test file is edited**, so the derive/reduce spine stays pristine.
 
-**THE WALL-CLOCK FLOOR IS PHYSICAL — measured 2026-07-28.** This box has **8 PHYSICAL cores
-behind 16 logical**. Total suite CPU is ~12.6 ks over 744 tests; an LPT pack onto 8 workers is
-1581 s, and the observed full run is 1331 s. **The schedule has no slack left** — do NOT try to
-tune scheduling further. The ONLY lever on gate cost is *running fewer tests*. (The single
-longest test, rung 24's `test_ei_stays_monotone` at ~518 s, is a hard per-test floor.)
+**THE SCHEDULE HAS NO SLACK — but that was never the only lever (CORRECTED 2026-07-30).** This box
+has **8 PHYSICAL cores behind 16 logical**, and xdist's `-n auto` counts PHYSICAL. The LPT pack is
+tight, so there is nothing left in *scheduling* — that part stands. What was WRONG is the
+conclusion I drew from it: *"the ONLY lever on gate cost is running fewer tests."* Two other levers
+were measured and both worked, at 973 tests (see [[perf-sonic-throat-and-pypy]]):
+- **Less CPU per test** — one closed-form root in `_sonic_throat` took the full gate 28:18 → 13:17.
+- **A faster interpreter** — PyPy is 5.1–5.3× on top of that, at zero code change.
+- (And `-n 16` over logical cores is a further 1.30×, not taken.)
+Full gate is now **28:18 → 1:55 combined (~14.8×)**. Generalise: *"the schedule is packed"* bounds
+scheduling only — it says nothing about the work inside each test or the machine running it.
 
 **The three gates** (see [[always-commit-and-push]] for which one gates a commit):
 - `pytest` — FAST subset, ~5 min. Slow-tagged FINDING gates deselected. ITERATION ONLY.

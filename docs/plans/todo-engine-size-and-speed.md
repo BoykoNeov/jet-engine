@@ -199,8 +199,42 @@ march compares exactly equal, float for float. For a project whose spine is anch
 
 **Side finding, free and interpreter-independent.** `-n 16` (logical) beats `-n 8` (physical) by
 **1.30×** on CPython and 1.36× on PyPy. xdist's `-n auto` counts physical cores, so the stock gate
-leaves that on the table. `-n 16` is a one-flag change to `pytest.ini` — **not** taken here, because
-it trades headroom on a machine that is also being used interactively; noted as available.
+leaves that on the table. `-n 16` is a one-flag change to `pytest.ini` — **not taken**: the user
+reported the machine going sluggish under it, and 1.3× is not worth the interactive box.
+
+## The interactive-headroom fix (2026-07-30) — priority, not fewer workers
+
+`-n auto` packs a worker onto every physical core, so a gate saturates the machine whatever the
+interpreter. The fix in `conftest.py` is `_run_at_below_normal_priority()`, called from
+`pytest_configure` — which runs in the controller **and** in every xdist worker, so one call
+covers the fleet (verified: all 9 processes report `BelowNormal` mid-run).
+
+**Why priority and not `-n 6`.** A below-normal process is preempted only when something else
+actually wants the CPU, so an idle machine still runs the gate at **full speed** — the cost is
+zero when nobody is competing. Surrendering a worker pays unconditionally.
+
+**Honest scope.** This governs CPU scheduling only. Memory-bandwidth and L3 contention are not
+priority-governed, so a packed run can still feel heavy. If it does, `-n 6` is the lever priority
+cannot pull. Opt out entirely with `JET_TEST_NICE=0`.
+
+**A coupling to watch (not blocking, but nobody was watching it).** Every run rewrites
+`.pytest_cache/v/durations/call`, and `conftest.py`'s `SLOW_SECONDS = 8.0` is a **threshold on
+those numbers**. Those durations were always contention-inflated; running below-normal makes the
+inflation depend on *what else the box is doing*. So a fast non-spine test that gets preempted past
+8.0 s can be tagged `slow` and silently drop out of the bare `pytest` subset. **If the fast subset
+ever shrinks unexpectedly, this is why** — the fix is to re-learn durations on an idle machine.
+For the same reason the `~5 min` / `~6–16 min` budgets in `CLAUDE.md` are left alone: they are
+stale-HIGH (the safe direction) since the rung-30 fix, and re-measuring them under load would write
+a contention number in place of an honest one. The `~13 min` full-gate figure was measured on an
+idle box at normal priority — that is the one to keep.
+
+**The trap it nearly shipped as.** The obvious spelling
+`kernel32.SetPriorityClass(kernel32.GetCurrentProcess(), …)` returns **0** on 64-bit Windows and
+raises nothing: `GetCurrentProcess()` returns the pseudo-handle `(HANDLE)-1`, and ctypes' default
+`restype` of `c_int` truncates it, so the call gets a bad handle and fails **silently**. Measured —
+processes stayed at `Normal` while the code "succeeded". `restype = c_void_p` is load-bearing.
+Because a silent no-op is the failure mode, the helper *verifies* with `GetPriorityClass` and the
+report header prints a **WARNING** when the drop did not take.
 
 **Friction, both small.** (a) `tests/test_rung28.py` imports `main`, which imports matplotlib, so a
 bare PyPy gate errors at collection (953 passed, 1 error) until `pip install matplotlib` is run into

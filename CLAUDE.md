@@ -225,7 +225,7 @@ A compact map — the per-rung method/finding detail lives in `docs/rungN-spec.m
 - **Ship a rung: `pytest --affected`** (~6–16 min) — the fast subset PLUS the slow gates the diff
   can reach (AST symbol-diff + caller closure, cumulative since the last full gate); self-escalates
   to the full gate on a core / module-level change. **The rung green-gate.**
-- **Full gate: `pytest --runslow`** (**~26 min** at rung 63, measured; it varies with load) —
+- **Full gate: `pytest --runslow`** (**~13 min** at rung 66, measured; it varies with load) —
   everything. **Every 3rd rung** (the header nags), at session end, and whenever `--affected`
   escalates. ACCEPTED RISK: a regression in an unreached non-spine gate can hide for ≤3 rungs;
   `main.py` is covered by no test.

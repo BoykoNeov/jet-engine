@@ -42,6 +42,7 @@ import ast
 import os
 import re
 import subprocess
+import sys
 import time
 
 import pytest
@@ -336,8 +337,55 @@ def pytest_addoption(parser):
                      help="diff against REV instead of the last passing full gate")
 
 
+def _run_at_below_normal_priority():
+    """Drop THIS process to below-normal scheduling priority. Called from `pytest_configure`,
+    which runs in the controller AND in every xdist worker, so one call covers the whole fleet.
+
+    WHY. `-n auto` packs one worker onto every physical core, so a gate saturates the machine and
+    the box goes sluggish for whatever else is running on it. Priority is the right lever rather
+    than surrendering a worker: a below-normal process is preempted only when something else
+    actually wants the CPU, so an otherwise-idle machine still runs the gate at full speed — the
+    cost is zero when nobody is competing, unlike `-n 6`, which pays unconditionally.
+
+    HONEST SCOPE. This governs CPU scheduling only. Memory-bandwidth and L3 contention are NOT
+    priority-governed, so a fully-packed run can still feel heavy on memory-bound work. If that
+    bites, drop the worker count (`-n 6`) — that is the lever priority cannot pull.
+
+    Opt out with `JET_TEST_NICE=0`. Never raises: a failure here must not fail a test run.
+    Returns True if the priority actually moved — the caller reports it, because the Win32 call
+    fails SILENTLY (see below) and a courtesy that quietly does nothing is worse than none.
+
+    THE TRAP, measured: `kernel32.SetPriorityClass(kernel32.GetCurrentProcess(), ...)` returns
+    **0** here. `GetCurrentProcess()` hands back the pseudo-handle `(HANDLE)-1`, and ctypes'
+    default `restype` is `c_int`, which truncates it on 64-bit — so the call gets a bad handle,
+    fails, and raises NOTHING. `restype = c_void_p` is load-bearing, not tidiness.
+    """
+    if os.environ.get("JET_TEST_NICE", "1") == "0":
+        return False
+    try:
+        if sys.platform == "win32":
+            import ctypes
+            BELOW_NORMAL_PRIORITY_CLASS = 0x00004000
+            k32 = ctypes.windll.kernel32
+            k32.GetCurrentProcess.restype = ctypes.c_void_p      # see THE TRAP above
+            handle = ctypes.c_void_p(k32.GetCurrentProcess())
+            if not k32.SetPriorityClass(handle, BELOW_NORMAL_PRIORITY_CLASS):
+                return False
+            return k32.GetPriorityClass(handle) == BELOW_NORMAL_PRIORITY_CLASS
+        # Read-first, because `os.nice` is a RELATIVE bump while `SetPriorityClass` is absolute:
+        # a worker that already inherited nice 5 would otherwise drift to 10, and its children
+        # further still. Keep the two platforms idempotent alike.
+        target, current = 5, os.nice(0)
+        if current < target:
+            os.nice(target - current)
+        return os.nice(0) >= target
+    except Exception:
+        return False            # best-effort courtesy, never a gate failure
+
+
 def pytest_configure(config):
     config.addinivalue_line("markers", "slow: an inherently-expensive gate (deselected unless --runslow)")
+    config._jet_niced = _run_at_below_normal_priority()
 
 
 def pytest_collection_modifyitems(config, items):
@@ -424,6 +472,11 @@ _SEEN: set = set()
 def pytest_report_header(config):
     """Say out loud which gate is running, what it selected, and when the full one is due."""
     lines = []
+    # Report the priority drop rather than assume it: the Win32 call fails silently (see
+    # `_run_at_below_normal_priority`), and a courtesy that quietly no-ops is worse than none.
+    if not getattr(config, "_jet_niced", False) and os.environ.get("JET_TEST_NICE", "1") != "0":
+        lines.append("gate: WARNING — could not drop to below-normal priority; the run will "
+                     "compete with your foreground apps")
     if config.getoption("--affected") and not config.option.markexpr:
         affected, why = _affected_for(config)
         if affected is None:

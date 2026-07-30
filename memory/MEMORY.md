@@ -8,7 +8,8 @@ these lines (the same rule CLAUDE.md lives under).
 - [Git remote setup](git-remote-setup.md) — repo is github.com/BoykoNeov/jet-engine (public), branch main, origin over SSH
 - [Always commit and push](always-commit-and-push.md) — auto-commit + push green work without being asked; gate is `pytest --affected`, NOT bare pytest; never gate a docs-only change
 - [CLAUDE.md is a reference](claude-md-is-a-reference.md) — one-line-per-rung index, detail → docs/rungN-spec.md; a guard test enforces the size budget; bloated to ~200KB twice before
-- [Test-suite speed policy](test-suite-speed-policy.md) — three gates (iterate / `--affected` ship / `--runslow` every 3rd rung); reduce spine runs on all three; wall-clock floor is physical, fewer tests is the only lever
+- [Test-suite speed policy](test-suite-speed-policy.md) — three gates (iterate / `--affected` ship / `--runslow` every 3rd rung); reduce spine runs on all three; the schedule is packed but that bounds SCHEDULING only
+- [Perf: sonic throat + PyPy](perf-sonic-throat-and-pypy.md) — the hot function was hot ALGORITHMICALLY (45 bisections for a linear root), not linguistically; gate 28:18 → 1:55; PyPy bit-identical but not adopted
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page published as artifact 56cde230…; update the same URL, regenerate via extract_data.py + build.py
 
 ## Shipped rungs
