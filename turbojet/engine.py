@@ -9925,6 +9925,12 @@ class LimitedBleedTransient(ScheduledBleedTransient):
         # below are therefore reported as DIAGNOSTICS, never as results, and the span is what
         # replaces them. Every rung-44-to-52 reader that reports WHERE a minimum sits is
         # bounded by this on a floored plant -- see docs/rung64-spec.md s 4.
+        #
+        # WHERE THEY ARE SAFE TO READ: any march with `plateau_pts == 1` -- i.e. a genuine
+        # isolated minimum. That covers every OPEN-LOOP law (valve shut, constant, schedule)
+        # and a SATURATED floor (pinned at b_max, so it never rides). It does NOT cover a
+        # RIDING floor, which is the only case with a plateau. Check `plateau_pts` before
+        # quoting them; a reader that skips the check is reading a 1-ulp tie.
         lo = d["lp"]["min_phi"]
         flat = [p["s"] for p in traj if p["phi_lp"] <= lo * (1.0 + 1e-12)]
         at = min(traj, key=lambda p: p["phi_lp"])
