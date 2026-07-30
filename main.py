@@ -4637,6 +4637,75 @@ def print_bleed_schedule_table(flight):
     print("    placement and the MAGNITUDE rides on it (the sign does not). Every rung-57")
     print("    concession is inherited. See docs/rung62-spec.md.")
 
+
+def print_fuel_bleed_table(flight):
+    """Rung-63 payoff: rung 62's own seam -- a fuel-side min-select leg BESIDE the valve.
+
+    Rung 58 found the influence between a stator and a Wf/pt3 leg runs ONE WAY, and rung 59
+    explained it: the leg senses two things and a stator reaches NEITHER (a choked A4 guards
+    the ordinate, rung 39's pi_LPC cancellation guards the abscissa). A bleed is the ladder's
+    only lever that breaks mdot_face == mdot_core -- the identity UPSTREAM of both -- so it
+    reaches both and the arrow closes."""
+    print("\nFUEL + BLEED (rung 63): rung 58's ONE-WAY arrow was a fact about the LEG's two")
+    print("PROTECTIONS, not about the lever's kind. A bleed breaks both, and the arrow CLOSES.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR = 0.55
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    LO, HI, N_LO, V, B = 1000.0, 1400.0, 0.65, 0.20, 0.10
+    STAT = dict(vsv_sched_lp=StatorSchedule(V, N_LO))
+    BLED = dict(bleed_sched=BleedSchedule(B, N_LO))
+    t = ScheduledBleedTransient(design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0)
+    leg = t.accel_schedule(flight, LO, HI, 0.25, 13)
+
+    print("\n  The leg's two SENSED INPUTS, per lever (rung 59's table, differenced):")
+    print(f"    {'lever':<24} {'d_ordinate':>12} {'d_abscissa':>12} {'d_MFP(A4)':>12}")
+    for name, kw in ((f"LP stator  v_max={V:.2f}", STAT), (f"bleed      b_max={B:.2f}", BLED)):
+        d = t.sensed_inputs(flight, LO, HI, kw, margin=0.25, n=9)
+        print(f"    {name:<24} {d['d_ordinate']:12.3e} {d['d_abscissa']:12.3e} "
+              f"{d['d_mfp']:12.3e}")
+    print("    A choked A4 keeps MFP at machine zero for BOTH -- that control never moves.")
+    print("    What moves is Tt25: only the LP shaft balance carries (1-b), so Tt3 falls,")
+    print("    f rises, and BOTH halves of the schedule table shift. Ten orders apart.")
+
+    print("\n  So the leg can FEEL a bleed and cannot feel a stator (sub-grid s_eng):")
+    print(f"    {'lever':<24} {'r':>5} {'s_eng ref':>10} {'s_eng armed':>12} {'shift':>9}")
+    for name, kw in ((f"LP stator  v_max={V:.2f}", STAT), (f"bleed      b_max={B:.2f}", BLED)):
+        for r in (0.25, 0.50, 1.00):
+            d = t.leg_retiming(flight, LO, HI, kw, accel=leg, r=r)
+            print(f"    {name:<24} {r:5.2f} {d['ref_dormant']:10.5f} "
+                  f"{d['armed_dormant']:12.5f} {100.0 * d['rel_dormant']:+8.3f}%")
+    print("    The bleed is positive and the LARGER in every cell; the stator's own shift is")
+    print("    trajectory-mediated (its TABLE is bit-identical) and spans -0.03 % to +1.28 %.")
+    print("    LATER, not earlier -- a sign the pressure channel alone gets WRONG (spec § 2).")
+
+    print("\n  And a phi FLOOR beside the valve has NO composable middle -- two regimes only,")
+    print("  with the boundary at the two plants' OWN minimum phi:")
+    d = t.floor_dichotomy(flight, LO, HI, BLED, sm_grid=(0.36, 0.40, 0.43, 0.46))
+    print(f"    band in sm = [{d['band'][0]:.4f}, {d['band'][1]:.4f}]   "
+          f"min phi: ref {d['min_phi_ref']:.5f}, armed {d['min_phi_armed']:.5f}")
+    print(f"    {'sm':>5} {'phi_lim':>8} {'removed(fuel)':>14} {'removed(both)':>14} "
+          f"{'credit':>11}")
+    for row in d["rows"]:
+        print(f"    {row['sm']:5.2f} {row['phi_lim']:8.5f} {row['removed_fuel']:14.4e} "
+              f"{row['removed_both']:14.4e} {row['credit']:+11.3e}")
+    print("    Inside the band the valve DISARMS the floor exactly (and the armed cell is")
+    print("    bit-for-bit its own leg-free march); above it both bind, the floor pins the")
+    print("    currency, and the valve's credit is exactly zero -- rung 60's tautology.")
+    print("    SCOPE: only the FEEDFORWARD leg composes; the valve is an IMPOSED position;")
+    print("    s_eng's magnitude rides on rung 48's disclaimed margin. docs/rung63-spec.md.")
+
+
 def main():
     # The tables carry unicode (Δ, ·, ≡, ≈); force UTF-8 so `python main.py` renders
     # on any console (a stock Windows cp1252 console would otherwise crash on them).
@@ -4776,6 +4845,7 @@ def main():
     print_stator_bleed_table(FLIGHT)
 
     print_bleed_schedule_table(FLIGHT)
+    print_fuel_bleed_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

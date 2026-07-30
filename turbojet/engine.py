@@ -9146,7 +9146,8 @@ class ScheduledBleedTransient(ScheduledStatorTransient):
                 else self.v_of("lp", p["nu_lp"], p["nu_hp"], Tt2))
 
     def _legs(self, flight: FlightCondition, reference, Tt4_lo: float, Tt4_hi: float,
-              r: float, s_settle: float, ds: float, spool: str) -> dict:
+              r: float, s_settle: float, ds: float, spool: str,
+              accel=None, surge=None, Tt4_max=None) -> dict:
         """Rung 57's START / RAMP / FULL, generalised to ANY reference machine.
 
             START-ONLY  armed running line, REFERENCE march
@@ -9160,15 +9161,23 @@ class ScheduledBleedTransient(ScheduledStatorTransient):
         difference is the pair, not the lever).
 
         `self_cancel` < 1 is rung 57's negative feedback; > 1 is AMPLIFICATION.
+
+        RUNG 63 threads ONE fuel-side min-select leg through all four marches, so a lever's
+        loop can be measured with a LEGGED neighbour carried on both sides of the difference.
+        All three default to None -- `_stator_march`'s own default -- so every rung-62 caller
+        reaches the IDENTICAL four marches: THE REDUCE.
         """
-        t_ref, nu0_r = reference._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds)
+        kw = dict(accel=accel, surge=surge, Tt4_max=Tt4_max)
+        t_ref, nu0_r = reference._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds, **kw)
         r_ref = reference._read(t_ref)[spool]
         eq = self.equilibrium(flight, Tt4_lo)
         nu0_a = (eq["nu_lp"], eq["nu_hp"])
         t_start, _ = reference._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds,
-                                             nu0=nu0_a)
-        t_ramp, _ = self._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds, nu0=nu0_r)
-        t_full, _ = self._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds, nu0=nu0_a)
+                                             nu0=nu0_a, **kw)
+        t_ramp, _ = self._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds, nu0=nu0_r,
+                                       **kw)
+        t_full, _ = self._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds, nu0=nu0_a,
+                                       **kw)
         base = r_ref["m_i"]
         r_ramp, r_full = self._read(t_ramp)[spool], self._read(t_full)[spool]
         start = reference._read(t_start)[spool]["m_i"] - base
@@ -9208,7 +9217,8 @@ class ScheduledBleedTransient(ScheduledStatorTransient):
 
     def marginal_loop(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
                       lever: dict, neighbour: "dict | None" = None, r: float = 0.5,
-                      s_settle: float = 1.2, ds: float = 0.01, spool: str = "lp") -> dict:
+                      s_settle: float = 1.2, ds: float = 0.01, spool: str = "lp",
+                      accel=None, surge=None, Tt4_max=None) -> dict:
         """THE SECOND FINDING (rung 62). One lever's OWN loop, measured with a NEIGHBOUR
         carried on both sides of the difference.
 
@@ -9223,11 +9233,16 @@ class ScheduledBleedTransient(ScheduledStatorTransient):
         The control that makes the result mean anything is a CONSTANT neighbour at the same
         commanded level: a constant position has no loop of its own, so if it moves the
         answer far less than a schedule of the same authority does, the effect is the LOOP
-        and not the LEVEL."""
-        neighbour = dict(neighbour or {})
-        ref = self.at_lever(**neighbour)
-        armed = self.at_lever(**{**neighbour, **lever})
-        return armed._legs(flight, ref, Tt4_lo, Tt4_hi, r, s_settle, ds, spool)
+        and not the LEVEL.
+
+        RUNG 63: the neighbour may instead be a FUEL-SIDE min-select leg (`accel` / `surge`
+        / `Tt4_max`), carried on both sides the same way. A leg has no state-feed of its own
+        -- it reads the state but emits a fuel cap, not a setting that re-enters through
+        `dn/d(setting)` -- so it is the control for "does a loop answer to its neighbour's
+        LOOP, or merely to its neighbour's trajectory?"."""
+        ref, armed = self._isolating(lever, neighbour)
+        return armed._legs(flight, ref, Tt4_lo, Tt4_hi, r, s_settle, ds, spool,
+                           accel=accel, surge=surge, Tt4_max=Tt4_max)
 
     def commanded_level(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
                         r: float = 0.5, s_settle: float = 1.2, ds: float = 0.01,
@@ -9333,3 +9348,318 @@ class ScheduledBleedTransient(ScheduledStatorTransient):
             credit = m._read(t)[spool]["m_i"] - base
             out.append(dict(r=r, bare=base, credit=credit, per_setting=credit / setting))
         return out
+
+    # =====================================================================================
+    # RUNG 63 -- FUEL + BLEED on one plant. Rung 62's named seam.
+    #
+    # Rung 58 measured a ONE-WAY arrow between a variable stator and a `Wf/pt3` accel leg:
+    # the leg moved the stator's credit by +9.51 %, the stator moved the leg's engagement
+    # time by -0.162 % -- a factor of 59. Rung 59 then explained the small number exactly.
+    # The leg senses TWO things and the stator reaches NEITHER:
+    #
+    #     ORDINATE  kappa_ss = Wf/pt3 = pi_b*f(Tt3,Tt4)*MFP_A4 / [(1+f)*sqrt(Tt4)].
+    #               A4 is CHOKED so MFP_A4 is hardware; Tt3 is pinned by two MAP-FREE shaft
+    #               balances  =>  kappa_ss = kappa_ss(Tt4) alone.     [rung 59 _proof_chain]
+    #     ABSCISSA  n_H(Tt4): the HP-face corrected flow carries pt4 ~ pi_LPC over
+    #               pt25 ~ pi_LPC, so pi_LPC CANCELS.                 [rung 39's ONE arrow]
+    #
+    # A BLEED BREAKS BOTH, and the algebra says exactly where. Of the two shaft balances
+    # only the LP one carries the valve (`_powers`: the HP has core flow on both sides, so
+    # (1-b) cancels -- rung 42's bleed-INVARIANT form):
+    #
+    #     dh_LPC = eta_m*(1-b)*(1+f)*dh_LPT   =>  Tt25 FALLS with b
+    #     dh_HPC = eta_m*(1+f)*dh_HPT         =>  Tt3 falls by the SAME enthalpy
+    #                                         =>  f RISES  =>  kappa_ss RISES  (the ORDINATE)
+    #     and m_hp ~ sqrt(Tt25)*pi_HPC/(1+f)  =>  n_H(Tt4) MOVES        (the ABSCISSA)
+    #
+    # `pi_LPC` still cancels out of `m_hp`: rung 39's arrow is not repealed. What moves the
+    # abscissa is that the bleed moves `Tt25` ITSELF, which no stator can do. The valve is
+    # the ladder's only lever that breaks `mdot_face == mdot_core`, and that identity sits
+    # UPSTREAM of both protections.
+    #
+    # SCOPE OF THAT CLAIM -- it is about the TABLE, and this rung got it wrong twice by
+    # over-reaching from it. `kappa_ss` and `n_H(Tt4)` are STEADY properties; `s_eng` is a
+    # property of the TRAJECTORY through them, and a stator moves the trajectory with its
+    # table bit-identical (up to +1.28 % measured). So "a stator cannot re-time the leg" is
+    # FALSE; what holds is that the bleed's channel is STRUCTURAL and the stator's is
+    # trajectory-mediated. See docs/rung63-spec.md s 2.
+    # =====================================================================================
+
+    def _isolating(self, lever: dict, neighbour: "dict | None" = None):
+        """RUNG 63. The (reference, armed) sibling PAIR that isolates `lever` in the
+        presence of `neighbour` -- and THE GATE that makes every reader below trustworthy.
+
+        RUNG 62 OVERRODE `at_stator` ON PURPOSE, so a rung-57 reader called on a bleed-armed
+        machine differences against a sibling CARRYING THIS MACHINE'S VALVE (its gate 3,
+        rung 61's `at_setting` trap one ladder over). That override reaches SIX inherited
+        readers: `stator_credit`, `credit_decomposition`, `composite_credit`,
+        `engagement_shift`, `schedule_invariance`, `matched_credit`.
+
+        `schedule_invariance` is the one that bites. On a bleed-armed machine it derives the
+        `Wf/pt3` table on `self` and on `self.at_stator()` -- THE SAME BLEED-ARMED MACHINE --
+        and returns `ordinate_identical = True`. That is numerically identical to rung 59's
+        headline result, so it would read as a clean confirmation of rung 59 while measuring
+        nothing at all. Every rung-63 reader is therefore built HERE, and rungs 58/59's own
+        methods are left literally unchanged."""
+        neighbour = dict(neighbour or {})
+        assert lever, "rung-63 isolates a lever: pass one `at_lever` keyword"
+        for k in lever:
+            assert k not in neighbour, (
+                f"rung-63: {k!r} is the LEVER being isolated, so the reference sibling must "
+                f"not also carry it -- that is exactly the armed-vs-armed comparison rung "
+                f"62's `at_stator` override would have produced silently.")
+        ref = self.at_lever(**neighbour)
+        armed = self.at_lever(**{**neighbour, **lever})
+        want = bool(neighbour.get("bleed")) or neighbour.get("bleed_sched") is not None
+        assert ref._armed_bleed() is want, (
+            "rung-63's reference sibling must carry the NEIGHBOUR's valve and nothing else; "
+            f"it reports armed={ref._armed_bleed()} against neighbour={want}.")
+        return ref, armed
+
+    # --- THE HEADLINE: the RETURN arrow -- what a lever does to the LEG's engagement -----
+
+    def leg_retiming(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                     lever: dict, accel=None, surge=None, Tt4_max=None, r: float = 0.5,
+                     s_settle: float = 1.2, ds: float = 0.005,
+                     neighbour: "dict | None" = None) -> dict:
+        """THE RUNG (63). Rung 58's `engagement_shift`, on a lever the leg can FEEL.
+
+        Sub-grid engagement time (`_leg_residual` + `_s_eng`) on the reference and the armed
+        plant, on BOTH the limited march and the DORMANT one -- the dormant leg is where `g`
+        is defined everywhere and no clip has yet perturbed the states, so it is the clean
+        reading and the two agree here to 6 decimal places.
+
+        ONE leg object is used on both plants (rung 58's discipline): a leg that differed
+        between them would make the difference isolate nothing.
+
+        A bleed schedule moves this by +2.9 to +4.2 %, LATER, at every ramp rate and on both
+        map shapes. A STATOR moves it too (up to +1.28 %) even though its TABLE is
+        bit-identical -- `s_eng` is a TRAJECTORY quantity. So the bleed's channel is
+        STRUCTURAL and the stator's trajectory-mediated; the data separates them by the
+        bleed being positive and strictly the larger in every cell. Rung 58's own -0.162 %
+        is at ITS placement (n_lo = 0.7557) and is NOT a control for this grid.
+
+        THE SIGN IS NOT THE OBVIOUS ONE and `channels` says why: the bleed LOWERS `pt3`
+        (which would engage the leg EARLIER) but RAISES `kappa(n_H)` through the abscissa
+        shift, and the two nearly cancel in the cap. What decides the sign is the third
+        term -- the COMMANDED fuel ramp, re-derived on the bled plant through
+        `fuel_for_Tt4`, falls further than the cap does, so the crossing arrives LATER."""
+        self._one_leg(accel, surge, Tt4_max)
+        ref, armed = self._isolating(lever, neighbour)
+        kw = dict(accel=accel, surge=surge, Tt4_max=Tt4_max)
+        out, audits = {}, {}
+        for tag, mach in (("ref", ref), ("armed", armed)):
+            for how, leg in (("limited", kw), ("dormant", {})):
+                traj, _ = mach._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds, **leg)
+                out[f"{tag}_{how}"] = mach._s_eng(
+                    mach._leg_residual(flight, traj, accel, surge, Tt4_max))
+                if how == "limited" and accel is not None:
+                    audits[tag] = mach._clamp_audit(flight, traj, accel)
+        d_lim = out["armed_limited"] - out["ref_limited"]
+        d_dor = out["armed_dormant"] - out["ref_dormant"]
+        return dict(r=r, ds=ds, leg=self._one_leg(accel, surge, Tt4_max), **out,
+                    audits=audits, d_limited=d_lim, d_dormant=d_dor,
+                    rel_limited=d_lim / out["ref_limited"],
+                    rel_dormant=d_dor / out["ref_dormant"],
+                    channels=(self._cap_channels(flight, ref, armed, accel, Tt4_lo, Tt4_hi,
+                                                 r, s_settle, ds, out["ref_dormant"])
+                              if accel is not None else None))
+
+    @staticmethod
+    def _cap_channels(flight: FlightCondition, ref, armed, accel: "AccelSchedule",
+                      Tt4_lo: float, Tt4_hi: float, r: float, s_settle: float, ds: float,
+                      s_at: float) -> dict:
+        """RUNG 63. The THREE terms of `g = Wf_sched - (1+m)*kappa(n_H)*pt3`, read on both
+        DORMANT marches at the reference plant's own engagement time, so the sign of the
+        re-timing is attributed rather than asserted.
+
+        `kappa` is the ABSCISSA channel (the table re-read at a moved `n_H`), `pt3` the
+        pressure channel, `mf_sched` the COMMANDED ramp -- which is not a constant across
+        the two plants, because `_stator_march` pins both to the same `Tt4` endpoints
+        (rung 35's apples-to-apples discipline) and a bled machine burns different fuel to
+        reach them."""
+        rows = {}
+        for tag, m in (("ref", ref), ("armed", armed)):
+            traj, _ = m._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds)
+            p = min(traj, key=lambda q: abs(q["s"] - s_at))
+            i = m._instant_fuel(flight, p["nu_lp"], p["nu_hp"], p["mf_sched"])
+            pt3 = i["pt4"] / m.pi_b
+            cap = accel.cap(i["n_hp"], pt3)
+            rows[tag] = dict(s=p["s"], n_hp=i["n_hp"], pt3=pt3, cap=cap,
+                             kappa=cap / ((1.0 + accel.margin) * pt3),
+                             mf_sched=p["mf_sched"], g=p["mf_sched"] - cap)
+        a, b = rows["ref"], rows["armed"]
+        return dict(ref=a, armed=b, s_at=s_at,
+                    d_kappa=b["kappa"] / a["kappa"] - 1.0,
+                    d_pt3=b["pt3"] / a["pt3"] - 1.0,
+                    d_cap=b["cap"] / a["cap"] - 1.0,
+                    d_mf_sched=b["mf_sched"] / a["mf_sched"] - 1.0,
+                    d_g=b["g"] - a["g"])
+
+    # --- THE MECHANISM: the leg's two SENSED INPUTS -------------------------------------
+
+    def sensed_inputs(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                      lever: dict, margin: float = 0.25, n: int = 13,
+                      neighbour: "dict | None" = None) -> dict:
+        """RUNG 63. Rung 59's `schedule_invariance` with a GENUINELY BARE reference -- the
+        `Wf/pt3` table derived on both plants and compared HALF BY HALF, plus the
+        proof-chain residuals that say which factor carries the difference.
+
+        Rung 59's verdicts, to compare against: an LP stator moves NEITHER half (both
+        <= 1e-13, its own published tolerance); an HP stator moves ONLY the abscissa, with
+        the ordinate exactly 0.
+
+        `mfp` is the control that must stay at machine zero for ANY lever: `A4` is choked,
+        so the corrected group is hardware and nothing on the compressor side can reach it.
+        If it ever moves, the chain has broken somewhere else and the rest is meaningless."""
+        ref, armed = self._isolating(lever, neighbour)
+        L_ref = ref.accel_schedule(flight, Tt4_lo, Tt4_hi, margin, n)
+        L_arm = armed.accel_schedule(flight, Tt4_lo, Tt4_hi, margin, n)
+        chain = []
+        keys = ("Tt25", "Tt3", "f", "mfp", "ratio", "kappa", "n_hp", "nu_lp")
+        for k in range(n):
+            Tt4 = Tt4_lo + (Tt4_hi - Tt4_lo) * k / (n - 1.0)
+            a, b = ref._proof_chain(flight, Tt4), armed._proof_chain(flight, Tt4)
+            chain.append(dict(Tt4=Tt4, **{f"d_{key}": (b[key] - a[key]) / a[key]
+                                          for key in keys}))
+        mid = n // 2
+        return dict(
+            reference=L_ref, armed=L_arm, chain=chain,
+            ordinate_identical=(L_arm.kappa == L_ref.kappa),
+            abscissa_identical=(L_arm.n_H == L_ref.n_H),
+            d_ordinate=max(abs(a - b) / b for a, b in zip(L_arm.kappa, L_ref.kappa)),
+            d_abscissa=max(abs(a - b) / b for a, b in zip(L_arm.n_H, L_ref.n_H)),
+            signed_ordinate=L_arm.kappa[mid] / L_ref.kappa[mid] - 1.0,
+            signed_abscissa=L_arm.n_H[mid] / L_ref.n_H[mid] - 1.0,
+            d_mfp=max(abs(row["d_mfp"]) for row in chain))
+
+    def matched_leg_deltas(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                           lever: dict, margin: float = 0.25, r: float = 0.5,
+                           s_settle: float = 1.2, ds: float = 0.005, spool: str = "lp",
+                           n: int = 13, neighbour: "dict | None" = None) -> dict:
+        """RUNG 63. Rung 59's SPLICE, for a lever that moves BOTH halves of the table.
+
+        The armed cell is run against four legs -- the reference-derived one, the MATCHED
+        one, and the two `_synthetic_leg` splices -- so the matched leg's effect can be read
+        per half. Rung 59 always had one half exactly zero, which made the split trivially
+        additive; here both halves are live and they carry OPPOSITE SIGNS.
+
+        THE SHARES ARE DELIBERATELY NOT RETURNED. With the two halves opposite in sign,
+        `delta_match` is a small difference of two larger terms, and the shares move by
+        ~10 % under an `ds` halving while their sum barely moves -- rung 43's
+        currency-circularity shape exactly. The three RAW deltas carry the claim, and the
+        load-bearing one (`delta_index`) is the grid-robust member. Rungs 45/49's precedent:
+        when the denominator is a difference of opposite-signed terms, publish raw."""
+        ref, armed = self._isolating(lever, neighbour)
+        L_B = ref.accel_schedule(flight, Tt4_lo, Tt4_hi, margin, n)      # reference-derived
+        L_A = armed.accel_schedule(flight, Tt4_lo, Tt4_hi, margin, n)    # MATCHED
+        L_S = self._synthetic_leg(L_A, L_B)      # ARMED index, REFERENCE values
+        L_C = self._synthetic_leg(L_B, L_A)      # REFERENCE index, ARMED values
+        args = (flight, Tt4_lo, Tt4_hi, r, s_settle, ds, spool)
+        cells, audits = {}, {}
+        for tag, leg in (("bare_leg", L_B), ("matched", L_A), ("reindexed", L_S),
+                         ("revalued", L_C)):
+            cells[tag] = armed._cell(*args, leg, None, None)
+            traj, _ = armed._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds, accel=leg)
+            audits[tag] = armed._clamp_audit(flight, traj, leg)
+        base = cells["bare_leg"]["m_i"]
+        return dict(spool=spool, r=r, ds=ds, margin=margin, cells=cells, audits=audits,
+                    delta_match=cells["matched"]["m_i"] - base,
+                    delta_index=cells["reindexed"]["m_i"] - base,
+                    delta_value=cells["revalued"]["m_i"] - base,
+                    clamped=max(a["clamped"] for a in audits.values()))
+
+    # --- the FORWARD arrow: rung 58's second difference, on `at_lever` siblings ----------
+
+    def lever_composite(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                        lever: dict, accel=None, surge=None, Tt4_max=None, r: float = 0.5,
+                        s_settle: float = 1.2, ds: float = 0.005, spool: str = "lp",
+                        neighbour: "dict | None" = None) -> dict:
+        """RUNG 63. Rung 58's four-cell mixed second difference, built on `at_lever`
+        siblings so it can isolate the VALVE (`composite_credit` cannot -- see `_isolating`).
+
+            interaction = [M_i(both) - M_i(fuel)] - [M_i(lever) - M_i(neither)]
+
+        THE CURRENCY IS `M_i` for rung 58's reason, and for a bleed it is cleaner still:
+        the valve is a pure POINT-mover (`v = 0` identically), so `M_i = T_c - 1/phi` with
+        `T_c` the blade metal off the DESIGN map -- ONE fixed wall in all four cells, and no
+        moving-wall coordinate artifact is even possible.
+
+        `predicted` re-reads the LEG-FREE credit profile at the relocated minimum, which is
+        rung 58's mechanism claim (relocation x state-feed) transplanted: if it recovers the
+        interaction, this direction of the arrow is rung 58 CONFIRMED on a new lever rather
+        than new content. It does -- 85 %, against rung 58's own 86 %."""
+        assert spool in ("lp", "hp"), f"spool must be 'lp' or 'hp', got {spool!r}"
+        self._one_leg(accel, surge, Tt4_max)
+        ref, armed = self._isolating(lever, neighbour)
+        args = (flight, Tt4_lo, Tt4_hi, r, s_settle, ds, spool)
+        cells = {
+            "neither": ref._cell(*args, None, None, None),
+            "lever": armed._cell(*args, None, None, None),
+            "fuel": ref._cell(*args, accel, surge, Tt4_max),
+            "both": armed._cell(*args, accel, surge, Tt4_max),
+        }
+        c_bare = cells["lever"]["m_i"] - cells["neither"]["m_i"]
+        c_fuel = cells["both"]["m_i"] - cells["fuel"]["m_i"]
+        dI = c_fuel - c_bare
+        prof = armed._profile_credit(cells["neither"]["prof"], cells["lever"]["prof"])
+        p_bare, p_fuel = prof(cells["neither"]["s"]), prof(cells["both"]["s"])
+        return dict(
+            spool=spool, r=r, ds=ds, leg=self._one_leg(accel, surge, Tt4_max), cells=cells,
+            credit_bare=c_bare, credit_fuel=c_fuel, interaction=dI,
+            share=dI / c_bare if c_bare else float("nan"),
+            predicted=p_fuel - p_bare, profile_bare=p_bare, profile_fuel=p_fuel,
+            recovered=((p_fuel - p_bare) / dI if dI else float("nan")),
+            relocation=cells["both"]["s"] - cells["lever"]["s"],
+            relocation_bare=cells["fuel"]["s"] - cells["neither"]["s"],
+            removed_bare=cells["fuel"]["fuel_removed"],
+            removed_armed=cells["both"]["fuel_removed"])
+
+    # --- THE SECOND FINDING: a phi FLOOR beside the valve has no composable middle -------
+
+    def floor_dichotomy(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                        lever: dict, sm_grid, spool: str = "lp", r: float = 0.5,
+                        s_settle: float = 1.2, ds: float = 0.005,
+                        neighbour: "dict | None" = None) -> dict:
+        """RUNG 63. Rung 49's `phi` floor beside the valve, swept over the set point.
+
+        A bleed's credit runs ENTIRELY through `phi` (it is a pure point-mover: `v = 0`, so
+        `M_i = T_c - 1/phi` exactly). A `SurgeLimiter` PINS `phi`. Rung 60 found a floor
+        beside a STATOR gives `= v` in `phi` and `= 0` in incidence, both exact; with
+        `v = 0` those two collapse onto each other. So the pair has only two regimes, and
+        the boundary is not fitted -- it is the two plants' OWN minimum `phi`:
+
+            phi_lim < min phi(reference)   both plants clear    the leg is DORMANT in BOTH
+            in between                     the floor is DISARMED by the lever: dormant on
+                                           the armed plant, BIT-FOR-BIT its leg-free march
+            phi_lim > min phi(armed)       BOTH bind, the floor pins the currency, and the
+                                           lever's credit is EXACTLY zero -- rung 60's
+                                           tautology, now in both currencies at once
+
+        There is no middle in which the two compose. `fuel_removed` carries the verdict and
+        `s_eng` is deliberately NOT reported: a floor above the initial `phi` is violated
+        from `s = 0`, where `_s_eng` finds no upward crossing and returns nan."""
+        ref, armed = self._isolating(lever, neighbour)
+        cmap = self.map_lp_design if spool == "lp" else self.map_hp_design
+        args = (flight, Tt4_lo, Tt4_hi, r, s_settle, ds, spool)
+        free_ref = ref._cell(*args, None, None, None)
+        free_arm = armed._cell(*args, None, None, None)
+        rows = []
+        for sm in sm_grid:
+            lim = SurgeLimiter.from_margin(cmap, spool, sm)
+            cf, cb = ref._cell(*args, None, lim, None), armed._cell(*args, None, lim, None)
+            rows.append(dict(
+                sm=sm, phi_lim=lim.phi_lim, m_i_fuel=cf["m_i"], m_i_both=cb["m_i"],
+                min_phi_fuel=cf["min_phi"], min_phi_both=cb["min_phi"],
+                removed_fuel=cf["fuel_removed"], removed_both=cb["fuel_removed"],
+                credit=cb["m_i"] - cf["m_i"],
+                # DORMANT on the armed plant means BIT-FOR-BIT its own leg-free march --
+                # the strongest available witness, and the one a tolerance would blur.
+                disarmed=(cb["fuel_removed"] == 0.0 and cf["fuel_removed"] > 0.0
+                          and cb["m_i"] == free_arm["m_i"]
+                          and cb["min_phi"] == free_arm["min_phi"])))
+        return dict(spool=spool, r=r, ds=ds, phi_surge=cmap.phi_surge,
+                    min_phi_ref=free_ref["min_phi"], min_phi_armed=free_arm["min_phi"],
+                    band=(free_ref["min_phi"] / cmap.phi_surge - 1.0,
+                          free_arm["min_phi"] / cmap.phi_surge - 1.0),
+                    rows=rows)
