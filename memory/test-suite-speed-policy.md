@@ -78,5 +78,11 @@ What was WRONG was the conclusion *"the ONLY lever is running fewer tests"*: **l
 - **When a count you predicted and a count you measured disagree, the model is wrong** — find the
   second mechanism before shipping. (That is how the 122-decorator route was found at all.)
 
+**Timing numbers in CLAUDE.md drift, and the FAST tier drifts faster.** At rung 69 the
+measured tiers were 3:06 full / 1:54 `not slow`, against a documented 2:42 / 1:10 — but only
++25 tests had been added, so the old 1:10 was almost certainly STALE rather than the new work
+being expensive. If the fast tier appears to creep, check that hypothesis FIRST; do not open a
+performance regression on a delta between a fresh measurement and an unknown-age one.
+
 Remaining accepted risk: **`main.py` is covered by no test.** See [[always-commit-and-push]],
 [[session-end-routine]], [[golden-fingerprint-gate]].
