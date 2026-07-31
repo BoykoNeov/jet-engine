@@ -1,11 +1,11 @@
 ---
 name: perf-sonic-throat-and-pypy
-description: "The 2026-07-30 perf investigation: _sonic_throat's CPG branch is a CLOSED-FORM root (5.4x on a march, 28:18 -> 13:17 on the gate) and PyPy is a further 5.1-5.3x with BIT-IDENTICAL trajectories. Also the lesson that a profile's hot function may be hot for an algorithmic reason, not a language reason."
+description: "The 2026-07-30 perf investigation: _sonic_throat's CPG branch is a CLOSED-FORM root (5.4x on a march, 28:18 -> 13:17 on the gate) and PyPy is a further 5.1-5.3x. Its bit-identity is SCOPED to the CPG ladder (corrected 2026-07-31). Also the lesson that a profile's hot function may be hot for an algorithmic reason, not a language reason."
 metadata: 
   node_type: memory
   type: project
   originSessionId: 9815da7f-03c3-438c-b234-613c89605708
-  modified: 2026-07-30T20:27:40.187Z
+  modified: 2026-07-31T06:10:54.742Z
 ---
 
 Asked whether `engine.py` should be split and whether a **Rust rewrite** would buy speed. Both
@@ -27,8 +27,16 @@ fast the language computes it.** Rungs 31–66 all run CPG, so this is the whole
 `requirements.txt`/`pytest.ini` untouched. Preconditions if it ever is: matplotlib must be
 installed into it (`test_rung28` → `main` → matplotlib, one level down — I wrongly claimed no test
 imports it), and the learned-duration cache must not be shared between interpreters.
-**The load-bearing PyPy result is not speed — it is that a 341-point march is BIT-IDENTICAL across
-interpreters.** For a project whose spine is anchored numbers, that is the precondition.
+
+**⚠ CORRECTED 2026-07-31 — "BIT-IDENTICAL across interpreters" is TRUE but SCOPED, and I stated
+it here without the scope.** The evidence was ONE 341-point rung-66 march, which is a CPG /
+`_sonic_throat` path. Measured across six more kernels: the **CPG ladder is bit-identical**
+(96 matcher values + 6 152 trajectory floats + every discrete argmin/edge row), but **71% of 133
+equilibrium-side values DIFFER** (rungs 3–30 diagnostics; worst 3.7e-6 relative, on a
+difference-of-near-equals). Mechanism: `expm1`/`log1p`/`erf` differ by 1 ulp and naive `sum()`
+reassociates — primitives the NASA-integral / equilibrium kernels use and the CPG closed forms
+do not. **The generalising lesson: one bit-identical sample licenses a claim about that KERNEL,
+never about the interpreter.** Plan + evidence: `docs/plans/todo-pypy-switch.md`.
 
 **Two confounds I caught only by checking, both of which would have shipped a wrong number:**
 1. PyPy's `-n auto` resolved to 16 **logical** CPUs, CPython's to 8 **physical** → the first
