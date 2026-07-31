@@ -11,6 +11,7 @@ these lines (the same rule CLAUDE.md lives under).
 - [Test-suite speed policy](test-suite-speed-policy.md) — three gates (iterate / `--affected` ship / `--runslow` every 3rd rung); reduce spine runs on all three; the schedule is packed but that bounds SCHEDULING only
 - [Perf: sonic throat + PyPy](perf-sonic-throat-and-pypy.md) — the hot function was hot ALGORITHMICALLY (45 bisections for a linear root), not linguistically; gate 28:18 → 1:55; PyPy bit-identical but not adopted
 - [Golden fingerprint gate](golden-fingerprint-gate.md) — the project's ONLY absolute-value gate; goldens are a CPython anchor, NEVER regenerate them under another interpreter; measure a detector's sensitivity, don't assert it
+- [Golden gate slice 2](golden-gate-slice2.md) — 26 arms / 8044 values; drift is set by CONDITIONING not by rung, and the reduced-resolution worry measured backwards
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page published as artifact 56cde230…; update the same URL, regenerate via extract_data.py + build.py
 
 ## Shipped rungs

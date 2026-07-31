@@ -112,6 +112,16 @@ _SEED_SLOW = {
     "test_rung47": {"test_lagged_governor_overshoots_erodes_hp_and_misses_lp",
                     "test_overshoot_grows_and_hp_erodes_monotone_in_tau",
                     "test_fast_ramp_lp_relief_eroded_by_lag_never_enhanced"},
+    # The golden fingerprint's four HEAVY arms (the rungs 16/17/23/24 mixing closures added by
+    # slice 2 of docs/plans/todo-pypy-switch.md). Measured idle on CPython: r24 60.5 s, r23
+    # 60.5 s, r16 46.5 s, r17 16.4 s. Seeded because a COLD cache has no learned duration, so
+    # without this the very first `pytest` in a fresh clone runs them at full cost — the exact
+    # thing the seed set exists to prevent. The module's CHEAP arms are deliberately absent:
+    # they carry the `test_golden_fingerprint_` prefix and are spine-overridden anyway.
+    "test_numeric_fingerprint": {"test_golden_kernel_r16_pocket_quench_pdf",
+                                 "test_golden_kernel_r17_exhaust_no_clamp",
+                                 "test_golden_kernel_r23_spatial_dwell_pdf",
+                                 "test_golden_kernel_r24_spatial_local_pdf"},
 }
 
 

@@ -77,6 +77,9 @@ constant would buy flakiness rather than sensitivity. If rung 26's freeze-out nu
 guarding below 1e-5, the fix is a better-conditioned probe (its worst values are
 differences-of-near-equals), not a smaller number here.
 
+(That table is SLICE 1's eight arms. Slice 2 added eighteen more — see § SLICE 2 below, which
+re-measures the floor and leaves it at 1e-5.)
+
 --------------------------------------------------------------------------------------------
 IF THIS TEST FAILS — the procedure
 --------------------------------------------------------------------------------------------
@@ -122,6 +125,71 @@ Kernels
 A-F are the transcendental/equilibrium side: `expm1`, `log1p`, `erf` and naive `sum()`
 reassociation, which is exactly where the two interpreters disagree and where the CPG closed
 forms do not go.
+
+--------------------------------------------------------------------------------------------
+SLICE 2 — the rungs 3-30 DIAGNOSTIC ladder (added 2026-07-31)
+--------------------------------------------------------------------------------------------
+Slice 1 (above) sampled SIX equilibrium-side kernels. Slice 2 fills the machine: 18 more arms,
+keyed BY RUNG so a failure names the rung that moved.
+
+  prop  RUNGS 3/4/5/6 — the GAS PROPERTY LAYER under every factory (thermally_perfect /
+        reacting / reacting_forkb / reacting_equilibrium): cp, h, pr, gamma, their INVERSES,
+        Fork B's absolute-enthalpy interface, and the rung-6 Kp composition solve. This arm is
+        here for SEPARABILITY, not coverage: it is the substrate every other arm stands on, so
+        `prop` red means the PRIMITIVE layer moved, while a diagnostic red with `prop` green
+        means that diagnostic moved. It also carries the arm's widest drift (8.9e-12, on the
+        `T_from_pr_t` inverse — an iterative solve amplifying a 1-ulp property difference).
+  r7    thermal_nox, plain + the rung-19 super-eq-O lift + prompt NO
+  r8    zoned_nox MIXED-OUT across rung 9's phi bell (0.8 ... 2.0)
+  r10   the finite-rate quench (tau_q)          r11  JetMixing (tau_q DERIVED from J)
+  r12   Unmixedness                             r13  MixingPDF
+  r14   nozzle_flow (the rung-14 bracket)       r15  QuenchPDF
+  r16   PocketQuenchPDF (+ the 20/21 lift)      r17  exhaust_no_clamp
+  r18   TransportedPDF                          r22  SpatialPDF
+  r23   SpatialDwellPDF                         r24  SpatialLocalPDF
+  r25   finite_rate_nozzle    r27  no_freeze_out_nozzle    r28  coupled_no_freeze_out_nozzle
+
+RESOLUTION — the one real concession, stated up front. These arms run at REDUCED quadrature
+(the `_NG/_NS/_NB/_NQ/_NXY/_NT` block below), keeping the anchor CONFIGURATION (S=0.0625, the
+J values, phi_p=1.5, the design point) and cutting only node counts. ** A GREEN ARM HERE DOES
+NOT GUARD THE SPEC'S QUOTED DIGIT. ** It guards the kernel's arithmetic at this resolution.
+
+That concession was CHECKED rather than assumed, because the § 0 mechanism behind the
+equilibrium-side drift is naive `sum()` reassociation, whose error grows with TERM COUNT — so a
+reduced probe could systematically under-report. Re-measured at 4x the terms (2x n_bell, 2x
+n_quad, 4x cross-plane cells), the drift does NOT grow:
+
+    arm    reduced     4x terms
+    r13    1.85e-15    1.85e-15
+    r18    1.31e-15    1.31e-15
+    r22    1.34e-15    1.31e-15
+    r24    3.26e-14    2.49e-14   <- FALLS
+
+So on these kernels the drift is not set by the quadrature sums at all; it is inherited from
+the fixed upstream layer (the equilibrium design point and the Kp solve) and the quadrature
+AVERAGES it down. That inherited floor is not an inference — it is the `prop` arm, measured
+directly at 8.91e-12, and `prop` is upstream of every other arm in this module. The reduced
+tolerances are therefore not optimistic — if anything the full-resolution paths the specs quote
+are tighter.
+
+DRIFT AND SENSITIVITY. Every slice-2 tolerance is the same one-round-decade rule, measured over
+1 661 values; each consumes 1.3-9.6% of its band, the same snug-not-flaky range slice 1 landed
+in. The sensitivity sweep was run only on the arms whose tolerance is >= 1e-7
+(`sensitivity2.py`), because slice 1's own table showed tight arms simply detect AT their
+tolerance (A 1e-10 -> 1e-10, B 1e-11 -> 1e-11, E 1e-9 -> 1e-9) while the informative cases were
+the LOOSE ones (D amplifying, F weak):
+
+    arm    tol      smallest relative input change DETECTED
+    r25    1e-4     1e-5      <- ties kernel F as the gate's weakest
+    r28    1e-5     1e-6
+
+Both are loose for kernel F's exact reason: their worst values (`dS_finite`, `channel_ratio`)
+are an entropy difference-of-near-equals and a log-ratio, which amplify the underlying drift.
+** The gate's floor is therefore UNCHANGED at 1e-5 — now reached by two arms (F, r25) instead
+of one — with everything else at 1e-6 or tighter. ** The other SIXTEEN slice-2 arms were NOT
+swept; that is a recorded skip, not implied coverage, and it is safe only in the direction
+claimed: a 1e-13-band arm cannot have a floor WORSE than the 1e-5 headline, but nothing here
+says how much better it is.
 """
 import json
 import os
@@ -129,7 +197,12 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from turbojet.gas import Gas, JetMixing, FreezeOut, _spatial_local_field  # noqa: E402
+from turbojet.gas import (  # noqa: E402
+    Gas, JetMixing, FreezeOut, _spatial_local_field,
+    Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF,
+    SpatialPDF, SpatialDwellPDF, SpatialLocalPDF, FiniteRate, NOFreezeOut, CoupledNOFreezeOut,
+    PromptNO,
+)
 from turbojet.engine import (  # noqa: E402
     FlightCondition, build_turbojet, build_two_spool_turbojet, OffDesignMatcher, ComponentMap,
     TwoLagCascadeTransient, BleedLimiter, SurgeLimiter, AsymmetricLag,
@@ -149,7 +222,29 @@ TOL = {
     "C":   1e-13,    # measured drift 2.4e-15
     "D":   1e-7,     # measured drift 1.0e-8
     "E":   1e-9,     # measured drift 6.6e-11
-    "F":   1e-4,     # measured drift 3.7e-6  <- the WEAKEST arm; see test_sensitivity_is_measured
+    "F":   1e-4,     # measured drift 3.7e-6  <- the WEAKEST arm of slice 1
+    # ---------------- SLICE 2: the rungs 3-30 DIAGNOSTIC ladder (2026-07-31) ----------------
+    # Same rule, same measurement (`M:\claud_projects\temp\pypy-fingerprint\slice2.py` +
+    # `compare2.py`, 1 661 values). Keyed BY RUNG, not by letter: a failure has to say which
+    # rung moved. Every one of these consumes 1.3-9.6% of its band — see § SLICE 2 below.
+    "prop": 1e-10,   # measured drift 8.9e-12   the gas property layer, rungs 3/4/5/6
+    "r7":   1e-13,   # measured drift 2.1e-15   thermal_nox (+ rung-19 super-eq-O / prompt)
+    "r8":   1e-13,   # measured drift 2.4e-15   zoned_nox mixed-out, the rung-9 phi bell
+    "r10":  1e-13,   # measured drift 1.6e-15   the finite-rate quench (tau_q)
+    "r11":  1e-13,   # measured drift 1.3e-15   JetMixing — tau_q DERIVED from J
+    "r12":  1e-13,   # measured drift 1.4e-15   Unmixedness
+    "r13":  1e-13,   # measured drift 1.9e-15   MixingPDF
+    "r14":  1e-9,    # measured drift 9.7e-11   nozzle_flow (frozen-vs-equilibrium bracket)
+    "r15":  1e-13,   # measured drift 1.8e-15   QuenchPDF
+    "r16":  1e-13,   # measured drift 1.7e-15   PocketQuenchPDF (+ the rung-20/21 lift)
+    "r17":  1e-9,    # measured drift 9.7e-11   exhaust_no_clamp — inherits r14's nozzle
+    "r18":  1e-13,   # measured drift 1.3e-15   TransportedPDF (the NEGATIVE rung's kernel)
+    "r22":  1e-13,   # measured drift 1.3e-15   SpatialPDF
+    "r23":  1e-13,   # measured drift 1.6e-15   SpatialDwellPDF
+    "r24":  1e-12,   # measured drift 3.3e-14   SpatialLocalPDF
+    "r25":  1e-4,    # measured drift 2.0e-6    finite_rate_nozzle <- joint-WEAKEST; see below
+    "r27":  1e-8,    # measured drift 1.8e-10   no_freeze_out_nozzle
+    "r28":  1e-5,    # measured drift 6.8e-7    coupled_no_freeze_out_nozzle
 }
 
 # --------------------------------------------------------------------------- shared conditions
@@ -166,9 +261,20 @@ def _cpg_gas():
 
 
 def _floats_of(obj, prefix, out):
-    """Every public float attribute of a result object, sorted for determinism."""
+    """Every public float attribute of a result object, sorted for determinism.
+
+    An attribute that RAISES is PINNED as raising, not silently skipped: the slice-2 probe
+    found `CoupledNOFreezeOutState.no_collapse_ratio` (rung 28) reads `self.x_no_e_entry`, a
+    field copied from `NozzleFlowState` that this dataclass does not have — so it raises
+    AttributeError unconditionally. It is dead code (nothing calls it), so this is a disclosure,
+    not a repair. Recording the exception TYPE as a pinned value means the day it starts or stops
+    raising reads as the SHAPE change it is, rather than as a quietly-dropped attribute."""
     for attr in sorted(a for a in dir(obj) if not a.startswith("_")):
-        v = getattr(obj, attr)
+        try:
+            v = getattr(obj, attr)
+        except Exception as exc:                     # noqa: BLE001 — pinning the failure IS the point
+            out[f"{prefix}.{attr}!raises"] = type(exc).__name__
+            continue
         if isinstance(v, float):
             out[f"{prefix}.{attr}"] = v
 
@@ -308,8 +414,265 @@ def kernel_F():
     return out
 
 
+# ===========================================================================================
+# SLICE 2 — the rungs 3-30 DIAGNOSTIC ladder
+# ===========================================================================================
+# RESOLUTION, disclosed. These kernels run at REDUCED quadrature, not at the resolution a spec
+# quotes: the mixing closures at full config defaults are the project's most expensive code
+# (rung 24's `test_ei_stays_monotone` is ~518 s for ONE gate). The anchor CONFIGURATION is kept
+# — S=0.0625, the J values, phi_p=1.5, the design point — and only the node counts are cut.
+#
+# ** A GREEN ARM HERE DOES NOT GUARD THE SPEC'S QUOTED DIGIT. ** It guards the kernel's
+# arithmetic at this resolution, which is what a drift detector needs. Said plainly because the
+# reverse reading is the tempting one.
+#
+# The reduction was CHECKED, not assumed. The mechanism behind the equilibrium-side drift is
+# naive `sum()` reassociation, whose error grows with TERM COUNT — so a reduced probe could
+# under-report. Re-measured at 4x the terms (2x n_bell, 2x n_quad, 4x cross-plane cells) on
+# r13/r18/r22/r24: see § SLICE 2 in the module docstring for the result.
+_NG, _NS = 24, 200        # zoned_nox quench grid / steps  (defaults 240 / 2000)
+_NB, _NQ = 24, 48         # PDF bell / quadrature nodes    (defaults 200 / 200, or 120 / 160)
+_NXY = 16                 # cross-plane ny = nz            (defaults 48, or 40)
+_NT = 12                  # dwell time nodes               (default 32)
+_PDF = dict(n_bell=_NB, n_quad=_NQ)
+_XY = dict(ny=_NXY, nz=_NXY)
+_MIX = dict(C_e=0.20, U_c=75.0, shape_n=2.0)      # the rung-11 jet, J passed per call
+
+
+def _dp():
+    """The shared equilibrium design point, as (gas, far, Tt3, Tt4, pt4, Tt5, pt5)."""
+    gas, res = _equilibrium_design()
+    st3, st4, st5 = res.stations["3"], res.stations["4"], res.stations["5"]
+    return gas, st4.far, st3.Tt, st4.Tt, st4.pt, st5.Tt, st5.pt
+
+
+def _zoned(cases):
+    """zoned_nox at the shared design point, rung 9's rich primary, one closure per case."""
+    gas, far, Tt3, Tt4, pt4, _, _ = _dp()
+    out = {}
+    for tag, extra in cases.items():
+        kw = dict(phi_primary=1.5, tau=3e-3, quench_ngrid=_NG, quench_nsteps=_NS)
+        kw.update(extra)
+        _floats_of(gas.zoned_nox(far, Tt3, Tt4, pt4, **kw), tag, out)
+    return out
+
+
+def kernel_prop():
+    """RUNGS 3/4/5/6 — the GAS PROPERTY LAYER, under every factory.
+
+    The substrate every other arm stands on: the NASA cp/h/pr integrals and their inverses,
+    plus Fork B's absolute-enthalpy interface and the rung-6 equilibrium composition solve.
+    It buys SEPARABILITY — this arm red means the PRIMITIVE layer moved; a diagnostic arm red
+    with this one green means the diagnostic moved. Milliseconds; no cycle run."""
+    TS = [250.0, 500.0, 800.0, 1200.0, 1500.0, 1800.0, 2200.0, 2800.0]
+    FARS = [0.0, 0.010, 0.02718, 0.040]
+    out = {}
+    gases = {"tpg": Gas.thermally_perfect(),
+             "r4": Gas.reacting(f_design=0.02718),
+             "r5": Gas.reacting_forkb(f_design=0.02718)}
+    eq = Gas.reacting_equilibrium(f_design=0.02718)
+    eq.freeze_equilibrium(0.02718, 1500.0, 1.4e6)     # an equilibrium hot section must be frozen
+    gases["r6"] = eq
+
+    for gname, g in gases.items():
+        for T in TS:
+            out[f"{gname}.cp_c({T:g})"] = g.cp_c_at(T)
+            out[f"{gname}.h_c({T:g})"] = g.h_c(T)
+            out[f"{gname}.pr_c({T:g})"] = g.pr_c(T)
+            out[f"{gname}.gam_c({T:g})"] = g.gamma_c_at(T)
+            out[f"{gname}.T_of_h_c({T:g})"] = g.T_from_h_c(g.h_c(T))
+            out[f"{gname}.T_of_pr_c({T:g})"] = g.T_from_pr_c(g.pr_c(T))
+        for far in ([0.02718] if gname == "r6" else FARS):    # r6 is frozen at ONE far
+            out[f"{gname}.R_t({far:g})"] = g.R_t_at(far)
+            for T in TS:
+                out[f"{gname}.cp_t({T:g},{far:g})"] = g.cp_t_at(T, far)
+                out[f"{gname}.h_t({T:g},{far:g})"] = g.h_t(T, far)
+                out[f"{gname}.pr_t({T:g},{far:g})"] = g.pr_t(T, far)
+                out[f"{gname}.gam_t({T:g},{far:g})"] = g.gamma_t_at(T, far)
+                out[f"{gname}.T_of_h_t({T:g},{far:g})"] = g.T_from_h_t(g.h_t(T, far), far)
+                out[f"{gname}.T_of_pr_t({T:g},{far:g})"] = g.T_from_pr_t(g.pr_t(T, far), far)
+
+    fb = gases["r5"]                                          # rung 5's absolute-enthalpy side
+    out["r5.lhv"], out["r5.f_stoich"] = fb.lhv, fb.f_stoich_lean
+    out["r5.hf_fuel_mass"] = fb.hf_fuel_mass
+    for far in FARS:
+        out[f"r5.hf_products({far:g})"] = fb.hf_products_mass(far)
+        for T in (1200.0, 1800.0, 2400.0):
+            out[f"r5.h_t_abs({T:g},{far:g})"] = fb.h_t_abs(T, far)
+    for T in (1200.0, 1800.0, 2400.0):
+        out[f"r6.h_air_B({T:g})"] = eq.h_air_abs_B(T)
+    for far, T, p in ((0.010, 1800.0, 1.4e6), (0.02718, 2400.0, 1.4e6), (0.02718, 2400.0, 3.0e5)):
+        comp = eq.equilibrium_composition(far, T, p)          # the rung-6 Kp solve itself
+        for s in sorted(comp):
+            out[f"r6.comp({far:g},{T:g},{p:g}).{s}"] = comp[s]
+        out[f"r6.h_prod_B({far:g},{T:g},{p:g})"] = eq.h_products_abs_B(comp, T)
+    return out
+
+
+def kernel_r7():
+    """RUNG 7 (+19) — thermal_nox: extended Zeldovich on the equilibrium pool. Plain, with the
+    rung-19 super-equilibrium-O lift, with prompt NO, and both. Pure Arrhenius exp/log."""
+    gas, far, _, _, pt4, _, _ = _dp()
+    out = {}
+    for tag, kw in (("plain", {}), ("supereq", dict(super_eq_o=True)),
+                    ("prompt", dict(prompt=PromptNO(), phi=1.0)),
+                    ("both", dict(super_eq_o=True, prompt=PromptNO(), phi=1.2))):
+        _floats_of(gas.thermal_nox(far, 2200.0, pt4, tau=3e-3, **kw), tag, out)
+    for T in (1800.0, 2000.0, 2400.0):                # the T-sensitivity the rung reads
+        _floats_of(gas.thermal_nox(far, T, pt4, tau=3e-3), f"T{int(T)}", out)
+    return out
+
+
+def kernel_r8():
+    """RUNGS 8/9 — zoned_nox MIXED-OUT, swept over phi_primary: the rung-9 bell (lean -> the
+    near-stoich peak -> the rich collapse), with no quench closure in the way."""
+    return _zoned({f"phi{phi:g}": dict(phi_primary=phi) for phi in (0.8, 1.0, 1.2, 1.5, 2.0)})
+
+
+def kernel_r10():
+    """RUNG 10 — the FINITE-RATE quench: tau_q resolves the dilution in time, so a rich
+    primary's T rises back through the stoich peak and RE-MAKES NO."""
+    return _zoned({f"tq{tq:g}": dict(tau_q=tq) for tq in (1e-3, 3e-3)})
+
+
+def kernel_r11():
+    """RUNG 11 — JetMixing DERIVES tau_q from the jet momentum-flux ratio J (the monotone,
+    mean-field sweep)."""
+    return _zoned({f"J{int(J)}": dict(mixing=JetMixing(J=J, **_MIX))
+                         for J in (4.0, 16.0, 64.0)})
+
+
+def kernel_r12():
+    """RUNG 12 — Unmixedness: the bulk + under-mixed-core split that turns the J-sweep back up
+    and pins the minimum at C_opt."""
+    return _zoned({f"J{int(J)}": dict(mixing=JetMixing(J=J, **_MIX),
+                                            unmixedness=Unmixedness(S=0.0625))
+                         for J in (4.0, 16.0, 64.0)})
+
+
+def kernel_r13():
+    """RUNG 13 — MixingPDF: the mean-preserving beta-PDF over the ideal bell."""
+    return _zoned({f"J{int(J)}": dict(mixing=JetMixing(J=J, **_MIX),
+                                            pdf=MixingPDF(S=0.0625, **_PDF))
+                         for J in (4.0, 16.0)})
+
+
+def kernel_r14():
+    """RUNG 14 — nozzle_flow: the frozen-vs-shifting-equilibrium exit-velocity bracket, and the
+    dropped-clamp collapse ratio every rung 17+ number reads off it."""
+    gas, far, _, Tt4, pt4, Tt5, pt5 = _dp()
+    out = {}
+    _floats_of(gas.nozzle_flow(far, Tt4, pt4, Tt5, pt5, FLIGHT.p0), "nf", out)
+    return out
+
+
+def kernel_r15():
+    """RUNG 15 — QuenchPDF: rung 13's PDF carried through the finite quench chain (both mixing
+    mechanisms combined -> a finite floor)."""
+    return _zoned({f"J{int(J)}": dict(mixing=JetMixing(J=J, **_MIX),
+                                            pdf_quench=QuenchPDF(S=0.0625, **_PDF))
+                         for J in (4.0, 16.0)})
+
+
+def kernel_r16():
+    """RUNG 16 (+20/21) — PocketQuenchPDF: each pocket through its OWN quench, with and without
+    the rung-19/20/21 super-equilibrium-O lift threaded through those same integrals."""
+    return _zoned({"J4": dict(mixing=JetMixing(J=4.0, **_MIX),
+                                    pocket_quench=PocketQuenchPDF(S=0.0625, **_PDF)),
+                         "J16": dict(mixing=JetMixing(J=16.0, **_MIX),
+                                     pocket_quench=PocketQuenchPDF(S=0.0625, **_PDF)),
+                         "J16.seq": dict(mixing=JetMixing(J=16.0, **_MIX), super_eq_o=True,
+                                         pocket_quench=PocketQuenchPDF(S=0.0625, **_PDF))})
+
+
+def kernel_r17():
+    """RUNG 17 — exhaust_no_clamp: the three mixing-fidelity models (mixed-out / bulk quench /
+    per-pocket) through the SAME rung-14 nozzle, and the clamp margin each one reads."""
+    gas, far, Tt3, Tt4, pt4, Tt5, pt5 = _dp()
+    out = {}
+    c = gas.exhaust_no_clamp(far, Tt3, Tt4, pt4, Tt5, pt5, FLIGHT.p0, phi_primary=1.5,
+                             mixing=JetMixing(J=16.0, **_MIX),
+                             pocket_quench=PocketQuenchPDF(S=0.0625, **_PDF),
+                             quench_ngrid=_NG, quench_nsteps=_NS)
+    _floats_of(c, "clamp", out)
+    return out
+
+
+def kernel_r18():
+    """RUNG 18 — TransportedPDF: the variance-decay ODE. The rung is a NEGATIVE, but its kernel
+    is live code and carries quoted digits, so it is pinned like any other."""
+    return _zoned({f"J{int(J)}": dict(mixing=JetMixing(J=J, **_MIX),
+                                            transported=TransportedPDF(S=0.0625, **_PDF))
+                         for J in (4.0, 16.0)})
+
+
+def kernel_r22():
+    """RUNG 22 — SpatialPDF: the resolved y-z cross-plane that makes C_opt an OUTPUT."""
+    return _zoned({f"J{int(J)}": dict(mixing=JetMixing(J=J, **_MIX),
+                                            spatial=SpatialPDF(S=0.0625, **_PDF, **_XY))
+                         for J in (4.0, 16.0)})
+
+
+def kernel_r23():
+    """RUNG 23 — SpatialDwellPDF: the cross-plane developed in TIME (the xi-tau correlation that
+    ADDS NO)."""
+    return _zoned({f"J{int(J)}": dict(
+        mixing=JetMixing(J=J, **_MIX),
+        spatial_dwell=SpatialDwellPDF(S=0.0625, nt=_NT, **_PDF, **_XY)) for J in (4.0, 16.0)})
+
+
+def kernel_r24():
+    """RUNG 24 — SpatialLocalPDF: each cell its OWN rate, so tau_mix cancels and F(C) goes
+    U-shaped with its minimum AT the derived C_opt."""
+    return _zoned({f"J{int(J)}": dict(mixing=JetMixing(J=J, **_MIX),
+                                            spatial_local=SpatialLocalPDF(S=0.0625, **_PDF, **_XY))
+                         for J in (4.0, 16.0)})
+
+
+def kernel_r25():
+    """RUNG 25 — finite_rate_nozzle: the Damkoehler flow between rung-14's bounds, across the
+    three-state (F / I / R) picture. Its entropy differences are differences-of-near-equals,
+    which is why this arm's band is as wide as kernel F's."""
+    gas, far, _, Tt4, pt4, Tt5, pt5 = _dp()
+    out = {}
+    for Da in (0.1, 1.0, 10.0):
+        _floats_of(gas.finite_rate_nozzle(far, Tt4, pt4, Tt5, pt5, FLIGHT.p0,
+                                          finite_rate=FiniteRate(Da=Da)), f"Da{Da:g}", out)
+    return out
+
+
+def kernel_r27():
+    """RUNG 27 — no_freeze_out_nozzle: the clock under the frozen-NO assumption every NO number
+    since rung 7 rides on."""
+    gas, far, Tt3, Tt4, pt4, Tt5, pt5 = _dp()
+    out = {}
+    _floats_of(gas.no_freeze_out_nozzle(far, Tt3, Tt4, pt4, Tt5, pt5, FLIGHT.p0,
+                                        phi_primary=1.5,
+                                        no_freeze_out=NOFreezeOut(L=0.3)), "nfo", out)
+    return out
+
+
+def kernel_r28():
+    """RUNG 28 — coupled_no_freeze_out_nozzle, COUPLED and UNCOUPLED: rung 27's clock on rung
+    26's relaxing pool, and the kill test both of rung 28's corrections ride on."""
+    gas, far, Tt3, Tt4, pt4, Tt5, pt5 = _dp()
+    out = {}
+    for couple in (True, False):
+        _floats_of(gas.coupled_no_freeze_out_nozzle(
+            far, Tt3, Tt4, pt4, Tt5, pt5, FLIGHT.p0, phi_primary=1.5,
+            coupled=CoupledNOFreezeOut(L=0.3), couple=couple),
+            "on" if couple else "off", out)
+    return out
+
+
 KERNELS = {"cpg": kernel_cpg, "r66": kernel_r66, "A": kernel_A, "B": kernel_B,
-           "C": kernel_C, "D": kernel_D, "E": kernel_E, "F": kernel_F}
+           "C": kernel_C, "D": kernel_D, "E": kernel_E, "F": kernel_F,
+           # slice 2 — the rungs 3-30 diagnostic ladder
+           "prop": kernel_prop, "r7": kernel_r7, "r8": kernel_r8, "r10": kernel_r10,
+           "r11": kernel_r11, "r12": kernel_r12, "r13": kernel_r13, "r14": kernel_r14,
+           "r15": kernel_r15, "r16": kernel_r16, "r17": kernel_r17, "r18": kernel_r18,
+           "r22": kernel_r22, "r23": kernel_r23, "r24": kernel_r24, "r25": kernel_r25,
+           "r27": kernel_r27, "r28": kernel_r28}
 
 
 # --------------------------------------------------------------------------- encode / compare
@@ -375,8 +738,9 @@ def _check(name):
             # can report — a limiter engagement row moving is exactly what rungs 46-66 measure.
             f"  {k}\n    golden {_show(w)}\n    actual {_show(g)}"
             + (f"\n    rel err {e:.3e}" if e != float("inf") else
-               "\n    ^ a DISCRETE reading MOVED — not a drift. A min-select crossing or a "
-               "limiter engage/release row is at a different index.")
+               "\n    ^ a DISCRETE reading MOVED — not a drift. Either a min-select crossing / "
+               "limiter engage-release row is at a different index (the rungs 46-66 failure "
+               "mode), or a `!raises` attribute changed which exception it raises.")
             for k, w, g, e in bad[:5])
         + (f"\n  ... and {len(bad) - 5} more" if len(bad) > 5 else "")
         + "\nDo NOT regenerate reflexively — work the procedure in this module's docstring.")
@@ -422,6 +786,94 @@ def test_golden_fingerprint_F_freeze_out():
     _check("F")
 
 
+# ------------------------------------------------------------------ slice 2, the CHEAP arms
+# `test_golden_fingerprint_*` == the conftest spine override: never slow-tagged, runs on EVERY
+# invocation. Given ONLY to arms measured <= 2 s idle, so none of them can end up in kernel E's
+# position (7.71 s against SLOW_SECONDS = 8.0, i.e. tagged or not depending on box load).
+
+def test_golden_fingerprint_prop_gas_properties():
+    """RUNGS 3-6, the property layer. The separability arm: red here means the PRIMITIVE moved."""
+    _check("prop")
+
+
+def test_golden_fingerprint_r7_thermal_nox():
+    _check("r7")
+
+
+def test_golden_fingerprint_r8_zoned_nox_bell():
+    _check("r8")
+
+
+def test_golden_fingerprint_r10_finite_rate_quench():
+    _check("r10")
+
+
+def test_golden_fingerprint_r14_nozzle_flow():
+    _check("r14")
+
+
+def test_golden_fingerprint_r25_finite_rate_nozzle():
+    _check("r25")
+
+
+def test_golden_fingerprint_r27_no_freeze_out():
+    _check("r27")
+
+
+def test_golden_fingerprint_r28_coupled_no_march():
+    _check("r28")
+
+
+# ------------------------------------------------------------------ slice 2, the COSTLY arms
+# Deliberately NOT `test_golden_fingerprint_*`: these are the mixing closures, 2.4-60 s each, and
+# conftest's spine pattern was narrowed precisely so they cannot be dragged into bare `pytest`.
+# They are slow-tagged like every other FINDING sweep. That is weaker than the spine but not by
+# much: `--affected` re-enables the slow gates of every module the diff can reach, and this
+# module imports `turbojet.gas` and `turbojet.engine`, so a rung commit runs them on the SHIP
+# gate. Measured idle, CPython: r11 2.4 / r12 2.4 / r13 3.1 / r15 3.1 / r18 4.5 / r22 4.6 /
+# r17 16.4 / r16 46.5 / r23 60.5 / r24 60.5 s. The full gate's pole is rung 24's own
+# `test_ei_stays_monotone` at ~518 s, so none of these moves the wall clock.
+
+def test_golden_kernel_r11_jet_mixing():
+    _check("r11")
+
+
+def test_golden_kernel_r12_unmixedness():
+    _check("r12")
+
+
+def test_golden_kernel_r13_mixing_pdf():
+    _check("r13")
+
+
+def test_golden_kernel_r15_quench_pdf():
+    _check("r15")
+
+
+def test_golden_kernel_r16_pocket_quench_pdf():
+    _check("r16")
+
+
+def test_golden_kernel_r17_exhaust_no_clamp():
+    _check("r17")
+
+
+def test_golden_kernel_r18_transported_pdf():
+    _check("r18")
+
+
+def test_golden_kernel_r22_spatial_pdf():
+    _check("r22")
+
+
+def test_golden_kernel_r23_spatial_dwell_pdf():
+    _check("r23")
+
+
+def test_golden_kernel_r24_spatial_local_pdf():
+    _check("r24")
+
+
 def test_golden_file_declares_its_provenance():
     """The goldens' whole value is being CPython's. If the meta block ever stops saying so —
     because someone regenerated under another interpreter — the anchor is gone and this file
@@ -447,6 +899,28 @@ def test_every_kernel_has_a_disclosed_tolerance():
         f"goldens {sorted(golden['kernels'])} — these three sets must agree exactly")
 
 
+def test_every_kernel_is_actually_GATED():
+    """The three sets above can all agree while a kernel has NO test function calling `_check`
+    on it — it would be generated, pinned, counted in the value total, and never verified. At
+    eight arms that was eyeball-checkable; at twenty-six across two naming conventions it is not,
+    and the failure is silent in the direction that matters (a green suite hiding an unchecked
+    kernel). So read the gates' own source and assert every kernel is reached by one."""
+    import inspect
+    import re
+
+    gated = set()
+    for name, fn in globals().items():
+        if name.startswith("test_") and callable(fn) and name != "test_every_kernel_is_actually_GATED":
+            gated |= set(re.findall(r'_check\("([^"]+)"\)', inspect.getsource(fn)))
+    ungated = sorted(set(KERNELS) - gated)
+    assert not ungated, (
+        f"{len(ungated)} kernel(s) are pinned in the golden but no test checks them: {ungated}. "
+        "Add a gate — `test_golden_fingerprint_*` if the arm is <= 2 s idle (conftest's spine "
+        "override), `test_golden_kernel_*` otherwise.")
+    assert not (gated - set(KERNELS)), (
+        f"a gate calls _check on a kernel that does not exist: {sorted(gated - set(KERNELS))}")
+
+
 # --------------------------------------------------------------------------- regeneration
 def _regenerate():
     """Print every changing value, THEN write. The printed diff is the point of the flag."""
@@ -462,20 +936,42 @@ def _regenerate():
         print(f"  running kernel {name} ...", flush=True)
         new[name] = {k: _encode(v) for k, v in fn().items()}
 
-    changed = 0
+    # TWO PASSES, and the order is the whole point. A regeneration that ADDS a kernel (slice 2 of
+    # the PyPy plan adds ~10) emits thousands of pure additions; a single capped list would spend
+    # its budget on those and never reach a MOVED value — which is the only kind that can destroy
+    # the anchor. So moved-values print FIRST and UNCAPPED; additions print after, capped.
+    moved, added, removed = [], 0, []
     for name in sorted(new):
         prev, cur = old.get(name, {}), new[name]
         for k in sorted(set(prev) | set(cur)):
-            a, b = _decode(prev.get(k)) if k in prev else None, _decode(cur[k]) if k in cur else None
+            if k not in prev:
+                added += 1
+                continue
+            if k not in cur:
+                removed.append(f"{name}.{k}")
+                continue
+            a, b = _decode(prev[k]), _decode(cur[k])
             if a != b:
-                changed += 1
-                if changed <= 40:
-                    print(f"    {name}.{k}\n      was {a!r}\n      now {b!r}")
-    print(f"\n  {changed} value(s) changed" + (" (first 40 shown)" if changed > 40 else ""))
-    if changed:
-        print("  >>> READ THAT DIFF. If it is longer than you expected, STOP and work the")
-        print("  >>> procedure in this module's docstring. Record in the commit message WHICH")
-        print("  >>> values moved, BY HOW MUCH, and WHY that is correct.")
+                moved.append((f"{name}.{k}", a, b))
+    for name in sorted(set(old) - set(new)):
+        removed.extend(f"{name}.{k}" for k in sorted(old[name]))
+
+    if moved:
+        print(f"\n  !!! {len(moved)} EXISTING value(s) MOVED — this is the diff that matters:")
+        for k, a, b in moved:
+            print(f"    {k}\n      was {a!r}\n      now {b!r}")
+    if removed:
+        print(f"\n  !!! {len(removed)} value(s) DISAPPEARED (a probe's shape changed): "
+              f"{removed[:10]}" + (f" ... +{len(removed) - 10}" if len(removed) > 10 else ""))
+    print(f"\n  {len(moved)} moved, {len(removed)} removed, {added} newly added")
+    if moved or removed:
+        print("  >>> READ THAT DIFF. A MOVED or REMOVED value is the anchor changing under you.")
+        print("  >>> If it is longer than you expected, STOP and work the procedure in this")
+        print("  >>> module's docstring. Record in the commit message WHICH values moved, BY HOW")
+        print("  >>> MUCH, and WHY that is correct.")
+    else:
+        print("  >>> No existing value moved. Confirm with: git diff tests/golden/ — the ONLY")
+        print("  >>> '-' lines must be the `meta` block. Any other '-' line means a value moved.")
 
     sha = ""
     try:

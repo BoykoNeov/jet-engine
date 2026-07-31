@@ -3,15 +3,17 @@
 **Status:** planned, not started. Not a rung. A build/infrastructure change. Raised 2026-07-31
 after the measurement in § 0 refuted the scope of a claim this project had already recorded.
 
-**Sliced into four units, of which one is already measured empty** — so the real remaining work is
-**slices 1 + 2 (build the missing detector)** and **slice 4 (the switch, mostly config and docs)**.
-Slice 5 is optional and deliberately deferred.
+**Sliced into four units. Slices 0–3 are now done** (slice 3 measured empty), so the only
+remaining work is **slice 4 — the switch itself, mostly config and docs**. Slice 5 is optional and
+deliberately deferred. The detector slices 1–2 exist to make the switch safe, and they are built:
+**8 044 pinned CPython values — rungs 3–28 gated individually, rungs 31–66 through the CPG ladder
+and the rung-66 cascade — green under both interpreters.**
 
 | slice | what | size |
 |---|---|---|
 | 0 | recon — the evidence base | **DONE** |
 | 1 | the golden-fingerprint gate | **DONE** — `tests/test_numeric_fingerprint.py`, 6 381 pinned values |
-| 2 | extend it across the rungs 3–30 kernels | the least certain; inventory grind |
+| 2 | extend it across the rungs 3–30 kernels | **DONE** — 18 arms by rung, 8 044 pinned values |
 | 3 | make the full gate green on PyPy | **MEASURED EMPTY — 973 passed, 0 failed** |
 | 4 | the switch itself | small; config + docs + a durable install path |
 | 5 | collapse the three-gate policy | optional, deferred by choice |
@@ -235,6 +237,112 @@ alongside the equilibrium one.
 **Done when:** every rungs 3–30 kernel with quoted digits has at least one pinned value, green on
 both interpreters.
 
+### RESULT — DONE (2026-07-31)
+
+**Shipped:** 18 new arms in `tests/test_numeric_fingerprint.py`, keyed **by rung** (`prop`, `r7`,
+`r8`, `r10`–`r18`, `r22`–`r25`, `r27`, `r28`) rather than continuing the A–F letters — a failure
+message has to name the rung that moved. The golden file goes **6 381 → 8 044 values (384 →
+496 KB)**. **The eighteen arms reproduce the temp-dir probe bit-for-bit** (`verify_promoted.py`),
+so the committed gate is the measured object, not a re-derivation of it.
+
+```
+CPython 3.14.3   pytest tests/test_numeric_fingerprint.py --runslow   29 passed in 66.6s
+PyPy 3.11.15     (same, against the CPython goldens)                  28 passed in 11.6s
+bare `pytest`    24 of 28 (the four heavy arms slow-tagged)            9.4s
+FULL GATE        CPython 1001 in 13:00  /  PyPy 1002 in 2:00          both green (§ 3)
+```
+
+**Both § 2 decisions taken:**
+
+1. **Coverage bar — the anchor CONFIGURATION at reduced quadrature**, not a cheap representative
+   point and not the full-resolution anchor. S=0.0625, the J values, φ_p=1.5 and the design point
+   are the ones the specs use; only node counts are cut (quench grid 24/200 vs 240/2000, PDF nodes
+   24/48 vs 200/200, cross-plane 16² vs 48²). **Stated in the test, in the register the project
+   uses for concessions: a green arm here does NOT guard the digit a spec quotes.**
+2. **Sampling/runtime is explicit and nothing is silently dropped.** Every kernel in § 2's
+   uncovered list is pinned. Total probe cost 209.8 s CPython (heaviest arm 60.5 s) against a full
+   gate whose pole is rung 24's own `test_ei_stays_monotone` at ~518 s — so the arms pack in
+   without moving the wall clock, and no top-N truncation was needed.
+
+**R1 (“slice 2 is bigger than it looks”) did not materialise, and the reason is worth recording:**
+the fear was that the rungs 7–24 kernels are too slow to cover meaningfully. They are, at their
+**config-default** resolution. At reduced quadrature they are 0.01–60 s — and the reduction turned
+out to cost nothing in fidelity (next paragraph). The expensive thing about those kernels was never
+the arithmetic under test; it was the convergence resolution the FINDING gates need.
+
+**The one thing that could have made this slice a lie, checked rather than assumed.** § 0's
+mechanism for the equilibrium-side drift is naive `sum()` reassociation, whose error grows with
+TERM COUNT — so a reduced-resolution arm could systematically under-report the drift of the
+full-resolution path. Re-measured at 4× the terms:
+
+| arm | reduced | 4× terms |
+|---|---|---|
+| r13 | 1.85e-15 | 1.85e-15 |
+| r18 | 1.31e-15 | 1.31e-15 |
+| r22 | 1.34e-15 | 1.31e-15 |
+| r24 | 3.26e-14 | **2.49e-14** |
+
+**It does not grow — it falls.** The drift on these kernels is not produced by the quadrature sums
+at all; it is inherited from the fixed upstream layer (the design point, the Kp solve) and the
+quadrature AVERAGES it down. (r22's worst key even moves under refinement, from `ei_no_spatial` to
+the shared upstream `x_no_quenched`.) So the reduced tolerances are conservative, and the
+full-resolution paths the specs quote are if anything tighter than what is gated.
+
+**Per-arm drift and headroom.** Same one-round-decade rule; the full table is in
+`M:\claud_projects\temp\pypy-fingerprint\SLICE2-FINDINGS.md`. Across all **26** committed arms,
+PyPy consumes at worst **10.45%** of a tolerance and at least **1.31%** — the same snug band
+slice 1 landed in. Worst drift anywhere on the diagnostic ladder: **1.98e-6** (`r25.dS_finite`),
+against specs quoting 3–4 significant figures.
+
+**THE FINDING THIS SLICE ADDS, beyond coverage: the drift is distributed by CONDITIONING, not by
+rung.** Every arm at ~1e-15 reads a well-conditioned quantity. Every arm above 1e-10 reads a
+**difference of near-equals** (`dS_finite`, `x_no_e_exit`), a **log-ratio** (`channel_ratio`), or
+runs an **iterative inverse** (`prop.T_from_pr_t` — 78 412 ulp out of a 1-ulp property difference,
+the widest drift in the whole property layer). Kernel F was slice 1's lone outlier and got a
+one-off explanation; with r25 and r28 beside it, it is a **class**, and the class is predictable
+from how a number is formed rather than from which rung forms it. The practical consequence: the
+gate's floor is set by conditioning, so *tightening constants can never move it* — only a
+better-conditioned probe can.
+
+**A dedicated separability arm.** `prop` pins the gas property layer itself (cp/h/pr/γ and their
+inverses, under all four factories, plus Fork B's absolute-enthalpy interface and the rung-6 Kp
+solve) — 884 values, 0.01 s. It is not there for coverage: it is there so that `prop` red means
+the PRIMITIVE layer moved, while a diagnostic red with `prop` green localises the change to that
+diagnostic. Nothing in slices 0–1 could tell those two apart.
+
+**Sensitivity, measured only where it is informative** (`sensitivity2.py`): the arms with a
+tolerance ≥ 1e-7, since slice 1 established that tight arms simply detect AT their tolerance.
+`r25` detects 1e-5, `r28` detects 1e-6. **The gate's floor is unchanged at 1e-5**, now reached by
+two arms (F, r25) instead of one. The other sixteen were not swept and that is recorded as a skip.
+
+**Policy: the four heavy arms are seeded slow in `conftest.py`,** not spine-overridden. The spine
+prefix `test_golden_fingerprint_*` was given only to arms measured **≤ 2 s idle**, so none can end
+up in kernel E's position (7.71 s against `SLOW_SECONDS = 8.0`, i.e. tagged or not depending on box
+load). The other ten carry `test_golden_kernel_*` and are slow-tagged like any FINDING sweep —
+which is weaker than the spine but not by much: `--affected` re-enables the slow gates of every
+module the diff can reach, and this module imports `turbojet.gas` and `turbojet.engine`, so a rung
+commit runs them on the **ship** gate. The seed entry exists because a cold cache has no learned
+duration, so without it the first `pytest` in a fresh clone pays the full cost once.
+
+**A guard the slice needed and slice 1 did not.** `test_every_kernel_has_a_disclosed_tolerance`
+asserts `KERNELS == TOL == goldens`, which still fires if a tolerance is forgotten — but all three
+sets can agree while a kernel has **no test function calling `_check` on it**: it would be
+generated, pinned, counted in the 8 044, and never verified. At eight arms that was
+eyeball-checkable; at twenty-six across two naming conventions it is not, and the failure is
+silent in the worst direction (a green suite hiding an unchecked kernel). So
+`test_every_kernel_is_actually_GATED` reads the gates' own source for `_check("…")` and asserts
+every kernel is reached. Verified to fire by adding a synthetic ungated kernel.
+
+**Side-finding — dead code in rung 28.** `CoupledNOFreezeOutState.no_collapse_ratio` reads
+`self.x_no_e_entry`, a field copied from `NozzleFlowState` that this dataclass does not have; it
+raises `AttributeError` unconditionally and nothing calls it (rungs 14/17 read the real one off
+`NozzleFlowState`). **Not repaired here** — it is production code and outside this slice — but not
+hidden either: `_floats_of` now pins the exception TYPE as a value, so the day it starts or stops
+raising, the gate reports it as the shape change it is.
+
+**What this slice did NOT do:** no arm runs at a spec's full quoted resolution (above), and
+`main.py` is still covered by nothing (slice 4 item 4).
+
 ### ⚠ Two jobs are being conflated here — keep them apart when sequencing
 
 - **Validating TODAY'S switch** — is PyPy's arithmetic close enough to CPython's that no quoted
@@ -278,8 +386,21 @@ CPython-vs-PyPy agreement; per the §-intro blocker, a green suite can only prov
 itself. The agreement evidence is § 0's, and slices 1–2 make it permanent (see § 2's note on the
 two jobs) — but they are not what makes today's switch safe. § 0 is.
 
-**Residual work:** re-run once after slices 1–2 land (the new golden gate is itself 973+1 tests
-that must be green on both), and keep the repair shape on file in case a future run does trip one
+**RE-RUN AFTER SLICES 1–2 — DONE (2026-07-31), and this is the result that actually licenses the
+switch.** The gate grew 973 → 1 002 tests (slice 1's 10, slice 2's 19), and 26 of those now pin
+absolute CPython numbers:
+
+```
+CPython 3.14.3   pytest --runslow    1001 passed in 780.79s (13:00)   [before the 1002nd, a test-only guard]
+PyPy 3.11.15     pytest --runslow    1002 passed in 120.43s (2:00)    -> 6.5x
+```
+
+Run with `-o cache_dir=…` so PyPy's ~5× faster timings could not overwrite the learned durations
+that drive CPython's fast/slow partition — the split-cache footgun § 4 names, avoided rather than
+discovered. **Unlike § 3's original 973-green run, this one is NOT just "PyPy agrees with itself":
+1 663 of those assertions are against absolute values CPython produced.**
+
+**Residual work:** keep the repair shape on file in case a future run does trip one
 — **by construction, not by tolerance**, the way rung 48's was fixed (comparison starts at row 1,
 row 0 gated as the ulp artifact it is; bit-exactness kept everywhere the contract actually claims).
 
