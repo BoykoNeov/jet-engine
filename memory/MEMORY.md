@@ -9,6 +9,7 @@ these lines (the same rule CLAUDE.md lives under).
 - [Always commit and push](always-commit-and-push.md) — auto-commit + push green work without being asked; the gate is bare `pytest` (it runs everything); never gate a docs-only change, never run it "just to be sure"
 - [CLAUDE.md is a reference](claude-md-is-a-reference.md) — one-line-per-rung index, detail → docs/rungN-spec.md; a guard test enforces the size budget; bloated to ~200KB twice before
 - [Test-suite speed policy](test-suite-speed-policy.md) — ONE gate: `pytest` runs everything (2:18); the tiering's blocker was a COUNT argument that inverts under COST; the LPT scheduler is worth ~26%
+- [xdist module-fixture cost](xdist-module-fixture-cost.md) — a module-scoped fixture is rebuilt PER WORKER, so each extra consumer multiplies it; 5 consumers of a 20 s reader added 2:37 to a 2:59 gate
 - [Perf: sonic throat + PyPy](perf-sonic-throat-and-pypy.md) — the hot function was hot ALGORITHMICALLY (45 bisections for a linear root), not linguistically; gate 28:18 → 1:55
 - [PyPy switch shipped](pypy-switch-shipped.md) — full gate 17:27 → 2:47; SLOW_SECONDS KEPT with its reason inverted (bought time → buys determinism); psutil load-bearing; print precision protects states, not residuals
 - [Golden fingerprint gate](golden-fingerprint-gate.md) — the project's ONLY absolute-value gate; goldens are a CPython anchor, NEVER regenerate them under another interpreter; measure a detector's sensitivity, don't assert it
@@ -62,6 +63,7 @@ these lines (the same rule CLAUDE.md lives under).
 - [Rung 68 three loops](rung68-three-loops.md) — n loops on one variable are RANK ONE, so only the CYCLIC product is independent; check what's independent before quoting it; three of my own claims corrected by measurement mid-build
 - [Rung 69 reference split](rung69-reference-split.md) — the rank counts CONSTRAINTS not loops (zeros = n − m); det J was BLIND to the split and c1 the discriminator; a null space ABSORBS a moved start
 - [Rung 70 generic split](rung70-generic-split.md) — the split buys the RANK, the RING needs one lever on TWO walls; a predicted NULL refuted into an invariance; I caught a gate computing my own formula twice
+- [Rung 71 full split](rung71-full-split.md) — n=m=3: rank independence is NOT constraint independence (`zeros = n−m` counts gradients, not LIVE loops); det J finally alive and STILL blind to the one new gain; my own headline quoted the wrong window
 
 ## Margin sweeps — confirmations, not rungs
 - [Rung 29 π_c margin](rung29-pi-c-margin.md) — verdict confirmed at 9.4× but π_c NOT protective; the ENERGY = INVENTORY × COMPLETION sharpening

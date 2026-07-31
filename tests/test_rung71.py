@@ -301,6 +301,14 @@ def test_the_third_loops_window_is_the_SECOND_loops_lag(full):
     # THE JOINT WINDOW IS THIN, AND THAT IS DISCLOSED RATHER THAN WORKED AROUND
     assert 0.0 < wl["joint_fraction"] < 0.05, wl["joint_fraction"]
     assert wl["base"]["n_interior"] >= 5, wl["base"]
+    # AND THE TWO WINDOWS ARE NOT THE SAME NUMBER, which is gated because conflating them would
+    # credit CONTAINMENT with narrowing that belongs to rung 67's imposed `Tt4_max`. The stator
+    # rides over ~7.9 % of the march; the joint window is that intersected with a governor that
+    # opens late, and its LEFT edge is the GOVERNOR's, not the stator's.
+    b = wl["base"]
+    assert b["stator"][2] / b["n"] > 2.0 * wl["joint_fraction"], b
+    assert b["joint"][0] == b["gov"][0], (b["joint"], b["gov"])
+    assert b["stator"][0] < b["gov"][0], (b["stator"], b["gov"])
 
 
 def test_the_stator_quits_while_the_marched_phi_is_still_short(full):

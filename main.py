@@ -5083,8 +5083,13 @@ def print_full_split_table(flight):
         print(f"    {left}   |   {right}")
     print(f"    Monotone in the VALVE's clock over {wl['q_span']:.2f}x; a "
           f"{wl['s_span']:.2f}x NON-monotone band in its own.")
-    print(f"    The joint window is {100*wl['joint_fraction']:.1f}% of the march -- DISCLOSED, "
-          "and the rung's own subject.")
+    print(f"    The stator rides over {100*wl['base']['stator'][2]/wl['base']['n']:.1f}% of the "
+          f"march (rung 70's stator: 24.3%) -- THIS rung's number.")
+    print(f"    The JOINT window is thinner still, {100*wl['joint_fraction']:.1f}%, but that is "
+          "the 7.9% intersected with a")
+    print("    governor that does not engage until s = 0.105 -- rung 67's imposed Tt4_max, NOT")
+    print("    containment. Containment owns where the stator's window ENDS; Tt4_max owns where")
+    print("    the joint one STARTS.")
 
     print("\n  THE DETERMINANT IS ALIVE FOR THE FIRST TIME -- AND STILL BLIND TO ONE GAIN:")
     g = t.full_gains(flight, LO, HI, TMAX, SM, every=3)
@@ -5130,7 +5135,9 @@ def print_full_split_table(flight):
     print(f"    of the incidence credit running ALONE, against the incidence stator's own "
           f"{100*b['inc_credit_stator_alone']:.1f} %.")
     print("    SCOPE: the joint window is ~2% of the march and every gain table lives inside")
-    print("    it; Tt4_max is rung 67's imposed value, phi_lim/b_max/v_max rungs 64/57/58's;")
+    print("    it; the CONTAINMENT is contingent on the two walls being MATCHED at the design")
+    print("    setting (rung 69's choice) -- only the RANK half of the headline is general;")
+    print("    Tt4_max is rung 67's imposed value, phi_lim/b_max/v_max rungs 64/57/58's;")
     print("    the determinant's FACTORING is contingent on grad(M_i) = sigma grad(phi) + e_v;")
     print("    all three tau are swept march coordinates. See docs/rung71-spec.md.")
 

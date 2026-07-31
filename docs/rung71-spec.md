@@ -13,10 +13,18 @@ Five states, three clocks, one actuator per loop, **three constraints**. `n = m 
 § 9 as its strongest seam.
 
 > **HEADLINE — A CONSTRAINT CAN BE INDEPENDENT IN RANK AND REDUNDANT ON THE BAND.**
-> The Jacobian is full rank and the third loop is live over **2.05 %** of the march, because at
-> the valve's own set point `M_i = m_lim + v ≥ m_lim` for every admissible `v ≥ 0`: the third
-> constraint is **implied** by the second's on the whole band. `zeros = n − m` counts GRADIENT
-> DIRECTIONS; it does not count LIVE loops. Rung 69's rank law is **bounded**, not corrected.
+> The Jacobian is full rank and the third loop rides over **7.9 %** of the march (27 points of
+> 341, against rung 70's 83), because at the valve's own set point `M_i = m_lim + v ≥ m_lim` for
+> every admissible `v ≥ 0`: the third constraint is **implied** by the second's on the whole
+> band. `zeros = n − m` counts GRADIENT DIRECTIONS; it does not count LIVE loops. Rung 69's rank
+> law is **bounded**, not corrected.
+>
+> **TWO NUMBERS, AND ONLY ONE OF THEM IS THIS RUNG'S.** The *joint* window — all three loops live
+> at once — is thinner still at **2.05 %**, but that is the stator's 7.9 % intersected with a
+> governor that does not engage until `s = 0.105`, which is rung 67's imposed `Tt4_max` and not
+> containment. **Containment owns where the stator's window ENDS; `Tt4_max` owns where the joint
+> one STARTS.** Rung 63's lesson — *check a quoted number was taken at THIS rung's settings* —
+> turned on this rung's own headline.
 
 > **AND `det J`, NON-ZERO FOR THE FIRST TIME IN THIS FAMILY, FACTORS INTO THE TWO PRIOR RUNGS'
 > OWN NON-DEGENERACY CONDITIONS — ONE FACTOR PER RUNG** — `−(1 − pair_RC)(1 − pair_CV)`, rung
@@ -171,7 +179,13 @@ Six unconditionally positive terms when `u, w, z > 0`, so
 | **joint** | **0.105 … 0.135** | **7** (2.05 %) | **61** (17.9 %) |
 
 The governor's and the valve's windows are essentially rung 70's. **The stator's is what
-collapsed**, and not for a numerical reason.
+collapsed** — 83 points to 27, 24.3 % of the march to 7.9 % — and not for a numerical reason.
+
+**The joint window's extra thinness is NOT this rung's finding.** It starts at `s = 0.105`
+because that is where `Tt4` first crosses rung 67's imposed 1200 K, which is a set point chosen
+elsewhere; the stator has been riding since `s = 0.005`. § 2.2 explains where the stator's
+window **ends**. Attributing the whole 2.05 % to containment would credit it with something half
+of which belongs to `Tt4_max`.
 
 ### 2.2 WHY — derivable, zero new constants
 
@@ -238,6 +252,12 @@ governor sits on its own dormant kink (**disclosed** — a dropped point is a co
 * `|det − (−(1−RC)(1−CV))| ≤ 1.72e−3` against a determinant of magnitude 2.86, i.e. **0.06 %**.
 * `pair_RV(71) / (pair_CV · pair_RV(70))` — read on rung 70's own rig at the **identical** base
   points — departs by at most **0.66 %**, the same differencing floor.
+
+**AND THAT FLOOR IS MEASURED, NOT ASSERTED** (rung 68's standard, which measured its own detector
+rather than claiming it). Halving `(dg, dq, dv)` four times at `s = 0.122` leaves every residual
+**bit-unchanged** — `|y + pair_RV| = 8.324e−4` at 1/1, 1/2, 1/4, 1/8 and 1/16 alike. It is not
+truncation, which would fall; it is the **root-finders' own floor**, which is what an identity
+that is exact in exact arithmetic must bottom out on.
 
 ### 3.1 The two controls are DIFFERENT KINDS
 
@@ -505,10 +525,20 @@ derived for the window, seen integrally instead of dynamically. The anchor is **
 ## 10. Concessions
 
 * Every one rungs 62–70 list, all inherited.
-* **THE JOINT WINDOW IS 2.05 % OF THE MARCH** (7 points at `ds = 0.005`, 6 interior). That is
-  the rung's own subject rather than an accident, but every gain table here is a reading over 30
-  units of `s` in 1700 and is quoted as such. The tables run at `ds = 0.002` (16 interior points,
-  8 sampled) and § 2.3's slow-valve arm carries 47 interior points as the wide-window reading.
+* **THE STATOR RIDES OVER 7.9 % OF THE MARCH AND THE JOINT WINDOW IS 2.05 %** (7 points at
+  `ds = 0.005`, 6 interior). The first number is this rung's subject; the second is that
+  intersected with rung 67's `Tt4_max`, and the two are kept apart everywhere they are quoted
+  (§ 0, § 2.1). Every gain table here is still a reading over 30 units of `s` in 1700 and is
+  quoted as such. The tables run at `ds = 0.002` (16 interior points, 8 sampled) and § 2.3's
+  slow-valve arm carries 47 interior points as the wide-window reading.
+* **THE CONTAINMENT IS CONTINGENT ON THE MATCHED WALL, and only the RANK half of the headline is
+  general.** `M_i = m_lim + v` at `φ = φ_lim` holds *because* `m_lim = T_c − 1/φ_lim` exactly —
+  rung 69 § 10's zero-new-constant choice, made there so that a change of coordinate would not
+  be confounded with a set-point offset. Tighten the incidence wall by `δ` and the containment
+  fails for `v < δ`. So *`zeros = n − m` does not count live loops* is the general statement;
+  *this* plant's third loop is redundant on its band for a reason its own set points supply.
+  Gated as a condition beside its consequence (rung 70 § 4.1's form), and § 11 names the offset
+  wall as the seam it opens.
 * `Tt4_max = 1200 K` is **rung 67's imposed value**, taken verbatim so the numbers difference
   against rungs 67 and 70. Lowering it to 1150 K widens the joint window to 8 interior points;
   **disclosed and not adopted** (rung 63's lesson).

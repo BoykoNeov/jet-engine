@@ -14864,7 +14864,8 @@ class FullSplitTransient(CrossSplitTransient):
 
     HEADLINE: **A CONSTRAINT CAN BE INDEPENDENT IN RANK AND REDUNDANT ON THE BAND.** The
     Jacobian has FULL rank -- `zeros = n - m = 0`, the cell no rung has occupied -- and yet the
-    third loop is live over 2 % of the march, because at the VALVE's own set point
+    third loop rides over only 7.9 % of the march (27 points of 341, against rung 70's 83),
+    because at the VALVE's own set point
 
         phi = phi_lim  =>  M_i = T_c - 1/phi_lim + v = m_lim + v  >=  m_lim  for every v >= 0
 
@@ -14874,6 +14875,21 @@ class FullSplitTransient(CrossSplitTransient):
     the window's right edge marching monotonically out with `tau_q` (0.115 -> 0.365 over an
     400x clock range). `zeros = n - m` counts GRADIENT DIRECTIONS; it does not count LIVE loops,
     and rung 69's rank law is BOUNDED by that rather than corrected.
+
+    TWO NUMBERS, AND ONLY ONE OF THEM IS THIS RUNG'S. The JOINT window -- all three loops live
+    at once -- is thinner still at 2.05 %, but that is the stator's 7.9 % intersected with a
+    governor that does not engage until `s = 0.105`, which is rung 67's imposed `Tt4_max` and
+    NOT containment. **Containment owns where the stator's window ENDS; `Tt4_max` owns where the
+    joint one STARTS.** Quoting 2.05 % as the third loop's liveness would credit containment with
+    something half of which belongs to a set point chosen two rungs ago -- rung 63's *check a
+    quoted number was taken at THIS rung's settings*, turned on this rung's own headline.
+
+    AND THE CONTAINMENT IS CONTINGENT ON THE MATCHED WALL. `M_i = m_lim + v` at `phi = phi_lim`
+    holds BECAUSE `m_lim = T_c - 1/phi_lim` exactly (rung 69 s 10's zero-new-constant choice,
+    made there so a change of coordinate would not be confounded with a set-point offset).
+    Tighten the incidence wall by `delta` and it fails for `v < delta`. **Only the RANK half of
+    the headline is general**; this plant's third loop is redundant on its band for a reason its
+    own set points supply.
 
     AND `det J`, NON-ZERO FOR THE FIRST TIME IN THIS FAMILY, IS STILL BLIND TO THE ONLY NEW
     GAIN. With `T := Tt4`, `phi := phi_lp`, `psi := M_i = T_c - 1/phi + v` and `sigma := 1/phi^2`,
@@ -14955,11 +14971,14 @@ class FullSplitTransient(CrossSplitTransient):
     than argued, because `tests/test_numeric_fingerprint.py` does not watch this path.
 
     CONCESSIONS (in addition to every one rungs 62-70 list, all inherited):
-      * **THE JOINT WINDOW IS 2.05 % OF THE MARCH** (7 points at `ds = 0.005`, 6 of them
-        interior). That is the rung's own subject rather than an accident, but every gain table
-        here is a reading over 30 units of `s` in 1700 and it is quoted as such. The tables run
-        at `ds = 0.002` (16 interior points) and the SLOW-VALVE arm (`tau_q = 2.0`, 47 interior)
-        is carried beside them as the wide-window reading.
+      * **THE STATOR RIDES OVER 7.9 % OF THE MARCH AND THE JOINT WINDOW IS 2.05 %** (7 points at
+        `ds = 0.005`, 6 of them interior). The first is this rung's subject; the second is that
+        intersected with rung 67's `Tt4_max`, and the two are kept apart everywhere they are
+        quoted. Every gain table here is still a reading over 30 units of `s` in 1700 and it is
+        quoted as such. The tables run at `ds = 0.002` (16 interior points) and the SLOW-VALVE
+        arm (`tau_q = 2.0`, 47 interior) is carried beside them as the wide-window reading.
+      * The CONTAINMENT is contingent on the MATCHED WALL (see above); only the RANK half of the
+        headline is general.
       * `Tt4_max = 1200 K` is RUNG 67's IMPOSED value, taken verbatim so the numbers difference
         against rungs 67 and 70. Lowering it to 1150 K widens the joint window; DISCLOSED and
         NOT adopted (rung 63's lesson).
