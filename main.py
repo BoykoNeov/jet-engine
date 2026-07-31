@@ -24,6 +24,7 @@ from turbojet.engine import (  # noqa: E402
     ScheduledStatorTransient, StatorSchedule, IncidenceLimiter, StatorBleedMatcher,
     ScheduledBleedTransient, BleedSchedule, LimitedBleedTransient, BleedLimiter,
     ThreeLoopCascadeTransient, StatorLimiter,
+    ReferenceSplitTransient, StatorIncidenceLimiter,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -4844,6 +4845,101 @@ def print_three_loop_table(flight):
     print("    MAGNITUDES are disclaimed and the ORDERING is the claim. See docs/rung68-spec.md.")
 
 
+
+def print_reference_split_table(flight):
+    """Rung-69 payoff: rung 68's own named strongest seam -- the SAME stator, referenced to
+    INCIDENCE instead of to `phi`.
+
+    The panel is built around the correction, because that is the part a reader inheriting rung
+    68 would get wrong: `det J` is ZERO under BOTH references, so the determinant test rung 68
+    leaned on is BLIND to the split. What moves is the second invariant, and what it says is
+    that the rank counts CONSTRAINTS, not loops."""
+    print("\nTHE REFERENCE SPLIT (rung 69): a loop's COORDINATE, not its actuator, decides")
+    print("whether it adds a ZERO or a RANK -- ZEROS = n - m, with m the CONSTRAINT count.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR = 0.55
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    LO, HI, B, PHI, VM = 1000.0, 1400.0, 0.10, 0.80, 0.20
+    SM = PHI / FLOOR - 1.0
+    t = ReferenceSplitTransient(
+        design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0,
+        bleed_lim=BleedLimiter(phi_lim=PHI, b_max=B, tau=0.05),
+        stator_inc=StatorIncidenceLimiter.from_margin(LP, VM, SM, tau=0.05))
+    T_c = LP.tan_beta1_crit()
+    print(f"  ONE PHYSICAL WALL, TWO COORDINATES: phi_lim = {PHI} is m_lim = T_c - 1/phi_lim = "
+          f"{T_c - 1.0 / PHI:.6f}")
+    print("  at the DESIGN stator setting. dphi/dv = -0.423 but dM_i/dv = +0.335, so THIS loop")
+    print("  CLOSES the stators -- the physical direction, and the opposite of rung 68's.")
+
+    print("\n  WHICH PAIRS KEEP RUNG 66's IDENTITY READS OFF WHICH LOOPS SHARE A CONSTRAINT.")
+    print("  Both references, the SAME base points on ONE trajectory:")
+    g = t.reference_gains(flight, LO, HI, sm=SM, every=20)
+    print(f"    {'s':>7} | {'R_q*C_g':>11} {'R_v*V_g':>10} {'C_v*V_q':>10} {'CYCLIC':>10}"
+          f" | {'R_q*C_g':>11} {'R_v*V_g':>9} {'CYCLIC':>9}")
+    print(f"    {'':>7} | {'-- incidence-referenced (rung 69) --':^45}"
+          f" | {'-- phi (rung 68) --':^33}")
+    for row in g["rows"]:
+        i, p = row["inc"], row["phi"]
+        print(f"    {row['s']:7.4f} | {i['pair_RC']:11.8f} {i['pair_RV']:10.5f} "
+              f"{i['pair_CV']:10.5f} {i['cyclic']:10.5f} | {p['pair_RC']:11.8f} "
+              f"{p['pair_RV']:9.5f} {p['cyclic']:9.5f}")
+    print(f"    The SHARED pair holds at 1 to {g['worst_RC_inc']:.1e} under BOTH. The split")
+    print(f"    pairs BOTH go to k in [{g['k_range'][0]:.4f}, {g['k_range'][1]:.4f}] -- equal "
+          f"to {100*g['worst_pair_gap']:.2f}%, which")
+    print("    measures that the two walls differ by exactly the LEVER'S OWN channel.")
+
+    print("\n  THE SPECTRUM -- and the invariant rung 68 used CANNOT SEE THIS:")
+    r = t.reference_modes(flight, LO, HI, sm=SM, clocks=((0.05, 0.05, 0.05),
+                                                         (0.05, 0.005, 0.05)), every=60)
+    print(f"    {'taus (g,q,s)':>20} {'ref':>5} {'zeros':>7} {'|c0|/S^3':>11} "
+          f"{'|c1|/S^2':>11} {'pair':>8} {'zeta':>8}")
+    for arm in r["arms"]:
+        for ref in ("inc", "phi"):
+            a = arm["refs"][ref]
+            zt = a["zeta_range"][0]
+            print(f"    {str(arm['taus']):>20} {ref:>5} {str(a['zeros']):>7} "
+                  f"{a['max_c0_rel']:11.2e} {a['min_c1_rel']:11.2e} "
+                  f"{'complex' if a['all_complex'] else 'real':>8} {zt:8.4f}")
+    print("    det J = 0 under BOTH -- the two loops still on `phi` keep exactly PARALLEL rows,")
+    print("    whatever the third watches. `c1` moves by more than TEN orders. And the freed root does")
+    print("    NOT land on the real axis: zeta >= 1/sqrt(1-k) for EVERY bandwidth, so ONE")
+    print("    SCALAR sets the split, the cyclic product AND the ring (rung 67's P, new")
+    print("    mechanism). The window has edges -- the fast-fuel arm above is back on the axis,")
+    print("    and the RANK does not care.")
+
+    print("\n  THE LEDGER -- and its WHOLE SIGN TABLE flips with the reference:")
+    b = t.reference_bill(flight, LO, HI, sm=SM)
+    print(f"    {'stator credit':>28} {'phi-referenced':>16} {'incidence-referenced':>22}")
+    for lbl, key in ((" alone, in phi", "alone"), (" alone, in incidence", "alone_inc"),
+                     (" marginal, in phi", "marginal"),
+                     (" marginal, in incidence", "marginal_inc")):
+        print(f"    {lbl:>28} {b['stator_credit']['phi'][key]:15.2f}% "
+              f"{b['stator_credit']['inc'][key]:21.2f}%")
+    si = b["inc"]["cells"]
+    print(f"    The sharpest number: the incidence loop ALONE takes min phi_lp to "
+          f"{si['S']['min_phi']:.6f},")
+    print(f"    BELOW the bare march's own {si['bare']['min_phi']:.6f} -- measurably worse "
+          "than no limiter at all,")
+    print("    in the currency it does not watch. Rung 53's 'a margin is a DISTANCE' one level")
+    print("    up again: rung 68 showed a credit needs its WALL named, this one shows it needs")
+    print("    its loop's REFERENCE named too.")
+    print("    SCOPE: v_max = 0.20 is INHERITED from rungs 57/58 and the loop SATURATES on it")
+    print("    over 84% of the ramp when it runs alone, so the S/FS cells are authority-limited")
+    print("    by a ceiling chosen elsewhere; all three tau are swept march coordinates; and")
+    print("    the two floors are matched at the DESIGN setting, so the references are compared")
+    print("    at equal WALL and not at equal excursion. See docs/rung69-spec.md.")
+
 def main():
     # The tables carry unicode (Δ, ·, ≡, ≈); force UTF-8 so `python main.py` renders
     # on any console (a stock Windows cp1252 console would otherwise crash on them).
@@ -4988,6 +5084,7 @@ def main():
     print_bleed_limiter_table(FLIGHT)
 
     print_three_loop_table(FLIGHT)
+    print_reference_split_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

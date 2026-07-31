@@ -58,7 +58,16 @@ _CLAUDE_MD = os.path.join(_HERE, os.pardir, "CLAUDE.md")
 # panel since rung 64, so § Layout's "one panel per rung" was false. The correction plus the
 # open-task line that tracks the backfill cost ~334 B. That is a DEFECT DISCLOSURE, and the
 # right move when it is paid off is to DELETE both and drop this budget back, not to keep it.
-MAX_BYTES = 32_600
+# Bumped at rung 69 (33,400 B), the same shape and the same reason as 67 and 68: ONE table row
+# at 345 B (inside the per-row rule), its § Layout ladder entry, and its name in the BUILT list.
+# PAID FOR only in part -- the open-seam entry rung 69 closes (THE REFERENCE SPLIT) was rewritten
+# into rung 69's OWN seams, which are more numerous than what they replaced, so that rewrite cost
+# ~65 B rather than refunding any. The three no-grow sites (scope narration, engine.py method
+# inventory, per-seam BUILT list) were checked first and none of them grew beyond one name.
+# This buys ~90 B of headroom on purpose: the next rung trips it again, which is the guard
+# working. The rung-68 panel-backfill disclosure (~334 B) is still unpaid and is still the
+# first thing to delete when § Open engineering tasks clears it.
+MAX_BYTES = 33_400
 MAX_LINES = 300
 
 
