@@ -5208,7 +5208,6 @@
    "off.net_factor": {
     "f": "0x1.0000000000000p+0"
    },
-   "off.no_collapse_ratio!raises": "AttributeError",
    "off.relaxed_fraction": {
     "f": "0x1.b78c5ed86f395p-25"
    },
@@ -5281,7 +5280,6 @@
    "on.net_factor": {
     "f": "0x1.d85b07e711fe1p-1"
    },
-   "on.no_collapse_ratio!raises": "AttributeError",
    "on.relaxed_fraction": {
     "f": "0x1.b25ecf4df0f82p-25"
    },
@@ -24182,7 +24180,7 @@
   "generated": "2026-07-31",
   "implementation": "cpython",
   "note": "CPython-generated ANCHOR. Do NOT regenerate under another interpreter \u2014 see tests/test_numeric_fingerprint.py.",
-  "repo_sha": "f4e4b508b0646a2c01ce3b6ec1ef5c437b698e65",
+  "repo_sha": "7c567110a4ae0b90aa9b9bd1efc71040094be0ea",
   "version": "3.14.3"
  }
 }

@@ -263,12 +263,18 @@ def _cpg_gas():
 def _floats_of(obj, prefix, out):
     """Every public float attribute of a result object, sorted for determinism.
 
-    An attribute that RAISES is PINNED as raising, not silently skipped: the slice-2 probe
-    found `CoupledNOFreezeOutState.no_collapse_ratio` (rung 28) reads `self.x_no_e_entry`, a
-    field copied from `NozzleFlowState` that this dataclass does not have — so it raises
-    AttributeError unconditionally. It is dead code (nothing calls it), so this is a disclosure,
-    not a repair. Recording the exception TYPE as a pinned value means the day it starts or stops
-    raising reads as the SHAPE change it is, rather than as a quietly-dropped attribute."""
+    An attribute that RAISES is PINNED as raising, not silently skipped. Recording the exception
+    TYPE as a pinned value means the day an attribute starts or stops raising reads as the SHAPE
+    change it is, rather than as a quietly-dropped attribute.
+
+    The mechanism earned itself immediately, and that case is now historical: the slice-2 probe
+    found `CoupledNOFreezeOutState.no_collapse_ratio` (rung 28) reading `self.x_no_e_entry`, a
+    field copied from `NozzleFlowState` that the dataclass does not have — so it raised
+    AttributeError unconditionally, and nothing called it. Slice 2 disclosed it here rather than
+    repairing production code out of scope; it was deleted (not repaired — the repair would have
+    been vacuous, see the comment at its former site in `gas.py`) in the slice-4 commit, and the
+    two `r28.*!raises` keys left the goldens in that regeneration. The mechanism stays: it is the
+    only thing in the gate that can see an attribute change its FAILURE behaviour."""
     for attr in sorted(a for a in dir(obj) if not a.startswith("_")):
         try:
             v = getattr(obj, attr)

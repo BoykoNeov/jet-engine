@@ -3754,11 +3754,14 @@ class CoupledNOFreezeOutState:
         """Does the coupling push the clock DEEPER below the freeze threshold (rung 27's conclusion)?"""
         return self.net_factor < 1.0
 
-    @property
-    def no_collapse_ratio(self) -> float:
-        """x_NO_e(entry)/x_NO_e(exit) — the cooling collapse of equilibrium NO that makes the frozen NO
-        super-equilibrium (frozen-NO-independent; the rung-14 quantity)."""
-        return self.x_no_e_entry / self.x_no_e_exit if self.x_no_e_exit > 0.0 else float("inf")
+    # NO `no_collapse_ratio` here, deliberately. Rungs 14/17 carry one (`NozzleFlowState`,
+    # `ExhaustNOxClampState`) and a copy of that property lived here until it was found DEAD — it read
+    # an `x_no_e_entry` field this dataclass never had, so it raised `AttributeError` unconditionally
+    # and nothing called it. It was deleted rather than repaired because the repair would be VACUOUS:
+    # the nozzle-ENTRY state is path-independent (the same `comp_entry`, Tt9, pt9 feed both
+    # trajectories — the reason `Da_entry` is bit-for-bit rung 27's), so the ratio could only ever
+    # reproduce `nozzle_flow`'s number verbatim. Rung 28 holds its clamp denominator on the FROZEN
+    # path (`x_no_e_exit`); read the collapse off rung 14, where it is the finding.
 
 
 @dataclass
