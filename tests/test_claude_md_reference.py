@@ -77,7 +77,17 @@ _CLAUDE_MD = os.path.join(_HERE, os.pardir, "CLAUDE.md")
 # engine.py method inventory, per-seam BUILT list) were checked first and none grew beyond one
 # name. The rung-68 panel-backfill disclosure (~334 B) is STILL unpaid: rung 70 wrote its own
 # panel, but 65/66/67 still have none, so that debt does not clear here.
-MAX_BYTES = 33_680
+# Bumped at rung 71 (34,180 B), and the ~105 B of headroom above again did what it was bought to
+# do. Same shape as 67/68/69/70: ONE table row at 349 B (inside the per-row rule), its § Layout
+# ladder entry, and its name in the BUILT list. PAID FOR in part, and this time genuinely: rung 71
+# closes the `n = m = 3` cell, which was the FIRST clause of the "Rungs 69/70's seams" open entry,
+# and that entry was rewritten 20 B SHORTER than what it replaced despite naming three new seams.
+# The three no-grow sites (scope narration, engine.py method inventory, per-seam BUILT list) were
+# checked first and none grew beyond one name. ~85 B of headroom on purpose, so the next rung trips
+# it again. The rung-68 panel-backfill disclosure (~334 B) is STILL unpaid — 65/66/67 have no
+# panel and rung 71 wrote its own, so that debt is now four rungs old and is still the first thing
+# to delete when § Open engineering tasks clears it.
+MAX_BYTES = 34_180
 MAX_LINES = 300
 
 

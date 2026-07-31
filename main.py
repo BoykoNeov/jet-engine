@@ -25,6 +25,7 @@ from turbojet.engine import (  # noqa: E402
     ScheduledBleedTransient, BleedSchedule, LimitedBleedTransient, BleedLimiter,
     ThreeLoopCascadeTransient, StatorLimiter,
     ReferenceSplitTransient, StatorIncidenceLimiter, CrossSplitTransient,
+    FullSplitTransient,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -5026,6 +5027,114 @@ def print_cross_split_table(flight):
     print("    disclaimed. See docs/rung70-spec.md.")
 
 
+def print_full_split_table(flight):
+    """Rung-71 payoff: `n = m = 3`, ZERO zeros -- the last unoccupied cell of rung 69 s 1's
+    table, and rung 70's own named strongest seam.
+
+    The panel is built around the thing a reader of rungs 68-70 would get wrong: they would
+    read `zeros = n - m = 0` as *three live loops*, and it is not. The third constraint is
+    IMPLIED by the second's on the whole admissible band, so the loop lives inside the valve's
+    LAG -- an independent GRADIENT with a redundant FEASIBLE SET. Everything else here follows
+    from that one sentence, including the ledger."""
+    print("\nTHE FULL SPLIT (rung 71): a constraint can be INDEPENDENT IN RANK and REDUNDANT")
+    print("ON THE BAND -- so `zeros = n - m` counts GRADIENTS, not LIVE loops.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR = 0.55
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    LO, HI, B, PHI, VM, TMAX = 1000.0, 1400.0, 0.10, 0.80, 0.20, 1200.0
+    SM = PHI / FLOOR - 1.0
+    t = FullSplitTransient(
+        design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0,
+        bleed_lim=BleedLimiter.from_margin(LP, B, SM, tau=0.05),
+        stator_inc=StatorIncidenceLimiter.from_margin(LP, VM, SM, tau=0.05))
+    print("  RUNG 69's MOVE, APPLIED TO RUNG 70's PLANT: the stator's REFERENCE goes from `phi`")
+    print("  to INCIDENCE, beside rung 47's governor and rung 65's valve. Three loops, THREE")
+    print("  constraints -- n = m = 3, and the actuator block is INVERTIBLE for the first time.")
+
+    print("\n  THE CONTAINMENT, and it needs no new constant:")
+    print("    phi = phi_lim  =>  M_i = T_c - 1/phi_lim + v = m_lim + v >= m_lim  for all v >= 0")
+    bc = t.band_containment(flight, LO, HI, TMAX, SM)
+    print("    so {phi >= phi_lim} INTERSECT the band [0, v_max] sits INSIDE {M_i >= m_lim}.")
+    print(f"    Measured on the march: of {bc['n_delivering']} points where the valve DELIVERS,")
+    print(f"    the stator rides at {bc['riding_while_delivering']} of them, and the slack "
+          f"minus v bottoms out at")
+    print(f"    exactly {bc['worst_slack_minus_v']:.1f} (it IS 1/phi_lim - 1/phi, zero where "
+          "the valve pins the floor).")
+
+    print("\n  SO THE THIRD LOOP'S WINDOW IS THE SECOND LOOP'S LAG -- swept from both sides:")
+    wl = t.window_law(flight, LO, HI, TMAX, SM)
+    print(f"    {'tau_q':>8} {'rides to s =':>14}   |   {'tau_s':>8} {'rides to s =':>14}")
+    for i in range(max(len(wl["tau_qs"]), len(wl["tau_ss"]))):
+        left = (f"{wl['tau_qs'][i]:8.3f} {wl['edge_q'][i]:14.3f}"
+                if i < len(wl["tau_qs"]) else f"{'':>23}")
+        right = (f"{wl['tau_ss'][i]:8.3f} {wl['edge_s'][i]:14.3f}"
+                 if i < len(wl["tau_ss"]) else "")
+        print(f"    {left}   |   {right}")
+    print(f"    Monotone in the VALVE's clock over {wl['q_span']:.2f}x; a "
+          f"{wl['s_span']:.2f}x NON-monotone band in its own.")
+    print(f"    The joint window is {100*wl['joint_fraction']:.1f}% of the march -- DISCLOSED, "
+          "and the rung's own subject.")
+
+    print("\n  THE DETERMINANT IS ALIVE FOR THE FIRST TIME -- AND STILL BLIND TO ONE GAIN:")
+    g = t.full_gains(flight, LO, HI, TMAX, SM, every=3)
+    print(f"    {'s':>7} | {'R_q*C_g':>10} {'R_v*V_g':>10} {'C_v*V_q':>10} | "
+          f"{'det M':>10} {'-(1-RC)(1-CV)':>14}")
+    for row in g["rows"]:
+        a = row["gains"]
+        print(f"    {row['s']:7.4f} | {a['pair_RC']:10.6f} {a['pair_RV']:10.6f} "
+              f"{a['pair_CV']:10.6f} | {row['det']:10.6f} {row['det_pred']:14.6f}")
+    print(f"    NO pair is 1 (closest: {g['closest_to_1']:.3f} away) -- rung 66's identity is a")
+    print("    property of a SHARED constraint and nothing is shared. `pair_RC` IS rung 67's P")
+    print("    and `pair_CV` IS rung 69's k, so only the middle column is new -- and the")
+    print(f"    determinant FACTORS into the other two to {g['worst_det_err']:.1e}, because "
+          "pair_RV cancels")
+    print(f"    against the reverse cyclic product (to {g['worst_y_is_RV']:.1e}). ONE FACTOR "
+          "PER RUNG.")
+
+    print("\n  AND THE s = 0 FIXED POINT BECOMES A POINT:")
+    ic = t.ic_contraction(flight, LO, HI, TMAX, SM)
+    for name, lbl in (("full", "rung 71 (n = m = 3)"), ("shared", "rung 70 (n = 3, m = 2)")):
+        d = ic[name]
+        print(f"    {lbl:>24}: {d['n']} starts x orders -> {d['members']} limit point(s), "
+              f"spread {max(d['spread'].values()):.3e}")
+    print("    Rung 69 s 6 called a null space a SHOCK ABSORBER. At nullity ZERO there is")
+    print("    nothing to absorb with, and the sweep REJECTS a moved start instead.")
+
+    print("\n  THE LEDGER, IN THREE CURRENCIES -- one per loop:")
+    b = t.full_bill(flight, LO, HI, TMAX, SM)
+    print(f"    {'cell':>5} {'I (phi)':>12} {'E (Tt4)':>10} {'M (incid.)':>12} "
+          f"{'min phi':>9} {'max Tt4':>9}")
+    for k, c in b["cells"].items():
+        print(f"    {k:>5} {c['I']:12.4e} {c['E']:10.3f} {c['M']:12.4e} "
+              f"{c['min_phi']:9.6f} {c['max_Tt4']:9.2f}")
+    print("    Each loop's MARGINAL share of its OWN currency, against its SOLO one:")
+    for leg in ("gov", "valve", "stator"):
+        print(f"      {leg:>7}: kept {100*b['kept'][leg]:7.1f} %")
+    print("    RUNG 70 s 5 SAID *a loop is eroded by the loops it SHARES a constraint with, and")
+    print("    by no others*. NO TWO LOOPS SHARE HERE and the stator keeps a few per cent --")
+    print("    so erosion has a SECOND channel: a loop is eroded by any loop that pushes its")
+    print("    constraint into the SLACK region. That is the containment again, integrated.")
+    print(f"    The sharpest number: the VALVE, which cannot see M_i at all, delivers "
+          f"{100*b['inc_credit_valve_alone']:.1f} %")
+    print(f"    of the incidence credit running ALONE, against the incidence stator's own "
+          f"{100*b['inc_credit_stator_alone']:.1f} %.")
+    print("    SCOPE: the joint window is ~2% of the march and every gain table lives inside")
+    print("    it; Tt4_max is rung 67's imposed value, phi_lim/b_max/v_max rungs 64/57/58's;")
+    print("    the determinant's FACTORING is contingent on grad(M_i) = sigma grad(phi) + e_v;")
+    print("    all three tau are swept march coordinates. See docs/rung71-spec.md.")
+
+
 def main():
     # The tables carry unicode (Δ, ·, ≡, ≈); force UTF-8 so `python main.py` renders
     # on any console (a stock Windows cp1252 console would otherwise crash on them).
@@ -5173,6 +5282,7 @@ def main():
     print_reference_split_table(FLIGHT)
 
     print_cross_split_table(FLIGHT)
+    print_full_split_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

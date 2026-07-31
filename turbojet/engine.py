@@ -14846,3 +14846,716 @@ class CrossSplitTransient(ReferenceSplitTransient):
                           "stator": cells["GV"]["E"] - cells["GVS"]["E"]},
             delivered_phi=cells["GVS"]["credit_phi"],
             delivered_Tt4=cells["GVS"]["credit_Tt4"])
+
+
+class FullSplitTransient(CrossSplitTransient):
+    """RUNG 71. THE FULL SPLIT -- `n = m = 3`, ZERO zeros: the LAST UNOCCUPIED CELL of rung
+    69 s 1's table, and the seam rung 70 s 6.1/s 9 named as its strongest. See
+    `docs/rung71-spec.md`.
+
+    Rung 69's move (swap ONE loop's COORDINATE, change nothing else) applied to rung 70's
+    plant: rung 68's `phi` stator becomes rung 69's INCIDENCE stator, beside rung 47's `Tt4`
+    governor and rung 65's `phi` valve. Five states, three clocks, one actuator per loop, and
+    now THREE constraints.
+
+        dg/ds = ( R(nu,q,v) - g ) / tau_g    R = rung 47's clip,  Tt4 <= Tt4_max  [GOV,    Tt4]
+        dq/ds = ( C(nu,g,v) - q ) / tau_q    C = rung 65's b_cmd, phi >= phi_lim  [VALVE,  phi]
+        dv/ds = ( V(nu,g,q) - v ) / tau_s    V = rung 69's v_cmd,  M_i >= m_lim   [STATOR, M_i]
+
+    HEADLINE: **A CONSTRAINT CAN BE INDEPENDENT IN RANK AND REDUNDANT ON THE BAND.** The
+    Jacobian has FULL rank -- `zeros = n - m = 0`, the cell no rung has occupied -- and yet the
+    third loop is live over 2 % of the march, because at the VALVE's own set point
+
+        phi = phi_lim  =>  M_i = T_c - 1/phi_lim + v = m_lim + v  >=  m_lim  for every v >= 0
+
+    so `{phi >= phi_lim} INTERSECT {v >= 0}` is CONTAINED IN `{M_i >= m_lim}`: the third
+    constraint is IMPLIED by the second's on the WHOLE admissible band. **The incidence loop
+    can only ride where the valve is FAILING -- inside its LAG** -- and `window_law` measures
+    the window's right edge marching monotonically out with `tau_q` (0.115 -> 0.365 over an
+    400x clock range). `zeros = n - m` counts GRADIENT DIRECTIONS; it does not count LIVE loops,
+    and rung 69's rank law is BOUNDED by that rather than corrected.
+
+    AND `det J`, NON-ZERO FOR THE FIRST TIME IN THIS FAMILY, IS STILL BLIND TO THE ONLY NEW
+    GAIN. With `T := Tt4`, `phi := phi_lp`, `psi := M_i = T_c - 1/phi + v` and `sigma := 1/phi^2`,
+
+        grad psi  =  sigma * grad phi  +  e_v                     [the lever's OWN +1 channel]
+
+        pair_RC = R_q C_g = (T_q phi_g)/(T_g phi_q)     = rung 67's `P`, rung 70's, UNCHANGED
+        pair_CV = C_v V_q = sigma phi_v/psi_v           = rung 69's `k`, UNCHANGED
+        pair_RV = R_v V_g = (T_v psi_g)/(T_g psi_v)     = THE ONLY NEW NUMBER HERE
+                          = pair_CV * pair_RV(rung 70)  at an identical base point
+
+        x := R_q C_v V_g = -pair_RC * pair_CV       y := R_v C_g V_q = -pair_RV   (exactly)
+
+        det M = -1 + sum(pairs) + x + y  =  **-(1 - pair_RC)(1 - pair_CV)**
+
+    `pair_RV` cancels against the REVERSE cyclic product `y`, so:
+
+    > **THE FULL-RANK DETERMINANT IS THE TWO PRIOR RUNGS' NON-DEGENERACY CONDITIONS,
+    > MULTIPLIED -- ONE FACTOR PER RUNG.**
+
+    which is also the rank statement: `span{grad phi, grad psi} = span{grad phi, e_v}`
+    UNCONDITIONALLY (the `+1` puts `e_v` in the span whatever the plant does), so
+    `grad T` escapes that plane iff `T_g phi_q != T_q phi_g` iff `pair_RC != 1` -- **`m = 3` IS
+    rung 67's own non-degeneracy condition, and `m = 2` is rung 69's.**
+
+    NEITHER CYCLIC PRODUCT IS INDEPENDENT ANY MORE. Rung 68 said *quote `x`*; rung 69 said it
+    flips to `-k`; rung 70 found it BLIND to `pair_RV`. Here `x` is a product of two other pairs
+    and `y` IS `-pair_RV`, so the three PAIRS are the complete independent set and both cyclics
+    are re-expressions. **`pair_RV` is invisible to the cyclic product at rung 70 AND to the
+    determinant here; only `c1` has ever seen it** -- rung 68's *check what is INDEPENDENT
+    before quoting it*, in its third shape.
+
+    THE INVARIANTS, and ONE OF THEM IS A TAUTOLOGY:
+
+        c0 = det J = -(1-pair_RC)(1-pair_CV)/(tau_g tau_q tau_s)   != 0, THE FIRST TIME
+        c1 = sum_{i<j} (1 - pair_ij)/(tau_i tau_j)                 all THREE terms alive
+        c2 = tr J = -sum 1/tau_i                                   the ODE's own diagonal
+
+    **`c1`'s closed form must NOT be gated as a measurement**: for any matrix with `-1` on the
+    diagonal it IS the second invariant, so the shipped `_invariants` would be agreeing with
+    itself (rung 67 gate 9's retraction; rung 70 s 3.1 rewrote its own gate for this). **`c0`'s
+    is NOT a tautology** -- it uses FOUR of the six gains and asserts the other two drop out.
+    That is the claim, and that is what is gated.
+
+    THE RING, AND WHY RUNG 69's FLOOR IS THE `c0 = 0` CORNER. All three roots share one trace
+    budget, `lam1+lam2+lam3 = -sum 1/tau_i`. At rung 69 the third root WAS the zero, so the pair
+    took the whole budget (`Re = -sum/2`) and `zeta >= 1/sqrt(1-k)` followed by AM-GM. Here the
+    third loop's own pole DRAINS it, so that bound is not derived for this plant -- and it does
+    not hold: at matched clocks `zeta = 0.5895` against rung 69's `0.5974`. **The floor was a
+    property of the RANK DEFICIENCY, not of `k`.** What replaces it is a Routh certificate,
+    with `a,b,c = 1/tau_i` and `u,w,z = 1 - pair_{RC,RV,CV}`:
+
+        A2 A1 - A0 = u a^2 b + u a b^2 + w a^2 c + w a c^2 + z b^2 c + z b c^2
+                     + (u + w + z - u z) a b c
+
+    six unconditionally positive terms, so **`u + w + z >= u z` is SUFFICIENT for stability at
+    EVERY bandwidth triple** -- the first non-trivial stability condition in this family (at
+    `m < n` a zero root plus a negative trace made it automatic).
+
+    Usage:
+        t = FullSplitTransient(design, FLIGHT, 1.0, map_lp=..., map_hp=..., bleed_lim=bl)
+        t.window_law(FLIGHT, 1000., 1400., 1200., sm=0.4545)   # the BAND-REDUNDANCY law
+        t.full_gains(FLIGHT, 1000., 1400., 1200., sm=0.4545)   # 3 pairs, det FACTORS, 2 controls
+        t.full_modes(FLIGHT, 1000., 1400., 1200., sm=0.4545)   # ZERO zeros, Routh, the ring
+        t.full_bill(FLIGHT, 1000., 1400., 1200., sm=0.4545)    # 8 cells, THREE currencies
+        t.ic_contraction(FLIGHT, 1000., 1400., 1200., sm=0.4545)  # the fixed point is a POINT
+
+    THE REDUCE HAS FOUR BIT-FOR-BIT ARMS, ALL BY DISPATCH:
+      * `tau_gov=None`                  => rung 69 (and everything under it)
+      * `stator_lim` armed, not `stator_inc` => RUNG 70
+      * no stator armed                 => rung 67
+      * neither                         => rungs 66/65/64/62
+    AND THE MARCH IS NOT DUPLICATED. Rung 69 already made `_stator_leg`, `_clamp_v`,
+    `_check_v0`, `_manifold_v` and `_solve_v` overridable, each the IDENTITY of what it
+    replaced, so rung 70's `_integrate_fuel_cross_triple` runs THIS plant unchanged -- the only
+    thing rung 71 removes is rung 70's own refusal to enter it. Rungs 68/69/70 each shipped a
+    sibling integrator because a state was being ADDED; nothing is added here, so a copy would
+    be 130 lines that cannot differ. The reuse is GATED (341 points, 9 keys, worst 0.0) rather
+    than argued, because `tests/test_numeric_fingerprint.py` does not watch this path.
+
+    CONCESSIONS (in addition to every one rungs 62-70 list, all inherited):
+      * **THE JOINT WINDOW IS 2.05 % OF THE MARCH** (7 points at `ds = 0.005`, 6 of them
+        interior). That is the rung's own subject rather than an accident, but every gain table
+        here is a reading over 30 units of `s` in 1700 and it is quoted as such. The tables run
+        at `ds = 0.002` (16 interior points) and the SLOW-VALVE arm (`tau_q = 2.0`, 47 interior)
+        is carried beside them as the wide-window reading.
+      * `Tt4_max = 1200 K` is RUNG 67's IMPOSED value, taken verbatim so the numbers difference
+        against rungs 67 and 70. Lowering it to 1150 K widens the joint window; DISCLOSED and
+        NOT adopted (rung 63's lesson).
+      * `phi_lim`, `b_max` (rung 64) and `v_max = 0.20` (rungs 57/58) remain IMPOSED; `m_lim`
+        adds no constant (rung 69 s 10, verbatim).
+      * The base point is rung 69's `_manifold_v` -- `phi = phi_lim` -- and it carries rung 69
+        s 1.2's disclosure verbatim: it sits at `v < 0`, OUTSIDE the incidence loop's own band.
+        At `n = m` no identity NEEDS a manifold, so the choice is made for DIFFERENCEABILITY
+        against rungs 67/69/70 and not for exactness. Stated, not implied.
+      * The determinant's FACTORING is CONTINGENT on `grad psi = sigma grad phi + e_v` (rung 69
+        s 1.1's structure). A generic third constraint leaves `x` and `y` independent and it
+        would not factor. Gated as a condition beside its consequence (rung 70 s 4.1's form).
+      * All three clocks are swept coordinates on the march's own `s`. ORDERINGS, SIGNS and
+        INVARIANCES are the claims; every MAGNITUDE is disclaimed.
+      * The spectrum is sampled at finitely many trajectory points -- a DIAGNOSTIC that can miss
+        a brief excursion (rung 65's retracted trap), not a proof of convergence.
+      * The STAGE STACK (rungs 55/56) is still off the transient ladder, and this still does NOT
+        close rung 63's fuel+bleed+STATOR seam (that seam wants an OPEN-loop schedule).
+    """
+
+    def at_lever(self, vsv_lp: float = 0.0, vsv_hp: float = 0.0, vsv_sched_lp=None,
+                 vsv_sched_hp=None, bleed: float = 0.0, bleed_sched=None,
+                 bleed_lim=None, stator_lim=None, stator_inc=None) -> "FullSplitTransient":
+        """Rung 70's sibling constructor returning THIS class. THE NINTH INSTANCE of the trap
+        rungs 61-70 each hit. The signature does not grow -- rung 71 arms its third loop with
+        the SAME `stator_inc` keyword rung 69 added -- so the failure mode is rung 70's plain
+        one: hand back the parent's class and every reader measures rung 70's plant (a `phi`
+        stator, `m = 2`) while reporting rung 71's."""
+        de, fd, md, rho, lpd = self._ctor
+        return FullSplitTransient(
+            de, fd, md, map_lp=self.map_lp_design, map_hp=self.map_hp_design, rho=rho,
+            vsv_lp=vsv_lp, vsv_hp=vsv_hp, vsv_sched_lp=vsv_sched_lp,
+            vsv_sched_hp=vsv_sched_hp, bleed=bleed, bleed_sched=bleed_sched,
+            bleed_lim=bleed_lim, stator_lim=stator_lim, stator_inc=stator_inc,
+            lp_disabled=lpd)
+
+    # --- the march: rung 70's integrator, ENTERED rather than refused -------------------------
+
+    @staticmethod
+    def _rk4_floor_full(ds: float, rate: float, tau_s: float) -> None:
+        """THE FLOOR, RE-JUSTIFIED A FOURTH TIME ON A THIRD ARGUMENT -- which is the pattern,
+        not an oversight.
+
+        Rung 68's `ds*sum(1/tau_i) <= 2` is exact-in-argument there (`J` rank one, non-zero
+        eigenvalue EXACTLY `-sum 1/tau_i`). Rung 69 kept the constant on a complex pair of
+        modulus `sqrt(A z (1-k))`, conservative for `k >= -3`. Rung 70 kept it because
+        `min(pair) ~ 0` put the pair back on the real axis near `-sum 1/tau_i`. **Here NEITHER
+        argument applies**: there is no zero root at all, so the trace is shared THREE ways and
+        the dominant root is strictly smaller in magnitude than the rate sum. That makes the
+        inherited constant conservative for a new reason and `full_modes` MEASURES `|lam|`
+        against it rather than trusting it -- rung 65 published a retraction for exactly the
+        failure mode of a trusted stability argument."""
+        assert ds * rate <= 2.0, (
+            f"rung-71: ds*sum(1/tau_i) = {ds*rate:.3f} is outside the explicit RK4 stability "
+            f"region for the three actuator states (ds = {ds}, tau_s = {tau_s}). At FULL RANK "
+            "there is no zero eigenvalue to absorb the trace, so all three roots share it and "
+            "the dominant one is BELOW the rate sum -- the inherited constant stays "
+            "conservative, for a third reason. Refine the grid or slow a clock.")
+
+    def integrate_fuel(self, flight: FlightCondition, fuel_schedule, nu0,
+                       s_end: float, ds: float, freeze=None, Tt4_max=None,
+                       tau_gov=None, accel=None, surge=None, s_off=None,
+                       tau_rel=None, lag=None) -> list:
+        lag = lag if lag is not None else self._lag
+        # RUNG 67's clock rides on an instance attribute and `_stator_march` does not forward it
+        # as a keyword (rung 68's note, inherited through rung 70), so reading only the argument
+        # would let a rung-71 march silently become a rung-69 one.
+        tau_gov = tau_gov if tau_gov is not None else self._tau_gov
+        if (tau_gov is None or self.stator_inc is None
+                or not self._lagged_stator()):
+            # EVERY inherited arm leaves through here: rung 70 (a `phi` stator beside the
+            # governor), rung 69 (an incidence stator, no governor), rung 68, rung 67, and
+            # everything under them. This class never intercepts a march it does not own.
+            return super().integrate_fuel(
+                flight, fuel_schedule, nu0, s_end, ds, freeze=freeze, Tt4_max=Tt4_max,
+                tau_gov=tau_gov, accel=accel, surge=surge, s_off=s_off, tau_rel=tau_rel,
+                lag=lag)
+        assert Tt4_max is not None, (
+            "rung-71's odd loop IS the redline: `tau_gov` without `Tt4_max` is a governor with "
+            "no set point, which would march as rung 69 while every reader reported rung 71.")
+        assert not (lag is not None and (accel is not None or surge is not None)), (
+            "rung-71: rung 52's phi FUEL leg beside this governor is `n = 4, m = 3` -- FOUR "
+            "loops, two of them on one actuator. It is an unregistered plant and rung 70's own "
+            "named seam; rung 68's `tau_gov` assert exists because 'silently accepts it' is "
+            "the failure mode. Arm one fuel-side leg, not both.")
+        assert s_off is None and tau_rel is None, (
+            "rung-71: rungs 50/51's FORCED release edges are an isolation instrument for a leg "
+            "that could not pin its own trigger. All three legs here pin their own (rung 68's "
+            "argument, verbatim through rung 70).")
+        assert self.bleed_lim is None or self._lagged(), (
+            "rung-71: an INSTANTANEOUS valve beside a lagged stator is not a control but a "
+            "different plant (rung 65 called the instantaneous limit singular, and rung 66 "
+            "refused the comparison for that reason). Give the valve a `tau` or leave it out.")
+        self._rk4_floor_full(
+            ds, 1.0 / tau_gov + (1.0 / self.bleed_lim.tau if self._lagged() else 0.0)
+            + 1.0 / self._stator_leg().tau, self._stator_leg().tau)
+        # RUNG 70's FIVE-STATE INTEGRATOR, UNCHANGED AND UNCOPIED. Rung 69 made the five seams
+        # this needs overridable (`_stator_leg`, `_clamp_v`, `_check_v0`, `_manifold_v`,
+        # `_solve_v`) and each is the IDENTITY of what it replaced, so the ONLY thing that moves
+        # between rungs 70 and 71 is which limiter `_stator_leg` hands back. Rungs 68/69/70 each
+        # shipped a sibling because a STATE was being added; nothing is added here.
+        return self._integrate_fuel_cross_triple(flight, fuel_schedule, nu0, s_end, ds,
+                                                 freeze, Tt4_max, tau_gov)
+
+    def _full_rig(self, sm: float, tau: float, tau_s: float, v_max: float, Tt4_max: float,
+                  valve: bool = True, stator: bool = True):
+        """Rung 70's `_split_rig` with the stator's REFERENCE moved and NOTHING else -- one
+        constructor for every cell of every table here, so a cell can differ from another only
+        by which loops are armed (rung 63's lesson).
+
+        Both floors still come from the SAME `from_margin(cmap, ., sm)`. Under rung 70 that was
+        load-bearing because `pair_CV = 1` is an identity of a SHARED set point; here nothing is
+        shared and no identity depends on it -- but it is kept, because rung 69's constructor
+        asserts `m_lim == T_c - 1/phi_lim` and because comparing two references at UNEQUAL walls
+        would confound this rung with a set-point offset (rung 66 measured -2.5 % moving its own
+        product to 0.951)."""
+        cmap = self.map_lp_design
+        bl = BleedLimiter.from_margin(cmap, self.bleed_lim.b_max if self.bleed_lim
+                                      else 0.10, sm, tau=tau) if valve else None
+        sl = (StatorIncidenceLimiter.from_margin(cmap, v_max, sm, tau=tau_s)
+              if stator else None)
+        m = self.at_lever(bleed_lim=bl, stator_inc=sl)
+        m._gov_max = Tt4_max
+        return m
+
+    @staticmethod
+    def _zeta_ring(roots):
+        """THE DAMPING RATIO OF THE COMPLEX PAIR -- and it CANNOT be rung 70's reader either.
+        THE THIRD REBUILD OF THIS INSTRUMENT IN FOUR RUNGS, and each rebuild has the same cause:
+        the rung changed WHICH ROOT IS WHICH.
+
+            rung 69   `-Re(dom)/|dom|`      exact for a complex DOMINANT pair; returns exactly
+                                            1.0 for any real root
+            rung 70   both NON-ZERO roots,  exact when exactly ONE root is zero
+                      magnitude-sorted
+            rung 71   the pair identified by its IMAGINARY PART, `None` when there is none
+
+        **Here NO root is zero and the pair is not always the two largest.** Measured against
+        rung 70's reader over a 12-arm clock grid it disagrees on FOUR: 0.960 vs 0.686, 1.279 vs
+        0.670, 1.045 vs 0.924, and 1.035 on an arm whose spectrum is entirely REAL. A reader
+        that returns a number where there is no ring is worse than one that returns nothing, so
+        this one returns `None` and every caller reports the count of real-spectrum arms."""
+        cx = [r for r in roots if abs(r.imag) > 1e-6 * abs(r)]
+        if not cx:
+            return None
+        r = cx[0]
+        return None if abs(r) == 0.0 else -r.real / abs(r)
+
+    # --- s 0: THE BAND-REDUNDANCY LAW ---------------------------------------------------------
+
+    def window_law(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                   Tt4_max: float, sm: float, tau_qs=(0.005, 0.05, 0.20, 0.50, 2.00),
+                   tau_ss=(0.005, 0.05, 0.20, 0.50), r: float = 0.5,
+                   s_settle: float = 1.2, ds: float = 0.005, tau: float = 0.05,
+                   tau_gov: float = 0.05, tau_s: float = 0.05,
+                   v_max: float = 0.20) -> dict:
+        """s 0 MEASURED: **the third constraint is REDUNDANT ON THE BAND, so the third loop
+        lives inside the SECOND's LAG.**
+
+        The derivation carries no new constant. At the valve's own set point,
+
+            phi = phi_lim  =>  M_i = T_c - 1/phi_lim + v = m_lim + v >= m_lim   for all v >= 0
+
+        and the incidence band IS `[0, v_max]` (rung 69 s 0.1), so `{phi >= phi_lim} INTERSECT
+        {v >= 0}` sits inside `{M_i >= m_lim}`. The stator can therefore only ride where the
+        valve has NOT yet delivered -- which on a lagged plant is exactly the valve's own lag.
+
+        TWO SWEEPS, because a one-sided one would not separate the mechanism from the plant:
+        `tau_qs` moves the VALVE's clock (predicted: the window's right edge moves monotonically
+        OUT) and `tau_ss` moves the STATOR's own (predicted: comparatively flat). If both moved
+        together the law would be 'a slower loop rides longer', which is a different and much
+        weaker statement.
+
+        `n_interior` is the count of points where all three loops ride AND every arm of the
+        central difference stays on-regime -- the quotable sample, never inferred from the
+        window's width."""
+        def arm(tq, tg, ts):
+            m = self._full_rig(sm, tq, ts, v_max, Tt4_max)
+            traj = m._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds,
+                                   Tt4_max=Tt4_max, tau_gov=tg)[0]
+            b_max = m.bleed_lim.b_max
+
+            def span(sel):
+                w = [p["s"] for p in traj if sel(p)]
+                return (min(w), max(w), len(w)) if w else (None, None, 0)
+
+            pts = self._riding(traj, b_max)
+            nint = sum(1 for p in pts
+                       if m._triple_gains_at(flight, p, None, None,
+                                             manifold=True)["interior"])
+            # WHERE the stator goes dormant, and the MARCHED `phi` there.
+            #
+            # THE MARCHED CROSSING IS NOT THE EVENT, and saying so is the point. `_solve_v`
+            # tests dormancy on the COUNTERFACTUAL plant at `v = 0`, so the stator quits when
+            # `phi` WOULD clear the floor with the stators back at the design setting -- which
+            # happens while the MARCHED `phi` is still below it by exactly the stator's own
+            # contribution (measured `dphi/dv ~ -0.42` times `v`). The two edges therefore
+            # differ by a real amount and quoting their agreement would be a fudge. **The exact
+            # statement of the containment lives in `band_containment`**, which needs no
+            # counterfactual: wherever the valve DELIVERS, `slack - v = 1/phi_lim - 1/phi >= 0`
+            # identically and the stator is dormant at every such point.
+            rid = [p for p in traj if p.get("v_regime") == "riding"]
+            caught = [p["s"] for p in traj if p["phi_lp"] >= m.bleed_lim.phi_lim - 1e-9
+                      and p["s"] > (rid[0]["s"] if rid else 0.0)]
+            off = rid[-1] if rid else None
+            return dict(
+                taus=(tg, tq, ts), n=len(traj), phi_lim=m.bleed_lim.phi_lim,
+                phi_at_stator_off=(off["phi_lp"] if off else None),
+                v_at_stator_off=(off["v"] if off else None),
+                gov=span(lambda p: p["required"] > 0.0),
+                valve=span(lambda p: 0.0 < p["b_cmd"] < b_max),
+                stator=span(lambda p: p.get("v_regime") == "riding"),
+                joint=span(lambda p: p["required"] > 0.0 and 0.0 < p["b_cmd"] < b_max
+                           and p.get("v_regime") == "riding"),
+                n_interior=nint, v_hi=max(p["v"] for p in traj),
+                min_phi=min(p["phi_lp"] for p in traj),
+                stator_off=(off["s"] if off else None),
+                phi_recovers_marched=(min(caught) if caught else None))
+
+        by_q = [arm(tq, tau_gov, tau_s) for tq in tau_qs]
+        by_s = [arm(tau, tau_gov, ts) for ts in tau_ss]
+        base = by_q[list(tau_qs).index(tau)] if tau in tau_qs else arm(tau, tau_gov, tau_s)
+
+        def edge(rows):
+            return [x["stator"][1] for x in rows]
+
+        eq, es = edge(by_q), edge(by_s)
+        return dict(
+            base=base, by_tau_q=by_q, by_tau_s=by_s, tau_qs=tau_qs, tau_ss=tau_ss,
+            edge_q=eq, edge_s=es,
+            # THE LAW: monotone in the VALVE's clock, comparatively flat in the STATOR's
+            q_monotone=all(eq[i] <= eq[i + 1] + 1e-12 for i in range(len(eq) - 1)),
+            q_span=(max(eq) / min(eq)) if min(eq) else None,
+            s_span=(max(es) / min(es)) if min(es) else None,
+            joint_fraction=base["joint"][2] / base["n"] if base["n"] else 0.0,
+            # THE STATOR QUITS WHILE THE MARCHED `phi` IS STILL SHORT OF THE FLOOR -- by its
+            # own contribution, and by nothing else. Reported as the gap it is (see `arm`).
+            phi_short_at_off=(base["phi_lim"] - base["phi_at_stator_off"]
+                              if base["phi_at_stator_off"] is not None else None),
+            v_at_off=base["v_at_stator_off"])
+
+    def band_containment(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                         Tt4_max: float, sm: float, r: float = 0.5, s_settle: float = 1.2,
+                         ds: float = 0.005, tau: float = 0.05, tau_gov: float = 0.05,
+                         tau_s: float = 0.05, v_max: float = 0.20) -> dict:
+        """s 0's containment as an ARITHMETIC statement on the marched trajectory, beside the
+        RANK it does not contradict.
+
+        For every marched point this evaluates `M_i - m_lim` at the LIVE state and reports the
+        minimum over the points where the valve is DELIVERING (`phi_lp >= phi_lim`). The
+        prediction is that it is `>= v >= 0` there -- never negative -- so the incidence loop
+        has nothing to do wherever the valve has succeeded. That is a statement about FEASIBLE
+        SETS and it coexists with `m = 3`, which is a statement about GRADIENTS."""
+        m = self._full_rig(sm, tau, tau_s, v_max, Tt4_max)
+        traj = m._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds,
+                               Tt4_max=Tt4_max, tau_gov=tau_gov)[0]
+        T_c = self.map_lp_design.tan_beta1_crit()
+        phi_lim = m.bleed_lim.phi_lim
+        m_lim = m.stator_inc.m_lim
+        rows = []
+        for p in traj:
+            mi = StatorIncidenceLimiter.margin(T_c, p["phi_lp"], p["v"])
+            rows.append(dict(s=p["s"], phi=p["phi_lp"], v=p["v"], slack=mi - m_lim,
+                             delivering=p["phi_lp"] >= phi_lim - 1e-12,
+                             riding=p.get("v_regime") == "riding"))
+        deliv = [x for x in rows if x["delivering"]]
+        return dict(
+            n=len(rows), n_delivering=len(deliv),
+            # the containment: slack >= v >= 0 wherever the valve delivers
+            min_slack_delivering=min((x["slack"] for x in deliv), default=None),
+            worst_slack_minus_v=min((x["slack"] - x["v"] for x in deliv), default=None),
+            # and the stator is dormant on every one of those points
+            riding_while_delivering=sum(1 for x in deliv if x["riding"]),
+            min_slack_all=min(x["slack"] for x in rows),
+            n_riding=sum(1 for x in rows if x["riding"]))
+
+    # --- s 1: THE THREE PAIRS, TWO INHERITED CONTROLS, AND THE FACTORING ----------------------
+
+    def full_gains(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                   Tt4_max: float, sm: float, r: float = 0.5, s_settle: float = 1.2,
+                   ds: float = 0.002, tau: float = 0.05, tau_gov: float = 0.05,
+                   tau_s: float = 0.05, v_max: float = 0.20, every: int = 2) -> dict:
+        """s 1 MEASURED: the six cross-gains, the THREE pairwise products, BOTH cyclic products
+        and the determinant, with the rung-70 rig read at the IDENTICAL base points.
+
+        THE TWO CONTROLS ARE DIFFERENT KINDS, and conflating them would be the error:
+          * `pair_RC` is a NUMERICAL control -- rows R and C are the SAME closures rung 70 and
+            rung 67 used, evaluated at the same base point, so it is literally the same
+            computation and must reproduce rung 67's `P` to the differencing floor.
+          * `pair_CV` is a FUNCTIONAL-FORM control -- it is rung 69's `k` on rung 69's own two
+            loops, but re-measured on a DIFFERENT trajectory. Its FORM and BAND are gated; a
+            tolerance the trajectory shift does not justify is not.
+
+        THE READINGS AND WHAT EACH CARRIES:
+            no pair is 1        rung 66's identity is a property of a SHARED constraint, and
+                                nothing is shared -- so it appears ZERO times, for the first time
+            y + pair_RV = 0     the reverse cyclic product IS the new pair, negated
+            x + pair_RC*pair_CV the forward one is a PRODUCT of the other two
+            det + (1-RC)(1-CV)  THE FACTORING, and it uses only FOUR of the six gains
+            RV / (CV * RV70)    `pair_RV(71) = pair_CV * pair_RV(70)`, the cross-rung identity
+        """
+        m = self._full_rig(sm, tau, tau_s, v_max, Tt4_max)
+        m70 = self._split_rig(sm, tau, tau_s, v_max, Tt4_max)
+        traj = m._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds,
+                               Tt4_max=Tt4_max, tau_gov=tau_gov)[0]
+        pts = self._riding(traj, m.bleed_lim.b_max)
+        rows, skipped, checks = [], [], []
+        for p in pts[::every]:
+            gg = m._triple_gains_at(flight, p, None, None, manifold=True)
+            if not gg["interior"]:
+                skipped.append(dict(s=p["s"], off_regime=gg["off_regime"]))
+                continue
+            checks.append(m._assert_state_boundary(flight, p, Tt4_max))
+            g70 = m70._triple_gains_at(flight, p, None, None, manifold=True)
+            x = gg["R_q"] * gg["C_v"] * gg["V_g"]
+            y = gg["R_v"] * gg["C_g"] * gg["V_q"]
+            det = (-1.0 + gg["pair_RC"] + gg["pair_RV"] + gg["pair_CV"] + x + y)
+            det_pred = -(1.0 - gg["pair_RC"]) * (1.0 - gg["pair_CV"])
+            rows.append(dict(
+                s=p["s"], gains=gg, phi_rig=g70, x=x, y=y, det=det, det_pred=det_pred,
+                y_is_RV=abs(y + gg["pair_RV"]),
+                x_is_product=abs(x + gg["pair_RC"] * gg["pair_CV"]),
+                det_err=abs(det - det_pred),
+                cross_rung=(abs(gg["pair_RV"] / (gg["pair_CV"] * g70["pair_RV"]) - 1.0)
+                            if g70["interior"] and g70["pair_RV"] else None)))
+        return dict(
+            n_riding=len(pts), n_sampled=len(pts[::every]), rows=rows, skipped=skipped,
+            boundary=checks, ds=ds,
+            s_window=(pts[0]["s"], pts[-1]["s"]) if pts else None,
+            # NO pair is 1 -- rung 66's identity appears zero times, for the first time
+            closest_to_1=min((min(abs(x["gains"][k] - 1.0)
+                                  for k in ("pair_RC", "pair_RV", "pair_CV"))
+                              for x in rows), default=None),
+            # BOTH cyclic products are redundant
+            worst_y_is_RV=max((x["y_is_RV"] for x in rows), default=None),
+            worst_x_is_product=max((x["x_is_product"] for x in rows), default=None),
+            # THE FACTORING -- four gains out of six
+            worst_det_err=max((x["det_err"] for x in rows), default=None),
+            det_scale=min((abs(x["det_pred"]) for x in rows), default=None),
+            # the cross-rung identity, rung 70's rig at the SAME points
+            worst_cross_rung=max((x["cross_rung"] for x in rows
+                                  if x["cross_rung"] is not None), default=None),
+            pair_RC=[x["gains"]["pair_RC"] for x in rows],
+            pair_RV=[x["gains"]["pair_RV"] for x in rows],
+            pair_CV=[x["gains"]["pair_CV"] for x in rows])
+
+    # --- s 2: THE SPECTRUM -- ZERO zeros, det ALIVE, Routh non-trivial ------------------------
+
+    def full_modes(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                   Tt4_max: float, sm: float,
+                   clocks=((0.05, 0.05, 0.05), (0.05, 0.005, 0.05), (0.05, 0.5, 0.05),
+                           (0.005, 0.05, 0.05), (0.05, 0.05, 2.0), (0.10, 0.10, 0.05)),
+                   r: float = 0.5, s_settle: float = 1.2, ds: float = 0.002,
+                   v_max: float = 0.20, every: int = 4) -> dict:
+        """s 1/s 2's spectrum across a clock grid. `clocks` is `(tau_q, tau_gov, tau_s)` --
+        rung 68/69/70's ordering of the same grid, so the arms line up row for row.
+
+        THE DEFAULT GRID IS SIX ARMS, chosen to span the three RING regimes s 5 needs (two
+        below rung 69's line, three above it, one with no complex pair at all) at the smallest
+        arm count that still does. Rungs 68/69/70 default to FOUR; the spec s 4's ten-arm table
+        is that reader called with a wider grid, and every arm of it is reproducible by passing
+        `clocks`. A march at `ds = 0.002` is the cost here, so arms are not free.
+
+            zeros     -- `n - m` = **0**. The last unoccupied cell, and the first plant in this
+                         family whose actuator block is invertible.
+            c0        -- `det J` != 0, and it matches `-(1-pair_RC)(1-pair_CV)/prod(tau)`. That
+                         closed form uses FOUR of the six gains, so it is a CLAIM and not a
+                         re-expression -- unlike `c1`'s, which is a tautology of any matrix with
+                         `-1` on the diagonal and is therefore reported, never gated.
+            routh     -- `u + w + z - u z`, whose positivity is SUFFICIENT for stability at
+                         every bandwidth triple (class docstring). The first non-trivial
+                         stability condition this family has had.
+            ring      -- the pair identified by its IMAGINARY PART (`_zeta_ring`), `None` where
+                         the spectrum is real. Reported against rung 69's `1/sqrt(1-pair_CV)`,
+                         which is NOT a bound here: rung 69's third root was the ZERO and took
+                         nothing from the trace budget, while this one drains it.
+        """
+        out = []
+        for tau_q, tau_g, tau_s in clocks:
+            m = self._full_rig(sm, tau_q, tau_s, v_max, Tt4_max)
+            traj = m._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds,
+                                   Tt4_max=Tt4_max, tau_gov=tau_g)[0]
+            pts = self._riding(traj, m.bleed_lim.b_max)
+            taus = (tau_g, tau_q, tau_s)          # the (g, q, v) order of the state vector
+            rate = sum(1.0 / t for t in taus)
+            rows, skipped = [], 0
+            for p in pts[::every]:
+                gg = m._triple_gains_at(flight, p, None, None, manifold=True)
+                if not gg["interior"]:
+                    skipped += 1        # DISCLOSED below, never a silent truncation
+                    continue
+                c2, c1, c0 = self._invariants(gg, taus)
+                roots = self._cubic_roots_c(c2, c1, c0)
+                nz = sorted(roots, key=abs)
+                u = 1.0 - gg["pair_RC"]
+                w = 1.0 - gg["pair_RV"]
+                z = 1.0 - gg["pair_CV"]
+                aa, bb, cc = 1.0 / tau_g, 1.0 / tau_q, 1.0 / tau_s
+                c0_pred = -u * z * aa * bb * cc
+                zeta = self._zeta_ring(roots)
+                rows.append(dict(
+                    s=p["s"], c2=c2, c1=c1, c0=c0, roots=roots, c0_pred=c0_pred,
+                    c0_err=abs(c0 / c0_pred - 1.0) if c0_pred else None,
+                    u=u, w=w, z=z, routh=u + w + z - u * z,
+                    pair_RC=gg["pair_RC"], pair_RV=gg["pair_RV"], pair_CV=gg["pair_CV"],
+                    zeta=zeta, r69_floor=z ** -0.5 if z > 0.0 else None,
+                    below_r69=(zeta is not None and z > 0.0 and zeta < z ** -0.5),
+                    complex_pair=zeta is not None,
+                    n_zero=sum(1 for x in roots if abs(x) < 1e-4 * rate),
+                    min_root=abs(nz[0]), max_root=abs(nz[-1]),
+                    stable=all(x.real < 0.0 for x in roots),
+                    ds_lambda=ds * abs(nz[-1]), mod_ratio=abs(nz[-1]) / rate))
+            out.append(dict(
+                taus=taus, rate_sum=-rate, n=len(pts), n_sampled=len(pts[::every]),
+                skipped=skipped, rows=rows,
+                zeros=sorted({x["n_zero"] for x in rows}),
+                min_root_rel=min((x["min_root"] / rate for x in rows), default=None),
+                max_c0_err=max((x["c0_err"] for x in rows if x["c0_err"] is not None),
+                               default=None),
+                min_routh=min((x["routh"] for x in rows), default=None),
+                all_stable=all(x["stable"] for x in rows) if rows else None,
+                any_complex=any(x["complex_pair"] for x in rows) if rows else None,
+                any_below_r69=any(x["below_r69"] for x in rows) if rows else None,
+                max_mod_ratio=max((x["mod_ratio"] for x in rows), default=None),
+                zeta_range=(min((x["zeta"] for x in rows if x["zeta"] is not None),
+                                default=None),
+                            max((x["zeta"] for x in rows if x["zeta"] is not None),
+                                default=None))))
+        live = [a for a in out if a["rows"]]
+        return dict(
+            clocks=clocks, ds=ds, arms=out,
+            zeros_everywhere=sorted({z for a in live for z in a["zeros"]}),
+            arms_with_ring=sum(1 for a in live if a["any_complex"]),
+            arms_real=sum(1 for a in live if not a["any_complex"]),
+            arms_below_r69=sum(1 for a in live if a["any_below_r69"]),
+            max_c0_err=max((a["max_c0_err"] for a in live
+                            if a["max_c0_err"] is not None), default=None),
+            min_routh=min((a["min_routh"] for a in live), default=None),
+            max_mod_ratio=max((a["max_mod_ratio"] for a in live), default=None),
+            all_stable=all(a["all_stable"] for a in live))
+
+    # --- s 3: THE INITIAL CONDITION -- a POINT, not a family ----------------------------------
+
+    def ic_contraction(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                       Tt4_max: float, sm: float,
+                       orders=("gqv", "gvq", "qgv", "qvg", "vgq", "vqg"),
+                       fracs=(0.0, 0.25, 0.6, 1.0), r: float = 0.5, s_settle: float = 1.2,
+                       ds: float = 0.005, tau: float = 0.05, tau_gov: float = 0.05,
+                       tau_s: float = 0.05, v_max: float = 0.20) -> dict:
+        """s 3: **at `n = m` the `s = 0` fixed point is a POINT, and the sweep REJECTS a moved
+        start instead of absorbing it.**
+
+        Rungs 68/69/70 all carry a null space, so their `s = 0` fixed points are a
+        ONE-PARAMETER FAMILY and a Gauss-Seidel sweep lands on whichever member its ORDER
+        selects. Rung 69 s 6 measured the IC spread GROWING as the nullity fell and called a
+        null space a SHOCK ABSORBER. At nullity ZERO the prediction is neither absorption nor
+        growth but COLLAPSE.
+
+        THE INSTRUMENT IS NOT `ic_family`'s, and that is deliberate. `_stator_march`'s `b0`/`v0`
+        arguments PIN their actuator -- the integrator's `steps` skip re-solving a pinned one --
+        so a march started off the fixed point HOLDS the displacement by construction and could
+        never reject it. This runs the sweep ITSELF, from the same three shipped laws, with
+        nothing pinned:
+
+            g <- R(q, v) ,   q <- C(g, v) ,   v <- V(g, q)        in the given order
+
+        and reports where each start converges. **Rung 70's plant is run on the same rig as the
+        negative control** -- its valve and stator SHARE `phi`, so `|C_v V_q| = 1` exactly and
+        its sweep is marginal by construction. A contraction here that is not matched by a
+        failure to contract there would be measuring the solver, not the rank."""
+        def sweep(m, at, order, start, band):
+            R, C, V = m._triple_laws(flight, at[0], at[1], at[2], None, None)
+            steps = {"g": lambda g, q, v: (R(q, v)[0], q, v),
+                     "q": lambda g, q, v: (g, C(g, v)[0], v),
+                     "v": lambda g, q, v: (g, q, V(g, q)[0])}
+            g, q, v = start
+            res, its = float("inf"), 0
+            for its in range(1, 121):
+                gn, qn, vn = g, q, v
+                for key in order:
+                    gn, qn, vn = steps[key](gn, qn, vn)
+                res = max(abs(gn - g), abs(qn - q), abs(vn - v))
+                g, q, v = gn, qn, vn
+                if res <= 1e-13:
+                    break
+            return dict(order=order, start=start, band=band, g=g, q=q, v=v,
+                        res=res, iters=its)
+
+        out = {}
+        for name, rig in (("full", self._full_rig(sm, tau, tau_s, v_max, Tt4_max)),
+                          ("shared", self._split_rig(sm, tau, tau_s, v_max, Tt4_max))):
+            traj = rig._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds,
+                                     Tt4_max=Tt4_max, tau_gov=tau_gov)[0]
+            p0 = traj[0]
+            at = (p0["nu_lp"], p0["nu_hp"], p0["mf_sched"])
+            b_max = rig.bleed_lim.b_max
+            # the stator's band runs the OTHER WAY under the two references (rung 69 s 0.1), so
+            # a displacement is taken as a FRACTION of each rig's own band -- comparing two
+            # plants at equal `v` would compare a dormant loop against a riding one
+            v_hi = (rig.stator_inc.v_max if rig.stator_inc is not None
+                    else -rig.stator_lim.v_max)
+            rows = []
+            for order in orders:
+                for f in fracs:
+                    rows.append(sweep(rig, at, order, (0.0, f * b_max, f * v_hi), f))
+            conv = [x for x in rows if x["res"] <= 1e-9]
+            pts = {(round(x["g"], 10), round(x["q"], 10), round(x["v"], 10)) for x in conv}
+            span = dict(
+                g=max(x["g"] for x in conv) - min(x["g"] for x in conv),
+                q=max(x["q"] for x in conv) - min(x["q"] for x in conv),
+                v=max(x["v"] for x in conv) - min(x["v"] for x in conv)) if conv else None
+            out[name] = dict(rows=rows, n=len(rows), n_converged=len(conv),
+                             members=len(pts), spread=span,
+                             marched=(p0["g"], p0["b"], p0["v"]),
+                             max_iters=max((x["iters"] for x in conv), default=None))
+        return out
+
+    # --- s 4: THE LEDGER -- THREE currencies, one per loop -------------------------------------
+
+    def full_bill(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                  Tt4_max: float, sm: float, r: float = 0.5, s_settle: float = 1.2,
+                  ds: float = 0.005, tau: float = 0.05, tau_gov: float = 0.05,
+                  tau_s: float = 0.05, v_max: float = 0.20) -> dict:
+        """THE 8-CELL LEDGER IN **THREE** CURRENCIES -- one per loop, and the first table in
+        this family that needs one column per loop.
+
+        Rung 66/68 had one (`I`, rung 66's `phi` violation integral); rung 70 had two (`+ E`,
+        rung 67's `Tt4` exceedance). Here the three loops watch three walls, so rung 68's
+        `_violation_inc` joins them as the incidence currency. All three are INHERITED
+        unchanged, so this table differences against rungs 66/67/68/70 rather than resembling
+        them.
+
+        **THE PREDICTION UNDER TEST IS RUNG 70 s 5's LAW AT ITS ZERO-SHARING CORNER**: *a loop
+        is eroded by the loops it shares a constraint with, and by no others.* Rung 70 measured
+        each `phi` loop keeping a small fraction of its solo credit while the governor kept
+        ~100 % of its own. Here NO two loops share, so every loop's MARGINAL contribution should
+        be ~100 % of its SOLO one -- in its own currency, which is the only place the question
+        is even well posed (rung 53: a margin is a DISTANCE, so a credit without its wall is
+        meaningless).
+
+        AND THE TWO READINGS MUST BE QUOTED TOGETHER. s 0 confines the stator to the valve's
+        lag, so it can keep 100 % of a SMALL credit; reporting the ratio without the absolute
+        integral, or the reverse, would each mislead in a different direction."""
+        cells = {}
+        for name, valve, stator, gov in (("bare", False, False, False),
+                                         ("G", False, False, True),
+                                         ("V", True, False, False),
+                                         ("S", False, True, False),
+                                         ("GV", True, False, True),
+                                         ("GS", False, True, True),
+                                         ("VS", True, True, False),
+                                         ("GVS", True, True, True)):
+            m = self._full_rig(sm, tau, tau_s, v_max, Tt4_max, valve=valve, stator=stator)
+            traj = m._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds,
+                                   Tt4_max=(Tt4_max if gov else None),
+                                   tau_gov=(tau_gov if gov else None))[0]
+            phi_lim = (1.0 + sm) * self.map_lp_design.phi_surge
+            T_c = self.map_lp_design.tan_beta1_crit()
+            m_lim = T_c - 1.0 / phi_lim
+            cells[name] = dict(
+                I=self._violation(traj, phi_lim, r),
+                E=self._exceed(traj, Tt4_max, r),
+                M=self._violation_inc(traj, m_lim, T_c, r),
+                min_phi=min(p["phi_lp"] for p in traj),
+                max_Tt4=max(p["Tt4"] for p in traj),
+                v_hi=max((p.get("v", 0.0) for p in traj), default=0.0), n=len(traj))
+        base = cells["bare"]
+        for c in cells.values():
+            for key, cr in (("I", "credit_phi"), ("E", "credit_Tt4"), ("M", "credit_inc")):
+                c[cr] = (1.0 - c[key] / base[key]) if base[key] > 0.0 else None
+        # each loop in ITS OWN currency: governor -> Tt4, valve -> phi, stator -> incidence
+        own = dict(gov=("E", "credit_Tt4", "VS"), valve=("I", "credit_phi", "GS"),
+                   stator=("M", "credit_inc", "GV"))
+        solo = dict(gov="G", valve="V", stator="S")
+        marginal, erosion, absolute = {}, {}, {}
+        for leg, (key, cr, without) in own.items():
+            marg = cells[without][key] - cells["GVS"][key]
+            alone = base[key] - cells[solo[leg]][key]
+            marginal[leg], absolute[leg] = marg, alone
+            erosion[leg] = (marg / alone) if alone else None
+        # WHICH CELLS MAKE A CURRENCY WORSE THAN THE BARE MARCH. Rung 69 s 4 measured the
+        # incidence-referenced stator alone driving `min phi_lp` BELOW the bare march's own;
+        # that cell then INFLATES another loop's marginal, because the other loop is repairing
+        # damage rather than delivering protection. Recorded so a `kept` ratio above 1 is read
+        # as the confound it is (rung 58's *check the SUM, not the term*) and not as a credit.
+        degrades = {n: [k for k in ("I", "E", "M") if c[k] > base[k] * (1.0 + 1e-12)]
+                    for n, c in cells.items() if n != "bare"}
+        return dict(
+            cells=cells, Tt4_max=Tt4_max, own_currency=own, degrades=degrades,
+            # THE SHARPEST SINGLE NUMBER: the loop that does NOT watch `M_i` protects it better
+            # than the loop that does -- s 0's containment, read in the ledger.
+            inc_credit_valve_alone=cells["V"]["credit_inc"],
+            inc_credit_stator_alone=cells["S"]["credit_inc"],
+            marginal=marginal, alone=absolute, kept=erosion,
+            marginal_phi={k: cells[v[2]]["I"] - cells["GVS"]["I"] for k, v in own.items()},
+            marginal_Tt4={k: cells[v[2]]["E"] - cells["GVS"]["E"] for k, v in own.items()},
+            marginal_inc={k: cells[v[2]]["M"] - cells["GVS"]["M"] for k, v in own.items()},
+            delivered=dict(phi=cells["GVS"]["credit_phi"], Tt4=cells["GVS"]["credit_Tt4"],
+                           inc=cells["GVS"]["credit_inc"]))
