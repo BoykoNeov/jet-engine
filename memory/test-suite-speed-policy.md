@@ -41,6 +41,16 @@ Three consequences, and they are the prize:
    test near the threshold flip SIDE between runs). The durations cache is still read — but only to
    ORDER the run, so that effect now costs wall clock and nothing else.
 
+**⚠ ONE CONCERN TRANSFERRED RATHER THAN CLOSING (advisor caught this; I had written "evaporates").**
+`SLOW_SECONDS` also MAINTAINED the marker set — a test that got expensive got tagged whether or not
+its author noticed. What replaced it is a hand-kept **snapshot**. For `pytest` that is safe: an
+unmarked expensive gate still RUNS, and the symptom is a visibly slower gate. **`-m "not slow"` has
+no backstop at all**, and it is the documented iteration loop — a future unmarked sweep will inflate
+it silently. If it drifts from 1:31, **mark the new offender**; do NOT reintroduce a threshold
+(that trades the automation for hazard 3, on the command where being wrong is cheapest).
+*Generalise: deleting a mechanism that served two purposes closes one and moves the other — name
+which is which.*
+
 **THE SCHEDULER IS WORTH ~26 %, measured by accident.** A `-n0` diagnostic wrote **0.00 s** for rung
 24's `test_ei_stays_monotone` into the cache (on one worker it HITS the module memo). The next gate
 therefore ranked the suite's **biggest pole as its cheapest test** and scheduled it **last** — it ran

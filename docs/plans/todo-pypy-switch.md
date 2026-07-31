@@ -620,9 +620,19 @@ it deferred the gates that matter most and ran the cheap corroborating ones ever
    JIT-warm-up attribution lets a test near any threshold flip SIDE between runs. The cache is
    still read, but only to order the run, so the same effect can now cost wall clock and nothing else.
 
-**HONEST COST:** the per-rung ship gate went from a narrowed ~1 min to the full 2:47, and
+**HONEST COST:** the per-rung ship gate went from a narrowed ~1 min to the full 2:18, and
 `--affected` was real work now deleted. It is not kept-in-case — an unused selector that silently
 mis-selects is worse than none.
+
+**AND THE ONE CONCERN THAT TRANSFERRED RATHER THAN CLOSING.** `SLOW_SECONDS` was a *maintenance*
+mechanism as well as a policy: a test that got expensive got tagged whether or not its author
+noticed. The marker set that replaced it is a **snapshot**, maintained by hand. For `pytest` that
+is fine — an unmarked expensive gate still RUNS, and the only symptom is a visibly slower gate.
+But **`-m "not slow"` now has no backstop at all**, and that is the command this slice documents
+as the iteration loop: a future unmarked sweep will silently inflate it and nothing will say so.
+If it drifts from today's 1:31, **mark the new offender** — do not reintroduce a threshold, which
+would buy the automation back at the price of the nondeterminism in point 3 above, on the one
+command where being wrong is cheapest. Recorded in `conftest.py`'s docstring too.
 
 #### An accident that PRICED the scheduler — the one number this slice added to the switch
 

@@ -10,6 +10,21 @@ Policy (see the Commands section of CLAUDE.md):
 `slow` is therefore a LABEL, not a policy. It marks an inherently-expensive gate so you can opt
 out of it while iterating; no code here reads it to decide what a plain `pytest` runs.
 
+THE MARKER SET IS A SNAPSHOT WITH NO AUTOMATIC MAINTENANCE — say it out loud, because the
+retired `SLOW_SECONDS` route USED to maintain it. That threshold was a backstop: a test that got
+expensive got tagged whether or not its author noticed. Deleting it did not make the concern go
+away, it TRANSFERRED it:
+
+  * a plain `pytest` is SAFE from an unmarked expensive test — the test still runs, and the only
+    symptom is a visibly slower gate. That is the safe direction, and it is why no threshold is
+    needed to protect THE GATE.
+  * `-m "not slow"` is NOT protected. It has no backstop at all now, so a new expensive gate that
+    nobody marks silently makes the iteration loop cost more, and nothing will tell you.
+
+If that opt-out drifts (it is 1:31 today), the fix is to MARK THE NEW OFFENDER — not to
+reintroduce a threshold. A threshold would buy back the automation at the price of the
+nondeterminism in (c) below, on the one command where being wrong is cheapest.
+
 WHY THE THREE-GATE POLICY WAS RETIRED (2026-07-31, docs/plans/todo-pypy-switch.md slice 5).
 Until the PyPy switch this file ran a tiered policy: a fast default, `--runslow` for everything,
 and `--affected` (a git + AST symbol-diff + caller-closure selector, ~185 lines) as the per-rung
