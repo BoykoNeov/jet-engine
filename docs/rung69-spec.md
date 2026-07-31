@@ -485,11 +485,16 @@ The anchor (`docs/plans/rung69-anchor-reference-split.md`) pre-registered nine.
   test moves `m` alone: two loops on `φ` plus **two** on `M_i` (`n = 4, m = 2` ⇒ 2 zeros again,
   at a different loop count). It needs a fourth lever with authority over the LP, which this
   plant does not have — the same hardware wall rung 68's `n = 4` seam hit.
-* **A plant with `pair_RV ≠ pair_CV`** — § 1.1's generic split, where the odd constraint does
-  *not* depend on `(g, q)` only through the shared one. Rung 47's `Tt4` governor is exactly
-  that (it sees the fuel directly), so **rung 68's *three loops on TWO variables* seam and this
-  one are the same seam approached from two sides**, and running it would separate "a second
-  constraint" from "a second constraint that factors through the first".
+* ~~**A plant with `pair_RV ≠ pair_CV`**~~ — **CLOSED BY RUNG 70** (`docs/rung70-spec.md`), and
+  it did close rung 68's *three loops on TWO variables* with it, exactly as predicted here. The
+  governor's constraint does not factor, so the two split pairs separate — **with OPPOSITE
+  SIGNS**, `−0.017…−0.020` against `+0.113…+0.127`. Three consequences for THIS rung's reading:
+  § 1.1's `pair_RV = pair_CV` is confirmed as *a measurement of the two walls' relationship*
+  and not of the rank; § 1.4's `c1 = (1−k)(…)` is the factoring special case of a **clock-
+  weighted two-term sum**, so its bandwidth-independence was a property of the collapse; and
+  § 3's damping floor, attained here on a finite hyperplane, becomes an **infimum on a ray**.
+  **Rung 70's floor is rung 67's `ζ` exactly** — a lever fighting itself is what made THIS
+  rung's `k ≈ −1.7` and hence its visible ring.
 * **A plant with `k < −3`**, where the inherited RK4 constant stops being conservative (§ 7) and
   the guard would have to be re-derived rather than re-justified. `k` is a plant property, so
   this needs a lever whose two channels fight harder — not a new law.

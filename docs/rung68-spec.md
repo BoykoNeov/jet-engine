@@ -424,9 +424,14 @@ The anchor (`docs/plans/rung68-anchor-three-loops.md`) pre-registered eight.
   leaves −1 and the block goes to rank 2 — one zero, not two. It is also the physically correct
   direction for the lever (`dM_i/dv = +0.344`), so it is the pairing where redundancy and
   hardware sense finally agree. **The strongest open seam in this family.**
-* **THREE loops on TWO variables** — rung 67's own seam, still open, and now asserted against
-  from this side too: rung 47's `Tt4` governor beside this triple superposes rung 67's `P < 0`
-  block onto this rank-one one.
+* ~~**THREE loops on TWO variables**~~ — **CLOSED BY RUNG 70** (`docs/rung70-spec.md`). Rung
+  47's `Tt4` governor replaces this rung's fuel leg beside the same valve and the same stator:
+  `n = 3, m = 2`, one zero. It is the SAME seam as rung 69 § 11's *`pair_RV ≠ pair_CV`*
+  approached from the other side, and both close together. The prediction above was half right —
+  the block does stop being rank one — but the `P < 0` block does **not** simply superpose:
+  `pair_CV` inherits this rung's identity, `pair_RC` **is** rung 67's `P`, and `pair_RV` comes
+  back with the OPPOSITE SIGN, so no single scalar survives. **And rung 70 retires this rung's
+  *quote `x`*:** the cyclic product equals `−pair_RC` and is structurally blind to `pair_RV`.
 * **A plant with `|P| > 1`** (rung 67) — untouched.
 * **An ASYMMETRIC valve** (rung 65) and an **asymmetric governor** (rung 67) — both still open.
 * **Fuel + bleed + STATOR-as-a-SCHEDULE**, all three on one plant — rung 63's seam, still open

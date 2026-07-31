@@ -24,7 +24,7 @@ from turbojet.engine import (  # noqa: E402
     ScheduledStatorTransient, StatorSchedule, IncidenceLimiter, StatorBleedMatcher,
     ScheduledBleedTransient, BleedSchedule, LimitedBleedTransient, BleedLimiter,
     ThreeLoopCascadeTransient, StatorLimiter,
-    ReferenceSplitTransient, StatorIncidenceLimiter,
+    ReferenceSplitTransient, StatorIncidenceLimiter, CrossSplitTransient,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -4940,6 +4940,92 @@ def print_reference_split_table(flight):
     print("    the two floors are matched at the DESIGN setting, so the references are compared")
     print("    at equal WALL and not at equal excursion. See docs/rung69-spec.md.")
 
+
+def print_cross_split_table(flight):
+    """Rung-70 payoff: rung 68 s 10's *three loops on TWO variables* and rung 69 s 11's
+    *`pair_RV != pair_CV`* -- ONE seam from two sides, closed together.
+
+    The panel is built around what a reader of rungs 68/69 would carry in wrongly. Rung 68 says
+    *quote the cyclic product*; rung 69 says *`pair_RC = 1` is the negative control*. BOTH stop
+    being true here, and neither failure raises anything -- so the panel shows the identity
+    MOVING and the cyclic product going HALF-BLIND, on one trajectory."""
+    print("\nTHE GENERIC SPLIT (rung 70): the split buys the RANK; the RING needs the odd")
+    print("constraint to be a SECOND WALL ON THE SAME LEVER.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR = 0.55
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    LO, HI, B, PHI, VM, TMAX = 1000.0, 1400.0, 0.10, 0.80, 0.20, 1200.0
+    SM = PHI / FLOOR - 1.0
+    t = CrossSplitTransient(
+        design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0,
+        bleed_lim=BleedLimiter.from_margin(LP, B, SM, tau=0.05),
+        stator_lim=StatorLimiter.from_margin(LP, VM, SM, tau=0.05))
+    print("  RUNG 67's SUBSTITUTION, APPLIED TO RUNG 68's TRIPLE: the odd loop's SENSOR moves")
+    print(f"  from `phi` to `Tt4` (rung 47's governor, Tt4_max = {TMAX:.0f} K -- rung 67's own")
+    print("  imposed value). Same valve, same stator, same wall. n = 3, m = 2 -- RUNG 69's CELL.")
+
+    w = t.window_overlap(flight, LO, HI, TMAX, SM)
+    print(f"\n  All three windows overlap on s in [{w['joint'][0]:.3f}, {w['joint'][1]:.3f}] "
+          f"({w['joint'][2]} points, {100*w['joint_fraction']:.1f}% of the march) -- a GATE,")
+    print("  not a remark: a gain table over an empty intersection would report the algebra of")
+    print("  loops that were never simultaneously live.")
+
+    print("\n  THE IDENTITY MOVES -- and BOTH of rungs 68/69's readings stop being complete:")
+    g = t.split_gains(flight, LO, HI, TMAX, SM, every=20)
+    print(f"    {'s':>7} | {'R_q*C_g':>10} {'R_v*V_g':>10} {'C_v*V_q':>13} {'CYCLIC x':>10}"
+          f" | {'R_q*C_g':>10}")
+    print(f"    {'':>7} | {'-- rung 70: the GOVERNOR is the odd loop --':^47}"
+          f" | {'rung 68':^10}")
+    for row in g["rows"]:
+        a, f = row["gov"], row["fuel"]
+        # the rung-68 contrast is only readable where ITS leg is interior too; an off-regime
+        # arm is a KINK, not a gain, and is shown as such rather than differenced anyway
+        fuel = f"{f['pair_RC']:10.6f}" if f["interior"] else f"{'off-regime':>10}"
+        print(f"    {row['s']:7.4f} | {a['pair_RC']:10.6f} {a['pair_RV']:10.6f} "
+              f"{a['pair_CV']:13.10f} {a['cyclic']:10.6f} | {fuel}")
+    print(f"    The SHARED pair is now (C,V) and holds at 1 to {g['worst_CV']:.1e}. At the SAME")
+    print(f"    base points rung 68's fuel leg still gives pair_RC = 1 to "
+          f"{g['worst_RC_fuel']:.1e} -- so the")
+    print("    identity MOVED, measured on ONE trajectory. The two SPLIT pairs come back with")
+    print("    OPPOSITE SIGNS, which no single scalar can summarise -- and the CYCLIC product")
+    print(f"    equals -pair_RC to {g['worst_cyclic_is_RC']:.1e} while being BLIND to pair_RV.")
+
+    print("\n  THE SPECTRUM, and the FLOOR the split leaves behind:")
+    f = t.split_floor(flight, LO, HI, TMAX, SM,
+                      grid=((0.05, 0.05, 0.05), (0.05, 0.05, 0.10), (0.05, 0.05, 2.00)))
+    print(f"    {'taus (g,q,s)':>20} {'quiet share':>12} {'zeta':>9} {'floor':>9} {'pair':>9}")
+    for row in f["rows"]:
+        if "zeta" not in row:
+            continue
+        print(f"    {str(row['taus']):>20} {row['quiet_share']:12.4f} {row['zeta']:9.5f} "
+              f"{row['floor']:9.5f} {'COMPLEX' if row['complex_pair'] else 'real':>9}")
+    print("    RUNG 69 FOUND A VISIBLE RING (zeta >= 0.61) because its `k ~ -1.7` was ONE LEVER")
+    print("    READING TWO WALLS. Here the odd constraint sits on a DIFFERENT lever, both split")
+    print("    pairs are cross-LEVER gains, and the floor lands at ~0.990 -- which is rung 67's")
+    print("    own zeta = 1/sqrt(1+|P|), because min() selects pair_RC and pair_RC IS rung 67's")
+    print("    P. A third loop that SHARES a constraint adds a zero and moves the achievable")
+    print("    damping NOWHERE. The pre-registered 'no complex pair at ANY bandwidth' is")
+    print("    REFUTED: the last row rings -- but only where the stator carries 1% of the rate")
+    print("    sum, i.e. where the third loop is dynamically inert, and at zeta = 0.992 it is")
+    print("    rung 67's admissible-but-unobservable mode again.")
+    print("    SCOPE: that floor identity is CONTINGENT on pair_RV > 0 (had the stator's pair")
+    print("    been the more negative one, min() would select a gain rung 67 never measured);")
+    print("    Tt4_max/phi_lim/b_max/v_max are imposed or inherited; all three tau are swept")
+    print("    march coordinates. ORDERINGS and SIGNS are the claims, MAGNITUDES are")
+    print("    disclaimed. See docs/rung70-spec.md.")
+
+
 def main():
     # The tables carry unicode (Δ, ·, ≡, ≈); force UTF-8 so `python main.py` renders
     # on any console (a stock Windows cp1252 console would otherwise crash on them).
@@ -5085,6 +5171,8 @@ def main():
 
     print_three_loop_table(FLIGHT)
     print_reference_split_table(FLIGHT)
+
+    print_cross_split_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

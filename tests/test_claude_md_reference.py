@@ -67,7 +67,17 @@ _CLAUDE_MD = os.path.join(_HERE, os.pardir, "CLAUDE.md")
 # This buys ~90 B of headroom on purpose: the next rung trips it again, which is the guard
 # working. The rung-68 panel-backfill disclosure (~334 B) is still unpaid and is still the
 # first thing to delete when § Open engineering tasks clears it.
-MAX_BYTES = 33_400
+# Bumped at rung 70 (33,680 B), and the ~90 B of headroom above did exactly what it was bought
+# to do -- the next rung tripped it. Same shape as 67/68/69: ONE table row at 322 B (comfortably
+# inside the per-row rule), its § Layout ladder entry, and its name in the BUILT list. PAID FOR
+# in part: rung 70 closes TWO listed open seams (rung 68's THREE-loops-on-TWO-variables and rung
+# 69's pair_RV != pair_CV, which rung 69 identified as one seam from two sides), so the "Rung
+# 69's seams" open-list entry was rewritten into "Rungs 69/70's seams" -- one clause deleted,
+# two added, roughly a wash rather than a refund. The three no-grow sites (scope narration,
+# engine.py method inventory, per-seam BUILT list) were checked first and none grew beyond one
+# name. The rung-68 panel-backfill disclosure (~334 B) is STILL unpaid: rung 70 wrote its own
+# panel, but 65/66/67 still have none, so that debt does not clear here.
+MAX_BYTES = 33_680
 MAX_LINES = 300
 
 

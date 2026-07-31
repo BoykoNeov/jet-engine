@@ -13969,3 +13969,880 @@ class ReferenceSplitTransient(ThreeLoopCascadeTransient):
                     v_range=(min(p["v"] for p in traj), max(p["v"] for p in traj)))
             res[ref] = arms
         return res
+
+
+class CrossSplitTransient(ReferenceSplitTransient):
+    """RUNG 70. THE GENERIC SPLIT -- rung 68 s 10's *three loops on TWO variables* and rung 69
+    s 11's *a plant with `pair_RV != pair_CV`*, WHICH ARE ONE SEAM FROM TWO SIDES (rung 69 says
+    so explicitly). Both close here. See `docs/rung70-spec.md`.
+
+    Rung 67's substitution applied to rung 68's triple: rung 52's `phi` fuel leg is replaced by
+    **rung 47's `Tt4` topping GOVERNOR**, beside rung 65's `phi` valve and rung 68's `phi`
+    stator. Five states, three clocks, one actuator per loop -- rung 68's shapes exactly, and
+    only the ODD loop's COORDINATE differs.
+
+        dg/ds = ( R(nu,q,v) - g ) / tau_g    R = rung 47's clip,  Tt4 <= Tt4_max  [GOV,    Tt4]
+        dq/ds = ( C(nu,g,v) - q ) / tau_q    C = rung 65's b_cmd, phi >= phi_lim  [VALVE,  phi]
+        dv/ds = ( V(nu,g,q) - v ) / tau_s    V = rung 68's v_cmd,  phi >= phi_lim [STATOR, phi]
+
+    `n = 3`, `m = 2` -- THE SAME CELL AS RUNG 69, reached by a different route, so this is a
+    CONTROLLED COMPARISON at equal counts. What differs is which pair shares the constraint and
+    whether the odd constraint FACTORS through it.
+
+    HEADLINE: **THE SPLIT BUYS THE RANK; THE RING NEEDS THE ODD CONSTRAINT TO BE A SECOND WALL
+    ON THE SAME LEVER.** Rung 69 found a complex pair with a bandwidth-independent floor
+    `zeta >= 1/sqrt(1-k)`, `k ~ -1.7..-2.0`. That `k` came from ONE LEVER READING TWO WALLS --
+    the stator's `phi_v/phi^2` geometry, a lever fighting itself. Here the odd constraint sits
+    on a DIFFERENT lever, both split pairs are cross-LEVER fuel-vs-airflow gains of order
+    `1e-2`, so `1 - p ~ 1` and the floor lands at `~0.99`: **the rank is bought, and the mode is
+    real at every bandwidth.** That upgrades rung 69's *complex iff `k < 0`* from a CONDITION
+    into a MECHANISM.
+
+    THE ALGEBRA (rung 69 s 1, with `T := Tt4`, `phi := phi_lp`):
+
+        row_R = -(1/T_g) grad T^T      row_C = -(1/phi_q) grad phi^T
+                                       row_V = -(1/phi_v) grad phi^T
+
+    Rows C and V are PARALLEL and row R is not, so `m = 2` and ZEROS = 1.
+
+        pair_CV = C_v V_q = 1                      <- THE SHARED PAIR: rung 66's identity, and
+                                                      it MOVED. A reader inheriting rung 69's
+                                                      `pair_RC = 1` control reads a SIGNAL.
+        pair_RC = R_q C_g = (T_q phi_g)/(T_g phi_q)   SPLIT
+        pair_RV = R_v V_g = (T_v phi_g)/(T_g phi_v)   SPLIT
+
+        equal  iff  T_q/phi_q == T_v/phi_v   i.e. iff `Tt4` depends on `(q,v)` ONLY through
+        `phi`. At rung 69 that held TRIVIALLY (`M_i = T_c - 1/phi + v` differs from the shared
+        wall by exactly the lever's own direct channel) and both pairs collapsed onto one
+        scalar. **Here they do not, and THAT is the rung**: rung 69's `pair_RV = pair_CV` was a
+        measurement of the two WALLS' relationship, untested until a plant existed where it
+        fails.
+
+    AND THE CYCLIC PRODUCT GOES HALF-BLIND, which retires it as a summary:
+
+        x := R_q C_v V_g = -(T_q phi_g)/(T_g phi_q) = -pair_RC     -- and NOTHING about pair_RV
+
+    Rung 68 said *quote `x`* and rung 69 said *`x` flips to `-k`*; both were complete only
+    because every split pair was one scalar. **Here `x` sees ONE of the two and structurally
+    cannot see the other** -- rung 68's own *check what is INDEPENDENT before quoting it*, in
+    its second shape.
+
+    THE INVARIANTS, and no single scalar summarises them any more:
+
+        c0 = det J = 0   ALWAYS -- rows C and V stay parallel whatever the governor does, so
+                         `det` is blind to THIS split exactly as it was to rung 69's
+        c1 = (1 - pair_RC)/(tau_g tau_q) + (1 - pair_RV)/(tau_g tau_s)      [the (C,V) term dies]
+        c2 = tr J = -sum 1/tau_i                                            [the ODE's diagonal]
+
+    `c1` is again the discriminator -- but rung 69's `c1 = (1-k) A z` had the two shared rates
+    entering only through their SUM, and here the two split pairs sit on DIFFERENT clock
+    products. So the bandwidths weight them independently, and that changes the ring's floor
+    from an attained minimum to an INFIMUM. With `a = 1/tau_g`, `b = 1/tau_q`, `c = 1/tau_s`:
+
+        zeta = (a+b+c) / (2 sqrt( a (u b + w c) )) ,   u = 1-pair_RC,  w = 1-pair_RV
+             >=  1/sqrt(1 - min(pair_RC, pair_RV))              -- set by the WORSE pair
+
+    **THE EQUALITY SET COLLAPSES FROM A HYPERPLANE TO A RAY.** Rung 69's `u = w` makes `b, c`
+    enter only through `b+c`, so its floor is attained on `a = b+c`, reachable with all three
+    clocks FINITE. (It is *not* attained at matched clocks -- there `A = 2/tau != z = 1/tau`,
+    which is why rung 69's own table reads `zeta = 0.645` against a floor of `0.609`.) Here
+    equality needs `b -> 0` AND `a = c`: the floor is approached only by SILENCING one of the
+    two loops that share the wall, so it is STRICT at every admissible bandwidth triple.
+
+    THE NEGATIVE CONTROL IS BUILT IN, AND IT IS RUNG 67. `pair_RC` here IS rung 67's
+    `P = R_q C_g` -- same governor, same valve, same shipped closures -- so `split_gains`
+    reports both. A disagreement larger than the base-point shift the third loop induces means
+    the `_b_state`/`_v_state` boundary is wrong, NOT that the plant changed.
+
+    THE `_b_state`/`_v_state` BOUNDARY carries over from rung 68 verbatim with `R` = the
+    governor, and on this cascade it is load-bearing for rung 67's reason: `R_q != 0` ONLY
+    because the governor senses `Tt4` on the machine as the valve actually is. It is ASSERTED
+    (`_assert_state_boundary`) rather than inherited silently -- rung 68 flags it as the one
+    thing here that can go wrong without failing.
+
+    Usage:
+        t = CrossSplitTransient(design, FLIGHT, 1.0, map_lp=..., map_hp=..., bleed_lim=bl)
+        t.split_gains(FLIGHT, 1000., 1400., 1200., sm=0.4545)   # the TWO split pairs + rung 67
+        t.split_modes(FLIGHT, 1000., 1400., 1200., sm=0.4545)   # 1 zero, det blind, c1 alive
+        t.split_floor(FLIGHT, 1000., 1400., 1200., sm=0.4545)   # the RAY, and the real branch
+        t.split_bill(FLIGHT, 1000., 1400., 1200., sm=0.4545)    # the 8-cell, TWO currencies
+
+    THE REDUCE HAS TWO BIT-FOR-BIT ARMS, both by DISPATCH:
+      * `tau_gov=None`  => rung 69/68 (and everything under them) bit-for-bit -- the governor
+        is what arms this rung, so without it `integrate_fuel` is the parent's own call.
+      * no stator armed => RUNG 67 bit-for-bit -- the parent already dispatches there, and this
+        class never intercepts a march it does not own.
+    Neither `tau_gov -> inf` nor `tau_s -> inf` is bit-for-bit (a different code path with a
+    fifth state); both are rung 68's converging limits and are REPORTED, never asserted.
+
+    CONCESSIONS (in addition to every one rungs 62-69 list, all inherited):
+      * `Tt4_max = 1200 K` is RUNG 67's IMPOSED value, taken verbatim so the numbers difference
+        against rung 67's rather than merely resembling them (rung 63's lesson). Rung 67 chose
+        it for overlap with ONE `phi` loop; `window_overlap` VERIFIES all three overlap before
+        any ledger cell is quotable, and it is a gate rather than an argument.
+      * `phi_lim`, `b_max` (rung 64) and `v_max = 0.20` (rungs 57/58) remain IMPOSED.
+      * The `phi`-referenced stator still moves the lever in the ANTI-PHYSICAL direction and
+        erodes incidence margin while protecting `phi` (rung 68's concession, verbatim).
+      * All three clocks are swept coordinates on the march's own `s`; no actuator bandwidth is
+        anchored anywhere in this family. ORDERINGS, SIGNS and INVARIANCES are the claims;
+        every MAGNITUDE is disclaimed.
+      * The spectrum is sampled at finitely many trajectory points -- a DIAGNOSTIC that can
+        miss a brief excursion (rung 65's retracted trap), not a proof of convergence.
+      * `min(pair_RC, pair_RV) ~ 0` is measured on THIS plant. Whether a cross-LEVER pair is
+        always weak is NOT established; the claim is the MECHANISM -- a ring needs one lever on
+        two walls -- with this plant's numbers as its instance.
+      * The STAGE STACK (rungs 55/56) is still off the transient ladder, and this still does
+        NOT close rung 63's fuel+bleed+STATOR seam (that seam wants an OPEN-loop schedule).
+    """
+
+    # The governor's set point, armed on a RIG so the inherited rung-68 readers reach the
+    # governor's law through `_triple_laws`. Class-level for rung 68's reason: `_arm` is
+    # reachable from an inherited constructor's own steady solve, before `__init__` has run.
+    _gov_max = None
+
+    def at_lever(self, vsv_lp: float = 0.0, vsv_hp: float = 0.0, vsv_sched_lp=None,
+                 vsv_sched_hp=None, bleed: float = 0.0, bleed_sched=None,
+                 bleed_lim=None, stator_lim=None, stator_inc=None) -> "CrossSplitTransient":
+        """Rung 69's sibling constructor returning THIS class. THE EIGHTH INSTANCE of the trap
+        rungs 61-69 each hit. The signature does NOT grow here -- rung 70's third loop is armed
+        by a MARCH argument (`tau_gov`), not by a machine keyword -- so the failure mode is back
+        to rung 67's plain one: hands back the parent's class, and every reader then measures
+        rung 69's plant while reporting rung 70's."""
+        de, fd, md, rho, lpd = self._ctor
+        return CrossSplitTransient(
+            de, fd, md, map_lp=self.map_lp_design, map_hp=self.map_hp_design, rho=rho,
+            vsv_lp=vsv_lp, vsv_hp=vsv_hp, vsv_sched_lp=vsv_sched_lp,
+            vsv_sched_hp=vsv_sched_hp, bleed=bleed, bleed_sched=bleed_sched,
+            bleed_lim=bleed_lim, stator_lim=stator_lim, stator_inc=stator_inc,
+            lp_disabled=lpd)
+
+    # --- the march: rung 68's five states, with the ODD loop on the OTHER variable ------------
+
+    def integrate_fuel(self, flight: FlightCondition, fuel_schedule, nu0,
+                       s_end: float, ds: float, freeze=None, Tt4_max=None,
+                       tau_gov=None, accel=None, surge=None, s_off=None,
+                       tau_rel=None, lag=None) -> list:
+        lag = lag if lag is not None else self._lag
+        # RUNG 67's clock rides on an instance attribute and `_stator_march` does not forward it
+        # as a keyword, so reading only the argument would let a rung-70 march silently become a
+        # rung-68 one (rung 68's own note, and the reason the refusal below can fire at all).
+        tau_gov = tau_gov if tau_gov is not None else self._tau_gov
+        if tau_gov is None or not self._lagged_stator():
+            # EVERY inherited arm leaves through here: rung 69 (an incidence stator), rung 68
+            # (a phi stator, no governor), rung 67 (a governor, no stator), and everything
+            # under them. This class never intercepts a march it does not own.
+            return super().integrate_fuel(
+                flight, fuel_schedule, nu0, s_end, ds, freeze=freeze, Tt4_max=Tt4_max,
+                tau_gov=tau_gov, accel=accel, surge=surge, s_off=s_off, tau_rel=tau_rel,
+                lag=lag)
+        assert self.stator_inc is None, (
+            "rung-70 is THREE loops on TWO variables: the governor on `Tt4`, the valve and the "
+            "STATOR both on `phi`. An INCIDENCE stator here would put all three on DIFFERENT "
+            "constraints -- `n = m = 3`, ZERO zeros, the one cell of rung 69 s 1's table this "
+            "ladder has never occupied. That is rung 70's own next seam, asserted against "
+            "rather than run.")
+        assert Tt4_max is not None, (
+            "rung-70's odd loop IS the redline: `tau_gov` without `Tt4_max` is a governor with "
+            "no set point, which would march as rung 68 while every reader reported rung 70.")
+        assert not (lag is not None and (accel is not None or surge is not None)), (
+            "rung-70: rung 52's phi FUEL leg beside this governor is `n = 4, m = 2` -- FOUR "
+            "loops, and two of them on the same actuator. It is an unregistered plant and the "
+            "next seam after this one; rung 68's own `tau_gov` assert exists because 'silently "
+            "accepts it' is the failure mode. Arm one fuel-side leg, not both.")
+        assert s_off is None and tau_rel is None, (
+            "rung-70: rungs 50/51's FORCED release edges are an isolation instrument for a leg "
+            "that could not pin its own trigger. All three legs here pin their own (rung 68's "
+            "argument, verbatim).")
+        assert self.bleed_lim is None or self._lagged(), (
+            "rung-70: an INSTANTANEOUS valve beside a lagged stator is not a control but a "
+            "different plant (rung 65 called the instantaneous limit singular, and rung 66 "
+            "refused the comparison for that reason). Give the valve a `tau` or leave it out.")
+        return self._integrate_fuel_cross_triple(flight, fuel_schedule, nu0, s_end, ds,
+                                                 freeze, Tt4_max, tau_gov)
+
+    @staticmethod
+    def _rk4_floor_split(ds: float, rate: float, tau_s: float) -> None:
+        """THE FLOOR, RE-JUSTIFIED A THIRD TIME ON THE SAME CONSTANT -- which is the point.
+
+        Rung 68's `ds*sum(1/tau_i) <= 2` is exact-in-argument there (`J` rank one, non-zero
+        eigenvalue EXACTLY `-sum 1/tau_i`). Rung 69 kept the constant on a different argument
+        (a complex pair of modulus `sqrt(A z (1-k))`, bounded by `sqrt(1-k)/2` times the sum, so
+        conservative for `k >= -3`). Here `min(pair) ~ 0` puts the two non-zero roots back on
+        the REAL axis with the dominant one at `~ -sum 1/tau_i` again -- so the constant is
+        conservative for rung 68's reason once more, on a plant rung 68's derivation does not
+        cover. It is RE-STATED rather than inherited because rung 65 published a retraction for
+        a trusted stability argument, and `split_floor` MEASURES `|lam|` against it."""
+        assert ds * rate <= 2.0, (
+            f"rung-70: ds*sum(1/tau_i) = {ds*rate:.3f} is outside the explicit RK4 stability "
+            f"region for the three actuator states (ds = {ds}, tau_s = {tau_s}). Under the "
+            "GENERIC split the block is rank TWO but its non-zero pair is REAL and dominated by "
+            "the rate sum (min(pair) ~ 0), so this is rung 68's bound on rung 68's argument. "
+            "Refine the grid or slow a clock.")
+
+    def _integrate_fuel_cross_triple(self, flight: FlightCondition, fuel_schedule, nu0,
+                                     s_end: float, ds: float, freeze, Tt4_max: float,
+                                     tau_gov: float) -> list:
+        """RUNG 70's march -- rung 68's five-state integrator with ONE substitution, the odd
+        loop's SENSOR, exactly as rung 67 substituted into rung 66's.
+
+        IT IS A SIBLING, NOT AN EDIT. Rungs 68/69's arms have to stay bit-for-bit and
+        `tests/test_numeric_fingerprint.py` is the project's only ABSOLUTE gate, so the two
+        integrators are kept apart even where they agree line for line.
+
+        TWO THINGS DIFFER FROM `_integrate_fuel_triple`, and both are rung 67's placement:
+          * `Tt4_max` is the GOVERNOR's set point, carried BY THE STATE (`mf = mf_sched - g`)
+            the way rung 47 carries it -- NOT rung 52's unlagged min-select on top of the
+            already-clipped fuel. Applying both would clip twice and the redline would be held
+            by an instrument that is not the loop under study.
+          * `required` is the governor's clip, solved from the SCHEDULED fuel on the plant as
+            the OTHER TWO ACTUATORS ACTUALLY ARE (`_b_state = q`, `_v_state = v`). Forget
+            either and that cross-gain is identically zero, the loop silently decouples, and
+            NOTHING FAILS -- rung 62's `_powers` trap, sixth reload.
+
+        Every key rungs 52/65/66/67/68 record is recorded here byte-unchanged, so every reader
+        in the family works on this trajectory too."""
+        lim_s = self._stator_leg()
+        tau_s = lim_s.tau
+        # The VALVE is OPTIONAL, rung 68's `has_q` verbatim -- the ledger's `G`, `S` and `GS`
+        # cells are marches of this same integrator with it disarmed, which is what keeps every
+        # cell differenceable against every other (rung 63's lesson).
+        has_q = self._lagged()
+        tau_q = self.bleed_lim.tau if has_q else None
+        self._rk4_floor_split(ds, 1.0 / tau_gov + (1.0 / tau_q if has_q else 0.0)
+                              + 1.0 / tau_s, tau_s)
+        Tt2, pt2, _ = self._inlet(flight)
+        base_close = super(LimitedBleedTransient, self)._close_fuel
+
+        def command(a, h, mf, v):
+            """THE VALVE law -- rung 68's, verbatim. Roots over TRIAL positions, so NO
+            `_b_state`; `_v_state` IS set, because it solves against the plant as the STATORS
+            actually are."""
+            if not has_q:
+                return 0.0
+            self._v_state = v
+            try:
+                return self._solve_b(self._closer(base_close, a, h, mf, Tt2, pt2))[1]
+            finally:
+                self._v_state = None
+
+        def stator(a, h, mf, q):
+            """THE STATOR law -- rung 68's, verbatim. Trials `v`, so NO `_v_state`, but
+            `_b_state = q`. Returns (v, regime); the regime is CARRIED, never re-derived."""
+            self._b_state = q
+            try:
+                _, v, reg = self._solve_v(self._closer_v(base_close, a, h, mf, Tt2, pt2))
+                return v, reg
+            finally:
+                self._b_state = None
+
+        def required(a, h, q, v, mf_sched):
+            """THE GOVERNOR law -- rung 67's `required` with the stator's state added. It trials
+            NEITHER other actuator, so it sees BOTH; solved from the SCHEDULED fuel (rung 47's
+            discipline: `required` is what the clip WOULD have to be, not what the current clip
+            makes it)."""
+            self._b_state, self._v_state = q, v
+            try:
+                i = self._instant_fuel(flight, a, h, mf_sched)
+                if i["Tt4"] <= Tt4_max:
+                    return 0.0
+                return max(0.0, mf_sched
+                           - self._topping_fuel(flight, a, h, Tt4_max, mf_sched))
+            finally:
+                self._b_state, self._v_state = None, None
+
+        def der(a, h, g, q, v, s):
+            mf_sched = float(fuel_schedule(s))
+            req = required(a, h, q, v, mf_sched)
+            mf = max(1e-9, mf_sched - g)          # the redline rides on the STATE (rung 47/67)
+            self._b_state, self._v_state = q, v
+            try:
+                i = self._instant_fuel(flight, a, h, mf)
+            finally:
+                self._b_state, self._v_state = None, None
+            cmd = command(a, h, mf, v)
+            vcmd, vreg = stator(a, h, mf, q)
+            da = 0.0 if freeze == "lp" else i["Phi_lp"] / self.rho
+            dh = 0.0 if freeze == "hp" else i["Phi_hp"]
+            return (da, dh, (req - g) / tau_gov, ((cmd - q) / tau_q if has_q else 0.0),
+                    (vcmd - v) / tau_s, mf, i, req, cmd, vcmd, vreg)
+
+        # --- THE JOINT INITIAL CONDITION: rung 68's family, for rung 68's reason ---------------
+        # The governor opens DORMANT (the ramp starts below the redline), so `g0 = 0` exactly
+        # and rung 67's damped 2x2 solve is not what is needed here. What remains is rung 68's
+        # situation unchanged: the VALVE and the STATOR are both live at `s = 0` and they SHARE
+        # the constraint, so their pairwise contraction is `|C_v V_q| = 1` EXACTLY -- marginal.
+        # The `s = 0` fixed points are a ONE-PARAMETER FAMILY and a Gauss-Seidel sweep lands on
+        # whichever member its ORDER selects. The order is DECLARED, never inferred: `g -> q ->
+        # v`, rung 68's, so the rung-68 arm is reached unchanged.
+        a, h = nu0
+        mf0 = float(fuel_schedule(0.0))
+        if self._v0 is not None:
+            self._check_v0(self._v0, lim_s)
+        g, q, v = 0.0, command(a, h, mf0, 0.0), (self._v0 if self._v0 is not None else 0.0)
+        if self._b0 is not None:
+            q = self._b0
+        steps = {"g": lambda g, q, v: (required(a, h, q, v, mf0), q, v),
+                 "q": lambda g, q, v: (g, q if self._b0 is not None
+                                       else command(a, h, max(1e-9, mf0 - g), v), v),
+                 "v": lambda g, q, v: (g, q, v if self._v0 is not None
+                                       else stator(a, h, max(1e-9, mf0 - g), q)[0])}
+        assert sorted(self._ic_order) == ["g", "q", "v"], (
+            f"rung-70 ic_order is a permutation of 'gqv'; got {self._ic_order!r}")
+        res, its = float("inf"), 0
+        for its in range(1, 61):
+            gn, qn, vn = g, q, v
+            for key in self._ic_order:
+                gn, qn, vn = steps[key](gn, qn, vn)
+            res = max(abs(gn - g), abs(qn - q), abs(vn - v))
+            g, q, v = gn, qn, vn
+            if res <= 1e-12:
+                break
+        assert res <= 1e-9, (
+            f"rung-70: the joint initial condition did not converge (residual {res:.3e} after "
+            f"{its} iterations) in order {self._ic_order!r}. The two `phi` loops still SHARE a "
+            "constraint, so their `s = 0` fixed points are a CURVE and a sweep can only land on "
+            "a member. Report the state and the order; do not raise the cap.")
+
+        pts, s = [], 0.0
+        for _ in range(int(round(s_end / ds)) + 1):
+            try:
+                k1a, k1h, k1g, k1q, k1v, mf_app, inst, req, cmd, vcmd, vreg = der(
+                    a, h, g, q, v, s)
+            except AssertionError:
+                break
+            pts.append(dict(s=s, nu_lp=a, nu_hp=h, Tt4=inst["Tt4"], f=inst["f"],
+                            pi_lpc=inst["pi_lpc"], pi_hpc=inst["pi_hpc"],
+                            phi_lp=inst["phi_lp"], phi_hp=inst["phi_hp"],
+                            mdot_air=inst["mdot_air"], sp_thrust=inst["sp_thrust"],
+                            branch=inst["branch"], mf=mf_app,
+                            mf_sched=float(fuel_schedule(s)), g=g, required=req,
+                            b=q, b_cmd=cmd, v=v, v_cmd=vcmd, v_regime=vreg,
+                            ic_iters=its, ic_res=res, ic_order=self._ic_order))
+            try:
+                k2 = der(a + ds/2*k1a, h + ds/2*k1h, g + ds/2*k1g, q + ds/2*k1q,
+                         v + ds/2*k1v, s + ds/2)
+                k3 = der(a + ds/2*k2[0], h + ds/2*k2[1], g + ds/2*k2[2], q + ds/2*k2[3],
+                         v + ds/2*k2[4], s + ds/2)
+                k4 = der(a + ds*k3[0], h + ds*k3[1], g + ds*k3[2], q + ds*k3[3],
+                         v + ds*k3[4], s + ds)
+            except AssertionError:
+                break
+            a += ds / 6 * (k1a + 2 * k2[0] + 2 * k3[0] + k4[0])
+            h += ds / 6 * (k1h + 2 * k2[1] + 2 * k3[1] + k4[1])
+            g += ds / 6 * (k1g + 2 * k2[2] + 2 * k3[2] + k4[2])
+            q += ds / 6 * (k1q + 2 * k2[3] + 2 * k3[3] + k4[3])
+            v += ds / 6 * (k1v + 2 * k2[4] + 2 * k3[4] + k4[4])
+            # Every position is PHYSICAL (rung 65, verbatim): the actuators' own hardware stops,
+            # applied to the STATE and never to a command.
+            if has_q:
+                q = min(self.bleed_lim.b_max, max(0.0, q))
+            v = self._clamp_v(v, lim_s)
+            g = max(0.0, g)
+            s += ds
+        return pts
+
+    # --- s 1: THE LAWS, with the odd one on the other variable --------------------------------
+
+    def _triple_laws(self, flight: FlightCondition, a: float, h: float, mf_sched: float,
+                     accel, surge):
+        """Rung 68's three closures with `R` swapped for the GOVERNOR when a set point is armed
+        (`_gov_max`, set by `_split_rig`). `C` and `V` are the parent's OWN closures, untouched
+        -- which is what makes the pairwise products a MEASUREMENT rather than a restatement:
+        the two `phi` laws still know nothing of each other or of the governor.
+
+        With `_gov_max` unset this is the parent's answer verbatim, so every rung-68/69 reader
+        reached through a rung-70 machine measures rung 68/69's plant."""
+        R_fuel, C, V = super()._triple_laws(flight, a, h, mf_sched, accel, surge)
+        Tt4_max = self._gov_max
+        if Tt4_max is None:
+            return R_fuel, C, V
+
+        def R(q, v):
+            """-> (clip, regime). Rung 47's law, and it has the SAME kink rung 52's has: a
+            `max(0, .)` at its own dormant edge, so a central difference straddling it returns
+            the slope of neither branch. The regime label is what the caller filters on."""
+            self._b_state, self._v_state = q, v
+            try:
+                i = self._instant_fuel(flight, a, h, mf_sched)
+                if i["Tt4"] <= Tt4_max:
+                    return 0.0, "dormant"
+                raw = mf_sched - self._topping_fuel(flight, a, h, Tt4_max, mf_sched)
+            finally:
+                self._b_state, self._v_state = None, None
+            return max(0.0, raw), ("riding" if raw > 0.0 else "dormant")
+
+        return R, C, V
+
+    def _split_rig(self, sm: float, tau: float, tau_s: float, v_max: float, Tt4_max: float,
+                   valve: bool = True, stator: bool = True):
+        """A machine with any SUBSET of the two AIRFLOW loops armed and the governor's set point
+        attached. ONE constructor for every cell of every table here, so a cell can differ from
+        another only by which loops are armed (rung 63's lesson, and the reason the credits are
+        differenceable at all).
+
+        Both floors come from the SAME `from_margin(cmap, ., sm)`, which is what makes the
+        valve and the stator ONE set point rather than two numbers that happen to agree -- and
+        under THIS rung that is not a nicety: `pair_CV = 1` is an identity of a SHARED
+        constraint, and a set-point offset would break it and look like a failed prediction."""
+        cmap = self.map_lp_design
+        bl = BleedLimiter.from_margin(cmap, self.bleed_lim.b_max if self.bleed_lim
+                                      else 0.10, sm, tau=tau) if valve else None
+        sl = StatorLimiter.from_margin(cmap, v_max, sm, tau=tau_s) if stator else None
+        m = self.at_lever(bleed_lim=bl, stator_lim=sl)
+        m._gov_max = Tt4_max
+        return m
+
+    def _with_gov(self, val, fn, *a, **kw):
+        """Run a reader with the governor's set point forced on or off (`None` = rung 68's fuel
+        leg). Restored in a `finally` for rung 62's reason: a leaked setting would make a reader
+        report a plant that was never marched."""
+        prev, self._gov_max = self._gov_max, val
+        try:
+            return fn(*a, **kw)
+        finally:
+            self._gov_max = prev
+
+    def _assert_state_boundary(self, flight: FlightCondition, p: dict, Tt4_max: float,
+                               dq: float = 1e-5, dv: float = 1e-4) -> dict:
+        """THE ONE THING RUNG 68 SAYS CAN GO WRONG SILENTLY, asserted rather than inherited.
+
+        `R_q != 0` and `R_v != 0` ONLY because the governor senses `Tt4` on the machine as the
+        other two actuators actually are. Drop `_b_state`/`_v_state` around `required` and both
+        cross-gains are identically zero: the odd loop DECOUPLES, `m` reads 1 instead of 2 by
+        accident, `c1` collapses -- and every prediction here would 'confirm' rung 68 instead.
+        So the boundary is measured against its own broken version."""
+        a, h, mf_sched = p["nu_lp"], p["nu_hp"], p["mf_sched"]
+        q, v = p["b"], p["v"]
+        R, _, _ = self._triple_laws(flight, a, h, mf_sched, None, None)
+
+        def blind(qq, vv):
+            """`required` WITHOUT the state boundary -- the failure mode, built on purpose."""
+            i = self._instant_fuel(flight, a, h, mf_sched)
+            if i["Tt4"] <= Tt4_max:
+                return 0.0
+            return max(0.0, mf_sched - self._topping_fuel(flight, a, h, Tt4_max, mf_sched))
+
+        live = dict(R_q=(R(q + dq, v)[0] - R(q - dq, v)[0]) / (2 * dq),
+                    R_v=(R(q, v + dv)[0] - R(q, v - dv)[0]) / (2 * dv))
+        dead = dict(R_q=(blind(q + dq, v) - blind(q - dq, v)) / (2 * dq),
+                    R_v=(blind(q, v + dv) - blind(q, v - dv)) / (2 * dv))
+        assert dead["R_q"] == 0.0 and dead["R_v"] == 0.0, (
+            "rung-70: the BLIND control is supposed to be identically zero -- if it is not, "
+            "this instrument is not measuring what it claims.")
+        assert abs(live["R_q"]) > 0.0 and abs(live["R_v"]) > 0.0, (
+            f"rung-70: the governor's cross-gains came back {live} at s = {p['s']}. A ZERO "
+            "cross-gain is not a weak coupling, it is a MISSING one (rung 67's gate): the "
+            "`_b_state`/`_v_state` boundary around `required` has been lost, and with it the "
+            "second constraint. Every prediction in this rung would then confirm rung 68.")
+        return dict(s=p["s"], live=live, dead=dead)
+
+    @staticmethod
+    def _zeta_pair(roots):
+        """THE DAMPING RATIO OF THE NON-ZERO PAIR -- and it CANNOT be rung 69's reader.
+
+        Rung 69 reads `zeta = -Re(dom)/|dom|` off the DOMINANT root, which is exact for the
+        complex pair it measures and returns exactly 1.0 for ANY real root. Here the pair is
+        predicted REAL, so that reader would report `zeta = 1` on every arm and the floor claim
+        would be untestable -- a instrument that cannot distinguish 'critically damped' from
+        'overdamped by 3x' cannot measure a bound whose whole content is how much margin the
+        plant has above 1.
+
+        So the pair is read the way the closed form defines it, from BOTH non-zero roots:
+
+            zeta = -(lam1 + lam2) / (2 sqrt(lam1 lam2))
+
+        which is `-Re/|lam|` when they are conjugate and `>= 1` when they are real. That makes
+        `zeta` and `zeta_pred` the SAME quantity, so their agreement is a check on the algebra
+        rather than a comparison of two different definitions."""
+        nz = sorted(roots, key=abs)[1:]
+        s, p = nz[0] + nz[1], nz[0] * nz[1]
+        rt = cmath.sqrt(p)
+        return None if abs(rt) == 0.0 else (-s / (2.0 * rt)).real
+
+    # --- s 1: THE PAIRWISE SPLIT, and rung 67 as the built-in control --------------------------
+
+    def split_gains(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                    Tt4_max: float, sm: float, r: float = 0.5, s_settle: float = 1.2,
+                    ds: float = 0.005, tau: float = 0.05, tau_gov: float = 0.05,
+                    tau_s: float = 0.05, v_max: float = 0.20, every: int = 10) -> dict:
+        """s 1 MEASURED: the six cross-gains and the three pairwise products, on ONE trajectory,
+        under BOTH odd loops at the SAME base points (rung 69's design).
+
+        `gov` is rung 70's plant. `fuel` re-reads rung 68's `R` at the identical points -- it is
+        not marched, it is the CONTRAST, and it is what shows that the identity MOVES from
+        `(R,C)` to `(C,V)` rather than merely appearing somewhere new.
+
+        THE READINGS AND WHAT EACH CARRIES:
+            pair_CV     the SHARED pair. 1 to the differencing floor under `gov`.
+            pair_RC     SPLIT -- and it IS rung 67's `P`, so it doubles as the negative control.
+            pair_RV     SPLIT -- and the cyclic product CANNOT SEE IT (`x = -pair_RC`).
+            pair_gap    |pair_RC - pair_RV| / max(|.|): ZERO at rung 69, non-zero here. THE RUNG.
+        """
+        m = self._split_rig(sm, tau, tau_s, v_max, Tt4_max)
+        traj = m._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds,
+                               Tt4_max=Tt4_max, tau_gov=tau_gov)[0]
+        pts = self._riding(traj, m.bleed_lim.b_max)
+        rows, skipped, checks = [], [], []
+        for p in pts[::every]:
+            gov = m._triple_gains_at(flight, p, None, None, manifold=True)
+            fuel = m._with_gov(None, m._triple_gains_at, flight, p, None,
+                               SurgeLimiter.from_margin(self.map_lp_design, "lp", sm),
+                               manifold=True)
+            if not gov["interior"]:
+                skipped.append(dict(s=p["s"], off_regime=gov["off_regime"]))
+                continue
+            checks.append(m._assert_state_boundary(flight, p, Tt4_max))
+            den = max(abs(gov["pair_RC"]), abs(gov["pair_RV"]), 1e-300)
+            rows.append(dict(s=p["s"], gov=gov, fuel=fuel,
+                             pair_gap=abs(gov["pair_RC"] - gov["pair_RV"]) / den,
+                             cyclic_is_RC=abs(gov["cyclic"] + gov["pair_RC"])))
+        return dict(
+            n_riding=len(pts), n_sampled=len(pts[::every]), rows=rows, skipped=skipped,
+            boundary=checks,
+            s_window=(pts[0]["s"], pts[-1]["s"]) if pts else None,
+            # THE SHARED IDENTITY, and the two SPLIT pairs it does not reach
+            worst_CV=max((abs(x["gov"]["pair_CV"] - 1.0) for x in rows), default=None),
+            worst_RC_is_1=max((abs(x["gov"]["pair_RC"] - 1.0) for x in rows), default=None),
+            worst_RV_is_1=max((abs(x["gov"]["pair_RV"] - 1.0) for x in rows), default=None),
+            # THE RUNG: the two split pairs are DIFFERENT, which rung 69's plant could not show
+            min_pair_gap=min((x["pair_gap"] for x in rows), default=None),
+            max_pair_gap=max((x["pair_gap"] for x in rows), default=None),
+            # `x = -pair_RC` identically, so the cyclic product is blind to `pair_RV`
+            worst_cyclic_is_RC=max((x["cyclic_is_RC"] for x in rows), default=None),
+            # rung 68's control: under the FUEL leg the identity sits on (R,C) instead
+            worst_RC_fuel=max((abs(x["fuel"]["pair_RC"] - 1.0) for x in rows
+                               if x["fuel"]["interior"]), default=None),
+            pair_RC=[x["gov"]["pair_RC"] for x in rows],
+            pair_RV=[x["gov"]["pair_RV"] for x in rows],
+            worse_pair=min((min(x["gov"]["pair_RC"], x["gov"]["pair_RV"]) for x in rows),
+                           default=None))
+
+    def rung67_control(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                       Tt4_max: float, sm: float, tau: float = 0.05, tau_gov: float = 0.05,
+                       tau_s: float = 0.05, v_max: float = 0.20, r: float = 0.5,
+                       s_settle: float = 1.2, ds: float = 0.005, every: int = 10) -> dict:
+        """THE NEGATIVE CONTROL: `pair_RC` here IS rung 67's `P = R_q C_g`.
+
+        Same governor, same valve, same shipped closures -- the ONLY difference is that a third
+        loop is present and has moved the base point. So the two must agree in SIGN and ORDER OF
+        MAGNITUDE, and a departure beyond that is a broken state boundary rather than a plant
+        that changed. It is reported as a ratio and never gated to a tolerance the base-point
+        shift does not justify."""
+        got = self.split_gains(flight, Tt4_lo, Tt4_hi, Tt4_max, sm, r=r, s_settle=s_settle,
+                               ds=ds, tau=tau, tau_gov=tau_gov, tau_s=tau_s, v_max=v_max,
+                               every=every)
+        ref = self._split_rig(sm, tau, tau_s, v_max, Tt4_max, stator=False).cross_identity(
+            flight, Tt4_lo, Tt4_hi, Tt4_max, tau=tau, tau_govs=(tau_gov,))
+        P70 = got["pair_RC"]
+        return dict(
+            n=len(P70), P70_lo=min(P70) if P70 else None, P70_hi=max(P70) if P70 else None,
+            P67_lo=ref["prod_lo"], P67_hi=ref["prod_hi"],
+            both_negative=(all(x < 0.0 for x in P70) and ref["all_negative"]) if P70 else None,
+            ratio=((sum(P70) / len(P70)) / (0.5 * (ref["prod_lo"] + ref["prod_hi"])))
+            if P70 else None)
+
+    # --- s 2: THE SPECTRUM -- one zero, det blind, c1 alive and CLOCK-WEIGHTED -----------------
+
+    def split_modes(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                    Tt4_max: float, sm: float,
+                    clocks=((0.05, 0.05, 0.05), (0.05, 0.005, 0.05),
+                            (0.05, 0.5, 0.05), (0.02, 0.05, 0.10)),
+                    r: float = 0.5, s_settle: float = 1.2, ds: float = 0.002,
+                    v_max: float = 0.20, every: int = 20) -> dict:
+        """s 1's spectrum across a clock grid. `clocks` is `(tau_q, tau_gov, tau_s)` -- rung
+        68/69's ordering of the same grid, so the arms line up row for row.
+
+            zeros -- `n - m` = 1. The same cell as rung 69, reached without an incidence wall.
+            c0    -- `det J` = 0. BLIND to this split too, for the same reason: the valve and
+                     the stator keep exactly parallel rows whatever the governor watches.
+            c1    -- NON-ZERO, and it is the discriminator AGAIN. But it is now a CLOCK-WEIGHTED
+                     SUM of two different split pairs, so unlike rung 69's `(1-k) A z` it moves
+                     under a re-weighting of the clocks at FIXED plant.
+        """
+        out = []
+        for tau_q, tau_g, tau_s in clocks:
+            m = self._split_rig(sm, tau_q, tau_s, v_max, Tt4_max)
+            traj = m._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds,
+                                   Tt4_max=Tt4_max, tau_gov=tau_g)[0]
+            pts = self._riding(traj, m.bleed_lim.b_max)
+            taus = (tau_g, tau_q, tau_s)          # the (g, q, v) order of the state vector
+            rate = sum(1.0 / t for t in taus)
+            rows, skipped = [], 0
+            for p in pts[::every]:
+                gg = m._triple_gains_at(flight, p, None, None, manifold=True)
+                if not gg["interior"]:
+                    skipped += 1        # DISCLOSED below, never a silent truncation
+                    continue
+                c2, c1, c0 = self._invariants(gg, taus)
+                roots = self._cubic_roots_c(c2, c1, c0)
+                nz = sorted(roots, key=abs)
+                dom = nz[-1]
+                # THE CLOSED FORM, beside the shipped cubic's own root: c1 is predicted to be
+                # the CLOCK-WEIGHTED sum, and quoting only the cubic would hide which term won.
+                c1_pred = ((1.0 - gg["pair_RC"]) / (tau_g * tau_q)
+                           + (1.0 - gg["pair_RV"]) / (tau_g * tau_s))
+                rows.append(dict(
+                    s=p["s"], c2=c2, c1=c1, c0=c0, roots=roots,
+                    c1_pred=c1_pred, c1_err=abs(c1 / c1_pred - 1.0) if c1_pred else None,
+                    pair_RC=gg["pair_RC"], pair_RV=gg["pair_RV"], pair_CV=gg["pair_CV"],
+                    cyclic=gg["cyclic"], zeta=self._zeta_pair(roots),
+                    complex_pair=abs(dom.imag) > 1e-6 * abs(dom),
+                    n_zero=sum(1 for x in roots if abs(x) < 1e-4 * rate),
+                    worst_zero=abs(nz[0]),
+                    c1_rel=abs(c1) / rate ** 2, c0_rel=abs(c0) / rate ** 3))
+            out.append(dict(
+                taus=taus, rate_sum=-rate, n=len(pts), n_sampled=len(pts[::every]),
+                skipped=skipped, rows=rows,
+                zeros=sorted({x["n_zero"] for x in rows}),
+                max_c0_rel=max((x["c0_rel"] for x in rows), default=None),
+                min_c1_rel=min((x["c1_rel"] for x in rows), default=None),
+                max_c1_err=max((x["c1_err"] for x in rows if x["c1_err"] is not None),
+                               default=None),
+                any_complex=any(x["complex_pair"] for x in rows) if rows else None,
+                zeta_range=(min((x["zeta"] for x in rows if x["zeta"] is not None),
+                                default=None),
+                            max((x["zeta"] for x in rows if x["zeta"] is not None),
+                                default=None))))
+        return dict(clocks=clocks, ds=ds, arms=out)
+
+    def c1_clock_swap(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                      Tt4_max: float, sm: float, tau_g: float = 0.05,
+                      fast: float = 0.02, slow: float = 0.10, r: float = 0.5,
+                      s_settle: float = 1.2, ds: float = 0.005, v_max: float = 0.20) -> dict:
+        """THE DISCRIMINATING TEST OF s 1.4, and the one reading that cannot be fooled.
+
+        That `c1 != 0` is rung 69's result, not this rung's, and that `c1` MOVES across a clock
+        grid proves nothing -- the rate sum moves too. That the measured `c1` matches the
+        two-term closed form to 1e-10 only validates the formula against itself.
+
+        WHAT DISCRIMINATES IS A SWAP. Hold `tau_g` and exchange `(tau_q, tau_s)`:
+
+            one scalar (rung 69's shape, u == w):  c1 = u (1/(tau_g tau_q) + 1/(tau_g tau_s))
+                                                   -- SYMMETRIC in the exchange => INVARIANT
+            two terms  (this rung):                c1 changes by
+                                                   (u - w)(1/(tau_g tau_q) - 1/(tau_g tau_s))
+
+        The gains are evaluated ONCE and re-weighted under both clock assignments, so the
+        comparison isolates the CLOCKS from the plant; each arm's own marched `c1` is reported
+        beside it as the realism check.
+
+        AND THE CLOCK PRODUCTS THEMSELVES CONFIRM THE IDENTITY MOVED. Rung 69's two `c1` terms
+        both carry `1/tau_s`, its ODD loop's clock; both of these carry `1/tau_g`, which is
+        THIS rung's odd loop. The surviving factor is always the odd loop's clock, because the
+        pair that SHARES contributes nothing -- so the clock products are a free read of which
+        two loops share a constraint."""
+        out = {}
+        for name, (tau_q, tau_s) in (("fast_valve", (fast, slow)),
+                                     ("fast_stator", (slow, fast))):
+            m = self._split_rig(sm, tau_q, tau_s, v_max, Tt4_max)
+            traj = m._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds,
+                                   Tt4_max=Tt4_max, tau_gov=tau_g)[0]
+            pts = self._riding(traj, m.bleed_lim.b_max)
+            assert pts, f"rung-70 c1_clock_swap: no riding-interior window on arm {name}"
+            p = pts[len(pts) // 2]
+            gg = m._triple_gains_at(flight, p, None, None, manifold=True)
+            assert gg["interior"], (
+                f"rung-70 c1_clock_swap: the {name} base point is off-regime "
+                f"({gg['off_regime']}) -- a kink, not a gain.")
+            c2, c1, c0 = self._invariants(gg, (tau_g, tau_q, tau_s))
+            out[name] = dict(taus=(tau_g, tau_q, tau_s), s=p["s"], c1_marched=c1,
+                             pair_RC=gg["pair_RC"], pair_RV=gg["pair_RV"], gains=gg)
+
+        # ONE plant, BOTH clock assignments -- the pure discrimination.
+        #
+        # EVERY `c1` BELOW COMES FROM THE SHIPPED `_invariants`, i.e. from the actual 3x3
+        # Jacobian, and NEVER from s 1.4's closed form. That distinction is the whole gate:
+        # evaluating the closed form under two clock assignments and reporting that it changed
+        # would be rung 67 gate 9's TAUTOLOGY -- a formula agreeing with itself. The closed form
+        # appears exactly once, as `predicted_delta`, and it is the thing under test.
+        base = out["fast_valve"]["gains"]
+
+        def c1_shipped(gg, tau_q, tau_s):
+            return self._invariants(gg, (tau_g, tau_q, tau_s))[1]
+
+        held = dict(c1_fast_valve=c1_shipped(base, fast, slow),
+                    c1_fast_stator=c1_shipped(base, slow, fast))
+        # WHAT A ONE-SCALAR PLANT WOULD HAVE GIVEN, built from THIS plant's own gains by forcing
+        # `pair_RC == pair_RV == k` at their mean -- rung 69's shape, on rung 70's numbers. The
+        # two split pairs are forced through the gains that carry them (`R_q`, `R_v`), so
+        # `pair_CV` is untouched and the null differs from the plant in exactly one respect.
+        k = 0.5 * (base["pair_RC"] + base["pair_RV"])
+        null_gg = dict(base)
+        null_gg["R_q"] = k / base["C_g"]
+        null_gg["R_v"] = k / base["V_g"]
+        one = dict(c1_fast_valve=c1_shipped(null_gg, fast, slow),
+                   c1_fast_stator=c1_shipped(null_gg, slow, fast))
+        held["ratio"] = held["c1_fast_stator"] / held["c1_fast_valve"]
+        one["ratio"] = one["c1_fast_stator"] / one["c1_fast_valve"]
+        return dict(
+            arms=out, held_gains=held, one_scalar_null=one, k_null=k,
+            marched_ratio=(out["fast_stator"]["c1_marched"]
+                           / out["fast_valve"]["c1_marched"]),
+            # THE ONLY closed-form quantity here, and the one under test.
+            # delta = (w - u)(1/fast - 1/slow)/tau_g, and `w - u = pair_RC - pair_RV`
+            predicted_delta=((base["pair_RC"] - base["pair_RV"])
+                             * (1.0 / (tau_g * fast) - 1.0 / (tau_g * slow))),
+            measured_delta=held["c1_fast_stator"] - held["c1_fast_valve"],
+            null_delta=one["c1_fast_stator"] - one["c1_fast_valve"])
+
+    # --- s 3: THE FLOOR -- an INFIMUM on a ray, not a minimum on a hyperplane -----------------
+
+    def split_floor(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                    Tt4_max: float, sm: float,
+                    grid=((0.05, 0.05, 0.05), (0.05, 0.05, 0.025), (0.05, 0.05, 0.10),
+                          (0.10, 0.10, 0.05), (0.02, 0.20, 0.05), (0.20, 0.02, 0.05),
+                          (2.00, 0.05, 0.05), (0.05, 0.05, 2.00), (0.05, 2.00, 2.00)),
+                    r: float = 0.5, s_settle: float = 1.2, ds: float = 0.005,
+                    v_max: float = 0.20) -> dict:
+        """s 3: `zeta >= 1/sqrt(1 - min(pair_RC, pair_RV))` over every bandwidth, approached
+        ONLY on a RAY -- and WHICH ray is measured, not assumed.
+
+        The equality set silences whichever of the two SHARED loops carries the SMALLER
+        coefficient `1 - pair`, i.e. the one whose split pair is closer to `+1`. On this plant
+        `pair_RC ~ -0.02` and `pair_RV ~ +0.12`, so `w = 1 - pair_RV < u = 1 - pair_RC` and the
+        ray silences the STATOR (`1/tau_s -> 0`, `tau_g = tau_q`) -- the very loop that made
+        this `n = 3`. The grid therefore straddles BOTH extremes (a slow valve and a slow
+        stator) rather than assuming the direction.
+
+        The gains do not depend on the clocks -- `R`, `C` and `V` are control LAWS and the
+        clocks enter only through `D = diag(1/tau_i)` -- so each grid point measures its gains
+        on ITS OWN march and reports both the closed form and the shipped cubic's own roots,
+        rather than pretending each arm is an independent measurement of the plant.
+
+        It is a SWEEP, not a limit: a silenced clock is `1/tau = 0`, which is not a plant."""
+        rows = []
+        for tau_q, tau_g, tau_s in grid:
+            m = self._split_rig(sm, tau_q, tau_s, v_max, Tt4_max)
+            traj = m._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds,
+                                   Tt4_max=Tt4_max, tau_gov=tau_g)[0]
+            pts = self._riding(traj, m.bleed_lim.b_max)
+            taus = (tau_g, tau_q, tau_s)
+            if not pts:
+                rows.append(dict(taus=taus, n=0))
+                continue
+            p = pts[len(pts) // 2]
+            gg = m._triple_gains_at(flight, p, None, None, manifold=True)
+            if not gg["interior"]:
+                rows.append(dict(taus=taus, n=len(pts), off_regime=gg["off_regime"]))
+                continue
+            aa, bb, cc = 1.0 / tau_g, 1.0 / tau_q, 1.0 / tau_s
+            u, w = 1.0 - gg["pair_RC"], 1.0 - gg["pair_RV"]
+            det2 = aa * (u * bb + w * cc)
+            c2, c1, c0 = self._invariants(gg, taus)
+            roots = self._cubic_roots_c(c2, c1, c0)
+            dom = sorted(roots, key=abs)[-1]
+            # THE RAY's own coordinate: the share of the shared pair's rate carried by the loop
+            # the equality set SILENCES -- the one with the smaller `1 - pair`. Measured, not
+            # assumed, because which loop that is, is a property of the plant.
+            quiet = bb if u < w else cc
+            rows.append(dict(
+                taus=taus, n=len(pts), s=p["s"], pair_RC=gg["pair_RC"],
+                pair_RV=gg["pair_RV"], u=u, w=w, silenced=("valve" if u < w else "stator"),
+                quiet_share=quiet / (aa + bb + cc), a_over_loud=aa / (cc if u < w else bb),
+                det2=det2, zeta_pred=(aa + bb + cc) / (2.0 * det2 ** 0.5),
+                zeta=self._zeta_pair(roots), floor=(1.0 - min(gg["pair_RC"],
+                                                             gg["pair_RV"])) ** -0.5,
+                mod=abs(dom), mod_pred=det2 ** 0.5, rate_sum=aa + bb + cc,
+                complex_pair=abs(dom.imag) > 1e-6 * abs(dom)))
+        live = [x for x in rows if "zeta" in x]
+        return dict(
+            rows=rows,
+            holds=all(x["zeta"] >= x["floor"] - 1e-9 for x in live),
+            strict=all(x["zeta"] > x["floor"] + 1e-12 for x in live),
+            any_complex=any(x["complex_pair"] for x in live),
+            floor_range=(min((x["floor"] for x in live), default=None),
+                         max((x["floor"] for x in live), default=None)),
+            tightest=min(live, key=lambda x: x["zeta"] / x["floor"]) if live else None,
+            worst_pred_err=max((abs(x["zeta"] / x["zeta_pred"] - 1.0) for x in live),
+                               default=None),
+            # the RK4 guard, MEASURED against the plant rather than trusted
+            max_ds_lambda=ds * max((x["mod"] for x in live), default=0.0),
+            max_mod_ratio=max((x["mod"] / x["rate_sum"] for x in live), default=None))
+
+    # --- s 4: THE WINDOWS, and the LEDGER ------------------------------------------------------
+
+    def window_overlap(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                       Tt4_max: float, sm: float, r: float = 0.5, s_settle: float = 1.2,
+                       ds: float = 0.005, tau: float = 0.05, tau_gov: float = 0.05,
+                       tau_s: float = 0.05, v_max: float = 0.20) -> dict:
+        """DO ALL THREE WINDOWS OVERLAP? -- a GATE, not a remark.
+
+        Rung 67 had to pick `Tt4_max` so that the governor's window overlapped the valve's AT
+        ALL ('post-ramp by construction' holds only at rung 46/47's own redline). Rung 70 adds a
+        third window and inherits rung 67's number verbatim, so the overlap is no longer
+        something rung 67 established for this plant -- it has to be re-measured before any
+        ledger cell or gain table is quotable, because a table over an empty intersection would
+        report the pairwise algebra of loops that were never simultaneously live."""
+        m = self._split_rig(sm, tau, tau_s, v_max, Tt4_max)
+        traj = m._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds,
+                               Tt4_max=Tt4_max, tau_gov=tau_gov)[0]
+        b_max = m.bleed_lim.b_max
+
+        def span(sel):
+            w = [p["s"] for p in traj if sel(p)]
+            return (min(w), max(w), len(w)) if w else (None, None, 0)
+
+        gov = span(lambda p: p["required"] > 0.0)
+        val = span(lambda p: 0.0 < p["b_cmd"] < b_max)
+        sta = span(lambda p: p.get("v_regime") == "riding")
+        joint = span(lambda p: p["required"] > 0.0 and 0.0 < p["b_cmd"] < b_max
+                     and p.get("v_regime") == "riding")
+        return dict(gov=gov, valve=val, stator=sta, joint=joint, n=len(traj),
+                    overlaps=joint[2] > 0,
+                    joint_fraction=joint[2] / len(traj) if traj else 0.0)
+
+    def split_bill(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                   Tt4_max: float, sm: float, r: float = 0.5, s_settle: float = 1.2,
+                   ds: float = 0.005, tau: float = 0.05, tau_gov: float = 0.05,
+                   tau_s: float = 0.05, v_max: float = 0.20) -> dict:
+        """THE 8-CELL LEDGER IN TWO CURRENCIES -- every subset of the three loops, every loop
+        lagged, and the SAME rig for every cell (rung 63's lesson).
+
+        TWO currencies because the loops watch two variables and a one-currency ledger would
+        score the governor in the valve's coin. `I` is rung 66's `phi` violation integral and
+        `E` is rung 67's `Tt4` exceedance integral, both inherited unchanged so this table is
+        differenceable against rungs 66/67/68 rather than merely similar.
+
+        THE ASYMMETRY IS THE POINT and it is rung 67's cross-credit, now with a THIRD loop: the
+        airflow loops DEBIT the temperature (bleed and closed stators both make it hotter at
+        fixed fuel) while the governor CREDITS the surge margin (clipping fuel raises `phi`).
+        Rung 68's three loops shared ONE currency and could only erode each other."""
+        cells = {}
+        for name, valve, stator, gov in (("bare", False, False, False),
+                                         ("G", False, False, True),
+                                         ("V", True, False, False),
+                                         ("S", False, True, False),
+                                         ("GV", True, False, True),
+                                         ("GS", False, True, True),
+                                         ("VS", True, True, False),
+                                         ("GVS", True, True, True)):
+            m = self._split_rig(sm, tau, tau_s, v_max, Tt4_max, valve=valve, stator=stator)
+            traj = m._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds,
+                                   Tt4_max=(Tt4_max if gov else None),
+                                   tau_gov=(tau_gov if gov else None))[0]
+            phi_lim = (m.bleed_lim.phi_lim if m.bleed_lim
+                       else StatorLimiter.from_margin(self.map_lp_design, v_max, sm).phi_lim)
+            cells[name] = dict(
+                I=self._violation(traj, phi_lim, r),
+                E=self._exceed(traj, Tt4_max, r),
+                min_phi=min(p["phi_lp"] for p in traj),
+                max_Tt4=max(p["Tt4"] for p in traj), n=len(traj))
+        base = cells["bare"]
+
+        def credit(c, key):
+            return 1.0 - c[key] / base[key] if base[key] > 0.0 else None
+
+        for c in cells.values():
+            c["credit_phi"], c["credit_Tt4"] = credit(c, "I"), credit(c, "E")
+        return dict(
+            cells=cells, phi_lim_source="from_margin(sm)", Tt4_max=Tt4_max,
+            # THE MARGINAL contribution of each loop to the FULL triple -- the only reading that
+            # survives rung 58's *check the SUM, not the term*
+            marginal_phi={"gov": cells["VS"]["I"] - cells["GVS"]["I"],
+                          "valve": cells["GS"]["I"] - cells["GVS"]["I"],
+                          "stator": cells["GV"]["I"] - cells["GVS"]["I"]},
+            marginal_Tt4={"gov": cells["VS"]["E"] - cells["GVS"]["E"],
+                          "valve": cells["GS"]["E"] - cells["GVS"]["E"],
+                          "stator": cells["GV"]["E"] - cells["GVS"]["E"]},
+            delivered_phi=cells["GVS"]["credit_phi"],
+            delivered_Tt4=cells["GVS"]["credit_Tt4"])
