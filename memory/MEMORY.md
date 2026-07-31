@@ -61,6 +61,7 @@ these lines (the same rule CLAUDE.md lives under).
 - [Rung 67 cascade A](rung67-cascade-a.md) — one scalar P sets BOTH the ringing window and the damping, so the mode is admissible but UNOBSERVABLE; a zero cross-gain is saturation, never decoupling; two-branch registration is the device that produced the surprise
 - [Rung 68 three loops](rung68-three-loops.md) — n loops on one variable are RANK ONE, so only the CYCLIC product is independent; check what's independent before quoting it; three of my own claims corrected by measurement mid-build
 - [Rung 69 reference split](rung69-reference-split.md) — the rank counts CONSTRAINTS not loops (zeros = n − m); det J was BLIND to the split and c1 the discriminator; a null space ABSORBS a moved start
+- [Rung 70 generic split](rung70-generic-split.md) — the split buys the RANK, the RING needs one lever on TWO walls; a predicted NULL refuted into an invariance; I caught a gate computing my own formula twice
 
 ## Margin sweeps — confirmations, not rungs
 - [Rung 29 π_c margin](rung29-pi-c-margin.md) — verdict confirmed at 9.4× but π_c NOT protective; the ENERGY = INVENTORY × COMPLETION sharpening

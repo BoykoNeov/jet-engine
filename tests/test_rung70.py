@@ -427,19 +427,33 @@ def test_P8_REFUTED_the_ring_is_reachable_but_only_by_silencing_the_third_loop(c
     *admissible, unobservable* class.
 
     'Reachable' and 'reachable with three live loops' are different sentences, and this gate
-    asserts BOTH: no complex pair on any arm with comparable clocks, one on the ray."""
+    asserts BOTH: no complex pair on any arm with comparable clocks, one on the ray.
+
+    THE RAY HAS TWO COORDINATES AND BOTH ARE CHECKED. § 1.5's equality needs the silenced
+    loop's share to vanish AND `a` matched to the SURVIVING shared rate. Here `u > w`, so the
+    ray silences the STATOR and the survivor is the VALVE — equality wants `tau_g = tau_q`, NOT
+    `tau_g = tau_s`. An arm that is near on `quiet_share` alone is not on the ray, and the grid
+    carries one of each so the distinction is measured rather than asserted."""
     f = cross.split_floor(FLIGHT, LO, HI, TT4_MAX, SM, r=R, s_settle=SETTLE, ds=DS,
                           v_max=V_MAX)
     live = [x for x in f["rows"] if "zeta" in x]
+    # the silenced loop is a PLANT property, constant down the column
+    assert {x["silenced"] for x in live} == {"stator"}, [x["silenced"] for x in live]
     comparable = [x for x in live if x["quiet_share"] > 0.05]
-    ray = [x for x in live if x["quiet_share"] <= 0.05]
+    ray = [x for x in live if x["quiet_share"] <= 0.05 and abs(x["a_over_loud"] - 1.0) < 0.1]
+    near = [x for x in live if x["quiet_share"] <= 0.05 and abs(x["a_over_loud"] - 1.0) >= 0.1]
+    assert ray and near, "the grid must carry an on-ray arm AND a near-but-off-ray one"
     assert not any(x["complex_pair"] for x in comparable), \
         [x["taus"] for x in comparable if x["complex_pair"]]
-    assert any(x["complex_pair"] for x in ray), [x["taus"] for x in ray]
-    # and even on the ray it is rung 67's unobservable mode, not rung 69's visible one
+    # ON the ray in BOTH coordinates: complex, and hard against the floor
     for x in ray:
-        if x["complex_pair"]:
-            assert x["zeta"] > 0.98, x
+        assert x["complex_pair"], x
+        assert x["zeta"] > 0.98, x                       # rung 67's mode, not rung 69's
+        assert x["zeta"] / x["floor"] - 1.0 < 0.01, x    # within 1 % of the infimum
+    # near on ONE coordinate only: not on the ray, and nowhere near the floor
+    for x in near:
+        assert not x["complex_pair"], x
+        assert x["zeta"] / x["floor"] - 1.0 > 1.0, x
 
 
 @pytest.mark.slow

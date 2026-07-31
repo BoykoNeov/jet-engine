@@ -228,19 +228,35 @@ drift between two marches.
 
 `split_floor`, `ds = 0.005`, `(τ_g, τ_q, τ_s)`:
 
-| `(τ_g, τ_q, τ_s)` | silenced-loop share | `ζ` | floor | complex? |
-|---|---|---|---|---|
-| (0.05, 0.05, 0.05) | 0.333 | 1.0882 | 0.99090 | no |
-| (0.05, 0.05, 0.025) | 0.500 | 1.1995 | 0.99128 | no |
-| (0.05, 0.05, 0.10) | 0.200 | 1.0345 | 0.99054 | no |
-| (0.10, 0.10, 0.05) | 0.500 | 1.1987 | 0.99141 | no |
-| (0.20, 0.02, 0.05) | 0.267 | 2.0234 | 0.99049 | no |
-| (0.02, 0.20, 0.05) | 0.267 | 1.1138 | 0.99135 | no |
-| (0.05, 2.00, 0.05) | 0.494 | 1.0639 | 0.99197 | no |
-| **(0.05, 0.05, 2.00)** | **0.012** | **0.99216** | 0.99041 | **YES** |
-| (2.00, 0.05, 2.00) | 0.024 | 3.2529 | 0.99024 | no |
+**Read the two ray coordinates together.** `u = 1 − pair_RC ≈ 1.020` and `w = 1 − pair_RV ≈
+0.874`, so `u > w` and the equality set silences the **stator** — the loop attached to the
+*smaller* coefficient. `silenced` is therefore a **plant property, constant down the column**,
+naming which loop the ray would quiet; it is *not* a label for whichever clock a given row
+slowed. Equality then needs `a` matched to the **surviving** shared rate, which is the
+**valve** (`τ_g = τ_q`) and *not* `τ_s` — so an arm is on the ray only when **both**
+`quiet_share → 0` **and** `a/loud → 1`.
+
+| `(τ_g, τ_q, τ_s)` | quiet share | `a/loud` | `ζ` | floor | complex? |
+|---|---|---|---|---|---|
+| (0.05, 0.05, 0.05) | 0.333 | 1.00 | 1.0882 | 0.99090 | no |
+| (0.05, 0.05, 0.025) | 0.500 | 1.00 | 1.1995 | 0.99128 | no |
+| (0.05, 0.05, 0.10) | 0.200 | 1.00 | 1.0345 | 0.99054 | no |
+| (0.10, 0.10, 0.05) | 0.500 | 1.00 | 1.1987 | 0.99141 | no |
+| (0.20, 0.02, 0.05) | 0.267 | 0.10 | 2.0234 | 0.99049 | no |
+| (0.02, 0.20, 0.05) | 0.267 | 10.0 | 1.1138 | 0.99135 | no |
+| (0.05, 2.00, 0.05) | 0.494 | 40.0 | 1.0639 | 0.99197 | no |
+| **(0.05, 0.05, 2.00)** | **0.012** | **1.00** | **0.99216** | 0.99041 | **YES** |
+| (2.00, 0.05, 2.00) | 0.024 | 0.03 | 3.2529 | 0.99024 | no |
 
 `ζ` agrees with the closed form to 7.1e−11 on every arm; `holds` and `strict` both true.
+
+**Exactly one arm satisfies both ray coordinates, and it is the only one that rings.** The
+bolded row has `quiet_share = 0.012` *and* `a/loud = 1.00`, and lands 0.18 % above the floor.
+The last row looks close on `quiet_share` alone but has `a/loud = 0.03` — it slowed the
+governor as well, so it is not on the ray and sits at ζ = 3.25. `(0.05, 2.00, 0.05)` silences
+the **valve**, which is the wrong loop here, and is the farthest arm of all. That the ray
+coordinates and the complex branch pick out the same single arm is the strongest form § 1.5's
+claim takes on this grid.
 
 **PRE-REGISTERED P8 SAID *NO COMPLEX PAIR AT ANY BANDWIDTH*. THAT IS FALSE.** The floor is
 `≈ 0.990 < 1`, so a complex pair is *admitted*, and it is found — on the arm with `τ_s` at 40×
