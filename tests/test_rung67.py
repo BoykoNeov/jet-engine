@@ -361,8 +361,19 @@ def test_the_b0_spread_SPLITS_on_a_non_degenerate_pair():
     assert b["dremoved_rel"] / a["dremoved_rel"] > 100.0
     # (ii) THE VIOLATION INTEGRAL: it SURVIVES on a pair with no marginal direction, so it was
     #      ordinary transient sensitivity. That half INVERTS.
+    #
+    #      THE GATE IS THE RATIO, AND THE FIRST VERSION OF IT WAS A TAUTOLOGY. Asserting
+    #      `a > 0.9 * b` next to `a > 0.3` sets a threshold of 0.366 against a measured 0.455 --
+    #      it would pass on a spread that had SHRUNK by 10 %, which is the opposite finding.
+    #      The claim is a 12 % gap (45.50 % vs 40.75 %), so the gap is what must be watched.
+    #      It is quotable because it is grid-converged in its own right: the RATIO reads
+    #      1.1182 / 1.1167 / 1.1165 at ds = 0.01 / 0.005 / 0.0025 (0.15 %), with both spreads
+    #      individually tight (A 0.18 %, B 0.33 %). Cf. `docs/pt3-sensor-lag-negative.md`, where
+    #      a 12 % gap sat INSIDE its own ds band and was therefore not a finding.
     assert a["dI_phi_rel"] > 0.3, a["dI_phi_rel"]
-    assert a["dI_phi_rel"] > 0.9 * _b_integral_spread(b)
+    assert 0.35 < _b_integral_spread(b) < 0.45, "rung 66's reference spread moved"
+    assert a["dI_phi_rel"] / _b_integral_spread(b) > 1.05, (
+        a["dI_phi_rel"], _b_integral_spread(b))
     # the natural march must actually ride, or the instrument is measuring nothing
     assert a["natural"]["n_on"] > 50
 
@@ -402,6 +413,43 @@ def test_the_sum_bound_is_measured_CONSERVATIVE_not_assumed():
         assert row["sum_conservative"] > 1.05, row
     matched = [x for x in d["rows"] if abs(x["rho_clock"] - 1.0) < 1e-9][0]
     assert 1.9 < matched["sum_conservative"] < 2.1, "the derived 2x at matched clocks"
+
+
+def test_the_damped_IC_fallback_is_EXERCISED_not_merely_shipped():
+    """On the anchored plant `|P| ~ 0.02` converges undamped in 1-2 iterations, so the damped
+    retries are code that never runs there — untested guard code, which is a liability and not
+    a safeguard. Fed synthetic laws with a chosen `P` the ladder is exercised directly: the
+    composite multiplier is `(1-w) + wP`, so w = 1 handles |P| < 1, w = 1/2 up to 3, w = 1/4
+    up to 7.
+
+    IT ALSO PINS THE THING RUNG 66's MESSAGE GOT WRONG FOR THIS CASCADE: a stall is a SOLVER
+    failure, because `det J != 0` means the equilibrium is unique at every `P != 1`."""
+    solve = CrossLoopCascadeTransient._joint_fixed_point
+    g_star, q_star = 3.0e-3, 0.04
+
+    def laws(P, a=1.0e-3):
+        """`required(q)` and `command(g)` linear about (g*, q*) with `dR/dq * dC/dg == P`."""
+        return (lambda q: g_star + a * (q - q_star),
+                lambda g: q_star + (P / a) * (g - g_star))
+
+    # THE CAP PARTICIPATES IN THE CHOICE, which is not obvious and is why this is measured:
+    # `P = -0.9` contracts undamped (|P| < 1) but at 0.9 per iteration, needing ~218 to reach
+    # 1e-12 from a 1e-2 offset — past the 60 cap — so the ladder drops to w = 1/2 (multiplier
+    # 0.05) and converges immediately. A slow contraction is damped exactly like a divergent
+    # one, and the outcome is the same equilibrium either way.
+    for P, w_expected in ((-0.02, 1.0), (-0.5, 1.0), (-0.9, 0.5), (-2.0, 0.5), (-5.0, 0.25)):
+        R_of, C_of = laws(P)
+        g, q, res, its, w = solve(R_of, C_of, q_star + 0.01)
+        assert res <= 1e-9, (P, res, w)
+        assert abs(g - g_star) < 1e-9 and abs(q - q_star) < 1e-7, (P, g, q)
+        assert w == w_expected, (P, w, w_expected)
+        assert its <= 60
+    # the UNDAMPED path must be untouched by the ladder's existence: w = 1 is the identity
+    R_of, C_of = laws(-0.02)
+    assert solve(R_of, C_of, q_star + 0.01)[4] == 1.0
+    # and `fix_q` (rung 65/66's `b0` override) holds the valve while the clip still solves
+    g, q, res, _, _ = solve(R_of, C_of, 0.055, fix_q=True)
+    assert q == 0.055 and res <= 1e-9 and abs(g - R_of(0.055)) < 1e-9
 
 
 @pytest.mark.slow

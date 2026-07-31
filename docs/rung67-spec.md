@@ -263,9 +263,29 @@ quoted:
   the early window where the integral is accumulated. **That half INVERTS.**
 
 And the residual difference points the other way from rung 66's ledger: A's 45.50 % against B's
-40.75 % says the redundant pair is ~10 % *less* sensitive to its own initial condition on the
+40.75 % says the redundant pair is **12 % less sensitive** to its own initial condition on the
 shared variable. **That is the one thing redundancy buys that bandwidth does not** — and rung 66,
 having only the degenerate case, could not see it.
+
+**The 12 % is a finding and not noise, and that had to be measured rather than asserted.** Both
+spreads are grid-converged *and so is their ratio* — the quantity the claim actually rests on:
+
+| `ds` | A `dI_φ` | B `dI_φ` | **ratio** |
+|---|---|---|---|
+| 0.01 | 45.413 % | 40.613 % | 1.1182 |
+| 0.005 | 45.447 % | 40.696 % | 1.1167 |
+| 0.0025 | 45.495 % | 40.748 % | **1.1165** |
+
+The ratio moves 0.15 % across a 4× range against a 12 % effect. `docs/pt3-sensor-lag-negative.md`
+is the standing counter-example — a 12 % gap that sat *inside* its own `ds` band and was
+therefore not a finding — so the test gates the RATIO with a margin, after a first version of
+that gate was written as a tautology (§ 6, gate 9).
+
+**The mechanism has a supporting number.** The proposed reason for A's larger spread is that in
+A the valve is the *only* φ-protecting loop, so moving `b0` moves φ unopposed, whereas in B the
+fuel leg defends the same variable and partly compensates. The ledger says exactly that: B's
+fuel leg credits `I_φ` at **60.46 %** against A's governor at **20.87 %** — three times the
+φ-authority available to absorb the offset. It is consistent, not proved (§ 8).
 
 ---
 
@@ -283,6 +303,22 @@ having only the degenerate case, could not see it.
 
 **Grid convergence** across an 8–16× `ds` range: `P` 0.04 %, `I_φ` 0.23 %, `I_T` **0.005 %**,
 both `b0` spreads 0.2 %.
+
+**Gate 9 was written as a TAUTOLOGY first, and the correction is recorded because the claim it
+guards is the one that leaves this file.** The inversion half of § 5 rests on a 12 % gap, and
+the first form of its gate (`a > 0.9 × b`, sitting beside an existing `a > 0.3`) set a threshold
+of 0.366 against a measured 0.455 — it would have passed on a spread that had *shrunk* by 10 %,
+i.e. on the opposite finding. The gate now watches the RATIO with a margin, and the grid table
+in § 5 is what makes the ratio quotable.
+
+**The damped IC fallback is EXERCISED, not merely shipped.** On this plant `|P| ≈ 0.02` and the
+undamped sweep converges in 1–2 iterations at every corner (`ever_damped = False`), so the
+damped retries are code that never runs here — untested guard code, which is a liability rather
+than a safeguard. `_joint_fixed_point` is therefore extracted from the march and driven directly
+with synthetic laws of chosen `P`: the composite multiplier is `(1−w) + wP`, so `w = 1` handles
+`|P| < 1`, `w = ½` up to 3, `w = ¼` up to 7 — **and the 60-iteration cap participates in the
+choice**, so `P = −0.9` (which contracts, at 0.9 per iteration) is damped exactly like a
+divergent one.
 
 **One instrument was repaired, and the defect is disclosed rather than hidden.** `_exceed` does
 not copy rung 66's `_violation` upper limit. `_violation` breaks on `traj[i]["s"] > s_hi`, which
@@ -306,7 +342,7 @@ The anchor pre-registered seven, two designed to fail.
 |---|---|---|
 | **P1** | measured spectrum matches the closed form, including the window edges | **HIT.** Complex 13/13 inside (`ρ = 1`), real 0/13 outside at both `ρ = 10` and `ρ = 0.1`; `ρ_lo·ρ_hi − 1 = 0` exactly. |
 | **P2** | the mode is ADMISSIBLE AND UNOBSERVABLE, both from the same scalar | **HIT.** `ζ = 0.98995` (predicted 0.985–0.995), `T = 44.0 τ`, and at most ONE sign change in the free response anywhere — admissible for a real pair, so zero evidence of ringing. The detector fires at 3/7/13 crossings for `|P| = 0.5/3/10`. |
-| **P3** | the `b0` spread COLLAPSES, discharging rung 66 § 8 (both branches registered) | **SPLIT — and it is the richer answer.** The withheld-fuel spread collapses 83.96 % → 0.014 % (discharged); the violation-integral spread survives 40.75 % → 45.50 % (**inverted**). § 5. |
+| **P3** | the `b0` spread COLLAPSES, discharging rung 66 § 8 (both branches registered) | **SPLIT — and it is the richer answer.** The withheld-fuel spread collapses 83.96 % → 0.014 % (discharged); the violation-integral spread survives 40.75 % → 45.50 %, a 12 % gap whose *ratio* is grid-stable to 0.15 % (**inverted**). § 5. |
 | **P4** | the cross-credit off-diagonals have OPPOSITE signs | **HIT.** Valve on `I_T`: **−6.42 %** (+22.1 K on peak `Tt4`); governor on `I_φ`: **+20.87 %**. |
 | **P5** | near-additivity on the diagonal — erosion ≲ 1.5× against rung 66's 38× | **HIT, and one cell went past it.** 1.26× (valve on `I_φ`) and **0.93×** (governor on `I_T` — *super*-additive, because the valve's debit gives it more to remove). |
 | **P6** | *(designed to fail)* rung 66's sum floor is still SAFE but no longer the radius | **HIT, not the failure.** `sum_always_safe = True`, conservative by **1.98×** at matched clocks — the derived 2× — and 1.10× at `ρ = 10` and `ρ = 0.1`. Rung 66's floor is BOUNDED, not corrected. |

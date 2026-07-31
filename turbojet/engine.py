@@ -11590,20 +11590,11 @@ class CrossLoopCascadeTransient(TwoLagCascadeTransient):
         if self._b0 is not None:
             assert 0.0 <= self._b0 <= lim.b_max, (
                 f"rung-67 b0 is a valve POSITION: {self._b0} is outside [0, {lim.b_max}]")
-        res, its, w_used = float("inf"), 0, 1.0
-        for w in (1.0, 0.5, 0.25):
-            g, q = 0.0, (self._b0 if self._b0 is not None else command(a, h, mf0))
-            res, w_used = float("inf"), w
-            for its in range(1, 61):
-                gn = required(a, h, q, mf0)
-                qn = q if self._b0 is not None else command(a, h, max(1e-9, mf0 - gn))
-                gn, qn = g + w * (gn - g), q + w * (qn - q)
-                res = max(abs(gn - g), abs(qn - q))
-                g, q = gn, qn
-                if res <= 1e-12:
-                    break
-            if res <= 1e-9:
-                break
+        g, q, res, its, w_used = self._joint_fixed_point(
+            lambda qq: required(a, h, qq, mf0),
+            lambda gg: command(a, h, max(1e-9, mf0 - gg)),
+            (self._b0 if self._b0 is not None else command(a, h, mf0)),
+            fix_q=self._b0 is not None)
         assert res <= 1e-9, (
             f"rung-67: the joint initial condition did not converge (residual {res:.3e} after "
             f"{its} iterations, down to damping {w_used}). The iteration contracts at "
@@ -11646,6 +11637,40 @@ class CrossLoopCascadeTransient(TwoLagCascadeTransient):
             g = max(0.0, g)
             s += ds
         return pts
+
+    @staticmethod
+    def _joint_fixed_point(required_of, command_of, q0: float, fix_q: bool = False,
+                           tol: float = 1e-12, cap: int = 60):
+        """The two laws' simultaneous equilibrium, by DAMPED Gauss-Seidel. Returns
+        `(g, q, residual, iterations, damping)`.
+
+        IT IS EXTRACTED FROM THE MARCH SO IT CAN BE TESTED, and that is not tidiness: on the
+        anchored plant `|P| ~ 0.02` and the undamped sweep converges in one or two iterations,
+        so the damped retries are code that NEVER RUNS THERE. Fed synthetic laws with a chosen
+        `P` it is exercised directly -- the composite map's multiplier is `(1-w) + wP`, so
+        `w = 1` handles `|P| < 1`, `w = 1/2` up to `|P| < 3`, `w = 1/4` up to `|P| < 7`.
+
+        WHY THE LADDER EXISTS AT ALL, and it is rung 66's message that must NOT be inherited:
+        rung 66's iteration contracts at `|P|`, which ITS identity pins at 1, so a stall there
+        genuinely is the degeneracy. Here `|P|` is pinned by nothing, `det J = (1-P)/(t_g t_v)`
+        is non-zero for every `P != 1`, and the equilibrium exists and is unique regardless --
+        so a stall would be a SOLVER failure, and reporting it as a marginal mode would be a
+        false finding. Damping first, assert second."""
+        g = q = res = 0.0
+        its, w_used = 0, 1.0
+        for w in (1.0, 0.5, 0.25):
+            g, q, res, w_used = 0.0, q0, float("inf"), w
+            for its in range(1, cap + 1):
+                gn = required_of(q)
+                qn = q if fix_q else command_of(gn)
+                gn, qn = g + w * (gn - g), q + w * (qn - q)
+                res = max(abs(gn - g), abs(qn - q))
+                g, q = gn, qn
+                if res <= tol:
+                    break
+            if res <= 1e-9:
+                break
+        return g, q, res, its, w_used
 
     # --- THE SCALAR: both cross-gains, measured on the shipped closures -----------------------
 
