@@ -48,7 +48,12 @@ _CLAUDE_MD = os.path.join(_HERE, os.pardir, "CLAUDE.md")
 # for exactly the row that comment predicted -- ONE table line at 345 B (inside the 350 B
 # per-row rule) plus its § Layout ladder entry, and PAID FOR in part by rewriting the CASCADE A
 # open-seam entry it closes. Real one-line-per-rung growth, which is what a bump is for.
-MAX_BYTES = 31_700
+# Bumped at rung 68 (32,173 B), same shape and same reason: ONE table row at 348 B (inside the
+# per-row rule), its § Layout ladder entry, and its name in the BUILT list -- PAID FOR by
+# rewriting the THREE-loops open-seam entry it closes into rung 68's own, one line shorter than
+# the sum of what it replaced. The three no-grow sites (scope narration, engine.py method
+# inventory, per-seam BUILT list) were checked first and none of them grew.
+MAX_BYTES = 32_250
 MAX_LINES = 300
 
 
