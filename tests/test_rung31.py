@@ -24,6 +24,8 @@ import math
 import os
 import sys
 
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from turbojet.gas import Gas  # noqa: E402
@@ -115,6 +117,7 @@ def test_cycle_untouched():
 
 
 # --------------------------------------------------------------------------- gate 4/6
+@pytest.mark.slow
 def test_running_line_and_direction():
     """GATE 4/6 — the running line is monotone; hotter pumps harder; unchoke is flagged."""
     m, _ = _reacting_matcher()

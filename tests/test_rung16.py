@@ -28,6 +28,8 @@ import math
 import os
 import sys
 
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from turbojet.engine import FlightCondition, build_turbojet  # noqa: E402
@@ -197,6 +199,7 @@ def test_reduce_at_c_opt_is_finite_bulk_quench_no():
     assert rel < 1e-3, f"at C_opt ⟨EI⟩₁₆ must equal the finite bulk quench NO to <0.1%, rel={rel:.2e}"
 
 
+@pytest.mark.slow
 def test_zoned_nox_matches_ei16_helper():
     # Pin the fast (cached-bank) helper to the PRODUCTION zoned_nox path at the SAME resolution, so the
     # sweep gates below exercise the SAME arithmetic the production code does.
@@ -260,6 +263,7 @@ def test_sublinear_dwell_the_mechanism():
 # --------------------------------------------------------------------------- #
 # GATE 4 — THE HEADLINE: the far over-penetration flank ERODES vs rung 15.     #
 # --------------------------------------------------------------------------- #
+@pytest.mark.slow
 def test_far_flank_erosion_vs_rung15():
     # The cooling-limited dwell drops EI on the whole over-penetration flank vs rung-15's linear climb.
     dp = _design_point()
@@ -304,6 +308,7 @@ def test_far_flank_climb_flattens_vs_rung15():
 # --------------------------------------------------------------------------- #
 # GATE 6 — clamp dormancy over the per-pocket streams (max_a < 1 everywhere).  #
 # --------------------------------------------------------------------------- #
+@pytest.mark.slow
 def test_clamp_dormant_over_pockets():
     # The per-pocket integrator is CLAMP-FREE (a super-eq pocket would roll over) — but DORMANT at this
     # design point: max_a < 1 across the sweep AND across every pocket (the difference is cooling, not

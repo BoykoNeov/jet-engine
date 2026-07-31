@@ -141,6 +141,7 @@ def test_reduce_lp_disabled_asserts_the_split_is_two_shaft():
 # GATES 3+4+5 — THE GOVERNOR HOLDS, THE SPLIT, THE MECHANISM
 # ======================================================================================
 
+@pytest.mark.slow
 def test_governor_holds_and_the_surge_relief_split():
     """THE HEADLINE. Every shape incl. the mode-free hp-only:
       (3) the governor HOLDS Tt4 at the redline;
@@ -175,6 +176,7 @@ def test_governor_holds_and_the_surge_relief_split():
 # GATE 6 — THE LEVER: relief_lp switches on in the fast-ramp limit
 # ======================================================================================
 
+@pytest.mark.slow
 def test_the_lever_fast_ramp_switches_on_lp_relief():
     """relief_lp is machine-zero at MODERATE r (the LP surge min sits below the redline) but goes
     strictly POSITIVE in the fast-ramp limit (r<=0.15): the LP surge minimum migrates above the

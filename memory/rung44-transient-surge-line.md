@@ -43,7 +43,8 @@ scope-limit inverted onto the surge axis.
 - Referenced the excursion to the **instantaneous-Tt4 running line**, NOT the starting point —
   avoided the exact backwards-sign bug rung 40's first slip_excursion probe hit.
 - Advisor **confirmed the sign independently** and blocked "done" on PROCESS: run the real green
-  gate `pytest --runslow` (bare pytest deselects other rungs' slow finding gates) + `python main.py`
+  gate `pytest --runslow` (at the time, bare pytest deselected other rungs' slow finding gates —
+  no longer true, see [[test-suite-speed-policy]]) + `python main.py`
   end-to-end, since I edited a shared class (rungs 42/43 inherit `TwoSpoolTransient`) + added a panel.
 - Advisor **framing sharpen**: the mode-irrelevance claim leads on the **damping ratio**
   (|Im/Re|<=0.164 < 0.25, airtight); the hp-only-largest-ratio leg is CORROBORATION only (it

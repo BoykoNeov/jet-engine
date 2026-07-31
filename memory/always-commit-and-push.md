@@ -20,22 +20,16 @@ main. Still respect the [[session-end-routine]] (also refresh memory + docs at
 session end) and [[git-remote-setup]] (origin = github.com/BoykoNeov/jet-engine
 over SSH).
 
-**The green-gate is `pytest --affected`, NOT bare `pytest` and no longer
-`--runslow` every time (2026-07-28, user's cadence choice).** See
-[[test-suite-speed-policy]] for how the selector works. In short:
-- `pytest` (fast subset) is for ITERATION only — it deselects the expensive
-  `slow` FINDING gates. Never green-commit on it.
-- **`pytest --affected` is the per-rung gate** (between the other two). It keeps
-  every fast test and re-enables the slow gates only for the modules the working
-  diff can reach. It self-escalates to the full gate when it cannot reason.
-- **`pytest --runslow` (2:47 since the PyPy switch, was ~22 min) every 3rd rung**, at session end, and whenever
-  `--affected` escalates. The report header counts rung commits since the last
-  full gate and nags when the cadence is due.
-- The bit-for-bit reduce SPINE (`test_reduce_*` / `test_cycle_untouched_*` /
-  `*_bit_for_bit`) is never slow-tagged, so it runs on EVERY invocation of all
-  three. That is what makes the reduced gate safe.
-- ACCEPTED RISK the user signed off on: a regression in an unreached non-spine
-  FINDING gate can hide for up to 3 rungs.
+**The green-gate is bare `pytest` — it now runs EVERYTHING (2026-07-31, the
+three-gate collapse).** See [[test-suite-speed-policy]]. In short:
+- **`pytest` = the gate.** 1002 tests, **2:18**. Nothing is deselected, so a
+  green run is a green run — there is no longer a weaker gate to commit on.
+- `pytest -m "not slow"` (**1:31**) is an ITERATION opt-out you TYPE. Never
+  green-commit on it — it sheds the 224 expensive FINDING sweeps.
+- `--affected`, `--runslow`-as-a-tier and the every-3rd-rung cadence are GONE.
+  `--runslow` is still accepted as a no-op, so old commands keep working.
+- **The former ACCEPTED RISK is retired**: no gate is unreached any more, so a
+  regression can no longer hide for up to 3 rungs. (`main.py` is still untested.)
 
 **DO NOT run the gate when ONLY docs changed (2026-07-27, user instruction).** A
 docs-only commit (a `docs/*.md` negative record, a `rungN-spec.md` correction,
@@ -43,5 +37,10 @@ docs-only commit (a `docs/*.md` negative record, a `rungN-spec.md` correction,
 `CLAUDE.md` itself, which has a size guard: run just
 `python tests/test_claude_md_reference.py` (instant), not the suite. Reserve the
 real gate for commits that touch `turbojet/`, `tests/`, `main.py` or `conftest.py`.
-**Why:** a full 22-minute run on a docs edit is pure dead time and returns no
-information the change could possibly have affected.
+**Why:** a gate run on a docs edit is pure dead time and returns no information
+the change could possibly have affected.
+
+**More generally, do not run the gate without a reason (2026-07-31, user):** at
+**session end** (unless it ran shortly before) and after a **code** change — but
+**NOT** at session start, **NOT** on a docs-only change, and **NOT** "just to be
+sure". Cheapness is not a reason to run it reflexively.

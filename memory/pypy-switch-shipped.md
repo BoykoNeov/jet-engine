@@ -11,9 +11,9 @@ metadata:
 PyPy 3.11 (v7.3.23) is the project's interpreter as of 2026-07-31, via a repo venv `.venv` built
 from `M:\claud_projects\tools\pypy3.11-v7.3.23-win64`. Plan + full write-up:
 `docs/plans/todo-pypy-switch.md` § 4. Slices 0–3 built the detector first
-([[golden-fingerprint-gate]], [[golden-gate-slice2]]); slice 5 (collapse the three-gate policy)
-stays open. Corrects [[perf-sonic-throat-and-pypy]]'s "NOT adopted"; retimes
-[[test-suite-speed-policy]].
+([[golden-fingerprint-gate]], [[golden-gate-slice2]]); slice 5 then **collapsed the three-gate
+policy** the same day — see [[test-suite-speed-policy]], which this entry's timings predate.
+Corrects [[perf-sonic-throat-and-pypy]]'s "NOT adopted".
 
 **Delivered: `--runslow` 1047.5 s → 167.8 s (6.2×)** on the identical 1002 tests, bare `pytest`
 79.8 s. The plan predicted "2:37–2:50" and measured 2:47.
@@ -34,10 +34,11 @@ justification vacuous, look for a NEW justification at the same value before ass
 move.* Keeping a number can be the active decision.
 
 **A new, permanent property of the interpreter — disclosed, not fixed:** the learned-duration
-cache is now **schedule-dependent** (the JIT-warm-up attribution above). Both the fast subset and
-`--affected` read it, so a test near *any* threshold can flip side between runs. Nothing sits near
-8.0 s so it does not bite today — recorded in `conftest.py` rather than omitted for being
-currently harmless.
+cache is now **schedule-dependent** (the JIT-warm-up attribution above), so a test near *any*
+threshold can flip side between runs. Disclosed here rather than omitted for being currently
+harmless — and it **paid off the same day**: slice 5 cited it as one reason to delete
+`SLOW_SECONDS` outright, which removed the hazard instead of monitoring it
+([[test-suite-speed-policy]]).
 
 **`psutil` is LOAD-BEARING, and nothing in the tree would have revealed it.** pytest-xdist counts
 PHYSICAL cores via psutil and silently falls back to `os.cpu_count()` — LOGICAL — without it. On

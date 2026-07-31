@@ -195,6 +195,7 @@ def test_terminal_field_reproduces_rung22():
         assert abs(g_dwell - g22) < 1e-9, f"terminal field {g_dwell} != rung-22 {g22} at J={J}"
 
 
+@pytest.mark.slow
 def test_production_g_matches_spatialpdf():
     # The production spatial_dwell width == SpatialPDF's width at the same grid (both = the terminal field).
     dp = _design_point()
@@ -208,6 +209,7 @@ def test_production_g_matches_spatialpdf():
 # --------------------------------------------------------------------------- #
 # GATE 2 — the CORRELATION SIGN (matched-mean): corr_ratio > 1, one-signed across τ_mix.
 # --------------------------------------------------------------------------- #
+@pytest.mark.slow
 def test_correlation_adds_no_at_design_point():
     # The load-bearing positive: at the design point the correlated τ(ξ) makes MORE NO than the
     # matched-mean scalar ⟨τ⟩ — rich pockets dwell long ⇒ re-make more. corr_ratio > 1.
@@ -246,6 +248,7 @@ def test_correlation_concentrated_under_penetration():
 # --------------------------------------------------------------------------- #
 # GATE 3 — the rung-18 tie + clamp dormancy + cycle-untouched.
 # --------------------------------------------------------------------------- #
+@pytest.mark.slow
 def test_g_below_two_stream_ceiling():
     dp = _design_point()
     for J in (1.0, 16.0, 400.0):
@@ -254,6 +257,7 @@ def test_g_below_two_stream_ceiling():
         assert s.g_spatial_dwell < s.g_ceiling, f"g {s.g_spatial_dwell} !< ceiling {s.g_ceiling} at J={J}"
 
 
+@pytest.mark.slow
 def test_clamp_dormant_at_station4():
     dp = _design_point()
     for J in (4.0, 16.0, 100.0):
@@ -284,6 +288,7 @@ def test_no_c_opt_knob():
     assert abs(_cfg(k_p=0.20).C_opt() - 1.0 / (4 * 0.20 ** 2)) < 1e-12   # k_p SETS C_opt as an output
 
 
+@pytest.mark.slow
 def test_helper_matches_production():
     # Pin the fast cached-bank helper to the PRODUCTION zoned_nox path at the SAME resolution.
     dp = _design_point()

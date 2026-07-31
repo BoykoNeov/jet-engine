@@ -4,10 +4,11 @@
 build/infrastructure change. Raised 2026-07-31 after the measurement in § 0 refuted the scope of a
 claim this project had already recorded.
 
-**Slices 0–4 are all DONE.** Slice 5 remains optional and deliberately deferred — and slice 4
-found it is *bigger* than written (see its RESULT). The detector slices 1–2 exist to make the
-switch safe, and they are built: **8 042 pinned CPython values — rungs 3–28 gated individually,
-rungs 31–66 through the CPG ladder and the rung-66 cascade — green under both interpreters.**
+**All six slices are DONE.** The detector slices 1–2 exist to make the switch safe, and they are
+built: **8 042 pinned CPython values — rungs 3–28 gated individually, rungs 31–66 through the CPG
+ladder and the rung-66 cascade — green under both interpreters.** Slice 5 then collapsed the
+three-gate policy: `pytest` runs everything, and the blocker recorded against it turned out to be
+an argument about the wrong quantity (see its RESULT).
 
 | slice | what | size |
 |---|---|---|
@@ -16,10 +17,12 @@ rungs 31–66 through the CPG ladder and the rung-66 cascade — green under bot
 | 2 | extend it across the rungs 3–30 kernels | **DONE** — 18 arms by rung, 8 044 pinned values |
 | 3 | make the full gate green on PyPy | **MEASURED EMPTY — 973 passed, 0 failed** |
 | 4 | the switch itself | **DONE** — 1002 passed in 2:47; `SLOW_SECONDS` kept, and why |
-| 5 | collapse the three-gate policy | optional, deferred by choice — and larger than written |
+| 5 | collapse the three-gate policy | **DONE** — one gate; `conftest.py` 589 → 217 lines, `--affected` deleted |
 
 **The prize, as delivered:** the full gate goes **17:27 → 2:47 (6.2×)** at the worker count
-`-n auto` actually resolves to, measured on the same 1002 tests on an idle box. The 13:17 → 2:37
+`-n auto` actually resolves to, measured on the same 1002 tests on an idle box. (Slice 5 later
+measured **2:18** on the same 1002 tests — not a further speed-up, just a better-conditioned LPT
+cache; see its RESULT, which prices the scheduler.) The 13:17 → 2:37
 (5.08×) predicted here was measured on a smaller suite at a different rung; the *ratio* held and
 improved. Still *not* the "28:18 → 1:55, ~14.8×" in `todo-engine-size-and-speed.md`, which bundles
 the rung-30 algorithmic fix (already shipped, and CPython kept it) with an `-n 16` config that was
@@ -571,9 +574,78 @@ therefore leave 87 % of the partition standing. This slice must decide what happ
 author-declared markers — and they are a *declaration of intent* that no timing overturns, so
 "they're fast now" is not by itself an argument for removing them.
 
-**Deliberately optional, and deliberately last.** It is a real simplification and the biggest
-second-order prize of the switch, but it deletes machinery that took work to build, and it should
-be decided after living with the faster gate for a few rungs — not in the same motion.
+### RESULT — DONE (2026-07-31). **The blocker above was an argument about the wrong quantity.**
+
+**Green: `pytest` = 1002 passed in 138.7 s (2:18); `-m "not slow"` = 778 passed in 91.6 s (1:31).**
+The gate is now ONE command, and the partition is preserved exactly — 1002 / 224 / 778, identical
+to the counts the retired policy produced.
+
+**THE FINDING: the blocker is a COUNT argument, and measured by COST it inverts.**
+
+| route | nodeids | call-time | median | share of deferred cost |
+|---|---|---|---|---|
+| the 194 hand-marked (`@pytest.mark.slow`) | 87 % | **196 s** | **0.30 s** | **28 %** |
+| the 30 threshold-tagged (`SLOW_SECONDS`) | 13 % | **516 s** | — | **72 %** |
+
+139 of the 194 hand-marked tests run in **under a second**. The hand-marked majority had stopped
+costing anything, and the automatic minority held all the money — **and those 30 are the project's
+headline FINDING gates** (rung 24's ⟨EI⟩-monotone negative, rung 46's relief split, rung 22's
+derived floor, the three heavy golden kernels). So the tiering had **inverted its own purpose**:
+it deferred the gates that matter most and ran the cheap corroborating ones every time. The
+"declaration of intent" objection survives intact — it is simply no longer about a cost.
+
+**What shipped: the DEFAULT was inverted, not the tier deleted.**
+
+- `pytest` runs **everything** (2:47). `pytest -m "not slow"` is the iteration opt-out (1:20) — a
+  convenience you type, never a default you inherit. `slow` became a **label**, not a policy.
+- The 27 functions route (2) tagged automatically now carry an explicit `@pytest.mark.slow`
+  (22 inserted; 5 already had one). Five test files needed a module-level `import pytest` they
+  had never required — the only non-mechanical part of the conversion.
+- **Deleted:** `SLOW_SECONDS`, `_SEED_SLOW`, `_is_spine`, the deselection hook, and all ~185 lines
+  of `--affected` (git + AST symbol-diff + caller closure + baseline-sha protocol + escalation +
+  cadence banner). `conftest.py` 589 → 217 lines.
+- **Kept:** the below-normal priority drop, and duration recording — because the LPT interleave
+  reads that cache and models 93 % of the wall clock. It now feeds ORDER only.
+- `--runslow` survives as an **accepted no-op**. Not politeness: `test_rung42/53/55` pass it from
+  their `__main__` blocks and specs record reproduction commands carrying it (e.g.
+  `docs/both-edges-limiter-negative.md`). Its meaning was "run everything" — now the default.
+
+**Three things fall out, and they are the actual prize:**
+
+1. `CLAUDE.md`'s **ACCEPTED RISK is gone** — "a regression in an unreached non-spine gate can hide
+   for ≤3 rungs" has no referent when there is no unreached gate. So is the every-3rd-rung cadence.
+2. `_is_spine` **deleted itself.** The reduce gates were force-run because a fast default could
+   drop them; a default that runs everything protects them by construction.
+3. A **real nondeterminism hazard** went with `SLOW_SECONDS` — slice 4 disclosed that PyPy's
+   JIT-warm-up attribution lets a test near any threshold flip SIDE between runs. The cache is
+   still read, but only to order the run, so the same effect can now cost wall clock and nothing else.
+
+**HONEST COST:** the per-rung ship gate went from a narrowed ~1 min to the full 2:47, and
+`--affected` was real work now deleted. It is not kept-in-case — an unused selector that silently
+mis-selects is worse than none.
+
+#### An accident that PRICED the scheduler — the one number this slice added to the switch
+
+The closing gate ran **3:07**, above slice 4's 2:47, and the cause was mine: a `-n0` diagnostic
+had written **0.00 s** for rung 24's `test_ei_stays_monotone` into the durations cache (on one
+worker it HITS the module memo). `conftest.py`'s interleave therefore ranked the suite's biggest
+pole as its cheapest test and scheduled it **last** — it ran 52.74 s on the tail. Re-recording the
+cache from that run and re-running gave **2:18**: same tests, same box, one variable.
+
+So **the LPT ordering is worth ~26 % of the full gate (3:07 → 2:18, ~50 s)** — a direct
+measurement, where the previous justification was only "the pack models 93 % of the wall clock".
+It also means **a stray `-n0` run spoils the next gate's schedule** (it self-heals on the
+following parallel run). Both are now in `conftest.py`'s docstring.
+
+#### A measured aside — checked, then WITHDRAWN as an argument
+
+Rung 24's `_EI_SWEEP` is memoised at module level, but `--dist load` plus the long-pole interleave
+reliably split its two readers across workers, so it is computed **twice** (48.14 + 46.40 s
+recorded; **34.82 s for the pair on one worker, second reader 0.00 s** — measured). Real. But
+across 8 workers the duplicate is worth **~6 s of wall clock**, and recovering it means grouping
+by file, which breaks the LPT pack that is worth far more. Rungs 23/16 show no such pattern (their
+solo-vs-parallel gap is memory-bandwidth contention, ~1.4–1.6×, exactly as `conftest.py`'s
+honest-scope note predicts). Recorded so it is not re-derived; **it did not affect the decision.**
 
 ---
 

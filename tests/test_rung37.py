@@ -23,6 +23,8 @@ Gates (docs/rung37-spec.md § Verification gates):
 import os
 import sys
 
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from turbojet.gas import Gas  # noqa: E402
@@ -116,6 +118,7 @@ def test_heat_soak_equilibrium_is_rung35_transient_only():
 
 
 # --------------------------------------------------------------------------- gate 5
+@pytest.mark.slow
 def test_heat_soak_cold_below_hot_below_adiabatic():
     """GATE 5 — THE HEAT-SOAK FINDING (the load-bearing SIGN). The peak surge excursion obeys
     cold first-accel < hot reslam < adiabatic (rung 35): the cold metal's heat sink depresses

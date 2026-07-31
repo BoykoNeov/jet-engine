@@ -25,6 +25,8 @@ import math
 import os
 import sys
 
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from turbojet.engine import FlightCondition, build_turbojet  # noqa: E402
@@ -223,6 +225,7 @@ def test_emissions_global_min_at_max_segregation():
     assert ei[amin] < ei[16], f"the endpoint must beat the C_opt floor: {ei[amin]:.4f} < {ei[16]:.4f}"
 
 
+@pytest.mark.slow
 def test_derived_floor_sits_below_the_hump_peak():
     """WHY the C_opt emissions basin is narrow: the DERIVED floor g(C_opt)≈0.018 sits just BELOW the
     ideal-bell ⟨EI⟩(g) hump peak (~0.021). Rung 18's arbitrary floor g_ceiling·exp(−Da_opt)≈0.009 sits

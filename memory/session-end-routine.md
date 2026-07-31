@@ -24,15 +24,12 @@ update**, or whenever the user says **"session end"**, always do all four, in or
    updates.
 4. **Push to main** — push the `main` branch to `origin`.
 
-**The pre-commit gate is `pytest --affected`, NOT bare `pytest` (2026-07-28).** Bare
-`pytest` runs only the FAST subset and deselects the `slow`-tagged expensive FINDING /
-robustness gates (mixing-PDF sweeps, transient marches). `--affected` (~6–16 min) adds
-back the slow gates the working diff can reach. **At SESSION END specifically, run the
-full `pytest --runslow` (~22 min)** — session end is one of the declared full-gate
-points, along with every 3rd rung and any `--affected` self-escalation. A green
-`--runslow` also re-seeds the baseline sha that `--affected` diffs against, so ending a
-session on one leaves the next session's gate accurate. See [[test-suite-speed-policy]],
-CLAUDE.md Commands + `conftest.py`.
+**The pre-commit gate is bare `pytest` — it runs EVERYTHING (2026-07-31, the three-gate
+collapse; 1002 tests, 2:18).** `pytest -m "not slow"` is an iteration opt-out only; never
+commit green on it. **At SESSION END run the full `pytest`** — unless it already ran
+shortly before and nothing has changed since, in which case do not re-run it "just to be
+sure" (user, 2026-07-31). Skip it entirely for a docs-only session end. See
+[[test-suite-speed-policy]], [[always-commit-and-push]], CLAUDE.md Commands + `conftest.py`.
 
 **Why:** the user wants a consistent wrap-up so memory, docs, and git stay in
 sync and nothing is lost between sessions. The action needs judgment (what to

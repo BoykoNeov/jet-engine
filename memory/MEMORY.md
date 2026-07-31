@@ -6,9 +6,9 @@ these lines (the same rule CLAUDE.md lives under).
 ## Working agreements
 - [Session-end routine](session-end-routine.md) — at end of batch/planning, or "session end": update memory + docs, commit, push to main
 - [Git remote setup](git-remote-setup.md) — repo is github.com/BoykoNeov/jet-engine (public), branch main, origin over SSH
-- [Always commit and push](always-commit-and-push.md) — auto-commit + push green work without being asked; gate is `pytest --affected`, NOT bare pytest; never gate a docs-only change
+- [Always commit and push](always-commit-and-push.md) — auto-commit + push green work without being asked; the gate is bare `pytest` (it runs everything); never gate a docs-only change, never run it "just to be sure"
 - [CLAUDE.md is a reference](claude-md-is-a-reference.md) — one-line-per-rung index, detail → docs/rungN-spec.md; a guard test enforces the size budget; bloated to ~200KB twice before
-- [Test-suite speed policy](test-suite-speed-policy.md) — three gates (1:20 / `--affected` ship / 2:47 full); reduce spine runs on all three; 87% of `slow` is hand-declared in the test files, not measured
+- [Test-suite speed policy](test-suite-speed-policy.md) — ONE gate: `pytest` runs everything (2:18); the tiering's blocker was a COUNT argument that inverts under COST; the LPT scheduler is worth ~26%
 - [Perf: sonic throat + PyPy](perf-sonic-throat-and-pypy.md) — the hot function was hot ALGORITHMICALLY (45 bisections for a linear root), not linguistically; gate 28:18 → 1:55
 - [PyPy switch shipped](pypy-switch-shipped.md) — full gate 17:27 → 2:47; SLOW_SECONDS KEPT with its reason inverted (bought time → buys determinism); psutil load-bearing; print precision protects states, not residuals
 - [Golden fingerprint gate](golden-fingerprint-gate.md) — the project's ONLY absolute-value gate; goldens are a CPython anchor, NEVER regenerate them under another interpreter; measure a detector's sensitivity, don't assert it

@@ -222,19 +222,16 @@ A compact map — the per-rung method/finding detail lives in `docs/rungN-spec.m
 
 ## Commands
 - Run the model: `python main.py` · Install: see `requirements.txt` (a PyPy venv — § Stack)
-- **Iterate: `pytest`** — the FAST subset (**1:20**); expensive FINDING gates are `slow`-tagged out.
-  The reduce spine (`test_reduce_*`, `test_cycle_untouched_*`, `*_bit_for_bit`) is **NEVER**
-  slow-tagged and runs on **every** invocation — that is what makes the two gates below safe.
-- **Ship a rung: `pytest --affected`** — the fast subset PLUS the slow gates the diff can reach
-  (AST symbol-diff + caller closure, cumulative since the last full gate); self-escalates to the
-  full gate on a core / module-level change. Strictly between the two. **The rung green-gate.**
-- **Full gate: `pytest --runslow`** (**2:47** at rung 66, PyPy, measured idle) —
-  everything. **Every 3rd rung** (the header nags), at session end, and whenever `--affected`
-  escalates. ACCEPTED RISK: a regression in an unreached non-spine gate can hide for ≤3 rungs;
-  `main.py` is covered by no test.
-- Only the slow gates: `pytest -m slow` · One rung by hand: `python tests/test_rung2.py`
+- **The gate: `pytest`** — **EVERYTHING**, 1002 tests, **2:18** (PyPy, idle). ONE gate; nothing is
+  ever silently deselected, so no regression can hide. (`main.py` is covered by no test.)
+- **Iterate: `pytest -m "not slow"`** (**1:31**) — the same run minus the expensive FINDING sweeps.
+  `slow` is a LABEL you opt out of by typing, never a default. Only those: `pytest -m slow`.
+- **WHEN to run the gate:** at session end (unless run shortly before), and after a code change.
+  NOT at session start, NOT on a docs-only change, NOT "just to be sure".
+- One rung by hand: `python tests/test_rung2.py`
 
-Policy lives in `conftest.py` + `pytest.ini`; 87% of `slow` is `@pytest.mark.slow` in the tests.
+`conftest.py` holds the policy and why the three-gate tiering was retired; `--runslow` is accepted
+and ignored, since everything runs anyway.
 
 ## Stack
 **PyPy 3.11** in the repo venv `.venv` (`.venv\Scripts\activate`), not CPython — the gate is 6.2×

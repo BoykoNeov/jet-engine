@@ -129,6 +129,7 @@ def test_g_identical_to_rung22_by_construction(J):
     assert abs(g24 - g22) < 1e-12, f"g drifted from rung 22 at J={J}: {g24} vs {g22}"
 
 
+@pytest.mark.slow
 def test_production_width_matches_spatial_pdf():
     """The shipped zoned_nox width == SpatialPDF's at the same grid (both ARE the terminal field)."""
     s = _zoned(16, spatial_local=_cfg())
@@ -136,6 +137,7 @@ def test_production_width_matches_spatial_pdf():
     assert abs(s.g_spatial_local - s22.g_spatial) < 1e-12
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("J", [4, 16, 64])
 def test_g_below_two_stream_ceiling(J):
     """The rung-18 two-stream ceiling still bounds the resolved field (carried from rungs 22/23)."""
@@ -259,6 +261,7 @@ def test_f_optimum_shifts_as_h_over_s_squared():
 # --------------------------------------------------------------------------- #
 # GATE 4 — THE NEGATIVE HEADLINE: <EI>(J) stays MONOTONE on the REAL chemistry.
 # --------------------------------------------------------------------------- #
+@pytest.mark.slow
 def test_ei_stays_monotone_the_emissions_optimum_is_not_recovered():
     """THE HEADLINE, and it is a NEGATIVE (the rung-18 tradition). F(C) grows off-optimum — the
     derived dwell growth is REAL and in the RIGHT PLACE — but ⟨τ⟩ = τ_mix(J)·F(C) and τ_mix's ~20×
@@ -301,6 +304,7 @@ def test_scale_swamps_shape_quantified():
     )
 
 
+@pytest.mark.slow
 def test_local_rate_moves_ei_only_modestly_vs_rung23():
     """The whole locally-resolved upgrade is worth only a few % of ⟨EI⟩ — the honest scale of what
     localizing the RATE (but not the SCALE) buys. Certified as a BOUND, not a value."""
@@ -314,6 +318,7 @@ def test_local_rate_moves_ei_only_modestly_vs_rung23():
 # --------------------------------------------------------------------------- #
 # GATE 5 — what rung 24 DELIBERATELY does not claim (mirroring rungs 16 and 23).
 # --------------------------------------------------------------------------- #
+@pytest.mark.slow
 def test_does_not_claim_the_emissions_global_min_location():
     """Rung 16's GATE 3 declined the emissions global-min LOCATION; rung 23 declined it; rung 24
     declines it too — but now having MEASURED the reason (the shape grows, the scale wins). What IS

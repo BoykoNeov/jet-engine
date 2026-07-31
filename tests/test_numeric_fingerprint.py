@@ -195,6 +195,8 @@ import json
 import os
 import sys
 
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from turbojet.gas import (  # noqa: E402
@@ -753,10 +755,13 @@ def _check(name):
 
 
 # --------------------------------------------------------------------------- the gates
-# Named `test_golden_fingerprint_*` so conftest._is_spine keeps them out of slow-tagging: they
-# are absolute-value gates and must run on EVERY invocation, not only under --runslow. The two
-# meta-guards below deliberately do NOT carry that prefix — they are sub-millisecond, so no
-# threshold can ever reach them, and the spine override should stay as narrow as its reason.
+# The `test_golden_fingerprint_*` / `test_golden_kernel_*` split is now purely a COST label: the
+# first are cheap and carry no marker, the second are `@pytest.mark.slow` so `-m "not slow"` can
+# skip them while iterating. Both run on a plain `pytest`, which runs everything.
+# HISTORY (it explains the naming, which is otherwise arbitrary): the prefix used to trigger
+# `conftest._is_spine`, a force-run override that kept these absolute-value gates inside a FAST
+# DEFAULT that would otherwise have deselected them. The default was inverted 2026-07-31 and the
+# override deleted — see conftest.py. The names were left alone; only their meaning narrowed.
 
 def test_golden_fingerprint_cpg():
     """The CPG structural ladder — rungs 31-66's actual path. Bit-equality."""
@@ -793,9 +798,8 @@ def test_golden_fingerprint_F_freeze_out():
 
 
 # ------------------------------------------------------------------ slice 2, the CHEAP arms
-# `test_golden_fingerprint_*` == the conftest spine override: never slow-tagged, runs on EVERY
-# invocation. Given ONLY to arms measured <= 2 s idle, so none of them can end up in kernel E's
-# position (7.71 s against SLOW_SECONDS = 8.0, i.e. tagged or not depending on box load).
+# `test_golden_fingerprint_*` == unmarked, so these survive the `-m "not slow"` opt-out too.
+# Given ONLY to arms measured <= 2 s idle, which is what keeps that opt-out worth typing.
 
 def test_golden_fingerprint_prop_gas_properties():
     """RUNGS 3-6, the property layer. The separability arm: red here means the PRIMITIVE moved."""
@@ -831,14 +835,14 @@ def test_golden_fingerprint_r28_coupled_no_march():
 
 
 # ------------------------------------------------------------------ slice 2, the COSTLY arms
-# Deliberately NOT `test_golden_fingerprint_*`: these are the mixing closures, 2.4-60 s each, and
-# conftest's spine pattern was narrowed precisely so they cannot be dragged into bare `pytest`.
-# They are slow-tagged like every other FINDING sweep. That is weaker than the spine but not by
-# much: `--affected` re-enables the slow gates of every module the diff can reach, and this
-# module imports `turbojet.gas` and `turbojet.engine`, so a rung commit runs them on the SHIP
-# gate. Measured idle, CPython: r11 2.4 / r12 2.4 / r13 3.1 / r15 3.1 / r18 4.5 / r22 4.6 /
-# r17 16.4 / r16 46.5 / r23 60.5 / r24 60.5 s. The full gate's pole is rung 24's own
-# `test_ei_stays_monotone` at ~518 s, so none of these moves the wall clock.
+# Deliberately NOT `test_golden_fingerprint_*`: these are the mixing closures, the costliest arms
+# in the module, so they are the ones `-m "not slow"` should shed. The three heaviest carry an
+# explicit `@pytest.mark.slow` (r16 9.5 / r23 11.9 / r24 11.9 s on PyPy); the rest are cheap
+# enough to leave unmarked. All of them run on a plain `pytest` either way — under the retired
+# tiering this block had to argue that `--affected` would reach them, and it no longer does.
+# Measured idle, CPython: r11 2.4 / r12 2.4 / r13 3.1 / r15 3.1 / r18 4.5 / r22 4.6 / r17 16.4 /
+# r16 46.5 / r23 60.5 / r24 60.5 s. The wall-clock pole is rung 24's own `test_ei_stays_monotone`,
+# not anything here.
 
 def test_golden_kernel_r11_jet_mixing():
     _check("r11")
@@ -856,6 +860,7 @@ def test_golden_kernel_r15_quench_pdf():
     _check("r15")
 
 
+@pytest.mark.slow
 def test_golden_kernel_r16_pocket_quench_pdf():
     _check("r16")
 
@@ -872,10 +877,12 @@ def test_golden_kernel_r22_spatial_pdf():
     _check("r22")
 
 
+@pytest.mark.slow
 def test_golden_kernel_r23_spatial_dwell_pdf():
     _check("r23")
 
 
+@pytest.mark.slow
 def test_golden_kernel_r24_spatial_local_pdf():
     _check("r24")
 
@@ -921,8 +928,8 @@ def test_every_kernel_is_actually_GATED():
     ungated = sorted(set(KERNELS) - gated)
     assert not ungated, (
         f"{len(ungated)} kernel(s) are pinned in the golden but no test checks them: {ungated}. "
-        "Add a gate — `test_golden_fingerprint_*` if the arm is <= 2 s idle (conftest's spine "
-        "override), `test_golden_kernel_*` otherwise.")
+        "Add a gate — `test_golden_fingerprint_*` if the arm is <= 2 s idle, "
+        "`test_golden_kernel_*` (+ `@pytest.mark.slow` if heavy) otherwise.")
     assert not (gated - set(KERNELS)), (
         f"a gate calls _check on a kernel that does not exist: {sorted(gated - set(KERNELS))}")
 

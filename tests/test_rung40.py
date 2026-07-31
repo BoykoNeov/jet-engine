@@ -288,6 +288,7 @@ def test_sigma_crit_identity_channels_and_direction():
 
 
 # --------------------------------------------------------------------------- gate 5
+@pytest.mark.slow
 @pytest.mark.parametrize("gas_name", ["cpg", "reacting"])
 def test_finding_stability_is_rho_free(gas_name):
     """GATE 5 — FINDING (i): the clock ratio cannot destabilize the two-shaft pair.
