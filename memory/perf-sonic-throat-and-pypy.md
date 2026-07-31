@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 9815da7f-03c3-438c-b234-613c89605708
-  modified: 2026-07-31T06:10:54.742Z
+  modified: 2026-07-31T06:31:03.587Z
 ---
 
 Asked whether `engine.py` should be split and whether a **Rust rewrite** would buy speed. Both
@@ -31,12 +31,13 @@ imports it), and the learned-duration cache must not be shared between interpret
 **⚠ CORRECTED 2026-07-31 — "BIT-IDENTICAL across interpreters" is TRUE but SCOPED, and I stated
 it here without the scope.** The evidence was ONE 341-point rung-66 march, which is a CPG /
 `_sonic_throat` path. Measured across six more kernels: the **CPG ladder is bit-identical**
-(96 matcher values + 6 152 trajectory floats + every discrete argmin/edge row), but **71% of 133
+(96 matcher values + 6 138 trajectory floats + every discrete argmin/edge row), but **71% of 133
 equilibrium-side values DIFFER** (rungs 3–30 diagnostics; worst 3.7e-6 relative, on a
 difference-of-near-equals). Mechanism: `expm1`/`log1p`/`erf` differ by 1 ulp and naive `sum()`
 reassociates — primitives the NASA-integral / equilibrium kernels use and the CPG closed forms
 do not. **The generalising lesson: one bit-identical sample licenses a claim about that KERNEL,
-never about the interpreter.** Plan + evidence: `docs/plans/todo-pypy-switch.md`.
+never about the interpreter.** Plan + evidence: `docs/plans/todo-pypy-switch.md`. The detector
+that hole demanded is now built — see [[golden-fingerprint-gate]].
 
 **Two confounds I caught only by checking, both of which would have shipped a wrong number:**
 1. PyPy's `-n auto` resolved to 16 **logical** CPUs, CPython's to 8 **physical** → the first

@@ -210,9 +210,12 @@ A compact map — the per-rung method/finding detail lives in `docs/rungN-spec.m
   per rung** (each demonstrates that rung's load-bearing claim and states its honest scope).
 - `tests/` — per-rung `test_rungN.py` (N = 1…66; plus the rung-1/2b/3/4/5 files). Every rung file
   carries that rung's **reduce-to-prior** gate plus its load-bearing claims — the gates are named in
-  the spec. `test_claude_md_reference.py` is the size guard on this file, and
+  the spec. `test_claude_md_reference.py` is the size guard on this file;
   `test_phi_rate_limiter_negative.py` is the only NEGATIVE carrying a gate (it BOUNDS rung 49's
-  bracket, which no per-rung gate watches — it owns no production code).
+  bracket, which no per-rung gate watches — it owns no production code); and
+  `test_numeric_fingerprint.py` is the only **ABSOLUTE-value** gate — the reduce spine compares
+  two quantities from the SAME run, so it is blind to anything that moves both sides together.
+  Its goldens are a committed **CPython** anchor; never regenerate them under another interpreter.
 - `docs/rungN-spec.md` — the derivation, assumptions, concessions and gates for rung N.
   `docs/plans/rungN-anchor-*.md` — that rung's verified anchor data. `docs/plans/` also holds the
   living plan/tasks.

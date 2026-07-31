@@ -40,7 +40,12 @@ _CLAUDE_MD = os.path.join(_HERE, os.pardir, "CLAUDE.md")
 # Deliberate budget. Bytes is the primary guard (the failure mode is prose volume,
 # not line count); lines is a secondary sanity cap. Bump ONLY for real content
 # growth, never to make an essay fit — see the module docstring.
-MAX_BYTES = 31_000     # bumped at rung 64 (30,274 B): one genuine row, deliberately
+# Bumped at rung 64 (30,274 B): one genuine row, deliberately. Bumped again 2026-07-31
+# (31,259 B) for the golden-fingerprint gate's § Layout entry — NOT a rung, and not table
+# growth: a third non-rung test file, beside the two § Layout already names. The prior budget
+# had 33 bytes left, so rung 67's row trips it regardless; taking the bump here for a reason
+# that can be named beats taking it later for a row that cannot.
+MAX_BYTES = 31_500
 MAX_LINES = 300
 
 

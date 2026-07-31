@@ -137,9 +137,22 @@ def _is_spine(nodeid: str) -> bool:
     run (the user's explicit choice, 2026-07-21), even for the expensive rungs. This OVERRIDES
     both the seed set and the learned cache. All three name forms are used across the suite
     (`test_reduce_*`, `test_cycle_untouched_*`, and `..._bit_for_bit` / `..._bitforbit`); every
-    match is a genuine reduce/cycle gate (checked — no false positives)."""
+    match is a genuine reduce/cycle gate (checked — no false positives).
+
+    FOURTH FORM, added 2026-07-31: `test_golden_fingerprint_*`. The reduce spine compares two
+    quantities computed in the SAME run, so it cannot see a change that moves both sides
+    together — an interpreter swap, a library update, the rung-30 closed-form fix. The golden
+    fingerprint (`tests/test_numeric_fingerprint.py`) is the absolute-value counterpart, and it
+    is only worth having if it runs as often as the spine does. It needs the override for a
+    concrete reason, not on principle: its heaviest arm (kernel E, the off-design matcher on the
+    equilibrium gas) measures 7.7 s idle, so under an 8-worker load it records above
+    SLOW_SECONDS and would be silently tagged out of bare `pytest`. The pattern is deliberately
+    NARROW — `test_golden_fingerprint`, not `test_golden` — so that extending the fingerprint to
+    the expensive rungs 7-24 kernels cannot drag a multi-minute gate into the fast subset by
+    accident. Anything slower belongs behind `--runslow` like every other FINDING sweep."""
     f = _func_of(nodeid)
     return (f.startswith("test_reduce") or f.startswith("test_cycle_untouched")
+            or f.startswith("test_golden_fingerprint")
             or "bit_for_bit" in f or "bitforbit" in f)
 
 
