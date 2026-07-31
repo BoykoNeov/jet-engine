@@ -476,8 +476,18 @@ options were refused, on data:
 
 **The constant survives, with its reason inverted: under CPython it bought TIME; under PyPy it
 buys DETERMINISM.** The seed set WAS regenerated (61 → 27 pairs; 42 stale entries, of which 20
-were spine-overridden and had always been inert), excluding by construction anything whose
-CPython duration was < 1 s so a warm-up artefact cannot be frozen into the cold-cache path.
+were spine-overridden and had always been inert), with a one-time filter excluding anything whose
+CPython duration was < 1 s so a warm-up artefact could not be frozen into the cold-cache path.
+That filter is **not an invariant** — a test added after the switch has no CPython duration to
+check, and for those the live mechanism is the learned cache, as it always was.
+
+⚠ **The cold-cache check is weaker than it first looks — recorded because it will be misread.**
+A cold run deselects 224, identical to warm. That looked like validation, and it is not: the seed
+was regenerated as *exactly* `pypy >= SLOW_SECONDS`, so cold (seed only) and warm (seed OR
+learned) agree **BY CONSTRUCTION**. It confirms the regeneration was applied correctly — worth
+having — but it is **not** independent evidence that 8.0 is right. The three arguments above
+(noise band, 0-newly-slow asymmetry, rescale-is-backwards) are the whole case, and they do not
+need a fourth.
 
 #### CORRECTION — the threshold governs a MINORITY of the partition
 

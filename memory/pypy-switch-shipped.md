@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 26837c68-090b-4326-a309-885d38daeae7
-  modified: 2026-07-31T10:33:08.619Z
+  modified: 2026-07-31T10:37:08.279Z
 ---
 
 PyPy 3.11 (v7.3.23) is the project's interpreter as of 2026-07-31, via a repo venv `.venv` built
@@ -57,10 +57,20 @@ physical number `main.py` emits and does not extend to residuals; the claim that
 change (83,057 → 80,058 B) is a matplotlib build difference, not physics.
 
 **The seed set was regenerated (61 → 27 pairs; 42 stale, of which 20 had always been inert
-because `_is_spine` overrode them).** Rule added: never seed an entry whose CPython duration was
-< 1 s, so a JIT-warm-up artefact cannot be frozen into the cold-cache path. Validated the way a
-seed should be — **on a COLD cache**, where it is the only mechanism: 224 deselected, identical
-to warm. It had not been true before.
+because `_is_spine` overrode them),** with a ONE-TIME filter dropping anything whose CPython
+duration was < 1 s so a JIT-warm-up artefact could not freeze into the cold-cache path. That
+filter is not an invariant — post-switch tests have no CPython duration to check.
+
+**⚠ And the check I ran on it was a TAUTOLOGY, which I wrote up as validation in three places
+before the advisor caught it.** A cold cache deselects 224, identical to warm — but the seed was
+regenerated as *exactly* `pypy >= SLOW_SECONDS`, so cold (seed only) and warm (seed OR learned)
+agree BY CONSTRUCTION. It confirms the regeneration was *applied*, not that the threshold is
+*right*. **Generalise: when you build an artefact from a predicate and then test that the
+artefact agrees with that predicate, you have tested your typing, not your judgement.** The
+tell was available in my own table — `8.0s -> 30 (duration-only: 29)` — and I read the
+coincidence as a property of the threshold when it was a property of how I had just built the
+seed. The real case for 8.0 (noise band, 0-newly-slow asymmetry, rescale-is-backwards) never
+needed it.
 
 **The one remaining CPython need is NOT a violation of "no CPython dependency":** running the
 project (model, plot, all three gates) is PyPy-only. *Regenerating* the goldens still needs

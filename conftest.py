@@ -100,9 +100,18 @@ _CACHE_KEY = "durations/call"
 # can only ever ADD a slow tag, never remove one). Function names match ALL parametrizations
 # (the "[param]" suffix is stripped before comparison). The learned cache extends this over
 # time; this seed only has to be right enough that the first cold `pytest` is already fast.
-# Entries whose CPython duration was < 1 s are EXCLUDED by construction, so a PyPy JIT-warm-up
-# artefact cannot be frozen into the cold-cache path (none qualified — all three measured
-# warm-up rows land below 8.0 s anyway, but the rule is what keeps that true as the suite grows).
+#
+# The regeneration applied a ONE-TIME filter: an entry whose CPython duration was < 1 s was
+# excluded, so a PyPy JIT-warm-up artefact could not be frozen into the cold-cache path. None
+# qualified. That filter is NOT an invariant and cannot be re-applied — a test added after the
+# switch has no CPython duration to check. For new tests the live mechanism is the learned
+# cache, which is what it has always been; the seed is only a cold-start hint.
+#
+# NOTE on the cold-cache check: because this set was regenerated as exactly `pypy >= SLOW_SECONDS`,
+# a cold run (seed only) and a warm one (seed OR learned) necessarily agree — 224 deselected
+# either way, measured. That agreement is BY CONSTRUCTION. It confirms the regeneration was
+# applied correctly; it is NOT independent evidence that 8.0 is the right threshold. The
+# arguments for 8.0 are the ones on the constant above, and they stand on their own.
 _SEED_SLOW = {
     "test_rung16": {"test_clamp_dormant_over_pockets",
                     "test_far_flank_erosion_vs_rung15",
