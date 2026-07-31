@@ -197,6 +197,16 @@ amortises across 973 tests instead of being paid once per process.
 march compares exactly equal, float for float. For a project whose spine is anchored numbers and
 `*_bit_for_bit` gates, that is the precondition — without it the speed would be unusable.
 
+> **⚠ SCOPE CORRECTION (2026-07-31).** That sentence is true of the kernel it was measured on and
+> was written without saying so. The march above is a **CPG / `_sonic_throat`** path. Re-measured
+> across six more kernels: the **CPG ladder is bit-identical** (96 off-design matcher values,
+> 6 152 rung-66 trajectory floats, every discrete argmin / limiter-edge row), but **71% of 133
+> equilibrium-side values DIFFER** — rungs 3–30 diagnostics, worst **3.7e-6** relative, on a
+> difference-of-near-equals quantity that is unchanged at 3 significant figures. Cause:
+> `expm1` / `log1p` / `erf` differ by 1 ulp and naive `sum()` reassociates (`exp`, `log`, `sqrt`,
+> `**`, `fsum` all agree). Read the claim as **"the CPG structural ladder is bit-identical"**, not
+> "the interpreter is". Full evidence and the adoption plan: **`docs/plans/todo-pypy-switch.md`**.
+
 **Side finding, free and interpreter-independent.** `-n 16` (logical) beats `-n 8` (physical) by
 **1.30×** on CPython and 1.36× on PyPy. xdist's `-n auto` counts physical cores, so the stock gate
 leaves that on the table. `-n 16` is a one-flag change to `pytest.ini` — **not taken**: the user
