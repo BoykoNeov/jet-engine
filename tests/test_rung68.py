@@ -136,8 +136,7 @@ def test_an_unlagged_stator_is_refused_not_silently_dropped(design):
     """A `StatorLimiter` without `tau` cannot be marched, and dropping it would make every
     reader report a third loop that never acted."""
     with pytest.raises(AssertionError, match="INSTANTANEOUS"):
-        StatorLimiter(phi_lim=PHI, v_max=V_MAX, tau=None).__class__  # constructed below
-        _stator(tau=0.0)
+        _stator(tau=0.0)                  # `tau=0` is NOT the instantaneous loop, it is a bug
     m = _three(design, bleed_lim=_valve(TAU), stator_lim=_stator(tau=None))
     a = _march(m, surge=_fuel(), lag=_lag())
     assert "v" not in a[0], "an unlagged stator must not enter the five-state integrator"

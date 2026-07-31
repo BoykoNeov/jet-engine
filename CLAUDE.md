@@ -162,6 +162,9 @@ derivation is in its spec. A numbered seam is closed and must never be re-opened
 - **Feeding a shifted/marched state into the production cycle** — a re-foundation, not a rung.
 
 ## Open engineering tasks (not rungs, not seams)
+- **Backfill `main.py` panels for rungs 65/66/67** — found at rung 68, which added its own. The
+  "one panel per rung" contract has been unmet since rung 65, and `main.py` is covered by no
+  test, so the gate cannot see it. Check this whenever a rung ships.
 - **Audit the iterative solvers for absolute-tolerance-below-noise-floor** — **CLOSED, NEGATIVE**
   (`docs/plans/todo-solver-tolerance-audit.md`). Rung 43 fixed a real rung-40 `_EQ_TOL` hole; the
   six `_ETA_TOL` secants do **not** share it (exact float64 root). No code change.
@@ -212,7 +215,8 @@ A compact map — the per-rung method/finding detail lives in `docs/rungN-spec.m
   loop — five states, three clocks). Each reduces to its predecessor (exact dispatch, an inherited identity, or the forward closure);
   **the method names + reduce contracts are in each rung's spec, not here.**
 - `main.py` — the design-point run: ideal-vs-real tables, the overlaid T–s diagram, and **one panel
-  per rung** (each demonstrates that rung's load-bearing claim and states its honest scope).
+  per rung** (each demonstrates that rung's load-bearing claim and states its honest scope) —
+  **except 65/66/67, which have none; see § Open engineering tasks.**
 - `tests/` — per-rung `test_rungN.py` (N = 1…68; plus the rung-1/2b/3/4/5 files). Every rung file
   carries that rung's **reduce-to-prior** gate plus its load-bearing claims — the gates are named in
   the spec. `test_claude_md_reference.py` is the size guard on this file;

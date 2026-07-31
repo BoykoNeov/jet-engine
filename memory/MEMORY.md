@@ -59,6 +59,7 @@ these lines (the same rule CLAUDE.md lives under).
 - [Rung 65 lagged valve](rung65-lagged-valve.md) — a lag repairs the SOLVE without removing the DEGENERACY; a § 0 pre-check that was itself RK4 instability; not every third state starts at zero
 - [Rung 66 two-lag cascade](rung66-two-lag-cascade.md) — two loops on one variable are ONE loop with the rates ADDED (R_q·C_g ≡ 1 identically); my anchor was right for the wrong reason and my own stability floor was unsafe; check where an extremum sits before quoting it
 - [Rung 67 cascade A](rung67-cascade-a.md) — one scalar P sets BOTH the ringing window and the damping, so the mode is admissible but UNOBSERVABLE; a zero cross-gain is saturation, never decoupling; two-branch registration is the device that produced the surprise
+- [Rung 68 three loops](rung68-three-loops.md) — n loops on one variable are RANK ONE, so only the CYCLIC product is independent; check what's independent before quoting it; three of my own claims corrected by measurement mid-build
 
 ## Margin sweeps — confirmations, not rungs
 - [Rung 29 π_c margin](rung29-pi-c-margin.md) — verdict confirmed at 9.4× but π_c NOT protective; the ENERGY = INVENTORY × COMPLETION sharpening

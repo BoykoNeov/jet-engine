@@ -355,7 +355,11 @@ the frozen state to persist, and § 5 shows the freeze belonged to the manifold.
   one leaves no riding points on this anchor. **— DISCHARGED IN PART BY RUNG 67**, which is
   that pair: the withheld-fuel spread collapses 84 % → 0.014 % (so it *was* the zero
   eigenvalue), while the violation-integral spread survives 40.7 % → 45.5 % (so *that* one was
-  ordinary transient sensitivity). See `docs/rung67-spec.md` § 5.
+  ordinary transient sensitivity). See `docs/rung67-spec.md` § 5. **— AND RE-MEASURED AT
+  `n = 3` BY RUNG 68**, which ran this same instrument at these same ±0.01 offsets with a third
+  loop armed: the withheld-fuel spread grows 84 % → **105.5 %** and the violation-integral
+  spread ±20 % → **45.2 %**. Rung 68 likewise declines to attribute the growth to the extra
+  zero eigenvalue, since `n = 3` also has one more actuator free to move.
 * The fuel-leg-alone control's march **truncates at `s = 1.08`** of 1.70. The ramp-window
   violation integral cannot reach that far, so the ledger is unaffected — but no post-ramp
   number is quoted for that cell.
@@ -384,9 +388,21 @@ the frozen state to persist, and § 5 shows the freeze belonged to the manifold.
   floor.
 * **An ASYMMETRIC valve** — rung 65's standing concession, untouched here. This rung's fuel leg
   is asymmetric and its valve is not; making both asymmetric is a fourth constant.
-* **THREE loops on one variable.** The identity is stated for a pair. `det J ≡ 0` for two laws
-  on one constraint suggests a rank deficiency that GROWS with the loop count — an `n`-loop
-  block on one manifold should have `n − 1` zero eigenvalues, so the third limiter would buy
-  even less than the second's 1.59 %. Derivable, unmeasured.
+* **THREE loops on one variable — CLOSED BY RUNG 68** (`docs/rung68-spec.md`). The structural
+  half of the prediction below is CONFIRMED and stronger than written: `J = −D·c·rᵀ` is RANK
+  ONE at every `n`, so the `n − 1` zeros are exact and the non-zero root is `−Σ 1/τ_i` — the
+  rates add at every `n`, and this rung's `R_q·C_g ≡ 1` is one entry of `−c·rᵀ` rather than a
+  property of PAIRS. **The magnitude half MISSED**, and the reason is already visible in this
+  rung's own § 4: the third limiter buys **2.45 %**, MORE than the second's 1.59 %, while the
+  FUEL leg added last buys 0.495 %. Credit is not ordered by loop count and is not a function
+  of `Σ 1/τ` — as § 4's own 1.59 % vs 33.64 % (both doubling the rate sum, 21× apart) should
+  have warned. Rung 68 also shows the `n ≥ 3` content is NOT the pairwise identity restated:
+  imposing all three pairwise products leaves a free parameter, the CYCLIC product, and only
+  that one tests joint collapse.
+
+  *(Original text: the identity is stated for a pair. `det J ≡ 0` for two laws on one
+  constraint suggests a rank deficiency that GROWS with the loop count — an `n`-loop block on
+  one manifold should have `n − 1` zero eigenvalues, so the third limiter would buy even less
+  than the second's 1.59 %. Derivable, unmeasured.)*
 * **Fuel + bleed + STATOR, all three on one plant** — rung 63's seam, still untouched by
   64/65/66.

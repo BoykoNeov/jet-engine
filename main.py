@@ -23,6 +23,7 @@ from turbojet.engine import (  # noqa: E402
     AsymmetricLag, VariableStatorMatcher, StageStackMatcher, ram_recovery,
     ScheduledStatorTransient, StatorSchedule, IncidenceLimiter, StatorBleedMatcher,
     ScheduledBleedTransient, BleedSchedule, LimitedBleedTransient, BleedLimiter,
+    ThreeLoopCascadeTransient, StatorLimiter,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -4771,6 +4772,78 @@ def print_bleed_limiter_table(flight):
     print("    disclaimed and the ORDERING is the claim. See docs/rung64-spec.md.")
 
 
+def print_three_loop_table(flight):
+    """Rung-68 payoff: rung 66's own seam -- a THIRD loop on `phi_lp`.
+
+    The panel is built around the thing that nearly went unnoticed. Rung 66's identity is ONE
+    scalar; stating it three times over three pairs is the same measurement three times, and
+    `tr` is the hardcoded diagonal. Imposing all three pairwise identities STILL leaves the
+    block a free parameter -- the CYCLIC product -- so a block can be pairwise-degenerate and
+    rank 2. That is why the first table shows the pairs and the cycle side by side."""
+    print("\nTHREE LOOPS ON ONE VARIABLE (rung 68): `n` loops on one variable are ONE loop")
+    print("with ALL `n` RATES ADDED -- J = -D c r^T is RANK ONE at every n.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR = 0.55
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    LO, HI, B, PHI, VM = 1000.0, 1400.0, 0.10, 0.80, 0.20
+    SM = PHI / FLOOR - 1.0
+    t = ThreeLoopCascadeTransient(
+        design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0,
+        bleed_lim=BleedLimiter(phi_lim=PHI, b_max=B, tau=0.05),
+        stator_lim=StatorLimiter(phi_lim=PHI, v_max=VM, tau=0.05))
+
+    print("\n  WHAT IS ACTUALLY INDEPENDENT -- the three PAIRWISE products are rung 66's one")
+    print("  identity three times; only the CYCLIC product tests JOINT collapse:")
+    g = t.triple_gains(flight, LO, HI, sm=SM, every=35)
+    print(f"    {'s':>7} {'R_q*C_g':>11} {'R_v*V_g':>11} {'C_v*V_q':>11} "
+          f"{'CYCLIC R_q*C_v*V_g':>20}")
+    for row in g["rows"]:
+        o = row["on"]
+        print(f"    {row['s']:7.4f} {o['pair_RC']:11.8f} {o['pair_RV']:11.8f} "
+              f"{o['pair_CV']:11.8f} {o['cyclic']:20.10f}")
+    print(f"    {g['n_riding']} points with all three loops riding INTERIOR. Predicted -1 "
+          "(three factors")
+    print("    of -phi_j/phi_i). det = (x+1)^2/x, so det carries nothing the cycle does not.")
+    s = t.cyclic_sensitivity(flight, LO, HI, sm=SM)
+    print(f"    The DETECTOR, measured not asserted: floor {s['floor']:.2e}, gain "
+          f"{s['gain']:.2f} per unit")
+    print(f"    off-manifold displacement -- it resolves delta >~ {s['resolves']:.0e}.")
+
+    print("\n  THE LEDGER -- every subset of the three loops, and the WALL each credit is")
+    print("  measured against (the stator MOVES the phi wall and not the metal one):")
+    b = t.triple_bill(flight, LO, HI, sm=SM)
+    print(f"    {'cell':>5} {'I (phi)':>13} {'credit':>9} {'I (incidence)':>15} {'credit':>9}")
+    for k in ("bare", "F", "V", "S", "FV", "FS", "VS", "FVS"):
+        c = b["cells"][k]
+        print(f"    {k:>5} {c['I']:13.6e} {c['credit']:8.2f}% {c['I_inc']:15.6e} "
+              f"{c['credit_inc']:8.2f}%")
+    print(f"    Three standalone credits sum to {b['sum_singles']:.1f}%; the TRIPLE delivers "
+          f"{b['delivered']:.1f}%.")
+    print(f"    {'added LAST':>12} {'marginal (phi)':>16} {'alone':>9} {'erosion':>9} "
+          f"{'marginal (incid)':>18}")
+    for k in ("fuel", "valve", "stator"):
+        print(f"    {k:>12} {b['marginal'][k]:15.3f}% {b['singles'][k]:8.2f}% "
+              f"{b['erosion'][k]:8.1f}x {b['marginal_incidence'][k]:17.3f}%")
+    print("    The stator PROTECTS phi and ERODES incidence -- rung 53's 'a margin is a")
+    print("    DISTANCE' reaching the SIGN of a credit. And rung 66 s 9's guess that the")
+    print("    third limiter would buy LEAST is wrong: the FUEL leg, added last, buys least.")
+    print("    SCOPE: the phi-referenced stator loop moves the lever the ANTI-PHYSICAL way (a")
+    print("    real VSV closes to protect; this one OPENS), all three tau are swept march")
+    print("    coordinates, and phi_lim/b_max/v_max are imposed or inherited -- so the")
+    print("    MAGNITUDES are disclaimed and the ORDERING is the claim. See docs/rung68-spec.md.")
+
+
 def main():
     # The tables carry unicode (Δ, ·, ≡, ≈); force UTF-8 so `python main.py` renders
     # on any console (a stock Windows cp1252 console would otherwise crash on them).
@@ -4913,6 +4986,8 @@ def main():
     print_fuel_bleed_table(FLIGHT)
 
     print_bleed_limiter_table(FLIGHT)
+
+    print_three_loop_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

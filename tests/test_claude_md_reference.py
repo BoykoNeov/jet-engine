@@ -53,7 +53,12 @@ _CLAUDE_MD = os.path.join(_HERE, os.pardir, "CLAUDE.md")
 # rewriting the THREE-loops open-seam entry it closes into rung 68's own, one line shorter than
 # the sum of what it replaced. The three no-grow sites (scope narration, engine.py method
 # inventory, per-seam BUILT list) were checked first and none of them grew.
-MAX_BYTES = 32_250
+# Raised again in the same commit (32,507 B) for something that is NOT rung growth and is
+# recorded here so it cannot be mistaken for it: rung 68 found that `main.py` has carried no
+# panel since rung 64, so § Layout's "one panel per rung" was false. The correction plus the
+# open-task line that tracks the backfill cost ~334 B. That is a DEFECT DISCLOSURE, and the
+# right move when it is paid off is to DELETE both and drop this budget back, not to keep it.
+MAX_BYTES = 32_600
 MAX_LINES = 300
 
 

@@ -390,8 +390,12 @@ open with the fuel leg engaged and the valve at its lower stop (`b0 = 0`), so th
 
 ## 9. Next seams
 
-* **THREE loops on one variable** — rung 66's standing seam, untouched. Its identity is stated
-  for a pair; an `n`-loop block on one manifold should carry `n − 1` zero eigenvalues.
+* **THREE loops on one variable — CLOSED BY RUNG 68** (`docs/rung68-spec.md`). The prediction
+  below holds exactly: `J = −D·c·rᵀ` is RANK ONE at every `n`, so an `n`-loop block on one
+  manifold carries `n − 1` zeros and one root at `−Σ 1/τ_i`. What it does NOT carry is rung
+  66's magnitude guess (the third limiter buys 2.45 %, MORE than the second's 1.59 %), and the
+  `n ≥ 3` content turns out to be the CYCLIC product rather than the pairwise identity restated
+  — a block can be pairwise-degenerate and still rank 2.
 * **THREE loops on TWO variables** — this rung's own: the governor and the φ floor *both* beside
   the valve, which § 2's algebra says superposes a `P ≡ +1` block onto a `P < 0` one. Asserted
   against in `integrate_fuel`, not run.

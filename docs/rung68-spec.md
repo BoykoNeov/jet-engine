@@ -200,11 +200,21 @@ is why it is the sum and not the max.
 
 ## 4. WHAT THE TRIPLE DELIVERS — the 7-cell ledger, in BOTH currencies
 
-Currency: rung 66's `I = ∫₀^r max(0, φ_lim − φ_lp) ds`, its `_violation` **inherited unchanged**
-so the two rungs' ledgers are differenceable rather than merely similar. (Cross-check: this
-rung's `FV` cell returns `I = 1.528558e−3`, inside rung 66's own published grid band
-`1.52626e−3 … 1.52922e−3`, with `min φ_lp = 0.793085` — rung 66's value exactly.) Every loop is
-lagged, in every cell.
+Currency: rung 66's `I = ∫₀^r max(0, φ_lim − φ_lp) ds`, its `_violation` **inherited
+unchanged**. Every loop is lagged, in every cell.
+
+**WHAT THAT DOES AND DOES NOT BUY, stated precisely because the `bare` cell is the denominator
+of all eight credits.** The eight cells here are built by ONE rig differing only in which loops
+are armed, so they are differenceable *against each other* — which is what every number in this
+section uses. Against rung 66's published table they are **close but not identical**: this
+rung's `FV` cell returns `I = 1.528558e−3` against rung 66's `1.52910e−3` (inside its own
+published grid band `1.52626e−3 … 1.52922e−3`) with `min φ_lp = 0.793085`, rung 66's value
+exactly; but `bare` returns `2.581532e−2` against rung 66's `2.58877e−2`, **0.28 % apart**. The
+residual is almost certainly a grid difference — rung 66's own § 4 reports a 0.19 % spread
+across an 8× `ds` range, and the `FV` agreement lands inside that band rather than on its
+value. **It is NOT reconciled here.** § 8's P3 crosses the two ledgers (2.45 % against rung
+66's 1.59 %), and that comparison survives only because a 54 % gap cannot be closed by 0.28 %
+— which is an argument about margin, not a claim of identity.
 
 | cell | `I` (φ) | credit | `I` (incidence) | credit | `min φ` | `v_min` | `b` used |
 |---|---|---|---|---|---|---|---|
@@ -262,7 +272,8 @@ in one wall and harmful in the other. A credit quoted without its wall is meanin
 
 On the triple the ledger is identical to ~1e−15 across a 4× ceiling (not bit-for-bit: `v_max`
 is one end of `_solve_v`'s bracket, so it moves `_illinois`'s first secant — disclosed rather
-than tuned away). On the same lever ALONE the same ceiling moves `I` by **10×**.
+than tuned away). On the same lever ALONE the same ceiling is decisive: **7.9×** on `I` over
+that same 0.05 → 0.20 range, and **10.4×** over 0.02 → 0.20.
 
 **This EXTENDS rung 64 rather than contradicting it.** Rung 64's *the ceiling is the lever's
 AUTHORITY* is a statement about a lever alone. Put two other loops on the same variable and
