@@ -144,9 +144,11 @@ def _is_spine(nodeid: str) -> bool:
     together — an interpreter swap, a library update, the rung-30 closed-form fix. The golden
     fingerprint (`tests/test_numeric_fingerprint.py`) is the absolute-value counterpart, and it
     is only worth having if it runs as often as the spine does. It needs the override for a
-    concrete reason, not on principle: its heaviest arm (kernel E, the off-design matcher on the
-    equilibrium gas) measures 7.7 s idle, so under an 8-worker load it records above
-    SLOW_SECONDS and would be silently tagged out of bare `pytest`. The pattern is deliberately
+    concrete, MEASURED reason: its heaviest arm (kernel E, the off-design matcher on the
+    equilibrium gas) learned 7.71 s from the full 8-worker gate against SLOW_SECONDS = 8.0 — a
+    3.6 % margin. That is worse than being clearly over the line: at that distance the tag flips
+    with whatever else the box is doing, so without this override the gate would drop in and out
+    of bare `pytest` NONDETERMINISTICALLY. The pattern is deliberately
     NARROW — `test_golden_fingerprint`, not `test_golden` — so that extending the fingerprint to
     the expensive rungs 7-24 kernels cannot drag a multi-minute gate into the fast subset by
     accident. Anything slower belongs behind `--runslow` like every other FINDING sweep."""
