@@ -44,8 +44,11 @@ _CLAUDE_MD = os.path.join(_HERE, os.pardir, "CLAUDE.md")
 # (31,259 B) for the golden-fingerprint gate's § Layout entry — NOT a rung, and not table
 # growth: a third non-rung test file, beside the two § Layout already names. The prior budget
 # had 33 bytes left, so rung 67's row trips it regardless; taking the bump here for a reason
-# that can be named beats taking it later for a row that cannot.
-MAX_BYTES = 31_500
+# that can be named beats taking it later for a row that cannot. Bumped at rung 67 (31,583 B)
+# for exactly the row that comment predicted -- ONE table line at 345 B (inside the 350 B
+# per-row rule) plus its § Layout ladder entry, and PAID FOR in part by rewriting the CASCADE A
+# open-seam entry it closes. Real one-line-per-rung growth, which is what a bump is for.
+MAX_BYTES = 31_700
 MAX_LINES = 300
 
 

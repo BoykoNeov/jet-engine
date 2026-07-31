@@ -352,7 +352,10 @@ the frozen state to persist, and § 5 shows the freeze belonged to the manifold.
 * The 84 % `b0` sensitivity of § 5 is reported as a MEASUREMENT and **not attributed** to the
   zero eigenvalue. Separating it from ordinary transient sensitivity needs a non-degenerate
   pair to compare against, and § 2's scope table shows the set-point offset that would build
-  one leaves no riding points on this anchor.
+  one leaves no riding points on this anchor. **— DISCHARGED IN PART BY RUNG 67**, which is
+  that pair: the withheld-fuel spread collapses 84 % → 0.014 % (so it *was* the zero
+  eigenvalue), while the violation-integral spread survives 40.7 % → 45.5 % (so *that* one was
+  ordinary transient sensitivity). See `docs/rung67-spec.md` § 5.
 * The fuel-leg-alone control's march **truncates at `s = 1.08`** of 1.70. The ramp-window
   violation integral cannot reach that far, so the ledger is unaffected — but no post-ramp
   number is quoted for that cell.
@@ -361,12 +364,21 @@ the frozen state to persist, and § 5 shows the freeze belonged to the manifold.
 
 ## 9. Next seams
 
-* **CASCADE A** — rung 47's `tau_gov` `Tt4` governor beside this valve. It is the pairing this
+* **CASCADE A — CLOSED BY RUNG 67** (`docs/rung67-spec.md`). The prediction below was right on
+  every structural point — `P = R_q C_g < 0` (measured −2.0e−2), `det J ≠ 0`, and the
+  oscillatory mode admissible in a window in `ρ = τ_v/τ_g` — and **incomplete on the one that
+  mattered**: the same scalar that opens the window damps the mode (`ζ = 1/√(1+|P|) = 0.990`,
+  `T = 44 τ`, neither containing a time constant), so it is admissible at every clock pair and
+  observable at none. Rung 67 also **splits § 8's concession below**: the 84 % withheld-fuel
+  spread IS this rung's zero eigenvalue (it collapses to 0.014 % on the non-degenerate pair),
+  while the violation-integral spread is NOT (it survives, slightly larger).
+
+  *(Original text: rung 47's `tau_gov` `Tt4` governor beside this valve. It is the pairing this
   rung's identity does **not** cover: two loops on two DIFFERENT variables, hence no shared
   constraint, hence `R_q C_g ≠ 1` and `det J ≠ 0`. The cross-gains there have **opposite**
   signs (more bleed → less core flow → hotter at fixed fuel, so `∂R/∂q > 0`), so A admits the
   oscillatory actuator mode B provably cannot, with `τ_v/τ_g` as its `ρ`. Asserted against in
-  `integrate_fuel`, not run.
+  `integrate_fuel`, not run.)*
 * **The two-loop DEBIT shape** (the anchor's P7/P8) — displaced by the identity, and not clean
   on a plant whose set point is never held. It wants a case where the pair *does* reach the
   floor.
