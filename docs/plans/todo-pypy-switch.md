@@ -1,13 +1,13 @@
 # TODO — switch the project's interpreter to PyPy
 
-**Status:** planned, not started. Not a rung. A build/infrastructure change. Raised 2026-07-31
-after the measurement in § 0 refuted the scope of a claim this project had already recorded.
+**Status: SHIPPED 2026-07-31.** PyPy 3.11 is the project's interpreter. Not a rung — a
+build/infrastructure change. Raised 2026-07-31 after the measurement in § 0 refuted the scope of a
+claim this project had already recorded.
 
-**Sliced into four units. Slices 0–3 are now done** (slice 3 measured empty), so the only
-remaining work is **slice 4 — the switch itself, mostly config and docs**. Slice 5 is optional and
-deliberately deferred. The detector slices 1–2 exist to make the switch safe, and they are built:
-**8 044 pinned CPython values — rungs 3–28 gated individually, rungs 31–66 through the CPG ladder
-and the rung-66 cascade — green under both interpreters.**
+**Slices 0–4 are all DONE.** Slice 5 remains optional and deliberately deferred — and slice 4
+found it is *bigger* than written (see its RESULT). The detector slices 1–2 exist to make the
+switch safe, and they are built: **8 042 pinned CPython values — rungs 3–28 gated individually,
+rungs 31–66 through the CPG ladder and the rung-66 cascade — green under both interpreters.**
 
 | slice | what | size |
 |---|---|---|
@@ -15,13 +15,18 @@ and the rung-66 cascade — green under both interpreters.**
 | 1 | the golden-fingerprint gate | **DONE** — `tests/test_numeric_fingerprint.py`, 6 381 pinned values |
 | 2 | extend it across the rungs 3–30 kernels | **DONE** — 18 arms by rung, 8 044 pinned values |
 | 3 | make the full gate green on PyPy | **MEASURED EMPTY — 973 passed, 0 failed** |
-| 4 | the switch itself | small; config + docs + a durable install path |
-| 5 | collapse the three-gate policy | optional, deferred by choice |
+| 4 | the switch itself | **DONE** — 1002 passed in 2:47; `SLOW_SECONDS` kept, and why |
+| 5 | collapse the three-gate policy | optional, deferred by choice — and larger than written |
 
-**The prize:** the full gate goes **13:17 → 2:37 (5.08×)** at the worker count `-n auto`
-actually resolves to. That is the honest adoption delta — *not* the "28:18 → 1:55, ~14.8×" in
-`todo-engine-size-and-speed.md`, which bundles the rung-30 algorithmic fix (already shipped, and
-CPython keeps it) with an `-n 16` config that was explicitly declined.
+**The prize, as delivered:** the full gate goes **17:27 → 2:47 (6.2×)** at the worker count
+`-n auto` actually resolves to, measured on the same 1002 tests on an idle box. The 13:17 → 2:37
+(5.08×) predicted here was measured on a smaller suite at a different rung; the *ratio* held and
+improved. Still *not* the "28:18 → 1:55, ~14.8×" in `todo-engine-size-and-speed.md`, which bundles
+the rung-30 algorithmic fix (already shipped, and CPython kept it) with an `-n 16` config that was
+explicitly declined — and which slice 4 found survives only because `psutil` is installed.
+
+**The value count moved 8 044 → 8 042**: the two rung-28 `no_collapse_ratio!raises` keys left the
+goldens when that dead property was deleted (its own commit, `0b2bdcd`, before the switch).
 
 **The blocker this plan exists to remove:** the project has 973 tests and **not one of them pins
 an absolute number**. Every tight gate compares two quantities computed in the *same* run. So a
@@ -431,18 +436,130 @@ row 0 gated as the ulp artifact it is; bit-exactness kept everywhere the contrac
 **Done when:** a clean clone + documented install reproduces a green `--runslow` and a working
 `main.py`, with no CPython dependency anywhere in the tree.
 
+### RESULT — DONE (2026-07-31)
+
+**Green: `--runslow` = 1002 passed in 167.83 s (2:47)**, against **1047.53 s (17:27)** for the
+identical 1002 tests on CPython — **6.2× on wall clock**, 6.58× on summed call-time (per-test p10
+3.38× / median 5.96× / p90 8.30×, non-uniform because the JIT amortises over long tests). Bare
+`pytest` = **778 passed in 79.77 s (1:20)**. § 5 predicted "2:37–2:50 for everything" — measured
+2:47, inside the predicted band.
+
+1. **Install location — DONE.** `M:\claud_projects\tools\pypy3.11-v7.3.23-win64`, out of the
+   regenerable temp area. The repo venv `.venv` is built from it and gitignored; nothing global
+   changed, so other projects keep CPython. `requirements.txt` documents the two-line install.
+2. **Config — DONE.** `requirements.txt` rewritten (and see the psutil finding below);
+   `CLAUDE.md` § Commands + § Stack re-measured. `pytest.ini` needed **no change**.
+3. **`SLOW_SECONDS` — DELIBERATELY UNCHANGED at 8.0.** See below; this is the substantive item.
+4. **`main.py` — VERIFIED**, exit 0, 6m01s, and diffed against a CPython run. See below.
+5. **Stale numbers — DONE** in `todo-engine-size-and-speed.md` (+ the § 0 scope qualifier) and in
+   `conftest.py`, whose module docstring, `SLOW_SECONDS` comment, `_SEED_SLOW`, `_is_spine`
+   docstring and § affected-set header were ALL carrying CPython measurements.
+
+#### The threshold: a rescale would have been backwards
+
+The plan proposed "re-tune to ~1.6 s to preserve today's partition, or accept the re-cut". Both
+options were refused, on data:
+
+- **The budget stopped binding.** At *every* candidate threshold bare `pytest` fits the ~5 min
+  budget — the full gate itself is 2:47. So "preserve the partition" optimises a constraint that
+  no longer exists.
+- **Rescaling is not even a cost cut.** At 1.2 s (= 8.0/6.58) the duration route tags **167**
+  tests; at 0.5 s, **249**. CPython's 8.0 tagged **159**. A rescale tags MORE, not fewer.
+- **1–3 s is the noise band.** PyPy attributes JIT warm-up to whichever test first touches a code
+  path on a worker, so trivial tests record seconds they do not cost: rung 17's
+  `test_identity_is_witnessed_not_a_test` 0.00 s → **2.67 s**; rung 23's
+  `test_correlation_concentrated_under_penetration` 0.35 s → **4.70 s**. A threshold there would
+  flip tags run-to-run.
+- **8.0 s is already the safe answer.** It tags 30, and against the CPython partition that is
+  **0 newly slow / 107 newly fast** — every disagreement in the safe direction. 107 gates that
+  `--runslow` used to own now run on *every* invocation, free.
+
+**The constant survives, with its reason inverted: under CPython it bought TIME; under PyPy it
+buys DETERMINISM.** The seed set WAS regenerated (61 → 27 pairs; 42 stale entries, of which 20
+were spine-overridden and had always been inert), excluding by construction anything whose
+CPython duration was < 1 s so a warm-up artefact cannot be frozen into the cold-cache path.
+
+#### CORRECTION — the threshold governs a MINORITY of the partition
+
+The plan's framing ("the fast/slow partition silently re-cuts") **over-stated what `SLOW_SECONDS`
+controls**, and the error was only caught by the closing gate: bare `pytest` deselects **224**
+tests, but the conftest duration route accounts for just **30**. The other ~194 come from
+**122 explicit `@pytest.mark.slow` decorator sites across 18 test files**.
+
+So the partition is **87 % hand-declared, 13 % measured** — the threshold is a *backstop for
+gates nobody marked*, not the policy. This also corrects `CLAUDE.md`'s own "no test file is
+edited", which was true of the *policy* but invited exactly the inference that got made here.
+Both `conftest.py`'s docstring and `CLAUDE.md` now state the split. **Consequence for § 5:**
+collapsing the three-gate policy is a bigger job than retiring `conftest.py`'s machinery — it
+must also decide what to do with 122 author-declared markers, which are a statement of intent
+that no timing overturns.
+
+#### `main.py`: one line moved, and it is the informative one
+
+Full-resolution output, CPython vs PyPy: **151,249 bytes both, one line differs.** In the rung-32
+panel, `tau_c rel` reads `7.0e-10` (CPython) vs `6.9e-10` (PyPy). That line prints a **convergence
+residual**, not a physical state — and it is the *only* such printed quantity. Print precision
+(2–4 s.f.) protects a physical number because drift is ~1e-6, decades below the last printed
+digit; it gives a residual no protection at all, because there the printed value **is** the noise.
+
+So: **the ~1e-3 print-precision sensitivity bound holds for every physical number `main.py`
+emits, and does not extend to printed residuals.** The claim that line supports ("the work
+`tau_c` is choke-pinned, map-free to ~1e-6") survives by three decades under both interpreters.
+This does **not** tighten § 0's bound — `main.py` prints far too coarsely to be a numeric gate;
+it confirms the specs' quoted figures are safe. (`ts_diagram.png` changed 83,057 → 80,058 B: a
+matplotlib build difference between the two environments, not physics.)
+
+#### A THIRD friction, found the hard way: `psutil` is load-bearing
+
+pytest-xdist counts **physical** cores via psutil and silently falls back to `os.cpu_count()` —
+**logical** cores — without it. On this 8-physical/16-logical box that turns `-n auto` into
+`-n 16`, which was measured (1.30×) and **declined** because it makes the machine sluggish.
+CPython's environment happened to carry psutil, so the decline held *by accident*. Installing it
+under PyPy is what makes `-n auto` mean the same thing after the switch (verified: `8/8 workers`).
+It is pinned in `requirements.txt` with this reasoning, because nothing else in the tree would
+reveal it.
+
+#### A NEW property of the interpreter — disclosed, not fixed
+
+The learned-duration cache is now **schedule-dependent** in a way it was not under CPython (the
+JIT-warm-up attribution above). Both the fast subset and `--affected` read that cache, so a test
+near *any* threshold can flip side between runs. At 8.0 s nothing sits near the line, so it does
+not bite today — but it is a property of the interpreter, not a bug, and it is recorded in
+`conftest.py`'s docstring rather than omitted for being currently harmless.
+
+#### The one remaining CPython dependency — deliberate, and NOT a violation
+
+"No CPython dependency anywhere in the tree" holds for **running** the project: model, plot, and
+all three gates are PyPy-only. The exception is **regenerating** `tests/golden/numeric_fingerprint.json`,
+which by slice 1's design is a committed **CPython anchor** — regenerating it under PyPy would
+silently redefine the reference the gate exists to hold. That is not a dependency of the repo;
+it is a property of the anchor, and the provenance guard (`meta.implementation`) enforces it.
+The goldens were regenerated on CPython 3.14.3 **before** the switch, with the key delta
+predicted first and verified after (0 moved / 2 removed / 0 added — the two rung-28
+`no_collapse_ratio!raises` keys, from the dead-property deletion).
+
 ---
 
 ## § 5 — SLICE 5 (OPTIONAL, unlocked by the switch): collapse the three-gate policy
 
-At 2:37–2:50 for *everything*, the three-tier policy (bare `pytest` / `--affected` / `--runslow`
-13 min) has little reason to exist — the full gate would plausibly be **no slower than today's fast
-subset**. Stated cautiously on purpose: `CLAUDE.md`'s `~5 min` fast-subset budget is flagged
-**stale-HIGH since the rung-30 fix** in `todo-engine-size-and-speed.md`, so the comparison needs a
-re-measurement on an idle box before it is quoted as a result. That would retire
-`conftest.py`'s slow-tagging, its seed set, and `--affected`'s
+**MEASURED (slice 4, 2026-07-31) — the prediction held and the premise is now solid.** The full
+gate is **167.8 s (2:47)**, inside the 2:37–2:50 predicted here; bare `pytest` is **79.8 s
+(1:20)**. The caution above is discharged: the `~5 min` figure WAS stale-high, and so was the
+`~13 min` full-gate figure — CPython's real full gate was **1047.5 s (17:27)**, corroborated
+independently by its summed call-time ÷ 8 workers ≈ 1022 s. So the old numbers were stale, not
+the runs contaminated. The full gate is now **~2× faster than the fast subset used to be**, which
+is the condition this slice was waiting for.
+
+Retiring the tiering would remove `conftest.py`'s slow-tagging, its seed set, and `--affected`'s
 AST symbol-diff + caller-closure machinery: a large amount of process complexity that exists
 purely because the gate was expensive.
+
+**BUT — slice 4 found this slice is bigger than written.** The duration threshold accounts for
+only **30 of the 224** deselected tests; the other ~194 come from **122 explicit
+`@pytest.mark.slow` decorators across 18 test files**. Deleting `conftest.py`'s machinery would
+therefore leave 87 % of the partition standing. This slice must decide what happens to those
+author-declared markers — and they are a *declaration of intent* that no timing overturns, so
+"they're fast now" is not by itself an argument for removing them.
 
 **Deliberately optional, and deliberately last.** It is a real simplification and the biggest
 second-order prize of the switch, but it deletes machinery that took work to build, and it should

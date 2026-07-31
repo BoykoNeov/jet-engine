@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: 8c26fd4b-a96a-48b1-b4d0-d6638ba4a998
-  modified: 2026-07-28T12:15:44.810Z
+  modified: 2026-07-31T10:33:53.804Z
 ---
 
 When work reaches a green, complete state, commit it and push to `main`
@@ -25,10 +25,10 @@ over SSH).
 [[test-suite-speed-policy]] for how the selector works. In short:
 - `pytest` (fast subset) is for ITERATION only — it deselects the expensive
   `slow` FINDING gates. Never green-commit on it.
-- **`pytest --affected` is the per-rung gate** (~6–16 min). It keeps every fast
-  test and re-enables the slow gates only for the modules the working diff can
-  reach. It self-escalates to the full gate when it cannot reason.
-- **`pytest --runslow` (~22 min) every 3rd rung**, at session end, and whenever
+- **`pytest --affected` is the per-rung gate** (between the other two). It keeps
+  every fast test and re-enables the slow gates only for the modules the working
+  diff can reach. It self-escalates to the full gate when it cannot reason.
+- **`pytest --runslow` (2:47 since the PyPy switch, was ~22 min) every 3rd rung**, at session end, and whenever
   `--affected` escalates. The report header counts rung commits since the last
   full gate and nags when the cadence is due.
 - The bit-for-bit reduce SPINE (`test_reduce_*` / `test_cycle_untouched_*` /

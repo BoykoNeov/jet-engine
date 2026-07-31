@@ -215,26 +215,28 @@ A compact map — the per-rung method/finding detail lives in `docs/rungN-spec.m
   bracket, which no per-rung gate watches — it owns no production code); and
   `test_numeric_fingerprint.py` is the only **ABSOLUTE-value** gate — the reduce spine compares
   two quantities from the SAME run, so it is blind to anything that moves both sides together.
-  Its goldens are a committed **CPython** anchor; never regenerate them under another interpreter.
+  Its goldens are a committed **CPython** anchor; regenerating them needs CPython, never PyPy.
 - `docs/rungN-spec.md` — the derivation, assumptions, concessions and gates for rung N.
   `docs/plans/rungN-anchor-*.md` — that rung's verified anchor data. `docs/plans/` also holds the
   living plan/tasks.
 
 ## Commands
-- Run the model: `python main.py` · Install: `pip install -r requirements.txt`
-- **Iterate: `pytest`** — the FAST subset (~5 min); expensive FINDING gates are `slow`-tagged out.
+- Run the model: `python main.py` · Install: see `requirements.txt` (a PyPy venv — § Stack)
+- **Iterate: `pytest`** — the FAST subset (**1:20**); expensive FINDING gates are `slow`-tagged out.
   The reduce spine (`test_reduce_*`, `test_cycle_untouched_*`, `*_bit_for_bit`) is **NEVER**
   slow-tagged and runs on **every** invocation — that is what makes the two gates below safe.
-- **Ship a rung: `pytest --affected`** (~6–16 min) — the fast subset PLUS the slow gates the diff
-  can reach (AST symbol-diff + caller closure, cumulative since the last full gate); self-escalates
-  to the full gate on a core / module-level change. **The rung green-gate.**
-- **Full gate: `pytest --runslow`** (**~13 min** at rung 66, measured; it varies with load) —
+- **Ship a rung: `pytest --affected`** — the fast subset PLUS the slow gates the diff can reach
+  (AST symbol-diff + caller closure, cumulative since the last full gate); self-escalates to the
+  full gate on a core / module-level change. Strictly between the two. **The rung green-gate.**
+- **Full gate: `pytest --runslow`** (**2:47** at rung 66, PyPy, measured idle) —
   everything. **Every 3rd rung** (the header nags), at session end, and whenever `--affected`
   escalates. ACCEPTED RISK: a regression in an unreached non-spine gate can hide for ≤3 rungs;
   `main.py` is covered by no test.
 - Only the slow gates: `pytest -m slow` · One rung by hand: `python tests/test_rung2.py`
 
-Policy + escalation rules live in `conftest.py` + `pytest.ini` — no test file is edited.
+Policy lives in `conftest.py` + `pytest.ini`; 87% of `slow` is `@pytest.mark.slow` in the tests.
 
 ## Stack
-Python (standard library) + matplotlib for the plot. No other dependencies.
+**PyPy 3.11** in the repo venv `.venv` (`.venv\Scripts\activate`), not CPython — the gate is 6.2×
+faster, and `psutil` is REQUIRED (without it `-n auto` means 16 workers). Install + why:
+`docs/plans/todo-pypy-switch.md`. Otherwise stdlib + matplotlib for the plot.

@@ -1,3 +1,9 @@
+# INTERPRETER: PyPy 3.11 (v7.3.23), not CPython. See CLAUDE.md § Stack and
+# docs/plans/todo-pypy-switch.md for the install path and why the switch was made.
+# Install into a venv built from PyPy:
+#     <pypy>\pypy.exe -m venv .venv
+#     .venv\Scripts\python.exe -m pip install -r requirements.txt
+
 # Runtime — the model + the T-s plot
 matplotlib
 
@@ -5,3 +11,11 @@ matplotlib
 # tests (parallel by default). See conftest.py / CLAUDE.md for the fast/slow run policy.
 pytest
 pytest-xdist
+
+# NOT optional, and not a convenience: xdist counts PHYSICAL cores via psutil and falls back to
+# os.cpu_count() — i.e. LOGICAL cores — when it is absent. On this 8-physical/16-logical box that
+# fallback silently turns `-n auto` into `-n 16`, which was measured (1.30x) and DECLINED because
+# it makes the machine sluggish (docs/plans/todo-engine-size-and-speed.md). CPython's environment
+# happened to carry psutil, so the decline held there by accident; installing it here is what makes
+# `-n auto` mean the same thing after the interpreter switch.
+psutil

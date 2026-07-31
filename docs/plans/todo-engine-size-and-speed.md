@@ -94,8 +94,10 @@ call sites and is on every path from rung 30 up.
 2. ~~`pytest -n auto`~~ — **ALREADY DONE.** `pytest.ini` runs `-n auto --dist load
    --maxschedchunk=1` with LPT ordering from learned durations. There is no parallelism win left
    to take. See the budget below.
-3. **PyPy** — ✅ **MEASURED** (see § Outcome of item 2 below). **5.1–5.3×** on the full gate,
-   zero code change, and — the load-bearing result — **bit-identical trajectories**.
+3. **PyPy** — ✅ **ADOPTED 2026-07-31** (§ Outcome of item 2 below; the switch itself, its
+   validation and its install path are `docs/plans/todo-pypy-switch.md`). **5.1–5.3×** on the full
+   gate, zero model change. The **bit-identical trajectories** result that licensed it is TRUE BUT
+   SCOPED — read the ⚠ scope correction below before quoting it.
 4. **Rust/PyO3 on `_sonic_throat` alone** — justified only after (1); the kernel is ~40 lines,
    so this is a targeted extension, not a rewrite.
 
@@ -176,9 +178,17 @@ Left open deliberately.
 
 ## Outcome of item 2 — measured, not projected
 
-PyPy 3.11 (v7.3.23) installed **outside the repo** at `M:\claud_projects\temp\pypy`, with its own
-`cache_dir` so the two interpreters cannot poison each other's learned durations. **Not adopted** —
-nothing in the tree points at it; `requirements.txt` and `pytest.ini` are untouched.
+PyPy 3.11 (v7.3.23) was installed **outside the repo** for this measurement, with its own
+`cache_dir` so the two interpreters could not poison each other's learned durations.
+
+> **ADOPTED 2026-07-31.** "Not adopted — nothing in the tree points at it" is no longer true and
+> the sentence is retired here rather than left to mislead. PyPy now lives at
+> `M:\claud_projects\tools\pypy3.11-v7.3.23-win64` (a durable location — the measurement copy sat
+> under `temp\`, which is the regenerable area), the repo runs on a venv built from it, and
+> `requirements.txt` / `CLAUDE.md` name it. The split-cache footgun below is dissolved rather than
+> managed: there is only one interpreter now. **`docs/plans/todo-pypy-switch.md` is the record** —
+> what was validated before the switch (8 042 pinned CPython values), and the one thing that still
+> requires CPython (regenerating those goldens, a maintenance procedure, never a runtime need).
 
 The first comparison (PyPy 1:55 vs CPython 13:17 ≈ 6.9×) was **confounded**: PyPy's `-n auto`
 resolved to 16 **logical** CPUs, CPython's to 8 **physical** ones. Re-run at matched worker counts:
@@ -250,6 +260,16 @@ report header prints a **WARNING** when the drop did not take.
 bare PyPy gate errors at collection (953 passed, 1 error) until `pip install matplotlib` is run into
 PyPy — my earlier claim that "no test imports matplotlib" was wrong, it enters one level down.
 (b) The learned-duration cache is per-interpreter and must not be shared.
+
+**A THIRD friction, found only when the switch was actually made (2026-07-31), and it is not small
+— it would have silently reversed a decision recorded on this very page.** xdist counts PHYSICAL
+cores through `psutil` and falls back to `os.cpu_count()` — LOGICAL cores — when psutil is absent.
+CPython's environment happened to carry psutil; the PyPy one did not. So `-n auto` meant **8** under
+CPython and **16** under PyPy — which is exactly the `-n 16` measured above and **declined** because
+it makes the box sluggish. That is also the real explanation for the "confounded" first comparison
+recorded above: it was not a quirk of the measurement, it was a missing package, and left alone it
+would have shipped as the default. `psutil` is now a hard entry in `requirements.txt`. **The general
+lesson: `-n auto` is not a constant — it is a function of what is installed.**
 
 **Combined with item 1:** the full gate went **28:18 → 1:55, ~14.8×**, with no algorithmic change
 beyond one closed-form root and no change to any anchored number.

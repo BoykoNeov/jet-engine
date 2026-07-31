@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 1c258a79-b4c7-4891-ab3d-022937f8d1a3
-  modified: 2026-07-30T20:27:11.127Z
+  modified: 2026-07-31T10:32:35.340Z
 ---
 
 The suite was **49 min serial** → **~5 min routine / ~22–25 min full** (2026-07-21), then the
@@ -23,13 +23,23 @@ were measured and both worked, at 973 tests (see [[perf-sonic-throat-and-pypy]])
 Full gate is now **28:18 → 1:55 combined (~14.8×)**. Generalise: *"the schedule is packed"* bounds
 scheduling only — it says nothing about the work inside each test or the machine running it.
 
-**The three gates** (see [[always-commit-and-push]] for which one gates a commit):
-- `pytest` — FAST subset, ~5 min. Slow-tagged FINDING gates deselected. ITERATION ONLY.
-- `pytest --affected` — ~6–16 min. **The per-rung ship gate.** Every fast test PLUS the slow
-  gates of the modules the working diff can reach. Strict superset of `pytest`, strict subset
-  of `--runslow`.
-- `pytest --runslow` — ~22–25 min. Everything. **Every 3rd rung** (the report header nags), at
-  session end, and whenever `--affected` escalates.
+**The three gates** (see [[always-commit-and-push]] for which one gates a commit). **Timings
+re-measured 2026-07-31 after the PyPy switch — every figure below used to be 5–6× larger:**
+- `pytest` — FAST subset, **1:20**. Slow-tagged FINDING gates deselected. ITERATION ONLY.
+- `pytest --affected` — **strictly between the other two.** The per-rung ship gate. Every fast
+  test PLUS the slow gates of the modules the working diff can reach.
+- `pytest --runslow` — **2:47**, 1002 tests. Everything. **Every 3rd rung** (the report header
+  nags), at session end, and whenever `--affected` escalates.
+
+**⚠ CORRECTED 2026-07-31 — "no test file is edited" is true of the POLICY and misleading about
+the PARTITION.** Bare `pytest` deselects 224 tests, but `conftest.py`'s learned-duration route
+accounts for only **30**. The other ~194 come from **122 explicit `@pytest.mark.slow` decorators
+across 18 test files**. So the split is **87 % hand-declared by rung authors, 13 % measured**.
+`SLOW_SECONDS` is a *backstop for gates nobody marked*, not the policy — do not read a change to
+it as re-cutting the suite. I inherited the wrong model from the plan and only caught it because
+the closing gate's deselected count (224) disagreed with the prediction (30). **When a count you
+predicted and a count you measured disagree, the model is wrong — find the second mechanism
+before shipping.**
 
 **How `--affected` decides** (the load-bearing design choice): rung commits are **~99 % ADDITIVE**
 to `engine.py` (+404/−2 for rung 57), so `git diff` answers "what existing code moved?" directly

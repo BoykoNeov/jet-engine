@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 9815da7f-03c3-438c-b234-613c89605708
-  modified: 2026-07-31T06:31:03.587Z
+  modified: 2026-07-31T10:32:19.214Z
 ---
 
 Asked whether `engine.py` should be split and whether a **Rust rewrite** would buy speed. Both
@@ -23,10 +23,11 @@ fast the language computes it.** Rungs 31–66 all run CPG, so this is the whole
 - full gate `--runslow`: 28:18 → 13:17 (**2.15×**), CPython `-n 8`
 - PyPy 3.11 on top: **5.08× at `-n 8`, 5.32× at `-n 16`** — combined **28:18 → 1:55, ~14.8×**
 
-**PyPy is NOT adopted** — it lives at `M:\claud_projects\temp\pypy` with its own `cache_dir`;
-`requirements.txt`/`pytest.ini` untouched. Preconditions if it ever is: matplotlib must be
-installed into it (`test_rung28` → `main` → matplotlib, one level down — I wrongly claimed no test
-imports it), and the learned-duration cache must not be shared between interpreters.
+**PyPy WAS ADOPTED on 2026-07-31** — this paragraph used to say "NOT adopted" and is corrected.
+It now lives at `M:\claud_projects\tools\pypy3.11-v7.3.23-win64` with the repo venv `.venv` built
+from it; `requirements.txt` + `CLAUDE.md` § Stack document it. The split-`cache_dir` precaution
+dissolved (there is only one interpreter now). Both stated preconditions were met: matplotlib is
+installed under PyPy and `main.py` renders. See [[pypy-switch-shipped]].
 
 **⚠ CORRECTED 2026-07-31 — "BIT-IDENTICAL across interpreters" is TRUE but SCOPED, and I stated
 it here without the scope.** The evidence was ONE 341-point rung-66 march, which is a CPG /
