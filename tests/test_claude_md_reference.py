@@ -113,7 +113,18 @@ _CLAUDE_MD = os.path.join(_HERE, os.pardir, "CLAUDE.md")
 # clause was merged into the valve/stator one rather than merely deleted, so the refund is ~40 B
 # against ~560 B of growth. The three no-grow sites (scope narration, engine.py method
 # inventory, per-seam BUILT list) were checked first and only the last grew, by one name.
-MAX_BYTES = 35_760
+# Bumped at rung 76 (36,430 B), the same shape as 67-75: ONE table row at 348 B (inside the
+# per-row rule), its section Layout ladder entry, and its name in the BUILT list. PAID FOR
+# properly this time and not merely in part: rung 76 CLOSES the "fuel-dependent cap" clause of
+# the live shortlist, and the whole "Rungs 69-76's seams" entry was rewritten ~25 B SHORTER than
+# what it replaced despite naming two new seams (a sensed cap on a MASKED leg, and the 1/(1-c)
+# gain every set-point solve carries) and upgrading the n=4 verdict with rung 76's mechanism.
+# The section Layout ladder entry was also written short (~140 B against the ~330 B first draft)
+# once this guard tripped -- which is the guard doing exactly its job on a first draft rather
+# than on an essay. The three no-grow sites (scope narration, engine.py method inventory,
+# per-seam BUILT list) were checked first and only the last grew, by one name. ~83 B of headroom
+# on purpose, so the next rung trips it again.
+MAX_BYTES = 36_430
 MAX_LINES = 300
 
 

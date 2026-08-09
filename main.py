@@ -29,6 +29,7 @@ from turbojet.engine import (  # noqa: E402
     FullSplitTransient, SharedActuatorTransient, AppliedReferenceTransient,
     DemandCoordinateTransient,
     AntiWindupTransient,
+    SensedCapTransient,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -5925,6 +5926,112 @@ def print_anti_windup_table(flight):
     print("    See docs/rung75-spec.md.")
 
 
+def print_sensed_cap_table(flight):
+    """Rung-76 payoff: THE FUEL-DEPENDENT CAP -- rung 73 s 11's second seam, deferred by rungs
+    73, 74 AND 75.
+
+    The panel is built around the sentence a reader of rungs 72-75 would carry in and get
+    wrong: *min-select masks whatever you add, so everything lands on the masked leg* -- true
+    of three consecutive rungs, and false the moment the thing added is not in a leg's LAW."""
+    print("\nTHE FUEL-DEPENDENT CAP (rung 76): a device in a leg's LAW reaches only the MASKED")
+    print("leg; a device in the PLANT THE LEGS READ reaches only the AUTHORITATIVE one.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR = 0.55
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    LO, HI, B, TMAX, MARGIN = 1000.0, 1400.0, 0.10, 1200.0, 0.10
+    PHI_JAC, PHI_BOTH = 0.80, 0.76
+
+    def rig(phi_lim, inc=False):
+        sm = phi_lim / FLOOR - 1.0
+        return SensedCapTransient(
+            design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0,
+            bleed_lim=BleedLimiter.from_margin(LP, B, sm, tau=0.05),
+            stator_inc=(StatorIncidenceLimiter.from_margin(LP, 0.20, sm, tau=0.05) if inc
+                        else None),
+            stator_lim=(None if inc else StatorLimiter.from_margin(LP, 0.20, sm, tau=0.05)))
+
+    print("\n  THE TWO READINGS OF ONE CAP. Rung 48's leg states its law as an inequality ON")
+    print("  THE FUEL, and a real limiter EVALUATES the right-hand side from the pt3 it SENSES:")
+    print("      solve   cap = w*  with  w* = (1+m)*kappa(n_H(w*))*pt3(w*)   <- rungs 48-75")
+    print("      sensed  cap(w) = (1+m)*kappa(n_H(w))*pt3(w)  at w = mf_app  <- AS WRITTEN")
+    print("  The set-point solve was a MODELLING CHOICE, not the schedule. This rung adds NO")
+    print("  constant at all -- `margin` is rung 48's own, and kappa is still derived.")
+
+    t = rig(PHI_JAC)
+    g = t.cap_gains(flight, LO, HI, TMAX, phi_lim=PHI_JAC, margin=MARGIN)
+    live = {k: c for k, c in g["cells"].items() if c.get("n")}
+
+    print("\n  THE AUTHORITATIVE DIAGONAL -- the one entry rungs 73, 74 AND 75 each report as")
+    print("  *moved 0.0 relative*, because min-select masks a LAW but cannot mask a PLANT:")
+    print("    %-22s %-8s  %-11s %-11s %-9s %s"
+          % ("cell", "c", "solve", "sensed", "moved", "vs (c-1)/tau"))
+    for k in sorted(live):
+        c = live[k]
+        print("    %-22s %-8.4f  %-11.4f %-11.4f %-9.4f %.1e"
+              % (k, c["c"][0], c["auth_diag0"][0], c["auth_diag"][0],
+                 c["auth_moved"], c["auth_err"]))
+    print("  `c = d(cap)/dw` is MEASURED, not derived -- a bracketing root-finder converges on")
+    print("  a sign change whether or not G is monotone, so the shipped solve working buys")
+    print("  *a root exists*, never c < 1.")
+
+    print("\n  AND THE MASKED LEG IS UNTOUCHED, so the RANK does not move -- a FIFTH running:")
+    print("    %-22s %-14s %-12s %s" % ("cell", "masked moved", "mask_leak", "zeros"))
+    for k in sorted(live):
+        c = live[k]
+        print("    %-22s %-14.1e %-12.1e %d -> %d"
+              % (k, c["masked_moved"], c["mask_leak"], c["zeros0"][0], c["zeros"][0]))
+    print("  min() is FLAT in what the masked leg holds, so d(mf_app)/dw_masked = 0. The same")
+    print("  flatness that gives rungs 72-76 their triangularity is what confines THIS rung's")
+    print("  device to the authoritative leg -- and rung 75's to the masked one.")
+
+    sg = t.solve_gain(flight, LO, HI, TMAX, phi_lim=PHI_JAC, margin=MARGIN)
+    print("\n  AND THE SET-POINT SOLVE WAS NEVER A RELOCATION OF THE CAP -- IT IS A GAIN ON IT.")
+    print("  Differentiating the fixed point cap = cap_sensed(cap, q) in one line gives")
+    print("  d(cap_solve)/dq = (d(cap_sensed)/dq)/(1 - c), so a limiter written as a SOLVE is a")
+    print("  STIFFER limiter than the schedule it claims to implement:")
+    print("    the two laws agree at the solve's own answer to   %.1e  (machine zero)"
+          % sg["fixed_point"])
+    print("    measured amplification                            %.5f .. %.5f"
+          % (sg["gain"][0], sg["gain"][1]))
+    print("    against 1/(1 - c), per point                      %.1e" % sg["gain_err"])
+    print("  This was NOT predicted. It was written down to explain why det J's ratio misses")
+    print("  1-c by 0.7%, and it is the strongest number in the rung.")
+
+    b = rig(PHI_BOTH).cap_bill(flight, LO, HI, TMAX, phi_lim=PHI_BOTH, margin=MARGIN)
+    print("\n  THE BILL. During the ramp mf_app < cap_solve, so the sensed cap is the LOWER one")
+    print("  and the leg cuts HARDER -- rung 48's solve has been granting the engine the fuel")
+    print("  it would be self-consistent WITH, which is more than its own schedule allows:")
+    print("    peak Tt4    %.2f -> %.2f K   (%+.2f)"
+          % (b["max_Tt4"][0], b["max_Tt4"][1], b["max_Tt4"][1] - b["max_Tt4"][0]))
+    print("    min phi_lp  %.6f -> %.6f  (%+.2e)"
+          % (b["min_phi"][0], b["min_phi"][1], b["min_phi"][1] - b["min_phi"][0]))
+    print("    fuel burnt  %+.4f%%   cuts harder over the WHOLE ramp: %s"
+          % (100.0 * (b["fuel_int"][1] / b["fuel_int"][0] - 1.0), b["cuts_harder"]))
+
+    print("\n  SCOPE: the knob reaches the ACCEL branch of _cap_fuel and NOTHING else -- the phi")
+    print("    leg and the governor are floors on STATES and have no sensed form, so the")
+    print("    governor's whole row is bit-identical in every cell (measured 0.0). `margin` is")
+    print("    imposed (rung 48's own) and every structural entry is checked at three margins;")
+    print("    the accel leg had never been armed in this family, so NOTHING here is")
+    print("    differenced against a quoted rung-73/74/75 number -- the 2x2 is re-measured on")
+    print("    one rig and rung 75's headline is REPRODUCED rather than cited. The masked-leg")
+    print("    cell is UNREACHED and rung 48 says why: its leg is feedforward and fires early,")
+    print("    the governor is feedback and fires late, so the leg that binds the cap is also")
+    print("    the leg that holds the actuator (24/24 combinations). det J's ratio is 1-c only")
+    print("    to 0.7%, and section 3 names the mechanism rather than tightening a tolerance.")
+    print("    See docs/rung76-spec.md.")
+
 def main():
     # The tables carry unicode (Δ, ·, ≡, ≈); force UTF-8 so `python main.py` renders
     # on any console (a stock Windows cp1252 console would otherwise crash on them).
@@ -6081,6 +6188,7 @@ def main():
     print_applied_reference_table(FLIGHT)
     print_demand_coordinate_table(FLIGHT)
     print_anti_windup_table(FLIGHT)
+    print_sensed_cap_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

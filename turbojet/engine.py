@@ -17583,17 +17583,33 @@ class DemandCoordinateTransient(AppliedReferenceTransient):
         return self._cap_free(
             G, mf_sched, lambda: self._topping_fuel(flight, a, h, Tt4_max, mf_sched))
 
+    @staticmethod
+    def _sensed_cap(flight, a, h, accel, mf_app):
+        """RUNG 76's ONE HOOK, and on THIS rung it returns `None` -- which is rung 73 s 6's own
+        concession stated as code. EVERY cap in this family is a SET-POINT SOLVE, so it is a
+        function of the STATE alone and `d(cap)/d(mf) = 0`; that is what collapses rung 73's
+        applied reference from a continuum to three readings."""
+        return None
+
     def _cap_fuel(self, flight: "FlightCondition", a: float, h: float, mf_sched: float,
-                  accel, surge) -> float:
+                  accel, surge, mf_app=None) -> float:
         """RUNG 52's leg as a DEMAND -- the MINIMUM of its (up to two) unfloored set points,
-        which is min-select one level down and is rung 48/49's own `min(caps)`."""
+        which is min-select one level down and is rung 48/49's own `min(caps)`.
+
+        `mf_app` is RUNG 76's argument and is ignored here: only a cap that DEPENDS on the fuel
+        it is asked about can read it, and this rung has none. The phi leg never reads it in
+        any rung -- a floor on a state is not a formula for a fuel (rung 76 s 0.1)."""
         caps = []
         if accel is not None:
-            def Ga(w):
-                i = self._instant_fuel(flight, a, h, w)
-                return w - accel.cap(i["n_hp"], i["pt4"] / self.pi_b)
-            caps.append(self._cap_free(
-                Ga, mf_sched, lambda: self._sched_fuel(flight, a, h, mf_sched, accel)))
+            sensed = self._sensed_cap(flight, a, h, accel, mf_app)
+            if sensed is not None:
+                caps.append(sensed)
+            else:
+                def Ga(w):
+                    i = self._instant_fuel(flight, a, h, w)
+                    return w - accel.cap(i["n_hp"], i["pt4"] / self.pi_b)
+                caps.append(self._cap_free(
+                    Ga, mf_sched, lambda: self._sched_fuel(flight, a, h, mf_sched, accel)))
         if surge is not None:
             k = surge.key()
 
@@ -17797,10 +17813,10 @@ class DemandCoordinateTransient(AppliedReferenceTransient):
             finally:
                 self._b_state = None
 
-        def cap_fuel(a, h, q, v, mf_sched):
+        def cap_fuel(a, h, q, v, mf_sched, mf_app):
             self._b_state, self._v_state = q, v
             try:
-                return self._cap_fuel(flight, a, h, mf_sched, accel, surge)
+                return self._cap_fuel(flight, a, h, mf_sched, accel, surge, mf_app=mf_app)
             finally:
                 self._b_state, self._v_state = None, None
 
@@ -17814,7 +17830,7 @@ class DemandCoordinateTransient(AppliedReferenceTransient):
         def der(a, h, wf, wr, q, v, s):
             mf_sched = float(fuel_schedule(s))
             mf_app = self._applied_demand(wf, wr, mf_sched)
-            cf = self._demand_target(cap_fuel(a, h, q, v, mf_sched), mf_sched)
+            cf = self._demand_target(cap_fuel(a, h, q, v, mf_sched, mf_app), mf_sched)
             cr = self._demand_target(cap_gov(a, h, q, v, mf_sched), mf_sched)
             tf = self._demand_reference(cf, wf, mf_app)
             tr = self._demand_reference(cr, wr, mf_app)
@@ -17874,7 +17890,7 @@ class DemandCoordinateTransient(AppliedReferenceTransient):
         def step_f(wf, wr, q, v):
             ma = self._applied_demand(wf, wr, mf0)
             tgt = self._demand_reference(
-                self._demand_target(cap_fuel(a, h, q, v, mf0), mf0), wf, ma)
+                self._demand_target(cap_fuel(a, h, q, v, mf0, ma), mf0), wf, ma)
             return _stop(_relax(tgt, wf, ma, self._demand_tau(lag, tgt, wf))), wr, q, v
 
         def step_r(wf, wr, q, v):
@@ -18083,13 +18099,14 @@ class DemandCoordinateTransient(AppliedReferenceTransient):
         base_close = super(LimitedBleedTransient, self)._close_fuel
 
         def F(wf, wr, q, v):
+            ma = self._applied_demand(wf, wr, mf_sched)
             self._b_state, self._v_state = q, v
             try:
-                cap = self._cap_fuel(flight, a, h, mf_sched, accel, surge)
+                cap = self._cap_fuel(flight, a, h, mf_sched, accel, surge, mf_app=ma)
             finally:
                 self._b_state, self._v_state = None, None
             tgt = self._demand_target(cap, mf_sched)
-            return (self._demand_reference(tgt, wf, self._applied_demand(wf, wr, mf_sched)),
+            return (self._demand_reference(tgt, wf, ma),
                     ("riding" if cap < mf_sched else "dormant"))
 
         def R(wf, wr, q, v):
@@ -18694,12 +18711,14 @@ class AntiWindupTransient(DemandCoordinateTransient):
             return 0.0 if tau_t is None else (mf_app - w) / tau_t
 
         def F(wf, wr, q, v):
+            # RUNG 76: `ma` MOVES ABOVE THE CAP CALL, because a sensed cap is a function of it.
+            # Under `solve` the argument is ignored and every float here is rung 75's.
+            ma = self._applied_demand(wf, wr, mf_sched)
             self._b_state, self._v_state = q, v
             try:
-                cap = self._cap_fuel(flight, a, h, mf_sched, accel, surge)
+                cap = self._cap_fuel(flight, a, h, mf_sched, accel, surge, mf_app=ma)
             finally:
                 self._b_state, self._v_state = None, None
-            ma = self._applied_demand(wf, wr, mf_sched)
             tgt = self._demand_reference(self._demand_target(cap, mf_sched), wf, ma)
             return ((tgt - wf) / tau_f + _track(wf, ma),
                     "riding" if cap < mf_sched else "dormant")
@@ -19089,3 +19108,481 @@ class AntiWindupTransient(DemandCoordinateTransient):
                     handover_vs_accident=((min(hs), max(hs)), hand(acc)) if hs else None,
                     Tt4_monotone=all(x["max_Tt4"] <= y["max_Tt4"]
                                      for x, y in zip(rows, rows[1:])))
+
+
+# ==========================================================================================
+# RUNG 76 — THE FUEL-DEPENDENT CAP
+# ==========================================================================================
+
+class SensedCapTransient(AntiWindupTransient):
+    """RUNG 76. Rung 73 s 11's second seam, deferred by rungs 73, 74 AND 75: **a leg whose cap
+    DEPENDS ON THE FUEL IT IS ASKED ABOUT** (docs/rung76-spec.md).
+
+    Every cap in this family is a SET-POINT SOLVE -- `_cap_gov` returns the `w` at which
+    `Tt4(w) = Tt4_max`, `_cap_fuel`'s phi branch the `w` at which `phi(w) = phi_lim` -- so it is
+    a function of the STATE alone, `d(cap)/d(mf) = 0`, and rung 73's `{0,1}` follows. Rung 48's
+    `Wf/pt3` leg is the ONE whose law is not a solve. Its own docstring states it as an
+    inequality ON THE FUEL:
+
+        Wf  <=  (1 + margin) * kappa_ss(n_H) * pt3
+
+    and a real `Wf/pt3` limiter EVALUATES that right-hand side from the delivery pressure it
+    SENSES -- the pt3 produced by the fuel actually burning. `_sched_fuel` instead solves the
+    implicit fixed point `w* = cap(w*)`, i.e. it asks what fuel would be self-consistent with
+    the pt3 THAT fuel would itself produce. **That is a modelling choice, not the schedule.**
+
+        solve    cap = w*  with  w* = (1+margin)*kappa(n_H(w*))*pt3(w*)   -- RUNG 48, shipped
+        sensed   cap(w) = (1+margin)*kappa(n_H(w))*pt3(w)  at  w = mf_app -- AS WRITTEN
+
+    THE FIFTH DECLARED KNOB, beside `_share_law` (72), `_ref_law` (73), `_lag_coord` (74) and
+    `_windup_law` (75) -- and the FIRST that adds NO CONSTANT AT ALL. `margin` is rung 48's own
+    already-imposed scalar and kappa's shape is still derived from the plant's own equilibria.
+
+    HEADLINE: **A DEVICE IN A LEG'S LAW REACHES ONLY THE MASKED LEG; A DEVICE IN THE PLANT THE
+    LEGS READ REACHES ONLY THE AUTHORITATIVE ONE.** Rung 75's back-calculation sits in a leg's
+    own law, which min-select MASKS, so everything it did it did to the masked leg. This sits
+    in the plant BOTH legs read through `mf_app`, which min-select CANNOT mask because the
+    plant is shared -- so it writes on the AUTHORITATIVE fuel diagonal, the one entry rungs
+    73/74/75 each measure as *moved 0.0 relative*. And `n_live` is STILL <= 3, a FIFTH time,
+    because the obstruction is `min`'s flatness in the MASKED state -- which is neither a law
+    nor a plant.
+
+    ITS DOMAIN IS DECLARED, NOT CONCEDED: `_cap_law` reaches the ACCEL branch of `_cap_fuel`
+    and nothing else. The phi leg and the governor have no sensed form in any rung -- a floor
+    on a STATE is not a formula for a FUEL.
+
+    `clip x sensed` is REFUSED at `integrate_fuel`: the clip coordinate dispatches out of this
+    ladder before `_cap_fuel` is ever called, so such a march would silently be rung 73 and be
+    reported as this rung (rung 75 s 0.1's refusal, one knob over).
+
+    Usage:
+        t = SensedCapTransient(design, FLIGHT, 1.0, map_lp=..., map_hp=..., bleed_lim=bl)
+        t._lag_coord, t._cap_law = "demand", "sensed"
+        t.cap_gains(FLIGHT, 1000., 1400., 1200.)   # s 1: the 2x2, per AUTHORITY cell
+        t.cap_bill(FLIGHT, 1000., 1400., 1200.)    # s 2: the path moves, the destination stays
+
+    THE REDUCE: `_cap_law = 'solve'` is rung 75 with the hook's branch not taken -- the same
+    march, the same floats, on the accel-armed plant this ladder has always supported and never
+    marched. Gated non-vacuous on rung 73's discipline: the same machine under `sensed` must
+    DIFFER.
+    """
+
+    _cap_law = "solve"
+
+    # --- the knob, in ONE place ---------------------------------------------------------------
+
+    def _sensed_cap(self, flight, a, h, accel, mf_app):
+        """RUNG 48's schedule AS WRITTEN, evaluated at the fuel actually burning. `None` is
+        rung 75 EXACTLY -- the caller then takes the shipped set-point solve and no float in
+        this family moves."""
+        if self._cap_law != "sensed":
+            return None
+        assert mf_app is not None, (
+            "rung-76: a SENSED cap is a function of the fuel it is asked about, and this call "
+            "site did not supply one. `mf_app` is threaded from `_applied_demand` at every "
+            "site that can have it; a `None` here is a THREADING bug, and falling back to the "
+            "solve would report rung 75 as this rung (anchor s 3's second refutation).")
+        i = self._instant_fuel(flight, a, h, max(1e-9, mf_app))
+        return accel.cap(i["n_hp"], i["pt4"] / self.pi_b)
+
+    def integrate_fuel(self, flight: "FlightCondition", fuel_schedule, nu0,
+                       s_end: float, ds: float, freeze=None, Tt4_max=None,
+                       tau_gov=None, accel=None, surge=None, s_off=None,
+                       tau_rel=None, lag=None) -> list:
+        assert self._cap_law in ("solve", "sensed"), (
+            "rung-76: the CAP LAW is this rung's subject and it is DECLARED; got "
+            f"{self._cap_law!r}. 'solve' is rung 48's set-point solve (rungs 48-75); 'sensed' "
+            "is the schedule as written, evaluated at the applied fuel.")
+        if self._cap_law == "sensed":
+            assert self._lag_coord != "clip", (
+                "rung-76: `sensed` is REFUSED in the CLIP coordinate. `clip` dispatches out of "
+                "this ladder before `_cap_fuel` is ever called, so the march would silently be "
+                "rung 73 and be reported as this rung -- rung 75 s 0.1's refusal, one knob "
+                f"over. Got _lag_coord = {self._lag_coord!r}.")
+            assert accel is not None, (
+                "rung-76: `sensed` re-reads rung 48's `Wf/pt3` schedule, so there must BE one. "
+                "The phi leg and the governor have no sensed form in any rung -- a floor on a "
+                "STATE is not a formula for a FUEL (spec s 0.1). Pass `accel=`.")
+        return super().integrate_fuel(
+            flight, fuel_schedule, nu0, s_end, ds, freeze=freeze, Tt4_max=Tt4_max,
+            tau_gov=tau_gov, accel=accel, surge=surge, s_off=s_off, tau_rel=tau_rel, lag=lag)
+
+    # --- the five knobs, carried: the FOURTEENTH instance of rungs 61-75's trap ----------------
+
+    def at_lever(self, vsv_lp: float = 0.0, vsv_hp: float = 0.0, vsv_sched_lp=None,
+                 vsv_sched_hp=None, bleed: float = 0.0, bleed_sched=None,
+                 bleed_lim=None, stator_lim=None, stator_inc=None) -> "SensedCapTransient":
+        """THE FOURTEENTH INSTANCE, now with FIVE knobs to drop instead of four."""
+        de, fd, md, rho, lpd = self._ctor
+        m = SensedCapTransient(
+            de, fd, md, map_lp=self.map_lp_design, map_hp=self.map_hp_design, rho=rho,
+            vsv_lp=vsv_lp, vsv_hp=vsv_hp, vsv_sched_lp=vsv_sched_lp,
+            vsv_sched_hp=vsv_sched_hp, bleed=bleed, bleed_sched=bleed_sched,
+            bleed_lim=bleed_lim, stator_lim=stator_lim, stator_inc=stator_inc,
+            lp_disabled=lpd)
+        m._ref_law, m._lag_coord = self._ref_law, self._lag_coord
+        m._windup_law, m._tau_t, m._ic_cap = self._windup_law, self._tau_t, self._ic_cap
+        m._cap_law = self._cap_law
+        return m
+
+    def _shared_rig(self, sm, tau, tau_s, v_max, Tt4_max, tau_att=0.05, tau_rel=0.15,
+                    inc=False, fuel=True, valve=True, stator=True, gov=True):
+        """Rung 75's rig with the CAP LAW carried too -- a fifth knob on the same leak."""
+        m, surge, lag = super()._shared_rig(sm, tau, tau_s, v_max, Tt4_max, tau_att=tau_att,
+                                            tau_rel=tau_rel, inc=inc, fuel=fuel, valve=valve,
+                                            stator=stator, gov=gov)
+        m._cap_law = self._cap_law
+        return m, surge, lag
+
+    def _cap_march(self, flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle, ds,
+                   v_max, inc, coord, ref, law, tau_t, cap_law, accel, nu0=None):
+        """One rig, one march, under FIVE named knobs AND an armed accel leg -- rung 75's
+        `_windup_march` with the schedule passed through, which is the one thing this family's
+        marches have never done."""
+        tau_f, tau_gov, tau_q, tau_s = taus
+        m, surge, lag = self._shared_rig(sm, tau_q, tau_s, v_max, Tt4_max,
+                                         tau_att=tau_f, tau_rel=3.0 * tau_f, inc=inc)
+        m._lag_coord, m._ref_law = coord, ref
+        m._windup_law, m._tau_t, m._ic_cap = law, tau_t, self._ic_cap
+        m._cap_law = cap_law
+        traj = m._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds, nu0=nu0,
+                               Tt4_max=Tt4_max, tau_gov=tau_gov, accel=accel, surge=surge,
+                               lag=lag)[0]
+        return m, surge, lag, traj
+
+    def _with_cap(self, law, fn, *a, **kw):
+        """Run a reader under a named CAP LAW, restored in a `finally` -- rung 62's reason,
+        TENTH reload."""
+        prev = self._cap_law
+        self._cap_law = law
+        try:
+            return fn(*a, **kw)
+        finally:
+            self._cap_law = prev
+
+    def accel_for(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float, sm: float,
+                  Tt4_max: float, taus, v_max: float, inc: bool, margin: float):
+        """Rung 48's schedule built on THE RIG THAT WILL MARCH IT. `kappa_ss` is read off the
+        plant's OWN equilibria, so a schedule built on `self` and marched on `_shared_rig`'s
+        machine would be a schedule for a different engine -- the FOURTEENTH instance of rungs
+        61-75's trap wearing its other face (the knob that is not carried is here a TABLE)."""
+        m = self._shared_rig(sm, taus[2], taus[3], v_max, Tt4_max,
+                             tau_att=taus[0], tau_rel=3.0 * taus[0], inc=inc)[0]
+        return m.accel_schedule(flight, Tt4_lo, Tt4_hi, margin)
+
+    def _c_at(self, flight, a, h, accel, w, q, v, rel=1e-6):
+        """`c = d(cap_sensed)/dw` AT A POINT -- the one number this whole rung rests on, and it
+        is MEASURED. It is NOT implied by the shipped bracket working: a bracketing root-finder
+        converges on a sign change whether or not `G = w - cap(w)` is monotone, so
+        `_sched_fuel` bracketing buys *a root exists*, never `G' > 0` (anchor s 0.3)."""
+        dw = rel * max(w, 1e-9)
+        self._b_state, self._v_state = q, v
+        try:
+            def cap(x):
+                i = self._instant_fuel(flight, a, h, x)
+                return accel.cap(i["n_hp"], i["pt4"] / self.pi_b)
+            return (cap(w + dw) - cap(w - dw)) / (2.0 * dw)
+        finally:
+            self._b_state, self._v_state = None, None
+
+    # --- s 1: THE AUTHORITATIVE DIAGONAL, WHICH NOTHING IN THIS FAMILY HAS EVER MOVED ---------
+
+    def _cap_rows(self, flight, sm, ref, law, tau_t, taus, inc, Tt4_lo, Tt4_hi, Tt4_max,
+                  r, s_settle, ds, v_max, accel, every):
+        """`sensed` against `solve` AT THE SAME STATES, both through `_rhs_laws`.
+
+        THE STATES ARE THE CLIP PLANT'S AT THE INHERITED FLOOR -- rung 74 s 1.3 / rung 75
+        s 1.2's disclosure, inherited word for word and for its own reason. AND THEY ARE READ
+        UNDER `solve`, necessarily: `clip x sensed` is refused. So the difference measured here
+        is PURELY the law at ONE state, which is what a Jacobian comparison has to be.
+
+        The RHS reader, never `_jac4` -- rung 75 s 1.1's reason survives one knob over, and
+        gains a second: a sensed cap is not part of any leg's TARGET either. `_jac4` would
+        report both fuel diagonals at `-1/tau_i` by construction and refute this rung having
+        measured nothing."""
+        # THE BASE MARCH CARRIES NEITHER DEVICE. Rung 75 refuses `clip x track` outright, so
+        # the states can only come from a `none` clip march -- which is rung 75's own
+        # `_windup_rows` discipline, and it is the right one for a second reason: BOTH laws
+        # are then applied in the READER, at one state, and neither can move the trajectory
+        # it is read on.
+        m, surge, lag, traj = self._cap_march(
+            flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle, ds, v_max, inc,
+            "clip", ref, "none", None, "solve", accel)
+        m._lag_coord = "demand"
+        pts = m._riding4(traj, m.bleed_lim.b_max)
+        rows = []
+        for p in pts[::every]:
+            tau_f = lag.tau(p["required_fuel"], p["g_fuel"])
+            mf_sched = p["mf_sched"]
+            wf = p["w_fuel"] if "w_fuel" in p else mf_sched - p["g_fuel"]
+            wr = p["w_gov"] if "w_gov" in p else mf_sched - p["g_gov"]
+            ma = m._applied_demand(wf, wr, mf_sched)
+            def read(cl):
+                return m._with_windup(law, tau_t, m._with_cap, cl, m._rhs_gains_at,
+                                      flight, p, accel, surge, Tt4_max, tau_f, taus[1])
+            g = read("sensed")
+            if not g.get("interior") or g["masked"] is None:
+                continue
+            g0 = read("solve")
+            if not g0.get("interior"):
+                continue
+            c = m._c_at(flight, p["nu_lp"], p["nu_hp"], accel, ma, p["b"], p["v"])
+            # DOES THE RE-READ LEG SET THE CAP AT ALL? `_cap_fuel` is `min(accel, phi)` --
+            # min-select ONE LEVEL DOWN (rung 74's own phrase) -- and the phi leg has no
+            # sensed form. So wherever the phi cap is the lower one this knob is INERT, and
+            # an aggregate that pooled those points would report a real law as broken.
+            #
+            # AND IT MUST BIND UNDER **BOTH** LAWS. `_cap_fuel`'s `min` has its own SWITCH,
+            # and the two laws being differenced sit on opposite sides of it near a crossover
+            # -- so a point can be accel-bound under `solve` and phi-bound under `sensed`, and
+            # differencing it measures a LEG CHANGE and reports it as a law that broke. That
+            # is rung 72's `switch_guard` one min-select level down, and it is what the two
+            # `1.9e-01` cells in the first sweep were.
+            m._b_state, m._v_state = p["b"], p["v"]
+            try:
+                cap_a = m._with_cap("solve", m._cap_fuel, flight, p["nu_lp"], p["nu_hp"],
+                                    mf_sched, accel, None)
+                cap_a2 = m._with_cap("sensed", m._cap_fuel, flight, p["nu_lp"], p["nu_hp"],
+                                     mf_sched, accel, None, mf_app=ma)
+                cap_s = m._cap_fuel(flight, p["nu_lp"], p["nu_hp"], mf_sched, None, surge)
+            finally:
+                m._b_state, m._v_state = None, None
+            rate = 1.0 / tau_f + sum(1.0 / t for t in taus[1:])
+            ch, ch0 = m._charpoly4(g["J"]), m._charpoly4(g0["J"])
+            rt, rt0 = m._quartic_roots_c(ch), m._quartic_roots_c(ch0)
+            tau_a = tau_f if g["authority"] == "fuel" else taus[1]
+            tau_m = tau_f if g["masked"] == "fuel" else taus[1]
+            rows.append(dict(
+                s=p["s"], auth=g["authority"], masked=g["masked"], c=c,
+                accel_binds=max(cap_a, cap_a2) < cap_s, cap_accel=cap_a, cap_phi=cap_s,
+                tau_auth=tau_a, tau_masked=tau_m,
+                auth_diag=g["auth_diag"], auth_diag0=g0["auth_diag"],
+                masked_diag=g["masked_diag"], masked_diag0=g0["masked_diag"],
+                row_auth=g["masked_row_auth"], row_auth0=g0["masked_row_auth"],
+                mask_leak=g["mask_leak"], mask_leak0=g0["mask_leak"],
+                det=ch[4], det0=ch0[4],
+                # P9: the GOVERNOR's row cannot move in any cell -- `_cap_gov` has no branch
+                gov_row=max(abs(g["J"][1][j] - g0["J"][1][j]) for j in range(4)),
+                zeros=sum(1 for z in rt if abs(z) < 1e-4 * rate),
+                zeros0=sum(1 for z in rt0 if abs(z) < 1e-4 * rate)))
+        return rows, len(pts)
+
+    def cap_gains(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                  Tt4_max: float, phi_lim: float = 0.80, margin: float = 0.10,
+                  taus=(0.05, 0.05, 0.05, 0.05), tau_t: float = 0.05,
+                  refs=("sched", "applied"), laws=("none", "track"), inc: bool = False,
+                  r: float = 0.5, s_settle: float = 1.2, ds: float = 0.005,
+                  v_max: float = 0.20, every: int = 8) -> dict:
+        """s 1 MEASURED: **a device in a leg's LAW reaches only the MASKED leg; a device in the
+        PLANT THE LEGS READ reaches only the AUTHORITATIVE one.**
+
+        Rung 75's back-calculation is a term in the masked leg's own law and min-select masks a
+        law, so it wrote `-1/tau_t` on the MASKED diagonal and left the authoritative one
+        *moved 0.0 relative* -- as rungs 73 and 74 also each report. A sensed cap is in NO
+        leg's law: it is in the plant BOTH legs read through `mf_app`, and min-select cannot
+        mask a plant. So it writes `c/tau_f` on the AUTHORITATIVE fuel diagonal.
+
+        AND THE TWO AUTHORITY CELLS CARRY DIFFERENT HALVES OF IT, so they are never pooled
+        (rung 73 s 4's pooling failure, and rung 75 s 1.4's split):
+
+          * FUEL authoritative -> the fuel row IS the authoritative row: `d(cap)/dw_f = c`,
+            diagonal `(c-1)/tau_f`, and `det J` scales by `1 - c`. The masked GOVERNOR's cap
+            has no sensed form, so its row does not move at all.
+          * GOV authoritative  -> the fuel leg is MASKED and reads the governor through
+            `mf_app`: its diagonal is UNMOVED (`min` is flat in what the masked leg holds) and
+            its CROSS moves. `det J` is then unmoved EXACTLY.
+
+        `c` is measured per point and every ratio is scored against THAT point's own `c`."""
+        sm = phi_lim / self.map_lp_design.phi_surge - 1.0
+        accel = self.accel_for(flight, Tt4_lo, Tt4_hi, sm, Tt4_max, taus, v_max, inc, margin)
+        cells = {}
+        for ref in refs:
+            for law in laws:
+                rows, n = self._cap_rows(flight, sm, ref, law, tau_t if law == "track" else
+                                         None, taus, inc, Tt4_lo, Tt4_hi, Tt4_max, r,
+                                         s_settle, ds, v_max, accel, every)
+                for auth in ("fuel", "gov"):
+                    inert = [x for x in rows if x["auth"] == auth and not x["accel_binds"]]
+                    rr = [x for x in rows if x["auth"] == auth and x["accel_binds"]]
+                    key = f"{ref}|{law}|{auth}"
+                    if not rr:
+                        cells[key] = dict(n=0, n_riding=n, ref=ref, law=law, auth=auth,
+                                          n_inert=len(inert))
+                        continue
+                    det_rat = [(x["det"] / x["det0"], x["c"]) for x in rr
+                               if abs(x["det0"]) > 1e-30]
+                    cells[key] = dict(
+                        n=len(rr), n_riding=n, ref=ref, law=law, auth=auth,
+                        # the points where the OTHER cap is the lower one: the knob is inert
+                        # there BY CONSTRUCTION, and they are reported, never pooled in
+                        n_inert=len(inert),
+                        c=(min(x["c"] for x in rr), max(x["c"] for x in rr)),
+                        # P2/P4: the AUTHORITATIVE diagonal, and what it was
+                        auth_diag=(min(x["auth_diag"] for x in rr),
+                                   max(x["auth_diag"] for x in rr)),
+                        auth_diag0=(min(x["auth_diag0"] for x in rr),
+                                    max(x["auth_diag0"] for x in rr)),
+                        auth_moved=max(abs(x["auth_diag"] - x["auth_diag0"])
+                                       / max(1e-30, abs(x["auth_diag0"])) for x in rr),
+                        # the LAW, per point against that point's own `c`
+                        auth_err=max(abs(x["auth_diag"] - (x["c"] - 1.0) / x["tau_auth"])
+                                     * x["tau_auth"] for x in rr),
+                        masked_diag=(min(x["masked_diag"] for x in rr),
+                                     max(x["masked_diag"] for x in rr)),
+                        masked_moved=max(abs(x["masked_diag"] - x["masked_diag0"])
+                                         / max(1e-30, abs(x["masked_diag0"]))
+                                         if abs(x["masked_diag0"]) > 1e-30
+                                         else abs(x["masked_diag"]) for x in rr),
+                        # P6: the masked row's CROSS
+                        row_auth=(min(x["row_auth"] for x in rr),
+                                  max(x["row_auth"] for x in rr)),
+                        row_auth0=(min(x["row_auth0"] for x in rr),
+                                   max(x["row_auth0"] for x in rr)),
+                        row_err=max(abs(x["row_auth"] - (x["c"] if ref == "sched"
+                                                         else x["c"] - 1.0) / x["tau_masked"])
+                                    * x["tau_masked"] for x in rr) if auth == "gov" else None,
+                        # P5: the RANK
+                        mask_leak=max(abs(x["mask_leak"]) for x in rr),
+                        mask_leak0=max(abs(x["mask_leak0"]) for x in rr),
+                        # P7: det J scales by 1 - c, per point
+                        det=(min(x["det"] for x in rr), max(x["det"] for x in rr)),
+                        det0=(min(x["det0"] for x in rr), max(x["det0"] for x in rr)),
+                        det_ratio=((min(u for u, _ in det_rat), max(u for u, _ in det_rat))
+                                   if det_rat else None),
+                        det_err=(max(abs(u - (1.0 - cc)) for u, cc in det_rat)
+                                 if det_rat else None),
+                        # P8: the spectrum's count
+                        zeros=(min(x["zeros"] for x in rr), max(x["zeros"] for x in rr)),
+                        zeros0=(min(x["zeros0"] for x in rr), max(x["zeros0"] for x in rr)),
+                        zeros_moved=max(abs(x["zeros"] - x["zeros0"]) for x in rr),
+                        # P9: the governor's row is bit-identical
+                        gov_row=max(x["gov_row"] for x in rr))
+        return dict(phi_lim=phi_lim, margin=margin, taus=taus, tau_t=tau_t, inc=inc, ds=ds,
+                    cells=cells)
+
+    # --- s 2: THE PATH MOVES AND THE DESTINATION DOES NOT ------------------------------------
+
+    def cap_bill(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                 Tt4_max: float, phi_lim: float = 0.76, margin: float = 0.10,
+                 taus=(0.05, 0.05, 0.05, 0.05), tau_t: float = 0.05,
+                 ref: str = "sched", law: str = "none", inc: bool = False, r: float = 0.5,
+                 s_settle: float = 1.2, ds: float = 0.005, v_max: float = 0.20,
+                 tail: float = 3.0) -> dict:
+        """s 2 MEASURED: **the knob is a PURE TRANSIENT DEVICE on the leg that holds.**
+
+        Setting `dw_f/ds = 0` with the fuel leg authoritative (`mf_app = w_f`) gives
+        `w_f* = cap_sensed(w_f*) = cap_solve` EXACTLY, because `cap_solve` is by construction
+        the fixed point of `cap_sensed` -- and under `applied` identically, since
+        `_demand_reference` returns `cap` itself when `mf_app == w_own`. So the two laws have
+        the SAME equilibrium and different paths: the marching lag performs the set-point
+        solve's fixed-point iteration IN TIME rather than at a POINT, at contraction ratio `c`
+        per lag time constant.
+
+        The BILL's sign is the claim and the magnitude is reported with its `ds` band: during
+        the ramp `mf_app < cap_solve`, so `cap_sensed < cap_solve` (the droop identity, D1) and
+        the sensed leg cuts HARDER."""
+        sm = phi_lim / self.map_lp_design.phi_surge - 1.0
+        accel = self.accel_for(flight, Tt4_lo, Tt4_hi, sm, Tt4_max, taus, v_max, inc, margin)
+        out = {}
+        for cl in ("solve", "sensed"):
+            traj = self._cap_march(flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle, ds,
+                                   v_max, inc, "demand", ref, law,
+                                   tau_t if law == "track" else None, cl, accel)[3]
+            out[cl] = traj
+        a, b = out["solve"], out["sensed"]
+        assert len(a) == len(b), "the two cap laws marched different grids"
+        s_tail = r + tail * max(taus)
+
+        def key(t, k):
+            return [p[k] for p in t]
+
+        ramp = [i for i, p in enumerate(a) if p["s"] <= r]
+        tl = [i for i, p in enumerate(a) if p["s"] >= s_tail]
+        wf = [(abs(b[i]["w_fuel"] - a[i]["w_fuel"]) / max(1e-30, abs(a[i]["w_fuel"])))
+              for i in range(len(a))]
+        return dict(
+            phi_lim=phi_lim, margin=margin, ref=ref, law=law, inc=inc, ds=ds, n=len(a),
+            s_tail=s_tail,
+            # P11: the sign of the BILL
+            max_Tt4=(max(key(a, "Tt4")), max(key(b, "Tt4"))),
+            min_phi=(min(key(a, "phi_lp")), min(key(b, "phi_lp"))),
+            fuel_int=(sum(key(a, "mf")) * ds, sum(key(b, "mf")) * ds),
+            # P10: the destination is the SAME, the path is not
+            wf_tail=max(wf[i] for i in tl) if tl else None,
+            wf_ramp=max(wf[i] for i in ramp) if ramp else None,
+            cuts_harder=all(b[i]["mf"] <= a[i]["mf"] + 1e-15 for i in ramp),
+            traj=dict(solve=a, sensed=b))
+
+    # --- s 3: WHAT THE SOLVE WAS BUYING -- a GAIN, not a relocation ---------------------------
+
+    def solve_gain(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                   Tt4_max: float, phi_lim: float = 0.80, margin: float = 0.10,
+                   taus=(0.05, 0.05, 0.05, 0.05), ref: str = "sched", inc: bool = False,
+                   r: float = 0.5, s_settle: float = 1.2, ds: float = 0.005,
+                   v_max: float = 0.20, dq: float = 1e-5, every: int = 8) -> dict:
+        """s 3: **THE SET-POINT SOLVE IS NOT A RELOCATION OF THE CAP -- IT IS A GAIN ON IT.**
+
+        This section is DERIVATION AFTER MEASUREMENT and is labelled so: it was written to
+        explain why s 1's `det J` ratio misses `1 - c` by ~0.7% when the whole fuel row was
+        derived to scale by exactly `1 - c`. It does, at ONE `w`; the two laws are read at
+        DIFFERENT `w` (`mf_app` against `cap_solve`), and that is the entire residual.
+
+        TWO IDENTITIES, both with zero fitted constants:
+
+        (1) `cap_sensed(cap_solve) = cap_solve` EXACTLY -- `cap_solve` is by construction the
+            fixed point of `cap_sensed`, so the two laws AGREE at the solve's own answer. This
+            is D2 as a property of the LAWS, and it is why the equilibrium of a leg that HOLDS
+            does not move. (The march's tail is NOT that equilibrium -- the spools are still
+            spinning up there, which is why the trajectory form of the claim fails.)
+
+        (2) `d(cap_solve)/dq = ( d(cap_sensed)/dq ) / ( 1 - c )` at the SAME `w = cap_solve`.
+            Differentiating the fixed point `cap = cap_sensed(cap, q)` gives it in one line.
+            **So the solve AMPLIFIES the cap's sensitivity to every other state by `1/(1-c)`**
+            -- measured `1.228 ... 1.246` against a predicted `1/(1-c)` at `< 1e-8`. A limiter
+            written as a solve is a STIFFER limiter than the schedule it claims to implement,
+            and nothing in rungs 48-75 could see that, because none of them had a second
+            reading of the same cap to difference against.
+
+        `q` is the VALVE state and is chosen because it is the one other state the cap depends
+        on through the plant and not through any leg's law."""
+        sm = phi_lim / self.map_lp_design.phi_surge - 1.0
+        accel = self.accel_for(flight, Tt4_lo, Tt4_hi, sm, Tt4_max, taus, v_max, inc, margin)
+        m, surge, lag, traj = self._cap_march(
+            flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle, ds, v_max, inc,
+            "clip", ref, "none", None, "solve", accel)
+        m._lag_coord = "demand"
+        rows = []
+        for p in m._riding4(traj, m.bleed_lim.b_max)[::every]:
+            a, h, q, v, ms = p["nu_lp"], p["nu_hp"], p["b"], p["v"], p["mf_sched"]
+
+            def solve(qq):
+                m._b_state, m._v_state = qq, v
+                try:
+                    return m._with_cap("solve", m._cap_fuel, flight, a, h, ms, accel, None)
+                finally:
+                    m._b_state, m._v_state = None, None
+
+            def sensed(qq, w):
+                m._b_state, m._v_state = qq, v
+                try:
+                    return m._with_cap("sensed", m._cap_fuel, flight, a, h, ms, accel, None,
+                                       mf_app=w)
+                finally:
+                    m._b_state, m._v_state = None, None
+
+            w0 = solve(q)
+            c = m._c_at(flight, a, h, accel, w0, q, v)
+            S = (sensed(q + dq, w0) - sensed(q - dq, w0)) / (2.0 * dq)
+            D = (solve(q + dq) - solve(q - dq)) / (2.0 * dq)
+            rows.append(dict(s=p["s"], cap_solve=w0, c=c,
+                             fixed_point=abs(sensed(q, w0) - w0),
+                             dS=S, dD=D, gain=(D / S if S != 0.0 else float("nan")),
+                             predicted=1.0 / (1.0 - c)))
+        return dict(phi_lim=phi_lim, margin=margin, ref=ref, inc=inc, n=len(rows), rows=rows,
+                    # (1) the two laws agree at the solve's own answer, EXACTLY
+                    fixed_point=max(x["fixed_point"] for x in rows) if rows else None,
+                    # (2) the amplification, per point against that point's own `c`
+                    gain=((min(x["gain"] for x in rows), max(x["gain"] for x in rows))
+                          if rows else None),
+                    gain_err=(max(abs(x["gain"] - x["predicted"]) for x in rows)
+                              if rows else None))
