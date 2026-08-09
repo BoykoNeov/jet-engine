@@ -27,6 +27,7 @@ from turbojet.engine import (  # noqa: E402
     ThreeLoopCascadeTransient, StatorLimiter,
     ReferenceSplitTransient, StatorIncidenceLimiter, CrossSplitTransient,
     FullSplitTransient, SharedActuatorTransient, AppliedReferenceTransient,
+    DemandCoordinateTransient,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -5654,6 +5655,133 @@ def print_applied_reference_table(flight):
     print("    four tau are swept march coordinates. See docs/rung73-spec.md.")
 
 
+def print_demand_coordinate_table(flight):
+    """Rung-74 payoff: rung 72/73's two fuel-side legs lagging the DEMAND instead of the CLIP --
+    rung 73 s 11's own sharpest seam, and the last place `n_live = 4` could still hide.
+
+    The panel is built around the sentence a reader of rungs 47-73 would carry in and get
+    wrong: *a lagged limiter cannot hold its constraint on a ramp -- that is the cost of
+    realism* (rung 47's own concession). It is a property of the COORDINATE. Nothing here
+    changes a clock, a gain, a loop, a state or a reference."""
+    print("\nTHE DEMAND COORDINATE (rung 74): a coordinate on the lag is PURE BILL -- it cannot")
+    print("touch the rank, and it moves the cut by the SCHEDULE'S OWN SLOPE.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR = 0.55
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    LO, HI, B, TMAX = 1000.0, 1400.0, 0.10, 1200.0
+    PHI_ARREST, PHI_BOTH, PHI_GOV = 0.80, 0.76, 0.70
+
+    def rig(phi_lim, inc=False):
+        sm = phi_lim / FLOOR - 1.0
+        return DemandCoordinateTransient(
+            design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0,
+            bleed_lim=BleedLimiter.from_margin(LP, B, sm, tau=0.05),
+            stator_inc=(StatorIncidenceLimiter.from_margin(LP, 0.20, sm, tau=0.05) if inc
+                        else None),
+            stator_lim=(None if inc else StatorLimiter.from_margin(LP, 0.20, sm, tau=0.05)))
+
+    print("\n  THE ONE LINE THAT IS THE WHOLE RUNG. Every leg since rung 47 lags its CLIP; a")
+    print("  fuel control lags its DEMAND -- the fuel it would allow -- and the lowest wins:")
+    print("      CLIP    dg/ds = (required - g)/tau,  g >= 0,   mf = mf_sched - max(gf, gr)")
+    print("      DEMAND  dw/ds = (cap      - w)/tau,  no floor, mf = min(mf_sched, wf, wr)")
+    print("  Substituting w = mf_sched - g and cap = mf_sched - required:")
+    print("      dg/ds = (required - g)/tau  +  d(mf_sched)/ds     <- a STATE-INDEPENDENT term")
+    print("  so it appears in NO Jacobian. That is derivation, not measurement, and the panel")
+    print("  below never reads it off a matrix this project wrote.")
+
+    print("\n  THE SPECTRUM IS INVARIANT AND THE ENTRIES ARE NOT -- two Jacobians at ONE state,")
+    print("  through two DIFFERENT sets of closures:")
+    g = rig(PHI_ARREST).demand_gains(flight, LO, HI, TMAX, phi_lim=PHI_ARREST)
+    print(f"    interior points                          {g['n']:>12d}")
+    print(f"    characteristic polynomial, RELATIVE gap  {g['worst_poly_rel']:12.2e}")
+    print(f"    fuel<->non-fuel entries after a SIGN FLIP{g['worst_flip']:12.2e}")
+    print(f"    the OTHER off-diagonals                  {g['worst_keep']:12.1f}  <- EXACTLY 0")
+    print(f"    the four CYCLIC products                 {g['worst_pairs_gap']:12.2e}")
+    print(f"    entries that genuinely CHANGED SIGN      {g['min_sign_changed']:>12d}"
+          f"   (largest {g['biggest_moved']:.0f})")
+    print("    The last row is the gate that matters: a port that silently did nothing would")
+    print("    pass every other line (rung 73's `_reference` no-op returned a PERFECT")
+    print("    confirmation having measured nothing).")
+    print(f"    AND THE MASKED COLUMN IS ZERO IN BOTH COORDINATES ({g['worst_mask_leak']:.1f}):")
+    print("    `min()` is flat in the masked DEMAND exactly as `max()` was flat in the masked")
+    print("    CLIP, so the block form survives and n_live is still <= 3. THE SEAM CLOSES BY")
+    print("    REFUTATION -- the third rung running.")
+
+    print("\n  THE FORCING, ISOLATED -- open loop, along ONE trajectory, because two plants that")
+    print("  differ at all differ EVERYWHERE downstream:")
+    f = rig(PHI_BOTH).forcing_openloop(flight, LO, HI, TMAX, phi_lim=PHI_BOTH)
+    print(f"    schedule slope d(mf_sched)/ds = {f['slope']:.6f} ,  tau = 0.05")
+    print(f"    predicted steady offset  slope*tau = {f['predicted']:.4e}")
+    print(f"    MEASURED, late ramp                = {f['mean_delta_late']:.4e}"
+          f"   (ratio {f['ratio_late']:.4f}, worst point {100*f['worst_rel_late']:.1f}%)")
+    print(f"    after the ramp stops   {f['delta_post_first']:.3e} -> "
+          f"{f['delta_post_last']:.2e}   <- a FORCING, not a gain")
+
+    print("\n  SO THE LAG STOPS BREAKING THE REDLINE -- WHICH CORRECTS RUNG 47's CONCESSION:")
+    print(f"    {'stator':>10} {'phi_lim':>8} {'clip maxTt4':>12} {'demand':>10} "
+          f"{'over(clip)':>11} {'over(dem)':>10}")
+    for inc in (False, True):
+        for phi in (PHI_ARREST, PHI_BOTH, PHI_GOV):
+            d = rig(phi, inc).demand_law(flight, LO, HI, TMAX, 0.0, floors=(phi,))
+            a = [x for x in d["arms"] if x["inc"] == inc][0]
+            c, m = a["coords"]["clip"], a["coords"]["demand"]
+            print(f"    {'incidence' if inc else 'phi':>10} {phi:8.2f} {c['max_Tt4']:12.2f} "
+                  f"{m['max_Tt4']:10.2f} {c['overshoot']:+11.2f} {m['overshoot']:+10.2f}")
+    print("    A first-order lag tracks a SLOW target well and a RAMPING one poorly. In clip")
+    print("    coordinates the target rides the SCHEDULE; in demand coordinates it rides the")
+    print("    PLANT. Same leg, same clock -- and rung 47's *the cost of realism is that a")
+    print("    lagged governor breaks the redline hold* is a property of the COORDINATE.")
+    print("    AT phi_lim = 0.80 THE DEMAND PLANT DOES NOT ACCELERATE AT ALL (maxTt4 = Tt4_lo,")
+    print("    min phi = 0.800000, both exact): the surge cap is AT the scheduled fuel from")
+    print("    s = 0, so a leg that TRACKS it pins phi on the floor. The whole accel at that")
+    print("    floor is powered by the clip coordinate's own tracking error.")
+
+    print("\n  AND THE FLOOR CHANGES ADDRESS, WHICH DECIDES WHETHER THE PLANT EXISTS AT ALL:")
+    w = rig(PHI_BOTH).windup_law(flight, LO, HI, TMAX, phi_lim=PHI_BOTH)
+    print(f"    {'coordinate':>16} {'reference':>10} {'plant?':>7} {'masked w/mf_sched':>19}")
+    for k in ("demand|sched", "demand|applied", "demand-latched|sched",
+              "demand-latched|applied"):
+        c, r = k.split("|")
+        v = w["cells"][k]
+        ratio = (f"{v['max_masked_over_sched']:.4f}" if v["exists"] else "--")
+        print(f"    {c:>16} {r:>10} {('yes' if v['exists'] else 'NO'):>7} {ratio:>19}")
+    print("    The clip law floors the STATE (g >= 0); the demand law floors the COMPOSITION")
+    print("    (mf <= mf_sched). Same admissible fuels, DIFFERENT plant -- a stop on the state")
+    print("    resets the leg's memory and a stop on the output does not. So RUNG 73 s 0.2's")
+    print("    *an applied-referenced leg is self-anti-winding under min-select -- a property")
+    print("    of the COMPOSITION* is CORRECTED: it is a property of the coordinate's STOP.")
+    print("    With the stop the masked leg parks at EXACTLY 1.0; without it there is no")
+    print("    interior equilibrium and the march never starts. RUNG 52's max(0,.), inherited")
+    print("    unexamined for 22 rungs, is this family's implicit ANTI-WINDUP DEVICE.")
+
+    print("\n  RUNG 69, FROM THE OTHER SIDE: *a loop's COORDINATE decides whether it adds a ZERO")
+    print("    or a RANK* -- that is the CONSTRAINT's coordinate. This is the STATE's, and it")
+    print("    cannot touch the rank at all. A constraint's coordinate is GEOMETRY; a state's")
+    print("    is BOOKKEEPING, and only one of them is in the Jacobian.")
+
+    print("\n  SCOPE: phi_lim had to be SWEPT to get a comparable trajectory (the inherited")
+    print("    floor arrests the demand plant) -- it is an imposed coordinate since rungs")
+    print("    36/49, but this is the first rung whose ARMS depend on moving it; the unfloored")
+    print("    cap is a set-point solve in a regime the family has never exercised (measured")
+    print("    available at 341/341 anchor points, and it asserts rather than falling back);")
+    print("    the demand plant is SCHED-referenced only, since demand x applied has no plant;")
+    print("    the gains are read on the CLIP plant's states, because `_shared_rig` gives every")
+    print("    leg one margin and a lowered floor makes the valve dormant; Tt4_max is rung 67's")
+    print("    imposed value and all four tau are swept march coordinates.")
+    print("    See docs/rung74-spec.md.")
+
+
 def main():
     # The tables carry unicode (Δ, ·, ≡, ≈); force UTF-8 so `python main.py` renders
     # on any console (a stock Windows cp1252 console would otherwise crash on them).
@@ -5808,6 +5936,7 @@ def main():
     print_full_split_table(FLIGHT)
     print_shared_actuator_table(FLIGHT)
     print_applied_reference_table(FLIGHT)
+    print_demand_coordinate_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

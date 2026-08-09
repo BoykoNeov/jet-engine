@@ -17444,3 +17444,999 @@ class AppliedReferenceTransient(SharedActuatorTransient):
             # the governor's own currency as an INTEGRAL, both references
             Tt4_integral_sched=s["fuel_marginal_Tt4"],
             Tt4_integral_applied=a["fuel_marginal_Tt4"])
+
+
+class DemandCoordinateTransient(AppliedReferenceTransient):
+    """RUNG 74. THE DEMAND COORDINATE -- rung 73 s 11's own sharpest seam, and the last place
+    `n_live = 4` could still hide. See `docs/rung74-spec.md`.
+
+    Every fuel-side leg since rung 47 carries the CLIP as its state -- the CUT, floored at
+    zero -- and rung 73 s 11 concedes that a real fuel control does not:
+
+        dg/ds = ( required - g ) / tau ,  g >= 0 ,   mf = mf_sched - max(gf, gr)   [CLIP]
+        dw/ds = ( cap      - w ) / tau ,  no floor,  mf = min(mf_sched, wf, wr)    [DEMAND]
+
+    with `w` the fuel the leg would ALLOW and `cap` its set point. Substituting
+    `w = mf_sched - g` and `cap = mf_sched - req` gives the whole of s 1 in one line:
+
+        dg/ds = ( req - g ) / tau  +  d(mf_sched)/ds
+
+    > **HEADLINE -- A COORDINATE ON THE LAG IS PURE BILL. IT CANNOT TOUCH THE RANK, AND IT
+    > MOVES THE CUT BY THE SCHEDULE'S OWN SLOPE.** The added term is STATE-INDEPENDENT, so it
+    > appears in no Jacobian: the spectrum, `zeros`, `det J` and every cyclic product are
+    > invariant, and `min()` is flat in the masked DEMAND exactly as `max()` was flat in the
+    > masked CLIP -- so the masked column is still zero, `M` is still block-triangular and
+    > **`n_live` is still <= 3. The seam closes by REFUTATION, the third running.** What moves
+    > is the BILL, by `d(mf_sched)/ds * tau` -- a first-order lag's own ramp-tracking error --
+    > which on the anchor EXCEEDS the fuel leg's entire clip.
+
+    > **AND THE FLOOR CHANGES ADDRESS, WHICH IS THE HALF THAT IS NOT A COORDINATE.** The clip
+    > law floors the STATE (`g >= 0`); the demand law floors the COMPOSITION (`mf <= mf_sched`,
+    > i.e. the schedule is just another min-select input). The two admit the SAME applied
+    > fuels and are NOT the same plant: a floor on the state RESETS the leg's memory, a floor
+    > on the output does not. **Rung 52's `max(0, .)`, inherited unexamined for 22 rungs, is
+    > this family's implicit anti-windup / tracking device** -- and the measurement that says
+    > so is that the governor's UNFLOORED cap sits at `1.303 * mf_sched` at the start of the
+    > ramp (headroom the clip coordinate erases). `demand-latched` is the instrument that
+    > separates the two halves: `latched - clip` is the COORDINATE, `demand - latched` is the
+    > FLOOR'S ADDRESS.
+
+    > **AND RUNG 73's REFERENCE SURVIVES THE COORDINATE, TERM FOR TERM.** Its hook
+    > `req_applied = g_own + req_sched - max(gf,gr)` maps to `w_target = w_own + cap - mf_app`,
+    > the same law with the same float-identical branch when the leg holds. So both reference
+    > cells exist here and rung 73's pole at the ORIGIN is coordinate-invariant -- **an
+    > eigenvalue cannot notice a coordinate**, which is the sharpest way to say what this rung
+    > is, and the cleanest contrast with rung 69: a CONSTRAINT's coordinate moves the RANK, a
+    > STATE's coordinate cannot.
+
+    THE CAP HAD TO BE UNFLOORED FIRST, AND THAT IS THIS RUNG'S ONE IMPLEMENTATION COST. Every
+    shipped cap is floored at the schedule -- `_surge_fuel` and `_sched_fuel` return `mf_sched`
+    ITSELF when the leg is clear, and `required_gov` short-circuits before `_topping_fuel` is
+    called -- so the cap ABOVE the schedule had never been computed in this project. The demand
+    target IS that cap, and using the floored one instead would MANUFACTURE a dormant-leg cut
+    and let it be reported as a finding. `_cap_free` walks the inherited bracket in the other
+    direction (no new constant) and asserts by name if it fails; measured available at 341 of
+    341 points on both arms, both caps (anchor s 0.2).
+
+    THE THIRD DECLARED KNOB, beside rung 72's `_share_law` and rung 73's `_ref_law`:
+
+        clip            the state is `g`, target `required`, floor on the STATE  -- RUNG 73/72
+        demand          the state is `w`, target `cap`, floor on the COMPOSITION -- THE PLANT
+        demand-latched  the state is `w`, target `min(mf_sched, cap)`, floor on the STATE
+                        -- s 3's ISOLATION INSTRUMENT, and EXACTLY the clip plant plus the
+                        forcing
+
+    `demand x sum` is REFUSED: `min(mf_sched, wf, wr)` has no `sum` reading that keeps the
+    schedule as an input, so marching it would swap two declared laws at once (rung 73's
+    refusal of `applied x sum`, verbatim in its reasoning).
+
+    Usage:
+        t = DemandCoordinateTransient(design, FLIGHT, 1.0, map_lp=..., map_hp=..., bleed_lim=bl)
+        t._lag_coord = "demand"
+        t.demand_law(FLIGHT, 1000., 1400., 1200., sm=0.4545)      # the BILL and the hand-over
+        t.demand_gains(FLIGHT, 1000., 1400., 1200., sm=0.4545)    # entries move, spectrum stays
+        t.latch_discriminator(FLIGHT, 1000., 1400., 1200., sm=0.4545)  # coordinate vs floor
+        t.flat_schedule_identity(FLIGHT, 1200., sm=0.4545)        # the reduce BY IDENTITY
+
+    THE REDUCE: `_lag_coord = 'clip'` is rung 73 bit-for-bit on all six of its arms (the march
+    is not even entered -- exact dispatch), and `demand-latched` on a FLAT schedule is the clip
+    plant by IDENTITY, the forcing being identically zero. That second arm is the one that
+    matters: it is the only one in which this rung's own march runs and still has to agree.
+    """
+
+    _lag_coord = "clip"
+
+    # --- the UNFLOORED cap: the inherited bracket, walked the other way ----------------------
+
+    @staticmethod
+    def _cap_free(G, mf_sched: float, shipped, grow: float = 1.0 / 0.9, n: int = 60):
+        """The set point ABOVE the schedule -- the target a DORMANT demand-lagged leg chases,
+        and the one quantity this ladder has never computed.
+
+        `G(w) > 0` means the leg must CUT at `w` (rung 49's sign, and rung 46's after the
+        `Tt4_max` subtraction). When `G(mf_sched) > 0` the leg is BINDING and the SHIPPED solve
+        is returned untouched -- so on every point where the family has ever consulted a cap,
+        this returns the family's own number and nothing is re-bracketed. Only in the SLACK
+        regime does the search run, and there it grows the bracket by `1/0.9` (the mirror image
+        of `_surge_fuel`'s own `0.9` shrink -- a direction, not a new constant).
+
+        IT ASSERTS BY NAME RATHER THAN FALLING BACK, because the fallback is `mf_sched` and
+        `mf_sched` is precisely the floored cap whose use would manufacture this rung's own
+        finding (anchor s 0.2). A silent fallback here would be undetectable in every reader."""
+        g0 = G(mf_sched)
+        if g0 > 0.0:
+            return shipped()
+        lo, glo = mf_sched, g0
+        hi, ghi = mf_sched, None
+        for _ in range(n):
+            hi *= grow
+            try:
+                ghi = G(hi)
+            except AssertionError:
+                ghi = None
+                break
+            if ghi > 0.0:
+                break
+            ghi = None
+        assert ghi is not None, (
+            f"rung-74: the UNFLOORED cap is unreachable above mf_sched = {mf_sched:.6e} "
+            f"(searched to {hi:.6e}). The demand coordinate's target IS this cap; falling "
+            "back to the floored one would manufacture a dormant-leg cut and report it as a "
+            "finding (anchor s 0.2). Measured reachable at 341 of 341 anchor points -- if it "
+            "fails here, the operating point is outside what this rung measured.")
+        return _illinois(G, lo, hi, glo, ghi, tol=1e-13)
+
+    def _cap_gov(self, flight: "FlightCondition", a: float, h: float, mf_sched: float,
+                 Tt4_max: float) -> float:
+        """RUNG 47's set point as a DEMAND: the fuel at which `Tt4 == Tt4_max`, computed in the
+        slack regime too. `required_gov`'s short-circuit is exactly what has to be removed --
+        it is a guard on the bracket, and in this coordinate it is a guard on the answer."""
+        def G(w):
+            return self._instant_fuel(flight, a, h, w)["Tt4"] - Tt4_max
+        return self._cap_free(
+            G, mf_sched, lambda: self._topping_fuel(flight, a, h, Tt4_max, mf_sched))
+
+    def _cap_fuel(self, flight: "FlightCondition", a: float, h: float, mf_sched: float,
+                  accel, surge) -> float:
+        """RUNG 52's leg as a DEMAND -- the MINIMUM of its (up to two) unfloored set points,
+        which is min-select one level down and is rung 48/49's own `min(caps)`."""
+        caps = []
+        if accel is not None:
+            def Ga(w):
+                i = self._instant_fuel(flight, a, h, w)
+                return w - accel.cap(i["n_hp"], i["pt4"] / self.pi_b)
+            caps.append(self._cap_free(
+                Ga, mf_sched, lambda: self._sched_fuel(flight, a, h, mf_sched, accel)))
+        if surge is not None:
+            k = surge.key()
+
+            def Gs(w):
+                return surge.phi_lim - self._instant_fuel(flight, a, h, w)[k]
+            caps.append(self._cap_free(
+                Gs, mf_sched, lambda: self._surge_fuel(flight, a, h, mf_sched, surge)))
+        return min(caps) if caps else float("inf")
+
+    # --- the composition, the reference and the lag, each in ONE place -----------------------
+
+    def _applied_demand(self, wf: float, wr: float, mf_sched: float) -> float:
+        """MIN-SELECT in the coordinate a fuel control actually uses: the schedule is just
+        another input, and the LOWEST demand wins. Identical in value to
+        `mf_sched - max(0, gf, gr)`, and NOT identical as a plant -- that is s 3."""
+        return min(mf_sched, wf, wr)
+
+    def _demand_target(self, cap: float, mf_sched: float) -> float:
+        """The LATCH, and the only thing `demand-latched` changes: capping the target at the
+        schedule is exactly rung 52's `max(0, .)` seen from the other coordinate."""
+        return min(mf_sched, cap) if self._lag_coord == "demand-latched" else cap
+
+    def _demand_reference(self, cap: float, w_own: float, mf_app: float) -> float:
+        """RUNG 73's hook, TERM FOR TERM, in demand coordinates:
+
+            req_applied = g_own + req_sched - max(gf, gr)   <=>   w = w_own + cap - mf_app
+
+        and the float-identical branch is load-bearing for the same reason it was there: when
+        the leg HOLDS, `mf_app == w_own` and this returns `cap` ITSELF, so the authoritative
+        leg's own diagonal carries no cancellation and rung 73's `M3`-entry-for-entry claim
+        survives the coordinate."""
+        if self._ref_law != "applied":
+            return cap
+        if mf_app == w_own:
+            return cap
+        return w_own + cap - mf_app
+
+    @staticmethod
+    def _demand_tau(lag, cap: float, w: float) -> float:
+        """RUNG 52's asymmetric lag, ARGUMENTS SWAPPED -- and the swap is the whole point.
+
+        Attack in clip coordinates is `required > g`; substituting `w = mf_sched - g` and
+        `cap = mf_sched - required` gives `required > g  <=>  cap < w`. A port that kept the
+        shipped argument order would select `tau_rel` on ATTACK, i.e. a 3x clock error in the
+        direction that SLOWS protection -- and it would have read as a finding (*the demand
+        coordinate is less protective*) and passed every gate one would think to write. Anchor
+        s 0.4; gated directly on a known-attack point."""
+        return lag.tau(w, cap)
+
+    def at_lever(self, vsv_lp: float = 0.0, vsv_hp: float = 0.0, vsv_sched_lp=None,
+                 vsv_sched_hp=None, bleed: float = 0.0, bleed_sched=None,
+                 bleed_lim=None, stator_lim=None, stator_inc=None
+                 ) -> "DemandCoordinateTransient":
+        """THE TWELFTH INSTANCE of the trap rungs 61-73 each hit, now with THREE knobs to
+        drop instead of two."""
+        de, fd, md, rho, lpd = self._ctor
+        m = DemandCoordinateTransient(
+            de, fd, md, map_lp=self.map_lp_design, map_hp=self.map_hp_design, rho=rho,
+            vsv_lp=vsv_lp, vsv_hp=vsv_hp, vsv_sched_lp=vsv_sched_lp,
+            vsv_sched_hp=vsv_sched_hp, bleed=bleed, bleed_sched=bleed_sched,
+            bleed_lim=bleed_lim, stator_lim=stator_lim, stator_inc=stator_inc,
+            lp_disabled=lpd)
+        m._ref_law, m._lag_coord = self._ref_law, self._lag_coord
+        return m
+
+    def _shared_rig(self, sm, tau, tau_s, v_max, Tt4_max, tau_att=0.05, tau_rel=0.15,
+                    inc=False, fuel=True, valve=True, stator=True, gov=True):
+        """Rung 73's rig with the COORDINATE carried too -- the same one-level-down leak, a
+        third knob on."""
+        m, surge, lag = super()._shared_rig(sm, tau, tau_s, v_max, Tt4_max, tau_att=tau_att,
+                                            tau_rel=tau_rel, inc=inc, fuel=fuel, valve=valve,
+                                            stator=stator, gov=gov)
+        m._lag_coord = self._lag_coord
+        return m, surge, lag
+
+    def _with_coord(self, coord: str, fn, *a, **kw):
+        """Run a reader under a named coordinate, restored in a `finally` -- rung 62's reason,
+        EIGHTH reload."""
+        prev, self._lag_coord = self._lag_coord, coord
+        try:
+            return fn(*a, **kw)
+        finally:
+            self._lag_coord = prev
+
+    @staticmethod
+    def _rk4_floor_shared(ds: float, rate: float) -> None:
+        """THE FLOOR, RE-JUSTIFIED A SEVENTH TIME -- and the new argument is about WHICH STATES
+        ARE LIVE, not about the dominant root.
+
+        Rungs 72/73 argued from the masked leg's eigenvalue (`-1/tau_f`, then exactly zero).
+        Neither sentence is the one needed here: the rates are UNCHANGED by a coordinate (s 1),
+        so whichever reference is set, that argument carries verbatim. What is new is that
+        removing the STATE floor makes a dormant leg an ACTIVE first-order lag over the whole
+        march instead of a state parked at a stop -- more live states at the same rates. A
+        parked state contributes no root at all, so the rate sum this constant bounds is if
+        anything better populated here, and the inherited constant stays conservative. The
+        forcing term is state-independent and cannot move a root."""
+        assert ds * rate <= 2.0, (
+            f"rung-74: ds*sum(1/tau_i) = {ds*rate:.3f} is outside the explicit RK4 stability "
+            f"region for the FOUR actuator states (ds = {ds}). A coordinate does not change a "
+            "rate, so the inherited constant carries -- but removing the state floor makes a "
+            "dormant leg an ACTIVE lag, so more of these rates are live at once. Refine the "
+            "grid or slow a clock.")
+
+    # --- the march: the SAME six states, two of them in the other coordinate -----------------
+
+    def integrate_fuel(self, flight: "FlightCondition", fuel_schedule, nu0,
+                       s_end: float, ds: float, freeze=None, Tt4_max=None,
+                       tau_gov=None, accel=None, surge=None, s_off=None,
+                       tau_rel=None, lag=None) -> list:
+        assert self._lag_coord in ("clip", "demand", "demand-latched"), (
+            f"rung-74: the lag's COORDINATE is this rung's subject and it is DECLARED; got "
+            f"{self._lag_coord!r}. 'clip' is rung 73/72; 'demand' is the plant; "
+            "'demand-latched' is s 3's instrument.")
+        lag = lag if lag is not None else self._lag
+        tau_gov = tau_gov if tau_gov is not None else self._tau_gov
+        has_fuel = lag is not None and (accel is not None or surge is not None)
+        if self._lag_coord == "clip" or tau_gov is None or not has_fuel:
+            # EXACT DISPATCH: rung 73 and everything under it. This class never intercepts a
+            # march it does not own, and `clip` is rung 73 by not entering at all.
+            return super().integrate_fuel(
+                flight, fuel_schedule, nu0, s_end, ds, freeze=freeze, Tt4_max=Tt4_max,
+                tau_gov=tau_gov, accel=accel, surge=surge, s_off=s_off, tau_rel=tau_rel,
+                lag=lag)
+        assert self._share_law == "max", (
+            "rung-74: the DEMAND coordinate composes as `min(mf_sched, wf, wr)`, which has no "
+            "`sum` reading that keeps the schedule as an input. Marching it would swap two "
+            "declared laws at once -- rung 73's refusal of `applied x sum`, verbatim.")
+        assert Tt4_max is not None, (
+            "rung-74: `tau_gov` without `Tt4_max` is a governor with no set point (rungs "
+            "70/71/72/73's assert, inherited word for word).")
+        assert s_off is None and tau_rel is None, (
+            "rung-74: rungs 50/51's FORCED release edges are an isolation instrument for a leg "
+            "that could not pin its own trigger; all four legs here pin their own.")
+        assert self.bleed_lim is None or self._lagged(), (
+            "rung-74: an INSTANTANEOUS valve beside lagged fuel-side legs is not a control but "
+            "a different plant (rung 65/66's refusal, inherited).")
+        return self._integrate_fuel_demand(flight, fuel_schedule, nu0, s_end, ds,
+                                           freeze, Tt4_max, tau_gov, accel, surge, lag)
+
+    def _integrate_fuel_demand(self, flight: "FlightCondition", fuel_schedule, nu0,
+                               s_end: float, ds: float, freeze, Tt4_max, tau_gov,
+                               accel, surge, lag) -> list:
+        """RUNG 74's march -- rung 72/73's six states with the two fuel-side ones carrying the
+        DEMAND instead of the clip.
+
+        IT IS A SIBLING, AND HERE THAT IS FORCED FOR A NEW REASON. Rung 72 sired one because a
+        state was ADDED; nothing is added here, and the temptation is therefore to add the
+        forcing term `d(mf_sched)/ds` to the parent's march and be done. **That would make s 1
+        a construction**: the identity `dg/ds = (req - g)/tau + d(mf_sched)/ds` is what this
+        rung is CLAIMING, and a march built on it could not measure it. `w` is marched as a
+        genuine state, the schedule is never differentiated, and the identity is left to be
+        differenced against the parent (which also handles the ramp's two KINKS exactly, where
+        a derivative would have had to pick a branch).
+
+        EVERY RECORDED KEY IS THE PARENT'S, with `g_fuel`/`g_gov` the CLIP PROJECTIONS
+        `mf_sched - w`, so every inherited reader works on this trajectory unchanged."""
+        has_v = self._lagged_stator()
+        lim_s = self._stator_leg() if has_v else None
+        tau_s = lim_s.tau if has_v else None
+        has_q = self._lagged()
+        tau_q = self.bleed_lim.tau if has_q else None
+        self._rk4_floor_shared(
+            ds, 1.0 / tau_gov + 1.0 / min(lag.tau_att, lag.tau_rel)
+            + (1.0 / tau_q if has_q else 0.0) + (1.0 / tau_s if has_v else 0.0))
+        Tt2, pt2, _ = self._inlet(flight)
+        base_close = super(LimitedBleedTransient, self)._close_fuel
+        latched = self._lag_coord == "demand-latched"
+
+        def command(a, h, mf, v):
+            if not has_q:
+                return 0.0
+            self._v_state = v
+            try:
+                return self._solve_b(self._closer(base_close, a, h, mf, Tt2, pt2))[1]
+            finally:
+                self._v_state = None
+
+        def stator(a, h, mf, q):
+            if not has_v:
+                return 0.0, None
+            self._b_state = q
+            try:
+                _, v, reg = self._solve_v(self._closer_v(base_close, a, h, mf, Tt2, pt2))
+                return v, reg
+            finally:
+                self._b_state = None
+
+        def cap_fuel(a, h, q, v, mf_sched):
+            self._b_state, self._v_state = q, v
+            try:
+                return self._cap_fuel(flight, a, h, mf_sched, accel, surge)
+            finally:
+                self._b_state, self._v_state = None, None
+
+        def cap_gov(a, h, q, v, mf_sched):
+            self._b_state, self._v_state = q, v
+            try:
+                return self._cap_gov(flight, a, h, mf_sched, Tt4_max)
+            finally:
+                self._b_state, self._v_state = None, None
+
+        def der(a, h, wf, wr, q, v, s):
+            mf_sched = float(fuel_schedule(s))
+            mf_app = self._applied_demand(wf, wr, mf_sched)
+            cf = self._demand_target(cap_fuel(a, h, q, v, mf_sched), mf_sched)
+            cr = self._demand_target(cap_gov(a, h, q, v, mf_sched), mf_sched)
+            tf = self._demand_reference(cf, wf, mf_app)
+            tr = self._demand_reference(cr, wr, mf_app)
+            mf = max(1e-9, mf_app)
+            self._b_state, self._v_state = q, v
+            try:
+                i = self._instant_fuel(flight, a, h, mf)
+            finally:
+                self._b_state, self._v_state = None, None
+            cmd = command(a, h, mf, v)
+            vcmd, vreg = stator(a, h, mf, q)
+            da = 0.0 if freeze == "lp" else i["Phi_lp"] / self.rho
+            dh = 0.0 if freeze == "hp" else i["Phi_hp"]
+            return (da, dh, (tf - wf) / self._demand_tau(lag, tf, wf), (tr - wr) / tau_gov,
+                    ((cmd - q) / tau_q if has_q else 0.0),
+                    ((vcmd - v) / tau_s if has_v else 0.0),
+                    mf, i, cf, cr, cmd, vcmd, vreg, mf_sched)
+
+        # --- THE JOINT INITIAL CONDITION, in the new coordinate ------------------------------
+        # Rung 72's order (`r -> q -> v -> f`) and its cap, unchanged. The STARTING point is
+        # `w = mf_sched` (i.e. `g = 0`, the parent's own start) and the STOP is the latch's,
+        # applied only when the latch is armed -- an unlatched leg has no state stop at all,
+        # which is s 3's whole subject and must not be smuggled in through the sweep.
+        a, h = nu0
+        mf0 = float(fuel_schedule(0.0))
+        if self._v0 is not None and has_v:
+            self._check_v0(self._v0, lim_s)
+        wf = wr = mf0
+        q = command(a, h, mf0, 0.0)
+        v = self._v0 if (self._v0 is not None and has_v) else 0.0
+        if self._b0 is not None:
+            q = self._b0
+
+        def _stop(w):
+            return min(mf0, w) if latched else w
+
+        steps = {
+            "f": lambda wf, wr, q, v: (
+                _stop(self._demand_reference(
+                    self._demand_target(cap_fuel(a, h, q, v, mf0), mf0), wf,
+                    self._applied_demand(wf, wr, mf0))), wr, q, v),
+            "r": lambda wf, wr, q, v: (
+                wf, _stop(self._demand_reference(
+                    self._demand_target(cap_gov(a, h, q, v, mf0), mf0), wr,
+                    self._applied_demand(wf, wr, mf0))), q, v),
+            "q": lambda wf, wr, q, v: (wf, wr, q if self._b0 is not None else command(
+                a, h, max(1e-9, self._applied_demand(wf, wr, mf0)), v), v),
+            "v": lambda wf, wr, q, v: (wf, wr, q, v if (self._v0 is not None or not has_v)
+                                       else stator(
+                a, h, max(1e-9, self._applied_demand(wf, wr, mf0)), q)[0])}
+        assert sorted(self._ic_order4) == ["f", "q", "r", "v"], (
+            f"rung-74 ic_order4 is a permutation of 'frqv'; got {self._ic_order4!r}")
+        res, its = float("inf"), 0
+        for its in range(1, 61):
+            n = (wf, wr, q, v)
+            for key in self._ic_order4:
+                n = steps[key](*n)
+            res = max(abs(n[i] - x) for i, x in enumerate((wf, wr, q, v)))
+            wf, wr, q, v = n
+            if res <= 1e-12:
+                break
+        assert res <= 1e-9, (
+            f"rung-74: the joint initial condition did not converge (residual {res:.3e} after "
+            f"{its} iterations) in order {self._ic_order4!r}, at wf = {wf:.6e}, wr = {wr:.6e}, "
+            f"under ({self._lag_coord!r}, {self._ref_law!r}). Under MIN-SELECT the sweep can "
+            "cycle between the two fuel-side legs (rung 72's reason) -- and under "
+            "('demand', 'applied') there is a SECOND, structural reason, which is this rung's "
+            "s 4: a MASKED applied-referenced leg obeys dw/ds = (cap - mf_app)/tau, which is "
+            "state-independent and POSITIVE, so with no stop in its path it has NO INTERIOR "
+            "EQUILIBRIUM AT ALL. The same motion in CLIP coordinates runs INTO the floor at "
+            "g = 0 and halts there, which is what rung 73 s 0.2 read as self-anti-winding. "
+            "Neither is a cap to raise: report the state, the order and both demands.")
+
+        pts, s = [], 0.0
+        for _ in range(int(round(s_end / ds)) + 1):
+            try:
+                k1 = der(a, h, wf, wr, q, v, s)
+            except AssertionError:
+                break
+            _, _, _, _, _, _, mf_app, inst, cf, cr, cmd, vcmd, vreg, ms = k1
+            gf, gr = ms - wf, ms - wr
+            clip = ms - mf_app
+            pts.append(dict(s=s, nu_lp=a, nu_hp=h, Tt4=inst["Tt4"], f=inst["f"],
+                            pi_lpc=inst["pi_lpc"], pi_hpc=inst["pi_hpc"],
+                            phi_lp=inst["phi_lp"], phi_hp=inst["phi_hp"],
+                            mdot_air=inst["mdot_air"], sp_thrust=inst["sp_thrust"],
+                            branch=inst["branch"], mf=mf_app, mf_sched=ms, g=clip,
+                            required=max(ms - cf, ms - cr), g_fuel=gf, g_gov=gr,
+                            required_fuel=ms - cf, required_gov=ms - cr,
+                            w_fuel=wf, w_gov=wr, cap_fuel=cf, cap_gov=cr,
+                            authority=self._demand_authority(wf, wr, ms),
+                            b=q, b_cmd=cmd, v=v, v_cmd=vcmd, v_regime=vreg,
+                            ic_iters=its, ic_res=res, ic_order=self._ic_order4,
+                            share_law=self._share_law, lag_coord=self._lag_coord))
+            try:
+                k2 = der(a + ds/2*k1[0], h + ds/2*k1[1], wf + ds/2*k1[2], wr + ds/2*k1[3],
+                         q + ds/2*k1[4], v + ds/2*k1[5], s + ds/2)
+                k3 = der(a + ds/2*k2[0], h + ds/2*k2[1], wf + ds/2*k2[2], wr + ds/2*k2[3],
+                         q + ds/2*k2[4], v + ds/2*k2[5], s + ds/2)
+                k4 = der(a + ds*k3[0], h + ds*k3[1], wf + ds*k3[2], wr + ds*k3[3],
+                         q + ds*k3[4], v + ds*k3[5], s + ds)
+            except AssertionError:
+                break
+            a += ds / 6 * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0])
+            h += ds / 6 * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1])
+            wf += ds / 6 * (k1[2] + 2 * k2[2] + 2 * k3[2] + k4[2])
+            wr += ds / 6 * (k1[3] + 2 * k2[3] + 2 * k3[3] + k4[3])
+            q += ds / 6 * (k1[4] + 2 * k2[4] + 2 * k3[4] + k4[4])
+            v += ds / 6 * (k1[5] + 2 * k2[5] + 2 * k3[5] + k4[5])
+            if has_q:
+                q = min(self.bleed_lim.b_max, max(0.0, q))
+            if has_v:
+                v = self._clamp_v(v, lim_s)
+            if latched:
+                # THE LATCH: the clip plant's `g >= 0`, in this coordinate. Applied ONLY here --
+                # an unlatched demand has no state stop, and that is the finding, not an
+                # oversight (s 3).
+                nxt = float(fuel_schedule(s + ds))
+                wf, wr = min(nxt, wf), min(nxt, wr)
+            s += ds
+        return pts
+
+    @staticmethod
+    def _demand_authority(wf: float, wr: float, mf_sched: float, tol: float = 1e-12) -> str:
+        """Rung 72's label in the new coordinate: who holds the actuator is who DEMANDS LEAST,
+        and `dormant` is now a statement about the SCHEDULE (neither leg is below it) rather
+        than about a state sitting on a stop -- which is s 3's finding in one method."""
+        if wf >= mf_sched - tol and wr >= mf_sched - tol:
+            return "dormant"
+        if abs(wf - wr) <= tol:
+            return "tie"
+        return "fuel" if wf < wr else "gov"
+
+    # --- s 0/2: THE BILL -- what the coordinate costs, and the redline it hands back ---------
+
+    def _coord_march(self, flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle, ds,
+                     v_max, inc, coord, ref="sched", nu0=None):
+        """One rig, one march, under a NAMED coordinate -- and `_shared_rig` carries both
+        knobs, without which every cell here would march rung 73 while the caller reported
+        rung 74 (the `at_lever` trap, three knobs on)."""
+        tau_f, tau_gov, tau_q, tau_s = taus
+        m, surge, lag = self._shared_rig(sm, tau_q, tau_s, v_max, Tt4_max,
+                                         tau_att=tau_f, tau_rel=3.0 * tau_f, inc=inc)
+        m._lag_coord, m._ref_law = coord, ref
+        traj = m._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds, nu0=nu0,
+                               Tt4_max=Tt4_max, tau_gov=tau_gov, surge=surge, lag=lag)[0]
+        return m, surge, lag, traj
+
+    def demand_law(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                   Tt4_max: float, sm: float, taus=(0.05, 0.05, 0.05, 0.05),
+                   floors=(0.80, 0.76, 0.70), r: float = 0.5, s_settle: float = 1.2,
+                   ds: float = 0.005, v_max: float = 0.20) -> dict:
+        """s 2 MEASURED: **the coordinate is a CUT, and the cut is the schedule's own slope
+        times the clock -- so the lag stops breaking the redline.**
+
+        A first-order lag tracks a SLOW target well and a RAMPING one poorly, with a steady
+        error equal to the target's slope times `tau`. **Which target it sees is the
+        coordinate's choice**, and that is the whole rung:
+
+            CLIP   target `required = mf_sched - cap`  rides the SCHEDULE  -> error ~ mf_dot*tau
+            DEMAND target `cap`                        rides the PLANT     -> error ~ cap_dot*tau
+
+        so the same leg, with the same clock, UNDER-cuts by `mf_dot*tau` in one coordinate and
+        tracks in the other. **THAT CORRECTS RUNG 47's HEADLINE CONCESSION** -- *the cost of
+        realism is that a lagged governor breaks the redline hold* -- which is a property of
+        the COORDINATE, not of the lag.
+
+        `sm` is IGNORED in favour of `floors`, and that is disclosed rather than tidied: at the
+        INHERITED floor (`phi_lim = 0.80`) the surge cap sits AT the scheduled fuel from `s = 0`
+        (anchor s 0.2), so a leg that TRACKS it pins `phi` on the floor and permits no
+        acceleration at all -- `max Tt4 = Tt4_lo`, exactly. That is a reportable extreme and it
+        is reported, but it is not a trajectory anything can be differenced on, so the rung's
+        comparison arms sit at floors the accel survives. `phi_lim` has been an imposed, swept
+        coordinate since rungs 36/49 and is one here."""
+        out = []
+        for inc in (False, True):
+            for phi_lim in floors:
+                sm_i = phi_lim / self.map_lp_design.phi_surge - 1.0
+                row = dict(inc=inc, phi_lim=phi_lim, sm=sm_i, coords={})
+                for coord in ("clip", "demand-latched", "demand"):
+                    # THE REFERENCE IS HELD FIXED AT `sched` ON EVERY ARM, and the first
+                    # version of this reader did NOT do that: it read the clip plant under
+                    # rung 73's APPLIED reference and the two demand plants under `sched`, so
+                    # every quoted number was the coordinate PLUS the reference. On the
+                    # `phi_lim = 0.80` arms that is 32 K and 71 K of a 315 K / 354 K effect
+                    # (rung 73 § 2.1's own table is the check), and § 4 measures the reference
+                    # at +162 K inside one coordinate -- so it is not a rounding-scale
+                    # confound. Rung 63's lesson, which this rung's own § 0.1 states as a
+                    # refusal and its reader then broke: CHANGE ONE LAW AT A TIME.
+                    ref = "sched"
+                    try:
+                        _, _, _, traj = self._coord_march(
+                            flight, Tt4_lo, Tt4_hi, Tt4_max, sm_i, taus, r, s_settle, ds,
+                            v_max, inc, coord, ref)
+                    except AssertionError as exc:
+                        row["coords"][coord] = dict(failed=str(exc)[:200])
+                        continue
+                    hand = [traj[i]["s"] for i in range(1, len(traj))
+                            if traj[i]["authority"] != traj[i - 1]["authority"]
+                            and "dormant" not in (traj[i]["authority"],
+                                                  traj[i - 1]["authority"])]
+                    row["coords"][coord] = dict(
+                        n=len(traj), max_Tt4=max(p["Tt4"] for p in traj),
+                        min_phi=min(p["phi_lp"] for p in traj),
+                        overshoot=max(p["Tt4"] for p in traj) - Tt4_max,
+                        breach=min(p["phi_lp"] for p in traj) - phi_lim,
+                        handovers=hand, first_gov=next(
+                            (p["s"] for p in traj if p["authority"] == "gov"), None),
+                        arrested=abs(max(p["Tt4"] for p in traj) - Tt4_lo) < 1e-6,
+                        max_clip=max(p["g"] for p in traj),
+                        ic_iters=traj[0]["ic_iters"])
+                c, l_, d = (row["coords"].get(k, {}) for k in
+                            ("clip", "demand-latched", "demand"))
+                if "max_Tt4" in c and "max_Tt4" in d:
+                    row["dTt4_coord"] = d["max_Tt4"] - c["max_Tt4"]
+                    row["dphi_coord"] = d["min_phi"] - c["min_phi"]
+                    row["holds_redline"] = d["overshoot"] <= 0.0 < c["overshoot"]
+                if "max_Tt4" in l_ and "max_Tt4" in d:
+                    row["dTt4_floor"] = d["max_Tt4"] - l_["max_Tt4"]
+                out.append(row)
+        return dict(arms=out, taus=taus, ds=ds, floors=floors, Tt4_max=Tt4_max,
+                    # THE HEADLINE CELL: wherever the clip plant BREACHES the redline, does
+                    # the demand plant hold it -- same clocks, same maps, same schedule?
+                    redline_flips=[(a["inc"], a["phi_lim"]) for a in out
+                                   if a.get("holds_redline")],
+                    arrested=[(a["inc"], a["phi_lim"]) for a in out
+                              if a["coords"].get("demand", {}).get("arrested")])
+
+    # --- s 1: THE ENTRIES MOVE, THE SPECTRUM DOES NOT ----------------------------------------
+
+    def _demand_laws(self, flight: "FlightCondition", a: float, h: float, mf_sched: float,
+                     accel, surge, Tt4_max: float):
+        """The four laws as closures of the other three states, in DEMAND coordinates -- each
+        through the same shipped closure the clip laws use, none knowing the others exist.
+
+        `C` and `V` see the two demands ONLY through `_applied_demand`, so under MIN-SELECT the
+        masked one reaches them through a function that is FLAT in it -- `min()` where rung 72
+        had `max()`, which is s 1's whole reason the triangularity survives a coordinate."""
+        Tt2, pt2, _ = self._inlet(flight)
+        base_close = super(LimitedBleedTransient, self)._close_fuel
+
+        def F(wf, wr, q, v):
+            self._b_state, self._v_state = q, v
+            try:
+                cap = self._cap_fuel(flight, a, h, mf_sched, accel, surge)
+            finally:
+                self._b_state, self._v_state = None, None
+            tgt = self._demand_target(cap, mf_sched)
+            return (self._demand_reference(tgt, wf, self._applied_demand(wf, wr, mf_sched)),
+                    ("riding" if cap < mf_sched else "dormant"))
+
+        def R(wf, wr, q, v):
+            self._b_state, self._v_state = q, v
+            try:
+                cap = self._cap_gov(flight, a, h, mf_sched, Tt4_max)
+            finally:
+                self._b_state, self._v_state = None, None
+            tgt = self._demand_target(cap, mf_sched)
+            return (self._demand_reference(tgt, wr, self._applied_demand(wf, wr, mf_sched)),
+                    ("riding" if cap < mf_sched else "dormant"))
+
+        def C(wf, wr, v):
+            self._v_state = v
+            try:
+                _, b, reg = self._solve_b(self._closer(
+                    base_close, a, h, max(1e-9, self._applied_demand(wf, wr, mf_sched)),
+                    Tt2, pt2))
+                return b, reg
+            finally:
+                self._v_state = None
+
+        def V(wf, wr, q):
+            self._b_state = q
+            try:
+                _, vv, reg = self._solve_v(self._closer_v(
+                    base_close, a, h, max(1e-9, self._applied_demand(wf, wr, mf_sched)),
+                    Tt2, pt2))
+                return vv, reg
+            finally:
+                self._b_state = None
+
+        return F, R, C, V
+
+    def _demand_gains_at(self, flight, p, accel, surge, Tt4_max, dg=1e-7, dq=1e-5, dv=1e-4,
+                         manifold=True, switch_guard=4.0):
+        """The FOURTEEN central differences in DEMAND coordinates -- rung 73's list, with `wf`
+        and `wr` in place of `gf` and `gr`. Both of rung 72's filters are kept verbatim (REGIME
+        on every perturbed evaluation, SWITCH PROXIMITY on the `min()` kink)."""
+        a, h, mf_sched = p["nu_lp"], p["nu_hp"], p["mf_sched"]
+        # THE PROJECTION IS THE POINT OF ENTRY, so this reader takes a CLIP trajectory's point
+        # too: `w = mf_sched - g` is the coordinate change itself, and a Jacobian is a function
+        # of the STATE, not of which plant's trajectory passed through it (s 1.3).
+        wf = p["w_fuel"] if "w_fuel" in p else mf_sched - p["g_fuel"]
+        wr = p["w_gov"] if "w_gov" in p else mf_sched - p["g_gov"]
+        q = p["b"]
+        F, R, C, V = self._demand_laws(flight, a, h, mf_sched, accel, surge, Tt4_max)
+        if manifold:
+            v = self._manifold_v(flight, a, h, mf_sched,
+                                 mf_sched - self._applied_demand(wf, wr, mf_sched), q,
+                                 lambda g_, q_: V(mf_sched - g_, mf_sched, q_))
+        else:
+            v = p["v"]
+        if abs(wf - wr) <= switch_guard * dg:
+            return dict(interior=False, off_regime=["switch"], s=p["s"], v_base=v,
+                        near_switch=True)
+        ev = {}
+        for key, val in (
+                ("F+f", F(wf + dg, wr, q, v)), ("F-f", F(wf - dg, wr, q, v)),
+                ("F+r", F(wf, wr + dg, q, v)), ("F-r", F(wf, wr - dg, q, v)),
+                ("F+q", F(wf, wr, q + dq, v)), ("F-q", F(wf, wr, q - dq, v)),
+                ("F+v", F(wf, wr, q, v + dv)), ("F-v", F(wf, wr, q, v - dv)),
+                ("R+f", R(wf + dg, wr, q, v)), ("R-f", R(wf - dg, wr, q, v)),
+                ("R+r", R(wf, wr + dg, q, v)), ("R-r", R(wf, wr - dg, q, v)),
+                ("R+q", R(wf, wr, q + dq, v)), ("R-q", R(wf, wr, q - dq, v)),
+                ("R+v", R(wf, wr, q, v + dv)), ("R-v", R(wf, wr, q, v - dv)),
+                ("C+f", C(wf + dg, wr, v)), ("C-f", C(wf - dg, wr, v)),
+                ("C+r", C(wf, wr + dg, v)), ("C-r", C(wf, wr - dg, v)),
+                ("C+v", C(wf, wr, v + dv)), ("C-v", C(wf, wr, v - dv)),
+                ("V+f", V(wf + dg, wr, q)), ("V-f", V(wf - dg, wr, q)),
+                ("V+r", V(wf, wr + dg, q)), ("V-r", V(wf, wr - dg, q)),
+                ("V+q", V(wf, wr, q + dq)), ("V-q", V(wf, wr, q - dq))):
+            ev[key] = val
+        off = [k for k, (_, reg) in ev.items() if reg != "riding"]
+        if off:
+            return dict(interior=False, off_regime=off, s=p["s"], v_base=v, near_switch=False)
+
+        def d(kp, km, h2):
+            return (ev[kp][0] - ev[km][0]) / (2 * h2)
+
+        g = dict(interior=True, off_regime=[], near_switch=False, v_base=v,
+                 authority=self._demand_authority(wf, wr, mf_sched),
+                 F_f=d("F+f", "F-f", dg), F_r=d("F+r", "F-r", dg),
+                 F_q=d("F+q", "F-q", dq), F_v=d("F+v", "F-v", dv),
+                 R_f=d("R+f", "R-f", dg), R_r=d("R+r", "R-r", dg),
+                 R_q=d("R+q", "R-q", dq), R_v=d("R+v", "R-v", dv),
+                 C_f=d("C+f", "C-f", dg), C_r=d("C+r", "C-r", dg), C_v=d("C+v", "C-v", dv),
+                 V_f=d("V+f", "V-f", dg), V_r=d("V+r", "V-r", dg), V_q=d("V+q", "V-q", dq))
+        g["pair_FR"] = g["F_r"] * g["R_f"]
+        g["pair_RC"] = g["R_q"] * g["C_r"]
+        g["pair_CV"] = g["C_v"] * g["V_q"]
+        g["pair_RV"] = g["R_v"] * g["V_r"]
+        g["masked"] = "fuel" if g["authority"] == "gov" else (
+            "gov" if g["authority"] == "fuel" else None)
+        g["mask_leak"] = (max(abs(g["C_f"]), abs(g["V_f"])) if g["masked"] == "fuel"
+                          else max(abs(g["C_r"]), abs(g["V_r"]))
+                          if g["masked"] == "gov" else None)
+        return g
+
+    def demand_gains(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                     Tt4_max: float, phi_lim: float = 0.76,
+                     taus=(0.05, 0.05, 0.05, 0.05), inc: bool = False, r: float = 0.5,
+                     s_settle: float = 1.2, ds: float = 0.002, v_max: float = 0.20,
+                     every: int = 4) -> dict:
+        """s 1 MEASURED: **the ENTRIES move and the SPECTRUM does not.**
+
+        The two Jacobians are taken AT THE SAME STATE, computed through DIFFERENT closures
+        (`_demand_laws` against `_quad_laws`), so the agreement is a measurement and not a
+        restatement.
+
+        AND THE STATES ARE THE **CLIP** PLANT'S, WHICH IS A DISCLOSURE AND NOT A CONVENIENCE.
+        A Jacobian is a function of the state, not of which trajectory passed through it, so
+        either plant's points would do -- but only one of them has all FOUR legs riding. The
+        floor `phi_lim` is shared by the surge leg, the valve and the stator (`_shared_rig`
+        builds all three from one margin), so at the LOWERED floor this rung's own arms need
+        (s 2), the valve is off its regime at every point and there is no interior cell at all;
+        at the INHERITED floor the clip plant rides all four, and the demand plant does not
+        accelerate. Reading both matrices on the clip plant's states is what lets the SAME
+        window serve both, and it costs nothing this rung is claiming.
+
+        THE PREDICTION (anchor D2/P1/P2): `D J D^-1` with `D = -I` on the two fuel-side states,
+        so every fuel<->non-fuel off-diagonal FLIPS SIGN, every fuel<->fuel and
+        non-fuel<->non-fuel entry does not, the four cyclic products are invariant (each
+        crosses the block an even number of times) and the SPECTRUM is identical. **A cell in
+        which every entry agreed would mean the port never changed coordinates** -- rung 73's
+        `_reference` no-op, one rung on."""
+        sm = phi_lim / self.map_lp_design.phi_surge - 1.0
+        m, surge, lag = self._shared_rig(sm, taus[2], taus[3], v_max, Tt4_max,
+                                         tau_att=taus[0], tau_rel=3.0 * taus[0], inc=inc)
+        m._lag_coord, m._ref_law = "clip", "sched"
+        traj = m._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds, Tt4_max=Tt4_max,
+                               tau_gov=taus[1], surge=surge, lag=lag)[0]
+        rows, skipped = [], {"regime": 0, "switch": 0}
+        for p in traj[::every]:
+            gg = m._with_ref("sched", m._quad_gains_at, flight, p, None, surge, Tt4_max)
+            if not gg.get("interior"):
+                skipped["switch" if gg.get("near_switch") else "regime"] += 1
+                continue
+            gw = m._with_coord(
+                "demand", m._demand_gains_at, flight, p, None, surge, Tt4_max)
+            if not gw.get("interior"):
+                skipped["regime"] += 1
+                continue
+            Jw = self._jac4(gw, taus)
+            Jg = self._jac4(gg, taus)
+            pw = self._charpoly4(Jw)
+            pg = self._charpoly4(Jg)
+            # the SIGN-FLIP pattern: rows/cols 0,1 are the fuel-side block
+            flips, keeps = [], []
+            for i in range(4):
+                for j in range(4):
+                    if i == j:
+                        continue
+                    fuel_i, fuel_j = i < 2, j < 2
+                    tgt = -Jg[i][j] if (fuel_i != fuel_j) else Jg[i][j]
+                    err = abs(Jw[i][j] - tgt)
+                    scale = max(1.0, abs(Jg[i][j]))
+                    (flips if fuel_i != fuel_j else keeps).append(
+                        (err / scale, abs(Jg[i][j]), i, j))
+            rows.append(dict(
+                s=p["s"], authority=gw["authority"],
+                poly_gap=max(abs(x - y) for x, y in zip(pw, pg)),
+                poly_scale=max(abs(x) for x in pg),
+                worst_flip=max(flips)[0], worst_keep=max(keeps)[0],
+                # the entries that are NOT the same number: the port really changed coordinates
+                n_sign_changed=sum(1 for e, mag, i, j in flips if mag > 1e-6),
+                biggest_moved=max((mag for e, mag, i, j in flips), default=0.0),
+                mask_leak_w=gw["mask_leak"], mask_leak_g=gg["mask_leak"],
+                pairs_gap=max(abs(gw[k] - gg[k]) for k in
+                              ("pair_FR", "pair_RC", "pair_CV", "pair_RV"))))
+        return dict(inc=inc, phi_lim=phi_lim, taus=taus, ds=ds, n=len(rows), rows=rows,
+                    skipped=skipped,
+                    worst_poly_gap=max((x["poly_gap"] for x in rows), default=None),
+                    # RELATIVE, because the charpoly's own coefficients run to ~1/tau^4 ~ 1e5
+                    # and an absolute gap on those is not a statement about the spectrum
+                    worst_poly_rel=max((x["poly_gap"] / x["poly_scale"] for x in rows),
+                                       default=None),
+                    worst_flip=max((x["worst_flip"] for x in rows), default=None),
+                    worst_keep=max((x["worst_keep"] for x in rows), default=None),
+                    worst_pairs_gap=max((x["pairs_gap"] for x in rows), default=None),
+                    worst_mask_leak=max((max(x["mask_leak_w"] or 0.0,
+                                             x["mask_leak_g"] or 0.0) for x in rows),
+                                        default=None),
+                    min_sign_changed=min((x["n_sign_changed"] for x in rows), default=None),
+                    biggest_moved=max((x["biggest_moved"] for x in rows), default=None))
+
+    # --- s 3: THE COORDINATE vs THE FLOOR'S ADDRESS ------------------------------------------
+
+    def latch_discriminator(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                            Tt4_max: float, phi_lim: float = 0.76,
+                            taus=(0.05, 0.05, 0.05, 0.05), inc: bool = False,
+                            r: float = 0.5, s_settle: float = 1.2, ds: float = 0.005,
+                            v_max: float = 0.20) -> dict:
+        """s 3: **the ISOLATION INSTRUMENT -- which half of this rung is the coordinate, and
+        which is the floor's address.**
+
+        `demand-latched` is EXACTLY the clip plant plus the forcing (the target is capped at the
+        schedule and the state stops at it, which is rung 52's `max(0, .)` in this coordinate),
+        so differencing the three arms splits the rung in two:
+
+            latched - clip     the COORDINATE          (a forcing of `mf_dot * tau`)
+            demand  - latched  the FLOOR'S ADDRESS     (a stop on the STATE vs on the OUTPUT)
+
+        Without it the rung changes two laws at once and no cell is attributable -- rung 72's
+        SUM law and rung 73's reading C, in their fourth shape."""
+        sm = phi_lim / self.map_lp_design.phi_surge - 1.0
+        t = {}
+        for coord, ref in (("clip", "sched"), ("demand-latched", "sched"),
+                           ("demand", "sched")):
+            t[coord] = self._coord_march(flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r,
+                                         s_settle, ds, v_max, inc, coord, ref)[3]
+        n = min(len(x) for x in t.values())
+        mf_hi = max(p["mf_sched"] for p in t["clip"])
+        slope = (mf_hi - t["clip"][0]["mf_sched"]) / r
+
+        def gap(x, y, key):
+            return [abs(t[x][i][key] - t[y][i][key]) for i in range(n)]
+
+        ramp = [i for i in range(n) if t["clip"][i]["s"] < r]
+        post = [i for i in range(n) if t["clip"][i]["s"] >= r]
+        both_riding = [i for i in range(n)
+                       if t["demand"][i]["authority"] in ("fuel", "gov")
+                       and t["demand-latched"][i]["authority"] in ("fuel", "gov")]
+        dg = gap("demand-latched", "clip", "g_gov")
+        return dict(
+            inc=inc, phi_lim=phi_lim, taus=taus, ds=ds, n=n, slope=slope,
+            forcing=slope * taus[1],
+            # THE COORDINATE half: a forcing, so it lives ON the ramp and dies after it
+            coord_dTt4=max(gap("demand-latched", "clip", "Tt4")),
+            coord_dg_ramp=max(dg[i] for i in ramp) if ramp else None,
+            coord_dg_post=max(dg[i] for i in post) if post else None,
+            # and its SIZE is the schedule's slope times the clock
+            coord_dg_at_mid=dg[len(ramp) // 2] if ramp else None,
+            forcing_ratio=(dg[len(ramp) // 2] / (slope * taus[1])) if ramp else None,
+            # THE FLOOR half: a BOUNDARY property -- zero wherever both legs ride
+            floor_dTt4=max(gap("demand", "demand-latched", "Tt4")),
+            floor_dg_riding=max((abs(t["demand"][i]["g_gov"]
+                                     - t["demand-latched"][i]["g_gov"])
+                                 for i in both_riding), default=None),
+            n_both_riding=len(both_riding),
+            max_Tt4={k: max(p["Tt4"] for p in v[:n]) for k, v in t.items()},
+            min_phi={k: min(p["phi_lp"] for p in v[:n]) for k, v in t.items()})
+
+    # --- s 4: THE STOP WAS DOING THE ANTI-WINDUP, AND RUNG 73 CALLED IT THE COMPOSITION ------
+
+    def windup_law(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                   Tt4_max: float, phi_lim: float = 0.76,
+                   taus=(0.05, 0.05, 0.05, 0.05), inc: bool = False, r: float = 0.5,
+                   s_settle: float = 1.2, ds: float = 0.005, v_max: float = 0.20) -> dict:
+        """s 4 MEASURED: **rung 73's self-anti-winding is a property of the COORDINATE'S STOP,
+        not of the composition.**
+
+        Rung 73 s 0.2: *masked means `gr > gf ~ req_f`, so `dgf/ds = (req_f - gr)/tau < 0`: the
+        leg integrates the exceedance still owed... An applied-referenced leg is
+        self-anti-winding under min-select -- that is a property of the composition, not of
+        these numbers.* The motion is real and this rung reproduces it. What is NOT a property
+        of the composition is where it STOPS: in clip coordinates the leg runs INTO the floor at
+        `g = 0`; in demand coordinates the identical motion is `dw/ds = (cap - mf_app)/tau > 0`
+        with nothing in its path, and the leg has **no interior equilibrium at all** -- the
+        joint IC sweep cannot converge and the march never starts.
+
+        Reported as a CELL TABLE rather than an assertion, because *the plant does not exist*
+        is a measurement about three of the four cells and the fourth is the plant."""
+        sm = phi_lim / self.map_lp_design.phi_surge - 1.0
+        cells = {}
+        for coord in ("demand", "demand-latched"):
+            for ref in ("sched", "applied"):
+                try:
+                    traj = self._coord_march(flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r,
+                                             s_settle, ds, v_max, inc, coord, ref)[3]
+                    masked = [(p["w_fuel"] if p["authority"] == "gov" else p["w_gov"])
+                              for p in traj if p["authority"] in ("fuel", "gov")]
+                    cells[(coord, ref)] = dict(
+                        exists=True, n=len(traj), ic_iters=traj[0]["ic_iters"],
+                        ic_res=traj[0]["ic_res"],
+                        max_masked_w=max(masked) if masked else None,
+                        max_masked_over_sched=max(
+                            ((p["w_fuel"] if p["authority"] == "gov" else p["w_gov"])
+                             / p["mf_sched"] for p in traj
+                             if p["authority"] in ("fuel", "gov")), default=None),
+                        max_Tt4=max(p["Tt4"] for p in traj))
+                except AssertionError as exc:
+                    cells[(coord, ref)] = dict(exists=False, why=str(exc)[:240])
+        return dict(inc=inc, phi_lim=phi_lim, taus=taus, ds=ds,
+                    cells={f"{c}|{rf}": v for (c, rf), v in cells.items()},
+                    # the finding in one boolean: the STOP is what made rung 73's leg settle
+                    no_equilibrium_without_a_stop=(
+                        not cells[("demand", "applied")]["exists"]
+                        and cells[("demand-latched", "applied")]["exists"]),
+                    both_sched_exist=(cells[("demand", "sched")]["exists"]
+                                      and cells[("demand-latched", "sched")]["exists"]))
+
+    # --- THE REDUCE BY IDENTITY: a FLAT schedule kills the forcing --------------------------
+
+    def flat_schedule_identity(self, flight: "FlightCondition", Tt4_flat: float,
+                               phi_lim: float = 0.76, taus=(0.05, 0.05, 0.05, 0.05),
+                               inc: bool = False, s_end: float = 1.2, ds: float = 0.005,
+                               v_max: float = 0.20, Tt4_max: float = 1200.0,
+                               nu_offset: float = 0.94) -> dict:
+        """THE REDUCE THAT MATTERS -- and the only one in which this rung's own march runs.
+
+        `_lag_coord = 'clip'` reduces by DISPATCH (the march is not entered), which is exact but
+        says nothing about the new integrator. On a FLAT schedule the forcing `mf_dot*tau` is
+        identically zero and the latch's stop coincides with the clip plant's, so
+        `demand-latched` IS the clip plant -- **by identity, not by dispatch** (rung 71's form).
+
+        IT IS GATED NON-VACUOUS. A flat schedule at the running line is a plant at rest, and two
+        plants at rest agree trivially, so the march starts OFF the running line (`nu_offset`)
+        and the reader reports how many points actually had a leg riding."""
+        sm = phi_lim / self.map_lp_design.phi_surge - 1.0
+        eq = self.equilibrium(flight, Tt4_flat)
+        nu0 = (eq["nu_lp"] * nu_offset, eq["nu_hp"] * nu_offset)
+        t = {}
+        for coord in ("clip", "demand-latched"):
+            t[coord] = self._coord_march(flight, Tt4_flat, Tt4_flat, Tt4_max, sm, taus,
+                                         0.5, s_end - 0.5, ds, v_max, inc, coord, "sched",
+                                         nu0=nu0)[3]
+        n = min(len(x) for x in t.values())
+        keys = ("nu_lp", "nu_hp", "Tt4", "phi_lp", "mf", "b", "v", "g_fuel", "g_gov")
+        worst = {k: max(abs(t["clip"][i][k] - t["demand-latched"][i][k]) for i in range(n))
+                 for k in keys}
+        riding = sum(1 for i in range(n)
+                     if t["clip"][i]["authority"] in ("fuel", "gov"))
+        return dict(inc=inc, phi_lim=phi_lim, n=n, nu0=nu0, worst=worst,
+                    worst_any=max(worst.values()),
+                    bit_identical=all(t["clip"][i][k] == t["demand-latched"][i][k]
+                                      for i in range(n) for k in keys),
+                    riding=riding, non_vacuous=riding > 0,
+                    span_Tt4=(min(p["Tt4"] for p in t["clip"][:n]),
+                              max(p["Tt4"] for p in t["clip"][:n])))
+
+    def forcing_openloop(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                         Tt4_max: float, phi_lim: float = 0.76,
+                         taus=(0.05, 0.05, 0.05, 0.05), inc: bool = False, r: float = 0.5,
+                         s_settle: float = 1.2, ds: float = 0.005,
+                         v_max: float = 0.20) -> dict:
+        """s 1.2 -- THE FORCING, ISOLATED, and the reader that exists because s 3's closed-loop
+        difference CANNOT isolate it.
+
+        Two plants that differ at all differ EVERYWHERE downstream: by mid-ramp the demand march
+        is at a different state, so `latched - clip` measures the forcing PLUS every consequence
+        of having applied it, and it does not vanish after the ramp the way the forcing does.
+        (Anchor P6 is refuted on exactly this confusion, and s 9 scores it: the LAW's difference
+        is a boundary property, the TRAJECTORY's is not.)
+
+        So the forcing is read OPEN LOOP, along ONE trajectory -- the clip march's own -- with
+        both lag laws integrated against their own targets at the same states. There the
+        prediction is exact and there is nothing else in the number:
+
+            g_demand(s) - g_clip(s)  ->  d(mf_sched)/ds * tau      while the schedule moves
+                                     ->  0 (on the release clock)  after it stops
+
+        This is rungs 50/51's forced-edge device and rung 72's SUM law in a fourth shape: an
+        instrument that is NOT the plant, carried because the plant cannot answer the question
+        the derivation asks."""
+        sm = phi_lim / self.map_lp_design.phi_surge - 1.0
+        m, surge, lag, traj = self._coord_march(
+            flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle, ds, v_max, inc,
+            "clip", "sched")
+        tau_gov = taus[1]
+        slope = (max(p["mf_sched"] for p in traj) - traj[0]["mf_sched"]) / r
+        wg = traj[0]["mf_sched"]          # the governor's demand, open loop
+        gg = 0.0                          # the governor's clip, open loop
+        rows = []
+        for p in traj:
+            ms = p["mf_sched"]
+            self._b_state, self._v_state = p["b"], p["v"]
+            try:
+                cap = self._cap_gov(flight, p["nu_lp"], p["nu_hp"], ms, Tt4_max)
+            finally:
+                self._b_state, self._v_state = None, None
+            req = max(0.0, ms - cap)
+            rows.append(dict(s=p["s"], on_ramp=p["s"] < r, cap=cap, req=req,
+                             g_clip=gg, g_dem=ms - wg, delta=(ms - wg) - gg,
+                             riding=cap < ms))
+            wg += ds * (cap - wg) / tau_gov
+            gg += ds * (req - gg) / tau_gov
+        on = [x for x in rows if x["on_ramp"] and x["riding"]]
+        off = [x for x in rows if not x["on_ramp"] and x["riding"]]
+        # the LATE half of the ramp: the lag has settled onto its steady tracking error there,
+        # which is the only place the closed form is meant to hold (a first-order lag needs
+        # ~3 tau to reach it, and the leg does not even ride before that)
+        late = on[len(on) // 2:] if on else []
+        return dict(inc=inc, phi_lim=phi_lim, taus=taus, ds=ds, n=len(rows), slope=slope,
+                    predicted=slope * tau_gov, n_on_ramp=len(on), n_post=len(off),
+                    mean_delta_late=(sum(x["delta"] for x in late) / len(late)
+                                     if late else None),
+                    ratio_late=((sum(x["delta"] for x in late) / len(late))
+                                / (slope * tau_gov) if late else None),
+                    worst_rel_late=(max(abs(x["delta"] - slope * tau_gov)
+                                        for x in late) / (slope * tau_gov)
+                                    if late else None),
+                    # after the ramp the forcing is GONE and the difference unwinds to zero
+                    delta_post_first=off[0]["delta"] if off else None,
+                    delta_post_last=off[-1]["delta"] if off else None,
+                    decayed=(abs(off[-1]["delta"]) < 0.1 * abs(off[0]["delta"])
+                             if len(off) > 1 and off[0]["delta"] != 0.0 else None),
+                    rows=rows)
