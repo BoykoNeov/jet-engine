@@ -109,6 +109,12 @@ def _keys(traj, ks=("s", "nu_lp", "nu_hp", "phi_lp", "phi_hp", "Tt4", "mf", "b",
 
 # ======================================================================================
 # THE REDUCE SPINE — five arms, all by DISPATCH, all bit-for-bit (anchor P8)
+#
+# NOT MARKED `slow`, DELIBERATELY. Each of these runs two 341-point marches, so they are not
+# free, and `conftest.py` is explicit that `-m "not slow"` has no backstop against an unmarked
+# expensive test. They stay in the fast loop anyway because the reduce spine is the project's
+# spine — and because rungs 69/70/71 leave their own (2, 4 and 4 tests) unmarked for exactly
+# that reason. Every FINDING sweep below IS marked. See docs/rung72-spec.md s 7.
 # ======================================================================================
 
 def test_reduces_to_rung71_no_fuel_leg(design):

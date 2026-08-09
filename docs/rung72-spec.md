@@ -358,6 +358,19 @@ and the ledger holed exactly where the fourth loop stands alone.
 A **sibling integrator** was required, not rung 71's re-entry: a state is genuinely added, so
 rung 71's *reuse, do not copy* argument does not carry and rungs 68/69/70's precedent does.
 
+**THE FIVE REDUCE TESTS ARE DELIBERATELY NOT MARKED `slow`**, and it is recorded because
+`conftest.py` says `-m "not slow"` has no backstop. Each runs two 341-point marches, so they are
+not free — but the reduce spine is *the project's spine*, and rungs 69/70/71 leave their own
+(2, 4 and 4 tests) unmarked for the same reason. A stated choice, not an omission. Every
+FINDING sweep here — `authority_law`, `shared_gains`, `shared_cells`, `mask_discriminator`,
+`shared_bill` — **is** marked. The refusals cost nothing: each asserts before any march.
+
+**GATE TIMING IS UNMEASURED AT THIS RUNG AND SAYING SO IS THE POINT.** Three runs on this box
+gave 15:04, then 8:37, then **9:21 for the 868-test `-m "not slow"` subset** — a subset cannot
+take longer than the whole, so the box was not in a steady state and none of the three is a
+reading. CLAUDE.md's `~3:18` / `~1:18` are therefore left as the last *trustworthy* numbers and
+flagged stale, rather than overwritten with a measurement that looks verified and is not.
+
 ---
 
 ## 8. THE REFUSALS, AND THE INSTRUMENT GATED AGAINST ITSELF

@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 63348b1b-2010-4972-adee-1420b3254bc5
-  modified: 2026-08-09T13:08:29.195Z
+  modified: 2026-08-09T13:37:11.949Z
 ---
 
 Rung 72 (shipped 2026-08-09) armed rung 52's φ fuel leg BESIDE rung 47's `Tt4` governor — two
@@ -55,6 +55,16 @@ zeros — gating it would be the instrument agreeing with itself ([[rung67-casca
 retraction, third shape). Sharpest new trap: a fuel leg that lost its `_b_state`/`_v_state`
 boundary returns `F_q = F_v = 0` and its row looks exactly like a MASKED one — the rung would
 confirm its own headline through a bug. Both legs are asserted against both blind versions.
+
+**Two plumbing shapes on this ladder, both of which bit during the build.**
+1. `_stator_march` forwards a FIXED set of keywords. A refusal that lives in `integrate_fuel`
+   (`s_off`, `tau_rel`) must be tested *there* — testing it through `_stator_march` gets a
+   TypeError, not the assert. Rung 71 § 8.2 states this in prose; I rediscovered it by crash.
+   Second time the entry-point signature bit: the rung-67 reduce arm has no `v` key at all.
+2. **The dispatch predicate must name the rung's SUBJECT, not copy the parent's shape.** Gating
+   entry on `_lagged_stator()` looked right (every parent does it) and silently made two ledger
+   cells unmarchable — found only when rung 52's assert fired eight frames down. Rung 72's
+   subject is the shared actuator, so the predicate is *both fuel legs armed*, stator or not.
 
 **Next seam, named as sharpest:** an APPLIED-fuel-referenced leg. The whole triangular structure
 rests on both inherited legs computing at the SCHEDULED fuel (rungs 47/52's own discipline);
