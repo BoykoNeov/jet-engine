@@ -107,7 +107,13 @@ _CLAUDE_MD = os.path.join(_HERE, os.pardir, "CLAUDE.md")
 # date it no longer needs. The three no-grow sites (scope narration, engine.py method inventory,
 # per-seam BUILT list) were checked FIRST and none grew beyond one name and one ladder arrow.
 # ~8 B of headroom on purpose: the next rung trips this, which is the guard working.
-MAX_BYTES = 35_240
+# Bumped at rung 75 (35,760 B), the same shape as 67-74: ONE table row at 344 B (inside the
+# per-row rule), its section Layout ladder entry, and its name in the BUILT list. PAID FOR in
+# part -- rung 75 closes the "explicit ANTI-WINDUP law" entry on the live shortlist, and that
+# clause was merged into the valve/stator one rather than merely deleted, so the refund is ~40 B
+# against ~560 B of growth. The three no-grow sites (scope narration, engine.py method
+# inventory, per-seam BUILT list) were checked first and only the last grew, by one name.
+MAX_BYTES = 35_760
 MAX_LINES = 300
 
 

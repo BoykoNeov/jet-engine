@@ -17526,6 +17526,13 @@ class DemandCoordinateTransient(AppliedReferenceTransient):
 
     _lag_coord = "clip"
 
+    # RUNG 75's SECOND HOOK, and the default is the inherited literal, so this rung is unmoved.
+    # The joint IC sweep is a FIXED-POINT ITERATION and rung 75 s 0.3 shows its residual falls
+    # GEOMETRICALLY at a ratio the anti-windup device sets, so `60` is a cut across a geometric
+    # sequence and not a property of any plant. It is raised ONLY in a rung-75 reader, to
+    # measure a derived iteration count; every PLANT in this family keeps the inherited cap.
+    _ic_cap = 60
+
     # --- the UNFLOORED cap: the inherited bracket, walked the other way ----------------------
 
     @staticmethod
@@ -17635,6 +17642,14 @@ class DemandCoordinateTransient(AppliedReferenceTransient):
         coordinate is less protective*) and passed every gate one would think to write. Anchor
         s 0.4; gated directly on a known-attack point."""
         return lag.tau(w, cap)
+
+    @staticmethod
+    def _windup_tau():
+        """RUNG 75's hook, and on THIS rung it returns `None` -- which is s 4's finding stated
+        as code. The clip coordinate has an anti-windup device BY ACCIDENT (rung 52's
+        `max(0, .)`, named for the first time in 22 rungs); the demand coordinate has NONE, and
+        that is why `demand x applied` has no interior equilibrium here."""
+        return None
 
     def at_lever(self, vsv_lp: float = 0.0, vsv_hp: float = 0.0, vsv_sched_lp=None,
                  vsv_sched_hp=None, bleed: float = 0.0, bleed_sched=None,
@@ -17749,9 +17764,16 @@ class DemandCoordinateTransient(AppliedReferenceTransient):
         tau_s = lim_s.tau if has_v else None
         has_q = self._lagged()
         tau_q = self.bleed_lim.tau if has_q else None
+        # RUNG 75's ONE HOOK INTO THIS MARCH. `None` here is rung 74, and every branch guarded
+        # by it is NOT TAKEN -- so this rung's floats are untouched by construction, and the
+        # inherited bit-for-bit gates are what say so. Rung 73's `_reference` precedent, with
+        # the difference that this hook is genuinely in the march (rung 73's was in a reader,
+        # which is exactly why that one could confirm having measured nothing).
+        tau_t = self._windup_tau()
         self._rk4_floor_shared(
             ds, 1.0 / tau_gov + 1.0 / min(lag.tau_att, lag.tau_rel)
-            + (1.0 / tau_q if has_q else 0.0) + (1.0 / tau_s if has_v else 0.0))
+            + (1.0 / tau_q if has_q else 0.0) + (1.0 / tau_s if has_v else 0.0)
+            + (2.0 / tau_t if tau_t is not None else 0.0))
         Tt2, pt2, _ = self._inlet(flight)
         base_close = super(LimitedBleedTransient, self)._close_fuel
         latched = self._lag_coord == "demand-latched"
@@ -17806,7 +17828,15 @@ class DemandCoordinateTransient(AppliedReferenceTransient):
             vcmd, vreg = stator(a, h, mf, q)
             da = 0.0 if freeze == "lp" else i["Phi_lp"] / self.rho
             dh = 0.0 if freeze == "hp" else i["Phi_hp"]
-            return (da, dh, (tf - wf) / self._demand_tau(lag, tf, wf), (tr - wr) / tau_gov,
+            dwf = (tf - wf) / self._demand_tau(lag, tf, wf)
+            dwr = (tr - wr) / tau_gov
+            if tau_t is not None:
+                # RUNG 75, THE DECLARED DEVICE: back-calculation onto the APPLIED fuel. It is
+                # identically zero on whichever leg HOLDS the actuator (`mf_app == w_auth`), so
+                # it disarms itself on the authoritative leg and acts only on the masked one.
+                dwf += (mf_app - wf) / tau_t
+                dwr += (mf_app - wr) / tau_t
+            return (da, dh, dwf, dwr,
                     ((cmd - q) / tau_q if has_q else 0.0),
                     ((vcmd - v) / tau_s if has_v else 0.0),
                     mf, i, cf, cr, cmd, vcmd, vreg, mf_sched)
@@ -17829,15 +17859,33 @@ class DemandCoordinateTransient(AppliedReferenceTransient):
         def _stop(w):
             return min(mf0, w) if latched else w
 
+        def _relax(tgt, w, mf_app, tau):
+            """RUNG 75: a TRACKED leg's initial condition is the fixed point of BOTH terms, not
+            of the lag alone. `tau_t is None` returns the target ITSELF, so rung 74's sweep is
+            this expression with the branch not taken.
+
+            The map's slope in `w` is `tau_t / (tau + tau_t)`, which is < 1 for every finite
+            `tau_t` and -> 1 as `tau_t -> inf`: the device turns rung 74 s 4's DIVERGENT sweep
+            into a contraction, and the rate at which it does IS how much plant it buys."""
+            if tau_t is None:
+                return tgt
+            return (tau_t * tgt + tau * mf_app) / (tau + tau_t)
+
+        def step_f(wf, wr, q, v):
+            ma = self._applied_demand(wf, wr, mf0)
+            tgt = self._demand_reference(
+                self._demand_target(cap_fuel(a, h, q, v, mf0), mf0), wf, ma)
+            return _stop(_relax(tgt, wf, ma, self._demand_tau(lag, tgt, wf))), wr, q, v
+
+        def step_r(wf, wr, q, v):
+            ma = self._applied_demand(wf, wr, mf0)
+            tgt = self._demand_reference(
+                self._demand_target(cap_gov(a, h, q, v, mf0), mf0), wr, ma)
+            return wf, _stop(_relax(tgt, wr, ma, tau_gov)), q, v
+
         steps = {
-            "f": lambda wf, wr, q, v: (
-                _stop(self._demand_reference(
-                    self._demand_target(cap_fuel(a, h, q, v, mf0), mf0), wf,
-                    self._applied_demand(wf, wr, mf0))), wr, q, v),
-            "r": lambda wf, wr, q, v: (
-                wf, _stop(self._demand_reference(
-                    self._demand_target(cap_gov(a, h, q, v, mf0), mf0), wr,
-                    self._applied_demand(wf, wr, mf0))), q, v),
+            "f": step_f,
+            "r": step_r,
             "q": lambda wf, wr, q, v: (wf, wr, q if self._b0 is not None else command(
                 a, h, max(1e-9, self._applied_demand(wf, wr, mf0)), v), v),
             "v": lambda wf, wr, q, v: (wf, wr, q, v if (self._v0 is not None or not has_v)
@@ -17846,7 +17894,7 @@ class DemandCoordinateTransient(AppliedReferenceTransient):
         assert sorted(self._ic_order4) == ["f", "q", "r", "v"], (
             f"rung-74 ic_order4 is a permutation of 'frqv'; got {self._ic_order4!r}")
         res, its = float("inf"), 0
-        for its in range(1, 61):
+        for its in range(1, self._ic_cap + 1):
             n = (wf, wr, q, v)
             for key in self._ic_order4:
                 n = steps[key](*n)
@@ -18440,3 +18488,604 @@ class DemandCoordinateTransient(AppliedReferenceTransient):
                     decayed=(abs(off[-1]["delta"]) < 0.1 * abs(off[0]["delta"])
                              if len(off) > 1 and off[0]["delta"] != 0.0 else None),
                     rows=rows)
+
+
+class AntiWindupTransient(DemandCoordinateTransient):
+    """RUNG 75. THE DECLARED ANTI-WINDUP DEVICE -- rung 74 s 10's own seam, and the cell rung
+    74 s 4 reports as NOT EXISTING. See `docs/rung75-spec.md`.
+
+    Rung 74 s 4 found rung 52's `max(0, .)` to be this family's anti-windup device *by
+    accident*, and found that removing it leaves the masked applied-referenced leg with
+
+        dw/ds = ( cap - mf_app ) / tau  > 0 ,  nothing in its path
+
+    -- no interior equilibrium, so the joint IC sweep diverges and `demand x applied` HAS NO
+    PLANT. This rung declares the device the accident was standing in for. The textbook one is
+    BACK-CALCULATION: the masked leg's state is pulled toward the fuel actually applied, on its
+    own clock `tau_t`.
+
+        dw/ds = ( target - w ) / tau  +  ( mf_app - w ) / tau_t          [`track`]
+
+    THE DEVICE DISARMS ITSELF ON THE LEG THAT HOLDS THE ACTUATOR. `mf_app = min(mf_sched, wf,
+    wr)`, so on the authoritative leg `mf_app == w_auth` and the added term is IDENTICALLY
+    ZERO -- not small, zero. So rung 72's *ONE plant IS rungs 68/69/70/71 by AUTHORITY* is
+    untouched, and everything this rung does, it does to the MASKED leg.
+
+    > **HEADLINE -- AN ANTI-WINDUP DEVICE IS DECISIVE ON THE SPECTRUM AND INERT ON THE RANK:
+    > THE EXACT INVERSE OF RUNG 74's COORDINATE.** The tracking term is STATE-DEPENDENT, so
+    > unlike rung 74's forcing it is *in* the Jacobian -- it writes `-1/tau_t` onto the masked
+    > leg's own diagonal, which rung 73's applied reference had cancelled to zero. **The masked
+    > pole leaves the ORIGIN, `zeros` loses `n_masked`, and `det J` -- dead since rung 73 --
+    > comes back alive.** And `n_live` does not move: the term sits in the masked leg's ROW,
+    > reading the authoritative leg's state, while the masked COLUMN stays zero because
+    > `min()` is still flat in what the masked leg holds. Rung 74 moved the bill and not the
+    > spectrum; this moves the spectrum and not the rank.
+
+    > **AND THE ACCIDENT WAS TRACKING THE WRONG SIGNAL.** The inherited stop clamps the state
+    > at the SCHEDULE (`w <= mf_sched`, rung 74's `demand-latched`); the declared device pulls
+    > it toward the APPLIED fuel (`mf_app <= mf_sched`). The two therefore coincide EXACTLY
+    > while no leg is cutting and diverge only where one is -- which is the regime the whole
+    > limiter family lives in.
+
+    THE PARK LAW, derived and then measured. Setting `dw/ds = 0` for a masked leg under the
+    APPLIED reference -- where `target = w + cap - mf_app`, so the `w` cancels out of the first
+    term -- gives
+
+        w* = mf_app + (tau_t / tau) * ( cap - mf_app )
+
+    an offset ABOVE the applied fuel, proportional to the leg's own slack and to the CLOCK
+    RATIO. Both limits are the rungs on either side: `tau_t -> 0` parks the leg at `mf_app`
+    exactly (textbook perfect tracking, and a leg poised to take the actuator with no unwinding
+    to do), `tau_t -> inf` recovers rung 74's divergence. Under the `sched` reference the first
+    term keeps its own `w` and the park law is the weighted mean
+    `w* = (tau_t*cap + tau*mf_app) / (tau + tau_t)` -- **two different park laws, which is what
+    makes the windup x reference 2x2 non-degenerate.**
+
+    THE FOURTH DECLARED KNOB, beside `_share_law` (72), `_ref_law` (73) and `_lag_coord` (74):
+
+        none    no declared device -- RUNG 74, by the branch not being taken
+        track   back-calculation onto `mf_app` on the clock `tau_t` -- THIS RUNG
+
+    `clip x track` is **REFUSED**: rung 52's `max(0, .)` is still in that coordinate, so the
+    cell would run TWO anti-windup devices at once -- rung 63's *change one law at a time*,
+    which rung 74 s 2 records itself breaking in a `for` loop. `demand-latched x track` is
+    refused for the same reason, one device on.
+
+    `tau_t` IS A NEW CONSTANT -- the first new clock since rung 65 -- and it cannot be derived
+    from anything shipped. Every finding here is therefore a property of the SWEEP (the two
+    limits and the monotone trend between them), never of a chosen value, which is the
+    treatment `phi_lim` has had since rungs 36/49. Its fast end is GRID-LIMITED and the bound
+    is arithmetic, not taste: the device adds `1/tau_t` to each of the two fuel-side diagonals,
+    so `_rk4_floor_shared` admits `tau_t >= 2*ds / (2 - ds*sum(1/tau_i))`, i.e. `tau_t >=
+    0.00625` at the inherited `ds = 0.005` and four clocks of `0.05`. Perfect tracking is not
+    reachable on this grid and is not claimed.
+
+    Usage:
+        t = AntiWindupTransient(design, FLIGHT, 1.0, map_lp=..., map_hp=..., bleed_lim=bl)
+        t._lag_coord, t._windup_law, t._tau_t = "demand", "track", 0.05
+
+    THE REDUCE: `_windup_law = 'none'` is rung 74 with the hook's branch not taken -- the same
+    march, the same floats. It is gated non-vacuous the way rung 73 gated its own: the same
+    machine under `track` must DIFFER.
+    """
+
+    _windup_law = "none"
+    _tau_t = None
+
+    # --- the device, in ONE place ------------------------------------------------------------
+
+    def _windup_tau(self):
+        """The hook rung 74's march reads. `None` is rung 74 EXACTLY -- every branch guarded by
+        it is skipped, so the reduce is not a tolerance."""
+        if self._windup_law != "track":
+            return None
+        assert self._lag_coord == "demand", (
+            "rung-75: `track` is REFUSED outside the plain DEMAND coordinate. In `clip` rung "
+            "52's `max(0, .)` is still there and in `demand-latched` the latch is, so either "
+            "cell would run TWO anti-windup devices at once and attribute the result to this "
+            f"one -- rung 63's change-one-law-at-a-time. Got _lag_coord = {self._lag_coord!r}.")
+        assert isinstance(self._tau_t, (int, float)) and self._tau_t > 0.0, (
+            "rung-75: the tracking clock `tau_t` is this rung's ONE new constant and it is "
+            f"DECLARED, never defaulted; got {self._tau_t!r}. It has no derivation from "
+            "anything shipped, so every finding is a property of the SWEEP.")
+        return float(self._tau_t)
+
+    def integrate_fuel(self, flight: "FlightCondition", fuel_schedule, nu0,
+                       s_end: float, ds: float, freeze=None, Tt4_max=None,
+                       tau_gov=None, accel=None, surge=None, s_off=None,
+                       tau_rel=None, lag=None) -> list:
+        assert self._windup_law in ("none", "track"), (
+            "rung-75: the ANTI-WINDUP LAW is this rung's subject and it is DECLARED; got "
+            f"{self._windup_law!r}. 'none' is rung 74 (no declared device -- the demand "
+            "coordinate has NONE, which is rung 74 s 4); 'track' is back-calculation onto the "
+            "applied fuel.")
+        if self._windup_law == "track":
+            # THE REFUSALS ARE CHECKED HERE AND NOT ONLY IN `_windup_tau`, because `clip`
+            # DISPATCHES OUT of this ladder before any hook is read -- so a `clip x track`
+            # march would have run rung 73 silently and reported it as this rung.
+            self._windup_tau()
+        return super().integrate_fuel(
+            flight, fuel_schedule, nu0, s_end, ds, freeze=freeze, Tt4_max=Tt4_max,
+            tau_gov=tau_gov, accel=accel, surge=surge, s_off=s_off, tau_rel=tau_rel, lag=lag)
+
+    # --- the four knobs, carried: the THIRTEENTH instance of rungs 61-74's trap ---------------
+
+    def at_lever(self, vsv_lp: float = 0.0, vsv_hp: float = 0.0, vsv_sched_lp=None,
+                 vsv_sched_hp=None, bleed: float = 0.0, bleed_sched=None,
+                 bleed_lim=None, stator_lim=None, stator_inc=None
+                 ) -> "AntiWindupTransient":
+        """THE THIRTEENTH INSTANCE, now with FOUR knobs to drop instead of three."""
+        de, fd, md, rho, lpd = self._ctor
+        m = AntiWindupTransient(
+            de, fd, md, map_lp=self.map_lp_design, map_hp=self.map_hp_design, rho=rho,
+            vsv_lp=vsv_lp, vsv_hp=vsv_hp, vsv_sched_lp=vsv_sched_lp,
+            vsv_sched_hp=vsv_sched_hp, bleed=bleed, bleed_sched=bleed_sched,
+            bleed_lim=bleed_lim, stator_lim=stator_lim, stator_inc=stator_inc,
+            lp_disabled=lpd)
+        m._ref_law, m._lag_coord = self._ref_law, self._lag_coord
+        m._windup_law, m._tau_t, m._ic_cap = self._windup_law, self._tau_t, self._ic_cap
+        return m
+
+    def _shared_rig(self, sm, tau, tau_s, v_max, Tt4_max, tau_att=0.05, tau_rel=0.15,
+                    inc=False, fuel=True, valve=True, stator=True, gov=True):
+        """Rung 74's rig with the DEVICE carried too -- a fourth knob on the same leak."""
+        m, surge, lag = super()._shared_rig(sm, tau, tau_s, v_max, Tt4_max, tau_att=tau_att,
+                                            tau_rel=tau_rel, inc=inc, fuel=fuel, valve=valve,
+                                            stator=stator, gov=gov)
+        m._windup_law, m._tau_t, m._ic_cap = self._windup_law, self._tau_t, self._ic_cap
+        return m, surge, lag
+
+    def _windup_march(self, flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle, ds,
+                      v_max, inc, coord, ref, law, tau_t, nu0=None):
+        """One rig, one march, under FOUR named knobs -- rung 74's `_coord_march` with the
+        device declared at the call site rather than inherited from whatever `self` happens to
+        carry (the same trap, one knob on)."""
+        tau_f, tau_gov, tau_q, tau_s = taus
+        m, surge, lag = self._shared_rig(sm, tau_q, tau_s, v_max, Tt4_max,
+                                         tau_att=tau_f, tau_rel=3.0 * tau_f, inc=inc)
+        m._lag_coord, m._ref_law = coord, ref
+        m._windup_law, m._tau_t, m._ic_cap = law, tau_t, self._ic_cap
+        traj = m._stator_march(flight, Tt4_lo, Tt4_hi, r, s_settle, ds, nu0=nu0,
+                               Tt4_max=Tt4_max, tau_gov=tau_gov, surge=surge, lag=lag)[0]
+        return m, surge, lag, traj
+
+    # --- THE INSTRUMENT: the RHS, differenced END TO END ---------------------------------------
+
+    def _with_windup(self, law, tau_t, fn, *a, **kw):
+        """Run a reader under a named DEVICE, restored in a `finally` -- rung 62's reason,
+        NINTH reload."""
+        prev = (self._windup_law, self._tau_t)
+        self._windup_law, self._tau_t = law, tau_t
+        try:
+            return fn(*a, **kw)
+        finally:
+            self._windup_law, self._tau_t = prev
+
+    def _rhs_laws(self, flight: "FlightCondition", a: float, h: float, mf_sched: float,
+                  accel, surge, Tt4_max: float, tau_f: float, tau_gov: float):
+        """THE FOUR RIGHT-HAND SIDES as closures of all four states -- **not the four targets**,
+        and that difference is this rung's one load-bearing implementation cost.
+
+        EVERY INHERITED GAINS READER DIFFERENCES THE *TARGET* AND HANDS THE RESULT TO `_jac4`,
+        WHICH ASSEMBLES `J[i][j] = (dcmd_i/dx_j - delta_ij)/tau_i`. The tracking term
+        `(mf_app - w)/tau_t` is in NEITHER: it is not part of any leg's target, and `tau_t` is
+        not in `taus`. **So `demand_gains` run on the `track` cell would report the masked
+        diagonal unchanged, `det J` still dead and the spectrum invariant -- a PERFECT
+        REFUTATION OF THIS RUNG'S HEADLINE, having measured nothing.** That is rung 73's
+        `_reference` no-op with the sign flipped, and it would pass every gate one would think
+        to write.
+
+        The repair is to difference the DERIVATIVE, so the fuel rows are measured end to end
+        and the diagonal is a measurement rather than a construction. `tau_t` is deliberately
+        NOT added to `taus`: letting `_jac4` write `-1/tau_t` onto the diagonal would be the
+        SEVENTH instance of the shipped-instrument-agrees-with-itself pattern (rung 67 gate 9,
+        rung 71 s 1.4, rung 72 ss 4 and 8, rung 73's `_reference`, rung 74 s 1.1). Rung 73
+        WEAKENED `_jac4` to *measure* these two diagonals; this finishes that move for all four.
+
+        `tau_f` IS FROZEN AT THE BASE POINT and not recomputed per perturbation -- rung 72's own
+        convention (`tau_f = lag.tau(p['required_fuel'], p['g_fuel'])` passed in as a constant),
+        because rung 52's lag is a STEP in the attack/release direction and central-differencing
+        across it would measure the step, not the plant."""
+        Tt2, pt2, _ = self._inlet(flight)
+        base_close = super(LimitedBleedTransient, self)._close_fuel
+        tau_t = self._windup_tau()
+
+        def _track(w, mf_app):
+            return 0.0 if tau_t is None else (mf_app - w) / tau_t
+
+        def F(wf, wr, q, v):
+            self._b_state, self._v_state = q, v
+            try:
+                cap = self._cap_fuel(flight, a, h, mf_sched, accel, surge)
+            finally:
+                self._b_state, self._v_state = None, None
+            ma = self._applied_demand(wf, wr, mf_sched)
+            tgt = self._demand_reference(self._demand_target(cap, mf_sched), wf, ma)
+            return ((tgt - wf) / tau_f + _track(wf, ma),
+                    "riding" if cap < mf_sched else "dormant")
+
+        def R(wf, wr, q, v):
+            self._b_state, self._v_state = q, v
+            try:
+                cap = self._cap_gov(flight, a, h, mf_sched, Tt4_max)
+            finally:
+                self._b_state, self._v_state = None, None
+            ma = self._applied_demand(wf, wr, mf_sched)
+            tgt = self._demand_reference(self._demand_target(cap, mf_sched), wr, ma)
+            return ((tgt - wr) / tau_gov + _track(wr, ma),
+                    "riding" if cap < mf_sched else "dormant")
+
+        def C(wf, wr, q, v):
+            self._v_state = v
+            try:
+                _, b, reg = self._solve_b(self._closer(
+                    base_close, a, h, max(1e-9, self._applied_demand(wf, wr, mf_sched)),
+                    Tt2, pt2))
+                return (b - q) / self.bleed_lim.tau, reg
+            finally:
+                self._v_state = None
+
+        def V(wf, wr, q, v):
+            self._b_state = q
+            try:
+                _, vv, reg = self._solve_v(self._closer_v(
+                    base_close, a, h, max(1e-9, self._applied_demand(wf, wr, mf_sched)),
+                    Tt2, pt2))
+                return (vv - v) / self._stator_leg().tau, reg
+            finally:
+                self._b_state = None
+
+        return F, R, C, V
+
+    def _rhs_gains_at(self, flight, p, accel, surge, Tt4_max, tau_f, tau_gov, dg=1e-7,
+                      dq=1e-5, dv=1e-4, switch_guard=4.0):
+        """THE SIXTEEN central differences -- the WHOLE matrix, diagonals included. Rung 72's
+        two filters are kept verbatim (REGIME on every perturbed evaluation, SWITCH PROXIMITY
+        on the `min()` kink).
+
+        NO `manifold` KNOB, and its absence is the honest option rather than a dropped feature.
+        Rung 74's reader needed `_manifold_v` because it read the DEMAND matrix at the CLIP
+        plant's states, where `v` belongs to a different plant; every cell here is read on the
+        trajectory of the plant it is a Jacobian of, so `p['v']` IS the state."""
+        a, h, mf_sched = p["nu_lp"], p["nu_hp"], p["mf_sched"]
+        wf = p["w_fuel"] if "w_fuel" in p else mf_sched - p["g_fuel"]
+        wr = p["w_gov"] if "w_gov" in p else mf_sched - p["g_gov"]
+        q, v = p["b"], p["v"]
+        assert self._lagged() and self._lagged_stator(), (
+            "rung-75: the RHS reader measures all FOUR rows, so both the valve and the stator "
+            "must be lagged states -- rungs 65/66's refusal of an instantaneous leg beside "
+            "lagged ones, inherited.")
+        F, R, C, V = self._rhs_laws(flight, a, h, mf_sched, accel, surge, Tt4_max,
+                                    tau_f, tau_gov)
+        if abs(wf - wr) <= switch_guard * dg:
+            return dict(interior=False, off_regime=["switch"], s=p["s"], near_switch=True)
+        base = (wf, wr, q, v)
+        steps = (dg, dg, dq, dv)
+        laws = (F, R, C, V)
+        J, off = [[0.0] * 4 for _ in range(4)], []
+        vals = {}
+        for j in range(4):
+            for sgn in (+1, -1):
+                x = list(base)
+                x[j] += sgn * steps[j]
+                for i, law in enumerate(laws):
+                    val, reg = law(*x)
+                    if reg != "riding":
+                        off.append("%s%s%d" % ("FRCV"[i], "+-"[sgn < 0], j))
+                    vals[(i, j, sgn)] = val
+        if off:
+            return dict(interior=False, off_regime=off, s=p["s"], near_switch=False)
+        for i in range(4):
+            for j in range(4):
+                J[i][j] = (vals[(i, j, +1)] - vals[(i, j, -1)]) / (2 * steps[j])
+        auth = self._demand_authority(wf, wr, mf_sched)
+        masked = "fuel" if auth == "gov" else ("gov" if auth == "fuel" else None)
+        im = 0 if masked == "fuel" else (1 if masked == "gov" else None)
+        ia = 1 if masked == "fuel" else (0 if masked == "gov" else None)
+        # THE TRACKING TERM ON THE LEG THAT HOLDS THE ACTUATOR IS THE ZERO **FUNCTION**, not a
+        # small number: `mf_app = min(mf_sched, wf, wr) == w_auth` in a NEIGHBOURHOOD, so it is
+        # zero at the base point AND at both perturbations of that leg's own state. That is
+        # what leaves rung 72's `ONE plant IS rungs 68/69/70/71 by AUTHORITY` untouched.
+        leak = None
+        if ia is not None:
+            leak = 0.0
+            for sgn in (+1, -1):
+                x = list(base)
+                x[ia] += sgn * steps[ia]
+                leak = max(leak, abs(self._applied_demand(x[0], x[1], mf_sched) - x[ia]))
+            leak = max(leak, abs(self._applied_demand(wf, wr, mf_sched) - base[ia]))
+        return dict(interior=True, off_regime=[], near_switch=False, J=J, s=p["s"],
+                    authority=auth, masked=masked, v_base=v,
+                    # the MASKED COLUMN -- what rung 72/73/74 call the triangularity
+                    mask_leak=(max(abs(J[i][im]) for i in range(4) if i != im)
+                               if im is not None else None),
+                    masked_diag=J[im][im] if im is not None else None,
+                    auth_diag=J[ia][ia] if ia is not None else None,
+                    masked_row_auth=J[im][ia] if im is not None else None,
+                    track_leak=leak)
+
+    # --- s 1: THE POLE, THE DETERMINANT, AND THE RANK THAT DOES NOT MOVE ----------------------
+
+    def _windup_rows(self, flight, sm, ref, tau_t, taus, inc, Tt4_lo, Tt4_hi, Tt4_max,
+                     r, s_settle, ds, v_max, every):
+        """`track` against `none` AT THE SAME STATES, both through `_rhs_laws`.
+
+        THE STATES ARE THE CLIP PLANT'S AT THE INHERITED FLOOR, which is rung 74 s 1.3's
+        disclosure inherited word for word and for its own reason: `_shared_rig` gives every
+        leg ONE margin, so at the lowered floor s 2's arms need, the VALVE is off-regime at
+        every point and `_riding4` returns NOTHING (measured, 0 of 0 -- the first reader written
+        here returned an empty table and that is why this paragraph exists). A Jacobian is a
+        function of the STATE, and every claim in this section is a DIFFERENCE between two laws
+        at ONE state, so the choice of trajectory cannot manufacture one."""
+        m, surge, lag, traj = self._windup_march(
+            flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle, ds, v_max, inc,
+            "clip", ref, "none", None)
+        m._lag_coord = "demand"
+        pts = m._riding4(traj, m.bleed_lim.b_max)
+        rows = []
+        for p in pts[::every]:
+            tau_f = lag.tau(p["required_fuel"], p["g_fuel"])
+            g = m._with_windup("track", tau_t, m._rhs_gains_at, flight, p, None, surge,
+                               Tt4_max, tau_f, taus[1])
+            if not g.get("interior") or g["masked"] is None:
+                continue
+            g0 = m._with_windup("none", None, m._rhs_gains_at, flight, p, None, surge,
+                                Tt4_max, tau_f, taus[1])
+            if not g0.get("interior"):
+                continue
+            rate = 1.0 / tau_f + sum(1.0 / t for t in taus[1:])
+            c, c0 = m._charpoly4(g["J"]), m._charpoly4(g0["J"])
+            rt, rt0 = m._quartic_roots_c(c), m._quartic_roots_c(c0)
+            tau_masked = tau_f if g["masked"] == "fuel" else taus[1]
+            rows.append(dict(
+                s=p["s"], auth=g["authority"], masked=g["masked"], tau_masked=tau_masked,
+                masked_diag=g["masked_diag"], masked_diag0=g0["masked_diag"],
+                auth_diag=g["auth_diag"], auth_diag0=g0["auth_diag"],
+                row_auth=g["masked_row_auth"], row_auth0=g0["masked_row_auth"],
+                mask_leak=g["mask_leak"], mask_leak0=g0["mask_leak"],
+                track_leak=g["track_leak"], det=c[4], det0=c0[4],
+                zeros=sum(1 for z in rt if abs(z) < 1e-4 * rate),
+                zeros0=sum(1 for z in rt0 if abs(z) < 1e-4 * rate)))
+        return rows, len(pts)
+
+    def windup_gains(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                   Tt4_max: float, phi_lim: float = 0.80,
+                   taus=(0.05, 0.05, 0.05, 0.05), tau_ts=(0.05, 0.0125),
+                   refs=("applied", "sched"), inc: bool = False, r: float = 0.5,
+                   s_settle: float = 1.2, ds: float = 0.005, v_max: float = 0.20,
+                   every: int = 8) -> dict:
+        """s 1 MEASURED: **the pole LEAVES THE ORIGIN, `det J` REVIVES, and the RANK does not
+        move** -- the exact inverse of rung 74.
+
+        Rung 74's coordinate was a STATE-INDEPENDENT forcing, so it was in no Jacobian at all
+        and the spectrum was invariant. This device's term is STATE-DEPENDENT: it writes
+        `-1/tau_t` onto the masked leg's own diagonal -- **the one rung 73's applied reference
+        had cancelled to exactly zero** -- so the masked pole moves off the origin, `zeros`
+        loses `n_masked` and `det J`, dead since rung 73, comes back. And `n_live` is UNMOVED,
+        because the term sits in the masked leg's ROW (it reads the authoritative leg through
+        `mf_app`) while the masked COLUMN stays zero: `min()` is still flat in what the masked
+        leg holds.
+
+        THE REVIVAL IS `applied`-ONLY, and that is one mechanism with two faces rather than two
+        findings. Under `sched` the masked diagonal was ALREADY `-1/tau` (the target is `cap`,
+        which does not contain `w`), so the device moves it to `-(1/tau + 1/tau_t)` and nothing
+        was ever dead there.
+
+        Read through `_rhs_laws`, never `_jac4` -- anchor s 0.6, and the reason it is a section
+        of the anchor rather than a footnote: a target-differencing reader is BLIND to this
+        rung's whole subject and would have returned a perfect refutation of the headline."""
+        sm = phi_lim / self.map_lp_design.phi_surge - 1.0
+        cells = {}
+        for ref in refs:
+            for tau_t in tau_ts:
+                rows, n = self._windup_rows(flight, sm, ref, tau_t, taus, inc, Tt4_lo, Tt4_hi,
+                                            Tt4_max, r, s_settle, ds, v_max, every)
+                if not rows:
+                    cells[f"{ref}|{tau_t}"] = dict(n=0, n_riding=n)
+                    continue
+                cells[f"{ref}|{tau_t}"] = dict(
+                    n=len(rows), n_riding=n, tau_t=tau_t, ref=ref,
+                    # P1: the masked diagonal IS the device's own clock (applied) or the two
+                    # rates ADDED (sched) -- rung 66's identity in a fifth shape
+                    masked_diag=(min(r_["masked_diag"] for r_ in rows),
+                                 max(r_["masked_diag"] for r_ in rows)),
+                    masked_diag0=(min(r_["masked_diag0"] for r_ in rows),
+                                  max(r_["masked_diag0"] for r_ in rows)),
+                    diag_err=max(abs(r_["masked_diag"]
+                                     - (-1.0 / tau_t if ref == "applied"
+                                        else -(1.0 / tau_t + 1.0 / r_["tau_masked"])))
+                                 * min(tau_t, 1.0) for r_ in rows),
+                    # P2: the device is the ZERO FUNCTION on the leg that HOLDS
+                    auth_diag_moved=max(abs(r_["auth_diag"] - r_["auth_diag0"])
+                                        / max(1e-30, abs(r_["auth_diag0"])) for r_ in rows),
+                    track_leak=max(r_["track_leak"] for r_ in rows),
+                    # P3: the masked COLUMN, untouched -- `n_live <= 3` a FOURTH time
+                    mask_leak=max(r_["mask_leak"] for r_ in rows),
+                    mask_leak0=max(r_["mask_leak0"] for r_ in rows),
+                    # P4/P5: the determinant and the zero count
+                    det=(min(r_["det"] for r_ in rows), max(r_["det"] for r_ in rows)),
+                    det0=(min(r_["det0"] for r_ in rows), max(r_["det0"] for r_ in rows)),
+                    det_alive=min(abs(r_["det"]) for r_ in rows),
+                    det0_alive=max(abs(r_["det0"]) for r_ in rows),
+                    zeros=sorted({r_["zeros"] for r_ in rows}),
+                    zeros0=sorted({r_["zeros0"] for r_ in rows}),
+                    # P6: the masked ROW's coupling to the authoritative leg
+                    row_err=max(abs(r_["row_auth"]
+                                    - (1.0 / tau_t - 1.0 / r_["tau_masked"] if ref == "applied"
+                                       else 1.0 / tau_t)) * min(tau_t, 1.0) for r_ in rows),
+                    row_auth0=(min(r_["row_auth0"] for r_ in rows),
+                               max(r_["row_auth0"] for r_ in rows)),
+                    rows=rows)
+        # the RATIOS: the masked diagonal and `det J` scale TOGETHER, which is what
+        # block-triangularity means -- `det J = masked_diag * det(live 3x3)` and the live block
+        # is rung 71's, unmoved
+        ratios = {}
+        for ref in refs:
+            a = cells.get(f"{ref}|{tau_ts[0]}")
+            b = cells.get(f"{ref}|{tau_ts[-1]}") if len(tau_ts) > 1 else None
+            if not a or not b or not a.get("rows") or not b.get("rows"):
+                continue
+            pr = [(x, y) for x, y in zip(a["rows"], b["rows"]) if x["s"] == y["s"]]
+            if not pr:
+                continue
+            ratios[ref] = dict(
+                n=len(pr),
+                diag=(min(y["masked_diag"] / x["masked_diag"] for x, y in pr),
+                      max(y["masked_diag"] / x["masked_diag"] for x, y in pr)),
+                det=(min(y["det"] / x["det"] for x, y in pr),
+                     max(y["det"] / x["det"] for x, y in pr)))
+        return dict(phi_lim=phi_lim, taus=taus, tau_ts=tau_ts, inc=inc, ds=ds,
+                    cells=cells, ratios=ratios)
+
+    # --- s 2: THE CONTRACTION -- rung 74's own residual, EXPLAINED ----------------------------
+
+    def contraction_law(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                        Tt4_max: float, phi_lim: float = 0.76,
+                        taus=(0.05, 0.05, 0.05, 0.05),
+                        tau_ts=(0.4, 0.2, 0.1, 0.05, 0.025, 0.0125),
+                        res0: float = 2.898e-3, tol: float = 1e-12, ic_cap: int = 400,
+                        inc: bool = False, r: float = 0.5, s_settle: float = 1.2,
+                        ds: float = 0.005, v_max: float = 0.20) -> dict:
+        """s 2: **rung 74 s 4's `2.898e-3` was not a solver failing to find a plant -- it was a
+        CONTRACTION WITH RATIO EXACTLY ONE**, and this reader is the derivation that says so.
+
+        The joint IC sweep is a fixed-point iteration. Adding the device changes its map's
+        slope in the leg's own state from `1` to
+
+            sigma = tau_t / ( tau + tau_t )   < 1 for every FINITE tau_t,  -> 1 as tau_t -> inf
+
+        so the residual falls GEOMETRICALLY and the sweep converges in
+        `ceil( ln(tol/res0) / ln sigma )` iterations -- with `res0` **rung 74's own reported
+        residual** and `tol` the inherited one. **Zero fitted constants.**
+
+        SO THE `EXISTS / DOES NOT EXIST` BOUNDARY THE FIRST PROBE SHOWED IS THE 60-ITERATION
+        CAP CUTTING A GEOMETRIC SEQUENCE, not a property of any plant: the park law gives a
+        FINITE equilibrium at every finite `tau_t`, and rung 74's cell is the `sigma = 1` limit
+        where the residual has nowhere to go. **Rung 74's verdict stands and its number is
+        explained.**
+
+        THE CAP IS RAISED HERE AND ONLY HERE. `_ic_cap` defaults to the inherited `60` on every
+        plant in this family; this reader is measuring a DERIVED count and needs room for it."""
+        import math
+        sm = phi_lim / self.map_lp_design.phi_surge - 1.0
+        rows = []
+        for tau_t in tau_ts:
+            sigma = tau_t / (taus[0] + tau_t)
+            pred = math.ceil(math.log(tol / res0) / math.log(sigma))
+            prev, self._ic_cap = self._ic_cap, ic_cap
+            try:
+                traj = self._windup_march(flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r,
+                                          s_settle, ds, v_max, inc, "demand", "applied",
+                                          "track", tau_t)[3]
+                got, res = traj[0]["ic_iters"], traj[0]["ic_res"]
+            except AssertionError:
+                got, res = None, None
+            finally:
+                self._ic_cap = prev
+            rows.append(dict(tau_t=tau_t, sigma=sigma, predicted=pred, measured=got, res=res,
+                             within_inherited_cap=pred <= 60))
+        hit = [x for x in rows if x["measured"] is not None]
+        return dict(phi_lim=phi_lim, taus=taus, res0=res0, tol=tol, ic_cap=ic_cap, rows=rows,
+                    n=len(hit), n_exact=sum(1 for x in hit if x["measured"] == x["predicted"]),
+                    all_exact=bool(hit) and all(x["measured"] == x["predicted"] for x in hit))
+
+    # --- s 3: THE ACCIDENT AND THE DEVICE, WHERE NOTHING IS CUTTING ---------------------------
+
+    def device_control(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                       Tt4_max: float, phi_lim: float = 0.76,
+                       taus=(0.05, 0.05, 0.05, 0.05), tau_ts=(0.05, 0.0125),
+                       refs=("sched", "applied"), inc: bool = False, r: float = 0.5,
+                       s_settle: float = 1.2, ds: float = 0.005, v_max: float = 0.20) -> dict:
+        """s 3, THE CONTROL ROW -- and it is where this rung's own prediction died.
+
+        ANCHOR P8 SAID the two devices coincide where no leg is cutting, because there
+        `mf_app = mf_sched` and the tracker pulls to exactly where the latch clamps. **REFUTED
+        ON THE STATE, HELD EXACTLY ON THE OUTPUT**, and the reason is the park law the same
+        anchor derived two lines earlier: the tracking term pulls toward `mf_app`, but the
+        TARGET term still pushes toward `cap`, and with `cap > mf_sched` (rung 74 s 0.2 measures
+        `1.303x` at `s = 0`) the balance sits ABOVE the schedule. The latch clamps AT it.
+
+        So the honest statement is a distinction, not an equality: **while nothing is cutting
+        the two devices burn identically -- 0.0, exactly -- and their STATES never agree at
+        all**, with the gap scaling as the park law's `tau_t/tau` says it must. That the
+        prediction was written on the state and the equality lives on the output is rung 74
+        P6's law/trajectory confusion in a THIRD shape (rung 58's *check the SUM, not the
+        term*), and it is scored REFUTED."""
+        sm = phi_lim / self.map_lp_design.phi_surge - 1.0
+        out = {}
+        for ref in refs:
+            for tau_t in tau_ts:
+                a = self._windup_march(flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle,
+                                       ds, v_max, inc, "demand", ref, "track", tau_t)[3]
+                b = self._windup_march(flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle,
+                                       ds, v_max, inc, "demand-latched", ref, "none", None)[3]
+                n = min(len(a), len(b))
+                dorm = [i for i in range(n) if a[i]["authority"] == "dormant"
+                        and b[i]["authority"] == "dormant"]
+                cut = [i for i in range(n) if a[i]["authority"] in ("fuel", "gov")]
+                ok, sk = ("mf", "Tt4", "nu_lp"), ("w_fuel", "w_gov")
+                out[f"{ref}|{tau_t}"] = dict(
+                    ref=ref, tau_t=tau_t, n_dormant=len(dorm), n_cutting=len(cut),
+                    dormant_output=(max(abs(a[i][k] - b[i][k]) for i in dorm for k in ok)
+                                    if dorm else None),
+                    dormant_state=(max(abs(a[i][k] - b[i][k]) for i in dorm for k in sk)
+                                   if dorm else None),
+                    cutting_output=(max(abs(a[i][k] - b[i][k]) for i in cut for k in ok)
+                                    if cut else None))
+        return dict(phi_lim=phi_lim, taus=taus, inc=inc, cells=out)
+
+    # --- s 4: THE BILL, AND THE THRESHOLD ON THE ONE NEW CONSTANT -----------------------------
+
+    def windup_bill(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                    Tt4_max: float, phi_lim: float = 0.76,
+                    taus=(0.05, 0.05, 0.05, 0.05),
+                    tau_ts=(0.00625, 0.0125, 0.025, 0.05, 0.0625, 0.075, 0.0875, 0.1),
+                    ref: str = "applied", inc: bool = False, r: float = 0.5,
+                    s_settle: float = 1.2, ds: float = 0.005, v_max: float = 0.20) -> dict:
+        """s 4: **the device's whole delivered credit is a THRESHOLD ON ITS OWN CLOCK**, and
+        the comparison that matters is against the ACCIDENT, not against `tau_t`.
+
+        Rung 47's headline concession -- *the cost of realism is that a lagged governor breaks
+        the redline hold* -- was corrected by rung 74 into a property of the COORDINATE. This
+        rung finds the third layer: within the demand coordinate, whether the redline holds is
+        a **threshold on `tau_t`**, the one constant this rung adds and cannot derive. Rung
+        54's shape (*every verdict is a threshold ON the disclosed constant*), now on a clock.
+
+        The HAND-OVER is reported beside it because anchor P9 registered its direction in
+        advance, with BOTH mechanisms named -- rung 74's P5 was refuted for guessing one."""
+        sm = phi_lim / self.map_lp_design.phi_surge - 1.0
+
+        def hand(traj):
+            for p in traj:
+                if p["authority"] == "gov":
+                    return p["s"]
+            return None
+
+        rows = []
+        for tau_t in tau_ts:
+            traj = self._windup_march(flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle,
+                                      ds, v_max, inc, "demand", ref, "track", tau_t)[3]
+            mx = max(p["Tt4"] for p in traj)
+            rows.append(dict(tau_t=tau_t, ratio=tau_t / taus[0], max_Tt4=mx,
+                             over=mx - Tt4_max, holds=mx <= Tt4_max,
+                             min_phi=min(p["phi_lp"] for p in traj), handover=hand(traj)))
+        acc = self._windup_march(flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle, ds,
+                                 v_max, inc, "demand-latched", ref, "none", None)[3]
+        acc_mx = max(p["Tt4"] for p in acc)
+        holds = [x for x in rows if x["holds"]]
+        breaks = [x for x in rows if not x["holds"]]
+        hs = [x["handover"] for x in rows if x["handover"] is not None]
+        return dict(phi_lim=phi_lim, taus=taus, ref=ref, inc=inc, ds=ds, rows=rows,
+                    accident=dict(max_Tt4=acc_mx, over=acc_mx - Tt4_max,
+                                  min_phi=min(p["phi_lp"] for p in acc), handover=hand(acc)),
+                    # THE THRESHOLD: the last clock that holds and the first that breaks
+                    tau_t_holds=max((x["tau_t"] for x in holds), default=None),
+                    tau_t_breaks=min((x["tau_t"] for x in breaks), default=None),
+                    ratio_holds=max((x["ratio"] for x in holds), default=None),
+                    ratio_breaks=min((x["ratio"] for x in breaks), default=None),
+                    # P9: monotone, and the direction discriminates the mechanism
+                    handover_monotone=all(x <= y for x, y in zip(hs, hs[1:])),
+                    handover_span=(min(hs), max(hs)) if hs else None,
+                    handover_vs_accident=((min(hs), max(hs)), hand(acc)) if hs else None,
+                    Tt4_monotone=all(x["max_Tt4"] <= y["max_Tt4"]
+                                     for x, y in zip(rows, rows[1:])))

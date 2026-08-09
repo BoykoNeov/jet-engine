@@ -28,6 +28,7 @@ from turbojet.engine import (  # noqa: E402
     ReferenceSplitTransient, StatorIncidenceLimiter, CrossSplitTransient,
     FullSplitTransient, SharedActuatorTransient, AppliedReferenceTransient,
     DemandCoordinateTransient,
+    AntiWindupTransient,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -5782,6 +5783,148 @@ def print_demand_coordinate_table(flight):
     print("    See docs/rung74-spec.md.")
 
 
+def print_anti_windup_table(flight):
+    """Rung-75 payoff: the DECLARED anti-windup device -- rung 74 s 10's own seam, and the cell
+    rung 74 s 4 reports as having no plant.
+
+    The panel is built around the sentence a reader of rungs 68-74 would carry in and get
+    wrong: *anything that moves a pole moves the rank* -- because in this family, for seven
+    rungs, whatever moved the spectrum also moved what could be counted. Here they separate."""
+    print("\nTHE DECLARED ANTI-WINDUP DEVICE (rung 75): decisive on the SPECTRUM, inert on the")
+    print("RANK -- the exact INVERSE of rung 74's coordinate.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR = 0.55
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    LO, HI, B, TMAX = 1000.0, 1400.0, 0.10, 1200.0
+    PHI_JAC, PHI_BOTH = 0.80, 0.76
+
+    def rig(phi_lim, inc=False):
+        sm = phi_lim / FLOOR - 1.0
+        return AntiWindupTransient(
+            design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0,
+            bleed_lim=BleedLimiter.from_margin(LP, B, sm, tau=0.05),
+            stator_inc=(StatorIncidenceLimiter.from_margin(LP, 0.20, sm, tau=0.05) if inc
+                        else None),
+            stator_lim=(None if inc else StatorLimiter.from_margin(LP, 0.20, sm, tau=0.05)))
+
+    print("\n  THE ONE LINE THAT IS THE WHOLE RUNG. Rung 74 removed the state floor and found")
+    print("  the masked leg had NOTHING in its path. This puts a RATE there instead of a wall:")
+    print("      none   dw/ds = (target - w)/tau                          <- RUNG 74")
+    print("      track  dw/ds = (target - w)/tau + (mf_app - w)/tau_t     <- back-calculation")
+    print("  The added term is STATE-DEPENDENT, so unlike rung 74's forcing it IS in the")
+    print("  Jacobian. That is derivation; the panel measures what it does there.")
+
+    t = rig(PHI_JAC)
+    g = t.windup_gains(flight, LO, HI, TMAX, phi_lim=PHI_JAC, tau_ts=(0.05, 0.0125),
+                       refs=("applied", "sched"))
+    print("\n  THE MASKED LEG'S OWN DIAGONAL -- the one rung 73's APPLIED reference cancelled")
+    print("  to exactly zero, which is why det J has been dead for two rungs:")
+    print("    %-10s %-8s  %-14s %-14s  %-10s %s"
+          % ("reference", "tau_t", "diag (none)", "diag (track)", "det J", "zeros"))
+    for ref in ("applied", "sched"):
+        for tt in (0.05, 0.0125):
+            c = g["cells"].get("%s|%s" % (ref, tt))
+            if not c or not c.get("n"):
+                continue
+            print("    %-10s %-8.4f  %-14.4f %-14.4f  %-10s %d -> %d"
+                  % (ref, tt, c["masked_diag0"][0], c["masked_diag"][0],
+                     "dead->%.0f" % abs(c["det_alive"]) if c["det0_alive"] < 1e-9
+                     else "alive", c["zeros0"][0], c["zeros"][0]))
+    print("  Under APPLIED the pole LEAVES THE ORIGIN and det J REVIVES; under SCHED the")
+    print("  diagonal was already -1/tau, so the device merely ADDS THE RATES and nothing was")
+    print("  ever dead. ONE mechanism, two faces.")
+
+    rr = g.get("ratios", {})
+    if "applied" in rr and "sched" in rr:
+        print("\n  AND det J FOLLOWS THE DIAGONAL EXACTLY, which is what block-triangularity")
+        print("  MEANS (det J = masked diagonal x det of rung 71's untouched 3x3 block):")
+        print("    %-10s %-22s %s" % ("reference", "diagonal ratio", "det J ratio"))
+        for ref in ("applied", "sched"):
+            print("    %-10s %-22.6f %.6f" % (ref, rr[ref]["diag"][0], rr[ref]["det"][0]))
+        print("  4.000000 where the diagonal is -1/tau_t; 2.500000 where it is the two rates")
+        print("  ADDED (100/40) -- rung 66's identity in a fifth shape, now on a DEVICE.")
+
+    print("\n  AND THE RANK DOES NOT MOVE. The term sits in the masked leg's ROW (it reads the")
+    print("  authoritative leg through mf_app); the masked COLUMN stays zero because min() is")
+    print("  still flat in what the masked leg holds:")
+    for ref in ("applied", "sched"):
+        c = g["cells"].get("%s|0.05" % ref)
+        if c and c.get("n"):
+            print("    %-10s mask_leak %.1e (none) -> %.1e (track)   track_leak %.1e"
+                  % (ref, c["mask_leak0"], c["mask_leak"], c["track_leak"]))
+    print("  So n_live is STILL <= 3 -- the FOURTH running -- and the device is the ZERO")
+    print("  FUNCTION on whichever leg holds the actuator (track_leak = 0.0, exactly), which")
+    print("  is what leaves rung 72's `one plant IS rungs 68-71 by AUTHORITY` untouched.")
+
+    c = rig(PHI_BOTH).contraction_law(flight, LO, HI, TMAX, phi_lim=PHI_BOTH,
+                                      tau_ts=(0.4, 0.2, 0.1, 0.05))
+    print("\n  AND RUNG 74's OWN RESIDUAL, EXPLAINED. Its joint IC sweep is a FIXED POINT")
+    print("  ITERATION; the device changes its map's slope from 1 to sigma = tau_t/(tau+tau_t),")
+    print("  so it converges in ceil(ln(tol/res0)/ln sigma) -- with res0 RUNG 74's OWN reported")
+    print("  2.898e-3 and tol the inherited 1e-12. Zero fitted constants:")
+    print("    %-9s %-10s %-12s %s" % ("tau_t", "sigma", "predicted", "measured"))
+    for x in c["rows"]:
+        print("    %-9.4f %-10.6f %-12d %s"
+              % (x["tau_t"], x["sigma"], x["predicted"],
+                 x["measured"] if x["measured"] is not None else "-"))
+    print("  So rung 74's `no interior equilibrium` VERDICT stands (tau_t -> inf gives sigma =")
+    print("  1 and w* -> inf) and its NUMBER was never a solver failing -- it was a contraction")
+    print("  with ratio EXACTLY ONE. The exists/does-not-exist boundary is the 60-iteration cap")
+    print("  cutting a geometric sequence, and the cap is raised in a READER, never in a plant.")
+
+    b = rig(PHI_BOTH).windup_bill(flight, LO, HI, TMAX, phi_lim=PHI_BOTH,
+                                  tau_ts=(0.0125, 0.05, 0.0625, 0.075, 0.1))
+    print("\n  THE BILL -- and rung 47's headline concession, THIRD LAYER. Rung 47: a lagged")
+    print("  governor breaks the redline hold. Rung 74: that is the COORDINATE. Rung 75: inside")
+    print("  the demand coordinate it is a THRESHOLD ON tau_t:")
+    print("    %-9s %-10s %-11s %-11s %s"
+          % ("tau_t", "tau_t/tau", "max Tt4", "over max", "hand-over"))
+    for x in b["rows"]:
+        print("    %-9.5f %-10.3f %-11.2f %+11.2f %s"
+              % (x["tau_t"], x["ratio"], x["max_Tt4"], x["over"],
+                 ("%.3f" % x["handover"]) if x["handover"] is not None else "-"))
+    a = b["accident"]
+    print("    %-9s %-10s %-11.2f %+11.2f %s"
+          % ("ACCIDENT", "-", a["max_Tt4"], a["over"],
+             ("%.3f" % a["handover"]) if a["handover"] is not None else "-"))
+    print("  The threshold is bracketed at tau_t/tau_f in (%.2f, %.2f] -- a tracking clock no"
+          % (b["ratio_holds"], b["ratio_breaks"]))
+    print("  slower than its own leg's. Rung 54's shape, now on a CLOCK. AND THE MAGNITUDE IS")
+    print("  AGAINST THE ACCIDENT, not across the sweep: tau_t moves the peak 13 K and the")
+    print("  hand-over two grid cells; the declared device beats rung 52's inherited stop by")
+    print("  ~160 K and hands over ~0.36 earlier. The whole sweep lives inside a tenth of it.")
+
+    print("\n  WHAT THIS RUNG IS. Rung 74 moved the BILL and not the spectrum; this moves the")
+    print("  SPECTRUM and not the rank. Together they separate three things this family has")
+    print("  been running together since rung 68: POLE LOCATION, `zeros`, and LIVE-LOOP COUNT.")
+    print("  Rung 71 found that zeros counts GRADIENTS, not live loops; this is its converse --")
+    print("  A POLE IS NOT A LOOP EITHER.")
+
+    print("\n  SCOPE: tau_t is a NEW CONSTANT, the first new clock since rung 65, and it is not")
+    print("    derived from anything shipped -- every finding above is a property of the SWEEP")
+    print("    or a threshold on it, never of a chosen value; its fast end is GRID-LIMITED at")
+    print("    tau_t >= 0.00625 by the inherited RK4 floor, so perfect tracking is unreachable")
+    print("    here and is not claimed; `clip x track` is REFUSED (rung 52's max(0,.) is still")
+    print("    there, so the cell would run two devices at once), which means the accident is")
+    print("    measured only against the demand coordinate's own latch; the control row is ONE")
+    print("    point (the accel arms almost immediately); the hand-over's tau_t-dependence is")
+    print("    two grid cells, at the resolution limit; the Jacobians are read at the INHERITED")
+    print("    floor and the trajectories at the lowered one, so no cell carries both; Tt4_max")
+    print("    is rung 67's imposed value and all four tau are swept march coordinates.")
+    print("    See docs/rung75-spec.md.")
+
+
 def main():
     # The tables carry unicode (Δ, ·, ≡, ≈); force UTF-8 so `python main.py` renders
     # on any console (a stock Windows cp1252 console would otherwise crash on them).
@@ -5937,6 +6080,7 @@ def main():
     print_shared_actuator_table(FLIGHT)
     print_applied_reference_table(FLIGHT)
     print_demand_coordinate_table(FLIGHT)
+    print_anti_windup_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

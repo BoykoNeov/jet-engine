@@ -69,6 +69,7 @@ these lines (the same rule CLAUDE.md lives under).
 
 - [Rung 73 applied reference](rung73-applied-reference.md) — a predicted coupling landed in the wrong COLUMN so rung 72's block survived its own seam; weakening an instrument cost 5 orders of magnitude and was worth it; the bug that returned a PERFECT confirmation having measured nothing
 - [Rung 74 demand coordinate](rung74-demand-coordinate.md) — a STATE’s coordinate is PURE BILL (no rank, all trajectory); the redline break was the COORDINATE not the lag; the clip floor was an accidental anti-windup device; a closed-loop difference cannot isolate a forcing
+- [Rung 75 anti-windup device](rung75-antiwindup-device.md) — a device is decisive on the SPECTRUM and inert on the RANK; the inherited instrument was BLIND and would have refuted the headline having measured nothing; rung 74’s “divergence” was a contraction at ratio one
 
 ## Margin sweeps — confirmations, not rungs
 - [Rung 29 π_c margin](rung29-pi-c-margin.md) — verdict confirmed at 9.4× but π_c NOT protective; the ENERGY = INVENTORY × COMPLETION sharpening
