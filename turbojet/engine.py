@@ -19586,3 +19586,457 @@ class SensedCapTransient(AntiWindupTransient):
                           if rows else None),
                     gain_err=(max(abs(x["gain"] - x["predicted"]) for x in rows)
                               if rows else None))
+
+
+# ==========================================================================================
+# RUNG 77 — THE STIFFNESS LEDGER
+# ==========================================================================================
+
+class StiffnessLedgerTransient(SensedCapTransient):
+    """RUNG 77. Rung 76 s 8's third seam: **the `1/(1-c)` gain as a design variable**
+    (docs/rung77-spec.md).
+
+    Rung 76 s 3 found that writing rung 48's leg as a set-point solve multiplies its
+    sensitivity to every other state by `1/(1-c)`, and s 8 predicted that *every other
+    set-point solve in this family (`_topping_fuel`, `_surge_fuel`) has one and it has never
+    been read*. **This rung reads all three and REFUTES that wording.**
+
+    The three residuals, and their slopes in the fuel:
+
+        accel (48)  G_a(w) = w - cap(w)           G_a' = 1 - c        DIMENSIONLESS
+        gov   (46)  G_g(w) = Tt4(w) - Tt4_max     G_g' = dTt4/dw      K per kg/s
+        phi   (49)  G_s(w) = phi_lim - phi_lp(w)  G_s' = -dphi/dw     phi per kg/s
+
+    HEADLINE: **A SET-POINT SOLVE'S SENSITIVITY IS A FORCING OVER A SLOPE, AND `1/(1-c)` IS
+    THE SLOPE HALF OF ONE LEG.** The implicit function theorem gives `dw*/dq = -G_q/G_w` for
+    all three; substituting the accel leg's residual returns rung 76 s 3's identity exactly,
+    with `1/(1-c) = 1/G_a'`. So the `1/(1-c)` is not a gain a solve BUYS -- it is that leg's
+    own residual slope, and it takes that form for ONE reason: **its set point is a formula
+    for its own actuator.** `Tt4_max` and `phi_lim` are CONSTANTS, so `G_g'` and `G_s'` have
+    no `1` to subtract from, are dimensional, and have no second reading to difference
+    against. **A floor on a STATE is not a formula for a FUEL** -- rung 76 s 0.1's own
+    sentence, read one step further, and it is why the other two legs have a STIFFNESS but
+    can never have a GAIN.
+
+    AND THE TWO ROUTES TO A SINGULARITY ARE NOT THE SAME ROUTE. `dw*/dq` diverges iff
+    `G_w -> 0`, which the accel leg reaches at `c -> 1` (rung 76 s 8's fourth seam) and the
+    phi leg reaches when ANOTHER LEVER PINS THE VARIABLE IT WATCHES -- rung 64's derived
+    `dphi/dW_f = 0` under a riding valve. This family reaches the second and never the first.
+    The governor reaches neither: nothing here pins `Tt4` at a fixed fuel.
+
+    THIS RUNG ADDS NO KNOB, NO STATE AND NO PLANT CODE. It is a pure reader, so the reduce is
+    by CONSTRUCTION rather than by dispatch -- every march it runs is `SensedCapTransient`'s
+    bit-for-bit because not one of the parent's plant methods is overridden. That also means
+    there is NO parent edit for the reduce spine to be blind to, which is what rung 76 s 6.1
+    had to spend a `git worktree` check on and this rung does not.
+
+    THE ONE OVERRIDE IS A CONSTRUCTOR, and it is the carried-knob trap wearing its FIFTEENTH
+    face: `_shared_rig` builds its machine through `at_lever`, which names its class
+    literally, so a subclass that does not re-declare it gets a rig with none of these
+    readers on it -- the trap with a CLASS in the role the knob and the table have played.
+
+    Usage:
+        t = StiffnessLedgerTransient(design, FLIGHT, 1.0, map_lp=..., map_hp=..., bleed_lim=bl)
+        t.leg_slopes(FLIGHT, 1000., 1400., 1200.)       # s 1: the three slopes + the instrument
+        t.set_point_gains(FLIGHT, 1000., 1400., 1200.)  # s 2: `dw*/dq` vs `-G_q/G_w`, per leg
+        t.singular_limit(FLIGHT, 1000., 1400., 1200.)   # s 3: rung 64's derivation, measured
+        t.stiffness_ledger(FLIGHT, 1000., 1400., 1200.) # s 4: the ordering, over the arms
+
+    Anchor: `docs/plans/rung77-anchor-solve-stiffness.md`. Gates: `tests/test_rung77.py`.
+    """
+
+    # --- THE ONE OVERRIDE, AND IT IS A CONSTRUCTOR ---------------------------------------------
+
+    def at_lever(self, vsv_lp: float = 0.0, vsv_hp: float = 0.0, vsv_sched_lp=None,
+                 vsv_sched_hp=None, bleed: float = 0.0, bleed_sched=None,
+                 bleed_lim=None, stator_lim=None, stator_inc=None
+                 ) -> "StiffnessLedgerTransient":
+        """THE FIFTEENTH INSTANCE, and the thing not carried is the CLASS. Five knobs still
+        travel; what would have leaked here is every reader below, silently, on a rig that
+        looked right and answered rung 76."""
+        de, fd, md, rho, lpd = self._ctor
+        m = StiffnessLedgerTransient(
+            de, fd, md, map_lp=self.map_lp_design, map_hp=self.map_hp_design, rho=rho,
+            vsv_lp=vsv_lp, vsv_hp=vsv_hp, vsv_sched_lp=vsv_sched_lp,
+            vsv_sched_hp=vsv_sched_hp, bleed=bleed, bleed_sched=bleed_sched,
+            bleed_lim=bleed_lim, stator_lim=stator_lim, stator_inc=stator_inc,
+            lp_disabled=lpd)
+        m._ref_law, m._lag_coord = self._ref_law, self._lag_coord
+        m._windup_law, m._tau_t, m._ic_cap = self._windup_law, self._tau_t, self._ic_cap
+        m._cap_law = self._cap_law
+        return m
+
+    # --- the instrument, in ONE place ---------------------------------------------------------
+
+    @staticmethod
+    def _slope_at(G, w: float, rel: float = 1e-6) -> float:
+        """`dG/dw` at a point -- rung 76's `_c_at` shape, generalised to ANY residual, and the
+        ONLY differencing primitive in this rung. `rel = 1e-6` is `_c_at`'s own, inherited so
+        that s 1's instrument check compares two readings taken at the SAME step (their
+        roundoff then cancels, which is what makes `1 - G_a' == c` a check on the ALGEBRA and
+        not on the arithmetic -- and s 1 says so rather than claiming nine figures)."""
+        dw = rel * max(abs(w), 1e-9)
+        return (G(w + dw) - G(w - dw)) / (2.0 * dw)
+
+    def _legs(self, flight: "FlightCondition", a: float, h: float, mf_sched: float,
+              accel, surge, Tt4_max) -> dict:
+        """THE THREE SET-POINT SOLVES, SIDE BY SIDE AND UNMIXED.
+
+        `_cap_fuel` returns `min(accel, phi)` -- min-select one level down -- and a ledger of
+        legs must never read that minimum: it would report whichever leg happened to bind and
+        call it the other's slope (rung 76 s 1.3's own trap, which cost that rung a sweep).
+        So each residual is built here from the SAME body `_cap_fuel` uses, one leg at a time,
+        and each set point comes from `_cap_free` -- the UNFLOORED cap, so a DORMANT leg still
+        has a slope. A floored cap would return `mf_sched` and this ledger would silently
+        become a ledger of the schedule.
+
+        `scale` is each leg's OWN set point and is the one normalisation used anywhere here:
+        `w` for the accel leg (whose set point IS a fuel, so the normalisation is the
+        IDENTITY), `Tt4_max` for the governor, `phi_lim` for the phi leg. Every one of them is
+        that leg's own already-imposed scalar -- **this rung adds no constant.**
+
+        `live` IS RUNG 76 s 1.3's SWITCH GUARD, ONE LEVEL OVER, and it is not optional. A leg
+        is LIVE at this point iff `G(mf_sched) > 0` -- `_cap_free`'s own test, and the sign
+        rung 49 fixed: positive means the leg must CUT. Reading the UNFLOORED cap is what lets
+        a DORMANT leg have a slope at all, and that is deliberate; but ORDERING a dormant leg's
+        gain against a live one's compares a limiter that is acting with one that is not, which
+        is the same error `_cap_fuel`'s `min` would have made one level up."""
+        R = self._residuals(flight, a, h, accel, surge, Tt4_max)
+        out = {}
+        if "accel" in R:
+            wa = self._cap_free(R["accel"], mf_sched,
+                                lambda: self._sched_fuel(flight, a, h, mf_sched, accel))
+            out["accel"] = dict(G=R["accel"], w=wa, scale=wa,
+                                live=R["accel"](mf_sched) > 0.0)
+        if "gov" in R:
+            out["gov"] = dict(G=R["gov"], w=self._cap_gov(flight, a, h, mf_sched, Tt4_max),
+                              scale=Tt4_max, live=R["gov"](mf_sched) > 0.0)
+        if "phi" in R:
+            ws = self._cap_free(R["phi"], mf_sched,
+                                lambda: self._surge_fuel(flight, a, h, mf_sched, surge))
+            out["phi"] = dict(G=R["phi"], w=ws, scale=surge.phi_lim,
+                              live=R["phi"](mf_sched) > 0.0)
+        return out
+
+    def _residuals(self, flight: "FlightCondition", a: float, h: float,
+                   accel, surge, Tt4_max) -> dict:
+        """THE THREE RESIDUALS AS CLOSURES, WITH NO SOLVE -- and the split from `_legs` is not
+        tidiness, it is the RUNG-62 `_powers` TRAP in its own clothes.
+
+        A residual closes over `self` and reads `_b_state` **when it is CALLED**, not when it
+        is built. So a reader that builds one inside a `_b_state = q` block and evaluates it
+        after the `finally` has run measures the residual **on the plant with the valve LOOP
+        CLOSED**, whatever `q` it thought it was asking about. The first version of s 2 did
+        exactly that: both `q +- dq` readings landed on the same closed-valve plant,
+        `G_q` came back **identically zero**, and the relative error against `direct` was a
+        clean `1.000e+00` -- a number with no noise in it, which is what gave it away.
+
+        Splitting the closures out makes the fix structural: s 2 rebuilds them at each `qq`
+        INSIDE that `qq`'s own block, so a residual can only ever be evaluated on the plant it
+        was built for."""
+        out = {}
+        if accel is not None:
+            def Ga(w):
+                i = self._instant_fuel(flight, a, h, w)
+                return w - accel.cap(i["n_hp"], i["pt4"] / self.pi_b)
+            out["accel"] = Ga
+        if Tt4_max is not None:
+            def Gg(w):
+                return self._instant_fuel(flight, a, h, w)["Tt4"] - Tt4_max
+            out["gov"] = Gg
+        if surge is not None:
+            k = surge.key()
+
+            def Gs(w):
+                return surge.phi_lim - self._instant_fuel(flight, a, h, w)[k]
+            out["phi"] = Gs
+        return out
+
+    def _ledger_march(self, flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle, ds,
+                      v_max, inc, margin):
+        """One rig, one march, ACCEL-ARMED -- rung 76's `_cap_march` at its own settings, with
+        the schedule built by `accel_for` on the rig that will march it (rung 76 s 7's trap,
+        whose cousin is a TABLE and not a knob)."""
+        accel = self.accel_for(flight, Tt4_lo, Tt4_hi, sm, Tt4_max, taus, v_max, inc, margin)
+        m, surge, lag, traj = self._cap_march(
+            flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle, ds, v_max, inc,
+            "clip", "sched", "none", None, "solve", accel)
+        m._lag_coord = "demand"
+        return m, surge, lag, traj, accel
+
+    # --- s 1: THE THREE SLOPES, AND THE INSTRUMENT CHECKED AGAINST RUNG 76 ---------------------
+
+    def leg_slopes(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                   Tt4_max: float, phi_lim: float = 0.80, margin: float = 0.10,
+                   taus=(0.05, 0.05, 0.05, 0.05), inc: bool = False, r: float = 0.5,
+                   s_settle: float = 1.2, ds: float = 0.005, v_max: float = 0.20,
+                   every: int = 8) -> dict:
+        """s 1: **the three residual slopes, and the ONE of them that is dimensionless.**
+
+        Each leg's `G_w` is read at ITS OWN set point, with the valve and stator FROZEN at the
+        trajectory's states (`_b_state` / `_v_state`) -- which is how every reader from rung 64
+        to rung 76 has read this plant, and is the OPEN loop. s 3 reads the phi leg the other
+        way and that is the whole difference between them.
+
+        THE INSTRUMENT IS CHECKED AGAINST RUNG 76's OWN `_c_at`, not against `solve_gain`:
+        `1 - G_a'` must be `c`. This is a check on the ALGEBRA (the two readings share a step
+        size, so their roundoff cancels) and s 1 of the spec says exactly that rather than
+        quoting the residual as agreement to eleven figures."""
+        sm = phi_lim / self.map_lp_design.phi_surge - 1.0
+        m, surge, lag, traj, accel = self._ledger_march(
+            flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle, ds, v_max, inc, margin)
+        rows = []
+        for p in m._riding4(traj, m.bleed_lim.b_max)[::every]:
+            a, h, q, v, ms = p["nu_lp"], p["nu_hp"], p["b"], p["v"], p["mf_sched"]
+            m._b_state, m._v_state = q, v
+            try:
+                legs = m._legs(flight, a, h, ms, accel, surge, Tt4_max)
+                row = dict(s=p["s"])
+                for name, L in legs.items():
+                    gw = m._slope_at(L["G"], L["w"])
+                    row[name] = dict(w=L["w"], Gw=gw, norm=L["w"] / L["scale"] * gw,
+                                     stiff=abs(L["scale"] / (L["w"] * gw)))
+                row["c"] = m._c_at(flight, a, h, accel, legs["accel"]["w"], q, v)
+                row["c_err"] = abs((1.0 - row["accel"]["Gw"]) - row["c"])
+            finally:
+                m._b_state, m._v_state = None, None
+            rows.append(row)
+
+        def span(name, key):
+            xs = [x[name][key] for x in rows]
+            return (min(xs), max(xs))
+        return dict(phi_lim=phi_lim, margin=margin, inc=inc, n=len(rows), rows=rows,
+                    # the instrument: `1 - G_a'` IS rung 76's `c`
+                    c_err=max(x["c_err"] for x in rows) if rows else None,
+                    c=span("accel", "Gw") if rows else None,
+                    # the three slopes, RAW -- and they do not share a unit
+                    Gw=({k: span(k, "Gw") for k in ("accel", "gov", "phi")} if rows else None),
+                    # the three slopes, each normalised by ITS OWN set point
+                    norm=({k: span(k, "norm") for k in ("accel", "gov", "phi")}
+                          if rows else None),
+                    stiff=({k: span(k, "stiff") for k in ("accel", "gov", "phi")}
+                           if rows else None),
+                    # P5's NON-VACUITY gate: the three are not one quantity in three costumes
+                    sep=(min(abs(x[i]["norm"] - x[j]["norm"]) for x in rows
+                             for i, j in (("accel", "gov"), ("gov", "phi"), ("accel", "phi")))
+                         if rows else None))
+
+    # --- s 2: THE SENSITIVITY ITSELF, IN A CURRENCY ALL THREE LEGS SHARE -----------------------
+
+    def set_point_gains(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                        Tt4_max: float, phi_lim: float = 0.80, margin: float = 0.10,
+                        taus=(0.05, 0.05, 0.05, 0.05), inc: bool = False, r: float = 0.5,
+                        s_settle: float = 1.2, ds: float = 0.005, v_max: float = 0.20,
+                        dq: float = 1e-5, every: int = 8) -> dict:
+        """s 2: **`dw*/dq = -G_q/G_w`, measured per leg, in kg/s per unit valve.**
+
+        THIS IS THE LEDGER'S LEGAL CURRENCY AND IT NEEDS NO NORMALISATION. s 1's three slopes
+        carry three different units, so ordering them is not a comparison; `dw*/dq` is a fuel
+        per valve position for all three legs, so ordering it IS one. The normalised table in
+        s 1 survives only because it is what reproduces rung 76 s 3's gain on the accel column.
+
+        `direct` re-solves each leg's set point at `q +- dq` -- the whole solve, exactly as the
+        plant would. `ift` differences the residual's two partials SEPARATELY at the unperturbed
+        set point. They are different computations of the same number, and P2 is that they
+        agree; a reader that computed `ift` and called it `direct` would be rung 70's gate
+        computing its own formula twice, which is why both are returned."""
+        sm = phi_lim / self.map_lp_design.phi_surge - 1.0
+        m, surge, lag, traj, accel = self._ledger_march(
+            flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle, ds, v_max, inc, margin)
+        rows = []
+        for p in m._riding4(traj, m.bleed_lim.b_max)[::every]:
+            a, h, q, v, ms = p["nu_lp"], p["nu_hp"], p["b"], p["v"], p["mf_sched"]
+
+            def at(qq):
+                m._b_state, m._v_state = qq, v
+                try:
+                    return m._legs(flight, a, h, ms, accel, surge, Tt4_max)
+                finally:
+                    m._b_state, m._v_state = None, None
+
+            def G_at(qq, name, w):
+                """The residual at `w` on the plant AS THE VALVE IS AT `qq` -- rebuilt inside
+                this block, never carried out of it (`_residuals`' whole reason)."""
+                m._b_state, m._v_state = qq, v
+                try:
+                    return m._residuals(flight, a, h, accel, surge, Tt4_max)[name](w)
+                finally:
+                    m._b_state, m._v_state = None, None
+
+            lo, mid, hi = at(q - dq), at(q), at(q + dq)
+            row = dict(s=p["s"])
+            for name in ("accel", "gov", "phi"):
+                direct = (hi[name]["w"] - lo[name]["w"]) / (2.0 * dq)
+                w0 = mid[name]["w"]
+                m._b_state, m._v_state = q, v
+                try:
+                    gw = m._slope_at(mid[name]["G"], w0)
+                finally:
+                    m._b_state, m._v_state = None, None
+                # `G_q` at FIXED `w`: the residual re-read on the perturbed plant
+                gq = (G_at(q + dq, name, w0) - G_at(q - dq, name, w0)) / (2.0 * dq)
+                ift = -gq / gw
+                row[name] = dict(w=w0, direct=direct, ift=ift, Gq=gq, Gw=gw,
+                                 live=mid[name]["live"],
+                                 err=abs(direct - ift) / max(abs(direct), 1e-30))
+            row["live"] = tuple(k for k in ("accel", "gov", "phi") if row[k]["live"])
+            rows.append(row)
+
+        def span(name, key):
+            xs = [x[name][key] for x in rows]
+            return (min(xs), max(xs))
+
+        def order_of(x, keys):
+            return tuple(sorted(keys, key=lambda k: abs(x[k]["direct"])))
+        order = [order_of(x, ("accel", "gov", "phi")) for x in rows]
+        # THE GUARDED ORDER: only legs that are actually acting at this point (rung 76 s 1.3)
+        g_order = [order_of(x, x["live"]) for x in rows if len(x["live"]) > 1]
+        return dict(phi_lim=phi_lim, margin=margin, inc=inc, n=len(rows), rows=rows,
+                    # P2: the two computations of the same number agree
+                    ift_err=max(x[k]["err"] for x in rows
+                                for k in ("accel", "gov", "phi")) if rows else None,
+                    gain={k: span(k, "direct") for k in ("accel", "gov", "phi")}
+                    if rows else None,
+                    # P3: the ORDER, smallest first, and whether it is the same at every point
+                    order=order[0] if order else None,
+                    order_stable=len(set(order)) == 1 if order else None,
+                    # ... and the SAME question asked only of the legs that are LIVE there
+                    n_guarded=len(g_order),
+                    guarded=g_order[0] if g_order else None,
+                    guarded_stable=len(set(g_order)) == 1 if g_order else None,
+                    guarded_orders=sorted(set(g_order)),
+                    # the phi leg's place, which is the half of P3 that has to hold alone
+                    phi_top=all(order_of(x, x["live"])[-1] == "phi"
+                                for x in rows if "phi" in x["live"]))
+
+    # --- s 3: THE SINGULAR LIMIT, AND RUNG 64's DERIVATION MEASURED ----------------------------
+
+    def singular_limit(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                       Tt4_max: float, phi_lim: float = 0.80, margin: float = 0.10,
+                       taus=(0.05, 0.05, 0.05, 0.05), inc: bool = False, r: float = 0.5,
+                       s_settle: float = 1.2, ds: float = 0.005, v_max: float = 0.20,
+                       spread: float = 0.10, every: int = 8) -> dict:
+        """s 3: **`dw*/dq` diverges iff `G_w -> 0`, and this family reaches that ONE way.**
+
+        RUNG 64 DERIVED, IN ITS OWN WORDS *"DERIVED, not measured"*, that where the bleed valve
+        rides it re-pins `phi_lp` to `phi_lim` at ANY fuel, so `dphi/dW_f = 0` and rung 49's
+        set-point solve is degenerate across its whole bracket. **This measures it.** The phi
+        residual is read twice at the same states: OPEN (`_b_state = q`, the valve frozen --
+        every reader from 64 to 76) and CLOSED (`_b_state = None`, the valve re-solving at
+        every trial fuel, which is the plant rung 64 is talking about).
+
+        `phi_spread` is the blunt form of the same statement and is reported beside the slope
+        because a derivative can be small for reasons a VALUE cannot: `phi_lp` read at
+        `(1 -+ spread) * w` under the closed valve, which rung 64 says must be `phi_lim` at
+        both ends and at every point between.
+
+        THE GOVERNOR IS READ IN BOTH TOO, AND THAT IS THE CONTROL. Nothing in this family pins
+        `Tt4` at a fixed fuel, so `G_g'` must be indifferent to the valve's loop -- if it is
+        not, the closed reading is measuring the valve's own motion rather than the leg's
+        degeneracy, and s 3 would be an artifact instead of a confirmation."""
+        sm = phi_lim / self.map_lp_design.phi_surge - 1.0
+        m, surge, lag, traj, accel = self._ledger_march(
+            flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle, ds, v_max, inc, margin)
+        k = surge.key()
+        rows = []
+        for p in m._riding4(traj, m.bleed_lim.b_max)[::every]:
+            a, h, q, v, ms = p["nu_lp"], p["nu_hp"], p["b"], p["v"], p["mf_sched"]
+            m._b_state, m._v_state = q, v
+            try:
+                legs = m._legs(flight, a, h, ms, accel, surge, Tt4_max)
+                ws, wg = legs["phi"]["w"], legs["gov"]["w"]
+                Gs, Gg = legs["phi"]["G"], legs["gov"]["G"]
+                op_s, op_g = m._slope_at(Gs, ws), m._slope_at(Gg, wg)
+            finally:
+                m._b_state, m._v_state = None, None
+            m._v_state = v                       # ONLY the valve is closed; the stator is not
+            try:
+                cl_s, cl_g = m._slope_at(Gs, ws), m._slope_at(Gg, wg)
+                phis = [m._instant_fuel(flight, a, h, ws * f)[k]
+                        for f in (1.0 - spread, 1.0, 1.0 + spread)]
+            finally:
+                m._v_state = None
+            rows.append(dict(s=p["s"], w_phi=ws, w_gov=wg,
+                             phi_open=op_s, phi_closed=cl_s,
+                             gov_open=op_g, gov_closed=cl_g,
+                             gov_rel=abs(cl_g - op_g) / max(abs(op_g), 1e-30),
+                             phi_spread=max(phis) - min(phis),
+                             phi_off=max(abs(x - surge.phi_lim) for x in phis)))
+        return dict(phi_lim=phi_lim, margin=margin, inc=inc, spread=spread, n=len(rows),
+                    rows=rows,
+                    # P6: the phi leg's slope DIES when the valve closes around its variable
+                    phi_open=(min(abs(x["phi_open"]) for x in rows) if rows else None),
+                    phi_closed=(max(abs(x["phi_closed"]) for x in rows) if rows else None),
+                    # the blunt form: phi_lp is phi_lim at every fuel in the band
+                    phi_off=(max(x["phi_off"] for x in rows) if rows else None),
+                    phi_spread=(max(x["phi_spread"] for x in rows) if rows else None),
+                    # THE CONTROL: the governor's slope does NOT care about the valve's loop
+                    gov_rel=(max(x["gov_rel"] for x in rows) if rows else None),
+                    gov_open=(min(abs(x["gov_open"]) for x in rows) if rows else None))
+
+    # --- s 4: THE ORDER, OVER THE ARMS ---------------------------------------------------------
+
+    def stiffness_ledger(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                         Tt4_max: float, phi_lims=(0.76, 0.80), margins=(0.05, 0.10, 0.40),
+                         Tt4_maxes=(1180.0, 1200.0), arms=(False, True),
+                         taus=(0.05, 0.05, 0.05, 0.05), r: float = 0.5, s_settle: float = 1.2,
+                         ds: float = 0.005, v_max: float = 0.20, every: int = 16) -> dict:
+        """s 4: **does the ORDER survive the arms?**
+
+        s 2's ordering is one trajectory at one setting, which is exactly the shape of claim
+        rung 63 was caught over-reading. So it is re-taken over both stator arms, three
+        `margin`s, two `Tt4_max` and two `phi_lim` -- and the reported result is the SET of
+        orderings seen, not a representative one. A single inverting cell is the finding, and
+        `orders` is returned whole so it cannot be hidden behind a max.
+
+        `c_max` rides along because rung 76 s 8's fourth seam (`c -> 1`, the solve whose gain
+        diverges) is a claim about REACHABILITY, and the honest way to say it is unreachable
+        here is to report how close the whole sweep gets."""
+        cells, orders, gorders, cmax, seps = [], set(), set(), 0.0, []
+        for inc in arms:
+            for phi_lim in phi_lims:
+                for margin in margins:
+                    for tmax in Tt4_maxes:
+                        g = self.set_point_gains(
+                            flight, Tt4_lo, Tt4_hi, tmax, phi_lim=phi_lim, margin=margin,
+                            taus=taus, inc=inc, r=r, s_settle=s_settle, ds=ds, v_max=v_max,
+                            every=every)
+                        if not g["n"]:
+                            cells.append(dict(inc=inc, phi_lim=phi_lim, margin=margin,
+                                              Tt4_max=tmax, n=0))
+                            continue
+                        s1 = self.leg_slopes(
+                            flight, Tt4_lo, Tt4_hi, tmax, phi_lim=phi_lim, margin=margin,
+                            taus=taus, inc=inc, r=r, s_settle=s_settle, ds=ds, v_max=v_max,
+                            every=every)
+                        orders.add(g["order"])
+                        gorders.update(g["guarded_orders"])
+                        cmax = max(cmax, max(1.0 - x for x in s1["c"]))
+                        seps.append(s1["sep"])
+                        cells.append(dict(inc=inc, phi_lim=phi_lim, margin=margin,
+                                          Tt4_max=tmax, n=g["n"], order=g["order"],
+                                          stable=g["order_stable"], ift_err=g["ift_err"],
+                                          c=s1["c"], norm=s1["norm"], sep=s1["sep"],
+                                          gov_norm=s1["norm"]["gov"],
+                                          guarded=g["guarded"], n_guarded=g["n_guarded"],
+                                          guarded_stable=g["guarded_stable"],
+                                          phi_top=g["phi_top"]))
+        live = [c for c in cells if c["n"]]
+        return dict(n_cells=len(cells), n_live=len(live), cells=cells,
+                    # P4: ONE ordering across every cell, or the set that shows otherwise
+                    orders=sorted(orders), order_invariant=len(orders) == 1,
+                    order_stable=all(c["stable"] for c in live),
+                    # ... and the same, GUARDED to the legs that are actually acting
+                    guarded_orders=sorted(gorders),
+                    guarded_invariant=len(gorders) == 1,
+                    guarded_stable=all(c["guarded_stable"] for c in live
+                                       if c["n_guarded"]),
+                    # the half of the ordering that has to survive alone
+                    phi_top=all(c["phi_top"] for c in live),
+                    ift_err=max(c["ift_err"] for c in live) if live else None,
+                    # P5 over the whole sweep
+                    sep=min(seps) if seps else None,
+                    # P7: the governor's normalised slope never collapses
+                    gov_norm=(min(c["gov_norm"][0] for c in live) if live else None),
+                    # P8: how close `c` gets to 1 anywhere in this family
+                    c_max=cmax)

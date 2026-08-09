@@ -132,6 +132,18 @@ _CLAUDE_MD = os.path.join(_HERE, os.pardir, "CLAUDE.md")
 # hand). The § Open engineering tasks entry that tracks it costs ~330 B. That is a DEFECT
 # DISCLOSURE, and the right move when it is paid off is to DELETE it and drop this budget back,
 # not to keep it.
+# NOT bumped at rung 77, and that is recorded here because every entry above is a bump and a
+# reader would otherwise assume the pattern continued. Rung 77 cost ~432 B (ONE table row, its
+# section Layout ladder entry, its name in the BUILT list) and was PAID FOR IN FULL: it CLOSES
+# the "1/(1-c) GAIN every set-point solve carries" clause rung 76 put on the live shortlist, and
+# the row and ladder entry were then written SHORT twice over -- the first draft tripped this
+# guard by 92 B and the second by 4 B. That is the guard doing its job on a first draft exactly
+# as the rung-76 comment hoped, and it is the first rung since 66 to need no bump at all.
+# ALSO at rung 77: CLAUDE.md's working-tree copy was the repo's last CRLF file (36,764 B on disk
+# against git's stored 36,500 B). `.gitattributes` says `*.md text eol=lf` and every other file
+# is LF, so it was normalised -- which means the ~264 B this guard used to see from carriage
+# returns are GONE and the real headroom was always ~340 B, not ~76 B. Do not read the pre-rung-77
+# numbers in the comments above as directly comparable to the ones below.
 MAX_BYTES = 36_840
 MAX_LINES = 300
 

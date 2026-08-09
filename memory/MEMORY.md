@@ -71,6 +71,7 @@ these lines (the same rule CLAUDE.md lives under).
 - [Rung 74 demand coordinate](rung74-demand-coordinate.md) — a STATE’s coordinate is PURE BILL (no rank, all trajectory); the redline break was the COORDINATE not the lag; the clip floor was an accidental anti-windup device; a closed-loop difference cannot isolate a forcing
 - [Rung 75 anti-windup device](rung75-antiwindup-device.md) — a device is decisive on the SPECTRUM and inert on the RANK; the inherited instrument was BLIND and would have refuted the headline having measured nothing; rung 74’s “divergence” was a contraction at ratio one
 - [Rung 76 fuel-dependent cap](rung76-fuel-dependent-cap.md) — a device in a leg's LAW reaches the MASKED leg, one in the shared PLANT reaches the AUTHORITATIVE one; the 0.7% miss on a pre-registered identity WAS the finding (a set-point solve is a 1/(1−c) GAIN); guard the second min-select
+- [Rung 77 stiffness ledger](rung77-stiffness-ledger.md) — a set-point solve's sensitivity is a FORCING OVER A SLOPE, so 1/(1−c) is the SLOPE HALF of one leg; check UNITS before choosing a normalisation; a closure that outlived its state block returned a perfect 1.000e+00
 
 ## Margin sweeps — confirmations, not rungs
 - [Rung 29 π_c margin](rung29-pi-c-margin.md) — verdict confirmed at 9.4× but π_c NOT protective; the ENERGY = INVENTORY × COMPLETION sharpening

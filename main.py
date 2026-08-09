@@ -30,6 +30,7 @@ from turbojet.engine import (  # noqa: E402
     DemandCoordinateTransient,
     AntiWindupTransient,
     SensedCapTransient,
+    StiffnessLedgerTransient,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -6032,6 +6033,94 @@ def print_sensed_cap_table(flight):
     print("    to 0.7%, and section 3 names the mechanism rather than tightening a tolerance.")
     print("    See docs/rung76-spec.md.")
 
+
+def print_stiffness_ledger_table(flight):
+    """Rung-77 payoff: THE STIFFNESS LEDGER -- rung 76 s 8's third seam.
+
+    The panel is built around the sentence rung 76 s 8 wrote and this rung refutes: *every
+    other set-point solve in this family has a `1/(1-c)` and it has never been read*. They do
+    not have one and cannot: `1/(1-c)` is a RESIDUAL SLOPE, and only a set point that is a
+    formula for its own actuator makes that slope dimensionless."""
+    print("\nTHE STIFFNESS LEDGER (rung 77): a set-point solve's sensitivity is a FORCING OVER")
+    print("A SLOPE, and 1/(1-c) is the SLOPE HALF of one leg.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR = 0.55
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    LO, HI, B, TMAX, MARGIN, PHI = 1000.0, 1400.0, 0.10, 1200.0, 0.10, 0.80
+    sm = PHI / FLOOR - 1.0
+    t = StiffnessLedgerTransient(
+        design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0,
+        bleed_lim=BleedLimiter.from_margin(LP, B, sm, tau=0.05),
+        stator_lim=StatorLimiter.from_margin(LP, 0.20, sm, tau=0.05))
+    t._lag_coord, t._ref_law = "demand", "sched"
+    t._windup_law, t._tau_t, t._cap_law = "none", None, "solve"
+
+    s1 = t.leg_slopes(flight, LO, HI, TMAX, phi_lim=PHI, margin=MARGIN)
+    s2 = t.set_point_gains(flight, LO, HI, TMAX, phi_lim=PHI, margin=MARGIN)
+    s3 = t.singular_limit(flight, LO, HI, TMAX, phi_lim=PHI, margin=MARGIN)
+
+    print("\n  THE THREE RESIDUALS, and only ONE of them is dimensionless:")
+    print("    accel (48)  G_a(w) = w - cap(w)            G_a' = 1 - c       [-]")
+    print("    gov   (46)  G_g(w) = Tt4(w) - Tt4_max      G_g' = dTt4/dw     [K per kg/s]")
+    print("    phi   (49)  G_s(w) = phi_lim - phi_lp(w)   G_s' = -dphi/dw    [phi per kg/s]")
+    print("  `Tt4_max` and `phi_lim` are CONSTANTS -- no `1` to subtract from, so no `c`.")
+
+    print("\n  %-6s %22s %18s %10s %16s" % ("leg", "G_w (raw)", "normalised", "1/|n|",
+                                            "dw*/dq [kg/s]"))
+    print("  " + "-" * 76)
+    for k in ("accel", "gov", "phi"):
+        gw, nm, st, gn = s1["Gw"][k], s1["norm"][k], s1["stiff"][k], s2["gain"][k]
+        print("  %-6s %10.4e..%10.4e %8.5f..%8.5f %5.3f..%5.3f %+8.2e..%+8.2e"
+              % (k, gw[0], gw[1], nm[0], nm[1], st[0], st[1], gn[0], gn[1]))
+
+    print("\n  THE ACCEL COLUMN IS RUNG 76 SECTION 3's GAIN, digit for digit (1.22799..1.24573),")
+    print("    read here by an INDEPENDENT route -- 1/G_a' from one residual, never solve_gain.")
+    print("    Instrument: |(1 - G_a') - c| = %.2e against rung 76's own _c_at."
+          % s1["c_err"])
+    print("  D1 `dw*/dq = -G_q/G_w` HOLDS per leg: worst relative %.2e (a differencing"
+          % s2["ift_err"])
+    print("    floor -- dq swept 3 decades gives a textbook central-difference V).")
+
+    print("\n  THE ORDER, in the currency all three legs share: %s" % (s2["order"],))
+    print("    The phi leg is 45-64x the governor and 112-268x the accel leg -- by a wide")
+    print("    margin the stiffest thing in this control system.")
+    print("  AND THE VALVE'S SIGN SPLITS: accel and gov NEGATIVE, phi POSITIVE. Opening the")
+    print("    bleed valve tightens both fuel-side caps and loosens the one that watches phi,")
+    print("    so the lever that buys the phi leg its protection debits both others (rung 61's")
+    print("    `buys the COORDINATE, not the BILL`, with a sign on it).")
+
+    print("\n  THE SINGULAR LIMIT -- dw*/dq diverges iff G_w -> 0, and there are TWO routes:")
+    print("    accel   c -> 1, the set point chases its OWN actuator     NOT reachable here")
+    print("    phi     another lever PINS the variable it watches        REACHED (rung 64)")
+    print("    gov     neither: nothing here pins Tt4 at a fixed fuel    NOT reachable")
+    print("  RUNG 64 DERIVED its valve degeneracy and said so (`DERIVED, not measured`).")
+    print("    MEASURED: |G_s'| open %.4f -> closed %.3e, and phi_lp is phi_lim to %.1e"
+          % (s3["phi_open"], s3["phi_closed"], s3["phi_off"]))
+    print("    across +-10%% fuel. CONTROL: the governor read the same way moves %.1e"
+          % s3["gov_rel"])
+    print("    relative, not zero but 2% against 100% -- without it this is an artifact.")
+
+    print("\n  SCOPE: this rung measures SOLVERS, not physics -- G_w is a property of how a")
+    print("    limiter is WRITTEN, which is what rung 76 s 8 asked for. `dw*/dq` is read in")
+    print("    ONE direction (the valve), so `stiffest leg` means stiffest TO THE VALVE, and")
+    print("    each slope is read at its OWN leg's set point. Over 24 cells the raw ordering")
+    print("    is NOT invariant (3 invert, all at margin 0.40) -- every one a DORMANT accel")
+    print("    leg, and under rung 76 s 1.3's own switch guard the phi leg is top 24/24.")
+    print("    `c` never exceeds 0.2234, which BOUNDS rung 76's `c -> 1` seam before it is")
+    print("    built. No knob, no state, no constant, no plant code. See docs/rung77-spec.md.")
+
+
 def main():
     # The tables carry unicode (Δ, ·, ≡, ≈); force UTF-8 so `python main.py` renders
     # on any console (a stock Windows cp1252 console would otherwise crash on them).
@@ -6189,6 +6278,8 @@ def main():
     print_demand_coordinate_table(FLIGHT)
     print_anti_windup_table(FLIGHT)
     print_sensed_cap_table(FLIGHT)
+
+    print_stiffness_ledger_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 
