@@ -64,6 +64,7 @@ these lines (the same rule CLAUDE.md lives under).
 - [Rung 69 reference split](rung69-reference-split.md) — the rank counts CONSTRAINTS not loops (zeros = n − m); det J was BLIND to the split and c1 the discriminator; a null space ABSORBS a moved start
 - [Rung 70 generic split](rung70-generic-split.md) — the split buys the RANK, the RING needs one lever on TWO walls; a predicted NULL refuted into an invariance; I caught a gate computing my own formula twice
 - [Rung 71 full split](rung71-full-split.md) — n=m=3: rank independence is NOT constraint independence (`zeros = n−m` counts gradients, not LIVE loops); det J finally alive and STILL blind to the one new gain; my own headline quoted the wrong window
+- [Rung 72 shared actuator](rung72-shared-actuator.md) — two loops on ONE actuator are a SWITCH between plants; ONE plant IS rungs 68/69/70/71 by AUTHORITY; first seam closed by REFUTING its premise; three predictions died of one oversight; two instruments silently agreed with themselves
 
 ## Margin sweeps — confirmations, not rungs
 - [Rung 29 π_c margin](rung29-pi-c-margin.md) — verdict confirmed at 9.4× but π_c NOT protective; the ENERGY = INVENTORY × COMPLETION sharpening

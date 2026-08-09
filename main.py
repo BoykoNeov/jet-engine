@@ -26,7 +26,7 @@ from turbojet.engine import (  # noqa: E402
     LaggedBleedTransient, TwoLagCascadeTransient, CrossLoopCascadeTransient,
     ThreeLoopCascadeTransient, StatorLimiter,
     ReferenceSplitTransient, StatorIncidenceLimiter, CrossSplitTransient,
-    FullSplitTransient,
+    FullSplitTransient, SharedActuatorTransient,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -5403,6 +5403,111 @@ def print_full_split_table(flight):
     print("    all three tau are swept march coordinates. See docs/rung71-spec.md.")
 
 
+def print_shared_actuator_table(flight):
+    """Rung-72 payoff: rung 52's `phi` FUEL leg armed BESIDE rung 47's `Tt4` governor, so two
+    limiters drive ONE actuator. `n = 4` -- the last unoccupied SHAPE, and the seam rungs 70/71
+    both named.
+
+    The panel is built around what a reader of rungs 68-71 would carry in wrongly. They would
+    ask rung 71 s 11's question -- does `m` count constraints or actuators? -- and take one of
+    the two answers. BOTH ARE WRONG, and the four-cell table is the whole panel: this ONE plant
+    IS each of rungs 68/69/70/71 in turn, selected at RUN TIME by which leg holds the actuator."""
+    print("\nTWO LOOPS ON ONE ACTUATOR (rung 72): a shared actuator adds a SWITCH BETWEEN")
+    print("PLANTS, not a loop -- so `n` counts the loops holding AUTHORITY, not the states.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR = 0.55
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    LO, HI, B, PHI, TMAX = 1000.0, 1400.0, 0.10, 0.80, 1200.0
+    SM = PHI / FLOOR - 1.0
+    t = SharedActuatorTransient(
+        design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0,
+        bleed_lim=BleedLimiter.from_margin(LP, B, SM, tau=0.05))
+
+    print("\n  THE ONE MODELLING DECISION, DECLARED (there is no prior rung to inherit it from):")
+    print("    mf = mf_sched - max(gf, gr)     MIN-SELECT in clip coordinates.  THE PLANT.")
+    print("    mf = mf_sched - gf - gr         the SUM law.  AN INSTRUMENT, never the plant.")
+
+    print("\n  AUTHORITY IS EXCLUSIVE, AND IT CHANGES HANDS ONCE -- INSIDE THE JOINT WINDOW:")
+    al = t.authority_law(flight, LO, HI, TMAX, SM)
+    print(f"    {'stator':>10} {'clocks (f,g,q,s)':>22} {'joint window':>16} {'fuel':>6} "
+          f"{'gov':>5} {'hand-over':>10}")
+    for a in al["arms"]:
+        lbl = "incidence" if a["inc"] else "phi"
+        w = f"{a['joint'][0]:.3f}-{a['joint'][1]:.3f}"
+        ho = f"{a['handovers'][0]:.3f}" if a["handovers"] else "--"
+        print(f"    {lbl:>10} {str(a['taus']):>22} {w:>16} {a['in_joint']['fuel']:6d} "
+              f"{a['in_joint']['gov']:5d} {ho:>10}")
+    print("    Both legs WANT a cut over ~94% of the march, so the masked one is RIDING and")
+    print("    reaching NOTHING -- not dormant, and nowhere near a stop.")
+
+    print("\n  WHY: `max()` IS FLAT IN THE MASKED CLIP, so its whole column is (-1, 0, 0, 0):")
+    g = t.shared_gains(flight, LO, HI, TMAX, SM)
+    print(f"    F_r = {g['worst_F_r']}   R_f = {g['worst_R_f']}   "
+          f"pair_FR = {g['worst_pair_FR']}      <- both legs solve from the SCHEDULED fuel")
+    print(f"    masked leg's C and V gains: {g['worst_mask_leak']}   "
+          f"(live gains stay >= {g['min_live_gain']:.1e}, so this is not a dead instrument)")
+    print("    RUNG 66's MIRROR: two loops on one VARIABLE gave pair = 1 EXACTLY -- maximally")
+    print("    REDUNDANT. Two loops on one ACTUATOR give 0 EXACTLY -- maximally EXCLUSIVE.")
+
+    print("\n  SO THE FOUR CELLS ARE THE FOUR RUNGS -- one plant, selected at RUN TIME:")
+    c = t.shared_cells(flight, LO, HI, TMAX, SM)
+    par = {(False, "fuel"): "rung 68", (False, "gov"): "rung 70",
+           (True, "fuel"): "rung 69", (True, "gov"): "rung 71"}
+    print(f"    {'stator':>10} {'holds':>6} {'is':>9} {'n':>4} {'zeros':>6} "
+          f"{'constraint reading':>19} {'poly gap':>10}")
+    for k in ((False, "fuel"), (False, "gov"), (True, "fuel"), (True, "gov")):
+        d = c["cells"][k]
+        lbl = "incidence" if k[0] else "phi"
+        naive = 2 if not k[0] else 1
+        print(f"    {lbl:>10} {k[1]:>6} {par[k]:>9} {d['n']:4d} {d['zeros'][0]:6d} "
+              f"{naive:19d} {d['gap']:10.1e}")
+    print("    Each cell's characteristic POLYNOMIAL is the parent rung's own times")
+    print("    (lam + 1/tau_masked), rebuilt from the SHIPPED rung-68/69/70/71 readers -- two")
+    print("    independent instruments reaching ONE polynomial. Compared coefficient by")
+    print("    coefficient, not root by root: in the rung-68 cell the parent has a DOUBLE zero")
+    print("    root and a root match would report 4.6e-07, which is sqrt(precision) and not a")
+    print("    disagreement (the two readers' base points agree to 0.0 exactly).")
+    print("    THE CONSTRAINT READING IS WRONG BY ONE ON BOTH ARMS; the ACTUATOR reading is")
+    print("    right on the phi arm and wrong on the incidence one -- right by COINCIDENCE.")
+    print("    Rung 71 s 11 offered those two answers. The answer is NEITHER:")
+    print("        zeros = n_live - m_live,   n_live = the loops holding AUTHORITY = 3, always")
+    print("    AND THE RANK CHANGES AT THE HAND-OVER with no state, no gain, no clock moving.")
+
+    print("\n  THE ISOLATION INSTRUMENT -- AND THE CONFOUND IT NEARLY SHIPPED WITH:")
+    md = t.mask_discriminator(flight, LO, HI, TMAX, SM)
+    print(f"    {'clocks (f,g)':>16} {'min-select pole':>17} {'SUM pole':>12}")
+    for a in md["arms"]:
+        tag = "  <- MATCHED" if a["matched"] else ""
+        print(f"    {str(a['taus'][:2]):>16} {a['laws']['max']['worst_pole']:17.2e} "
+              f"{a['laws']['sum']['worst_pole']:12.2e}{tag}")
+    print("    At tau_f = tau_g the SUM law has (1,-1,0,0) as an EXACT eigenvector with")
+    print("    eigenvalue -1/tau, so the test passes under BOTH laws and separates nothing.")
+    print("    The matched row is GATED beside the result: a discriminator quoted from it alone")
+    print("    is a discriminator that never tested anything.")
+
+    print("\n  SO `n = 4` IS A MIRAGE, AND THAT CLOSES A SEAM BY REFUTING ITS PREMISE:")
+    print("    n_live is 3 at every instant, so a shared actuator collapses (4, m) to (3, m)")
+    print("    plus a free pole. Rung 71 s 11 named TWO routes to n = 4; this one cannot get")
+    print("    there, and rung 69 s 11's (a fourth LP lever) stays OPEN.")
+    print("    SCOPE: the composition law is DECLARED, not derived, and the whole triangular")
+    print("    structure rests on BOTH inherited legs computing at the SCHEDULED fuel -- an")
+    print("    applied-fuel-referenced leg gives F_r != 0 and the block form is gone (the")
+    print("    sharpest next seam). The incidence/governor cell is 1 point at matched clocks")
+    print("    and is read on a WIDE-CELL clock arm; Tt4_max is rung 67's imposed value; all")
+    print("    four tau are swept march coordinates. See docs/rung72-spec.md.")
+
+
 def main():
     # The tables carry unicode (Δ, ·, ≡, ≈); force UTF-8 so `python main.py` renders
     # on any console (a stock Windows cp1252 console would otherwise crash on them).
@@ -5555,6 +5660,7 @@ def main():
 
     print_cross_split_table(FLIGHT)
     print_full_split_table(FLIGHT)
+    print_shared_actuator_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

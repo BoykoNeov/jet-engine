@@ -15578,3 +15578,1152 @@ class FullSplitTransient(CrossSplitTransient):
             marginal_inc={k: cells[v[2]]["M"] - cells["GVS"]["M"] for k, v in own.items()},
             delivered=dict(phi=cells["GVS"]["credit_phi"], Tt4=cells["GVS"]["credit_Tt4"],
                            inc=cells["GVS"]["credit_inc"]))
+
+
+class SharedActuatorTransient(FullSplitTransient):
+    """RUNG 72. TWO LOOPS ON ONE ACTUATOR -- `n = 4`, the only unoccupied SHAPE left after
+    rungs 68-71 filled every `(3, m)` cell. See `docs/rung72-spec.md`.
+
+    Rung 52's `phi` FUEL leg is armed BESIDE rung 47's `Tt4` governor, so the two of them
+    drive the SAME actuator. Six states, four clocks, four loops, THREE actuators:
+
+        dgf/ds = ( F(nu,gr,q,v) - gf ) / tau_f   F = rung 52's clip,  phi_lp >= phi_lim  [FUEL]
+        dgr/ds = ( R(nu,gf,q,v) - gr ) / tau_g   R = rung 47's clip,  Tt4 <= Tt4_max     [GOV]
+        dq/ds  = ( C(nu,gf,gr,v) - q ) / tau_q   C = rung 65's b_cmd, phi_lp >= phi_lim  [VALVE]
+        dv/ds  = ( V(nu,gf,gr,q) - v ) / tau_s   V = rung 68/69's,  phi or M_i           [STATOR]
+
+    THE COMPOSITION LAW IS THIS RUNG'S ONE MODELLING DECISION, AND IT IS DECLARED RATHER THAN
+    INHERITED, because no prior rung has had two clips on one actuator to compose:
+
+        mf = mf_sched - max(gf, gr)          MIN-SELECT, in clip coordinates. THE PLANT.
+        mf = mf_sched - gf - gr              the SUM law. AN INSTRUMENT, and NOT the plant.
+
+    The first is what a fuel control does: every leg computes the fuel it would allow and the
+    LOWEST wins, which in clip coordinates is the LARGEST cut. The second double-clips and is
+    not physical (rung 70's own integrator refuses it in so many words); it is carried ONLY as
+    the isolation instrument of s 3, because it removes MASKING while changing nothing else --
+    the same role rungs 50/51's forced release edges played.
+
+    > **HEADLINE -- TWO LOOPS ON ONE ACTUATOR ARE NOT TWO LOOPS. MIN-SELECT MAKES AUTHORITY
+    > EXCLUSIVE, SO THE MASKED LEG DECOUPLES: IT ADDS A STATE AND A BARE POLE, BUT NEITHER AN
+    > `n` NOR AN `m`.** Wherever `gr > gf` the fuel leg reaches the plant through NOTHING --
+    > `max()` is flat in it -- so its whole column outside its own diagonal is zero, `M` is
+    > block-triangular, and
+    >
+    >     eig(M) = { -1 }  UNION  eig(M_3)          M_3 = the parent rung's 3x3 block EXACTLY
+    >     det M  = -det M_3 ,   zeros(72) = zeros(parent)
+    >
+    > The masked loop contributes an eigenvalue at `-1/tau_f`: a first-order lag running open
+    > loop. **That is rung 66's mirror.** Two loops on one VARIABLE are ONE loop with the rates
+    > ADDED (`det J == 0`, rank one); two loops on one ACTUATOR are ONE loop PLUS A FREE POLE
+    > (`det J = -det J_parent`, rank `n - 1` at worst).
+
+    > **AND IT ANSWERS RUNG 70/71's QUESTION IN THE NEGATIVE, ON BOTH ARMS AT ONCE.** `m`
+    > counts neither constraints nor actuators:
+    >
+    > | arm | constraints | actuators | `n - m` (constraints) | measured `zeros` |
+    > |---|---|---|---|---|
+    > | `phi` stator (rung 70's plant + the leg) | 2 | 3 | **2** | **1** |
+    > | INCIDENCE stator (rung 71's + the leg) | 3 | 3 | **1** | **0** |
+    >
+    > The constraint reading is wrong by EXACTLY ONE on both arms, and the actuator reading is
+    > right on the first only by coincidence -- it gets the second wrong by one in the other
+    > direction. What is right is that a MASKED loop leaves both counts: `zeros = n_live -
+    > m_live`, with `n_live` the loops holding AUTHORITY. **Rung 71 showed `m` counts gradients
+    > and not live loops; rung 72 shows `n` counts loops with AUTHORITY and not states.**
+
+    THE SUM LAW IS THE DISCRIMINATOR, and it is why s 3 exists. Counting zeros alone cannot
+    separate *masking* from *the actuator reading*: on the `phi` arm both say 1. Restoring both
+    legs' authority WITHOUT changing the loop count moves the count to the CONSTRAINT reading's
+    own value on each arm (2 and 1), and the zero EIGENVECTOR moves off the masked state's own
+    axis. Two readings that agree on a count disagree on a direction -- rung 69's move (`det J`
+    blind, `c1` the discriminator) in a fourth shape.
+
+    AND s 1's ROW FORMULA IS WHAT BREAKS, NOT `m`. Rung 69 s 1 writes every row as
+    `row_i = -(1/c_i^(i)) grad c^(i)`, which needs the loop's own actuator to have authority
+    over its own constraint. A MASKED leg has `c_i^(i) = 0` exactly, so its row formula is
+    UNDEFINED -- not merely parallel to another's. `J` itself stays finite (every row is
+    `(dR_i/dx_j - delta_ij)/tau_i`), so `det J`, the zero count and `c1` remain measurable while
+    the closed form `zeros = n - m` has no value to take. That is the honest shape of the
+    finding, and it rhymes with rung 71's own *counts gradients, not live loops*.
+
+    A THIRD REGIME LABEL, WHICH NO PRIOR RUNG NEEDED. A leg here can be DORMANT (its required
+    clip is zero), RIDING-MASKED (it wants a cut, and a bigger one is already applied) or
+    RIDING-AUTHORITATIVE (its cut is the applied one). Rung 67's *a zero cross-gain is
+    saturation, never decoupling* acquires a second exception: it can also be MASKING, which
+    saturation-filtering does not catch because the masked leg is nowhere near a stop.
+
+    Usage:
+        t = SharedActuatorTransient(design, FLIGHT, 1.0, map_lp=..., map_hp=..., bleed_lim=bl)
+        t.authority_law(FLIGHT, 1000., 1400., 1200., sm=0.4545)   # who holds the actuator, when
+        t.shared_gains(FLIGHT, 1000., 1400., 1200., sm=0.4545)    # 12 gains, det = -det parent
+        t.shared_modes(FLIGHT, 1000., 1400., 1200., sm=0.4545)    # zeros on BOTH arms
+        t.mask_discriminator(FLIGHT, 1000., 1400., 1200., sm=0.4545)  # MAX vs SUM, + eigenvector
+
+    THE REDUCE HAS FOUR BIT-FOR-BIT ARMS, ALL BY DISPATCH:
+      * no fuel leg (`lag`/`surge` unarmed) => RUNG 71 (incidence stator) or RUNG 70 (`phi`)
+      * `tau_gov=None`                      => rung 69 / rung 68
+      * no stator armed                     => rung 67 / rung 66
+      * neither fuel-side leg               => rungs 65/64/62
+    """
+
+    _share_law = "max"      # "max" = MIN-SELECT, the plant. "sum" = s 3's isolation instrument.
+    _ic_order4 = "rqvf"     # rung 70's `g -> q -> v` with the new loop APPENDED, declared.
+
+    def at_lever(self, vsv_lp: float = 0.0, vsv_hp: float = 0.0, vsv_sched_lp=None,
+                 vsv_sched_hp=None, bleed: float = 0.0, bleed_sched=None,
+                 bleed_lim=None, stator_lim=None, stator_inc=None) -> "SharedActuatorTransient":
+        """THE TENTH INSTANCE of the trap rungs 61-71 each hit. The signature does not grow --
+        rung 72's fourth loop is armed by a per-MARCH argument (`lag` + `surge`), not by a
+        machine keyword -- so the failure mode is the plain one: hand back the parent's class
+        and every reader measures rung 71's plant (three loops, one per actuator) while
+        reporting rung 72's."""
+        de, fd, md, rho, lpd = self._ctor
+        return SharedActuatorTransient(
+            de, fd, md, map_lp=self.map_lp_design, map_hp=self.map_hp_design, rho=rho,
+            vsv_lp=vsv_lp, vsv_hp=vsv_hp, vsv_sched_lp=vsv_sched_lp,
+            vsv_sched_hp=vsv_sched_hp, bleed=bleed, bleed_sched=bleed_sched,
+            bleed_lim=bleed_lim, stator_lim=stator_lim, stator_inc=stator_inc,
+            lp_disabled=lpd)
+
+    def _with_share(self, law: str, fn, *a, **kw):
+        """Run a reader under a named composition law, restored in a `finally` -- rung 62's
+        reason, sixth reload: a leaked setting would make a reader report a plant that was
+        never marched."""
+        prev, self._share_law = self._share_law, law
+        try:
+            return fn(*a, **kw)
+        finally:
+            self._share_law = prev
+
+    def _applied_clip(self, gf: float, gr: float) -> float:
+        """THE COMPOSITION LAW, in ONE place so no reader can disagree with the march."""
+        return max(gf, gr) if self._share_law == "max" else gf + gr
+
+    @staticmethod
+    def _rk4_floor_shared(ds: float, rate: float) -> None:
+        """THE FLOOR, RE-JUSTIFIED A FIFTH TIME ON A FOURTH ARGUMENT -- which is the pattern
+        rungs 68-71 established, not an oversight.
+
+        Rung 68's `ds*sum(1/tau_i) <= 2` was exact-in-argument there; rung 69 kept it on a
+        complex pair; rung 70 because `min(pair) ~ 0` put the pair back near `-sum`; rung 71
+        because at full rank the trace is shared three ways. **Here the argument is new again**:
+        the masked leg's eigenvalue is EXACTLY `-1/tau_f` (a decoupled first-order lag) and the
+        other three share the remainder, so no root can exceed the rate sum in magnitude and
+        the inherited constant stays conservative for a fourth reason. `shared_modes` MEASURES
+        `|lam|` against it rather than trusting it -- rung 65 published a retraction for exactly
+        the failure mode of a trusted stability argument."""
+        assert ds * rate <= 2.0, (
+            f"rung-72: ds*sum(1/tau_i) = {ds*rate:.3f} is outside the explicit RK4 stability "
+            f"region for the FOUR actuator states (ds = {ds}). The masked leg contributes a "
+            "bare pole at -1/tau_f and the other three share what is left of the trace, so the "
+            "dominant root is below the rate sum -- the inherited constant stays conservative, "
+            "for a fourth reason. Refine the grid or slow a clock.")
+
+    # --- the march: a SIXTH state, and a SIBLING integrator ---------------------------------
+
+    def integrate_fuel(self, flight: FlightCondition, fuel_schedule, nu0,
+                       s_end: float, ds: float, freeze=None, Tt4_max=None,
+                       tau_gov=None, accel=None, surge=None, s_off=None,
+                       tau_rel=None, lag=None) -> list:
+        lag = lag if lag is not None else self._lag
+        # RUNG 67's clock rides on an instance attribute and `_stator_march` does not forward it
+        # as a keyword (rung 68's note, inherited through rungs 70/71), so reading only the
+        # argument would let a rung-72 march silently become a rung-68/69 one.
+        tau_gov = tau_gov if tau_gov is not None else self._tau_gov
+        has_fuel = lag is not None and (accel is not None or surge is not None)
+        if tau_gov is None or not has_fuel:
+            # EVERY inherited arm leaves through here: rung 71 (an incidence stator beside the
+            # governor, no fuel leg), rung 70 (a `phi` stator there), rungs 69/68 (no governor),
+            # rung 67, rung 66 and everything under them. This class never intercepts a march it
+            # does not own, and each parent's own refusal stays armed for direct callers.
+            #
+            # THE STATOR IS NOT PART OF THE TEST, and that is deliberate. The SHARED ACTUATOR is
+            # this rung's subject, so the two fuel-side legs together are what it owns -- with a
+            # stator (s 2's four cells) or without (the ledger's `FG` and `FGV` cells, which
+            # have no inherited home at all: rung 52's own integrator refuses `lag` beside
+            # `tau_gov` in so many words). Gating entry on a stator would leave those two cells
+            # unmarchable and the ledger with a hole exactly where the fourth loop is alone.
+            return super().integrate_fuel(
+                flight, fuel_schedule, nu0, s_end, ds, freeze=freeze, Tt4_max=Tt4_max,
+                tau_gov=tau_gov, accel=accel, surge=surge, s_off=s_off, tau_rel=tau_rel,
+                lag=lag)
+        assert Tt4_max is not None, (
+            "rung-72: `tau_gov` without `Tt4_max` is a governor with no set point. It would "
+            "march as rung 68/69 -- ONE fuel-side leg -- while every reader reported the "
+            "shared actuator (rungs 70/71's assert, inherited word for word).")
+        assert s_off is None and tau_rel is None, (
+            "rung-72: rungs 50/51's FORCED release edges are an isolation instrument for a leg "
+            "that could not pin its own trigger. All four legs here pin their own (rung 68's "
+            "argument, verbatim through rungs 70/71).")
+        assert self.bleed_lim is None or self._lagged(), (
+            "rung-72: an INSTANTANEOUS valve beside lagged fuel-side legs is not a control but "
+            "a different plant (rung 65 called the instantaneous limit singular, rung 66 "
+            "refused the comparison for that reason). Give the valve a `tau` or leave it out.")
+        assert self._share_law in ("max", "sum"), (
+            f"rung-72: the composition law on the SHARED actuator is this rung's one modelling "
+            f"decision and it is DECLARED; got {self._share_law!r}. 'max' is MIN-SELECT (the "
+            "plant); 'sum' double-clips and is s 3's isolation instrument, never the plant.")
+        return self._integrate_fuel_shared(flight, fuel_schedule, nu0, s_end, ds,
+                                           freeze, Tt4_max, tau_gov, accel, surge, lag)
+
+    def _integrate_fuel_shared(self, flight: FlightCondition, fuel_schedule, nu0,
+                               s_end: float, ds: float, freeze, Tt4_max, tau_gov,
+                               accel, surge, lag: "AsymmetricLag") -> list:
+        """RUNG 72's march -- rung 70/71's five-state integrator with rung 52's fuel clip as a
+        SIXTH state, and the two clips composed on ONE actuator.
+
+        IT IS A SIBLING, NOT AN EDIT, AND HERE THAT IS FORCED. Rung 71 could re-enter its
+        parent's march because nothing was added; a STATE is genuinely added here, so rung 71's
+        *reuse, do not copy* argument does not carry and rungs 68/69/70's precedent does.
+
+        THREE THINGS DIFFER FROM `_integrate_fuel_cross_triple`, and only the first is new:
+          * `mf = mf_sched - self._applied_clip(gf, gr)`. ONE call, so the plant and every
+            reader compose the two clips the same way or neither does.
+          * BOTH `required` closures are solved from the SCHEDULED fuel -- rung 47's discipline
+            and rung 52's, each verbatim -- so neither leg's bracket is perturbed by the other's
+            clip and their mutual cross-gains are structurally ZERO. That is a property of the
+            two INHERITED laws, not a modelling choice made here, and s 1 gates it as such.
+          * `Tt4_max` reaches the plant ONLY through the governor's state. Rung 52's unlagged
+            min-select on top would clip twice and hold the redline with an instrument that is
+            not the loop under study (rung 70's note, and it applies with more force now that a
+            second lagged leg is present).
+
+        Every key rungs 52/65/66/67/68/70/71 record is recorded byte-unchanged, with `g` the
+        APPLIED clip and `required` the BINDING requirement, so every inherited reader works on
+        this trajectory -- and it sees the loop that HOLDS the actuator, which is the only
+        answer that keeps `mf = mf_sched - g` true."""
+        has_v = self._lagged_stator()
+        lim_s = self._stator_leg() if has_v else None
+        tau_s = lim_s.tau if has_v else None
+        has_q = self._lagged()
+        tau_q = self.bleed_lim.tau if has_q else None
+        self._rk4_floor_shared(
+            ds, 1.0 / tau_gov + 1.0 / min(lag.tau_att, lag.tau_rel)
+            + (1.0 / tau_q if has_q else 0.0) + (1.0 / tau_s if has_v else 0.0))
+        Tt2, pt2, _ = self._inlet(flight)
+        base_close = super(LimitedBleedTransient, self)._close_fuel
+
+        def command(a, h, mf, v):
+            """THE VALVE law -- rungs 68/70/71's, verbatim. Roots over TRIAL positions, so NO
+            `_b_state`; `_v_state` IS set, because it solves against the plant as the STATORS
+            actually are."""
+            if not has_q:
+                return 0.0
+            self._v_state = v
+            try:
+                return self._solve_b(self._closer(base_close, a, h, mf, Tt2, pt2))[1]
+            finally:
+                self._v_state = None
+
+        def stator(a, h, mf, q):
+            """THE STATOR law -- rungs 68/70/71's, verbatim. Trials `v`, so NO `_v_state`, but
+            `_b_state = q`. Returns (v, regime); the regime is CARRIED, never re-derived.
+
+            With no stator armed it is the constant `(0, None)`: the lever sits at its design
+            setting and contributes no state, which is what makes the ledger's stator-less cells
+            differenceable against the armed ones (rung 68's `has_q`, one lever over)."""
+            if not has_v:
+                return 0.0, None
+            self._b_state = q
+            try:
+                _, v, reg = self._solve_v(self._closer_v(base_close, a, h, mf, Tt2, pt2))
+                return v, reg
+            finally:
+                self._b_state = None
+
+        def required_fuel(a, h, q, v, mf_sched):
+            """RUNG 52's leg -- rung 68's `required`, verbatim including its `max(0, .)` kink."""
+            self._b_state, self._v_state = q, v
+            try:
+                caps = []
+                if accel is not None:
+                    caps.append(self._sched_fuel(flight, a, h, mf_sched, accel))
+                if surge is not None:
+                    caps.append(self._surge_fuel(flight, a, h, mf_sched, surge))
+                return max(0.0, mf_sched - min(caps)) if caps else 0.0
+            finally:
+                self._b_state, self._v_state = None, None
+
+        def required_gov(a, h, q, v, mf_sched):
+            """RUNG 47's clip -- rung 70's `required`, verbatim."""
+            self._b_state, self._v_state = q, v
+            try:
+                i = self._instant_fuel(flight, a, h, mf_sched)
+                if i["Tt4"] <= Tt4_max:
+                    return 0.0
+                return max(0.0, mf_sched
+                           - self._topping_fuel(flight, a, h, Tt4_max, mf_sched))
+            finally:
+                self._b_state, self._v_state = None, None
+
+        def der(a, h, gf, gr, q, v, s):
+            mf_sched = float(fuel_schedule(s))
+            rf = required_fuel(a, h, q, v, mf_sched)
+            rr = required_gov(a, h, q, v, mf_sched)
+            mf = max(1e-9, mf_sched - self._applied_clip(gf, gr))
+            self._b_state, self._v_state = q, v
+            try:
+                i = self._instant_fuel(flight, a, h, mf)
+            finally:
+                self._b_state, self._v_state = None, None
+            cmd = command(a, h, mf, v)
+            vcmd, vreg = stator(a, h, mf, q)
+            da = 0.0 if freeze == "lp" else i["Phi_lp"] / self.rho
+            dh = 0.0 if freeze == "hp" else i["Phi_hp"]
+            return (da, dh, (rf - gf) / lag.tau(rf, gf), (rr - gr) / tau_gov,
+                    ((cmd - q) / tau_q if has_q else 0.0),
+                    ((vcmd - v) / tau_s if has_v else 0.0),
+                    mf, i, rf, rr, cmd, vcmd, vreg)
+
+        # --- THE JOINT INITIAL CONDITION: four-way, and the ORDER IS DECLARED -----------------
+        # Rungs 68/70/71 sweep `g -> q -> v`. The new loop is APPENDED (`r -> q -> v -> f`), so
+        # the rung-70/71 arm is reached unchanged and the fuel leg takes up only what the triple
+        # leaves -- rung 68's own justification, one loop further on.
+        #
+        # AND THERE IS A NEW WAY FOR IT TO FAIL. Under MIN-SELECT the sweep can CYCLE: the fuel
+        # leg takes authority, which changes the plant the governor solves against, which hands
+        # authority back. That is a FINDING about the composition law and it is reported (the
+        # residual, the order, and the two clips), never repaired by raising the cap.
+        a, h = nu0
+        mf0 = float(fuel_schedule(0.0))
+        if self._v0 is not None and has_v:
+            self._check_v0(self._v0, lim_s)
+        gf, gr = 0.0, 0.0
+        q = command(a, h, mf0, 0.0)
+        v = self._v0 if (self._v0 is not None and has_v) else 0.0
+        if self._b0 is not None:
+            q = self._b0
+        steps = {
+            "f": lambda gf, gr, q, v: (required_fuel(a, h, q, v, mf0), gr, q, v),
+            "r": lambda gf, gr, q, v: (gf, required_gov(a, h, q, v, mf0), q, v),
+            "q": lambda gf, gr, q, v: (gf, gr, q if self._b0 is not None else command(
+                a, h, max(1e-9, mf0 - self._applied_clip(gf, gr)), v), v),
+            "v": lambda gf, gr, q, v: (gf, gr, q, v if (self._v0 is not None or not has_v)
+                                       else stator(
+                a, h, max(1e-9, mf0 - self._applied_clip(gf, gr)), q)[0])}
+        assert sorted(self._ic_order4) == ["f", "q", "r", "v"], (
+            f"rung-72 ic_order4 is a permutation of 'frqv'; got {self._ic_order4!r}")
+        res, its = float("inf"), 0
+        for its in range(1, 61):
+            n = (gf, gr, q, v)
+            for key in self._ic_order4:
+                n = steps[key](*n)
+            res = max(abs(n[i] - x) for i, x in enumerate((gf, gr, q, v)))
+            gf, gr, q, v = n
+            if res <= 1e-12:
+                break
+        assert res <= 1e-9, (
+            f"rung-72: the joint initial condition did not converge (residual {res:.3e} after "
+            f"{its} iterations) in order {self._ic_order4!r}, at gf = {gf:.6e}, gr = {gr:.6e}. "
+            "Two loops share the fuel actuator, so a sweep under MIN-SELECT can cycle between "
+            "'the fuel leg holds it' and 'the governor holds it'. That is a FINDING about the "
+            "composition law: report the state, the order and both clips; do not raise the cap.")
+
+        pts, s = [], 0.0
+        for _ in range(int(round(s_end / ds)) + 1):
+            try:
+                k1 = der(a, h, gf, gr, q, v, s)
+            except AssertionError:
+                break
+            _, _, _, _, _, _, mf_app, inst, rf, rr, cmd, vcmd, vreg = k1
+            clip = self._applied_clip(gf, gr)
+            pts.append(dict(s=s, nu_lp=a, nu_hp=h, Tt4=inst["Tt4"], f=inst["f"],
+                            pi_lpc=inst["pi_lpc"], pi_hpc=inst["pi_hpc"],
+                            phi_lp=inst["phi_lp"], phi_hp=inst["phi_hp"],
+                            mdot_air=inst["mdot_air"], sp_thrust=inst["sp_thrust"],
+                            branch=inst["branch"], mf=mf_app,
+                            mf_sched=float(fuel_schedule(s)), g=clip,
+                            required=max(rf, rr), g_fuel=gf, g_gov=gr,
+                            required_fuel=rf, required_gov=rr,
+                            authority=self._authority(gf, gr),
+                            b=q, b_cmd=cmd, v=v, v_cmd=vcmd, v_regime=vreg,
+                            ic_iters=its, ic_res=res, ic_order=self._ic_order4,
+                            share_law=self._share_law))
+            try:
+                k2 = der(a + ds/2*k1[0], h + ds/2*k1[1], gf + ds/2*k1[2], gr + ds/2*k1[3],
+                         q + ds/2*k1[4], v + ds/2*k1[5], s + ds/2)
+                k3 = der(a + ds/2*k2[0], h + ds/2*k2[1], gf + ds/2*k2[2], gr + ds/2*k2[3],
+                         q + ds/2*k2[4], v + ds/2*k2[5], s + ds/2)
+                k4 = der(a + ds*k3[0], h + ds*k3[1], gf + ds*k3[2], gr + ds*k3[3],
+                         q + ds*k3[4], v + ds*k3[5], s + ds)
+            except AssertionError:
+                break
+            a += ds / 6 * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0])
+            h += ds / 6 * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1])
+            gf += ds / 6 * (k1[2] + 2 * k2[2] + 2 * k3[2] + k4[2])
+            gr += ds / 6 * (k1[3] + 2 * k2[3] + 2 * k3[3] + k4[3])
+            q += ds / 6 * (k1[4] + 2 * k2[4] + 2 * k3[4] + k4[4])
+            v += ds / 6 * (k1[5] + 2 * k2[5] + 2 * k3[5] + k4[5])
+            # Every position is PHYSICAL (rung 65, verbatim): the actuators' own hardware stops,
+            # applied to the STATE and never to a command. BOTH clips are floored at zero --
+            # a negative clip is fuel ADDED by a limiter, which no leg here can do.
+            if has_q:
+                q = min(self.bleed_lim.b_max, max(0.0, q))
+            if has_v:
+                v = self._clamp_v(v, lim_s)
+            gf, gr = max(0.0, gf), max(0.0, gr)
+            s += ds
+        return pts
+
+    @staticmethod
+    def _authority(gf: float, gr: float, tol: float = 1e-12) -> str:
+        """WHO HOLDS THE ACTUATOR -- the third regime label, and the one no prior rung needed.
+
+        `dormant` (neither leg is cutting), `tie` (the switch itself, where the Jacobian is
+        discontinuous and a central difference straddles the kink), or the name of the leg whose
+        clip is the applied one. A leg that is CUTTING but not named here is RIDING-MASKED:
+        nowhere near a stop, and coupled to nothing."""
+        if gf <= tol and gr <= tol:
+            return "dormant"
+        if abs(gf - gr) <= tol:
+            return "tie"
+        return "fuel" if gf > gr else "gov"
+
+    def _shared_rig(self, sm: float, tau: float, tau_s: float, v_max: float, Tt4_max: float,
+                    tau_att: float = 0.05, tau_rel: float = 0.15, inc: bool = False,
+                    fuel: bool = True, valve: bool = True, stator: bool = True,
+                    gov: bool = True):
+        """A machine with any SUBSET of the FOUR loops armed, plus the fuel leg and lag that go
+        with it. ONE constructor for every cell of every table here, so a cell can differ from
+        another only by which loops are armed and WHICH COORDINATE the stator watches -- rung
+        63's lesson, and the reason the credits are differenceable at all.
+
+        `inc` selects the arm: `False` = rung 70's `phi` stator (`n = 4`, TWO constraints),
+        `True` = rung 71's INCIDENCE stator (THREE). Every floor still comes from the SAME
+        `from_margin(cmap, ., sm)`, and `m_lim = T_c - 1/phi_lim` adds no constant (rung 69
+        s 10, verbatim) -- comparing the two arms at UNEQUAL walls would confound this rung
+        with a set-point offset."""
+        cmap = self.map_lp_design
+        bl = BleedLimiter.from_margin(cmap, self.bleed_lim.b_max if self.bleed_lim
+                                      else 0.10, sm, tau=tau) if valve else None
+        sl = si = None
+        if stator:
+            if inc:
+                si = StatorIncidenceLimiter.from_margin(cmap, v_max, sm, tau=tau_s)
+            else:
+                sl = StatorLimiter.from_margin(cmap, v_max, sm, tau=tau_s)
+        m = self.at_lever(bleed_lim=bl, stator_lim=sl, stator_inc=si)
+        m._gov_max = Tt4_max if gov else None
+        surge = SurgeLimiter.from_margin(cmap, "lp", sm) if fuel else None
+        lag = AsymmetricLag(tau_att=tau_att, tau_rel=tau_rel) if fuel else None
+        return m, surge, lag
+
+    # --- s 1: THE FOUR LAWS, and the TWELVE gains ---------------------------------------------
+
+    def _quad_laws(self, flight: FlightCondition, a: float, h: float, mf_sched: float,
+                   accel, surge, Tt4_max: float):
+        """The FOUR control laws as closures of the other three states, each through a SHIPPED
+        closure, none knowing the others exist. That mutual ignorance is what makes their
+        products a MEASUREMENT of s 1's algebra rather than a restatement of it.
+
+        `F` and `R` are rung 68's and rung 70's `required`, verbatim -- including the fact that
+        each computes its clip from the SCHEDULED fuel and therefore CANNOT see the other's
+        state. That is not a choice made here; it is the property of the two inherited laws that
+        s 1.1 turns into `F_r = R_f = 0`, and it is differenced rather than assumed.
+
+        `C` and `V` are rungs 65/68/69's, and they see the two clips ONLY through
+        `_applied_clip` -- so under MIN-SELECT the masked one reaches them through a function
+        that is FLAT in it."""
+        Tt2, pt2, _ = self._inlet(flight)
+        base_close = super(LimitedBleedTransient, self)._close_fuel
+
+        def F(gr, q, v):
+            """RUNG 52's leg. `max(0, .)` has a KINK at its own dormant edge; the regime label
+            is what the caller filters on."""
+            self._b_state, self._v_state = q, v
+            try:
+                caps = []
+                if accel is not None:
+                    caps.append(self._sched_fuel(flight, a, h, mf_sched, accel))
+                if surge is not None:
+                    caps.append(self._surge_fuel(flight, a, h, mf_sched, surge))
+                raw = (mf_sched - min(caps)) if caps else 0.0
+            finally:
+                self._b_state, self._v_state = None, None
+            return max(0.0, raw), ("riding" if raw > 0.0 else "dormant")
+
+        def R(gf, q, v):
+            """RUNG 47's clip, with rung 70's own kink."""
+            self._b_state, self._v_state = q, v
+            try:
+                i = self._instant_fuel(flight, a, h, mf_sched)
+                if i["Tt4"] <= Tt4_max:
+                    return 0.0, "dormant"
+                raw = mf_sched - self._topping_fuel(flight, a, h, Tt4_max, mf_sched)
+            finally:
+                self._b_state, self._v_state = None, None
+            return max(0.0, raw), ("riding" if raw > 0.0 else "dormant")
+
+        def C(gf, gr, v):
+            self._v_state = v
+            try:
+                _, b, reg = self._solve_b(self._closer(
+                    base_close, a, h, max(1e-9, mf_sched - self._applied_clip(gf, gr)),
+                    Tt2, pt2))
+                return b, reg
+            finally:
+                self._v_state = None
+
+        def V(gf, gr, q):
+            self._b_state = q
+            try:
+                _, vv, reg = self._solve_v(self._closer_v(
+                    base_close, a, h, max(1e-9, mf_sched - self._applied_clip(gf, gr)),
+                    Tt2, pt2))
+                return vv, reg
+            finally:
+                self._b_state = None
+
+        return F, R, C, V
+
+    def _quad_gains_at(self, flight, p, accel, surge, Tt4_max, dg=1e-7, dq=1e-5, dv=1e-4,
+                       manifold=True, switch_guard=4.0):
+        """The TWELVE central differences at one trajectory point, with TWO filters.
+
+        REGIME, rung 68's, inherited: every perturbed evaluation is checked, not just the base
+        point, because a base point can be comfortably riding while one arm of a difference has
+        crossed into `dormant` or onto a stop.
+
+        SWITCH PROXIMITY, and this one is NEW. A difference in `gf` of step `dg` taken where
+        `|gf - gr| < dg` straddles the `max()` kink and returns the slope of NEITHER branch --
+        the authority-hand-over's version of the regime trap, and the regime filter does not
+        catch it, because at the switch BOTH legs are comfortably riding and nowhere near a
+        stop. Points inside `switch_guard * dg` of the hand-over are skipped and COUNTED (rung
+        68's rule: a dropped point is a coverage claim, never a silent truncation).
+
+        `manifold=True` puts the stator on the shared manifold before differencing (rung 68's
+        exact statement of the algebra, inherited unchanged)."""
+        a, h, mf_sched = p["nu_lp"], p["nu_hp"], p["mf_sched"]
+        gf, gr, q = p["g_fuel"], p["g_gov"], p["b"]
+        F, R, C, V = self._quad_laws(flight, a, h, mf_sched, accel, surge, Tt4_max)
+        if manifold:
+            # rung 68's `_manifold_v`, with the applied clip standing in for its single `g`
+            v = self._manifold_v(flight, a, h, mf_sched, self._applied_clip(gf, gr), q,
+                                 lambda g_, q_: V(g_, 0.0, q_))
+        else:
+            v = p["v"]
+        if self._share_law == "max" and abs(gf - gr) <= switch_guard * dg:
+            return dict(interior=False, off_regime=["switch"], s=p["s"], v_base=v,
+                        near_switch=True)
+
+        ev = {}
+        for key, val in (("F+r", F(gr + dg, q, v)), ("F-r", F(gr - dg, q, v)),
+                         ("F+q", F(gr, q + dq, v)), ("F-q", F(gr, q - dq, v)),
+                         ("F+v", F(gr, q, v + dv)), ("F-v", F(gr, q, v - dv)),
+                         ("R+f", R(gf + dg, q, v)), ("R-f", R(gf - dg, q, v)),
+                         ("R+q", R(gf, q + dq, v)), ("R-q", R(gf, q - dq, v)),
+                         ("R+v", R(gf, q, v + dv)), ("R-v", R(gf, q, v - dv)),
+                         ("C+f", C(gf + dg, gr, v)), ("C-f", C(gf - dg, gr, v)),
+                         ("C+r", C(gf, gr + dg, v)), ("C-r", C(gf, gr - dg, v)),
+                         ("C+v", C(gf, gr, v + dv)), ("C-v", C(gf, gr, v - dv)),
+                         ("V+f", V(gf + dg, gr, q)), ("V-f", V(gf - dg, gr, q)),
+                         ("V+r", V(gf, gr + dg, q)), ("V-r", V(gf, gr - dg, q)),
+                         ("V+q", V(gf, gr, q + dq)), ("V-q", V(gf, gr, q - dq))):
+            ev[key] = val
+        off = [k for k, (_, reg) in ev.items() if reg != "riding"]
+        if off:
+            return dict(interior=False, off_regime=off, s=p["s"], v_base=v,
+                        near_switch=False)
+
+        def d(kp, km, h2):
+            return (ev[kp][0] - ev[km][0]) / (2 * h2)
+
+        g = dict(interior=True, off_regime=[], near_switch=False, v_base=v,
+                 authority=self._authority(gf, gr),
+                 F_r=d("F+r", "F-r", dg), F_q=d("F+q", "F-q", dq), F_v=d("F+v", "F-v", dv),
+                 R_f=d("R+f", "R-f", dg), R_q=d("R+q", "R-q", dq), R_v=d("R+v", "R-v", dv),
+                 C_f=d("C+f", "C-f", dg), C_r=d("C+r", "C-r", dg), C_v=d("C+v", "C-v", dv),
+                 V_f=d("V+f", "V-f", dg), V_r=d("V+r", "V-r", dg), V_q=d("V+q", "V-q", dq))
+        # THE PAIR PRODUCT AT ITS OPPOSITE CORNER. Rung 66's two loops on one VARIABLE gave
+        # exactly 1; two loops on one ACTUATOR give exactly 0.
+        g["pair_FR"] = g["F_r"] * g["R_f"]
+        g["pair_RC"] = g["R_q"] * g["C_r"]
+        g["pair_CV"] = g["C_v"] * g["V_q"]
+        g["pair_RV"] = g["R_v"] * g["V_r"]
+        # the MASKED leg's own coupling into the plant -- predicted EXACTLY zero, not small
+        g["masked"] = "fuel" if g["authority"] == "gov" else (
+            "gov" if g["authority"] == "fuel" else None)
+        g["mask_leak"] = (max(abs(g["C_f"]), abs(g["V_f"])) if g["masked"] == "fuel"
+                          else max(abs(g["C_r"]), abs(g["V_r"]))
+                          if g["masked"] == "gov" else None)
+        return g
+
+    @staticmethod
+    def _jac4(gg, taus):
+        """The 4x4 `J`, rows `(f, r, q, v)`, `J[i][j] = (dcmd_i/dx_j - delta_ij)/tau_i`.
+
+        Built EXPLICITLY rather than through a closed form, because the closed form is what
+        s 1.2 is claiming. `taus` is `(tau_f, tau_g, tau_q, tau_s)`."""
+        tf, tg, tq, ts = taus
+        return [[-1.0 / tf, gg["F_r"] / tf, gg["F_q"] / tf, gg["F_v"] / tf],
+                [gg["R_f"] / tg, -1.0 / tg, gg["R_q"] / tg, gg["R_v"] / tg],
+                [gg["C_f"] / tq, gg["C_r"] / tq, -1.0 / tq, gg["C_v"] / tq],
+                [gg["V_f"] / ts, gg["V_r"] / ts, gg["V_q"] / ts, -1.0 / ts]]
+
+    @staticmethod
+    def _charpoly4(A):
+        """`[1, a3, a2, a1, a0]` of `det(lam I - A)` by Faddeev-LeVerrier -- exact in exact
+        arithmetic, no iteration, and it needs no pivoting to be stable at this size."""
+        n = 4
+        c, M = [1.0], None
+        for k in range(1, n + 1):
+            if k == 1:
+                M = [row[:] for row in A]
+            else:
+                T = [[M[i][j] + (c[-1] if i == j else 0.0) for j in range(n)] for i in range(n)]
+                M = [[sum(A[i][t] * T[t][j] for t in range(n)) for j in range(n)]
+                     for i in range(n)]
+            c.append(-sum(M[i][i] for i in range(n)) / k)
+        return c
+
+    @staticmethod
+    def _quartic_roots_c(coef):
+        """The four roots of a monic quartic by Durand-Kerner, in complex arithmetic.
+
+        WHY NOT A CLOSED FORM: Ferrari's needs branch choices that go badly conditioned exactly
+        where this rung lives -- near a DOUBLE root, which is what a block-triangular `M` with a
+        repeated clock produces. Durand-Kerner has no branches, and its residual is CHECKED by
+        the caller rather than trusted (`_cubic_roots_c`'s own discipline, one degree up)."""
+        _, a3, a2, a1, a0 = coef
+
+        def poly(z):
+            return (((z + a3) * z + a2) * z + a1) * z + a0
+
+        # a fixed, deterministic start -- Math.random has no place in a reproducible gate
+        z = [complex(0.4, 0.9) ** k for k in range(4)]
+        scale = max(1.0, abs(a3), abs(a2) ** 0.5, abs(a1) ** (1 / 3.), abs(a0) ** 0.25)
+        z = [x * scale for x in z]
+        for _ in range(500):
+            step = 0.0
+            for i in range(4):
+                den = 1.0 + 0j
+                for j in range(4):
+                    if j != i:
+                        den *= (z[i] - z[j])
+                if den == 0:
+                    den = 1e-30 + 0j
+                d = poly(z[i]) / den
+                z[i] -= d
+                step = max(step, abs(d))
+            if step <= 1e-14 * scale:
+                break
+        return sorted(z, key=lambda w: (w.real, w.imag))
+
+    @classmethod
+    def charpoly_selftest(cls) -> dict:
+        """THE INSTRUMENT, GATED AGAINST ITSELF -- and this one is not ceremony.
+
+        The first version of `_charpoly4` had `A` where the Faddeev-LeVerrier recursion needs
+        `M_{k-1}`, and it returned a WRONG polynomial whose roots were entirely plausible:
+        a stable-looking spectrum, a determinant of 5.9e+05, a residual `|p(root)|` of 1e-09
+        (the root finder was faithfully solving the wrong polynomial), and a parent comparison
+        that simply came out large. **Nothing downstream could tell.** So the polynomial is
+        checked against two things it cannot be wrong about at the same time as being wrong:
+
+          * an INDEPENDENT trace and determinant -- `sum(roots) = tr A` and `prod(roots) =
+            det A` by cofactor expansion, neither of which goes through the recursion;
+          * a TRIANGULAR matrix, whose spectrum is its own diagonal, with off-diagonal
+            couplings large enough that a broken recursion cannot coincidentally survive."""
+        def det4(A):
+            """Laplace expansion -- independent of the recursion under test."""
+            tot = 0.0
+            for j in range(4):
+                sub = [[A[i][k] for k in range(4) if k != j] for i in range(1, 4)]
+                d3 = (sub[0][0] * (sub[1][1] * sub[2][2] - sub[1][2] * sub[2][1])
+                      - sub[0][1] * (sub[1][0] * sub[2][2] - sub[1][2] * sub[2][0])
+                      + sub[0][2] * (sub[1][0] * sub[2][1] - sub[1][1] * sub[2][0]))
+                tot += (-1.0) ** j * A[0][j] * d3
+            return tot
+
+        out = {}
+        gen = [[-20.0, 3.0, -1.5, 0.7], [2.0, -25.0, 4.0, -0.3],
+               [-1.0, 5.0, -30.0, 2.5], [0.5, -2.0, 6.0, -40.0]]
+        tri = [[-20.0, 7.0, -3.0, 9.0], [0.0, -25.0, 4.0, -6.0],
+               [0.0, 0.0, -30.0, 8.0], [0.0, 0.0, 0.0, -50.0]]
+        for name, A in (("general", gen), ("triangular", tri)):
+            coef = cls._charpoly4(A)
+            roots = cls._quartic_roots_c(coef)
+            tr = sum(A[i][i] for i in range(4))
+            pr = 1.0 + 0j
+            for z in roots:
+                pr *= z
+            out[name] = dict(
+                trace_err=abs(sum(roots).real + coef[1]) + abs(sum(roots).real - tr),
+                det_err=abs(pr.real - det4(A)) / max(1.0, abs(det4(A))),
+                det_vs_a0=abs(coef[4] - det4(A)) / max(1.0, abs(det4(A))),
+                resid=max(abs((((z + coef[1]) * z + coef[2]) * z + coef[3]) * z + coef[4])
+                          for z in roots) / max(1.0, abs(det4(A))))
+        # the triangular arm: the spectrum IS the diagonal, matched element for element
+        diag = sorted(tri[i][i] for i in range(4))
+        got = sorted(z.real for z in cls._quartic_roots_c(cls._charpoly4(tri)))
+        out["triangular"]["diag_err"] = max(abs(a - b) for a, b in zip(diag, got))
+        out["triangular"]["max_imag"] = max(
+            abs(z.imag) for z in cls._quartic_roots_c(cls._charpoly4(tri)))
+        return out
+
+    @staticmethod
+    def _parent_quartic(c3: tuple, tau_m: float):
+        """s 1.2's claim AS A POLYNOMIAL IDENTITY: `p4(lam) = (lam + 1/tau_m) * p3(lam)`, with
+        `p3` the parent rung's own characteristic polynomial built from the SHIPPED
+        `_invariants` (`lam^3 - c2 lam^2 + c1 lam - c0`).
+
+        **COEFFICIENTS, NOT ROOTS, AND THAT IS THE POINT.** In the rank-ONE cell the parent has
+        a DOUBLE zero root and this rung a TRIPLE one, and a repeated root is resolved only to
+        the square root of the working precision -- measured, the individual roots come back at
+        3e-07 while every invariant sits at 1e-13. Matching roots there would report a 4.6e-07
+        'disagreement' that is the root finder's resolution and not a difference between two
+        plants. The coefficient form has no such floor and states the claim exactly."""
+        c2, c1, c0 = c3
+        p3 = (1.0, -c2, c1, -c0)
+        a = 1.0 / tau_m
+        return (1.0, p3[1] + a, p3[2] + a * p3[1], p3[3] + a * p3[2], a * p3[3])
+
+    @staticmethod
+    def _riding4(traj, b_max):
+        """Trajectory points where ALL FOUR loops are live and strictly interior. Rung 68's
+        `_riding` with the fourth leg added; the stator is still filtered on the REGIME LABEL
+        and never on a float comparison against a stop."""
+        return [p for p in traj
+                if p["required_fuel"] > 0.0 and p["required_gov"] > 0.0
+                and 0.0 < p["b_cmd"] < b_max and p.get("v_regime") == "riding"]
+
+    def _shared_march(self, flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle, ds,
+                      v_max, inc):
+        """One rig, one march, under MIN-SELECT -- **the plant is ALWAYS marched under `max`**,
+        whatever law a reader then reads the Jacobian under. Marching the SUM law would compare
+        two laws on two different trajectories and confound the law with the state (s 3)."""
+        tau_f, tau_gov, tau_q, tau_s = taus
+        m, surge, lag = self._shared_rig(sm, tau_q, tau_s, v_max, Tt4_max,
+                                         tau_att=tau_f, tau_rel=3.0 * tau_f, inc=inc)
+        traj = m._with_share("max", m._stator_march, flight, Tt4_lo, Tt4_hi, r, s_settle, ds,
+                             Tt4_max=Tt4_max, tau_gov=tau_gov, surge=surge, lag=lag)[0]
+        return m, surge, lag, traj
+
+    # --- s 0: WHO HOLDS THE ACTUATOR, AND WHEN ------------------------------------------------
+
+    def authority_law(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                      Tt4_max: float, sm: float,
+                      clocks=((0.05, 0.05, 0.05, 0.05), (0.20, 0.01, 0.50, 0.05)),
+                      r: float = 0.5, s_settle: float = 1.2, ds: float = 0.005,
+                      v_max: float = 0.20) -> dict:
+        """s 0 MEASURED: **the four windows, and the ONE hand-over inside them.**
+
+        Under min-select exactly one fuel-side leg reaches the actuator at a time, so the
+        trajectory splits into an interval where rung 52's leg holds it and one where rung 47's
+        governor does. THE HAND-OVER SITS INSIDE THE JOINT WINDOW on both arms and at both clock
+        settings, which is what lets every claim in s 2 be measured on both sides of a rank
+        change **on one trajectory**, with no second plant.
+
+        AND THE TWO EVENTS THAT END THE FUEL LEG's AUTHORITY AND THE INCIDENCE STATOR's WINDOW
+        ARE THE SAME EVENT: `phi_lp` recovering through the floor shrinks rung 52's clip (so the
+        governor overtakes it) and simultaneously makes the stator dormant (rung 71 s 0.2). That
+        is why the incidence arm's governor-authority cell is nearly empty at matched clocks --
+        1 point of 35 -- and why the WIDE-CELL clock arm exists: a fast governor and a slow fuel
+        leg hand over EARLY, and a slow valve keeps the stator riding LATE. All four are swept
+        march coordinates, disclosed as such."""
+        out = []
+        for inc in (False, True):
+            for taus in clocks:
+                m, surge, lag, traj = self._shared_march(
+                    flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle, ds, v_max, inc)
+                b_max = m.bleed_lim.b_max
+
+                def span(sel):
+                    w = [p["s"] for p in traj if sel(p)]
+                    return (min(w), max(w), len(w)) if w else (None, None, 0)
+
+                joint = self._riding4(traj, b_max)
+                census = {}
+                for p in traj:
+                    census[p["authority"]] = census.get(p["authority"], 0) + 1
+                hand = [traj[i]["s"] for i in range(1, len(traj))
+                        if traj[i]["authority"] != traj[i - 1]["authority"]
+                        and "dormant" not in (traj[i]["authority"],
+                                              traj[i - 1]["authority"])]
+                in_joint = {a: sum(1 for p in joint if p["authority"] == a)
+                            for a in ("fuel", "gov")}
+                out.append(dict(
+                    inc=inc, taus=taus, n=len(traj), census=census, handovers=hand,
+                    fuel=span(lambda p: p["required_fuel"] > 0.0),
+                    gov=span(lambda p: p["required_gov"] > 0.0),
+                    valve=span(lambda p: 0.0 < p["b_cmd"] < b_max),
+                    stator=span(lambda p: p.get("v_regime") == "riding"),
+                    joint=(joint[0]["s"], joint[-1]["s"], len(joint)) if joint
+                    else (None, None, 0),
+                    joint_fraction=len(joint) / len(traj) if traj else 0.0,
+                    # BOTH legs want a cut here: the masked one is RIDING and reaching nothing
+                    both_want=span(lambda p: p["required_fuel"] > 0.0
+                                   and p["required_gov"] > 0.0)[2],
+                    in_joint=in_joint,
+                    handover_inside=bool(hand) and any(
+                        joint[0]["s"] <= s <= joint[-1]["s"] for s in hand) if joint else False,
+                    min_phi=min(p["phi_lp"] for p in traj),
+                    max_Tt4=max(p["Tt4"] for p in traj)))
+        return dict(arms=out, clocks=clocks, ds=ds,
+                    both_cells_everywhere=all(a["in_joint"]["fuel"] > 0
+                                              and a["in_joint"]["gov"] > 0
+                                              for a in out if a["taus"] == clocks[-1]),
+                    one_handover=all(len(a["handovers"]) <= 1 for a in out))
+
+    # --- s 1: THE TWELVE GAINS, AND THE TWO THAT ARE EXACTLY ZERO -----------------------------
+
+    def shared_gains(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                     Tt4_max: float, sm: float, taus=(0.05, 0.05, 0.05, 0.05),
+                     inc: bool = False, r: float = 0.5, s_settle: float = 1.2,
+                     ds: float = 0.002, v_max: float = 0.20, every: int = 2) -> dict:
+        """s 1 MEASURED: the twelve cross-gains, and **the four of them that are EXACTLY zero.**
+
+            F_r = R_f = 0     the two legs cannot see each other -- both solve from the
+                              SCHEDULED fuel (rungs 47/52's own discipline, inherited)
+            C_m = V_m = 0     the MASKED leg reaches the plant through nothing, because
+                              `max()` is FLAT in it
+
+        so `pair_FR = 0` **exactly**. Rung 66's two loops on one VARIABLE gave a pair product of
+        exactly 1 -- maximally redundant; two loops on one ACTUATOR give exactly 0 -- maximally
+        exclusive. Those are the two corners of the same question and they are one rung apart in
+        subject and six in number.
+
+        **THE MASK LEAK IS THE GATED QUANTITY AND THE FREE POLE IS ITS CONSEQUENCE, NOT A
+        SECOND MEASUREMENT.** `_jac4` puts `-1/tau_i` on the diagonal BY CONSTRUCTION, so once
+        the masked column's off-diagonal entries are measured zero, `A e_m = -(1/tau_m) e_m` is
+        ALGEBRA and reporting the eigenvalue as a separate confirmation would be the shipped
+        instrument agreeing with itself -- rung 67 gate 9's retraction and rung 71 s 1.4's `c1`,
+        in a third shape. The pole is reported; the leak is gated."""
+        m, surge, lag, traj = self._shared_march(
+            flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle, ds, v_max, inc)
+        pts = self._riding4(traj, m.bleed_lim.b_max)
+        rows, skipped = [], dict(switch=0, regime=0)
+        checks = []
+        for p in pts[::every]:
+            gg = m._with_share("max", m._quad_gains_at, flight, p, None, surge, Tt4_max)
+            if not gg["interior"]:
+                skipped["switch" if gg.get("near_switch") else "regime"] += 1
+                continue
+            checks.append(m._assert_fuel_boundary(flight, p, Tt4_max, surge))
+            tau_f = lag.tau(p["required_fuel"], p["g_fuel"])
+            tt = (tau_f, taus[1], taus[2], taus[3])
+            coef = m._charpoly4(m._jac4(gg, tt))
+            rows.append(dict(s=p["s"], gains=gg, authority=gg["authority"],
+                             masked=gg["masked"], mask_leak=gg["mask_leak"],
+                             det=coef[4], taus=tt))
+        leaks = [x["mask_leak"] for x in rows if x["mask_leak"] is not None]
+        return dict(
+            inc=inc, taus=taus, ds=ds, rows=rows, skipped=skipped,
+            n_riding=len(pts), n_sampled=len(pts[::every]), boundary=checks,
+            s_window=(pts[0]["s"], pts[-1]["s"]) if pts else None,
+            by_authority={a: sum(1 for x in rows if x["authority"] == a)
+                          for a in ("fuel", "gov")},
+            # THE FOUR EXACT ZEROS -- gated as `== 0.0`, never as `< tol`
+            worst_F_r=max((abs(x["gains"]["F_r"]) for x in rows), default=None),
+            worst_R_f=max((abs(x["gains"]["R_f"]) for x in rows), default=None),
+            worst_pair_FR=max((abs(x["gains"]["pair_FR"]) for x in rows), default=None),
+            worst_mask_leak=max(leaks, default=None),
+            # and the gains that are NOT zero, so the plant is not trivially decoupled
+            min_live_gain=min((min(abs(x["gains"][k]) for k in ("F_q", "F_v", "R_q", "R_v"))
+                               for x in rows), default=None),
+            det_range=((min(x["det"] for x in rows), max(x["det"] for x in rows))
+                       if rows else None))
+
+    def _assert_fuel_boundary(self, flight: FlightCondition, p: dict, Tt4_max: float,
+                              surge, dq: float = 1e-5, dv: float = 1e-4) -> dict:
+        """RUNG 70's boundary check, FOR BOTH FUEL LEGS -- and here it guards the headline.
+
+        Rung 70 measures the governor's cross-gains against a deliberately blind version,
+        because losing `_b_state`/`_v_state` around `required` decouples the odd loop and
+        NOTHING FAILS. Under a shared actuator that trap has a twin with teeth: a fuel leg whose
+        `required` lost the boundary would return `F_q = F_v = 0` and its row would look exactly
+        like a MASKED one -- **this rung would confirm its own headline through a bug.** So both
+        legs are measured against both blind versions."""
+        a, h, mf_sched = p["nu_lp"], p["nu_hp"], p["mf_sched"]
+        q, v = p["b"], p["v"]
+        F, R, _, _ = self._quad_laws(flight, a, h, mf_sched, None, surge, Tt4_max)
+
+        def blind_gov(qq, vv):
+            i = self._instant_fuel(flight, a, h, mf_sched)
+            if i["Tt4"] <= Tt4_max:
+                return 0.0
+            return max(0.0, mf_sched - self._topping_fuel(flight, a, h, Tt4_max, mf_sched))
+
+        def blind_fuel(qq, vv):
+            return max(0.0, mf_sched - self._surge_fuel(flight, a, h, mf_sched, surge))
+
+        live = dict(F_q=(F(0.0, q + dq, v)[0] - F(0.0, q - dq, v)[0]) / (2 * dq),
+                    F_v=(F(0.0, q, v + dv)[0] - F(0.0, q, v - dv)[0]) / (2 * dv),
+                    R_q=(R(0.0, q + dq, v)[0] - R(0.0, q - dq, v)[0]) / (2 * dq),
+                    R_v=(R(0.0, q, v + dv)[0] - R(0.0, q, v - dv)[0]) / (2 * dv))
+        dead = dict(F_q=(blind_fuel(q + dq, v) - blind_fuel(q - dq, v)) / (2 * dq),
+                    F_v=(blind_fuel(q, v + dv) - blind_fuel(q, v - dv)) / (2 * dv),
+                    R_q=(blind_gov(q + dq, v) - blind_gov(q - dq, v)) / (2 * dq),
+                    R_v=(blind_gov(q, v + dv) - blind_gov(q, v - dv)) / (2 * dv))
+        assert all(x == 0.0 for x in dead.values()), (
+            f"rung-72: the BLIND controls are supposed to be identically zero; got {dead}. "
+            "If they are not, this instrument is not measuring what it claims.")
+        assert all(abs(x) > 0.0 for x in live.values()), (
+            f"rung-72: a fuel leg's cross-gains came back {live} at s = {p['s']}. A ZERO cross-"
+            "gain here is not a weak coupling and not saturation (rung 67's gate) -- it is a "
+            "LOST `_b_state`/`_v_state` boundary, and it would make a LIVE leg's row look "
+            "exactly like a MASKED one. The rung would then confirm its own headline.")
+        return dict(s=p["s"], live=live, dead=dead)
+
+    # --- s 2: THE FOUR CELLS -- ONE PLANT, FOUR PARENT RUNGS ----------------------------------
+
+    def shared_cells(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                     Tt4_max: float, sm: float,
+                     clocks=((0.05, 0.05, 0.05, 0.05), (0.20, 0.01, 0.50, 0.05)),
+                     r: float = 0.5, s_settle: float = 1.2, ds: float = 0.002,
+                     v_max: float = 0.20, every: int = 2) -> dict:
+        """s 2 MEASURED, AND IT IS THE RUNG: **this ONE six-state plant IS rung 68, 69, 70 or
+        71 at every instant -- polynomial for polynomial -- plus a free pole at the masked
+        leg's own clock.** Which one is selected by AUTHORITY and by the stator's coordinate:
+
+            | stator watches | fuel leg holds | governor holds |
+            |---|---|---|
+            | `phi`   | RUNG 68  (m_live 1, zeros 2) | RUNG 70  (m_live 2, zeros 1) |
+            | `M_i`   | RUNG 69  (m_live 2, zeros 1) | RUNG 71  (m_live 3, zeros 0) |
+
+        The whole `(3, m)` table rungs 68-71 spent four rungs filling is a property of ONE
+        plant, indexed by which leg holds the actuator. **The rank CHANGES at the hand-over
+        with no state, no gain and no clock moving** -- 2 to 1 on the `phi` arm and 1 to 0 on
+        the incidence one -- which is a discontinuity no previous rung in this family could
+        exhibit, because none had a quantity that could change without something moving.
+
+        THE TEST IS A POLYNOMIAL IDENTITY, NOT A ROOT MATCH (`_parent_quartic`): the parent's
+        characteristic polynomial is rebuilt from the SHIPPED rung-68/69/70/71 readers
+        (`_triple_gains_at` -> `_invariants`), multiplied by `(lam + 1/tau_masked)`, and
+        compared to this rung's own quartic coefficient by coefficient. Two independent
+        instruments reaching the same polynomial is the measurement; the free pole is a
+        consequence of s 1's measured zeros and is reported, never gated (`shared_gains`).
+
+        `zeros = n_live - m_live`, with `n_live` the loops holding AUTHORITY."""
+        parent_of = {(False, "fuel"): "rung 68", (False, "gov"): "rung 70",
+                     (True, "fuel"): "rung 69", (True, "gov"): "rung 71"}
+        arms = []
+        for inc in (False, True):
+            for taus in clocks:
+                m, surge, lag, traj = self._shared_march(
+                    flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle, ds, v_max, inc)
+                pts = self._riding4(traj, m.bleed_lim.b_max)
+                cells, skipped = {}, dict(switch=0, regime=0, parent=0)
+                for p in pts[::every]:
+                    gg = m._with_share("max", m._quad_gains_at, flight, p, None, surge,
+                                       Tt4_max)
+                    if not gg["interior"]:
+                        skipped["switch" if gg.get("near_switch") else "regime"] += 1
+                        continue
+                    auth = gg["authority"]
+                    if auth not in ("fuel", "gov"):
+                        continue
+                    tau_f = lag.tau(p["required_fuel"], p["g_fuel"])
+                    tt = (tau_f, taus[1], taus[2], taus[3])
+                    coef = m._charpoly4(m._jac4(gg, tt))
+                    roots = m._quartic_roots_c(coef)
+                    rate = sum(1.0 / t for t in tt)
+                    nz = sum(1 for z in roots if abs(z) < 1e-4 * rate)
+                    tau_m = tau_f if auth == "gov" else taus[1]
+                    # THE PARENT, chosen by AUTHORITY, through the SHIPPED three-loop readers:
+                    # the governor holding => {gov, valve, stator} = rung 70/71
+                    # the fuel leg holding => {rung 52's leg, valve, stator} = rung 68/69
+                    if auth == "gov":
+                        g3 = m._triple_gains_at(flight, p, None, None, manifold=True)
+                        t3 = (taus[1], taus[2], taus[3])
+                    else:
+                        g3 = m._with_gov(None, m._triple_gains_at, flight, p, None, surge,
+                                         manifold=True)
+                        t3 = (tau_f, taus[2], taus[3])
+                    gap = vgap = None
+                    if g3.get("interior"):
+                        pred = m._parent_quartic(m._invariants(g3, t3), tau_m)
+                        gap = max(abs(coef[j] - pred[j]) / rate ** j for j in range(1, 5))
+                        vgap = abs(g3["v_base"] - gg["v_base"])
+                    else:
+                        skipped["parent"] += 1
+                    c = cells.setdefault(auth, dict(
+                        n=0, n_parent=0, zeros=set(), gap=0.0, vgap=0.0, pole=0.0,
+                        det=[], s=[], parent=parent_of[(inc, auth)]))
+                    c["n"] += 1
+                    c["zeros"].add(nz)
+                    c["det"].append(coef[4])
+                    c["s"].append(p["s"])
+                    c["pole"] = max(c["pole"],
+                                    min(abs(z + 1.0 / tau_m) for z in roots) * tau_m)
+                    if gap is not None:
+                        c["n_parent"] += 1
+                        c["gap"] = max(c["gap"], gap)
+                        c["vgap"] = max(c["vgap"], vgap)
+                for c in cells.values():
+                    c["zeros"] = sorted(c["zeros"])
+                    c["s"] = (min(c["s"]), max(c["s"]))
+                    c["det"] = (min(c["det"]), max(c["det"]))
+                arms.append(dict(inc=inc, taus=taus, cells=cells, skipped=skipped,
+                                 n_riding=len(pts), n_sampled=len(pts[::every])))
+        seen = {}
+        for a in arms:
+            for auth, c in a["cells"].items():
+                k = (a["inc"], auth)
+                d = seen.setdefault(k, dict(parent=c["parent"], zeros=set(), gap=0.0,
+                                            pole=0.0, n=0, vgap=0.0))
+                d["zeros"] |= set(c["zeros"])
+                d["gap"] = max(d["gap"], c["gap"])
+                d["vgap"] = max(d["vgap"], c["vgap"])
+                d["pole"] = max(d["pole"], c["pole"])
+                d["n"] += c["n"]
+        for d in seen.values():
+            d["zeros"] = sorted(d["zeros"])
+        return dict(arms=arms, clocks=clocks, ds=ds, cells=seen,
+                    # the LAW: zeros = n_live - m_live, one value per cell, four cells
+                    law_holds=all(len(d["zeros"]) == 1 for d in seen.values()),
+                    predicted={(False, "fuel"): 2, (False, "gov"): 1,
+                               (True, "fuel"): 1, (True, "gov"): 0},
+                    all_four_cells=len(seen) == 4,
+                    worst_parent_gap=max(d["gap"] for d in seen.values()),
+                    worst_v_gap=max(d["vgap"] for d in seen.values()),
+                    worst_pole=max(d["pole"] for d in seen.values()))
+
+    # --- s 3: THE ISOLATION INSTRUMENT -- and its own confound --------------------------------
+
+    def mask_discriminator(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                           Tt4_max: float, sm: float,
+                           clocks=((0.05, 0.05, 0.05, 0.05), (0.05, 0.08, 0.05, 0.05),
+                                   (0.02, 0.09, 0.05, 0.05)),
+                           inc: bool = False, r: float = 0.5, s_settle: float = 1.2,
+                           ds: float = 0.002, v_max: float = 0.20, every: int = 4) -> dict:
+        """s 3: **the SUM law read at the MIN-SELECT trajectory's own base points** -- one law
+        swapped, nothing else, which is rung 71's `m70`-at-identical-points device applied to a
+        composition law instead of a rung.
+
+        IT IS NOT MARCHED. The SUM law double-clips: its own march starves the engine and stops
+        at 84 points of 341 with `Tt4` never reaching the redline. Comparing two laws on two
+        different trajectories would confound the law with the state.
+
+        **AND THE FIRST VERSION OF THIS READER AGREED WITH ITSELF.** At `tau_f = tau_g` the SUM
+        law has `(1, -1, 0, 0)` as an exact eigenvector with eigenvalue `-1/tau` -- the two fuel
+        rows are `(-1, 0, .)` and `(0, -1, .)` and the shared columns cancel in the difference
+        direction -- so the free-pole test passes under BOTH laws at matched clocks (residual
+        3.6e-16) and separates them only when the two fuel clocks DIFFER (measured 1.4e-02 to
+        3.6e-01). The matched arm is carried in the table as the confound it is, because a
+        discriminator that would have been quoted from the matched arm alone is a discriminator
+        that never tested anything (rung 66's own lesson, and rung 70's).
+
+        The two readings, both at unmatched clocks:
+            zeros     MOVES BY ONE at fuel-authority points -- the masked leg regains a rank
+            free pole PRESENT under min-select to 1e-15, ABSENT under SUM"""
+        m0, surge0, lag0, _ = self._shared_march(
+            flight, Tt4_lo, Tt4_hi, Tt4_max, sm, clocks[0], r, s_settle, ds, v_max, inc)
+        out = []
+        for taus in clocks:
+            m, surge, lag, traj = self._shared_march(
+                flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle, ds, v_max, inc)
+            pts = self._riding4(traj, m.bleed_lim.b_max)
+            laws = {}
+            for law in ("max", "sum"):
+                zc, poles, worst_re, auth = {}, [], -1e30, set()
+                for p in pts[::every]:
+                    gg = m._with_share(law, m._quad_gains_at, flight, p, None, surge, Tt4_max)
+                    if not gg["interior"]:
+                        continue
+                    tau_f = lag.tau(p["required_fuel"], p["g_fuel"])
+                    tt = (tau_f, taus[1], taus[2], taus[3])
+                    roots = m._quartic_roots_c(m._charpoly4(m._jac4(gg, tt)))
+                    rate = sum(1.0 / t for t in tt)
+                    a = gg["authority"]
+                    auth.add(a)
+                    zc.setdefault(a, set()).add(
+                        sum(1 for z in roots if abs(z) < 1e-4 * rate))
+                    tau_m = tau_f if a == "gov" else taus[1]
+                    poles.append(min(abs(z + 1.0 / tau_m) for z in roots) * tau_m)
+                    worst_re = max(worst_re, max(z.real for z in roots) * min(tt))
+                laws[law] = dict(zeros={k: sorted(v) for k, v in zc.items()},
+                                 worst_pole=max(poles) if poles else None,
+                                 worst_re=worst_re, authority=sorted(auth))
+            out.append(dict(taus=taus, matched=(taus[0] == taus[1]), laws=laws,
+                            n=len(pts[::every])))
+        un = [a for a in out if not a["matched"]]
+        mt = [a for a in out if a["matched"]]
+        return dict(
+            inc=inc, arms=out, ds=ds,
+            # THE DISCRIMINATOR, unmatched clocks only
+            max_pole_unmatched=max((a["laws"]["max"]["worst_pole"] for a in un), default=None),
+            sum_pole_unmatched=min((a["laws"]["sum"]["worst_pole"] for a in un), default=None),
+            # THE CONFOUND, quoted so it cannot be quoted as a result
+            sum_pole_matched=max((a["laws"]["sum"]["worst_pole"] for a in mt), default=None),
+            # the counts, per authority regime
+            zeros_max={a["taus"]: a["laws"]["max"]["zeros"] for a in out},
+            zeros_sum={a["taus"]: a["laws"]["sum"]["zeros"] for a in out},
+            # reported as TWO FACTS, never as a stability theorem (a frozen Jacobian on a
+            # trajectory the SUM law never marched)
+            sum_worst_re=max(a["laws"]["sum"]["worst_re"] for a in out),
+            max_worst_re=max(a["laws"]["max"]["worst_re"] for a in out))
+
+    # --- s 4: THE LEDGER -- SIXTEEN cells, and a loop that pays for a window it does not own --
+
+    def shared_bill(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                    Tt4_max: float, sm: float, taus=(0.05, 0.05, 0.05, 0.05),
+                    inc: bool = False, r: float = 0.5, s_settle: float = 1.2,
+                    ds: float = 0.005, v_max: float = 0.20) -> dict:
+        """THE 16-CELL LEDGER -- every subset of the FOUR loops, in THREE currencies.
+
+        Rungs 66/68 had 8 cells in one currency, rungs 70/71 8 in two and three. Here the
+        subsets double because the fourth loop is real even where its authority is not, and the
+        question the ledger answers is the one a rank argument cannot: **what does a MASKED leg
+        buy?** It is coupled to nothing while masked, so a spectral reading says 'nothing'; the
+        ledger says otherwise, because authority is a function of `s` and a leg that is masked
+        late held the actuator early.
+
+        THE PREDICTION UNDER TEST (anchor P6): the fuel leg's marginal `phi` credit is POSITIVE
+        but delivered ENTIRELY inside its own authority window, and it leaves `max Tt4` unmoved
+        -- a leg that is masked wherever the governor binds cannot spend the governor's
+        currency. Reported with the ABSOLUTE integrals beside the ratios, because rung 71 s 4's
+        own lesson is that a loop can keep 100 % of a credit that is small."""
+        names = ("F", "G", "V", "S")
+        cells = {}
+        for bits in range(16):
+            on = {names[i]: bool(bits & (1 << i)) for i in range(4)}
+            key = "".join(n for n in names if on[n]) or "bare"
+            # ONE constructor for every cell, so a cell differs from another only by which
+            # loops are armed (rung 63's lesson, and the reason the credits difference at all)
+            m2, surge2, lag2 = self._shared_rig(
+                sm, taus[2], taus[3], v_max, Tt4_max, tau_att=taus[0], tau_rel=3.0 * taus[0],
+                inc=inc, fuel=on["F"], valve=on["V"], stator=on["S"], gov=on["G"])
+            traj = m2._with_share(
+                "max", m2._stator_march, flight, Tt4_lo, Tt4_hi, r, s_settle, ds,
+                Tt4_max=(Tt4_max if on["G"] else None),
+                tau_gov=(taus[1] if on["G"] else None), surge=surge2, lag=lag2)[0]
+            phi_lim = (1.0 + sm) * self.map_lp_design.phi_surge
+            T_c = self.map_lp_design.tan_beta1_crit()
+            cells[key] = dict(
+                on=on,
+                I=self._violation(traj, phi_lim, r),
+                E=self._exceed(traj, Tt4_max, r),
+                M=self._violation_inc(traj, T_c - 1.0 / phi_lim, T_c, r),
+                min_phi=min(p["phi_lp"] for p in traj),
+                max_Tt4=max(p["Tt4"] for p in traj), n=len(traj),
+                # WHERE the fuel leg held the actuator, in this cell
+                auth_fuel=sum(1 for p in traj if p.get("authority") == "fuel"),
+                handover=next((p["s"] for i, p in enumerate(traj[1:], 1)
+                               if p.get("authority") == "gov"
+                               and traj[i - 1].get("authority") == "fuel"), None))
+        base = cells["bare"]
+        for c in cells.values():
+            for k, cr in (("I", "credit_phi"), ("E", "credit_Tt4"), ("M", "credit_inc")):
+                c[cr] = (1.0 - c[k] / base[k]) if base[k] > 0.0 else None
+        own = dict(F=("I", "GVS"), G=("E", "FVS"), V=("I", "FGS"),
+                   S=("M" if inc else "I", "FGV"))
+        marginal, alone, kept = {}, {}, {}
+        for leg, (cur, without) in own.items():
+            marg = cells[without][cur] - cells["FGVS"][cur]
+            solo = base[cur] - cells[leg][cur]
+            marginal[leg], alone[leg] = marg, solo
+            kept[leg] = (marg / solo) if solo else None
+        return dict(
+            cells=cells, inc=inc, taus=taus, own_currency=own,
+            marginal=marginal, alone=alone, kept=kept,
+            # P6: the fuel leg buys phi and does NOT spend the governor's currency
+            fuel_marginal_phi=marginal["F"],
+            fuel_marginal_Tt4=cells["GVS"]["E"] - cells["FGVS"]["E"],
+            Tt4_full=cells["FGVS"]["max_Tt4"], Tt4_no_fuel=cells["GVS"]["max_Tt4"],
+            phi_full=cells["FGVS"]["min_phi"], phi_no_fuel=cells["GVS"]["min_phi"],
+            handover=cells["FGVS"]["handover"],
+            delivered=dict(phi=cells["FGVS"]["credit_phi"],
+                           Tt4=cells["FGVS"]["credit_Tt4"],
+                           inc=cells["FGVS"]["credit_inc"]))

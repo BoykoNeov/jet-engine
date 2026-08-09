@@ -87,7 +87,19 @@ _CLAUDE_MD = os.path.join(_HERE, os.pardir, "CLAUDE.md")
 # it again. The rung-68 panel-backfill disclosure (~334 B) is STILL unpaid — 65/66/67 have no
 # panel and rung 71 wrote its own, so that debt is now four rungs old and is still the first thing
 # to delete when § Open engineering tasks clears it.
-MAX_BYTES = 34_180
+# Bumped at rung 72 (34,790 B), and the ~85 B of headroom above again did what it was bought to
+# do. Same shape as 67/68/69/70/71: ONE table row at 346 B (inside the per-row rule), its § Layout
+# ladder entry, and its name in the BUILT list. PAID FOR from TWO places, and one of them settles
+# an old debt: (a) the "Rungs 69/70/71's seams" open entry was rewritten as "Rungs 69–72's" and
+# came out ~17 B longer despite naming three new seams and marking one CLOSED-BY-REFUTATION, so
+# roughly a wash; (b) **the rung-68 panel-backfill disclosure is finally PAID OFF and DELETED** —
+# § Open engineering tasks records the contract CLOSED (65/66/67 backfilled 2026-08-09), and the
+# comment at the top of this block said the right move once paid was to delete it and drop the
+# budget rather than keep it. Only the standing caveat survives, one line instead of two, because
+# `main.py` really is covered by no test and that warning is not the debt. Refund ~67 B. The three
+# no-grow sites (scope narration, engine.py method inventory, per-seam BUILT list) were checked
+# first and none grew beyond one name. ~88 B of headroom on purpose, so the next rung trips it.
+MAX_BYTES = 34_790
 MAX_LINES = 300
 
 
