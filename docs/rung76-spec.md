@@ -311,6 +311,27 @@ Gated non-vacuous on rung 73's `charpoly_selftest` discipline: **the same machin
 must differ** — measured, it does. And the refusals are refusals: `clip × sensed` and `sensed`
 without an `accel` schedule both assert by name.
 
+### 6.1 THE ARMS ABOVE CANNOT SEE THIS RUNG'S ONE EDIT TO ITS PARENTS, SO IT WAS CHECKED APART
+
+`_cap_fuel` gained an `mf_app` parameter and `ma = _applied_demand(…)` moved **above** the cap
+call in `_demand_laws.F` and `_rhs_laws.F` — which are rung 74's and rung 75's code, not this
+rung's. Every reduce arm above runs with `accel` **armed on both sides**, so none of them can
+see a change on the φ-only plant those rungs actually shipped; and `test_numeric_fingerprint.py`
+— the project's only absolute-value gate — has `TwoLagCascadeTransient` (rung 66) as its
+most-derived arm, so neither can it. **The reduce spine is blind to anything that moves both
+sides together, and here both sides are post-change.**
+
+So it was checked against the previous commit directly, in a `git worktree` at `HEAD~1`: 24 arms
+(both classes × two φ floors × four coordinate/reference/device cells × both stator arms), all
+with `accel=None`, **229,152 floats compared and bit-for-bit identical**. The edit is inert, and
+12 of those arms instantiate and march `DemandCoordinateTransient` itself, so the parent's
+`_sensed_cap` **staticmethod** stub — the one that runs when the child is not involved — is
+exercised too.
+
+**This is a one-off check and not a gate, which is a real gap and is recorded as one** in
+CLAUDE.md § Open engineering tasks: rungs 67–76's plants have no absolute-value gate at all, and
+closing it means new fingerprint arms whose goldens must be regenerated under **CPython**.
+
 ---
 
 ## 7. THE ANCHOR, SCORED

@@ -124,7 +124,15 @@ _CLAUDE_MD = os.path.join(_HERE, os.pardir, "CLAUDE.md")
 # than on an essay. The three no-grow sites (scope narration, engine.py method inventory,
 # per-seam BUILT list) were checked first and only the last grew, by one name. ~83 B of headroom
 # on purpose, so the next rung trips it again.
-MAX_BYTES = 36_430
+# Raised again in the same commit (36,840 B) for something that is NOT rung growth and is
+# recorded here so it cannot be mistaken for it -- the rung-68 panel-backfill precedent, second
+# instance: rung 76 found that `test_numeric_fingerprint.py`'s most-derived arm is rung 66's, so
+# rungs 67-76's plants have NO absolute-value gate, and the reduce spine cannot see an edit that
+# moves both sides together (rung 76 s 6.1 had to check its own parent edit against HEAD~1 by
+# hand). The § Open engineering tasks entry that tracks it costs ~330 B. That is a DEFECT
+# DISCLOSURE, and the right move when it is paid off is to DELETE it and drop this budget back,
+# not to keep it.
+MAX_BYTES = 36_840
 MAX_LINES = 300
 
 

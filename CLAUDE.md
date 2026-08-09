@@ -164,7 +164,7 @@ seam is closed and must never be re-opened by mistake.
 - **The subsonic / unchoked LP branch** in the two-spool solves (rung 38 flags, does not solve) and its **transient**.
 - An **ANCHOR for the blading**: a stress / tip-Mach limit pinning `U` from outside the stack, or an annulus law `Vx(k)`.
 - **Fuel + bleed + STATOR**, all three on one plant (rung 63's seam, untouched by 64/65).
-- **Rungs 69–76's seams — enumerated in each rung's spec, not here.** Shortlist: THREE legs on one actuator; the DEMAND coordinate and ANTI-WINDUP device for the valve/stator; a sensed cap on a MASKED leg; the `1/(1−c)` GAIN every set-point solve carries. `n`=4 needs rung 69's 4th LP lever or a composition that is not `min` — every other route is CLOSED by refutation (rung 76: the obstruction is the COMPOSITION).
+- **Rungs 69–76's seams — enumerated in each rung's spec, not here.** Shortlist: THREE legs on one actuator; the DEMAND coordinate and ANTI-WINDUP device for the valve/stator; a sensed cap on a MASKED leg; the `1/(1−c)` GAIN every set-point solve carries. `n`=4 needs rung 69's 4th LP lever or a composition that is not `min` — every route TRIED (72–76) is CLOSED by refutation, and rung 76 names the obstruction as the COMPOSITION.
 - **Rung 37's internal clocks on two shafts** and the combined 3-state; **customer/cooling bleed** at station 3.
 - **Afterburner**; a **real hardware/CFD map + surge line** (rung 32's standing concession, now doubled across two spools).
 - **Feeding a shifted/marched state into the production cycle** — a re-foundation, not a rung.
@@ -172,6 +172,10 @@ seam is closed and must never be re-opened by mistake.
 ## Open engineering tasks (not rungs, not seams)
 - **One panel per rung** — CLOSED. `main.py` has no test, so the gate cannot see it: check on every ship.
 - **Solver absolute-tolerance audit** — CLOSED, NEGATIVE; `docs/plans/todo-solver-tolerance-audit.md`.
+- **The fingerprint gate stops at rung 66.** `test_numeric_fingerprint.py`'s most-derived arm is
+  `TwoLagCascadeTransient`, so rungs 67–76's plants have NO absolute-value gate and the reduce spine
+  cannot see an edit that moves both sides. Rung 76 § 6.1 checked its own parent edit against `HEAD~1`
+  by hand (229,152 floats, bit-for-bit). New arms need goldens regenerated under CPython.
 
 ## Conventions
 - **SI units throughout** (K, Pa, kg/s, m/s, J/kg). Convert kPa → Pa internally.
