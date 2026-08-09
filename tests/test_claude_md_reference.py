@@ -99,7 +99,15 @@ _CLAUDE_MD = os.path.join(_HERE, os.pardir, "CLAUDE.md")
 # `main.py` really is covered by no test and that warning is not the debt. Refund ~67 B. The three
 # no-grow sites (scope narration, engine.py method inventory, per-seam BUILT list) were checked
 # first and none grew beyond one name. ~88 B of headroom on purpose, so the next rung trips it.
-MAX_BYTES = 34_790
+# Bumped at rung 73 (35,240 B): the same shape as rungs 67/68 and for the same reason -- ONE
+# table row at 349 B (inside the 350 B per-row rule), its § Layout ladder entry, and its name in
+# the BUILT list. PAID FOR IN PART, as that precedent requires, by rewriting the open-seam entry
+# it CLOSES: the rung-69..72 line lost "an APPLIED-fuel-referenced leg" and gained rung 73's own
+# sharpest seam (STATE-AS-DEMAND) in fewer words, and § Open engineering tasks' panel line lost a
+# date it no longer needs. The three no-grow sites (scope narration, engine.py method inventory,
+# per-seam BUILT list) were checked FIRST and none grew beyond one name and one ladder arrow.
+# ~8 B of headroom on purpose: the next rung trips this, which is the guard working.
+MAX_BYTES = 35_240
 MAX_LINES = 300
 
 

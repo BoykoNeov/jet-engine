@@ -8,6 +8,7 @@ these lines (the same rule CLAUDE.md lives under).
 - [Git remote setup](git-remote-setup.md) — repo is github.com/BoykoNeov/jet-engine (public), branch main, origin over SSH
 - [Always commit and push](always-commit-and-push.md) — auto-commit + push green work without being asked; the gate is bare `pytest` (it runs everything); never gate a docs-only change, never run it "just to be sure"
 - [CLAUDE.md is a reference](claude-md-is-a-reference.md) — one-line-per-rung index, detail → docs/rungN-spec.md; a guard test enforces the size budget; bloated to ~200KB twice before
+- [Never run the gate for timing](never-run-the-gate-for-timing.md) — a quoted run time is documentation, not a signal; take it from a run that was already happening, or leave it stale and say so
 - [Test-suite speed policy](test-suite-speed-policy.md) — ONE gate: `pytest` runs everything (2:18); the tiering's blocker was a COUNT argument that inverts under COST; the LPT scheduler is worth ~26%
 - [xdist module-fixture cost](xdist-module-fixture-cost.md) — a module-scoped fixture is rebuilt PER WORKER, so each extra consumer multiplies it; 5 consumers of a 20 s reader added 2:37 to a 2:59 gate
 - [Perf: sonic throat + PyPy](perf-sonic-throat-and-pypy.md) — the hot function was hot ALGORITHMICALLY (45 bisections for a linear root), not linguistically; gate 28:18 → 1:55
@@ -65,6 +66,8 @@ these lines (the same rule CLAUDE.md lives under).
 - [Rung 70 generic split](rung70-generic-split.md) — the split buys the RANK, the RING needs one lever on TWO walls; a predicted NULL refuted into an invariance; I caught a gate computing my own formula twice
 - [Rung 71 full split](rung71-full-split.md) — n=m=3: rank independence is NOT constraint independence (`zeros = n−m` counts gradients, not LIVE loops); det J finally alive and STILL blind to the one new gain; my own headline quoted the wrong window
 - [Rung 72 shared actuator](rung72-shared-actuator.md) — two loops on ONE actuator are a SWITCH between plants; ONE plant IS rungs 68/69/70/71 by AUTHORITY; first seam closed by REFUTING its premise; three predictions died of one oversight; two instruments silently agreed with themselves
+
+- [Rung 73 applied reference](rung73-applied-reference.md) — a predicted coupling landed in the wrong COLUMN so rung 72's block survived its own seam; weakening an instrument cost 5 orders of magnitude and was worth it; the bug that returned a PERFECT confirmation having measured nothing
 
 ## Margin sweeps — confirmations, not rungs
 - [Rung 29 π_c margin](rung29-pi-c-margin.md) — verdict confirmed at 9.4× but π_c NOT protective; the ENERGY = INVENTORY × COMPLETION sharpening

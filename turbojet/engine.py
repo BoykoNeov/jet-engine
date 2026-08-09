@@ -15669,6 +15669,17 @@ class SharedActuatorTransient(FullSplitTransient):
 
     _share_law = "max"      # "max" = MIN-SELECT, the plant. "sum" = s 3's isolation instrument.
     _ic_order4 = "rqvf"     # rung 70's `g -> q -> v` with the new loop APPENDED, declared.
+    _ref_law = "sched"      # RUNG 73's knob. "sched" IS this rung (s 1.1); "applied" is rung 73.
+
+    def _reference(self, req: float, g_own: float, gf: float, gr: float) -> float:
+        """WHICH FUEL A LEG COMPUTES ITS CLIP FROM -- the IDENTITY here, and rung 73's subject.
+
+        Rung 72's two legs both solve from the SCHEDULED fuel (rung 47's discipline and rung
+        52's, each verbatim), which is what makes `F_r = R_f = 0` EXACTLY and the block
+        triangular. s 6 concedes that a leg reading the APPLIED fuel would not, and s 11 names
+        it the sharpest seam. The hook is the seam's one seat: rung 72 returns `req` unchanged,
+        so this class is untouched by its existence."""
+        return req
 
     def at_lever(self, vsv_lp: float = 0.0, vsv_hp: float = 0.0, vsv_sched_lp=None,
                  vsv_sched_hp=None, bleed: float = 0.0, bleed_sched=None,
@@ -15859,8 +15870,8 @@ class SharedActuatorTransient(FullSplitTransient):
 
         def der(a, h, gf, gr, q, v, s):
             mf_sched = float(fuel_schedule(s))
-            rf = required_fuel(a, h, q, v, mf_sched)
-            rr = required_gov(a, h, q, v, mf_sched)
+            rf = self._reference(required_fuel(a, h, q, v, mf_sched), gf, gf, gr)
+            rr = self._reference(required_gov(a, h, q, v, mf_sched), gr, gf, gr)
             mf = max(1e-9, mf_sched - self._applied_clip(gf, gr))
             self._b_state, self._v_state = q, v
             try:
@@ -15894,9 +15905,20 @@ class SharedActuatorTransient(FullSplitTransient):
         v = self._v0 if (self._v0 is not None and has_v) else 0.0
         if self._b0 is not None:
             q = self._b0
+        # THE STATE FLOOR BELONGS IN THE SWEEP, NOT ONLY IN THE MARCH. The march floors both
+        # clips at zero after every step ("a negative clip is fuel ADDED by a limiter, which no
+        # leg here can do"), so the settled state the sweep is solving for must respect the same
+        # physical stop. It is a NO-OP for this rung -- both `required` closures already return
+        # `max(0, .)` -- and it is load-bearing for rung 73, whose hook returns an INCREMENT
+        # that can be negative: a dormant leg beside a riding one then has no interior fixed
+        # point at all (`dg/ds = -clip/tau < 0`), and its equilibrium is the stop itself.
         steps = {
-            "f": lambda gf, gr, q, v: (required_fuel(a, h, q, v, mf0), gr, q, v),
-            "r": lambda gf, gr, q, v: (gf, required_gov(a, h, q, v, mf0), q, v),
+            "f": lambda gf, gr, q, v: (
+                max(0.0, self._reference(required_fuel(a, h, q, v, mf0), gf, gf, gr)),
+                gr, q, v),
+            "r": lambda gf, gr, q, v: (
+                gf, max(0.0, self._reference(required_gov(a, h, q, v, mf0), gr, gf, gr)),
+                q, v),
             "q": lambda gf, gr, q, v: (gf, gr, q if self._b0 is not None else command(
                 a, h, max(1e-9, mf0 - self._applied_clip(gf, gr)), v), v),
             "v": lambda gf, gr, q, v: (gf, gr, q, v if (self._v0 is not None or not has_v)
@@ -16154,10 +16176,18 @@ class SharedActuatorTransient(FullSplitTransient):
         """The 4x4 `J`, rows `(f, r, q, v)`, `J[i][j] = (dcmd_i/dx_j - delta_ij)/tau_i`.
 
         Built EXPLICITLY rather than through a closed form, because the closed form is what
-        s 1.2 is claiming. `taus` is `(tau_f, tau_g, tau_q, tau_s)`."""
+        s 1.2 is claiming. `taus` is `(tau_f, tau_g, tau_q, tau_s)`.
+
+        THE TWO FUEL-SIDE SELF-GAINS ARE READ, NOT ASSUMED (rung 73 s 1.3). Here they are
+        absent and default to zero, which reproduces this rung's `-1/tau_i` exactly -- but a
+        leg whose law reads its OWN state has `F_f != 0`, and a diagonal WRITTEN by the
+        instrument would then make the pole a construction rather than a measurement. The
+        default keeps rung 72 bit-unchanged; the `.get` is what lets rung 73 weaken it."""
         tf, tg, tq, ts = taus
-        return [[-1.0 / tf, gg["F_r"] / tf, gg["F_q"] / tf, gg["F_v"] / tf],
-                [gg["R_f"] / tg, -1.0 / tg, gg["R_q"] / tg, gg["R_v"] / tg],
+        return [[(gg.get("F_f", 0.0) - 1.0) / tf, gg["F_r"] / tf,
+                 gg["F_q"] / tf, gg["F_v"] / tf],
+                [gg["R_f"] / tg, (gg.get("R_r", 0.0) - 1.0) / tg,
+                 gg["R_q"] / tg, gg["R_v"] / tg],
                 [gg["C_f"] / tq, gg["C_r"] / tq, -1.0 / tq, gg["C_v"] / tq],
                 [gg["V_f"] / ts, gg["V_r"] / ts, gg["V_q"] / ts, -1.0 / ts]]
 
@@ -16727,3 +16757,690 @@ class SharedActuatorTransient(FullSplitTransient):
             delivered=dict(phi=cells["FGVS"]["credit_phi"],
                            Tt4=cells["FGVS"]["credit_Tt4"],
                            inc=cells["FGVS"]["credit_inc"]))
+
+
+class AppliedReferenceTransient(SharedActuatorTransient):
+    """RUNG 73. THE APPLIED REFERENCE -- rung 72 s 11's own sharpest seam, and the direct test
+    of the bound its s 6 put on its headline. See `docs/rung73-spec.md`.
+
+    Rung 72's two fuel-side legs both compute their clip from the SCHEDULED fuel: rung 47's
+    discipline (*`required` is what the clip WOULD have to be*) and rung 52's (*solved from the
+    scheduled fuel so arming one leg cannot perturb another's bracket*). Neither was written
+    with a second clip on the same actuator in mind, and rung 72 s 1.1 turns that into
+    `F_r = R_f = 0` EXACTLY -- the whole triangular structure. Its s 11:
+
+        *A leg that reads the applied fuel gives `F_r != 0`, couples the two fuel rows, and
+        destroys the block form -- the spectrum would then be genuinely four-dimensional.*
+
+    > **HEADLINE -- THE COUPLING IS REAL, AND IT LANDS IN THE WRONG COLUMN.** `F_r = -1`
+    > EXACTLY, so rung 72 s 11's premise HOLDS; but triangularity was never a property of the
+    > masked leg's ROW. It is a property of its COLUMN, and `F_r` sits in the AUTHORITATIVE one.
+    > Under min-select the masked column is `(0,0,0,0)` under EVERY reference -- `max()` is flat
+    > in the masked state and nothing downstream can see it -- so
+    >
+    >     eig(M4) = { 0 } UNION eig(M3)        M3 = the parent rung's 3x3 block, ENTRY FOR ENTRY
+    >
+    > **TRIANGULARITY IS A PROPERTY OF MIN-SELECT ALONE, NOT OF THE REFERENCE.** What the
+    > reference buys is the POLE: rung 72's free pole at `-1/tau_masked` moves to EXACTLY THE
+    > ORIGIN, because a masked leg referenced to the applied fuel is a PURE INTEGRATOR running
+    > open loop. Rung 72 saw min-select windup's LAG; this is the windup itself.
+
+    > **AND SO `det J` DIES IN THE ONE CELL WHERE IT WAS ALIVE.** `zeros = n_live - m_live +
+    > n_masked`: every one of rung 72's four per-cell counts gains exactly one, and rung 71's
+    > full-rank cell -- the only live determinant in the family, `+5.9e4` under rung 72 -- goes
+    > to zero. A reference is not a gain, not a clock and not a loop, and it changes the RANK.
+
+    > **AND THE MASKED INTEGRATOR DOES NOT WIND UP, WHICH IS WHY THE PAIR COMPOSES AT ALL.**
+    > Masked means `gr > gf ~ req_f`, so `dgf/ds = (req_f - gr)/tau_f < 0`: the leg integrates
+    > the exceedance still OWED, and the leg holding the actuator is already curing it.
+    > **An applied-referenced leg is self-anti-winding under min-select** -- no anti-windup
+    > device is needed, and that is a property of the composition, not of these numbers.
+
+    THE THREE READINGS, because the seam names one plant and the ladder admits three. Every cap
+    here (`_topping_fuel`, `_surge_fuel`, `_sched_fuel`) is a SET-POINT SOLVE -- a function of
+    `(nu, q, v)` and NOT of the fuel it was asked about -- so `d(required)/d(mf)` is not a
+    gradient but the BRANCH INDICATOR `{0, 1}`:
+
+        A  only the DORMANCY TEST moves      -- not a plant; the guard half, inherited by both
+        B  req = g_own + (mf_app - cap)      -- THE PLANT. it reaches its own set point
+        C  req = mf_app - cap                -- a P-controller with 2x DROOP. s 3's instrument
+
+    C is NOT refused as broken: it is a well-posed proportional law. It is refused as DEGENERATE
+    FOR THIS LADDER -- a leg that structurally cannot reach its own floor makes every currency
+    in the rung-46..72 ledger measure a different object -- and it is carried as the isolation
+    instrument, the role rung 72's SUM law and rungs 50/51's forced release edges played.
+    **B and C move DISJOINT halves of the same matrix**: B moves the pole and keeps the parent,
+    C keeps the pole and moves the parent (s 3).
+
+    THE HOOK IS ONE LINE, AND NO SOLVER CHANGES. Because `cap` is fuel-independent,
+    `mf_app - cap == req_sched - applied_clip` identically, so
+
+        req_applied = g_own + req_sched - max(gf, gr)
+
+    with `req_sched` the SHIPPED rung-47 / rung-52 `required`. When the leg HOLDS,
+    `max(gf, gr) == g_own` and the hook returns `req_sched` FLOAT-IDENTICALLY -- an explicit
+    branch, not an arithmetic coincidence, which is rung 48's `_sched_fuel` device and what
+    makes `M3` the parent's block EXACTLY rather than merely to roundoff.
+
+    Usage:
+        t = AppliedReferenceTransient(design, FLIGHT, 1.0, map_lp=..., map_hp=..., bleed_lim=bl)
+        t.handover_law(FLIGHT, 1000., 1400., 1200., sm=0.4545)      # the LATE hand-over
+        t.applied_gains(FLIGHT, 1000., 1400., 1200., sm=0.4545)     # 14 gains; F_f/R_r in {0,1}
+        t.applied_cells(FLIGHT, 1000., 1400., 1200., sm=0.4545)     # zeros +1, det J dead
+        t.ref_discriminator(FLIGHT, 1000., 1400., 1200., sm=0.4545) # reading B vs reading C
+        t.applied_bill(FLIGHT, 1000., 1400., 1200., sm=0.4545)      # what rung 72 under-reported
+
+    THE REDUCE: rung 72's five inherited arms hold BY DISPATCH (with one fuel-side leg armed
+    this class never enters the shared march at all), and a SIXTH is `_ref_law = 'sched'`, which
+    is rung 72 bit-for-bit because `_reference` is then the identity. **AND THE FIVE ARE NOT
+    MERELY DISPATCH HERE, THEY ARE AN IDENTITY**: with one fuel-side leg the sole leg always
+    holds authority, so the applied reference IS the scheduled one -- the reduce would hold even
+    if the dispatch were removed. That is rung 71's *inherited identity* form, one rung on.
+    """
+
+    _ref_law = "applied"
+
+    def _reference(self, req: float, g_own: float, gf: float, gr: float) -> float:
+        """READING B, and the ONE place the reference lives -- so no reader can disagree with
+        the march (rung 72's `_applied_clip` discipline, second instance).
+
+        THE FLOAT-IDENTICAL BRANCH IS LOAD-BEARING, NOT A TIDY-UP. `g_own + req - g_own` is not
+        `req` in binary floating point; taken through a central difference of step 1e-7 the
+        cancellation shows up as a 4e-11 entry on the AUTHORITATIVE leg's own diagonal, and the
+        claim *`M3` is the parent's block ENTRY FOR ENTRY* would then be a 1e-11 claim instead
+        of an exact one. Rung 48's `_sched_fuel` returns `mf_sched` ITSELF for the same reason,
+        and says so: that is what makes a reduce bit-for-bit rather than merely equal.
+
+        AND IT DISPATCHES ON `_ref_law`, WHICH IS NOT A FORMALITY. The first version of this
+        method applied reading B unconditionally, so `_with_ref('sched', .)` was a NO-OP and
+        every A-vs-B reader differenced the plant against ITSELF. It did not fail: it returned
+        `worst_delta_rest = 0.0` and `mask_leak = 0.0` -- a PERFECT confirmation of this rung's
+        headline, produced by an instrument that had measured nothing. That is the fifth
+        instance of the shipped-instrument-agrees-with-itself pattern in this family (rung 67
+        gate 9, rung 71 s 1.4, rung 72 s 4 and s 8's `_charpoly4`), and the only defence that
+        has ever worked is a gate that FAILS when the two laws are the same one."""
+        if self._ref_law != "applied":
+            return req
+        clip = self._applied_clip(gf, gr)
+        if clip == g_own:
+            return req
+        return g_own + req - clip
+
+    def _with_ref(self, law: str, fn, *a, **kw):
+        """Run a reader under a named reference law, restored in a `finally` -- rung 62's
+        reason, SEVENTH reload: a leaked setting would make a reader report a plant that was
+        never marched."""
+        prev, self._ref_law = self._ref_law, law
+        try:
+            return fn(*a, **kw)
+        finally:
+            self._ref_law = prev
+
+    def at_lever(self, vsv_lp: float = 0.0, vsv_hp: float = 0.0, vsv_sched_lp=None,
+                 vsv_sched_hp=None, bleed: float = 0.0, bleed_sched=None,
+                 bleed_lim=None, stator_lim=None, stator_inc=None
+                 ) -> "AppliedReferenceTransient":
+        """THE ELEVENTH INSTANCE of the trap rungs 61-72 each hit -- and here it grows a second
+        head. Handing back the parent's class would report rung 73 while measuring rung 72;
+        handing back the right class but dropping `_ref_law` would do the same thing one level
+        down, silently, in every ledger cell (`_shared_rig` is the other half of the fix)."""
+        de, fd, md, rho, lpd = self._ctor
+        m = AppliedReferenceTransient(
+            de, fd, md, map_lp=self.map_lp_design, map_hp=self.map_hp_design, rho=rho,
+            vsv_lp=vsv_lp, vsv_hp=vsv_hp, vsv_sched_lp=vsv_sched_lp,
+            vsv_sched_hp=vsv_sched_hp, bleed=bleed, bleed_sched=bleed_sched,
+            bleed_lim=bleed_lim, stator_lim=stator_lim, stator_inc=stator_inc,
+            lp_disabled=lpd)
+        m._ref_law = self._ref_law
+        return m
+
+    @staticmethod
+    def _rk4_floor_shared(ds: float, rate: float) -> None:
+        """THE FLOOR, RE-JUSTIFIED A SIXTH TIME -- and the previous five do NOT carry.
+
+        Rung 72's argument was *the masked leg's eigenvalue is exactly `-1/tau_f` and the other
+        three share the remainder, so no root exceeds the rate sum*. Here the masked leg's
+        eigenvalue is exactly ZERO, which is NEUTRALLY stable, so 'the dominant root is below
+        the rate sum' is no longer the sentence. The new one: `lam = 0` is interior to every
+        explicit stability region at every step size, and the remaining three roots share a
+        trace that is `1/tau_masked` MORE negative than rung 72's -- so the inherited constant
+        is MORE conservative here, not less. `applied_cells` MEASURES `|lam|` against it rather
+        than trusting it (rung 65's retraction is what that discipline is for)."""
+        assert ds * rate <= 2.0, (
+            f"rung-73: ds*sum(1/tau_i) = {ds*rate:.3f} is outside the explicit RK4 stability "
+            f"region for the FOUR actuator states (ds = {ds}). The masked leg contributes a "
+            "pole at EXACTLY the origin -- neutrally stable, interior to every region -- and "
+            "the other three share a trace more negative than rung 72's, so the inherited "
+            "constant is more conservative here. Refine the grid or slow a clock.")
+
+    def integrate_fuel(self, flight: FlightCondition, fuel_schedule, nu0,
+                       s_end: float, ds: float, freeze=None, Tt4_max=None,
+                       tau_gov=None, accel=None, surge=None, s_off=None,
+                       tau_rel=None, lag=None) -> list:
+        assert self._ref_law in ("sched", "applied"), (
+            f"rung-73: the fuel reference is this rung's subject and it is DECLARED; got "
+            f"{self._ref_law!r}. 'applied' is reading B (the plant); 'sched' is rung 72.")
+        assert not (self._ref_law == "applied" and self._share_law == "sum"), (
+            "rung-73: an APPLIED reference on top of the SUM composition swaps TWO declared "
+            "laws at once. `max(gf,gr) == g_own` never holds under `sum`, so the hook never "
+            "takes its identity branch, BOTH fuel rows gain a cross term and the block form "
+            "goes -- a fourth plant, whose result could be attributed to neither law. That is "
+            "rung 63's lesson in its plainest form: change one law at a time.")
+        return super().integrate_fuel(
+            flight, fuel_schedule, nu0, s_end, ds, freeze=freeze, Tt4_max=Tt4_max,
+            tau_gov=tau_gov, accel=accel, surge=surge, s_off=s_off, tau_rel=tau_rel, lag=lag)
+
+    def _shared_rig(self, sm, tau, tau_s, v_max, Tt4_max, tau_att=0.05, tau_rel=0.15,
+                    inc=False, fuel=True, valve=True, stator=True, gov=True):
+        """Rung 72's rig, with the REFERENCE carried onto the new machine. Without this, every
+        ledger cell and every gain reader would march rung 72 while the caller reported rung
+        73 -- the `at_lever` trap, one level down and invisible."""
+        m, surge, lag = super()._shared_rig(sm, tau, tau_s, v_max, Tt4_max, tau_att=tau_att,
+                                            tau_rel=tau_rel, inc=inc, fuel=fuel, valve=valve,
+                                            stator=stator, gov=gov)
+        m._ref_law = self._ref_law
+        return m, surge, lag
+
+    # --- s 1: FOURTEEN gains -- rung 72's twelve, plus the two DIAGONALS it CONSTRUCTED -------
+
+    def _quad_gains_at(self, flight, p, accel, surge, Tt4_max, dg=1e-7, dq=1e-5, dv=1e-4,
+                       manifold=True, switch_guard=4.0):
+        """THE FOURTEEN central differences: rung 72's twelve, plus `F_f` and `R_r`.
+
+        Rung 72 never took those two, because its `_jac4` could write `-1/tau_i` on the diagonal
+        by construction -- correct there, since neither law reads its own state. Reading B does,
+        so the diagonal has to be MEASURED, and that is also what keeps this rung's headline off
+        rung 72 s 1.2's list: a pole at the origin reported from a diagonal the instrument
+        itself wrote would be the FOURTH instance of the shipped instrument agreeing with itself
+        (rung 67 gate 9, rung 71 s 1.4's `c1`, rung 72 s 4's matched clocks). Here `F_f` is a
+        difference through the SHIPPED closure, and it comes back EXACTLY 1 when the leg is
+        masked and EXACTLY 0 when it holds -- s 1's branch indicator, measured.
+
+        Both filters are rung 72's, verbatim: REGIME on every perturbed evaluation, and SWITCH
+        PROXIMITY (a difference of step `dg` taken within `switch_guard*dg` of the hand-over
+        straddles the `max()` kink and returns the slope of neither branch)."""
+        a, h, mf_sched = p["nu_lp"], p["nu_hp"], p["mf_sched"]
+        gf, gr, q = p["g_fuel"], p["g_gov"], p["b"]
+        F0, R0, C, V = self._quad_laws(flight, a, h, mf_sched, accel, surge, Tt4_max)
+        if manifold:
+            v = self._manifold_v(flight, a, h, mf_sched, self._applied_clip(gf, gr), q,
+                                 lambda g_, q_: V(g_, 0.0, q_))
+        else:
+            v = p["v"]
+        if self._share_law == "max" and abs(gf - gr) <= switch_guard * dg:
+            return dict(interior=False, off_regime=["switch"], s=p["s"], v_base=v,
+                        near_switch=True)
+
+        def F(gf_, gr_, q_, v_):
+            raw, reg = F0(gr_, q_, v_)
+            return self._reference(raw, gf_, gf_, gr_), reg
+
+        def R(gf_, gr_, q_, v_):
+            raw, reg = R0(gf_, q_, v_)
+            return self._reference(raw, gr_, gf_, gr_), reg
+
+        ev = {}
+        for key, val in (
+                ("F+f", F(gf + dg, gr, q, v)), ("F-f", F(gf - dg, gr, q, v)),
+                ("F+r", F(gf, gr + dg, q, v)), ("F-r", F(gf, gr - dg, q, v)),
+                ("F+q", F(gf, gr, q + dq, v)), ("F-q", F(gf, gr, q - dq, v)),
+                ("F+v", F(gf, gr, q, v + dv)), ("F-v", F(gf, gr, q, v - dv)),
+                ("R+f", R(gf + dg, gr, q, v)), ("R-f", R(gf - dg, gr, q, v)),
+                ("R+r", R(gf, gr + dg, q, v)), ("R-r", R(gf, gr - dg, q, v)),
+                ("R+q", R(gf, gr, q + dq, v)), ("R-q", R(gf, gr, q - dq, v)),
+                ("R+v", R(gf, gr, q, v + dv)), ("R-v", R(gf, gr, q, v - dv)),
+                ("C+f", C(gf + dg, gr, v)), ("C-f", C(gf - dg, gr, v)),
+                ("C+r", C(gf, gr + dg, v)), ("C-r", C(gf, gr - dg, v)),
+                ("C+v", C(gf, gr, v + dv)), ("C-v", C(gf, gr, v - dv)),
+                ("V+f", V(gf + dg, gr, q)), ("V-f", V(gf - dg, gr, q)),
+                ("V+r", V(gf, gr + dg, q)), ("V-r", V(gf, gr - dg, q)),
+                ("V+q", V(gf, gr, q + dq)), ("V-q", V(gf, gr, q - dq))):
+            ev[key] = val
+        off = [k for k, (_, reg) in ev.items() if reg != "riding"]
+        if off:
+            return dict(interior=False, off_regime=off, s=p["s"], v_base=v, near_switch=False)
+
+        def d(kp, km, h2):
+            return (ev[kp][0] - ev[km][0]) / (2 * h2)
+
+        g = dict(interior=True, off_regime=[], near_switch=False, v_base=v,
+                 authority=self._authority(gf, gr),
+                 F_f=d("F+f", "F-f", dg), F_r=d("F+r", "F-r", dg),
+                 F_q=d("F+q", "F-q", dq), F_v=d("F+v", "F-v", dv),
+                 R_f=d("R+f", "R-f", dg), R_r=d("R+r", "R-r", dg),
+                 R_q=d("R+q", "R-q", dq), R_v=d("R+v", "R-v", dv),
+                 C_f=d("C+f", "C-f", dg), C_r=d("C+r", "C-r", dg), C_v=d("C+v", "C-v", dv),
+                 V_f=d("V+f", "V-f", dg), V_r=d("V+r", "V-r", dg), V_q=d("V+q", "V-q", dq))
+        g["pair_FR"] = g["F_r"] * g["R_f"]
+        g["pair_RC"] = g["R_q"] * g["C_r"]
+        g["pair_CV"] = g["C_v"] * g["V_q"]
+        g["pair_RV"] = g["R_v"] * g["V_r"]
+        g["masked"] = "fuel" if g["authority"] == "gov" else (
+            "gov" if g["authority"] == "fuel" else None)
+        g["mask_leak"] = (max(abs(g["C_f"]), abs(g["V_f"])) if g["masked"] == "fuel"
+                          else max(abs(g["C_r"]), abs(g["V_r"]))
+                          if g["masked"] == "gov" else None)
+        # s 1's BRANCH INDICATOR, MEASURED: the masked leg's own self-gain, its cross-gain onto
+        # the AUTHORITATIVE axis, and the holding leg's self-gain. Under reading B these are
+        # exactly 1, -1 and 0; under rung 72 all three are 0.
+        g["self_masked"] = (g["F_f"] if g["masked"] == "fuel"
+                            else g["R_r"] if g["masked"] == "gov" else None)
+        g["cross_masked"] = (g["F_r"] if g["masked"] == "fuel"
+                             else g["R_f"] if g["masked"] == "gov" else None)
+        g["self_live"] = (g["R_r"] if g["masked"] == "fuel"
+                          else g["F_f"] if g["masked"] == "gov" else None)
+        return g
+
+    # --- s 0: THE HAND-OVER MOVES, AND THE MASKED LEG WINDS DOWN ------------------------------
+
+    def handover_law(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                     Tt4_max: float, sm: float,
+                     clocks=((0.05, 0.05, 0.05, 0.05), (0.20, 0.01, 0.50, 0.05),
+                             (0.20, 0.005, 0.80, 0.05)),
+                     r: float = 0.5, s_settle: float = 1.2, ds: float = 0.005,
+                     v_max: float = 0.20) -> dict:
+        """s 0 MEASURED: **the hand-over is LATE under the applied reference, on every arm --
+        and the masked leg winds DOWN, not up.**
+
+        The sign is derivable and it is this rung's first correction of rung 72. A masked
+        governor referenced to the SCHEDULE races toward `req_sched`, the clip the SCHEDULE
+        would need -- so it is given credit for a cut the fuel leg has already made. Referenced
+        to the APPLIED fuel it integrates `req_sched - gf`, the cut still OWED. **The
+        physically-correct governor is therefore the SLOWER one**: it takes the actuator later
+        and the redline is approached with less margin.
+
+        THE WINDUP CHECK IS REPORTED HERE, AND IT WAS THE FEASIBILITY GATE. A masked integrator
+        with only a floor under it is textbook min-select windup; had `g_masked` run away, the
+        hand-over would slam a wound-up clip onto the actuator and starve the engine -- which is
+        how rung 72 s 4's SUM law died, at 84 points of 341. It does not: masked means
+        `gr > gf ~ req_f`, so the integrand is negative and the leg winds DOWN."""
+        out = []
+        for inc in (False, True):
+            for taus in clocks:
+                row = dict(inc=inc, taus=taus, laws={})
+                for law in ("sched", "applied"):
+                    _, _, _, traj = self._with_ref(
+                        law, self._shared_march, flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r,
+                        s_settle, ds, v_max, inc)
+                    hand = [traj[i]["s"] for i in range(1, len(traj))
+                            if traj[i]["authority"] != traj[i - 1]["authority"]
+                            and "dormant" not in (traj[i]["authority"],
+                                                  traj[i - 1]["authority"])]
+                    back = [traj[i]["s"] for i in range(1, len(traj))
+                            if traj[i]["authority"] == "fuel"
+                            and traj[i - 1]["authority"] == "gov"]
+                    masked = [(p["g_fuel"] if p["authority"] == "gov" else p["g_gov"])
+                              for p in traj if p["authority"] in ("fuel", "gov")]
+                    row["laws"][law] = dict(
+                        n=len(traj), handovers=hand, hands_back=back,
+                        first_gov=next((p["s"] for p in traj if p["authority"] == "gov"), None),
+                        max_masked=max(masked) if masked else None,
+                        final_g_fuel=traj[-1]["g_fuel"], final_g_gov=traj[-1]["g_gov"],
+                        max_Tt4=max(p["Tt4"] for p in traj),
+                        min_phi=min(p["phi_lp"] for p in traj),
+                        ic_iters=traj[0]["ic_iters"], ic_res=traj[0]["ic_res"])
+                s0 = row["laws"]["sched"]["first_gov"]
+                s1 = row["laws"]["applied"]["first_gov"]
+                row["later"] = (s1 is not None and s0 is not None and s1 > s0)
+                row["delay"] = (s1 - s0) if (s1 is not None and s0 is not None) else None
+                row["dTt4"] = (row["laws"]["applied"]["max_Tt4"]
+                               - row["laws"]["sched"]["max_Tt4"])
+                row["dphi"] = (row["laws"]["applied"]["min_phi"]
+                               - row["laws"]["sched"]["min_phi"])
+                out.append(row)
+        return dict(arms=out, clocks=clocks, ds=ds,
+                    always_later=all(a["later"] for a in out),
+                    never_back=all(not a["laws"][l]["hands_back"] for a in out
+                                   for l in ("sched", "applied")),
+                    one_handover=all(len(a["laws"][l]["handovers"]) <= 1 for a in out
+                                     for l in ("sched", "applied")),
+                    full_march=all(a["laws"][l]["n"] == a["laws"]["sched"]["n"] for a in out
+                                   for l in ("sched", "applied")),
+                    worst_dTt4=max(a["dTt4"] for a in out),
+                    worst_dphi=max(abs(a["dphi"]) for a in out),
+                    worst_delay=min(a["delay"] for a in out))
+
+    # --- s 1: THE FOURTEEN GAINS, AND THE ENTRYWISE J-DELTA -----------------------------------
+
+    def applied_gains(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                      Tt4_max: float, sm: float, taus=(0.05, 0.05, 0.05, 0.05),
+                      inc: bool = False, r: float = 0.5, s_settle: float = 1.2,
+                      ds: float = 0.002, v_max: float = 0.20, every: int = 2) -> dict:
+        """s 1 MEASURED: **the masked leg's self-gain is EXACTLY 1 and the holding leg's EXACTLY
+        0** -- the set-point solve's branch indicator, read through the shipped closures --
+        **and the masked COLUMN is still exactly zero.**
+
+            self_masked  == +1.0   the masked leg reads its OWN state (rung 72: 0)
+            cross_masked == -1.0   and the AUTHORITATIVE one (rung 72: 0) -- s 11's `F_r != 0`
+            self_live    ==  0.0   the holding leg's applied reference IS the scheduled one
+            mask_leak    ==  0.0   and the masked leg STILL reaches the plant through nothing
+
+        The last line is the headline: the seam's premise holds and its conclusion does not.
+
+        AND THE J-DELTA IS REPORTED ENTRYWISE, at the SAME base points under both references
+        (rung 71's device, rung 72 s 4's) -- 14 of the 16 entries are EXACTLY 0.0, and the two
+        that move are BOTH exactly `1/tau_masked`."""
+        m, surge, lag, traj = self._shared_march(
+            flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle, ds, v_max, inc)
+        pts = self._riding4(traj, m.bleed_lim.b_max)
+        rows, skipped, checks = [], dict(switch=0, regime=0), []
+        names = ("f", "r", "q", "v")
+        for p in pts[::every]:
+            gg = m._with_ref("applied", m._quad_gains_at, flight, p, None, surge, Tt4_max)
+            if not gg["interior"]:
+                skipped["switch" if gg.get("near_switch") else "regime"] += 1
+                continue
+            g72 = m._with_ref("sched", m._quad_gains_at, flight, p, None, surge, Tt4_max)
+            if not g72["interior"]:
+                skipped["regime"] += 1
+                continue
+            checks.append(m._assert_fuel_boundary(flight, p, Tt4_max, surge))
+            tau_f = lag.tau(p["required_fuel"], p["g_fuel"])
+            tt = (tau_f, taus[1], taus[2], taus[3])
+            j73, j72 = m._jac4(gg, tt), m._jac4(g72, tt)
+            delta = {names[i] + names[j]: j73[i][j] - j72[i][j]
+                     for i in range(4) for j in range(4)}
+            masked = gg["masked"]
+            tau_m = tau_f if masked == "fuel" else taus[1]
+            moved = ("ff", "fr") if masked == "fuel" else ("rr", "rf")
+            rows.append(dict(
+                s=p["s"], authority=gg["authority"], masked=masked, gains=gg, taus=tt,
+                self_masked=gg["self_masked"], cross_masked=gg["cross_masked"],
+                self_live=gg["self_live"], mask_leak=gg["mask_leak"],
+                delta_moved=tuple(delta[k] * tau_m for k in moved),
+                delta_rest=max(abs(delta[k]) for k in delta if k not in moved),
+                det=m._charpoly4(j73)[4]))
+        return dict(
+            inc=inc, taus=taus, ds=ds, rows=rows, skipped=skipped, boundary=checks,
+            n_riding=len(pts), n_sampled=len(pts[::every]),
+            by_authority={a: sum(1 for x in rows if x["authority"] == a)
+                          for a in ("fuel", "gov")},
+            # THE EXACT ONES -- gated as `== 1.0` / `== -1.0` / `== 0.0`, never as `< tol`
+            self_masked=sorted({x["self_masked"] for x in rows}),
+            cross_masked=sorted({x["cross_masked"] for x in rows}),
+            self_live=sorted({x["self_live"] for x in rows}),
+            worst_mask_leak=max((abs(x["mask_leak"]) for x in rows), default=None),
+            # the J-delta: two entries move, by exactly 1/tau_masked; the other 14 are 0.0
+            worst_delta_rest=max((x["delta_rest"] for x in rows), default=None),
+            moved_scaled=sorted({round(v, 12) for x in rows for v in x["delta_moved"]}),
+            # and the LIVE gains, so "exactly zero everywhere" is not bought with a dead reader
+            min_live_gain=min((min(abs(x["gains"][k]) for k in ("F_q", "F_v", "R_q", "R_v"))
+                               for x in rows), default=None),
+            det_range=((min(x["det"] for x in rows), max(x["det"] for x in rows))
+                       if rows else None))
+
+    # --- s 2: THE FOUR CELLS -- every zero count PLUS ONE, and a determinant that dies --------
+
+    def applied_cells(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                      Tt4_max: float, sm: float,
+                      clocks=((0.05, 0.05, 0.05, 0.05), (0.20, 0.01, 0.50, 0.05),
+                              (0.20, 0.005, 0.80, 0.05)),
+                      r: float = 0.5, s_settle: float = 1.2, ds: float = 0.002,
+                      v_max: float = 0.20, every: int = 2) -> dict:
+        """s 2 MEASURED, AND IT IS THE RUNG: **the plant is STILL rung 68/69/70/71 plus a pole,
+        and the pole is now at the ORIGIN.**
+
+            | stator watches | fuel leg holds          | governor holds        |
+            | `phi`   | RUNG 68 + a zero  (zeros 3)    | RUNG 70 + a zero (2)  |
+            | `M_i`   | RUNG 69 + a zero  (zeros 2)    | RUNG 71 + a zero (1)  |
+
+        `zeros = n_live - m_live + n_masked`. Every one of rung 72's four counts gains exactly
+        one, and **rung 71's cell -- the only full-rank plant in the family, `det J = +5.9e4`
+        under rung 72 -- goes to zero.** A reference is not a gain, not a clock and not a loop.
+
+        THE TEST IS THE SAME POLYNOMIAL IDENTITY with the pole moved: `p4 = (lam + a)*p3` with
+        `a = 1/tau_m -> 0`, so `_parent_quartic(c3, inf)` states it exactly and reuses rung 72's
+        instrument unchanged. Coefficients, not roots -- and the argument is STRONGER here than
+        in rung 72, because the added root is exactly zero, so every cell now has at least a
+        DOUBLE zero root and a root match would resolve it only to sqrt(eps).
+
+        THE ZERO EIGENVECTOR's DIRECTION IS THE GATED HALF (rung 72 s 1.2's discipline, and the
+        reason this rung does not gate its own pole): `A e_masked = 0` is a claim about the
+        MEASURED masked column, whereas the eigenvalue would be a claim about a diagonal -- and
+        here that diagonal is measured too, so the pole is reported and the null direction and
+        the COUNT are gated.
+
+        A THIRD CLOCK ARM IS CARRIED (`0.20, 0.005, 0.80, 0.05`) and disclosed: the applied
+        reference delays the hand-over, so rung 72's coverage does not transfer -- at matched
+        clocks the incidence/governor cell is EMPTY. The new arm is rung 72 s 2.3's own device
+        pushed one notch (governor twice as fast, valve 1.6x slower); all four entries are swept
+        march coordinates and no physical constant enters."""
+        parent_of = {(False, "fuel"): "rung 68", (False, "gov"): "rung 70",
+                     (True, "fuel"): "rung 69", (True, "gov"): "rung 71"}
+        arms = []
+        for inc in (False, True):
+            for taus in clocks:
+                m, surge, lag, traj = self._shared_march(
+                    flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle, ds, v_max, inc)
+                pts = self._riding4(traj, m.bleed_lim.b_max)
+                cells, skipped = {}, dict(switch=0, regime=0, parent=0)
+                for p in pts[::every]:
+                    gg = m._with_ref("applied", m._quad_gains_at, flight, p, None, surge,
+                                     Tt4_max)
+                    if not gg["interior"]:
+                        skipped["switch" if gg.get("near_switch") else "regime"] += 1
+                        continue
+                    auth = gg["authority"]
+                    if auth not in ("fuel", "gov"):
+                        continue
+                    tau_f = lag.tau(p["required_fuel"], p["g_fuel"])
+                    tt = (tau_f, taus[1], taus[2], taus[3])
+                    A = m._jac4(gg, tt)
+                    coef = m._charpoly4(A)
+                    roots = m._quartic_roots_c(coef)
+                    rate = sum(1.0 / t for t in tt)
+                    nz = sum(1 for z in roots if abs(z) < 1e-4 * rate)
+                    im = 0 if auth == "gov" else 1
+                    null_res = max(abs(A[i][im]) for i in range(4)) / rate
+                    if auth == "gov":
+                        g3 = m._triple_gains_at(flight, p, None, None, manifold=True)
+                        t3 = (taus[1], taus[2], taus[3])
+                    else:
+                        g3 = m._with_gov(None, m._triple_gains_at, flight, p, None, surge,
+                                         manifold=True)
+                        t3 = (tau_f, taus[2], taus[3])
+                    gap = gap_hi = vgap = None
+                    if g3.get("interior"):
+                        pred = m._parent_quartic(m._invariants(g3, t3), float("inf"))
+                        gap = max(abs(coef[j] - pred[j]) / rate ** j for j in range(1, 5))
+                        # AND THE SAME COMPARISON WITH THE TRACE COEFFICIENT LEFT OUT, because
+                        # `gap` and `null` are NOT two measurements. The masked column's only
+                        # non-zero entry is its own diagonal (`F_f - 1`, which is ~0 only up to
+                        # the cancellation in `gf + req - gf`), and `a3` IS minus the trace, so
+                        # `j = 1` reproduces `null` entry for entry. Quoting both as agreement
+                        # would be this family's sixth instrument-agrees-with-itself. `gap_hi`
+                        # (j = 2, 3, 4) is where the two INDEPENDENT readers actually meet.
+                        gap_hi = max(abs(coef[j] - pred[j]) / rate ** j for j in range(2, 5))
+                        vgap = abs(g3["v_base"] - gg["v_base"])
+                    else:
+                        skipped["parent"] += 1
+                    c = cells.setdefault(auth, dict(
+                        n=0, n_parent=0, zeros=set(), gap=0.0, gap_hi=0.0, vgap=0.0, pole=0.0,
+                        null=0.0, det=[], lam_max=0.0, s=[], parent=parent_of[(inc, auth)]))
+                    c["n"] += 1
+                    c["zeros"].add(nz)
+                    c["det"].append(coef[4])
+                    c["s"].append(p["s"])
+                    c["null"] = max(c["null"], null_res)
+                    c["lam_max"] = max(c["lam_max"], max(abs(z) for z in roots) / rate)
+                    c["pole"] = max(c["pole"], min(abs(z) for z in roots) / rate)
+                    if gap is not None:
+                        c["n_parent"] += 1
+                        c["gap"] = max(c["gap"], gap)
+                        c["gap_hi"] = max(c["gap_hi"], gap_hi)
+                        c["vgap"] = max(c["vgap"], vgap)
+                for c in cells.values():
+                    c["zeros"] = sorted(c["zeros"])
+                    c["s"] = (min(c["s"]), max(c["s"]))
+                    c["det"] = (min(c["det"]), max(c["det"]))
+                arms.append(dict(inc=inc, taus=taus, cells=cells, skipped=skipped,
+                                 n_riding=len(pts), n_sampled=len(pts[::every])))
+        seen = {}
+        for a in arms:
+            for auth, c in a["cells"].items():
+                d = seen.setdefault((a["inc"], auth),
+                                    dict(parent=c["parent"], zeros=set(), gap=0.0, pole=0.0,
+                                         gap_hi=0.0, null=0.0, vgap=0.0, n=0, n_parent=0,
+                                         lam_max=0.0, det=0.0))
+                d["zeros"] |= set(c["zeros"])
+                for k in ("gap", "gap_hi", "vgap", "pole", "null", "lam_max"):
+                    d[k] = max(d[k], c[k])
+                d["det"] = max(d["det"], max(abs(x) for x in c["det"]))
+                d["n"] += c["n"]
+                d["n_parent"] += c["n_parent"]
+        for d in seen.values():
+            d["zeros"] = sorted(d["zeros"])
+        return dict(arms=arms, clocks=clocks, ds=ds, cells=seen,
+                    law_holds=all(len(d["zeros"]) == 1 for d in seen.values()),
+                    # rung 72's per-cell counts, EACH PLUS ONE
+                    predicted={(False, "fuel"): 3, (False, "gov"): 2,
+                               (True, "fuel"): 2, (True, "gov"): 1},
+                    rung72={(False, "fuel"): 2, (False, "gov"): 1,
+                            (True, "fuel"): 1, (True, "gov"): 0},
+                    all_four_cells=len(seen) == 4,
+                    worst_parent_gap=max(d["gap"] for d in seen.values()),
+                    # the INDEPENDENT half of the comparison -- see the `gap_hi` note above
+                    worst_parent_gap_hi=max(d["gap_hi"] for d in seen.values()),
+                    worst_v_gap=max(d["vgap"] for d in seen.values()),
+                    worst_null=max(d["null"] for d in seen.values()),
+                    worst_det=max(d["det"] for d in seen.values()),
+                    worst_lam=max(d["lam_max"] for d in seen.values()),
+                    pole_at_origin=max(d["pole"] for d in seen.values()))
+
+    # --- s 3: THE ISOLATION INSTRUMENT -- reading C, which moves the OTHER half ---------------
+
+    def ref_discriminator(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                          Tt4_max: float, sm: float, taus=(0.05, 0.05, 0.05, 0.05),
+                          inc: bool = False, r: float = 0.5, s_settle: float = 1.2,
+                          ds: float = 0.002, v_max: float = 0.20, every: int = 4) -> dict:
+        """s 3: **reading C, read at reading B's own base points** -- one law swapped, nothing
+        else (rung 71's device, rung 72 s 4's, third instance).
+
+        C is the LITERAL reading of rung 72 s 11 (`req = mf_app - cap`, no increment) and it is
+        a well-posed proportional law with 2x droop. It is not the plant, and it is NOT MARCHED:
+        a leg that lands at half its own required clip holds neither floor, so its trajectory
+        would confound the reference with the state -- rung 72 s 4's reason, verbatim.
+
+        **THE POINT OF CARRYING IT IS THAT IT MOVES THE OTHER HALF OF THE MATRIX.** Under C the
+        masked row is `(-1/tau_m, -1/tau_m, ., .)`: the diagonal is rung 72's, so THE POLE STAYS
+        at `-1/tau_masked` -- while the AUTHORITATIVE leg picks up `-1` on its own diagonal, so
+        `M3` is NO LONGER the parent's block. So:
+
+            B: the pole MOVES to the origin, `M3` IS the parent's        (the plant)
+            C: the pole STAYS at `-1/tau_m`, `M3` is NOT the parent's    (the instrument)
+
+        Two readings of one seam that agree on `F_r != 0` and disagree on everything it was
+        supposed to imply. That is what makes the headline a measurement rather than a choice of
+        law -- and it is why C is carried instead of dismissed (rung 63's lesson)."""
+        m, surge, lag, traj = self._shared_march(
+            flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle, ds, v_max, inc)
+        pts = self._riding4(traj, m.bleed_lim.b_max)
+        rows = []
+        for p in pts[::every]:
+            gb = m._with_ref("applied", m._quad_gains_at, flight, p, None, surge, Tt4_max)
+            if not gb["interior"] or gb["authority"] not in ("fuel", "gov"):
+                continue
+            g72 = m._with_ref("sched", m._quad_gains_at, flight, p, None, surge, Tt4_max)
+            if not g72["interior"]:
+                continue
+            tau_f = lag.tau(p["required_fuel"], p["g_fuel"])
+            tt = (tau_f, taus[1], taus[2], taus[3])
+            masked = gb["masked"]
+            live = "gov" if masked == "fuel" else "fuel"
+            tau_m = tau_f if masked == "fuel" else taus[1]
+            tau_l = taus[1] if masked == "fuel" else tau_f
+            # READING C, built from the SAME measured differences (`req = req_sched - clip`):
+            # the masked leg keeps rung 72's diagonal and gains the cross term, and the LIVE
+            # leg's own diagonal picks up the `-1` that B's identity branch removes.
+            gc = dict(g72)
+            gc["F_r"] = gb["F_r"] if masked == "fuel" else 0.0
+            gc["R_f"] = gb["R_f"] if masked == "gov" else 0.0
+            gc["F_f"] = 0.0 if masked == "fuel" else -1.0
+            gc["R_r"] = 0.0 if masked == "gov" else -1.0
+            rate = sum(1.0 / t for t in tt)
+            rb = m._quartic_roots_c(m._charpoly4(m._jac4(gb, tt)))
+            rc = m._quartic_roots_c(m._charpoly4(m._jac4(gc, tt)))
+            r72 = m._quartic_roots_c(m._charpoly4(m._jac4(g72, tt)))
+            rows.append(dict(
+                s=p["s"], authority=gb["authority"], masked=masked, taus=tt, tau_live=tau_l,
+                # does a root sit AT THE ORIGIN?  (B: yes.  C and rung 72: no)
+                origin_B=min(abs(z) for z in rb) / rate,
+                origin_C=min(abs(z) for z in rc) / rate,
+                origin_72=min(abs(z) for z in r72) / rate,
+                # does a root sit at -1/tau_masked?  (C and rung 72: yes.  B: not by law)
+                pole_B=min(abs(z + 1.0 / tau_m) for z in rb) * tau_m,
+                pole_C=min(abs(z + 1.0 / tau_m) for z in rc) * tau_m,
+                pole_72=min(abs(z + 1.0 / tau_m) for z in r72) * tau_m,
+                # the LIVE leg's own diagonal: B leaves it at rung 72's, C moves it by -1
+                live_diag_B=(gb["F_f"] if live == "fuel" else gb["R_r"]),
+                live_diag_C=(gc["F_f"] if live == "fuel" else gc["R_r"]),
+                zeros_B=sum(1 for z in rb if abs(z) < 1e-4 * rate),
+                zeros_C=sum(1 for z in rc if abs(z) < 1e-4 * rate),
+                zeros_72=sum(1 for z in r72 if abs(z) < 1e-4 * rate)))
+        return dict(
+            inc=inc, taus=taus, ds=ds, rows=rows, n=len(rows),
+            # B puts a root at the origin; C and rung 72 do not
+            worst_origin_B=max((x["origin_B"] for x in rows), default=None),
+            best_origin_C=min((x["origin_C"] for x in rows), default=None),
+            best_origin_72=min((x["origin_72"] for x in rows), default=None),
+            # C keeps rung 72's pole; B does not
+            worst_pole_C=max((x["pole_C"] for x in rows), default=None),
+            worst_pole_72=max((x["pole_72"] for x in rows), default=None),
+            best_pole_B=min((x["pole_B"] for x in rows), default=None),
+            # the LIVE leg's diagonal: unmoved under B, moved by exactly -1 under C
+            live_diag_B=sorted({x["live_diag_B"] for x in rows}),
+            live_diag_C=sorted({x["live_diag_C"] for x in rows}),
+            zeros={k: sorted({x["zeros_" + k] for x in rows}) for k in ("B", "C", "72")},
+            # AND THE COUNTS MUST BE DIFFERENCED PER POINT, NOT POOLED. This reader spans BOTH
+            # authority cells, whose counts already differ by one under rung 72 alone, so a
+            # pooled `min(B) > max(72)` compares the `phi`-arm's fuel cell against its governor
+            # cell and says nothing. Per point, B adds EXACTLY one zero everywhere and C never
+            # adds one -- it REMOVES one wherever the live leg's droop restores full rank.
+            dzeros_B=sorted({x["zeros_B"] - x["zeros_72"] for x in rows}),
+            dzeros_C=sorted({x["zeros_C"] - x["zeros_72"] for x in rows}))
+
+    # --- s 4: THE LEDGER -- what the SCHEDULED reference was quietly buying -------------------
+
+    def applied_bill(self, flight: FlightCondition, Tt4_lo: float, Tt4_hi: float,
+                     Tt4_max: float, sm: float, taus=(0.05, 0.05, 0.05, 0.05),
+                     inc: bool = False, r: float = 0.5, s_settle: float = 1.2,
+                     ds: float = 0.005, v_max: float = 0.20) -> dict:
+        """s 4: **rung 72's own 16-cell ledger, run under BOTH references and differenced.**
+
+        The spectral finding says the reference reaches only the masked leg's own two entries,
+        and a masked leg is coupled to nothing. The ledger is where that stops being the whole
+        story: **authority is a function of `s`**, the reference moves the HAND-OVER, and the
+        hand-over is when the redline stops being defended by a leg that is not watching it.
+
+        THE PREDICTION UNDER TEST (anchor P6): rung 72 s 5 reports the fuel leg's marginal peak
+        `Tt4` debit as +0.29 K / +1.86 K and calls the `phi` credit the finding. Under the
+        correct reference the debit should be more than TEN TIMES larger on both arms, with the
+        `phi` column unmoved -- because the fuel leg's own authority window is EARLY, where the
+        reference is the identity, while the governor's is LATE, where it is not.
+
+        Every cell is built through `_shared_rig` (rung 63's lesson: a cell may differ from
+        another only by which loops are armed), and `_shared_rig` carries `_ref_law` -- without
+        which every cell here would march rung 72 while the caller reported rung 73."""
+        out = {}
+        for law in ("sched", "applied"):
+            out[law] = self._with_ref(law, super().shared_bill, flight, Tt4_lo, Tt4_hi,
+                                      Tt4_max, sm, taus=taus, inc=inc, r=r,
+                                      s_settle=s_settle, ds=ds, v_max=v_max)
+        s, a = out["sched"], out["applied"]
+        return dict(
+            inc=inc, taus=taus, ds=ds, sched=s, applied=a,
+            # THE PEAK Tt4 DEBIT the fuel leg imposes, under each reference
+            debit_sched=s["Tt4_full"] - s["Tt4_no_fuel"],
+            debit_applied=a["Tt4_full"] - a["Tt4_no_fuel"],
+            debit_ratio=((a["Tt4_full"] - a["Tt4_no_fuel"])
+                         / (s["Tt4_full"] - s["Tt4_no_fuel"])
+                         if s["Tt4_full"] != s["Tt4_no_fuel"] else None),
+            # and the phi credit, which should not move
+            phi_marginal_sched=s["fuel_marginal_phi"],
+            phi_marginal_applied=a["fuel_marginal_phi"],
+            phi_full_sched=s["phi_full"], phi_full_applied=a["phi_full"],
+            kept_sched=s["kept"]["F"], kept_applied=a["kept"]["F"],
+            handover_sched=s["handover"], handover_applied=a["handover"],
+            # the governor's own currency as an INTEGRAL, both references
+            Tt4_integral_sched=s["fuel_marginal_Tt4"],
+            Tt4_integral_applied=a["fuel_marginal_Tt4"])

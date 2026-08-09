@@ -26,7 +26,7 @@ from turbojet.engine import (  # noqa: E402
     LaggedBleedTransient, TwoLagCascadeTransient, CrossLoopCascadeTransient,
     ThreeLoopCascadeTransient, StatorLimiter,
     ReferenceSplitTransient, StatorIncidenceLimiter, CrossSplitTransient,
-    FullSplitTransient, SharedActuatorTransient,
+    FullSplitTransient, SharedActuatorTransient, AppliedReferenceTransient,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -5508,6 +5508,152 @@ def print_shared_actuator_table(flight):
     print("    four tau are swept march coordinates. See docs/rung72-spec.md.")
 
 
+def print_applied_reference_table(flight):
+    """Rung-73 payoff: rung 72's two fuel-side legs re-referenced to the fuel the engine is
+    ACTUALLY burning -- rung 72 s 11's own sharpest seam, and the direct test of the bound its
+    s 6 put on its headline.
+
+    The panel is built around the one sentence a reader of rung 72 would carry in and get
+    wrong. Rung 72 s 6 says its triangular block rests on BOTH legs computing at the SCHEDULED
+    fuel, and s 11 says an applied-referenced leg destroys it. The FIRST half of that is
+    measured TRUE (`F_r = -1`, exactly) and the SECOND half FALSE -- and the panel's job is to
+    show why those are consistent: `F_r` is in the wrong COLUMN."""
+    print("\nTHE APPLIED REFERENCE (rung 73): the coupling rung 72 predicted is REAL, and it")
+    print("lands in the WRONG COLUMN -- triangularity is a property of MIN-SELECT alone.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR = 0.55
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    LO, HI, B, PHI, TMAX = 1000.0, 1400.0, 0.10, 0.80, 1200.0
+    SM = PHI / FLOOR - 1.0
+    CLOCKS = ((0.05, 0.05, 0.05, 0.05), (0.20, 0.01, 0.50, 0.05), (0.20, 0.005, 0.80, 0.05))
+    t = AppliedReferenceTransient(
+        design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0,
+        bleed_lim=BleedLimiter.from_margin(LP, B, SM, tau=0.05))
+
+    print("\n  THE SEAM NAMES ONE PLANT; THE LADDER ADMITS THREE, because every cap here is a")
+    print("  SET-POINT solve -- a function of (nu, q, v) and NOT of the fuel it was asked")
+    print("  about -- so d(required)/d(mf) is a BRANCH INDICATOR in {0, 1}, not a gradient:")
+    print("    A  only the dormancy test moves  -- not a plant; the guard half, in both B and C")
+    print("    B  req = g_own + (mf_app - cap)  -- THE PLANT: it reaches its own set point")
+    print("    C  req = mf_app - cap            -- a P-controller with 2x DROOP. The instrument")
+    print("  C is not broken, it is DEGENERATE FOR THIS LADDER: a leg that cannot reach its own")
+    print("  floor measures a different object than every currency in rungs 46-72 did.")
+
+    print("\n  THE HAND-OVER GOES LATE ON EVERY ARM -- and the SIGN is derivable:")
+    h = t.handover_law(flight, LO, HI, TMAX, SM, clocks=CLOCKS)
+    print(f"    {'stator':>10} {'clocks (f,g,q,s)':>24} {'hand 72':>8} {'hand 73':>8} "
+          f"{'maxTt4 72':>10} {'maxTt4 73':>10} {'d(min phi)':>11}")
+    for a in h["arms"]:
+        s, p = a["laws"]["sched"], a["laws"]["applied"]
+        print(f"    {'incidence' if a['inc'] else 'phi':>10} {str(a['taus']):>24} "
+              f"{s['first_gov']:8.3f} {p['first_gov']:8.3f} "
+              f"{s['max_Tt4']:10.2f} {p['max_Tt4']:10.2f} {a['dphi']:11.1e}")
+    print("    A masked governor referenced to the SCHEDULE races toward the clip the SCHEDULE")
+    print("    would need -- credit for a cut the FUEL LEG already made. Referenced to the")
+    print("    APPLIED fuel it integrates the cut still OWED. The CORRECT governor is SLOWER,")
+    print("    takes the actuator later, and lets Tt4 run up to 71 K further. And phi does not")
+    print("    move at all: the reference is decisive in Tt4 and invisible in phi.")
+    print("    NO WINDUP, which was the feasibility gate: masked means gr > gf ~ req_f, so the")
+    print("    integrand is NEGATIVE and the masked leg winds DOWN to its floor (final gf = "
+          f"{h['arms'][0]['laws']['applied']['final_g_fuel']:.1f}).")
+
+    print("\n  THE COUPLING IS REAL -- AND THE MASKED COLUMN IS STILL ZERO:")
+    g = t.applied_gains(flight, LO, HI, TMAX, SM, taus=CLOCKS[0])
+    print(f"    cross_masked = {g['cross_masked'][0]:+.9f}   <- rung 72 s 11's `F_r != 0`, HELD")
+    print(f"    self_masked  = {g['self_masked'][-1]:+.9f}   <- and it reads its OWN state: an")
+    print("                                     INTEGRATOR, not a lag")
+    print(f"    self_live    = {g['self_live'][0]}          <- EXACT: the HOLDING leg's applied")
+    print("                                     reference IS the scheduled one")
+    print(f"    mask_leak    = {g['worst_mask_leak']}          <- EXACT: and the masked leg still")
+    print("                                     reaches the plant through NOTHING")
+    print(f"    14 of the 16 entries of J(73) - J(72) are EXACTLY {g['worst_delta_rest']}, at the SAME")
+    print("    base points. The two that move are the masked leg's own DIAGONAL and its cross-")
+    print("    gain onto the AUTHORITATIVE axis -- both exactly 1/tau_masked. `F_r` is a ROW")
+    print("    entry in the LIVE column; triangularity lives in the MASKED one.")
+    print("    (The two exact ZEROS are gated as equality and the two ONES are not: `self_live`")
+    print("    takes an explicit identity BRANCH, while `self_masked` is a central difference of")
+    print("    a SUM. An exact zero survives a difference quotient; an exact one does not.)")
+
+    print("\n  SO EVERY CELL IS ITS RUNG-72 PARENT PLUS ONE ZERO, AND det J DIES EVERYWHERE:")
+    c = t.applied_cells(flight, LO, HI, TMAX, SM, clocks=CLOCKS)
+    print(f"    {'stator':>10} {'holds':>6} {'is':>9} {'n':>4} {'zeros 72':>9} {'zeros 73':>9} "
+          f"{'gap_hi':>9} {'|det|':>10}")
+    for k in ((False, "fuel"), (False, "gov"), (True, "fuel"), (True, "gov")):
+        d = c["cells"][k]
+        print(f"    {'incidence' if k[0] else 'phi':>10} {k[1]:>6} {d['parent']:>9} "
+              f"{d['n']:4d} {c['rung72'][k]:9d} {d['zeros'][0]:9d} "
+              f"{d['gap_hi']:9.1e} {d['det']:10.1e}")
+    print("    zeros = n_live - m_live + n_masked. Rung 72's free pole at -1/tau_masked moves")
+    print("    to EXACTLY the origin -- min-select windup, in the spectrum, as the integrator")
+    print("    itself and no longer as its lag. RUNG 71's CELL IS THE ONE THAT MATTERS: its")
+    print("    det J = +5.9e+04 was the only live determinant in the whole family, and a change")
+    print("    that adds no loop, no gain, no clock and no state KILLS it.")
+    print("    `gap_hi` is the parent-polynomial comparison with the TRACE coefficient left")
+    print("    out -- because `gap` and the null residual are ONE number, not two: the masked")
+    print("    column's only non-zero entry is its own diagonal, and a3 IS minus the trace.")
+
+    print("\n  THE INSTRUMENT HAD TO BE WEAKENED FIRST, AND IT COST FIVE ORDERS OF MAGNITUDE:")
+    print("    rung 72's `_jac4` WRITES -1/tau on the diagonal, so a pole claim read off it")
+    print("    would be the shipped instrument agreeing with itself (rung 67 gate 9, rung 71")
+    print("    s 1.4, rung 72 s 4). Here F_f and R_r are MEASURED -- and a measured diagonal")
+    print("    carries the float cancellation of `gf + req - gf`, so the parent identity lands")
+    print("    at 5e-12 where rung 72's constructed one reached 7e-17. The right trade: the")
+    print("    alternative was a headline the instrument would have written itself.")
+
+    print("\n  THE TWO READINGS MOVE DISJOINT HALVES OF THE SAME MATRIX:")
+    d0 = t.ref_discriminator(flight, LO, HI, TMAX, SM, taus=CLOCKS[0])
+    print(f"    {'':>10} {'root at origin':>15} {'root at -1/tau_m':>17} {'live diagonal':>14} "
+          f"{'zeros vs 72':>12}")
+    print(f"    {'rung 72':>10} {'(3 cells have)':>15} {d0['worst_pole_72']:17.1e} "
+          f"{0.0:14.1f} {'--':>12}")
+    print(f"    {'B applied':>10} {d0['worst_origin_B']:15.1e} {d0['best_pole_B']:17.1e} "
+          f"{d0['live_diag_B'][0]:14.1f} {str(d0['dzeros_B']):>12}")
+    print(f"    {'C literal':>10} {d0['best_origin_C']:15.1e} {d0['worst_pole_C']:17.1e} "
+          f"{d0['live_diag_C'][0]:14.1f} {str(d0['dzeros_C']):>12}")
+    print("    B moves the POLE and keeps the parent; C keeps the pole and moves the PARENT.")
+    print("    AND THE OBVIOUS DISCRIMINATOR IS THE ONE THAT FAILS: `is there a root at the")
+    print("    origin` cannot separate B from rung 72, which already has zero roots in three of")
+    print("    its four cells. Only the COUNT, differenced PER POINT, does it -- pooled across")
+    print("    the two authority cells it compares one cell against the other and says nothing.")
+
+    print("\n  AND THE BILL -- WHICH A SPECTRAL READING SAYS SHOULD BE EMPTY:")
+    for inc in (False, True):
+        b = t.applied_bill(flight, LO, HI, TMAX, SM, taus=CLOCKS[0], inc=inc)
+        print(f"    {'incidence' if inc else 'phi':>10} stator | fuel leg's peak Tt4 debit "
+              f"{b['debit_sched']:+7.3f} K (rung 72) -> {b['debit_applied']:+8.3f} K "
+              f"({b['debit_ratio']:.0f}x)")
+        print(f"    {'':>10}        | its marginal phi credit "
+              f"{b['phi_marginal_sched']:+.3e} -> {b['phi_marginal_applied']:+.3e}"
+              f"   min phi {b['phi_full_applied']:.6f} (UNMOVED)")
+    print("    RUNG 72 UNDER-REPORTED ITS OWN PEAK DEBIT BY TWO ORDERS OF MAGNITUDE, and the")
+    print("    mechanism is structural: the fuel leg's authority window is EARLY, where the")
+    print("    reference is the identity; the governor's is LATE, where it is not. The error")
+    print("    exists ONLY at rung 72 -- with one fuel-side leg the two references coincide")
+    print("    exactly, so rungs 46-71 are untouched. On the phi arm the leg's marginal phi")
+    print("    credit even CHANGES SIGN: a phi limiter that debits phi, through a governor it")
+    print("    never touches (rung 49's both-edges law, reaching a currency the leg owns).")
+
+    print("\n  SCOPE: the reference is DECLARED, not derived, as rung 72's composition law is;")
+    print("    reading C is read at B's base points and NEVER MARCHED, so nothing here says")
+    print("    what a 2x-droop control would DO; the {0,1} branch indicator is a property of")
+    print("    THIS ladder's set-point solvers, not of limiters in general; the Tt4 numbers are")
+    print("    two model references at one imposed Tt4_max on one ramp -- the ORDERING is the")
+    print("    claim; the incidence/governor cell is EMPTY at matched clocks and is read on two")
+    print("    wider clock arms, one of them new; Tt4_max is rung 67's imposed value and all")
+    print("    four tau are swept march coordinates. See docs/rung73-spec.md.")
+
+
 def main():
     # The tables carry unicode (Δ, ·, ≡, ≈); force UTF-8 so `python main.py` renders
     # on any console (a stock Windows cp1252 console would otherwise crash on them).
@@ -5661,6 +5807,7 @@ def main():
     print_cross_split_table(FLIGHT)
     print_full_split_table(FLIGHT)
     print_shared_actuator_table(FLIGHT)
+    print_applied_reference_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 
