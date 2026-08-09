@@ -204,6 +204,15 @@ is the SLOWER one**, takes the actuator later, and lets the redline be approache
 margin. Rung 72's redline protection was, in part, an artifact of a counterfactual — and only at
 rung 72, because with one fuel-side leg `gf = 0` and the two references coincide.
 
+**AND THE REFERENCE MOVES A SECOND THING, WHICH IS INERT AND IS NAMED HERE RATHER THAN LEFT
+IMPLICIT.** `lag.tau(required, g)` picks attack-vs-release from `required`, and under the applied
+reference `required` is the *referenced* value — so the masked fuel leg's own clock can sit on a
+different branch than it would under rung 72 at the same base point (`req_sched > gr` in place of
+`req_sched > gf`). It cannot reach anything: while masked the leg is invisible to the plant, and
+§ 2.1 measures that authority never hands back, so the branch never propagates to the trajectory;
+and every J-comparison in § 3 holds `τ` **fixed** across the two references, so it cannot enter a
+gain either. The delay's sign above is therefore the governor's integrand alone.
+
 ### 2.2 No windup — measured, and it was the feasibility gate
 
 341 of 341 points on every arm, `ic_iters = 1`, `ic_res = 0.0` (rung 72's P9 inherited).
@@ -315,6 +324,20 @@ Rung 72's own 16-cell ledger, run under **both** references and differenced. `ds
 | its marginal `φ` credit | +1.65e−5 → **−3.63e−5** | +1.87e−4 → **+7.16e−5** |
 | `min φ_lp` (all four loops) | 0.795155 → **0.795155** | 0.791380 → **0.791380** |
 | hand-over | 0.205 → **0.235** | 0.245 → **0.300** |
+
+**AND THE SIGN CHANGE IS CONFIRMED ON A FINER GRID, BECAUSE IT IS A SMALL DIFFERENCE OF SMALL
+NUMBERS.** The marginal `φ` column is a difference of violation integrals of order `1e−2`, at one
+`ds`, while `min φ_lp` does not move at all — exactly the shape `docs/pt3-sensor-lag-negative.md`
+was written about (*a 12 % gap inside my own `ds` band*). Re-read at `ds = 0.002`, a 2.5× refinement:
+
+| | `φ` arm, `ds` 0.005 → 0.002 | `M_i` arm, 0.005 → 0.002 |
+|---|---|---|
+| marginal `φ`, rung 72 | +1.645e−5 → **+1.631e−5** | +1.870e−4 → **+1.866e−4** |
+| marginal `φ`, corrected | −3.629e−5 → **−3.612e−5** | +7.163e−5 → **+7.198e−5** |
+| peak `Tt4` debit ratio | 110.4× → **107.7×** | 39.3× → **39.5×** |
+
+Every entry moves by under 1 %, and the `φ`-arm sign survives. The claim is quoted with its
+band; the `Tt4` half was never in doubt (`+32 K` against a march-noise floor four orders below).
 
 **RUNG 72 UNDER-REPORTED ITS OWN PEAK DEBIT BY TWO ORDERS OF MAGNITUDE**, and the mechanism is
 § 2.1's: the fuel leg's authority window is **early**, where the reference is the identity, while
