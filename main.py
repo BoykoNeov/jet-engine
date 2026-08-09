@@ -23,6 +23,7 @@ from turbojet.engine import (  # noqa: E402
     AsymmetricLag, VariableStatorMatcher, StageStackMatcher, ram_recovery,
     ScheduledStatorTransient, StatorSchedule, IncidenceLimiter, StatorBleedMatcher,
     ScheduledBleedTransient, BleedSchedule, LimitedBleedTransient, BleedLimiter,
+    LaggedBleedTransient, TwoLagCascadeTransient, CrossLoopCascadeTransient,
     ThreeLoopCascadeTransient, StatorLimiter,
     ReferenceSplitTransient, StatorIncidenceLimiter, CrossSplitTransient,
     FullSplitTransient,
@@ -4774,6 +4775,266 @@ def print_bleed_limiter_table(flight):
     print("    disclaimed and the ORDERING is the claim. See docs/rung64-spec.md.")
 
 
+def print_lagged_valve_table(flight):
+    """Rung-65 payoff: rung 64's own seam -- the valve given a BANDWIDTH, so its position
+    stops being a function of the state and becomes a THIRD STATE.
+
+    The panel is ordered by what the rung actually claims. Bandwidth as a second hardware axis
+    is the corollary, so it goes first and briefly; the RUNG is the pair of tables under it --
+    the fuel leg's plant handed back (a span rung 64 could only derive) and the redundancy
+    still there anyway, moved out of the solver and into the state."""
+    print("\nTHE LAGGED BLEED VALVE (rung 65): a lag repairs the SOLVE without removing the")
+    print("DEGENERACY -- the redundancy of two loops on one variable is CONSERVED.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR = 0.55
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    LO, HI, B, PHI, DS = 1000.0, 1400.0, 0.10, 0.80, 0.005
+    SM = PHI / FLOOR - 1.0
+    TAU = 0.05                    # ds/tau = 0.1: the RK4 floor of s 0 is ds/tau <~ 2.78
+    t = LaggedBleedTransient(design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0)
+
+    print("\n  BANDWIDTH, THE SECOND HARDWARE AXIS -- and it is PURE LOSS (a slower valve")
+    print("  protects LESS *and* bleeds MORE), with rung 64's instantaneous valve as the top row:")
+    bc = t.bandwidth_ceiling(flight, LO, HI, PHI, B, ds=DS)
+    print(f"    {'tau':>8} {'min phi_lp':>12} {'undershoot':>11} {'int b ds':>9} "
+          f"{'plateau':>8} {'dev vs r64':>11}")
+    print(f"    {'rung 64':>8} {bc['inst_min_phi']:12.9f} {0.0:11.3e} {bc['inst_b_int']:9.6f} "
+          f"{bc['inst_plateau_pts']:8d} {'--':>11}")
+    for row in bc["rows"]:
+        print(f"    {row['tau']:8.3f} {row['min_phi_lp']:12.9f} {row['undershoot']:11.3e} "
+              f"{row['b_int']:9.6f} {row['plateau_pts']:8d} {row['dev']:11.3e}")
+    rows = bc["rows"]                              # the sweep is DESCENDING in tau, so both
+    worse = all(rows[i]["undershoot"] < rows[i + 1]["undershoot"]   # currencies must improve
+                for i in range(len(rows) - 1))                      # monotonically along it
+    more = all(rows[i]["b_int"] > rows[i + 1]["b_int"] for i in range(len(rows) - 1))
+    print(f"    Both currencies monotone in tau and the SAME way (protection {worse}, "
+          f"bleed {more}):")
+    print("    there is no trade to buy. And rung 64 s 4's DESTROYED argmin is RESTORED -- its")
+    print(f"    floor pins phi_lp over {bc['inst_plateau_pts']} points (an interval, ~1/ds), "
+          "every lagged march over 1.")
+    print(f"    The tau -> 0 arm of the reduce is MEASURED, not asserted: dev shrinks "
+          f"monotonically ({bc['dev_shrinks']}).")
+
+    print("\n  THE DISCRIMINATOR -- rung 64 s 3 DERIVED that an instantaneous valve re-pins")
+    print("  phi_lp at every trial fuel, deleting the fuel leg's plant. Here it is EXHIBITED,")
+    print("  one bracket swept on both plants at the state where a fuel leg bites hardest:")
+    fa = t.fuel_authority(flight, LO, HI, SM, B, tau=TAU, ds=DS)
+    print(f"    probe: s = {fa['at']['s']:.3f}, b = {fa['at']['b']:.6f}, "
+          f"phi_lp = {fa['at']['phi_lp']:.6f}, Wf x {fa['fracs']}")
+    for key, name in (("inst", "INSTANTANEOUS (rung 64)"), ("lagged", f"LAGGED  tau = {TAU}")):
+        q = fa[key]
+        print(f"    {name:<24} phi span {q['span']:11.4e}  monotone {str(q['monotone']):>5}"
+              f"  sign change {str(q['sign_change']):>5}")
+    print("    The instantaneous span is ROUNDOFF (its monotonicity is meaningless), so the")
+    print(f"    ratio {fa['ratio']:.1e} has a machine-zero denominator and only its ORDER is a")
+    print("    statement. Inside ONE derivative evaluation a lagged valve is a CONSTANT, so the")
+    print("    fuel leg sees rung 42's imposed-valve plant and rung 49's own premise -- phi")
+    print("    falls monotonically with fuel -- is restored verbatim.")
+
+    print("\n  AND THE CONTINUUM SURVIVES ANYWAY -- THE RUNG. Wherever both loops ride, every")
+    print("  (b, Wf) on phi_lp = phi_lim satisfies BOTH laws, so b_cmd == b and db/ds == 0:")
+    mm = t.marginal_mode(flight, LO, HI, SM, B, tau=TAU, taus=(0.2, 0.01), ds=DS)
+    print(f"    {'member':<22} {'b0':>9} {'drift':>10} {'|b_cmd-b|/tau':>14} "
+          f"{'fuel removed':>13} {'laws held':>10}")
+    for key, cell, name in ((None, mm["natural"], "natural (the EDGE)"),
+                            ("lo", mm["moved"]["lo"], "b0 - 0.01 (inside)"),
+                            ("hi", mm["moved"]["hi"], "b0 + 0.01 (outside)")):
+        print(f"    {name:<22} {cell['b0']:9.6f} {cell['drift']:10.2e} {cell['dbds']:14.2e} "
+              f"{cell['removed']:13.6e} {cell['laws_held']:10.2e}")
+    print("    b is a CONSTANT OF THE MOTION -- the drift column IS the claim (b_end = b0 to")
+    print("    ~4e-16 over a whole march), so the family is one-parameter in b0 alone,")
+    print(f"    and its members withhold DIFFERENT fuel (ratio "
+          f"{mm['natural']['removed'] / mm['moved']['lo']['removed']:.3f} against the member")
+    print("    0.01 below). The EDGE is derivable -- the valve's law is the SMALLEST position")
+    print("    holding the floor, so ABOVE b_cmd(0) it is doing more than its law asks and")
+    print("    CLOSES (the third row's drift), which is why the natural march looks unique.")
+    print(f"    tau multiplies a machine zero and cannot reach the mode: withheld fuel is")
+    print(f"    tau-invariant to {mm['tau_span_rel']:.1e} relative across a 20x range.")
+    print("    SCOPE: one anchor (rung 64's grid), phi_lim/b_max imposed or inherited, and the")
+    print("    RK4 floor ds/tau <~ 2.78 is asserted in the plant -- a violation looks exactly")
+    print("    like the finding 'a fast valve bleeds more'. See docs/rung65-spec.md.")
+
+
+def print_two_lag_cascade_table(flight):
+    """Rung-66 payoff: rung 65's own seam -- rung 52's lagged FUEL leg BESIDE the lagged valve,
+    so both loops on `phi_lp` have a clock. Four states, two bandwidths.
+
+    The first table is the rung, and its CONTROL is the column beside the product: a constant
+    `R_q * C_g` is evidence of a reciprocal pair only if the individual gains MOVE. They swing
+    ~1.4-1.8x over the same march while the product holds."""
+    print("\nTHE TWO-LAG CASCADE (rung 66): two loops on ONE variable are ONE loop with the")
+    print("RATES ADDED -- R_q * C_g == 1 is an IDENTITY, so det J == 0 and the pair is degenerate.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR = 0.55
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    LO, HI, B, PHI, DS = 1000.0, 1400.0, 0.10, 0.80, 0.005
+    SM, TAU, TAU_ATT = PHI / FLOOR - 1.0, 0.05, 0.05
+    t = TwoLagCascadeTransient(design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0,
+                               bleed_lim=BleedLimiter(phi_lim=PHI, b_max=B, tau=TAU))
+
+    print("\n  THE IDENTITY, MEASURED -- both cross-gains central-differenced at RIDING points")
+    print("  (`required > 0` AND the valve strictly inside its stops), at three fuel clocks:")
+    ci = t.cascade_identity(flight, LO, HI, SM, B, tau=TAU, ds=DS)
+    print(f"    {'tau_att':>8} {'R_q*C_g lo..hi':>22} {'gain swing R':>13} {'gain swing C':>13} "
+          f"{'|lam| max':>10} {'1/t_g+1/t_v':>12}")
+    for row in ci["rows"]:
+        print(f"    {row['tau_att']:8.3f} "
+              f"{row['prod_lo']:10.6f}..{row['prod_hi']:<10.6f} {row['gain_span_R']:13.3f} "
+              f"{row['gain_span_C']:13.3f} {row['rho_max']:10.2f} "
+              f"{row['rate_closed_form']:12.2f}")
+    mid = ci["rows"][1]
+    print(f"    gains at tau_att = {mid['tau_att']}:  R_q in [{mid['R_q_lo']:.4f}, "
+          f"{mid['R_q_hi']:.4f}],  C_g in [{mid['C_g_lo']:.4f}, {mid['C_g_hi']:.4f}]")
+    print("    The product holds to a few percent over 100x in the fuel clock while the gains")
+    print("    themselves swing -- so it is a RECIPROCAL PAIR and not a constant plant, and both")
+    print("    are strictly NEGATIVE (SUBSTITUTING loops). The spectrum is exactly")
+    print(f"    {{0, -(1/t_g + 1/t_v)}}: real at every sampled point ({ci['all_real']}), and the")
+    print(f"    non-zero root matches the SUM of the rates to {ci['rho_err_max']:.1e} relative.")
+
+    print("\n  WHAT THE PAIR DELIVERS -- both cells LAGGED on purpose (an instantaneous control")
+    print("  is a different plant, not a control), scored on the violation AREA int max(0,")
+    print("  phi_lim - phi_lp) ds, which no initial condition can clamp:")
+    cb = t.cascade_bill(flight, LO, HI, SM, B, tau=TAU, tau_att=TAU_ATT, ds=DS)
+    print(f"    {'cell':>7} {'I (phi)':>13} {'credit':>9} {'min phi (s>0)':>14} {'s at min':>9}")
+    for k, name in (("bare", "bare"), ("fuel", "fuel"), ("valve", "valve"), ("both", "both")):
+        c = cb["cells"][k]
+        cr = "--" if k == "bare" else f"{cb['credit'][k] * 100.0:7.2f}%"
+        print(f"    {name:>7} {c['I']:13.6e} {cr:>9} {c['min_phi']:14.9f} {c['s_at_min']:9.4f}")
+    print(f"    The pair beats both singles ({cb['beats_both']}) and is strongly SUB-ADDITIVE:")
+    print(f"    the two standalone credits sum to {cb['sum_alone'] * 100.0:.2f}% and the pair "
+          f"delivers {cb['delivered'] * 100.0:.2f}%.")
+    print(f"    {'added LAST':>12} {'marginal':>10} {'alone':>9} {'erosion':>9}")
+    for k, mg, al, er in (("fuel", cb["marginal_fuel"], cb["credit"]["fuel"], cb["erosion_fuel"]),
+                          ("valve", cb["marginal_valve"], cb["credit"]["valve"],
+                           cb["erosion_valve"])):
+        print(f"    {k:>12} {mg * 100.0:9.3f}% {al * 100.0:8.2f}% {er:8.1f}x")
+    print("    A WHOLE SECOND LIMITER on top of the stronger one buys almost nothing: with one")
+    print("    effective actuator direction, the second loop buys the RATE, never the AUTHORITY.")
+    print("    SCOPE: one anchor and one SET POINT -- both laws are referenced to the SAME")
+    print("    phi_lim, which is what makes them redundant; the erosion MAGNITUDE is a")
+    print("    measurement on this grid and the ordering is the claim. See docs/rung66-spec.md.")
+
+
+def print_cascade_a_table(flight):
+    """Rung-67 payoff: rung 66's OTHER cascade -- the two lagged loops moved onto DIFFERENT
+    variables (rung 47's Tt4 governor beside the phi valve), so `det J != 0`.
+
+    The ringing null is only worth something if the detector is shown to fire, so
+    `detector_sensitivity` is printed beside the sweep that returns zero: at |P| ~ 0.02 the
+    count is zero because the period is ~45 tau and the amplitude is e^-45 by then, NOT
+    because the counter is blind."""
+    print("\nCASCADE A (rung 67): two loops on TWO variables. ONE SCALAR P = R_q * C_g < 0 sets")
+    print("BOTH faces -- it ends the degeneracy AND opens a ringing window, then damps it.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR = 0.55
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    LO, HI, B, PHI, TMAX, DS = 1000.0, 1400.0, 0.10, 0.80, 1200.0, 0.005
+    TAU, TAU_GOV = 0.05, 0.05
+    t = CrossLoopCascadeTransient(design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0,
+                                  bleed_lim=BleedLimiter(phi_lim=PHI, b_max=B, tau=TAU))
+
+    print("\n  THE SCALAR -- the two cross-gains have OPPOSITE SIGNS (bleed makes it HOTTER,")
+    print("  clipping fuel needs LESS bleed), so their product is negative and det J != 0:")
+    ci = t.cross_identity(flight, LO, HI, TMAX, tau=TAU, n_sample=8, ds=DS)
+    print(f"    {'tau_gov':>8} {'t_v/t_g':>8} {'P = R_q*C_g':>12} {'min R_q':>9} "
+          f"{'max C_g':>10} {'complex':>9} {'window rho':>18}")
+    for row in ci["rows"]:                         # the TIGHT bound on each sign: the smallest
+        print(f"    {row['tau_gov']:8.3f} {row['rho_clock']:8.2f} {row['P_mid']:12.6f} "  # R_q
+              f"{row['R_q_lo']:9.4f} {row['C_g_hi']:10.4f} "        # and the largest C_g
+              f"{row['n_complex']:4d}/{row['n_sample']:<4d} "
+              f"{row['rho_lo']:9.4f}..{row['rho_hi']:.4f}")
+    print(f"    P is NEGATIVE everywhere ({ci['all_negative']}), and ~50x smaller in magnitude")
+    print("    than cascade B's identically-1. The complex branch is a closed form in ONE")
+    print("    coordinate -- rho + 1/rho < 2 + 4|P| -- so the edges are RECIPROCALS and the")
+    print("    window is log-symmetric about matched clocks; the spectrum lands where it says.")
+    print(f"    R_q is not machine-zero ({ci['R_q_min_abs']:.2e}): a zero there would mean the")
+    print("    governor is not sensing the live valve, i.e. two independent loops, not a cascade.")
+
+    print("\n  ADMISSIBLE, BUT UNOBSERVABLE. The FREE response (natural minus a b0-offset march,")
+    print("  so the common fuel ramp cancels) never rings -- inside the window or outside it:")
+    ow = t.oscillation_window(flight, LO, HI, TMAX, tau=TAU, rhos=(0.5, 1.0, 2.0), ds=DS)
+    print(f"    P = {ow['P']:.6f};  window {ow['window']['rho_lo']:.4f}.."
+          f"{ow['window']['rho_hi']:.4f},  zeta = {ow['window']['zeta']:.4f},  "
+          f"T/tau = {ow['window']['T_over_tau']:.1f}")
+    print(f"    {'rho':>6} {'tau_gov':>8} {'complex?':>9} {'sign changes q/g':>18} "
+          f"{'offset surviving':>17}")
+    for row in ow["rows"]:
+        print(f"    {row['rho']:6.2f} {row['tau_gov']:8.4f} "
+              f"{str(row['complex_predicted']):>9} "
+              f"{row['sign_changes_q']:8d}/{row['sign_changes_g']:<9d} {row['survives']:17.2e}")
+    print("    THE THRESHOLD IS TWO CROSSINGS, and it is a theorem rather than a tolerance: a")
+    print("    sum of two decaying REAL exponentials has at most ONE zero, so a single crossing")
+    print("    is admissible on the real branch and carries nothing. None of these reaches two.")
+    print("    The SAME scalar that opens the window sets the damping -- zeta = 1/sqrt(1+|P|)")
+    print("    and T/tau = 2pi/sqrt|P| contain NO time constant, so no bandwidth can make the")
+    print("    mode visible. A null is worth nothing until the detector is shown to FIRE:")
+    ds_ = CrossLoopCascadeTransient.detector_sensitivity()
+    print(f"    {'|P|':>7} {'zeta':>8} {'T/tau':>8} {'periods in march':>17} "
+          f"{'sign changes':>13} {'rings':>7}")
+    for row in ds_["rows"]:
+        print(f"    {abs(row['P']):7.2f} {row['zeta']:8.4f} {row['T_over_tau']:8.2f} "
+              f"{row['periods']:17.2f} {row['sign_changes']:13d} {str(row['rings']):>7}")
+    print("    So the plant's silence is a STATEMENT about |P| ~ 0.02 (the period is ~45 tau and")
+    print("    the response is e^-45 by then), not about the counter.")
+
+    print("\n  THE LEDGER cascade B could not build -- TWO currencies, so the 2x2 is SIGNED:")
+    cb = t.cross_bill(flight, LO, HI, TMAX, tau=TAU, tau_gov=TAU_GOV, ds=DS)
+    print(f"    {'cell':>7} {'I_T (Tt4)':>13} {'credit_T':>10} {'I_phi':>13} {'credit_phi':>11} "
+          f"{'max Tt4':>9}")
+    for k, name in (("bare", "bare"), ("gov", "governor"), ("valve", "valve"), ("both", "both")):
+        c = cb["cells"][k]
+        cT = "--" if k == "bare" else f"{cb['credit_T'][k] * 100.0:8.2f}%"
+        cF = "--" if k == "bare" else f"{cb['credit_phi'][k] * 100.0:9.2f}%"
+        print(f"    {name:>7} {c['I_T']:13.6e} {cT:>10} {c['I_phi']:13.6e} {cF:>11} "
+              f"{c['max_Tt4']:9.2f}")
+    print(f"    OFF-DIAGONAL, and it has no cascade-B analogue: the valve DEBITS the temperature")
+    print(f"    ({cb['valve_on_T'] * 100.0:+.2f}%) while the governor CREDITS the surge margin "
+          f"({cb['gov_on_phi'] * 100.0:+.2f}%) --")
+    print("    one loop helps the other, the other hurts it, and both signs are derivable from")
+    print("    R_q > 0 and C_g < 0 before any march is run.")
+    print(f"    DIAGONAL: each loop keeps ~all of its own credit -- erosion "
+          f"{cb['erosion_gov']:.2f}x (governor)")
+    print(f"    and {cb['erosion_valve']:.2f}x (valve), against rung 66's 38x on the SHARED")
+    print("    variable. Same instrument, same phi_lim, opposite verdict: two loops on TWO")
+    print("    variables buy AUTHORITY.")
+    print("    SCOPE: one anchor; Tt4_max/phi_lim/b_max are imposed or inherited, the clocks are")
+    print("    swept march coordinates, and P is measured on THIS plant -- the MAGNITUDES are")
+    print("    disclaimed and the signs and the ordering are the claim. See docs/rung67-spec.md.")
+
+
 def print_three_loop_table(flight):
     """Rung-68 payoff: rung 66's own seam -- a THIRD loop on `phi_lp`.
 
@@ -5284,6 +5545,10 @@ def main():
     print_fuel_bleed_table(FLIGHT)
 
     print_bleed_limiter_table(FLIGHT)
+
+    print_lagged_valve_table(FLIGHT)
+    print_two_lag_cascade_table(FLIGHT)
+    print_cascade_a_table(FLIGHT)
 
     print_three_loop_table(FLIGHT)
     print_reference_split_table(FLIGHT)
