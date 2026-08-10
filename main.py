@@ -33,6 +33,7 @@ from turbojet.engine import (  # noqa: E402
     StiffnessLedgerTransient,
     ResidualGaugeTransient,
     StateCoordinateTransient,
+    SplitWallTransient,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -6363,6 +6364,105 @@ def print_state_coordinate_table(flight):
     print("    looked at. Zero new constants. See docs/rung79-spec.md.")
 
 
+def print_split_wall_table(flight):
+    """Rung-80 payoff: THE SPLIT WALL -- docs/rung74-arrest-interval.md s 8's seam.
+
+    Every floor since rung 49 came from ONE margin, so the airflow levers could only act inside
+    the fuel leg's tracking error and `demand` had no four-loop cell at any wall. This rung
+    gives them their OWN margin. The panel is built around the two nouns the answer separates:
+    the seam's four-loop CELL, which opens, and the fourth AUTHORITATIVE loop, which does not --
+    and around the arrest, which turns out to belong to neither floor but to their coincidence."""
+    print("\nTHE SPLIT WALL (rung 80): a LEVEL split separates loops on the CONSTRAINT, never")
+    print("  the two that share the ACTUATOR.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR = 0.55
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    LO, HI, B, TMAX = 1000.0, 1400.0, 0.10, 1200.0
+    # THE FUEL WALL IS 0.75 AND BOTH EDGES OF ITS WINDOW ARE READ, NOT CHOSEN: the free droop
+    # 0.7464 (below it the leg is dormant) and the free operating point 0.7731 (at or above it
+    # a SHARED wall arrests) -- both from docs/rung74-arrest-interval.md.
+    PHI_FUEL, sm = 0.75, 0.80 / FLOOR - 1.0
+
+    def rig():
+        m = SplitWallTransient(
+            design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0,
+            bleed_lim=BleedLimiter.from_margin(LP, B, sm, tau=0.05),
+            stator_lim=StatorLimiter.from_margin(LP, 0.20, sm, tau=0.05))
+        m._lag_coord, m._ref_law, m._windup_law, m._cap_law = "demand", "sched", "none", "solve"
+        return m
+
+    lv = rig().split_liveness(flight, LO, HI, TMAX, phi_lim=PHI_FUEL)
+    print("\n  s 2 -- THE CELL OPENS. `phi_air = shared` is rung 74's own result, reproduced")
+    print("    as this table's baseline at IDENTICAL settings:")
+    print("      coord   phi_air   valve moved   fuel cuts   ALL-FOUR riding")
+    for r in lv["rows"]:
+        print("      %-7s %-9s %5d/%d      %4d/%d      %4d/%d"
+              % (r["coord"], "shared" if r["phi_air"] is None else "%.2f" % r["phi_air"],
+                 r["valve_moved"], r["npts"], r["n_cut_fuel"], r["npts"],
+                 r["n_riding4"], r["npts"]))
+    print("    The `clip` rows are the POSITIVE CONTROL (they have four-loop cells at the")
+    print("    shared wall, so zeros there would mean a broken reader, not a quiet plant).")
+    print("    THE ANCHOR PREDICTED THE FUEL LEG WOULD GO DORMANT. It does not: its cut is")
+    print("    evaluated at the SCHEDULED fuel, so a lever that raises the ACHIEVED phi only")
+    print("    ERODES it (%d -> %d -> %d). Live on the counterfactual, not on the state."
+          % tuple(r["n_cut_fuel"] for r in lv["rows"] if r["coord"] == "demand"))
+
+    ar = rig().split_arrest(flight, LO, HI, TMAX, phi_lim_lo=PHI_FUEL)
+    print("\n  s 3 -- AND THE ARREST BELONGS TO NEITHER FLOOR, BUT TO THEIR COINCIDENCE:")
+    print("      wall     shared (both)      air only          fuel only")
+    for i, w in enumerate(ar["walls"]):
+        cells = []
+        for arm in ("shared", "air", "fuel"):
+            row = ar["arms"][arm]["rows"][i]
+            cells.append("%-9s %7.1f" % ("ARRESTED" if row["arrested"] else "marches",
+                                         row["max_Tt4"]))
+        print("      %-8.4f %s   %s   %s" % (w, cells[0], cells[1], cells[2]))
+    print("    The SHARED column is rung 74's bracket to the digit (last march %.4f, first"
+          % ar["arms"]["shared"]["last_march"])
+    print("    arrest %.4f, the free operating point 0.7731162133 INSIDE it) -- which is what"
+          % ar["arms"]["shared"]["first_arrest"])
+    print("    makes the other two columns readable. Neither SPLIT arm arrests anywhere, and")
+    print("    the lift is still HAPPENING in both (phi(0) sits on 0.78 / 0.80 with the valve")
+    print("    open), so the null is not a dormant knob. On a shared wall `the floor that")
+    print("    lifts` and `the leg with no margin left` are ONE OBJECT; separating them is")
+    print("    the only way to see that the lift which CAUSES the arrest also CURES it.")
+
+    gn = rig().split_gains(flight, LO, HI, TMAX, phi_lim=PHI_FUEL,
+                           phi_airs=(None, 0.77), coord="clip")
+    print("\n  s 5 -- BUT THE FOURTH LOOP IS RIDING, NOT AUTHORITATIVE. Under min-select one")
+    print("    fuel-side leg still holds the actuator and the other is MASKED, with its")
+    print("    column at EXACTLY zero however far apart the walls are set:")
+    for a in gn["arms"]:
+        print("      phi_air %-6s interior %d   authority %s   max|mask leak| %s"
+              % ("shared" if a["phi_air"] is None else "%.2f" % a["phi_air"],
+                 a["n_interior"], a["authority"], a["max_mask_leak"]))
+    print("    AND THE ZERO IS GUARDED, because an exact zero can mean *nothing was computed*:")
+    print("    the shared arm holds a cell where the OTHER leg is masked, and on the identical")
+    print("    code path it returns |cyclic| = %.6f -- rung 66's `two loops on one variable"
+          % gn["control_nonzero"])
+    print("    give exactly 1`. Every split arm differenced ALL of its points (skipped 0/0).")
+
+    print("\n  WHAT THIS SAYS. The split delivers the seam's own object -- all four loops")
+    print("    riding and strictly interior in `demand`, empty at every shared wall -- and NOT")
+    print("    a fourth live loop: `n_live` is still <= 3, a SIXTH time. Five rungs failed at")
+    print("    this seam because it was written in the RIDING noun and scored in the")
+    print("    AUTHORITY one, and the two differ by exactly the leg `min` masks. Authority is")
+    print("    decided on the ACTUATOR, so no CONSTRAINT-side knob can buy it. All three")
+    print("    pre-registered predictions were REFUTED (anchor s 5a). Zero new constants.")
+    print("    CORRECTS rung 74 s 2.2. See docs/rung80-spec.md.")
+
+
 def main():
     # The tables carry unicode (Δ, ·, ≡, ≈); force UTF-8 so `python main.py` renders
     # on any console (a stock Windows cp1252 console would otherwise crash on them).
@@ -6525,6 +6625,7 @@ def main():
     print_residual_gauge_table(FLIGHT)
 
     print_state_coordinate_table(FLIGHT)
+    print_split_wall_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

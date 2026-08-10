@@ -207,8 +207,9 @@ _CLAUDE_MD = os.path.join(_HERE, os.pardir, "CLAUDE.md")
 # THE LESSON THIS TIME: the biggest refund in the file's history was a section this comment had
 # already marked as deletable-when-clear, and it stayed for TWELVE rungs after clearing because
 # each rung looked for slack in prose instead of re-reading its own deletion notes. Check for
-# SECTIONS whose stated deletion condition is met before compressing sentences. 3 B of headroom,
-# so rung 81 trips this guard too.
+# SECTIONS whose stated deletion condition is met before compressing sentences. 2 B of headroom
+# (3 B, less the 1 B the gate-timing refresh in the same commit spent), so rung 81 trips this
+# guard too.
 #
 # UNCHANGED A THIRD TIME at the ARREST-INTERVAL CORRECTION (`docs/rung74-arrest-interval.md`),
 # and the entry above was right that the next writer would trip it: there were 0 B free, so this
