@@ -279,15 +279,17 @@ plant that never produced one.
   `docs/rung74-arrest-interval.md`, and all three clauses were wrong.** The window `(0.7731,
   0.7884)` is the **ANTI-window**: `0.7731162133` is the **free operating point**, so a wall
   above it is *lifted onto* by an airflow floor and the initial margin is exactly **zero** — the
-  condition the seam was trying to escape. `0.7884` has no provenance in this rig (a stator-only
-  lift there uses 19.5% of `v_max`) and is recorded as unsourced. And it is **not a new rig**: in
+  condition the seam was trying to escape. **Both endpoints are rung 68 § 7 `min φ` rows** —
+  fuel-alone `0.773116`, stator-alone `0.788430` — read as excursion limits when they are values
+  those levers **hold**, so the window written and the window described are disjoint. And it is
+  **not a new rig**: in
   `clip` the cell `(clip, 0.76)` — rungs 75/76's own wall — already has all four loops live with
   +1.3% initial margin. In `demand` it is unreachable at **every** wall, because the arrest is an
   **interval** `(0.7731162133, ≈0.852)` above the free point and the leg **holds** below it.
 * ~~**RUNGS 72–77's § 5 SECTIONS.**~~ **CLOSED — `docs/rungs72-77-march-audit.md`.** None of
   them stands still, and the seam had to be **retargeted** first: "§ 5" is this rung's
-  numbering, and the audit's unit is the *march call site*. The arrest is the cell `(demand,
-  0.80)` — **rung 74 § 2.2 owns it**, and this rung's § 5 marched inside it without citing it.
+  numbering, and the audit's unit is the *march call site*. The arrest is the `demand` interval
+  above — **rung 74 § 2.2 owns it**, and this rung's § 5 marched inside it without citing it.
 * **CAN A DISCONTINUOUS SELECTOR AMPLIFY FLOAT NOISE?** P2's real question, untouched because the
   gap is 13 orders too wide. It needs a plant where two legs cross.
 * **THE SAME COORDINATE ON A LEG THAT IS NOT `min`-COMPOSED.** Rung 76 named the COMPOSITION as

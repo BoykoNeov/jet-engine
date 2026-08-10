@@ -251,15 +251,19 @@ the rung's own file):
 * ~~**A φ-floor march with NON-ZERO initial margin.**~~ **CLOSED by REFUTING it —
   `docs/rung74-arrest-interval.md`.** The interval quoted here is the **ANTI-window**: `0.7731`
   is this document's own § 2.1 free operating point, and § 2.1's mechanism — a floor lifts `φ(0)`
-  **onto** the wall — is exactly why a wall *above* it gives **zero** initial margin. The upper
-  endpoint `0.7884` has no provenance in this rig and is recorded as unsourced. The rig wanted is
+  **onto** the wall — is exactly why a wall *above* it gives **zero** initial margin. **Both
+  endpoints are rung 68 § 7 `min φ` rows** — fuel-alone `0.773116` and stator-alone `0.788430` —
+  i.e. values those levers *hold*, not excursion limits, so the interval written here and the one
+  its own prose describes are **disjoint**. The rig wanted is
   not new: `(clip, 0.76)` already has all four loops live with +1.3% initial margin; in `demand`
   no wall does. **§ 2.2's positive control was one point of an interval** —
   `(0.7731162133, ≈0.852)`, both edges derived — and its "0.75 and 0.70 give identical
   trajectories" reading is the same edge seen from below.
 * ~~**Rungs 72–77's § 5 sections.**~~ **CLOSED — `docs/rungs72-77-march-audit.md`, and the
-  hedge was right.** None of the six stands still: the arrest is the CELL `(demand, φ_lim =
-  0.80)`, not the shared rig, and five of the six march in `clip` or at a different wall. **It
+  hedge was right.** None of the six stands still: the arrest is not the shared rig — it is the
+  **INTERVAL** `(0.7731162133, ≈0.852)` in `demand` (`docs/rung74-arrest-interval.md` § 4; the
+  audit read it as the single cell `(demand, 0.80)`, which was true of the cells it measured) —
+  and five of the six march in `clip` or at a different wall. **It
   also CORRECTS this document's attribution** — the arrest was found, mechanised and gated at
   **rung 74 § 2.2** ("THE ARREST — disclosed, not tuned away") before rungs 78/79 were built,
   and § 2 above is a rediscovery. Every number here stands; the credit does not. The audit adds

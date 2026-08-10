@@ -29,18 +29,46 @@ the same one:
 > point and **above** the free excursion minimum — `φ_lim ∈ (0.7731, 0.7884)` at these settings,
 > a ~1.5% window. It is a **new rig**, not comparable to §§ 1–4.
 
-**The window is inverted, its upper endpoint is unsourced, and the rig it asks for was shipped
-three rungs ago.** All three clauses are measured below.
+**The window is inverted, its two endpoints come from a table that does not mean what they were
+read as, and the rig it asks for was shipped three rungs ago.** All three clauses are measured
+below.
 
 * `0.7731162133` is the **free operating point** (§ 2), so it is the window's *upper* edge, not
   its lower one: a wall above it is **lifted onto** (§ 2), which is the zero-margin condition the
   seam is trying to escape. **The interval as written is the ANTI-window.**
-* `0.7884` has **no provenance in this rig.** A stator-only lift to that wall uses `|v|/v_max =
-  0.195` — 19.5% of authority, nothing distinguished (§ 2). The number is not reproduced here
-  and is recorded as unexplained.
+* **Both endpoints are sourced — to `min φ` rows of rung 68 § 7's single-loop ledger** (carried
+  into rungs 69 § 8 and 70 § 5). `0.773116` is that table's **F** row (fuel leg alone);
+  `0.788430` is its **S** row (stator alone). They are the φ each lever *holds* when it is the
+  only one armed — **not** an operating point and **not** an excursion minimum. § 0.1 measures
+  why the F row happens to equal `φ(0)`, and why that coincidence is the whole mis-read.
 * The correct window is **(free droop, free operating point) = (0.7430, 0.7731)** in `clip` (§ 5),
   and the cell `(clip, 0.76)` inside it **already has all four loops live with non-zero initial
   margin.** It is rungs 75/76's own wall. **The seam is closed by MEASUREMENT, not by plumbing.**
+
+### 0.1 THE SEAM'S PROSE AND THE SEAM'S NUMBERS NAME **DISJOINT** INTERVALS
+
+This is the stronger refutation, because it kills the *construction* and not just the arithmetic.
+Bare plant, nothing armed, 341 points:
+
+| quantity | measured here | rung 68 § 7 / rung 70 § 5 row |
+|---|---|---|
+| `φ_lp(0)` — the initial operating point | **0.7731162133** | **F** (fuel alone) `min φ` = 0.773116 |
+| `min φ_lp` — the free excursion minimum | **0.7354416064** (index 47/341) | **bare** `min φ` = 0.735442 |
+| free droop with the redline governor live | **0.7429942633** (§ 5) | **G** (governor alone) `min φ` = 0.7430 |
+| the seam's upper endpoint | — | **S** (stator alone) `min φ` = 0.788430 |
+
+So the seam's **prose** — *below the initial operating point, above the free excursion minimum* —
+names `(0.7354, 0.7731)` bare, or `(0.7430, 0.7731)` in the rig rungs 74–79 actually march (the
+redline governor is armed there whatever the φ wall does, so its droop is the G row, not the bare
+one). **That is § 5's window, exactly.** The seam's **numbers** name `(0.7731, 0.7884)` — on the
+*other side* of its own lower endpoint. The two intervals are disjoint and share one endpoint.
+
+**The mis-read is legible.** In rung 68's rig the shared wall is `0.80`, which is **above** `φ(0)`,
+so with the fuel leg alone the plant is in breach from `s = 0` and the best the leg does is hold
+`φ` at its initial value — which is why that row's `min φ` **is** `φ(0)` to seven digits. Reading
+it as a droop turns an operating point into an excursion floor. The same table's **S** row is the
+stator holding its own wall (§ 2's mechanism, one loop), not a floor either. Two holding values
+were read as two excursion limits, and the interval between them inverted.
 
 And in the coordinate rungs 74–79 actually argue in, the seam is **not satisfiable at any wall** —
 which is § 4, and the reason this document exists.
@@ -80,8 +108,10 @@ not asserted.
 
 **In the four-loop rig the lift is the VALVE's, not the stator's.** At `φ_lim = 0.78` with all
 four armed: `b(0) = 0.00962`, `v(0) = −0.0000000`. The stator-only table above is therefore a
-**probe of the mechanism, not of the rig** — which is exactly why `0.7884` cannot be attributed
-to stator saturation, and is not.
+**probe of the mechanism, not of the rig** — which is why `0.7884` is not stator *saturation*
+(19.5% of authority is not a limit) even though it **is** a stator number: it is rung 68 § 7's
+stator-alone `min φ`, i.e. this table's own row 4 seen from the other side. A lever holding its
+wall and a lever running out of authority are different facts, and only the first one is here.
 
 ---
 
@@ -276,8 +306,14 @@ concession** (§ 8), not a rounding detail.
   `(coordinate, wall)` pair"* is **sharpened to a mechanism and made exhaustive** (§ 5): in
   `demand` the pair has no live cell at any wall.
 * **`docs/rung79-spec.md` § 9 and `docs/rung79-gap-margin.md` § 6** — the seam's window is the
-  **anti-window**, its upper endpoint is unsourced, and the rig it asks for is shipped (§ 0/§ 5).
-  **CLOSED, by refuting its premise.**
+  **anti-window**; both its endpoints are `min φ` rows of rung 68 § 7's single-loop ledger read as
+  excursion limits when they are **holding values** (§ 0.1), so its prose and its numbers name
+  disjoint intervals; and the rig it asks for is shipped (§ 0/§ 5). **CLOSED, by refuting its
+  premise.**
+* **Nothing in rung 68 § 7 / 69 § 8 / 70 § 5 is wrong** — those tables report `min φ` and that is
+  what they contain. What was missing is that the **F** row's `min φ` is its own initial condition,
+  because at a wall above `φ(0)` a fuel leg alone can only hold. That is rung 74 § 2.2's mechanism
+  visible one rung early, unremarked (§ 0.1).
 
 ## 8. WHAT THIS DOES **NOT** SAY, AND WHAT IS STILL OPEN
 
@@ -288,7 +324,9 @@ concession** (§ 8), not a rounding detail.
   airflow levers anything to do is a juxtaposition, not a correction, and is not scored as one.
 * **One rig, one flight condition, one `b_max`/`v_max` pair.** The upper edge is the **valve's**
   saturation *on this hardware*; a larger `b_max` moves it and nothing here says where.
-* **`0.7884` is still unexplained** — recorded as unsourced rather than back-fitted.
+* **`0.7884` is sourced, not derived here.** It is rung 68 § 7's stator-alone `min φ` (§ 0.1).
+  *Why* the stator alone holds at that particular φ is rung 68's question, not this one's; nothing
+  here re-derives it, and no verdict here depends on it.
 * **STILL OPEN, and now sharper: a four-loop live-wall march in `demand`.** § 5 shows it is
   unreachable on the **shared** wall by construction. The one untried route is to **split the
   wall** — arm the airflow levers ABOVE the fuel leg so the queue's order reverses and they

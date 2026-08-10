@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: b32d0148-c70f-48b2-96f4-cb3f82e00659
-  modified: 2026-08-10T16:04:11.499Z
+  modified: 2026-08-10T16:52:02.598Z
 ---
 
 Checked the "φ-floor march with NON-ZERO initial margin" seam (2026-08-10). Doc:
@@ -16,9 +16,12 @@ no plant code, no knob, no constant.
 the march audit § 6 all wanted a wall in `φ_lim ∈ (0.7731, 0.7884)`. But `0.7731162133` is the
 **free operating point**, and a φ floor with authority to spare **sits EXACTLY on its wall** (6
 walls, ≤1e−15) — so the named interval is the **ANTI-window**: precisely the walls that pin the
-initial margin to ZERO. `0.7884` has no provenance in the rig at all. And the rig wanted was
-already shipped: `(clip, 0.76)` — rungs 75/76's own wall — has all four loops live with +1.3%
-initial margin. See [[rung79-gap-margin]], [[rungs72-77-march-audit]].
+initial margin to ZERO. **Both endpoints trace to rung 68 § 7's single-loop ledger** — `0.773116`
+is its fuel-alone `min φ`, `0.788430` its stator-alone one — i.e. values those levers **hold**,
+not excursion limits; so the seam's prose (*below the operating point, above the free minimum*)
+and its numbers name **disjoint** intervals. And the rig wanted was already shipped: `(clip,
+0.76)` — rungs 75/76's own wall — has all four loops live with +1.3% initial margin. See
+[[rung79-gap-margin]], [[rungs72-77-march-audit]].
 
 **The findings.**
 
@@ -40,6 +43,12 @@ initial margin. See [[rung79-gap-margin]], [[rungs72-77-march-audit]].
   pattern.**
 * **The number that doesn't parse IS the pivot signal.** I noticed the seam's interval sat on the
   wrong side of the free point, called it odd, and kept going. That anomaly was the whole finding.
+* **"No provenance" is a negative existence claim, and one refuted guess is not evidence for it.**
+  I killed *stator saturation* and wrote `0.7884` off as unsourced. **One grep** found it — rung
+  68 § 7's stator row — and the same table's fuel row is my `φ(0)` to 7 digits. **Grep the number
+  before you call it unexplained.** The sourcing turned an arithmetic complaint into a
+  construction-killing one, and showed rung 74's arrest mechanism sitting unremarked in rung 68's
+  own published table.
 * **Count the INFORMATIVE cells, not the rows.** My "0 counter-examples of 10" was 4 informative
   cells: 2 rows were the arrest (both sides at float noise) and 4 had the leg dormant. Same shape
   as [[rung78-residual-gauge]] and [[rung79-state-coordinate]]'s traps.

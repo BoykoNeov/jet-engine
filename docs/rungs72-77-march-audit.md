@@ -1,4 +1,4 @@
-# RUNGS 72–77's MARCHES, AUDITED — the arrest is a CELL, and rung 74 already owned it
+# RUNGS 72–77's MARCHES, AUDITED — the arrest is rung 74's, and this document under-states its reach
 
 **Status: CHECKED — CONFIRMATION for rungs 72–77, CORRECTION for rungs 78/79 and for the
 document that opened this seam.** Not a rung: no new knob, no new constant, no production code.
@@ -9,10 +9,15 @@ The seam, in `docs/rung79-gap-margin.md` § 6's own words:
 > and that is a reason to look, **not** a result. **NOT MEASURED; this document makes no claim
 > about them, and no later reader should quote one.**
 
-It is now measured. **Rungs 72–77's marches do NOT stand still.** The arrest belongs to one
-cell — `(demand coordinate, φ_lim = 0.80)` — and that cell was found, named, mechanised and
-gated at **rung 74 § 2.2**, which rungs 78, 79 and the gap document all re-entered without
-citing.
+It is now measured. **Rungs 72–77's marches do NOT stand still.** The arrest was found, named,
+mechanised and gated at **rung 74 § 2.2**, which rungs 78, 79 and the gap document all re-entered
+without citing.
+
+> **SCOPE, corrected by `docs/rung74-arrest-interval.md` — read § 4.2 before quoting this
+> document's "cell".** Below, the arrest is called the single cell `(demand, φ_lim = 0.80)`.
+> That is true of the cells measured **here** and false in general: it is an **INTERVAL**,
+> `(0.7731162133, ≈0.852)`, whose lower edge is the free operating point and whose upper edge is
+> the valve saturating. Every number in this document stands; only the word *cell* is too small.
 
 ---
 
