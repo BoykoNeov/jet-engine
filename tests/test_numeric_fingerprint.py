@@ -247,6 +247,24 @@ RUN-vs-SHIPPED-GOLDEN under PyPy (slice 1's own standard: a claim about the comm
 artifact has to be taken against the committed artifact, not against the probe that fitted
 it). r68 and r77 differ in no value at all and so have no headroom to report.
 
+COST, and it is recorded here to CORRECT A CLAIM MADE ELSEWHERE. Measured 2026-08-10 with
+`pytest tests/test_numeric_fingerprint.py --durations=0` (PyPy, quiet box, the `-n auto` from
+`pytest.ini`, so these are per-test CALL times under a parallel run): the eleven slice-3 arms
+sum to 76.7 s -- r76 at 13.9 s and r67 at 10.2 s the two heaviest, r72 at 2.4 s the lightest --
+against ~149 s for the module entire. Add all 13.8 s of `test_every_kernel_is_actually_GATED`,
+which exercises every kernel and so cannot be split cleanly, and slice 3 is still under 91 s.
+  Rung 78's commit message asserts that these arms are what moved the full gate from ~9:40 to
+~14:14. THEY ARE NOT, and the arithmetic is one line: the gate rose 274 s, while slice 3 (<=91 s)
+and rung 78's own module (50.8 s) together add at most ~142 s of SERIAL work -- and added wall
+clock can never EXCEED added serial work, under any scheduler. So at most half the rise is the
+new tests. The rest is the two numbers never having been comparable: `~9:40` was quoted "at
+1242, shared box" and carried forward across several rungs without re-measurement, and it was
+differenced against a fresh quiet-box run as though it were a measurement of the same thing.
+  That is this module's own lesson arriving from outside the goldens: a number carried forward
+is not a measurement, and the moment it is differenced against a fresh one it starts inventing
+causes. The attribution in the commit message stands uncorrected in git history on purpose --
+rewriting a pushed commit to hide a wrong claim is worse than leaving it and saying so here.
+
 THREE VALUES ARE EXCLUDED, and this is a disclosure, not a tolerance. In rung 76's
 `applied|none|fuel` cell the masked leg's determinant is the DEAD one, so `det_err` and
 `det_ratio` are 0/0: CPython reads +27.2, PyPy +1.34. That is not drift and no constant fixes

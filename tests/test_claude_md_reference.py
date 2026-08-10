@@ -161,7 +161,15 @@ _CLAUDE_MD = os.path.join(_HERE, os.pardir, "CLAUDE.md")
 # shortlist. The section Layout entry is a class name and a number, because the chain was
 # compressed to exactly that at slice 3 -- which is why this bump is 409 B and not the ~800 B
 # the same rung would have cost against the per-class prose that stood there yesterday.
-# 8 B of headroom again, on purpose, so rung 79 trips this guard too.
+# 9 B of headroom again, on purpose, so rung 79 trips this guard too.
+# AND FOR RUNG 79, SPECIFICALLY, THE ANSWER IS NOT A THIRD NUMBER. This constant was LOWERED
+# and then RAISED within a single day (slice 3, then rung 78), which is how "bump it" turns from
+# a deliberate act into the pattern this guard exists to prevent. Rung 79 has 9 B: it trips on
+# its first character, so it must OPEN by moving ~400 B of detail into a spec -- section
+# "Deferred seams" and section "Open engineering tasks" are the two sites that have never been
+# compressed and are where to look FIRST, since section Layout was already taken at slice 3 and
+# the rung table is one line per rung by rule. Raise this only if that search comes back empty,
+# and if it does, say in the new entry which sites were searched.
 MAX_BYTES = 35_970
 MAX_LINES = 300
 
