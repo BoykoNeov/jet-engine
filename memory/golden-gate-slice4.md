@@ -5,10 +5,11 @@ metadata:
   node_type: memory
   type: project
   originSessionId: cf30db3f-2b60-4f60-9eb0-f64d420e03c8
-  modified: 2026-08-10T08:49:09.862Z
+  modified: 2026-08-10T09:14:13.930Z
 ---
 
-Fingerprint slice 4 shipped 2026-08-10: 2 arms (`r78` `gauge_scan`+`root_census`+`gauge_vs_device`,
+Fingerprint slice 4 shipped 2026-08-10 (commit `5b0d62a`; the rung-79 `main.py` panel that
+shipped beside it is `0e568c0`): 2 arms (`r78` `gauge_scan`+`root_census`+`gauge_vs_device`,
 `r79` `coord_forced`+`coord_scan`+`coord_census`+`coord_march`), 2,724 new values, golden
 37→39 kernels, 18,573→21,297 values. Slice 4 declares NO settings of its own — rung 79 § 0.2
 takes rung 78's verbatim, which takes rung 77's — so the two arms are differenceable against
