@@ -188,7 +188,11 @@ AS A PLANT"** as an open seam.
   the coordinate **must** be `demand` (`clip` dispatches out of the ladder before `_cap_fuel`);
   combined with `PHI_JAC = 0.80`, inherited from rung 76, that lands the section in rung 74's
   arrest arm exactly. The requirement was real and so was the wall — **what is missing is that
-  either spec knew the intersection had already been characterised.**
+  either spec knew the intersection had already been characterised.** Both now carry the
+  pointer: `docs/rung78-spec.md` § 5.3 and `docs/rung79-spec.md` § 9. Rung 78 § 5 already
+  declared itself *NOT ESTABLISHED*, so this **sharpens** it rather than correcting a number —
+  its `hits = 1366` / `binds = 0` are **one operating point read 341 times**, and its § 9 seam
+  needed two things, not one (a binding accel leg **and** a plant that moves).
 * **`docs/rung79-gap-margin.md` rediscovered it from scratch**, mechanised it correctly and
   independently (the stator lifting the free `φ = 0.7731` onto the wall, so rung 49's leg reads
   a state already on its floor), and reported it as new. Its § 2.1 and rung 74 § 2.2 are the

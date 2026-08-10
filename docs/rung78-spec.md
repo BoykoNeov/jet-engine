@@ -249,6 +249,22 @@ uniqueness collision on the *set-point solve itself*, which is where the claim l
 have shown the same statement one level up, on the plant, and it is **NOT ESTABLISHED** — recorded
 here as a failure to measure, not as a result.
 
+### 5.3 A FOURTH VACUITY, FOUND FROM OUTSIDE — THE PLANT WAS STANDING STILL
+
+Added by `docs/rungs72-77-march-audit.md` after this rung shipped. § 5's march runs at
+`(demand, φ_lim = 0.80)`, which is **rung 74 § 2.2's disclosed arrest cell**: at the inherited
+floor a leg that tracks its cap pins `φ` on the floor and the acceleration never starts. Measured
+over the same 341 steps — `nu_lp` spread **0.0**, `Tt4` **1000 → 1000**, `min φ_lp` **0.800000**,
+all exact. § 5 was reading a **stationary operating point 341 times**.
+
+This **strengthens** § 5's own verdict rather than weakening it. `binds = 0` stays true and stays
+honest, but it is a **one-point** statement — *the accel leg is not the lower cap at the initial
+condition* — not the trajectory statement § 5 wanted. And `hits = 1366` could never have
+discriminated: **on a frozen plant every liveness counter reports the initial condition at FULL
+count**, so the instrument § 5.1 built to escape trap 2 scores green on trap 4 by construction.
+Three traps became four, and the fourth is the one that was invisible from inside the section.
+The correction is to the **attribution** in § 9's first seam, not to any number here.
+
 ---
 
 ## 6. CONCESSIONS (in addition to every one rungs 62–77 list, all inherited)
@@ -302,9 +318,12 @@ different root*. A gate written from the anchor would have watched `ok` and seen
 
 ## 9. NEXT SEAMS
 
-* **§ 5, ON A PLANT WHERE THE ACCEL LEG BINDS.** The trajectory claim is untested, not refuted.
-  It needs an operating point where the accel cap is the lower one in a coordinate that calls
-  `_cap_fuel` — a lower `φ_lim`, a hotter band, or a leg pair that is not this one.
+* **§ 5, ON A PLANT WHERE THE ACCEL LEG BINDS — AND WHERE THE PLANT MOVES AT ALL.** The
+  trajectory claim is untested, not refuted. It needs an operating point where the accel cap is
+  the lower one in a coordinate that calls `_cap_fuel` — a lower `φ_lim`, a hotter band, or a leg
+  pair that is not this one. **Sharpened by § 5.3:** it needs *two* things, and this rung had
+  neither. The second is cheap — rungs 72/73/77 march at **this very wall** in `clip` and move
+  (`nu_lp` by ~11%), so the arrest is the coordinate, not the setting.
 * **THE BAND'S EDGES, RESOLVED.** `[0.9, 1.2]` is what ten samples resolve (§ 6). Where does the
   second root enter — is it born at a fold at finite distance, or does it come in from the
   bracket's edge? § 3's `0.574 → 0.956` approach says fold; it has not been measured.

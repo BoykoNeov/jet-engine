@@ -147,13 +147,13 @@ re-opened by mistake. (NO-GROW: never re-enumerate the rungs — it duplicates t
 - Locally-resolved mixing **SCALE** — `docs/mixing-scale-negative.md` (unanchored exponent `p`).
 - Anchored `δ(J)` law via a JICF trajectory — `docs/mixing-jicf-anchor-negative.md` (a SECOND unanchored exponent).
 - Lagged/filtered `pt3` sensor on rung 48's leg — `docs/pt3-sensor-lag-negative.md` (CONFIRMS 48, corrects its SIGN).
-- A limiter with BOTH edges inside the ramp — `docs/both-edges-limiter-negative.md`. Closes the WHOLE `pt3`-filter family; **UPGRADES rung 48's law**.
+- A limiter with BOTH edges inside the ramp — `docs/both-edges-limiter-negative.md`. Closes the WHOLE `pt3`-filter family; **UPGRADES 48's law**.
 - **PER-ROW BLADING** (rung 56's seam) — `docs/per-row-blading-negative.md`. **OVER-DETERMINED** ⇒ capacity inert. **CORRECTS 55.**
-- The **φ-RATE limiter** (rung 60's seam) — `docs/phi-rate-limiter-negative.md`. **Fuel's authority over `φ` INVERTS between LEVEL and DERIVATIVE**. BOUNDS rung 49; the one negative with a gate.
+- The **φ-RATE limiter** (rung 60's seam) — `docs/phi-rate-limiter-negative.md`. **Fuel's authority over `φ` INVERTS between LEVEL and DERIVATIVE**. BOUNDS 49; the one negative with a gate.
 
 **Checked, CONFIRMATION / CORRECTION — not a rung:**
-- Rungs 72–77's **marches** — `docs/rungs72-77-march-audit.md`. The arrest is a CELL, **rung 74 § 2.2's**; none stands still. **CORRECTS 78/79.**
-- Rung 79 § 9's **gap** — `docs/rung79-gap-margin.md`. Its § 5 march **STANDS STILL**; the residual is rung 77's `1/(1−c)`. **CORRECTS 79.**
+- 72–77's **marches** — `docs/rungs72-77-march-audit.md`. The arrest is a CELL, **rung 74 § 2.2's** and only 74's; no shipped march arrests. **CORRECTS 78/79.**
+- Rung 79 § 9's **gap** — `docs/rung79-gap-margin.md`. Its § 5 march **STANDS STILL**; residual = rung 77's `1/(1−c)`. **CORRECTS 79.**
 - "Earned at design" over `π_c` (`docs/rung29-pi-c-margin.md`, ~9.4×, NOT protective, `ENERGY = INVENTORY × COMPLETION`) and flight `M0` (`docs/rung29-M0-margin.md`, ~8.8×, monotone-protective, the `delta_h`-swing correction).
 - `β<1` over `π_c` — `docs/rung28-beta-margin.md` (β pressure-invariant; higher `π_c` protective).
 
@@ -238,7 +238,7 @@ A compact map — the per-rung method/finding detail lives in `docs/rungN-spec.m
 
 ## Commands
 - Run the model: `python main.py` · Install: see `requirements.txt` (a PyPy venv — § Stack)
-- **The gate: `pytest`** — **EVERYTHING**, 1294 tests, **~9:06 at 1287** (PyPy, rung 79, box load
+- **The gate: `pytest`** — **EVERYTHING**, 1299 tests, **~9:06 at 1287** (PyPy, rung 79, box load
   unknown; a 40:28 at 1294 came off a LOADED box, so it neither differences nor replaces this).
   ONE gate; nothing is ever silently deselected, so no regression can hide. (`main.py` has no test.)
 - **Iterate: `pytest -m "not slow"`** — 958 tests, **~1:54 at 890**. The run minus the expensive sweeps.
