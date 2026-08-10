@@ -188,6 +188,28 @@ _CLAUDE_MD = os.path.join(_HERE, os.pardir, "CLAUDE.md")
 # said in eight words what they say in four. 2 B of headroom -- the next writer of ANY line here
 # trips this guard, which is the intended state.
 #
+# UNCHANGED AT RUNG 80 -- the SECOND rung in a row to pay for itself, and the LONG-PROMISED
+# deletion finally happened. Rung 80 cost ~500 B (ONE table row at 348 B, inside the per-row
+# rule; its section Layout ladder entry; the BUILT range; the four "current scope" bumps; and the
+# 72-77-audit line, which had to be BOUNDED because rung 80 splits the wall it says has no
+# four-loop cell). Paid from FOUR sites, in the order this comment has been telling successive
+# rungs to search:
+#   * section "Open engineering tasks" DELETED ENTIRELY (~300 B). All three of its entries were
+#     already CLOSED, and this comment has said since rung 68 that the right move once that
+#     happens is to DELETE the section and give the budget back, not to keep it. The one LIVE
+#     instruction inside it -- main.py has no test, check it on every ship -- was moved into
+#     section Layout's own main.py bullet, where it costs ~40 B instead of a section.
+#   * the BUILT paragraph's meta-prose, compressed (~53 B) -- same facts, fewer words.
+#   * "(`main.py` has no test.)" in section Commands, now a DUPLICATE of the line above (~24 B),
+#     plus the gate-timing parenthetical, which named a rung for no reason (~20 B).
+#   * the gas.py config inventory's `A`/`B`/`C`/`D` enumeration collapsed to `A`...`D` (~46 B) --
+#     the method-inventory no-grow site, which had re-grown exactly as rung 79's entry warned.
+# THE LESSON THIS TIME: the biggest refund in the file's history was a section this comment had
+# already marked as deletable-when-clear, and it stayed for TWELVE rungs after clearing because
+# each rung looked for slack in prose instead of re-reading its own deletion notes. Check for
+# SECTIONS whose stated deletion condition is met before compressing sentences. 3 B of headroom,
+# so rung 81 trips this guard too.
+#
 # UNCHANGED A THIRD TIME at the ARREST-INTERVAL CORRECTION (`docs/rung74-arrest-interval.md`),
 # and the entry above was right that the next writer would trip it: there were 0 B free, so this
 # one had to fund itself completely. It is NOT a rung -- no plant code, no knob, no constant -- so

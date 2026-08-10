@@ -21319,3 +21319,444 @@ class StateCoordinateTransient(ResidualGaugeTransient):
                     # ... and that the forced bracket agrees with the SHIPPED solve, so the
                     # bypass is measuring the same set point and not a nearby one
                     d_shipped=max(x["d_shipped"] for x in rows) if rows else None)
+
+
+class SplitWallTransient(StateCoordinateTransient):
+    """RUNG 80. THE SPLIT WALL -- `docs/rung74-arrest-interval.md` s 8's seam, and the one route
+    to `n_live = 4` that rungs 72-79 never tried (docs/rung80-spec.md).
+
+    Every floor in this family since rung 49 comes from ONE margin through ONE factory:
+
+        phi_lim = (1 + sm) * cmap.phi_surge        the FUEL leg (49), the VALVE (64), the
+                                                   STATOR (68) -- all three, the same float
+
+    and `docs/rung74-arrest-interval.md` s 3 measured what that costs: the airflow levers are
+    NOT parallel defenders of the wall. They act only inside the authoritative leg's TRACKING
+    ERROR, so in `demand` -- where the fuel leg over-protects at every wall measured -- they
+    are inert, 0/341, and the coordinate has no four-loop cell at ANY wall (its s 5).
+
+    THE KNOB, and it is the EIGHTH declared one: a SECOND margin for the AIRFLOW legs.
+
+        phi_lim = (1 + sm    ) * cmap.phi_surge    the fuel leg's floor
+        phi_air = (1 + sm_air) * cmap.phi_surge    the valve's and the stator's
+
+    `sm_air = None` is the inherited SHARED wall by EXACT DISPATCH -- this rung's override
+    returns `super()`'s machine untouched, so not one float in rungs 49-79 moves. Zero new
+    constants: `phi_surge` is the map's own and `sm_air` is swept exactly as `sm` has been
+    since rung 49.
+
+    > **HEADLINE -- A SET OF FLOORS ON ONE VARIABLE IS A TOTAL ORDER, AND ONLY THE TOP ONE IS
+    > EVER LIVE.** Splitting the wall does not put the loops in PARALLEL; it re-labels which
+    > one leads. Lifting the airflow legs above the fuel leg hands them the violation -- and in
+    > closing it they lift `phi` to THEIR floor, at which point the fuel leg's own floor is no
+    > longer violated and IT goes dormant. The count does not go 3 -> 4; the membership
+    > rotates. **`n_live <= 3` a SIXTH time, and for the first time not by masking,
+    > triangularity or a solver short-circuit but by the ORDER STRUCTURE of the set points.**
+
+    > **AND THE FOUR-LOOP CELL IS SHUT BY TWO EDGES THIS PROJECT ALREADY MEASURED.** Both walls
+    > can only stay live if the levers SATURATE before closing the gap -- and the valve's
+    > saturation edge is bracketed at `phi in [0.8500, 0.8550]` while the ARREST edge, above
+    > which a floor lifts `phi(0)` onto the wall and the accel never starts, is `0.7731162133`
+    > (both `docs/rung74-arrest-interval.md` s 4). Saturation sits ABOVE the arrest edge, so
+    > the two requirements are INCOMPATIBLE on this hardware and the cell is closed by a
+    > DERIVED IMPOSSIBILITY rather than by a failed search. The escape is a bigger valve, which
+    > that document already flags as unmeasured and this one scopes but does not chase.
+
+    > **AND THE ARREST EDGE CHANGES OWNER, WHICH IS THE GATE.** With both walls below the free
+    > operating point `phi(0)` is unchanged, so sweeping `sm_air` with `sm` FIXED reproduces
+    > rung 74's bracket -- marches at `phi_air = 0.7731`, arrests at `0.7732` -- on the NEW
+    > knob. Same two numbers, different lever: the arrest is a property of the HIGHEST floor,
+    > not of the fuel leg's.
+
+    THE RANK CLAIM IS DELIBERATELY NOT MADE, and the anchor says so before any sweep ran.
+    `d(c - phi)/dx = -d(phi)/dx` for ANY level `c`, so a constraint's gradient is blind to its
+    own level and "the split cannot move the rank" is CALCULUS. A test on it would pass forever
+    and guard nothing -- this repo's own recorded failure mode (`docs/rung74-arrest-interval.md`
+    s 3.1; rung 78 s 5.5's four vacuity traps in a row). What IS measurable is rung 69's
+    discriminator: `det J` was blind to a COORDINATE split and `c1` was not, so the question
+    asked here is whether a LEVEL split moves `c1` -- and if the gain reader finds no interior
+    point (P1 holding), `split_gains` reports VACUOUS and nothing is scored.
+
+    Usage:
+        t = SplitWallTransient(design, FLIGHT, 1.0, map_lp=..., map_hp=..., bleed_lim=bl)
+        t._lag_coord = "demand"
+        t.split_liveness(FLIGHT, 1000., 1400., 1200.)    # s 2: the TOTAL ORDER
+        t.split_arrest(FLIGHT, 1000., 1400., 1200.)      # s 3: the edge changes OWNER
+        t.split_saturation(FLIGHT, 1000., 1400., 1200.)  # s 4: the DERIVED IMPOSSIBILITY
+        t.split_gains(FLIGHT, 1000., 1400., 1200.)       # s 5: c1, or VACUOUS
+
+    THE REDUCE: `_sm_air = None` dispatches to rung 79 on an exact `is None` test, and
+    `sm_air == sm` must agree with it TO THE LAST BIT -- it rebuilds the same floors from the
+    same factory, so any difference is a bug in the rebuild and not a finding.
+
+    Anchor: `docs/plans/rung80-anchor-split-wall.md`. Gates: `tests/test_rung80.py`.
+    """
+
+    _sm_air = None          # the AIRFLOW legs' margin; None => rungs 49-79's SHARED wall
+
+    # --- the knob, in ONE place ---------------------------------------------------------------
+
+    def at_lever(self, vsv_lp: float = 0.0, vsv_hp: float = 0.0, vsv_sched_lp=None,
+                 vsv_sched_hp=None, bleed: float = 0.0, bleed_sched=None,
+                 bleed_lim=None, stator_lim=None, stator_inc=None
+                 ) -> "SplitWallTransient":
+        """THE EIGHTEENTH INSTANCE of the trap rungs 61-79 each hit. Dropping `_sm_air` here
+        would rebuild every rig at the SHARED wall while the caller reported a split one -- and
+        because the split's whole signature is *the levers do nothing*, the loss would return
+        this rung's own predicted result having measured rung 79."""
+        de, fd, md, rho, lpd = self._ctor
+        m = SplitWallTransient(
+            de, fd, md, map_lp=self.map_lp_design, map_hp=self.map_hp_design, rho=rho,
+            vsv_lp=vsv_lp, vsv_hp=vsv_hp, vsv_sched_lp=vsv_sched_lp,
+            vsv_sched_hp=vsv_sched_hp, bleed=bleed, bleed_sched=bleed_sched,
+            bleed_lim=bleed_lim, stator_lim=stator_lim, stator_inc=stator_inc,
+            lp_disabled=lpd)
+        m._ref_law, m._lag_coord = self._ref_law, self._lag_coord
+        m._windup_law, m._tau_t, m._ic_cap = self._windup_law, self._tau_t, self._ic_cap
+        m._cap_law, m._gauge_k, m._phi_ref = self._cap_law, self._gauge_k, self._phi_ref
+        m._sm_air = self._sm_air
+        return m
+
+    def _shared_rig(self, sm, tau, tau_s, v_max, Tt4_max, tau_att=0.05, tau_rel=0.15,
+                    inc=False, fuel=True, valve=True, stator=True, gov=True):
+        """The split applied ON THE MACHINE `super()` RETURNS -- never threaded as a kwarg.
+
+        `_shared_rig` is overridden SIX times up this ladder (rungs 73/74/75/76/78/79), each
+        calling its parent with an EXPLICIT argument list. A new keyword added at the base
+        would be swallowed by every one of them: the split would never happen, the reduce test
+        would pass BECAUSE the knob was ignored, and `split_liveness` would honestly report
+        *the levers did not move* -- which is this rung's own headline. That is a confirmation
+        manufactured by a plumbing bug, so the knob is carried as an ATTRIBUTE (the ladder's own
+        idiom, twelve rungs deep) and the resulting walls are ASSERTED APART by name."""
+        m, surge, lag = super()._shared_rig(sm, tau, tau_s, v_max, Tt4_max, tau_att=tau_att,
+                                            tau_rel=tau_rel, inc=inc, fuel=fuel, valve=valve,
+                                            stator=stator, gov=gov)
+        m._sm_air = self._sm_air
+        if self._sm_air is None:
+            return m, surge, lag            # EXACT DISPATCH: rung 79, bit-for-bit
+        assert self._sm_air >= sm, (
+            f"rung-80: the AIRFLOW wall sits AT or ABOVE the fuel leg's -- that is the whole "
+            f"construction (the levers must own a violation the fuel leg is not asked to "
+            f"prevent). Got sm_air = {self._sm_air} below sm = {sm}; below it the fuel leg is "
+            "the top floor again and this is rungs 49-79 with an extra float.")
+        cmap = self.map_lp_design
+        if m.bleed_lim is not None:
+            m.bleed_lim = BleedLimiter.from_margin(cmap, m.bleed_lim.b_max, self._sm_air,
+                                                   tau=m.bleed_lim.tau)
+        if m.stator_lim is not None:
+            m.stator_lim = StatorLimiter.from_margin(cmap, m.stator_lim.v_max, self._sm_air,
+                                                     tau=m.stator_lim.tau)
+        if m.stator_inc is not None:
+            m.stator_inc = StatorIncidenceLimiter.from_margin(cmap, m.stator_inc.v_max,
+                                                              self._sm_air,
+                                                              tau=m.stator_inc.tau)
+        # THE DROPPED-KWARG CONTROL, run on the OBJECTS and not on the arguments: read the walls
+        # BACK off the limiters the rig will actually march with. A silent no-op dies here.
+        w = self._walls_of(m, surge)
+        assert (self._sm_air == sm or w["phi_air"] is None or w["phi_lim"] is None
+                or w["phi_air"] > w["phi_lim"]), (
+            f"rung-80: the split did not reach the plant -- phi_air = {w['phi_air']} is not "
+            f"above phi_lim = {w['phi_lim']} at sm_air = {self._sm_air} > sm = {sm}. The rig "
+            "would then march rung 79 while every reader here reported a split wall, and the "
+            "levers' silence would read as this rung's finding.")
+        return m, surge, lag
+
+    @staticmethod
+    def _walls_of(m, surge) -> dict:
+        """The floors as they stand ON THE BUILT MACHINE -- the fuel leg's from `surge`, the
+        airflow legs' from the limiters themselves.
+
+        `StatorIncidenceLimiter` stores `m_lim` and not `phi_lim` (rung 69's own naming
+        precaution against a bound method comparing unequal to a float), so it is read through
+        its shipped `phi_lim_at`."""
+        si = m.stator_inc
+        return dict(
+            phi_lim=surge.phi_lim if surge is not None else None,
+            phi_air=(m.bleed_lim.phi_lim if m.bleed_lim is not None
+                     else m.stator_lim.phi_lim if m.stator_lim is not None
+                     else si.phi_lim_at(m.map_lp_design) if si is not None else None),
+            phi_valve=m.bleed_lim.phi_lim if m.bleed_lim is not None else None,
+            phi_stator=(m.stator_lim.phi_lim if m.stator_lim is not None
+                        else si.phi_lim_at(m.map_lp_design) if si is not None else None))
+
+    def _with_air(self, sm_air, fn, *a, **kw):
+        """Run a reader at a named AIRFLOW margin, restored in a `finally` -- rung 62's reason,
+        and this family's THIRTEENTH reload of it."""
+        prev = self._sm_air
+        self._sm_air = sm_air
+        try:
+            return fn(*a, **kw)
+        finally:
+            self._sm_air = prev
+
+    # --- one march, one row: every table below is built from these two ------------------------
+
+    def _split_march(self, flight, Tt4_lo, Tt4_hi, Tt4_max, phi_lim, phi_air, coord,
+                     taus, r, s_settle, ds, v_max, inc, ref="sched"):
+        """One rig at TWO walls, marched under a named coordinate. `phi_air=None` is the shared
+        wall, i.e. exactly rung 74's `_coord_march`."""
+        ps = self.map_lp_design.phi_surge
+        sm = phi_lim / ps - 1.0
+        sm_air = None if phi_air is None else phi_air / ps - 1.0
+        return self._with_air(sm_air, self._coord_march, flight, Tt4_lo, Tt4_hi, Tt4_max, sm,
+                              taus, r, s_settle, ds, v_max, inc, coord, ref)
+
+    @staticmethod
+    def _split_row(m, surge, traj, Tt4_lo, phi_lim, phi_air, coord, tol=1e-12) -> dict:
+        """THE ROW, WITH ITS COUNTERS NAMED. `docs/rung74-arrest-interval.md` s 3.2's warning is
+        this rung's too: the MOTION counter (displacement from the initial condition), the
+        LIVENESS label (`required_* > 0`) and `_riding4` (all four strictly interior) are THREE
+        different nouns and must never be differenced. All three are reported side by side, and
+        P1 is scored on the fuel leg's own CUT -- never on lever motion.
+
+        AND `n_riding4` IS MEANINGLESS WHERE `arrested` IS TRUE. A plant lifted onto its own
+        floor at `s = 0` never moves, and every one of its 341 frozen points can satisfy all
+        four riding tests at once -- this rung's own s 3 control arm reports **320** of them at
+        `phi_lim = 0.78` with `max_Tt4 = Tt4_lo` exactly. That is
+        `docs/rungs72-77-march-audit.md`'s *"a liveness counter on a FROZEN plant reports FULL
+        activity"*, reproduced here. `riding4_valid` carries the pairing rule so no reader can
+        quote the count without it."""
+        b0, v0 = traj[0]["b"], traj[0]["v"]
+        maxT = max(p["Tt4"] for p in traj)
+        assert m.bleed_lim is not None, (
+            "rung-80: `n_riding4` counts points with the valve STRICTLY INTERIOR, which needs "
+            "the valve's own `b_max`. A default stop here would silently redefine the counter "
+            "on the one rig where it is unarmed, and the number would still print.")
+        b_max = m.bleed_lim.b_max
+        w = SplitWallTransient._walls_of(m, surge)
+        return dict(
+            coord=coord, phi_lim=phi_lim, phi_air=phi_air, npts=len(traj),
+            # the walls AS BUILT -- so no table here can quote a wall the rig did not carry
+            phi_lim_built=w["phi_lim"], phi_air_built=w["phi_air"],
+            phi0=traj[0]["phi_lp"], b0=b0, v0=v0,
+            b0_frac=b0 / b_max,
+            min_phi=min(p["phi_lp"] for p in traj), max_Tt4=maxT,
+            # ARREST: the plant never leaves its initial power setting (rung 74's own detector)
+            arrested=maxT <= Tt4_lo * (1.0 + 1e-9),
+            riding4_valid=maxT > Tt4_lo * (1.0 + 1e-9),
+            # LIVENESS -- the noun P1 is scored on
+            n_cut_fuel=sum(1 for p in traj if p["required_fuel"] > 0.0),
+            n_cut_gov=sum(1 for p in traj if p["required_gov"] > 0.0),
+            max_req_fuel=max(p["required_fuel"] for p in traj),
+            max_req_gov=max(p["required_gov"] for p in traj),
+            # MOTION -- the arrest doc's noun, kept only so the two can be seen not to agree
+            valve_moved=sum(1 for p in traj if abs(p["b"] - b0) > tol),
+            stator_moved=sum(1 for p in traj if abs(p["v"] - v0) > tol),
+            # ALL FOUR RIDING AND STRICTLY INTERIOR -- and this is NOT rung 72's `n_live`,
+            # which counts the loops holding AUTHORITY. s 5 measures that one; the two differ
+            # by exactly the leg `min` masks, which is this rung's whole headline.
+            n_riding4=len(SplitWallTransient._riding4(traj, b_max)),
+            b_max_hit=any(p["b"] >= b_max * (1.0 - 1e-12) for p in traj))
+
+    # --- s 2: THE TOTAL ORDER -----------------------------------------------------------------
+
+    def split_liveness(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                       Tt4_max: float, phi_lim: float = 0.75, phi_airs=(None, 0.76, 0.77),
+                       coords=("demand", "clip"), taus=(0.05, 0.05, 0.05, 0.05),
+                       inc: bool = False, r: float = 0.5, s_settle: float = 1.2,
+                       ds: float = 0.005, v_max: float = 0.20) -> dict:
+        """s 2 MEASURED: **what the split actually buys, in both coordinates.**
+
+        The anchor's P1 says the count will not go 3 -> 4: the levers will close the gap, lift
+        `phi` to THEIR floor, and thereby switch the FUEL leg off. Scored on `n_cut_fuel` and
+        `n_riding4`, with lever motion reported beside them and never differenced against them.
+
+        `clip` IS THE POSITIVE CONTROL AND IT IS NOT OPTIONAL. It has four-loop cells at the
+        SHARED wall (`docs/rung74-arrest-interval.md` s 5: valve 275, stator 281 at 0.760), so
+        a reader that reports zero motion there is BROKEN, and every `demand` zero in the same
+        table would be uninterpretable. `phi_air=None` is the shared-wall control in each
+        coordinate, so each split row has its own baseline at identical settings (rung 63's
+        lesson: a number quoted at another cell's settings is not a comparison)."""
+        rows = []
+        for coord in coords:
+            for pa in phi_airs:
+                m, surge, _, traj = self._split_march(
+                    flight, Tt4_lo, Tt4_hi, Tt4_max, phi_lim, pa, coord, taus, r, s_settle,
+                    ds, v_max, inc)
+                rows.append(self._split_row(m, surge, traj, Tt4_lo, phi_lim, pa, coord))
+        split = [x for x in rows if x["phi_air"] is not None]
+        clip = [x for x in rows if x["coord"] == "clip"]
+        dem = [x for x in split if x["coord"] == "demand"]
+        return dict(phi_lim=phi_lim, phi_airs=phi_airs, coords=coords, taus=taus, ds=ds,
+                    rows=rows,
+                    # THE POSITIVE CONTROL, first -- everything else is void without it
+                    control_ok=bool(clip) and all(x["valve_moved"] > 0 for x in clip),
+                    # P1: the split wakes the LEVERS ...
+                    levers_woke=bool(dem) and all(x["valve_moved"] > 0 for x in dem),
+                    # ... and switches the FUEL leg OFF. This is the scored pair.
+                    fuel_off=bool(dem) and all(x["n_cut_fuel"] == 0 for x in dem),
+                    four_live=max((x["n_riding4"] for x in split), default=0),
+                    n_split=len(split))
+
+    # --- s 3: THE ARREST EDGE CHANGES OWNER ---------------------------------------------------
+
+    def split_arrest(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                     Tt4_max: float, walls=(0.7700, 0.7725, 0.7731, 0.7732, 0.7740, 0.7800),
+                     phi_lim_lo: float = 0.75, phi_air_hi: float = 0.80,
+                     coord: str = "demand", taus=(0.05, 0.05, 0.05, 0.05), inc: bool = False,
+                     r: float = 0.5, s_settle: float = 1.2, ds: float = 0.005,
+                     v_max: float = 0.20) -> dict:
+        """s 3 MEASURED: **WHICH FLOOR OWNS THE ARREST -- three arms across ONE wall axis.**
+
+        `docs/rung74-arrest-interval.md` s 4 brackets the arrest at `[0.7731, 0.7732]` and gives
+        the mechanism: above the free operating point *"a floor lifts `phi(0)` ONTO the wall,
+        the leg opens ON its own floor with no authority left, and the accel never starts."*
+        On a SHARED wall *a floor* and *the leg* are the same object, so that sentence cannot
+        say which of the two the arrest belongs to. Splitting the wall separates them, and this
+        is the only rig in the project that can ask:
+
+            shared   phi_air = phi_lim = w      the CONTROL -- rung 74's own bracket, and if it
+                                                does not reproduce here nothing else in this
+                                                table is interpretable
+            air      phi_lim FIXED low, phi_air = w    only the AIRFLOW floor crosses the edge
+            fuel     phi_air FIXED high, phi_lim = w   only the FUEL leg's floor crosses it
+
+        Read `arrests` per arm. The control fixes the rig; the two split arms locate the owner.
+        `phi_air_hi` sits ABOVE every swept wall so the `fuel` arm's airflow floor never becomes
+        the lower of the two (which would silently turn it into the `shared` arm)."""
+        assert phi_air_hi > max(walls) and phi_lim_lo < min(walls), (
+            f"rung-80: the two FIXED walls must bracket the swept ones, else an arm changes "
+            f"identity mid-sweep. Got phi_lim_lo = {phi_lim_lo}, walls = {walls}, "
+            f"phi_air_hi = {phi_air_hi}.")
+        arms = {}
+        for arm in ("shared", "air", "fuel"):
+            rows = []
+            for w in walls:
+                pl, pa = {"shared": (w, None), "air": (phi_lim_lo, w),
+                          "fuel": (w, phi_air_hi)}[arm]
+                m, surge, _, traj = self._split_march(
+                    flight, Tt4_lo, Tt4_hi, Tt4_max, pl, pa, coord, taus, r, s_settle, ds,
+                    v_max, inc)
+                rows.append(dict(wall=w,
+                                 **self._split_row(m, surge, traj, Tt4_lo, pl, pa, coord)))
+            marched = [x["wall"] for x in rows if not x["arrested"]]
+            arrested = [x["wall"] for x in rows if x["arrested"]]
+            arms[arm] = dict(rows=rows, marched=marched, arrested=arrested,
+                             last_march=max(marched) if marched else None,
+                             first_arrest=min(arrested) if arrested else None,
+                             # a bracket is an EDGE only if the two sets do not interleave
+                             monotone=(not marched or not arrested
+                                       or max(marched) < min(arrested)))
+        return dict(walls=walls, phi_lim_lo=phi_lim_lo, phi_air_hi=phi_air_hi, coord=coord,
+                    taus=taus, ds=ds, arms=arms,
+                    # THE CONTROL, first: rung 74's bracket must reappear or the rig is wrong
+                    control_bracket=(arms["shared"]["last_march"],
+                                     arms["shared"]["first_arrest"]),
+                    owner=[a for a in ("air", "fuel") if arms[a]["arrested"]])
+
+    # --- s 4: THE DERIVED IMPOSSIBILITY -------------------------------------------------------
+
+    def split_saturation(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                         Tt4_max: float, phi_lim: float = 0.75,
+                         phi_airs=(0.78, 0.80, 0.82, 0.84, 0.85, 0.855, 0.86, 0.88),
+                         coord: str = "demand", taus=(0.05, 0.05, 0.05, 0.05),
+                         inc: bool = False, r: float = 0.5, s_settle: float = 1.2,
+                         ds: float = 0.005, v_max: float = 0.20) -> dict:
+        """s 4 MEASURED: **the two edges on ONE axis, so the impossibility is read and not
+        argued.**
+
+        Both walls stay live only if the levers RUN OUT of authority before they close the gap
+        -- otherwise s 2's total order applies and the fuel leg switches off. So the four-loop
+        cell needs the valve SATURATED and the plant NOT arrested at the same `phi_air`. This
+        sweep reports `b/b_max` and `arrested` in one table: if the first saturated wall lies
+        ABOVE the last marching one, the cell is empty **by construction on this hardware**.
+
+        THE ESCAPE IS NAMED AND NOT TAKEN: `b_max` is rung 42's valve size and is hardware. A
+        larger one moves the saturation edge down and nothing here says how far -- exactly the
+        concession `docs/rung74-arrest-interval.md` s 8 already carries."""
+        rows = []
+        for pa in phi_airs:
+            m, surge, _, traj = self._split_march(
+                flight, Tt4_lo, Tt4_hi, Tt4_max, phi_lim, pa, coord, taus, r, s_settle, ds,
+                v_max, inc)
+            rows.append(self._split_row(m, surge, traj, Tt4_lo, phi_lim, pa, coord))
+        sat = [x["phi_air"] for x in rows if x["b_max_hit"]]
+        march = [x["phi_air"] for x in rows if not x["arrested"]]
+        first_sat = min(sat) if sat else None
+        last_march = max(march) if march else None
+        return dict(phi_lim=phi_lim, coord=coord, rows=rows, ds=ds,
+                    first_sat=first_sat, last_march=last_march,
+                    # the four-loop cell needs BOTH at one wall; empty if the edges are ordered
+                    cell=[x["phi_air"] for x in rows
+                          if x["b_max_hit"] and not x["arrested"]],
+                    impossible=bool(sat) and (last_march is None or first_sat > last_march))
+
+    # --- s 5: THE DISCRIMINATOR, OR NOTHING ---------------------------------------------------
+
+    def split_gains(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                    Tt4_max: float, phi_lim: float = 0.75, phi_airs=(None, 0.77),
+                    coord: str = "clip", taus=(0.05, 0.05, 0.05, 0.05), inc: bool = False,
+                    r: float = 0.5, s_settle: float = 1.2, ds: float = 0.005,
+                    v_max: float = 0.20, every: int = 5) -> dict:
+        """s 5 MEASURED, OR DECLARED VACUOUS: **does a LEVEL split move `c1`?**
+
+        THE RANK QUESTION IS NOT ASKED, and the anchor says why before any sweep ran:
+        `d(c - phi)/dx = -d(phi)/dx` for any level `c`, so a gradient is blind to its own level
+        and *the rank is unmoved* is CALCULUS. Rung 69's own lesson gives the question that is
+        not: `det J` was BLIND to a coordinate split and `c1` was the discriminator. So this
+        asks whether a LEVEL split reaches `c1`, and whether the three-phi-loop CYCLIC product
+        keeps the value rung 68 measured for loops sharing one variable.
+
+        RUN IN `clip`, because s 2 predicts `demand` has no interior point to difference at --
+        and if `clip` has none either, `n_interior = 0` is reported as **VACUOUS** and nothing
+        is scored. A gain table computed over zero points is this repo's recorded way of
+        confirming anything at all (rung 78 s 5.1)."""
+        out = []
+        for pa in phi_airs:
+            m, surge, lag, traj = self._split_march(
+                flight, Tt4_lo, Tt4_hi, Tt4_max, phi_lim, pa, coord, taus, r, s_settle, ds,
+                v_max, inc)
+            pts = self._riding4(traj, m.bleed_lim.b_max)
+            cells, skipped = [], dict(switch=0, regime=0)
+            for p in pts[::every]:
+                gg = m._with_share("max", m._quad_gains_at, flight, p, None, surge, Tt4_max)
+                if not gg["interior"]:
+                    skipped["switch" if gg.get("near_switch") else "regime"] += 1
+                    continue
+                tau_f = lag.tau(p["required_fuel"], p["g_fuel"])
+                tt = (tau_f, taus[1], taus[2], taus[3])
+                coef = m._charpoly4(m._jac4(gg, tt))
+                roots = m._quartic_roots_c(coef)
+                rate = sum(1.0 / t for t in tt)
+                cells.append(dict(
+                    s=p["s"], phi=p["phi_lp"], authority=gg["authority"],
+                    # RUNG 72's noun, and the one this rung's headline turns on: under
+                    # min-select the OTHER fuel-side leg is MASKED, and its column is
+                    # predicted EXACTLY zero however far apart the two WALLS are set.
+                    masked=gg["masked"], mask_leak=gg["mask_leak"],
+                    zeros=sum(1 for z in roots if abs(z) < 1e-4 * rate),
+                    c1=coef[3], c0=coef[4],
+                    # the THREE phi loops around their cycle, BOTH directions
+                    cyc_fwd=gg["F_q"] * gg["C_v"] * gg["V_f"],
+                    cyc_rev=gg["F_v"] * gg["V_q"] * gg["C_f"],
+                    pair_RC=gg["pair_RC"], pair_CV=gg["pair_CV"]))
+            auth = {}
+            for c in cells:
+                auth[c["authority"]] = auth.get(c["authority"], 0) + 1
+            out.append(dict(phi_air=pa, n_riding=len(pts), n_sampled=len(pts[::every]),
+                            n_interior=len(cells), skipped=skipped, cells=cells,
+                            authority=auth, masked=sorted({c["masked"] for c in cells}),
+                            max_mask_leak=max((c["mask_leak"] for c in cells), default=None),
+                            zeros=sorted({c["zeros"] for c in cells}),
+                            max_cyc=max((max(abs(c["cyc_fwd"]), abs(c["cyc_rev"]))
+                                         for c in cells), default=None)))
+        cells_all = [c for a in out for c in a["cells"]]
+        return dict(phi_lim=phi_lim, coord=coord, taus=taus, ds=ds, arms=out,
+                    # THE VACUITY FLAG, first and unconditional
+                    vacuous=any(a["n_interior"] == 0 for a in out),
+                    n_interior=[a["n_interior"] for a in out],
+                    # EVERY point differenced, or the zeros below are the instrument declining
+                    # to measure rather than a structure (rung 78 s 5.1's trap)
+                    all_differenced=all(a["skipped"]["switch"] == 0
+                                        and a["skipped"]["regime"] == 0 for a in out),
+                    # NEVER more than ONE leg holds the actuator -- rung 72, unmoved by a level
+                    # split however wide
+                    ever_two_authorities=any(c["authority"] not in ("fuel", "gov")
+                                             for c in cells_all),
+                    # THE POSITIVE CONTROL FOR THE ZERO: a cell where the OTHER leg is masked,
+                    # on the SAME code path, must return a NON-zero cyclic product -- else
+                    # `cyc = 0` is unfalsifiable. `clip`'s fuel-authority cell supplies it.
+                    control_nonzero=max((max(abs(c["cyc_fwd"]), abs(c["cyc_rev"]))
+                                         for c in cells_all if c["masked"] == "gov"),
+                                        default=None),
+                    max_mask_leak=max((c["mask_leak"] for c in cells_all), default=None))

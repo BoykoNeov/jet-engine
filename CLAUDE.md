@@ -21,7 +21,7 @@ teaching, not for features or polish.
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is anchored to a
-published case. All rungs are live; the current scope is **rung 79**. Read a rung's spec (last
+published case. All rungs are live; the current scope is **rung 80**. Read a rung's spec (last
 column) before touching it — that is where the real content lives.
 
 | Rung | Adds (one-line hook) | Spec |
@@ -106,6 +106,7 @@ column) before touching it — that is where the real content lives.
 | 77 | **THE STIFFNESS LEDGER** — rung 76 § 8's seam, REFUTED; no knob, constant or plant code. **HEADLINE: a solve's sensitivity is a FORCING OVER A SLOPE, so `1/(1−c)` is the SLOPE HALF of ONE leg** — the others' set points are CONSTANTS: a stiffness, never a gain. | `docs/rung77-spec.md` |
 | 78 | **THE RESIDUAL GAUGE** — rung 77 § 9's seam, CLOSED by REFUTING it; one swept knob, zero constants. **HEADLINE: a residual's SLOPE is a GAUGE, its root's UNIQUENESS is not** — `1/(1−c)` reaches ∞ without moving `dw*/dq`, but a SECOND root COLLIDES at `k·c`=1. **CORRECTS rung 77 § 3; BOUNDS rung 76 § 3.** | `docs/rung78-spec.md` |
 | 79 | **THE STATE COORDINATE** — rung 78 § 9's 4th seam: rung 60's incidence for rung 49's `φ`, zero constants (`T_c`/`v` CANCEL). **HEADLINE: a coordinate is a GAUGE the PLANT cannot REACH** — the branch making a leg AUTHORITATIVE restores the original one, so the two sets are DISJOINT. **BOUNDS rung 78.** | `docs/rung79-spec.md` |
+| 80 | **THE SPLIT WALL** — rung 74's arrest seam: the airflow legs get their OWN margin `sm_air`, zero constants. **HEADLINE: a LEVEL split separates loops on the CONSTRAINT, never the two on one ACTUATOR** — the four-loop cell OPENS, `n_live`≤3 a SIXTH time. **CORRECTS 74: the arrest is the walls' COINCIDENCE.** | `docs/rung80-spec.md` |
 
 ## Working contract (from SPEC.md — these override convenience)
 - **Derive before you code.** For each station, write the governing equation and
@@ -121,14 +122,14 @@ column) before touching it — that is where the real content lives.
 - **Every new rung reduces to its predecessor**, exactly and by test (`X=None` ⇒
   the prior code path). This is the project's spine — see any `docs/rungN-spec.md`.
 
-**Current scope (rung 79).** The **cycle solve** is a thermally-perfect, reacting,
+**Current scope (rung 80).** The **cycle solve** is a thermally-perfect, reacting,
 dissociation-equilibrium gas (`Gas.reacting_equilibrium()`) through ideal + real components
 (isentropic `η_c/η_t` **or** polytropic `e_c/e_t`, mutually exclusive; `π_d/π_b/π_n`, `η_b`,
 `η_m`; dual cold/hot gas; specified exit pressure). The burner root-finds `f` over the scale-B
 absolute balance, then freezes the station-4 mixture through turbine + nozzle; Fork A/B and
 frozen-products gases are kept alongside. **Everything from rung 7 up is a diagnostic *beside*
 the cycle**, reached through **separate entry points** that leave the default
-`build_turbojet(…).run(…)` design run **bit-for-bit rung 6**. Rungs **31–79** are the
+`build_turbojet(…).run(…)` design run **bit-for-bit rung 6**. Rungs **31–80** are the
 STRUCTURAL / DYNAMIC ones — a new off-design or transient operating point, through the two
 matcher ladders mapped in § Layout; rungs **7–30, 36, 41, 44, 45** are pure diagnostics that
 only *read* the design-point / running-line state. Each rung reduces to its predecessor
@@ -137,9 +138,9 @@ exactly and by test — the gates are named in its spec.
 ## Deferred seams — status map
 One line per seam — `BUILT` (detail in its spec) · `NEGATIVE → doc` · `OPEN`.
 
-**BUILT — every seam numbered 25–79 was closed by the SAME-NUMBERED rung**, whose one-line hook is
-the table above and whose derivation is in its spec. A numbered seam must never be
-re-opened by mistake. (NO-GROW: never re-enumerate the rungs — it duplicates the table.)
+**BUILT — every seam numbered 25–80 was closed by the SAME-NUMBERED rung** (hook in the table
+above, derivation in its spec). Never re-open one by mistake, and never re-enumerate them
+here — that duplicates the table.
 
 **Investigated, NEGATIVE — not shipped, not a rung (facts live here + the doc):**
 - Resolved `τ_res` from the nozzle area-schedule (26's seam a) — `docs/tau-res-negative.md`.
@@ -152,7 +153,7 @@ re-opened by mistake. (NO-GROW: never re-enumerate the rungs — it duplicates t
 - The **φ-RATE limiter** (60's seam) — `docs/phi-rate-limiter-negative.md`. **Fuel's authority over `φ` INVERTS between LEVEL and DERIVATIVE**. BOUNDS 49; the one negative with a gate.
 
 **Checked, CONFIRMATION / CORRECTION — not a rung:**
-- 72–77's **marches** + 74's **arrest** — `docs/rungs72-77-march-audit.md`, `docs/rung74-arrest-interval.md`. The arrest is **74 § 2.2's** and an **INTERVAL**, both edges DERIVED; no shipped march arrests; **no `demand` march has four live loops at ANY wall**. **CORRECTS 78/79; CLOSES 79's window seam.** Next: the SPLIT WALL.
+- 72–77's **marches** + 74's **arrest** — `docs/rungs72-77-march-audit.md`, `docs/rung74-arrest-interval.md`. The arrest is **74 § 2.2's** and an **INTERVAL**, both edges DERIVED; no shipped march arrests; **no `demand` march has four live loops at any SHARED wall** (rung 80 splits it). **CORRECTS 78/79; CLOSES 79's window seam.**
 - Rung 79 § 9's **gap** — `docs/rung79-gap-margin.md`. Its § 5 march **STANDS STILL**; residual = rung 77's `1/(1−c)`. **CORRECTS 79.**
 - "Earned at design" over `π_c` (`docs/rung29-pi-c-margin.md`, ~9.4×, NOT protective, `ENERGY = INVENTORY × COMPLETION`) and `M0` (`docs/rung29-M0-margin.md`, ~8.8×, monotone-protective, the `delta_h`-swing correction).
 - `β<1` over `π_c` — `docs/rung28-beta-margin.md` (β pressure-invariant; higher `π_c` protective).
@@ -165,14 +166,10 @@ re-opened by mistake. (NO-GROW: never re-enumerate the rungs — it duplicates t
 - **The subsonic / unchoked LP branch** in the two-spool solves (38 flags, unsolved) and its **transient**.
 - An **ANCHOR for the blading**: a stress / tip-Mach limit pinning `U` externally, or an annulus law `Vx(k)`.
 - **Fuel + bleed + STATOR** on one plant (rung 63's seam, untouched by 64/65).
-- **Rungs 69–79's seams — in each rung's spec, not here.** Shortlist: THREE legs on one actuator; the DEMAND/ANTI-WINDUP pair for valve/stator. `n`=4 needs a 4th LP lever or a non-`min` composition — every route TRIED (72–76) is CLOSED — 76 names the COMPOSITION, **79 the SOLVER's short-circuit.**
+- **Rungs 69–80's seams — in each rung's spec, not here.** Shortlist: THREE legs on one actuator; the DEMAND/ANTI-WINDUP pair for valve/stator. `n`=4 needs a 4th non-fuel lever or a non-`min` composition; every route TRIED (72–76, 80) is CLOSED — **80: AUTHORITY is decided on the ACTUATOR, so no CONSTRAINT-side knob reaches it.**
 - **Rung 37's internal clocks on two shafts** + the combined 3-state; **customer/cooling bleed** at station 3.
 - **Afterburner**; a **real hardware/CFD map + surge line** (32's concession, doubled on two spools).
 - **Feeding a shifted/marched state into the production cycle** — a re-foundation, not a rung.
-
-## Open engineering tasks (not rungs, not seams)
-All three CLOSED: the per-rung `main.py` panel (no test — check every ship); the solver-tolerance audit (NEGATIVE, `docs/plans/todo-solver-tolerance-audit.md`);
-the fingerprint gate's rung 67–79 arms (its docstring §§ SLICE 3–4).
 
 ## Conventions
 - **SI units throughout** (K, Pa, kg/s, m/s, J/kg). Convert kPa → Pa internally.
@@ -180,7 +177,7 @@ the fingerprint gate's rung 67–79 arms (its docstring §§ SLICE 3–4).
   static only at the nozzle exit (station 9) for exhaust velocity.
 
 ## Layout
-A compact map — the per-rung method/finding detail lives in `docs/rungN-spec.md`, not here.
+A compact map — per-rung method/finding detail lives in `docs/rungN-spec.md`, not here.
 - `turbojet/gas.py` — **the core.** `FlowState`; the dual-section `Gas` (cold/hot, `unified()`)
   with the CPG closed-form / TPG NASA-integral property interface (hot methods carry `far`); the
   gas factories (`thermally_perfect` / `reacting` / `reacting_forkb` / `reacting_equilibrium`); the
@@ -188,7 +185,7 @@ A compact map — the per-rung method/finding detail lives in `docs/rungN-spec.m
   (`thermal_nox`, `zoned_nox`, `nozzle_flow`, `exhaust_no_clamp`, and the nozzle/turbine marches
   `finite_rate_` / `freeze_out_` / `no_freeze_out_` / `coupled_no_freeze_out_nozzle`,
   `shifting_turbine`) with their configs — the mutually-exclusive mixing closures
-  `JetMixing…SpatialLocalPDF`, and `FiniteRate`/`FreezeOut`/`NOFreezeOut`/`CoupledNOFreezeOut`.
+  `JetMixing…SpatialLocalPDF`, and `FiniteRate`…`CoupledNOFreezeOut`.
 - `turbojet/components.py` — `Inlet, Compressor, Burner, Turbine, Nozzle` as pure `apply(state, gas)`
   in `h`/`pr` form (+ loss params, `ram_recovery(M0)`, the polytropic knob). The Nozzle branches
   CPG/TPG and carries rung-30's `convergent=True` choke via the module-level `_sonic_throat`; rung-31's
@@ -217,17 +214,18 @@ A compact map — the per-rung method/finding detail lives in `docs/rungN-spec.m
   `TwoLagCascadeTransient` (66) → `CrossLoopCascadeTransient` (67) → `ThreeLoopCascadeTransient`
   (68) → `ReferenceSplitTransient` (69) → `CrossSplitTransient` (70) → `FullSplitTransient` (71) →
   `SharedActuatorTransient` (72) → `AppliedReferenceTransient` (73) → `DemandCoordinateTransient`
-  (74) → `AntiWindupTransient` (75) → `SensedCapTransient` (76) → `StiffnessLedgerTransient` (77) → `ResidualGaugeTransient` (78) → `StateCoordinateTransient` (79).
+  (74) → `AntiWindupTransient` (75) → `SensedCapTransient` (76) → `StiffnessLedgerTransient` (77) → `ResidualGaugeTransient` (78) → `StateCoordinateTransient` (79) → `SplitWallTransient` (80).
   Each adds ONE thing — a state, a clock, a knob, or (77) nothing but a reader — and reduces to its
   predecessor; **what each adds, its method names and its reduce contract are in that rung's
   spec, not here.**
 - `main.py` — the design-point run: ideal-vs-real tables, the overlaid T–s diagram, and **one panel
-  per rung** (each demonstrates that rung's load-bearing claim and states its honest scope).
-- `tests/` — per-rung `test_rungN.py` (N = 1…79; plus the rung-1/2b/3/4/5 files). Every rung file
+  per rung** (each states that rung's load-bearing claim and its honest scope). It has NO test —
+  check it on every ship.
+- `tests/` — per-rung `test_rungN.py` (N = 1…80; plus the rung-1/2b/3/4/5 files). Every rung file
   carries that rung's **reduce-to-prior** gate plus its load-bearing claims — the gates are named in
   the spec. `test_claude_md_reference.py` is the size guard on this file;
   `test_phi_rate_limiter_negative.py` is the only NEGATIVE carrying a gate (it BOUNDS rung 49's
-  bracket, which no per-rung gate watches — it owns no production code); and
+  bracket, which no per-rung gate watches); and
   `test_numeric_fingerprint.py` is the only **ABSOLUTE-value** gate — the reduce spine compares
   two quantities from the SAME run, so it is blind to anything that moves both sides together.
   Its goldens are a committed **CPython** anchor; regenerating them needs CPython, never PyPy.
@@ -237,10 +235,10 @@ A compact map — the per-rung method/finding detail lives in `docs/rungN-spec.m
 
 ## Commands
 - Run the model: `python main.py` · Install: see `requirements.txt` (a PyPy venv — § Stack)
-- **The gate: `pytest`** — **EVERYTHING**, 1301 tests, **~9:06 at 1287** (PyPy, rung 79, box load
-  unknown; a 40:28 at 1294 came off a LOADED box, so it neither differences nor replaces this).
-  ONE gate; nothing is ever silently deselected, so no regression can hide. (`main.py` has no test.)
-- **Iterate: `pytest -m "not slow"`** — 958 tests, **~1:54 at 890**. The run minus the expensive sweeps.
+- **The gate: `pytest`** — **EVERYTHING**, 1313 tests, **~10:05 at 1313** (PyPy, box load unknown;
+  a 40:28 at 1294 came off a LOADED box — neither differences nor replaces it).
+  ONE gate; nothing is ever silently deselected, so no regression can hide.
+- **Iterate: `pytest -m "not slow"`** — 970 tests, **~1:54 at 890**. The run minus the expensive sweeps.
   `slow` is a LABEL you opt out of by typing, never a default. Only those: `pytest -m slow`.
 - **WHEN to run the gate:** at session end (unless run shortly before), and after a code change.
   NOT at session start, NOT on a docs-only change, NOT "just to be sure", and **NEVER to refresh
@@ -248,7 +246,7 @@ A compact map — the per-rung method/finding detail lives in `docs/rungN-spec.m
 - One rung by hand: `python tests/test_rung2.py`
 
 `conftest.py` holds the policy and why the three-gate tiering was retired; `--runslow` is accepted
-and ignored, since everything runs anyway.
+and ignored; everything runs anyway.
 
 ## Stack
 **PyPy 3.11** in the repo venv `.venv` (`.venv\Scripts\activate`), not CPython — the gate is 6.2×
