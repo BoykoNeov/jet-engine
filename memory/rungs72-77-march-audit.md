@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 1a9f7c95-42c1-49bc-b17b-41e3fd7cf11d
-  modified: 2026-08-10T13:41:11.696Z
+  modified: 2026-08-10T14:28:39.456Z
 ---
 
 Closed the seam `docs/rung79-gap-margin.md` § 6 left open ("rungs 72–77 share the rig — a
@@ -33,6 +33,12 @@ Shipped as `docs/rungs72-77-march-audit.md` + five gates (72/73/75/76/77), 2026-
    marched inside it and the gap doc rediscovered it from scratch. **Before writing a
    correction, grep the earlier rungs for the phenomenon's own name.** See
    [[rung79-gap-margin]], [[rung74-demand-coordinate]].
+
+4. **"CORRECTS N" is a DEBT, and it is owed in N's OWN spec.** The first commit edited rung
+   79's spec, the gap doc and the panel, and advertised `CORRECTS 78/79` — `rung78-spec.md`
+   untouched. Same trap one level down: a compressed restatement that enumerates *"the six
+   rungs … 72/73/77 … 75/76"* is five names, and the missing one (74) was the one with the
+   arrested arm. **After writing a summary line, count the members against the table.**
 
 **The verdict:** the arrest is the CELL `(demand, φ_lim = 0.80)`, not the shared rig — 72/73/77
 march in `clip` (77 at the arrested rows' OWN wall, 0.80, and it is the liveliest march in the
