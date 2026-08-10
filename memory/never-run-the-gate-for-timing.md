@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: ee1bb5b3-3bf3-438a-840d-81bfcc41dd85
-  modified: 2026-08-09T15:03:46.832Z
+  modified: 2026-08-10T05:15:24.382Z
 ---
 
 Do **not** run `pytest` (or any subset) for the purpose of measuring or refreshing a
@@ -24,3 +24,14 @@ CLAUDE.md name — after a code change, or at session end if it hasn't run recen
 one of those runs happens to produce a clean timing, update the quoted number from it as
 a free side effect. Never schedule a run whose only output is a timing, and never run a
 second one to confirm a timing. See also [[test-suite-speed-policy]].
+
+**And the corollary, learned the hard way at rung 78: a stale timing may be QUOTED but must
+never be DIFFERENCED.** The quiet-box ship run read 14:14 against a carried `~9:40 at 1242,
+shared box`, and I attributed the 274 s rise to the fingerprint slice in a commit message
+without measuring anything. One `--durations=0` on that module killed it: the slice costs
+<=91 s and rung 78's own module 50.8 s, and *added wall clock cannot exceed added serial work
+under any scheduler*, so at most half the rise was the new tests. The two numbers were never
+measurements of the same machine. Measuring ONE MODULE's cost is allowed and cheap — it is not
+"refreshing a gate timing" — so when a rise wants explaining, measure the suspect module
+instead of reasoning from the difference of two gate runs. And a wrong claim already pushed
+gets corrected in place (here, the fingerprint module's § SLICE 3), never force-pushed away.
