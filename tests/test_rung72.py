@@ -466,3 +466,37 @@ def test_authority_labels_the_switch_itself(design):
     assert a(1e-3, 1e-3) == "tie"
     assert a(2e-3, 1e-3) == "fuel"
     assert a(1e-3, 2e-3) == "gov"
+
+
+# --- THE MARCH AUDIT: rung 79's gap seam, checked from the other end ------------------------
+# `docs/rungs72-77-march-audit.md`. Added by a CONFIRMATION, not by this rung's anchor, and
+# honest about that: nothing here was pre-registered.
+
+@pytest.mark.slow
+def test_this_rungs_march_MOVES_and_all_four_loops_are_live(design):
+    """`docs/rung79-gap-margin.md` proved rungs 78/79's marches never leave their initial state
+    and flagged that THIS RUNG SHARES THE RIG. It does not stand still.
+
+    **AND THE GATE IS A COUNTER-EXAMPLE, NOT A LIVENESS ASSERTION.** Same rig, same wall
+    (`phi_lim = 0.80`), same 341 steps as the arrested rows -- the ONLY difference is the
+    coordinate, which is `clip` here and `demand` there (rung 74 s 2.2's arrest arm). That is
+    what localises the arrest to the CELL rather than to the rig.
+
+    The four loop counts are the SECOND vacuity mode (audit s 1): a plant that moves while the
+    section's own loop does nothing is just as vacuous as a frozen one."""
+    m = _shared(design, bleed_lim=_valve())
+    traj = m._shared_march(FLIGHT, LO, HI, TT4_MAX, SM, CLOCKS[0], R, SETTLE, DS,
+                           V_MAX, False)[3]
+    assert len(traj) > 300, len(traj)
+    nu = [p["nu_lp"] for p in traj]
+    assert (max(nu) - min(nu)) / min(nu) > 1e-2, (min(nu), max(nu))
+    t4 = [p["Tt4"] for p in traj]
+    assert max(t4) - min(t4) > 200.0, (min(t4), max(t4))
+    # ALL FOUR LOOPS ACT -- governor, valve interior, stator riding, and rung 49's phi leg,
+    # the last by its observable signature: the droop is held far above the free one (0.7430
+    # at the 0.70 arm, audit s 3) while still crossing the wall the clip coordinate tracks.
+    b_max = m.bleed_lim.b_max
+    assert sum(1 for p in traj if p["required"] > 0.0) > 300
+    assert sum(1 for p in traj if 0.0 < p["b_cmd"] < b_max) > 50
+    assert sum(1 for p in traj if p.get("v_regime") == "riding") > 50
+    assert min(p["phi_lp"] for p in traj) > 0.78, min(p["phi_lp"] for p in traj)

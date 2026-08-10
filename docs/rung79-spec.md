@@ -279,8 +279,10 @@ plant that never produced one.
   that would give every trajectory claim in rungs 72–79 something to be about: a wall **below**
   the initial operating point and **above** the free excursion minimum — `φ_lim ∈ (0.7731,
   0.7884)` at these settings, a ~1.5% window. It is a **new rig**, not comparable to §§ 1–4.
-* **RUNGS 72–77's § 5 SECTIONS.** Only 78 and 79 were checked. They share the rig, which is a
-  reason to look and **not** a result — **NOT MEASURED, and no claim is made about them.**
+* ~~**RUNGS 72–77's § 5 SECTIONS.**~~ **CLOSED — `docs/rungs72-77-march-audit.md`.** None of
+  them stands still, and the seam had to be **retargeted** first: "§ 5" is this rung's
+  numbering, and the audit's unit is the *march call site*. The arrest is the cell `(demand,
+  0.80)` — **rung 74 § 2.2 owns it**, and this rung's § 5 marched inside it without citing it.
 * **CAN A DISCONTINUOUS SELECTOR AMPLIFY FLOAT NOISE?** P2's real question, untouched because the
   gap is 13 orders too wide. It needs a plant where two legs cross.
 * **THE SAME COORDINATE ON A LEG THAT IS NOT `min`-COMPOSED.** Rung 76 named the COMPOSITION as

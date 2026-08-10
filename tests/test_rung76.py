@@ -370,3 +370,34 @@ def test_the_trajectories_do_not_converge_at_the_tail(design):
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))
+
+
+# --- THE MARCH AUDIT: rung 79's gap seam, checked from the other end ------------------------
+# `docs/rungs72-77-march-audit.md`. A CONFIRMATION's gate, not this rung's anchor.
+
+@pytest.mark.slow
+def test_the_cap_march_MOVES_but_TWO_OF_FOUR_LOOPS_ARE_INERT_at_this_wall(design):
+    """Rungs 78/79 stand still at `(demand, PHI_JAC = 0.80)` -- rung 74 s 2.2's arrest arm.
+    `cap_bill` marches the same coordinate at `PHI_BOTH = 0.76` and the plant DOES accelerate,
+    so the arrest is the CELL and not the rig this rung shares with them.
+
+    **AND THE VALVE AND THE STATOR ARE INERT HERE, 0/341 each** -- pinned as an equality, since
+    the dormancy is the record. s 2's `cuts_harder` bill is therefore read on a TWO-loop plant;
+    it is a claim about the fuel-side cap law, which is what makes that admissible, but the
+    scope was never stated."""
+    sm = _sm(PHI_BOTH)
+    m = _rig(design, SensedCapTransient, sm)
+    acc = _accel(design, sm)
+    traj = m._cap_march(FLIGHT, LO, HI, TT4_MAX, sm, TAUS, R, SETTLE, DS, V_MAX, False,
+                        "demand", "sched", "none", None, "solve", acc)[3]
+    assert len(traj) > 300, len(traj)
+    nu = [p["nu_lp"] for p in traj]
+    assert (max(nu) - min(nu)) / min(nu) > 1e-2, (min(nu), max(nu))
+    t4 = [p["Tt4"] for p in traj]
+    assert max(t4) - min(t4) > 100.0, (min(t4), max(t4))
+    b_max = m.bleed_lim.b_max
+    assert sum(1 for p in traj if 0.0 < p["b_cmd"] < b_max) == 0
+    assert sum(1 for p in traj if p.get("v_regime") == "riding") == 0
+    assert sum(1 for p in traj if p["required"] > 0.0) > 300
+    assert min(p["phi_lp"] for p in traj) > PHI_BOTH, min(p["phi_lp"] for p in traj)
+    assert min(p["phi_lp"] for p in traj) > 0.755, "the phi leg would be dormant below the droop"

@@ -252,10 +252,14 @@ the rung's own file):
   trajectories* wants a rig whose wall is below the initial operating point and above the free
   excursion minimum — i.e. `φ_lim ∈ (0.7731, 0.7884)` at these settings, a ~1.5% window. That is
   a new rig, and it would not be comparable to §§ 1–4 (§ 2.3).
-* **Rungs 72–77's § 5 sections.** Only rungs 78 and 79 were checked here. They share the rig —
-  and that is a reason to look, **not** a result. **NOT MEASURED; this document makes no claim
-  about them, and no later reader should quote one.** (A hedge in a project whose discipline is
-  *count, don't infer* reads as a finding within two citations.)
+* ~~**Rungs 72–77's § 5 sections.**~~ **CLOSED — `docs/rungs72-77-march-audit.md`, and the
+  hedge was right.** None of the six stands still: the arrest is the CELL `(demand, φ_lim =
+  0.80)`, not the shared rig, and five of the six march in `clip` or at a different wall. **It
+  also CORRECTS this document's attribution** — the arrest was found, mechanised and gated at
+  **rung 74 § 2.2** ("THE ARREST — disclosed, not tuned away") before rungs 78/79 were built,
+  and § 2 above is a rediscovery. Every number here stands; the credit does not. The audit adds
+  one finding of its own: at `(demand, 0.76)` — rungs 75/76's wall — the valve and the stator
+  are **inert 0/341**, so those trajectories are a two-loop plant.
 * **Whether a discontinuous selector can amplify a coordinate's float noise** — rung 79 § 9's
   third bullet, still untouched and now doubly out of reach: the legs are 12.6% apart *and* the
   plant is static.

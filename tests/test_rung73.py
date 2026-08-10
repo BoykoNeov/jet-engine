@@ -493,3 +493,26 @@ def test_the_reference_lives_in_one_place(design):
     assert psrc.count("self._reference(") == 4, (
         "the march must reach the reference ONLY through the hook: twice in `der` and twice "
         "in the initial-condition sweep, once per leg in each")
+
+
+# --- THE MARCH AUDIT: rung 79's gap seam, checked from the other end ------------------------
+# `docs/rungs72-77-march-audit.md`. A CONFIRMATION's gate, not this rung's anchor.
+
+@pytest.mark.slow
+def test_this_rungs_march_MOVES_and_all_four_loops_are_live(design):
+    """The applied reference does not change the answer rung 72's arm gives: at `phi_lim = 0.80`
+    in the CLIP coordinate the plant accelerates, and all four loops act. Rungs 78/79 stand
+    still at the same wall in the DEMAND coordinate (rung 74 s 2.2) -- the cell, not the rig."""
+    m = _applied(design, bleed_lim=_valve())
+    traj = m._shared_march(FLIGHT, LO, HI, TT4_MAX, SM, CLOCKS[0], R, SETTLE, DS,
+                           V_MAX, False)[3]
+    assert len(traj) > 300, len(traj)
+    nu = [p["nu_lp"] for p in traj]
+    assert (max(nu) - min(nu)) / min(nu) > 1e-2, (min(nu), max(nu))
+    t4 = [p["Tt4"] for p in traj]
+    assert max(t4) - min(t4) > 200.0, (min(t4), max(t4))
+    b_max = m.bleed_lim.b_max
+    assert sum(1 for p in traj if p["required"] > 0.0) > 300
+    assert sum(1 for p in traj if 0.0 < p["b_cmd"] < b_max) > 50
+    assert sum(1 for p in traj if p.get("v_regime") == "riding") > 50
+    assert min(p["phi_lp"] for p in traj) > 0.78, min(p["phi_lp"] for p in traj)

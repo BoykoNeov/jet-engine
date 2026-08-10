@@ -403,3 +403,46 @@ def test_at_lever_carries_all_four_knobs(design):
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))
+
+
+# --- THE MARCH AUDIT: rung 79's gap seam, checked from the other end ------------------------
+# `docs/rungs72-77-march-audit.md`. A CONFIRMATION's gate, not this rung's anchor.
+
+@pytest.mark.slow
+def test_the_march_MOVES_but_TWO_OF_FOUR_LOOPS_ARE_INERT_at_this_wall(design):
+    """`docs/rung79-gap-margin.md` proved rungs 78/79's marches never leave their initial state
+    and flagged that this rung SHARES THE RIG. **It does not stand still** -- it marches at
+    `PHI_BOTH = 0.76`, and the arrest is confined to `(demand, 0.80)`, rung 74 s 2.2's arm.
+
+    **THE SECOND HALF IS THE FINDING AND IT IS PINNED AS AN EQUALITY.** At this wall the VALVE
+    and the STATOR never act, 0 of 341 steps each: `windup_bill`'s trajectories are a TWO-loop
+    plant (rung 47's governor + rung 49's phi leg), not the four-loop one this rung's other
+    sections read at `PHI_JAC`. Nothing shipped is voided -- this rung's claims are about the
+    fuel-side device -- but the scope is now recorded rather than assumed.
+
+    The phi leg IS live, and the control is the free droop: at the 0.70 arm the plant falls to
+    0.7464 (audit s 3), so `min phi_lp = 0.765754` here is the leg holding, not a coincidence
+    of where the excursion lands.
+
+    **THE CELL IS `windup_bill`'s OWN**, not the one an audit reaches for by default: the bill
+    marches `("demand", "applied", "track", tau_t)` for its rows and `("demand-latched", ...)`
+    for the accident. `("demand", "sched", "none")` is this rung's REDUCE cell -- it is rung 74
+    -- and gating there would have measured the parent (audit s 0). Both real cells carry the
+    same two zeros."""
+    sm = _sm(PHI_BOTH)
+    m = _rig(design, AntiWindupTransient, sm)
+    traj = m._windup_march(FLIGHT, LO, HI, TT4_MAX, sm, TAUS, R, SETTLE, DS, V_MAX, False,
+                           "demand", "applied", "track", TAU_T)[3]
+    assert len(traj) > 300, len(traj)
+    nu = [p["nu_lp"] for p in traj]
+    assert (max(nu) - min(nu)) / min(nu) > 1e-2, (min(nu), max(nu))
+    t4 = [p["Tt4"] for p in traj]
+    assert max(t4) - min(t4) > 100.0, (min(t4), max(t4))
+    # THE TWO INERT LOOPS -- an equality, because the dormancy is what is being recorded
+    b_max = m.bleed_lim.b_max
+    assert sum(1 for p in traj if 0.0 < p["b_cmd"] < b_max) == 0
+    assert sum(1 for p in traj if p.get("v_regime") == "riding") == 0
+    # THE TWO LIVE ONES, the second against the free droop
+    assert sum(1 for p in traj if p["required"] > 0.0) > 300
+    assert min(p["phi_lp"] for p in traj) > PHI_BOTH, min(p["phi_lp"] for p in traj)
+    assert min(p["phi_lp"] for p in traj) > 0.755, "the phi leg would be dormant below the droop"

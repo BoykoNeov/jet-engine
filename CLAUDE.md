@@ -152,10 +152,10 @@ re-opened by mistake. (NO-GROW: never re-enumerate the rungs — it duplicates t
 - The **φ-RATE limiter** (rung 60's seam) — `docs/phi-rate-limiter-negative.md`. **Fuel's authority over `φ` INVERTS between LEVEL and DERIVATIVE**. BOUNDS rung 49; the one negative with a gate.
 
 **Checked, CONFIRMATION / CORRECTION — not a rung:**
-- Rung 79 § 9's **constant gap** — `docs/rung79-gap-margin.md`. Its § 5 march **STANDS STILL**; the residual is rung 77's `1/(1−c)`, not `κ` drift. **CORRECTS 79.**
-- "Earned at design" over `π_c` — `docs/rung29-pi-c-margin.md` (holds ~9.4×; `π_c` NOT protective; `ENERGY = INVENTORY × COMPLETION`).
-- "Earned at design" over flight `M0` — `docs/rung29-M0-margin.md` (holds ~8.8×; monotone-protective; the `delta_h`-swing correction).
-- `β<1` over `π_c` / hotter cycles — `docs/rung28-beta-margin.md` (β pressure-invariant; higher `π_c` protective).
+- Rungs 72–77's **marches** — `docs/rungs72-77-march-audit.md`. The arrest is a CELL, **rung 74 § 2.2's**; none stands still. **CORRECTS 78/79.**
+- Rung 79 § 9's **gap** — `docs/rung79-gap-margin.md`. Its § 5 march **STANDS STILL**; the residual is rung 77's `1/(1−c)`. **CORRECTS 79.**
+- "Earned at design" over `π_c` (`docs/rung29-pi-c-margin.md`, ~9.4×, NOT protective, `ENERGY = INVENTORY × COMPLETION`) and flight `M0` (`docs/rung29-M0-margin.md`, ~8.8×, monotone-protective, the `delta_h`-swing correction).
+- `β<1` over `π_c` — `docs/rung28-beta-margin.md` (β pressure-invariant; higher `π_c` protective).
 
 **Still OPEN — not yet built (the live to-build list):**
 - **The real spatial / transported-CFD PDF** — the standing mixing ceiling (rungs 22–24 are a Gaussian-plume cartoon; needs an anchored SCALE + spread law).
@@ -165,13 +165,13 @@ re-opened by mistake. (NO-GROW: never re-enumerate the rungs — it duplicates t
 - **The subsonic / unchoked LP branch** in the two-spool solves (rung 38 flags, does not solve) and its **transient**.
 - An **ANCHOR for the blading**: a stress / tip-Mach limit pinning `U` from outside the stack, or an annulus law `Vx(k)`.
 - **Fuel + bleed + STATOR**, all three on one plant (rung 63's seam, untouched by 64/65).
-- **Rungs 69–79's seams — in each rung's spec, not here.** Shortlist: THREE legs on one actuator; the DEMAND/ANTI-WINDUP pair for the valve/stator. `n`=4 needs rung 69's 4th LP lever or a non-`min` composition — every route TRIED (72–76) is CLOSED, and 76 names the COMPOSITION as the obstruction; **79 adds the SOLVER's short-circuit as a second one.**
+- **Rungs 69–79's seams — in each rung's spec, not here.** Shortlist: THREE legs on one actuator; the DEMAND/ANTI-WINDUP pair for the valve/stator. `n`=4 needs a 4th LP lever or a non-`min` composition — every route TRIED (72–76) is CLOSED; 76 names the COMPOSITION as the obstruction, **79 the SOLVER's short-circuit.**
 - **Rung 37's internal clocks on two shafts** and the combined 3-state; **customer/cooling bleed** at station 3.
 - **Afterburner**; a **real hardware/CFD map + surge line** (rung 32's standing concession, now doubled across two spools).
 - **Feeding a shifted/marched state into the production cycle** — a re-foundation, not a rung.
 
 ## Open engineering tasks (not rungs, not seams)
-All three CLOSED, detail in the linked file: the per-rung `main.py` panel (no test — check on
+All three CLOSED: the per-rung `main.py` panel (no test — check on
 every ship); the solver-tolerance audit (NEGATIVE, `docs/plans/todo-solver-tolerance-audit.md`);
 the fingerprint gate's rung 67–79 arms (that module's docstring §§ SLICE 3–4).
 

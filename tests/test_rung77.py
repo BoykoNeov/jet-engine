@@ -315,3 +315,35 @@ def test_c_never_approaches_one(design):
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))
+
+
+# --- THE MARCH AUDIT: rung 79's gap seam, checked from the other end ------------------------
+# `docs/rungs72-77-march-audit.md`. A CONFIRMATION's gate, not this rung's anchor.
+
+@pytest.mark.slow
+def test_the_ledger_march_MOVES_and_keeps_THREE_loops_live(design):
+    """Rungs 78/79 stand still at `(demand, 0.80)` -- rung 74 s 2.2's arrest arm -- and rung 79's
+    gap doc flagged that this rung SHARES THE RIG. `_ledger_march` marches in **CLIP**, and it
+    accelerates.
+
+    **THE COORDINATE IS THE GATE, AND THE WALL IS THE POINT.** `leg_slopes` derives its `sm`
+    from `phi_lim = PHI_JAC = 0.80` -- the ARRESTED rows' own wall, NOT the `PHI_BOTH` this
+    file's reduce arms use -- and this march is nevertheless the liveliest in the family
+    (governor 340, valve 161, stator 97). Gating the non-zero counts at 0.80 is what stops a
+    later reader conflating the two coordinates' liveness, which is the audit's s 3."""
+    sm = _sm(PHI_JAC)
+    m = _rig(design, StiffnessLedgerTransient, sm)
+    traj = m._ledger_march(FLIGHT, LO, HI, TT4_MAX, sm, TAUS, R, SETTLE, DS, V_MAX,
+                           False, MARGIN)[3]
+    assert len(traj) > 300, len(traj)
+    nu = [p["nu_lp"] for p in traj]
+    assert (max(nu) - min(nu)) / min(nu) > 1e-2, (min(nu), max(nu))
+    t4 = [p["Tt4"] for p in traj]
+    assert max(t4) - min(t4) > 100.0, (min(t4), max(t4))
+    b_max = m.bleed_lim.b_max
+    assert sum(1 for p in traj if p["required"] > 0.0) > 300
+    assert sum(1 for p in traj if 0.0 < p["b_cmd"] < b_max) > 50
+    assert sum(1 for p in traj if p.get("v_regime") == "riding") > 50
+    # the phi leg is live and the CLIP coordinate tracks with error, so the droop crosses it
+    assert min(p["phi_lp"] for p in traj) < PHI_JAC, min(p["phi_lp"] for p in traj)
+    assert min(p["phi_lp"] for p in traj) > 0.780, "the phi leg would be dormant below the droop"

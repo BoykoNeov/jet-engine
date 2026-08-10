@@ -6309,6 +6309,19 @@ def print_state_coordinate_table(flight):
     print("    re-tuned: phi_lim ON the wall is what ss 1-4's constrained linearisation")
     print("    requires, so the standstill is RECORDED AND GATED instead.")
 
+    print("\n  ... AND THE ATTRIBUTION, CORRECTED (docs/rungs72-77-march-audit.md):")
+    print("    THE ARREST IS A CELL, `(demand, phi_lim = 0.80)` -- NOT the shared rig. Of")
+    print("    the six rungs the gap doc declined to claim about, NONE stands still:")
+    print("    rungs 72/73/77 march in CLIP (77 at 0.80, this wall, and it is the")
+    print("    LIVELIEST march in the family), rungs 75/76 in `demand` at 0.76. And the")
+    print("    cell was found, mechanised and GATED at RUNG 74 s 2.2 -- `THE ARREST,")
+    print("    disclosed, not tuned away` -- before rungs 78/79 were built. Neither spec")
+    print("    cites it; s 5 above marched inside it. Every number stands, the credit")
+    print("    does not. The audit's own finding: at `(demand, 0.76)` the VALVE and the")
+    print("    STATOR are INERT 0/341, so rungs 75/76 read a TWO-loop plant -- and a")
+    print("    liveness counter on a FROZEN plant reports the initial condition at FULL")
+    print("    count (valve = 341/341 here), which is why spreads are read FIRST.")
+
     print("\n  s 5.3 -- THE COMPLEMENTARITY, an IDENTITY of `_cap_free`'s branch condition:")
     print("    {the knob is live} = %d      {the leg reaches applied fuel} = %d"
           % (m["n_live"], m["n_reach"]))
