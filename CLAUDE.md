@@ -21,7 +21,7 @@ teaching, not for features or polish.
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is anchored to a
-published case. All rungs are live; the current scope is **rung 77**. Read a rung's spec (last
+published case. All rungs are live; the current scope is **rung 78**. Read a rung's spec (last
 column) before touching it — that is where the real content lives.
 
 | Rung | Adds (one-line hook) | Spec |
@@ -104,6 +104,7 @@ column) before touching it — that is where the real content lives.
 | 75 | **THE ANTI-WINDUP DEVICE, DECLARED** — rung 74's accident given a RATE. **HEADLINE: a device is decisive on the SPECTRUM and inert on the RANK** — the masked pole leaves the ORIGIN and `det J` REVIVES, yet the term is in the masked ROW, so `n_live`≤3 a FOURTH time. **CORRECTS rung 74's** residual. | `docs/rung75-spec.md` |
 | 76 | **THE FUEL-DEPENDENT CAP** — rung 73 § 11's seam, deferred by 73/74/75; zero new constants. **HEADLINE: a device in a leg's LAW reaches only the MASKED leg, one in the PLANT THE LEGS READ only the AUTHORITATIVE one** — `min` masks a law, not a plant; `n_live`≤3 a FIFTH time, so the obstruction is the COMPOSITION. **BOUNDS rung 48.** | `docs/rung76-spec.md` |
 | 77 | **THE STIFFNESS LEDGER** — rung 76 § 8's seam, REFUTED; no knob, constant or plant code. **HEADLINE: a solve's sensitivity is a FORCING OVER A SLOPE, so `1/(1−c)` is the SLOPE HALF of ONE leg** — the others' set points are CONSTANTS: a stiffness, never a gain. | `docs/rung77-spec.md` |
+| 78 | **THE RESIDUAL GAUGE** — rung 77 § 9's seam, CLOSED by REFUTING it; one swept knob, zero constants. **HEADLINE: a residual's SLOPE is a GAUGE, its root's UNIQUENESS is not** — `1/(1−c)` reaches ∞ without moving `dw*/dq`, but a SECOND root COLLIDES at `k·c`=1. **CORRECTS rung 77 § 3; BOUNDS rung 76 § 3.** | `docs/rung78-spec.md` |
 
 ## Working contract (from SPEC.md — these override convenience)
 - **Derive before you code.** For each station, write the governing equation and
@@ -119,14 +120,14 @@ column) before touching it — that is where the real content lives.
 - **Every new rung reduces to its predecessor**, exactly and by test (`X=None` ⇒
   the prior code path). This is the project's spine — see any `docs/rungN-spec.md`.
 
-**Current scope (rung 77).** The **cycle solve** is a thermally-perfect, reacting,
+**Current scope (rung 78).** The **cycle solve** is a thermally-perfect, reacting,
 dissociation-equilibrium gas (`Gas.reacting_equilibrium()`) through ideal + real components
 (isentropic `η_c/η_t` **or** polytropic `e_c/e_t`, mutually exclusive; `π_d/π_b/π_n`, `η_b`,
 `η_m`; dual cold/hot gas; specified exit pressure). The burner root-finds `f` over the scale-B
 absolute balance, then freezes the station-4 mixture through turbine + nozzle; Fork A/B and
 frozen-products gases are kept alongside. **Everything from rung 7 up is a diagnostic *beside*
 the cycle**, reached through **separate entry points** that leave the default
-`build_turbojet(…).run(…)` design run **bit-for-bit rung 6**. Rungs **31–77** are the
+`build_turbojet(…).run(…)` design run **bit-for-bit rung 6**. Rungs **31–78** are the
 STRUCTURAL / DYNAMIC ones — a new off-design or transient operating point, through the two
 matcher ladders mapped in § Layout; rungs **7–30, 36, 41, 44, 45** are pure diagnostics that
 only *read* the design-point / running-line state. Each rung reduces to its predecessor
@@ -139,7 +140,8 @@ One line per seam — `BUILT` (detail in its rung's spec) · `NEGATIVE → doc` 
 62: the `b(n_L)` schedule; 63: fuel+bleed; 64: the φ-referenced LIMITER; 65: its LAGGED valve;
 66: the two-lag CASCADE; 67: cascade A; 68: THREE loops on one variable; 69: the REFERENCE
 SPLIT; 70: the GENERIC one; 71: the FULL one; 72: the SHARED ACTUATOR; 73: the APPLIED
-REFERENCE; 74: the DEMAND COORDINATE; 76: the FUEL-DEPENDENT CAP; 77: the STIFFNESS LEDGER).** The table above is its one-line hook; the derivation is in its spec. A numbered
+REFERENCE; 74: the DEMAND COORDINATE; 76: the FUEL-DEPENDENT CAP; 77: the STIFFNESS LEDGER; 78: the
+RESIDUAL GAUGE).** The table above is its one-line hook; the derivation is in its spec. A numbered
 seam is closed and must never be re-opened by mistake.
 
 **Investigated, NEGATIVE — not shipped, not a rung (these facts live only here + the doc):**
@@ -165,7 +167,7 @@ seam is closed and must never be re-opened by mistake.
 - **The subsonic / unchoked LP branch** in the two-spool solves (rung 38 flags, does not solve) and its **transient**.
 - An **ANCHOR for the blading**: a stress / tip-Mach limit pinning `U` from outside the stack, or an annulus law `Vx(k)`.
 - **Fuel + bleed + STATOR**, all three on one plant (rung 63's seam, untouched by 64/65).
-- **Rungs 69–77's seams — enumerated in each rung's spec, not here.** Shortlist: THREE legs on one actuator; the DEMAND coordinate and ANTI-WINDUP device for the valve/stator; a sensed cap on a MASKED leg. `n`=4 needs rung 69's 4th LP lever or a composition that is not `min` — every route TRIED (72–76) is CLOSED by refutation, and rung 76 names the obstruction as the COMPOSITION.
+- **Rungs 69–78's seams — enumerated in each rung's spec, not here.** Shortlist: THREE legs on one actuator; the DEMAND coordinate and ANTI-WINDUP device for the valve/stator; a sensed cap on a MASKED leg. `n`=4 needs rung 69's 4th LP lever or a composition that is not `min` — every route TRIED (72–76) is CLOSED by refutation, and rung 76 names the obstruction as the COMPOSITION.
 - **Rung 37's internal clocks on two shafts** and the combined 3-state; **customer/cooling bleed** at station 3.
 - **Afterburner**; a **real hardware/CFD map + surge line** (rung 32's standing concession, now doubled across two spools).
 - **Feeding a shifted/marched state into the production cycle** — a re-foundation, not a rung.
@@ -220,13 +222,13 @@ A compact map — the per-rung method/finding detail lives in `docs/rungN-spec.m
   `TwoLagCascadeTransient` (66) → `CrossLoopCascadeTransient` (67) → `ThreeLoopCascadeTransient`
   (68) → `ReferenceSplitTransient` (69) → `CrossSplitTransient` (70) → `FullSplitTransient` (71) →
   `SharedActuatorTransient` (72) → `AppliedReferenceTransient` (73) → `DemandCoordinateTransient`
-  (74) → `AntiWindupTransient` (75) → `SensedCapTransient` (76) → `StiffnessLedgerTransient` (77).
+  (74) → `AntiWindupTransient` (75) → `SensedCapTransient` (76) → `StiffnessLedgerTransient` (77) → `ResidualGaugeTransient` (78).
   Each adds ONE thing — a state, a clock, a knob, or (77) nothing but a reader — and reduces to its
   predecessor; **what each adds, its method names and its reduce contract are in that rung's
   spec, not here.**
 - `main.py` — the design-point run: ideal-vs-real tables, the overlaid T–s diagram, and **one panel
   per rung** (each demonstrates that rung's load-bearing claim and states its honest scope).
-- `tests/` — per-rung `test_rungN.py` (N = 1…76; plus the rung-1/2b/3/4/5 files). Every rung file
+- `tests/` — per-rung `test_rungN.py` (N = 1…78; plus the rung-1/2b/3/4/5 files). Every rung file
   carries that rung's **reduce-to-prior** gate plus its load-bearing claims — the gates are named in
   the spec. `test_claude_md_reference.py` is the size guard on this file;
   `test_phi_rate_limiter_negative.py` is the only NEGATIVE carrying a gate (it BOUNDS rung 49's
@@ -240,9 +242,9 @@ A compact map — the per-rung method/finding detail lives in `docs/rungN-spec.m
 
 ## Commands
 - Run the model: `python main.py` · Install: see `requirements.txt` (a PyPy venv — § Stack)
-- **The gate: `pytest`** — **EVERYTHING**, 1255 tests, **~9:40 at 1242** (PyPy, rung 77, shared box). ONE gate;
+- **The gate: `pytest`** — **EVERYTHING**, 1267 tests, **~14:14 at 1267** (PyPy, rung 78, quiet box). ONE gate;
   nothing is ever silently deselected, so no regression can hide. (`main.py` has no test.)
-- **Iterate: `pytest -m "not slow"`** — 925 tests, **~1:54 at 890**. The run minus the expensive sweeps.
+- **Iterate: `pytest -m "not slow"`** — 934 tests, **~1:54 at 890**. The run minus the expensive sweeps.
   `slow` is a LABEL you opt out of by typing, never a default. Only those: `pytest -m slow`.
 - **WHEN to run the gate:** at session end (unless run shortly before), and after a code change.
   NOT at session start, NOT on a docs-only change, NOT "just to be sure", and **NEVER to refresh

@@ -20040,3 +20040,682 @@ class StiffnessLedgerTransient(SensedCapTransient):
                     gov_norm=(min(c["gov_norm"][0] for c in live) if live else None),
                     # P8: how close `c` gets to 1 anywhere in this family
                     c_max=cmax)
+
+
+class ResidualGaugeTransient(StiffnessLedgerTransient):
+    """RUNG 78. Rung 77 s 9's second seam -- **a cap whose `c` approaches 1** -- CLOSED BY
+    REFUTING ITS PREMISE (docs/rung78-spec.md).
+
+    Rung 77 s 3 lists two routes to a singular set-point solve, `dw*/dq = -G_q/G_w` with
+    `G_w -> 0`, and calls the first of them (`c -> 1`) *unreachable in this family*:
+    `c <= 0.2234` over 24 cells. Rung 77 s 9 then asks for a schedule that could reach it.
+    **This rung reaches it in one line, at a FIXED set point, and finds that arriving costs
+    nothing.** Anchor the accel leg's cap at its own root and scale the departure:
+
+        cap_k(w) = w0 + k * (cap(w) - w0)        w0 := the k = 1 root, cap(w0) = w0
+
+    `cap_k(w0) = w0` IDENTICALLY, for every `k` -- so the set point is invariant by
+    construction, not by tolerance -- while `G_k' = 1 - k*c` is a free dial that reaches ZERO
+    at `k = 1/c` and goes NEGATIVE beyond it.
+
+    HEADLINE: **A RESIDUAL'S SLOPE IS A GAUGE; ITS ROOT'S UNIQUENESS IS NOT.** `G_w` and `G_q`
+    scale in LOCKSTEP -- substituting the k = 1 identity `dcap/dq = w0' * (1 - c)` collapses the
+    numerator to `w0' * (1 - k*c)`, so `dw*/dq = w0'` for every `k`. The `1 - k*c` that vanishes
+    in the denominator vanishes in the numerator at the same `k`, and rung 77 s 3's first route
+    is a **REMOVABLE** singularity: a coordinate artifact of how the residual was written, not a
+    property of the plant. **So `1/(1-c)` is a GAUGE.** Rung 76 s 3's factor survives for the one
+    reason this rung isolates: `solve` and `sensed` have DIFFERENT ROOTS, and a re-writing that
+    MOVES the root is a device where one that PRESERVES it is a change of coordinates.
+
+    AND THE SINGULARITY LEAVES A TRACE, IN THE ONE PLACE NOBODY WAS WATCHING. The gauge
+    preserves the root exactly and destroys its UNIQUENESS: a SECOND root sweeps in from below,
+    COLLIDES with the true one exactly at `k*c = 1`, and departs upward. Inside that band a
+    solver returns *a* root, not *the* root. **What `c -> 1` actually costs is not sensitivity;
+    it is WELL-POSEDNESS** -- and that is invisible to `dw*/dq`, which is why rung 77 could
+    measure the limit correctly and still describe it wrongly.
+
+    THE SIXTH DECLARED KNOB, beside `_share_law` (72), `_ref_law` (73), `_lag_coord` (74),
+    `_windup_law` (75) and `_cap_law` (76) -- and the SECOND that adds no constant at all: `k`
+    is SWEPT, never set, and `w0` is the plant's own already-solved set point.
+
+    ITS DOMAIN IS DECLARED: the gauge reaches the ACCEL leg and nothing else, for rung 77 s 1's
+    reason read one step on -- `Tt4_max` and `phi_lim` are CONSTANTS, so the governor and the phi
+    leg have no cap to anchor and no `c` to scale. A gauge needs a formula, and a floor on a
+    STATE is not one.
+
+    IT IS A DIAGNOSTIC DEVICE AND SAYS SO. `cap_k` needs the k = 1 root as its anchor, so it is
+    not a limiter anyone could build -- it is the one-parameter family that holds a set point
+    fixed while sweeping its residual's slope, which is exactly what is needed to tell a gauge
+    from a device. Nothing here is proposed as hardware.
+
+    Usage:
+        t = ResidualGaugeTransient(design, FLIGHT, 1.0, map_lp=..., map_hp=..., bleed_lim=bl)
+        t.gauge_scan(FLIGHT, 1000., 1400., 1200.)      # s 1/2: w*(k), G_w(k), dw*/dq(k)
+        t.root_census(FLIGHT, 1000., 1400., 1200.)     # s 3: the SECOND root, and the collision
+        t.gauge_march(FLIGHT, 1000., 1400., 1200.)     # s 4: the TRAJECTORY under the gauge
+
+    THE REDUCE: `_gauge_k = 1.0` is rung 77 with the branch not taken -- `_cap_fuel` dispatches
+    to `super()` on an `is`-exact comparison, so not one float in this family moves. Gated on
+    rung 73's discipline in BOTH directions: at `k != 1` the residual's SLOPE must differ (else
+    the knob is dead) and, outside the collision band, the TRAJECTORY must NOT (else the gauge
+    is not a gauge).
+
+    Anchor: `docs/plans/rung78-anchor-residual-gauge.md`. Gates: `tests/test_rung78.py`.
+    """
+
+    _gauge_k = 1.0
+
+    # How many times the GAUGED branch of `_cap_fuel` actually ran. s 5's first version reported
+    # a bit-identical trajectory (`0.000e+00`) under four different gauges and it was VACUOUS:
+    # `_ledger_march` marches in the CLIP coordinate, and rung 76 s 0's own refusal says `clip`
+    # dispatches out of this ladder BEFORE `_cap_fuel` is reached. The branch never executed.
+    # A counter makes that failure impossible to repeat silently -- rung 77 s 8's lesson, and it
+    # is an INSTRUMENT, never read by the plant.
+    _gauge_hits = 0
+    # ... and how many times its VALUE won the min-select. `_gauge_hits` proves the branch ran;
+    # this proves the plant CONSUMED it. They are different failures and both look like a pass.
+    _gauge_binds = 0
+
+    # --- the knob, in ONE place ---------------------------------------------------------------
+
+    def _accel_cap_fn(self, flight: "FlightCondition", a: float, h: float, accel):
+        """`cap(w)` for the accel leg -- rung 76's law, and the ONE cap in this family that
+        depends on the fuel it is asked about, hence the only one that HAS a `c`."""
+        def cap(w):
+            i = self._instant_fuel(flight, a, h, w)
+            return accel.cap(i["n_hp"], i["pt4"] / self.pi_b)
+        return cap
+
+    def _gauged_accel_cap(self, flight: "FlightCondition", a: float, h: float,
+                          mf_sched: float, accel) -> float:
+        """The accel leg's set point UNDER THE GAUGE, solved from the plant's own guess.
+
+        `w0` is the SHIPPED unfloored set point -- rung 74's `_cap_free` on rung 77's residual,
+        untouched, and it is the anchor. The gauged residual is then re-solved from `mf_sched`,
+        **not** from `w0`: a solver seeded with the answer would hand it back whether or not the
+        gauge preserved the root, and the whole rung is the question of whether it does (rung
+        77 s 8's vacuity trap, one rung on).
+
+        `_cap_free` CANNOT be reused past `k = 1/c`. It walks the bracket upward and stops at
+        `G > 0`, which assumes `G` increases in `w`; beyond the singular gauge it decreases. That
+        is a SOLVER fact and it is disclosed rather than met as a surprise -- s 3 of the spec is
+        about the other, sharper one."""
+        assert self._cap_law != "sensed", (
+            "rung-78: `sensed` x a non-identity GAUGE is REFUSED. This branch bypasses "
+            "`_sensed_cap`, so the cap would be evaluated at the TRIAL fuel instead of the "
+            "APPLIED one and the march would silently be rung 78-on-rung-75 while being "
+            "reported as rung 78-on-rung-76 -- rung 76 s 0's own refusal of `clip x sensed`, "
+            f"one knob over. Got _cap_law = {self._cap_law!r}, _gauge_k = {self._gauge_k!r}.")
+        cap = self._accel_cap_fn(flight, a, h, accel)
+        w0 = self._cap_free(lambda w: w - cap(w), mf_sched,
+                            lambda: self._sched_fuel(flight, a, h, mf_sched, accel))
+        k = self._gauge_k
+        w, ok = self._gauge_root(self._gauge_residual(cap, w0), mf_sched)
+        # `ok` IS NOT THE GUARD. The gauge preserves `w0` as a root identically, so the only
+        # correctness question is whether the solver found THAT root -- and s 3 measures it
+        # converging cleanly onto a SECOND one inside the collision band. A gate on `ok` would
+        # pass every wrong answer this rung is about.
+        assert ok and abs(w - w0) <= 1e-6 * abs(w0), (
+            f"rung-78: the GAUGED accel solve returned {w!r} at k = {k:.6g} where the anchor "
+            f"is w0 = {w0:.6e} (converged = {ok}). `w0` is a root of `G_k` IDENTICALLY, so "
+            "this is either a solver failure or -- inside the multi-root band around "
+            "`k*c = 1` -- the SECOND root (spec s 3). A march must not run on either.")
+        return w
+
+    def _gauge_residual(self, cap, w0: float):
+        """`G_k(w) = w - cap_k(w)`, and at `k = 1` it is the shipped residual EXPRESSION, not
+        merely a number equal to it -- `w0` does not appear at all."""
+        k = self._gauge_k
+        if k == 1.0:
+            return lambda w: w - cap(w)
+        return lambda w: w - (w0 + k * (cap(w) - w0))
+
+    @staticmethod
+    def _gauge_root(G, guess: float, rel: float = 1e-10, n: int = 400, trust: float = 0.25):
+        """DAMPED Newton with a differenced derivative -- the one root finder in this rung, and
+        it has to survive BOTH SIGNS of `G_w`, which is why the shipped bracket is not reused.
+
+        TWO DAMPING RULES, and both are SOLVER facts rather than plant ones:
+
+        * a TRUST REGION (`|dw| <= trust * w`). Near the singular gauge `|G'|` is small, so an
+          undamped step is enormous and lands off the modelled speed-line region -- which the
+          plant reports as rung 62's bracket assertion, not as a root-finding failure.
+        * BACKTRACKING ON THE PLANT'S OWN REFUSAL: an `AssertionError` from an evaluation is a
+          step that left the model, so the step is halved and retried rather than propagated.
+
+        Returns `(w, ok)`. **`ok` is NOT a correctness guard** -- s 3's whole content is that
+        inside the collision band this converges cleanly onto the WRONG root. Every caller that
+        needs correctness checks `|w - w0| / w0` instead."""
+        w, prev = guess, None
+        for _ in range(n):
+            dw = 1e-7 * max(abs(w), 1e-9)
+            try:
+                g, gp = G(w), (G(w + dw) - G(w - dw)) / (2.0 * dw)
+            except AssertionError:
+                if prev is None:
+                    return float("nan"), False
+                w = 0.5 * (w + prev)                    # retreat toward the last good point
+                continue
+            if gp == 0.0:
+                return float("nan"), False
+            step = g / gp
+            lim = trust * max(abs(w), 1e-12)
+            if abs(step) > lim:
+                step = lim if step > 0.0 else -lim
+            prev, w = w, w - step
+            if not (w > 0.0):
+                return float("nan"), False
+            if abs(step) <= rel * max(abs(w), 1e-12):
+                return w, True
+        return w, False
+
+    @staticmethod
+    def _root_count(G, w0: float, lo: float = 0.2, hi: float = 3.0, n: int = 120,
+                    locate: bool = True):
+        """Sign changes of `G` on `[lo, hi] * w0` -- a COUNT, not a solve. A root finder started
+        anywhere would only ever report the one it reached, which is precisely the failure s 3
+        is about, so uniqueness cannot be tested with one.
+
+        `locate=False` returns the bracket midpoints without refining them: s 1 needs only HOW
+        MANY roots there are, and refining each one costs more than the whole walk."""
+        xs = [w0 * (lo + (hi - lo) * i / n) for i in range(n + 1)]
+        vals = []
+        for x in xs:
+            try:
+                vals.append((x, G(x)))
+            except AssertionError:
+                vals.append((x, None))
+        roots = []
+        for (x1, g1), (x2, g2) in zip(vals, vals[1:]):
+            if g1 is None or g2 is None or g1 == 0.0 or g1 * g2 >= 0.0:
+                continue
+            if locate:
+                for _ in range(60):
+                    xm = 0.5 * (x1 + x2)
+                    gm = G(xm)
+                    if g1 * gm <= 0.0:
+                        x2, g2 = xm, gm
+                    else:
+                        x1, g1 = xm, gm
+            roots.append(0.5 * (x1 + x2) / w0)
+        return sorted(roots)
+
+    # --- the PLANT: one branch, taken only when the knob is off its identity -------------------
+
+    def _cap_fuel(self, flight: "FlightCondition", a: float, h: float, mf_sched: float,
+                  accel, surge, mf_app=None) -> float:
+        """Rung 74's min-select with the ACCEL branch gauged. At `k = 1` this dispatches to the
+        parent and the whole family is bit-for-bit rung 77."""
+        if self._gauge_k == 1.0:
+            return super()._cap_fuel(flight, a, h, mf_sched, accel, surge, mf_app=mf_app)
+        caps = []
+        if accel is not None:
+            # s 5's NON-VACUITY counter. It MUST be written on the CLASS: `self._x += 1` would
+            # create an instance attribute and leave the class one at zero forever, so the
+            # instrument built to catch a vacuous section would itself have been vacuous.
+            ResidualGaugeTransient._gauge_hits += 1
+            caps.append(self._gauged_accel_cap(flight, a, h, mf_sched, accel))
+        if surge is not None:
+            k = surge.key()
+
+            def Gs(w):
+                return surge.phi_lim - self._instant_fuel(flight, a, h, w)[k]
+            caps.append(self._cap_free(
+                Gs, mf_sched, lambda: self._surge_fuel(flight, a, h, mf_sched, surge)))
+        if not caps:
+            return float("inf")
+        out = min(caps)
+        # THE THIRD NON-VACUITY CHECK, and it is a different question from `_gauge_hits`: that
+        # counter proves the gauged branch RAN, this one proves its VALUE REACHED THE PLANT. If
+        # the phi leg won every `min`, the accel cap would be computed 1 366 times a march and
+        # discarded 1 366 times, and "the gauge is inert on the trajectory" would be untested
+        # while looking exactly like a pass.
+        if accel is not None and out == caps[0]:
+            ResidualGaugeTransient._gauge_binds += 1
+        return out
+
+    # --- the SIXTEENTH instance of rungs 61-77's carried-knob trap -----------------------------
+
+    def at_lever(self, vsv_lp: float = 0.0, vsv_hp: float = 0.0, vsv_sched_lp=None,
+                 vsv_sched_hp=None, bleed: float = 0.0, bleed_sched=None,
+                 bleed_lim=None, stator_lim=None, stator_inc=None
+                 ) -> "ResidualGaugeTransient":
+        """THE SIXTEENTH INSTANCE. Rung 77 lost the CLASS here; this rung would lose the knob
+        on top of it, and every reader below would silently run at `k = 1`."""
+        de, fd, md, rho, lpd = self._ctor
+        m = ResidualGaugeTransient(
+            de, fd, md, map_lp=self.map_lp_design, map_hp=self.map_hp_design, rho=rho,
+            vsv_lp=vsv_lp, vsv_hp=vsv_hp, vsv_sched_lp=vsv_sched_lp,
+            vsv_sched_hp=vsv_sched_hp, bleed=bleed, bleed_sched=bleed_sched,
+            bleed_lim=bleed_lim, stator_lim=stator_lim, stator_inc=stator_inc,
+            lp_disabled=lpd)
+        m._ref_law, m._lag_coord = self._ref_law, self._lag_coord
+        m._windup_law, m._tau_t, m._ic_cap = self._windup_law, self._tau_t, self._ic_cap
+        m._cap_law, m._gauge_k = self._cap_law, self._gauge_k
+        return m
+
+    def _shared_rig(self, sm, tau, tau_s, v_max, Tt4_max, tau_att=0.05, tau_rel=0.15,
+                    inc=False, fuel=True, valve=True, stator=True, gov=True):
+        m, surge, lag = super()._shared_rig(sm, tau, tau_s, v_max, Tt4_max, tau_att=tau_att,
+                                            tau_rel=tau_rel, inc=inc, fuel=fuel, valve=valve,
+                                            stator=stator, gov=gov)
+        m._gauge_k = self._gauge_k
+        return m, surge, lag
+
+    def _with_gauge(self, k, fn, *a, **kw):
+        """Run something under a named gauge, restored in a `finally` -- rung 62's reason, and
+        this family's ELEVENTH reload of it."""
+        prev = self._gauge_k
+        self._gauge_k = k
+        try:
+            return fn(*a, **kw)
+        finally:
+            self._gauge_k = prev
+
+    # --- s 1 / s 2: THE SET POINT, THE SLOPE, AND THE SENSITIVITY ------------------------------
+
+    def gauge_scan(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                   Tt4_max: float, phi_lim: float = 0.80, margin: float = 0.10,
+                   taus=(0.05, 0.05, 0.05, 0.05), inc: bool = False, r: float = 0.5,
+                   s_settle: float = 1.2, ds: float = 0.005, v_max: float = 0.20,
+                   dq: float = 1e-5, every: int = 8, mults=None) -> dict:
+        """s 1/2: **`w*(k)`, `G_w(k)` and `dw*/dq(k)` at each riding point.**
+
+        `k` is swept in MULTIPLES OF `1/c`, each point's own, so the singular gauge sits at
+        `k*c = 1` in every row.
+
+        WHAT IS EXCLUDED IS MEASURED, NOT CHOSEN. The anchor registered the exclusion as
+        `|1 - k*c| < 1e-3`, and that number is **REFUTED** -- the disturbed region is ~2.5
+        decades wider. It would have been trivial to widen it to a round `0.30` that covers the
+        measurement, and that is a tuned pass wearing a pre-registered threshold's clothes. So
+        the exclusion here is not a width at all: a point is excluded iff `G_k` has **MORE THAN
+        ONE ROOT** there, counted by `_root_count` at that point and that gauge. s 1's constant
+        then cannot cover for s 3's content, because s 1 has no constant -- the two sections
+        interlock, and the band is an OUTPUT of the sweep rather than an input to it.
+
+        `dw*/dq` is taken by re-solving the WHOLE gauged set point at `q +- dq`, with the anchor
+        `w0` re-solved at each `q` too -- it is that state's own k = 1 root, and freezing it
+        across the perturbation would be measuring a different construction. Reading `-G_q/G_w`
+        instead would be computing the formula under test (rung 70's gate, which computed its
+        own formula twice and agreed with itself).
+
+        EVERY READING IS TAKEN INSIDE ITS OWN `_b_state` BLOCK. `_c_at` restores the freeze in
+        its own `finally`, so a reader that calls it and keeps going measures the rest of its
+        table on the CLOSED-valve plant -- rung 77 s 2's trap, and the first version of s 3 of
+        this rung walked into it and read a broken identity that was a difference between two
+        PLANTS."""
+        m, surge, accel, pts = self._gauge_points(
+            flight, Tt4_lo, Tt4_hi, Tt4_max, margin, taus, r, s_settle, ds, v_max, inc,
+            phi_lim, every)
+        rows = []
+        for p in pts:
+            a, h, q, v, ms = p["nu_lp"], p["nu_hp"], p["b"], p["v"], p["mf_sched"]
+
+            def at(qq, k):
+                """The whole gauged solve on the plant AS THE VALVE IS AT `qq`, with the cap,
+                the anchor, the residual and the root ALL rebuilt inside this block. A closure
+                carried out of it reads the plant with the valve loop CLOSED, whatever `qq` it
+                was asked about -- rung 77 s 2's trap, and it returns a clean `1.000e+00`."""
+                m._b_state, m._v_state = qq, v
+                try:
+                    cap = m._accel_cap_fn(flight, a, h, accel)
+                    w0 = m._cap_free(lambda w: w - cap(w), ms,
+                                     lambda: m._sched_fuel(flight, a, h, ms, accel))
+                    prev, m._gauge_k = m._gauge_k, k
+                    try:
+                        G = m._gauge_residual(cap, w0)
+                        w, ok = m._gauge_root(G, ms)
+                        # the SLOPE is read at the ANCHOR, which is a root at every gauge by
+                        # construction -- reading it at `w` would report the slope at whatever
+                        # root the solver reached, and inside the band that is the other one
+                        gw = m._slope_at(G, w0)
+                        nr = len(m._root_count(G, w0))
+                    finally:
+                        m._gauge_k = prev
+                    return w, ok, gw, w0, nr
+                finally:
+                    m._b_state, m._v_state = None, None
+
+            w1, ok1, gw1, w01, _ = at(q, 1.0)
+            m._b_state, m._v_state = q, v
+            try:
+                c = m._c_at(flight, a, h, accel, w1, q, v)
+            finally:
+                m._b_state, m._v_state = None, None
+            row = dict(s=p["s"], c=c, k_crit=1.0 / c, w1=w1, Gw1=gw1,
+                       # THE NON-VACUITY ANCHOR: the `k = 1` column must BE rung 77 s 1's
+                       # `G_a'` and rung 76's `c`, or this sweep is measuring its own solver
+                       c_err=abs((1.0 - gw1) - c), ks={})
+            # the sweep DELIBERATELY includes `1.05` and `1.1`, where the anchor's `1e-3` window
+            # said nothing is wrong and s 3 says the residual is multi-rooted. A sweep that
+            # stepped over them would report a clean hold by choosing where to look.
+            for mult in (mults or (-0.5, 0.0, 0.25, 0.5, 0.9, 1.05, 1.1, 1.5, 2.0, 3.0)):
+                k = mult / c if mult else 0.0
+                w, ok, gw, w0, nr = at(q, k)
+                hi_ = at(q + dq, k)
+                lo_ = at(q - dq, k)
+                row["ks"][mult] = dict(
+                    mult=mult, k=k, w=w, ok=ok and hi_[1] and lo_[1], Gw=gw,
+                    Gw_pred=1.0 - k * c, anchor=w0, n_roots=nr,
+                    w_move=abs(w - w1) / abs(w1),
+                    Gw_err=abs(gw - (1.0 - k * c)) / max(abs(1.0 - k * c), 1e-30),
+                    direct=(hi_[0] - lo_[0]) / (2.0 * dq),
+                    # MEASURED, not chosen: excluded iff the residual is multi-rooted here
+                    excluded=max(nr, hi_[4], lo_[4]) > 1)
+            # the reference every gauge is differenced against, taken by the SAME `at` the
+            # sweep uses so the two share a differencing floor (rung 77 s 2.2's reason)
+            base = (at(q + dq, 1.0)[0] - at(q - dq, 1.0)[0]) / (2.0 * dq)
+            for d in row["ks"].values():
+                d["gain_move"] = abs(d["direct"] - base) / max(abs(base), 1e-30)
+            row["base"] = base
+            rows.append(row)
+        keep = [d for x in rows for d in x["ks"].values() if not d["excluded"]]
+        drop = [d for x in rows for d in x["ks"].values() if d["excluded"]]
+        return dict(phi_lim=phi_lim, margin=margin, inc=inc, n=len(rows), rows=rows,
+                    # the EXCLUSION, as an OUTPUT: which gauges were multi-rooted, and how bad
+                    # they were -- a rung that drops points must say what it dropped
+                    n_excluded=len(drop), n_kept=len(keep),
+                    excluded_mults=sorted({d["mult"] for d in drop}),
+                    excluded_worst=(max(d["w_move"] for d in drop) if drop else None),
+                    # the `k = 1` column IS rung 76's `c` / rung 77's `G_a'`
+                    c_err=max(x["c_err"] for x in rows) if rows else None,
+                    # P1: the set point does not move, ANYWHERE outside the collision band
+                    w_move=max(d["w_move"] for d in keep) if keep else None,
+                    # P2: the slope IS `1 - k*c`, and it changes SIGN
+                    Gw_err=max(d["Gw_err"] for d in keep) if keep else None,
+                    Gw_span=((min(d["Gw"] for d in keep), max(d["Gw"] for d in keep))
+                             if keep else None),
+                    sign_change=(any(d["Gw"] < 0.0 for d in keep)
+                                 and any(d["Gw"] > 0.0 for d in keep)) if keep else None,
+                    # P3: and NEITHER does the sensitivity -- the singularity is REMOVABLE
+                    gain_move=max(d["gain_move"] for d in keep) if keep else None,
+                    n_bad=sum(0 if d["ok"] else 1 for d in keep),
+                    c=(min(x["c"] for x in rows), max(x["c"] for x in rows)) if rows else None)
+
+    def _gauge_points(self, flight, Tt4_lo, Tt4_hi, Tt4_max, margin, taus, r, s_settle, ds,
+                      v_max, inc, phi_lim, every):
+        """Rung 77's own march, at rung 77's own settings, read at its own points -- so s 1's
+        `k = 1` column IS rung 77 s 1 and can be differenced against it (rung 63's lesson: a
+        number quoted from another rung's settings is not a comparison)."""
+        sm = phi_lim / self.map_lp_design.phi_surge - 1.0
+        m, surge, lag, traj, accel = self._ledger_march(
+            flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle, ds, v_max, inc, margin)
+        return m, surge, accel, m._riding4(traj, m.bleed_lim.b_max)[::every]
+
+    # --- s 3: THE SECOND ROOT, AND WHERE IT COLLIDES -------------------------------------------
+
+    def root_census(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                    Tt4_max: float, phi_lim: float = 0.80, margin: float = 0.10,
+                    taus=(0.05, 0.05, 0.05, 0.05), inc: bool = False, r: float = 0.5,
+                    s_settle: float = 1.2, ds: float = 0.005, v_max: float = 0.20,
+                    every: int = 8, mults=(0.5, 0.9, 0.99, 1.01, 1.05, 1.1, 1.2, 1.5, 2.0, 3.0),
+                    lo: float = 0.2, hi: float = 3.0, n: int = 400) -> dict:
+        """s 3: **the gauge preserves the root and destroys its UNIQUENESS.**
+
+        `G_k(w0)` must be ZERO at every `k` -- that is the construction, and it is checked
+        rather than assumed, because it is the ONE thing that would make s 1/s 2 meaningless.
+        Then the residual is walked across `[lo, hi] * w0` and its sign changes COUNTED.
+
+        The walk is a COUNT, not a solve: what matters is how many roots there are, and a root
+        finder started anywhere would only ever report the one it happened to reach -- which is
+        exactly the failure this section explains."""
+        m, surge, accel, pts = self._gauge_points(
+            flight, Tt4_lo, Tt4_hi, Tt4_max, margin, taus, r, s_settle, ds, v_max, inc,
+            phi_lim, every)
+        rows = []
+        for p in pts:
+            a, h, q, v, ms = p["nu_lp"], p["nu_hp"], p["b"], p["v"], p["mf_sched"]
+            m._b_state, m._v_state = q, v
+            try:
+                cap = m._accel_cap_fn(flight, a, h, accel)
+                w0 = m._cap_free(lambda w: w - cap(w), ms,
+                                 lambda: m._sched_fuel(flight, a, h, ms, accel))
+                c = m._c_at(flight, a, h, accel, w0, q, v)
+                m._b_state, m._v_state = q, v      # `_c_at` un-freezes in its OWN `finally`
+                cells = {}
+                for mult in mults:
+                    k = mult / c
+                    m._gauge_k = k
+                    try:
+                        G = m._gauge_residual(cap, w0)
+                        at_w0 = G(w0)
+                        roots = m._root_count(G, w0, lo=lo, hi=hi, n=n)
+                    finally:
+                        m._gauge_k = 1.0
+                    cells[mult] = dict(mult=mult, k=k, G_at_w0=at_w0, n_roots=len(roots),
+                                       roots=sorted(roots),
+                                       spurious=sorted(x for x in roots
+                                                       if abs(x - 1.0) > 1e-6))
+            finally:
+                m._b_state, m._v_state = None, None
+            rows.append(dict(s=p["s"], w0=w0, c=c, k_crit=1.0 / c, cells=cells))
+        allc = [d for x in rows for d in x["cells"].values()]
+        multi = sorted({d["mult"] for d in allc if d["n_roots"] > 1})
+        return dict(phi_lim=phi_lim, margin=margin, inc=inc, n=len(rows), rows=rows,
+                    # the construction, CHECKED: `w0` is a root at every gauge
+                    G_at_w0=max(abs(d["G_at_w0"]) for d in allc) if allc else None,
+                    # the true root is always FOUND by the walk
+                    true_found=all(any(abs(x - 1.0) <= 1e-6 for x in d["roots"])
+                                   for d in allc),
+                    # ... and it is not always ALONE
+                    n_roots=sorted({d["n_roots"] for d in allc}),
+                    multi_mults=multi,
+                    # the band, and that it BRACKETS the singular gauge
+                    band=(min(multi), max(multi)) if multi else None,
+                    brackets=(min(multi) < 1.0 < max(multi)) if multi else None,
+                    # the spurious root's distance from the true one, at the band's edges
+                    approach=(min(abs(x - 1.0) for d in allc for x in d["spurious"])
+                              if any(d["spurious"] for d in allc) else None))
+
+    # --- s 4: A GAUGE AGAINST A DEVICE, AND THE OTHER SINGULAR ROUTE ---------------------------
+
+    def gauge_vs_device(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                        Tt4_max: float, phi_lim: float = 0.80, margin: float = 0.10,
+                        taus=(0.05, 0.05, 0.05, 0.05), inc: bool = False, r: float = 0.5,
+                        s_settle: float = 1.2, ds: float = 0.005, v_max: float = 0.20,
+                        every: int = 8, dq: float = 1e-5, spread: float = 0.10) -> dict:
+        """s 4: **what separates a GAUGE from a DEVICE, and what the phi leg's route really is.**
+
+        TWO QUESTIONS, ONE READER, because they are the same question asked of the two things
+        rung 77 s 3 called singular.
+
+        **P6 — does rung 76 survive?** This rung's whole claim is that `1/(1-c)` is a gauge. If
+        rung 76 s 3's `solve` -> `sensed` re-writing ALSO left the root where it was, then that
+        rung measured a gauge and called it a device. So both caps are solved at the same states
+        and their ROOTS compared: a device MOVES the root, a gauge does not.
+
+        **P5 — is the phi leg's singular route the same as the accel leg's?** Rung 77 s 3 says
+        `dw*/dq` DIVERGES where a riding valve pins `phi_lp`. The anchor predicted `0/0` instead
+        of divergence. **BOTH are wrong, and the reason is structural rather than numerical:**
+        `dw*/dq` is an OPEN-LOOP object -- it exists because `q` is an INPUT, which is what
+        `_b_state = q` makes it. The pinning rung 77 s 3 measures happens with `_b_state = None`,
+        where the valve is a DEPENDENT variable solved from the state. There is no `q` there to
+        differentiate against, so `G_q` is not small: it does not EXIST. The two readings are not
+        the same derivative, and rung 77 s 3 put them on one axis.
+
+        So what is measured is the pair that shows it: `G_w` open (finite) against `G_w` closed
+        (dead) at the SAME states, plus the blunt form -- `phi_lp` held at `phi_lim` across a
+        +-`spread` fuel band under the closed valve. `dphi/dq` is reported OPEN only, where it
+        is defined, and its absence closed is the finding rather than a missing number."""
+        m, surge, accel, pts = self._gauge_points(
+            flight, Tt4_lo, Tt4_hi, Tt4_max, margin, taus, r, s_settle, ds, v_max, inc,
+            phi_lim, every)
+        key = surge.key()
+        rows = []
+        for p in pts:
+            a, h, q, v, ms = p["nu_lp"], p["nu_hp"], p["b"], p["v"], p["mf_sched"]
+            m._b_state, m._v_state = q, v
+            try:
+                cap = m._accel_cap_fn(flight, a, h, accel)
+                w_solve = m._cap_free(lambda w: w - cap(w), ms,
+                                      lambda: m._sched_fuel(flight, a, h, ms, accel))
+                # rung 76's SENSED cap: the same law, evaluated at the fuel actually burning
+                w_sensed = m._with_cap(
+                    "sensed", lambda: m._sensed_cap(flight, a, h, accel, ms))
+                # the phi leg, OPEN (valve frozen) -- rung 77 s 1's reading
+                def Gs(w):
+                    return surge.phi_lim - m._instant_fuel(flight, a, h, w)[key]
+                w_phi = m._cap_free(Gs, ms,
+                                    lambda: m._surge_fuel(flight, a, h, ms, surge))
+                open_w = m._slope_at(Gs, w_phi)
+                open_q = (m._phi_at(flight, a, h, w_phi, key, q + dq, v)
+                          - m._phi_at(flight, a, h, w_phi, key, q - dq, v)) / (2.0 * dq)
+            finally:
+                m._b_state, m._v_state = None, None
+            # ... and CLOSED: the valve re-solving at every trial, which is rung 64's plant
+            m._v_state = v
+            try:
+                closed_w = m._slope_at(Gs, w_phi)
+                phis = [m._instant_fuel(flight, a, h, w_phi * f)[key]
+                        for f in (1.0 - spread, 1.0, 1.0 + spread)]
+            finally:
+                m._v_state = None
+            rows.append(dict(
+                s=p["s"], w_solve=w_solve, w_sensed=w_sensed,
+                # P6: a DEVICE moves the root
+                device=abs(w_sensed - w_solve) / abs(w_solve),
+                w_phi=w_phi, phi_open_w=open_w, phi_open_q=open_q,
+                phi_closed_w=closed_w,
+                # P5: the slope dies -- and `dphi/dq` has no CLOSED counterpart to die WITH it,
+                # because `q` is not an input there. That is the correction, not a missing cell.
+                kill_w=abs(closed_w) / max(abs(open_w), 1e-30),
+                phi_spread=max(phis) - min(phis)))
+        return dict(phi_lim=phi_lim, margin=margin, inc=inc, n=len(rows), rows=rows,
+                    # P6: rung 76's re-writing MOVES the root -- it is a device, not a gauge
+                    device=min(x["device"] for x in rows) if rows else None,
+                    device_max=max(x["device"] for x in rows) if rows else None,
+                    # P5: the phi leg's slope DIES when the valve closes around its variable...
+                    kill_w=max(x["kill_w"] for x in rows) if rows else None,
+                    phi_open_w=min(abs(x["phi_open_w"]) for x in rows) if rows else None,
+                    phi_closed_w=max(abs(x["phi_closed_w"]) for x in rows) if rows else None,
+                    # ... while `dphi/dq` is FINITE in the only reading that has a `q` at all
+                    phi_open_q=min(abs(x["phi_open_q"]) for x in rows) if rows else None,
+                    phi_spread=max(x["phi_spread"] for x in rows) if rows else None)
+
+    @staticmethod
+    def _c_on_frozen(m, flight, p, accel) -> float:
+        """`c` at a trajectory point, with the ANCHOR SOLVED ON THE FROZEN PLANT.
+
+        The first version of s 5 solved this anchor with no `_b_state` block around it, so the
+        root came off the plant with the valve loop CLOSED and was then handed to `_c_at`, which
+        freezes internally -- two different plants, one number. That is the trap s 5.1 is about,
+        and it had shipped inside s 5's own code. `_c_at` restores `None` in its own `finally`,
+        which is why the freeze is taken twice here rather than held across both calls."""
+        a, h, q, v, ms = p["nu_lp"], p["nu_hp"], p["b"], p["v"], p["mf_sched"]
+        m._b_state, m._v_state = q, v
+        try:
+            cap = m._accel_cap_fn(flight, a, h, accel)
+            w0 = m._cap_free(lambda w: w - cap(w), ms,
+                             lambda: m._sched_fuel(flight, a, h, ms, accel))
+        finally:
+            m._b_state, m._v_state = None, None
+        return m._c_at(flight, a, h, accel, w0, q, v)
+
+    def _phi_at(self, flight, a, h, w, key, q, v):
+        """`phi_lp` at a fuel, with the valve held at `q` (`None` = the loop CLOSED, re-solving
+        at this very fuel) and the stator at `v`. In its own block, always."""
+        self._b_state, self._v_state = q, v
+        try:
+            return self._instant_fuel(flight, a, h, w)[key]
+        finally:
+            self._b_state, self._v_state = None, None
+
+    # --- s 5: THE TRAJECTORY, WHICH IS WHERE A GAUGE HAS TO BE INERT ---------------------------
+
+    def gauge_march(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                    Tt4_max: float, phi_lim: float = 0.80, margin: float = 0.10,
+                    taus=(0.05, 0.05, 0.05, 0.05), inc: bool = False, r: float = 0.5,
+                    s_settle: float = 1.2, ds: float = 0.005, v_max: float = 0.20,
+                    mults=(0.0, 0.5, 2.0, 3.0)) -> dict:
+        """s 4: **the whole march, re-run under each gauge.**
+
+        s 1-3 read set points at frozen states. This runs the PLANT: `_cap_fuel`'s accel branch
+        is the gauged one at every RK4 stage of every step, so if the gauge were a device rather
+        than a coordinate the trajectory would say so.
+
+        `k` is chosen per RUN, not per point, so it cannot be re-anchored mid-march: the multiple
+        is taken against the FIRST riding point's `c` and then held. That is deliberate and it is
+        the harder test -- `c` drifts along the trajectory, so a run at `mult = 2.0` is at
+        `k*c = 2.0` only at the start and sweeps through a range, and the invariance has to hold
+        across all of it.
+
+        THE COORDINATE IS `demand`, NOT rung 77's `clip`, AND IT HAS TO BE. `_ledger_march`
+        marches in `clip`, where rung 76 s 0's refusal says the ladder dispatches out before
+        `_cap_fuel` is ever reached -- so a gauged `clip` march never executes the gauged branch
+        and returns a bit-identical trajectory that has measured NOTHING. The first version of
+        this section did exactly that and reported `0.000e+00` under four gauges. `_gauge_hits`
+        counts the branch's executions and is returned, so the failure cannot recur silently."""
+        sm = phi_lim / self.map_lp_design.phi_surge - 1.0
+        accel0 = self.accel_for(flight, Tt4_lo, Tt4_hi, sm, Tt4_max, taus, v_max, inc, margin)
+        base = self._cap_march(flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle, ds,
+                               v_max, inc, "demand", "sched", "none", None, "solve", accel0)
+        m0, surge, lag, traj0 = base
+        accel = accel0
+        p0 = m0._riding4(traj0, m0.bleed_lim.b_max)[0]
+        m0._b_state, m0._v_state = p0["b"], p0["v"]
+        try:
+            cap = m0._accel_cap_fn(flight, p0["nu_lp"], p0["nu_hp"], accel)
+            w00 = m0._cap_free(lambda w: w - cap(w), p0["mf_sched"],
+                               lambda: m0._sched_fuel(flight, p0["nu_lp"], p0["nu_hp"],
+                                                      p0["mf_sched"], accel))
+            c0 = m0._c_at(flight, p0["nu_lp"], p0["nu_hp"], accel, w00, p0["b"], p0["v"])
+        finally:
+            m0._b_state, m0._v_state = None, None
+        # THE SCHEDULE MUST NOT MOVE WITH `k`. `_ledger_march` builds it through `accel_for`,
+        # which builds it on `_shared_rig` -- and `_shared_rig` now CARRIES `_gauge_k`. If the
+        # schedule tracked the gauge, s 5 would be comparing two schedules and calling the
+        # difference a trajectory. Rungs 61-77 lost a carried knob sixteen times; this is the
+        # one place this rung could lose it in the other direction.
+        sched0 = self.accel_for(flight, Tt4_lo, Tt4_hi, sm, Tt4_max, taus, v_max, inc, margin)
+        sched_moved = None
+        keys = ("nu_lp", "nu_hp", "mf", "b", "v")
+        cells = []
+        for mult in mults:
+            k = mult / c0 if mult else 0.0
+            sk = self._with_gauge(k, self.accel_for, flight, Tt4_lo, Tt4_hi, sm, Tt4_max,
+                                  taus, v_max, inc, margin)
+            moved = max([abs(x - y) / max(abs(y), 1e-30)
+                         for x, y in zip(sk.kappa, sched0.kappa)]
+                        + [abs(x - y) / max(abs(y), 1e-30)
+                           for x, y in zip(sk.n_H, sched0.n_H)])
+            sched_moved = moved if sched_moved is None else max(sched_moved, moved)
+            ResidualGaugeTransient._gauge_hits = 0
+            ResidualGaugeTransient._gauge_binds = 0
+            _, _, _, traj = self._with_gauge(
+                k, self._cap_march, flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r,
+                s_settle, ds, v_max, inc, "demand", "sched", "none", None, "solve", accel0)
+            hits = ResidualGaugeTransient._gauge_hits
+            binds = ResidualGaugeTransient._gauge_binds
+            n = min(len(traj), len(traj0))
+            worst, where = 0.0, None
+            for key in keys:
+                for i in range(n):
+                    x, y = traj[i].get(key), traj0[i].get(key)
+                    if not (isinstance(x, float) and isinstance(y, float)):
+                        continue
+                    e = abs(x - y) / max(abs(y), 1e-12)
+                    if e > worst:
+                        worst, where = e, (key, i)
+            # `k` is HELD while `c` drifts along the march, so `k*c` SWEEPS. The invariance has
+            # to hold across that whole range, and the range has to stay clear of s 3's
+            # multi-root band -- which is an ASSUMPTION until it is recorded, and it is the
+            # assumption that makes this section interpretable at all.
+            cs = [self._c_on_frozen(m0, flight, pp, accel)
+                  for pp in m0._riding4(traj0, m0.bleed_lim.b_max)[::4]]
+            kc = sorted(k * x for x in cs)
+            cells.append(dict(mult=mult, k=k, n=n, same_len=len(traj) == len(traj0),
+                              worst=worst, where=where, kc=(kc[0], kc[-1]), hits=hits,
+                              binds=binds,
+                              clear=not (kc[0] <= 1.0 <= kc[-1])))
+        return dict(phi_lim=phi_lim, margin=margin, inc=inc, c0=c0, n=len(traj0), cells=cells,
+                    # THE REDUCE'S OTHER HALF: a gauge is INERT on the plant it re-writes
+                    worst=max(x["worst"] for x in cells) if cells else None,
+                    same_len=all(x["same_len"] for x in cells),
+                    # NON-VACUITY: the gauged branch must actually have RUN
+                    hits=min(x["hits"] for x in cells) if cells else 0,
+                    binds=min(x["binds"] for x in cells) if cells else 0,
+                    # the schedule is NOT a function of the gauge
+                    sched_moved=sched_moved,
+                    # and no run's swept `k*c` crossed the collision band
+                    clear=all(x["clear"] for x in cells),
+                    kc=[(x["mult"], x["kc"]) for x in cells])

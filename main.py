@@ -31,6 +31,7 @@ from turbojet.engine import (  # noqa: E402
     AntiWindupTransient,
     SensedCapTransient,
     StiffnessLedgerTransient,
+    ResidualGaugeTransient,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -6121,6 +6122,82 @@ def print_stiffness_ledger_table(flight):
     print("    built. No knob, no state, no constant, no plant code. See docs/rung77-spec.md.")
 
 
+def print_residual_gauge_table(flight):
+    """Rung-78 payoff: THE RESIDUAL GAUGE -- rung 77 s 9's second seam, closed by refuting it.
+
+    The panel is built around the one construction: anchor the accel leg's cap at its own root
+    and scale the departure. The set point is then invariant IDENTICALLY while `G_k' = 1 - k*c`
+    is a free dial, so `c -> 1` is reachable by choice -- and costs nothing, because `G_q`
+    carries the same vanishing factor. What it DOES cost is uniqueness."""
+    print("\nTHE RESIDUAL GAUGE (rung 78): a residual's SLOPE is a GAUGE; its root's")
+    print("UNIQUENESS is not.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR = 0.55
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    LO, HI, B, TMAX, MARGIN, PHI = 1000.0, 1400.0, 0.10, 1200.0, 0.10, 0.80
+    sm = PHI / FLOOR - 1.0
+    t = ResidualGaugeTransient(
+        design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0,
+        bleed_lim=BleedLimiter.from_margin(LP, B, sm, tau=0.05),
+        stator_lim=StatorLimiter.from_margin(LP, 0.20, sm, tau=0.05))
+    t._lag_coord, t._ref_law = "demand", "sched"
+    t._windup_law, t._tau_t, t._cap_law = "none", None, "solve"
+
+    g = t.gauge_scan(flight, LO, HI, TMAX, phi_lim=PHI, margin=MARGIN)
+    cen = t.root_census(flight, LO, HI, TMAX, phi_lim=PHI, margin=MARGIN)
+
+    print("\n  THE CONSTRUCTION -- and the set point is invariant by ALGEBRA, not tolerance:")
+    print("    cap_k(w) = w0 + k*(cap(w) - w0)      w0 := the k=1 root, so cap(w0) = w0")
+    print("    cap_k(w0) = w0 + k*0 = w0            for EVERY k          =>  G_k' = 1 - k*c")
+
+    r = g["rows"][0]
+    print("\n  ONE RIDING POINT (s = %.3f, c = %.6f, so the singular gauge is k = %.4f):"
+          % (r["s"], r["c"], r["k_crit"]))
+    print("    %7s %10s %13s %13s %11s %16s %11s"
+          % ("k*c", "k", "G_w", "1 - k*c", "w move", "dw*/dq", "gain move"))
+    for d in r["ks"].values():
+        print("    %7.2f %10.4f %13.5e %13.5e %11.2e %16.8e %11.2e%s"
+              % (d["mult"], d["k"], d["Gw"], d["Gw_pred"], d["w_move"], d["direct"],
+                 d["gain_move"], "   <- multi-rooted" if d["excluded"] else ""))
+
+    print("\n  OVER ALL %d POINTS:  G_w spans %.4f .. %.4f (BOTH SIGNS), and matches 1-k*c"
+          % (g["n"], g["Gw_span"][0], g["Gw_span"][1]))
+    print("    to %.2e.  The set point moves %.2e and dw*/dq moves %.2e."
+          % (g["Gw_err"], g["w_move"], g["gain_move"]))
+    print("    So `1/(1-c)` is reachable, reaches INFINITY, and the plant does not notice:")
+    print("    G_w and G_q carry the SAME vanishing factor, so their quotient is invariant.")
+
+    print("\n  BUT THE ROOT'S UNIQUENESS DIES -- |G_k(w0)| = %.2e at every gauge (it is a"
+          % cen["G_at_w0"])
+    print("    root by construction), while a SECOND root collides with it at k*c = 1:")
+    print("    %7s %7s   %s" % ("k*c", "roots", "locations (w/w0)"))
+    for d in cen["rows"][0]["cells"].values():
+        print("    %7.2f %7d   %s"
+              % (d["mult"], d["n_roots"], "  ".join("%.6f" % x for x in d["roots"])))
+    print("    multi-root band k*c in %s, which BRACKETS the singular gauge: %s"
+          % (str(cen["band"]), cen["brackets"]))
+
+    print("\n  WHAT THIS SAYS. Rung 77 s 3 called `c -> 1` one of two routes to a singular")
+    print("    set-point solve and unreachable here. It is reachable in one line, and it is a")
+    print("    REMOVABLE singularity -- a property of how the residual was WRITTEN. What the")
+    print("    limit actually costs is WELL-POSEDNESS: inside the band a solver converges")
+    print("    cleanly onto the WRONG root (ok=True, set point moved 61%). Rung 76 SURVIVES,")
+    print("    because `solve` -> `sensed` MOVES the root (2.8e-02 .. 1.4e-01) -- a rewriting")
+    print("    that moves the root is a DEVICE, one that preserves it is a COORDINATE.")
+    print("    One swept knob, no constant. See docs/rung78-spec.md.")
+
+
 def main():
     # The tables carry unicode (Δ, ·, ≡, ≈); force UTF-8 so `python main.py` renders
     # on any console (a stock Windows cp1252 console would otherwise crash on them).
@@ -6280,6 +6357,7 @@ def main():
     print_sensed_cap_table(FLIGHT)
 
     print_stiffness_ledger_table(FLIGHT)
+    print_residual_gauge_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

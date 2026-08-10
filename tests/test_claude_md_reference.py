@@ -153,7 +153,16 @@ _CLAUDE_MD = os.path.join(_HERE, os.pardir, "CLAUDE.md")
 # freed 1,282 B, ALL of it given back: 8 B of headroom, so rung 78 trips this guard and has to
 # justify its own bump like every rung before 77. Compressing a section Layout entry is the
 # SANCTIONED move here; raising the number is not.
-MAX_BYTES = 35_560
+# RAISED at rung 78 (35,560 -> 35,970), and this is ORDINARY rung growth, unlike the two
+# entries above it. Rung 78 cost 409 B -- ONE table row, its name in the section Layout ladder
+# chain, one clause in the BUILT list, and the four "current scope" bumps -- against the 350 B
+# this file's own header budgets for a row. It is paid for in full: rung 78 CLOSES rung 77 s 9's
+# "a cap whose `c` approaches 1" seam by REFUTING it, and removes that clause from the live
+# shortlist. The section Layout entry is a class name and a number, because the chain was
+# compressed to exactly that at slice 3 -- which is why this bump is 409 B and not the ~800 B
+# the same rung would have cost against the per-class prose that stood there yesterday.
+# 8 B of headroom again, on purpose, so rung 79 trips this guard too.
+MAX_BYTES = 35_970
 MAX_LINES = 300
 
 

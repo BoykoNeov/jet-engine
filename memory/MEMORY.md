@@ -15,6 +15,7 @@ these lines (the same rule CLAUDE.md lives under).
 - [PyPy switch shipped](pypy-switch-shipped.md) — full gate 17:27 → 2:47; SLOW_SECONDS KEPT with its reason inverted (bought time → buys determinism); psutil load-bearing; print precision protects states, not residuals
 - [Golden fingerprint gate](golden-fingerprint-gate.md) — the project's ONLY absolute-value gate; goldens are a CPython anchor, NEVER regenerate them under another interpreter; measure a detector's sensitivity, don't assert it
 - [Golden gate slice 2](golden-gate-slice2.md) — 26 arms / 8044 values; drift is set by CONDITIONING not by rung, and the reduced-resolution worry measured backwards
+- [Golden gate slice 3](golden-gate-slice3.md) — rungs 67-77 pinned; a STRIDE knob is not a RESOLUTION knob (an arm that guarded nothing), and a structural zero needs a two-sided ABS tolerance
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page published as artifact 56cde230…; update the same URL, regenerate via extract_data.py + build.py
 
 ## Shipped rungs
@@ -72,6 +73,7 @@ these lines (the same rule CLAUDE.md lives under).
 - [Rung 75 anti-windup device](rung75-antiwindup-device.md) — a device is decisive on the SPECTRUM and inert on the RANK; the inherited instrument was BLIND and would have refuted the headline having measured nothing; rung 74’s “divergence” was a contraction at ratio one
 - [Rung 76 fuel-dependent cap](rung76-fuel-dependent-cap.md) — a device in a leg's LAW reaches the MASKED leg, one in the shared PLANT reaches the AUTHORITATIVE one; the 0.7% miss on a pre-registered identity WAS the finding (a set-point solve is a 1/(1−c) GAIN); guard the second min-select
 - [Rung 77 stiffness ledger](rung77-stiffness-ledger.md) — a set-point solve's sensitivity is a FORCING OVER A SLOPE, so 1/(1−c) is the SLOPE HALF of one leg; check UNITS before choosing a normalisation; a closure that outlived its state block returned a perfect 1.000e+00
+- [Rung 78 residual gauge](rung78-residual-gauge.md) — a residual's SLOPE is a GAUGE, its root's UNIQUENESS is not; THREE vacuity traps in one section (wrong coordinate, a counter that was itself vacuous, masking) — only COUNTING caught them; `ok` is not a correctness guard
 
 ## Margin sweeps — confirmations, not rungs
 - [Rung 29 π_c margin](rung29-pi-c-margin.md) — verdict confirmed at 9.4× but π_c NOT protective; the ENERGY = INVENTORY × COMPLETION sharpening
