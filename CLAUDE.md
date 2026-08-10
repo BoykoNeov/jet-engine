@@ -173,10 +173,9 @@ seam is closed and must never be re-opened by mistake.
 ## Open engineering tasks (not rungs, not seams)
 - **One panel per rung** — CLOSED. `main.py` has no test, so the gate cannot see it: check on every ship.
 - **Solver absolute-tolerance audit** — CLOSED, NEGATIVE; `docs/plans/todo-solver-tolerance-audit.md`.
-- **The fingerprint gate stops at rung 66.** `test_numeric_fingerprint.py`'s most-derived arm is
-  `TwoLagCascadeTransient`, so rungs 67–76's plants have NO absolute-value gate and the reduce spine
-  cannot see an edit that moves both sides. Rung 76 § 6.1 checked its own parent edit against `HEAD~1`
-  by hand (229,152 floats, bit-for-bit). New arms need goldens regenerated under CPython.
+- **The fingerprint gate stopped at rung 66** — CLOSED by slice 3: one arm per rung 67–77 pins that
+  rung's INSTRUMENTS, so a parent edit now trips the gate instead of a hand-rolled worktree diff.
+  The (rel, abs) pair, the vacuity trap and the numbers are in that module's docstring § SLICE 3.
 
 ## Conventions
 - **SI units throughout** (K, Pa, kg/s, m/s, J/kg). Convert kPa → Pa internally.
@@ -218,19 +217,13 @@ A compact map — the per-rung method/finding detail lives in `docs/rungN-spec.m
   FORWARD closure, then rung 63's READERS beside a fuel leg, built on `at_lever`) →
   `LimitedBleedTransient` (64: the `BleedLimiter` φ FLOOR, an outer root over closures) →
   `LaggedBleedTransient` (65: that limiter's `tau` makes the POSITION a third state) →
-  `TwoLagCascadeTransient` (66: rung 52's lagged FUEL leg beside it — four states, two clocks) →
-  `CrossLoopCascadeTransient` (67: rung 47's lagged GOVERNOR there instead — the two loops on
-  DIFFERENT variables) → `ThreeLoopCascadeTransient` (68: a `StatorLimiter` φ floor as a THIRD
-  loop — five states, three clocks) → `ReferenceSplitTransient` (69: that SAME stator on a
-  `StatorIncidenceLimiter` instead — one lever, the other COORDINATE) → `CrossSplitTransient`
-  (70: rung 68's triple with the odd loop's SENSOR on `Tt4` — rung 47's governor, a sibling
-  integrator) → `FullSplitTransient` (71: rung 70's triple with rung 69's INCIDENCE stator —
-  `n`=`m`=3, and the ONE class here that REUSES its parent's march rather than siring one) →
-  `SharedActuatorTransient` (72: rung 52's fuel leg BESIDE the governor — two loops on ONE
-  actuator, six states, `_applied_clip` DECLARED) → `AppliedReferenceTransient` (73: those two
-  legs re-referenced to the APPLIED fuel — no new state, one `_reference` hook, and `_jac4`
-  weakened to MEASURE the two fuel-side diagonals it used to write) → `DemandCoordinateTransient` (74: those legs lagging the DEMAND — a third knob `_lag_coord` and an UNFLOORED cap) → `AntiWindupTransient` (75: a declared BACK-CALCULATION on the masked leg — a fourth knob `_windup_law`, one new clock `τ_t`, and the RHS-differencing instrument its headline needs) → `SensedCapTransient` (76: rung 48's leg re-read AS WRITTEN — a fifth knob `_cap_law`, no new constant, the first ARMED accel leg here) → `StiffnessLedgerTransient` (77: a READER of the three legs' slopes). Each reduces to its predecessor (exact dispatch, an inherited identity, or the forward closure);
-  **the method names + reduce contracts are in each rung's spec, not here.**
+  `TwoLagCascadeTransient` (66) → `CrossLoopCascadeTransient` (67) → `ThreeLoopCascadeTransient`
+  (68) → `ReferenceSplitTransient` (69) → `CrossSplitTransient` (70) → `FullSplitTransient` (71) →
+  `SharedActuatorTransient` (72) → `AppliedReferenceTransient` (73) → `DemandCoordinateTransient`
+  (74) → `AntiWindupTransient` (75) → `SensedCapTransient` (76) → `StiffnessLedgerTransient` (77).
+  Each adds ONE thing — a state, a clock, a knob, or (77) nothing but a reader — and reduces to its
+  predecessor; **what each adds, its method names and its reduce contract are in that rung's
+  spec, not here.**
 - `main.py` — the design-point run: ideal-vs-real tables, the overlaid T–s diagram, and **one panel
   per rung** (each demonstrates that rung's load-bearing claim and states its honest scope).
 - `tests/` — per-rung `test_rungN.py` (N = 1…76; plus the rung-1/2b/3/4/5 files). Every rung file
@@ -247,9 +240,9 @@ A compact map — the per-rung method/finding detail lives in `docs/rungN-spec.m
 
 ## Commands
 - Run the model: `python main.py` · Install: see `requirements.txt` (a PyPy venv — § Stack)
-- **The gate: `pytest`** — **EVERYTHING**, 1243 tests, **~9:40 at 1242** (PyPy, rung 77, shared box). ONE gate;
+- **The gate: `pytest`** — **EVERYTHING**, 1255 tests, **~9:40 at 1242** (PyPy, rung 77, shared box). ONE gate;
   nothing is ever silently deselected, so no regression can hide. (`main.py` has no test.)
-- **Iterate: `pytest -m "not slow"`** — 917 tests, **~1:54 at 890**. The run minus the expensive sweeps.
+- **Iterate: `pytest -m "not slow"`** — 925 tests, **~1:54 at 890**. The run minus the expensive sweeps.
   `slow` is a LABEL you opt out of by typing, never a default. Only those: `pytest -m slow`.
 - **WHEN to run the gate:** at session end (unless run shortly before), and after a code change.
   NOT at session start, NOT on a docs-only change, NOT "just to be sure", and **NEVER to refresh

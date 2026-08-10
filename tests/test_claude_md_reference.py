@@ -144,7 +144,16 @@ _CLAUDE_MD = os.path.join(_HERE, os.pardir, "CLAUDE.md")
 # is LF, so it was normalised -- which means the ~264 B this guard used to see from carriage
 # returns are GONE and the real headroom was always ~340 B, not ~76 B. Do not read the pre-rung-77
 # numbers in the comments above as directly comparable to the ones below.
-MAX_BYTES = 36_840
+# LOWERED at fingerprint slice 3 (36,840 -> 35,560), and it is the FIRST DROP in this constant's
+# history. The 36,840 bump above was taken against a DEFECT DISCLOSURE and its own comment says
+# the right move once paid off is to give the budget back. Slice 3 pays it off, so: the entry was
+# rewritten CLOSED and ~90 B shorter, and section Layout's rungs-66-77 chain -- which had grown into
+# a per-class essay, the exact thing this file's docstring forbids and its own last sentence
+# already delegated to the specs -- was compressed to a bare class -> rung chain (-1,189 B). Total
+# freed 1,282 B, ALL of it given back: 8 B of headroom, so rung 78 trips this guard and has to
+# justify its own bump like every rung before 77. Compressing a section Layout entry is the
+# SANCTIONED move here; raising the number is not.
+MAX_BYTES = 35_560
 MAX_LINES = 300
 
 

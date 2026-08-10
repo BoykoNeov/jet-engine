@@ -190,6 +190,79 @@ of one — with everything else at 1e-6 or tighter. ** The other SIXTEEN slice-2
 swept; that is a recorded skip, not implied coverage, and it is safe only in the direction
 claimed: a 1e-13-band arm cannot have a floor WORSE than the 1e-5 headline, but nothing here
 says how much better it is.
+
+--------------------------------------------------------------------------------------------
+SLICE 3 — the rungs 67-77 CONTROL ladder (added 2026-08-10)
+--------------------------------------------------------------------------------------------
+Slices 1 and 2 stop at rung 66: the most-derived plant pinned anywhere above was
+`TwoLagCascadeTransient`. Rungs 67-77 — the whole loop-topology family, eleven rungs of
+cascades, splits, shared actuators and set-point solves — had NO absolute-value gate at all,
+and the reduce spine cannot see an edit that moves both sides. That gap was not hypothetical:
+rung 76 § 6.1 had to check its one parent edit against `HEAD~1` in a `git worktree`, by hand,
+229 152 floats, precisely because nothing here could. Slice 3 closes it, one arm per rung.
+
+WHAT IS PINNED, and it is deliberately NOT a trajectory. These rungs' content is their
+INSTRUMENTS — `det J`, `c1`, the eigenvalues, `zeros = n - m`, the cyclic product, rung 77's
+three slopes and the shared currency `dw*/dq` — plus the discrete readings those carry
+(`n_live`, `zeros`, orderings, engage/release rows). Those are what has never had an absolute
+gate, and per value they are far cheaper than a march. Each arm reads its rung's own
+instrument methods on its rung's own rig, at that rung's published settings.
+
+  r67 `cross_identity` + `oscillation_window`   r73 `applied_gains`
+  r68 `triple_gains` + `triple_modes`           r74 `demand_gains`
+  r69 `reference_gains` + `reference_modes`     r75 `windup_gains`
+  r70 `split_gains` + `split_modes`             r76 `cap_gains`
+  r71 `full_gains` + `full_modes`               r77 `leg_slopes` + `set_point_gains`
+  r72 `charpoly_selftest` + `shared_gains`          + `singular_limit`
+
+** `every` IS NOT A SAFE RESOLUTION KNOB, AND THAT WAS MEASURED. ** Slice 2 cut node counts
+freely. Here the analogous knob strides the RIDING ARC, and these arcs are short — rung 71's is
+7 points at `ds = 0.005`. The first cut of this slice used `every = 40`; the rung-71 arm then
+sampled ONE base point, that point skipped as off-regime, and the arm came back with
+`rows#n = 0` and 27 of its 83 values `None`. It would have shipped 83 pinned values, passed
+every gate in this module forever, and guarded NOTHING — rung 77 § 8's failure mode exactly (a
+reader that measured nothing and returned a perfect number). `every` is 4 here, and
+`test_slice3_arms_are_not_vacuous` is the check that caught it, kept as a gate.
+
+THE TOLERANCE IS A PAIR, and slices 1/2 are untouched by it (no `ABS_TOL` entry == 0.0 ==
+the old pure-relative behaviour). Rungs 72-76 pin quantities their own findings say are ZERO:
+rung 73's `det J` DIES (the masked pole hits the origin) and rung 75's `det0` is that pole
+before the device moves it. Two interpreters land such a value on opposite sides of zero at
+1e-11 — a RELATIVE error of 4, an ABSOLUTE error of 1e-10. A relative band wide enough to pass
+that would be worthless; the meaningful assertion on a structural zero is that it is STILL
+ZERO. So a value passes if `|a-b| <= abs_tol` OR `|a-b|/|b| <= rel_tol`.
+
+The abs constants are justified from BOTH sides, not just the drift: `1e-9` sits >=4x above
+every measured absolute drift AND >=2.8 decades BELOW the live scale of the same quantity
+(rung 72's `det` is alive at 2.9e-5), so it certifies "still zero" without being able to mask a
+dead determinant coming alive. Rung 73's `det` is never alive in its own arm at all — max
+6.7e-11 across every cell — which IS that rung's finding.
+
+CALIBRATION RULE, sharpened. Slices 1/2 used "one round decade above the measured drift" and
+landed at 2.4-10.5% band consumption by luck; applied here it would have shipped arms at 89%
+of band, which is a flake and not a detector. The rule used is ** the round decade at least 4x
+above the measured drift **, which reduces to slice 1's wherever slice 1 already had headroom.
+Worst per-key headroom over all eleven arms is 4.5x (r70), best 31.8x (r73) -- measured
+RUN-vs-SHIPPED-GOLDEN under PyPy (slice 1's own standard: a claim about the committed
+artifact has to be taken against the committed artifact, not against the probe that fitted
+it). r68 and r77 differ in no value at all and so have no headroom to report.
+
+THREE VALUES ARE EXCLUDED, and this is a disclosure, not a tolerance. In rung 76's
+`applied|none|fuel` cell the masked leg's determinant is the DEAD one, so `det_err` and
+`det_ratio` are 0/0: CPython reads +27.2, PyPy +1.34. That is not drift and no constant fixes
+it — it is a quantity the model does not determine. `_UNSTABLE` names the three keys at their
+kernel; nothing else in this module is dropped, and 10 531 of 10 534 values are gated.
+
+SENSITIVITY, measured the same way as slices 1/2 (`sensitivity3.py`, 2026-08-10): perturb
+`cp_t` — the one physical input all eleven arms read, since all eleven march the same two-spool
+CPG plant — and record the smallest decade that turns each arm red.
+
+    ** ALL ELEVEN ARMS DETECT 1e-14, the tightest decade swept. ** No arm in this slice is
+    anywhere near the gate's 1e-5 floor; that floor remains kernel F's and r25's.
+
+Two arms (r68, r77) measured EXACT across the interpreters — 1 663 and 591 values, zero
+differing — and assert bit-equality, like `cpg` and `r66`. Cost, PyPy idle: 3-18 s per arm,
+87 s for the slice.
 """
 import json
 import os
@@ -208,6 +281,11 @@ from turbojet.gas import (  # noqa: E402
 from turbojet.engine import (  # noqa: E402
     FlightCondition, build_turbojet, build_two_spool_turbojet, OffDesignMatcher, ComponentMap,
     TwoLagCascadeTransient, BleedLimiter, SurgeLimiter, AsymmetricLag,
+    # slice 3 — the rungs 67-77 control ladder, one class per rung
+    CrossLoopCascadeTransient, ThreeLoopCascadeTransient, ReferenceSplitTransient,
+    CrossSplitTransient, FullSplitTransient, SharedActuatorTransient,
+    AppliedReferenceTransient, DemandCoordinateTransient, AntiWindupTransient,
+    SensedCapTransient, StiffnessLedgerTransient, StatorLimiter, StatorIncidenceLimiter,
 )
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -247,6 +325,42 @@ TOL = {
     "r25":  1e-4,    # measured drift 2.0e-6    finite_rate_nozzle <- joint-WEAKEST; see below
     "r27":  1e-8,    # measured drift 1.8e-10   no_freeze_out_nozzle
     "r28":  1e-5,    # measured drift 6.8e-7    coupled_no_freeze_out_nozzle
+    # ---------------- SLICE 3: the rungs 67-77 CONTROL ladder (2026-08-10) ----------------
+    # `M:\claud_projects\temp\fingerprint-slice3\{probe,fit_final,sensitivity3}.py`, 10 534
+    # values. RULE: the round decade at least 4x above the measured drift (see § SLICE 3 —
+    # slices 1/2's "one decade" would have shipped arms at 89% of band here). Several arms
+    # ALSO need an absolute leg, in `ABS_TOL` below; a `0.0` here is bit-equality as always.
+    "r67":  1e-15,   # measured drift 1.7e-16   cascade A — the scalar P, and the window
+    "r68":  0.0,     # measured EXACT — 0 of 1 663 values differed
+    "r69":  1e-14,   # measured drift 4.0e-16   the REFERENCE split — zeros = n - m, and c1
+    "r70":  1e-14,   # measured drift 3.9e-16   the GENERIC split
+    "r71":  1e-14,   # measured drift 1.4e-15   the FULL split — n = m = 3
+    "r72":  1e-15,   # BACKSTOP, not a fit: 0 keys ride the relative leg (the abs one carries
+                     # every difference). Kept nonzero so a LARGE-magnitude value whose 1-ulp
+                     # difference exceeds `ABS_TOL` cannot fail on arithmetic alone.
+    "r73":  1e-15,   # BACKSTOP, as r72 — every difference here is a structural zero
+    "r74":  1e-14,   # measured drift 4.8e-16   the DEMAND coordinate
+    "r75":  1e-9,    # measured drift 5.7e-11   the ANTI-WINDUP device
+    "r76":  1e-11,   # measured drift 3.1e-13   the FUEL-DEPENDENT cap
+    "r77":  0.0,     # measured EXACT — 0 of 591 values differed
+}
+
+# --------------------------------------------------------------------------- absolute leg
+# SLICE 3 ONLY, and slices 1/2 are untouched: an ABSENT entry is 0.0, which is exactly the
+# pure-relative comparison this module shipped with. See § SLICE 3 for why a pair is needed —
+# rungs 72-76 pin determinants their OWN findings say are ZERO, and two interpreters put such a
+# value on opposite sides of zero at 1e-11 (relative error 4, absolute error 1e-10).
+#
+# `1e-9` is justified from BOTH sides and neither half is optional: it is >=4x above every
+# measured absolute drift, AND >=2.8 decades below the LIVE scale of the same quantity (rung
+# 72's `det` is alive at 2.9e-5), so it cannot mask a dead determinant coming alive.
+ABS_TOL = {
+    "r70":  1e-15,   # measured 2.2e-16 on `c1_err` — a residual, not a determinant
+    "r72":  1e-9,    # measured 8.9e-11 on `det` / `trace_err` / `det_vs_a0`
+    "r73":  1e-9,    # measured 3.1e-11 on `det` — rung 73's own DEAD determinant
+    "r74":  1e-9,    # measured 8.1e-11 on `poly_gap`
+    "r75":  1e-9,    # measured 1.8e-10 on `det0` — the masked pole before the device moves it
+    "r76":  1e-9,    # measured 5.2e-11 on `det` / `det0`
 }
 
 # --------------------------------------------------------------------------- shared conditions
@@ -673,6 +787,257 @@ def kernel_r28():
     return out
 
 
+# ===========================================================================================
+# SLICE 3 — the rungs 67-77 CONTROL ladder
+# ===========================================================================================
+# The settings are rungs 67-77's OWN, taken verbatim from their test files, and they are
+# UNIFORM across the whole family: the same flight point, the same LP/HP maps, the same
+# LO/HI/DS/SETTLE/R, FLOOR = 0.55, B = 0.10, V_MAX = 0.20, TT4_MAX = 1200 (rung 67's imposed
+# redline, carried unchanged through rung 77), PHI_JAC = 0.80 / PHI_BOTH = 0.76, MARGIN = 0.10.
+#
+# RESOLUTION is cut as slice 2 cuts it — but see § SLICE 3: `every` is NOT one of the knobs
+# that may be cut freely here, because it strides the riding arc rather than a quadrature.
+_S3_LO, _S3_HI, _S3_DS, _S3_SETTLE, _S3_R = 1000.0, 1400.0, 0.005, 1.2, 0.5
+_S3_FLOOR, _S3_B, _S3_VMAX, _S3_TT4MAX = 0.55, 0.10, 0.20, 1200.0
+_S3_PHI, _S3_MARGIN = 0.80, 0.10
+_S3_TAU = _S3_TAU_S = _S3_TAU_GOV = _S3_TAU_T = 0.05
+_S3_TAUS = (0.05, 0.05, 0.05, 0.05)
+_S3_SM = _S3_PHI / _S3_FLOOR - 1.0
+_S3_CLOCKS = ((0.05, 0.05, 0.05), (0.05, 0.005, 0.05))
+_SLICE3 = ("r67", "r68", "r69", "r70", "r71", "r72", "r73", "r74", "r75", "r76", "r77")
+EVERY_G, EVERY_M = 4, 4                       # gains / modes base-point stride — see § SLICE 3
+
+# THE THREE EXCLUDED VALUES, named at the kernel that produces them so they are never pinned.
+# In rung 76's `applied|none|fuel` cell the masked leg's determinant is the DEAD one, so
+# `det_err` and `det_ratio` are 0/0 — CPython +27.2, PyPy +1.34. That is not drift and no
+# tolerance fixes it: the model does not determine these. Dropping them costs 3 of 10 534.
+_UNSTABLE = {
+    "r76": ("g.cells.applied|none|fuel.det_err",
+            "g.cells.applied|none|fuel.det_ratio[0]",
+            "g.cells.applied|none|fuel.det_ratio[1]"),
+}
+
+_S3_LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(_S3_FLOOR)
+_S3_HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(_S3_FLOOR)
+
+
+_S3_DESIGN = []
+
+
+def _s3_design():
+    """The two-spool CPG design every slice-3 arm marches (rungs 67-77's shared rig).
+
+    MEMOISED, and that is a pure cost decision rather than a semantic one: building it is ~5 s
+    and eleven arms want the same object, so an uncached version costs the slice ~56 s. It is
+    safe because it was CHECKED both ways — every one of the 10 531 values is bit-identical
+    whether each arm builds its own design or all eleven share one, which is also evidence no
+    arm mutates it."""
+    if not _S3_DESIGN:
+        _S3_DESIGN.append(build_two_spool_turbojet(
+            _cpg_gas(), 3.0, 6.0, TT4, FLIGHT.p0, nozzle_convergent=True,
+            pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+            eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98))
+    return _S3_DESIGN[0]
+
+
+def _s3_rig(cls, *, inc=False, plain=False, **attrs):
+    """A rung-67-to-77 machine. `plain` is the rungs 67/68/69 constructor (the limiters are
+    built DIRECTLY, not `from_margin`), which is how those three rungs' own tests build them."""
+    if plain:
+        kw = dict(bleed_lim=BleedLimiter(phi_lim=_S3_PHI, b_max=_S3_B, tau=_S3_TAU))
+        if cls is not CrossLoopCascadeTransient:
+            kw["stator_lim"] = StatorLimiter(phi_lim=_S3_PHI, v_max=_S3_VMAX, tau=_S3_TAU_S)
+    else:
+        kw = dict(bleed_lim=BleedLimiter.from_margin(_S3_LP, _S3_B, _S3_SM, tau=_S3_TAU),
+                  stator_inc=(StatorIncidenceLimiter.from_margin(
+                      _S3_LP, _S3_VMAX, _S3_SM, tau=_S3_TAU_S) if inc else None),
+                  stator_lim=(None if inc else StatorLimiter.from_margin(
+                      _S3_LP, _S3_VMAX, _S3_SM, tau=_S3_TAU_S)))
+    m = cls(_s3_design(), FLIGHT, 1.0, map_lp=_S3_LP, map_hp=_S3_HP, rho=1.0, **kw)
+    for k, v in attrs.items():
+        setattr(m, k, v)
+    return m
+
+
+def _flat(obj, prefix, out):
+    """Recurse an instrument's return value to SCALAR leaves.
+
+    Floats compare at the kernel's (rel, abs) pair; int / bool / str / None compare EXACTLY,
+    which is what makes `zeros`, `n_live`, an ordering tuple or a `True` invariance a pinned
+    DISCRETE reading rather than a drift. A container's LENGTH is pinned as `#n` so a row list
+    that empties reads as the shape change it is — the rung-71 vacuity above emptied a list
+    without changing any value in it."""
+    if isinstance(obj, dict):
+        for k in sorted(obj, key=repr):
+            _flat(obj[k], f"{prefix}.{k}", out)
+    elif isinstance(obj, (list, tuple)):
+        out[f"{prefix}#n"] = len(obj)
+        for i, v in enumerate(obj):
+            _flat(v, f"{prefix}[{i}]", out)
+    elif isinstance(obj, complex):
+        out[f"{prefix}.re"], out[f"{prefix}.im"] = obj.real, obj.imag
+    elif isinstance(obj, (bool, int, str, float)) or obj is None:
+        out[prefix] = obj
+    else:
+        out[f"{prefix}!type"] = type(obj).__name__
+
+
+def _s3(name, *pairs):
+    """Flatten each (tag, instrument-result) pair, then drop this arm's `_UNSTABLE` keys."""
+    out = {}
+    for tag, val in pairs:
+        _flat(val, tag, out)
+    for k in _UNSTABLE.get(name, ()):
+        out.pop(k, None)
+    return out
+
+
+def kernel_r67():
+    """RUNG 67 — cascade A, two loops on TWO variables: the ONE scalar `P = R_q*C_g` that ends
+    rung 66's degeneracy and opens the ringing window, and the same `P` that damps it."""
+    m = _s3_rig(CrossLoopCascadeTransient, plain=True)
+    return _s3("r67",
+               ("idt", m.cross_identity(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX, tau=_S3_TAU,
+                                        tau_govs=(0.005, 0.05, 0.5), n_sample=4, r=_S3_R,
+                                        s_settle=_S3_SETTLE, ds=_S3_DS)),
+               ("osc", m.oscillation_window(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX, tau=_S3_TAU,
+                                            rhos=(0.5, 1.0, 2.0), r=_S3_R,
+                                            s_settle=_S3_SETTLE, ds=_S3_DS)))
+
+
+def kernel_r68():
+    """RUNG 68 — three loops on ONE variable: rank ONE at every n, so only the CYCLIC product
+    tests joint collapse. Measured EXACT across the interpreters."""
+    m = _s3_rig(ThreeLoopCascadeTransient, plain=True)
+    return _s3("r68",
+               ("g", m.triple_gains(FLIGHT, _S3_LO, _S3_HI, _S3_SM, r=_S3_R,
+                                    s_settle=_S3_SETTLE, ds=_S3_DS, tau=_S3_TAU,
+                                    tau_s=_S3_TAU_S, v_max=_S3_VMAX, every=EVERY_G)),
+               ("mo", m.triple_modes(FLIGHT, _S3_LO, _S3_HI, _S3_SM, clocks=_S3_CLOCKS,
+                                     r=_S3_R, s_settle=_S3_SETTLE, ds=_S3_DS,
+                                     v_max=_S3_VMAX, every=EVERY_M)))
+
+
+def kernel_r69():
+    """RUNG 69 — the REFERENCE split: `zeros = n - m` counts CONSTRAINTS, and `c1` is the
+    discriminator `det J` is blind to. Both invariants are pinned."""
+    m = _s3_rig(ReferenceSplitTransient, plain=True)
+    return _s3("r69",
+               ("g", m.reference_gains(FLIGHT, _S3_LO, _S3_HI, _S3_SM, r=_S3_R,
+                                       s_settle=_S3_SETTLE, ds=_S3_DS, tau=_S3_TAU,
+                                       tau_s=_S3_TAU_S, v_max=_S3_VMAX, every=EVERY_G)),
+               ("mo", m.reference_modes(FLIGHT, _S3_LO, _S3_HI, _S3_SM, clocks=_S3_CLOCKS,
+                                        r=_S3_R, s_settle=_S3_SETTLE, ds=_S3_DS,
+                                        v_max=_S3_VMAX, every=EVERY_M)))
+
+
+def kernel_r70():
+    """RUNG 70 — the GENERIC split: rung 47's `Tt4` governor as the odd loop, the same (n,m)
+    cell as rung 69 reached without an incidence wall."""
+    m = _s3_rig(CrossSplitTransient)
+    return _s3("r70",
+               ("g", m.split_gains(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX, _S3_SM, r=_S3_R,
+                                   s_settle=_S3_SETTLE, ds=_S3_DS, tau=_S3_TAU,
+                                   tau_gov=_S3_TAU_GOV, tau_s=_S3_TAU_S, v_max=_S3_VMAX,
+                                   every=EVERY_G)),
+               ("mo", m.split_modes(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX, _S3_SM,
+                                    clocks=_S3_CLOCKS, r=_S3_R, s_settle=_S3_SETTLE,
+                                    ds=_S3_DS, v_max=_S3_VMAX, every=EVERY_M)))
+
+
+def kernel_r71():
+    """RUNG 71 — the FULL split: `n = m = 3`, ZERO zeros, and `det J` finally nonzero.
+
+    ITS MODES ARM RUNS AT ds = 0.002, NOT 0.005, and that is the vacuity story in § SLICE 3:
+    at 0.005 the `(0.05, 0.005, 0.05)` clock rides only FOUR points, so any stride leaves one
+    sample and it skips off-regime. This is rung 71's own modes resolution."""
+    m = _s3_rig(FullSplitTransient, inc=True)
+    return _s3("r71",
+               ("g", m.full_gains(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX, _S3_SM, r=_S3_R,
+                                  s_settle=_S3_SETTLE, ds=_S3_DS, tau=_S3_TAU,
+                                  tau_gov=_S3_TAU_GOV, tau_s=_S3_TAU_S, v_max=_S3_VMAX,
+                                  every=EVERY_G)),
+               ("mo", m.full_modes(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX, _S3_SM,
+                                   clocks=_S3_CLOCKS, r=_S3_R, s_settle=_S3_SETTLE,
+                                   ds=0.002, v_max=_S3_VMAX, every=EVERY_M)))
+
+
+def kernel_r72():
+    """RUNG 72 — the SHARED actuator: `min`-select MASKS a leg, so `zeros = n_live - m_live`.
+
+    `charpoly_selftest` is a CLASSMETHOD and costs nothing, and it is the one thing here worth
+    pinning for its own sake: rung 72's first `_charpoly4` had `A` where Faddeev-LeVerrier
+    needs `M_{k-1}` and returned a WRONG polynomial with an entirely plausible spectrum."""
+    m = _s3_rig(SharedActuatorTransient)
+    return _s3("r72",
+               ("cp", SharedActuatorTransient.charpoly_selftest()),
+               ("g", m.shared_gains(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX, _S3_SM, taus=_S3_TAUS,
+                                    inc=False, r=_S3_R, s_settle=_S3_SETTLE, ds=_S3_DS,
+                                    v_max=_S3_VMAX, every=EVERY_G)))
+
+
+def kernel_r73():
+    """RUNG 73 — the APPLIED reference: the masked pole hits the ORIGIN and `det J` DIES.
+
+    EVERY differing value in this arm is a structural zero, which is why its relative entry is
+    a backstop and its `ABS_TOL` leg carries the comparison. `det` never exceeds 6.7e-11 in any
+    cell here — that is the rung's finding, pinned."""
+    m = _s3_rig(AppliedReferenceTransient)
+    return _s3("r73",
+               ("g", m.applied_gains(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX, _S3_SM, taus=_S3_TAUS,
+                                     inc=False, r=_S3_R, s_settle=_S3_SETTLE, ds=_S3_DS,
+                                     v_max=_S3_VMAX, every=EVERY_G)))
+
+
+def kernel_r74():
+    """RUNG 74 — the DEMAND coordinate: no rank, PURE BILL, the cut moving by the schedule's
+    own slope."""
+    m = _s3_rig(DemandCoordinateTransient, _lag_coord="demand", _ref_law="sched")
+    return _s3("r74",
+               ("g", m.demand_gains(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX, phi_lim=_S3_PHI,
+                                    taus=_S3_TAUS, inc=False, r=_S3_R, s_settle=_S3_SETTLE,
+                                    ds=_S3_DS, v_max=_S3_VMAX, every=EVERY_G)))
+
+
+def kernel_r75():
+    """RUNG 75 — the ANTI-WINDUP device: DECISIVE on the spectrum, INERT on the rank. The
+    masked pole leaves the origin and `det J` revives, which is `det0` moving off zero."""
+    m = _s3_rig(AntiWindupTransient, _lag_coord="demand", _ref_law="sched",
+                _windup_law="track", _tau_t=_S3_TAU_T)
+    return _s3("r75",
+               ("g", m.windup_gains(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX, phi_lim=_S3_PHI,
+                                    taus=_S3_TAUS, tau_ts=(0.05, 0.0125),
+                                    refs=("applied", "sched"), inc=False, r=_S3_R,
+                                    s_settle=_S3_SETTLE, ds=_S3_DS, v_max=_S3_VMAX,
+                                    every=EVERY_G)))
+
+
+def kernel_r76():
+    """RUNG 76 — the FUEL-DEPENDENT cap: a device in a leg's LAW reaches the MASKED leg, one in
+    the PLANT the legs read reaches the AUTHORITATIVE one. Three of its values are `_UNSTABLE`
+    and are dropped here, not toleranced — see § SLICE 3."""
+    m = _s3_rig(SensedCapTransient, _lag_coord="demand", _ref_law="sched",
+                _windup_law="none", _tau_t=None, _cap_law="sensed")
+    return _s3("r76",
+               ("g", m.cap_gains(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX, phi_lim=_S3_PHI,
+                                 margin=_S3_MARGIN, taus=_S3_TAUS, tau_t=_S3_TAU_T,
+                                 refs=("sched", "applied"), laws=("none", "track"), inc=False,
+                                 r=_S3_R, s_settle=_S3_SETTLE, ds=_S3_DS, v_max=_S3_VMAX,
+                                 every=EVERY_G)))
+
+
+def kernel_r77():
+    """RUNG 77 — the STIFFNESS ledger: the three legs' slopes, the shared currency `dw*/dq`
+    they are ordered in, and rung 64's degeneracy measured. Measured EXACT."""
+    m = _s3_rig(StiffnessLedgerTransient, _lag_coord="demand", _ref_law="sched",
+                _windup_law="none", _tau_t=None, _cap_law="solve")
+    kw = dict(phi_lim=_S3_PHI, margin=_S3_MARGIN)
+    return _s3("r77",
+               ("sl", m.leg_slopes(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX, **kw)),
+               ("sg", m.set_point_gains(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX, **kw)),
+               ("sq", m.singular_limit(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX, **kw)))
+
+
 KERNELS = {"cpg": kernel_cpg, "r66": kernel_r66, "A": kernel_A, "B": kernel_B,
            "C": kernel_C, "D": kernel_D, "E": kernel_E, "F": kernel_F,
            # slice 2 — the rungs 3-30 diagnostic ladder
@@ -680,7 +1045,11 @@ KERNELS = {"cpg": kernel_cpg, "r66": kernel_r66, "A": kernel_A, "B": kernel_B,
            "r11": kernel_r11, "r12": kernel_r12, "r13": kernel_r13, "r14": kernel_r14,
            "r15": kernel_r15, "r16": kernel_r16, "r17": kernel_r17, "r18": kernel_r18,
            "r22": kernel_r22, "r23": kernel_r23, "r24": kernel_r24, "r25": kernel_r25,
-           "r27": kernel_r27, "r28": kernel_r28}
+           "r27": kernel_r27, "r28": kernel_r28,
+           # slice 3 — the rungs 67-77 control ladder
+           "r67": kernel_r67, "r68": kernel_r68, "r69": kernel_r69, "r70": kernel_r70,
+           "r71": kernel_r71, "r72": kernel_r72, "r73": kernel_r73, "r74": kernel_r74,
+           "r75": kernel_r75, "r76": kernel_r76, "r77": kernel_r77}
 
 
 # --------------------------------------------------------------------------- encode / compare
@@ -694,12 +1063,19 @@ def _decode(v):
     return float.fromhex(v["f"]) if isinstance(v, dict) and "f" in v else v
 
 
-def _close(a, b, tol):
-    """`a` measured, `b` golden. tol == 0.0 means bit-equality."""
+def _close(a, b, tol, abs_tol=0.0):
+    """`a` measured, `b` golden. `tol` == 0.0 AND `abs_tol` == 0.0 means bit-equality.
+
+    A value passes if EITHER leg covers it. The absolute leg exists for slice 3's structural
+    zeros — a determinant a rung's own finding says is dead — where two interpreters land on
+    opposite sides of zero and the RELATIVE error is meaningless (see § SLICE 3). `abs_tol`
+    defaults to 0.0, so every slice-1 and slice-2 arm compares exactly as it always has."""
     if a == b:
         return True, 0.0
     if not isinstance(a, float) or not isinstance(b, float):
         return False, float("inf")
+    if abs_tol > 0.0 and abs(a - b) <= abs_tol:
+        return True, 0.0
     err = abs(a - b) / abs(b) if b != 0.0 else abs(a)
     return (err <= tol) if tol > 0.0 else False, err
 
@@ -729,15 +1105,17 @@ def _check(name):
         f"  newly produced, not in the golden ({len(extra)}): {extra[:8]}\n"
         f"Fix the probe to match the new API; the VALUES must be unchanged.")
 
-    tol = TOL[name]
+    tol, atol = TOL[name], ABS_TOL.get(name, 0.0)
     bad = []
     for k in sorted(want):
-        ok, err = _close(got[k], want[k], tol)
+        ok, err = _close(got[k], want[k], tol, atol)
         if not ok:
             bad.append((k, want[k], got[k], err))
     assert not bad, (
         f"kernel {name!r}: {len(bad)} of {len(want)} values moved beyond tol={tol:g}"
-        + (" (BIT-EQUALITY asserted — this kernel is measured exact)" if tol == 0.0 else "")
+        + (f" / abs_tol={atol:g}" if atol else "")
+        + (" (BIT-EQUALITY asserted — this kernel is measured exact)"
+           if tol == 0.0 and atol == 0.0 else "")
         + "\n" + "\n".join(
             # hex alongside repr: on the bit-exact arms the interesting failure is a 1-ulp shift,
             # and "...ff4p+9 vs ...ff5p+9" says that at a glance where two 17-digit reprs do not.
@@ -887,6 +1265,88 @@ def test_golden_kernel_r24_spatial_local_pdf():
     _check("r24")
 
 
+# ------------------------------------------------------------------ slice 3, rungs 67-77
+# All eleven are `test_golden_kernel_*` because none is <= 2 s idle, which is this module's
+# only criterion for the unmarked name. The four heaviest (PyPy idle: r67 9.8 / r75 11.4 /
+# r77 13.3 / r76 17.7 s) carry `@pytest.mark.slow`; the other seven are 2.9-7.7 s and are left
+# unmarked so the `-m "not slow"` iterate loop still sees SEVEN of the eleven rungs that had no
+# absolute-value gate at all. All of them run on a plain `pytest`.
+
+@pytest.mark.slow
+def test_golden_kernel_r67_cascade_a():
+    _check("r67")
+
+
+def test_golden_kernel_r68_three_loops():
+    _check("r68")
+
+
+def test_golden_kernel_r69_reference_split():
+    _check("r69")
+
+
+def test_golden_kernel_r70_generic_split():
+    _check("r70")
+
+
+def test_golden_kernel_r71_full_split():
+    _check("r71")
+
+
+def test_golden_kernel_r72_shared_actuator():
+    _check("r72")
+
+
+def test_golden_kernel_r73_applied_reference():
+    _check("r73")
+
+
+def test_golden_kernel_r74_demand_coordinate():
+    _check("r74")
+
+
+@pytest.mark.slow
+def test_golden_kernel_r75_anti_windup():
+    _check("r75")
+
+
+@pytest.mark.slow
+def test_golden_kernel_r76_sensed_cap():
+    _check("r76")
+
+
+@pytest.mark.slow
+def test_golden_kernel_r77_stiffness_ledger():
+    _check("r77")
+
+
+def test_slice3_arms_are_not_vacuous():
+    """THE CHECK THAT CAUGHT THE RUNG-71 ARM, kept as a gate rather than as a war story.
+
+    An instrument reader can return a fully-populated-looking object in which every row list is
+    EMPTY and every derived field is `None` — because the stride landed on one base point and
+    that point skipped as off-regime. Such an arm pins dozens of values, passes `_check`
+    forever, and guards nothing. It is rung 77 § 8's failure mode (a reader that measured
+    nothing and returned a perfect number) at the level of the gate rather than the rung.
+
+    Read from the GOLDEN, not from a fresh run, so it costs nothing and so it also fails if a
+    regeneration ever pins a vacuous arm."""
+    golden = _load_golden()["kernels"]
+    for name in _SLICE3:
+        arm = {k: _decode(v) for k, v in golden[name].items()}
+        empty = [k for k, v in arm.items() if k.endswith("rows#n") and v == 0]
+        assert not empty, (
+            f"{name}: {len(empty)} EMPTY row list(s) — {empty[:4]}. The instrument sampled no "
+            "live base point, so this arm pins nothing. Do NOT widen a tolerance; lower the "
+            "stride or raise the resolution until rows appear (see § SLICE 3).")
+        nones = sum(1 for v in arm.values() if v is None)
+        assert nones <= 0.15 * len(arm), (
+            f"{name}: {nones}/{len(arm)} pinned values are None — the instrument was idle")
+        floats = {v for v in arm.values() if isinstance(v, float)}
+        assert len(floats) >= 8, (
+            f"{name}: only {len(floats)} distinct float(s) pinned — vacuous")
+
+
 def test_golden_file_declares_its_provenance():
     """The goldens' whole value is being CPython's. If the meta block ever stops saying so —
     because someone regenerated under another interpreter — the anchor is gone and this file
@@ -910,6 +1370,12 @@ def test_every_kernel_has_a_disclosed_tolerance():
     assert set(KERNELS) == set(TOL) == set(golden["kernels"]), (
         f"kernels {sorted(KERNELS)}, tolerances {sorted(TOL)}, "
         f"goldens {sorted(golden['kernels'])} — these three sets must agree exactly")
+    # the ABSOLUTE leg is opt-in, but it may not name a kernel that does not exist, and a
+    # kernel may not be given an absolute band without a relative one written down beside it
+    stray = sorted(set(ABS_TOL) - set(TOL))
+    assert not stray, f"ABS_TOL names kernel(s) with no tolerance entry: {stray}"
+    for k, v in sorted(ABS_TOL.items()):
+        assert v > 0.0, f"ABS_TOL[{k!r}] is {v} — omit the entry instead, 0.0 is the default"
 
 
 def test_every_kernel_is_actually_GATED():
@@ -1000,7 +1466,11 @@ def _regenerate():
                             "interpreter — see tests/test_numeric_fingerprint.py."},
            "kernels": new}
     os.makedirs(os.path.dirname(GOLDEN_PATH), exist_ok=True)
-    with open(GOLDEN_PATH, "w", encoding="utf-8") as fh:
+    # `newline=""` pins LF on Windows too. `.gitattributes` says `* text=auto eol=lf`, so a
+    # CRLF write is normalised on commit and the working tree then differs from the blob --
+    # which makes the NEXT regeneration's diff show every line as changed and buries the
+    # "READ THAT DIFF" procedure this file rests on. Rung 77 hit the same thing on CLAUDE.md.
+    with open(GOLDEN_PATH, "w", encoding="utf-8", newline="") as fh:
         json.dump(doc, fh, indent=1, sort_keys=True)
         fh.write("\n")
     print(f"  wrote {GOLDEN_PATH} "
