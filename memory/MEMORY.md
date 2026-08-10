@@ -78,6 +78,7 @@ these lines (the same rule CLAUDE.md lives under).
 - [Rung 79 state coordinate](rung79-state-coordinate.md) — a coordinate is a GAUGE the PLANT cannot REACH (the branch making a leg AUTHORITATIVE restores the original coordinate); registering the VACUITY CONDITION beat registering the result; first rung to pay its CLAUDE.md row with no bump
 
 ## Margin sweeps — confirmations, not rungs
+- [Rung 79 gap margin](rung79-gap-margin.md) — the § 5 march STANDS STILL; a limiter armed at the initial operating point has no transient, and the rig placement a constrained Jacobian REQUIRES is what voids it; a counter is only as good as the NOUN it counts
 - [Rung 29 π_c margin](rung29-pi-c-margin.md) — verdict confirmed at 9.4× but π_c NOT protective; the ENERGY = INVENTORY × COMPLETION sharpening
 - [Rung 29 M0 margin](rung29-M0-margin.md) — monotone-protective (opposite of π_c), 8.8×; the delta_h-swing-not-headroom correction; double-edged envelope
 - [Rung 28 β margin hardened](rung28-beta-margin-hardened.md) — β exactly pressure-invariant, π_c protective

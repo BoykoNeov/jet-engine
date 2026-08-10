@@ -180,6 +180,13 @@ _CLAUDE_MD = os.path.join(_HERE, os.pardir, "CLAUDE.md")
 # ~400 B and made the entry rung-count-invariant again, which is what it was supposed to be.
 # THE LESSON FOR THE NEXT RUNG: check the three no-grow sites for RE-GROWTH before assuming the
 # only slack is in the two uncompressed ones. 131 B of headroom, so rung 80 trips this guard too.
+#
+# UNCHANGED AGAIN at rung 79's GAP CORRECTION (`docs/rung79-gap-margin.md`) -- a CORRECTION is
+# not a rung and gets no bump. Its one line under section "Deferred seams" cost 148 B and was paid
+# from three sites, all by deleting words rather than facts: the BUILT entry's historical note
+# about its own deletion (already recorded in this comment, above), and two parentheticals that
+# said in eight words what they say in four. 2 B of headroom -- the next writer of ANY line here
+# trips this guard, which is the intended state.
 MAX_BYTES = 35_970
 MAX_LINES = 300
 

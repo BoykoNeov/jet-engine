@@ -103,6 +103,18 @@ not a blind one. `n_roots = [1]` is also the first time any rung has counted the
 
 **And almost none of that means what it looks like.**
 
+> **⚠ CORRECTED AFTER SHIP — § 9's gap seam, checked: `docs/rung79-gap-margin.md`.**
+> **This march never leaves its initial state.** `nu_lp` and `nu_hp` have **exactly 0.0**
+> relative spread over all 341 steps; only `s` and `mf_sched` (1.478×) move. The rig arms three
+> φ floors at one wall and the **stator** lifts the free initial point (`φ_lp = 0.7731`) onto it
+> **exactly**, so rung 49's leg binds at `s = 0` with no authority left — *a limiter armed with
+> zero initial margin has no transient*. The "1366 calls across the accel" below are **1366 calls
+> at ONE operating point**, and every § 5 number phrased as being *across the accel* must be read
+> that way. **§ 5.1–5.3 survive intact** (they are identities of `_cap_free`'s branch condition,
+> which a static plant satisfies as surely as a moving one); § 5.5 gains a **fourth** entry.
+> The rig is **not** changed — `PHI_JAC = 0.80` on the wall is what §§ 1–4's constrained
+> linearisation requires (that doc § 2.3). Rung 78's march stands still identically.
+
 ### 5.1 `d_set = 0.0` IS EVIDENCE ABOUT `_surge_fuel`, NOT ABOUT COORDINATES
 
 `_cap_free` short-circuits to `shipped()` whenever `G(mf_sched) > 0`, i.e. whenever the leg
@@ -172,8 +184,17 @@ selector lower than the counter built to catch it**. § 5.3's `n_reach` is the h
    from *6 in `phi` alone*; only the second would mean the knob was never exercised. Splitting the
    counter by coordinate settled it (`br_phi = 3`, `br_inc = 3`).
 
-Each was caught by **counting**, never by inspection — rung 78 § 5.1's lesson, and it did not
-prevent the same class of failure recurring, only shortened it.
+4. **AND A FOURTH, WHICH SURVIVED THE SHIP** (`docs/rung79-gap-margin.md` § 4.1). The
+   `n_distinct` guard was read as refuting *"one state logged 1366 times"*. It is exactly that:
+   the 129 distinct `p_phi` values are float-level products of a bracketed solve whose **start
+   point** `mf_sched` sweeps 1.478× while the plant state is constant to 1e−15. The counter
+   distinguishes distinct **floats**; the claim needed distinct **states**. **A counter is only
+   as good as the noun it counts** — "count, never eyeball" does not save you from counting the
+   wrong thing, and this one sat inside the guard § 8.1 is proudest of.
+
+The first three were caught by **counting**, never by inspection — rung 78 § 5.1's lesson, and it
+did not prevent the same class of failure recurring, only shortened it. The fourth was not caught
+at all until the seam it left behind was checked.
 
 ---
 
@@ -185,14 +206,21 @@ prevent the same class of failure recurring, only shortened it.
 * **`br_inc = 3` of 1366.** The knob was exercised on the plant three times. Three is not zero —
   which is the only reason § 5 is reported at all — but it is not a trajectory either.
 * **§§ 1–4 are an identity.** They confirm code paths run, not that anything was discovered.
-* **The gap is essentially constant and unexplained.** `gap ∈ [0.126136034007005,
-  0.126136034007016]` over 129 distinct values — the accel and φ caps sit at a fixed ratio to 13
-  digits across the whole accel. That is measured, not derived; the schedule is built from the
-  same plant through `accel_for`, which would explain it, and that explanation is **not checked**.
+* ~~**The gap is essentially constant and unexplained.**~~ **CHECKED — `docs/rung79-gap-margin.md`.**
+  `gap ∈ [0.126136034007005, 0.126136034007016]`, and the explanation is § 5's correction box:
+  the ratio is fixed to 13 digits because the **plant is fixed** to 15. With the plant pinned,
+  `p_phi ≡ mf`, so `gap + 1 = a_cap/mf` — a **frozen-state ratio**, not an accel-wide invariant.
+  Swept: `gap(margin = 0) = 0` **exactly** (a standing plant is AT steady state, and rung 48's
+  `margin = 0` schedule IS the steady-state fuel), and
+  `d ln(gap+1)/d ln(1+margin) = 1/(1−c)` — **rung 77's stiffness**, agreeing with the shipped
+  `_c_at` to **5.3e−06** when read at the fixed point.
 * **P2 is vacuous by 13 orders of magnitude**, so this rung says nothing about whether a
   discontinuous selector can amplify a coordinate's float noise. The question is real and
   **untouched**.
 * **One operating point, one leg, one coordinate pair.** `phi_lim = 0.80`, LP spool, φ ↔ `M_i`.
+  This meant *one setting*; it is true in the far stronger sense of **one STATE** — see § 5's
+  correction box. Everything § 5 says about *trajectories* is a statement about a plant that did
+  not move.
 
 ## 7. THE REDUCE
 
@@ -208,7 +236,7 @@ alone passes something broken.
 | | prediction | verdict |
 |---|---|---|
 | **P1** | set point moves by solver noise only: `0 < δ < 1e−9` at a majority of cells | **SPLIT.** On the plant `δ = 0.0` **exactly** at 1366/1366 — the lower bound REFUTED, and not because the solver is slope-insensitive but because the coordinate was **never consulted** (§ 5.1). Forced past the short-circuit: **`6.14e−15` / `7.64e−16`**, inside the registered band. The prediction was right about the mechanism and wrong about where it would be visible |
-| **P2** | the min-select never flips | **HELD, AND VACUOUSLY, ON BOTH GROUNDS** — `flips = 0`, but `d_max = 0.0` (nothing moved) *and* `gap ≈ 0.1261` (nothing could have crossed). 13 orders of margin |
+| **P2** | the min-select never flips | **HELD, AND VACUOUSLY, ON ~~BOTH~~ THREE GROUNDS** — `flips = 0`, but `d_max = 0.0` (nothing moved), `gap ≈ 0.1261` (nothing could have crossed), **and the plant never left its initial state at all** (§ 5's box; the third ground was found after ship). 13 orders of margin |
 | **P2n** | the non-vacuity guard, registered in advance | **FIRED AS REGISTERED, ON BOTH GROUNDS.** See § 8.1 |
 | **P3** | `binds > 0`, and `binds == hits` | **HELD** — 1366/1366, and rung 78's masked leg is indeed this rung's authoritative one. **But the CLAIM needed narrowing**: `binds` is not the last selector (§ 5.4); the honest number is `n_reach = 1363` |
 | **P4** | trajectory worst move `< 1e−9` | **HELD, VACUOUSLY** — `0.000e+00`, for P1's reason |
@@ -227,17 +255,32 @@ guard existed before the number did.
 **Registering the vacuity condition is worth more than registering the result.** That is the
 finding most likely to outlive this rung's physics.
 
+**AND IT IS NOT ENOUGH, WHICH IS THE SHARPER HALF.** P2n asked *"is the gap wide enough to make
+`flips = 0` uninformative?"* and answered yes. It never asked *"did the plant move?"* — and it
+had not (§ 5's box). A registered vacuity guard protects the question you thought to register;
+the fourth trap (§ 5.5) sat **underneath** this one, in the same section, and shipped. The
+transferable form is therefore narrower than the sentence above: **register the vacuity condition
+of the INSTRUMENT and of the PLANT separately**, because a guard on the reading cannot see a
+plant that never produced one.
+
 ## 9. NEXT SEAMS
 
 * **A PLANT WHERE THE KNOB IS REACHABLE.** § 5.3 says `{live} ∩ {reaches}` is empty *for a leg
   solved through `_cap_free`*. A leg whose set point is computed **without** a binding
   short-circuit would break the complementarity — that is a plumbing change, and it is the only
   route to a real trajectory measurement here.
-* **THE CONSTANT GAP.** 12.6136% to 13 digits across the accel (§ 6). **The obvious candidate is
-  rung 48's `(1 + margin)` factor** — `margin = 0.10` here, and the accel cap carries it directly —
-  with the residual ~2.6% from `κ(n_H)`'s own drift; that is a guess, and checking it means
-  sweeping `margin` and seeing whether the gap tracks it. If it does, this is a **structural**
-  relation between rung 48's schedule and rung 49's floor that no rung has named.
+* ~~**THE CONSTANT GAP.**~~ **CLOSED — `docs/rung79-gap-margin.md`, and it CORRECTS this rung.**
+  The `(1 + margin)` half **held**; the other two clauses are **refuted**. `κ` does not drift —
+  `n_H` is clamped at the schedule table's first abscissa at 341/341 steps because **the plant
+  never moves** (§ 5's box) — and there is **no** relation between the two legs: the residual is
+  rung 76's `solve` cap law being a **fixed point**, whose gain is rung 77's `1/(1−c)`. Rung 49's
+  floor enters only by standing the plant still, which is what makes `p_phi ≡ mf`.
+* **A φ-FLOOR MARCH WITH NON-ZERO INITIAL MARGIN.** The seam § 5's correction opens, and the one
+  that would give every trajectory claim in rungs 72–79 something to be about: a wall **below**
+  the initial operating point and **above** the free excursion minimum — `φ_lim ∈ (0.7731,
+  0.7884)` at these settings, a ~1.5% window. It is a **new rig**, not comparable to §§ 1–4.
+* **RUNGS 72–77's § 5 SECTIONS.** Only 78 and 79 were checked. They share the rig, which is a
+  reason to look and **not** a result — **NOT MEASURED, and no claim is made about them.**
 * **CAN A DISCONTINUOUS SELECTOR AMPLIFY FLOAT NOISE?** P2's real question, untouched because the
   gap is 13 orders too wide. It needs a plant where two legs cross.
 * **THE SAME COORDINATE ON A LEG THAT IS NOT `min`-COMPOSED.** Rung 76 named the COMPOSITION as

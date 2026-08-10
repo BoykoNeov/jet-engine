@@ -17,6 +17,7 @@ its AFFINE family's `1 - k*c` passing through zero.
 
 Anchor + scoring: `docs/plans/rung79-anchor-state-coordinate.md`, `docs/rung79-spec.md` § 8.
 """
+import math
 import os
 import sys
 
@@ -241,10 +242,19 @@ def test_the_min_never_flips_AND_that_is_vacuous(march):
         march["gap_min"], march["d_max"])
 
 
-def test_the_gap_log_records_distinct_states(march):
-    """NON-VACUITY for P2n: `gap_min ~= gap_med` to 13 digits reads as ONE state logged 1366
-    times. It is not — 129 distinct gaps over 42 distinct phi caps. COUNT, never eyeball; a
-    near-perfect number is this project's recorded failure mode."""
+def test_the_gap_log_records_distinct_FLOATS_not_distinct_states(march):
+    """CORRECTED AFTER SHIP (`docs/rung79-gap-margin.md` s 4.1). This counter's docstring used
+    to read `n_distinct > 10` as refuting "ONE state logged 1366 times".
+
+    **IT IS EXACTLY THAT.** The plant never leaves its initial state (see the standstill gates
+    below); the 129 distinct `p_phi` values are float-level products of a bracketed solve whose
+    START POINT `mf_sched` sweeps 1.478x while the state is constant to 1e-15. The counter
+    distinguishes distinct FLOATS; the claim needed distinct STATES.
+
+    A counter is only as good as the NOUN it counts -- "count, never eyeball" does not save you
+    from counting the wrong thing. Kept as a plumbing check (the log is populated at all, which
+    is what caught s 5.5's first instrument failure) and renamed so it cannot be re-read as a
+    state count."""
     assert march["n_distinct"] > 10, march["n_distinct"]
     assert march["n_distinct_gap"] > 10, march["n_distinct_gap"]
     assert march["n_log"] > 100, march["n_log"]
@@ -257,6 +267,147 @@ def test_the_trajectory_and_the_schedule_do_not_move(march):
     assert march["same_len"], "the two marches took different numbers of steps"
     assert march["worst"] < 1e-9, (march["worst"], march["where"])
     assert march["sched_moved"] == 0.0, march["sched_moved"]
+
+
+# --- THE STANDSTILL: s 9's GAP SEAM, CHECKED AFTER SHIP -------------------------------------
+# `docs/rung79-gap-margin.md`. These gates were added by a CORRECTION, not by this rung's
+# anchor, and they are honest about that: nothing here was pre-registered.
+
+TAUS, R, S_SETTLE, DS = (0.05, 0.05, 0.05, 0.05), 0.5, 1.2, 0.005
+
+
+def _march_at(design, phi_jac=PHI_JAC, margin=MARGIN):
+    """`coord_march`'s own march, with the TRAJECTORY handed back (the reader returns only
+    aggregates, and the whole question here is whether the states move)."""
+    m0 = _rig(design)
+    sm = phi_jac / FLOOR - 1.0
+    if phi_jac != PHI_JAC:                    # the positive control needs its own floors
+        m0 = m0.at_lever(bleed_lim=BleedLimiter.from_margin(LP, B, sm, tau=TAU),
+                         stator_lim=StatorLimiter.from_margin(LP, V_MAX, sm, tau=TAU_S))
+        m0._lag_coord, m0._ref_law = "demand", "sched"
+        m0._windup_law, m0._cap_law = "none", "solve"
+    accel = m0.accel_for(FLIGHT, LO, HI, sm, TT4_MAX, TAUS, V_MAX, False, margin)
+    m, _, _, traj = m0._cap_march(FLIGHT, LO, HI, TT4_MAX, sm, TAUS, R, S_SETTLE, DS,
+                                  V_MAX, False, "demand", "sched", "none", None, "solve",
+                                  accel)
+    return m0, m, accel, traj
+
+
+def _spread(traj, key):
+    v = [p[key] for p in traj if isinstance(p.get(key), float)]
+    return (max(v) - min(v)) / max(abs(min(v)), 1e-30)
+
+
+@pytest.fixture(scope="module")
+def still(design):
+    return _march_at(design)
+
+
+def _a_cap(m0, m, p, margin):
+    """The accel leg's set point at ONE frozen state, at an arbitrary `margin` -- rung 76's
+    `solve` law, i.e. the FIXED POINT of `w = (1+margin)*kappa*pt3(w)`."""
+    sm = PHI_JAC / FLOOR - 1.0
+    accel = m0.accel_for(FLIGHT, LO, HI, sm, TT4_MAX, TAUS, V_MAX, False, margin)
+    a, h, q, v, ms = p["nu_lp"], p["nu_hp"], p["b"], p["v"], p["mf_sched"]
+    cap = m._accel_cap_fn(FLIGHT, a, h, accel)
+    m._b_state, m._v_state = q, v
+    try:
+        w = m._cap_free(lambda x: x - cap(x), ms,
+                        lambda: m._sched_fuel(FLIGHT, a, h, ms, accel))
+        return w, m._c_at(FLIGHT, a, h, accel, w, q, v), m._c_at(
+            FLIGHT, a, h, accel, p["mf"], q, v)
+    finally:
+        m._b_state, m._v_state = None, None
+
+
+def test_the_march_stands_still_AND_THAT_IS_THE_SCOPE_OF_SECTION_5(still):
+    """**THE CORRECTION, PINNED.** `nu_lp`/`nu_hp` do not move by ONE BIT over the whole march,
+    so s 5's "1366 calls across the accel" are 1366 calls at ONE OPERATING POINT.
+
+    THIS GATE BLESSES NOTHING. It records s 5's scope condition. An edit that unpins this march
+    must RESCORE s 5 (and rung 78's), not silently change what the section measured -- and the
+    rig must NOT be re-tuned to unpin it: `PHI_JAC = 0.80` sitting exactly on the wall is what
+    ss 1-4's CONSTRAINED linearisation requires, and `test_numeric_fingerprint.py` pins these
+    numbers bit-exact."""
+    _, _, _, traj = still
+    assert len(traj) > 300, len(traj)
+    assert _spread(traj, "nu_lp") == 0.0, _spread(traj, "nu_lp")
+    assert _spread(traj, "nu_hp") == 0.0, _spread(traj, "nu_hp")
+    assert _spread(traj, "mf") < 1e-12, _spread(traj, "mf")
+    # ... while the COMMAND ramps. Without this the standstill could be an empty march.
+    assert _spread(traj, "mf_sched") > 1.0, _spread(traj, "mf_sched")
+
+
+def test_the_floor_is_armed_AT_the_initial_condition(still):
+    """THE MECHANISM. Three phi floors sit on one wall at `phi_lim = 0.80`, and the FREE initial
+    point is BELOW it (0.7731) -- the stator lifts the plant exactly onto the wall, so rung 49's
+    leg reads a state already ON its floor and its cap IS the fuel already flowing.
+
+    A limiter armed with ZERO INITIAL MARGIN has no transient."""
+    _, _, _, traj = still
+    assert abs(traj[0]["phi_lp"] - PHI_JAC) < 1e-9, traj[0]["phi_lp"]
+    assert _spread(traj, "phi_lp") < 1e-12, "phi never leaves the wall"
+    # and the cap IS the flowing fuel, which is why nothing accelerates
+    assert abs(traj[0]["cap_fuel"] - traj[0]["mf"]) < 1e-12 * traj[0]["mf"]
+
+
+@pytest.mark.slow
+def test_the_same_rig_DOES_march_when_the_wall_is_lowered(design):
+    """THE POSITIVE CONTROL, and without it the gate above would also pass a march broken for
+    any other reason. Same rig, same code path, wall below the initial operating point."""
+    _, _, _, traj = _march_at(design, phi_jac=0.75)
+    assert _spread(traj, "nu_lp") > 1e-2, _spread(traj, "nu_lp")
+    t4 = [p["Tt4"] for p in traj]
+    assert max(t4) - min(t4) > 100.0, (min(t4), max(t4))
+
+
+def test_gap_at_zero_margin_is_EXACTLY_zero(still):
+    """s 9 predicted `gap ~ margin + 0.026`, the offset being `kappa(n_H)`'s drift. REFUTED at
+    its own anchor: a STANDING plant is AT steady state, and rung 48's `margin = 0` schedule IS
+    the steady-state fuel -- so the accel cap and the phi floor's cap are the same number.
+
+    There is no constant offset to explain."""
+    m0, m, _, traj = still
+    p = traj[len(traj) // 2]
+    w0, _, _ = _a_cap(m0, m, p, 0.0)
+    assert abs(w0 - p["mf"]) < 1e-11 * p["mf"], (w0, p["mf"])
+
+
+def test_the_gap_residual_is_rung_77s_STIFFNESS(still, march):
+    """**WHAT s 9's RESIDUAL ACTUALLY IS.** `gap + 1 = a_cap/mf` (the plant is pinned, so the
+    phi cap IS the flowing fuel), and `a_cap` is rung 76's `solve` law -- a FIXED POINT, not an
+    evaluation. So
+
+        d ln(gap+1) / d ln(1+margin)  =  1/(1 - c) ,   c = d(cap)/dw   [rung 77's own scalar]
+
+    Two independent instruments: the SWEEP's slope, and the SHIPPED `_c_at`.
+
+    THE EVALUATION POINT IS THE WHOLE TEST, and the second assert is its NON-VACUITY control.
+    `c` must be read at the FIXED POINT -- the point whose response is being swept -- not at the
+    plant's fuel, which is 12.6% away in `w`. An instrument that agreed at BOTH points would be
+    insensitive to where it was read and would therefore be measuring nothing (rung 77 s 8's
+    `1.000e+00`)."""
+    m0, m, _, traj = still
+    p = traj[len(traj) // 2]
+    d = 0.01
+    lo, _, _ = _a_cap(m0, m, p, MARGIN - d)
+    hi, _, _ = _a_cap(m0, m, p, MARGIN + d)
+    mid, c_cap, c_mf = _a_cap(m0, m, p, MARGIN)
+    slope = ((math.log(hi) - math.log(lo))
+             / (math.log1p(MARGIN + d) - math.log1p(MARGIN - d)))
+    assert abs(slope - 1.0 / (1.0 - c_cap)) < 1e-4 * slope, (slope, c_cap)
+    # ... and the control: read at the WRONG point it must MISS, by orders
+    miss = abs(slope - 1.0 / (1.0 - c_mf)) / slope
+    assert miss > 1e-3, (
+        "`c` read at the plant's fuel agrees just as well as `c` read at the fixed point -- "
+        "the identity is then insensitive to the evaluation point and measures nothing", miss)
+    # AND THE GAP REALLY IS THAT RATIO, not a nearby one. Compared against the SHIPPED reader's
+    # own `gap_min` rather than a hardcoded literal: this file is not the place for an
+    # absolute-value golden (that is `test_numeric_fingerprint.py`'s job, on a CPython anchor),
+    # and a cross-instrument agreement is the stronger claim anyway -- it says this frozen-state
+    # reconstruction reproduces what `coord_march` reports, which is what s 9 quoted.
+    assert abs((mid / p["mf"] - 1.0) - march["gap_min"]) < 1e-9 * march["gap_min"], (
+        mid / p["mf"] - 1.0, march["gap_min"])
 
 
 # --- THE REFUSAL ----------------------------------------------------------------------------

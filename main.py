@@ -6281,15 +6281,33 @@ def print_state_coordinate_table(flight):
     print("    hits = %d, binds = %d, flips = %d, trajectory worst = %.3e, sched_moved = %.3e"
           % (m["hits"], m["binds"], m["flips"], m["worst"], m["sched_moved"]))
     print("    -- a flawless-looking pass, and the guard registered BEFORE the run says")
-    print("    VACUOUS = %s, on BOTH grounds at once: d_max = %.3e (the coordinate moved the"
+    print("    VACUOUS = %s, on both REGISTERED grounds at once: d_max = %.3e (the"
           % (m["vacuous"], m["d_max"]))
-    print("    cap by EXACTLY nothing) AND gap_min = %.6f (the legs are %.0f orders wider"
-          % (m["gap_min"], math.log10(m["gap_min"] / f["d_forced"])))
-    print("    apart than the largest float move s 5.2 can force out of the coordinate, so")
-    print("    no `min` could have flipped). %d distinct gaps over %d states, so the"
-          % (m["n_distinct_gap"], m["n_distinct"]))
-    print("    13-digit constancy is a real invariant and not one state logged %d times."
+    print("    coordinate moved the cap by EXACTLY nothing) AND gap_min = %.6f (the legs"
+          % m["gap_min"])
+    print("    are %.0f orders wider apart than the largest float move s 5.2 can force out"
+          % math.log10(m["gap_min"] / f["d_forced"]))
+    print("    of the coordinate, so no `min` could have flipped).")
+
+    print("\n  ... AND A THIRD GROUND, FOUND AFTER SHIP (docs/rung79-gap-margin.md):")
+    print("    THE MARCH NEVER LEAVES ITS INITIAL STATE -- nu_lp and nu_hp move by ZERO")
+    print("    bits over every step; only the COMMAND ramps (mf_sched, 1.478x). Three phi")
+    print("    floors sit on ONE wall and the stator lifts the free start (phi = 0.7731)")
+    print("    exactly onto it, so rung 49's leg binds at s = 0 with no authority left:")
+    print("    A LIMITER ARMED WITH ZERO INITIAL MARGIN HAS NO TRANSIENT. So the %d calls"
           % m["n_log"])
+    print("    are %d calls at ONE operating point, and the %d distinct gaps are distinct"
+          % (m["n_log"], m["n_distinct_gap"]))
+    print("    FLOATS -- a solve whose START POINT moves -- never distinct STATES. That is")
+    print("    the FOURTH vacuity trap and the only one that survived the ship, sitting")
+    print("    inside the guard s 8.1 is proudest of. s 5.1-5.3 below are identities of a")
+    print("    branch condition and SURVIVE INTACT; every reading phrased as being ACROSS")
+    print("    THE ACCEL does not. And the gap itself is then explained: gap(margin=0) = 0")
+    print("    EXACTLY (a standing plant IS at steady state, which is what rung 48's")
+    print("    margin-0 schedule returns), with d ln(gap+1)/d ln(1+margin) = 1/(1-c) --")
+    print("    RUNG 77's STIFFNESS, not the kappa drift s 9 guessed. The rig is NOT")
+    print("    re-tuned: phi_lim ON the wall is what ss 1-4's constrained linearisation")
+    print("    requires, so the standstill is RECORDED AND GATED instead.")
 
     print("\n  s 5.3 -- THE COMPLEMENTARITY, an IDENTITY of `_cap_free`'s branch condition:")
     print("    {the knob is live} = %d      {the leg reaches applied fuel} = %d"

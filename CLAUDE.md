@@ -139,10 +139,9 @@ One line per seam — `BUILT` (detail in its rung's spec) · `NEGATIVE → doc` 
 
 **BUILT — every seam numbered 25–79 was closed by the SAME-NUMBERED rung**, whose one-line hook is
 the table above and whose derivation is in its spec. A numbered seam is closed and must never be
-re-opened by mistake. (This entry named all of 61–79 until rung 79; that enumeration duplicated the
-table and grew per rung, which the size guard says to DELETE rather than pay for.)
+re-opened by mistake. (NO-GROW: never re-enumerate the rungs — it duplicates the table.)
 
-**Investigated, NEGATIVE — not shipped, not a rung (these facts live only here + the doc):**
+**Investigated, NEGATIVE — not shipped, not a rung (facts live only here + the doc):**
 - Resolved `τ_res` from the nozzle area-schedule (rung 26's seam a) — `docs/tau-res-negative.md`.
 - Finite-rate turbine march (rung 29's seam a) — `docs/turbine-march-negative.md` (`I_turb ≡ S`).
 - Locally-resolved mixing **SCALE** — `docs/mixing-scale-negative.md` (unanchored exponent `p`).
@@ -152,7 +151,8 @@ table and grew per rung, which the size guard says to DELETE rather than pay for
 - **PER-ROW BLADING** (rung 56's seam) — `docs/per-row-blading-negative.md`. **OVER-DETERMINED** ⇒ capacity inert. **CORRECTS 55.**
 - The **φ-RATE limiter** (rung 60's seam) — `docs/phi-rate-limiter-negative.md`. **Fuel's authority over `φ` INVERTS between LEVEL and DERIVATIVE**. BOUNDS rung 49; the one negative with a gate.
 
-**Checked, CONFIRMATION / CORRECTION — not a rung (the rung-29/28 margin sweeps):**
+**Checked, CONFIRMATION / CORRECTION — not a rung:**
+- Rung 79 § 9's **constant gap** — `docs/rung79-gap-margin.md`. Its § 5 march **STANDS STILL**; the residual is rung 77's `1/(1−c)`, not `κ` drift. **CORRECTS 79.**
 - "Earned at design" over `π_c` — `docs/rung29-pi-c-margin.md` (holds ~9.4×; `π_c` NOT protective; `ENERGY = INVENTORY × COMPLETION`).
 - "Earned at design" over flight `M0` — `docs/rung29-M0-margin.md` (holds ~8.8×; monotone-protective; the `delta_h`-swing correction).
 - `β<1` over `π_c` / hotter cycles — `docs/rung28-beta-margin.md` (β pressure-invariant; higher `π_c` protective).
@@ -171,8 +171,8 @@ table and grew per rung, which the size guard says to DELETE rather than pay for
 - **Feeding a shifted/marched state into the production cycle** — a re-foundation, not a rung.
 
 ## Open engineering tasks (not rungs, not seams)
-All three CLOSED, detail in the linked file: the per-rung `main.py` panel (no test covers it —
-check on every ship); the solver-tolerance audit (NEGATIVE, `docs/plans/todo-solver-tolerance-audit.md`);
+All three CLOSED, detail in the linked file: the per-rung `main.py` panel (no test — check on
+every ship); the solver-tolerance audit (NEGATIVE, `docs/plans/todo-solver-tolerance-audit.md`);
 the fingerprint gate's rung 67–79 arms (that module's docstring §§ SLICE 3–4).
 
 ## Conventions
@@ -238,10 +238,10 @@ A compact map — the per-rung method/finding detail lives in `docs/rungN-spec.m
 
 ## Commands
 - Run the model: `python main.py` · Install: see `requirements.txt` (a PyPy venv — § Stack)
-- **The gate: `pytest`** — **EVERYTHING**, 1289 tests, **~9:06 at 1287** (PyPy, rung 79, box load
-  unknown; a 18:31 at 1289 came off a LOADED box, so it neither differences nor replaces this).
+- **The gate: `pytest`** — **EVERYTHING**, 1294 tests, **~9:06 at 1287** (PyPy, rung 79, box load
+  unknown; a 40:28 at 1294 came off a LOADED box, so it neither differences nor replaces this).
   ONE gate; nothing is ever silently deselected, so no regression can hide. (`main.py` has no test.)
-- **Iterate: `pytest -m "not slow"`** — 954 tests, **~1:54 at 890**. The run minus the expensive sweeps.
+- **Iterate: `pytest -m "not slow"`** — 958 tests, **~1:54 at 890**. The run minus the expensive sweeps.
   `slow` is a LABEL you opt out of by typing, never a default. Only those: `pytest -m slow`.
 - **WHEN to run the gate:** at session end (unless run shortly before), and after a code change.
   NOT at session start, NOT on a docs-only change, NOT "just to be sure", and **NEVER to refresh
