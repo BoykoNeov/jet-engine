@@ -222,7 +222,8 @@ sampled ONE base point, that point skipped as off-regime, and the arm came back 
 `rows#n = 0` and 27 of its 83 values `None`. It would have shipped 83 pinned values, passed
 every gate in this module forever, and guarded NOTHING — rung 77 § 8's failure mode exactly (a
 reader that measured nothing and returned a perfect number). `every` is 4 here, and
-`test_slice3_arms_are_not_vacuous` is the check that caught it, kept as a gate.
+`test_instrument_arms_are_not_vacuous` is the check that caught it, kept as a gate (it walks
+slice 4 as well — a new slice must join its iteration set in the same edit that adds its arms).
 
 THE TOLERANCE IS A PAIR, and slices 1/2 are untouched by it (no `ABS_TOL` entry == 0.0 ==
 the old pure-relative behaviour). Rungs 72-76 pin quantities their own findings say are ZERO:
@@ -281,6 +282,56 @@ CPG plant — and record the smallest decade that turns each arm red.
 Two arms (r68, r77) measured EXACT across the interpreters — 1 663 and 591 values, zero
 differing — and assert bit-equality, like `cpg` and `r66`. Cost, PyPy idle: 3-18 s per arm,
 87 s for the slice.
+
+--------------------------------------------------------------------------------------------
+SLICE 4 — rungs 78/79, the RESIDUAL GAUGE and the STATE COORDINATE (added 2026-08-10)
+--------------------------------------------------------------------------------------------
+Slice 3 stops at rung 77, so the two rungs shipped after it had no absolute-value gate. Same
+shape as slice 3, one arm per rung, reading each rung's own instruments on the SAME rig — slice
+4 declares no settings of its own, because rung 79 § 0.2 takes rung 78's verbatim and rung 78
+takes rung 77's. `every` is left at the READERS' DEFAULT (8), which is what `tests/test_rung78.py`
+and `test_rung79.py` use — neither passes it — so every pinned value is read at the RESOLUTION
+those specs quote, and § SLICE 3's warning about that stride is respected by not touching it.
+(Resolution, not VALUE: the shared `_cpg_gas()` differs from the rungs' own gas in `R_c` — see
+the caveat under PROVENANCE. These arms are drift detectors, not a second copy of the specs.)
+
+  r78 `gauge_scan` + `root_census` + `gauge_vs_device`
+  r79 `coord_forced` + `coord_scan` + `coord_census` + `coord_march`
+
+** r79 LEADS WITH `coord_forced`, AND THAT IS THE WHOLE DESIGN OF THE ARM. ** On the plant the
+coordinate is never consulted: `_cap_free` short-circuits to `_surge_fuel` exactly when the leg
+binds, so `coord_scan` / `coord_march` report EXACT zeros (`d_set`, `d_max`, `n_both`) by
+construction. An arm built on those alone would pin dozens of structural zeros and guard nothing
+about the coordinate — § SLICE 3's vacuity failure in a new costume. `coord_forced` bypasses the
+short-circuit and is where the arm's only live float differences live (6.1e-15 / 7.6e-16).
+
+PROVENANCE. Measured 2026-08-10, CPython 3.14.3 vs PyPy 3.11.15 (7.3.23), 2 724 values
+(r78 2 393, r79 331), via `M:\claud_projects\temp\fingerprint-slice4\probe4.py` compared with
+slice 3's `compare3.py`. ** ZERO values differed on either arm ** — 1 068 of r78's 1 769 floats
+and 93 of r79's 224 are distinct, so the exactness is the arithmetic's and not a vacuous probe's.
+So both assert BIT-EQUALITY (`TOL = 0.0`), like `cpg` / `r66` / `r68` / `r77`, and neither needs
+an `ABS_TOL` leg. No sensitivity sweep: an exact arm already sits at the ulp floor, the same row
+`cpg` and `r66` occupy in slice 1's table.
+
+  CAVEAT ON THAT MEASUREMENT, disclosed because § SLICE 3 says to verify RUN-vs-SHIPPED-GOLDEN
+  and not probe-vs-probe. The probe is not bit-for-bit this kernel: it builds the gas the RUNGS'
+  own tests build (`R_c = (1.4-1)/1.4*1004 = 286.857...`), whereas every arm in this file shares
+  `_cpg_gas()`, which has used the conventional `R_c = 286.9` since slice 1. That is slice-WIDE
+  and PRE-DATES slice 4 — rungs 67-77 pin the same 286.9 — and it is kept deliberately: matching
+  the rungs here would leave slice 4 unable to be differenced against slice 3, which is the one
+  property the "no settings of its own" design buys. The consequence is only that the 0-of-2 724
+  figure above characterises an ADJACENT computation. What actually licenses `TOL = 0.0` is the
+  full PyPy gate run against the CPython-written golden, which is this arm run against these
+  bits; the probe is what made that run worth attempting, not what justifies the constant.
+  That run happened on the ship: `pytest` under PyPy 3.11.15, 1 289 items, both slow gates GREEN
+  at `TOL = 0.0` against the CPython 3.14.3 golden. THAT is the licence, and it is the check
+  § SLICE 3 item (e) asks for — RUN-vs-SHIPPED-GOLDEN, not probe-vs-probe.
+
+For r79 that strictness is not merely the rule being followed — ** the zeros ARE the finding **.
+`d_max = 0`, `d_set = 0` and `n_both = 0` are rung 79's headline (a coordinate the plant cannot
+reach), so bit-equality pins the CLAIM, not just a noise band. If this arm ever proves fragile,
+read the docstring's "demote THOSE arms" licence with that in mind: loosening r79 loosens the
+finding. Cost, PyPy idle: 18.3 s (r78) and 20.8 s (r79), beside slice 3's heaviest.
 """
 import json
 import os
@@ -304,6 +355,8 @@ from turbojet.engine import (  # noqa: E402
     CrossSplitTransient, FullSplitTransient, SharedActuatorTransient,
     AppliedReferenceTransient, DemandCoordinateTransient, AntiWindupTransient,
     SensedCapTransient, StiffnessLedgerTransient, StatorLimiter, StatorIncidenceLimiter,
+    # slice 4 — rungs 78/79
+    ResidualGaugeTransient, StateCoordinateTransient,
 )
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -361,6 +414,13 @@ TOL = {
     "r75":  1e-9,    # measured drift 5.7e-11   the ANTI-WINDUP device
     "r76":  1e-11,   # measured drift 3.1e-13   the FUEL-DEPENDENT cap
     "r77":  0.0,     # measured EXACT — 0 of 591 values differed
+    # ---------------- SLICE 4: rungs 78/79 (2026-08-10) — see § SLICE 4 ----------------
+    # Same rule, same measurement shape (`…\fingerprint-slice4\probe4.py` + slice 3's
+    # `compare3.py`, 2 724 values). Both measured EXACT, so both assert bit-equality and
+    # neither takes an `ABS_TOL` leg. For r79 that is not just the rule: its zeros ARE rung
+    # 79's finding, so loosening this arm would loosen the CLAIM, not a noise band.
+    "r78":  0.0,     # measured EXACT — 0 of 2 393 values differed (1 068 of 1 769 distinct)
+    "r79":  0.0,     # measured EXACT — 0 of   331 values differed (   93 of   224 distinct)
 }
 
 # --------------------------------------------------------------------------- absolute leg
@@ -1056,6 +1116,61 @@ def kernel_r77():
                ("sq", m.singular_limit(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX, **kw)))
 
 
+# ===========================================================================================
+# SLICE 4 — rungs 78 and 79
+# ===========================================================================================
+# The settings are rungs 78/79's OWN, and they are ALREADY the `_S3_*` block above: rung 79
+# § 0.2 says it takes rung 78's verbatim, and rung 78 takes rung 77's. So slice 4 declares no
+# settings of its own — it reuses `_s3_rig` / `_s3_design`, which is also what makes these two
+# arms differenceable against slice 3's.
+#
+# `every` IS LEFT AT THE READERS' DEFAULT (8) and NOT set to `EVERY_G`. Neither
+# `tests/test_rung78.py` nor `tests/test_rung79.py` passes it, so the default is the stride the
+# two specs' published numbers were measured at — every value pinned below is a number those
+# specs quote. § SLICE 3's warning (this stride walks the RIDING ARC; cutting it emptied the
+# rung-71 arm) is honoured by not touching it at all.
+_SLICE4 = ("r78", "r79")
+_S4_KW = dict(phi_lim=_S3_PHI, margin=_S3_MARGIN, taus=_S3_TAUS, r=_S3_R,
+              s_settle=_S3_SETTLE, ds=_S3_DS, v_max=_S3_VMAX, inc=False)
+
+
+def kernel_r78():
+    """RUNG 78 — THE RESIDUAL GAUGE: `G_k' = 1 - k*c` as a free dial that reaches infinity
+    without moving `dw*/dq`, the SECOND root that collides with the first at `k*c = 1`, and
+    (`d`) the coordinate-vs-device discriminator — `solve` -> `sensed` MOVES the root.
+
+    A FRESH RIG PER READER, deliberately: these classes carry class-level counters and a
+    `_gauge_k` the readers set and restore, and rungs 61-79 have hit the carried-knob trap
+    repeatedly. Three constructions cost ~1 s against the arm's ~18 s."""
+    def m():
+        return _s3_rig(ResidualGaugeTransient, _lag_coord="demand", _ref_law="sched",
+                       _windup_law="none", _tau_t=None, _cap_law="solve", _gauge_k=1.0)
+    return _s3("r78",
+               ("g", m().gauge_scan(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX, **_S4_KW)),
+               ("c", m().root_census(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX, **_S4_KW)),
+               ("d", m().gauge_vs_device(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX, **_S4_KW)))
+
+
+def kernel_r79():
+    """RUNG 79 — THE STATE COORDINATE: rung 60's incidence in place of rung 49's `phi`.
+
+    `coord_forced` IS THE LOAD-BEARING READER AND IT LEADS THE ARM. On the plant every delta
+    this rung measures is EXACTLY zero — not because the coordinate preserves the root but
+    because `_cap_free` short-circuits past it (§ 5.1), so an arm built on `coord_scan` and
+    `coord_march` alone would pin dozens of structural zeros and guard NOTHING about the
+    coordinate. `coord_forced` bypasses the short-circuit and is where this rung's only live
+    numbers live. The other three are still pinned: `m` carries § 5.3's complementarity
+    (`n_live` / `n_reach` / `n_both`) and the 13-digit `gap`, which are the rung's content."""
+    def m():
+        return _s3_rig(StateCoordinateTransient, _lag_coord="demand", _ref_law="sched",
+                       _windup_law="none", _tau_t=None, _cap_law="solve")
+    return _s3("r79",
+               ("f", m().coord_forced(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX, **_S4_KW)),
+               ("s", m().coord_scan(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX, **_S4_KW)),
+               ("c", m().coord_census(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX, **_S4_KW)),
+               ("m", m().coord_march(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX, **_S4_KW)))
+
+
 KERNELS = {"cpg": kernel_cpg, "r66": kernel_r66, "A": kernel_A, "B": kernel_B,
            "C": kernel_C, "D": kernel_D, "E": kernel_E, "F": kernel_F,
            # slice 2 — the rungs 3-30 diagnostic ladder
@@ -1067,7 +1182,9 @@ KERNELS = {"cpg": kernel_cpg, "r66": kernel_r66, "A": kernel_A, "B": kernel_B,
            # slice 3 — the rungs 67-77 control ladder
            "r67": kernel_r67, "r68": kernel_r68, "r69": kernel_r69, "r70": kernel_r70,
            "r71": kernel_r71, "r72": kernel_r72, "r73": kernel_r73, "r74": kernel_r74,
-           "r75": kernel_r75, "r76": kernel_r76, "r77": kernel_r77}
+           "r75": kernel_r75, "r76": kernel_r76, "r77": kernel_r77,
+           # slice 4 — rungs 78/79
+           "r78": kernel_r78, "r79": kernel_r79}
 
 
 # --------------------------------------------------------------------------- encode / compare
@@ -1338,8 +1455,26 @@ def test_golden_kernel_r77_stiffness_ledger():
     _check("r77")
 
 
-def test_slice3_arms_are_not_vacuous():
+# ------------------------------------------------------------------------ slice 4, rungs 78-79
+# Both carry `@pytest.mark.slow`: PyPy idle 18.3 s (r78) / 20.8 s (r79), which puts them beside
+# slice 3's four heaviest. Both still run on a plain `pytest` — the ONE gate.
+
+@pytest.mark.slow
+def test_golden_kernel_r78_residual_gauge():
+    _check("r78")
+
+
+@pytest.mark.slow
+def test_golden_kernel_r79_state_coordinate():
+    _check("r79")
+
+
+def test_instrument_arms_are_not_vacuous():
     """THE CHECK THAT CAUGHT THE RUNG-71 ARM, kept as a gate rather than as a war story.
+
+    IT COVERS SLICES 3 AND 4, and the name says `instrument` rather than `slice3` for that
+    reason: every arm built on a rung's own INSTRUMENT readers can fail this way, so a new
+    slice must be added to the iteration set in the same edit that adds its arms.
 
     An instrument reader can return a fully-populated-looking object in which every row list is
     EMPTY and every derived field is `None` — because the stride landed on one base point and
@@ -1350,7 +1485,7 @@ def test_slice3_arms_are_not_vacuous():
     Read from the GOLDEN, not from a fresh run, so it costs nothing and so it also fails if a
     regeneration ever pins a vacuous arm."""
     golden = _load_golden()["kernels"]
-    for name in _SLICE3:
+    for name in _SLICE3 + _SLICE4:
         arm = {k: _decode(v) for k, v in golden[name].items()}
         empty = [k for k, v in arm.items() if k.endswith("rows#n") and v == 0]
         assert not empty, (
@@ -1401,7 +1536,14 @@ def test_every_kernel_is_actually_GATED():
     on it — it would be generated, pinned, counted in the value total, and never verified. At
     eight arms that was eyeball-checkable; at twenty-six across two naming conventions it is not,
     and the failure is silent in the direction that matters (a green suite hiding an unchecked
-    kernel). So read the gates' own source and assert every kernel is reached by one."""
+    kernel). So read the gates' own source and assert every kernel is reached by one.
+
+    IF THIS FAILS NAMING KERNELS YOU KNOW ARE GATED, suspect the detector before the gates.
+    `inspect.getsource` re-reads THIS FILE from disk using line numbers cached at import, so
+    EDITING THE FILE WHILE THE SUITE RUNS hands the regex below the wrong text and reports
+    long-standing arms as ungated. Slice 4 hit exactly that: a docstring edit under a running
+    gate produced '12 kernel(s) ... no test checks them' on a tree that was green. Re-run on a
+    stable file before believing it — and do not edit a source file while its suite is running."""
     import inspect
     import re
 
@@ -1476,6 +1618,17 @@ def _regenerate():
                              capture_output=True, text=True, timeout=30).stdout.strip()
     except (OSError, subprocess.SubprocessError):
         pass
+    if not sha:
+        # SLICE 4 hit this: a BACKGROUNDED regeneration got no `git` (sandbox or the 30 s
+        # timeout under load) and wrote an empty sha. Nothing was wrong with the 21 297 VALUES
+        # -- only the provenance -- but the failure was silent here and only surfaced two steps
+        # later in `test_golden_file_declares_its_provenance`, i.e. after the file was written.
+        # Say it HERE, where the operator is still watching, so the meta block can be repaired
+        # from the HEAD that was current during the run instead of re-running the 18-minute
+        # regeneration for a string.
+        print("  !!! WARNING: `git rev-parse HEAD` returned nothing, so `repo_sha` is EMPTY.")
+        print("  !!! The values are unaffected; the PROVENANCE is not. Fill it in by hand with")
+        print("  !!! the HEAD that was current during this run, or the provenance guard fails.")
     doc = {"meta": {"implementation": sys.implementation.name,
                     "version": sys.version.split()[0],
                     "generated": time.strftime("%Y-%m-%d"),

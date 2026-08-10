@@ -16,6 +16,7 @@ these lines (the same rule CLAUDE.md lives under).
 - [Golden fingerprint gate](golden-fingerprint-gate.md) — the project's ONLY absolute-value gate; goldens are a CPython anchor, NEVER regenerate them under another interpreter; measure a detector's sensitivity, don't assert it
 - [Golden gate slice 2](golden-gate-slice2.md) — 26 arms / 8044 values; drift is set by CONDITIONING not by rung, and the reduced-resolution worry measured backwards
 - [Golden gate slice 3](golden-gate-slice3.md) — rungs 67-77 pinned; a STRIDE knob is not a RESOLUTION knob (an arm that guarded nothing), and a structural zero needs a two-sided ABS tolerance
+- [Golden gate slice 4](golden-gate-slice4.md) — rungs 78/79 pinned BIT-EXACT; lead an arm with the reader that BYPASSES the plant's short-circuit, and when the zeros ARE the finding, loosening the tolerance loosens the CLAIM
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page published as artifact 56cde230…; update the same URL, regenerate via extract_data.py + build.py
 
 ## Shipped rungs

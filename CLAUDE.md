@@ -173,7 +173,7 @@ table and grew per rung, which the size guard says to DELETE rather than pay for
 ## Open engineering tasks (not rungs, not seams)
 All three CLOSED, detail in the linked file: the per-rung `main.py` panel (no test covers it —
 check on every ship); the solver-tolerance audit (NEGATIVE, `docs/plans/todo-solver-tolerance-audit.md`);
-the fingerprint gate's rung 67–77 arms (that module's docstring § SLICE 3).
+the fingerprint gate's rung 67–79 arms (that module's docstring §§ SLICE 3–4).
 
 ## Conventions
 - **SI units throughout** (K, Pa, kg/s, m/s, J/kg). Convert kPa → Pa internally.
@@ -238,9 +238,9 @@ A compact map — the per-rung method/finding detail lives in `docs/rungN-spec.m
 
 ## Commands
 - Run the model: `python main.py` · Install: see `requirements.txt` (a PyPy venv — § Stack)
-- **The gate: `pytest`** — **EVERYTHING**, 1287 tests, **~9:06 at 1287** (PyPy, rung 79, box load
-  unknown; the prior quote was ~14:14 at 1267 and the two are NOT differenceable). ONE gate;
-  nothing is ever silently deselected, so no regression can hide. (`main.py` has no test.)
+- **The gate: `pytest`** — **EVERYTHING**, 1289 tests, **~9:06 at 1287** (PyPy, rung 79, box load
+  unknown; a 15:24 at 1289 came off a LOADED box, so it neither differences nor replaces this).
+  ONE gate; nothing is ever silently deselected, so no regression can hide. (`main.py` has no test.)
 - **Iterate: `pytest -m "not slow"`** — 954 tests, **~1:54 at 890**. The run minus the expensive sweeps.
   `slow` is a LABEL you opt out of by typing, never a default. Only those: `pytest -m slow`.
 - **WHEN to run the gate:** at session end (unless run shortly before), and after a code change.
