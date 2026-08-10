@@ -20719,3 +20719,603 @@ class ResidualGaugeTransient(StiffnessLedgerTransient):
                     # and no run's swept `k*c` crossed the collision band
                     clear=all(x["clear"] for x in cells),
                     kc=[(x["mult"], x["kc"]) for x in cells])
+
+
+class StateCoordinateTransient(ResidualGaugeTransient):
+    """RUNG 79. Rung 78 s 9's fourth seam -- **THE SAME QUESTION ON THE PHI LEG'S OWN
+    COORDINATE** (docs/rung79-spec.md).
+
+    Rung 78 re-wrote a leg's LAW (`cap_k = w0 + k*(cap - w0)`) and found the root preserved and
+    its UNIQUENESS DESTROYED. This rung re-writes a leg's STATE COORDINATE -- rung 60's
+    incidence `M_i` in place of rung 49's `phi` -- and asks the same question of the other side.
+    Rung 69 gave a STATOR loop a different coordinate without changing what it watches; nothing
+    in 69-78 asked whether doing that to a FUEL leg preserves its root.
+
+        Gs(w) = phi_lim - phi(w)                                 [rung 49, SHIPPED]
+        Gi(w) = m_lim   - M_i(w)  =  1/phi(w) - 1/phi_lim        [rung 60's currency]
+
+    **`T_c` AND `v` CANCEL IDENTICALLY** -- the blade metal and the stator setting are both
+    absent from the incidence residual. Rung 60 chose `M_i` BECAUSE the stator does not move its
+    wall; in the residual the stator does not appear at all. What is left is a MULTIPLIER:
+
+        Gi(w) = Gs(w) * h(w) ,      h(w) := 1/(phi(w)*phi_lim)  >  0   STRICTLY
+
+    HEADLINE: **A COORDINATE CHANGE IS A GAUGE THAT CANNOT GO SINGULAR.** `h > 0` with no zero
+    anywhere on the domain, so (i) the root SET is preserved POINTWISE, not merely at the set
+    point -- `sign Gi == sign Gs` everywhere, hence equal root COUNTS on any window; (ii) the
+    slope at the root scales by exactly `1/phi_lim**2`, a DERIVED factor with no fitted content
+    (`Gs(w*) = 0` kills the `Gs*h'` term); (iii) `dw*/dq` is INVARIANT, both halves carrying the
+    same `h(w*)`; and (iv) monotonicity survives, so the SHIPPED bracket still applies.
+
+    **THIS BOUNDS RUNG 78 -- IT DOES NOT CORRECT IT.** Rung 78's lost uniqueness was a property
+    of its AFFINE LAW-SIDE family, whose slope factor `1 - k*c` PASSES THROUGH ZERO. This gauge
+    has NO DIAL AT ALL, and the reason is the cancellation above: there is nothing left to
+    sweep. "Cannot be driven singular" is therefore not *we swept and never reached zero*, it is
+    *there is nothing to sweep* -- and the multiplier is positive because a COORDINATE MUST BE
+    INVERTIBLE. That is the missing hypothesis under which rung 78's uniqueness survives.
+
+    THE ROOT-FINDER IS ITSELF THE DIAGNOSTIC. Rung 78 had to write a damped Newton BECAUSE its
+    family could invert `G`'s sign; this rung reuses rung 74's shipped bracket unchanged. The
+    solver requirement separates a law-side family from a coordinate.
+
+    AND ITS s 5 IS LIVE WHERE RUNG 78's WAS MASKED, for the same reason. Rung 78 gauged the
+    ACCEL leg and measured it winning 0 of 15 riding points -- `binds = 0`, and its trajectory
+    claim went down as NOT ESTABLISHED. The leg that wins those 15 is the PHI leg, which is the
+    one gauged here, so the gauged value actually reaches the plant. `_coord_binds` proves it
+    rather than assuming it (rung 78 s 5.1's lesson, applied in advance).
+
+    WHAT IS ACTUALLY AT RISK, since the rest is an identity: the set point is preserved in EXACT
+    arithmetic, but `_cap_free` is a bracketed Illinois solve whose iterate sequence depends on
+    the residual's SLOPE. Same root, DIFFERENT FLOATS -- and those floats feed a `min`, which is
+    a DISCONTINUOUS selector. `_coord_flips` is the whole scored question (anchor P2), and the
+    leg-to-leg GAP is its NON-VACUITY guard: if the two legs are never close, "the min never
+    flips" is true and measures nothing, and the spec says so.
+
+    THE SEVENTH DECLARED KNOB, beside `_share_law` (72), `_ref_law` (73), `_lag_coord` (74),
+    `_windup_law` (75), `_cap_law` (76) and `_gauge_k` (78) -- and the THIRD that adds no
+    constant: `T_c` is rung 53's `1/phi_surge`, `m_lim` is rung 49's own floor read through rung
+    60's shipped `from_phi`, and both cancel.
+
+    Usage:
+        t = StateCoordinateTransient(design, FLIGHT, 1.0, map_lp=..., map_hp=..., bleed_lim=bl)
+        t.coord_scan(FLIGHT, 1000., 1400., 1200.)     # s 1-3: w*, the slope ratio, dw*/dq
+        t.coord_census(FLIGHT, 1000., 1400., 1200.)   # s 4: root counts, BOTH coordinates
+        t.coord_march(FLIGHT, 1000., 1400., 1200.)    # s 5: the PLANT, and the flips
+
+    THE REDUCE: `_phi_ref = "phi"` dispatches `_cap_fuel` to `super()` on an exact comparison,
+    so not one float in this family moves. Gated on rung 73's discipline in BOTH directions: at
+    `incidence` the residual's SLOPE RATIO must equal `1/phi_lim**2` (else the knob is dead --
+    a coordinate that changes nothing is not a coordinate) AND the SET POINT must not move (else
+    it is not a coordinate at all, it is a device).
+
+    Anchor: `docs/plans/rung79-anchor-state-coordinate.md`. Gates: `tests/test_rung79.py`.
+    """
+
+    _phi_ref = "phi"                    # "phi" (rung 49/78) | "incidence" (rung 60's currency)
+
+    # s 5's NON-VACUITY counters, and they MUST be written on the CLASS: `self._x += 1` creates
+    # an INSTANCE attribute and leaves the class one at zero forever -- rung 78 s 5.1's second
+    # trap, where the instrument built to catch a vacuous section was itself vacuous.
+    _coord_hits = 0                     # the incidence branch RAN
+    _coord_binds = 0                    # ... and its value WON the min-select
+    # AND THE INDEX TRAP: rung 78 tested `out == caps[0]`, which is the ACCEL entry whenever
+    # accel is armed. Copying that pattern for the PHI leg would give `binds = 0` forever and a
+    # s 5 that looks exactly like a pass. This compares the two caps by NAME, never by position.
+
+    # THE FOURTH COUNTER, AND IT IS THE ONE THAT MATTERS -- how often `_cap_free` returned the
+    # SHIPPED FALLBACK instead of bracketing the coordinated residual. `hits`/`binds` are BLIND
+    # to this: they read 1366/1366 while the coordinate was thrown away before any solve. See
+    # s 5.1 -- it is rung 78 s 5's masking arriving one level DEEPER, and by a different door.
+    # ... AND SPLIT BY COORDINATE, because a single total cannot tell *3 slack states in each of
+    # 2 coordinates* from *6 in `phi` alone* -- and only the first means the knob was ever
+    # exercised on the plant. `_surge_fuel` brackets its OWN hardcoded phi residual, so the
+    # short-circuit does not bypass a coordinate, it SUBSTITUTES the original one.
+    _coord_fb_phi = 0
+    _coord_fb_inc = 0
+    _coord_calls_phi = 0
+    _coord_calls_inc = 0
+
+    _coord_probe = False                # the instrument of s 5; never read by the plant
+    _coord_log = None                   # [(accel_cap, phi_cap_in_phi, phi_cap_in_incidence)]
+
+    # --- the knob, in ONE place ---------------------------------------------------------------
+
+    def _phi_residual(self, flight: "FlightCondition", a: float, h: float, surge, coord=None):
+        """`Gs` or `Gi` -- the ONE place the coordinate is chosen, so no reader can drift from
+        the plant.
+
+        `surge.phi_lim` is used RAW, exactly as the shipped `_cap_fuel` does. `_resolve_floor`
+        returns a plain `SurgeLimiter` BY IDENTITY (rung 60), so on this family's rig the two
+        agree; using the raw value keeps `Gi` the exact coordinate transform of the residual the
+        parent actually solves, rather than of a nearby one."""
+        k = surge.key()
+        if (coord or self._phi_ref) == "phi":
+            return lambda w: surge.phi_lim - self._instant_fuel(flight, a, h, w)[k]
+        inv = 1.0 / surge.phi_lim
+        return lambda w: 1.0 / self._instant_fuel(flight, a, h, w)[k] - inv
+
+    def _phi_cap(self, flight: "FlightCondition", a: float, h: float, mf_sched: float,
+                 surge, coord=None) -> float:
+        """The phi leg's unfloored set point in the chosen coordinate.
+
+        THE FALLBACK IS REUSED, DELIBERATELY. `_surge_fuel` solves `phi(w) = phi_lim`, which is
+        the SAME ROOT SET as `Gi` (the multiplier has no zero), so the reuse is legal -- and
+        writing an incidence-specific fallback would put TWO root-finders behind a rung whose
+        whole claim is that there is ONE root.
+
+        AND IT IS COUNTED, PER COORDINATE, WHICH IS s 5.1. `_cap_free` short-circuits to
+        `shipped()` whenever `G(mf_sched) > 0`, i.e. whenever the leg BINDS -- and `_surge_fuel`
+        BRACKETS ITS OWN HARDCODED `Gs` (`engine.py` ~4760: `phi_lim - _instant_fuel(.)[k]`).
+        It is NOT coordinate-free; it is written in the ORIGINAL coordinate. So on a binding leg
+        this knob is not inert, it is UNREACHABLE -- the plumbing routes past it.
+
+        THE SPLIT IS BY COORDINATE AND THAT IS NOT A DETAIL. A single total cannot distinguish
+        *three slack states solved in each of two coordinates* from *six solved only in `phi`* --
+        and in the second case the incidence residual was never bracketed on the plant at all
+        and s 5 measured nothing about the knob."""
+        c = coord or self._phi_ref
+
+        def shipped():
+            if c == "phi":
+                StateCoordinateTransient._coord_fb_phi += 1
+            else:
+                StateCoordinateTransient._coord_fb_inc += 1
+            return self._surge_fuel(flight, a, h, mf_sched, surge)
+        G = self._phi_residual(flight, a, h, surge, coord)
+        out = self._cap_free(G, mf_sched, shipped)
+        if c == "phi":
+            StateCoordinateTransient._coord_calls_phi += 1
+        else:
+            StateCoordinateTransient._coord_calls_inc += 1
+        return out
+
+    # --- the PLANT: one branch, taken only when the knob is off its identity -------------------
+
+    def _cap_fuel(self, flight: "FlightCondition", a: float, h: float, mf_sched: float,
+                  accel, surge, mf_app=None) -> float:
+        """Rung 78's min-select with the PHI branch re-coordinated. At `"phi"` this dispatches
+        to the parent and the whole family is bit-for-bit rung 78."""
+        if self._phi_ref == "phi":
+            return super()._cap_fuel(flight, a, h, mf_sched, accel, surge, mf_app=mf_app)
+        assert self._gauge_k == 1.0, (
+            "rung-79: an INCIDENCE phi leg x a non-identity rung-78 GAUGE is REFUSED. The two "
+            "knobs re-write DIFFERENT legs' residuals, so composing them is neither rung 78 nor "
+            "rung 79 and nothing measures it -- rung 78 s 0.3's refusal of `sensed x gauge`, "
+            f"one knob over. Got _phi_ref = {self._phi_ref!r}, _gauge_k = {self._gauge_k!r}.")
+        # THE ACCEL LEG IS THE PARENT'S, UNTOUCHED -- taken by calling `super()` with the phi
+        # leg disarmed rather than by re-deriving it here. Rung 78 duplicated that body; a copy
+        # is a place for the two to drift, and this rung's whole claim is that ONE leg moved.
+        a_cap = super()._cap_fuel(flight, a, h, mf_sched, accel, None, mf_app=mf_app)
+        if surge is None:
+            return a_cap
+        StateCoordinateTransient._coord_hits += 1
+        fb0 = StateCoordinateTransient._coord_fb_inc
+        p_cap = self._phi_cap(flight, a, h, mf_sched, surge)
+        # WAS THE KNOB LIVE ON THIS CALL? Differenced around the solve rather than inferred from
+        # a total -- s 5.3's complementarity is a per-call claim and needs a per-call flag.
+        used_fb = StateCoordinateTransient._coord_fb_inc != fb0
+        if self._coord_probe:
+            # AN INSTRUMENT, NEVER THE PLANT: the SAME leg solved in the OTHER coordinate at the
+            # SAME state, so s 5 can measure the float delta, the leg-to-leg GAP it has to cross
+            # to matter, and whether the `min` ever selected differently. Computed here because
+            # this is the only place both are available at the identical frozen state.
+            #
+            # `mf_sched` IS LOGGED BECAUSE `binds` IS NOT THE LAST SELECTOR. Winning this `min`
+            # is not reaching the plant: `_applied_demand` takes `min(mf_sched, wf, wr)` further
+            # down, so a cap ABOVE the schedule is masked there however cleanly it won here.
+            # That is rung 78 s 5.1's third trap one selector lower, and `binds` cannot see it.
+            p_phi = self._phi_cap(flight, a, h, mf_sched, surge, coord="phi")
+            StateCoordinateTransient._coord_log.append(
+                (a_cap, p_phi, p_cap, mf_sched, used_fb))
+        if p_cap <= a_cap:
+            StateCoordinateTransient._coord_binds += 1
+        return min(a_cap, p_cap)
+
+    # --- the SEVENTEENTH instance of rungs 61-78's carried-knob trap ---------------------------
+
+    def at_lever(self, vsv_lp: float = 0.0, vsv_hp: float = 0.0, vsv_sched_lp=None,
+                 vsv_sched_hp=None, bleed: float = 0.0, bleed_sched=None,
+                 bleed_lim=None, stator_lim=None, stator_inc=None
+                 ) -> "StateCoordinateTransient":
+        """THE SEVENTEENTH INSTANCE. Rung 78 lost the CLASS and the gauge here; this rung would
+        lose the COORDINATE on top of both, and every reader below would silently run at
+        `"phi"` -- i.e. would report rung 79 having marched rung 78."""
+        de, fd, md, rho, lpd = self._ctor
+        m = StateCoordinateTransient(
+            de, fd, md, map_lp=self.map_lp_design, map_hp=self.map_hp_design, rho=rho,
+            vsv_lp=vsv_lp, vsv_hp=vsv_hp, vsv_sched_lp=vsv_sched_lp,
+            vsv_sched_hp=vsv_sched_hp, bleed=bleed, bleed_sched=bleed_sched,
+            bleed_lim=bleed_lim, stator_lim=stator_lim, stator_inc=stator_inc,
+            lp_disabled=lpd)
+        m._ref_law, m._lag_coord = self._ref_law, self._lag_coord
+        m._windup_law, m._tau_t, m._ic_cap = self._windup_law, self._tau_t, self._ic_cap
+        m._cap_law, m._gauge_k, m._phi_ref = self._cap_law, self._gauge_k, self._phi_ref
+        return m
+
+    def _shared_rig(self, sm, tau, tau_s, v_max, Tt4_max, tau_att=0.05, tau_rel=0.15,
+                    inc=False, fuel=True, valve=True, stator=True, gov=True):
+        m, surge, lag = super()._shared_rig(sm, tau, tau_s, v_max, Tt4_max, tau_att=tau_att,
+                                            tau_rel=tau_rel, inc=inc, fuel=fuel, valve=valve,
+                                            stator=stator, gov=gov)
+        m._phi_ref = self._phi_ref
+        return m, surge, lag
+
+    def _with_coord(self, ref, fn, *a, **kw):
+        """Run something in a named COORDINATE, restored in a `finally` -- rung 62's reason, and
+        this family's TWELFTH reload of it."""
+        prev = self._phi_ref
+        self._phi_ref = ref
+        try:
+            return fn(*a, **kw)
+        finally:
+            self._phi_ref = prev
+
+    def _with_probe(self, fn, *a, **kw):
+        """Arm s 5's instrument and hand back its log, always cleared and disarmed.
+
+        THE FLAG IS WRITTEN ON THE CLASS, and the first version wrote `self._coord_probe = True`.
+        That is the carried-knob trap of rungs 61-78 landing on the INSTRUMENT rather than on the
+        plant: `_cap_march` builds a NEW machine through `_shared_rig`/`at_lever`, so the marching
+        object read the class default `False` and the log came back EMPTY -- while `hits` and
+        `binds` (class-level writes) reported 1366/1366 and looked like a flawless pass. Rung 78
+        s 5.1's second trap, same mechanism, opposite attribute."""
+        prev_p, prev_l = (StateCoordinateTransient._coord_probe,
+                          StateCoordinateTransient._coord_log)
+        StateCoordinateTransient._coord_log = []
+        StateCoordinateTransient._coord_probe = True
+        try:
+            out = fn(*a, **kw)
+        finally:
+            log = StateCoordinateTransient._coord_log
+            StateCoordinateTransient._coord_probe = prev_p
+            StateCoordinateTransient._coord_log = prev_l
+        return out, log
+
+    # --- s 1-3: THE SET POINT, THE SLOPE RATIO, AND THE SENSITIVITY ----------------------------
+
+    def _coord_at(self, flight, m, p, surge, dq: float = 1e-5, rel: float = 1e-7):
+        """Both coordinates read at ONE frozen trajectory point.
+
+        THE FREEZE IS TAKEN AROUND EVERY SOLVE, and that is rung 78 s 5.1's third trap read in
+        advance: a root solved with the valve loop CLOSED and a slope then measured on the
+        FROZEN plant are two different plants wearing one number.
+
+        `dw*/dq` is the SENSITIVITY rung 77 built and rung 78 showed is gauge-invariant on the
+        law side. Here `q` is the valve position, perturbed around the frozen setting and the
+        set point re-solved -- a CENTRAL difference, in each coordinate separately."""
+        a, h, q, v, ms = p["nu_lp"], p["nu_hp"], p["b"], p["v"], p["mf_sched"]
+
+        def solve(coord, qq):
+            m._b_state, m._v_state = qq, v
+            try:
+                return m._phi_cap(flight, a, h, ms, surge, coord=coord)
+            finally:
+                m._b_state, m._v_state = None, None
+
+        def slope(coord, w):
+            m._b_state, m._v_state = q, v
+            try:
+                G = m._phi_residual(flight, a, h, surge, coord)
+                d = rel * max(abs(w), 1e-9)
+                return (G(w + d) - G(w - d)) / (2.0 * d)
+            finally:
+                m._b_state, m._v_state = None, None
+
+        w_p, w_i = solve("phi", q), solve("incidence", q)
+        s_p, s_i = slope("phi", w_p), slope("incidence", w_p)
+        out = {}
+        for name, coord in (("phi", "phi"), ("inc", "incidence")):
+            hi_, lo_ = solve(coord, q + dq), solve(coord, q - dq)
+            out["dwdq_" + name] = (hi_ - lo_) / (2.0 * dq)
+        return dict(s=p["s"], w_phi=w_p, w_inc=w_i,
+                    # P1 -- REPORTED AS A NUMBER. `1e-15` (same float) and `1e-9` (a different
+                    # Illinois iterate path) mean different things, and a `< 1e-6` bound passes
+                    # both while telling you nothing.
+                    d_set=abs(w_i - w_p) / max(abs(w_p), 1e-30),
+                    same_float=(w_i == w_p),
+                    slope_phi=s_p, slope_inc=s_i,
+                    ratio=(s_i / s_p if s_p != 0.0 else float("nan")), **out)
+
+    def coord_scan(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                   Tt4_max: float, phi_lim: float = 0.80, margin: float = 0.10,
+                   taus=(0.05, 0.05, 0.05, 0.05), inc: bool = False, r: float = 0.5,
+                   s_settle: float = 1.2, ds: float = 0.005, v_max: float = 0.20,
+                   dq: float = 1e-5, every: int = 8) -> dict:
+        """s 1-3: **the set point, the slope ratio `1/phi_lim**2`, and `dw*/dq`.**
+
+        EVERY NUMBER HERE CONFIRMS AN IDENTITY AND NONE OF THEM CAN FAIL -- anchor s 0 says so
+        in advance, and the spec repeats it. `Gi = Gs/(phi*phi_lim)` with a strictly positive
+        multiplier is four lines of algebra, so a disagreement here is a BUG and not a finding.
+        It is run because an unconfirmed identity is an UNRUN CODE PATH, which is a different
+        thing worth knowing.
+
+        Read at rung 78's own points, at rung 78's own settings, so the two are differenceable
+        (rung 63's lesson: a number quoted from another rung's settings is not a comparison)."""
+        m, surge, accel, pts = self._gauge_points(
+            flight, Tt4_lo, Tt4_hi, Tt4_max, margin, taus, r, s_settle, ds, v_max, inc,
+            phi_lim, every)
+        rows = [self._coord_at(flight, m, p, surge, dq=dq) for p in pts]
+        pred = 1.0 / (phi_lim * phi_lim)
+        return dict(phi_lim=phi_lim, margin=margin, inc=inc, n=len(rows), rows=rows,
+                    predicted_ratio=pred,
+                    # D2: the slope scales by the DERIVED factor, with no fitted content
+                    ratio_err=max(abs(x["ratio"] / pred - 1.0) for x in rows) if rows else None,
+                    # D3: ... and the SENSITIVITY does not move at all
+                    dwdq_err=max(abs(x["dwdq_inc"] - x["dwdq_phi"])
+                                 / max(abs(x["dwdq_phi"]), 1e-30) for x in rows)
+                    if rows else None,
+                    # P1: the set point, as a NUMBER, plus whether it is the SAME FLOAT
+                    d_set=max(x["d_set"] for x in rows) if rows else None,
+                    d_set_min=min(x["d_set"] for x in rows) if rows else None,
+                    n_same_float=sum(1 for x in rows if x["same_float"]))
+
+    # --- s 4: THE ROOT CENSUS, IN BOTH COORDINATES ---------------------------------------------
+
+    def coord_census(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                     Tt4_max: float, phi_lim: float = 0.80, margin: float = 0.10,
+                     taus=(0.05, 0.05, 0.05, 0.05), inc: bool = False, r: float = 0.5,
+                     s_settle: float = 1.2, ds: float = 0.005, v_max: float = 0.20,
+                     every: int = 8, lo: float = 0.2, hi: float = 3.0, n: int = 400) -> dict:
+        """s 4: **the root COUNT, walked in both coordinates over rung 78's own window.**
+
+        A COUNT, not a solve -- rung 78 s 3's instrument, reused for its own reason: a root
+        finder started anywhere reports only the root it reached, which is exactly the failure
+        that made rung 78's `ok` useless as a correctness guard.
+
+        D1 forces the two counts to be EQUAL (a positive multiplier cannot create or destroy a
+        sign change). It does NOT force either of them to be ONE, and nothing in 49-78 has ever
+        looked -- so `n_roots` is an inherited fact about the PHI LEG that this rung is the
+        first to measure, in passing."""
+        m, surge, accel, pts = self._gauge_points(
+            flight, Tt4_lo, Tt4_hi, Tt4_max, margin, taus, r, s_settle, ds, v_max, inc,
+            phi_lim, every)
+        rows = []
+        for p in pts:
+            a, h, q, v, ms = p["nu_lp"], p["nu_hp"], p["b"], p["v"], p["mf_sched"]
+            m._b_state, m._v_state = q, v
+            try:
+                w0 = m._phi_cap(flight, a, h, ms, surge, coord="phi")
+                rp = m._root_count(m._phi_residual(flight, a, h, surge, "phi"),
+                                   w0, lo=lo, hi=hi, n=n)
+                ri = m._root_count(m._phi_residual(flight, a, h, surge, "incidence"),
+                                   w0, lo=lo, hi=hi, n=n)
+            finally:
+                m._b_state, m._v_state = None, None
+            rows.append(dict(s=p["s"], w0=w0, n_phi=len(rp), n_inc=len(ri),
+                             roots_phi=rp, roots_inc=ri,
+                             worst=max([abs(x - y) for x, y in zip(rp, ri)], default=0.0)))
+        return dict(phi_lim=phi_lim, margin=margin, inc=inc, n=len(rows), rows=rows,
+                    # D1: EQUAL counts, and the located roots agree to the walk's own resolution
+                    counts_equal=all(x["n_phi"] == x["n_inc"] for x in rows),
+                    n_roots=sorted({x["n_phi"] for x in rows}),
+                    worst=max((x["worst"] for x in rows), default=None))
+
+    # --- s 5: THE PLANT, AND THE ONE QUESTION THAT CAN ACTUALLY FAIL ---------------------------
+
+    def coord_march(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                    Tt4_max: float, phi_lim: float = 0.80, margin: float = 0.10,
+                    taus=(0.05, 0.05, 0.05, 0.05), inc: bool = False, r: float = 0.5,
+                    s_settle: float = 1.2, ds: float = 0.005, v_max: float = 0.20) -> dict:
+        """s 5: **the whole march, in each coordinate, with the min-select watched.**
+
+        s 1-4 read set points at frozen states, where the answer is an identity. This runs the
+        PLANT, and the plant contains a `min` -- a DISCONTINUOUS selector fed by two bracketed
+        Illinois solves. Same root in exact arithmetic, DIFFERENT FLOATS: the question is
+        whether that difference ever crosses the other leg.
+
+        THREE NON-VACUITY CHECKS, all registered in the anchor BEFORE this was run, because
+        rung 78 s 5.1 hit three such traps after the fact:
+
+        * `hits`   -- the re-coordinated branch RAN.
+        * `binds`  -- ... and its value WON the min, so the plant CONSUMED it. Rung 78's s 5
+          died here with `binds = 0` on the ACCEL leg; the leg that wins those points is the
+          PHI leg, which is the one this rung moves.
+        * `gap`    -- the leg-to-leg distance the float delta would have to cross. **If `gap`
+          is much larger than `d_set`, `flips = 0` is TRUE AND UNINFORMATIVE**, and the spec
+          must report it that way rather than score it as a pass.
+
+        THE COORDINATE IS `demand`, and it has to be: `clip` dispatches out of the ladder before
+        `_cap_fuel` is reached (rung 76 s 0), which is precisely how rung 78's first s 5
+        measured nothing under four different gauges."""
+        sm = phi_lim / self.map_lp_design.phi_surge - 1.0
+        accel0 = self._with_coord("phi", self.accel_for, flight, Tt4_lo, Tt4_hi, sm, Tt4_max,
+                                  taus, v_max, inc, margin)
+        # THE SCHEDULE MUST NOT MOVE WITH THE COORDINATE. `accel_for` builds on `_shared_rig`,
+        # which now CARRIES `_phi_ref` -- so if the schedule tracked the knob this section would
+        # compare two schedules and call the difference a trajectory. Rung 78 lost this in the
+        # other direction sixteen times over; it is checked, not assumed.
+        sched1 = self._with_coord("incidence", self.accel_for, flight, Tt4_lo, Tt4_hi, sm,
+                                  Tt4_max, taus, v_max, inc, margin)
+        sched_moved = max([abs(x - y) / max(abs(y), 1e-30)
+                           for x, y in zip(sched1.kappa, accel0.kappa)]
+                          + [abs(x - y) / max(abs(y), 1e-30)
+                             for x, y in zip(sched1.n_H, accel0.n_H)])
+        args = (flight, Tt4_lo, Tt4_hi, Tt4_max, sm, taus, r, s_settle, ds, v_max, inc,
+                "demand", "sched", "none", None, "solve", accel0)
+        _, _, _, traj0 = self._with_coord("phi", self._cap_march, *args)
+        StateCoordinateTransient._coord_hits = 0
+        StateCoordinateTransient._coord_binds = 0
+        StateCoordinateTransient._coord_fb_phi = 0
+        StateCoordinateTransient._coord_fb_inc = 0
+        StateCoordinateTransient._coord_calls_phi = 0
+        StateCoordinateTransient._coord_calls_inc = 0
+        (_, _, _, traj1), log = self._with_probe(
+            self._with_coord, "incidence", self._cap_march, *args)
+        hits = StateCoordinateTransient._coord_hits
+        binds = StateCoordinateTransient._coord_binds
+        # s 5.1's counters, SPLIT. The `incidence` column is the plant's own (this march runs in
+        # that coordinate); the `phi` column is the probe's. `br_inc` is the number that decides
+        # whether this section exercised the KNOB at all, and it is reported raw.
+        fbp, fbi = (StateCoordinateTransient._coord_fb_phi,
+                    StateCoordinateTransient._coord_fb_inc)
+        cp, ci = (StateCoordinateTransient._coord_calls_phi,
+                  StateCoordinateTransient._coord_calls_inc)
+        # THE LOG IS THE SECTION. Each entry is one `_cap_fuel` call: the accel cap, and the SAME
+        # phi leg solved in BOTH coordinates at the IDENTICAL frozen state.
+        armed = [x for x in log if x[0] != float("inf")]
+        flips = sum(1 for a_c, p_p, p_i, _, _ in armed if (p_p <= a_c) != (p_i <= a_c))
+        gaps = [abs(a_c - p_p) / max(abs(p_p), 1e-30) for a_c, p_p, _, _, _ in armed]
+        dels = [abs(p_i - p_p) / max(abs(p_p), 1e-30) for _, p_p, p_i, _, _ in log]
+        # s 5.3 -- THE COMPLEMENTARITY, and it is an IDENTITY of `_cap_free`'s branch condition
+        # rather than a measurement. `_cap_free` short-circuits iff `G(mf_sched) > 0` iff the
+        # cap lies BELOW the schedule; it brackets the coordinated residual iff the cap lies
+        # AT OR ABOVE it -- which is exactly when `_applied_demand`'s `min(mf_sched, .)` throws
+        # the cap away. So {knob live} and {leg reaches applied fuel} are DISJOINT BY
+        # CONSTRUCTION. Counted here so the identity is checked and not merely asserted.
+        live = [x for x in log if not x[4]]                   # the residual WAS bracketed
+        reach = [x for x in log if min(x[0], x[2]) < x[3]]    # ... and the cap beat the schedule
+        both = [x for x in log if (not x[4]) and min(x[0], x[2]) < x[3]]
+        n = min(len(traj0), len(traj1))
+        worst, where = 0.0, None
+        for key in ("nu_lp", "nu_hp", "mf", "b", "v"):
+            for i in range(n):
+                x, y = traj1[i].get(key), traj0[i].get(key)
+                if not (isinstance(x, float) and isinstance(y, float)):
+                    continue
+                e = abs(x - y) / max(abs(y), 1e-12)
+                if e > worst:
+                    worst, where = e, (key, i)
+        return dict(phi_lim=phi_lim, margin=margin, inc=inc, n=n,
+                    same_len=len(traj0) == len(traj1),
+                    # P4: a coordinate is INERT on the plant it re-writes
+                    worst=worst, where=where,
+                    # P3: the branch RAN, and the plant CONSUMED its value
+                    hits=hits, binds=binds, n_armed=len(armed), n_log=len(log),
+                    # ... AND THE FOURTH CHECK, which the first three cannot see: was the
+                    # COORDINATED RESIDUAL EVER BRACKETED? `_cap_free` short-circuits on a
+                    # BINDING leg to `_surge_fuel`, which brackets its OWN hardcoded phi
+                    # residual -- so the knob is UNREACHABLE there, and `br_inc = 0` would mean
+                    # this section never exercised it at all.
+                    calls_phi=cp, calls_inc=ci, fb_phi=fbp, fb_inc=fbi,
+                    br_phi=cp - fbp, br_inc=ci - fbi,
+                    # AND THE LOG'S OWN DIVERSITY. `gap_min` and `gap_med` agreeing to 13 digits
+                    # over 1366 samples is either a real invariant or one state logged 1366
+                    # times, and a near-perfect number is this project's recorded failure mode
+                    # (rung 77's `1.000e+00`, rung 73's perfect confirmation). COUNT the states.
+                    n_distinct=len({x[1] for x in log}),
+                    n_distinct_accel=len({x[0] for x in log}),
+                    # s 5.3: the two sets, and their intersection. `n_both` MUST be 0.
+                    n_live=len(live), n_reach=len(reach), n_both=len(both),
+                    # P2: the min-select never selected differently ...
+                    flips=flips,
+                    # P2n: ... and here is what that claim is worth. `gap_min` is the closest
+                    # the two legs ever came; `d_max` is the largest float move the coordinate
+                    # made. P2 is INFORMATIVE only if the two are comparable.
+                    gap_min=min(gaps) if gaps else None,
+                    gap_med=sorted(gaps)[len(gaps) // 2] if gaps else None,
+                    # THE SPREAD, not just two order statistics. `gap_min ~= gap_med` to 13
+                    # digits reads as one state logged 1366 times until `gap_max` and the
+                    # distinct count say otherwise -- a near-perfect number is this project's
+                    # recorded failure mode and it gets counted, never eyeballed.
+                    gap_max=max(gaps) if gaps else None,
+                    n_distinct_gap=len(set(gaps)),
+                    d_max=max(dels) if dels else None,
+                    d_med=sorted(dels)[len(dels) // 2] if dels else None,
+                    # AND THE GUARD ITSELF, which must NOT return `None` in its most vacuous
+                    # case. `d_max == 0` is not "no data", it is the STRONGEST possible vacuity:
+                    # the coordinate moved the cap by EXACTLY nothing, so no `min` could flip
+                    # whatever the gap. The first version's `max(dels) > 0` condition sent that
+                    # case to `None`, i.e. reported the clearest failure as unmeasured.
+                    vacuous=(True if (dels and max(dels) == 0.0)
+                             else (min(gaps) > 1e3 * max(dels)) if (gaps and dels) else None),
+                    # and the schedule is NOT a function of the coordinate
+                    sched_moved=sched_moved)
+
+    # --- s 5.2: THE SHORT-CIRCUIT BYPASSED, WHICH IS WHAT MAKES s 5 READABLE --------------------
+
+    def _forced_cap(self, flight, a: float, h: float, mf_sched: float, surge, coord,
+                    grow: float = 1.0 / 0.9, shrink: float = 0.9, n: int = 60) -> float:
+        """The phi leg's set point with `_cap_free`'s BINDING SHORT-CIRCUIT BYPASSED -- the
+        coordinated residual bracketed and solved in BOTH regimes.
+
+        THIS IS AN INSTRUMENT AND NEVER THE PLANT. `_cap_free` is right to short-circuit: on a
+        binding leg it returns the family's own shipped number, which is the whole reason rung
+        74 could add a demand coordinate without moving anything. But that path solves the
+        SET-POINT EQUATION rather than a residual, so it is COORDINATE-BLIND BY CONSTRUCTION,
+        and a `d_set` of exactly zero measured through it says nothing about coordinates at all.
+
+        Forcing the bracket is the only way to ask the question s 5 was written to ask: **is the
+        invariance EXACT because the coordinate preserves the root, or exact because the
+        coordinate was never consulted?** The two are indistinguishable in the plant and differ
+        by ~1e-15 here. Both bracket directions are rung 74's own (`0.9` down, `1/0.9` up) --
+        a direction, not a new constant."""
+        G = self._phi_residual(flight, a, h, surge, coord)
+        g0 = G(mf_sched)
+        if g0 > 0.0:                                   # BINDING: walk DOWN to the sign change
+            hi, ghi = mf_sched, g0
+            lo, glo = mf_sched, None
+            for _ in range(n):
+                lo *= shrink
+                try:
+                    glo = G(lo)
+                except AssertionError:
+                    continue
+                if glo < 0.0:
+                    break
+            assert glo is not None and glo < 0.0, (
+                f"rung-79: the forced bracket found no sign change below mf_sched = "
+                f"{mf_sched:.6e} (searched to {lo:.6e}) in the {coord!r} coordinate.")
+        else:                                          # SLACK: walk UP, rung 74's own direction
+            lo, glo = mf_sched, g0
+            hi, ghi = mf_sched, None
+            for _ in range(n):
+                hi *= grow
+                try:
+                    ghi = G(hi)
+                except AssertionError:
+                    ghi = None
+                    break
+                if ghi > 0.0:
+                    break
+                ghi = None
+            assert ghi is not None, (
+                f"rung-79: the forced bracket found no sign change above mf_sched = "
+                f"{mf_sched:.6e} (searched to {hi:.6e}) in the {coord!r} coordinate.")
+        return _illinois(G, lo, hi, glo, ghi, tol=1e-13)
+
+    def coord_forced(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                     Tt4_max: float, phi_lim: float = 0.80, margin: float = 0.10,
+                     taus=(0.05, 0.05, 0.05, 0.05), inc: bool = False, r: float = 0.5,
+                     s_settle: float = 1.2, ds: float = 0.005, v_max: float = 0.20,
+                     every: int = 8) -> dict:
+        """s 5.2: **the same set point, both coordinates, with the short-circuit bypassed.**
+
+        s 5 measures `d_set = 0` at 1366 of 1366 points and that number is UNINTERPRETABLE on
+        its own -- `_cap_free` returned the coordinate-blind fallback 2726 times of 2732. This
+        separates the two explanations, and the answer decides what the rung is allowed to
+        claim: an EXACT invariance the coordinate earned, or an invariance it was never asked
+        about. Measured here at ~1e-15, i.e. the coordinate is root-preserving to float noise
+        and the short-circuit then rounds that to exactly zero.
+
+        **THE SHORT-CIRCUIT DOES NOT CREATE THE INVARIANCE; IT SHARPENS IT.** That is the one
+        sentence s 5 needs and cannot supply."""
+        m, surge, accel, pts = self._gauge_points(
+            flight, Tt4_lo, Tt4_hi, Tt4_max, margin, taus, r, s_settle, ds, v_max, inc,
+            phi_lim, every)
+        rows = []
+        for p in pts:
+            a, h, q, v, ms = p["nu_lp"], p["nu_hp"], p["b"], p["v"], p["mf_sched"]
+            m._b_state, m._v_state = q, v
+            try:
+                G = m._phi_residual(flight, a, h, surge, "phi")
+                binding = G(ms) > 0.0
+                w_p = m._forced_cap(flight, a, h, ms, surge, "phi")
+                w_i = m._forced_cap(flight, a, h, ms, surge, "incidence")
+                w_s = m._surge_fuel(flight, a, h, ms, surge)
+            finally:
+                m._b_state, m._v_state = None, None
+            rows.append(dict(s=p["s"], binding=binding, w_phi=w_p, w_inc=w_i, w_shipped=w_s,
+                             d_forced=abs(w_i - w_p) / max(abs(w_p), 1e-30),
+                             d_shipped=abs(w_p - w_s) / max(abs(w_s), 1e-30),
+                             same_float=(w_i == w_p)))
+        return dict(phi_lim=phi_lim, margin=margin, inc=inc, n=len(rows), rows=rows,
+                    # the regime the plant is actually in at these points
+                    n_binding=sum(1 for x in rows if x["binding"]),
+                    # THE NUMBER s 5 CANNOT PRODUCE: the coordinate's true float footprint
+                    d_forced=max(x["d_forced"] for x in rows) if rows else None,
+                    d_forced_med=(sorted(x["d_forced"] for x in rows)[len(rows) // 2]
+                                  if rows else None),
+                    n_same_float=sum(1 for x in rows if x["same_float"]),
+                    # ... and that the forced bracket agrees with the SHIPPED solve, so the
+                    # bypass is measuring the same set point and not a nearby one
+                    d_shipped=max(x["d_shipped"] for x in rows) if rows else None)

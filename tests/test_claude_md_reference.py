@@ -170,6 +170,16 @@ _CLAUDE_MD = os.path.join(_HERE, os.pardir, "CLAUDE.md")
 # compressed and are where to look FIRST, since section Layout was already taken at slice 3 and
 # the rung table is one line per rung by rule. Raise this only if that search comes back empty,
 # and if it does, say in the new entry which sites were searched.
+#
+# RUNG 79 DID THAT SEARCH AND IT CAME BACK FULL, so this constant is UNCHANGED -- the first rung
+# in this sequence to pay for itself. Both named sites were searched. section "Open engineering
+# tasks" gave ~230 B (three CLOSED entries, all with their detail already in a linked file,
+# collapsed to one sentence). The rest came from a site the docstring lists as ALREADY collapsed
+# and which had quietly RE-GROWN: the per-seam BUILT list was enumerating every rung 61-79 by
+# name, duplicating the table and costing ~60 B per rung. Deleting the enumeration returned
+# ~400 B and made the entry rung-count-invariant again, which is what it was supposed to be.
+# THE LESSON FOR THE NEXT RUNG: check the three no-grow sites for RE-GROWTH before assuming the
+# only slack is in the two uncompressed ones. 131 B of headroom, so rung 80 trips this guard too.
 MAX_BYTES = 35_970
 MAX_LINES = 300
 
