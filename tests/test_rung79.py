@@ -286,7 +286,13 @@ def test_the_carried_knob_survives_at_lever(design):
 def test_the_probe_flag_is_written_on_the_class(design):
     """s 5.5's first instrument failure, gated. `self._coord_probe = True` creates an INSTANCE
     attribute, and `_cap_march` builds a NEW machine — so the marching object read the class
-    default `False` and the log came back EMPTY while `hits`/`binds` reported a flawless pass."""
+    default `False` and the log came back EMPTY while `hits`/`binds` reported a flawless pass.
+
+    SCOPE: this checks the FLAG's storage, not the PLUMBING. It builds a fresh machine directly
+    rather than going through `_cap_march` -> `_shared_rig` -> `at_lever`, so it would still pass
+    if a future edit dropped the flag somewhere in that chain. The real regression guard for the
+    chain is `n_log > 100` in `test_the_gap_log_records_distinct_states`; do not read this test
+    as covering it."""
     m = _rig(design)
     seen = {}
 

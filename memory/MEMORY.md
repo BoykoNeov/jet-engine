@@ -74,6 +74,7 @@ these lines (the same rule CLAUDE.md lives under).
 - [Rung 76 fuel-dependent cap](rung76-fuel-dependent-cap.md) — a device in a leg's LAW reaches the MASKED leg, one in the shared PLANT reaches the AUTHORITATIVE one; the 0.7% miss on a pre-registered identity WAS the finding (a set-point solve is a 1/(1−c) GAIN); guard the second min-select
 - [Rung 77 stiffness ledger](rung77-stiffness-ledger.md) — a set-point solve's sensitivity is a FORCING OVER A SLOPE, so 1/(1−c) is the SLOPE HALF of one leg; check UNITS before choosing a normalisation; a closure that outlived its state block returned a perfect 1.000e+00
 - [Rung 78 residual gauge](rung78-residual-gauge.md) — a residual's SLOPE is a GAUGE, its root's UNIQUENESS is not; THREE vacuity traps in one section (wrong coordinate, a counter that was itself vacuous, masking) — only COUNTING caught them; `ok` is not a correctness guard
+- [Rung 79 state coordinate](rung79-state-coordinate.md) — a coordinate is a GAUGE the PLANT cannot REACH (the branch making a leg AUTHORITATIVE restores the original coordinate); registering the VACUITY CONDITION beat registering the result; first rung to pay its CLAUDE.md row with no bump
 
 ## Margin sweeps — confirmations, not rungs
 - [Rung 29 π_c margin](rung29-pi-c-margin.md) — verdict confirmed at 9.4× but π_c NOT protective; the ENERGY = INVENTORY × COMPLETION sharpening

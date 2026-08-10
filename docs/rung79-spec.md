@@ -233,9 +233,11 @@ finding most likely to outlive this rung's physics.
   solved through `_cap_free`*. A leg whose set point is computed **without** a binding
   short-circuit would break the complementarity — that is a plumbing change, and it is the only
   route to a real trajectory measurement here.
-* **THE CONSTANT GAP.** 12.6136% to 13 digits across the accel (§ 6). If it is `accel_for`
-  building the schedule off the same running line, that is a **structural** relation between rung
-  48's schedule and rung 49's floor that no rung has named.
+* **THE CONSTANT GAP.** 12.6136% to 13 digits across the accel (§ 6). **The obvious candidate is
+  rung 48's `(1 + margin)` factor** — `margin = 0.10` here, and the accel cap carries it directly —
+  with the residual ~2.6% from `κ(n_H)`'s own drift; that is a guess, and checking it means
+  sweeping `margin` and seeing whether the gap tracks it. If it does, this is a **structural**
+  relation between rung 48's schedule and rung 49's floor that no rung has named.
 * **CAN A DISCONTINUOUS SELECTOR AMPLIFY FLOAT NOISE?** P2's real question, untouched because the
   gap is 13 orders too wide. It needs a plant where two legs cross.
 * **THE SAME COORDINATE ON A LEG THAT IS NOT `min`-COMPOSED.** Rung 76 named the COMPOSITION as
