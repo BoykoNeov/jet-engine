@@ -32,6 +32,7 @@ from turbojet.engine import (  # noqa: E402
     SensedCapTransient,
     StiffnessLedgerTransient,
     ResidualGaugeTransient,
+    StateCoordinateTransient,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -6198,6 +6199,136 @@ def print_residual_gauge_table(flight):
     print("    One swept knob, no constant. See docs/rung78-spec.md.")
 
 
+def print_state_coordinate_table(flight):
+    """Rung-79 payoff: THE STATE COORDINATE -- rung 78 s 9's fourth seam.
+
+    Rung 78 re-wrote a leg's LAW and found the root preserved and its UNIQUENESS destroyed.
+    This rung re-writes the same leg's STATE COORDINATE -- rung 60's incidence `M_i` for rung
+    49's `phi` -- and asks the other half of the question. The panel is built around the split
+    that answer turns out to have: the coordinate is a clean GAUGE wherever it is consulted,
+    and the plant's plumbing declines to consult it in EITHER regime, for two different
+    reasons that partition the calls exactly."""
+    print("\nTHE STATE COORDINATE (rung 79): a coordinate is a GAUGE the PLANT cannot REACH.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR = 0.55
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    LO, HI, B, TMAX, PHI = 1000.0, 1400.0, 0.10, 1200.0, 0.80
+    sm = PHI / FLOOR - 1.0
+
+    def rig():
+        # rung 78's settings, taken VERBATIM -- rung 63's lesson: a number quoted from another
+        # rung's settings is not a comparison. Each reader gets a fresh machine because the
+        # march's counters are class-level.
+        m = StateCoordinateTransient(
+            design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0,
+            bleed_lim=BleedLimiter.from_margin(LP, B, sm, tau=0.05),
+            stator_lim=StatorLimiter.from_margin(LP, 0.20, sm, tau=0.05))
+        m._lag_coord, m._ref_law, m._windup_law, m._cap_law = "demand", "sched", "none", "solve"
+        return m
+
+    print("\n  THE CANCELLATION -- which is why the knob costs ZERO new constants:")
+    print("    Gs(w) = phi_lim - phi(w)                                  [rung 49, SHIPPED]")
+    print("    Gi(w) = m_lim - M_i(w) = [T_c - 1/phi_lim + v] - [T_c - 1/phi(w) + v]")
+    print("          = 1/phi(w) - 1/phi_lim                    <- T_c AND v CANCEL IDENTICALLY")
+    print("          = Gs(w)*h(w),   h := 1/(phi(w)*phi_lim) > 0   STRICTLY, so NO DIAL")
+
+    s = rig().coord_scan(flight, LO, HI, TMAX, phi_lim=PHI)
+    print("\n  s 1-3 -- THE GAUGE at %d riding points. Declared UNSCORED in advance: this is"
+          % s["n"])
+    print("    four lines of algebra, so a disagreement here would be a BUG, not a finding.")
+    print("    %7s %13s %13s %11s %11s %11s %15s"
+          % ("s", "w* (phi)", "w* (inc)", "slope phi", "slope inc", "ratio", "dw*/dq move"))
+    for r in s["rows"][:5]:
+        print("    %7.3f %13.9f %13.9f %11.5f %11.5f %11.7f %15.3e"
+              % (r["s"], r["w_phi"], r["w_inc"], r["slope_phi"], r["slope_inc"], r["ratio"],
+                 abs(r["dwdq_inc"] - r["dwdq_phi"])))
+    print("    ... %d more rows." % (s["n"] - 5))
+    print("    The slope scales by the DERIVED factor 1/phi_lim^2 = %.6f to %.2e, `dw*/dq`"
+          % (s["predicted_ratio"], s["ratio_err"]))
+    print("    moves %.3e -- EXACTLY zero, not small -- and the set point is the SAME FLOAT"
+          % s["dwdq_err"])
+    print("    at %d of %d. Both halves carry the same h(w*), so the quotient is invariant."
+          % (s["n_same_float"], s["n"]))
+
+    c = rig().coord_census(flight, LO, HI, TMAX, phi_lim=PHI)
+    print("\n  s 4 -- THE ROOT CENSUS, and the instrument has an INHERITED POSITIVE CONTROL:")
+    print("    counts EQUAL at %d/%d, n_roots = %s, located roots agree to %.3e."
+          % (sum(1 for x in c["rows"] if x["n_phi"] == x["n_inc"]), c["n"],
+             c["n_roots"], c["worst"]))
+    print("    A positive multiplier cannot create or destroy a sign change, so EQUAL is the")
+    print("    identity -- but nothing forces either count to be ONE. `_root_count` is rung")
+    print("    78 s 3's own walk, and THERE it FOUND a second root sweeping in and colliding")
+    print("    at k*c = 1. An instrument that has detected the thing it now reports absent is")
+    print("    not a blind one, so `[1]` is a measurement -- the first count of the PHI leg's")
+    print("    roots any rung has taken.")
+
+    # s 5.2 is READ here and PRINTED below: its `d_forced` is the only honest scale against
+    # which s 5's `gap` can be called wide, since s 5's own `d_max` is exactly zero.
+    f = rig().coord_forced(flight, LO, HI, TMAX, phi_lim=PHI)
+    m = rig().coord_march(flight, LO, HI, TMAX, phi_lim=PHI)
+    print("\n  s 5 -- THE PLANT, AND ALMOST NONE OF IT MEANS WHAT IT LOOKS LIKE:")
+    print("    hits = %d, binds = %d, flips = %d, trajectory worst = %.3e, sched_moved = %.3e"
+          % (m["hits"], m["binds"], m["flips"], m["worst"], m["sched_moved"]))
+    print("    -- a flawless-looking pass, and the guard registered BEFORE the run says")
+    print("    VACUOUS = %s, on BOTH grounds at once: d_max = %.3e (the coordinate moved the"
+          % (m["vacuous"], m["d_max"]))
+    print("    cap by EXACTLY nothing) AND gap_min = %.6f (the legs are %.0f orders wider"
+          % (m["gap_min"], math.log10(m["gap_min"] / f["d_forced"])))
+    print("    apart than the largest float move s 5.2 can force out of the coordinate, so")
+    print("    no `min` could have flipped). %d distinct gaps over %d states, so the"
+          % (m["n_distinct_gap"], m["n_distinct"]))
+    print("    13-digit constancy is a real invariant and not one state logged %d times."
+          % m["n_log"])
+
+    print("\n  s 5.3 -- THE COMPLEMENTARITY, an IDENTITY of `_cap_free`'s branch condition:")
+    print("    {the knob is live} = %d      {the leg reaches applied fuel} = %d"
+          % (m["n_live"], m["n_reach"]))
+    print("    INTERSECTION = %d, and %d + %d = %d: the two sets PARTITION the calls."
+          % (m["n_both"], m["n_live"], m["n_reach"], m["n_log"]))
+    print("    `_cap_free` short-circuits to `_surge_fuel` iff the cap lies BELOW the")
+    print("    schedule, i.e. iff the leg BINDS -- and `_surge_fuel` brackets its OWN")
+    print("    hardcoded phi residual, SUBSTITUTING THE ORIGINAL COORDINATE BACK IN. It")
+    print("    brackets the coordinated residual only when `_applied_demand`'s second min")
+    print("    throws the cap away. So the knob is unreachable in BOTH regimes, for two")
+    print("    different reasons, and there is no third regime. (`binds` is NOT the last")
+    print("    selector -- %d/%d wins the INNER min and is still consistent with total"
+          % (m["binds"], m["n_log"]))
+    print("    masking; %d is the honest number.)" % m["n_reach"])
+
+    f = rig().coord_forced(flight, LO, HI, TMAX, phi_lim=PHI)
+    print("\n  s 5.2 -- THE SHORT-CIRCUIT BYPASSED, which is what makes s 5 readable at all:")
+    print("    binding at %d/%d, d_forced max/med = %.3e / %.3e (a few ulp), same float %d"
+          % (f["n_binding"], f["n"], f["d_forced"], f["d_forced_med"], f["n_same_float"]))
+    print("    of %d -- and forced vs the SHIPPED solve = %.3e, so the bypass is measuring"
+          % (f["n"], f["d_shipped"]))
+    print("    the SAME set point and not a nearby one. The coordinate is root-preserving to")
+    print("    ~1e-15 and the short-circuit then ROUNDS THAT TO EXACTLY ZERO. An exact")
+    print("    invariance and an UNMEASURED one are indistinguishable in the plant, and here")
+    print("    they differ by 1e-15.")
+
+    print("\n  WHAT THIS SAYS. This BOUNDS rung 78 rather than correcting it: uniqueness")
+    print("    survives THIS gauge because h > 0 strictly, while rung 78's loss belonged to")
+    print("    its affine LAW-side family, whose `1 - k*c` passes through zero. `Cannot be")
+    print("    driven singular` here is not *we swept and never reached zero* -- there is")
+    print("    NOTHING TO SWEEP, because a coordinate must be invertible. The root-finder is")
+    print("    itself the diagnostic: rung 78 needed a damped Newton, this rung reuses rung")
+    print("    74's shipped bracket unchanged, with zero failures. And the masking is a")
+    print("    THIRD mechanism -- distinct from rung 72's `min`-mask and rung 76's law-vs-")
+    print("    plant split -- consequent on WHERE A SOLVER SHORT-CIRCUITS, which no rung had")
+    print("    looked at. Zero new constants. See docs/rung79-spec.md.")
+
+
 def main():
     # The tables carry unicode (Δ, ·, ≡, ≈); force UTF-8 so `python main.py` renders
     # on any console (a stock Windows cp1252 console would otherwise crash on them).
@@ -6358,6 +6489,8 @@ def main():
 
     print_stiffness_ledger_table(FLIGHT)
     print_residual_gauge_table(FLIGHT)
+
+    print_state_coordinate_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 
