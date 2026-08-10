@@ -275,10 +275,15 @@ plant that never produced one.
   never moves** (§ 5's box) — and there is **no** relation between the two legs: the residual is
   rung 76's `solve` cap law being a **fixed point**, whose gain is rung 77's `1/(1−c)`. Rung 49's
   floor enters only by standing the plant still, which is what makes `p_phi ≡ mf`.
-* **A φ-FLOOR MARCH WITH NON-ZERO INITIAL MARGIN.** The seam § 5's correction opens, and the one
-  that would give every trajectory claim in rungs 72–79 something to be about: a wall **below**
-  the initial operating point and **above** the free excursion minimum — `φ_lim ∈ (0.7731,
-  0.7884)` at these settings, a ~1.5% window. It is a **new rig**, not comparable to §§ 1–4.
+* ~~**A φ-FLOOR MARCH WITH NON-ZERO INITIAL MARGIN.**~~ **CLOSED by REFUTING it —
+  `docs/rung74-arrest-interval.md`, and all three clauses were wrong.** The window `(0.7731,
+  0.7884)` is the **ANTI-window**: `0.7731162133` is the **free operating point**, so a wall
+  above it is *lifted onto* by an airflow floor and the initial margin is exactly **zero** — the
+  condition the seam was trying to escape. `0.7884` has no provenance in this rig (a stator-only
+  lift there uses 19.5% of `v_max`) and is recorded as unsourced. And it is **not a new rig**: in
+  `clip` the cell `(clip, 0.76)` — rungs 75/76's own wall — already has all four loops live with
+  +1.3% initial margin. In `demand` it is unreachable at **every** wall, because the arrest is an
+  **interval** `(0.7731162133, ≈0.852)` above the free point and the leg **holds** below it.
 * ~~**RUNGS 72–77's § 5 SECTIONS.**~~ **CLOSED — `docs/rungs72-77-march-audit.md`.** None of
   them stands still, and the seam had to be **retargeted** first: "§ 5" is this rung's
   numbering, and the audit's unit is the *march call site*. The arrest is the cell `(demand,

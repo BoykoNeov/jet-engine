@@ -248,10 +248,15 @@ the rung's own file):
 
 ## 6. WHAT IS STILL OPEN
 
-* **A φ-floor march with NON-ZERO initial margin.** Everything rungs 72–79 claim *about
-  trajectories* wants a rig whose wall is below the initial operating point and above the free
-  excursion minimum — i.e. `φ_lim ∈ (0.7731, 0.7884)` at these settings, a ~1.5% window. That is
-  a new rig, and it would not be comparable to §§ 1–4 (§ 2.3).
+* ~~**A φ-floor march with NON-ZERO initial margin.**~~ **CLOSED by REFUTING it —
+  `docs/rung74-arrest-interval.md`.** The interval quoted here is the **ANTI-window**: `0.7731`
+  is this document's own § 2.1 free operating point, and § 2.1's mechanism — a floor lifts `φ(0)`
+  **onto** the wall — is exactly why a wall *above* it gives **zero** initial margin. The upper
+  endpoint `0.7884` has no provenance in this rig and is recorded as unsourced. The rig wanted is
+  not new: `(clip, 0.76)` already has all four loops live with +1.3% initial margin; in `demand`
+  no wall does. **§ 2.2's positive control was one point of an interval** —
+  `(0.7731162133, ≈0.852)`, both edges derived — and its "0.75 and 0.70 give identical
+  trajectories" reading is the same edge seen from below.
 * ~~**Rungs 72–77's § 5 sections.**~~ **CLOSED — `docs/rungs72-77-march-audit.md`, and the
   hedge was right.** None of the six stands still: the arrest is the CELL `(demand, φ_lim =
   0.80)`, not the shared rig, and five of the six march in `clip` or at a different wall. **It

@@ -187,6 +187,21 @@ _CLAUDE_MD = os.path.join(_HERE, os.pardir, "CLAUDE.md")
 # about its own deletion (already recorded in this comment, above), and two parentheticals that
 # said in eight words what they say in four. 2 B of headroom -- the next writer of ANY line here
 # trips this guard, which is the intended state.
+#
+# UNCHANGED A THIRD TIME at the ARREST-INTERVAL CORRECTION (`docs/rung74-arrest-interval.md`),
+# and the entry above was right that the next writer would trip it: there were 0 B free, so this
+# one had to fund itself completely. It is NOT a rung -- no plant code, no knob, no constant -- so
+# the "a CORRECTION gets no bump" rule from the entry above applies verbatim. It also did not get
+# a new bullet: the finding CORRECTS the 72-77 march audit's own "the arrest is a CELL" clause,
+# so it was MERGED INTO that bullet rather than listed beside it, which is the cheapest honest
+# shape and the one a reader of either document needs. Gross cost ~205 B, paid from 15 sites in
+# section "Deferred seams" and section "Open engineering tasks" by deleting WORDS ("rung 26's seam a"
+# -> "26's seam a"; "not yet built (the live to-build list)" -> "the live to-build list"; and
+# similar), plus writing the merged bullet twice -- the first draft tripped this guard by 205 B
+# and the second by 8 B. ONE substitution was REVERTED mid-pass because it deleted a fact and not
+# a word ("the forward burner asserts against an equilibrium gas" -> "asserts an equilibrium gas"
+# is a different claim), and the 8 B it had bought were found elsewhere. That reversal is the rule
+# this block keeps restating, caught in the act. 4 B of headroom.
 MAX_BYTES = 35_970
 MAX_LINES = 300
 

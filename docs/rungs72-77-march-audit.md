@@ -204,6 +204,19 @@ attribution: the gap document's finding is a **rediscovery**, and the honest led
 that rung 74 predicted rungs 78/79's standstill before either was built, in a section written
 to warn about exactly that.
 
+### 4.2 AND THIS DOCUMENT'S OWN "CELL" IS UNDER-STATED — `docs/rung74-arrest-interval.md`
+
+*"The arrest is the cell `(demand, 0.80)`"* was true of the cells **measured**. It is an
+**INTERVAL** — every wall in `(0.7731162133, ≈0.852)`, both edges derived. This document's two
+`demand` points, 0.76 and 0.80, happen to sit either side of the lower edge (the **free
+operating point**), which is why one marches and one does not; a third point anywhere between
+0.7732 and 0.85 would have shown it. **The localisation to the coordinate stands** — `clip` has
+no arrest at any wall — and so does § 3's *"liveness is a property of the `(coordinate, wall)`
+pair"*, now with a mechanism and made **exhaustive**: in `demand` that pair has **no** live
+cell at any wall, so §§ 2–3's `(demand, 0.76)` dormancy is not one wall's accident but the only
+outcome available. The "NEW, AND RECORDED HERE FOR THE FIRST TIME" bullet in § 3 keeps its
+credit; what it lacked was the reason.
+
 ### 4.1 AND THE GAP DOC'S HEDGE WAS RIGHT TO BE A HEDGE
 
 Its § 6 refused to infer from "they share the rig" and said so in bold. **Inferring would have
@@ -239,9 +252,11 @@ find that out.
 
 ## 6. WHAT IS STILL OPEN
 
-* **A φ-floor march with NON-ZERO initial margin** — unchanged by this audit, and now with a
-  second reason to want it: the `(demand, 0.76)` rig that *does* march has two of four loops
-  inert, so it is not a substitute for one where all four run with a live wall.
+* ~~**A φ-floor march with NON-ZERO initial margin**~~ — **CLOSED by REFUTING its premise,
+  `docs/rung74-arrest-interval.md`.** In `clip` it needs no new rig: `(clip, 0.76)` — rungs
+  75/76's own wall — already has all four loops live with +1.3% initial margin. In `demand` it
+  is unreachable at **every** wall, which is that document § 5 and the reason the
+  `(demand, 0.76)` dormancy this audit found is not an accident of one wall.
 * **THE ARREST, AS A PLANT** — rung 74 § 10's own seam, still open, still uncited by the five
   rungs that followed it.
 * **Rungs 62–71's marches.** NOT MEASURED. They predate the `demand` coordinate entirely, so

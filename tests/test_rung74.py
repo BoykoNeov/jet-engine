@@ -261,6 +261,78 @@ def test_at_the_inherited_floor_the_demand_plant_does_not_accelerate(design):
 
 
 # ======================================================================================
+# § 2.2 CORRECTED IN SCOPE — the arrest is an INTERVAL (docs/rung74-arrest-interval.md)
+#
+# The arm above pins the arrest AT the inherited floor. These two pin how far it REACHES,
+# and both edges are DERIVED rather than chosen — which is what stops either gate from
+# being satisfiable by tuning a wall.
+#
+# NOT gated, deliberately: *the airflow levers move iff the fuel leg breaches*. One
+# direction of that is what a floor IS ("act to keep phi >= phi_lim" commands nothing when
+# phi >= phi_lim), so the test would pass forever and guard nothing — this repo's own
+# recorded failure mode (rung 77 § 8, rung 78 § 5.1, rung 79 § 5.5).
+# ======================================================================================
+
+def _free_phi(design):
+    """The FREE operating point: no floor armed anywhere, no fuel-side leg, no governor.
+    Read rather than hardcoded, because it is the arrest's own lower edge."""
+    m = DemandCoordinateTransient(design, FLIGHT, 1.0, map_lp=LP, map_hp=HP, rho=1.0)
+    return m._stator_march(FLIGHT, LO, HI, R, SETTLE, DS)[0][0]["phi_lp"]
+
+
+@pytest.mark.slow
+def test_the_arrest_is_an_interval_whose_lower_edge_is_the_free_operating_point(design):
+    """§ 2.2 CORRECTED IN SCOPE — the arrest is not the cell `phi_lim = 0.80`.
+
+    MECHANISM: an airflow floor above the free operating point LIFTS `phi(0)` exactly onto its
+    wall, so rung 49's leg opens ON its own floor with no authority left and the accel never
+    starts. Below that point no lift is needed and the leg opens with margin.
+
+    So the lower edge is not a setting — it is the free plant's own `phi`, measured here with
+    every floor disarmed and asserted to fall INSIDE the bracket. A wall 1e-4 either side of it
+    decides whether the plant accelerates at all."""
+    # `_free_phi` reaches a SHALLOWER march than the assertions below (no floor, no leg, no
+    # governor, so the dispatch stops early). That is deliberate -- it is the FREE plant -- and
+    # it returns 0.7731162132533, i.e. the doc's 0.7731162133 to every digit quoted. The
+    # bracket, not an absolute value, is what is gated: pinning the digits here would duplicate
+    # `test_numeric_fingerprint.py`'s job on a number that is allowed to move with the map.
+    free = _free_phi(design)
+    below = _march(_demand(design, sm=_sm(0.7731), coord="demand"), sm=_sm(0.7731))
+    above = _march(_demand(design, sm=_sm(0.7732), coord="demand"), sm=_sm(0.7732))
+    assert 0.7731 < free < 0.7732, free
+    # BELOW the free point: the leg opens with margin and the plant accelerates.
+    assert max(p["Tt4"] for p in below) - LO > 1.0, max(p["Tt4"] for p in below)
+    # ABOVE it: lifted onto the wall, zero margin, and the accel never starts.
+    assert abs(max(p["Tt4"] for p in above) - LO) < 1e-6, max(p["Tt4"] for p in above)
+    assert abs(above[0]["phi_lp"] - 0.7732) < 1e-9, above[0]["phi_lp"]
+    # ... and the lift is what did it -- below the free point NO floor has moved at s = 0.
+    assert abs(below[0]["b"]) < 1e-12 and abs(below[0]["v"]) < 1e-12, below[0]
+
+
+@pytest.mark.slow
+def test_the_arrest_is_the_demand_coordinates_and_it_ends_at_the_valves_saturation(design):
+    """The two CONTROLS that make the bracket above a statement rather than a coincidence.
+
+    THE COORDINATE: at the bracket's own wall the `clip` plant marches ~280 K. Without this the
+    bracket would also pass on a rig that was broken for any other reason at 0.7732.
+
+    THE UPPER EDGE: the arrest ends where the lifting lever RUNS OUT — `b/b_max` is 0.987 at the
+    last arrested wall and exactly 1.000 at the first non-arrested one. It is read off the
+    hardware, not chosen. And the plant does not RECOVER there: past saturation `max Tt4` falls
+    BELOW `Tt4_lo`, so the interval's top is the onset of a worse regime, not a return to a
+    normal one."""
+    clip = _march(_demand(design, sm=_sm(0.7732), coord="clip"), sm=_sm(0.7732))
+    assert max(p["Tt4"] for p in clip) - LO > 200.0, max(p["Tt4"] for p in clip)
+
+    lo_w, hi_w = _march(_demand(design, sm=_sm(0.850), coord="demand"), sm=_sm(0.850)), \
+        _march(_demand(design, sm=_sm(0.855), coord="demand"), sm=_sm(0.855))
+    assert abs(max(p["Tt4"] for p in lo_w) - LO) < 1e-6, max(p["Tt4"] for p in lo_w)
+    assert lo_w[0]["b"] < B - 1e-9, lo_w[0]["b"]          # NOT saturated -> still arrested
+    assert abs(hi_w[0]["b"] - B) < 1e-9, hi_w[0]["b"]     # saturated     -> arrest ends
+    assert max(p["Tt4"] for p in hi_w) < LO - 0.5, max(p["Tt4"] for p in hi_w)
+
+
+# ======================================================================================
 # § 4 — THE STOP WAS DOING THE ANTI-WINDUP (rung 73 § 0.2, CORRECTED)
 # ======================================================================================
 

@@ -216,6 +216,18 @@ form of the rung's claim — **the whole accel at that floor is powered by the c
 own tracking error** — and it is why the comparison arms sit at floors the accel survives.
 `φ_lim` has been an imposed, swept coordinate since rungs 36/49 and is one here.
 
+**CORRECTED IN SCOPE — `docs/rung74-arrest-interval.md`. It is not this floor; it is an
+INTERVAL, and this section under-states its own result.** The arrest holds at **every** wall in
+`(0.7731162133, ≈0.852)`, both edges DERIVED: the lower one is the **free operating point** (a
+wall above it is *lifted onto* by an airflow floor, so the leg opens ON its own wall with no
+authority left — bracketed 0.7731 marches / 0.7732 does not), the upper one is the **valve's
+saturation** (bracketed `b/b_max` 0.987 arrested / 1.000 not), above which the plant does not
+recover but **decelerates**, to 911.8 K at `φ_lim = 0.96`. In `clip` there is no arrest at any
+wall. So the sentence in bold above holds on all of that interval and not merely at 0.80 —
+**and the finding, the mechanism and the gate are this rung's**; the correction only measures
+how far they reach. Its consequence for rungs 74–79 is that **no `demand` march has all four
+loops live at any wall** (that document § 5).
+
 ### 2.3 The floor's address is negligible in one currency and not in another
 
 ≤ 0.33 K on peak `Tt4`, and **0.135 in hand-over time** (0.625 against 0.760) — a 22% shift in
