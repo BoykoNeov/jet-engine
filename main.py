@@ -35,6 +35,7 @@ from turbojet.engine import (  # noqa: E402
     StateCoordinateTransient,
     SplitWallTransient,
     AuthorityClockTransient,
+    ThresholdLawTransient,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -6568,6 +6569,88 @@ def print_authority_clock_table(flight):
     print("    scored 506 of 506 and had no hard cases in it.")
 
 
+def print_threshold_law_table(flight):
+    """Rung-82 payoff: THE THRESHOLD'S OWN LAW -- docs/rung81-spec.md s 8's first seam.
+
+    Rung 81 scored its criterion as a LABEL predictor at 99.15% and asked for the next step: make
+    it predict the THRESHOLD. This panel is the answer, and the answer is no.
+
+    THE PANEL IS s 3a ONLY, and the cut is disclosed rather than implied: the shipped reader also
+    sweeps the ramp (five ramps, three readings each, ~8.5 min) and the wall (five walls). Those
+    are TABLES; this is the MECHANISM, and it is the one section that is causal rather than
+    correlational -- the ramp sweep's own 5-of-5 is confounded, because its reference sits at one
+    value while `r` moves underneath it. Here `r` is HELD and the reference is swept across the
+    threshold, so the sign law is read on one plant. docs/rung82-spec.md ss 2/4-5 carry the rest.
+
+    THE RESOLUTION IS NOT CUT, and that is this rung's own lesson: the closest signed error here
+    is 9.2e-04, so a bisection coarser than that decides the headline numerically rather than
+    physically. It happened -- at seven bisections the law read 4-of-5 -- and the gate now asserts
+    the bracket against the margin instead of trusting it (tests/test_rung82.py)."""
+    print("\nTHE THRESHOLD'S OWN LAW (rung 82): a criterion read FORWARD inherits the sign of")
+    print("  its own reference -- so it reports where the reader started, not where the")
+    print("  threshold is.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR = 0.55
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    LO, HI, B, TMAX = 1000.0, 1400.0, 0.10, 1200.0
+    PHI_FUEL, PHI_AIR, sm = 0.75, 0.77, 0.80 / FLOOR - 1.0
+
+    m = ThresholdLawTransient(
+        design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0,
+        bleed_lim=BleedLimiter.from_margin(LP, B, sm, tau=0.05),
+        stator_lim=StatorLimiter.from_margin(LP, 0.20, sm, tau=0.05))
+    m._lag_coord, m._ref_law, m._windup_law, m._cap_law = "demand", "sched", "none", "solve"
+    g = m.threshold_reference(flight, LO, HI, TMAX, phi_lim=PHI_FUEL, phi_air=PHI_AIR)
+
+    print("\n  s 3a -- ONE ramp (r = %.2f), ONE plant. The threshold is BISECTED on the plant"
+          % g["r"])
+    print("    at tau_f* = %.5f (bracket %.2e wide), then the criterion is read FORWARD from"
+          % (g["tau_star"], g["width"]))
+    print("    five different reference marches -- the only thing changing is where it STARTED.")
+    print("      tau_ref   reference is   forward tau_f*   signed error   |error|")
+    for x in g["rows"]:
+        print("      %7.3f   %-12s   %13.5f   %+12.5f   %6.1f%%"
+              % (x["tau_ref"], "ABOVE tau_f*" if x["ref_above"] else "below tau_f*",
+                 x["fwd"], x["fwd"] - g["tau_star"], 100.0 * x["err"]))
+    print("    THE SIGN FOLLOWS THE REFERENCE'S SIDE, %d of %d: a reference above the threshold"
+          % (g["n_agree"], g["n_live"]))
+    print("    UNDER-predicts, one below OVER-predicts. The forward reading is therefore not a")
+    print("    prediction of the threshold -- it is a report on where the reader began.")
+
+    print("\n    AND THE MAP CONTRACTS ON ONE SIDE ONLY. Read as an iteration tau_ref -> forward,")
+    print("    the error SHRINKS with distance ABOVE the threshold (grows_above=%s) and GROWS"
+          % g["grows_above"])
+    print("    BELOW it (grows_below=%s)." % g["grows_below"])
+    print("    So starting FURTHER AWAY -- on the right side -- reads BETTER. That is rung 77's")
+    print("    1/(1-c) with the SIGN of c deciding whether the reading is usable at all, and the")
+    print("    threshold is the boundary between the two regimes.")
+    print("    It also explains the ramp sweep the spec carries: the two ramps where the forward")
+    print("    reading blew up (73.6%, 182.9%) are EXACTLY the two whose reference sat below.")
+
+    print("\n  WHAT THIS BOUNDS. Rung 81's 99.15% is a LABEL score, and it holds because every")
+    print("    input is read at the very point being labelled. Asked to predict ACROSS")
+    print("    trajectories the criterion has no separation to exploit -- the spec measures the")
+    print("    governor clock keeping 53% of its own coefficient and the surge floor, which the")
+    print("    criterion puts in the SET-POINT term, moving the fuel-cap SLOPE by 144%.")
+    print("    The seam asked to turn a label predictor into a quantitative one; the answer is")
+    print("    no, and rung 81's result stands exactly where it was measured.")
+    print("\n  HONEST SCOPE: one rig, one wall pair, one flight condition. The ramp window")
+    print("    (r <= 0.85) and the wall range (0.745-0.755) are where the plant is MARCHABLE,")
+    print("    not physical boundaries -- outside them there is no four-loop point at all, or")
+    print("    the threshold leaves the bracket. Both are disclosed in docs/rung82-spec.md s 6.")
+
+
 def main():
     # The tables carry unicode (Δ, ·, ≡, ≈); force UTF-8 so `python main.py` renders
     # on any console (a stock Windows cp1252 console would otherwise crash on them).
@@ -6732,6 +6815,7 @@ def main():
     print_state_coordinate_table(FLIGHT)
     print_split_wall_table(FLIGHT)
     print_authority_clock_table(FLIGHT)
+    print_threshold_law_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

@@ -225,6 +225,24 @@ _CLAUDE_MD = os.path.join(_HERE, os.pardir, "CLAUDE.md")
 # a word ("the forward burner asserts against an equilibrium gas" -> "asserts an equilibrium gas"
 # is a different claim), and the 8 B it had bought were found elsewhere. That reversal is the rule
 # this block keeps restating, caught in the act. 4 B of headroom.
+#
+# UNCHANGED A FOURTH TIME at rung 82, which cost 334 B gross and paid all of it. The first
+# search found only ~212 B in section Layout and section "Deferred seams", and the rest came from
+# the place no previous entry had looked: THE NEW ROW ITSELF. It carried a mechanism sentence
+# ("the terms are not independent coordinates") and a measured number ("81's 99%"), and CLAUDE.md's
+# own banner forbids BOTH in a rung row — so ~58 B of the shortfall was a rule violation, not a
+# budget problem. THE LESSON: check the new row against the ≤350 B / no-numbers / no-mechanism
+# rule BEFORE hunting prose elsewhere; a row that breaks the rule is the cheapest 60 B in the file
+# and the only site where deleting is also a correction. The other three sites were pure
+# duplication — the reduce-to-prior contract stated a THIRD time in "Current scope", "separate
+# entry point (the design run is untouched)" repeated verbatim two paragraphs apart, and two
+# consecutive clauses in the 66→N ladder entry both saying "detail is in that rung's spec".
+# Deleting a duplicate is free; that is why they are worth more than compressing sentences.
+#
+# ALSO CAUGHT, AND NOT A BUDGET MATTER: the rung-82 edit pass rewrote CLAUDE.md through a text
+# handle that converted the whole file LF -> CRLF, adding 253 B of pure whitespace and putting the
+# real overrun at 587 B instead of 334 B. This guard reads BYTES, so a line-ending change reads as
+# content. Any scripted edit of this file must open it with `newline=''` (or write bytes).
 MAX_BYTES = 35_970
 MAX_LINES = 300
 

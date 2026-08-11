@@ -22113,3 +22113,476 @@ class AuthorityClockTransient(SplitWallTransient):
                     # P5: REPORTED, never gated (rung 80 s 8's discipline)
                     zeros_fuel_auth=sorted({c["zeros"] for c in fuel}),
                     zeros_gov_auth=sorted({c["zeros"] for c in gov}))
+
+
+class ThresholdLawTransient(AuthorityClockTransient):
+    """RUNG 82. THE THRESHOLD'S OWN LAW -- `docs/rung81-spec.md` s 8's first seam, and the one
+    question rung 81 left open about its own criterion (docs/rung82-spec.md).
+
+    Rung 81 s 1 derived a criterion for WHO HOLDS THE ACTUATOR and scored it as a LABEL
+    predictor: 1 045 of 1 054 points, 99.15%. What it never asked is whether the same formula
+    predicts the THRESHOLD -- the `tau_f` at which the fuel region opens, located there only as
+    a bracket, `(0.05, 0.08]`.
+
+    THIS RUNG ADDS NO STATE, NO KNOB AND NO CONSTANT -- rungs 77/81's precedent, and here it is
+    forced twice over: the lever is `r`, `_stator_march`'s own ramp parameter since rung 57, and
+    the clock map is rung 52's `tau_rel = 3 * tau_att`.
+
+    > **HEADLINE -- A THRESHOLD IS A FIXED POINT, NOT A FORMULA.** The criterion's inputs
+    > (`gap`, `cdot_f`, `cdot_r`, and the ACTIVE clock) are all read off a trajectory, and rung
+    > 81 s 3 measured that `tau_f` moves 1 304 of 1 364 floats of it. So the formula cannot be
+    > evaluated at a candidate threshold without first marching there. Read FORWARD off a fixed
+    > reference march it is wrong by a multiple; read as the ROOT of its own residual it lands.
+    > A 99% label predictor is not a threshold predictor, and the gap between them is a
+    > TRAJECTORY DEPENDENCE, not an accuracy.
+
+    THE THREE READINGS, and keeping them apart is the whole method (anchor s 1):
+
+        tau_hat(s) = ( gap(s) + tau_gov * cdot_r(s) ) / cdot_f(s)     the POINT-WISE threshold,
+                                                                     in the EFFECTIVE clock
+        h(tau_f)   = min_s [ tau_hat(s) - tau_eff(s) ]                the RESIDUAL: < 0 iff the
+                                                                     criterion calls any point
+                                                                     `fuel` on THIS march
+
+        FORWARD      tau_hat_min off a FIXED reference march, / kappa   -- a PREDICTION
+        FIXED POINT  the root of h(tau_f)                               -- a SELF-CONSISTENT solve
+        MEASURED     smallest tau_f with n_fuel > 0, bisected           -- the thing predicted
+
+    > **AND THE SWEPT KNOB IS NOT THE BINDING CLOCK.** Rung 52's lag is asymmetric, so a
+    > releasing leg's active constant is `3 * tau_f`. Every binding point in this family is in
+    > RELEASE (anchor s 0, E5), so a table quoting the swept knob against a threshold derived in
+    > the effective one is off by exactly 3x. `kappa` is READ per point and printed on every row
+    > -- never imposed, and V4 voids any row that mixes the two regimes.
+
+    Usage:
+        t = ThresholdLawTransient(design, FLIGHT, 1.0, map_lp=..., map_hp=..., bleed_lim=bl)
+        t._lag_coord = "demand"
+        t.threshold_law(FLIGHT, 1000., 1400., 1200.)      # s 1-3: the ramp sweep, three readings
+        t.threshold_terms(FLIGHT, 1000., 1400., 1200.)    # s 4-5: tau_gov and the WALL pair
+
+    THE REDUCE IS AN IDENTITY. At rung 81's clocks, walls and ramp this class's march must be
+    `AuthorityClockTransient`'s TO THE LAST BIT and its four-loop set rung 81's own.
+
+    Anchor: `docs/plans/rung82-anchor-threshold-law.md`. Gates: `tests/test_rung82.py`.
+    """
+
+    # --- the residual, and the two currencies it lives in --------------------------------------
+
+    def _threshold_scan(self, flight, Tt4_lo, Tt4_hi, Tt4_max, phi_lim, phi_air, tau_f,
+                        tau_gov, tau_q, tau_s, r, s_settle, ds, v_max, inc) -> dict:
+        """ONE march, reduced to the three numbers a threshold needs -- and to the flags that
+        say whether they may be quoted at all.
+
+        `n_fuel` is the MEASURED detector. `h` is the criterion's own residual on the SAME
+        march. `kappa` is the ratio of the ACTIVE clock to the SWEPT one, read through the very
+        accessor the march integrates with -- assuming it would quote a 3x wrong constant at
+        every releasing point (rung 81's `_criterion_at` carries the same warning, and here the
+        number it protects is the answer rather than a label)."""
+        m, surge, lag, traj = self._split_march(
+            flight, Tt4_lo, Tt4_hi, Tt4_max, phi_lim, phi_air, "demand",
+            (tau_f, tau_gov, tau_q, tau_s), r, s_settle, ds, v_max, inc)
+        ride = self._riding4(traj, m.bleed_lim.b_max)
+        seen = {id(p) for p in ride}
+        maxT = max(p["Tt4"] for p in traj)
+        cells = [self._criterion_at(traj, i, "demand", lag, tau_gov)
+                 for i, p in enumerate(traj) if id(p) in seen and 0 < i < len(traj) - 1]
+        # THE POINT-WISE IMPLIED THRESHOLD, and the residual whose ROOT is the fixed point.
+        # `slope_f <= 0` is excluded BY NAME and counted: a non-rising cap makes `tau_hat` a
+        # division by a sign the derivation does not cover, and silently dropping those points
+        # would let an empty scan read as a confident `gov`.
+        hats, n_bad = [], 0
+        for c in cells:
+            if c["slope_f"] <= 0.0:
+                n_bad += 1
+                continue
+            hats.append(((c["setpoint_gap"] + tau_gov * c["slope_r"]) / c["slope_f"],
+                         c["tau_f"], c["s"]))
+        h = min((hat - te for hat, te, _ in hats), default=None)
+        arg = min(hats, key=lambda t: t[0] - t[1]) if hats else None
+        kap = sorted({round(c["tau_f"] / tau_f, 6) for c in cells}) if tau_f > 0.0 else []
+        return dict(
+            tau_f=tau_f, tau_gov=tau_gov, r=r, ds=ds, phi_lim=phi_lim, phi_air=phi_air,
+            npts=len(traj), n_riding4=len(ride), max_Tt4=maxT,
+            min_phi=min(p["phi_lp"] for p in traj),
+            # V1/V2/V6 -- the flags, BEFORE any number off this march may be quoted
+            riding4_valid=maxT > Tt4_lo * (1.0 + 1e-9),
+            window_open=len(ride) > 0,
+            n_scored=len(cells), n_slope_excluded=n_bad,
+            # the MEASURED detector
+            n_fuel=sum(1 for p in ride if p["authority"] == "fuel"),
+            n_gov=sum(1 for p in ride if p["authority"] == "gov"),
+            # the criterion's own verdict, and its residual
+            n_pred_fuel=sum(1 for c in cells if c["predicted"] == "fuel"),
+            n_agree=sum(1 for c in cells if c["predicted"] == c["measured"]),
+            h=h, tau_hat_min=min((x[0] for x in hats), default=None),
+            s_bind=arg[2] if arg else None, tau_eff_bind=arg[1] if arg else None,
+            # V4: the clock map, READ and never imposed
+            kappa=kap, kappa_pure=len(kap) == 1,
+            # P4/P5's two terms, AT THE BINDING POINT and nowhere else -- a band over the whole
+            # window would average the very separation those predictions are about
+            gap_bind=next((c["setpoint_gap"] for c in cells if arg and c["s"] == arg[2]), None),
+            ratio_bind=next((c["slope_f"] / c["slope_r"] for c in cells
+                             if arg and c["s"] == arg[2] and c["slope_r"] != 0.0), None),
+            # THE TWO SLOPES SEPARATELY, at the binding point -- rung 81 s 1's own reason for
+            # carrying them beside their ratio: a term can dominate at equal clocks, and a
+            # table with only the ratio cannot say which of the two moved.
+            slope_f_bind=next((c["slope_f"] for c in cells if arg and c["s"] == arg[2]), None),
+            slope_r_bind=next((c["slope_r"] for c in cells if arg and c["s"] == arg[2]), None))
+
+    def _scan(self, tau_f, **kw):
+        return self._threshold_scan(tau_f=tau_f, **kw)
+
+    def _bisect(self, key, lo, hi, n=10, **kw) -> dict:
+        """Bisect `tau_f` on a MONOTONE detector, returning the BRACKET and never a point.
+
+        `key` maps a scan to True once the threshold is passed. Two detectors ride this one
+        routine deliberately -- the MEASURED one (`n_fuel > 0`) and the criterion's own
+        (`h < 0`) -- because a threshold and its prediction compared through two different
+        search laws would differ by the search as well as by the physics.
+
+        THE ENDPOINTS ARE TESTED FIRST AND THE ROW IS VOIDED IF THEY DO NOT STRADDLE (V3): an
+        endpoint is a CENSORED observation, not a value, and returning `lo` for a bracket that
+        never opened would put a number where there is none."""
+        s_lo, s_hi = self._scan(lo, **kw), self._scan(hi, **kw)
+        if not (s_lo["window_open"] and s_hi["window_open"]):
+            return dict(void="V1: four-loop window empty at a bracket end",
+                        lo=lo, hi=hi, at_lo=s_lo, at_hi=s_hi)
+        if key(s_lo) or not key(s_hi):
+            return dict(void=("V3: threshold not strictly inside [%g, %g]" % (lo, hi)),
+                        lo=lo, hi=hi, at_lo=s_lo, at_hi=s_hi,
+                        below=key(s_lo), above=not key(s_hi))
+        a, b = lo, hi
+        for _ in range(n):
+            mid = 0.5 * (a + b)
+            s = self._scan(mid, **kw)
+            if not s["window_open"]:
+                return dict(void="V1: window closed mid-bisection", lo=a, hi=b)
+            a, b = (a, mid) if key(s) else (mid, b)
+        return dict(lo=a, hi=b, mid=0.5 * (a + b), width=b - a, void=None,
+                    at_hi=self._scan(b, **kw))
+
+    # --- s 1-3: THE RAMP SWEEP, AND THE THREE READINGS -----------------------------------------
+
+    def threshold_law(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                      Tt4_max: float, phi_lim: float = 0.75, phi_air: float = 0.77,
+                      rs=(0.20, 0.25, 0.35, 0.50, 0.70), tau_gov: float = 0.05,
+                      tau_ref: float = 0.05, tau_q: float = 0.05, tau_s: float = 0.05,
+                      bracket=(0.004, 0.30), n_bisect: int = 10, s_settle: float = 1.2,
+                      ds: float = 0.005, ds_fine: float = 0.0025, v_max: float = 0.20,
+                      inc: bool = False) -> dict:
+        """s 1-3 MEASURED: **the threshold against the ramp rate, read three ways.**
+
+        THE RAMP IS THE LEVER AND THE WINDOW IS BOUNDED. Anchor E1: at `r >= 1.0` there is no
+        four-loop point at all, so a threshold there is not small -- it does not exist. Every
+        row therefore carries `window_open` and V1 voids rather than reports.
+
+        THE `ds` CONTROL IS NOT OPTIONAL (anchor s 4.2, V5). Rung 81 s 2 put scored points
+        `9.3e-04` from a tie, so a finer step can hand the first flip to a DIFFERENT point. Each
+        measured threshold is re-bisected at `ds_fine` and the two brackets are returned side by
+        side; a threshold that moves by more than its own width is VOID, never rounded."""
+        base = dict(flight=flight, Tt4_lo=Tt4_lo, Tt4_hi=Tt4_hi, Tt4_max=Tt4_max,
+                    phi_lim=phi_lim, phi_air=phi_air, tau_gov=tau_gov, tau_q=tau_q,
+                    tau_s=tau_s, s_settle=s_settle, v_max=v_max, inc=inc)
+        lo, hi = bracket
+        rows = []
+        for r in rs:
+            kw = dict(base, r=r, ds=ds)
+            meas = self._bisect(lambda s: s["n_fuel"] > 0, lo, hi, n_bisect, **kw)
+            # THE FIXED POINT: the SAME bisection on the criterion's OWN residual, so the two
+            # differ by the physics and not by the search (`_bisect`'s docstring).
+            fix = self._bisect(lambda s: s["h"] is not None and s["h"] < 0.0,
+                               lo, hi, n_bisect, **kw)
+            # THE FORWARD READING: one reference march, no search at all. The effective-clock
+            # threshold it implies, mapped back to the SWEPT knob through the kappa the same
+            # march reports -- anchor s 4.5, the 3x this table is most exposed to.
+            ref = self._scan(tau_ref, **kw)
+            kap = ref["kappa"][0] if ref["kappa_pure"] else None
+            fwd = (ref["tau_hat_min"] / kap
+                   if kap and ref["tau_hat_min"] is not None else None)
+            # V5: the same measured threshold at a finer step. `ds_fine=None` SKIPS it, and the
+            # row then carries `ds_stable=None` rather than True -- an unrun control must never
+            # read as a passed one (rung 78's `ok` is not a correctness guard).
+            fine = (self._bisect(lambda s: s["n_fuel"] > 0, lo, hi, n_bisect,
+                                 **dict(base, r=r, ds=ds_fine))
+                    if ds_fine is not None else None)
+            rows.append(self._threshold_row(r, meas, fix, fwd, ref, fine, tau_ref))
+        live = [x for x in rows if x["ok"]]
+        pairs = [(x["r"], x["tau_star"]) for x in live]
+        return dict(rs=rs, tau_gov=tau_gov, tau_ref=tau_ref, phi_lim=phi_lim, phi_air=phi_air,
+                    bracket=bracket, ds=ds, ds_fine=ds_fine, rows=rows,
+                    n_void=len(rows) - len(live),
+                    # P1: the fixed point lands, the forward reading does not
+                    p1_fixed_in=[x["r"] for x in live if x["fixed_in_bracket"]],
+                    p1_fixed_out=[x["r"] for x in live if not x["fixed_in_bracket"]],
+                    p1_fwd_in=[x["r"] for x in live if x["fwd_in_bracket"]],
+                    p1_fwd_out=[x["r"] for x in live if not x["fwd_in_bracket"]],
+                    # P2: BOTH readings sit BELOW the measured threshold -- signed, not absolute
+                    p2_fixed_early=[x["r"] for x in live if x["fixed_early"]],
+                    p2_fwd_early=[x["r"] for x in live if x["fwd_early"]],
+                    p2_all_early=bool(live) and all(x["fixed_early"] and x["fwd_early"]
+                                                    for x in live),
+                    # P3: the forward reading is never closer than the fixed point
+                    p3_fwd_never_better=bool(live) and all(
+                        x["err_fwd"] >= x["err_fixed"] for x in live
+                        if x["err_fwd"] is not None and x["err_fixed"] is not None),
+                    # E5/V4, and the currency this whole table is quoted in
+                    kappa_seen=sorted({k for x in rows for k in x["kappa"]}),
+                    all_kappa_pure=all(x["kappa_pure"] for x in rows),
+                    # V5: the ds control. THREE outcomes, not two -- an unrun control is its own
+                    # state and must never be counted with the failures OR the passes.
+                    ds_stable=[x["r"] for x in live if x["ds_stable"] is True],
+                    ds_unstable=[x["r"] for x in live if x["ds_stable"] is False],
+                    ds_unrun=[x["r"] for x in live if x["ds_stable"] is None],
+                    # the monotone law itself -- E3's brackets, now resolved
+                    thresholds=pairs,
+                    monotone_in_r=all(a[1] < b[1] for a, b in zip(pairs, pairs[1:])))
+
+    @staticmethod
+    def _threshold_row(r, meas, fix, fwd, ref, fine, tau_ref) -> dict:
+        """One ramp's row, with the VOID REASON carried rather than the row dropped -- rung 80
+        s 8's discipline: a census that silently omits its failures reports a cleaner law than
+        the plant has."""
+        if meas.get("void") or fix.get("void"):
+            return dict(r=r, ok=False, void=meas.get("void") or fix.get("void"),
+                        kappa=ref.get("kappa", []), kappa_pure=ref.get("kappa_pure", False),
+                        n_riding4=ref.get("n_riding4"), window_open=ref.get("window_open"),
+                        riding4_valid=ref.get("riding4_valid"))
+        t = meas["mid"]
+        fx = fix["mid"]
+        # V5: the finer step must land the threshold inside the coarse bracket, or the
+        # threshold is not RESOLVED and nothing here may be quoted. `None` where the control
+        # was not run at all -- which is NOT the same as passing it.
+        ds_ok = (None if fine is None
+                 else (not fine.get("void")) and abs(fine["mid"] - t) <= meas["width"])
+        return dict(
+            r=r, ok=True, void=None,
+            tau_star=t, lo=meas["lo"], hi=meas["hi"], width=meas["width"],
+            tau_star_eff=t * (ref["kappa"][0] if ref["kappa_pure"] else float("nan")),
+            fixed=fx, fwd=fwd, tau_ref=tau_ref, tau_hat_min_ref=ref["tau_hat_min"],
+            # P1: INSIDE the measured bracket, which is the only currency a bisection has
+            fixed_in_bracket=meas["lo"] <= fx <= meas["hi"],
+            fwd_in_bracket=fwd is not None and meas["lo"] <= fwd <= meas["hi"],
+            # P2: SIGNED -- below the measured threshold, not merely near it
+            fixed_early=fx < t, fwd_early=fwd is not None and fwd < t,
+            err_fixed=abs(fx - t) / t, err_fwd=abs(fwd - t) / t if fwd is not None else None,
+            dist_ref=abs(tau_ref - t) / t,
+            # the binding point, and the two terms read THERE (P4/P5's instrument)
+            s_bind=meas["at_hi"]["s_bind"], gap_bind=meas["at_hi"]["gap_bind"],
+            ratio_bind=meas["at_hi"]["ratio_bind"],
+            tau_eff_bind=meas["at_hi"]["tau_eff_bind"],
+            n_riding4=meas["at_hi"]["n_riding4"], n_fuel=meas["at_hi"]["n_fuel"],
+            agreement=(meas["at_hi"]["n_agree"] / meas["at_hi"]["n_scored"]
+                       if meas["at_hi"]["n_scored"] else None),
+            kappa=ref["kappa"], kappa_pure=ref["kappa_pure"],
+            riding4_valid=meas["at_hi"]["riding4_valid"], window_open=True,
+            # V5's own numbers, reported whether or not they pass
+            ds_stable=ds_ok,
+            tau_star_fine=(None if fine is None or fine.get("void") else fine["mid"]))
+
+    # --- s 3a: THE DISCRIMINATOR -- IS THE FORWARD READING'S SIGN THE REFERENCE'S OR THE RAMP'S?
+
+    def threshold_reference(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                            Tt4_max: float, phi_lim: float = 0.75, phi_air: float = 0.77,
+                            r: float = 0.35, tau_refs=(0.02, 0.03, 0.05, 0.08, 0.12),
+                            tau_gov: float = 0.05, tau_q: float = 0.05, tau_s: float = 0.05,
+                            bracket=(0.004, 0.30), n_bisect: int = 10, s_settle: float = 1.2,
+                            ds: float = 0.005, v_max: float = 0.20, inc: bool = False) -> dict:
+        """s 3a MEASURED: **at ONE ramp, does the forward reading's SIGN follow its own
+        reference's side of the threshold?**
+
+        THIS EXISTS BECAUSE s 1-3's HEADLINE CORRELATION IS CONFOUNDED. There the forward
+        reading is EARLY at `r` = 0.20/0.25/0.35 and LATE at 0.50/0.70 -- 5 of 5 with the side
+        `tau_ref = 0.05` sits on. But `tau_ref` is the SAME on every one of those rows, so the
+        side is perfectly collinear with `r`: the ramp was changed and the side followed. A
+        correlation across a confounded axis is what `docs/rung74-arrest-interval.md` calls a
+        closed-loop difference that cannot isolate a forcing.
+
+        SO THE RAMP IS HELD AND THE REFERENCE IS SWEPT ACROSS THE THRESHOLD. One plant, one
+        measured `tau*`, five references. If `sign(forward - tau*)` flips AT the crossing, the
+        sign is the REFERENCE's and s 1-3's reading is causal. If it does not, the sign is the
+        RAMP's and this rung's headline is about the ramp instead -- which is why the flip is
+        reported as a location and not as a boolean alone.
+
+        AND IT DOUBLES AS P3's OWN AXIS. P3 registered that `|forward - tau*|` grows with
+        `|tau_ref - tau*|`; s 1-3 could only measure that distance across FIVE DIFFERENT
+        PLANTS, which is not the axis P3 named. Here the plant is fixed and the distance is the
+        only thing moving."""
+        base = dict(flight=flight, Tt4_lo=Tt4_lo, Tt4_hi=Tt4_hi, Tt4_max=Tt4_max,
+                    phi_lim=phi_lim, phi_air=phi_air, tau_gov=tau_gov, tau_q=tau_q,
+                    tau_s=tau_s, s_settle=s_settle, v_max=v_max, inc=inc, r=r, ds=ds)
+        b = self._bisect(lambda s: s["n_fuel"] > 0, bracket[0], bracket[1], n_bisect, **base)
+        if b.get("void"):
+            return dict(r=r, void=b["void"], rows=[])
+        tstar = b["mid"]
+        rows = []
+        for tr in tau_refs:
+            s = self._scan(tr, **base)
+            kap = s["kappa"][0] if s["kappa_pure"] else None
+            fwd = (s["tau_hat_min"] / kap
+                   if kap and s["tau_hat_min"] is not None else None)
+            rows.append(dict(
+                tau_ref=tr, fwd=fwd, ref_above=tr > tstar,
+                # THE SIGNED ERROR -- the whole point. `early` means the forward reading sits
+                # BELOW the measured threshold, which is P2's currency verbatim.
+                early=(fwd is not None and fwd < tstar),
+                err=abs(fwd - tstar) / tstar if fwd is not None else None,
+                dist=abs(tr - tstar) / tstar,
+                s_bind=s["s_bind"], n_riding4=s["n_riding4"], n_fuel=s["n_fuel"],
+                window_open=s["window_open"], riding4_valid=s["riding4_valid"],
+                kappa_pure=s["kappa_pure"]))
+        live = [x for x in rows if x["fwd"] is not None and x["window_open"]]
+        # THE FLIP: does `early` track `ref_above` on EVERY row? A single row where they part
+        # ends the causal reading, so this is an ALL and never a count.
+        agree = [x for x in live if x["early"] == x["ref_above"]]
+        # P3's growth clause, on the axis it named: `err` against `dist`, sorted by distance
+        # WITHIN EACH SIDE -- the two sides are different branches of the map and pooling them
+        # would test a monotonicity nobody predicted.
+        def _grows(side):
+            xs = sorted((x for x in live if x["ref_above"] is side), key=lambda x: x["dist"])
+            return (None if len(xs) < 2
+                    else all(a["err"] <= b_["err"] for a, b_ in zip(xs, xs[1:])))
+        return dict(r=r, tau_star=tstar, bracket=[b["lo"], b["hi"]], width=b["width"],
+                    tau_refs=tau_refs, rows=rows, void=None, n_live=len(live),
+                    # THE DISCRIMINATOR
+                    sign_follows_reference=bool(live) and len(agree) == len(live),
+                    n_agree=len(agree),
+                    crossing=[(x["tau_ref"], x["early"]) for x in live],
+                    # P3, on its own axis, per side
+                    grows_above=_grows(True), grows_below=_grows(False),
+                    # the binding point's migration, which is the MECHANISM (rung 56's law)
+                    s_binds=[(x["tau_ref"], x["s_bind"]) for x in live])
+
+    # --- s 4-5: THE TWO TERMS, SEPARATELY ------------------------------------------------------
+
+    def threshold_terms(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                        Tt4_max: float, phi_lim: float = 0.75, phi_air: float = 0.77,
+                        phi_lims=(0.745, 0.7475, 0.750, 0.7525, 0.755), r: float = 0.35,
+                        tau_govs=(0.02, 0.05, 0.20), tau_q: float = 0.05, tau_s: float = 0.05,
+                        bracket=(0.004, 0.30), n_bisect: int = 10, s_settle: float = 1.2,
+                        ds: float = 0.005, v_max: float = 0.20, inc: bool = False) -> dict:
+        """s 4-5 MEASURED: **do `tau_gov` and the WALL PAIR reach the threshold through the two
+        DIFFERENT terms the criterion says they do?**
+
+        P4 is the LAG term: `d(tau_f*)/d(tau_gov) = cdot_r/cdot_f` at the binding point.
+        P5 is the SET-POINT term: a wall move must reach `gap` and leave the slope ratio alone.
+
+        RUNG 81 s 4.4 REFUSED a wall sweep -- *"it would confound the clock with the set-point
+        gap"*. That refusal is DISCHARGED here rather than ignored: the confound is the very
+        thing being measured, because the criterion puts the two in SEPARATE terms and a sweep
+        is the only way to find out whether they separate. ONE wall moves (`phi_lim`), `phi_air`
+        is held, and V7 withdraws P5 rather than reframing it if they do not.
+
+        THE ALTERNATE WALL IS **BELOW** THE REFERENCE ONE, AND THE ANCHOR SAID ABOVE. P5 was
+        registered as *"raising `phi_lim` raises `gap` and therefore the threshold"* -- and the
+        SIGN IS BACKWARDS, measured: `phi_lim` is the fuel leg's OWN floor, so RAISING it makes
+        that leg's cap MORE severe, which LOWERS `gap` and lowers the threshold. At 0.76 the
+        threshold falls below `tau_f = 0.004` (3 fuel points already there) and V3 censors the
+        row. Going the other way keeps the threshold inside a bracket the plant can be marched
+        on -- so the direction is REFUTED and reported, and the SEPARATION, which is what P5 is
+        actually about, is still measured. Rung 81 s 4.4's refusal is discharged either way."""
+        base = dict(flight=flight, Tt4_lo=Tt4_lo, Tt4_hi=Tt4_hi, Tt4_max=Tt4_max,
+                    tau_q=tau_q, tau_s=tau_s, r=r, s_settle=s_settle, ds=ds, v_max=v_max,
+                    inc=inc, phi_air=phi_air)
+        lo, hi = bracket
+
+        def at(pl, tg):
+            kw = dict(base, phi_lim=pl, tau_gov=tg)
+            b = self._bisect(lambda s: s["n_fuel"] > 0, lo, hi, n_bisect, **kw)
+            if b.get("void"):
+                return dict(phi_lim=pl, tau_gov=tg, ok=False, void=b["void"])
+            s = b["at_hi"]
+            return dict(phi_lim=pl, tau_gov=tg, ok=True, void=None, tau_star=b["mid"],
+                        width=b["width"], gap_bind=s["gap_bind"], ratio_bind=s["ratio_bind"],
+                        s_bind=s["s_bind"], n_riding4=s["n_riding4"], n_fuel=s["n_fuel"],
+                        riding4_valid=s["riding4_valid"],
+                        slope_f=s["slope_f_bind"], slope_r=s["slope_r_bind"],
+                        kappa=(s["kappa"][0] if s["kappa_pure"] else None))
+
+        govs = [at(phi_lim, tg) for tg in tau_govs]
+        # ASCENDING in `phi_lim`, so `rises` reads as the ANCHOR REGISTERED IT ("raising
+        # `phi_lim` raises the threshold") and scores False rather than being re-based to
+        # whichever order makes it True.
+        #
+        # THE RANGE IS THE ADMISSIBLE ONE AND IT IS NARROW. Measured: at 0.740 the threshold
+        # is censored ABOVE `tau_f = 0.30` and at 0.760 BELOW 0.004 -- a >20x swing in the
+        # threshold for 0.02 of wall. So a pair a hundredth apart cannot be marched at both
+        # ends, and the five points here span the whole interval V3 leaves open.
+        walls = [at(pl, 0.05) for pl in sorted(phi_lims)]
+        gl = [x for x in govs if x["ok"]]
+        wl = [x for x in walls if x["ok"]]
+        # P4: the measured rise against the binding point's OWN slope ratio. Differentiating
+        # the criterion at a FROZEN trajectory gives `d(tau_eff*)/d(tau_gov) = cdot_r/cdot_f`,
+        # so the coefficient in the SWEPT knob carries a `1/kappa` as well:
+        #
+        #     d(tau_f*)/d(tau_gov)  =  1 / ( kappa * ratio )
+        #
+        # BOTH factors are read, neither imposed. The first version of this reader dropped
+        # `kappa` and reported a 5.7x miss where the honest one is 1.9x -- which is anchor
+        # s 4.5's own warning ("a table quoting one currency silently would be off by 3x")
+        # firing on the reader that wrote it. It is left named rather than tidied away.
+        p4 = None
+        if len(gl) >= 2:
+            a, b = gl[0], gl[-1]
+            slope = ((b["tau_star"] - a["tau_star"]) / (b["tau_gov"] - a["tau_gov"]))
+            pred = (1.0 / (b["kappa"] * b["ratio_bind"])
+                    if b["ratio_bind"] and b["kappa"] else None)
+            p4 = dict(measured=slope, predicted=pred, rises=slope > 0.0,
+                      rel_err=(abs(slope - pred) / abs(pred)
+                               if pred not in (None, 0.0) else None),
+                      # THE TRANSFER RATE, and it is the rung's own headline on a second knob:
+                      # `predicted` is the partial at a FROZEN trajectory, `measured` is the
+                      # total derivative the plant delivers. Their ratio is how much of the
+                      # criterion's coefficient survives the trajectory's own response.
+                      transfer=(slope / pred if pred not in (None, 0.0) else None),
+                      # THE SECANT IS OVER A 10x SPAN AND IT IS QUOTED AS ONE. Reported
+                      # sub-interval by sub-interval beside it, because a single secant across
+                      # a range that wide cannot distinguish a coefficient that is WRONG from
+                      # one that is RIGHT NEAR THE REFERENCE and collapses away from it -- and
+                      # those are different findings.
+                      secants=[dict(lo=u["tau_gov"], hi=v["tau_gov"],
+                                    measured=((v["tau_star"] - u["tau_star"])
+                                              / (v["tau_gov"] - u["tau_gov"])),
+                                    predicted=(1.0 / (v["kappa"] * v["ratio_bind"])
+                                               if v["ratio_bind"] and v["kappa"] else None))
+                               for u, v in zip(gl, gl[1:])],
+                      kappa=[x["kappa"] for x in gl],
+                      ratio_bind=[x["ratio_bind"] for x in gl],
+                      taus=[(x["tau_gov"], x["tau_star"]) for x in gl])
+        # P5 / V7: the wall must move `gap` and NOT the ratio. Both fractional moves are
+        # reported; the prediction is that the ratio's is under a THIRD of the gap's.
+        p5 = None
+        if len(wl) >= 2:
+            a, b = wl[0], wl[-1]
+            dg = (abs(b["gap_bind"] - a["gap_bind"]) / abs(a["gap_bind"])
+                  if a["gap_bind"] else None)
+            # THE LAG TERM IS `tau_gov * cdot_r`, NOT THE RATIO. The criterion's two terms are
+            # `gap` and `tau_gov*cdot_r`; `cdot_f/cdot_r` is neither of them, and scoring the
+            # separation on it would withdraw P5 on a quantity the derivation does not contain.
+            # `tau_gov` is held across this sweep, so the fractional move is `cdot_r`'s.
+            dr = (abs(b["slope_r"] - a["slope_r"]) / abs(a["slope_r"])
+                  if a["slope_r"] else None)
+            # ... and the SLOPE the wall is NOT supposed to reach at all, reported beside it.
+            df = (abs(b["slope_f"] - a["slope_f"]) / abs(a["slope_f"])
+                  if a["slope_f"] else None)
+            p5 = dict(d_gap=dg, d_lag=dr, d_slope_f=df,
+                      d_ratio=(abs(b["ratio_bind"] - a["ratio_bind"]) / abs(a["ratio_bind"])
+                               if a["ratio_bind"] else None),
+                      rises=b["tau_star"] > a["tau_star"],
+                      separates=(dg is not None and dr is not None and dr < dg / 3.0),
+                      # V7, and it is scored on the SWEEP's ends rather than on a pair: the
+                      # separation P5 claims is that ONE term carries the wall. If both move
+                      # comparably the claim is WITHDRAWN, not softened.
+                      v7_withdrawn=(dg is not None and dr is not None and dr >= dg / 3.0),
+                      # WHICH WAY EACH MOVED. Both terms pushing the threshold the SAME way is
+                      # a different finding from either one carrying it, and a table of
+                      # magnitudes alone cannot tell them apart.
+                      gap_falls=(a["gap_bind"] is not None and b["gap_bind"] < a["gap_bind"]),
+                      ratio_rises=(a["ratio_bind"] is not None
+                                   and b["ratio_bind"] > a["ratio_bind"]),
+                      monotone=all(u["tau_star"] > v["tau_star"] for u, v in zip(wl, wl[1:])),
+                      taus=[(x["phi_lim"], x["tau_star"]) for x in wl],
+                      gaps=[x["gap_bind"] for x in wl], ratios=[x["ratio_bind"] for x in wl],
+                      slope_f=[x["slope_f"] for x in wl], slope_r=[x["slope_r"] for x in wl])
+        return dict(r=r, phi_lim=phi_lim, phi_lims=phi_lims, phi_air=phi_air, ds=ds,
+                    tau_govs=tau_govs, bracket=bracket, govs=govs, walls=walls,
+                    n_void=sum(1 for x in govs + walls if not x["ok"]), p4=p4, p5=p5)
