@@ -17,6 +17,7 @@ these lines (the same rule CLAUDE.md lives under).
 - [Golden gate slice 2](golden-gate-slice2.md) — 26 arms / 8044 values; drift is set by CONDITIONING not by rung, and the reduced-resolution worry measured backwards
 - [Golden gate slice 3](golden-gate-slice3.md) — rungs 67-77 pinned; a STRIDE knob is not a RESOLUTION knob (an arm that guarded nothing), and a structural zero needs a two-sided ABS tolerance
 - [Golden gate slice 4](golden-gate-slice4.md) — rungs 78/79 pinned BIT-EXACT; lead an arm with the reader that BYPASSES the plant's short-circuit, and when the zeros ARE the finding, loosening the tolerance loosens the CLAIM
+- [Golden gate slice 5](golden-gate-slice5.md) — rung 80 pinned; a finite difference inherits its drift from the quantity DIFFERENCED (flat across 15 decades) so relative is the wrong currency; a per-arm "measured X" is the worst among keys RIDING that leg, not the arm's worst
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page published as artifact 56cde230…; update the same URL, regenerate via extract_data.py + build.py
 
 ## Shipped rungs
