@@ -21,8 +21,13 @@ teaching, not for features or polish.
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is anchored to a
-published case. All rungs are live; the current scope is **rung 83**. Read a rung's spec (last
-column) before touching it — that is where the real content lives.
+published case. All rungs are live; the current scope is **rung 83**.
+
+**Families** (contiguous): 1–6 cycle · 7–24 NOx & mixing · 25–30 nozzle/turbine marches ·
+31–33 off-design steady · 34–37 1-spool transient · 38–45 two-spool · 46–52 fuel limiters ·
+53–56 + 61 airflow levers (steady) · 57–60, 62–63 schedules · 64–68 valve/lag/cascades ·
+69–83 reference splits & rank. **Read-only diagnostics: 7–30, 36, 41, 44, 45**; all else
+STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 
 | Rung | Adds (one-line hook) | Spec |
 |------|----------------------|------|
@@ -132,10 +137,7 @@ dissociation-equilibrium gas (`Gas.reacting_equilibrium()`) through ideal + real
 absolute balance, then freezes the station-4 mixture through turbine + nozzle; Fork A/B and
 frozen-products gases are kept alongside. **Everything from rung 7 up is a diagnostic *beside*
 the cycle**, reached through **separate entry points** that leave the default
-`build_turbojet(…).run(…)` design run **bit-for-bit rung 6**. Rungs **31–83** are the
-STRUCTURAL / DYNAMIC ones — a new off-design or transient operating point, through the two
-matcher ladders in § Layout; rungs **7–30, 36, 41, 44, 45** are pure diagnostics that
-only *read* the design-point / running-line state.
+`build_turbojet(…).run(…)` design run **bit-for-bit rung 6**.
 
 ## Deferred seams — status map
 One line per seam — `BUILT` (detail in its spec) · `NEGATIVE → doc` · `OPEN`.
@@ -178,7 +180,7 @@ derivation in its spec). Never re-open one, and never re-enumerate them here.
   static only at the nozzle exit (station 9) for exhaust velocity.
 
 ## Layout
-A compact map — per-rung detail lives in `docs/rungN-spec.md`, not here.
+A compact map.
 - `turbojet/gas.py` — **the core.** `FlowState`; the dual-section `Gas` (cold/hot, `unified()`)
   with the CPG closed-form / TPG NASA-integral property interface (hot methods carry `far`); the
   gas factories (`thermally_perfect` / `reacting` / `reacting_forkb` / `reacting_equilibrium`); the
