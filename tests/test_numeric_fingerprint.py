@@ -106,6 +106,15 @@ error. Do NOT reach for regeneration. Work the decision:
 Regenerate with:  python tests/test_numeric_fingerprint.py --regenerate
 It prints every changing value before writing. If that diff is longer than you expected, stop.
 
+`meta.repo_sha` IS THE PARENT, NOT THE TREE THAT PRODUCED THE VALUES, and reading it the other
+way will mislead you. It records HEAD at the moment the regeneration ran, which is necessarily
+BEFORE the commit that ships the new arms — so a slice that adds a kernel writes a sha at which
+that kernel does not exist. Every slice from 1 to 6 has this off-by-one; it is inherent to
+"regenerate, then commit" and no amend fixes it (the fix would be a second write after the
+commit, which would itself need a commit). Read it as "the state the OTHER 41 arms were measured
+against", which is what it is actually good for, and take the producing tree from the commit that
+carries the golden's own diff.
+
 --------------------------------------------------------------------------------------------
 Kernels
 --------------------------------------------------------------------------------------------
