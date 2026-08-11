@@ -298,10 +298,16 @@ definitional or reported-only), and `n_riding4` on arrested rows (§ 8).
   sweep that would say whether the degeneracy is a measure-zero set or a neighbourhood.
 * **A LARGER `b_max`.** The saturation edge is hardware (§ 4); rung 74 § 8's concession is
   inherited unchanged.
-* **A FINGERPRINT ARM FOR THIS RUNG.** `tests/test_numeric_fingerprint.py` pins absolute values
-  for rungs 67–79 (its docstring §§ SLICE 3–4). Rung 80 has none, and the tracking line that used
-  to live under CLAUDE.md § Open engineering tasks was deleted in this rung's commit once its
-  three entries all closed — so the debt is recorded **here**, deliberately, rather than nowhere.
-  A slice 5 would lead with `split_arrest`'s three-arm table, since it is the reader that
-  exercises the new knob on both sides of the shared/split boundary.
+* ~~**A FINGERPRINT ARM FOR THIS RUNG.**~~ **PAID — `tests/test_numeric_fingerprint.py` § SLICE 5**
+  (2026-08-11), and it did lead with `split_arrest` as this entry asked. One arm, `r80`, four
+  readers, 1 092 values pinned against a CPython 3.14.3 anchor; `split_arrest` reproduces § 3's
+  `control_bracket = (0.7731, 0.7732)` as a **discrete** reading, so a last-bit shift moves it as
+  a jump rather than a drift. **It also returned one finding this spec did not have:** all 37
+  PyPy-vs-CPython differences are `.c0`/`.c1` cross-gains that sort by **magnitude, not by name** —
+  the drift is inherited from the quantity being *differenced*, so it sits flat at ~1e-11 across
+  gains spanning fifteen decades. The arm is therefore compared on an **absolute** leg (1e-9, with
+  a relative backstop no key rides) — the first there **sized by a LIVE value** (8.5e-11 on a `c0`
+  alive at 1e-6…1e-5) rather than by a quantity whose whole assertion is that it is *still zero*,
+  which is what rungs 70–76's identical constant certifies. It carries one near-dead cell too, and
+  that half IS the old reason. Cost: 60.6 s on PyPy — the heaviest arm there by 3×.
 * Everything rungs 72–79 §§ 8–11 leave, unchanged by this rung.

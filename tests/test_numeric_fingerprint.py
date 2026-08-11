@@ -332,6 +332,72 @@ For r79 that strictness is not merely the rule being followed — ** the zeros A
 reach), so bit-equality pins the CLAIM, not just a noise band. If this arm ever proves fragile,
 read the docstring's "demote THOSE arms" licence with that in mind: loosening r79 loosens the
 finding. Cost, PyPy idle: 18.3 s (r78) and 20.8 s (r79), beside slice 3's heaviest.
+
+SLICE 5 — rung 80, THE SPLIT WALL (added 2026-08-11)
+--------------------------------------------------------------------------------------------
+`docs/rung80-spec.md` § 10 booked this arm as a DEBT in the rung's own spec, and named what it
+should lead with; this slice pays it. One arm, `r80`, four readers on one rig:
+
+  r80 `split_arrest` + `split_liveness` + `split_gains` (clip AND demand) + `split_saturation`
+
+** `split_arrest` LEADS, and § 10 asked for exactly that. ** It is the only reader that exercises
+the new knob on BOTH sides of the shared/split boundary, and its `shared` third reproduces rung
+74's own derived bracket — `control_bracket = (0.7731, 0.7732)`. That is a DISCRETE reading: a
+last-bit shift moves it as a JUMP to a different grid point, not as a drift, which is the failure
+this module exists to catch and the one no relative tolerance can paper over.
+
+Slice 5 declares NO settings block, for the second slice running — every rung-80 reader defaults
+to the `_S3_*` values and `tests/test_rung80.py` passes none of them. Its only arguments are the
+two the rung itself introduces (its fuel wall, and the airflow walls swept beside it), so the arm
+stays differenceable against slices 3 and 4. THE ONE CUT is disclosed at `_S5_SAT`:
+`split_saturation` sweeps EIGHT walls by default and slice 5 pins FOUR, chosen to keep both of
+the ordered edges that are its entire content. A recorded skip, never implied coverage.
+
+  ONE GAIN CELL LIST IS PINNED DELIBERATELY EMPTY. The `demand` shared-wall arm has no interior
+  point (`cells#n = 0`) — that is rung 74's finding reported honestly, not a probe that declined
+  to measure. It is disclosed because it walked straight up to slice 3's vacuity trap in yet
+  another costume: `test_instrument_arms_are_not_vacuous` keyed only on `rows#n` and would have
+  waved three empty cell lists through. It grew a `cells#n` rule in this same edit, deliberately
+  weak — at least ONE list non-empty — because one empty list here IS content and all of them
+  cannot be. The arm's live weight is the two SPLIT arms beside it (7 and 4 interior cells).
+  AND THE WEAK RULE IS NOT THE GUARD, so read it as a disclosure rather than a hole: what makes
+  this arm impossible to pass while measuring nothing is the FOUR DISCRETE readings — `four_live`
+  = 33, `first_arrest` = 0.7732, `ever_two_authorities` = False, `first_sat` = 0.855 — compared
+  exactly, none of which a dead plant can produce. Rung 77's closure outlived its state block and
+  returned a perfect `1.000e+00`; the reading that would have caught it is this kind, not a count.
+
+PROVENANCE. Measured 2026-08-11, the SHIPPED kernel under PyPy 3.11.15 against the SHIPPED
+CPython 3.14.3 golden — RUN-vs-SHIPPED-GOLDEN directly, so slice 4's "characterises an ADJACENT
+computation" caveat does not apply to this constant. 37 of 1 092 values differed (615 floats, 276
+distinct); no DISCRETE reading moved. Every one of the 37 is a `.c0` or `.c1` cross-gain, and the
+fact that they sort by MAGNITUDE and not by name is the whole tolerance argument:
+
+    family          n   magnitude        worst RELATIVE   worst ABSOLUTE
+    `.c1` large    15   5.0e3 - 1.5e4    1.1e-15  (ulp)   1.1e-11
+    `.c0`          20   1.1e-6 - 2.5e-5  4.5e-5           8.5e-11
+    `.c1` small     1   2.4e-6           6.2e-7           1.5e-12
+    `.c0` near-dead 1   1.3e-11          3.1              4.1e-11   <- the ONE outlier
+
+** SO THE RELATIVE LEG IS THE WRONG CURRENCY FOR THIS ARM, and that is a fact about the reader,
+not a concession. ** These are FINITE-DIFFERENCE cross-gains: the drift is inherited from the
+absolute size of the quantity being differenced, so it is flat at ~1e-11 across a family whose
+own magnitudes span fifteen decades. Sizing a relative band for `.c0` needs 1e-3 under the >=4x
+rule — which would hang a thousandth-scale band on the `.c1` family that currently reproduces to
+1e-16. That is thirteen decades of blindness bought to accommodate a mispricing, so `ABS_TOL`
+carries the arm (0 keys ride the relative leg) and `TOL` is r72's declared backstop. Both halves
+of the `ABS_TOL` rule are re-earned above the table there, on THIS arm's numbers.
+
+  THE NEAR-DEAD CELL IS NOT TREATED AS A FINDING, and the difference from r79 matters. Rung 79's
+  zeros ARE its claim, so bit-equality pins the claim; rung 80's claims are the DISCRETE readings
+  (`four_live = 33`, `first_arrest = 0.7732`, `ever_two_authorities = False`, `first_sat = 0.855`)
+  and every one of those is compared EXACTLY — a non-float never reaches either leg. The lone
+  1.3e-11 cross-gain is a small number the arm happens to carry, not a zero the rung asserts.
+
+Cost, PyPy idle: 60.6 s — ** the heaviest arm in this module by 3x **, because its four readers
+march 34 full 341-point trajectories (18 for `split_arrest` alone) where a slice-3/4 arm reads
+gains at a handful of base points. `@pytest.mark.slow`, and it still runs on a plain `pytest`.
+Under CPython the same arm takes ~8.5 min, which is most of a regeneration — budget for that
+before regenerating, and see the WARNING under PROCEDURE about backgrounding one.
 """
 import json
 import os
@@ -357,6 +423,8 @@ from turbojet.engine import (  # noqa: E402
     SensedCapTransient, StiffnessLedgerTransient, StatorLimiter, StatorIncidenceLimiter,
     # slice 4 — rungs 78/79
     ResidualGaugeTransient, StateCoordinateTransient,
+    # slice 5 — rung 80
+    SplitWallTransient,
 )
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -421,10 +489,19 @@ TOL = {
     # 79's finding, so loosening this arm would loosen the CLAIM, not a noise band.
     "r78":  0.0,     # measured EXACT — 0 of 2 393 values differed (1 068 of 1 769 distinct)
     "r79":  0.0,     # measured EXACT — 0 of   331 values differed (   93 of   224 distinct)
+    # ---------------- SLICE 5: rung 80 (2026-08-11) — see § SLICE 5 ----------------
+    # Measured RUN-vs-SHIPPED-GOLDEN, which is § SLICE 3 item (e)'s own standard taken directly:
+    # 37 of 1 092 values differed, and the ABSOLUTE leg below carries EVERY one of them. That is
+    # not a dodge — r80's differences are FINITE-DIFFERENCE cross-gains, so their drift is set by
+    # the magnitude of the quantity DIFFERENCED and not by the gain's own, and a relative band
+    # misprices them in both directions at once (see the table in § SLICE 5).
+    "r80":  1e-15,   # BACKSTOP, as r72/r73 — 0 keys ride the relative leg. Here it is defensive
+                     # ONLY: 1 ulp at this arm's largest value (1.5e4) is 1.8e-12, already inside
+                     # the absolute leg. Kept for r72's stated reason, not for the same effect.
 }
 
 # --------------------------------------------------------------------------- absolute leg
-# SLICE 3 ONLY, and slices 1/2 are untouched: an ABSENT entry is 0.0, which is exactly the
+# SLICES 3 AND 5, and slices 1/2/4 are untouched: an ABSENT entry is 0.0, which is exactly the
 # pure-relative comparison this module shipped with. See § SLICE 3 for why a pair is needed —
 # rungs 72-76 pin determinants their OWN findings say are ZERO, and two interpreters put such a
 # value on opposite sides of zero at 1e-11 (relative error 4, absolute error 1e-10).
@@ -432,6 +509,13 @@ TOL = {
 # `1e-9` is justified from BOTH sides and neither half is optional: it is >=4x above every
 # measured absolute drift, AND >=2.8 decades below the LIVE scale of the same quantity (rung
 # 72's `det` is alive at 2.9e-5), so it cannot mask a dead determinant coming alive.
+#
+# SLICE 5 REUSES THAT CONSTANT AND HAS TO RE-EARN BOTH HALVES, because r80's differences are not
+# determinants and inheriting a number on family resemblance is how a band stops being measured:
+# 1e-9 is >=11.8x above r80's measured 8.5e-11, AND 3.06 decades below the live scale of the very
+# same cross-gain family (`c0` alive from 1.1e-6, median 5.3e-6). ONE `c0` is near-dead at 1.3e-11
+# and rides this leg — but its waking up means reaching its siblings' 1e-6, three decades ABOVE
+# the band, so the leg cannot hide that either. The table is in § SLICE 5.
 ABS_TOL = {
     "r70":  1e-15,   # measured 2.2e-16 on `c1_err` — a residual, not a determinant
     "r72":  1e-9,    # measured 8.9e-11 on `det` / `trace_err` / `det_vs_a0`
@@ -439,6 +523,8 @@ ABS_TOL = {
     "r74":  1e-9,    # measured 8.1e-11 on `poly_gap`
     "r75":  1e-9,    # measured 1.8e-10 on `det0` — the masked pole before the device moves it
     "r76":  1e-9,    # measured 5.2e-11 on `det` / `det0`
+    "r80":  1e-9,    # measured 8.5e-11 on the split CROSS-GAINS `c0` / `c1` — the ONLY leg that
+                     # compares this arm; see § SLICE 5 for why relative is the wrong currency
 }
 
 # --------------------------------------------------------------------------- shared conditions
@@ -1171,6 +1257,62 @@ def kernel_r79():
                ("m", m().coord_march(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX, **_S4_KW)))
 
 
+# ===========================================================================================
+# SLICE 5 — rung 80, THE SPLIT WALL
+# ===========================================================================================
+# NO SETTINGS BLOCK, for the second slice running: every one of rung 80's readers DEFAULTS to
+# the `_S3_*` values above (`taus = (0.05,)*4`, `r = 0.5`, `s_settle = 1.2`, `ds = 0.005`,
+# `v_max = 0.20`, `inc = False`), and `tests/test_rung80.py` passes none of them. So the only
+# arguments below are the two this rung declares — its FUEL wall and the AIRFLOW walls swept
+# beside it — and every other number is inherited, which is what keeps slice 5 differenceable
+# against slices 3 and 4.
+_SLICE5 = ("r80",)
+_S5_PHI_FUEL = 0.75            # rung 80's own fuel wall, strictly inside rung 74's window
+_S5_PHI_AIRS = (None, 0.77, 0.80)      # `tests/test_rung80.py`'s two gain fixtures, verbatim
+# THE ONE CUT, and it is a SWEEP LIST and not a stride: `split_saturation`'s default sweeps
+# EIGHT walls, i.e. eight full 341-point marches, for a table whose content is two ORDERED
+# EDGES. These four keep both — 0.84/0.85 unsaturated, 0.855 the first saturated wall (so § 4's
+# [0.850, 0.855] bracket survives), 0.88 saturated AND marching (so the cell that killed the
+# rung's own P2 survives). Dropped: 0.78, 0.80, 0.82, 0.86. Recorded skip, not implied coverage.
+_S5_SAT = (0.84, 0.85, 0.855, 0.88)
+
+
+def kernel_r80():
+    """RUNG 80 — THE SPLIT WALL: the airflow legs get their own margin `sm_air`, so for the
+    first time the fuel leg's floor and the valve's/stator's are DIFFERENT levels.
+
+    `split_arrest` LEADS THE ARM, and `docs/rung80-spec.md` § 10 asks for exactly that: it is
+    the only reader that exercises the new knob on BOTH sides of the shared/split boundary, and
+    its `shared` third is rung 74's own derived bracket — a discrete reading that a last-bit
+    shift would move as a JUMP, which is the failure mode this module exists to catch.
+
+    THE `demand` GAIN ARM PINS ONE DELIBERATELY EMPTY CELL LIST, and that is disclosed rather
+    than hidden: the shared-wall baseline has NO interior point (`n_riding = 0`), which is rung
+    74's finding reported honestly by the reader. Note the guard below keys on `rows#n` and so
+    does NOT see a `cells#n` of zero — that is why it grew a second rule in this same edit. The
+    arm's live content is the two SPLIT arms (7 and 4 interior cells) beside it.
+
+    A FRESH RIG PER READER, as slice 4 does: `_sm_air` is restored in a `finally`, but this
+    ladder's own code calls the carried-knob trap "the EIGHTEENTH instance" and four rig builds
+    cost ~1 s against the arm's ~58 s."""
+    def m():
+        return _s3_rig(SplitWallTransient, _lag_coord="demand", _ref_law="sched",
+                       _windup_law="none", _cap_law="solve")
+    return _s3("r80",
+               ("a", m().split_arrest(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX,
+                                      phi_lim_lo=_S5_PHI_FUEL)),
+               ("l", m().split_liveness(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX,
+                                        phi_lim=_S5_PHI_FUEL)),
+               ("gc", m().split_gains(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX,
+                                      phi_lim=_S5_PHI_FUEL, phi_airs=_S5_PHI_AIRS,
+                                      coord="clip")),
+               ("gd", m().split_gains(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX,
+                                      phi_lim=_S5_PHI_FUEL, phi_airs=_S5_PHI_AIRS,
+                                      coord="demand")),
+               ("s", m().split_saturation(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX,
+                                          phi_lim=_S5_PHI_FUEL, phi_airs=_S5_SAT)))
+
+
 KERNELS = {"cpg": kernel_cpg, "r66": kernel_r66, "A": kernel_A, "B": kernel_B,
            "C": kernel_C, "D": kernel_D, "E": kernel_E, "F": kernel_F,
            # slice 2 — the rungs 3-30 diagnostic ladder
@@ -1184,7 +1326,9 @@ KERNELS = {"cpg": kernel_cpg, "r66": kernel_r66, "A": kernel_A, "B": kernel_B,
            "r71": kernel_r71, "r72": kernel_r72, "r73": kernel_r73, "r74": kernel_r74,
            "r75": kernel_r75, "r76": kernel_r76, "r77": kernel_r77,
            # slice 4 — rungs 78/79
-           "r78": kernel_r78, "r79": kernel_r79}
+           "r78": kernel_r78, "r79": kernel_r79,
+           # slice 5 — rung 80
+           "r80": kernel_r80}
 
 
 # --------------------------------------------------------------------------- encode / compare
@@ -1469,12 +1613,32 @@ def test_golden_kernel_r79_state_coordinate():
     _check("r79")
 
 
+# --------------------------------------------------------------------------- slice 5, rung 80
+# THE HEAVIEST ARM IN THIS MODULE, and the arithmetic is disclosed rather than apologised for:
+# its four readers march 34 full 341-point trajectories (18 for `split_arrest` alone — three
+# arms across six walls), against 3-18 s for a slice-3/4 arm that reads GAINS at a handful of
+# base points. ~58 s on PyPy. `@pytest.mark.slow`, and it still runs on a plain `pytest`.
+
+@pytest.mark.slow
+def test_golden_kernel_r80_split_wall():
+    _check("r80")
+
+
 def test_instrument_arms_are_not_vacuous():
     """THE CHECK THAT CAUGHT THE RUNG-71 ARM, kept as a gate rather than as a war story.
 
-    IT COVERS SLICES 3 AND 4, and the name says `instrument` rather than `slice3` for that
+    IT COVERS SLICES 3, 4 AND 5, and the name says `instrument` rather than `slice3` for that
     reason: every arm built on a rung's own INSTRUMENT readers can fail this way, so a new
     slice must be added to the iteration set in the same edit that adds its arms.
+
+    THE `cells#n` RULE IS SLICE 5's ADDITION, and it exists because slice 5 walked straight up
+    to the hole in the first one. The `rows#n` check above cannot see a gain reader that
+    differenced NO base point, because those readers name their list `cells` — so rung 80's
+    `split_gains` could have pinned three empty ones and sailed through the guard written to
+    catch exactly that. The rule is deliberately the WEAK one (**at least one** cell list
+    non-empty, not all of them): rung 80's `demand` shared-wall arm is empty ON PURPOSE — zero
+    interior points at a shared wall IS rung 74's finding, and the reader sets `vacuous` to say
+    so. A rule demanding every list be populated would fail an honest arm.
 
     An instrument reader can return a fully-populated-looking object in which every row list is
     EMPTY and every derived field is `None` — because the stride landed on one base point and
@@ -1485,13 +1649,18 @@ def test_instrument_arms_are_not_vacuous():
     Read from the GOLDEN, not from a fresh run, so it costs nothing and so it also fails if a
     regeneration ever pins a vacuous arm."""
     golden = _load_golden()["kernels"]
-    for name in _SLICE3 + _SLICE4:
+    for name in _SLICE3 + _SLICE4 + _SLICE5:
         arm = {k: _decode(v) for k, v in golden[name].items()}
         empty = [k for k, v in arm.items() if k.endswith("rows#n") and v == 0]
         assert not empty, (
             f"{name}: {len(empty)} EMPTY row list(s) — {empty[:4]}. The instrument sampled no "
             "live base point, so this arm pins nothing. Do NOT widen a tolerance; lower the "
             "stride or raise the resolution until rows appear (see § SLICE 3).")
+        cells = [v for k, v in arm.items() if k.endswith("cells#n")]
+        assert not cells or any(v > 0 for v in cells), (
+            f"{name}: EVERY one of its {len(cells)} cell list(s) is empty, so the gain reader "
+            "differenced no base point at all and this arm's zeros are the instrument declining "
+            "to measure. One empty list can be a finding; all of them cannot.")
         nones = sum(1 for v in arm.values() if v is None)
         assert nones <= 0.15 * len(arm), (
             f"{name}: {nones}/{len(arm)} pinned values are None — the instrument was idle")
