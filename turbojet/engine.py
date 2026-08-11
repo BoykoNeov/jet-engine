@@ -22586,3 +22586,167 @@ class ThresholdLawTransient(AuthorityClockTransient):
         return dict(r=r, phi_lim=phi_lim, phi_lims=phi_lims, phi_air=phi_air, ds=ds,
                     tau_govs=tau_govs, bracket=bracket, govs=govs, walls=walls,
                     n_void=sum(1 for x in govs + walls if not x["ok"]), p4=p4, p5=p5)
+
+
+class CorrectorLawTransient(ThresholdLawTransient):
+    """RUNG 83. THE CORRECTOR'S OWN BAR -- `docs/rung82-spec.md` s 8's first seam
+    (docs/rung83-spec.md).
+
+    Rung 82 s 8 asked whether a SINGLE Newton step off the residual `h` reaches the same place as
+    its 13-march bisection, calling that "the difference between a diagnosis and a usable
+    predictor". The answer is NO, and the reason is not accuracy.
+
+    THIS RUNG ADDS NO STATE, NO KNOB AND NO CONSTANT -- the fourth reader-only rung (77, 81, 82,
+    83). Every march it runs is `ThresholdLawTransient._scan`, unchanged; `c` is MEASURED, and
+    `1/(1-c)` is rung 77's own scalar in a third role. The reduce is therefore an IDENTITY.
+
+    > **HEADLINE -- A BRACKETING SOLVE LOCATES A *SIGN CHANGE*; A CORRECTOR NEEDS A *ROOT*, AND
+    > ON A RESIDUAL BUILT AS A MINIMUM THOSE ARE DIFFERENT OBJECTS.** `h` is a `min` over the
+    > scored trajectory points, so every argmin handover is a JUMP. Bisection reads only
+    > `sign(h)` -- free from ONE march (s 2, correcting rung 82 s 6) and defined whether or not a
+    > root exists. A corrector reads the residual's VALUE and SLOPE, which presuppose one. At
+    > `r = 0.25` on the shipped grid there is none: `g = F - tau` goes `+1.65e-3 -> -2.43e-3`
+    > across a `tau` step of `1.25e-5`, at the argmin handover. The thirteen marches buy AN
+    > ANSWER THAT EXISTS.
+
+    **CROSS-RUNG.** Rung 78 found a residual's SLOPE is a GAUGE and its root's UNIQUENESS is not.
+    This rung finds its root's EXISTENCE is not either.
+    """
+
+    # --- s 1: THE IDENTITY, AND THE FORWARD READING OFF ONE MARCH ------------------------------
+
+    def corrector_read(self, tau_f, **kw) -> dict:
+        """ONE march, reduced to everything a corrector could possibly read from it.
+
+        Rung 82 ships `h = min_s [hat(s) - tau_eff(s)]` and `tau_hat_min = min_s hat(s)`. When
+        `tau_eff` is constant along `s` -- what `kappa_pure` reports -- the two minima share an
+        argmin, so `h = kappa * (F - tau)` with `F = tau_hat_min/kappa` rung 82's own FORWARD
+        reading. THE FIXED POINT IS THEREFORE THE ROOT OF THE FORWARD READING'S OWN RESIDUAL, and
+        rung 82's `fix` bisection is literally solving `F(tau) = tau`.
+
+        `exact` checks that identity on the shipped dict at ZERO tolerance. It is the one part of
+        the derivation that IS a measurement: the algebra of the spec's s 1.3 holds for ANY `F`
+        and is never gated -- an identity round-trip cannot fail, so a test on it would pass on a
+        plant that does not exist."""
+        s = self._scan(tau_f, **kw)
+        kap = s["kappa"][0] if s["kappa_pure"] and s["kappa"] else None
+        F = (s["tau_hat_min"] / kap
+             if kap and s["tau_hat_min"] is not None else None)
+        pred = (s["tau_hat_min"] - kap * tau_f
+                if kap and s["tau_hat_min"] is not None else None)
+        return dict(tau_f=tau_f, F=F, g=(F - tau_f) if F is not None else None,
+                    h=s["h"], kappa=kap, kappa_pure=s["kappa_pure"],
+                    # the identity, at ZERO tolerance -- `h` against `tau_hat_min - kappa*tau`
+                    exact=(pred is not None and s["h"] is not None and pred == s["h"]),
+                    identity_pred=pred,
+                    # s 2: THE SIDE, from this single march. `h > 0` <=> `F > tau` <=> BELOW the
+                    # root. Rung 82 s 6 says the reader cannot know this without the solve.
+                    below_root=(None if s["h"] is None else s["h"] > 0.0),
+                    s_bind=s["s_bind"], n_fuel=s["n_fuel"], n_scored=s["n_scored"],
+                    window_open=s["window_open"], riding4_valid=s["riding4_valid"],
+                    tau_hat_min=s["tau_hat_min"], scan=s)
+
+    @staticmethod
+    def corrector_step(read: dict, c: float) -> dict:
+        """THE SINGLE NEWTON STEP, in closed form. `kappa` CANCELS (spec s 1.2):
+
+            tau_1 = tau_0 - h/h' = tau_0 + (F(tau_0) - tau_0)/(1 - c),      c = F'(tau_0)
+
+        so the correction is the forward reading's own miss over rung 77's `1/(1-c)` -- that
+        scalar's THIRD role, after 77's stiffness and 78's gauge.
+
+        `c` is SUPPLIED, never invented here: the whole question of this rung is where a corrector
+        could get it. `|1-c| < 1e-12` is V5 and returns `None`, never a clipped number."""
+        if read["F"] is None or abs(1.0 - c) < 1e-12:
+            return dict(tau_hat=None, c=c, forward=read["F"], correction=None,
+                        void=("V4: kappa impure" if read["F"] is None
+                              else "V5: |1-c| below 1e-12"))
+        t0, F = read["tau_f"], read["F"]
+        return dict(tau_hat=t0 + (F - t0) / (1.0 - c), c=c, void=None,
+                    # the RAW forward reading beside it: the step is only worth its march if it
+                    # BEATS the number it corrects, and rung 82 s 3a says that number is good
+                    # exactly where the spec's s 1.4 lever arm makes the correction bad.
+                    forward=F, correction=(F - t0) * c / (1.0 - c))
+
+    # --- s 3: THE SHAPE -- IS THE SIGN CHANGE A ROOT, OR A JUMP? -------------------------------
+
+    def residual_shape(self, lo: float, hi: float, n: int = 21, **kw) -> dict:
+        """Resolve `g = F - tau` on a ladder and classify EVERY sign change it contains.
+
+        `F(tau) = min_s hat(s)/kappa` is a MINIMUM over the scored trajectory points, so it is
+        smooth only while the argmin holds and JUMPS at every handover. A sign change of `g` is
+        therefore not automatically a root: it is a root if `g` passes THROUGH zero, and a jump if
+        it steps across.
+
+        The classifier must not be a judgement call, so it is a RATIO, reported and never
+        thresholded into a verdict here: `min(|g_lo|, |g_hi|)` over the ladder's own step. A
+        crossing drives that ratio toward zero as the ladder refines; a jump does not.
+        `argmin_moved` sits beside it because a jump AT a handover is the min-over-a-discrete-set
+        mechanism and one away from a handover is something else."""
+        step = (hi - lo) / (n - 1.0)
+        pts = [self.corrector_read(lo + (hi - lo) * i / (n - 1.0), **kw) for i in range(n)]
+        changes = []
+        for a, b in zip(pts, pts[1:]):
+            if a["g"] is None or b["g"] is None or (a["g"] > 0.0) == (b["g"] > 0.0):
+                continue
+            small = min(abs(a["g"]), abs(b["g"]))
+            changes.append(dict(
+                tau_lo=a["tau_f"], tau_hi=b["tau_f"], g_lo=a["g"], g_hi=b["g"],
+                s_lo=a["s_bind"], s_hi=b["s_bind"], argmin_moved=(a["s_bind"] != b["s_bind"]),
+                smallest_g=small, step=step, ratio=small / step,
+                jump_in_F=((b["F"] - a["F"]) / a["F"] if a["F"] else None)))
+        return dict(lo=lo, hi=hi, n=n, step=step, points=pts, changes=changes,
+                    n_changes=len(changes),
+                    n_kappa_impure=sum(1 for p in pts if not p["kappa_pure"]),
+                    # a handover ANYWHERE on the ladder, whether or not `g` changed sign there
+                    n_argmin_switches=sum(1 for a, b in zip(pts, pts[1:])
+                                          if a["s_bind"] != b["s_bind"]))
+
+    # --- s 4: THE ITERATED SECANT, UNDER A START RULE THE CALLER MUST NAME ---------------------
+
+    def corrector_secant(self, t0: float, t1: float, cap: int = 6,
+                         bracket=(0.004, 0.30), flat: float = 1e-12, **kw) -> dict:
+        """Iterate the secant on `g = F - tau`, two most recent iterates, and REPORT the cost.
+
+        `t0`/`t1` are the caller's, deliberately: rung 82's own P1 and this rung's P5 both died of
+        a bar that named a DIRECTION and never a POINT, so a start rule chosen after seeing the
+        answer is the failure mode this signature refuses to hide.
+
+        Clamps to the bracket are COUNTED (S1) -- an uncounted clamp turns a secant into a
+        bisection wearing a secant's name. A flat pair ABORTS (S2) rather than being nudged."""
+        blo, bhi = bracket
+        trace, pts, clamps, abort = [], [], 0, None
+        for t in (t0, t1):
+            rd = self.corrector_read(t, **kw)
+            if rd["g"] is None:
+                abort = "V4: kappa impure at a start point"
+                break
+            pts.append((t, rd["g"]))
+            trace.append(dict(tau=t, F=rd["F"], g=rd["g"], s_bind=rd["s_bind"], clamped=False))
+        if abort is None:
+            for _ in range(cap):
+                (ta, ga), (tb, gb) = pts[-2], pts[-1]
+                if abs(gb - ga) < flat:
+                    abort = "S2: flat pair, |dg| < %g" % flat
+                    break
+                tn = tb - gb * (tb - ta) / (gb - ga)
+                cl = False
+                if tn < blo:
+                    tn, cl = blo, True
+                elif tn > bhi:
+                    tn, cl = bhi, True
+                clamps += cl
+                rd = self.corrector_read(tn, **kw)
+                if rd["g"] is None:
+                    abort = "V4: kappa impure at an iterate"
+                    break
+                pts.append((tn, rd["g"]))
+                trace.append(dict(tau=tn, F=rd["F"], g=rd["g"], s_bind=rd["s_bind"], clamped=cl))
+        return dict(t0=t0, t1=t1, cap=cap, trace=trace, clamps=clamps, abort=abort,
+                    marches=len(trace), tau=trace[-1]["tau"] if trace else None,
+                    final_g=abs(trace[-1]["g"]) if trace else None,
+                    # 2 starts + `cap` iterates against the 13 a `_bisect(n=10)` costs
+                    marches_vs_bisect=(len(trace), 13),
+                    # the residual is what a caller WITHOUT the answer can see; the error against
+                    # a known root is scored outside, so this method never needs the root.
+                    converged=(bool(trace) and abs(trace[-1]["g"]) < 1e-12 and not clamps))

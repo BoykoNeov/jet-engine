@@ -218,10 +218,22 @@ any count on a row with `riding4_valid` False.
 
 ## 8. NEXT SEAMS
 
-* **THE FIXED POINT'S OWN COST.** It lands to a few percent but needs a bisection over marches —
-  ~40 marches a threshold here. Whether a **single Newton step** off the residual `h` (whose slope
-  § 3a already measures at ±0.044 / −1.83) reaches the same place for one march is untested, and it
-  is the difference between a diagnosis and a usable predictor.
+* ~~**THE FIXED POINT'S OWN COST.**~~ **PAID — rung 83** (`docs/rung83-spec.md`), answered **NO**,
+  and the seam misnamed its own difficulty on two counts.
+  * It framed the obstacle as **cost** and the unknown as the **slope**. Neither. A single step's
+    error is its slope error times a **lever arm** (`τ₀/τ* − 1`), so the reference that makes this
+    rung's § 3a forward reading *accurate* is the one that demands the finest slope — and worse,
+    a corrector needs the **mean slope back to the root**, which differs in **SIGN** from every
+    local reading at six sampled rows. Measuring it needs the root, i.e. the solve being avoided.
+  * **And at `r = 0.25` there is no root to find.** `h` is a `min` over trajectory points, so it
+    jumps at every argmin handover; there, `g = F − τ` steps `+1.65e−3 → −2.43e−3` across a τ step
+    of `1.25e−5`. **This rung's row for that ramp reports a DISCONTINUITY where its text says fixed
+    point** — the bisection locates a sign change, which is defined whether or not a root exists.
+    Refining to this rung's own `ds_fine` **creates** the root and moves the answer a full bracket
+    width, so § 2's five-row table is `ds`-dependent in a way it does not disclose.
+  * **What survives.** § 6's *"the reader cannot know which side it is on without solving the
+    problem it was trying to avoid"* is **CORRECTED**: `sign(h)` off one march gives the side of
+    the residual's own root, at every sampled point of all five ramps. Only the root is a solve.
 * **THE DIVERGING SIDE, RESOLVED.** § 3a measures the map's slope at two points below the threshold
   and one pair above. Where the slope passes through −1, and whether that boundary is the threshold
   itself or merely near it, is unmeasured — and it decides whether "start above" is a rule or a

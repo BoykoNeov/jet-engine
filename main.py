@@ -36,6 +36,7 @@ from turbojet.engine import (  # noqa: E402
     SplitWallTransient,
     AuthorityClockTransient,
     ThresholdLawTransient,
+    CorrectorLawTransient,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -6651,6 +6652,114 @@ def print_threshold_law_table(flight):
     print("    the threshold leaves the bracket. Both are disclosed in docs/rung82-spec.md s 6.")
 
 
+def print_corrector_law_table(flight):
+    """Rung-83 payoff: THE CORRECTOR'S OWN BAR -- docs/rung82-spec.md s 8's first seam.
+
+    Rung 82 s 8 asked whether ONE Newton step off the residual `h` reaches the same place as its
+    13-march bisection -- "the difference between a diagnosis and a usable predictor". The answer
+    is no, and the reason is neither accuracy nor the slope.
+
+    THE PANEL IS s 3 ONLY, and the cut is disclosed: the shipped reader also runs the one-step
+    estimators across a seven-rung ladder at five ramps, the iterated secant under its registered
+    start rule, and the intervention that moves the start onto each root (268 marches, ~15 min).
+    Those are TABLES; this is the MECHANISM, and it is the one part that decides the seam. The two
+    windows below are the MEASURED ones at the resolution they were found on -- re-reading them
+    coarser would show a chord where the finding is a step. docs/rung83-spec.md carries the rest.
+    """
+    print("\nTHE CORRECTOR'S OWN BAR (rung 83): a bracketing solve locates a SIGN CHANGE; a")
+    print("  corrector needs a ROOT -- and on a residual built as a MINIMUM those are")
+    print("  different objects.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR = 0.55
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9,
+                   gamma_t=g, cp_t=cp, R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    sm = 0.80 / FLOOR - 1.0
+    m = CorrectorLawTransient(design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0,
+                              bleed_lim=BleedLimiter.from_margin(LP, 0.10, sm, tau=0.05),
+                              stator_lim=StatorLimiter.from_margin(LP, 0.20, sm, tau=0.05))
+    m._lag_coord, m._ref_law, m._windup_law, m._cap_law = "demand", "sched", "none", "solve"
+    kw = dict(flight=flight, Tt4_lo=1000.0, Tt4_hi=1400.0, Tt4_max=1200.0, phi_lim=0.75,
+              phi_air=0.77, tau_gov=0.05, tau_q=0.05, tau_s=0.05, s_settle=1.2,
+              ds=0.005, v_max=0.20, inc=False)
+
+    print("\n  s 1  RUNG 82's TWO READINGS ARE ONE OBJECT. Its scan returns h = min[hat - tau_eff]")
+    print("    and tau_hat_min = min[hat]. With tau_eff constant along the trajectory the two")
+    print("    minima share an argmin, so h = kappa*(F - tau) with F = tau_hat_min/kappa -- rung")
+    print("    82's own FORWARD reading. THE FIXED POINT IS THE ROOT OF THE FORWARD READING'S OWN")
+    print("    RESIDUAL, so its bisection is literally solving F(tau) = tau.")
+    rd = m.corrector_read(0.08, **dict(kw, r=0.5))
+    print("      at r=0.50, tau_f=0.080:  h = %+.12e" % rd["h"])
+    print("                               tau_hat_min - kappa*tau = %+.12e" % rd["identity_pred"])
+    print("      identical to the last bit: %s     (kappa = %.1f, exact)" % (rd["exact"], rd["kappa"]))
+    print("    A Newton step then reads tau_1 = tau_0 + (F - tau_0)/(1 - c), and KAPPA CANCELS:")
+    print("    the correction is the forward reading's own miss over rung 77's 1/(1-c) -- that")
+    print("    scalar's THIRD role, after 77's stiffness and 78's gauge.")
+
+    print("\n  s 2  AND THE SIDE IS FREE. h > 0 iff F > tau iff tau is BELOW the root, so ONE")
+    print("    march says which side a reference sits on. Rung 82 s 6 says the reader 'cannot")
+    print("    know which side it is on without solving the problem it was trying to avoid'.")
+    print("      r      tau_f    sign(h)      says          root is at   correct")
+    for r, root, taus in ((0.25, 0.019754, (0.008, 0.050)), (0.35, 0.037098, (0.020, 0.120))):
+        for t in taus:
+            x = m.corrector_read(t, **dict(kw, r=r))
+            print("      %.2f   %.3f    %-9s    %-11s   %.6f     %s"
+                  % (r, t, "positive" if x["h"] > 0 else "negative",
+                     "BELOW root" if x["below_root"] else "above root", root,
+                     x["below_root"] == (t < root)))
+    print("    IT CAN. The side is one march; only the ROOT is a solve. CORRECTS rung 82 s 6.")
+
+    print("\n  s 3  SO WHY DOES ONE STEP NOT WORK? Not accuracy, and not the slope. F(tau) is a")
+    print("    MINIMUM over the scored trajectory points, so it JUMPS wherever the binding point")
+    print("    changes hands -- and at one of rung 82's five ramps the residual's sign change IS")
+    print("    such a handover. 21 marches at 1.25e-05 spacing, inside the bisection's own bracket:")
+    jump = m.residual_shape(0.0197750, 0.0197875, n=2, **dict(kw, r=0.25))["changes"][0]
+    cross = m.residual_shape(0.037000, 0.037333, n=2, **dict(kw, r=0.35))["changes"][0]
+    print("      (this panel uses main.py's R_c=286.9, so the last digits differ from the")
+    print("       spec's tables, which carry the tests' R_c -- that is the gas, not drift)")
+    print("      ramp   tau window            g below      g above      binding pt   min|g|/step")
+    for nm, r, ch in (("0.25", 0.25, jump), ("0.35", 0.35, cross)):
+        print("      %s   %.7f..%.7f  %+.4e  %+.4e  %-10s   %8.2f"
+              % (nm, ch["tau_lo"], ch["tau_hi"], ch["g_lo"], ch["g_hi"],
+                 "HANDS OVER" if ch["argmin_moved"] else "unchanged", ch["ratio"]))
+    print("    AT r=0.25 THE RESIDUAL DOES NOT APPROACH ZERO -- IT STEPS ACROSS IT. The smaller")
+    print("    of the two is %.0fx the tau step, and the step coincides with the argmin handover."
+          % jump["ratio"])
+    print("    So on the shipped grid THERE IS NO FIXED POINT at that ramp: rung 82's 13-march")
+    print("    answer, 0.019754, is the location of a DISCONTINUITY. At r=0.35 the same reader")
+    print("    on the same plant finds a genuine crossing (ratio %.2f, no handover) -- and that" % cross["ratio"])
+    print("    is the one ramp of five where a corrector works at all.")
+
+    print("\n  s 4  THE COST, PAIRED WITH WHAT IT BUYS. From the start rule fixed in advance")
+    print("    (sqrt of rung 82's own bracket, then x1.25), the secant at r=0.35 drives the")
+    print("    residual to ~1e-15 in 8 marches against 13 -- and its 0.10% 'error' is the")
+    print("    BISECTION's, whose 13 marches only resolve the root to +-0.39%. Started AT rung")
+    print("    82's own answer for r=0.25, the same secant OSCILLATES and never converges.")
+    print("      Under the registered start, 1 of 5 ramps reaches 1%; the intervention that moves")
+    print("      the start onto each root converts 3 of the 4 failures. The fourth is r=0.25,")
+    print("      because there is nothing there to converge to.")
+
+    print("\n  WHAT THIS BOUNDS. The thirteen marches were never buying resolution -- they buy AN")
+    print("    ANSWER THAT EXISTS. Bisection reads only sign(h), which s 2 shows is free and is")
+    print("    defined whether or not a root is there; a corrector reads the residual's VALUE and")
+    print("    SLOPE, which presuppose one. The seam's single step is answered NO. Rung 78 found a")
+    print("    residual's SLOPE is a GAUGE and its root's UNIQUENESS is not; its EXISTENCE is not")
+    print("    either -- refining the march step to rung 82's own ds_fine CREATES the r=0.25 root,")
+    print("    moves the answer by a full bracket width, and opens a new handover elsewhere.")
+    print("\n  HONEST SCOPE: one rig, one coordinate, one flight condition. The jumping mechanism")
+    print("    is general to rung 82's reader; that it leaves a MISSING ROOT at 1 of 5 ramps is")
+    print("    measured here only, and which ramps have roots at which ds is a two-parameter")
+    print("    sweep this rung does not run. docs/rung83-spec.md s 7.")
+
 def main():
     # The tables carry unicode (Δ, ·, ≡, ≈); force UTF-8 so `python main.py` renders
     # on any console (a stock Windows cp1252 console would otherwise crash on them).
@@ -6816,6 +6925,7 @@ def main():
     print_split_wall_table(FLIGHT)
     print_authority_clock_table(FLIGHT)
     print_threshold_law_table(FLIGHT)
+    print_corrector_law_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

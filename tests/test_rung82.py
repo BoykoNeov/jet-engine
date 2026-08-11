@@ -180,7 +180,9 @@ def test_the_fixed_point_is_never_beaten_by_the_forward_reading(law):
 
     Scored on the ERROR and not on bracket membership: the bracket is `2^-N` of the search
     interval, a width set by a loop count, so a gate written against it would pass or fail on
-    `N_BISECT` rather than on the plant (anchor § 6a, P1)."""
+    `N_BISECT` rather than on the plant (anchor § 6a, P1).
+
+    CORRECTED BY RUNG 83 (`docs/rung83-spec.md` § 3.2), and the assertion is left exactly as it was: at `r = 0.25` the `h < 0` bisection converges on a DISCONTINUITY, not a fixed point — the residual steps `+1.65e-3 -> -2.43e-3` across a τ step of `1.25e-5` at an argmin handover. What is scored here is the number that bisection returns, and that number is real; the word *fixed point* is wrong for one of the three live ramps."""
     live = [x for x in law["rows"] if x["ok"]]
     assert len(live) == len(RS)
     assert law["p3_fwd_never_better"], [(x["r"], x["err_fixed"], x["err_fwd"]) for x in live]
@@ -190,7 +192,9 @@ def test_the_fixed_point_is_never_beaten_by_the_forward_reading(law):
 @pytest.mark.slow
 def test_the_fixed_point_sits_below_the_measured_threshold(law):
     """P2's SURVIVING HALF — rung 81 § 2's *"the criterion is early, never late"* transferred
-    from the label to the threshold, for the reading that has no reference to inherit from."""
+    from the label to the threshold, for the reading that has no reference to inherit from.
+
+    CORRECTED BY RUNG 83 (`docs/rung83-spec.md` § 3.2), and the assertion is left exactly as it was: at `r = 0.25` the `h < 0` bisection converges on a DISCONTINUITY, not a fixed point — the residual steps `+1.65e-3 -> -2.43e-3` across a τ step of `1.25e-5` at an argmin handover. What is scored here is the number that bisection returns, and that number is real; the word *fixed point* is wrong for one of the three live ramps."""
     live = [x for x in law["rows"] if x["ok"]]
     assert law["p2_fixed_early"] == [x["r"] for x in live], law["p2_fixed_early"]
 
