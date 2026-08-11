@@ -91835,13 +91835,971 @@
    "m.zeros_fuel_auth[0]": 1,
    "m.zeros_gov_auth#n": 1,
    "m.zeros_gov_auth[0]": 1
+  },
+  "r82": {
+   "l.all_kappa_pure": true,
+   "l.bracket#n": 2,
+   "l.bracket[0]": {
+    "f": "0x1.0624dd2f1a9fcp-8"
+   },
+   "l.bracket[1]": {
+    "f": "0x1.3333333333333p-2"
+   },
+   "l.ds": {
+    "f": "0x1.47ae147ae147bp-8"
+   },
+   "l.ds_fine": null,
+   "l.ds_stable#n": 0,
+   "l.ds_unrun#n": 3,
+   "l.ds_unrun[0]": {
+    "f": "0x1.0000000000000p-2"
+   },
+   "l.ds_unrun[1]": {
+    "f": "0x1.6666666666666p-2"
+   },
+   "l.ds_unrun[2]": {
+    "f": "0x1.0000000000000p-1"
+   },
+   "l.ds_unstable#n": 0,
+   "l.kappa_seen#n": 1,
+   "l.kappa_seen[0]": {
+    "f": "0x1.8000000000000p+1"
+   },
+   "l.monotone_in_r": true,
+   "l.n_void": 0,
+   "l.p1_fixed_in#n": 0,
+   "l.p1_fixed_out#n": 3,
+   "l.p1_fixed_out[0]": {
+    "f": "0x1.0000000000000p-2"
+   },
+   "l.p1_fixed_out[1]": {
+    "f": "0x1.6666666666666p-2"
+   },
+   "l.p1_fixed_out[2]": {
+    "f": "0x1.0000000000000p-1"
+   },
+   "l.p1_fwd_in#n": 0,
+   "l.p1_fwd_out#n": 3,
+   "l.p1_fwd_out[0]": {
+    "f": "0x1.0000000000000p-2"
+   },
+   "l.p1_fwd_out[1]": {
+    "f": "0x1.6666666666666p-2"
+   },
+   "l.p1_fwd_out[2]": {
+    "f": "0x1.0000000000000p-1"
+   },
+   "l.p2_all_early": false,
+   "l.p2_fixed_early#n": 3,
+   "l.p2_fixed_early[0]": {
+    "f": "0x1.0000000000000p-2"
+   },
+   "l.p2_fixed_early[1]": {
+    "f": "0x1.6666666666666p-2"
+   },
+   "l.p2_fixed_early[2]": {
+    "f": "0x1.0000000000000p-1"
+   },
+   "l.p2_fwd_early#n": 2,
+   "l.p2_fwd_early[0]": {
+    "f": "0x1.0000000000000p-2"
+   },
+   "l.p2_fwd_early[1]": {
+    "f": "0x1.6666666666666p-2"
+   },
+   "l.p3_fwd_never_better": true,
+   "l.phi_air": {
+    "f": "0x1.8a3d70a3d70a4p-1"
+   },
+   "l.phi_lim": {
+    "f": "0x1.8000000000000p-1"
+   },
+   "l.rows#n": 3,
+   "l.rows[0].agreement": {
+    "f": "0x1.0000000000000p+0"
+   },
+   "l.rows[0].dist_ref": {
+    "f": "0x1.758c6b3850a95p+0"
+   },
+   "l.rows[0].ds_stable": null,
+   "l.rows[0].err_fixed": {
+    "f": "0x1.d1ddab80b690bp-6"
+   },
+   "l.rows[0].err_fwd": {
+    "f": "0x1.cc0ea9fe3ca39p-4"
+   },
+   "l.rows[0].fixed": {
+    "f": "0x1.43a5e353f7cedp-6"
+   },
+   "l.rows[0].fixed_early": true,
+   "l.rows[0].fixed_in_bracket": false,
+   "l.rows[0].fwd": {
+    "f": "0x1.27b453d095592p-6"
+   },
+   "l.rows[0].fwd_early": true,
+   "l.rows[0].fwd_in_bracket": false,
+   "l.rows[0].gap_bind": {
+    "f": "0x1.55447e7897290p-10"
+   },
+   "l.rows[0].hi": {
+    "f": "0x1.4f7ced916872ap-6"
+   },
+   "l.rows[0].kappa#n": 1,
+   "l.rows[0].kappa[0]": {
+    "f": "0x1.8000000000000p+1"
+   },
+   "l.rows[0].kappa_pure": true,
+   "l.rows[0].lo": {
+    "f": "0x1.4ac083126e978p-6"
+   },
+   "l.rows[0].n_fuel": 1,
+   "l.rows[0].n_riding4": 49,
+   "l.rows[0].ok": true,
+   "l.rows[0].r": {
+    "f": "0x1.0000000000000p-2"
+   },
+   "l.rows[0].ratio_bind": {
+    "f": "0x1.1fe69259abbb3p+3"
+   },
+   "l.rows[0].riding4_valid": true,
+   "l.rows[0].s_bind": {
+    "f": "0x1.47ae147ae147bp-4"
+   },
+   "l.rows[0].tau_eff_bind": {
+    "f": "0x1.f73b645a1cabfp-5"
+   },
+   "l.rows[0].tau_hat_min_ref": {
+    "f": "0x1.bb8e7db8e005bp-5"
+   },
+   "l.rows[0].tau_ref": {
+    "f": "0x1.999999999999ap-5"
+   },
+   "l.rows[0].tau_star": {
+    "f": "0x1.4d1eb851eb851p-6"
+   },
+   "l.rows[0].tau_star_eff": {
+    "f": "0x1.f3ae147ae147ap-5"
+   },
+   "l.rows[0].tau_star_fine": null,
+   "l.rows[0].void": null,
+   "l.rows[0].width": {
+    "f": "0x1.2f1a9fbe76c80p-12"
+   },
+   "l.rows[0].window_open": true,
+   "l.rows[1].agreement": {
+    "f": "0x1.f45d1745d1746p-1"
+   },
+   "l.rows[1].dist_ref": {
+    "f": "0x1.306336c521717p-2"
+   },
+   "l.rows[1].ds_stable": null,
+   "l.rows[1].err_fixed": {
+    "f": "0x1.33308b10c9565p-5"
+   },
+   "l.rows[1].err_fwd": {
+    "f": "0x1.4e5bf5368c632p-3"
+   },
+   "l.rows[1].fixed": {
+    "f": "0x1.2fe76c8b43958p-5"
+   },
+   "l.rows[1].fixed_early": true,
+   "l.rows[1].fixed_in_bracket": false,
+   "l.rows[1].fwd": {
+    "f": "0x1.0831f984dfc9dp-5"
+   },
+   "l.rows[1].fwd_early": true,
+   "l.rows[1].fwd_in_bracket": false,
+   "l.rows[1].gap_bind": {
+    "f": "0x1.9c2eb1ec83d00p-10"
+   },
+   "l.rows[1].hi": {
+    "f": "0x1.3ced916872b02p-5"
+   },
+   "l.rows[1].kappa#n": 1,
+   "l.rows[1].kappa[0]": {
+    "f": "0x1.8000000000000p+1"
+   },
+   "l.rows[1].kappa_pure": true,
+   "l.rows[1].lo": {
+    "f": "0x1.3a8f5c28f5c29p-5"
+   },
+   "l.rows[1].n_fuel": 1,
+   "l.rows[1].n_riding4": 44,
+   "l.rows[1].ok": true,
+   "l.rows[1].r": {
+    "f": "0x1.6666666666666p-2"
+   },
+   "l.rows[1].ratio_bind": {
+    "f": "0x1.c8247a2851f74p+2"
+   },
+   "l.rows[1].riding4_valid": true,
+   "l.rows[1].s_bind": {
+    "f": "0x1.eb851eb851ebbp-4"
+   },
+   "l.rows[1].tau_eff_bind": {
+    "f": "0x1.db645a1cac083p-4"
+   },
+   "l.rows[1].tau_hat_min_ref": {
+    "f": "0x1.8c4af6474faebp-4"
+   },
+   "l.rows[1].tau_ref": {
+    "f": "0x1.999999999999ap-5"
+   },
+   "l.rows[1].tau_star": {
+    "f": "0x1.3bbe76c8b4396p-5"
+   },
+   "l.rows[1].tau_star_eff": {
+    "f": "0x1.d99db22d0e561p-4"
+   },
+   "l.rows[1].tau_star_fine": null,
+   "l.rows[1].void": null,
+   "l.rows[1].width": {
+    "f": "0x1.2f1a9fbe76c80p-12"
+   },
+   "l.rows[1].window_open": true,
+   "l.rows[2].agreement": {
+    "f": "0x1.f15f15f15f15fp-1"
+   },
+   "l.rows[2].dist_ref": {
+    "f": "0x1.b0eaf1a9b9c02p-3"
+   },
+   "l.rows[2].ds_stable": null,
+   "l.rows[2].err_fixed": {
+    "f": "0x1.2aca4b9cc2c2dp-5"
+   },
+   "l.rows[2].err_fwd": {
+    "f": "0x1.78f539e3f42e2p-1"
+   },
+   "l.rows[2].fixed": {
+    "f": "0x1.f472b020c49bap-5"
+   },
+   "l.rows[2].fixed_early": true,
+   "l.rows[2].fixed_in_bracket": false,
+   "l.rows[2].fwd": {
+    "f": "0x1.c2e5684461e8bp-4"
+   },
+   "l.rows[2].fwd_early": false,
+   "l.rows[2].fwd_in_bracket": false,
+   "l.rows[2].gap_bind": {
+    "f": "0x1.dc993cdaa2680p-10"
+   },
+   "l.rows[2].hi": {
+    "f": "0x1.0449ba5e353f8p-4"
+   },
+   "l.rows[2].kappa#n": 1,
+   "l.rows[2].kappa[0]": {
+    "f": "0x1.8000000000000p+1"
+   },
+   "l.rows[2].kappa_pure": true,
+   "l.rows[2].lo": {
+    "f": "0x1.031a9fbe76c8cp-4"
+   },
+   "l.rows[2].n_fuel": 1,
+   "l.rows[2].n_riding4": 35,
+   "l.rows[2].ok": true,
+   "l.rows[2].r": {
+    "f": "0x1.0000000000000p-1"
+   },
+   "l.rows[2].ratio_bind": {
+    "f": "0x1.537c4d8f4b167p+2"
+   },
+   "l.rows[2].riding4_valid": true,
+   "l.rows[2].s_bind": {
+    "f": "0x1.7ae147ae147b1p-3"
+   },
+   "l.rows[2].tau_eff_bind": {
+    "f": "0x1.866e978d4fdf4p-3"
+   },
+   "l.rows[2].tau_hat_min_ref": {
+    "f": "0x1.522c0e33496e8p-2"
+   },
+   "l.rows[2].tau_ref": {
+    "f": "0x1.999999999999ap-5"
+   },
+   "l.rows[2].tau_star": {
+    "f": "0x1.03b22d0e56042p-4"
+   },
+   "l.rows[2].tau_star_eff": {
+    "f": "0x1.858b439581063p-3"
+   },
+   "l.rows[2].tau_star_fine": null,
+   "l.rows[2].void": null,
+   "l.rows[2].width": {
+    "f": "0x1.2f1a9fbe76c00p-12"
+   },
+   "l.rows[2].window_open": true,
+   "l.rs#n": 3,
+   "l.rs[0]": {
+    "f": "0x1.0000000000000p-2"
+   },
+   "l.rs[1]": {
+    "f": "0x1.6666666666666p-2"
+   },
+   "l.rs[2]": {
+    "f": "0x1.0000000000000p-1"
+   },
+   "l.tau_gov": {
+    "f": "0x1.999999999999ap-5"
+   },
+   "l.tau_ref": {
+    "f": "0x1.999999999999ap-5"
+   },
+   "l.thresholds#n": 3,
+   "l.thresholds[0]#n": 2,
+   "l.thresholds[0][0]": {
+    "f": "0x1.0000000000000p-2"
+   },
+   "l.thresholds[0][1]": {
+    "f": "0x1.4d1eb851eb851p-6"
+   },
+   "l.thresholds[1]#n": 2,
+   "l.thresholds[1][0]": {
+    "f": "0x1.6666666666666p-2"
+   },
+   "l.thresholds[1][1]": {
+    "f": "0x1.3bbe76c8b4396p-5"
+   },
+   "l.thresholds[2]#n": 2,
+   "l.thresholds[2][0]": {
+    "f": "0x1.0000000000000p-1"
+   },
+   "l.thresholds[2][1]": {
+    "f": "0x1.03b22d0e56042p-4"
+   }
+  },
+  "r82r": {
+   "f.bracket#n": 2,
+   "f.bracket[0]": {
+    "f": "0x1.3a8f5c28f5c29p-5"
+   },
+   "f.bracket[1]": {
+    "f": "0x1.3ced916872b02p-5"
+   },
+   "f.crossing#n": 5,
+   "f.crossing[0]#n": 2,
+   "f.crossing[0][0]": {
+    "f": "0x1.47ae147ae147bp-6"
+   },
+   "f.crossing[0][1]": false,
+   "f.crossing[1]#n": 2,
+   "f.crossing[1][0]": {
+    "f": "0x1.eb851eb851eb8p-6"
+   },
+   "f.crossing[1][1]": false,
+   "f.crossing[2]#n": 2,
+   "f.crossing[2][0]": {
+    "f": "0x1.999999999999ap-5"
+   },
+   "f.crossing[2][1]": true,
+   "f.crossing[3]#n": 2,
+   "f.crossing[3][0]": {
+    "f": "0x1.47ae147ae147bp-4"
+   },
+   "f.crossing[3][1]": true,
+   "f.crossing[4]#n": 2,
+   "f.crossing[4][0]": {
+    "f": "0x1.eb851eb851eb8p-4"
+   },
+   "f.crossing[4][1]": true,
+   "f.grows_above": false,
+   "f.grows_below": true,
+   "f.n_agree": 5,
+   "f.n_live": 5,
+   "f.r": {
+    "f": "0x1.6666666666666p-2"
+   },
+   "f.rows#n": 5,
+   "f.rows[0].dist": {
+    "f": "0x1.eca51d4abf6c4p-2"
+   },
+   "f.rows[0].early": false,
+   "f.rows[0].err": {
+    "f": "0x1.fa1ced0f5357ap-1"
+   },
+   "f.rows[0].fwd": {
+    "f": "0x1.39edc4645562ep-4"
+   },
+   "f.rows[0].kappa_pure": true,
+   "f.rows[0].n_fuel": 0,
+   "f.rows[0].n_riding4": 41,
+   "f.rows[0].ref_above": false,
+   "f.rows[0].riding4_valid": true,
+   "f.rows[0].s_bind": {
+    "f": "0x1.0a3d70a3d70a5p-3"
+   },
+   "f.rows[0].tau_ref": {
+    "f": "0x1.47ae147ae147bp-6"
+   },
+   "f.rows[0].window_open": true,
+   "f.rows[1].dist": {
+    "f": "0x1.c5ef57e03e44ep-3"
+   },
+   "f.rows[1].early": false,
+   "f.rows[1].err": {
+    "f": "0x1.076bbb36dc912p-1"
+   },
+   "f.rows[1].fwd": {
+    "f": "0x1.de313c8e853cbp-5"
+   },
+   "f.rows[1].kappa_pure": true,
+   "f.rows[1].n_fuel": 0,
+   "f.rows[1].n_riding4": 41,
+   "f.rows[1].ref_above": false,
+   "f.rows[1].riding4_valid": true,
+   "f.rows[1].s_bind": {
+    "f": "0x1.0a3d70a3d70a5p-3"
+   },
+   "f.rows[1].tau_ref": {
+    "f": "0x1.eb851eb851eb8p-6"
+   },
+   "f.rows[1].window_open": true,
+   "f.rows[2].dist": {
+    "f": "0x1.306336c521717p-2"
+   },
+   "f.rows[2].early": true,
+   "f.rows[2].err": {
+    "f": "0x1.4e5bf5368c632p-3"
+   },
+   "f.rows[2].fwd": {
+    "f": "0x1.0831f984dfc9dp-5"
+   },
+   "f.rows[2].kappa_pure": true,
+   "f.rows[2].n_fuel": 6,
+   "f.rows[2].n_riding4": 46,
+   "f.rows[2].ref_above": true,
+   "f.rows[2].riding4_valid": true,
+   "f.rows[2].s_bind": {
+    "f": "0x1.d70a3d70a3d73p-4"
+   },
+   "f.rows[2].tau_ref": {
+    "f": "0x1.999999999999ap-5"
+   },
+   "f.rows[2].window_open": true,
+   "f.rows[3].dist": {
+    "f": "0x1.135ae2b54093cp+0"
+   },
+   "f.rows[3].early": true,
+   "f.rows[3].err": {
+    "f": "0x1.1e2404bdd5ab4p-4"
+   },
+   "f.rows[3].fwd": {
+    "f": "0x1.25afc37353903p-5"
+   },
+   "f.rows[3].kappa_pure": true,
+   "f.rows[3].n_fuel": 20,
+   "f.rows[3].n_riding4": 49,
+   "f.rows[3].ref_above": true,
+   "f.rows[3].riding4_valid": true,
+   "f.rows[3].s_bind": {
+    "f": "0x1.c28f5c28f5c2bp-4"
+   },
+   "f.rows[3].tau_ref": {
+    "f": "0x1.47ae147ae147bp-4"
+   },
+   "f.rows[3].window_open": true,
+   "f.rows[4].dist": {
+    "f": "0x1.0e842a07f06edp+1"
+   },
+   "f.rows[4].early": true,
+   "f.rows[4].err": {
+    "f": "0x1.88332bc254bf6p-6"
+   },
+   "f.rows[4].fwd": {
+    "f": "0x1.342f8bbd7d8e5p-5"
+   },
+   "f.rows[4].kappa_pure": true,
+   "f.rows[4].n_fuel": 39,
+   "f.rows[4].n_riding4": 54,
+   "f.rows[4].ref_above": true,
+   "f.rows[4].riding4_valid": true,
+   "f.rows[4].s_bind": {
+    "f": "0x1.ae147ae147ae3p-4"
+   },
+   "f.rows[4].tau_ref": {
+    "f": "0x1.eb851eb851eb8p-4"
+   },
+   "f.rows[4].window_open": true,
+   "f.s_binds#n": 5,
+   "f.s_binds[0]#n": 2,
+   "f.s_binds[0][0]": {
+    "f": "0x1.47ae147ae147bp-6"
+   },
+   "f.s_binds[0][1]": {
+    "f": "0x1.0a3d70a3d70a5p-3"
+   },
+   "f.s_binds[1]#n": 2,
+   "f.s_binds[1][0]": {
+    "f": "0x1.eb851eb851eb8p-6"
+   },
+   "f.s_binds[1][1]": {
+    "f": "0x1.0a3d70a3d70a5p-3"
+   },
+   "f.s_binds[2]#n": 2,
+   "f.s_binds[2][0]": {
+    "f": "0x1.999999999999ap-5"
+   },
+   "f.s_binds[2][1]": {
+    "f": "0x1.d70a3d70a3d73p-4"
+   },
+   "f.s_binds[3]#n": 2,
+   "f.s_binds[3][0]": {
+    "f": "0x1.47ae147ae147bp-4"
+   },
+   "f.s_binds[3][1]": {
+    "f": "0x1.c28f5c28f5c2bp-4"
+   },
+   "f.s_binds[4]#n": 2,
+   "f.s_binds[4][0]": {
+    "f": "0x1.eb851eb851eb8p-4"
+   },
+   "f.s_binds[4][1]": {
+    "f": "0x1.ae147ae147ae3p-4"
+   },
+   "f.sign_follows_reference": true,
+   "f.tau_refs#n": 5,
+   "f.tau_refs[0]": {
+    "f": "0x1.47ae147ae147bp-6"
+   },
+   "f.tau_refs[1]": {
+    "f": "0x1.eb851eb851eb8p-6"
+   },
+   "f.tau_refs[2]": {
+    "f": "0x1.999999999999ap-5"
+   },
+   "f.tau_refs[3]": {
+    "f": "0x1.47ae147ae147bp-4"
+   },
+   "f.tau_refs[4]": {
+    "f": "0x1.eb851eb851eb8p-4"
+   },
+   "f.tau_star": {
+    "f": "0x1.3bbe76c8b4396p-5"
+   },
+   "f.void": null,
+   "f.width": {
+    "f": "0x1.2f1a9fbe76c80p-12"
+   }
+  },
+  "r82t": {
+   "t.bracket#n": 2,
+   "t.bracket[0]": {
+    "f": "0x1.0624dd2f1a9fcp-8"
+   },
+   "t.bracket[1]": {
+    "f": "0x1.3333333333333p-2"
+   },
+   "t.ds": {
+    "f": "0x1.47ae147ae147bp-8"
+   },
+   "t.govs#n": 3,
+   "t.govs[0].gap_bind": {
+    "f": "0x1.b93d448e85e78p-10"
+   },
+   "t.govs[0].kappa": {
+    "f": "0x1.8000000000000p+1"
+   },
+   "t.govs[0].n_fuel": 1,
+   "t.govs[0].n_riding4": 43,
+   "t.govs[0].ok": true,
+   "t.govs[0].phi_lim": {
+    "f": "0x1.8000000000000p-1"
+   },
+   "t.govs[0].ratio_bind": {
+    "f": "0x1.bfb9fd55a98a7p+2"
+   },
+   "t.govs[0].riding4_valid": true,
+   "t.govs[0].s_bind": {
+    "f": "0x1.0000000000001p-3"
+   },
+   "t.govs[0].slope_f": {
+    "f": "0x1.280c6b6596363p-6"
+   },
+   "t.govs[0].slope_r": {
+    "f": "0x1.528c3e184ade3p-9"
+   },
+   "t.govs[0].tau_gov": {
+    "f": "0x1.47ae147ae147bp-6"
+   },
+   "t.govs[0].tau_star": {
+    "f": "0x1.2d89374bc6a80p-5"
+   },
+   "t.govs[0].void": null,
+   "t.govs[0].width": {
+    "f": "0x1.2f1a9fbe76c80p-12"
+   },
+   "t.govs[1].gap_bind": {
+    "f": "0x1.9c2eb1ec83d00p-10"
+   },
+   "t.govs[1].kappa": {
+    "f": "0x1.8000000000000p+1"
+   },
+   "t.govs[1].n_fuel": 1,
+   "t.govs[1].n_riding4": 44,
+   "t.govs[1].ok": true,
+   "t.govs[1].phi_lim": {
+    "f": "0x1.8000000000000p-1"
+   },
+   "t.govs[1].ratio_bind": {
+    "f": "0x1.c8247a2851f74p+2"
+   },
+   "t.govs[1].riding4_valid": true,
+   "t.govs[1].s_bind": {
+    "f": "0x1.eb851eb851ebbp-4"
+   },
+   "t.govs[1].slope_f": {
+    "f": "0x1.289f77d0b3dd1p-6"
+   },
+   "t.govs[1].slope_r": {
+    "f": "0x1.4cf23e245e9f3p-9"
+   },
+   "t.govs[1].tau_gov": {
+    "f": "0x1.999999999999ap-5"
+   },
+   "t.govs[1].tau_star": {
+    "f": "0x1.3bbe76c8b4396p-5"
+   },
+   "t.govs[1].void": null,
+   "t.govs[1].width": {
+    "f": "0x1.2f1a9fbe76c80p-12"
+   },
+   "t.govs[2].gap_bind": {
+    "f": "0x1.905b95efd9b60p-10"
+   },
+   "t.govs[2].kappa": {
+    "f": "0x1.8000000000000p+1"
+   },
+   "t.govs[2].n_fuel": 1,
+   "t.govs[2].n_riding4": 42,
+   "t.govs[2].ok": true,
+   "t.govs[2].phi_lim": {
+    "f": "0x1.8000000000000p-1"
+   },
+   "t.govs[2].ratio_bind": {
+    "f": "0x1.b73a0778af842p+2"
+   },
+   "t.govs[2].riding4_valid": true,
+   "t.govs[2].s_bind": {
+    "f": "0x1.eb851eb851ebbp-4"
+   },
+   "t.govs[2].slope_f": {
+    "f": "0x1.0f776b1709a12p-6"
+   },
+   "t.govs[2].slope_r": {
+    "f": "0x1.3c71c65dcb1b3p-9"
+   },
+   "t.govs[2].tau_gov": {
+    "f": "0x1.999999999999ap-3"
+   },
+   "t.govs[2].tau_star": {
+    "f": "0x1.536c8b4395811p-5"
+   },
+   "t.govs[2].void": null,
+   "t.govs[2].width": {
+    "f": "0x1.2f1a9fbe76d00p-12"
+   },
+   "t.n_void": 0,
+   "t.p4.kappa#n": 3,
+   "t.p4.kappa[0]": {
+    "f": "0x1.8000000000000p+1"
+   },
+   "t.p4.kappa[1]": {
+    "f": "0x1.8000000000000p+1"
+   },
+   "t.p4.kappa[2]": {
+    "f": "0x1.8000000000000p+1"
+   },
+   "t.p4.measured": {
+    "f": "0x1.a4fa4fa4fa4f5p-6"
+   },
+   "t.p4.predicted": {
+    "f": "0x1.8de31eabfcda7p-5"
+   },
+   "t.p4.ratio_bind#n": 3,
+   "t.p4.ratio_bind[0]": {
+    "f": "0x1.bfb9fd55a98a7p+2"
+   },
+   "t.p4.ratio_bind[1]": {
+    "f": "0x1.c8247a2851f74p+2"
+   },
+   "t.p4.ratio_bind[2]": {
+    "f": "0x1.b73a0778af842p+2"
+   },
+   "t.p4.rel_err": {
+    "f": "0x1.e2497f518dee7p-2"
+   },
+   "t.p4.rises": true,
+   "t.p4.secants#n": 2,
+   "t.p4.secants[0].hi": {
+    "f": "0x1.999999999999ap-5"
+   },
+   "t.p4.secants[0].lo": {
+    "f": "0x1.47ae147ae147bp-6"
+   },
+   "t.p4.secants[0].measured": {
+    "f": "0x1.d999999999987p-5"
+   },
+   "t.p4.secants[0].predicted": {
+    "f": "0x1.7f21b9e1bf198p-5"
+   },
+   "t.p4.secants[1].hi": {
+    "f": "0x1.999999999999ap-3"
+   },
+   "t.p4.secants[1].lo": {
+    "f": "0x1.999999999999ap-5"
+   },
+   "t.p4.secants[1].measured": {
+    "f": "0x1.3bbbbbbbbbbbdp-6"
+   },
+   "t.p4.secants[1].predicted": {
+    "f": "0x1.8de31eabfcda7p-5"
+   },
+   "t.p4.taus#n": 3,
+   "t.p4.taus[0]#n": 2,
+   "t.p4.taus[0][0]": {
+    "f": "0x1.47ae147ae147bp-6"
+   },
+   "t.p4.taus[0][1]": {
+    "f": "0x1.2d89374bc6a80p-5"
+   },
+   "t.p4.taus[1]#n": 2,
+   "t.p4.taus[1][0]": {
+    "f": "0x1.999999999999ap-5"
+   },
+   "t.p4.taus[1][1]": {
+    "f": "0x1.3bbe76c8b4396p-5"
+   },
+   "t.p4.taus[2]#n": 2,
+   "t.p4.taus[2][0]": {
+    "f": "0x1.999999999999ap-3"
+   },
+   "t.p4.taus[2][1]": {
+    "f": "0x1.536c8b4395811p-5"
+   },
+   "t.p4.transfer": {
+    "f": "0x1.0edb40573908cp-1"
+   },
+   "t.p5.d_gap": {
+    "f": "0x1.48531897b482cp-1"
+   },
+   "t.p5.d_lag": {
+    "f": "0x1.c19a1f0a25416p-2"
+   },
+   "t.p5.d_ratio": {
+    "f": "0x1.659a9bcde4e49p-1"
+   },
+   "t.p5.d_slope_f": {
+    "f": "0x1.71b5445db36b0p+0"
+   },
+   "t.p5.gap_falls": true,
+   "t.p5.gaps#n": 3,
+   "t.p5.gaps[0]": {
+    "f": "0x1.2ee9df9e21a8cp-9"
+   },
+   "t.p5.gaps[1]": {
+    "f": "0x1.9c2eb1ec83d00p-10"
+   },
+   "t.p5.gaps[2]": {
+    "f": "0x1.b2ab8b9972d70p-11"
+   },
+   "t.p5.monotone": true,
+   "t.p5.ratio_rises": true,
+   "t.p5.ratios#n": 3,
+   "t.p5.ratios[0]": {
+    "f": "0x1.49a8ea9207d85p+2"
+   },
+   "t.p5.ratios[1]": {
+    "f": "0x1.c8247a2851f74p+2"
+   },
+   "t.p5.ratios[2]": {
+    "f": "0x1.17f45f204e614p+3"
+   },
+   "t.p5.rises": false,
+   "t.p5.separates": false,
+   "t.p5.slope_f#n": 3,
+   "t.p5.slope_f[0]": {
+    "f": "0x1.676227b0e6f2ap-7"
+   },
+   "t.p5.slope_f[1]": {
+    "f": "0x1.289f77d0b3dd1p-6"
+   },
+   "t.p5.slope_f[2]": {
+    "f": "0x1.b7328da3487e7p-6"
+   },
+   "t.p5.slope_r#n": 3,
+   "t.p5.slope_r[0]": {
+    "f": "0x1.17150407aa2bcp-9"
+   },
+   "t.p5.slope_r[1]": {
+    "f": "0x1.4cf23e245e9f3p-9"
+   },
+   "t.p5.slope_r[2]": {
+    "f": "0x1.919dfc2ac86bap-9"
+   },
+   "t.p5.taus#n": 3,
+   "t.p5.taus[0]#n": 2,
+   "t.p5.taus[0][0]": {
+    "f": "0x1.7d70a3d70a3d7p-1"
+   },
+   "t.p5.taus[0][1]": {
+    "f": "0x1.90978d4fdf3b6p-4"
+   },
+   "t.p5.taus[1]#n": 2,
+   "t.p5.taus[1][0]": {
+    "f": "0x1.8000000000000p-1"
+   },
+   "t.p5.taus[1][1]": {
+    "f": "0x1.3bbe76c8b4396p-5"
+   },
+   "t.p5.taus[2]#n": 2,
+   "t.p5.taus[2][0]": {
+    "f": "0x1.828f5c28f5c29p-1"
+   },
+   "t.p5.taus[2][1]": {
+    "f": "0x1.c0624dd2f1aa0p-7"
+   },
+   "t.p5.v7_withdrawn": true,
+   "t.phi_air": {
+    "f": "0x1.8a3d70a3d70a4p-1"
+   },
+   "t.phi_lim": {
+    "f": "0x1.8000000000000p-1"
+   },
+   "t.phi_lims#n": 3,
+   "t.phi_lims[0]": {
+    "f": "0x1.7d70a3d70a3d7p-1"
+   },
+   "t.phi_lims[1]": {
+    "f": "0x1.8000000000000p-1"
+   },
+   "t.phi_lims[2]": {
+    "f": "0x1.828f5c28f5c29p-1"
+   },
+   "t.r": {
+    "f": "0x1.6666666666666p-2"
+   },
+   "t.tau_govs#n": 3,
+   "t.tau_govs[0]": {
+    "f": "0x1.47ae147ae147bp-6"
+   },
+   "t.tau_govs[1]": {
+    "f": "0x1.999999999999ap-5"
+   },
+   "t.tau_govs[2]": {
+    "f": "0x1.999999999999ap-3"
+   },
+   "t.walls#n": 3,
+   "t.walls[0].gap_bind": {
+    "f": "0x1.2ee9df9e21a8cp-9"
+   },
+   "t.walls[0].kappa": {
+    "f": "0x1.8000000000000p+1"
+   },
+   "t.walls[0].n_fuel": 1,
+   "t.walls[0].n_riding4": 40,
+   "t.walls[0].ok": true,
+   "t.walls[0].phi_lim": {
+    "f": "0x1.7d70a3d70a3d7p-1"
+   },
+   "t.walls[0].ratio_bind": {
+    "f": "0x1.49a8ea9207d85p+2"
+   },
+   "t.walls[0].riding4_valid": true,
+   "t.walls[0].s_bind": {
+    "f": "0x1.1eb851eb851edp-3"
+   },
+   "t.walls[0].slope_f": {
+    "f": "0x1.676227b0e6f2ap-7"
+   },
+   "t.walls[0].slope_r": {
+    "f": "0x1.17150407aa2bcp-9"
+   },
+   "t.walls[0].tau_gov": {
+    "f": "0x1.999999999999ap-5"
+   },
+   "t.walls[0].tau_star": {
+    "f": "0x1.90978d4fdf3b6p-4"
+   },
+   "t.walls[0].void": null,
+   "t.walls[0].width": {
+    "f": "0x1.2f1a9fbe76c00p-12"
+   },
+   "t.walls[1].gap_bind": {
+    "f": "0x1.9c2eb1ec83d00p-10"
+   },
+   "t.walls[1].kappa": {
+    "f": "0x1.8000000000000p+1"
+   },
+   "t.walls[1].n_fuel": 1,
+   "t.walls[1].n_riding4": 44,
+   "t.walls[1].ok": true,
+   "t.walls[1].phi_lim": {
+    "f": "0x1.8000000000000p-1"
+   },
+   "t.walls[1].ratio_bind": {
+    "f": "0x1.c8247a2851f74p+2"
+   },
+   "t.walls[1].riding4_valid": true,
+   "t.walls[1].s_bind": {
+    "f": "0x1.eb851eb851ebbp-4"
+   },
+   "t.walls[1].slope_f": {
+    "f": "0x1.289f77d0b3dd1p-6"
+   },
+   "t.walls[1].slope_r": {
+    "f": "0x1.4cf23e245e9f3p-9"
+   },
+   "t.walls[1].tau_gov": {
+    "f": "0x1.999999999999ap-5"
+   },
+   "t.walls[1].tau_star": {
+    "f": "0x1.3bbe76c8b4396p-5"
+   },
+   "t.walls[1].void": null,
+   "t.walls[1].width": {
+    "f": "0x1.2f1a9fbe76c80p-12"
+   },
+   "t.walls[2].gap_bind": {
+    "f": "0x1.b2ab8b9972d70p-11"
+   },
+   "t.walls[2].kappa": {
+    "f": "0x1.8000000000000p+1"
+   },
+   "t.walls[2].n_fuel": 1,
+   "t.walls[2].n_riding4": 48,
+   "t.walls[2].ok": true,
+   "t.walls[2].phi_lim": {
+    "f": "0x1.828f5c28f5c29p-1"
+   },
+   "t.walls[2].ratio_bind": {
+    "f": "0x1.17f45f204e614p+3"
+   },
+   "t.walls[2].riding4_valid": true,
+   "t.walls[2].s_bind": {
+    "f": "0x1.999999999999bp-4"
+   },
+   "t.walls[2].slope_f": {
+    "f": "0x1.b7328da3487e7p-6"
+   },
+   "t.walls[2].slope_r": {
+    "f": "0x1.919dfc2ac86bap-9"
+   },
+   "t.walls[2].tau_gov": {
+    "f": "0x1.999999999999ap-5"
+   },
+   "t.walls[2].tau_star": {
+    "f": "0x1.c0624dd2f1aa0p-7"
+   },
+   "t.walls[2].void": null,
+   "t.walls[2].width": {
+    "f": "0x1.2f1a9fbe76c80p-12"
+   }
   }
  },
  "meta": {
   "generated": "2026-08-11",
   "implementation": "cpython",
   "note": "CPython-generated ANCHOR. Do NOT regenerate under another interpreter \u2014 see tests/test_numeric_fingerprint.py.",
-  "repo_sha": "ffc304125a940af2cc49c4e59e55cfc9dd249ef1",
+  "repo_sha": "4e6b7e5e61f99f839b91956dc9f6e40816560592",
   "version": "3.14.3"
  }
 }

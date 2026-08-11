@@ -109,7 +109,7 @@ It prints every changing value before writing. If that diff is longer than you e
 `meta.repo_sha` IS THE PARENT, NOT THE TREE THAT PRODUCED THE VALUES, and reading it the other
 way will mislead you. It records HEAD at the moment the regeneration ran, which is necessarily
 BEFORE the commit that ships the new arms — so a slice that adds a kernel writes a sha at which
-that kernel does not exist. Every slice from 1 to 6 has this off-by-one; it is inherent to
+that kernel does not exist. Every slice from 1 to 7 has this off-by-one; it is inherent to
 "regenerate, then commit" and no amend fixes it (the fix would be a second write after the
 commit, which would itself need a commit). Read it as "the state the OTHER 41 arms were measured
 against", which is what it is actually good for, and take the producing tree from the commit that
@@ -525,6 +525,96 @@ see the WARNING under PROCEDURE about backgrounding one.
 NO SENSITIVITY SWEEP FOR r81: an exact arm already sits at the ulp floor, slice 4's row. r81m was
 not swept either, and that is a recorded skip: its band is 1e-9, three decades tighter than the
 gate's 1e-5 floor, so it cannot be the floor — but nothing here says how much better it is.
+
+--------------------------------------------------------------------------------------------
+SLICE 7 — rung 82, THE THRESHOLD'S OWN LAW (added 2026-08-11)
+--------------------------------------------------------------------------------------------
+`docs/rung82-spec.md` § 8 booked this arm as a DEBT and predicted its shape. The debt is paid;
+** THE PREDICTION IS REFUTED, AND IN THE DIRECTION THAT COSTS NOTHING. ** Three arms, one per
+reader, and ALL THREE ARE BIT-EXACT:
+
+  r82   `threshold_law`       — §§ 1-3, the ramp swept, read three ways.      153 values
+  r82r  `threshold_reference` — § 3a, THE HEADLINE's own sweep.               111 values
+  r82t  `threshold_terms`     — §§ 4-5, the governor clock and the wall.      176 values
+
+** THE FIRST ARMS IN THIS MODULE THAT ROOT-FIND, AND THAT IS WHY A GO/NO-GO RAN FIRST. ** Slices
+3-6 read gains and counts off a FIXED march, so slice 4's caveat about the shared `_cpg_gas()`
+(`R_c = 286.9`, not rung 82's own 286.857) was benign there: a slightly different march moves the
+values a band then covers. Here every value comes off a BISECTION, and rung 82 § 5 measures the
+whole marchable wall range at 0.01 wide with a >20x threshold swing across it — so the shared gas
+could have pushed a root across a censoring edge and left three arms pinning `void` strings. It
+was measured before a line of the arms was written (`…\fingerprint-slice7\probe7.py`): `n_void`
+0, three live thresholds, `monotone_in_r` True, all six `threshold_terms` rows live, `p4`/`p5`
+non-None. THE ARMS ALSO REPRODUCE EVERY NUMBER THE SPEC PUBLISHES — `tau*` 0.02033 / 0.03854 /
+0.06340, the forward reading's 73.6 % blow-up, § 3a's 98.9 -> 2.4 % walk, `transfer` 0.529, the
+wall's −64.1 % / +43.9 % / +144.4 % — which is slice 6's sentence one rung along and is worth
+repeating only because a root-finder had no obligation to.
+
+** r82r's VACUITY CONDITION IS `crossing`, AND IT IS THE ONE SPECIFIC TO THIS RUNG. **
+`sign_follows_reference` is an ALL over live rows, so five references that all sat on ONE side of
+the threshold would score a perfect 5-of-5 having tested nothing at all — § SLICE 3's trap in
+rung 82's costume, and exactly the failure rung 81 § 0 and rung 78 § 9 each hit in their own way.
+Both sides are present and the arm pins the pairs, not the boolean: `(0.02, False), (0.03,
+False), (0.05, True), (0.08, True), (0.12, True)`. Two below, three above, and the flip located.
+
+** THE EXACTNESS IS PREDICTED FIRST, THEN MEASURED — slice 6's order, and here it is stronger. **
+Slice 6 could predict its clock half exact and had to NAME where the drift would live instead:
+`_quad_gains_at` -> `_charpoly4`, which sums PRODUCTS. ** RUNG 82 BUILDS NO JACOBIAN AT ALL **
+(its own § 6: *"It does not measure a rank, a mode, or `n_live`"*), so that mechanism is ABSENT
+from this rung — and with it the only thing in rungs 80/81 that drifted. What remains is
+`_criterion_at` on a bit-exact CPG two-spool march (`cpg`, r68, r77, r78, r79, r81 all pin it),
+two subtractions and a divide per `tau_hat`, a `min`, a compare, and bisection midpoints that are
+exact binary halvings of their bracket. No naive `sum()`, no transcendental, nothing to
+reassociate. So all three `TOL` entries are 0.0 because the arithmetic says so; 0 of 440
+confirms it.
+
+** AND THAT REFUTES § 8's OWN BOOKING, WHICH IS CONTENT AND NOT A LINE TO DROP QUIETLY. ** The
+seam predicted *"this rung's two readers sit in different regimes … so one tolerance pair is
+unlikely to serve both"* and nominated ** 8.29e-04 ** (§ 5's `gap` at `phi_lim = 0.755`) as the
+smallest live value a band would have to clear. Measured: no band is needed on any arm, so the
+number never comes into play — and it was not the binding one either. The smallest live value on
+EVERY arm is the bisection WIDTH, ** 2.8906e-04 ** (`l.rows[2].width`, `f.width`,
+`t.walls[0].width`), one decade below the seam's candidate. Had a band been needed it would have
+had to clear that, not the `gap`. The seam reasoned about the rung's PHYSICS and the binding
+quantity turned out to be its SEARCH.
+
+** WHY THREE ARMS, AND IT IS NOT SLICE 6's REASON. ** Slice 6 split because one `(rel, abs)` pair
+could not serve both halves — a MEASURED, forced split. Nothing forces this one: three exact arms
+would merge into one exact arm with no loss of band. The reasons are the two honest ones and they
+are stated as such. (a) COST: 410 s of PyPy in one test would be a 410 s serial tail on one xdist
+worker, against 191 s for the largest of three. (b) ATTRIBUTION: r82 red means the ramp sweep or
+the plant moved, r82r red means § 3a's sign law did, r82t red means the two-knob coupling did —
+and those are three different findings that a merged arm would report as one name.
+
+SETTINGS ARE `tests/test_rung82.py`'s, VERBATIM, and the two CUTS in them are ITS cuts, recorded
+here rather than re-derived: `rs = (0.25, 0.35, 0.50)` (3 of the reader's 5 ramps) and
+`phi_lims = (0.745, 0.750, 0.755)` (3 of 5 walls, spanning the whole interval V3 leaves open).
+`ds_fine=None` SKIPS the step control — the rows carry `ds_stable=None`, and this slice therefore
+guards NOTHING about `ds`-resolution. Recorded skip, not implied coverage, slice 5's language.
+** `n_bisect` IS THE ONE KNOB WITH A PRICE ON THE RECORD AND IT IS NOT CUT: ** the rung's own test
+header measures what 10 -> 7 does — the bracket widens to 2.3e-3, above § 3a's closest signed
+error of 9.2e-4, and the headline reads 4-of-5 instead of 5-of-5. Not because the plant moved,
+but because the SEARCH became coarser than the effect. Ten stays.
+
+ORDER-INDEPENDENCE, CHECKED AND NOT ASSUMED, as slice 6 checks it — three arms sharing one
+memoised `_s3_design()` is a stronger exposure than two. Run reader-REVERSED under PyPy
+(`probe7.py --reverse`), all 440 values are bit-identical to the forward run, and the two totals
+agree to 3 s (407.2 vs 410.2).
+
+PROVENANCE. Measured 2026-08-11, these kernels under CPython 3.14.3 vs PyPy 3.11.15 (7.3.23) via
+`M:\claud_projects\temp\fingerprint-slice7\{probe7,compare7}.py`. The probe IMPORTS `_s3_rig` /
+`_cpg_gas` / `_s3` from this module and calls the same three readers with the same arguments.
+** 440 values, 0 differing, 0 of them non-float. ** No threshold, no sign, no count, no `void`
+label and no boolean moved across the interpreters.
+
+COST, and it is the module's heaviest slice: ** 410.2 s PyPy (r82 178.7 + r82r 40.2 + r82t
+191.3) — r82t displaces r81 as the heaviest arm here. ** All three are `@pytest.mark.slow` and
+all three still run on a plain `pytest`. Under CPython the three take ** 1964.0 s (32.7 min) **,
+4.8x PyPy, which puts a whole-module regeneration at roughly ** 65 minutes ** — budget for that
+BEFORE regenerating, and see the WARNING under PROCEDURE about backgrounding one. The CPython
+figure is an UPPER bound: its first arm ran co-resident with the PyPy order-independence run.
+
+NO SENSITIVITY SWEEP FOR ANY OF THE THREE: exact arms sit at the ulp floor, slice 4's row.
 """
 import json
 import os
@@ -554,6 +644,8 @@ from turbojet.engine import (  # noqa: E402
     SplitWallTransient,
     # slice 6 — rung 81
     AuthorityClockTransient,
+    # slice 7 — rung 82
+    ThresholdLawTransient,
 )
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -638,6 +730,16 @@ TOL = {
     "r81m": 1e-15,   # BACKSTOP, as r72/r73/r80 — 0 keys ride the relative leg. All 155 of this
                      # arm's differences are `_charpoly4` coefficients, the same sums-of-products
                      # mechanism r80's cross-gains have, so the ABSOLUTE leg below carries it.
+    # ---------------- SLICE 7: rung 82 (2026-08-11) — see § SLICE 7 ----------------
+    # THREE arms, ALL EXACT, and the exactness is the arithmetic's answer before it is a
+    # measurement: rung 82 builds NO Jacobian, so `_charpoly4` — the one thing that drifted in
+    # slices 5 and 6 — is absent, leaving `_criterion_at` on a bit-exact CPG march, single-op
+    # ratios, and bisection midpoints. NONE of the three takes an `ABS_TOL` leg, and rung 82
+    # § 8's own prediction (two regimes, two bands, a 8.29e-04 to clear) is REFUTED by that.
+    "r82":  0.0,     # PREDICTED exact, then measured so — 0 of 153 values differed
+    "r82r": 0.0,     # PREDICTED exact, then measured so — 0 of 111. Loosening THIS one would
+                     # loosen § 3a's sign law itself, r79's reason: the claim IS the signs.
+    "r82t": 0.0,     # PREDICTED exact, then measured so — 0 of 176
 }
 
 # --------------------------------------------------------------------------- absolute leg
@@ -1529,6 +1631,101 @@ def kernel_r81m():
                                               phi_lim=_S5_PHI_FUEL, phi_air=_S6_PHI_AIR)))
 
 
+# ===========================================================================================
+# SLICE 7 — rung 82, THE THRESHOLD'S OWN LAW
+# ===========================================================================================
+# NO SETTINGS BLOCK BEYOND RUNG 82's OWN THREE, for the FOURTH slice running: this rung adds no
+# state, no knob and no constant, so its readers default to the `_S3_*` values (`s_settle = 1.2`,
+# `ds = 0.005`, `v_max = 0.20`, `inc = False`, `tau_gov = tau_q = tau_s = 0.05`) and to rung 80's
+# wall pair, reused here as `_S5_PHI_FUEL` / `_S6_PHI_AIR` so the code itself says this arm sits
+# on the same cell slices 5 and 6 do. The three below are the ONLY arguments
+# `tests/test_rung82.py` passes, and they are taken from it verbatim.
+#
+# ** THE FIRST ARMS IN THIS MODULE THAT ROOT-FIND. ** Slices 3-6 read gains and counts off a
+# FIXED march; every value here comes off a BISECTION over marches, which is why the probe's
+# go/no-go was run before a line of this was written: the shared `_cpg_gas()` (`R_c = 286.9`, not
+# rung 82's own 286.857) could have moved a root across one of § 5's censoring edges, and the
+# whole marchable wall range is 0.01 wide. It did not — see § SLICE 7.
+#
+# `n_bisect` IS NOT CUT, AND THAT IS THE ONE KNOB HERE WITH A RECORDED PRICE. `tests/test_rung82.
+# py`'s own header records what happened when it was trimmed 10 -> 7: the bracket widened to
+# 2.3e-3, above § 3a's closest signed error (9.2e-4), and the headline read 4-of-5 instead of
+# 5-of-5 — the search coarser than the effect it was measuring. Ten bisections stay.
+_SLICE7 = ("r82", "r82r", "r82t")
+_S7_RS = (0.25, 0.35, 0.50)               # the ramp set, `tests/test_rung82.py` verbatim
+_S7_NBISECT = 10                          # NOT a free knob — see above
+_S7_PHI_LIMS = (0.745, 0.750, 0.755)      # § 5's three admissible walls, the test's own trim
+
+
+def _s7_rig():
+    """A fresh rung-82 machine, FRESH PER READER as slices 4/5/6 build theirs.
+
+    Identical to `_s6_rig()` but for the class: rung 82 is a reader-only rung whose reduce
+    contract is that its march is `AuthorityClockTransient`'s to the last bit, so anything else
+    here would be measuring a plant rung 82 does not have."""
+    return _s3_rig(ThresholdLawTransient, _lag_coord="demand", _ref_law="sched",
+                   _windup_law="none", _cap_law="solve")
+
+
+def kernel_r82():
+    """RUNG 82 — §§ 1-3, THE RAMP SWEEP READ THREE WAYS: measured, fixed point, forward.
+
+    `docs/rung82-spec.md` § 8 booked this arm and named the value a band would have to clear.
+    The lead readings are the two that survived their own registration — the fixed point beats
+    the forward reading at every ramp (`p3_fwd_never_better`) and sits below the measured
+    threshold at every ramp — over a `thresholds` list that must be MONOTONE in the ramp.
+
+    ITS VACUITY GUARDS ARE IN-READER AND THEY ARE THE REASON THIS ARM IS SAFE TO PIN: `n_void`
+    counts rows the plant refused (V1's empty four-loop window, V3's censored bracket), and a
+    row that voids carries its REASON rather than being dropped. A silently emptied sweep here
+    would pin a monotone law over nothing.
+
+    `ds_fine=None` SKIPS THE STEP CONTROL, which is `tests/test_rung82.py`'s own choice and is a
+    RECORDED SKIP, not implied coverage: this arm guards nothing about `ds`-resolution, and the
+    rows carry `ds_stable=None`, which the reader keeps distinct from False."""
+    return _s3("r82",
+               ("l", _s7_rig().threshold_law(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX,
+                                             phi_lim=_S5_PHI_FUEL, phi_air=_S6_PHI_AIR,
+                                             rs=_S7_RS, n_bisect=_S7_NBISECT, ds_fine=None)))
+
+
+def kernel_r82r():
+    """RUNG 82 — § 3a, THE HEADLINE: does the forward reading's SIGN follow its REFERENCE's side?
+
+    THE ARM'S OWN VACUITY CONDITION IS `crossing`, AND IT IS CHECKED RATHER THAN ASSUMED.
+    `sign_follows_reference` is an ALL over the live rows, so five references that all landed on
+    ONE side of the threshold would score a perfect 5-of-5 having tested nothing — § SLICE 3's
+    trap in rung 82's costume, and the reason the sweep is pinned as the `(tau_ref, early)` pairs
+    and not as the boolean alone. Both sides are present here (two below, three above).
+
+    It also carries § 3a's second half — `grows_above` False beside `grows_below` True, the
+    one-sided contraction that explains § 2's two blow-ups as the reference's side and not the
+    ramp's."""
+    return _s3("r82r",
+               ("f", _s7_rig().threshold_reference(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX,
+                                                   phi_lim=_S5_PHI_FUEL, phi_air=_S6_PHI_AIR,
+                                                   n_bisect=_S7_NBISECT)))
+
+
+def kernel_r82t():
+    """RUNG 82 — §§ 4-5, THE OTHER TWO KNOBS: the governor clock and the WALL.
+
+    The two derived blocks are the content — `transfer`, the fraction of a frozen-trajectory
+    coefficient that survives the plant's own response, and the wall's three fractional moves
+    (`d_gap`, `d_lag`, `d_slope_f`) with `v7_withdrawn` beside them. A regeneration that moved
+    `v7_withdrawn` or `separates` would be moving rung 82's verdict, not a float.
+
+    THE WALL SET IS THE TEST'S THREE, NOT THE READER'S FIVE, and that is a CUT: 0.7475 and
+    0.7525 are dropped, two bisections at ~13 marches each. The three kept span the whole
+    admissible interval V3 leaves open (0.745 / 0.750 / 0.755), which is what `d_gap` and
+    `d_slope_f` are read across, and three points is the smallest set on which `monotone` says
+    anything. Recorded skip, not implied coverage."""
+    return _s3("r82t",
+               ("t", _s7_rig().threshold_terms(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX,
+                                               phi_lim=_S5_PHI_FUEL, phi_air=_S6_PHI_AIR,
+                                               n_bisect=_S7_NBISECT, phi_lims=_S7_PHI_LIMS)))
+
+
 KERNELS = {"cpg": kernel_cpg, "r66": kernel_r66, "A": kernel_A, "B": kernel_B,
            "C": kernel_C, "D": kernel_D, "E": kernel_E, "F": kernel_F,
            # slice 2 — the rungs 3-30 diagnostic ladder
@@ -1546,7 +1743,10 @@ KERNELS = {"cpg": kernel_cpg, "r66": kernel_r66, "A": kernel_A, "B": kernel_B,
            # slice 5 — rung 80
            "r80": kernel_r80,
            # slice 6 — rung 81, split into its two halves (see § SLICE 6)
-           "r81": kernel_r81, "r81m": kernel_r81m}
+           "r81": kernel_r81, "r81m": kernel_r81m,
+           # slice 7 — rung 82, one arm per READER (see § SLICE 7 for why, and why it is not
+           # slice 6's reason)
+           "r82": kernel_r82, "r82r": kernel_r82r, "r82t": kernel_r82t}
 
 
 # --------------------------------------------------------------------------- encode / compare
@@ -1860,12 +2060,46 @@ def test_golden_kernel_r81m_mirror_mask():
     _check("r81m")
 
 
+# ------------------------------------------------------- slice 7, rung 82 — one arm per READER
+# The heaviest slice in the module: 410 s PyPy across three arms. § SLICE 7 says why they are
+# three, and says plainly that the reason is NOT slice 6's — nothing here needed a second band.
+
+@pytest.mark.slow
+def test_golden_kernel_r82_threshold_law():
+    """§§ 1-3: the monotone `tau*(r)`, and the fixed point beating the forward reading at every
+    ramp. The whole table rung 82's § 2 publishes, at this module's shared gas."""
+    _check("r82")
+
+
+@pytest.mark.slow
+def test_golden_kernel_r82r_threshold_reference():
+    """§ 3a: THE HEADLINE — `sign(forward - tau*)` follows the reference's own side, 5 of 5,
+    with `crossing` carrying both sides so the 5-of-5 cannot be a statement about one."""
+    _check("r82r")
+
+
+@pytest.mark.slow
+def test_golden_kernel_r82t_threshold_terms():
+    """§§ 4-5: the governor clock's `transfer` and the wall's three fractional moves — the
+    measurement that withdrew P5 and named `c_dot_f` as the wall's largest mover."""
+    _check("r82t")
+
+
 def test_instrument_arms_are_not_vacuous():
     """THE CHECK THAT CAUGHT THE RUNG-71 ARM, kept as a gate rather than as a war story.
 
-    IT COVERS SLICES 3, 4, 5 AND 6, and the name says `instrument` rather than `slice3` for that
-    reason: every arm built on a rung's own INSTRUMENT readers can fail this way, so a new
+    IT COVERS SLICES 3, 4, 5, 6 AND 7, and the name says `instrument` rather than `slice3` for
+    that reason: every arm built on a rung's own INSTRUMENT readers can fail this way, so a new
     slice must be added to the iteration set in the same edit that adds its arms.
+
+    THE `govs#n` / `walls#n` NAMES ARE SLICE 7's ADDITION, and they are slice 5's `cells#n`
+    lesson recurring rather than a new rule: rung 82's `threshold_terms` calls its two row lists
+    `govs` and `walls`, so a guard that knows only `rows` and `cells` would have watched an arm
+    whose every sweep came back censored and seen nothing to complain about. The rule for these
+    two is the STRICT one (neither may be empty), unlike `cells#n`'s deliberate weak form: an
+    empty gov or wall list is never a finding here — V3 censoring the whole sweep means the band
+    of walls the plant can be marched on has moved, which is exactly the regression this slice
+    exists to catch.
 
     THE `cells#n` RULE IS SLICE 5's ADDITION, and it exists because slice 5 walked straight up
     to the hole in the first one. The `rows#n` check above cannot see a gain reader that
@@ -1885,9 +2119,10 @@ def test_instrument_arms_are_not_vacuous():
     Read from the GOLDEN, not from a fresh run, so it costs nothing and so it also fails if a
     regeneration ever pins a vacuous arm."""
     golden = _load_golden()["kernels"]
-    for name in _SLICE3 + _SLICE4 + _SLICE5 + _SLICE6:
+    for name in _SLICE3 + _SLICE4 + _SLICE5 + _SLICE6 + _SLICE7:
         arm = {k: _decode(v) for k, v in golden[name].items()}
-        empty = [k for k, v in arm.items() if k.endswith("rows#n") and v == 0]
+        empty = [k for k, v in arm.items()
+                 if k.endswith(("rows#n", "govs#n", "walls#n")) and v == 0]
         assert not empty, (
             f"{name}: {len(empty)} EMPTY row list(s) — {empty[:4]}. The instrument sampled no "
             "live base point, so this arm pins nothing. Do NOT widen a tolerance; lower the "

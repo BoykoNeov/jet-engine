@@ -19,6 +19,7 @@ these lines (the same rule CLAUDE.md lives under).
 - [Golden gate slice 4](golden-gate-slice4.md) — rungs 78/79 pinned BIT-EXACT; lead an arm with the reader that BYPASSES the plant's short-circuit, and when the zeros ARE the finding, loosening the tolerance loosens the CLAIM
 - [Golden gate slice 5](golden-gate-slice5.md) — rung 80 pinned; a finite difference inherits its drift from the quantity DIFFERENCED (flat across 15 decades) so relative is the wrong currency; a per-arm "measured X" is the worst among keys RIDING that leg, not the arm's worst
 - [Golden gate slice 6](golden-gate-slice6.md) — rung 81 pinned as TWO arms; a band must clear the SMALLEST LIVE value it covers or it erases the finding, and bit-equality can be PREDICTED from the arithmetic rather than measured
+- [Golden gate slice 7](golden-gate-slice7.md) — rung 82 pinned as THREE bit-exact arms; a ROOT-FINDING arm needs a go/no-go before it is written, and the smallest live value belonged to the SEARCH not the physics
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page published as artifact 56cde230…; update the same URL, regenerate via extract_data.py + build.py
 
 ## Shipped rungs

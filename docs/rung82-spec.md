@@ -229,8 +229,22 @@ any count on a row with `riding4_valid` False.
 * **THE SAME THREE READINGS IN `clip`.** Rung 81 § 3 found the fuel leg's clock an **exact null**
   there at the split wall; a threshold in a coordinate where the knob is inert is either absent or
   somewhere else entirely, and neither has been looked at.
-* **A FINGERPRINT ARM FOR THIS RUNG.** Slice 6's lesson applies: this rung's two readers sit in
-  different regimes (§ 2's bisection is a *bracket*, § 3a's forward values are floats off a single
-  march), so one tolerance pair is unlikely to serve both. The smallest live value to clear is
-  § 5's `gap` at `φ_lim = 0.755`, **8.29e-04**.
+* ~~**A FINGERPRINT ARM FOR THIS RUNG.**~~ **PAID — `tests/test_numeric_fingerprint.py` § SLICE 7**
+  (2026-08-11), three arms, one per reader: `r82` (`threshold_law`, 153 values), `r82r`
+  (`threshold_reference`, 111) and `r82t` (`threshold_terms`, 176). **And this entry was wrong on
+  every count it made.** It predicted two readers in different numerical regimes needing different
+  tolerance pairs; measured, **all three arms are BIT-EXACT — 0 of 440 values differ** between
+  CPython 3.14.3 and PyPy 3.11.15, so no band exists to be shared or split.
+  * **The exactness is derivable, and the reason is § 6's own disclaimer.** This rung builds no
+    Jacobian, so `_charpoly4` — the sums-of-products path that carried *every* difference in
+    slices 5 and 6 — is absent. What is left is `_criterion_at` on a CPG march five arms already
+    pin exact, single-op ratios, and bisection midpoints that are exact binary halvings.
+  * **And `8.29e-04` was not the binding number either.** The smallest live value on every arm is
+    the bisection **width**, `2.8906e-04` — one decade below the `gap` this entry nominated. The
+    seam reasoned about the rung's physics; the small quantity turned out to belong to its
+    **search**. (Moot at a zero tolerance, recorded because the reasoning would recur.)
+  * **The three arms are a COST and ATTRIBUTION split, not slice 6's forced one** — 410 s of PyPy
+    in one test would be a serial tail on one worker, and three names say which of the three
+    findings moved. Settings are `tests/test_rung82.py`'s verbatim; `ds_fine=None` means the arm
+    guards nothing about step resolution, and `n_bisect` is not cut for the reason § 2 records.
 * Everything rungs 72–81 §§ 8–11 leave, unchanged by this rung.
