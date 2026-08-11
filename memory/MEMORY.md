@@ -106,6 +106,7 @@ grouped below by the same families as that table, in the same numeric order.
 - [Rung 81 authority clock](rung81-authority-clock.md) — authority is the LAG's not the SET POINT's, and a masked leg's clock is an EXACT null knob (0 of 1364 floats); the first grid's 100% was the WEAKER measurement, and a pre-check answered the seam before the anchor existed
 - [Rung 82 threshold law](rung82-threshold-law.md) — a criterion read FORWARD inherits the SIGN of its own reference; the pre-check killed the intended headline, two registered bars were VOID for comparing a physical quantity to a loop count, and a 5-of-5 correlation needed one discriminator to become causal
 - [Rung 83 corrector law](rung83-corrector-law.md) — a bracketing solve locates a SIGN CHANGE and a corrector needs a ROOT; one ramp has none, an identity round-trip was sold as a 2.7e-14 verification, and a bar that named a DIRECTION instead of a POINT died
+- [Rung 84 staircase law](rung84-staircase-law.md) — a small integer COUNT cannot carry a RATE (two predictions died of it, the third bar in this lineage to die of its own wording); the headline was written before the measurement that refuted it, and the defective estimator sat in the SHIPPED reader, not just the probe
 
 ## Margin sweeps — confirmations, not rungs
 - [Rungs 72–77 march audit](rungs72-77-march-audit.md) — the arrest is rung 74 § 2.2's and it already owned it; a seam's section number does not survive the rungs it points at; a liveness counter on a FROZEN plant reports FULL activity

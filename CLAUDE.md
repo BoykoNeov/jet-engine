@@ -21,12 +21,12 @@ teaching, not for features or polish.
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is anchored to a
-published case. All rungs are live; the current scope is **rung 83**.
+published case. All rungs are live; the current scope is **rung 84**.
 
 **Families** (contiguous): 1–6 cycle · 7–24 NOx & mixing · 25–30 nozzle/turbine marches ·
 31–33 off-design steady · 34–37 1-spool transient · 38–45 two-spool · 46–52 fuel limiters ·
 53–56 + 61 airflow levers (steady) · 57–60, 62–63 schedules · 64–68 valve/lag/cascades ·
-69–83 reference splits & rank. **Read-only diagnostics: 7–30, 36, 41, 44, 45**; all else
+69–84 reference splits & rank. **Read-only diagnostics: 7–30, 36, 41, 44, 45**; all else
 STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 
 | Rung | Adds (one-line hook) | Spec |
@@ -115,6 +115,7 @@ STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 | 81 | **THE AUTHORITY CLOCK** — rung 80's seam: the MIRROR cell, fuel leg holding. **HEADLINE: a leg that never holds the ACTUATOR has no CLOCK** — a masked `τ` moves the march by NOTHING, bit-for-bit, yet decides where it holds. Authority is the LAG's, not the SET POINT's. **BOUNDS 80; CORRECTS 74's "pure bill".** | `docs/rung81-spec.md` |
 | 82 | **THE THRESHOLD'S OWN LAW** — 81's seam, answered **NO**. **HEADLINE: a criterion read FORWARD inherits the SIGN of its own reference** — it reports where the reader STARTED, so only the FIXED POINT lands. **BOUNDS 81 to the trajectory it labels.** | `docs/rung82-spec.md` |
 | 83 | **THE CORRECTOR'S OWN BAR** — 82's seam, answered **NO**. **HEADLINE: a bracketing solve locates a SIGN CHANGE, a corrector needs a ROOT** — on a `min`-built residual those differ, and 1 of 5 ramps has NONE. **CORRECTS 82 § 6 — the SIDE is free.** | `docs/rung83-spec.md` |
+| 84 | **THE MARCHED MINIMUM'S STAIRCASE** — 83's map seam. **HEADLINE: a minimum over a MARCHED set is a reading on a MOVING GRID BOUNDARY, so the residual carries the march's own SAWTOOTH** — a missing root is a crossing landing on a step. **CORRECTS 83's reason, CONFIRMS its verdict; SCALES 82's step control.** | `docs/rung84-spec.md` |
 
 ## Working contract (from SPEC.md — these override convenience)
 - **Derive before you code.** For each station, write the governing equation and
@@ -130,10 +131,9 @@ STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 - **Every new rung reduces to its predecessor**, exactly and by test (`X=None` ⇒
   the prior code path). This is the project's spine — see any `docs/rungN-spec.md`.
 
-**Current scope (rung 83).** The **cycle solve** is a thermally-perfect, reacting,
+**Current scope (rung 84).** The **cycle solve** is a thermally-perfect, reacting,
 dissociation-equilibrium gas (`Gas.reacting_equilibrium()`) through ideal + real components
-(isentropic `η_c/η_t` **or** polytropic `e_c/e_t`, mutually exclusive; `π_d/π_b/π_n`, `η_b`,
-`η_m`; dual cold/hot gas; specified exit pressure). The burner root-finds `f` over the scale-B
+(rungs 2/2b's knobs, mutually exclusive; specified exit pressure). The burner root-finds `f` over the scale-B
 absolute balance, then freezes the station-4 mixture through turbine + nozzle; Fork A/B and
 frozen-products gases are kept alongside. **Everything from rung 7 up is a diagnostic *beside*
 the cycle**, reached through **separate entry points** that leave the default
@@ -142,8 +142,8 @@ the cycle**, reached through **separate entry points** that leave the default
 ## Deferred seams — status map
 One line per seam — `BUILT` (detail in its spec) · `NEGATIVE → doc` · `OPEN`.
 
-**BUILT — every seam numbered 25–82 was closed by the SAME-NUMBERED rung** (hook in the table above,
-derivation in its spec). Never re-open one, and never re-enumerate them here.
+**BUILT — every seam numbered 25–83 was closed by the SAME-NUMBERED rung.**
+Never re-open one, and never re-enumerate them here.
 
 **Investigated, NEGATIVE — not shipped, not a rung (facts live here + the doc):**
 - Resolved `τ_res` from the nozzle area-schedule (26's seam a) — `docs/tau-res-negative.md`.
@@ -156,9 +156,9 @@ derivation in its spec). Never re-open one, and never re-enumerate them here.
 - The **φ-RATE limiter** (60's seam) — `docs/phi-rate-limiter-negative.md`. **Fuel's authority over `φ` INVERTS between LEVEL and DERIVATIVE**. BOUNDS 49; the one negative with a gate.
 
 **Checked, CONFIRMATION / CORRECTION — not a rung:**
-- 72–77's **marches** + 74's **arrest** — `docs/rungs72-77-march-audit.md`, `docs/rung74-arrest-interval.md`. The arrest is **74 § 2.2's** and an **INTERVAL**; no shipped march arrests, and no `demand` march has four live loops at any SHARED wall (80 splits it). **CORRECTS 78/79; CLOSES 79's window seam.**
+- 72–77's **marches** + 74's **arrest** — `docs/rungs72-77-march-audit.md`, `docs/rung74-arrest-interval.md`. The arrest is **74 § 2.2's** and an **INTERVAL**; no shipped march arrests, and no `demand` march has four live loops at a SHARED wall (80 splits it). **CORRECTS 78/79; CLOSES 79's window seam.**
 - Rung 79 § 9's **gap** — `docs/rung79-gap-margin.md`. Its § 5 march **STANDS STILL**; residual = rung 77's `1/(1−c)`. **CORRECTS 79.**
-- "Earned at design" over `π_c` (`docs/rung29-pi-c-margin.md`, ~9.4×, NOT protective, `ENERGY = INVENTORY × COMPLETION`) and `M0` (`docs/rung29-M0-margin.md`, ~8.8×, monotone-protective, the `delta_h`-swing correction).
+- "Earned at design" over `π_c` (`docs/rung29-pi-c-margin.md`, NOT protective) and `M0` (`docs/rung29-M0-margin.md`, monotone-protective).
 - `β<1` over `π_c` — `docs/rung28-beta-margin.md` (β pressure-invariant; higher `π_c` protective).
 
 **Still OPEN — the live to-build list:**
@@ -169,7 +169,7 @@ derivation in its spec). Never re-open one, and never re-enumerate them here.
 - **The subsonic / unchoked LP branch** in the two-spool solves (38 flags, unsolved) and its **transient**.
 - An **ANCHOR for the blading**: a stress / tip-Mach limit pinning `U` externally, or an annulus law `Vx(k)`.
 - **Fuel + bleed + STATOR** on one plant (rung 63's seam, untouched by 64/65).
-- **Rungs 69–83's seams — in each rung's spec, not here.** `n`=4 needs a 4th non-fuel lever or a non-`min` composition; every route TRIED (72–76, 80) is CLOSED.
+- **Rungs 69–84's seams — in each rung's spec, not here.** `n`=4 needs a 4th non-fuel lever or a non-`min` composition; every route TRIED (72–76, 80) is CLOSED.
 - **Rung 37's internal clocks on two shafts** + the combined 3-state; **customer/cooling bleed** at station 3.
 - **Afterburner**; a **real hardware/CFD map + surge line** (32's concession, doubled on two spools).
 - **Feeding a shifted/marched state into the production cycle** — a re-foundation, not a rung.
@@ -214,24 +214,22 @@ A compact map.
   FORWARD closure, then 63's READERS beside a fuel leg, built on `at_lever`) →
   `LimitedBleedTransient` (64: the `BleedLimiter` φ FLOOR, an outer root over closures) →
   `LaggedBleedTransient` (65: that limiter's `tau` makes the POSITION a third state) → then
-  **exactly ONE class per rung, 66→83**, `TwoLagCascadeTransient` (66) … `CorrectorLawTransient`
-  (83). Each adds ONE thing — a state, a clock, a knob, or (77/81/82/83) nothing but a reader — and
+  **exactly ONE class per rung, 66→84**, `TwoLagCascadeTransient` (66) … `StaircaseLawTransient`
+  (84). Each adds ONE thing — a state, a clock, a knob, or (77/81/82/83/84) nothing but a reader — and
   reduces to its predecessor; **each is named in its own spec's header, and what it adds, its
   method names and its reduce contract are there, not here** — so this entry never grows.
 - `main.py` — the design-point run: ideal-vs-real tables, the overlaid T–s diagram, and **one panel
   per rung** (each states that rung's load-bearing claim and its honest scope). It has NO test —
   check it on every ship.
-- `tests/` — per-rung `test_rungN.py` (N = 1…83; plus the rung-1/2b/3/4/5 files). Every rung file
-  carries that rung's **reduce-to-prior** gate plus its load-bearing claims — the gates are named in
-  the spec. `test_claude_md_reference.py` is the size guard on this file;
-  `test_phi_rate_limiter_negative.py` is the only NEGATIVE carrying a gate (it BOUNDS 49's
-  bracket, which no per-rung gate watches); and
+- `tests/` — per-rung `test_rungN.py` (N = 1…84; plus the rung-1/2b/3/4/5 files). Every rung file
+  carries that rung's **reduce-to-prior** gate plus its load-bearing claims.
+  `test_claude_md_reference.py` is the size guard on this file;
+  `test_phi_rate_limiter_negative.py` is the only NEGATIVE carrying a gate; and
   `test_numeric_fingerprint.py` is the only **ABSOLUTE-value** gate — the reduce spine compares
   two quantities from the SAME run, so it is blind to anything that moves both sides together.
   Its goldens are a committed **CPython** anchor; regenerating them needs CPython, never PyPy.
-- `docs/rungN-spec.md` — the derivation, assumptions, concessions and gates for rung N.
-  `docs/plans/rungN-anchor-*.md` — that rung's verified anchor data. `docs/plans/` also holds the
-  living plan/tasks.
+- `docs/rungN-spec.md` (contents: see the banner); `docs/plans/rungN-anchor-*.md` — that rung's
+  verified anchor data. `docs/plans/` also holds the living plan/tasks.
 
 ## Commands
 - Run the model: `python main.py` · Install: see `requirements.txt` (a PyPy venv — § Stack)

@@ -37,6 +37,7 @@ from turbojet.engine import (  # noqa: E402
     AuthorityClockTransient,
     ThresholdLawTransient,
     CorrectorLawTransient,
+    StaircaseLawTransient,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -6760,6 +6761,98 @@ def print_corrector_law_table(flight):
     print("    measured here only, and which ramps have roots at which ds is a two-parameter")
     print("    sweep this rung does not run. docs/rung83-spec.md s 7.")
 
+
+def print_staircase_law_table(flight):
+    """Rung-84 payoff: THE MARCHED MINIMUM'S STAIRCASE -- docs/rung83-spec.md s 8's first seam.
+
+    Rung 83 s 8 asked WHICH RAMPS HAVE ROOTS AND AT WHICH `ds`, calling the map the thing that
+    decides "whether rung 82's five-row table contains one discontinuity or several". The map is
+    ONE, and the mechanism under it names an object rung 83 did not have.
+
+    THE PANEL IS ss 1-2 AND THE MAP'S DECISIVE CELL, and the cut is disclosed: the shipped reader
+    also counts the lattice at five steps over a 16x range, resolves the summand profile, and
+    classifies all ten map cells (~400 marches, ~33 min). Those are TABLES; this is the MECHANISM.
+    docs/rung84-spec.md carries the rest, including the THREE refuted predictions.
+    """
+    print("\nTHE MARCHED MINIMUM'S STAIRCASE (rung 84): a minimum over a MARCHED set is not a")
+    print("  minimum at all -- it is a reading on a MOVING GRID BOUNDARY, so the residual")
+    print("  carries the march's own SAWTOOTH.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR = 0.55
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9,
+                   gamma_t=g, cp_t=cp, R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    sm = 0.80 / FLOOR - 1.0
+    m = StaircaseLawTransient(design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0,
+                              bleed_lim=BleedLimiter.from_margin(LP, 0.10, sm, tau=0.05),
+                              stator_lim=StatorLimiter.from_margin(LP, 0.20, sm, tau=0.05))
+    m._lag_coord, m._ref_law, m._windup_law, m._cap_law = "demand", "sched", "none", "solve"
+    kw = dict(flight=flight, Tt4_lo=1000.0, Tt4_hi=1400.0, Tt4_max=1200.0, phi_lim=0.75,
+              phi_air=0.77, tau_gov=0.05, tau_q=0.05, tau_s=0.05, s_settle=1.2,
+              v_max=0.20, inc=False)
+
+    print("\n  s 1  A MIN CANNOT JUMP. Rung 83 says F is a `min`, so it jumps at every handover.")
+    print("    A minimum over a FIXED finite set of continuous functions is CONTINUOUS -- it")
+    print("    KINKS where the argmin changes hands. A jump needs the SET to change. And the")
+    print("    argmin is not interior at all: it is the four-loop window's FIRST marched point.")
+    print("      ramp   tau        binding pt   window edge  on the grid   at the edge")
+    for r, tau in ((0.25, 0.0197), (0.35, 0.0371), (0.70, 0.0920)):
+        rd = m.edge_read(tau, **dict(kw, r=r, ds=0.005))
+        print("      %.2f   %.5f    %-10s   %-11s  %-12s  %s"
+              % (r, tau, rd["s_bind"], rd["edge"], rd["edge_on_grid"], rd["at_edge"]))
+    print("    Measured at 71 of 71 across five ramps, both shipped steps, both branches. So")
+    print("    rung 82's `min` is DECORATIVE: the object rungs 82 and 83 solve is an evaluation")
+    print("    on a boundary that sits on the march grid and moves in whole grid steps.")
+
+    print("\n  s 2  WHICH MAKES THE CLASSIFIER AN IDENTITY, NOT A THRESHOLD. On the points two")
+    print("    marches SHARE, the minimum is over a fixed set and so is continuous. Split the")
+    print("    difference there (SMOOTH) from the rest (MEMBERSHIP) and no tolerance is needed:")
+    print("      ramp   tau window             d(total)     SMOOTH       MEMBERSHIP   verdict")
+    for nm, r, lo, hi, ds in (("0.25", 0.25, 0.0197750, 0.0197875, 0.005),
+                              ("0.35", 0.35, 0.0370000, 0.0373330, 0.005)):
+        c = m.classify(m.edge_read(lo, **dict(kw, r=r, ds=ds)),
+                       m.edge_read(hi, **dict(kw, r=r, ds=ds)))
+        print("      %s   %.7f..%.7f  %+.4e  %+.4e  %+.4e  %s"
+              % (nm, lo, hi, c["d_full"], c["d_smooth"], c["d_membership"], c["kind"]))
+    print("    THE MEMBERSHIP TERM IS EXACTLY ZERO when the sets agree -- not small, zero. Rung")
+    print("    83's jump is the window OPENING ONE MARCH STEP EARLIER, and 99.4% of its step is")
+    print("    that one entering point; restricted to the shared points the sign change VANISHES.")
+    print("    (This panel uses main.py's R_c=286.9, so last digits differ from the spec's tables.)")
+
+    print("\n  s 3  SO ROOT EXISTENCE IS A PROPERTY OF THE PLANT **AND ITS RESOLUTION**. The same")
+    print("    ramp, one halving of the march step apart:")
+    print("      ramp   ds        bisected at   verdict     membership")
+    for ds in (0.005, 0.0025):
+        rc = m.root_class(bracket=(0.004, 0.30), **dict(kw, r=0.25, ds=ds))
+        print("      0.25   %-8g  %.6f      %-9s   %+.4e"
+              % (ds, rc["mid"], rc["kind"], rc["d_membership"]))
+    print("    Five ramps x both shipped steps: ONE cell of ten has no root, and it is rung 83's")
+    print("    own. So rung 82's five-row table contains exactly ONE discontinuity -- the seam's")
+    print("    question, answered.")
+
+    print("\n  WHAT THIS CORRECTS. Rung 83's `argmin_moved` flag fired at the RIGHT PLACE for the")
+    print("    WRONG REASON: an edge move FORCES an argmin move, never the reverse, and on this")
+    print("    plant the two are one event (0 counter-examples in 40 pairs). Verdict CONFIRMED,")
+    print("    reason CORRECTED -- rung 28's shape. And rung 82's ds control gets the SCALE it")
+    print("    lacked: it voids a threshold that moves by more than a BISECTION width, but the")
+    print("    sawtooth lets a root shift ~0.48*ds for an entirely benign reason -- twelve such")
+    print("    widths. The row it voids moves 5 of them, well inside.")
+    print("\n  HONEST SCOPE: one rig, one coordinate. THREE of seven registered predictions were")
+    print("    REFUTED, two of them because a ratio of SMALL INTEGER COUNTS cannot carry a rate.")
+    print("    The claim that refinement RELOCATES rather than removes a missing root was one of")
+    print("    them: measured absent/present/present/present over four steps. The shadow FRACTION")
+    print("    is ds-free by its factors; ten cells cannot test a rate. docs/rung84-spec.md s 8.")
+
+
 def main():
     # The tables carry unicode (Δ, ·, ≡, ≈); force UTF-8 so `python main.py` renders
     # on any console (a stock Windows cp1252 console would otherwise crash on them).
@@ -6926,6 +7019,8 @@ def main():
     print_authority_clock_table(FLIGHT)
     print_threshold_law_table(FLIGHT)
     print_corrector_law_table(FLIGHT)
+
+    print_staircase_law_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 

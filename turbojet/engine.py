@@ -22168,6 +22168,44 @@ class ThresholdLawTransient(AuthorityClockTransient):
 
     # --- the residual, and the two currencies it lives in --------------------------------------
 
+    def _scan_cells(self, flight, Tt4_lo, Tt4_hi, Tt4_max, phi_lim, phi_air, tau_f,
+                    tau_gov, tau_q, tau_s, r, s_settle, ds, v_max, inc):
+        """THE MARCH AND THE POINTS IT SCORES, factored out of `_threshold_scan` for rung 84.
+
+        `_threshold_scan` reduces this to COUNTS (`n_scored`, `n_riding4`), which is everything
+        rungs 82 and 83 needed and not enough for rung 84: a minimum over a set that CHANGES
+        cannot be told from one whose argmin merely moves without the point IDENTITIES. This
+        returns them, so the later reader duplicates no formula.
+
+        A PURE EXTRACT-METHOD -- the same calls in the same order, so `_threshold_scan`'s dict is
+        unmoved in every key by every bit. That claim is not asserted here, it is CERTIFIED by
+        rung 83's bit-exact reduce gate and by the `r82`/`r82r`/`r82t` fingerprint arms, all of
+        which carry `TOL = 0.0`."""
+        m, surge, lag, traj = self._split_march(
+            flight, Tt4_lo, Tt4_hi, Tt4_max, phi_lim, phi_air, "demand",
+            (tau_f, tau_gov, tau_q, tau_s), r, s_settle, ds, v_max, inc)
+        ride = self._riding4(traj, m.bleed_lim.b_max)
+        seen = {id(p) for p in ride}
+        cells = [self._criterion_at(traj, i, "demand", lag, tau_gov)
+                 for i, p in enumerate(traj) if id(p) in seen and 0 < i < len(traj) - 1]
+        return traj, ride, cells
+
+    @staticmethod
+    def _hats(cells, tau_gov):
+        """THE POINT-WISE IMPLIED THRESHOLD, and the residual whose ROOT is the fixed point.
+
+        `slope_f <= 0` is excluded BY NAME and counted: a non-rising cap makes `tau_hat` a
+        division by a sign the derivation does not cover, and silently dropping those points
+        would let an empty scan read as a confident `gov`."""
+        hats, n_bad = [], 0
+        for c in cells:
+            if c["slope_f"] <= 0.0:
+                n_bad += 1
+                continue
+            hats.append(((c["setpoint_gap"] + tau_gov * c["slope_r"]) / c["slope_f"],
+                         c["tau_f"], c["s"]))
+        return hats, n_bad
+
     def _threshold_scan(self, flight, Tt4_lo, Tt4_hi, Tt4_max, phi_lim, phi_air, tau_f,
                         tau_gov, tau_q, tau_s, r, s_settle, ds, v_max, inc) -> dict:
         """ONE march, reduced to the three numbers a threshold needs -- and to the flags that
@@ -22178,25 +22216,11 @@ class ThresholdLawTransient(AuthorityClockTransient):
         accessor the march integrates with -- assuming it would quote a 3x wrong constant at
         every releasing point (rung 81's `_criterion_at` carries the same warning, and here the
         number it protects is the answer rather than a label)."""
-        m, surge, lag, traj = self._split_march(
-            flight, Tt4_lo, Tt4_hi, Tt4_max, phi_lim, phi_air, "demand",
-            (tau_f, tau_gov, tau_q, tau_s), r, s_settle, ds, v_max, inc)
-        ride = self._riding4(traj, m.bleed_lim.b_max)
-        seen = {id(p) for p in ride}
+        traj, ride, cells = self._scan_cells(
+            flight, Tt4_lo, Tt4_hi, Tt4_max, phi_lim, phi_air, tau_f,
+            tau_gov, tau_q, tau_s, r, s_settle, ds, v_max, inc)
         maxT = max(p["Tt4"] for p in traj)
-        cells = [self._criterion_at(traj, i, "demand", lag, tau_gov)
-                 for i, p in enumerate(traj) if id(p) in seen and 0 < i < len(traj) - 1]
-        # THE POINT-WISE IMPLIED THRESHOLD, and the residual whose ROOT is the fixed point.
-        # `slope_f <= 0` is excluded BY NAME and counted: a non-rising cap makes `tau_hat` a
-        # division by a sign the derivation does not cover, and silently dropping those points
-        # would let an empty scan read as a confident `gov`.
-        hats, n_bad = [], 0
-        for c in cells:
-            if c["slope_f"] <= 0.0:
-                n_bad += 1
-                continue
-            hats.append(((c["setpoint_gap"] + tau_gov * c["slope_r"]) / c["slope_f"],
-                         c["tau_f"], c["s"]))
+        hats, n_bad = self._hats(cells, tau_gov)
         h = min((hat - te for hat, te, _ in hats), default=None)
         arg = min(hats, key=lambda t: t[0] - t[1]) if hats else None
         kap = sorted({round(c["tau_f"] / tau_f, 6) for c in cells}) if tau_f > 0.0 else []
@@ -22750,3 +22774,268 @@ class CorrectorLawTransient(ThresholdLawTransient):
                     # the residual is what a caller WITHOUT the answer can see; the error against
                     # a known root is scored outside, so this method never needs the root.
                     converged=(bool(trace) and abs(trace[-1]["g"]) < 1e-12 and not clamps))
+
+
+class StaircaseLawTransient(CorrectorLawTransient):
+    """RUNG 84. THE MARCHED MINIMUM'S STAIRCASE -- `docs/rung83-spec.md` s 8's first seam
+    (docs/rung84-spec.md).
+
+    Rung 83 s 8 asked WHICH RAMPS HAVE ROOTS AND AT WHICH `ds`, calling the `(r, ds)` map the
+    thing that "decides whether rung 82's five-row table contains one discontinuity or several".
+    The map is here -- and the mechanism underneath it turns the question over.
+
+    THIS RUNG ADDS NO STATE, NO KNOB AND NO CONSTANT -- the FIFTH reader-only rung (77, 81, 82,
+    83, 84). Every march it runs is `ThresholdLawTransient`'s, reached through `_scan_cells`,
+    which is that method's own march extracted verbatim. The reduce is therefore an IDENTITY.
+
+    > **HEADLINE -- A MINIMUM OVER A MARCHED SET IS NOT A MINIMUM AT ALL; IT IS AN EVALUATION ON
+    > A MOVING GRID BOUNDARY, SO THE RESIDUAL CARRIES THE MARCH'S OWN SAWTOOTH.** A `min` over a
+    > FIXED finite set of continuous functions is continuous -- it KINKS at a handover, it cannot
+    > JUMP. Rung 83's jump is the four-loop window opening one march step earlier, and the
+    > entering point binds immediately because the argmin IS the window's leading point (measured
+    > at 71 of 71). So `F(tau) = hat(ceil(s*(tau)/ds)*ds; tau)/kappa`, i.e.
+
+        h(tau; ds) = h_true(tau) + hat' * delta(tau, ds) + O(ds^2),   delta = s_edge - s* in [0,ds)
+
+    > -- the true residual plus a SAWTOOTH of amplitude `hat'*ds` on a lattice of tread
+    > `ds/|ds*/dtau|`. Rise and tread carry the same factor of `ds`, so the STAIRCASE NUMBER
+    > `Lambda = rise/tread` is a ratio of three PLANT slopes with no `ds` in it.
+
+    **CROSS-RUNG.** Rung 83's `argmin_moved` flag fired CORRECTLY and reported a CONSEQUENCE: an
+    edge move forces an argmin move, never the reverse. Verdict CONFIRMED, reason CORRECTED --
+    rung 28's shape. Rung 82's residual is BOUNDED: the `min` it is built as never binds away
+    from the window's first point on this plant. And rung 82 s 2's V5 -- which trips at `r = 0.35`
+    and which that rung could only name a category error -- GETS THE SCALE IT LACKED: a threshold
+    may move by the sawtooth's own `~0.48*ds` for an entirely benign reason, which is many
+    bisection widths.
+
+    **AND WHAT IT DOES NOT CLAIM.** That refinement RELOCATES rather than removes a missing root
+    was pre-registered (P6) and is **REFUTED**: at `r = 0.25` the sequence over four steps is
+    absent / present / present / present. The shadow FRACTION is `Lambda/(1+Lambda)` and is
+    `ds`-invariant by its factors; WHICH crossings it covers is the sawtooth's phase, and one
+    ramp over four steps cannot test a rate. See `docs/rung84-spec.md` s 6.
+
+    Usage:
+        t = StaircaseLawTransient(design, FLIGHT, 1.0, map_lp=..., map_hp=..., bleed_lim=bl)
+        t._lag_coord = "demand"
+        t.edge_read(0.02, **kw)                     # s 1: ONE march, the boundary reading
+        t.staircase_scan(0.019, 0.0206, 17, **kw)   # s 2: the ladder, every change classified
+        t.lattice_count(0.019, 0.0206, **kw)        # s 3: the COUNT, from TWO marches
+        t.root_class(**kw)                          # s 4: bisect, then classify EXACTLY
+
+    Anchor: `docs/plans/rung84-anchor-staircase-law.md`. Gates: `tests/test_rung84.py`.
+    """
+
+    # --- s 1: ONE MARCH, AND THE POINT IDENTITIES RUNG 82 REDUCED TO COUNTS --------------------
+
+    def edge_read(self, tau_f, **kw) -> dict:
+        """ONE march, returning the SET the minimum is taken over -- not merely its size.
+
+        `summands` is keyed by the march coordinate `s`, so two reads at neighbouring `tau` can
+        be DIFFERENCED point by point. That is the whole instrument: rung 83 could see that
+        `s_bind` moved and could not see whether the set it moved within was the same set.
+
+        `edge` is the window's FIRST riding point. `at_edge` says the minimum is attained there,
+        and if that is true everywhere then rung 82's `min` is a BOUNDARY READING (s 1.1).
+
+        Every number here comes off `_scan_cells` + `_hats` -- `ThresholdLawTransient`'s own march
+        and its own point-wise threshold, called once. No formula is restated in this class."""
+        traj, ride, cells = self._scan_cells(tau_f=tau_f, **kw)
+        hats, n_bad = self._hats(cells, kw["tau_gov"])
+        # `kappa` READ, never imposed -- rung 82's V4, inherited unchanged.
+        kap = sorted({round(c["tau_f"] / tau_f, 6) for c in cells}) if tau_f > 0.0 else []
+        pure = len(kap) == 1
+        # the summands, keyed by `s`. `round` to 9 places so two marches' grids compare as keys;
+        # `ds >= 6.25e-4` here, so 9 places cannot merge two distinct march points.
+        summ = {round(s, 9): hat - te for hat, te, s in hats}
+        edge = round(ride[0]["s"], 9) if ride else None
+        h = min(summ.values()) if summ else None
+        sb = min(summ, key=summ.get) if summ else None
+        ds = kw["ds"]
+        return dict(
+            tau_f=tau_f, r=kw["r"], ds=ds, h=h, kappa=(kap[0] if pure else None),
+            kappa_pure=pure, F=((h / kap[0] + tau_f) if pure and h is not None else None),
+            g=(h / kap[0] if pure and h is not None else None),
+            summands=summ, s_bind=sb, edge=edge,
+            # s 1.1: is the minimum attained AT the window's leading point?
+            at_edge=(sb is not None and sb == edge),
+            n_ride=len(ride), n_scored=len(summ), n_slope_excluded=n_bad,
+            window_open=len(ride) > 0,
+            riding4_valid=max(p["Tt4"] for p in traj) > kw["Tt4_lo"] * (1.0 + 1e-9),
+            # V3: s 1.2's `ceil` picture REQUIRES the edge to sit on the march grid. Checked, not
+            # assumed -- if it fails, no count below may be quoted.
+            edge_on_grid=(edge is not None and abs(edge / ds - round(edge / ds)) < 1e-9),
+            edge_index=(int(round(edge / ds)) if edge is not None else None))
+
+    # --- s 2: THE CLASSIFIER, AND IT IS EXACT --------------------------------------------------
+
+    @staticmethod
+    def classify(a: dict, b: dict) -> dict:
+        """Split `h(b) - h(a)` into a SMOOTH term and a MEMBERSHIP term, exactly.
+
+        On the points the two marches SHARE, the minimum is a min over a FIXED set and so is
+        continuous by construction: that difference is the SMOOTH term. Everything else is the
+        set having changed. The decomposition needs no tolerance and no threshold, which is the
+        upgrade over rung 83 s 3's `ratio = smallest_g/step` -- a number its own docstring had to
+        call "reported and never thresholded into a verdict here".
+
+        THE VERDICT IS THE SIGN CHANGE'S, not the difference's: a sign change of `g` is a
+        CROSSING iff it SURVIVES restriction to the common points. A staircase can step across
+        zero while the common-set reading never changes sign at all -- which is precisely rung 83
+        s 3.2's `r = 0.25`."""
+        sa, sb = set(a["summands"]), set(b["summands"])
+        common = sa & sb
+        ha = min((a["summands"][s] for s in common), default=None)
+        hb = min((b["summands"][s] for s in common), default=None)
+        sign_full = (a["h"] is not None and b["h"] is not None
+                     and (a["h"] > 0.0) != (b["h"] > 0.0))
+        sign_common = (ha is not None and hb is not None and (ha > 0.0) != (hb > 0.0))
+        d_full = (b["h"] - a["h"]) if (a["h"] is not None and b["h"] is not None) else None
+        d_common = (hb - ha) if (ha is not None and hb is not None) else None
+        return dict(
+            tau_lo=a["tau_f"], tau_hi=b["tau_f"],
+            entered=sorted(sb - sa), left=sorted(sa - sb),
+            set_changed=bool(sa != sb), argmin_moved=(a["s_bind"] != b["s_bind"]),
+            edge_moved=(a["edge"] != b["edge"]),
+            h_lo=a["h"], h_hi=b["h"], h_common_lo=ha, h_common_hi=hb,
+            d_full=d_full, d_smooth=d_common,
+            # EXACTLY zero when the sets agree -- P2's bar, and an identity rather than a bound
+            d_membership=(None if d_full is None or d_common is None else d_full - d_common),
+            sign_change=sign_full, sign_change_common=sign_common,
+            # THE VERDICT. `None` where there is no sign change to classify -- an unclassified
+            # pair must never read as either kind (rung 78's `ok` is not a correctness guard).
+            kind=(None if not sign_full else ("crossing" if sign_common else "jump")))
+
+    def staircase_scan(self, lo: float, hi: float, n: int = 17, **kw) -> dict:
+        """A `tau` ladder, with EVERY adjacent pair classified and the edge tracked.
+
+        Returns the census P1/P2/P4 are scored on. `n_edge_moves` is counted here the expensive
+        way -- from the ladder -- so that `lattice_count`'s two-march arithmetic has something to
+        be checked against (V4: the two agree only if the edge is monotone)."""
+        pts = [self.edge_read(lo + (hi - lo) * i / (n - 1.0), **kw) for i in range(n)]
+        pairs = [self.classify(a, b) for a, b in zip(pts, pts[1:])]
+        changes = [p for p in pairs if p["sign_change"]]
+        return dict(
+            lo=lo, hi=hi, n=n, points=pts, pairs=pairs, changes=changes,
+            # P1
+            n_at_edge=sum(1 for p in pts if p["at_edge"]), n_points=len(pts),
+            all_at_edge=all(p["at_edge"] for p in pts),
+            # P2 -- the two directions of the exact classifier, counted separately
+            n_sign_changes=len(changes),
+            n_crossings=sum(1 for c in changes if c["kind"] == "crossing"),
+            n_jumps=sum(1 for c in changes if c["kind"] == "jump"),
+            exact_zero_when_set_equal=all(
+                p["d_membership"] == 0.0 for p in pairs
+                if not p["set_changed"] and p["d_membership"] is not None),
+            nonzero_when_set_differs=all(
+                p["d_membership"] != 0.0 for p in pairs
+                if p["set_changed"] and p["d_membership"] is not None),
+            # P4 -- the counter-example, if the plant has one
+            n_argmin_only=sum(1 for p in pairs if p["argmin_moved"] and not p["set_changed"]),
+            n_set_only=sum(1 for p in pairs if p["set_changed"] and not p["argmin_moved"]),
+            n_edge_moves=sum(1 for p in pairs if p["edge_moved"]),
+            # V3/V4
+            all_on_grid=all(p["edge_on_grid"] for p in pts),
+            edge_monotone=all(a["edge_index"] >= b["edge_index"]
+                              for a, b in zip(pts, pts[1:])
+                              if a["edge_index"] is not None and b["edge_index"] is not None),
+            edge_indices=[p["edge_index"] for p in pts],
+            all_open=all(p["window_open"] for p in pts),
+            all_kappa_pure=all(p["kappa_pure"] for p in pts))
+
+    # --- s 3: THE COUNT, FROM TWO MARCHES ------------------------------------------------------
+
+    def lattice_count(self, lo: float, hi: float, **kw) -> dict:
+        """s 1.2's COUNT: the number of jumps in `[lo, hi]` is `(edge(lo) - edge(hi))/ds`.
+
+        TWO marches, and an INTEGER. Each jump moves the window's leading point by exactly one
+        grid step, so the count is the edge INDEX difference -- no ladder, no resolution
+        argument, and nothing to miss between samples.
+
+        IT IS ONLY VALID IF THE EDGE IS MONOTONE (V4), which two endpoints cannot see. The caller
+        must certify that with `staircase_scan` on the same window; `edge_monotone` there is the
+        licence for the number here, and this method says so rather than assuming it."""
+        a, b = self.edge_read(lo, **kw), self.edge_read(hi, **kw)
+        ok = (a["edge_index"] is not None and b["edge_index"] is not None
+              and a["edge_on_grid"] and b["edge_on_grid"])
+        return dict(lo=lo, hi=hi, ds=kw["ds"], r=kw["r"],
+                    edge_lo=a["edge"], edge_hi=b["edge"],
+                    index_lo=a["edge_index"], index_hi=b["edge_index"],
+                    n_jumps=(a["edge_index"] - b["edge_index"]) if ok else None,
+                    # `ds*/dtau`, the PLANT property the count divides by `ds` to get -- it must
+                    # come out the same at every `ds` if s 1.2 is right
+                    ds_star=((a["edge_index"] - b["edge_index"]) * kw["ds"]) if ok else None,
+                    slope_s_star=(((a["edge_index"] - b["edge_index"]) * kw["ds"]) / (hi - lo)
+                                  if ok else None),
+                    on_grid=ok, at_edge=(a["at_edge"], b["at_edge"]),
+                    void=(None if ok else "V3: an edge off the march grid"))
+
+    # --- s 4: THE STAIRCASE NUMBER, AND THE MAP ------------------------------------------------
+
+    def staircase_number(self, tau_lo: float, tau_hi: float, spacing: float = None,
+                         **kw) -> dict:
+        """`Lambda = RISE / TREAD` at ONE lattice event -- V5's whole content.
+
+        `tau_lo`/`tau_hi` must BRACKET exactly one edge move. The RISE is the membership term
+        alone, in `g`; the TREAD is the smooth drift across ONE LATTICE CELL. Both come off the
+        SAME event, because a rise from one cell over a tread from another is not a ratio (V5).
+
+        `spacing` IS AN ARGUMENT AND NOT A DERIVED NUMBER, and that is a correction rather than a
+        convenience. The obvious estimator -- a counting window divided by `lattice_count`'s
+        `n_jumps` -- takes the tread from an INTEGER quantized to +/-1, so at the counts this
+        plant gives (1, 3, 5 over the shipped window) it carries +/-100%, +/-33% and +/-20% of
+        pure quantization before any physics. THAT ESTIMATOR REFUTED THIS RUNG'S OWN P5, and the
+        same defect refuted P3's ratio bar. Passing the spacing puts the choice in the caller's
+        signature where it can be read, instead of hiding a quantized divide inside a method whose
+        output a spec would then have to silently correct.
+
+        With `spacing=None` the method returns the FACTORS and no `lam` -- which is the honest
+        state when the lattice spacing has not been measured to better than one grid step."""
+        a, b = self.edge_read(tau_lo, **kw), self.edge_read(tau_hi, **kw)
+        c = self.classify(a, b)
+        if not (a["kappa_pure"] and b["kappa_pure"]):
+            return dict(void="V2: kappa impure at an end of the bracket",
+                        tau_lo=tau_lo, tau_hi=tau_hi, rise=None, dg_dtau=None)
+        if c["d_membership"] is None or not c["edge_moved"]:
+            return dict(void=("V5: no edge move in [%g, %g]" % (tau_lo, tau_hi)),
+                        tau_lo=tau_lo, tau_hi=tau_hi,
+                        edge_moved=c.get("edge_moved"), rise=None, dg_dtau=None)
+        kap = a["kappa"]
+        dt = tau_hi - tau_lo
+        rise = abs(c["d_membership"]) / kap             # the JUMP in `g`, membership term alone
+        slope = abs(c["d_smooth"]) / kap / dt           # |dg/dtau| on the branch, from this pair
+        tread = (slope * spacing) if spacing else None
+        return dict(tau_lo=tau_lo, tau_hi=tau_hi, ds=kw["ds"], r=kw["r"], void=None,
+                    rise=rise, dg_dtau=slope, dtau=dt, spacing=spacing, tread=tread,
+                    lam=((rise / tread) if tread else None),
+                    entered=c["entered"], left=c["left"],
+                    d_membership=c["d_membership"], d_smooth=c["d_smooth"])
+
+    def root_class(self, bracket=(0.004, 0.30), n_bisect: int = 10, eps: float = 1e-7,
+                   **kw) -> dict:
+        """BISECT the residual, then say EXACTLY whether the sign change it found is a root.
+
+        Rung 82's `_bisect` is reused verbatim -- the same search law, so this differs from its
+        answer by the classification and by nothing else. The bracket it returns is then read at
+        both ends with `edge_read` and put through `classify`: a CROSSING iff the sign change
+        survives restriction to the points both ends share.
+
+        `eps` is NOT a classifier tolerance -- there is none. It only guards the degenerate case
+        of a bracket so narrow the two marches are the same float."""
+        bi = self._bisect(lambda s: s["h"] is not None and s["h"] < 0.0,
+                          bracket[0], bracket[1], n_bisect, **kw)
+        if bi.get("void"):
+            return dict(void=bi["void"], r=kw["r"], ds=kw["ds"], kind=None, root_exists=None)
+        a, b = bi["lo"], bi["hi"]
+        if b - a < eps:
+            return dict(void="V6: bracket narrower than %g" % eps, r=kw["r"], ds=kw["ds"],
+                        kind=None, root_exists=None)
+        c = self.classify(self.edge_read(a, **kw), self.edge_read(b, **kw))
+        return dict(r=kw["r"], ds=kw["ds"], void=None, lo=a, hi=b, mid=0.5 * (a + b),
+                    width=b - a, kind=c["kind"], root_exists=(c["kind"] == "crossing"),
+                    set_changed=c["set_changed"], argmin_moved=c["argmin_moved"],
+                    edge_moved=c["edge_moved"], entered=c["entered"], left=c["left"],
+                    d_full=c["d_full"], d_smooth=c["d_smooth"],
+                    d_membership=c["d_membership"],
+                    h_lo=c["h_lo"], h_hi=c["h_hi"],
+                    h_common_lo=c["h_common_lo"], h_common_hi=c["h_common_hi"])
