@@ -21760,3 +21760,356 @@ class SplitWallTransient(StateCoordinateTransient):
                                          for c in cells_all if c["masked"] == "gov"),
                                         default=None),
                     max_mask_leak=max((c["mask_leak"] for c in cells_all), default=None))
+
+
+class AuthorityClockTransient(SplitWallTransient):
+    """RUNG 81. THE AUTHORITY CLOCK -- `docs/rung80-spec.md` s 10's first seam, and the one
+    noun rungs 72-80 held fixed without ever saying so (docs/rung81-spec.md).
+
+    Rung 72 established that under `min` exactly ONE fuel-side leg reaches the actuator and the
+    other is MASKED with an identically zero column. Every cell measured since -- rungs 72 to 80,
+    and all ELEVEN of rung 80's four-loop cells -- had the SAME leg holding: the `Tt4` governor.
+    So `n_live <= 3` has been read six times off a single side of a switch, and rung 80 s 10
+    booked the other side as untested.
+
+    THIS RUNG ADDS NO STATE, NO KNOB AND NO CONSTANT -- rung 77's precedent, and here it is
+    forced rather than chosen: the knob that decides the switch turns out to be one the plant has
+    carried since rung 47.
+
+    > **HEADLINE -- AUTHORITY IS DECIDED BY THE LAG, NOT BY THE SET POINT.** In `demand` each
+    > leg's state is the fuel it ALLOWS, tracking a rising cap through a first-order lag, so it
+    > sits BELOW that cap by the ramp-tracking error `tau * dc/ds`. `min` then hands the actuator
+    > to the leg with the smaller state -- which is the SLOWER leg, not the leg whose own limit
+    > is the more severe. The two nouns can disagree in SIGN, and where they do, the leg
+    > DEMANDING the deeper cut is not the leg SETTING the fuel.
+
+    THE CRITERION, derived from rung 74's own law with nothing added (anchor s 1):
+
+        w ~ c - tau * dc/ds                        a lag tracking a ramp
+        c_f - c_r = required_gov - required_fuel    because `required = mf_sched - c`
+
+        FUEL HOLDS  IFF   required_gov - required_fuel   <   tau_f * dc_f/ds - tau_gov * dc_r/ds
+                             [the SET-POINT gap]              [the LAG-ERROR gap]
+
+    a race between two differences, both already in the shipped trajectory dict.
+
+    > **AND THE SIGN OF THE `tau_f` TERM FLIPS WITH THE COORDINATE.** In `clip` the state is the
+    > CUT, lagging `required` FROM BELOW, so a slower leg has a SMALLER cut and LESS authority:
+    > the same inequality holds with `tau_f * d(required_f)/ds` and `tau_gov * d(required_r)/ds`
+    > EXCHANGED. Rung 74 called a state's coordinate *pure bill -- no rank, all trajectory*.
+    > It is: the bill has no rank of its own. What it does instead is **choose which leg is
+    > masked**, and therefore which rows of the Jacobian are the zero ones.
+
+    THE RANK CLAIM IS NOT MOVED AND IS NOT RE-DERIVED. `min` is flat in the masked leg whichever
+    leg that is, so `n_live <= 3` is rung 72's result and this rung tests only that it is
+    SYMMETRIC in the switch -- the mirror cell, measured for the first time.
+
+    Usage:
+        t = AuthorityClockTransient(design, FLIGHT, 1.0, map_lp=..., map_hp=..., bleed_lim=bl)
+        t._lag_coord = "demand"
+        t.authority_clock(FLIGHT, 1000., 1400., 1200.)   # s 1-3: the grid, and the criterion
+        t.authority_mask(FLIGHT, 1000., 1400., 1200.)    # s 4-5: the MIRROR mask
+
+    THE REDUCE IS AN IDENTITY, and that is the whole contract of a reader-only rung: at rung
+    80's clocks and walls this class's march must be `SplitWallTransient`'s TO THE LAST BIT, and
+    its four-loop set rung 80's own. A reader-only rung whose march moved would be a rung-80
+    regression wearing a new class name.
+
+    Anchor: `docs/plans/rung81-anchor-authority-clock.md`. Gates: `tests/test_rung81.py`.
+    """
+
+    # --- the criterion, read off the SHIPPED trajectory ---------------------------------------
+
+    @staticmethod
+    def _central(traj, i: int, key: str) -> float:
+        """`d(key)/ds` by central difference. The march runs at a FIXED `ds`, so the spacing is
+        taken from `s` itself and never reconstructed from the step count."""
+        return ((traj[i + 1][key] - traj[i - 1][key])
+                / (traj[i + 1]["s"] - traj[i - 1]["s"]))
+
+    def _criterion_at(self, traj, i: int, coord: str, lag, tau_gov: float) -> dict:
+        """THE ANCHOR s 1 RACE, at one INTERIOR trajectory index, in whichever coordinate the
+        march ran.
+
+        `tau_f` is NOT the swept constant: rung 52's lag is asymmetric, so the fuel leg's active
+        clock is read through the SAME accessor the march integrates with (`_demand_tau`, whose
+        argument swap rung 74 s 0.4 gates) -- assuming attack here would quote a 3x wrong clock
+        on any point where the leg is releasing, and every disagreement it caused would have
+        been read as the criterion failing.
+
+        The governor has no such asymmetry: `dwr = (tr - wr) / tau_gov` is the march, verbatim."""
+        p = traj[i]
+        gap = p["required_gov"] - p["required_fuel"]          # the SET-POINT gap
+        if coord == "demand":
+            tau_f = self._demand_tau(lag, p["cap_fuel"], p["w_fuel"])
+            lag_gap = (tau_f * self._central(traj, i, "cap_fuel")
+                       - tau_gov * self._central(traj, i, "cap_gov"))
+        else:
+            # THE COORDINATE'S OWN SIGN: the clip state lags `required` from BELOW, so the two
+            # tau terms EXCHANGE. This is the half of the rung that is a prediction and not an
+            # observation, and writing it as one expression with a swapped pair is deliberate --
+            # a second formula would hide that it is the SAME race.
+            tau_f = lag.tau(p["required_fuel"], p["g_fuel"])
+            lag_gap = (tau_gov * self._central(traj, i, "required_gov")
+                       - tau_f * self._central(traj, i, "required_fuel"))
+        scale = max(abs(gap), abs(lag_gap))
+        return dict(s=p["s"], setpoint_gap=gap, lag_gap=lag_gap, tau_f=tau_f, tau_gov=tau_gov,
+                    # THE TWO SLOPES, SEPARATELY -- because the grid's own answer turns on their
+                    # RATIO and not on the clocks': a term `tau_f * e_f` can dominate
+                    # `tau_gov * e_r` at EQUAL clocks, and reporting only the product would
+                    # leave that unreadable.
+                    slope_f=(self._central(traj, i, "cap_fuel") if coord == "demand"
+                             else self._central(traj, i, "required_fuel")),
+                    slope_r=(self._central(traj, i, "cap_gov") if coord == "demand"
+                             else self._central(traj, i, "required_gov")),
+                    predicted="fuel" if gap < lag_gap else "gov",
+                    measured=p["authority"],
+                    # HOW FAR FROM THE TIE, so a disagreement can be placed rather than counted.
+                    # The quasi-steady form is exact only where `dc/ds` is constant, so its
+                    # errors are PREDICTED to sit near zero margin (anchor P1).
+                    margin=(lag_gap - gap) / scale if scale > 0.0 else 0.0)
+
+    # --- s 1-3: THE GRID, BOTH COORDINATES ----------------------------------------------------
+
+    def authority_clock(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                        Tt4_max: float, phi_lim: float = 0.75, phi_air: float = 0.77,
+                        tau_fs=(0.02, 0.05, 0.08, 0.10, 0.12, 0.20),
+                        tau_govs=(0.02, 0.05, 0.20),
+                        tau_q: float = 0.05, tau_s: float = 0.05,
+                        coords=("demand", "clip"), r: float = 0.5, s_settle: float = 1.2,
+                        ds: float = 0.005, v_max: float = 0.20, inc: bool = False) -> dict:
+        """s 1-3 MEASURED: **who holds the actuator, over a clean `(tau_f, tau_gov)` grid.**
+
+        ONE KNOB PER AXIS, and it is the anchor's own control 3: `tau_q` and `tau_s` are held
+        FIXED at rung 80's values across the whole grid. The s 0 pre-check that found the mirror
+        cell moved the fuel clock, the governor clock AND the valve clock in one step, so it
+        could not say which one opened it -- separating them is this reader's first job.
+
+        THE DIAGONAL IS THE CONTROL. `tau_f == tau_gov == 0.05` is rung 80's own cell at rung
+        80's own walls and must reproduce its result (33 four-loop points, all `gov`); a grid
+        that disagrees there is not the shipped plant.
+
+        `riding4_valid` is carried on every row and the census must never be read without it --
+        rung 80 s 8's frozen plant reported 320 four-loop points having never moved."""
+        rows, sigs = [], {}
+        for coord in coords:
+            for tf in tau_fs:
+                for tg in tau_govs:
+                    m, surge, lag, traj = self._split_march(
+                        flight, Tt4_lo, Tt4_hi, Tt4_max, phi_lim, phi_air, coord,
+                        (tf, tg, tau_q, tau_s), r, s_settle, ds, v_max, inc)
+                    b_max = m.bleed_lim.b_max
+                    # THE WHOLE MARCH, not a scalar off it. An exact-invariance claim resting on
+                    # one reduced number is this project's own recorded way of being wrong
+                    # (rung 77's closure returned a perfect 1.000e+00 having outlived its state
+                    # block), so the `tau_f` column is compared on all 341 points x 4 plant
+                    # states. Kept LOCAL: the booleans are returned, the 49k floats are not.
+                    sigs.setdefault((coord, tg), []).append(
+                        tuple(p[k] for p in traj for k in ("phi_lp", "Tt4", "b", "v")))
+                    maxT = max(p["Tt4"] for p in traj)
+                    ride = self._riding4(traj, b_max)
+                    seen = {id(p) for p in ride}
+                    cells, edge = [], 0
+                    for i, p in enumerate(traj):
+                        if id(p) not in seen:
+                            continue
+                        if i == 0 or i == len(traj) - 1:
+                            edge += 1          # no central difference exists -- COUNTED, V5
+                            continue
+                        cells.append(self._criterion_at(traj, i, coord, lag, tg))
+                    census = {}
+                    for p in ride:
+                        census[p["authority"]] = census.get(p["authority"], 0) + 1
+                    agree = [c for c in cells if c["predicted"] == c["measured"]]
+                    bad = [c for c in cells if c["predicted"] != c["measured"]]
+                    rows.append(dict(
+                        coord=coord, tau_f=tf, tau_gov=tg, tau_q=tau_q, tau_s=tau_s,
+                        phi_lim=phi_lim, phi_air=phi_air, max_Tt4=maxT,
+                        riding4_valid=maxT > Tt4_lo * (1.0 + 1e-9),
+                        n_riding4=len(ride), census=census,
+                        n_fuel=census.get("fuel", 0), n_gov=census.get("gov", 0),
+                        # THE CRITERION, scored point by point
+                        n_scored=len(cells), n_edge=edge, n_agree=len(agree),
+                        agreement=len(agree) / len(cells) if cells else None,
+                        # a MISS is only excused if it sits near the tie -- reported, not assumed
+                        worst_miss=max((abs(c["margin"]) for c in bad), default=None),
+                        min_margin=min((abs(c["margin"]) for c in cells), default=None),
+                        cells=cells))
+        # THE SECOND CONTROL, and the anchor fixed it in advance: `clip` at the SHARED wall is
+        # the ONE cell in this family already known to carry a fuel-authority point (rung 80
+        # s 5, `s = 0.135`). Without it in the same table, `clip`'s empty fuel region at the
+        # SPLIT wall is a reader that cannot say `fuel` rather than a plant that does not.
+        # AND IT IS SWEPT IN `tau_f`, WHICH IS WHAT MAKES THE INERTNESS ABOVE NON-TAUTOLOGICAL.
+        # If `tau_f` were inert in `clip` FULL STOP, "the clock is a null knob there" would be a
+        # statement about the coordinate. It is not: at the SHARED wall the fuel leg DOES take
+        # the actuator on part of the ramp (rung 80 s 5), and there the same 10x sweep must MOVE
+        # the march. Inert where the leg is masked, live where it is not -- rung 72's block,
+        # read on the plant.
+        ctl_rows, ccensus = [], {}
+        for tf in tau_fs:
+            cm, _, _, ctraj = self._split_march(
+                flight, Tt4_lo, Tt4_hi, Tt4_max, phi_lim, None, "clip",
+                (tf, 0.05, tau_q, tau_s), r, s_settle, ds, v_max, inc)
+            cride = self._riding4(ctraj, cm.bleed_lim.b_max)
+            cc = {}
+            for p in cride:
+                cc[p["authority"]] = cc.get(p["authority"], 0) + 1
+            ctl_rows.append(dict(tau_f=tf, n_riding4=len(cride), census=cc,
+                                 n_fuel=cc.get("fuel", 0),
+                                 max_Tt4=max(p["Tt4"] for p in ctraj)))
+            if tf == 0.05:
+                ccensus = cc
+
+        val = [x for x in rows if x["riding4_valid"]]
+        dem = [x for x in val if x["coord"] == "demand"]
+        ctl = [x for x in dem if x["tau_f"] == x["tau_gov"] == 0.05]
+        scored = [x for x in val if x["n_scored"] > 0]
+        return dict(phi_lim=phi_lim, phi_air=phi_air, tau_fs=tau_fs, tau_govs=tau_govs,
+                    tau_q=tau_q, tau_s=tau_s, coords=coords, ds=ds, rows=rows,
+                    # THE CONTROL, first: rung 80's own cell, at rung 80's own clocks
+                    control_all_gov=bool(ctl) and all(x["n_fuel"] == 0 and x["n_gov"] > 0
+                                                      for x in ctl),
+                    control_n_riding4=[x["n_riding4"] for x in ctl],
+                    # THE READER CAN SAY `fuel` IN `clip`, on this rig, at matched clocks
+                    control_clip_shared=ccensus,
+                    control_clip_fuel=ccensus.get("fuel", 0),
+                    control_clip_rows=ctl_rows,
+                    # ... and where the fuel leg HOLDS, its clock is NOT inert
+                    control_clip_tau_f_live=len({x["max_Tt4"] for x in ctl_rows}) > 1,
+                    # V4: fuel authority EVERYWHERE would mean the reader is not reading the
+                    # clock at all, and it would contradict a measured pre-check fact
+                    all_fuel=bool(val) and all(x["n_gov"] == 0 for x in val),
+                    # P1: the criterion, worst cell on the grid
+                    agreement=min((x["agreement"] for x in scored), default=None),
+                    n_scored=sum(x["n_scored"] for x in val),
+                    worst_miss=max((x["worst_miss"] for x in val
+                                    if x["worst_miss"] is not None), default=None),
+                    # P2/P3: WHERE the fuel leg holds, per coordinate -- the two regions
+                    fuel_cells={c: sorted((x["tau_f"], x["tau_gov"], x["n_fuel"])
+                                          for x in val
+                                          if x["coord"] == c and x["n_fuel"] > 0)
+                                for c in coords},
+                    # the SIDE of the diagonal each coordinate's fuel region sits on
+                    fuel_side={c: sorted({("slow_fuel" if x["tau_f"] > x["tau_gov"]
+                                           else "fast_fuel" if x["tau_f"] < x["tau_gov"]
+                                           else "matched")
+                                          for x in val
+                                          if x["coord"] == c and x["n_fuel"] > 0})
+                               for c in coords},
+                    # THE MASKED LEG'S CLOCK, READ AS A TRAJECTORY INVARIANCE. Rung 72's block
+                    # says `min` is FLAT in the masked leg, so wherever that leg never takes the
+                    # actuator its OWN clock can reach nothing -- and the whole `tau_f` column
+                    # must then collapse onto one march. This is that claim as an EXACT float
+                    # comparison on the plant rather than as a zero in a Jacobian, and it is
+                    # free: no extra march, just the rows already in hand grouped by `tau_gov`.
+                    tau_f_inert=self._tau_f_inert(rows, sigs, coords, tau_govs),
+                    n_invalid=len(rows) - len(val))
+
+    @staticmethod
+    def _tau_f_inert(rows, sigs, coords, tau_govs) -> dict:
+        """Per `(coord, tau_gov)` column: does EVERY `tau_f` give the SAME MARCH?
+
+        Compared BIT-FOR-BIT over all 341 points x `phi_lp`/`Tt4`/`b`/`v` -- no tolerance, and
+        deliberately not a scalar. An inert knob changes NOTHING; a tolerance here would let a
+        small real motion read as inertness, and a reduced number would let a compensating pair
+        do the same. `n_differing` counts the floats that move against the column's first row,
+        so a `False` says how far from inert as well as that it is not.
+
+        `None` where the column has fewer than two rows to compare."""
+        out = {}
+        for c in coords:
+            for tg in tau_govs:
+                col = [x for x in rows if x["coord"] == c and x["tau_gov"] == tg]
+                sg = sigs.get((c, tg), [])
+                if len(col) < 2 or len(sg) != len(col):
+                    out[f"{c}@{tg}"] = None
+                    continue
+                nd = max(sum(1 for a, b in zip(sg[0], s) if a != b) for s in sg[1:])
+                out[f"{c}@{tg}"] = dict(
+                    n_tau_f=len(col), n_floats=len(sg[0]), n_differing=nd,
+                    march_identical=nd == 0,
+                    Tt4_identical=len({x["max_Tt4"] for x in col}) == 1,
+                    riding4_identical=len({x["n_riding4"] for x in col}) == 1,
+                    n_riding4=sorted({x["n_riding4"] for x in col}),
+                    all_valid=all(x["riding4_valid"] for x in col))
+        return out
+
+    # --- s 4-5: THE MIRROR MASK ---------------------------------------------------------------
+
+    def authority_mask(self, flight: "FlightCondition", Tt4_lo: float, Tt4_hi: float,
+                       Tt4_max: float, phi_lim: float = 0.75, phi_air: float = 0.77,
+                       clocks=((0.20, 0.05, 0.05, 0.05), (0.05, 0.05, 0.05, 0.05)),
+                       coord: str = "demand", r: float = 0.5, s_settle: float = 1.2,
+                       ds: float = 0.005, v_max: float = 0.20, inc: bool = False,
+                       every: int = 1) -> dict:
+        """s 4-5 MEASURED: **rung 72's block, read on the OTHER side of the switch.**
+
+        Every mask measurement rungs 72-80 made had the GOVERNOR authoritative and the FUEL leg
+        masked. This reader runs the identical twelve-gain instrument over cells where the FUEL
+        leg holds, and asks whether `min`'s block is symmetric in the switch: one authority per
+        interior point, `mask_leak` EXACTLY zero, `n_live <= 3` a seventh time.
+
+        THE CONTROL IS THE TABLE'S OWN SECOND ROW, and it is better than rung 80's because both
+        branches appear on ONE code path: the cyclic product must be ZERO where the fuel leg is
+        masked (`min` is flat in it) and rung 66's ~1 where the GOVERNOR is -- so `cyc = 0` is
+        falsifiable HERE rather than by importing a number from another arm. A table showing one
+        regime only is reported as such and scores nothing (anchor V1/V3)."""
+        out = []
+        for taus in clocks:
+            m, surge, lag, traj = self._split_march(
+                flight, Tt4_lo, Tt4_hi, Tt4_max, phi_lim, phi_air, coord, taus, r, s_settle,
+                ds, v_max, inc)
+            maxT = max(p["Tt4"] for p in traj)
+            pts = self._riding4(traj, m.bleed_lim.b_max)
+            cells, skipped = [], dict(switch=0, regime=0)
+            for p in pts[::every]:
+                gg = m._with_share("max", m._quad_gains_at, flight, p, None, surge, Tt4_max)
+                if not gg["interior"]:
+                    skipped["switch" if gg.get("near_switch") else "regime"] += 1
+                    continue
+                tau_f = lag.tau(p["required_fuel"], p["g_fuel"])
+                tt = (tau_f, taus[1], taus[2], taus[3])
+                coef = m._charpoly4(m._jac4(gg, tt))
+                roots = m._quartic_roots_c(coef)
+                rate = sum(1.0 / t for t in tt)
+                cells.append(dict(
+                    s=p["s"], phi=p["phi_lp"], authority=gg["authority"], masked=gg["masked"],
+                    mask_leak=gg["mask_leak"], c1=coef[3], c0=coef[4],
+                    zeros=sum(1 for z in roots if abs(z) < 1e-4 * rate),
+                    cyc=max(abs(gg["F_q"] * gg["C_v"] * gg["V_f"]),
+                            abs(gg["F_v"] * gg["V_q"] * gg["C_f"]))))
+            by = {}
+            for c in cells:
+                d = by.setdefault(c["authority"], dict(n=0, max_cyc=0.0, max_leak=0.0,
+                                                       zeros=set()))
+                d["n"] += 1
+                d["max_cyc"] = max(d["max_cyc"], c["cyc"])
+                d["max_leak"] = max(d["max_leak"], abs(c["mask_leak"]))
+                d["zeros"].add(c["zeros"])
+            for d in by.values():
+                d["zeros"] = sorted(d["zeros"])
+            out.append(dict(taus=taus, riding4_valid=maxT > Tt4_lo * (1.0 + 1e-9),
+                            max_Tt4=maxT, n_riding=len(pts), n_sampled=len(pts[::every]),
+                            n_interior=len(cells), skipped=skipped, by_authority=by,
+                            cells=cells))
+        alive = [a for a in out if a["riding4_valid"]]
+        cells_all = [c for a in alive for c in a["cells"]]
+        fuel = [c for c in cells_all if c["authority"] == "fuel"]
+        gov = [c for c in cells_all if c["authority"] == "gov"]
+        return dict(coord=coord, clocks=clocks, phi_lim=phi_lim, phi_air=phi_air, ds=ds,
+                    arms=out,
+                    # THE VACUITY FLAGS, first and unconditional
+                    vacuous=not fuel or not gov,
+                    n_fuel_interior=len(fuel), n_gov_interior=len(gov),
+                    all_differenced=all(a["skipped"]["switch"] == 0
+                                        and a["skipped"]["regime"] == 0 for a in alive),
+                    # P4: the block, on BOTH sides of the switch
+                    ever_two_authorities=any(c["authority"] not in ("fuel", "gov")
+                                             for c in cells_all),
+                    max_mask_leak=max((abs(c["mask_leak"]) for c in cells_all), default=None),
+                    # THE DISCRIMINATOR, both branches on one code path
+                    cyc_fuel_auth=max((c["cyc"] for c in fuel), default=None),
+                    cyc_gov_auth=max((c["cyc"] for c in gov), default=None),
+                    # P5: REPORTED, never gated (rung 80 s 8's discipline)
+                    zeros_fuel_auth=sorted({c["zeros"] for c in fuel}),
+                    zeros_gov_auth=sorted({c["zeros"] for c in gov}))

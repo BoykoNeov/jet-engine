@@ -147,3 +147,35 @@ its four-loop set must be rung 80's own. A reader-only rung whose march moved wo
 regression wearing a new class name.
 
 ## 6a. SCORED — APPENDED AFTER THE SWEEPS, WITH NOTHING ABOVE EDITED
+
+Tables and derivations: `docs/rung81-spec.md`. Two of the five predictions are split verdicts and
+neither half is rounded into the other.
+
+| # | verdict |
+|---|---|
+| **P1** | **SPLIT.** The `≥ 95 %` threshold **HOLDS** — 1 045 of 1 054 points (99.15 %), worst single cell **95.24 %**. Its *"misses within 10 %"* clause is **REFUTED at its own line**: 3 of the 9 misses exceed it, worst **11.77 %**. Not gated, for that reason |
+| **P2** | **CONFIRMED.** `τ_q` pinned at 0.05 across the whole grid and the fuel region still opens, from `τ_f = 0.08`. The pre-check's confound is discharged |
+| **P3** | **WORDING REFUTED, MECHANISM CONFIRMED.** No opposite-side region exists at the split wall — `clip` has **0 fuel cells of 18**. The sign flip is real but appears only on the shared-wall **control** (13 → 3 fuel-held points across a 10× `τ_f` sweep, monotone) |
+| **P4** | **CONFIRMED.** `mask_leak == 0` exactly on **both** sides of the switch, one authority per interior point, `ever_two_authorities` False |
+| **P5** | **REFUTED.** `zeros = {1}` in both regimes — it does not move by one. Reported, never gated, exactly as registered |
+
+**THE HEADLINE IS NOT AMONG THEM, AND WAS NOT PREDICTED.** § 3: in `clip` at the split wall the
+fuel leg is masked throughout, and a **10× sweep of its own time constant moves 0 of 1 364
+floats** — at all three governor clocks — while the same sweep at the shared wall is live. Rung
+72's *"`min` is flat in the masked leg"* as an exact invariance of the plant.
+
+**THE VACUITY CONDITIONS, SCORED.** V1 did not fire (47 and 33 interior points, both regimes
+present). V2 did not fire (`n_invalid = 0`; every row marched). V3 did not fire (the `clip`
+control carries 7 fuel-held points). V4 did not fire (`all_fuel` False). V5 could not fire —
+`_riding4` already requires both demands positive, and **0** points were dropped as trajectory
+edges, so the exclusion was empty rather than untested.
+
+**ONE METHOD NOTE, RECORDED BECAUSE IT NEARLY WENT THE OTHER WAY.** The first grid
+(`τ_f ∈ {0.02, 0.05, 0.20}`) scored the criterion at **506 of 506 — a perfect 100 %** with the
+closest point **25 % from the tie**. That is a test with no hard cases in it. Refining the axis to
+put points at `9e-04` of the tie produced the nine misses and the 99.15 %. **The lower number is
+the stronger measurement**, and the perfect one would have been the finding had the grid not been
+refined.
+
+**THE REDUCE HELD**: 0 differing values over 341 points × 8 keys. **GATES**: `tests/test_rung81.py`,
+12 tests, all green.

@@ -78,6 +78,7 @@ these lines (the same rule CLAUDE.md lives under).
 - [Rung 78 residual gauge](rung78-residual-gauge.md) — a residual's SLOPE is a GAUGE, its root's UNIQUENESS is not; THREE vacuity traps in one section (wrong coordinate, a counter that was itself vacuous, masking) — only COUNTING caught them; `ok` is not a correctness guard
 - [Rung 79 state coordinate](rung79-state-coordinate.md) — a coordinate is a GAUGE the PLANT cannot REACH (the branch making a leg AUTHORITATIVE restores the original coordinate); registering the VACUITY CONDITION beat registering the result; first rung to pay its CLAUDE.md row with no bump
 - [Rung 80 split wall](rung80-split-wall.md) — a LEVEL split opens the four-loop cell but never a fourth AUTHORITATIVE loop; the seam had named the wrong NOUN, all three pre-registered predictions were refuted, and the arrest turned out to be the two walls' COINCIDENCE
+- [Rung 81 authority clock](rung81-authority-clock.md) — authority is the LAG's not the SET POINT's, and a masked leg's clock is an EXACT null knob (0 of 1364 floats); the first grid's 100% was the WEAKER measurement, and a pre-check answered the seam before the anchor existed
 
 ## Margin sweeps — confirmations, not rungs
 - [Rungs 72–77 march audit](rungs72-77-march-audit.md) — the arrest is rung 74 § 2.2's and it already owned it; a seam's section number does not survive the rungs it points at; a liveness counter on a FROZEN plant reports FULL activity

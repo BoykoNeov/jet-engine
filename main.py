@@ -34,6 +34,7 @@ from turbojet.engine import (  # noqa: E402
     ResidualGaugeTransient,
     StateCoordinateTransient,
     SplitWallTransient,
+    AuthorityClockTransient,
 )
 from turbojet.gas import (  # noqa: E402
     Gas, JetMixing, Unmixedness, MixingPDF, QuenchPDF, PocketQuenchPDF, TransportedPDF, SpatialPDF,
@@ -6463,6 +6464,106 @@ def print_split_wall_table(flight):
     print("    CORRECTS rung 74 s 2.2. See docs/rung80-spec.md.")
 
 
+def print_authority_clock_table(flight):
+    """Rung-81 payoff: THE AUTHORITY CLOCK -- docs/rung80-spec.md s 10's first seam.
+
+    Rungs 72-80 read `n_live <= 3` six times off ONE side of a switch: every cell measured had
+    the Tt4 governor holding the actuator. This panel throws the switch, and is built around the
+    two readings that follow -- the MECHANISM (authority is the lag's, not the set point's) and
+    its most extreme consequence (a masked leg's own clock is exactly inert).
+
+    THE GRID IS CUT, and the cut is disclosed rather than implied: the shipped reader sweeps six
+    fuel clocks x three governor clocks x two coordinates (36 marches, ~55 s). This panel runs
+    the two ENDPOINTS of the fuel axis at one governor clock -- enough to carry both readings,
+    and not enough to locate the threshold between them (that number is in the spec, measured on
+    the full grid)."""
+    print("\nTHE AUTHORITY CLOCK (rung 81): authority is decided by the LAG, not by the SET")
+    print("  POINT -- so a leg that never holds the actuator has no clock at all.")
+
+    losses = dict(pi_d=0.97, eta_lpc=0.90, eta_hpc=0.88, eta_b=0.99, pi_b=0.96,
+                  eta_hpt=0.92, eta_lpt=0.90, eta_m=0.99, pi_n=0.98)
+    FLOOR = 0.55
+    LP = ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7).with_phi_surge(FLOOR)
+    HP = ComponentMap(a=0.08, b=0.15, sigma=0.1, l=1.0).with_phi_surge(FLOOR)
+
+    def cpg():
+        g, cp = 1.3, 1239.0
+        return Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=g, cp_t=cp,
+                   R_t=(g - 1.0) / g * cp, hPR=42.8e6)
+
+    design = build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, flight.p0,
+                                      nozzle_convergent=True, **losses)
+    LO, HI, B, TMAX = 1000.0, 1400.0, 0.10, 1200.0
+    # RUNG 80's OWN WALLS, unchanged -- a wall sweep is refused here because it would confound
+    # the clock with the set-point gap, which is what the criterion below is a statement about.
+    PHI_FUEL, PHI_AIR, sm = 0.75, 0.77, 0.80 / FLOOR - 1.0
+
+    def rig():
+        m = AuthorityClockTransient(
+            design, flight, 1.0, map_lp=LP, map_hp=HP, rho=1.0,
+            bleed_lim=BleedLimiter.from_margin(LP, B, sm, tau=0.05),
+            stator_lim=StatorLimiter.from_margin(LP, 0.20, sm, tau=0.05))
+        m._lag_coord, m._ref_law, m._windup_law, m._cap_law = "demand", "sched", "none", "solve"
+        return m
+
+    g = rig().authority_clock(flight, LO, HI, TMAX, phi_lim=PHI_FUEL, phi_air=PHI_AIR,
+                              tau_fs=(0.05, 0.20), tau_govs=(0.05,))
+    print("\n  s 1 -- WHO HOLDS THE ACTUATOR. One knob per axis: the VALVE clock is pinned at")
+    print("    rung 80's 0.05 throughout, so nothing below can be the valve's doing.")
+    print("      coord   tau_f   ALL-FOUR riding   fuel-held   gov-held   max Tt4")
+    for r in g["rows"]:
+        print("      %-7s %5.2f   %8d          %6d      %6d     %7.1f"
+              % (r["coord"], r["tau_f"], r["n_riding4"], r["n_fuel"], r["n_gov"],
+                 r["max_Tt4"]))
+    print("    The `demand` tau_f = 0.05 row is RUNG 80's OWN CELL (%d four-loop points, every"
+          % g["control_n_riding4"][0])
+    print("    one held by the governor) -- the control that says this is the shipped plant.")
+    print("    Slowing ONLY the fuel leg hands it the actuator, and the governor's own limit is")
+    print("    STILL the more severe one there: the leg demanding the deeper cut is not the leg")
+    print("    setting the fuel. That is the whole mechanism, and it is rung 74's `bill`.")
+
+    print("\n  s 3 -- AND ITS CONSEQUENCE, WHICH IS THE HEADLINE. Compare each coordinate's two")
+    print("    marches BIT-FOR-BIT (341 points x phi_lp/Tt4/b/v = 1364 floats):")
+    for k, v in g["tau_f_inert"].items():
+        print("      %-14s %4d of %d floats moved   %s"
+              % (k, v["n_differing"], v["n_floats"],
+                 "IDENTICAL -- the clock reached nothing" if v["march_identical"]
+                 else "the clock is decisive"))
+    print("    In `clip` at this wall the fuel leg is MASKED for the whole ramp, and a 10x")
+    print("    sweep of its own time constant moves NOT ONE BIT. That is rung 72's `min is")
+    print("    flat in the masked leg` -- until now a zero in a Jacobian -- as an exact")
+    print("    invariance of the plant itself.")
+    print("    AND THE CONTROL SAYS IT IS ABOUT MASKING, NOT ABOUT `clip`: at the SHARED wall,")
+    print("    where that leg DOES take the actuator, the same sweep is live --")
+    print("      tau_f:       " + "  ".join("%5.2f" % x["tau_f"]
+                                            for x in g["control_clip_rows"]))
+    print("      fuel-held:   " + "  ".join("%5d" % x["n_fuel"]
+                                            for x in g["control_clip_rows"]))
+    print("    and it falls the OTHER way, because a clip state lags its target from below: a")
+    print("    slower leg cuts LESS. The sign of the clock's authority flips with the")
+    print("    coordinate -- the same slowing that BUYS the actuator in `demand` SELLS it here.")
+
+    mk = rig().authority_mask(flight, LO, HI, TMAX, phi_lim=PHI_FUEL, phi_air=PHI_AIR)
+    print("\n  s 4 -- RUNG 72's BLOCK, READ ON THE OTHER SIDE OF THE SWITCH:")
+    print("      clocks                    interior   authority   max|mask leak|   max|cyclic|")
+    for a in mk["arms"]:
+        for auth, d in sorted(a["by_authority"].items()):
+            print("      %-25s %6d     %-9s   %.3e        %.6f"
+                  % (str(a["taus"]), d["n"], auth, d["max_leak"], d["max_cyc"]))
+    print("    The mask is SYMMETRIC: exactly one authority per point and a mask leak of zero")
+    print("    on BOTH sides, so `n_live <= 3` a SEVENTH time -- this rung throws the switch,")
+    print("    it does not remove it. The cyclic column is the discriminator, and both of its")
+    print("    branches are in this one table: the three-phi-loop cycle runs THROUGH the fuel")
+    print("    leg, so it is exactly 0 where that leg is masked and ~1 where the governor is.")
+    print("    A reader returning only zeros would be indistinguishable from one measuring")
+    print("    nothing; this one is not.")
+    print("\n  HONEST SCOPE: one rig, one wall pair, one flight condition, one ramp. The")
+    print("    criterion behind s 1 is QUASI-STEADY and misses near its own tie (9 of 1054 on")
+    print("    the full grid, worst 11.8% from it) -- disclosed in docs/rung81-spec.md s 2,")
+    print("    where the refined grid that FOUND those misses is also recorded: the first grid")
+    print("    scored 506 of 506 and had no hard cases in it.")
+
+
 def main():
     # The tables carry unicode (Δ, ·, ≡, ≈); force UTF-8 so `python main.py` renders
     # on any console (a stock Windows cp1252 console would otherwise crash on them).
@@ -6626,6 +6727,7 @@ def main():
 
     print_state_coordinate_table(FLIGHT)
     print_split_wall_table(FLIGHT)
+    print_authority_clock_table(FLIGHT)
 
     plot_ts_diagram(ideal, real, FLIGHT)
 
