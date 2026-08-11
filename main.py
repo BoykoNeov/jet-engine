@@ -6474,9 +6474,11 @@ def print_authority_clock_table(flight):
 
     THE GRID IS CUT, and the cut is disclosed rather than implied: the shipped reader sweeps six
     fuel clocks x three governor clocks x two coordinates (36 marches, ~55 s). This panel runs
-    the two ENDPOINTS of the fuel axis at one governor clock -- enough to carry both readings,
-    and not enough to locate the threshold between them (that number is in the spec, measured on
-    the full grid)."""
+    the two ENDPOINTS of the fuel axis at one governor clock. That is enough to SHOW both
+    readings and not enough to BE either of them -- it cannot locate the threshold between the
+    endpoints, and its invariance row is a PAIR where the claim is a six-march column at three
+    governor clocks. Both are labelled as samples where they print, with the spec's own numbers
+    named beside them (rung 63's lesson: a number quoted at settings other than its claim's)."""
     print("\nTHE AUTHORITY CLOCK (rung 81): authority is decided by the LAG, not by the SET")
     print("  POINT -- so a leg that never holds the actuator has no clock at all.")
 
@@ -6529,10 +6531,12 @@ def print_authority_clock_table(flight):
               % (k, v["n_differing"], v["n_floats"],
                  "IDENTICAL -- the clock reached nothing" if v["march_identical"]
                  else "the clock is decisive"))
-    print("    In `clip` at this wall the fuel leg is MASKED for the whole ramp, and a 10x")
-    print("    sweep of its own time constant moves NOT ONE BIT. That is rung 72's `min is")
-    print("    flat in the masked leg` -- until now a zero in a Jacobian -- as an exact")
-    print("    invariance of the plant itself.")
+    print("    In `clip` at this wall the fuel leg is MASKED for the whole ramp, and its own")
+    print("    time constant reaches NOTHING. That is rung 72's `min is flat in the masked")
+    print("    leg` -- until now a zero in a Jacobian -- as an exact invariance of the plant.")
+    print("    THAT ROW IS THE ENDPOINT PAIR OF A SIX-CLOCK COLUMN, not the claim: the spec")
+    print("    measures it over six fuel clocks at THREE governor clocks (0 of 1364 floats in")
+    print("    every clip column, 1304 of 1364 in every demand one) -- docs/rung81-spec.md s 3.")
     print("    AND THE CONTROL SAYS IT IS ABOUT MASKING, NOT ABOUT `clip`: at the SHARED wall,")
     print("    where that leg DOES take the actuator, the same sweep is live --")
     print("      tau_f:       " + "  ".join("%5.2f" % x["tau_f"]
