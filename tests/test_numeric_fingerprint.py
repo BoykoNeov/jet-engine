@@ -398,6 +398,124 @@ march 34 full 341-point trajectories (18 for `split_arrest` alone) where a slice
 gains at a handful of base points. `@pytest.mark.slow`, and it still runs on a plain `pytest`.
 Under CPython the same arm takes ~8.5 min, which is most of a regeneration — budget for that
 before regenerating, and see the WARNING under PROCEDURE about backgrounding one.
+  (Slice 6 below displaces it as the heaviest. The sentence is left as measured rather than
+  rewritten, because "the heaviest arm" is a fact about a date and not about r80.)
+
+--------------------------------------------------------------------------------------------
+SLICE 6 — rung 81, THE AUTHORITY CLOCK (added 2026-08-11)
+--------------------------------------------------------------------------------------------
+`docs/rung81-spec.md` § 8 booked this arm as a DEBT and named what it should lead with; this
+slice pays it. TWO arms, and the split is the slice's own finding rather than a convenience:
+
+  r81   `authority_clock` — the (`tau_f`, `tau_gov`) grid, the criterion scored point by point,
+        and § 3's `tau_f_inert` block.                          BIT-EQUALITY, 11 462 values.
+  r81m  `authority_mask`  — rung 72's twelve-gain block read on BOTH sides of the switch.
+                                                       ABSOLUTE leg 1e-9, 784 values.
+
+** WHY TWO ARMS AND NOT ONE. ** Merged, the pair would have to share one (rel, abs) pair, and the
+absolute leg the mask needs is 1e-9 — against a `lag_gap` whose smallest live value in the clock
+arm is ** 9.42e-9 **. That is a band worth 10.6 % of the quantity, hung on a value that measured
+bit-exact, and `lag_gap` is one of the two terms § 1's criterion is an inequality BETWEEN. The
+same erasure one decade up reaches `margin`, whose closest-to-tie point is 9.257e-04. A merged arm
+would therefore have shipped § 1's content inside a band wide enough to hide it. Two arms cost one
+extra name and buy back 11 462 values at the ulp floor; they also SEPARATE the two failure modes
+(slice 2's `prop` argument): r81 red means the PLANT or the criterion moved, r81m red means the
+Jacobian / characteristic-polynomial arithmetic did.
+
+** r81's BIT-EQUALITY IS PREDICTED, THEN CONFIRMED — that order matters. ** Every exact arm before
+this one (`cpg`, `r66`, `r68`, `r77`, `r78`, `r79`) asserts exactness BECAUSE it measured it.
+Here it is derivable first: every operation in
+`_criterion_at` is a SINGLE IEEE op on a bit-identical input — two subtractions and a divide in
+`_central`, one multiply, a `max`, a compare — with no naive `sum()` to reassociate and no
+transcendental anywhere, standing on a CPG two-spool march that `cpg`, r68, r77, r78 and r79
+already pin as exact across the two interpreters. So `TOL["r81"] = 0.0` is what the arithmetic
+says it must be, and the measurement (0 of 11 462, 3 945 distinct floats) confirms rather than
+discovers it. AND THE DRIFT'S HOME IS NAMED, not merely located: all 155 differing values live in
+`authority_mask`, whose `_quad_gains_at` -> `_charpoly4` path sums PRODUCTS — r80's mechanism
+exactly, one rung along.
+
+NO SETTINGS BLOCK, for the THIRD slice running, and here it is not even a choice: rung 81's two
+readers DEFAULT to the `_S3_*` values (`r = 0.5`, `s_settle = 1.2`, `ds = 0.005`, `v_max = 0.20`,
+`inc = False`) and to rung 80's own wall pair, and `tests/test_rung81.py` overrides none of them.
+The two walls are passed explicitly anyway, reusing `_S5_PHI_FUEL`, so the code itself says this
+arm sits on slice 5's cell.
+
+** AND THE GRID IS NOT CUT, WHICH IS A DEPARTURE FROM SLICE 5 AND IS THE HONEST ONE. ** Slice 5
+trimmed a sweep list because its content was two ordered edges and four walls kept both. There is
+no such trim here: § 3's finding IS the six-column table — three `demand` columns at 1 304 of
+1 364 differing floats beside three `clip` columns at 0 — so cutting `tau_fs` shrinks the 10x
+range the headline is stated over, and cutting `tau_govs` removes the ~2x modulation § 1 gates.
+The arm runs the full 36-cell grid plus its 6-march shared-wall control, and the cost is disclosed
+below rather than negotiated down.
+
+** THE LEAD READING IS § 3's `n_differing`, AND ITS FALSIFIER IS IN THE SAME READER. ** `0 of
+1 364` in each of the three `clip` columns is an INT and so compares exactly whatever the
+tolerance is. What makes it a gate rather than a decoration is that `authority_clock` also carries
+the positive half on the SAME code path: `control_clip_fuel = 7` and `control_clip_tau_f_live =
+True` at the SHARED wall, where that leg does take the actuator and the identical 10x sweep MOVES
+the march. A zero with no live sibling would be a statement about the COORDINATE, not about
+MASKING — § SLICE 3's vacuity trap in rung 81's costume.
+
+THIS ARM REPRODUCES EVERY DISCRETE NUMBER THE SPEC PUBLISHES, and that is worth one sentence
+because slice 4 could not say it. On the shared `_cpg_gas()` (`R_c = 286.9`, not rung 81's own
+286.857) the arm returns the control's 33 four-loop points, `n_scored = 1054`, the worst cell's
+0.95238, `worst_miss = 0.1177`, 1 304 / 0 / 1 364 in the six columns, and § 1's fuel-region table
+cell for cell. The counts are ROBUST to that gas difference; the arm is still a drift detector and
+not a second copy of the spec, and slice 4's caveat is not withdrawn — it is simply not needed to
+read these numbers.
+
+PROVENANCE. Measured 2026-08-11, this kernel under CPython 3.14.3 vs PyPy 3.11.15 (7.3.23) via
+`M:\claud_projects\temp\fingerprint-slice6\{probe6,compare6}.py`. The probe IMPORTS `_s3_rig` /
+`_cpg_gas` / `_s3` from this module and calls the same two readers with the same arguments, so it
+is this computation and not an adjacent one — slice 4's caveat does not apply. 12 246 values,
+155 differing, ** 0 of them non-float **: no `predicted`, no `measured`, no `authority` label and
+no count moved, which is the failure this module exists to catch. Every difference is a `c0` or a
+`c1` in `authority_mask`:
+
+    family   n       magnitude          worst RELATIVE   worst ABSOLUTE
+    `c0`    80/80    1.18e-09 - 1.14e-05    3.23e-03         8.95e-11
+    `c1`    75/80    4.54e+01 - 5.06e+03    7.39e-14         5.46e-12
+
+** SO r81m TAKES AN ABSOLUTE LEG FOR r80's REASON, RE-EARNED ON THESE NUMBERS. ** The drift is
+flat at ~1e-11 across a pair of families whose own magnitudes span twelve decades, so relative is
+again the wrong currency: sizing it for `c0` needs 1e-2 under the >=4x rule, which would hang a
+percent-wide band on `c1`, a family reproducing to 7.4e-14. `ABS_TOL["r81m"] = 1e-9` is >=11.2x
+above the measured 8.95e-11, and `TOL["r81m"]` is r72's declared backstop with 0 keys riding it.
+
+  THE LIVE SCALE IS THIS ARM'S OWN, and deliberately NOT rung 72's imported 2.9e-5 — `c0`'s own
+  maximum is 1.14e-5, at that same scale, so quoting rung 72 would suggest the band sits a mere
+  4 decades below "alive". It does not. `c0` is the quartic's constant term, i.e. `det J`, and
+  `zeros = 1` in BOTH regimes says one pole is at the origin — so `c0` is a DEAD determinant and
+  `c1` is very nearly the surviving triple product `r1*r2*r3` (4.5e1 - 5.1e3). A fourth pole
+  coming live at this rig's own rate (`1/tau` = 20 s^-1) therefore puts `c0` at ~9e2 - 1e5:
+  ** twelve or more decades above the band, which cannot mask it. **
+
+  THE WEAK END IS DISCLOSED, NOT DRESSED UP. 6 of the 80 `c0` values sit below 1e-8 and the
+  smallest is 1.177e-09, so for those the band asserts "still zero" and very little more. That is
+  what a dead determinant IS, and it is slice 5's near-dead-cell disclosure with a handful of
+  cells instead of one. The other 74 sit at or above 1e-8, and 40 of 80 at or above 1e-7, where
+  the band is one to two decades below the value.
+
+ORDER-INDEPENDENCE, CHECKED RATHER THAN ASSUMED. Split into two `KERNELS` entries these readers
+may run in either order, in either xdist worker, with `_s3_design()` memoised across them — and
+this ladder's own code calls the carried-knob trap "the EIGHTEENTH instance". Run MASK-FIRST
+(`…\fingerprint-slice6\order6.py`), all 12 246 values are bit-identical to the clock-first probe.
+The readers do restore `_sm_air` in a `finally`; this says so on the plant instead of trusting it.
+
+COST, PyPy idle: ** 104.7 s (r81 100.7 + r81m 4.1) — r81 displaces r80 as the heaviest arm in
+this module. ** Both are `@pytest.mark.slow` and both still run on a plain `pytest`; r81m is over
+the 2 s bar an unmarked gate needs, so neither is exempt. Under CPython the pair takes 375 s, which
+puts the whole-module regeneration at roughly 33 min — budget for that BEFORE regenerating, and
+see the WARNING under PROCEDURE about backgrounding one.
+  The split MOVES ~5 s of design build to whichever half runs first, so the two are not additive
+  in the way the numbers above read: the order-independence run measured 9.6 s + 81.8 s = 91.4 s
+  on the same box. Both are quoted because the difference is box load and build placement, not
+  arithmetic — and this module's own § SLICE 3 records what happens when one carried-forward
+  timing gets differenced against a fresh one as though they measured the same thing.
+
+NO SENSITIVITY SWEEP FOR r81: an exact arm already sits at the ulp floor, slice 4's row. r81m was
+not swept either, and that is a recorded skip: its band is 1e-9, three decades tighter than the
+gate's 1e-5 floor, so it cannot be the floor — but nothing here says how much better it is.
 """
 import json
 import os
@@ -425,6 +543,8 @@ from turbojet.engine import (  # noqa: E402
     ResidualGaugeTransient, StateCoordinateTransient,
     # slice 5 — rung 80
     SplitWallTransient,
+    # slice 6 — rung 81
+    AuthorityClockTransient,
 )
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -498,6 +618,17 @@ TOL = {
     "r80":  1e-15,   # BACKSTOP, as r72/r73 — 0 keys ride the relative leg. Here it is defensive
                      # ONLY: 1 ulp at this arm's largest value (1.5e4) is 1.8e-12, already inside
                      # the absolute leg. Kept for r72's stated reason, not for the same effect.
+    # ---------------- SLICE 6: rung 81 (2026-08-11) — see § SLICE 6 ----------------
+    # TWO arms, because one (rel, abs) pair cannot serve both halves: the mask's absolute leg is
+    # 1e-9 and the clock's smallest live `lag_gap` is 9.42e-9, so a merged arm would band one of
+    # § 1's two criterion terms at 10.6% of itself. Split, the clock half keeps bit-equality.
+    "r81":  0.0,     # PREDICTED exact, then measured so — 0 of 11 462 values differed (3 945
+                     # distinct floats). Every op in `_criterion_at` is a single IEEE op on a
+                     # bit-exact CPG march: no naive `sum()`, no transcendental, nothing to
+                     # reassociate. This is the arithmetic's answer, not a fitted constant.
+    "r81m": 1e-15,   # BACKSTOP, as r72/r73/r80 — 0 keys ride the relative leg. All 155 of this
+                     # arm's differences are `_charpoly4` coefficients, the same sums-of-products
+                     # mechanism r80's cross-gains have, so the ABSOLUTE leg below carries it.
 }
 
 # --------------------------------------------------------------------------- absolute leg
@@ -525,6 +656,15 @@ ABS_TOL = {
     "r76":  1e-9,    # measured 5.2e-11 on `det` / `det0`
     "r80":  1e-9,    # measured 8.5e-11 on the split CROSS-GAINS `c0` / `c1` — the ONLY leg that
                      # compares this arm; see § SLICE 5 for why relative is the wrong currency
+    # SLICE 6 re-earns the same constant a THIRD time, on `authority_mask`'s charpoly
+    # coefficients, and it does NOT inherit rung 72's live scale: `c0`'s own max is 1.14e-5, at
+    # that same 2.9e-5, so quoting rung 72 would read as "only 4 decades below alive". The in-arm
+    # justification is stronger — `c0` is `det J` with one pole AT THE ORIGIN (`zeros = 1` in both
+    # regimes), so `c1` is nearly the surviving triple product (4.5e1 - 5.1e3) and a fourth live
+    # pole at this rig's own 20 s^-1 puts `c0` at ~9e2 - 1e5, twelve+ decades above the band.
+    "r81m": 1e-9,    # measured 8.95e-11 on `c0` / `c1` (>=11.2x). 6 of 80 `c0` sit below 1e-8,
+                     # smallest 1.177e-9 — there the band says "still zero" and little more,
+                     # which is what a dead determinant is. Disclosed in § SLICE 6, not hidden.
 }
 
 # --------------------------------------------------------------------------- shared conditions
@@ -1313,6 +1453,73 @@ def kernel_r80():
                                           phi_lim=_S5_PHI_FUEL, phi_airs=_S5_SAT)))
 
 
+# ===========================================================================================
+# SLICE 6 — rung 81, THE AUTHORITY CLOCK
+# ===========================================================================================
+# NO SETTINGS BLOCK, for the THIRD slice running, and here it is not even a choice: rung 81's two
+# readers DEFAULT to the `_S3_*` values (`r = 0.5`, `s_settle = 1.2`, `ds = 0.005`,
+# `v_max = 0.20`, `inc = False`) and to rung 80's own wall pair, and `tests/test_rung81.py`
+# overrides none of them. The two walls are passed EXPLICITLY anyway — `_S5_PHI_FUEL` reused, so
+# the code itself says this arm sits on slice 5's cell — and every other number is inherited.
+#
+# THE CLOCK GRID IS THE READER'S OWN DEFAULT AND IS NOT CUT. Slice 5 trimmed a sweep list because
+# its content was two ordered edges and four walls kept both; there is no such trim here. § 3's
+# finding IS the six-column table (three `demand` columns at 1 304 of 1 364 differing floats
+# beside three `clip` columns at 0), so cutting `tau_fs` shrinks the 10x range the headline is
+# stated over and cutting `tau_govs` removes the ~2x modulation § 1 gates. The full 36-cell grid
+# plus its 6-march shared-wall control runs, and the cost is DISCLOSED (§ SLICE 6), not traded.
+_SLICE6 = ("r81", "r81m")
+_S6_PHI_AIR = 0.77             # rung 80's airflow wall — the SPLIT side of rung 81's switch
+
+
+def _s6_rig():
+    """A fresh rung-81 machine. FRESH PER READER, as slices 4 and 5 do: these readers set and
+    restore `_sm_air` in a `finally`, but this ladder's own code calls the carried-knob trap "the
+    EIGHTEENTH instance" and a rig build costs ~0.5 s against the pair's 105 s."""
+    return _s3_rig(AuthorityClockTransient, _lag_coord="demand", _ref_law="sched",
+                   _windup_law="none", _cap_law="solve")
+
+
+def kernel_r81():
+    """RUNG 81 — THE AUTHORITY CLOCK: the mirror cell, with the FUEL leg holding the actuator.
+
+    `docs/rung81-spec.md` § 8 booked this arm and named what it should lead with — § 3's
+    `n_differing`, the count of trajectory floats that a 10x sweep of the MASKED leg's own time
+    constant moves. It is structurally zero and it is an INT, so it compares exactly whatever the
+    tolerance is. What makes it a GATE rather than a decoration is that this same reader carries
+    the positive half on the SAME code path: at the SHARED wall the fuel leg does take the
+    actuator, and there the identical sweep MOVES the march (`control_clip_fuel`,
+    `control_clip_tau_f_live`). A zero with no live sibling would be a statement about the
+    COORDINATE rather than about MASKING — § SLICE 3's vacuity trap in a new costume.
+
+    BIT-EQUALITY, AND IT IS PREDICTED BEFORE IT IS MEASURED: every operation in `_criterion_at`
+    is a single IEEE op on a bit-identical input — `_central`'s two subtractions and a divide, a
+    multiply, a `max`, a compare — with no naive `sum()` to reassociate and no transcendental,
+    over a CPG march `cpg` / r68 / r77 / r78 / r79 already pin as exact. See `r81m` for where
+    this rung's arithmetic DOES drift, and § SLICE 6 for why the two are separate arms."""
+    return _s3("r81",
+               ("c", _s6_rig().authority_clock(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX,
+                                               phi_lim=_S5_PHI_FUEL, phi_air=_S6_PHI_AIR)))
+
+
+def kernel_r81m():
+    """RUNG 81 — THE MIRROR MASK: rung 72's twelve-gain block read on BOTH sides of the switch.
+
+    SPLIT FROM `r81` FOR A MEASURED REASON, not for tidiness. This is the only half of rung 81
+    that drifts across interpreters — all 155 differing values are `_charpoly4` coefficients,
+    whose sums-of-products are r80's mechanism exactly — and the absolute band it needs (1e-9)
+    is WIDER than the smallest live `lag_gap` in `r81` (9.42e-9). Merged, one of § 1's two
+    criterion terms would sit inside a band worth 10.6% of itself.
+
+    ITS OWN FALSIFIER IS ALSO IN-READER: `cyc_gov_auth` is EXACTLY 0 where the fuel leg is masked
+    and `cyc_fuel_auth` ~1.04 where the governor is, so the zero cannot be an instrument that
+    declined to measure. `every` is left at the reader's default of 1 — striding it would thin
+    `n_fuel_interior` / `n_gov_interior`, which are this arm's vacuity guards."""
+    return _s3("r81m",
+               ("m", _s6_rig().authority_mask(FLIGHT, _S3_LO, _S3_HI, _S3_TT4MAX,
+                                              phi_lim=_S5_PHI_FUEL, phi_air=_S6_PHI_AIR)))
+
+
 KERNELS = {"cpg": kernel_cpg, "r66": kernel_r66, "A": kernel_A, "B": kernel_B,
            "C": kernel_C, "D": kernel_D, "E": kernel_E, "F": kernel_F,
            # slice 2 — the rungs 3-30 diagnostic ladder
@@ -1328,7 +1535,9 @@ KERNELS = {"cpg": kernel_cpg, "r66": kernel_r66, "A": kernel_A, "B": kernel_B,
            # slice 4 — rungs 78/79
            "r78": kernel_r78, "r79": kernel_r79,
            # slice 5 — rung 80
-           "r80": kernel_r80}
+           "r80": kernel_r80,
+           # slice 6 — rung 81, split into its two halves (see § SLICE 6)
+           "r81": kernel_r81, "r81m": kernel_r81m}
 
 
 # --------------------------------------------------------------------------- encode / compare
@@ -1624,10 +1833,28 @@ def test_golden_kernel_r80_split_wall():
     _check("r80")
 
 
+# --------------------------------------------------------- slice 6, rung 81 — BOTH halves
+# The heaviest pair in the module: 100.7 s + 4.1 s PyPy idle. `r81` asserts BIT-EQUALITY over
+# 11 462 values and `r81m` rides an absolute leg over 784 — § SLICE 6 says why one arm could not
+# do both (the mask's 1e-9 band is wider than the clock's smallest live `lag_gap`).
+
+@pytest.mark.slow
+def test_golden_kernel_r81_authority_clock():
+    """The grid, the criterion, and § 3's `n_differing` — the reading rung 81's spec asked this
+    arm to lead with. Bit-equality, and it is the arithmetic's answer rather than a fitted one."""
+    _check("r81")
+
+
+@pytest.mark.slow
+def test_golden_kernel_r81m_mirror_mask():
+    """Rung 72's block on the OTHER side of the switch. The only half of rung 81 that drifts."""
+    _check("r81m")
+
+
 def test_instrument_arms_are_not_vacuous():
     """THE CHECK THAT CAUGHT THE RUNG-71 ARM, kept as a gate rather than as a war story.
 
-    IT COVERS SLICES 3, 4 AND 5, and the name says `instrument` rather than `slice3` for that
+    IT COVERS SLICES 3, 4, 5 AND 6, and the name says `instrument` rather than `slice3` for that
     reason: every arm built on a rung's own INSTRUMENT readers can fail this way, so a new
     slice must be added to the iteration set in the same edit that adds its arms.
 
@@ -1649,7 +1876,7 @@ def test_instrument_arms_are_not_vacuous():
     Read from the GOLDEN, not from a fresh run, so it costs nothing and so it also fails if a
     regeneration ever pins a vacuous arm."""
     golden = _load_golden()["kernels"]
-    for name in _SLICE3 + _SLICE4 + _SLICE5:
+    for name in _SLICE3 + _SLICE4 + _SLICE5 + _SLICE6:
         arm = {k: _decode(v) for k, v in golden[name].items()}
         empty = [k for k, v in arm.items() if k.endswith("rows#n") and v == 0]
         assert not empty, (

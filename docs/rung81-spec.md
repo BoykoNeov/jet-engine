@@ -259,7 +259,26 @@ any count on a row with `riding4_valid` False.
 * **THE FOURTH LOOP, STILL.** `n_live = 4` is unmoved and unreached: this rung throws the switch,
   it does not remove it. Rung 80 § 10's second bullet stands verbatim — a non-`min` composition or
   a fourth lever off the fuel actuator.
-* **A FINGERPRINT ARM FOR THIS RUNG.** `tests/test_numeric_fingerprint.py` has no `r81`. The
-  natural lead is § 3's `n_differing`, which is **discrete and structurally zero** — the shape
-  slice 4 handled for rung 79, and it needs that slice's two-sided reasoning, not a relative leg.
+* ~~**A FINGERPRINT ARM FOR THIS RUNG.**~~ **PAID — `tests/test_numeric_fingerprint.py` § SLICE 6**
+  (2026-08-11), and it did lead with § 3's `n_differing` as this entry asked. **But the entry
+  guessed the wrong half.** It predicted "slice 4's two-sided reasoning, not a relative leg" for the
+  whole arm; measured, the rung's two readers land in *different* regimes and the arm had to be
+  **two**: `r81` (`authority_clock`, 11 462 values) is **bit-exact** and `r81m`
+  (`authority_mask`, 784) carries **every one** of the 155 CPython-vs-PyPy differences.
+  * **The split is forced, not tidy.** One tolerance pair cannot serve both: the mask's charpoly
+    coefficients need an absolute band of `1e-9`, and the *smallest live* `lag_gap` in § 1's
+    criterion is **9.42e-9** — a merged arm would have banded one of the criterion's two terms at
+    10.6 % of itself, and `margin`'s closest-to-tie point (9.257e-04) one decade up.
+  * **And the exactness is DERIVED before it is measured** — the sharper form of what this entry
+    reached for. Every operation in `_criterion_at` is a *single* IEEE op on a bit-identical
+    input (`_central`'s two subtractions and a divide, one multiply, a `max`, a compare): no naive
+    `sum()` to reassociate, no transcendental, over a CPG march four earlier arms already pin as
+    exact. So 0 of 11 462 is what the arithmetic *must* give. The drift's home is named too —
+    `_quad_gains_at` → `_charpoly4` sums **products**, rung 80's mechanism one rung along.
+  * **Every discrete number this spec publishes is reproduced** on the module's shared gas
+    (`R_c = 286.9`, not this rung's 286.857): the control's 33, `n_scored` 1054, 95.238 %,
+    `worst_miss` 0.1177, § 1's fuel-region table cell for cell, and § 3's 1 304 / 0 of 1 364. **No
+    non-float moved across the interpreters** — no authority label, no prediction, no count.
+  * Cost, PyPy: **104.7 s**, which makes `r81` the heaviest arm in that module; the grid is
+    deliberately **not** cut, because § 3's finding *is* the six-column table.
 * Everything rungs 72–80 §§ 8–11 leave, unchanged by this rung.

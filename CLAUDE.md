@@ -233,7 +233,7 @@ A compact map — per-rung method/finding detail lives in `docs/rungN-spec.md`, 
 
 ## Commands
 - Run the model: `python main.py` · Install: see `requirements.txt` (a PyPy venv — § Stack)
-- **The gate: `pytest`** — **EVERYTHING**, 1326 tests, **~12:08 at 1314** (PyPy, box load unknown;
+- **The gate: `pytest`** — **EVERYTHING**, 1328 tests, **~12:59 at 1328** (PyPy, box load unknown;
   a 40:28 at 1294 came off a LOADED box — neither differences nor replaces it).
   ONE gate; nothing is ever silently deselected, so no regression can hide.
 - **Iterate: `pytest -m "not slow"`** — 973 tests, **~1:54 at 890**. The run minus the expensive sweeps.
