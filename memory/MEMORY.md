@@ -1,127 +1,130 @@
 # Memory index
 
-One line per entry — the hook only. Full detail lives in the linked file; do not re-expand
-these lines (the same rule CLAUDE.md lives under).
-
-**What a rung entry's hook says:** the **process lesson** — what went wrong, what it corrected,
-what to do differently next time. NOT the rung's physical headline: that already sits in CLAUDE.md's
-rung table, which loads beside this file, so restating it here is pure duplication. Rung entries are
-grouped below by the same families as that table, in the same numeric order.
+One line per entry — the **hook only**, and one lesson per hook. Detail lives in the linked
+file; never re-expand these lines. A rung hook carries the **process lesson** (what went wrong,
+what to do differently), never the physical headline — that is already in CLAUDE.md's rung
+table, which loads beside this file. Rung entries follow that table's families and numbering.
 
 ## Working agreements
 - [Session-end routine](session-end-routine.md) — at end of batch/planning, or "session end": update memory + docs, commit, push to main
-- [Git remote setup](git-remote-setup.md) — repo is github.com/BoykoNeov/jet-engine (public), branch main, origin over SSH
-- [Always commit and push](always-commit-and-push.md) — auto-commit + push green work without being asked; the gate is bare `pytest` (it runs everything); never gate a docs-only change, never run it "just to be sure"
-- [CLAUDE.md is a reference](claude-md-is-a-reference.md) — one-line-per-rung index, detail → docs/rungN-spec.md; a guard test enforces the size budget; bloated to ~200KB twice before
-- [Two indexes, one spine](two-indexes-one-spine.md) — CLAUDE.md's table carries the PHYSICAL verdict, this index the PROCESS lesson; ~42% measured overlap was memory restating the headline; group inside numeric order, never reorder by theme
-- [Never run the gate for timing](never-run-the-gate-for-timing.md) — a quoted run time is documentation, not a signal; take it from a run that was already happening, or leave it stale and say so
-- [Test-suite speed policy](test-suite-speed-policy.md) — ONE gate: `pytest` runs everything (2:18); the tiering's blocker was a COUNT argument that inverts under COST; the LPT scheduler is worth ~26%
-- [xdist module-fixture cost](xdist-module-fixture-cost.md) — a module-scoped fixture is rebuilt PER WORKER, so each extra consumer multiplies it; 5 consumers of a 20 s reader added 2:37 to a 2:59 gate
-- [Perf: sonic throat + PyPy](perf-sonic-throat-and-pypy.md) — the hot function was hot ALGORITHMICALLY (45 bisections for a linear root), not linguistically; gate 28:18 → 1:55
-- [PyPy switch shipped](pypy-switch-shipped.md) — full gate 17:27 → 2:47; SLOW_SECONDS KEPT with its reason inverted (bought time → buys determinism); psutil load-bearing; print precision protects states, not residuals
-- [Golden fingerprint gate](golden-fingerprint-gate.md) — the project's ONLY absolute-value gate; goldens are a CPython anchor, NEVER regenerate them under another interpreter; measure a detector's sensitivity, don't assert it
-- [Golden gate slice 2](golden-gate-slice2.md) — 26 arms / 8044 values; drift is set by CONDITIONING not by rung, and the reduced-resolution worry measured backwards
-- [Golden gate slice 3](golden-gate-slice3.md) — rungs 67-77 pinned; a STRIDE knob is not a RESOLUTION knob (an arm that guarded nothing), and a structural zero needs a two-sided ABS tolerance
-- [Golden gate slice 4](golden-gate-slice4.md) — rungs 78/79 pinned BIT-EXACT; lead an arm with the reader that BYPASSES the plant's short-circuit, and when the zeros ARE the finding, loosening the tolerance loosens the CLAIM
-- [Golden gate slice 5](golden-gate-slice5.md) — rung 80 pinned; a finite difference inherits its drift from the quantity DIFFERENCED (flat across 15 decades) so relative is the wrong currency; a per-arm "measured X" is the worst among keys RIDING that leg, not the arm's worst
-- [Golden gate slice 6](golden-gate-slice6.md) — rung 81 pinned as TWO arms; a band must clear the SMALLEST LIVE value it covers or it erases the finding, and bit-equality can be PREDICTED from the arithmetic rather than measured
-- [Golden gate slice 7](golden-gate-slice7.md) — rung 82 pinned as THREE bit-exact arms; a ROOT-FINDING arm needs a go/no-go before it is written, and the smallest live value belonged to the SEARCH not the physics
-- [Visuals artifact](visuals-artifact.md) — docs/visuals/ page published as artifact 56cde230…; update the same URL, regenerate via extract_data.py + build.py
+- [Git remote setup](git-remote-setup.md) — github.com/BoykoNeov/jet-engine (public), branch main, origin over SSH
+- [Always commit and push](always-commit-and-push.md) — auto-commit + push green work unasked; gate is bare `pytest`; never gate a docs-only change
+- [CLAUDE.md is a reference](claude-md-is-a-reference.md) — one line per rung, detail → docs/rungN-spec.md; a guard test enforces the budget
+- [Two indexes, one spine](two-indexes-one-spine.md) — CLAUDE.md carries the PHYSICAL verdict, this file the PROCESS lesson; never restate the headline
+- [Never run the gate for timing](never-run-the-gate-for-timing.md) — a quoted run time is documentation, not a signal; take it from a run already happening
+- [Test-suite speed policy](test-suite-speed-policy.md) — ONE gate; the tiering's blocker was a COUNT argument that inverts under COST
+- [xdist module-fixture cost](xdist-module-fixture-cost.md) — a module fixture is rebuilt PER WORKER, so each consumer multiplies it (2:37 added to a 2:59 gate)
+- [Perf: sonic throat + PyPy](perf-sonic-throat-and-pypy.md) — the hot function was hot ALGORITHMICALLY (45 bisections for a linear root), not linguistically
+- [PyPy switch shipped](pypy-switch-shipped.md) — SLOW_SECONDS kept with its reason INVERTED (bought time → buys determinism); psutil load-bearing
+- [Golden fingerprint gate](golden-fingerprint-gate.md) — the ONLY absolute-value gate; goldens are a CPython anchor, never regenerate elsewhere; measure a detector's sensitivity
+- [Golden gate slice 2](golden-gate-slice2.md) — drift is set by CONDITIONING, not by rung; the reduced-resolution worry measured backwards
+- [Golden gate slice 3](golden-gate-slice3.md) — a STRIDE knob is not a RESOLUTION knob (an arm that guarded nothing); a structural zero needs a two-sided ABS tolerance
+- [Golden gate slice 4](golden-gate-slice4.md) — lead an arm with the reader that BYPASSES the short-circuit; when zeros ARE the finding, loosening tolerance loosens the CLAIM
+- [Golden gate slice 5](golden-gate-slice5.md) — a finite difference inherits drift from the quantity DIFFERENCED, so relative is the wrong currency
+- [Golden gate slice 6](golden-gate-slice6.md) — a band must clear the SMALLEST LIVE value it covers; bit-equality can be PREDICTED from the arithmetic
+- [Golden gate slice 7](golden-gate-slice7.md) — a ROOT-FINDING arm needs a go/no-go before it is written; the smallest live value belonged to the SEARCH, not the physics
+- [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL, regenerate via extract_data.py + build.py
+- [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy leaves `open().write()` unflushed, PowerShell Get/Set-Content double-encodes UTF-8; both fail SILENTLY
+
+## The Rust port — decided 2026-08-12, phases 0–1 done and green
+- [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; **phase 2+ needs fresh authorisation**
+- [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost by COMPILING and returning a silently different number
+- [Rust arithmetic IS PyPy](rust-port-arithmetic-is-pypy.md) — 98.89% bit-exact vs PyPy against 58% vs CPython, so the risk is SOLVER STOPPING RULES, not floating point
 
 ## Shipped rungs
 
 ### 25–30 · nozzle & turbine marches
-- [Rung 25 finite-rate nozzle](rung25-finite-rate-nozzle.md) — finite-rate nozzle chemistry; inverted into a three-state picture (an irreversible-fast ceiling below the reversible bound)
-- [Rung 26 freeze-out](rung26-freeze-out.md) — anchored local Da(T,p) clock; the freeze point MOVES with Tt4, density-driven; refutes rung 25's own seam framing
-- [Rung 27 NO freeze-out](rung27-no-freeze-out.md) — the frozen-NO assumption DERIVED (Da_NO≪1 from entry); the kill test INVERTS rung 26
-- [Rung 28 coupled NO march](rung28-coupled-no-march.md) — confirms rung 27's verdict, corrects BOTH its reasons; the precedent for editing a shipped rung
-- [Rung 29 shifting turbine](rung29-shifting-turbine.md) — frozen turbine EARNED at design, bites hot; the RATIO ≠ ENERGY correction; bound-first method
-- [Rung 30 choked nozzle](rung30-choked-nozzle.md) — full expansion NOT earned for a convergent engine; the pressure term rescues 87%
+- [Rung 25 finite-rate nozzle](rung25-finite-rate-nozzle.md) — inverted into a three-state picture (an irreversible-fast ceiling below the reversible bound)
+- [Rung 26 freeze-out](rung26-freeze-out.md) — density-driven, not T-driven; refutes rung 25's own seam framing
+- [Rung 27 NO freeze-out](rung27-no-freeze-out.md) — an assumption DERIVED rather than asserted; the kill test INVERTS rung 26
+- [Rung 28 coupled NO march](rung28-coupled-no-march.md) — confirms a verdict while correcting BOTH its reasons; the precedent for editing a shipped rung
+- [Rung 29 shifting turbine](rung29-shifting-turbine.md) — the RATIO ≠ ENERGY correction; the bound-first method
+- [Rung 30 choked nozzle](rung30-choked-nozzle.md) — full expansion NOT earned; the pressure term rescues 87%
 
 ### 31–33 · off-design steady matching
-- [Rung 31 off-design matching](rung31-offdesign-matching.md) — FIRST STRUCTURAL rung (pi_c becomes an OUTPUT); tau_t drifts on real gas, const on CPG; reduce-by-construction
-- [Rung 32 component maps](rung32-component-maps.md) — CORRECTS rung 31's "choked hardware IS the map": work is map-free but pi_c/mdot/N need it; N enters via speed lines
-- [Rung 33 subsonic matching](rung33-subsonic-matching.md) — the INVERSION of rung 31: subsonic tau_t varies even on CPG (structural coupling through pi_c, not p0 — advisor's fix)
+- [Rung 31 off-design matching](rung31-offdesign-matching.md) — first STRUCTURAL rung; reduce-by-construction
+- [Rung 32 component maps](rung32-component-maps.md) — CORRECTS rung 31's "choked hardware IS the map"
+- [Rung 33 subsonic matching](rung33-subsonic-matching.md) — the INVERSION of rung 31; coupling through pi_c, not p0 (advisor's fix)
 
 ### 34–37 · the single-spool transient
-- [Rung 34 spool transient](rung34-spool-transient.md) — N becomes a STATE (first DYNAMIC rung); the finding is the ratio tau_fuel/tau_spool, not the tautological I-independent shape
-- [Rung 35 fuel metering](rung35-fuel-metering.md) — fuel is the control, Tt4 an OUTPUT; CORRECTS rung 34 (fuel ENLARGES the surge excursion; the two accel limits are COUPLED)
-- [Rung 36 surge line](rung36-surge-line.md) — SM thin at LOW power; the zero-new-constant anchor was DEAD so phi_surge is imposed, but the SIGN survives; never gate the crossing
-- [Rung 37 combustor dynamics](rung37-combustor-dynamics.md) — the two internal clocks SPLIT: volume-filling confirms rung 34's concession, heat-soak corrects it (a 2nd state, history-dependent, surge-PROTECTIVE)
+- [Rung 34 spool transient](rung34-spool-transient.md) — the finding is the RATIO of clocks, not the tautological I-independent shape
+- [Rung 35 fuel metering](rung35-fuel-metering.md) — CORRECTS rung 34: fuel ENLARGES the excursion, the two accel limits are COUPLED
+- [Rung 36 surge line](rung36-surge-line.md) — the zero-new-constant anchor was DEAD so phi_surge is imposed, but the SIGN survives; never gate the crossing
+- [Rung 37 combustor dynamics](rung37-combustor-dynamics.md) — the two clocks SPLIT: one confirms rung 34's concession, the other corrects it
 
 ### 38–45 · two spools
-- [Rung 38 two-spool matching](rung38-two-spool-matching.md) — FIRST TWO-SHAFT rung; rung 31's trick chained twice via a 3rd choked throat A45; I caught my own "spools don't talk" over-claim pre-ship
-- [Rung 39 two-spool + maps](rung39-two-spool-maps.md) — REFUTES rung 38's prediction while CONFIRMING its verdict: the map opens ONE arrow HP→LP (pi_LPC cancels); two speeds ⇒ slip
-- [Rung 40 two-shaft transient](rung40-two-shaft-transient.md) — the LP map opens a COMPLEX inter-spool mode; rho SPLITS (powerless over stability, decisive over oscillation)
-- [Rung 41 two-spool surge line](rung41-two-spool-surge-line.md) — the exposure SPLITS onto the LP; a LIVE zero-new-constant closed form; corrects rung 36's mechanism, its verdict survives
-- [Rung 42 interstage bleed](rung42-interstage-bleed.md) — the valve is a DoF on ONE spool (LP yes, HP no); my "penalizes HP" hypothesis REFUTED; state self-targeting in phi-space
-- [Rung 43 two-shaft fuel metering](rung43-two-shaft-fuel-metering.md) — the spools sit at DIFFERENT points in ONE overshoot loop so neither clock governs it; the CURRENCY-CIRCULARITY trap
-- [Rung 44 transient surge line](rung44-transient-surge-line.md) — LP eats ~1.6-2.2x (rung 41 survives dynamically) but the excursion is SCHEDULE-slaved: ramp-rate-driven, mode-independent
-- [Rung 45 transient fuel surge](rung45-transient-fuel-surge.md) — rung 43's rho-monotone overshoot NEVER reaches the reference-free surge object; fuel enlarges the approach, compresses the ratio
+- [Rung 38 two-spool matching](rung38-two-spool-matching.md) — I caught my own "spools don't talk" over-claim pre-ship
+- [Rung 39 two-spool + maps](rung39-two-spool-maps.md) — REFUTES rung 38's prediction while CONFIRMING its verdict
+- [Rung 40 two-shaft transient](rung40-two-shaft-transient.md) — rho SPLITS: powerless over stability, decisive over oscillation
+- [Rung 41 two-spool surge line](rung41-two-spool-surge-line.md) — corrects rung 36's mechanism while its verdict survives
+- [Rung 42 interstage bleed](rung42-interstage-bleed.md) — my "penalizes HP" hypothesis REFUTED; state self-targeting in phi-space
+- [Rung 43 two-shaft fuel metering](rung43-two-shaft-fuel-metering.md) — the CURRENCY-CIRCULARITY trap
+- [Rung 44 transient surge line](rung44-transient-surge-line.md) — the excursion is SCHEDULE-slaved: ramp-rate-driven, mode-independent
+- [Rung 45 transient fuel surge](rung45-transient-fuel-surge.md) — a rho-monotone overshoot NEVER reaches the reference-free object
 
 ### 46–52 · the fuel-side limiter family
-- [Rung 46 TIT topping governor](rung46-tit-topping-governor.md) — first fuel-side FEEDBACK; relief SPLITS (rebates the late HP, machine-zero on the early binding LP); rung 35's limits are SEQUENCED in time
-- [Rung 47 lagged topping governor](rung47-lagged-topping-governor.md) — a lag is TRAILING-edge, so it REFUTES rung 46's "slow governor reaches earlier"; cost of realism = it breaks the redline hold
-- [Rung 48 accel schedule](rung48-accel-schedule.md) — UNIFIES 46/47: a fuel-side limiter rebates a spool IFF it engages upstream of THAT spool's own surge minimum; m is an engagement-TIME dial
-- [Rung 49 phi feedback limiter](rung49-phi-feedback-limiter.md) — watches the PROTECTED variable; a limiter acts through BOTH edges on DIFFERENT clocks, so an LP floor DEBITS the HP; both predicted signs were wrong
-- [Rung 50 release edge isolated](rung50-release-edge-isolated.md) — the closing edge RELOCATES both spools' minima to itself; rung 48's immunity is TIMING, not clip SHAPE; refusing my own first confirming result was the key move
-- [Rung 51 release rate](rung51-release-rate.md) — the debit is NOT a functional of the applied-fuel trajectory (two-sided bracket, after the pre-registered gate turned out confounded)
-- [Rung 52 asymmetric lag](rung52-asymmetric-lag.md) — a self-releasing limiter CANNOT DEBIT THE SPOOL IT WATCHES, so rung 50's watched-side debit is an ARTIFACT OF FORCING; surfacing a conflict beat complying
+- [Rung 46 TIT topping governor](rung46-tit-topping-governor.md) — relief SPLITS by spool; rung 35's limits are SEQUENCED in time
+- [Rung 47 lagged topping governor](rung47-lagged-topping-governor.md) — a lag is TRAILING-edge, refuting "slow governor reaches earlier"
+- [Rung 48 accel schedule](rung48-accel-schedule.md) — UNIFIES 46/47: a limiter rebates a spool IFF it engages upstream of THAT spool's own minimum
+- [Rung 49 phi feedback limiter](rung49-phi-feedback-limiter.md) — both edges act on DIFFERENT clocks; both my predicted signs were wrong
+- [Rung 50 release edge isolated](rung50-release-edge-isolated.md) — refusing my own first CONFIRMING result was the key move
+- [Rung 51 release rate](rung51-release-rate.md) — two-sided bracket, after the pre-registered gate turned out confounded
+- [Rung 52 asymmetric lag](rung52-asymmetric-lag.md) — rung 50's debit was an ARTIFACT OF FORCING; surfacing a conflict beat complying
 
 ### 53–56 · airflow levers, on the steady matcher
-- [Rung 53 variable stator](rung53-variable-stator.md) — the FIRST floor-moving lever; a margin is a DISTANCE, so such a lever makes it coordinate-dependent — BOUNDS rungs 36-52's currency
-- [Rung 54 stator throat](rung54-stator-throat.md) — the constant SPLIT (shape derived / level disclosed); BIND-NEVER-RELIEVE; a CONSTRAINT'S SEVERITY is coordinate-dependent too
-- [Rung 55 stage stack](rung55-stage-stack.md) — a POSITIONAL lever buys relief from the part it does not move; the row count has an INTERIOR optimum
-- [Rung 56 per-row capacity](rung56-per-row-capacity.md) — the binding row MIGRATES with power; the machine's two binding rows differ by END *and* SPOOL; a LEVER'S COST is coordinate-dependent too
+- [Rung 53 variable stator](rung53-variable-stator.md) — a margin is a DISTANCE, so a floor-moving lever makes it coordinate-dependent
+- [Rung 54 stator throat](rung54-stator-throat.md) — the constant SPLIT: shape derived, level disclosed
+- [Rung 55 stage stack](rung55-stage-stack.md) — the row count has an INTERIOR optimum
+- [Rung 56 per-row capacity](rung56-per-row-capacity.md) — a LEVER'S COST is coordinate-dependent too
 
 ### 57–63 · schedules on the transient — except 61, which is steady
-- [Rung 57 stator schedule on the transient](rung57-stator-schedule-transient.md) — a wall-moving lever has NO CLOCK, bounding rungs 46-52's timing family as rung 53 bounded their currency
-- [Rung 58 composite min-select](rung58-composite-minselect.md) — two levers do not superpose (ONE-WAY); my "inherits a clock" headline was refuted by MY OWN table — check the SUM, not the term
-- [Rung 59 matched schedule](rung59-matched-schedule.md) — a schedule's ORDINATE cannot see a stator, only its INDEX can; discharges rung 58's concession as VACUOUS
-- [Rung 60 matched floor](rung60-matched-floor.md) — a floor PINS the coordinate it watches, so the composite is a TAUTOLOGY in ANY currency; the advisor's blocker BECAME the headline
-- [Rung 61 stator + bleed](rung61-stator-bleed.md) — a compensating lever buys back the COORDINATE, not the BILL; a "derived" scaling whose binding constant is mine is not derived
-- [Rung 62 bleed schedule](rung62-bleed-schedule.md) — a state-fed schedule's LOOP has a SIGN; two loops through one state do not compose; the _powers trap (Newton converging on a residual the plant does not use)
-- [Rung 63 fuel + bleed](rung63-fuel-bleed.md) — a fuel schedule's TABLE has two guards and only a MASS-extracting lever reaches them; I over-claimed the consequence 3x — check a quoted number was taken at THIS rung's settings
+- [Rung 57 stator schedule on the transient](rung57-stator-schedule-transient.md) — bounds rungs 46-52's timing family as rung 53 bounded their currency
+- [Rung 58 composite min-select](rung58-composite-minselect.md) — my headline was refuted by MY OWN table: check the SUM, not the term
+- [Rung 59 matched schedule](rung59-matched-schedule.md) — discharges rung 58's concession as VACUOUS
+- [Rung 60 matched floor](rung60-matched-floor.md) — the advisor's blocker BECAME the headline
+- [Rung 61 stator + bleed](rung61-stator-bleed.md) — a "derived" scaling whose binding constant is mine is NOT derived
+- [Rung 62 bleed schedule](rung62-bleed-schedule.md) — the _powers trap: Newton converging on a residual the plant does not use
+- [Rung 63 fuel + bleed](rung63-fuel-bleed.md) — I over-claimed 3x; check a quoted number was taken at THIS rung's settings
 
 ### 64–68 · the bleed valve, its lag, and cascades
-- [Rung 64 phi bleed limiter](rung64-phi-bleed-limiter.md) — a limiter's LAW cannot buy PROTECTION, only its PRICE (the ceiling is b_max, i.e. hardware); two predictions refuted and both BECAME content; the discriminator-before-the-anchor move
-- [Rung 65 lagged valve](rung65-lagged-valve.md) — a lag repairs the SOLVE without removing the DEGENERACY; a § 0 pre-check that was itself RK4 instability; not every third state starts at zero
-- [Rung 66 two-lag cascade](rung66-two-lag-cascade.md) — two loops on one variable are ONE loop with the rates ADDED (R_q·C_g ≡ 1 identically); my anchor was right for the wrong reason and my own stability floor was unsafe; check where an extremum sits before quoting it
-- [Rung 67 cascade A](rung67-cascade-a.md) — one scalar P sets BOTH the ringing window and the damping, so the mode is admissible but UNOBSERVABLE; a zero cross-gain is saturation, never decoupling; two-branch registration is the device that produced the surprise
-- [Rung 68 three loops](rung68-three-loops.md) — n loops on one variable are RANK ONE, so only the CYCLIC product is independent; check what's independent before quoting it; three of my own claims corrected by measurement mid-build
+- [Rung 64 phi bleed limiter](rung64-phi-bleed-limiter.md) — two predictions refuted and both BECAME content; the discriminator-before-the-anchor move
+- [Rung 65 lagged valve](rung65-lagged-valve.md) — a § 0 pre-check that was itself RK4 instability; not every third state starts at zero
+- [Rung 66 two-lag cascade](rung66-two-lag-cascade.md) — my anchor was right for the WRONG reason; check where an extremum sits before quoting it
+- [Rung 67 cascade A](rung67-cascade-a.md) — a zero cross-gain is saturation, never decoupling; two-branch registration produced the surprise
+- [Rung 68 three loops](rung68-three-loops.md) — check what is INDEPENDENT before quoting it; three of my claims corrected mid-build
 
-### 69–83 · reference splits, rank, and the reader-only rungs
-- [Rung 69 reference split](rung69-reference-split.md) — the rank counts CONSTRAINTS not loops (zeros = n − m); det J was BLIND to the split and c1 the discriminator; a null space ABSORBS a moved start
-- [Rung 70 generic split](rung70-generic-split.md) — the split buys the RANK, the RING needs one lever on TWO walls; a predicted NULL refuted into an invariance; I caught a gate computing my own formula twice
-- [Rung 71 full split](rung71-full-split.md) — n=m=3: rank independence is NOT constraint independence (`zeros = n−m` counts gradients, not LIVE loops); det J finally alive and STILL blind to the one new gain; my own headline quoted the wrong window
-- [Rung 72 shared actuator](rung72-shared-actuator.md) — two loops on ONE actuator are a SWITCH between plants; ONE plant IS rungs 68/69/70/71 by AUTHORITY; first seam closed by REFUTING its premise; three predictions died of one oversight; two instruments silently agreed with themselves
-- [Rung 73 applied reference](rung73-applied-reference.md) — a predicted coupling landed in the wrong COLUMN so rung 72's block survived its own seam; weakening an instrument cost 5 orders of magnitude and was worth it; the bug that returned a PERFECT confirmation having measured nothing
-- [Rung 74 demand coordinate](rung74-demand-coordinate.md) — a STATE’s coordinate is PURE BILL (no rank, all trajectory); the redline break was the COORDINATE not the lag; the clip floor was an accidental anti-windup device; a closed-loop difference cannot isolate a forcing
-- [Rung 75 anti-windup device](rung75-antiwindup-device.md) — a device is decisive on the SPECTRUM and inert on the RANK; the inherited instrument was BLIND and would have refuted the headline having measured nothing; rung 74’s “divergence” was a contraction at ratio one
-- [Rung 76 fuel-dependent cap](rung76-fuel-dependent-cap.md) — a device in a leg's LAW reaches the MASKED leg, one in the shared PLANT reaches the AUTHORITATIVE one; the 0.7% miss on a pre-registered identity WAS the finding (a set-point solve is a 1/(1−c) GAIN); guard the second min-select
-- [Rung 77 stiffness ledger](rung77-stiffness-ledger.md) — a set-point solve's sensitivity is a FORCING OVER A SLOPE, so 1/(1−c) is the SLOPE HALF of one leg; check UNITS before choosing a normalisation; a closure that outlived its state block returned a perfect 1.000e+00
-- [Rung 78 residual gauge](rung78-residual-gauge.md) — a residual's SLOPE is a GAUGE, its root's UNIQUENESS is not; THREE vacuity traps in one section (wrong coordinate, a counter that was itself vacuous, masking) — only COUNTING caught them; `ok` is not a correctness guard
-- [Rung 79 state coordinate](rung79-state-coordinate.md) — a coordinate is a GAUGE the PLANT cannot REACH (the branch making a leg AUTHORITATIVE restores the original coordinate); registering the VACUITY CONDITION beat registering the result; first rung to pay its CLAUDE.md row with no bump
-- [Rung 80 split wall](rung80-split-wall.md) — a LEVEL split opens the four-loop cell but never a fourth AUTHORITATIVE loop; the seam had named the wrong NOUN, all three pre-registered predictions were refuted, and the arrest turned out to be the two walls' COINCIDENCE
-- [Rung 81 authority clock](rung81-authority-clock.md) — authority is the LAG's not the SET POINT's, and a masked leg's clock is an EXACT null knob (0 of 1364 floats); the first grid's 100% was the WEAKER measurement, and a pre-check answered the seam before the anchor existed
-- [Rung 82 threshold law](rung82-threshold-law.md) — a criterion read FORWARD inherits the SIGN of its own reference; the pre-check killed the intended headline, two registered bars were VOID for comparing a physical quantity to a loop count, and a 5-of-5 correlation needed one discriminator to become causal
-- [Rung 83 corrector law](rung83-corrector-law.md) — a bracketing solve locates a SIGN CHANGE and a corrector needs a ROOT; one ramp has none, an identity round-trip was sold as a 2.7e-14 verification, and a bar that named a DIRECTION instead of a POINT died
-- [Rung 84 staircase law](rung84-staircase-law.md) — a small integer COUNT cannot carry a RATE (two predictions died of it, the third bar in this lineage to die of its own wording); the headline was written before the measurement that refuted it, and the defective estimator sat in the SHIPPED reader, not just the probe
+### 69–84 · reference splits, rank, and the reader-only rungs
+- [Rung 69 reference split](rung69-reference-split.md) — det J was BLIND to the split and c1 the discriminator; a null space ABSORBS a moved start
+- [Rung 70 generic split](rung70-generic-split.md) — a predicted NULL refuted into an invariance; I caught a gate computing my own formula twice
+- [Rung 71 full split](rung71-full-split.md) — rank independence is NOT constraint independence; my own headline quoted the wrong window
+- [Rung 72 shared actuator](rung72-shared-actuator.md) — first seam closed by REFUTING its premise; two instruments silently agreed with themselves
+- [Rung 73 applied reference](rung73-applied-reference.md) — a bug that returned a PERFECT confirmation having measured nothing; weakening an instrument was worth 5 orders
+- [Rung 74 demand coordinate](rung74-demand-coordinate.md) — a closed-loop difference cannot isolate a forcing; the clip floor was an ACCIDENTAL anti-windup device
+- [Rung 75 anti-windup device](rung75-antiwindup-device.md) — the inherited instrument was BLIND and would have refuted the headline having measured nothing
+- [Rung 76 fuel-dependent cap](rung76-fuel-dependent-cap.md) — the 0.7% miss on a pre-registered identity WAS the finding; guard the second min-select
+- [Rung 77 stiffness ledger](rung77-stiffness-ledger.md) — check UNITS before choosing a normalisation; a stale closure returned a perfect 1.000e+00
+- [Rung 78 residual gauge](rung78-residual-gauge.md) — THREE vacuity traps in one section, only COUNTING caught them; `ok` is not a correctness guard
+- [Rung 79 state coordinate](rung79-state-coordinate.md) — registering the VACUITY CONDITION beat registering the result
+- [Rung 80 split wall](rung80-split-wall.md) — the seam named the wrong NOUN; all three pre-registered predictions were refuted
+- [Rung 81 authority clock](rung81-authority-clock.md) — the first grid's 100% was the WEAKER measurement; a pre-check answered the seam before the anchor existed
+- [Rung 82 threshold law](rung82-threshold-law.md) — two registered bars were VOID for comparing a physical quantity to a loop count
+- [Rung 83 corrector law](rung83-corrector-law.md) — an identity round-trip sold as verification; a bar naming a DIRECTION instead of a POINT died
+- [Rung 84 staircase law](rung84-staircase-law.md) — a small integer COUNT cannot carry a RATE; the defective estimator sat in the SHIPPED reader, not just the probe
 
 ## Margin sweeps — confirmations, not rungs
-- [Rungs 72–77 march audit](rungs72-77-march-audit.md) — the arrest is rung 74 § 2.2's and it already owned it; a seam's section number does not survive the rungs it points at; a liveness counter on a FROZEN plant reports FULL activity
-- [Rung 74 arrest interval](rung74-arrest-interval.md) — the arrest is an INTERVAL with two DERIVED edges, and `demand` has NO four-loop wall; the advisor killed my framing with a row from my own table, and the number that didn't parse WAS the finding
-- [Rung 79 gap margin](rung79-gap-margin.md) — the § 5 march STANDS STILL; a limiter armed at the initial operating point has no transient, and the rig placement a constrained Jacobian REQUIRES is what voids it; a counter is only as good as the NOUN it counts
-- [Rung 29 π_c margin](rung29-pi-c-margin.md) — verdict confirmed at 9.4× but π_c NOT protective; the ENERGY = INVENTORY × COMPLETION sharpening
-- [Rung 29 M0 margin](rung29-M0-margin.md) — monotone-protective (opposite of π_c), 8.8×; the delta_h-swing-not-headroom correction; double-edged envelope
+- [Rungs 72–77 march audit](rungs72-77-march-audit.md) — a seam's section number does not survive the rungs it points at; a liveness counter on a FROZEN plant reports FULL activity
+- [Rung 74 arrest interval](rung74-arrest-interval.md) — the advisor killed my framing with a row from my own table; the number that didn't parse WAS the finding
+- [Rung 79 gap margin](rung79-gap-margin.md) — a counter is only as good as the NOUN it counts; a limiter armed at the initial point has no transient
+- [Rung 29 π_c margin](rung29-pi-c-margin.md) — verdict confirmed but π_c NOT protective; the ENERGY = INVENTORY × COMPLETION sharpening
+- [Rung 29 M0 margin](rung29-M0-margin.md) — monotone-protective (opposite of π_c); the swing-not-headroom correction
 - [Rung 28 β margin hardened](rung28-beta-margin-hardened.md) — β exactly pressure-invariant, π_c protective
 
 ## Investigated, NEGATIVE — not shipped, not rungs
 - [τ_res negative](tau-res-negative.md) — rung 26's seam (a) negative on both counts; confirms rung 26
-- [Mixing-scale negative](mixing-scale-negative.md) — the locally-resolved-SCALE ceiling attack; revisit only when δ(J) is anchored
+- [Mixing-scale negative](mixing-scale-negative.md) — revisit only when δ(J) is anchored
 - [Turbine-march negative](turbine-march-negative.md) — I_turb≡S because turbine entry is at equilibrium; rung 25's dodge cannot repeat
 - [Mixing JICF-anchor negative](mixing-jicf-anchor-negative.md) — confirms rung 22 but rides on a SECOND unanchored exponent
-- [pt3 sensor-lag negative](pt3-sensor-lag-negative.md) — confirms rung 48, corrects its seam's SIGN (a sensor lag engages EARLIER); the 12%-gap-inside-my-own-ds-band lesson
+- [pt3 sensor-lag negative](pt3-sensor-lag-negative.md) — corrects rung 48's seam SIGN; the 12%-gap-inside-my-own-band lesson
 - [Per-row blading negative](per-row-blading-negative.md) — the request is OVER-DETERMINED (proof); capacity inert on the well-posed anchor
-- [Both-edges limiter negative](both-edges-limiter-negative.md) — closes the WHOLE pt3-filter family (the ramp is the only clock); UPGRADES rung 48 to the truncated-descent law
-- [phi-rate limiter negative](phi-rate-limiter-negative.md) — fuel's authority over phi INVERTS between LEVEL and DERIVATIVE; the ONE negative carrying a test
+- [Both-edges limiter negative](both-edges-limiter-negative.md) — closes the WHOLE pt3-filter family; UPGRADES rung 48
+- [phi-rate limiter negative](phi-rate-limiter-negative.md) — authority INVERTS between LEVEL and DERIVATIVE; the ONE negative carrying a test
