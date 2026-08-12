@@ -16,20 +16,39 @@
 //!   lifted two ways: a computed T-driven super-equilibrium factor and an imposed prompt
 //!   (Fenimore) bump. Both refute "the rich primary explodes", from opposite directions.
 //!   `docs/rung19-spec.md`.
+//! - **rung 10** — the quench takes TIME. As the dilution air mixes in, the local mixture
+//!   sweeps through STOICHIOMETRIC, so a rich primary's temperature RISES through the NO-bell
+//!   peak and the same Zeldovich rate RE-MAKES the NO it avoided. `docs/rung10-spec.md`.
+//! - **rung 11** — the quench time stops being a free knob: [`JetMixing`] DERIVES it from the
+//!   jet momentum-flux ratio J, with an entrainment schedule replacing rung 10's linear one.
+//!   Mean-field, so EI falls MONOTONICALLY in J — no mixing optimum. `docs/rung11-spec.md`.
+//! - **rung 12** — [`Unmixedness`] splits the flow into a mean-field bulk and an under-mixed
+//!   core that lingers, and the NO-vs-J curve TURNS BACK UP: the Holdeman optimum, recovered
+//!   and pinned AT `C_opt`. `docs/rung12-spec.md`.
+//! - **rung 20** — rung 19's super-equilibrium [O] threaded THROUGH the quench, closing the
+//!   seam where the finite-quench numbers still rode on equilibrium O. `docs/rung20-spec.md`.
 //!
 //! # What the port had to be careful about here
 //!
 //! Every composition is an ORDERED slice, never a map, because Python sums its dicts in
-//! insertion order and float addition is not associative. In this slice every composition
-//! comes from [`gas::equilibrium_composition`] or [`gas::air_mole_fractions`], so no new
-//! ordering is introduced — but rung 10's quench trajectory BUILDS one, and that is where
-//! the next slice has to look.
+//! insertion order and float addition is not associative. Through rung 20 every composition
+//! still comes from [`gas::equilibrium_composition`] or [`gas::air_mole_fractions`], so no new
+//! ordering is introduced anywhere in this file.
+//!
+//! Slice A predicted the trap would fire in rung 10's quench trajectory. **It does not, and
+//! the check is worth recording rather than repeating**: the trajectory builds a record of
+//! SCALARS read by field ([`QuenchPoint`]), rung 12's two-stream split is a scalar mass
+//! weighting, and the only composition either of them sums is the equilibrium solver's own
+//! output. The Python sites that DO assemble a composition by hand sit in the nozzle marches
+//! (`gas.py:1963` / `gas.py:2255`) — rungs 25/26, which is phase 4's problem, not this file's.
 //!
 //! The Zeldovich integrator is fixed-step RK4 with no adaptive control, so it carries no
 //! stopping rule. What it does carry is 4000 accumulations, and `c += dt/6.0 * (…)` is a
 //! different function in the last bit from `(…) * dt/6.0`. The two bisections
 //! ([`primary_aft`], [`mixed_out_t`]) are where the stopping rules live, and their inner
-//! evaluation is the 8-species Newton — the deepest solver nesting in the project.
+//! evaluation is the 8-species Newton — the deepest solver nesting in the project. Rung 10
+//! wraps a THIRD loop around that pair: one trajectory is `ngrid` mix-out bisections, each a
+//! bisection over a Newton.
 
 use crate::gas::{
     self, air_mole_fractions, equilibrium_composition, g_molar, h_molar_a, m_air, powp, species,
@@ -413,6 +432,275 @@ pub fn mixed_out_t(
     t
 }
 
+// --------------------------------------------------------------------------------------
+// RUNG 10 — the FINITE-RATE quench (secondary-zone Zeldovich in the cooling gas).
+//
+// Rung 9's mix-out is the IDEAL (infinitely-fast) quench: NO frozen at the primary value.
+// Here the quench air is added over a finite time, so the LOCAL mixture sweeps far_p → far_ov
+// — through STOICHIOMETRIC for a rich primary — and a rich primary's temperature RISES through
+// the NO-bell peak on the way down, RE-MAKING the NO it avoided. `docs/rung10-spec.md`.
+// --------------------------------------------------------------------------------------
+
+/// One point on the fast-chemistry dilution trajectory, at dilution fraction β.
+///
+/// A record of SCALARS, read by field and never summed — which is why the composition-ORDER
+/// hazard the port plan flagged for this slice does not actually fire here (see the module
+/// header). Every composition on this path still comes from [`equilibrium_composition`].
+#[derive(Debug, Clone, Copy)]
+pub struct QuenchPoint {
+    /// mol current-air per mol total-FINAL-air, `a(β) = α + β(1−α)`
+    pub a: f64,
+    /// local instantaneous-equilibrium temperature, K
+    pub t: f64,
+    /// [O], mol/m³ (the rung-6 equilibrium pool's; rung 20 lifts it INSIDE the integrator)
+    pub c_o: f64,
+    /// [N₂], mol/m³
+    pub c_n2: f64,
+    /// [H], mol/m³
+    pub c_h: f64,
+    /// [NO]_e, mol/m³ — the thermodynamic ceiling, untouched by rung 20
+    pub c_noe: f64,
+    /// moles per mol CURRENT air
+    pub ntot_local: f64,
+    /// pool volume on the FINAL (total-air) basis, m³ — so extensive NO moles ↔ concentration
+    pub v: f64,
+}
+
+/// Fast-chemistry dilution trajectory for the finite quench (rung 10).
+///
+/// The quench is resolved in a parameter β ∈ [0,1] (dilution fraction). The air present at β
+/// is `a(β) = α + β(1−α)` mol per mol TOTAL(final) air, so the LOCAL fuel/air ratio
+/// `far_local = far_ov/a` sweeps far_p → far_ov — through STOICHIOMETRIC for a rich primary
+/// (the peak of the NO bell). At each β the majors + T are instantaneous equilibrium (the
+/// rung-8 re-equilibrating [`mixed_out_t`] on the CURRENT air, basis 1 mol current air), so
+/// [O], [N₂], [H], [NO]_e and T are functions of β ALONE; NO is the one SLOW variable,
+/// integrated separately by [`quench_no`].
+///
+/// The rung-7 K-check + trace guards bind along the WHOLE trajectory (every T the quench
+/// visits), not just the primary — the transcribed rates stay tied to the a6/a7 thermo.
+///
+/// **This is the expensive object in the slice** — every point re-equilibrates the diluting
+/// majors through a bisection whose inner evaluation is the 8-species Newton. It takes no
+/// `tau_q` and no jet config, so ONE trajectory serves an entire τ_q sweep, an entire J sweep,
+/// and rung 12's bulk/core pair; [`quench_no`] accepts it prebuilt for exactly that reason.
+pub fn quench_trajectory(
+    comp_prim: &[(&str, f64)],
+    t_prim: f64,
+    alpha: f64,
+    far_ov: f64,
+    t_dilution: f64,
+    p: f64,
+    ngrid: usize,
+) -> Vec<QuenchPoint> {
+    let mut tab = Vec::with_capacity(ngrid);
+    for i in 0..ngrid {
+        let b = i as f64 / (ngrid - 1) as f64;
+        let a = alpha + b * (1.0 - alpha); // mol current-air / mol total-final-air
+        let far_local = far_ov / a; // far_p (β=0) → far_ov (β=1)
+        let alpha_local = alpha / a; // fraction of CURRENT air that is primary
+        let t_local = mixed_out_t(comp_prim, t_prim, alpha_local, far_local, t_dilution, p);
+        let comp_local = equilibrium_composition(far_local, t_local, p);
+        let ntot_local: f64 = comp_local.iter().map(|&(_, v)| v).sum(); // per mol current-air
+        let conc = p / (RU * t_local); // total molar conc, mol/m³
+        let c_o = maybe(&comp_local, "O") / ntot_local * conc;
+        let c_n2 = need(&comp_local, "N2") / ntot_local * conc;
+        let c_h = maybe(&comp_local, "H") / ntot_local * conc;
+        let x_no_e = equilibrium_no_fraction(&comp_local, t_local);
+        let c_noe = x_no_e * conc;
+        let v = a * ntot_local * RU * t_local / p; // volume on the FINAL (total-air) basis
+        let kr = kcheck_ratio(t_local); // K-check binds at EVERY trajectory T
+        assert!(
+            0.90 < kr && kr < 1.15,
+            "quench K-check off: ratio {kr:.4} at T={t_local:.1}"
+        );
+        assert!(
+            x_no_e < 0.02,
+            "NO not trace on quench path (x_NO_e={x_no_e:.4e}) at T={t_local:.1}"
+        );
+        tab.push(QuenchPoint { a, t: t_local, c_o, c_n2, c_h, c_noe, ntot_local, v });
+    }
+    tab
+}
+
+/// Linear interpolation on the trajectory at time-fraction `tfrac`, Python's `interp` exactly.
+///
+/// `int(x)` truncates toward zero and the index is clamped to `len−2`, so `tfrac = 1` lands on
+/// the last interval with `w = 1` rather than running off the end. Rust's `as usize` also
+/// truncates toward zero (and saturates at 0 below it), which is the same function on this
+/// domain — β never leaves [0,1].
+fn interp(tab: &[QuenchPoint], tfrac: f64, get: impl Fn(&QuenchPoint) -> f64) -> f64 {
+    let x = tfrac * (tab.len() - 1) as f64;
+    let i = (x as usize).min(tab.len() - 2);
+    let w = x - i as f64;
+    get(&tab[i]) * (1.0 - w) + get(&tab[i + 1]) * w
+}
+
+/// What [`quench_no`] returns — Python's result dict, as a struct.
+#[derive(Debug, Clone, Copy)]
+pub struct QuenchResult {
+    /// EI_NO re-made along the finite quench, g NO / kg fuel
+    pub ei: f64,
+    /// NO mole fraction frozen at the end of the quench
+    pub x_no_mix: f64,
+    /// NO moles per mol total-final-air
+    pub n_no: f64,
+    /// peak T along the path, K — `> T_primary` for a RICH primary (the smoking gun)
+    pub t_peak: f64,
+    /// max `[NO]/[NO]_e` reached; `< 1` ⇒ the dropped equilibrium clamp is dormant
+    pub max_a: f64,
+}
+
+/// Numerical + closure knobs for [`quench_no`] — Python's keyword tail.
+pub struct QuenchOpts<'a> {
+    /// RK4 steps in REAL time
+    pub nsteps: usize,
+    /// trajectory points, when one has to be built
+    pub ngrid: usize,
+    /// a PREBUILT trajectory; `None` builds one (the τ_q-independence lever)
+    pub tab: Option<&'a [QuenchPoint]>,
+    /// RUNG 11 — the β(t/τ_q) entrainment schedule; `None` is the identity ⇒ rung 10
+    pub schedule: Option<&'a dyn Fn(f64) -> f64>,
+    /// RUNG 20 — lift [O] by m(T) along the cooling path; `false` ⇒ bit-for-bit rung 10/11
+    pub super_eq_o: bool,
+}
+
+impl Default for QuenchOpts<'_> {
+    fn default() -> Self {
+        Self { nsteps: 2000, ngrid: 240, tab: None, schedule: None, super_eq_o: false }
+    }
+}
+
+/// Finite-rate quench NO integrator (rung 10; schedule-aware for rung 11). CLAMP-FREE.
+///
+/// Integrates the extended-Zeldovich rate (the SAME reverse-rate one-equation form as
+/// [`thermal_no`]) along the [`quench_trajectory`] cooling/mixing path, starting from the
+/// primary's kinetic NO. Two differences from [`thermal_no`], both load-bearing:
+///
+/// * **NO is EXTENSIVE** — moles per mol total-final-air. Mixing dilution air changes the
+///   volume `V(β)` but conserves NO moles; only chemistry changes them. So this integrates
+///   `dn_NO/dt = rate([NO] = n_NO/V)·V`.
+/// * **The `cNO ≤ cNOe` CAP IS DROPPED.** On a cooling path NO is legitimately
+///   super-equilibrium and frozen (Heywood); the cap would delete exactly that NO — a
+///   plausible-but-wrong low number with the asserts still green. The `(1−a²)` factor already
+///   goes NEGATIVE when `a > 1` (super-eq NO decomposes) and the Arrhenius constants freeze it
+///   out as T falls, so the form self-limits. This is a SEPARATE integrator; [`thermal_no`]
+///   stays byte-identical, because its rung-6..9 reduce gates depend on its exact capped RK4
+///   trajectory. `docs/rung10-spec.md` § the clamp trap.
+///
+/// A slow quench dwells near the stoichiometric crossing (the NO-bell peak) and RE-MAKES the
+/// NO a rich primary avoided; a fast quench escapes past the peak — the RQL hazard.
+///
+/// RUNG 11 — `schedule` decouples the DILUTION FRACTION β from time. Rung 10's `β = t/τ_q` is
+/// linear; a physical jet-entrainment schedule remaps it, `β = schedule(t/τ_q)`. The
+/// trajectory is indexed on β but `dt` still steps in REAL time for the Zeldovich accumulation
+/// — conflating the two (which rung 10 got away with only because its schedule was the
+/// identity) would silently reproduce rung-10 behaviour under a rung-11 label.
+///
+/// **The time variable ACCUMULATES** (`t += dt`), and `i as f64 * dt` is a different number
+/// after 2000 steps. Likewise `(t + 0.5·dt)/tau_q` is not `t/tau_q + 0.5·dt/tau_q`.
+pub fn quench_no(
+    comp_prim: &[(&str, f64)],
+    t_prim: f64,
+    alpha: f64,
+    far_ov: f64,
+    t_dilution: f64,
+    p: f64,
+    n_no_initial: f64,
+    tau_q: f64,
+    o: QuenchOpts<'_>,
+) -> QuenchResult {
+    let built;
+    let tab: &[QuenchPoint] = match o.tab {
+        Some(t) => t,
+        None => {
+            built =
+                quench_trajectory(comp_prim, t_prim, alpha, far_ov, t_dilution, p, o.ngrid);
+            &built
+        }
+    };
+
+    let mut max_a = 0.0f64; // max [NO]/[NO]_e over the path: <1 ⇒ clamp dormant
+
+    // `max_a` is updated AFTER the `cNOe <= 0` early return and on ALL FOUR RK4 trial states,
+    // including `n_no + dt·k3` — rung 10's dormancy gate reads it, so the update points are
+    // part of the contract, not bookkeeping.
+    let dn_dt = |tfrac: f64, n_no: f64, max_a: &mut f64| -> f64 {
+        let c_noe = interp(tab, tfrac, |r| r.c_noe);
+        if c_noe <= 0.0 {
+            return 0.0;
+        }
+        let t = interp(tab, tfrac, |r| r.t);
+        let v = interp(tab, tfrac, |r| r.v);
+        let mut c_o = interp(tab, tfrac, |r| r.c_o);
+        let c_n2 = interp(tab, tfrac, |r| r.c_n2);
+        let c_h = interp(tab, tfrac, |r| r.c_h);
+        if o.super_eq_o {
+            // RUNG 20 — lift [O] by m(T) INSIDE the re-making (the deferred rung-19 seam: the
+            // finite-quench NO rode on equilibrium O). m multiplies c_o, so it scales R1
+            // (formation) AND R2 (reverse) alike, exactly as `thermal_no`'s o_multiplier does
+            // on the primary. Floor T at the flame band — m diverges as T → 0 on the cool tail.
+            let m = super_eq_o_multiplier(t.max(SUPER_EQ_T_FLOOR));
+            assert!(
+                (1.0..=2.0).contains(&m),
+                "quench super-eq O multiplier m={m:.3} at T={t:.0} K outside [1,2] — the \
+                 Westenberg partial-eq closure is a flame model (floored at T≳1500 K)"
+            );
+            c_o *= m;
+        }
+        let r1 = k_zeldovich("1f", t) * c_o * c_n2;
+        let r2 = k_zeldovich("2r", t) * c_noe * c_o;
+        let r3 = k_zeldovich("3r", t) * c_noe * c_h;
+        let beta = if (r2 + r3) > 0.0 { r1 / (r2 + r3) } else { 0.0 };
+        let a = (n_no / v) / c_noe;
+        if a > *max_a {
+            *max_a = a;
+        }
+        2.0 * r1 * (1.0 - a * a) / (1.0 + beta * a) * v // d(n_NO)/dt = rate·V
+    };
+
+    // β↔time map: identity (β = t/τ_q, rung-10 linear) unless a rung-11 mixing schedule remaps
+    // it. With `schedule: None` the calls below are byte-identical to rung 10.
+    let identity = |x: f64| x;
+    let sched: &dyn Fn(f64) -> f64 = o.schedule.unwrap_or(&identity);
+
+    let mut n_no = n_no_initial;
+    let dt = tau_q / o.nsteps as f64;
+    let mut t = 0.0f64;
+    for _ in 0..o.nsteps {
+        let b1 = sched((t / tau_q).min(1.0));
+        let b2 = sched(((t + 0.5 * dt) / tau_q).min(1.0));
+        let b3 = sched(((t + dt) / tau_q).min(1.0));
+        let k1 = dn_dt(b1, n_no, &mut max_a);
+        let k2 = dn_dt(b2, n_no + 0.5 * dt * k1, &mut max_a);
+        let k3 = dn_dt(b2, n_no + 0.5 * dt * k2, &mut max_a);
+        let k4 = dn_dt(b3, n_no + dt * k3, &mut max_a);
+        n_no += dt / 6.0 * (k1 + 2.0 * k2 + 2.0 * k3 + k4);
+        if n_no < 0.0 {
+            n_no = 0.0; // guard negatives ONLY (no equilibrium cap)
+        }
+        t += dt;
+    }
+
+    let last = tab[tab.len() - 1];
+    let ntot_mix = last.a * last.ntot_local; // per mol total-final-air (= ntot(far_ov, T_mix))
+    let x_no_mix = n_no / ntot_mix;
+    let n_fuel = far_ov * m_air() / M_CH2;
+    let ei = if n_fuel > 0.0 {
+        1000.0 * (n_no * m_no()) / (n_fuel * M_CH2_KG)
+    } else {
+        0.0
+    };
+    // Python's `max(r["T"] for r in tab)`: a left fold that keeps the FIRST maximum, so a
+    // lean/stoich (monotone-falling) trajectory reports `tab[0].t` exactly.
+    let mut t_peak = tab[0].t;
+    for r in &tab[1..] {
+        if r.t > t_peak {
+            t_peak = r.t;
+        }
+    }
+    QuenchResult { ei, x_no_mix, n_no, t_peak, max_a }
+}
+
 /// Rung-19 prompt-NO (Fenimore) config — De Soete's (1975) global-rate CORRECTION FACTOR
 /// reduced to its fitted, rich-peaking φ-shape.
 ///
@@ -525,6 +813,186 @@ impl PromptNo {
     }
 }
 
+/// Rung-11 jet-in-crossflow mixing config — the PHYSICAL dilution-air entrainment model that
+/// retires rung 10's free `τ_q` + linear-schedule knobs. `docs/rung11-spec.md`.
+///
+/// A MEAN-FIELD model: a single well-mixed core diluting on a mean β(t). It DERIVES the quench
+/// RATE from jet momentum but CANNOT produce a mixing OPTIMUM — that is a spatial-variance
+/// effect (an over-penetrating jet leaves an un-mixed hot near-stoich core), deferred to rung
+/// 12. So the J-sweep is MONOTONE **by construction**, not by accident.
+///
+/// The one design knob is the momentum-flux ratio `J = ρ_j U_j²/(ρ_c U_c²)`; `H`/`U_c`/`C_e`/
+/// `shape_n` are order-of-magnitude / un-anchored (like α, φ_p, τ), so the ABSOLUTE `τ_q` is
+/// un-pinned — what is certified is the √J SCALING and the monotone direction.
+#[derive(Debug, Clone, Copy)]
+pub struct JetMixing {
+    /// jet-to-crossflow momentum-flux ratio (THE design knob)
+    pub j: f64,
+    /// dilution-zone duct height, m (the cross-stream mixing length)
+    pub h: f64,
+    /// bulk crossflow velocity, m/s
+    pub u_c: f64,
+    /// entrainment constant, O(0.1); folds penetration + entrainment + density ratio
+    pub c_e: f64,
+    /// entrainment schedule exponent (1 = linear/rung-10; >1 decelerating)
+    pub shape_n: f64,
+}
+
+impl Default for JetMixing {
+    /// Python's dataclass defaults. `J` has none there (it is the required design knob), so the
+    /// value here is a placeholder every construction site is expected to overwrite; the
+    /// `..Default::default()` idiom is what keeps the other four honest.
+    fn default() -> Self {
+        Self { j: 1.0, h: 0.10, u_c: 75.0, c_e: 0.15, shape_n: 2.0 }
+    }
+}
+
+impl JetMixing {
+    /// Python's `__post_init__`; see [`PromptNo::validate`] for why it is a method here.
+    pub fn validate(&self) {
+        for (name, v) in [
+            ("J", self.j),
+            ("H", self.h),
+            ("U_c", self.u_c),
+            ("C_e", self.c_e),
+            ("shape_n", self.shape_n),
+        ] {
+            assert!(v > 0.0, "JetMixing.{name}={v} must be positive");
+        }
+    }
+
+    /// Derived quench time `τ_q = H/(C_e·√J·U_c)` — monotone-DECREASING in J (a
+    /// higher-momentum jet penetrates and entrains faster; penetration ∝ √J). "Quick quench"
+    /// = high jet momentum. For physical `J ∈ [4,100]` this lands in the RQL sub-ms–few-ms band.
+    ///
+    /// **`sqrt`, not `powp`.** Python spells this `math.sqrt(self.J)`, which IS the sqrt
+    /// instruction — the exact inverse of phase 2's trap, where Python's `x ** 0.5` was a libm
+    /// `pow` call that differed from `sqrt` about 1 point in 670. Applying "always `powp`"
+    /// mechanically would get this one backwards.
+    pub fn tau_q(&self) -> f64 {
+        self.h / (self.c_e * self.j.sqrt() * self.u_c)
+    }
+
+    /// The entrainment schedule `β(t/τ_q) = 1 − (1 − t/τ_q)^shape_n` — reaches β=1 EXACTLY at
+    /// `tfrac=1` (no endpoint trap). `shape_n=1` ⇒ `β = tfrac` (linear = constant entrainment =
+    /// rung 10, the reduce); `shape_n>1` ⇒ concave/decelerating (fast near the jet where shear
+    /// and gradient are strong, slowing as the concentration difference collapses).
+    ///
+    /// `shape_n == 1` returns the IDENTITY exactly — not `1−(1−x)^1`, which drifts a ULP — so a
+    /// `shape_n=1` jet is BYTE-IDENTICAL to the rung-10 linear path at the derived `τ_q`.
+    ///
+    /// The exponent is a float FIELD, not an integer literal, so PyPy's `x ** 2` → multiply
+    /// rewrite does not apply and this reaches libm `pow`: hence [`powp`]. That is measured by
+    /// the oracle's own schedule block, not reasoned about — it is the first non-literal float
+    /// exponent in a hot path in the project.
+    pub fn schedule(&self, tfrac: f64) -> f64 {
+        if self.shape_n == 1.0 {
+            return tfrac;
+        }
+        1.0 - powp(1.0 - tfrac, self.shape_n)
+    }
+}
+
+/// Rung-12 spatial-unmixedness (two-stream) model — the VARIANCE layer rung 11 deferred. It
+/// rides ON a [`JetMixing`] (which supplies J and the duct height H) and finally makes the
+/// NO-vs-J curve TURN BACK UP, recovering the classic Holdeman dilution-jet optimum AT `C_opt`.
+///
+/// Rung 11 was MEAN-FIELD, so its J-sweep is monotone (a stronger jet only ever re-makes LESS
+/// NO). But a real dilution jet has an OPTIMUM at the Holdeman group `C = (S/H)√J ≈ 2.5` (a
+/// *uniformity* criterion): UNDER-penetration leaves the jet near the wall and the core
+/// un-mixed; OVER-penetration slams the air onto the far wall / collides jets in the centre —
+/// BOTH leave a hot, near-stoichiometric core that misses the fast jet mixing and lingers.
+///
+/// THE MODEL (a two-stream split, mass-weighted; the CORE carries the off-optimum penalty TWO
+/// WAYS):
+///
+/// * a BULK fraction `(1−w)` quenched at the rung-11 jet time `τ_mean(J)` — the mean-field
+///   flow (∝ 1/√J: monotone-falling, the fixed REFERENCE, NOT a function of `C_opt`);
+/// * an UNDER-MIXED CORE fraction `w` that MISSES the jet and lingers, quenched at a dwell
+///   `τ_core(C) = τ_res·(1 + b_u·u)` — an ABSOLUTE residence, NOT the vanishing jet time, so
+///   its NO penalty survives J→∞ — that GROWS off-optimum;
+/// * the unmixedness `u(C) = |ln(C/C_opt)|` drives both and is KINKED at `C_opt`.
+///
+/// ```text
+/// EI_total = (1−w)·EI(τ_mean) + w·EI(τ_core)
+/// ```
+///
+/// THE PIN: with a SMOOTH (parabolic) `w` the turn-up would drift to a stronger jet than
+/// `C_opt` — the still-falling mean-field bulk pulls it right. The KINK gives `w` a non-zero
+/// slope at `C_opt`, so the turn-up starts THERE. The EI-min therefore pins at `C_opt` for ALL
+/// `S` ⇒ `J_min = J_opt = (C_opt·H/S)²`, shifting EXACTLY as `(H/S)²` — the Holdeman group made
+/// literal. `docs/rung12-spec.md`.
+///
+/// Like `C_e`/`τ_q`, the ABSOLUTE knobs (`S`, `τ_res`, `k_u`, `b_u`, `w_max`) are
+/// order-of-magnitude / un-anchored — what is certified is the TURN-UP, the optimum AT `C_opt`,
+/// and the `(H/S)²` shift.
+#[derive(Debug, Clone, Copy)]
+pub struct Unmixedness {
+    /// dilution-jet spacing, m (cross-stream spacing of adjacent jets)
+    pub s: f64,
+    /// Holdeman uniformity optimum of `C = (S/H)√J` (best cross-plane mixing)
+    pub c_opt: f64,
+    /// core dwell AT the optimum, s (the absolute dilution-zone residence)
+    pub tau_res: f64,
+    /// core-fraction sensitivity to unmixedness (the kink that PINS the min at `C_opt`)
+    pub k_u: f64,
+    /// core-dwell growth off-optimum (keeps the over-penetration flank rising)
+    pub b_u: f64,
+    /// cap on the segregated core fraction (`0 < w_max ≤ 1`)
+    pub w_max: f64,
+}
+
+impl Default for Unmixedness {
+    fn default() -> Self {
+        Self { s: 0.0625, c_opt: 2.5, tau_res: 2.5e-3, k_u: 2.5, b_u: 1.0, w_max: 0.7 }
+    }
+}
+
+impl Unmixedness {
+    /// Python's `__post_init__`.
+    pub fn validate(&self) {
+        for (name, v) in
+            [("S", self.s), ("C_opt", self.c_opt), ("tau_res", self.tau_res), ("w_max", self.w_max)]
+        {
+            assert!(v > 0.0, "Unmixedness.{name}={v} must be positive");
+        }
+        assert!(self.k_u >= 0.0, "Unmixedness.k_u={} must be ≥ 0 (0 ⇒ reduce to rung 11)", self.k_u);
+        assert!(self.b_u >= 0.0, "Unmixedness.b_u={} must be ≥ 0", self.b_u);
+        assert!(
+            self.w_max <= 1.0,
+            "Unmixedness.w_max={} must be ≤ 1 (a mass fraction)",
+            self.w_max
+        );
+    }
+
+    /// The Holdeman momentum-flux/geometry group `C = (S/H)√J` — jet penetration ∝ √J scaled by
+    /// the spacing/height ratio. Uses the paired [`JetMixing`]'s `H` and `J` (the same jet that
+    /// set `τ_q`). `sqrt`, not `powp`, for the reason in [`JetMixing::tau_q`].
+    pub fn c(&self, mixing: &JetMixing) -> f64 {
+        (self.s / mixing.h) * mixing.j.sqrt()
+    }
+
+    /// The unmixedness `u(C) = |ln(C/C_opt)|` — an L1 (KINKED) distance from the Holdeman
+    /// optimum, 0 at `C_opt`, symmetric in `ln C`. The kink is what pins the EI-min AT `C_opt`
+    /// rather than at a stronger jet (a smooth parabola would let it drift).
+    pub fn u(&self, c: f64) -> f64 {
+        (c / self.c_opt).ln().abs()
+    }
+
+    /// The un-mixed (segregated) core mass fraction `w(C) = min(w_max, k_u·u)`. Zero at `C_opt`
+    /// (perfect tiling), rising on BOTH flanks, capped at `w_max`.
+    pub fn core_fraction(&self, c: f64) -> f64 {
+        self.w_max.min(self.k_u * self.u(c))
+    }
+
+    /// The under-mixed core's quench dwell `τ_core(C) = τ_res·(1 + b_u·u)` — an ABSOLUTE
+    /// residence (it does NOT ride the vanishing jet time `τ_mean ∝ 1/√J`, so its NO penalty
+    /// survives J→∞) that GROWS off-optimum. Equals `τ_res` at `C_opt`.
+    pub fn core_dwell(&self, c: f64) -> f64 {
+        self.tau_res * (1.0 + self.b_u * self.u(c))
+    }
+}
+
 /// Knobs for [`Gas::thermal_nox`] — rung 7's residence time plus rung 19's two channels.
 ///
 /// A struct rather than a parameter list, and deliberately so: § 2 of the port plan makes it
@@ -559,17 +1027,38 @@ impl Default for ThermalNoxOpts {
 pub struct ZonedNoxOpts {
     /// primary-zone residence time, s
     pub tau: f64,
-    /// rung 19: lift the primary [O] by the Westenberg m(T_p)
+    /// rung 19 + 20: lift the primary [O] by m(T_p), AND the quench path's by m(T(β))
     pub super_eq_o: bool,
     /// rung 19: the imposed prompt bump at `phi_primary`
     pub prompt: Option<PromptNo>,
     /// RK4 steps for the primary Zeldovich integrator
     pub nsteps: usize,
+    /// rung 10: a FINITE quench time, s. `None` ⇒ the IDEAL quench ⇒ bit-for-bit rung 9.
+    /// MUTUALLY EXCLUSIVE with `mixing`.
+    pub tau_q: Option<f64>,
+    /// rung 11: DERIVE `τ_q` and the entrainment schedule from jet-in-crossflow physics
+    pub mixing: Option<JetMixing>,
+    /// rung 12: the two-stream spatial-variance layer. REQUIRES `mixing`.
+    pub unmixedness: Option<Unmixedness>,
+    /// finite-quench trajectory points — a pure cost/accuracy knob
+    pub quench_ngrid: usize,
+    /// finite-quench RK4 steps — a pure cost/accuracy knob
+    pub quench_nsteps: usize,
 }
 
 impl Default for ZonedNoxOpts {
     fn default() -> Self {
-        Self { tau: 3e-3, super_eq_o: false, prompt: None, nsteps: 4000 }
+        Self {
+            tau: 3e-3,
+            super_eq_o: false,
+            prompt: None,
+            nsteps: 4000,
+            tau_q: None,
+            mixing: None,
+            unmixedness: None,
+            quench_ngrid: 240,
+            quench_nsteps: 2000,
+        }
     }
 }
 
@@ -602,6 +1091,32 @@ pub struct ZonedNoxState {
     pub prompt: Option<PromptNo>,
     /// RUNG 19 — additive primary prompt EI, g NO/kg fuel (0.0 ⇒ thermal only)
     pub ei_no_prompt: f64,
+    // RUNG 10 — the finite-rate quench. ALL `None` for the ideal quench (`tau_q: None`,
+    // `mixing: None`), which is the short-circuit that makes the reduce exact.
+    /// quench (dilution-mixing) time, s — the free rung-10 knob, or rung 11's DERIVED one
+    pub tau_q: Option<f64>,
+    /// EI_NO re-made along the finite quench, g NO/kg fuel — the MEAN-FIELD (rung-11) bulk
+    pub ei_no_quenched: Option<f64>,
+    /// NO mole fraction frozen at the end of the finite quench
+    pub x_no_quenched: Option<f64>,
+    /// peak T along the quench path, K — `> T_primary` for a RICH primary
+    pub t_peak: Option<f64>,
+    /// max `[NO]/[NO]_e` along the path; `< 1` ⇒ the dropped clamp is dormant
+    pub max_a_quench: Option<f64>,
+    /// RUNG 11 — the jet-in-crossflow config that DERIVED `tau_q` + the schedule
+    pub mixing: Option<JetMixing>,
+    // RUNG 12 — spatial unmixedness. `ei_no_quenched` then holds the mean-field BULK and
+    // `ei_no_unmixed` the two-stream total — the one that TURNS BACK UP in J.
+    /// the variance config that split bulk/core
+    pub unmixedness: Option<Unmixedness>,
+    /// the Holdeman group `C = (S/H)√J` at this J
+    pub c_holdeman: Option<f64>,
+    /// the un-mixed core mass fraction `w(C)` (0 at `C_opt`)
+    pub w_core: Option<f64>,
+    /// two-stream EI_NO, g/kg — `(1−w)·EI(τ_mean) + w·EI(τ_core)`
+    pub ei_no_unmixed: Option<f64>,
+    /// the lingering core's EI_NO at `τ_core(C)` — the penalty source
+    pub ei_no_core: Option<f64>,
 }
 
 impl ZonedNoxState {
@@ -691,6 +1206,31 @@ impl Gas {
     ///
     /// RUNG 19 acts ONLY on the primary diagnostic, by the same two channels as
     /// [`Gas::thermal_nox`].
+    ///
+    /// RUNG 10 — pass a finite `tau_q` to resolve the quench in TIME instead of collapsing it
+    /// to an instant. As the dilution air mixes in, the LOCAL mixture sweeps
+    /// `far_p → f_stoich → far_ov`, so a RICH primary's temperature RISES through the NO-bell
+    /// peak and the extended-Zeldovich rate RE-MAKES NO along that path. A SLOW quench dwells
+    /// at stoich and re-makes the NO the rich primary avoided; a FAST quench escapes past the
+    /// peak — the whole point of "quick"-quench, and rung 9's rich-flank collapse is therefore
+    /// CONTINGENT on it. `tau_q: None` is the IDEAL quench — the EXACT rung-9 path.
+    ///
+    /// RUNG 11 — pass a `mixing` config INSTEAD of `tau_q` to DERIVE the quench from
+    /// jet-in-crossflow physics. `ei_no_quenched` falls MONOTONICALLY as J rises. Mean-field:
+    /// it derives the quench RATE but has no mixing OPTIMUM.
+    ///
+    /// RUNG 12 — pass an `unmixedness` config (REQUIRES `mixing`) to add the two-stream
+    /// VARIANCE layer, making the NO-vs-J curve TURN BACK UP and recovering the Holdeman
+    /// optimum AT `C_opt`. `ei_no_quenched` still holds the monotone mean-field BULK reference;
+    /// `ei_no_unmixed` is the two-stream total. `k_u = 0` is bit-for-bit rung 11.
+    ///
+    /// RUNG 20 — `super_eq_o` now ALSO lifts [O] along the quench path, so the finite-quench
+    /// fields stop riding on the equilibrium-O lower bound. `false` ⇒ byte-identical rung 10/11.
+    ///
+    /// `quench_ngrid`/`quench_nsteps` are pure cost/accuracy knobs, used only on a finite
+    /// quench. The 240 default reproduces the anchor's worked example; the SHAPE (peak
+    /// temperature, monotonicity) is settled by ~32 points, so tests run coarse — a 240-point
+    /// trajectory is 240 mix-out bisections, each re-solving the 8-species Newton ~31 times.
     pub fn zoned_nox(
         &self,
         far: f64,
@@ -705,6 +1245,20 @@ impl Gas {
             "phi_primary {phi_primary} outside (0, 2] — the 5-species (no soot / no C(s)) basis \
              is valid only below soot onset (~φ2; graphite onset is φ3). Rich RQL scope."
         );
+        assert!(
+            !(o.tau_q.is_some() && o.mixing.is_some()),
+            "pass EITHER tau_q (rung-10 free time + linear schedule) OR mixing (rung-11 \
+             jet-entrainment: DERIVES τ_q + a decelerating schedule) — mutually exclusive."
+        );
+        assert!(
+            !(o.unmixedness.is_some() && o.mixing.is_none()),
+            "unmixedness (rung-12 spatial variance) REQUIRES a `mixing` config — it needs the \
+             jet's J and duct H for the Holdeman group C=(S/H)√J and the mean-field bulk τ_mean."
+        );
+        // Python also asserts that AT MOST ONE of its eight mixing closures is passed. With
+        // `unmixedness` the only one ported, that check would compare one Option against one —
+        // it cannot fail, and a bar that cannot fail is not a bar (rungs 78/79's lesson). The
+        // rung-13..24 closures land in later slices; the check arrives WITH the second one.
         let hf_fuel = self.spec.hf_fuel_molar.unwrap_or_else(gas::hf_fuel_default);
         let far_p = phi_primary * gas::f_stoich();
         let alpha = far / far_p; // fraction of the air in the primary
@@ -760,7 +1314,7 @@ impl Gas {
             equilibrium_composition(far, t_mix, p).iter().map(|&(_, v)| v).sum();
         let x_no_mix = n_no_total / ntot_mix;
 
-        ZonedNoxState {
+        let mut state = ZonedNoxState {
             phi_primary,
             far_primary: far_p,
             alpha,
@@ -772,6 +1326,116 @@ impl Gas {
             o_multiplier: m_p,
             prompt: o.prompt,
             ei_no_prompt,
+            tau_q: None,
+            ei_no_quenched: None,
+            x_no_quenched: None,
+            t_peak: None,
+            max_a_quench: None,
+            mixing: None,
+            unmixedness: None,
+            c_holdeman: None,
+            w_core: None,
+            ei_no_unmixed: None,
+            ei_no_core: None,
+        };
+        if o.tau_q.is_none() && o.mixing.is_none() {
+            return state; // IDEAL quench — bit-for-bit rung 9
         }
+
+        // RUNG 10/11 — the finite-rate quench: re-integrate NO (clamp-free) through the
+        // cooling/mixing trajectory, starting from the primary's frozen NO. A pure diagnostic —
+        // NO/N still never enter the equilibrium solve, so the cycle stays bit-for-bit rung 6.
+        // Rung 10 = a free `tau_q` + linear schedule; rung 11 = `mixing` DERIVES
+        // `τ_q = H/(C_e√J·U_c)` and a decelerating entrainment schedule (`mixing: None` ⇒
+        // `schedule: None` ⇒ byte-identical rung 10).
+        let (tau_q_eff, sched_fn): (f64, Option<Box<dyn Fn(f64) -> f64>>) = match o.mixing {
+            Some(m) => {
+                m.validate();
+                (m.tau_q(), Some(Box::new(move |x| m.schedule(x))))
+            }
+            None => (o.tau_q.expect("checked above"), None),
+        };
+        assert!(
+            tau_q_eff > 0.0,
+            "tau_q {tau_q_eff} must be positive (or None for the ideal quench)"
+        );
+
+        // Rung 12 shares ONE τ_q-independent trajectory between the mean-field bulk and the
+        // under-mixed core (both traverse the same β-path, differing only in τ). The
+        // mean-field-only path lets `quench_no` build its own → byte-identical rung 10/11.
+        let tab: Option<Vec<QuenchPoint>> = o.unmixedness.map(|_| {
+            quench_trajectory(&comp_p, t_p, alpha, far, tt3, p, o.quench_ngrid)
+        });
+        let sched_ref = sched_fn.as_deref();
+        // RUNG 20 — `super_eq_o` lifts [O] INSIDE this re-making by m(T) along the cooling path
+        // (`false` ⇒ byte-identical rung 10/11), so `ei_no_quenched` and the rung-12 core carry
+        // the same lift the rung-19 primary already did — closing the "finite-quench fields ride
+        // on equilibrium O" lower-bound seam. The lift is MODEST & PEAK-CONCENTRATED: the
+        // Zeldovich re-making peaks at the hottest stoich crossing where m(T) is at its MINIMUM,
+        // so the effective lift ≈ m(T_peak), even smaller than the rung-19 primary lift.
+        // `docs/rung20-spec.md`. The NO ceiling `[NO]_e` is a THERMODYNAMIC quantity, untouched.
+        let q = quench_no(
+            &comp_p,
+            t_p,
+            alpha,
+            far,
+            tt3,
+            p,
+            n_no_total,
+            tau_q_eff,
+            QuenchOpts {
+                nsteps: o.quench_nsteps,
+                ngrid: o.quench_ngrid,
+                tab: tab.as_deref(),
+                schedule: sched_ref,
+                super_eq_o: o.super_eq_o,
+            },
+        );
+        state.tau_q = Some(tau_q_eff);
+        state.mixing = o.mixing;
+        state.ei_no_quenched = Some(q.ei); // the MEAN-FIELD (rung-11) bulk EI
+        state.x_no_quenched = Some(q.x_no_mix);
+        state.t_peak = Some(q.t_peak);
+        state.max_a_quench = Some(q.max_a);
+
+        let Some(um) = o.unmixedness else {
+            return state; // rung 10/11 mean field — untouched
+        };
+
+        // RUNG 12 — the under-mixed CORE (spatial variance): the SAME cooling trajectory, but
+        // the core misses the jet and quenches at an ABSOLUTE residence `τ_core(C)` (NOT the
+        // vanishing jet time, so its NO penalty survives J→∞) that GROWS off-optimum.
+        // Mass-weight bulk/core by the KINKED segregated fraction `w(C)`, whose non-zero slope
+        // at `C_opt` PINS the EI-min AT the Holdeman optimum (`J_min = J_opt`, shifting as
+        // `(H/S)²`) → EI_NO turns back up. Still a pure diagnostic: cycle bit-for-bit rung 6.
+        um.validate();
+        let mixing = o.mixing.expect("unmixedness REQUIRES mixing — asserted above");
+        let c = um.c(&mixing);
+        let w = um.core_fraction(c);
+        let qc = quench_no(
+            &comp_p,
+            t_p,
+            alpha,
+            far,
+            tt3,
+            p,
+            n_no_total,
+            um.core_dwell(c),
+            QuenchOpts {
+                nsteps: o.quench_nsteps,
+                ngrid: o.quench_ngrid,
+                tab: tab.as_deref(),
+                schedule: sched_ref,
+                super_eq_o: o.super_eq_o, // rung 20: lift the lingering core's re-making too
+            },
+        );
+        state.unmixedness = Some(um);
+        state.c_holdeman = Some(c);
+        state.w_core = Some(w);
+        state.ei_no_core = Some(qc.ei); // the lingering-core EI at τ_core(C)
+        state.ei_no_unmixed = Some((1.0 - w) * q.ei + w * qc.ei);
+        // the dormancy gate spans BOTH streams
+        state.max_a_quench = Some(q.max_a.max(qc.max_a));
+        state
     }
 }
