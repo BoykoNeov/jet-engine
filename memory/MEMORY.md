@@ -26,7 +26,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL, regenerate via extract_data.py + build.py
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy leaves `open().write()` unflushed, PowerShell Get/Set-Content double-encodes UTF-8; both fail SILENTLY
 
-## The Rust port — decided 2026-08-12; phases 0–2 done, phase 3 in slices (A, B and C done)
+## The Rust port — decided 2026-08-12; phases 0–2 done, phase 3 in slices (A–D done; only 14/17 left)
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; slices are free inside phase 3, **phase 5 needs fresh authorisation**
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost by COMPILING and returning a silently different number
 - [Rust arithmetic IS PyPy](rust-port-arithmetic-is-pypy.md) — 100% bit-exact vs PyPy on gas AND cycle; size a solver claim by DISTINCT ROOTS, not row count
@@ -34,6 +34,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Shape keys](rust-port-shape-keys.md) — dump a finding's ARGMAX: a peak's VALUE drifts between interpreters and its LOCATION does not; an analytic cancellation read through a solver is exact to the solver's GRID
 - [Location keys REFUTE](rust-port-location-keys-refute.md) — the argmax that pays is the one that DISAGREES; a group is earned by the factor appearing twice; sweep wider than the source's own gate
 - [A ported test can go VACUOUS](rust-port-ported-test-vacuity.md) — a better factorisation turns the source's real pin into a self-comparison; a location key on a scheme boundary needs a COARSER grid
+- [Inside/outside exactness](rust-port-inside-outside-exactness.md) — an op applied INSIDE an accumulation and removed OUTSIDE is exact in algebra, not arithmetic, and the source says “exactly”; a residual needs an ABSOLUTE bar
 
 ## Shipped rungs
 
