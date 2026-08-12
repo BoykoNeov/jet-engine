@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 5e70803c-a526-46b5-908f-68437f30d895
-  modified: 2026-08-12T11:13:44.783Z
+  modified: 2026-08-12T14:00:48.591Z
 ---
 
 Phase 3 slice C of the Rust port (rungs 13/15/16/18/21 — the mixture-fraction PDF family,
@@ -45,6 +45,18 @@ Two confirmations worth carrying forward:
 - **A pre-registered CONFIRMATION held**, at four spacings x two design points, with a companion
   assertion that every value moved so the equal locations are not a tautology. Slice B's refutation
   was the exception; budget for either.
+
+**EXTENSION (slice E, 2026-08-12) — the port's OWN factorisation can create the vacuity, and that
+is the case the rule misses.** Cases so far split two ways: the source's test meets the target's
+type system (an unknown field is a compile error; a required argument cannot be `None`), which is
+easy to spot; and the target's factorisation dissolves the thing being compared, which is not.
+Slice E hit the second kind in a new place — replacing a monkey-patch with an injected function
+removed the very branch the test existed to check, so the "faithful" version compared a call to
+itself. **The rule has to be re-asked AFTER the target design is chosen, not only when reading the
+source's test** — the pre-registration asserted the opposite for a day. The fix that ships keeps
+the tautological comparison only as SETUP for an arm that can fail (feed the injected function a
+DIFFERENT value and require the answer to move), which catches the real defect: a body that
+ignores its injected argument. See [[rust-port-measure-before-registering]].
 
 Related: [[rust-port-decided]], [[rust-port-shape-keys]], [[rust-port-arithmetic-is-pypy]],
 [[rust-port-power-spelling]].

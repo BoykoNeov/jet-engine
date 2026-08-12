@@ -37,7 +37,7 @@
 //!   of exactness, both caused by applying an operation inside an accumulation and removing it
 //!   outside (see `nox`'s cross-plane section note).
 //! * **E — rungs 14/17**: the nozzle strand — the frozen↔shifting thrust bracket and the
-//!   combustor-mixing-fidelity ladder of the dropped-NO-clamp margin. 511/511 bit-exact. It
+//!   combustor-mixing-fidelity ladder of the dropped-NO-clamp margin. 513/513 bit-exact. It
 //!   corrected a THIRD claim of exactness (the frozen reduce is exact in algebra only, and its
 //!   floor is the entropy ROUTE rather than the bisection's stopping rule) and LOCATED a band
 //!   edge the source states without measuring: past J ≈ 2460 the bulk margin goes dormant while

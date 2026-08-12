@@ -3915,11 +3915,20 @@ pub fn expand_nozzle(
 
 /// [`expand_nozzle`] with the bracket guard as a QUESTION instead of an assert.
 ///
-/// `None` ⇔ the root pinned at the cold floor. NARROWER than Python's `except AssertionError`
-/// around the same call by exactly the equilibrium solver's own asserts — the same distinction
-/// [`try_primary_aft`] carries, and the reason the oracle's guard census runs on the FROZEN
-/// branch alone: the shifting branch would additionally reach the Newton's asserts below the
-/// floor, and the count would then be measuring two guards at once.
+/// `None` ⇔ the root pinned at the cold floor. In TYPE this is narrower than Python's
+/// `except AssertionError` around the same call, by the equilibrium solver's own asserts — the
+/// same distinction [`try_primary_aft`] carries.
+///
+/// **CORRECTION (post-slice-E review).** This doc used to add that the narrowing is why the
+/// oracle's guard census runs on the frozen branch alone — "the shifting branch would
+/// additionally reach the Newton's asserts below the floor, so the count would measure two
+/// guards at once". **Measured, that is false, and the reason is the bracket.** The bisection
+/// clamps T into `[T_EXIT_FLOOR, tt9]`, so the composition is only ever re-equilibrated at
+/// T ≥ 500 K — inside the Newton's converging range — and the floor guard is the only one either
+/// branch can reach. Swept over the back-pressure ladder at both design points, the two branches
+/// fire the SAME guard at the SAME ladder position. The census now runs on both and the oracle
+/// asserts they agree, so the type-level narrowing above is real but has no reachable instance
+/// from this entry point; a phase-4 caller that expands outside this bracket would be the first.
 pub fn try_expand_nozzle(
     comp_entry: &[(&'static str, f64)],
     far: f64,

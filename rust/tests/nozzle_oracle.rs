@@ -251,8 +251,12 @@ fn rust_values() -> Vec<(String, f64)> {
         let d = build_dp(tt4, l, m);
         let comp = equilibrium_composition(d.far, d.tt4, d.pt4);
         let mut fires = 0usize;
+        let mut fires_shifting = 0usize;
         for &(rtag, ratio) in P9_RATIOS {
             let p9 = d.pt9 * ratio;
+            if try_expand_nozzle(&comp, d.far, d.tt9, d.pt9, p9, true).is_none() {
+                fires_shifting += 1;
+            }
             match try_expand_nozzle(&comp, d.far, d.tt9, d.pt9, p9, false) {
                 None => fires += 1,
                 Some(ex) => {
@@ -262,6 +266,7 @@ fn rust_values() -> Vec<(String, f64)> {
             }
         }
         put(format!("guard/{tag}/fires"), fires as f64);
+        put(format!("guard/{tag}/fires_shifting"), fires_shifting as f64);
         put(format!("guard/{tag}/ladder"), P9_RATIOS.len() as f64);
     }
 
@@ -281,6 +286,7 @@ fn rust_values() -> Vec<(String, f64)> {
     put("r17/nozzle/x_no_e_exit".into(), nf17.x_no_e_exit);
     put("r17/nozzle/collapse".into(), nf17.no_collapse_ratio);
 
+    let mut clamp_states = Vec::new();      // kept for the sizing-lever check in section 6
     for (tag, phi_p, j, c_e, su) in [
         ("J225", PHI_P, 225.0, CE, false),
         ("J225/ce15", PHI_P, 225.0, 0.15, false),
@@ -310,6 +316,7 @@ fn rust_values() -> Vec<(String, f64)> {
         put(format!("r17/{tag}/max_a_quench"), s.max_a_quench);
         put(format!("r17/{tag}/hides"), if s.hides_super_eq() { 1.0 } else { 0.0 });
         put(format!("r17/{tag}/monotone"), if s.ladder_monotone() { 1.0 } else { 0.0 });
+        clamp_states.push((tag, s));
     }
 
     // the rung-14 contrast: mixed-out straight through the nozzle, no jet at all
@@ -326,6 +333,32 @@ fn rust_values() -> Vec<(String, f64)> {
     }
 
     // === 6. the firing band edge, on the CHEAP path ===========================================
+    // THE LEVER IS CHECKED, NOT ARGUED, and it is the one assumption bit-equality is BLIND to:
+    // the Python dump hoists the same call, so an invalid hoist would bake the stale denominator
+    // into BOTH references and 511/511 would pass with both wrong. Re-solving `nozzle_flow`
+    // in-loop would NOT detect it — it takes no jet argument, so that compares a pure function to
+    // itself (vacuity case #8's shape). The check that bites is against the UN-HOISTED route:
+    // `exhaust_no_clamp` takes the mixing config and builds its own nozzle internally.
+    for (tag, s) in &clamp_states {
+        assert_eq!(
+            s.x_no_e_exit.to_bits(),
+            nf17.x_no_e_exit.to_bits(),
+            "sizing lever INVALID: {tag} moved the clamp denominator"
+        );
+        assert_eq!(
+            s.t9.to_bits(),
+            nf17.t9_frozen.to_bits(),
+            "sizing lever INVALID: {tag} moved the exit temperature"
+        );
+    }
+    let distinct: std::collections::HashSet<u64> =
+        clamp_states.iter().map(|(_, s)| s.a_bulk_quench.to_bits()).collect();
+    assert!(
+        distinct.len() >= 5,
+        "the lever check is vacuous — only {} distinct states compared",
+        distinct.len()
+    );
+
     let xe17 = nf17.x_no_e_exit;
     let zn_mixed = d17.gas.zoned_nox(
         d17.far, d17.tt3, d17.tt4, d17.pt4, PHI_P,
@@ -603,6 +636,18 @@ fn the_exit_floor_guard_is_reachable_and_moves_with_the_design_point() {
                 None => fires += 1,
                 Some(ex) => coldest_ok = coldest_ok.min(ex.t9),
             }
+            // THE SAME GUARD ON THE SHIFTING BRANCH, ratio by ratio — stronger than matching
+            // counts, and the correction to what this file first claimed. The bracket floors T at
+            // 500 K, inside the equilibrium Newton's converging range, so re-equilibrating on
+            // every step exposes the branch to NO extra guard. See `try_expand_nozzle`'s doc.
+            let shift_rejected =
+                try_expand_nozzle(&comp, d.far, d.tt9, d.pt9, d.pt9 * ratio, true).is_none();
+            let frozen_rejected =
+                try_expand_nozzle(&comp, d.far, d.tt9, d.pt9, d.pt9 * ratio, false).is_none();
+            assert_eq!(
+                shift_rejected, frozen_rejected,
+                "{tag}: the two branches disagree about the floor guard at p9/pt9={ratio}"
+            );
         }
         assert!(fires > 0, "{tag}: the guard never fired — the ladder does not reach it");
         assert!(fires < P9_RATIOS.len(), "{tag}: the guard rejected everything");

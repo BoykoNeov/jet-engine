@@ -138,6 +138,16 @@ mixing term is live and the drop is genuinely a different (equilibrium) path.
 > 2200 K one — 6.4× and 44.9× below where the engine runs. So both sides of the guard are gated
 > in Rust (a census over a fixed back-pressure ladder rejects 4 of 12 ratios at the cool point and
 > 1 of 12 at the hot one), rather than the guard being a branch no test can enter.
+>
+> **And it is the ONLY guard either branch can reach** (post-ship review, same slice). The first
+> version of that census ran on the frozen branch alone, reasoning that a shifting expansion would
+> *also* trip the equilibrium Newton's own asserts down there and so confound the count. Measured
+> across the whole ladder at both design points, that is **false**: the bisection brackets T into
+> `[500 K, Tt9]`, so the composition is only ever re-equilibrated at T ≥ 500 K — inside the Newton's
+> converging range — and both branches fire the *same* floor guard at the *same* ladder position.
+> The census now runs on both and the ratio-by-ratio agreement is asserted, which makes the guard
+> threshold a measured property of the BRACKET rather than of the composition.
+> `docs/plans/todo-rust-port.md` § 4.10.1 (b).
 
 ---
 

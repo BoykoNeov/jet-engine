@@ -245,7 +245,16 @@ put("resid/bit_equal_count", float(bit_equal_shipped))
 #
 # The ladder is fixed and spans it: at the cool design point the guard rejects the bottom half, at
 # the hot one only the bottom quarter. Values are dumped for the ratios that SOLVE; the census
-# counts the ones that do not. Frozen branch only — see § the discrete keys.
+# counts the ones that do not.
+#
+# BOTH BRANCHES, and the first version of this file was wrong about why not. It censused the
+# frozen branch alone, on the argument that the shifting branch "would additionally reach the
+# equilibrium Newton's asserts below the floor, so the count would be measuring two guards at
+# once". MEASURED, that is false: the bisection brackets T into [500 K, Tt9], which is INSIDE the
+# Newton's converging range, so the Newton is never reached out-of-range and the FLOOR guard is
+# the only one either branch can fire. The two censuses are dumped separately and the gate asserts
+# they AGREE — which is a measurement (the guard threshold is set by the bracket, not by the
+# composition) where the frozen-only version was an assumption.
 # ==============================================================================================
 print(f"[4] the back-pressure ladder + guard census  ({time.time() - T0:.1f}s)")
 P9_RATIOS = [("r999", 0.999), ("r900", 0.9), ("r500", 0.5), ("r250", 0.25), ("r159", 0.159),
@@ -255,8 +264,15 @@ for tag in ("dp", "hot"):
     d = dp(tag)
     comp = G._equilibrium_composition(d["far"], d["Tt4"], d["pt4"])
     fires = 0
+    fires_shift = 0
     for rtag, ratio in P9_RATIOS:
         p9 = d["pt9"] * ratio
+        try:
+            G._expand_nozzle(comp, d["far"], d["Tt9"], d["pt9"], p9, shifting=True)
+        except AssertionError as exc:
+            # The message pins WHICH guard: a Newton failure here would refute the note above.
+            assert "pinned at the" in str(exc), f"shifting branch fired a NON-floor assert: {exc}"
+            fires_shift += 1
         try:
             T9f, V9f, _ = G._expand_nozzle(comp, d["far"], d["Tt9"], d["pt9"], p9, shifting=False)
         except AssertionError:
@@ -265,6 +281,7 @@ for tag in ("dp", "hot"):
         put(f"bp/{tag}/{rtag}/T9", T9f)
         put(f"bp/{tag}/{rtag}/V9", V9f)
     put(f"guard/{tag}/fires", float(fires))
+    put(f"guard/{tag}/fires_shifting", float(fires_shift))
     put(f"guard/{tag}/ladder", float(len(P9_RATIOS)))
 
 # ==============================================================================================
@@ -298,6 +315,9 @@ put("r17/nozzle/x_no_e_exit", NF17.x_no_e_exit)
 put("r17/nozzle/collapse", NF17.no_collapse_ratio)
 
 
+_CLAMP_STATES = {}     # tag -> state, kept for the sizing-lever check at section 6
+
+
 def dump_clamp(tag, phi_p, J, C_e=CE, super_eq_o=False):
     t = time.time()
     s = g17.exhaust_no_clamp(D17["far"], D17["Tt3"], D17["Tt4"], D17["p"],
@@ -322,6 +342,7 @@ def dump_clamp(tag, phi_p, J, C_e=CE, super_eq_o=False):
     put(f"r17/{tag}/monotone", 1.0 if s.ladder_monotone else 0.0)
     print(f"   clamp {tag}: a=({s.a_mixed_out:.4f},{s.a_bulk_quench:.4f},{s.a_pocket:.4f}) "
           f"[{time.time() - t:.1f}s]")
+    _CLAMP_STATES[tag] = s
     return s
 
 
@@ -357,6 +378,20 @@ J_LADDER = [("J25", 25.0), ("J100", 100.0), ("J225", 225.0), ("J400", 400.0), ("
             ("J1000", 1000.0), ("J2000", 2000.0), ("J2500", 2500.0), ("J4000", 4000.0),
             ("J8000", 8000.0), ("J16000", 16000.0)]
 XE17 = NF17.x_no_e_exit
+
+# THE LEVER IS CHECKED, NOT ARGUED — and this is the one assumption bit-equality is BLIND to.
+# The Rust gate hoists the same call, so if the hoist were invalid the stale denominator would be
+# baked into BOTH references and 511/511 would pass with both of them wrong. Re-solving
+# `nozzle_flow` in-loop cannot detect that: it takes no jet argument in either language, so it
+# would compare a pure function to itself (vacuity case #8's shape). The check that BITES is
+# against the UN-HOISTED route — `exhaust_no_clamp` does take the mixing config and builds its own
+# nozzle internally — at every point section 5 shares with the sweep below.
+for _tag, _s in _CLAMP_STATES.items():
+    assert _s.x_no_e_exit == XE17, f"sizing lever INVALID: {_tag} moved the clamp denominator"
+    assert _s.T9 == NF17.T9_frozen, f"sizing lever INVALID: {_tag} moved the exit temperature"
+assert len({_s.a_bulk_quench for _s in _CLAMP_STATES.values()}) >= 5, \
+    "the lever check is vacuous — the states it compares are not distinct"
+
 zn_mixed = g17.zoned_nox(D17["far"], D17["Tt3"], D17["Tt4"], D17["p"], PHI_P, TAU)
 put("edge/a_mixed", zn_mixed.x_no_mix / XE17)       # jet-INDEPENDENT: one value for the whole sweep
 for ctag, C_e in (("ce20", 0.20), ("ce15", 0.15)):

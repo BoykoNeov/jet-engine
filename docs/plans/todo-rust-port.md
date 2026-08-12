@@ -764,7 +764,7 @@ combustor-mixing-fidelity ladder of the dropped-NO-clamp margin. It ships the no
 
 | | bit-identical vs PyPy | vs CPython |
 |---|---|---|
-| nozzle oracle (511 values) | **511 / 511 (100 %)** | 149 / 511 (**29.2 %**) |
+| nozzle oracle (513 values) | **513 / 513 (100 %)** | 151 / 513 (**29.4 %**) |
 
 **The CPython agreement is the LOWEST of any slice** — 29.2 %, against slice D's 52.2 % and slice
 C's 70.6 % — and structurally so, not by luck. Almost every key here rides a bisection root whose
@@ -775,7 +775,7 @@ found: the discrete counts (22 keys, 0.00e0) and the solver-free composition sum
 
 | class | keys | CPython↔PyPy | what it is |
 |---|---|---|---|
-| `discrete` | 22 | **0.00e0** | halving counts, the guard census, the band-edge index, root counts |
+| `discrete` | 24 | **0.00e0** | halving counts, the guard census (BOTH branches — § 4.10.1 b), the band-edge index, root counts |
 | `prim/comp` | 22 | 3.5e-15 | the station-4 composition and its mass per mol air |
 | `conv` / `bp` | 46 | ≤7.6e-12 | the converged frozen root, and the back-pressure ladder |
 | `dp` / `prim/thermo` / `prim/x_no_e` | 78 | ≤5.7e-11 | the cycle inputs, the molar S/H sums, equilibrium NO |
@@ -891,6 +891,60 @@ COMMON clamp denominator `x_no_e(T9)` are ONE call for the entire φ_p × J × C
 sweep. Measured on PyPy: `nozzle_flow` 8 ms, a bulk `zoned_nox` 0.13 s, a full `exhaust_no_clamp`
 1.95 s at the source's own coarse grids. The whole dump is 17 s on PyPy and 134 s on CPython.
 Without the lever the band-edge sweep pays a nozzle solve per J point that cannot move.
+
+#### 4.10.1 POST-SHIP REVIEW — the lever was ARGUED not measured, and one shipped REASON was wrong
+
+Slice E shipped before its closing review ran (the advisor was unavailable twice). Run afterwards,
+it raised four items; two were real, and both are now fixed on top of `e077517`. The oracle grew
+511 → **513** keys and is **513/513** bit-exact against PyPy (151/513, 29.4 %, against CPython —
+the two new keys are discrete, so exact on both).
+
+**(a) THE ONE ASSUMPTION BIT-EQUALITY IS STRUCTURALLY BLIND TO — and the obvious check for it is
+VACUOUS.** The sizing lever above is an argument, not a measurement: nothing verified that hoisting
+the nozzle solve out of the sweep is legitimate. It matters more than a normal untested assumption,
+because **both** the Python dump and the Rust gate hoist, so an invalid hoist bakes the same stale
+denominator into both references and 513/513 passes with both of them wrong. The obvious repair —
+re-solve `nozzle_flow` inside the loop and compare — **cannot detect it**: `nozzle_flow` takes no
+jet argument in either language, so that compares a pure function to itself. That is vacuity case
+#8's shape arriving in the fix rather than in the test, and it was caught before it was written.
+The check that BITES is against the **un-hoisted route**: `exhaust_no_clamp` does take the mixing
+config and builds its own nozzle internally, and it is run at seven points the sweep shares.
+Measured: the denominator and T9 are **bit-identical across all seven** on both interpreters, and
+the five shared `a_bulk` values agree bit-for-bit between the hoisted and un-hoisted routes while
+being five DISTINCT numbers. Now asserted in both languages, with the distinctness asserted too so
+the check cannot go quietly vacuous.
+
+**(b) A SHIPPED REASON REFUTED — the guard census was frozen-only for a FALSE reason, and the fix
+ADDS a measurement.** `try_expand_nozzle`'s doc said the census runs on the frozen branch alone
+because the shifting branch "would additionally reach the equilibrium Newton's asserts below the
+floor, so the count would measure two guards at once". Swept over the back-pressure ladder at both
+design points: **false**. The bisection brackets T into `[500 K, Tt9]`, which is inside the Newton's
+converging range, so the Newton is never reached out-of-range and the floor guard is the only one
+either branch can fire — same guard, same ladder position, same message. The choice was harmless;
+its stated reason was not. The census now runs on **both** branches (`guard/…/fires_shifting`), the
+Python asserts the message identifies the floor guard, and the Rust asserts the two branches agree
+**ratio by ratio** rather than merely in count. The type-level narrowing of `Option` against
+Python's `except AssertionError` is real but has **no reachable instance from this entry point**; a
+phase-4 caller expanding outside this bracket would be the first, and the doc now says so.
+
+**(c) THE DEFERRAL SWEEP, RUN AND CLEAN.** § 4.10 finding 5 recorded a portable gate parked behind
+an unrelated dependency, and phase 3's completion is exactly when to check for more: every
+intra-phase-3 dependency now exists. Swept every Rust test and source file for deferral markers —
+five hits, all decisions rather than parked work (three vacuity-register entries, one rung-30 item
+correctly beyond phase 3, one *physics* deferral inherited from the source). Rung 20's gate 5 was
+the only instance.
+
+**(d) THE BLUR FIXED WHERE A READER MEETS IT.** Finding 2 diagnosed rung 17's prose as conflating
+the two margins, then appended a SHARPENING block *below* the conflating sentence. Both earlier
+passages now name `a_bulk` as the un-pinned one and point forward; `CLAUDE.md`'s rung-17 row goes
+from "bulk + per-pocket FIRE" to "bulk fires IN-BAND, per-pocket everywhere" (+19 B against 61 B of
+headroom; the row's no-numbers rule keeps `J ≈ 2460` out of it).
+
+**STILL OPEN, and deliberately NOT started: a vacuity retro-audit of slices A–D.** Case #8's
+mechanism is the port's own factorisation dissolving a comparison, and slices A–D pre-registered
+*before* measuring — so the rule that caught it here was applied to the source's design and never
+re-applied to theirs. That is an audit, not a check, and phase 4 is unauthorised; it is listed here
+as a candidate rather than run.
 
 ### 4.9 SLICE E (rungs 14/17, the NOZZLE STRAND) — PRE-REGISTERED, and the three bars MEASURED first
 
@@ -1118,7 +1172,7 @@ next starts. The tree is green at every phase boundary; there is no big-bang cut
 | **0** | ~~Cargo crate; the oracle bridge; the per-quantity tolerance policy~~ | **DONE** | ✅ 3232 values round-trip; policy DERIVED from the CPython↔PyPy gap, not invented |
 | **1** | ~~`gas.rs` — `FlowState`, CPG closed form, TPG NASA integrals, reacting section, Fork B, equilibrium Newton (rungs 1–6)~~ | **DONE** | ✅ **two** gates: `gas_oracle.rs` (values, **3232/3232** bit-exact vs PyPy after phase 2's fix — § 4.1 shipped it at 3196, § 4.2 says why) and `gas_spine.rs` (**reduce-to-prior**, 6 tests — § 5.1) |
 | **2** | ~~`components.rs` + `engine.rs` design point — shaft balance, `_score`; conservation checks as `assert!`~~ | **DONE** | ✅ **three** gates: `cycle_oracle.rs` (1481/1481 bit-exact vs PyPy, on 19+15 distinct solver roots — § 4.2), the 8 ported rung suites (39 tests, rungs 1–6, incl. rung 6's GATE 1), and `porting_rules.rs` |
-| **3** | NOx & mixing, rungs 7–24. **RISK-BEARING — not bulk.** These are phase 1's largest *consumer*: every one rides the equilibrium solve and `Kp = exp(−ΔG°/RuT)`, and their findings are *shapes* (the bell's peak, the minimum pinned at `C_opt`, monotone-vs-turns-back-up) that a last-digit shift in an exponential can move. Deliberately placed straight after phase 1 as the **first real test of whether the transcendental arithmetic holds**. **DONE — slices A (7/8/9/19), B (10/11/12/20), C (13/15/16/18/21), D (22/23/24) and E (14/17) all shipped**, § 4.3–4.10; the slices are grouped in § 4.3 by DEPENDENCY, not by number | 4–6 | ✅ slice A: `nox_oracle.rs` (**1806/1806** bit-exact vs PyPy on 22+22 distinct solver roots) + 4 rung suites (43 tests) · ✅ slice B: `quench_oracle.rs` (**2507/2507**, on 165 distinct trajectory roots) + 4 rung suites (39 tests), one location key NARROWING a shipped claim · ✅ slice C: `pdf_oracle.rs` (**2448/2448**, both quadrature branches asserted exercised) + 5 rung suites (59 tests); the source's own mean-preservation guard found to have an `n_quad` FLOOR, and the port gates the REJECTION as well as the acceptance (§ 4.5) · ✅ slice D: `spatial_oracle.rs` (**462/462**, incl. 28 DISCRETE keys) + 3 rung suites (43 tests); TWO source claims of exactness CORRECTED — rung 24 applies an operation inside an accumulation and removes it outside, twice (§ 4.8) | · ✅ slice E: `nozzle_oracle.rs` (**511/511**, incl. 22 DISCRETE keys) + 2 rung suites (24 tests) + 3 gates `rung20.rs` had deferred; a THIRD claim of exactness corrected (the frozen reduce is algebraic only, and its floor is the entropy ROUTE, not the bisection's stopping rule) and rung 17's firing band edge LOCATED — past it the bulk margin goes dormant while the per-pocket one RISES (§ 4.10) |
+| **3** | NOx & mixing, rungs 7–24. **RISK-BEARING — not bulk.** These are phase 1's largest *consumer*: every one rides the equilibrium solve and `Kp = exp(−ΔG°/RuT)`, and their findings are *shapes* (the bell's peak, the minimum pinned at `C_opt`, monotone-vs-turns-back-up) that a last-digit shift in an exponential can move. Deliberately placed straight after phase 1 as the **first real test of whether the transcendental arithmetic holds**. **DONE — slices A (7/8/9/19), B (10/11/12/20), C (13/15/16/18/21), D (22/23/24) and E (14/17) all shipped**, § 4.3–4.10; the slices are grouped in § 4.3 by DEPENDENCY, not by number | 4–6 | ✅ slice A: `nox_oracle.rs` (**1806/1806** bit-exact vs PyPy on 22+22 distinct solver roots) + 4 rung suites (43 tests) · ✅ slice B: `quench_oracle.rs` (**2507/2507**, on 165 distinct trajectory roots) + 4 rung suites (39 tests), one location key NARROWING a shipped claim · ✅ slice C: `pdf_oracle.rs` (**2448/2448**, both quadrature branches asserted exercised) + 5 rung suites (59 tests); the source's own mean-preservation guard found to have an `n_quad` FLOOR, and the port gates the REJECTION as well as the acceptance (§ 4.5) · ✅ slice D: `spatial_oracle.rs` (**462/462**, incl. 28 DISCRETE keys) + 3 rung suites (43 tests); TWO source claims of exactness CORRECTED — rung 24 applies an operation inside an accumulation and removes it outside, twice (§ 4.8) | · ✅ slice E: `nozzle_oracle.rs` (**513/513**, incl. 24 DISCRETE keys) + 2 rung suites (24 tests) + 3 gates `rung20.rs` had deferred; a THIRD claim of exactness corrected (the frozen reduce is algebraic only, and its floor is the entropy ROUTE, not the bisection's stopping rule) and rung 17's firing band edge LOCATED — past it the bulk margin goes dormant while the per-pocket one RISES (§ 4.10) |
 | **4** | Nozzle & turbine marches, rungs 25–30 — own convergence behaviour, hence separate | 2–3 | per-rung tests pass |
 | **5** | Steady matchers — rungs 31–33, 38–39, 42, 53–56, 61. **Contains the diamond** (§ 6) | 4–6 | per-rung tests pass |
 | **6** | Transients — rungs 34–37, 40, 43–52 (the fuel-side limiter family) | 4–6 | per-rung tests pass |

@@ -37,13 +37,16 @@ universal — see § scope) is the lesson: three *independent* physics composing
 >   only *adds* NO to the mixed-out pool (`x_no_quenched ≥ x_no_mix` in the dormant regime) and the
 >   per-pocket excess is additive (`x_no_pocket = x_no_bulk + κ·⟨EI⟩_pocket`, `⟨EI⟩ ≥ 0`). And
 >   `a_mixed < 1` is robust (a rich primary makes ≈0 NO). **These are the certified claim.** The
->   **FIRING** (`a_bulk > 1`, `a_pocket > 1`) is the **un-pinned threshold**: it holds across the RQL
->   J-band but is **NOT universal** — as the quench gets *fast* (`J→∞`) `x_no_quenched → x_no_mix` (the
->   rung-10 `τ_q→0` reduce: fast quench = ideal quench = mixed-out), so even `a_bulk → a_mixed < 1`
->   (dormant). probe4 shows the slide: `a_bulk = 5.0 → 3.35 → 2.0` for `J = 100 → 225 → 625` (>1 in-band,
->   heading for <1). Every firing magnitude **and the gap** ride on un-pinned scales (`C_e`, `τ_res`,
->   `H`, `J`; the gap moves ~23% over `C_e = 0.15 → 0.20`). **The headline — mixing-out HIDES super-eq
->   NO — rides on the IN-BAND firing, and that in-band firing is the lesson, not a universal claim.**
+>   **FIRING** is the **un-pinned threshold** — and it is `a_bulk > 1` that is un-pinned, **not**
+>   `a_pocket > 1`. It holds across the RQL J-band but is **NOT universal**: as the quench gets *fast*
+>   (`J→∞`) `x_no_quenched → x_no_mix` (the rung-10 `τ_q→0` reduce: fast quench = ideal quench =
+>   mixed-out), so `a_bulk → a_mixed < 1` (dormant). probe4 shows the slide: `a_bulk = 5.0 → 3.35 →
+>   2.0` for `J = 100 → 225 → 625` (>1 in-band, heading for <1); the crossing was later **located** at
+>   `J ≈ 2460`, and past it **`a_pocket` keeps RISING** rather than following — see § SHARPENING, which
+>   is where this bullet's original "the firing" (both margins at once) is corrected. Every firing
+>   magnitude **and the gap** ride on un-pinned scales (`C_e`, `τ_res`, `H`, `J`; the gap moves ~23%
+>   over `C_e = 0.15 → 0.20`). **The headline — mixing-out HIDES super-eq NO — rides on the IN-BAND
+>   firing of `a_bulk`, and that in-band firing is the lesson, not a universal claim.**
 > - **Contrast rung 14, don't collide with it.** Rung 14 fires *on* the φ_p=1.0 mixed-out number
 >   (`a≈250`) — the **zoned-vs-unzoned** axis. Rung 17 is the **mixing-fidelity** axis at the **rich**
 >   φ_p=1.5 primary, where that same mixed-out number is dormant. Not a contradiction: the same
@@ -189,9 +192,10 @@ IDENTITY (stated, not gated):  a_pocket/a_bulk = x_pocket/x_bulk = ei_no_pocket_
 4. **Scale-sensitivity — the ORDERING holds, the MAGNITUDE does not.** Sweep `C_e`: the **ordering**
    `a_mixed<1<a_bulk<a_pocket` holds at every scale (structural), while the **magnitudes and the gap
    move** (`gap` ~23% over `C_e=0.15→0.20`; `a_bulk` `4.46→3.35`). The gate asserts **both**: ordering
-   invariant, magnitude variant — the honest scope made a test. **The firing is verified in-band, NOT
-   claimed universal**: a fast enough quench (`J→∞`) drives `a_bulk→a_mixed<1` (the rung-10 `τ_q→0`
+   invariant, magnitude variant — the honest scope made a test. **The BULK firing is verified in-band,
+   NOT claimed universal**: a fast enough quench (`J→∞`) drives `a_bulk→a_mixed<1` (the rung-10 `τ_q→0`
    reduce — probe4: `a_bulk 5.0→3.35→2.0` over `J=100→625`), the deliberately-named edge of the claim.
+   The edge is at `J ≈ 2460`, and `a_pocket` does **not** cross with it (§ SHARPENING).
 5. **Reduce-to-components (exact).** The numbers `exhaust_no_clamp` uses are bit-identical to the
    underlying diagnostics: `x_no_bulk == zoned_nox(…, mixing).x_no_quenched`, `a_bulk ==
    nozzle_flow(…, x_no_frozen=x_no_bulk).max_a`, and `ei_no_pocket_quench ==` the rung-16 value — it
