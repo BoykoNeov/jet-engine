@@ -26,7 +26,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL, regenerate via extract_data.py + build.py
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy leaves `open().write()` unflushed, PowerShell Get/Set-Content double-encodes UTF-8; both fail SILENTLY
 
-## The Rust port — decided 2026-08-12; PHASES 0–4 DONE (3–E, and 4 in slices F/G/H); 377 Rust tests; **phase 5 needs fresh authorisation**
+## The Rust port — decided 2026-08-12; PHASES 0–4 DONE (3–E, and 4 in slices F/G/H); 387 Rust tests; **phase 5 needs fresh authorisation**
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; slices are free inside an authorised phase, **phase 5 needs fresh authorisation**
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost by COMPILING and returning a silently different number
 - [Rust arithmetic IS PyPy](rust-port-arithmetic-is-pypy.md) — 100% bit-exact vs PyPy on gas AND cycle; size a solver claim by DISTINCT ROOTS, not row count
@@ -38,6 +38,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Measure before registering](rust-port-measure-before-registering.md) — probe FIRST, then pre-register; a slack bar in the source is a lead to a wrong exactness claim, not a number to copy; and a bit-equality gate is BLIND to an assumption both sides share
 - [COPY vs REDERIVATION](rust-port-copy-vs-rederivation.md) — an "exactly" claim survives a copied instruction sequence and dies on a second derivation; so don't factor a deliberate duplication away
 - [A documented gate that doesn't exist](rust-port-documented-gate-that-doesnt-exist.md) — the key-COUNT guard is blind to a class ABSENT FROM BOTH sides; make a dead key earn its place instead of deleting it
+- [An oracle cannot see a MISSING GATE](rust-port-oracle-cannot-see-a-missing-gate.md) — 100% bit-exact says nothing about COVERAGE; grep the source test's gates and diff, and never port from a header
 - [Guessed census bars](rust-port-guessed-census-bars.md) — five typed count bars, five wrong, four hiding real physics; measure counts, prefer per-arm, DROP a coincidence bar
 
 ## Shipped rungs

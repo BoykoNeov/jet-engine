@@ -1283,8 +1283,34 @@ tries to form. Rung 27's own output says so and nothing in its suite reads it.
 
 ### 4.15 SLICE H (rungs 29/30) — PHASE 4 COMPLETE, and the one slice that was NOT pre-registered
 
-**270 / 270 bit-exact against PyPy.** The Rust suite is **377 tests**, and **phase 4 is complete**:
-slices F (25/26), G (27/28) and H (29/30) all shipped, in three sessions against the 2–3 budgeted.
+**270 / 270 bit-exact against PyPy.** The Rust suite is **387 tests**, and **phase 4 is complete**:
+slices F (25/26), G (27/28) and H (29/30) all shipped — in ONE session against the 2–3 budgeted.
+
+**AND THE FIRST VERSION OF THIS SLICE SHIPPED 6 OF RUNG 29's 16 GATES.** Slices F and G each began
+by reading `test_rungN.py` and enumerating its gates; slice H read `gas.py`'s docstrings, the spec,
+and `test_rung30.py`'s *header*, and **never opened `test_rung29.py` at all** — which is the
+largest test file in the phase at 422 lines. It got the smallest Rust suite (7 tests, against rung
+25's 17), and the ten missing gates were the entire `π_c`-margin and `M0`-margin families: the two
+sweeps that re-check rung 29's "one design point" concession on the axes it named.
+
+**No self-check in this port could have caught that, and the reason is worth keeping.** The oracle
+came back 270/270 and the phase looked complete. **An oracle gates VALUES; a missing gate is a
+missing CLAIM, not a wrong number.** Bit-equality says the port computes what the Python computes —
+it is silent on whether anything asserts what that computation is *for*. The only detector is
+enumerating the source's gates and diffing, which costs one `grep`.
+
+The ten are now ported, along with two clauses of rung 30's gate 3 that the header summary carried
+and the first pass dropped (`p* > 3·p0`, and the thrust-loss magnitude). Two bars were also
+tightened from round thresholds to the rung's own numbers — `rescued > 0.5` → `0.80–0.94` against
+the documented 87 %, and net loss `< 0.15` → `0.03–0.10` against the documented 5–8 %; both pass,
+and both would previously have passed on a model with substantially wrong physics.
+
+> **A vacuity the re-aim created, caught on the way in.** The Python runs the two margin sweeps
+> through two helpers and gates that they agree at the point they share. This port has ONE
+> parameterised helper, so transcribing that assertion compares a function with itself — it passed,
+> and meant nothing. It now compares the sweep helper against the design-point construction, which
+> really are two different paths here. **That is vacuity case #8 for the fourth time, and every
+> instance has been created by the port's own factorisation rather than inherited from the source.**
 
 **THIS SLICE BROKE THE RULE THE OTHER TWO FOLLOWED, and it is recorded because the cost is
 visible.** Slices E, F and G each probed the Python first and wrote the bars down before any code.

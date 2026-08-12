@@ -73,13 +73,14 @@ struct Dp {
     v9: f64,
     p9: f64,
     t9: f64,
+    v0: f64,
 }
 
 fn dp(tt4: f64) -> Dp {
     let eng = build_turbojet(Gas::reacting_equilibrium(), PI_C, tt4, 50_000.0, losses());
     let r = eng.run(&flight(), 1.0);
     let (s4, s5) = (r.station("4"), r.station("5"));
-    Dp { far: s4.far, tt5: s5.tt, pt5: s5.pt, v9: r.v9, p9: r.p9, t9: r.t9, gas: eng.gas }
+    Dp { far: s4.far, tt5: s5.tt, pt5: s5.pt, v9: r.v9, p9: r.p9, t9: r.t9, v0: r.v0, gas: eng.gas }
 }
 
 fn st5(d: &Dp) -> FlowState {
@@ -214,9 +215,17 @@ fn it_chokes_at_design_and_the_pressure_term_rescues_most_of_the_deficit() {
     assert!((conv.m9 - 1.0).abs() < 1e-9, "the design point must CHOKE: M9={}", conv.m9);
     assert!(conv.p9 > p0, "a choked nozzle is UNDEREXPANDED: p9={} vs p0={p0}", conv.p9);
     assert!(conv.v9 < full.v9, "the choked exit velocity must be lower");
+    // The source's own strength claim, which a bare "it chokes" does not carry: the throat sits
+    // more than 3x ambient, so the design point is not marginally choked but deeply so.
+    assert!(conv.p9 > 3.0 * p0, "p* should exceed 3*p0, got {}", conv.p9 / p0);
 
     // The two thrust terms, per unit mass flow. `rho9 = p9/(R_t*T9)`.
-    let v0 = flight().m0 * (1.4 * 286.9 * 250.0f64).sqrt();
+    //
+    // `v0` comes from the RUN rather than from hardcoded cold-section constants. A first draft
+    // spelled it `M0 * sqrt(1.4 * 286.9 * 250)`, which cancels in `rescued` (both terms carry it)
+    // but NOT in the net-loss fraction, where it sits in the denominator — so the looser of the
+    // two arms was the one riding on constants that do not belong to this gas.
+    let v0 = d.v0;
     let r_t = d.gas.r_t_at(d.far);
     let rho9 = conv.p9 / (r_t * conv.t9);
     let momentum = conv.v9 - v0;
@@ -225,19 +234,23 @@ fn it_chokes_at_design_and_the_pressure_term_rescues_most_of_the_deficit() {
     assert!(pressure > 0.0, "the pressure term must be strictly positive when choked");
 
     // The momentum deficit ALONE would be a large loss; the pressure term cancels most of it.
+    //
+    // **THE BARS ARE THE RUNG'S OWN NUMBERS, not round thresholds.** The source says the pressure
+    // term rescues ~87 % and specific thrust falls 5–8 %; a first draft asserted `> 0.5` and
+    // `< 0.15`, which pass on a model that gets the physics substantially wrong. Loosening a bar
+    // loosens the CLAIM, which is this project's own lesson from the golden-gate work.
     let momentum_deficit = full_thrust - momentum;
     let net_deficit = full_thrust - (momentum + pressure);
     assert!(momentum_deficit > 0.0 && net_deficit > 0.0, "the convergent nozzle must lose thrust");
     let rescued = 1.0 - net_deficit / momentum_deficit;
     assert!(
-        rescued > 0.5,
-        "the pressure term should rescue most of the momentum deficit, got {rescued}"
+        (0.80..0.94).contains(&rescued),
+        "the pressure term should rescue ~87 % of the momentum deficit, got {rescued}"
     );
-    // …and the NET loss is a few percent, not the tens of percent the velocity drop implies.
+    let net_loss = net_deficit / full_thrust;
     assert!(
-        net_deficit / full_thrust < 0.15,
-        "net specific-thrust loss {} is larger than the rung claims",
-        net_deficit / full_thrust
+        (0.03..0.10).contains(&net_loss),
+        "specific thrust should fall 5-8 %, got {net_loss}"
     );
 }
 
