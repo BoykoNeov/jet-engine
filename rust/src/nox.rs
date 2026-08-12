@@ -1079,6 +1079,38 @@ pub fn pocket_quench_grid(
     tau_core: f64,
     o: PocketOpts,
 ) -> PocketGrid {
+    pocket_quench_grid_dwell(far_overall, tt3, p, hf_fuel, tau_ref, Dwell::Scalar(tau_core), o)
+}
+
+/// Where each pocket's dwell comes from.
+///
+/// Rung 16 gives every pocket ONE shared dwell; rungs 23 and 24 give each its own `τ(ξ)` read
+/// off the resolved cross-plane. The Python spells this as an optional `tau_of_xi=` beside the
+/// scalar `tau_core`, with `None` meaning the scalar — so [`Dwell::Scalar`] IS the rung-16 path,
+/// byte for byte, and nothing about rungs 16/15 moves when the other arm is added.
+///
+/// The matched-mean twin that isolates the ξ–τ CORRELATION also takes [`Dwell::Scalar`]: it is
+/// the same integral at the β-PDF mean `⟨τ⟩` of the very spectrum being tested, so the two runs
+/// differ ONLY by the correlation.
+#[derive(Debug, Clone, Copy)]
+pub enum Dwell<'a> {
+    /// one shared dwell for every pocket (rung 16, and the matched-mean reference)
+    Scalar(f64),
+    /// each pocket at its own derived dwell (rungs 23 and 24)
+    PerPocket(&'a TauSpectrum),
+}
+
+/// [`pocket_quench_grid`] with the dwell SOURCE left open — the rung-23/24 generalisation.
+#[allow(clippy::too_many_arguments)]
+pub fn pocket_quench_grid_dwell(
+    far_overall: f64,
+    tt3: f64,
+    p: f64,
+    hf_fuel: f64,
+    tau_ref: f64,
+    dwell: Dwell<'_>,
+    o: PocketOpts,
+) -> PocketGrid {
     let xi_max = xi_soot_bound(); // ξ at the soot bound φ=2
     let xi_grid: Vec<f64> =
         (0..o.n_bell).map(|i| xi_max * (i as f64 + 0.5) / o.n_bell as f64).collect();
@@ -1109,6 +1141,11 @@ pub fn pocket_quench_grid(
         };
         let ntot: f64 = comp.iter().map(|&(_, v)| v).sum();
         let n0 = alpha * thermal_no(&comp, t_p, p, tau_ref, far_local, 4000, m0).x_no * ntot;
+        // RUNG 23/24 — the pocket's OWN dwell, read off the resolved field at its ξ.
+        let tau_pocket = match dwell {
+            Dwell::Scalar(t) => t,
+            Dwell::PerPocket(sp) => sp.at(xi),
+        };
         let q = quench_no(
             &comp,
             t_p,
@@ -1117,7 +1154,7 @@ pub fn pocket_quench_grid(
             tt3,
             p,
             n0,
-            tau_core,
+            tau_pocket,
             QuenchOpts {
                 nsteps: o.quench_nsteps,
                 ngrid: o.quench_ngrid,
@@ -1236,6 +1273,514 @@ pub fn transport_variance(
          stay bounded by the injection ceiling (check C_φ·ω·τ ≥ 0 and dt small enough)."
     );
     g
+}
+
+// --------------------------------------------------------------------------------------
+// RUNGS 22/23/24 — the RESOLVED CROSS-PLANE.
+//
+// Rung 18's load-bearing NEGATIVE was that a 0-D variance transport CANNOT DERIVE the
+// Holdeman optimum: with any mean-field ω(J) the residual g(J) is monotone, so rung 18 had to
+// IMPOSE a coverage ω(C) peaked at C_opt. These three rungs resolve the y-z dilution
+// cross-plane instead, and C_opt EMERGES as an OUTPUT — the INVERSION of rung 18.
+//
+//   * rung 22 — the WIDTH g(C) from the resolved field           (`spatial_segregation`)
+//   * rung 23 — that field DEVELOPED IN TIME, so each pocket
+//               carries its OWN dwell τ(ξ)                        (`spatial_dwell_field`)
+//   * rung 24 — the same field where each cell relaxes at its
+//               OWN gradient-derived rate                         (`spatial_local_field`)
+//
+// PORTING NOTE — THE SUMMATION SHAPES ARE PER-LINE, AND THE PYTHON IS NOT UNIFORM. Rung 22 and
+// rung 23 accumulate every moment FLAT (one running accumulator over all cells). Rung 24's
+// `mean` is HIERARCHICAL (`sum(sum(r) for r in xi)` — row partials, then summed) while its
+// `meansq` two lines later is FLAT. That single line is the ENTIRE reason rung 24's `g` is not
+// bit-equal to rung 22's, measured: substituting a flat mean reproduces rung 22 exactly at
+// every J and grid. So rung 23's reduce is asserted BIT-EXACT and rung 24's needs a tolerance
+// — the opposite of what the two Python docstrings claim. Tidying the hierarchical sum into a
+// flat one would be MORE accurate and would be a DEFECT. See `docs/plans/todo-rust-port.md`
+// § 4.7.
+// --------------------------------------------------------------------------------------
+
+/// Bisect the mean-preserving air scale `s` so `⟨ξ⟩ = ξ̄`, then return it.
+///
+/// Shared by all three cross-plane builders — 60 fixed bisections on `[0, 50]`, the ceiling
+/// chosen so it clears the over-penetration flank (where the far-wall-reflected plume needs
+/// `s ≈ 5–6` to reach the mean). The `hi` branch is taken on `mean <= xibar`, matching the
+/// Python's `if m > xibar: lo = s else: hi = s` exactly — the comparison, and therefore the
+/// bracket the 60 halvings walk, must not be re-spelled.
+fn mean_preserving_scale(mean_at: impl Fn(f64) -> f64, xibar: f64) -> f64 {
+    let (mut lo, mut hi) = (0.0f64, 50.0f64);
+    for _ in 0..60 {
+        let s = 0.5 * (lo + hi);
+        if mean_at(s) > xibar {
+            lo = s; // too little air delivered ⇒ raise the scale
+        } else {
+            hi = s;
+        }
+    }
+    0.5 * (lo + hi)
+}
+
+/// The separable unit-mean plume factors `(ây, âz)` of one periodic dilution cell.
+///
+/// A single jet enters from the wall `y = 0` at `z = S/2`. Penetration `δ` gets MIRROR IMAGES
+/// at BOTH walls (`y = 0` and `y = H`) so mass stays inside `[0, H]` — that reflection is what
+/// makes the over-penetration penalty survive; the span gets periodic images at `±S`. Each
+/// factor is normalised to unit spatial mean, so the outer product has unit mean too.
+fn plume_factors(
+    s_spacing: f64,
+    h: f64,
+    delta: f64,
+    sig_y: f64,
+    sig_z: f64,
+    ny: usize,
+    nz: usize,
+) -> (Vec<f64>, Vec<f64>) {
+    let ys: Vec<f64> = (0..ny).map(|i| (i as f64 + 0.5) * h / ny as f64).collect();
+    let zs: Vec<f64> = (0..nz).map(|j| (j as f64 + 0.5) * s_spacing / nz as f64).collect();
+    let ay: Vec<f64> = ys
+        .iter()
+        .map(|&y| {
+            [-delta, delta, 2.0 * h - delta, 2.0 * h + delta]
+                .iter()
+                .map(|&c| (-((y - c) * (y - c)) / (2.0 * sig_y * sig_y)).exp())
+                .sum::<f64>()
+        })
+        .collect();
+    let az: Vec<f64> = zs
+        .iter()
+        .map(|&z| {
+            [-1.0f64, 0.0, 1.0]
+                .iter()
+                .map(|&m| {
+                    let d = z - s_spacing / 2.0 - m * s_spacing;
+                    (-(d * d) / (2.0 * sig_z * sig_z)).exp()
+                })
+                .sum::<f64>()
+        })
+        .collect();
+    let may = ay.iter().sum::<f64>() / ny as f64;
+    let maz = az.iter().sum::<f64>() / nz as f64;
+    (ay.iter().map(|&a| a / may).collect(), az.iter().map(|&a| a / maz).collect())
+}
+
+/// The mixture fraction of the RICH primary, and the overall mean — with the RQL guard.
+///
+/// Every cross-plane builder needs a primary RICHER than the mean (the jet dilutes DOWN to it);
+/// the assert is the Python's, and it is the geometry statement, not a numerical guard.
+fn cross_plane_endpoints(far_overall: f64, phi_primary: f64, who: &str) -> (f64, f64) {
+    let xibar = far_overall / (1.0 + far_overall);
+    let far_p = phi_primary * gas::f_stoich();
+    let xi_p = far_p / (1.0 + far_p);
+    assert!(
+        xi_p > xibar,
+        "{who} needs a RICH primary (φ_p={phi_primary}, ξ_p={xi_p:.4}) richer than the overall \
+         mean (ξ̄={xibar:.4}) — the RQL geometry (the jet dilutes DOWN to the mean)."
+    );
+    (xibar, xi_p)
+}
+
+/// The mean-preservation contract shared by all three builders: `⟨ξ⟩` must land on `ξ̄` to 1 %.
+fn assert_mean_preserved(mean: f64, xibar: f64, who: &str) {
+    assert!(
+        (mean - xibar).abs() <= 0.01 * xibar,
+        "{who} drifted the mean: ⟨ξ⟩={mean:.6} vs ξ̄={xibar:.6} (>1%) — the mean-preserving \
+         closure must integrate at ξ̄ (bisection s pinned near the ceiling 50?)."
+    );
+}
+
+/// Rung-22 RESOLVED cross-plane segregation `g = Var[ξ]/(ξ̄(1−ξ̄))`.
+///
+/// The width of the mixture-fraction distribution over ONE dilution-cell cross-plane — the
+/// SPATIAL successor of rung-18's 0-D variance ODE. Where rung 18 got `g` from a lumped decay
+/// and had to IMPOSE the coverage to place the optimum, rung 22 resolves the y-z plane and the
+/// Holdeman optimum EMERGES.
+///
+/// * penetration `δ = k_p·√(S·H)·J^(1/4)` — jet-in-crossflow `δ ∝ d_j·√J` at a FIXED dilution
+///   mass ratio (`d_j ∝ √(S·H)·J^(−1/4)`), so the SPACING enters the penetration, not just the
+///   momentum ratio. THIS is what a mean-field `ω(J)` could not reach.
+/// * spread is a FIXED MIXING LENGTH `σ_y = k_y·H`, `σ_z = k_z·S` — J-INDEPENDENT. That is what
+///   keeps an OVER-penetration penalty alive: a jet shooting past mid-height reflects off the
+///   far wall, piling air there and leaving the near wall rich, so the variance climbs again.
+///
+/// THE OPTIMUM IS AN OUTPUT: uniformity is best where the jet fills half the height,
+/// `δ ≈ H/2 ⇒ (S/H)·√J = 1/(4k_p²)`, i.e. `C` is CONSTANT at the optimum and `J_opt` shifts
+/// exactly as `(H/S)²`. What is DERIVED is the GROUP COLLAPSE and the shift — not the number,
+/// which rides on the semi-empirical `k_p`.
+#[allow(clippy::too_many_arguments)]
+pub fn spatial_segregation(
+    far_overall: f64,
+    phi_primary: f64,
+    s_spacing: f64,
+    h: f64,
+    j: f64,
+    k_p: f64,
+    k_y: f64,
+    k_z: f64,
+    ny: usize,
+    nz: usize,
+) -> f64 {
+    let (xibar, xi_p) = cross_plane_endpoints(far_overall, phi_primary, "spatial segregation");
+    let delta = k_p * (s_spacing * h).sqrt() * gas::powp(j, 0.25);
+    let (sig_y, sig_z) = (k_y * h, k_z * s_spacing);
+    let (ayh, azh) = plume_factors(s_spacing, h, delta, sig_y, sig_z, ny, nz);
+    let beta_bar = (xi_p - xibar) / xi_p; // the MEAN air fraction that pins ⟨ξ⟩ = ξ̄
+
+    // (⟨ξ⟩, ⟨ξ²⟩) at air scale s — BOTH accumulated FLAT, in one pass, y outer / z inner.
+    let moments = |s: f64| -> (f64, f64) {
+        let (mut sxi, mut sxi2) = (0.0f64, 0.0f64);
+        for &a in &ayh {
+            let sa = s * beta_bar * a;
+            for &b in &azh {
+                let mut beta = sa * b;
+                if beta > 1.0 {
+                    beta = 1.0;
+                } else if beta < 0.0 {
+                    beta = 0.0;
+                }
+                let xi = xi_p * (1.0 - beta);
+                sxi += xi;
+                sxi2 += xi * xi;
+            }
+        }
+        let n = (ny * nz) as f64;
+        (sxi / n, sxi2 / n)
+    };
+
+    let s = mean_preserving_scale(|s| moments(s).0, xibar);
+    let (mean, meansq) = moments(s);
+    assert_mean_preserved(mean, xibar, "spatial field");
+    let var = (meansq - mean * mean).max(0.0);
+    var / (xibar * (1.0 - xibar))
+}
+
+/// A binned, monotone `τ(ξ)` interpolator — the dwell spectrum rungs 23 and 24 both return.
+///
+/// Built by binning the `(ξ_terminal, τ)` cloud over `nb = max(8, ny/2)` uniform bins and
+/// keeping ONLY the non-empty ones, so the knot count is DATA-dependent — which is why it is
+/// dumped as its own oracle key: a count off by one reshapes the whole interpolator, and no
+/// tolerance on τ would name that.
+#[derive(Debug, Clone)]
+pub struct TauSpectrum {
+    /// bin centres of the non-empty bins
+    pub centers: Vec<f64>,
+    /// mean dwell in each non-empty bin
+    pub taus: Vec<f64>,
+}
+
+impl TauSpectrum {
+    /// Bin a `(ξ, τ)` cloud into the flat-extrapolated interpolator.
+    fn from_cells(cells: &[(f64, f64)], ny: usize) -> Self {
+        let xlo = cells.iter().fold(f64::INFINITY, |m, &(x, _)| m.min(x));
+        let xhi = cells.iter().fold(f64::NEG_INFINITY, |m, &(x, _)| m.max(x));
+        let span = (xhi - xlo).max(1e-12);
+        let nb = (ny / 2).max(8);
+        let mut sums = vec![0.0f64; nb];
+        let mut cnts = vec![0usize; nb];
+        for &(x, t) in cells {
+            let b = (((x - xlo) / span * nb as f64) as usize).min(nb - 1);
+            sums[b] += t;
+            cnts[b] += 1;
+        }
+        let mut centers = Vec::new();
+        let mut taus = Vec::new();
+        for b in 0..nb {
+            if cnts[b] > 0 {
+                centers.push(xlo + (b as f64 + 0.5) / nb as f64 * span);
+                taus.push(sums[b] / cnts[b] as f64);
+            }
+        }
+        Self { centers, taus }
+    }
+
+    /// ξ ↦ τ, flat-extrapolated at both ends (the `Bell::at` shape on a different pair).
+    pub fn at(&self, xi: f64) -> f64 {
+        if xi <= self.centers[0] {
+            return self.taus[0];
+        }
+        let n = self.centers.len();
+        if xi >= self.centers[n - 1] {
+            return self.taus[n - 1];
+        }
+        let (mut klo, mut khi) = (0usize, n - 1);
+        while khi - klo > 1 {
+            let mid = (klo + khi) / 2;
+            if self.centers[mid] <= xi {
+                klo = mid;
+            } else {
+                khi = mid;
+            }
+        }
+        let w = (xi - self.centers[klo]) / (self.centers[khi] - self.centers[klo]);
+        self.taus[klo] + w * (self.taus[khi] - self.taus[klo])
+    }
+
+    /// The non-empty knot count — a DISCRETE oracle key (see the struct docs).
+    pub fn n_knots(&self) -> usize {
+        self.centers.len()
+    }
+}
+
+/// Rung-23 DERIVED DWELL SPECTRUM — rung 22's cross-plane developed IN TIME.
+///
+/// Rung 22 derived the WIDTH but fed it through the per-pocket quench with the IMPORTED rung-16
+/// kinked SCALAR dwell, which BAKES `C_opt` in. Rung 23 watches the SAME plane mix out over
+/// `tau_mix` and reads each pocket's dwell from first principles — no `C_opt`, no `τ_res`, no
+/// `b_u`. Both laws terminate at `tau_mix`, so the terminal field IS rung-22's.
+///
+/// * `σ(t) = σ_final·√(t/τ_mix)` — turbulent diffusion (`σ² ∝ D_t·t`)
+/// * `δ(t) = δ_final·(t/τ_mix)^(1/3)` — the jet-in-crossflow trajectory
+///
+/// THE ONE GENUINELY NEW QUANTITY is the ξ–τ CORRELATION: rich pockets are the LATE-ARRIVING
+/// ones, so dwell correlates with composition, which rung-16's single scalar cannot express.
+/// The per-cell dwell is the ARRIVAL-TIME DEFICIT `τ_cell = ∫₀^τ_mix (1 − β(t)/β_final) dt`.
+///
+/// Returns `(g_spatial, τ(ξ))`. The `g` here is BIT-EQUAL to [`spatial_segregation`] at a
+/// matched grid — `_plume(1.0)` scales by `1.0^(1/3)` and `√1.0`, both exact, and every
+/// accumulator below is FLAT like rung 22's. Measured 9/9 exact; see the section note.
+#[allow(clippy::too_many_arguments)]
+pub fn spatial_dwell_field(
+    far_overall: f64,
+    phi_primary: f64,
+    s_spacing: f64,
+    h: f64,
+    j: f64,
+    tau_mix: f64,
+    k_p: f64,
+    k_y: f64,
+    k_z: f64,
+    ny: usize,
+    nz: usize,
+    nt: usize,
+) -> (f64, TauSpectrum) {
+    let (xibar, xi_p) = cross_plane_endpoints(far_overall, phi_primary, "spatial dwell field");
+    assert!(tau_mix > 0.0, "tau_mix={tau_mix} must be positive (rung-11's H/(C_e√J·U_c))");
+    let delta_f = k_p * (s_spacing * h).sqrt() * gas::powp(j, 0.25);
+    let (sig_y_f, sig_z_f) = (k_y * h, k_z * s_spacing);
+    let beta_bar_full = (xi_p - xibar) / xi_p;
+
+    // the plume at fractional time t/τ_mix, with σ and δ time-developed
+    let plume = |frac: f64| -> (Vec<f64>, Vec<f64>) {
+        let delta = delta_f * gas::powp(frac, 1.0 / 3.0);
+        plume_factors(s_spacing, h, delta, sig_y_f * frac.sqrt(), sig_z_f * frac.sqrt(), ny, nz)
+    };
+
+    let (ayh_f, azh_f) = plume(1.0); // the TERMINAL plume == rung 22's
+    let mean_terminal = |s: f64| -> f64 {
+        let mut sxi = 0.0f64;
+        for &a in &ayh_f {
+            let sa = s * beta_bar_full * a;
+            for &b in &azh_f {
+                sxi += xi_p * (1.0 - (sa * b).clamp(0.0, 1.0));
+            }
+        }
+        sxi / (ny * nz) as f64
+    };
+    let s_star = mean_preserving_scale(mean_terminal, xibar);
+
+    // the terminal β field, and the terminal variance (FLAT, exactly as rung 22 accumulates)
+    let beta_fin: Vec<Vec<f64>> = ayh_f
+        .iter()
+        .map(|&a| azh_f.iter().map(|&b| (s_star * beta_bar_full * a * b).clamp(0.0, 1.0)).collect())
+        .collect();
+    let (mut sxi, mut sxi2) = (0.0f64, 0.0f64);
+    for row in &beta_fin {
+        for &bf in row {
+            let xi = xi_p * (1.0 - bf);
+            sxi += xi;
+            sxi2 += xi * xi;
+        }
+    }
+    let n = (ny * nz) as f64;
+    let mean = sxi / n;
+    assert_mean_preserved(mean, xibar, "spatial dwell field");
+    let g_spatial = (sxi2 / n - mean * mean).max(0.0) / (xibar * (1.0 - xibar));
+
+    // DWELL — the arrival-time deficit ∫(1 − β(t)/β_final) dt over [0, τ_mix].
+    let dt = tau_mix / nt as f64;
+    let mut tau_cell = vec![vec![0.0f64; nz]; ny];
+    for k in 0..nt {
+        let frac = (k as f64 + 0.5) / nt as f64;
+        let (ayh, azh) = plume(frac);
+        let bb = beta_bar_full * frac; // air delivered so far grows with t
+        for i in 0..ny {
+            let sa = s_star * bb * ayh[i];
+            for jj in 0..nz {
+                let beta_t = (sa * azh[jj]).clamp(0.0, 1.0);
+                let bf = beta_fin[i][jj];
+                let ratio = if bf > 1e-12 { beta_t / bf } else { 1.0 };
+                tau_cell[i][jj] += (1.0 - ratio.clamp(0.0, 1.0)) * dt;
+            }
+        }
+    }
+
+    let cells: Vec<(f64, f64)> = (0..ny)
+        .flat_map(|i| {
+            let beta_fin = &beta_fin;
+            let tau_cell = &tau_cell;
+            (0..nz).map(move |jj| (xi_p * (1.0 - beta_fin[i][jj]), tau_cell[i][jj]))
+        })
+        .collect();
+    (g_spatial, TauSpectrum::from_cells(&cells, ny))
+}
+
+/// Rung-24 LOCALLY-RESOLVED MIXING TIME — the same plane, each cell at its OWN rate.
+///
+/// SAME ENDPOINT, DIFFERENT PATHS: the terminal field is rung-22's, so `g` is the same quantity;
+/// only the PATH differs. Each cell relaxes at its own `ω`, renormalised to complete at `τ_mix`:
+///
+/// ```text
+/// β(t)   = β_final·(1 − e^(−ω t))/(1 − e^(−ω τ_mix))
+/// τ_cell = τ_mix·[1 − 1/E + 1/u],   u = ω·τ_mix,  E = 1 − e^(−u)
+/// ```
+///
+/// ANALYTIC — no time stepping, so there is no `nt`. THE RATE is `ω = D_t·|∇ξ|²/var` (rung-18's
+/// own `ω = χ/2var` made LOCAL in the numerator) with `D_t = σ_final²/(2τ_mix)` REUSED, so this
+/// adds no new constant. THE EXACT FACTORISATION: `τ_mix` CANCELS out of `u`, so
+/// `⟨τ⟩(J) = τ_mix(J)·F(C)` exactly — scale × shape, cleanly separated, and `F(C)` is the
+/// derived content: U-shaped with its minimum AT `C_opt`.
+///
+/// Returns `(g_spatial, τ(ξ), F_shape)`.
+///
+/// **The `g` here is NOT bit-equal to [`spatial_segregation`]'s** — see the section note. The
+/// mean below is the Python's HIERARCHICAL `sum(sum(r) for r in xi)` and the mean-square is its
+/// FLAT companion; that asymmetry, not the physics, is the ~1e-17.
+#[allow(clippy::too_many_arguments)]
+pub fn spatial_local_field(
+    far_overall: f64,
+    phi_primary: f64,
+    s_spacing: f64,
+    h: f64,
+    j: f64,
+    tau_mix: f64,
+    k_p: f64,
+    k_y: f64,
+    k_z: f64,
+    ny: usize,
+    nz: usize,
+) -> (f64, TauSpectrum, f64) {
+    let (xibar, xi_p) = cross_plane_endpoints(far_overall, phi_primary, "spatial local field");
+    assert!(tau_mix > 0.0, "tau_mix={tau_mix} must be positive (rung-11's H/(C_e√J·U_c))");
+    let delta = k_p * (s_spacing * h).sqrt() * gas::powp(j, 0.25);
+    let (sig_y, sig_z) = (k_y * h, k_z * s_spacing);
+    let (ayh, azh) = plume_factors(s_spacing, h, delta, sig_y, sig_z, ny, nz);
+    let beta_bar = (xi_p - xibar) / xi_p;
+
+    let mean_at = |s: f64| -> f64 {
+        let mut t = 0.0f64;
+        for &a in &ayh {
+            let sa = s * beta_bar * a;
+            for &b in &azh {
+                t += xi_p * (1.0 - (sa * b).clamp(0.0, 1.0));
+            }
+        }
+        t / (ny * nz) as f64
+    };
+    let s_star = mean_preserving_scale(mean_at, xibar);
+    let xi: Vec<Vec<f64>> = ayh
+        .iter()
+        .map(|&a| {
+            azh.iter().map(|&b| xi_p * (1.0 - (s_star * beta_bar * a * b).clamp(0.0, 1.0))).collect()
+        })
+        .collect();
+
+    let n = (ny * nz) as f64;
+    // HIERARCHICAL — row partials, then summed. The Python's `sum(sum(r) for r in xi)`, and the
+    // one line that costs rung 24 bit-equality with rung 22. Do NOT flatten it.
+    let mean = xi.iter().map(|r| r.iter().sum::<f64>()).sum::<f64>() / n;
+    assert_mean_preserved(mean, xibar, "spatial local field");
+    // FLAT — one accumulator over all cells. The Python's `sum(v*v for r in xi for v in r)`,
+    // a different shape from the mean two lines above, deliberately preserved.
+    let meansq = xi.iter().flat_map(|r| r.iter()).map(|&v| v * v).sum::<f64>() / n;
+    let var = (meansq - mean * mean).max(0.0);
+    let g_spatial = var / (xibar * (1.0 - xibar));
+
+    // THE LOCAL RATE + the analytic dwell. u = σ_y²·|∇ξ|²/(2·var) — τ_mix CANCELS.
+    let (dy, dz) = (h / ny as f64, s_spacing / nz as f64);
+    let mut cells = Vec::with_capacity(ny * nz);
+    let mut tsum = 0.0f64;
+    for i in 0..ny {
+        let (im, ip) = (i.saturating_sub(1), (i + 1).min(ny - 1)); // zero-gradient (wall) in y
+        for jj in 0..nz {
+            let jm = (jj + nz - 1) % nz; // periodic in z
+            let jp = (jj + 1) % nz;
+            let gy = (xi[ip][jj] - xi[im][jj]) / ((ip - im) as f64 * dy);
+            let gz = (xi[i][jp] - xi[i][jm]) / (2.0 * dz);
+            let u = sig_y * sig_y * (gy * gy + gz * gz) / (2.0 * var.max(1e-30));
+            let t = if u < 1e-8 {
+                0.5 * tau_mix // stagnant limit (u→0) — NOT a dormant branch: 18–50 % of cells
+            } else {
+                let e = 1.0 - (-u).exp();
+                tau_mix * (1.0 - 1.0 / e + 1.0 / u)
+            };
+            cells.push((xi[i][jj], t));
+            tsum += t;
+        }
+    }
+    let f_shape = (tsum / n) / tau_mix; // the PURE field functional (τ_mix-free)
+    (g_spatial, TauSpectrum::from_cells(&cells, ny), f_shape)
+}
+
+/// How many cells take rung-24's `u < 1e-8` stagnant branch — a DISCRETE oracle key.
+///
+/// The β-clip creates large exactly-flat plateaus where `|∇ξ|² = 0`, so this branch is taken by
+/// 18–50 % of cells, not dormant. The count is U-shaped with its minimum at `C_opt`, which
+/// corroborates `F`'s U — but it is NOT a second kill test, because `u` carries the same
+/// explicit `1/var` coupling that makes "argmin F == argmin g" a tell. The g-free witness stays
+/// `⟨|∇ξ|²⟩`.
+#[allow(clippy::too_many_arguments)]
+pub fn spatial_local_stagnant_cells(
+    far_overall: f64,
+    phi_primary: f64,
+    s_spacing: f64,
+    h: f64,
+    j: f64,
+    k_p: f64,
+    k_y: f64,
+    k_z: f64,
+    ny: usize,
+    nz: usize,
+) -> usize {
+    let (xibar, xi_p) = cross_plane_endpoints(far_overall, phi_primary, "spatial local field");
+    let delta = k_p * (s_spacing * h).sqrt() * gas::powp(j, 0.25);
+    let (sig_y, sig_z) = (k_y * h, k_z * s_spacing);
+    let (ayh, azh) = plume_factors(s_spacing, h, delta, sig_y, sig_z, ny, nz);
+    let beta_bar = (xi_p - xibar) / xi_p;
+    let mean_at = |s: f64| -> f64 {
+        let mut t = 0.0f64;
+        for &a in &ayh {
+            let sa = s * beta_bar * a;
+            for &b in &azh {
+                t += xi_p * (1.0 - (sa * b).clamp(0.0, 1.0));
+            }
+        }
+        t / (ny * nz) as f64
+    };
+    let s_star = mean_preserving_scale(mean_at, xibar);
+    let xi: Vec<Vec<f64>> = ayh
+        .iter()
+        .map(|&a| {
+            azh.iter().map(|&b| xi_p * (1.0 - (s_star * beta_bar * a * b).clamp(0.0, 1.0))).collect()
+        })
+        .collect();
+    let n = (ny * nz) as f64;
+    let mean = xi.iter().map(|r| r.iter().sum::<f64>()).sum::<f64>() / n;
+    let meansq = xi.iter().flat_map(|r| r.iter()).map(|&v| v * v).sum::<f64>() / n;
+    let var = (meansq - mean * mean).max(0.0);
+    let (dy, dz) = (h / ny as f64, s_spacing / nz as f64);
+    let mut count = 0usize;
+    for i in 0..ny {
+        let (im, ip) = (i.saturating_sub(1), (i + 1).min(ny - 1));
+        for jj in 0..nz {
+            let jm = (jj + nz - 1) % nz;
+            let jp = (jj + 1) % nz;
+            let gy = (xi[ip][jj] - xi[im][jj]) / ((ip - im) as f64 * dy);
+            let gz = (xi[i][jp] - xi[i][jm]) / (2.0 * dz);
+            if sig_y * sig_y * (gy * gy + gz * gz) / (2.0 * var.max(1e-30)) < 1e-8 {
+                count += 1;
+            }
+        }
+    }
+    count
 }
 
 /// Rung-19 prompt-NO (Fenimore) config — De Soete's (1975) global-rate CORRECTION FACTOR
@@ -1925,6 +2470,251 @@ impl TransportedPdf {
     }
 }
 
+/// Rung-22 RESOLVED cross-plane / spatial-PDF config — the seam rungs 17 AND 18 both named as
+/// their deferred ceiling, done as the honest INVERSION of rung 18. `docs/rung22-spec.md`.
+///
+/// The delta over rung 18 is MINIMAL and that is the point: rung 18 got the β-PDF width `g` from
+/// a lumped ODE, rung 22 gets the SAME `g` from a resolved cross-plane, and BOTH feed the
+/// identical rung-13 ideal bell. Only the SOURCE of `g` changes — from imposed to derived.
+///
+/// **THE SIGNATURE OF THE INVERSION: there is no `c_opt` field.** Every rung-12..18 config takes
+/// `C_opt = 2.5` as an INPUT; here [`SpatialPdf::c_opt`] is a DERIVED property, because the
+/// optimum is where the penetration fills half the duct height. In the Python this is guarded by
+/// a test asserting that `SpatialPDF(C_opt=2.5)` raises `TypeError`; in Rust an unknown struct
+/// field is a COMPILE error, so that test is not ported — the type system already states it, and
+/// a runtime transcription would measure nothing. What IS gated is the derivation: `c_opt()`
+/// tracking `1/(4k_p²)` as `k_p` moves, and the argmin following it.
+#[derive(Debug, Clone, Copy)]
+pub struct SpatialPdf {
+    /// dilution-jet spacing, m (forms the Holdeman group with `H` and `J`)
+    pub s: f64,
+    /// penetration constant — SETS `C_opt = 1/(4k_p²)` as an OUTPUT
+    pub k_p: f64,
+    /// penetration mixing length / duct height (fixed, J-independent)
+    pub k_y: f64,
+    /// spanwise mixing length / spacing (fixed, J-independent)
+    pub k_z: f64,
+    /// cross-plane penetration (y) grid — converged (32/48/64 agree)
+    pub ny: usize,
+    /// cross-plane span (z) grid
+    pub nz: usize,
+    /// ideal-bell grid points
+    pub n_bell: usize,
+    /// β-PDF quadrature nodes
+    pub n_quad: usize,
+}
+
+impl Default for SpatialPdf {
+    fn default() -> Self {
+        Self { s: 0.0625, k_p: 0.316, k_y: 0.28, k_z: 0.28, ny: 48, nz: 48, n_bell: 200, n_quad: 200 }
+    }
+}
+
+impl SpatialPdf {
+    /// Python's `__post_init__`.
+    pub fn validate(&self) {
+        for (name, v) in [("S", self.s), ("k_p", self.k_p), ("k_y", self.k_y), ("k_z", self.k_z)] {
+            assert!(v > 0.0, "SpatialPdf.{name}={v} must be positive");
+        }
+        assert!(
+            self.ny > 1 && self.nz > 1 && self.n_bell > 1 && self.n_quad > 1,
+            "SpatialPdf grid sizes (ny, nz, n_bell, n_quad) must be > 1"
+        );
+    }
+
+    /// The Holdeman group `C = (S/H)√J` — the same jet that set `τ_q`.
+    pub fn c(&self, mixing: &JetMixing) -> f64 {
+        (self.s / mixing.h) * mixing.j.sqrt()
+    }
+
+    /// The DERIVED uniformity optimum `C_opt = 1/(4k_p²)` — an OUTPUT, not a knob.
+    pub fn c_opt(&self) -> f64 {
+        1.0 / (4.0 * self.k_p * self.k_p)
+    }
+
+    /// The resolved width `g(C)` and the rung-18 two-stream ceiling. `g < g_ceiling` ALWAYS — a
+    /// partial-mix realisation carries less variance than the two-δ extreme.
+    pub fn segregation(
+        &self,
+        mixing: &JetMixing,
+        far_overall: f64,
+        phi_primary: f64,
+    ) -> (f64, f64) {
+        let g_ceiling = two_stream_ceiling(far_overall, phi_primary);
+        let g = spatial_segregation(
+            far_overall, phi_primary, self.s, mixing.h, mixing.j, self.k_p, self.k_y, self.k_z,
+            self.ny, self.nz,
+        );
+        (g, g_ceiling)
+    }
+}
+
+/// Rung-23 DERIVED DWELL SPECTRUM config — the PARTIAL closure rung 22 named, completed on the
+/// OTHER half. `docs/rung23-spec.md`.
+///
+/// Rung 22 derived the WIDTH but fed it through the per-pocket quench with the IMPORTED rung-16
+/// kinked SCALAR dwell, which BAKES `C_opt` in. Rung 23 develops the SAME plane in TIME and reads
+/// each pocket's dwell from first principles — no `C_opt`, no `τ_res`, no `b_u`. So it adds NO
+/// new dwell knob: geometry from rung 22, time from rung 11's `τ_mix = mixing.tau_q()`.
+///
+/// **The default grid is 40/40, NOT rung 22's 48/48.** That mismatch is inert in the Python's own
+/// tests, which pass grids explicitly on both sides — but a comparison of this `g` against
+/// [`SpatialPdf`]'s AT DEFAULTS fails for a reason that is not a defect. At a MATCHED grid the
+/// two are BIT-EQUAL (measured 9/9), which is a tighter statement than the Python's own `< 1e-9`.
+#[derive(Debug, Clone, Copy)]
+pub struct SpatialDwellPdf {
+    /// dilution-jet spacing, m
+    pub s: f64,
+    /// penetration constant — SETS `C_opt = 1/(4k_p²)` as an OUTPUT
+    pub k_p: f64,
+    /// penetration mixing length / duct height
+    pub k_y: f64,
+    /// spanwise mixing length / spacing
+    pub k_z: f64,
+    /// cross-plane penetration (y) grid
+    pub ny: usize,
+    /// cross-plane span (z) grid
+    pub nz: usize,
+    /// time steps of the arrival-time-deficit integral over `[0, τ_mix]`
+    pub nt: usize,
+    /// per-pocket ξ-grid points (each a full quench — the cost driver)
+    pub n_bell: usize,
+    /// β-PDF quadrature nodes
+    pub n_quad: usize,
+}
+
+impl Default for SpatialDwellPdf {
+    fn default() -> Self {
+        Self {
+            s: 0.0625,
+            k_p: 0.316,
+            k_y: 0.28,
+            k_z: 0.28,
+            ny: 40,
+            nz: 40,
+            nt: 32,
+            n_bell: 120,
+            n_quad: 160,
+        }
+    }
+}
+
+impl SpatialDwellPdf {
+    /// Python's `__post_init__`.
+    pub fn validate(&self) {
+        for (name, v) in [("S", self.s), ("k_p", self.k_p), ("k_y", self.k_y), ("k_z", self.k_z)] {
+            assert!(v > 0.0, "SpatialDwellPdf.{name}={v} must be positive");
+        }
+        assert!(
+            self.ny > 1 && self.nz > 1 && self.nt > 1 && self.n_bell > 1 && self.n_quad > 1,
+            "SpatialDwellPdf grid sizes (ny, nz, nt, n_bell, n_quad) must be > 1"
+        );
+    }
+
+    /// The Holdeman group `C = (S/H)√J` (identical to [`SpatialPdf::c`]).
+    pub fn c(&self, mixing: &JetMixing) -> f64 {
+        (self.s / mixing.h) * mixing.j.sqrt()
+    }
+
+    /// The DERIVED uniformity optimum — an OUTPUT, not a knob.
+    pub fn c_opt(&self) -> f64 {
+        1.0 / (4.0 * self.k_p * self.k_p)
+    }
+
+    /// The resolved width `g(C)`, the derived dwell spectrum `τ(ξ)`, and the two-stream ceiling.
+    pub fn dwell_field(
+        &self,
+        mixing: &JetMixing,
+        far_overall: f64,
+        phi_primary: f64,
+    ) -> (f64, TauSpectrum, f64) {
+        let g_ceiling = two_stream_ceiling(far_overall, phi_primary);
+        let (g, spectrum) = spatial_dwell_field(
+            far_overall, phi_primary, self.s, mixing.h, mixing.j, mixing.tau_q(), self.k_p,
+            self.k_y, self.k_z, self.ny, self.nz, self.nt,
+        );
+        (g, spectrum, g_ceiling)
+    }
+}
+
+/// Rung-24 LOCALLY-RESOLVED MIXING TIME config — the ceiling every rung since 11 deferred BY
+/// NAME, taken one step. `docs/rung24-spec.md`.
+///
+/// Rungs 11–23 all ran on ONE GLOBAL `τ_mix`. Here each cell relaxes at its own gradient-derived
+/// rate, with `D_t` REUSED from rung 22's σ and rung 11's τ — so this adds no new constant and no
+/// new knob. `τ_mix` CANCELS out of `u`, so `⟨τ⟩(J) = τ_mix(J)·F(C)` EXACTLY.
+///
+/// THE ANSWER IS A SPLIT, and the headline is the NEGATIVE half: `F(C)` is U-shaped with its
+/// minimum AT `C_opt` (the off-optimum dwell growth rung 16 IMPOSED, here DERIVED from
+/// gradients), but F's ~39 % U loses to `τ_mix`'s ~20× swing, so `⟨EI⟩(J)` stays MONOTONE and the
+/// emissions optimum is STILL not recovered. Rung 24 localises the RATE, not the SCALE.
+///
+/// There is **no `nt`** — the dwell is ANALYTIC where rung 23 needed a time-stepped quadrature.
+#[derive(Debug, Clone, Copy)]
+pub struct SpatialLocalPdf {
+    /// dilution-jet spacing, m
+    pub s: f64,
+    /// penetration constant — SETS `C_opt = 1/(4k_p²)` as an OUTPUT
+    pub k_p: f64,
+    /// penetration mixing length / duct height
+    pub k_y: f64,
+    /// spanwise mixing length / spacing
+    pub k_z: f64,
+    /// cross-plane penetration (y) grid (F stable to 3 decimals 32→96)
+    pub ny: usize,
+    /// cross-plane span (z) grid
+    pub nz: usize,
+    /// per-pocket ξ-grid points (the cost driver)
+    pub n_bell: usize,
+    /// β-PDF quadrature nodes
+    pub n_quad: usize,
+}
+
+impl Default for SpatialLocalPdf {
+    fn default() -> Self {
+        Self { s: 0.0625, k_p: 0.316, k_y: 0.28, k_z: 0.28, ny: 48, nz: 48, n_bell: 120, n_quad: 160 }
+    }
+}
+
+impl SpatialLocalPdf {
+    /// Python's `__post_init__`.
+    pub fn validate(&self) {
+        for (name, v) in [("S", self.s), ("k_p", self.k_p), ("k_y", self.k_y), ("k_z", self.k_z)] {
+            assert!(v > 0.0, "SpatialLocalPdf.{name}={v} must be positive");
+        }
+        assert!(
+            self.ny > 1 && self.nz > 1 && self.n_bell > 1 && self.n_quad > 1,
+            "SpatialLocalPdf grid sizes (ny, nz, n_bell, n_quad) must be > 1"
+        );
+    }
+
+    /// The Holdeman group `C = (S/H)√J` (identical to [`SpatialPdf::c`]).
+    pub fn c(&self, mixing: &JetMixing) -> f64 {
+        (self.s / mixing.h) * mixing.j.sqrt()
+    }
+
+    /// The DERIVED uniformity optimum — an OUTPUT, not a knob. `F(C)` mins HERE.
+    pub fn c_opt(&self) -> f64 {
+        1.0 / (4.0 * self.k_p * self.k_p)
+    }
+
+    /// The width `g`, the locally-resolved spectrum `τ(ξ)`, the pure field functional
+    /// `F = ⟨τ⟩/τ_mix`, and the two-stream ceiling.
+    pub fn local_field(
+        &self,
+        mixing: &JetMixing,
+        far_overall: f64,
+        phi_primary: f64,
+    ) -> (f64, TauSpectrum, f64, f64) {
+        let g_ceiling = two_stream_ceiling(far_overall, phi_primary);
+        let (g, spectrum, f_shape) = spatial_local_field(
+            far_overall, phi_primary, self.s, mixing.h, mixing.j, mixing.tau_q(), self.k_p,
+            self.k_y, self.k_z, self.ny, self.nz,
+        );
+        (g, spectrum, f_shape, g_ceiling)
+    }
+}
+
 /// Knobs for [`Gas::thermal_nox`] — rung 7's residence time plus rung 19's two channels.
 ///
 /// A struct rather than a parameter list, and deliberately so: § 2 of the port plan makes it
@@ -1980,6 +2770,12 @@ pub struct ZonedNoxOpts {
     pub pocket_quench: Option<PocketQuenchPdf>,
     /// rung 18: the width from a variance-decay ODE instead of the kink. REQUIRES `mixing`.
     pub transported: Option<TransportedPdf>,
+    /// rung 22: the width from a RESOLVED cross-plane — `C_opt` an OUTPUT. REQUIRES `mixing`.
+    pub spatial: Option<SpatialPdf>,
+    /// rung 23: that plane developed in TIME, so each pocket has its OWN `τ(ξ)`. REQUIRES `mixing`.
+    pub spatial_dwell: Option<SpatialDwellPdf>,
+    /// rung 24: the same plane with a LOCALLY-RESOLVED relaxation rate. REQUIRES `mixing`.
+    pub spatial_local: Option<SpatialLocalPdf>,
     /// finite-quench trajectory points — a pure cost/accuracy knob
     pub quench_ngrid: usize,
     /// finite-quench RK4 steps — a pure cost/accuracy knob
@@ -2000,6 +2796,9 @@ impl Default for ZonedNoxOpts {
             pdf_quench: None,
             pocket_quench: None,
             transported: None,
+            spatial: None,
+            spatial_dwell: None,
+            spatial_local: None,
             quench_ngrid: 240,
             quench_nsteps: 2000,
         }
@@ -2099,6 +2898,51 @@ pub struct ZonedNoxState {
     pub g_transported: Option<f64>,
     /// ⟨EI⟩ over the β-PDF of the ideal bell at `g_transported`
     pub ei_no_transported: Option<f64>,
+    // RUNG 22 — the RESOLVED cross-plane. Only the SOURCE of `g` changes vs rung 18: the same
+    // rung-13 ideal bell is fed, but the width comes from a resolved y-z field and `C_opt`
+    // EMERGES as an OUTPUT rather than being imposed through a coverage.
+    /// the resolved cross-plane config used
+    pub spatial: Option<SpatialPdf>,
+    /// the resolved-field width `g(C)` — `< g_ceiling`, min AT the DERIVED `C_opt`
+    pub g_spatial: Option<f64>,
+    /// ⟨EI⟩ over the β-PDF of the ideal bell at `g_spatial`
+    pub ei_no_spatial: Option<f64>,
+    // RUNG 23 — the same plane developed in TIME, so each pocket carries its OWN dwell. The
+    // matched-mean TWIN is the instrument: the identical integral at the β-PDF mean ⟨τ⟩ removes
+    // the ξ–τ correlation, so the two differ ONLY by it.
+    /// the derived-dwell config used
+    pub spatial_dwell: Option<SpatialDwellPdf>,
+    /// the resolved-field width (BIT-EQUAL to `g_spatial` at a matched grid — the reduce anchor)
+    pub g_spatial_dwell: Option<f64>,
+    /// `⟨τ⟩` over the β-PDF — the matched-mean scalar the twin runs at
+    pub tau_mean_dwell: Option<f64>,
+    /// term 2 with the CORRELATED `τ(ξ)`
+    pub ei_no_spatial_dwell_excess: Option<f64>,
+    /// term1 + term2(correlated `τ(ξ)`)
+    pub ei_no_spatial_dwell: Option<f64>,
+    /// term1 + term2(scalar `⟨τ⟩`) — the correlation-off reference
+    pub ei_no_spatial_dwell_meanfield: Option<f64>,
+    /// `excess_corr/excess_mean`; `> 1` ⇒ the ξ–τ correlation ADDS NO
+    pub corr_ratio: Option<f64>,
+    // RUNG 24 — the same plane with each cell at its OWN gradient-derived rate. `τ_mix` cancels
+    // out of `u`, so `⟨τ⟩ = τ_mix·F(C)` exactly and `f_shape` is a PURE field functional.
+    /// the locally-resolved-rate config used
+    pub spatial_local: Option<SpatialLocalPdf>,
+    /// the resolved-field width — the SAME quantity as `g_spatial` but NOT bit-equal to it (the
+    /// Python's hierarchical mean; see the cross-plane section note)
+    pub g_spatial_local: Option<f64>,
+    /// `F = ⟨τ⟩/τ_mix` — U-shaped with its minimum AT the derived `C_opt`
+    pub f_shape: Option<f64>,
+    /// `⟨τ⟩` over the β-PDF — the matched-mean scalar
+    pub tau_mean_local: Option<f64>,
+    /// term 2 with the LOCALLY-RESOLVED `τ(ξ)`
+    pub ei_no_spatial_local_excess: Option<f64>,
+    /// term1 + term2(locally-resolved `τ(ξ)`)
+    pub ei_no_spatial_local: Option<f64>,
+    /// term1 + term2(scalar `⟨τ⟩`) — the matched-mean twin
+    pub ei_no_spatial_local_meanfield: Option<f64>,
+    /// `excess_corr/excess_mean` for the LOCAL spectrum
+    pub corr_ratio_local: Option<f64>,
 }
 
 impl ZonedNoxState {
@@ -2257,18 +3101,37 @@ impl Gas {
             "transported (rung-18 transported-variance closure) REQUIRES a `mixing` config — it \
              needs the Holdeman group C=(S/H)√J that the imposed coverage ω(C) rides on."
         );
+        assert!(
+            !(o.spatial.is_some() && o.mixing.is_none()),
+            "spatial (rung-22 resolved cross-plane PDF) REQUIRES a `mixing` config — it needs the \
+             jet's J and duct H for the Holdeman group C=(S/H)√J."
+        );
+        assert!(
+            !(o.spatial_dwell.is_some() && o.mixing.is_none()),
+            "spatial_dwell (rung-23 DERIVED dwell spectrum) REQUIRES a `mixing` config — it needs \
+             the jet's J and duct H, AND rung-11's τ_mix as the dwell's absolute scale."
+        );
+        assert!(
+            !(o.spatial_local.is_some() && o.mixing.is_none()),
+            "spatial_local (rung-24 LOCALLY-RESOLVED mixing time) REQUIRES a `mixing` config — it \
+             needs the jet's J and duct H, AND rung-11's τ_mix for D_t."
+        );
         // AT MOST ONE closure. Slice B's version of this file recorded that the check was
         // DELIBERATELY omitted while `unmixedness` was the only closure ported, because
         // comparing one Option against one cannot fail and a bar that cannot fail is not a bar
         // (rungs 78/79's vacuity lesson) — and promised it would arrive WITH the second closure.
-        // Five are ported now, so it is live, and it is the same guard the Python writes over
-        // its eight. Rungs 22/23/24's three spatial closures join this count in a later slice.
+        // Slice D completes the set: EIGHT closures of the SAME variance physics, the Python's
+        // own count. Note the Python gates this in rungs 22 and 23's suites but NOT rung 24's —
+        // the Rust gates all three, which is slice D's instance of sweeping past the source.
         let closures = [
             o.unmixedness.is_some(),
             o.pdf.is_some(),
             o.pdf_quench.is_some(),
             o.pocket_quench.is_some(),
             o.transported.is_some(),
+            o.spatial.is_some(),
+            o.spatial_dwell.is_some(),
+            o.spatial_local.is_some(),
         ]
         .iter()
         .filter(|&&x| x)
@@ -2278,7 +3141,9 @@ impl Gas {
             "pass AT MOST ONE of unmixedness (rung-12 two-stream) / pdf (rung-13 β-PDF on the \
              ideal bell) / pdf_quench (rung-15 β-PDF THROUGH the quench, LINEARISED dwell) / \
              pocket_quench (rung-16 PER-POCKET quench, SCALAR dwell) / transported (rung-18 \
-             transported variance) — closures of the SAME variance physics, {closures} given."
+             transported variance) / spatial (rung-22 RESOLVED cross-plane WIDTH) / spatial_dwell \
+             (rung-23 that plane in TIME, per-pocket τ(ξ)) / spatial_local (rung-24 the same plane \
+             with a LOCAL rate) — closures of the SAME variance physics, {closures} given."
         );
         // RUNG 21 — the rung-20 forbid guard is DISCHARGED. `super_eq_o` now threads the SAME
         // Westenberg m(T) lift through the ideal-bell composition integrals too — rung 13's
@@ -2379,6 +3244,24 @@ impl Gas {
             g_ceiling: None,
             g_transported: None,
             ei_no_transported: None,
+            spatial: None,
+            g_spatial: None,
+            ei_no_spatial: None,
+            spatial_dwell: None,
+            g_spatial_dwell: None,
+            tau_mean_dwell: None,
+            ei_no_spatial_dwell_excess: None,
+            ei_no_spatial_dwell: None,
+            ei_no_spatial_dwell_meanfield: None,
+            corr_ratio: None,
+            spatial_local: None,
+            g_spatial_local: None,
+            f_shape: None,
+            tau_mean_local: None,
+            ei_no_spatial_local_excess: None,
+            ei_no_spatial_local: None,
+            ei_no_spatial_local_meanfield: None,
+            corr_ratio_local: None,
         };
         if o.tau_q.is_none() && o.mixing.is_none() {
             return state; // IDEAL quench — bit-for-bit rung 9
@@ -2534,6 +3417,192 @@ impl Gas {
             state.ei_no_pocket_quench = Some(q.ei + excess); // term1 + term2
             // the dormancy gate spans the pockets as well as the bulk
             state.max_a_quench = Some(q.max_a.max(pocket_max_a));
+            return state;
+        }
+
+        if let Some(sl) = o.spatial_local {
+            // RUNG 24 — the LOCALLY-RESOLVED MIXING TIME. Rungs 11–23 all ran on ONE GLOBAL
+            // `τ_mix`; rung 23 §9 named this successor and hoped a per-cell rate "could restore
+            // an off-optimum dwell GROWTH that pins the emissions optimum non-circularly". This
+            // ASKS that question. Each cell relaxes at its own `ω = D_t|∇ξ|²/var` (rung-18's own
+            // form, made local in the numerator, `D_t` REUSED — no new constant), renormalised to
+            // complete at `τ_mix`, so the TERMINAL field is rung-22's and `g` is the same
+            // quantity. Structure mirrors rung 23; only the dwell SOURCE changes.
+            //
+            // THE SPLIT ANSWER. POSITIVE: `τ_mix` cancels out of `u`, so `⟨τ⟩ = τ_mix·F(C)`
+            // EXACTLY and `F(C)` is U-shaped with its min AT `C_opt` — the growth rung 16 IMPOSED,
+            // here DERIVED from gradients. Non-circular: `⟨|∇ξ|²⟩`, which carries no `g`, is
+            // MAXIMAL at `C_opt`. NEGATIVE (THE HEADLINE): F's ~39 % U loses to `τ_mix`'s ~20×
+            // swing, so `⟨EI⟩(J)` stays MONOTONE and the emissions pin is STILL not recovered.
+            // THE SCALE SWAMPS THE SHAPE — rung 24 localises the RATE, not the SCALE.
+            sl.validate();
+            let mixing = mixing_cfg.expect("spatial_local REQUIRES mixing — asserted above");
+            let c = sl.c(&mixing);
+            let (g_seg, spectrum, f_shape, g_ceiling) = sl.local_field(&mixing, far, phi_primary);
+            assert!(
+                g_seg < g_ceiling + 1e-9,
+                "resolved-field g_spatial={g_seg:.4e} exceeded the two-stream ceiling \
+                 g_ceiling={g_ceiling:.4e} — a partial-mix cross-plane must be LESS segregated \
+                 than the two-δ extreme."
+            );
+            let xibar = far / (1.0 + far);
+            let (nodes, wts) = beta_pdf_nodes_weights(xibar, g_seg, sl.n_quad);
+            // ⟨τ⟩_PDF — the matched-mean scalar the correlation-off twin runs at
+            let tau_mean = wts
+                .iter()
+                .zip(nodes.iter())
+                .fold(0.0, |acc, (&wi, &x)| acc + wi * spectrum.at(x));
+            let pocket_opts = PocketOpts {
+                n_bell: sl.n_bell,
+                quench_ngrid: o.quench_ngrid,
+                quench_nsteps: o.quench_nsteps,
+                super_eq_o: o.super_eq_o,
+            };
+            // term 2 at the LOCALLY-RESOLVED τ(ξ)
+            let grid_corr = pocket_quench_grid_dwell(
+                far,
+                tt3,
+                p,
+                hf_fuel,
+                o.tau,
+                Dwell::PerPocket(&spectrum),
+                pocket_opts,
+            );
+            let excess_corr = pocket_quench_integrate(&grid_corr, far, g_seg, sl.n_quad);
+            // term 2 with the SCALAR ⟨τ⟩ — correlation OFF
+            let grid_mean = pocket_quench_grid_dwell(
+                far,
+                tt3,
+                p,
+                hf_fuel,
+                o.tau,
+                Dwell::Scalar(tau_mean),
+                pocket_opts,
+            );
+            let excess_mean = pocket_quench_integrate(&grid_mean, far, g_seg, sl.n_quad);
+            state.spatial_local = Some(sl);
+            state.c_holdeman = Some(c);
+            state.g_ceiling = Some(g_ceiling);
+            state.g_spatial_local = Some(g_seg);
+            state.g_seg = Some(g_seg);
+            state.f_shape = Some(f_shape);
+            state.tau_mean_local = Some(tau_mean);
+            state.ei_no_spatial_local_excess = Some(excess_corr);
+            state.ei_no_spatial_local = Some(q.ei + excess_corr); // term1 + locally-resolved term2
+            state.ei_no_spatial_local_meanfield = Some(q.ei + excess_mean); // term1 + matched-mean
+            state.corr_ratio_local =
+                Some(if excess_mean > 1e-30 { excess_corr / excess_mean } else { f64::NAN });
+            // dormancy spans BOTH twins
+            state.max_a_quench =
+                Some(q.max_a.max(grid_corr.max_a).max(grid_mean.max_a));
+            return state;
+        }
+
+        if let Some(sd) = o.spatial_dwell {
+            // RUNG 23 — the DERIVED DWELL SPECTRUM through the per-pocket quench. Where rung 16
+            // quenched every pocket at ONE scalar dwell (the imported kink, baking `C_opt` in) and
+            // rung 22 derived only the WIDTH, rung 23 develops the SAME plane in TIME over
+            // rung-11's `τ_mix` so each pocket carries its OWN dwell — rich pockets arrive LATE,
+            // so they dwell LONG. Additive, mirroring rung 16: term 1 is the rung-11 bulk floor
+            // unchanged, term 2 is the β-PDF integral at the derived `τ(ξ)`.
+            //
+            // THE CERTIFIED POSITIVE is the ξ–τ CORRELATION, isolated by a MATCHED-MEAN twin: the
+            // same integral at the scalar `⟨τ⟩_PDF` removes the correlation, so the two differ
+            // ONLY by it. `corr_ratio > 1` ⇒ the correlation ADDS NO — the physics rung-16's
+            // single scalar structurally cannot express. HONEST: the absolute magnitude and the
+            // off-optimum TREND ride on rung-11's un-anchored `τ_mix`, so the derived τ FALLS
+            // off-optimum and does NOT lift the over-penetration flank.
+            sd.validate();
+            let mixing = mixing_cfg.expect("spatial_dwell REQUIRES mixing — asserted above");
+            let c = sd.c(&mixing);
+            let (g_seg, spectrum, g_ceiling) = sd.dwell_field(&mixing, far, phi_primary);
+            assert!(
+                g_seg < g_ceiling + 1e-9,
+                "resolved-field g_spatial={g_seg:.4e} exceeded the two-stream ceiling \
+                 g_ceiling={g_ceiling:.4e} — a partial-mix cross-plane must be LESS segregated \
+                 than the two-δ extreme."
+            );
+            let xibar = far / (1.0 + far);
+            let (nodes, wts) = beta_pdf_nodes_weights(xibar, g_seg, sd.n_quad);
+            let tau_mean = wts
+                .iter()
+                .zip(nodes.iter())
+                .fold(0.0, |acc, (&wi, &x)| acc + wi * spectrum.at(x));
+            let pocket_opts = PocketOpts {
+                n_bell: sd.n_bell,
+                quench_ngrid: o.quench_ngrid,
+                quench_nsteps: o.quench_nsteps,
+                super_eq_o: o.super_eq_o,
+            };
+            let grid_corr = pocket_quench_grid_dwell(
+                far,
+                tt3,
+                p,
+                hf_fuel,
+                o.tau,
+                Dwell::PerPocket(&spectrum),
+                pocket_opts,
+            );
+            let excess_corr = pocket_quench_integrate(&grid_corr, far, g_seg, sd.n_quad);
+            let grid_mean = pocket_quench_grid_dwell(
+                far,
+                tt3,
+                p,
+                hf_fuel,
+                o.tau,
+                Dwell::Scalar(tau_mean),
+                pocket_opts,
+            );
+            let excess_mean = pocket_quench_integrate(&grid_mean, far, g_seg, sd.n_quad);
+            state.spatial_dwell = Some(sd);
+            state.c_holdeman = Some(c);
+            state.g_ceiling = Some(g_ceiling);
+            state.g_spatial_dwell = Some(g_seg);
+            state.g_seg = Some(g_seg);
+            state.tau_mean_dwell = Some(tau_mean);
+            state.ei_no_spatial_dwell_excess = Some(excess_corr);
+            state.ei_no_spatial_dwell = Some(q.ei + excess_corr); // term1 + correlated term2
+            state.ei_no_spatial_dwell_meanfield = Some(q.ei + excess_mean); // term1 + matched-mean
+            state.corr_ratio =
+                Some(if excess_mean > 1e-30 { excess_corr / excess_mean } else { f64::NAN });
+            state.max_a_quench =
+                Some(q.max_a.max(grid_corr.max_a).max(grid_mean.max_a));
+            return state;
+        }
+
+        if let Some(sp) = o.spatial {
+            // RUNG 22 — the RESOLVED cross-plane, the INVERSION of rung 18. Where rung 18 got the
+            // width from a 0-D variance ODE and had to IMPOSE the coverage to place the optimum
+            // (its NEGATIVE result: 0-D cannot DERIVE `C_opt`), rung 22 resolves the y-z plane and
+            // the Holdeman optimum EMERGES: the penetration couples the spacing S in, and the
+            // optimum is where δ fills half the height ⇒ `(S/H)√J = 1/(4k_p²)`, S,H-independent,
+            // with `J_opt` shifting exactly as `(H/S)²`. NO `C_opt` is fed in. The width feeds the
+            // SAME rung-13 ideal bell as rung 18 — only the SOURCE of `g` changed.
+            //
+            // The emissions min at `C_opt` is only LOCAL: the derived floor sits just UNDER the
+            // ideal-bell hump peak, so the basin is narrow and the global ⟨EI⟩ min is at max
+            // segregation (rung-13's descending far flank, spatialised). That is why the clean
+            // headline is UNIFORMITY, not emissions — and why rung 22 derives the WIDTH but leaves
+            // the DWELL as rung-16's imported kink, which rungs 23/24 then take up.
+            sp.validate();
+            let mixing = mixing_cfg.expect("spatial REQUIRES mixing — asserted above");
+            let c = sp.c(&mixing);
+            let (g_seg, g_ceiling) = sp.segregation(&mixing, far, phi_primary);
+            assert!(
+                g_seg < g_ceiling + 1e-9,
+                "resolved-field g_spatial={g_seg:.4e} exceeded the two-stream ceiling \
+                 g_ceiling={g_ceiling:.4e} — a partial-mix cross-plane must be LESS segregated \
+                 than the two-δ extreme."
+            );
+            state.spatial = Some(sp);
+            state.c_holdeman = Some(c);
+            state.g_ceiling = Some(g_ceiling);
+            state.g_spatial = Some(g_seg);
+            state.g_seg = Some(g_seg);
+            state.ei_no_spatial = Some(pdf_mean_ei(
+                far, tt3, p, hf_fuel, o.tau, g_seg, sp.n_bell, sp.n_quad,
+                o.super_eq_o, // rung 21: the same lift threads the same bell
+            ));
             return state;
         }
 

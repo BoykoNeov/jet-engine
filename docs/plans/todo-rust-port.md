@@ -608,6 +608,41 @@ Three consequences, all load-bearing for the port:
    ≤1-of-EIGHT guard, so the rung-24 one sweeps past the source's gate — the fourth consecutive
    slice to do so.
 
+**THE SUMMATION SHAPE IS PER-LINE, NOT PER-FUNCTION — and the rule above would break the other
+moment.** Rung 24 computes its two moments two lines apart in OPPOSITE shapes:
+
+```python
+mean   = sum(sum(r) for r in xi) / (ny * nz)             # HIERARCHICAL — row partials, then summed
+meansq = sum(v * v for r in xi for v in r) / (ny * nz)   # FLAT — one accumulator over all cells
+```
+
+Rung 22 does both flat in one pass, so only the MEAN drifts. Substituting a flat mean reproduces
+rung 22 **bit-for-bit at every J and grid measured**, and the hierarchical one never does — so the
+entire ~1e-17 is that one line, pinned rather than inferred. Porting "reproduce the hierarchical
+sum" as a blanket rule would make `meansq` hierarchical too and inject a SECOND defect on the other
+moment. Every accumulator is ported per line. (Rung 23's are all flat, matching rung 22 — which is
+*why* it comes out exact.)
+
+**THE DUMP'S GRID CONVENTION, STATED because the next slice will hit it.** The three configs carry
+DIFFERENT default grids — `SpatialPDF` 48/48, `SpatialDwellPDF` 40/40, `SpatialLocalPDF` 48/48 — so
+any key cross-asserting rung 23's `g` against rung 22's *at defaults* fails for a reason that is not
+a defect. The Python's own tests dodge this by passing grids explicitly on both sides, which makes
+the mismatch inert in the source's gates but NOT in a dump built from default configs. **The dump
+passes grids explicitly wherever two closures' `g` are compared**, and the cross-closure keys live
+in one class so the bar is chosen once.
+
+**TWO DISCRETE KEYS, the family slice C's first-burnable-node index opened.** Neither is a value:
+- **The non-empty bin count in the τ(ξ) binner** (rungs 23 and 24). `centers`/`taus` are built only
+  over bins with `cnts[b] > 0`, so the knot count is DATA-dependent; a count off by one changes the
+  interpolator's whole shape and no tolerance on τ would name it. Dumped per J, both rungs.
+- **The count of cells taking rung 24's `u < 1e-8` stagnant branch.** Measured, and it is emphatically
+  NOT dormant — **18–50 % of cells** take it (`ny=nz=32`: 304/1024 at J=4, **180/1024 at J=16**,
+  494/1024 at J=100), because the β-clip creates large exactly-flat plateaus where `|∇ξ|² = 0`. So
+  this is the opposite of rung 20's dormant floor: a heavily-taken branch, worth a key on its own.
+  Its count is **U-shaped with the minimum at `C_opt`**, which corroborates F's U — but it is NOT a
+  second kill test, because `u` carries the same explicit `1/var` coupling. The g-free witness stays
+  `⟨|∇ξ|²⟩`.
+
 **THE THIRD VACUITY CASE, AND THE PATTERN NOW HAS A NAME.** `test_no_C_opt_knob_it_is_derived`
 asserts that `SpatialPDF(C_opt=2.5)` raises `TypeError`. In Rust an unknown struct field is a
 COMPILE error and the crate has no dependencies by decision (§ 3), so there is no `trybuild` and any
