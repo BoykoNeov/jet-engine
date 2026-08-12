@@ -6,20 +6,26 @@
 //!
 //! Measured over all 3232 values, rungs 1-6:
 //!
-//!     Rust vs CPython 3.14.3    1880 / 3232 bit-identical (58.17 %)
-//!     Rust vs PyPy 3.11.15      3196 / 3232 bit-identical (98.89 %)
+//!     Rust vs CPython 3.14.3    1883 / 3232 bit-identical (58.26 %)
+//!     Rust vs PyPy 3.11.15      3232 / 3232 bit-identical (100.00 %)
 //!
-//! and the second line is the finding. Every forward quantity — cp, h, pr, gamma, R, the
-//! mole-weighted coefficients, the equilibrium substrate (a6, a7, the four molar functions,
-//! lnKp), the dense elimination, and the 8-species equilibrium COMPOSITION — is 100 %
-//! bit-exact against PyPy, `exp`/`log` included. Rust's arithmetic is not a source of drift
-//! here; it IS PyPy's, and CPython's libm is the outlier.
+//! and the second line is the finding. EVERY value — cp, h, pr, gamma, R, the mole-weighted
+//! coefficients, the equilibrium substrate (a6, a7, the four molar functions, lnKp), the dense
+//! elimination, the 8-species equilibrium COMPOSITION, and both safeguarded-Newton inverses —
+//! is bit-exact against PyPy, `exp`/`log`/`pow` included. Rust's arithmetic is not a source of
+//! drift here; it IS PyPy's, and CPython's libm is the outlier.
 //!
-//! The only spread left is the two safeguarded-Newton inverses (`T_from_h` 373/400,
-//! `T_from_pr` 391/400), and it is not arithmetic either — it is `solve`'s own `tol = 1e-11`
-//! relative stopping rule landing on a marginally different iterate, three orders of
-//! magnitude above every other term. So the inverses get a loose bar and everything else a
-//! tight one, and that split is the finding rather than a convenience.
+//! PHASE 2 CORRECTED THIS FILE'S OWN DIAGNOSIS. Phase 1 shipped it at 3196/3232 and blamed the
+//! 36 misses — all of them in the inverses (`T_from_h` 373/400, `T_from_pr` 391/400) — on
+//! `solve`'s `tol = 1e-11` stopping rule landing on a marginally different iterate. That was
+//! wrong. The cause was arithmetic after all: `antideriv_h`/`antideriv_phi`/`poly` spelled
+//! Python's `T ** 3`..`T ** 5` as product chains, which disagree with libm `pow` in the last
+//! bit on ~30 % of inputs. The Newton was the AMPLIFIER, not the source — a 1e-20-relative
+//! error in a high-order term, magnified by a 1e-11 stopping rule. Fixing the spelling took
+//! this arm to 100 %. See the note above `poly` in `gas.rs`.
+//!
+//! So the PyPy arm is now held to BIT-EQUALITY rather than a tolerance: a tolerance bar cannot
+//! tell a real defect from acceptable noise, and for a whole phase it did not.
 //!
 //! Regenerate the oracle with:
 //!     C:\Python314\python.exe rust/oracle/dump_gas.py rust/oracle/gas_cpython.tsv
@@ -235,9 +241,11 @@ fn quant_of(key: &str) -> &'static str {
 }
 
 /// The bar for each class, from the measured CPython↔PyPy spread (see the module header).
+/// It binds the CPYTHON arm only — the PyPy arm is held to bit-equality.
 fn bar_for(quant: &str) -> f64 {
     match quant {
-        // Set by `solve`'s own tol = 1e-11 relative, not by arithmetic. 2x headroom.
+        // The inverses' CPython spread. NOT a stopping-rule artefact, as phase 1 believed:
+        // against PyPy these are now bit-exact, so what is left here is CPython's own libm.
         "T_from_h" | "T_from_pr" => 2.0e-11,
         // exp() dominates; the two interpreters differ by 1.78e-14 here.
         "pr" => 1.0e-13,
@@ -254,7 +262,7 @@ fn bar_for(quant: &str) -> f64 {
 
 #[test]
 fn gas_matches_the_cpython_oracle() {
-    compare_against(ORACLE_CPYTHON, "CPython 3.14.3");
+    compare_against(ORACLE_CPYTHON, "CPython 3.14.3", false);
 }
 
 /// The same comparison against the interpreter the test gate actually runs on.
@@ -262,13 +270,14 @@ fn gas_matches_the_cpython_oracle() {
 /// Not redundant — it is the DISCRIMINATOR. Rust's worst deviation from CPython came out
 /// identical to PyPy's, quantity by quantity, to three significant figures. Either Rust has
 /// its own drift that coincidentally matches PyPy's, or Rust and PyPy agree and CPython is
-/// the odd one out. This arm separates those, and the bit-exact count is the whole answer.
+/// the odd one out. This arm separates those, and the bit-exact count is the whole answer —
+/// which is why it is now asserted as a COUNT and not as a tolerance (see the module header).
 #[test]
 fn gas_matches_the_pypy_oracle() {
-    compare_against(ORACLE_PYPY, "PyPy 3.11.15");
+    compare_against(ORACLE_PYPY, "PyPy 3.11.15", true);
 }
 
-fn compare_against(oracle_text: &str, label: &str) {
+fn compare_against(oracle_text: &str, label: &str, require_bit_exact: bool) {
     let oracle = load_oracle(oracle_text);
     let ours = rust_values();
     println!("\n=== Rust vs {label} ===");
@@ -326,4 +335,14 @@ fn compare_against(oracle_text: &str, label: &str) {
     assert!(missing.is_empty(), "keys computed by Rust but absent from the oracle: {missing:?}");
     assert!(failures.is_empty(),
             "{} value(s) outside the measured bar:\n{}", failures.len(), failures.join("\n"));
+    if require_bit_exact {
+        let drifted: Vec<&String> =
+            rows.iter().filter(|(_, (_, _, w, _))| *w > 0.0).map(|(_, (_, _, _, k))| k).collect();
+        assert_eq!(exact, total,
+                   "phase 2 measured {total}/{total} BIT-IDENTICAL to {label}; this run got \
+                    {exact}. A drop is either a real arithmetic regression or a toolchain/libm \
+                    change — find out WHICH before loosening this to a tolerance. Phase 1 ran \
+                    this arm at 98.89 % and the missing 1.11 % was a transcription bug. \
+                    First drifted keys: {drifted:?}");
+    }
 }

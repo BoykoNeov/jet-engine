@@ -42,7 +42,7 @@ fn cpg_keeps_the_closed_forms_bit_for_bit() {
     assert_ne!((1.4f64 - 1.0).to_bits(), 0.4f64.to_bits(), "…and this is why");
     for t in [200.0, 288.15, 500.0, 1000.0, 1500.0, 2200.0, 3000.0] {
         assert_eq!(s.h(t).to_bits(), (1004.0f64 * t).to_bits(), "h must be exactly cp*T at {t}");
-        assert_eq!(s.pr(t).to_bits(), t.powf(1.0 / s.g).to_bits(), "pr must be exactly T^(1/g)");
+        assert_eq!(s.pr(t).to_bits(), powp(t, 1.0 / s.g).to_bits(), "pr must be exactly T^(1/g)");
         // Both inverses are closed-form too — no Newton, so they invert exactly.
         assert_eq!(s.t_from_h(s.h(t)).to_bits(), t.to_bits(), "T_from_h exact at {t}");
         assert!(rel(s.t_from_pr(s.pr(t)), t) < 1e-15, "T_from_pr round-trip at {t}");

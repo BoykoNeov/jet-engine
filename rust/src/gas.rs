@@ -38,6 +38,31 @@
 
 use std::cell::RefCell;
 
+/// Python's `x ** y`: a REAL `pow` call, never a strength-reduced substitute.
+///
+/// Porting rule 2 above says "never `powf` for an integer power" — but it does not say what
+/// to write instead, and the answer is not the obvious one. Measured over a 4012-point grid
+/// against both interpreters the project ships on:
+///
+/// ```text
+///                      matches Python's `**`      note
+///   x ** 0.5   powf            4006 / 4012        LLVM FOLDS powf(0.5) -> sqrt
+///              sqrt            4006 / 4012        ...so the two are the SAME 6 misses
+///              powp           4012 / 4012        a real pow call
+///   x ** 2     x * x           4012 / 4012        the one integer power that coincides
+///   x ** 4     x*x*x*x         2587 / 4012        a product chain is 36 % WRONG
+///              powf(4.0)       4012 / 4012        not folded; matches
+/// ```
+///
+/// So: `** 0.5` and `** 4` must reach libm `pow`, and `** 2` may be a product. The
+/// `black_box` is what stops LLVM constant-folding the exponent and rewriting the call —
+/// without it `powf(0.5)` and `sqrt` are literally the same instruction (measured: identical
+/// on all 4012 points). `tests/porting_rules.rs` keeps that detector honest.
+#[inline]
+pub fn powp(x: f64, y: f64) -> f64 {
+    x.powf(std::hint::black_box(y))
+}
+
 // --------------------------------------------------------------------------------------
 // Constants and the NASA 7-coefficient species data.
 // Cp_molar(T)/Ru = a1 + a2 T + a3 T^2 + a4 T^3 + a5 T^4, two ranges joined at 1000 K.
@@ -279,12 +304,45 @@ pub fn mixture(fractions: &[(&str, f64)]) -> ([f64; 5], [f64; 5], f64) {
 // header. `A[2] * T * T` would be `(A2*T)*T`, which is not what Python computes.
 // --------------------------------------------------------------------------------------
 
+// MULTIPLY THE SQUARE, CALL `pow` ABOVE IT. Neither half is a style choice, and the SPLIT is
+// the whole point -- "always multiply" and "always pow" both lose, measured:
+//
+//     spelling of the SQUARE                          gas oracle vs PyPy
+//       t * t                                          3232 / 3232   <- shipped
+//       powp(t, 2.0)                                   3230 / 3232
+//     spelling of the CUBE and above
+//       product chains                                 3196 / 3232   (what phase 1 shipped)
+//       powp(t, 3.0) / powp(t, 4.0) / powp(t, 5.0)     3232 / 3232   <- shipped
+//
+// Python spells all of these `T ** 2 ... T ** 5`. The asymmetry is PyPy's, not Rust's: its JIT
+// rewrites `x ** 2` into a multiply and does NOT rewrite higher powers, so reproducing PyPy
+// means doing exactly the same. Over a 6013-point grid, `x*x` matches PyPy's `x ** 2` at
+// 6013/6013 while every cheap spelling of the higher powers fails -- `x*x*x` 4519/6013,
+// `x*x*x*x` 3975/6013, and binary exponentiation `(x*x)*(x*x)` 3054/6013, i.e. WORSE than the
+// naive chain. CPython does not rewrite the square either, which is why it disagrees with
+// PyPy at 2 points in 6013 -- one more instance of the standing finding that CPython is the
+// outlier.
+//
+// HOW THIS WAS MISSED FOR A PHASE. Phase 1 shipped product chains here and its own oracle
+// passed at 100 % on h, because the mis-spelled terms are the HIGH-ORDER ones: a 1-ULP error
+// in `a[4]*T^5/5` is ~1e-20 relative to the sum and only occasionally tips the last bit. It
+// took evaluating at CYCLE-DETERMINED temperatures (phase 2's `T9 = 775.53`, not a round grid
+// point) for the tip to happen -- and then the safeguarded Newton, whose `tol = 1e-11`
+// stopping rule phase 1 had blamed for the residual, AMPLIFIED it to 1e-11 and made it look
+// like a solver artefact. A 100 %-bit-exact result on a chosen grid did not certify the
+// arithmetic; it certified the grid.
+//
+// THE PRICE, measured and accepted: 2.1x on a rung-5 Fork-B cycle (6.2 -> 12.9 us) and 1.36x
+// on a rung-6 equilibrium cycle (850 -> 1157 us). Bought: 3196 -> 3232 on the gas oracle and
+// 661 -> 676 on the cycle oracle, i.e. exact reproduction rather than "close". The port's
+// § 4 fragile rungs are COUNT-based findings that a 15th-digit shift can flip, so this is the
+// right side of that trade -- but it is a real cost, and if a later phase becomes speed-bound
+// it is confined to these three functions.
+
 /// `cp(T)/R = A1 + A2 T + A3 T^2 + A4 T^3 + A5 T^4`.
 pub fn poly(a: &[f64; 5], t: f64) -> f64 {
     let t2 = t * t;
-    let t3 = t2 * t;
-    let t4 = t3 * t;
-    a[0] + a[1] * t + a[2] * t2 + a[3] * t3 + a[4] * t4
+    a[0] + a[1] * t + a[2] * t2 + a[3] * powp(t, 3.0) + a[4] * powp(t, 4.0)
 }
 
 /// `∫_0^T (cp/R) dT'` -- the enthalpy antiderivative through the origin.
@@ -294,18 +352,15 @@ pub fn poly(a: &[f64; 5], t: f64) -> f64 {
 /// gas. Datum-0 makes a flat-cp thermally-perfect section reduce to EXACTLY cp*T.
 pub fn antideriv_h(a: &[f64; 5], t: f64) -> f64 {
     let t2 = t * t;
-    let t3 = t2 * t;
-    let t4 = t3 * t;
-    let t5 = t4 * t;
-    a[0] * t + a[1] * t2 / 2.0 + a[2] * t3 / 3.0 + a[3] * t4 / 4.0 + a[4] * t5 / 5.0
+    a[0] * t + a[1] * t2 / 2.0 + a[2] * powp(t, 3.0) / 3.0
+        + a[3] * powp(t, 4.0) / 4.0 + a[4] * powp(t, 5.0) / 5.0
 }
 
 /// `∫ (cp/R)/T' dT' = phi(T)/R`. Datum arbitrary -- it cancels in every pr ratio.
 pub fn antideriv_phi(a: &[f64; 5], t: f64) -> f64 {
     let t2 = t * t;
-    let t3 = t2 * t;
-    let t4 = t3 * t;
-    a[0] * t.ln() + a[1] * t + a[2] * t2 / 2.0 + a[3] * t3 / 3.0 + a[4] * t4 / 4.0
+    a[0] * t.ln() + a[1] * t + a[2] * t2 / 2.0
+        + a[3] * powp(t, 3.0) / 3.0 + a[4] * powp(t, 4.0) / 4.0
 }
 
 /// Invert a monotone-increasing `f` to `f(T) = target`: safeguarded Newton.
@@ -370,9 +425,9 @@ impl CpgSection {
     pub fn cp(&self, _t: f64) -> f64 { self.cp_const }
     pub fn h(&self, t: f64) -> f64 { self.cp_const * t }
     /// `T^(1/g)` -- i.e. `T^(cp/R)` in the closed-form limit.
-    pub fn pr(&self, t: f64) -> f64 { t.powf(1.0 / self.g) }
+    pub fn pr(&self, t: f64) -> f64 { powp(t, 1.0 / self.g) }
     pub fn t_from_h(&self, h: f64) -> f64 { h / self.cp_const }
-    pub fn t_from_pr(&self, pr: f64) -> f64 { pr.powf(self.g) }
+    pub fn t_from_pr(&self, pr: f64) -> f64 { powp(pr, self.g) }
     pub fn gamma_at(&self, _t: f64) -> f64 { self.gamma }
     pub fn r_at(&self) -> f64 { self.r }
 }
@@ -963,5 +1018,369 @@ pub struct FlowState {
 impl FlowState {
     pub fn new(tt: f64, pt: f64, mdot: f64) -> Self {
         FlowState { tt, pt, mdot, far: 0.0 }
+    }
+}
+
+// --------------------------------------------------------------------------------------
+// The DUAL-SECTION gas — what the components actually hold.
+//
+// Cold section (gamma_c, cp_c, R_c) applies upstream of the burner (0->3); hot section
+// (gamma_t, cp_t, R_t) applies downstream (4->9). The burner is the hand-off. R is NOT
+// independent of (gamma, cp) — the perfect-gas relation is R = (gamma-1)/gamma * cp — but
+// it is kept explicit so a CPG case can pin the exact constants its reference used: rung 1's
+// table used cp = 1004 with a rounded R = 287 that is ~0.05 % off the relation, and
+// reduce-to-ideal must reproduce it exactly. See the module header § the trap.
+// --------------------------------------------------------------------------------------
+
+/// The gas's declared inputs — one field per Python dataclass field, same names.
+///
+/// Split out from [`Gas`] because the sections are DERIVED from these (Python does that in
+/// `__post_init__`), and because `..GasSpec::default()` is the Rust spelling of Python's
+/// keyword defaults AND of `dataclasses.replace` in [`Gas::unified`]. That second use is the
+/// load-bearing one: `todo-rust-port.md` § "What Rust deletes outright" records eighteen
+/// separate hand-written field-copy sites in the Python and a rung-80 docstring calling the
+/// omission of one *"THE EIGHTEENTH INSTANCE of the trap"*. With struct-update syntax,
+/// forgetting a field is not expressible.
+#[derive(Clone, Debug, PartialEq)]
+pub struct GasSpec {
+    // Cold section (stations 0 -> 3): fresh air.
+    pub gamma_c: f64,
+    /// J/(kg K) — CPG only; ignored for a TPG cold section.
+    pub cp_c: f64,
+    pub r_c: f64,
+    // Hot section (stations 4 -> 9): combustion products. Defaults EQUAL the cold ones, so
+    // an unconfigured `Gas` behaves exactly like the rung-1 single gas.
+    pub gamma_t: f64,
+    /// J/(kg K) — CPG only.
+    pub cp_t: f64,
+    pub r_t: f64,
+    /// Fuel heating value, J/kg.
+    pub hpr: f64,
+    /// RUNG 3. `None` => the section is calorically perfect (the default, so rungs 1-2 are
+    /// untouched). Each is the `(A_low, A_high)` Cp/R polynomial pair.
+    pub cp_c_coeffs: Option<([f64; 5], [f64; 5])>,
+    pub cp_t_coeffs: Option<([f64; 5], [f64; 5])>,
+    /// RUNG 4. When true the hot composition — and so cp_t/R_t/gamma_t — tracks f; the
+    /// scalars above then hold only REPRESENTATIVE values (at f_design) for diagnostics.
+    pub reacting_hot: bool,
+    /// RUNG 5. When true the burner DERIVES its heat release from formation enthalpies
+    /// instead of the assumed `hpr`, and `hpr` is set to the derived LHV.
+    pub fork_b: bool,
+    /// Fuel ΔHf298, J/mol (Fork B only) — the ONE calibration input.
+    pub hf_fuel_molar: Option<f64>,
+    /// RUNG 6. When true the hot composition is the chemical-EQUILIBRIUM mixture at the
+    /// burner's `(Tt4, pt4)`, frozen downstream. Implies `fork_b`.
+    pub equilibrium: bool,
+}
+
+impl Default for GasSpec {
+    /// DEFAULTS = RUNG 1: hot == cold (one gas), gamma = 1.4, cp = 1004, R = 287. So
+    /// `Gas::default()` is the rung-1 cold-air-standard gas, exactly as bare `Gas()` is.
+    fn default() -> Self {
+        GasSpec {
+            gamma_c: 1.4, cp_c: 1004.0, r_c: 287.0,
+            gamma_t: 1.4, cp_t: 1004.0, r_t: 287.0,
+            hpr: 42.8e6,
+            cp_c_coeffs: None,
+            cp_t_coeffs: None,
+            reacting_hot: false,
+            fork_b: false,
+            hf_fuel_molar: None,
+            equilibrium: false,
+        }
+    }
+}
+
+/// Dual-section gas: the declared [`GasSpec`] plus the two sections derived from it.
+///
+/// Components never see WHICH kind of section they hold — they call `h_c`/`pr_t`/… and the
+/// routing happens here. That is the whole point of the interface: a rung-2 CPG run and a
+/// rung-6 equilibrium run go through the identical component code.
+#[derive(Debug, Clone)]
+pub struct Gas {
+    pub spec: GasSpec,
+    cold: Section,
+    hot: Section,
+}
+
+impl Default for Gas {
+    fn default() -> Self { Gas::new(GasSpec::default()) }
+}
+
+impl Gas {
+    /// Python's `__post_init__`: pick each section from the spec.
+    ///
+    /// The hot branch ORDER is load-bearing and matches the Python line for line —
+    /// equilibrium first, then reacting, then frozen-TPG, then CPG. Testing `cp_t_coeffs`
+    /// before `reacting_hot` would hand a reacting gas a frozen section and it would still
+    /// run, still look plausible, and be silently wrong.
+    pub fn new(spec: GasSpec) -> Self {
+        let cold = match spec.cp_c_coeffs {
+            Some((lo, hi)) => Section::Tpg(TpgSection::new(lo, hi, spec.r_c)),
+            None => Section::Cpg(CpgSection::new(spec.gamma_c, spec.cp_c, spec.r_c)),
+        };
+        let hot = if spec.equilibrium {
+            Section::Equilibrium(EquilibriumSection::new())   // composition = equilibrium(f,T,p)
+        } else if spec.reacting_hot {
+            Section::Reacting(ReactingSection::new())         // composition tracks f
+        } else if let Some((lo, hi)) = spec.cp_t_coeffs {
+            Section::Tpg(TpgSection::new(lo, hi, spec.r_t))   // frozen cp(T)
+        } else {
+            Section::Cpg(CpgSection::new(spec.gamma_t, spec.cp_t, spec.r_t))  // constant cp
+        };
+        Gas { spec, cold, hot }
+    }
+
+    // --- the factories ------------------------------------------------------------------
+    //
+    // Rust has no keyword defaults, so each factory comes in two spellings: the bare name is
+    // Python's default call (`Gas.reacting()`), and the `_with` suffix takes the arguments
+    // explicitly. Every call site then reads like the Python line it came from, instead of
+    // every site restating defaults that only two tests ever change.
+
+    /// RUNG 3, at Mattingly's assumed heating value — Python's `Gas.thermally_perfect()`.
+    pub fn thermally_perfect() -> Self { Gas::thermally_perfect_with(HPR_MATTINGLY) }
+
+    /// RUNG 4 defaults — Python's `Gas.reacting()`.
+    pub fn reacting() -> Self { Gas::reacting_with(0.0, HPR_MATTINGLY) }
+
+    /// RUNG 5 defaults — Python's `Gas.reacting_forkb()`.
+    pub fn reacting_forkb() -> Self { Gas::reacting_forkb_with(hf_fuel_default(), 0.0) }
+
+    /// RUNG 6 defaults — Python's `Gas.reacting_equilibrium()`.
+    pub fn reacting_equilibrium() -> Self {
+        Gas::reacting_equilibrium_with(hf_fuel_default(), 0.0)
+    }
+
+    /// RUNG 3. NASA-air cold section + lean-products hot section.
+    pub fn thermally_perfect_with(hpr: f64) -> Self {
+        let (alo_c, ahi_c, r_c) = mixture(AIR);
+        let (alo_t, ahi_t, r_t) = mixture(PRODUCTS);
+        Gas::new(GasSpec {
+            r_c, r_t, hpr,
+            cp_c_coeffs: Some((alo_c, ahi_c)),
+            cp_t_coeffs: Some((alo_t, ahi_t)),
+            ..GasSpec::default()
+        })
+    }
+
+    /// RUNG 4. NASA-air cold section + a REACTING hot section whose composition tracks f.
+    ///
+    /// `r_t` is set to a REPRESENTATIVE value at `f_design`, used only for diagnostics and
+    /// [`unified`](Self::unified) — every live property call routes through the
+    /// f-parameterised interface, so `f_design` does not affect the cycle result.
+    pub fn reacting_with(f_design: f64, hpr: f64) -> Self {
+        let (alo_c, ahi_c, r_c) = mixture(AIR);
+        let (_, _, r_t) = mixture(&products_composition(f_design));
+        Gas::new(GasSpec {
+            r_c, r_t, hpr,
+            cp_c_coeffs: Some((alo_c, ahi_c)),
+            reacting_hot: true,
+            ..GasSpec::default()
+        })
+    }
+
+    /// RUNG 5 — Fork B. The same reacting composition, but the burner derives its heat
+    /// release from an absolute-enthalpy balance rather than the assumed `hpr`.
+    ///
+    /// `hf_fuel_molar` is pinned so the DERIVED LHV falls out at Mattingly's assumed
+    /// 42.8 MJ/kg — which is what makes Fork B reproduce rung-4 Fork A EXACTLY for complete
+    /// combustion. `hpr` is then SET to that derived LHV so downstream sees the derived value.
+    pub fn reacting_forkb_with(hf_fuel_molar: f64, f_design: f64) -> Self {
+        let (alo_c, ahi_c, r_c) = mixture(AIR);
+        let (_, _, r_t) = mixture(&products_composition(f_design));
+        let lhv = lhv_from_fuel(hf_fuel_molar);              // DERIVED heating value
+        Gas::new(GasSpec {
+            r_c, r_t, hpr: lhv,
+            cp_c_coeffs: Some((alo_c, ahi_c)),
+            reacting_hot: true, fork_b: true,
+            hf_fuel_molar: Some(hf_fuel_molar),
+            ..GasSpec::default()
+        })
+    }
+
+    /// RUNG 6. Fork B's burner, but the products DISSOCIATE: the station-4 composition is
+    /// the chemical-equilibrium mixture solved from `Kp(T)`, then frozen through turbine and
+    /// nozzle. Reduces to Fork B exactly in the cold-`Tt4` limit.
+    pub fn reacting_equilibrium_with(hf_fuel_molar: f64, f_design: f64) -> Self {
+        let (alo_c, ahi_c, r_c) = mixture(AIR);
+        let (_, _, r_t) = mixture(&products_composition(f_design));
+        let lhv = lhv_from_fuel(hf_fuel_molar);
+        Gas::new(GasSpec {
+            r_c, r_t, hpr: lhv,
+            cp_c_coeffs: Some((alo_c, ahi_c)),
+            reacting_hot: true, fork_b: true, equilibrium: true,
+            hf_fuel_molar: Some(hf_fuel_molar),
+            ..GasSpec::default()
+        })
+    }
+
+    /// A copy with the hot section COLLAPSED onto the cold one — the lever for the
+    /// reduce-to-ideal gate.
+    ///
+    /// Collapsing the WHOLE section (the `(gamma, cp, R)` triple AND any TPG cp(T) model AND
+    /// the reacting/Fork-B/equilibrium flags) is what lets the rung-2..6 machinery reproduce
+    /// the rung-1 table to the digit. If the hot section stayed different, its exponent would
+    /// tilt the turbine and nozzle legs and the digits would drift.
+    ///
+    /// `hpr` is deliberately NOT reset: a unified Fork-B gas keeps its derived LHV, exactly
+    /// as `dataclasses.replace` leaves it.
+    pub fn unified(&self) -> Gas {
+        Gas::new(GasSpec {
+            gamma_t: self.spec.gamma_c,
+            cp_t: self.spec.cp_c,
+            r_t: self.spec.r_c,
+            cp_t_coeffs: self.spec.cp_c_coeffs,
+            reacting_hot: false,
+            fork_b: false,
+            equilibrium: false,
+            hf_fuel_molar: None,
+            ..self.spec.clone()
+        })
+    }
+
+    // --- isentropic exponents (CPG closed-form helpers; stations 0 and 9 only) -----------
+
+    /// Cold isentropic exponent `g = (gamma-1)/gamma`; `1/g = gamma/(gamma-1)`.
+    pub fn g_c(&self) -> f64 { (self.spec.gamma_c - 1.0) / self.spec.gamma_c }
+    /// Hot isentropic exponent `g = (gamma-1)/gamma`.
+    pub fn g_t(&self) -> f64 { (self.spec.gamma_t - 1.0) / self.spec.gamma_t }
+
+    pub fn gamma_c(&self) -> f64 { self.spec.gamma_c }
+    pub fn gamma_t(&self) -> f64 { self.spec.gamma_t }
+    pub fn r_c(&self) -> f64 { self.spec.r_c }
+    /// The SCALAR hot gas constant. For a reacting/equilibrium gas this is only the
+    /// representative diagnostic value — the live one is [`r_t_at`](Self::r_t_at).
+    pub fn r_t(&self) -> f64 { self.spec.r_t }
+    pub fn hpr(&self) -> f64 { self.spec.hpr }
+    pub fn is_fork_b(&self) -> bool { self.spec.fork_b }
+    pub fn is_equilibrium(&self) -> bool { self.spec.equilibrium }
+
+    pub fn cold_is_cpg(&self) -> bool { self.cold.is_cpg() }
+
+    /// Is the HOT section calorically perfect?
+    ///
+    /// A reacting hot section is NOT — it must route through the TPG/integral branch in the
+    /// Nozzle and the freestream. Python has to spell that as
+    /// `cp_t_coeffs is None and not reacting_hot`, because `reacting()` sets no coefficients
+    /// and the test would otherwise say "CPG" and silently take the constant-gamma path.
+    /// Here the section itself is the answer: only `Section::Cpg` is calorically perfect.
+    pub fn hot_is_cpg(&self) -> bool { self.hot.is_cpg() }
+
+    // --- the property interface (components call THESE, never cp / g directly) -----------
+
+    pub fn cp_c_at(&self, t: f64) -> f64 { self.cold.cp(t, 0.0) }
+    pub fn h_c(&self, t: f64) -> f64 { self.cold.h(t, 0.0) }
+    pub fn pr_c(&self, t: f64) -> f64 { self.cold.pr(t, 0.0) }
+    pub fn t_from_h_c(&self, h: f64) -> f64 { self.cold.t_from_h(h, 0.0) }
+    pub fn t_from_pr_c(&self, pr: f64) -> f64 { self.cold.t_from_pr(pr, 0.0) }
+    pub fn gamma_c_at(&self, t: f64) -> f64 { self.cold.gamma_at(t, 0.0) }
+
+    // Each hot-section call carries `far`, the fuel/air ratio that fixes the reacting
+    // composition (rung 4). CPG and frozen-TPG sections ignore it, so the parameter is purely
+    // additive and reduce-to-ideal is untouched; a reacting/equilibrium section selects its
+    // per-f mixture. Downstream of the burner, callers pass `state.far`.
+    pub fn cp_t_at(&self, t: f64, far: f64) -> f64 { self.hot.cp(t, far) }
+    pub fn h_t(&self, t: f64, far: f64) -> f64 { self.hot.h(t, far) }
+    pub fn pr_t(&self, t: f64, far: f64) -> f64 { self.hot.pr(t, far) }
+    pub fn t_from_h_t(&self, h: f64, far: f64) -> f64 { self.hot.t_from_h(h, far) }
+    pub fn t_from_pr_t(&self, pr: f64, far: f64) -> f64 { self.hot.t_from_pr(pr, far) }
+    pub fn gamma_t_at(&self, t: f64, far: f64) -> f64 { self.hot.gamma_at(t, far) }
+
+    /// Hot-section gas constant. Constant for CPG/frozen-TPG (`== r_t`); for a reacting
+    /// section it RISES slightly with f (each mol of fuel replaces 1.5 O2 by CO2 + the much
+    /// lighter H2O, so the mean molar mass drops).
+    pub fn r_t_at(&self, far: f64) -> f64 { self.hot.r_at(far) }
+
+    // --- Fork B absolute-enthalpy interface (rung 5; the BURNER alone uses it) -----------
+    //
+    // These carry the formation offset a6 that the sensible h_c/h_t deliberately omit. Only
+    // the burner — the one place enthalpy crosses the cold->hot section boundary — needs
+    // absolute values; turbine and nozzle use enthalpy DIFFERENCES, where the offset cancels,
+    // so they stay on the sensible interface and are bit-for-bit rung 4.
+
+    /// Derived lower heating value, J/kg. `== hpr` by construction for a Fork-B gas; a
+    /// non-Fork-B gas has no fuel formation enthalpy, so it falls back to the assumed `hpr`.
+    pub fn lhv(&self) -> f64 {
+        if self.spec.fork_b {
+            lhv_from_fuel(self.spec.hf_fuel_molar.expect("Fork B gas without hf_fuel_molar"))
+        } else {
+            self.spec.hpr
+        }
+    }
+
+    /// Fuel formation enthalpy per unit fuel MASS, J/kg (Fork B only).
+    pub fn hf_fuel_mass(&self) -> f64 {
+        assert!(self.spec.fork_b, "hf_fuel_mass: not Fork B");
+        self.spec.hf_fuel_molar.expect("hf_fuel_mass: not Fork B") / M_CH2_KG
+    }
+
+    pub fn hf_fuel_molar(&self) -> f64 {
+        self.spec.hf_fuel_molar.expect("hf_fuel_molar: not Fork B")
+    }
+
+    /// Formation enthalpy of the products at `far`, per unit product mass, J/kg.
+    pub fn hf_products_mass(&self, far: f64) -> f64 { formation_products_mass(far) }
+
+    /// Absolute cold-air enthalpy == the sensible one (air is elements, formation datum 0).
+    pub fn h_c_abs(&self, t: f64) -> f64 { self.h_c(t) }
+
+    /// Absolute hot-products enthalpy: sensible `h_t` plus the product formation offset.
+    pub fn h_t_abs(&self, t: f64, far: f64) -> f64 { self.h_t(t, far) + formation_products_mass(far) }
+
+    // --- Rung-6 equilibrium-burner interface (the BURNER alone uses it) ------------------
+    //
+    // The burner root-finds f on the SCALE-B absolute-enthalpy balance (per mol air), with
+    // the equilibrium composition re-solved at each trial f. Scale B (0 K sensible +
+    // formation) is production Fork B's datum, so the cycle reduces to Fork B exactly when
+    // dissociation is off; the composition comes from the scale-A Kp solve, and the only
+    // object crossing between the two scales is datum-free mole numbers.
+
+    /// Complete-combustion lower heating value per mol fuel, J/mol — the `eta_b` loss basis.
+    pub fn lhv_molar(&self) -> f64 { self.lhv() * M_CH2_KG }
+
+    /// Lean stoichiometric fuel/air ratio — the burner's f-bracket upper bound.
+    pub fn f_stoich_lean(&self) -> f64 { f_stoich() }
+
+    /// Mol of (CH2) burned per mol dry air at fuel/air ratio f.
+    pub fn n_fuel_per_air(&self, f: f64) -> f64 { f * m_air() / M_CH2 }
+
+    /// Chemical-equilibrium product mole numbers per mol air at `(f, T, p)`.
+    pub fn equilibrium_composition(&self, f: f64, t: f64, p: f64) -> Vec<(&'static str, f64)> {
+        equilibrium_composition(f, t, p)
+    }
+
+    /// Air absolute MOLAR enthalpy per mol air, SCALE B (formation of air = 0).
+    pub fn h_air_abs_b(&self, t: f64) -> f64 {
+        // Summed in AIR's own order (N2, O2, Ar) with one accumulator: float addition is not
+        // associative, so the iteration order is part of the arithmetic.
+        let mut s = 0.0f64;
+        for &(sp, x) in air_mole_fractions().iter() {
+            s += x * h_molar_b(sp, t);
+        }
+        s
+    }
+
+    /// Products absolute MOLAR enthalpy per mol air, SCALE B, over a composition.
+    pub fn h_products_abs_b(&self, comp: &[(&'static str, f64)], t: f64) -> f64 {
+        let mut s = 0.0f64;
+        for &(sp, n) in comp {
+            s += n * h_molar_b(sp, t);
+        }
+        s
+    }
+
+    /// Freeze the station-4 equilibrium mixture for the whole downstream cycle.
+    ///
+    /// Panics if this gas is not an equilibrium gas — the burner guards on
+    /// [`is_equilibrium`](Self::is_equilibrium) before calling, so reaching here otherwise
+    /// is a routing bug, not a user error.
+    pub fn freeze_equilibrium(&self, f: f64, t_burn: f64, p_burn: f64)
+        -> Vec<(&'static str, f64)>
+    {
+        match &self.hot {
+            Section::Equilibrium(s) => s.freeze(f, t_burn, p_burn),
+            _ => panic!("freeze_equilibrium on a non-equilibrium hot section"),
+        }
     }
 }

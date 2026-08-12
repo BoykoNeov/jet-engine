@@ -26,10 +26,11 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL, regenerate via extract_data.py + build.py
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy leaves `open().write()` unflushed, PowerShell Get/Set-Content double-encodes UTF-8; both fail SILENTLY
 
-## The Rust port — decided 2026-08-12, phases 0–1 done and green
-- [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; **phase 2+ needs fresh authorisation**
+## The Rust port — decided 2026-08-12, phases 0–2 done and green
+- [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; **phase 3+ needs fresh authorisation**
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost by COMPILING and returning a silently different number
-- [Rust arithmetic IS PyPy](rust-port-arithmetic-is-pypy.md) — 98.89% bit-exact vs PyPy against 58% vs CPython, so the risk is SOLVER STOPPING RULES, not floating point
+- [Rust arithmetic IS PyPy](rust-port-arithmetic-is-pypy.md) — 100% bit-exact vs PyPy on gas AND cycle; size a solver claim by DISTINCT ROOTS, not row count
+- [Power spelling is split](rust-port-power-spelling.md) — multiply the square, pow above it; a tolerance bar hid the defect for a whole phase
 
 ## Shipped rungs
 

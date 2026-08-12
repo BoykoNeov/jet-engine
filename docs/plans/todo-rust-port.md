@@ -1,10 +1,11 @@
 # The Rust port — plan
 
-**Status: PHASES 0–1 COMPLETE AND GREEN. Phase 2 onward is NOT yet authorised.** The
+**Status: PHASES 0–2 COMPLETE AND GREEN. Phase 3 onward is NOT yet authorised.** The
 architecture is settled by measurement (§ 1–2); the three forks were answered on 2026-08-12
-(§ 9); phases 0 and 1 were then built and gated (§ 4.1). This is the deliberate early exit —
-phase 1 was chosen as the stopping point because it is where the arithmetic risk concentrates,
-and § 4.1 is the answer to the question that justified stopping here.
+(§ 9); phases 0–2 were then built and gated (§ 4.1, § 4.2). Phase 1 was the first deliberate
+stopping point because it is where the arithmetic risk concentrates; phase 2 was authorised
+separately and **corrected phase 1's central diagnosis** — see § 4.2, which is the answer to
+the question phase 1 thought it had already answered.
 
 **The ask.** The whole project in Rust — engine *and* all tests. Python may survive only as a
 **single-use oracle**: a reference implementation the Rust is validated against, then deleted.
@@ -168,6 +169,13 @@ test file holds absolute values.
 
 ### 4.1 What phase 1 MEASURED — the bar is far easier to clear than feared
 
+> **⚠ READ § 4.2 FIRST. This section's numbers and its central diagnosis were both superseded
+> by phase 2.** Its *conclusion* — the bar is far easier to clear than feared — survives and
+> in fact strengthened to 100 %. Its *reason* for the residual 36 misses (a solver stopping
+> rule) was wrong: the cause was a 1-ULP transcription defect in the polynomial spelling, which
+> the stopping rule then amplified. Kept unedited below as the audit trail, because the way a
+> tolerance bar hid a real defect is itself the finding.
+
 The tolerance policy is not invented. The project already ships on two interpreters (the gate
 runs PyPy, the fingerprint goldens are CPython), so whatever those two disagree by is a
 deviation the project ALREADY tolerates. The oracle therefore dumps under both, and the gap
@@ -200,6 +208,76 @@ Three consequences for the rest of the port:
 3. **The rung-6 result de-risks phase 3.** The equilibrium solve was named the highest-risk
    piece and came back bit-exact, which is the substrate rungs 7–24 sit on.
 
+### 4.2 What phase 2 MEASURED — § 4.1's diagnosis was WRONG, and the bar is 100 %
+
+Phase 2 ported `components.py` and `engine.py`'s design point, and built the cycle oracle that
+gates them (`rust/oracle/dump_cycle.py`, `rust/tests/cycle_oracle.rs`) — the twin of phase 1's
+gas oracle, one layer up: the whole design cycle, across the gas ladder and the loss
+configurations rungs 1–6 exercise. It found a defect in phase 1's shipped code.
+
+**§ 4.1 attributed the residual 36/3232 to the solvers. It was arithmetic.** `poly`,
+`antideriv_h` and `antideriv_phi` spelled Python's `T ** 3` … `T ** 5` as product chains.
+Measured over 6013 points against both interpreters, `x*x*x` reproduces `x ** 3` only
+4519/6013 and `x*x*x*x` reproduces `x ** 4` only 3975/6013 — Python's `**` is a libm `pow`
+call, and a product chain is a *different function* in the last bit. The error lands in the
+high-order terms, ~1e-20 relative to the sum, so it tipped the last bit only occasionally —
+which is why phase 1's own oracle passed at 100 % on enthalpy. **The safeguarded Newton then
+amplified it to 1e-11 through its `tol = 1e-11` stopping rule, which is exactly what made it
+look like a stopping-rule artefact.** The gate ran a whole phase on that misreading.
+
+The rule that fixes it is **split**, and neither simplification works:
+
+| | spelling | gas oracle vs PyPy |
+|---|---|---|
+| the SQUARE | `t * t` | **3232 / 3232** ✅ |
+| | `powp(t, 2.0)` | 3230 / 3232 |
+| the CUBE and above | product chains | 3196 / 3232 (phase 1) |
+| | `powp(t, 3.0/4.0/5.0)` | **3232 / 3232** ✅ |
+
+The asymmetry is PyPy's, not Rust's: its JIT rewrites `x ** 2` into a multiply and does **not**
+rewrite higher powers, so reproducing PyPy means doing exactly the same. A third trap sits
+beside it: written as the obvious `x.powf(0.5)`, LLVM folds the call to `sqrt` — measured
+identical on all 4012 grid points — while Python's `x ** 0.5` differs from `sqrt` about 1 point
+in 670. Hence `gas::powp`, whose `black_box` on the exponent defeats the fold.
+`rust/tests/porting_rules.rs` keeps all three detectors honest, oracle-free.
+
+**Result after the fix, and the new bar:**
+
+| | bit-identical vs PyPy | vs CPython |
+|---|---|---|
+| gas oracle (3232 values) | **3232 / 3232 (100 %)** | 1883 / 3232 |
+| cycle oracle (1481 values) | **1481 / 1481 (100 %)** | 903 / 1481 |
+
+The two Python interpreters agree with each other on only **64 %** of the cycle values, with
+gaps to 4.9e-11 — so "Rust IS PyPy" is now a stronger statement than "Python is Python".
+
+**Both new solvers reproduce bit-for-bit**, and that claim is sized deliberately. A headline
+like "`far`: 114/114" is 19 measurements wearing a 114 costume — stations 0/2/3 are
+structurally zero and 4/5/9 repeat one number. So the oracle carries a **solver sweep** moving
+every knob the burner's root depends on (`pi_c` 6→30, `Tt4` 1000→2100 K, `eta_b` 0.93→1.00,
+`M0` 0.2→2.4, `p0` 15→101 kPa, `mdot` 1→200). The claim rests on **19 distinct fixed-point
+roots and 15 distinct bisection roots**, all bit-exact, and `cycle_oracle.rs` asserts that
+distinct-root count so it cannot silently collapse.
+
+**THE BAR IS NOW BIT-EQUALITY FOR PHASES 0–2, AND THAT REVISES § 9 DECISION 1.** Both oracles
+assert `exact == total` on the PyPy arm. § 9 chose Option B (tolerance) on the grounds that
+Option A was "expensive and may be unreachable"; phases 0–2 measured it to be *neither*, and a
+tolerance bar demonstrably cannot tell a real defect from acceptable noise — for a whole phase
+it did not. **This is not a blanket adoption of Option A.** A later phase — phase 3's mixing
+PDFs and bell integrals bring new solvers — may legitimately fail to reach 100 %. If it does,
+that phase falls back to § 4.1's tolerance policy **with its deviation distribution published
+in this document**, never by silently loosening the bar. A future session that sees 3231/3232
+should read the assertion message, which says the same thing.
+
+**The price, measured and accepted: 2.1× on a rung-5 Fork-B cycle (6.2 → 12.9 µs), 1.36× on a
+rung-6 equilibrium cycle (850 → 1157 µs).** It is confined to the three polynomial functions
+and therefore to REAL-GAS paths: `CpgSection` is closed-form and never touches them, and the
+deepest transient ladders (rungs 66–84, where the wall-clock actually is) build bare CPG gases.
+The steady matchers and lower transients (31, 34, 40, 57) do build equilibrium gases and will
+pay. § 6's "2–4 minutes" estimate should be read with that in mind — it was an estimate before
+this cost existed. If a later phase becomes speed-bound, the trade is reversible in one
+function, at a known price in bit-exactness.
+
 ### The rungs where a tolerance is NOT a valid substitute
 
 The finding is a **count**, and a count jumps discontinuously:
@@ -231,8 +309,8 @@ next starts. The tree is green at every phase boundary; there is no big-bang cut
 | # | scope | sessions | gate |
 |---|---|---|---|
 | **0** | ~~Cargo crate; the oracle bridge; the per-quantity tolerance policy~~ | **DONE** | ✅ 3232 values round-trip; policy DERIVED from the CPython↔PyPy gap, not invented |
-| **1** | ~~`gas.rs` — `FlowState`, CPG closed form, TPG NASA integrals, reacting section, Fork B, equilibrium Newton (rungs 1–6)~~ | **DONE** | ✅ **two** gates: `gas_oracle.rs` (values, 3196/3232 bit-exact vs PyPy — § 4.1) and `gas_spine.rs` (**reduce-to-prior**, 6 tests — § 5.1) |
-| **2** | `components.rs` + `engine.rs` design point — shaft balance, `_score`; conservation checks as `assert!` (they run on **every** execution, per the working contract) | 1–2 | rungs 1–6 tests pass |
+| **1** | ~~`gas.rs` — `FlowState`, CPG closed form, TPG NASA integrals, reacting section, Fork B, equilibrium Newton (rungs 1–6)~~ | **DONE** | ✅ **two** gates: `gas_oracle.rs` (values, **3232/3232** bit-exact vs PyPy after phase 2's fix — § 4.1 shipped it at 3196, § 4.2 says why) and `gas_spine.rs` (**reduce-to-prior**, 6 tests — § 5.1) |
+| **2** | ~~`components.rs` + `engine.rs` design point — shaft balance, `_score`; conservation checks as `assert!`~~ | **DONE** | ✅ **three** gates: `cycle_oracle.rs` (1481/1481 bit-exact vs PyPy, on 19+15 distinct solver roots — § 4.2), the 8 ported rung suites (39 tests, rungs 1–6, incl. rung 6's GATE 1), and `porting_rules.rs` |
 | **3** | NOx & mixing, rungs 7–24. **RISK-BEARING — not bulk.** These are phase 1's largest *consumer*: every one rides the equilibrium solve and `Kp = exp(−ΔG°/RuT)`, and their findings are *shapes* (the bell's peak, the minimum pinned at `C_opt`, monotone-vs-turns-back-up) that a last-digit shift in an exponential can move. Deliberately placed straight after phase 1 as the **first real test of whether the transcendental arithmetic holds** | 4–6 | per-rung tests pass; extremum *locations* re-checked, not just values |
 | **4** | Nozzle & turbine marches, rungs 25–30 — own convergence behaviour, hence separate | 2–3 | per-rung tests pass |
 | **5** | Steady matchers — rungs 31–33, 38–39, 42, 53–56, 61. **Contains the diamond** (§ 6) | 4–6 | per-rung tests pass |
@@ -274,6 +352,35 @@ agree at every probe point and still be structurally wrong. Six tests, all green
 **NOT covered, deliberately:** rung 6's GATE 1 — the cold-`Tt4` *cycle* reduce (`fE == fB` to
 1e-6) — needs `build_turbojet`, so it lands in **phase 2** with the components. Phase 1's gate
 is the gas layer's spine, not the cycle's.
+
+### 5.2 What phase 2 shipped
+
+`rust/src/components.rs` (the five components, every conservation assert, `ram_recovery`),
+`rust/src/engine.rs` (freestream, the shaft balance and its closure check, `score`,
+`build_turbojet`), and the `Gas`/`GasSpec` pair in `gas.rs` that phase 1 had left out — the
+dual-section object the components actually hold, its four factories, and `unified()`.
+
+Three notes on shape, each a place Rust says something the Python could only comment:
+
+- **`GasSpec` + struct-update syntax replaces `dataclasses.replace`.** § 2 records eighteen
+  hand-written field-copy sites in the Python and a rung-80 docstring calling one omission
+  *"THE EIGHTEENTH INSTANCE of the trap"*. `..self.spec` makes forgetting a field inexpressible.
+- **`Losses::default()` is the reduce-to-ideal gate**, the way Python's ideal keyword defaults
+  are: the no-argument call IS the rung-1 engine.
+- **`Component` is an enum, not a trait object.** Python dispatches with `isinstance` because
+  Turbine and Nozzle deliberately diverge from `apply(state, gas)`; the enum turns that
+  divergence into a `match` the compiler checks, so a sixth component cannot be added without
+  deciding how the engine drives it.
+
+**Deliberately NOT ported yet:** rung 30's choked convergent nozzle (`_sonic_throat`) and rung
+31's `choked_mfp`, though both live in `components.py`. They belong to phases 4 and 5, where
+their own gates run; shipping them into a phase gated only by the rungs 1–6 suites would ship
+untested code. The Python grew that branch AT rung 30 too.
+
+The 39 ported tests also record two ENVELOPE limits of the Python being ported, neither
+introduced by the port: the design-point scorer's efficiency cascade is `0/0` at `M0 = 0`, and
+production's Fork-B closure assert fires at `f ≈ 0.052` (~77 % of stoichiometric). Both are
+documented at their sweep entries rather than worked around.
 
 ---
 
@@ -338,6 +445,13 @@ every disagreement with the oracle ambiguous.
    the decision).*
 3. **Go → PHASES 0–1 ONLY.** Build the scaffolding, the oracle bridge and the gas core, then
    stop and re-decide before phase 3 (the first heavy consumer of that arithmetic).
+   **Superseded 2026-08-12: phase 2 was authorised and is complete.** The stop-and-re-decide
+   point is now **before phase 3**, which is where it was always going to matter.
+
+**Decision 1 is REVISED by § 4.2**: phases 0–2 are held to bit-equality, not to a tolerance,
+because it was measured achievable (100 % on both oracles) and because a tolerance bar let a
+real defect ride for a whole phase. Later phases may fall back to Option B, with the deviation
+distribution published here.
 
 ### Consequences for the phase table
 

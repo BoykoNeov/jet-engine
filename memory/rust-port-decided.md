@@ -1,6 +1,6 @@
 ---
 name: rust-port-decided
-description: "The project is being rewritten in Rust; phases 0-1 are done and green, phase 2+ needs fresh authorisation"
+description: "The project is being rewritten in Rust; phases 0-2 are done and green, phase 3+ needs fresh authorisation"
 metadata: 
   node_type: memory
   type: project
@@ -14,16 +14,19 @@ the rule the user gave is "the ENGINE is pure Rust", so everything computational
 station tables, is Rust.
 
 The plan is `docs/plans/todo-rust-port.md` — read it rather than re-deriving. Three decisions
-are already locked: bit-exactness **option B** (Python as oracle, then re-anchor to Rust);
-`main.py` **split** (Rust prints tables + emits plot JSON, Python draws only); and **phases 0–1
-only**, then stop.
+are already locked: `main.py` **split** (Rust prints tables + emits plot JSON, Python draws
+only); the `const Hooks` ladder architecture; and **stop-and-re-decide at each phase boundary**.
+The bit-exactness fork was decided as **option B** (tolerance) but phases 0–2 are held to
+**bit-equality** instead, because it was measured achievable — see [[rust-port-power-spelling]]
+for why that revision happened and what would justify falling back.
 
-**Phases 0 and 1 are COMPLETE, green, committed and pushed** (`rust/`, commits 101e3be and
-f8a77d1). Phase 2 onward is **not authorised** — ask before starting it.
+**Phases 0, 1 and 2 are COMPLETE, green, committed and pushed** (`rust/`). Phase 3 onward is
+**not authorised** — ask before starting it. Phase 3 is the risk-bearing one (rungs 7–24's
+findings are extremum LOCATIONS, and it brings new solvers).
 
-**Why:** the user deliberately scoped an early exit at phase 1 because that is where the
-arithmetic risk concentrates. Treating "the plan exists" as authorisation to keep building
-would spend a large budget on an unapproved branch.
+**Why:** the user scoped an early exit because that is where the arithmetic risk concentrates,
+and authorises phases one at a time. Treating "the plan exists" as authorisation to keep
+building would spend a large budget on an unapproved branch.
 
 **How to apply:** if asked to continue the port, confirm which phase. The architecture question
 is settled and should not be re-litigated: a `const Hooks` table of function pointers per rung,
