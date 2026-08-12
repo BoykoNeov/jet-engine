@@ -529,6 +529,29 @@ Three smaller things the slice recorded rather than worked around:
   places, as slice B's was — here, and in `docs/rung21-spec.md`, because someone reading the rung's
   own spec to understand the physics never opens this file.
 
+### 4.6 Every bit-equality number in § 4.1–4.5 is OPTIMISATION-INDEPENDENT
+
+Each slice's percentage was measured on ONE build. That is a weaker claim than it reads as: an
+unqualified "2448/2448 bit-exact" asserts a property of the *arithmetic*, but a single run only
+establishes it for one codegen. Re-run after slice C at **three optimisation levels** — `opt-level
+= 0`, the `[profile.test]` `opt-level = 2`, and release's `opt-level = 3` + `lto = "thin"` +
+`codegen-units = 1` — all five oracle gates (`gas` / `cycle` / `nox` / `quench` / `pdf`, 11,474
+values) pass identically at every one. `opt-level = 0` is 8.3× slower on `pdf_oracle` (43.7 s vs
+5.3 s), so the codegen really is different.
+
+This is the expected result and worth having anyway: Rust does not enable FP contraction, so
+`a*b + c` may not become an FMA and the optimiser may not reassociate — the guarantee that makes
+the port's whole bit-equality programme possible is a LANGUAGE property, not a lucky build. The
+one-line consequence: **the percentages may be quoted unqualified**, and a future disagreement that
+appears only at one optimisation level is a compiler bug, not a porting defect.
+
+The same pass re-checked something § 4.5's stale-docstring entry above does NOT cover: whether the
+**Rust** doc comments transcribed the stale Python claim. They did not — `nox.rs` states the forbid
+guard DISCHARGED, and every "stays equilibrium-O" in the Rust is conditioned on `super_eq_o =
+false`, which is the reduce contract rather than the stale assertion. The no-edit policy is
+correctly scoped to the oracle: the Rust is not the oracle, so text there can and should be fixed
+on sight.
+
 ### The rungs where a tolerance is NOT a valid substitute
 
 The finding is a **count**, and a count jumps discontinuously:
