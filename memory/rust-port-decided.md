@@ -1,11 +1,11 @@
 ---
 name: rust-port-decided
-description: "The project is being rewritten in Rust; phases 0-2 done, phase 3 authorised and running in SLICES, phase 5 needs fresh authorisation"
+description: "The project is being rewritten in Rust; phases 0-3 done, phase 4 authorised and running in SLICES, phase 5 needs fresh authorisation"
 metadata: 
   node_type: memory
   type: project
   originSessionId: 454e5108-5b41-4abd-b607-eac9932757b5
-  modified: 2026-08-12T08:12:17.150Z
+  modified: 2026-08-12T17:30:05.620Z
 ---
 
 On 2026-08-12 the user decided to rewrite the whole project in Rust. Python survives only as a
@@ -20,13 +20,15 @@ The bit-exactness fork was decided as **option B** (tolerance) but phases 0–2 
 **bit-equality** instead, because it was measured achievable — see [[rust-port-power-spelling]]
 for why that revision happened and what would justify falling back.
 
-**Phases 0, 1 and 2 are COMPLETE, green, committed and pushed** (`rust/`). **Phase 3 was
-authorised on 2026-08-12 and runs in SLICES** — it is the port's largest phase (2,745 source
-lines, 204 tests, eight mutually-exclusive mixing closures), so it ships one green gate at a
-time rather than as one landing. **Slice A (rungs 7/8/9/19) is done**; remaining: the
-finite-rate quench (10–12), the PDF family (13/15/16/18), the nozzle strand (14/17), the
-spatial fields (20–24). No further authorisation is needed *inside* phase 3. The next
+**Phases 0–3 are COMPLETE, green, committed and pushed** (`rust/`) — phase 3 shipped as five
+slices, A (7/8/9/19) through E (14/17). **Phase 4 was authorised on 2026-08-12** and runs in
+three slices grouped by DEPENDENCY, not by number: **F (rungs 25/26) is done**; G (27/28) and
+H (29/30) remain. No further authorisation is needed *inside* an authorised phase. The next
 re-decide point is **before phase 5**, which contains the rung-61 multiple-inheritance diamond.
+
+**Slicing by dependency is now the established shape of a phase**, and the slices are where the
+findings come from: five oracles at 100 % bit-exact and every finding produced instead by
+sweeping past the source's own gates.
 
 **Why:** the user scoped early exits because that is where the arithmetic risk concentrates,
 and authorises phases one at a time. Treating "the plan exists" as authorisation to keep

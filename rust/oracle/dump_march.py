@@ -11,7 +11,7 @@ WHAT IS ACTUALLY NEW HERE, and therefore what the sweep is built around:
     400 steps deep, each step re-solving the equilibrium composition and then bisecting a
     temperature. Error does not merely appear — it ACCUMULATES, and the exit state is 400 chained
     solves downstream of the entry. That is what makes bit-equality here a stronger statement than
-    it was in slice E, and why `iters/` is dumped per march rather than per call.
+    it was in slice E, where every gated quantity was a single solve.
 
   * `dS` LEADS, and it is the most drift-sensitive quantity in the port so far. It is
     `S_exit − S_entry`: a difference of two molar entropies that legitimately lands NEGATIVE in 13
@@ -48,12 +48,6 @@ against them. Without the lever every Da point would pay three nozzle solves tha
 
 THE DISCRETE KEYS, and what each is honestly worth:
 
-  * `iters/…/min`, `iters/…/max` — the fewest/most halvings any one step's energy bisection took.
-    A NAMING key, not an independent discriminator, and recorded as one (slice E's classification):
-    the exit state is already gated at bit-equality, so a mis-shaped loop is caught by the VALUE.
-    What the count adds is that the failure reads "41 halvings instead of 37". Measured 36-37 at
-    every one of the 70 probe marches, so it is nearly constant — which is the point: it is a
-    tripwire, not a measurement.
   * `census/negative_ds` — how many cells of a fixed Da × Tt4 ladder produce a NEGATIVE `dS`. This
     one IS live and no tolerance expresses it: it is the count of cells where a physically
     non-negative quantity comes out the other side of the truncation with the wrong sign, and it
@@ -62,6 +56,22 @@ THE DISCRETE KEYS, and what each is honestly worth:
     relaxation on at all (`Da_entry < 1`). This is rung 26's own dormant-lean claim as an integer:
     2 of 5 on the ladder below, and it MOVES with Tt4, which is the rung.
   * `order/<species>` — the index of each species in `_equilibrium_composition`'s returned order.
+
+WHAT IS DELIBERATELY *NOT* DUMPED, AND WHERE IT WENT INSTEAD. The energy bisection's halving count.
+An earlier draft of this header described an `iters/…/min|max` class and the dump never emitted one
+— `_finite_rate_expand` returns four values and cannot report a count without instrumenting the
+source, so the class was documentation for a gate that did not exist. Note that the Rust gate's
+key-COUNT guard could not have caught that: neither side emitted the class, so the totals matched.
+
+The count is worth keeping, but not here. Slice E classified its own `iters` as a NAMING key —
+the value is already gated at bit-equality, so a mis-shaped loop is caught by the value and the
+count only improves the failure message. There is however one thing the count says that no dumped
+value can: **whether the loop CONVERGED at all.** `used == 200` means the bracket never met its
+stopping rule, and that is invisible in the result, because `0.5*(lo+hi)` off an unconverged
+bracket is a perfectly plausible temperature. A Python↔Rust dump cannot express it either, since
+both sides would agree on the same unconverged number. So the count lives on `march::March` and is
+gated in `tests/rung25.rs::the_energy_bisection_converges_far_inside_its_cap`, against the 36–37
+halvings § 4.11 probe 1 measured across all 70 marches.
 
 Regenerate with:
     py -3                     rust/oracle/dump_march.py rust/oracle/march_cpython.tsv

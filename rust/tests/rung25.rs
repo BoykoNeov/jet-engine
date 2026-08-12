@@ -268,6 +268,43 @@ fn large_da_on_a_good_grid_is_not_refused() {
     assert!(m.v9 < nozzle(&d, 3.0, 400).v9_reversible);
 }
 
+/// **The energy bisection must CONVERGE, and that is invisible in every value the oracle holds.**
+///
+/// Each step runs a counted `for _ in 0..200` and then takes `0.5*(lo+hi)` from whatever bracket
+/// it ends with. If the stopping rule never fires, that expression still returns a perfectly
+/// plausible temperature — the march continues, the exit state is wrong by an amount nobody can
+/// name, and `march_oracle.rs` cannot say so either, because the Python would sit at the same
+/// unconverged number and the two would agree bit-for-bit.
+///
+/// § 4.11 probe 1 measured 36–37 halvings across all 70 marches, so the cap has ~5× headroom. The
+/// band below is deliberately wider than the measurement (it must not fail when a design point
+/// shifts a halving) but far below 200 (it must fail if the rule stops firing).
+#[test]
+fn the_energy_bisection_converges_far_inside_its_cap() {
+    for tt4 in [1300.0, 1500.0, 1800.0, 2200.0, 2300.0] {
+        let d = dp(tt4);
+        let ce = entry(&d);
+        for da in [0.03, 3.0, 300.0] {
+            for nstep in [100usize, 400] {
+                let m = finite_rate_expand(&ce, d.far, d.tt9, d.pt9, d.p9, da, nstep);
+                assert!(
+                    m.iters_max < 60,
+                    "energy bisection took {} halvings at Tt4={tt4}, Da={da}, nstep={nstep} — \
+                     measured 36–37, and 200 means it never converged at all",
+                    m.iters_max
+                );
+                // …and the floor, so a loop that broke IMMEDIATELY (an inverted stopping rule,
+                // which would also return a plausible number) fails just as loudly.
+                assert!(
+                    m.iters_min > 20,
+                    "energy bisection took only {} halvings at Tt4={tt4}, Da={da}",
+                    m.iters_min
+                );
+            }
+        }
+    }
+}
+
 // --- GATE 7: ATOM CONSERVATION (the vector-relaxation free invariant) ------------------------ //
 
 /// Each element count is a linear invariant shared by `n` and `n_eq`, so the exact linear

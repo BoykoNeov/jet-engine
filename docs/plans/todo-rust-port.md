@@ -1204,6 +1204,23 @@ measure-before-registering rule failing at the one place slice E did not apply i
 own census bars — and it is the second time in this port a "count" bar has been the thing that was
 wrong.**
 
+**FINDING 5 (post-ship review) — A KEY CLASS DOCUMENTED TWICE, COMPUTED, AND EMITTED BY NOBODY.**
+The dump's header described an `iters/…/min|max` discrete-key class in two passages, and
+`March` computed both fields every step behind a paragraph justifying them. Nothing emitted them
+and nothing read them; the Python cannot report a halving count without instrumenting the source,
+so the class was documentation for a gate that did not exist. **The oracle's own key-COUNT guard
+could not catch it** — it asserts `rust.len() == oracle.len()`, and with the class absent from
+BOTH sides the totals matched at 912. A guard against drift between two sides is blind to
+something missing from both.
+
+Resolved by making the counts earn their place rather than deleting them, because there is exactly
+one thing they say that no dumped value can: **whether the loop converged.** `used == 200` means
+the bracket never met its stopping rule, and that is invisible in the result — `0.5*(lo+hi)` off an
+unconverged bracket is a plausible temperature, and a Python↔Rust dump would see both sides agree
+on the same unconverged number. The counts now gate a band (measured 36–37; the gate is 20 < n <
+60) in `tests/rung25.rs::the_energy_bisection_converges_far_inside_its_cap`, which also catches
+the inverted stopping rule that would break out immediately.
+
 **THE PORT DECISIONS TAKEN, all four as pre-registered in § 4.11**: a new `march.rs` (rung 30 will
 go to `components.rs`); `choked_mfp` deferred to phase 5, checked against the tests rather than
 assumed; the two non-oracle reduces gated as named tests; and the three bisection tolerances

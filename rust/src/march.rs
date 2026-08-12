@@ -89,10 +89,18 @@ pub struct March {
     pub ds: f64,
     /// fewest halvings any one step's energy bisection took
     ///
-    /// A NAMING key, not an independent discriminator, and recorded as one — the same
-    /// classification slice E gave `Expansion::iters`. `t9` is already gated at bit-equality, so
-    /// a mis-shaped loop is caught by the VALUE; what the count adds is that the failure reads
-    /// "41 halvings instead of 37". Measured 36–37 across all 70 probe marches.
+    /// **This pair carries the one thing the oracle structurally cannot say: whether the loop
+    /// CONVERGED.** Slice E classified its own `Expansion::iters` as a NAMING key, because `t9`
+    /// is gated at bit-equality and so a mis-shaped loop is already caught by the value. That
+    /// remains true — but `used == 200` means the bracket never met its stopping rule, and *that*
+    /// is invisible in the result: `0.5*(lo+hi)` off an unconverged bracket is a perfectly
+    /// plausible temperature. A Python↔Rust dump cannot see it either, since both sides would
+    /// agree on the same unconverged number.
+    ///
+    /// Measured 36–37 across all 70 marches of § 4.11 probe 1, and gated in
+    /// `tests/rung25.rs::the_energy_bisection_converges_far_inside_its_cap`. An earlier draft of
+    /// this slice computed both fields and read them nowhere, while the oracle's header described
+    /// an `iters/` key class the dump never emitted.
     pub iters_min: usize,
     /// most halvings any one step's energy bisection took (see [`March::iters_min`])
     pub iters_max: usize,

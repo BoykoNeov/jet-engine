@@ -26,8 +26,8 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL, regenerate via extract_data.py + build.py
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy leaves `open().write()` unflushed, PowerShell Get/Set-Content double-encodes UTF-8; both fail SILENTLY
 
-## The Rust port — decided 2026-08-12; PHASES 0–3 DONE (slices A–E, 296 Rust tests); phase 4 unauthorised
-- [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; slices are free inside phase 3, **phase 5 needs fresh authorisation**
+## The Rust port — decided 2026-08-12; PHASES 0–3 DONE (slices A–E); PHASE 4 authorised, slice F done (330 Rust tests)
+- [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; slices are free inside an authorised phase, **phase 5 needs fresh authorisation**
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost by COMPILING and returning a silently different number
 - [Rust arithmetic IS PyPy](rust-port-arithmetic-is-pypy.md) — 100% bit-exact vs PyPy on gas AND cycle; size a solver claim by DISTINCT ROOTS, not row count
 - [Power spelling is split](rust-port-power-spelling.md) — multiply the square, pow above it; a tolerance bar hid the defect for a whole phase
@@ -36,6 +36,8 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [A ported test can go VACUOUS](rust-port-ported-test-vacuity.md) — a better factorisation turns the source's real pin into a self-comparison; a location key on a scheme boundary needs a COARSER grid
 - [Inside/outside exactness](rust-port-inside-outside-exactness.md) — an op applied INSIDE an accumulation and removed OUTSIDE is exact in algebra, not arithmetic, and the source says “exactly”; a residual needs an ABSOLUTE bar
 - [Measure before registering](rust-port-measure-before-registering.md) — probe FIRST, then pre-register; a slack bar in the source is a lead to a wrong exactness claim, not a number to copy; and a bit-equality gate is BLIND to an assumption both sides share
+- [COPY vs REDERIVATION](rust-port-copy-vs-rederivation.md) — an "exactly" claim survives a copied instruction sequence and dies on a second derivation; so don't factor a deliberate duplication away
+- [A documented gate that doesn't exist](rust-port-documented-gate-that-doesnt-exist.md) — the key-COUNT guard is blind to a class ABSENT FROM BOTH sides; make a dead key earn its place instead of deleting it
 
 ## Shipped rungs
 
