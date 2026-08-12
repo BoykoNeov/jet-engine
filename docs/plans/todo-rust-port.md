@@ -1,8 +1,10 @@
 # The Rust port — plan
 
 **Status: PHASES 0–3 COMPLETE AND GREEN — slices A (rungs 7/8/9/19), B (10/11/12/20),
-C (13/15/16/18/21), D (22/23/24) and E (14/17, the nozzle strand) all shipped. 296 Rust tests.
-The next phase is 4 (the nozzle & turbine marches, rungs 25–30).**
+C (13/15/16/18/21), D (22/23/24) and E (14/17, the nozzle strand) all shipped.
+PHASE 4 (the nozzle & turbine marches, rungs 25–30) was AUTHORISED 2026-08-12 and runs in three
+slices: F (25/26) is SHIPPED — § 4.11 pre-registration, § 4.12 measurement — and G (27/28) and
+H (29/30) are next. 330 Rust tests.**
 The architecture is settled by measurement (§ 1–2); the three forks were answered on 2026-08-12
 (§ 9); phases 0–2 were then built and gated (§ 4.1, § 4.2). Phase 1 was the first deliberate
 stopping point because it is where the arithmetic risk concentrates; phase 2 was authorised
@@ -1129,6 +1131,218 @@ a monotonicity claim on three points is the shape slice B narrowed rung 12 on, a
    `nsteps` 200). Without the lever every J point on the band-edge sweep costs a nozzle solve it does
    not need.
 
+### 4.12 What phase 4 SLICE F MEASURED — 100 % again, a claim of exactness that SURVIVED, and a test bar that does not
+
+**912 / 912 bit-exact against PyPy**, first run, including exit states 400 chained solves deep.
+The Rust suite is now **330 tests**. Slice F is rungs 25/26; slices G (27/28) and H (29/30) follow.
+
+**FINDING 1 — the marches AMPLIFY the interpreter gap, which is what makes the 100 % sharp.**
+Against **CPython** the same dump is only **493 / 912** bit-identical (54.1 %), and the split by
+quantity is the story: `clock/` (solver-free, closed form) is 90/90 identical, while **velocity is
+3 / 88** and temperature 56/92. A march is not a solve — it re-solves the equilibrium composition
+and bisects a temperature 100 or 400 times over, so a last-bit difference at step 1 is still being
+carried at step 400. **Bit-equality on these keys is therefore a much stronger statement than the
+same words were in slice E**, where the quantities were single solves. It also disposes of the
+standing worry that a 100 % result might mean the sweep is insensitive: on the very same keys, two
+Pythons disagree.
+
+**FINDING 2 — the FOURTH "exactly"-class claim in this lineage, and the first to SURVIVE.**
+§ 4.11 probe 4 measured `_freeze_out_expand`'s "reproduces `_finite_rate_expand(Da)` **to the
+ULP**" at 40/40 bit-exact on the Python, and the Rust reproduces it at 40/40 between its own two
+functions (`tests/rung26.rs::constant_da_local_is_rung25_bit_for_bit`, against the Python suite's
+6 cells). Slices C, D and E each corrected a claim of exactly this shape — 3 for 3 — so the prior
+was that this would be the fourth correction. **It is not, and the reason is structural rather
+than lucky:** the two loops are a deliberate verbatim duplication, so the reduce compares two
+identical instruction sequences rather than two routes to the same number. Slice E's corrected
+claim failed precisely because it compared two ROUTES (the entropy scale against the production
+nozzle's Newton). **The distinction to carry forward: "exactly" survives a COPY and does not
+survive a REDERIVATION.**
+
+> **AND THE DUPLICATION IS LOAD-BEARING IN THE PORT, NOT JUST THE SOURCE.** Factoring the two
+> Rust loops into one generic body would compile, pass the oracle at 912/912, and silently turn
+> this gate into a self-comparison — vacuity case #8, whose mechanism is the port's own
+> factorisation dissolving the source's pin. `march.rs`'s header says so at the top, because the
+> next reader's instinct will be to remove the copy.
+
+**FINDING 3 — a shipped TEST BAR that only holds where it was evaluated.** `test_rung26.py`'s
+2nd-law gate asserts `dS_freeze > -1e-6` at `Tt4 ∈ {1500, 1800, 2200}`. Swept over the oracle's
+five design points:
+
+| `Tt4` | 1300 | 1500 | 1800 | 2200 | 2300 |
+|---|---|---|---|---|---|
+| `dS_freeze` | **−2.077e-05** | +1.211e-04 | +3.202e-03 | +3.947e-02 | +7.056e-02 |
+| `Da_entry` | 0.0654 | 0.3098 | 1.4465 | 4.5012 | 5.1538 |
+
+**At 1300 K the bar fails by 20×.** Not a port defect — the oracle gates `fz/cold/dS` bit-exactly
+and it passes, so the Python computes the same number; the bar was simply never evaluated below
+1500 K. The mechanism is the one § 4.11 probe 3 identified from the other side: the anchored clock
+never switches on at 1300 K (`Da_entry` = 0.065), so there is almost no relaxation and therefore
+almost no entropy to produce, and the trapezoid truncation is then LARGER than the physical signal
+and sets its sign. `-1e-6` sits in the gap between the two regimes.
+
+The Rust suite ships the three statements that are actually true, separately rather than conflated
+into one threshold: `dS` clears the code's OWN floor (`DS_FLOOR` = −5e-3) everywhere, with the
+worst point clearing by 240×; `dS > 1e-4` strictly wherever `Da_entry > 1`, i.e. wherever there is
+relaxation to produce it; and **`dS` is MONOTONE in `Tt4` across the whole ladder** — which the
+Python never asserts and which is a far sharper detector than any floor, since it fails if a march
+goes wrong anywhere on the ladder rather than only below a bound. **The Python's bar is left
+as-is**: no shipped CLAIM moves (rung 26's headline is the moving freeze point, untouched), and
+editing the source's tests is not the port's remit. It is recorded here so phase 8's adjudication
+does not meet it cold.
+
+**FINDING 4 — a distinct-value bar I guessed was wrong, and the shortfall was the physics.** The
+dump's first draft asserted one lumped "≥ 80 distinct clock values" over the anchored clock's three
+arms and failed at 66. The arms are not comparable: with the density pinned, `τ_chem` loses its
+only pressure dependence, so that arm's 6 × 5 grid holds **6** values, not 30 — the kill test
+working exactly as designed. A lumped bar hid a real structural fact behind a threshold nobody had
+checked. The dump now gates each arm at its own count (`free` 30, `killT` 30, `killM` 6) and, since
+`τ_free ∝ T⁴/p²` and `τ_killT ∝ (T/p)²`, **the pressure ladder was moved off round numbers** so
+those counts are structural: on `{2e4, 5e4, …}` the cells `(800 K, 2e4 Pa)` and `(2000 K, 5e4 Pa)`
+share `p/T` = 25 and `killT` silently held 29. Encoding *that* as the bar would have pinned a
+floating-point coincidence that need not survive a change of interpreter. **This is the
+measure-before-registering rule failing at the one place slice E did not apply it — to the dump's
+own census bars — and it is the second time in this port a "count" bar has been the thing that was
+wrong.**
+
+**THE PORT DECISIONS TAKEN, all four as pre-registered in § 4.11**: a new `march.rs` (rung 30 will
+go to `components.rs`); `choked_mfp` deferred to phase 5, checked against the tests rather than
+assumed; the two non-oracle reduces gated as named tests; and the three bisection tolerances
+transcribed separately, with `equilibrate_hp` dumped DIRECTLY as well as through its caller so a
+mis-transcribed `1e-10` names the equilibration instead of reading as a nozzle defect.
+
+### 4.11 SLICE F (rungs 25/26, the RECOMBINATION MARCHES) — PRE-REGISTERED, five probes MEASURED first
+
+**PHASE 4 WAS AUTHORISED 2026-08-12** (the standing re-decide point in § 9 decision 3 was *before*
+phase 4; it is now spent, and the next one is before phase 5). Phase 4 is rungs 25–30 and runs in
+**three slices, grouped by DEPENDENCY** exactly as phase 3 was:
+
+| slice | rungs | what it is | depends on |
+|---|---|---|---|
+| **F** | 25, 26 | the MAJOR-POOL marches: the Damköhler flow between rung-14's bounds, its closed-form fast ceiling, and the anchored GRI-Mech clock that lets the relaxation shut off | slice E's `expand_nozzle` + the three mixture helpers |
+| **G** | 27, 28 | the NO marches: a scalar relaxation on the FROZEN path, then that clock re-read on slice F's RELAXING pool | F (rung 28 only — see below) |
+| **H** | 29, 30 | the work-limited turbine expansion, and the sonic throat of a convergent nozzle | neither |
+
+**RUNG 27 DOES NOT DEPEND ON RUNG 26**, and an earlier draft of this table said it did.
+`_no_freeze_out_expand` marches a single scalar along rung-14's FROZEN isentropic path and never
+touches `_freeze_out_expand`. Only rung 28 needs rung 26 — it reads the `record` trajectory. F→G
+is still the right order, but for rung 28's sake alone.
+
+**THE PROBES RAN FIRST, AS SLICE E MADE THE RULE** (`M:\claud_projects\temp\rust-phase4\probe_slice_f.py`,
+PyPy, the gate interpreter). All five targets are things the source states in WORDS and never
+numbers, and each one sets a bar below. The sweep is deliberately wider than the source's own gates:
+`Tt4 ∈ {1300, 1500, 1800, 2200, 2300}` against the tests' {1500, 1800, 2200}, and
+`Da ∈ {0.03 … 300}` against their {0.3 … 30}.
+
+**PROBE 1 — the `T + 50` upper bracket is SOUND, and its word-bound is now a number.**
+`_finite_rate_expand:1967` justifies the temperature bisection's upper bracket with *"bounded by the
+whole entry re-equilibration ~10s of K, so T+50 never clips the root"* — a bound with no measurement
+behind it. Measured over 70 marches: the largest single-step temperature RISE is **12.956 K**, at
+`Tt4 = 2300, Da = 300, nstep = 100, step 0` — the hottest, fastest, coarsest corner, and the FIRST
+step, which is exactly where the recombination reheat is concentrated. Headroom to the top of the
+bracket never falls below **37.04 K**. Probe 2 measures the re-equilibration the docstring appeals to
+at **21.40 K**, so the stated chain (rise ≤ re-equilibration ≪ 50) holds with 3.9× margin on the
+measured rise and 2.3× on its own bound. **Nothing moves; the bar is that the bracket is transcribed
+as `T + 50.0` literally**, because it sets the bisection's iterate sequence and any narrowing changes
+every bit downstream.
+
+> Also measured, and load-bearing for the port: the bisection uses **36–37** of its `range(200)`
+> halvings at every one of the 70 marches. The counted loop's cap is never reached, so the `break`
+> always fires — the Rust may not rely on that, but the oracle records the count as a NAMING key
+> (slice E's classification: T9 is already gated at bit-equality, so the count only makes a
+> shape error read "41 halvings instead of 37").
+
+**PROBE 2 — `_equilibrate_hp`'s bracket is over-wide, and ASYMMETRIC IN THE UNUSED DIRECTION.**
+`_irreversible_fast_expand:2028` brackets the constant-(H,p) root at `[Tt9 − 100, Tt9 + 800]`.
+Measured: the root is **always above `Tt9`**, by 0.02 K at `Tt4` = 1300 rising monotonically to
+**21.40 K** at 2300. So the 100 K below `Tt9` is never entered at all, and at most **2.7 %** of the
+800 K above it is used. That is consistent with the docstring's physics (recombination reheats, so
+`T* > Tt9`) — the measurement adds that the bracket is ~37× wider than the largest root offset.
+**No change: same transcription bar as probe 1.** Recorded because a later reader tempted to tighten
+this bracket would silently move every `V9_irrev_fast` in the slice.
+
+**PROBE 3 — the 2nd-law floor's comment is CONFIRMED, both of its numbers.** `_DS_FLOOR = -5e-3`
+(gas.py:1922) is justified by *"at the config minimum nstep (100) the worst trapezoid-truncation dS
+is ~−1e-3 (frozen limit, 2nd-order → 0); this floor clears that yet catches a pathologically coarse
+grid (nstep ≈ 10 ⇒ dS ≈ −0.1)"*. Measured:
+
+| claim | measured |
+|---|---|
+| worst dS at `nstep = 100` is ~−1e-3 | **−5.366e-04**, margin 4.46e-03 over the floor |
+| …and it is the FROZEN limit | **yes** — at `Da = 0.03`, the lowest rate probed; 8 of the 13 negative cells sit at `Tt4` = 1300 |
+| `nstep ≈ 10` ⇒ dS ≈ −0.1 | **−3.2e-02 … −7.3e-02**, and the assert FIRES at all three rates |
+
+The assert does not fire at `nstep = 20` (dS = −2.2e-04 at `Da` = 30, −2.6e-03 at 300 — negative but
+inside the floor), so the config's own `nstep ≥ 100` guard carries **5×** margin over where the floor
+actually bites. **This is the first probe in this lineage that CONFIRMS the source rather than
+correcting it, and it is recorded as such.**
+
+> **`dS` LEADS THE ORACLE.** It is a difference of two molar entropies that legitimately lands
+> NEGATIVE in **13 of 70** sweep cells at the shipped `nstep`, i.e. a near-total cancellation whose
+> sign is not even fixed. That makes it the most drift-sensitive quantity in the slice and therefore
+> the arm to lead with — slice 5's lesson (a finite difference inherits its drift from the quantity
+> differenced) and slice 4's (lead with the reader that bypasses the short-circuit), applied here.
+
+**PROBE 4 — rung 26's "to the ULP" reduce HOLDS. The first exactness claim in this lineage to
+survive.** `_freeze_out_expand:2216` says that with a CONSTANT `da_local_fn` it "reproduces
+`_finite_rate_expand(Da)` **to the ULP**". Slices C, D and E each corrected a claim of this exact
+shape (three for three), so this was pre-registered as the likely fourth. Measured over
+`Tt4 × Da × nstep` = 5 × 4 × 2 = **40 cells**: **40/40 bit-exact**, worst |ΔV9| exactly **0.0**, and
+the exit composition bit-identical species by species and in the same order. It survives `Da = 300`,
+which the source's own gate (Da ∈ {0.5, 2, 10}, one design point) never reaches. **GATE: the Rust
+must reproduce this as an equality between two RUST functions, not via the oracle** — the Python↔Rust
+dump cannot see a loop-shape error transcribed identically into both copies, and this reduce can.
+That is one of the two non-oracle gates in this slice.
+
+**PROBE 5 — the composition-ORDER hazard filed against these exact two lines is NOT LIVE, and the
+order is still load-bearing.** § 4.3's slice-A note, corrected by slice B, ends by naming
+`gas.py:1963` and `gas.py:2255` — the two hand-built `comp1 = {sp: …}` dictionaries — as **"phase 4's
+problem"**. It is now phase 4, and the question is answered by dumping rather than by reading:
+
+* `sps = list(comp)` and `list(n_eq)` are the **same list in the same order**, at every step.
+* `_equilibrium_composition` returns `[CO2, H2O, CO, H2, OH, O, H, O2, N2, Ar]` for **112 of 112**
+  probed `(far, T, p)` combinations spanning `far ∈ [0.010, 0.045]`, `T ∈ [700, 2400] K`,
+  `p ∈ [2e4, 2.5e6] Pa`. The key order is input-independent.
+* Therefore `n_eq.get(sp, 0.0)` **never fills a zero** and nothing in `n_eq` is **ever dropped**. The
+  silent-zero branch has no reachable instance from these entry points.
+
+**The hazard is discharged — but the ORDER is not free**, because `sum(comp1.values())` and
+`mix_h_abs_b` both accumulate in it and floating-point addition is not associative. **GATE: the
+oracle dumps the ordered species list as data**, and the Rust slice is built from that dump rather
+than from a list retyped by hand.
+
+**THE PORT DECISIONS.**
+
+1. **A NEW `march.rs`, and this is the module decision slice E parked.** Slice E's port decision 1
+   put rung 17 in `nox.rs` and said explicitly that phase 4's marches "are where that module
+   decision belongs — not pre-built for a phase that has not been scoped", so this is not read as
+   settled either way. It is settled now, and **against** `nox.rs`: that file is already **4,349
+   lines** and slices F+G would push it past 5,500. The dependency is strictly ONE-WAY — the marches
+   consume `mix_entropy_molar` / `mix_mass_per_air` / `mix_h_abs_b` / `expand_nozzle` /
+   `equilibrium_no_fraction`, all already `pub`, and nothing in rungs 7–24 consumes a march — so
+   there is no circular dependency to buy, which was slice E's stated reason against splitting. Rung
+   29's `shifting_turbine` is a `Gas` method, and an inherent `impl Gas` block is legal from any
+   module of the defining crate (`nox.rs` already has two). **Rung 30 goes to `components.rs`
+   regardless**, being a `Nozzle` branch.
+2. **`choked_mfp` IS NOT PORTED IN THIS PHASE.** § 5.2 assigns it to rung 31 and phase 5. Checked
+   against the tests rather than assumed: **no rung-30 test references it** (the only hit anywhere in
+   `tests/` is a comment in `test_numeric_fingerprint.py`). Shipping it under a gate made only of
+   rung-30 tests is the "untested code" case the plan warns about, so it waits for phase 5.
+3. **TWO GATES ARE NOT THE ORACLE.** Probe 4's constant-rate reduce (rung 26 → rung 25) and rung
+   28's structural reduce (`_frozen_no_trajectory` → `_coupled_no_march` reproduces
+   `_no_freeze_out_expand`, slice G) are equalities between two RUST functions. A Python↔Rust dump is
+   blind to a loop-shape error made identically in both copies; these are not. They run as named
+   gates in the rung suites, not as a byproduct of the oracle.
+4. **THREE BISECTION TOLERANCES IN ONE SLICE, and transcribing them uniformly is the defect.**
+   `1e-11 * Tm` (rungs 25/26's energy bisection), `1e-10 * T` (`_equilibrate_hp`), `1e-13 * Tm`
+   (rung 27's `_frozen_T`, and slice E's `expand_nozzle` already carries it). All three share slice
+   E's named loop shape — counted `range(200)`, midpoint at the TOP, bracket updated, break on
+   **this iteration's pre-update** midpoint, result recomputed from the final bracket AFTER the loop.
+   Each is transcribed literally and separately.
+5. **THE SLICE A–D VACUITY RETRO-AUDIT STAYS DEFERRED, deliberately.** § 4.10 (a) lists it as a
+   *candidate*, not as parked work. Folding an audit of four shipped slices into a porting phase
+   blurs two deliverables and would make phase 4's own gate ambiguous. It is not forgotten; it is
+   not phase 4.
+
 ### The rungs where a tolerance is NOT a valid substitute
 
 The finding is a **count**, and a count jumps discontinuously:
@@ -1173,7 +1387,7 @@ next starts. The tree is green at every phase boundary; there is no big-bang cut
 | **1** | ~~`gas.rs` — `FlowState`, CPG closed form, TPG NASA integrals, reacting section, Fork B, equilibrium Newton (rungs 1–6)~~ | **DONE** | ✅ **two** gates: `gas_oracle.rs` (values, **3232/3232** bit-exact vs PyPy after phase 2's fix — § 4.1 shipped it at 3196, § 4.2 says why) and `gas_spine.rs` (**reduce-to-prior**, 6 tests — § 5.1) |
 | **2** | ~~`components.rs` + `engine.rs` design point — shaft balance, `_score`; conservation checks as `assert!`~~ | **DONE** | ✅ **three** gates: `cycle_oracle.rs` (1481/1481 bit-exact vs PyPy, on 19+15 distinct solver roots — § 4.2), the 8 ported rung suites (39 tests, rungs 1–6, incl. rung 6's GATE 1), and `porting_rules.rs` |
 | **3** | NOx & mixing, rungs 7–24. **RISK-BEARING — not bulk.** These are phase 1's largest *consumer*: every one rides the equilibrium solve and `Kp = exp(−ΔG°/RuT)`, and their findings are *shapes* (the bell's peak, the minimum pinned at `C_opt`, monotone-vs-turns-back-up) that a last-digit shift in an exponential can move. Deliberately placed straight after phase 1 as the **first real test of whether the transcendental arithmetic holds**. **DONE — slices A (7/8/9/19), B (10/11/12/20), C (13/15/16/18/21), D (22/23/24) and E (14/17) all shipped**, § 4.3–4.10; the slices are grouped in § 4.3 by DEPENDENCY, not by number | 4–6 | ✅ slice A: `nox_oracle.rs` (**1806/1806** bit-exact vs PyPy on 22+22 distinct solver roots) + 4 rung suites (43 tests) · ✅ slice B: `quench_oracle.rs` (**2507/2507**, on 165 distinct trajectory roots) + 4 rung suites (39 tests), one location key NARROWING a shipped claim · ✅ slice C: `pdf_oracle.rs` (**2448/2448**, both quadrature branches asserted exercised) + 5 rung suites (59 tests); the source's own mean-preservation guard found to have an `n_quad` FLOOR, and the port gates the REJECTION as well as the acceptance (§ 4.5) · ✅ slice D: `spatial_oracle.rs` (**462/462**, incl. 28 DISCRETE keys) + 3 rung suites (43 tests); TWO source claims of exactness CORRECTED — rung 24 applies an operation inside an accumulation and removes it outside, twice (§ 4.8) | · ✅ slice E: `nozzle_oracle.rs` (**513/513**, incl. 24 DISCRETE keys) + 2 rung suites (24 tests) + 3 gates `rung20.rs` had deferred; a THIRD claim of exactness corrected (the frozen reduce is algebraic only, and its floor is the entropy ROUTE, not the bisection's stopping rule) and rung 17's firing band edge LOCATED — past it the bulk margin goes dormant while the per-pocket one RISES (§ 4.10) |
-| **4** | Nozzle & turbine marches, rungs 25–30 — own convergence behaviour, hence separate | 2–3 | per-rung tests pass |
+| **4** | Nozzle & turbine marches, rungs 25–30 — own convergence behaviour, hence separate. **AUTHORISED 2026-08-12; in three DEPENDENCY slices — F (25/26) SHIPPED, G (27/28), H (29/30)** | 2–3 | ✅ slice F: `march_oracle.rs` (**912/912** bit-exact vs PyPy, on 49 distinct march exit roots) + 2 rung suites (32 tests) in a new `march.rs`; the FOURTH "exactly"-class claim and the FIRST to survive — because it compares a COPY, not a rederivation (§ 4.12) |
 | **5** | Steady matchers — rungs 31–33, 38–39, 42, 53–56, 61. **Contains the diamond** (§ 6) | 4–6 | per-rung tests pass |
 | **6** | Transients — rungs 34–37, 40, 43–52 (the fuel-side limiter family) | 4–6 | per-rung tests pass |
 | **7** | **The ladder, rungs 57–84** — the `Hooks` table from § 2, one module per rung | 5–8 | 28/28 reduce-to-prior bit-exact |

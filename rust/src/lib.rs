@@ -44,8 +44,19 @@
 //!   the per-pocket one keeps RISING, so the rung's headline predicate is about `a_bulk` and not
 //!   about the ladder.
 //!
-//! Off-design and transient ladders arrive in phases 4–7 and leave this design run untouched, as
-//! they do in the Python.
+//! **Phase 4 — the nozzle & turbine marches (rungs 25–30) — is under way in [`march`]**, in three
+//! dependency slices:
+//!
+//! * **F — rungs 25/26 (SHIPPED)**: the Damköhler flow between rung-14's bounds, its closed-form
+//!   irreversible-fast ceiling, and the anchored GRI-Mech clock that lets the relaxation freeze
+//!   partway down the nozzle. 912/912 bit-exact — and against CPython the same dump is only 54 %
+//!   identical (velocity 3/88), because a 400-step march carries a last-bit difference all the way
+//!   to the exit. It also found a shipped test bar that holds only at the three temperatures it
+//!   was evaluated at (§ 4.12 of the plan).
+//! * **G — rungs 27/28** and **H — rungs 29/30**: next.
+//!
+//! The remaining off-design and transient ladders arrive in phases 5–7 and leave this design run
+//! untouched, as they do in the Python.
 //!
 //! # Porting rules that are NOT optional
 //!
@@ -66,4 +77,5 @@
 pub mod components;
 pub mod engine;
 pub mod gas;
+pub mod march;
 pub mod nox;
