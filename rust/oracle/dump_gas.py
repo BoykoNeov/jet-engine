@@ -114,6 +114,57 @@ for f in FAR_GRID:
     dump_section(f"react/{f!r}", react, far=f)
 
 
+# --- rung 6: the equilibrium substrate ------------------------------------------------
+# a6/a7 first, then the four molar functions built on them, then lnKp. Ordered that way on
+# purpose: if a6 is wrong, everything downstream is wrong, and this makes it obvious which.
+EQ_SPECIES = ("CO2", "H2O", "CO", "H2", "OH", "O", "H", "O2", "N2", "Ar")
+EQ_T = [800.0, 1000.0, 1500.0, 1800.0, 2200.0, 2600.0, 3000.0]
+
+for s in EQ_SPECIES:
+    put(f"a6/{s}", G._a6_of(s))
+    put(f"a7/{s}", G._a7_of(s))
+    for T in EQ_T:
+        put(f"sens_h/{s}/{T!r}", G._sens_h(s, T))
+        put(f"sens_phi/{s}/{T!r}", G._sens_phi(s, T))
+        put(f"h_molar_A/{s}/{T!r}", G._h_molar_A(s, T))
+        put(f"s_molar/{s}/{T!r}", G._s_molar(s, T))
+        put(f"g_molar/{s}/{T!r}", G._g_molar(s, T))
+        put(f"h_molar_B/{s}/{T!r}", G._h_molar_B(s, T))
+
+for i, rxn in enumerate(G._REACTIONS):
+    for T in EQ_T:
+        put(f"lnKp/{i}/{T!r}", G._lnKp(rxn, T))
+
+# The dense solve, on a fixed conditioned system. Exercises partial pivoting (row 0's
+# leading entry is NOT the column max) without depending on the equilibrium Jacobian.
+_A = [[1.0 / (i + j + 1) + (10.0 if i == j else 0.0) for j in range(8)] for i in range(8)]
+_A[0][0] = 0.5                      # force a pivot swap on the first column
+_b = [float(i + 1) for i in range(8)]
+for i, xi in enumerate(G._gauss_solve(_A, _b)):
+    put(f"gauss/{i}", xi)
+
+# --- rung 6: the equilibrium composition ------------------------------------------------
+EQ_FAR = [0.02, 0.025, 0.03]
+EQ_BURN = [(1500.0, 101325.0), (1800.0, 1000000.0), (2200.0, 2500000.0),
+           (2500.0, 2500000.0)]
+
+for (Tb, pb) in EQ_BURN:
+    for f in EQ_FAR:
+        comp = G._equilibrium_composition(f, Tb, pb)
+        for s in EQ_SPECIES:
+            put(f"equilcomp/{Tb!r}/{pb!r}/{f!r}/{s}", comp[s])
+
+# --- rung 6: the frozen equilibrium hot section ------------------------------------------
+# One section per burn condition -- reusing one across two (Tt4, pt4) trips its own guard,
+# which is the point of the guard.
+for (Tb, pb) in EQ_BURN:
+    sec = G._EquilibriumSection()
+    for f in EQ_FAR:
+        sec.freeze(f, Tb, pb)
+    for f in EQ_FAR:
+        dump_section(f"equil/{Tb!r}/{pb!r}/{f!r}", sec, far=f)
+
+
 # --- write --------------------------------------------------------------------------
 out = sys.argv[1] if len(sys.argv) > 1 else "gas_oracle.tsv"
 seen = set()

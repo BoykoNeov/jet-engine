@@ -1,9 +1,10 @@
 # The Rust port — plan
 
-**Status: DECIDED — phases 0–1 AUTHORISED, the rest is not.** The architecture is settled by
-measurement (§ 1–2); the three open forks were answered on 2026-08-12 (§ 9). Build phases 0
-and 1, then stop and re-decide: phase 1 is where the arithmetic risk concentrates, so it is
-the deliberate early exit.
+**Status: PHASES 0–1 COMPLETE AND GREEN. Phase 2 onward is NOT yet authorised.** The
+architecture is settled by measurement (§ 1–2); the three forks were answered on 2026-08-12
+(§ 9); phases 0 and 1 were then built and gated (§ 4.1). This is the deliberate early exit —
+phase 1 was chosen as the stopping point because it is where the arithmetic risk concentrates,
+and § 4.1 is the answer to the question that justified stopping here.
 
 **The ask.** The whole project in Rust — engine *and* all tests. Python may survive only as a
 **single-use oracle**: a reference implementation the Rust is validated against, then deleted.
@@ -165,6 +166,40 @@ what reduce-to-prior means — and those survive any faithful port untouched. Th
 the reduce contract is *stronger* in Rust (28/28 bit-exact by construction, § 1). Only one
 test file holds absolute values.
 
+### 4.1 What phase 1 MEASURED — the bar is far easier to clear than feared
+
+The tolerance policy is not invented. The project already ships on two interpreters (the gate
+runs PyPy, the fingerprint goldens are CPython), so whatever those two disagree by is a
+deviation the project ALREADY tolerates. The oracle therefore dumps under both, and the gap
+sets each bar. Over all 3232 gas values, rungs 1–6:
+
+| | bit-identical | |
+|---|---|---|
+| Rust vs **CPython** 3.14.3 | 1880 / 3232 | 58.17 % |
+| Rust vs **PyPy** 3.11.15 | **3196 / 3232** | **98.89 %** |
+
+**The second line is the finding.** Every forward quantity is **100 % bit-exact against
+PyPy** — `cp`, `h`, `pr`, `gamma`, `R`, the mole-weighted coefficients, the whole equilibrium
+substrate (`a6`, `a7`, the four molar functions, `lnKp`), the dense Gaussian elimination, and
+the **8-species equilibrium composition itself** — with `exp` and `log` included. Rust's
+floating-point arithmetic is not a source of drift here. It *is* PyPy's; CPython's libm is
+the outlier.
+
+The only spread left is the two safeguarded-Newton inverses (`T_from_h` 373/400, `T_from_pr`
+391/400), and that is not arithmetic either: it is `_solve`'s own `tol = 1e-11` relative
+stopping rule landing on a marginally different iterate — **three orders of magnitude above
+every other term in the gas layer.**
+
+Three consequences for the rest of the port:
+
+1. **Option B is cheaper than budgeted.** The re-anchor is not "Rust's numbers replace
+   CPython's"; it is "Rust's numbers are PyPy's numbers", and the project's gate already runs
+   on PyPy. The fingerprint's existing tolerances already absorb this exact gap.
+2. **The residual risk is the SOLVERS, not the arithmetic.** Every remaining phase should
+   budget for stopping-rule reproducibility and not for last-bit polynomial drift.
+3. **The rung-6 result de-risks phase 3.** The equilibrium solve was named the highest-risk
+   piece and came back bit-exact, which is the substrate rungs 7–24 sit on.
+
 ### The rungs where a tolerance is NOT a valid substitute
 
 The finding is a **count**, and a count jumps discontinuously:
@@ -195,8 +230,8 @@ next starts. The tree is green at every phase boundary; there is no big-bang cut
 
 | # | scope | sessions | gate |
 |---|---|---|---|
-| **0** | Cargo workspace; the oracle bridge (Python dumps JSON at named probes, a Rust test reads and compares); the per-quantity tolerance policy | 1 | bridge round-trips on a design run |
-| **1** | `gas.rs` — `FlowState`, dual-section `Gas`, CPG closed form, TPG NASA integrals, reacting, Fork B, equilibrium Newton (rungs 1–6) | 3–5 | design-point station table matches oracle |
+| **0** | ~~Cargo crate; the oracle bridge; the per-quantity tolerance policy~~ | **DONE** | ✅ 3232 values round-trip; policy DERIVED from the CPython↔PyPy gap, not invented |
+| **1** | ~~`gas.rs` — `FlowState`, CPG closed form, TPG NASA integrals, reacting section, Fork B, equilibrium Newton (rungs 1–6)~~ | **DONE** | ✅ 3196/3232 bit-exact vs PyPy; see § 4.1 |
 | **2** | `components.rs` + `engine.rs` design point — shaft balance, `_score`; conservation checks as `assert!` (they run on **every** execution, per the working contract) | 1–2 | rungs 1–6 tests pass |
 | **3** | NOx & mixing, rungs 7–24. **RISK-BEARING — not bulk.** These are phase 1's largest *consumer*: every one rides the equilibrium solve and `Kp = exp(−ΔG°/RuT)`, and their findings are *shapes* (the bell's peak, the minimum pinned at `C_opt`, monotone-vs-turns-back-up) that a last-digit shift in an exponential can move. Deliberately placed straight after phase 1 as the **first real test of whether the transcendental arithmetic holds** | 4–6 | per-rung tests pass; extremum *locations* re-checked, not just values |
 | **4** | Nozzle & turbine marches, rungs 25–30 — own convergence behaviour, hence separate | 2–3 | per-rung tests pass |

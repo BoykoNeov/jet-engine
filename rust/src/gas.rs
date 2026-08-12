@@ -1,18 +1,21 @@
 //! Working fluid: the flow state, and the dual-section gas.
 //!
-//! Port of `turbojet/gas.py` rungs 1-4 (phase 1 of docs/plans/todo-rust-port.md). The
-//! derivations live in `docs/rung3-variable-cp.md` and `docs/rung4-reacting-products.md`;
-//! what follows is the arithmetic and the reasons a line is shaped the way it is.
+//! Port of `turbojet/gas.py` rungs 1-6 (phase 1 of docs/plans/todo-rust-port.md). The
+//! derivations live in `docs/rung3-variable-cp.md`, `docs/rung4-reacting-products.md`,
+//! `docs/rung5-fork-b.md` and `docs/rung6-spec.md`; what follows is the arithmetic and the
+//! reasons a line is shaped the way it is.
 //!
 //! RUNG 3 -- variable cp(T): the thermally-perfect gas. Rungs 1-2 modelled each section as
 //! *calorically* perfect (constant gamma, cp, R). Rung 3 lets cp vary with temperature, which
 //! is the first rung where the isentropic power law Tt/Tt = (pt/pt)^g STOPS being exact, so
 //! the cycle moves to the gas-table property functions:
 //!
-//!     h(T)   = ∫_0^T cp dT'          enthalpy,          J/kg
-//!     phi(T) = ∫ cp/T dT'            entropy function,  J/(kg K)
-//!     pr(T)  = exp(phi(T)/R)         reduced pressure,  dimensionless
-//!     T_from_h, T_from_pr            the two inverses
+//! ```text
+//! h(T)   = ∫_0^T cp dT'          enthalpy,          J/kg
+//! phi(T) = ∫ cp/T dT'            entropy function,  J/(kg K)
+//! pr(T)  = exp(phi(T)/R)         reduced pressure,  dimensionless
+//! T_from_h, T_from_pr            the two inverses
+//! ```
 //!
 //! For any process 1->2, ds = phi(T2)-phi(T1) - R ln(p2/p1). Set ds = 0 and it collapses to
 //! p2/p1 = pr(T2)/pr(T1) -- every isentropic step in the cycle is ONE pr ratio.
@@ -490,6 +493,380 @@ impl ReactingSection {
     pub fn r_at(&self, far: f64) -> f64 { self.section_for(far).r }
 }
 
+// --------------------------------------------------------------------------------------
+// RUNG 6 — high-temperature dissociation + chemical equilibrium.
+//
+// The complete-combustion `products_composition(f)` is replaced (for the equilibrium gas)
+// by a T,p-coupled solve: 3 element balances (C, H, O) + 5 reaction Kp relations for the 8
+// reacting mole numbers. Kp needs g0 = h0 − T s0 on absolute enthalpy (a6) AND absolute
+// entropy (a7).
+//
+// THE DATUM RULE, and it is a requirement rather than a taste: the Kp solve uses SCALE A
+// (a6-at-298.15, formation) or the reaction ΔG° is simply wrong; the cycle burner's energy
+// balance uses SCALE B (0 K sensible + formation) so it reduces to Fork B exactly. Only the
+// datum-free composition — the mole numbers — crosses between them.
+// --------------------------------------------------------------------------------------
+
+/// The 8 unknowns. N2 and Ar are inert and carried separately.
+///
+/// ORDER IS LOAD-BEARING: it fixes the residual vector, the Jacobian columns and — through
+/// [`equilibrium_composition`] — the order [`mixture`] later sums in.
+pub const SP_REACT: [&str; 8] = ["CO2", "H2O", "CO", "H2", "OH", "O", "H", "O2"];
+
+/// Atom counts (C, H, O) per species, in [`SP_REACT`] order.
+pub const ELEM: [[f64; 3]; 8] = [
+    [1.0, 0.0, 2.0], // CO2
+    [0.0, 2.0, 1.0], // H2O
+    [1.0, 0.0, 1.0], // CO
+    [0.0, 2.0, 0.0], // H2
+    [0.0, 1.0, 1.0], // OH
+    [0.0, 0.0, 1.0], // O
+    [0.0, 1.0, 0.0], // H
+    [0.0, 0.0, 2.0], // O2
+];
+
+/// The five basis dissociation reactions (products positive), as `(species index, nu)`:
+///
+/// ```text
+/// CO2 -> CO + 1/2 O2      H2O -> H2 + 1/2 O2      H2O -> OH + 1/2 H2
+/// 1/2 O2 -> O             1/2 H2 -> H
+/// ```
+///
+/// Held as ordered slices, not maps: Python iterates its dicts in insertion order and float
+/// addition is not associative, so the term order is part of the arithmetic.
+pub const REACTIONS: [&[(usize, f64)]; 5] = [
+    &[(0, -1.0), (2, 1.0), (7, 0.5)],
+    &[(1, -1.0), (3, 1.0), (7, 0.5)],
+    &[(1, -1.0), (4, 1.0), (3, 0.5)],
+    &[(7, -0.5), (5, 1.0)],
+    &[(3, -0.5), (6, 1.0)],
+];
+
+/// `∫_0^T (cp/Ru) dT'` for one species (dimensionless), across the 1000 K join.
+pub fn sens_h(sp: &str, t: f64) -> f64 {
+    let s = species(sp);
+    if t <= T_BREAK {
+        return antideriv_h(&s.a_low, t);
+    }
+    antideriv_h(&s.a_low, T_BREAK) + antideriv_h(&s.a_high, t) - antideriv_h(&s.a_high, T_BREAK)
+}
+
+/// `∫ (cp/Ru)/T' dT'` for one species (dimensionless), across the join.
+pub fn sens_phi(sp: &str, t: f64) -> f64 {
+    let s = species(sp);
+    if t <= T_BREAK {
+        return antideriv_phi(&s.a_low, t);
+    }
+    antideriv_phi(&s.a_low, T_BREAK) + antideriv_phi(&s.a_high, t)
+        - antideriv_phi(&s.a_high, T_BREAK)
+}
+
+/// Formation constant: `H(298.15) = ΔHf` ⇒ `a6 = ΔHf/Ru − antideriv_h(A_low, 298.15)`.
+pub fn a6_of(sp: &str) -> f64 {
+    hf298(sp) / RU - antideriv_h(&species(sp).a_low, T_REF)
+}
+
+/// Absolute-entropy constant: `S(298.15) = S298` ⇒ `a7 = S298/Ru − antideriv_phi(A_low, 298.15)`.
+pub fn a7_of(sp: &str) -> f64 {
+    s298(sp) / RU - antideriv_phi(&species(sp).a_low, T_REF)
+}
+
+/// SCALE A absolute molar enthalpy (a6-at-298.15, formation), J/mol. Kp and AFT only.
+pub fn h_molar_a(sp: &str, t: f64) -> f64 {
+    RU * (sens_h(sp, t) + a6_of(sp))
+}
+
+/// Absolute standard-state molar entropy `s0(T)` at p0 = 1 bar, J/(mol K). Kp only.
+pub fn s_molar(sp: &str, t: f64) -> f64 {
+    RU * (sens_phi(sp, t) + a7_of(sp))
+}
+
+/// Absolute standard-state Gibbs energy `g0(T) = h0 − T s0`, J/mol (scale A). Kp only.
+pub fn g_molar(sp: &str, t: f64) -> f64 {
+    h_molar_a(sp, t) - t * s_molar(sp, t)
+}
+
+/// SCALE B absolute molar enthalpy (0 K sensible + formation), J/mol.
+///
+/// The burner's ENERGY-balance datum — it matches production Fork B, so the cycle reduces
+/// to it exactly.
+pub fn h_molar_b(sp: &str, t: f64) -> f64 {
+    RU * sens_h(sp, t) + hf298(sp)
+}
+
+/// `ln Kp(T) = −ΔG°(T)/(Ru T)`, with `ΔG° = Σ nu g0` (scale A, a datum-free reaction constant).
+pub fn ln_kp(rxn: &[(usize, f64)], t: f64) -> f64 {
+    let mut dg0 = 0.0f64;
+    for &(i, nu) in rxn {
+        dg0 += nu * g_molar(SP_REACT[i], t);
+    }
+    -dg0 / (RU * t)
+}
+
+/// Solve `A x = b` by Gauss-Jordan elimination with partial pivoting (small dense system).
+///
+/// The pivot search keeps Python's FIRST-maximum tie-break. Rust's `max_by` returns the LAST
+/// maximum, which would pick a different row on a tie and take the Newton down a different
+/// (still convergent, but not bit-identical) path.
+pub fn gauss_solve(a: &[Vec<f64>], b: &[f64]) -> Vec<f64> {
+    let n = a.len();
+    let mut m: Vec<Vec<f64>> = a
+        .iter()
+        .enumerate()
+        .map(|(i, row)| {
+            let mut r = row.clone();
+            r.push(b[i]);
+            r
+        })
+        .collect();
+    for c in 0..n {
+        let mut piv_row = c;
+        let mut best = m[c][c].abs();
+        for r in (c + 1)..n {
+            if m[r][c].abs() > best {
+                best = m[r][c].abs();
+                piv_row = r;
+            }
+        }
+        m.swap(c, piv_row);
+        let piv = m[c][c];
+        let prow = m[c].clone();
+        for r in 0..n {
+            if r != c && m[r][c] != 0.0 {
+                let fac = m[r][c] / piv;
+                for k in c..=n {
+                    m[r][k] -= fac * prow[k];
+                }
+            }
+        }
+    }
+    (0..n).map(|i| m[i][n] / m[i][i]).collect()
+}
+
+/// Core equilibrium solve: mole numbers of the 8 reacting species at `(T, p)`, given C/H/O
+/// atom totals and inert moles.
+///
+/// Damped Newton in `y = ln n` (which keeps `n > 0`), seeded from complete combustion; 3
+/// element balances plus 5 reaction Kp equations. Reaction `r` reads
+///
+/// ```text
+/// Σ nu_ri (y_i − ln n_tot) + dnu_r ln(p/p0) − lnKp_r = 0
+/// ```
+///
+/// with `n_tot` INCLUDING the inert species, so the mole fractions `x_i = n_i/n_tot` are
+/// right. Basis-agnostic (any `C_bC H_bH`), so the tests reuse it for the methane anchor.
+///
+/// RUNG 9 — the seed BRANCHES on the O-balance sign. The 8-species system is complete lean
+/// OR rich; only the SEED must know which side it is on. The lean branch keeps the
+/// byte-identical rung-6 expression, so every rung-1..8 path — all lean — takes an unchanged
+/// Newton trajectory and reduce-to-rung-8 is bit-for-bit by construction.
+pub fn equil_solve(
+    b_c: f64, b_h: f64, b_o: f64, n_inert: f64, t: f64, p: f64,
+) -> [f64; 8] {
+    // Seed, in SP_REACT order: CO2, H2O, CO, H2, OH, O, H, O2.
+    let seed: [f64; 8] = if b_o >= 2.0 * b_c + b_h / 2.0 {
+        // LEAN — byte-identical to the rung-6 seed (C->CO2, H->H2O, leftover O2; radicals
+        // tiny). Untouched so the whole lean cycle keeps its exact Newton path.
+        [
+            b_c.max(1e-12),
+            (b_h / 2.0).max(1e-12),
+            1e-8,
+            1e-8,
+            1e-8,
+            1e-9,
+            1e-9,
+            ((b_o - 2.0 * b_c - b_h / 2.0) / 2.0).max(1e-8),
+        ]
+    } else {
+        // RICH (rung 9) — O-limited allocation, atom-conserving: water first, then all
+        // C->CO, upgrade CO->CO2 with the O left over; any H beyond the O supply stays H2.
+        // The lean seed's O2 goes negative when rich and grossly violates the O balance, so
+        // damped Newton is fragile there; this one converges cleanly to the soot bound.
+        let n_h2o = (b_h / 2.0).min(b_o);
+        let o_left = b_o - n_h2o;
+        let n_co2 = b_c.min((o_left - b_c).max(0.0));
+        [
+            n_co2.max(1e-12),
+            n_h2o.max(1e-12),
+            (b_c - n_co2).max(1e-12),
+            (b_h / 2.0 - n_h2o).max(1e-12),
+            1e-8,
+            1e-9,
+            1e-9,
+            1e-8,
+        ]
+    };
+
+    let mut y: [f64; 8] = [0.0; 8];
+    for j in 0..8 {
+        y[j] = seed[j].ln();
+    }
+    let lnkp: Vec<f64> = REACTIONS.iter().map(|r| ln_kp(r, t)).collect();
+    let lnpr = (p / P_REF).ln();
+
+    let mut converged = false;
+    for _ in 0..200 {
+        let mut nv = [0.0f64; 8];
+        for j in 0..8 {
+            nv[j] = y[j].exp();
+        }
+        let mut ntot = 0.0f64;
+        for j in 0..8 {
+            ntot += nv[j];
+        }
+        ntot += n_inert;
+        let ln_ntot = ntot.ln();
+
+        // Residuals: 3 element balances, then the 5 reaction relations.
+        let mut f = [0.0f64; 8];
+        for (k, b) in [b_c, b_h, b_o].iter().enumerate() {
+            let mut s = 0.0f64;
+            for j in 0..8 {
+                s += ELEM[j][k] * nv[j];
+            }
+            f[k] = s - b;
+        }
+        for (ri, r) in REACTIONS.iter().enumerate() {
+            let dnu: f64 = r.iter().map(|&(_, nu)| nu).sum();
+            let mut s = 0.0f64;
+            for &(j, nu) in r.iter() {
+                s += nu * (y[j] - ln_ntot);
+            }
+            f[3 + ri] = s + dnu * lnpr - lnkp[ri];
+        }
+
+        // Jacobian dF/dy (y_j = ln n_j, so dn_j/dy_j = n_j).
+        let mut jac: Vec<Vec<f64>> = vec![vec![0.0; 8]; 8];
+        for j in 0..8 {
+            for k in 0..3 {
+                jac[k][j] = ELEM[j][k] * nv[j]; // element rows
+            }
+        }
+        for (ri, r) in REACTIONS.iter().enumerate() {
+            let dnu: f64 = r.iter().map(|&(_, nu)| nu).sum();
+            for j in 0..8 {
+                let nu = r.iter().find(|&&(i, _)| i == j).map_or(0.0, |&(_, v)| v);
+                jac[3 + ri][j] = nu - dnu * (nv[j] / ntot);
+            }
+        }
+
+        let neg: Vec<f64> = f.iter().map(|v| -v).collect();
+        let dy = gauss_solve(&jac, &neg);
+        let mut step = f64::NEG_INFINITY;
+        for d in &dy {
+            step = step.max(d.abs());
+        }
+        // Damping: cap the log-step at 1.
+        let scale = if step < 1.0 { 1.0 } else { 1.0 / step };
+        for j in 0..8 {
+            // Floor: n >= ~1e-35, for the trace species.
+            y[j] = (y[j] + scale * dy[j]).max(-80.0);
+        }
+        if step * scale < 1e-13 {
+            converged = true;
+            break;
+        }
+    }
+
+    // CONVERGENCE (rung-6 standing assert, the Newton twin of the burner's fixed-point
+    // `else: assert False`): the atom balances below can hold with the log-Kp residuals still
+    // open, so guard the FULL solve explicitly. Measured ~10-20 steps, far under 200.
+    assert!(converged,
+            "equilibrium Newton did not converge in 200 steps at (T={t}, p={p})");
+
+    let mut comp = [0.0f64; 8];
+    for j in 0..8 {
+        comp[j] = y[j].exp();
+    }
+    // ATOM CONSERVATION (rung-6 standing assert): the solver enforces C, H, O as equations,
+    // so a converged run closes them — this catches a non-converged solve.
+    let bal = |k: usize| -> f64 { (0..8).map(|j| ELEM[j][k] * comp[j]).sum() };
+    assert!((bal(0) - b_c).abs() < 1e-9 * (b_c + 1e-9), "C balance");
+    assert!((bal(1) - b_h).abs() < 1e-9 * (b_h + 1e-9), "H balance");
+    assert!((bal(2) - b_o).abs() < 1e-9 * b_o, "O balance");
+    comp
+}
+
+/// Equilibrium mole numbers per mol dry air at `(f, T, p)` for the (CH2)n fuel.
+///
+/// Returns the 8 reacting species followed by the inert N2 and Ar — the order
+/// [`mixture`] will sum in.
+pub fn equilibrium_composition(f: f64, t: f64, p: f64) -> Vec<(&'static str, f64)> {
+    let x = air_mole_fractions();
+    let xg = |name: &str| x.iter().find(|&&(s, _)| s == name).unwrap().1;
+    let n_fuel = f * m_air() / M_CH2;
+    let comp = equil_solve(n_fuel, 2.0 * n_fuel, 2.0 * xg("O2"), xg("N2") + xg("Ar"), t, p);
+    let mut out: Vec<(&'static str, f64)> =
+        SP_REACT.iter().enumerate().map(|(j, &s)| (s, comp[j])).collect();
+    out.push(("N2", xg("N2")));
+    out.push(("Ar", xg("Ar")));
+    out
+}
+
+/// A hot section whose composition is the EQUILIBRIUM mixture at the burner's `(Tt4, pt4)`,
+/// FROZEN through the turbine and nozzle (rung 6, frozen-downstream).
+///
+/// Like [`ReactingSection`] it delegates to a memoised per-`far` [`TpgSection`], so `R_t`
+/// tracks the dissociation mole-count shift — but the composition comes from the equilibrium
+/// solve, so **the burner must [`freeze`](Self::freeze) before any downstream call.** The
+/// `(Tt4, pt4)` is baked in at freeze time; downstream calls key on `far` alone, because the
+/// frozen mixture does not depend on the evaluation temperature (the turbine asks at Tt5, the
+/// nozzle at T9).
+///
+/// Reusing one gas across two burn configs at the same `far` but different `(Tt4, pt4)` trips
+/// the guard. That restores "pure function of far for a fixed burn config" — no hidden state.
+#[derive(Debug, Default)]
+pub struct EquilibriumSection {
+    cache: RefCell<Vec<(u64, TpgSection)>>,
+    comp: RefCell<Vec<(u64, Vec<(&'static str, f64)>)>>,
+    burn: RefCell<Option<(f64, f64)>>,
+}
+
+impl Clone for EquilibriumSection {
+    fn clone(&self) -> Self { EquilibriumSection::default() }
+}
+
+impl EquilibriumSection {
+    pub fn new() -> Self { Self::default() }
+
+    pub fn freeze(&self, far: f64, t_burn: f64, p_burn: f64) -> Vec<(&'static str, f64)> {
+        {
+            let mut burn = self.burn.borrow_mut();
+            match *burn {
+                None => *burn = Some((t_burn, p_burn)),
+                Some((t0, p0)) => assert!(
+                    (t0 - t_burn).abs() < 1e-9 * t_burn && (p0 - p_burn).abs() < 1e-6 * p_burn,
+                    "equilibrium section: burn condition changed on a reused Gas \
+                     (had {t0}, {p0}; got {t_burn}, {p_burn})"),
+            }
+        }
+        let key = far.to_bits();
+        if !self.cache.borrow().iter().any(|&(k, _)| k == key) {
+            let comp = equilibrium_composition(far, t_burn, p_burn);
+            let (a_low, a_high, r) = mixture(&comp);
+            self.cache.borrow_mut().push((key, TpgSection::new(a_low, a_high, r)));
+            self.comp.borrow_mut().push((key, comp));
+        }
+        self.comp.borrow().iter().find(|&&(k, _)| k == key).unwrap().1.clone()
+    }
+
+    fn section_for(&self, far: f64) -> TpgSection {
+        let key = far.to_bits();
+        let hit = self.cache.borrow().iter().find(|&&(k, _)| k == key).map(|&(_, s)| s);
+        hit.unwrap_or_else(|| panic!(
+            "equilibrium hot section not frozen for far={far}: the burner must run \
+             (freeze the station-4 mixture) before any downstream property call"))
+    }
+
+    pub fn cp(&self, t: f64, far: f64) -> f64 { self.section_for(far).cp(t) }
+    pub fn h(&self, t: f64, far: f64) -> f64 { self.section_for(far).h(t) }
+    pub fn pr(&self, t: f64, far: f64) -> f64 { self.section_for(far).pr(t) }
+    pub fn t_from_h(&self, h: f64, far: f64) -> f64 { self.section_for(far).t_from_h(h) }
+    pub fn t_from_pr(&self, pr: f64, far: f64) -> f64 { self.section_for(far).t_from_pr(pr) }
+    pub fn gamma_at(&self, t: f64, far: f64) -> f64 { self.section_for(far).gamma_at(t) }
+    pub fn r_at(&self, far: f64) -> f64 { self.section_for(far).r }
+}
+
 /// The one property interface components call. They never see which kind they hold.
 ///
 /// Python spells this as three classes with a shared duck-typed interface plus an ignored
@@ -499,6 +876,7 @@ pub enum Section {
     Cpg(CpgSection),
     Tpg(TpgSection),
     Reacting(ReactingSection),
+    Equilibrium(EquilibriumSection),
 }
 
 impl Section {
@@ -509,6 +887,7 @@ impl Section {
             Section::Cpg(s) => s.cp(t),
             Section::Tpg(s) => s.cp(t),
             Section::Reacting(s) => s.cp(t, far),
+            Section::Equilibrium(s) => s.cp(t, far),
         }
     }
     pub fn h(&self, t: f64, far: f64) -> f64 {
@@ -516,6 +895,7 @@ impl Section {
             Section::Cpg(s) => s.h(t),
             Section::Tpg(s) => s.h(t),
             Section::Reacting(s) => s.h(t, far),
+            Section::Equilibrium(s) => s.h(t, far),
         }
     }
     pub fn pr(&self, t: f64, far: f64) -> f64 {
@@ -523,6 +903,7 @@ impl Section {
             Section::Cpg(s) => s.pr(t),
             Section::Tpg(s) => s.pr(t),
             Section::Reacting(s) => s.pr(t, far),
+            Section::Equilibrium(s) => s.pr(t, far),
         }
     }
     pub fn t_from_h(&self, h: f64, far: f64) -> f64 {
@@ -530,6 +911,7 @@ impl Section {
             Section::Cpg(s) => s.t_from_h(h),
             Section::Tpg(s) => s.t_from_h(h),
             Section::Reacting(s) => s.t_from_h(h, far),
+            Section::Equilibrium(s) => s.t_from_h(h, far),
         }
     }
     pub fn t_from_pr(&self, pr: f64, far: f64) -> f64 {
@@ -537,6 +919,7 @@ impl Section {
             Section::Cpg(s) => s.t_from_pr(pr),
             Section::Tpg(s) => s.t_from_pr(pr),
             Section::Reacting(s) => s.t_from_pr(pr, far),
+            Section::Equilibrium(s) => s.t_from_pr(pr, far),
         }
     }
     pub fn gamma_at(&self, t: f64, far: f64) -> f64 {
@@ -544,6 +927,7 @@ impl Section {
             Section::Cpg(s) => s.gamma_at(t),
             Section::Tpg(s) => s.gamma_at(t),
             Section::Reacting(s) => s.gamma_at(t, far),
+            Section::Equilibrium(s) => s.gamma_at(t, far),
         }
     }
     pub fn r_at(&self, far: f64) -> f64 {
@@ -551,6 +935,7 @@ impl Section {
             Section::Cpg(s) => s.r_at(),
             Section::Tpg(s) => s.r_at(),
             Section::Reacting(s) => s.r_at(far),
+            Section::Equilibrium(s) => s.r_at(far),
         }
     }
 }

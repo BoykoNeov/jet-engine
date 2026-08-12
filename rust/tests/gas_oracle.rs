@@ -2,19 +2,24 @@
 //!
 //! The bars below are not invented. The project already ships on two interpreters (the test
 //! gate runs PyPy, the fingerprint goldens are CPython), so whatever those two disagree by is
-//! a deviation the project ALREADY tolerates. Measured on this exact dump, 1465 values:
+//! a deviation the project ALREADY tolerates. That gap sets each bar.
 //!
-//!     quantity              keys  differing   worst rel
-//!     T_from_h               208        103    9.90e-12
-//!     T_from_pr              208        148    8.91e-12
-//!     pr                     208        124    1.78e-14
-//!     cp / h / gamma / A / R  ~365       ~275   <= 7.28e-16
-//!     const / air_x / comp / hf_prod  72    0    0 (bit-identical)
+//! Measured over all 3232 values, rungs 1-6:
 //!
-//! The dominant error in the whole gas layer is not arithmetic — it is `solve`'s own
-//! `tol = 1e-11` relative stopping rule, three orders of magnitude above everything else.
-//! So the inverses get a loose bar and the forward polynomial a tight one, and the split is
-//! the finding, not a convenience.
+//!     Rust vs CPython 3.14.3    1880 / 3232 bit-identical (58.17 %)
+//!     Rust vs PyPy 3.11.15      3196 / 3232 bit-identical (98.89 %)
+//!
+//! and the second line is the finding. Every forward quantity — cp, h, pr, gamma, R, the
+//! mole-weighted coefficients, the equilibrium substrate (a6, a7, the four molar functions,
+//! lnKp), the dense elimination, and the 8-species equilibrium COMPOSITION — is 100 %
+//! bit-exact against PyPy, `exp`/`log` included. Rust's arithmetic is not a source of drift
+//! here; it IS PyPy's, and CPython's libm is the outlier.
+//!
+//! The only spread left is the two safeguarded-Newton inverses (`T_from_h` 373/400,
+//! `T_from_pr` 391/400), and it is not arithmetic either — it is `solve`'s own `tol = 1e-11`
+//! relative stopping rule landing on a marginally different iterate, three orders of
+//! magnitude above every other term. So the inverses get a loose bar and everything else a
+//! tight one, and that split is the finding rather than a convenience.
 //!
 //! Regenerate the oracle with:
 //!     C:\Python314\python.exe rust/oracle/dump_gas.py rust/oracle/gas_cpython.tsv
@@ -138,6 +143,74 @@ fn rust_values() -> Vec<(String, f64)> {
         dump_section(&format!("react/{fl}"), &react, f, &mut v);
     }
 
+    // --- rung 6: the equilibrium substrate ----------------------------------------------
+    // a6/a7 first, then the four molar functions built on them, then lnKp: if a6 is wrong,
+    // everything downstream is wrong, and this ordering makes it obvious which.
+    const EQ_SPECIES: [&str; 10] =
+        ["CO2", "H2O", "CO", "H2", "OH", "O", "H", "O2", "N2", "Ar"];
+    const EQ_T: [(&str, f64); 7] = [("800.0", 800.0), ("1000.0", 1000.0), ("1500.0", 1500.0),
+        ("1800.0", 1800.0), ("2200.0", 2200.0), ("2600.0", 2600.0), ("3000.0", 3000.0)];
+
+    for s in EQ_SPECIES {
+        v.push((format!("a6/{s}"), a6_of(s)));
+        v.push((format!("a7/{s}"), a7_of(s)));
+        for (tl, t) in EQ_T {
+            v.push((format!("sens_h/{s}/{tl}"), sens_h(s, t)));
+            v.push((format!("sens_phi/{s}/{tl}"), sens_phi(s, t)));
+            v.push((format!("h_molar_A/{s}/{tl}"), h_molar_a(s, t)));
+            v.push((format!("s_molar/{s}/{tl}"), s_molar(s, t)));
+            v.push((format!("g_molar/{s}/{tl}"), g_molar(s, t)));
+            v.push((format!("h_molar_B/{s}/{tl}"), h_molar_b(s, t)));
+        }
+    }
+    for (i, rxn) in REACTIONS.iter().enumerate() {
+        for (tl, t) in EQ_T {
+            v.push((format!("lnKp/{i}/{tl}"), ln_kp(rxn, t)));
+        }
+    }
+
+    // The dense solve, on the same fixed conditioned system the dumper uses. Row 0's leading
+    // entry is forced BELOW the column max so partial pivoting actually swaps.
+    let mut ga: Vec<Vec<f64>> = (0..8)
+        .map(|i| (0..8).map(|j| 1.0 / ((i + j + 1) as f64) + if i == j { 10.0 } else { 0.0 })
+             .collect())
+        .collect();
+    ga[0][0] = 0.5;
+    let gb: Vec<f64> = (0..8).map(|i| (i + 1) as f64).collect();
+    for (i, xi) in gauss_solve(&ga, &gb).into_iter().enumerate() {
+        v.push((format!("gauss/{i}"), xi));
+    }
+
+    // --- rung 6: the equilibrium composition and the frozen hot section ------------------
+    const EQ_FAR: [(&str, f64); 3] = [("0.02", 0.02), ("0.025", 0.025), ("0.03", 0.03)];
+    const EQ_BURN: [(&str, f64, &str, f64); 4] = [
+        ("1500.0", 1500.0, "101325.0", 101325.0),
+        ("1800.0", 1800.0, "1000000.0", 1000000.0),
+        ("2200.0", 2200.0, "2500000.0", 2500000.0),
+        ("2500.0", 2500.0, "2500000.0", 2500000.0),
+    ];
+
+    for (tbl, tb, pbl, pb) in EQ_BURN {
+        for (fl, f) in EQ_FAR {
+            let comp = equilibrium_composition(f, tb, pb);
+            for (s, n) in comp {
+                v.push((format!("equilcomp/{tbl}/{pbl}/{fl}/{s}"), n));
+            }
+        }
+    }
+    // One section per burn condition — reusing one across two (Tt4, pt4) trips its own
+    // guard, which is the point of the guard.
+    for (tbl, tb, pbl, pb) in EQ_BURN {
+        let eq = EquilibriumSection::new();
+        for (_, f) in EQ_FAR {
+            eq.freeze(f, tb, pb);
+        }
+        let sec = Section::Equilibrium(eq);
+        for (fl, f) in EQ_FAR {
+            dump_section(&format!("equil/{tbl}/{pbl}/{fl}"), &sec, f, &mut v);
+        }
+    }
+
     for (k, x) in &v {
         assert!(x.is_finite(), "{k} is not finite: {x}");
     }
@@ -153,11 +226,12 @@ fn quant_of(key: &str) -> &'static str {
             return q;
         }
     }
-    match key.split('/').next() {
-        Some("const") => "const",
-        Some("air_x") => "air_x",
-        _ => "other",
-    }
+    // Families keyed only by their leading segment. Listed explicitly rather than returned
+    // as a slice of the key so the classifier can never invent a class from a typo.
+    const FAM: &[&str] = &["const", "air_x", "a6", "a7", "sens_h", "sens_phi", "h_molar_A",
+                           "s_molar", "g_molar", "h_molar_B", "lnKp", "gauss", "equilcomp"];
+    let lead = key.split('/').next().unwrap_or("");
+    FAM.iter().find(|f| **f == lead).copied().unwrap_or("other")
 }
 
 /// The bar for each class, from the measured CPython↔PyPy spread (see the module header).
@@ -167,6 +241,12 @@ fn bar_for(quant: &str) -> f64 {
         "T_from_h" | "T_from_pr" => 2.0e-11,
         // exp() dominates; the two interpreters differ by 1.78e-14 here.
         "pr" => 1.0e-13,
+        // The rung-6 Newton's OUTPUT — the 8-species damped solve with a dense inner
+        // elimination. Opened at 1e-9 because its reproducibility was a question to be
+        // MEASURED rather than predicted, then closed onto the measurement: 1.84e-15 against
+        // CPython and 120/120 BIT-EXACT against PyPy. The bar is the measurement plus ~5x,
+        // not the guess.
+        "equilcomp" => 1.0e-14,
         // Pure polynomial / mole-weighting: the interpreters agree to 1-3 ULP.
         _ => 1.0e-15,
     }
@@ -235,7 +315,7 @@ fn compare_against(oracle_text: &str, label: &str) {
     }
     let total: usize = rows.iter().map(|r| r.1 .0).sum();
     let exact: usize = rows.iter().map(|r| r.1 .1).sum();
-    println!("\n{exact} / {total} bit-identical to CPython ({:.2}%)",
+    println!("\n{exact} / {total} bit-identical to {label} ({:.2}%)",
              100.0 * exact as f64 / total as f64);
     for (q, (_, _, worst, key)) in &rows {
         if *worst > 0.0 {
