@@ -1,14 +1,15 @@
 # The Rust port — plan
 
 **Status: PHASES 0–2 COMPLETE AND GREEN; PHASE 3 IN PROGRESS — SLICES A (rungs 7/8/9/19),
-B (rungs 10/11/12/20) AND C (rungs 13/15/16/18/21) DONE.**
+B (rungs 10/11/12/20), C (rungs 13/15/16/18/21) AND D (rungs 22/23/24) DONE; only the nozzle
+strand (14/17) remains.**
 The architecture is settled by measurement (§ 1–2); the three forks were answered on 2026-08-12
 (§ 9); phases 0–2 were then built and gated (§ 4.1, § 4.2). Phase 1 was the first deliberate
 stopping point because it is where the arithmetic risk concentrates; phase 2 was authorised
 separately and **corrected phase 1's central diagnosis** — see § 4.2, which is the answer to
 the question phase 1 thought it had already answered. Phase 3 was authorised on 2026-08-12 and
 is being taken in slices, because at 2,745 source lines and 204 tests it is the largest phase
-in the port; § 4.3 records slice A, § 4.4 slice B, § 4.5 slice C.
+in the port; § 4.3 records slice A, § 4.4 slice B, § 4.5 slice C, § 4.7–4.8 slice D.
 
 **The ask.** The whole project in Rust — engine *and* all tests. Python may survive only as a
 **single-use oracle**: a reference implementation the Rust is validated against, then deleted.
@@ -296,8 +297,8 @@ much later than rung 19:
 |---|---|---|
 | ~~the finite-rate quench~~ | ~~10, 11, 12, **20**~~ | **DONE — § 4.4** |
 | ~~the PDF family~~ | ~~13, 15, 16, 18, **21**~~ | **DONE — § 4.5** |
-| the nozzle strand | 14, 17 | independent of the mixing closures — portable at any point |
-| the resolved cross-plane | 22, 23, 24 | rung 13's bell **(now ported — `nox::bell_interpolator`)**; otherwise self-contained |
+| ~~the resolved cross-plane~~ | ~~22, 23, 24~~ | **DONE — § 4.7 (pre-registration), § 4.8 (measurement)** |
+| the nozzle strand | 14, 17 | independent of the mixing closures — portable at any point; **the last of phase 3**, and it lands next to phase 4, whose rung 25 brackets against rung 14's bounds |
 
 Slice B leaves the quench machinery (`quench_trajectory` / `quench_no` / `JetMixing` /
 `Unmixedness`) in place, which is what rungs 15 and 16 build their dwell chain on — so the PDF
@@ -552,6 +553,93 @@ false`, which is the reduce contract rather than the stale assertion. The no-edi
 correctly scoped to the oracle: the Rust is not the oracle, so text there can and should be fixed
 on sight.
 
+### 4.8 What phase 3 SLICE D MEASURED — 100 % again, and TWO "exact" claims corrected
+
+Slice D is rungs **22 / 23 / 24**: the resolved y-z cross-plane, that plane developed in TIME so
+each pocket carries its own dwell, and the same plane with each cell relaxing at its own
+gradient-derived rate. It ships the closures in `rust/src/nox.rs`, the oracle
+`rust/oracle/dump_spatial.py`, and four gates — three rung suites (43 tests) plus
+`spatial_oracle.rs` (5). The Rust suite is now **265 tests**.
+
+| | bit-identical vs PyPy | vs CPython |
+|---|---|---|
+| spatial oracle (462 values) | **462 / 462 (100 %)** | 241 / 462 (**52.2 %**) |
+
+**All 10 location keys and all 28 DISCRETE keys are identical on BOTH interpreters** — the split
+every slice has found, now with a new class on the exact-zero side.
+
+| class | keys | CPython↔PyPy | what it is |
+|---|---|---|---|
+| `cross_plane_algebra` | 30 | **0.00e0** | penetration, the Holdeman group, the derived optimum |
+| `shape_location` | 10 | **0.00e0** | every argmin / argmax index |
+| `discrete` | 28 | **0.00e0** | τ(ξ) knot counts and the stagnant-branch census |
+| `residual` (ABS) | 33 | 2.19e-16 | the two reduce residuals and the τ_mix cancellation |
+| `dp` / `zn` | 150 | ≤4.4e-15 | the design points and the public wiring |
+| `field` | 151 | ≤6.1e-13 | the resolved fields and everything read off them |
+| `spectrum` | 60 | ≤1.0e-12 | the τ(ξ) interpolators and their β-PDF means |
+
+**THE HEADLINE IS THAT TWO SOURCE CLAIMS OF EXACTNESS ARE BACKWARDS OR WRONG, FOR ONE REASON.**
+Rung 24 applies an operation INSIDE an accumulation and removes it OUTSIDE, twice:
+
+1. **The `g` reduce** — § 4.7's pre-registered measurement, confirmed by the port. Rung 23 is
+   EXACT, rung 24 is not, and the whole ~1e-17 is `sum(sum(r) for r in xi)` against rung 22's flat
+   pass. Substituting a flat mean reproduces rung 22 bit-for-bit at every point measured.
+2. **The `τ_mix` cancellation** — found DURING the port, not pre-registered. The docstring says
+   `⟨τ⟩ = τ_mix·F(C)` **EXACTLY**; production forms `Σ(τ_mix·X_i)` and divides the mean by `τ_mix`
+   afterwards instead of scaling once, so `F` moves by up to 2.4e-14 relative across three decades
+   of `τ_mix`. Algebraically exact, arithmetically not.
+
+Both are gated **from both sides** — the port must reproduce the inexactness, because tidying
+either into its exact form would be MORE accurate than the source and is therefore a defect.
+
+**FOUR FURTHER FINDINGS.**
+
+3. **RUNG 24's `u < 1e-8` BRANCH IS THE INVERSE OF RUNG 20's FLOOR.** Rung 20's flame-band clip
+   never binds at the shipped design point and needed a second, cooler one before its gate meant
+   anything. This one is taken by **18–50 % of cells** at every J, because the β-clip creates
+   large exactly-flat plateaus where `|∇ξ|²` is precisely zero. Its census is a DISCRETE key,
+   U-shaped with its minimum at `C_opt` — recorded as CORROBORATION of `F`'s U and explicitly NOT
+   as a second kill test, because `u` carries the same `1/var` coupling that makes
+   "argmin F == argmin g" circular. The g-free witness stays `⟨|∇ξ|²⟩`.
+4. **A RELATIVE BAR IS THE WRONG CURRENCY FOR A RESIDUAL, AND IT FAILED LOUDLY.** The CPython arm
+   reported a worst relative disagreement of **1.60** on `d24/n16/J1.0` — a difference of two
+   nearly-equal numbers, where the operands' last bits set the whole answer. Those keys are now
+   compared ABSOLUTELY (measured worst 2.19e-16). Same lesson the golden fingerprint gate learned
+   from the other side.
+5. **AN INVENTED BAR FAILED INSIDE THE HOUR, TWICE.** A 1e-14 relative bar on the rung-24 residual
+   (measured 1.10e-14) and a 1.05 clearance bar on the g-free witness's peak (measured **1.0137** —
+   the peak clears its low neighbour by 1.4 %, the thinnest margin any location key in this slice
+   carries). The second fix is the instructive one: the peak was widened onto a **4× grid** where
+   the clearances become 19.5 % and 47.8 %, rather than the bar being loosened. **A location key
+   that sits close to its neighbours needs a coarser grid, never a looser bar** — slice C's rule,
+   applied a second time and now on a kill test rather than on a hump.
+6. **MY OWN FIRST GATE OVER-CLAIMED, AND THE WIDER SWEEP CAUGHT IT.** The first version of the
+   reduce gate swept 3 J × 3 grids, found rung 24 inexact 9/9, and stated "never bit-equal" as a
+   law. The oracle's wider sweep (adding `ny=16` and `J ∈ {1, 400}`) found **two points where the
+   two summation orders round together**. Fifth consecutive slice where sweeping past the first
+   gate written changed what could be claimed.
+
+**THE THIRD AND FOURTH VACUITY CASES, both declined rather than transcribed.** § 4.7 pre-registered
+`test_no_C_opt_knob_it_is_derived` (a `TypeError` that in Rust is a compile error); rung 23's
+`test_helper_matches_production` is the fourth, and the direct twin of rung 16's from slice C. Both
+are replaced by statements the Python cannot make: `c_opt()` TRACKING `1/(4k_p²)` as `k_p` moves
+with the argmin following it, and — for rung 23 — that a CONSTANT `TauSpectrum` reproduces the
+scalar path bit-for-bit (the new `Dwell` enum's own reduce) and that the matched-mean arm IS rung
+16's closure at a derived scalar. All four can fail; the transcriptions could not.
+
+**A GRID CONVENTION AND A CROSS-SLICE INTERACTION, both recorded because they will recur.** The
+three configs ship DIFFERENT default grids (22 → 48/48, 23 → 40/40, 24 → 48/48), so any comparison
+of two closures' `g` at defaults fails for a reason that is not a defect; every such comparison
+passes grids explicitly and says so. And **slice C's `n_quad` floor binds inside slice D**: the two
+gates that sweep `J` wide enough for the resolved width to reach the top of the `g` range panic
+inside the quadrature's own mean-preservation guard at `n_quad = 64`, and run at 160.
+
+**One more grid distinction, which is the rung's own physics rather than a porting detail.** Rung
+22's WIDTH minimum is broad, so a ~2× coarse grid locates it safely; its EMISSIONS minimum is
+NARROW, because the derived floor sits just below the ideal-bell hump peak. Probed at J=36 instead
+of 25 the emissions reading is monotone (1.1860 / 1.1767 / 1.1639) — a true statement about a
+different question. Two quantities, two grids, and the reason is in the spec.
+
 ### 4.7 SLICE D (rungs 22/23/24) — PRE-REGISTERED before any code was written
 
 Recorded here **before** the port, because three of the four decisions below are vacuity traps of a
@@ -694,7 +782,7 @@ next starts. The tree is green at every phase boundary; there is no big-bang cut
 | **0** | ~~Cargo crate; the oracle bridge; the per-quantity tolerance policy~~ | **DONE** | ✅ 3232 values round-trip; policy DERIVED from the CPython↔PyPy gap, not invented |
 | **1** | ~~`gas.rs` — `FlowState`, CPG closed form, TPG NASA integrals, reacting section, Fork B, equilibrium Newton (rungs 1–6)~~ | **DONE** | ✅ **two** gates: `gas_oracle.rs` (values, **3232/3232** bit-exact vs PyPy after phase 2's fix — § 4.1 shipped it at 3196, § 4.2 says why) and `gas_spine.rs` (**reduce-to-prior**, 6 tests — § 5.1) |
 | **2** | ~~`components.rs` + `engine.rs` design point — shaft balance, `_score`; conservation checks as `assert!`~~ | **DONE** | ✅ **three** gates: `cycle_oracle.rs` (1481/1481 bit-exact vs PyPy, on 19+15 distinct solver roots — § 4.2), the 8 ported rung suites (39 tests, rungs 1–6, incl. rung 6's GATE 1), and `porting_rules.rs` |
-| **3** | NOx & mixing, rungs 7–24. **RISK-BEARING — not bulk.** These are phase 1's largest *consumer*: every one rides the equilibrium solve and `Kp = exp(−ΔG°/RuT)`, and their findings are *shapes* (the bell's peak, the minimum pinned at `C_opt`, monotone-vs-turns-back-up) that a last-digit shift in an exponential can move. Deliberately placed straight after phase 1 as the **first real test of whether the transcendental arithmetic holds**. **IN PROGRESS — slices A (7/8/9/19), B (10/11/12/20) and C (13/15/16/18/21) DONE**, § 4.3–4.5; the two remaining slices are grouped in § 4.3 by DEPENDENCY, not by number | 4–6 | ✅ slice A: `nox_oracle.rs` (**1806/1806** bit-exact vs PyPy on 22+22 distinct solver roots) + 4 rung suites (43 tests) · ✅ slice B: `quench_oracle.rs` (**2507/2507**, on 165 distinct trajectory roots) + 4 rung suites (39 tests), one location key NARROWING a shipped claim · ✅ slice C: `pdf_oracle.rs` (**2448/2448**, both quadrature branches asserted exercised) + 5 rung suites (59 tests); the source's own mean-preservation guard found to have an `n_quad` FLOOR, and the port gates the REJECTION as well as the acceptance (§ 4.5) |
+| **3** | NOx & mixing, rungs 7–24. **RISK-BEARING — not bulk.** These are phase 1's largest *consumer*: every one rides the equilibrium solve and `Kp = exp(−ΔG°/RuT)`, and their findings are *shapes* (the bell's peak, the minimum pinned at `C_opt`, monotone-vs-turns-back-up) that a last-digit shift in an exponential can move. Deliberately placed straight after phase 1 as the **first real test of whether the transcendental arithmetic holds**. **IN PROGRESS — slices A (7/8/9/19), B (10/11/12/20), C (13/15/16/18/21) and D (22/23/24) DONE**, § 4.3–4.8; only the nozzle strand (14/17) remains, and the slices are grouped in § 4.3 by DEPENDENCY, not by number | 4–6 | ✅ slice A: `nox_oracle.rs` (**1806/1806** bit-exact vs PyPy on 22+22 distinct solver roots) + 4 rung suites (43 tests) · ✅ slice B: `quench_oracle.rs` (**2507/2507**, on 165 distinct trajectory roots) + 4 rung suites (39 tests), one location key NARROWING a shipped claim · ✅ slice C: `pdf_oracle.rs` (**2448/2448**, both quadrature branches asserted exercised) + 5 rung suites (59 tests); the source's own mean-preservation guard found to have an `n_quad` FLOOR, and the port gates the REJECTION as well as the acceptance (§ 4.5) · ✅ slice D: `spatial_oracle.rs` (**462/462**, incl. 28 DISCRETE keys) + 3 rung suites (43 tests); TWO source claims of exactness CORRECTED — rung 24 applies an operation inside an accumulation and removes it outside, twice (§ 4.8) |
 | **4** | Nozzle & turbine marches, rungs 25–30 — own convergence behaviour, hence separate | 2–3 | per-rung tests pass |
 | **5** | Steady matchers — rungs 31–33, 38–39, 42, 53–56, 61. **Contains the diamond** (§ 6) | 4–6 | per-rung tests pass |
 | **6** | Transients — rungs 34–37, 40, 43–52 (the fuel-side limiter family) | 4–6 | per-rung tests pass |

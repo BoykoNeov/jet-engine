@@ -32,10 +32,15 @@
 //! * **C — rungs 13/15/16/18/21**: the mixture-fraction PDF family — the β-PDF closure on the
 //!   ideal bell, through the quench, per pocket, from a transported variance ODE, and the lift
 //!   threaded through all of them. 2448/2448 bit-exact.
+//! * **D — rungs 22/23/24**: the resolved y-z cross-plane, that plane developed in TIME so each
+//!   pocket carries its own dwell, and the same plane with each cell relaxing at its own
+//!   gradient-derived rate. 462/462 bit-exact — and it CORRECTED two of the source's own claims
+//!   of exactness, both caused by applying an operation inside an accumulation and removing it
+//!   outside (see `nox`'s cross-plane section note).
 //!
-//! Remaining: the nozzle strand (rungs 14/17, independent of the mixing closures and portable at
-//! any point) and the resolved cross-plane (22/23/24). Off-design and transient ladders arrive in
-//! phases 5–7 and leave this design run untouched, as they do in the Python.
+//! Remaining in phase 3: only the nozzle strand (rungs 14/17), independent of the mixing closures
+//! and portable at any point. Off-design and transient ladders arrive in phases 5–7 and leave this
+//! design run untouched, as they do in the Python.
 //!
 //! # Porting rules that are NOT optional
 //!

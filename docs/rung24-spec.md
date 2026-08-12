@@ -146,3 +146,32 @@ question rung 23 asked — *does a locally-resolved rate pin the emissions optim
 is real and it is not enough,"** which neither "yes" nor "no" would have said. What rung 24 **cannot** claim
 (the magnitude, the emissions global-min, a locally-resolved *scale*, a firing magnitude for rung 17) it says
 as loudly as what it can — and it **corrects** rung-23 §9's hope rather than inheriting it.
+
+## Two "EXACTLY"s on this page are exact in ALGEBRA and not in ARITHMETIC — found by the Rust port
+
+Both statements above that use the word *exactly* are true of the equations and false of the
+floating-point code, for **one shared reason**: `_spatial_local_field` applies an operation INSIDE an
+accumulation and removes it OUTSIDE. Neither is a bug — the errors are at the 1e-14 level and nothing
+in the rung's findings moves — but both are **over-stated as written**, and the port's bit-equality bar
+is what surfaced them.
+
+1. **"the terminal field is rung-22's EXACTLY ⇒ `g` is IDENTICAL BY CONSTRUCTION — not to a
+   tolerance (contrast rung-23's, which re-derives it and matches to <1%)".** Measured at
+   J ∈ {4, 16, 100} × `ny=nz` ∈ {32, 40, 48}: **the pairing is backwards.** Rung 23's `g` is
+   *exactly* equal to rung 22's at every point; rung 24's *never* is (≤1.9e-16). Rung 23 reaches the
+   terminal field through `_plume(1.0)`, whose `1.0**(1/3)` and `sqrt(1.0)` are exactly 1, and then
+   accumulates flat exactly as rung 22 does. Rung 24 computes
+   `mean = sum(sum(r) for r in xi)` — a **hierarchical** sum — while `meansq` two lines later is
+   **flat**; substituting a flat mean reproduces rung 22 bit-for-bit. That one line is the entire
+   difference.
+2. **"`τ_mix` CANCELS out of `u` … so `⟨τ⟩(J) = τ_mix(J)·F(C)` EXACTLY".** The cancellation is
+   algebraically complete, but the code forms `tsum = Σ(τ_mix·τ_cell_shape)` and then divides the
+   mean by `τ_mix`, rather than accumulating the shape and scaling once. Measured across three
+   decades of `τ_mix`, `F` moves by up to 2.4e-14 relative.
+
+**Recorded, not edited.** Same call slices B and C made about rung 12's and rung 21's docstrings:
+changing the ported source mid-port would put the Python oracle and its own description out of step
+for a reason unrelated to the physics. The **Rust** states the measured position instead, and its
+gates assert the inexactness from both sides — a port that "tidied" either sum into its exact form
+would be *more accurate than this rung* and is therefore a defect.
+`docs/plans/todo-rust-port.md` § 4.7–4.8.
