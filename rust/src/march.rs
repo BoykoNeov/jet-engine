@@ -59,7 +59,10 @@
 //! * Every accumulation runs in the composition's own order; `f64` addition is not associative.
 
 use crate::gas::{equilibrium_composition, powp, Gas, RU};
-use crate::nox::{expand_nozzle, mix_entropy_molar, mix_h_abs_b, mix_mass_per_air, T_EXIT_FLOOR};
+use crate::nox::{
+    equilibrium_no_fraction, expand_nozzle, k_zeldovich, mix_entropy_molar, mix_h_abs_b,
+    mix_mass_per_air, ZonedNoxOpts, T_EXIT_FLOOR,
+};
 
 // ------------------------------------------------------------------------------------------- //
 // Rung 25 — FINITE-RATE nozzle chemistry (the Damköhler flow BETWEEN rung-14's bounds)
@@ -819,6 +822,764 @@ impl Gas {
             da_exit,
             co_fraction_entry: co_fraction(&comp_entry),
             co_fraction_freeze_exit: co_fraction(&d.comp9),
+        }
+    }
+}
+
+// ------------------------------------------------------------------------------------------- //
+// Rung 27 — NO FREEZE-OUT: is the frozen-NO assumption every NO number carries EARNED?
+// ------------------------------------------------------------------------------------------- //
+
+/// Anchored super-equilibrium NO-destruction clock (rung 27) — the relaxation time of
+/// super-equilibrium exhaust NO back toward its LOCAL equilibrium, on the extended-Zeldovich
+/// REVERSE reactions:
+///
+/// ```text
+/// τ_NO = 1 / ( 2 ( k2r·[O] + k3r·[H] ) ) = 1 / ( 2 c_tot ( k2r·x_O + k3r·x_H ) )
+/// ```
+///
+/// Built from rung 7's OWN Hanson & Salimian constants — zero new constants, as rung 26. This is
+/// the `a >> 1` limit of the full rung-7 rate, and it is `[NO]_e`- AND `a`-INDEPENDENT, so the
+/// freeze answer does not depend on which frozen NO level is fed in.
+///
+/// **CONTRAST rung 26's clock, which is the whole point of the rung.** That one has `Ea = 0` (so
+/// it ACCELERATES on cooling) and is termolecular (`c_tot^2`); this one is Arrhenius (so it
+/// CRATERS on cooling) and bimolecular (`c_tot^1`). Both its factors AGREE — both drive freezing —
+/// so the kill test INVERTS rung 26's, where density won DESPITE an opposing rate constant.
+///
+/// Evaluated on the FROZEN (radical-rich) pool, which is the FASTEST possible relaxation, so
+/// `Da_NO` comes out an UPPER bound — the same bounding logic rung 26 used for `x_OH`. Returns
+/// `+inf` when `[O] = [H] = 0`. `kill_t` pins T in the rate constants only; `kill_c` pins the total
+/// concentration in `[O]`,`[H]` only. Each leaves the OTHER live.
+///
+/// **The premise rung 27 gave for the `a >> 1` form is FALSE at the nozzle entry** — NO arrives
+/// SUB-equilibrium there and initially tries to FORM. See [`tau_no_exact`] for the repair, which
+/// is what actually justifies this surrogate.
+pub fn tau_no_destroy(
+    comp: &[(&str, f64)],
+    t: f64,
+    p: f64,
+    kill_t: Option<f64>,
+    kill_c: Option<f64>,
+) -> f64 {
+    let ntot: f64 = comp.iter().map(|&(_, n)| n).sum();
+    if ntot <= 0.0 {
+        return f64::INFINITY;
+    }
+    let c_tot = p / (RU * t); // mol/m^3 (SI — `k_zeldovich` returns SI)
+    let c_use = kill_c.unwrap_or(c_tot);
+    let tk = kill_t.unwrap_or(t);
+    let c_o = get_or_zero(comp, "O") / ntot * c_use;
+    let c_h = get_or_zero(comp, "H") / ntot * c_use;
+    let denom = 2.0 * (k_zeldovich("2r", tk) * c_o + k_zeldovich("3r", tk) * c_h);
+    if denom > 0.0 {
+        1.0 / denom
+    } else {
+        f64::INFINITY
+    }
+}
+
+/// The EXACT local linearised NO relaxation time at the actual local `a` (rung 28) — the check
+/// that certifies rung 27's `a >> 1` surrogate is a genuine bound. Returns `(tau_exact, beta, a)`.
+///
+/// ```text
+/// d[NO]/dt = 2R1(1-a^2)/(1+beta*a),   a = [NO]/[NO]_e,   beta = R1/(R2+R3)
+/// => tau_exact = [NO]_e (1+beta*a)^2 / ( 2 R1 (2a + beta*a^2 + beta) )
+/// ```
+///
+/// Its limits: `a → inf` gives exactly [`tau_no_destroy`]; `a → 0` gives that surrogate divided by
+/// `beta^2`. In between, with `u = beta*a`, the ratio is `(1+u)^2/[(1+u)^2 − (1−beta^2)] > 1` for
+/// every `a >= 0` whenever `beta < 1`. So the surrogate is the fast asymptote approached from
+/// ABOVE: a uniform LOWER bound on tau in BOTH regimes, which is what rung 27's bound claim needed
+/// and what its "arrives super-equilibrium" premise did not supply.
+///
+/// **`beta < 1` is EMPIRICAL, not a theorem**, and remains the honest weak point. Measured over the
+/// path × the design ladder it spans 0.0022 … 0.5429, and the source's own sweep of the whole
+/// runnable `(Tt4, pi_c)` plane maxes at 0.5444; beta is exactly pressure-invariant and both of
+/// `pi_c`'s indirect channels push it DOWN.
+///
+/// **`(1.0 + beta*a) ** 2` is an INTEGER exponent, so it spells as a PRODUCT** — the exact inverse
+/// of [`N_HOHM`] earlier in this module, which is a float constant and must reach libm `pow`. Both
+/// rules live here, which is why each site restates which one applies.
+///
+/// Returns `(inf, 0, 0)` when the rate degenerates (`[NO]_e`, `R1` or `R2+R3` <= 0). That branch is
+/// DORMANT at every shipped condition — 0 of 55 sampled cells — so `tests/rung28.rs` reaches it by
+/// forcing the radicals to zero rather than gating it only from the accepting side.
+pub fn tau_no_exact(comp: &[(&str, f64)], t: f64, p: f64, x_no: f64) -> (f64, f64, f64) {
+    let ntot: f64 = comp.iter().map(|&(_, n)| n).sum();
+    if ntot <= 0.0 {
+        return (f64::INFINITY, 0.0, 0.0);
+    }
+    let c_tot = p / (RU * t);
+    let c_o = get_or_zero(comp, "O") / ntot * c_tot;
+    let c_h = get_or_zero(comp, "H") / ntot * c_tot;
+    let c_n2 = get_or_zero(comp, "N2") / ntot * c_tot;
+    let c_noe = equilibrium_no_fraction(comp, t) * c_tot;
+    if c_noe <= 0.0 {
+        return (f64::INFINITY, 0.0, 0.0);
+    }
+    let r1 = k_zeldovich("1f", t) * c_o * c_n2;
+    let r2 = k_zeldovich("2r", t) * c_noe * c_o;
+    let r3 = k_zeldovich("3r", t) * c_noe * c_h;
+    if r1 <= 0.0 || (r2 + r3) <= 0.0 {
+        return (f64::INFINITY, 0.0, 0.0);
+    }
+    let beta = r1 / (r2 + r3);
+    let a = x_no * c_tot / c_noe;
+    let u = 1.0 + beta * a; // `** 2` on an INT exponent => a product, not `powp`
+    let tau = c_noe * (u * u) / (2.0 * r1 * (2.0 * a + beta * a * a + beta));
+    (tau, beta, a)
+}
+
+/// The frozen-composition isentropic temperature at pressure `p` — byte-identical to
+/// `expand_nozzle(shifting=false)`'s bisection (same bracket, same `1e-13` tolerance, same loop
+/// shape), so an exit temperature from here matches `nozzle_flow` bit-for-bit.
+///
+/// That is the reduce hinge for rungs 27 and 28, and § 4.13 prediction 1 measured it holding at
+/// all five design points. It is a COPY of the loop rather than a second route to the same number,
+/// which is why the port predicted it would survive before measuring.
+///
+/// **THIS ONE MERGE IS SAFE, AND THE DISTINCTION FROM THE RUNG-25/26 DUPLICATION IS THE POINT.**
+/// The Python carries two textual copies of this bisection, one inside `_no_freeze_out_expand` and
+/// one inside `_frozen_no_trajectory`, and the port merges them. That is the opposite of the
+/// module header's "do not factor" rule, so it needs a reason rather than a preference: **what the
+/// rung-28 reduce tests is not this helper.** The reduce compares two independently written NO
+/// marches — their loop order, their `max_a` tracking, their relaxation expression, their clock
+/// calls — and merging a shared temperature lookup leaves every one of those still separately
+/// spelled. The rung-25/26 case is different in kind: there the ENTIRE loop is the thing under
+/// comparison, so merging it would leave the gate comparing a function to itself. The test is
+/// always "would the merge make the gate trivial", never "is duplication virtuous".
+fn frozen_t_at(comp_entry: &[(&str, f64)], s_entry: f64, tt9: f64, p: f64) -> f64 {
+    let (mut lo, mut hi) = (T_EXIT_FLOOR, tt9);
+    for _ in 0..200 {
+        let tm = 0.5 * (lo + hi);
+        if mix_entropy_molar(comp_entry, tm, p) > s_entry {
+            hi = tm;
+        } else {
+            lo = tm;
+        }
+        if hi - lo <= 1e-13 * tm {
+            break;
+        }
+    }
+    0.5 * (lo + hi)
+}
+
+/// One NO FREEZE-OUT march (rung 27) — a SINGLE scalar (the NO mole fraction) relaxed along
+/// rung-14's FROZEN isentropic nozzle path toward the LOCAL equilibrium NO:
+///
+/// ```text
+/// x_no <- x_no + (1 - exp(-Da_NO_local*ds))*(x_NO_e(T) - x_no)
+/// ```
+///
+/// Unlike rung 26's march this carries no energy spine — NO is a trace diagnostic riding on the
+/// frozen major pool. `Da_NO_local -> 0` leaves NO frozen at entry (the reduce, and the clamp then
+/// equals rung 14/17's bit-for-bit); `-> inf` makes NO track `x_NO_e` down and the clamp go
+/// dormant. The FINDING is that the anchored `Da_NO << 1` everywhere, so the first branch is the
+/// physical one and the frozen-NO assumption carried since rung 7 is DERIVED, not assumed.
+///
+/// `max_a` is tracked over the WHOLE trajectory. The source hedges that "a relaxed one may peak
+/// earlier" than the cold exit — measured over 5 design points × 4 rate scales spanning `1e-12` to
+/// `1e12`, it never does: the peak is at the exit in all 20 cells, including where NO is 97 %
+/// relaxed. Returns `(t9, x_no_exit, x_no_e_exit, max_a, da_entry, da_exit)`.
+pub fn no_freeze_out_expand(
+    comp_entry: &[(&'static str, f64)],
+    tt9: f64,
+    pt9: f64,
+    p9: f64,
+    x_no_entry: f64,
+    da_no_fn: DaLocalFn,
+    nstep: usize,
+) -> (f64, f64, f64, f64, f64, f64) {
+    let s_entry = mix_entropy_molar(comp_entry, tt9, pt9);
+    let lnr = (p9 / pt9).ln();
+    let ds = 1.0 / nstep as f64;
+
+    let mut x_no = x_no_entry;
+    let da_entry = da_no_fn(comp_entry, tt9, pt9);
+    let mut max_a = 0.0f64;
+    for k in 0..nstep {
+        let p0 = pt9 * (lnr * k as f64 * ds).exp();
+        let t0 = if k == 0 { tt9 } else { frozen_t_at(comp_entry, s_entry, tt9, p0) };
+        let x_no_e0 = equilibrium_no_fraction(comp_entry, t0);
+        if x_no_e0 > 0.0 {
+            max_a = max_a.max(x_no / x_no_e0); // trajectory a, BEFORE this step's relax
+        }
+        let da_local = da_no_fn(comp_entry, t0, p0);
+        let relax = 1.0 - (-da_local * ds).exp();
+        x_no += relax * (x_no_e0 - x_no);
+    }
+    let t9 = frozen_t_at(comp_entry, s_entry, tt9, p9);
+    let x_no_e_exit = equilibrium_no_fraction(comp_entry, t9);
+    if x_no_e_exit > 0.0 {
+        max_a = max_a.max(x_no / x_no_e_exit); // the cold exit — where a frozen NO peaks
+    }
+    let da_exit = da_no_fn(comp_entry, t9, p9);
+    (t9, x_no, x_no_e_exit, max_a, da_entry, da_exit)
+}
+
+// ------------------------------------------------------------------------------------------- //
+// Rung 28 — THE COUPLED NO MARCH: rung 27's clock on rung 26's RELAXING pool
+// ------------------------------------------------------------------------------------------- //
+
+/// Rung-27's FROZEN nozzle path as an explicit trajectory (rung 28).
+///
+/// Same pressure grid as [`freeze_out_expand`] / [`no_freeze_out_expand`] and the same entropy
+/// bisection — and, as in rung 27, the `k = 0` temperature is `tt9` EXACTLY rather than a bisection
+/// at `pt9`. Composition is `comp_entry` at every station, frozen by definition.
+///
+/// Feeding this to [`coupled_no_march`] reproduces [`no_freeze_out_expand`] BIT-FOR-BIT — the
+/// rung-28 reduce, structural rather than numerical. § 4.13 prediction 2 measured it at 10/10, and
+/// it holds *despite* rung 27 computing `equilibrium_no_fraction` once per step where rung 28
+/// computes it twice: same function, same arguments, same bits. **A COPY is about the arithmetic
+/// performed, not the syntax.**
+pub fn frozen_no_trajectory(
+    comp_entry: &[(&'static str, f64)],
+    tt9: f64,
+    pt9: f64,
+    p9: f64,
+    nstep: usize,
+) -> Vec<MarchStation> {
+    let s_entry = mix_entropy_molar(comp_entry, tt9, pt9);
+    let lnr = (p9 / pt9).ln();
+    let ds = 1.0 / nstep as f64;
+
+    let mut traj = Vec::with_capacity(nstep + 1);
+    for k in 0..nstep {
+        let p0 = pt9 * (lnr * k as f64 * ds).exp();
+        let t = if k == 0 { tt9 } else { frozen_t_at(comp_entry, s_entry, tt9, p0) };
+        traj.push(MarchStation { s: k as f64 * ds, p: p0, t, comp: comp_entry.to_vec() });
+    }
+    let t_exit = frozen_t_at(comp_entry, s_entry, tt9, p9);
+    traj.push(MarchStation { s: 1.0, p: p9, t: t_exit, comp: comp_entry.to_vec() });
+    traj
+}
+
+/// The rung-28 COUPLED NO march — rung 27's trace-NO relaxation reading its clock off a SUPPLIED
+/// trajectory instead of the hard-wired frozen station-4 pool.
+///
+/// Rung 27 deferred this with the note that coupling to rung 26's relaxing pool "can ONLY slow NO
+/// further (radical-poorer => larger tau_NO)". **That is ONE-SIDED**: coupling to rung 26 couples
+/// to ALL of rung 26, INCLUDING its exothermic heat release, which lifts `T(s)` above the frozen
+/// isentrope — and because this clock is Arrhenius, that SPEEDS NO destruction. Two opposing
+/// channels:
+///
+/// 1. **radical depletion** — `[O]`,`[H]` recombine => `tau_NO` rises => DEEPER frozen;
+/// 2. **heat release** — `T(s)` above frozen => Arrhenius `k` rises => LESS frozen.
+///
+/// Taking `clock_traj` as a PARAMETER is what makes the decomposition first-class rather than a
+/// probe artefact: pass the frozen trajectory for rung 27, the freeze-out one for the coupled
+/// march, and the two hybrids to isolate each channel. Coupling only the composition would
+/// structurally exclude channel 2 and thereby manufacture rung 27's tidy prediction.
+///
+/// `ref_traj` supplies the clamp DENOMINATOR path and is held on the FROZEN nozzle deliberately:
+/// the coupled exit is warmer, so an equilibrium NO read there would move `max_a` for a purely
+/// THERMODYNAMIC reason and entangle it with the kinetic finding.
+///
+/// ONE-WAY by construction: NO is a trace species and is never fed back into the pool.
+pub fn coupled_no_march(
+    clock_traj: &[MarchStation],
+    ref_traj: &[MarchStation],
+    x_no_entry: f64,
+    da_no_fn: DaLocalFn,
+) -> (f64, f64, f64, f64, f64, f64) {
+    assert_eq!(
+        ref_traj.len(),
+        clock_traj.len(),
+        "coupled_no_march: trajectory length mismatch ({} vs {})",
+        clock_traj.len(),
+        ref_traj.len()
+    );
+    let nstep = clock_traj.len() - 1;
+    let ds = 1.0 / nstep as f64;
+    let mut x_no = x_no_entry;
+    let mut max_a = 0.0f64;
+    let da_entry = da_no_fn(&clock_traj[0].comp, clock_traj[0].t, clock_traj[0].p);
+    for k in 0..nstep {
+        let (p0, t_clock) = (clock_traj[k].p, clock_traj[k].t);
+        let comp_clock = &clock_traj[k].comp;
+        let x_no_e_ref = equilibrium_no_fraction(&ref_traj[k].comp, ref_traj[k].t);
+        if x_no_e_ref > 0.0 {
+            max_a = max_a.max(x_no / x_no_e_ref); // trajectory a, BEFORE this step's relax
+        }
+        let da_local = da_no_fn(comp_clock, t_clock, p0);
+        let relax = 1.0 - (-da_local * ds).exp();
+        x_no += relax * (equilibrium_no_fraction(comp_clock, t_clock) - x_no);
+    }
+    let last = &clock_traj[nstep];
+    let ref_last = &ref_traj[nstep];
+    let x_no_e_ref_exit = equilibrium_no_fraction(&ref_last.comp, ref_last.t);
+    if x_no_e_ref_exit > 0.0 {
+        max_a = max_a.max(x_no / x_no_e_ref_exit); // the cold exit — where a frozen NO peaks
+    }
+    let da_exit = da_no_fn(&last.comp, last.t, last.p);
+    (ref_last.t, x_no, x_no_e_ref_exit, max_a, da_entry, da_exit)
+}
+
+// ------------------------------------------------------------------------------------------- //
+// The rung-27 / rung-28 configs, states and `Gas` entry points
+// ------------------------------------------------------------------------------------------- //
+
+/// Rung-27 NO-freeze-out config: rung 26's anchored-clock machinery on a NO-destruction clock.
+#[derive(Debug, Clone, Copy)]
+pub struct NoFreezeOut {
+    /// residence length, m — sets `tau_res`, as rung 26
+    pub l: f64,
+    /// NO-relaxation march resolution
+    pub nstep: usize,
+    /// dimensionless `Da_NO` multiplier for the limit gates (1.0 = anchored)
+    pub rate_scale: f64,
+}
+
+impl Default for NoFreezeOut {
+    fn default() -> Self {
+        Self { l: 0.5, nstep: 400, rate_scale: 1.0 }
+    }
+}
+
+impl NoFreezeOut {
+    /// Python's `__post_init__`.
+    pub fn validate(&self) {
+        assert!(self.l > 0.0, "NOFreezeOut.L={} must be positive", self.l);
+        assert!(self.nstep >= 100, "NOFreezeOut.nstep={} too coarse (need >= 100)", self.nstep);
+        assert!(
+            self.rate_scale > 0.0,
+            "NOFreezeOut.rate_scale={} must be positive",
+            self.rate_scale
+        );
+    }
+}
+
+/// Rung-27 NO-freeze-out diagnostic. A pure diagnostic BESIDE the cycle.
+#[derive(Debug, Clone)]
+pub struct NoFreezeOutNozzleState {
+    /// frozen nozzle exit static T (== `nozzle_flow`'s `t9_frozen`), K
+    pub t9_frozen: f64,
+    /// `Da_NO` at the nozzle entry — `<< 1` means frozen from entry (the finding)
+    pub da_entry: f64,
+    /// `Da_NO` at the exit (falls further — the kill test's both-factors-agree)
+    pub da_exit: f64,
+    /// entry exhaust NO fed through (the rung-8 zoned mole fraction)
+    pub x_no_frozen: f64,
+    /// exit NO after the anchored march (it barely moves)
+    pub x_no_relaxed: f64,
+    /// equilibrium NO at the entry
+    pub x_no_e_entry: f64,
+    /// equilibrium NO at the exit (collapsed — the clamp denominator)
+    pub x_no_e_exit: f64,
+    /// max `[NO]/[NO]_e` over the RELAXED march (the real clamp margin)
+    pub max_a: f64,
+    /// max `[NO]/[NO]_e` if NO were fully frozen (== rung 14/17's number)
+    pub max_a_frozen: f64,
+}
+
+impl NoFreezeOutNozzleState {
+    /// True when `Da_NO < 1` at the entry — NO never relaxes. TRUE at every `Tt4`, which is the
+    /// rung: unlike the major pool, NO is frozen from entry everywhere.
+    pub fn frozen_from_entry(&self) -> bool {
+        self.da_entry < 1.0
+    }
+
+    /// Does the dropped clamp fire (super-equilibrium NO at the exit)?
+    pub fn clamp_fires(&self) -> bool {
+        self.max_a > 1.0
+    }
+
+    /// How far exhaust NO relaxed toward equilibrium: 0 = fully frozen (the anchored finding),
+    /// 1 = fully equilibrated (`rate_scale` → ∞).
+    ///
+    /// It can come out slightly NEGATIVE at the hot anchored points, and that is physics rather
+    /// than noise: `a < 1` at the entry, so NO arrives SUB-equilibrium and initially FORMS. That
+    /// is rung 28's erratum showing up in rung 27's own output.
+    pub fn relaxed_fraction(&self) -> f64 {
+        let num = self.x_no_frozen - self.x_no_relaxed;
+        let den = self.x_no_frozen - self.x_no_e_exit;
+        if den.abs() > 0.0 {
+            num / den
+        } else {
+            0.0
+        }
+    }
+}
+
+/// Rung-28 coupled NO-freeze-out config.
+#[derive(Debug, Clone, Copy)]
+pub struct CoupledNoFreezeOut {
+    /// residence length, m
+    pub l: f64,
+    /// shared march resolution (both trajectories on one pressure grid)
+    pub nstep: usize,
+    /// NO-clock `Da_NO` multiplier (1.0 = anchored; → 0 gives the reduce)
+    pub rate_scale: f64,
+    /// rung-26 recombination-clock multiplier (1.0 = anchored; → ∞ is the structural gate)
+    pub pool_rate_scale: f64,
+}
+
+impl Default for CoupledNoFreezeOut {
+    fn default() -> Self {
+        Self { l: 0.5, nstep: 400, rate_scale: 1.0, pool_rate_scale: 1.0 }
+    }
+}
+
+impl CoupledNoFreezeOut {
+    /// Python's `__post_init__`.
+    pub fn validate(&self) {
+        assert!(self.l > 0.0, "CoupledNOFreezeOut.L={} must be positive", self.l);
+        assert!(
+            self.nstep >= 100,
+            "CoupledNOFreezeOut.nstep={} too coarse (need >= 100)",
+            self.nstep
+        );
+        assert!(
+            self.rate_scale > 0.0,
+            "CoupledNOFreezeOut.rate_scale={} must be positive",
+            self.rate_scale
+        );
+        assert!(
+            self.pool_rate_scale > 0.0,
+            "CoupledNOFreezeOut.pool_rate_scale={} must be positive (an UNRELAXED pool is \
+             rung 27 — reach it with couple=false, not with pool_rate_scale=0)",
+            self.pool_rate_scale
+        );
+    }
+}
+
+/// Rung-28 coupled NO-freeze-out diagnostic.
+///
+/// **READ THE RATIOS AS THE CLOCK'S DEPTH, NOT NO's MOTION** — NO does not move
+/// (`relaxed_fraction` is ~0).
+#[derive(Debug, Clone)]
+pub struct CoupledNoFreezeOutState {
+    /// frozen nozzle exit static T (== `nozzle_flow`'s), K
+    pub t9_frozen: f64,
+    /// rung-26 freeze-out exit static T, K — WARMER, because of the heat release
+    pub t9_pool: f64,
+    /// rung-26's pool freeze point — the INTERLOCK that gates the coupling
+    pub s_freeze_pool: f64,
+    /// `Da_NO` at entry — path-INDEPENDENT, so bit-for-bit rung 27's
+    pub da_entry: f64,
+    /// rung-27 baseline: frozen T + frozen composition
+    pub da_exit_frozen: f64,
+    /// channel 1 alone: frozen T + coupled composition
+    pub da_exit_depletion: f64,
+    /// channel 2 alone: coupled T + frozen composition
+    pub da_exit_heat: f64,
+    /// the rung-28 march: coupled T + coupled composition
+    pub da_exit_coupled: f64,
+    /// `(x_O + x_H)` at the nozzle entry (frozen, radical-rich)
+    pub x_radical_entry: f64,
+    /// `(x_O + x_H)` at the exit after rung-26 relaxation (depleted)
+    pub x_radical_exit_pool: f64,
+    /// entry exhaust NO fed through
+    pub x_no_frozen: f64,
+    /// exit NO after the COUPLED march
+    pub x_no_relaxed: f64,
+    /// equilibrium NO at the frozen exit (the clamp denominator)
+    pub x_no_e_exit: f64,
+    /// max `[NO]/[NO]_e` over the coupled march
+    pub max_a: f64,
+    /// max `[NO]/[NO]_e` if NO were fully frozen (== rung 14/17/27's number)
+    pub max_a_frozen: f64,
+    /// `[NO]/[NO]_e` at the nozzle ENTRY — SUB-equilibrium (< 1) for `Tt4` ≥ 1800 K
+    pub a_entry: f64,
+    /// `[NO]/[NO]_e` at the exit — super-equilibrium, where the clamp is read
+    pub a_exit: f64,
+    /// max `β = R1/(R2+R3)` over the path; `< 1` means the surrogate bounds the rate
+    pub beta_max: f64,
+    /// min `τ_exact/τ_surrogate` over the path; `≥ 1` means the bound holds pointwise
+    pub tau_ratio_min: f64,
+}
+
+impl CoupledNoFreezeOutState {
+    /// Channel 1: how much the radical depletion slows the clock.
+    pub fn depletion_factor(&self) -> f64 {
+        if self.da_exit_frozen > 0.0 {
+            self.da_exit_depletion / self.da_exit_frozen
+        } else {
+            1.0
+        }
+    }
+
+    /// Channel 2: how much the heat release speeds it back up.
+    pub fn heat_release_factor(&self) -> f64 {
+        if self.da_exit_frozen > 0.0 {
+            self.da_exit_heat / self.da_exit_frozen
+        } else {
+            1.0
+        }
+    }
+
+    /// The two channels together.
+    pub fn net_factor(&self) -> f64 {
+        if self.da_exit_frozen > 0.0 {
+            self.da_exit_coupled / self.da_exit_frozen
+        } else {
+            1.0
+        }
+    }
+
+    /// `|ln(ch2)/ln(ch1)|` — how much of the depletion effect the heat release cancels, in the log
+    /// space where the two channels compose. Rises MONOTONICALLY with `Tt4`, which is the
+    /// certified trend; the NET's non-monotone turnaround is NOT claimed.
+    pub fn channel_ratio(&self) -> f64 {
+        let (d, h) = (self.depletion_factor(), self.heat_release_factor());
+        if d <= 0.0 || d == 1.0 || h <= 0.0 {
+            return 0.0;
+        }
+        (h.ln() / d.ln()).abs()
+    }
+
+    /// Does the coupling push the clock DEEPER below the freeze threshold (rung 27's conclusion)?
+    pub fn deeper_frozen(&self) -> bool {
+        self.net_factor() < 1.0
+    }
+
+    /// Is rung 27's `a ≫ 1` surrogate a genuine bound on the rate along this path?
+    pub fn surrogate_bounds_rate(&self) -> bool {
+        self.beta_max < 1.0 && self.tau_ratio_min >= 1.0
+    }
+
+    /// Does NO arrive SUB-equilibrium at the nozzle entry? (The erratum's point.)
+    pub fn sub_equilibrium_entry(&self) -> bool {
+        self.a_entry < 1.0
+    }
+
+    /// True when `Da_NO < 1` at the entry. The entry state is PATH-INDEPENDENT, so this is rung
+    /// 27's answer bit-for-bit.
+    pub fn frozen_from_entry(&self) -> bool {
+        self.da_entry < 1.0
+    }
+
+    /// Does the dropped clamp fire?
+    pub fn clamp_fires(&self) -> bool {
+        self.max_a > 1.0
+    }
+
+    /// How far exhaust NO relaxed toward equilibrium over the coupled march (~0).
+    pub fn relaxed_fraction(&self) -> f64 {
+        let num = self.x_no_frozen - self.x_no_relaxed;
+        let den = self.x_no_frozen - self.x_no_e_exit;
+        if den.abs() > 0.0 {
+            num / den
+        } else {
+            0.0
+        }
+    }
+}
+
+/// `(x_O + x_H)` — the radical fraction whose depletion is rung 28's channel 1.
+fn radical_fraction(comp: &[(&str, f64)]) -> f64 {
+    let n: f64 = comp.iter().map(|&(_, v)| v).sum();
+    if n > 0.0 {
+        (get_or_zero(comp, "O") + get_or_zero(comp, "H")) / n
+    } else {
+        0.0
+    }
+}
+
+impl Gas {
+    /// NO-freeze-out nozzle diagnostic (rung 27).
+    ///
+    /// Every NO number since rung 7 ASSUMES the station-4 exhaust NO freezes through the nozzle,
+    /// and the rung-14/17 dropped-clamp corollary reads `max_a` OFF that assumption. Rung 26 then
+    /// showed the MAJOR pool freezes only partway down. This asks the same of NO — and finds the
+    /// assumption is EARNED: `Da_NO ≪ 1` from entry at EVERY `Tt4`, so the clamp firing is derived,
+    /// on an upper bound (the frozen radical-rich pool is the fastest possible relaxation).
+    ///
+    /// NO LOCATION / moving-freeze-point is claimed — rung 26's headline has no analogue here,
+    /// because NO is frozen from entry everywhere.
+    #[allow(clippy::too_many_arguments)]
+    pub fn no_freeze_out_nozzle(
+        &self,
+        far: f64,
+        tt3: f64,
+        tt4: f64,
+        pt4: f64,
+        tt9: f64,
+        pt9: f64,
+        p9: f64,
+        phi_primary: f64,
+        no_freeze_out: NoFreezeOut,
+    ) -> NoFreezeOutNozzleState {
+        assert!(
+            self.is_equilibrium(),
+            "no_freeze_out_nozzle: needs the rung-6 equilibrium gas (Gas::reacting_equilibrium())"
+        );
+        assert!(
+            p9 <= pt9 * (1.0 + 1e-12),
+            "no_freeze_out_nozzle: back-pressure p9={p9:.0} Pa exceeds pt9={pt9:.0} Pa \
+             (cannot expand to it)"
+        );
+        no_freeze_out.validate();
+        let comp_entry = equilibrium_composition(far, tt4, pt4);
+
+        // The clamp-relevant frozen exhaust NO: the rung-8 zoned mole fraction — what rungs 14/17
+        // carry through the nozzle, and what arrives SUPER-equilibrium at the cold exit.
+        let zn = self.zoned_nox(far, tt3, tt4, pt4, phi_primary, ZonedNoxOpts::default());
+        let x_no_frozen = zn.x_no_mix;
+
+        // The rung-14 reference. `nozzle_flow` is UNTOUCHED — this only reads it.
+        let nf = self.nozzle_flow(far, tt4, pt4, tt9, pt9, p9, Some(x_no_frozen));
+
+        let tau_res = no_freeze_out.l / (0.6 * nf.v9_frozen); // pinned to FROZEN V9, as rung 26
+        let rs = no_freeze_out.rate_scale;
+        let da_no = move |comp: &[(&'static str, f64)], t: f64, p: f64| {
+            rs * tau_res / tau_no_destroy(comp, t, p, None, None)
+        };
+
+        let (_t9, x_no_relaxed, _x_no_e_exit, max_a, da_entry, da_exit) = no_freeze_out_expand(
+            &comp_entry,
+            tt9,
+            pt9,
+            p9,
+            x_no_frozen,
+            &da_no,
+            no_freeze_out.nstep,
+        );
+
+        NoFreezeOutNozzleState {
+            t9_frozen: nf.t9_frozen,
+            da_entry,
+            da_exit,
+            x_no_frozen,
+            x_no_relaxed,
+            x_no_e_entry: nf.x_no_e_entry,
+            x_no_e_exit: nf.x_no_e_exit,
+            max_a,
+            max_a_frozen: nf.max_a.expect("nozzle_flow was given x_no_frozen"),
+        }
+    }
+
+    /// Coupled NO-freeze-out nozzle diagnostic (rung 28).
+    ///
+    /// Rung 27 read its NO clock on the FROZEN station-4 pool and deferred the coupled march with
+    /// the note that it "can ONLY slow NO further". Rung 28 builds it and finds that "only" was
+    /// ONE-SIDED — see [`coupled_no_march`] for the two channels.
+    ///
+    /// THE VERDICT is a CONFIRMATION with a MECHANISTIC CORRECTION: rung 27's conclusion holds
+    /// (`net_factor < 1` everywhere in band), its mechanism was incomplete (`heat_release_factor`
+    /// exceeds 1 everywhere, cancelling nearly half the depletion at the hot edge), the win is
+    /// STRUCTURAL rather than incidental (channel 1 is unbounded while channel 2 saturates), and
+    /// the HEADLINE IS UNTOUCHED — the nozzle-entry state is path-independent, so `da_entry` is
+    /// rung 27's bit-for-bit and NO stays frozen from entry.
+    ///
+    /// `couple = false` runs the NO clock on the FROZEN trajectory — i.e. rung 27 exactly, and the
+    /// reduce is STRUCTURAL (the same expression sequence, not merely the same answer to a
+    /// tolerance).
+    #[allow(clippy::too_many_arguments)]
+    pub fn coupled_no_freeze_out_nozzle(
+        &self,
+        far: f64,
+        tt3: f64,
+        tt4: f64,
+        pt4: f64,
+        tt9: f64,
+        pt9: f64,
+        p9: f64,
+        phi_primary: f64,
+        coupled: CoupledNoFreezeOut,
+        couple: bool,
+    ) -> CoupledNoFreezeOutState {
+        assert!(
+            self.is_equilibrium(),
+            "coupled_no_freeze_out_nozzle: needs the rung-6 equilibrium gas \
+             (Gas::reacting_equilibrium())"
+        );
+        assert!(
+            p9 <= pt9 * (1.0 + 1e-12),
+            "coupled_no_freeze_out_nozzle: back-pressure p9={p9:.0} Pa exceeds pt9={pt9:.0} Pa \
+             (cannot expand to it)"
+        );
+        coupled.validate();
+        let comp_entry = equilibrium_composition(far, tt4, pt4);
+        let nstep = coupled.nstep;
+
+        let zn = self.zoned_nox(far, tt3, tt4, pt4, phi_primary, ZonedNoxOpts::default());
+        let x_no_frozen = zn.x_no_mix;
+        let nf = self.nozzle_flow(far, tt4, pt4, tt9, pt9, p9, Some(x_no_frozen));
+
+        let tau_res = coupled.l / (0.6 * nf.v9_frozen);
+        let rate_scale = coupled.rate_scale;
+        let pool_rate_scale = coupled.pool_rate_scale;
+        let da_no = move |comp: &[(&'static str, f64)], t: f64, p: f64| {
+            rate_scale * tau_res / tau_no_destroy(comp, t, p, None, None)
+        };
+        let da_pool = move |comp: &[(&'static str, f64)], t: f64, p: f64| {
+            pool_rate_scale * tau_res / tau_chem_recomb(comp, t, p, None, None)
+        };
+
+        // (a) rung-14/27's FROZEN trajectory — the clamp-denominator reference and rung 27's clock.
+        let frozen_traj = frozen_no_trajectory(&comp_entry, tt9, pt9, p9, nstep);
+
+        // (b) rung-26's RELAXING trajectory, recorded by a PURE OBSERVER, so rung 26 stays
+        //     bit-for-bit with and without the recording (gated in `tests/rung26.rs`).
+        let mut pool_traj: Vec<MarchStation> = Vec::new();
+        let (_pool, s_freeze_pool, _dae, _dax) = freeze_out_expand(
+            &comp_entry,
+            far,
+            tt9,
+            pt9,
+            p9,
+            &da_pool,
+            nstep,
+            Some(&mut pool_traj),
+        );
+
+        let clock_traj = if couple { &pool_traj } else { &frozen_traj };
+        let (_t9_ref, x_no_relaxed, x_no_e_exit, max_a, da_entry, da_exit_coupled) =
+            coupled_no_march(clock_traj, &frozen_traj, x_no_frozen, &da_no);
+
+        // The channel decomposition, read at the exit on the two HYBRID paths. Coupling only the
+        // composition would exclude channel 2 by construction, so BOTH hybrids are reported.
+        let pool_ex = &pool_traj[nstep];
+        let froz_ex = &frozen_traj[nstep];
+        let da_exit_frozen = da_no(&comp_entry, froz_ex.t, pool_ex.p); // rung-27 baseline
+        let da_exit_depl = da_no(&pool_ex.comp, froz_ex.t, pool_ex.p); // channel 1 alone
+        let da_exit_heat = da_no(&comp_entry, pool_ex.t, pool_ex.p); // channel 2 alone
+
+        // The β repair: certify that rung-27's surrogate really does bound the rate, on the frozen
+        // reference path where the freeze verdict is read.
+        let (mut beta_max, mut tau_ratio_min) = (0.0f64, f64::INFINITY);
+        let (mut a_entry, mut a_exit) = (0.0, 0.0);
+        for i in 0..11 {
+            let st = &frozen_traj[(i * nstep / 10).min(nstep)];
+            let (tau_e, beta_i, a_i) = tau_no_exact(&st.comp, st.t, st.p, x_no_frozen);
+            let tau_s = tau_no_destroy(&st.comp, st.t, st.p, None, None);
+            beta_max = beta_max.max(beta_i);
+            if tau_s > 0.0 && tau_e.is_finite() {
+                tau_ratio_min = tau_ratio_min.min(tau_e / tau_s);
+            }
+            if i == 0 {
+                a_entry = a_i;
+            }
+            a_exit = a_i;
+        }
+        if !tau_ratio_min.is_finite() {
+            // DORMANT at every shipped condition — 0 of 55 sampled cells reach it. Gated from the
+            // REFUSING side in `tests/rung28.rs` rather than only from the accepting one.
+            tau_ratio_min = 1.0;
+        }
+
+        CoupledNoFreezeOutState {
+            t9_frozen: nf.t9_frozen,
+            t9_pool: pool_ex.t,
+            s_freeze_pool,
+            da_entry,
+            da_exit_frozen,
+            da_exit_depletion: da_exit_depl,
+            da_exit_heat,
+            da_exit_coupled,
+            x_radical_entry: radical_fraction(&comp_entry),
+            x_radical_exit_pool: radical_fraction(&pool_ex.comp),
+            x_no_frozen,
+            x_no_relaxed,
+            x_no_e_exit,
+            max_a,
+            max_a_frozen: nf.max_a.expect("nozzle_flow was given x_no_frozen"),
+            a_entry,
+            a_exit,
+            beta_max,
+            tau_ratio_min,
         }
     }
 }

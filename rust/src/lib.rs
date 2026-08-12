@@ -53,7 +53,12 @@
 //!   identical (velocity 3/88), because a 400-step march carries a last-bit difference all the way
 //!   to the exit. It also found a shipped test bar that holds only at the three temperatures it
 //!   was evaluated at (§ 4.12 of the plan).
-//! * **G — rungs 27/28** and **H — rungs 29/30**: next.
+//! * **G — rungs 27/28 (SHIPPED)**: the trace-NO relaxation that DERIVES the frozen-NO assumption
+//!   every NO number has carried since rung 7, and that clock re-read on slice F's relaxing pool.
+//!   776/776 bit-exact — and only **8.0 %** CPython-identical, the sharpest dump in the port,
+//!   because every quantity is a ratio of Arrhenius rates read off a marched trajectory. Slice F's
+//!   copy-vs-rederivation discriminator made two pre-registered predictions here and both held.
+//! * **H — rungs 29/30**: next.
 //!
 //! The remaining off-design and transient ladders arrive in phases 5–7 and leave this design run
 //! untouched, as they do in the Python.
