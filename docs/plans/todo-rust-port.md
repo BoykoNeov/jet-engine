@@ -1,7 +1,9 @@
 # The Rust port — plan
 
-**Status: PROPOSAL.** The architecture is settled by measurement (§ 1–2). Three decisions
-are still the user's and nothing should be built until they land (§ 9).
+**Status: DECIDED — phases 0–1 AUTHORISED, the rest is not.** The architecture is settled by
+measurement (§ 1–2); the three open forks were answered on 2026-08-12 (§ 9). Build phases 0
+and 1, then stop and re-decide: phase 1 is where the arithmetic risk concentrates, so it is
+the deliberate early exit.
 
 **The ask.** The whole project in Rust — engine *and* all tests. Python may survive only as a
 **single-use oracle**: a reference implementation the Rust is validated against, then deleted.
@@ -256,10 +258,22 @@ every disagreement with the oracle ambiguous.
 
 ---
 
-## 9. Decisions still needed
+## 9. Decisions — ANSWERED 2026-08-12
 
-1. **The bit-exactness bar** — A (digit-for-digit) or B (oracle, then re-anchor). *Recommend B.*
-2. **`main.py`** — port straight, Rust plotting crate, or keep one Python chart script
-   (violates oracle-only)?
-3. **Go / no-go**, and whether phases 0–1 should run first as a proof before committing to the
-   rest — phase 1 is where the arithmetic risk concentrates, so it is the natural early exit.
+1. **The bit-exactness bar → OPTION B.** Python is the oracle; agreement is required to a
+   declared tolerance across every golden key, the deviation distribution is published, the
+   fragile rungs of § 4 are adjudicated individually, and only then are Rust's values frozen.
+   The CPython fingerprint stays in git history as the audit trail.
+2. **`main.py` → SPLIT, on the rule "the ENGINE is pure Rust".** Everything computational,
+   including the station tables the working contract requires every run to print, is Rust.
+   Rust also emits the plot's data as JSON. **One small Python script owns the matplotlib
+   chart only** — it does no physics, reads no engine code, and is the single permitted
+   exception to oracle-only. *To verify in phase 8: that it stays fast (the assumption behind
+   the decision).*
+3. **Go → PHASES 0–1 ONLY.** Build the scaffolding, the oracle bridge and the gas core, then
+   stop and re-decide before phase 3 (the first heavy consumer of that arithmetic).
+
+### Consequences for the phase table
+
+Phase 8's `main.py` row is now "Rust CLI prints the tables and dumps plot JSON; port the
+chart script; verify it is fast" rather than a three-way choice.

@@ -1,0 +1,20 @@
+[package]
+name = "turbojet"
+version = "0.1.0"
+edition = "2021"
+
+# NO DEPENDENCIES, and that is a decision, not an accident. The Python it replaces imports
+# only `math`/`cmath`; the oracle files are TSV of u64 bit patterns precisely so the test
+# harness needs no JSON crate. See docs/plans/todo-rust-port.md § 3.
+[dependencies]
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+
+# The working contract says conservation checks are ASSERTIONS that run on every execution
+# (SPEC.md), so `assert!` must survive optimisation -- never `debug_assert!`, and never
+# `-C debug-assertions=off` reasoning that they are test-only. They are the model.
+[profile.test]
+opt-level = 2
