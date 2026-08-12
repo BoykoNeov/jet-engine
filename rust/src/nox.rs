@@ -27,6 +27,19 @@
 //!   and pinned AT `C_opt`. `docs/rung12-spec.md`.
 //! - **rung 20** — rung 19's super-equilibrium [O] threaded THROUGH the quench, closing the
 //!   seam where the finite-quench numbers still rode on equilibrium O. `docs/rung20-spec.md`.
+//! - **rung 13** — [`MixingPdf`] replaces rung-12's two lumps with a CONTINUOUS mean-preserving
+//!   β-PDF of mixture fraction over the ideal bell. A MECHANISM SEPARATION: composition variance
+//!   pins the optimum's LOCATION, and rung-12's dwell made the climb. `docs/rung13-spec.md`.
+//! - **rung 15** — [`QuenchPdf`] carries that β-PDF THROUGH the quench, so the two mechanisms
+//!   COMBINE: a FINITE floor at `C_opt`, and the far flank climbs again. `docs/rung15-spec.md`.
+//! - **rung 16** — [`PocketQuenchPdf`] retires rung-15's linearisation by quenching EACH pocket
+//!   separately, so the dwell acts inside the cooling chemistry and term 2 goes SUBLINEAR.
+//!   `docs/rung16-spec.md`.
+//! - **rung 18** — [`TransportedPdf`] derives the width from a variance-decay ODE instead of the
+//!   kink. Load-bearing result NEGATIVE: a 0-D transport cannot derive the optimum's location.
+//!   `docs/rung18-spec.md`.
+//! - **rung 21** — the super-equilibrium [O] threaded through the ideal-bell integrals too, which
+//!   discharges rung 20's forbid guard. Shape-preserving. `docs/rung21-spec.md`.
 //!
 //! # What the port had to be careful about here
 //!
@@ -359,6 +372,44 @@ fn h_prod_scale_a(comp: &[(&str, f64)], t: f64) -> f64 {
 /// The inner `h_prod_scale_a` re-solves the 8-species equilibrium Newton at every trial T, so
 /// this is a bisection wrapped around a Newton — the deepest solver nesting in the project.
 pub fn primary_aft(far_p: f64, p: f64, t_air: f64, hf_fuel: f64) -> f64 {
+    let t = primary_aft_raw(far_p, p, t_air, hf_fuel);
+    // Bracket guard (post-loop, not an endpoint eval — `equilibrium_composition` DIVERGES at
+    // the cold 800 K edge, so we cannot probe there; a root outside [800,3200] instead pins
+    // the bisection against an edge, which this catches). Any real flame sits well inside.
+    assert!(
+        801.0 < t && t < 3199.0,
+        "primary_aft: flame temp {t:.1} K pinned at [800,3200] K bracket edge (far_p={far_p:.4})"
+    );
+    t
+}
+
+/// [`primary_aft`] with the bracket guard as a `None` instead of a panic — **the flammability
+/// limit as a BRANCH** (rung 13).
+///
+/// The ideal bell is sampled from ξ≈0 upward, and its cold end is not a small number: below the
+/// flammability limit the bisection pins against its 800 K edge and there is no flame at all.
+/// Python expresses that as `try: _primary_aft(...) except AssertionError: return 0.0`, which is
+/// a *catch*, so nothing in the Python distinguishes "no flame" from "some other assertion in
+/// the equilibrium solver". Rust cannot catch a panic and should not try; this splits the guard
+/// out instead, which is narrower than Python's `except` by exactly the solver's own asserts.
+///
+/// That difference is MEASURED rather than assumed: the oracle dumps the index of the first
+/// burnable node on every bell grid it builds (`bell/*/first_burnable`), so if the two languages
+/// ever took the zero branch a different number of times, the gate names the grid. Measured on
+/// the shipped grids: 1 node at the subsonic design point, 0 at the hotter supersonic one — so
+/// both the taken and the never-taken case are covered.
+pub fn try_primary_aft(far_p: f64, p: f64, t_air: f64, hf_fuel: f64) -> Option<f64> {
+    let t = primary_aft_raw(far_p, p, t_air, hf_fuel);
+    if 801.0 < t && t < 3199.0 {
+        Some(t)
+    } else {
+        None
+    }
+}
+
+/// The bisection itself, shared by [`primary_aft`] and [`try_primary_aft`] so the two cannot
+/// drift apart — they differ ONLY in what they do with a pinned bracket.
+fn primary_aft_raw(far_p: f64, p: f64, t_air: f64, hf_fuel: f64) -> f64 {
     let n_fuel = far_p * m_air() / M_CH2;
     let h_react = h_air_molar_a(t_air) + n_fuel * hf_fuel;
 
@@ -376,15 +427,7 @@ pub fn primary_aft(far_p: f64, p: f64, t_air: f64, hf_fuel: f64) -> f64 {
             break;
         }
     }
-    let t = 0.5 * (lo + hi);
-    // Bracket guard (post-loop, not an endpoint eval — `equilibrium_composition` DIVERGES at
-    // the cold 800 K edge, so we cannot probe there; a root outside [800,3200] instead pins
-    // the bisection against an edge, which this catches). Any real flame sits well inside.
-    assert!(
-        801.0 < t && t < 3199.0,
-        "primary_aft: flame temp {t:.1} K pinned at [800,3200] K bracket edge (far_p={far_p:.4})"
-    );
-    t
+    0.5 * (lo + hi)
 }
 
 /// Mixed-out temperature after adding `(1−α)` mol dilution air at `t_dilution` to `α` mol
@@ -701,6 +744,500 @@ pub fn quench_no(
     QuenchResult { ei, x_no_mix, n_no, t_peak, max_a }
 }
 
+// --------------------------------------------------------------------------------------
+// RUNGS 13 / 15 / 16 / 18 / 21 — the mixture-fraction PDF family.
+//
+// Rung 12 parameterised the segregation as TWO LUMPS: a mean-field bulk and an under-mixed
+// core, mass-weighted by a kinked `w(C)`. Rungs 13-18 replace that with a CONTINUOUS
+// distribution — a mean-preserving β-PDF of mixture fraction ξ = far/(1+far), integrated
+// against the ideal primary bell EI(φ) — and then ask, one rung at a time, what the width of
+// that distribution should be and what the pockets inside it should be carried through.
+//
+//   13  the bell integrated against a β-PDF whose width is the SAME kinked `g(C)`
+//   15  that integral SCALED by rung-12's dwell (a linearisation: exact only while EI ∝ τ)
+//   16  each rich pocket through its OWN quench instead, so the dwell acts inside the cooling
+//   18  the width from a variance-DECAY ODE off a DERIVED ceiling, instead of the kink
+//   21  rung 19's super-equilibrium [O] threaded through ALL of the above
+//
+// The load-bearing arithmetic is `beta_pdf_nodes_weights`, and it is REGIME-SWITCHING: the
+// shape parameter `a = ξ̄(1/g − 1)` crosses 1 as the width grows, and the quadrature changes
+// scheme at exactly that crossing. A port that gets one branch right and the other wrong looks
+// correct across most of a J sweep and wrong in a narrow band around the optimum.
+// --------------------------------------------------------------------------------------
+
+/// Rung-9 IDEAL primary EI_NO (g NO/kg fuel) at a LOCAL fuel/air ratio — the bell EI(φ) the
+/// rung-13 PDF closure samples.
+///
+/// Runs the same primitives as the zoned primary ([`primary_aft`] → [`equilibrium_composition`]
+/// → [`thermal_no`]) at the local φ. Returns 0 outside the valid window: φ>2 (the soot bound —
+/// the 5-species basis is invalid AND the O-starved pool makes ≈0 NO anyway) or too lean to
+/// burn (see [`try_primary_aft`]). No finite quench here — this ISOLATES composition variance
+/// on the ideal bell; carrying it through the finite quench is rung 15's seam.
+///
+/// RUNG 20/21 — `super_eq_o` lifts this local bell's [O] by `m(T_p)`. `false` ⇒ the rung-13/15/18
+/// integrals are UNTOUCHED, staying equilibrium-O lower bounds. `docs/rung21-spec.md`.
+pub fn ideal_bell_ei(
+    far_local: f64,
+    p: f64,
+    tt3: f64,
+    hf_fuel: f64,
+    tau: f64,
+    super_eq_o: bool,
+) -> f64 {
+    let phi = far_local / gas::f_stoich();
+    if far_local <= 0.0 || phi > 2.0 + 1e-9 {
+        return 0.0;
+    }
+    let Some(t_p) = try_primary_aft(far_local, p, tt3, hf_fuel) else {
+        return 0.0; // too lean to burn (cold-bracket-edge flame)
+    };
+    let comp = equilibrium_composition(far_local, t_p, p);
+    let m = if super_eq_o {
+        super_eq_o_multiplier(t_p.max(SUPER_EQ_T_FLOOR))
+    } else {
+        1.0
+    };
+    thermal_no(&comp, t_p, p, tau, far_local, 4000, m).ei_no
+}
+
+/// Regime-aware, mean-preserving quadrature of a β-PDF of mixture fraction ξ (rung 13).
+///
+/// Mean ξ̄, normalized variance (segregation) `g ∈ (0,1)`: `σ² = g·ξ̄(1−ξ̄)`, shape parameters
+/// `a = ξ̄(1/g − 1)`, `b = (1−ξ̄)(1/g − 1)`. Returns (nodes ξᵢ, normalized weights wᵢ).
+///
+/// **The two regimes are different integration schemes, and the switch is at `a = 1`.**
+/// A LEAN mean gives `a < 1`, so `P_β ∝ ξ^(a−1)` has an integrable SINGULARITY at ξ→0 that a
+/// naive uniform-in-ξ midpoint rule mis-weights (⟨ξ⟩ drifts off ξ̄ and the integral never
+/// converges). The fix substitutes `u = ξ^a` — uniform in u, the Jacobian cancelling `ξ^(a−1)`
+/// EXACTLY and leaving the bounded weight `(1−ξ)^(b−1)`, `b ≥ 1`. For `a ≥ 1` (near-delta, no
+/// singularity) it windows a uniform-in-ξ grid over `ξ̄ ± 8σ` instead — CENTERED on the mass,
+/// because as g→0 the peak narrows to a sliver near ξ̄ and a `[0, …]` window would mis-resolve it.
+///
+/// **The mean and variance are ASSERTED against their targets — that check is the deliverable
+/// more than the number is.** Both guards are live constraints on the caller, not decoration:
+///
+/// * `b ≥ 1` caps the width at `g ≤ (1−ξ̄)/(2−ξ̄)` — 0.493 at the shipped lean mean.
+/// * the 1 % mean-preservation bar is `n_quad`-SENSITIVE, which the oracle measured rather than
+///   assumed: at a lean mean it REJECTS `g = 0.026` (the first point past the `a = 1` switch)
+///   and `g = 0.40` for every `n_quad ≤ 100`, and accepts both from 112 up. The Python's own
+///   gate samples `n_quad = 160`, so nothing there could see it.
+///
+/// Three spellings here are not interchangeable, and each is the opposite of its neighbour:
+/// `powp` for the COMPUTED exponent `1/a`, `.sqrt()` for σ (the sqrt instruction, NOT `powp`),
+/// and `d * d` for the variance check's `** 2` (an integer literal, which PyPy rewrites into a
+/// multiply). `(hi − lo)·(i + 0.5)/n` is `((hi−lo)·(i+0.5))/n`, not `(hi−lo)·((i+0.5)/n)`.
+pub fn beta_pdf_nodes_weights(xibar: f64, g_seg: f64, n_quad: usize) -> (Vec<f64>, Vec<f64>) {
+    let inv = 1.0 / g_seg - 1.0;
+    let (a, b) = (xibar * inv, (1.0 - xibar) * inv);
+    assert!(
+        a > 0.0 && b >= 1.0,
+        "β-PDF shape (a={a:.3}, b={b:.3}) outside a>0,b≥1 — the quadrature needs a non-singular \
+         (1−ξ) tail (b≥1 holds for a lean mean until g≈0.49, well past g_max)."
+    );
+    let n = n_quad as f64;
+    let (nodes, logw): (Vec<f64>, Vec<f64>) = if a < 1.0 {
+        // singular lean-mean regime — u = ξ^a cancels ξ^(a−1)
+        let nodes: Vec<f64> =
+            (0..n_quad).map(|i| powp((i as f64 + 0.5) / n, 1.0 / a)).collect();
+        let logw = nodes.iter().map(|&x| (b - 1.0) * (1.0 - x).ln()).collect();
+        (nodes, logw)
+    } else {
+        // near-delta (a ≥ 1): bounded density, so CENTER the window on the mass
+        let sigma = (g_seg * xibar * (1.0 - xibar)).sqrt();
+        let lo = 1e-12f64.max(xibar - 8.0 * sigma);
+        let hi = (1.0 - 1e-12f64).min(xibar + 8.0 * sigma);
+        let nodes: Vec<f64> =
+            (0..n_quad).map(|i| lo + (hi - lo) * (i as f64 + 0.5) / n).collect();
+        let logw = nodes
+            .iter()
+            .map(|&x| (a - 1.0) * x.ln() + (b - 1.0) * (1.0 - x).ln())
+            .collect();
+        (nodes, logw)
+    };
+    let m = logw.iter().fold(f64::NEG_INFINITY, |acc, &v| acc.max(v));
+    let ww: Vec<f64> = logw.iter().map(|&l| (l - m).exp()).collect();
+    let s: f64 = ww.iter().fold(0.0, |acc, &v| acc + v);
+    let w: Vec<f64> = ww.iter().map(|&x| x / s).collect();
+
+    // mean-preservation gate (THE deliverable): the closure must integrate at the specified mean
+    let mean_xi = w.iter().zip(nodes.iter()).fold(0.0, |acc, (&wi, &x)| acc + wi * x);
+    let var_xi = w.iter().zip(nodes.iter()).fold(0.0, |acc, (&wi, &x)| {
+        let d = x - xibar;
+        acc + wi * (d * d)
+    });
+    let var_tgt = g_seg * xibar * (1.0 - xibar);
+    assert!(
+        (mean_xi - xibar).abs() <= 0.01 * xibar,
+        "β-PDF quadrature drifted the mean: ⟨ξ⟩={mean_xi:.6} vs ξ̄={xibar:.6} (>1%) — the \
+         mean-preserving closure must integrate at ξ̄ (raise n_quad: the bar needs ≥112 near \
+         the a=1 switch and at the top of the g range)."
+    );
+    assert!(
+        (var_xi - var_tgt).abs() <= 0.05 * var_tgt,
+        "β-PDF quadrature variance off target: {var_xi:.3e} vs {var_tgt:.3e} (>5%)."
+    );
+    (nodes, w)
+}
+
+/// The IDEAL primary bell EI(ξ) on a fixed fine ξ-grid, with a linear interpolator.
+///
+/// Python returns a closure over its two reference arrays; Rust returns the arrays, which is
+/// the same object with the capture made visible. Built ONCE and reused: the bell is
+/// equilibrium-heavy (every node an AFT bisection plus a 4000-step RK4) and depends on
+/// **neither `g` nor `J`**, so one bell serves an entire segregation sweep and an entire jet
+/// sweep. That is the sizing lever this whole slice rests on.
+#[derive(Debug, Clone)]
+pub struct Bell {
+    /// the reference ξ grid, from ~0 up to the φ=2 soot bound
+    pub xi_ref: Vec<f64>,
+    /// EI_NO at each reference ξ, g NO/kg fuel (0 below the flammability limit)
+    pub ei_ref: Vec<f64>,
+}
+
+impl Bell {
+    /// ξ ↦ EI, linear between reference nodes. Three branches, all of them reachable: below the
+    /// first node the bell is flat, at or beyond the last it is 0 (past φ=2, soot-rich), and
+    /// between them a binary search plus a lerp.
+    pub fn at(&self, xi: f64) -> f64 {
+        let n = self.xi_ref.len();
+        if xi <= self.xi_ref[0] {
+            return self.ei_ref[0];
+        }
+        if xi >= self.xi_ref[n - 1] {
+            return 0.0; // beyond φ=2 (soot-rich) ⇒ EI≈0
+        }
+        let (mut lo, mut hi) = (0usize, n - 1);
+        while hi - lo > 1 {
+            let mid = (lo + hi) / 2;
+            if self.xi_ref[mid] <= xi {
+                lo = mid;
+            } else {
+                hi = mid;
+            }
+        }
+        let t = (xi - self.xi_ref[lo]) / (self.xi_ref[hi] - self.xi_ref[lo]);
+        self.ei_ref[lo] + t * (self.ei_ref[hi] - self.ei_ref[lo])
+    }
+}
+
+/// ξ at the φ=2 soot bound — the top of every ξ-grid in this family.
+pub fn xi_soot_bound() -> f64 {
+    (2.0 * gas::f_stoich()) / (1.0 + 2.0 * gas::f_stoich())
+}
+
+/// Build the ideal bell (rung 13; rung 21's `super_eq_o` lifts every node).
+///
+/// The grid is `xi_max·(i + 0.5)/n_bell` — `(xi_max·(i+0.5))/n_bell`, left to right, and NOT
+/// `xi_max·((i+0.5)/n_bell)`. Three grid formulas in this family have three different shapes;
+/// transcribing them by eye is how one of them ends up a bit off.
+pub fn bell_interpolator(
+    p: f64,
+    tt3: f64,
+    hf_fuel: f64,
+    tau: f64,
+    n_bell: usize,
+    super_eq_o: bool,
+) -> Bell {
+    let xi_max = xi_soot_bound();
+    let xi_ref: Vec<f64> =
+        (0..n_bell).map(|i| xi_max * (i as f64 + 0.5) / n_bell as f64).collect();
+    let ei_ref = xi_ref
+        .iter()
+        .map(|&x| ideal_bell_ei(x / (1.0 - x), p, tt3, hf_fuel, tau, super_eq_o))
+        .collect();
+    Bell { xi_ref, ei_ref }
+}
+
+/// `⟨EI⟩ = ∫₀¹ EI_bell(φ(ξ))·P_β(ξ; ξ̄, g) dξ` on a PREBUILT bell — the hoisted form.
+///
+/// This is [`pdf_mean_ei`] with the bell lifted out of the call, which is what makes a sweep
+/// affordable, and it is what the Python's own rung-13/21 tests use. **One documented
+/// difference from the wrapper:** the `g → 0` delta short-circuit returns the INTERPOLANT at ξ̄,
+/// where production returns the EXACT [`ideal_bell_ei`]. The Python has the same split and its
+/// `test_reduce_g_to_zero_is_well_mixed_point_value` is careful about which one it compares to.
+pub fn pdf_mean_ei_on_bell(bell: &Bell, xibar: f64, g_seg: f64, n_quad: usize) -> f64 {
+    if g_seg <= 1e-9 {
+        return bell.at(xibar); // delta ⇒ well-mixed point value
+    }
+    let (nodes, w) = beta_pdf_nodes_weights(xibar, g_seg, n_quad);
+    w.iter().zip(nodes.iter()).fold(0.0, |acc, (&wi, &x)| acc + wi * bell.at(x))
+}
+
+/// `⟨EI⟩` over the mean-preserving β-PDF of the ideal bell — the rung-13 closure, and the one
+/// rungs 18 and 22 reuse verbatim with only the SOURCE of `g` changed.
+///
+/// A β-PDF of mixture fraction at the OVERALL mean `ξ̄ = far/(1+far)`; `g → 0` is a delta at ξ̄,
+/// i.e. the well-mixed point value. Builds the bell (the expensive part) and integrates it
+/// against the regime-aware quadrature.
+///
+/// RUNG 21 — `super_eq_o` threads the Westenberg m(T) lift through BOTH the delta short-circuit
+/// AND the built bell, so the reduce stays consistent in the limit.
+#[allow(clippy::too_many_arguments)]
+pub fn pdf_mean_ei(
+    far_overall: f64,
+    tt3: f64,
+    p: f64,
+    hf_fuel: f64,
+    tau: f64,
+    g_seg: f64,
+    n_bell: usize,
+    n_quad: usize,
+    super_eq_o: bool,
+) -> f64 {
+    let xibar = far_overall / (1.0 + far_overall);
+    if g_seg <= 1e-9 {
+        // delta ⇒ well-mixed point value, from the EXACT bell rather than the interpolant
+        return ideal_bell_ei(far_overall, p, tt3, hf_fuel, tau, super_eq_o);
+    }
+    let bell = bell_interpolator(p, tt3, hf_fuel, tau, n_bell, super_eq_o);
+    let (nodes, w) = beta_pdf_nodes_weights(xibar, g_seg, n_quad);
+    w.iter().zip(nodes.iter()).fold(0.0, |acc, (&wi, &x)| acc + wi * bell.at(x))
+}
+
+/// Rung 16's per-pocket bank: EI for every pocket on the ξ-grid, at ONE dwell.
+///
+/// **This is the slice's expensive object and its own sizing lever.** Each rich-of-mean pocket
+/// is a full [`quench_no`] that builds its OWN mix-out trajectory — no `tab` sharing is
+/// possible, because every pocket sits at its own `far_local` with its own `alpha`. But the
+/// bank depends on `tau_core` and **not on `g_seg`**, which enters nowhere before the final
+/// β-quadrature. So the Python's monolithic function is split in two here: build the bank once
+/// per dwell, then [`pocket_quench_integrate`] over as many widths as you like for free. The
+/// Python cannot do that and rebuilds 24 quenches per call.
+#[derive(Debug, Clone)]
+pub struct PocketGrid {
+    /// the ξ grid, up to the φ=2 soot bound
+    pub xi_grid: Vec<f64>,
+    /// EI at each pocket, g NO/kg fuel
+    pub vals: Vec<f64>,
+    /// max `[NO]/[NO]_e` over every pocket's quench; `< 1` ⇒ the dropped clamp stayed dormant
+    pub max_a: f64,
+}
+
+impl PocketGrid {
+    /// ξ ↦ EI over the pocket bank — the same three-branch interpolator as [`Bell::at`], on a
+    /// different pair of arrays. (Kept as its own body rather than shared, because the Python
+    /// writes it twice too and the φ>2 tail is a rung-15-scope decision, not a lerp detail.)
+    pub fn at(&self, xi: f64) -> f64 {
+        let n = self.xi_grid.len();
+        if xi <= self.xi_grid[0] {
+            return self.vals[0];
+        }
+        if xi >= self.xi_grid[n - 1] {
+            return 0.0; // φ>2 tail: rung-15 soot-bound scope
+        }
+        let (mut lo, mut hi) = (0usize, n - 1);
+        while hi - lo > 1 {
+            let mid = (lo + hi) / 2;
+            if self.xi_grid[mid] <= xi {
+                lo = mid;
+            } else {
+                hi = mid;
+            }
+        }
+        let t = (xi - self.xi_grid[lo]) / (self.xi_grid[hi] - self.xi_grid[lo]);
+        self.vals[lo] + t * (self.vals[hi] - self.vals[lo])
+    }
+}
+
+/// Numerical knobs for the per-pocket bank — Python's keyword tail on `_pocket_quench_mean_ei`.
+#[derive(Debug, Clone, Copy)]
+pub struct PocketOpts {
+    /// ξ-grid points; each one is a pocket, and each rich pocket a full quench — the cost driver
+    pub n_bell: usize,
+    /// trajectory points inside each pocket's quench
+    pub quench_ngrid: usize,
+    /// RK4 steps inside each pocket's quench
+    pub quench_nsteps: usize,
+    /// RUNG 20/21 — lift each pocket's initial [O] AND its quench re-making
+    pub super_eq_o: bool,
+}
+
+impl Default for PocketOpts {
+    fn default() -> Self {
+        Self { n_bell: 120, quench_ngrid: 240, quench_nsteps: 2000, super_eq_o: false }
+    }
+}
+
+/// Build the rung-16 per-pocket bank at a single dwell `tau_core`.
+///
+/// Pocket bookkeeping (a mixture fraction ξ ⇒ local `far_local = ξ/(1−ξ)`, `α = far_ov/far_local`):
+///
+/// * **RICH of the overall mean**, burnable, φ≤2 → its own [`quench_no`]: it dilutes DOWN through
+///   stoichiometric toward the mean, which is the rung-10 re-making.
+/// * **LEAN of the mean / φ>2 / too lean to burn** → [`ideal_bell_ei`] (0 above φ2). A lean
+///   pocket only gets leaner on dilution and never re-crosses stoich, so it has no finite
+///   quench. Keeping this branch bit-identical to rung 15's is what makes the reduce exact.
+///
+/// `n0 = α · x_no · Σn` is `(α·x_no)·Σn`, left to right; float multiply is not associative and
+/// this is the seed the whole pocket integration starts from.
+pub fn pocket_quench_grid(
+    far_overall: f64,
+    tt3: f64,
+    p: f64,
+    hf_fuel: f64,
+    tau_ref: f64,
+    tau_core: f64,
+    o: PocketOpts,
+) -> PocketGrid {
+    let xi_max = xi_soot_bound(); // ξ at the soot bound φ=2
+    let xi_grid: Vec<f64> =
+        (0..o.n_bell).map(|i| xi_max * (i as f64 + 0.5) / o.n_bell as f64).collect();
+    let mut vals = Vec::with_capacity(o.n_bell);
+    let mut max_a = 0.0f64;
+    for &xi in &xi_grid {
+        let far_local = xi / (1.0 - xi);
+        if far_local < far_overall
+            || far_local / gas::f_stoich() > 2.0 + 1e-9
+            || far_local <= 0.0
+        {
+            // lean/tail: the rung-15 bell, lifted WITH the pocket so there is no half-eq-O hybrid
+            vals.push(ideal_bell_ei(far_local, p, tt3, hf_fuel, tau_ref, o.super_eq_o));
+            continue;
+        }
+        let Some(t_p) = try_primary_aft(far_local, p, tt3, hf_fuel) else {
+            vals.push(0.0); // too lean to burn (cold-edge flame)
+            continue;
+        };
+        let alpha = far_overall / far_local; // ≤ 1 (a rich-of-mean pocket)
+        let comp = equilibrium_composition(far_local, t_p, p);
+        // RUNG 20 — lift the pocket's initial [O] at its OWN flame T_p, and (below) its quench
+        // re-making too, so every EI in the β-PDF integral carries the same closure.
+        let m0 = if o.super_eq_o {
+            super_eq_o_multiplier(t_p.max(SUPER_EQ_T_FLOOR))
+        } else {
+            1.0
+        };
+        let ntot: f64 = comp.iter().map(|&(_, v)| v).sum();
+        let n0 = alpha * thermal_no(&comp, t_p, p, tau_ref, far_local, 4000, m0).x_no * ntot;
+        let q = quench_no(
+            &comp,
+            t_p,
+            alpha,
+            far_overall,
+            tt3,
+            p,
+            n0,
+            tau_core,
+            QuenchOpts {
+                nsteps: o.quench_nsteps,
+                ngrid: o.quench_ngrid,
+                tab: None,
+                schedule: None,
+                super_eq_o: o.super_eq_o,
+            },
+        );
+        vals.push(q.ei);
+        max_a = max_a.max(q.max_a);
+    }
+    PocketGrid { xi_grid, vals, max_a }
+}
+
+/// Integrate a prebuilt [`PocketGrid`] against the β-PDF — the cheap half of rung 16.
+///
+/// `g → 0` ⇒ a delta at ξ̄ ⇒ the single pocket AT the mean (≈0 at a lean mean, which is why the
+/// finite bulk floor dominates there).
+pub fn pocket_quench_integrate(
+    grid: &PocketGrid,
+    far_overall: f64,
+    g_seg: f64,
+    n_quad: usize,
+) -> f64 {
+    let xibar = far_overall / (1.0 + far_overall);
+    if g_seg <= 1e-9 {
+        return grid.at(xibar); // delta ⇒ a single pocket at the mean
+    }
+    let (nodes, w) = beta_pdf_nodes_weights(xibar, g_seg, n_quad);
+    w.iter().zip(nodes.iter()).fold(0.0, |acc, (&wi, &x)| acc + wi * grid.at(x))
+}
+
+/// `⟨EI_pocket_quench(ξ; τ_core)⟩` over the β-PDF — rung 16's closure, as one call.
+///
+/// The rung-16 upgrade of [`pdf_mean_ei`]: where rung 15 integrates the CONSTANT-T ideal bell
+/// and multiplies by a scalar dwell factor `D(u) = τ_core/τ_ref` (a LINEARISATION, exact only
+/// while EI ∝ τ), rung 16 carries EACH rich-of-mean pocket through its OWN finite quench at the
+/// dwell τ_core, so the dwell enters INSIDE the chemistry. A pocket that lingers COOLS as it
+/// re-makes NO through the stoichiometric crossing, so ⟨EI⟩ is SUBLINEAR in τ_core — the
+/// cooling-limited dwell erodes rung-15's far-over-penetration flank.
+///
+/// Returns `(⟨EI⟩ g NO/kg fuel, max_a)`; `max_a` folds into the clamp-dormancy gate.
+#[allow(clippy::too_many_arguments)]
+pub fn pocket_quench_mean_ei(
+    far_overall: f64,
+    tt3: f64,
+    p: f64,
+    hf_fuel: f64,
+    tau_ref: f64,
+    tau_core: f64,
+    g_seg: f64,
+    n_quad: usize,
+    o: PocketOpts,
+) -> (f64, f64) {
+    let grid = pocket_quench_grid(far_overall, tt3, p, hf_fuel, tau_ref, tau_core, o);
+    (pocket_quench_integrate(&grid, far_overall, g_seg, n_quad), grid.max_a)
+}
+
+/// Rung-18 DERIVED injection ceiling `g_ceiling = (ξ_p − ξ̄)/(1 − ξ̄)`.
+///
+/// The maximum normalized variance of a two-delta PDF on {0 (dilution air), ξ_p (rich-primary
+/// products)} at the fixed overall mean ξ̄. Set by the PRIMARY RICHNESS φ_p, **NOT a free knob**
+/// — the one quantity rung 18 DERIVES rather than fits, and it exposes rung-13's `g_max = 0.3`
+/// as ~4.4× too large (φ_p=1.5 ⇒ 0.0675).
+///
+/// A two-delta at {0, ξ_p} with mean ξ̄ carries mass ξ̄/ξ_p at ξ_p; its variance is ξ̄(ξ_p−ξ̄), so
+/// the normalized segregation is `(ξ_p−ξ̄)/(1−ξ̄)`. Requires `φ_p > φ_overall` (a rich primary
+/// diluting down to a leaner mean — the RQL geometry), which the assert enforces.
+pub fn two_stream_ceiling(far_overall: f64, phi_primary: f64) -> f64 {
+    let xibar = far_overall / (1.0 + far_overall);
+    let far_p = phi_primary * gas::f_stoich();
+    let xi_p = far_p / (1.0 + far_p);
+    let g_ceiling = (xi_p - xibar) / (1.0 - xibar);
+    assert!(
+        0.0 < g_ceiling && g_ceiling < 1.0,
+        "two-stream ceiling g={g_ceiling:.4} outside (0,1): the primary (φ_p={phi_primary}, \
+         ξ_p={xi_p:.4}) must be RICHER than the overall mean (ξ̄={xibar:.4}) — the RQL geometry."
+    );
+    g_ceiling
+}
+
+/// Rung-18 transported segregation: the mixture-fraction variance DECAY ODE
+/// `dg/dt = −C_φ·ω·g` integrated over the residence `[0, τ]` from the injection ceiling.
+///
+/// ω is the turbulent mixing frequency and `C_φ ≈ 2` the canonical mechanical-to-scalar
+/// timescale ratio (scalar dissipation). Returns the residual width `g(τ)`.
+///
+/// **Analytic for constant ω — and deliberately NOT written that way.** `g_ceiling·exp(−C_φ·ω·τ)`
+/// is the closed form, but the negative-result gate has to be able to drive this with ANY ω, so
+/// it is integrated numerically: backward (implicit) Euler on the linear decay, which is
+/// unconditionally stable AND positivity-preserving for any dt (forward Euler goes negative once
+/// `C_φ·ω·dt > 1`). The loop of `nsteps` divisions is ~1 % from the closed form at the shipped
+/// settings, and the oracle dumps both side by side so a "simplification" fails loudly here
+/// instead of quietly making rung 18's basin the wrong depth.
+///
+/// The physics result this exists to state is NEGATIVE: a mean-field ω(J) gives a monotone/flat
+/// g(J) — no interior optimum. An optimum appears ONLY once ω is given a SPATIAL coverage
+/// dependence ω(C = (S/H)√J), i.e. once the jet spacing S is injected. So this ODE cannot DERIVE
+/// the Holdeman optimum; the location is imposed through the caller's ω(C). `docs/rung18-spec.md`.
+pub fn transport_variance(
+    g_ceiling: f64,
+    omega: f64,
+    tau: f64,
+    c_phi: f64,
+    nsteps: usize,
+) -> f64 {
+    let dt = tau / nsteps as f64;
+    let mut g = g_ceiling;
+    let denom = 1.0 + c_phi * omega * dt;
+    for _ in 0..nsteps {
+        g /= denom;
+    }
+    assert!(
+        0.0 < g && g <= g_ceiling + 1e-12,
+        "transported variance g={g:.4e} left (0, g_ceiling={g_ceiling:.4e}] — the decay ODE must \
+         stay bounded by the injection ceiling (check C_φ·ω·τ ≥ 0 and dt small enough)."
+    );
+    g
+}
+
 /// Rung-19 prompt-NO (Fenimore) config — De Soete's (1975) global-rate CORRECTION FACTOR
 /// reduced to its fitted, rich-peaking φ-shape.
 ///
@@ -993,6 +1530,401 @@ impl Unmixedness {
     }
 }
 
+/// Rung-13 resolved-mixing-PDF config — a mean-preserving β-PDF of mixture fraction that
+/// replaces rung-12's parameterised SEGREGATION (`w(C)`) with a CONTINUOUS distribution.
+///
+/// Rides ON a [`JetMixing`] (it needs J and the duct height H for the Holdeman group
+/// `C = (S/H)√J`) and is MUTUALLY EXCLUSIVE with [`Unmixedness`] — two closures of the same
+/// segregation physics.
+///
+/// **A MECHANISM SEPARATION, not a rung-12 reproduction.** Rung-12's over-penetration CLIMB came
+/// from the DWELL effect — an absolute, off-optimum-growing `τ_core` surviving J→∞, a TIME
+/// mechanism. This rung isolates the COMPOSITION mechanism and DROPS the quench chain, so it
+/// structurally CANNOT climb: it pins the optimum LOCATION (min AT `C_opt`) while the
+/// far-over-penetration flank DESCENDS. Composition variance pins the optimum; the dwell makes
+/// the climb; combining them is rung 15.
+///
+/// **The lesson, framed correctly — NOT generic "convexity/Jensen".** The NO-vs-φ bell is convex
+/// on its flanks but CONCAVE at the peak, so there is no global convexity to invoke. The honest
+/// statement: NO production is sharply PEAKED at stoich, so spreading the local φ around a fixed
+/// mean RAISES the mean NO whenever the mean is OFF-stoich — the stoich-ward tail samples the
+/// peak while the mean itself sits in a low-EI wing — most strongly the leaner the mean, and it
+/// REVERSES SIGN at a stoichiometric mean. Our combustor mean is LEAN, so segregation raises NO
+/// and the optimum is where segregation is least.
+///
+/// `docs/rung13-spec.md`. Like the rung-9..12 knobs, `S`/`k_g`/`g_max` are order-of-magnitude;
+/// `C_opt ≈ 2.5` is Holdeman's value. What is CERTIFIED is the optimum pinned AT `C_opt` (both
+/// flanks up), the `(H/S)²` shift, and the SIGN of the effect and its reversal at a stoich mean.
+#[derive(Debug, Clone, Copy)]
+pub struct MixingPdf {
+    /// dilution-jet spacing, m (forms the Holdeman group with H and J)
+    pub s: f64,
+    /// Holdeman uniformity optimum of `C = (S/H)√J` (the segregation minimum)
+    pub c_opt: f64,
+    /// segregation sensitivity to the kinked distance `|ln(C/C_opt)|`
+    pub k_g: f64,
+    /// cap on the segregation (`0 < g_max < 1`; past the ⟨EI⟩(g) hump ⇒ the far flank descends)
+    pub g_max: f64,
+    /// reference-bell grid points — EI(ξ) is built ONCE and interpolated
+    pub n_bell: usize,
+    /// β-PDF quadrature nodes
+    pub n_quad: usize,
+}
+
+impl Default for MixingPdf {
+    fn default() -> Self {
+        Self { s: 0.0625, c_opt: 2.5, k_g: 0.3, g_max: 0.3, n_bell: 200, n_quad: 200 }
+    }
+}
+
+impl MixingPdf {
+    /// Python's `__post_init__`.
+    pub fn validate(&self) {
+        for (name, v) in [("S", self.s), ("C_opt", self.c_opt)] {
+            assert!(v > 0.0, "MixingPDF.{name}={v} must be positive");
+        }
+        assert!(
+            self.k_g >= 0.0,
+            "MixingPDF.k_g={} must be ≥ 0 (0 ⇒ g≡0 ⇒ well-mixed point)",
+            self.k_g
+        );
+        assert!(
+            0.0 < self.g_max && self.g_max < 1.0,
+            "MixingPDF.g_max={} must be in (0,1)",
+            self.g_max
+        );
+        assert!(
+            self.n_bell > 1 && self.n_quad > 1,
+            "MixingPDF grid sizes (n_bell, n_quad) must be > 1"
+        );
+    }
+
+    /// The Holdeman group `C = (S/H)√J` — identical to [`Unmixedness::c`], the same jet that set
+    /// `τ_q`. `sqrt`, not `powp`, for the reason in [`JetMixing::tau_q`].
+    pub fn c(&self, mixing: &JetMixing) -> f64 {
+        (self.s / mixing.h) * mixing.j.sqrt()
+    }
+
+    /// The β-PDF segregation width `g(C) = min(g_max, k_g·|ln(C/C_opt)|)` — KINKED at `C_opt`
+    /// (0 there, rising on BOTH flanks with a non-zero slope, which is what pins the emissions
+    /// minimum AT `C_opt`), capped at `g_max`. `g → 0` ⇒ a delta at ξ̄ ⇒ the well-mixed point.
+    pub fn segregation(&self, c: f64) -> f64 {
+        self.g_max.min(self.k_g * (c / self.c_opt).ln().abs())
+    }
+}
+
+/// Rung-15 PDF-THROUGH-QUENCH config — rung-13's β-PDF carried THROUGH the rung-10/12 dwell
+/// chain, so the two mixing mechanisms finally COMBINE.
+///
+/// ```text
+/// ⟨EI⟩₁₅ = EI_bulk_quench(τ_mean)   # term 1: the rung-11 mean field — a FINITE floor, all C
+///        + D(u) · ⟨EI_bell⟩(g)      # term 2: the rung-13 integral × a rung-12 dwell
+/// ```
+///
+/// with `g(C) = min(g_max, k_g·u)` (rung-13 segregation), `u(C) = |ln(C/C_opt)|` (rung-12
+/// unmixedness), and the dwell factor `D(u) = τ_res(1 + b_u·u)/τ_ref` — an ABSOLUTE
+/// off-optimum-growing residence rescaling the reference-τ bell EI to the pocket's actual
+/// lingering dwell (exact while EI ∝ τ, the dormant clamp). `τ_ref` is the `zoned_nox` residence
+/// at which the bell is built, so the two stay locked.
+///
+/// **Distinguishable from BOTH parents**: the finite floor and the climbing far flank are NOT
+/// rung 13 (whose optimum is ≈0 and whose far flank descends); the STOICH-MEAN SIGN REVERSAL is
+/// NOT reproducible by rung-12's lumped dwell, which is the discriminator that catches the naïve
+/// "dwell-only PDF through the quench" trap. `b_u = 3` is larger than rung-12's default because
+/// term 2's `⟨EI_bell⟩` is a weaker lever than rung-12's `EI(τ_core)`. `docs/rung15-spec.md`.
+#[derive(Debug, Clone, Copy)]
+pub struct QuenchPdf {
+    /// dilution-jet spacing, m
+    pub s: f64,
+    /// Holdeman uniformity optimum of `C = (S/H)√J` (segregation AND dwell minimum)
+    pub c_opt: f64,
+    /// β-PDF segregation sensitivity to `|ln(C/C_opt)|` (the rung-13 width)
+    pub k_g: f64,
+    /// cap on the segregation (`0 < g_max < 1`; the rung-13 bimodal bound)
+    pub g_max: f64,
+    /// under-mixed-pocket dwell AT the optimum, s (an absolute residence; rung 12)
+    pub tau_res: f64,
+    /// off-optimum dwell growth — pins the min at `C_opt`; larger than rung-12's default
+    pub b_u: f64,
+    /// reference-bell grid points (rung 13)
+    pub n_bell: usize,
+    /// β-PDF quadrature nodes (rung 13)
+    pub n_quad: usize,
+}
+
+impl Default for QuenchPdf {
+    fn default() -> Self {
+        Self {
+            s: 0.0625,
+            c_opt: 2.5,
+            k_g: 0.3,
+            g_max: 0.3,
+            tau_res: 2.5e-3,
+            b_u: 3.0,
+            n_bell: 200,
+            n_quad: 200,
+        }
+    }
+}
+
+impl QuenchPdf {
+    /// Python's `__post_init__`.
+    pub fn validate(&self) {
+        for (name, v) in [("S", self.s), ("C_opt", self.c_opt), ("tau_res", self.tau_res)] {
+            assert!(v > 0.0, "QuenchPDF.{name}={v} must be positive");
+        }
+        assert!(self.k_g >= 0.0, "QuenchPDF.k_g={} must be ≥ 0 (0 ⇒ floor only)", self.k_g);
+        assert!(self.b_u >= 0.0, "QuenchPDF.b_u={} must be ≥ 0", self.b_u);
+        assert!(
+            0.0 < self.g_max && self.g_max < 1.0,
+            "QuenchPDF.g_max={} must be in (0,1)",
+            self.g_max
+        );
+        assert!(
+            self.n_bell > 1 && self.n_quad > 1,
+            "QuenchPDF grid sizes (n_bell, n_quad) must be > 1"
+        );
+    }
+
+    /// The Holdeman group `C = (S/H)√J` — identical to [`MixingPdf::c`].
+    pub fn c(&self, mixing: &JetMixing) -> f64 {
+        (self.s / mixing.h) * mixing.j.sqrt()
+    }
+
+    /// The unmixedness `u(C) = |ln(C/C_opt)|` — the KINKED L1 distance from the optimum, driving
+    /// BOTH the β-PDF width and the dwell growth (rungs 12 and 13's kinks, unified).
+    pub fn u(&self, c: f64) -> f64 {
+        (c / self.c_opt).ln().abs()
+    }
+
+    /// The rung-13 β-PDF segregation width `g(C) = min(g_max, k_g·u)`.
+    pub fn segregation(&self, c: f64) -> f64 {
+        self.g_max.min(self.k_g * self.u(c))
+    }
+
+    /// The dwell factor `D(u) = τ_res(1 + b_u·u)/τ_ref` — the segregated pocket's ABSOLUTE
+    /// residence relative to the bell's reference residence. Its off-optimum growth is what makes
+    /// the far flank CLIMB.
+    pub fn dwell_factor(&self, c: f64, tau_ref: f64) -> f64 {
+        self.tau_res * (1.0 + self.b_u * self.u(c)) / tau_ref
+    }
+}
+
+/// Rung-16 PER-POCKET PDF-through-quench config — RETIRES rung-15's one acknowledged
+/// linearisation.
+///
+/// Rung 15 carried the composition β-PDF through the dwell as `term 2 = D(u)·⟨EI_bell⟩(g)`: the
+/// CONSTANT-T ideal bell times a SCALAR dwell factor, exact only while EI ∝ τ — which ignores
+/// that a lingering pocket COOLS. Rung 16 carries EACH rich-of-mean pocket through its OWN finite
+/// quench at the dwell `τ_core`, so the dwell acts INSIDE the chemistry. Same knobs, same
+/// rides-on-`JetMixing`, same Holdeman group.
+///
+/// **The robust lesson** (`docs/rung16-spec.md`):
+/// * SUBLINEAR DWELL (the mechanism) — term 2 grows sublinearly in `τ_core`, against rung-15's
+///   linear `D(u)·EI` whose growth IS the dwell ratio exactly. The linearisation made visible.
+/// * FAR-FLANK EROSION (the headline) — the cooling-limited dwell erodes rung-15's
+///   over-penetration secondary basin into NEAR-DEGENERACY with the sharp `C_opt` notch, which
+///   survives (the composition excess still → 0 at `C_opt`, both immediate flanks up).
+/// * **NOT CLAIMED: which of the two near-degenerate optima is GLOBALLY lowest.** It flips across
+///   the β-PDF quadrature, the φ>2 tail treatment and the `C_e` regime, all comparable to the
+///   margin. Rung 16 quantifies the linearisation error; it does not relocate the optimum — so no
+///   gate here asserts a global-min LOCATION, and the oracle deliberately dumps no argmin for it.
+///
+/// The defaults are SMALLER than rung 15's because each `n_bell` node is a full quench.
+#[derive(Debug, Clone, Copy)]
+pub struct PocketQuenchPdf {
+    /// dilution-jet spacing, m
+    pub s: f64,
+    /// Holdeman uniformity optimum of `C = (S/H)√J`
+    pub c_opt: f64,
+    /// β-PDF segregation sensitivity to `|ln(C/C_opt)|` (the rung-13 width)
+    pub k_g: f64,
+    /// cap on the segregation (`0 < g_max < 1`)
+    pub g_max: f64,
+    /// under-mixed-pocket dwell AT the optimum, s (absolute; rung 12)
+    pub tau_res: f64,
+    /// off-optimum dwell growth (the rung-12 `core_dwell` slope)
+    pub b_u: f64,
+    /// per-pocket ξ-grid points — each one a full quench, so this is THE cost driver
+    pub n_bell: usize,
+    /// β-PDF quadrature nodes (rung 13)
+    pub n_quad: usize,
+}
+
+impl Default for PocketQuenchPdf {
+    fn default() -> Self {
+        Self {
+            s: 0.0625,
+            c_opt: 2.5,
+            k_g: 0.3,
+            g_max: 0.3,
+            tau_res: 2.5e-3,
+            b_u: 3.0,
+            n_bell: 120,
+            n_quad: 160,
+        }
+    }
+}
+
+impl PocketQuenchPdf {
+    /// Python's `__post_init__`.
+    pub fn validate(&self) {
+        for (name, v) in [("S", self.s), ("C_opt", self.c_opt), ("tau_res", self.tau_res)] {
+            assert!(v > 0.0, "PocketQuenchPDF.{name}={v} must be positive");
+        }
+        assert!(
+            self.k_g >= 0.0,
+            "PocketQuenchPDF.k_g={} must be ≥ 0 (0 ⇒ floor only)",
+            self.k_g
+        );
+        assert!(self.b_u >= 0.0, "PocketQuenchPDF.b_u={} must be ≥ 0", self.b_u);
+        assert!(
+            0.0 < self.g_max && self.g_max < 1.0,
+            "PocketQuenchPDF.g_max={} must be in (0,1)",
+            self.g_max
+        );
+        assert!(self.n_bell > 1 && self.n_quad > 1, "PocketQuenchPDF grid sizes must be > 1");
+    }
+
+    /// The Holdeman group `C = (S/H)√J` — identical to [`QuenchPdf::c`].
+    pub fn c(&self, mixing: &JetMixing) -> f64 {
+        (self.s / mixing.h) * mixing.j.sqrt()
+    }
+
+    /// The unmixedness `u(C) = |ln(C/C_opt)|`.
+    pub fn u(&self, c: f64) -> f64 {
+        (c / self.c_opt).ln().abs()
+    }
+
+    /// The rung-13 β-PDF segregation width `g(C) = min(g_max, k_g·u)`.
+    pub fn segregation(&self, c: f64) -> f64 {
+        self.g_max.min(self.k_g * self.u(c))
+    }
+
+    /// The ABSOLUTE per-pocket dwell `τ_core(C) = τ_res(1 + b_u·u)`. Unlike rung 15's
+    /// [`QuenchPdf::dwell_factor`] — a `τ_core/τ_ref` RATIO multiplying a constant-T bell — this
+    /// goes straight INTO each pocket's quench, so the dwell acts through the cooling chemistry.
+    pub fn core_dwell(&self, c: f64) -> f64 {
+        self.tau_res * (1.0 + self.b_u * self.u(c))
+    }
+}
+
+/// Rung-18 TRANSPORTED-variance config — the honest LIMIT of the deferred "transported PDF" seam.
+///
+/// Rungs 12–17 IMPOSE the β-PDF width as a kinked `g(C) = min(g_max, k_g·|ln(C/C_opt)|)`. This
+/// config instead solves `g(C)` as the residual of a variance DECAY ODE
+/// (`dg/dt = −C_φ·ω(C)·g`, [`transport_variance`]) from a DERIVED two-stream ceiling
+/// ([`two_stream_ceiling`]), then feeds it through the same rung-13 ideal bell.
+///
+/// **THE LOAD-BEARING RESULT IS NEGATIVE, and stronger for it.** A 0-D variance transport CANNOT
+/// DERIVE the `C_opt` optimum: with any MEAN-FIELD ω(J) the residual g(J) is monotone or flat —
+/// no interior optimum, because an optimum needs ω peaked at a specific PENETRATION, i.e. the
+/// SPATIAL spacing S, which a mean-field trajectory does not contain. So the coverage
+/// `ω(C) = ω_opt·exp(−ln²(C/C_opt)/2w_cov²)` below is an EXPLICITLY IMPOSED spatial closure — the
+/// honest successor of rung-13's kinked g(C), NOT a derivation.
+///
+/// **What transport legitimately DOES add** (certified): a DERIVED ceiling from φ_p, exposing
+/// rung-13's `g_max = 0.3` as ~4.4× too large; a RESIDUAL floor `g(C_opt) = g_ceiling·e^(−Da_opt)
+/// > 0`, so the emissions optimum is ELEVATED off the well-mixed value rather than touching it;
+/// and SMOOTHNESS — both one-sided slopes vanish at `C_opt`, so the kink's sharpness was the
+/// artifact, not its location. `docs/rung18-spec.md`.
+#[derive(Debug, Clone, Copy)]
+pub struct TransportedPdf {
+    /// dilution-jet spacing, m
+    pub s: f64,
+    /// Holdeman uniformity optimum of `C = (S/H)√J` (here, the COVERAGE peak)
+    pub c_opt: f64,
+    /// scalar-dissipation constant (mechanical-to-scalar timescale ratio; anchored ≈2)
+    pub c_phi: f64,
+    /// optimum Damköhler `C_φ·ω_opt·τ` — e-folds of variance the best jet decays
+    pub da_opt: f64,
+    /// coverage width in `ln(C/C_opt)` — sets the basin breadth; the IMPOSED spatial part
+    pub w_cov: f64,
+    /// mixing residence for the ODE, s (folds into Da; g depends only on the product)
+    pub tau_mix: f64,
+    /// ideal-bell grid points (rung 13)
+    pub n_bell: usize,
+    /// β-PDF quadrature nodes (rung 13)
+    pub n_quad: usize,
+    /// variance-ODE integration steps
+    pub n_ode: usize,
+}
+
+impl Default for TransportedPdf {
+    fn default() -> Self {
+        Self {
+            s: 0.0625,
+            c_opt: 2.5,
+            c_phi: 2.0,
+            da_opt: 2.0,
+            w_cov: 1.0,
+            tau_mix: 2.5e-3,
+            n_bell: 200,
+            n_quad: 200,
+            n_ode: 400,
+        }
+    }
+}
+
+impl TransportedPdf {
+    /// Python's `__post_init__`.
+    pub fn validate(&self) {
+        for (name, v) in [
+            ("S", self.s),
+            ("C_opt", self.c_opt),
+            ("C_phi", self.c_phi),
+            ("Da_opt", self.da_opt),
+            ("w_cov", self.w_cov),
+            ("tau_mix", self.tau_mix),
+        ] {
+            assert!(v > 0.0, "TransportedPDF.{name}={v} must be positive");
+        }
+        assert!(
+            self.n_bell > 1 && self.n_quad > 1 && self.n_ode > 1,
+            "TransportedPDF grid sizes (n_bell, n_quad, n_ode) must be > 1"
+        );
+    }
+
+    /// The Holdeman group `C = (S/H)√J` — identical to [`MixingPdf::c`].
+    pub fn c(&self, mixing: &JetMixing) -> f64 {
+        (self.s / mixing.h) * mixing.j.sqrt()
+    }
+
+    /// The IMPOSED spatial coverage `ω(C) = ω_opt·exp(−ln²(C/C_opt)/2w_cov²)`, peaked at `C_opt`
+    /// (the best cross-plane tiling ⇒ fastest scalar dissipation) and SMOOTH — an analytic
+    /// maximum, so zero slope at `C_opt`, NOT the kink. `ω_opt` is folded in via
+    /// `Da_opt = C_φ·ω_opt·τ_mix`.
+    ///
+    /// **This is the one thing a 0-D transport cannot derive** — the spatial S enters here, and
+    /// nowhere else — so it is the explicit successor of rung-13's kinked g(C), stated as an
+    /// imposition rather than smuggled in.
+    pub fn coverage_omega(&self, c: f64) -> f64 {
+        let omega_opt = self.da_opt / (self.c_phi * self.tau_mix); // from Da_opt = C_φ·ω_opt·τ_mix
+        let lnr = (c / self.c_opt).ln();
+        omega_opt * (-lnr * lnr / (2.0 * self.w_cov * self.w_cov)).exp()
+    }
+
+    /// The TRANSPORTED width `g(C)`: integrate the decay ODE from the DERIVED two-stream ceiling.
+    /// A smooth basin (min AT `C_opt`, from the imposed coverage) ELEVATED off zero by the
+    /// residual `g(C_opt) = g_ceiling·e^(−Da_opt) > 0`. Returns `(g, g_ceiling)`.
+    pub fn segregation(
+        &self,
+        c: f64,
+        far_overall: f64,
+        phi_primary: f64,
+    ) -> (f64, f64) {
+        let g_ceiling = two_stream_ceiling(far_overall, phi_primary);
+        let g = transport_variance(
+            g_ceiling,
+            self.coverage_omega(c),
+            self.tau_mix,
+            self.c_phi,
+            self.n_ode,
+        );
+        (g, g_ceiling)
+    }
+}
+
 /// Knobs for [`Gas::thermal_nox`] — rung 7's residence time plus rung 19's two channels.
 ///
 /// A struct rather than a parameter list, and deliberately so: § 2 of the port plan makes it
@@ -1040,6 +1972,14 @@ pub struct ZonedNoxOpts {
     pub mixing: Option<JetMixing>,
     /// rung 12: the two-stream spatial-variance layer. REQUIRES `mixing`.
     pub unmixedness: Option<Unmixedness>,
+    /// rung 13: the resolved mixing β-PDF on the IDEAL bell. REQUIRES `mixing`.
+    pub pdf: Option<MixingPdf>,
+    /// rung 15: that β-PDF THROUGH the quench, with a LINEARISED dwell. REQUIRES `mixing`.
+    pub pdf_quench: Option<QuenchPdf>,
+    /// rung 16: the same, PER POCKET — the dwell inside the chemistry. REQUIRES `mixing`.
+    pub pocket_quench: Option<PocketQuenchPdf>,
+    /// rung 18: the width from a variance-decay ODE instead of the kink. REQUIRES `mixing`.
+    pub transported: Option<TransportedPdf>,
     /// finite-quench trajectory points — a pure cost/accuracy knob
     pub quench_ngrid: usize,
     /// finite-quench RK4 steps — a pure cost/accuracy knob
@@ -1056,6 +1996,10 @@ impl Default for ZonedNoxOpts {
             tau_q: None,
             mixing: None,
             unmixedness: None,
+            pdf: None,
+            pdf_quench: None,
+            pocket_quench: None,
+            transported: None,
             quench_ngrid: 240,
             quench_nsteps: 2000,
         }
@@ -1117,6 +2061,44 @@ pub struct ZonedNoxState {
     pub ei_no_unmixed: Option<f64>,
     /// the lingering core's EI_NO at `τ_core(C)` — the penalty source
     pub ei_no_core: Option<f64>,
+    // RUNG 13 — the resolved mixing PDF. `ei_no_quenched` still holds the mean-field bulk
+    // reference; `ei_no_pdf` is the β-PDF integral over the IDEAL bell, whose minimum is
+    // PINNED AT `C_opt` (both flanks up) — the optimum LOCATION from a continuous distribution
+    // rather than two lumps. Its far-over-penetration flank DESCENDS; the climb was rung-12's
+    // dwell, which this rung deliberately drops.
+    /// the β-PDF config used
+    pub pdf: Option<MixingPdf>,
+    /// the segregation width `g(C)` (0 at `C_opt`) — reused by rungs 15/16/18
+    pub g_seg: Option<f64>,
+    /// ⟨EI⟩ over the β-PDF of the ideal bell, g/kg — min AT `C_opt`
+    pub ei_no_pdf: Option<f64>,
+    // RUNG 15 — the PDF THROUGH the finite quench (composition variance AND dwell, COMBINED).
+    // `ei_no_quenched` is term 1, the FINITE floor rung 13 lacked.
+    /// the PDF-through-quench config used (`c_holdeman`/`g_seg` reused)
+    pub pdf_quench: Option<QuenchPdf>,
+    /// term 2 = `D(u)·⟨EI_bell⟩(g)`, g/kg — resolved composition × a LINEARISED dwell
+    pub ei_no_pdf_excess: Option<f64>,
+    /// term1 + term2, g/kg — the combined result (a finite floor, the far flank CLIMBING)
+    pub ei_no_pdf_quench: Option<f64>,
+    // RUNG 16 — the same, PER POCKET: each rich pocket through its OWN quench, so the dwell acts
+    // inside the cooling chemistry and term 2 is SUBLINEAR in `τ_core`.
+    /// the per-pocket PDF-through-quench config used
+    pub pocket_quench: Option<PocketQuenchPdf>,
+    /// term 2 — the per-pocket quench β-PDF integral, g/kg
+    pub ei_no_pocket_excess: Option<f64>,
+    /// term1 + term2, g/kg — erodes rung-15's far flank into near-degeneracy with the notch
+    pub ei_no_pocket_quench: Option<f64>,
+    // RUNG 18 — the TRANSPORTED-variance closure. The width is no longer the imposed kink but
+    // the residual of a decay ODE from a DERIVED ceiling: a SMOOTH basin ELEVATED off the
+    // well-mixed value. `ei_no_pdf` is NOT set here (a different closure); `g_seg` is reused.
+    /// the transported-variance config used
+    pub transported: Option<TransportedPdf>,
+    /// the DERIVED two-stream injection ceiling `(ξ_p−ξ̄)/(1−ξ̄)` from φ_p
+    pub g_ceiling: Option<f64>,
+    /// the ODE-residual width `g(C)` — `≤ g_ceiling`, and `> 0` even at `C_opt`
+    pub g_transported: Option<f64>,
+    /// ⟨EI⟩ over the β-PDF of the ideal bell at `g_transported`
+    pub ei_no_transported: Option<f64>,
 }
 
 impl ZonedNoxState {
@@ -1255,10 +2237,57 @@ impl Gas {
             "unmixedness (rung-12 spatial variance) REQUIRES a `mixing` config — it needs the \
              jet's J and duct H for the Holdeman group C=(S/H)√J and the mean-field bulk τ_mean."
         );
-        // Python also asserts that AT MOST ONE of its eight mixing closures is passed. With
-        // `unmixedness` the only one ported, that check would compare one Option against one —
-        // it cannot fail, and a bar that cannot fail is not a bar (rungs 78/79's lesson). The
-        // rung-13..24 closures land in later slices; the check arrives WITH the second one.
+        assert!(
+            !(o.pdf.is_some() && o.mixing.is_none()),
+            "pdf (rung-13 resolved mixing PDF) REQUIRES a `mixing` config — it needs the jet's J \
+             and duct H for the Holdeman group C=(S/H)√J that sets the β-PDF width g(C)."
+        );
+        assert!(
+            !(o.pdf_quench.is_some() && o.mixing.is_none()),
+            "pdf_quench (rung-15 PDF through the quench) REQUIRES a `mixing` config — it needs \
+             the Holdeman group C=(S/H)√J AND the derived τ_mean for the mean-field floor."
+        );
+        assert!(
+            !(o.pocket_quench.is_some() && o.mixing.is_none()),
+            "pocket_quench (rung-16 PER-POCKET PDF through the quench) REQUIRES a `mixing` \
+             config — it needs the Holdeman group C=(S/H)√J AND the derived τ_mean floor."
+        );
+        assert!(
+            !(o.transported.is_some() && o.mixing.is_none()),
+            "transported (rung-18 transported-variance closure) REQUIRES a `mixing` config — it \
+             needs the Holdeman group C=(S/H)√J that the imposed coverage ω(C) rides on."
+        );
+        // AT MOST ONE closure. Slice B's version of this file recorded that the check was
+        // DELIBERATELY omitted while `unmixedness` was the only closure ported, because
+        // comparing one Option against one cannot fail and a bar that cannot fail is not a bar
+        // (rungs 78/79's vacuity lesson) — and promised it would arrive WITH the second closure.
+        // Five are ported now, so it is live, and it is the same guard the Python writes over
+        // its eight. Rungs 22/23/24's three spatial closures join this count in a later slice.
+        let closures = [
+            o.unmixedness.is_some(),
+            o.pdf.is_some(),
+            o.pdf_quench.is_some(),
+            o.pocket_quench.is_some(),
+            o.transported.is_some(),
+        ]
+        .iter()
+        .filter(|&&x| x)
+        .count();
+        assert!(
+            closures <= 1,
+            "pass AT MOST ONE of unmixedness (rung-12 two-stream) / pdf (rung-13 β-PDF on the \
+             ideal bell) / pdf_quench (rung-15 β-PDF THROUGH the quench, LINEARISED dwell) / \
+             pocket_quench (rung-16 PER-POCKET quench, SCALAR dwell) / transported (rung-18 \
+             transported variance) — closures of the SAME variance physics, {closures} given."
+        );
+        // RUNG 21 — the rung-20 forbid guard is DISCHARGED. `super_eq_o` now threads the SAME
+        // Westenberg m(T) lift through the ideal-bell composition integrals too — rung 13's
+        // `pdf`, rung 15's term 2, rung 18's `transported` — so `pdf_quench` is no longer a
+        // half-lifted HYBRID: term 1 (lifted by rung 20) and term 2 (lifted here) both carry
+        // m(T) and the sum is internally consistent. No forbid: `super_eq_o` combines with every
+        // closure. The ideal-bell lift is peak-concentrated and BELOW the primary's, because the
+        // integral is EI-weighted onto the near-stoich peak where m is at its MINIMUM — the
+        // rung-20 inversion generalised to composition variance. `docs/rung21-spec.md`.
         let hf_fuel = self.spec.hf_fuel_molar.unwrap_or_else(gas::hf_fuel_default);
         let far_p = phi_primary * gas::f_stoich();
         let alpha = far / far_p; // fraction of the air in the primary
@@ -1337,6 +2366,19 @@ impl Gas {
             w_core: None,
             ei_no_unmixed: None,
             ei_no_core: None,
+            pdf: None,
+            g_seg: None,
+            ei_no_pdf: None,
+            pdf_quench: None,
+            ei_no_pdf_excess: None,
+            ei_no_pdf_quench: None,
+            pocket_quench: None,
+            ei_no_pocket_excess: None,
+            ei_no_pocket_quench: None,
+            transported: None,
+            g_ceiling: None,
+            g_transported: None,
+            ei_no_transported: None,
         };
         if o.tau_q.is_none() && o.mixing.is_none() {
             return state; // IDEAL quench — bit-for-bit rung 9
@@ -1397,6 +2439,128 @@ impl Gas {
         state.x_no_quenched = Some(q.x_no_mix);
         state.t_peak = Some(q.t_peak);
         state.max_a_quench = Some(q.max_a);
+
+        // The five closures below are mutually exclusive (asserted above) and each returns, so
+        // the order is the Python's own branch order and not a precedence. Rungs 22/23/24's
+        // spatial closures sit between `pocket_quench` and `transported` in the Python; they
+        // arrive in a later slice and slot into the same place.
+        let mixing_cfg = o.mixing;
+
+        if let Some(pdf) = o.pdf {
+            // RUNG 13 — the RESOLVED MIXING PDF, replacing rung-12's parameterised segregation
+            // with a continuous distribution: integrate the IDEAL primary bell EI(φ) over a
+            // mean-preserving β-PDF of mixture fraction whose single width is the segregation
+            // `g(C) = min(g_max, k_g·|ln(C/C_opt)|)` — KINKED at the Holdeman optimum, so
+            // ⟨EI⟩(g(C)) collapses to the well-mixed value AT `C_opt` (g=0 ⇒ delta ⇒ point
+            // value) with both flanks lifting. Isolates the COMPOSITION mechanism and drops the
+            // dwell chain, so it pins the optimum but does NOT climb. A pure diagnostic: NO/N
+            // still never enter the equilibrium solve, so the cycle stays bit-for-bit rung 6.
+            pdf.validate();
+            let mixing = mixing_cfg.expect("pdf REQUIRES mixing — asserted above");
+            let c = pdf.c(&mixing);
+            let g_seg = pdf.segregation(c);
+            state.pdf = Some(pdf);
+            state.c_holdeman = Some(c);
+            state.g_seg = Some(g_seg);
+            state.ei_no_pdf = Some(pdf_mean_ei(
+                far, tt3, p, hf_fuel, o.tau, g_seg, pdf.n_bell, pdf.n_quad,
+                o.super_eq_o, // rung 21: lift the ideal bell
+            ));
+            return state;
+        }
+
+        if let Some(qp) = o.pdf_quench {
+            // RUNG 15 — the PDF THROUGH the finite quench: carry rung-13's β-PDF through the
+            // rung-10/12 dwell chain, COMBINING composition variance with the dwell. Additive:
+            //   term 1 = `ei_no_quenched` (the rung-11 mean-field bulk — the FINITE floor rung
+            //            13 lacked, present at all C);
+            //   term 2 = D(u)·⟨EI_bell⟩(g) (the rung-13 integral REUSED VERBATIM, scaled by the
+            //            off-optimum-growing dwell factor; EI ∝ τ, the dormant clamp).
+            // The bell's reference residence IS `o.tau`, so the two stay locked. At `C_opt`
+            // (g→0) term 2 → 0 and ⟨EI⟩ is the FINITE bulk NO, not rung-13's ≈0; off-optimum the
+            // NONLINEAR bell keeps the stoich-mean SIGN REVERSAL that a lumped-dwell rung 12
+            // cannot, and the dwell growth makes the far flank CLIMB.
+            qp.validate();
+            let mixing = mixing_cfg.expect("pdf_quench REQUIRES mixing — asserted above");
+            let c = qp.c(&mixing);
+            let g_seg = qp.segregation(c);
+            let bell_mean_ei = pdf_mean_ei(
+                far, tt3, p, hf_fuel, o.tau, g_seg, qp.n_bell, qp.n_quad,
+                o.super_eq_o, // rung 21: lift term 2's ideal bell
+            );
+            let term2 = qp.dwell_factor(c, o.tau) * bell_mean_ei;
+            state.pdf_quench = Some(qp);
+            state.c_holdeman = Some(c);
+            state.g_seg = Some(g_seg);
+            state.ei_no_pdf_excess = Some(term2);
+            state.ei_no_pdf_quench = Some(q.ei + term2); // term1 + term2
+            return state;
+        }
+
+        if let Some(pq) = o.pocket_quench {
+            // RUNG 16 — the PDF through the finite quench, PER POCKET, retiring rung-15's
+            // linearised dwell. Rung 15 scaled the CONSTANT-T bell by a scalar `D(u)`, exact only
+            // while EI ∝ τ. Rung 16 carries EACH rich-of-mean β-PDF pocket through its OWN finite
+            // quench at the dwell `τ_core(C)`, so the dwell acts INSIDE the cooling chemistry.
+            // Additive, mirroring rung 15 — only term 2's internals change. Because a lingering
+            // pocket COOLS, term 2 is SUBLINEAR in `τ_core`, which erodes the over-penetration
+            // flank into near-degeneracy with the `C_opt` notch. At `C_opt` (g→0) term 2 is the
+            // single lean pocket at ξ̄ ≈ 0, so the total is the finite bulk floor.
+            pq.validate();
+            let mixing = mixing_cfg.expect("pocket_quench REQUIRES mixing — asserted above");
+            let c = pq.c(&mixing);
+            let g_seg = pq.segregation(c);
+            let tau_core = pq.core_dwell(c);
+            let (excess, pocket_max_a) = pocket_quench_mean_ei(
+                far,
+                tt3,
+                p,
+                hf_fuel,
+                o.tau,
+                tau_core,
+                g_seg,
+                pq.n_quad,
+                PocketOpts {
+                    n_bell: pq.n_bell,
+                    quench_ngrid: o.quench_ngrid,
+                    quench_nsteps: o.quench_nsteps,
+                    super_eq_o: o.super_eq_o, // rung 20: lift each pocket's re-making
+                },
+            );
+            state.pocket_quench = Some(pq);
+            state.c_holdeman = Some(c);
+            state.g_seg = Some(g_seg);
+            state.ei_no_pocket_excess = Some(excess);
+            state.ei_no_pocket_quench = Some(q.ei + excess); // term1 + term2
+            // the dormancy gate spans the pockets as well as the bulk
+            state.max_a_quench = Some(q.max_a.max(pocket_max_a));
+            return state;
+        }
+
+        if let Some(tr) = o.transported {
+            // RUNG 18 — the TRANSPORTED-variance closure. The β-PDF width `g(C)` is no longer the
+            // imposed kink but the residual of a variance DECAY ODE from a DERIVED two-stream
+            // ceiling, fed through the SAME rung-13 ideal bell. What it adds over the kink: a
+            // ceiling DERIVED from φ_p rather than the free `g_max`; a RESIDUAL floor
+            // `g(C_opt) > 0`, so the optimum is ELEVATED off the well-mixed value; and a SMOOTH
+            // basin, so the kink's sharpness was the artifact and not its location. The `C_opt`
+            // LOCATION still rides on the IMPOSED spatial coverage ω(C) — a 0-D transport cannot
+            // derive it, which is this rung's load-bearing NEGATIVE result.
+            tr.validate();
+            let mixing = mixing_cfg.expect("transported REQUIRES mixing — asserted above");
+            let c = tr.c(&mixing);
+            let (g_seg, g_ceiling) = tr.segregation(c, far, phi_primary);
+            state.transported = Some(tr);
+            state.c_holdeman = Some(c);
+            state.g_ceiling = Some(g_ceiling);
+            state.g_transported = Some(g_seg);
+            state.g_seg = Some(g_seg);
+            state.ei_no_transported = Some(pdf_mean_ei(
+                far, tt3, p, hf_fuel, o.tau, g_seg, tr.n_bell, tr.n_quad,
+                o.super_eq_o, // rung 21: the same lift threads the same bell
+            ));
+            return state;
+        }
 
         let Some(um) = o.unmixedness else {
             return state; // rung 10/11 mean field — untouched

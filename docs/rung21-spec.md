@@ -129,6 +129,25 @@ transported-CFD PDF** (rung 18 proved a 0-D transport cannot derive the `C_opt` 
   the EI the PDF integrates, exactly as for `pdf`/`pdf_quench`.
 - `exhaust_no_clamp` is unaffected (it does not use the ideal-bell integrals).
 
+## Two source comments this rung DID NOT catch up — found by the Rust port, recorded not edited
+
+`zoned_nox`'s live code says the forbid guard is discharged (`gas.py:4422–4430`), but two
+**docstrings elsewhere in `gas.py` still assert the opposite** and were missed when this rung
+landed:
+
+- `gas.py:3355–3356` (the `ZonedNOxState` rung-19/20 field block): *"the ideal-bell composition
+  integrals (pdf/pdf_quench/transported) DELIBERATELY stay equilibrium-O (forbidden to combine —
+  see the zoned_nox guard)"*.
+- `gas.py:4360` (the rung-19 paragraph of `zoned_nox`'s own docstring): *"the finite-quench/PDF
+  fields stay equilibrium-O (threading the lift THROUGH the quench is a deferred seam)"* — which
+  rung 20 discharged for the quench and this rung for the PDF.
+
+Both are **stale, not wrong-in-effect**: the code does the rung-21 thing and the gates prove it.
+They are recorded here rather than fixed because the fix belongs to the Rust port's schedule, not
+to this rung — editing the ported source mid-port would put the Python oracle and its own
+description out of step for a reason unrelated to the physics. Same call slice B made about rung
+12's over-stated `Unmixedness` docstring (`docs/plans/todo-rust-port.md` § 4.4–4.5).
+
 ## Verification gates (priority order) — `tests/test_rung21.py`
 1. **Reduce (load-bearing).** `super_eq_o=False` ⇒ `ei_no_pdf`/`ei_no_pdf_quench`/`ei_no_transported`
    bit-for-bit the prior rung (a defaulted kwarg). Rungs 1–20 suites green (the rung-20 forbid gate is
