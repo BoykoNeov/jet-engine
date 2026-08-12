@@ -243,6 +243,37 @@ fn prompt_survives_where_thermal_dies() {
             "ei_no_total ≠ thermal + prompt");
 }
 
+/// The `phi` override — a branch the Python has and neither suite exercised until now.
+///
+/// `thermal_nox`'s `phi` argument replaces the DERIVED `far/f_stoich` for the prompt term only,
+/// so a shipped-but-untested `Some(_)` arm could return the derived value forever and every
+/// other gate would pass. Three claims: passing the derived value explicitly is bit-for-bit the
+/// default; passing a different one MOVES the prompt; and it moves the prompt ALONE — the
+/// thermal channel does not read φ at all.
+#[test]
+fn the_explicit_phi_overrides_only_the_prompt() {
+    let (g, _tt3, _tt4, far, p) = design_point();
+    let with_prompt = |phi: Option<f64>| {
+        g.thermal_nox(far, 2200.0, p,
+                      ThermalNoxOpts { tau: TAU, prompt: Some(PromptNo::default()), phi,
+                                       ..ThermalNoxOpts::default() })
+    };
+    let derived = with_prompt(None);
+    let explicit_same = with_prompt(Some(far / f_stoich()));
+    assert_eq!(derived.ei_no_prompt.to_bits(), explicit_same.ei_no_prompt.to_bits(),
+               "passing the derived φ explicitly is not bit-for-bit the default");
+    let moved = with_prompt(Some(1.2));
+    assert_ne!(moved.ei_no_prompt.to_bits(), derived.ei_no_prompt.to_bits(),
+               "φ=1.2 left the prompt unmoved — the override arm is dead");
+    // φ=1.2 sits near f(φ)'s rich peak and the derived φ here is ~0.4 (a lean cycle far), so
+    // the override must RAISE the prompt, not merely change it.
+    assert!(moved.ei_no_prompt > derived.ei_no_prompt,
+            "the rich-peaking f(φ) should raise the prompt at φ=1.2 over the lean derived φ");
+    // ...and the thermal channel is φ-blind: it reads the pool, which φ does not touch.
+    assert_eq!(moved.x_no.to_bits(), derived.x_no.to_bits(),
+               "the explicit φ moved the THERMAL channel — it must reach the prompt alone");
+}
+
 // ------------------------------------------------------------------------------------- //
 // GATE 6 — T-sensitivity discriminator: thermal (double exp) ≫ prompt (single).           //
 // ------------------------------------------------------------------------------------- //

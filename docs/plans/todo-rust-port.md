@@ -285,12 +285,22 @@ function, at a known price in bit-exactness.
 Slice A is rungs **7 / 8 / 9 / 19**: the extended-Zeldovich integrator, the two-zone
 primary→dilution split, the rich-primary bell, and rung 19's two channels for lifting the
 equilibrium-[O] lower bound. It ships `rust/src/nox.rs`, the oracle `rust/oracle/dump_nox.py`,
-and five gates (`nox_oracle.rs` plus the four rung suites, 46 tests). Rungs 10–18 and 20–24 —
-the finite-rate quench and the eight mixing closures — are the remaining slices.
+and five gates (`nox_oracle.rs` plus the four rung suites, 47 tests).
+
+**The remaining slices, grouped by DEPENDENCY rather than by number** — the numbering is
+misleading here, because rungs 20 and 21 are super-eq O threaded through machinery that arrives
+much later than rung 19:
+
+| slice | rungs | what it needs first |
+|---|---|---|
+| the finite-rate quench | 10, 11, 12, **20** | rung 10's `_quench_no`; **20 is the super-eq lift THROUGH that quench**, so it cannot precede it |
+| the PDF family | 13, 15, 16, 18, **21** | rung 13's `_bell_interpolator`; **21 is the same lift through the ideal-bell integrals** |
+| the nozzle strand | 14, 17 | independent of the mixing closures — portable at any point |
+| the resolved cross-plane | 22, 23, 24 | rung 13's bell; otherwise self-contained |
 
 | | bit-identical vs PyPy | vs CPython |
 |---|---|---|
-| NOx oracle (1790 values) | **1790 / 1790 (100 %)** | 1151 / 1790 (**64.3 %**) |
+| NOx oracle (1806 values) | **1806 / 1806 (100 %)** | 1159 / 1806 (**64.2 %**) |
 
 **The bar holds, and it holds exactly where phase 3 was rated risk-bearing.** § 5's
 reconciliation narrowed the risk to "watch the stopping rules, not the polynomials", and slice
@@ -355,7 +365,7 @@ next starts. The tree is green at every phase boundary; there is no big-bang cut
 | **0** | ~~Cargo crate; the oracle bridge; the per-quantity tolerance policy~~ | **DONE** | ✅ 3232 values round-trip; policy DERIVED from the CPython↔PyPy gap, not invented |
 | **1** | ~~`gas.rs` — `FlowState`, CPG closed form, TPG NASA integrals, reacting section, Fork B, equilibrium Newton (rungs 1–6)~~ | **DONE** | ✅ **two** gates: `gas_oracle.rs` (values, **3232/3232** bit-exact vs PyPy after phase 2's fix — § 4.1 shipped it at 3196, § 4.2 says why) and `gas_spine.rs` (**reduce-to-prior**, 6 tests — § 5.1) |
 | **2** | ~~`components.rs` + `engine.rs` design point — shaft balance, `_score`; conservation checks as `assert!`~~ | **DONE** | ✅ **three** gates: `cycle_oracle.rs` (1481/1481 bit-exact vs PyPy, on 19+15 distinct solver roots — § 4.2), the 8 ported rung suites (39 tests, rungs 1–6, incl. rung 6's GATE 1), and `porting_rules.rs` |
-| **3** | NOx & mixing, rungs 7–24. **RISK-BEARING — not bulk.** These are phase 1's largest *consumer*: every one rides the equilibrium solve and `Kp = exp(−ΔG°/RuT)`, and their findings are *shapes* (the bell's peak, the minimum pinned at `C_opt`, monotone-vs-turns-back-up) that a last-digit shift in an exponential can move. Deliberately placed straight after phase 1 as the **first real test of whether the transcendental arithmetic holds**. **IN PROGRESS — slice A (7/8/9/19) DONE**, § 4.3; slices remaining: the finite-rate quench (10–12), the PDF family (13/15/16/18), the nozzle strand (14/17), the spatial fields (20–24) | 4–6 | ✅ slice A: `nox_oracle.rs` (**1790/1790** bit-exact vs PyPy on 22+22 distinct solver roots) + 4 rung suites (42 tests); extremum *locations* dumped as their own keys, not just values |
+| **3** | NOx & mixing, rungs 7–24. **RISK-BEARING — not bulk.** These are phase 1's largest *consumer*: every one rides the equilibrium solve and `Kp = exp(−ΔG°/RuT)`, and their findings are *shapes* (the bell's peak, the minimum pinned at `C_opt`, monotone-vs-turns-back-up) that a last-digit shift in an exponential can move. Deliberately placed straight after phase 1 as the **first real test of whether the transcendental arithmetic holds**. **IN PROGRESS — slice A (7/8/9/19) DONE**, § 4.3; the remaining slices are grouped there by DEPENDENCY, not by number (rungs 20 and 21 belong with 10–12 and 13–18 respectively) | 4–6 | ✅ slice A: `nox_oracle.rs` (**1806/1806** bit-exact vs PyPy on 22+22 distinct solver roots) + 4 rung suites (43 tests); extremum *locations* dumped as their own keys, not just values |
 | **4** | Nozzle & turbine marches, rungs 25–30 — own convergence behaviour, hence separate | 2–3 | per-rung tests pass |
 | **5** | Steady matchers — rungs 31–33, 38–39, 42, 53–56, 61. **Contains the diamond** (§ 6) | 4–6 | per-rung tests pass |
 | **6** | Transients — rungs 34–37, 40, 43–52 (the fuel-side limiter family) | 4–6 | per-rung tests pass |

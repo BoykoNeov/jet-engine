@@ -258,6 +258,19 @@ fn rust_values() -> Vec<(String, f64)> {
             }
         }
     }
+    // The EXPLICIT-φ branch — see the oracle's note. Without this the `phi: Some(_)` arm of
+    // `ThermalNoxOpts` is shipped and unmeasured.
+    for far in [0.02717919071928212f64, 0.0677] {
+        for phi in [0.8, 1.2, 1.6, far / gas::f_stoich()] {
+            let n = g.thermal_nox(far, 2200.0, 1.5e6,
+                                  ThermalNoxOpts { prompt: Some(PromptNo::default()),
+                                                   phi: Some(phi),
+                                                   ..ThermalNoxOpts::default() });
+            let tag = format!("{}/{}", py_repr(far), py_repr(phi));
+            put(format!("tnoxphi/{tag}/ei_prompt"), n.ei_no_prompt);
+            put(format!("tnoxphi/{tag}/ei_total"), n.ei_no_total());
+        }
+    }
 
     // --- SECTION 6: the design points -----------------------------------------------------
     let dps = design_points();
@@ -362,7 +375,6 @@ fn quant_of(key: &str) -> &'static str {
             _ => "kinetic",
         },
     }
-    .trim_start_matches("")
 }
 
 /// The bar for each class — CPYTHON arm only; the PyPy arm is held to bit-equality.

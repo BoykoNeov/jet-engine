@@ -177,7 +177,8 @@ fn frozen_majors_mixout_misses_tt4() {
     // Frozen composite: primary dissociated products (× α) + dilution air, NO recombination.
     // Built as an ORDERED list, in the order Python's dict ends up holding — the primary's
     // species first, then any air species not already present. All three air species ARE
-    // already present (N2/Ar close the equilibrium pool, O2 opens it), so nothing is appended.
+    // already there (O2 closes the reacting eight; N2 and Ar are appended after it), so the
+    // second loop only accumulates and never appends.
     let mut frozen: Vec<(&str, f64)> = comp_p.iter().map(|&(s, n)| (s, alpha * n)).collect();
     for &(s, x) in air_mole_fractions().iter() {
         match frozen.iter_mut().find(|e| e.0 == s) {

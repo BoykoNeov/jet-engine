@@ -157,6 +157,17 @@ for far in (0.01, 0.02717919071928212, 0.0677):
             put(f"tnox/{tag}/o_mult", n.o_multiplier)
             put(f"tnox/{tag}/ppm", n.ppm)
             put(f"tnox/{tag}/ppm_eq", n.ppm_eq)
+# The EXPLICIT-φ branch. `thermal_nox`'s `phi` argument overrides the derived far/f_stoich for
+# the prompt term ONLY, so without a case that sets it the branch ships unmeasured — the same
+# objection phase 2 raised against porting rung 30's choked nozzle into a phase whose gates
+# could not see it. Two φ per point: one that must MOVE the prompt off its derived value, and
+# the derived value itself passed explicitly, which must reproduce the default arm exactly.
+for far in (0.02717919071928212, 0.0677):
+    for phi in (0.8, 1.2, 1.6, far / G._F_STOICH):
+        n = GAS.thermal_nox(far, 2200.0, 1.5e6, 3e-3, prompt=G.PromptNO(), phi=phi)
+        tag = f"{far!r}/{phi!r}"
+        put(f"tnoxphi/{tag}/ei_prompt", n.ei_no_prompt)
+        put(f"tnoxphi/{tag}/ei_total", n.ei_no_total)
 
 # --- SECTION 6: the design points the zoned diagnostic actually runs on -------------------
 # Derived from REAL equilibrium-engine runs, never hardcoded — the mix-out gate

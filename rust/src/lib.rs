@@ -21,8 +21,10 @@
 //!
 //! **Phase 3 is in progress.** Slice A ([`nox`], rungs 7/8/9/19) is complete and green: the
 //! extended-Zeldovich integrator, the two-zone primary/dilution split, the rich-primary bell
-//! and rung 19's two channels for lifting the equilibrium-[O] lower bound. Rungs 10–18 and
-//! 20–24 — the finite-rate quench and the eight mixing closures — are the remaining slices.
+//! and rung 19's two channels for lifting the equilibrium-[O] lower bound. The finite-rate
+//! quench and the eight mixing closures are the remaining slices; the plan groups them by
+//! DEPENDENCY rather than by rung number, because rungs 20 and 21 thread rung 19's lift through
+//! machinery (rung 10's quench, rung 13's bell) that arrives well after it.
 //! Off-design and transient ladders arrive in phases 5–7 and leave this design run untouched,
 //! as they do in the Python.
 //!
