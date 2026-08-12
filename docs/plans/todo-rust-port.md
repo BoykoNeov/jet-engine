@@ -4,7 +4,7 @@
 C (13/15/16/18/21), D (22/23/24) and E (14/17, the nozzle strand) all shipped.
 PHASE 4 (the nozzle & turbine marches, rungs 25–30) was AUTHORISED 2026-08-12 and is COMPLETE —
 three dependency slices, F (25/26) § 4.11/4.12, G (27/28) § 4.13/4.14, H (29/30) § 4.15, all
-bit-exact. 377 Rust tests. The next phase is 5, which needs FRESH AUTHORISATION (it contains the
+bit-exact. 397 Rust tests. The next phase is 5, which needs FRESH AUTHORISATION (it contains the
 rung-61 diamond).**
 The architecture is settled by measurement (§ 1–2); the three forks were answered on 2026-08-12
 (§ 9); phases 0–2 were then built and gated (§ 4.1, § 4.2). Phase 1 was the first deliberate
@@ -1283,7 +1283,7 @@ tries to form. Rung 27's own output says so and nothing in its suite reads it.
 
 ### 4.15 SLICE H (rungs 29/30) — PHASE 4 COMPLETE, and the one slice that was NOT pre-registered
 
-**270 / 270 bit-exact against PyPy.** The Rust suite is **387 tests**, and **phase 4 is complete**:
+**270 / 270 bit-exact against PyPy.** The Rust suite is **397 tests**, and **phase 4 is complete**:
 slices F (25/26), G (27/28) and H (29/30) all shipped — in ONE session against the 2–3 budgeted.
 
 **AND THE FIRST VERSION OF THIS SLICE SHIPPED 6 OF RUNG 29's 16 GATES.** Slices F and G each began
@@ -1299,8 +1299,21 @@ missing CLAIM, not a wrong number.** Bit-equality says the port computes what th
 it is silent on whether anything asserts what that computation is *for*. The only detector is
 enumerating the source's gates and diffing, which costs one `grep`.
 
-The ten are now ported, along with two clauses of rung 30's gate 3 that the header summary carried
-and the first pass dropped (`p* > 3·p0`, and the thrust-loss magnitude). Two bars were also
+**AND THE SAME ENUMERATION THEN FOUND SIX MORE IN SLICE G.** Running the check across all six
+rungs rather than only the one that failed: rungs 25, 26 and 27 were complete by name (10 gates
+each, all covered), but `test_rung28.py` has **20 gates and the port held 14** — missing the whole
+β-MARGIN family, which is rung 28's own seam re-checked. Those are now ported too, including the
+three sharpest: β is **EXACTLY pressure-invariant** (gated at `1e-12` relative over a 640×
+pressure span — a claim of exactness that a looser bar could not tell from "roughly flat"), its
+whole-plane maximum is **INTERIOR** rather than a scan edge (the ridge must strictly beat both
+flanks), and `τ_exact/τ_surrogate` matches its hand-derived closed form pointwise, which is the
+only non-tautological check on the algebra the entire repair rests on.
+
+**The pattern in the two misses is worth naming: they were the two LARGEST test files** (422 and
+~400 lines), i.e. exactly the ones where reading the source docstrings feels like enough.
+
+The ten rung-29 gates are now ported, along with two clauses of rung 30's gate 3 that the header
+summary carried and the first pass dropped (`p* > 3·p0`, and the thrust-loss magnitude). Two bars were also
 tightened from round thresholds to the rung's own numbers — `rescued > 0.5` → `0.80–0.94` against
 the documented 87 %, and net loss `< 0.15` → `0.03–0.10` against the documented 5–8 %; both pass,
 and both would previously have passed on a model with substantially wrong physics.

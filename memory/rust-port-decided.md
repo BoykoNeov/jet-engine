@@ -20,7 +20,7 @@ The bit-exactness fork was decided as **option B** (tolerance) but phases 0–2 
 **bit-equality** instead, because it was measured achievable — see [[rust-port-power-spelling]]
 for why that revision happened and what would justify falling back.
 
-**Phases 0–4 are COMPLETE, green, committed and pushed** (`rust/`, 387 tests) — phase 3 shipped
+**Phases 0–4 are COMPLETE, green, committed and pushed** (`rust/`, 397 tests) — phase 3 shipped
 as five slices A–E, phase 4 as three dependency slices F (25/26), G (27/28), H (29/30). Every
 oracle is 100 % bit-exact against PyPy. No further authorisation is needed *inside* an authorised
 phase. **The next re-decide point is NOW: phase 5 needs fresh authorisation**, and it is the one

@@ -322,6 +322,258 @@ fn the_pool_freeze_point_gates_the_coupling() {
     assert!(hot.net_factor() < 0.95, "net={} on a relaxing pool", hot.net_factor());
 }
 
+// ============================================================================================= //
+// THE β-MARGIN FAMILY — rung 28's own seam, re-checked, and the gates the first pass of this port
+// missed.
+//
+// The same coverage lesson slice H's rung 29 taught: the oracle read 776/776 and this file still
+// held 14 of the source's 20 gates. **An oracle gates VALUES; a missing gate is a missing CLAIM.**
+// Enumerated with `grep "^def test" tests/test_rung28.py` and diffed, which is the only detector.
+// ============================================================================================= //
+
+const BAND: [f64; 6] = [1500.0, 1650.0, 1800.0, 2000.0, 2200.0, 2400.0];
+
+/// `beta_max` at an arbitrary `(Tt4, π_c)`, for the plane sweeps.
+fn beta_at(tt4: f64, pi_c: f64) -> f64 {
+    let eng = build_turbojet(Gas::reacting_equilibrium(), pi_c, tt4, 50_000.0, losses());
+    let r = eng.run(&flight(), 1.0);
+    let (s3, s4, s9) = (r.station("3"), r.station("4"), r.station("9"));
+    eng.gas
+        .coupled_no_freeze_out_nozzle(
+            s4.far,
+            s3.tt,
+            s4.tt,
+            s4.pt,
+            s9.tt,
+            s9.pt,
+            r.p9,
+            PHI_P,
+            CoupledNoFreezeOut::default(),
+            true,
+        )
+        .beta_max
+}
+
+/// The frozen trajectory must BE rung-27's own path: `k = 0` is `Tt9` exactly (no bisection at the
+/// entry), the composition is the same object at every station, and the path cools monotonically.
+#[test]
+fn the_frozen_trajectory_matches_the_rung27_path() {
+    let d = dp(2200.0);
+    let ce = entry(&d);
+    let traj = frozen_no_trajectory(&ce, d.tt9, d.pt9, d.p9, 400);
+    assert_eq!(traj.len(), 401);
+    assert_eq!(traj[0].p.to_bits(), d.pt9.to_bits(), "entry pressure must be pt9 exactly");
+    assert_eq!(traj[0].t.to_bits(), d.tt9.to_bits(), "entry T must be Tt9 exactly, not a bisection");
+    assert_eq!(traj[400].p.to_bits(), d.p9.to_bits());
+    for station in &traj {
+        assert_eq!(station.comp.len(), ce.len());
+        for (&(s1, n1), &(s2, n2)) in station.comp.iter().zip(ce.iter()) {
+            assert_eq!(s1, s2);
+            assert_eq!(n1.to_bits(), n2.to_bits(), "frozen: the composition must not move");
+        }
+    }
+    assert!(
+        traj.windows(2).all(|w| w[0].t > w[1].t),
+        "the frozen path must cool monotonically"
+    );
+}
+
+/// `rate_scale → 0` leaves NO where it entered, so the clamp is the rung-14/17 number bit-for-bit.
+#[test]
+fn no_rate_off_recovers_the_clamp() {
+    for tt4 in [1500.0, 2200.0] {
+        let off =
+            cpl(&dp(tt4), CoupledNoFreezeOut { rate_scale: 1e-30, ..Default::default() }, true);
+        assert_eq!(off.x_no_relaxed.to_bits(), off.x_no_frozen.to_bits());
+        assert_eq!(off.max_a.to_bits(), off.max_a_frozen.to_bits());
+        assert_eq!(off.relaxed_fraction(), 0.0);
+    }
+}
+
+/// **The algebra the whole bound rests on**, checked pointwise rather than asserted:
+/// `τ_exact/τ_surrogate = (1+u)²/[(1+u)² − (1−β²)]` with `u = βa`.
+///
+/// This is the non-tautological arm of the β repair — a closed form derived by hand against two
+/// independently computed relaxation times. Also the one place rung 28's `(1+βa)²` integer power
+/// is checked against a formula rather than against the Python.
+#[test]
+fn the_exact_tau_ratio_matches_the_closed_form() {
+    let d = dp(2200.0);
+    let ce = entry(&d);
+    let zn = d.gas.zoned_nox(d.far, d.tt3, d.tt4, d.pt4, PHI_P, ZonedNoxOpts::default());
+    let traj = frozen_no_trajectory(&ce, d.tt9, d.pt9, d.p9, 400);
+    let mut sampled = 0usize;
+    for station in traj.iter().step_by(40) {
+        let (tau_e, beta, a_loc) = tau_no_exact(&station.comp, station.t, station.p, zn.x_no_mix);
+        let tau_s = tau_no_destroy(&station.comp, station.t, station.p, None, None);
+        let u = beta * a_loc;
+        let one_plus_u = 1.0 + u;
+        let expect = (one_plus_u * one_plus_u) / ((one_plus_u * one_plus_u) - (1.0 - beta * beta));
+        let got = tau_e / tau_s;
+        assert!(
+            (got - expect).abs() <= 1e-9 * expect.abs(),
+            "closed form mismatch at T={:.0}: {got} vs {expect}",
+            station.t
+        );
+        assert!(tau_e >= tau_s, "the bound must hold POINTWISE at T={:.0}", station.t);
+        sampled += 1;
+    }
+    assert!(sampled >= 10, "only {sampled} path samples");
+}
+
+/// β RISES with `Tt4` and reaches about half the `β = 1` threshold — the honest weak point, gated
+/// so it cannot silently drift into a violation.
+///
+/// **And it FORBIDS the false comfort that β plateaus.** On a fixed mixture β climbs without limit
+/// and crosses 1 off-cycle near 3200 K, so the margin is a TEMPERATURE HEADROOM rather than a
+/// ceiling — which is a much weaker and more honest claim than "it saturates around 0.5".
+#[test]
+fn the_beta_margin_is_disclosed_not_comfortable() {
+    let betas: Vec<f64> =
+        BAND.iter().map(|&tt4| cpl(&dp(tt4), CoupledNoFreezeOut::default(), true).beta_max).collect();
+    assert!(betas[0] < 0.15, "beta small lean, got {}", betas[0]);
+    assert!(betas[5] > 0.3, "beta must be materially larger hot: {}", betas[5]);
+    assert!(
+        betas.iter().cloned().fold(f64::MIN, f64::max) < 0.6,
+        "beta must stay under the measured plane bound: {betas:?}"
+    );
+
+    // NOT a plateau: on a FIXED mixture beta climbs monotonically and passes 1 off-cycle.
+    let d = dp(2200.0);
+    let ce = entry(&d);
+    let seq: Vec<f64> = [1600.0, 2000.0, 2400.0, 2800.0, 3200.0]
+        .iter()
+        .map(|&t| tau_no_exact(&ce, t, d.pt9, 1e-4).1)
+        .collect();
+    assert!(seq.windows(2).all(|w| w[0] < w[1]), "beta must climb monotonically in T: {seq:?}");
+    assert!(seq[4] > 1.0, "beta must exceed 1 off-cycle (~3200 K) — not a plateau: {}", seq[4]);
+}
+
+/// The whole-runnable-plane bound on β, and that its maximum is INTERIOR rather than a scan edge.
+///
+/// β is non-monotone in BOTH axes and turns over below `π_c ≈ 8` — as `π_c` falls, `far` rises
+/// (pushing β down) while `Tt9` rises (pushing it up), and the composition channel wins at low
+/// `π_c`. So the ridge must strictly beat BOTH flanks, which is what makes the quoted bound a
+/// maximum rather than wherever the scan happened to stop.
+#[test]
+fn the_beta_plane_maximum_is_interior() {
+    let ridge: Vec<f64> = [(2300.0, 8.0), (2325.0, 10.0)].iter().map(|&(t, p)| beta_at(t, p)).collect();
+    let low: Vec<f64> = [(2300.0, 4.0), (2200.0, 4.0), (2300.0, 6.0)]
+        .iter()
+        .map(|&(t, p)| beta_at(t, p))
+        .collect();
+    let high: Vec<f64> = [(2300.0, 13.0), (2400.0, 20.0), (2450.0, 25.0)]
+        .iter()
+        .map(|&(t, p)| beta_at(t, p))
+        .collect();
+    let mx = |v: &[f64]| v.iter().cloned().fold(f64::MIN, f64::max);
+    let mn = |v: &[f64]| v.iter().cloned().fold(f64::MAX, f64::min);
+    let peak = mx(&ridge).max(mx(&low)).max(mx(&high));
+    assert!(peak < 0.6, "beta must stay under the quoted plane bound: {peak}");
+    assert!(peak > 0.5, "the ridge must actually be sampled: {peak}");
+    assert_eq!(peak.to_bits(), mx(&ridge).to_bits(), "the max must sit ON the ridge");
+    assert!(mx(&low) < mn(&ridge), "the ridge must beat the LOW-pi_c flank: {ridge:?} vs {low:?}");
+    assert!(mx(&high) < mn(&ridge), "the ridge must beat the high flank: {ridge:?} vs {high:?}");
+}
+
+/// **β is EXACTLY pressure-invariant**, so `π_c` has no DIRECT channel into the bound at all.
+///
+/// `R1`, `R2` and `R3` are each a product of two concentrations, so `c_tot²` cancels top and
+/// bottom and β reduces to mole fractions and T-only rate constants. Gated over a **640× pressure
+/// span** at `rel_tol = 1e-12` — a claim of exactness that a tolerance three orders looser would
+/// not distinguish from "roughly flat".
+#[test]
+fn beta_is_exactly_pressure_invariant() {
+    let d = dp(2200.0);
+    let ce = entry(&d);
+    let reference = tau_no_exact(&ce, d.tt9, d.pt9, 1e-4).1;
+    assert!(reference > 0.0 && reference < 1.0);
+    for scale in [0.25, 4.0, 40.0, 160.0] {
+        let beta = tau_no_exact(&ce, d.tt9, d.pt9 * scale, 1e-4).1;
+        assert!(
+            (beta - reference).abs() <= 1e-12 * reference,
+            "beta must be pressure-invariant; at {scale}x p got {beta} vs {reference}"
+        );
+    }
+}
+
+/// The seam rung 28 filed was "β at higher `π_c`", and the answer INVERTS the worry: both of
+/// `π_c`'s indirect channels push β DOWN, so a higher-pressure cycle is PROTECTIVE. Entry `Da_NO`
+/// falls on the same axis, so rung 27's verdict hardens there too.
+#[test]
+fn beta_falls_with_pressure_ratio() {
+    let mut out: Vec<(f64, f64)> = Vec::new();
+    for pi_c in [10.0, 40.0] {
+        let eng = build_turbojet(Gas::reacting_equilibrium(), pi_c, 2200.0, 50_000.0, losses());
+        let r = eng.run(&flight(), 1.0);
+        let (s3, s4, s9) = (r.station("3"), r.station("4"), r.station("9"));
+        let cp = eng.gas.coupled_no_freeze_out_nozzle(
+            s4.far,
+            s3.tt,
+            s4.tt,
+            s4.pt,
+            s9.tt,
+            s9.pt,
+            r.p9,
+            PHI_P,
+            CoupledNoFreezeOut::default(),
+            true,
+        );
+        out.push((cp.beta_max, cp.da_entry));
+    }
+    assert!(out[1].0 < out[0].0, "beta must FALL with pi_c: {} → {}", out[0].0, out[1].0);
+    assert!(out[1].0 < 0.8 * out[0].0, "…and materially so: {} → {}", out[0].0, out[1].0);
+    assert!(out[1].1 < out[0].1, "entry Da_NO must fall with pi_c too");
+    assert!(out[1].1 < 1.0, "still frozen from entry at high pi_c");
+}
+
+/// **The Da ratios are the CLOCK's depth, not NO's motion.** `relaxed_fraction` stays ≈ 0 across
+/// the band — slightly NEGATIVE hot, which is the sub-equilibrium entry causing a tiny FORMATION
+/// drift — and the clamp is unmoved from rung 14/17's number.
+#[test]
+fn no_barely_moves_despite_the_da_ratios() {
+    for tt4 in BAND {
+        let cp = cpl(&dp(tt4), CoupledNoFreezeOut::default(), true);
+        assert!(
+            cp.relaxed_fraction().abs() < 1e-2,
+            "NO must stay frozen at Tt4={tt4}: {}",
+            cp.relaxed_fraction()
+        );
+        assert!(
+            (cp.max_a - cp.max_a_frozen).abs() <= 1e-2 * cp.max_a_frozen,
+            "the clamp must be unmoved at Tt4={tt4}"
+        );
+        assert!(cp.clamp_fires(), "the clamp must still fire at Tt4={tt4}");
+    }
+}
+
+/// Depletion wins at EVERY `Tt4` once the pool chemistry runs faster than anchored — the
+/// structural claim, not a single-point one.
+#[test]
+fn depletion_wins_at_every_tt4_in_the_limit() {
+    for tt4 in [1800.0, 2000.0, 2200.0, 2400.0] {
+        let d = dp(tt4);
+        let fast =
+            cpl(&d, CoupledNoFreezeOut { pool_rate_scale: 1e6, ..Default::default() }, true);
+        assert!(
+            fast.net_factor() < 1.0,
+            "a fast pool must drive the clock DEEPER frozen at Tt4={tt4}: {}",
+            fast.net_factor()
+        );
+        assert!(fast.depletion_factor() < 1.0);
+    }
+}
+
+#[test]
+fn cycle_untouched() {
+    let d = dp(2200.0);
+    let far_before = d.far;
+    let _ = cpl(&d, CoupledNoFreezeOut::default(), true);
+    let r = build_turbojet(Gas::reacting_equilibrium(), PI_C, 2200.0, 50_000.0, losses())
+        .run(&flight(), 1.0);
+    assert_eq!(r.station("4").far.to_bits(), far_before.to_bits());
+}
+
 #[test]
 #[should_panic(expected = "too coarse")]
 fn guard_nstep_below_100_is_refused() {
