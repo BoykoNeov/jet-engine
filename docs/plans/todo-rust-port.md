@@ -1,11 +1,13 @@
 # The Rust port — plan
 
-**Status: PHASES 0–2 COMPLETE AND GREEN. Phase 3 onward is NOT yet authorised.** The
-architecture is settled by measurement (§ 1–2); the three forks were answered on 2026-08-12
+**Status: PHASES 0–2 COMPLETE AND GREEN; PHASE 3 IN PROGRESS — SLICE A (rungs 7/8/9/19) DONE.**
+The architecture is settled by measurement (§ 1–2); the three forks were answered on 2026-08-12
 (§ 9); phases 0–2 were then built and gated (§ 4.1, § 4.2). Phase 1 was the first deliberate
 stopping point because it is where the arithmetic risk concentrates; phase 2 was authorised
 separately and **corrected phase 1's central diagnosis** — see § 4.2, which is the answer to
-the question phase 1 thought it had already answered.
+the question phase 1 thought it had already answered. Phase 3 was authorised on 2026-08-12 and
+is being taken in slices, because at 2,745 source lines and 204 tests it is the largest phase
+in the port; § 4.3 records what slice A measured.
 
 **The ask.** The whole project in Rust — engine *and* all tests. Python may survive only as a
 **single-use oracle**: a reference implementation the Rust is validated against, then deleted.
@@ -278,12 +280,54 @@ pay. § 6's "2–4 minutes" estimate should be read with that in mind — it was
 this cost existed. If a later phase becomes speed-bound, the trade is reversible in one
 function, at a known price in bit-exactness.
 
+### 4.3 What phase 3 SLICE A MEASURED — the bar holds where the plan said it would break
+
+Slice A is rungs **7 / 8 / 9 / 19**: the extended-Zeldovich integrator, the two-zone
+primary→dilution split, the rich-primary bell, and rung 19's two channels for lifting the
+equilibrium-[O] lower bound. It ships `rust/src/nox.rs`, the oracle `rust/oracle/dump_nox.py`,
+and five gates (`nox_oracle.rs` plus the four rung suites, 46 tests). Rungs 10–18 and 20–24 —
+the finite-rate quench and the eight mixing closures — are the remaining slices.
+
+| | bit-identical vs PyPy | vs CPython |
+|---|---|---|
+| NOx oracle (1790 values) | **1790 / 1790 (100 %)** | 1151 / 1790 (**64.3 %**) |
+
+**The bar holds, and it holds exactly where phase 3 was rated risk-bearing.** § 5's
+reconciliation narrowed the risk to "watch the stopping rules, not the polynomials", and slice
+A is where the two hardest stopping rules in the project live: `primary_aft` and `mixed_out_t`
+are bisections whose INNER evaluation is the 8-species equilibrium Newton. Both reproduce
+bit-for-bit, on **22 distinct AFT roots and 22 distinct mix-out roots** (asserted, so they
+cannot silently collapse). The 4000-step RK4 integrator reproduces too, which was never in
+doubt — it has no adaptive control, so it carries no stopping rule at all, only accumulation
+order. CPython↔PyPy agree on 64.3 %, the same ~64 % the cycle oracle found.
+
+**Three findings that change how the remaining slices are written:**
+
+1. **SHAPE KEYS EARN THEIR COST, and the measurement says so.** Rung 9's claim is *where* the
+   EI-vs-φ bell peaks. CPython and PyPy disagree on the peak **value** in the last bit and
+   agree on the peak **location** exactly. A value gate would have called that a deviation; the
+   argmax key says the finding did not move. Every remaining slice with a location claim (rungs
+   12, 22, 24 above all) should dump its argmax beside its curve.
+2. **SPLIT-INDEPENDENCE IS NOT A BIT-EQUALITY.** α cancels ALGEBRAICALLY, but `α·far_p = far_ov`
+   holds only to rounding, so the bisection's final sign test can land on the other side. The
+   spread is 0.0 K at two design points and **5.821e-7 K** at the other two — which is
+   `2500/2³²` **exactly**, one quantum of the `[700, 3200]` bracket after the 32 halvings the
+   `hi−lo < 1e-6` rule allows. Not drift: one grid step. This is the shape of thing to expect
+   wherever a later rung asserts an analytic cancellation through a solver.
+3. **The composition-ORDER trap did not fire in slice A, because slice A never builds one.**
+   Every composition here comes from `equilibrium_composition` or `air_mole_fractions`. Rung
+   10's `_quench_trajectory` and rung 12's two-stream split DO build new ones, whose insertion
+   order is the code's order rather than `SP_REACT`'s. **That is the first thing the next slice
+   must enumerate**, before a line of Rust: a wrong order is one ULP in `ntot`, invisible in
+   `x_no`, and then amplified by a bisection — exactly the shape of phase 2's defect.
+
 ### The rungs where a tolerance is NOT a valid substitute
 
 The finding is a **count**, and a count jumps discontinuously:
 
 | rung | the claim | why a tolerance does not cover it |
 |---|---|---|
+| **9** | the EI bell PEAKS near φ≈0.95 | **MEASURED (§ 4.3):** the two interpreters disagree on the peak VALUE and agree on its LOCATION — so the argmax is the only key that answers "did the finding move?" |
 | **83** | 1 of 5 ramps has no root | a 15th-digit shift can cost a fourth ramp its root |
 | **84** | a minimum over a *marched* grid | by construction a reading that a tiny shift relocates to the next step |
 | **81** | 0 of 1,364 floats moved | **bit-equality itself is the finding** |
@@ -311,7 +355,7 @@ next starts. The tree is green at every phase boundary; there is no big-bang cut
 | **0** | ~~Cargo crate; the oracle bridge; the per-quantity tolerance policy~~ | **DONE** | ✅ 3232 values round-trip; policy DERIVED from the CPython↔PyPy gap, not invented |
 | **1** | ~~`gas.rs` — `FlowState`, CPG closed form, TPG NASA integrals, reacting section, Fork B, equilibrium Newton (rungs 1–6)~~ | **DONE** | ✅ **two** gates: `gas_oracle.rs` (values, **3232/3232** bit-exact vs PyPy after phase 2's fix — § 4.1 shipped it at 3196, § 4.2 says why) and `gas_spine.rs` (**reduce-to-prior**, 6 tests — § 5.1) |
 | **2** | ~~`components.rs` + `engine.rs` design point — shaft balance, `_score`; conservation checks as `assert!`~~ | **DONE** | ✅ **three** gates: `cycle_oracle.rs` (1481/1481 bit-exact vs PyPy, on 19+15 distinct solver roots — § 4.2), the 8 ported rung suites (39 tests, rungs 1–6, incl. rung 6's GATE 1), and `porting_rules.rs` |
-| **3** | NOx & mixing, rungs 7–24. **RISK-BEARING — not bulk.** These are phase 1's largest *consumer*: every one rides the equilibrium solve and `Kp = exp(−ΔG°/RuT)`, and their findings are *shapes* (the bell's peak, the minimum pinned at `C_opt`, monotone-vs-turns-back-up) that a last-digit shift in an exponential can move. Deliberately placed straight after phase 1 as the **first real test of whether the transcendental arithmetic holds** | 4–6 | per-rung tests pass; extremum *locations* re-checked, not just values |
+| **3** | NOx & mixing, rungs 7–24. **RISK-BEARING — not bulk.** These are phase 1's largest *consumer*: every one rides the equilibrium solve and `Kp = exp(−ΔG°/RuT)`, and their findings are *shapes* (the bell's peak, the minimum pinned at `C_opt`, monotone-vs-turns-back-up) that a last-digit shift in an exponential can move. Deliberately placed straight after phase 1 as the **first real test of whether the transcendental arithmetic holds**. **IN PROGRESS — slice A (7/8/9/19) DONE**, § 4.3; slices remaining: the finite-rate quench (10–12), the PDF family (13/15/16/18), the nozzle strand (14/17), the spatial fields (20–24) | 4–6 | ✅ slice A: `nox_oracle.rs` (**1790/1790** bit-exact vs PyPy on 22+22 distinct solver roots) + 4 rung suites (42 tests); extremum *locations* dumped as their own keys, not just values |
 | **4** | Nozzle & turbine marches, rungs 25–30 — own convergence behaviour, hence separate | 2–3 | per-rung tests pass |
 | **5** | Steady matchers — rungs 31–33, 38–39, 42, 53–56, 61. **Contains the diamond** (§ 6) | 4–6 | per-rung tests pass |
 | **6** | Transients — rungs 34–37, 40, 43–52 (the fuel-side limiter family) | 4–6 | per-rung tests pass |
@@ -447,6 +491,11 @@ every disagreement with the oracle ambiguous.
    stop and re-decide before phase 3 (the first heavy consumer of that arithmetic).
    **Superseded 2026-08-12: phase 2 was authorised and is complete.** The stop-and-re-decide
    point is now **before phase 3**, which is where it was always going to matter.
+   **Superseded again 2026-08-12: phase 3 was authorised and is under way, in SLICES.** The
+   phase is the port's largest (2,745 source lines, 204 tests, eight mutually-exclusive mixing
+   closures), so it ships one green gate at a time rather than as one landing. Slice A is done
+   (§ 4.3). No further authorisation is needed inside phase 3; the next re-decide point is
+   **before phase 5**, which contains the diamond (§ 6).
 
 **Decision 1 is REVISED by § 4.2**: phases 0–2 are held to bit-equality, not to a tolerance,
 because it was measured achievable (100 % on both oracles) and because a tolerance bar let a

@@ -13,13 +13,18 @@
 //! Python remains the **oracle** the Rust is validated against, and is deleted at phase 8.
 //!
 //! **Phases 0–2 are complete and green**: the gas core ([`gas`], rungs 1–6), the five
-//! components ([`components`]) and the design-point cycle ([`engine`]). Both oracles hold the
-//! port to **bit-equality** against PyPy — 3232/3232 gas values and 1481/1481 cycle values —
-//! rather than to a tolerance, because phase 2 measured that bar achievable and found that a
-//! tolerance had let a real transcription defect ride for a whole phase (§ 4.2 of the plan).
+//! components ([`components`]) and the design-point cycle ([`engine`]). All three oracles hold
+//! the port to **bit-equality** against PyPy — 3232/3232 gas values, 1481/1481 cycle values and
+//! 1790/1790 NOx values — rather than to a tolerance, because phase 2 measured that bar
+//! achievable and found that a tolerance had let a real transcription defect ride for a whole
+//! phase (§ 4.2 of the plan).
 //!
-//! Phase 3 (NOx and mixing, rungs 7–24) is **not yet authorised**. Off-design and transient
-//! ladders arrive in phases 5–7 and leave this design run untouched, as they do in the Python.
+//! **Phase 3 is in progress.** Slice A ([`nox`], rungs 7/8/9/19) is complete and green: the
+//! extended-Zeldovich integrator, the two-zone primary/dilution split, the rich-primary bell
+//! and rung 19's two channels for lifting the equilibrium-[O] lower bound. Rungs 10–18 and
+//! 20–24 — the finite-rate quench and the eight mixing closures — are the remaining slices.
+//! Off-design and transient ladders arrive in phases 5–7 and leave this design run untouched,
+//! as they do in the Python.
 //!
 //! # Porting rules that are NOT optional
 //!
