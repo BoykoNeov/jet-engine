@@ -12,16 +12,15 @@
 //! This crate is the Rust port of `turbojet/`, following `docs/plans/todo-rust-port.md`. The
 //! Python remains the **oracle** the Rust is validated against, and is deleted at phase 8.
 //!
-//! **Phases 0–2 are complete and green**: the gas core ([`gas`], rungs 1–6), the five
-//! components ([`components`]) and the design-point cycle ([`engine`]). All three oracles hold
-//! the port to **bit-equality** against PyPy — 3232/3232 gas values, 1481/1481 cycle values and
-//! 1790/1790 NOx values — rather than to a tolerance, because phase 2 measured that bar
-//! achievable and found that a tolerance had let a real transcription defect ride for a whole
-//! phase (§ 4.2 of the plan).
+//! **Phases 0–3 are complete and green**: the gas core ([`gas`], rungs 1–6), the five
+//! components ([`components`]), the design-point cycle ([`engine`]) and the whole NOx / mixing /
+//! nozzle strand ([`nox`], rungs 7–24). Every oracle holds the port to **bit-equality** against
+//! PyPy rather than to a tolerance, because phase 2 measured that bar achievable and found that
+//! a tolerance had let a real transcription defect ride for a whole phase (§ 4.2 of the plan).
 //!
-//! **Phase 3 is in progress**, in slices grouped by DEPENDENCY rather than by rung number —
-//! because rungs 20 and 21 thread rung 19's lift through machinery (rung 10's quench, rung 13's
-//! bell) that arrives well after it. Three slices are complete and green, all in [`nox`]:
+//! **Phase 3 ran in slices grouped by DEPENDENCY rather than by rung number** — because rungs 20
+//! and 21 thread rung 19's lift through machinery (rung 10's quench, rung 13's bell) that arrives
+//! well after it. All five are complete and green, all in [`nox`]:
 //!
 //! * **A — rungs 7/8/9/19**: the extended-Zeldovich integrator, the two-zone primary/dilution
 //!   split, the rich-primary bell, and rung 19's two channels for lifting the equilibrium-[O]
@@ -37,10 +36,16 @@
 //!   gradient-derived rate. 462/462 bit-exact — and it CORRECTED two of the source's own claims
 //!   of exactness, both caused by applying an operation inside an accumulation and removing it
 //!   outside (see `nox`'s cross-plane section note).
+//! * **E — rungs 14/17**: the nozzle strand — the frozen↔shifting thrust bracket and the
+//!   combustor-mixing-fidelity ladder of the dropped-NO-clamp margin. 511/511 bit-exact. It
+//!   corrected a THIRD claim of exactness (the frozen reduce is exact in algebra only, and its
+//!   floor is the entropy ROUTE rather than the bisection's stopping rule) and LOCATED a band
+//!   edge the source states without measuring: past J ≈ 2460 the bulk margin goes dormant while
+//!   the per-pocket one keeps RISING, so the rung's headline predicate is about `a_bulk` and not
+//!   about the ladder.
 //!
-//! Remaining in phase 3: only the nozzle strand (rungs 14/17), independent of the mixing closures
-//! and portable at any point. Off-design and transient ladders arrive in phases 5–7 and leave this
-//! design run untouched, as they do in the Python.
+//! Off-design and transient ladders arrive in phases 4–7 and leave this design run untouched, as
+//! they do in the Python.
 //!
 //! # Porting rules that are NOT optional
 //!

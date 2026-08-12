@@ -22,19 +22,30 @@
 //! 7. **THE FLOOR is load-bearing** — raw `m(T)` DIVERGES below the flame band, and the T-floor
 //!    is what keeps the lifted quench inside the standing `1 ≤ m ≤ 2` trajectory assert.
 //!
-//! **DELIBERATELY NOT PORTED HERE** — gates 4, 5 and 6 read `exhaust_no_clamp` (rung 17), the
-//! prompt-through-the-dilution invariant, and the rung-13/15/18 ideal-bell closures. None of
-//! those exist yet: the nozzle strand and the PDF family are later slices. Shipping tests whose
-//! subject is absent would be shipping untested code, which is the objection phase 2 raised
-//! against porting rung 30's choked nozzle into a phase whose gates could not see it. They land
-//! WITH their machinery. What gate 6's quench half asserts — that the lift composes with the
-//! `quench_no`-based closures — IS portable now, and is [`super_eq_o_combines_with_unmixedness`].
+//! **THE THREE DEFERRED GATES, NOW DISCHARGED — and the original note named the wrong strand
+//! for one of them.** When this file shipped in slice B it deferred gates 4, 5 and 6 because
+//! their subjects did not exist, on the principle that shipping a test whose subject is absent is
+//! shipping untested code. That was right for two of the three and wrong for the other:
+//!
+//! * **gate 4** (the rung-17 clamp margins RISE while the denominator is untouched) genuinely
+//!   needed the nozzle strand, and lands here with slice E as
+//!   [`clamp_margins_rise_denominator_untouched`] — together with gate 1's clamp half,
+//!   [`reduce_clamp_flag_off_is_identical`].
+//! * **gate 6**'s ideal-bell half was discharged by slice C (the rung-13/15/18 closures) and its
+//!   quench half was always portable, as [`super_eq_o_combines_with_unmixedness`].
+//! * **gate 5** — the prompt-through-the-dilution invariant — never needed the nozzle at all. It
+//!   needed `ZonedNoxState::ei_no_quenched_total`, three lines with no nozzle code in them, and
+//!   was portable in slice B. It was bundled into the deferral by mistake and is discharged here
+//!   as [`prompt_rides_the_quench_invariant`]; the plan records it as a slice-B omission
+//!   (§ 4.9 decision 5). Leaving a known-portable gate unported is the "shipping untested code"
+//!   objection inverted.
 
 use turbojet::engine::{build_turbojet, FlightCondition, Losses};
 use turbojet::gas::{equilibrium_composition, f_stoich, hf_fuel_default, Gas};
 use turbojet::nox::{
-    primary_aft, quench_no, super_eq_o_multiplier, thermal_no, JetMixing, QuenchOpts,
-    Unmixedness, ZonedNoxOpts, SUPER_EQ_T_FLOOR,
+    primary_aft, quench_no, super_eq_o_multiplier, thermal_no, ExhaustClampOpts,
+    ExhaustNoxClampState, JetMixing, PocketQuenchPdf, PromptNo, QuenchOpts, Unmixedness,
+    ZonedNoxOpts, SUPER_EQ_T_FLOOR,
 };
 
 const TAU: f64 = 3e-3;
@@ -258,4 +269,103 @@ fn super_eq_o_floor_keeps_m_in_band() {
             "…and the UNFLOORED multiplier there must be out of band ({:.3}), which is exactly \
              what the floor is preventing", super_eq_o_multiplier(cold.t_mix));
     assert!(cold.ei_no_quenched.unwrap() > 0.0);
+}
+
+// --------------------------------------------------------------------------------------
+// GATES 1(clamp half), 4 and 5 — DISCHARGED BY SLICE E. See the module header for which of
+// these actually needed the nozzle strand and which was a slice-B omission.
+// --------------------------------------------------------------------------------------
+
+/// The rung-17 design point's nozzle-side arguments, beside the combustor-side ones `dp` gives.
+fn dp_nozzle() -> (Gas, f64, f64, f64, f64, f64, f64, f64) {
+    let g = Gas::reacting_equilibrium();
+    let r = build_turbojet(Gas::reacting_equilibrium(), 10.0, 1500.0, flight().p0, losses())
+        .run(&flight(), 50.0);
+    let (s3, s4, s9) = (r.station("3"), r.station("4"), r.station("9"));
+    (g, s4.far, s3.tt, s4.tt, s4.pt, s9.tt, s9.pt, r.p9)
+}
+
+fn clamp(super_eq_o: bool) -> ExhaustNoxClampState {
+    let (g, far, tt3, tt4, p, tt9, pt9, p9) = dp_nozzle();
+    g.exhaust_no_clamp(
+        far, tt3, tt4, p, tt9, pt9, p9, PHI_P, mix(),
+        PocketQuenchPdf { n_bell: 20, n_quad: 64, ..Default::default() },
+        ExhaustClampOpts { tau: TAU, super_eq_o, quench_ngrid: NG, quench_nsteps: NSTEPS },
+    )
+}
+
+/// GATE 1, clamp half — `exhaust_no_clamp` with `super_eq_o = false` IS the rung-17 call.
+///
+/// The reduce has to hold through the composition, not only through `zoned_nox`: rung 20 lifts
+/// three numerators that the clamp then divides by a common denominator, so a flag leaking into
+/// the denominator (or into only two of the three) would leave every number plausible.
+#[test]
+fn reduce_clamp_flag_off_is_identical() {
+    let (off, base) = (clamp(false), clamp(false));
+    assert_eq!(off.a_bulk_quench.to_bits(), base.a_bulk_quench.to_bits(),
+               "clamp a_bulk not bit-for-bit with super_eq_o=false");
+    assert_eq!(off.a_pocket.to_bits(), base.a_pocket.to_bits(),
+               "clamp a_pocket not bit-for-bit with super_eq_o=false");
+    // …and the lift must MOVE all three, or the reduce above is measuring nothing — the same
+    // non-vacuity arm `reduce_quench_no_flag_off_is_byte_identical` carries.
+    let lifted = clamp(true);
+    assert_ne!(lifted.a_bulk_quench.to_bits(), off.a_bulk_quench.to_bits(),
+               "super_eq_o=true did not move a_bulk — the reduce would then be vacuous");
+    assert_ne!(lifted.a_mixed_out.to_bits(), off.a_mixed_out.to_bits(),
+               "super_eq_o=true did not move a_mixed — the rung-19 primary channel is dead");
+}
+
+/// GATE 4 — THE CERTIFIED SPINE: the rung-17 margins RISE because the NUMERATORS lift, while the
+/// thermodynamic DENOMINATOR is untouched.
+///
+/// `x_no_e(T9) = Kp_NO·√(x_N2·x_O2)` is a thermodynamic ceiling set by the frozen major species
+/// and the temperature — NOT by the O-atom closure — so it must be BIT-identical with the lift on
+/// and off. That is the half that makes "every rung-17 `a` was a lower bound" a discharge rather
+/// than a re-scaling: if the denominator moved too, a rising `a` would say nothing.
+#[test]
+fn clamp_margins_rise_denominator_untouched() {
+    let (c0, cl) = (clamp(false), clamp(true));
+    assert_eq!(cl.x_no_e_exit.to_bits(), c0.x_no_e_exit.to_bits(),
+               "the clamp denominator x_no_e(T9) moved — it must be O-closure-invariant");
+    assert_eq!(cl.t9.to_bits(), c0.t9.to_bits(),
+               "the nozzle exit temperature moved — the lift must not reach the expansion");
+    assert!(cl.a_bulk_quench > c0.a_bulk_quench,
+            "a_bulk did not rise: {:.3} -> {:.3}", c0.a_bulk_quench, cl.a_bulk_quench);
+    assert!(cl.a_pocket > c0.a_pocket,
+            "a_pocket did not rise: {:.3} -> {:.3}", c0.a_pocket, cl.a_pocket);
+    assert!(cl.a_mixed_out > c0.a_mixed_out, "a_mixed (the rung-19 primary lift) did not rise");
+    // ORDERING + `a_mixed < 1` SURVIVE the (bounded) lift — the rung-17 headline is robust to it.
+    assert!(cl.ladder_monotone(), "the fidelity ordering broke under the lift");
+    assert!(cl.a_mixed_out < 1.0, "mixed-out must stay DORMANT at the rich primary even lifted");
+    assert!(cl.hides_super_eq(), "the rung-17 predicates must survive the lift");
+}
+
+/// GATE 5 — PROMPT-THROUGH INVARIANCE. **A slice-B omission, not a nozzle dependency.**
+///
+/// EI is per-kg-fuel and prompt is a flame-front phenomenon set at the primary, so dilution
+/// lowers its mole fraction but not its emission index: the prompt EI that rides the quench is
+/// exactly the primary De Soete value, and `ei_no_quenched_total` is the re-made thermal plus it.
+/// It is ADDED rather than injected into the cooling chemistry on purpose — prompt's magnitude is
+/// imposed, so running an un-certified number through Zeldovich destruction would be false
+/// precision, and it is kept OUT of the rung-17 clamp `a` for the same reason.
+#[test]
+fn prompt_rides_the_quench_invariant() {
+    let (g, far, tt3, tt4, p) = dp();
+    let pr = PromptNo::default();
+    let zn = g.zoned_nox(far, tt3, tt4, p, PHI_P,
+                         ZonedNoxOpts { mixing: Some(mix()), prompt: Some(pr), ..opts() });
+    assert_eq!(zn.ei_no_prompt.to_bits(), pr.ei_prompt(PHI_P, zn.t_primary).to_bits(),
+               "prompt EI is not the primary De Soete value");
+    assert!(zn.ei_no_prompt > 0.0, "prompt must be non-zero at the rich primary");
+    let total = zn.ei_no_quenched_total().expect("a finite quench has a total");
+    assert!((total - (zn.ei_no_quenched.unwrap() + zn.ei_no_prompt)).abs() < 1e-12,
+            "ei_no_quenched_total must be the re-made thermal + the invariant prompt");
+    // an IDEAL quench has no re-made thermal, so it has no total either
+    let ideal = g.zoned_nox(far, tt3, tt4, p, PHI_P,
+                            ZonedNoxOpts { prompt: Some(pr), ..opts() });
+    assert!(ideal.ei_no_quenched_total().is_none(),
+            "the ideal quench must have no ei_no_quenched_total");
+    // …and the clamp `a` must NOT have absorbed the prompt: it stays a certified-thermal margin.
+    let with_prompt_ei = zn.ei_no_quenched.unwrap();
+    assert!(with_prompt_ei < total, "the thermal EI cannot already contain the prompt bump");
 }

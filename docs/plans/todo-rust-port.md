@@ -1,15 +1,15 @@
 # The Rust port — plan
 
-**Status: PHASES 0–2 COMPLETE AND GREEN; PHASE 3 IN PROGRESS — SLICES A (rungs 7/8/9/19),
-B (rungs 10/11/12/20), C (rungs 13/15/16/18/21) AND D (rungs 22/23/24) DONE; only the nozzle
-strand (14/17) remains.**
+**Status: PHASES 0–3 COMPLETE AND GREEN — slices A (rungs 7/8/9/19), B (10/11/12/20),
+C (13/15/16/18/21), D (22/23/24) and E (14/17, the nozzle strand) all shipped. 296 Rust tests.
+The next phase is 4 (the nozzle & turbine marches, rungs 25–30).**
 The architecture is settled by measurement (§ 1–2); the three forks were answered on 2026-08-12
 (§ 9); phases 0–2 were then built and gated (§ 4.1, § 4.2). Phase 1 was the first deliberate
 stopping point because it is where the arithmetic risk concentrates; phase 2 was authorised
 separately and **corrected phase 1's central diagnosis** — see § 4.2, which is the answer to
 the question phase 1 thought it had already answered. Phase 3 was authorised on 2026-08-12 and
-is being taken in slices, because at 2,745 source lines and 204 tests it is the largest phase
-in the port; § 4.3 records slice A, § 4.4 slice B, § 4.5 slice C, § 4.7–4.8 slice D.
+was taken in slices, because at 2,745 source lines and 204 tests it is the largest phase in the
+port; § 4.3 records slice A, § 4.4 slice B, § 4.5 slice C, § 4.7–4.8 slice D, § 4.9–4.10 slice E.
 
 **The ask.** The whole project in Rust — engine *and* all tests. Python may survive only as a
 **single-use oracle**: a reference implementation the Rust is validated against, then deleted.
@@ -298,7 +298,7 @@ much later than rung 19:
 | ~~the finite-rate quench~~ | ~~10, 11, 12, **20**~~ | **DONE — § 4.4** |
 | ~~the PDF family~~ | ~~13, 15, 16, 18, **21**~~ | **DONE — § 4.5** |
 | ~~the resolved cross-plane~~ | ~~22, 23, 24~~ | **DONE — § 4.7 (pre-registration), § 4.8 (measurement)** |
-| the nozzle strand | 14, 17 | independent of the mixing closures — portable at any point; **the last of phase 3**, and it lands next to phase 4, whose rung 25 brackets against rung 14's bounds |
+| ~~the nozzle strand~~ | ~~14, 17~~ | **DONE — § 4.9 (pre-registration), § 4.10 (measurement). PHASE 3 COMPLETE.** It lands next to phase 4, whose rung 25 brackets against rung 14's bounds |
 
 Slice B leaves the quench machinery (`quench_trajectory` / `quench_no` / `JetMixing` /
 `Unmixedness`) in place, which is what rungs 15 and 16 build their dwell chain on — so the PDF
@@ -754,6 +754,327 @@ With rung 16's cached-helper test (§ 4.5) and rung 23's `test_helper_matches_pr
 type system or factorisation already guarantees.** A faithful port of such a test is a green test
 that measures nothing. The rule: **ask what a ported test could still FAIL for in the new code.**
 
+### 4.10 What phase 3 SLICE E MEASURED — 100 % again, PHASE 3 COMPLETE, and a THIRD "exactly" corrected
+
+Slice E is rungs **14 / 17**: the frozen↔shifting-equilibrium nozzle bracket, and the
+combustor-mixing-fidelity ladder of the dropped-NO-clamp margin. It ships the nozzle strand in
+`rust/src/nox.rs`, the oracle `rust/oracle/dump_nozzle.py`, and four gates — two rung suites
+(24 tests) plus `nozzle_oracle.rs` (4) — and discharges three gates `rung20.rs` had deferred.
+**The Rust suite is now 296 tests, and phase 3 is complete.**
+
+| | bit-identical vs PyPy | vs CPython |
+|---|---|---|
+| nozzle oracle (511 values) | **511 / 511 (100 %)** | 149 / 511 (**29.2 %**) |
+
+**The CPython agreement is the LOWEST of any slice** — 29.2 %, against slice D's 52.2 % and slice
+C's 70.6 % — and structurally so, not by luck. Almost every key here rides a bisection root whose
+inner evaluation is the 8-species Newton, and one whole class is a difference of near-equal
+numbers. The classes that are EXACTLY equal on both interpreters are the ones every slice has
+found: the discrete counts (22 keys, 0.00e0) and the solver-free composition sums (22 keys,
+3.5e-15). This is the fifth consecutive slice with that same split.
+
+| class | keys | CPython↔PyPy | what it is |
+|---|---|---|---|
+| `discrete` | 22 | **0.00e0** | halving counts, the guard census, the band-edge index, root counts |
+| `prim/comp` | 22 | 3.5e-15 | the station-4 composition and its mass per mol air |
+| `conv` / `bp` | 46 | ≤7.6e-12 | the converged frozen root, and the back-pressure ladder |
+| `dp` / `prim/thermo` / `prim/x_no_e` | 78 | ≤5.7e-11 | the cycle inputs, the molar S/H sums, equilibrium NO |
+| `clamp` / `r17` / `r14c` / `edge` | 194 | ≤9.6e-11 | the clamp diagnostics and the whole rung-17 ladder |
+| `nz/bracket` | 56 | ≤9.9e-11 | T9, V9, dV9 for both bracket limits |
+| `nz/exit_eq` | 80 | ≤3.6e-10 | the shifted exit composition — worst key is H, a ~1e-24 trace |
+| `residual` (ABS) | 17 | 6.0e-11 | the frozen-reduce residual, at both stopping rules |
+
+**FINDING 1 — A THIRD SOURCE CLAIM OF EXACTNESS IS ALGEBRAIC ONLY, AND THIS TIME THE MECHANISM IS
+TWO ROUTES RATHER THAN TWO SUMMATION SHAPES.** `_expand_nozzle`'s docstring says its frozen branch
+"reduces to the production nozzle's pr-ratio expansion **EXACTLY** (the fixed-comp mixing term
+cancels)", and `test_rung14.py` gates that at `< 1e-6` absolute. Measured over eight design points:
+**0 / 8 bit-equal**, worst 2.46e-11 m/s in V9 (1.75e-14 relative) and 2.80e-11 K in T9 (2.36e-14).
+The source's bar sits about six orders above the number it gates.
+
+The residual then **SPLITS**, which is the part worth having. Re-running the frozen bisection with
+its `hi − lo ≤ 1e-13·T` stopping rule made a knob — down to `0`, all 200 halvings — the residual
+falls to **2.05e-12 K (2.5e-15 relative)** and **stops there**. So the stopping rule is a factor
+4–8 and the FLOOR is the route: a molar entropy sum `Σ nᵢ[s0ᵢ(T) − Ru ln(xᵢp/p0)]` against
+production's `t_from_pr` Newton on `antideriv_phi` of the mole-weighted coefficients. The mixing
+term does cancel; two ways of adding the same numbers do not.
+
+Gated **from both sides**, as slice D's two were: the reduce is asserted at 1e-12 relative (40×
+over measured), the converged residual at 1e-13 and asserted NON-zero, and the bit-equal COUNT is
+asserted at 0 of 8 rather than "never" — slice D's finding 7 is the reason a count and not a law.
+Recorded in `docs/rung14-spec.md`; the Python is not edited (the standing oracle policy).
+
+**FINDING 2 — RUNG 17's FIRING BAND EDGE IS LOCATED, AND THE LADDER DOES NOT GO DORMANT WITH THE
+BULK.** The source is explicit that the firing is in-band and not universal: "as the quench gets
+FAST (J→∞) `x_no_quenched→x_no_mix` … so `a_bulk→a_mixed<1` (dormant)". It never measures where,
+and its suite tests one J. Bisected on the sign of `a_bulk − 1`:
+
+| `C_e` | `a_bulk` at the RQL J = 225 | `a_bulk` crosses 1 at |
+|---|---|---|
+| 0.15 | 4.356 | **J ≈ 3978–4000** |
+| 0.20 | 3.272 | **J ≈ 2457–2470** |
+
+The firing survives ~11× past the shipped band and the edge moves 1.6× on an un-pinned entrainment
+scale. **But the natural reading of that caveat — that J→∞ sends the whole ladder dormant — is
+wrong:**
+
+| `J` | `a_mixed` | `a_bulk` | `a_pocket` | gap | `hides_super_eq` | `ladder_monotone` |
+|---|---|---|---|---|---|---|
+| 225 (RQL) | 0.01582 | 3.272 | **11.06** | 3.38 | true | true |
+| 4 000 | 0.01582 | 0.789 | **12.82** | 16.26 | **false** | true |
+| 16 000 | 0.01582 | 0.402 | **14.34** | 35.65 | **false** | true |
+
+**The mechanism is the source's own, one rung down**, and the gate checks it term by term rather
+than asserting the outcome: `ei_no_pocket_quench` = term 1 (the mean-field bulk, riding
+`τ_mean ∝ 1/√J`, which collapses) + term 2 (the β-PDF integral at `τ_core = τ_res(1+b_u·u)`, which
+`PocketQuenchPDF.core_dwell`'s **own docstring** calls an ABSOLUTE residence whose NO penalty
+"survives J→∞", with `u` growing off-optimum). Measured term 2 = 0.646 → 0.997 → 1.155 g/kg. So
+`hides_super_eq` is a statement about `a_bulk` and `ladder_monotone` is the statement about the
+ladder — a distinction the rung's own prose blurs. Checked against the obvious alternative
+explanation: the segregation `g` is PINNED at `g_max` = 0.3 from J ≈ 225 upward and unpinned at
+J = 25, so the clip is exercised on both sides and the rise is not the width moving. Recorded in
+`docs/rung17-spec.md`. **Sixth consecutive slice where sweeping past the source's own gate found
+something the source's gate structurally could not.**
+
+**FINDING 3 — A DORMANT GUARD THAT IS ACTUALLY REACHABLE, WHICH IS THE BEST CASE OF A FAMILY THE
+PORT KEEPS MEETING.** `_expand_nozzle`'s post-loop assert says the 500 K exit-bracket floor "never
+happens here (every exit sits >700 K)". True at shipped conditions; measured, it fires below
+`p9/pt9` = **0.025016** at the cool design point and **0.002608** at the hot one, 6.4× and 44.9×
+below where the engine runs. Compare the family: rung 20's flame-band floor was dormant and needed
+a SECOND, cooler design point before its gate meant anything (§ 4.4); slice D's knot count could
+not fire at all and had to be labelled a tripwire (§ 4.8). This one is gated from both sides at
+both design points, and its census over a fixed back-pressure ladder (4 of 12 rejected at the cool
+point, 1 of 12 at the hot one) is a live integer that MOVES.
+
+**FINDING 4 — THE EIGHTH VACUITY CASE IS THE FIRST THE PORT CREATED RATHER THAN INHERITED.**
+§ 4.9 decision 3 pre-registered replacing the Python's monkey-patch gate — which rebinds the global
+`_equilibrium_composition` to a constant and asserts the shifting branch then equals the frozen one
+bit-for-bit — with a closure passed into the expansion body, and called that "strictly stronger …
+it still fails if the branches ever diverge in bookkeeping". **The second half is false, and it is
+false because of the first half of the same decision:** once `shifting` is consumed by the closure
+builder there is no branch left inside the body, so the constant-closure call and the frozen call
+are the SAME CALL. Slice C's finding 5 in a new costume, and the third time the port has met it —
+but the first time the port's own factorisation, rather than Rust's type system, dissolved a test
+that was real in Python. The shipped gate keeps the tautology only as the SETUP for an arm that
+CAN fail: fed a DIFFERENT constant pool (the shifted exit mixture), the same call must MOVE both
+T9 and V9 — which is what catches a body that ignored `comp_at` and would silently collapse the
+whole bracket. **The rule survives; what failed was asking it before the design was fixed instead
+of after.**
+
+**FINDING 5 — ONE OF `rung20.rs`'s THREE DEFERRED GATES WAS NEVER THIS STRAND'S.** Slice B's
+`rung20.rs` deferred gates 4/5/6 to "the nozzle strand and the PDF family". Gate 4 (the clamp
+margins rise while the denominator is untouched) is genuinely slice E's, and lands here with gate
+1's clamp half. Gate 6's ideal-bell half was slice C's and its quench half was always portable.
+**Gate 5 — prompt riding the dilution — needed `ei_no_quenched_total`, three lines with no nozzle
+code in them, and was portable in slice B.** It is added here and labelled a slice-B omission, and
+the header comment that mis-attributed it is corrected in the same edit. Recorded because the
+"don't ship a test whose subject is absent" rule is right and its failure mode is the inverse:
+a portable gate parked behind an unrelated dependency, which nothing re-checks.
+
+Two smaller things the slice recorded rather than worked around:
+
+- **THE `residual` CLASS IS COMPARED ABSOLUTELY, AND THE CPython ARM ON IT IS A SANITY CHECK
+  RATHER THAN A DISCRIMINATOR.** These keys are differences of near-equal numbers, and measured
+  across the two interpreters one of them SIGN-FLIPS (−2.27e-13 against +2.27e-13, relative
+  disagreement 2.00) while the absolute spread stays at 6.0e-11. Slice D's finding 5 from the same
+  side. The bar covers values as small as 2.3e-13, so on those keys the CPython arm constrains
+  almost nothing and it is the PyPy arm's bit-equality that pins them — stated in the gate rather
+  than left for a reader to work out.
+- **THE HALVING COUNT IS A NAMING KEY, NOT A DISCRIMINATOR, AND IT SAYS SO.** Slice D kept its
+  knot count on the argument that nothing else could see a change; that argument does NOT hold
+  here, because T9 is gated at bit-equality and a mis-shaped loop moves T9. What the count adds is
+  that the failure reads "47 halvings instead of 44" rather than "T9 differs in the last two bits".
+  Kept for that, labelled as that.
+
+**THE SIZING LEVER, and it is the same shape slice B's was.** `nozzle_flow` reads only
+`(far, Tt4, pt4, Tt9, pt9, p9)` — no `phi_primary`, no mixing config, no grid — so T9 and the
+COMMON clamp denominator `x_no_e(T9)` are ONE call for the entire φ_p × J × C_e × super_eq_o
+sweep. Measured on PyPy: `nozzle_flow` 8 ms, a bulk `zoned_nox` 0.13 s, a full `exhaust_no_clamp`
+1.95 s at the source's own coarse grids. The whole dump is 17 s on PyPy and 134 s on CPython.
+Without the lever the band-edge sweep pays a nozzle solve per J point that cannot move.
+
+### 4.9 SLICE E (rungs 14/17, the NOZZLE STRAND) — PRE-REGISTERED, and the three bars MEASURED first
+
+Recorded **before** any Rust was written, and — the change from § 4.7 — **after** the measurements the
+decisions depend on. Slice D pre-registered one already-measured inversion; this slice makes that the
+rule, because every gate below would otherwise have transcribed a bar nobody had checked. Four
+probes ran on the Python first (`PyPy`, the gate interpreter); all four moved a gate.
+
+**PROBE 1 — the frozen reduce is NOT exact, and the source's own bar is five orders too slack.**
+`_expand_nozzle`'s frozen branch docstring says it "reduces to the production nozzle's pr-ratio
+expansion **EXACTLY** (the fixed-comp mixing term cancels)", and `test_rung14.py` gates it at
+`< 1e-6` absolute. Measured over Tt4 ∈ {1300, 1500, 1800, 2200} × losses {on, off}:
+
+| | worst |
+|---|---|
+| `\|V9_frozen − V9_production\|` | 2.46e-11 m/s (1.75e-14 relative) |
+| `\|T9_frozen − T9_production\|` | 2.80e-11 K (2.36e-14 relative) |
+| bit-equal | **0 / 8** |
+
+**And the residual SPLITS, which is the part worth having.** Re-running the frozen bisection with its
+`hi − lo ≤ 1e-13·T` stopping rule made a knob — 1e-13 → 1e-14 → 1e-15 → 1e-16 → 0 (all 200 halvings)
+— the residual falls to **2.05e-12 K (2.5e-15 relative)** at Tt4=1500 and 2.27e-12 K (1.8e-15) at
+2200, **and stops there.** So the shipped stopping rule contributes a factor 4–8, and the irreducible
+floor is the **ROUTE**: the molar entropy sum `Σ nᵢ[s0ᵢ(T) − Ru ln(xᵢp/p0)]` against production's
+`t_from_pr` Newton on `antideriv_phi` of the mole-weighted coefficients. Algebraically the same
+number; arithmetically two different functions, exactly as `x*x*x` is not `x ** 3` (§ 4.2).
+
+**The "EXACTLY" is therefore ALGEBRAIC — the third of that family, after slice D's two** (§ 4.8), and
+the first where the inexactness is two different *routes* rather than two different *summation
+shapes*. Consequences, all pre-registered:
+
+1. The rung-14 reduce gate is **1e-12 RELATIVE** (≈40× over the measured 2.4e-14), not the source's
+   1e-6 absolute. A bar six orders above the thing it measures cannot tell a defect from noise, which
+   is § 4.2's whole lesson.
+2. A **SECOND** gate states what the Python cannot: rebuilt independently on the public
+   `mix_entropy_molar` with the bracket driven to full convergence, the residual is **still nonzero**
+   and ≤1e-13 relative. The Python's tolerance is a literal inside a private function, so its suite
+   cannot ask this question at all.
+3. That second gate is asserted **only at the two design points it was measured at**, and the oracle
+   dumps the converged residual at all eight so the bit-equal COUNT is reported rather than assumed.
+   Slice D's finding 7 — a first gate that stated "never bit-equal" as a law and was refuted by the
+   wider sweep — is the reason this is a count and not a claim.
+
+**PROBE 2 — the 500 K exit-bracket floor is REACHABLE, at BOTH shipped design points.**
+`_expand_nozzle`'s post-loop guard says "Never happens here (every exit sits >700 K)". True of shipped
+conditions, and the port now says where it stops being true — bracketed on `p9/pt9`:
+
+| design point | Tt9 | guard FIRES below | shipped `p9/pt9` | margin |
+|---|---|---|---|---|
+| Tt4 = 1500 K | 1262.7 K | **0.025016** | 0.1591 | 6.4× |
+| Tt4 = 2200 K | 1991.8 K | **0.002608** | 0.1170 | 44.9× |
+
+This is the **best-behaved** member of the dormant-guard family the port keeps meeting: rung 20's
+flame-band floor needed a second, cooler design point before its gate meant anything (§ 4.4), and
+slice D's knot count could not fire at all and had to be labelled a tripwire (§ 4.8 finding 4). This
+one is gated **from both sides at both design points** — a `should_panic` at a `p9` past the edge and
+a pass at the shipped one — so neither half is a bar that cannot fail.
+
+**PROBE 3 — rung 17's firing band edge, LOCATED. The source states it and never measures it.**
+The `exhaust_no_clamp` docstring says the firing "holds across the RQL J-band but is NOT universal —
+as the quench gets FAST (J→∞) `x_no_quenched→x_no_mix` … so `a_bulk→a_mixed<1` (dormant)". Measured,
+by bisecting `J` on the sign of `a_bulk − 1`:
+
+| `C_e` | `a_bulk` at the RQL J = 225 | `a_bulk` crosses 1 at |
+|---|---|---|
+| 0.15 | 4.356 | **J ≈ 3978–4000** |
+| 0.20 | 3.272 | **J ≈ 2457–2470** |
+
+So the firing survives ~11× past the shipped band, and the edge MOVES by 1.6× on an un-pinned
+entrainment scale — which is the source's "rides on un-pinned mixing scales" made numerical.
+
+**PROBE 4 — and the ladder does NOT go dormant with the bulk. This is the slice's finding.**
+The natural reading of that caveat is that `J→∞` sends the whole ladder dormant. It does not:
+
+| `J` | `a_mixed` | `a_bulk` | `a_pocket` | pocket/bulk gap | `hides_super_eq` | `ladder_monotone` |
+|---|---|---|---|---|---|---|
+| 225 (RQL) | 0.01582 | 3.272 | **11.06** | 3.38 | true | true |
+| 4 000 | 0.01582 | 0.789 | **12.82** | 16.26 | **false** | true |
+| 16 000 | 0.01582 | 0.402 | **14.34** | 35.65 | **false** | true |
+
+`a_pocket` RISES while `a_bulk` falls through 1, so past the crossing the rung-17 headline predicate
+`hides_super_eq` (defined on `a_bulk`) goes FALSE while the ORDERING survives everywhere measured.
+**The mechanism is the source's own, one rung down:** `ei_no_pocket_quench` = term 1 (the mean-field
+bulk, riding `τ_mean ∝ 1/√J`, which collapses) + term 2 (the β-PDF integral at
+`τ_core = τ_res(1+b_u·u)`, which `PocketQuenchPDF.core_dwell`'s docstring calls an ABSOLUTE residence
+whose "NO penalty survives J→∞", and `u` GROWS off-optimum). Measured term 2 = 0.646 → 0.997 → 1.155
+g/kg across those three J. **So rung 17's J→∞ caveat is exactly right about `a_bulk` and incomplete
+as a statement about the LADDER**, and rung 16 already contains the reason. The port gates the
+reconciliation; the correction is recorded in `docs/rung17-spec.md`, not edited into the Python
+(the standing oracle policy, § 4.5).
+
+Checked while measuring it, because the alternative explanation is a width effect: the segregation
+`g` is **pinned at `g_max` = 0.3 from J ≈ 225 upward** (raw `k_g·|C−C_opt|` = 2.06 at J=225, 22.97 at
+J=16 000) and is NOT pinned at J = 25 (0.1875). So the clip is exercised on both sides and the
+`a_pocket` rise is not the width moving.
+
+**PROBE 5 — `dV9_frac` is monotone on a grid 3.7× finer than the source's.** `test_rung14.py` asserts
+`fracs[0] < fracs[1] < fracs[2]` on Tt4 ∈ {1500, 1800, 2200}. Measured strictly monotone on **11
+points** over 1300–2300 K, 9.86e-6 → 7.90e-3, with `co_fraction_entry` 1.44e-7 at the cool end. The
+hot-anchor band `3e-3 < dV9_frac < 8e-3` holds (4.38e-3 at 2200 K). Nothing moved; recorded because
+a monotonicity claim on three points is the shape slice B narrowed rung 12 on, and this one survives.
+
+**THE SIX PORT DECISIONS.**
+
+1. **It lands in `nox.rs`, not a new module.** Rung 17 is nine NO fields plus `T9`/`x_no_e_exit`, and
+   is three `zoned_nox` calls; `nozzle_clamp_diag` calls `equilibrium_no_fraction`, which already
+   lives there. A separate module buys a circular dependency or a 200-line orphan. Phase 4's marches
+   (rungs 25–30, six rungs) are the second consumer of `mix_entropy_molar`/`mix_mass_per_air`/
+   `mix_h_abs_b` and are where that module decision belongs — **not pre-built for a phase that has
+   not been scoped.** Recorded so phase 4 does not read this as settled against it.
+2. **THE BISECTION'S LOOP SHAPE IS A NAMED HAZARD, and it is three hazards.** `_expand_nozzle` runs
+   `for _ in range(200)`, takes the midpoint at the TOP, updates the bracket, then breaks on
+   `hi − lo <= 1e-13 * T` where `T` is **this iteration's pre-update midpoint** — and computes
+   `T9 = 0.5*(lo+hi)` **after** the loop, from the final bracket. An idiomatic `while hi-lo > tol`
+   rewrite gets all three wrong (it can do zero halvings, it tests a different midpoint, and it
+   returns the last `T` rather than the final bracket's), and each is worth one bracket quantum —
+   invisible to any tolerance, which is slice A's `2500/2³²` shape. **Checked while registering it:
+   `primary_aft` and `mixed_out_t`, ported in slices A/B, both have the shape right** (`for _ in
+   0..100`, midpoint at the top, break after the update, `0.5*(lo+hi)` post-loop). The discipline is
+   holding; this records the evidence rather than the intention. Note also `<=`, not `<`.
+3. **The monkey-patch becomes a CLOSURE, and production must go through it.** `test_rung14.py`'s
+   gate 1b rebinds the module-global `_equilibrium_composition` to freeze the shift, then asserts the
+   shifting branch equals the frozen one bit-for-bit. Rust gets `expand_nozzle_with(comp_at: impl
+   Fn(f64) -> Vec<(&'static str, f64)>, …)`, and `expand_nozzle(comp_entry, far, …, shifting)` is a
+   thin wrapper that builds the closure and calls it. **If the two were separate paths the test would
+   compare the closure path to the bool path and prove nothing about production** — the same trap as
+   slice C's helper-matches-production.
+
+   > **CORRECTED DURING THE PORT — and the correction is vacuity case #8.** This entry originally
+   > said the closure version is "strictly stronger than the Python's: no global mutation, and it
+   > still fails if the branches ever diverge in bookkeeping." The second half is false, and it is
+   > false *because* of the first decision in this same paragraph. Once `shifting` is consumed by
+   > the closure builder there is no branch left inside the expansion body, so
+   > `expand_nozzle_with(constant closure)` and `expand_nozzle(shifting = false)` are the SAME CALL
+   > and asserting they agree compares a function to itself. Slice C's finding 5 in a new costume
+   > — "a better factorisation turns the source's real pin into a self-comparison" — and the third
+   > time the port has met it. **The shipped gate keeps the tautological half only as the setup for
+   > an arm that CAN fail: fed a DIFFERENT constant pool (the shifted exit mixture), the same call
+   > must MOVE both T9 and V9.** That is what catches a body which ignored `comp_at` and read
+   > `comp_entry` throughout — a defect that would silently collapse the whole rung-14 bracket, and
+   > which the tautological half passes happily.
+4. **VACUITY CASES FIVE, SIX, SEVEN AND EIGHT — the register is now five slices long, and
+   case #8 is one this slice's own design CREATED (see decision 3's correction).**
+   * **#5, rung 14:** `assert nf.comp_exit_eq is not nf.comp_entry` — a Python identity check, put
+     there to catch "a silent solver return of the entry pool". In Rust `comp_exit_eq` is a `Vec`
+     and is always a fresh allocation, so the transcription is green by construction. Replaced by the
+     physics it was proxying: the exit pool differs from the entry pool **as values**, with CO down
+     and CO2 up.
+   * **#6, rung 17:** `test_identity_is_witnessed_not_a_test` — and its own file header says it:
+     "witnessed, not gated … Reported; NOT a discriminating test." It compares `a_pocket/a_bulk` to
+     `gap_pocket_over_bulk`, both built from the same two EIs over the same `xe`. It cannot fail in
+     Python either; in Rust it is the same tautology in a new costume. Replaced by a round-trip that
+     CAN fail: `kappa · ei_no_quenched` must reproduce `x_no_bulk_quench`, and `a_pocket` must equal
+     `x_no_pocket / xe` with `xe` taken from an INDEPENDENT `nozzle_flow` call rather than off the
+     same state.
+   * **#7, rung 17:** `test_requires_both_configs` passes `mixing=None` / `pocket_quench=None` and
+     asserts each is rejected. Rust takes both **by value**, not as `Option`, so the requirement is a
+     COMPILE error — rung 22's `TypeError` probe in a new costume (§ 4.8). Not ported; the Rust
+     asserts the guard that remains runtime, `p9 ≤ pt9`, and the equilibrium-gas requirement.
+   With rung 16's cached helper (§ 4.5), rung 23's `test_helper_matches_production` and rung 22's
+   `TypeError` probe (§ 4.8), that is **eight instances across three slices**, and the register has
+   not gone a slice without gaining one. Case #8 is the first the PORT created rather than
+   inherited, which is worth separating: #5–#7 are the source's tests meeting Rust's type system,
+   #8 is a factorisation of mine dissolving a test that was real in Python. The rule
+   ("ask what a ported test could still FAIL for in the new code") catches both, but only if it is
+   re-asked AFTER the design is chosen — here it was not, and the pre-registration said the
+   opposite for a day.
+5. **RUNG 20's DEFERRED GATE 5 IS NOT THIS SLICE'S, and the comment blaming the nozzle strand is
+   wrong.** `rust/tests/rung20.rs`'s header defers gates 4/5/6 to "the nozzle strand and the PDF
+   family". Gate 4 (the clamp margins rise, denominator untouched) and gate 1's clamp half ARE slice
+   E's and land here. Gate 5 is the prompt-through-dilution invariant, which needs
+   `ei_no_quenched_total` — a three-line `Option<f64>` on `ZonedNoxState` with nothing to do with the
+   nozzle. **It was portable in slice B and was bundled into the deferral by mistake.** It is added
+   here and labelled as a slice-B omission; the header comment is corrected in the same edit.
+   Leaving a known-portable gate unported is the "shipping untested code" objection inverted.
+6. **THE SIZING LEVER, and it is the same shape slice B's was.** `nozzle_flow` reads only
+   `(far, Tt4, pt4, Tt9, pt9, p9)` — **not** `phi_primary`, `mixing`, `pocket_quench`, `super_eq_o`
+   or any grid. So `T9` and the common clamp denominator `x_no_e(T9)` are ONE call for the entire
+   `φ_p × J × C_e × super_eq_o` sweep, and the three NO numerators sweep against a cached
+   denominator. Measured on PyPy: `nozzle_flow` 8 ms, a bulk `zoned_nox` 0.13 s, a full
+   `exhaust_no_clamp` 1.95 s at the source's own coarse grids (`n_bell` 20, `n_quad` 64, `ngrid` 24,
+   `nsteps` 200). Without the lever every J point on the band-edge sweep costs a nozzle solve it does
+   not need.
+
 ### The rungs where a tolerance is NOT a valid substitute
 
 The finding is a **count**, and a count jumps discontinuously:
@@ -766,6 +1087,8 @@ The finding is a **count**, and a count jumps discontinuously:
 | **13** | ⟨EI⟩(g) is HUMPED | **MEASURED (§ 4.5):** the peak is an interior argmax sitting one grid cell from the quadrature's own `a = 1` scheme switch, across which the curve is not locally monotone. The claim is the LOCATION; the neighbouring values differ by ~3 %. |
 | **13** | the min is pinned AT `C_opt`, shifting as `(H/S)²` | **MEASURED (§ 4.5)** at four spacings: the finding is that two argmins stand in a fixed relation, which no per-value tolerance expresses. |
 | **16** | which near-degenerate optimum is lowest | **THE INVERSE CASE, and it belongs here for that reason:** the rung DECLINES this location, so it must NOT be gated — a key on it fails for reasons that are not defects. The gates assert the sublinearity RATIO instead. |
+| **14** | the dropped clamp FIRES on the cooling path | **MEASURED (§ 4.9):** a THRESHOLD, `max_a > 1`. It rides ~250× clear at φ_p=1.0 and ~0.016 at φ_p=1.5, so the two SIDES are what the rung says — a value tolerance on `max_a` expresses neither. |
+| **17** | the fidelity ORDERING `a_mixed < a_bulk < a_pocket` | **MEASURED (§ 4.9):** three comparisons, not three values — and the one that BREAKS out of band is `a_bulk > 1`, at `J ≈ 2460`, while the ordering itself survives to J = 16 000. A tolerance loose enough to pass the moved magnitudes cannot see either. |
 | **18** | mean-field ω has NO interior optimum | the finding is that an argmin sits at an END for three ω-shapes and INSIDE for the spatial one — four locations and a contrast, not four values. |
 | **21** | the O-lift is SHAPE-PRESERVING | **MEASURED (§ 4.5):** the claim is that two argmins are EQUAL while every value between them moves. A value tolerance loose enough to pass the moved values cannot see the equal locations at all. |
 | **83** | 1 of 5 ramps has no root | a 15th-digit shift can cost a fourth ramp its root |
@@ -795,12 +1118,17 @@ next starts. The tree is green at every phase boundary; there is no big-bang cut
 | **0** | ~~Cargo crate; the oracle bridge; the per-quantity tolerance policy~~ | **DONE** | ✅ 3232 values round-trip; policy DERIVED from the CPython↔PyPy gap, not invented |
 | **1** | ~~`gas.rs` — `FlowState`, CPG closed form, TPG NASA integrals, reacting section, Fork B, equilibrium Newton (rungs 1–6)~~ | **DONE** | ✅ **two** gates: `gas_oracle.rs` (values, **3232/3232** bit-exact vs PyPy after phase 2's fix — § 4.1 shipped it at 3196, § 4.2 says why) and `gas_spine.rs` (**reduce-to-prior**, 6 tests — § 5.1) |
 | **2** | ~~`components.rs` + `engine.rs` design point — shaft balance, `_score`; conservation checks as `assert!`~~ | **DONE** | ✅ **three** gates: `cycle_oracle.rs` (1481/1481 bit-exact vs PyPy, on 19+15 distinct solver roots — § 4.2), the 8 ported rung suites (39 tests, rungs 1–6, incl. rung 6's GATE 1), and `porting_rules.rs` |
-| **3** | NOx & mixing, rungs 7–24. **RISK-BEARING — not bulk.** These are phase 1's largest *consumer*: every one rides the equilibrium solve and `Kp = exp(−ΔG°/RuT)`, and their findings are *shapes* (the bell's peak, the minimum pinned at `C_opt`, monotone-vs-turns-back-up) that a last-digit shift in an exponential can move. Deliberately placed straight after phase 1 as the **first real test of whether the transcendental arithmetic holds**. **IN PROGRESS — slices A (7/8/9/19), B (10/11/12/20), C (13/15/16/18/21) and D (22/23/24) DONE**, § 4.3–4.8; only the nozzle strand (14/17) remains, and the slices are grouped in § 4.3 by DEPENDENCY, not by number | 4–6 | ✅ slice A: `nox_oracle.rs` (**1806/1806** bit-exact vs PyPy on 22+22 distinct solver roots) + 4 rung suites (43 tests) · ✅ slice B: `quench_oracle.rs` (**2507/2507**, on 165 distinct trajectory roots) + 4 rung suites (39 tests), one location key NARROWING a shipped claim · ✅ slice C: `pdf_oracle.rs` (**2448/2448**, both quadrature branches asserted exercised) + 5 rung suites (59 tests); the source's own mean-preservation guard found to have an `n_quad` FLOOR, and the port gates the REJECTION as well as the acceptance (§ 4.5) · ✅ slice D: `spatial_oracle.rs` (**462/462**, incl. 28 DISCRETE keys) + 3 rung suites (43 tests); TWO source claims of exactness CORRECTED — rung 24 applies an operation inside an accumulation and removes it outside, twice (§ 4.8) |
+| **3** | NOx & mixing, rungs 7–24. **RISK-BEARING — not bulk.** These are phase 1's largest *consumer*: every one rides the equilibrium solve and `Kp = exp(−ΔG°/RuT)`, and their findings are *shapes* (the bell's peak, the minimum pinned at `C_opt`, monotone-vs-turns-back-up) that a last-digit shift in an exponential can move. Deliberately placed straight after phase 1 as the **first real test of whether the transcendental arithmetic holds**. **DONE — slices A (7/8/9/19), B (10/11/12/20), C (13/15/16/18/21), D (22/23/24) and E (14/17) all shipped**, § 4.3–4.10; the slices are grouped in § 4.3 by DEPENDENCY, not by number | 4–6 | ✅ slice A: `nox_oracle.rs` (**1806/1806** bit-exact vs PyPy on 22+22 distinct solver roots) + 4 rung suites (43 tests) · ✅ slice B: `quench_oracle.rs` (**2507/2507**, on 165 distinct trajectory roots) + 4 rung suites (39 tests), one location key NARROWING a shipped claim · ✅ slice C: `pdf_oracle.rs` (**2448/2448**, both quadrature branches asserted exercised) + 5 rung suites (59 tests); the source's own mean-preservation guard found to have an `n_quad` FLOOR, and the port gates the REJECTION as well as the acceptance (§ 4.5) · ✅ slice D: `spatial_oracle.rs` (**462/462**, incl. 28 DISCRETE keys) + 3 rung suites (43 tests); TWO source claims of exactness CORRECTED — rung 24 applies an operation inside an accumulation and removes it outside, twice (§ 4.8) | · ✅ slice E: `nozzle_oracle.rs` (**511/511**, incl. 22 DISCRETE keys) + 2 rung suites (24 tests) + 3 gates `rung20.rs` had deferred; a THIRD claim of exactness corrected (the frozen reduce is algebraic only, and its floor is the entropy ROUTE, not the bisection's stopping rule) and rung 17's firing band edge LOCATED — past it the bulk margin goes dormant while the per-pocket one RISES (§ 4.10) |
 | **4** | Nozzle & turbine marches, rungs 25–30 — own convergence behaviour, hence separate | 2–3 | per-rung tests pass |
 | **5** | Steady matchers — rungs 31–33, 38–39, 42, 53–56, 61. **Contains the diamond** (§ 6) | 4–6 | per-rung tests pass |
 | **6** | Transients — rungs 34–37, 40, 43–52 (the fuel-side limiter family) | 4–6 | per-rung tests pass |
 | **7** | **The ladder, rungs 57–84** — the `Hooks` table from § 2, one module per rung | 5–8 | 28/28 reduce-to-prior bit-exact |
 | **8** | `main.py` replacement; adjudicate the fragile rungs; re-anchor the fingerprint; **delete the Python** | 2–3 | full suite green on Rust alone |
+
+**PHASE 3's estimate held: 4–6 sessions were budgeted and five slices shipped.** Its
+risk-bearing label was earned in a way the estimate did not anticipate — the arithmetic never
+failed (five oracles, 11,985 values, 100 % bit-exact against PyPy at every one), and every
+finding came instead from sweeping past the source's own gates. Six slices, six such findings.
 
 **Total: 26–40 focused sessions**, as estimated *before* phase 1 ran. The risk is **not**
 evenly spread and is not only at the ends: it concentrates in phase 1's transcendental
@@ -933,10 +1261,11 @@ every disagreement with the oracle ambiguous.
    point is now **before phase 3**, which is where it was always going to matter.
    **Superseded again 2026-08-12: phase 3 was authorised and is under way, in SLICES.** The
    phase is the port's largest (2,745 source lines, 204 tests, eight mutually-exclusive mixing
-   closures), so it ships one green gate at a time rather than as one landing. Slices A (§ 4.3),
-   B (§ 4.4) and C (§ 4.5) are done; the nozzle strand (14/17) and the resolved cross-plane
-   (22/23/24) remain. No further authorisation is needed inside phase 3; the next re-decide point
-   is **before phase 5**, which contains the diamond (§ 6).
+   closures), so it shipped one green gate at a time rather than as one landing. **All five slices
+   are now done — A (§ 4.3), B (§ 4.4), C (§ 4.5), D (§ 4.7–4.8) and E (§ 4.9–4.10) — and PHASE 3
+   IS COMPLETE.** No further authorisation was needed inside phase 3; **phase 4 (the nozzle &
+   turbine marches, rungs 25–30) has not been authorised and is the next thing to ask about.** The
+   standing re-decide point remains **before phase 5**, which contains the diamond (§ 6).
 
 **Decision 1 is REVISED by § 4.2**: phases 0–2 are held to bit-equality, not to a tolerance,
 because it was measured achievable (100 % on both oracles) and because a tolerance bar let a

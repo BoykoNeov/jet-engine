@@ -103,6 +103,42 @@ solves. So the **frozen** branch of `_expand_nozzle` reproduces the production `
 precision (the load-bearing reduce). For a **shifting** mixture the mole fractions *do* change, so the
 mixing term is live and the drop is genuinely a different (equilibrium) path.
 
+> ### CORRECTION (2026-08-12, from the Rust port's slice E) — the "exactly" is ALGEBRAIC
+>
+> The paragraph above is right about the algebra and wrong about the arithmetic, and the gate
+> below hides it behind a bar six orders too loose. **Measured over eight design points (Tt4 ∈
+> {1300, 1500, 1800, 2200} K × losses on/off): the frozen branch is bit-equal to the production
+> nozzle at NONE of them.** Worst disagreement 2.46e-11 m/s in `V9` (1.75e-14 relative) and
+> 2.80e-11 K in `T9` (2.36e-14). The gate's `< 1e-6` therefore passes on anything.
+>
+> **And the residual splits, which is the useful half.** Re-running the frozen bisection with its
+> `hi − lo ≤ 1e-13·T` stopping rule made a knob — tightened to zero, so the loop takes all 200
+> halvings — the disagreement falls to **2.05e-12 K (2.5e-15 relative) and stops there**. So:
+>
+> * the stopping rule contributes a factor 4–8;
+> * the FLOOR is the **route**. `_mix_entropy_molar` sums `Σ nᵢ[s0ᵢ(T) − Ru ln(xᵢp/p0)]` per
+>   species; the production nozzle runs `T_from_pr`'s safeguarded Newton on `_antideriv_phi` of
+>   the **mole-weighted** coefficients. Those are the same number in exact arithmetic and two
+>   different functions in the last bits — the same class as `x*x*x` not being `x ** 3`.
+>
+> Nothing about the physics changes: the mixing term does cancel, and that IS why a pr-ratio
+> expansion and an entropy-balance expansion agree at all. What changes is what the reduce gate
+> can honestly claim. The Rust suite asserts **1e-12 relative** (≈40× over measured) and adds a
+> second gate the Python cannot state, because its tolerance is a literal inside a private
+> function: that the converged-bracket residual is non-zero and ≤1e-13 relative, and that the
+> bit-equal COUNT over the eight points is 0 — a fact about this sweep, not a law.
+> `rust/tests/nozzle_oracle.rs::the_frozen_reduce_is_inexact_and_the_floor_is_the_route`;
+> `docs/plans/todo-rust-port.md` § 4.10 finding 1.
+
+> ### The 500 K exit-bracket guard is REACHABLE (same source, same slice)
+>
+> `_expand_nozzle`'s post-loop assert is commented "Never happens here (every exit sits >700 K)".
+> True at shipped conditions and silent about whether the branch is testable at all. Measured, it
+> fires below `p9/pt9` = **0.025016** at the Tt4 = 1500 K design point and **0.002608** at the
+> 2200 K one — 6.4× and 44.9× below where the engine runs. So both sides of the guard are gated
+> in Rust (a census over a fixed back-pressure ladder rejects 4 of 12 ratios at the cool point and
+> 1 of 12 at the hot one), rather than the guard being a branch no test can enter.
+
 ---
 
 ## Verification gates (priority order)

@@ -104,6 +104,49 @@ unconservative precisely at the rich RQL primary** real low-NOx combustors use �
 mixing (quench + pockets) to see the exhaust NO that actually leaves the engine, and rung 14 proves
 that NO is frozen super-equilibrium at the exit.
 
+> ### SHARPENING (2026-08-12, from the Rust port's slice E) — where the firing stops, and what
+> does NOT stop with it
+>
+> This rung is careful that the firing is IN-BAND and not universal: as the quench gets fast
+> (`J→∞`) the bulk re-making vanishes, `x_no_quenched → x_no_mix`, and `a_bulk → a_mixed < 1`.
+> That is stated everywhere and **measured nowhere** — the suite tests one `J`. Bisecting on the
+> sign of `a_bulk − 1` at the shipped design point:
+>
+> | `C_e` | `a_bulk` at the RQL `J` = 225 | `a_bulk` crosses 1 at |
+> |---|---|---|
+> | 0.15 | 4.356 | **`J` ≈ 3978–4000** |
+> | 0.20 | 3.272 | **`J` ≈ 2457–2470** |
+>
+> So the firing survives about **11× past the shipped band**, and the edge itself moves 1.6× on an
+> entrainment scale nothing pins — which is the "rides on un-pinned mixing scales" caveat made
+> numerical. Deliberately left as a coarse bracket: the crossing is a smooth root, so a resolved
+> digit would just be a `C_e`/`τ_res`/`H` reading in disguise.
+>
+> **The correction is what happens PAST the crossing.** The natural reading of the caveat — that
+> `J→∞` sends the whole ladder dormant — is wrong:
+>
+> | `J` | `a_mixed` | `a_bulk` | `a_pocket` | gap | `hides_super_eq` | `ladder_monotone` |
+> |---|---|---|---|---|---|---|
+> | 225 (RQL) | 0.01582 | 3.272 | **11.06** | 3.38 | true | true |
+> | 4 000 | 0.01582 | 0.789 | **12.82** | 16.26 | **false** | true |
+> | 16 000 | 0.01582 | 0.402 | **14.34** | 35.65 | **false** | true |
+>
+> `a_pocket` **RISES** while `a_bulk` falls through 1. The mechanism is rung 16's own, and its
+> docstring says so already: `ei_no_pocket_quench` = term 1, the mean-field bulk riding
+> `τ_mean ∝ 1/√J` and collapsing, **plus** term 2, the β-PDF integral at
+> `τ_core = τ_res·(1+b_u·u)` — which `PocketQuenchPDF.core_dwell` describes as an *absolute*
+> residence whose "NO penalty survives `J→∞`", with `u` growing off-optimum. Measured term 2 =
+> 0.646 → 0.997 → 1.155 g/kg over those three `J`.
+>
+> **So the two predicates say different things and this rung's prose blurs them.**
+> `hides_super_eq` is defined on `a_bulk` and is therefore the in-band claim; `ladder_monotone` is
+> the claim about the ladder, and it survives everywhere measured. Checked against the obvious
+> alternative explanation — the segregation `g` is PINNED at `g_max` = 0.3 from `J` ≈ 225 upward
+> and unpinned at `J` = 25, so the clip is exercised on both sides and the rise is not the width
+> moving. Gated as `rust/tests/rung17.rs::the_ladder_does_not_go_dormant_with_the_bulk` and
+> `…::the_firing_band_edge_is_located_and_moves_with_the_scale`;
+> `docs/plans/todo-rust-port.md` § 4.10 finding 2.
+
 ---
 
 ## The equations — a composition, no station changes
