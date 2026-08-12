@@ -120,3 +120,23 @@ one-signed wherever the pockets stay formation-limited. What rung 23 **cannot** 
 magnitude, the emissions global-min, a locally-resolved mixing time) it says as loudly as what it can: the
 correlation's **shape** is derived, its **magnitude** rides on rung-11's `τ_mix`, and the `C_opt` emissions
 pin — which rung 16 already declined — is left to the un-anchored dwell trend.
+
+## This rung's consistency anchor is UNDER-claimed — it is BIT-EXACT, not "<1 %"
+
+`_spatial_dwell_field`'s docstring says its terminal field "re-derives" rung-22's `g` "through a time
+development" and matches "to <1%", and `tests/test_rung23.py` gates it at `< 1e-9`. **Measured by the
+Rust port at J ∈ {4, 16, 100} × `ny=nz` ∈ {32, 40, 48}: the two are EXACTLY equal, at every point.**
+
+The reason is worth stating, because it is what makes the anchor strong rather than lucky. The time
+development terminates at `t = τ_mix`, and at `frac = 1.0` its two scalings are `1.0**(1/3)` and
+`sqrt(1.0)` — both exactly 1.0 in IEEE-754, so the terminal plume is not merely *equivalent* to rung
+22's, it is the identical arithmetic. Every accumulator on the way to the variance is then a FLAT
+single pass, matching rung 22's. Nothing rounds differently anywhere.
+
+**The comparison this sharpens is with rung 24**, whose spec claims the opposite pairing: rung 24
+says its `g` is "IDENTICAL BY CONSTRUCTION — not to a tolerance (contrast rung-23's …)", and it is
+in fact the one that is NOT bit-exact, because its mean is a hierarchical `sum(sum(r) for r in xi)`
+where rung 22 runs one flat pass. So the two rungs' claims are swapped, and the source's `< 1e-9`
+gate — applied identically to both — is exactly the bar that cannot tell them apart. See
+`docs/rung24-spec.md` for that half and `docs/plans/todo-rust-port.md` § 4.7–4.8 for the
+measurement. Recorded, not edited, for the reason given there.

@@ -20,10 +20,18 @@ WHAT IS ACTUALLY NEW HERE, and therefore what the sweep is built around:
     (`sum(sum(r) for r in xi)`) while its mean-square two lines later is FLAT, so it is NOT. The
     Python's docstrings claim the OPPOSITE pairing and its own gate asserts `< 1e-9` on both,
     which is why the source cannot see the difference. Both are dumped, with different bars.
-  * A DATA-DEPENDENT KNOT COUNT. Rungs 23 and 24 bin a `(ξ, τ)` cloud into `max(8, ny//2)` bins
-    and keep only the NON-EMPTY ones, so the interpolator's knot count is an OUTPUT of the field.
-    A count off by one reshapes the whole spectrum and no tolerance on τ would name it, so it is
-    dumped as its own DISCRETE key — the family slice C's first-burnable-node index opened.
+  * A KNOT COUNT THAT *COULD* BE DATA-DEPENDENT — AND, MEASURED, IS NOT. Rungs 23 and 24 bin a
+    `(ξ, τ)` cloud into `max(8, ny//2)` bins and keep only the NON-EMPTY ones, so in principle the
+    interpolator's knot count is an OUTPUT of the field. **Measured across five grids (16→96) and
+    six decades of J (0.05→5000), every bin is non-empty at every point: the count is always
+    exactly `max(8, ny//2)`.** The Gaussian-plume field covers its own ξ range densely, so nothing
+    in the shipped regime empties a bin. The key is therefore a TRIPWIRE, not a live
+    discriminator: it is dumped because a count off by one would reshape the whole spectrum and no
+    tolerance on τ would name it, but it is currently a check on the bin arithmetic rather than on
+    the data-dependence. Recorded honestly instead of left justified by a property it does not
+    have — the same "a bar that cannot fail is not a bar" shape as the ≤1-of-N guard slice B
+    deferred. (The one thing that DOES fire out there is the mean-preservation guard, at J ≈ 5e4,
+    where the over-penetrating plume needs an air scale past the bisection's ceiling of 50.)
   * A HEAVILY-TAKEN SCHEME BRANCH. Rung 24 sends any cell with `u < 1e-8` to an analytic
     stagnant limit. Measured, 18–50 % of cells take it, because the β-clip creates large
     exactly-flat plateaus where `|∇ξ|² = 0` — so unlike rung 20's flame-band floor this is the
@@ -92,9 +100,10 @@ PHI_P = 1.5      # the RQL rich primary every mixing rung anchors on
 CE = 0.20        # the ANCHORED jet-entrainment regime (rungs 11-16)
 S0, H0 = 0.0625, 0.10        # the shipped spacing and duct height ⇒ C_opt=2.5 at J=16
 KP, KY, KZ = 0.316, 0.28, 0.28
-# The cross-plane grids. 16 is deliberately below anything the Python ships: it is the grid where
-# the non-empty-bin count has the most room to differ, and the field is pure arithmetic so a
-# coarse grid certifies the same spellings a fine one would.
+# The cross-plane grids. 16 is deliberately below anything the Python ships — not because the bin
+# count differs there (measured: it never does, see the module docstring) but because the field is
+# pure arithmetic, so a coarse grid certifies the same spellings a fine one would at a fraction of
+# the cost, and because the mean-preserving bisection walks a different bracket at each grid.
 NY_SWEEP = (16, 32, 48)
 NT = 24                       # rung-23 dwell time steps
 # The end-to-end rung-23/24 chemistry in § 7 — each bank is n_bell pockets, each a full quench,

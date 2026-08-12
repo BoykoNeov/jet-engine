@@ -592,7 +592,7 @@ Rung 24 applies an operation INSIDE an accumulation and removes it OUTSIDE, twic
 Both are gated **from both sides** — the port must reproduce the inexactness, because tidying
 either into its exact form would be MORE accurate than the source and is therefore a defect.
 
-**FOUR FURTHER FINDINGS.**
+**FIVE FURTHER FINDINGS.**
 
 3. **RUNG 24's `u < 1e-8` BRANCH IS THE INVERSE OF RUNG 20's FLOOR.** Rung 20's flame-band clip
    never binds at the shipped design point and needed a second, cooler one before its gate meant
@@ -601,19 +601,32 @@ either into its exact form would be MORE accurate than the source and is therefo
    U-shaped with its minimum at `C_opt` — recorded as CORROBORATION of `F`'s U and explicitly NOT
    as a second kill test, because `u` carries the same `1/var` coupling that makes
    "argmin F == argmin g" circular. The g-free witness stays `⟨|∇ξ|²⟩`.
-4. **A RELATIVE BAR IS THE WRONG CURRENCY FOR A RESIDUAL, AND IT FAILED LOUDLY.** The CPython arm
+4. **ONE OF THE TWO DISCRETE KEYS IS A TRIPWIRE, NOT A DISCRIMINATOR — and it is recorded as one.**
+   The τ(ξ) binner keeps only NON-EMPTY bins, so its knot count *could* be an output of the field.
+   Measured across five grids (16→96) and six decades of `J` (0.05→5000): **every bin is non-empty
+   at every point**, so the count is always exactly `max(8, ny/2)`. The Gaussian-plume field covers
+   its own ξ range densely and nothing in the shipped regime empties a bin. The key is kept —
+   a count off by one would reshape the whole spectrum invisibly to any τ tolerance — but the
+   comment justifying it originally claimed the coarse grid was chosen because the count "has the
+   most room to differ" there, which the measurement does not support. Corrected in the dump and
+   in the gate. Same "a bar that cannot fail is not a bar" shape as the ≤1-of-N guard slice B
+   deferred, and the honest move is to name it rather than to leave the justification stronger
+   than the evidence. (The stagnant census, by contrast, is live: it moves with `J` and bottoms at
+   `C_opt`. And the mean-preservation guard DOES fire out at `J ≈ 5e4`, where the over-penetrating
+   plume needs an air scale past the bisection's ceiling of 50.)
+5. **A RELATIVE BAR IS THE WRONG CURRENCY FOR A RESIDUAL, AND IT FAILED LOUDLY.** The CPython arm
    reported a worst relative disagreement of **1.60** on `d24/n16/J1.0` — a difference of two
    nearly-equal numbers, where the operands' last bits set the whole answer. Those keys are now
    compared ABSOLUTELY (measured worst 2.19e-16). Same lesson the golden fingerprint gate learned
    from the other side.
-5. **AN INVENTED BAR FAILED INSIDE THE HOUR, TWICE.** A 1e-14 relative bar on the rung-24 residual
+6. **AN INVENTED BAR FAILED INSIDE THE HOUR, TWICE.** A 1e-14 relative bar on the rung-24 residual
    (measured 1.10e-14) and a 1.05 clearance bar on the g-free witness's peak (measured **1.0137** —
    the peak clears its low neighbour by 1.4 %, the thinnest margin any location key in this slice
    carries). The second fix is the instructive one: the peak was widened onto a **4× grid** where
    the clearances become 19.5 % and 47.8 %, rather than the bar being loosened. **A location key
    that sits close to its neighbours needs a coarser grid, never a looser bar** — slice C's rule,
    applied a second time and now on a kill test rather than on a hump.
-6. **MY OWN FIRST GATE OVER-CLAIMED, AND THE WIDER SWEEP CAUGHT IT.** The first version of the
+7. **MY OWN FIRST GATE OVER-CLAIMED, AND THE WIDER SWEEP CAUGHT IT.** The first version of the
    reduce gate swept 3 J × 3 grids, found rung 24 inexact 9/9, and stated "never bit-equal" as a
    law. The oracle's wider sweep (adding `ny=16` and `J ∈ {1, 400}`) found **two points where the
    two summation orders round together**. Fifth consecutive slice where sweeping past the first

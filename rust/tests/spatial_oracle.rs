@@ -20,10 +20,13 @@
 //!   and a single last-bit difference in the accumulation can send one halving the other way. The
 //!   `g22/` sweep spans three grids × five J × three geometries × two design points for exactly
 //!   that reason.
-//! * **DISCRETE OUTPUTS NO TOLERANCE CAN SEE.** The τ(ξ) binner keeps only NON-EMPTY bins, so its
-//!   knot count is data-dependent (`knots/`); rung 24's `u < 1e-8` stagnant branch is taken by
-//!   18–50 % of cells, so its census is a real integer (`stag/`). Both are dumped per grid and
-//!   per J.
+//! * **DISCRETE OUTPUTS NO TOLERANCE CAN SEE — one live, one a tripwire.** Rung 24's `u < 1e-8`
+//!   stagnant branch is taken by 18–50 % of cells, so its census (`stag/`) is a live integer that
+//!   MOVES with J. The τ(ξ) binner's knot count (`knots/`) could in principle be data-dependent —
+//!   it keeps only non-empty bins — but measured across five grids and six decades of J it is
+//!   ALWAYS exactly `max(8, ny/2)`: the plume covers its own ξ range densely and no bin ever
+//!   empties. It is kept because a count off by one would reshape the whole spectrum invisibly to
+//!   any τ tolerance, but it is honestly a tripwire, not a discriminator.
 //! * **THE CIRCULARITY KILL TEST.** `u` carries an explicit `1/var` and rung 22 already mins `g`
 //!   at `C_opt`, so "argmin F == argmin g" is a TELL. The `grad/` keys are `⟨|∇ξ|²⟩`, which
 //!   carries no `g`, and they are rebuilt HERE from the field without variance normalisation —
