@@ -827,6 +827,231 @@ impl Gas {
 }
 
 // ------------------------------------------------------------------------------------------- //
+// Rung 29 — THE SHIFTING TURBINE: a zero-knob WORK-LIMITED bracket, station 4 → 5
+// ------------------------------------------------------------------------------------------- //
+
+/// Turbine-exit bisection floor, Pa (rung 29).
+pub const P_TURB_FLOOR: f64 = 1.0e3;
+
+/// The `|ΔT5/T5|` below which freezing the turbine is called EARNED (rung 29).
+pub const SHIFT_EARNED_TOL: f64 = 1e-3;
+
+/// One reversible, WORK-LIMITED turbine expansion from `(tt4, pt4)`. Returns `(t5, p5, comp5)`.
+///
+/// Outer bisection on `p5`, inner bisection on `T5` at constant entropy. Monotone and so safely
+/// bracketed: expanding to a LOWER `p5` extracts MORE work, so the enthalpy residual falls through
+/// the target exactly once.
+///
+/// **The endpoint is WORK-limited, not PRESSURE-limited** — that is the one structural difference
+/// from rung 14's nozzle bracket and the reason this needs its own solver. The shaft fixes the
+/// enthalpy drop, so both expansions must give up the SAME work; what the chemistry changes is
+/// where they end up.
+///
+/// `shifting = false` holds the composition at `comp_entry`. It is NOT the path production uses —
+/// `Gas::shifting_turbine` delegates its frozen bound to the shipped closed form so the reduce
+/// holds BY CONSTRUCTION — and exists so the two bounds share one signature, and so a gate can
+/// check the solver and the closed form agree.
+///
+/// Reversible by construction, so this is the `η_t = 1` bracket. A real `η_t < 1` adds a SEPARATE
+/// and much larger entropy source that does not touch the chemistry question being bracketed.
+pub fn work_limited_expand(
+    comp_entry: &[(&'static str, f64)],
+    far: f64,
+    tt4: f64,
+    pt4: f64,
+    work_molar: f64,
+    shifting: bool,
+) -> (f64, f64, Vec<(&'static str, f64)>) {
+    let s_entry = mix_entropy_molar(comp_entry, tt4, pt4);
+    let h_target = mix_h_abs_b(comp_entry, tt4) - work_molar;
+
+    let comp_at = |t: f64, p: f64| -> Vec<(&'static str, f64)> {
+        if shifting {
+            equilibrium_composition(far, t, p)
+        } else {
+            comp_entry.to_vec()
+        }
+    };
+
+    // S rises with T at fixed p, so bisect the entropy residual — the same construction
+    // `expand_nozzle` uses, at the RUNNING p rather than a fixed back-pressure.
+    let t_isentropic_at = |p: f64| -> f64 {
+        let (mut lo, mut hi) = (T_EXIT_FLOOR, tt4);
+        for _ in 0..200 {
+            let t = 0.5 * (lo + hi);
+            if mix_entropy_molar(&comp_at(t, p), t, p) > s_entry {
+                hi = t;
+            } else {
+                lo = t;
+            }
+            if hi - lo <= 1e-13 * t {
+                break;
+            }
+        }
+        0.5 * (lo + hi)
+    };
+
+    let (mut lo_p, mut hi_p) = (P_TURB_FLOOR, pt4);
+    for _ in 0..200 {
+        let p = 0.5 * (lo_p + hi_p);
+        let t = t_isentropic_at(p);
+        if mix_h_abs_b(&comp_at(t, p), t) > h_target {
+            hi_p = p; // not enough work extracted yet — expand further
+        } else {
+            lo_p = p;
+        }
+        if hi_p - lo_p <= 1e-12 * p {
+            break;
+        }
+    }
+    let p5 = 0.5 * (lo_p + hi_p);
+    let t5 = t_isentropic_at(p5);
+    // Bracket guards, post-loop as in `expand_nozzle`: a root pinned at either edge means the
+    // shaft asked for more work than the expansion can deliver down to the floor pressure.
+    assert!(
+        t5 > T_EXIT_FLOOR + 1.0,
+        "turbine exit T={t5:.1} K pinned at the {T_EXIT_FLOOR:.0} K floor (far={far:.4})"
+    );
+    assert!(
+        p5 > P_TURB_FLOOR * 1.01,
+        "turbine exit p={p5:.1} Pa pinned at the {P_TURB_FLOOR:.0} Pa floor (far={far:.4})"
+    );
+    let comp5 = comp_at(t5, p5);
+    (t5, p5, comp5)
+}
+
+/// Rung-29 shifting-turbine diagnostic — the frozen↔shifting bracket at the SAME shaft work.
+///
+/// **THE INVERSION WORTH CARRYING IS RATIO ≠ ENERGY.** The frozen station-5 pool is
+/// super-equilibrium by a large RATIO, which is what rungs 14/25 read; what the shift can actually
+/// exploit is the radical INVENTORY, which is a different and much smaller quantity. A bracket
+/// that moves little in energy can still sit on an enormous ratio.
+#[derive(Debug, Clone)]
+pub struct ShiftingTurbineState {
+    /// (F) frozen-composition exit total T, K — == the shipped `Turbine` at `η_t = 1`
+    pub t5_frozen: f64,
+    /// (F) frozen-composition exit total p, Pa — == the shipped `Turbine`
+    pub p5_frozen: f64,
+    /// (S) fully-shifting exit total T, K — WARMER, because recombination reheats
+    pub t5_shifting: f64,
+    /// (S) fully-shifting exit total p, Pa — HIGHER, since less pressure drop is needed
+    pub p5_shifting: f64,
+    /// the shaft-set enthalpy drop both expansions gave up, J/kg
+    pub delta_h: f64,
+    /// max over `{CO, OH, O, H, H2}` of `x_frozen/x_eq` at `(t5_frozen, p5_frozen)`
+    pub super_eq_ratio_max: f64,
+    /// `(x_O + x_H + x_OH)` of the frozen pool — what the shift can actually EXPLOIT
+    pub radical_inventory: f64,
+}
+
+impl ShiftingTurbineState {
+    /// The bound's exit-temperature move, K. Positive: a shifting turbine RECOMBINES on the way
+    /// down, and that heat release lands as a warmer exit for the same shaft work.
+    pub fn dt5(&self) -> f64 {
+        self.t5_shifting - self.t5_frozen
+    }
+
+    /// `ΔT5/T5` — the headline.
+    pub fn dt5_fraction(&self) -> f64 {
+        self.dt5() / self.t5_frozen
+    }
+
+    /// `Δp5/p5`. The shifting expansion reaches the same work at a HIGHER exit pressure — the
+    /// chemical energy pays part of the shaft's bill — which is what would propagate to thrust.
+    pub fn dp5_fraction(&self) -> f64 {
+        (self.p5_shifting - self.p5_frozen) / self.p5_frozen
+    }
+
+    /// Is freezing the turbine defensible here? True when even the MAXIMUM shift is small.
+    pub fn frozen_turbine_earned(&self) -> bool {
+        self.dt5_fraction().abs() < SHIFT_EARNED_TOL
+    }
+}
+
+impl Gas {
+    /// Shifting-turbine bracket, station 4 → 5 (rung 29).
+    ///
+    /// Every rung since 6 FREEZES the station-4 mixture through the turbine; rungs 14/25 then read
+    /// that frozen pool at the nozzle entry and call it super-equilibrium — the premise the whole
+    /// `(R−I)` entry-irreversibility gap rests on. This asks whether the freeze itself is EARNED,
+    /// by bracketing the turbine the way rung 14 bracketed the nozzle. Zero knobs, no rate.
+    ///
+    /// Pass the run's own `delta_h = (h_c(Tt3) − h_c(Tt2))/(η_m·(1+f))`, i.e. exactly what
+    /// `Engine::run` hands the turbine.
+    ///
+    /// **The frozen bound is DELEGATED to the shipped turbine path, not re-solved.** At `η_t = 1`
+    /// the production `Turbine` is exactly `T5 = T_from_h_t(h_t(Tt4) − Δh)` and
+    /// `p5 = pt4·pr_t(T5)/pr_t(Tt4)`, so taking those two lines verbatim makes the reduce hold BY
+    /// CONSTRUCTION rather than by numerical agreement — the bound cannot drift from the cycle it
+    /// is bracketing.
+    pub fn shifting_turbine(
+        &self,
+        far: f64,
+        tt4: f64,
+        pt4: f64,
+        delta_h: f64,
+    ) -> ShiftingTurbineState {
+        let comp_entry = equilibrium_composition(far, tt4, pt4);
+        let m = mix_mass_per_air(&comp_entry);
+
+        // (F) FROZEN — the shipped path, verbatim.
+        let t5_frozen = self.t_from_h_t(self.h_t(tt4, far) - delta_h, far);
+        let p5_frozen = pt4 * self.pr_t(t5_frozen, far) / self.pr_t(tt4, far);
+
+        // (S) FULLY SHIFTING — the same work, with the pool at local equilibrium throughout.
+        let (t5_shifting, p5_shifting, _) =
+            work_limited_expand(&comp_entry, far, tt4, pt4, delta_h * m, true);
+
+        // The super-equilibrium content of the FROZEN pool at station 5, in BOTH currencies, so
+        // the ratio-vs-inventory inversion is readable off one state object.
+        let comp_eq5 = equilibrium_composition(far, t5_frozen, p5_frozen);
+        let n_f: f64 = comp_entry.iter().map(|&(_, n)| n).sum();
+        let n_e: f64 = comp_eq5.iter().map(|&(_, n)| n).sum();
+        let mut ratio_max = 0.0f64;
+        for sp in ["CO", "OH", "O", "H", "H2"] {
+            let x_e = get_or_zero(&comp_eq5, sp) / n_e;
+            if x_e > 0.0 {
+                ratio_max = ratio_max.max((get_or_zero(&comp_entry, sp) / n_f) / x_e);
+            }
+        }
+        let inventory: f64 =
+            ["O", "H", "OH"].iter().map(|&sp| get_or_zero(&comp_entry, sp)).sum::<f64>() / n_f;
+
+        // Conservation checks, on every call (the project contract).
+        // (1) Recombination RELEASES energy, so at equal work the shifting exit cannot be cooler
+        //     and cannot need a deeper pressure drop. This is the direction of the whole bracket.
+        assert!(
+            t5_shifting >= t5_frozen - 1e-9 * t5_frozen,
+            "shifting turbine exit must not be COOLER than frozen at equal work \
+             (recombination reheats)"
+        );
+        assert!(
+            p5_shifting >= p5_frozen - 1e-9 * p5_frozen,
+            "shifting turbine exit must not be at LOWER pressure than frozen at equal work"
+        );
+        // (2) Both expansions gave up the SAME shaft work — verified on ABSOLUTE enthalpy, since
+        //     the composition changes so the formation enthalpy does not cancel.
+        let w_shift = (mix_h_abs_b(&comp_entry, tt4)
+            - mix_h_abs_b(&equilibrium_composition(far, t5_shifting, p5_shifting), t5_shifting))
+            / m;
+        assert!(
+            (w_shift - delta_h).abs() < 1e-6 * delta_h,
+            "shifting expansion did not extract the shaft work: {w_shift} != {delta_h}"
+        );
+
+        ShiftingTurbineState {
+            t5_frozen,
+            p5_frozen,
+            t5_shifting,
+            p5_shifting,
+            delta_h,
+            super_eq_ratio_max: ratio_max,
+            radical_inventory: inventory,
+        }
+    }
+}
+
+// ------------------------------------------------------------------------------------------- //
 // Rung 27 — NO FREEZE-OUT: is the frozen-NO assumption every NO number carries EARNED?
 // ------------------------------------------------------------------------------------------- //
 

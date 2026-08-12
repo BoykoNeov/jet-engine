@@ -58,10 +58,17 @@
 //!   776/776 bit-exact — and only **8.0 %** CPython-identical, the sharpest dump in the port,
 //!   because every quantity is a ratio of Arrhenius rates read off a marched trajectory. Slice F's
 //!   copy-vs-rederivation discriminator made two pre-registered predictions here and both held.
-//! * **H — rungs 29/30**: next.
+//! * **H — rungs 29/30 (SHIPPED)**: the work-limited turbine bracket that asks whether FREEZING
+//!   the turbine is earned, and the choked convergent nozzle that asks whether FULL EXPANSION is.
+//!   270/270 bit-exact. Rung 29's "ratio ≠ energy" came out stronger than the source states it —
+//!   the super-equilibrium ratio is ANTI-correlated with the energy, largest (993×) exactly where
+//!   the bracket is worth least.
 //!
-//! The remaining off-design and transient ladders arrive in phases 5–7 and leave this design run
-//! untouched, as they do in the Python.
+//! **PHASE 4 IS COMPLETE.** The remaining off-design and transient ladders arrive in phases 5–7
+//! and leave this design run untouched, as they do in the Python. Note that three different
+//! spellings of "raise to a power" now live in phase 4 alone — a libm `pow` for `** 0.5`, the real
+//! `sqrt` instruction for `math.sqrt`, and a product for a small integer exponent — and each site
+//! says which rule applies, because applying any one by habit is a silent one-bit defect.
 //!
 //! # Porting rules that are NOT optional
 //!

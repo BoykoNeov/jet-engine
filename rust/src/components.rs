@@ -37,11 +37,14 @@
 //! a check on the ideal SUBSTATE plus an entropy-generation INEQUALITY on the actual
 //! temperature.
 //!
-//! NOT PORTED HERE, and deliberately: rung 30's CHOKED CONVERGENT nozzle (`convergent=True`,
-//! `_sonic_throat`) and rung 31's `choked_mfp`. They belong to phases 4 and 5, where their own
-//! gates (`test_rung30.py`, `test_rung31.py`) run. Porting them now would ship untested code
-//! into a phase gated only by the rungs 1-6 suites, and the Python did exactly this too — the
-//! Nozzle grew its choke branch AT rung 30, not before.
+//! RUNG 30 — the CHOKED CONVERGENT nozzle ([`Nozzle::convergent`], [`sonic_throat`]) arrived with
+//! phase 4 slice H, gated by `tests/rung30.rs`. The default `convergent = false` path is the
+//! shipped specified-exit-pressure nozzle, untouched, so every rungs 1-6 number is inert by
+//! construction — which is the same order the Python grew it in.
+//!
+//! STILL NOT PORTED HERE, and deliberately: rung 31's `choked_mfp`. It belongs to phase 5, where
+//! `test_rung31.py` runs. Checked rather than assumed before slice H shipped: no rung-30 test
+//! references it, so porting it now would ship code into a phase whose gate cannot exercise it.
 
 use crate::gas::{powp, FlowState, Gas};
 
@@ -599,11 +602,99 @@ pub struct Nozzle {
     pub pi_n: f64,
     /// `p9` — defaults to `p_ambient` (fully expanded).
     pub p_exit: f64,
+    /// RUNG 30: a FIXED CONVERGENT nozzle, which chokes rather than expanding to a given `p9`.
+    ///
+    /// The default (`false`) is the shipped specified-exit-pressure nozzle, untouched.
+    pub convergent: bool,
+}
+
+/// RUNG 30. The general (TPG / reacting) sonic-throat solve: bisect `T*` on the residual
+///
+/// ```text
+/// h_t(Tt9, far) - h_t(T*, far)  -  1/2 * gamma_t(T*, far) * R_t * T*
+/// ```
+///
+/// which is monotone in `T*` — the enthalpy drop rises as `T*` falls while the sonic KE falls —
+/// so the root is unique and a bracket suffices.
+///
+/// **Factored out of [`sonic_throat`] deliberately, and the reason is load-bearing.** Rung 30's
+/// gate 2a justifies itself as "two genuinely different code paths onto the same M=1 condition",
+/// and it runs on a CPG gas — where [`sonic_throat`] takes the closed form. Without an explicit
+/// entry point to THIS loop the gate would silently have compared the closed form against itself.
+/// That is the same vacuity shape the port has hit from the other direction, so the split stays.
+///
+/// `h_tt` and `r` are passed in rather than recomputed: they are loop invariants the caller
+/// already holds, and sharing them keeps this byte-for-byte the loop that shipped.
+pub fn sonic_throat_bisect(gas: &Gas, tt9: f64, far: f64, h_tt: f64, r: f64) -> f64 {
+    let resid = |t: f64| -> f64 { (h_tt - gas.h_t(t, far)) - 0.5 * gas.gamma_t_at(t, far) * r * t };
+
+    let (mut lo, mut hi) = (0.5 * tt9, tt9); // T*/Tt ~ 0.85–0.87; safely bracketed
+    let mut flo = resid(lo); // > 0 (big drop), resid(hi) < 0 (no drop)
+    assert!(flo > 0.0 && resid(hi) <= 0.0, "sonic-throat bracket does not straddle M=1");
+    for _ in 0..200 {
+        let mid = 0.5 * (lo + hi);
+        let fm = resid(mid);
+        if flo * fm <= 0.0 {
+            hi = mid;
+        } else {
+            lo = mid;
+            flo = fm;
+        }
+        if hi - lo <= 1e-13 * tt9 {
+            break;
+        }
+    }
+    0.5 * (lo + hi)
+}
+
+/// RUNG 30. The M=1 (choking) exit state of a convergent nozzle: `(T*, p*, V*)`.
+///
+/// A convergent nozzle can accelerate the flow only to Mach 1 at its throat, and the throat IS the
+/// exit. At M=1 the exit velocity equals the local speed of sound:
+///
+/// ```text
+/// V*^2 = 2*( h_t(Tt9) - h_t(T*) )                 # energy: KE is the enthalpy drop
+/// V*   = a(T*) = sqrt( gamma_t(T*) * R_t * T* )   # sonic condition M9 = 1
+/// ```
+///
+/// Eliminating `V*` gives one monotone equation in `T*`, then `p* = pt9·pr_t(T*)/pr_t(Tt9)`.
+///
+/// **THE CPG BRANCH IS SOLVED, NOT SEARCHED.** On a calorically-perfect hot section `h_t = cp·T`
+/// and `gamma_t` is constant, so the residual is EXACTLY LINEAR in T and its root is closed-form —
+/// the SAME equation, not an approximation of it. The form used is the residual's own root rather
+/// than the textbook `2/(γ+1)`, so it stays correct if a CPG section is ever built with
+/// `cp ≠ γR/(γ−1)` — the rounded-constants trap gate 2a exists to avoid.
+///
+/// **`** 0.5` IS A LIBM `pow`, NOT `sqrt`.** The Python spells `V*` as `(...) ** 0.5`, which is a
+/// `pow` call and differs from `sqrt` about one point in 670 — the exact trap phase 2 was caught
+/// by. It is [`powp`] here. Note the CONTRAST with rung 26's `math.sqrt(J)`, which really is the
+/// sqrt instruction: the rule is per-site and cannot be applied by habit.
+pub fn sonic_throat(gas: &Gas, tt9: f64, pt9: f64, far: f64) -> (f64, f64, f64) {
+    let r = gas.r_t_at(far);
+    let h_tt = gas.h_t(tt9, far);
+
+    let tstar = if gas.hot_is_cpg() {
+        let t = h_tt / (gas.cp_t_at(tt9, far) + 0.5 * gas.gamma_t_at(tt9, far) * r);
+        // The bracket the bisection asserted, kept as a check but paid for in arithmetic rather
+        // than in gas calls: a physical sonic throat sits at T*/Tt ~ 0.85–0.87.
+        assert!(0.5 * tt9 < t && t < tt9, "CPG sonic-throat root outside the physical bracket");
+        t
+    } else {
+        sonic_throat_bisect(gas, tt9, far, h_tt, r)
+    };
+    let pstar = pt9 * gas.pr_t(tstar, far) / gas.pr_t(tt9, far);
+    let vstar = powp(2.0 * (h_tt - gas.h_t(tstar, far)), 0.5);
+    (tstar, pstar, vstar)
 }
 
 impl Nozzle {
     pub fn new(p_ambient: f64, pi_n: f64, p_exit: Option<f64>) -> Self {
-        Nozzle { p_ambient, pi_n, p_exit: p_exit.unwrap_or(p_ambient) }
+        Nozzle { p_ambient, pi_n, p_exit: p_exit.unwrap_or(p_ambient), convergent: false }
+    }
+
+    /// RUNG 30's convergent nozzle — the flow decides `p9`.
+    pub fn convergent(p_ambient: f64, pi_n: f64) -> Self {
+        Nozzle { p_ambient, pi_n, p_exit: p_ambient, convergent: true }
     }
 
     pub fn apply(&self, s: &FlowState, gas: &Gas) -> NozzleExit {
@@ -613,7 +704,39 @@ impl Nozzle {
         let r = gas.r_t_at(f);
         let tt9 = s.tt;
         let pt9 = self.pi_n * s.pt;         // specified nozzle pressure loss
-        let p9 = self.p_exit;               // expand to the specified back-pressure
+
+        // RUNG 30: a CONVERGENT nozzle lets the FLOW decide p9. Find the sonic (M=1) throat and
+        // choke-detect against ambient. If choked the exit is pinned there (underexpanded,
+        // p9 = p* > p0); if subcritical, p9 = p0 and control falls through to the shared
+        // expansion — bit-for-bit the default nozzle at that condition, which is the reduce.
+        let p9 = if self.convergent {
+            let (tstar, pstar, vstar) = sonic_throat(gas, tt9, pt9, f);
+            if pstar > self.p_ambient {
+                let (p9, t9, v9) = (pstar, tstar, vstar);
+                let a9 = powp(gas.gamma_t_at(t9, f) * r * t9, 0.5);
+                let m9 = v9 / a9; // == 1 by construction
+                let out = FlowState { tt: tt9, pt: pt9, mdot: s.mdot, far: s.far };
+                assert!((out.pt - self.pi_n * s.pt).abs() < 1e-9 * s.pt, "nozzle pt9 != pi_n*pt5");
+                assert!(
+                    (gas.pr_t(tt9, f) / gas.pr_t(t9, f) - pt9 / p9).abs() < 1e-9 * (pt9 / p9),
+                    "nozzle static drop not isentropic"
+                );
+                assert!((m9 - 1.0).abs() < 1e-9, "choked convergent nozzle must exit at M9 = 1");
+                assert!(p9 > self.p_ambient, "choked nozzle is underexpanded: p9 > p0");
+                let split_tol = if gas.hot_is_cpg() { 1e-3 } else { 1e-9 };
+                let enthalpy_total = gas.h_t(tt9, f);
+                assert!(
+                    (gas.h_t(t9, f) + 0.5 * (v9 * v9) - enthalpy_total).abs()
+                        <= split_tol * enthalpy_total,
+                    "choked nozzle energy split off by more than the constant mismatch"
+                );
+                assert!(out.mdot == s.mdot && out.far == s.far, "nozzle adds no mass or fuel");
+                return NozzleExit { state: out, m9, t9, v9, p9 };
+            }
+            self.p_ambient // subcritical: expand fully to ambient
+        } else {
+            self.p_exit // expand to the specified back-pressure
+        };
 
         assert!(p9 <= pt9,                  // else the "expansion" would need compression
                 "nozzle back-pressure p9={p9:.0} Pa exceeds total pressure pt9={pt9:.0} Pa \

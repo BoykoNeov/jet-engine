@@ -2,9 +2,10 @@
 
 **Status: PHASES 0–3 COMPLETE AND GREEN — slices A (rungs 7/8/9/19), B (10/11/12/20),
 C (13/15/16/18/21), D (22/23/24) and E (14/17, the nozzle strand) all shipped.
-PHASE 4 (the nozzle & turbine marches, rungs 25–30) was AUTHORISED 2026-08-12 and runs in three
-slices: F (25/26) and G (27/28) are SHIPPED — § 4.11/4.12 and § 4.13/4.14 — and H (29/30) is
-next. 361 Rust tests.**
+PHASE 4 (the nozzle & turbine marches, rungs 25–30) was AUTHORISED 2026-08-12 and is COMPLETE —
+three dependency slices, F (25/26) § 4.11/4.12, G (27/28) § 4.13/4.14, H (29/30) § 4.15, all
+bit-exact. 377 Rust tests. The next phase is 5, which needs FRESH AUTHORISATION (it contains the
+rung-61 diamond).**
 The architecture is settled by measurement (§ 1–2); the three forks were answered on 2026-08-12
 (§ 9); phases 0–2 were then built and gated (§ 4.1, § 4.2). Phase 1 was the first deliberate
 stopping point because it is where the arithmetic risk concentrates; phase 2 was authorised
@@ -1280,6 +1281,70 @@ at 2200, −1.3e-03 at 2300). A negative relaxation means NO *formed* rather tha
 exactly rung 28's erratum, that `a < 1` at the entry so NO arrives SUB-equilibrium and initially
 tries to form. Rung 27's own output says so and nothing in its suite reads it.
 
+### 4.15 SLICE H (rungs 29/30) — PHASE 4 COMPLETE, and the one slice that was NOT pre-registered
+
+**270 / 270 bit-exact against PyPy.** The Rust suite is **377 tests**, and **phase 4 is complete**:
+slices F (25/26), G (27/28) and H (29/30) all shipped, in three sessions against the 2–3 budgeted.
+
+**THIS SLICE BROKE THE RULE THE OTHER TWO FOLLOWED, and it is recorded because the cost is
+visible.** Slices E, F and G each probed the Python first and wrote the bars down before any code.
+Slice H went straight from reading the source to porting, and the three census bars were therefore
+invented while writing the dump rather than measured before it. All three were wrong:
+
+* `>= 24 distinct sonic-throat roots` — **actual 17**, because `T*` is PRESSURE-INDEPENDENT. The
+  residual `h_t(Tt9) − h_t(T*) = ½γ_t(T*)R T*` contains no pressure at all; `pt9` enters only
+  through `p*`. So a 6 × 4 grid holds SIX roots per arm. **That is the property rung 31's
+  `choked_mfp` is built on ("MFP* is a function of Tt and composition ALONE") showing up one rung
+  early** — a real structural fact the guessed bar was hiding.
+* `p*` distinct = 24 — **actual 19**. On a CPG gas `T*/Tt9` is constant, so `p* = pt9 · const` and
+  the structural count is 4; the constant is reached through `pr_t(T*)/pr_t(Tt9)`, which differs in
+  the last bits per `Tt9`, giving 19 by coincidence. **Dropped rather than pinned** — encoding 19
+  would fix a floating-point accident that need not survive a change of interpreter, which is the
+  same trap slice F avoided by moving its clock ladder off round numbers.
+* A fixed ambient ladder for the nozzle census — **impossible at some design points**, because
+  `pt9` moves with `Tt4` and 3.0e5 Pa is subcritical at one point and ABOVE `pt9` at another. Now
+  set as fractions of the local `pt9`, so both branches are live everywhere.
+
+**Counting the whole phase: five guessed bars, five wrong, and in four cases the shortfall was the
+PHYSICS rather than a defect.** The rule is not "measure more"; it is that a bar written while
+authoring a gate is a guess wearing a gate's clothes, and the place it keeps happening is census
+counts — the one class where being wrong looks like a failing test rather than a wrong number.
+
+**THE FINDINGS.**
+
+1. **RATIO ≠ ENERGY is stronger than the source states it: the two are ANTI-CORRELATED.** Rung 29
+   says the frozen station-5 pool is super-equilibrium by a large ratio while the energy available
+   is small. Measured across the ladder, the ratio does not merely fail to predict the energy — it
+   moves the OTHER WAY:
+
+   | `Tt4` | 1300 | 1500 | 1800 | 2200 | 2300 | span |
+   |---|---|---|---|---|---|---|
+   | `ΔT5/T5` | 1.69e-05 | 1.07e-04 | 7.65e-04 | 6.13e-03 | 1.04e-02 | **×616 (rises)** |
+   | super-eq ratio | 993.5 | 109.4 | 17.7 | 5.21 | 4.25 | **÷234 (FALLS)** |
+   | radical inventory | 3.85e-06 | 3.18e-05 | 3.11e-04 | 2.28e-03 | 3.19e-03 | ×828 (rises) |
+
+   The ratio is largest (993×) exactly where the bracket is worth least (1.7e-05), and the
+   INVENTORY — what a shifting expansion can actually burn — tracks the energy to within a factor
+   1.3 while the ratio moves 234× the other way. `tests/rung29.rs` gates the anti-correlation
+   rather than bounds on each series, because a threshold on either alone would pass on a model
+   where both rose together, which is exactly the reading rung 29 corrected.
+2. **THREE SPELLINGS OF "RAISE TO A POWER" NOW LIVE IN ONE PHASE, and each site takes a different
+   one.** `sonic_throat`'s `V* = (...) ** 0.5` is a libm `pow` (differs from `sqrt` about one point
+   in 670 — phase 2's trap); rung 26's `math.sqrt(J)` really is the sqrt instruction; rung 28's
+   `(1+βa)²` is an integer power that may be a product. Any one rule applied by habit to all three
+   is a silent one-bit defect, and the three are within 500 lines of each other in `march.rs` and
+   `components.rs`. Each site now restates which rule applies and why.
+3. **The two-path gate is protected AND the protection is checked.** Rung 30's gate 2a calls itself
+   "two genuinely different code paths onto the same M=1 condition" — but it runs on a CPG gas,
+   where `sonic_throat` takes the closed form, so without the separate `sonic_throat_bisect` entry
+   point it would compare the closed form with itself. `tests/rung30.rs` asserts the two paths
+   AGREE to the bisection's band **and DISAGREE somewhere** — the second half being what proves the
+   dispatch has not collapsed. That is the shape `porting_rules.rs` uses to prove `powp` is a real
+   call, reused where the same vacuity could arise.
+4. **`choked_mfp` stayed out, as pre-registered in § 4.11**, and the check was against the tests
+   rather than the plan's word: no rung-30 test references it, so it waits for phase 5 where
+   `test_rung31.py` can exercise it.
+
 ### 4.13 SLICE G (rungs 27/28, the NO MARCHES) — PRE-REGISTERED, and the first slice to register PREDICTIONS
 
 Slice F's finding 2 produced a **discriminator**, so this slice registers predictions rather than
@@ -1525,7 +1590,7 @@ next starts. The tree is green at every phase boundary; there is no big-bang cut
 | **1** | ~~`gas.rs` — `FlowState`, CPG closed form, TPG NASA integrals, reacting section, Fork B, equilibrium Newton (rungs 1–6)~~ | **DONE** | ✅ **two** gates: `gas_oracle.rs` (values, **3232/3232** bit-exact vs PyPy after phase 2's fix — § 4.1 shipped it at 3196, § 4.2 says why) and `gas_spine.rs` (**reduce-to-prior**, 6 tests — § 5.1) |
 | **2** | ~~`components.rs` + `engine.rs` design point — shaft balance, `_score`; conservation checks as `assert!`~~ | **DONE** | ✅ **three** gates: `cycle_oracle.rs` (1481/1481 bit-exact vs PyPy, on 19+15 distinct solver roots — § 4.2), the 8 ported rung suites (39 tests, rungs 1–6, incl. rung 6's GATE 1), and `porting_rules.rs` |
 | **3** | NOx & mixing, rungs 7–24. **RISK-BEARING — not bulk.** These are phase 1's largest *consumer*: every one rides the equilibrium solve and `Kp = exp(−ΔG°/RuT)`, and their findings are *shapes* (the bell's peak, the minimum pinned at `C_opt`, monotone-vs-turns-back-up) that a last-digit shift in an exponential can move. Deliberately placed straight after phase 1 as the **first real test of whether the transcendental arithmetic holds**. **DONE — slices A (7/8/9/19), B (10/11/12/20), C (13/15/16/18/21), D (22/23/24) and E (14/17) all shipped**, § 4.3–4.10; the slices are grouped in § 4.3 by DEPENDENCY, not by number | 4–6 | ✅ slice A: `nox_oracle.rs` (**1806/1806** bit-exact vs PyPy on 22+22 distinct solver roots) + 4 rung suites (43 tests) · ✅ slice B: `quench_oracle.rs` (**2507/2507**, on 165 distinct trajectory roots) + 4 rung suites (39 tests), one location key NARROWING a shipped claim · ✅ slice C: `pdf_oracle.rs` (**2448/2448**, both quadrature branches asserted exercised) + 5 rung suites (59 tests); the source's own mean-preservation guard found to have an `n_quad` FLOOR, and the port gates the REJECTION as well as the acceptance (§ 4.5) · ✅ slice D: `spatial_oracle.rs` (**462/462**, incl. 28 DISCRETE keys) + 3 rung suites (43 tests); TWO source claims of exactness CORRECTED — rung 24 applies an operation inside an accumulation and removes it outside, twice (§ 4.8) | · ✅ slice E: `nozzle_oracle.rs` (**513/513**, incl. 24 DISCRETE keys) + 2 rung suites (24 tests) + 3 gates `rung20.rs` had deferred; a THIRD claim of exactness corrected (the frozen reduce is algebraic only, and its floor is the entropy ROUTE, not the bisection's stopping rule) and rung 17's firing band edge LOCATED — past it the bulk margin goes dormant while the per-pocket one RISES (§ 4.10) |
-| **4** | Nozzle & turbine marches, rungs 25–30 — own convergence behaviour, hence separate. **AUTHORISED 2026-08-12; in three DEPENDENCY slices — F (25/26) and G (27/28) SHIPPED, H (29/30) next** | 2–3 | ✅ slice F: `march_oracle.rs` (**912/912** bit-exact vs PyPy, on 49 distinct march exit roots) + 2 rung suites (32 tests) in a new `march.rs`; the FOURTH "exactly"-class claim and the FIRST to survive — because it compares a COPY, not a rederivation (§ 4.12) · ✅ slice G: `no_march_oracle.rs` (**776/776**, and only 8.0 % CPython-identical — the sharpest dump in the port) + 2 rung suites (28 tests); slice F's discriminator made TWO pre-registered predictions and both HELD (§ 4.14) |
+| **4** | Nozzle & turbine marches, rungs 25–30 — own convergence behaviour, hence separate. ~~**AUTHORISED 2026-08-12; three DEPENDENCY slices**~~ **DONE** | 2–3 | ✅ slice F: `march_oracle.rs` (**912/912** bit-exact vs PyPy, on 49 distinct march exit roots) + 2 rung suites (32 tests) in a new `march.rs`; the FOURTH "exactly"-class claim and the FIRST to survive — because it compares a COPY, not a rederivation (§ 4.12) · ✅ slice G: `no_march_oracle.rs` (**776/776**, and only 8.0 % CPython-identical — the sharpest dump in the port) + 2 rung suites (28 tests); slice F's discriminator made TWO pre-registered predictions and both HELD (§ 4.14) · ✅ slice H: `tt_oracle.rs` (**270/270**) + 2 rung suites (14 tests); RATIO ≠ ENERGY measured ANTI-correlated, and the one slice not pre-registered — all three of its guessed census bars were wrong (§ 4.15) |
 | **5** | Steady matchers — rungs 31–33, 38–39, 42, 53–56, 61. **Contains the diamond** (§ 6) | 4–6 | per-rung tests pass |
 | **6** | Transients — rungs 34–37, 40, 43–52 (the fuel-side limiter family) | 4–6 | per-rung tests pass |
 | **7** | **The ladder, rungs 57–84** — the `Hooks` table from § 2, one module per rung | 5–8 | 28/28 reduce-to-prior bit-exact |
