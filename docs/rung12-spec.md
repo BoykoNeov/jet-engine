@@ -107,25 +107,34 @@ it, so the EI-min **pins at `C_opt`** ⇒ `J_min = J_opt`, shifting as `(H/S)²`
 > inverts — the core becomes a **relief**, not a penalty, so the minimum slides to a stronger jet.
 > Write the crossing spacing `S_x = τ_res·C_e·C_opt·U_c`.
 >
-> **MEASURED** (dp1, φ_p=1.5, ngrid 33, 16 points spanning two entrainment constants — `C_e`=0.15
-> and 0.20, which move `S_x` from 0.0703 m to 0.0938 m):
+> **MEASURED** (dp1, φ_p=1.5, ngrid 33) — and the sweep that matters is **`τ_res`**, not `C_e`.
+> `C_e` and `U_c` reach the model only through `τ_mean`, so they are one lever wearing two names
+> and moving either is a weak test. `τ_res` is the discriminator: it sits in `S_x` **and** in
+> `τ_core = τ_res·(1+b_u·u)`, so if its appearance in `S_x` were doing double duty, the boundary
+> would drift in this ratio. `H` is a third, free leg — it **cancels out of `S_x` by algebra**
+> above, so a sweep of it must move nothing.
 >
-> | `S/S_x` | 0.53 | 0.67 | 0.71 | 0.85 | 0.89 | 0.96 | 1.07 | 1.14 | 1.17 | 1.28 | 1.33 | 1.42 | 1.56 | 1.60 | 1.78 | 2.13 |
-> |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-> | min at `C_opt`? | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+> | swept | range | `S_x` range | last pinned | first broken |
+> |---|---|---|---|---|
+> | `τ_res` | 1.25 → 5.0 ms (4×) | 0.0352 → 0.1406 m | **1.15** | **1.20** |
+> | `C_e` | 0.15 → 0.20 (1.33×) | 0.0703 → 0.0938 m | **1.15** | **1.20** |
+> | `H` | 0.05 → 0.20 (4×) | unchanged (cancels) | **1.15** | **1.20** |
 >
-> **The pin holds iff `S/S_x ≲ 1.2`, and the two `C_e` sweeps agree on that ratio** — the collapse
-> is the evidence that `S_x` is the right group (the limit moved in absolute metres and not in
-> this ratio). The excess over 1 is real: the inequality assumes `EI ∝ τ`, and the anchor above
-> already records EI as mildly **concave** in dwell, so the bulk falls more slowly than the
-> algebra predicts and the pin survives ~20 % past the crossing. **1.2 is therefore MEASURED and
-> bracketed (pinned at 1.17, broken at 1.28), not derived** — nobody has resolved the threshold.
+> **The pin holds iff `S/S_x ≲ 1.2`, and every sweep agrees on that ratio** — including the one
+> that could have exposed `S_x` as a coincidence. That collapse is what earns the group: the
+> limit moves by 4× in absolute metres and not at all in this ratio. The excess over 1 is real:
+> the inequality assumes `EI ∝ τ`, and the anchor above already records EI as mildly **concave**
+> in dwell, so the bulk falls more slowly than the algebra predicts and the pin survives ~15–20 %
+> past the crossing. **The transition is BRACKETED in (1.15, 1.20], not resolved** — nobody has
+> located it inside that gap, and the derived value is 1.0.
 >
-> **The default `S=0.0625, C_e=0.15` sits at `S/S_x = 0.89`** — inside the band, but only by about
-> 1.3× in spacing. Gated in Rust as `rung12.rs::the_pin_at_c_opt_has_a_spacing_limit`, which
-> asserts the law over both `C_e` rather than a table of answers. Nothing in the model changed;
-> the claim was narrowed to what it supports. `turbojet/gas.py`'s `Unmixedness` docstring still
-> carries the original wording.
+> **The default `S=0.0625, C_e=0.15, τ_res=2.5 ms` sits at `S/S_x = 0.89`** — inside the band, but
+> only by about 1.3× in spacing. Gated in Rust as
+> `rung12.rs::the_pin_at_c_opt_has_a_spacing_limit`, which bars `≤ 1.15` and `≥ 1.30` over all
+> three sweeps and deliberately leaves the unresolved gap unasserted, so the rows nearest the
+> edge cannot fail for a non-regression. Nothing in the model changed; the claim was narrowed to
+> what it supports. `turbojet/gas.py`'s `Unmixedness` docstring still carries the original
+> wording.
 
 ---
 

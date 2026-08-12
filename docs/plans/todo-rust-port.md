@@ -351,8 +351,8 @@ order. CPython↔PyPy agree on 64.3 %, the same ~64 % the cycle oracle found.
 Slice B is rungs **10 / 11 / 12 / 20**: the finite-rate quench, the jet-entrainment model that
 derives its time, the two-stream variance layer that recovers the Holdeman optimum, and rung
 19's super-equilibrium O threaded through the quench. It ships the quench machinery in
-`rust/src/nox.rs`, the oracle `rust/oracle/dump_quench.py`, and five gates
-(`quench_oracle.rs` plus the four rung suites, 44 tests).
+`rust/src/nox.rs`, the oracle `rust/oracle/dump_quench.py`, and five gates — the four rung
+suites (39 tests) plus `quench_oracle.rs` (5), 44 in all.
 
 | | bit-identical vs PyPy | vs CPython |
 |---|---|---|
@@ -388,18 +388,25 @@ it of 22 roots. The classes that disagree are the ones with an accumulated itera
 3. **RUNG 12's "the min pins at `C_opt` for ALL S" IS OVER-STATED, and the port's own shape key
    is what found it.** The Python's gate 3 tests only `S ∈ {0.0625, 0.05}`, both inside the
    valid band, so nothing there could see it. The boundary has a closed form in the model's own
-   knobs: at the optimum `τ_mean(J_opt) = S/(C_e·C_opt·U_c)`, and the "lingering" core stops
-   being a penalty once that reaches `τ_res`. Writing `S_x = τ_res·C_e·C_opt·U_c`, **measured
-   over 16 points at two entrainment constants (`S_x` moving 0.0703 → 0.0938 m): the pin holds
-   iff `S/S_x ≲ 1.2`, in BOTH sweeps.** The collapse across `C_e` is the evidence that `S_x` is
-   the right group. The excess over 1 is the class docstring's own inequality being
-   CONSERVATIVE — it assumes `EI ∝ τ`, and EI is sublinear in dwell, so the bulk falls more
-   slowly than the algebra predicts. **1.2 is a MEASURED coefficient (bracketed in 1.17–1.28,
-   not resolved), not a derived one.** The shipped default sits at `S/S_x` = 0.89 — inside the
-   band by about 1.3×. Gated as `rung12.rs::the_pin_at_c_opt_has_a_spacing_limit`; recorded in
-   `docs/rung12-spec.md`. **The Python's `Unmixedness` docstring still says "for ALL S" and is
-   the one place this correction has not been written, because editing the ported source
-   mid-port needs its own decision.**
+   knobs: at the optimum `τ_mean(J_opt) = S/(C_e·C_opt·U_c)` — **`H` cancels** — and the
+   "lingering" core stops being a penalty once that reaches `τ_res`. Write
+   `S_x = τ_res·C_e·C_opt·U_c`.
+
+   **The group is earned by the `τ_res` sweep, and which sweep earns it is the methodological
+   point.** `C_e` and `U_c` reach the model only through `τ_mean`, so they are ONE lever wearing
+   two names — a `C_e` sweep alone is a weak test, and it was the first evidence offered here.
+   `τ_res` is the discriminator: it sits in `S_x` AND directly in `τ_core`, so if its appearance
+   in `S_x` were doing double duty the ratio would drift. MEASURED: **the boundary is
+   `pinned ≤ 1.15`, `broken ≥ 1.20`, across `τ_res` (4×, moving `S_x` 0.035 → 0.141 m), `C_e`
+   (1.33×) and `H` (4×, cancels).** The excess over the derived 1.0 is the class docstring's own
+   inequality being CONSERVATIVE — it assumes `EI ∝ τ`, and EI is sublinear in dwell, so the
+   bulk falls more slowly than the algebra predicts. **The transition is BRACKETED in
+   (1.15, 1.20], not resolved**, so the gate bars `≤ 1.15` and `≥ 1.30` and leaves the gap
+   unasserted: an iff at 1.2 would put the two rows nearest the edge on a coefficient nobody
+   located. The shipped default sits at `S/S_x` = 0.89 — inside the band by about 1.3×. Gated as
+   `rung12.rs::the_pin_at_c_opt_has_a_spacing_limit`; recorded in `docs/rung12-spec.md`. **The
+   Python's `Unmixedness` docstring still says "for ALL S" and is the one place this correction
+   has not been written, because editing the ported source mid-port needs its own decision.**
 
 Two smaller things the slice recorded rather than worked around:
 
@@ -449,7 +456,7 @@ next starts. The tree is green at every phase boundary; there is no big-bang cut
 | **0** | ~~Cargo crate; the oracle bridge; the per-quantity tolerance policy~~ | **DONE** | ✅ 3232 values round-trip; policy DERIVED from the CPython↔PyPy gap, not invented |
 | **1** | ~~`gas.rs` — `FlowState`, CPG closed form, TPG NASA integrals, reacting section, Fork B, equilibrium Newton (rungs 1–6)~~ | **DONE** | ✅ **two** gates: `gas_oracle.rs` (values, **3232/3232** bit-exact vs PyPy after phase 2's fix — § 4.1 shipped it at 3196, § 4.2 says why) and `gas_spine.rs` (**reduce-to-prior**, 6 tests — § 5.1) |
 | **2** | ~~`components.rs` + `engine.rs` design point — shaft balance, `_score`; conservation checks as `assert!`~~ | **DONE** | ✅ **three** gates: `cycle_oracle.rs` (1481/1481 bit-exact vs PyPy, on 19+15 distinct solver roots — § 4.2), the 8 ported rung suites (39 tests, rungs 1–6, incl. rung 6's GATE 1), and `porting_rules.rs` |
-| **3** | NOx & mixing, rungs 7–24. **RISK-BEARING — not bulk.** These are phase 1's largest *consumer*: every one rides the equilibrium solve and `Kp = exp(−ΔG°/RuT)`, and their findings are *shapes* (the bell's peak, the minimum pinned at `C_opt`, monotone-vs-turns-back-up) that a last-digit shift in an exponential can move. Deliberately placed straight after phase 1 as the **first real test of whether the transcendental arithmetic holds**. **IN PROGRESS — slices A (7/8/9/19) and B (10/11/12/20) DONE**, § 4.3–4.4; the remaining slices are grouped in § 4.3 by DEPENDENCY, not by number (rung 21 belongs with 13–18) | 4–6 | ✅ slice A: `nox_oracle.rs` (**1806/1806** bit-exact vs PyPy on 22+22 distinct solver roots) + 4 rung suites (43 tests) · ✅ slice B: `quench_oracle.rs` (**2507/2507**, on 165 distinct trajectory roots) + 4 rung suites (44 tests); extremum *locations* dumped as their own keys, and one of them NARROWED a shipped claim (§ 4.4) |
+| **3** | NOx & mixing, rungs 7–24. **RISK-BEARING — not bulk.** These are phase 1's largest *consumer*: every one rides the equilibrium solve and `Kp = exp(−ΔG°/RuT)`, and their findings are *shapes* (the bell's peak, the minimum pinned at `C_opt`, monotone-vs-turns-back-up) that a last-digit shift in an exponential can move. Deliberately placed straight after phase 1 as the **first real test of whether the transcendental arithmetic holds**. **IN PROGRESS — slices A (7/8/9/19) and B (10/11/12/20) DONE**, § 4.3–4.4; the remaining slices are grouped in § 4.3 by DEPENDENCY, not by number (rung 21 belongs with 13–18) | 4–6 | ✅ slice A: `nox_oracle.rs` (**1806/1806** bit-exact vs PyPy on 22+22 distinct solver roots) + 4 rung suites (43 tests) · ✅ slice B: `quench_oracle.rs` (**2507/2507**, on 165 distinct trajectory roots) + 4 rung suites (39 tests); extremum *locations* dumped as their own keys, and one of them NARROWED a shipped claim (§ 4.4) |
 | **4** | Nozzle & turbine marches, rungs 25–30 — own convergence behaviour, hence separate | 2–3 | per-rung tests pass |
 | **5** | Steady matchers — rungs 31–33, 38–39, 42, 53–56, 61. **Contains the diamond** (§ 6) | 4–6 | per-rung tests pass |
 | **6** | Transients — rungs 34–37, 40, 43–52 (the fuel-side limiter family) | 4–6 | per-rung tests pass |

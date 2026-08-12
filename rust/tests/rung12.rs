@@ -279,69 +279,103 @@ fn optimum_is_at_holdeman_c_opt_and_shifts_as_h_over_s_squared() {
 /// optimum `√J_opt = C_opt·H/S`, so
 ///
 /// ```text
-/// τ_mean(J_opt) = H/(C_e·√J_opt·U_c) = S/(C_e·C_opt·U_c)
+/// τ_mean(J_opt) = H/(C_e·√J_opt·U_c) = S/(C_e·C_opt·U_c)          ← H CANCELS, by algebra
 /// ```
 ///
 /// and the core stops lingering — stops being a penalty at all — once that reaches `τ_res`. Call
-/// the spacing where they cross `S_x = τ_res·C_e·C_opt·U_c`. **MEASURED over 16 points spanning
-/// two entrainment constants (`C_e` = 0.15 and 0.20, which move `S_x` from 0.0703 m to
-/// 0.0938 m): the pin holds iff `S/S_x ≲ 1.2`, in BOTH sweeps.** That collapse is the evidence
-/// that `S_x` is the right group — a spacing limit that moved with `C_e` in absolute metres but
-/// not in this ratio.
+/// the spacing where they cross `S_x = τ_res·C_e·C_opt·U_c`.
 ///
-/// The excess over 1 is real and has a reason. The docstring's inequality assumes `EI ∝ τ` (that
-/// is what turns `dE/dlnJ` into `−E/2`); EI is SUBLINEAR in dwell at these times, so the bulk
-/// falls more slowly than the algebra predicts and the pin survives ~20 % past the crossing.
-/// **1.2 is therefore a MEASURED coefficient, not a derived one** — the derived value is 1.0.
-/// The transition is bracketed, not resolved: pinned at 1.17, broken at 1.28, and 1.2 is a bar
-/// inside that gap rather than a threshold anyone has located.
+/// **THE GROUP IS EARNED BY `τ_res`, NOT BY `C_e`.** `C_e` and `U_c` reach the model only
+/// through `τ_mean`, so they are one lever wearing two names and a sweep of either is a weak
+/// test. `τ_res` is the discriminator: it appears in `S_x` AND directly in
+/// `τ_core = τ_res·(1+b_u·u)`, so if its appearance in `S_x` were doing double duty the ratio
+/// would drift. MEASURED across `τ_res` = 1.25 / 2.5 / 5.0 ms — a 4× sweep moving `S_x` from
+/// 0.035 m to 0.141 m — **the boundary lands in the same bracket every time.** `H` is a third,
+/// free leg: it cancels above by algebra, and a 4× `H` sweep confirms the ratio does not move.
 ///
-/// The shipped default (`S` = 0.0625, `C_e` = 0.15) sits at `S/S_x` = 0.89 — inside the band,
-/// but only by about 1.3×. That is the useful thing to know and was invisible before this sweep.
+/// **MEASURED BAND: the pin holds at `S/S_x ≤ 1.15` and is broken at `≥ 1.20`**, across `τ_res`
+/// (4×), `C_e` (1.33×) and `H` (4×). The excess over 1 is real and has a reason: the pin
+/// inequality assumes `EI ∝ τ` (that is what turns `dE/dlnJ` into `−E/2`), and EI is SUBLINEAR
+/// in dwell at these times, so the bulk falls more slowly than the algebra predicts and the pin
+/// survives ~15–20 % past the crossing. **The transition is BRACKETED, not resolved** — nobody
+/// has located it inside (1.15, 1.20]. The assertions below therefore leave that gap alone and
+/// bar only `≤ 1.15` and `≥ 1.30`: putting an iff at 1.2 would make the two rows nearest the
+/// edge able to fail for a non-regression, which is the same flaky-detector hazard the coarse
+/// argmax grids exist to avoid.
+///
+/// The shipped default (`S` = 0.0625, `C_e` = 0.15, `τ_res` = 2.5 ms) sits at `S/S_x` = 0.89 —
+/// inside the band, but only by about 1.3×. That is the useful thing to know and was invisible
+/// before this sweep.
 #[test]
 fn the_pin_at_c_opt_has_a_spacing_limit() {
     let t = reusable_traj(1.5);
-    // (C_e, S) pairs spanning the boundary from both sides at two entrainment constants. The
-    // expectation is computed from the RATIO, not listed per row, so the test states the law
-    // rather than a table of answers.
-    let cases = [
-        (0.15, 0.05), (0.15, 0.0625), (0.15, 0.08), (0.15, 0.09), (0.15, 0.10),
-        (0.15, 0.11), (0.15, 0.125), (0.15, 0.15),
-        (0.20, 0.05), (0.20, 0.0625), (0.20, 0.08), (0.20, 0.09), (0.20, 0.10),
-        (0.20, 0.11), (0.20, 0.125), (0.20, 0.15),
+    /// Is the EI-min still AT `J_opt` for this configuration?
+    ///
+    /// The J grid is RELATIVE to each configuration's own `J_opt`, so every row asks the same
+    /// question — "does the minimum sit at the uniformity optimum?" — regardless of where that
+    /// optimum lands.
+    fn pinned(t: &Traj, s: f64, c_e: f64, tau_res: f64, h: f64) -> bool {
+        let u = Unmixedness { s, tau_res, ..Unmixedness::default() };
+        let jo = (u.c_opt * h / u.s).powi(2);
+        let eis: Vec<f64> = [0.25, 0.5, 1.0, 2.0, 4.0]
+            .iter()
+            .map(|&k| {
+                t.two_stream(&JetMixing { j: jo * k, h, c_e, shape_n: 2.0,
+                                          ..JetMixing::default() }, &u).ei
+            })
+            .collect();
+        argmin(&eis) == 2
+    }
+
+    // (C_e, τ_res, H) configurations. The baseline first, then ONE factor moved at a time —
+    // including the two that would expose S_x as a coincidence if it were one.
+    let configs = [
+        (0.15, 2.5e-3, 0.10), // the shipped defaults
+        (0.20, 2.5e-3, 0.10), // C_e   — reaches the model only through τ_mean
+        (0.15, 1.25e-3, 0.10), // τ_res — THE discriminator: also in τ_core
+        (0.15, 5.0e-3, 0.10), // τ_res, the other way
+        (0.15, 2.5e-3, 0.05), // H     — cancels out of S_x by algebra
     ];
+    // Ratios that sit CLEAR of the unresolved (1.15, 1.20] transition, on both sides.
+    let pinned_ratios = [0.7, 0.9, 1.0, 1.15];
+    let broken_ratios = [1.30, 1.5, 2.0];
+
     let mut n_pinned = 0usize;
-    for (c_e, s) in cases {
-        let u = spacing(s);
-        let base = JetMixing { c_e, ..JetMixing::default() };
-        // the crossing spacing: where τ_mean(J_opt) == τ_res
-        let s_x = u.tau_res * c_e * u.c_opt * base.u_c;
-        let ratio = s / s_x;
-        let jo = j_opt(&u);
-        let js = [jo / 4.0, jo / 2.0, jo, 2.0 * jo, 4.0 * jo];
-        let rows: Vec<TwoStream> =
-            js.iter().map(|&j| t.two_stream(&jet(j, c_e), &u)).collect();
-        let imin = argmin(&rows.iter().map(|r| r.ei).collect::<Vec<_>>());
-        let pinned = imin == 2;
-        assert_eq!(pinned, ratio < 1.2,
-                   "C_e={c_e}, S={s}: S/S_x={ratio:.2}, so the pin should be {} — but the \
-                    minimum sat at index {imin} (J={:.4} vs J_opt={jo:.4}). This is the \
-                    MEASURED band of rung 12's 'min at C_opt for ALL S' claim.",
-                   if ratio < 1.2 { "HELD" } else { "BROKEN" }, js[imin]);
-        // The physical reading of the same thing: past the crossing the mean-field bulk at the
-        // optimum is SLOWER than the core's absolute dwell, so the "lingering" core is really a
-        // relief. The pin survives a little past that, which is the sublinearity.
-        let tau_mean_opt = JetMixing { j: jo, c_e, ..JetMixing::default() }.tau_q();
-        assert_eq!(tau_mean_opt > u.tau_res, ratio > 1.0,
-                   "C_e={c_e}, S={s}: S_x must be exactly where τ_mean(J_opt) crosses τ_res");
-        if pinned {
+    let mut n_broken = 0usize;
+    for (c_e, tau_res, h) in configs {
+        let s_x = tau_res * c_e * Unmixedness::default().c_opt * JetMixing::default().u_c;
+        for ratio in pinned_ratios {
+            assert!(pinned(&t, ratio * s_x, c_e, tau_res, h),
+                    "C_e={c_e}, τ_res={tau_res}, H={h}: at S/S_x={ratio} the min must still be \
+                     AT C_opt (S_x={s_x:.5} m). If this moved, either the model changed or S_x \
+                     is not the group.");
             n_pinned += 1;
         }
+        for ratio in broken_ratios {
+            assert!(!pinned(&t, ratio * s_x, c_e, tau_res, h),
+                    "C_e={c_e}, τ_res={tau_res}, H={h}: at S/S_x={ratio} the pin must be BROKEN \
+                     — past the crossing the mean-field bulk is slower than the core's absolute \
+                     dwell, so the 'lingering' core is a relief, not a penalty.");
+            n_broken += 1;
+        }
     }
-    // Guard against the whole sweep landing on one side, which would make the law vacuous.
-    assert!(n_pinned > 0 && n_pinned < cases.len(),
-            "the spacing sweep must straddle the boundary, got {n_pinned}/{} pinned",
-            cases.len());
+    // Neither side may be empty, or the law is vacuous rather than measured.
+    assert!(n_pinned > 0 && n_broken > 0, "the sweep must straddle the boundary");
+
+    // The closed form itself: S_x is EXACTLY where τ_mean(J_opt) crosses τ_res, and H cancels.
+    for h in [0.05, 0.10, 0.20] {
+        let u = Unmixedness::default();
+        let s_x = u.tau_res * 0.15 * u.c_opt * JetMixing::default().u_c;
+        for ratio in [0.9, 1.1] {
+            let uu = Unmixedness { s: ratio * s_x, ..Unmixedness::default() };
+            let jo = (uu.c_opt * h / uu.s).powi(2);
+            let tau_mean_opt =
+                JetMixing { j: jo, h, c_e: 0.15, ..JetMixing::default() }.tau_q();
+            assert!((tau_mean_opt / uu.tau_res - ratio).abs() < 1e-12,
+                    "τ_mean(J_opt)/τ_res must equal S/S_x exactly, and be H-independent \
+                     (H={h}): got {:.6} for ratio {ratio}", tau_mean_opt / uu.tau_res);
+        }
+    }
 }
 
 // --------------------------------------------------------------------------------------
