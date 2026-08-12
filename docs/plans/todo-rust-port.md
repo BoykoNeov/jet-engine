@@ -552,6 +552,72 @@ false`, which is the reduce contract rather than the stale assertion. The no-edi
 correctly scoped to the oracle: the Rust is not the oracle, so text there can and should be fixed
 on sight.
 
+### 4.7 SLICE D (rungs 22/23/24) — PRE-REGISTERED before any code was written
+
+Recorded here **before** the port, because three of the four decisions below are vacuity traps of a
+kind slices B and C already paid for, and one is a source claim that measurement **inverted**.
+
+**The already-measured inversion — WHICH REDUCE IS EXACT IS BACKWARDS FROM THE DOCSTRINGS.**
+Rung 24's `_spatial_local_field` docstring says its `g` is "IDENTICAL BY CONSTRUCTION — not to a
+tolerance (contrast rung-23's `_spatial_dwell_field`, which re-derives it through a time development
+and matches to <1%)". Measured at J ∈ {4, 16, 100} × ny=nz ∈ {32, 40, 48}, nine points each:
+
+| | vs `_spatial_segregation` | |
+|---|---|---|
+| rung 23 (`_spatial_dwell_field`) | **exactly equal, 9/9** | the one the docstring only claims to <1% |
+| rung 24 (`_spatial_local_field`) | **never equal**, ≤1.9e-16 | the one the docstring claims by construction |
+
+Both directions are wrong, and the mechanism is **summation order**, not physics:
+
+- Rung 23 reaches the terminal field through `_plume(1.0)` — `delta_f * 1.0**(1/3)` and
+  `sig_f * sqrt(1.0)` are bit-identical to rung 22's, and it then accumulates `sxi`/`sxi2` in the
+  same flat single pass. Exact, at every grid.
+- Rung 24 builds the field as a list of rows and takes `sum(sum(r) for r in xi)` — a **hierarchical**
+  sum (row partials, then summed) where rung 22 runs one flat accumulator. Same value in exact
+  arithmetic, different rounding. Hence ~1e-17.
+
+Three consequences, all load-bearing for the port:
+1. **The Rust must reproduce the hierarchical sum**, not "tidy it up" into a flat one. A flat sum
+   would be more accurate and would be a DEFECT — it is exactly the class of transcription error
+   § 4.2 caught only because the bar is bit-equality. `sum(sum(r) for r in xi)` ports as
+   `xi.iter().map(|r| r.iter().sum::<f64>()).sum::<f64>()`.
+2. **The two reduces get DIFFERENT bars**: rung 23's is asserted bit-exact (tighter than the
+   Python's own `< 1e-9`), rung 24's needs a tolerance. The source asserts `< 1e-9` on both, which
+   is why its own gate cannot see that they differ in kind.
+3. **The rung-24 docstring is wrong as written** — a different category from § 4.5's two, which were
+   merely stale. Recorded, not edited (the oracle policy); the *Rust* doc comment states the
+   measured position instead.
+
+**The four gate decisions.**
+
+1. **Rung 22's `C_opt` is located by GRID ARGMIN**, not a root-find — `_argmin_C` sweeps J
+   log-spaced over [1, 400]. At the Python's `npts` of 49/81 the neighbours sit ~3.8–6.4% apart in
+   `C` around a quadratic minimum, which is the configuration § 4.5 finding 2 says not to ship a
+   location key on. Rung 24's own gates already show the house style — `J ∈ {4, 9, 16, 36, 64}`,
+   ~1.8–2.25× apart, with `C_opt = 2.5` landing exactly on a node. The rung-22 location key uses
+   that grid shape; the fine sweep is dumped as VALUES.
+2. **Rung 24's finding is a SPLIT** — `F(C)` U-shaped with an interior minimum, `⟨EI⟩(J)` monotone.
+   Both halves are asserted off the SAME sweep, plus the part that makes the pair non-vacuous: the
+   two argmins must land at DIFFERENT J (F interior, ⟨EI⟩ at an end). Without that, one quantity
+   wired into both slots passes.
+3. **Rung 23's matched-mean twin is already in production** (`ei_no_spatial_dwell_meanfield`,
+   `corr_ratio`), so the kill test is a sign assert — plus a bar that the two terms differ by more
+   than the tolerance floor. A τ(ξ) accidentally wired flat gives `corr_ratio` exactly 1.0, which
+   would otherwise read as "no correlation effect" rather than "instrument dead".
+4. **Rung 24's Python suite has NO `at_most_one_closure` gate.** All three Rust suites get the
+   ≤1-of-EIGHT guard, so the rung-24 one sweeps past the source's gate — the fourth consecutive
+   slice to do so.
+
+**THE THIRD VACUITY CASE, AND THE PATTERN NOW HAS A NAME.** `test_no_C_opt_knob_it_is_derived`
+asserts that `SpatialPDF(C_opt=2.5)` raises `TypeError`. In Rust an unknown struct field is a
+COMPILE error and the crate has no dependencies by decision (§ 3), so there is no `trybuild` and any
+runtime transcription measures literally nothing. It is not ported; the Rust asserts the derivation
+instead — `C_opt() == 1/(4k_p²)` across several `k_p`, and the argmin TRACKING it as `k_p` moves.
+With rung 16's cached-helper test (§ 4.5) and rung 23's `test_helper_matches_production`, that is
+**three instances across two slices of one pattern: the source's test guards something the target's
+type system or factorisation already guarantees.** A faithful port of such a test is a green test
+that measures nothing. The rule: **ask what a ported test could still FAIL for in the new code.**
+
 ### The rungs where a tolerance is NOT a valid substitute
 
 The finding is a **count**, and a count jumps discontinuously:
