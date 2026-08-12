@@ -231,7 +231,7 @@ next starts. The tree is green at every phase boundary; there is no big-bang cut
 | # | scope | sessions | gate |
 |---|---|---|---|
 | **0** | ~~Cargo crate; the oracle bridge; the per-quantity tolerance policy~~ | **DONE** | ✅ 3232 values round-trip; policy DERIVED from the CPython↔PyPy gap, not invented |
-| **1** | ~~`gas.rs` — `FlowState`, CPG closed form, TPG NASA integrals, reacting section, Fork B, equilibrium Newton (rungs 1–6)~~ | **DONE** | ✅ 3196/3232 bit-exact vs PyPy; see § 4.1 |
+| **1** | ~~`gas.rs` — `FlowState`, CPG closed form, TPG NASA integrals, reacting section, Fork B, equilibrium Newton (rungs 1–6)~~ | **DONE** | ✅ **two** gates: `gas_oracle.rs` (values, 3196/3232 bit-exact vs PyPy — § 4.1) and `gas_spine.rs` (**reduce-to-prior**, 6 tests — § 5.1) |
 | **2** | `components.rs` + `engine.rs` design point — shaft balance, `_score`; conservation checks as `assert!` (they run on **every** execution, per the working contract) | 1–2 | rungs 1–6 tests pass |
 | **3** | NOx & mixing, rungs 7–24. **RISK-BEARING — not bulk.** These are phase 1's largest *consumer*: every one rides the equilibrium solve and `Kp = exp(−ΔG°/RuT)`, and their findings are *shapes* (the bell's peak, the minimum pinned at `C_opt`, monotone-vs-turns-back-up) that a last-digit shift in an exponential can move. Deliberately placed straight after phase 1 as the **first real test of whether the transcendental arithmetic holds** | 4–6 | per-rung tests pass; extremum *locations* re-checked, not just values |
 | **4** | Nozzle & turbine marches, rungs 25–30 — own convergence behaviour, hence separate | 2–3 | per-rung tests pass |
@@ -240,9 +240,40 @@ next starts. The tree is green at every phase boundary; there is no big-bang cut
 | **7** | **The ladder, rungs 57–84** — the `Hooks` table from § 2, one module per rung | 5–8 | 28/28 reduce-to-prior bit-exact |
 | **8** | `main.py` replacement; adjudicate the fragile rungs; re-anchor the fingerprint; **delete the Python** | 2–3 | full suite green on Rust alone |
 
-**Total: 26–40 focused sessions.** The risk is **not** evenly spread and is not only at the
-ends: it concentrates in phase 1's transcendental arithmetic, in **phase 3 which consumes it**,
-and in the final count-based adjudication. Phases 4–7 are grinding but low-risk.
+**Total: 26–40 focused sessions**, as estimated *before* phase 1 ran. The risk is **not**
+evenly spread and is not only at the ends: it concentrates in phase 1's transcendental
+arithmetic, in **phase 3 which consumes it**, and in the final count-based adjudication.
+Phases 4–7 are grinding but low-risk.
+
+**Reconciling that against what phase 1 actually measured (§ 4.1):** phase 3 was rated
+risk-bearing because rungs 7–24 ride the equilibrium solve and their findings are extremum
+*locations*. That solve has now come back **bit-exact**, which removes the *arithmetic* half of
+phase 3's risk but **not** the *shape* half — an extremum's location can still move on a
+solver's stopping rule, and phase 3's own mixing PDFs and bell integrals bring new solvers.
+So phase 3 keeps its 4–6 sessions and its risk-bearing label, with the reason narrowed: **watch
+the stopping rules, not the polynomials.** No other estimate changes.
+
+### 5.1 What phase 1's spine gate does and does not cover
+
+`gas_spine.rs` ports the reduce-to-prior contract that `gas_oracle.rs` cannot see — a port can
+agree at every probe point and still be structurally wrong. Six tests, all green:
+
+- the calorically-perfect section keeps `h = cp T` and `pr = T^(1/g)` **bit-for-bit**, so
+  reduce-to-ideal still reproduces rung 1's table to the digit;
+- **the trap, measured**: the closed-form and integral exponents differ by 4.98e-4, moving `pr`
+  by 1.35e-2 while leaving `h` at 3.1e-16 — so the branch split is load-bearing for pressure
+  and harmless for enthalpy, exactly as rung 3's docstring claims;
+- Fork B's derived LHV round-trips the assumed 42.8 MJ/kg with gap **exactly 0**;
+- a6/a7 self-check (GATE 3) — evaluating back at 298.15 K returns ΔHf and S298;
+- pressure suppresses dissociation (0.101 → 0.056 → 0.039 at 1/5/13 atm);
+- **rung 6 reduces to rung 4 as it cools**: worst composition gap 4.0e-2 → 7.5e-3 → 6.4e-4 →
+  1.1e-5 → **4.8e-8** over 2400→900 K, strictly shrinking. The *shrinking* is the assertion, not
+  the smallness — a constant offset would betray a scale-A datum leaking into a scale-B
+  balance, and "the gap is small" passes happily on a constant 1 %.
+
+**NOT covered, deliberately:** rung 6's GATE 1 — the cold-`Tt4` *cycle* reduce (`fE == fB` to
+1e-6) — needs `build_turbojet`, so it lands in **phase 2** with the components. Phase 1's gate
+is the gas layer's spine, not the cycle's.
 
 ---
 

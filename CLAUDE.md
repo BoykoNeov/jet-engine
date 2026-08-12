@@ -233,7 +233,7 @@ A compact map.
 
 ## Commands
 - Run the model: `python main.py` · Install: see `requirements.txt` (a PyPy venv — § Stack)
-- **The gate: `pytest`** — **EVERYTHING**, 1355 tests, **~17:21 at 1355** (PyPy, box load unknown;
+- **The gate: `pytest`** — **EVERYTHING**, 1364 tests, **~17:21 at 1355** (PyPy, box load unknown;
   a 40:28 at 1294 came off a LOADED box — neither differences nor replaces it).
   ONE gate; nothing is ever silently deselected, so no regression can hide.
 - **Iterate: `pytest -m "not slow"`** — 977 tests, **~1:54 at 890**.
