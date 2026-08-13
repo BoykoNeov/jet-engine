@@ -4,10 +4,12 @@
 C (13/15/16/18/21), D (22/23/24) and E (14/17, the nozzle strand) all shipped.
 PHASE 4 (the nozzle & turbine marches, rungs 25–30) was AUTHORISED 2026-08-12 and is COMPLETE —
 three dependency slices, F (25/26) § 4.11/4.12, G (27/28) § 4.13/4.14, H (29/30) § 4.15, all
-bit-exact. 397 Rust tests. The next phase is 5, which needs FRESH AUTHORISATION — its
-**PRE-FLIGHT inheritance census is DONE and is § 5.3**: the rung-61 diamond is discharged, and
-the phase's real structural requirement is a FIVE-name virtual-dispatch set — one of them claimed
-by PHASE 6 — plus one live constant shadow.**
+bit-exact. 397 Rust tests.
+**PHASE 5 (the steady matchers) was AUTHORISED 2026-08-13 and is IN PROGRESS, in SLICES.** Its
+**PRE-FLIGHT inheritance census (§ 5.3) came first and is DONE**: the rung-61 diamond is
+discharged, and the phase's real structural requirement is a FIVE-name virtual-dispatch set —
+one of them claimed by PHASE 6 — plus one live constant shadow. **The next authorisation point
+is before phase 6.**
 The architecture is settled by measurement (§ 1–2); the three forks were answered on 2026-08-12
 (§ 9); phases 0–2 were then built and gated (§ 4.1, § 4.2). Phase 1 was the first deliberate
 stopping point because it is where the arithmetic risk concentrates; phase 2 was authorised
@@ -1915,6 +1917,13 @@ every disagreement with the oracle ambiguous.
    IS COMPLETE.** No further authorisation was needed inside phase 3; **phase 4 (the nozzle &
    turbine marches, rungs 25–30) has not been authorised and is the next thing to ask about.** The
    standing re-decide point remains **before phase 5**, which contains the diamond (§ 6).
+   **Superseded 2026-08-13, in TWO steps.** The re-decide point was reached and taken in the order
+   the plan asked for: first the **PRE-FLIGHT ALONE** was authorised — § 6's prescribed diamond
+   action, which discharged it and found the phase's real structural content (§ 5.3) — and only
+   then, on that evidence, **PHASE 5 ITSELF was authorised on 2026-08-13, in SLICES**, on the
+   phase-3/4 pattern (pre-register, port code with its tests, gate every value, ship one green
+   slice at a time). Slices are free inside the phase; **the next authorisation point is before
+   phase 6.**
 
 **Decision 1 is REVISED by § 4.2**: phases 0–2 are held to bit-equality, not to a tolerance,
 because it was measured achievable (100 % on both oracles) and because a tolerance bar let a
