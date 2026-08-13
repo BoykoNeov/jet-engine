@@ -46,6 +46,13 @@ the constant half alone passes on a solver that stopped responding to its inputs
 varying half alone passes on a sweep too narrow to resolve anything. Same instinct as
 [[rust-port-shape-keys]] and [[rust-port-location-keys-refute]].
 
+**A GATE THAT PINS A TO B IS NOT EVIDENCE ABOUT B'S OWN VALUE.** The oracle proves Rust ==
+Python. A prediction that named specific numbers needed Python == those numbers too, and I
+wrote "the prediction held" on the strength of the oracle alone. It did hold — but I checked
+after claiming, and one paragraph above a finding whose whole content is that implicit scope is
+how this port keeps getting bitten. When a gate is relative, the absolute half is a separate
+check.
+
 **Also settled here, and load-bearing for phase 6:** the virtual hook for `solve_turbine`
 shipped WITH the slice rather than being retrofitted, because rung 34 overrides it from the
 next phase — the requirement [[rust-port-phase5-preflight]] discovered by widening its census.
