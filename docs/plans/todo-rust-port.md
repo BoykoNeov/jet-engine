@@ -2038,12 +2038,28 @@ fallible paths (§ (i)) and `nozzle_convergent` on `Losses`. **The Rust suite is
 | **`loopcount`** | 88 | **18 cells DISAGREE** | the joint fixed point's pass count — see finding 4 |
 
 **ALL FOUR SURVIVING PREDICTIONS HELD, and two of them are only meaningful because they are
-COUNTS.** P1: the turbine solve takes **47** map evaluations at every call with no spread, and
-the per-cell `n_solve_turbine` table reproduces cell for cell — including the 200s, where the
+COUNTS.** P1 has two halves and BOTH were checked, which is worth spelling out because the gate
+alone only proves the first: the gate shows Rust == Python, and P1 also asserted Python == a
+specific table. The turbine solve takes **47** map evaluations at every call with no spread; and
+read off the oracle at the design Mach, the joint-loop table is
+
+| gas | `Tt4` = 1500 | 1100 | 900 |
+|---|---|---|---|
+| calorically perfect | **1** | **7** | **7** |
+| thermally perfect | **2** | **7** | **7** |
+| reacting equilibrium | **200** | **200** | **7** |
+
+— cell for cell the `1/7/7 · 2/7/7 · 200/200/7` § (b) predicted, including the 200s, where the
 answer *is* the 200th iterate of a non-converging loop. P2 (as re-scoped): **550 low / 46 high**
 march rejections, per cell, on the grid now recorded in the oracle. P4: the three `Tt ** 0.5`
 sites are libm `pow`s, and would have shown as value drift if not. (P3 was already refuted both
 ways by § (g).)
+
+*A near-miss worth recording, because it is finding 2's own error committed one paragraph above
+finding 2:* the first version of this section claimed P1 "held" on the strength of the gate
+alone, which measures agreement with Python and says nothing about agreement with the predicted
+table. The table was then read off the oracle and does match — but the claim was written before
+it was checked. **A gate that pins A to B is not evidence about B's own value.**
 
 **FINDING 1 — THE TWO RUNGS, RESTATED AS A COUNT OVER BIT PATTERNS, WHICH IS STRICTLY STRONGER
 THAN EITHER SUITE'S OWN GATE.** Both Python suites express rung 31's pin and rung 33's inversion

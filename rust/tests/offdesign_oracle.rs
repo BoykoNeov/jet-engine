@@ -148,17 +148,45 @@ fn abort_code(msg: &str) -> f64 {
     panic!("UNCLASSIFIED abort, add it to abort_code: {}", &msg[..msg.len().min(120)]);
 }
 
+thread_local! {
+    /// Set only while [`catch`] is running, so the hook below knows this panic is expected.
+    static EXPECTING_PANIC: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// Install a panic hook that stays SILENT for expected panics and defers to the default one
+/// for everything else — installed exactly once for the process.
+///
+/// The obvious spelling (`take_hook` / `set_hook` around each call) is wrong here and the
+/// reason is not hypothetical: the two oracle tests run CONCURRENTLY in one binary, and the
+/// hook is process-global. Interleaved swaps can leave the silencer installed permanently, and
+/// the failure mode is the nastiest kind — every later genuine panic in this binary loses its
+/// message while still failing, so a future debugging session starts with less information than
+/// it should. Installing once and discriminating on a THREAD-LOCAL flag has no race at all.
+fn install_quiet_hook() {
+    static ONCE: std::sync::Once = std::sync::Once::new();
+    ONCE.call_once(|| {
+        let default = std::panic::take_hook();
+        std::panic::set_hook(Box::new(move |info| {
+            if !EXPECTING_PANIC.with(|e| e.get()) {
+                default(info);
+            }
+        }));
+    });
+}
+
 /// Run `f`, converting a panic into its message — Rust's stand-in for `except AssertionError`
 /// at the CELL level.
 ///
 /// **This is a test-only device and deliberately not in the library.** The cells it catches are
 /// the ones Python aborts on too; the port's actual fallible paths are `Result`s in shipped
-/// code, and conflating the two would let a genuine panic pass as an expected abort.
+/// code, and conflating the two would let a genuine panic pass as an expected abort. Note that
+/// a panic reaching here with an unrecognised message is NOT swallowed — `abort_code` re-panics
+/// with the text — so nothing is lost by silencing the hook.
 fn catch<T>(f: impl FnOnce() -> T + std::panic::UnwindSafe) -> Result<T, String> {
-    let prev = std::panic::take_hook();
-    std::panic::set_hook(Box::new(|_| {}));
+    install_quiet_hook();
+    EXPECTING_PANIC.with(|e| e.set(true));
     let out = std::panic::catch_unwind(f);
-    std::panic::set_hook(prev);
+    EXPECTING_PANIC.with(|e| e.set(false));
     out.map_err(|e| {
         e.downcast_ref::<String>().cloned()
             .or_else(|| e.downcast_ref::<&str>().map(|s| s.to_string()))
@@ -406,7 +434,12 @@ fn bar_for(quant: &str, strict: bool) -> f64 {
     match quant {
         "discrete" => 0.0,   // counts and branch labels: exactly equal on BOTH interpreters
         "step" => 0.0,       // 0.15 + k*0.02 is the same float everywhere
-        "residual" => 1.0e-6,   // ABSOLUTE, on mass flows of order 1 kg/s
+        // ABSOLUTE, on mass flows of order 1 kg/s. Measured worst 1.91e-10, so this is ~52x —
+        // the same order of headroom `value` carries. The first draft said 1e-6, which cleared
+        // the worst deviation by 5,000x and would have let a real hundred-fold degradation
+        // through; the smallest live endpoint residual is 4.77e-3, so there is no floor forcing
+        // it loose either.
+        "residual" => 1.0e-8,
         // THE JOINT FIXED POINT'S PASS COUNT IS NOT INTERPRETER-INVARIANT, and that is the
         // sharpest confirmation of § 5.4 (g) the port has. Its stopping rule is UNMEETABLE by a
         // hair, so which side of it a cell lands on is decided by last-bit arithmetic: CPython
