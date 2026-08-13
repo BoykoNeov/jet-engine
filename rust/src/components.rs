@@ -42,9 +42,10 @@
 //! shipped specified-exit-pressure nozzle, untouched, so every rungs 1-6 number is inert by
 //! construction — which is the same order the Python grew it in.
 //!
-//! STILL NOT PORTED HERE, and deliberately: rung 31's `choked_mfp`. It belongs to phase 5, where
-//! `test_rung31.py` runs. Checked rather than assumed before slice H shipped: no rung-30 test
-//! references it, so porting it now would ship code into a phase whose gate cannot exercise it.
+//! RUNG 31's [`choked_mfp`] ARRIVED WITH PHASE 5 SLICE I, and not before. It was held out of
+//! phase 2 (§ 5.2) and again out of phase 4 slice H (§ 4.15) on the same checked-not-assumed
+//! ground: no rungs 1-30 test references it, so shipping it earlier would have put code into a
+//! phase whose gate could not exercise it. `tests/rung31.rs` is that gate.
 
 use crate::gas::{powp, FlowState, Gas};
 
@@ -685,6 +686,37 @@ pub fn sonic_throat(gas: &Gas, tt9: f64, pt9: f64, far: f64) -> (f64, f64, f64) 
     let pstar = pt9 * gas.pr_t(tstar, far) / gas.pr_t(tt9, far);
     let vstar = powp(2.0 * (h_tt - gas.h_t(tstar, far)), 0.5);
     (tstar, pstar, vstar)
+}
+
+/// RUNG 31. The sonic (M = 1) mass-flow parameter of the hot gas: `MFP* = mdot*sqrt(Tt)/(A*pt)`.
+///
+/// A choked throat passes a FIXED corrected mass flow per unit area. Writing `mdot = rho*·V*·A`
+/// at the sonic throat and dividing by `A·pt/sqrt(Tt)` (with `rho* = p*/(R_t·T*)`):
+///
+/// ```text
+/// MFP*(Tt, far) = rho*·V*·sqrt(Tt)/pt = (p*/(R_t·T*))·V*·sqrt(Tt)/pt
+/// ```
+///
+/// **The key property: `MFP*` is PRESSURE-LEVEL-INDEPENDENT.** The sonic throat state
+/// (`T*`, `p*/pt`, `V*`) comes from ISENTROPIC ratios off `(Tt, pt)` — `p*/pt = pr_t(T*)/pr_t(Tt)`
+/// does not depend on the `pt` level — so `MFP*` is a function of `Tt` and composition ALONE.
+/// That is exactly what lets it serve as a fixed hardware constant off-design, and it is what
+/// rung 31's two choke constraints are built on. Slice H measured the same property one rung
+/// early: its `6 × 4` throat grid held SIX roots, not 24, because the residual contains no
+/// pressure at all.
+///
+/// Computed EXACTLY from rung 30's [`sonic_throat`] — no closed-form gamma approximation. On a
+/// CPG gas it equals the textbook `sqrt(gamma/R)·(2/(gamma+1))^((gamma+1)/(2(gamma-1)))`.
+///
+/// **`Tt ** 0.5` IS A LIBM `pow`, NOT `sqrt`** — [`powp`], per the split rule in `lib.rs`. This
+/// site was pre-registered as a trap before the port was written (`todo-rust-port.md` § 5.4, P4)
+/// precisely because a `sqrt` here would be a silent one-bit defect that a tolerance would hide.
+pub fn choked_mfp(gas: &Gas, tt: f64, far: f64) -> f64 {
+    // pt cancels in the ratio p*/pt, so any positive pt gives the same MFP*; use 1.0.
+    let (tstar, pstar, vstar) = sonic_throat(gas, tt, 1.0, far);
+    let r = gas.r_t_at(far);
+    let rho_over_pt = pstar / (r * tstar); // = (p*/pt)/(R·T*), the pt-independent group
+    rho_over_pt * vstar * powp(tt, 0.5)
 }
 
 impl Nozzle {
