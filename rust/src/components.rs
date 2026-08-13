@@ -47,7 +47,7 @@
 //! ground: no rungs 1-30 test references it, so shipping it earlier would have put code into a
 //! phase whose gate could not exercise it. `tests/rung31.rs` is that gate.
 
-use crate::gas::{powp, FlowState, Gas};
+use crate::gas::{Abort, powp, FlowState, Gas};
 
 /// Inlet total-pressure recovery `eta_r` vs flight Mach (MIL-E-5008B correlation).
 ///
@@ -389,14 +389,30 @@ impl Burner {
     /// does. That costs one final equilibrium solve whose result is discarded — kept because
     /// the loop's stopping rule is what decides which f is returned, and phase 1 measured
     /// stopping rules to be the port's whole residual risk (`todo-rust-port.md` § 4.1).
-    fn solve_equilibrium(&self, tt3: f64, pt4: f64, gas: &Gas) -> f64 {
+    pub fn solve_equilibrium(&self, tt3: f64, pt4: f64, gas: &Gas) -> f64 {
+        self.try_solve_equilibrium(tt3, pt4, gas).unwrap_or_else(|e| panic!("{}", e.0))
+    }
+
+    /// The FALLIBLE twin of [`solve_equilibrium`](Self::solve_equilibrium) — see [`Abort`].
+    ///
+    /// **This is the site § 5.4 (f) missed.** Rung 31's `solve_f` calls it on every pass of the
+    /// joint `(f, pt4)` fixed point, and it reaches the equilibrium Newton *directly* rather
+    /// than through `Gas::freeze_equilibrium` — so the dump behind (f) could not see it. It
+    /// raises on five cells that go on to bracket, moving the low bracket as far as 0.35.
+    ///
+    /// Its OWN 200-step guard stays an `assert!` and that is a measurement, not an oversight:
+    /// over the recorded sweep it never fires. Only the Newton beneath it does.
+    ///
+    /// `pub` (like [`sonic_throat_bisect`]) so a gate can reach it without a later visibility
+    /// churn — rung 31's `solve_f` is its only production caller besides `apply`.
+    pub fn try_solve_equilibrium(&self, tt3: f64, pt4: f64, gas: &Gas) -> Result<f64, Abort> {
         let h_air = gas.h_air_abs_b(tt3);
         let (mut lo, mut hi) = (0.0f64, gas.f_stoich_lean() * (1.0 - 1e-6)); // lean bracket
         let mut f = 0.0f64;
         let mut ok = false;
         for _ in 0..Self::FP_MAX {
             f = 0.5 * (lo + hi);
-            let comp = gas.equilibrium_composition(f, self.tt4, pt4);
+            let comp = gas.try_equilibrium_composition(f, self.tt4, pt4)?;
             let n_fuel = gas.n_fuel_per_air(f);
             let res = h_air + n_fuel * gas.hf_fuel_molar()
                 - gas.h_products_abs_b(&comp, self.tt4)
@@ -412,7 +428,7 @@ impl Burner {
             }
         }
         assert!(ok, "rung-6 burner root-find did not converge in {} steps", Self::FP_MAX);
-        f
+        Ok(f)
     }
 }
 
@@ -730,6 +746,22 @@ impl Nozzle {
     }
 
     pub fn apply(&self, s: &FlowState, gas: &Gas) -> NozzleExit {
+        self.try_apply(s, gas).unwrap_or_else(|e| panic!("{}", e.0))
+    }
+
+    /// The FALLIBLE twin of [`apply`](Self::apply) — see [`Abort`].
+    ///
+    /// **EVERY assert in the body is an `Abort` here, not just the `p9 <= pt9` precondition**,
+    /// and that is the rule rather than caution: rung 33's bracket march writes a BARE
+    /// `except AssertionError`, so Python catches the isentropic check, the energy split, the
+    /// choked branch's `M9 == 1` and its `p9 > p0` on exactly the same footing as the
+    /// precondition. Wiring only the one that happens to have been measured firing would leave
+    /// a Rust panic where Python marched on — which is § 5.4 (i)'s whole lesson, applied
+    /// forward instead of after the fact.
+    ///
+    /// Over the recorded sweep only the precondition is ever taken (132 times). The other five
+    /// are `Abort`s on reachability, not on measurement.
+    pub fn try_apply(&self, s: &FlowState, gas: &Gas) -> Result<NozzleExit, Abort> {
         // Hot-section gas at the burned-products composition (rung 4): R_t and gamma_t depend
         // on far, so read them at s.far (ignored by CPG/frozen-TPG).
         let f = s.far;
@@ -748,31 +780,35 @@ impl Nozzle {
                 let a9 = powp(gas.gamma_t_at(t9, f) * r * t9, 0.5);
                 let m9 = v9 / a9; // == 1 by construction
                 let out = FlowState { tt: tt9, pt: pt9, mdot: s.mdot, far: s.far };
-                assert!((out.pt - self.pi_n * s.pt).abs() < 1e-9 * s.pt, "nozzle pt9 != pi_n*pt5");
-                assert!(
-                    (gas.pr_t(tt9, f) / gas.pr_t(t9, f) - pt9 / p9).abs() < 1e-9 * (pt9 / p9),
-                    "nozzle static drop not isentropic"
-                );
-                assert!((m9 - 1.0).abs() < 1e-9, "choked convergent nozzle must exit at M9 = 1");
-                assert!(p9 > self.p_ambient, "choked nozzle is underexpanded: p9 > p0");
+                check((out.pt - self.pi_n * s.pt).abs() < 1e-9 * s.pt,
+                      || "nozzle pt9 != pi_n*pt5".to_string())?;
+                check((gas.pr_t(tt9, f) / gas.pr_t(t9, f) - pt9 / p9).abs() < 1e-9 * (pt9 / p9),
+                      || "nozzle static drop not isentropic".to_string())?;
+                check((m9 - 1.0).abs() < 1e-9,
+                      || "choked convergent nozzle must exit at M9 = 1".to_string())?;
+                check(p9 > self.p_ambient,
+                      || "choked nozzle is underexpanded: p9 > p0".to_string())?;
                 let split_tol = if gas.hot_is_cpg() { 1e-3 } else { 1e-9 };
                 let enthalpy_total = gas.h_t(tt9, f);
-                assert!(
-                    (gas.h_t(t9, f) + 0.5 * (v9 * v9) - enthalpy_total).abs()
-                        <= split_tol * enthalpy_total,
-                    "choked nozzle energy split off by more than the constant mismatch"
-                );
-                assert!(out.mdot == s.mdot && out.far == s.far, "nozzle adds no mass or fuel");
-                return NozzleExit { state: out, m9, t9, v9, p9 };
+                check((gas.h_t(t9, f) + 0.5 * (v9 * v9) - enthalpy_total).abs()
+                          <= split_tol * enthalpy_total,
+                      || "choked nozzle energy split off by more than the constant mismatch"
+                          .to_string())?;
+                check(out.mdot == s.mdot && out.far == s.far,
+                      || "nozzle adds no mass or fuel".to_string())?;
+                return Ok(NozzleExit { state: out, m9, t9, v9, p9 });
             }
             self.p_ambient // subcritical: expand fully to ambient
         } else {
             self.p_exit // expand to the specified back-pressure
         };
 
-        assert!(p9 <= pt9,                  // else the "expansion" would need compression
-                "nozzle back-pressure p9={p9:.0} Pa exceeds total pressure pt9={pt9:.0} Pa \
-                 — the nozzle cannot expand to it (raise pi_n / lower p_exit)");
+        // Else the "expansion" would need compression. THE ONE GUARD OF THE SIX THAT IS
+        // MEASURED TO FIRE during rung 33's march (132 times over the recorded sweep) — it is
+        // the high-`pi_t` wall the march walks in from.
+        check(p9 <= pt9, || format!(
+            "nozzle back-pressure p9={p9:.0} Pa exceeds total pressure pt9={pt9:.0} Pa \
+             — the nozzle cannot expand to it (raise pi_n / lower p_exit)"))?;
 
         let (m9, t9, v9);
         if gas.hot_is_cpg() {
@@ -796,12 +832,14 @@ impl Nozzle {
 
         // Conservation checks, every call (contract #4).
         // (1) SPECIFIED nozzle pressure ratio.
-        assert!((out.pt - self.pi_n * s.pt).abs() < 1e-9 * s.pt, "nozzle pt9 != pi_n*pt5");
+        check((out.pt - self.pi_n * s.pt).abs() < 1e-9 * s.pt,
+              || "nozzle pt9 != pi_n*pt5".to_string())?;
         // (2) Static<->total isentropic relation pr(Tt9)/pr(T9) == pt9/p9. Exact by
         //     construction in BOTH branches (T9 derived to satisfy it) — assert TIGHT.
-        assert!((gas.pr_t(tt9, f) / gas.pr_t(t9, f) - pt9 / p9).abs() < 1e-9 * (pt9 / p9),
-                "nozzle static drop not isentropic");
-        assert!(out.mdot == s.mdot && out.far == s.far, "nozzle adds no mass or fuel");
+        check((gas.pr_t(tt9, f) / gas.pr_t(t9, f) - pt9 / p9).abs() < 1e-9 * (pt9 / p9),
+              || "nozzle static drop not isentropic".to_string())?;
+        check(out.mdot == s.mdot && out.far == s.far,
+              || "nozzle adds no mass or fuel".to_string())?;
         // (3) The NON-tautological check: total enthalpy splits into static + kinetic,
         //     h(Tt9) == h(T9) + V9^2/2. On a TPG section V9 came from EXACTLY this drop, so it
         //     is exact — assert TIGHT. On a CPG section the hot-section constants carry the
@@ -810,11 +848,20 @@ impl Nozzle {
         let split_tol = if gas.hot_is_cpg() { 1e-3 } else { 1e-9 };
         let enthalpy_total = gas.h_t(tt9, f);
         let enthalpy_static_plus_ke = gas.h_t(t9, f) + 0.5 * (v9 * v9);
-        assert!((enthalpy_static_plus_ke - enthalpy_total).abs() <= split_tol * enthalpy_total,
-                "nozzle energy split off by more than the constant mismatch: {} vs {}",
-                enthalpy_static_plus_ke, enthalpy_total);
-        NozzleExit { state: out, m9, t9, v9, p9 }
+        check((enthalpy_static_plus_ke - enthalpy_total).abs() <= split_tol * enthalpy_total,
+              || format!("nozzle energy split off by more than the constant mismatch: {} vs {}",
+                         enthalpy_static_plus_ke, enthalpy_total))?;
+        Ok(NozzleExit { state: out, m9, t9, v9, p9 })
     }
+}
+
+/// `assert!` spelled as a `Result` — the body of every guard [`Nozzle::try_apply`] converts.
+///
+/// The message closure is lazy for the same reason `assert!`'s format arguments are: on the
+/// overwhelmingly common passing path nothing is formatted and nothing is allocated, so making
+/// these guards fallible costs the design run exactly nothing.
+fn check(ok: bool, msg: impl FnOnce() -> String) -> Result<(), Abort> {
+    if ok { Ok(()) } else { Err(Abort(msg())) }
 }
 
 // =======================================================================================

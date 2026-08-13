@@ -698,6 +698,38 @@ pub fn gauss_solve(a: &[Vec<f64>], b: &[f64]) -> Vec<f64> {
     (0..n).map(|i| m[i][n] / m[i][i]).collect()
 }
 
+/// A condition Python signals with `AssertionError` **and that some caller catches**.
+///
+/// Python has one mechanism for two different jobs. `assert` is the working contract's
+/// standing conservation check — a bug, and it should stop the program. But rung 33's bracket
+/// march writes `except AssertionError: pt += 0.02`, which turns a subset of those same
+/// asserts into ordinary control flow: "this trial point is not evaluable, try the next one".
+/// Rust cannot conflate the two, and should not, so the port splits them by the ONE criterion
+/// that decides which job an assert is doing:
+///
+/// > **an assert becomes an `Abort` iff it is reachable from inside the march's residual**
+/// > — which is exactly the scope of Python's `try`.
+///
+/// Everything else stays `assert!`. Both edges of that line were measured rather than assumed
+/// (`todo-rust-port.md` § 5.4 (i)): `sonic_throat`'s bracket guards are reachable but took
+/// **0 of 111,775** calls, so they stay panics — a fallible path with no reachable failure is
+/// a gate that measures nothing; and [`solve`]'s `inverse: root not bracketed` fires 6 times
+/// in 225,410 but **every one aborts its cell** rather than being marched past, established as
+/// a superset argument rather than as an absence.
+///
+/// The pattern is always an additive twin — `try_x` holds the body, `x` delegates and panics
+/// with the identical message — so no already-gated caller changes at all.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Abort(pub String);
+
+impl std::fmt::Display for Abort {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl std::error::Error for Abort {}
+
 /// Core equilibrium solve: mole numbers of the 8 reacting species at `(T, p)`, given C/H/O
 /// atom totals and inert moles.
 ///
@@ -718,6 +750,25 @@ pub fn gauss_solve(a: &[Vec<f64>], b: &[f64]) -> Vec<f64> {
 pub fn equil_solve(
     b_c: f64, b_h: f64, b_o: f64, n_inert: f64, t: f64, p: f64,
 ) -> [f64; 8] {
+    try_equil_solve(b_c, b_h, b_o, n_inert, t, p).unwrap_or_else(|e| panic!("{}", e.0))
+}
+
+/// The FALLIBLE twin of [`equil_solve`] — see [`Abort`].
+///
+/// Same arithmetic, iterate for iterate; the only difference is that the convergence guard
+/// hands back an [`Abort`] instead of panicking. It exists because rung 33's bracket march
+/// **catches** that failure and marches on, and it was measured to do so on live cells: the
+/// route `Burner::try_solve_equilibrium` → [`try_equilibrium_composition`] → here raises 26
+/// times on FIVE cells that then return a matched operating point, moving the low bracket from
+/// 0.15 to as far as 0.35 (`todo-rust-port.md` § 5.4 (i)). A panic there would return nothing
+/// where the Python returns a number.
+///
+/// The atom-conservation asserts below it stay `assert!`: they are the working contract's
+/// standing conservation checks, they are unreachable on a converged solve, and Python's own
+/// march has never been measured to catch one.
+pub fn try_equil_solve(
+    b_c: f64, b_h: f64, b_o: f64, n_inert: f64, t: f64, p: f64,
+) -> Result<[f64; 8], Abort> {
     // Seed, in SP_REACT order: CO2, H2O, CO, H2, OH, O, H, O2.
     let seed: [f64; 8] = if b_o >= 2.0 * b_c + b_h / 2.0 {
         // LEAN — byte-identical to the rung-6 seed (C->CO2, H->H2O, leftover O2; radicals
@@ -826,8 +877,14 @@ pub fn equil_solve(
     // CONVERGENCE (rung-6 standing assert, the Newton twin of the burner's fixed-point
     // `else: assert False`): the atom balances below can hold with the log-Kp residuals still
     // open, so guard the FULL solve explicitly. Measured ~10-20 steps, far under 200.
-    assert!(converged,
-            "equilibrium Newton did not converge in 200 steps at (T={t}, p={p})");
+    //
+    // The MESSAGE is Python's verbatim, and that is load-bearing rather than cosmetic: this is
+    // the one guard rung 33's march catches by exception TYPE, so the text is all that
+    // distinguishes it from the other two families in a diagnostic.
+    if !converged {
+        return Err(Abort(format!(
+            "equilibrium Newton did not converge in 200 steps at (T={t}, p={p})")));
+    }
 
     let mut comp = [0.0f64; 8];
     for j in 0..8 {
@@ -839,7 +896,7 @@ pub fn equil_solve(
     assert!((bal(0) - b_c).abs() < 1e-9 * (b_c + 1e-9), "C balance");
     assert!((bal(1) - b_h).abs() < 1e-9 * (b_h + 1e-9), "H balance");
     assert!((bal(2) - b_o).abs() < 1e-9 * b_o, "O balance");
-    comp
+    Ok(comp)
 }
 
 /// Equilibrium mole numbers per mol dry air at `(f, T, p)` for the (CH2)n fuel.
@@ -847,15 +904,27 @@ pub fn equil_solve(
 /// Returns the 8 reacting species followed by the inert N2 and Ar — the order
 /// [`mixture`] will sum in.
 pub fn equilibrium_composition(f: f64, t: f64, p: f64) -> Vec<(&'static str, f64)> {
+    try_equilibrium_composition(f, t, p).unwrap_or_else(|e| panic!("{}", e.0))
+}
+
+/// The FALLIBLE twin of [`equilibrium_composition`] — see [`Abort`].
+///
+/// **This is the route `todo-rust-port.md` § 5.4 (f)'s dump could not see.** It reaches the
+/// Newton *directly*, never through [`Gas::freeze_equilibrium`], which is what that dump
+/// instrumented — so the "every raise is at Tt4 = 400" conclusion was drawn from a sample this
+/// path is absent from by construction.
+pub fn try_equilibrium_composition(f: f64, t: f64, p: f64)
+    -> Result<Vec<(&'static str, f64)>, Abort>
+{
     let x = air_mole_fractions();
     let xg = |name: &str| x.iter().find(|&&(s, _)| s == name).unwrap().1;
     let n_fuel = f * m_air() / M_CH2;
-    let comp = equil_solve(n_fuel, 2.0 * n_fuel, 2.0 * xg("O2"), xg("N2") + xg("Ar"), t, p);
+    let comp = try_equil_solve(n_fuel, 2.0 * n_fuel, 2.0 * xg("O2"), xg("N2") + xg("Ar"), t, p)?;
     let mut out: Vec<(&'static str, f64)> =
         SP_REACT.iter().enumerate().map(|(j, &s)| (s, comp[j])).collect();
     out.push(("N2", xg("N2")));
     out.push(("Ar", xg("Ar")));
-    out
+    Ok(out)
 }
 
 /// A hot section whose composition is the EQUILIBRIUM mixture at the burner's `(Tt4, pt4)`,
@@ -885,6 +954,17 @@ impl EquilibriumSection {
     pub fn new() -> Self { Self::default() }
 
     pub fn freeze(&self, far: f64, t_burn: f64, p_burn: f64) -> Vec<(&'static str, f64)> {
+        self.try_freeze(far, t_burn, p_burn).unwrap_or_else(|e| panic!("{}", e.0))
+    }
+
+    /// The FALLIBLE twin of [`freeze`](Self::freeze) — see [`Abort`].
+    ///
+    /// The burn-condition guard stays an `assert!`: reusing one gas across two burn configs is
+    /// a routing bug in the caller, not an inevaluable trial point, and rung 33 hands every
+    /// trial a FRESH gas so the march cannot reach it.
+    pub fn try_freeze(&self, far: f64, t_burn: f64, p_burn: f64)
+        -> Result<Vec<(&'static str, f64)>, Abort>
+    {
         {
             let mut burn = self.burn.borrow_mut();
             match *burn {
@@ -897,12 +977,12 @@ impl EquilibriumSection {
         }
         let key = far.to_bits();
         if !self.cache.borrow().iter().any(|&(k, _)| k == key) {
-            let comp = equilibrium_composition(far, t_burn, p_burn);
+            let comp = try_equilibrium_composition(far, t_burn, p_burn)?;
             let (a_low, a_high, r) = mixture(&comp);
             self.cache.borrow_mut().push((key, TpgSection::new(a_low, a_high, r)));
             self.comp.borrow_mut().push((key, comp));
         }
-        self.comp.borrow().iter().find(|&&(k, _)| k == key).unwrap().1.clone()
+        Ok(self.comp.borrow().iter().find(|&&(k, _)| k == key).unwrap().1.clone())
     }
 
     fn section_for(&self, far: f64) -> TpgSection {
@@ -1350,6 +1430,13 @@ impl Gas {
         equilibrium_composition(f, t, p)
     }
 
+    /// The FALLIBLE twin of [`equilibrium_composition`](Self::equilibrium_composition).
+    pub fn try_equilibrium_composition(&self, f: f64, t: f64, p: f64)
+        -> Result<Vec<(&'static str, f64)>, Abort>
+    {
+        try_equilibrium_composition(f, t, p)
+    }
+
     /// Air absolute MOLAR enthalpy per mol air, SCALE B (formation of air = 0).
     pub fn h_air_abs_b(&self, t: f64) -> f64 {
         // Summed in AIR's own order (N2, O2, Ar) with one accumulator: float addition is not
@@ -1378,8 +1465,21 @@ impl Gas {
     pub fn freeze_equilibrium(&self, f: f64, t_burn: f64, p_burn: f64)
         -> Vec<(&'static str, f64)>
     {
+        self.try_freeze_equilibrium(f, t_burn, p_burn).unwrap_or_else(|e| panic!("{}", e.0))
+    }
+
+    /// The FALLIBLE twin of [`freeze_equilibrium`](Self::freeze_equilibrium) — see [`Abort`].
+    ///
+    /// This IS the route `todo-rust-port.md` § 5.4 (f) sampled, and its conclusion holds here:
+    /// over the recorded sweep it raises 40 times, all at `Tt4 = 400 K`, where no `pi_t` is
+    /// evaluable and the whole bracket is dead anyway. It is fallible regardless — the two
+    /// routes share one solve, so splitting them would leave a hazard argument standing where
+    /// a `Result` costs nothing.
+    pub fn try_freeze_equilibrium(&self, f: f64, t_burn: f64, p_burn: f64)
+        -> Result<Vec<(&'static str, f64)>, Abort>
+    {
         match &self.hot {
-            Section::Equilibrium(s) => s.freeze(f, t_burn, p_burn),
+            Section::Equilibrium(s) => s.try_freeze(f, t_burn, p_burn),
             _ => panic!("freeze_equilibrium on a non-equilibrium hot section"),
         }
     }

@@ -64,11 +64,35 @@
 //!   the super-equilibrium ratio is ANTI-correlated with the energy, largest (993×) exactly where
 //!   the bracket is worth least.
 //!
-//! **PHASE 4 IS COMPLETE.** The remaining off-design and transient ladders arrive in phases 5–7
-//! and leave this design run untouched, as they do in the Python. Note that three different
-//! spellings of "raise to a power" now live in phase 4 alone — a libm `pow` for `** 0.5`, the real
-//! `sqrt` instruction for `math.sqrt`, and a product for a small integer exponent — and each site
-//! says which rule applies, because applying any one by habit is a silent one-bit defect.
+//! **PHASE 4 IS COMPLETE.** Note that three different spellings of "raise to a power" live in
+//! phase 4 alone — a libm `pow` for `** 0.5`, the real `sqrt` instruction for `math.sqrt`, and a
+//! product for a small integer exponent — and each site says which rule applies, because applying
+//! any one by habit is a silent one-bit defect.
+//!
+//! **Phase 5 — the steady matchers — is under way in [`matcher`]**, in dependency slices:
+//!
+//! * **I — rungs 31/33 (SHIPPED)**: off-design matching, where the operating point stops being an
+//!   input. Fixed hardware (two throat areas from one design run) pins the turbine by geometry
+//!   and the shaft balance hands back the compressor, so `pi_c` and `mdot_air` become OUTPUTS;
+//!   below the nozzle-unchoke boundary that pin is void and a second branch re-solves it.
+//!   3951/3951 bit-exact, including 961 discrete keys and every bracket endpoint.
+//!
+//! Slice I is where the port first had to do three things it had never done, and each one left a
+//! mark on the crate rather than only on the module:
+//!
+//! 1. **MARCH PAST A FAILURE.** Rung 33 steps a bracket inward while catching what Python raises
+//!    as `AssertionError`, so some of the crate's `assert!`s are now [`gas::Abort`]s instead —
+//!    under one rule, applied per site, with both of its edges measured. Every conversion is an
+//!    additive `try_` twin whose panicking original delegates to it, so no earlier gate moved.
+//! 2. **DISPATCH VIRTUALLY.** `solve_turbine` is called on `self` inside rung 31's own body and
+//!    is overridden by rung 34 — in the NEXT phase. It ships hookable ([`matcher::MatcherHooks`])
+//!    rather than being refactored later under a gate.
+//! 3. **REPRODUCE A LOOP THAT DOES NOT CONVERGE.** The joint `(f, pt4)` fixed point exhausts its
+//!    200-pass cap with no assert on the production gas, so its answer is the 200th iterate of a
+//!    fixed count and every pass has to reproduce exactly.
+//!
+//! The remaining transient ladders arrive in phases 6–7 and leave the design run untouched, as
+//! they do in the Python.
 //!
 //! # Porting rules that are NOT optional
 //!
@@ -90,4 +114,5 @@ pub mod components;
 pub mod engine;
 pub mod gas;
 pub mod march;
+pub mod matcher;
 pub mod nox;

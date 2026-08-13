@@ -4,12 +4,14 @@
 C (13/15/16/18/21), D (22/23/24) and E (14/17, the nozzle strand) all shipped.
 PHASE 4 (the nozzle & turbine marches, rungs 25–30) was AUTHORISED 2026-08-12 and is COMPLETE —
 three dependency slices, F (25/26) § 4.11/4.12, G (27/28) § 4.13/4.14, H (29/30) § 4.15, all
-bit-exact. 397 Rust tests.
+bit-exact.
 **PHASE 5 (the steady matchers) was AUTHORISED 2026-08-13 and is IN PROGRESS, in SLICES.** Its
 **PRE-FLIGHT inheritance census (§ 5.3) came first and is DONE**: the rung-61 diamond is
 discharged, and the phase's real structural requirement is a FIVE-name virtual-dispatch set —
-one of them claimed by PHASE 6 — plus one live constant shadow. **The next authorisation point
-is before phase 6.**
+one of them claimed by PHASE 6 — plus one live constant shadow. **SLICE I (rungs 31/33) IS
+SHIPPED — 3951/3951 bit-exact; 415 Rust tests in all** (§ 5.5); it also carries the port's first
+fallible paths and its first virtual hook, and § 5.4 (i) records how the fallible design's
+first answer was wrong. **The next authorisation point is before phase 6.**
 The architecture is settled by measurement (§ 1–2); the three forks were answered on 2026-08-12
 (§ 9); phases 0–2 were then built and gated (§ 4.1, § 4.2). Phase 1 was the first deliberate
 stopping point because it is where the arithmetic risk concentrates; phase 2 was authorised
@@ -1634,7 +1636,7 @@ next starts. The tree is green at every phase boundary; there is no big-bang cut
 | **2** | ~~`components.rs` + `engine.rs` design point — shaft balance, `_score`; conservation checks as `assert!`~~ | **DONE** | ✅ **three** gates: `cycle_oracle.rs` (1481/1481 bit-exact vs PyPy, on 19+15 distinct solver roots — § 4.2), the 8 ported rung suites (39 tests, rungs 1–6, incl. rung 6's GATE 1), and `porting_rules.rs` |
 | **3** | NOx & mixing, rungs 7–24. **RISK-BEARING — not bulk.** These are phase 1's largest *consumer*: every one rides the equilibrium solve and `Kp = exp(−ΔG°/RuT)`, and their findings are *shapes* (the bell's peak, the minimum pinned at `C_opt`, monotone-vs-turns-back-up) that a last-digit shift in an exponential can move. Deliberately placed straight after phase 1 as the **first real test of whether the transcendental arithmetic holds**. **DONE — slices A (7/8/9/19), B (10/11/12/20), C (13/15/16/18/21), D (22/23/24) and E (14/17) all shipped**, § 4.3–4.10; the slices are grouped in § 4.3 by DEPENDENCY, not by number | 4–6 | ✅ slice A: `nox_oracle.rs` (**1806/1806** bit-exact vs PyPy on 22+22 distinct solver roots) + 4 rung suites (43 tests) · ✅ slice B: `quench_oracle.rs` (**2507/2507**, on 165 distinct trajectory roots) + 4 rung suites (39 tests), one location key NARROWING a shipped claim · ✅ slice C: `pdf_oracle.rs` (**2448/2448**, both quadrature branches asserted exercised) + 5 rung suites (59 tests); the source's own mean-preservation guard found to have an `n_quad` FLOOR, and the port gates the REJECTION as well as the acceptance (§ 4.5) · ✅ slice D: `spatial_oracle.rs` (**462/462**, incl. 28 DISCRETE keys) + 3 rung suites (43 tests); TWO source claims of exactness CORRECTED — rung 24 applies an operation inside an accumulation and removes it outside, twice (§ 4.8) | · ✅ slice E: `nozzle_oracle.rs` (**513/513**, incl. 24 DISCRETE keys) + 2 rung suites (24 tests) + 3 gates `rung20.rs` had deferred; a THIRD claim of exactness corrected (the frozen reduce is algebraic only, and its floor is the entropy ROUTE, not the bisection's stopping rule) and rung 17's firing band edge LOCATED — past it the bulk margin goes dormant while the per-pocket one RISES (§ 4.10) |
 | **4** | Nozzle & turbine marches, rungs 25–30 — own convergence behaviour, hence separate. ~~**AUTHORISED 2026-08-12; three DEPENDENCY slices**~~ **DONE** | 2–3 | ✅ slice F: `march_oracle.rs` (**912/912** bit-exact vs PyPy, on 49 distinct march exit roots) + 2 rung suites (32 tests) in a new `march.rs`; the FOURTH "exactly"-class claim and the FIRST to survive — because it compares a COPY, not a rederivation (§ 4.12) · ✅ slice G: `no_march_oracle.rs` (**776/776**, and only 8.0 % CPython-identical — the sharpest dump in the port) + 2 rung suites (28 tests); slice F's discriminator made TWO pre-registered predictions and both HELD (§ 4.14) · ✅ slice H: `tt_oracle.rs` (**270/270**) + 2 rung suites (14 tests); RATIO ≠ ENERGY measured ANTI-correlated, and the one slice not pre-registered — all three of its guessed census bars were wrong (§ 4.15) |
-| **5** | Steady matchers — rungs 31–33, 38–39, 42, 53–56, 61. ~~**Contains the diamond** (§ 6)~~ **PRE-FLIGHT DONE (§ 5.3), build UNAUTHORISED.** The diamond is discharged; the phase's structural content is the **five-name virtual set** (`_solve_turbine` — claimed by PHASE 6 — `match`, `_hp_eta_loop`, `_lp_eta_loop`, `at_setting`) and `_INC_MAX`'s live shadow | 4–6 | per-rung tests pass |
+| **5** | Steady matchers — rungs 31–33, 38–39, 42, 53–56, 61. ~~**Contains the diamond** (§ 6)~~ **PRE-FLIGHT DONE (§ 5.3); AUTHORISED 2026-08-13, IN PROGRESS in slices.** The diamond is discharged; the phase's structural content is the **five-name virtual set** (`_solve_turbine` — claimed by PHASE 6 — `match`, `_hp_eta_loop`, `_lp_eta_loop`, `at_setting`) and `_INC_MAX`'s live shadow | 4–6 | ✅ slice I (rungs 31/33): `offdesign_oracle.rs` (**3951/3951** bit-exact vs PyPy, incl. **961 discrete** keys) + 2 rung suites (17 tests) in a new `matcher.rs`; the crate's FIRST fallible paths, its FIRST virtual hook, and the two rungs re-gated as counts over BIT PATTERNS (§ 5.5) |
 | **6** | Transients — rungs 34–37, 40, 43–52 (the fuel-side limiter family) | 4–6 | per-rung tests pass |
 | **7** | **The ladder, rungs 57–84** — the `Hooks` table from § 2, one module per rung | 5–8 | 28/28 reduce-to-prior bit-exact |
 | **8** | `main.py` replacement; adjudicate the fragile rungs; re-anchor the fingerprint; **delete the Python** | 2–3 | full suite green on Rust alone |
@@ -2015,6 +2017,92 @@ down** — this sweep, at the same 3 × 6 × 7 shape, measures 550 / 46. So P2 b
 reproduces the per-cell rejection counts and bracket endpoints of the grid recorded in the
 oracle*, and the grid is now in the dump where it can be read. A count without its grid is not a
 measurement.
+
+### 5.5 What phase 5 SLICE I MEASURED — 100 % again, and every pre-registered prediction held
+
+Slice I ships `rust/src/matcher.rs` (`OffDesignMatcher`, both branches, `MatcherHooks`), the
+oracle `rust/oracle/dump_offdesign.py`, and three gates — `offdesign_oracle.rs` plus the two
+ported rung suites `rung31.rs` (8 tests) and `rung33.rs` (9). It also ships the crate's first
+fallible paths (§ (i)) and `nozzle_convergent` on `Losses`. **The Rust suite is now 415 tests.**
+
+| | bit-identical vs PyPy | vs CPython |
+|---|---|---|
+| off-design oracle (3,951 values) | **3,951 / 3,951 (100 %)** | 2,387 / 3,951 (**60.4 %**) |
+
+| class | keys | CPython↔PyPy | what it is |
+|---|---|---|---|
+| `discrete` | 873 | **0.00e0** | the branch labels, the abort codes, the per-cell march-rejection tallies, the 47, the root counts |
+| `step` | 238 | **0.00e0** | the marched bracket endpoints, `0.15 + k·0.02` |
+| `value` | 2,514 | ≤2.6e-10 | the matched grid — `pi_c`, `tau_t`, `pi_t`, the stations, thrust, the efficiencies |
+| `residual` (ABS) | 238 | ≤1.9e-10 | the (★★) mass-continuity residual at both endpoints |
+| **`loopcount`** | 88 | **18 cells DISAGREE** | the joint fixed point's pass count — see finding 4 |
+
+**ALL FOUR SURVIVING PREDICTIONS HELD, and two of them are only meaningful because they are
+COUNTS.** P1: the turbine solve takes **47** map evaluations at every call with no spread, and
+the per-cell `n_solve_turbine` table reproduces cell for cell — including the 200s, where the
+answer *is* the 200th iterate of a non-converging loop. P2 (as re-scoped): **550 low / 46 high**
+march rejections, per cell, on the grid now recorded in the oracle. P4: the three `Tt ** 0.5`
+sites are libm `pow`s, and would have shown as value drift if not. (P3 was already refuted both
+ways by § (g).)
+
+**FINDING 1 — THE TWO RUNGS, RESTATED AS A COUNT OVER BIT PATTERNS, WHICH IS STRICTLY STRONGER
+THAN EITHER SUITE'S OWN GATE.** Both Python suites express rung 31's pin and rung 33's inversion
+as tolerances (`|tau_t − tau_t0| < 1e-9`, `spread > 1e-3`). A tolerance cannot distinguish *the
+pin holds* from *the pin nearly holds*, and the two claims are not even in the same currency.
+Counted over distinct `f64` bit patterns instead, on the same 3-gas × 6-Mach × 7-throttle grid:
+
+| gas | choked `tau_t` | subsonic `tau_t` |
+|---|---|---|
+| calorically perfect | **1 pattern / 26 cells** | **4 / 4** |
+| thermally perfect | 24 / 24 | 5 / 5 |
+| reacting equilibrium | 24 / 24 | 5 / 5 |
+
+So (★) is not merely tight on a CPG gas — it is *exact*, one value across the whole throttle AND
+flight-Mach sweep — while the subsonic branch on the same gas moves at every point. **The pairing
+is what makes it a measurement**: the second column alone would pass on a sweep too narrow to
+resolve anything, and the first alone would pass on a solver that had stopped responding to its
+inputs. `rung31.rs::the_pin_is_exact_not_merely_tight` gates both halves together.
+
+**FINDING 2 — A COUNT WITHOUT ITS GRID IS NOT A MEASUREMENT.** § (a) recorded "930 raises on the
+low march and 616 on the high" but not the sweep that produced them, so the number could not be
+reproduced, could not be ported as a prediction, and had to be re-measured from scratch; the same
+3 × 6 × 7 shape gives 550 / 46. This is the fourth distinct way the port has been bitten by a
+claim whose *scope* was left implicit — after the dead-guard sweeps (§ 5.3, twice), the census
+restricted to its own phase, and § (i)'s dump that could not see a route. The grid now lives in
+the oracle file beside the counts, where a reader gets both or neither.
+
+**FINDING 3 — THE ENVELOPE IS GATED AS DATA, NOT AS A SKIP LIST.** 38 of the 126 cells abort, for
+five distinct reasons. Each is dumped as a numeric abort CODE, so a Rust that aborted for a
+*different* reason — or matched a cell Python could not — fails on that key instead of silently
+producing a shorter file. All 38 agree, which is what makes the fallible-path design of § (i)
+verified rather than merely argued: the rejection set, the resulting bracket, and the reason each
+cell dies are all reproduced exactly.
+
+**FINDING 4 — THE ONE QUANTITY IN THE PORT THAT IS NOT INTERPRETER-INVARIANT, AND IT IS THE
+SHARPEST CONFIRMATION OF § (g) AVAILABLE.** Every slice so far has found the discrete keys
+exactly equal on both interpreters — counts, indices, censuses — because integers do not drift.
+Here **one** discrete class does not: the joint `(f, pt4)` fixed point's pass count differs
+between CPython and PyPy on **18 of 88 cells**, flipping **7 ↔ 200 in BOTH directions**, and
+every disagreeing cell is on the equilibrium gas. That is § (g)'s "the stopping rule is
+unmeetable" caught in the act — the test fails by such a hair that last-bit arithmetic decides
+which side of it a cell lands on.
+
+Two things make it a finding rather than noise, and both are asserted in the gate rather than
+narrated: the instability is **confined to the equilibrium gas** (a calorically-perfect cell
+flipping would mean something else entirely), and **it never moves a value** — the same cells'
+`pi_c`, `tau_t` and thrust still agree to 2.6e-10. A cell that ran 200 passes and one that ran 7
+land on the same answer, so the loop *is* converged in any physical sense and only the stopping
+TEST fails to say so. The class is bit-gated on PyPy, where it is prediction P1, and explicitly
+not compared on CPython, with the disagreement count printed on both arms.
+
+**This sharpens the phase-6 inbox item at § (h).** `TwoSpoolTransient` drives `match()` in loops
+at five sites; a 28× cost swing that flips on last-bit arithmetic is not only a per-timestep
+expense but a reproducibility hazard for anything that counts work.
+
+**WHAT SLICE J OWES, WRITTEN DOWN RATHER THAN LEFT TO BE NOTICED.** `test_rung33.py`'s gate 7 has
+a second half asserting that rung 32's `MapMatcher` does NOT inherit rung 33's dispatch. Rung 32
+does not exist in the Rust yet, so there is nothing for that claim to be true or false of; it is
+recorded as `rung33.rs::slice_j_deferrals`, which gates the part that IS checkable today.
 
 ---
 

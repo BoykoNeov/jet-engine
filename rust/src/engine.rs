@@ -296,6 +296,13 @@ pub struct Losses {
     /// away from ambient for an under/over-expanded nozzle — specific thrust then carries the
     /// pressure term.
     pub p_exit: Option<f64>,
+    /// RUNG 30. `true` makes the nozzle a fixed CONVERGENT one that choke-detects and ignores
+    /// `p_exit`: the FLOW decides `p9` (the sonic `p*` if choked, else `p_ambient`).
+    ///
+    /// The default `false` keeps the specified-`p_exit` nozzle, so every rungs 1-6 number is
+    /// untouched by construction. **Rung 31 REQUIRES it** — the matcher's `A8` is the throat
+    /// area of a convergent nozzle, and there is no such area without one.
+    pub nozzle_convergent: bool,
 }
 
 impl Default for Losses {
@@ -303,6 +310,7 @@ impl Default for Losses {
         Losses {
             pi_d: 1.0, eta_c: 1.0, e_c: None, eta_b: 1.0, pi_b: 1.0,
             eta_t: 1.0, e_t: None, eta_m: 1.0, pi_n: 1.0, p_exit: None,
+            nozzle_convergent: false,
         }
     }
 }
@@ -324,7 +332,11 @@ pub fn build_turbojet(
         ("3", Component::Compressor(Compressor::new(pi_c, losses.eta_c, losses.e_c))),
         ("4", Component::Burner(Burner::new(tt4, losses.eta_b, losses.pi_b))),
         ("5", Component::Turbine(Turbine::new(losses.eta_t, losses.e_t))),
-        ("9", Component::Nozzle(Nozzle::new(p_ambient, losses.pi_n, losses.p_exit))),
+        ("9", Component::Nozzle(if losses.nozzle_convergent {
+            Nozzle::convergent(p_ambient, losses.pi_n)
+        } else {
+            Nozzle::new(p_ambient, losses.pi_n, losses.p_exit)
+        })),
     ];
     Engine::new(gas, components, losses.eta_m)
 }
