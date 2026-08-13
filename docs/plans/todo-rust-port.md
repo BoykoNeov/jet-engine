@@ -1839,6 +1839,79 @@ the FIVE-name virtual set — one of which is claimed by phase 6 — not the two
 census was widened twice, and both widenings paid: the first turned "the diamond" into "nine
 edges", the second turned "closed inside phase 5" into `_solve_turbine`.**
 
+### 5.4 SLICE I (rungs 31 + 33, `OffDesignMatcher`) — PRE-REGISTERED, five probes MEASURED first
+
+**The slice.** Rungs 31 and 33 are **one Python class** — rung 33 is a second `match` branch on
+rung 31's object, dispatched when the choked solve leaves the nozzle subsonic — so they are one
+slice by construction, not by grouping. Rung 32 (`ComponentMap` + `MapMatcher`) is slice J.
+Ported alongside: `choked_mfp`, deliberately deferred out of phase 2 (§ 5.2) and out of phase 4
+(§ 4.15) as *"phase 5's, where its own gates run."* Its gates now run.
+
+**Probed BEFORE registering** (the standing lesson), and the first probe's headline was WRONG:
+
+**(a) THE CAUGHT-EXCEPTION WALL IS LIVE — after a first sweep said it was dead.**
+`_match_subsonic` marches both brackets inward while catching `AssertionError` from deep inside
+the component stack. Swept at one flight Mach and three throttles: **zero raises**, which would
+have meant the Rust needs no fallible path at all. Swept at **3 gases × 6 flight Machs × 7
+throttles = 126 bracket pairs**: **930 raises on the low march and 616 on the high march.** The
+arm carries the majority of the low-throttle envelope. *A dead-guard finding is only as wide as
+the sweep behind it* — the same lesson as § 5.3's second widening, twice in one session.
+**Consequence:** `subsonic_operating` must be fallible in Rust; a panic cannot be marched past.
+
+**(b) THE JOINT `(f, pt4)` FIXED POINT DOES NOT CONVERGE ON THE PRODUCTION GAS.** Its docstring
+says seeding from the design point *"converges in a few passes."* Measured, as `_solve_turbine`
+calls per `match`:
+
+| gas | Tt4 = 1500 | 1100 | 900 |
+|---|---|---|---|
+| CPG | 1 | 7 | 7 |
+| thermally-perfect | 2 | 7 | 7 |
+| **reacting-equilibrium** | **200** | **200** | 7 |
+
+200 is `_MAX`. The loop **exhausts its cap and falls out without ever setting `done`, and there
+is no assert** — unlike `_solve_f` three methods above it, which raises when it fails to
+converge. So the production gas silently returns the 200th iterate at the two hottest throttles.
+The numbers are right (`pi_c` reduces to 10.0 to 1e-8 at design), so this is a **convergence-test
+failure, not a wrong answer** — but the returned value is *the last iterate of a fixed count*,
+which makes bit-exact reproduction of all 200 passes a hard requirement rather than a nicety.
+
+**(c) THE TURBINE BISECTION IS EXACTLY 47 EVALUATIONS, ALWAYS.** `_solve_turbine` bisects `pi_t`
+on `(0.02, 0.999)` to `hi - lo <= _TOL`, and `_TOL = 1e-13` is **absolute** there while the same
+constant is used **relatively** in the `f` fixed point — the docstring calls it *"fixed-point /
+bisection relative tolerance"*, which is half right. 2 bracket evaluations + 44 halvings
+(`ceil(log2(0.979/1e-13)) = 44`) + 1 final = **47**, and it measured 47 at every call with no
+spread.
+
+**(d) THE BRANCH MAP, so the gate cannot silently exercise one path.** Choked down to Tt4 ≈ 650,
+subsonic below: CPG flips between 600 and 550, thermally-perfect and reacting between 650 and
+600. The CPG unchoke boundary bisects cleanly to **Tt4 = 592.036674415 K**. On the two variable-cp
+gases the boundary is **NOT cleanly locatable**: inside a narrow band the subsonic re-solve lands
+back above ambient and trips its own `p9 = p0` assert, so dispatch and re-solve disagree there.
+Recorded as a scope edge of the Python being ported; not introduced by the port, and not repaired
+by it.
+
+**(e) ENVELOPE LIMITS THAT ARE NOT RUNG 31/33's, kept out of the oracle.** `M0 = 0` trips the
+freestream's own ram assert on a variable-cp gas (phase 2 already recorded the design-point half
+of this). `M0 = 2.0` at low throttle trips **the efficiency cascade in `_score`** at Tt4 = 650 and
+**the equilibrium Newton's 200-step cap** at Tt4 = 550 — neither is a matching failure, and both
+are upstream of this slice.
+
+**PRE-REGISTERED PREDICTIONS** (falsifiable, recorded before the Rust exists):
+
+1. **P1 — the counts port exactly.** Rust reproduces 47 turbine-residual evaluations per solve and
+   the 1/7/7 · 2/7/7 · 200/200/7 joint-loop table, cell for cell. A count that differs means the
+   arithmetic diverged even where the value gate still passes.
+2. **P2 — the raise counts port exactly.** The fallible Rust path raises on the same 930 low /
+   616 high bracket samples. If Rust's count differs, the wall sits somewhere else and (a)'s
+   correction is itself wrong.
+3. **P3 — the 200-cap exhaustion is a LAST-BITS LIMIT CYCLE, not slow convergence.** The last 20
+   iterates of `f` should span ~1e-13 relative without shrinking. If instead they shrink
+   monotonically, the loop is merely slow and `_MAX` is a badly chosen budget — a different
+   finding, and one that would make the cap a *tuning* bug rather than a *stopping-rule* bug.
+4. **P4 — `Tt ** 0.5` is a `pow`, not a `sqrt`.** Both `choked_mfp` and the `tau_t ** 0.5` in the
+   turbine residual must use the port's `powp`. This is the trap that hid for a whole phase
+   (§ 4.15); registering it means a miss shows up as an oracle failure, not as a tolerance.
+
 ---
 
 ## 6. Named risks
