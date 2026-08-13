@@ -6,8 +6,8 @@ PHASE 4 (the nozzle & turbine marches, rungs 25–30) was AUTHORISED 2026-08-12 
 three dependency slices, F (25/26) § 4.11/4.12, G (27/28) § 4.13/4.14, H (29/30) § 4.15, all
 bit-exact. 397 Rust tests. The next phase is 5, which needs FRESH AUTHORISATION — its
 **PRE-FLIGHT inheritance census is DONE and is § 5.3**: the rung-61 diamond is discharged, and
-the phase's real structural requirement is a FOUR-name virtual-dispatch set plus one live
-constant shadow.**
+the phase's real structural requirement is a FIVE-name virtual-dispatch set — one of them claimed
+by PHASE 6 — plus one live constant shadow.**
 The architecture is settled by measurement (§ 1–2); the three forks were answered on 2026-08-12
 (§ 9); phases 0–2 were then built and gated (§ 4.1, § 4.2). Phase 1 was the first deliberate
 stopping point because it is where the arithmetic risk concentrates; phase 2 was authorised
@@ -1632,7 +1632,7 @@ next starts. The tree is green at every phase boundary; there is no big-bang cut
 | **2** | ~~`components.rs` + `engine.rs` design point — shaft balance, `_score`; conservation checks as `assert!`~~ | **DONE** | ✅ **three** gates: `cycle_oracle.rs` (1481/1481 bit-exact vs PyPy, on 19+15 distinct solver roots — § 4.2), the 8 ported rung suites (39 tests, rungs 1–6, incl. rung 6's GATE 1), and `porting_rules.rs` |
 | **3** | NOx & mixing, rungs 7–24. **RISK-BEARING — not bulk.** These are phase 1's largest *consumer*: every one rides the equilibrium solve and `Kp = exp(−ΔG°/RuT)`, and their findings are *shapes* (the bell's peak, the minimum pinned at `C_opt`, monotone-vs-turns-back-up) that a last-digit shift in an exponential can move. Deliberately placed straight after phase 1 as the **first real test of whether the transcendental arithmetic holds**. **DONE — slices A (7/8/9/19), B (10/11/12/20), C (13/15/16/18/21), D (22/23/24) and E (14/17) all shipped**, § 4.3–4.10; the slices are grouped in § 4.3 by DEPENDENCY, not by number | 4–6 | ✅ slice A: `nox_oracle.rs` (**1806/1806** bit-exact vs PyPy on 22+22 distinct solver roots) + 4 rung suites (43 tests) · ✅ slice B: `quench_oracle.rs` (**2507/2507**, on 165 distinct trajectory roots) + 4 rung suites (39 tests), one location key NARROWING a shipped claim · ✅ slice C: `pdf_oracle.rs` (**2448/2448**, both quadrature branches asserted exercised) + 5 rung suites (59 tests); the source's own mean-preservation guard found to have an `n_quad` FLOOR, and the port gates the REJECTION as well as the acceptance (§ 4.5) · ✅ slice D: `spatial_oracle.rs` (**462/462**, incl. 28 DISCRETE keys) + 3 rung suites (43 tests); TWO source claims of exactness CORRECTED — rung 24 applies an operation inside an accumulation and removes it outside, twice (§ 4.8) | · ✅ slice E: `nozzle_oracle.rs` (**513/513**, incl. 24 DISCRETE keys) + 2 rung suites (24 tests) + 3 gates `rung20.rs` had deferred; a THIRD claim of exactness corrected (the frozen reduce is algebraic only, and its floor is the entropy ROUTE, not the bisection's stopping rule) and rung 17's firing band edge LOCATED — past it the bulk margin goes dormant while the per-pocket one RISES (§ 4.10) |
 | **4** | Nozzle & turbine marches, rungs 25–30 — own convergence behaviour, hence separate. ~~**AUTHORISED 2026-08-12; three DEPENDENCY slices**~~ **DONE** | 2–3 | ✅ slice F: `march_oracle.rs` (**912/912** bit-exact vs PyPy, on 49 distinct march exit roots) + 2 rung suites (32 tests) in a new `march.rs`; the FOURTH "exactly"-class claim and the FIRST to survive — because it compares a COPY, not a rederivation (§ 4.12) · ✅ slice G: `no_march_oracle.rs` (**776/776**, and only 8.0 % CPython-identical — the sharpest dump in the port) + 2 rung suites (28 tests); slice F's discriminator made TWO pre-registered predictions and both HELD (§ 4.14) · ✅ slice H: `tt_oracle.rs` (**270/270**) + 2 rung suites (14 tests); RATIO ≠ ENERGY measured ANTI-correlated, and the one slice not pre-registered — all three of its guessed census bars were wrong (§ 4.15) |
-| **5** | Steady matchers — rungs 31–33, 38–39, 42, 53–56, 61. ~~**Contains the diamond** (§ 6)~~ **PRE-FLIGHT DONE (§ 5.3), build UNAUTHORISED.** The diamond is discharged; the phase's structural content is the **four-name virtual set** (`match`, `_hp_eta_loop`, `_lp_eta_loop`, `at_setting`) and `_INC_MAX`'s live shadow | 4–6 | per-rung tests pass |
+| **5** | Steady matchers — rungs 31–33, 38–39, 42, 53–56, 61. ~~**Contains the diamond** (§ 6)~~ **PRE-FLIGHT DONE (§ 5.3), build UNAUTHORISED.** The diamond is discharged; the phase's structural content is the **five-name virtual set** (`_solve_turbine` — claimed by PHASE 6 — `match`, `_hp_eta_loop`, `_lp_eta_loop`, `at_setting`) and `_INC_MAX`'s live shadow | 4–6 | per-rung tests pass |
 | **6** | Transients — rungs 34–37, 40, 43–52 (the fuel-side limiter family) | 4–6 | per-rung tests pass |
 | **7** | **The ladder, rungs 57–84** — the `Hooks` table from § 2, one module per rung | 5–8 | 28/28 reduce-to-prior bit-exact |
 | **8** | `main.py` replacement; adjudicate the fragile rungs; re-anchor the fingerprint; **delete the Python** | 2–3 | full suite green on Rust alone |
@@ -1747,22 +1747,40 @@ cell: it does not. Rung 42's `match` may name its parent directly. The single re
 that **rung 61 must not inherit rung 42's constructor**, which is one line of Rust, not an
 architecture.
 
-**4. Virtual dispatch across ALL of phase 5 is FIVE overrides on FOUR names — and the set is
-CLOSED.** The pattern that a plain Rust `struct` + `impl` cannot express is a child overriding
-a method an *ancestor calls on `self`*. Every other override is a leaf and needs nothing.
+**4. Virtual dispatch across phase 5 is SIX overrides on FIVE names, and the set is NOT closed —
+one name crosses into phase 6.** The pattern a plain Rust `struct` + `impl` cannot express is a
+child overriding a method an *ancestor calls on `self`*. Every other override is a leaf and needs
+nothing. Swept with the ancestors restricted to the phase-5 set and the **descendants opened to
+all 58 classes in `engine.py`** — the first pass restricted both sides and therefore answered only
+*"does phase 5 need hooks for phase 5?"*:
 
 | name | overridden by | called on `self` by | sites |
 |---|---|---|---|
+| **`_solve_turbine`** | **`SpoolTransient` — rung 34, PHASE 6** | `OffDesignMatcher` | 1 |
 | `match` | `TwoSpoolBleedMatcher` | `TwoSpoolMapMatcher` | 3 (`engine.py:3193, 3233, 3261`) |
 | `_hp_eta_loop` | `StageStackMatcher` | `TwoSpoolMapMatcher` | 1 (`2992`) |
 | `_lp_eta_loop` | `StageStackMatcher` | `TwoSpoolMapMatcher` | 1 (`2994`) |
 | `at_setting` | `StageStackMatcher`, `StatorBleedMatcher` | `VariableStatorMatcher` | **13** (`6169`–`6549`) |
 
-**Closed:** no class anywhere else in `engine.py` — the whole 28-deep transient ladder included —
-overrides any of the four. So phase 5's dispatch can be settled inside phase 5, and phases 6/7
-inherit no obligation on these names. **`at_setting` is the heavy one** by an order of magnitude
-and is a *sibling constructor* returning the concrete type, which is exactly the `Self`-returning
-shape the const-`Hooks` table handles free and a hardcoded `Prev` chain does not.
+**`_solve_turbine` is the one that decides the architecture for slice one.** It is rung 31's
+method, it is called on `self` inside rung 31's own body, and the class that overrides it is
+**rung 34's `SpoolTransient` — phase 6**. So `OffDesignMatcher`'s ported body must already be
+hookable at that name on the day it ships, or phase 6 refactors phase-5 code that is already
+gated. This is precisely the failure the phase gating exists to prevent, and a census restricted
+to phase 5 could not see it. **32 further names are called on `self` and overridden by nothing at
+all** — those are plain functions, no hook, no indirection.
+
+**`at_setting` is the heavy one** by an order of magnitude, and is a *sibling constructor*
+returning the concrete type — the `Self`-returning shape a const-`Hooks` table handles free and a
+hardcoded `Prev` chain does not.
+
+**4b. SIBLING DISPATCH is live, and a `self.X` scan is structurally blind to it.** `at_setting`
+/`at_point`/`at_bleed` hand back a concrete-typed sibling and the code then calls methods on *that*
+receiver. Six distinct names are invoked that way; five resolve to a single definition and are
+safe, but **`match` is called on a sibling at 4 sites** (`8612, 8614, 8629, 8669`) and `match` is
+overridden. It adds no new name to the set above — it adds the requirement that the sibling
+constructor return **the instantiating cell**, not a fixed type, which is exactly why rung 61
+overrides `at_setting` at all.
 
 **5. The hazard the override census could not see, checked separately and ABSENT.** An ancestor
 calling `self.X()` where `X` is supplied only by a descendant (the abstract-hook / template-method
@@ -1775,7 +1793,9 @@ shape) is invisible to a both-define-it diff. Swept over all thirteen phase-5 cl
 overridden by rung 55**, so on a rung-55 object rung 53's own inherited loops run to 200. In Rust
 that cap must be a per-cell parameter, never a literal in the ported body. `_INC_TOL` is
 redeclared at the **identical** value (`1e-12`) — inert, but preserve it so a reader does not
-infer a difference that is not there.
+infer a difference that is not there. Swept downstream against all 58 classes as well: **those
+two are the only constant shadows that exist**, and nothing in the transient ladder shadows a
+phase-5 constant.
 
 **7. THE KILL TEST — the source's claim at `engine.py:8477` CONFIRMED, and SHARPENED.** The
 comment says a co-operative `super()` chain *"would silently leave the stators at the design
@@ -1796,8 +1816,10 @@ damage lands:
 The error is **concentrated in exactly the two quantities rung 61 is about** — the margin
 coordinate `φ` and the shaft speed `N`, 13–15 % — while thrust moves 0.1 % and the pressure
 ratio 0.015 %. "Plausible numbers" is literally right: every headline cycle number a casual
-check would look at is intact. This is the fourth source claim of this class the port has tested
-and the second to survive intact.
+check would look at is intact. **It is deliberately NOT counted in the port's "exactly"-claim
+ledger** (slices D, E and F): those were *exactness* claims — `== 0`, bit-for-bit — and this is a
+*hazard* claim, an assertion about what would go wrong on a road not taken. Different category,
+different test, its own line.
 
 **What was NOT built, and why.** A source-level re-parenting harness (recompile rung 42's and
 rung 61's bodies under a linear base, diff the outputs against the diamond) was designed and
@@ -1811,7 +1833,9 @@ or fail spuriously. Walking the MRO and walking the flattened order agree *by co
 that arm is void, and the questions that are not void are 3, 4, 5 and 7 above.
 
 **Verdict: § 6's diamond is DISCHARGED as a risk, and phase 5's real structural requirement is
-the four-name virtual set, not the two-parent join.**
+the FIVE-name virtual set — one of which is claimed by phase 6 — not the two-parent join. The
+census was widened twice, and both widenings paid: the first turned "the diamond" into "nine
+edges", the second turned "closed inside phase 5" into `_solve_turbine`.**
 
 ---
 
@@ -1822,9 +1846,11 @@ the four-name virtual set, not the two-parent join.**
   of the MRO by hand**, and rung 53 shadows nothing on the plant — so the flattened linear chain
   IS the MRO. The prescribed action was carried out and **widened**: `engine.rs` has no matchers,
   so phase 5 is the port's FIRST meeting with Python inheritance, and the diamond is the easy
-  edge. **The real requirement is the FOUR-name virtual set** (`match`, `_hp_eta_loop`,
-  `_lp_eta_loop`, `at_setting` — 5 overrides, closed against the whole ladder) **plus one live
-  constant shadow** (`_INC_MAX` 80→200, read by inherited rung-53 solver loops).
+  edge. **The real requirement is the FIVE-name virtual set** (`_solve_turbine`, `match`,
+  `_hp_eta_loop`, `_lp_eta_loop`, `at_setting`) **plus one live constant shadow** (`_INC_MAX`
+  80→200, read by inherited rung-53 solver loops). **NOT closed:** `_solve_turbine` is rung 31's,
+  called on `self` in rung 31's body, and overridden by **phase 6's** rung 34 — so phase 5's
+  first slice must ship it hookable or phase 6 refactors gated code.
 - **`main.py`.** 5,236 lines, almost all formatted tables plus one chart. Least valuable to
   port, most tedious (Rust's formatting is clumsier). Three ways: port straight; emit data and
   plot with a Rust crate; or keep one Python script for the chart — which **violates the
