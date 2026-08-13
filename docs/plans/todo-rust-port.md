@@ -1904,13 +1904,64 @@ are upstream of this slice.
 2. **P2 — the raise counts port exactly.** The fallible Rust path raises on the same 930 low /
    616 high bracket samples. If Rust's count differs, the wall sits somewhere else and (a)'s
    correction is itself wrong.
-3. **P3 — the 200-cap exhaustion is a LAST-BITS LIMIT CYCLE, not slow convergence.** The last 20
-   iterates of `f` should span ~1e-13 relative without shrinking. If instead they shrink
-   monotonically, the loop is merely slow and `_MAX` is a badly chosen budget — a different
-   finding, and one that would make the cap a *tuning* bug rather than a *stopping-rule* bug.
+3. ~~**P3 — the 200-cap exhaustion is a LAST-BITS LIMIT CYCLE, not slow convergence.**~~
+   **REFUTED IN ITS DICHOTOMY, and the real answer is sharper — see (g).**
 4. **P4 — `Tt ** 0.5` is a `pow`, not a `sqrt`.** Both `choked_mfp` and the `tau_t ** 0.5` in the
    turbine residual must use the port's `powp`. This is the trap that hid for a whole phase
    (§ 4.15); registering it means a miss shows up as an oracle failure, not as a tolerance.
+
+**(f) THE FALLIBLE-PATH DESIGN, decided by measurement rather than by taste.** The bracket march
+walks past **three** assert sites, not one: the equilibrium Newton's 200-step cap (`gas.py:651`),
+the nozzle's `p9 <= pt9` precondition (`components.py:683`), and the matcher's own `f` fixed point
+(`engine.py:500`). Two are cheap to make fallible in Rust; the third sits in phase-1 **gated**
+code and would force a signature change through it. So the question measured first was whether it
+needs to be fallible at all — dumped every `(f, Tt4, pt4)` reaching `freeze_equilibrium` over
+the march, 8,289 calls:
+
+| axis | raising calls (129) | succeeding calls (8,160) | separates? |
+|---|---|---|---|
+| `f` | 0.0271792 … 0.0271792 | 0.000102 … 0.0271792 | no — ranges overlap |
+| `pt4` | 4.96e5 … 1.91e6 | 5.03e4 … 1.91e6 | no — ranges overlap |
+| **`Tt4`** | **400 only** | **500, 600, 900, 1500** | **YES, cleanly — no value on both sides** |
+
+**Every one of the 129 raises is at `Tt4 = 400 K`**, and at that throttle the Newton fails for
+*every* `pi_t`, so the whole low bracket is unevaluable and the outer sub-idle assert fires
+anyway. `Tt4 = 400` is below the modelled envelope, not an interior condition. **Decision: make
+the two cheap sites fallible** — `Nozzle::try_apply` returning `Result` with `apply` delegating,
+and a `Result` on the matcher's own `solve_f` — **and leave `gas.rs` untouched.** The documented
+consequence, stated rather than hidden: below the envelope the two implementations **both abort,
+with different messages** (Python raises the outer "does not bracket … SUB-IDLE" assert, Rust
+panics inside the equilibrium Newton). Neither returns a number, so no result diverges. **This is
+NOT a fitted `Tt4 < 500` screen** — the Rust does not test the throttle at all; it simply lets an
+out-of-envelope condition abort, which is what Python does one frame later.
+
+**P2 is re-scoped accordingly:** the raise counts to reproduce are the **in-envelope** ones (the
+nozzle and burner sites), where the equilibrium site contributes zero. A Rust rejection set that
+differs even by one trial moves the bracket and therefore the root, so this is a value gate, not
+a bookkeeping one.
+
+**(g) WHAT THE 200-CAP ACTUALLY IS — P3's dichotomy was FALSE, both ways.** The loop's `done`
+needs `|Δf| <= 1e-13·f` **AND** `|Δpt4| <= 1e-13·pt4`, and the two hot throttles fail it for
+**different reasons**:
+
+- **Tt4 = 1500:** `f` is **exactly constant** across all 200 passes — one distinct value, `Δf = 0`.
+  So the `f` half of the test passes trivially and it is the **`pt4` half** that never settles.
+- **Tt4 = 1100:** `f` falls into a **two-value cycle** between adjacent representable numbers,
+  `|Δf| = 2e-13` absolute on `f ≈ 0.0272` — about `7e-12` relative, roughly **70× above** the
+  `1e-13` bar it is tested against. It cannot ever pass.
+
+Neither is "slow convergence" and neither is a plain limit cycle: **the stopping rule is
+unmeetable at this tolerance**, by a different mechanism at each throttle. The bearing on the
+port is that the returned value is the 200th iterate of a fixed count, so all 200 passes must
+reproduce bit-for-bit — and the bearing on the *project* is that a later rung cannot treat this
+loop's output as converged to its own stated tolerance.
+
+**(h) A SECOND PHASE-6 INBOX ITEM, recorded now while it is cheap.** § 5.3 left phase 6 owed
+`_solve_turbine`. Add this: `TwoSpoolTransient` drives `self.match(...)` inside loops at **five
+sites**, so a matcher that silently runs 200 non-converging passes is a per-timestep cost *and* a
+"the state advances on an unconverged iterate" question. Measured here for the **single-spool**
+joint loop only; whether the two-spool matcher shares the behaviour is slice K's to establish,
+not assumed from this one.
 
 ---
 
