@@ -1910,7 +1910,9 @@ are upstream of this slice.
    turbine residual must use the port's `powp`. This is the trap that hid for a whole phase
    (§ 4.15); registering it means a miss shows up as an oracle failure, not as a tolerance.
 
-**(f) THE FALLIBLE-PATH DESIGN, decided by measurement rather than by taste.** The bracket march
+**(f) THE FALLIBLE-PATH DESIGN, decided by measurement rather than by taste.** — **SUPERSEDED
+BY (i): its conclusion is right for the route it sampled and WRONG for the one it did not.**
+Kept verbatim below, because what it got wrong is the finding. The bracket march
 walks past **three** assert sites, not one: the equilibrium Newton's 200-step cap (`gas.py:651`),
 the nozzle's `p9 <= pt9` precondition (`components.py:683`), and the matcher's own `f` fixed point
 (`engine.py:500`). Two are cheap to make fallible in Rust; the third sits in phase-1 **gated**
@@ -1962,6 +1964,57 @@ sites**, so a matcher that silently runs 200 non-converging passes is a per-time
 "the state advances on an unconverged iterate" question. Measured here for the **single-spool**
 joint loop only; whether the two-spool matcher shares the behaviour is slice K's to establish,
 not assumed from this one.
+
+**(i) (f) IS CORRECTED, AND THE REASON IS THAT `except AssertionError` IS BARE.** (f) reasoned
+about three named assert *sites*. But `_match_subsonic`'s `except AssertionError` names nothing —
+it catches **every** assert reachable from `resid`, so the question is not "which three did we
+list" but "which are reachable". Re-swept with the caught exception's **message** recorded
+(3 gases × 6 flight Machs × 7 throttles; `M:\claud_projects\temp\rust-slice-i\probe_raises*.py`),
+596 raises fell into exactly **three families** — and the split by *call route* is what refutes (f):
+
+| family | raises | route into it | fires on cells that BRACKET? |
+|---|---|---|---|
+| the equilibrium Newton, via `Gas.freeze_equilibrium` | 40 | **(f) sampled this one** | no — `Tt4 = 400` only, and no `pi_t` is evaluable there |
+| the equilibrium Newton, via `Burner._solve_equilibrium` → `_equilibrium_composition` | **26** | **(f) never sampled it** | **YES — 5 cells at `Tt4` = 500 / 600 / 650** |
+| the matcher's own `f` fixed point (`engine.py:500`) | 172 | — | yes |
+| the nozzle's asserts (`components.py`) | 132 | — | yes |
+
+**The second row is the correction.** `_solve_f`'s equilibrium branch reaches the composition
+solve **directly** and never touches `freeze_equilibrium`, so (f)'s 8,289-call dump was blind to
+it by construction — the same shape as § 4.16's *"an oracle cannot see a missing gate"*, one level
+down. Those 26 raises are **in-envelope and load-bearing**: they move the low bracket from 0.15 to
+0.19 / 0.35 / 0.17 / 0.33 / 0.23 on five cells that then return a matched point. A Rust that panics
+there returns nothing where Python returns a number. **So `gas.rs` DOES need a fallible path** —
+but as an **additive `try_` twin** whose panicking original delegates to it, which is not the
+signature change through gated code that (f) refused: **no phase-1 gate sees any change at all.**
+
+**THE RULE, stated once and applied per site:** *an assert becomes fallible iff it is reachable
+from inside `resid` during the bracket march* — which is exactly Python's `try` scope. Its two
+edges were both measured rather than assumed:
+
+- **`_sonic_throat`'s two bracket asserts: 0 fires in 111,775 calls.** Reachable, never taken.
+  Left as panics — a fallible path with no reachable failure is a gate that measures nothing
+  (§ 4.9's rule), and the consequence is stated instead: if one ever fired, Rust would abort where
+  Python marched on.
+- **`_solve`'s `inverse: root not bracketed`: 6 fires in 225,410 calls — and every one aborts its
+  CELL rather than being marched past.** Established as a *superset* argument, not an absence:
+  the message sweep runs the subsonic march on all 126 cells unconditionally, where `match` runs
+  it only after unchoke, so its march coverage strictly contains the full sweep's — and it saw
+  three families, not four. All six sit at `Tt4 = 400` on the thermally-perfect gas. Left a panic;
+  making it fallible would infect every property-interface call site in the crate for a guard that
+  provably cannot be marched past.
+
+**THE ENVELOPE MAP, so the oracle excludes cells with a reason rather than silently.** Over the
+126 cells: **88 match (74 choked, 14 subsonic), 38 abort** — `Tt4 = 400` is outside the envelope
+on every gas, and the aborts above it are the `_score` efficiency cascade (11) and SUB-IDLE (11),
+both of which (e) had already placed upstream of this slice.
+
+**P2 IS RE-SCOPED A SECOND TIME, and the reason is worth more than the number.** (a)'s
+"930 low / 616 high" is not reproducible, because **the sweep grid behind it was never written
+down** — this sweep, at the same 3 × 6 × 7 shape, measures 550 / 46. So P2 becomes: *the Rust
+reproduces the per-cell rejection counts and bracket endpoints of the grid recorded in the
+oracle*, and the grid is now in the dump where it can be read. A count without its grid is not a
+measurement.
 
 ---
 
