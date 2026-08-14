@@ -2614,6 +2614,80 @@ and exactly the line slice L would have copied.
 
 ---
 
+### 5.8 SLICE L (rungs 41 + 42) — **STEP 1 SHIPPED, pre-registration STILL TO WRITE**
+
+Handoff state as of commit `ff784ed`. **448 Rust tests green, all three existing oracles
+bit-identical.** Read this before resuming — the probes are done and their numbers are here, so
+do NOT re-measure them.
+
+**What is DONE — step 1, the fallible twins.** Rung 41's `surge_margin_schedule`,
+`running_line_map` and `flow_coefficient_turn` wrap `self.match` in `except AssertionError` and
+**skip** the failing point, so every assert reachable inside `match` sits in a caught scope that
+Rust cannot express with a panic. The crate rule (`gas.rs::Abort`) is *an assert becomes an
+`Abort` iff it is reachable from inside the march's residual* — here, from inside the caught
+scope. Which asserts those are was **measured** on a 147-cell grid (3 gases × 2 bleeds × 7 `M0` ×
+7 `Tt4`), recording the innermost raising frame:
+
+| site | firings | verdict |
+|------|---------|---------|
+| `_score` efficiency cascade | 27 | → `Abort` |
+| `gas._solve`, via `t_from_pr_t` **only** | 36 | → `Abort` |
+| `_equil_solve` Newton | 14 | → `Abort` |
+| `_solve_f` burner | 3 | → `Abort` |
+| nozzle back-pressure | 6 | → `Abort` |
+| `freestream` ram-must-not-cool | 28 | → `Abort` |
+| rung-39 UNCHOKED scope guard | 23 (25 at `b`=0.10) | → `Abort` |
+| everything else, incl. `t_from_h`→`solve` | **0** | keeps `assert!` |
+
+The zero-firing rule holds: *a fallible path with no reachable failure is a gate that measures
+nothing.* `t_from_h` reaches the same `solve` and fires **0** times, so the adjudication is per
+**call site**, not per function. This **overturns § 5.4 (i)'s** "`solve` stays a panic" — by
+measurement, which is the only thing allowed to overturn it.
+
+Shape shipped: an **additive twin** — `try_x` holds the body and returns `Result<_, Abort>`, `x`
+delegates and panics with the identical message. No already-gated caller changed and no shipped
+bit moved. The hook table's entry is now `try_match_point`, so rung 42's override and rung 41's
+caller meet at **one** fallible dispatch point. Rung 38's `match_point` stays infallible on
+purpose (its scope guard is not in the caught chain).
+
+**What the probes ALSO settled — reuse, do not re-run:**
+
+- **The dispatch is live and gateable.** In Python, `bleed_trade → surge_margin → self.match →
+  rung 42's override`, and the surge margins **move with bleed**. No value key can fake it, so
+  slice L owes a `gate_the_dispatch_is_live`.
+- **Rung 42's UNCHOKED count rises 23 → 25 when the valve opens.** That is rung 42's own gate 6,
+  *opening the valve shrinks the choked envelope*, expressed as a census count — a count that
+  measures physics, not plumbing.
+- **Rung 41's own guards never fire** on the swept grid (floors to 0.65, four map shapes):
+  neither `already at/over surge` nor `_pi_c_spool`'s `tau <= 1`. Rung 42's own asserts (secant,
+  turbine loop, unphysical) likewise 0. Its constructor guard `0 <= bleed < 0.5` **does** fire.
+  Per the zero rule, all of those stay `assert!`.
+
+**What REMAINS, in order:**
+
+1. **Write the pre-registration** — the numbered predictions with explicit refutation conditions,
+   *before* any porting. It must include a P5-style *"the fallible refactor moves no shipped
+   bit"* (already satisfied, so state it as a standing gate) and the **deferrals**: rung 41's
+   gates 1b/7b and part of its cycle test reach `TwoSpoolTransient`, which is **phase 6**.
+2. **Port rung 41** — `critical_flow_turn_pi`, `pi_c_spool`, `surge_margin`,
+   `surge_margin_schedule`, `running_line_map`, `flow_coefficient_turn`. Two faithfulness traps
+   in the source: the memo key is `round(float(T), 6)`, and the `except AssertionError: break`
+   guards the **coarse scan only** — the golden section is left **unguarded**. Copy both.
+3. **Port rung 42** — `TwoSpoolBleedMatcher` with its **own** `R42` hook-table entry,
+   `lp_eta_loop_bleed`, `cascade_bleed`, a **separate** rebuild body (not rung 39's with a `b`
+   parameter bolted on — this is `docs`' *COPY vs REDERIVATION* entry: do not factor a deliberate
+   duplication away), and `bleed_trade`. The bleed booking fields go on the result as their own
+   commit, with all five oracles re-run bit-identical.
+4. **The oracle and the suites** — `rust/oracle/dump_slice_l.py` + `rust/tests/slice_l_oracle.rs`,
+   then `rung41.rs` / `rung42.rs` porting the 9 + 10 Python gates.
+
+Then **slices M / N / O**: rungs 53–56 and 61, the airflow levers.
+
+**Probe scripts** live in `M:\claud_projects\temp\rust-slice-l\` (`probe_slice_l.py`,
+`probe_sites.py`, `probe_solve_chain.py`).
+
+---
+
 ## 6. Named risks
 
 - ~~**The diamond.**~~ **DISCHARGED — § 5.3.** `StatorBleedMatcher(TwoSpoolBleedMatcher,
