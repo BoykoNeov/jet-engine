@@ -1636,10 +1636,21 @@ next starts. The tree is green at every phase boundary; there is no big-bang cut
 | **2** | ~~`components.rs` + `engine.rs` design point — shaft balance, `_score`; conservation checks as `assert!`~~ | **DONE** | ✅ **three** gates: `cycle_oracle.rs` (1481/1481 bit-exact vs PyPy, on 19+15 distinct solver roots — § 4.2), the 8 ported rung suites (39 tests, rungs 1–6, incl. rung 6's GATE 1), and `porting_rules.rs` |
 | **3** | NOx & mixing, rungs 7–24. **RISK-BEARING — not bulk.** These are phase 1's largest *consumer*: every one rides the equilibrium solve and `Kp = exp(−ΔG°/RuT)`, and their findings are *shapes* (the bell's peak, the minimum pinned at `C_opt`, monotone-vs-turns-back-up) that a last-digit shift in an exponential can move. Deliberately placed straight after phase 1 as the **first real test of whether the transcendental arithmetic holds**. **DONE — slices A (7/8/9/19), B (10/11/12/20), C (13/15/16/18/21), D (22/23/24) and E (14/17) all shipped**, § 4.3–4.10; the slices are grouped in § 4.3 by DEPENDENCY, not by number | 4–6 | ✅ slice A: `nox_oracle.rs` (**1806/1806** bit-exact vs PyPy on 22+22 distinct solver roots) + 4 rung suites (43 tests) · ✅ slice B: `quench_oracle.rs` (**2507/2507**, on 165 distinct trajectory roots) + 4 rung suites (39 tests), one location key NARROWING a shipped claim · ✅ slice C: `pdf_oracle.rs` (**2448/2448**, both quadrature branches asserted exercised) + 5 rung suites (59 tests); the source's own mean-preservation guard found to have an `n_quad` FLOOR, and the port gates the REJECTION as well as the acceptance (§ 4.5) · ✅ slice D: `spatial_oracle.rs` (**462/462**, incl. 28 DISCRETE keys) + 3 rung suites (43 tests); TWO source claims of exactness CORRECTED — rung 24 applies an operation inside an accumulation and removes it outside, twice (§ 4.8) | · ✅ slice E: `nozzle_oracle.rs` (**513/513**, incl. 24 DISCRETE keys) + 2 rung suites (24 tests) + 3 gates `rung20.rs` had deferred; a THIRD claim of exactness corrected (the frozen reduce is algebraic only, and its floor is the entropy ROUTE, not the bisection's stopping rule) and rung 17's firing band edge LOCATED — past it the bulk margin goes dormant while the per-pocket one RISES (§ 4.10) |
 | **4** | Nozzle & turbine marches, rungs 25–30 — own convergence behaviour, hence separate. ~~**AUTHORISED 2026-08-12; three DEPENDENCY slices**~~ **DONE** | 2–3 | ✅ slice F: `march_oracle.rs` (**912/912** bit-exact vs PyPy, on 49 distinct march exit roots) + 2 rung suites (32 tests) in a new `march.rs`; the FOURTH "exactly"-class claim and the FIRST to survive — because it compares a COPY, not a rederivation (§ 4.12) · ✅ slice G: `no_march_oracle.rs` (**776/776**, and only 8.0 % CPython-identical — the sharpest dump in the port) + 2 rung suites (28 tests); slice F's discriminator made TWO pre-registered predictions and both HELD (§ 4.14) · ✅ slice H: `tt_oracle.rs` (**270/270**) + 2 rung suites (14 tests); RATIO ≠ ENERGY measured ANTI-correlated, and the one slice not pre-registered — all three of its guessed census bars were wrong (§ 4.15) |
-| **5** | Steady matchers — rungs 31–33, 38–39, 42, 53–56, 61. ~~**Contains the diamond** (§ 6)~~ **PRE-FLIGHT DONE (§ 5.3); AUTHORISED 2026-08-13, IN PROGRESS in slices.** The diamond is discharged; the phase's structural content is the **five-name virtual set** (`_solve_turbine` — claimed by PHASE 6 — `match`, `_hp_eta_loop`, `_lp_eta_loop`, `at_setting`) and `_INC_MAX`'s live shadow | 4–6 | ✅ slice I (rungs 31/33): `offdesign_oracle.rs` (**3951/3951** bit-exact vs PyPy, incl. **961 discrete** keys) + 2 rung suites (17 tests) in a new `matcher.rs`; the crate's FIRST fallible paths, its FIRST virtual hook, and the two rungs re-gated as counts over BIT PATTERNS (§ 5.5) |
+| **5** | Steady matchers — rungs 31–33, 38–39, **41**, 42, 53–56, 61. ~~**Contains the diamond** (§ 6)~~ **PRE-FLIGHT DONE (§ 5.3); AUTHORISED 2026-08-13, IN PROGRESS in slices.** The diamond is discharged; the phase's structural content is the **five-name virtual set** (`_solve_turbine` — claimed by PHASE 6 — `match`, `_hp_eta_loop`, `_lp_eta_loop`, `at_setting`) and `_INC_MAX`'s live shadow | 4–6 | ✅ slice I (rungs 31/33): `offdesign_oracle.rs` (**3951/3951** bit-exact vs PyPy, incl. **961 discrete** keys) + 2 rung suites (17 tests) in a new `matcher.rs`; the crate's FIRST fallible paths, its FIRST virtual hook, and the two rungs re-gated as counts over BIT PATTERNS (§ 5.5) |
 | **6** | Transients — rungs 34–37, 40, 43–52 (the fuel-side limiter family) | 4–6 | per-rung tests pass |
-| **7** | **The ladder, rungs 57–84** — the `Hooks` table from § 2, one module per rung | 5–8 | 28/28 reduce-to-prior bit-exact |
+| **7** | **The ladder, rungs 57–60 and 62–84** — the `Hooks` table from § 2, one module per rung. (**61 is PHASE 5's**, not this phase's — it is the steady `StatorBleedMatcher`, and it was double-listed here until the slice-K audit) | 5–8 | 27/27 reduce-to-prior bit-exact |
 | **8** | `main.py` replacement; adjudicate the fragile rungs; re-anchor the fingerprint; **delete the Python** | 2–3 | full suite green on Rust alone |
+
+**THE TABLE'S OWN COVERAGE WAS NEVER AUDITED UNTIL SLICE K, AND IT HAD BOTH FAILURE MODES.**
+Enumerating rungs 1–84 across the eight rows found **rung 41 in NO phase** (5 stopped at 39 and
+jumped to 42; 6 listed 34–37, 40, 43–52) and **rung 61 in TWO** (named by 5, swept up by 7's
+"57–84"). Neither is cosmetic: rung 41's code is *inside* `TwoSpoolMapMatcher`, the class slice K
+ports, so an unassigned rung would have been ported by accident or dropped by accident — and the
+three `self.match` call sites the § 5.3 census used to justify a virtual hook are **all three
+rung-41 methods** (`surge_margin` 3174, `running_line_map` 3226, `flow_coefficient_turn` 3242),
+which is what decides slice K's boundary (§ 5.7). Both rows are corrected above. **The lesson is
+the port's own restated at the plan level: a scope list is a claim about a SET, and it is only as
+good as an enumeration over that set — nobody had ever counted.**
 
 **PHASE 3's estimate held: 4–6 sessions were budgeted and five slices shipped.** Its
 risk-bearing label was earned in a way the estimate did not anticipate — the arithmetic never
@@ -2346,6 +2357,157 @@ Python suite's three easiest-to-drop bars were copied verbatim: gate 4's
 `dpc > 30*rel` is CONDITIONAL on `Tt4 <= 1100`, gate 6's spread bar is TWO-SIDED (`< 0.05` **and**
 `> 1e-4`, and the lower half is what stops the robustness claim being a tautology about a quantity
 that never moved), and gate 1's specific-thrust bar is ABSOLUTE where its neighbours are relative.
+
+### 5.7 SLICE K (rungs 38 + 39, the TWO-SPOOL matchers) — PRE-REGISTERED, four probes MEASURED first
+
+**The slice.** `build_two_spool_turbojet` / `TwoSpoolEngine` / `TwoSpoolResult`, rung 38's
+`TwoSpoolMatcher` (the `(★)` choke solver parameterised to serve *both* turbines, the burner
+`f`-solve, the triangular `_cascade`, `match`) and rung 39's `TwoSpoolMapMatcher`
+(`_secant`, `_hp_eta_loop`, `_lp_eta_loop`, `_cascade_map`, `match`). Both `lp_disabled` reduce
+paths dispatch into already-shipped code — rung 38's to slice I's `OffDesignMatcher`, rung 39's to
+slice J's `MapMatcher` — so the whole four-rung ladder (flat+disabled → 31, shaped+disabled → 32,
+flat two-spool → 38, shaped two-spool → 39) closes inside this slice.
+
+**THE BOUNDARY IS DECIDED BY THE HOOK, AND THE HOOK IS DECIDED BY RUNG 41.** § 5.3's census
+justified a virtual `match` by three `self.match` call sites at `engine.py:3193, 3233, 3261`.
+Enumerating their enclosing `def`s puts **all three inside rung-41 methods** — `surge_margin`
+(3174), `running_line_map` (3226), `flow_coefficient_turn` (3242) — and rung 41 was in **no
+phase at all** until the audit recorded above § 5.1. So:
+
+* **Slice K = 38 + 39, the rung-41 surge methods EXCLUDED.** Measured, not assumed: rung 38's and
+  rung 39's own suites (6 + 10 tests) reference no surge method and no `phi_surge`.
+* **Slice L = 41 + 42.** Rung 42 *overrides* `match`; rung 41 *calls* it on `self`. They are the
+  hook's live pair, and gating dispatch needs both. Rung 41's gates 1–2 reach `TwoSpoolTransient`
+  (phase 6), so part of it defers — the `rung33.rs::slice_j_deferrals` precedent, reused.
+* **Consequence, NAMED rather than left to be noticed: slice K ships three hooks with ZERO live
+  call sites** (`match`, `_hp_eta_loop`, `_lp_eta_loop`; the eta loops are overridden by rung 55,
+  phase 7). That is the same standing as slice I's `solve_turbine`, which is unexercised until
+  phase 6 — an architectural requirement of § 5.3's census, not an instrument. The distinction
+  from slice J's deleted `debug_assert_eq!` is that a hook's job is to exist on the day the
+  overriding rung lands; an instrument's job is to fire.
+
+**PROBED BEFORE REGISTERING** (`M:\claud_projects\temp\rust-slice-k\probe_{slice_k,counts,envelope}.py`),
+and the first probe's grid was wrong in exactly the way the port keeps re-learning:
+
+**(a) `l` IS NOT INERT HERE, AND THAT IS A SLICE-J TOUCH.** § 5.6 (d) recorded rung 34's linear
+loading slope `l` as absent from the Rust `ComponentMap` because it is `0.0` at every rung-32
+call. **Rung 39's own test shapes set it** — `SHAPES_C` in `tests/test_rung39.py` carries
+`l = 0.7 / 0.85 / 1.0` on 2 of 2 maps in 5 of its 6 shapes, and over a `phi ∈ [0.6, 1.3]` sweep
+the two `psi` spellings differ by **27 % to 43 % relative**, not in the last bit. Porting rung 39's
+gates on `l = 0` shapes instead would narrow the band the source itself gates on — the vacuity
+trap of § 4.9. So `l` is added to `ComponentMap` now, under slice J's own discipline: `map_oracle`,
+`rung32`, `offdesign_oracle`, `rung31` and `rung33` are re-run and must be **bit-identical** or
+the change is reverted (registered as P5). `phi_surge` is **not** added — it is rung 41's, and it
+follows the surge methods into slice L.
+
+**(b) THE INHERITED QUESTION (§ 5.4 (h)) — ANSWERED, AND IT INVERTS THE SINGLE-SPOOL ANSWER.**
+Slice I left "whether the two-spool matcher shares the 200-pass behaviour is slice K's to
+establish". It does, and **far more widely**: on a 126-cell grid (3 gases × 6 flight Machs ×
+7 throttles from 900 to 1500 K) **23 of 105 matched cells** exhaust the cap on rung 38 and 10 of
+72 on rung 39 — against slice I's *two* cells on the single spool. All but one are the
+equilibrium gas (the exception is `tpg, M0 = 1.60, Tt4 = 1500`). **The mechanism is the
+inversion.** Slice I found the two halves of `done` failing for *different* reasons at different
+throttles (`f` exactly constant at 1500; a two-value `f` cycle at 1100). Here
+`n_distinct_f == n_distinct_pt4` in **every one of the 33 capped cells** — the two halves cycle
+*together*, over 2 to 6 distinct values, with `|Δf|/f` between 5.4e-13 and 2.8e-11 and
+`|Δpt4|/pt4` about 3× that. Both sit above the `1e-13` bar, so the rule is unmeetable — but by
+ONE mechanism on two spools where it was two mechanisms on one.
+
+**(c) THE PASS COUNT IS NOT CROSS-INTERPRETER STABLE, AND IT IS NOT A WOBBLE — IT IS 8 vs 200.**
+CPython and PyPy disagree on the joint-loop pass count at **29 of 126** rung-38 cells and **19 of
+144** rung-39 cells, every one on the equilibrium gas, and the disagreement is between converging
+in ~8 passes and never converging at all. Whether this loop terminates is an interpreter
+property. Three consequences, and the second is a correction of a shipped instrument's reading:
+
+1. The outer pass count may be gated **against PyPy only**, never on both arms.
+2. § 5.6's P3 said the *outer* secant count agrees on 144 of 144 cells while only the *inner*
+   turbine count disagrees, and read that as the discrete instability being "contained". It is
+   contained **in rung 32**, not in general: the two-spool outer loop is the same class of
+   count and it is the *least* stable quantity in this slice.
+3. The cells that cap must reproduce **200 passes bit-for-bit against PyPy**, exactly as slice I's
+   two did — registered as P2.
+
+**(d) THE BISECTION IS ONE NUMBER, AND THERE ARE THREE OF IT.** `_solve_choked_turbine`'s
+bracket is `(0.02, 0.999)` against `_TOL = 1e-13` absolute ⇒ `ceil(log2(0.979 / 1e-13)) = 44`
+iterations. Measured over **10 502 calls** on both interpreters: **one** distinct value, and the
+counter reads **47** — because `tau_of` runs once per residual evaluation *and once more after the
+loop*, and there are 46 residual evaluations (44 + the two bracket endpoints). § 5.6's P2 was
+CORRECTED for exactly this reason one slice ago; the number a gate compares against must be the
+one its instrument reads, so the gate names which of 44 / 46 / 47 it counts.
+
+**(e) THE ENVELOPE — AND MY OWN FIRST GRID REPEATED THE PORT'S OLDEST MISTAKE.** On the probe's
+first grid (`Tt4 ≥ 900`) **not one** of rungs 38/39's own asserts fired, which reads as "the
+scope guard is dead". On slice I's inherited grid (`M0 ∈ {0.3, 0.5, 0.85, 1.2, 1.6, 2.0}`,
+`Tt4 ∈ {400, 500, 600, 650, 900, 1100, 1500}`) rung 38's **UNCHOKE scope guard fires on 20 of 126
+cells** — a broad band along the cold/slow edge, not a corner. *A count without its grid is not a
+measurement*, and the instrument that produced the wrong reading was mine. Slice I's grid is
+therefore inherited wholesale. Full census on it: **58 abort / 68 matched** for rung 38 —
+`UNCHOKED` 20, `root not bracketed` 18, `efficiency cascade` 9, `equilibrium Newton` 7,
+`burner f` 2, `nozzle back-pressure` 2. Five of rungs 38/39's own asserts fire **zero** times
+(the `(★)` bracket straddle, the physicality check, both efficiency secants, the outer
+turbine-efficiency loop, `solve_n`'s speed-line bracket, and `TwoSpoolEngine.run`'s two shaft-closure
+checks) — dumped as explicit zeros, per § 5.6's P4. **Rung 39 with shaped maps differs from rung 38
+on exactly ONE cell of 126**: `tpg, M0 = 1.60, Tt4 = 600` matches on rung 38 and hits the
+efficiency cascade on rung 39. The map moves one cell across the envelope, and nothing else.
+
+**(f) `M0 = 0` IS EXCLUDED BY A SOLVER ROUND-TRIP, NOT BY PHYSICS — AND SLICE I NEVER SAW IT**
+(its grid started at 0.3). At `M0 = 0` the freestream's two-clause assert `Tt0 >= T0 and
+pt0 >= p0` fails on its **first** clause for the thermally-perfect and equilibrium gases and
+passes entirely on the calorically-perfect one: `T_from_h_c(h_c(250.0))` returns
+**249.99999999999994**, three ulps low, while the pressure clause is exact (`pr_c` ratio `1.0`).
+The CPG branch is a closed form and round-trips exactly, so its `M0 = 0` cells get as far as
+`_score` and abort there instead. The column is put **on** the dump grid rather than trimmed off
+it, because a Rust round-trip landing on the other side of exactness would move an envelope
+boundary that no value comparison can see (P6).
+
+**(g) THE `_secant` CLAMP IS DEAD.** `min(max(nxt, 0.3), 1.0)` binds **0 times** across all 72
+matched cells of the 144-cell shaped grid (6 map shapes × 3 gases × 2 Machs × 4 throttles).
+Ported as written — it is a guard on a path this grid does not reach — but recorded as dead so a
+reader does not infer it is load-bearing, and so slice L knows what it is looking at.
+
+**(h) THE SLICE CONTAINS NO SQUARES — MEASURED.** All **14** `**` operators in the ported range
+are `** 0.5`. § 5.6's square-spelling gate
+(`rung32.rs::the_three_squares_are_multiplies_not_pow_calls`) has nothing to cover here, and that
+is a measurement rather than an omission. The `l` term added under (a) is *linear*, so it adds
+none either.
+
+#### The predictions
+
+* **P1 — THE ONE ARROW IS STRUCTURAL, AND RUST CAN ASSERT WHAT PYTHON CAN ONLY TEST.** Rung 39's
+  finding A is that `_hp_eta_loop` is closed: perturbing `eta_lpc` leaves `pi_hpc` bit-for-bit
+  unchanged, while perturbing `eta_hpc` moves `pi_lpc`. In the port the HP loop's *signature*
+  carries no LP quantity, so the closure is a compile-time fact and the numerical gate is its
+  witness. *Refuted by:* any `eta_lpc` perturbation moving a single bit of `pi_hpc`.
+* **P2 — THE CAPPED CELLS COME BACK BIT-EXACT AGAINST PYPY, ALL 200 PASSES.** *Refuted by:* any
+  cell whose Rust joint-loop pass count differs from PyPy's, or whose value differs in a bit.
+  This is the slice's real risk: (c) shows the count is a knife edge between 8 and 200, so a
+  single last-bit divergence anywhere in the cascade shows up as a 25× count difference rather
+  than as a small value drift.
+* **P3 — THE BISECTION COUNT IS ONE DISTINCT VALUE ON THE DUMP GRID**, and the gate names which
+  of 44 iterations / 46 residual evaluations / 47 `tau_of` calls it reads. *Refuted by:* two
+  distinct values, on either interpreter.
+* **P4 — RUNG 38's AND 39's OWN ASSERTS, AS EXPLICIT COUNTS**: `UNCHOKED` exactly 20 on the
+  126-cell rung-38 grid; the `(★)` bracket, physicality, both secants, the turbine-eta loop, the
+  speed-line bracket and both shaft-closure checks exactly **0**, dumped as zeros under
+  `census/abort_code/…` rather than left as an absence. *Refuted by:* any nonzero, which would
+  mean the Rust reaches a failure mode the Python does not.
+* **P5 — ADDING `l` MOVES NO SHIPPED BIT.** `map_oracle` (7 252 keys), `offdesign_oracle`
+  (3 951), `rung31`, `rung32` and `rung33` re-run bit-identical after the `ComponentMap` change.
+  *Refuted by:* one changed bit ⇒ revert, per slice J's own rule for a refactor to gated code.
+* **P6 — THE `M0 = 0` ENVELOPE IS GAS-SPLIT IN RUST TOO**: the TPG and equilibrium cells abort on
+  the ram clause and the CPG ones get past it. *Refuted by:* a Rust round-trip that is exact on
+  the integral gases (the cell would then match, and no value comparison would notice).
+
+**Module decision.** A new `rust/src/two_spool.rs`. `matcher.rs` is 843 lines and `map.rs` 554;
+rung 38 + 39 is ~940 lines of Python and would push `matcher.rs` past 1 900. The dependency is
+strictly one-way (two-spool consumes `OffDesignMatcher`, `MapMatcher`, `ComponentMap`,
+`choked_mfp`, the components and the gas; nothing consumes it until slice L), which is the same
+test slice F applied when it split `march.rs` out.
+
+**Sizing.** The oracle runs the 126-cell grid on rung 38 and on rung 39 at the four `SHAPES_C`
+shapes plus flat; the equilibrium gas re-freezes its mixture once per joint-loop pass, and a
+200-pass cell is the cost trap — the probe's 126 rung-38 cells took 55 s on PyPy and 162 s on
+CPython.
 
 ---
 
