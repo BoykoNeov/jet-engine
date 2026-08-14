@@ -1636,7 +1636,7 @@ next starts. The tree is green at every phase boundary; there is no big-bang cut
 | **2** | ~~`components.rs` + `engine.rs` design point — shaft balance, `_score`; conservation checks as `assert!`~~ | **DONE** | ✅ **three** gates: `cycle_oracle.rs` (1481/1481 bit-exact vs PyPy, on 19+15 distinct solver roots — § 4.2), the 8 ported rung suites (39 tests, rungs 1–6, incl. rung 6's GATE 1), and `porting_rules.rs` |
 | **3** | NOx & mixing, rungs 7–24. **RISK-BEARING — not bulk.** These are phase 1's largest *consumer*: every one rides the equilibrium solve and `Kp = exp(−ΔG°/RuT)`, and their findings are *shapes* (the bell's peak, the minimum pinned at `C_opt`, monotone-vs-turns-back-up) that a last-digit shift in an exponential can move. Deliberately placed straight after phase 1 as the **first real test of whether the transcendental arithmetic holds**. **DONE — slices A (7/8/9/19), B (10/11/12/20), C (13/15/16/18/21), D (22/23/24) and E (14/17) all shipped**, § 4.3–4.10; the slices are grouped in § 4.3 by DEPENDENCY, not by number | 4–6 | ✅ slice A: `nox_oracle.rs` (**1806/1806** bit-exact vs PyPy on 22+22 distinct solver roots) + 4 rung suites (43 tests) · ✅ slice B: `quench_oracle.rs` (**2507/2507**, on 165 distinct trajectory roots) + 4 rung suites (39 tests), one location key NARROWING a shipped claim · ✅ slice C: `pdf_oracle.rs` (**2448/2448**, both quadrature branches asserted exercised) + 5 rung suites (59 tests); the source's own mean-preservation guard found to have an `n_quad` FLOOR, and the port gates the REJECTION as well as the acceptance (§ 4.5) · ✅ slice D: `spatial_oracle.rs` (**462/462**, incl. 28 DISCRETE keys) + 3 rung suites (43 tests); TWO source claims of exactness CORRECTED — rung 24 applies an operation inside an accumulation and removes it outside, twice (§ 4.8) | · ✅ slice E: `nozzle_oracle.rs` (**513/513**, incl. 24 DISCRETE keys) + 2 rung suites (24 tests) + 3 gates `rung20.rs` had deferred; a THIRD claim of exactness corrected (the frozen reduce is algebraic only, and its floor is the entropy ROUTE, not the bisection's stopping rule) and rung 17's firing band edge LOCATED — past it the bulk margin goes dormant while the per-pocket one RISES (§ 4.10) |
 | **4** | Nozzle & turbine marches, rungs 25–30 — own convergence behaviour, hence separate. ~~**AUTHORISED 2026-08-12; three DEPENDENCY slices**~~ **DONE** | 2–3 | ✅ slice F: `march_oracle.rs` (**912/912** bit-exact vs PyPy, on 49 distinct march exit roots) + 2 rung suites (32 tests) in a new `march.rs`; the FOURTH "exactly"-class claim and the FIRST to survive — because it compares a COPY, not a rederivation (§ 4.12) · ✅ slice G: `no_march_oracle.rs` (**776/776**, and only 8.0 % CPython-identical — the sharpest dump in the port) + 2 rung suites (28 tests); slice F's discriminator made TWO pre-registered predictions and both HELD (§ 4.14) · ✅ slice H: `tt_oracle.rs` (**270/270**) + 2 rung suites (14 tests); RATIO ≠ ENERGY measured ANTI-correlated, and the one slice not pre-registered — all three of its guessed census bars were wrong (§ 4.15) |
-| **5** | Steady matchers — rungs 31–33, 38–39, **41**, 42, 53–56, 61. ~~**Contains the diamond** (§ 6)~~ **PRE-FLIGHT DONE (§ 5.3); AUTHORISED 2026-08-13, IN PROGRESS in slices.** The diamond is discharged; the phase's structural content is the **five-name virtual set** (`_solve_turbine` — claimed by PHASE 6 — `match`, `_hp_eta_loop`, `_lp_eta_loop`, `at_setting`) and `_INC_MAX`'s live shadow | 4–6 | ✅ slice I (rungs 31/33): `offdesign_oracle.rs` (**3951/3951** bit-exact vs PyPy, incl. **961 discrete** keys) + 2 rung suites (17 tests) in a new `matcher.rs`; the crate's FIRST fallible paths, its FIRST virtual hook, and the two rungs re-gated as counts over BIT PATTERNS (§ 5.5) · ✅ slice J (rung 32): `map_oracle.rs` (**7 252/7 252**) + `rung32.rs`; the oracle found BLIND to a mis-spelled square, so the rule is gated directly (§ 5.6) · ✅ slice K (rungs 38/39): `two_spool_oracle.rs` (**11 812/11 812**, and only 46.3 % CPython-identical) + 2 rung suites (19 tests) in a new `two_spool.rs`; all six predictions held, and the CPython arm REFUTED an assertion inherited from slice I — the pass-count instability needs a SOLVER-derived property, not the equilibrium gas (§ 5.7) |
+| **5** | Steady matchers — rungs 31–33, 38–39, **41**, 42, 53–56, 61. ~~**Contains the diamond** (§ 6)~~ **PRE-FLIGHT DONE (§ 5.3); AUTHORISED 2026-08-13, IN PROGRESS in slices.** The diamond is discharged; the phase's structural content is the **five-name virtual set** (`_solve_turbine` — claimed by PHASE 6 — `match`, `_hp_eta_loop`, `_lp_eta_loop`, `at_setting`) and `_INC_MAX`'s live shadow | 4–6 | ✅ slice I (rungs 31/33): `offdesign_oracle.rs` (**3951/3951** bit-exact vs PyPy, incl. **961 discrete** keys) + 2 rung suites (17 tests) in a new `matcher.rs`; the crate's FIRST fallible paths, its FIRST virtual hook, and the two rungs re-gated as counts over BIT PATTERNS (§ 5.5) · ✅ slice J (rung 32): `map_oracle.rs` (**7 252/7 252**) + `rung32.rs`; the oracle found BLIND to a mis-spelled square, so the rule is gated directly (§ 5.6) · ✅ slice K (rungs 38/39): `two_spool_oracle.rs` (**11 812/11 812**, and only 46.3 % CPython-identical) + 2 rung suites (19 tests) in a new `two_spool.rs`; all six predictions held, and the CPython arm REFUTED an assertion inherited from slice I — the pass-count instability needs a SOLVER-derived property, not the equilibrium gas (§ 5.7) · ✅ slice L (rungs 41/42): `slice_l_oracle.rs` (**25 458 keys**) + 2 rung suites (12 + 12 tests) in a new `bleed.rs`, plus the crate's first FALLIBLE TWINS; nine predictions all settled, and a claim the SHIPPED SOURCE carried found wrong (§ 5.8) · ⏳ **the remainder is THREE slices, not one — M (53/54) · N (55/56) · O (61)**, sized and split in § 5.9; **M is PRE-REGISTERED (§ 5.9), 10 predictions**, and its probe **OVERTURNS slice J's `solve_n` zero-firing verdict** |
 | **6** | Transients — rungs 34–37, 40, 43–52 (the fuel-side limiter family) | 4–6 | per-rung tests pass |
 | **7** | **The ladder, rungs 57–60 and 62–84** — the `Hooks` table from § 2, one module per rung. (**61 is PHASE 5's**, not this phase's — it is the steady `StatorBleedMatcher`, and it was double-listed here until the slice-K audit) | 5–8 | 27/27 reduce-to-prior bit-exact |
 | **8** | `main.py` replacement; adjudicate the fragile rungs; re-anchor the fingerprint; **delete the Python** | 2–3 | full suite green on Rust alone |
@@ -3258,6 +3258,214 @@ probe cost was 296 s for the same sweep plus rung 41's schedules), plus rung 41'
 over 4 shapes × 2 floors × 3 gases and `flow_coefficient_turn` over gate 5's 19 cases × 2 spools
 (≈8 s flat, ≈79 s over the shaped grid). The **200-pass cells are the cost trap**, and the bleed axis makes more of them: 10 → 17
 as the valve opens.
+
+### 5.9 SLICE M (rungs 53 + 54, `VariableStatorMatcher`) — PRE-REGISTERED, nine probes MEASURED first
+
+**PHASE 5's REMAINDER IS THREE SLICES, NOT ONE.** The phase-5 row lists `53–56, 61` as one
+block and the memory index carried "slice M (53–56, 61) is next"; **neither was ever sized.**
+Enumerated, that block is **~1 600 Python lines and ~106 test gates** — against slice L's ~390
+lines and 19 gates, which still needed four steps and four commits. It splits on DEPENDENCY,
+the way § 4.3 grouped phase 3:
+
+| slice | scope | Python | gates | depends on |
+|-------|-------|--------|-------|------------|
+| **M** | 53 + 54 — `VariableStatorMatcher` + `ComponentMap`'s `vsv`/`capacity` channels | ~585 | 22 + 21 | slice L |
+| **N** | 55 + 56 — `StageStack` + `StageStackMatcher` | ~685 | 19 + 22 | **M** (`test_rung56.py::test_reduce_K1_is_rung54_throat_margin_bit_for_bit`) |
+| **O** | 61 — `StatorBleedMatcher` | ~305 | 22 | **M** *and* slice L's `bleed.rs` (it is the § 6 diamond, `TwoSpoolBleedMatcher` × `VariableStatorMatcher`) |
+
+53 and 54 are **inseparable**: 54's `throat_margin` extends 53's `stator_margin` row in place,
+and 54's `_schedule_root` is the documented immune replacement for 53's `incidence_schedule`
+ladder — the two docstrings cross-reference each other. Slice boundaries are free inside an
+authorised phase, so this is a SIZING correction, not a scope change, and needs no fresh
+authorisation. The phase-5 row's scope list is unchanged.
+
+`probe_m1.py`, PyPy. Grid: **2 gases (CPG, TPG) × rung 53/54's own five disclosed shapes ×
+4 throttles (1500/1200/1000/800) × 2 spools = 80 cells**, which is the grid the slice-M dump
+will sweep — never a neighbouring one (§ 5.7 (e)).
+
+**(i) THERE IS EXACTLY ONE CAUGHT SCOPE IN RUNGS 53/54, AND IT OVERTURNS A RECORDED SLICE-J
+VERDICT.** `grep except` over the two rungs' 585 lines returns **one** hit: rung 54's `_scan`
+wraps `at_setting(v,·).throat_margin(…)` in `except AssertionError: break`. Reproduced line for
+line with the innermost raising frame recorded:
+
+| cells | how the walk ends | innermost raising frame |
+|-------|-------------------|-------------------------|
+| **80 of 80** | broke on `AssertionError` | **`ComponentMap.solve_n`, the speed-line bracket — every single one** |
+| 0 | ran to `_V_MAX` | — |
+
+Cross-tabbed by the spool being swept, the split is **40 / 40 with NO crossover**: sweeping the
+LP stator kills `_lp_eta_loop`'s `solve_n`, sweeping the HP kills `_hp_eta_loop`'s. That is not
+plumbing — it is the lever unloading its own speed line until the map stops being valid, which is
+what `_scan`'s docstring calls "the SOLVE itself gives out".
+
+**`map.rs`'s shipped note says the opposite, and slice M overturns it by measurement** — the only
+thing allowed to. It reads: *"[`solve_n`]'s bracket assert … would fire **0** times … so it stays
+an `assert!` and not an `Abort`: nothing catches it"*, measured over slice J's 810 cells (§ 5.6
+(a)). Slice J's grid had no `_scan` in it, because rung 54 did not exist in the Rust yet. This is
+**the second time** a slice has overturned a predecessor's fallibility verdict on a wider grid —
+slice L's step 1 did it to § 5.4 (i)'s "`solve` stays a panic" — and it is the same lesson twice:
+**a zero-firing verdict is a claim about the GRID, and it expires when a new caller arrives.**
+Per-call-site, as slice L established:
+
+| `solve_n` call site | reached by slice M's caught scope? | verdict |
+|---------------------|-----------------------------------|---------|
+| `two_spool.rs:1408` — rung 39 `_hp_eta_loop` | **yes, 40 firings** | → `try_` twin |
+| `two_spool.rs:1443` — rung 39 `_lp_eta_loop` | **yes, 40 firings** | → `try_` twin |
+| `map.rs:511` — rung 32 `operating_point` | no | keeps `assert!` |
+| `bleed.rs:158` — rung 42 `lp_eta_loop_bleed` | no | keeps `assert!` |
+
+**(ii) `_V_MAX = 8.0` IS DEAD.** No walk reaches it. The break settings span **1.16 – 3.36**
+(26 distinct values), and `n_scan` runs **29 – 84**. Ported as written and **recorded dead**, so
+no reader infers it is load-bearing — slice L's `Tt4_lo = 350.0` precedent, second instance.
+
+**(iii) RUNG 53's OWN FLOOR ASSERT NEVER FIRES.** `stator_margin`'s
+`assert phi_s < phi_op` ("the running line has crossed its OWN floor"), called OUTSIDE any catch
+over `v ∈ {−0.30, −0.10, 0, 0.10, 0.30, 0.60, 1.00}` × 5 shapes × 4 throttles × 2 gases ×
+2 spools: **560 clean calls, 0 raises.** Per the zero rule it stays `assert!`.
+
+**(iv) `_INC_MAX = 80` IS A DEAD SHADOW ON BOTH ROOT-FINDERS, AND SO IS THE SECOND STOP CLAUSE.**
+The phase-5 row flags "`_INC_MAX`'s live shadow"; measured, it is not live.
+
+| root-finder | bisection passes | stop clause |
+|-------------|------------------|-------------|
+| rung 53 `incidence_schedule` (doubling ladder) | 30 · 32 · 33 · 34 · 35 · **36 max** | `\|r\| <= _INC_TOL` on **all 42**, `hi − lo <= 1e-14` **never** |
+| rung 54 `_schedule_root` (bracketed off the scan) | 26 · 28 · 29 · 30 · 31 · 32 · **33 max** | `\|r\| <= _INC_TOL` on **all 54**, `hi − lo <= 1e-14` **never** |
+
+Neither reaches 80. Unlike § 5.8.1 (iii)'s 33, these counts are **not** predictable from the
+arithmetic — the ladder's bracket width is data-dependent — so the gate asserts the measured SET,
+names its instrument (**bisection passes, not residual evaluations, not ladder steps**), and is
+**PyPy-arm only**, per slice K's P2 on count stability.
+
+**(v) THE TWO SCHEDULE CENSUSES.** Rung 53's ladder over the 80 cells: **20 "residual already
+zero"** (exactly the design throttle — 2 gases × 5 shapes × 2 spools), **42 roots**, **18 bracket
+ASSERTS** that propagate uncaught. Ladder steps ∈ {0, 3, 4, 5, 6}. Rung 54's bracket branch:
+**54 bracketed · 20 "no crossing → 0.0" · 6 "no crossing → None"**, and `schedule_throat` returns
+**74 `exists=True` / 6 `exists=False`**.
+
+**(vi) THREE FIELD-SET SPLITS, AND A FLOAT DUMP IS STRUCTURALLY BLIND TO ALL THREE.** Slice L's
+P9 rule (*a value oracle cannot see a missing value*), now three times over in one slice:
+
+| object | branch | the difference |
+|--------|--------|----------------|
+| `throat_margin` | `capacity > 0` | **16 keys vs 19** — `choked`, `m_c`, `throat_mach_design` appear only with a throat model (80 rows at 16, 160 at 19) |
+| `authority_ceiling` | `v_ch is None` | **86 of 240 cells** return `m_i_at_throat=None` where the rest return a float |
+| `schedule_throat` | `exists=False` | **6 of 80 rows** null `vsv_star`/`throat_loading`/`c_min` **and drop** `tan_b1`, `m`, `phi_op`, `n`, `m_i`, `m_phi` outright |
+
+Each gets a discriminant column plus a declared sentinel, and the gate asserts the branch COUNT.
+
+**(vii) THE `binds` CENSUS MEASURES PHYSICS, NOT PLUMBING.** `authority_ceiling`'s verdict —
+which of the three ceilings stops the stator first — over 240 cells (80 × 3 capacities):
+
+| `C` | throat | peak | edge |
+|-----|--------|------|------|
+| 0.00 | **0** | 48 | 32 |
+| 0.80 | **54** | 26 | 0 |
+| 0.90 | **66** | 14 | 0 |
+
+`peak_interior` is **144 True / 96 False**. The throat column rising with `C` is rung 54's own
+claim — *a tighter throat binds earlier* — expressed as a count the source could refute, which is
+what earns a count bar its place (`docs`' *guessed census bars* entry, and § 5.8.1 (v)'s
+precedent).
+
+**(viii) A CLAIM THE SHIPPED SOURCE CARRIES IS NARROWER THAN IT STATES — AND THE NARROWING IS A
+PARAMETER THE DOCSTRING NEVER NAMES.** `incidence_schedule`'s docstring says the doubling ladder
+"can step OVER the root and out the far side — reporting the schedule unreachable when it exists
+(measured: the `steep` shape at Tt4=1200, root at v* = 0.909)". **At the method's own default
+`v_hi = 1.0` it does no such thing**: on that exact cell it returns **0.9090766150970013**,
+agreeing with rung 54's scan-bracketed root to 1e-10. The failure needs the cap RAISED, and the
+source's own test supplies one — `test_rung54.py::test_rung54_root_finds_a_schedule_rung53s_doubling_ladder_walks_over`
+passes `v_hi = 0.98 * v_edge = 1.725`. Swept over caps {1.0, 0.98·v_edge, v_edge, 2.0, 4.0} on
+3 shapes × 2 spools:
+
+* the walk-over reproduces on **exactly 1 of 6 cells** (`steep`/LP), and there only at caps ≥ 1.725;
+* **`steep`/HP has an interior peak too and never walks over at ANY cap.** So an interior peak is
+  **necessary but not sufficient** — the peak must lie *between the root and the cap*. The
+  docstring names neither condition, and rung 54's spec inherits the same gap.
+
+The port's job is to **reproduce both sides**, not to repair either: a more careful Rust bracket
+would look like an improvement and be a silent divergence.
+
+**(ix) SLICE M HAS ZERO DEFERRALS — THE FIRST PHASE-5 SLICE WITH NONE, AND IT IS ENUMERATED
+RATHER THAN ASSUMED.** `grep -n "Transient\|StageStack"` over both suites returns **no hit in
+either** (the only `build_turbojet` calls are each suite's own single-spool "cycle untouched"
+gate, which ports now). Every one of the 43 gates is steady and reachable from slice L's ladder.
+This is checked BY ENUMERATION because `docs`' *an oracle cannot see a MISSING GATE* entry says a
+bit-exact dump says nothing about coverage.
+
+#### The predictions
+
+* **P1 — THE CAUGHT SCOPE REACHES `solve_n` AND NOTHING ELSE, PER CALL SITE.** 80 of 80 cells
+  abort, the innermost frame is `solve_n`'s bracket every time, and the firing loop tracks the
+  swept spool 40/40 with no crossover. The two rung-39 sites get `try_` twins; rung 32's and rung
+  42's keep `assert!`. *Refuted by:* any cell whose innermost frame is not `solve_n`, any
+  crossover between swept spool and firing loop, or any walk that reaches `_V_MAX`.
+* **P2 — THE REFACTOR AND THE TWO NEW MAP FIELDS MOVE NO SHIPPED BIT.** Three changes to
+  already-gated code land here: `vsv` and `capacity` arriving on `ComponentMap`, and the
+  `try_solve_n` twins on two call sites. `map_oracle` (7 252), `offdesign_oracle` (3 951),
+  `two_spool_oracle` (11 812), `slice_l_oracle` (25 458) and the `rung31`/`rung32`/`rung33`/
+  `rung38`/`rung39`/`rung41`/`rung42` suites re-run **bit-identical**. *Refuted by:* one changed
+  bit ⇒ **revert**, per slice J's rule for a refactor to gated code. Note this is the THIRD
+  instance of that rule and the largest re-run set the port has had.
+* **P3 — THE `vsv == 0` AND `capacity == 0` EARLY RETURNS ARE PORTED AS EARLY RETURNS.**
+  `psi` and `phi_max` both return before touching the swirl term at `vsv == 0.0`, and
+  `phi_surge_at` returns the FIELD. Writing `base - 0.0*(1+l)*phi` instead is an assumed
+  algebraic no-op, which is the *power-spelling* entry's exact failure class. *Refuted by:* any
+  rung ≤ 52 key moving in P2's re-run.
+* **P4 — `_V_MAX = 8.0` AND `_INC_MAX = 80` ARE DEAD, AND SO IS `hi − lo <= 1e-14`; ALL THREE
+  ARE PORTED AS WRITTEN AND RECORDED DEAD.** *Refuted by:* any walk terminating on `_V_MAX`, any
+  bisection reaching 80 passes, or any stop on the width clause.
+* **P5 — THE ROOT-FINDER PASS COUNTS ARE (iv)'s SETS, AND THE GATE NAMES ITS INSTRUMENT.**
+  Rung 53 ∈ {30, 32, 33, 34, 35, 36}; rung 54 ∈ {26, 28, 29, 30, 31, 32, 33}. Bisection passes —
+  **not** residual evaluations, **not** ladder steps; § 5.7 (d) corrected a bar one slice ago for
+  exactly this. PyPy arm only. *Refuted by:* any count outside its set.
+* **P6 — THE THREE FIELD-SET SPLITS ARE DUMPED AS DISCRIMINANTS PLUS DECLARED SENTINELS, AND THE
+  BRANCH COUNTS ARE THE GATE.** 80/160 on `throat_margin`'s capacity branch, 86/154 on
+  `authority_ceiling`'s `v_ch`, 74/6 on `schedule_throat`'s `exists`. No nullable column ever
+  carries a bare `0.0`. *Refuted by:* a Rust null row comparing equal to a real value — the
+  failure a float dump cannot see.
+* **P7 — THE `binds` CENSUS IS (vii)'s TABLE, INCLUDING THE ZEROS, AND THE THROAT COLUMN RISES
+  WITH `C`.** 0 / 54 / 66 at C = 0.00 / 0.80 / 0.90. *Refuted by:* a nonzero throat count at
+  C = 0, or a throat column that does not rise.
+* **P8 — THE WALK-OVER IS CAP-CONDITIONAL, AND BOTH SIDES ARE GATED.** At `v_hi = 1.0` the Rust
+  ladder returns `steep`/LP/1200's root bit-for-bit; at `v_hi = 0.98·v_edge` it raises. The
+  necessary-but-not-sufficient reading of `peak_interior` is gated by `steep`/HP, which has an
+  interior peak and never walks over. *Refuted by:* a Rust ladder that succeeds at the raised cap
+  (it would have silently repaired the defect) or fails at the default one.
+* **P9 — THE TWO REDUCE CONTRACTS ARE DIFFERENT SHAPES AND BOTH PORT.** Rung 53's is an
+  **IDENTITY** — at `vsv == 0` the stored maps are the SAME OBJECTS and `match` is rung 39's
+  inherited method, so there is no rung-53 path to skip. Rung 54's is an **INVARIANCE OVER `C`** —
+  every matched field bit-identical at every capacity, at a MOVED stator, which is strictly
+  stronger. In Rust the object-identity half becomes a pointer/field-provenance assertion, and
+  that translation is disclosed rather than quietly dropped. *Refuted by:* any matched field
+  moving with `C`.
+* **P10 — `at_setting` ENTERS THE HOOK TABLE IN THIS SLICE, WITH ITS DISPATCH GATE OWED TO SLICE
+  N.** It is overridden at **three** levels (53, 55, 61) and `stator_sweep`, `currency_split`,
+  `incidence_schedule`, `_scan` and `schedule_throat` all reach it through `self`. Hardcoding
+  rung 53's body would compile, return numbers, and return the WRONG ones under slice N — the
+  failure `map.rs`'s own note warns about for `solve_turbine`. Slice M has no descendant to
+  witness the dispatch with, so the gate is an **IOU** in `rung53.rs::slice_m_deferrals` (the
+  `slice_j_deferrals` / `slice_l_deferrals` precedent, fourth use), NOT a silent omission.
+
+#### Module decision, and sizing
+
+**A new `stator.rs`**, carrying `VariableStatorMatcher` with its own `R53`/`R54` hook-table
+entries, `at_setting` as a virtual, rung 53's four reading methods and rung 54's six. `two_spool.rs`
+is already 2 025 lines and slice K split it out of `matcher.rs` at exactly that bar. `ComponentMap`'s
+own rung-53/54 channels (`with_vsv`, `tan_beta1`, `tan_beta1_crit`, `phi_surge_at`, `with_capacity`,
+`throat_ratio`, `throat_loading`, `capacity_margin`, `chokes`, `design_throat_mach`) go into
+`map.rs` beside the fields they read, and `map.rs`'s *field subset* note — which already records
+`vsv` as owed to this slice — is discharged there.
+
+**The one shape decision that decides a reduce gate**, stated before it can be got wrong:
+`throat_margin` **mutates rung 53's returned row in place** and returns the same map. Rebuilding it
+as a fresh struct with the union of both field sets would look like a cleanup and would destroy
+P6's 16-vs-19 discriminant, which is the only instrument that can see the capacity branch at all.
+
+**Sizing.** The `_scan` walk is the cost trap: 80 cells × 29–84 settings × a full two-spool match
+each, measured at **17.5 s** for the abort census and **71.7 s** for the three-capacity `binds`
+sweep on CPG+TPG. The equilibrium gas multiplies that and its inclusion in the dump is decided by
+a running measurement, not assumed. Rung 53's ladder and rung 54's root are cheap by comparison
+(8.7 s and 24.9 s over the same 80 cells).
 
 ---
 
