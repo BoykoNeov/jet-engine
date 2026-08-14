@@ -3401,13 +3401,27 @@ passes `v_hi = 0.98 * v_edge = 1.725`. Swept over caps {1.0, 0.98·v_edge, v_edg
 * the walk-over reproduces on **exactly 1 of 6 cells** (`steep`/LP), and there only at caps ≥ 1.725;
 * **`steep`/HP has an interior peak too and never walks over at ANY cap.** So an interior peak is
   **necessary but not sufficient** — the peak must lie *between the root and the cap*. The
-  docstring names neither condition, and rung 54's spec inherits the same gap.
+  docstring names neither condition.
+
+**AND `docs/rung54-spec.md` CARRIES IT WORSE — CHECKED, NOT ASSUMED.** Its § at lines 168–172
+prints a ladder TRACE: *"rung 53's method walks 0.05 → … → 1.6 (residual +1.64e-2, already
+climbing) and asserts the schedule unreachable."* **That trace is unreachable at the shipped
+default.** The ladder's step is `hi = min(2*hi, cap)` with `cap = v_hi = 1.0`, so the sequence is
+0.05 · 0.1 · 0.2 · 0.4 · 0.8 · **1.0** and stops — reaching **1.6 requires `v_hi >= 1.6`**, i.e.
+a cap 60 % above the default the spec never mentions. So the spec does not merely omit the
+condition, it publishes a walk the method cannot take as called. **This is a source correction
+slice M owes**, in the same class as slice L step 4's, and it is recorded here rather than left
+as a passing remark because *asserting a defect in a file one has not opened* is precisely the
+copied-bar failure `docs`' *slice L step 4* entry records.
 
 The port's job is to **reproduce both sides**, not to repair either: a more careful Rust bracket
 would look like an improvement and be a silent divergence.
 
-**(ix) SLICE M HAS ZERO DEFERRALS — THE FIRST PHASE-5 SLICE WITH NONE, AND IT IS ENUMERATED
-RATHER THAN ASSUMED.** `grep -n "Transient\|StageStack"` over both suites returns **no hit in
+**(ix) SLICE M DEFERS ZERO TEST GATES — THE FIRST PHASE-5 SLICE WITH NONE, AND IT IS ENUMERATED
+RATHER THAN ASSUMED.** *(Read precisely: this is about the 43 gates in the two Python suites, all
+of which port now. It is NOT the same object as P10's IOU, which is a gate that **cannot exist
+yet** — no descendant exists to witness `at_setting`'s dispatch until slice N. `slice_m_deferrals`
+holds that one entry and no deferred gate.)* `grep -n "Transient\|StageStack"` over both suites returns **no hit in
 either** (the only `build_turbojet` calls are each suite's own single-spool "cycle untouched"
 gate, which ports now). Every one of the 43 gates is steady and reachable from slice L's ladder.
 This is checked BY ENUMERATION because `docs`' *an oracle cannot see a MISSING GATE* entry says a
