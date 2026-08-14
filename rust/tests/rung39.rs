@@ -29,8 +29,8 @@ use turbojet::engine::{build_turbojet, FlightCondition, Losses};
 use turbojet::gas::{Gas, GasSpec};
 use turbojet::map::{ComponentMap, MapMatcher};
 use turbojet::matcher::OffDesignMatcher;
-use turbojet::two_spool::{build_two_spool_turbojet, CascadeMap, MatchedMap, TwoSpoolLosses,
-                          TwoSpoolMapMatcher, TwoSpoolMatcher};
+use turbojet::two_spool::{build_two_spool_turbojet, counters, CascadeMap, MatchedMap,
+                          TwoSpoolLosses, TwoSpoolMapMatcher, TwoSpoolMatcher};
 
 const PI_LPC: f64 = 3.0;
 const PI_HPC: f64 = 6.0;
@@ -494,4 +494,39 @@ fn gate10_cycle_untouched_rung6() {
         assert_eq!(s.tt.to_bits(), t.tt.to_bits(), "station {label} Tt");
         assert_eq!(s.pt.to_bits(), t.pt.to_bits(), "station {label} pt");
     }
+}
+
+// ------------------------------------------------------------------- the check-first shape
+/// **THE `hp_passes_min` / `lp_passes_min` CLAIM, PINNED ABSOLUTELY — NOT AGAINST PYTHON.**
+///
+/// The oracle carries these two keys, but a comparison gate only asserts *Rust agrees with
+/// Python*: if BOTH sides ran the efficiency loop `do`-while — secant first, residual tested
+/// after — both would dump `1`, the comparison would pass clean, and the shape claim would be
+/// unwitnessed. A bit-equality gate is blind to an assumption the two sides SHARE, so the claim
+/// needs an absolute bar of its own.
+///
+/// The claim: on a flat map the efficiency residual is already met on entry, so the loop returns
+/// having called the secant ZERO times. `0` is only reachable check-first.
+///
+/// The second half is the vacuity guard. A counter wedged at its initial value would satisfy the
+/// first half for the wrong reason, so a shaped map must drive the same counters ABOVE zero.
+#[test]
+fn the_efficiency_loops_test_before_they_step() {
+    counters::reset();
+    let _ = flat_mm(cpg_gas()).match_point(&flight(), 1200.0);
+    assert_eq!(counters::hp_passes_min(), 0,
+               "the HP efficiency loop took a secant step on a FLAT map, where the residual is \
+                met on entry — that is a `do`-while shape, and the oracle's key-vs-key \
+                comparison cannot see it if the Python side has it too");
+    assert_eq!(counters::lp_passes_min(), 0,
+               "the LP efficiency loop took a secant step on a FLAT map — see above");
+
+    // ... and the counters are not simply stuck at zero.
+    counters::reset();
+    let (_, map_lp, map_hp) = shapes_c().into_iter().find(|(n, _, _)| *n == "tilted").unwrap();
+    let _ = mm(cpg_gas(), map_lp, map_hp).match_point(&flight(), 1200.0);
+    assert!(counters::hp_passes_max() > 0 && counters::lp_passes_max() > 0,
+            "a SHAPED map drove neither efficiency loop off zero ({} / {}) — the counters are \
+             not measuring the loop at all, so the flat-map zeros above prove nothing",
+            counters::hp_passes_max(), counters::lp_passes_max());
 }
