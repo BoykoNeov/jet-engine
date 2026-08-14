@@ -344,8 +344,14 @@ for code in sorted(set(ABORT.values())):
     put(f"census/r39/abort_code/{code:.0f}", float(CENSUS39[code]))
 put("census/r39/turb_passes_min", float(min(TURB_PASSES)))
 put("census/r39/turb_passes_max", float(max(TURB_PASSES)))
+# The MAXIMA witness that the ETA_MAX = 80 cap is nowhere near approached. The MINIMA are
+# what witness the CHECK-FIRST loop shape rung 39's flat-map reduce depends on: a flat map
+# passes the residual on entry, so the secant is called ZERO times. A `do`-while would move
+# the minimum to 1 and leave the maximum at 4 — so the maxima alone are BLIND to it.
 put("census/r39/hp_passes_max", float(max(HP_PASSES)))
 put("census/r39/lp_passes_max", float(max(LP_PASSES)))
+put("census/r39/hp_passes_min", float(min(HP_PASSES)))
+put("census/r39/lp_passes_min", float(min(LP_PASSES)))
 # THE DEAD CLAMP, dumped as an explicit zero rather than left as an absence (§ 5.7 (g)).
 put("census/r39/secant_clamp_hits", float(CLAMPS))
 print(f"[3] rung 39: {n39_ok} matched, turb passes {sorted(TURB_PASSES)}, "

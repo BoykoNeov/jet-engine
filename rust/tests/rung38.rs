@@ -272,7 +272,11 @@ fn gate3_structural_the_hp_leaf_takes_no_lp_quantity() {
     let hp = turbojet::two_spool::hp_eta_loop_closed(
         &wgas, TT4, f, cc.tt25, cc.tt3, mfp4, &turbojet::map::ComponentMap::flat(),
         c.eta_hpc, c.a4, c.pi_b,
-        m.core().reference.station("25").tt.sqrt() / m.core().reference.station("25").pt,
+        // `powp(tt, 0.5)`, NOT `tt.sqrt()` — the distinction slice I pre-registered as its P4
+        // because a tolerance hides it. Nothing here would notice the difference, which is
+        // exactly why the wrong spelling must not sit in new gated code for slice L to copy.
+        turbojet::gas::powp(m.core().reference.station("25").tt, 0.5)
+            / m.core().reference.station("25").pt,
         cc.tt3 / cc.tt25);
     assert!(hp.eta.is_finite() && hp.pi > 1.0);
 }

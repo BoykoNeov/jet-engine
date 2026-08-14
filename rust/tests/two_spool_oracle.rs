@@ -11,16 +11,22 @@
 //!   matched cells, ~12× more often than slice I's single-spool one, and the returned value is
 //!   then the 200th iterate of a fixed count. `n_pass` per cell is a gate key for that reason.
 //!
-//! * **AND THAT COUNT IS NOT INTERPRETER-INVARIANT** — CPython and PyPy disagree at 29 of 126
-//!   cells, flipping between ~8 passes and never converging, every one on the equilibrium gas
-//!   (§ 5.7 (c)). So the class is bit-gated on PyPy and excluded on CPython, exactly as slice I
-//!   does — and, as there, the exclusion is not a silent skip: the disagreement is counted,
-//!   asserted confined to the equilibrium gas, and asserted not to move a VALUE.
+//! * **AND THAT COUNT IS NOT INTERPRETER-INVARIANT** — CPython and PyPy disagree at 81 of 302
+//!   keys, flipping between ~8 passes and never converging (§ 5.7 (c)). So the class is bit-gated
+//!   on PyPy and excluded on CPython, exactly as slice I does — and, as there, the exclusion is
+//!   not a silent skip: the disagreement is counted, asserted CONFINED (see below — it needs a
+//!   solver-derived gas property, which is a CORRECTION of slice I's stated reason), and
+//!   asserted not to move a VALUE.
 //!
 //! * **A `do`-WHILE WHERE PYTHON CHECKS FIRST.** Rung 39's flat-map reduce to rung 38 holds
 //!   because both efficiency loops test the residual before ever calling the secant. The
-//!   `hp_passes_max`/`lp_passes_max` census keys carry that: a `do`-while would make them ≥ 1
-//!   where the flat cells measure 0.
+//!   `hp_passes_MIN`/`lp_passes_MIN` census keys carry that — 0 today, 1 under a `do`-while.
+//!   **The MAXIMA cannot**, and that was this comment's first draft: they are set by the SHAPED
+//!   cells at 4, so flipping every flat cell from 0 to 1 leaves them unmoved. A key named for a
+//!   defect it cannot detect is the "documented gate that doesn't exist" trap, one slice on. The
+//!   maxima are kept for what they DO witness — that `ETA_MAX = 80` is nowhere near approached —
+//!   and `rung39.rs::gate1_reduce_flat_maps_is_rung38` catches the defect bit-for-bit besides,
+//!   so the CODE was never in doubt here; the INSTRUMENT was.
 //!
 //! * **THE `l` TERM'S ARITHMETIC.** Slice K put rung 34's linear loading slope on
 //!   `ComponentMap` because rung 39's own shapes set it. The standalone `psi`/`solve_n` sweeps
@@ -274,6 +280,7 @@ fn rust_values() -> Vec<(String, f64)> {
     let mut census39: HashMap<u64, usize> = ALL_CODES.iter().map(|c| (*c as u64, 0)).collect();
     let (mut turb_min, mut turb_max, mut hp_max, mut lp_max, mut clamps) =
         (u64::MAX, 0u64, 0u64, 0u64, 0u64);
+    let (mut hp_min, mut lp_min) = (u64::MAX, u64::MAX);
     for &g in GASES {
         for (sname, mlp, mhp, wide) in shapes() {
             let mm = matcher39(g, mlp, mhp);
@@ -300,6 +307,8 @@ fn rust_values() -> Vec<(String, f64)> {
                     turb_max = turb_max.max(counters::turb_passes_max());
                     hp_max = hp_max.max(counters::hp_passes_max());
                     lp_max = lp_max.max(counters::lp_passes_max());
+                    hp_min = hp_min.min(counters::hp_passes_min());
+                    lp_min = lp_min.min(counters::lp_passes_min());
                     clamps += counters::secant_clamp_hits();
                     v.push((format!("r39/{tag}/n_pass"), counters::cascade_calls() as f64));
                     for (name, x) in [
@@ -335,6 +344,8 @@ fn rust_values() -> Vec<(String, f64)> {
     v.push(("census/r39/turb_passes_max".into(), turb_max as f64));
     v.push(("census/r39/hp_passes_max".into(), hp_max as f64));
     v.push(("census/r39/lp_passes_max".into(), lp_max as f64));
+    v.push(("census/r39/hp_passes_min".into(), hp_min as f64));
+    v.push(("census/r39/lp_passes_min".into(), lp_min as f64));
     v.push(("census/r39/secant_clamp_hits".into(), clamps as f64));
 
     // === 4. the (★) bisection's cost (P3) ===================================================

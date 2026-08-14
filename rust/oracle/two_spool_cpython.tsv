@@ -11368,6 +11368,8 @@ census/r39/turb_passes_min	4607182418800017408	1.0
 census/r39/turb_passes_max	4616189618054758400	4.0
 census/r39/hp_passes_max	4616189618054758400	4.0
 census/r39/lp_passes_max	4616189618054758400	4.0
+census/r39/hp_passes_min	0	0.0
+census/r39/lp_passes_min	0	0.0
 census/r39/secant_clamp_hits	0	0.0
 bisect/tau_of_calls_per_solve	4631811479262199808	47.0
 bisect/n_solves_swept	4652236007259766784	1028.0

@@ -98,6 +98,8 @@ pub mod counters {
         static TURB_MAX: Cell<u64> = const { Cell::new(0) };
         static HP_MAX: Cell<u64> = const { Cell::new(0) };
         static LP_MAX: Cell<u64> = const { Cell::new(0) };
+        static HP_MIN: Cell<u64> = const { Cell::new(u64::MAX) };
+        static LP_MIN: Cell<u64> = const { Cell::new(u64::MAX) };
         static CLAMPS: Cell<u64> = const { Cell::new(0) };
     }
 
@@ -109,6 +111,8 @@ pub mod counters {
         TURB_MAX.with(|c| c.set(0));
         HP_MAX.with(|c| c.set(0));
         LP_MAX.with(|c| c.set(0));
+        HP_MIN.with(|c| c.set(u64::MAX));
+        LP_MIN.with(|c| c.set(u64::MAX));
         CLAMPS.with(|c| c.set(0));
     }
 
@@ -117,8 +121,14 @@ pub mod counters {
         TURB_MIN.with(|c| c.set(c.get().min(n)));
         TURB_MAX.with(|c| c.set(c.get().max(n)));
     }
-    pub(super) fn note_hp(n: u64) { HP_MAX.with(|c| c.set(c.get().max(n))); }
-    pub(super) fn note_lp(n: u64) { LP_MAX.with(|c| c.set(c.get().max(n))); }
+    pub(super) fn note_hp(n: u64) {
+        HP_MAX.with(|c| c.set(c.get().max(n)));
+        HP_MIN.with(|c| c.set(c.get().min(n)));
+    }
+    pub(super) fn note_lp(n: u64) {
+        LP_MAX.with(|c| c.set(c.get().max(n)));
+        LP_MIN.with(|c| c.set(c.get().min(n)));
+    }
     pub(super) fn bump_clamp() { CLAMPS.with(|c| c.set(c.get() + 1)); }
 
     /// Passes of the JOINT `(f, pt4)` fixed point — one per cascade call.
@@ -126,9 +136,17 @@ pub mod counters {
     /// Fewest / most passes of the OUTER turbine-efficiency loop in any one cascade.
     pub fn turb_passes_min() -> u64 { TURB_MIN.with(|c| c.get()) }
     pub fn turb_passes_max() -> u64 { TURB_MAX.with(|c| c.get()) }
-    /// Most secant steps taken by one HP / LP efficiency loop.
+    /// Most secant steps taken by one HP / LP efficiency loop. These witness that the
+    /// `ETA_MAX = 80` cap is nowhere near approached (measured 4), NOT the loop's shape.
     pub fn hp_passes_max() -> u64 { HP_MAX.with(|c| c.get()) }
     pub fn lp_passes_max() -> u64 { LP_MAX.with(|c| c.get()) }
+    /// FEWEST secant steps taken by one HP / LP efficiency loop — **and this is the pair
+    /// that witnesses the CHECK-FIRST shape.** On a flat map the residual passes on entry,
+    /// so the loop returns having called the secant ZERO times; a `do`-while would make the
+    /// minimum 1 while leaving the maximum at 4, which is why the maxima alone are blind to
+    /// the defect the module note names.
+    pub fn hp_passes_min() -> u64 { HP_MIN.with(|c| c.get()) }
+    pub fn lp_passes_min() -> u64 { LP_MIN.with(|c| c.get()) }
     /// How often the secant's `[0.3, 1.0]` clamp BOUND. Measured `0` everywhere (§ 5.7 (g)).
     pub fn secant_clamp_hits() -> u64 { CLAMPS.with(|c| c.get()) }
 }
@@ -361,10 +379,8 @@ pub struct TwoSpoolMapResult {
 /// compares against rung 31 has to unwrap the single-spool arm.
 #[derive(Clone, Debug)]
 pub enum Matched {
-    /// `lp_disabled` — rung 31's or rung 32's own result, forwarded verbatim.
+    /// `lp_disabled` — rung 31's own result, forwarded verbatim.
     Single(OffDesignResult),
-    /// `lp_disabled` on the MAP matcher — rung 32's result, which carries the map read-offs.
-    SingleMap(MapOffDesignResult),
     /// The two-spool cascade.
     Two(TwoSpoolResult),
 }

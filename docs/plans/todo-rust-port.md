@@ -2590,11 +2590,27 @@ the calorically-perfect gas is closed-form and flips **nowhere**, on either grid
 asserts that (no `cpg` flip, ever), and slice I's comment is corrected in place with its
 assertion left standing — the rung-28 shape, applied to the port's own instruments.
 
-**ONE MORE INSTRUMENT DEFECT, THE SAME SHAPE AS SLICE J's.** `bisect/n_solves_swept` was classed
-`discrete` because its key looked like a census number. It is `2 × cascade_calls` summed over the
-sweep, so it inherits the joint loop's interpreter-dependence exactly, and the CPython arm failed
-on a key that was behaving correctly. **A quantity's class comes from what PRODUCES it, never
-from what it is called.**
+**TWO MORE INSTRUMENT DEFECTS, BOTH THE SHAPE SLICE J FOUND, AND NEITHER TOUCHING A NUMBER.**
+
+1. `bisect/n_solves_swept` was classed `discrete` because its key looked like a census number. It
+   is `2 × cascade_calls` summed over the sweep, so it inherits the joint loop's
+   interpreter-dependence exactly, and the CPython arm failed on a key that was behaving
+   correctly. **A quantity's class comes from what PRODUCES it, never from what it is called.**
+2. **A KEY NAMED FOR A DEFECT IT CANNOT DETECT.** The gate's own module note claimed
+   `hp_passes_max`/`lp_passes_max` witness the check-first loop shape — *"a `do`-while would make
+   them ≥ 1 where the flat cells measure 0"*. They would not: they are **maxima over the whole
+   grid**, set by the SHAPED cells at 4, so flipping every flat cell from 0 to 1 leaves them
+   unmoved. The asymmetry was visible in the dump itself — the outer turbine loop got a `_min`
+   *and* a `_max`, the eta loops only a `_max`. Both minima are now dumped and gated (`0` today);
+   the maxima are kept for what they DO witness, that `ETA_MAX = 80` is nowhere near approached.
+   This is `docs`' own *"a documented gate that doesn't exist"* entry, one slice later, and the
+   code was never in doubt — `rung39.rs::gate1_reduce_flat_maps_is_rung38` catches a `do`-while
+   bit-for-bit. **The instrument was.**
+
+Also removed post-ship: a `Matched::SingleMap` variant that nothing constructs (rung 39 dispatches
+through its own enum) — slice J's deleted-`debug_assert_eq!` class; and one `tt.sqrt()` in the new
+rung-38 structural gate where every shipped site spells it `powp(tt, 0.5)`. Harmless where it sat,
+and exactly the line slice L would have copied.
 
 ---
 

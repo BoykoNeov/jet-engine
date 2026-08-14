@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 475a500f-97bb-4f77-ac01-3592dc3d3a66
-  modified: 2026-08-14T09:37:58.813Z
+  modified: 2026-08-14T09:51:56.858Z
 ---
 
 Phase 5 slice K of the Rust port (`docs/plans/todo-rust-port.md` § 5.7) covers rungs 38 and 39,
@@ -51,6 +51,13 @@ unmeetable stopping rule; the closed-form gas flips nowhere. The failing copy is
 the finding, so copy earlier assertions forward *deliberately* and treat a failure as a
 measurement. (Slice I's assertion still holds on its own grid; only its reason was wrong — the
 [[rung28-coupled-no-march]] shape, applied to the port's own instruments.)
+
+**A KEY NAMED FOR A DEFECT IT CANNOT DETECT.** The gate's doc claimed two `*_passes_max` census
+keys would catch a `do`-while loop shape. They are **maxima over the whole grid**, set by the
+shaped cells, so flipping every flat cell from 0 to 1 leaves them unmoved. The tell was visible in
+the dump itself — one loop got a `_min` and a `_max`, the other only a `_max`. When you write down
+what an instrument catches, check that quantity would actually MOVE under the defect. Same family
+as [[rust-port-documented-gate-that-doesnt-exist]].
 
 **A QUANTITY'S CLASS COMES FROM WHAT PRODUCES IT, NEVER FROM WHAT IT IS CALLED.** A key named
 `bisect/n_solves_swept` was classed as a fixed count; it is a pass-count sum, so it inherits the
