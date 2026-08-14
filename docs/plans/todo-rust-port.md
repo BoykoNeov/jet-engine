@@ -3427,6 +3427,11 @@ bit-exact dump says nothing about coverage.
   `rung38`/`rung39`/`rung41`/`rung42` suites re-run **bit-identical**. *Refuted by:* one changed
   bit ⇒ **revert**, per slice J's rule for a refactor to gated code. Note this is the THIRD
   instance of that rule and the largest re-run set the port has had.
+  **The BASELINE is established BEFORE the first edit, not reconstructed after a failure:**
+  `cargo test --release` on the pre-slice-M tree is **481 passed / 0 failed across 56 suites,
+  exit 0** (`baseline_cargo.txt`). A prediction whose refutation costs a revert is worthless
+  without a recorded "before" — otherwise a red suite after the edit cannot be told from drift
+  that was already there.
 * **P3 — THE `vsv == 0` AND `capacity == 0` EARLY RETURNS ARE PORTED AS EARLY RETURNS.**
   `psi` and `phi_max` both return before touching the swirl term at `vsv == 0.0`, and
   `phi_surge_at` returns the FIELD. Writing `base - 0.0*(1+l)*phi` instead is an assumed
