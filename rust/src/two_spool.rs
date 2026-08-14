@@ -72,8 +72,8 @@
 
 use crate::components::{choked_mfp, ram_recovery, Burner, Component, Compressor, Inlet, Nozzle,
                         Turbine};
-use crate::engine::{score, Engine, EngineResult, FlightCondition, Performance};
-use crate::gas::{powp, FlowState, Gas};
+use crate::engine::{score, try_score, Engine, EngineResult, FlightCondition, Performance};
+use crate::gas::{powp, Abort, FlowState, Gas};
 use crate::map::{ComponentMap, MapMatcher, MapOffDesignResult};
 use crate::matcher::{OffDesignMatcher, OffDesignResult};
 
@@ -548,6 +548,14 @@ impl TwoSpoolCore {
         self.fs_engine.freestream(flight, self.mdot_air_design)
     }
 
+    /// The FALLIBLE twin of [`freestream_for`](Self::freestream_for) — see
+    /// [`Engine::try_freestream`].
+    pub fn try_freestream_for(
+        &self, flight: &FlightCondition,
+    ) -> Result<(FlowState, f64), Abort> {
+        self.fs_engine.try_freestream(flight, self.mdot_air_design)
+    }
+
     /// Capture the fixed hardware from one design run — **three** throat areas, where rung 31
     /// captured two.
     pub fn new(
@@ -619,17 +627,31 @@ impl TwoSpoolCore {
     /// See [`OffDesignMatcher::working_gas`] — identical need, same solution. `None` means "use
     /// the shared design gas".
     ///
-    /// **Infallible, unlike slice I's**, and that is measured rather than assumed: rungs 38/39
-    /// contain no `try`/`except` anywhere, so no caller here marches past a failure and there is
-    /// nothing for an [`Abort`](crate::gas::Abort) to be control flow *for* (§ 5.7 (e)).
+    /// **Slice K shipped this INFALLIBLE, with the reason written down, and SLICE L IS WHERE THE
+    /// REASON EXPIRES.** § 5.7 (e) argued "rungs 38/39 contain no `try`/`except` anywhere, so no
+    /// caller here marches past a failure and there is nothing for an [`Abort`] to be control
+    /// flow *for*". Correct then, and it is a statement about the CALLERS, not about this
+    /// function — rung 41 adds the first three (`surge_margin_schedule`, `running_line_map`,
+    /// `flow_coefficient_turn`), and the equilibrium Newton raises **14 times** inside their
+    /// caught scope on the dump grid. The twin below is what that costs. Kept as a pair of
+    /// functions rather than a rewrite, so slice K's gated body is the one still running.
+    ///
+    /// [`Abort`]: crate::gas::Abort
     pub fn working_gas(&self, f: f64, tt4: f64, pt4: f64) -> Option<Gas> {
+        self.try_working_gas(f, tt4, pt4).unwrap_or_else(|e| panic!("{}", e.0))
+    }
+
+    /// The FALLIBLE twin of [`working_gas`](Self::working_gas) — see [`Abort`].
+    ///
+    /// [`Abort`]: crate::gas::Abort
+    pub fn try_working_gas(&self, f: f64, tt4: f64, pt4: f64) -> Result<Option<Gas>, Abort> {
         if !self.gas().is_equilibrium() {
-            return None;
+            return Ok(None);
         }
         let g = Gas::reacting_equilibrium_with(
             self.hf_fuel_molar.expect("an equilibrium gas carries hf_fuel_molar"), 0.0);
-        g.freeze_equilibrium(f, tt4, pt4);
-        Some(g)
+        g.try_freeze_equilibrium(f, tt4, pt4)?;
+        Ok(Some(g))
     }
 
     // --- the shared (★) mechanism: one choked-throat PAIR pins one turbine's tau -----------
@@ -640,11 +662,28 @@ impl TwoSpoolCore {
     /// after the loop** — which is why the instrument reads 47 where the loop runs 44 times
     /// (§ 5.7 (d)).
     pub fn tau_of(&self, gas: &Gas, tt_in: f64, f: f64, pi_t: f64, eta: f64) -> (f64, f64) {
+        self.try_tau_of(gas, tt_in, f, pi_t, eta).unwrap_or_else(|e| panic!("{}", e.0))
+    }
+
+    /// The FALLIBLE twin of [`tau_of`](Self::tau_of) — see [`Abort`].
+    ///
+    /// **The whole of slice L's new fallible surface below the matcher is this one line**: the
+    /// isentropic `t_from_pr_t` at a trial expansion ratio. The two other inversions in this
+    /// body (`t_from_h_t`, twice) reach the same solver and raise **0** times on the dump grid,
+    /// so they keep their panics — see [`crate::gas::try_solve`].
+    ///
+    /// The counter is bumped BEFORE the fallible call, so a raising call still counts as a call
+    /// — which is what Python's frame count would say, and what the (★) census compares.
+    ///
+    /// [`Abort`]: crate::gas::Abort
+    pub fn try_tau_of(
+        &self, gas: &Gas, tt_in: f64, f: f64, pi_t: f64, eta: f64,
+    ) -> Result<(f64, f64), Abort> {
         self.tau_calls.set(self.tau_calls.get() + 1);
-        let tt_outs = gas.t_from_pr_t(gas.pr_t(tt_in, f) * pi_t, f);
+        let tt_outs = gas.try_t_from_pr_t(gas.pr_t(tt_in, f) * pi_t, f)?;
         let dh_ideal = gas.h_t(tt_in, f) - gas.h_t(tt_outs, f);
         let tt_out = gas.t_from_h_t(gas.h_t(tt_in, f) - eta * dh_ideal, f);
-        (tt_out / tt_in, tt_out)
+        Ok((tt_out / tt_in, tt_out))
     }
 
     /// Bisect `pi_t` so `pi_t/sqrt(tau_t) = A_in·MFP(Tt_in) / (A_out·pi_loss·MFP(Tt_out))`.
@@ -662,21 +701,38 @@ impl TwoSpoolCore {
     pub fn solve_choked_turbine(
         &self, gas: &Gas, tt_in: f64, f: f64, a_in: f64, a_out: f64, pi_loss: f64, eta: f64,
     ) -> (f64, f64, f64) {
+        self.try_solve_choked_turbine(gas, tt_in, f, a_in, a_out, pi_loss, eta)
+            .unwrap_or_else(|e| panic!("{}", e.0))
+    }
+
+    /// The FALLIBLE twin of [`solve_choked_turbine`](Self::solve_choked_turbine) — see
+    /// [`Abort`].
+    ///
+    /// The bracket-straddle guard STAYS an `assert!` inside the fallible body, and that is not
+    /// an oversight: it fires **0** times across slice K's and slice L's grids, so making it an
+    /// `Abort` would add a control-flow path with no reachable failure — a gate that measures
+    /// nothing (the [`Abort`] rule's own words). What propagates is the residual's inversion.
+    ///
+    /// [`Abort`]: crate::gas::Abort
+    #[allow(clippy::too_many_arguments)]
+    pub fn try_solve_choked_turbine(
+        &self, gas: &Gas, tt_in: f64, f: f64, a_in: f64, a_out: f64, pi_loss: f64, eta: f64,
+    ) -> Result<(f64, f64, f64), Abort> {
         let mfp_in = choked_mfp(gas, tt_in, f);
-        let resid = |pi_t: f64| -> f64 {
-            let (tau_t, tt_out) = self.tau_of(gas, tt_in, f, pi_t, eta);
+        let resid = |pi_t: f64| -> Result<f64, Abort> {
+            let (tau_t, tt_out) = self.try_tau_of(gas, tt_in, f, pi_t, eta)?;
             let mfp_out = choked_mfp(gas, tt_out, f);
             let rhs = a_in * mfp_in / (a_out * pi_loss * mfp_out);
-            pi_t / powp(tau_t, 0.5) - rhs
+            Ok(pi_t / powp(tau_t, 0.5) - rhs)
         };
 
         let (mut lo, mut hi) = (0.02, 0.999);
-        let (mut flo, fhi) = (resid(lo), resid(hi));
+        let (mut flo, fhi) = (resid(lo)?, resid(hi)?);
         assert!(flo < 0.0 && 0.0 < fhi,
                 "rung-38 turbine choke-match bracket does not straddle the root");
         for _ in 0..Self::MAX {
             let mid = 0.5 * (lo + hi);
-            let fm = resid(mid);
+            let fm = resid(mid)?;
             if flo * fm <= 0.0 {
                 hi = mid;
             } else {
@@ -688,16 +744,26 @@ impl TwoSpoolCore {
             }
         }
         let pi_t = 0.5 * (lo + hi);
-        let (tau_t, tt_out) = self.tau_of(gas, tt_in, f, pi_t, eta);
-        (pi_t, tau_t, tt_out)
+        let (tau_t, tt_out) = self.try_tau_of(gas, tt_in, f, pi_t, eta)?;
+        Ok((pi_t, tau_t, tt_out))
     }
 
     // --- the burner f-solve (reuses the shipped burner formulas) ---------------------------
 
     pub fn solve_f(&self, tt3: f64, pt4: f64, tt4: f64) -> f64 {
+        self.try_solve_f(tt3, pt4, tt4).unwrap_or_else(|e| panic!("{}", e.0))
+    }
+
+    /// The FALLIBLE twin of [`solve_f`](Self::solve_f) — see [`Abort`]. Both arms can raise
+    /// inside rung 41's caught scope: the equilibrium burner 0 times and this loop's own
+    /// non-convergence 3 times on the dump grid.
+    ///
+    /// [`Abort`]: crate::gas::Abort
+    pub fn try_solve_f(&self, tt3: f64, pt4: f64, tt4: f64) -> Result<f64, Abort> {
         let gas = self.gas();
         if gas.is_equilibrium() {
-            return Burner::new(tt4, self.eta_b, self.pi_b).solve_equilibrium(tt3, pt4, gas);
+            return Burner::new(tt4, self.eta_b, self.pi_b)
+                .try_solve_equilibrium(tt3, pt4, gas);
         }
         let h3 = gas.h_c(tt3);
         let mut f = 0.0;
@@ -705,11 +771,11 @@ impl TwoSpoolCore {
             let h4 = gas.h_t(tt4, f);
             let f_new = (h4 - h3) / (self.eta_b * gas.hpr() - h4);
             if (f_new - f).abs() <= Self::TOL * (f_new + 1e-30) {
-                return f_new;
+                return Ok(f_new);
             }
             f = f_new;
         }
-        panic!("rung-38 off-design burner f did not converge");
+        Err(Abort("rung-38 off-design burner f did not converge".to_string()))
     }
 
     // --- the triangular cascade at a FIXED (Tt2, Tt4, f) -----------------------------------
@@ -722,13 +788,22 @@ impl TwoSpoolCore {
     /// its own method, as the Python's is, so a gate can perturb one spool's constants at a
     /// FIXED `(Tt2, Tt4, f)` and the outer joint loop cannot confound the reading.
     pub fn cascade(&self, wgas: &Gas, tt2: f64, tt4: f64, f: f64) -> Cascade {
+        self.try_cascade(wgas, tt2, tt4, f).unwrap_or_else(|e| panic!("{}", e.0))
+    }
+
+    /// The FALLIBLE twin of [`cascade`](Self::cascade) — see [`Abort`].
+    ///
+    /// [`Abort`]: crate::gas::Abort
+    pub fn try_cascade(
+        &self, wgas: &Gas, tt2: f64, tt4: f64, f: f64,
+    ) -> Result<Cascade, Abort> {
         counters::bump_cascade();
         // Step 1 (★-HP): tau_HPT from (A4, A45) alone.
         let (pi_hpt, tau_hpt, tt45) =
-            self.solve_choked_turbine(wgas, tt4, f, self.a4, self.a45, 1.0, self.eta_hpt);
+            self.try_solve_choked_turbine(wgas, tt4, f, self.a4, self.a45, 1.0, self.eta_hpt)?;
         // Step 2 (★-LP): tau_LPT from (A45, A8) alone — needs the nozzle choked.
-        let (pi_lpt, tau_lpt, tt5) =
-            self.solve_choked_turbine(wgas, tt45, f, self.a45, self.a8, self.pi_n, self.eta_lpt);
+        let (pi_lpt, tau_lpt, tt5) = self.try_solve_choked_turbine(
+            wgas, tt45, f, self.a45, self.a8, self.pi_n, self.eta_lpt)?;
 
         // Step 3: LP shaft balance -> pi_LPC. NO reference to the HP spool.
         let dh_lpt = self.eta_m * (1.0 + f) * (wgas.h_t(tt45, f) - wgas.h_t(tt5, f));
@@ -744,7 +819,7 @@ impl TwoSpoolCore {
         let tt3s = wgas.t_from_h_c(h25b + self.eta_hpc * (h3 - h25b));
         let pi_hpc = wgas.pr_c(tt3s) / wgas.pr_c(tt25);
 
-        Cascade { pi_hpt, tau_hpt, tt45, pi_lpt, tau_lpt, tt5, pi_lpc, tt25, pi_hpc, tt3 }
+        Ok(Cascade { pi_hpt, tau_hpt, tt45, pi_lpt, tau_lpt, tt5, pi_lpc, tt25, pi_hpc, tt3 })
     }
 
     // --- match one operating point ---------------------------------------------------------
@@ -797,8 +872,12 @@ impl TwoSpoolCore {
         let mdot4 = self.a4 * pt4 * choked_mfp(wgas, tt4, f) / powp(tt4, 0.5);
         let mdot_air = mdot4 / (1.0 + f);
 
-        let r = self.rebuild(flight, pi_d, c.pi_lpc, c.pi_hpc, tt4, mdot_air,
-                             self.eta_lpc, self.eta_hpc, self.eta_hpt, self.eta_lpt);
+        // Rung 38's `match` is DELIBERATELY the infallible one: Python's rung 38 has no caller
+        // that catches, and the twin rule is about the CALLERS. Rung 39's — which rung 41 does
+        // catch — is the fallible one below.
+        let r = self.try_rebuild(flight, pi_d, c.pi_lpc, c.pi_hpc, tt4, mdot_air,
+                                 self.eta_lpc, self.eta_hpc, self.eta_hpt, self.eta_lpt)
+            .unwrap_or_else(|e| panic!("{}", e.0));
         let nozzle_choked = r.exit_p9 > self.p_ambient + 1e-6;
 
         // SCOPE GUARD (`docs/rung38-spec.md` § Scope). Unchoke relocates rung 33's inversion one
@@ -823,17 +902,17 @@ impl TwoSpoolCore {
     /// and reads exactly as before, rung 39 passes the map's values at the operating point, and
     /// the Python duplicates the whole body across the two `match` methods.
     #[allow(clippy::too_many_arguments)]
-    fn rebuild(
+    fn try_rebuild(
         &self, flight: &FlightCondition, pi_d: f64, pi_lpc: f64, pi_hpc: f64, tt4: f64,
         mdot_air: f64, eta_lpc: f64, eta_hpc: f64, eta_hpt: f64, eta_lpt: f64,
-    ) -> TwoSpoolRebuilt {
+    ) -> Result<TwoSpoolRebuilt, Abort> {
         let rgas = if self.gas().is_equilibrium() {
             Gas::reacting_equilibrium_with(
                 self.hf_fuel_molar.expect("an equilibrium gas carries hf_fuel_molar"), 0.0)
         } else {
             self.gas().clone()
         };
-        let (state0, v0) = self.fs_engine.freestream(flight, mdot_air);
+        let (state0, v0) = self.fs_engine.try_freestream(flight, mdot_air)?;
         let s2 = Inlet::new(pi_d).apply(&state0, &rgas);
         let s25 = Compressor::new(pi_lpc, eta_lpc, None).apply(&s2, &rgas);
         let s3 = Compressor::new(pi_hpc, eta_hpc, None).apply(&s25, &rgas);
@@ -842,12 +921,12 @@ impl TwoSpoolCore {
         let s45 = Turbine::new(eta_hpt, None).apply(&s4, &rgas, dh_hpt_reb);
         let dh_lpt_reb = (rgas.h_c(s25.tt) - rgas.h_c(s2.tt)) / (self.eta_m * (1.0 + s4.far));
         let s5 = Turbine::new(eta_lpt, None).apply(&s45, &rgas, dh_lpt_reb);
-        let exit = Nozzle::convergent(self.p_ambient, self.pi_n).apply(&s5, &rgas);
-        TwoSpoolRebuilt {
+        let exit = Nozzle::convergent(self.p_ambient, self.pi_n).try_apply(&s5, &rgas)?;
+        Ok(TwoSpoolRebuilt {
             state0, v0, s2, s25, s3, s4, s45, s5,
             exit_state: exit.state, exit_m9: exit.m9, exit_t9: exit.t9, exit_v9: exit.v9,
             exit_p9: exit.p9, gas: rgas,
-        }
+        })
     }
 }
 
@@ -875,21 +954,35 @@ impl TwoSpoolRebuilt {
         self, core: &TwoSpoolCore, flight: &FlightCondition, tt4: f64, mdot_air: f64,
         c: &Cascade,
     ) -> TwoSpoolResult {
+        self.try_into_result(core, flight, tt4, mdot_air, c)
+            .unwrap_or_else(|e| panic!("{}", e.0))
+    }
+
+    /// The FALLIBLE twin — see [`Abort`]. The only thing that can raise here is
+    /// [`try_score`]'s efficiency cascade, and it does: **27 cells** of the dump grid, every one
+    /// a cell rung 41's schedule methods skip.
+    ///
+    /// [`Abort`]: crate::gas::Abort
+    fn try_into_result(
+        self, core: &TwoSpoolCore, flight: &FlightCondition, tt4: f64, mdot_air: f64,
+        c: &Cascade,
+    ) -> Result<TwoSpoolResult, Abort> {
         let TwoSpoolRebuilt { state0, v0, s2, s25, s3, s4, s45, s5,
                               exit_state, exit_m9, exit_t9, exit_v9, exit_p9, gas: rgas } = self;
         let stations = vec![
             ("0", state0), ("2", s2), ("25", s25), ("3", s3), ("4", s4),
             ("45", s45), ("5", s5), ("9", exit_state),
         ];
-        let perf = score(&rgas, &stations, v0, exit_t9, exit_v9, exit_p9, flight.p0, rgas.hpr());
+        let perf = try_score(&rgas, &stations, v0, exit_t9, exit_v9, exit_p9, flight.p0,
+                             rgas.hpr())?;
         let thrust = mdot_air * perf.specific_thrust;
-        TwoSpoolResult {
+        Ok(TwoSpoolResult {
             stations, performance: perf, v0, v9: exit_v9, m9: exit_m9, t9: exit_t9, p9: exit_p9,
             thrust, tt4, m0: flight.m0, pi_lpc: c.pi_lpc, pi_hpc: c.pi_hpc,
             tau_lpc: s25.tt / s2.tt, tau_hpc: s3.tt / s25.tt,
             tau_hpt: c.tau_hpt, pi_hpt: c.pi_hpt, tau_lpt: c.tau_lpt, pi_lpt: c.pi_lpt,
             mdot_air, mdot_ratio: mdot_air / core.mdot_air_design,
-        }
+        })
     }
 }
 
@@ -918,12 +1011,22 @@ impl TwoSpoolRebuilt {
 
 /// The virtual table § 5.3's census requires rung 39 to ship.
 ///
-/// **Nothing dispatches through it in slice K** — see the module note. `match_point` is
-/// overridden by rung 42 and called on `self` only by rung-41 methods (slice L);
-/// `hp_eta_loop`/`lp_eta_loop` are overridden by rung 55 (phase 7).
+/// **Slice K shipped it with NOTHING dispatching through it; SLICE L MAKES `try_match_point`
+/// THE PORT'S FIRST LIVE VIRTUAL DISPATCH.** Rung 42 overrides it, and rung 41's `surge_margin`
+/// / `running_line_map` / `flow_coefficient_turn` call it on `self` — so a rung-42 object
+/// running `bleed_trade` reaches `surge_margin` (rung 41's code) which reaches rung 42's own
+/// override. That chain is the reason the table exists, and
+/// `rung42.rs::gate_the_dispatch_is_live` is what witnesses it: no value key can.
+/// `hp_eta_loop`/`lp_eta_loop` are still unexercised — they are overridden by rung 55 (phase 7).
 pub struct TwoSpoolHooks {
-    /// Match one point. Rung 42's `TwoSpoolBleedMatcher` overrides this.
-    pub match_point: fn(&TwoSpoolMapCore, &FlightCondition, f64) -> TwoSpoolMapResult,
+    /// Match one point, FALLIBLY. Rung 42's `TwoSpoolBleedMatcher` overrides this.
+    ///
+    /// The table holds the `try_` half of the twin, not the panicking half, because the
+    /// panicking half is a two-line wrapper that must NOT be overridable independently — a cell
+    /// that overrode only one of the pair would give `surge_margin_schedule` and
+    /// `surge_margin` different physics.
+    pub try_match_point:
+        fn(&TwoSpoolMapCore, &FlightCondition, f64) -> Result<TwoSpoolMapResult, Abort>,
     /// The CLOSED HP efficiency fixed point. Rung 55's `StageStackMatcher` overrides it.
     pub hp_eta_loop:
         fn(&TwoSpoolMapCore, &Gas, f64, f64, f64, f64, f64, &ComponentMap) -> EtaLoop,
@@ -934,7 +1037,7 @@ pub struct TwoSpoolHooks {
 
 /// RUNG 39's table.
 pub const R39: TwoSpoolHooks = TwoSpoolHooks {
-    match_point: r39_match_point,
+    try_match_point: r39_try_match_point,
     hp_eta_loop: r39_hp_eta_loop,
     lp_eta_loop: r39_lp_eta_loop,
 };
@@ -977,7 +1080,7 @@ impl TwoSpoolMapMatcher {
     pub fn match_point(&self, flight: &FlightCondition, tt4: f64) -> MatchedMap {
         match self {
             TwoSpoolMapMatcher::Degenerate(m) => MatchedMap::Single(m.match_point(flight, tt4)),
-            TwoSpoolMapMatcher::Full(c) => MatchedMap::Two((c.hooks.match_point)(c, flight, tt4)),
+            TwoSpoolMapMatcher::Full(c) => MatchedMap::Two(c.match_point(flight, tt4)),
         }
     }
 
@@ -1068,6 +1171,29 @@ impl TwoSpoolMapCore {
 
     pub fn gas(&self) -> &Gas { self.base.gas() }
 
+    // --- THE DISPATCH POINT ----------------------------------------------------------------
+
+    /// Match one point **through the virtual table** — rung 39's body, or rung 42's override.
+    ///
+    /// This pair is the port's first LIVE dispatch: rung 41's [`surge_margin`](Self::
+    /// surge_margin), [`running_line_map`](Self::running_line_map) and
+    /// [`flow_coefficient_turn`](Self::flow_coefficient_turn) all reach the concrete cell
+    /// through here, which is exactly what Python's `self.match(...)` does inside those three
+    /// methods.
+    pub fn match_point(&self, flight: &FlightCondition, tt4: f64) -> TwoSpoolMapResult {
+        self.try_match_point(flight, tt4).unwrap_or_else(|e| panic!("{}", e.0))
+    }
+
+    /// The FALLIBLE half — see [`Abort`]. Rung 41's three schedule methods call THIS one and
+    /// skip the point on `Err`, which is what Python's `except AssertionError: continue` means.
+    ///
+    /// [`Abort`]: crate::gas::Abort
+    pub fn try_match_point(
+        &self, flight: &FlightCondition, tt4: f64,
+    ) -> Result<TwoSpoolMapResult, Abort> {
+        (self.hooks.try_match_point)(self, flight, tt4)
+    }
+
     // --- the triangular map cascade at a FIXED (Tt2, pt2, Tt4, f) --------------------------
 
     /// Rung 38's steps 1–4 with both maps live, TRIANGULAR by construction.
@@ -1086,16 +1212,26 @@ impl TwoSpoolMapCore {
     /// cancels out of (†) and (‡). It is kept in the signature because rung 38 gate 3's protocol
     /// hands a caller the converged `(Tt2, pt2, Tt4, f)` four-tuple, and dropping one element
     /// here would make the two isolation entry points differ for no reason.
-    pub fn cascade_map(&self, wgas: &Gas, tt2: f64, _pt2: f64, tt4: f64, f: f64) -> CascadeMap {
+    pub fn cascade_map(&self, wgas: &Gas, tt2: f64, pt2: f64, tt4: f64, f: f64) -> CascadeMap {
+        self.try_cascade_map(wgas, tt2, pt2, tt4, f).unwrap_or_else(|e| panic!("{}", e.0))
+    }
+
+    /// The FALLIBLE twin of [`cascade_map`](Self::cascade_map) — see [`Abort`]. Both efficiency
+    /// loops and the outer turbine loop keep their panics: measured **0** raises.
+    ///
+    /// [`Abort`]: crate::gas::Abort
+    pub fn try_cascade_map(
+        &self, wgas: &Gas, tt2: f64, _pt2: f64, tt4: f64, f: f64,
+    ) -> Result<CascadeMap, Abort> {
         counters::bump_cascade();
         let mfp4 = choked_mfp(wgas, tt4, f);
         let (mut eta_hpt, mut eta_lpt) = (self.base.eta_hpt, self.base.eta_lpt);
         for turb_pass in 0..Self::TURB_MAX {
             // Steps 1–2: both turbines pinned by geometry, at the current turbine efficiencies.
-            let (pi_hpt, tau_hpt, tt45) = self.base.solve_choked_turbine(
-                wgas, tt4, f, self.base.a4, self.base.a45, 1.0, eta_hpt);
-            let (pi_lpt, tau_lpt, tt5) = self.base.solve_choked_turbine(
-                wgas, tt45, f, self.base.a45, self.base.a8, self.base.pi_n, eta_lpt);
+            let (pi_hpt, tau_hpt, tt45) = self.base.try_solve_choked_turbine(
+                wgas, tt4, f, self.base.a4, self.base.a45, 1.0, eta_hpt)?;
+            let (pi_lpt, tau_lpt, tt5) = self.base.try_solve_choked_turbine(
+                wgas, tt45, f, self.base.a45, self.base.a8, self.base.pi_n, eta_lpt)?;
 
             // ENERGY (map-free): the LP balance fixes Tt25, the HP balance fixes Tt3 onto it.
             let dh_lpt = self.base.eta_m * (1.0 + f) * (wgas.h_t(tt45, f) - wgas.h_t(tt5, f));
@@ -1129,7 +1265,7 @@ impl TwoSpoolMapCore {
             if (t_hpt - eta_hpt).abs() <= Self::ETA_TOL
                 && (t_lpt - eta_lpt).abs() <= Self::ETA_TOL {
                 counters::note_turb(turb_pass as u64 + 1);
-                return out;
+                return Ok(out);
             }
             eta_hpt = t_hpt;
             eta_lpt = t_lpt;
@@ -1261,22 +1397,22 @@ fn r39_lp_eta_loop(
 /// RUNG 39's `match`. The outer `(f, pt4)` fixed point is rung 38's, unchanged — the one place
 /// the two spools share state. `pi_lpc`, `pi_hpc`, all four efficiencies AND both shaft speeds
 /// are OUTPUTS. Scope (inherited, re-asserted): the nozzle must stay choked.
-fn r39_match_point(
+fn r39_try_match_point(
     core: &TwoSpoolMapCore, flight: &FlightCondition, tt4: f64,
-) -> TwoSpoolMapResult {
+) -> Result<TwoSpoolMapResult, Abort> {
     let b = &core.base;
     let pi_d = b.pi_d_max * ram_recovery(flight.m0);
-    let (state0, _v0) = b.freestream_for(flight);
+    let (state0, _v0) = b.try_freestream_for(flight)?;
     let (tt2, pt2) = (state0.tt, pi_d * state0.pt);
 
     let (mut f, mut pt4) = (b.f_design, b.pi_b * b.pi_hpc_design * b.pi_lpc_design * pt2);
     let mut c: Option<CascadeMap> = None;
     for _ in 0..TwoSpoolCore::MAX {
-        let owned = b.working_gas(f, tt4, pt4);
+        let owned = b.try_working_gas(f, tt4, pt4)?;
         let wgas = owned.as_ref().unwrap_or(b.gas());
-        let cm = core.cascade_map(wgas, tt2, pt2, tt4, f);
+        let cm = core.try_cascade_map(wgas, tt2, pt2, tt4, f)?;
         let pt4_new = b.pi_b * cm.c.pi_hpc * cm.c.pi_lpc * pt2;
-        let f_new = b.solve_f(cm.c.tt3, pt4_new, tt4);
+        let f_new = b.try_solve_f(cm.c.tt3, pt4_new, tt4)?;
         let done = (f_new - f).abs() <= TwoSpoolCore::TOL * (f_new + 1e-30)
             && (pt4_new - pt4).abs() <= TwoSpoolCore::TOL * pt4_new;
         c = Some(cm);
@@ -1292,25 +1428,31 @@ fn r39_match_point(
                 && 0.0 < c.c.tau_lpt && c.c.tau_lpt < 1.0,
             "rung-39 two-spool map match unphysical");
 
-    let owned = b.working_gas(f, tt4, pt4);
+    let owned = b.try_working_gas(f, tt4, pt4)?;
     let wgas = owned.as_ref().unwrap_or(b.gas());
     let mdot_air = b.a4 * pt4 * choked_mfp(wgas, tt4, f) / powp(tt4, 0.5) / (1.0 + f);
 
     // Rebuild FORWARD at the MAP-CONSISTENT efficiencies.
-    let r = b.rebuild(flight, pi_d, c.c.pi_lpc, c.c.pi_hpc, tt4, mdot_air,
-                      c.eta_lpc, c.eta_hpc, c.eta_hpt, c.eta_lpt);
+    let r = b.try_rebuild(flight, pi_d, c.c.pi_lpc, c.c.pi_hpc, tt4, mdot_air,
+                          c.eta_lpc, c.eta_hpc, c.eta_hpt, c.eta_lpt)?;
 
     // SCOPE GUARD (inherited from rung 38 — unchoke is still a rung-33-shaped follow-on).
-    assert!(r.exit_p9 > b.p_ambient + 1e-6,
-            "rung-39 two-spool map match at Tt4={tt4:.0}, M0={:.2}: nozzle UNCHOKED -- OUT OF \
-             SCOPE (docs/rung38-spec.md 'Scope'). The LP turbine's geometric tau_LPT pin (*-LP) \
-             is only valid while the nozzle stays choked.", flight.m0);
+    // An `Abort` rather than a panic FROM SLICE L ON: rung 41's schedule methods SKIP such a
+    // point, and this is much the commonest reason they do — 23 of the 147-cell dump grid at
+    // `b = 0`, rising to 25 at `b = 0.10`, which IS rung 42 gate 6's shrinking envelope, as a
+    // count.
+    if r.exit_p9 <= b.p_ambient + 1e-6 {
+        return Err(Abort(format!(
+            "rung-39 two-spool map match at Tt4={tt4:.0}, M0={:.2}: nozzle UNCHOKED -- OUT \
+             OF SCOPE (docs/rung38-spec.md 'Scope'). The LP turbine's geometric tau_LPT pin \
+             (*-LP) is only valid while the nozzle stays choked.", flight.m0)));
+    }
 
-    let base = r.into_result(b, flight, tt4, mdot_air, &c.c);
-    TwoSpoolMapResult {
+    let base = r.try_into_result(b, flight, tt4, mdot_air, &c.c)?;
+    Ok(TwoSpoolMapResult {
         base,
         eta_lpc: c.eta_lpc, eta_hpc: c.eta_hpc, eta_hpt: c.eta_hpt, eta_lpt: c.eta_lpt,
         n_lp: c.n_l, n_hp: c.n_h, n_lp_ratio: c.nl, n_hp_ratio: c.nh, slip: c.slip,
         phi_lp: c.phi_l, phi_hp: c.phi_h, nu_hpt: c.nu_hpt, nu_lpt: c.nu_lpt,
-    }
+    })
 }

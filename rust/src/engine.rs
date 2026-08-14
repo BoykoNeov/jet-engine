@@ -15,7 +15,7 @@
 //! products composition; a CPG/frozen-TPG gas ignores it.
 
 use crate::components::{Burner, Component, Compressor, Inlet, Nozzle, Turbine};
-use crate::gas::{powp, FlowState, Gas};
+use crate::gas::{powp, Abort, FlowState, Gas};
 
 /// Freestream / flight inputs (station 0).
 #[derive(Clone, Copy, Debug)]
@@ -138,6 +138,19 @@ impl Engine {
     /// `gamma*R/cp` differ from `gamma-1` by ~0.05 %, which the `pt0` exponent `1/gc = 3.5`
     /// amplifies to ~0.18 %. So the CPG branch keeps the closed form, to stay exact.
     pub fn freestream(&self, flight: &FlightCondition, mdot: f64) -> (FlowState, f64) {
+        self.try_freestream(flight, mdot).unwrap_or_else(|e| panic!("{}", e.0))
+    }
+
+    /// The FALLIBLE twin of [`freestream`](Self::freestream) — see [`Abort`].
+    ///
+    /// The ram check is a SANITY check, not a conservation law, and slice L is where it becomes
+    /// control flow: rung 41's `surge_margin_schedule` skips a point whose `match` raises, and
+    /// this is what raises on the whole `M0 = 0` column of the dump grid — **28 of the 294 cells
+    /// measured**, on the two integral gases only, because `t_from_h_c(h_c(250))` round-trips
+    /// three ulps low while the pressure clause is exact (§ 5.7 (f), now inside a caught scope).
+    pub fn try_freestream(
+        &self, flight: &FlightCondition, mdot: f64,
+    ) -> Result<(FlowState, f64), Abort> {
         let gas = &self.gas;
         let (tt0, pt0, v0);
         if gas.cold_is_cpg() {
@@ -159,8 +172,10 @@ impl Engine {
 
         // Sanity check, every call. NOT a conservation law: station 0 manufactures totals from
         // statics, so stopping the flow can only raise T and p.
-        assert!(tt0 >= flight.t0 && pt0 >= flight.p0, "ram must not cool/depressurize");
-        (state0, v0)
+        if !(tt0 >= flight.t0 && pt0 >= flight.p0) {
+            return Err(Abort("ram must not cool/depressurize".to_string()));
+        }
+        Ok((state0, v0))
     }
 
     /// Propagate the flow 0 -> 9 and compute performance.
@@ -247,6 +262,21 @@ pub fn score(
     gas: &Gas, stations: &[(&'static str, FlowState)], v0: f64,
     t9: f64, v9: f64, p9: f64, p0: f64, hpr: f64,
 ) -> Performance {
+    try_score(gas, stations, v0, t9, v9, p9, p0, hpr).unwrap_or_else(|e| panic!("{}", e.0))
+}
+
+/// The FALLIBLE twin of [`score`] — see [`Abort`].
+///
+/// The cascade closure is a free consistency check on a converged cycle, so it reads as a
+/// conservation assert; it becomes control flow at slice L for one structural reason. It is
+/// `0/0` at `M0 = 0` and near-`0/0` at very low thrust, and rung 41's schedule methods march
+/// straight through both. Measured: **27 raises of 294 cells** on the dump grid, every one on a
+/// cell rung 41 SKIPS.
+#[allow(clippy::too_many_arguments)]
+pub fn try_score(
+    gas: &Gas, stations: &[(&'static str, FlowState)], v0: f64,
+    t9: f64, v9: f64, p9: f64, p0: f64, hpr: f64,
+) -> Result<Performance, Abort> {
     let f = station_of(stations, "4").far;
     let pressure_thrust = (1.0 + f) * gas.r_t_at(f) * t9 * (1.0 - p0 / p9) / v9;
     let specific_thrust = (1.0 + f) * v9 - v0 + pressure_thrust;
@@ -259,11 +289,14 @@ pub fn score(
     let eta_overall = (specific_thrust * v0) / (f * hpr);
     // CASCADE CLOSURE (free consistency check): the KE-based cascade holds EXACTLY, which is
     // the whole reason eta_thermal is defined on kinetic energy rather than on Tt2/Tt3.
-    assert!((eta_overall - eta_thermal * eta_propulsive).abs() < 1e-9 * eta_overall,
-            "efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE definition");
-    Performance {
-        specific_thrust, tsfc, eta_brayton, eta_thermal, eta_propulsive, eta_overall,
+    if !((eta_overall - eta_thermal * eta_propulsive).abs() < 1e-9 * eta_overall) {
+        return Err(Abort(
+            "efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE definition"
+                .to_string()));
     }
+    Ok(Performance {
+        specific_thrust, tsfc, eta_brayton, eta_thermal, eta_propulsive, eta_overall,
+    })
 }
 
 /// The rung-2 loss parameters, all defaulting to IDEAL.

@@ -377,8 +377,32 @@ where
     F: Fn(f64) -> f64,
     G: Fn(f64) -> f64,
 {
+    try_solve(f, fprime, target, lo0, hi0, tol).unwrap_or_else(|e| panic!("{}", e.0))
+}
+
+/// The FALLIBLE twin of [`solve`] — see [`Abort`].
+///
+/// **§ 5.4 (i) decided this stays a panic, and SLICE L OVERTURNS THAT — by measurement, not by
+/// taste.** The earlier reading was that `inverse: root not bracketed` "fires 6 times in 225 410
+/// but every one aborts its cell rather than being marched past". That was true of the callers
+/// that existed then. Rung 41's `surge_margin_schedule` / `running_line_map` /
+/// `flow_coefficient_turn` write `except AssertionError: continue`, and on slice L's dump grid
+/// this bracket guard is raised **36 times inside that caught scope**, through one chain and
+/// only one: `match → cascade → solve_choked_turbine → resid → tau_of → t_from_pr_t →
+/// t_from_pr → solve`. So the twin is added along exactly that chain and nowhere else — the
+/// other inverse, `t_from_h`, reaches `solve` too and fires **0** times, so it keeps its
+/// `assert!` on the same rule that used to cover this one.
+pub fn try_solve<F, G>(
+    f: F, fprime: G, target: f64, lo0: f64, hi0: f64, tol: f64,
+) -> Result<f64, Abort>
+where
+    F: Fn(f64) -> f64,
+    G: Fn(f64) -> f64,
+{
     let (mut lo, mut hi) = (lo0, hi0);
-    assert!(f(lo) - target <= 0.0 && 0.0 <= f(hi) - target, "inverse: root not bracketed");
+    if !(f(lo) - target <= 0.0 && 0.0 <= f(hi) - target) {
+        return Err(Abort("inverse: root not bracketed".to_string()));
+    }
     let mut x = 0.5 * (lo + hi);
     for _ in 0..100 {
         let fx = f(x) - target;
@@ -389,11 +413,11 @@ where
             xn = 0.5 * (lo + hi); // bisection fallback
         }
         if (xn - x).abs() <= tol * x {
-            return xn;
+            return Ok(xn);
         }
         x = xn;
     }
-    x
+    Ok(x)
 }
 
 /// The default bracket and tolerance of `gas.py`'s `_solve`.
@@ -428,6 +452,9 @@ impl CpgSection {
     pub fn pr(&self, t: f64) -> f64 { powp(t, 1.0 / self.g) }
     pub fn t_from_h(&self, h: f64) -> f64 { h / self.cp_const }
     pub fn t_from_pr(&self, pr: f64) -> f64 { powp(pr, self.g) }
+    /// Infallible in fact — the closed form has no bracket to miss. Present so [`Section`] can
+    /// offer one fallible interface across all four kinds (§ 5.8).
+    pub fn try_t_from_pr(&self, pr: f64) -> Result<f64, Abort> { Ok(self.t_from_pr(pr)) }
     pub fn gamma_at(&self, _t: f64) -> f64 { self.gamma }
     pub fn r_at(&self) -> f64 { self.r }
 }
@@ -486,12 +513,21 @@ impl TpgSection {
     }
 
     pub fn t_from_pr(&self, pr_target: f64) -> f64 {
+        self.try_t_from_pr(pr_target).unwrap_or_else(|e| panic!("{}", e.0))
+    }
+
+    /// The FALLIBLE twin of [`t_from_pr`](Self::t_from_pr) — see [`Abort`] and [`try_solve`].
+    ///
+    /// The round-trip check below stays an `assert!`: it fires **0** times on slice L's dump
+    /// grid, and it is the working contract's conservation check rather than control flow. Only
+    /// the BRACKET is control flow — see [`try_solve`]'s note.
+    pub fn try_t_from_pr(&self, pr_target: f64) -> Result<f64, Abort> {
         let target = pr_target.ln(); // solve Phi(T) = ln(pr)
         // dPhi/dT = (cp/R)/T
-        let t = solve(|x| self.phi(x), |x| poly(self.a(x), x) / x,
-                      target, SOLVE_LO, SOLVE_HI, SOLVE_TOL);
+        let t = try_solve(|x| self.phi(x), |x| poly(self.a(x), x) / x,
+                          target, SOLVE_LO, SOLVE_HI, SOLVE_TOL)?;
         assert!((self.phi(t) - target).abs() <= 1e-9, "T_from_pr round-trip");
-        t
+        Ok(t)
     }
 
     /// `gamma = cp/(cp - R)`.
@@ -544,6 +580,10 @@ impl ReactingSection {
     pub fn pr(&self, t: f64, far: f64) -> f64 { self.section_for(far).pr(t) }
     pub fn t_from_h(&self, h: f64, far: f64) -> f64 { self.section_for(far).t_from_h(h) }
     pub fn t_from_pr(&self, pr: f64, far: f64) -> f64 { self.section_for(far).t_from_pr(pr) }
+    /// The FALLIBLE twin — see [`Abort`]. Only the frozen mixture's bracket can miss.
+    pub fn try_t_from_pr(&self, pr: f64, far: f64) -> Result<f64, Abort> {
+        self.section_for(far).try_t_from_pr(pr)
+    }
     pub fn gamma_at(&self, t: f64, far: f64) -> f64 { self.section_for(far).gamma_at(t) }
     pub fn r_at(&self, far: f64) -> f64 { self.section_for(far).r }
 }
@@ -998,6 +1038,10 @@ impl EquilibriumSection {
     pub fn pr(&self, t: f64, far: f64) -> f64 { self.section_for(far).pr(t) }
     pub fn t_from_h(&self, h: f64, far: f64) -> f64 { self.section_for(far).t_from_h(h) }
     pub fn t_from_pr(&self, pr: f64, far: f64) -> f64 { self.section_for(far).t_from_pr(pr) }
+    /// The FALLIBLE twin — see [`Abort`]. Only the frozen mixture's bracket can miss.
+    pub fn try_t_from_pr(&self, pr: f64, far: f64) -> Result<f64, Abort> {
+        self.section_for(far).try_t_from_pr(pr)
+    }
     pub fn gamma_at(&self, t: f64, far: f64) -> f64 { self.section_for(far).gamma_at(t) }
     pub fn r_at(&self, far: f64) -> f64 { self.section_for(far).r }
 }
@@ -1055,6 +1099,15 @@ impl Section {
             Section::Tpg(s) => s.t_from_pr(pr),
             Section::Reacting(s) => s.t_from_pr(pr, far),
             Section::Equilibrium(s) => s.t_from_pr(pr, far),
+        }
+    }
+    /// The FALLIBLE twin of [`t_from_pr`](Self::t_from_pr) — see [`Abort`].
+    pub fn try_t_from_pr(&self, pr: f64, far: f64) -> Result<f64, Abort> {
+        match self {
+            Section::Cpg(s) => s.try_t_from_pr(pr),
+            Section::Tpg(s) => s.try_t_from_pr(pr),
+            Section::Reacting(s) => s.try_t_from_pr(pr, far),
+            Section::Equilibrium(s) => s.try_t_from_pr(pr, far),
         }
     }
     pub fn gamma_at(&self, t: f64, far: f64) -> f64 {
@@ -1365,6 +1418,16 @@ impl Gas {
     pub fn pr_t(&self, t: f64, far: f64) -> f64 { self.hot.pr(t, far) }
     pub fn t_from_h_t(&self, h: f64, far: f64) -> f64 { self.hot.t_from_h(h, far) }
     pub fn t_from_pr_t(&self, pr: f64, far: f64) -> f64 { self.hot.t_from_pr(pr, far) }
+    /// The FALLIBLE twin of [`t_from_pr_t`](Self::t_from_pr_t) — see [`Abort`].
+    ///
+    /// **The ONE fallible property call on slice L's path**, and it is fallible because it
+    /// is the one measured to fail there: the turbine (★) residual inverts `pr_t` at a
+    /// trial expansion ratio, and on a cold/slow cell that lands outside the 150–4000 K
+    /// bracket. `t_from_h_t` sits in the same residual and fires 0 times, so it keeps its
+    /// panic — the asymmetry is measured, not stylistic (§ 5.8).
+    pub fn try_t_from_pr_t(&self, pr: f64, far: f64) -> Result<f64, Abort> {
+        self.hot.try_t_from_pr(pr, far)
+    }
     pub fn gamma_t_at(&self, t: f64, far: f64) -> f64 { self.hot.gamma_at(t, far) }
 
     /// Hot-section gas constant. Constant for CPG/frozen-TPG (`== r_t`); for a reacting
