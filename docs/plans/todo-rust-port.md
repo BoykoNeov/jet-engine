@@ -2614,7 +2614,7 @@ and exactly the line slice L would have copied.
 
 ---
 
-### 5.8 SLICE L (rungs 41 + 42) — **STEP 1 SHIPPED, pre-registration STILL TO WRITE**
+### 5.8 SLICE L (rungs 41 + 42) — **STEP 1 SHIPPED; PRE-REGISTERED (§ 5.8.1), eight predictions**
 
 Handoff state as of commit `ff784ed`. **448 Rust tests green, all three existing oracles
 bit-identical.** Read this before resuming — the probes are done and their numbers are here, so
@@ -2625,8 +2625,11 @@ do NOT re-measure them.
 **skip** the failing point, so every assert reachable inside `match` sits in a caught scope that
 Rust cannot express with a panic. The crate rule (`gas.rs::Abort`) is *an assert becomes an
 `Abort` iff it is reachable from inside the march's residual* — here, from inside the caught
-scope. Which asserts those are was **measured** on a 147-cell grid (3 gases × 2 bleeds × 7 `M0` ×
-7 `Tt4`), recording the innermost raising frame:
+scope. Which asserts those are was **measured** on a 147-cell grid (3 gases × 7 `M0` × 7 `Tt4`),
+swept at **two bleed settings** (`b` = 0.0 and 0.10) for 294 runs in all, recording the innermost
+raising frame. *(The parenthesis originally read "3 gases × 2 bleeds × 7 × 7 = 147", which
+multiplies to 294; the grid is 147 cells PER bleed setting, which is also how the `b`-dependent
+row below reads — corrected when § 5.8.1 went to pin these as gate bars.)*
 
 | site | firings | verdict |
 |------|---------|---------|
@@ -2663,12 +2666,14 @@ purpose (its scope guard is not in the caught chain).
   turbine loop, unphysical) likewise 0. Its constructor guard `0 <= bleed < 0.5` **does** fire.
   Per the zero rule, all of those stay `assert!`.
 
-**What REMAINS, in order:**
+**What REMAINS, in order** (step 1 of this list is **DONE** — it is § 5.8.1):
 
-1. **Write the pre-registration** — the numbered predictions with explicit refutation conditions,
-   *before* any porting. It must include a P5-style *"the fallible refactor moves no shipped
-   bit"* (already satisfied, so state it as a standing gate) and the **deferrals**: rung 41's
-   gates 1b/7b and part of its cycle test reach `TwoSpoolTransient`, which is **phase 6**.
+1. ~~**Write the pre-registration**~~ — **DONE, § 5.8.1**, eight predictions. It gained two
+   things the list above did not name: a P5-style *"the refactor moves no shipped bit"* extended
+   to cover **`phi_surge`'s arrival on `ComponentMap`** (§ 5.7 (a) deferred that field to this
+   slice, and adding it is a change to already-gated code), and a corrected **deferral** list —
+   gate 7b reaches `SpoolTransient` (**single**-spool, rungs 34/36), not `TwoSpoolTransient`, and
+   the cycle test **splits** rather than defers.
 2. **Port rung 41** — `critical_flow_turn_pi`, `pi_c_spool`, `surge_margin`,
    `surge_margin_schedule`, `running_line_map`, `flow_coefficient_turn`. Two faithfulness traps
    in the source: the memo key is `round(float(T), 6)`, and the `except AssertionError: break`
@@ -2684,7 +2689,181 @@ purpose (its scope guard is not in the caught chain).
 Then **slices M / N / O**: rungs 53–56 and 61, the airflow levers.
 
 **Probe scripts** live in `M:\claud_projects\temp\rust-slice-l\` (`probe_slice_l.py`,
-`probe_sites.py`, `probe_solve_chain.py`).
+`probe_sites.py`, `probe_solve_chain.py`, and § 5.8.1's `probe_l2.py`).
+
+### 5.8.1 SLICE L — PRE-REGISTERED, and a SECOND probe measured first
+
+**These are not re-measurements of § 5.8.** That handoff settled the seven fallibility sites and
+three facts, and they stand. What follows is a set of *different* questions, each of which decides
+either a Rust type signature or a gate bar — and the port's own rule is that a bar is measured on
+the grid it will be gated on, never read off a neighbouring one (§ 5.7 (e), and § 5.6's P2 before
+it). `probe_l2.py`, PyPy.
+
+**(i) THE GOLDEN SECTION'S NAKED `phi` NEVER RAISES — AND THE COARSE SCAN'S GUARD IS 100 % LIVE.**
+`flow_coefficient_turn` wraps only the **coarse scan** in `except AssertionError: break`; the
+`phi(c)` / `phi(d)` calls inside the golden section are unguarded, so a raise there propagates out
+of the method. Over **38 runs** (gate 5's own 19-case set × both spools) making **726 refinement
+calls**, the refinement raised **0** times, while the coarse guard fired in **38 of 38**. Two
+consequences, and the second was not anticipated:
+
+* `flow_coefficient_turn` stays **infallible** in Rust. A `Result` there would be a control-flow
+  path with no reachable failure — the `Abort` rule's own words, and slice K (g)'s dead-clamp
+  precedent. The live fallible call is `try_match_point` *inside the coarse scan*.
+* **`Tt4_lo = 350.0` is DEAD on this grid.** The scan always terminates on the abort, never on
+  `T > Tt4_lo`, so the runnable band's low end is set by the envelope and not by the parameter.
+  Ported as written, recorded as dead so no reader infers it is load-bearing.
+
+**(ii) THE MEMO KEY IS A THROTTLE, NOT A CACHE KEY — AND THE CACHE IS ALL BUT DEAD.**
+`cache[key] = self.match(flight, key)` passes the **rounded** value, so `round(float(T), 6)` sets
+the throttle actually matched. It moves **values**, not merely cache identity, and that is the
+faithfulness trap § 5.8 flagged. Measured: **10 cache hits against 4 206 misses** across the 38
+runs — every hit is the closing `od_at(Tstar)` landing on an abscissa already visited. So the
+rounding is **not** a caching device, and the port must not be written as though it were.
+
+On the spelling: Python's `round(x, 6)` is correctly-rounded decimal with half-to-**even**; the
+naive Rust `(x * 1e6).round() / 1e6` is half-**away-from-zero** *and* carries the multiply's own
+error. They agreed on **all 4 216 keys reached** and on a **600 000-point synthetic sweep** of
+golden-section abscissae over [350, 1500]. **That zero is not a proof, and this registration says
+so:** at these magnitudes a double's ulp is ≈2.3e-13, so the two spellings can differ only when the
+exact value lands within ≈1e-7 of a rounding boundary in the 7th decimal — about 2e-7 per call,
+i.e. ≈0.1 expected events in 600 000. A measured zero at that rate is consistent with a real
+divergence the sweep missed. **The instrument is therefore the KEY SEQUENCE, not the spelling**:
+every memo key is dumped as a discrete oracle value (P4), so a divergent rounding shows up as a
+changed key rather than as a silently different throttle.
+
+**(iii) THE REFINEMENT COUNT IS ONE NUMBER, AND IT IS PREDICTABLE FROM THE ARITHMETIC.** Every
+`MIN` run makes exactly **33** refinement `phi` calls — 2 initial plus 31 loop passes — and the
+arithmetic reproduces it: the bracket is 2 × `coarse` = 20 wide, the stop is `b - a < 1e-5`, and
+`ceil(ln(1e-5 / 20) / ln(0.618…)) = 31`. This is the *golden-gate-slice-6* rule reused — a count
+that can be **predicted** from the arithmetic is a stronger bar than one merely observed. **The
+gate names its instrument**, because the memo makes three counts differ: on a `MIN` run,
+refinement `phi` calls = **33**, total `match` calls = **116–140** (case-dependent, since the coarse
+scan's length rides the envelope), and loop passes = **32**, of which 31 call `phi` and the last
+only tests the stopping rule. § 5.7 (d) corrected a
+bar one slice ago for exactly this; the number a gate compares against must be the one its
+instrument reads.
+
+**(iv) THE ARGMIN's TIES ARE UNREACHABLE, SO THE RULE IS REGISTERED RATHER THAN MEASURED.**
+`min(range(len(vals)), key=…)` returns the **first** minimal index; Rust's `min_by` also returns
+the first, but a hand-rolled fold with `<=` flips it. Ties measured: **0** across all 38 runs. The
+port writes the first-wins spelling and carries an **explicit vacuity note** — no gate on this grid
+can distinguish the two, which is the honest reading of a rule the data cannot test.
+
+**(v) RUNG 42's CENSUS, ON THE DUMP GRID, PER BLEED LEVEL.** Grid: slice K's 147 cells
+(3 gases × 7 `M0` × 7 `Tt4`), inherited wholesale; the **bleed axis is new**. Codes are slice I's
+table as slice K appended to it — never renumbered.
+
+| `b` | matched | cascade (2) | bracket (3) | Newton (4) | burner `f` (5) | nozzle (6) | ram (7) | **UNCHOKED (8)** | 200-pass cells |
+|-----|---------|-------------|-------------|------------|----------------|------------|---------|------------------|----------------|
+| 0.00 | 67 | 13 | 18 | 7 | 2 | 3 | 14 | **23** | 10 |
+| 0.02 | 67 | 14 | 18 | 7 | 1 | 3 | 14 | **23** | 13 |
+| 0.05 | 66 | 14 | 18 | 7 | 1 | 3 | 14 | **24** | 17 |
+| 0.10 | 65 | 14 | 18 | 7 | 1 | 3 | 14 | **25** | 12 |
+
+Every row sums to 147. Two readings, and both become gates:
+
+* **`b` = 0 reproduces slice K's rung-39 census EXACTLY** — 67 matched with cascade 13, which is
+  slice K's own one-cell difference from rung 38 (`tpg, M0 = 1.60, Tt4 = 600`). The reduce
+  dispatch is therefore witnessed as a **census** as well as a value (P7).
+* **The UNCHOKED column rises monotonically with `b`.** That is rung 42's own gate 6 — *opening
+  the valve shrinks the choked envelope* — expressed as a count that measures **physics**, not
+  plumbing. It is the counterexample to `docs`' *guessed census bars* entry: a count bar earns its
+  place when the source has a claim it can refute.
+
+**(vi) RUNG 41's SCHEDULES SKIP, AND THE SKIP CENSUS IS GAS-DEPENDENT, NOT SHAPE-DEPENDENT.** Over
+4 map shapes × 2 floors × 3 gases on a 13-point throttle grid: **10 of 13 survive** on all 16
+CPG/TPG combinations and on 6 of 8 equilibrium ones; **9 of 13** on the equilibrium `steep` pair.
+The skip *reasons* split cleanly by gas (CPG: 3 × UNCHOKED · TPG: 1 × UNCHOKED + 2 × bracket ·
+eq: 1 × UNCHOKED + 1 × bracket + 1 × Newton) and are **identical across all four shapes and both
+floors**. Neither of rung 41's own asserts appears anywhere in that census — § 5.8's zero-firing
+verdict, confirmed a second time on a wider grid.
+
+**(vii) THE DISPATCH IS LIVE, AND ITS SIGN IS THE PHYSICS.** `bleed_trade → surge_margin →
+self.match → rung 42's override`: both margins rise monotonically with `b` at all three throttles
+on both gases (CPG at 1200 K: `SM_L` 0.1089 → 0.1248 → 0.1430; `SM_H` 0.5237 → 0.5338 → 0.5444).
+No value key can fake this, because the margins are computed *from* a match only the override
+supplies — which is why slice L owes a dispatch gate rather than a value one.
+
+#### The predictions
+
+* **P1 — THE DISPATCH IS LIVE, AND THE GATE IS A SIGN, NOT A VALUE.** Rung 41's `surge_margin`,
+  called through rung 42's `bleed_trade`, reaches rung 42's overriding `try_match_point`, so both
+  margins move monotonically upward with `b`. *Refuted by:* margins invariant in `b` (the hook
+  would then be dispatching to rung 39's body), or a non-monotone column.
+* **P2 — THE REFACTOR AND `phi_surge` MOVE NO SHIPPED BIT.** Two changes to already-gated code
+  land in this slice: step 1's fallible twins (already shipped and already satisfying this) and
+  **`phi_surge`'s arrival on `ComponentMap`**, which § 5.7 (a) deferred here on purpose.
+  `map_oracle` (7 252 keys), `offdesign_oracle` (3 951), `two_spool_oracle` (11 812) and the
+  `rung31` / `rung32` / `rung33` / `rung38` / `rung39` suites re-run **bit-identical**.
+  *Refuted by:* one changed bit ⇒ **revert**, per slice J's own rule for a refactor to gated code.
+* **P3 — `flow_coefficient_turn` IS INFALLIBLE, AND ITS COARSE GUARD IS THE LIVE ONE.** The
+  refinement makes 0 aborts and the coarse scan aborts on 38 of 38 runs, so `Tt4_lo` is never
+  what ends the band. *Refuted by:* any refinement abort on the dump grid (the method would then
+  need a `Result` and the Rust would be making a live failure un-catchable), or any run whose
+  scan ends on `T > Tt4_lo` instead.
+* **P4 — THE MEMO KEY SEQUENCE REPRODUCES BIT-FOR-BIT, DUMPED AS DISCRETE ORACLE KEYS.** Not the
+  rounding *spelling* — the sequence of keys the method actually matches at, which is what the
+  rounding decides. *Refuted by:* one key differing in a bit, which is the only way a divergent
+  `round` can be caught before it becomes a silently different throttle.
+* **P5 — THE REFINEMENT COUNT IS EXACTLY 33 ON EVERY `MIN` RUN**, and the gate states that it
+  counts **refinement `phi` calls** — not `match` calls, not loop passes. PyPy arm only, per
+  slice K's P2 on count stability. *Refuted by:* any second distinct value.
+* **P6 — RUNG 42's CENSUS IS (v)'s TABLE, PER BLEED, AS EXPLICIT COUNTS INCLUDING THE ZEROS.**
+  UNCHOKED **23 / 23 / 24 / 25** at `b` = 0.00 / 0.02 / 0.05 / 0.10; rung 42's own secant,
+  turbine-loop and unphysical asserts dumped as explicit **0**s (§ 5.6's P4 discipline).
+  *Refuted by:* any nonzero on the three zero rows, or a UNCHOKED column that does not rise.
+* **P7 — `b` = 0 IS RUNG 39, AS BOTH A VALUE AND A CENSUS.** The `bleed == 0.0` branch forwards
+  to rung 39's `match` verbatim, so every matched cell is bit-identical to `two_spool_oracle`'s
+  and the whole census row equals slice K's rung-39 row (67 matched, cascade 13).
+  *Refuted by:* one differing bit, or one cell landing in a different abort class.
+* **P8 — THE SURGE FLOOR IS INVISIBLE TO FLATNESS, AND THAT RULE IS GATED DIRECTLY.** Python's
+  `is_flat` deliberately excludes `phi_surge` (it is a pure diagnostic and enters no solver), and
+  a value oracle **structurally cannot see a boolean's field set** — slice J's "gate the rule
+  directly, because the oracle is blind to it" generalised from a mis-spelled square to a
+  predicate. Note `is_flat` is **not currently ported** (`map.rs` § *The field subset*: it is
+  called by no engine code, only by rung-36/41/53/54 tests), so this prediction is what decides
+  whether the slice adds it or gates the flat-reduce dispatch instead. *Refuted by:* a flat map
+  carrying a surge floor failing to take the flat-reduce path.
+
+#### The deferrals — and one of them is a SPLIT, not a defer
+
+Rung 41's suite is 9 gates; **two defer whole and one splits.** § 5.8's list named the wrong class
+for the second, which matters because the two transients are different rungs in the same phase:
+
+| gate | reaches | verdict |
+|------|---------|---------|
+| 1b `test_reduce_transient_untouched_by_surge_line_bit_for_bit` | `TwoSpoolTransient` (rung 40) | **DEFER → phase 6** — *except its last line* |
+| 1b's closing `is_flat` assertion | `ComponentMap` only | **PORTS NOW** — it needs no transient at all, and it is P8's gate |
+| 7b `test_rung36_verdict_survives_but_its_mechanism_is_corrected` | `SpoolTransient.surge_margin_channels` (rungs 34/36, **single**-spool) | **DEFER → phase 6.** § 5.8 called this `TwoSpoolTransient`; phase 6 covers both so the verdict held, but the noun was wrong |
+| 1c `test_cycle_untouched_rung6_bit_for_bit` | `build_turbojet(…).run()` **and** a `SpoolTransient` construction | **SPLITS** — the bit-for-bit cycle halves port now; only the interleaved transient construction waits |
+
+The IOU is written into `rung41.rs` as a `slice_l_deferrals` test, the
+`rung33.rs::slice_j_deferrals` precedent reused for the third time.
+
+#### Module decision, and sizing
+
+**Rung 41 goes INTO `two_spool.rs`** — its six methods are methods on `TwoSpoolMapMatcher`, the
+struct that file owns, and the whole point of slice K's hook was that rung 41's callers meet rung
+42's override at one dispatch point. **Rung 42 gets a new `bleed.rs`**, carrying
+`TwoSpoolBleedMatcher`, `lp_eta_loop_bleed`, `cascade_bleed`, its **separate** rebuild body and
+`bleed_trade`, plus its own `R42` hook-table entry. Rung 41 adds ~160 Python lines and rung 42
+~230; keeping both would push `two_spool.rs` past 2 100 lines, and slice K split `two_spool.rs`
+out of `matcher.rs` at exactly that bar. The dependency stays one-way (`bleed.rs` consumes
+`two_spool.rs`, nothing consumes `bleed.rs` until phase 6).
+
+**The one shape decision that decides a reduce gate**, stated before it can be got wrong: rung
+42's rebuild is a **deliberate duplication** of rung 39's, not rung 39's with a `b` parameter
+threaded through it. `docs`' *COPY vs REDERIVATION* entry is the reason — an "exactly" claim
+survives a copied instruction sequence and dies on a second derivation — and the Python says so
+in its own docstring (`_hp_eta_loop` is called **verbatim**; `_cascade_map` and `_lp_eta_loop` are
+left **literally unchanged** so rungs 39/41's suites keep witnessing them). Factoring the
+duplication away would look like a cleanup and break P7 bit-for-bit.
+
+**Sizing.** The oracle runs 147 cells × 4 bleed levels on rung 42 (≈5 min on PyPy — the measured
+probe cost was 296 s for the same sweep plus rung 41's schedules), plus rung 41's schedule methods
+over 4 shapes × 2 floors × 3 gases and `flow_coefficient_turn` over gate 5's 19 cases × 2 spools
+(≈8 s). The **200-pass cells are the cost trap**, and the bleed axis makes more of them: 10 → 17
+as the valve opens.
 
 ---
 
