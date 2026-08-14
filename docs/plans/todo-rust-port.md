@@ -3263,15 +3263,18 @@ as the valve opens.
 
 **PHASE 5's REMAINDER IS THREE SLICES, NOT ONE.** The phase-5 row lists `53–56, 61` as one
 block and the memory index carried "slice M (53–56, 61) is next"; **neither was ever sized.**
-Enumerated, that block is **~1 600 Python lines and ~106 test gates** — against slice L's ~390
-lines and 19 gates, which still needed four steps and four commits. It splits on DEPENDENCY,
+Enumerated, that block is **~1 600 Python lines and 103 test gates** — 22 · 21 · 18 · 21 · 21,
+**counted** with `grep -c "^def test"` and not estimated, because a section whose whole point is
+that nobody counted must not itself carry a guess (the first draft of this table said "~106",
+"19" and "22", and all three were wrong) — against slice L's ~390 lines and 19 gates, which
+still needed four steps and four commits. It splits on DEPENDENCY,
 the way § 4.3 grouped phase 3:
 
 | slice | scope | Python | gates | depends on |
 |-------|-------|--------|-------|------------|
 | **M** | 53 + 54 — `VariableStatorMatcher` + `ComponentMap`'s `vsv`/`capacity` channels | ~585 | 22 + 21 | slice L |
-| **N** | 55 + 56 — `StageStack` + `StageStackMatcher` | ~685 | 19 + 22 | **M** (`test_rung56.py::test_reduce_K1_is_rung54_throat_margin_bit_for_bit`) |
-| **O** | 61 — `StatorBleedMatcher` | ~305 | 22 | **M** *and* slice L's `bleed.rs` (it is the § 6 diamond, `TwoSpoolBleedMatcher` × `VariableStatorMatcher`) |
+| **N** | 55 + 56 — `StageStack` + `StageStackMatcher` | ~685 | 18 + 21 | **M** (`test_rung56.py::test_reduce_K1_is_rung54_throat_margin_bit_for_bit`) |
+| **O** | 61 — `StatorBleedMatcher` | ~305 | 21 | **M** *and* slice L's `bleed.rs` (it is the § 6 diamond, `TwoSpoolBleedMatcher` × `VariableStatorMatcher`) |
 
 53 and 54 are **inseparable**: 54's `throat_margin` extends 53's `stator_margin` row in place,
 and 54's `_schedule_root` is the documented immune replacement for 53's `incidence_schedule`
@@ -3328,8 +3331,14 @@ The phase-5 row flags "`_INC_MAX`'s live shadow"; measured, it is not live.
 
 | root-finder | bisection passes | stop clause |
 |-------------|------------------|-------------|
-| rung 53 `incidence_schedule` (doubling ladder) | 30 · 32 · 33 · 34 · 35 · **36 max** | `\|r\| <= _INC_TOL` on **all 42**, `hi − lo <= 1e-14` **never** |
-| rung 54 `_schedule_root` (bracketed off the scan) | 26 · 28 · 29 · 30 · 31 · 32 · **33 max** | `\|r\| <= _INC_TOL` on **all 54**, `hi − lo <= 1e-14` **never** |
+| rung 53 `incidence_schedule` (doubling ladder) | 30 · 32 · 33 · 34 · 35 · **36 max** | `\|r\| <= _INC_TOL` on **all 42** |
+| rung 54 `_schedule_root` (bracketed off the scan) | 26 · 28 · 29 · 30 · 31 · 32 · **33 max** | `\|r\| <= _INC_TOL` on **all 54** |
+
+**Said precisely, because the loose phrasing invites a deletion:** the width test is the SECOND
+disjunct of one `if abs(r) <= _INC_TOL or hi - lo <= 1e-14`, so what is measured is that the
+tolerance clause **always short-circuits it** — the width clause is *unreached*, which is not the
+same as *inert*. **Both disjuncts port.** (`docs`' *golden gate slice 4* entry is this lesson
+already: lead with the reader that BYPASSES the short-circuit.)
 
 Neither reaches 80. Unlike § 5.8.1 (iii)'s 33, these counts are **not** predictable from the
 arithmetic — the ladder's bracket width is data-dependent — so the gate asserts the measured SET,
@@ -3435,9 +3444,20 @@ bit-exact dump says nothing about coverage.
   **IDENTITY** — at `vsv == 0` the stored maps are the SAME OBJECTS and `match` is rung 39's
   inherited method, so there is no rung-53 path to skip. Rung 54's is an **INVARIANCE OVER `C`** —
   every matched field bit-identical at every capacity, at a MOVED stator, which is strictly
-  stronger. In Rust the object-identity half becomes a pointer/field-provenance assertion, and
-  that translation is disclosed rather than quietly dropped. *Refuted by:* any matched field
-  moving with `C`.
+  stronger. **The identity half SPLITS on what Rust can express, and the split is decided here
+  rather than discovered mid-port:** Python's gate is two assertions, and only one of them
+  survives.
+  * `VariableStatorMatcher.match is TwoSpoolMapMatcher.match` (`test_rung53.py:98`) — *"there is
+    no rung-53 code path to skip"* — ports **EXACTLY**, as raw **fn-pointer equality between the
+    `R53` and `R39` hook-table entries**. This is the half that carries the actual claim, and the
+    hook table is what makes it expressible.
+  * `m.map_lp is LP` ports **WEAKER**. `ComponentMap` is `#[derive(Copy)]`, so it has no object
+    identity to compare and none is meaningful for a value type; the honest Rust is field-wise
+    `==` plus `vsv == 0.0`. **That weakening is stated in the gate's own text**, not only here —
+    a reduce gate that silently answers a smaller question is the `docs` *ported test can go
+    VACUOUS* failure.
+
+  *Refuted by:* any matched field moving with `C`, or the two hook entries differing.
 * **P10 — `at_setting` ENTERS THE HOOK TABLE IN THIS SLICE, WITH ITS DISPATCH GATE OWED TO SLICE
   N.** It is overridden at **three** levels (53, 55, 61) and `stator_sweep`, `currency_split`,
   `incidence_schedule`, `_scan` and `schedule_throat` all reach it through `self`. Hardcoding
