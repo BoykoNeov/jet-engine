@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: 9964211f-4436-4198-9e01-847b54b09afa
-  modified: 2026-08-12T08:11:28.822Z
+  modified: 2026-08-14T17:01:03.596Z
 ---
 
 Phase 3 slice A (rungs 7/8/9/19) added **shape keys** to the oracle: for any finding whose
@@ -38,5 +38,13 @@ final sign test can land on the other side. The spread is `2500/2**32` EXACTLY �
 the solver's own bracket, not drift. The right assertion was one quantum, spelled as the
 arithmetic. **An analytic cancellation read through a solver is exact to the solver's grid, not
 to the bit** — expect this wherever a later rung asserts one.
+
+**BOUNDED by slice L (2026-08-14) — the headline holds only for an argmax over a GRID.** Rung
+41's `flow_coefficient_turn` golden-sections to an interior maximum over a CONTINUUM, and there
+the two interpreters agree on the peak VALUE to 4.07e-11 and on its LOCATION only to 7.39e-6 —
+five orders the other way. The grid was doing the work all along: it quantises the answer so both
+interpreters snap to one node, and the "keep it coarse" advice above is that mechanism stated
+without knowing it. Take a continuum argmax's location as √(objective noise)-conditioned and give
+it its own, wider, MEASURED bar. See [[rust-port-slice-l-step4]].
 
 Related: [[rust-port-arithmetic-is-pypy]], [[rust-port-power-spelling]], [[rust-port-decided]].

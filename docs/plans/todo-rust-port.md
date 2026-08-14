@@ -2691,7 +2691,9 @@ purpose (its scope guard is not in the caught chain).
    gates"; the files have **12 + 12** test functions under **8 + 8** documented headings, and the
    roster is now DATA in each suite. The narrowing was fixed as required (§ 5.8.4 (b)), and the
    `(1-b)` detector re-measured on the dump — **1.00 % of keys, and the `value` bar is blind to
-   all but one of them** (§ 5.8.4 (e)).
+   all but one of them** (§ 5.8.4 (e)). The CPython arm then caught that bar being **copied from
+   slice K rather than measured here**, and the 34 keys it failed on split into a flat extremum's
+   LOCATION and a pass-count flip's price — § 5.8.4 (h).
 
 ### 5.8.4 SLICE L step 4 — the oracle, the suites, and a claim the SHIPPED SOURCE carried
 
@@ -2807,6 +2809,41 @@ comparison can see a parameter both sides read. P9: the discriminant + declared 
 **16 of 19 `lp` cases RAIL** on the flat set, § 5.8.1 (viii)'s number to the cell. Pooling the two
 blocks' counters was the first draft's error and reported 32/22 over 54 runs, a number no
 prediction is written against.
+
+**(h) THE `value` BAR WAS COPIED FROM SLICE K, AND THE CPYTHON ARM CAUGHT IT.** 1e-8 relative was
+taken over wholesale; on this dump it failed on **34 of 23 772 value keys**. The 34 are two
+disjoint populations with nothing between them, and the accounting closes exactly — which is the
+reason to trust the split rather than widen one number:
+
+*(A) The LOCATION of a flat extremum — 28 keys = 7 turn cells × 4 fields.* Out of the SAME golden
+section, in the SAME cell: `phi_star` (what the turn is worth) agrees to **4.07e-11**, `Tt4_star`
+(where it is) to **7.39e-6**, `far` (read at that location) to **1.58e-5**. At an interior maximum
+the objective's slope is zero, so noise in the objective — the inner matcher's own convergence,
+not machine epsilon — buys a first-order move in the abscissa and none in the ordinate. The
+bracket is driven to 1e-5 K by a stopping rule the objective's noise floor cannot support, so the
+last refinements resolve nothing and the two interpreters settle anywhere in the ε-optimal set.
+**This INVERTS `docs`' *shape keys* entry** (*a peak's VALUE drifts and its LOCATION does not*):
+that was an argmax over a discrete GRID, which quantises the answer and snaps both interpreters to
+one node. This one is over a CONTINUUM. Same word, opposite conditioning — the grid was doing the
+work. NOT claimed: √(4.07e-11) = 6.4e-6 lands within 16 % of the worst `Tt4_star` and looks like
+the √ε law, but per CELL the ratio runs 0.07–6.17, a spread of ~90. Two maxima meeting, not a law
+(rung 66's *check where an extremum sits before quoting it*). Only the per-cell ORDERING is
+asserted. These four fields are now their own quantity class at a **measured** 1e-4, and the file
+says out loud that at that bar they are not meaningfully gated against CPython — the PyPy
+bit-equality arm is their gate.
+
+*(B) A pass-count flip costs ONE DECADE — 6 keys.* Value keys in cells whose joint loop ran a
+different number of passes reach **1.55e-8**; in cells that ran the same count they stop at
+**1.03e-9**. The first version held the flipped half to 1e-8 and fired, proving only that the bar
+had been inherited. Both populations are now measured and BOTH bars asserted, because the content
+is the separation: if the unflipped half ever reaches the flipped half's bar, the flip is not what
+drives the drift and the section measures nothing.
+
+**CPG is clean on both.** Zero calorically-perfect turn cells moved a location; zero
+calorically-perfect pass counts flipped. Slice K established that invariant on the loop count
+alone — a second, unrelated phenomenon now obeys it, for the same reason: a closed form has no
+root-find beneath it for last-bit arithmetic to tip. Both halves are asserted, so a future slice
+that breaks either learns it here.
 
 ### 5.8.3 SLICE L step 3 — the rung-42 port, and a PLANNED COMMIT that turned out vacuous
 
