@@ -341,7 +341,7 @@ fn the_three_squares_are_multiplies_not_pow_calls() {
     // above cannot see it: its `cmap` leaves `l` at 0.0, so the term is not there to reorder.
     let mut order_differs = 0usize;
     let l = 0.7; // rung 39's own SHAPES_C value
-    let cmap_l = ComponentMap { a: 0.25, b: 0.05, c: 0.08, sigma, a_t: 0.5, l };
+    let cmap_l = ComponentMap { a: 0.25, b: 0.05, c: 0.08, sigma, a_t: 0.5, l, phi_surge: 0.0 };
     for &step in &us {
         let phi = 1.0 + step;
         let u = phi - 1.0;

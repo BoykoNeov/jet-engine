@@ -64,10 +64,27 @@
 //! (`tests/test_rung39.py::SHAPES_C`), where the two spellings differ by **27–43 % relative** —
 //! so the term is inert exactly as far as the sweep that measured it, and no further. Gating rung
 //! 39 on `l = 0` shapes instead would have narrowed the band the source itself gates on
-//! (§ 5.7 (a)). `phi_surge` is still absent: it is rung 41's, and it arrives with the surge
-//! methods in slice L. `is_flat` and `phi_max` are not ported: the first is
-//! called by no engine code at all (only by rung-36/41/53/54 *tests*), the second only by the
-//! rung-34/40/43 forward transient closures, in phase 6.
+//! (§ 5.7 (a)).
+//!
+//! **SLICE L ADDED `phi_surge`, WHICH IS WHAT § 5.7 (a) DEFERRED HERE.** It is rung 36's surge
+//! line, read by rung 41's `surge_margin` alone; every rung ≤ 40 number is unchanged, and that is
+//! P2's bill — three value oracles and five suites re-run bit-identical, or the field reverts.
+//!
+//! **`is_flat` IS STILL NOT PORTED, AND SLICE L NARROWED ITS OWN DEFERRAL TABLE TO SAY SO.**
+//! § 5.8.1 listed rung 41 gate 1b's closing `ComponentMap.flat().with_phi_surge(0.6).is_flat()`
+//! as porting now. It does not, for two reasons found while writing the port. **(1) The predicate
+//! would be Python's MINUS A TERM.** Python's `is_flat` reads `vsv == 0.0`, and `vsv` is rung 53's
+//! — slice M's. A Rust `is_flat` without that conjunct is inert exactly as far as today's sweep
+//! and no further: **the `l` mistake of slice J→K, repeated on a predicate.** **(2) The Rust has
+//! no flat-reduce BRANCH for it to guard.** Python's flatness is a claim about which fields a
+//! predicate reads; here the reduce is STRUCTURAL — [`psi`](ComponentMap::psi) returns `1.0` and
+//! [`eta_c_at`](ComponentMap::eta_c_at) returns its base — so `is_flat()` could return `true`
+//! while the reduce is broken, and vice versa. P8's content is therefore gated where it lives, as
+//! a VALUE: a flat map with a floor and one without produce a bit-identical matched point
+//! (`rung41.rs` gate 1). `is_flat` lands with `vsv`, in slice M.
+//!
+//! `phi_max` is still not ported: it is called only by the rung-34/40/43 forward transient
+//! closures, in phase 6.
 
 use crate::components::choked_mfp;
 use crate::components::ram_recovery;
@@ -154,31 +171,62 @@ pub struct ComponentMap {
     /// Rung 32's four constructors leave it `0.0`, so every rung-31/32 number is unchanged; that
     /// is asserted, not assumed, by re-running `map_oracle` and `offdesign_oracle` (§ 5.7 P5).
     pub l: f64,
+    /// **RUNG 36's STALL FLOW COEFFICIENT — the surge line.** `0.0` means NO surge line (off),
+    /// exactly as Python spells it, and every rung ≤ 40 number is unchanged because nothing
+    /// below rung 41 reads it.
+    ///
+    /// **A PURE DIAGNOSTIC, and slice L gates that rather than asserting it.** The field enters
+    /// no solver: not [`psi`](ComponentMap::psi), not [`eta_c_at`](ComponentMap::eta_c_at), not
+    /// [`solve_n`](ComponentMap::solve_n) — only rung 41's
+    /// [`surge_margin`](crate::two_spool::TwoSpoolMapCore::surge_margin) and the derived
+    /// [`pi_c_spool`](crate::two_spool::TwoSpoolMapCore::pi_c_spool). So a map carrying a floor
+    /// must produce a matched point BIT-IDENTICAL to the same map without one, which is
+    /// `rung41.rs`'s gate 1 and § 5.8.1's P8.
+    ///
+    /// § 5.7 (a) deferred this field to slice L on purpose: adding it is a change to
+    /// already-gated code, and P2 is what pays for it — the three value oracles and the
+    /// rung-31/32/33/38/39 suites re-run bit-identical, or the change reverts.
+    pub phi_surge: f64,
 }
 
 impl ComponentMap {
     /// The FLAT map: every `eta` held at its design value, `sigma = 0`. Reduces [`MapMatcher`]
     /// to rung 31.
     pub const fn flat() -> Self {
-        Self { a: 0.0, b: 0.0, c: 0.0, sigma: 0.0, a_t: 0.0, l: 0.0 }
+        Self { a: 0.0, b: 0.0, c: 0.0, sigma: 0.0, a_t: 0.0, l: 0.0, phi_surge: 0.0 }
     }
 
     /// Representative shape 1 of 3 — curvature concentrated in FLOW. Moderated so `eta_c` stays
     /// in a believable band; the load-bearing claims are asserted ACROSS all three and the droop
     /// magnitude is disclaimed.
     pub const fn flow_dominated() -> Self {
-        Self { a: 0.25, b: 0.05, c: 0.0, sigma: 0.3, a_t: 0.02, l: 0.0 }
+        Self { a: 0.25, b: 0.05, c: 0.0, sigma: 0.3, a_t: 0.02, l: 0.0, phi_surge: 0.0 }
     }
 
     /// Representative shape 2 of 3 — curvature concentrated in SPEED.
     pub const fn pressure_dominated() -> Self {
-        Self { a: 0.05, b: 0.20, c: 0.0, sigma: 0.3, a_t: 0.02, l: 0.0 }
+        Self { a: 0.05, b: 0.20, c: 0.0, sigma: 0.3, a_t: 0.02, l: 0.0, phi_surge: 0.0 }
     }
 
     /// Representative shape 3 of 3 — a TILTED island (`c != 0`), which the other two do not
     /// exercise.
     pub const fn tilted() -> Self {
-        Self { a: 0.12, b: 0.12, c: 0.08, sigma: 0.6, a_t: 0.02, l: 0.0 }
+        Self { a: 0.12, b: 0.12, c: 0.08, sigma: 0.6, a_t: 0.02, l: 0.0, phi_surge: 0.0 }
+    }
+
+    /// RUNG 36. A copy of this map carrying a surge line at stall flow coefficient `phi_surge`.
+    ///
+    /// The surge floor is the ONE disclosed constant rung 36 imposes: the loading law's own peak
+    /// `1 - l/(2·sigma)` lands at `phi < 0` for the surge-realistic shapes, so there is no free
+    /// in-range stall point to inherit and it must be imposed. Its LEVEL is disclaimed; only the
+    /// SIGN of the margin schedule it induces is load-bearing, and that rides on the running-line
+    /// `phi_op` rather than on this constant.
+    ///
+    /// Python spells it `replace(self, phi_surge=…)` on a dataclass; here the type is `Copy`, so
+    /// the struct-update is the same operation with the same "returns a NEW map" contract — the
+    /// receiver is untouched, which is what lets a gate hold a bare and an armed map side by side.
+    pub const fn with_phi_surge(self, phi_surge: f64) -> Self {
+        Self { phi_surge, ..self }
     }
 
     /// Loading (work) coefficient at flow coefficient `phi`. `psi(1) = 1`, slope `-l` at design.
