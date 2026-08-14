@@ -2783,6 +2783,22 @@ sequences can close on the same midpoint. Its own commit, P2's bill paid: 448 gr
 bit-identical. Measured sequences: **124 keys (MIN) / 90 (RAIL)** on the rung-39 path, **121 / 88**
 on a rung-42 core at `b = 0.10` — different objects, as the branch flip predicts.
 
+**(g) ONE THING § 5.8.3 PREDICTED THAT THE DUMP DOES NOT WITNESS.** Step 3 reasoned that
+`flow_coefficient_turn`'s `MIN`/`RAIL` branch **can flip under bleed**, since bleed moves `phi` and
+therefore the argmin index. Read cell by cell rather than as the pooled `10 MIN / 6 RAIL`, it does
+not: `Hp` is MIN in all 8 rung-42-core turns, `Lp` is RAIL in all 6 at `M0 = 0.85` and MIN in both
+at `M0 = 1.60`, and `kind` is **identical at `b = 0.00` and `b = 0.10` in every one of the eight
+(gas, spool, flight) cells**. The branch driver on this grid is the FLIGHT MACH, not the valve.
+The concern was still worth acting on — it is why `kind` is dumped per cell, so the claim is gated
+rather than assumed — but a pooled count invites reading a bleed-driven flip into a number that
+contains none (`docs`' *guessed census bars*). Recorded so no later slice inherits it as
+established.
+
+Two dead axes were also turned into gates rather than left as duplicate work. `p3`'s floor sweep
+ran `flow_coefficient_turn` at floors 0.0 and 0.55, which that method never reads — 8 duplicate
+runs witnessing nothing. § 5.8.1 (viii) had MEASURED the invariance (bit-identical `Tt4_star` at
+both floors), so it is now asserted: the same content as gate 1, read through a different method.
+
 **What the rest of the dump settled.** P3: **0 refinement aborts** anywhere on the dump grid,
 including the rung-42 cores § 5.8.1's probes never swept, and `ended_on_abort` is **54 of 54** — so
 `Tt4_lo = 350` is dead, gated absolutely in `rung41.rs` (`band_lo > Tt4_lo + coarse`) since no

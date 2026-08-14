@@ -36,7 +36,7 @@
 use turbojet::engine::{build_turbojet, FlightCondition, Losses};
 use turbojet::gas::{Gas, GasSpec};
 use turbojet::map::ComponentMap;
-use turbojet::two_spool::{build_two_spool_turbojet, counters, round6, Spool, TurnKind,
+use turbojet::two_spool::{build_two_spool_turbojet, counters, round6, FlowTurn, Spool, TurnKind,
                           TwoSpoolLosses, TwoSpoolMapMatcher, TwoSpoolMapResult};
 
 const PI_LPC: f64 = 3.0;
@@ -514,21 +514,36 @@ fn p5_the_refinement_count_is_33_and_predictable() {
 ///
 /// It matters because a reader who believes `Tt4_lo = 350` sets the band's low end would tune it
 /// expecting the band to move.
+///
+/// **The floor axis is swept for a SECOND claim, not for redundancy.** `flow_coefficient_turn`
+/// never reads `phi_surge`, so floors 0.0 and 0.55 would otherwise be 8 duplicate runs witnessing
+/// nothing. § 5.8.1 (viii) measured that invariance directly — every cell returns a bit-identical
+/// `Tt4_star` at both floors — so it is asserted here and the dead axis becomes a gate. It is the
+/// same content as gate 1 (`phi_surge` is a pure diagnostic) read through a different method.
 #[test]
 fn p3_tt4_lo_is_dead_the_envelope_ends_the_band() {
     let (tt4_lo, coarse) = (350.0, 10.0);
     let mut n = 0;
     for (name, ml, mh) in shapes() {
-        for phi_s in [0.0, 0.55] {
-            for spool in [Spool::Hp, Spool::Lp] {
+        for spool in [Spool::Hp, Spool::Lp] {
+            let mut per_floor: Vec<FlowTurn> = Vec::new();
+            for phi_s in [0.0, 0.55] {
                 let m = mm(cpg_gas(), floor(ml, phi_s), floor(mh, phi_s));
                 let t = m.core().flow_coefficient_turn(&flight(), spool);
                 assert!(t.band.0 > tt4_lo + coarse,
                         "{name} / {phi_s} / {spool:?}: the coarse scan ended at {} — inside one \
                          step of Tt4_lo = {tt4_lo}, which means the PARAMETER ended the band and \
                          not the choked envelope", t.band.0);
+                per_floor.push(t);
                 n += 1;
             }
+            let (a, b) = (&per_floor[0], &per_floor[1]);
+            assert_eq!(a.tt4_star.to_bits(), b.tt4_star.to_bits(),
+                       "{name} / {spool:?}: arming the surge line MOVED the located turn — \
+                        phi_surge enters no solver, so the two floors must agree bit-for-bit");
+            assert_eq!(a.phi_star.to_bits(), b.phi_star.to_bits(), "{name} / {spool:?}");
+            assert_eq!(a.kind, b.kind, "{name} / {spool:?}");
+            assert_eq!(a.band.0.to_bits(), b.band.0.to_bits(), "{name} / {spool:?}");
         }
     }
     assert_eq!(n, 16, "the sweep this bar was measured on is 4 shapes x 2 floors x 2 spools");
