@@ -101,6 +101,7 @@ pub mod counters {
         static HP_MIN: Cell<u64> = const { Cell::new(u64::MAX) };
         static LP_MIN: Cell<u64> = const { Cell::new(u64::MAX) };
         static CLAMPS: Cell<u64> = const { Cell::new(0) };
+        static REFINE_CALLS: Cell<u64> = const { Cell::new(0) };
     }
 
     /// Zero every counter. Called per cell by the oracle gate, so a count is per-cell and not
@@ -114,6 +115,7 @@ pub mod counters {
         HP_MIN.with(|c| c.set(u64::MAX));
         LP_MIN.with(|c| c.set(u64::MAX));
         CLAMPS.with(|c| c.set(0));
+        REFINE_CALLS.with(|c| c.set(0));
     }
 
     pub(super) fn bump_cascade() { CASCADE_CALLS.with(|c| c.set(c.get() + 1)); }
@@ -149,6 +151,25 @@ pub mod counters {
     pub fn lp_passes_min() -> u64 { LP_MIN.with(|c| c.get()) }
     /// How often the secant's `[0.3, 1.0]` clamp BOUND. Measured `0` everywhere (§ 5.7 (g)).
     pub fn secant_clamp_hits() -> u64 { CLAMPS.with(|c| c.get()) }
+
+    pub(super) fn bump_refine() { REFINE_CALLS.with(|c| c.set(c.get() + 1)); }
+
+    /// RUNG 41. How many `phi` evaluations the GOLDEN SECTION made — the 2 initial plus one per
+    /// loop pass. **It counts the refinement's calls and nothing else**: not the coarse scan's,
+    /// and not the closing `od_at(Tstar)`.
+    ///
+    /// **Naming the instrument is the point, because the memo makes three counts differ** and
+    /// § 5.7 (d) corrected a bar one slice ago for exactly that. On a `MIN` run the refinement
+    /// makes **33** `phi` calls, the whole method makes **116–140** `match` calls (the coarse
+    /// scan's length rides the envelope, so this one is case-dependent), and the golden-section
+    /// loop takes **32** passes — of which 31 call `phi` and the last only tests the stopping
+    /// rule. A gate that compared 33 against a loop-pass counter would be measuring the wrong
+    /// number and would still pass most of the time.
+    ///
+    /// The 33 is **predictable from the arithmetic**, which is a stronger bar than one merely
+    /// observed (the *golden-gate-slice-6* rule): the bracket is `2 * coarse = 20` wide, the stop
+    /// is `b - a < 1e-5`, and `ceil(ln(1e-5 / 20) / ln(0.618…)) = 31`, plus the 2 initial.
+    pub fn refine_calls() -> u64 { REFINE_CALLS.with(|c| c.get()) }
 }
 
 // =========================================================================================
@@ -1455,4 +1476,469 @@ fn r39_try_match_point(
         n_lp: c.n_l, n_hp: c.n_h, n_lp_ratio: c.nl, n_hp_ratio: c.nh, slip: c.slip,
         phi_lp: c.phi_l, phi_hp: c.phi_h, nu_hpt: c.nu_hpt, nu_lpt: c.nu_lpt,
     })
+}
+
+// =========================================================================================
+// RUNG 41 — THE TWO-SPOOL SURGE LINE: the exposure SPLITS onto the LP spool
+// =========================================================================================
+//
+// Rung 36 hung a surge line on ONE compressor and read the margin off it. Split the shaft and
+// there are two faces, two speed lines and two floors — and the exposure does not divide evenly.
+// The LP face takes the throttle excursion; the HP face is SHIELDED, because the HP NGV choke
+// refers its corrected flow to the HP face and `pi_LPC` cancels out of it (rung 39's (†)). So the
+// HP spool's flow coefficient barely moves while the LP spool's falls hard.
+//
+// (★) IS THE SECOND, INDEPENDENT FINDING, and it costs ZERO new constants. On a choked-NGV
+// running line the compressor's flow coefficient is STATIONARY at
+//
+//       pi_c* = gamma_c^(gamma_c/(gamma_c-1))
+//
+// — the COLD gamma alone. Below pi* a throttled face walks AWAY from surge in flow coefficient;
+// above it, toward. That is a CPG, flat-map statement (it takes gamma_c as a constant and psi as
+// 1); on shaped maps and a variable-cp gas it shifts a few percent, and the whole residual is the
+// fuel fraction — rung 41's own kill test drives `hPR` up, `f` to zero, and watches the offset
+// vanish monotonically.
+//
+// # What this section adds to the port, beyond six methods
+//
+// **1. THE PORT'S FIRST LIVE VIRTUAL DISPATCH.** All three schedule methods reach the concrete
+// cell through [`TwoSpoolMapCore::try_match_point`], never through `r39_try_match_point`. That is
+// not a style preference: rung 42 overrides exactly that slot, so a `bleed_trade` running on a
+// rung-42 object must reach rung 42's body THROUGH rung 41's code. Naming the rung-39 function
+// here would compile, return a number, and silently give rung 42 rung 39's physics.
+//
+// **2. THE `except AssertionError` IS CONTROL FLOW, AND IT IS ASYMMETRIC.**
+// [`TwoSpoolMapCore::surge_margin_schedule`] and [`TwoSpoolMapCore::running_line_map`] SKIP a
+// failing throttle and carry on; [`TwoSpoolMapCore::flow_coefficient_turn`] guards **only its
+// coarse scan** and leaves the golden section NAKED. Both halves are copied as they stand — see
+// that method's own note for why the asymmetry is measured rather than assumed.
+//
+// **3. TWO PYTHON ASSERTS BECOME UNREACHABLE BY TYPE, AND THAT IS NAMED, NOT SILENT.**
+// `assert spool in ("hp", "lp")` cannot be written wrong against a [`Spool`] enum. And these six
+// methods sit on [`TwoSpoolMapCore`] rather than on [`TwoSpoolMapMatcher`], so they cannot be
+// called on a `lp_disabled` matcher at all — where Python would raise `AttributeError` from the
+// rung-32 delegate, not `AssertionError`. Both are the type carrying a guard the source spends a
+// line on; neither changes a number.
+
+/// Which spool a rung-41 diagnostic is asked about.
+///
+/// Python passes the strings `"hp"` / `"lp"` and opens `flow_coefficient_turn` with
+/// `assert spool in ("hp", "lp")`. That assert has no Rust counterpart because it has no Rust
+/// failure mode — which is the type doing the source's work, not a guard being dropped.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Spool {
+    Lp,
+    Hp,
+}
+
+/// Constant-speed surge margin on BOTH spools at one running-line point.
+///
+/// Every margin MAGNITUDE is disclaimed — it rides on the two imposed floors. What is
+/// load-bearing is the SPLIT (`phi_lp` takes the excursion, `phi_hp` is shielded) and, at matched
+/// map shapes with a common floor, the COLLAPSE of the ratio `sm_lp/sm_hp` with throttle. The
+/// ORDERING's level is partly a design-split artefact: `sm_lp < sm_hp` already holds at the
+/// design point because `pi_LPC = 3 < pi_HPC = 6`, not because the LP face is more exposed there.
+#[derive(Clone, Copy, Debug)]
+pub struct SurgeMargin {
+    pub tt4: f64,
+    /// `Tt4/Tt2` — the LP spool's own throttle coordinate.
+    pub x_lp: f64,
+    /// `Tt4/Tt25` — the HP spool's.
+    pub x_hp: f64,
+    pub phi_lp: f64,
+    pub phi_hp: f64,
+    pub n_lp: f64,
+    pub n_hp: f64,
+    pub pi_lpc: f64,
+    pub pi_hpc: f64,
+    pub slip: f64,
+    pub sm_lp: f64,
+    pub sm_hp: f64,
+    /// Whichever margin is smaller. **Ties go to `Lp`** — Python's `"lp" if SM_lp <= SM_hp`.
+    pub binding: Spool,
+}
+
+/// One point of the two running lines in MAP coordinates.
+#[derive(Clone, Copy, Debug)]
+pub struct RunningLinePoint {
+    pub tt4: f64,
+    pub x_lp: f64,
+    pub x_hp: f64,
+    pub phi_lp: f64,
+    pub phi_hp: f64,
+    pub n_lp: f64,
+    pub n_hp: f64,
+    pub pi_lpc: f64,
+    pub pi_hpc: f64,
+}
+
+/// Which branch [`TwoSpoolMapCore::flow_coefficient_turn`] took.
+///
+/// **NOT cosmetic — see [`FlowTurn`].** `Rail` is the majority branch on the LP spool.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TurnKind {
+    /// The flow-coefficient minimum is INTERIOR to the runnable band and was golden-sectioned.
+    Min,
+    /// The minimum sits at an end of the band — the turn is outside the choked envelope.
+    Rail,
+}
+
+/// The located flow-coefficient stationary point (★) on one spool.
+///
+/// **THE TWO BRANCHES RETURN DIFFERENT SHAPES, AND A FLOAT DUMP IS BLIND TO IT.** Python's `MIN`
+/// dict carries `pi_star`, `star_form`, `gamma_c` and `far`; its `RAIL` dict sets the first two to
+/// `None` and **omits the last two entirely**. Measured, the null branch is not a corner: **60
+/// `MIN` / 20 `RAIL`** over rung 41's four shapes plus flat at two floors and two flight Machs,
+/// and **16 of 19 `lp` cases RAIL** on flat maps — the LP spool normally lives there.
+///
+/// So a port writing `0.0` where Python writes `None` would produce a column that COMPARES EQUAL
+/// and means something else, and no value oracle could see it. [`Option`] is what makes that
+/// unwritable; the dump carries an explicit discriminant column plus a declared sentinel, and the
+/// gate asserts the branch COUNT rather than only the numbers (§ 5.8.1's P9).
+#[derive(Clone, Copy, Debug)]
+pub struct FlowTurn {
+    pub kind: TurnKind,
+    pub spool: Spool,
+    /// The located throttle. **Unrounded** — see [`round6`]: only the `match` ARGUMENT is rounded.
+    pub tt4_star: f64,
+    pub phi_star: f64,
+    /// `None` on [`TurnKind::Rail`].
+    pub pi_star: Option<f64>,
+    /// `1 + eta_c*(tau_c - 1)`, the measured left-hand side of (★). `None` on `Rail`.
+    ///
+    /// `eta_c` here is the CAPTURED DESIGN efficiency, not the map read-off at the located point —
+    /// Python reads `self.eta_hpc` / `self.eta_lpc` off the matcher, not `o.eta_hpc` off the
+    /// result. On a shaped map those differ, so the distinction moves the number.
+    pub star_form: Option<f64>,
+    /// `gamma_c^(gamma_c/(gamma_c-1))` — the closed form, on BOTH branches.
+    pub closed_form: f64,
+    /// `None` on `Rail`, where Python's dict has no such key at all.
+    pub gamma_c: Option<f64>,
+    /// The station-4 fuel-air ratio at the located point — the whole (★) residual. `None` on
+    /// `Rail`, where Python's dict has no such key at all.
+    pub far: Option<f64>,
+    /// `(lowest, highest)` throttle the coarse scan actually reached.
+    pub band: (f64, f64),
+}
+
+/// Python's `round(x, 6)`, which is NOT `(x * 1e6).round() / 1e6`.
+///
+/// **THIS IS A THROTTLE, NOT A CACHE KEY.** `flow_coefficient_turn`'s memo does
+/// `cache[key] = self.match(flight, key)` — it passes the ROUNDED value on as the throttle
+/// actually matched. So the rounding moves VALUES, not merely cache identity, and getting it
+/// wrong makes the port solve a silently different engine. (The memo is also all but dead as a
+/// cache: **10 hits against 4 206 misses**, every hit the closing `od_at(Tstar)` landing on an
+/// abscissa already visited. It must not be read as a caching device.)
+///
+/// **FORMAT-AND-PARSE IS NOT AN APPROXIMATION OF PYTHON'S `round` — IT IS PYTHON'S `round`.**
+/// CPython's `double_round` calls `_Py_dg_dtoa(x, mode 3, ndigits)` for the correctly-rounded,
+/// half-to-EVEN decimal string and `_Py_dg_strtod` to convert back; PyPy's `rfloat.round_double`
+/// does the same. Rust's `{:.6}` is exact and rounds half-to-even, and `str::parse::<f64>` is
+/// correctly rounded, so the two are the same two steps.
+///
+/// **The naive spelling is not merely riskier — it is DEMONSTRABLY WRONG on reachable inputs, and
+/// that upgrades § 5.8.1's P4.** The pre-registration measured 0 disagreements over 4 216 live
+/// keys and a 600 000-point synthetic sweep, and said so while recording that the zero was NOT a
+/// proof (≈0.1 expected events at the estimated rate). It can now be settled by construction. An
+/// exact tie at the 6th decimal needs `x = (2j+1)/(2·10^6)`; for a dyadic `x = m/2^k` that forces
+/// `k = 7` and `m` odd, so the ties are exactly the odd multiples of `1/128` — **representable,
+/// and inside the [350, 1500] band the scan sweeps.** At `x = 350.0078125` PyPy and this function
+/// both give `350.007812` (half to even) where `(x*1e6).round()/1e6` gives `350.007813`. The
+/// divergence class is therefore CLOSED here rather than merely gated downstream, and P4's key
+/// dump becomes a regression guard instead of the primary defence.
+pub fn round6(x: f64) -> f64 {
+    format!("{:.6}", x).parse::<f64>().expect("a formatted finite double parses back")
+}
+
+impl TwoSpoolMapCore {
+    /// (★): the pressure ratio at which a choked-NGV compressor's running-line flow coefficient
+    /// is STATIONARY — `pi_c* = gamma_c^(gamma_c/(gamma_c-1))`, from **`gamma_c` ALONE**.
+    ///
+    /// A CPG statement (it uses the cold-section gamma as a constant) and a flat-map one
+    /// (`psi == 1`, `eta` constant); on shaped maps and on a variable-`cp` gas it shifts by a few
+    /// percent — disclaimed, rung-32 methodology. Below `pi*` a throttled face walks AWAY from
+    /// surge in flow coefficient; above it, toward.
+    ///
+    /// Spelled with [`powp`] and not `f64::powf`, per `tests/porting_rules.rs`: this is a
+    /// general power, not a square, and the two spellings differ in the last bit.
+    pub fn critical_flow_turn_pi(&self) -> f64 {
+        let g = self.gas().gamma_c();
+        powp(g, g / (g - 1.0))
+    }
+
+    /// Rung 36's `_pi_c_map`, parameterised by spool: the compressor pressure ratio at an
+    /// ARBITRARY map point `(n, phi)`, through the SAME forward speed-line + efficiency-island
+    /// arithmetic the two efficiency loops use.
+    ///
+    /// At the OPERATING `(n, phi)` it reproduces the shipped `pi` bit-for-bit on each spool —
+    /// which is rung 41's gate 2 and the reason the margin is non-tautological: two code paths,
+    /// one `pi`, per spool. A margin computed off some other map would be measuring a different
+    /// machine from the one that set the running line.
+    ///
+    /// The `tau > 1` guard stays an `assert!`: swept over four map shapes × two floors × three
+    /// gases it fires **0** times, and a fallible path with no reachable failure is a gate that
+    /// measures nothing ([`Abort`]'s own rule).
+    ///
+    /// [`Abort`]: crate::gas::Abort
+    #[allow(clippy::too_many_arguments)]
+    pub fn pi_c_spool(
+        &self, cmap: &ComponentMap, tau_d: f64, eta_base: f64, n: f64, phi: f64, tt_in: f64,
+    ) -> f64 {
+        let gas = self.gas();
+        let tau = 1.0 + (tau_d - 1.0) * cmap.psi(phi) * n * n;
+        assert!(tau > 1.0,
+                "surge-margin map point does no work (tau<=1) at n={n:.4}, phi={phi:.4} — \
+                 phi below the loading-law positive-work edge.");
+        let tt_out = tt_in * tau;
+        let eta = cmap.eta_c_at(eta_base, phi, n);
+        let (h_in, h_out) = (gas.h_c(tt_in), gas.h_c(tt_out));
+        let tts = gas.t_from_h_c(h_in + eta * (h_out - h_in));
+        gas.pr_c(tts) / gas.pr_c(tt_in)
+    }
+
+    /// The [`pi_c_spool`](Self::pi_c_spool) reproduction of the SHIPPED `pi` at the operating
+    /// point — rung 41's gate 2 in one call.
+    pub fn pi_c_spool_shipped(&self, od: &TwoSpoolMapResult, spool: Spool) -> f64 {
+        match spool {
+            Spool::Lp => self.pi_c_spool(&self.map_lp, self.tau_lpc_d, self.base.eta_lpc,
+                                         od.n_lp, od.phi_lp, od.base.station("2").tt),
+            Spool::Hp => self.pi_c_spool(&self.map_hp, self.tau_hpc_d, self.base.eta_hpc,
+                                         od.n_hp, od.phi_hp, od.base.station("25").tt),
+        }
+    }
+
+    /// Constant-speed surge margin on BOTH spools at the running-line point for `tt4`:
+    /// `SM = pi_c(n0, phi_surge)/pi_c,op - 1`, each spool on its OWN speed line `n0`.
+    ///
+    /// Rung 36's primary currency — what a frozen-spool fuel step consumes — doubled. Each spool
+    /// reads its stall flow coefficient off its own map, so there are now TWO imposed constants
+    /// and the disclosed cost is doubled with them.
+    pub fn surge_margin(&self, flight: &FlightCondition, tt4: f64) -> SurgeMargin {
+        self.try_surge_margin(flight, tt4).unwrap_or_else(|e| panic!("{}", e.0))
+    }
+
+    /// The FALLIBLE twin of [`surge_margin`](Self::surge_margin) — see [`Abort`]. What propagates
+    /// is the MATCH's failure, which is what
+    /// [`surge_margin_schedule`](Self::surge_margin_schedule) skips on.
+    ///
+    /// **The two asserts inside stay asserts, and one of them has a consequence worth naming.**
+    /// Both fire **0** times on the swept grid (four shapes × two floors × three gases), so the
+    /// zero-firing rule keeps them panics. But `phi_surge > 0.0` is reachable BY CONSTRUCTION
+    /// rather than by throttle: on an UNARMED pair of maps, Python's `surge_margin_schedule`
+    /// catches it at every point and returns `[]`, where this panics on the first. That is a real
+    /// difference in behaviour on an input no gate supplies, recorded rather than papered over —
+    /// adding a `Result` for it would re-open an adjudication a measurement already settled.
+    ///
+    /// [`Abort`]: crate::gas::Abort
+    pub fn try_surge_margin(
+        &self, flight: &FlightCondition, tt4: f64,
+    ) -> Result<SurgeMargin, Abort> {
+        let (ml, mh) = (self.map_lp, self.map_hp);
+        assert!(ml.phi_surge > 0.0 && mh.phi_surge > 0.0,
+                "two-spool surge_margin needs a surge line on BOTH maps: build each with \
+                 .with_phi_surge(phi_surge).");
+        let od = self.try_match_point(flight, tt4)?;
+        let (tt2, tt25) = (od.base.station("2").tt, od.base.station("25").tt);
+        assert!(ml.phi_surge < od.phi_lp && mh.phi_surge < od.phi_hp,
+                "steady point already at/over surge at Tt4={tt4:.0}: phi=({:.4},{:.4}) vs \
+                 floors ({:.4},{:.4}).", od.phi_lp, od.phi_hp, ml.phi_surge, mh.phi_surge);
+        let sl = self.pi_c_spool(&ml, self.tau_lpc_d, self.base.eta_lpc, od.n_lp, ml.phi_surge,
+                                 tt2);
+        let sh = self.pi_c_spool(&mh, self.tau_hpc_d, self.base.eta_hpc, od.n_hp, mh.phi_surge,
+                                 tt25);
+        let (sm_lp, sm_hp) = (sl / od.base.pi_lpc - 1.0, sh / od.base.pi_hpc - 1.0);
+        Ok(SurgeMargin {
+            tt4, x_lp: tt4 / tt2, x_hp: tt4 / tt25,
+            phi_lp: od.phi_lp, phi_hp: od.phi_hp, n_lp: od.n_lp, n_hp: od.n_hp,
+            pi_lpc: od.base.pi_lpc, pi_hpc: od.base.pi_hpc, slip: od.slip, sm_lp, sm_hp,
+            binding: if sm_lp <= sm_hp { Spool::Lp } else { Spool::Hp },
+        })
+    }
+
+    /// `[surge_margin(Tt4)]` along the running line, **SKIPPING** points off the choked branch.
+    ///
+    /// The skip is control flow, not error handling — Python's `except AssertionError: continue`
+    /// — so the length of the returned list is itself a measurement. Over four map shapes × two
+    /// floors × three gases on a 13-point throttle grid, **10 of 13 survive** on every CPG and
+    /// TPG combination and on 6 of 8 equilibrium ones; 9 of 13 on the equilibrium `steep` pair.
+    /// The skip REASONS split by GAS and are identical across all four shapes and both floors,
+    /// which is the census that says the surge line itself is not what is failing.
+    pub fn surge_margin_schedule(
+        &self, flight: &FlightCondition, tt4_grid: &[f64],
+    ) -> Vec<SurgeMargin> {
+        let mut out = Vec::new();
+        for &tt4 in tt4_grid {
+            if let Ok(sm) = self.try_surge_margin(flight, tt4) {
+                out.push(sm);
+            }
+        }
+        out
+    }
+
+    /// The two running lines in map coordinates — `(x, phi, n, pi)` per spool, same skip rule.
+    ///
+    /// This is the object behind the SPLIT: `phi_hp` collapses on `x_hp = Tt4/Tt25` across flight
+    /// conditions while `phi_lp` rides `x_lp = Tt4/Tt2`.
+    pub fn running_line_map(
+        &self, flight: &FlightCondition, tt4_grid: &[f64],
+    ) -> Vec<RunningLinePoint> {
+        let mut out = Vec::new();
+        for &tt4 in tt4_grid {
+            let od = match self.try_match_point(flight, tt4) {
+                Ok(r) => r,
+                Err(_) => continue,
+            };
+            let (tt2, tt25) = (od.base.station("2").tt, od.base.station("25").tt);
+            out.push(RunningLinePoint {
+                tt4, x_lp: tt4 / tt2, x_hp: tt4 / tt25,
+                phi_lp: od.phi_lp, phi_hp: od.phi_hp, n_lp: od.n_lp, n_hp: od.n_hp,
+                pi_lpc: od.base.pi_lpc, pi_hpc: od.base.pi_hpc,
+            });
+        }
+        out
+    }
+
+    /// Locate the running-line flow-coefficient STATIONARY point (★) on one spool, with rung 41's
+    /// own defaults (`Tt4_hi = Tt4_design`, `Tt4_lo = 350`, `coarse = 10`) — every Python caller
+    /// in the suite and in `main.py` uses them.
+    pub fn flow_coefficient_turn(&self, flight: &FlightCondition, spool: Spool) -> FlowTurn {
+        self.flow_coefficient_turn_with(flight, spool, None, 350.0, 10.0)
+    }
+
+    /// [`flow_coefficient_turn`](Self::flow_coefficient_turn) with the scan parameters spelled
+    /// out. Coarse-scans `Tt4` down the choked branch, then golden-sections the interior minimum.
+    ///
+    /// # Why this is INFALLIBLE, and why that had to be measured
+    ///
+    /// The coarse scan is wrapped — a failing throttle ENDS the band and the scan keeps what it
+    /// has. The golden section is **NOT**: `phi(c)` / `phi(d)` are naked, so a failure there
+    /// propagates out of the whole method. Copying that asymmetry means deciding whether this
+    /// method returns a `Result`, and the answer is not guessable from the source: an infallible
+    /// port meeting a live refinement failure PANICS exactly where Python skips, and no value
+    /// comparison can see the difference.
+    ///
+    /// So it was measured, on two grids, because the first did not back the bar. **2 706
+    /// refinement calls over 118 runs, 0 aborts, and the coarse guard live on 118 of 118.** The
+    /// second grid exists because the first was flat-mapped (gate 5's own construction), which
+    /// backed nothing about the shaped cells a dump naturally sweeps; the re-measurement covers
+    /// rung 41's four shapes plus flat, at floors 0.0 and 0.55, at two flight Machs, both spools.
+    ///
+    /// Two consequences, and the second was not anticipated:
+    ///
+    /// * this stays infallible, and a refinement `Err` panics — which IS Python's behaviour, an
+    ///   uncaught `AssertionError` leaving the method, not an approximation of it;
+    /// * **`tt4_lo` is DEAD.** The scan always terminated on the abort, never on `t > tt4_lo`, so
+    ///   the band's low end is set by the choked envelope and not by this parameter. Ported as
+    ///   written and recorded as dead, so no reader infers it is load-bearing.
+    ///
+    /// # The band, and the memo
+    ///
+    /// `ts` stores the UNROUNDED `t` and `tt4_star` is returned unrounded: [`round6`] applies to
+    /// the `match` ARGUMENT alone. `t` accumulates by `t -= coarse` rather than
+    /// `start - k*coarse`, because those are different doubles after the first step.
+    pub fn flow_coefficient_turn_with(
+        &self, flight: &FlightCondition, spool: Spool, tt4_hi: Option<f64>, tt4_lo: f64,
+        coarse: f64,
+    ) -> FlowTurn {
+        /// One memoised match. Returns an INDEX so the borrow ends at the call.
+        fn od_index(
+            core: &TwoSpoolMapCore, flight: &FlightCondition,
+            cache: &mut Vec<(f64, TwoSpoolMapResult)>, t: f64,
+        ) -> Result<usize, Abort> {
+            let key = round6(t);
+            // Python's `key not in cache` on a float dict is value equality; a linear scan is the
+            // same predicate. No NaN and no signed zero reaches here (the band is [350, 1500]).
+            if let Some(i) = cache.iter().position(|(k, _)| *k == key) {
+                return Ok(i);
+            }
+            let r = core.try_match_point(flight, key)?;
+            cache.push((key, r));
+            Ok(cache.len() - 1)
+        }
+        fn phi_of(r: &TwoSpoolMapResult, spool: Spool) -> f64 {
+            match spool { Spool::Hp => r.phi_hp, Spool::Lp => r.phi_lp }
+        }
+
+        let cf = self.critical_flow_turn_pi();
+        let mut cache: Vec<(f64, TwoSpoolMapResult)> = Vec::new();
+
+        // --- the COARSE scan, guarded: a failing throttle ends the band ---------------------
+        let (mut ts, mut vals): (Vec<f64>, Vec<f64>) = (Vec::new(), Vec::new());
+        let mut t = tt4_hi.unwrap_or(self.base.tt4_design);
+        while t > tt4_lo {
+            match od_index(self, flight, &mut cache, t) {
+                // Python appends `phi(T)` FIRST, so an abort pushes NEITHER and the two lists
+                // stay the same length.
+                Ok(i) => { vals.push(phi_of(&cache[i].1, spool)); ts.push(t); }
+                Err(_) => break,
+            }
+            t -= coarse;
+        }
+        assert!(vals.len() >= 3, "flow_coefficient_turn: runnable band too short to scan");
+
+        // FIRST-WINS argmin, spelled as an explicit fold with `<`. Python's `min(range(n), key=…)`
+        // returns the first minimal index and Rust's `min_by` also would, but a hand-rolled fold
+        // with `<=` flips it — and TIES ARE UNREACHABLE on this grid (0 across 118 runs), so no
+        // gate here can distinguish the two spellings. Registered rather than measured, which is
+        // the honest reading of a rule the data cannot test.
+        let mut i = 0usize;
+        for j in 1..vals.len() {
+            if vals[j] < vals[i] {
+                i = j;
+            }
+        }
+        let band = (ts[ts.len() - 1], ts[0]);
+        if i == 0 || i == vals.len() - 1 {
+            return FlowTurn {
+                kind: TurnKind::Rail, spool, tt4_star: ts[i], phi_star: vals[i],
+                pi_star: None, star_form: None, closed_form: cf,
+                gamma_c: None, far: None, band,
+            };
+        }
+
+        // --- the GOLDEN SECTION, unguarded ---------------------------------------------------
+        let (mut a, mut b) = (ts[i + 1], ts[i - 1]);        // ts DESCENDS, so a < b
+        let gr = (powp(5.0, 0.5) - 1.0) / 2.0;
+        let (mut c, mut d) = (b - gr * (b - a), a + gr * (b - a));
+        {
+            let mut rphi = |t: f64| -> f64 {
+                counters::bump_refine();
+                let k = od_index(self, flight, &mut cache, t)
+                    .unwrap_or_else(|e| panic!("{}", e.0));
+                phi_of(&cache[k].1, spool)
+            };
+            let (mut fc, mut fd) = (rphi(c), rphi(d));
+            // CHECK-FIRST, and the shape is load-bearing: a `do`-while converges to the same
+            // place and makes the refinement count 34 instead of 33. Exhausting the 90 is not an
+            // error in the source either — it simply stops.
+            for _ in 0..90 {
+                if b - a < 1e-5 {
+                    break;
+                }
+                if fc < fd {
+                    b = d; d = c; fd = fc;
+                    c = b - gr * (b - a); fc = rphi(c);
+                } else {
+                    a = c; c = d; fc = fd;
+                    d = a + gr * (b - a); fd = rphi(d);
+                }
+            }
+        }
+        let tstar = 0.5 * (a + b);
+        let oi = od_index(self, flight, &mut cache, tstar)
+            .unwrap_or_else(|e| panic!("{}", e.0));
+        let o = &cache[oi].1;
+        // `eta` is the CAPTURED DESIGN efficiency, not the map read-off at this point.
+        let (pi_s, tau, eta, phi_s) = match spool {
+            Spool::Hp => (o.base.pi_hpc, o.base.station("3").tt / o.base.station("25").tt,
+                          self.base.eta_hpc, o.phi_hp),
+            Spool::Lp => (o.base.pi_lpc, o.base.station("25").tt / o.base.station("2").tt,
+                          self.base.eta_lpc, o.phi_lp),
+        };
+        FlowTurn {
+            kind: TurnKind::Min, spool, tt4_star: tstar, phi_star: phi_s,
+            pi_star: Some(pi_s), star_form: Some(1.0 + eta * (tau - 1.0)), closed_form: cf,
+            gamma_c: Some(self.gas().gamma_c()), far: Some(o.base.station("4").far), band,
+        }
+    }
 }
