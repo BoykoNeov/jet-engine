@@ -2614,7 +2614,7 @@ and exactly the line slice L would have copied.
 
 ---
 
-### 5.8 SLICE L (rungs 41 + 42) — **STEP 1 SHIPPED; PRE-REGISTERED (§ 5.8.1), eight predictions**
+### 5.8 SLICE L (rungs 41 + 42) — **STEP 1 SHIPPED; PRE-REGISTERED (§ 5.8.1), nine predictions**
 
 Handoff state as of commit `ff784ed`. **448 Rust tests green, all three existing oracles
 bit-identical.** Read this before resuming — the probes are done and their numbers are here, so
@@ -2668,7 +2668,7 @@ purpose (its scope guard is not in the caught chain).
 
 **What REMAINS, in order** (step 1 of this list is **DONE** — it is § 5.8.1):
 
-1. ~~**Write the pre-registration**~~ — **DONE, § 5.8.1**, eight predictions. It gained two
+1. ~~**Write the pre-registration**~~ — **DONE, § 5.8.1**, nine predictions. It gained two
    things the list above did not name: a P5-style *"the refactor moves no shipped bit"* extended
    to cover **`phi_surge`'s arrival on `ComponentMap`** (§ 5.7 (a) deferred that field to this
    slice, and adding it is a change to already-gated code), and a corrected **deferral** list —
@@ -2689,7 +2689,7 @@ purpose (its scope guard is not in the caught chain).
 Then **slices M / N / O**: rungs 53–56 and 61, the airflow levers.
 
 **Probe scripts** live in `M:\claud_projects\temp\rust-slice-l\` (`probe_slice_l.py`,
-`probe_sites.py`, `probe_solve_chain.py`, and § 5.8.1's `probe_l2.py`).
+`probe_sites.py`, `probe_solve_chain.py`, and § 5.8.1's `probe_l2.py` / `probe_l3.py`).
 
 ### 5.8.1 SLICE L — PRE-REGISTERED, and a SECOND probe measured first
 
@@ -2702,9 +2702,24 @@ it). `probe_l2.py`, PyPy.
 **(i) THE GOLDEN SECTION'S NAKED `phi` NEVER RAISES — AND THE COARSE SCAN'S GUARD IS 100 % LIVE.**
 `flow_coefficient_turn` wraps only the **coarse scan** in `except AssertionError: break`; the
 `phi(c)` / `phi(d)` calls inside the golden section are unguarded, so a raise there propagates out
-of the method. Over **38 runs** (gate 5's own 19-case set × both spools) making **726 refinement
-calls**, the refinement raised **0** times, while the coarse guard fired in **38 of 38**. Two
-consequences, and the second was not anticipated:
+of the method. Measured on **two grids**, because the first one did not back the bar:
+
+* **`probe_l2.py` — 38 runs, 726 refinement calls, 0 aborts, coarse guard 38 of 38.** The case set
+  is gate 5's own (7 design/efficiency variants + 4 `gamma_c` + `gamma_t` + `cp_t` + 3 `hPR` +
+  `M0` = 1.60 = 17) **plus 2 thermally-perfect cases gate 5 does not carry**, × both spools. Note
+  gate 5 only ever calls the `"hp"` spool, so **the `lp` column here is wider than any shipped
+  gate** — that is deliberate, and it is why the count's authority is this enumeration and not the
+  gate's.
+* **`probe_l3.py` — 80 runs, 1 980 refinement calls, 0 aborts, coarse guard 80 of 80.** Every one
+  of those matchers is built with **rung 41's own four shapes plus flat, at floors 0.0 and 0.55,
+  at both flight Machs**. This grid exists because the first was measured on **flat** maps only
+  (gate 5's own construction, no `map_lp` / `map_hp`), so it backed nothing about the shaped cells
+  a dump would naturally sweep — and the gap decides a **type signature**, not merely a bar: an
+  infallible `flow_coefficient_turn` meeting a shaped-map refinement abort panics exactly where
+  Python skips, and **no value comparison can see it.**
+
+**2 706 refinement calls over 118 runs, 0 aborts, and the coarse guard live on every single one.**
+Two consequences, and the second was not anticipated:
 
 * `flow_coefficient_turn` stays **infallible** in Rust. A `Result` there would be a control-flow
   path with no reachable failure — the `Abort` rule's own words, and slice K (g)'s dead-clamp
@@ -2732,7 +2747,8 @@ every memo key is dumped as a discrete oracle value (P4), so a divergent roundin
 changed key rather than as a silently different throttle.
 
 **(iii) THE REFINEMENT COUNT IS ONE NUMBER, AND IT IS PREDICTABLE FROM THE ARITHMETIC.** Every
-`MIN` run makes exactly **33** refinement `phi` calls — 2 initial plus 31 loop passes — and the
+`MIN` run makes exactly **33** refinement `phi` calls — on flat maps *and* on all four shapes at
+both floors (`probe_l3.py`: 60 `MIN` runs × 33 = 1 980 exactly) — 2 initial plus 31 loop passes, and the
 arithmetic reproduces it: the bracket is 2 × `coarse` = 20 wide, the stop is `b - a < 1e-5`, and
 `ceil(ln(1e-5 / 20) / ln(0.618…)) = 31`. This is the *golden-gate-slice-6* rule reused — a count
 that can be **predicted** from the arithmetic is a stronger bar than one merely observed. **The
@@ -2784,6 +2800,23 @@ on both gases (CPG at 1200 K: `SM_L` 0.1089 → 0.1248 → 0.1430; `SM_H` 0.5237
 No value key can fake this, because the margins are computed *from* a match only the override
 supplies — which is why slice L owes a dispatch gate rather than a value one.
 
+**(viii) THE TWO RETURN SHAPES DIFFER, AND `RAIL` IS THE MAJORITY BRANCH ON THE `lp` SPOOL.**
+`flow_coefficient_turn` returns `kind="MIN"` with `pi_star`, `star_form`, `gamma_c` and `far`, or
+`kind="RAIL"` with `pi_star=None`, `star_form=None` and **`gamma_c`/`far` absent from the dict
+altogether**. Measured: **60 `MIN` / 20 `RAIL` over `probe_l3.py`'s 80 runs**, and on `probe_l2.py`'s
+flat-map set **16 of 19 `lp` cases RAIL** — so the null branch is not a corner, it is where the LP
+spool normally lives. **A dump of floats is blind to the difference**: a Rust port writing `0.0`
+where Python writes `None` produces a column that compares equal and means something else. The
+dump therefore carries an explicit **discriminant column** (`kind`, as a code) and a **declared
+sentinel** for the three nullable columns, and the gate asserts the branch *count*, not just the
+values. This is P8's rule — *a value oracle cannot see a boolean's field set* — applied to a
+**missing value** instead of a missing field.
+
+One thing that fell out of `probe_l3.py` for free and belongs to P2: the surge floor changes
+**no** turn. Every `(gas, shape, M0, spool)` cell returns bit-identical `Tt4_star` at `floor = 0.0`
+and `floor = 0.55`, which is `phi_surge`-is-a-pure-diagnostic measured on the running line rather
+than argued from the docstring.
+
 #### The predictions
 
 * **P1 — THE DISPATCH IS LIVE, AND THE GATE IS A SIGN, NOT A VALUE.** Rung 41's `surge_margin`,
@@ -2797,10 +2830,13 @@ supplies — which is why slice L owes a dispatch gate rather than a value one.
   `rung31` / `rung32` / `rung33` / `rung38` / `rung39` suites re-run **bit-identical**.
   *Refuted by:* one changed bit ⇒ **revert**, per slice J's own rule for a refactor to gated code.
 * **P3 — `flow_coefficient_turn` IS INFALLIBLE, AND ITS COARSE GUARD IS THE LIVE ONE.** The
-  refinement makes 0 aborts and the coarse scan aborts on 38 of 38 runs, so `Tt4_lo` is never
-  what ends the band. *Refuted by:* any refinement abort on the dump grid (the method would then
-  need a `Result` and the Rust would be making a live failure un-catchable), or any run whose
-  scan ends on `T > Tt4_lo` instead.
+  refinement makes **0** aborts over **2 706 calls in 118 runs — flat maps AND all four shaped
+  pairs at both floors** — while the coarse scan aborts on **118 of 118**, so `Tt4_lo` is never
+  what ends the band. The shaped half of that grid is what makes the bar cover the cells the dump
+  sweeps; measured on flat maps alone it would have been a bar over unmeasured cells.
+  *Refuted by:* any refinement abort on the dump grid (the method would then need a `Result` and
+  the Rust would be making a live failure un-catchable), or any run whose scan ends on
+  `T > Tt4_lo` instead.
 * **P4 — THE MEMO KEY SEQUENCE REPRODUCES BIT-FOR-BIT, DUMPED AS DISCRETE ORACLE KEYS.** Not the
   rounding *spelling* — the sequence of keys the method actually matches at, which is what the
   rounding decides. *Refuted by:* one key differing in a bit, which is the only way a divergent
@@ -2824,6 +2860,12 @@ supplies — which is why slice L owes a dispatch gate rather than a value one.
   called by no engine code, only by rung-36/41/53/54 tests), so this prediction is what decides
   whether the slice adds it or gates the flat-reduce dispatch instead. *Refuted by:* a flat map
   carrying a surge floor failing to take the flat-reduce path.
+* **P9 — THE `RAIL` BRANCH IS DUMPED AS A DISCRIMINANT PLUS A DECLARED SENTINEL, AND ITS COUNT IS
+  THE GATE.** 60 `MIN` / 20 `RAIL` on the shaped grid; 16 of 19 `lp` cases RAIL on the flat one.
+  The three nullable columns (`pi_star`, `star_form`, and the two `MIN`-only fields) never carry a
+  bare `0.0`. *Refuted by:* a Rust `RAIL` row whose null columns compare equal to a real `MIN`
+  value — the failure a float dump cannot see, which is why the branch **count** is asserted
+  rather than only the numbers.
 
 #### The deferrals — and one of them is a SPLIT, not a defer
 
@@ -2862,7 +2904,7 @@ duplication away would look like a cleanup and break P7 bit-for-bit.
 **Sizing.** The oracle runs 147 cells × 4 bleed levels on rung 42 (≈5 min on PyPy — the measured
 probe cost was 296 s for the same sweep plus rung 41's schedules), plus rung 41's schedule methods
 over 4 shapes × 2 floors × 3 gases and `flow_coefficient_turn` over gate 5's 19 cases × 2 spools
-(≈8 s). The **200-pass cells are the cost trap**, and the bleed axis makes more of them: 10 → 17
+(≈8 s flat, ≈79 s over the shaped grid). The **200-pass cells are the cost trap**, and the bleed axis makes more of them: 10 → 17
 as the valve opens.
 
 ---
