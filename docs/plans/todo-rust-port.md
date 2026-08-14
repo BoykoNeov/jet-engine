@@ -2614,7 +2614,7 @@ and exactly the line slice L would have copied.
 
 ---
 
-### 5.8 SLICE L (rungs 41 + 42) — **STEP 1 SHIPPED; PRE-REGISTERED (§ 5.8.1), nine predictions**
+### 5.8 SLICE L (rungs 41 + 42) — **STEPS 1–3 SHIPPED; PRE-REGISTERED (§ 5.8.1), nine predictions**
 
 Handoff state as of commit `ff784ed`. **448 Rust tests green, all three existing oracles
 bit-identical.** Read this before resuming — the probes are done and their numbers are here, so
@@ -2680,13 +2680,119 @@ purpose (its scope guard is not in the caught chain).
    spools, both flight Machs, flat *and* shaped maps, all three gases for the schedules. It
    produced **two corrections to § 5.8.1**, both in § 5.8.2 below: P4 is now **closed by
    construction** rather than gated, and the deferral table's `is_flat` line is **withdrawn**.
-3. **Port rung 42** — `TwoSpoolBleedMatcher` with its **own** `R42` hook-table entry,
-   `lp_eta_loop_bleed`, `cascade_bleed`, a **separate** rebuild body (not rung 39's with a `b`
-   parameter bolted on — this is `docs`' *COPY vs REDERIVATION* entry: do not factor a deliberate
-   duplication away), and `bleed_trade`. The bleed booking fields go on the result as their own
-   commit, with all five oracles re-run bit-identical.
+3. ~~**Port rung 42**~~ — **DONE**, in a new `bleed.rs`: `TwoSpoolBleedMatcher` with its own
+   `R42` hook-table entry, `lp_eta_loop_bleed`, `try_cascade_bleed`, a **separate** rebuild body
+   *and a separate result assembly*, and `bleed_trade`. 448 Rust tests green with every oracle
+   bit-identical; smoke-checked **bit-for-bit against PyPy over 314 rows**, at `b > 0`, with the
+   check's own sensitivity measured. **P1, P2 and P7 are settled early** (§ 5.8.3). The planned
+   second commit for "the booking fields on the result" turned out **VACUOUS** — § 5.8.3 (a).
 4. **The oracle and the suites** — `rust/oracle/dump_slice_l.py` + `rust/tests/slice_l_oracle.rs`,
-   then `rung41.rs` / `rung42.rs` porting the 9 + 10 Python gates.
+   then `rung41.rs` / `rung42.rs` porting the 9 + 10 Python gates. **One narrowing to fix rather
+   than inherit:** § 5.8.1's grid sweeps rung 41's schedules on **rung-39 matchers only**, so a
+   dump built on it witnesses the dispatch through `surge_margin` alone. Step 3's smoke check
+   covered the other two by hand (§ 5.8.3 (g)); the dump must carry at least one `b > 0` cell of
+   `running_line_map` and `flow_coefficient_turn` on a rung-42 core, or the gap moves into slice M
+   unrecorded. Note also that the smoke check's own sensitivity to a mis-associated `(1-b)` is
+   ~2 % of rows (§ 5.8.3 (h)) — a value gate on a handful of cells would not catch it.
+
+### 5.8.3 SLICE L step 3 — the rung-42 port, and a PLANNED COMMIT that turned out vacuous
+
+Rung 42 lives in a new `bleed.rs`, as § 5.8.1's module decision said it would. Three of the nine
+predictions are now settled, and the step produced one correction to its own plan.
+
+**(a) THE SECOND COMMIT IS VACUOUS, BECAUSE THE ABSENCE IS A TYPE.** § 5.8's step-3 line said the
+bleed booking fields "go on the result as their own commit" — which presumes they land on the
+SHARED `TwoSpoolMapResult` and are therefore a change to gated code. They do not. Python never
+*constructs* a `TwoSpoolBleedResult` at `b = 0`; it returns rung 39's object, whose four booking
+attributes do not exist, and `bleed_trade` reads that **absence** through
+`getattr(od, "st_inlet", od.performance.specific_thrust)`. So the dataclass's `st_inlet = 0.0`
+default is **unreachable**, and a port that always built the struct would write `0.0` into the
+`b = 0` row where Python writes the core specific thrust. An `Option<BleedBooking>` on the new
+type makes that unwritable and touches no gated type at all — so there is nothing to split off.
+This is § 5.8.1's **P9 shape applied a second time in the same slice**, to a missing OBJECT rather
+than a missing value.
+
+**(b) THE `b = 0` ROW IS VACUOUS FOR THE THING IT LOOKS LIKE IT TESTS — REGISTERED, NOT DISCOVERED
+AFTERWARDS.** At `b = 0`, `st_inlet == specific_thrust` and `mdot_core == mdot_air` NUMERICALLY.
+So the row a value comparison would naturally reach for cannot discriminate a wrongly-built
+booking, a swapped `st_inlet`/`tsfc_inlet` pair, or a defaulted field — every spelling agrees
+there. The smoke sweep is therefore at `b > 0` only, and the `None`-ness is gated where it can be
+seen: as a type assertion in Rust, beside P7's bit-equality. Symmetric with § 5.8.2 (d)'s two
+notes: a check that passes under both spellings is not a check.
+
+**(c) THE FIRST OVERRIDE NEEDED THE DESCENDANT'S STATE ON THE SHARED CORE.** A `fn`-pointer table
+hands its hook `&TwoSpoolMapCore`, so `bleed` has to be a field there rather than on the rung-42
+leaf — which is what Python's `self` is anyway: inside rung 39's methods it IS the rung-42 object
+carrying `self.bleed`. Named in the field's doc so a reader does not infer rung 39 has a valve,
+and explicitly **not** the `l` mistake of slice J → K: the consumer ships in the same slice.
+
+**(d) THE HOOK ROUTING IS ASYMMETRIC, AND BOTH DIRECTIONS ARE LOAD-BEARING.** `_hp_eta_loop` is
+called **VERBATIM** by rung 42's cascade, so the Rust must reach it THROUGH the table — naming
+`r39_hp_eta_loop` would compile and silently freeze the slot rung 55 overrides in phase 7.
+Conversely `_lp_eta_loop_bleed` is a **NEW METHOD NAME in Python, not an override**, so `R42`'s
+`lp_eta_loop` slot stays rung 39's function; putting the bleed body there would stop rungs 39/41's
+suites witnessing the unchanged one, which is the very thing the source's docstring preserves.
+
+**(e) THE SCOPE GUARD IS WHERE COPYING THE SOURCE GIVES THE WRONG RUST.** Python spells rung 42's
+UNCHOKED guard as an `assert`, exactly as it spells rung 39's — and rung 39's is already an
+`Abort` here, because rung 41's schedule methods SKIP such a point. Rung 42's `match` is reached
+through the SAME hook from the SAME methods, so a panic would kill a `surge_margin_schedule` on a
+bleed matcher where Python skips. Ported as `Err`, and the smoke grid reaches it: **28 of 144
+cells**. Every other rung-42 guard stays an `assert!` on the zero-firing rule — including the
+constructor's range check, which is the one measured to FIRE.
+
+**(f) THE COUNTERS WIDENED TO `pub(crate)`, DELIBERATELY.** Rung 42's cascade feeds rung 38/39's
+accumulators, because `cascade_calls` per cell is how the oracle sees a joint loop **cap at 200**
+(`r38/n_pass`, `r39/n_pass`), and § 5.8.1 (v)'s rung-42 census counts exactly that per bleed
+level. `reset()` is per cell, so one cell runs one matcher and the rungs never mix inside a
+reading. Shipped **beside the code**, per § 5.8.2's rule: adding an instrument in step 4 means
+touching gated code twice.
+
+**What the smoke check compared, and why it is that wide.** § 5.8.2 (c)'s lesson applied UP FRONT
+rather than after a clean pass: **every** field of `TwoSpoolBleedResult`, of its rung-39 base and
+of its `Performance`, plus **all 8 stations × 4 fields** — 79 columns per matched row. `mdot` is
+in there because it is the ONLY place the extraction is visible at all (nothing downstream reads
+it: `try_score` never touches mass flow), and the same-typed adjacent pairs `phi_lp`/`phi_hp`,
+`n_lp`/`n_hp`, `pi_lpc`/`pi_hpc`, `st_inlet`/`tsfc_inlet` are exactly the transpositions no other
+number would reveal. **314 rows, 0 mismatches** — 116 matched cells over 3 gases × 2 map shapes ×
+2 flight Machs × 3 bleeds × 4 throttles, 28 aborts, 24 `bleed_trade` rows, 6 valve-restored
+checks, and the schedule block below.
+
+**(g) `bleed_trade` WITNESSES ONE OF THE THREE SCHEDULE METHODS, AND THE FIRST PASS STOPPED
+THERE.** The slice's claim — written into `two_spool.rs`'s own header — is that `surge_margin`,
+`running_line_map` AND `flow_coefficient_turn` all reach rung 42's body through the hook. Only the
+first is on `bleed_trade`'s path, and the other two are the ones with output nothing else covers:
+`flow_coefficient_turn` returns the type carrying P9's nullable columns, and its `MIN`/`RAIL`
+branch can FLIP under bleed, because bleed moves `phi` and therefore the argmin index. Widened to
+all three on a rung-42 core, at **both** bleed levels: **both branches are exercised at `b > 0`**
+(`Hp` `MIN` / `Lp` `RAIL` on all three gases, with the four `NULL` columns compared as such), and
+the skip census is the physics rather than the plumbing — **10 of 13 survive at `b = 0` on every
+gas, 9 of 13 on TPG and equilibrium at `b = 0.10`**, CPG holding at 10. That is rung 42's gate 6,
+*opening the valve shrinks the choked envelope*, read through rung 41's skip, reproduced
+bit-identically **including the count**. The `b = 0` figure also re-confirms § 5.8.1 (vi) on a
+shape pair it did not sweep.
+
+**(h) THE CHECK'S SENSITIVITY WAS MEASURED, NOT ASSUMED — AND IT IS 2 %.** `docs`' *slice J*
+entry is that a 7 252-key bit-exact oracle passed a deliberately mis-spelled square, so "0
+mismatches" is an observation until the detector is calibrated. Flipping ONE of the three `(1-b)`
+associations (`eta_m * (1+f) * (1-b)` for `eta_m * (1-b) * (1+f)`, algebraically identical and a
+different double) moves **7 of the 314 rows**: 5 matched cells, 1 `running_line_map` row and 1
+`surge_margin_schedule` row, all at the sweep's edges (`M0 = 1.60`, or the equilibrium gas at
+1300 K). Reverted, and the diff returns to zero. So the defect class IS caught — but by ~2 % of
+the grid, which is the argument for the sweep's width: a handful of cells would have passed it.
+
+**Three predictions settled early.**
+
+* **P1 — CONFIRMED, on both sides.** `bleed_trade → surge_margin → self.match → R42` reproduces
+  § 5.8.1 (vii)'s numbers to the digit (`SM_L` 0.1089 → 0.1248 → 0.1430, `SM_H` 0.5237 → 0.5338 →
+  0.5444), and the Rust carries its refutation condition as its own test: margins invariant in `b`
+  would mean the hook slot never got `R42`, which compiles and returns numbers.
+* **P2 — HELD.** Three additive changes to gated code (the `bleed` field, a `try_freestream_at`
+  accessor, the counter visibility) and **448 tests green with every oracle bit-identical**.
+* **P7 — HELD, as a VALUE.** `b = 0` against a `TwoSpoolMapMatcher` on the same design and maps:
+  bit-equal over all 8 stations × 4 fields and 13 further quantities, on 18 cells, with the
+  booking `None`. Spelled `R39.try_match_point` and not `core.try_match_point` — this is Python's
+  `super().match(...)`, a NON-virtual call, and routing it back through the table would recurse.
 
 ### 5.8.2 SLICE L step 2 — what the PORT found that the PRE-REGISTRATION could not
 
@@ -2782,7 +2888,9 @@ skip census reproduced exactly (10 of 13 on CPG/TPG/eq at these shapes).
 Then **slices M / N / O**: rungs 53–56 and 61, the airflow levers.
 
 **Probe scripts** live in `M:\claud_projects\temp\rust-slice-l\` (`probe_slice_l.py`,
-`probe_sites.py`, `probe_solve_chain.py`, and § 5.8.1's `probe_l2.py` / `probe_l3.py`).
+`probe_sites.py`, `probe_solve_chain.py`, § 5.8.1's `probe_l2.py` / `probe_l3.py`, and the two
+smoke checks — step 2's `smoke_ref.py` and step 3's `smoke42.py` with its Rust half `smoke42.rs`,
+kept there rather than in `rust/tests/` because the gates are step 4's).
 
 ### 5.8.1 SLICE L — PRE-REGISTERED, and a SECOND probe measured first
 

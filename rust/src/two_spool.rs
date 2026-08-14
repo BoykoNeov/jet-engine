@@ -118,8 +118,14 @@ pub mod counters {
         REFINE_CALLS.with(|c| c.set(0));
     }
 
-    pub(super) fn bump_cascade() { CASCADE_CALLS.with(|c| c.set(c.get() + 1)); }
-    pub(super) fn note_turb(n: u64) {
+    // `pub(crate)` rather than `pub(super)` since SLICE L: rung 42's cascade
+    // ([`crate::bleed::try_cascade_bleed`]) is a SEPARATE body in a sibling module, and it feeds
+    // the SAME accumulators. That is deliberate, not laziness — `cascade_calls` per cell is how
+    // the oracle sees a joint loop CAP at 200 (`r38/n_pass`, `r39/n_pass`), and § 5.8.1 (v)'s
+    // rung-42 census counts exactly that, per bleed level. `reset()` is called per cell, so one
+    // cell only ever runs one matcher and the two rungs never mix inside a reading.
+    pub(crate) fn bump_cascade() { CASCADE_CALLS.with(|c| c.set(c.get() + 1)); }
+    pub(crate) fn note_turb(n: u64) {
         TURB_MIN.with(|c| c.set(c.get().min(n)));
         TURB_MAX.with(|c| c.set(c.get().max(n)));
     }
@@ -127,7 +133,7 @@ pub mod counters {
         HP_MAX.with(|c| c.set(c.get().max(n)));
         HP_MIN.with(|c| c.set(c.get().min(n)));
     }
-    pub(super) fn note_lp(n: u64) {
+    pub(crate) fn note_lp(n: u64) {
         LP_MAX.with(|c| c.set(c.get().max(n)));
         LP_MIN.with(|c| c.set(c.get().min(n)));
     }
@@ -575,6 +581,20 @@ impl TwoSpoolCore {
         &self, flight: &FlightCondition,
     ) -> Result<(FlowState, f64), Abort> {
         self.fs_engine.try_freestream(flight, self.mdot_air_design)
+    }
+
+    /// [`try_freestream_for`](Self::try_freestream_for) at an EXPLICIT mass flow — what the
+    /// forward rebuild needs, where the ingested air is an OUTPUT of the match and not the design
+    /// value.
+    ///
+    /// Rungs 38/39's rebuild reaches `fs_engine` directly because it lives in this module; rung
+    /// 42's rebuild is a **separate body** in [`crate::bleed`] (a deliberate duplication, not a
+    /// parameterisation) and needs the same call from outside. Nothing else about the field's
+    /// privacy changes.
+    pub fn try_freestream_at(
+        &self, flight: &FlightCondition, mdot: f64,
+    ) -> Result<(FlowState, f64), Abort> {
+        self.fs_engine.try_freestream(flight, mdot)
     }
 
     /// Capture the fixed hardware from one design run — **three** throat areas, where rung 31
@@ -1155,6 +1175,15 @@ pub struct TwoSpoolMapCore {
     pub tau_lpc_d: f64,
     pub tau_hpc_d: f64,
     pub hooks: &'static TwoSpoolHooks,
+    /// RUNG 42's station-25 extraction fraction — **read by `R42`'s body ALONE, and 0.0 for every
+    /// rung-39 matcher.** Rung 39 has no valve; this field is here because Python's `self` inside
+    /// rung 39's methods IS the rung-42 object when one is running, and the port's `fn`-pointer
+    /// tables put the descendant's state on the shared core rather than on the leaf.
+    ///
+    /// It is NOT the *`l` mistake* of slice J → K (a field ported ahead of its consumer): the
+    /// consumer, [`crate::bleed::TwoSpoolBleedMatcher`], ships in the same slice, and the `b == 0`
+    /// dispatch to rung 39's verbatim body is what P7 gates.
+    pub bleed: f64,
 }
 
 impl TwoSpoolMapCore {
@@ -1186,6 +1215,9 @@ impl TwoSpoolMapCore {
             mcorr_hp_d: mdot_design * powp(s25.tt, 0.5) / s25.pt,
             tau_lpc_d: s25.tt / s2.tt,
             tau_hpc_d: s3.tt / s25.tt,
+            // The valve is SHUT unless rung 42's constructor opens it — which is also how the
+            // Python captures its hardware: from a BLEED-FREE design run.
+            bleed: 0.0,
             base, map_lp, map_hp, hooks,
         }
     }
