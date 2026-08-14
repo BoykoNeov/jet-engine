@@ -1,6 +1,6 @@
 ---
 name: rust-port-slice-l-step4
-description: Slice L step 4 (the oracle + both rung suites) — a claim written into the SHIPPED source was false and the gate built from it passed the defect; and a pre-registered bar re-measured on the wrong construction looked like a refutation
+description: Slice L step 4 (the oracle + both rung suites) — a claim written into the SHIPPED source was false and the gate built from it passed the defect; a bar COPIED from the previous slice failed the second arm, and its 34 keys split into a flat extremum's LOCATION and a pass-count flip's price
 metadata: 
   node_type: memory
   type: project
@@ -9,8 +9,8 @@ metadata:
 ---
 
 Slice L is COMPLETE: `dump_slice_l.py` (25 458 keys), `slice_l_oracle.rs`, `rung41.rs`,
-`rung42.rs`. 479 Rust tests green, PyPy arm 25 458/25 458 bit-identical, all nine predictions
-settled. Four process lessons:
+`rung42.rs`. 481 Rust tests green, PyPy arm 25 458/25 458 bit-identical, all nine predictions
+settled. Five process lessons:
 
 **1. A CLAIM IN THE SHIPPED SOURCE CAN BE FALSE, AND THE GATE BUILT FROM IT WILL PASS THE
 DEFECT.** `two_spool.rs` asserted the golden section's check-first shape was load-bearing — "a

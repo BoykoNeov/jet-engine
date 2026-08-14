@@ -2697,7 +2697,8 @@ purpose (its scope guard is not in the caught chain).
 
 ### 5.8.4 SLICE L step 4 — the oracle, the suites, and a claim the SHIPPED SOURCE carried
 
-**479 Rust tests green; the PyPy arm is 25 458 / 25 458 bit-identical.** Six of the nine
+**481 Rust tests green (479 before `slice_l_oracle.rs`'s two arms); the PyPy arm is
+25 458 / 25 458 bit-identical and the CPython arm passes at measured bars.** Six of the nine
 predictions are settled here (P3, P4, P5, P6, P8, P9), joining step 3's P1/P2/P7. Two of them
 moved, and one correction lands in shipped code rather than in a plan.
 

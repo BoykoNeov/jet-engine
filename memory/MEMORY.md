@@ -26,12 +26,12 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL, regenerate via extract_data.py + build.py
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy leaves `open().write()` unflushed, PowerShell Get/Set-Content double-encodes UTF-8; both fail SILENTLY
 
-## The Rust port — decided 2026-08-12; PHASES 0–4 DONE; **PHASE 5 AUTHORISED and under way — slices I (31/33), J (32), K (38/39), L (41/42) ALL SHIPPED; slice M (53–56, 61) is next**; 479 Rust tests
+## The Rust port — decided 2026-08-12; PHASES 0–4 DONE; **PHASE 5 AUTHORISED and under way — slices I (31/33), J (32), K (38/39), L (41/42) ALL SHIPPED; slice M (53–56, 61) is next**; 481 Rust tests
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; slices are free inside an authorised phase, **phase 5 needs fresh authorisation**
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost by COMPILING and returning a silently different number
 - [Rust arithmetic IS PyPy](rust-port-arithmetic-is-pypy.md) — 100% bit-exact vs PyPy on gas AND cycle; size a solver claim by DISTINCT ROOTS, not row count
 - [Power spelling is split](rust-port-power-spelling.md) — multiply the square, pow above it; a tolerance bar hid the defect for a whole phase
-- [Shape keys](rust-port-shape-keys.md) — dump a finding's ARGMAX: a peak's VALUE drifts between interpreters and its LOCATION does not; an analytic cancellation read through a solver is exact to the solver's GRID
+- [Shape keys](rust-port-shape-keys.md) — dump a finding's ARGMAX, but only a GRIDDED argmax pins the location; over a CONTINUUM it is the loose half (BOUNDED by slice L)
 - [Location keys REFUTE](rust-port-location-keys-refute.md) — the argmax that pays is the one that DISAGREES; a group is earned by the factor appearing twice; sweep wider than the source's own gate
 - [A ported test can go VACUOUS](rust-port-ported-test-vacuity.md) — a better factorisation turns the source's real pin into a self-comparison; a location key on a scheme boundary needs a COARSER grid
 - [Inside/outside exactness](rust-port-inside-outside-exactness.md) — an op applied INSIDE an accumulation and removed OUTSIDE is exact in algebra, not arithmetic, and the source says “exactly”; a residual needs an ABSOLUTE bar
