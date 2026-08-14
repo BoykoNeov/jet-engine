@@ -112,7 +112,7 @@ fn shapes() -> Vec<(&'static str, ComponentMap)> {
 /// and `eta_t_at`'s curvature would be pinned only on a band narrower than the gates using them.
 fn all_shapes() -> Vec<(&'static str, ComponentMap)> {
     let mut v = shapes();
-    v.push(("gate5", ComponentMap { a: 0.25, b: 0.05, c: 0.0, sigma: 0.3, a_t: 0.5 }));
+    v.push(("gate5", ComponentMap { a: 0.25, b: 0.05, sigma: 0.3, a_t: 0.5, ..ComponentMap::flat() }));
     v.push(("sig1", ComponentMap { sigma: 1.0, ..ComponentMap::flat() }));
     v
 }

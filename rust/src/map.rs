@@ -55,13 +55,17 @@
 //! # The field subset, and why it is not an approximation
 //!
 //! Python's `ComponentMap` is a dataclass carrying fields for four LATER rungs — `l` (34),
-//! `phi_surge` (36), `vsv` (53), `capacity` (54) — all defaulting to `0.0`. This port carries
-//! **rung 32's five only**, so [`ComponentMap::psi`] here is `1 - sigma*(phi-1)^2` where the
-//! Python's is `… - l*(phi-1)`. The two spellings were measured bit-identical over **26 900
-//! evaluations on the actually-swept `phi`**, on both interpreters (§ 5.6 (d)) — an omitted term
-//! is a zero-valued `f64` multiply-and-subtract, which is exact, but the port measures that
-//! rather than reasoning it, because "algebraically inert" and "arithmetically inert" have come
-//! apart three times already in this port. `is_flat` and `phi_max` are not ported: the first is
+//! `phi_surge` (36), `vsv` (53), `capacity` (54) — all defaulting to `0.0`. Slice J carried
+//! **rung 32's five only**, having measured the omitted `l` term bit-identical over 26 900 `psi`
+//! evaluations on both interpreters (§ 5.6 (d)).
+//!
+//! **SLICE K ADDED `l`, AND THE REASON IS THAT THE SLICE-J MEASUREMENT WAS ABOUT RUNG 32's CALLS,
+//! NOT ABOUT THE FIELD.** Rung 39's own test shapes set `l = 0.7 / 0.85 / 1.0`
+//! (`tests/test_rung39.py::SHAPES_C`), where the two spellings differ by **27–43 % relative** —
+//! so the term is inert exactly as far as the sweep that measured it, and no further. Gating rung
+//! 39 on `l = 0` shapes instead would have narrowed the band the source itself gates on
+//! (§ 5.7 (a)). `phi_surge` is still absent: it is rung 41's, and it arrives with the surge
+//! methods in slice L. `is_flat` and `phi_max` are not ported: the first is
 //! called by no engine code at all (only by rung-36/41/53/54 *tests*), the second only by the
 //! rung-34/40/43 forward transient closures, in phase 6.
 
@@ -117,12 +121,12 @@ pub fn psi_calls() -> u64 {
 /// These are what supply `N`:
 ///
 /// ```text
-/// (tau_c-1)/(tau_c-1)_d = ψ(phi)·n^2 ,   ψ(phi) = 1 - sigma*(phi-1)^2 ,   phi = m/n
+/// (tau_c-1)/(tau_c-1)_d = ψ(phi)·n^2 ,   ψ(phi) = 1 - sigma*(phi-1)^2 - l*(phi-1) ,   phi = m/n
 /// ```
 ///
 /// The choke pins `(tau_c, m)`; inverting for `n` places the pinned point on its speed line. At
-/// `sigma = 0` this collapses to `n = sqrt[(tau_c-1)/(tau_c-1)_d]` — map-free — so a nonzero
-/// `sigma` is the map's genuine speed-line content and nothing else.
+/// `sigma = l = 0` this collapses to `n = sqrt[(tau_c-1)/(tau_c-1)_d]` — map-free — so a nonzero
+/// `sigma` or `l` is the map's genuine speed-line content and nothing else.
 ///
 /// **Turbine map** — choked, so its corrected flow is fixed and it is indexed by corrected speed
 /// alone. Real turbine maps are FLAT near design, hence `a_t` small:
@@ -140,40 +144,57 @@ pub struct ComponentMap {
     pub sigma: f64,
     /// Turbine eta curvature in corrected speed. Small — turbine maps are flat.
     pub a_t: f64,
+    /// **RUNG 34's LINEAR LOADING SLOPE**, `dpsi/dphi|_1 = -l`. `0.0` at every rung-32 call, which
+    /// is why § 5.6 (d) left it out of the port and measured its absence inert over 26 900 `psi`
+    /// evaluations. **Rung 39's own test shapes set it** (`l = 0.7 / 0.85 / 1.0` in
+    /// `tests/test_rung39.py`'s `SHAPES_C`), and there the two spellings differ by 27–43 %
+    /// RELATIVE, not in the last bit — so slice K carries it rather than gating rung 39 on a
+    /// narrower band than the source does (§ 5.7 (a)).
+    ///
+    /// Rung 32's four constructors leave it `0.0`, so every rung-31/32 number is unchanged; that
+    /// is asserted, not assumed, by re-running `map_oracle` and `offdesign_oracle` (§ 5.7 P5).
+    pub l: f64,
 }
 
 impl ComponentMap {
     /// The FLAT map: every `eta` held at its design value, `sigma = 0`. Reduces [`MapMatcher`]
     /// to rung 31.
     pub const fn flat() -> Self {
-        Self { a: 0.0, b: 0.0, c: 0.0, sigma: 0.0, a_t: 0.0 }
+        Self { a: 0.0, b: 0.0, c: 0.0, sigma: 0.0, a_t: 0.0, l: 0.0 }
     }
 
     /// Representative shape 1 of 3 — curvature concentrated in FLOW. Moderated so `eta_c` stays
     /// in a believable band; the load-bearing claims are asserted ACROSS all three and the droop
     /// magnitude is disclaimed.
     pub const fn flow_dominated() -> Self {
-        Self { a: 0.25, b: 0.05, c: 0.0, sigma: 0.3, a_t: 0.02 }
+        Self { a: 0.25, b: 0.05, c: 0.0, sigma: 0.3, a_t: 0.02, l: 0.0 }
     }
 
     /// Representative shape 2 of 3 — curvature concentrated in SPEED.
     pub const fn pressure_dominated() -> Self {
-        Self { a: 0.05, b: 0.20, c: 0.0, sigma: 0.3, a_t: 0.02 }
+        Self { a: 0.05, b: 0.20, c: 0.0, sigma: 0.3, a_t: 0.02, l: 0.0 }
     }
 
     /// Representative shape 3 of 3 — a TILTED island (`c != 0`), which the other two do not
     /// exercise.
     pub const fn tilted() -> Self {
-        Self { a: 0.12, b: 0.12, c: 0.08, sigma: 0.6, a_t: 0.02 }
+        Self { a: 0.12, b: 0.12, c: 0.08, sigma: 0.6, a_t: 0.02, l: 0.0 }
     }
 
-    /// Loading (work) coefficient at flow coefficient `phi`. `psi(1) = 1`.
+    /// Loading (work) coefficient at flow coefficient `phi`. `psi(1) = 1`, slope `-l` at design.
     ///
-    /// **The Python's body carries two more terms, and their absence here is MEASURED inert.**
-    /// It reads `1 - sigma*(phi-1)^2 - l*(phi-1)`, then subtracts `vsv*(1+l)*phi` unless `vsv`
-    /// is zero. `l` is rung 34's linear loading slope and `vsv` rung 53's stator setting; both
-    /// are `0.0` at every rung-32 call, and the two spellings agree bit-for-bit over 26 900
-    /// swept evaluations on both interpreters (§ 5.6 (d)).
+    /// **The Python's body carries ONE more term, and its absence here is MEASURED inert.** It
+    /// subtracts `vsv*(1+l)*phi` unless `vsv` is zero; `vsv` is rung 53's stator setting, `0.0`
+    /// at every rung-32 and rung-39 call. `l` was in the same position until slice K and is now
+    /// carried — see the module note: it is `0.0` for rung 32 and NONZERO in rung 39's own
+    /// shapes, so "measured inert" was a statement about the sweep, not about the field.
+    ///
+    /// **THE TERM ORDER IS LOAD-BEARING AND THE ORACLE CANNOT SEE IT.** Float subtraction is not
+    /// associative, so `1.0 - l*u - sigma*(u*u)` is algebraically identical to the Python's
+    /// left-to-right `1.0 - sigma*(u*u) - l*u` and a different number in the last bit. This is the
+    /// same blindness the mis-spelled square exposed below, one step further: gated directly at
+    /// `rung32.rs::the_three_squares_are_multiplies_not_pow_calls`, which slice K extended with an
+    /// `l != 0` arm and its own vacuity guard.
     ///
     /// `(phi - 1.0)` is squared with a MULTIPLY, not `powp`: Python's `** 2` on a float is
     /// constant-folded to a multiply by CPython's peephole optimiser and by PyPy's JIT alike,
@@ -189,7 +210,7 @@ impl ComponentMap {
     pub fn psi(&self, phi: f64) -> f64 {
         PSI_CALLS.with(|c| c.set(c.get() + 1));
         let u = phi - 1.0;
-        1.0 - self.sigma * (u * u)
+        1.0 - self.sigma * (u * u) - self.l * u
     }
 
     /// Compressor efficiency read off the island at `(flow coefficient, corrected speed)`.

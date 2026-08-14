@@ -201,7 +201,7 @@ fn gate4_work_tau_c_is_map_free() {
 #[test]
 fn gate5_turbine_pinned_in_corrected_speed() {
     let (mm, _) = fast_matchers();
-    let steep = ComponentMap { a: 0.25, b: 0.05, c: 0.0, sigma: 0.3, a_t: 0.5 };
+    let steep = ComponentMap { a: 0.25, b: 0.05, sigma: 0.3, a_t: 0.5, ..ComponentMap::flat() };
     for tt4 in [1300.0, 1100.0, 900.0, 700.0] {
         let mo = mm.match_with(&flight(), tt4, &steep);
         assert!((mo.nu_t - 1.0).abs() < 0.01,
@@ -297,7 +297,7 @@ fn the_three_squares_are_multiplies_not_pow_calls() {
     }
     let sigma = 0.3;
     let (mut psi_differs, mut eta_c_differs, mut eta_t_differs) = (0usize, 0usize, 0usize);
-    let cmap = ComponentMap { a: 0.25, b: 0.05, c: 0.08, sigma, a_t: 0.5 };
+    let cmap = ComponentMap { a: 0.25, b: 0.05, c: 0.08, sigma, a_t: 0.5, ..ComponentMap::flat() };
     for &step in &us {
         let phi = 1.0 + step;
         // `(1.0 + step) - 1.0` does NOT round-trip to `step`, so the reconstruction below must
@@ -332,8 +332,34 @@ fn the_three_squares_are_multiplies_not_pow_calls() {
             eta_t_differs += 1;
         }
     }
+    // ---- SLICE K's ARM: the `l` TERM's POSITION, which no square gate covers ------------
+    // Slice K gave `ComponentMap` rung 34's linear loading slope, because rung 39's own shapes
+    // set it (§ 5.7 (a)). That CHANGES `psi` — the one function the 7 252-key oracle is blind
+    // to — and the hazard is no longer a spelling but an ORDER: float subtraction is not
+    // associative, so `1.0 - l*u - sigma*(u*u)` is algebraically identical to the Python's
+    // left-to-right `1.0 - sigma*(u*u) - l*u` and a different number in the last bit. The arm
+    // above cannot see it: its `cmap` leaves `l` at 0.0, so the term is not there to reorder.
+    let mut order_differs = 0usize;
+    let l = 0.7; // rung 39's own SHAPES_C value
+    let cmap_l = ComponentMap { a: 0.25, b: 0.05, c: 0.08, sigma, a_t: 0.5, l };
+    for &step in &us {
+        let phi = 1.0 + step;
+        let u = phi - 1.0;
+        let shipped = cmap_l.psi(phi);
+        let python_order = 1.0 - sigma * (u * u) - l * u;
+        let reordered = 1.0 - l * u - sigma * (u * u);
+        assert_eq!(shipped.to_bits(), python_order.to_bits(),
+                   "psi({phi}) with l != 0 is not the Python's LEFT-TO-RIGHT term order");
+        if python_order.to_bits() != reordered.to_bits() {
+            order_differs += 1;
+        }
+    }
     println!("over {} points the two spellings differ: psi {psi_differs}, \
-              eta_c_at {eta_c_differs}, eta_t_at {eta_t_differs}", us.len());
+              eta_c_at {eta_c_differs}, eta_t_at {eta_t_differs}; \
+              psi term ORDER differs at {order_differs}", us.len());
+    assert!(order_differs > 0,
+            "the grid could not tell the two TERM ORDERS apart anywhere, so the l-term assertion \
+             above is vacuous — widen it before trusting it");
     // THE VACUITY GUARD. If the grid cannot tell the spellings apart, the assertions above
     // proved nothing — they would hold for the wrong code too, which is exactly what happened
     // to the 7 252-key oracle.
