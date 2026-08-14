@@ -1636,7 +1636,7 @@ next starts. The tree is green at every phase boundary; there is no big-bang cut
 | **2** | ~~`components.rs` + `engine.rs` design point — shaft balance, `_score`; conservation checks as `assert!`~~ | **DONE** | ✅ **three** gates: `cycle_oracle.rs` (1481/1481 bit-exact vs PyPy, on 19+15 distinct solver roots — § 4.2), the 8 ported rung suites (39 tests, rungs 1–6, incl. rung 6's GATE 1), and `porting_rules.rs` |
 | **3** | NOx & mixing, rungs 7–24. **RISK-BEARING — not bulk.** These are phase 1's largest *consumer*: every one rides the equilibrium solve and `Kp = exp(−ΔG°/RuT)`, and their findings are *shapes* (the bell's peak, the minimum pinned at `C_opt`, monotone-vs-turns-back-up) that a last-digit shift in an exponential can move. Deliberately placed straight after phase 1 as the **first real test of whether the transcendental arithmetic holds**. **DONE — slices A (7/8/9/19), B (10/11/12/20), C (13/15/16/18/21), D (22/23/24) and E (14/17) all shipped**, § 4.3–4.10; the slices are grouped in § 4.3 by DEPENDENCY, not by number | 4–6 | ✅ slice A: `nox_oracle.rs` (**1806/1806** bit-exact vs PyPy on 22+22 distinct solver roots) + 4 rung suites (43 tests) · ✅ slice B: `quench_oracle.rs` (**2507/2507**, on 165 distinct trajectory roots) + 4 rung suites (39 tests), one location key NARROWING a shipped claim · ✅ slice C: `pdf_oracle.rs` (**2448/2448**, both quadrature branches asserted exercised) + 5 rung suites (59 tests); the source's own mean-preservation guard found to have an `n_quad` FLOOR, and the port gates the REJECTION as well as the acceptance (§ 4.5) · ✅ slice D: `spatial_oracle.rs` (**462/462**, incl. 28 DISCRETE keys) + 3 rung suites (43 tests); TWO source claims of exactness CORRECTED — rung 24 applies an operation inside an accumulation and removes it outside, twice (§ 4.8) | · ✅ slice E: `nozzle_oracle.rs` (**513/513**, incl. 24 DISCRETE keys) + 2 rung suites (24 tests) + 3 gates `rung20.rs` had deferred; a THIRD claim of exactness corrected (the frozen reduce is algebraic only, and its floor is the entropy ROUTE, not the bisection's stopping rule) and rung 17's firing band edge LOCATED — past it the bulk margin goes dormant while the per-pocket one RISES (§ 4.10) |
 | **4** | Nozzle & turbine marches, rungs 25–30 — own convergence behaviour, hence separate. ~~**AUTHORISED 2026-08-12; three DEPENDENCY slices**~~ **DONE** | 2–3 | ✅ slice F: `march_oracle.rs` (**912/912** bit-exact vs PyPy, on 49 distinct march exit roots) + 2 rung suites (32 tests) in a new `march.rs`; the FOURTH "exactly"-class claim and the FIRST to survive — because it compares a COPY, not a rederivation (§ 4.12) · ✅ slice G: `no_march_oracle.rs` (**776/776**, and only 8.0 % CPython-identical — the sharpest dump in the port) + 2 rung suites (28 tests); slice F's discriminator made TWO pre-registered predictions and both HELD (§ 4.14) · ✅ slice H: `tt_oracle.rs` (**270/270**) + 2 rung suites (14 tests); RATIO ≠ ENERGY measured ANTI-correlated, and the one slice not pre-registered — all three of its guessed census bars were wrong (§ 4.15) |
-| **5** | Steady matchers — rungs 31–33, 38–39, **41**, 42, 53–56, 61. ~~**Contains the diamond** (§ 6)~~ **PRE-FLIGHT DONE (§ 5.3); AUTHORISED 2026-08-13, IN PROGRESS in slices.** The diamond is discharged; the phase's structural content is the **five-name virtual set** (`_solve_turbine` — claimed by PHASE 6 — `match`, `_hp_eta_loop`, `_lp_eta_loop`, `at_setting`) and `_INC_MAX`'s live shadow | 4–6 | ✅ slice I (rungs 31/33): `offdesign_oracle.rs` (**3951/3951** bit-exact vs PyPy, incl. **961 discrete** keys) + 2 rung suites (17 tests) in a new `matcher.rs`; the crate's FIRST fallible paths, its FIRST virtual hook, and the two rungs re-gated as counts over BIT PATTERNS (§ 5.5) |
+| **5** | Steady matchers — rungs 31–33, 38–39, **41**, 42, 53–56, 61. ~~**Contains the diamond** (§ 6)~~ **PRE-FLIGHT DONE (§ 5.3); AUTHORISED 2026-08-13, IN PROGRESS in slices.** The diamond is discharged; the phase's structural content is the **five-name virtual set** (`_solve_turbine` — claimed by PHASE 6 — `match`, `_hp_eta_loop`, `_lp_eta_loop`, `at_setting`) and `_INC_MAX`'s live shadow | 4–6 | ✅ slice I (rungs 31/33): `offdesign_oracle.rs` (**3951/3951** bit-exact vs PyPy, incl. **961 discrete** keys) + 2 rung suites (17 tests) in a new `matcher.rs`; the crate's FIRST fallible paths, its FIRST virtual hook, and the two rungs re-gated as counts over BIT PATTERNS (§ 5.5) · ✅ slice J (rung 32): `map_oracle.rs` (**7 252/7 252**) + `rung32.rs`; the oracle found BLIND to a mis-spelled square, so the rule is gated directly (§ 5.6) · ✅ slice K (rungs 38/39): `two_spool_oracle.rs` (**11 812/11 812**, and only 46.3 % CPython-identical) + 2 rung suites (19 tests) in a new `two_spool.rs`; all six predictions held, and the CPython arm REFUTED an assertion inherited from slice I — the pass-count instability needs a SOLVER-derived property, not the equilibrium gas (§ 5.7) |
 | **6** | Transients — rungs 34–37, 40, 43–52 (the fuel-side limiter family) | 4–6 | per-rung tests pass |
 | **7** | **The ladder, rungs 57–60 and 62–84** — the `Hooks` table from § 2, one module per rung. (**61 is PHASE 5's**, not this phase's — it is the steady `StatorBleedMatcher`, and it was double-listed here until the slice-K audit) | 5–8 | 27/27 reduce-to-prior bit-exact |
 | **8** | `main.py` replacement; adjudicate the fragile rungs; re-anchor the fingerprint; **delete the Python** | 2–3 | full suite green on Rust alone |
@@ -2539,6 +2539,62 @@ transcription error. Both loops are written check-first, and gate 1 is what witn
 shapes plus flat; the equilibrium gas re-freezes its mixture once per joint-loop pass, and a
 200-pass cell is the cost trap — the probe's 126 rung-38 cells took 55 s on PyPy and 162 s on
 CPython.
+
+#### What phase 5 SLICE K MEASURED — SHIPPED, **11 812 / 11 812 bit-exact** vs PyPy
+
+`rust/src/two_spool.rs` + `rust/oracle/dump_two_spool.py` + `rust/tests/two_spool_oracle.rs` +
+`rust/tests/rung38.rs` (9 tests) + `rung39.rs` (10). Against CPython the same dump is **46.3 %**
+identical — the sharpest value dump in phase 5, because every cell is a joint fixed point over a
+turbine bisection over a gas solve.
+
+**The verdicts, one per registered prediction. All six land; two of them corrected something.**
+
+* **P1 — CONFIRMED, on the narrowed claim, and the port states it STRUCTURALLY.** Perturbing
+  `eta_lpc` leaves `pi_hpc`, `Tt3` and `Tt25` bit-for-bit unchanged across 4 shape pairs × 3
+  throttles × 2 gases, while `eta_hpc` moves `pi_lpc` negatively by more than `1e-5`; the
+  turbine efficiencies move both. Beyond the numbers, `hp_eta_loop_closed` is a FREE function
+  whose parameters are a gas, geometry, burner constants and HP-side scalars — so "no LP
+  efficiency, no LP pressure ratio" is a scope fact a reviewer can check without running
+  anything, and `rung38.rs::gate3_structural_the_hp_leaf_takes_no_lp_quantity` fails to compile
+  if that signature is ever widened for convenience.
+* **P2 — CONFIRMED, including every capped cell.** 11 812 of 11 812 keys bit-identical to PyPy,
+  and the 302 pass-count keys are inside that total — so the 200-pass cells reproduce all 200
+  passes. This was the slice's stated risk: with the count a knife edge between ~8 and 200, one
+  wrong bit anywhere in the cascade would have surfaced as a 25× count difference, not a drift.
+* **P3 — CONFIRMED at the noun the instrument reads.** `47` `tau_of` calls per (★) solve, ONE
+  distinct value over 1 800 solves on both interpreters — 44 bisection iterations + 2 bracket
+  endpoints + 1 final `tau_of`. Registered that way *because* § 5.6's P2 was corrected one slice
+  ago for counting the steps and forgetting the endpoints.
+* **P4 — CONFIRMED, exactly.** `UNCHOKED` = **23** on the 147-cell rung-38 grid (67 on rung 39's
+  larger one), and rung 38/39's six other asserts — the physicality check, the (★) bracket, both
+  efficiency secants, the outer turbine-eta loop, `solve_n`'s speed-line bracket and both
+  shaft-closure checks — fire **0** times, dumped as explicit zeros under
+  `census/r3*/abort_code/9..14` rather than left as an absence.
+* **P5 — CONFIRMED.** Adding `l` left `map_oracle` (7 252 keys), `offdesign_oracle` (3 951),
+  `rung31`, `rung32` and `rung33` bit-identical. Shipped as its own commit ahead of the module,
+  so a failure would have been isolated rather than entangled with 1 000 new lines.
+* **P6 — CONFIRMED.** Rust's `t_from_h_c(h_c(250.0))` returns 249.999999999999943 on both
+  integral gases and exactly 250.0 on the closed-form one, so the `M0 = 0` column aborts on the
+  ram clause for `tpg`/`eq` (14 cells) and gets as far as `score` for `cpg` — the gas-split
+  envelope, reproduced. Gated at `rung38.rs::envelope_m0_zero_is_a_round_trip_not_a_physics_boundary`,
+  which also pins that the PRESSURE clause is the exact one, so the abort's REASON cannot change
+  while the cell still aborts.
+
+**AND THE CPYTHON ARM REFUTED AN ASSERTION SLICE K INHERITED — WHICH IS THE SLICE'S OWN FINDING.**
+`offdesign_oracle.rs` states the pass-count instability is *"a property of the EQUILIBRIUM gas's
+unmeetable stopping rule"* and asserts every flip is an `eq` cell. Copied forward, that assertion
+FAILED here: of 81 flips, **13 are on the THERMALLY-PERFECT gas**. The common factor is not the
+composition, it is the **ROUTE TO A PROPERTY** — `tpg` and `eq` both reach `cp` through an
+integral and a root-find, so last-bit arithmetic can tip an unmeetable stopping rule either way;
+the calorically-perfect gas is closed-form and flips **nowhere**, on either grid. The gate now
+asserts that (no `cpg` flip, ever), and slice I's comment is corrected in place with its
+assertion left standing — the rung-28 shape, applied to the port's own instruments.
+
+**ONE MORE INSTRUMENT DEFECT, THE SAME SHAPE AS SLICE J's.** `bisect/n_solves_swept` was classed
+`discrete` because its key looked like a census number. It is `2 × cascade_calls` summed over the
+sweep, so it inherits the joint loop's interpreter-dependence exactly, and the CPython arm failed
+on a key that was behaving correctly. **A quantity's class comes from what PRODUCES it, never
+from what it is called.**
 
 ---
 

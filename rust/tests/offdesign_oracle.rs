@@ -529,8 +529,19 @@ fn compare_against(oracle_text: &str, label: &str, require_bit_exact: bool) {
     println!("
 loop-count cells disagreeing with {label}: {} / {n_loopcount}",
              flips.len());
+    // **THE REASON BELOW WAS CORRECTED BY SLICE K; THE ASSERTION SURVIVES.** This said the
+    // instability is "a property of the EQUILIBRIUM gas". `two_spool_oracle.rs` measures 81
+    // flips of which 13 are on the THERMALLY-PERFECT gas, so the common factor is not the
+    // composition — it is the ROUTE to a property. `tpg` and `eq` both reach `cp` through an
+    // integral and a root-find; the calorically-perfect gas is closed-form and flips nowhere.
+    // On THIS slice's grid every flip still happens to be `eq`, so the line below still holds
+    // and is left as the tighter statement it is for these cells — with the general rule named
+    // rather than implied. (The rung-28 shape: verdict confirmed, reason corrected.)
     assert!(flips.iter().all(|k| k.starts_with("cell/eq/")),
-            "the pass-count instability is a property of the EQUILIBRIUM gas's unmeetable              stopping rule. A calorically-perfect or frozen-TPG cell flipping would mean              something else entirely: {flips:?}");
+            "on THIS grid every pass-count flip is on the equilibrium gas. The general rule is \
+             that flips need a SOLVER-derived property (tpg or eq), never the closed-form cpg — \
+             so a cpg cell here would be a different phenomenon, and a tpg one would only mean \
+             this grid had widened: {flips:?}");
     for k in &flips {
         // The cell's VALUES must still agree — that is what makes the flip a statement about
         // the stopping TEST rather than about the answer.
