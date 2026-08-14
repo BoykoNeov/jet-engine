@@ -2437,18 +2437,24 @@ one its instrument reads, so the gate names which of 44 / 46 / 47 it counts.
 
 **(e) THE ENVELOPE — AND MY OWN FIRST GRID REPEATED THE PORT'S OLDEST MISTAKE.** On the probe's
 first grid (`Tt4 ≥ 900`) **not one** of rungs 38/39's own asserts fired, which reads as "the
-scope guard is dead". On slice I's inherited grid (`M0 ∈ {0.3, 0.5, 0.85, 1.2, 1.6, 2.0}`,
-`Tt4 ∈ {400, 500, 600, 650, 900, 1100, 1500}`) rung 38's **UNCHOKE scope guard fires on 20 of 126
-cells** — a broad band along the cold/slow edge, not a corner. *A count without its grid is not a
+scope guard is dead". On slice I's inherited grid rung 38's **UNCHOKE scope guard fires on a
+broad band along the cold/slow edge**, not in a corner. *A count without its grid is not a
 measurement*, and the instrument that produced the wrong reading was mine. Slice I's grid is
-therefore inherited wholesale. Full census on it: **58 abort / 68 matched** for rung 38 —
-`UNCHOKED` 20, `root not bracketed` 18, `efficiency cascade` 9, `equilibrium Newton` 7,
-`burner f` 2, `nozzle back-pressure` 2. Five of rungs 38/39's own asserts fire **zero** times
-(the `(★)` bracket straddle, the physicality check, both efficiency secants, the outer
-turbine-efficiency loop, `solve_n`'s speed-line bracket, and `TwoSpoolEngine.run`'s two shaft-closure
-checks) — dumped as explicit zeros, per § 5.6's P4. **Rung 39 with shaped maps differs from rung 38
-on exactly ONE cell of 126**: `tpg, M0 = 1.60, Tt4 = 600` matches on rung 38 and hits the
-efficiency cascade on rung 39. The map moves one cell across the envelope, and nothing else.
+inherited wholesale and **extended by the `M0 = 0` column of (f)**, giving
+`M0 ∈ {0, 0.3, 0.5, 0.85, 1.2, 1.6, 2.0} × Tt4 ∈ {400, 500, 600, 650, 900, 1100, 1500} × 3 gases
+= 147 cells`. **The census was then re-measured on THAT grid, and the first number was wrong:**
+`UNCHOKED` is **23**, not the 20 seen on 126 cells. Reading a census off the probe's grid and
+gating it on the dump's is precisely how § 5.6's P2 got its number wrong one slice ago. Full
+census, rung 38: **68 matched / 79 abort** — `UNCHOKED` 23, `root not bracketed` 18,
+`ram must not cool` 14, `efficiency cascade` 12, `equilibrium Newton` 7, `nozzle back-pressure` 3,
+`burner f` 2. Five of rungs 38/39's own asserts fire **zero** times (the `(★)` bracket straddle,
+the physicality check, both efficiency secants, the outer turbine-efficiency loop, `solve_n`'s
+speed-line bracket, and `TwoSpoolEngine.run`'s two shaft-closure checks) — dumped as explicit
+zeros, per § 5.6's P4. **Rung 39 with shaped maps differs from rung 38 on exactly ONE cell of
+147**: `tpg, M0 = 1.60, Tt4 = 600` matches on rung 38 and hits the efficiency cascade on rung 39.
+The map moves one cell across the envelope, and nothing else. Two families are NEW to slice I's
+`ABORT` table (`ram must not cool`, `UNCHOKED`); they are **appended**, never renumbered, because
+the Rust compares the code.
 
 **(f) `M0 = 0` IS EXCLUDED BY A SOLVER ROUND-TRIP, NOT BY PHYSICS — AND SLICE I NEVER SAW IT**
 (its grid started at 0.3). At `M0 = 0` the freestream's two-clause assert `Tt0 >= T0 and
@@ -2465,19 +2471,35 @@ matched cells of the 144-cell shaped grid (6 map shapes × 3 gases × 2 Machs ×
 Ported as written — it is a guard on a path this grid does not reach — but recorded as dead so a
 reader does not infer it is load-bearing, and so slice L knows what it is looking at.
 
-**(h) THE SLICE CONTAINS NO SQUARES — MEASURED.** All **14** `**` operators in the ported range
-are `** 0.5`. § 5.6's square-spelling gate
-(`rung32.rs::the_three_squares_are_multiplies_not_pow_calls`) has nothing to cover here, and that
-is a measurement rather than an omission. The `l` term added under (a) is *linear*, so it adds
-none either.
+**(h) THE SLICE CONTAINS NO SQUARES — BUT THAT IS THE WRONG READING OF SLICE J's LESSON.** All
+**14** `**` operators in the ported range are `** 0.5`, and the `l` term added under (a) is
+linear, so no new square enters. The first draft of this paragraph stopped there and concluded
+that `rung32.rs::the_three_squares_are_multiplies_not_pow_calls` "has nothing to cover here".
+**That is wrong, and it is wrong in slice J's own way.** (a) *changes `psi`* — the one function
+slice J proved the 7 252-key oracle is blind to, because it sweeps 60 evaluations of a rule whose
+two spellings differ once in 4 012 points. Python's body is
+`1.0 - sigma*(phi-1)**2 - l*(phi-1)`, and float subtraction is not associative: writing
+`1.0 - l*u - sigma*(u*u)` is algebraically identical, differs in the last bit, and would pass
+every oracle key. The existing gate cannot see it either — its `cmap` leaves `l` at `0.0`, so the
+term is not present to be reordered. It is extended with an `l != 0` arm asserting the
+left-to-right order, carrying its own vacuity guard that the reordered spelling is distinguishable
+on the grid at all. **The rule slice J actually established is not "gate squares" — it is "gate any
+change to `psi` DIRECTLY, because the oracle cannot see one."**
 
 #### The predictions
 
-* **P1 — THE ONE ARROW IS STRUCTURAL, AND RUST CAN ASSERT WHAT PYTHON CAN ONLY TEST.** Rung 39's
+* **P1 — THE ONE ARROW, AND THE STRUCTURAL HALF STATED NARROWLY ENOUGH TO BE FALSE.** Rung 39's
   finding A is that `_hp_eta_loop` is closed: perturbing `eta_lpc` leaves `pi_hpc` bit-for-bit
-  unchanged, while perturbing `eta_hpc` moves `pi_lpc`. In the port the HP loop's *signature*
-  carries no LP quantity, so the closure is a compile-time fact and the numerical gate is its
-  witness. *Refuted by:* any `eta_lpc` perturbation moving a single bit of `pi_hpc`.
+  unchanged, while perturbing `eta_hpc` moves `pi_lpc`. **The first draft of this prediction said
+  "the HP loop's signature carries no LP quantity, so the closure is a compile-time fact" — and
+  that is FALSE on code already read**: the signature takes `Tt25`, which the LP energy balance
+  produced, and `self` reaches `eta_lpc` in Rust exactly as in Python. A prediction that can be
+  "confirmed" without checking anything is the rung-61 trap (a derived quantity whose binding
+  constant is mine). The claim is therefore the narrow one rung 39's gate 4 actually tests: **no LP
+  EFFICIENCY and no LP PRESSURE RATIO enters the HP loop** — `Tt25` does, and it is map-free by
+  rung 38's energy cascade. The Rust makes that checkable by taking the HP loop's inputs as
+  explicit scalars rather than off `self`, so `eta_lpc` is not in scope inside it.
+  *Refuted by:* any `eta_lpc` perturbation moving a single bit of `pi_hpc`.
 * **P2 — THE CAPPED CELLS COME BACK BIT-EXACT AGAINST PYPY, ALL 200 PASSES.** *Refuted by:* any
   cell whose Rust joint-loop pass count differs from PyPy's, or whose value differs in a bit.
   This is the slice's real risk: (c) shows the count is a knife edge between 8 and 200, so a
@@ -2486,8 +2508,8 @@ none either.
 * **P3 — THE BISECTION COUNT IS ONE DISTINCT VALUE ON THE DUMP GRID**, and the gate names which
   of 44 iterations / 46 residual evaluations / 47 `tau_of` calls it reads. *Refuted by:* two
   distinct values, on either interpreter.
-* **P4 — RUNG 38's AND 39's OWN ASSERTS, AS EXPLICIT COUNTS**: `UNCHOKED` exactly 20 on the
-  126-cell rung-38 grid; the `(★)` bracket, physicality, both secants, the turbine-eta loop, the
+* **P4 — RUNG 38's AND 39's OWN ASSERTS, AS EXPLICIT COUNTS ON THE 147-CELL DUMP GRID**:
+  `UNCHOKED` exactly **23**; the `(★)` bracket, physicality, both secants, the turbine-eta loop, the
   speed-line bracket and both shaft-closure checks exactly **0**, dumped as zeros under
   `census/abort_code/…` rather than left as an absence. *Refuted by:* any nonzero, which would
   mean the Rust reaches a failure mode the Python does not.
@@ -2504,7 +2526,16 @@ strictly one-way (two-spool consumes `OffDesignMatcher`, `MapMatcher`, `Componen
 `choked_mfp`, the components and the gas; nothing consumes it until slice L), which is the same
 test slice F applied when it split `march.rs` out.
 
-**Sizing.** The oracle runs the 126-cell grid on rung 38 and on rung 39 at the four `SHAPES_C`
+**THE ONE LOOP-SHAPE DECISION THAT DECIDES A REDUCE GATE.** Rung 39's gate 1 — flat maps
+reproduce rung 38 bit-for-bit — does not hold because flat maps make the arithmetic agree. It
+holds because both efficiency loops **test the residual BEFORE ever calling `_secant`**, so on a
+flat map they return having done no secant arithmetic at all (measured: `hp_passes` includes 0 on
+27 of the shaped grid's cells), and because the outer turbine-efficiency loop returns on its first
+pass when `a_t == 0`. **A `do`-while shape converges to the same place, looks correct, and breaks
+the bit-for-bit reduce** for a reason that reads as a solver artefact rather than as a
+transcription error. Both loops are written check-first, and gate 1 is what witnesses it.
+
+**Sizing.** The oracle runs the 147-cell grid on rung 38 and on rung 39 at the four `SHAPES_C`
 shapes plus flat; the equilibrium gas re-freezes its mixture once per joint-loop pass, and a
 200-pass cell is the cost trap — the probe's 126 rung-38 cells took 55 s on PyPy and 162 s on
 CPython.
