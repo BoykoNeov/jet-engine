@@ -2674,10 +2674,12 @@ purpose (its scope guard is not in the caught chain).
    slice, and adding it is a change to already-gated code), and a corrected **deferral** list —
    gate 7b reaches `SpoolTransient` (**single**-spool, rungs 34/36), not `TwoSpoolTransient`, and
    the cycle test **splits** rather than defers.
-2. **Port rung 41** — `critical_flow_turn_pi`, `pi_c_spool`, `surge_margin`,
-   `surge_margin_schedule`, `running_line_map`, `flow_coefficient_turn`. Two faithfulness traps
-   in the source: the memo key is `round(float(T), 6)`, and the `except AssertionError: break`
-   guards the **coarse scan only** — the golden section is left **unguarded**. Copy both.
+2. ~~**Port rung 41**~~ — **DONE**, commits `13e02e6` (the `phi_surge` field, alone) and
+   `af0d3cb` (the six methods, into `two_spool.rs`). 448 Rust tests green; smoke-checked
+   **bit-for-bit against PyPy over 58 rows** before committing — both branches of the turn, both
+   spools, both flight Machs, flat *and* shaped maps, all three gases for the schedules. It
+   produced **two corrections to § 5.8.1**, both in § 5.8.2 below: P4 is now **closed by
+   construction** rather than gated, and the deferral table's `is_flat` line is **withdrawn**.
 3. **Port rung 42** — `TwoSpoolBleedMatcher` with its **own** `R42` hook-table entry,
    `lp_eta_loop_bleed`, `cascade_bleed`, a **separate** rebuild body (not rung 39's with a `b`
    parameter bolted on — this is `docs`' *COPY vs REDERIVATION* entry: do not factor a deliberate
@@ -2685,6 +2687,74 @@ purpose (its scope guard is not in the caught chain).
    commit, with all five oracles re-run bit-identical.
 4. **The oracle and the suites** — `rust/oracle/dump_slice_l.py` + `rust/tests/slice_l_oracle.rs`,
    then `rung41.rs` / `rung42.rs` porting the 9 + 10 Python gates.
+
+### 5.8.2 SLICE L step 2 — what the PORT found that the PRE-REGISTRATION could not
+
+Two of § 5.8.1's nine predictions changed shape while being implemented. Neither is a result being
+retro-fitted — both are the *instrument* turning out to be settleable by argument where the
+pre-registration could only measure.
+
+**(a) P4 IS CLOSED BY CONSTRUCTION, NOT MERELY GATED.** § 5.8.1 (ii) measured Python's `round(x, 6)`
+and the naive `(x * 1e6).round() / 1e6` agreeing on all 4 216 live keys and on a 600 000-point
+synthetic sweep, and — correctly — refused to call that a proof: at the estimated ~2e-7 divergence
+rate the sweep expects ≈0.1 events, so a measured zero is consistent with a real divergence it
+missed. That is why the registered instrument became the **key sequence** rather than the spelling.
+
+Writing the port settled it outright, in two steps.
+
+* **Format-and-parse IS Python's algorithm.** CPython's `double_round` calls `_Py_dg_dtoa(x, mode 3,
+  ndigits)` for the correctly-rounded, half-to-**even** decimal string and `_Py_dg_strtod` to convert
+  back; PyPy's `rfloat.round_double` does the same two steps. Rust's `{:.6}` is exact and rounds
+  half-to-even and `str::parse::<f64>` is correctly rounded, so `round6` is not an approximation of
+  `round(x, 6)` — it is the same pair of operations.
+* **The naive spelling is DEMONSTRABLY WRONG on reachable inputs.** An exact tie at the 6th decimal
+  needs `x = (2j+1)/(2·10^6)`; for a dyadic `x = m/2^k` that forces `k = 7` with `m` odd, so the ties
+  are exactly the **odd multiples of `1/128`** — representable, and inside the [350, 1500] band the
+  coarse scan sweeps. Verified on `x = 350.0078125`: PyPy and `round6` both give `350.007812`
+  (half to even) where the naive spelling gives `350.007813`.
+
+So the divergence class is closed in the library, and **P4's key dump becomes a regression guard
+rather than the primary defence.** The general lesson is the port's own *measure before registering*
+rule read from the other end: a measured zero bounds a *rate*, and when the failure class is small
+enough to ENUMERATE, enumerating it beats sweeping for it. § 5.8.1 (ii) sized the rate correctly and
+still could not see that the tie set was `{odd/128}`.
+
+**(b) P8's `is_flat` LINE IS WITHDRAWN — the deferral table named a gate that should not exist.**
+§ 5.8.1's table said rung 41 gate 1b's closing `ComponentMap.flat().with_phi_surge(0.6).is_flat()`
+**ports now**, since it needs no transient. It needs no transient and it should still not be
+written, for two reasons found while writing the port:
+
+1. **The predicate would be Python's minus a term.** Python's `is_flat` reads `vsv == 0.0`, and
+   `vsv` is rung 53's — slice M's. A Rust `is_flat` without that conjunct is inert exactly as far as
+   today's sweep and no further: **the `l` mistake of slice J → K, repeated on a predicate instead of
+   a field** (§ 5.7 (a)).
+2. **There is no flat-reduce BRANCH for it to guard.** Python's flatness is a claim about which
+   fields one predicate reads; in Rust the reduce is STRUCTURAL — `psi` returns `1.0`,
+   `eta_c_at` returns its base — so `is_flat()` could return `true` while the reduce is broken, and
+   vice versa. The predicate and the property are not the same object here.
+
+P8's *content* is therefore gated where it lives, as a **value**: a flat map carrying a floor and one
+without produce a bit-identical matched point (rung 41 gate 1's actual body). `is_flat` lands with
+`vsv`, in slice M. Recorded in `map.rs`'s field-subset note, which is where a reader looking for the
+field will be.
+
+**What step 2 confirmed unchanged.** P5's 33 refinement calls reproduced on every `MIN` run and 0 on
+every `RAIL` one, with the counter shipped **beside the code** rather than in step 4's gate — adding
+it later would mean touching gated code twice. P9 is carried by the **type**: `FlowTurn` uses
+`Option` for the four fields Python's `RAIL` dict nulls or omits, so writing `0.0` where Python
+writes `None` is unwritable rather than merely gated. The § 5.8.1 (vi) skip census reproduced exactly
+(10 of 13 on CPG/TPG/eq at these shapes).
+
+**Two divergences recorded rather than fixed**, both named in the source:
+
+* On **unarmed** maps Python's `surge_margin_schedule` catches the `phi_surge > 0` assert at every
+  point and returns `[]`; the Rust panics on the first. Reachable by CONSTRUCTION, not by throttle,
+  so no swept grid produces it — and adding a `Result` would re-open an adjudication a measurement
+  already settled (§ 5.8's zero-firing verdict).
+* `Spool` as an enum, and the six methods living on `TwoSpoolMapCore` rather than on the matcher
+  enum, make two Python asserts unreachable **by type**. Note the second changes the *exception*: a
+  rung-41 method on a `lp_disabled` Python matcher raises `AttributeError` from the rung-32 delegate,
+  not `AssertionError`, so it was never catchable by the schedule methods anyway.
 
 Then **slices M / N / O**: rungs 53–56 and 61, the airflow levers.
 
