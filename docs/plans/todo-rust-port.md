@@ -2614,7 +2614,7 @@ and exactly the line slice L would have copied.
 
 ---
 
-### 5.8 SLICE L (rungs 41 + 42) — **STEPS 1–3 SHIPPED; PRE-REGISTERED (§ 5.8.1), nine predictions**
+### 5.8 SLICE L (rungs 41 + 42) — **COMPLETE: steps 1–4 SHIPPED**; pre-registered (§ 5.8.1), nine predictions, ALL SETTLED
 
 Handoff state as of commit `ff784ed`. **448 Rust tests green, all three existing oracles
 bit-identical.** Read this before resuming — the probes are done and their numbers are here, so
@@ -2686,14 +2686,111 @@ purpose (its scope guard is not in the caught chain).
    bit-identical; smoke-checked **bit-for-bit against PyPy over 314 rows**, at `b > 0`, with the
    check's own sensitivity measured. **P1, P2 and P7 are settled early** (§ 5.8.3). The planned
    second commit for "the booking fields on the result" turned out **VACUOUS** — § 5.8.3 (a).
-4. **The oracle and the suites** — `rust/oracle/dump_slice_l.py` + `rust/tests/slice_l_oracle.rs`,
-   then `rung41.rs` / `rung42.rs` porting the 9 + 10 Python gates. **One narrowing to fix rather
-   than inherit:** § 5.8.1's grid sweeps rung 41's schedules on **rung-39 matchers only**, so a
-   dump built on it witnesses the dispatch through `surge_margin` alone. Step 3's smoke check
-   covered the other two by hand (§ 5.8.3 (g)); the dump must carry at least one `b > 0` cell of
-   `running_line_map` and `flow_coefficient_turn` on a rung-42 core, or the gap moves into slice M
-   unrecorded. Note also that the smoke check's own sensitivity to a mis-associated `(1-b)` is
-   ~2 % of rows (§ 5.8.3 (h)) — a value gate on a handful of cells would not catch it.
+4. ~~**The oracle and the suites**~~ — **DONE**, § 5.8.4. `dump_slice_l.py` (25 458 keys) +
+   `slice_l_oracle.rs`, and `rung41.rs` / `rung42.rs`. The step-4 line said "the 9 + 10 Python
+   gates"; the files have **12 + 12** test functions under **8 + 8** documented headings, and the
+   roster is now DATA in each suite. The narrowing was fixed as required (§ 5.8.4 (b)), and the
+   `(1-b)` detector re-measured on the dump — **1.00 % of keys, and the `value` bar is blind to
+   all but one of them** (§ 5.8.4 (e)).
+
+### 5.8.4 SLICE L step 4 — the oracle, the suites, and a claim the SHIPPED SOURCE carried
+
+**479 Rust tests green; the PyPy arm is 25 458 / 25 458 bit-identical.** Six of the nine
+predictions are settled here (P3, P4, P5, P6, P8, P9), joining step 3's P1/P2/P7. Two of them
+moved, and one correction lands in shipped code rather than in a plan.
+
+**(a) THE PLAN'S GATE COUNT WAS WRONG IN BOTH DIRECTIONS, AND THE ROSTER IS NOW DATA.** § 5.8's
+step-4 line said "the 9 + 10 Python gates". `tests/test_rung41.py` has **12** `def test_`
+functions under **8** documented gate headings; `tests/test_rung42.py` likewise has **12** under
+**8**. Neither file reconciles with 9 or with 10, and the numbers are not two views of one thing —
+the headings group functions unevenly (gate 5 is two functions, gate 1 is three). Enumerated
+before any Rust was written, per `docs`' *slice K* entry (the phase table's scope list had never
+been enumerated: it dropped one rung and double-counted another) and *an oracle cannot see a
+MISSING GATE* (grep the source's gates and diff; never port from a header).
+
+Settled: **10 of rung 41's 12 port** — gate 1b defers whole to phase 6 (`TwoSpoolTransient`),
+gate 7b defers whole (`SpoolTransient`, **single**-spool), and gate 1c SPLITS, its bit-for-bit
+cycle halves porting now. **All 12 of rung 42's port**, because that file's cycle gate reaches
+`build_turbojet` and the bleed matcher only — no transient anywhere. Both rosters are asserted as
+arrays (`slice_l_deferrals`, `slice_l_roster`) so the count is auditable rather than prose.
+
+**(b) THE CENSUS WAS FIRST MEASURED ON THE WRONG MAPS, AND IT LOOKED LIKE A REFUTATION.** The
+first dump swept rung 42's 147-cell grid on **FLAT** maps and read **68 / 68 / 68 / 67** matched
+with UNCHOKED flat at **23 / 23 / 23 / 23**. Against § 5.8.1 (v)'s registered 67 / 67 / 66 / 65
+and 23 / 23 / 24 / 25 that reads as P6 refuted — *the UNCHOKED column does not rise*, which is
+rung 42's own gate 6 failing.
+
+It was the grid. Every pre-registered number was probed on the **`mixed` pair**
+`(LP_SHAPED, HP_SHAPED)`, and P7's census half is that `b = 0` reproduces slice K's rung-39 row —
+which is slice K's `mixed` row, one of its two shapes getting the full `M0` grid. Re-swept there,
+the dump reproduces the table **to the cell**: 67 / 67 / 66 / 65 matched, UNCHOKED **23 / 23 / 24
+/ 25**, and the `b = 0` row's `efficiency cascade` count is **13** — slice K's own one-cell
+difference from rung 38. This is § 5.7 (e)'s rule caught in the act rather than quoted: *a bar is
+measured on the grid it will be gated on, never read off a neighbouring one.* The flat numbers
+are perfectly correct and answer a different question, which is exactly what makes the trap
+survivable-looking.
+
+**(c) A CLAIM IN THE SHIPPED SOURCE WAS FALSE, AND THE GATE WRITTEN FOR IT PASSED THE DEFECT.**
+`two_spool.rs` asserted, in the golden section's own comment, that the CHECK-FIRST shape is
+load-bearing — "a `do`-while converges to the same place and makes the refinement count 34 instead
+of 33". P5's gate was written on that claim. **Injected, the `do`-while makes 33.** Same
+`tt4_star`, same everything: 479 tests and all four value oracles pass unchanged.
+
+The reason is structural, and it is the mirror of the place the distinction IS live. The golden
+section's bracket is **always `2 * coarse = 20` wide on entry**, so the stopping rule cannot be met
+before the first pass — and meeting it on entry is the ONLY thing that separates check-first from
+`do`-while. Rung 39's efficiency loops differ precisely because a FLAT map meets their residual on
+entry, which is what `rung39.rs::the_efficiency_loops_test_before_they_step` gates. Carrying the
+claim across from one loop to the other was the error.
+
+Both the source comment and the test's doc are corrected, and P5 is re-registered against what it
+demonstrably catches, measured the same way: a changed **stopping rule** (`1e-6` gives 37) or
+bracket width. It is a gate on the scan PARAMETERS reaching the loop, not on the loop's shape. The
+count 33 itself stands, and stays out of the value dump — Python cannot instrument the shipped
+body's two phases from outside, so its arm would be a transcription and the comparison
+self-confirming (rung 83's *identity round-trip*).
+
+**(d) THE DISPATCH GATE IS THREE TESTS, AND IT IS THE ONLY THING THAT CATCHES ITS DEFECT.** § 5.8
+owed a `gate_the_dispatch_is_live`. Written first as one test with three legs, then split, because
+pointing `R42`'s hook at `R39.try_match_point` fires the FIRST leg and the other two never run —
+so "all three schedule methods witness the dispatch" would have been a claim the calibration never
+touched. Split, each fails on its own.
+
+The wider reading is the one worth keeping: with rung 42's physics replaced wholesale by rung 39's,
+**14 of `rung42.rs`'s 17 tests still pass**. Every value gate reaches `try_match_bleed` directly,
+because that is the entry point carrying the booking; only rung 41's methods go through the hook.
+A suite can port a rung's entire physics faithfully and still not witness the one thing the port
+added.
+
+**(e) THE DETECTOR WAS MEASURED, AND THE `value` BAR IS BLIND TO THE DEFECT IT WAS SIZED FOR.**
+Step 3 measured the `(1-b)` mis-association at ~2 % of its 314 smoke rows. Re-measured on the
+25 458-key dump: **254 keys move — 1.00 % — and exactly ONE exceeds the `value` bar. It is not a
+value.** It is an `n_pass`, the joint loop taking 12 passes instead of 11. The worst VALUE
+deviation over the whole sweep is **2.05e-9**, inside the 1e-8 relative bar.
+
+So the PyPy arm's bit-equality is not belt-and-braces, it is the detector: toleranced, this gate
+would catch the defect on 1 key of 25 458 instead of 254 — and that one key only exists because
+the pass count is dumped at all. The worst-moved value sits at `M0 = 1.60` on the thermally-perfect
+gas, which is where § 5.8.3 (h) said this class surfaces, so the deliberately-edge-placed cells
+earned their place.
+
+**(f) P4 COST A SECOND TOUCH OF GATED CODE, TAKEN DELIBERATELY.** § 5.8.2 warned that adding an
+instrument in step 4 means touching gated code twice, and shipped `refine_calls` in step 2 to avoid
+it. P4 needed one anyway: a memo-key recorder in `counters`, on `od_index`'s MISS branch. The
+alternative was transcribing the golden-section abscissa arithmetic into the gate, which gates the
+copy; and proxying the sequence through `tt4_star` is a gate that might not exist, since two branch
+sequences can close on the same midpoint. Its own commit, P2's bill paid: 448 green, four oracles
+bit-identical. Measured sequences: **124 keys (MIN) / 90 (RAIL)** on the rung-39 path, **121 / 88**
+on a rung-42 core at `b = 0.10` — different objects, as the branch flip predicts.
+
+**What the rest of the dump settled.** P3: **0 refinement aborts** anywhere on the dump grid,
+including the rung-42 cores § 5.8.1's probes never swept, and `ended_on_abort` is **54 of 54** — so
+`Tt4_lo = 350` is dead, gated absolutely in `rung41.rs` (`band_lo > Tt4_lo + coarse`) since no
+comparison can see a parameter both sides read. P9: the discriminant + declared sentinel
+(`NULL = -1.0`, impossible for all eight nullable columns) with the branch counts per BLOCK —
+**16 of 19 `lp` cases RAIL** on the flat set, § 5.8.1 (viii)'s number to the cell. Pooling the two
+blocks' counters was the first draft's error and reported 32/22 over 54 runs, a number no
+prediction is written against.
 
 ### 5.8.3 SLICE L step 3 — the rung-42 port, and a PLANNED COMMIT that turned out vacuous
 
