@@ -2120,6 +2120,213 @@ a second half asserting that rung 32's `MapMatcher` does NOT inherit rung 33's d
 does not exist in the Rust yet, so there is nothing for that claim to be true or false of; it is
 recorded as `rung33.rs::slice_j_deferrals`, which gates the part that IS checkable today.
 
+### 5.6 SLICE J (rung 32, `ComponentMap` + `MapMatcher`) — PRE-REGISTERED, eight probes MEASURED first
+
+**The slice.** Rung 32 is `ComponentMap` (an analytic compressor efficiency island + speed lines
+and a near-flat turbine map) and `MapMatcher`, which subclasses slice I's `OffDesignMatcher` and
+adds exactly one thing: the component efficiencies stop being held at design and are read off the
+map at the operating point, closed by an OUTER secant, with the shaft speed `N` attached from the
+speed-line inversion. Everything else — the choke machinery, `solve_turbine`, `solve_f`,
+`working_gas` — is slice I's, unchanged.
+
+**THE FIRST QUESTION WAS A BLOCKING ONE, AND IT DECIDED THE SHAPE OF A FUNCTION.**
+`_operating_point` calls `self._solve_turbine`. `class SpoolTransient(MapMatcher)` — rung 34,
+phase 6 — **overrides `_solve_turbine` and overrides neither `_operating_point` nor `match`**, so
+rung 32's operating point is a **SECOND live site** for the virtual hook slice I shipped, and it
+is a site § 5.3's census could not name because the census enumerated (name, ancestor, descendant)
+triples rather than call sites *inside* a class that does not yet exist in the Rust. Calling
+`r31_solve_turbine` directly here would compile and return a silently different number in phase 6
+— § 1's leaf-dispatch trap, which is the one failure mode the const-table architecture exists to
+make impossible. `operating_point` therefore dispatches through `self.solve_turbine`, and that is
+settled before the function is written rather than after it is gated.
+
+**Probed BEFORE registering** (the standing lesson), on both interpreters, and two of the eight
+probes changed a claim that was about to be registered wrong.
+
+**(a) BOTH OF RUNG 32'S OWN RAISE SITES ARE DEAD — swept 8× wider than the gates, because a
+narrow sweep is exactly how slice I's (a) got its first answer wrong.** `ComponentMap.solve_n`
+asserts its bisection bracket straddles the root; the outer secant has a `for…else raise` at
+`_ETA_MAX = 80`. Swept at **3 gases × 6 flight Machs × 9 throttles × 5 map shapes = 810 cells**:
+the bracket assert would fire **0 times**, the secant exhausts its cap **0 times**. The sweep
+does produce 135 raises — and **all 135 are at `M0 = 0.0`, all 135 are `Inlet`'s "ram must not
+cool/depressurize" or the CPG efficiency cascade, and `OffDesignMatcher.match` raises the
+identical assert at the identical cells**. They are rung 31's static-flight edge, not rung 32's.
+**Consequence: `MapMatcher` needs no fallible path.** That is the OPPOSITE of slice I's answer to
+the same question, and it is not a weaker sweep — it is a genuinely different structure, because
+nothing in rung 32 marches a bracket past a failure.
+
+**(b) `solve_n` COSTS EXACTLY 48 RESIDUAL EVALUATIONS AT EVERY CALL** — `min = max = 48`,
+one distinct value over **269 calls**, on both interpreters. Bracket `[0.1, 2.0]`, break
+`hi - lo <= 1e-14` **absolutely** ⇒ `ceil(log2(1.9 / 1e-14)) = 48`. The direct analogue of slice
+I's P1 (47 for the turbine solve) and, like it, a count that differs means the arithmetic diverged
+somewhere a value gate still passes.
+
+**(c) THE `eta_c` CLAMP NEVER BITES**, 0 times over the 99-cell instrumented sweep, so the
+`min(max(x, 0.3), 1.0)` spelling is **moot** — Python's `min`/`max` and Rust's `f64::min`/`max`
+disagree on NaN, and the port would have had to choose. Recorded rather than reasoned about: the
+Rust uses the Python's argument order and says at the site that the branch is unreached, so a
+future rung that DOES reach it inherits a decision that was made deliberately.
+
+**(d) THE OMITTED LATER-RUNG TERMS IN `psi` ARE BIT-INERT — MEASURED, NOT ARGUED.**
+`ComponentMap` carries fields for rungs 34 (`l`), 36 (`phi_surge`), 53 (`vsv`) and 54
+(`capacity`); slice J ports **only rung 32's five** (`a, b, c, sigma, a_t`), so its `psi` is
+`1 - sigma*(phi-1)^2` where the Python's is `… - l*(phi-1)`. Over **26 900 evaluations on the
+real swept `phi`**, the two spellings are bit-identical **26 900 / 26 900** on both interpreters.
+`is_flat` and `phi_max` are **not ported and the reason is written down**: `is_flat` is called by
+no engine code at all (only by rung-36/41/53/54 *tests*), and `phi_max` only by the rung-34/40/43
+forward transient closures — phase 6. Neither is reachable from any rung-32 gate.
+
+**(e) THE FLAT-MAP REDUCE IS BIT-EXACT, WHERE THE PYTHON GATES IT AT `1e-9` — AND THE FIRST
+STATEMENT OF THAT CLAIM WAS AN OVER-CLAIM.** With a flat map `eta_c_at` returns its base
+untouched, the residual is exactly `0.0`, the secant breaks on pass 1, and the operating point is
+computed at the design efficiencies — so every rung-31 quantity should be bit-identical, not
+merely close. Measured on the reacting gas at gate 1's three throttles: **10/10 scalars, all six
+stations' `Tt` and `pt`, and `specific_thrust`, bit-equal, on both interpreters.** Then swept to
+**3 gases × 3 Machs × 6 throttles**, and it FAILS on two cells — `(thermally-perfect, M0 = 0.85,
+Tt4 = 600)` and `(equilibrium, M0 = 0.85, Tt4 = 600)` — in **nine scalars and four stations at
+once**. Those are precisely the cells where **rung 31 dispatches to the subsonic branch and rung
+32 does not**, so the comparison there is not a reduce at all: it is (f) below, seen from the
+other side. **The registered claim is therefore conditional on the branch**, and the Python's
+gate 1 never met the condition because all three of its throttles are choked.
+
+**(f) THE RUNG-33 IOU DISCHARGES AS A CONTRADICTION, NOT AS AN ABSENCE.** At `Tt4 = 560` on the
+CPG gas, `OffDesignMatcher.match` returns `branch = 'subsonic'`. `MapMatcher.match` at the same
+cell **returns** — it does not abort — with `nozzle_choked = False` **and `branch = 'choked'`**:
+rung 32 predates rung 33 in the ladder, never got the dispatch, and inherits
+`OffDesignResult`'s default label, so the result carries a branch label its own flag contradicts.
+That is a sharper discharge of `rung33.rs::slice_j_deferrals` than "does not inherit", and it is
+the same fact (e)'s two failing cells report.
+
+**(g) THE INNER LOOP'S DISCRETE INSTABILITY IS CONTAINED — IT DOES NOT AMPLIFY THROUGH THE OUTER
+SECANT. The first measurement of this could not have detected it.** § 5.5 found the joint
+`(f, pt4)` pass count flipping `7 ↔ 200` between CPython and PyPy on 18 of 88 cells, **every
+disagreeing cell on the equilibrium gas**; rung 32 wraps that loop in an outer secant, so the
+question is whether the flip propagates outward. The first sweep compared 99 cells of outer
+counts across interpreters, found **99/99 identical** — and was **swept on the thermally-perfect
+gas, where the flip does not live either**. Re-measured on the equilibrium gas, 3 shapes × 4
+throttles: the inner counts disagree between interpreters in **8 of 12 cells** (e.g. `tilted`,
+`Tt4 = 1100`: PyPy `[200, 7, 9, 200, 200]` vs CPython `[8, 200, 8, 200, 9]`) while the outer
+secant count is identical in **12 of 12** (`1, 5, 5, 6` on both). A cell that ran 200 inner passes
+and one that ran 8 hand the secant the same operating point to well inside its own `1e-11`
+tolerance, so the outer count is a **usable** key exactly where the inner one is not.
+
+**(h) THE OUTER SECANT IS 1 PASS ON EVERY FLAT MAP, INCLUDING THE `sigma` VARIANTS.** Gate 6
+sweeps `sigma ∈ {0, 0.3, 0.6, 1.0}` expecting an `N` schedule that genuinely moves with it — and
+`sigma` enters `solve_n` only, never `eta_c_at`, so all four run the secant exactly once. The
+gate's "not a tautology" bar (`spread > 1e-4`) is therefore testing the speed-line inversion in
+isolation, with the efficiency loop inert. Worth saying because it means gate 6 does **not**
+exercise the machinery gate 3 does.
+
+**The predictions, registered before the Rust is written.** Each names what would refute it.
+
+* **P1 — the reduce is `==`, not a tolerance, ON THE CHOKED BRANCH.** With a flat map, every
+  quantity `OffDesignMatcher` also computes is bit-identical between `MapMatcher::match` and
+  `match_point` at every cell where the rung-31 answer has `nozzle_choked == true`. The map
+  read-offs `n_corr`, `N_ratio`, `flowcoef`, `nu_t` are **explicitly outside** the claim — they
+  come from `solve_n`, arithmetic rung 31 never runs. *Refuted by:* any choked cell needing a
+  tolerance; or by the claim holding on an UNCHOKED cell, which would mean the Rust inherited a
+  dispatch the Python does not have.
+* **P2 — `solve_n` takes exactly 48 residual evaluations, with zero spread, at every call in the
+  dump.** *Refuted by:* any other count.
+* **P3 — the outer secant count is interpreter-stable where the inner is not.** Over the oracle's
+  own grid the outer count agrees CPython-vs-PyPy at 100 %, on cells where the inner counts do
+  not. *Refuted by:* one disagreeing outer count. This EXTENDS § 5.5's finding rather than
+  re-running it — § 5.5 established the instability, P3 bounds its reach.
+* **P4 — `MapMatcher` needs no fallible path**, i.e. no `try_` twin is added to the crate by this
+  slice. *Refuted by:* any cell in the dump grid at `M0 > 0` that raises from `solve_n`'s bracket
+  or the secant's cap.
+* **P5 — rung 32 does NOT inherit rung 33's dispatch, and says so contradictorily**: at
+  `Tt4 = 560` CPG the Rust returns `nozzle_choked == false` with `branch == Choked`, where slice
+  I's matcher returns `Branch::Subsonic`. *Refuted by:* an abort, or a subsonic answer.
+* **P6 — `n_corr` is the LEAST cross-interpreter-stable quantity in the slice, and it is worst AT
+  THE DESIGN POINT.** Three points say so (`Tt4 = 1500`: 1.5e-11; `1200`: 9.1e-13; `900`:
+  1.6e-12), and the mechanism would be that `solve_n`'s target `(tau_c-1)/(tau_c_d-1) → 1` at
+  design, so the bisection resolves `n - 1` against a target whose own deviation from 1 is what
+  carries the error. *Refuted by:* the design point not being the worst cell on the full grid —
+  in which case the conditioning story is wrong and the three points were a coincidence, which is
+  precisely why this is registered rather than asserted.
+
+**THE ONE REFACTOR THIS SLICE MAKES TO GATED CODE, and how it is kept honest.**
+`OffDesignMatcher::rebuild` hardcodes `self.eta_c` / `self.eta_t`; rung 32 needs the same
+instruction sequence at the map's efficiencies. The Python duplicates the whole rebuild inside
+`MapMatcher.match`. The port instead **parameterises `rebuild` with `(eta_c, eta_t)`** — the port
+already shares that function between rungs 31 and 33 on exactly this reasoning, and slice F's
+*don't factor a deliberate duplication away* was about two loops that only LOOK alike, which this
+is not. What makes it safe is not the argument: `offdesign_oracle`, `rung31` and `rung33` are
+re-run afterwards and must be **bit-identical**, or the refactor is reverted.
+
+**Sizing.** Gate 1 on the reacting gas at three throttles; gates 3–7 on the thermally-perfect gas,
+as the Python's own `_fast_matchers` does — the outer secant multiplies the equilibrium re-freeze
+per inner pass, and an equilibrium sweep across all shapes is the slice's cost trap.
+
+#### What phase 5 SLICE J MEASURED — SHIPPED, **7 252 / 7 252 bit-exact** vs PyPy
+
+`rust/src/map.rs` + `rust/oracle/dump_map.py` + `rust/tests/map_oracle.rs` + `rust/tests/rung32.rs`.
+Against CPython the same dump is **69.2 %** identical: bit-exact on the calorically-perfect gas
+(2 588 / 2 588) and ~26 % on the thermally-perfect and equilibrium ones, because every cell is a
+three-deep nest of loops whose last bits are carried outward.
+
+**The verdicts, one per registered prediction.**
+
+* **P1 — CONFIRMED, and its conditional half now has EVIDENCE rather than a qualifier.** 28 of 28
+  choked cells reduce bit-for-bit against `OffDesignMatcher` on a flat map, across three gases.
+  The registered refutation clause ("the claim holding on an UNCHOKED cell") is not merely absent
+  — it is measured: **0 of 4** subsonic cells reduce bit-exactly, and the gate asserts
+  `n_sub_bitequal < n_sub`. That assertion was missing from the first draft, which asserted only
+  the choked half; "bit-exact on the choked branch" would then have been a qualifier with nothing
+  behind it, and a subsonic cell that happened to land back on rung 32's answer would have read as
+  support for the claim.
+* **P2 — CORRECTED: 50, not 48.** Same loop, same zero spread (one distinct count over 120 swept
+  calls on both interpreters), but the registration counted the bisection steps and forgot the two
+  bracket-endpoint evaluations that decide the assert. `ceil(log2(1.9/1e-14)) = 48` steps **+ 2**.
+  The claim survives; the number a gate compares against has to be the one the instrument reads.
+* **P3 — CONFIRMED, cleanly.** The outer secant's pass count agrees CPython-vs-PyPy on **144 of
+  144** cells; the inner turbine-solve total disagrees on **5 of 144**, and every one of those five
+  is on the equilibrium gas. So § 5.5's discrete instability is real and CONTAINED: a cell that ran
+  200 inner passes and one that ran 8 hand the secant the same operating point to well inside its
+  `1e-11` tolerance. The outer count is bit-gated on both arms; the inner one on neither but PyPy.
+* **P4 — CONFIRMED.** Rung 32's three own raise sites (the secant cap, the physicality assert, the
+  speed-line bracket) fire **0 times** across the 152-cell grid — dumped as explicit zero counts
+  under `census/abort_code/7..9` rather than left as an absence — and **0 times** over 120
+  standalone `solve_n` calls that now include `sigma = 1.0`. All 8 aborted cells are code 2, rung
+  31's efficiency cascade. **No `try_` twin is added by this slice.**
+* **P5 — CONFIRMED as the predicted contradiction.** At `Tt4 = 560` on the reacting gas rung 32
+  returns `nozzle_choked = false` with `branch = Choked`; rung 31's own matcher at the same cell
+  returns `Subsonic`. Discharged at `rung32.rs::rung33_gate7_second_half_map_does_not_inherit_subsonic`;
+  `rung33.rs::slice_j_deferrals` is KEPT, because it carries the contrast the rung-32 file cannot.
+* **P6 — REFUTED, BOTH HALVES.** `n_corr` is **not** the least cross-interpreter-stable quantity:
+  it ranks **21st of 38** at 2.68e-11, an order of magnitude better than `F_over_mdot` at 2.95e-10.
+  And it is **not** worst at the design point: its worst three cells are all at `Tt4 = 1100`, at
+  every flight Mach, on the FLAT map. The registered mechanism (the `solve_n` target → 1 at design,
+  so the bisection resolves `n - 1` against a target whose own deviation carries the error) is
+  therefore wrong, and the three probe points that suggested it — 1500, 1200, 900 — were a
+  coincidence of a grid that **never sampled 1100**. The lesson is the port's own, restated: the
+  argmax that pays is the one that disagrees, and a location claim must be swept wider than the
+  points that suggested it.
+
+**AND THE HEADLINE ALMOST SHIPPED IN THE WRONG CURRENCY.** Rung 32's finding is that the compressor
+WORK is choke-pinned and map-free while `pi_c` and `mdot` are not. The port's usual way to say
+"constant vs varies" is a count of distinct bit patterns — and that count is a perfect
+NON-discriminator here: `tau_c`'s bits move across the four map shapes in **every one of the 32**
+non-equilibrium cells, exactly as `pi_c`'s do. `tau_c` is map-free STRUCTURALLY (no map coefficient
+enters the shaft balance that sets it) but it is reached through a fixed point whose other variables
+do move with the map, and a converged iterate carries its history in the last bits. The claim is
+about MAGNITUDE and always was — Python's gate 4 bar is `1e-4`, not zero. Gated as a relative spread
+across shapes instead: **`3.65e-6` for `tau_c` against `3.76e-2` for `pi_c`**, and the assertion is
+the RATIO (measured `1.03e4`, barred at `1e3`) rather than the direction `tau_c < pi_c`, which would
+still pass with the map-freeness entirely gone.
+
+**Three coverage gaps closed after the first green run**, all of the same shape — an instrument that
+looked complete: (i) the oracle's four shapes did not include `a_t = 0.5` or `sigma = 1.0`, the
+coefficients rung 32's OWN gates 5 and 6 use, so the count and curvature claims were pinned on a
+band narrower than the gates relying on them; they are now in the standalone sweeps, which cost no
+cycle solve. (ii) A `CELL_Q` name list justified in a comment as keeping three arms in step was
+read only by a `debug_assert_eq!` — compiled out in `--release`, the only profile the gate runs in.
+Deleted. (iii) The Python suite's three easiest-to-drop bars were copied verbatim: gate 4's
+`dpc > 30*rel` is CONDITIONAL on `Tt4 <= 1100`, gate 6's spread bar is TWO-SIDED (`< 0.05` **and**
+`> 1e-4`, and the lower half is what stops the robustness claim being a tautology about a quantity
+that never moved), and gate 1's specific-thrust bar is ABSOLUTE where its neighbours are relative.
+
 ---
 
 ## 6. Named risks

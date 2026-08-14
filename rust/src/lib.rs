@@ -76,6 +76,16 @@
 //!   and the shaft balance hands back the compressor, so `pi_c` and `mdot_air` become OUTPUTS;
 //!   below the nozzle-unchoke boundary that pin is void and a second branch re-solves it.
 //!   3951/3951 bit-exact, including 961 discrete keys and every bracket endpoint.
+//! * **J — rung 32 (SHIPPED)**: the component map, in [`map`]. Slice I's fixed hardware IS a
+//!   map for the *work*, but not for the pressure ratio, the mass flow or the shaft speed — so
+//!   rung 32 hangs an analytic efficiency island and a family of speed lines off the same solve,
+//!   making `eta_c` and `eta_t` OUTPUTS of an outer secant around slice I's inner loop and
+//!   attaching `N` by inverting a speed line. 7252/7252 bit-exact. It is the port's first
+//!   THREE-DEEP nest of solves, and the outer one turns out to be the STABLE one: slice I's
+//!   7↔200 inner-pass flip reaches 5 of 144 cells and the outer secant count NONE of them.
+//!   It also had to change the currency of the rung's own headline — a count of distinct bit
+//!   patterns says `tau_c` moves with the map in every cell, because the fixed point carries its
+//!   history in the last bits; map-freeness is a MAGNITUDE claim (four orders), not an exact one.
 //!
 //! Slice I is where the port first had to do three things it had never done, and each one left a
 //! mark on the crate rather than only on the module:
@@ -113,6 +123,7 @@
 pub mod components;
 pub mod engine;
 pub mod gas;
+pub mod map;
 pub mod march;
 pub mod matcher;
 pub mod nox;

@@ -319,21 +319,23 @@ fn gate7_cycle_untouched() {
     assert!(r.m9 > 1.8 && (r.p9 - 50_000.0).abs() < 1e-6);
 }
 
-/// WHAT SLICE J OWES, recorded as a test so it cannot be lost.
+/// WHAT SLICE J OWED — **DISCHARGED**, at
+/// `rung32.rs::rung33_gate7_second_half_map_does_not_inherit_subsonic`.
 ///
-/// `test_rung33.py`'s gate 7 has a second half this module cannot express yet: `MapMatcher`
-/// (rung 32) overrides `match` and stays on its choked-only path below unchoke, flagging
-/// `nozzle_choked = False` WITHOUT re-solving — because subsonic + map is out of scope. It
-/// documents that rung 33's dispatch is **not inherited** by the map matcher.
+/// `test_rung33.py`'s gate 7 has a second half this module could not express when slice I
+/// shipped: `MapMatcher` (rung 32) overrides `match` and stays on its choked-only path below
+/// unchoke, flagging `nozzle_choked = False` WITHOUT re-solving — because subsonic + map is out
+/// of scope. It documents that rung 33's dispatch is **not inherited** by the map matcher.
 ///
-/// Rung 32 is slice J, so there is nothing here for that claim to be true or false of. It is
-/// written down rather than left implicit because the port has been bitten twice by exactly
-/// this shape: once by a documented gate that did not exist (§ 4.16), and once by a census
-/// that answered only for the phase it was standing in (§ 5.3 finding 4).
+/// Rung 32 did not exist in the Rust then, so there was nothing for that claim to be true or
+/// false of. It was written down rather than left implicit because the port has been bitten
+/// twice by exactly this shape: once by a documented gate that did not exist (§ 4.16), and once
+/// by a census that answered only for the phase it was standing in (§ 5.3 finding 4).
 ///
-/// This test asserts the ONE part of the claim that is checkable today — that dispatch is a
-/// property of `match_point`'s own body, so the only thing slice J has to do is decline to
-/// call it.
+/// **This test is KEPT rather than deleted**, and it now carries the half the rung-32 file
+/// cannot: that dispatching is a property of `match_point`'s OWN body, so the only thing rung 32
+/// had to do was decline to call it. Delete it and the rung-32 assertion becomes a statement
+/// about one matcher with nothing to contrast against.
 #[test]
 fn slice_j_deferrals() {
     let m = cpg_matcher();

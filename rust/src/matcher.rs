@@ -515,7 +515,7 @@ impl OffDesignMatcher {
         // whole of it is then thrown away. That is not waste to be optimised out: its asserts
         // are live abort sites, so moving the dispatch earlier — or onto a cheaper predicate —
         // would change which cells return a number.
-        let rebuilt = self.rebuild(flight, pi_d, pi_c, tt4, mdot_air);
+        let rebuilt = self.rebuild(flight, pi_d, pi_c, tt4, mdot_air, self.eta_c, self.eta_t);
         let nozzle_choked = rebuilt.exit.p9 > self.p_ambient + 1e-6;
 
         // RUNG 33 — DISPATCH. If the choked-branch match leaves the nozzle SUBSONIC, the (★)
@@ -548,8 +548,18 @@ impl OffDesignMatcher {
     /// difference is which asserts follow it), unlike the two inner fixed points, which only
     /// look alike. Every shipped conservation assert fires here, including the nozzle's — so
     /// this function is where an off-envelope cell aborts.
-    fn rebuild(
+    ///
+    /// **`(eta_c, eta_t)` ARE PARAMETERS, AND THAT IS SLICE J'S ONE REFACTOR OF GATED CODE.**
+    /// Rungs 31 and 33 pass `self.eta_c` / `self.eta_t` and so read exactly as before; rung 32's
+    /// [`MapMatcher`](crate::map::MapMatcher) passes the map's values at the operating point.
+    /// The Python duplicates this whole body inside `MapMatcher.match` — a third copy that is
+    /// the same instruction sequence with three substituted values, which is NOT slice F's
+    /// don't-factor-a-duplication-away case (that was about two loops which only look alike).
+    /// The refactor was gated the only way it can be: `offdesign_oracle`, `rung31` and `rung33`
+    /// re-run bit-identical afterwards.
+    pub(crate) fn rebuild(
         &self, flight: &FlightCondition, pi_d: f64, pi_c: f64, tt4: f64, mdot_air: f64,
+        eta_c: f64, eta_t: f64,
     ) -> Rebuilt {
         let rgas = if self.gas().is_equilibrium() {
             Gas::reacting_equilibrium_with(
@@ -559,10 +569,10 @@ impl OffDesignMatcher {
         };
         let (state0, v0) = self.fs_engine.freestream(flight, mdot_air);
         let s2 = Inlet::new(pi_d).apply(&state0, &rgas);
-        let s3 = Compressor::new(pi_c, self.eta_c, None).apply(&s2, &rgas);
+        let s3 = Compressor::new(pi_c, eta_c, None).apply(&s2, &rgas);
         let s4 = Burner::new(tt4, self.eta_b, self.pi_b).apply(&s3, &rgas);
         let dh_turb = (rgas.h_c(s3.tt) - rgas.h_c(s2.tt)) / (self.eta_m * (1.0 + s4.far));
-        let s5 = Turbine::new(self.eta_t, None).apply(&s4, &rgas, dh_turb);
+        let s5 = Turbine::new(eta_t, None).apply(&s4, &rgas, dh_turb);
         let exit = Nozzle::convergent(self.p_ambient, self.pi_n).apply(&s5, &rgas);
         Rebuilt { state0, v0, s2, s3, s4, s5, exit, gas: rgas }
     }
@@ -730,7 +740,7 @@ impl OffDesignMatcher {
         // Rebuild FORWARD with the derived (pi_c, mdot_air). The convergent nozzle now takes
         // the SUBSONIC branch itself (p9 = p0), so M9 < 1 by construction — the dispatch guard.
         let Rebuilt { state0, v0, s2, s3, s4, s5, exit, gas: rgas } =
-            self.rebuild(flight, pi_d, pi_c, tt4, mdot_air);
+            self.rebuild(flight, pi_d, pi_c, tt4, mdot_air, self.eta_c, self.eta_t);
         assert!(exit.m9 < 1.0 + 1e-6,
                 "rung-33 subsonic branch must exit M9 < 1 (got {:.4}) — dispatch misfired",
                 exit.m9);
@@ -767,18 +777,18 @@ impl OffDesignMatcher {
 }
 
 /// What [`OffDesignMatcher::rebuild`] hands back — the forward cycle, station by station.
-struct Rebuilt {
-    state0: FlowState,
-    v0: f64,
-    s2: FlowState,
-    s3: FlowState,
-    s4: FlowState,
-    s5: FlowState,
-    exit: crate::components::NozzleExit,
+pub(crate) struct Rebuilt {
+    pub(crate) state0: FlowState,
+    pub(crate) v0: f64,
+    pub(crate) s2: FlowState,
+    pub(crate) s3: FlowState,
+    pub(crate) s4: FlowState,
+    pub(crate) s5: FlowState,
+    pub(crate) exit: crate::components::NozzleExit,
     /// The FRESH gas the rebuild ran on. It must outlive the rebuild because `score` reads
     /// `R_t_at(f)` and `hpr` off it, and for an equilibrium gas it is the only object holding
     /// the station-4 mixture `Burner::apply` just froze.
-    gas: Gas,
+    pub(crate) gas: Gas,
 }
 
 /// RUNG 31's `solve_turbine`: bisect `pi_t` on the (★) MFP-ratio constraint.
