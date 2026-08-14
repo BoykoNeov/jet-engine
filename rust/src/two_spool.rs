@@ -90,7 +90,7 @@ use crate::matcher::{OffDesignMatcher, OffDesignResult};
 /// ([`hp_eta_loop_closed`], [`lp_eta_loop_arrow`], [`secant`]) — which is itself the point of
 /// those functions being free (§ 5.7 P1).
 pub mod counters {
-    use std::cell::Cell;
+    use std::cell::{Cell, RefCell};
 
     thread_local! {
         static CASCADE_CALLS: Cell<u64> = const { Cell::new(0) };
@@ -102,6 +102,10 @@ pub mod counters {
         static LP_MIN: Cell<u64> = const { Cell::new(u64::MAX) };
         static CLAMPS: Cell<u64> = const { Cell::new(0) };
         static REFINE_CALLS: Cell<u64> = const { Cell::new(0) };
+    }
+
+    thread_local! {
+        static MEMO_KEYS: RefCell<Vec<f64>> = const { RefCell::new(Vec::new()) };
     }
 
     /// Zero every counter. Called per cell by the oracle gate, so a count is per-cell and not
@@ -116,6 +120,7 @@ pub mod counters {
         LP_MIN.with(|c| c.set(u64::MAX));
         CLAMPS.with(|c| c.set(0));
         REFINE_CALLS.with(|c| c.set(0));
+        MEMO_KEYS.with(|c| c.borrow_mut().clear());
     }
 
     // `pub(crate)` rather than `pub(super)` since SLICE L: rung 42's cascade
@@ -176,6 +181,26 @@ pub mod counters {
     /// observed (the *golden-gate-slice-6* rule): the bracket is `2 * coarse = 20` wide, the stop
     /// is `b - a < 1e-5`, and `ceil(ln(1e-5 / 20) / ln(0.618…)) = 31`, plus the 2 initial.
     pub fn refine_calls() -> u64 { REFINE_CALLS.with(|c| c.get()) }
+
+    /// **P4's INSTRUMENT.** Every throttle
+    /// [`flow_coefficient_turn_with`](super::TwoSpoolMapCore::flow_coefficient_turn_with)'s memo
+    /// actually MATCHED at, in call order, MISSES ONLY.
+    ///
+    /// This is not a cache-hit-rate probe: `cache[key] = self.match(flight, key)` passes the
+    /// ROUNDED value on as the throttle, so the key sequence IS the sequence of engines the
+    /// method solved. The memo is all but dead as a cache anyway (10 hits against 4 206 misses),
+    /// which is why the miss list and the call list are nearly the same object.
+    ///
+    /// **Why a recorder and not a derived fingerprint.** [`round6`](super::round6) is now closed
+    /// by construction — format-and-parse IS Python's `round`, and the naive `(x*1e6).round()/1e6`
+    /// is demonstrably wrong at `350.0078125`. So P4 is a REGRESSION guard rather than the primary
+    /// defence. It is still gated as registered ("one key differing in a bit" is its refutation
+    /// condition) rather than proxied through `tt4_star`, because a proxy is a gate that might not
+    /// exist: two branch sequences can close on the same midpoint.
+    pub(super) fn note_key(t: f64) { MEMO_KEYS.with(|c| c.borrow_mut().push(t)); }
+
+    /// The keys recorded since the last [`reset`] — see [`note_key`].
+    pub fn memo_keys() -> Vec<f64> { MEMO_KEYS.with(|c| c.borrow().clone()) }
 }
 
 // =========================================================================================
@@ -1890,6 +1915,8 @@ impl TwoSpoolMapCore {
             if let Some(i) = cache.iter().position(|(k, _)| *k == key) {
                 return Ok(i);
             }
+            // P4's instrument, on the MISS branch — which is where the throttle is actually set.
+            counters::note_key(key);
             let r = core.try_match_point(flight, key)?;
             cache.push((key, r));
             Ok(cache.len() - 1)
