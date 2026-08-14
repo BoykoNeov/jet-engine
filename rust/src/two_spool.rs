@@ -180,6 +180,12 @@ pub mod counters {
     /// The 33 is **predictable from the arithmetic**, which is a stronger bar than one merely
     /// observed (the *golden-gate-slice-6* rule): the bracket is `2 * coarse = 20` wide, the stop
     /// is `b - a < 1e-5`, and `ceil(ln(1e-5 / 20) / ln(0.618…)) = 31`, plus the 2 initial.
+    ///
+    /// **What the count is and is NOT sensitive to, measured rather than assumed** (slice L step
+    /// 4, by injecting each defect and reverting): it MOVES on a changed stopping rule (`1e-6`
+    /// gives 37) and on a changed bracket width, and it does **not** move if the golden section is
+    /// rewritten `do`-while — the two shapes are indistinguishable on this loop. See that loop's
+    /// own note.
     pub fn refine_calls() -> u64 { REFINE_CALLS.with(|c| c.get()) }
 
     /// **P4's INSTRUMENT.** Every throttle
@@ -1974,9 +1980,18 @@ impl TwoSpoolMapCore {
                 phi_of(&cache[k].1, spool)
             };
             let (mut fc, mut fd) = (rphi(c), rphi(d));
-            // CHECK-FIRST, and the shape is load-bearing: a `do`-while converges to the same
-            // place and makes the refinement count 34 instead of 33. Exhausting the 90 is not an
-            // error in the source either — it simply stops.
+            // CHECK-FIRST, copied from the source — but the shape is **NOT** load-bearing here,
+            // and this comment said the opposite until slice L step 4 MEASURED it. Rewriting the
+            // loop `do`-while moves nothing: not the refinement count (33 either way), not
+            // `tt4_star`, not one bit of any oracle. The reason is structural — the bracket is
+            // ALWAYS `2 * coarse = 20` wide on entry, so the stopping rule cannot be met before
+            // the first pass, which is the only condition that separates the two shapes. Contrast
+            // the efficiency loops (`hp_eta_loop_closed` / `lp_eta_loop_arrow`), where a FLAT map
+            // meets the residual on entry and the distinction is live and gated.
+            //
+            // Kept check-first anyway, because it is what the Python spells; recorded as
+            // indistinguishable so no reader takes the `rung39.rs` shape gate to cover this loop
+            // too. Exhausting the 90 is not an error in the source either — it simply stops.
             for _ in 0..90 {
                 if b - a < 1e-5 {
                     break;
