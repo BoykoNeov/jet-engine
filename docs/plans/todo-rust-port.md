@@ -2738,12 +2738,35 @@ without produce a bit-identical matched point (rung 41 gate 1's actual body). `i
 `vsv`, in slice M. Recorded in `map.rs`'s field-subset note, which is where a reader looking for the
 field will be.
 
+**(c) THE SMOKE CHECK WAS WIDENED AFTER IT PASSED, AND THAT IS THE POINT.** The first pass printed
+**7 of 11** `FlowTurn` fields, **4 of 13** `SurgeMargin` fields and **0 of 9** `RunningLinePoint`
+fields — 20 uncompared `f64`s behind a clean diff. The failure mode that leaves open is the **SWAP**:
+`x_lp`/`x_hp`, `n_lp`/`n_hp`, `pi_lpc`/`pi_hpc` are same-typed ADJACENT entries in a struct literal,
+and `running_line_map`'s output feeds nothing downstream, so no other number in the port would
+reveal a transposition. `band` has the same property — written once, read by nobody. Re-run on every
+field of all three types: **88 rows, 0 mismatches**, including the four-field `NULL` sentinel on the
+`RAIL` rows. The lesson is `docs`' *oracle cannot see a missing gate* entry applied to a hand-written
+check: **a bit-exact agreement bounds the columns PRINTED, not the fields RETURNED**, and the fields
+most likely to be wrong are exactly the ones nothing downstream reads.
+
+**(d) TWO VACUITY NOTES, REGISTERED SYMMETRICALLY.** § 5.8.1 (iv) already recorded that the argmin's
+ties are unreachable (0 across 118 runs), so the first-wins rule is written to match the source and
+cannot be discriminated by any gate here. The same is true of `binding`: **every one of the 30 swept
+schedule rows came back `lp`**, so neither the `hp` arm nor the `<=` tie rule is exercised. That is
+not a grid deficiency — LP-always-binding IS rung 41's headline — so it is recorded beside the field
+rather than left for a reader to assume the branch was tested.
+
 **What step 2 confirmed unchanged.** P5's 33 refinement calls reproduced on every `MIN` run and 0 on
 every `RAIL` one, with the counter shipped **beside the code** rather than in step 4's gate — adding
-it later would mean touching gated code twice. P9 is carried by the **type**: `FlowTurn` uses
-`Option` for the four fields Python's `RAIL` dict nulls or omits, so writing `0.0` where Python
-writes `None` is unwritable rather than merely gated. The § 5.8.1 (vi) skip census reproduced exactly
-(10 of 13 on CPG/TPG/eq at these shapes).
+it later would mean touching gated code twice. **But the Python arm of P5 is permanently the
+`probe_l3` transcription**, because Python cannot instrument the shipped body's two phases apart
+from outside; the load-bearing leg is the arithmetic (`ceil(ln(1e-5/20)/ln(0.618…)) + 2 = 33`), which
+is interpreter-independent. **So step 4's `dump_slice_l.py` must NOT emit a literal 33** — that would
+make the oracle gate self-confirming, rung 83's *identity round-trip sold as verification* shape.
+Gate the 33 in `rung41.rs` against the arithmetic and keep it out of the value dump. P9 is carried by
+the **type**: `FlowTurn` uses `Option` for the four fields Python's `RAIL` dict nulls or omits, so
+writing `0.0` where Python writes `None` is unwritable rather than merely gated. The § 5.8.1 (vi)
+skip census reproduced exactly (10 of 13 on CPG/TPG/eq at these shapes).
 
 **Two divergences recorded rather than fixed**, both named in the source:
 

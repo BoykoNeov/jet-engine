@@ -1555,6 +1555,13 @@ pub struct SurgeMargin {
     pub sm_lp: f64,
     pub sm_hp: f64,
     /// Whichever margin is smaller. **Ties go to `Lp`** — Python's `"lp" if SM_lp <= SM_hp`.
+    ///
+    /// **Registered with a VACUITY NOTE, like the argmin's first-wins rule.** Every row of every
+    /// swept schedule came back `Lp` (30 rows over three gases), so neither the `Hp` arm nor the
+    /// `<=` tie rule is exercised by any data this rung produces — and that is not a grid
+    /// deficiency, it is the rung's own headline: the LP spool is the exposed one. So the rule is
+    /// written to match the source and recorded as untestable here, rather than left for a reader
+    /// to assume the branch was checked.
     pub binding: Spool,
 }
 
