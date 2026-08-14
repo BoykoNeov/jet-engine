@@ -2316,13 +2316,33 @@ across shapes instead: **`3.65e-6` for `tau_c` against `3.76e-2` for `pi_c`**, a
 the RATIO (measured `1.03e4`, barred at `1e3`) rather than the direction `tau_c < pi_c`, which would
 still pass with the map-freeness entirely gone.
 
-**Three coverage gaps closed after the first green run**, all of the same shape — an instrument that
-looked complete: (i) the oracle's four shapes did not include `a_t = 0.5` or `sigma = 1.0`, the
+**THE ORACLE IS BLIND TO THE SQUARE-SPELLING RULE, AND THAT WAS MEASURED RATHER THAN SUSPECTED.**
+`porting_rules.rs` was checked for whether it covers a new module and the answer is that it reads
+no source at all — it is a BEHAVIOURAL test that the spellings remain distinguishable, so no module
+is inside or outside its coverage. Which raised the real question: does anything gate `map.rs`'s
+spelling? `psi` was mis-spelled `powp(u, 2.0)` on purpose and the 7 252-key bit-equality oracle
+**passed both arms**. The reason is in `porting_rules.rs`'s own printout — `pow(x, 2)` differs from
+`x*x` at **1 point in 4012**, and the oracle sweeps 60 `psi` evaluations, so its power to catch this
+is ~1.5 %. All three squares in the file are now gated DIRECTLY at
+`rung32.rs::the_three_squares_are_multiplies_not_pow_calls`: a 40 000-point grid, the shipped
+function asserted equal to the multiply spelling at every point, plus a vacuity guard that the grid
+can tell the spellings apart at all (it does, at 19/17/22 points). Re-applying the mis-spelling now
+fails it. **The general lesson: "100 % bit-exact" bounds the CELLS the oracle visited, not the RULES
+it can discriminate — and a rule whose two spellings differ once in 4 000 needs its own grid.**
+(The first draft of that gate FAILED against correct code, because it reconstructed `u` as the
+sweep variable rather than as `(1.0 + step) - 1.0`, which does not round-trip.)
+
+**Three further coverage gaps closed after the first green run**, all of the same shape — an
+instrument that looked complete: (i) the oracle's four shapes did not include `a_t = 0.5` or
+`sigma = 1.0`, the
 coefficients rung 32's OWN gates 5 and 6 use, so the count and curvature claims were pinned on a
 band narrower than the gates relying on them; they are now in the standalone sweeps, which cost no
 cycle solve. (ii) A `CELL_Q` name list justified in a comment as keeping three arms in step was
 read only by a `debug_assert_eq!` — compiled out in `--release`, the only profile the gate runs in.
-Deleted. (iii) The Python suite's three easiest-to-drop bars were copied verbatim: gate 4's
+Deleted. (iv) `MapMatcher::match_point` — the no-argument form that reads the constructor's stored
+map — had NO coverage at all, because every gate and the whole oracle pass a map explicitly. The
+rung-33 discharge now goes through it, which is also what the Python's own gate does. (iii) The
+Python suite's three easiest-to-drop bars were copied verbatim: gate 4's
 `dpc > 30*rel` is CONDITIONAL on `Tt4 <= 1100`, gate 6's spread bar is TWO-SIDED (`< 0.05` **and**
 `> 1e-4`, and the lower half is what stops the robustness claim being a tautology about a quantity
 that never moved), and gate 1's specific-thrust bar is ABSOLUTE where its neighbours are relative.

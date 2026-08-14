@@ -263,6 +263,87 @@ fn gate7_direction_and_convergence() {
 }
 
 // ============================================================================================
+// THE SPELLING OF THE THREE SQUARES — gated directly, because the ORACLE CANNOT SEE IT
+// ============================================================================================
+
+/// `psi`, `eta_c_at` and `eta_t_at` must spell their squares as MULTIPLIES, not as `powp(_, 2)`.
+///
+/// **This test exists because the sensitivity was measured and came out at essentially zero.**
+/// `map.rs`'s `psi` was deliberately mis-spelled as `powp(u, 2.0)` and `map_oracle.rs` — 7 252
+/// keys, held to bit-equality — **still passed both arms**. The reason is in `porting_rules.rs`'s
+/// own printout: libm `pow(x, 2)` differs from `x*x` at **1 point in 4012**, so the oracle's
+/// 60-evaluation `psi` sweep has ~1.5 % power to catch it. A gate that passes when the code is
+/// wrong is not a gate, and "100 % bit-exact" says nothing about a defect the grid never reached.
+///
+/// So the spelling is gated the way `porting_rules.rs` gates the rule itself: on a grid dense
+/// enough that the two spellings are DISTINGUISHABLE, assert the shipped function tracks the
+/// multiply everywhere and the alternative somewhere-not. Both halves are load-bearing — without
+/// the second, the test would pass vacuously the day `pow` and multiply stop differing at all.
+///
+/// It matters more here than the count suggests: PyPy's JIT rewrites `x ** 2` to a multiply and
+/// does NOT rewrite higher powers, so reproducing PyPy means multiplying the square. A `powp`
+/// here would be one bit in a coefficient that a safeguarded outer secant then amplifies into
+/// something that reads as a solver artefact.
+#[test]
+fn the_three_squares_are_multiplies_not_pow_calls() {
+    use turbojet::gas::powp;
+    // The same geometric shape `porting_rules.rs` uses, run 10x longer so the discrimination
+    // count is a handful rather than a coin flip.
+    let mut us: Vec<f64> = Vec::with_capacity(40_000);
+    let mut x = 1.0000000001f64;
+    for _ in 0..40_000 {
+        us.push(x);
+        x *= 1.00017;
+    }
+    let sigma = 0.3;
+    let (mut psi_differs, mut eta_c_differs, mut eta_t_differs) = (0usize, 0usize, 0usize);
+    let cmap = ComponentMap { a: 0.25, b: 0.05, c: 0.08, sigma, a_t: 0.5 };
+    for &step in &us {
+        let phi = 1.0 + step;
+        // `(1.0 + step) - 1.0` does NOT round-trip to `step`, so the reconstruction below must
+        // recompute `u` exactly as the shipped functions do. Getting this wrong makes the test
+        // fail against CORRECT code — it did, on the first run.
+        let u = phi - 1.0;
+        // psi
+        let shipped = cmap.psi(phi);
+        let as_multiply = 1.0 - sigma * (u * u);
+        let as_pow = 1.0 - sigma * powp(u, 2.0);
+        assert_eq!(shipped.to_bits(), as_multiply.to_bits(),
+                   "psi({phi}) is not the MULTIPLY spelling");
+        if as_multiply.to_bits() != as_pow.to_bits() {
+            psi_differs += 1;
+        }
+        // eta_c_at — two squares and a cross term, at n = phi so both squares are exercised
+        let shipped = cmap.eta_c_at(0.88, phi, phi);
+        let as_multiply = 0.88 - 0.25 * (u * u) - 0.05 * (u * u) - 0.08 * u * u;
+        let as_pow = 0.88 - 0.25 * powp(u, 2.0) - 0.05 * powp(u, 2.0) - 0.08 * u * u;
+        assert_eq!(shipped.to_bits(), as_multiply.to_bits(),
+                   "eta_c_at({phi}) is not the MULTIPLY spelling");
+        if as_multiply.to_bits() != as_pow.to_bits() {
+            eta_c_differs += 1;
+        }
+        // eta_t_at
+        let shipped = cmap.eta_t_at(0.90, phi);
+        let as_multiply = 0.90 - 0.5 * (u * u);
+        let as_pow = 0.90 - 0.5 * powp(u, 2.0);
+        assert_eq!(shipped.to_bits(), as_multiply.to_bits(),
+                   "eta_t_at({phi}) is not the MULTIPLY spelling");
+        if as_multiply.to_bits() != as_pow.to_bits() {
+            eta_t_differs += 1;
+        }
+    }
+    println!("over {} points the two spellings differ: psi {psi_differs}, \
+              eta_c_at {eta_c_differs}, eta_t_at {eta_t_differs}", us.len());
+    // THE VACUITY GUARD. If the grid cannot tell the spellings apart, the assertions above
+    // proved nothing — they would hold for the wrong code too, which is exactly what happened
+    // to the 7 252-key oracle.
+    assert!(psi_differs > 0 && eta_c_differs > 0 && eta_t_differs > 0,
+            "the grid could not DISTINGUISH the two spellings anywhere (psi {psi_differs}, \
+             eta_c {eta_c_differs}, eta_t {eta_t_differs}), so this test is vacuous — widen it \
+             before trusting it");
+}
+
+// ============================================================================================
 // THE SLICE-I IOU, DISCHARGED
 // ============================================================================================
 
@@ -280,7 +361,12 @@ fn gate7_direction_and_convergence() {
 #[test]
 fn rung33_gate7_second_half_map_does_not_inherit_subsonic() {
     let mm = map_matcher(Gas::reacting_equilibrium());
-    let deep = mm.match_with(&flight(), 560.0, &ComponentMap::flat());
+    // `match_point`, NOT `match_with` — the Python calls `mm.match(FLIGHT, 560.0)` with no map
+    // argument, so it exercises the CONSTRUCTOR DEFAULT. Every other gate here and the whole
+    // oracle pass a map explicitly, which means this one call is the only thing in the crate
+    // that reaches `self.comp_map` at all; spelled `match_with` it would test the same VALUE
+    // down a different path and a forwarding slip would go unseen.
+    let deep = mm.match_point(&flight(), 560.0);
     assert!(!deep.base.nozzle_choked, "560 K is below the unchoke boundary");
     assert_eq!(deep.base.branch, Branch::Choked,
                "rung 32 must NOT re-solve on rung 33's branch — it never sets the label at all");

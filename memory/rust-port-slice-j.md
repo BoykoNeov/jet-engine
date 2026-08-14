@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: cd5969d1-a53f-40aa-b7d9-921d25427fef
-  modified: 2026-08-14T07:39:45.795Z
+  modified: 2026-08-14T07:54:23.400Z
 ---
 
 Phase 5 slice J of the Rust port (rung 32, `ComponentMap` + `MapMatcher`) shipped 2026-08-14,
@@ -50,6 +50,21 @@ probe never sampled. Exactly [[rust-port-location-keys-refute]], re-learned.
 **5. `debug_assert!` IS COMPILED OUT OF THE PROFILE THE GATE RUNS IN.** A name list justified in a
 comment as keeping three arms in step was read only by a `debug_assert_eq!` under `--release`. It
 guarded nothing — [[rust-port-documented-gate-that-doesnt-exist]] in the file I had just written.
+
+**6. "100 % BIT-EXACT" BOUNDS THE CELLS THE ORACLE VISITED, NOT THE RULES IT CAN DISCRIMINATE.**
+The sharpest one. Asked whether anything actually gates the new module's power-spelling rule, I
+mis-spelled a square on purpose — and the 7 252-key bit-equality oracle **passed both arms**. The
+two spellings differ at 1 point in 4 000 and the oracle swept 60, so its power was ~1.5 %. Fixed
+with a dedicated 40 000-point discrimination gate carrying a vacuity guard; re-applying the
+mis-spelling now fails it. **Deliberately break the code and check the gate notices** — a gate
+never run against a wrong answer is a hypothesis. Note also that the checking test is not a
+coverage list: it reads no source, it only proves the RULE is real, so no module is ever "inside"
+or "outside" it. Extends [[rust-port-oracle-cannot-see-a-missing-gate]] from missing gates to
+present-but-powerless ones, and [[golden-fingerprint-gate]]'s "measure a detector's sensitivity".
+
+**7. A NO-ARGUMENT CONVENIENCE WRAPPER CAN HAVE ZERO COVERAGE** while its parameterised twin has
+total coverage — every gate passed the argument explicitly, so nothing read the stored default.
+Route at least one test through the form the source's own tests use.
 
 **The advisor caught 2, 3-as-coverage, 5, and the ratio-vs-direction half of 1**, on a first-pass
 gate that was already green at 100 %. A green bit-exact gate says nothing about whether the gate

@@ -499,7 +499,11 @@ fn quant_of(key: &str) -> &'static str {
     if key.starts_with("census/")
         || key.ends_with("/abort") || key.ends_with("/branch")
         || key.ends_with("/nozzle_choked") || key.ends_with("/n_outer")
-        || key.ends_with("/r31_ok") || key.ends_with("/r31_branch")
+        // `/ok` covers both `red/…/r31_ok` and the 180 `solven/…/ok` bracket flags. Spelling
+        // only the first left the flags in the `value` class: they still gated (a 1<->0 flip is
+        // a deviation of 1.0, far past any bar), but the printed class table misreported 180
+        // discrete flags as floating-point values.
+        || key.ends_with("/ok") || key.ends_with("/r31_branch")
         || key.ends_with("/all_same") || key.ends_with("_same") || key.ends_with("_n")
     {
         return "discrete";

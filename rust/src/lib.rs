@@ -69,7 +69,8 @@
 //! product for a small integer exponent — and each site says which rule applies, because applying
 //! any one by habit is a silent one-bit defect.
 //!
-//! **Phase 5 — the steady matchers — is under way in [`matcher`]**, in dependency slices:
+//! **Phase 5 — the steady matchers — is under way in [`matcher`] and [`map`]**, in dependency
+//! slices:
 //!
 //! * **I — rungs 31/33 (SHIPPED)**: off-design matching, where the operating point stops being an
 //!   input. Fixed hardware (two throat areas from one design run) pins the turbine by geometry
@@ -80,12 +81,14 @@
 //!   map for the *work*, but not for the pressure ratio, the mass flow or the shaft speed — so
 //!   rung 32 hangs an analytic efficiency island and a family of speed lines off the same solve,
 //!   making `eta_c` and `eta_t` OUTPUTS of an outer secant around slice I's inner loop and
-//!   attaching `N` by inverting a speed line. 7252/7252 bit-exact. It is the port's first
-//!   THREE-DEEP nest of solves, and the outer one turns out to be the STABLE one: slice I's
-//!   7↔200 inner-pass flip reaches 5 of 144 cells and the outer secant count NONE of them.
-//!   It also had to change the currency of the rung's own headline — a count of distinct bit
-//!   patterns says `tau_c` moves with the map in every cell, because the fixed point carries its
-//!   history in the last bits; map-freeness is a MAGNITUDE claim (four orders), not an exact one.
+//!   attaching `N` by inverting a speed line. 7252/7252 bit-exact. **It found the SECOND live
+//!   site of point 2's hook below** — `MapMatcher::operating_point` calls `solve_turbine`, and
+//!   phase 6's rung 34 subclasses `MapMatcher` overriding that method and neither of the two
+//!   that call it — a site the phase-5 census structurally could not name, because it enumerated
+//!   method triples rather than call sites inside a class that did not yet exist in Rust. It is
+//!   also the port's first THREE-DEEP nest of solves, and the outer one turns out to be the
+//!   STABLE one: slice I's 7↔200 inner-pass flip reaches 5 of 144 cells and the outer secant
+//!   count NONE of them.
 //!
 //! Slice I is where the port first had to do three things it had never done, and each one left a
 //! mark on the crate rather than only on the module:

@@ -26,7 +26,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL, regenerate via extract_data.py + build.py
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy leaves `open().write()` unflushed, PowerShell Get/Set-Content double-encodes UTF-8; both fail SILENTLY
 
-## The Rust port — decided 2026-08-12; PHASES 0–4 DONE; **PHASE 5 AUTHORISED and under way — slices I (31/33) and J (32) shipped**; 425 Rust tests
+## The Rust port — decided 2026-08-12; PHASES 0–4 DONE; **PHASE 5 AUTHORISED and under way — slices I (31/33) and J (32) shipped**; 426 Rust tests
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; slices are free inside an authorised phase, **phase 5 needs fresh authorisation**
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost by COMPILING and returning a silently different number
 - [Rust arithmetic IS PyPy](rust-port-arithmetic-is-pypy.md) — 100% bit-exact vs PyPy on gas AND cycle; size a solver claim by DISTINCT ROOTS, not row count
@@ -42,7 +42,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Guessed census bars](rust-port-guessed-census-bars.md) — five typed count bars, five wrong, four hiding real physics; measure counts, prefer per-arm, DROP a coincidence bar
 - [Phase 5 pre-flight](rust-port-phase5-preflight.md) — the NAMED risk was the easy edge; a "closed set" claim is only as wide as the set you swept, and the 2nd widening crossed a phase boundary
 - [Slice I: rungs 31/33](rust-port-slice-i.md) — a bare `except` makes the question REACHABILITY, not which sites you listed; and a count without its grid is not a measurement
-- [Slice J: rung 32](rust-port-slice-j.md) — the port's habitual currency was a perfect NON-discriminator; and a qualifier with no assertion behind it is free
+- [Slice J: rung 32](rust-port-slice-j.md) — a 7252-key BIT-EXACT oracle passed a deliberately mis-spelled square: exactness bounds the CELLS visited, not the RULES discriminated
 
 ## Shipped rungs
 

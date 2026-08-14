@@ -48,7 +48,9 @@
 //! dispatch to `OffDesignMatcher.match`, which rung 32 overrides. Below the unchoke boundary a
 //! rung-32 point therefore comes back carrying `nozzle_choked = false` **and**
 //! `branch = Choked`: a label its own flag contradicts. That is not tidied here. It is rung 33's
-//! gate 7 second half, and it is asserted in `rung33.rs::slice_j_deferrals`.
+//! gate 7 second half, asserted in
+//! `rung32.rs::rung33_gate7_second_half_map_does_not_inherit_subsonic` (which discharges the IOU
+//! `rung33.rs::slice_j_deferrals` wrote down when slice I shipped).
 //!
 //! # The field subset, and why it is not an approximation
 //!
@@ -177,6 +179,13 @@ impl ComponentMap {
     /// constant-folded to a multiply by CPython's peephole optimiser and by PyPy's JIT alike,
     /// and `tests/porting_rules.rs` holds the split. A `powp(x, 2.0)` here would be a different
     /// number in the last bit.
+    ///
+    /// **AND THE ORACLE CANNOT SEE THAT — MEASURED, NOT ASSUMED.** This function was mis-spelled
+    /// as `powp(u, 2.0)` on purpose and `map_oracle.rs`, 7 252 keys held to bit-equality, passed
+    /// both arms. `pow(x, 2)` and `x*x` differ at only 1 point in 4012, and the oracle sweeps 60
+    /// `psi` evaluations. The spelling of all three squares in this file is therefore gated
+    /// DIRECTLY, on a 40 000-point grid with a vacuity guard, at
+    /// `rung32.rs::the_three_squares_are_multiplies_not_pow_calls`.
     pub fn psi(&self, phi: f64) -> f64 {
         PSI_CALLS.with(|c| c.set(c.get() + 1));
         let u = phi - 1.0;
