@@ -3291,13 +3291,25 @@ VERDICT.** `grep except` over the two rungs' 585 lines returns **one** hit: rung
 wraps `at_setting(v,·).throat_margin(…)` in `except AssertionError: break`. Reproduced line for
 line with the innermost raising frame recorded:
 
-| cells | how the walk ends | innermost raising frame |
-|-------|-------------------|-------------------------|
-| **80 of 80** | broke on `AssertionError` | **`ComponentMap.solve_n`, the speed-line bracket — every single one** |
-| 0 | ran to `_V_MAX` | — |
+| gas arm | cells | how the walk ends | innermost raising frame |
+|---------|-------|-------------------|-------------------------|
+| CPG + TPG | **80 of 80** | broke on `AssertionError` | **`ComponentMap.solve_n`, the speed-line bracket — every single one** |
+| **equilibrium** | **20 of 20** | broke on `AssertionError` | **`solve_n`, again — every single one** |
+| either | 0 | ran to `_V_MAX` | — |
 
-Cross-tabbed by the spool being swept, the split is **40 / 40 with NO crossover**: sweeping the
-LP stator kills `_lp_eta_loop`'s `solve_n`, sweeping the HP kills `_hp_eta_loop`'s. That is not
+Cross-tabbed by the spool being swept, the split is **40 / 40** on the first arm and **10 / 10**
+on the second, **with NO crossover in either**: sweeping the LP stator kills `_lp_eta_loop`'s
+`solve_n`, sweeping the HP kills `_hp_eta_loop`'s.
+
+**THE EQUILIBRIUM ARM IS NOT A FORMALITY, AND IT WAS RUN BECAUSE THE FIRST GRID COULD NOT BACK
+THE CLAIM.** `_scan`'s caught chain also contains `_equil_solve`'s Newton and `_solve_f`'s
+burner, and slice L's own table records those two firing **14** and **3** times inside a caught
+scope on ITS grid. Had either been the innermost frame here, **two more call sites would need
+fallible twins** — a TYPE SIGNATURE, discovered only after `stator.rs` had been written against a
+two-site shape. Neither appears: **100 cells, 100 `solve_n`, 50/50 by spool.** This is § 5.8.1
+(i)'s discipline reused — that probe was re-run on shaped maps for exactly the same reason, and
+the rule is *a bar measured on a narrower grid than the dump sweeps is a bar over unmeasured
+cells.* That is not
 plumbing — it is the lever unloading its own speed line until the map stops being valid, which is
 what `_scan`'s docstring calls "the SOLVE itself gives out".
 
@@ -3403,9 +3415,9 @@ bit-exact dump says nothing about coverage.
 
 #### The predictions
 
-* **P1 — THE CAUGHT SCOPE REACHES `solve_n` AND NOTHING ELSE, PER CALL SITE.** 80 of 80 cells
-  abort, the innermost frame is `solve_n`'s bracket every time, and the firing loop tracks the
-  swept spool 40/40 with no crossover. The two rung-39 sites get `try_` twins; rung 32's and rung
+* **P1 — THE CAUGHT SCOPE REACHES `solve_n` AND NOTHING ELSE, PER CALL SITE, ON ALL THREE GASES.**
+  **100 of 100 cells** abort (80 CPG+TPG + 20 equilibrium), the innermost frame is `solve_n`'s
+  bracket every time, and the firing loop tracks the swept spool **50/50** with no crossover. The two rung-39 sites get `try_` twins; rung 32's and rung
   42's keep `assert!`. *Refuted by:* any cell whose innermost frame is not `solve_n`, any
   crossover between swept spool and firing loop, or any walk that reaches `_V_MAX`.
 * **P2 — THE REFACTOR AND THE TWO NEW MAP FIELDS MOVE NO SHIPPED BIT.** Three changes to
@@ -3483,9 +3495,15 @@ P6's 16-vs-19 discriminant, which is the only instrument that can see the capaci
 
 **Sizing.** The `_scan` walk is the cost trap: 80 cells × 29–84 settings × a full two-spool match
 each, measured at **17.5 s** for the abort census and **71.7 s** for the three-capacity `binds`
-sweep on CPG+TPG. The equilibrium gas multiplies that and its inclusion in the dump is decided by
-a running measurement, not assumed. Rung 53's ladder and rung 54's root are cheap by comparison
-(8.7 s and 24.9 s over the same 80 cells).
+sweep on CPG+TPG. Rung 53's ladder and rung 54's root are cheap by comparison (8.7 s and 24.9 s
+over the same 80 cells).
+
+**The equilibrium gas is the cost, and it is now measured rather than guessed: 887 s for 20
+cells, ≈ 44 s per `_scan`** — about 200× the CPG/TPG cell. A full 40-cell equilibrium arm is
+therefore ≈ 30 min, and the first attempt at this measurement **was killed at a 15-minute cap
+with its output still buffered, having recorded nothing** — so the re-run prints per cell,
+unbuffered. Two consequences for the dump: the equilibrium arm is sampled at 2 throttles rather
+than 4, and any `_scan`-driven dump column states its own grid.
 
 ---
 
