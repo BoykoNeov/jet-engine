@@ -281,6 +281,7 @@ pub fn build_two_spool_turbojet(
 /// In Rust the separation is stronger than "not a subclass": `Engine::run`'s shaft step reads
 /// stations "3" and "2" by name off its own table, so a two-spool component list handed to it
 /// would close the WRONG shaft rather than fail. The type keeps that from being expressible.
+#[derive(Clone)]
 pub struct TwoSpoolEngine {
     pub gas: Gas,
     pub components: Vec<(&'static str, Component)>,

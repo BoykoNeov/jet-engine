@@ -99,6 +99,11 @@ impl EngineResult {
 /// turbine's required enthalpy drop from the compressor/inlet states it already holds and
 /// passes it in. Performance scoring uses the resulting station table plus the freestream/exit
 /// velocities and the exit pressure.
+///
+/// `Clone` because rung 53's `at_setting` REBUILDS a sibling matcher from the design engine, as
+/// Python's does — see [`crate::stator::VariableStatorCore::at_setting`]. Nothing here is
+/// mutated, so a clone is a deep copy of read-only design data.
+#[derive(Clone)]
 pub struct Engine {
     pub gas: Gas,
     /// Ordered `(station_label, component)` pairs.
