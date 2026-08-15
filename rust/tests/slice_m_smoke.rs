@@ -10,7 +10,10 @@
 //! is what exercises `psi`'s new term), `stator_sweep`, `currency_split`, `throttle_currency`
 //! and `incidence_schedule` at the SHIPPED default cap — and `currency_split` twice, the second
 //! time on a MOVED matcher, because at `v = 0` it cannot discriminate the sibling constructor it
-//! is supposed to be pinning.
+//! is supposed to be pinning. Rung 54 adds five more, and BOTH field-set splits are exercised
+//! on BOTH branches — the missing ones were located by PROBE (a `steep`-shaped arm), because the
+//! first grid left the parabolic peak refinement, the schedule's `found: None` and
+//! `v_ch: None`-with-a-throat-model entirely unmeasured.
 //!
 //! Regenerate with:
 //!     .venv\Scripts\python.exe M:\claud_projects\temp\slice_m\smoke53.py > <this tsv>
@@ -19,7 +22,7 @@ use std::collections::HashMap;
 use turbojet::engine::FlightCondition;
 use turbojet::gas::{Gas, GasSpec};
 use turbojet::map::ComponentMap;
-use turbojet::stator::VariableStatorCore;
+use turbojet::stator::{Binds, VariableStatorCore};
 use turbojet::two_spool::{build_two_spool_turbojet, Spool, TwoSpoolLosses};
 
 const ORACLE: &str = include_str!("../oracle/slice_m_smoke_pypy.tsv");
@@ -104,7 +107,7 @@ fn vm(vl: f64, vh: f64) -> VariableStatorCore {
 }
 
 #[test]
-fn rung53_readings_match_pypy_bit_for_bit() {
+fn rung53_and_rung54_readings_match_pypy_bit_for_bit() {
     let want = load();
     let mut seen = 0usize;
     let mut check = |key: String, got: f64| {
@@ -218,8 +221,173 @@ fn rung53_readings_match_pypy_bit_for_bit() {
         check(format!("{p}/n"), row.n);
     }
 
+
+    // =====================================================================================
+    // RUNG 54 — five more methods, and BOTH field-set splits exercised on BOTH branches.
+    // =====================================================================================
+    let cap = 0.80;
+    let vmc = |vl: f64, vh: f64| -> VariableStatorCore {
+        let d = build_two_spool_turbojet(cpg_gas(), PI_LPC, PI_HPC, TT4, 50_000.0, real());
+        VariableStatorCore::new(d, flight(), 1.0, lp_map().with_capacity(cap),
+                                hp_map().with_capacity(cap), vl, vh)
+    };
+    let binds_code = |b: Binds| match b {
+        Binds::Throat => 0.0,
+        Binds::Peak => 1.0,
+        Binds::Edge => 2.0,
+    };
+
+    // 6. throat_margin on BOTH branches of the capacity split — 16 keys vs 19.
+    for (tag, m) in [("noC", vm(0.10, 0.0)), ("C80", vmc(0.10, 0.0))] {
+        let r = m.throat_margin(&flight(), 1200.0);
+        for (sname, spool) in [("lp", Spool::Lp), ("hp", Spool::Hp)] {
+            let t = r.spool(spool).throat.expect("throat_margin always fills the extension");
+            let p = format!("throat/{tag}/{sname}");
+            check(format!("{p}/area"), t.area);
+            check(format!("{p}/throat_loading"), t.throat_loading);
+            check(format!("{p}/c_min"), t.c_min);
+            check(format!("{p}/capacity"), t.capacity);
+            check(format!("{p}/has_choke"), if t.choke.is_some() { 1.0 } else { 0.0 });
+            if let Some(k) = t.choke {
+                check(format!("{p}/m_c"), k.m_c);
+                check(format!("{p}/choked"), if k.choked { 1.0 } else { 0.0 });
+                check(format!("{p}/throat_mach_design"), k.throat_mach_design);
+            }
+        }
+    }
+
+    // 7. throat_sweep — two-sided; `area` is EXACTLY even in v, so an asymmetry there would be
+    //    a spelling error and not physics.
+    for row in vmc(0.0, 0.0).throat_sweep(&flight(), 1200.0, &[-0.10, 0.0, 0.10], Spool::Lp) {
+        let v = format!("{:+.2}", row.vsv);
+        let t = row.throat.expect("throat_sweep rows carry the extension");
+        check(format!("tsweep/{v}/area"), t.area);
+        check(format!("tsweep/{v}/throat_loading"), t.throat_loading);
+        check(format!("tsweep/{v}/m_c"), t.choke.expect("C > 0 here").m_c);
+    }
+
+    // 8. scan — the walk that ends on `solve_n`'s bracket. Its LENGTH is the instrument for
+    //    `V_MAX` being dead: 48 and 38 settings against a ceiling of 8.0/0.04 = 201.
+    for (sname, spool) in [("lp", Spool::Lp), ("hp", Spool::Hp)] {
+        let rows = vmc(0.0, 0.0).scan(&flight(), 1200.0, spool, None, None);
+        let last = rows[rows.len() - 1];
+        check(format!("scan/{sname}/n"), rows.len() as f64);
+        check(format!("scan/{sname}/v_edge"), last.vsv);
+        check(format!("scan/{sname}/m_i_0"), rows[0].m_i);
+        check(format!("scan/{sname}/m_i_edge"), last.m_i);
+        check(format!("scan/{sname}/x_edge"),
+              last.throat.expect("scan rows carry the extension").throat_loading);
+    }
+
+    // 9. authority_ceiling at THREE capacities including C = 0, which is the branch that
+    //    returns `v_ch: None` and `m_i_at_throat: None`.
+    for c in [0.0f64, 0.80, 0.90] {
+        for (sname, spool) in [("lp", Spool::Lp), ("hp", Spool::Hp)] {
+            let a = vmc(0.0, 0.0).authority_ceiling(&flight(), 1200.0, spool, Some(c));
+            let p = format!("ceil/{c:.2}/{sname}");
+            check(format!("{p}/capacity"), a.capacity);
+            check(format!("{p}/v_edge"), a.v_edge);
+            check(format!("{p}/x_edge"), a.x_edge);
+            check(format!("{p}/c_edge"), a.c_edge);
+            check(format!("{p}/v_peak"), a.v_peak);
+            check(format!("{p}/m_i_peak"), a.m_i_peak);
+            check(format!("{p}/m_i_0"), a.m_i_0);
+            check(format!("{p}/m_i_edge"), a.m_i_edge);
+            check(format!("{p}/m_i_usable"), a.m_i_usable);
+            check(format!("{p}/retained"), a.retained);
+            check(format!("{p}/setting_cut"), a.setting_cut);
+            check(format!("{p}/binds"), binds_code(a.binds));
+            check(format!("{p}/peak_interior"), if a.peak_interior { 1.0 } else { 0.0 });
+            check(format!("{p}/n_scan"), a.n_scan as f64);
+            check(format!("{p}/throat_before_edge"),
+                  if a.throat_before_edge { 1.0 } else { 0.0 });
+            // THE SPLIT A FLOAT DUMP CANNOT SEE. The presence column is checked FIRST and the
+            // value only when present, so a Rust `Some(0.0)` where Python has `None` fails on
+            // the flag rather than passing on a coincidence.
+            check(format!("{p}/has_v_ch"), if a.v_ch.is_some() { 1.0 } else { 0.0 });
+            if let Some(v) = a.v_ch {
+                check(format!("{p}/v_ch"), v);
+            }
+            check(format!("{p}/has_m_i_at_throat"),
+                  if a.m_i_at_throat.is_some() { 1.0 } else { 0.0 });
+            if let Some(v) = a.m_i_at_throat {
+                check(format!("{p}/m_i_at_throat"), v);
+            }
+        }
+    }
+
+    // 10. schedule_throat — THE RACE.
+    for row in vmc(0.0, 0.0).schedule_throat(&flight(), &[1400.0, 1200.0, 1000.0], Spool::Lp) {
+        let p = format!("sthroat/{:.0}", row.tt4);
+        check(format!("{p}/exists"), if row.exists { 1.0 } else { 0.0 });
+        check(format!("{p}/tan_b1_min"), row.tan_b1_min);
+        check(format!("{p}/tan_b1_design"), row.tan_b1_design);
+        check(format!("{p}/v_edge"), row.v_edge);
+        if let Some(fd) = row.found {
+            check(format!("{p}/vsv_star"), fd.vsv_star);
+            check(format!("{p}/tan_b1"), fd.tan_b1);
+            check(format!("{p}/m"), fd.m);
+            check(format!("{p}/phi_op"), fd.phi_op);
+            check(format!("{p}/n"), fd.n);
+            check(format!("{p}/m_i"), fd.m_i);
+            check(format!("{p}/m_phi"), fd.m_phi);
+            check(format!("{p}/throat_loading"), fd.throat_loading);
+            check(format!("{p}/c_min"), fd.c_min);
+            let k = fd.choke.expect("C > 0 here");
+            check(format!("{p}/m_c"), k.m_c);
+            check(format!("{p}/feasible"), if k.feasible { 1.0 } else { 0.0 });
+        }
+    }
+
+    // 11. THE STEEP SHAPE — the three branches sections 9-10 never reach, located by PROBE
+    //     rather than by guess: the parabolic peak refinement (`peak_interior`), the schedule's
+    //     `found: None`, and `v_ch: None` WITH a throat model (the walk never crosses 1/C).
+    let steep = ComponentMap { a: 0.25, b: 0.12, sigma: 0.3, l: 1.2, ..ComponentMap::flat() }
+        .with_phi_surge(FLOOR).with_capacity(cap);
+    let vsteep = || -> VariableStatorCore {
+        let d = build_two_spool_turbojet(cpg_gas(), PI_LPC, PI_HPC, TT4, 50_000.0, real());
+        VariableStatorCore::new(d, flight(), 1.0, steep, steep, 0.0, 0.0)
+    };
+    for (sname, spool, t) in [("lp", Spool::Lp, 1200.0f64), ("lp", Spool::Lp, 1000.0),
+                              ("hp", Spool::Hp, 1200.0)] {
+        let a = vsteep().authority_ceiling(&flight(), t, spool, None);
+        let p = format!("steep/{sname}/{t:.0}");
+        check(format!("{p}/v_edge"), a.v_edge);
+        check(format!("{p}/v_peak"), a.v_peak);
+        check(format!("{p}/m_i_peak"), a.m_i_peak);
+        check(format!("{p}/m_i_0"), a.m_i_0);
+        check(format!("{p}/m_i_usable"), a.m_i_usable);
+        check(format!("{p}/retained"), a.retained);
+        check(format!("{p}/setting_cut"), a.setting_cut);
+        check(format!("{p}/binds"), binds_code(a.binds));
+        check(format!("{p}/peak_interior"), if a.peak_interior { 1.0 } else { 0.0 });
+        check(format!("{p}/n_scan"), a.n_scan as f64);
+        check(format!("{p}/has_v_ch"), if a.v_ch.is_some() { 1.0 } else { 0.0 });
+        if let Some(v) = a.v_ch {
+            check(format!("{p}/v_ch"), v);
+        }
+        check(format!("{p}/has_m_i_at_throat"),
+              if a.m_i_at_throat.is_some() { 1.0 } else { 0.0 });
+        if let Some(v) = a.m_i_at_throat {
+            check(format!("{p}/m_i_at_throat"), v);
+        }
+    }
+    for row in vsteep().schedule_throat(&flight(), &[1200.0, 1000.0], Spool::Lp) {
+        let p = format!("steepsched/{:.0}", row.tt4);
+        check(format!("{p}/exists"), if row.exists { 1.0 } else { 0.0 });
+        check(format!("{p}/tan_b1_min"), row.tan_b1_min);
+        check(format!("{p}/tan_b1_design"), row.tan_b1_design);
+        check(format!("{p}/v_edge"), row.v_edge);
+        if let Some(fd) = row.found {
+            check(format!("{p}/vsv_star"), fd.vsv_star);
+            check(format!("{p}/throat_loading"), fd.throat_loading);
+            check(format!("{p}/c_min"), fd.c_min);
+            check(format!("{p}/m_c"), fd.choke.expect("C > 0 here").m_c);
+        }
+    }
+
     // The count guard: a `check` closure that silently stopped being called would leave every
     // assertion above vacuously satisfied. 153 is what the Python side reports it dumped.
     assert_eq!(seen, want.len(), "smoke check read {seen} keys of the dump's {}", want.len());
-    assert_eq!(seen, 169, "the smoke grid changed size — re-derive the dump, do not edit this");
+    assert_eq!(seen, 421, "the smoke grid changed size — re-derive the dump, do not edit this");
 }

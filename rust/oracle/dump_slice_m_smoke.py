@@ -95,6 +95,126 @@ for row in vm().incidence_schedule(FLIGHT, [1400.0, 1200.0], spool="lp"):
                 "n"):
         put(f"sched/{t:.0f}/{key}", row[key])
 
+
+# =========================================================================================
+# RUNG 54 — the throat. Five methods again, and the two field-set splits BOTH exercised.
+# =========================================================================================
+
+CAP = 0.80
+
+def vmc(vl=0.0, vh=0.0, cap=CAP):
+    """A matcher whose maps carry a THROAT MODEL, built the same capture-then-move way."""
+    return VariableStatorMatcher(design(gas()), FLIGHT, 1.0,
+                                 map_lp=LP.with_capacity(cap), map_hp=HP.with_capacity(cap),
+                                 vsv_lp=vl, vsv_hp=vh)
+
+
+# --- 6. throat_margin on BOTH branches of the capacity split (16 keys vs 19) --------------
+for tag, m in (("noC", vm(0.10, 0.0)), ("C80", vmc(0.10, 0.0))):
+    r = m.throat_margin(FLIGHT, 1200.0)
+    for spool in ("lp", "hp"):
+        row = r[spool]
+        for key in ("area", "throat_loading", "c_min", "capacity"):
+            put(f"throat/{tag}/{spool}/{key}", row[key])
+        put(f"throat/{tag}/{spool}/has_choke", 1.0 if "m_c" in row else 0.0)
+        if "m_c" in row:
+            put(f"throat/{tag}/{spool}/m_c", row["m_c"])
+            put(f"throat/{tag}/{spool}/choked", 1.0 if row["choked"] else 0.0)
+            put(f"throat/{tag}/{spool}/throat_mach_design", row["throat_mach_design"])
+
+# --- 7. throat_sweep — two-sided, and EVEN in v on the geometric channel -------------------
+for row in vmc().throat_sweep(FLIGHT, 1200.0, [-0.10, 0.0, 0.10], spool="lp"):
+    v = row["vsv"]
+    put(f"tsweep/{v:+.2f}/area", row["area"])
+    put(f"tsweep/{v:+.2f}/throat_loading", row["throat_loading"])
+    put(f"tsweep/{v:+.2f}/m_c", row["m_c"])
+
+# --- 8. _scan — the walk that ends on solve_n's bracket; its LENGTH is the V_MAX instrument
+for spool in ("lp", "hp"):
+    rows = vmc()._scan(FLIGHT, 1200.0, spool)
+    put(f"scan/{spool}/n", float(len(rows)))
+    put(f"scan/{spool}/v_edge", rows[-1]["vsv"])
+    put(f"scan/{spool}/m_i_0", rows[0]["m_i"])
+    put(f"scan/{spool}/m_i_edge", rows[-1]["m_i"])
+    put(f"scan/{spool}/x_edge", rows[-1]["throat_loading"])
+
+# --- 9. authority_ceiling — the headline object, at THREE capacities incl. C=0 -------------
+_BINDS = {"throat": 0.0, "peak": 1.0, "edge": 2.0}
+for cap in (0.0, 0.80, 0.90):
+    for spool in ("lp", "hp"):
+        a = vmc().authority_ceiling(FLIGHT, 1200.0, spool=spool, capacity=cap)
+        p = f"ceil/{cap:.2f}/{spool}"
+        for key in ("capacity", "v_edge", "x_edge", "c_edge", "v_peak", "m_i_peak",
+                    "m_i_0", "m_i_edge", "m_i_usable", "retained", "setting_cut"):
+            put(f"{p}/{key}", a[key])
+        put(f"{p}/binds", _BINDS[a["binds"]])
+        put(f"{p}/peak_interior", 1.0 if a["peak_interior"] else 0.0)
+        put(f"{p}/n_scan", float(a["n_scan"]))
+        put(f"{p}/throat_before_edge", 1.0 if a["throat_before_edge"] else 0.0)
+        # THE SPLIT a float dump cannot see: v_ch and m_i_at_throat are None on one branch.
+        put(f"{p}/has_v_ch", 1.0 if a["v_ch"] is not None else 0.0)
+        if a["v_ch"] is not None:
+            put(f"{p}/v_ch", a["v_ch"])
+        put(f"{p}/has_m_i_at_throat", 1.0 if a["m_i_at_throat"] is not None else 0.0)
+        if a["m_i_at_throat"] is not None:
+            put(f"{p}/m_i_at_throat", a["m_i_at_throat"])
+
+# --- 10. schedule_throat — THE RACE, and the exists split ----------------------------------
+for row in vmc().schedule_throat(FLIGHT, [1400.0, 1200.0, 1000.0], spool="lp"):
+    t = row["Tt4"]
+    p = f"sthroat/{t:.0f}"
+    put(f"{p}/exists", 1.0 if row["exists"] else 0.0)
+    put(f"{p}/tan_b1_min", row["tan_b1_min"])
+    put(f"{p}/tan_b1_design", row["tan_b1_design"])
+    put(f"{p}/v_edge", row["v_edge"])
+    if row["exists"]:
+        for key in ("vsv_star", "tan_b1", "m", "phi_op", "n", "m_i", "m_phi",
+                    "throat_loading", "c_min", "m_c"):
+            put(f"{p}/{key}", row[key])
+        put(f"{p}/feasible", 1.0 if row["feasible"] else 0.0)
+
+
+# --- 11. THE STEEP SHAPE — the three branches the LP/HP pair above never reaches ----------
+# Probed, not guessed: on the default maps `peak_interior` is False, every schedule EXISTS and
+# `v_ch` is present at C>0, so sections 9-10 leave the parabolic refinement, the `found: None`
+# branch and the `v_ch: None`-WITH-a-throat-model branch entirely unmeasured. `steep` reaches
+# all three -- LP at 1000/800 has no schedule, HP at 1200 never crosses 1/C.
+STEEP = ComponentMap(a=0.25, b=0.12, sigma=0.3, l=1.2).with_phi_surge(FLOOR)
+
+
+def vsteep(cap=CAP):
+    return VariableStatorMatcher(design(gas()), FLIGHT, 1.0,
+                                 map_lp=STEEP.with_capacity(cap),
+                                 map_hp=STEEP.with_capacity(cap))
+
+
+for spool, T in (("lp", 1200.0), ("lp", 1000.0), ("hp", 1200.0)):
+    a = vsteep().authority_ceiling(FLIGHT, T, spool=spool)
+    p = f"steep/{spool}/{T:.0f}"
+    for key in ("v_edge", "v_peak", "m_i_peak", "m_i_0", "m_i_usable", "retained",
+                "setting_cut"):
+        put(f"{p}/{key}", a[key])
+    put(f"{p}/binds", _BINDS[a["binds"]])
+    put(f"{p}/peak_interior", 1.0 if a["peak_interior"] else 0.0)
+    put(f"{p}/n_scan", float(a["n_scan"]))
+    put(f"{p}/has_v_ch", 1.0 if a["v_ch"] is not None else 0.0)
+    if a["v_ch"] is not None:
+        put(f"{p}/v_ch", a["v_ch"])
+    put(f"{p}/has_m_i_at_throat", 1.0 if a["m_i_at_throat"] is not None else 0.0)
+    if a["m_i_at_throat"] is not None:
+        put(f"{p}/m_i_at_throat", a["m_i_at_throat"])
+
+for row in vsteep().schedule_throat(FLIGHT, [1200.0, 1000.0], spool="lp"):
+    T = row["Tt4"]
+    p = f"steepsched/{T:.0f}"
+    put(f"{p}/exists", 1.0 if row["exists"] else 0.0)
+    put(f"{p}/tan_b1_min", row["tan_b1_min"])
+    put(f"{p}/tan_b1_design", row["tan_b1_design"])
+    put(f"{p}/v_edge", row["v_edge"])
+    if row["exists"]:
+        for key in ("vsv_star", "throat_loading", "c_min", "m_c"):
+            put(f"{p}/{key}", row[key])
+
 for k, v in out:
     print(f"{k}\t{v.hex()}")
 print(f"# {len(out)} keys", file=sys.stderr)

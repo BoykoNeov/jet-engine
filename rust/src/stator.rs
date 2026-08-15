@@ -719,3 +719,441 @@ impl VariableStatorCore {
         }).collect()
     }
 }
+
+// =========================================================================================
+// RUNG 54 — the stator-row THROAT
+//
+// THE POINT OF ENTRY IS: THERE ISN'T ONE. `v` enters the steady solve through `solve_n` alone
+// (rung 53's P1) and the throat enters NO solver, so `X` is a post-hoc functional of the
+// ALREADY-SOLVED state. An upstream throat therefore cannot change the map from setting to
+// incidence — it can only remove settings from the feasible set. BIND, NEVER RELIEVE. Hence
+// every method below is a pure read, and the reduce is an INVARIANCE OVER `C` (every matched
+// field bit-identical for EVERY capacity), which is stronger than rung 53's identity at one
+// setting.
+// =========================================================================================
+
+/// Which of the three ceilings stops the stator first.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Binds {
+    /// The THROAT — physics: `C*X(v) = 1`. Needs the throat model.
+    Throat,
+    /// The INCIDENCE PEAK — aerodynamics, zero constants.
+    Peak,
+    /// The BRACKET — rung 53's admitted map-validity ARTIFACT.
+    Edge,
+}
+
+/// RUNG 54's headline object: which ceiling binds, and what it costs IN THE CURRENCY rather
+/// than in the coordinate.
+#[derive(Clone, Copy, Debug)]
+pub struct AuthorityCeiling {
+    pub spool: Spool,
+    pub tt4: f64,
+    /// The capacity the ceiling was read at — this map's, or the caller's override.
+    pub capacity: f64,
+    /// The last setting the SOLVE survived — rung 53's admitted map-validity artifact.
+    pub v_edge: f64,
+    pub x_edge: f64,
+    pub c_edge: f64,
+    /// The incidence peak, parabolically refined off the grid argmax when it is interior.
+    pub v_peak: f64,
+    pub m_i_peak: f64,
+    /// `false` means the walk ran to the edge without turning over — rung 53's concession, which
+    /// holds on some shapes and not others.
+    pub peak_interior: bool,
+    pub m_i_0: f64,
+    pub m_i_edge: f64,
+    /// The setting at which the row chokes. `None` when there is no throat model, or when the
+    /// walk never crosses `1/C`.
+    pub v_ch: Option<f64>,
+    /// How many settings the walk survived — the instrument for `V_MAX` being dead.
+    pub n_scan: usize,
+    pub binds: Binds,
+    /// The RAW, unclipped incidence at the throat. `None` on the `v_ch is None` branch — **86 of
+    /// 240 probe cells**, which is why it is an `Option` and not a `0.0` (§ 5.9 (vi)).
+    ///
+    /// Kept beside `m_i_usable` because the two differ exactly when the throat lands PAST the
+    /// peak, which is the case an operator would never actually set.
+    pub m_i_at_throat: Option<f64>,
+    /// The incidence an operator could actually USE — clipped at the peak, because nobody sets
+    /// past it.
+    pub m_i_usable: f64,
+    /// `[M_i(usable) - M_i(0)] / [M_i_peak - M_i(0)]` — retention against the ACHIEVABLE PEAK,
+    /// not against the artifact endpoint.
+    pub retained: f64,
+    pub throat_before_edge: bool,
+    pub setting_cut: f64,
+}
+
+/// One row of [`schedule_throat`](VariableStatorCore::schedule_throat) — THE RACE.
+#[derive(Clone, Copy, Debug)]
+pub struct ThroatScheduleRow {
+    pub tt4: f64,
+    pub spool: Spool,
+    /// Whether the schedule EXISTS at this throttle. **Rows where it does not are a FINDING, not
+    /// a failure** — the incidence peak never reaches design incidence, which is rung 54's
+    /// correction of rung 53's P7 assumption that it always does.
+    pub exists: bool,
+    pub tan_b1_min: f64,
+    pub tan_b1_design: f64,
+    pub v_edge: f64,
+    /// Everything that exists only when the schedule does — **9 keys, and they are DROPPED rather
+    /// than nulled on the other branch** (§ 5.9 (vi), 74 rows vs 6). A flat struct with nullable
+    /// columns would make the two branches indistinguishable to a float dump.
+    pub found: Option<ThroatScheduleFound>,
+}
+
+/// The schedule's own reading, present only where the schedule exists.
+#[derive(Clone, Copy, Debug)]
+pub struct ThroatScheduleFound {
+    pub vsv_star: f64,
+    pub tan_b1: f64,
+    pub m: f64,
+    pub phi_op: f64,
+    pub n: f64,
+    pub m_i: f64,
+    pub m_phi: f64,
+    /// `X(v*)` — the schedule's throat loading, the left side of the race.
+    pub throat_loading: f64,
+    /// `C*(Tt4) = 1/X(v*)` — **the CONSTANT-FREE threshold**: the schedule is throat-feasible at
+    /// this throttle iff `C < c_min`. `> 1` is the region where the schedule asks LESS of the
+    /// throat than the design point itself, so EVERY row can fly it whatever its `C`.
+    pub c_min: f64,
+    /// Present only with a throat model.
+    pub choke: Option<ScheduleChoke>,
+}
+
+/// The two keys the schedule row gains from an actual capacity.
+#[derive(Clone, Copy, Debug)]
+pub struct ScheduleChoke {
+    pub m_c: f64,
+    pub feasible: bool,
+}
+
+impl VariableStatorCore {
+    /// RUNG 54's instrument: the THIRD reference-free currency, per spool, beside rung 53's two.
+    ///
+    /// Extends [`stator_margin`](Self::stator_margin)'s row with the throat read-offs, **in
+    /// place** — see the module note's decision 2. `c_min` is reported ALWAYS and needs no
+    /// constant; that is how rung 54's claims stay free of the one constant it adds.
+    pub fn throat_margin(&self, flight: &FlightCondition, tt4: f64) -> StatorMargin {
+        self.try_throat_margin(flight, tt4).unwrap_or_else(|e| panic!("{}", e.0))
+    }
+
+    /// The FALLIBLE twin — the one [`scan`](Self::scan) walks until.
+    pub fn try_throat_margin(
+        &self, flight: &FlightCondition, tt4: f64,
+    ) -> Result<StatorMargin, Abort> {
+        let mut out = self.try_stator_margin(flight, tt4)?;
+        for spool in [Spool::Lp, Spool::Hp] {
+            let (cmap, _, _, _) = self.spool_bits(spool);
+            let row = match spool {
+                Spool::Lp => &mut out.lp,
+                Spool::Hp => &mut out.hp,
+            };
+            let x = cmap.throat_loading(row.m);
+            row.throat = Some(ThroatRead {
+                area: cmap.throat_ratio(),
+                throat_loading: x,
+                c_min: 1.0 / x,
+                capacity: cmap.capacity,
+                // `gamma = 1.4` is Python's DEFAULT ARGUMENT, spelled here because Rust has none.
+                // This is the only shipped caller of `design_throat_mach`, so this literal is the
+                // whole of that default.
+                choke: if cmap.capacity > 0.0 {
+                    Some(ChokeRead {
+                        m_c: cmap.capacity_margin(row.m),
+                        choked: cmap.chokes(row.m),
+                        throat_mach_design: cmap.design_throat_mach(1.4),
+                    })
+                } else {
+                    None
+                },
+            });
+        }
+        Ok(out)
+    }
+
+    /// RUNG 54. TWO-SIDED sweep of the throat cost.
+    ///
+    /// Rung 50's lesson a third time: an edge is measured two-sided or not at all. The geometric
+    /// cost `1/sqrt(1+v^2)` is EXACTLY even in `v`, so any measured asymmetry in `X` is the
+    /// EFFICIENCY ISLAND's — and vanishes bit-for-bit on a flat island, where rung 53's P5 exact
+    /// zero pins `m`.
+    pub fn throat_sweep(
+        &self, flight: &FlightCondition, tt4: f64, vsv_grid: &[f64], spool: Spool,
+    ) -> Vec<SpoolMargin> {
+        vsv_grid.iter()
+            .map(|&v| *self.at_one(spool, v).throat_margin(flight, tt4).spool(spool))
+            .collect()
+    }
+
+    /// Walk the stator open→closed at fixed throttle **until the SOLVE ITSELF GIVES OUT**,
+    /// recording the three currencies. The last surviving row IS rung 53's admitted map-validity
+    /// edge.
+    ///
+    /// # What this walk actually catches, measured rather than assumed
+    ///
+    /// Python wraps the read in `except AssertionError: break`, which would catch any of FOUR
+    /// raise sites — `solve_n`'s speed-line bracket, rung 53's floor assert, the `phi_surge > 0`
+    /// anchor check, and `pi_c_spool`'s positive-work assert. **On 100 probe cells out of 100 the
+    /// innermost raising frame is `solve_n`'s bracket** (§ 5.9 (i)), CPG, TPG and equilibrium
+    /// alike, and the firing loop tracks the swept spool 50/50 with no crossover. So the Rust
+    /// breaks on the `Err` that [`ComponentMap::try_solve_n`] produces, and the other three stay
+    /// `assert!`s that would PANIC here where Python would break.
+    ///
+    /// **That is a real behavioural difference on an input no measurement produced**, and it is
+    /// recorded rather than papered over: converting all four would mean four fallible twins on a
+    /// zero-firing verdict, which is the opposite of the per-call-site discipline. The walk is
+    /// what unloads the speed line until the map stops being valid — which is what the source's
+    /// own docstring calls "the SOLVE itself gives out".
+    ///
+    /// [`ComponentMap::try_solve_n`]: crate::map::ComponentMap::try_solve_n
+    pub fn scan(
+        &self, flight: &FlightCondition, tt4: f64, spool: Spool,
+        step: Option<f64>, v_max: Option<f64>,
+    ) -> Vec<SpoolMargin> {
+        let step = step.unwrap_or(Self::V_STEP);
+        let v_max = v_max.unwrap_or(Self::V_MAX);
+        let mut rows = Vec::new();
+        let mut v = 0.0f64;
+        while v <= v_max + 1e-12 {
+            match self.at_one(spool, v).try_throat_margin(flight, tt4) {
+                Ok(r) => rows.push(*r.spool(spool)),
+                Err(_) => break,
+            }
+            v += step;
+        }
+        assert!(rows.len() >= 3,
+                "rung-54 scan died immediately at Tt4={tt4:.1} on the {}: the matcher is already \
+                 infeasible at the design setting.",
+                match spool { Spool::Lp => "LP", Spool::Hp => "HP" });
+        rows
+    }
+
+    /// Linear interpolation of one column of a scan, clamped to the walk's own ends.
+    fn interp(rows: &[SpoolMargin], v: f64, key: impl Fn(&SpoolMargin) -> f64) -> f64 {
+        for w in rows.windows(2) {
+            let (a, b) = (&w[0], &w[1]);
+            if a.vsv <= v && v <= b.vsv {
+                let t = (v - a.vsv) / (b.vsv - a.vsv);
+                return key(a) + t * (key(b) - key(a));
+            }
+        }
+        if v >= rows[rows.len() - 1].vsv { key(&rows[rows.len() - 1]) } else { key(&rows[0]) }
+    }
+
+    /// The FIRST crossing of `target` in one column, linearly located. `None` if the walk never
+    /// crosses — which is a finding, so it is not an error.
+    fn cross(
+        rows: &[SpoolMargin], key: impl Fn(&SpoolMargin) -> f64, target: f64, rising: bool,
+    ) -> Option<f64> {
+        for w in rows.windows(2) {
+            let (a, b) = (&w[0], &w[1]);
+            let (ya, yb) = (key(a), key(b));
+            if (rising && ya < target && target <= yb) || (!rising && ya > target && target >= yb)
+            {
+                return Some(a.vsv + (target - ya) / (yb - ya) * (b.vsv - a.vsv));
+            }
+        }
+        None
+    }
+
+    /// The throat loading off a scan row. Every scan row came from
+    /// [`try_throat_margin`](Self::try_throat_margin), so the extension is always present — this
+    /// `expect` is a structural invariant of [`scan`](Self::scan), not a guard on data.
+    fn scan_x(r: &SpoolMargin) -> f64 {
+        r.throat.expect("a scan row always carries the throat extension").throat_loading
+    }
+
+    /// RUNG 54's headline object: **WHICH of the three ceilings stops the stator first**, and
+    /// what that costs IN THE CURRENCY rather than in the coordinate.
+    ///
+    /// ```text
+    ///     v_ch    the THROAT         -- physics: C*X(v) = 1        (needs C)
+    ///     v_peak  the INCIDENCE PEAK -- aerodynamics: argmax_v M_i (zero constants)
+    ///     v_edge  the BRACKET        -- rung 53's map-validity ARTIFACT
+    /// ```
+    ///
+    /// `retained` is measured against the ACHIEVABLE PEAK, not against the artifact endpoint — an
+    /// operator would never set past the peak, so `m_i_usable` clips there.
+    ///
+    /// **The `binds` census is the claim the source could refute**, expressed as a count: the
+    /// throat column must RISE with `C` (0 / 54 / 66 at `C` = 0.00 / 0.80 / 0.90 over 240 probe
+    /// cells), because *a tighter throat binds earlier* is rung 54's own statement.
+    pub fn authority_ceiling(
+        &self, flight: &FlightCondition, tt4: f64, spool: Spool, capacity: Option<f64>,
+    ) -> AuthorityCeiling {
+        let (cmap, _, _, _) = self.spool_bits(spool);
+        let c = capacity.unwrap_or(cmap.capacity);
+        let rows = self.scan(flight, tt4, spool, None, None);
+        let (v_edge, m_i_0) = (rows[rows.len() - 1].vsv, rows[0].m_i);
+
+        // **Python's `max(range(len), key=...)` keeps the FIRST maximum on a tie; Rust's
+        // `max_by_key`/`max_by` keep the LAST.** On a strictly-unimodal walk they agree, so a
+        // value oracle would never see the difference — which is exactly why the strict `>` is
+        // written out rather than left to a combinator's tie rule.
+        let mut k = 0usize;
+        for (i, r) in rows.iter().enumerate() {
+            if r.m_i > rows[k].m_i {
+                k = i;
+            }
+        }
+        let interior = k > 0 && k < rows.len() - 1;
+        let (v_peak, m_i_peak) = if interior {
+            // 3-point parabolic refinement of the grid argmax.
+            let (a, b, cc) = (rows[k - 1].m_i, rows[k].m_i, rows[k + 1].m_i);
+            let den = a - 2.0 * b + cc;
+            let h = rows[k + 1].vsv - rows[k].vsv;
+            (rows[k].vsv + if den != 0.0 { 0.5 * h * (a - cc) / den } else { 0.0 },
+             if den != 0.0 { b - 0.125 * (a - cc) * (a - cc) / den } else { b })
+        } else {
+            (rows[k].vsv, rows[k].m_i)
+        };
+
+        let v_ch = if c > 0.0 {
+            Self::cross(&rows, Self::scan_x, 1.0 / c, true)
+        } else {
+            None
+        };
+        let common = |binds, m_i_at_throat, m_i_usable, retained, throat_before_edge,
+                      setting_cut| AuthorityCeiling {
+            spool, tt4, capacity: c,
+            v_edge,
+            x_edge: Self::scan_x(&rows[rows.len() - 1]),
+            c_edge: 1.0 / Self::scan_x(&rows[rows.len() - 1]),
+            v_peak, m_i_peak, peak_interior: interior,
+            m_i_0, m_i_edge: rows[rows.len() - 1].m_i,
+            v_ch, n_scan: rows.len(),
+            binds, m_i_at_throat, m_i_usable, retained, throat_before_edge, setting_cut,
+        };
+
+        let v_ch = match v_ch {
+            None => {
+                return common(if interior { Binds::Peak } else { Binds::Edge },
+                              None, m_i_peak, 1.0, false, 0.0);
+            }
+            Some(v) => v,
+        };
+        let v_use = v_ch.min(v_peak);
+        let m_i_use = Self::interp(&rows, v_use, |r| r.m_i);
+        let span = m_i_peak - m_i_0;
+        common(
+            if v_ch <= v_peak.min(v_edge) {
+                Binds::Throat
+            } else if v_peak <= v_edge {
+                Binds::Peak
+            } else {
+                Binds::Edge
+            },
+            Some(Self::interp(&rows, v_ch.min(v_edge), |r| r.m_i)),
+            m_i_use,
+            if span > 0.0 { (m_i_use - m_i_0) / span } else { 1.0 },
+            v_ch < v_edge,
+            1.0 - v_ch.min(v_edge) / v_edge,
+        )
+    }
+
+    /// RUNG 54's own root for rung 53's schedule: the SMALLEST setting that restores the design
+    /// incidence, **bracketed off the scan** and bisected.
+    ///
+    /// Rung 53's [`incidence_schedule`](Self::incidence_schedule) finds this by a DOUBLING
+    /// ladder, justified by "closing the stators lowers `tan(beta_1)` monotonically". Rung 54
+    /// measures that the residual is NOT monotone where the incidence peak is interior: past the
+    /// peak `tan_b1` turns back UP, so a doubling ladder can step over the root and out the far
+    /// side, then report the schedule unreachable when it exists. **Bracketing off the scan is
+    /// immune to that** — and where rung 53's ladder does succeed the two roots agree (gated).
+    ///
+    /// The FIRST crossing is the meaningful one: the least closure that buys design incidence.
+    ///
+    /// Returns `None` when the design incidence is unreachable at any feasible setting, and
+    /// `Some(0.0)` when the residual is already non-positive at the design setting — two
+    /// different findings that a `-1.0` sentinel would merge.
+    fn schedule_root(
+        &self, flight: &FlightCondition, tt4: f64, spool: Spool, scan: &[SpoolMargin],
+        t_design: f64,
+    ) -> Option<f64> {
+        let mut bracket = None;
+        for w in scan.windows(2) {
+            let (a, b) = (&w[0], &w[1]);
+            if a.tan_b1 > t_design && t_design >= b.tan_b1 {
+                bracket = Some((a.vsv, b.vsv));
+                break;
+            }
+        }
+        let (mut lo, mut hi) = match bracket {
+            Some(p) => p,
+            None => return if scan[0].tan_b1 <= t_design { Some(0.0) } else { None },
+        };
+        let resid = |v: f64| -> f64 {
+            self.at_one(spool, v).stator_margin(flight, tt4).spool(spool).tan_b1 - t_design
+        };
+        for _ in 0..Self::INC_MAX {
+            let mid = 0.5 * (lo + hi);
+            let r = resid(mid);
+            if r.abs() <= Self::INC_TOL || hi - lo <= 1e-14 {
+                return Some(mid);
+            }
+            if r > 0.0 {
+                lo = mid;
+            } else {
+                hi = mid;
+            }
+        }
+        Some(0.5 * (lo + hi))
+    }
+
+    /// RUNG 54 on rung 53's payoff object: **THE RACE.**
+    ///
+    /// As power falls the schedule's demand `v*(Tt4)` RISES while the flow `m` falls, so the
+    /// schedule's throat loading `X(v*)` is a race between the two, and its threshold
+    /// `C*(Tt4) = 1/X(v*)` says which rows can fly it:
+    ///
+    /// ```text
+    ///     the schedule is throat-FEASIBLE at this throttle  <=>  C < C*(Tt4)
+    /// ```
+    ///
+    /// `C* > 1` is the CONSTANT-FREE region: the schedule then asks LESS of the throat than the
+    /// design point itself, so every row can fly it whatever its `C`.
+    ///
+    /// Rows where the schedule does not EXIST come back with `found: None` rather than raising —
+    /// **that is a finding and not a failure**, and it is rung 54's correction of rung 53's P7.
+    pub fn schedule_throat(
+        &self, flight: &FlightCondition, tt4_grid: &[f64], spool: Spool,
+    ) -> Vec<ThroatScheduleRow> {
+        let (cmap, _, _, _) = self.spool_bits(spool);
+        let t_design = self.at_setting(0.0, 0.0)
+            .stator_margin(&self.flight_design, self.tt4_design()).spool(spool).tan_b1;
+
+        tt4_grid.iter().map(|&tt4| {
+            let scan = self.scan(flight, tt4, spool, None, None);
+            let v_edge = scan[scan.len() - 1].vsv;
+            let tan_b1_min = scan.iter().fold(f64::INFINITY, |m, r| m.min(r.tan_b1));
+            let v_star = self.schedule_root(flight, tt4, spool, &scan, t_design);
+            let found = v_star.map(|v_star| {
+                let at = *self.at_one(spool, v_star).stator_margin(flight, tt4).spool(spool);
+                let x = cmap.with_vsv(v_star).throat_loading(at.m);
+                ThroatScheduleFound {
+                    vsv_star: v_star, tan_b1: at.tan_b1, m: at.m, phi_op: at.phi_op, n: at.n,
+                    m_i: at.m_i, m_phi: at.m_phi, throat_loading: x, c_min: 1.0 / x,
+                    // NOT `capacity_margin`/`chokes`: Python spells these two INLINE here, off
+                    // the `X` computed above, rather than calling the map's own methods. Routing
+                    // them through the methods would recompute `X` from `throat_ratio` a second
+                    // time — algebraically the same, arithmetically a second derivation.
+                    choke: if cmap.capacity > 0.0 {
+                        Some(ScheduleChoke {
+                            m_c: 1.0 - cmap.capacity * x,
+                            feasible: cmap.capacity * x < 1.0,
+                        })
+                    } else {
+                        None
+                    },
+                }
+            });
+            ThroatScheduleRow {
+                tt4, spool, exists: found.is_some(), tan_b1_min,
+                tan_b1_design: t_design, v_edge, found,
+            }
+        }).collect()
+    }
+}
