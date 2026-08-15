@@ -71,6 +71,41 @@ use crate::gas::{powp, Abort};
 use crate::map::ComponentMap;
 use crate::two_spool::{Spool, TwoSpoolEngine, TwoSpoolMapCore, TwoSpoolMapResult, R39};
 
+thread_local! {
+    /// Bisection passes taken by rung 53's [`incidence_schedule`](VariableStatorCore::
+    /// incidence_schedule) since the last read.
+    static LADDER_PASSES: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+    /// Bisection passes taken by rung 54's [`schedule_root`](VariableStatorCore::schedule_root)
+    /// since the last read.
+    static ROOT_PASSES: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+}
+
+/// Read AND RESET rung 53's bisection-pass tally — see [`root_passes`] for why both counters
+/// exist and what exactly they count.
+pub fn ladder_passes() -> u64 {
+    LADDER_PASSES.with(|c| c.replace(0))
+}
+
+/// Read AND RESET rung 54's bisection-pass tally.
+///
+/// **THE INSTRUMENT IS NAMED BECAUSE THE OBVIOUS ONE IS WRONG.** [`crate::map::psi_calls`] cannot
+/// serve here: both root-finders reach `psi` through a FULL two-spool match, hundreds of times
+/// per residual, so a `psi` tally measures the plant and not the search. What § 5.9 (iv)'s
+/// pre-registered sets are about is **bisection PASSES** — not residual evaluations, not the
+/// doubling ladder's steps — so the counters sit in the two `for _ in 0..INC_MAX` loops and
+/// nowhere else. § 5.7 (d) corrected a bar one slice ago for exactly this confusion.
+///
+/// They read-and-RESET so a caller can attribute passes to one root: sweep a single-element
+/// throttle grid, then read. A plain read would accumulate across rows and measure a sum, which
+/// is not what the sets bound.
+///
+/// Unlike `V_MAX` and `INC_MAX`, these counts are **not predictable from the arithmetic** — the
+/// ladder's bracket width is data-dependent — which is why the gate asserts a measured SET and is
+/// PyPy-arm only (slice K's P2 on count stability).
+pub fn root_passes() -> u64 {
+    ROOT_PASSES.with(|c| c.replace(0))
+}
+
 // =========================================================================================
 // THE ROW — and the two absences a float dump cannot see
 // =========================================================================================
@@ -694,6 +729,7 @@ impl VariableStatorCore {
                          is unreachable this far off design — raise v_hi or narrow the throttle \
                          grid.");
                 for _ in 0..Self::INC_MAX {
+                    LADDER_PASSES.with(|c| c.set(c.get() + 1));
                     v = 0.5 * (lo + hi);
                     r = read(v, tt4).tan_b1 - t_design;
                     if r.abs() <= Self::INC_TOL || hi - lo <= 1e-14 {
@@ -1089,6 +1125,7 @@ impl VariableStatorCore {
             self.at_one(spool, v).stator_margin(flight, tt4).spool(spool).tan_b1 - t_design
         };
         for _ in 0..Self::INC_MAX {
+            ROOT_PASSES.with(|c| c.set(c.get() + 1));
             let mid = 0.5 * (lo + hi);
             let r = resid(mid);
             if r.abs() <= Self::INC_TOL || hi - lo <= 1e-14 {

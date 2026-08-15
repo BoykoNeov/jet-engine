@@ -3616,6 +3616,88 @@ One thing shipped that step 1 did NOT gate, and it is named so it cannot be forg
 is still unported (phase 6), and **its rung-53 early return is owed with it** — porting that body
 without the `vsv == 0.0` branch would be P3's failure one phase late.
 
+#### Steps 2–3 — SHIPPED. Both smoke grids were BLIND to branches they were written for
+
+Rung 53 (step 2) and rung 54 (step 3) each ported bit-for-bit on the first run — 169 keys, then
+421 — but **in both cases the first draft of the smoke check could not see the failure it
+existed to catch**, and both gaps were found by testing the instrument rather than the code.
+
+* **Step 2.** `currency_split`'s two legs hold the OTHER spool at `self`'s setting, unlike every
+  other sweep in the file. The first arm ran it only at `v = 0`, where *"hold at self's setting"*
+  and *"pin to zero"* are the SAME instruction. A second arm at `vsv = (0.15, 0.10)` discriminates;
+  **verified by mutating the leg to the wrong constructor** (it fails at `splitmv/lp/d_phi_op`, in
+  the 4th decimal) and reverting.
+* **Step 3.** On the two default maps `peak_interior` is False, every schedule EXISTS and `v_ch` is
+  present whenever `C > 0` — so 369 keys asserted while the parabolic peak refinement, the
+  schedule's `found: None` and the `v_ch: None`-WITH-a-throat-model branches went entirely
+  unmeasured. A probe over 3 shapes × 2 spools × 4 throttles located all three in the `steep`
+  shape.
+
+**The rule that generalises: a value grid chosen for coverage of CELLS is not a grid chosen for
+coverage of BRANCHES, and only the second one tests an `Option`.** Both gaps were invisible to
+the key count, which is what makes them worth recording.
+
+`at_setting` is a HOOK that REBUILDS (see `stator.rs`'s module note); `Engine` and `TwoSpoolEngine`
+gained `Clone` for it. Python's `r_hi is not None` guard is UNREACHABLE — the loop assigns before
+every exit — so the port breaks out of the loop WITH the value, making the unset state
+unrepresentable rather than merely unreached.
+
+#### Step 4 — the oracle. **EVERY PRE-REGISTERED CENSUS REPRODUCED, AND ONE BAR IS OFF BY A STEP**
+
+10 950 keys over the pre-registered 80 cells. Measured against § 5.9's bars:
+
+| bar | pre-registered | measured | |
+|---|---|---|---|
+| `binds` at `C` = 0.00 / 0.80 / 0.90 (throat) | 0 / 54 / 66 | **0 / 54 / 66** | ✔ |
+| `peak_interior` | 144 / 96 | **144 / 96** | ✔ |
+| `v_ch is None` | 86 of 240 | **86 of 240** | ✔ |
+| schedule `exists` | 74 / 6 | **74 / 6** | ✔ |
+| rung 53's ladder ASSERTS | 18 | **18** (62 bracket) | ✔ |
+| `n_scan` | 29–84, 26 distinct | **29–84, 26 distinct** | ✔ |
+| break settings | **1.16 – 3.36** | **1.120 – 3.320** | ✘ |
+
+**(a) THE BREAK-SETTING RANGE IS THE FAILING SETTING, NOT THE SURVIVING ONE — EXACTLY ONE SCAN
+STEP APART.** § 5.9 (ii) records "the break settings span 1.16 – 3.36 (26 distinct values)". The
+count is right and the range is one `V_STEP` high: `1.120 + 0.04 = 1.16` and `3.320 + 0.04 = 3.36`,
+and `29 * 0.04 = 1.16`, `84 * 0.04 = 3.36`. So the probe recorded the setting the walk DIED at,
+while `rows[-1]["vsv"]` — which every rung-54 reader consumes as `v_edge`, and which
+`authority_ceiling` divides by in `setting_cut` — is the last setting that SURVIVED. **A gate
+written from the plan's number would have been off by one step on a quantity that is a
+denominator.** Caught only because the dump re-measured instead of copying; this is the *slice L
+step 4* lesson (a copied bar) landing on the plan's own text rather than on the source's.
+
+**(b) THE 16-vs-19 BAR COUNTS A THIRD BRANCH THIS DUMP DOES NOT SWEEP.** § 5.9 (vi) says "80 rows
+at 16, 160 at 19"; the dump measures **80 / 80**, because it sweeps the capacity branch at
+`C ∈ {0, 0.80}` and the probe swept `{0, 0.80, 0.90}`. Both fully exercise the SPLIT — `C = 0.90`
+is the same branch as `C = 0.80` — so the gate asserts its own grid's 80/80 and says why it
+differs. Per *guessed census bars*: prefer the per-arm count actually measured over a total whose
+enumeration is not stated.
+
+**(c) THE EQUILIBRIUM ARM WAS RE-SIZED, AND THE SIZING ERROR IS THE PLAN'S.** § 5.9 sized it at
+"887 s for 20 cells, ≈ 44 s per `_scan`" — a figure that assumes ONE scan per cell. The full
+per-cell body runs **five** (the bare scan, one inside each of three `authority_ceiling` calls,
+one inside `schedule_throat`), i.e. ~75 min, which would put a quarter-hour into the Rust gate.
+The equilibrium arm therefore dumps the margin rows, ONE scan and the throat rows, and nothing
+that re-scans. **What it is FOR survives intact**: P1's claim is that the caught scope reaches
+`solve_n` on all three gases, and the scan IS the caught scope — its LENGTH is the witness. The
+`binds` census and the schedule split are cpg/tpg columns and the gate says so.
+
+**(d) P5 HAD NO INSTRUMENT AND NOW HAS ONE.** The pass-count sets are inside the shipped loops and
+`psi_calls` cannot serve — both root-finders reach `psi` through a FULL two-spool match, so a
+`psi` tally measures the plant, not the search. Two thread-locals in `stator.rs`, incremented once
+per BISECTION PASS (not per residual evaluation, not per ladder step) and read-and-reset so a
+caller can attribute passes to one root.
+
+#### Step 6 — the source correction, VERIFIED RATHER THAN COPIED
+
+`docs/rung54-spec.md` § P-C3 published a ladder trace the method **cannot take as called**, and
+`incidence_schedule`'s docstring stated the walk-over without the condition that produces it.
+Both now carry the measurement, and all three of its claims were re-run directly rather than
+copied from § 5.9 (viii): at `v_hi = 1.0` the `steep`/LP/1200 cell returns
+**0.9090766150970013**, agreeing with rung 54's scan-bracketed **0.9090766151249412** to 2.8e-11;
+it walks over at caps ≥ 1.725 and at no smaller cap; and `steep`/HP has an interior peak yet never
+walks over at ANY cap in {1.0, 0.98·v_edge, v_edge, 2.0, 4.0}.
+
 ---
 
 ## 6. Named risks

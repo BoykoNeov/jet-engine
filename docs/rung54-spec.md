@@ -167,15 +167,32 @@ not a map-validity edge, and it is reached inside the envelope, not beyond it.
 
 `incidence_schedule` brackets its root with a **doubling ladder**, justified in its own docstring
 by *"the residual is monotone decreasing in `v`"*. Where the peak is interior that premise fails:
-past the peak `tan β₁` turns back up, and the ladder steps **over** the root and out the far
-side. Measured on `steep` at `Tt4 = 1200`: a root exists at `v* = 0.909`; rung 53's method walks
-0.05 → … → 1.6 (residual `+1.64e-2`, already climbing) and asserts the schedule unreachable.
+past the peak `tan β₁` turns back up, and the ladder can step **over** the root and out the far
+side.
+
+> **CORRECTED BY SLICE M OF THE RUST PORT (`docs/plans/todo-rust-port.md` § 5.9 (viii)).** The
+> paragraph that stood here published a trace the method **cannot take as called**, and stated the
+> failure without the condition that produces it. Both are fixed below; the finding itself stands.
+>
+> The trace read: *"rung 53's method walks 0.05 → … → 1.6 (residual `+1.64e-2`, already climbing)
+> and asserts the schedule unreachable."* The ladder's step is `hi = min(2*hi, v_hi)` and `v_hi`
+> **defaults to 1.0**, so the sequence it can actually take is 0.05 · 0.1 · 0.2 · 0.4 · 0.8 · 1.0
+> and stops. Reaching 1.6 needs a cap 60 % above the shipped default, which this section never
+> mentioned. **At the default the method does not walk over at all**: on that very cell it returns
+> `v* = 0.9090766150970013`, agreeing with `_schedule_root` to 1e-10.
+
+**The failure is CAP-CONDITIONAL, and an interior peak is necessary but NOT sufficient.** Swept
+over caps {1.0, 0.98·v_edge, v_edge, 2.0, 4.0} on 3 shapes × 2 spools, the walk-over reproduces on
+**exactly 1 of 6** shape/spool cells — `steep`/LP, and there only at caps ≥ 1.725, which is the
+`v_hi = 0.98 * v_edge` that `test_rung54.py::test_rung54_root_finds_a_schedule_rung53s_doubling_ladder_walks_over`
+passes explicitly. `steep`/HP has an interior peak too and **never** walks over at any cap. So the
+peak must lie *between the root and the cap*; interiority alone does not do it.
 
 Rung 54's `_schedule_root` brackets off a scan and is immune; where the ladder succeeds the two
 agree to ≤ 1e-9 (gated both ways). **Rung 53's published numbers are unaffected** — its table is
 `flow/press`, where the premise holds — so its method is left algorithmically untouched and only
-its docstring gains a pointer. The defect is latent, and only the shapes rung 53 did not tabulate
-expose it.
+its docstring gains a pointer. The defect is latent, and only the shapes rung 53 did not tabulate,
+**at caps the default does not reach**, expose it.
 
 ---
 
