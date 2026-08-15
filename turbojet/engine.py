@@ -6266,10 +6266,21 @@ class VariableStatorMatcher(TwoSpoolMapMatcher):
         RUNG 54 BOUNDS THAT MONOTONICITY PREMISE. Where the incidence peak is INTERIOR (rung
         54 P-C2 measures it on 3 of the 5 disclosed shapes), tan beta_1 turns back UP past the
         peak, and this doubling ladder can step OVER the root and out the far side -- reporting
-        the schedule unreachable when it exists (measured: the `steep` shape at Tt4=1200, root
-        at v* = 0.909). This method is left as shipped, because rung 53's published table is
-        the flow/press shape where the premise HOLDS; rung 54's `_schedule_root` brackets off a
-        scan instead and is immune. Prefer `schedule_throat` on an unfamiliar map shape.
+        the schedule unreachable when it exists. This method is left as shipped, because rung
+        53's published table is the flow/press shape where the premise HOLDS; rung 54's
+        `_schedule_root` brackets off a scan instead and is immune. Prefer `schedule_throat`
+        on an unfamiliar map shape.
+
+        THE FAILURE IS CAP-CONDITIONAL, AND AN INTERIOR PEAK IS NECESSARY BUT NOT SUFFICIENT.
+        This paragraph used to cite "the `steep` shape at Tt4=1200, root at v* = 0.909" as a
+        walk-over WITHOUT naming the condition -- and at this method's own default v_hi = 1.0
+        that cell does NOT walk over: it returns 0.9090766150970013, agreeing with rung 54's
+        scan-bracketed root to 1e-10. The step is hi = min(2*hi, v_hi), so at the default the
+        ladder can only reach 0.05 -> 0.1 -> 0.2 -> 0.4 -> 0.8 -> 1.0. Swept over caps
+        {1.0, 0.98*v_edge, v_edge, 2.0, 4.0} on 3 shapes x 2 spools the walk-over reproduces on
+        exactly 1 of 6 cells (`steep`/LP) and only at caps >= 1.725 -- while `steep`/HP has an
+        interior peak too and never walks over at ANY cap. The peak must lie BETWEEN the root
+        and the cap. (Found by slice M of the Rust port; see docs/rung54-spec.md § P-C3.)
 
         Along the returned schedule M_i is constant BY CONSTRUCTION (to `_INC_TOL`) while
         M_phi is not — that contrast IS the headline, made operational: the phi-currency reports

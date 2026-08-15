@@ -26,7 +26,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL, regenerate via extract_data.py + build.py
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy leaves `open().write()` unflushed, PowerShell Get/Set-Content double-encodes UTF-8; both fail SILENTLY
 
-## The Rust port — decided 2026-08-12; PHASES 0–4 DONE; **PHASE 5 AUTHORISED and under way — slices I (31/33), J (32), K (38/39), L (41/42) ALL SHIPPED; slice M (53–56, 61) is next**; 481 Rust tests
+## The Rust port — decided 2026-08-12; PHASES 0–4 DONE; **PHASE 5 AUTHORISED and under way — slices I (31/33), J (32), K (38/39), L (41/42) SHIPPED; slice M's rungs 53/54 SHIPPED, its 55/56/61 remain**; 534 Rust tests
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; slices are free inside an authorised phase, **phase 5 needs fresh authorisation**
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost by COMPILING and returning a silently different number
 - [Rust arithmetic IS PyPy](rust-port-arithmetic-is-pypy.md) — 100% bit-exact vs PyPy on gas AND cycle; size a solver claim by DISTINCT ROOTS, not row count
@@ -47,6 +47,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Slice L step 1: fallible twins](rust-port-slice-l-step1.md) — fallibility is per CALL SITE, not per function; and a gate failed because the MESSAGE was broken, not the gate
 - [Slice L step 3: rung 42](rust-port-slice-l-step3.md) — my smoke check witnessed 1 of the 3 methods the slice's own headline names; measure the detector (it was 2%)
 - [Slice L step 4: the oracle + suites](rust-port-slice-l-step4.md) — a claim in the SHIPPED source was false and the gate built from it passed the defect; a copied bar failed, and its 34 keys split into two populations that closed the accounting exactly
+- [Slice M: rungs 53/54](rust-port-slice-m.md) — a bar asserted in a doc comment but never measured, refuted by a third of the dump; the two measuring passes after it found defects in the INSTRUMENT, not the port
 
 ## Shipped rungs
 

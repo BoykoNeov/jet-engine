@@ -258,6 +258,34 @@ impl ComponentMap {
                vsv: 0.0, capacity: 0.0 }
     }
 
+    // RUNG 34 — the SURGE-REALISTIC shapes. The linear loading slope `l > 0` makes the speed
+    // line's pressure ratio rise toward low flow (toward surge), so a forward acceleration
+    // excursion is physical and a surge floor has something to bite on. Three disclosed shapes,
+    // for the shape-robust SIGN of the excursion; magnitudes disclaimed.
+    //
+    // All three are LITERAL copies of Python's table rows. The numbers ARE the map's identity,
+    // so re-deriving one from a sibling plus an offset would be a second derivation of a thing
+    // that is only ever a row. Slice K wanted `surge_pressure` and spelled it inline in
+    // `rung39.rs:170` instead; that inline copy is now redundant with this one.
+
+    /// Curvature concentrated in FLOW.
+    pub const fn surge_flow() -> Self {
+        Self { a: 0.20, b: 0.05, c: 0.0, sigma: 0.1, a_t: 0.02, l: 0.7, phi_surge: 0.0,
+               vsv: 0.0, capacity: 0.0 }
+    }
+
+    /// Curvature concentrated in PRESSURE.
+    pub const fn surge_pressure() -> Self {
+        Self { a: 0.08, b: 0.15, c: 0.0, sigma: 0.1, a_t: 0.02, l: 1.0, phi_surge: 0.0,
+               vsv: 0.0, capacity: 0.0 }
+    }
+
+    /// A TILTED island (`c != 0`), which the other two do not exercise.
+    pub const fn surge_tilted() -> Self {
+        Self { a: 0.14, b: 0.10, c: 0.06, sigma: 0.2, a_t: 0.02, l: 0.85, phi_surge: 0.0,
+               vsv: 0.0, capacity: 0.0 }
+    }
+
     /// RUNG 36. A copy of this map carrying a surge line at stall flow coefficient `phi_surge`.
     ///
     /// The surge floor is the ONE disclosed constant rung 36 imposes: the loading law's own peak

@@ -3698,6 +3698,47 @@ copied from § 5.9 (viii): at `v_hi = 1.0` the `steep`/LP/1200 cell returns
 it walks over at caps ≥ 1.725 and at no smaller cap; and `steep`/HP has an interior peak yet never
 walks over at ANY cap in {1.0, 0.98·v_edge, v_edge, 2.0, 4.0}.
 
+#### Step 5 — the two suites. **43/43 GATES PORTED; THE `slow` MAPPING IN § 6 IS WRONG**
+
+`rung53.rs` (24 tests) and `rung54.rs` (25 tests), both green first run. The counts exceed
+Python's 22 + 21 because **four gates had to SPLIT**, and every split is forced rather than
+stylistic: Rust's `#[should_panic]` is per-test, so Python's `pytest.raises` inside a loop over
+three refused capacities becomes three tests, and two more refusals that sat inside a value gate
+become their own. The coverage check is therefore a **name → parameter-set diff, never a count**
+(slice L's guessed-bars lesson, and the fifth time a count bar would have been wrong): all 22 and
+all 21 Python names are present, with every `parametrize` set carried whole.
+
+**§ 6's test-suite mapping is corrected by measurement.** It prescribes
+`-m "not slow"` → `#[ignore]` + `cargo test -- --ignored`. That is wrong, and this slice is the
+first evidence: Python marks **13** of these 43 gates `slow`, and the ported 49 tests — the 13
+included, which between them run 10 shape×spool cells, 12 full matches, 8 bisected schedule
+points and two 5-shape × 6-throttle authority scans — finish in **0.82 s + 1.70 s**. The marker
+records a COST that did not survive the port, not a claim. Carrying it would deselect 13 real
+gates from the default run to save ~2 s, which is precisely the silent deselection
+`conftest.py`'s one-gate policy exists to forbid. **Rule for the remaining slices: port the
+gate, drop the marker, and re-introduce `#[ignore]` only against a MEASURED cost.**
+
+Three Python assertions are about Python and not about the physics; each is ported to a
+substitute or booked, never dropped silently (`rung53.rs::slice_m_deferrals`):
+
+| Python asserts | Rust | why |
+|---|---|---|
+| `m.map_lp is LP` (object identity) | bit equality of all 9 fields | `ComponentMap` is `Copy` — "the same object" is not a thing a Rust map can be |
+| `VariableStatorMatcher.match is TwoSpoolMapMatcher.match` | `hooks.hp_eta_loop as usize == R39.hp_eta_loop as usize` | no inheritance; delegation is the twin. Comparing two `R53` entries would be slice L's self-comparison and would pass on any table |
+| `raises(…, match="lp_disabled")` | **unrepresentable** — the parameter does not exist | a type-level refusal is strictly stronger than a runtime one, so nothing is owed |
+
+**Two genuine debts, both booked:** `ComponentMap::phi_max` (a third of rung 53's expression
+gate and part of rung 54's `C=0` gate — the symbol is read only by the rung-34/40/43 FORWARD
+transient closures, so it is **phase 6's**, with the Python assertion quoted at the deferral so
+the port need not re-derive it); and the `StatorHooks` **dispatch**, which slice M cannot witness
+because the table has one entry and `Descendant` one variant — **owed to slice N**, with the
+arity pinned by an exhaustive `match` so a second variant arriving without a dispatch gate fails
+to compile rather than passing quietly.
+
+Three map factories were missing from Rust and are added as literal table rows: `surge_flow`,
+`surge_pressure`, `surge_tilted`. Slice K had wanted `surge_pressure` and spelled it inline in
+`rung39.rs:170`; that inline copy is now redundant.
+
 ---
 
 ## 6. Named risks
@@ -3719,7 +3760,11 @@ walks over at ANY cap in {1.0, 0.98·v_edge, v_edge, 2.0, 4.0}.
 - **Test-suite mapping.** `pytest.mark.parametrize` → loops or a declarative macro. Module
   fixtures → `OnceLock` statics, built **once per process** rather than once per worker — your
   own notes record per-worker fixture rebuilding adding 2:37 to a 2:59 gate, and that cost
-  disappears rather than shrinking. `-m "not slow"` → `#[ignore]` + `cargo test -- --ignored`.
+  disappears rather than shrinking. ~~`-m "not slow"` → `#[ignore]` + `cargo test -- --ignored`.~~
+  **CORRECTED by slice M's step 5 — measure, don't map.** The `slow` marker records a COST, and
+  the cost does not survive the port: slice M's 13 marked gates run in ~2 s total. Port the gate,
+  DROP the marker, and re-introduce `#[ignore]` only against a measured cost — carrying it
+  forward would silently deselect real gates to save seconds.
 - **Speed, honestly bounded.** The measured 2.84× (PyPy) / 8.30× (CPython) was *three kernels
   in one march* and must not be extrapolated. Estimate — **labelled an estimate** — the gate
   lands around 2–4 minutes against today's ~17:21.
