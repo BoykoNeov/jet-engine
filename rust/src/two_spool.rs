@@ -1101,10 +1101,12 @@ pub struct TwoSpoolHooks {
         fn(&TwoSpoolMapCore, &FlightCondition, f64) -> Result<TwoSpoolMapResult, Abort>,
     /// The CLOSED HP efficiency fixed point. Rung 55's `StageStackMatcher` overrides it.
     pub hp_eta_loop:
-        fn(&TwoSpoolMapCore, &Gas, f64, f64, f64, f64, f64, &ComponentMap) -> EtaLoop,
+        fn(&TwoSpoolMapCore, &Gas, f64, f64, f64, f64, f64, &ComponentMap)
+           -> Result<EtaLoop, Abort>,
     /// The LP efficiency fixed point — the one that reads `pi_hpc`.
     pub lp_eta_loop:
-        fn(&TwoSpoolMapCore, &Gas, f64, f64, f64, f64, f64, f64, &ComponentMap) -> EtaLoop,
+        fn(&TwoSpoolMapCore, &Gas, f64, f64, f64, f64, f64, f64, &ComponentMap)
+           -> Result<EtaLoop, Abort>,
 }
 
 /// RUNG 39's table.
@@ -1324,9 +1326,10 @@ impl TwoSpoolMapCore {
             let tt3 = wgas.t_from_h_c(wgas.h_c(tt25) + dh_hpt);
 
             // THE TRIANGLE: HP closes on itself, THEN LP closes onto pi_HPC.
-            let hp = (self.hooks.hp_eta_loop)(self, wgas, tt4, f, tt25, tt3, mfp4, &self.map_hp);
+            let hp = (self.hooks.hp_eta_loop)(self, wgas, tt4, f, tt25, tt3, mfp4,
+                                              &self.map_hp)?;
             let lp = (self.hooks.lp_eta_loop)(
-                self, wgas, tt2, tt4, f, tt25, mfp4, hp.pi, &self.map_lp);
+                self, wgas, tt2, tt4, f, tt25, mfp4, hp.pi, &self.map_lp)?;
 
             // Two physical shaft speeds — the structural novelty (rung 38 computes none).
             let nl = lp.n * powp(tt2 / self.tt2_d, 0.5);
@@ -1397,7 +1400,7 @@ pub fn secant(eta: f64, eta_prev: Option<f64>, r: f64, r_prev: f64, target: f64)
 pub fn hp_eta_loop_closed(
     wgas: &Gas, tt4: f64, f: f64, tt25: f64, tt3: f64, mfp4: f64, cmap: &ComponentMap,
     eta_hpc_base: f64, a4: f64, pi_b: f64, mcorr_hp_d: f64, tau_hpc_d: f64,
-) -> EtaLoop {
+) -> Result<EtaLoop, Abort> {
     let (h25, h3, pr25) = (wgas.h_c(tt25), wgas.h_c(tt3), wgas.pr_c(tt25));
     let tau_hpc = tt3 / tt25;
     let (mut eta, mut eta_prev, mut r_prev) = (eta_hpc_base, None, f64::NAN);
@@ -1405,12 +1408,12 @@ pub fn hp_eta_loop_closed(
         let pi = wgas.pr_c(wgas.t_from_h_c(h25 + eta * (h3 - h25))) / pr25;
         // (†): pi_LPC-FREE by construction.
         let m = (a4 * pi_b * pi * mfp4 * powp(tt25 / tt4, 0.5) / (1.0 + f)) / mcorr_hp_d;
-        let n = cmap.solve_n(m, tau_hpc, tau_hpc_d);
+        let n = cmap.try_solve_n(m, tau_hpc, tau_hpc_d)?;
         let tgt = cmap.eta_c_at(eta_hpc_base, m / n, n);
         let r = tgt - eta;
         if r.abs() <= TwoSpoolMapCore::ETA_TOL {
             counters::note_hp(pass as u64);
-            return EtaLoop { eta, pi, m, n };
+            return Ok(EtaLoop { eta, pi, m, n });
         }
         let nxt = secant(eta, eta_prev, r, r_prev, tgt);
         eta_prev = Some(eta);
@@ -1432,7 +1435,7 @@ pub fn lp_eta_loop_arrow(
     wgas: &Gas, tt2: f64, tt4: f64, f: f64, tt25: f64, mfp4: f64, pi_hpc: f64,
     cmap: &ComponentMap, eta_lpc_base: f64, a4: f64, pi_b: f64, mcorr_lp_d: f64,
     tau_lpc_d: f64,
-) -> EtaLoop {
+) -> Result<EtaLoop, Abort> {
     let (h2, h25, pr2) = (wgas.h_c(tt2), wgas.h_c(tt25), wgas.pr_c(tt2));
     let tau_lpc = tt25 / tt2;
     let (mut eta, mut eta_prev, mut r_prev) = (eta_lpc_base, None, f64::NAN);
@@ -1440,12 +1443,12 @@ pub fn lp_eta_loop_arrow(
         let pi = wgas.pr_c(wgas.t_from_h_c(h2 + eta * (h25 - h2))) / pr2;
         // (‡): carries pi_hpc — the ONE arrow.
         let m = (a4 * pi_b * pi_hpc * pi * mfp4 * powp(tt2 / tt4, 0.5) / (1.0 + f)) / mcorr_lp_d;
-        let n = cmap.solve_n(m, tau_lpc, tau_lpc_d);
+        let n = cmap.try_solve_n(m, tau_lpc, tau_lpc_d)?;
         let tgt = cmap.eta_c_at(eta_lpc_base, m / n, n);
         let r = tgt - eta;
         if r.abs() <= TwoSpoolMapCore::ETA_TOL {
             counters::note_lp(pass as u64);
-            return EtaLoop { eta, pi, m, n };
+            return Ok(EtaLoop { eta, pi, m, n });
         }
         let nxt = secant(eta, eta_prev, r, r_prev, tgt);
         eta_prev = Some(eta);
@@ -1462,7 +1465,7 @@ pub fn lp_eta_loop_arrow(
 fn r39_hp_eta_loop(
     core: &TwoSpoolMapCore, wgas: &Gas, tt4: f64, f: f64, tt25: f64, tt3: f64, mfp4: f64,
     cmap: &ComponentMap,
-) -> EtaLoop {
+) -> Result<EtaLoop, Abort> {
     hp_eta_loop_closed(wgas, tt4, f, tt25, tt3, mfp4, cmap,
                        core.base.eta_hpc, core.base.a4, core.base.pi_b,
                        core.mcorr_hp_d, core.tau_hpc_d)
@@ -1472,7 +1475,7 @@ fn r39_hp_eta_loop(
 fn r39_lp_eta_loop(
     core: &TwoSpoolMapCore, wgas: &Gas, tt2: f64, tt4: f64, f: f64, tt25: f64, mfp4: f64,
     pi_hpc: f64, cmap: &ComponentMap,
-) -> EtaLoop {
+) -> Result<EtaLoop, Abort> {
     lp_eta_loop_arrow(wgas, tt2, tt4, f, tt25, mfp4, pi_hpc, cmap,
                       core.base.eta_lpc, core.base.a4, core.base.pi_b,
                       core.mcorr_lp_d, core.tau_lpc_d)

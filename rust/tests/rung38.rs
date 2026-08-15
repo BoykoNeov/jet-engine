@@ -278,6 +278,11 @@ fn gate3_structural_the_hp_leaf_takes_no_lp_quantity() {
         turbojet::gas::powp(m.core().reference.station("25").tt, 0.5)
             / m.core().reference.station("25").pt,
         cc.tt3 / cc.tt25);
+    // `.expect` and not `.unwrap()`: slice M made this loop fallible (rung 54's `_scan` catches
+    // its `solve_n` bracket), and this gate is about the SIGNATURE — an `Err` here would mean the
+    // HP leaf stopped closing on a flat map, which is a different failure from the one the
+    // assertion below describes.
+    let hp = hp.expect("the HP leaf closes on a flat map");
     assert!(hp.eta.is_finite() && hp.pi > 1.0);
 }
 

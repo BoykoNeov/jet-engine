@@ -3589,6 +3589,33 @@ min even sampled at 2 throttles, and the first attempt at that measurement alrea
 15-minute cap with its output buffered. The dump is started DETACHED and UNBUFFERED as step 4's
 first action, and the Rust reader is written while it runs — not after.
 
+#### Step 1 — SHIPPED. **P2 and P3 HOLD; the revert unit reached a TEST, which (a) did not say**
+
+`cargo test --release`: **481 passed / 0 failed across 56 suites, exit 0** — every digit the
+pre-edit baseline's, so all four value oracles and all seven suites re-run bit-identical and **P2
+is settled without a revert.** P3 rides on the same run: `vsv` is now a live field in `psi`, and
+the only thing standing between it and every rung ≤ 52 number is the `vsv == 0.0` early return.
+
+**What the port found that (a) did not.** (a) enumerated the revert unit as three SOURCE files.
+It is four files, and the fourth is a GATE: `rung38.rs`'s "no LP quantity is a parameter" test
+calls `hp_eta_loop_closed` DIRECTLY — it is a signature test, so a signature change reaches it by
+construction. It now `.expect`s, with the reason in the gate: an `Err` there would mean the HP
+leaf stopped closing on a flat map, which is a different failure from the one its assertion
+describes. `rung32.rs`'s ordering arm needed the two new fields spelled out, and `vsv: 0.0` is
+load-bearing there rather than padding — it is what sends `psi` down the early return, so the arm
+really does compare orderings of the TWO-term expression it names.
+
+**Two zero-firing verdicts were re-dated rather than deleted.** `map.rs`'s "0 of 810 cells, so it
+stays an `assert!`" is left standing beside the correction, because it is still true of the grid
+that measured it; and `bleed.rs`'s `lp_eta_loop_bleed` keeps its panicking `solve_n` **with the
+expiry written into the module note** — rung 61 overrides `at_setting` to keep the valve open
+through every sweep, which puts that site inside `_scan`'s catch for the first time. Slice O
+measures it; it does not inherit the paragraph.
+
+One thing shipped that step 1 did NOT gate, and it is named so it cannot be forgotten: `phi_max`
+is still unported (phase 6), and **its rung-53 early return is owed with it** — porting that body
+without the `vsv == 0.0` branch would be P3's failure one phase late.
+
 ---
 
 ## 6. Named risks

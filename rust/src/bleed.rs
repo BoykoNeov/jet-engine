@@ -48,6 +48,17 @@
 //! (which DOES fire), the `unphysical` closure check, the LP secant and the turbine loop (all
 //! measured **0** over 147 cells × 4 bleed levels).
 //!
+//! **SLICE M MADE THE HP HOOK FALLIBLE, AND LEFT THIS MODULE'S OWN `solve_n` PANICKING — WITH AN
+//! EXPIRY DATE.** Rung 54's `_scan` marches the stator closed until the solve gives out, and the
+//! frame it lands on is [`ComponentMap::solve_n`](crate::map::ComponentMap::solve_n)'s bracket,
+//! so the two rung-39 efficiency loops now return `Result` and [`try_cascade_bleed`] propagates
+//! the HP one with `?`. [`lp_eta_loop_bleed`]'s own `solve_n` is NOT converted: no rung-53/54
+//! walk reaches it, because rung 53's `at_setting` builds a valve-shut sibling. **Rung 61's
+//! `StatorBleedMatcher` overrides `at_setting` precisely so the valve stays OPEN through every
+//! sweep** — which puts this call site inside `_scan`'s catch for the first time. Slice O must
+//! MEASURE that site, not inherit this paragraph: a zero-firing verdict is a claim about the grid
+//! that measured it.
+//!
 //! # The narrowing, named rather than left implicit
 //!
 //! Python's `TwoSpoolBleedMatcher` accepts `lp_disabled`, and with the valve shut it forwards to
@@ -222,7 +233,7 @@ pub fn try_cascade_bleed(
         // THE TRIANGLE, unchanged in shape: HP closes on itself (VERBATIM rung 39, THROUGH the
         // hook — the structural claim), THEN LP closes onto pi_HPC with the extraction in its
         // flow.
-        let hp = (core.hooks.hp_eta_loop)(core, wgas, tt4, f, tt25, tt3, mfp4, &core.map_hp);
+        let hp = (core.hooks.hp_eta_loop)(core, wgas, tt4, f, tt25, tt3, mfp4, &core.map_hp)?;
         let lp = lp_eta_loop_bleed(wgas, tt2, tt4, f, tt25, mfp4, hp.pi, &core.map_lp, b,
                                    base.eta_lpc, base.a4, base.pi_b, core.mcorr_lp_d,
                                    core.tau_lpc_d);

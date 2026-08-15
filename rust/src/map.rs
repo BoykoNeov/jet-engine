@@ -43,6 +43,13 @@
 //! `OffDesignMatcher::match_point` — rung 31's static-flight edge, not rung 32's. So unlike
 //! slice I, this module adds no `try_` twin: no caller here marches past a failure.
 //!
+//! **SLICE M OVERTURNED THAT, AND THE SENTENCE ABOVE IS LEFT STANDING BECAUSE IT IS STILL TRUE OF
+//! ITS OWN GRID.** Rung 54's `_scan` marches the stator closed until the solve gives out, catching
+//! the raise — so [`ComponentMap::solve_n`] now has a [`try_solve_n`](ComponentMap::try_solve_n)
+//! twin, taken by the two rung-39 call sites `_scan` reaches and by neither of the other two.
+//! A zero-firing verdict is a claim about the grid that measured it, and it expires when a new
+//! caller arrives; see `solve_n`'s own note for the per-site table and for slice O's expiry.
+//!
 //! **3. RUNG 32 IS OLDER THAN RUNG 33, AND THE PORT KEEPS THAT.** `MapMatcher::match` does NOT
 //! dispatch to the subsonic branch — the Python's does not either, because rung 33 added the
 //! dispatch to `OffDesignMatcher.match`, which rung 32 overrides. Below the unchoke boundary a
@@ -70,26 +77,35 @@
 //! line, read by rung 41's `surge_margin` alone; every rung ≤ 40 number is unchanged, and that is
 //! P2's bill — three value oracles and five suites re-run bit-identical, or the field reverts.
 //!
-//! **`is_flat` IS STILL NOT PORTED, AND SLICE L NARROWED ITS OWN DEFERRAL TABLE TO SAY SO.**
-//! § 5.8.1 listed rung 41 gate 1b's closing `ComponentMap.flat().with_phi_surge(0.6).is_flat()`
-//! as porting now. It does not, for two reasons found while writing the port. **(1) The predicate
-//! would be Python's MINUS A TERM.** Python's `is_flat` reads `vsv == 0.0`, and `vsv` is rung 53's
-//! — slice M's. A Rust `is_flat` without that conjunct is inert exactly as far as today's sweep
-//! and no further: **the `l` mistake of slice J→K, repeated on a predicate.** **(2) The Rust has
-//! no flat-reduce BRANCH for it to guard.** Python's flatness is a claim about which fields a
-//! predicate reads; here the reduce is STRUCTURAL — [`psi`](ComponentMap::psi) returns `1.0` and
-//! [`eta_c_at`](ComponentMap::eta_c_at) returns its base — so `is_flat()` could return `true`
-//! while the reduce is broken, and vice versa. P8's content is therefore gated where it lives, as
-//! a VALUE: a flat map with a floor and one without produce a bit-identical matched point
-//! (`rung41.rs` gate 1). `is_flat` lands with `vsv`, in slice M.
+//! **SLICE M ADDS THE LAST TWO — `vsv` (53) AND `capacity` (54) — AND THE FIELD SUBSET IS NOW
+//! COMPLETE.** They arrive together because rungs 53 and 54 are inseparable (54's throat extends
+//! 53's margin row in place), and they arrive with OPPOSITE standing: `capacity` is inert like
+//! `phi_surge`, while **`vsv` is the first field on this struct that enters a SOLVER** — it is a
+//! new term in [`psi`](ComponentMap::psi), `psi` is [`solve_n`](ComponentMap::solve_n)'s residual,
+//! and `solve_n` sits inside both rung-39 efficiency fixed points. Every rung ≤ 52 number survives
+//! only because `psi` RETURNS EARLY at `vsv == 0.0` (§ 5.9 P3); P2 is what pays for that claim —
+//! four value oracles and seven suites re-run bit-identical, or the fields revert.
+//!
+//! **`is_flat` LANDS WITH THEM, WHICH IS WHAT SLICE L DEFERRED.** § 5.8.1 listed rung 41 gate 1b's
+//! closing `ComponentMap.flat().with_phi_surge(0.6).is_flat()` as porting then; it did not, for
+//! two reasons found while writing that port. **(1) The predicate would have been Python's MINUS A
+//! TERM** — `is_flat` reads `vsv == 0.0`, and without that conjunct it is inert exactly as far as
+//! the sweep that measured it and no further: the `l` mistake of slice J→K, repeated on a
+//! predicate. **(2) The Rust has no flat-reduce BRANCH for it to guard.** That second reason still
+//! stands and is why the predicate is NOT a reduce guard even now: the Rust reduce is STRUCTURAL,
+//! so `is_flat()` could return `true` while the reduce is broken. The reduce stays gated as a
+//! VALUE in `rung41.rs` gate 1; what [`is_flat`](ComponentMap::is_flat) gates is the RULE, and its
+//! own gate discriminates in both directions (`vsv != 0` ⇒ false, `capacity != 0` ⇒ still true).
 //!
 //! `phi_max` is still not ported: it is called only by the rung-34/40/43 forward transient
-//! closures, in phase 6.
+//! closures, in phase 6. **Its rung-53 early return is therefore owed with it** — Python's
+//! `phi_max` returns before the swirl term at `vsv == 0.0` exactly as `psi` does, and porting the
+//! body without that branch in phase 6 would be P3's failure one phase late.
 
 use crate::components::choked_mfp;
 use crate::components::ram_recovery;
 use crate::engine::{score, Engine, FlightCondition, Performance};
-use crate::gas::{powp, FlowState};
+use crate::gas::{powp, Abort, FlowState};
 use crate::matcher::{Branch, OffDesignMatcher, OffDesignResult, Rebuilt};
 
 thread_local! {
@@ -187,31 +203,59 @@ pub struct ComponentMap {
     /// already-gated code, and P2 is what pays for it — the three value oracles and the
     /// rung-31/32/33/38/39 suites re-run bit-identical, or the change reverts.
     pub phi_surge: f64,
+    /// **RUNG 53's VARIABLE STATOR SETTING**, `v = tan(alpha_1)` — the swirl the row induces.
+    /// `> 0` closed, `< 0` opened past axial, `0.0` the design setting.
+    ///
+    /// **THE ONE FIELD ON THIS STRUCT THAT ENTERS A SOLVER**, and the difference matters. `l` and
+    /// `phi_surge` arrived inert — the first read only by [`psi`](ComponentMap::psi)'s already-live
+    /// term, the second by rung 41's diagnostics. This one enters `psi` as a NEW term, `psi` is
+    /// [`solve_n`](ComponentMap::solve_n)'s residual, and `solve_n` is inside both rung-39
+    /// efficiency fixed points — so a moved stator moves the matched point. That is rung 53's P1
+    /// (*the stator is a SPEED lever*) expressed as a call graph, and it is why every rung ≤ 52
+    /// number survives only through the `vsv == 0.0` EARLY RETURN in `psi`, never through an
+    /// algebraic `- 0.0 * …` that would be a different last bit (§ 5.9 P3).
+    ///
+    /// Slice M carries it, having been named as owed here since slice J's field-subset note.
+    pub vsv: f64,
+    /// **RUNG 54's THROAT CAPACITY FRACTION** `C = MFP(M_th0)/MFP(1)` in `[0, 1)` — the fraction
+    /// of its choking corrected flow the vane row passes AT THE DESIGN SETTING. `0.0` means NO
+    /// throat model, exactly as `phi_surge = 0.0` means no surge line.
+    ///
+    /// **A PURE DIAGNOSTIC, like `phi_surge` and unlike `vsv`.** It enters no solver — the throat
+    /// is a post-hoc functional of the ALREADY-SOLVED state — so a map carrying a throat model
+    /// produces a bit-identical matched point to the same map without one. That is rung 54's own
+    /// P1, and it is what makes the rung's reduce an INVARIANCE OVER `C` rather than an identity
+    /// at one value.
+    pub capacity: f64,
 }
 
 impl ComponentMap {
     /// The FLAT map: every `eta` held at its design value, `sigma = 0`. Reduces [`MapMatcher`]
     /// to rung 31.
     pub const fn flat() -> Self {
-        Self { a: 0.0, b: 0.0, c: 0.0, sigma: 0.0, a_t: 0.0, l: 0.0, phi_surge: 0.0 }
+        Self { a: 0.0, b: 0.0, c: 0.0, sigma: 0.0, a_t: 0.0, l: 0.0, phi_surge: 0.0,
+               vsv: 0.0, capacity: 0.0 }
     }
 
     /// Representative shape 1 of 3 — curvature concentrated in FLOW. Moderated so `eta_c` stays
     /// in a believable band; the load-bearing claims are asserted ACROSS all three and the droop
     /// magnitude is disclaimed.
     pub const fn flow_dominated() -> Self {
-        Self { a: 0.25, b: 0.05, c: 0.0, sigma: 0.3, a_t: 0.02, l: 0.0, phi_surge: 0.0 }
+        Self { a: 0.25, b: 0.05, c: 0.0, sigma: 0.3, a_t: 0.02, l: 0.0, phi_surge: 0.0,
+               vsv: 0.0, capacity: 0.0 }
     }
 
     /// Representative shape 2 of 3 — curvature concentrated in SPEED.
     pub const fn pressure_dominated() -> Self {
-        Self { a: 0.05, b: 0.20, c: 0.0, sigma: 0.3, a_t: 0.02, l: 0.0, phi_surge: 0.0 }
+        Self { a: 0.05, b: 0.20, c: 0.0, sigma: 0.3, a_t: 0.02, l: 0.0, phi_surge: 0.0,
+               vsv: 0.0, capacity: 0.0 }
     }
 
     /// Representative shape 3 of 3 — a TILTED island (`c != 0`), which the other two do not
     /// exercise.
     pub const fn tilted() -> Self {
-        Self { a: 0.12, b: 0.12, c: 0.08, sigma: 0.6, a_t: 0.02, l: 0.0, phi_surge: 0.0 }
+        Self { a: 0.12, b: 0.12, c: 0.08, sigma: 0.6, a_t: 0.02, l: 0.0, phi_surge: 0.0,
+               vsv: 0.0, capacity: 0.0 }
     }
 
     /// RUNG 36. A copy of this map carrying a surge line at stall flow coefficient `phi_surge`.
@@ -229,13 +273,224 @@ impl ComponentMap {
         Self { phi_surge, ..self }
     }
 
+    /// Is this map FLAT — i.e. does [`MapMatcher`] on it reduce to rung 31 bit-for-bit?
+    ///
+    /// **THE PREDICATE'S CONTENT IS AN ASYMMETRY, NOT A ZERO CHECK.** Two of this struct's nine
+    /// fields are deliberately EXCLUDED and the reasons differ in direction:
+    ///
+    /// * `phi_surge` (rung 36) and `capacity` (rung 54) are **pure diagnostics** — neither enters
+    ///   `psi`, `eta_c_at` or `solve_n`, so a map carrying a surge floor or a throat model still
+    ///   reduces. Excluding them is what makes the reduce claim survive rungs 36/41/54.
+    /// * `vsv` (rung 53) is **included**, by the same rule read the other way: it enters `psi`, so
+    ///   a swirled map is NOT flat and must not claim the rung-31 reduce.
+    ///
+    /// **SLICE L DECLINED TO PORT THIS AND SAID WHY** (module note): a Rust `is_flat` without the
+    /// `vsv` conjunct would have been Python's predicate MINUS A TERM — inert exactly as far as
+    /// the sweep that measured it and no further, which is slice J→K's `l` mistake repeated on a
+    /// predicate. It lands here because slice M is where `vsv` exists to be read.
+    ///
+    /// It is still not a reduce GUARD: the Rust reduce is STRUCTURAL (`psi` returns `1.0`,
+    /// `eta_c_at` returns its base), so this could return `true` while the reduce is broken. The
+    /// reduce is gated as a VALUE in `rung41.rs` gate 1. What this predicate is for is the RULE —
+    /// which fields flatness reads — and its gate must therefore discriminate in BOTH directions:
+    /// `vsv != 0` ⇒ `false`, `capacity != 0` ⇒ still `true`.
+    pub fn is_flat(&self) -> bool {
+        self.a == 0.0 && self.b == 0.0 && self.c == 0.0 && self.sigma == 0.0
+            && self.a_t == 0.0 && self.l == 0.0 && self.vsv == 0.0
+    }
+
+    // --- RUNG 53: the variable stator ------------------------------------------------------
+
+    /// RUNG 53. A copy of this map with its stators moved to setting `vsv` (`= tan(alpha_1)`).
+    ///
+    /// The setting is a swept geometry COORDINATE, not a fitted constant: both channels it drives
+    /// — the loading law in [`psi`](Self::psi) and the stall floor in
+    /// [`phi_surge_at`](Self::phi_surge_at) — are derived from this map's OWN `l` and `phi_surge`.
+    /// `vsv == 0.0` is the design setting and every rung ≤ 52 path is bit-for-bit.
+    pub const fn with_vsv(self, vsv: f64) -> Self {
+        Self { vsv, ..self }
+    }
+
+    /// RUNG 53. The critical ROTOR RELATIVE INLET ANGLE at stall, `tan(beta_1)_crit`.
+    ///
+    /// Read off rungs 36/41's imposed floor, which is BY DEFINITION the `phi` at which the
+    /// design-set stators (`v = 0`, no pre-swirl) reach it: `tan(beta_1) = (1 - phi*v)/phi = 1/phi`
+    /// at `v = 0`. So `T_c = 1/phi_surge` — **ZERO new constants.**
+    ///
+    /// This is a property of the blade METAL, hence stator-INVARIANT, which is exactly why it and
+    /// not `phi` is the coordinate in which a stator-moved surge boundary stands still
+    /// (`docs/rung53-spec.md` § The headline).
+    pub fn tan_beta1_crit(&self) -> f64 {
+        assert!(self.phi_surge > 0.0,
+                "tan_beta1_crit needs the rung-36 floor as its anchor: build the map with \
+                 .with_phi_surge(phi_surge).");
+        1.0 / self.phi_surge
+    }
+
+    /// RUNG 53. Rotor relative inlet angle at flow coefficient `phi` and THIS stator setting.
+    ///
+    /// The axial velocity is `phi*U` and the relative tangential velocity is `U*(1 - phi*v)`, so
+    /// `tan(beta_1) = (1 - phi*v)/phi = 1/phi - v`. Stall iff `>= tan_beta1_crit`.
+    pub fn tan_beta1(&self, phi: f64) -> f64 {
+        1.0 / phi - self.vsv
+    }
+
+    /// RUNG 53. The stall floor AT THIS STATOR SETTING — the rung's second derived channel.
+    ///
+    /// Stall is a critical INCIDENCE, `tan(beta_1) >= T_c`, and `tan(beta_1) = 1/phi - v`, so the
+    /// floor is where `1/phi - v = T_c`:
+    ///
+    /// ```text
+    ///     phi_surge(v) = 1/(T_c + v) = phi_surge(0) / (1 + v*phi_surge(0))
+    /// ```
+    ///
+    /// Closing the stators (`v > 0`) LOWERS the floor. Zero new constants: `T_c` is rungs 36/41's
+    /// own imposed floor read as an incidence, so only its VARIATION is new and that variation is
+    /// DERIVED.
+    ///
+    /// **THE SPLIT OF DUTIES IS DELIBERATE, so rung 41's readers stay literally unchanged:** the
+    /// FIELD `phi_surge` is the design-setting ANCHOR (what rungs 36/41/44/45 read), this METHOD
+    /// is the live floor (what rung 53's diagnostics read). They coincide at `v = 0`, and the
+    /// `vsv == 0.0` branch returns the field EXACTLY rather than through the algebra.
+    pub fn phi_surge_at(&self) -> f64 {
+        if self.vsv == 0.0 {
+            return self.phi_surge;
+        }
+        self.phi_surge / (1.0 + self.vsv * self.phi_surge)
+    }
+
+    // --- RUNG 54: the stator-row THROAT ----------------------------------------------------
+
+    /// RUNG 54. A copy of this map carrying a THROAT MODEL of design capacity fraction
+    /// `C = MFP(M_th0)/MFP(1)` in `[0, 1)`.
+    ///
+    /// This is rung 54's ONE disclosed constant; the AREA law it multiplies is derived
+    /// ([`throat_ratio`](Self::throat_ratio)). `C = 0.0` means NO throat model, exactly as
+    /// `phi_surge = 0.0` means no surge line — and, like `phi_surge`, it never touches
+    /// `psi`/`eta_c_at`/the running line, so it cannot move a matched number (rung 54 P1).
+    pub fn with_capacity(self, capacity: f64) -> Self {
+        assert!((0.0..1.0).contains(&capacity),
+                "rung-54 capacity is a design FRACTION of choking flow, C in [0,1): got \
+                 {capacity}. C >= 1 would mean the row is already past choke at its own design \
+                 point.");
+        Self { capacity, ..self }
+    }
+
+    /// RUNG 54. The vane-row throat area at THIS setting over its design-setting value —
+    /// DERIVED, zero new constants, off rung 53's OWN coordinate.
+    ///
+    /// A cascade's throat is the minimum opening `o` between adjacent vanes; for pitch `s` and
+    /// metal exit angle `alpha_1` from axial the standard cascade relation is `o/s = cos(alpha_1)`.
+    /// Rung 53's setting is `v = tan(alpha_1)`, so
+    ///
+    /// ```text
+    ///     A_th(v)/A_th(0) = cos(alpha_1) = 1/sqrt(1 + v^2)
+    /// ```
+    ///
+    /// **THE ROTATION THAT BUYS INCIDENCE IS THE ROTATION THAT SPENDS THE THROAT**: one
+    /// coordinate, now three channels. Note this is EVEN in `v` — the throat is maximal at the
+    /// design setting and closes whichever way the vane turns. That coincidence is INHERITED from
+    /// rung 53's coordinate origin, not derived (`docs/rung54-spec.md` § Concessions).
+    ///
+    /// Python spells the root `(1.0 + v*v) ** 0.5`, which is [`powp`](crate::gas::powp)'s domain
+    /// and NOT `f64::sqrt` — the two agree here, but the port's rule is to spell the source's
+    /// operator, so this goes through `powp` like every other `** 0.5` in the tree.
+    pub fn throat_ratio(&self) -> f64 {
+        1.0 / powp(1.0 + self.vsv * self.vsv, 0.5)
+    }
+
+    /// RUNG 54. The THROAT-referred corrected flow at this setting, normalised on design:
+    /// `X(v) = m / (A_th(v)/A_th(0))`.
+    ///
+    /// `m` is the FACE-referred corrected flow (design = 1) — rung 53's own `phi_op * n`. The face
+    /// flow is NOT divided by the throat: annulus continuity gives `Vx = mdot/(rho*A)` independent
+    /// of `alpha_1` (the vane TURNS the flow, it does not squeeze the annulus), so the throat never
+    /// touches `phi = Vx/U`. It only sets where the Mach peaks — which is exactly why this channel
+    /// is diagnostic-only (rung 54 P1).
+    ///
+    /// **Spelled as Python spells it — a DIVISION by [`throat_ratio`](Self::throat_ratio), not a
+    /// multiplication by `sqrt(1 + v^2)`.** The docstring gives both forms; only one of them is
+    /// the instruction sequence, and *COPY vs REDERIVATION* says the second derivation is where
+    /// the last bit goes.
+    pub fn throat_loading(&self, m: f64) -> f64 {
+        m / self.throat_ratio()
+    }
+
+    /// RUNG 54's THIRD reference-free currency: distance to the row CHOKING,
+    /// `M_c = 1 - C*X(v)`, choked iff `<= 0`.
+    ///
+    /// Its boundary (throat Mach = 1) is set by GEOMETRY and is stator-invariant in its own
+    /// coordinate, so by rung 53's law it is a legitimate margin — unlike `M_phi`, whose wall moves
+    /// with the lever. Needs the throat model (`C > 0`).
+    pub fn capacity_margin(&self, m: f64) -> f64 {
+        assert!(self.capacity > 0.0,
+                "rung-54 capacity_margin needs a throat model: build the map with \
+                 .with_capacity(C).");
+        1.0 - self.capacity * self.throat_loading(m)
+    }
+
+    /// RUNG 54. Does the row choke at this face-referred corrected flow and setting?
+    pub fn chokes(&self, m: f64) -> bool {
+        self.capacity_margin(m) <= 0.0
+    }
+
+    /// RUNG 54. The disclosed constant READ PHYSICALLY: the design throat Mach `M_th0` whose MFP
+    /// fraction is `C`, by inverting `MFP(M)/MFP(1)` with
+    /// `MFP(M) ∝ M*(1 + (g-1)/2*M^2)^(-(g+1)/(2(g-1)))`.
+    ///
+    /// A reading helper only — nothing in the model consumes it. It exists so the one constant
+    /// rung 54 adds is disclosed in units an engineer can judge (`C = 0.80` ⟺ `M_th0 = 0.553`)
+    /// rather than as an abstract fraction.
+    ///
+    /// The bisection runs a FIXED 200-pass cap with an absolute `1e-15` width break, so like
+    /// [`solve_n`](Self::solve_n) its cost is data-independent; unlike `solve_n` its result is
+    /// read by no solver, so no count key rides on it.
+    ///
+    /// **`gamma` IS EXPLICIT WHERE PYTHON DEFAULTS IT TO `1.4`**, and the one shipped caller —
+    /// rung 54's `throat_margin` — calls it bare, so that call site must pass `1.4` and nothing
+    /// else. Rust has no default arguments; making the parameter explicit is the honest form, but
+    /// it moves the default from the callee to every caller, which is exactly the kind of quiet
+    /// re-spelling a value oracle WOULD catch (the number moves) and a signature review would not.
+    pub fn design_throat_mach(&self, gamma: f64) -> f64 {
+        assert!(self.capacity > 0.0,
+                "no throat model: build the map with .with_capacity(C).");
+        let e = -(gamma + 1.0) / (2.0 * (gamma - 1.0));
+        let refv = powp(1.0 + (gamma - 1.0) / 2.0, e);
+        let ratio = |m: f64| m * powp(1.0 + (gamma - 1.0) / 2.0 * m * m, e) / refv;
+
+        let (mut lo, mut hi) = (1e-6f64, 1.0f64);
+        for _ in 0..200 {
+            let mid = 0.5 * (lo + hi);
+            if ratio(mid) < self.capacity {
+                lo = mid;
+            } else {
+                hi = mid;
+            }
+            if hi - lo <= 1e-15 {
+                break;
+            }
+        }
+        0.5 * (lo + hi)
+    }
+
     /// Loading (work) coefficient at flow coefficient `phi`. `psi(1) = 1`, slope `-l` at design.
     ///
-    /// **The Python's body carries ONE more term, and its absence here is MEASURED inert.** It
-    /// subtracts `vsv*(1+l)*phi` unless `vsv` is zero; `vsv` is rung 53's stator setting, `0.0`
-    /// at every rung-32 and rung-39 call. `l` was in the same position until slice K and is now
-    /// carried — see the module note: it is `0.0` for rung 32 and NONZERO in rung 39's own
-    /// shapes, so "measured inert" was a statement about the sweep, not about the field.
+    /// **RUNG 53's STATOR TERM, AND THE EARLY RETURN IS THE PORT, NOT AN OPTIMISATION.** With
+    /// inlet swirl `v = tan(alpha_1)` the Euler work is `U^2*[1 - phi*(tan(beta_2) + v)]`;
+    /// normalising on the design work and matching this map's own `dpsi/dphi|_1 = -l` derives
+    /// `tan(beta_2) = l/(1+l)`, so the stator enters as exactly one extra term `- v*(1+l)*phi`
+    /// with **no new constant**. The parabolic `sigma` term is the NON-Euler loss curvature and is
+    /// deliberately left stator-inert (`docs/rung53-spec.md` § Concessions).
+    ///
+    /// Python returns BEFORE that term when `vsv == 0.0`, and so does this. Spelling it
+    /// `base - 0.0*(1.0 + l)*phi` instead would be an assumed algebraic no-op — the
+    /// *power-spelling-is-split* failure class, and the one thing that could move a rung ≤ 52 bit
+    /// (§ 5.9 P3). Every rung-32/38/39/41/42 call arrives at `vsv == 0.0` and takes the early
+    /// return, which is why P2's four oracles and seven suites re-run bit-identical.
+    ///
+    /// `l` sat where `vsv` sits until slice K and is now carried — see the module note: it is
+    /// `0.0` for rung 32 and NONZERO in rung 39's own shapes, so "measured inert" was a statement
+    /// about the sweep, not about the field.
     ///
     /// **THE TERM ORDER IS LOAD-BEARING AND THE ORACLE CANNOT SEE IT.** Float subtraction is not
     /// associative, so `1.0 - l*u - sigma*(u*u)` is algebraically identical to the Python's
@@ -258,7 +513,11 @@ impl ComponentMap {
     pub fn psi(&self, phi: f64) -> f64 {
         PSI_CALLS.with(|c| c.set(c.get() + 1));
         let u = phi - 1.0;
-        1.0 - self.sigma * (u * u) - self.l * u
+        let base = 1.0 - self.sigma * (u * u) - self.l * u;
+        if self.vsv == 0.0 {
+            return base;
+        }
+        base - self.vsv * (1.0 + self.l) * phi
     }
 
     /// Compressor efficiency read off the island at `(flow coefficient, corrected speed)`.
@@ -294,16 +553,56 @@ impl ComponentMap {
     /// instrument actually reads — so the counter here is [`psi_calls`], and `psi` is called
     /// exactly once per residual.)
     ///
-    /// The bracket assert is REACHABLE code that never fires on the matched envelope — 0 of 810
-    /// swept cells (§ 5.6 (a)) — so it stays an `assert!` and not an `Abort`: nothing catches it.
+    /// **SLICE M OVERTURNED THIS FUNCTION'S OWN FALLIBILITY VERDICT, WHICH USED TO READ "the
+    /// bracket assert never fires — 0 of 810 swept cells, so it stays an `assert!`: nothing
+    /// catches it".** That was measured over slice J's grid, and slice J's grid had no rung-54
+    /// `_scan` in it, because rung 54 did not exist in the Rust yet. `_scan` walks the stator
+    /// closed at fixed throttle *until the solve gives out*, catching `AssertionError` to find the
+    /// edge — and on **100 of 100** probe cells (CPG, TPG **and** equilibrium) the innermost
+    /// raising frame is THIS bracket, 50/50 split by the swept spool with no crossover (§ 5.9 (i)).
+    /// The walk unloading its own speed line until the map stops being valid IS the measurement
+    /// `_scan` exists to make.
+    ///
+    /// **A ZERO-FIRING VERDICT IS A CLAIM ABOUT THE GRID, AND IT EXPIRES WHEN A NEW CALLER
+    /// ARRIVES** — the second time a slice has done this to a predecessor (slice L step 1 did it
+    /// to § 5.4 (i)'s "`solve` stays a panic"). So fallibility here is decided PER CALL SITE, as
+    /// slice L established:
+    ///
+    /// | call site | inside `_scan`'s catch? | verdict |
+    /// |---|---|---|
+    /// | `two_spool.rs` rung 39 `hp_eta_loop_closed` | yes, 40 firings | [`try_solve_n`](Self::try_solve_n) |
+    /// | `two_spool.rs` rung 39 `lp_eta_loop_arrow` | yes, 40 firings | [`try_solve_n`](Self::try_solve_n) |
+    /// | `map.rs` rung 32 `operating_point` | no | keeps this panicking half |
+    /// | `bleed.rs` rung 42 `lp_eta_loop_bleed` | no | keeps this panicking half |
+    ///
+    /// **The last row is a verdict with an expiry date, and it is written down rather than left to
+    /// be rediscovered:** rung 61's `StatorBleedMatcher` (slice O) inherits `_scan` and overrides
+    /// `at_setting` to keep the valve open, so ITS walk reaches `lp_eta_loop_bleed`. Slice O must
+    /// re-measure that site rather than inherit this row.
+    ///
+    /// This half stays for the two sites nothing catches, and it is a two-line wrapper over the
+    /// fallible one so the pair cannot diverge — the same discipline the hook table applies to
+    /// `try_match_point`.
     pub fn solve_n(&self, m: f64, tau_c: f64, tau_c_d: f64) -> f64 {
+        self.try_solve_n(m, tau_c, tau_c_d).unwrap_or_else(|e| panic!("{}", e.0))
+    }
+
+    /// The FALLIBLE twin of [`solve_n`](Self::solve_n) — see its note for which call sites take
+    /// which half, and why the answer changed in slice M.
+    ///
+    /// The `Abort` message is the panicking half's message verbatim, because it is now the SAME
+    /// string produced in one place: a twin whose two halves say different things would make the
+    /// caught edge and the uncaught crash look like different failures.
+    pub fn try_solve_n(&self, m: f64, tau_c: f64, tau_c_d: f64) -> Result<f64, Abort> {
         let target = (tau_c - 1.0) / (tau_c_d - 1.0);
         let g = |n: f64| self.psi(m / n) * n * n - target;
 
         let (mut lo, mut hi) = (0.1f64, 2.0f64);
         let (mut flo, fhi) = (g(lo), g(hi));
-        assert!(flo < 0.0 && 0.0 < fhi,
-                "speed-line bracket fails for (m={}, tau_c={}): {}, {}", m, tau_c, flo, fhi);
+        if !(flo < 0.0 && 0.0 < fhi) {
+            return Err(Abort(format!(
+                "speed-line bracket fails for (m={}, tau_c={}): {}, {}", m, tau_c, flo, fhi)));
+        }
         for _ in 0..200 {
             let mid = 0.5 * (lo + hi);
             let fm = g(mid);
@@ -317,7 +616,7 @@ impl ComponentMap {
                 break;
             }
         }
-        0.5 * (lo + hi)
+        Ok(0.5 * (lo + hi))
     }
 }
 
