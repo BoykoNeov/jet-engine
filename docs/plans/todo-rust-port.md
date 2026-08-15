@@ -3524,6 +3524,71 @@ with its output still buffered, having recorded nothing** — so the re-run prin
 unbuffered. Two consequences for the dump: the equilibrium arm is sampled at 2 throttles rather
 than 4, and any `_scan`-driven dump column states its own grid.
 
+#### The steps — SIX, and step 1 is the whole revert unit
+
+Slice L's shape (four steps, four commits) with two additions: the gated-code refactor is
+ISOLATED into step 1 so P2's "one changed bit ⇒ revert" has a clean unit to revert, and the
+source correction slice M owes (§ 5.9 (viii)) is its own docs-only step at the end.
+
+| step | scope | gate |
+|------|-------|------|
+| **1** | **ALL changes to already-gated code**: `vsv` + `capacity` on `ComponentMap`, its ten rung-53/54 channels, `is_flat`, the `psi` early return, and the two `try_solve_n` twins with the hook-table signature change they force | **P2** — the four oracles and the seven suites re-run bit-identical |
+| **2** | `stator.rs` rung 53: `VariableStatorCore`, `R53`, `at_setting` as the table's fourth slot, `stator_margin`, `stator_sweep`, `currency_split`, `throttle_currency`, `incidence_schedule`; the `slice_m_deferrals` IOU (P10) | compiles + a smoke check against one dumped cell |
+| **3** | `stator.rs` rung 54: `throat_margin`, `throat_sweep`, `_scan`, `_interp`, `_cross`, `authority_ceiling`, `_schedule_root`, `schedule_throat`, `R54` | same |
+| **4** | the slice-M oracle — Python dump LAUNCHED FIRST (see below), Rust reader written while it runs; P4/P5/P6/P7's census bars | `slice_m_oracle.rs` bit-exact |
+| **5** | the two suites, `rung53.rs` (22) + `rung54.rs` (21), incl. P8's cap-conditional walk-over and P9's two reduce contracts | 43 gates green |
+| **6** | the SOURCE correction: `docs/rung54-spec.md` §'s unreachable trace, and `incidence_schedule`'s docstring condition | docs-only, **no gate** (§ Commands' rule) |
+
+**(a) P2's REVERT UNIT IS WIDER THAN P2's OWN TEXT, AND THE EXTRA PART IS IN TWO MORE FILES.**
+P2 enumerates "`vsv` and `capacity` arriving on `ComponentMap`, and the `try_solve_n` twins on
+two call sites". But `solve_n`'s bracket assert fires INSIDE `r39_hp_eta_loop` /
+`r39_lp_eta_loop`, so a fallible twin at those sites turns those two hook entries from `EtaLoop`
+to `Result<EtaLoop, Abort>` — a change to the PUBLIC `TwoSpoolHooks` signature, which ripples
+into `try_match_point`'s body and into `bleed.rs`, whose cascade calls `hp_eta_loop_closed`
+verbatim THROUGH the table. So the unit is **two fields + two twins + one hook-table signature
+across `map.rs`, `two_spool.rs` and `bleed.rs`.** Recorded here because "revert" needs to know
+what is in the revert; it is the same *fallibility is per CALL SITE* discipline as slice L step 1,
+one level up — there the twin was per site, here the SIGNATURE is per table.
+
+**(b) THE BASELINE IS SUFFICIENT AS RECORDED, AND THAT WAS CHECKED RATHER THAN ASSUMED.** P2's
+"before" is a COUNT (481/0, 56 suites), while the claim is bit-identity of four oracles. Those
+are the same object here only because every oracle compares against a **committed `.tsv` golden
+loaded with `include_str!`** — the goldens are Python-generated, in git, and untouched by this
+slice, so a passing `cargo test` IS the bit-identity check. Had the comparison been external, the
+pre-edit dumps would have to be saved BEFORE the first edit, because once the two fields land a
+"before" cannot be regenerated without reverting — which is the exact failure the baseline note
+was written to prevent.
+
+**(c) `at_setting`'s SIGNATURE IS DECIDED HERE AND IS ADDITIVE FOR N AND O.** With const
+fn-pointer tables (§ 4.1) and three overriding rungs, the carrier is a **descendant enum field**
+on `VariableStatorCore` (`Plain` / slice N's `Stack{…}` / slice O's `Bleed{…}`), and the hook is
+`fn(&VariableStatorCore, f64, f64) -> VariableStatorCore`. **The condition that makes this
+survive was checked, not hoped:** rung 55's and rung 61's `at_setting` bodies read only fields of
+`self` (`K_lp`/`K_hp`/`split`/`vsv_stages_*`/`cap_profile`; `bleed`) and re-construct their own
+type — neither reads anything slice M cannot store. So slices N and O add a VARIANT and a TABLE
+ENTRY and change no signature. Stated now because the alternative is discovering it mid-slice-N
+and paying for two more gated-code refactors.
+
+**(d) P6's SENTINEL IS DECIDED BEFORE THE DUMP IS WRITTEN.** The three field-set splits become
+`Option` in Rust and the dump needs a scalar column. `NaN` **fails open** — a null row and a live
+row both compare unequal, so a diff cannot see the very class of error P6 exists to catch — and
+`0.0` is what P6's own refutation clause names. The form is therefore a **presence column gated
+on its measured count** (80/160, 86/154, 74/6) beside a value column the reader asserts is never
+read when absent. `throat_margin`'s 16-vs-19 split is the same mechanism: emit the three throat
+keys CONDITIONALLY and gate the row counts.
+
+**(e) `is_flat` MUST DISCRIMINATE IN BOTH DIRECTIONS OR IT IS VACUOUS.** The content of Python's
+predicate is an ASYMMETRY — `vsv` is part of flatness (it enters `psi`), `capacity` is not (a
+pure diagnostic, like `phi_surge`). A gate asserting only `flat().is_flat() == true` passes with
+the `vsv` conjunct MISSING, which is slice J→K's `l` mistake repeated on a predicate and is what
+`map.rs`'s own note warns about. The gate asserts **`vsv != 0` ⇒ false** and **`capacity != 0` ⇒
+still true**.
+
+**(f) STEP 4 LAUNCHES THE PYTHON DUMP FIRST.** At ≈44 s per `_scan` the equilibrium arm is ~15
+min even sampled at 2 throttles, and the first attempt at that measurement already died at a
+15-minute cap with its output buffered. The dump is started DETACHED and UNBUFFERED as step 4's
+first action, and the Rust reader is written while it runs — not after.
+
 ---
 
 ## 6. Named risks
