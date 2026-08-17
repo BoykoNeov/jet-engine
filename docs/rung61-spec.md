@@ -303,6 +303,38 @@ untouched ⇒ **bit-for-bit rung 6**.
    interaction is the gated claim.
 10. **CYCLE UNTOUCHED** — the default single-spool design path is bit-for-bit rung 6.
 
+### What the RUST PORT measured about these gates (slice O, 2026-08-17)
+
+The port re-ran this rung's own instruments against a bit-exact oracle and swept past the
+suite's grid. Four things it found that this spec did not say:
+
+1. **`_feasible`'s `try/except` swallows NOTHING on the shipped grid.** Over 10 613 calls in
+   320 `compensating_bleed` cells, the plant refused **zero** times. Its docstring's claim —
+   *"the feasible set is bounded on BOTH axes, by different mechanisms"* — is **CONFIRMED** by a
+   1 760-cell wide sweep (756 refusals under exactly two mechanisms: the speed-line bracket
+   bounds `v` between 1.2 and 1.3; the choked envelope bounds `b` at 0.49, and only near the
+   throttle edge, `Tt4 = 700`) — but **its SCOPE is corrected: both bounds sit entirely outside
+   every shipped test.** Two of `compensating_bleed`'s three `None` branches
+   (`stator setting infeasible`, `choked envelope closed`) are therefore dead on the whole
+   suite; only `valve authority exhausted` is live, at 124 of 320 cells.
+
+2. **Two dead things, of different kinds.** `_B_MAX = 80` is never approached (22–30 passes over
+   all 196 solved calls) — a dead CAP. And the bisection's exit is
+   `abs(r) <= _B_TOL or hi - lo <= 1e-15`, whose **second disjunct never fires**: 196 of 196
+   exits are on the tolerance. That is a dead ARM of a live condition, which is the more easily
+   lost of the two.
+
+3. **`compensability`'s `ratio` uses Python truthiness**, `(bh / bl) if (bl and bh)`, which
+   treats an exact `0.0` as absent where `is not None` would not. Measured **latent**: no
+   `b* == 0.0` on any grid swept (196 values, min 8.54e-3), and on the shipped throttle band
+   every row is mixed anyway. Recorded so nobody "simplifies" it into a different function.
+
+4. **The two tolerance-style bars have measured headroom**, recorded here so later erosion reads
+   as erosion: gate 3's retention worst is **0.73339** against its `>= 0.70`, and gate 6's
+   credit interaction worst is **0.01686** against its `< 0.03`.
+
+Neither this rung's verdicts nor its numbers move. See `docs/plans/todo-rust-port.md` § 5.11.
+
 ## Concessions
 
 * **Steady only.** Rung 42's valve is not read by any transient ladder and rung 57 already

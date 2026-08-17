@@ -59,6 +59,20 @@
 //! MEASURE that site, not inherit this paragraph: a zero-firing verdict is a claim about the grid
 //! that measured it.
 //!
+//! **THE EXPIRY CAME DUE AT SLICE O, AND THE MEASUREMENT IS THE POINT.** It fires. Rung 61's
+//! `authority_with_bleed` runs rung 54's ceiling walk on a valve-OPEN machine, and the walk ends
+//! on THIS bracket — so [`lp_eta_loop_bleed`] now returns `Result` and [`try_cascade_bleed`]
+//! propagates it with `?`. The firing count on slice O's 640-cell grid is emitted by the census
+//! and gated in `slice_o_oracle.rs`, never restated from here.
+//!
+//! Two things about how it was found are worth keeping. **The gate found it before the paragraph
+//! was read** — the oracle panicked, the backtrace named the frame, and only then did this note
+//! turn out to have called it. A deferral written down is worth exactly the grep that finds it,
+//! and an empirical failure is what actually reaches you. And **no rung-42 gate could ever have
+//! seen it**: rung 42's own readers never walk until refusal, and rung 54's walk never ran on an
+//! open valve. The defect lives in neither rung — it is created by the COMPOSITION, which is what
+//! rung 61 is.
+//!
 //! # The narrowing, named rather than left implicit
 //!
 //! Python's `TwoSpoolBleedMatcher` accepts `lp_disabled`, and with the valve shut it forwards to
@@ -157,7 +171,7 @@ pub fn lp_eta_loop_bleed(
     wgas: &Gas, tt2: f64, tt4: f64, f: f64, tt25: f64, mfp4: f64, pi_hpc: f64,
     cmap: &ComponentMap, bleed: f64, eta_lpc_base: f64, a4: f64, pi_b: f64, mcorr_lp_d: f64,
     tau_lpc_d: f64,
-) -> EtaLoop {
+) -> Result<EtaLoop, Abort> {
     let (h2, h25, pr2) = (wgas.h_c(tt2), wgas.h_c(tt25), wgas.pr_c(tt2));
     let tau_lpc = tt25 / tt2;
     let (mut eta, mut eta_prev, mut r_prev) = (eta_lpc_base, None, f64::NAN);
@@ -166,12 +180,21 @@ pub fn lp_eta_loop_bleed(
         // (‡-b): carries pi_hpc (rung 39's ONE arrow) AND the extraction 1/(1-b).
         let m = (a4 * pi_b * pi_hpc * pi * mfp4 * powp(tt2 / tt4, 0.5)
                  / ((1.0 + f) * (1.0 - bleed))) / mcorr_lp_d;
-        let n = cmap.solve_n(m, tau_lpc, tau_lpc_d);
+        // SLICE O CONVERTED THIS, AND THE MODULE NOTE ABOVE SAID IT WOULD. The abort is
+        // TALLIED rather than merely propagated: slice L's verdict here was a zero-firing
+        // COUNT, so what retires it has to be a count too.
+        let n = match cmap.try_solve_n(m, tau_lpc, tau_lpc_d) {
+            Ok(n) => n,
+            Err(e) => {
+                counters::bump_lp_bleed_abort();
+                return Err(e);
+            }
+        };
         let tgt = cmap.eta_c_at(eta_lpc_base, m / n, n);
         let r = tgt - eta;
         if r.abs() <= TwoSpoolMapCore::ETA_TOL {
             counters::note_lp(pass as u64);
-            return EtaLoop { eta, pi, m, n };
+            return Ok(EtaLoop { eta, pi, m, n });
         }
         let nxt = secant(eta, eta_prev, r, r_prev, tgt);
         eta_prev = Some(eta);
@@ -236,7 +259,7 @@ pub fn try_cascade_bleed(
         let hp = (core.hooks.hp_eta_loop)(core, wgas, tt4, f, tt25, tt3, mfp4, &core.map_hp)?;
         let lp = lp_eta_loop_bleed(wgas, tt2, tt4, f, tt25, mfp4, hp.pi, &core.map_lp, b,
                                    base.eta_lpc, base.a4, base.pi_b, core.mcorr_lp_d,
-                                   core.tau_lpc_d);
+                                   core.tau_lpc_d)?;
 
         let nl = lp.n * powp(tt2 / core.tt2_d, 0.5);
         let nh = hp.n * powp(tt25 / core.tt25_d, 0.5);

@@ -3754,6 +3754,8 @@ signature."* The literal claim survives — `StatorHooks::at_setting`'s signatur
 the conclusion it was written to support does not. **Two gated-code edits are forced, and neither
 is visible from the method bodies (c) inspected:**
 
+**§ 5.11 (v) CORRECTS THE SECOND HALF OF THIS: SLICE O ADDED NO VARIANT.** Rung 61's `at_setting` reads only the bleed fraction, which has lived on `TwoSpoolMapCore` since slice L — so slice O is a TABLE ENTRY and `Descendant::Plain`. The prediction was right about slice N and wrong about slice O, for the same one-level-down carrier reason that cost slice N two gated-code edits.
+
 1. **`Descendant` cannot stay `Copy`.** Rung 55's state is not the five scalars (c) enumerated;
    it is the two **built** `StageStack` objects, and a stack carries `theta_d`, `varpi_d` and
    `_C_ks` — three runtime-length `Vec<f64>` ladders. `#[derive(Clone, Copy)]` on `Descendant`
@@ -4347,6 +4349,320 @@ another, is a disagreement waiting to happen, and a majority vote is not what se
 `#[test]` counts did. **Exactly one record should be a measurement and the rest should quote it**
 — the rule this project already applies to a quoted gate TIME, arriving on a gate COUNT.
 
+
+### 5.11 SLICE O (rung 61, `StatorBleedMatcher`) — PRE-REGISTERED, four probes MEASURED first
+
+**The last slice in phase 5**, and the one § 6 named as the phase's structural risk before
+§ 5.3's pre-flight discharged it. One rung, 306 source lines, 18 Python gates. Four steps, not
+six — slice J's shape (one rung), not slice N's.
+
+Probes: `M:\claud_projects\temp\slice_o\probe_o{1,2}.py` plus two inline checks.
+
+
+##### STEP 2 — SHIPPED. **P1 IS REFUTED, BY A DEFERRAL SLICE L HAD WRITTEN DOWN AND DATED**
+
+`rust/oracle/dump_slice_o.py` + `rust/tests/slice_o_oracle.rs`. **8 256 distinct keys bit-exact
+against PyPy on the fast arm** (640 root-finder cells over 2 gases × 5 shapes × 4 throttles ×
+4 settings × 2 spools × 2 targets) and **204 on the reacting arm** — the latter **first run, no
+edits**. The fast arm needed the edit below before it could run at all.
+
+**P1 IS REFUTED — a gated-code edit WAS needed, in `bleed.rs`, and it is not the one P1 was
+about.** P1 predicted no `Descendant` variant, no new field, no gated-code edit; the first two
+held (step 1), the third did not. Rung 42's bled LP efficiency loop called the PANICKING
+`solve_n` while rung 39's twin called `try_solve_n`, so it could not be caught. Converting it,
+propagating with `?`, and tallying the abort is the slice's ONE gated-code edit.
+
+**AND SLICE L HAD ALREADY CALLED IT, IN THE FILE THE EDIT LANDS IN.** `bleed.rs`'s module note
+says, verbatim: *"`lp_eta_loop_bleed`'s own `solve_n` is NOT converted: no rung-53/54 walk
+reaches it, because rung 53's `at_setting` builds a valve-shut sibling. **Rung 61's
+`StatorBleedMatcher` overrides `at_setting` precisely so the valve stays OPEN through every
+sweep** — which puts this call site inside `_scan`'s catch for the first time. Slice O must
+MEASURE that site, not inherit this paragraph."* Every clause of that is right, including which
+rung would come due.
+
+Three things follow, and the ordering of the first is the honest part:
+
+1. **THE GATE FOUND IT BEFORE THE PARAGRAPH WAS READ.** The oracle panicked, the backtrace named
+   `lp_eta_loop_bleed` eleven frames down, and only then did the module note turn out to have
+   predicted it. A deferral written down is worth exactly the grep that finds it; what actually
+   reaches you is a failure. That is an argument for **writing the deferral into the code the
+   next slice will run**, which is where slice L put it — not for trusting that it will be read.
+2. **NO RUNG-42 GATE COULD HAVE SEEN IT, AND NEITHER COULD A RUNG-54 ONE.** Rung 42's readers
+   never walk until refusal; rung 54's walk never ran on an open valve. The defect exists in
+   neither rung — **it is created by the COMPOSITION**, which is what rung 61 is. This is the
+   first defect in the port located in an edge rather than a node.
+3. **WHAT RETIRES A ZERO-FIRING COUNT IS A COUNT.** Slice L's verdict was *measured 0 firings*,
+   so the discharge is `counters::lp_bleed_aborts()`, tallied at the raise and gated **> 0** in
+   `slice_o_oracle.rs`. A comment saying "now it fires" would be the same species of claim that
+   needed replacing.
+
+**THE READ/KEY ACCOUNTING CLOSED ON TWO POPULATIONS, AND NAMING ONE WAS NOT ENOUGH.** The dump
+writes 8 700 lines over 8 256 distinct keys. The first reconciliation pin claimed the only
+duplicate was `goal` on a solved cell and **failed at 444 against 384**; the missing 60 are
+`price_split`'s `gap_present`, emitted once explicitly and again inside its own
+`(b_phi, b_m_phi, gap)` loop — and 60 is exactly `2 gases × 5 shapes × 2 spools × 3 settings`.
+Slice L step 4's lesson, second instance: **a residual that does not close is a population you
+have not found**, and only an exact bar says so — an approximate one absorbs all 60 silently.
+
+**THE CENSUS BARS § 5.11 REGISTERED, ALL HELD ON THE ORACLE'S OWN GRID** (not restated from the
+probe's — the cpg half of this grid *is* `probe_o1.py`'s, to the value):
+
+| § 5.11 | bar | result |
+|---|---|---|
+| (i) | `_feasible` refusals | **0** of every call in 640 cells |
+| (i) | `choked envelope` / `stator infeasible` branches | **0** each — both dead |
+| (i) | `valve authority exhausted` + solved | **= 640**, the two live outcomes partition the grid |
+| (ii) | `hi - lo <= 1e-15` arm | **0** — the dead arm of the compound condition |
+| (ii) | `_B_MAX = 80` | never reached |
+| (iii) | exact `b* == 0.0` | **0** — the truthiness trap is latent |
+| (iii) | `ratio` present | **0** — every shipped row is mixed |
+| (iv) | `b_last` present ⟺ exhausted branch | exact |
+
+And one identity is asserted per cell rather than in aggregate:
+`feasible = 2 + walk_steps + bisect_passes`, which is what makes the dumped count pin the PATH
+and not merely the endpoint — a bisection reads only signs, so a walk that visits different
+valve positions can still land on the same `b*` (slice N's vacuous-dispatch failure, in the one
+place it would have applied here).
+
+
+##### STEP 3 — SHIPPED. **TWO DETECTORS FIRED, AND ONE FIRED ON A GATE THAT WAS NOT AIMED AT IT**
+
+`rust/tests/rung61.rs` — **23 gates from Python's 18**, all green. The extra five are three
+`parametrize` families split into named gates plus the gas arms of gate 1 split into two, and the
+ledger.
+
+**ALL 23 PASSED FIRST RUN, WHICH BY THIS PROJECT'S RULE PROVES NOTHING**, so two defects were
+injected into `stator_bleed.rs`:
+
+| detector | what it removes | result |
+|---|---|---|
+| A | `with_b_cap` made a no-op | `gate8_the_ceiling_is_cap_dependent` **FAILS** |
+| B | `r61_at_setting` reverted to rung 53's body (the sibling loses the valve) | `gate2_trap_at_setting_carries_the_bleed` **and** `gate6_seam_as_posed_valve_shrinks_the_stators_authority` both **FAIL** |
+
+**DETECTOR B FIRING TWICE IS THE USEFUL PART.** Gate 2 is *aimed* at that defect; gate 6 is a
+physics gate about the valve pre-spending the incidence budget, and it catches the same injury
+independently because a valve-less sibling makes `authority_with_bleed`'s three rows identical.
+An independent witness is worth more than a second assertion in the same gate — and it is the
+converse of slice N's finding, where a gate that named a defect could not see it.
+
+**ONE GATE IS STRENGTHENED PAST THE SOURCE, AND FOR THE VACUITY REASON.** Python's trap gate
+asserts `isinstance(sib, StatorBleedMatcher)`. In Rust a sibling from `at_setting` is a
+`VariableStatorCore` whichever table built it, so an `isinstance` port would compare a type to
+itself — *a ported test can go VACUOUS*, caught before shipping rather than after. The
+discriminant is the TABLE POINTER and the carried valve position, and those are what the Rust
+asserts.
+
+**THE TWO TOLERANCE-STYLE BARS ARE MEASURED AND RECORDED, NOT RE-FITTED:**
+
+| gate | bar (the SOURCE's) | measured worst | headroom |
+|---|---|---|---|
+| 3, retention | `≥ 0.70` | **0.73339** | 4.8 % |
+| 6, credit interaction | `< 0.03` | **0.01686** | 1.8× |
+
+Recorded at each gate so a later change that erodes 0.733 to 0.71 reads as erosion rather than as
+a pass — and deliberately NOT tightened onto the port's own measurement, which is how a gate stops
+testing the claim it names.
+
+**A SECOND REACH-INSIDE, FOUND AT THE START THIS TIME.** `test_rung61.py:370` writes
+`m._B_CAP = cap` — slice N's `_V_SCAN` again, and slice N's memory entry prescribes the fix:
+`grep '\._[A-Z_]* *='` over the suite, at PRE-FLIGHT. Run here before a line of the suite was
+written, it returned exactly that one hit. `StatorBleedCore` gained `with_b_cap`, which is **not**
+a gated-code edit — the constant lives in slice O's own new file. The override deliberately does
+not propagate to siblings, which is faithful: Python rebinds an instance attribute and
+`at_point` builds fresh objects that read the class one, and no sibling ever runs a walk.
+
+---
+
+#### (i) THE LEADING FINDING — `_feasible` EXISTS TO SWALLOW REFUSALS, AND ON THE SHIPPED GRID IT SWALLOWS NONE
+
+`StatorBleedMatcher._feasible` wraps a sibling's `stator_margin` in a bare
+`except AssertionError: return None`, and its docstring justifies itself: *"Rung 42's valve
+SHRINKS the choked envelope while rung 53's setting unloads the speed line, so the feasible set
+is bounded on BOTH axes — by different mechanisms."* Measured over the suite's own grid — five
+map shapes × four `Tt4` × four `v` × two spools × two targets, **320 `compensating_bleed` calls
+and 10 613 `_feasible` calls**:
+
+| | count |
+|---|---:|
+| `_feasible` calls | 10 613 |
+| …that returned a row | **10 613** |
+| …that swallowed an assertion | **0** |
+
+**The claim is CONFIRMED and its SCOPE CORRECTED — not refuted.** A wide sweep (1 760 cells,
+`Tt4` 600–2100, `v` 0–5, `b` 0–0.49) refuses 756 of them, under exactly **two** distinct
+messages, and each attaches to the axis the docstring names:
+
+| axis, swept alone | bound | mechanism |
+|---|---|---|
+| `v` at `b = 0`, `Tt4 = 1500` | between 1.2 and 1.3 | **speed-line bracket** (`ComponentMap.solve_n`) |
+| `b` at `v = 0`, `Tt4 = 1500` | **none — clean to 0.49** | — |
+| `b` at `v = 0`, `Tt4 = 700` | 0.49 | **choked envelope** |
+
+So both mechanisms are real, they are the two the docstring names, and the `b` axis binds only
+near the throttle edge. **What is corrected is where they live: entirely outside every shipped
+test.** The consequence for the port is concrete and is a *reachability* statement, not a
+site list (slice I's rule): of `compensating_bleed`'s three `None`-returning branches, **two are
+dead on the whole Python suite** — `"stator setting infeasible with the valve shut"` and
+`"choked envelope closed before the target"` — and only `"valve authority exhausted (b >= cap)"`
+is live, at **124 of 320 calls**. This is a *hazard*-class claim about a road not taken, in
+§ 5.3 item 7's category, and is deliberately NOT counted in the port's "exactly"-claim ledger.
+
+#### (ii) TWO DEAD THINGS, AND THEY ARE DIFFERENT ANIMALS
+
+Registered separately on purpose — merging them into one "dead constants" bullet is what makes
+the second invisible.
+
+- **`_B_MAX = 80` is a DEAD CAP.** Measured 22–30 bisection passes over all 196 solved calls.
+  Same shape as `_INC_MAX` (§ 5.9 (iv)) and slice L's `Tt4_lo`: port as written, record dead.
+- **`hi - lo <= 1e-15` is a DEAD ARM OF A COMPOUND CONDITION.** The exit test is
+  `abs(r) <= self._B_TOL or hi - lo <= 1e-15`, and **196 of 196** solved calls exit on the
+  first disjunct. The second guards nothing on this grid. Slice N's *an arm that guarded
+  nothing* is the precedent, and it is the one where **porting the spelling still matters** —
+  a `||` whose right side is dropped is a different function wherever the grid later moves.
+
+#### (iii) THE TRUTHINESS TRAP — LATENT, AND PORTED AS WRITTEN
+
+`compensability` writes `row["ratio"] = (bh / bl) if (bl and bh) else None`. Python truthiness
+makes an **exact `0.0`** behave as absent, which `is not None` would not. Measured: **no
+`b_star == 0.0` on any grid swept** (196 solved values, min `8.54e-3`, max `4.49e-1`), and on
+the shipped throttle band every row is *mixed* — `b_lp` finite, `b_hp` `None` — so `ratio` is
+`None` for the stated physical reason and the trap never decides anything.
+
+Ported faithfully as `l != 0.0 && h != 0.0` inside the `(Some, Some)` arm, and recorded latent.
+**Fourth instance of *a dead thing's spelling still has to be right*** (slice N step 3).
+
+#### (iv) THE RETURN SHAPE IS AN ENUM, NOT A STRUCT OF `Option`s — A PORT DECISION, REGISTERED
+
+`compensating_bleed` returns **three different key sets**, measured:
+
+| branch | carries |
+|---|---|
+| solved | `b_star`, `goal`, `resid`, `bare_phi`, `bare_m_phi`, `bare_m_i` |
+| `"valve authority exhausted"` / `"choked envelope closed"` | `b_star=None`, `goal`, **`b_last`**, **`resid_last`** |
+| `"stator setting infeasible"` | `b_star=None`, `goal` — and **neither `b_last` nor `resid_last`** |
+
+`compensability` reads `c.get("resid_last")`, which tolerates that third shape; a Rust struct
+with `Option` fields would let a caller read a field Python would have raised `KeyError` on, so
+the port is a three-variant enum. Registered as the decision, not discovered later.
+
+#### (v) THE PLAN'S OWN WRITTEN EXPECTATION IS WRONG — `Descendant::Bleed` IS NOT NEEDED
+
+Two shipped places predict slice O adds a `Descendant` variant: `stator.rs`'s enum doc (*"slices
+N and O add a VARIANT and a TABLE ENTRY"*) and this plan at § 5.9. **Corrected here, with the
+reason, before any code is written.** Rung 61's `at_setting` reads exactly one piece of state —
+`self.bleed` — and `bleed` has been a field on `TwoSpoolMapCore` since slice L (`two_spool.rs`),
+because rung 42 needed it there. So rung 61 adds:
+
+- **one `StatorHooks` table**, `R61`, whose `at_setting` is `at_point(v_lp, v_hp, self.bleed)`;
+- **`core.hooks = &R42`** on the inner core, which is what makes rung 53's readers see the bled
+  `match` — `TwoSpoolMapCore::try_match_point` already dispatches through that pointer;
+- **`Descendant::Plain`**, which is also correct for `inc_max()`: rung 61 declares no `_INC_MAX`,
+  so it inherits rung 53's 80, and `Plain` returns exactly that.
+
+Nothing else. **§ 5.9 (c)'s scalar-variant prediction is not merely refuted here — the variant
+is not needed at all**, because the carrier it would have duplicated already exists one level
+down. That is the *same* one-level-down carrier fact slice N was burned by twice, arriving for
+once in the project's favour.
+
+#### (vi) THE ONE QUESTION A BODY-READ CANNOT ANSWER, AND IT IS CHECKED
+
+Registering (v) from a body-read is exactly slice N step 3's trap, so the carrier question is
+separated out and **measured**: `VariableStatorCore::with_hooks` builds a fresh
+`TwoSpoolMapCore` that initialises `bleed: 0.0`, so `R61`'s `at_setting` must restore the valve
+after construction. Does that need a `bleed` parameter on `with_hooks` — a **sixth gated-code
+edit** — or does build-then-set suffice?
+
+**Build-then-set suffices, and the hazard that would have killed it is checked ABSENT.** If the
+design capture dispatched through `core.hooks` even once, `&R42` at `bleed: 0.0` is a *different
+function object* than `&R39` and the design references would shift — a value-level difference no
+signature inspection shows. Read: `TwoSpoolMapCore::with_hooks` calls `TwoSpoolCore::new` and
+reads stations off `base.reference`. **It never calls `try_match_point`**, so the table pointer
+is inert at construction. And it is faithful besides — Python's rung 61 sets `self.bleed` *after*
+`VariableStatorMatcher.__init__` returns, and no constructor in the chain calls `self.match`.
+
+#### (vii) THE REACTING ARM IS FEASIBLE AND MUST BE SMALL — MEASURED, NOT ASSUMED
+
+Gate 1 requires the two-axis reduce bit-for-bit on the **reacting** gas as well as the fast one.
+Measured at the gate's own points (3 corners × 2 `Tt4` × 17 fields):
+
+| gas | mismatches | wall clock |
+|---|---:|---:|
+| `thermally_perfect` | **0** of 102 | 0.6 s |
+| `reacting_equilibrium` | **0** of 102 | 12.6 s |
+
+…and **one** `compensating_bleed` call on the reacting gas costs **54.5 s**. So the reacting arm
+is a REDUCE arm only — corners, never a `b*` sweep — the same split slice N's 5 649-key
+equilibrium arm took against its 72 520-key fast one. Sized before the oracle is written, which
+is the point of measuring it here.
+
+---
+
+#### PREDICTIONS — registered before any code
+
+| # | prediction | falsified by |
+|---|---|---|
+| **P1** | No `Descendant` variant, no new field, no gated-code edit outside `stator.rs`'s new table. | any edit to `bleed.rs` / `two_spool.rs` / `stage.rs` — **REFUTED at step 2**: the first two clauses held, the third did not (`lp_eta_loop_bleed` had to become fallible). Slice L had named this exact site, this exact rung, in `bleed.rs`'s own module note. |
+| **P2** | `R61`'s `at_setting` + `core.hooks = &R42` reproduce every rung-53/54 reader on a bled machine bit-for-bit. | any oracle key off |
+| **P3** | The oracle is bit-exact against PyPy **first run** (six slices, six times). | a single key off |
+| **P4** | The two-axis reduce holds on the reacting gas as well as the fast one, at `==`. | any field differing |
+| **P5** | `_B_MAX` never reached and the `1e-15` arm never taken, on the ORACLE's grid too — not just the probe's. | a census key disagreeing |
+| **P6** | The `at_setting`-drops-the-bleed trap (Python gate 2) is witnessable in Rust **only** structurally — a sibling built through `R53`'s body comes back with `bleed == 0.0` while every headline value stays plausible. | the value dump catching it |
+| **P7** | Rung 61's `lp_disabled` assert is **unrepresentable** in Rust — `VariableStatorCore` holds the non-degenerate `TwoSpoolMapCore` directly, so there is no `lp_disabled` rung-61 object to reject. Ported as a deferral, not as a gate. | a representable path |
+| **P8** | The 18 Python gates port to **≥ 18** Rust gates, as a `--list` name diff with 0 removals. | a removal — **HELD at 23** |
+
+#### THE FOUR STEPS
+
+| # | step | gate |
+|---|---|---|
+| 1 | ✅ `stator_bleed.rs` + `R61`; **ZERO gated-code edits** — P1 held | ✅ 599 → 603 run, 0 ignored; name diff **4 additions, 0 removals** |
+| 2 | ✅ `dump_slice_o.py` + `slice_o_oracle.rs`; **P1 REFUTED** — one gated-code edit in `bleed.rs`, which slice L had written down and dated | ✅ **8 256** distinct keys bit-exact (fast) + **204** (reacting, first run) |
+| 3 | ✅ `rung61.rs` — **23 gates from 18**; two detectors injected, both fired, one on a gate not aimed at it | ✅ 23/23 green; both tolerance bars measured |
+| 4 | docs — this section's findings into `docs/rung61-spec.md`, plus the two corrections (v) owes to `stator.rs` and § 5.9 | docs-only |
+
+
+##### STEP 1 — SHIPPED. **THE SMOKE GATE'S FIRST FAILURE WAS A DEFECT IN THE INSTRUMENT, NOT THE PORT**
+
+`rust/src/stator_bleed.rs` (794 lines) + `rust/tests/slice_o_smoke.rs` (4 gates). Crate
+**599 → 603 run, 0 ignored**, as a `--list` **name diff: 4 additions, 0 removals**.
+
+**P1 HELD, EXACTLY AS § 5.11 (v) CORRECTED IT.** The module adds one `StatorHooks` table
+(`R61`), sets `core.hooks = &R42` on the inner core, and takes `Descendant::Plain`. `git diff`
+over `src/` is **one line** outside the new file — `pub mod stator_bleed;` in `lib.rs`. **No
+`Descendant` variant, no new field, no gated-code edit** — the first slice since I to touch
+nothing that was already gated, and the reason is § 5.11 (v)'s: the carrier already existed one
+level down. Slice N's twice-burned lesson, arriving in the port's favour.
+
+**THE FINDING — A HAND-TYPED CONSTANT IN A PROBE SILENTLY CHANGED THE GAS, AND THE SMOKE GATE
+REPORTED IT AS A PORT DEFECT.** 11 of the first 12 dumped values were bit-exact and `thrust_comp`
+was off by **exactly 1 ULP**. Chasing it down through the decomposition found `v0` — the
+freestream velocity, a *phase-2* quantity — differing by 1 ULP, which no shipped oracle could
+have allowed. The cause was in the dump script: it built the gas with `R_c = .4/1.4*1004.` where
+`test_rung61.py::_cpg_gas` computes `R_c = (gamma_c - 1.0)/gamma_c * cp_c`, and **`1.4 - 1.0` is
+not the literal `0.4`** (`0.3999999999999999` against `0.4000000000000000222…`). Re-dumped with
+the suite's own recipe, all 16 values match to the bit.
+
+Three things follow, and the third is the one worth carrying:
+
+1. `probe_o1.py` — whose census went into § 5.11 (i)/(ii) — had used the correct recipe already,
+   so those counts stand. The wide sweep in § 5.11 (i) had not, so it was **re-run**: 1 760 cells,
+   756 refused, 578 speed-line / 178 choked — *identical*, and the `v` bound tightened from
+   "between 1.2 and 1.4" to **between 1.2 and 1.3**.
+2. A 1-ULP gas difference moved a thrust by 1 ULP and left `phi`, `n`, `b*` and both identity
+   residuals **bit-identical** — so the sensitivity is real but narrow, which is why it survived
+   eleven values before showing.
+3. **A GO/NO-GO GATE THAT FAILS HAS NOT NECESSARILY FOUND WHAT IT NAMES.** Slice M's two
+   measuring passes found defects in the instrument rather than the port; this is the third
+   instance, and the first where the instrument was a *constant* rather than a reader. The rule
+   the port already had — *never retype a decimal, dump the bits* — does not cover this, because
+   the defect was upstream of the dump: **the INPUTS have to be built by the source's own
+   expression, not by an equivalent-looking one.** An oracle inherits every constant its dump
+   script types.
+
+**THE STRUCTURAL GATE IS THE ONE NO VALUE CAN REPLACE.**
+`at_setting_carries_the_bleed_and_rung53s_body_would_not` asserts on the STATE — that the
+dispatched sibling keeps `bleed = 0.10` and keeps rung 42's inner table — because § 5.3 item 7
+measured what the failure looks like: 13–15 % on `φ` and `N`, **0.1 % on thrust**. Every headline
+number a value gate would look at stays plausible.
 
 ---
 

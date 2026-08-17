@@ -133,4 +133,5 @@ pub mod matcher;
 pub mod nox;
 pub mod stage;
 pub mod stator;
+pub mod stator_bleed;
 pub mod two_spool;

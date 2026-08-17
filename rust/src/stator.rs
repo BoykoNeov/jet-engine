@@ -243,6 +243,16 @@ pub const R53: StatorHooks = StatorHooks { at_setting: r53_at_setting };
 /// concrete rung — is the signature slices N and O would have to BREAK, turning two cheap
 /// additive slices into two more gated-code refactors. That much held.
 ///
+/// **AND SLICE O ADDED NO VARIANT AT ALL — THIS DOC'S "slices N and O add a VARIANT AND A TABLE
+/// ENTRY" IS HALF WRONG, CORRECTED HERE.** Rung 61's `at_setting` reads exactly one piece of
+/// state, the bleed fraction, and that has lived on [`TwoSpoolMapCore`] since slice L because
+/// rung 42 needed it there. So [`crate::stator_bleed::R61`] is a table entry and
+/// [`Plain`](Self::Plain) is the tag — which is also right for
+/// [`inc_max`](VariableStatorCore::inc_max), since rung 61 declares no `_INC_MAX` and inherits
+/// rung 53's 80. **The question a slice should ask is never "does this hook need a variant" but
+/// "where does this hook's state already live"** — the same one-level-down carrier fact that cost
+/// slice N two gated-code edits, arriving once in the port's favour.
+///
 /// **THE VARIANT REALLY IS THE SCALAR ONE § 5.9 (c) PREDICTED — AND (c) IS STILL REFUTED, ONE
 /// LEVEL DOWN.** Slice M read rung 55's `at_setting` body, saw it touch only scalars
 /// (`K_lp`/`K_hp`/`split`/`vsv_stages_*`/`cap_profile`), and concluded slices N/O would add a

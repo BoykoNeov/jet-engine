@@ -102,6 +102,7 @@ pub mod counters {
         static LP_MIN: Cell<u64> = const { Cell::new(u64::MAX) };
         static CLAMPS: Cell<u64> = const { Cell::new(0) };
         static REFINE_CALLS: Cell<u64> = const { Cell::new(0) };
+        static LP_BLEED_ABORTS: Cell<u64> = const { Cell::new(0) };
     }
 
     thread_local! {
@@ -120,6 +121,7 @@ pub mod counters {
         LP_MIN.with(|c| c.set(u64::MAX));
         CLAMPS.with(|c| c.set(0));
         REFINE_CALLS.with(|c| c.set(0));
+        LP_BLEED_ABORTS.with(|c| c.set(0));
         MEMO_KEYS.with(|c| c.borrow_mut().clear());
     }
 
@@ -143,6 +145,8 @@ pub mod counters {
         LP_MIN.with(|c| c.set(c.get().min(n)));
     }
     pub(super) fn bump_clamp() { CLAMPS.with(|c| c.set(c.get() + 1)); }
+    /// SLICE O: a `solve_n` bracket refusal inside rung 42's BLED LP efficiency loop.
+    pub(crate) fn bump_lp_bleed_abort() { LP_BLEED_ABORTS.with(|c| c.set(c.get() + 1)); }
 
     /// Passes of the JOINT `(f, pt4)` fixed point — one per cascade call.
     pub fn cascade_calls() -> u64 { CASCADE_CALLS.with(|c| c.get()) }
@@ -153,6 +157,12 @@ pub mod counters {
     /// `ETA_MAX = 80` cap is nowhere near approached (measured 4), NOT the loop's shape.
     pub fn hp_passes_max() -> u64 { HP_MAX.with(|c| c.get()) }
     pub fn lp_passes_max() -> u64 { LP_MAX.with(|c| c.get()) }
+    /// **SLICE O's DISCHARGED IOU, AS A NUMBER.** How many times rung 42's bled LP efficiency
+    /// loop hit `solve_n`'s bracket and returned `Err`. `bleed.rs`'s module note left this site
+    /// panicking on a measured zero-firing rule and named rung 61 as the composition that would
+    /// reach it; this is the count that replaced the claim. **Zero until slice O**, and never
+    /// zero on a ceiling walk over an open valve.
+    pub fn lp_bleed_aborts() -> u64 { LP_BLEED_ABORTS.with(|c| c.get()) }
     /// FEWEST secant steps taken by one HP / LP efficiency loop — **and this is the pair
     /// that witnesses the CHECK-FIRST shape.** On a flat map the residual passes on entry,
     /// so the loop returns having called the secant ZERO times; a `do`-while would make the
