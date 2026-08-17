@@ -105,6 +105,11 @@ fn is_argmin(key: &str) -> bool {
 /// ALL discrete keys rather than the argmin subset. The value tiers passed on the first run and
 /// only the counts failed — *a count derived from a superset is a guess*, which is this port's
 /// own `guessed census bars` lesson arriving on a population rather than on a magnitude.
+/// **The segment match is verified, not assumed.** It reads like a substring rule; it is not —
+/// `1500` occupies exactly ONE position in each family that has it (`thr`/`mar`/`gap` 6, `walk` 7,
+/// `sched` 5) and that position's only possible values are the four throttles. No shape name, no
+/// `K`-token and no field name can equal it. `shift` carries no throttle segment at all and no
+/// argmin key, so nothing escapes the classification.
 fn at_design(key: &str) -> bool {
     key.split('/').any(|s| s == "1500")
 }
@@ -622,10 +627,15 @@ fn slice_n_matches_pypy_bit_for_bit() {
                "with both spools stacked, ComponentMap::solve_n is never called — slice M's                 frame is absent, which is why P1 was measured rather than inherited");
     assert_eq!((f_br, f_cl), (39.0, 1.0), "§ 5.10 (i)'s frame census, to the firing");
     assert_eq!(fire("fire/has_clamped_sample"), 1.0);
+    // RECORDED HERE, CHECKED THERE. `is_finite` is not a bar — `at_gas`/`at_spool`/`at_vs` are
+    // small integers and nothing realistic fails it. The loop exists so these keys enter `read`
+    // and `owed` stays honest; the values are consumed as a rebuild recipe by
+    // `the_clamped_root_arm_is_reached_from_the_dump_grid`, which is where they are checked (its
+    // `tau_d`/`e_d` bit asserts) and where a wrong one fails.
     for k in ["m", "tau_c", "eta_live", "K", "vsv", "tau_d", "pi_d", "eta_d", "e_d",
               "at_gas", "at_shape", "at_spool", "at_vs"] {
         assert!(fire(&format!("fire/clamped/{k}")).is_finite(),
-                "the clamped-root sample's {k} — consumed by                  `the_clamped_root_arm_is_reached_from_the_dump_grid`");
+                "the clamped-root sample's {k}");
     }
 
     // § 5.10 (ii)'s 40 AND § 5.10 (i)'s 40 ARE THE SAME 40, and that is not automatic: a row can
