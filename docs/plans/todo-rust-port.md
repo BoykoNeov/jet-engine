@@ -4051,8 +4051,8 @@ D/E's *an "exactly" claim survives a copied instruction sequence and dies on a s
 | **2** | `stage.rs`: `StageStack` — the two design ladders, `_stage_eta`, `march` with BOTH floors counted, `tau_of`, `lumped_tau`, `solve_n` + `try_solve_n` (P1), and rung 56's `capacities`/`stage_*` row reads | ✅ **`slice_n_smoke.rs`, 1 337 keys bit-exact on SEVEN cells + 10 non-value gates**; crate **546 run, 0 skipped** — see below |
 | **3** | `StageStackCore`: `R55` in both tables, `at_stages`, the two stacked eta loops, `stage_margin`, `stage_throat_margin`, `throat_walk`, `work_gap`, `running_line_shift`, `stage_incidence_schedule`; the P3 dispatch gate discharging `slice_m_deferrals` item 3 | ✅ **crate 551 run, 0 skipped**; `slice_n_smoke.rs` still 1 337 keys bit-exact, 11 → 14 gates; `rung53.rs` 24 → 26 — see below |
 | **4** | the slice-N oracle — Python dump LAUNCHED FIRST, Rust reader written while it runs; the (i)/(iii)/(iv)/(vi) census bars, and the equilibrium arm on `stage_throat_margin` only | ✅ **`slice_n_oracle.rs`, 72 520 keys bit-exact first run** + a 5 649-key equilibrium arm + a 41 560-key CPython arm; 5 gates, crate **556 run, 0 skipped**. (i)/(iv) reproduced EXACTLY; (iii)/(vi) were measured on the PROBES' grid, so the census is EMITTED and compared — see below |
-| **5** | the two suites, `rung55.rs` (18) + `rung56.rs` (21), incl. P4/P5's reduce contracts, P6's tie-break and P8's per-floor split | 39 gates green, **as a name → parameter-set diff, never a count** |
-| **6** | the source corrections this slice owes (§ (iii)'s dead constants, if the specs assert otherwise) | docs-only, **no gate** |
+| **5** | the two suites, `rung55.rs` (18) + `rung56.rs` (21), incl. P4/P5's reduce contracts, P6's tie-break and P8's per-floor split | ✅ **`rung55.rs` 20 + `rung56.rs` 23 = 43 gates**, crate **556 → 599 run, 0 ignored**, as a `--list` **name diff: 43 additions, 0 removals**. Four detectors measured; TWO of the source's own gates found vacuous, and a FIFTH gated-code edit landed here — see below |
+| **6** | the source corrections this slice owes (§ (iii)'s dead constants, if the specs assert otherwise) | ✅ docs-only, **no gate**. The dead constants turned out NOT to be asserted anywhere in the two specs; what the slice actually owed was **three vacuous gates and one over-stated reason**, all found at step 5 — `docs/rung55-spec.md` § Verification gates + § the row-count table, `docs/rung56-spec.md` § Verification gates |
 
 ##### STEP 1 — SHIPPED. P2 held in BOTH currencies, and the count that did not reconcile was a FINDING
 
@@ -4497,6 +4497,169 @@ reader that doubles its cell's cost. And `cap_profile` is read **only** by `capa
 `derived` alone and `the_capacity_profile_cannot_reach_any_rung_55_reading` asserts the identity
 instead — with a `moved > 0` clause so it cannot become a comparison of two identical objects.
 That is a **stronger** statement than dumping the duplicate, and it saved 3.4 MB.
+
+##### STEP 5 — SHIPPED. **THE SOURCE'S OWN GATES WERE THE THING THAT NEEDED MEASURING**
+
+`rung55.rs` (20 gates) and `rung56.rs` (23) port `test_rung55.py`'s 18 and `test_rung56.py`'s 21.
+The crate is **599 run / 0 failed / 0 ignored** over 64 targets, measured with
+`cargo test --release -- --list` and reconciled as a **name diff against the step-4 baseline: 43
+additions, 0 removals** — the step table's own currency, because *exit-0 proves nothing FAILED;
+only the diff proves nothing VANISHED* (step 1). The ignored column was read explicitly, which is
+step 2's ```` ```ignore ```` trap; both new files spell all their fenced blocks `text`.
+
+**THE NAME → PARAMETER-SET DIFF, which is the artifact the rule actually asks for.** A count that
+reconciles is not one:
+
+| Python gate | its parameter set | Rust |
+|---|---|---|
+| `test_reduce_K1_is_bit_for_bit_rung53` | `(vl,vh)` × 4 × 4 throttles × 19 fields | 1, loops |
+| `test_reduce_stack_object_dispatches_at_K1` | 3 `(m, tau)` points | 1, **+ census clauses** |
+| `test_stack_reproduces_rung2b_polytropic_efficiency` | `kc` = 3.5, `K` ∈ {1,2,4,8,16,32} | 1 |
+| `test_reduce_K1_on_the_reacting_equilibrium_gas` | 2 throttles, equilibrium gas | 1 |
+| `test_design_ladder_is_exact_for_every_K_and_split` | `K` ∈ {2,4,8,16} × 2 splits × 2 spools | 1, loops |
+| `test_front_stage_phi_is_the_face_phi` | `K` ∈ {4,8} × 4 throttles × 2 spools | 1 |
+| `test_capacity_style_guards_reject_nonsense` | THREE refusals | **2** + ledger item 1 |
+| `test_marched_work_differs_…_throttle_depth` | 4 throttles × 2 spools, `K` ∈ {1,8} | 1 |
+| `test_p1_running_line_shift_sign_and_monotonicity` | 5 shapes | 1, loops |
+| `test_p1_is_paid_in_shaft_speed_not_performance` | 2 shapes × 4 throttles | 1 |
+| `test_p4_front_stalls_while_the_rear_chokes` | 2 throttles × 2 spools × 8 rows | 1 |
+| `test_p5_shift_converges_in_K` | 3 throttles × `K` ∈ {1,2,4,8,16} | 1 |
+| `test_p6_verdicts_survive_the_work_split` | 3 throttles × 2 spools | 1, **+ two `assert_ne!`** |
+| `test_cycle_untouched_transient_ladder_…_unstacked` | — | **DEFERRED, phase 6** |
+| `test_p3_front_row_lever_cost_factorises` | `K` ∈ {2,4,8,16} | 1 |
+| `test_p3_row_count_has_an_interior_optimum` | rows 1…6 at `_V_SCAN` = 0.01 | 1 |
+| `test_p3_all_rows_schedule_ceases_to_exist_deep_off_design` | 4 throttles | 1 |
+| `test_cycle_untouched_default_design_run_…_rung6` (×2 files) | 5 stations | 1 each |
+| — | — | **+1 ADDED**: `…the_scan_step_is_an_instance_value…` |
+| `test_reduce_invariance_over_capacity_and_profile` | 3 `(vl,vh)` × **9 cases** × 4 throttles × 19 | 1 |
+| `test_reduce_K1_is_rung54_throat_margin_bit_for_bit` | 2 settings × 2 profiles × 4 throttles × 2 spools | 1 |
+| `test_reduce_stack_capacities_at_K1` | 2 profiles × 3 gammas | 1 |
+| `test_derived_profile_is_the_ladder_…_front_row` | 2 spools × 8 rows | 1 |
+| `test_uniform_profile_is_the_disclosed_alternative` | TWO refusals + the uniform read | **2** + ledger item 1 |
+| `test_hp_profile_falls_harder_than_lp` | 2 spools | 1 |
+| `test_per_row_corrected_flow_is_phi_times_n_…` | `vsv_stages` = 3 at `v` = 0.40, 8 rows | 1 |
+| `test_design_tie_is_a_tolerance_not_an_identity` | `K` ∈ {2,4,8,16} × 2 spools | 1 |
+| `test_amplification_is_the_non_tautology_gate` | 5 shapes × 2 splits × 2 spools | 1 |
+| `test_uniform_profile_amplifies_harder_than_derived` | 2 throttles × 2 spools | 1 |
+| `test_binding_row_migrates_front_to_rear` | 5 shapes × 2 splits × 2 spools × 8-point walk | 1 |
+| `test_uniform_profile_binds_at_the_rear_…` | 5 shapes × 2 spools × 7 throttles | 1 |
+| `test_K_is_a_resolution_increments_shrink` | 2 spools × `K` ∈ {1,2,4,8,16,32} | 1 |
+| `test_split_is_load_bearing_but_carries_no_sign` | 5 shapes × 2 spools × 2 throttles | 1 |
+| `test_two_constraints_opposite_ends_and_opposite_spools` | 5 shapes × 2 throttles | 1 |
+| `test_rung54s_hp_throat_claim_is_corrected_by_resolution` | 3 throttles, both profiles | 1 |
+| `test_capacity_channel_stays_diagnostic_only` | `C` ∈ {0.99, 0.30}, 19 fields | 1 |
+| `test_front_row_lever_debits_the_row_it_does_not_move` | 2 throttles × `v` ∈ {0, 0.20, 0.3536, 0.60} | 1 |
+| `test_positional_advantage_is_currency_dependent` | 3 `v`, two currencies | 1 |
+| `test_lever_relocates_the_binding_row_to_itself_…` | 2 throttles × 3 `v` | 1 |
+| — | — | **+1 ADDED**: `…mach_guard_is_latent_not_absent` |
+
+18 + 21 = 39 Python names → 37 ported (one deferred) + 4 from two splits + 2 added = **43**.
+
+**FINDING 1 — THE FIFTH GATED-CODE EDIT LANDS AT STEP 5, AND § 5.10's STEP TABLE IS NOW REFUTED
+A THIRD TIME.** `test_rung55.py:481` sets `m._V_SCAN = 0.01` — a Python CLASS attribute overridden
+per instance. Rust's associated const cannot be, so `StageStackCore` gains a private `v_scan`
+field, a `with_v_scan` builder, and two `Self::V_SCAN` → `self.v_scan` reads. The step table calls
+step 1 *"ALL changes to already-gated code"*; step 3 refuted that once (`TwoSpoolMapCore`'s two
+stack fields), and this is the second refutation from a direction neither step looked. Stated at
+the level it generalises: **porting the CODE does not bound the edits the TESTS force** — a suite
+can reach inside a constant, and no amount of reading the source module will show you that.
+`grep '\._[A-Z_]* *='` over the four suites 53–56 returns exactly this one override and one
+*assertion* (`_V_STEP == 0.04`), so the scan was cheap and should have run at pre-flight.
+
+The edit is **value-neutral on everything already gated**: `slice_n_oracle.rs`'s 72 520 keys,
+`slice_n_smoke.rs`'s 1 337, `rung53.rs` and `rung54.rs` all re-ran bit-identical.
+
+**FINDING 2 — AND THE OVERRIDE MOVES NO VERDICT, WHICH THE OBVIOUS GATE COULD NOT HAVE TOLD ME.**
+The natural place to gate `with_v_scan` is the row-count experiment that needs it, and that gate
+is **vacuous**: measured, `test_p3_row_count_has_an_interior_optimum` passes unchanged at the
+default 0.05. Measured in Python at both steps, `rows = 1..6`:
+
+```text
+    v* at 0.01   0x1.6a19e5f8b8522p-2 …      RELIEF  0x1.867f37d1b88f3p-4 …
+    v* at 0.05   0x1.6a19e5f8b999ap-2 …      RELIEF  0x1.867f37d1b8b57p-4 …
+```
+
+— the roots differ from about the 11th decimal (the bisection stops on `INC_TOL = 1e-12` in the
+RESIDUAL, so a different bracket lands on a different root) and every bar in the experiment is
+orders above that. So the edit is justified by FAITHFULNESS, not by a failing gate, and it gets
+its own gate (`test_the_scan_step_is_an_instance_value_and_it_moves_the_root`) asserting the field
+is LIVE, that the default IS the const, and that the move is below every bar. **A dead knob's
+spelling still has to be right** — this slice's `_P_FLOOR`/`_INC_MAX` lesson, third instance, now
+on a knob whose deadness is a VERDICT's rather than a value's. It also **refutes the source's own
+stated reason** for the finer scan (*"the reversal was first seen at a coarse scan and could have
+been a bracket artifact"*): it was not.
+
+**FINDING 3 — TWO OF THE SOURCE'S OWN GATES ARE VACUOUS, AND ONLY INJECTING DEFECTS FOUND THEM.**
+Both suites passed on the first run, which is step 2's warning, so four detectors were injected
+into `stage.rs` and each gate watched:
+
+| injected defect | what fired | what did NOT |
+|---|---|---|
+| `K = 1` dispatch deleted (`if false && …`) | **NOTHING** — until the census clause was added | the whole of `test_reduce_stack_object_dispatches_at_K1` |
+| `K = 1` throat row RE-DERIVED instead of copied | `test_reduce_k1_is_rung54_throat_margin_bit_for_bit`, by **1 ULP** | — |
+| `Split::Tau`'s ladder collapsed onto `Split::DT` | rung 56's `test_split_is_load_bearing…` at `rel = 0.0000` | **rung 55's `test_p6_verdicts_survive_the_work_split`** |
+| the `v_scan` override removed | `test_the_scan_step_is_an_instance_value…` | `test_p3_row_count_has_an_interior_optimum` |
+
+* **`test_reduce_stack_object_dispatches_at_K1` cannot see the dispatch.** Its docstring says the
+  value equality shows *"it is the same code and not merely the same algebra"*. It does not: the
+  fall-through bisects the SAME bracket `[0.1, 2.0]` to the SAME `1e-14`, and its residual
+  `tau_of − tau_c` differs from the map's `psi*n² − target` by a POSITIVE affine factor, which a
+  bisection reading only SIGNS cannot see — same `lo`/`hi` sequence, same `0.5*(lo+hi)`, same
+  bits. Gated structurally instead, off `stage.rs`'s own census: a dispatched call runs **0**
+  bisection passes and **0** marches; the fallen-through one runs **144** (3 × 48). *A documented
+  gate that doesn't exist*, this time found in the SOURCE rather than in the port.
+* **`test_p6_verdicts_survive_the_work_split` cannot see a DEAD split.** Every clause it makes is
+  an upper bound, and every one is satisfied at `x == y` — so it cannot distinguish P6's claim
+  (*disclosed, and no verdict rides on it*) from *the disclosed choice is dead code*. Two
+  `assert_ne!` clauses close it, on the in-repo precedent that already exists for exactly this
+  shape (step 4's `moved > 0`; Python's own rung-56 P4 gate ends with `!=`). Detector re-measured:
+  the collapsed split now fails it. **A "nothing rides on this knob" gate is vacuous unless
+  something else says the knob is LIVE** — and rungs 55/56 are two-sided only when read TOGETHER,
+  which is not how a suite is read.
+* `test_rung55.py:498`'s cost clause is vacuous too, and differently: `cost ==
+  dict(sorted(cost.items()))` compares a dict to a re-ORDERED copy of itself and `dict.__eq__`
+  ignores order, so it is `True` for any curve, the `or` short-circuits, and the monotonicity it
+  looks like it gates is never evaluated. Measured on PyPy before porting — the costs ARE
+  ascending (0.0230, 0.0529, 0.0931, 0.1509, 0.2432, 0.4309) — so the Rust asserts the LIVE half
+  alone. The port is STRONGER here, deliberately and with the reason written at the gate.
+
+**THE `slow` MARKERS, DROPPED AGAINST A MEASUREMENT.** Python marks six of these 39 `slow`
+(5 in rung 55, 1 in rung 56). Measured: **`rung55.rs` 20 gates in 1.34 s, `rung56.rs` 23 in
+0.25 s** — the whole of both suites is under two seconds against a gate whose slowest single
+target is 246 s. Slice M's rule applies unchanged: port the gate, DROP the marker, re-introduce
+`#[ignore]` only against a MEASURED cost. Nothing here earns one.
+
+**ONE FRAGILITY WRITTEN DOWN RATHER THAN DISCOVERED LATER.** `take_census` reads AND RESETS a
+thread-local, so the dispatch gate is correct only while it is the sole census consumer in that
+binary. A second reader in `rung55.rs` would steal its tallies and the failure would read as a
+physics disagreement rather than a harness one. Noted at the gate; if one is ever needed, the two
+must be serialised.
+
+**WHAT STEP 6 INHERITED.** `slice_n_deferrals` (in `rung55.rs`) is the ledger of record from here;
+`slice_n_smoke.rs`'s `slice_n_deferrals_so_far` stays where it is, with its own outcomes, as the
+trail between steps.
+
+##### STEP 6 — SHIPPED, docs-only. **THE STEP WAS SCOPED AT THE WRONG DEFECT**
+
+The step table wrote step 6 as *"§ (iii)'s dead constants, if the specs assert otherwise"*. Read:
+`grep` over `docs/rung55-spec.md` and `docs/rung56-spec.md` for `_P_FLOOR`, `_T_FLOOR`, the two
+loop caps and `v_hi` returns **nothing** — neither spec mentions a single one of them, so the
+correction the step was named for **does not exist**. What the slice actually owed was found at
+step 5 and could not have been anticipated at pre-registration, because it is not about the code
+at all: **three of the source's own gates assert nothing, and one spec sentence over-states why a
+knob is there.** All four are written into the two specs, quoting the injected defect that
+exposed each:
+
+* `rung55-spec.md` § Verification gates — gates 1, 7 and 9's vacuity, each with its detector.
+* `rung55-spec.md` § the row-count table — `_V_SCAN` = 0.01 CONFIRMS the reversal rather than
+  rescuing it; the curve is scan-step-invariant to ~1e-11.
+* `rung56-spec.md` § Verification gates — its gate 7 is the one that DOES catch a dead split
+  (and rung 55's does not), and its gate 1 is genuinely tight at 1 ULP.
+
+The Python suites are left untouched: repairing the source's gates is a change to the oracle's
+tests, which § 8 puts outside the port. Recorded rather than done, with the measurement beside
+each, so whoever takes it is not re-deriving it. **A step named after a predicted defect finds
+the predicted defect or nothing** — the useful ones arrived from the step before it.
 
 
 - ~~**The diamond.**~~ **DISCHARGED — § 5.3.** `StatorBleedMatcher(TwoSpoolBleedMatcher,

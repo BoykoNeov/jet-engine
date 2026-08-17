@@ -26,7 +26,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL, regenerate via extract_data.py + build.py
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy leaves `open().write()` unflushed, PowerShell Get/Set-Content double-encodes UTF-8; both fail SILENTLY
 
-## The Rust port — decided 2026-08-12; PHASES 0–4 DONE; **PHASE 5 AUTHORISED and under way — slices I (31/33), J (32), K (38/39), L (41/42), M (53/54) SHIPPED; slice N (55/56) IN PROGRESS — steps 1-4 of 6 shipped; then slice O (61)**; 556 Rust tests, 0 skipped
+## The Rust port — decided 2026-08-12; PHASES 0–4 DONE; **PHASE 5 AUTHORISED and under way — slices I (31/33), J (32), K (38/39), L (41/42), M (53/54) SHIPPED; slice N (55/56) COMPLETE — all 6 steps shipped; NEXT IS slice O (61)**; 599 Rust tests, 0 skipped
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; slices are free inside an authorised phase, **phase 5 needs fresh authorisation**
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost by COMPILING and returning a silently different number
 - [Rust arithmetic IS PyPy](rust-port-arithmetic-is-pypy.md) — 100% bit-exact vs PyPy on gas AND cycle; size a solver claim by DISTINCT ROOTS, not row count
@@ -53,6 +53,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Slice N step 2](rust-port-slice-n-step2.md) — the dump passed first try and taught nothing; three instruments I wrote measured NOTHING, found only by running them
 - [Slice N step 3](rust-port-slice-n-step3.md) — a carrier claim checked on ONE hook says nothing about the next hook's; a constant measured DEAD still has to be SPELLED right
 - [Slice N step 4](rust-port-slice-n-step4.md) — one plan section held two censuses measured on two different GRIDS; and a count derived from a superset is a guess
+- [Slice N step 5](rust-port-slice-n-step5.md) — two of the SOURCE's own gates could not see the defect they name; and a suite reaching inside a constant forced a fifth gated-code edit
 
 ## Shipped rungs
 

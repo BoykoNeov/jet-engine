@@ -58,6 +58,16 @@ scan at `_V_SCAN` = 0.01 with `rows` = 5 and 7 filled in), and the mechanism is 
 rises with 6 rows moved, the identity of the worst stage **migrates rearward**, 0 → 6 → 7, into
 the rows the stator does not move.
 
+> **SHARPENED BY THE RUST PORT (slice N step 5) — the finer scan CONFIRMS the reversal, it does
+> not RESCUE it.** The sentence above reads as though `_V_SCAN` = 0.01 were needed to tell physics
+> from a bracket artifact. Measured at both steps on the shipped cell (`K` = 8, `Tt4` = 1000,
+> `rows` = 1…6): the two scans agree on every relief and every cost to about the **11th decimal**
+> — `v*` moves by ~1e-11, because the coarse scan only BRACKETS and the bisection then converges
+> on the residual to `_INC_TOL` = 1e-12 either way. Every verdict on this curve is therefore
+> **scan-step-invariant**, which is a stronger statement than the one this paragraph makes. (The
+> override is still carried in the port, because the port runs the source's experiment rather than
+> a neighbouring one that happens to agree — see `docs/plans/todo-rust-port.md` § 5.10 step 5.)
+
 ---
 
 ## The instrument — `StageStack`, and where it is allowed to bite
@@ -307,6 +317,33 @@ NON-TAUTOLOGY gate (marched ≠ lumped, exactly 0 at `K`=1, growing with throttl
 monotonicity; 5 P4's front-stalls/rear-chokes; 6 P5's convergence (increments shrink); 7 P6's
 split robustness; 8 SCOPE — the transient ladders are bit-for-bit unstacked; 9 P3's factorisation
 and the row-count optimum; 10 CYCLE UNTOUCHED (the default design run is bit-for-bit rung 6).
+
+> **THREE OF THESE GATES WERE MEASURED VACUOUS BY THE RUST PORT (slice N step 5), and the port's
+> copies are STRONGER by exactly that much.** Each was found by injecting the defect the gate
+> names and watching it stay green — not by reading it.
+>
+> * **Gate 1's `test_reduce_stack_object_dispatches_at_K1`** says its value equality shows *"the
+>   same code and not merely the same algebra"*. It does not. Delete `StageStack.solve_n`'s
+>   `K == 1` dispatch entirely and the assertion still passes **bit-for-bit**: the fall-through
+>   bisects the same `[0.1, 2.0]` to the same `1e-14`, and its residual differs from
+>   `ComponentMap.solve_n`'s by a POSITIVE affine factor — invisible to a bisection that reads
+>   only SIGNS. The dispatch needs a structural witness (the port uses a pass/march census: both
+>   exactly **0** when it dispatches, and the pass count measured **144** — 3 calls × 48 — when
+>   it does not).
+> * **Gate 7's `test_p6_verdicts_survive_the_work_split`** makes only UPPER bounds, every one
+>   satisfied at `x == y` — so it cannot tell P6's claim (*the split is disclosed and no verdict
+>   rides on it*) from *the split is dead code*. Collapse `_ladder_T`'s `"tau"` arm onto `"dT"`
+>   and this gate stays green while **rung 56's gate 7 fails at once**, because its claim has the
+>   opposite sign. The two rungs are two-sided only when read together, which is not how a suite
+>   is read; the port adds a `!=` clause, as rung 56's own gate already does.
+> * **Gate 9's `test_p3_row_count_has_an_interior_optimum`** asserts the cost curve is monotone
+>   as `cost == dict(sorted(cost.items())) or [...] == sorted([...])`. The first disjunct compares
+>   a dict to a re-ORDERED copy of itself, and `dict.__eq__` ignores order — so it is `True` for
+>   ANY curve, the `or` short-circuits, and the monotonicity is never evaluated. The claim itself
+>   HOLDS (0.0230, 0.0529, 0.0931, 0.1509, 0.2432, 0.4309, measured); only the gate was empty.
+>
+> The Python gates are left as they are — the port is a translation and repairing the source's
+> suite is outside it (`docs/plans/todo-rust-port.md` § 8) — so this note is the record.
 
 ## Gate 2b — a free consistency check, found by writing a gate with the WRONG SIGN
 

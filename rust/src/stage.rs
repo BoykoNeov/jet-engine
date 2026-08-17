@@ -879,6 +879,11 @@ pub struct StageStackCore {
     /// must be able to run them — which is where the `_INC_MAX` 80 → 200 shadow bites (see
     /// [`VariableStatorCore::inc_max`]).
     pub core: VariableStatorCore,
+    /// THE SCAN STEP AS AN INSTANCE VALUE — see [`with_v_scan`](Self::with_v_scan).
+    ///
+    /// Private, so [`V_SCAN`](Self::V_SCAN) stays the only way to spell the default and every
+    /// deviation goes through one named builder.
+    v_scan: f64,
 }
 
 impl StageStackCore {
@@ -888,6 +893,13 @@ impl StageStackCore {
     /// The COARSE scan step that BRACKETS the schedule root — rung 54's fix for rung 53's
     /// doubling ladder, which can step over an interior turning point. A NEW name in Python
     /// (`_V_SCAN`), not a shadow of [`VariableStatorCore::V_STEP`] = 0.04.
+    ///
+    /// **It is the DEFAULT, not the value the scan reads.** Python spells it `self._V_SCAN`, and
+    /// rung 55's own suite OVERRIDES it per instance (`test_rung55.py:481` sets `0.01` to fill in
+    /// the row-count curve). A Rust associated const cannot be overridden, so the live value is
+    /// the [`v_scan`](Self::with_v_scan) field and this const only seeds it — the `_INC_MAX`
+    /// lesson (*a dead constant's SPELLING still has to be right*) arriving on a constant that is
+    /// very much alive, one method along.
     pub const V_SCAN: f64 = 0.05;
 
     /// `super().__init__(...)` and then the two `if K > 1` constructions — Python's order, which
@@ -919,13 +931,31 @@ impl StageStackCore {
                                       core.core.base.pi_hpc_design, core.core.base.eta_hpc)
             }));
         }
-        StageStackCore { core }
+        StageStackCore { core, v_scan: Self::V_SCAN }
     }
 
     /// Wrap a sibling that came back through the [`R55`] hook. Every core this is called on
     /// carries [`Descendant::Stack`] by construction — the hook body is the only producer.
+    ///
+    /// **The sibling gets the DEFAULT scan step, not this object's** — and that is Python's, not
+    /// an oversight: `at_setting` constructs a fresh matcher whose `_V_SCAN` is the CLASS
+    /// attribute, so an override set on `self` does not travel. It cannot move a number either
+    /// way (only `self` runs the scan; the siblings are read at a fixed `v`), which is exactly
+    /// why copying it would be an invisible divergence rather than a caught one.
     fn wrap(core: VariableStatorCore) -> Self {
-        StageStackCore { core }
+        StageStackCore { core, v_scan: Self::V_SCAN }
+    }
+
+    /// Python's `m._V_SCAN = 0.01` — the coarse scan step, per instance.
+    ///
+    /// Rung 55's `test_p3_row_count_has_an_interior_optimum` refines the scan so the row-count
+    /// curve is filled in rather than sampled at 0.05; at the default step two of the six row
+    /// counts bracket the same root. The value MOVES `vsv_star`, so this is not cosmetic — it is
+    /// the one place in rungs 55/56 where a shipped test reaches inside a constant, and the port
+    /// has to offer the same reach or run a different experiment.
+    pub fn with_v_scan(mut self, v_scan: f64) -> Self {
+        self.v_scan = v_scan;
+        self
     }
 
     /// The stack description this core was built with.
@@ -1603,7 +1633,7 @@ impl StageStackCore {
                 // below runs off `r_lo`'s sign alone. Recorded, not carried: a `let _ = r_hi`
                 // would be a value this port pretends to use.
                 let mut hi = None;
-                let mut x = Self::V_SCAN;
+                let mut x = self.v_scan;
                 while x <= v_hi + 1e-12 {
                     let rx = match try_resid(x, tt4) {
                         Ok(rx) => rx,
@@ -1617,7 +1647,7 @@ impl StageStackCore {
                     }
                     lo = x;
                     r_lo = rx;
-                    x += Self::V_SCAN;
+                    x += self.v_scan;
                 }
                 match hi {
                     Some(mut hi) => {

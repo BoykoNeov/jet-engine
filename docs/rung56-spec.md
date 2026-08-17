@@ -302,6 +302,22 @@ so rung 55's published lever does not trip it.
    relocation threshold sitting above rung 55's schedule.
 10. **CYCLE UNTOUCHED** — the default single-spool design run is bit-for-bit rung 6.
 
+> **MEASURED BY THE RUST PORT (slice N step 5): GATE 7 IS THE ONE THAT CATCHES A DEAD SPLIT, AND
+> RUNG 55's GATE 7 IS NOT.** Collapsing `_ladder_T`'s `"tau"` arm onto `"dT"` — so the disclosed
+> work split stops being a choice at all — fails **this** gate immediately (`rel = 0.0000` on the
+> first cell) and leaves rung 55's `test_p6_verdicts_survive_the_work_split` **green**, because
+> rung 55's clauses are all upper bounds and an upper bound is satisfied at `x == y`. The two
+> rungs' claims have opposite signs and are two-sided only when read TOGETHER, which is not how a
+> suite is read. This gate's own closing `!=` is the pattern rung 55's copy was missing; the port
+> adds it there. See `docs/rung55-spec.md` § Verification gates and
+> `docs/plans/todo-rust-port.md` § 5.10 step 5.
+>
+> Gate 1's `K = 1` throat identity was also injected against and it is **genuinely tight**:
+> re-deriving row 0's `X`/`M_c` from the same algebra instead of copying rung 54's own
+> `throat_loading`/`capacity_margin` calls diverges by **1 ULP**, and the gate fails. That is the
+> port's *an "exactly" claim survives a copied instruction sequence and dies on a second
+> derivation* rule, confirmed on this rung's own reduce.
+
 ## The next seam
 
 > **⚠ CLOSED, NEGATIVE — `docs/per-row-blading-negative.md`. Do NOT re-open as written.** The
