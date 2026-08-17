@@ -5349,6 +5349,67 @@ message header — but the section lists in the table above are the re-parsed on
 in this port of a measuring pass finding the defect in the instrument, and the second in this
 slice.*
 
+##### STEP 2 — SHIPPED. **THE RUNG'S OWN HEADLINE ARITHMETIC IS UNOBSERVABLE TO EVERY GATE IT SHIPS**
+
+`tests/rung37.rs` — **all 7 Python gates port, none deferred**, plus 3 the port adds. Ten targets
+green on the first run in **6.6 s**.
+
+**PREDICTIONS 2 AND 3 WERE RUN AGAINST THE GATES AT THIS STEP, NOT DEFERRED TO THE DUMP.** Slice P
+recorded at its step 3 that its own prediction 3 had been measured against the SMOKE and never
+against the rung suites — which is the comparison the entire discriminator argument is about. Run
+here instead, and a third injection was added to it:
+
+| injected defect | smoke values (of 517) | **Python gates (of 7)** | port-added gates (of 3) |
+|---|---|---|---|
+| the Illinois exhaustion arm returns `a` | 97 | **0** | **0** |
+| the plenum power block copied from `_instant_tail` | 60 | **0** | **0** |
+| `equilibrium_soak`'s two loops UNIFIED | 29 | **0** | **0** |
+
+Predictions 2 and 3 registered *"0 gates, > 0 oracle keys"* and both hold. **The third row is the
+finding, and it is sharper than either.**
+
+**`_plenum_state`'s `Phi` IS READ AT EXACTLY ONE SITE, AND THERE THE WRONG FORMULA AND THE RIGHT
+ONE ARE IDENTICAL.** Rung 37's docstring calls this the honest part — *"the shaft power is
+computed HONESTLY with the two DISTINCT mass flows: the turbine passes `mdot_NGV`, the compressor
+`mdot_c` — unlike rung 34/35 where they are equal by the rigid coupling."* `Phi` is read only by
+`equilibrium_plenum`'s residual (`engine.py:2185`, `combustor.rs:619`); `plenum_frozen_peak` reads
+`pi_c`, `mdot_c`, `mdot_ngv` and `dpt4_ds` and never `Phi` at all. And the difference between the
+two formulas is
+
+```text
+    eta_m * (h_t4 - h_t5) * (mdot_ngv - mdot_c*(1 + f)) / (P_ref * nu)
+```
+
+which vanishes **exactly** when `mdot_c + mdot_fuel = mdot_ngv` — the plenum's own steady
+condition, and the very root that residual is driven to. So the one place the honest power block
+is read is the one place it cannot differ from the dishonest one. **The plenum's shaft ODE is
+never marched**: `pt4` is the only state the plenum integrates, on a spool frozen at `nu0`.
+
+This is not a defect in rung 37 — the physics is right and the claim is true — but the claim is
+carried by NO gate the rung ships, and only a bit-exact dump taken OFF equilibrium (the smoke's
+section C, 60 keys) witnesses it. *A quantity computed correctly, read once, and read only where
+its correctness cannot matter.* Registered so slice R does not inherit the sentence as though it
+were tested.
+
+**PREDICTION 8 HELD, MEASURED IN BOTH DIRECTIONS.** Python marks gate 5 `slow`. In Rust it runs
+alone in **5.95 s** — 90 % of the ten targets' 6.6 s, and **2.4 %** of the crate's slowest single
+target (246 s). So it is simultaneously the dominant cost of its own file and nowhere near earning
+an `#[ignore]`. Both numbers are quoted because § 5.14 registered that phase 6's marches were the
+first place a marker might genuinely be earned, and *"it is small"* against *"it is 90 % of its own
+file"* are different claims.
+
+**THE THREE ADDED GATES ARE ALL COUNTS, AND ONE FAILED FIRST WITH ITS OWN ARITHMETIC WRONG.**
+`the_marches_run_to_length_with_no_bracket_failure` predicted the plenum march at
+`151 + 3*150 = 601` `_plenum_state` calls and measured **703**. The missing 102 is the single
+`plenum_pt4_at` that sets the start pressure — 2 bracket endpoints plus `ILLINOIS_MAXIT = 100`
+residual evaluations, *because that is the site whose absolute 1e-12 tolerance never converges*.
+The exhaustion arm turned up as an exact integer inside a gate not written to look for it, and the
+gate now asserts the decomposition rather than the total. The other two are prediction 7 (the
+plenum instant reaches the hook once per call and the nozzle never) and prediction 3's count half,
+written as a CONTRAST — the back-pressure invert driven hard first and exhausting nothing, then
+the pressure solve exhausting — because a bare positive count would also pass a port that
+exhausted everywhere.
+
 ---
 
 ## 6. Named risks
