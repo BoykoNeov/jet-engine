@@ -131,5 +131,6 @@ pub mod map;
 pub mod march;
 pub mod matcher;
 pub mod nox;
+pub mod stage;
 pub mod stator;
 pub mod two_spool;

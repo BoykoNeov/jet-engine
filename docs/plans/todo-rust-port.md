@@ -4010,7 +4010,7 @@ D/E's *an "exactly" claim survives a copied instruction sequence and dies on a s
 | step | scope | gate |
 |------|-------|------|
 | **1** | **ALL changes to already-gated code**: `Descendant` loses `Copy`, `r53_at_setting`'s `.clone()`, and the `&'static TwoSpoolHooks` threaded through `VariableStatorCore::with_hooks`; plus the three `map.rs` helpers | ✅ **P2 HELD** — see below |
-| **2** | `stage.rs`: `StageStack` — the two design ladders, `_stage_eta`, `march` with BOTH floors counted, `tau_of`, `lumped_tau`, `solve_n` + `try_solve_n` (P1), and rung 56's `capacities`/`stage_*` row reads | compiles + a smoke check against one dumped cell |
+| **2** | `stage.rs`: `StageStack` — the two design ladders, `_stage_eta`, `march` with BOTH floors counted, `tau_of`, `lumped_tau`, `solve_n` + `try_solve_n` (P1), and rung 56's `capacities`/`stage_*` row reads | ✅ **`slice_n_smoke.rs`, 959 keys bit-exact on SIX cells + 9 non-value gates**; crate **545 run, 0 skipped** — see below |
 | **3** | `StageStackCore`: `R55` in both tables, `at_stages`, the two stacked eta loops, `stage_margin`, `stage_throat_margin`, `throat_walk`, `work_gap`, `running_line_shift`, `stage_incidence_schedule`; the P3 dispatch gate discharging `slice_m_deferrals` item 3 | same |
 | **4** | the slice-N oracle — Python dump LAUNCHED FIRST, Rust reader written while it runs; the (i)/(iii)/(iv)/(vi) census bars, and the equilibrium arm on `stage_throat_margin` only | `slice_n_oracle.rs` bit-exact |
 | **5** | the two suites, `rung55.rs` (18) + `rung56.rs` (21), incl. P4/P5's reduce contracts, P6's tie-break and P8's per-floor split | 39 gates green, **as a name → parameter-set diff, never a count** |
@@ -4046,6 +4046,86 @@ rule that forbade it was already in the repo. Measured: **2.27 s**, in a gate wh
 target is **246 s**. Marker dropped; `rung31.rs` is now 8 passed / 0 ignored and the crate is
 **535 run, 0 skipped**. *A correction applied only forward is a correction that leaves its own
 precedent standing* — and the only thing that surfaced it was a count that refused to reconcile.
+
+##### STEP 2 — SHIPPED. The value dump held first try; every finding came from the gates BESIDE it
+
+`stage.rs` carries `StageStack` whole: both work splits, both capacity profiles, the lazy per-row
+capacity cache, the two-reason fallible twin, and rung 56's four row reads. The dump —
+`slice_n_smoke.rs` against `oracle/slice_n_smoke_pypy.tsv` — is **959 keys bit-exact on the first
+run**, over six cells chosen by ENUMERATING the methods step 2 ships rather than by picking a
+representative one: `K` of 8/8/4/1/8/4, both splits, both profiles, the lumped and the front-row
+lever, a closed stator and an opened one, and `solve_n` on **both** the `K = 1` dispatch and the
+`K > 1` bisection. That enumeration is what caught the module's dead branch: **a stack with
+`vsv_stages = None` never touches `cmap_axial`**, so a smoke built only on the default lever
+leaves both second branches of `psi_at`/`vsv_at` unwitnessed.
+
+**THE INSTRUMENTS SHIPPED WITH THE CODE, NOT WITH THE GATES THAT READ THEM.** § 5.10's (iii),
+(vi) and P8 can only be observed from inside these functions, so `take_census` — bisection passes
+in both loops, marches, `solve_n` calls, constructions, cache builds/hits, and a PER-FLOOR split
+of the clamp counter — is in `stage.rs` from the start. Retrofitting it at step 4 would have meant
+editing step-2 code that step 3 was already built on, which is § 5.9 (a)'s ripple exactly. It
+immediately paid: `stage_eta` **48** passes, `try_solve_n` **48**, and a `solve_n` call costs
+**51 marches** — 2 bracket endpoints, 48 residuals, and the one extra march the clamped-root check
+runs. Both 48s are *predictable from the arithmetic* (absolute break over a fixed bracket), like
+`map.rs`'s, so they are gated rather than merely recorded.
+
+**FINDING 1 — `_P_FLOOR` IS DEAD FOR A DERIVED REASON, AND § 5.10 (iii) HAD ONLY THE GRID ONE.**
+The pre-registration recorded *0 firings in 521 649 marches*, which is a claim about a sweep.
+`tau_k` is floored **before** `base = 1 + e*(tau_k − 1)` is formed, so `base ≥ 1 − e*(1 − T_FLOOR)`
+and `base < P_FLOOR` requires
+
+```text
+    e > (1 − P_FLOOR)/(1 − T_FLOOR) = (1 − 1e-6)/(1 − 1e-3) = 1.001   EXACTLY
+```
+
+— a threshold in the two floor constants **alone**: independent of the map, the split, `K` and
+the design point. Since `e = e_d*(eta_live/eta_d)`, that sits just above any physical live
+efficiency, which is *why* the count is zero. Pushed past it deliberately, both floors fire on the
+**same** stages and the shared counter reads exactly double (7 → 14 at `K = 8`, 4 → 8 at `K = 4`)
+— § 5.10 (iii)'s *the two can never be conflated* shown rather than asserted. **A dead guard's
+threshold is worth more than its count**, and the count is what a sweep gives you.
+
+**FINDING 2 — THE FIRST FLOOR GRID CLAMPED NOTHING, AND THE GUESS IT WAS BUILT ON WAS BACKWARDS.**
+It probed `march(0.9, 0.1)` on the reading that `solve_n`'s LOW bracket end is the non-physical
+one. It is the HIGH `m/n` end: at `n = 0.1` the `n_k²` factor is tiny so `tau_k` stays near 1 and
+**nothing** clamps, while `march(8, 2)` drives **7 of 8** stages to `_T_FLOOR`. Had the grid been
+shipped as first written, the whole clamp branch — and with it the fallible twin's rarer abort
+reason — would have read as covered while never executing once.
+
+**FINDING 3 — THE ARGMIN TIE IS AT THE DESIGN SETTING, AND THE FIRST GATE ASSERTED IT SOMEWHERE
+ELSE AND WAS REFUTED BY ITS OWN NUMBERS.** § 5.10 (iv) locates the degeneracy at
+`phi_k = 1`; the first gate looked for it on a cell carrying a MOVED stator, where `psi(1) ≠ 1`,
+so the rows separate by whole percent (`[0.140, 0.243, 0.331, 0.348]`) and there is no tie at all.
+Measured at the design setting on the uniform profile:
+
+| | rows `0..K−2` | last row | argmin |
+|---|---|---|---|
+| `K = 8` | **bit-identical, all 7** | LOWER by one step in the last place | **7** |
+| `K = 4` | **bit-identical, all 3** | HIGHER by one step | **0** |
+
+The whole spread is `< 1e-15` and the argmin lands on **opposite ends of the stack** depending
+only on which way the march's own `th *= tau_k` accumulation drifted from the ladder `theta_d` it
+divides by. Both cells are in the dump, so the index is compared against PyPy rather than
+restated. And **the tie-break RULE is pinned on a constructed tie, not on these cells** — cell F's
+argmin is 0 because row 0 is genuinely tied-and-first and cell E's is 7 because row 7 is genuinely
+smaller, so neither run discriminates *first-of-equals* from *last-of-equals*; the `<=` fold that
+would return the LAST is written out beside it and asserted to differ (§ 5.10 P6's
+self-comparison clause).
+
+**FINDING 4 — STEP 1's OWN LESSON CAME BACK THE NEXT DAY, FROM THE OTHER DIRECTION.** The full
+run came back **545 passed / 0 failed / 1 IGNORED**, on a crate step 1 had just cleared to
+*535 run, 0 skipped*. The skipped item was a ```` ```ignore ```` doc-block in this step's own
+`StageStackSpec` note — the crate has **zero** doc-tests and spells all 42 of its other code
+blocks ```` ```text ````, so the one deviation both broke the convention and put a deselected
+item back in the ledger. It is now `text`, and the crate is **545 run, 0 skipped**. Step 1's
+finding was *a correction applied only forward leaves its own precedent standing*; this is the
+mirror — **a ledger you have just cleared is the easiest one to dirty again**, and the only thing
+that caught it was reading the ignored column of a run whose exit code was 0.
+
+**Two deferrals booked** (`slice_n_deferrals_so_far`, which step 5's suites take over): the
+`split` and `cap_profile` string asserts are **unrepresentable** — both are enums, so there is no
+invalid value to reject — and `0 <= vsv_stages` is half unrepresentable, `usize` carrying the
+lower bound while the `<= K` half stays a live, gated assert.
 
 **Rules slice M established that slice N inherits, so they are not re-litigated:** port the gate
 and **drop the `slow` marker** — Python marks 6 of these 39 `slow` (5 + 1), and `#[ignore]` returns only
