@@ -5385,16 +5385,23 @@ two formulas is
     eta_m * (h_t4 - h_t5) * (mdot_ngv - mdot_c*(1 + f)) / (P_ref * nu)
 ```
 
-which vanishes **exactly** when `mdot_c + mdot_fuel = mdot_ngv` — the plenum's own steady
-condition, and the very root that residual is driven to. So the one place the honest power block
-is read is the one place it cannot differ from the dishonest one. **The plenum's shaft ODE is
-never marched**: `pt4` is the only state the plenum integrates, on a spool frozen at `nu0`.
+which vanishes when `mdot_c + mdot_fuel = mdot_ngv` — the plenum's own steady condition, and the
+very root that residual is driven to. So the one place the honest power block is read is the place
+where it is nearly indistinguishable from the dishonest one. **The plenum's shaft ODE is never
+marched**: `pt4` is the only state the plenum integrates, on a spool frozen at `nu0`.
+
+**"Cannot differ" was the first wording and it is wrong by a residual — corrected at step 3 by
+measuring it.** The balance closes to ~1e-12 relative, not to zero, so the injection *does* move
+the plenum equilibrium: **5.4e-12 in `nu`, 9.1e-12 in `pi_c`**, three orders below gate 2's `1e-9`
+bar. That is a stronger statement than the exactness claim and it is the true one — the crate's own
+*an "exactly" claim survives a copied instruction sequence and dies on a second derivation* rule,
+turned on this plan's own prose.
 
 This is not a defect in rung 37 — the physics is right and the claim is true — but the claim is
-carried by NO gate the rung ships, and only a bit-exact dump taken OFF equilibrium (the smoke's
-section C, 60 keys) witnesses it. *A quantity computed correctly, read once, and read only where
-its correctness cannot matter.* Registered so slice R does not inherit the sentence as though it
-were tested.
+carried by NO gate the rung ships, and only a bit-exact dump witnesses it (60 smoke keys; 104
+section-C and 30 section-B oracle keys). *A quantity computed correctly, read once, and read only
+where its correctness is three orders below the bar.* Registered so slice R does not inherit the
+sentence as though it were tested.
 
 **PREDICTION 8 HELD, MEASURED IN BOTH DIRECTIONS.** Python marks gate 5 `slow`. In Rust it runs
 alone in **5.95 s** — 90 % of the ten targets' 6.6 s, and **2.4 %** of the crate's slowest single
@@ -5501,14 +5508,36 @@ sharp instrument rather than a formality.
 |---|---|---|
 | 1 | oracle 100 % bit-exact vs PyPy | **HELD** — 2 066/2 066, first run (517/517 at the smoke) |
 | 2 | unifying the soak loops: 0 gates, > 0 oracle keys | **HELD, sharper** — 0 of 10, **133** keys |
-| 3 | exhaustion returns `a`: 0 gates, > 0 oracle keys | **HELD, sharper** — 0 of 10, **456** keys |
-| 4 | `march` not reused; 0 stage failures | **HELD** — three marches written out; 0 failures, gated as evaluation COUNTS |
-| 5 | the two dead bracket asserts stay 0 | **HELD** — with live siblings in the same dump |
+| 3 | exhaustion returns `a`: 0 gates, > 0 oracle keys | **HELD, sharper** — 0 of 10, **456** keys. Its COUNT clause registered **109**; the dump gives **115** (103 + 6 + 6, sections C/B/D). 109 was probe 2's grid — slice N step 4's rule applied to this section's own registration |
+| 4 | `march` not reused; 0 stage failures | **HELD — but its FIRST gate was VACUOUS.** See below |
+| 5 | the two dead bracket asserts stay 0 | **HELD on every gate grid** — with live siblings in the same dump; one of the two is reachable off-grid, see below |
 | 6 | no `Hooks` table | **HELD** — § 5.12's census confirmed a second time |
 | 7 | the plenum instant: hook once per call, nozzle never | **HELD** — and the oracle's per-section form of it FAILED first; see step 3 |
 | 8 | gate 5 earns no `#[ignore]` | **HELD** — 5.95 s alone: 90 % of its own file, 2.4 % of the crate's slowest target |
 | 9 | `phi_max`: only the quadratic arm | **HELD — but it was UNGATED until an enumeration found it** |
 | 10 | the both-OFF reduce is BIT-for-bit | **HELD** — asserted as bits, in the suite and the dump |
+
+**PREDICTION 4's FIRST GATE MEASURED NOTHING, AND THE ADVISOR'S CHALLENGE IS WHAT FOUND IT.** The
+prediction forbids routing rung 37's marches through `spool.rs::march`, whose `break`-on-`Err`
+would convert a raise into a truncation. It was gated with evaluation COUNTS — and on a grid where
+no stage fails, a truncating marcher produces the identical trajectory, the identical values *and*
+the identical counts. A sixth injection (`soak_excursion` rewritten to break on `Err`) failed
+**0 of 19 gates across all three slice-Q targets**. The prediction was carried by nothing, exactly
+as prediction 9 had been, and the step-4 table above would have said "HELD" over an empty gate.
+
+**The repair is a FORCING case, not a looser bar, and it corrects a second claim on the way.**
+Coarsen the RK step until a stage genuinely leaves the valid region and the two implementations
+become distinguishable in the only way they ever can be: `plenum_frozen_peak` at `ds_frac = 2.0`
+overshoots `pt4` out of the `pic_band`, and `soak_excursion` at `ds = 2.0` drives the metal
+closure off its bracket. Both RAISE in Python and PANIC in Rust; a fused marcher would return a
+shorter trajectory instead. Two `#[should_panic]` gates, and re-applying the injection now fails
+**exactly one** — the one written for it.
+
+The second claim: `combustor.rs` had recorded the back-pressure invert's bracket as *"DEAD on
+every grid measured"*. It is dead on every grid a GATE reaches and reachable on purpose at
+`ds_frac = 2.0` — **the slice's own headline, one level down**. The comment is corrected, and the
+live arm now sits on the MARCH side of the *fallibility is per call site* claim rather than only
+on `equilibrium_soak`'s march-in.
 
 **THE SLICE'S ONE-LINE RESULT.** *A dead arm is a property of the grid, not of the code.* Slice P
 measured `try_illinois`'s exhaustion arm at ZERO firings, established that no value gate could see

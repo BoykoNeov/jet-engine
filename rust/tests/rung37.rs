@@ -461,3 +461,56 @@ fn the_marches_run_to_length_with_no_bracket_failure() {
          search probes speeds off the operable map); 0 of {} calls did", ke.soak_close_calls
     );
 }
+
+// ================================================ prediction 4, given a gate that can FAIL
+//
+// **THE COUNT GATE ABOVE CANNOT CARRY PREDICTION 4, AND MEASURING IT SAID SO.** Prediction 4 is
+// that rung 37's marches must NOT be routed through `spool.rs::march`, whose `break`-on-`Err`
+// would convert a raise into a truncation. It was first gated with evaluation counts — and on a
+// grid where nothing fails, a truncating marcher produces the identical trajectory, the identical
+// values AND the identical counts. Injected (`soak_excursion` rewritten to break on `Err`) and
+// re-run: **0 gates failed across all three slice-Q targets.** The prediction was carried by
+// nothing, exactly as prediction 9 had been.
+//
+// The repair is a FORCING case rather than a looser bar. Coarsen the RK step until a stage
+// genuinely leaves the valid region, and the two implementations become distinguishable in the
+// only way they ever can be: Python RAISES out of the whole call and a fused marcher would
+// return a shorter trajectory instead. These two tests are what fails when the injection is
+// re-applied.
+//
+// They also repair a second claim. `combustor.rs` recorded the back-pressure invert's bracket as
+// "dead on every grid measured" — true of every grid any gate reaches, and NOT a property of the
+// code: at `ds_frac = 2.0` the plenum's pressure overshoots clean out of the `pic_band` and the
+// invert fails from inside a march. Same shape as this slice's headline about the Illinois
+// exhaustion arm, one level down.
+
+/// **PREDICTION 4, half one.** A stage failure inside `plenum_frozen_peak` PROPAGATES.
+///
+/// `ds_frac = 2.0` makes the RK step on `pt4` overshoot the compressor's achievable pressure band,
+/// so `try_compressor_from_backpressure` cannot bracket. Python has no `try` in this march, so the
+/// `AssertionError` leaves the whole call; the Rust panicking twin does the same. **A marcher that
+/// broke out instead would return a `PlenumPeak` here and this test would fail.**
+#[test]
+#[should_panic(expected = "plenum back-pressure invert does not bracket")]
+fn prediction4_a_failed_stage_aborts_the_plenum_march() {
+    let cmap = ComponentMap::surge_flow();
+    let ct = build(cmap, 0.05, 0.0, 0.0);
+    let r = ct.plenum_frozen_peak(&flight(), 1100.0, 1400.0, Some(&cmap), 2.0);
+    // Unreachable; printed so a silent truncation cannot masquerade as a pass.
+    panic!("the march RETURNED (peak={}, split={}) — it truncated instead of raising", r.peak, r.split_max);
+}
+
+/// **PREDICTION 4, half two.** A stage failure inside `soak_excursion` PROPAGATES.
+///
+/// `ds = 2.0` drives the two-state RK4 to a speed where the heat-soak closure cannot bracket. This
+/// is the arm `combustor.rs` records as **0 of 11 544** from this caller — dead on every shipped
+/// grid, and reachable on purpose here, which is what puts a live arm on the MARCH side of the
+/// *fallibility is per call site* claim rather than only on `equilibrium_soak`'s march-in.
+#[test]
+#[should_panic(expected = "heat-soak closure does not bracket")]
+fn prediction4_a_failed_stage_aborts_the_soak_march() {
+    let cmap = ComponentMap::surge_flow();
+    let ct = build(cmap, 0.0, 0.1, 3.0);
+    let r = ct.soak_excursion(&flight(), 1100.0, 1400.0, Theta0::Cold, Some(&cmap), 2.0, 6.0);
+    panic!("the march RETURNED (E_surge={}) — it truncated instead of raising", r.e_surge);
+}

@@ -13,11 +13,18 @@
 //! | `equilibrium_soak`'s two loops UNIFIED | 29 | **0** | **0** |
 //!
 //! Every gate rung 37 ships is written at `1e-6`–`1e-9`, where its physics lives, and all three
-//! defects sit four or more orders below that. The middle row is the sharpest: the difference
+//! defects sit three or more orders below that. The middle row is the sharpest: the difference
 //! between the honest two-mass-flow power and a per-unit-air copy is
-//! `eta_m*dh_t*(mdot_ngv - mdot_c*(1+f))`, which vanishes EXACTLY at the plenum's steady
-//! condition — and `Phi` is read at exactly one site, that condition's own residual. **Section B
-//! exists because it is the only place in the project where that quantity is observable.**
+//! `eta_m*dh_t*(mdot_ngv - mdot_c*(1+f))`, and `Phi` is read at exactly ONE site — the residual of
+//! the very condition `mdot_c + mdot_fuel = mdot_ngv` that makes the bracket vanish.
+//!
+//! **It vanishes to the mass balance's own RESIDUAL, not to zero, and that distinction is
+//! measured rather than asserted.** The equilibrium closes the balance to ~1e-12 relative, so the
+//! injection moves the plenum equilibrium by **5.4e-12 in `nu`** and **9.1e-12 in `pi_c`** —
+//! three orders below gate 2's `1e-9` bar, which is why it fails no gate, and 104 section-C keys
+//! plus 30 section-B ones, which is why it fails the dump. The first draft of this paragraph said
+//! the two formulas "cannot differ" where `Phi` is read; they differ by the residual, and stating
+//! the size is both stronger and true.
 //!
 //! # The three census families, and what each is for
 //!

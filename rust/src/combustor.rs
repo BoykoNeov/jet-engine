@@ -445,11 +445,18 @@ impl CombustorTransient {
     /// **A THIRD use of the map** — not forward (rung 34), not inverted-for-`n` (rung 32), but
     /// inverted-for-`m` at a given `pi_c`.
     ///
-    /// **The bracket failure is DEAD on every grid measured — 0 of 15 136 calls** (§ 5.14 probe 3)
-    /// — and it is fallible anyway, because the site is reachable from inside
+    /// **The bracket failure never fires on any grid a GATE reaches — 0 of 15 136 calls** (§ 5.14
+    /// probe 3) — and it is fallible anyway, because the site is reachable from inside
     /// [`try_plenum_pt4_at`](Self::try_plenum_pt4_at)'s Illinois, where Python's `assert` would
     /// abort a bracket search rather than an operation. Slice I's rule reads the REACHABILITY, not
     /// the firing count; the count is what the census gates against zero.
+    ///
+    /// **"Dead" would be the wrong word, and this slice's own headline says why.** Coarsen
+    /// [`plenum_frozen_peak`](Self::plenum_frozen_peak)'s `ds_frac` to 2.0 and the RK step on
+    /// `pt4` overshoots clean out of the `pic_band`: the invert fails, from INSIDE a march, and
+    /// `rung37.rs::prediction4_a_failed_stage_aborts_the_plenum_march` gates it. A branch that no
+    /// shipped grid reaches is a property of the grid, not of the code — the same correction the
+    /// Illinois exhaustion arm forced on slice P, one level down.
     pub fn try_compressor_from_backpressure(
         &self, cmap: &ComponentMap, n: f64, tt2: f64, pt2: f64, pt4: f64,
     ) -> Result<BackPressureComp, Abort> {

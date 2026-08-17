@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: d3ef1fc3-403a-46c6-9456-b4f1aa4bef2d
-  modified: 2026-08-17T21:05:54.907Z
+  modified: 2026-08-17T21:15:58.297Z
 ---
 
 Phase 6 slice Q (rung 37, `CombustorTransient` → `rust/src/combustor.rs`) shipped 2026-08-18 in
@@ -41,6 +41,18 @@ comment's emphasis, grep who reads the value and check whether the readers can t
 
 **ENUMERATE THE REGISTERED PREDICTIONS BEFORE WRITING THE STEP UP, NOT AFTER.** Prediction 9 was
 carried by nothing — the dump emitted no `phi_max` arm tallies — and the enumeration caught it
-pre-write-up. This is [[rust-port-slice-p]]'s step-3 lesson applied rather than repeated.
+pre-write-up. This is [[rust-port-slice-p]]'s step-3 lesson applied rather than repeated. **But
+the enumeration only checks that a gate EXISTS, not that it can fail:** prediction 4 (don't fuse
+the marchers, a `break` would hide a raise) was gated with evaluation counts, and on a grid where
+nothing fails a truncating marcher gives identical values *and* identical counts. The injection
+failed **0 of 19**. The fix was a FORCING case — coarsen the RK step until a stage really leaves
+the valid region, then `#[should_panic]` — which also proved a branch documented as "dead on
+every grid measured" was merely off-grid. **To gate a difference that only shows up on failure,
+you have to manufacture the failure.**
+
+**PROSE THAT SAYS "EXACTLY" IS A CLAIM TO MEASURE.** "The one place it is read is the one place it
+cannot differ" was algebraically true and arithmetically wrong: the balance closes to ~1e-12, so
+the injection moves `nu` by 5.4e-12. Stating the size is stronger than claiming exactness — the
+[[rust-port-copy-vs-rederivation]] rule turned on my own write-up.
 
 Detail: `docs/plans/todo-rust-port.md` § 5.14. Remaining in phase 6: slices R, S, T, U.

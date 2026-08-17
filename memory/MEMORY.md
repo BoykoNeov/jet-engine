@@ -57,7 +57,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Slice O: rung 61, phase 5 done](rust-port-slice-o.md) — a deferral written into the code the NEXT slice runs came due exactly as written; the defect lived in an EDGE, not a node
 - [Phase 6 pre-flight](rust-port-phase6-preflight.md) — the same census run in the OPPOSITE direction hit a scoping bug a one-root set could not expose; the named arithmetic risk was refuted by measurement
 - [Slice P: rungs 34/35/36](rust-port-slice-p.md) — a perfectly-placed deferral note described a branch that does not exist; two of five injected defects were invisible to 132 bit-exact values
-- [Slice Q: rung 37](rust-port-slice-q.md) — a dead arm is a property of the GRID, not the code; three gates failed for three different wrong-set reasons
+- [Slice Q: rung 37](rust-port-slice-q.md) — a dead arm is a property of the GRID, not the code; and a gate that only fires on failure needs the failure MANUFACTURED
 
 ## Shipped rungs
 
