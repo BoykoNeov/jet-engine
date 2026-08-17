@@ -44,8 +44,12 @@
 
 use std::cell::{Cell, OnceCell};
 
-use crate::gas::{powp, Abort};
+use crate::engine::FlightCondition;
+use crate::gas::{powp, Abort, Gas};
 use crate::map::{mach_of_nu, mfp_frac, nu_of_mach, ComponentMap};
+use crate::stator::{Descendant, StatorHooks, VariableStatorCore};
+use crate::two_spool::{secant, EtaLoop, Spool, TwoSpoolEngine, TwoSpoolHooks, TwoSpoolMapCore,
+                       TwoSpoolMapResult, R39};
 
 // =========================================================================================
 // THE CENSUS — one read-and-reset, eight tallies
@@ -664,5 +668,991 @@ impl StageStack {
                  (m={m:.4}, tau_c={tau_c:.4}, K={}) — a map-validity edge.", self.k)));
         }
         Ok(n)
+    }
+}
+
+// =========================================================================================
+// THE MATCHER — rung 55's ONE point of entry, and rung 56's reads
+// =========================================================================================
+//
+// WHERE IT BITES, AND WHERE IT DOES NOT. The stack replaces rung 32's speed-line inversion
+// (`ComponentMap::solve_n`) with `StageStack::solve_n` inside rung 39's TWO efficiency loops —
+// and touches nothing else. The energy cascade (map-free, rung 38), the choke relations, the
+// burner `f` fixed point, the efficiency island, the rebuild-forward and every conservation
+// assert are rung 38/39's, entered unchanged. That is why `R55_TWO` below BORROWS
+// `R39.try_match_point` rather than naming a body of its own.
+//
+// THE REDUCE IS AN IDENTITY AT K = 1, like rung 53's and for the same reason: no stack object is
+// built when both `K` are 1, both efficiency loops dispatch to the INHERITED ones, and there is
+// no rung-55 code path to skip. Where a stack is built on ONE spool only, the other spool's loop
+// is still literally rung 39's — so a one-sided stack is a controlled experiment (§ 5.10 P9).
+// =========================================================================================
+
+/// RUNG 55/56's [`StatorHooks`] table — ONE override, and it exists to stop a swept stator
+/// setting silently dropping the stack.
+///
+/// A sibling built through rung 53's own body comes back with `stack_lp`/`stack_hp` = `None`:
+/// plausible numbers on the wrong machine, which no value gate would flag. That is what
+/// `rung53.rs::the_stacked_dispatch_is_live` asserts, discharging `slice_m_deferrals` item 3.
+pub const R55: StatorHooks = StatorHooks { at_setting: r55_at_setting };
+
+/// RUNG 55's [`TwoSpoolHooks`] table — **the two efficiency loops, and `R39`'s own
+/// `try_match_point` BY REFERENCE.**
+///
+/// Naming the shared entry as `R39.try_match_point` rather than re-exporting rung 39's private
+/// body makes the sharing structural: there is no second spelling of `match` that could drift,
+/// and the pointer comparison in the dispatch gate's third clause is guaranteed by construction
+/// rather than by discipline. (It is also the only route — `r39_try_match_point` is private to
+/// `two_spool.rs`, and reaching it would have been a FIFTH gated-code edit.)
+pub const R55_TWO: TwoSpoolHooks = TwoSpoolHooks {
+    try_match_point: R39.try_match_point,
+    hp_eta_loop: r55_hp_eta_loop,
+    lp_eta_loop: r55_lp_eta_loop,
+};
+
+/// RUNG 39's HP loop with the speed-line inversion taken through the stack — **identical line
+/// for line except `solve_n`**, which is how Python spells it and therefore how the port does.
+///
+/// Not folded together with [`crate::two_spool::hp_eta_loop_closed`] behind a
+/// `stack: Option<&StageStack>` parameter: that would turn rung 55's one point of entry into a
+/// flag, and `lp_eta_loop_bleed`'s note already settled the rule (*a deliberate duplication is
+/// not factored away*).
+///
+/// # The non-convergence divergence, recorded rather than repaired
+///
+/// Python raises `AssertionError` here, and rung 55's `stage_incidence_schedule` catches
+/// `AssertionError` — so in Python a non-converging secant would be swallowed by the scan as a
+/// map-validity edge. This `panic!` is rung 39's own spelling and is NOT catchable. § 5.10 (i)
+/// measured the caught frames on 40 firings and this was not among them (39 bracket, 1 clamped
+/// root, 0 elsewhere), so the divergence is unobservable on the grid — but P1's refutation clause
+/// is *"any Rust abort reaching the scan from a third frame"*, and this is where a third frame
+/// would come from. Written down so step 4's oracle can attribute it if it ever appears.
+#[allow(clippy::too_many_arguments)]
+fn r55_hp_eta_loop(
+    core: &TwoSpoolMapCore, wgas: &Gas, tt4: f64, f: f64, tt25: f64, tt3: f64, mfp4: f64,
+    cmap: &ComponentMap,
+) -> Result<EtaLoop, Abort> {
+    let stack = match &core.stack_hp {
+        // Python's `if self.stack_hp is None: return super()._hp_eta_loop(...)`, as a table read.
+        None => return (R39.hp_eta_loop)(core, wgas, tt4, f, tt25, tt3, mfp4, cmap),
+        Some(s) => s,
+    };
+    let (h25, h3, pr25) = (wgas.h_c(tt25), wgas.h_c(tt3), wgas.pr_c(tt25));
+    let tau_hpc = tt3 / tt25;
+    let (mut eta, mut eta_prev, mut r_prev) = (core.base.eta_hpc, None, f64::NAN);
+    for _ in 0..TwoSpoolMapCore::ETA_MAX {
+        let pi = wgas.pr_c(wgas.t_from_h_c(h25 + eta * (h3 - h25))) / pr25;
+        let m = (core.base.a4 * core.base.pi_b * pi * mfp4 * powp(tt25 / tt4, 0.5) / (1.0 + f))
+            / core.mcorr_hp_d;
+        let n = stack.try_solve_n(m, tau_hpc, eta)?;
+        let tgt = cmap.eta_c_at(core.base.eta_hpc, m / n, n);
+        let r = tgt - eta;
+        if r.abs() <= TwoSpoolMapCore::ETA_TOL {
+            return Ok(EtaLoop { eta, pi, m, n });
+        }
+        let nxt = secant(eta, eta_prev, r, r_prev, tgt);
+        eta_prev = Some(eta);
+        r_prev = r;
+        eta = nxt;
+    }
+    panic!("rung-55 HP stacked efficiency secant did not converge at Tt4={tt4}; moderate the HP \
+            map coefficients or the throttle.");
+}
+
+/// Rung 39's LP loop, ditto. `(‡)` — the one HP → LP arrow — is unchanged: `pi_hpc` still enters
+/// `m`, and the stack changes only which `n` holds it.
+#[allow(clippy::too_many_arguments)]
+fn r55_lp_eta_loop(
+    core: &TwoSpoolMapCore, wgas: &Gas, tt2: f64, tt4: f64, f: f64, tt25: f64, mfp4: f64,
+    pi_hpc: f64, cmap: &ComponentMap,
+) -> Result<EtaLoop, Abort> {
+    let stack = match &core.stack_lp {
+        None => return (R39.lp_eta_loop)(core, wgas, tt2, tt4, f, tt25, mfp4, pi_hpc, cmap),
+        Some(s) => s,
+    };
+    let (h2, h25, pr2) = (wgas.h_c(tt2), wgas.h_c(tt25), wgas.pr_c(tt2));
+    let tau_lpc = tt25 / tt2;
+    let (mut eta, mut eta_prev, mut r_prev) = (core.base.eta_lpc, None, f64::NAN);
+    for _ in 0..TwoSpoolMapCore::ETA_MAX {
+        let pi = wgas.pr_c(wgas.t_from_h_c(h2 + eta * (h25 - h2))) / pr2;
+        let m = (core.base.a4 * core.base.pi_b * pi_hpc * pi * mfp4 * powp(tt2 / tt4, 0.5)
+                 / (1.0 + f)) / core.mcorr_lp_d;
+        let n = stack.try_solve_n(m, tau_lpc, eta)?;
+        let tgt = cmap.eta_c_at(core.base.eta_lpc, m / n, n);
+        let r = tgt - eta;
+        if r.abs() <= TwoSpoolMapCore::ETA_TOL {
+            return Ok(EtaLoop { eta, pi, m, n });
+        }
+        let nxt = secant(eta, eta_prev, r, r_prev, tgt);
+        eta_prev = Some(eta);
+        r_prev = r;
+        eta = nxt;
+    }
+    panic!("rung-55 LP stacked efficiency secant did not converge at Tt4={tt4}; moderate the LP \
+            map coefficients or the throttle.");
+}
+
+/// RUNG 55's `at_setting`: a sibling at a moved stator setting that **rebuilds both stacks**.
+///
+/// Python overrides `at_setting` here for exactly this reason, and the port's shape makes the
+/// failure it prevents sharper: rung 53's body would hand back a core with the moved maps and
+/// `stack_lp`/`stack_hp` still `None`, i.e. a silently UNSTACKED machine. Rebuilding — rather
+/// than cloning the stacks across — is also what keeps the ladders honest, since a stack carries
+/// its own `cmap` at its own setting.
+fn r55_at_setting(core: &VariableStatorCore, vsv_lp: f64, vsv_hp: f64) -> VariableStatorCore {
+    let (k_lp, k_hp, split, vsv_stages_lp, vsv_stages_hp, cap_profile) = match core.descendant {
+        Descendant::Stack { k_lp, k_hp, split, vsv_stages_lp, vsv_stages_hp, cap_profile } =>
+            (k_lp, k_hp, split, vsv_stages_lp, vsv_stages_hp, cap_profile),
+        Descendant::Plain => unreachable!(
+            "R55's at_setting can only be reached from a core carrying Descendant::Stack"),
+    };
+    StageStackCore::new(StageStackCoreSpec {
+        vsv_lp, vsv_hp, k_lp, k_hp, split, vsv_stages_lp, vsv_stages_hp, cap_profile,
+        ..StageStackCoreSpec::new(core.design_engine().clone(), *core.flight_design(),
+                                  core.mdot_design(), core.map_lp_design, core.map_hp_design)
+    }).core
+}
+
+/// [`StageStackCore`]'s constructor arguments — Python's `__init__` signature, eight of whose
+/// thirteen parameters carry defaults.
+///
+/// A params struct for [`StageStackSpec`]'s reason, one level up: thirteen positional arguments,
+/// four of them bare `f64` and four bare `usize`/`Option<usize>`, would make a TRANSPOSITION
+/// compile. `lp_disabled` is absent — Rust has no such parameter (§ 5.10 P10), so rung 55's
+/// `assert not (lp_disabled and K > 1)` has nothing to witness and is booked unrepresentable.
+pub struct StageStackCoreSpec {
+    pub design_engine: TwoSpoolEngine,
+    pub flight_design: FlightCondition,
+    pub mdot_design: f64,
+    /// The DESIGN-SETTING maps — rung 53's discipline, re-asserted by its constructor.
+    pub map_lp: ComponentMap,
+    pub map_hp: ComponentMap,
+    pub vsv_lp: f64,
+    pub vsv_hp: f64,
+    /// Stage count on each spool. `1` means that spool is NOT stacked — no object is built and
+    /// its efficiency loop is rung 39's own.
+    pub k_lp: usize,
+    pub k_hp: usize,
+    pub split: Split,
+    pub vsv_stages_lp: Option<usize>,
+    pub vsv_stages_hp: Option<usize>,
+    pub cap_profile: CapProfile,
+}
+
+impl StageStackCoreSpec {
+    /// The five Python has no default for, plus the eight it does — held HERE, not at the call
+    /// site.
+    pub fn new(
+        design_engine: TwoSpoolEngine, flight_design: FlightCondition, mdot_design: f64,
+        map_lp: ComponentMap, map_hp: ComponentMap,
+    ) -> Self {
+        Self { design_engine, flight_design, mdot_design, map_lp, map_hp,
+               vsv_lp: 0.0, vsv_hp: 0.0, k_lp: 1, k_hp: 1, split: Split::DT,
+               vsv_stages_lp: None, vsv_stages_hp: None, cap_profile: CapProfile::Derived }
+    }
+}
+
+/// RUNG 55. Two-spool map matching with each compressor resolved into `K` STAGE BLOCKS.
+///
+/// ```text
+///     let m = StageStackCore::new(StageStackCoreSpec {
+///         k_lp: 8, k_hp: 8, ..StageStackCoreSpec::new(design, flight, 1.0, map_lp, map_hp) });
+///     let od = m.match_point(&flight, tt4);        // rung 39's result, unchanged
+///     m.stage_margin(&flight, tt4);                // per-STAGE phi / incidence  <- the rung
+///     m.work_gap(&flight, tt4);                    // the non-tautology gate, in-repo
+///     m.running_line_shift(&flight, &grid);        // P1: what the stack does to rungs 36-53
+///     m.stage_incidence_schedule(&flight, &grid, Spool::Lp, 0, 4.0);   // P3
+/// ```
+///
+/// SCOPE (inherited + this rung's): STEADY and TWO-SPOOL only. The transient ladders (rungs
+/// 34/40/43 and the whole limiter family 46–52) run their own forward closures off
+/// `ComponentMap::psi` and never construct a stack — deliberately, and asserted by test in
+/// Python. That gate is **owed to phase 6** and booked in `slice_n_deferrals`: it runs a rung-43
+/// fuel transient twice on the same hardware and demands the two point lists match, and
+/// `TwoSpoolFuelTransient` does not exist in Rust yet.
+pub struct StageStackCore {
+    /// The rung-53 object, carrying [`R55`] in its stator slot, [`R55_TWO`] in the inner
+    /// two-spool slot, [`Descendant::Stack`] as its description, and the two built stacks on
+    /// [`TwoSpoolMapCore::stack_lp`]/[`stack_hp`](TwoSpoolMapCore::stack_hp).
+    ///
+    /// `pub` for rung 42's reason: rungs 53/54's own diagnostics live on it, and a stacked object
+    /// must be able to run them — which is where the `_INC_MAX` 80 → 200 shadow bites (see
+    /// [`VariableStatorCore::inc_max`]).
+    pub core: VariableStatorCore,
+}
+
+impl StageStackCore {
+    /// Rung 55's own incidence-residual tolerance — a re-declaration of rung 53's
+    /// [`VariableStatorCore::INC_TOL`] at the SAME value, so it is not a shadow.
+    pub const INC_TOL: f64 = 1e-12;
+    /// The COARSE scan step that BRACKETS the schedule root — rung 54's fix for rung 53's
+    /// doubling ladder, which can step over an interior turning point. A NEW name in Python
+    /// (`_V_SCAN`), not a shadow of [`VariableStatorCore::V_STEP`] = 0.04.
+    pub const V_SCAN: f64 = 0.05;
+
+    /// `super().__init__(...)` and then the two `if K > 1` constructions — Python's order, which
+    /// matters: the stacks are built from the design references the rung-53 constructor has
+    /// already captured, at the LIVE (moved) maps.
+    pub fn new(spec: StageStackCoreSpec) -> Self {
+        let StageStackCoreSpec { design_engine, flight_design, mdot_design, map_lp, map_hp,
+                                 vsv_lp, vsv_hp, k_lp, k_hp, split, vsv_stages_lp,
+                                 vsv_stages_hp, cap_profile } = spec;
+        let mut core = VariableStatorCore::with_hooks(
+            design_engine, flight_design, mdot_design, map_lp, map_hp, vsv_lp, vsv_hp,
+            &R55, &R55_TWO,
+            Descendant::Stack { k_lp, k_hp, split, vsv_stages_lp, vsv_stages_hp, cap_profile });
+        // `kc` off the CYCLE's cold gamma — NOT `StageStackSpec`'s dataclass default 3.5, which
+        // only a hand-built stack ever sees.
+        let g = core.core.gas().gamma_c();
+        let kc = g / (g - 1.0);
+        if k_lp > 1 {
+            core.core.stack_lp = Some(StageStack::new(StageStackSpec {
+                kc, split, vsv_stages: vsv_stages_lp, cap_profile,
+                ..StageStackSpec::new(k_lp, core.core.map_lp, core.core.tau_lpc_d,
+                                      core.core.base.pi_lpc_design, core.core.base.eta_lpc)
+            }));
+        }
+        if k_hp > 1 {
+            core.core.stack_hp = Some(StageStack::new(StageStackSpec {
+                kc, split, vsv_stages: vsv_stages_hp, cap_profile,
+                ..StageStackSpec::new(k_hp, core.core.map_hp, core.core.tau_hpc_d,
+                                      core.core.base.pi_hpc_design, core.core.base.eta_hpc)
+            }));
+        }
+        StageStackCore { core }
+    }
+
+    /// Wrap a sibling that came back through the [`R55`] hook. Every core this is called on
+    /// carries [`Descendant::Stack`] by construction — the hook body is the only producer.
+    fn wrap(core: VariableStatorCore) -> Self {
+        StageStackCore { core }
+    }
+
+    /// The stack description this core was built with.
+    fn shape(&self) -> (usize, usize, Split, Option<usize>, Option<usize>, CapProfile) {
+        match self.core.descendant {
+            Descendant::Stack { k_lp, k_hp, split, vsv_stages_lp, vsv_stages_hp, cap_profile } =>
+                (k_lp, k_hp, split, vsv_stages_lp, vsv_stages_hp, cap_profile),
+            Descendant::Plain => unreachable!("a StageStackCore always carries Descendant::Stack"),
+        }
+    }
+
+    /// Stage count on one spool.
+    pub fn k(&self, spool: Spool) -> usize {
+        let (k_lp, k_hp, ..) = self.shape();
+        match spool { Spool::Lp => k_lp, Spool::Hp => k_hp }
+    }
+
+    /// How many FRONT stages carry the stator on one spool — `None` means all of them.
+    pub fn vsv_stages(&self, spool: Spool) -> Option<usize> {
+        let (_, _, _, l, h, _) = self.shape();
+        match spool { Spool::Lp => l, Spool::Hp => h }
+    }
+
+    /// The disclosed work split.
+    pub fn split(&self) -> Split { self.shape().2 }
+
+    /// The disclosed capacity profile.
+    pub fn cap_profile(&self) -> CapProfile { self.shape().5 }
+
+    /// This spool's stack, or `None` where `K == 1`.
+    pub fn stack_of(&self, spool: Spool) -> Option<&StageStack> {
+        match spool {
+            Spool::Lp => self.core.core.stack_lp.as_ref(),
+            Spool::Hp => self.core.core.stack_hp.as_ref(),
+        }
+    }
+
+    /// Rung 53's controlled-comparison sibling, **carrying this rung's stack description** —
+    /// through the virtual table, so this is also the port's witness that the table is live.
+    pub fn at_setting(&self, vsv_lp: f64, vsv_hp: f64) -> Self {
+        Self::wrap(self.core.at_setting(vsv_lp, vsv_hp))
+    }
+
+    /// The sibling with ONE spool's stator moved and the other at design.
+    fn at_one(&self, spool: Spool, v: f64) -> Self {
+        match spool {
+            Spool::Lp => self.at_setting(v, 0.0),
+            Spool::Hp => self.at_setting(0.0, v),
+        }
+    }
+
+    /// A sibling on the SAME hardware and the SAME stator setting, resolved into a different
+    /// number of stages. Every `K` sweep goes through this, so a swept resolution can never be
+    /// confused with a re-designed engine (rung 53's `at_setting` discipline, one coordinate
+    /// over).
+    ///
+    /// **`vsv_stages_*` default to `None` here and are INHERITED by `at_setting`** — Python's
+    /// signature, and the difference is load-bearing:
+    /// [`running_line_shift`](Self::running_line_shift) builds its `K = 1` baseline through this
+    /// call, so the baseline is on the LUMPED lever whatever lever `self` carries.
+    pub fn at_stages(
+        &self, k_lp: usize, k_hp: usize, vsv_stages_lp: Option<usize>,
+        vsv_stages_hp: Option<usize>,
+    ) -> Self {
+        let (_, _, split, _, _, cap_profile) = self.shape();
+        Self::new(StageStackCoreSpec {
+            vsv_lp: self.core.vsv_lp, vsv_hp: self.core.vsv_hp,
+            k_lp, k_hp, split, vsv_stages_lp, vsv_stages_hp, cap_profile,
+            ..StageStackCoreSpec::new(self.core.design_engine().clone(),
+                                      *self.core.flight_design(), self.core.mdot_design(),
+                                      self.core.map_lp_design, self.core.map_hp_design)
+        })
+    }
+
+    /// Rung 39's `match`, unchanged — the stack enters only through the two efficiency loops.
+    pub fn match_point(&self, flight: &FlightCondition, tt4: f64) -> TwoSpoolMapResult {
+        self.core.core.match_point(flight, tt4)
+    }
+}
+
+// =========================================================================================
+// RUNG 55's READING INSTRUMENT — rung 53's incidence currency, NOW PER STAGE
+// =========================================================================================
+
+/// One stage's row in [`StageStackCore::stage_margin`].
+#[derive(Clone, Copy, Debug)]
+pub struct StageRow {
+    pub stage: usize,
+    /// This stage's OWN flow coefficient.
+    pub phi: f64,
+    /// This stage's OWN corrected speed.
+    pub n: f64,
+    /// The setting this stage carries — rung 53's `v` on the front block, `0.0` behind it.
+    pub vsv: f64,
+    /// `1/phi_k - v_k`, against the SAME blade-metal critical angle.
+    pub tan_b1: f64,
+    /// Rung 53's currency B, per stage.
+    pub m_i: f64,
+    /// The stall floor AT THIS STAGE's setting.
+    pub phi_surge: f64,
+    /// Rung 53's currency A, per stage.
+    pub m_phi: f64,
+}
+
+/// One spool's stage-resolved incidence read — plus the two objects a LUMPED block cannot
+/// express.
+#[derive(Clone, Debug)]
+pub struct SpoolStageMargin {
+    pub vsv: f64,
+    pub phi_face: f64,
+    pub n: f64,
+    pub m: f64,
+    /// The critical angle — blade METAL, hence stator- AND stage-invariant, which is what makes
+    /// the per-stage margins comparable at all (rung 53's law).
+    pub tan_b1_crit: f64,
+    pub stages: Vec<StageRow>,
+    /// The stage with the SMALLEST incidence margin — the one that stalls first.
+    pub worst: usize,
+    pub m_i_worst: f64,
+    /// The FACE read rungs 36–53 have been making all along.
+    pub m_i_face: f64,
+    /// `phi_K/phi_1 - 1` — how far the LAST stage runs above the front.
+    pub rear_excess: f64,
+    pub phi_front: f64,
+    pub phi_rear: f64,
+}
+
+/// Both spools' stage-resolved rows at one operating point.
+#[derive(Clone, Debug)]
+pub struct StageMargin {
+    pub tt4: f64,
+    pub vsv_lp: f64,
+    pub vsv_hp: f64,
+    pub k_lp: usize,
+    pub k_hp: usize,
+    pub split: Split,
+    pub lp: SpoolStageMargin,
+    pub hp: SpoolStageMargin,
+}
+
+impl StageMargin {
+    pub fn spool(&self, spool: Spool) -> &SpoolStageMargin {
+        match spool { Spool::Lp => &self.lp, Spool::Hp => &self.hp }
+    }
+}
+
+/// **THE ARGMIN, IN ONE SPELLING, USED THREE TIMES.**
+///
+/// § 5.10 (iv) measured 13 of 1 280 half-rows where the per-row margins are equal to **1–2 ULP**
+/// and several rows are BIT-IDENTICAL — all at the design throttle, where every `phi_k = 1`. So
+/// the argmin there is a TIE-BREAK, not physics, and the port must reproduce Python's:
+/// `min(range(n), key=...)` returns the FIRST minimum. `Iterator::min_by` agrees; a `fold` with
+/// `<=`, or `max_by` anywhere near it, would not — **and a value oracle is blind to it, because
+/// the values agree to the bit while the INDEX flips.**
+///
+/// One function rather than three inline `min_by` calls so the rule cannot drift between
+/// `worst`, `binds` and `inc_worst`; step 2's `the_argmin_returns_the_first_of_several_bit_-
+/// identical_minima` pins it on a CONSTRUCTED tie, which is the only way it is pinned rather than
+/// incidentally satisfied.
+fn argmin(vals: impl Iterator<Item = f64>) -> usize {
+    vals.enumerate()
+        .min_by(|a, b| a.1.partial_cmp(&b.1).expect("a margin is never NaN"))
+        .expect("a stack has at least one row")
+        .0
+}
+
+impl StageStackCore {
+    /// RUNG 55's reading instrument: rung 53's incidence currency, **now per stage**.
+    ///
+    /// Every stage has its own `phi_k`, its own setting `v_k` (only the front `vsv_stages` carry
+    /// the stator), and hence its own `tan beta_1 = 1/phi_k - v_k` against the SAME blade-metal
+    /// critical angle `T_c`.
+    ///
+    /// Needs the rung-36 floor on both maps — it is the incidence anchor.
+    pub fn stage_margin(&self, flight: &FlightCondition, tt4: f64) -> StageMargin {
+        self.try_stage_margin(flight, tt4).unwrap_or_else(|e| panic!("{}", e.0))
+    }
+
+    /// The FALLIBLE twin — what [`stage_incidence_schedule`](Self::stage_incidence_schedule)'s
+    /// scan walks until.
+    ///
+    /// § 5.10 (i): rungs 55/56 have exactly ONE caught scope, and the aborts that reach it come
+    /// from [`StageStack::try_solve_n`]'s two arms — 39 of 40 the bracket, 1 of 40 the clamped
+    /// root — three frames down, inside the efficiency loops. The two asserts in this body stay
+    /// asserts: `phi_surge > 0` is reachable by CONSTRUCTION (an unarmed map pair), not by
+    /// throttle.
+    pub fn try_stage_margin(
+        &self, flight: &FlightCondition, tt4: f64,
+    ) -> Result<StageMargin, Abort> {
+        let od = self.core.core.try_match_point(flight, tt4)?;
+        let (k_lp, k_hp, split, ..) = self.shape();
+        Ok(StageMargin {
+            tt4, vsv_lp: self.core.vsv_lp, vsv_hp: self.core.vsv_hp, k_lp, k_hp, split,
+            lp: self.stage_row(&od, Spool::Lp),
+            hp: self.stage_row(&od, Spool::Hp),
+        })
+    }
+
+    fn stage_row(&self, od: &TwoSpoolMapResult, spool: Spool) -> SpoolStageMargin {
+        let (phi_face, n_face, eta_live) = match spool {
+            Spool::Lp => (od.phi_lp, od.n_lp, od.eta_lpc),
+            Spool::Hp => (od.phi_hp, od.n_hp, od.eta_hpc),
+        };
+        let (cmap, v) = self.map_and_setting(spool);
+        assert!(cmap.phi_surge > 0.0,
+                "rung-55 stage_margin needs the rung-36 floor as its incidence anchor on both \
+                 maps: build them with .with_phi_surge(phi_surge).");
+        let t_c = cmap.tan_beta1_crit();
+        let m = phi_face * n_face;
+        // At K = 1 the FACE read IS the stage read — one row, the map's own setting.
+        let (phis, n_ks, vs) = match self.stack_of(spool) {
+            None => (vec![phi_face], vec![n_face], vec![v]),
+            Some(stack) => {
+                let mr = stack.march(m, n_face, eta_live);
+                let vs = (0..stack.k).map(|k| stack.vsv_at(k)).collect();
+                (mr.phis, mr.n_ks, vs)
+            }
+        };
+        let stages: Vec<StageRow> = phis.iter().zip(&n_ks).zip(&vs).enumerate()
+            .map(|(k, ((&phi_k, &n_k), &v_k))| {
+                let tb1 = 1.0 / phi_k - v_k;
+                // The floor AT THIS ROW's setting — spelled as Python spells it, off the map's
+                // design-setting `phi_surge` field, NOT via `phi_surge_at` (which would read the
+                // MAP's `vsv`, not this row's).
+                let phi_s = cmap.phi_surge / (1.0 + v_k * cmap.phi_surge);
+                StageRow { stage: k, phi: phi_k, n: n_k, vsv: v_k, tan_b1: tb1,
+                           m_i: t_c - tb1, phi_surge: phi_s, m_phi: phi_k - phi_s }
+            }).collect();
+        let worst = argmin(stages.iter().map(|s| s.m_i));
+        SpoolStageMargin {
+            vsv: v, phi_face, n: n_face, m, tan_b1_crit: t_c,
+            worst, m_i_worst: stages[worst].m_i,
+            m_i_face: t_c - (1.0 / phi_face - v),
+            rear_excess: phis[phis.len() - 1] / phis[0] - 1.0,
+            phi_front: phis[0], phi_rear: phis[phis.len() - 1],
+            stages,
+        }
+    }
+
+    /// Rung 53's `_spool_bits`, narrowed to the two entries rungs 55/56 read.
+    fn map_and_setting(&self, spool: Spool) -> (ComponentMap, f64) {
+        match spool {
+            Spool::Lp => (self.core.core.map_lp, self.core.vsv_lp),
+            Spool::Hp => (self.core.core.map_hp, self.core.vsv_hp),
+        }
+    }
+}
+
+// =========================================================================================
+// RUNG 56 — rung 54's THROAT, PER ROW
+// =========================================================================================
+
+/// One stage's row in [`StageStackCore::stage_throat_margin`] — BOTH currencies side by side.
+#[derive(Clone, Copy, Debug)]
+pub struct StageThroatRow {
+    pub stage: usize,
+    pub phi: f64,
+    pub n: f64,
+    pub vsv: f64,
+    /// `phi_k * n_k` — the corrected flow referred to THIS row's inlet.
+    pub m_k: f64,
+    /// `C_k`, this row's design fraction of choking capacity.
+    pub capacity: f64,
+    /// `A_th(v_k)/A_th(0)` at the setting THIS row carries.
+    pub area: f64,
+    /// `X_k = m_k*sqrt(1 + v_k^2)`, rung 54's currency per row.
+    pub throat_loading: f64,
+    /// `M_c,k = 1 - C_k*X_k`.
+    pub m_c: f64,
+    /// `1/X_k` — the constant-FREE threshold on `C`.
+    pub c_min: f64,
+    pub chokes: bool,
+    /// Rung 53/55's incidence margin, carried alongside so the "two constraints, opposite ends"
+    /// claim is read off ONE solve.
+    pub m_i: f64,
+}
+
+/// One spool's per-row throat read — and the two objects a FACE read cannot have.
+#[derive(Clone, Debug)]
+pub struct SpoolThroatMargin {
+    pub vsv: f64,
+    pub m: f64,
+    pub n: f64,
+    /// The map's disclosed constant, read as the FRONT row's design capacity.
+    pub capacity_front: f64,
+    pub tan_b1_crit: f64,
+    pub stages: Vec<StageThroatRow>,
+    /// The row with the smallest CAPACITY margin — chokes first.
+    pub binds: usize,
+    pub m_c_worst: f64,
+    pub x_worst: f64,
+    pub c_min_worst: f64,
+    /// Rung 54's FACE read, for the amplification denominator.
+    pub m_c_face: f64,
+    pub x_face: f64,
+    /// `(1 - M_c at the binding ROW) / (1 - M_c at the FACE)` — how much of the throat loading
+    /// rung 54's face read could not see. EXACTLY 1.0 at `K = 1`.
+    pub amplification: f64,
+    pub chokes: bool,
+    /// The row with the smallest INCIDENCE margin — stalls first. § 5.10 (iv)'s headline is that
+    /// this and [`binds`](Self::binds) are DIFFERENT rows, at different ends.
+    pub inc_worst: usize,
+    pub m_i_worst: f64,
+    pub rear_binds: bool,
+    pub front_binds: bool,
+}
+
+/// Both spools' per-row throat rows at one operating point.
+#[derive(Clone, Debug)]
+pub struct StageThroatMargin {
+    pub tt4: f64,
+    pub k_lp: usize,
+    pub k_hp: usize,
+    pub split: Split,
+    pub cap_profile: CapProfile,
+    pub lp: SpoolThroatMargin,
+    pub hp: SpoolThroatMargin,
+}
+
+impl StageThroatMargin {
+    pub fn spool(&self, spool: Spool) -> &SpoolThroatMargin {
+        match spool { Spool::Lp => &self.lp, Spool::Hp => &self.hp }
+    }
+}
+
+impl StageStackCore {
+    /// RUNG 56's reading instrument, and the whole rung in one call: rung 54's CAPACITY currency
+    /// per row, beside rung 53/55's INCIDENCE currency per row.
+    ///
+    /// DIAGNOSTIC ONLY, by rung 54's theorem: nothing here enters a solver, so no `C` and no
+    /// profile can move a matched field.
+    ///
+    /// # The `K = 1` branch is rung 54's face read VERBATIM, and that is deliberate
+    ///
+    /// It calls [`ComponentMap::throat_ratio`]/[`throat_loading`](ComponentMap::throat_loading)/
+    /// [`capacity_margin`](ComponentMap::capacity_margin) rather than routing row 0 through the
+    /// stack's own per-row versions. That is what makes § 5.10 P4 an IDENTITY rather than an
+    /// algebraic re-derivation — slice D/E's *an "exactly" claim survives a copied instruction
+    /// sequence and dies on a second derivation*.
+    pub fn stage_throat_margin(
+        &self, flight: &FlightCondition, tt4: f64,
+    ) -> StageThroatMargin {
+        self.try_stage_throat_margin(flight, tt4).unwrap_or_else(|e| panic!("{}", e.0))
+    }
+
+    /// The FALLIBLE twin — [`throat_walk`](Self::throat_walk) does not catch, but the aborts
+    /// reaching it are the same two arms [`try_stage_margin`](Self::try_stage_margin) sees.
+    pub fn try_stage_throat_margin(
+        &self, flight: &FlightCondition, tt4: f64,
+    ) -> Result<StageThroatMargin, Abort> {
+        let od = self.core.core.try_match_point(flight, tt4)?;
+        let (k_lp, k_hp, split, _, _, cap_profile) = self.shape();
+        Ok(StageThroatMargin {
+            tt4, k_lp, k_hp, split, cap_profile,
+            lp: self.throat_row(&od, Spool::Lp),
+            hp: self.throat_row(&od, Spool::Hp),
+        })
+    }
+
+    fn throat_row(&self, od: &TwoSpoolMapResult, spool: Spool) -> SpoolThroatMargin {
+        let (phi_face, n_face, eta_live) = match spool {
+            Spool::Lp => (od.phi_lp, od.n_lp, od.eta_lpc),
+            Spool::Hp => (od.phi_hp, od.n_hp, od.eta_hpc),
+        };
+        let (cmap, v) = self.map_and_setting(spool);
+        assert!(cmap.capacity > 0.0,
+                "rung-56 stage_throat_margin needs rung 54's throat model on both maps: build \
+                 them with .with_capacity(C). C is read as the FRONT row's design capacity.");
+        assert!(cmap.phi_surge > 0.0,
+                "rung-56 reports both currencies, so it needs the rung-36 floor as the incidence \
+                 anchor too: build the maps with .with_phi_surge(phi_surge).");
+        let t_c = cmap.tan_beta1_crit();
+        let m = phi_face * n_face;
+        let (x_face, mc_face) = (cmap.throat_loading(m), cmap.capacity_margin(m));
+        // (k, phi, n, v, C, area, X, M_c) — Python's `triples`, which are octuples.
+        let rows: Vec<(usize, f64, f64, f64, f64, f64, f64, f64)> = match self.stack_of(spool) {
+            // K = 1: rung 54's face read, VERBATIM (see the doc note above).
+            None => vec![(0, phi_face, n_face, v, cmap.capacity, cmap.throat_ratio(),
+                          x_face, mc_face)],
+            Some(stack) => {
+                let mr = stack.march(m, n_face, eta_live);
+                mr.phis.iter().zip(&mr.n_ks).enumerate().map(|(k, (&phi_k, &n_k))| {
+                    let m_k = phi_k * n_k;
+                    (k, phi_k, n_k, stack.vsv_at(k), stack.stage_capacity(k),
+                     stack.stage_throat_ratio(k), stack.stage_throat_loading(k, m_k),
+                     stack.stage_capacity_margin(k, m_k))
+                }).collect()
+            }
+        };
+        let stages: Vec<StageThroatRow> = rows.iter()
+            .map(|&(k, phi_k, n_k, v_k, c_k, area_k, x_k, mc_k)| StageThroatRow {
+                stage: k, phi: phi_k, n: n_k, vsv: v_k, m_k: phi_k * n_k,
+                capacity: c_k, area: area_k, throat_loading: x_k, m_c: mc_k,
+                c_min: 1.0 / x_k, chokes: mc_k <= 0.0,
+                m_i: t_c - (1.0 / phi_k - v_k),
+            }).collect();
+        let binds = argmin(stages.iter().map(|s| s.m_c));
+        let inc_worst = argmin(stages.iter().map(|s| s.m_i));
+        SpoolThroatMargin {
+            vsv: v, m, n: n_face, capacity_front: cmap.capacity, tan_b1_crit: t_c,
+            binds, m_c_worst: stages[binds].m_c,
+            x_worst: stages[binds].throat_loading, c_min_worst: stages[binds].c_min,
+            m_c_face: mc_face, x_face,
+            amplification: (1.0 - stages[binds].m_c) / (1.0 - mc_face),
+            chokes: stages[binds].m_c <= 0.0,
+            inc_worst, m_i_worst: stages[inc_worst].m_i,
+            rear_binds: binds == stages.len() - 1,
+            front_binds: binds == 0,
+            stages,
+        }
+    }
+}
+
+// =========================================================================================
+// THE FOUR SWEEPS
+// =========================================================================================
+
+/// One row of [`StageStackCore::throat_walk`].
+#[derive(Clone, Debug)]
+pub struct WalkRow {
+    pub tt4: f64,
+    pub binds: usize,
+    pub m_c_worst: f64,
+    pub m_c_face: f64,
+    pub amplification: f64,
+    pub inc_worst: usize,
+    pub m_i_worst: f64,
+    pub chokes: bool,
+    pub c_min_worst: f64,
+    pub m: f64,
+    pub n: f64,
+    pub vsv: f64,
+    pub capacities: Vec<f64>,
+    pub throat_loadings: Vec<f64>,
+    pub margins: Vec<f64>,
+}
+
+/// One spool's entry in [`StageStackCore::work_gap`].
+#[derive(Clone, Copy, Debug)]
+pub struct SpoolWorkGap {
+    pub m: f64,
+    pub n: f64,
+    /// The LUMPED law rungs 32–53 use, at the SOLVED `(m, n)`.
+    pub tau_lumped: f64,
+    /// The MARCHED stack's work at the same point.
+    pub tau_marched: f64,
+    pub gap: f64,
+    /// The gap as a fraction of the lumped work RISE — exactly `0.0` at `K = 1`.
+    pub gap_frac: f64,
+}
+
+/// [`StageStackCore::work_gap`]'s return — the non-tautology gate, in-repo.
+#[derive(Clone, Copy, Debug)]
+pub struct WorkGap {
+    pub tt4: f64,
+    pub k_lp: usize,
+    pub k_hp: usize,
+    pub split: Split,
+    pub lp: SpoolWorkGap,
+    pub hp: SpoolWorkGap,
+}
+
+impl WorkGap {
+    pub fn spool(&self, spool: Spool) -> &SpoolWorkGap {
+        match spool { Spool::Lp => &self.lp, Spool::Hp => &self.hp }
+    }
+}
+
+/// One spool's entry in a [`ShiftRow`].
+#[derive(Clone, Copy, Debug)]
+pub struct SpoolShift {
+    pub n_lumped: f64,
+    pub n_stacked: f64,
+    pub d_n: f64,
+    pub phi_lumped: f64,
+    pub phi_stacked: f64,
+    pub d_phi: f64,
+    pub pi_lumped: f64,
+    pub pi_stacked: f64,
+    pub d_pi: f64,
+}
+
+/// One row of [`StageStackCore::running_line_shift`] — P1's controlled comparison.
+#[derive(Clone, Copy, Debug)]
+pub struct ShiftRow {
+    pub tt4: f64,
+    pub k_lp: usize,
+    pub k_hp: usize,
+    pub split: Split,
+    pub lp: SpoolShift,
+    pub hp: SpoolShift,
+    pub thrust_lumped: f64,
+    pub thrust_stacked: f64,
+    pub d_thrust: f64,
+}
+
+impl ShiftRow {
+    pub fn spool(&self, spool: Spool) -> &SpoolShift {
+        match spool { Spool::Lp => &self.lp, Spool::Hp => &self.hp }
+    }
+}
+
+impl StageStackCore {
+    /// RUNG 56 P1/P5 — the binding row against THROTTLE, on one spool.
+    ///
+    /// The derived profile designs the REAR rows with more capacity margin while the off-design
+    /// march drives them to higher `X_k`; the two fight, so which end binds MIGRATES with power.
+    pub fn throat_walk(
+        &self, flight: &FlightCondition, tt4_grid: &[f64], spool: Spool,
+    ) -> Vec<WalkRow> {
+        tt4_grid.iter().map(|&tt4| {
+            let full = self.stage_throat_margin(flight, tt4);
+            let r = full.spool(spool);
+            WalkRow {
+                tt4, binds: r.binds, m_c_worst: r.m_c_worst, m_c_face: r.m_c_face,
+                amplification: r.amplification, inc_worst: r.inc_worst,
+                m_i_worst: r.m_i_worst, chokes: r.chokes, c_min_worst: r.c_min_worst,
+                m: r.m, n: r.n, vsv: r.vsv,
+                capacities: r.stages.iter().map(|s| s.capacity).collect(),
+                throat_loadings: r.stages.iter().map(|s| s.throat_loading).collect(),
+                margins: r.stages.iter().map(|s| s.m_c).collect(),
+            }
+        }).collect()
+    }
+
+    /// **THE NON-TAUTOLOGY GATE, IN-REPO:** at the SOLVED `(m, n)`, how much does the MARCHED
+    /// stack's work differ from the lumped law rungs 32–53 use?
+    ///
+    /// Exactly zero at `K = 1` — the march IS that law. Non-zero and growing with throttle depth
+    /// is what makes the stack content rather than a re-read of `(tau_c, pi_c)`.
+    ///
+    /// The lumped side is spelled INLINE, off `cmap.psi` and this spool's `tau_d`, exactly as
+    /// Python spells it — not through [`StageStack::lumped_tau`], which would read the stack's
+    /// OWN `tau_d` and silently make the `K = 1` zero a self-comparison.
+    pub fn work_gap(&self, flight: &FlightCondition, tt4: f64) -> WorkGap {
+        let od = self.match_point(flight, tt4);
+        let (k_lp, k_hp, split, ..) = self.shape();
+        let one = |spool: Spool| -> SpoolWorkGap {
+            let (phi, n, eta_live) = match spool {
+                Spool::Lp => (od.phi_lp, od.n_lp, od.eta_lpc),
+                Spool::Hp => (od.phi_hp, od.n_hp, od.eta_hpc),
+            };
+            let (cmap, _) = self.map_and_setting(spool);
+            let tau_d = match spool {
+                Spool::Lp => self.core.core.tau_lpc_d,
+                Spool::Hp => self.core.core.tau_hpc_d,
+            };
+            let m = phi * n;
+            let lumped = 1.0 + cmap.psi(m / n) * n * n * (tau_d - 1.0);
+            let marched = match self.stack_of(spool) {
+                None => lumped,
+                Some(stack) => stack.tau_of(m, n, eta_live),
+            };
+            SpoolWorkGap { m, n, tau_lumped: lumped, tau_marched: marched,
+                           gap: marched - lumped,
+                           gap_frac: (marched - lumped) / (lumped - 1.0) }
+        };
+        WorkGap { tt4, k_lp, k_hp, split, lp: one(Spool::Lp), hp: one(Spool::Hp) }
+    }
+
+    /// P1 — **WHAT THE STACK DOES TO RUNGS 36–53.** This matcher against its OWN `K = 1` sibling
+    /// (same hardware, same maps, same stator setting), at each throttle.
+    ///
+    /// Because the face `phi` IS the front stage's, the shift in `phi_face` is a direct statement
+    /// about how the lumped solve placed the BINDING stage.
+    pub fn running_line_shift(
+        &self, flight: &FlightCondition, tt4_grid: &[f64],
+    ) -> Vec<ShiftRow> {
+        // Through `at_stages`, so `vsv_stages_*` fall back to `None` — the baseline is on the
+        // LUMPED lever whatever lever `self` carries.
+        let base = self.at_stages(1, 1, None, None);
+        let (k_lp, k_hp, split, ..) = self.shape();
+        tt4_grid.iter().map(|&tt4| {
+            let (a, b) = (base.match_point(flight, tt4), self.match_point(flight, tt4));
+            let one = |n0: f64, p0: f64, pi0: f64, n1: f64, p1: f64, pi1: f64| SpoolShift {
+                n_lumped: n0, n_stacked: n1, d_n: (n1 - n0) / n0,
+                phi_lumped: p0, phi_stacked: p1, d_phi: (p1 - p0) / p0,
+                pi_lumped: pi0, pi_stacked: pi1, d_pi: (pi1 - pi0) / pi0,
+            };
+            ShiftRow {
+                tt4, k_lp, k_hp, split,
+                lp: one(a.n_lp, a.phi_lp, a.base.pi_lpc, b.n_lp, b.phi_lp, b.base.pi_lpc),
+                hp: one(a.n_hp, a.phi_hp, a.base.pi_hpc, b.n_hp, b.phi_hp, b.base.pi_hpc),
+                thrust_lumped: a.base.thrust, thrust_stacked: b.base.thrust,
+                d_thrust: (b.base.thrust - a.base.thrust) / a.base.thrust,
+            }
+        }).collect()
+    }
+}
+
+// =========================================================================================
+// P3 — THE FRONT-ONLY STATOR SCHEDULE (rung 54's named seam, discharged)
+// =========================================================================================
+
+/// One row of [`StageStackCore::stage_incidence_schedule`].
+#[derive(Clone, Copy, Debug)]
+pub struct StageScheduleRow {
+    pub tt4: f64,
+    pub spool: Spool,
+    pub stage: usize,
+    /// Whether a root was BRACKETED. `false` is a finding and not a failure — § 5.10 (ii)
+    /// measured 40 of 160 rows not reaching, ALL on the lumped lever.
+    pub reached: bool,
+    pub vsv_star: f64,
+    pub residual: f64,
+    pub vsv_stages: Option<usize>,
+    pub k: usize,
+    pub tan_b1: f64,
+    pub tan_b1_design: f64,
+    pub phi_stage: f64,
+    pub phi_stage_bare: f64,
+    pub m_i: f64,
+    pub m_i_bare: f64,
+    pub m_i_worst: f64,
+    pub worst: usize,
+    pub n: f64,
+    pub n_bare: f64,
+    pub d_n: f64,
+    pub rear_excess: f64,
+}
+
+impl StageStackCore {
+    /// RUNG 55's payoff, and rung 54's seam discharged: the stator schedule that holds ONE
+    /// STAGE's incidence at its design value — with the stator moving only the front block.
+    ///
+    /// Rung 53's `incidence_schedule` holds the single lumped rotor's incidence by moving the
+    /// WHOLE machine. A real VSV moves the front stages only: set `vsv_stages_lp = Some(1)` and
+    /// the same target is bought on the stage that actually needs it. That comparison is P3, and
+    /// the cost collapses ~29×.
+    ///
+    /// The target incidence is READ off this matcher at the design setting and design throttle
+    /// (rung 53's discipline: the schedule inherits no constant of its own). The bracket is found
+    /// by a coarse SCAN and then bisected, so it is immune to the interior turning point that
+    /// defeats rung 53's doubling ladder.
+    ///
+    /// # The ONE caught scope in rungs 55/56
+    ///
+    /// `except AssertionError: break` around the scan residual — structurally rung 54's `_scan`,
+    /// which is why nothing is inherited from it. § 5.10 (i) measured the innermost raising frame
+    /// on 40 firings: [`StageStack::try_solve_n`]'s BRACKET 39 times, its CLAMPED ROOT once, and
+    /// [`ComponentMap::try_solve_n`] — slice M's frame — **zero** times, because with both spools
+    /// stacked it is never called at all.
+    ///
+    /// # Two literals that are not the same literal
+    ///
+    /// [`INC_TOL`](Self::INC_TOL) breaks on the RESIDUAL; the inner `hi - lo <= 1e-14` breaks on
+    /// the BRACKET WIDTH and is a bare literal in Python, distinct from it. They are not unified.
+    /// The loop cap is rung 55's own 200, not rung 53's 80 — see
+    /// [`VariableStatorCore::INC_MAX`].
+    pub fn stage_incidence_schedule(
+        &self, flight: &FlightCondition, tt4_grid: &[f64], spool: Spool, stage: usize,
+        v_hi: f64,
+    ) -> Vec<StageScheduleRow> {
+        let fd = *self.core.flight_design();
+        let t_design = self.at_setting(0.0, 0.0)
+            .stage_margin(&fd, self.core.tt4_design())
+            .spool(spool).stages[stage].tan_b1;
+        let read = |v: f64, tt4: f64| -> SpoolStageMargin {
+            self.at_one(spool, v).stage_margin(flight, tt4).spool(spool).clone()
+        };
+        // The FALLIBLE read the scan walks until — Python's `try: resid(x) except AssertionError`.
+        let try_resid = |v: f64, tt4: f64| -> Result<f64, Abort> {
+            Ok(self.at_one(spool, v).try_stage_margin(flight, tt4)?
+                   .spool(spool).stages[stage].tan_b1 - t_design)
+        };
+
+        tt4_grid.iter().map(|&tt4| {
+            let bare = read(0.0, tt4);
+            let r0 = bare.stages[stage].tan_b1 - t_design;
+            let (mut v, mut r) = (0.0f64, r0);
+            let mut reached = r0.abs() <= Self::INC_TOL;
+            if !reached {
+                let (mut lo, mut r_lo) = (0.0f64, r0);
+                // Python also binds `r_hi = rx` at the break and NEVER READS IT — the bisection
+                // below runs off `r_lo`'s sign alone. Recorded, not carried: a `let _ = r_hi`
+                // would be a value this port pretends to use.
+                let mut hi = None;
+                let mut x = Self::V_SCAN;
+                while x <= v_hi + 1e-12 {
+                    let rx = match try_resid(x, tt4) {
+                        Ok(rx) => rx,
+                        // The map-validity edge: STOP the scan here. Not an error — § 5.10 (ii)
+                        // measured this firing on 40 of 160 rows, every one on the lumped lever.
+                        Err(_) => break,
+                    };
+                    if rx * r_lo <= 0.0 {
+                        hi = Some(x);
+                        break;
+                    }
+                    lo = x;
+                    r_lo = rx;
+                    x += Self::V_SCAN;
+                }
+                match hi {
+                    Some(mut hi) => {
+                        reached = true;
+                        for _ in 0..self.core.inc_max() {
+                            v = 0.5 * (lo + hi);
+                            r = try_resid(v, tt4).unwrap_or_else(|e| panic!("{}", e.0));
+                            if r.abs() <= Self::INC_TOL || hi - lo <= 1e-14 {
+                                break;
+                            }
+                            if r * r_lo > 0.0 {
+                                lo = v;
+                                r_lo = r;
+                            } else {
+                                hi = v;
+                            }
+                        }
+                    }
+                    None => {
+                        v = lo;
+                        r = r_lo;
+                    }
+                }
+            }
+            let at = read(v, tt4);
+            StageScheduleRow {
+                tt4, spool, stage, reached, vsv_star: v, residual: r,
+                vsv_stages: self.vsv_stages(spool), k: self.k(spool),
+                tan_b1: at.stages[stage].tan_b1, tan_b1_design: t_design,
+                phi_stage: at.stages[stage].phi, phi_stage_bare: bare.stages[stage].phi,
+                m_i: at.stages[stage].m_i, m_i_bare: bare.stages[stage].m_i,
+                m_i_worst: at.m_i_worst, worst: at.worst,
+                n: at.n, n_bare: bare.n, d_n: (at.n - bare.n) / bare.n,
+                rear_excess: at.rear_excess,
+            }
+        }).collect()
     }
 }

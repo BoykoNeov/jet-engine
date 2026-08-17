@@ -243,20 +243,44 @@ pub const R53: StatorHooks = StatorHooks { at_setting: r53_at_setting };
 /// concrete rung — is the signature slices N and O would have to BREAK, turning two cheap
 /// additive slices into two more gated-code refactors. That much held.
 ///
-/// **`Copy` DID NOT, AND SLICE M's OWN PRE-REGISTRATION IS WHERE IT WENT WRONG** (plan § 5.9 (c),
-/// refuted in § 5.10). It read rung 55's `at_setting` body, saw it touch only scalars
-/// (`K_lp`/`K_hp`/`split`/`vsv_stages_*`/`cap_profile`), and concluded the variant would be a
-/// scalar one. But the state rung 55 needs *held* is the two BUILT `StageStack`s — `theta_d`,
-/// `varpi_d` and the `capacities()` cache are runtime-length `Vec<f64>`
-/// ladders — so the enum is `Clone`, not `Copy`. **Reading a method's body tells you what state it
-/// READS; it cannot tell you what the state's CARRIER costs.** Rebuilding the stacks on demand to
-/// keep `Copy` was measured and rejected: at `K = 8` a match runs 6 464 marches against 2
-/// constructions, so rebuilding per `solve_n` call costs ≈ 50 % and makes the measured 120-built /
-/// 4 360-hit capacity cache vacuous (§ 5.10 (vi)).
+/// **THE VARIANT REALLY IS THE SCALAR ONE § 5.9 (c) PREDICTED — AND (c) IS STILL REFUTED, ONE
+/// LEVEL DOWN.** Slice M read rung 55's `at_setting` body, saw it touch only scalars
+/// (`K_lp`/`K_hp`/`split`/`vsv_stages_*`/`cap_profile`), and concluded slices N/O would add a
+/// variant and change no signature. [`Stack`](Self::Stack) below carries exactly those six
+/// scalars, so on THIS type the prediction held. What it missed is a carrier one level down: the
+/// two BUILT `StageStack`s live on [`TwoSpoolMapCore::stack_lp`] — because rung 55's real
+/// overrides are the two efficiency loops, whose hook `self` is the INNER core and cannot see
+/// this enum at all. **Reading a method's body tells you what state it READS; it cannot tell you
+/// what the state's CARRIER costs** — and checking the carrier of ONE hook says nothing about the
+/// next hook's.
+///
+/// `Copy` was dropped in step 1 on the reading that this variant would hold the stacks
+/// themselves. It does not, so **the drop was not forced** — every field below is `Copy`. It is
+/// left as `Clone` rather than reverted: `Clone` is strictly weaker, nothing reads it as a claim,
+/// and a revert would churn gated code to buy nothing. Recorded here so no reader infers a `Vec`
+/// that is not there.
+///
+/// **THE STACKS ARE REBUILT AND NOT CLONED, AND THAT IS WHY THE SCALARS ARE THE RIGHT STATE.** A
+/// cloned stack carries ladders built from the OLD map at the OLD setting — precisely the failure
+/// this module predicted when it made `at_setting` a hook. `R55`'s override reconstructs from
+/// these six scalars plus the DESIGN maps, so a swept setting cannot silently keep a stale stack;
+/// and a sibling built through `R53`'s body instead comes back with `stack_lp: None` — silently
+/// UNSTACKED, which is the failure mode slice N's dispatch gate asserts against.
 #[derive(Clone, Debug)]
 pub enum Descendant {
     /// Rung 53/54: no state beyond the two settings.
     Plain,
+    /// RUNG 55/56 (slice N): the stage-stack DESCRIPTION — everything
+    /// [`StatorHooks::at_setting`]'s rung-55 body needs to rebuild both stacks at a moved
+    /// setting. The stacks themselves are on [`TwoSpoolMapCore`].
+    Stack {
+        k_lp: usize,
+        k_hp: usize,
+        split: crate::stage::Split,
+        vsv_stages_lp: Option<usize>,
+        vsv_stages_hp: Option<usize>,
+        cap_profile: crate::stage::CapProfile,
+    },
 }
 
 // =========================================================================================
@@ -312,9 +336,36 @@ impl VariableStatorCore {
     /// root 26–33, on every one of the 42 + 54 roots the probe grid produced. Ported as written
     /// and recorded dead, so no reader infers it is load-bearing.
     ///
-    /// Rung 61 SHADOWS it at 200 (slice O). That shadow is live — it is read by these inherited
-    /// solver loops — which is the one place a Python class constant is not a constant.
+    /// **RUNG 55 SHADOWS IT AT 200, AND THIS COMMENT'S FIRST DRAFT SAID RUNG 61.** § 5.3's
+    /// pre-flight (item 6) had it right and prescribed the fix — *"in Rust that cap must be a
+    /// per-cell parameter, never a literal in the ported body"* — and slice M shipped the literal
+    /// anyway, in both loops, with a comment pointing the next reader at the wrong slice. Read:
+    /// `StatorBleedMatcher` declares `_B_TOL`/`_B_MAX`/`_B_CAP`/`_B_STEP` and **no** `_INC_MAX`;
+    /// `StageStackMatcher` declares `_INC_MAX = 200` (`engine.py:7282`). So the shadow was live at
+    /// SLICE N, not slice O, and it is read from THREE places — rung 55's own
+    /// `stage_incidence_schedule` plus these two inherited solver loops, which a stacked object
+    /// enters with 200 in Python and would enter with 80 here if the cap were read as a literal.
+    /// That is why [`inc_max`](Self::inc_max) exists.
+    ///
+    /// **What licensed the slip is § 5.9 (iv), and it is TRUE.** (iv) measured this cap NEVER
+    /// REACHED — 30–36 passes on rung 53's ladder, 26–33 on rung 54's bracketed root, every one
+    /// ending on [`INC_TOL`](Self::INC_TOL) — so 80 against 200 cannot move a number on that grid,
+    /// and "the shadow is not live" reads as settled. Two different senses of *live*: a cap that
+    /// is never hit still decides which constant the body NAMES, and a body naming the wrong one
+    /// is wrong wherever the grid later moves. **A dead constant's SPELLING still has to be
+    /// right** — the same shape as this module's own *a dead guard's threshold is worth more than
+    /// its count*.
+    ///
+    /// **And the shadow is LATENT on the shipped suite besides:** `test_rung55.py:438` runs
+    /// `incidence_schedule` on a genuine rung-53 matcher, so no shipped Python test drives an
+    /// inherited schedule on a stacked object. Ported for faithfulness and recorded unexercised —
+    /// which is exactly why no value oracle could ever have caught it.
     pub const INC_MAX: usize = 80;
+    /// RUNG 55's shadow of [`INC_MAX`](Self::INC_MAX) — `StageStackMatcher._INC_MAX`. Rung 55's
+    /// own `_INC_TOL` is a re-declaration at the SAME value (1e-12), so it is not a shadow; its
+    /// `_V_SCAN = 0.05` is a NEW name and not a shadow of [`V_STEP`](Self::V_STEP) = 0.04. Only
+    /// this one differs, and only this one needs the dispatch.
+    pub const INC_MAX_STACKED: usize = 200;
     /// Stator-setting scan step for the ceiling walk.
     pub const V_STEP: f64 = 0.04;
     /// Scan ceiling.
@@ -381,6 +432,31 @@ impl VariableStatorCore {
     /// The design flight condition — Python reads it back out of `_ctor[1]`.
     pub fn flight_design(&self) -> &FlightCondition {
         &self.flight_design
+    }
+
+    /// The design engine — Python's `_ctor[0]`. `pub` so a DESCENDANT's `at_setting` body can
+    /// live in its own module and still re-invoke the constructor the way Python does.
+    pub fn design_engine(&self) -> &TwoSpoolEngine {
+        &self.design_engine
+    }
+
+    /// The design mass flow — Python's `_ctor[2]`. See [`design_engine`](Self::design_engine).
+    pub fn mdot_design(&self) -> f64 {
+        self.mdot_design
+    }
+
+    /// **THE ONE PLACE A PYTHON CLASS CONSTANT IS NOT A CONSTANT** — the bisection cap the two
+    /// inherited schedule solvers below read off `self`.
+    ///
+    /// Rung 53 declares 80; rung 55's `StageStackMatcher` shadows it at 200. In Python that is
+    /// `self._INC_MAX` and the MRO decides; here the descendant tag does, which is the same
+    /// decision expressed as data. See [`INC_MAX`](Self::INC_MAX) for why the shadow is rung 55's
+    /// and not rung 61's, and for why it is latent on the shipped suite.
+    pub fn inc_max(&self) -> usize {
+        match self.descendant {
+            Descendant::Plain => Self::INC_MAX,
+            Descendant::Stack { .. } => Self::INC_MAX_STACKED,
+        }
     }
 
     // --- THE DISPATCH POINT ---------------------------------------------------------------
@@ -751,7 +827,7 @@ impl VariableStatorCore {
                          v <= {v_hi:.2}: residual {r_lo:+.4e} at v={lo:.4}. The design incidence \
                          is unreachable this far off design — raise v_hi or narrow the throttle \
                          grid.");
-                for _ in 0..Self::INC_MAX {
+                for _ in 0..self.inc_max() {
                     LADDER_PASSES.with(|c| c.set(c.get() + 1));
                     v = 0.5 * (lo + hi);
                     r = read(v, tt4).tan_b1 - t_design;
@@ -1147,7 +1223,7 @@ impl VariableStatorCore {
         let resid = |v: f64| -> f64 {
             self.at_one(spool, v).stator_margin(flight, tt4).spool(spool).tan_b1 - t_design
         };
-        for _ in 0..Self::INC_MAX {
+        for _ in 0..self.inc_max() {
             ROOT_PASSES.with(|c| c.set(c.get() + 1));
             let mid = 0.5 * (lo + hi);
             let r = resid(mid);

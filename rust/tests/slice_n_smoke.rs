@@ -46,8 +46,12 @@
 
 use std::collections::HashMap;
 
+use turbojet::engine::FlightCondition;
+use turbojet::gas::{Gas, GasSpec};
 use turbojet::map::ComponentMap;
-use turbojet::stage::{take_census, CapProfile, Split, StageStack, StageStackSpec};
+use turbojet::stage::{take_census, CapProfile, Split, StageStack, StageStackCore,
+                      StageStackCoreSpec, StageStackSpec};
+use turbojet::two_spool::{build_two_spool_turbojet, Spool, TwoSpoolEngine, TwoSpoolLosses};
 
 const ORACLE: &str = include_str!("../oracle/slice_n_smoke_pypy.tsv");
 
@@ -536,6 +540,19 @@ fn slice_n_deferrals_so_far() {
     //    step 5 on a hand-built profile, not reachable from any stack this file builds.
     // 4. Rung 55's `lp_disabled` refusal — no such parameter exists in the Rust, so
     //    `assert not (lp_disabled and K > 1)` has nothing to witness (§ 5.10 P10).
+
+    // --- STEP 3's own additions -------------------------------------------------------------
+    // 5. `assert spool in self._SPOOLS` — THREE instances (`_stack_of`, `throat_walk`,
+    //    `stage_incidence_schedule`), all UNREPRESENTABLE: `Spool` is a two-variant enum, so
+    //    there is no third value to reject. Same shape as item 1, and counted separately because
+    //    a name → parameter-set diff at step 5 will otherwise read three gates as missing.
+    let _ = (Spool::Lp, Spool::Hp);
+    // 6. Rung 55's `test_cycle_untouched_transient_ladder_is_bit_for_bit_unstacked` — OWED TO
+    //    PHASE 6, not to this slice. It runs a rung-43 fuel transient twice on the same hardware
+    //    (once before a stack is live, once after) and demands the two point lists compare `==`;
+    //    `TwoSpoolFuelTransient` does not exist in Rust yet. Booked under THAT reason and not
+    //    under `phi_max`, which is where the first draft filed it — *a deferral filed against the
+    //    wrong cause is a deferral nobody can discharge.*
 }
 
 #[test]
@@ -563,4 +580,195 @@ fn the_argmin_returns_the_first_of_several_bit_identical_minima() {
     }
     assert_eq!(last, 3, "a `<=` fold picks the LAST — which is the defect this gate exists for");
     assert_ne!(argmin, last);
+}
+
+// =========================================================================================
+// STEP 3 — REACHABILITY, and the reduce identities that are STRUCTURAL rather than measured
+// =========================================================================================
+//
+// Step 3 ships six public reading methods and two hook bodies, and until step 4's oracle exists
+// NONE of them is executed by anything. That is slice L step 3's shape exactly — *my smoke check
+// witnessed 1 of the 3 methods the slice's own headline names* — so this gate enumerates the six
+// and calls every one.
+//
+// It deliberately asserts only what is STRUCTURAL: row counts, and the three `K = 1` identities
+// that hold by which BRANCH runs rather than by arithmetic agreeing. § 5.10's P4 (rung 56's face
+// read field-for-field against rung 54's) and P5 (`solve_n`'s dispatch) are step 5's, and stating
+// them here as approximate versions of themselves would be the *ported test goes VACUOUS* trap in
+// reverse — a weaker gate standing where the strong one is owed.
+
+fn eng_design() -> TwoSpoolEngine {
+    let (gc, cc, gt, ct) = (1.4f64, 1004.0f64, 1.3f64, 1239.0f64);
+    let gas = Gas::new(GasSpec {
+        gamma_c: gc, cp_c: cc, r_c: (gc - 1.0) / gc * cc,
+        gamma_t: gt, cp_t: ct, r_t: (gt - 1.0) / gt * ct,
+        hpr: 42.8e6, ..GasSpec::default()
+    });
+    build_two_spool_turbojet(gas, 3.0, 6.0, 1500.0, 50_000.0, TwoSpoolLosses {
+        pi_d: 0.97, eta_lpc: 0.90, eta_hpc: 0.88, eta_b: 0.99, pi_b: 0.96,
+        eta_hpt: 0.92, eta_lpt: 0.90, eta_m: 0.99, pi_n: 0.98,
+        p_exit: None, nozzle_convergent: true,
+    })
+}
+
+fn eng_flight() -> FlightCondition {
+    FlightCondition::new(250.0, 50_000.0, 0.85)
+}
+
+/// Armed with BOTH walls: rung 36's floor (the incidence anchor) and rung 54's capacity.
+fn armed_maps() -> (ComponentMap, ComponentMap) {
+    (ComponentMap { a: 0.20, b: 0.05, sigma: 0.1, l: 0.7, ..ComponentMap::flat() }
+         .with_phi_surge(0.55).with_capacity(0.80),
+     ComponentMap { a: 0.08, b: 0.15, sigma: 0.1, l: 1.0, ..ComponentMap::flat() }
+         .with_phi_surge(0.55).with_capacity(0.80))
+}
+
+fn matcher(k_lp: usize, k_hp: usize, vsv_stages_lp: Option<usize>) -> StageStackCore {
+    let (ml, mh) = armed_maps();
+    StageStackCore::new(StageStackCoreSpec {
+        k_lp, k_hp, vsv_stages_lp,
+        ..StageStackCoreSpec::new(eng_design(), eng_flight(), 1.0, ml, mh)
+    })
+}
+
+/// The six methods, each reached at least once, on a STACKED matcher and on its `K = 1` control.
+#[test]
+fn every_step3_reader_is_reached_and_the_k1_branches_are_exact() {
+    let f = eng_flight();
+    let stacked = matcher(8, 8, Some(1));
+    let lumped = matcher(1, 1, None);
+
+    // --- (1) stage_margin: K rows per spool, and ONE row where no object was built.
+    let sm = stacked.stage_margin(&f, 1200.0);
+    assert_eq!(sm.lp.stages.len(), 8);
+    assert_eq!(sm.hp.stages.len(), 8);
+    assert!(sm.lp.worst < 8 && sm.hp.worst < 8);
+    let sm1 = lumped.stage_margin(&f, 1200.0);
+    assert_eq!(sm1.lp.stages.len(), 1);
+    // One row means front IS rear, so `rear_excess` is a STRUCTURAL zero — the sign of a lumped
+    // read, and the quantity rung 55 exists to make non-zero.
+    assert_eq!(sm1.lp.rear_excess.to_bits(), 0.0f64.to_bits());
+    assert!(sm.lp.rear_excess != 0.0, "a resolved stack must separate front from rear");
+
+    // --- (2) stage_throat_margin: at K = 1 the FACE read IS the row read, by branch.
+    let tm1 = lumped.stage_throat_margin(&f, 1200.0);
+    for r in [&tm1.lp, &tm1.hp] {
+        assert_eq!(r.stages.len(), 1);
+        assert_eq!(r.m_c_worst.to_bits(), r.m_c_face.to_bits());
+        assert_eq!(r.x_worst.to_bits(), r.x_face.to_bits());
+        assert_eq!(r.amplification.to_bits(), 1.0f64.to_bits(),
+                   "at K = 1 the binding row IS the face, exactly");
+        assert_eq!(r.binds, 0);
+        assert!(r.front_binds && r.rear_binds);
+    }
+    let tm = stacked.stage_throat_margin(&f, 1200.0);
+    assert_eq!(tm.lp.stages.len(), 8);
+    assert!(tm.lp.binds < 8 && tm.lp.inc_worst < 8);
+
+    // --- (3) throat_walk: one row per throttle, on one spool.
+    let grid = [1500.0, 1200.0, 1000.0];
+    let walk = stacked.throat_walk(&f, &grid, Spool::Lp);
+    assert_eq!(walk.len(), 3);
+    for (row, &tt4) in walk.iter().zip(&grid) {
+        assert_eq!(row.tt4.to_bits(), tt4.to_bits());
+        assert_eq!(row.capacities.len(), 8);
+        assert_eq!(row.margins.len(), 8);
+    }
+
+    // --- (4) work_gap: EXACTLY zero at K = 1 (the `None` branch assigns the lumped value to the
+    //         marched one), and non-zero once resolved. That is the non-tautology, in-repo.
+    let wg1 = lumped.work_gap(&f, 1200.0);
+    assert_eq!(wg1.lp.gap.to_bits(), 0.0f64.to_bits());
+    assert_eq!(wg1.hp.gap.to_bits(), 0.0f64.to_bits());
+    assert_eq!(wg1.lp.tau_marched.to_bits(), wg1.lp.tau_lumped.to_bits());
+    let wg = stacked.work_gap(&f, 1200.0);
+    assert!(wg.lp.gap != 0.0 && wg.hp.gap != 0.0,
+            "a marched stack must do different work from the lumped law it replaces");
+
+    // --- (5) running_line_shift: against `at_stages(1, 1)`. On a matcher that IS K = 1 the
+    //         baseline is the same machine, so every delta is a STRUCTURAL exact zero — which is
+    //         also the only cheap witness that `at_stages` rebuilds the same hardware.
+    let s1 = lumped.running_line_shift(&f, &grid);
+    assert_eq!(s1.len(), 3);
+    for row in &s1 {
+        assert_eq!(row.lp.d_n.to_bits(), 0.0f64.to_bits());
+        assert_eq!(row.hp.d_phi.to_bits(), 0.0f64.to_bits());
+        assert_eq!(row.d_thrust.to_bits(), 0.0f64.to_bits());
+    }
+    let sh = stacked.running_line_shift(&f, &grid);
+    assert!(sh.iter().any(|r| r.lp.d_n != 0.0),
+            "the stacked efficiency loops must move the running line");
+
+    // --- (6) stage_incidence_schedule: the FRONT-ROW lever, which § 5.10 (ii) measured reaching
+    //         on all 80 of its rows. One off-design throttle is enough to reach the scan, the
+    //         bracket and the bisection.
+    let rows = stacked.stage_incidence_schedule(&f, &[1000.0], Spool::Lp, 0, 4.0);
+    assert_eq!(rows.len(), 1);
+    let r = &rows[0];
+    assert!(r.reached, "the front-row schedule must EXIST at Tt4 = 1000");
+    assert!(r.vsv_star > 0.0, "closing the stator is what buys the design incidence back");
+    assert!(r.residual.abs() <= StageStackCore::INC_TOL,
+            "a reached root sits on the residual tolerance, not merely near it");
+    assert_eq!(r.k, 8);
+    assert_eq!(r.vsv_stages, Some(1));
+    assert_eq!(r.spool, Spool::Lp);
+}
+
+/// **THE ONE-SIDED STACK IS A CONTROLLED EXPERIMENT — the reachability half of § 5.10 P9.**
+///
+/// Where a stack is built on ONE spool only, the other spool's efficiency loop is literally rung
+/// 39's, reached through the `None` arm of rung 55's hook body. This gate witnesses that arm
+/// exists and is taken; P9's measured claim — that stacking the LP spool leaves all four HP
+/// fields BIT-IDENTICAL while the reverse does not — is step 5's, on its 40-point grid.
+#[test]
+fn a_one_sided_stack_leaves_the_other_spools_loop_inherited() {
+    let f = eng_flight();
+    let one_sided = matcher(8, 1, None);
+    assert!(one_sided.stack_of(Spool::Lp).is_some());
+    assert!(one_sided.stack_of(Spool::Hp).is_none(),
+            "K_hp = 1 builds no object, so its loop is rung 39's own");
+    let sm = one_sided.stage_margin(&f, 1200.0);
+    assert_eq!(sm.lp.stages.len(), 8);
+    assert_eq!(sm.hp.stages.len(), 1);
+    assert_eq!(sm.hp.rear_excess.to_bits(), 0.0f64.to_bits());
+}
+
+/// **THE PER-ROW SURGE FLOOR, WHICH IS THE ONE SPELLING IN STEP 3 THAT COULD DIVERGE SILENTLY.**
+///
+/// Python computes each row's floor as `cmap.phi_surge / (1 + v_k*cmap.phi_surge)` — off the map's
+/// `phi_surge` **FIELD**, which by rung 53's rule means the DESIGN-setting anchor — and NOT via
+/// `ComponentMap::phi_surge_at`, which reads the MAP's own `vsv`. On a lumped lever the two agree
+/// for every row and the choice is invisible. On the FRONT-ROW lever at a moved setting they do
+/// not: the rear rows carry `v_k = 0` while `cmap.vsv != 0`, so the map-level reader would put the
+/// rear rows' floor at the front rows' value.
+///
+/// The reachability gate above reads `m_i` / `worst` / `rear_excess` and would never see it —
+/// step 2's own lesson (a smoke grid on the default lever leaves `cmap_axial`'s branch dead) one
+/// method further along.
+#[test]
+fn the_per_row_surge_floor_is_read_off_the_design_anchor_not_the_moved_map() {
+    let f = eng_flight();
+    let moved = matcher(8, 8, Some(1)).at_setting(0.20, 0.0);
+    let (ml, _) = armed_maps();
+    let lp = moved.stage_margin(&f, 1200.0);
+    let rows = &lp.lp.stages;
+    assert_eq!(rows.len(), 8);
+    assert_eq!(rows[0].vsv.to_bits(), 0.20f64.to_bits(), "row 0 carries the stator");
+    assert_eq!(rows[7].vsv.to_bits(), 0.0f64.to_bits(), "row 7 does not");
+
+    // The rear rows sit at the DESIGN anchor, to the bit — `v_k = 0` makes the formula the
+    // identity, which is what "the field means the design-setting floor" cashes out to.
+    assert_eq!(rows[7].phi_surge.to_bits(), ml.phi_surge.to_bits());
+    // ...and the front row does NOT, which is what makes the previous line a claim.
+    assert!(rows[0].phi_surge != rows[7].phi_surge,
+            "a moved front row must sit on a moved floor");
+    // The discriminator against the wrong spelling: the MAP-level reader returns the front row's
+    // number for every row, so a port written on `phi_surge_at()` would fail the line above.
+    let moved_map = moved.core.core.map_lp;
+    assert_eq!(rows[0].phi_surge.to_bits(), moved_map.phi_surge_at().to_bits());
+    assert!(moved_map.phi_surge_at() != ml.phi_surge,
+            "...and the two readers genuinely disagree here, or this gate is vacuous");
+
+    // `m_phi` is the same claim in the currency rungs 36–52 spend, so it splits the same way.
+    assert_eq!(rows[7].m_phi.to_bits(), (rows[7].phi - ml.phi_surge).to_bits());
 }

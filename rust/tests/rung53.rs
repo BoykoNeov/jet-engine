@@ -40,6 +40,7 @@
 use turbojet::engine::{build_turbojet, FlightCondition, Losses};
 use turbojet::gas::{Gas, GasSpec};
 use turbojet::map::ComponentMap;
+use turbojet::stage::{CapProfile, Split, StageStackCore, StageStackCoreSpec};
 use turbojet::stator::{VariableStatorCore, R53};
 use turbojet::two_spool::{build_two_spool_turbojet, Spool, TwoSpoolEngine, TwoSpoolLosses,
                           TwoSpoolMapCore, R39};
@@ -603,19 +604,29 @@ fn test_cycle_untouched_rung6() {
 ///    guarantee is strictly stronger than Python's runtime assertion, and there is nothing left
 ///    to witness at run time.
 ///
-/// 3. **`StatorHooks` DISPATCH** — the table has ONE entry and `Descendant` ONE variant, so any
-///    "dispatch works" assertion would pass while measuring nothing. The hook exists for rung
-///    55's `StageStackMatcher` (slice N) and rung 61's `StatorBleedMatcher` (slice O), whose
-///    overrides are the reason a swept setting cannot silently drop the stage stack or shut the
-///    bleed valve. **Owed to slice N**, and the arity is pinned below so a second variant
-///    arriving without a dispatch gate breaks this test rather than passing quietly.
+/// 3. **`StatorHooks` DISPATCH** — ~~the table has ONE entry and `Descendant` ONE variant, so any
+///    "dispatch works" assertion would pass while measuring nothing.~~ **DISCHARGED FOR RUNG 55
+///    BY SLICE N step 3** — see [`the_stacked_dispatch_is_live`] below, the second cell the arity
+///    pin was waiting for. **STILL OWED FOR RUNG 61** (slice O): `StatorBleedMatcher` overrides
+///    `at_setting` for its own reason — so a sweep cannot silently run with the bleed valve SHUT
+///    — and nothing here witnesses that override, because the class does not exist yet. Marked
+///    per-rung rather than struck whole, so a slice-O reader still finds an IOU: *a deferral
+///    filed against the wrong cause is a deferral nobody can discharge*, and a deferral closed on
+///    behalf of a rung that has not shipped is the same failure with the sign flipped.
 #[test]
 fn slice_m_deferrals() {
-    // (3) — the arity pin. `Descendant` is non-exhaustive to a reader but not to the compiler:
-    // adding a variant makes this match fail to compile, which is the point.
-    let d = turbojet::stator::Descendant::Plain;
-    match d {
-        turbojet::stator::Descendant::Plain => {}
+    // (3) — the arity pin, now with the variant it was waiting for. `Descendant` is
+    // non-exhaustive to a reader but not to the compiler: adding a variant makes this match fail
+    // to compile, which is the point — and it DID, at slice N step 3, which is how a reader knows
+    // the pin is load-bearing rather than decorative.
+    for d in [turbojet::stator::Descendant::Plain,
+              turbojet::stator::Descendant::Stack {
+                  k_lp: 8, k_hp: 1, split: Split::DT, vsv_stages_lp: Some(1),
+                  vsv_stages_hp: None, cap_profile: CapProfile::Derived }] {
+        match d {
+            turbojet::stator::Descendant::Plain => {}
+            turbojet::stator::Descendant::Stack { .. } => {}
+        }
     }
     // ...and the one hook entry really is rung 53's own, not a placeholder.
     let m = vm_default(0.0, 0.0);
@@ -625,6 +636,113 @@ fn slice_m_deferrals() {
     let sib = m.at_setting(0.2, 0.0);
     assert_eq!(sib.map_lp_design.vsv.to_bits(), 0.0f64.to_bits());
     assert_eq!(sib.core.map_lp.vsv.to_bits(), 0.2f64.to_bits());
+}
+
+/// **SLICE N step 3, P3 — THE DISPATCH GATE, AND IT ASSERTS IN BOTH DIRECTIONS.**
+///
+/// The deferral it discharges is `slice_m_deferrals` item 3: slice M shipped two hook tables with
+/// nothing overriding them, so a "dispatch works" assertion could only have compared a table to
+/// itself. Rung 55 is the first descendant, and it overrides in the OTHER table —
+/// `_hp_eta_loop`/`_lp_eta_loop` live on rung 39's [`TwoSpoolHooks`], not on `StatorHooks`.
+///
+/// **THREE CLAUSES, NOT TWO, AND THE THIRD IS THE ONE A CARELESS GATE OMITS.** A one-directional
+/// gate passes on ANY table — slice M (e)'s `is_flat` failure mode — so this asserts:
+///
+/// ```text
+///     a rung-53 core's eta loops ARE R39's          (the negative control)
+///     a STACKED core's eta loops are NOT R39's      (the override happened)
+///     a stacked core's try_match_point IS R39's     (and NOTHING ELSE was overridden)
+/// ```
+///
+/// The third clause is what catches an accidental `match` override — the failure that would make
+/// rung 55 a new matcher rather than rung 39's with one inversion swapped.
+///
+/// **AND THE POINTER CLAUSES CANNOT SEE THE FAILURE THAT ACTUALLY MATTERS**, which is why the
+/// second half of this gate is a VALUE comparison. An `R55` whose `at_setting` entry was left
+/// pointing at `r53_at_setting` still satisfies every fn-pointer comparison above — and it would
+/// hand back a sibling with `stack_lp: None`, a silently UNSTACKED machine producing plausible
+/// numbers. § 5.10 measured which reads discriminate it: `stack.cmap.vsv` MOVES, and
+/// `stack.cmap_axial.vsv` stays 0.0 by construction, so the PAIR is a two-sided bar; while
+/// `theta_d` and `e_d` are **bit-identical** across the move, because the design ladder is built
+/// from `tau_d`/`pi_d`/`eta_d`/`kc` and the stator touches none of them. A "the stack was
+/// rebuilt" gate written on `theta_d` would pass on a stack that was never rebuilt at all — *a
+/// ported test can go VACUOUS*, caught before writing rather than after.
+#[test]
+fn the_stacked_dispatch_is_live() {
+    let plain = vm_default(0.0, 0.0);
+    let stacked = StageStackCore::new(StageStackCoreSpec {
+        k_lp: 8, k_hp: 1, vsv_stages_lp: Some(1),
+        ..StageStackCoreSpec::new(design(cpg_gas()), flight(), 1.0, lp_map(), hp_map())
+    });
+
+    // --- clause 1: the negative control. A rung-53 core inherits rung 39's loops verbatim.
+    assert_eq!(plain.core.hooks.hp_eta_loop as usize, R39.hp_eta_loop as usize);
+    assert_eq!(plain.core.hooks.lp_eta_loop as usize, R39.lp_eta_loop as usize);
+    assert_eq!(plain.hooks.at_setting as usize, R53.at_setting as usize);
+
+    // --- clause 2: the stacked core overrides BOTH, in the INNER table.
+    assert_ne!(stacked.core.core.hooks.hp_eta_loop as usize, R39.hp_eta_loop as usize,
+               "rung 55 must override the HP efficiency loop");
+    assert_ne!(stacked.core.core.hooks.lp_eta_loop as usize, R39.lp_eta_loop as usize,
+               "rung 55 must override the LP efficiency loop");
+    assert_ne!(stacked.core.hooks.at_setting as usize, R53.at_setting as usize,
+               "rung 55 must override at_setting, or a swept setting drops the stack");
+
+    // --- clause 3: and NOTHING ELSE. `match` is rung 39's own body, by construction — R55_TWO
+    // names `R39.try_match_point` rather than a second spelling of it.
+    assert_eq!(stacked.core.core.hooks.try_match_point as usize,
+               R39.try_match_point as usize,
+               "rung 55 adds no matching code path — the stack enters through solve_n alone");
+
+    // --- the VALUE half: at_setting REBUILDS, and the two reads that can tell.
+    let base = stacked.stack_of(Spool::Lp).expect("K_lp = 8 builds a stack");
+    assert_eq!(base.cmap.vsv.to_bits(), 0.0f64.to_bits());
+    let moved = stacked.at_setting(0.20, 0.0);
+    let ms = moved.stack_of(Spool::Lp).expect("the sibling must still be STACKED");
+    assert_eq!(ms.cmap.vsv.to_bits(), 0.20f64.to_bits(),
+               "the rebuilt stack must carry the MOVED map");
+    assert_eq!(ms.cmap_axial.vsv.to_bits(), 0.0f64.to_bits(),
+               "...and the rows the front-block stator does not move must stay at design");
+    // The two reads that CANNOT tell — asserted equal, so the vacuity is recorded rather than
+    // discovered by someone writing a weaker gate later.
+    assert_eq!(ms.theta_d[1].to_bits(), base.theta_d[1].to_bits(),
+               "the design ladder is map-INDEPENDENT: it cannot witness a rebuild");
+    assert_eq!(ms.e_d.to_bits(), base.e_d.to_bits(),
+               "nor can e_d");
+    // The unstacked spool stays unstacked through the move.
+    assert!(moved.stack_of(Spool::Hp).is_none(), "K_hp = 1 builds no object, at any setting");
+}
+
+/// **THE `_INC_MAX` SHADOW — RUNG 55's, AND `stator.rs`'s FIRST DRAFT SAID RUNG 61's.**
+///
+/// § 5.3's pre-flight had it right and told the port what to do about it (*"in Rust that cap must
+/// be a per-cell parameter, never a literal in the ported body"*); slice M shipped the literal in
+/// both loops and named the wrong rung beside it. Read: `StatorBleedMatcher` declares
+/// `_B_TOL`/`_B_MAX`/`_B_CAP`/`_B_STEP` and no `_INC_MAX`; `StageStackMatcher` declares
+/// `_INC_MAX = 200` (`engine.py:7282`). Three read sites — rung 55's own
+/// `stage_incidence_schedule` and the two INHERITED rung-53/54 solver loops, which a stacked
+/// object enters with 200 in Python.
+///
+/// **NO VALUE MOVES, AND IT IS GATED ANYWAY.** § 5.9 (iv) measured the cap never reached (30–36
+/// passes, then 26–33, all ending on `_INC_TOL`), so 80 against 200 cannot change a number on
+/// that grid — which is what licensed the literal. A cap that is never hit still decides which
+/// constant the body NAMES. So this gate asserts the DISPATCH, not an outcome. It is latent
+/// besides: `test_rung55.py:438` runs `incidence_schedule` on a genuine rung-53 matcher, so no
+/// shipped Python test drives an inherited schedule on a stacked object — which is exactly why no
+/// value oracle could have caught a wrong cap here.
+#[test]
+fn the_bisection_cap_is_shadowed_by_the_descendant() {
+    assert_eq!(vm_default(0.0, 0.0).inc_max(), VariableStatorCore::INC_MAX);
+    assert_eq!(VariableStatorCore::INC_MAX, 80);
+    let stacked = StageStackCore::new(StageStackCoreSpec {
+        k_lp: 4, ..StageStackCoreSpec::new(design(cpg_gas()), flight(), 1.0, lp_map(), hp_map())
+    });
+    assert_eq!(stacked.core.inc_max(), VariableStatorCore::INC_MAX_STACKED);
+    assert_eq!(VariableStatorCore::INC_MAX_STACKED, 200);
+    // The other two rung-55 constants are NOT shadows, and saying so is half the finding: the
+    // tolerance is a re-declaration at the same value, and the scan step is a NEW name.
+    assert_eq!(StageStackCore::INC_TOL.to_bits(), VariableStatorCore::INC_TOL.to_bits());
+    assert_ne!(StageStackCore::V_SCAN.to_bits(), VariableStatorCore::V_STEP.to_bits());
 }
 
 /// Python's `**0.5`, spelled the way the port spells it everywhere else.

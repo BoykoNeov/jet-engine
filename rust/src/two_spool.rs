@@ -1218,6 +1218,27 @@ pub struct TwoSpoolMapCore {
     /// consumer, [`crate::bleed::TwoSpoolBleedMatcher`], ships in the same slice, and the `b == 0`
     /// dispatch to rung 39's verbatim body is what P7 gates.
     pub bleed: f64,
+    /// RUNG 55's LP stage stack — **read by `R55`'s efficiency-loop bodies ALONE, and `None` for
+    /// every rung-39/42/53 matcher.** [`bleed`](Self::bleed)'s precedent, and the same reason:
+    /// Python's `self` inside rung 39's `_lp_eta_loop` IS the rung-55 object when one is running,
+    /// so the descendant's state goes on the shared core rather than on the leaf.
+    ///
+    /// **AND THE FOURTH GATED-CODE EDIT OF SLICE N LANDS HERE, AT STEP 3, IN A FILE STEP 1 NEVER
+    /// OPENED.** § 5.10's step table called step 1 *"ALL changes to already-gated code"* and P2
+    /// enumerated three edits in `stator.rs`; P2's literal text survives (its three call sites are
+    /// still three), but the table row does not. The plan asked what carrier
+    /// [`crate::stator::StatorHooks::at_setting`] needs and never asked what carrier the
+    /// *efficiency-loop hook* needs — and that hook's `self` is this INNER core, which cannot see
+    /// [`crate::stator::VariableStatorCore::descendant`] above it. It is § 5.9 (a)'s burn again
+    /// (three files enumerated, the unit was four) and this slice's own headline one level down:
+    /// **a carrier claim checked on one hook says nothing about the next hook's.**
+    ///
+    /// Held BY VALUE and not behind a handle: [`crate::stage::StageStack`]'s per-row capacity
+    /// cache is a `OnceCell`, and § 5.10 (vi)'s 120-built / 4 360-hit census is only Python's if
+    /// there is exactly ONE stack object per spool per matcher for readers to share.
+    pub stack_lp: Option<crate::stage::StageStack>,
+    /// RUNG 55's HP stage stack — see [`stack_lp`](Self::stack_lp).
+    pub stack_hp: Option<crate::stage::StageStack>,
 }
 
 impl TwoSpoolMapCore {
@@ -1252,6 +1273,10 @@ impl TwoSpoolMapCore {
             // The valve is SHUT unless rung 42's constructor opens it — which is also how the
             // Python captures its hardware: from a BLEED-FREE design run.
             bleed: 0.0,
+            // ...and the compressors are LUMPED unless rung 55's constructor stacks them, which
+            // is Python's `self.stack_lp = self.stack_hp = None` before its two `if K > 1`.
+            stack_lp: None,
+            stack_hp: None,
             base, map_lp, map_hp, hooks,
         }
     }
