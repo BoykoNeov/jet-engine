@@ -648,6 +648,52 @@ impl ComponentMap {
     }
 }
 
+// =========================================================================================
+// RUNG 56's THREE MFP HELPERS — module-level in Python, module-level here
+// =========================================================================================
+//
+// They live in `map.rs` and not with rung 55/56's stack because they are the relation
+// [`ComponentMap::design_throat_mach`] was factored out of, and it is their only existing
+// consumer. Python defaults `gamma` to `1.4` on all three; Rust has no default arguments, so
+// every call site names it — the same honest-but-noisier trade `design_throat_mach` already
+// makes, and for the same reason (a quiet re-spelling of a default is a number a value oracle
+// catches and a signature review does not).
+
+/// RUNG 56. `MFP(M)/MFP(1)` — rung 54's own ratio, factored out so the per-row profile and
+/// [`ComponentMap::design_throat_mach`] speak the same relation.
+pub fn mfp_frac(m: f64, gamma: f64) -> f64 {
+    let e = -(gamma + 1.0) / (2.0 * (gamma - 1.0));
+    m * powp(1.0 + (gamma - 1.0) / 2.0 * m * m, e) / powp(1.0 + (gamma - 1.0) / 2.0, e)
+}
+
+/// RUNG 56. The TOTAL-referenced Mach `nu = V/sqrt(gamma*R*Tt) = M/sqrt(1 + (g-1)/2*M^2)`.
+///
+/// It is `nu`, not `M`, that scales as `1/sqrt(Tt)` at a common velocity — which is the whole
+/// content of rung 56's derived per-row capacity profile.
+pub fn nu_of_mach(m: f64, gamma: f64) -> f64 {
+    m / powp(1.0 + (gamma - 1.0) / 2.0 * m * m, 0.5)
+}
+
+/// RUNG 56. The inverse of [`nu_of_mach`].
+///
+/// **GUARDED, AND THE GUARD IS LATENT-ONLY — MEASURED, NOT ASSUMED.** `nu` is bounded by
+/// `sqrt(2/(gamma-1))` (the `M -> infinity` limit); past it the radicand goes negative. Python's
+/// `** 0.5` would return a *complex* number there rather than raising, which is why the source
+/// asserts; Rust's `powf` returns `NaN`, which is a different silent failure and no better. The
+/// shipped path can never reach it — `nu_1 < nu(M=1)` for any `C < 1` and the ladder only divides
+/// it DOWN — and slice N's probe puts the worst `nu²` on the whole grid at **2.7 %** of the limit.
+/// It is ported because `gamma_th` is a free constructor argument: rung 54 P-C3's *gate the latent
+/// defect, not just the exercised path*. Its gate is therefore a `#[should_panic]` on a hand-built
+/// `nu`, never a value key.
+pub fn mach_of_nu(nu: f64, gamma: f64) -> f64 {
+    let lim = 2.0 / (gamma - 1.0);
+    assert!(nu * nu >= 0.0 && nu * nu < lim,
+            "rung-56 total-referenced Mach out of range: nu={nu:.6} must satisfy \
+             nu^2 < 2/(gamma-1) = {lim:.4} at gamma={gamma}. nu is bounded by nu(M=1) for any \
+             design capacity fraction C < 1, so this means a profile was built by hand.");
+    nu / powp(1.0 - (gamma - 1.0) / 2.0 * nu * nu, 0.5)
+}
+
 /// A matched off-design point WITH the component map (`docs/rung32-spec.md`).
 ///
 /// Python subclasses `OffDesignResult`; this composes it, because the added fields are read

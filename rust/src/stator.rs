@@ -69,7 +69,9 @@
 use crate::engine::FlightCondition;
 use crate::gas::{powp, Abort};
 use crate::map::ComponentMap;
-use crate::two_spool::{Spool, TwoSpoolEngine, TwoSpoolMapCore, TwoSpoolMapResult, R39};
+use crate::two_spool::{
+    Spool, TwoSpoolEngine, TwoSpoolHooks, TwoSpoolMapCore, TwoSpoolMapResult, R39,
+};
 
 thread_local! {
     /// Bisection passes taken by rung 53's [`incidence_schedule`](VariableStatorCore::
@@ -237,12 +239,21 @@ pub const R53: StatorHooks = StatorHooks { at_setting: r53_at_setting };
 /// Descendant state carried on the core, so [`StatorHooks::at_setting`]'s signature does not
 /// change when slices N and O arrive.
 ///
-/// One variant today. It is here rather than added later because the alternative — a return type
-/// that names a concrete rung — is the signature slices N and O would have to BREAK, turning two
-/// cheap additive slices into two more gated-code refactors. Rung 55's and rung 61's `at_setting`
-/// bodies were read before this was decided: both read only fields of `self` (`K_lp`/`K_hp`/
-/// `split`/`vsv_stages_*`/`cap_profile`; `bleed`), so both arrive as a VARIANT plus a TABLE ENTRY.
-#[derive(Clone, Copy, Debug)]
+/// It is here rather than added later because the alternative — a return type that names a
+/// concrete rung — is the signature slices N and O would have to BREAK, turning two cheap
+/// additive slices into two more gated-code refactors. That much held.
+///
+/// **`Copy` DID NOT, AND SLICE M's OWN PRE-REGISTRATION IS WHERE IT WENT WRONG** (plan § 5.9 (c),
+/// refuted in § 5.10). It read rung 55's `at_setting` body, saw it touch only scalars
+/// (`K_lp`/`K_hp`/`split`/`vsv_stages_*`/`cap_profile`), and concluded the variant would be a
+/// scalar one. But the state rung 55 needs *held* is the two BUILT `StageStack`s — `theta_d`,
+/// `varpi_d` and the `capacities()` cache are runtime-length `Vec<f64>`
+/// ladders — so the enum is `Clone`, not `Copy`. **Reading a method's body tells you what state it
+/// READS; it cannot tell you what the state's CARRIER costs.** Rebuilding the stacks on demand to
+/// keep `Copy` was measured and rejected: at `K = 8` a match runs 6 464 marches against 2
+/// constructions, so rebuilding per `solve_n` call costs ≈ 50 % and makes the measured 120-built /
+/// 4 360-hit capacity cache vacuous (§ 5.10 (vi)).
+#[derive(Clone, Debug)]
 pub enum Descendant {
     /// Rung 53/54: no state beyond the two settings.
     Plain,
@@ -319,16 +330,23 @@ impl VariableStatorCore {
         map_lp: ComponentMap, map_hp: ComponentMap, vsv_lp: f64, vsv_hp: f64,
     ) -> Self {
         Self::with_hooks(design_engine, flight_design, mdot_design, map_lp, map_hp,
-                         vsv_lp, vsv_hp, &R53, Descendant::Plain)
+                         vsv_lp, vsv_hp, &R53, &R39, Descendant::Plain)
     }
 
     /// The constructor descendants call, so a rung-55/61 core is built by the same capture-then-
     /// move sequence rather than by a second one.
+    ///
+    /// **IT TAKES TWO TABLES, AND THAT IS THE SECOND HALF OF § 5.9 (c)'s REFUTATION.** Slice M
+    /// hardcoded `&R39` below on the reading that a descendant of rung 53 overrides rung 53's
+    /// methods. Rung 55 does not: its two overrides are `_hp_eta_loop`/`_lp_eta_loop`, which live
+    /// on rung 39's [`TwoSpoolHooks`] — so a stacked core is a rung-53 object whose *inner* table
+    /// is not rung 39's. A single-table constructor cannot express that, which is why this is a
+    /// gated-code edit rather than the additive one (c) predicted.
     #[allow(clippy::too_many_arguments)]
     pub fn with_hooks(
         design_engine: TwoSpoolEngine, flight_design: FlightCondition, mdot_design: f64,
         map_lp: ComponentMap, map_hp: ComponentMap, vsv_lp: f64, vsv_hp: f64,
-        hooks: &'static StatorHooks, descendant: Descendant,
+        hooks: &'static StatorHooks, two_hooks: &'static TwoSpoolHooks, descendant: Descendant,
     ) -> Self {
         assert!(map_lp.vsv == 0.0 && map_hp.vsv == 0.0,
                 "rung-53 VariableStatorMatcher takes the DESIGN-SETTING maps and moves the \
@@ -338,7 +356,7 @@ impl VariableStatorCore {
         // maps FIRST, and only then move the stators. Building the core from already-moved maps
         // would re-reference every corrected coordinate onto a machine that does not exist.
         let mut core = TwoSpoolMapCore::with_hooks(
-            design_engine.clone(), flight_design, mdot_design, map_lp, map_hp, &R39);
+            design_engine.clone(), flight_design, mdot_design, map_lp, map_hp, two_hooks);
         // At v == 0 the maps are LEFT ALONE, so the reduce is an identity and not a
         // re-construction — `with_vsv(0.0)` would be a different object carrying the same bits,
         // and Python's gate asserts the object.
@@ -481,10 +499,15 @@ impl VariableStatorCore {
 
 /// RUNG 53's sibling constructor. Rebuilds from the DESIGN maps, exactly as Python re-invokes
 /// its own constructor — see the module note's decision 1 for why this is not a copy-and-swap.
+///
+/// **BOTH tables are carried across**, not just [`StatorHooks`]: a sibling at a moved setting that
+/// silently reverted the inner table to `R39` would drop rung 55's stage stack, which is exactly
+/// the failure `StageStackMatcher.at_setting` exists in Python to prevent.
 fn r53_at_setting(core: &VariableStatorCore, vsv_lp: f64, vsv_hp: f64) -> VariableStatorCore {
     VariableStatorCore::with_hooks(
         core.design_engine.clone(), core.flight_design, core.mdot_design,
-        core.map_lp_design, core.map_hp_design, vsv_lp, vsv_hp, core.hooks, core.descendant)
+        core.map_lp_design, core.map_hp_design, vsv_lp, vsv_hp, core.hooks, core.core.hooks,
+        core.descendant.clone())
 }
 
 // =========================================================================================

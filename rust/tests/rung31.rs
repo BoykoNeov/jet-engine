@@ -171,10 +171,17 @@ fn gate3_cycle_untouched() {
 // ----------------------------------------------------------------------------- gate 4/6
 /// GATE 4/6 — the running line is monotone; hotter pumps harder; unchoke is flagged.
 ///
-/// `#[ignore]` is the port's spelling of `@pytest.mark.slow`: run it with
-/// `cargo test -- --ignored`, exactly as the Python's `-m slow` opts in by typing.
+/// **IT USED TO BE `#[ignore]`, AND THAT WAS SLICE I SPELLING `@pytest.mark.slow` INSTEAD OF
+/// MEASURING IT** (`tests/test_rung31.py:120` carries the marker). Slice M's step 5 corrected the
+/// rule — *port the gate, DROP the marker, re-introduce `#[ignore]` only against a MEASURED cost*
+/// — but corrected it going forward only, so this one survivor kept deselecting itself for two
+/// slices. **Measured: 2.27 s**, in a gate whose slowest single target is 246 s. The marker records
+/// a cost that did not survive the port, exactly as slice M found for its own 13.
+///
+/// It surfaced from a COUNT that did not reconcile: slice N's step-1 baseline listed 535 tests
+/// where the shipped ledger said 534, and `--list` counts an ignored test while a run does not.
+/// The ±1 was the finding, not the noise.
 #[test]
-#[ignore]
 fn gate4_running_line_and_direction() {
     let m = matcher(Gas::reacting_equilibrium());
     let ods: Vec<_> = [1500.0, 1300.0, 1100.0, 900.0]
