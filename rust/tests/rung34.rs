@@ -376,13 +376,24 @@ fn the_hook_table_fires_and_rung31s_does_not() {
     let before = counters::take();
     assert_eq!(before.r34_solve_turbine, 0, "constructing must not solve a turbine");
 
+    turbojet::matcher::take_r31_calls(); // discard the construction's, if any
     st.equilibrium(&flight(), 1300.0, None);
     let c = counters::take();
+    let r31 = turbojet::matcher::take_r31_calls();
     assert!(
         c.r34_solve_turbine > 0,
         "RUNG 34's turbine solve never fired — the inner matcher is carrying rung 31's table, \
          and every value gate on a CHOKED cell would still be ~9e-12 out rather than failing \
          loudly (§ 5.13 probe 2)"
+    );
+    // THE SECOND CLAUSE, and this gate's name promised it from the start. Without it a table
+    // wired to BOTH functions would pass: `r34 > 0` says rung 34's ran, not that rung 31's
+    // didn't. Slice P measured the stakes — with the tables swapped, ALL 19 ported Python gates
+    // in this file, `rung35.rs` and `rung36.rs` still pass; only bit-level comparison sees it.
+    assert_eq!(
+        r31, 0,
+        "rung 31's BISECTION ran {r31} times on a SpoolTransient. It must never: rung 34
+         overrides that name, and the two solvers agree only to ~9e-12 (§ 5.13 probe 2)"
     );
 
     // The subsonic branch: the hook still fires (the choked star is always solved first) but its

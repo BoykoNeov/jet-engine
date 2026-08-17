@@ -5036,13 +5036,103 @@ decomposition would be a parallel arithmetic.
 suites run in **1.35 s together**. Slice M's rule applied unchanged: port the gate, drop the
 marker, re-introduce `#[ignore]` only against a measured cost. Nothing here earns one.
 
-**ONE GATE COULD NOT BE PORTED AS WRITTEN, AND THE DIFFERENCE IS RECORDED AT THE GATE.** Rung 35's
-gate 2 re-runs ONE engine object before and after building a transient off it, to say the
-constructor does not perturb it. The Rust constructor CONSUMES its engine, so the equivalent
-statement is that two design runs off two identically-built engines agree while a transient exists
-between them. That is the same claim about global state and a weaker one about aliasing — written
-into the gate rather than glossed, because a reader comparing the two files will otherwise see a
-gate that looks the same and is not.
+**ONE GATE COULD NOT BE PORTED AS WRITTEN, AND THE FIRST ATTEMPT WAS VACUOUS.** Rung 35's gate 2
+re-runs ONE engine object before and after building a transient off it. That has content in Python
+because the constructor takes *that* engine and the objects are SHARED (`self.gas` **is**
+`_fs_engine.gas`, and an equilibrium gas carries a frozen station-4 mixture a constructor could
+reset). The Rust constructor CONSUMES its engine, so the aliasing half is the compiler's. The
+first draft transcribed the shape anyway — run, build a transient off a *second* engine, run again
+— which **cannot fail**: nothing connects the two and the engine is immutable. A gate that cannot
+fail is worse than an absent one, because a reader diffing the suites sees a gate that looks the
+same and is not. Repaired to assert what remains testable — a design run is BIT-reproducible
+across an intervening transient construction *and use* — with the difference written at the gate.
+
+##### STEP 3 — SHIPPED. **`spool_oracle.rs`: 7 300 KEYS, AND THE CPython ARM IS THE SHARPEST SINCE
+SLICE G**
+
+`oracle/dump_spool.py` + `tests/spool_oracle.rs`, seven sections over 7 map shapes × 6 throttles,
+15 marches, 9 surge schedules, 2 channel decompositions and every `phi_max` arm driven directly.
+**7 300 / 7 300 bit-exact against PyPy** — prediction 1 held. Six gates.
+
+**STEP 2's WRITE-UP CALLED THE SLICE SHIPPED AND IT WAS AT STEP 2 OF FOUR.** Five of the ten
+predictions were unsettled at that point and the prose did not say so: 1 and 4 needed a dump that
+did not exist, 5's only clause was true by construction, 6 was ungated, and **3 had never been
+run at all** — the injection was measured against the SMOKE, not against the rung suites, which is
+the comparison the whole discriminator argument is about. Recorded here rather than quietly fixed,
+because the failure mode is the plan's own: *a step's write-up is a claim about what is gated, and
+it is only as good as an enumeration over the registered list.*
+
+**PREDICTION 3, FINALLY RUN, AND IT IS SHARPER THAN REGISTERED.** Rung 34's Illinois turbine solve
+was swapped for rung 31's bisection — a ~9e-12 disagreement — and everything re-run:
+
+| | gates failing |
+|---|---|
+| the **19 ported Python gates** across `rung34.rs` + `rung35.rs` + `rung36.rs` | **0** |
+| `slice_p_smoke.rs`'s bit comparisons | 6 of 9 |
+| the two gates the PORT added | 2 |
+
+Registered as *"> 0 oracle keys and 0 rung-suite gates"*; measured as **zero of nineteen**. Every
+gate those three suites ship is written at `1e-6`–`1e-9`, where their physics lives, and a defect
+four orders below that is invisible to all of them. The argument for an oracle is now a
+measurement in this port rather than a principle inherited from it.
+
+**PREDICTION 2's SECOND CLAUSE WAS IN THE GATE'S NAME AND NOT IN ITS BODY.**
+`the_hook_table_fires_and_rung31s_does_not` could only assert the first half: `spool.rs` counted
+rung 34's function and **nothing counted rung 31's**, so a table wired to BOTH would have passed.
+`matcher::take_r31_calls` closes it, and the oracle asserts it over the whole grid as well.
+Additive instrumentation on the precedent `OffDesignMatcher::tau_calls` and `map::psi_calls`
+already set — no signature and no phase-2-to-5 gate changes.
+
+**PREDICTIONS 4, 5 AND 6 ARE NOW GATED BY THE DUMP RATHER THAN RESTATED FROM THE PROBE.** § 5.13's
+numbers (185 fallbacks, 2 escalations, 16 508 `phi_max` calls) came off `probe_p.py`'s grid, which
+is **not** this one — slice N step 4's lesson taken as an instruction, so the census is emitted per
+section and compared. Measured here: the LINEAR `phi_max` arm fires **0** times across all five
+marching sections against 23 000-odd live calls, and **6** times in the direct section, which is
+what makes the zeros evidence rather than silence. Both arms of the `M9 > 0.985` guard fire on the
+marches (182 raises, 2 escalations). And the spool-down's length differs by map shape with both
+edges present — one shape full, two short — so the `break` that makes LENGTH an output is not dead.
+
+**A FOURTH INSTRUMENT DEFECT, FOUND BY THE GATE IT WAS BUILT FOR.** The first dump came back
+**7 299 of 7 300**, the single miss being `census/equilibria/illinois_evals`: Rust 16 761, Python
+16 752. Every value agreed; only the count moved. Cause: the Python wrapper tallied into the census
+*after* `_illinois` returned, and an Illinois whose residual raises mid-search — which is CONTROL
+FLOW here, not an error — propagates out and skips that line, discarding the call's evaluations
+entirely. Rust's counter increments in the loop and keeps them. The instrument was aligned to the
+port (the more informative of the two) rather than the reverse. Fourth instance of a measuring pass
+finding the defect in the INSTRUMENT.
+
+**THE CPython ARM: 1 652 of 7 300 identical — 22.6 %, and § 5.12's warning is vindicated.** The
+pre-flight's probe got **100 %** on this same instrument and recorded it as NOT coverage, because
+it ran a CPG gas whose properties are closed-form. On the thermally-perfect gas the same arm is the
+sharpest detector since slice G's 8.0 %: **83.8 % of continuous keys move between two correct
+implementations of one language.** The tiering is the finding —
+
+* **530 discrete OUTPUT keys — branch labels, trajectory lengths, schedule row counts, surge
+  verdicts, cell tallies — and ZERO differ.** The physics' discrete answers are interpreter-
+  invariant. That is the **opposite** of slice N, where 520 discrete argmin keys flipped because
+  the compared quantities had collapsed to 1–2 ULP.
+* **22 of 60 census keys differ** — solver iteration counts only. How many passes it took moves;
+  what it converged to does not.
+* **Two structural-zero families, named so nobody re-derives them.** `Phi`/`p_net_spec` at an
+  equilibrium ARE the residual driven to zero (483 keys, worst *absolute* gap 1.06e-5). And
+  `E_surge` on a PEAKED map is `max(0, …)` sitting AT its clamp — rung 34's gate 4 says
+  `flow_dominated` run forward gives a NEGATIVE excursion, so the accumulator never leaves 0.0:
+  PyPy returns **exactly 0.0**, CPython **1.61e-11**, a 100 % relative difference out of a 1e-11
+  drift. **A `max`-accumulated quantity at its floor converts arbitrary drift into total relative
+  disagreement**, which is why the arm is tiered on KIND and not on one tolerance.
+
+**THE DUMP LIVES IN-TREE.** `slice_p_smoke.rs`'s 132 goldens were produced by a script under
+`M:\claud_projects\temp`, unlike every prior slice's `rust/oracle/dump_*.py`. That is a durability
+defect independent of the oracle question — goldens whose producer is outside the repository
+cannot be regenerated from a checkout. `oracle/dump_spool.py` carries the regenerate header.
+
+**THREE RECORDS DISAGREED WITH EACH OTHER AFTER STEP 2, AND ALL THREE ARE FIXED.**
+`rung41.rs`'s roster still read `ported == 10` and printed `DEFERRED -> phase 6` for the gate
+`rung36.rs` had already discharged (now 11, with the last one booked explicitly to slice R);
+`rung53.rs`'s ledger item 1 still carried the wrong `phi_max` assertion while step 1's write-up
+said *"both notes corrected"*; and the step-2 text above read as slice-complete. *A stale
+cross-reference costs more than an uncounted one* — the project's own rule, applied to the port's
+own paperwork.
 
 ---
 

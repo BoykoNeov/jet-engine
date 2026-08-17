@@ -11,7 +11,7 @@
 //! | # | `tests/test_rung41.py` | here |
 //! |---|------------------------|------|
 //! | 1 | `test_reduce_surge_line_is_pure_diagnostic_bit_for_bit` | [`gate1_surge_line_is_a_pure_diagnostic`] |
-//! | 2 | `test_reduce_transient_untouched_by_surge_line_bit_for_bit` | **DEFER → phase 6** (`TwoSpoolTransient`); its closing `is_flat` line **WITHDRAWN → slice M** |
+//! | 2 | `test_reduce_transient_untouched_by_surge_line_bit_for_bit` | **DEFER → phase 6 SLICE R** (`TwoSpoolTransient`, rung 40) — the ONE still outstanding; its closing `is_flat` line **WITHDRAWN → slice M** |
 //! | 3 | `test_cycle_untouched_rung6_bit_for_bit` | **SPLIT** — [`gate1c_cycle_untouched_rung6`] ports the bit-for-bit halves; the interleaved `SpoolTransient` construction defers |
 //! | 4 | `test_pi_c_spool_reproduces_shipped_pi_both_spools` | [`gate2_pi_c_spool_reproduces_the_shipped_pi`] |
 //! | 5 | `test_split_lp_takes_the_excursion` | [`gate3_the_split_lp_takes_the_excursion`] |
@@ -21,7 +21,7 @@
 //! | 9 | `test_closed_form_residual_is_the_fuel_fraction_kill_test` | [`gate5_kill_test_the_residual_is_the_fuel_fraction`] |
 //! |10 | `test_margin_ordering_lp_is_the_exposed_spool` | [`gate6_margin_ordering_lp_is_the_exposed_spool`] |
 //! |11 | `test_flow_turn_does_not_propagate_into_the_margin` | [`gate7_the_turn_does_not_propagate_into_the_margin`] |
-//! |12 | `test_rung36_verdict_survives_but_its_mechanism_is_corrected` | **DEFER → phase 6** (`SpoolTransient`, **single**-spool rungs 34/36) |
+//! |12 | `test_rung36_verdict_survives_but_its_mechanism_is_corrected` | **DISCHARGED by phase-6 SLICE P**, in `rung36.rs` (`SpoolTransient`, **single**-spool rungs 34/36) |
 //!
 //! **Three claims here are NOT comparisons, and could not be.** A Rust-vs-Python oracle is blind
 //! to an assumption both sides share (`docs`' *measure before registering*), so each of these
@@ -615,20 +615,25 @@ fn slice_l_deferrals() {
         ("test_closed_form_residual_is_the_fuel_fraction_kill_test", true),
         ("test_margin_ordering_lp_is_the_exposed_spool", true),
         ("test_flow_turn_does_not_propagate_into_the_margin", true),
-        // DEFER -> phase 6: `SpoolTransient.surge_margin_channels` — SINGLE-spool, rungs 34/36.
-        // § 5.8's own list called this `TwoSpoolTransient`; phase 6 covers both, so the verdict
-        // held while the noun was wrong.
-        ("test_rung36_verdict_survives_but_its_mechanism_is_corrected", false),
+        // DISCHARGED by PHASE 6 SLICE P, in `rung36.rs`, not here: it reaches
+        // `SpoolTransient.surge_margin_channels` — SINGLE-spool, rungs 34/36 — so it lands in the
+        // file whose object it uses. § 5.8's own list called this `TwoSpoolTransient`; the verdict
+        // (defer to phase 6) held while the noun was wrong, and slice P is where that showed.
+        ("test_rung36_verdict_survives_but_its_mechanism_is_corrected", true),
     ];
     let ported = roster.iter().filter(|(_, p)| *p).count();
     assert_eq!(roster.len(), 12,
                "tests/test_rung41.py has 12 test functions — if that changed, this roster is \
                 stale and the port is gating against a file that no longer exists");
-    assert_eq!(ported, 10, "10 of rung 41's 12 test functions port in slice L; 2 defer to \
-                            phase 6, and one of the 10 ports only its non-transient half");
+    assert_eq!(ported, 11, "11 of rung 41's 12 test functions are now gated: 10 landed in slice L \
+                            (one of them only its non-transient half), and the 11th was \
+                            discharged by phase-6 slice P as \
+                            `rung36.rs::rung41_deferred_the_verdict_survives_while_its_mechanism_\
+                            is_corrected`. The LAST one still defers to phase 6 slice R \
+                            (`TwoSpoolTransient`, rung 40).");
     for (name, p) in roster {
         if !p {
-            println!("DEFERRED -> phase 6: {name}");
+            println!("STILL DEFERRED -> phase 6 slice R: {name}");
         }
     }
 }

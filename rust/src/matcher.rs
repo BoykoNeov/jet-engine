@@ -812,6 +812,7 @@ pub(crate) struct Rebuilt {
 pub fn r31_solve_turbine(
     m: &OffDesignMatcher, gas: &Gas, tt4: f64, f: f64, eta_t: Option<f64>,
 ) -> (f64, f64, f64) {
+    R31_CALLS.with(|c| c.set(c.get() + 1));
     let mfp4 = choked_mfp(gas, tt4, f);
 
     let resid = |pi_t: f64| -> f64 {
@@ -840,4 +841,28 @@ pub fn r31_solve_turbine(
     let pi_t = 0.5 * (lo + hi);
     let (tau_t, tt5) = m.tau_t_of_pi_t(gas, tt4, f, pi_t, eta_t);
     (pi_t, tau_t, tt5)
+}
+
+thread_local! {
+    static R31_CALLS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+}
+
+/// How many times [`r31_solve_turbine`] has run on this thread, and reset.
+///
+/// **ADDED BY PHASE 6 SLICE P, AND IT IS THE SECOND HALF OF A GATE THAT ALREADY EXISTED.**
+/// `spool.rs`'s hook gate is named *"the hook table fires AND rung 31's does not"*, and only the
+/// first clause could be asserted: [`crate::spool::counters`] counts rung 34's function, and
+/// nothing counted this one — so a table wired to BOTH would have passed. Slice P measured why
+/// that matters: with the tables swapped, **all 19 ported Python gates in `rung34/35/36.rs` still
+/// pass**, and the disagreement is ~9e-12, visible only to a bit comparison.
+///
+/// Additive instrumentation on the precedent [`OffDesignMatcher::tau_calls`] already sets — a
+/// `Cell<u64>` increment does no float arithmetic, so it cannot perturb a value, and no signature
+/// or gate in phases 2–5 changes.
+pub fn take_r31_calls() -> u64 {
+    R31_CALLS.with(|c| {
+        let v = c.get();
+        c.set(0);
+        v
+    })
 }

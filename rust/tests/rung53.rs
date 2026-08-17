@@ -590,14 +590,25 @@ fn test_cycle_untouched_rung6() {
 /// precedent, fourth use: an omission that is written down is a decision; one that is not is a
 /// gate-name diff that reads 22/22 while covering less.
 ///
-/// 1. **`ComponentMap::phi_max`** — a third of
-///    `test_reduce_componentmap_expressions_bit_for_bit`. The symbol does not exist in Rust: it
-///    is read only by the rung-34/40/43 FORWARD transient closures (phase 6), and the steady
-///    stator never calls it. **Owed to phase 6**, with the Python assertion it must reproduce
-///    quoted here so the port does not have to re-derive it:
-///    `sigma == 0 and l == 0` ⇒ `phi_max() == 5.0`; else `1 + u` with
-///    `u = rhs/l` when `sigma == 0`, else `(-l + sqrt(l^2 + 4*sigma*rhs))/(2*sigma)`,
-///    `rhs = 1 - 0.1`.
+/// 1. ~~**`ComponentMap::phi_max`**~~ — **DISCHARGED by phase-6 SLICE P**, which is where its only
+///    callers (rung 34's two forward compressor closures) arrive. It was a third of
+///    `test_reduce_componentmap_expressions_bit_for_bit`, and the steady stator never calls it.
+///
+///    **AND THE ASSERTION THIS ITEM QUOTED WAS WRONG — kept here rather than deleted, because
+///    the error is the lesson.** It read: *`sigma == 0 and l == 0` ⇒ `phi_max() == 5.0`; else
+///    `1 + u` with `u = rhs/l` when `sigma == 0`, else `(-l + sqrt(l^2 + 4*sigma*rhs))/(2*sigma)`,
+///    `rhs = 1 - 0.1`* — which is the **rung-34 form**, i.e. the shipped function evaluated at
+///    `vsv == 0`. The real body threads the swirl amplitude `A = vsv*(1 + l)` through **three**
+///    coefficients: the flat guard is `sigma == 0 && l == 0 && A == 0`, `rhs = 1 - A - psi_floor`,
+///    and the linear coefficient is `l + A`. `map.rs`'s companion note went further and said
+///    `phi_max` *"returns before the swirl term at `vsv == 0.0` exactly as `psi` does"* — it does
+///    not; there is no early return at all.
+///
+///    Both records were placed exactly where slice P would read them, which is slice O's rule
+///    working; **the content was the defect**. And it was unobservable at the discharge site —
+///    § 5.13 probe 1 measured `vsv == 0.0` at all 16 508 calls a rung-34 march makes, so a port
+///    built from the quotation would have been bit-identical here and wrong for rung 53.
+///    See [`ComponentMap::phi_max`] for what shipped.
 ///
 /// 2. **The `lp_disabled` refusal** — the second half of `test_design_setting_maps_refused`.
 ///    Rust's constructor has no such parameter, so the call does not compile. **Not owed**: the

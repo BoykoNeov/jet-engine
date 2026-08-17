@@ -81,6 +81,7 @@ pub fn try_illinois<F>(
 where
     F: FnMut(f64) -> Result<f64, Abort>,
 {
+    ILLINOIS_CALLS.with(|x| x.set(x.get() + 1));
     for _ in 0..maxit {
         let c = (a * fb - b * fa) / (fb - fa);
         let fc = f(c)?;
@@ -122,6 +123,7 @@ thread_local! {
     static SUBSONIC_ESCALATIONS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
     static NU_FLOOR_HITS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
     static RESID_SENTINELS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+    static ILLINOIS_CALLS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
     static ILLINOIS_EVALS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
     static ILLINOIS_EXHAUSTED: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
 }
@@ -144,6 +146,11 @@ pub mod counters {
     /// Residual evaluations inside [`try_illinois`], summed over every call. The ONLY thing that
     /// can see the convergence test being reordered ahead of `f(c)`.
     pub fn illinois_evals() -> u64 { ILLINOIS_EVALS.with(|c| c.get()) }
+    /// Calls to [`try_illinois`], summed over every root find on this thread.
+    pub fn illinois_calls() -> u64 { ILLINOIS_CALLS.with(|c| c.get()) }
+    /// `try_turbine_subsonic` failures, absorbed or escalated. Python counts the RAISE; the two
+    /// arms here partition it exactly, since every failure is one or the other.
+    pub fn subsonic_raises() -> u64 { subsonic_fallbacks() + subsonic_escalations() }
     /// Calls that ran out of iterations. Expected 0 — which is exactly why the exhaustion arm's
     /// `Ok(b)` is invisible to every value gate.
     pub fn illinois_exhausted() -> u64 { ILLINOIS_EXHAUSTED.with(|c| c.get()) }
@@ -158,6 +165,7 @@ pub mod counters {
             subsonic_escalations: subsonic_escalations(),
             nu_floor_hits: nu_floor_hits(),
             resid_sentinels: resid_sentinels(),
+            illinois_calls: illinois_calls(),
             illinois_evals: illinois_evals(),
             illinois_exhausted: illinois_exhausted(),
         };
@@ -166,6 +174,7 @@ pub mod counters {
         SUBSONIC_ESCALATIONS.with(|x| x.set(0));
         NU_FLOOR_HITS.with(|x| x.set(0));
         RESID_SENTINELS.with(|x| x.set(0));
+        ILLINOIS_CALLS.with(|x| x.set(0));
         ILLINOIS_EVALS.with(|x| x.set(0));
         ILLINOIS_EXHAUSTED.with(|x| x.set(0));
         c
@@ -178,6 +187,7 @@ pub mod counters {
         pub subsonic_escalations: u64,
         pub nu_floor_hits: u64,
         pub resid_sentinels: u64,
+        pub illinois_calls: u64,
         pub illinois_evals: u64,
         pub illinois_exhausted: u64,
     }

@@ -125,6 +125,29 @@ thread_local! {
     /// passed by value throughout: a `Cell` field would make the type neither `Copy` nor
     /// meaningfully `PartialEq`, which would change shipped code to hold a test number.
     static PSI_CALLS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+
+    /// [`ComponentMap::phi_max`]'s per-ARM tallies, added by phase 6 slice P on the same
+    /// reasoning as `PSI_CALLS` above.
+    ///
+    /// § 5.13 probe 1 measured that a rung-34 march reaches only two of the three arithmetic
+    /// arms and never a nonzero swirl amplitude — the `sigma == 0, l != 0` LINEAR arm is dead on
+    /// every grid the port sweeps. That is a claim about REACHABILITY, so no value key can carry
+    /// it: the arms are counted, the counts are dumped by `oracle/dump_spool.py`, and
+    /// `spool_oracle.rs` compares them. Order is `[flat5, quadratic, linear, swirled]`.
+    static PHI_MAX_ARMS: std::cell::Cell<[u64; 4]> = const { std::cell::Cell::new([0; 4]) };
+}
+
+/// Read AND RESET the [`PHI_MAX_ARMS`] tallies — `[flat5, quadratic, linear, swirled]`.
+///
+/// It resets because the oracle emits the census PER SECTION, and a section's counts are its
+/// own; `stage.rs::take_census`'s fragility applies unchanged (correct only while there is one
+/// consumer per binary).
+pub fn take_phi_max_arms() -> [u64; 4] {
+    PHI_MAX_ARMS.with(|c| {
+        let v = c.get();
+        c.set([0; 4]);
+        v
+    })
 }
 
 /// Read the [`PSI_CALLS`] tally — see its note. `u64` increments only: no float arithmetic, so
@@ -582,6 +605,19 @@ impl ComponentMap {
     /// spelling is `powp(x, 0.5)`.
     pub fn phi_max(&self, psi_floor: f64) -> f64 {
         let a = self.vsv * (1.0 + self.l);
+        PHI_MAX_ARMS.with(|c| {
+            let mut v = c.get();
+            v[if a != 0.0 {
+                3
+            } else if self.sigma == 0.0 && self.l == 0.0 {
+                0
+            } else if self.sigma == 0.0 {
+                2
+            } else {
+                1
+            }] += 1;
+            c.set(v);
+        });
         if self.sigma == 0.0 && self.l == 0.0 && a == 0.0 {
             return 5.0;
         }

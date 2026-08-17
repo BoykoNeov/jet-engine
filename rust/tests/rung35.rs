@@ -115,17 +115,27 @@ fn gate2_the_tt4_control_path_is_untouched() {
         );
     }
 
-    // Python re-runs ONE engine object before and after building a transient off it. The Rust
-    // constructor CONSUMES its engine, so the equivalent statement is that two design runs off
-    // two identically-built engines agree while a transient exists between them — which is the
-    // same claim about global state and a weaker one about aliasing. Recorded, not glossed.
-    let eng = design();
-    let before = eng.run(&flight(), 1.0).performance.specific_thrust;
-    let _ = SpoolTransient::new(design(), flight(), 1.0, ComponentMap::surge_flow());
-    let after = eng.run(&flight(), 1.0).performance.specific_thrust;
-    assert!(
-        (after - before).abs() < 1e-12,
-        "building a SpoolTransient must not perturb the design run"
+    // PYTHON'S SECOND HALF DOES NOT SURVIVE THE PORT AS AN ASSERTION, AND SAYING SO IS THE
+    // FAITHFUL MOVE. Python re-runs ONE engine object before and after building a transient off
+    // it, and that has content there because the constructor takes *that* engine and the objects
+    // are SHARED — `self.gas` **is** `_fs_engine.gas`, and an equilibrium gas carries a frozen
+    // station-4 mixture a constructor could reset. The Rust constructor CONSUMES its engine, so
+    // no transient can alias one a later `run` reads, and the guarantee is structural.
+    //
+    // The first draft transcribed the shape anyway — `eng.run()`, build a transient off a SECOND
+    // engine, `eng.run()` again — which cannot fail: nothing connects the two and `eng` is
+    // immutable. A gate that cannot fail is worse than an absent one, because a reader diffing
+    // the two suites sees a gate that looks the same and is not. What IS still testable is that
+    // a design run is reproducible across an intervening transient CONSTRUCTION AND USE, which
+    // is the global-state half of Python's claim; the aliasing half is the compiler's.
+    let before = design().run(&flight(), 1.0).performance.specific_thrust;
+    let s2 = SpoolTransient::new(design(), flight(), 1.0, ComponentMap::surge_flow());
+    let _ = s2.equilibrium(&flight(), 1200.0, None);
+    let after = design().run(&flight(), 1.0).performance.specific_thrust;
+    assert_eq!(
+        after.to_bits(), before.to_bits(),
+        "a design run must be BIT-reproducible across an intervening transient — the global-state \
+         half of Python's claim (the aliasing half is structural: the constructor consumes)"
     );
 }
 
