@@ -124,6 +124,7 @@
 //!   in every profile. That is the working contract, not a debugging convenience.
 
 pub mod bleed;
+pub mod combustor;
 pub mod components;
 pub mod engine;
 pub mod gas;

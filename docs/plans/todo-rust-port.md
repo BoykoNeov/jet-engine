@@ -5310,6 +5310,45 @@ and 180 test lines over 7 tests against slice P's 720/19 — roughly a third of 
 measured rather than reasoned. 2: `tests/rung37.rs`, the 7 Python gates. 3:
 `oracle/dump_combustor.py` + `tests/combustor_oracle.rs`, PyPy and CPython arms. 4: docs.
 
+##### STEP 1 — SHIPPED. **THE ARM SLICE P COULD NOT REACH IS WORTH 97 OF 517 VALUES HERE**
+
+`src/combustor.rs` (the port) + `oracle/dump_slice_q_smoke.py` + `tests/slice_q_smoke.rs`.
+**517 values bit-exact against PyPy on the first run**, over eleven sections chosen to touch every
+path once: the speed line read as `pi_c(m)` at both band endpoints, the back-pressure invert, the
+decoupled instant at three pressures around the steady one, the exhausting root find, the plenum
+equilibrium beside rung 35's, a 151-step plenum march on two shapes × two fill clocks, the soak
+closure at three metal temperatures **including one above the burner exit**, the soak instant, the
+two-loop soak equilibrium, a two-state march reaching BOTH arms of `t_accel`, and the both-OFF
+reduce. Predictions 6 (no `Hooks` table) and 10 (the reduce is BIT-identical, asserted in the test
+rather than only compared to Python) held.
+
+**FIVE DEFECTS INJECTED INTO THE SHIPPED CODE, AND ALL FIVE ARE VISIBLE** — slice N step 2's rule
+that a dump passing first try means no gate has been watched to fail:
+
+| injected defect | smoke values failing (of 517) | sections |
+|---|---|---|
+| the Illinois exhaustion arm returns `a` instead of `b` | **97** | C D E F + census |
+| the plenum power block copied from `_instant_tail` (per unit AIR) | **60** | C E + census |
+| `equilibrium_soak`'s two loops UNIFIED | **29** | I + census |
+| the back-pressure invert returns the RECOMPUTED `pi_c` | **16** | B C E F |
+| `dTm/ds` reads `Tt4_turb` instead of `Tt4_burner` | **9** | H I J + census |
+
+**THE TOP ROW IS THE SLICE'S LEADING RESULT AND IT INVERTS SLICE P's.** That is the identical
+injection slice P measured as **0 of 8** — invisible to 132 bit-exact values, because the arm was
+never reached. One rung later the same three lines decide 97 values. *A dead arm is a property of
+the GRID, not of the code*: slice P closed the blind spot with `counters::illinois_exhausted`
+rather than deleting the claim, and slice Q is what that counter was for. Note also which sections
+it does NOT touch — H, I and J, the heat-soak half, because the exhaustion is confined to
+`_plenum_pt4_at`.
+
+**AND THE INJECTION HARNESS'S FIRST SECTION LIST WAS WRONG.** It split the panic message at
+`"values differ:\n"` and took everything after, which on this console includes cargo's own
+interleaved output, so it reported `Compiling` and `Finished` as sections. Re-parsed to match only
+lines of the shape `key: rust <x> != py <y>`. The COUNTS were never affected — they come from the
+message header — but the section lists in the table above are the re-parsed ones. *Sixth instance
+in this port of a measuring pass finding the defect in the instrument, and the second in this
+slice.*
+
 ---
 
 ## 6. Named risks
