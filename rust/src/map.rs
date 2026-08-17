@@ -97,10 +97,12 @@
 //! VALUE in `rung41.rs` gate 1; what [`is_flat`](ComponentMap::is_flat) gates is the RULE, and its
 //! own gate discriminates in both directions (`vsv != 0` ⇒ false, `capacity != 0` ⇒ still true).
 //!
-//! `phi_max` is still not ported: it is called only by the rung-34/40/43 forward transient
-//! closures, in phase 6. **Its rung-53 early return is therefore owed with it** — Python's
-//! `phi_max` returns before the swirl term at `vsv == 0.0` exactly as `psi` does, and porting the
-//! body without that branch in phase 6 would be P3's failure one phase late.
+//! `phi_max` is **ported, by slice P** (phase 6), which is where its only callers arrive — rung
+//! 34's two forward compressor closures. **The deferral note this paragraph used to carry was
+//! WRONG about the shape**: it said `phi_max` "returns before the swirl term at `vsv == 0.0`
+//! exactly as `psi` does", and it does not — the swirl amplitude enters three coefficients and
+//! branches on none of them. See [`ComponentMap::phi_max`] for what was actually ported and how
+//! the note came to describe a control flow the source never had.
 
 use crate::components::choked_mfp;
 use crate::components::ram_recovery;
@@ -546,6 +548,52 @@ impl ComponentMap {
             return base;
         }
         base - self.vsv * (1.0 + self.l) * phi
+    }
+
+    /// The largest flow coefficient `phi > 1` at which `psi(phi) >= psi_floor` — i.e. at which the
+    /// speed line still does positive work (`tau_c > 1`). Beyond it the parabola-plus-linear
+    /// loading law goes non-physical, and rung 34's two forward compressor closures cap their
+    /// flow search here. `sigma = l = 0` (a flat map) means `psi == 1` always, so there is no
+    /// such edge and Python returns a large sentinel.
+    ///
+    /// **OWED TO PHASE 6 SINCE SLICE M, AND BOTH RECORDS OF THE DEFERRAL DESCRIBE A BRANCH THAT
+    /// DOES NOT EXIST.** `rung53.rs`'s ledger item 1 and this module's own note (see the module
+    /// header) each say the rung-53 repair here is an early return at `vsv == 0.0`, *"exactly as
+    /// `psi` does"*. [`psi`](Self::psi) does have one. **This does not.** The swirl amplitude
+    /// `A = vsv*(1 + l)` is linear in `phi`, so it shifts the SAME quadratic rather than adding a
+    /// term to it, and it enters in **three** places — the flat guard (`A == 0.0`), the
+    /// right-hand side (`1 - A - psi_floor`) and the linear coefficient (`l + A`) — none of them
+    /// a branch. The assertion quoted at the deferral is the rung-34 form (`rhs = 1 - 0.1`,
+    /// `lin = l`): correct at `vsv == 0.0`, wrong everywhere else, and **unobservable in slice P**
+    /// — `vsv == 0.0` at all 16 508 measured calls (§ 5.13 probe 1). Ported from the source, not
+    /// from the note.
+    ///
+    /// **THE LINEAR BRANCH IS DEAD ON EVERY GRID THE PORT SWEEPS AND IS SPELLED ANYWAY.** Of the
+    /// three arithmetic arms, slice P's dump reaches `flat5` 5 258 times and `quadratic` 11 250,
+    /// and `sigma == 0 with l != 0` **zero** times — no shipped `ComponentMap` constructor makes
+    /// that shape. A constant measured dead still has to be spelled right (slice N step 3), so
+    /// `rung34.rs::phi_max_reproduces_all_three_arms` drives all three directly rather than
+    /// through a march.
+    ///
+    /// `lin * lin` is a MULTIPLY, not `powp(lin, 2.0)` — the same split
+    /// `porting_rules.rs` holds and `psi` documents above; `.sqrt()` is the port of Python's
+    /// `** 0.5`, which is the OTHER half of that split and is `powp` everywhere else in the crate.
+    /// Here Python writes `(...) ** 0.5` on a non-literal exponent expression, so the faithful
+    /// spelling is `powp(x, 0.5)`.
+    pub fn phi_max(&self, psi_floor: f64) -> f64 {
+        let a = self.vsv * (1.0 + self.l);
+        if self.sigma == 0.0 && self.l == 0.0 && a == 0.0 {
+            return 5.0;
+        }
+        // solve  sigma*u^2 + (l + A)*u = 1 - A - psi_floor,   u = phi - 1 > 0
+        let rhs = 1.0 - a - psi_floor;
+        let lin = self.l + a;
+        let u = if self.sigma == 0.0 {
+            rhs / lin
+        } else {
+            (-lin + powp(lin * lin + 4.0 * self.sigma * rhs, 0.5)) / (2.0 * self.sigma)
+        };
+        1.0 + u
     }
 
     /// Compressor efficiency read off the island at `(flow coefficient, corrected speed)`.

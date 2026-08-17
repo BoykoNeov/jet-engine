@@ -4949,6 +4949,101 @@ LENGTH is a discrete output that varies by map shape, and the oracle emits it as
 10. Zero `slow` markers are earned: rungs 34/35/36 carry none in Python and the Rust marches are
     the same arithmetic 6–8× faster.
 
+##### STEP 1 — SHIPPED. **TWO OF FIVE INJECTED DEFECTS ARE INVISIBLE TO 132 BIT-EXACT VALUES**
+
+`src/spool.rs` (the port) + `ComponentMap::phi_max` + `tests/slice_p_smoke.rs`. **132 values
+bit-exact against PyPy on the first run**, over eight cells chosen to touch every path once: a
+choked equilibrium, a subsonic one, an off-equilibrium instant, a 21-step RK4 trajectory, rung
+35's fuel control, rung 36's margin and its compounding, rung 41's channels, all six `phi_max`
+shapes driven directly, and the forward/backward map inverse. Prediction 1 held; predictions 7
+(the inverse is exact) and 9 (rung 41's channels port) held; prediction 8 held — no `Hooks` table
+was needed in this module.
+
+**FINDING 1 — THE SMOKE DUMP PASSED FIRST TRY, SO EVERY GATE WAS WATCHED TO FAIL, AND TWO COULD
+NOT.** Slice N step 2's warning, taken as an instruction. Five defects were injected into the
+shipped code and the 132 values re-run:
+
+| injected defect | value gates failing (of 8) |
+|---|---|
+| the constructor takes `R31` instead of `R34` — rung 31's bisection on a rung-34 object | **5** |
+| `fa *= 0.5` dropped — plain regula falsi instead of Illinois | **6** |
+| the width test reads `\|c − b\|` (the new interval) instead of `\|b − a\|` | **6** |
+| **the convergence test moved BEFORE `f(c)` is evaluated** | **0** |
+| **exhausting `maxit` returns `a` instead of `b`** | **0** |
+
+The last two are invisible **and the port's own doc comment asserted they were not** — it said all
+three of the function's delicate details *"change the returned bits on cells that converge on the
+final pass."* They do not, and both fail the same way: the reorder returns the **identical** `c`
+and differs only in whether a residual is evaluated, and the exhaustion arm is **never reached**.
+They are COUNT properties, not value properties — slice N FINDING 6's shape arriving in the port's
+own scaffolding rather than in the physics. **The comment is corrected against the measurement,
+and the blind spots are closed rather than documented:** `counters::illinois_evals` and
+`illinois_exhausted` now instrument the loop, gated against PyPy counts measured by the same
+method Python measures its own (a counting copy wrapping the shipped call sites). PyPy's
+**227 / 403 / 1 344 / 199** reproduce on the first run, and re-injecting the reorder now fails
+**exactly one** gate — the count one.
+
+**FINDING 2 — THE HOOK IS DEAD ON THE SUBSONIC BRANCH, AND THAT IS WHY PREDICTION 2 IS A COUNT.**
+Of the eight value gates, the wrong-hook injection moves five — and the one it conspicuously does
+NOT move is the **subsonic equilibrium**. The reason is structural: `_instant_tail` solves the
+choked `(★)` geometry first, dispatches on the nozzle, and on the subsonic branch **re-solves
+`pi_t` from nozzle continuity**, discarding the choked-star answer entirely. So on a subsonic cell
+the table could be wired to anything at all. § 5.13's prediction 2 registered a firing COUNT
+rather than a value comparison for a different reason (slice N's unreachable hook); it turns out
+to be load-bearing for this one as well. **A hook can be simultaneously load-bearing and dead,
+depending on which branch the cell takes** — and the value oracle reports the second case as
+agreement.
+
+**FINDING 3 — `phi_max`'s DEAD ARMS ARE GATED DIRECTLY, AND THE GATE NEEDED A VACUITY GUARD.**
+Probe 1 measured that a rung-34 march reaches only two of the three arithmetic arms and never a
+nonzero `vsv`. Six shapes are therefore driven straight at the function — flat, two quadratics,
+the linear arm, and two swirled ones — and the gate ends by asserting the six values are
+**DISTINCT**, because six calls that happen to return one number would pass the bit comparison
+six times while testing one branch. Rung 55's `test_p6_verdicts_survive_the_work_split` precedent.
+
+##### STEP 2 — SHIPPED. **THE THREE RUNG SUITES, AND A REGISTERED PREDICTION CONFIRMED TIGHTER
+THAN PYTHON ASSERTS**
+
+`rung34.rs` (11 tests), `rung35.rs` (5), `rung36.rs` (9) — **all 19 of the Python gates port,
+none deferred**, plus three added by the port. Everything green on the first run; the four slice-P
+targets together run in **1.4 s**.
+
+**THE ROSTER, and it is symmetric in both directions.** Rung 34's eight gates, rung 35's four and
+rung 36's seven all land. Three tests exist here that do not exist in Python and are listed in
+each file's roster so a name diff reads correctly:
+`the_hook_table_fires_and_rung31s_does_not` (the firing count),
+`phi_max_is_read_at_both_flow_search_caps` (the cap is READ, not just correct), and
+`the_illinois_call_and_evaluation_counts_reproduce_pypys` (step 1's two blind spots).
+
+**PREDICTION 7 HELD, AND THE PORT ASSERTS IT 100 000× TIGHTER THAN PYTHON DOES.** Rung 34's gate 6
+says `solve_n(m, tau_c_forward(n, m)) == n` and Python's bar is `1e-9`. § 5.13 registered it as
+EXACT rather than tight, on the ground that slice J ported the inverse of this very equation.
+Measured worst residual over 4 shapes × 5 speeds × 4 flows: **inside 1e-14**. The Python bar is
+kept as the first clause and the tight one added beside it as a SECOND assertion, so a future
+loosening is visible in the diff rather than absorbed into a widened tolerance.
+
+**PREDICTION 9 DISCHARGED — `rung41.rs`'s DEFERRAL LANDS IN `rung36.rs`, NOT WHERE SLICE L FILED
+IT.** Slice L's ledger called `test_rung36_verdict_survives_but_its_mechanism_is_corrected` a
+`TwoSpoolTransient` gate and booked it to phase 6 on that basis; it is a SINGLE-spool gate (rungs
+34/36), which is why it discharges here rather than waiting for slice R. Slice L's verdict held
+while its noun was wrong — recorded at the time, and now closed. The ported gate asserts four
+things Python asserts in one: rung 36's verdict survives the decomposition, BOTH channels move,
+the speed-line channel thins monotonically all the way down, and at the reference throttle every
+channel collapses onto the shipped margin — that last clause being the anchor without which the
+decomposition would be a parallel arithmetic.
+
+**PREDICTION 10 HELD, MEASURED.** Python marks one of these 19 `slow` (rung 36's). The three Rust
+suites run in **1.35 s together**. Slice M's rule applied unchanged: port the gate, drop the
+marker, re-introduce `#[ignore]` only against a measured cost. Nothing here earns one.
+
+**ONE GATE COULD NOT BE PORTED AS WRITTEN, AND THE DIFFERENCE IS RECORDED AT THE GATE.** Rung 35's
+gate 2 re-runs ONE engine object before and after building a transient off it, to say the
+constructor does not perturb it. The Rust constructor CONSUMES its engine, so the equivalent
+statement is that two design runs off two identically-built engines agree while a transient exists
+between them. That is the same claim about global state and a weaker one about aliasing — written
+into the gate rather than glossed, because a reader comparing the two files will otherwise see a
+gate that looks the same and is not.
+
 ---
 
 ## 6. Named risks

@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 454e5108-5b41-4abd-b607-eac9932757b5
-  modified: 2026-08-12T17:30:05.620Z
+  modified: 2026-08-17T17:49:46.416Z
 ---
 
 On 2026-08-12 the user decided to rewrite the whole project in Rust. Python survives only as a
@@ -20,11 +20,12 @@ The bit-exactness fork was decided as **option B** (tolerance) but phases 0–2 
 **bit-equality** instead, because it was measured achievable — see [[rust-port-power-spelling]]
 for why that revision happened and what would justify falling back.
 
-**Phases 0–4 are COMPLETE, green, committed and pushed** (`rust/`, 397 tests) — phase 3 shipped
-as five slices A–E, phase 4 as three dependency slices F (25/26), G (27/28), H (29/30). Every
-oracle is 100 % bit-exact against PyPy. No further authorisation is needed *inside* an authorised
-phase. **The next re-decide point is NOW: phase 5 needs fresh authorisation**, and it is the one
-that contains the rung-61 multiple-inheritance diamond.
+**Phases 0–5 are COMPLETE, green, committed and pushed** — phase 3 shipped as five slices A–E,
+phase 4 as three (F/G/H), **phase 5 as seven (I·J·K·L·M·N·O), finished 2026-08-17**. Every oracle
+is 100 % bit-exact against PyPy. No further authorisation is needed *inside* an authorised phase.
+**PHASE 6 (the 15 transient rungs) was AUTHORISED 2026-08-17**; its pre-flight is
+[[rust-port-phase6-preflight]] and its slices are P–U. **The next re-decide point is before
+phase 7.**
 
 **Slicing by dependency is now the established shape of a phase**, and the slices are where the
 findings come from: five oracles at 100 % bit-exact and every finding produced instead by
