@@ -489,10 +489,11 @@ fn the_design_row_margins_tie_and_the_argmin_is_decided_by_the_last_bit() {
 /// and the sign change the bisection needs does not exist.
 ///
 /// The **clamped-root** arm is deliberately NOT reached here — § 5.10 (i) measured it at 1 firing
-/// in 40, and manufacturing it needs a root that exists whose march still clamps. It is booked in
-/// [`slice_n_deferrals_so_far`] and owed by step 4's oracle, where the dump grid produces it
-/// naturally. Written down rather than left silent, which is *a documented gate that doesn't
-/// exist* read the other way round.
+/// in 40, and manufacturing it needs a root that exists whose march still clamps. It was booked in
+/// [`slice_n_deferrals_so_far`] and step 4's oracle DISCHARGED it, from the firing's own
+/// arguments: `slice_n_oracle.rs::the_clamped_root_arm_is_reached_from_the_dump_grid`. Written
+/// down rather than left silent, which is *a documented gate that doesn't exist* read the other
+/// way round.
 #[test]
 fn the_speed_line_bracket_arm_returns_err_and_the_panicking_half_agrees() {
     let st = cell_a();
@@ -531,10 +532,14 @@ fn slice_n_deferrals_so_far() {
 
     // 2. Python's `assert 0 <= vsv_stages` — half UNREPRESENTABLE. `usize` cannot be negative,
     //    so only the `<= K` half survives as a runtime assert. It is live and gated below.
-    // 2b. `try_solve_n`'s CLAMPED-ROOT `Err` arm — the 1-in-40 of § 5.10 (i). The BRACKET arm is
-    //    gated above; this one needs a root that exists whose march still clamps, which the
-    //    step-4 dump grid produces naturally and a hand-built cell does not. OWED BY STEP 4, and
-    //    written here so it cannot read as covered in the meantime.
+    // 2b. `try_solve_n`'s CLAMPED-ROOT `Err` arm — the 1-in-40 of § 5.10 (i). **DISCHARGED BY
+    //    STEP 4**, in `slice_n_oracle.rs::the_clamped_root_arm_is_reached_from_the_dump_grid`:
+    //    the dump classifies each caught firing AT THE RAISE (the schedule's `except
+    //    AssertionError: break` swallows which arm it was) and carries the firing's
+    //    `(m, tau_c, eta_live)` plus its cell, so the gate rebuilds that stack — checked against
+    //    its own `tau_d`/`e_d` bits — and re-enters the arm directly. Both arms of P1's twin are
+    //    now executed. Left in the ledger with its outcome rather than struck, so a reader
+    //    following the BRACKET arm's note above finds where the other half went.
     // 3. Python's `_M_of_nu` range guard is LATENT-ONLY (worst `nu^2` on § 5.10's grid is 2.7 %
     //    of the limit) and lives in `map.rs`, shipped at step 1. Its `#[should_panic]` is owed by
     //    step 5 on a hand-built profile, not reachable from any stack this file builds.
