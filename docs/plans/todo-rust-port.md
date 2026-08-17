@@ -4846,6 +4846,109 @@ re-introduce `#[ignore]` only against a MEASURED Rust cost. Phase 6 is the first
 might genuinely be earned (4 000-step marches inside sweeps), so measure rather than assume in
 either direction.
 
+### 5.13 SLICE P (rungs 34/35/36, `SpoolTransient`) — PRE-REGISTERED, five probes MEASURED first
+
+The port's first ODE. `SpoolTransient` (720 lines, `engine.py:1292–2010`) subclasses rung 32's
+`MapMatcher`, replaces the steady shaft balance with a FORWARD closure, and marches
+`dν/ds = Φ(ν, Tt4(s))` under RK4. Rung 35 re-controls the same plant on FUEL (`Tt4` becomes an
+output); rung 36 hangs a read-only surge line beside it. Three Python suites, **19 tests**, zero
+`slow` markers.
+
+`M:\claud_projects\temp\rust-phase6\probe_p.py`, five arms, run over seven map shapes × six
+throttles plus fifteen marches.
+
+**PROBE 1 — `ComponentMap::phi_max`'s DEFERRAL NOTE DESCRIBES A CONTROL FLOW THAT DOES NOT
+EXIST.** The symbol is owed to this slice (`rung53.rs` item 1 / `map.rs:101`) because rung 34's
+two compressor closures are its only callers. Both records say the rung-53 repair is an **early
+return at `vsv == 0.0`, "exactly as `psi` does"**. Read: `psi` does have one (`engine.py:855`);
+**`phi_max` does not.** It folds the swirl amplitude `A = vsv·(1+l)` into the *coefficients* —
+the flat guard becomes `sigma == 0 and l == 0 and A == 0`, `rhs = 1 − A − psi_floor`, and the
+linear coefficient is `lin = l + A`, so `A` appears in three places and none of them is a branch.
+The quoted assertion is the rung-34 form (`rhs = 1 − 0.1`, `lin = l`) — **correct exactly where
+slice P lives and wrong everywhere else.** Copying it would have shipped a `phi_max` with a
+spurious early return, observationally identical on every call this slice makes and wrong for
+rung 53. *Slice O's lesson with the failure mode moved: the deferral was placed where the next
+slice would read it, and its CONTENT was the defect.*
+
+Measured: **16 508 calls, `vsv == 0.0` at every one**, and only two of the three arithmetic
+branches live — `flat5` (σ = l = 0 ⇒ 5.0) **5 258**, `quadratic` **11 250**, the `sigma == 0,
+l ≠ 0` **linear** branch **0**. Six distinct return values over six `(σ, l)` pairs. So the dead
+branch and the dead `A` both have to be SPELLED right against a Python that never exercises them
+here — slice N step 3's rule, third instance.
+
+**PROBE 2 — THE `_solve_turbine` OVERRIDE IS LOAD-BEARING, AND THE SOURCE'S OWN TOLERANCE CLAIM
+IS 1.7× LIGHT.** This is the name § 5.3's census made phase 5 ship hookable; slice P is what
+finally fires it. `engine.py:1322` says the Illinois override finds the *"same root as the
+inherited bisection to ~1e-11"*. Measured over **14 002 paired calls** (both solvers run on
+identical inputs):
+
+| quantity | max relative | median | bit-identical |
+|---|---|---|---|
+| `pi_t` | **8.950e-12** | 1.069e-12 | 8 / 14 002 |
+| `tau_t` | **1.707e-11** | 4.477e-13 | 187 / 14 002 |
+
+The claim holds for the ROOT and is exceeded by the quantity DERIVED from it — `tau_t` comes back
+1.9× outside the stated band, because `_tau_t_of_pi_t` amplifies. Rung 31's bracket never failed
+where rung 34's succeeded (0 of 14 002), so the two solvers agree on the domain as well as the
+root. **The porting consequence is a discriminator:** calling `r31_solve_turbine` from a rung-34
+body would move `pi_t` by ~9e-12, which the ORACLE sees and the SUITE does not — rung 34's own
+reduce gates are written at `1e-8`. Registered as a gate in its own right, not left to the dump.
+
+**PROBE 3 — THE ASSERT CENSUS: FIVE SITES FIRE, AND THE RAREST ONE IS THE ESCALATION GUARD.**
+Slice I's rule (*an assert becomes fallible iff it is reachable from inside a bracket march's
+`resid`*) applied to rung 34's four `try` scopes. Firings, deduplicated to the raising frame:
+
+| site | fires | reached from |
+|---|---|---|
+| `_close_compressor:1390` — the flow bracket | 1 312 | `_find_equilibrium_nu`'s march-in, `integrate`'s step |
+| `_solve_f:500` — the matcher's `f` fixed point | 1 194 | inherited, slice I already fallible |
+| `components.py apply:683` — the nozzle | 983 | inherited, slice I already fallible |
+| `_turbine_subsonic:1432` — the subsonic bracket | 187 | `_instant_tail`'s fallback `try` |
+| **`_instant_tail:1488` — the `M9 > 0.985` escalation** | **2** | nothing catches it |
+
+**Both arms of the subsonic fallback are LIVE on this grid** — 185 of the 187 bracket failures are
+the legitimate `M9 → 1` boundary and get absorbed, and **2 escalate**, which is the branch the
+source's comment says must raise rather than hide under a *"subsonic"* label. A port that turned
+that guard into a silent fallback would pass every value gate. Two firings out of ~16 000 instants
+is the whole detector, so the dump carries the escalation as a COUNT.
+
+**PROBE 4 — TWO CLAMPS LIVE, ONE DEAD.** `_interp`'s low clamp fires **15**, its high clamp
+**34**, interior **2 612** — both edges exercised, so the ported `_interp` is gated three ways.
+`integrate`'s `nu = max(0.2, …)` sub-idle floor: **0 hits** in every march run here. Dead, spelled
+anyway, and recorded so a later slice does not read its absence as absence of the code.
+
+**PROBE 5 — THE MARCHES TERMINATE EARLY, AND ONLY ON THE SPOOL-DOWN.** `except AssertionError:
+break` is not decoration: of fifteen marches, the three accel ramps and the fuel ramp run to full
+length on every shape, and the **fuel-cut spool-down stops early on two shapes of three** —
+`surge_flow` at 66 of 161 steps, `flat` at 81 of 161, `flow_dominated` full. So the trajectory
+LENGTH is a discrete output that varies by map shape, and the oracle emits it as a key.
+
+**THE TEN PREDICTIONS, registered before any Rust is written:**
+
+1. The oracle comes back **100 % bit-exact against PyPy** — the RK4 has no adaptive control, so
+   it carries accumulation order and no stopping rule (§ 4.3's precedent), and every solver under
+   it is an Illinois already proven exact in slices I/J.
+2. `r34_solve_turbine` fires **> 0** and `r31_solve_turbine` fires **0** on a `SpoolTransient`
+   march — the count, not the values, because slice N FINDING 3 caught a hook that compiled and
+   was never reached.
+3. Injecting `r31_solve_turbine` in rung 34's body moves **> 0 oracle keys and 0 rung-suite
+   gates**, at ~9e-12 — probe 2's discriminator, measured as a detector.
+4. `phi_max`'s **linear** branch stays at 0 firings across the whole dump, and the `A ≠ 0` path
+   stays unreachable — both gated against Python directly rather than through the march.
+5. The escalation guard fires **exactly 2** times on the pre-registered grid, and the fallback
+   **185**; a port that swaps them changes no value key.
+6. Trajectory LENGTH differs by map shape on the spool-down and is bit-reproduced.
+7. Rung 34's gate 6 (`solve_n(m, tau_c_forward(n, m)) == n`) is **exact**, not merely tight —
+   slice J ported `solve_n` and this is its exact inverse. If it is not exact, the reason is
+   slice J's mis-spelled-square shape and it gets its own gate.
+8. `SpoolTransient` and `CombustorTransient` need **no `Hooks` table** — § 5.12's census says
+   nothing downstream overrides a name rung 34 calls on `self`. If slice P finds one, § 5.12's
+   arm 1 is wrong and the phase table's slice split moves.
+9. The rung-41 gate deferred to here (`test_rung36_verdict_survives_but_its_mechanism_is_corrected`,
+   `surge_margin_channels`) ports whole; `rung41.rs`'s roster count moves 10 → 11.
+10. Zero `slow` markers are earned: rungs 34/35/36 carry none in Python and the Rust marches are
+    the same arithmetic 6–8× faster.
+
 ---
 
 ## 6. Named risks
