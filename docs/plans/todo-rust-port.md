@@ -11,7 +11,16 @@ discharged, and the phase's real structural requirement is a FIVE-name virtual-d
 one of them claimed by PHASE 6 — plus one live constant shadow. **SLICE I (rungs 31/33) IS
 SHIPPED — 3951/3951 bit-exact; 415 Rust tests in all** (§ 5.5); it also carries the port's first
 fallible paths and its first virtual hook, and § 5.4 (i) records how the fallible design's
-first answer was wrong. **The next authorisation point is before phase 6.**
+first answer was wrong. **PHASE 5 IS COMPLETE** — seven slices, I·J·K·L·M·N·O, the last of them
+shipping rung 61's diamond on 2026-08-17.
+**PHASE 6 (the 15 transient rungs) WAS AUTHORISED 2026-08-17.** Its **PRE-FLIGHT (§ 5.12) came
+first and is DONE**: the § 5.3 census run in the opposite direction — phase 6 as the ancestor
+side — found **six names crossing into phase 7**, all on the two-spool chain, zero constant
+shadows, and no sibling dispatch owed. It also settled two things the slice plan cannot discover
+later: `integrate_fuel` is ported **entire** (rungs 46–52 are keywords on one method, not seven
+classes), and the `min`-select hazard the phase table's "low-risk" label would have missed is
+**refuted by measurement** — the legs never contend, so the discrete content is the arming
+predicates, not an argmin. **The next authorisation point is before phase 7.**
 The architecture is settled by measurement (§ 1–2); the three forks were answered on 2026-08-12
 (§ 9); phases 0–2 were then built and gated (§ 4.1, § 4.2). Phase 1 was the first deliberate
 stopping point because it is where the arithmetic risk concentrates; phase 2 was authorised
@@ -1637,7 +1646,7 @@ next starts. The tree is green at every phase boundary; there is no big-bang cut
 | **3** | NOx & mixing, rungs 7–24. **RISK-BEARING — not bulk.** These are phase 1's largest *consumer*: every one rides the equilibrium solve and `Kp = exp(−ΔG°/RuT)`, and their findings are *shapes* (the bell's peak, the minimum pinned at `C_opt`, monotone-vs-turns-back-up) that a last-digit shift in an exponential can move. Deliberately placed straight after phase 1 as the **first real test of whether the transcendental arithmetic holds**. **DONE — slices A (7/8/9/19), B (10/11/12/20), C (13/15/16/18/21), D (22/23/24) and E (14/17) all shipped**, § 4.3–4.10; the slices are grouped in § 4.3 by DEPENDENCY, not by number | 4–6 | ✅ slice A: `nox_oracle.rs` (**1806/1806** bit-exact vs PyPy on 22+22 distinct solver roots) + 4 rung suites (43 tests) · ✅ slice B: `quench_oracle.rs` (**2507/2507**, on 165 distinct trajectory roots) + 4 rung suites (39 tests), one location key NARROWING a shipped claim · ✅ slice C: `pdf_oracle.rs` (**2448/2448**, both quadrature branches asserted exercised) + 5 rung suites (59 tests); the source's own mean-preservation guard found to have an `n_quad` FLOOR, and the port gates the REJECTION as well as the acceptance (§ 4.5) · ✅ slice D: `spatial_oracle.rs` (**462/462**, incl. 28 DISCRETE keys) + 3 rung suites (43 tests); TWO source claims of exactness CORRECTED — rung 24 applies an operation inside an accumulation and removes it outside, twice (§ 4.8) | · ✅ slice E: `nozzle_oracle.rs` (**513/513**, incl. 24 DISCRETE keys) + 2 rung suites (24 tests) + 3 gates `rung20.rs` had deferred; a THIRD claim of exactness corrected (the frozen reduce is algebraic only, and its floor is the entropy ROUTE, not the bisection's stopping rule) and rung 17's firing band edge LOCATED — past it the bulk margin goes dormant while the per-pocket one RISES (§ 4.10) |
 | **4** | Nozzle & turbine marches, rungs 25–30 — own convergence behaviour, hence separate. ~~**AUTHORISED 2026-08-12; three DEPENDENCY slices**~~ **DONE** | 2–3 | ✅ slice F: `march_oracle.rs` (**912/912** bit-exact vs PyPy, on 49 distinct march exit roots) + 2 rung suites (32 tests) in a new `march.rs`; the FOURTH "exactly"-class claim and the FIRST to survive — because it compares a COPY, not a rederivation (§ 4.12) · ✅ slice G: `no_march_oracle.rs` (**776/776**, and only 8.0 % CPython-identical — the sharpest dump in the port) + 2 rung suites (28 tests); slice F's discriminator made TWO pre-registered predictions and both HELD (§ 4.14) · ✅ slice H: `tt_oracle.rs` (**270/270**) + 2 rung suites (14 tests); RATIO ≠ ENERGY measured ANTI-correlated, and the one slice not pre-registered — all three of its guessed census bars were wrong (§ 4.15) |
 | **5** | ~~Steady matchers — rungs 31–33, 38–39, **41**, 42, 53–56, 61~~ **DONE 2026-08-17, seven slices (I·J·K·L·M·N·O).** ~~**Contains the diamond** (§ 6)~~ **PRE-FLIGHT DONE (§ 5.3); AUTHORISED 2026-08-13.** The diamond is discharged; the phase's structural content is the **five-name virtual set** (`_solve_turbine` — claimed by PHASE 6 — `match`, `_hp_eta_loop`, `_lp_eta_loop`, `at_setting`) and `_INC_MAX`'s live shadow | 4–6 | ✅ slice I (rungs 31/33): `offdesign_oracle.rs` (**3951/3951** bit-exact vs PyPy, incl. **961 discrete** keys) + 2 rung suites (17 tests) in a new `matcher.rs`; the crate's FIRST fallible paths, its FIRST virtual hook, and the two rungs re-gated as counts over BIT PATTERNS (§ 5.5) · ✅ slice J (rung 32): `map_oracle.rs` (**7 252/7 252**) + `rung32.rs`; the oracle found BLIND to a mis-spelled square, so the rule is gated directly (§ 5.6) · ✅ slice K (rungs 38/39): `two_spool_oracle.rs` (**11 812/11 812**, and only 46.3 % CPython-identical) + 2 rung suites (19 tests) in a new `two_spool.rs`; all six predictions held, and the CPython arm REFUTED an assertion inherited from slice I — the pass-count instability needs a SOLVER-derived property, not the equilibrium gas (§ 5.7) · ✅ slice L (rungs 41/42): `slice_l_oracle.rs` (**25 458 keys**) + 2 rung suites (12 + 12 tests) in a new `bleed.rs`, plus the crate's first FALLIBLE TWINS; nine predictions all settled, and a claim the SHIPPED SOURCE carried found wrong (§ 5.8) · ✅ slice M (rungs 53/54): `slice_m_oracle.rs` + 2 rung suites (24 + 25 tests) in a new `stator.rs`, all six steps shipped; its probe **OVERTURNED slice J's `solve_n` zero-firing verdict**, and a bar asserted in a shipped doc comment was refuted by a third of the dump (§ 5.9) · ✅ **PHASE 5 COMPLETE** — the last two slices were N (55/56) and O (61), sized in § 5.9; **N is PRE-REGISTERED (§ 5.10), 10 predictions**, and its probes **REFUTE § 5.9 (c) twice** — reading a method's body cannot see its state's CARRIER — **steps 1–4 SHIPPED** (step 1: P2 held at 535 names, `diff` empty, and the ±1 that would not reconcile was slice I's last `#[ignore]` surviving a rule slice M had already retired · step 2: `stage.rs` + `slice_n_smoke.rs`, **1 337 keys bit-exact first run** over seven enumerated cells, and it **CORRECTS § 5.10 (iii)** — `_P_FLOOR`'s deadness is a DERIVED threshold `e > 1.001` in the two floor constants, not a property of the sweep · step 3: `StageStackCore` + `R55`/`R55_TWO`, and the carrier lesson RECURRED — a FOURTH gated-code edit, at step 3, in a file step 1 never opened, because the plan asked what carrier `at_setting` needs and never what carrier the EFFICIENCY-LOOP hook needs; plus an `_INC_MAX` shadow § 5.3's pre-flight had called correctly and the porting slice mis-spelled · step 4: `slice_n_oracle.rs`, **72 520 keys bit-exact first run** + a 5 649-key equilibrium arm and a 41 560-key CPython one, and § 5.10's own censuses turned out to be measured on TWO grids — (i)/(iv) reproduced to the firing, (iii)/(vi) came from a 240-cell probe sweep, so the census is EMITTED and compared rather than restated; the CPython arm's *discrete → bits* tier had to SPLIT, because all 520 interpreter flips are argmin indices at the design throttle) |
-| **6** | Transients — rungs 34–37, 40, 43–52 (the fuel-side limiter family) | 4–6 | per-rung tests pass |
+| **6** | Transients — rungs 34–37, 40, 43–52 (the fuel-side limiter family). **AUTHORISED 2026-08-17; PRE-FLIGHT DONE (§ 5.12).** The phase's structural content is a **six-name virtual set** — `integrate_fuel`, `_close`, `_close_fuel`, `_surge_fuel`, `_instant_tail`, `_powers` — **every one of which crosses into phase 7**, so there is no phase-6-internal hook and the `Hooks` table appears at slice R, not P. Six slices, ordered by `_degenerate`: **P** (34/35/36 `SpoolTransient`) · **Q** (37) · **R** (40/44) · **S** (43/45, `integrate_fuel` ENTIRE) · **T** (46/47/48 gates) · **U** (49/50/51/52 gates). The `4257–4506` object block spans two phases — `IncidenceLimiter` is rung **60** | 4–6 (**light** — 156 tests over 15 files, and phase 3 took five slices for 204) | per-rung tests pass |
 | **7** | **The ladder, rungs 57–60 and 62–84** — the `Hooks` table from § 2, one module per rung. (**61 is PHASE 5's**, not this phase's — it is the steady `StatorBleedMatcher`, and it was double-listed here until the slice-K audit) | 5–8 | 27/27 reduce-to-prior bit-exact |
 | **8** | `main.py` replacement; adjudicate the fragile rungs; re-anchor the fingerprint; **delete the Python** | 2–3 | full suite green on Rust alone |
 
@@ -4699,6 +4708,143 @@ Three things follow, and the third is the one worth carrying:
 dispatched sibling keeps `bleed = 0.10` and keeps rung 42's inner table — because § 5.3 item 7
 measured what the failure looks like: 13–15 % on `φ` and `N`, **0.1 % on thrust**. Every headline
 number a value gate would look at stays plausible.
+
+### 5.12 PHASE 6 PRE-FLIGHT — the census in the OTHER direction, MEASURED
+
+**AUTHORISED 2026-08-17** ("work on Phase 6 (the 15 transient rungs)"), which is the fresh
+authorisation § 5's row 5 said was owed before this phase.
+
+Phase 5's pre-flight (§ 5.3) swept with phase 5 as the *descendant* side and found **one** name
+crossing forward. Phase 6 is the mirror at ten times the size and the roles are swapped: **every
+class in phase 7 descends from `TwoSpoolFuelTransient`.** So the same sweep is run again with the
+phase-6 set as ANCESTORS and all 58 classes opened on the descendant side — § 5.3's second
+widening, applied to the phase that widening was *about*.
+
+**THE FIRST RUN OF THE CENSUS WAS WRONG, AND THE ERROR IS ONE THE PHASE-5 SWEEP COULD NOT MAKE.**
+It asked *"is this name redefined by any class descending from ANY phase-6 class"* and returned
+**32** names. But `SpoolTransient` (single-spool) and `TwoSpoolFuelTransient` (two-spool) are
+**siblings**, not a chain — a same-named method on one is not an override of the other, and 26 of
+the 32 were exactly that. Phase 5's set had one root, so the bug had nowhere to appear. Re-scoped
+so an override must be a class whose MRO contains *the ancestor that makes the call*:
+
+| name | called on `self` by | sites | overridden by |
+|---|---|---|---|
+| **`integrate_fuel`** | `SpoolTransient.ramp_excursion_fuel`, `TwoSpoolFuelTransient.{ramp_excursion_fuel, _fuel_ramp_march}` | 2 | **11 phase-7 classes** (`LaggedBleedTransient` … `SensedCapTransient`) |
+| **`_close`** | `TwoSpoolTransient.{_instant, equilibrium}` | 2 | 4 (`ScheduledStatorTransient`, `ScheduledBleedTransient`, `LimitedBleedTransient`, `LaggedBleedTransient`) |
+| **`_close_fuel`** | `TwoSpoolFuelTransient._instant_fuel` | 1 | the same 4 |
+| **`_surge_fuel`** | `TwoSpoolFuelTransient.{integrate_fuel, _integrate_fuel_lagged, _integrate_fuel_asym}` | 3 | `ScheduledStatorTransient` |
+| **`_instant_tail`** | `TwoSpoolTransient._instant`, `TwoSpoolFuelTransient._instant_fuel` | 2 | `ScheduledBleedTransient` |
+| **`_powers`** | `TwoSpoolTransient.equilibrium` | 1 | `ScheduledBleedTransient` |
+
+**SIX names, all on the two-spool chain, and every one of them CROSSES INTO PHASE 7** — there is
+not a single phase-6-internal hook. `SpoolTransient` and `CombustorTransient` need **none**:
+nothing downstream inherits from them (`CombustorTransient` has 0 subclasses, `SpoolTransient`
+has 1 and it is `CombustorTransient` itself, which overrides nothing that rung 34 calls on
+`self`). So slices P and Q ship as plain `struct` + `impl`, and the `Hooks` table appears at
+slice R.
+
+**THE OTHER THREE ARMS, EACH MEASURED RATHER THAN ASSUMED:**
+
+- **Template-method hazard (§ 5.3 arm 5): ABSENT, 0 sites.** No phase-6 body reads a `self.X`
+  that its own MRO does not supply.
+- **Constant shadows (the `_INC_MAX` shape): 0 pairs.** No descendant of any phase-6 class
+  redefines a constant that class declares, and no phase-6 class shadows a phase-5 one. Four
+  class constants ARE read off `self` inside phase-6 bodies and must be per-cell parameters
+  rather than literals on the same rule: `_EQ_MAX = 80`, `_EQ_TOL = 1e-12`, `_N_TOL = 1e-12`,
+  `_PHI_FLOOR = 0.3`.
+- **Sibling-receiver dispatch: live, but entirely PHASE-7-INTERNAL.** Phase 6 defines no
+  `at_*` constructor at all — `at_lever`/`at_stator` are rung 57's and below. Two overridden
+  names *are* invoked on a sibling result (`_stator_march` at 17 sites, `equilibrium` at 2),
+  and both callers are phase-7 classes. **Nothing is owed by phase 6 here**, which is the one
+  arm where phase 5 was the harder case.
+
+**THE SCOPE LIST, ENUMERATED — and the 4257–4506 object block spans TWO phases.** Slice K's audit
+found rung 41 in no phase and rung 61 in two, on the lesson that *a scope list is a claim about a
+SET and nobody had ever counted*. Counted here: five objects sit in that block, and the middle
+one is not phase 6's.
+
+| object | line | rung | phase |
+|---|---|---|---|
+| `AccelSchedule` | 4257 | 48 | **6** |
+| `SurgeLimiter` | 4304 | 49 | **6** |
+| `IncidenceLimiter` | 4349 | **60** | **7** |
+| `_release_weight` | 4426 | 51 | **6** |
+| `AsymmetricLag` | 4454 | 52 | **6** |
+
+**RUNGS 46–52 DO NOT PARTITION THE WAY EVERY PRIOR SLICE DID, AND THE SOURCE SETTLES IT.** Every
+slice so far was *a class*. These seven are **keyword arguments on one method**: `integrate_fuel`
+(4834–5029) plus the two bodies it dispatches to, `_integrate_fuel_lagged` (5030) and
+`_integrate_fuel_asym` (5105). A slice-per-rung would write partial bodies that never existed in
+Python, and each rung's reduce contract is *`X=None` ⇒ the prior rung bit-for-bit* — a claim about
+the WHOLE body, testable only once it is whole. **So `integrate_fuel` is ported ENTIRE in one
+slice, with all seven legs, and only the GATES are sliced.** Decided here, not discovered at
+slice T.
+
+**THE SLICE ORDER IS FORCED BY `_degenerate`, not chosen.** `TwoSpoolTransient.__init__` (3416)
+constructs a `SpoolTransient` as `self._degenerate` when `lp_disabled`, and both
+`TwoSpoolFuelTransient.integrate_fuel` (4961) and `.equilibrium_fuel` (4794) delegate to it. The
+single-spool transient is therefore a *component* of the two-spool one, not a parallel branch.
+
+| slice | rungs | class | depends on |
+|---|---|---|---|
+| **P** | 34, 35, 36 | `SpoolTransient` | phase 5 slice I/J (`MapMatcher`, the `_solve_turbine` hook) |
+| **Q** | 37 | `CombustorTransient` | P |
+| **R** | 40, 44 | `TwoSpoolTransient` | P (`_degenerate`), slice K |
+| **S** | 43, 45 | `TwoSpoolFuelTransient` — the whole `integrate_fuel` | P, R |
+| **T** | 46, 47, 48 | gates only: governor, `τ_gov`, `AccelSchedule` | S |
+| **U** | 49, 50, 51, 52 | gates only: `SurgeLimiter`, `s_off`, `τ_rel`, `AsymmetricLag` | S |
+
+**THE ARITHMETIC RISK WAS PREDICTED IN THE WRONG PLACE, AND THE PROBE REFUTED IT.** The phase
+table calls phases 4–7 *"grinding but low-risk"*; the one shape that would break that is a
+`min`-select inside an RK4 march, because a last-bit difference there does not drift — it flips
+which leg is authoritative and the flip propagates for every remaining step. `der` (4972) collects
+up to three caps and applies `min(caps)`, so the prediction was that the oracle must dump an
+argmin index (slice N's FINDING 6, one level up). **Measured over 78 cases** — ramp rate
+{0.15, 0.5, 2.0} × redline {none, 1480, 1420} × accel margin {none, 0.05, 0.15} × φ floor
+{none, 0.75, 0.77}, `M:\claud_projects\temp\rust-phase6\probe_minselect2.py`:
+
+**not one `der` in any case had two live caps.** 0 contested selections out of ~600 000. The
+legs never contend, so `min(caps)` is never a comparison and there is no argmin to flip. The
+discrete content is one level down, in the two **arming predicates** — `i["Tt4"] > Tt4_max`
+(4991) and `c < mf` (4997) — each evaluated in every RK sub-step. Those are what the oracle
+must emit, as a per-leg decision sequence, not an index.
+
+**AND THE CPython ARM SAYS NOTHING YET, WHICH IS ITSELF THE FINDING.** Dumped both decision
+sequences and the full trajectory bits over six armed configurations and diffed CPython 3.14
+against PyPy: **9 376 keys, 100 % identical** — no arming flip, no trajectory bit. Next to slice
+G's 8.0 % and slice K's 46.3 % that reads as a clean result, and it is not one: the probe runs a
+**CPG** gas, whose property calls are closed-form, so there is almost nothing for the two
+interpreters to disagree about. **The CPython arm is only a detector on the reacting/equilibrium
+gas**, and slice S owes that measurement before it can claim the arming decisions are stable.
+Recorded now so the 100 % is not quoted later as coverage it does not have — *an oracle cannot
+see a missing gate*, applied to the instrument instead of the gate.
+
+**THE DEFERRAL INBOX, COLLECTED ONCE AND ASSIGNED.** Six items are owed to this phase; each is
+booked to the slice that can discharge it, so none ships orphaned:
+
+| owed item | recorded at | slice |
+|---|---|---|
+| `test_reduce_transient_untouched_by_surge_line_bit_for_bit` | `rung41.rs` roster #2 | **R** (rung 40) |
+| `test_rung36_verdict_survives_but_its_mechanism_is_corrected` | `rung41.rs` roster #12 | **P** (`SpoolTransient.surge_margin_channels`, single-spool 34/36) |
+| `ComponentMap::phi_max` **and its rung-53 early return** | `rung53.rs` item 1, `map.rs:101` | **P** (rung 34's forward closures are its only reader) |
+| `test_cycle_untouched_transient_ladder_…_unstacked` | `rung55.rs` item 5, `stage.rs:870` | **S** (needs `TwoSpoolFuelTransient`) |
+
+Slice O's lesson applies to every deferral this phase *creates*: **write it where the next
+slice's compiler and tests will hit it**, not only into a paragraph — what reached slice O was a
+panic with a backtrace, and the note that had predicted it correctly was read second.
+
+**REPRESENTATION, SETTLED ONCE.** Schedules (`fuel_schedule`, `schedule`, the internal `sched`
+closures at 3828/5295) are all `f64 -> f64` closures capturing local values; they become
+`&dyn Fn(f64) -> f64`. `_closer(self, method, *args)` (10041) is phase 7's and forwards varargs —
+**not** phase 6's problem, and it is flagged here only so slice S does not design for it.
+
+**SIZING, HONESTLY.** ~3 540 source lines and 5 036 test lines over **156 Python tests** in 15
+files. Phase 3 was 2 745 lines / 204 tests and took five slices; phase 5 was seven. **The table's
+"4–6 sessions" is light for six slices** — say so rather than discover it. Nine of the 156 tests
+carry `slow` (rungs 37, 40, 46, 52); slice M's rule stands — port the gate, drop the marker,
+re-introduce `#[ignore]` only against a MEASURED Rust cost. Phase 6 is the first phase where one
+might genuinely be earned (4 000-step marches inside sweeps), so measure rather than assume in
+either direction.
 
 ---
 
