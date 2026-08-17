@@ -5156,6 +5156,162 @@ own paperwork.
 
 ---
 
+### 5.14 SLICE Q (rung 37, `CombustorTransient`) — PRE-REGISTERED, four probes MEASURED first
+
+Rung 37 splits rung 34's one bundled concession ("no combustor volume-filling, no heat soak … they
+do not change the `r` framing") into two clocks that fall on opposite sides of `tau_spool`. A
+**PLENUM** makes `pt4` a state and CONFIRMS the concession; a **HEAT-SOAK** metal temperature `Tm`
+is a genuine second state and CORRECTS it. `CombustorTransient` (447 lines, `engine.py:2012–2396`,
+14 methods) subclasses `SpoolTransient`; one Python suite, **7 tests**, one of them `slow`.
+
+`M:\claud_projects\temp\rust-phase6\probe_q.py`, `probe_q2.py`, `probe_q3.py` — four arms over
+three surge shapes × the gate grids.
+
+**PROBE 1 — `equilibrium_soak` CONTAINS THE SAME FIXED-POINT LOOP TWICE AND THE TWO COPIES DO NOT
+AGREE.** `resid`'s inner loop (2296–2305) sets `Tm = inst["Tt4_burner"]` on the pass that
+converges, *before* breaking; the outer loop (2307–2312) breaks **without** that line. So the
+residual the root find sees is evaluated one fixed-point update ahead of the instant the method
+returns. Measured over 6 cells, unifying them (the outer loop given the inner's terminal update):
+
+| quantity | worst move |
+|---|---|
+| `nu` | **0.000e+00 — bit-identical** |
+| `pi_c` | 3.098e-12 |
+| `Tt4` | 9.767e-12 |
+| `\|dTm\|` at the terminal pass | 1.190e-07 K |
+
+`nu` cannot move because the outer loop sits **downstream of the root find**. Gate 4's bar is
+`1e-9` relative, three orders above the largest of these. Worst outer pass count is **8** against
+the `range(60)` cap, and the initial guess is a bare literal `Tm = 1500.0` at both sites — not
+`Tt4_lo`, not the design `Tt4`. *This is a duplication the source does not argue for and is not
+even identical; it is ported as two written-out loops with the difference stated at the site.*
+
+**PROBE 2 — THE ILLINOIS EXHAUSTION ARM IS THE DOMINANT PATH HERE, AND SLICE P SHIPPED IT AS
+UNREACHABLE.** `_plenum_pt4_at` (2172) passes `tol=self._N_TOL=1e-12` as an **absolute** bracket
+width on a `pt4` of order `1e5` Pa — seventeen decades below the values it brackets. Attribution
+by call site, `probe_q2.py`:
+
+| site | calls | residual evals | **exhausted `maxit`** |
+|---|---|---|---|
+| `_plenum_pt4_at`'s `bal` | 109 | 10 359 | **103** |
+| `_compressor_from_backpressure`'s invert | 10 918 | 93 939 | 0 |
+| `_solve_turbine` (rung 34's hook) | 11 078 | 92 866 | 0 |
+| every other site | — | — | 0 |
+
+**94.5 % of that site's calls run out of iterations and return `b`.** Slice P step 1 listed
+*"exhausting `maxit` returns `a` instead of `b`"* as one of two injected defects invisible to 132
+bit-exact values, and closed the blind spot with `counters::illinois_exhausted`. Slice Q is where
+that counter acquires a population. Injecting `return a` and re-running: `equilibrium_plenum`'s
+`nu` moves **3.523e-12**, `pi_c`/`pt4` **6.292e-12** — and `plenum_frozen_peak`'s peak moves
+**0.000e+00**. So the arm goes from *unreachable and uncounted* to *dominant and still four orders
+below every gate the suite ships*. The count is not a substitute for a value gate here; it is the
+only thing that separates the two returns.
+
+**PROBE 3 — THE REACHABILITY CENSUS, AND WHAT THE PLENUM PATH STRUCTURALLY CANNOT REACH.**
+
+- **NONE of rung 37's three marches carries a `try`.** `plenum_frozen_peak` (2213),
+  `soak_excursion` (2347) and `adiabatic_excursion` (2382) run `n_steps + 1` unconditionally, so a
+  failing RK stage **propagates** — the exact opposite of `SpoolTransient.march`, whose `except
+  AssertionError: break` makes trajectory LENGTH an output (§ 5.13 probe 5). Measured over 30
+  marches: **0 stage failures**. The difference is therefore **LATENT**, which is precisely why it
+  must not be fused: routing these through `spool.rs::march` — private, in-crate, and right there
+  — would silently convert a raise into a truncation that no value gate could ever see.
+- **The soak closure's bracket assert is live from ONE of its two callers.**
+  `_close_compressor_fuel_soak` fires **208 of 1 373** times from `equilibrium_soak`'s march-in
+  and **0 of 11 544** from `soak_excursion`'s RK stages. Same function, opposite fallibility —
+  slice L step 1's *per call site, not per function* rule with both arms in one file for the
+  first time.
+- **`_plenum_pt4_at`'s bracket assert fires 116 of 225**; its `m_min < m_max` floor assert **0**;
+  `_compressor_from_backpressure`'s bracket assert **0 of 15 136**. Two dead, one hot.
+- **The plenum instant reaches the HOOK on every call and the nozzle DISPATCH on none** —
+  2 272 `_plenum_state` calls, **2 272** `_solve_turbine`, **0** `_instant_tail`, **0**
+  `_turbine_subsonic`. So slice P's two rarest counters (the `M9 > 0.985` fallback and its
+  escalation) are **structurally unreachable** from rung 37's plenum path, and `R34` is
+  load-bearing on all of it. *`probe_q2.py`'s first version of this measurement counted
+  `_instant_tail` GLOBALLY and reported 160; scoped to "while inside `_plenum_state`" it is 0.
+  Fifth instance in this port of a measuring pass finding the defect in the instrument.*
+- **`phi_max` reaches ONE arm.** Only `quadratic` fires (11 659 in one section); `flat5`,
+  `linear` and `swirled` are all 0 — a **different** census from slice P's (5 258 `flat5`),
+  because rung 37's grid is all surge shapes. Quoted with its grid, never merged with slice P's.
+- **`t_accel is None` is reachable on one gate's grid and not the other's** — 4 of 24 cells at
+  gate 5's `s_end=6.0`, 0 of 6 at gate 6's default `s_end=12.0`. It is an `Option`, and gate 6's
+  `1e9` sentinel is Python's way of ordering a `None`.
+- **`_pic_band`'s ceiling: `phi_max*n` binds 15 of 15**, the literal `2.5` never; the `_PHI_FLOOR`
+  floor never sits above it. **`n_steps = int(round(10.0*r_v/ds))`** with `ds = r_v/15` evaluates
+  to exactly `150.0` at every `r_v` swept — the round's tie is **measured** unreachable, and
+  `round_ties_even` is spelled anyway on `march`'s precedent. **`_plenum_K == 0.0`** is reachable
+  only through the both-OFF construction gates 1 and 7 build: dead in every physics path, spelled.
+
+**PROBE 4 — `docs/rung37-spec.md`'s NUMBERS WERE TAKEN ON A GRID `test_rung37.py` NEVER RUNS, AND
+THEY ALL REPRODUCE.** The spec quotes its excursion table, `split_max ≈ 22 %` and
+`t_accel ≈ 5.55` vs `2.15` at `G=0.1, r_m=3`; the suite sweeps `G ∈ {0.05, 0.15} × r_m ∈ {1, 5}`.
+Slice N step 4's two-grids-one-section shape, sitting in the rung's own documentation. Re-measured
+on both: every spec number reproduces to its quoted precision (`t_accel` 5.549999999999988 against
+2.1500000000000004; `split_max` 21.98/22.09/22.12 %; `peak − E0` between −7.3e-11 and −1.7e-8),
+and `cold < hot < adiabatic` holds on all nine spec-and-test cells. **A confirmation, recorded so
+the grid mismatch is not re-discovered as a defect** — the numbers are right, only their grid was
+unstated.
+
+**THE TEN PREDICTIONS, registered before any Rust is written:**
+
+1. The oracle comes back **100 % bit-exact against PyPy** — no adaptive control, no stopping rule
+   downstream of a solver slices I/J/P already proved exact.
+2. **Unifying `equilibrium_soak`'s two loops fails 0 of the 7 ported Python gates and moves > 0
+   oracle keys.** Slice P's prediction 3 arriving in a second slice, registered before the port
+   rather than after the dump.
+3. Injecting `return a` into the exhaustion arm likewise fails **0 rung-37 gates** and moves
+   **> 0 oracle keys**; `illinois_exhausted` comes back **109** attributed wholly to
+   `_plenum_pt4_at`, 0 elsewhere.
+4. `SpoolTransient::march` is **NOT** reused. Trajectory length is a PARAMETER here, not an
+   output, and the dump carries **0 stage failures** so the difference is gated by reachability.
+5. `_compressor_from_backpressure`'s bracket assert and `_plenum_pt4_at`'s floor assert stay at
+   **0** firings across the whole dump — gated against zero rather than left absent.
+6. **No `Hooks` table** — § 5.12's arm 1, second confirmation: `CombustorTransient` has 0
+   subclasses. If slice Q finds one, the pre-flight's census is wrong.
+7. `_plenum_state` fires `r34_solve_turbine` **exactly once per call** and `_instant_tail` /
+   `_turbine_subsonic` **zero** times, over the whole dump.
+8. Gate 5 — rung 37's only `slow` marker — earns **no `#[ignore]`**, measured against the crate's
+   slowest target in both directions rather than by applying slice M's rule reflexively.
+9. `phi_max`'s `flat5` / `linear` / `swirled` arms stay at **0** across every marching section
+   against a live `quadratic` count, and the direct section drives all four so the zeros are
+   evidence rather than silence.
+10. Gate 1's reduce (both OFF ⇒ rung 35) holds **bit-for-bit**, not to a tolerance — the OFF
+    switches are exact dispatch, and in Rust they are `Option`s that are never read.
+
+**THREE FUNCTIONS LOOK REUSABLE AND ARE NOT**, named here so a later reader does not undo the
+duplication:
+
+- **`pi_c_map` vs `_pic_of_m`.** `pi_c_map` (rung 36) carries a `tau_c > 1.0` guard and takes
+  `phi`; `_pic_of_m` (rung 37) has no guard and takes `m`. Reusing it adds an error path Python
+  does not have.
+- **`try_instant_tail`'s power block vs `_plenum_state`'s.** The tail computes `pt_spec =
+  eta_m*(1+f)*Δh_t` **per unit air**; the plenum computes `Pt = eta_m*mdot_ngv*Δh_t` on the
+  **absolute** flows, with `Pc` on `mdot_c`. They are equal only when `mdot_ngv == mdot_air*(1+f)`
+  — which is exactly the coupling the plenum exists to break. A different formula, not a refactor.
+- **`f_cap = 0.05`.** A local literal in `_plenum_pt4_at`, in `_close_compressor_fuel_soak`, and
+  already in `try_close_compressor_fuel`. Three copies in Python, three in Rust.
+
+**PORT DECISIONS, REGISTERED** (slice O's precedent). `theta0` is a string with `else`-hot
+semantics — any value that is not `"cold"` is hot — becoming an enum, which **narrows** the
+domain; `adiabatic_excursion` returns `theta0="adiabatic"`, so the enum's third variant is
+unreachable from `soak_excursion` and is a label, not an input. `_plenum_state` returns neither an
+`Instant` nor a `CompState` (no thrust, no `m9`, and a `dpt4_ds` neither has), so it gets its own
+struct. `_close_compressor_fuel_soak` returns a `CompState` whose `tt4` holds `Tt4_turb`, with
+`tt4_b` carried beside it — the tail is handed `Tt4_turb` as its `tt4` argument, and only
+`dTm/ds` and the burner balance read `Tt4_burner`.
+
+**MODULE DECISION AND SIZING.** A new `src/combustor.rs` — the rung has its own two effects, its
+own three marches and its own structs, and `spool.rs` is already 1 383 lines. `CombustorTransient`
+is **composition over `SpoolTransient`** (§ 5.12's census: nothing downstream overrides anything
+it calls on `self`), reaching the parent's public surface through a `pub inner`. ~450 source lines
+and 180 test lines over 7 tests against slice P's 720/19 — roughly a third of slice P.
+
+**THE FOUR STEPS.** 1: `src/combustor.rs` + `tests/slice_q_smoke.rs`, with the injections above
+measured rather than reasoned. 2: `tests/rung37.rs`, the 7 Python gates. 3:
+`oracle/dump_combustor.py` + `tests/combustor_oracle.rs`, PyPy and CPython arms. 4: docs.
+
+---
+
 ## 6. Named risks
 
 ##### STEP 4 — SHIPPED. **THE SECTION'S OWN CENSUSES WERE MEASURED ON TWO DIFFERENT GRIDS**
