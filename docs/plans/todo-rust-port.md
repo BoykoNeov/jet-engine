@@ -5410,6 +5410,86 @@ written as a CONTRAST — the back-pressure invert driven hard first and exhaust
 the pressure solve exhausting — because a bare positive count would also pass a port that
 exhausted everywhere.
 
+##### STEP 3 — SHIPPED. **THREE OF THE ORACLE'S OWN GATES FAILED, AND ALL THREE WERE THE GATE'S FAULT**
+
+`oracle/dump_combustor.py` + `tests/combustor_oracle.rs`, nine sections over the gates' own grid.
+**2 066 / 2 066 bit-exact against PyPy on the first run** — prediction 1 held. Eight gates.
+
+**PREDICTIONS 2 AND 3's SECOND CLAUSE, FINALLY RUN.** Step 2 measured the gate half; the oracle
+half had never been run against a dump because there was none. Completed here:
+
+| injected defect | smoke (of 517) | Python gates (of 7) | added (of 3) | **oracle (of 2 066)** |
+|---|---|---|---|---|
+| the Illinois exhaustion arm returns `a` | 97 | 0 | 0 | **456** |
+| the plenum power block copied from `_instant_tail` | 60 | 0 | 0 | **142** |
+| `equilibrium_soak`'s two loops UNIFIED | 29 | 0 | 0 | **133** |
+
+Registered as *"0 gates, > 0 oracle keys"*; measured at **zero of ten against 133–456 of 2 066**.
+Slice P's argument for an oracle is now a measurement in a second slice rather than a precedent
+inherited from the first. (The counts are exact — they come from the failure header. The *section*
+attribution is not enumerated: the assertion prints only its first twelve keys.)
+
+**THE THREE GATE FAILURES, EACH A DIFFERENT WAY OF MEASURING THE WRONG SET.** None was a port
+defect; the 2 066 values were already right.
+
+1. **A precondition listed a section that root-finds NOTHING.** The exhaustion contrast asserts
+   *"these sections root-find hard and exhaust nothing"* over `A, E, G, H`. Section A is pure
+   arithmetic — `pic_band` and `pic_of_m`, no bracket anywhere — and makes **0** Illinois calls, so
+   "A exhausts nothing" is the emptiest sentence in the file. The `illinois_calls > 50` clause is
+   what caught it, which is that clause's entire purpose: *an exhaustion count of zero means
+   nothing without a call count beside it.*
+2. **A RATE whose denominator included the population that never reached the thing measured.**
+   The bar asked that half of `_plenum_pt4_at`'s calls exhaust; measured 103 of **225** = 46 %,
+   and failed. But **116 of those 225 fail the bracket test and never reach the Illinois** —
+   `equilibrium_plenum`'s outer search probes speeds off the operable map. Against the 109 that do
+   reach it the rate is 103, the **94.5 %** § 5.14 probe 2 measured, reproduced exactly. Two
+   different numbers about two different sets, and only one of them is what the sentence says.
+3. **A per-SECTION census answering a per-CALL-PATH question.** The gate asserted
+   `subsonic_raises == 0` in the plenum sections; B tallies **1** and D **4**. Not from any plenum
+   instant — from the rung-35 calls each section makes to *reach* one (`fuel_for_tt4`,
+   `equilibrium_fuel`), which do go through `_instant_tail`. **It is the same conflation
+   `probe_q2.py`'s global-vs-scoped instrument made at the probe stage, arriving this time in a
+   GATE** — where, had the tallies happened to be zero, it would have shipped as a true-looking
+   false claim. The scoped form lives in `rung37.rs`, which brackets the counters around
+   `try_plenum_state` alone and gets zero; the oracle now asserts only what a section tally can
+   support.
+
+That is the third, fourth and fifth instrument defect in this slice, and the more expensive
+place for it: *a probe that measures nothing wastes a run; a GATE that measures nothing ships.*
+
+**PREDICTION 9 WAS CARRIED BY NOTHING, AND AN ENUMERATION FOUND IT BEFORE THE WRITE-UP DID.** The
+first version of the dump emitted no `phi_max` arm tallies at all, so the registered claim — that
+rung 37 reaches only the quadratic arm — had no gate. Slice P's step 3 named exactly this failure
+mode; the fix is that the enumeration over the ten predictions was run **before** writing this
+section rather than after. Now gated: `flat5`, `linear` and `swirled` at **0** in all nine
+sections against a live quadratic count, and the census is quoted as **rung 37's own** — slice P's
+had `flat5` at 5 258 because its grid included flat maps, and the two must never be merged. That
+the three dead arms are reachable at all stays `spool_oracle.rs`'s gate; re-driving them here
+would gate one fact twice.
+
+**ONE PREDICTION WAS SHARPENED BY THE DUMP.** § 5.14 registered the flow ceiling's literal `2.5`
+arm as never binding on the operating grid (probe 3: 15 of 15 took the map arm). Section A drives
+`nu` to 1.3 to put the other side on the dump — and only **1 of 12** cells takes the literal arm.
+`surge_flow`'s `phi_max` is large enough to clear 2.5 there; `surge_pressure`'s and
+`surge_tilted`'s are not, a third of the way past design speed. The arm is **shape-dependent**, and
+the gate names the cell rather than the count.
+
+**THE CPython ARM: 452 of 2 066 identical — 21.9 %, and it reproduces slice P's tiering exactly.**
+§ 5.12's pre-flight got 100 % on a CPG gas and recorded it as NOT coverage; slice P measured 22.6 %
+on the thermally-perfect gas, and this is the second independent confirmation that the arm is a
+sharp instrument rather than a formality.
+
+* **83 discrete OUTPUT keys — branch labels, the `cold < hot < adiabatic` verdicts, the `t_accel`
+  presence flags, the reduce flags, which ceiling arm binds — and ZERO differ.** What the physics
+  DECIDES is interpreter-invariant.
+* **1 576 of 1 812 continuous keys differ — 87.0 %** between two correct implementations of one
+  language.
+* **38 of 171 census keys differ**, all of them solver iteration counts. How many passes it took
+  moves; what it converged to does not.
+
+**AND THE WHOLE CRATE IS GREEN** — every target, 0 failed, with the two slice-Q targets adding
+10.1 s (oracle) and 6.6 s (suite) beside a slowest single target of 269 s.
+
 ---
 
 ## 6. Named risks
