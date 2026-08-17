@@ -5032,9 +5032,13 @@ the speed-line channel thins monotonically all the way down, and at the referenc
 channel collapses onto the shipped margin — that last clause being the anchor without which the
 decomposition would be a parallel arithmetic.
 
-**PREDICTION 10 HELD, MEASURED.** Python marks one of these 19 `slow` (rung 36's). The three Rust
-suites run in **1.35 s together**. Slice M's rule applied unchanged: port the gate, drop the
-marker, re-introduce `#[ignore]` only against a measured cost. Nothing here earns one.
+**PREDICTION 10 HELD, MEASURED — AND THE NUMBER WAS RE-TAKEN AFTER STEP 3.** Python marks one of
+these 19 `slow` (rung 36's). The three Rust suites run in **1.3 s together**. That measurement
+predated `spool_oracle.rs`, which did not then exist and which runs **3.9 s** on its own; the
+honest figure for the slice is **all five targets in 5.3 s**, against a crate whose slowest single
+target is 246 s. Slice M's rule applied unchanged: port the gate, drop the marker, re-introduce
+`#[ignore]` only against a measured cost. Nothing here earns one — *stated against the number that
+includes the oracle, not the one that predates it.*
 
 **ONE GATE COULD NOT BE PORTED AS WRITTEN, AND THE FIRST ATTEMPT WAS VACUOUS.** Rung 35's gate 2
 re-runs ONE engine object before and after building a transient off it. That has content in Python
@@ -5125,6 +5129,22 @@ implementations of one language.** The tiering is the finding —
 `M:\claud_projects\temp`, unlike every prior slice's `rust/oracle/dump_*.py`. That is a durability
 defect independent of the oracle question — goldens whose producer is outside the repository
 cannot be regenerated from a checkout. `oracle/dump_spool.py` carries the regenerate header.
+
+**ONE DECISION BOOKED TO SLICE R's PRE-REGISTRATION RATHER THAN LEFT TO ARRIVE MID-PORT.**
+`spool.rs::march` de-duplicates Python's two RK4 bodies (`integrate` 1588, `integrate_fuel` 1769)
+into one with the instant passed in. That is defensible **here** and the reason is written at the
+function: the two Python bodies are character-identical apart from the closure they call and the
+`Tt4` they record, and neither carries a comment arguing for the separation — the *do not factor a
+deliberate duplication away* rule targets a duplication the SOURCE argues for, and this is not one.
+
+**It stops being free at slice R.** `TwoSpoolTransient.integrate` (3753) marches TWO states with
+`rho` on the LP equation — a different signature, not the same body; `TwoSpoolFuelTransient.
+integrate_fuel` (4834) is the min-select body and § 5.12 booked it as **overridden by 11 phase-7
+classes**, so it must be a hook; and `_integrate_fuel_lagged`/`_integrate_fuel_asym` add a third
+state. There will be pressure to widen `march` into one shared marcher across all four. **Fusing
+them would put a hook's dispatch inside a body slice P's gates already cover** — § 5.3's
+`_solve_turbine` argument one level up, and the exact failure the phase gating exists to prevent.
+Registered as a decision slice R must make explicitly, with its reason, before any code.
 
 **THREE RECORDS DISAGREED WITH EACH OTHER AFTER STEP 2, AND ALL THREE ARE FIXED.**
 `rung41.rs`'s roster still read `ported == 10` and printed `DEFERRED -> phase 6` for the gate

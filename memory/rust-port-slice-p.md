@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: cc5d95b2-526a-4146-b929-a889adee8a25
-  modified: 2026-08-17T18:25:03.727Z
+  modified: 2026-08-17T18:45:11.428Z
 ---
 
 Slice P ported `SpoolTransient` — the port's **first ODE**, where `N` becomes a state under an
@@ -79,6 +79,13 @@ drift into total relative disagreement.
 returned, so an Illinois whose residual raises mid-search (control flow here, not an error) skipped
 the tally and discarded that call's evaluations; Rust's in-loop counter kept them. Aligned the
 instrument to the port, not the reverse. [[rust-port-slice-m]]'s pattern, fourth instance.
+
+**BOOKED FOR SLICE R, NOT LEFT TO ARRIVE MID-PORT.** `march` de-duplicates Python's two RK4
+bodies, which is fine here (identical apart from the closure, and the source argues for no
+separation). It stops being free at slice R: the two-spool march has a different signature,
+`integrate_fuel` must be a HOOK (11 phase-7 overriders), and two more bodies add a third state.
+Fusing them would put a hook's dispatch inside a body slice P's gates already cover — § 5.3's
+`_solve_turbine` argument one level up.
 
 **Two source claims measured, one confirmed and one 1.7× light.** The Illinois override finds the
 *"same root as the inherited bisection to ~1e-11"*: true of `pi_t` (8.95e-12 over 14 002 paired

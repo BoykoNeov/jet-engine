@@ -506,12 +506,29 @@ fn the_spooldown_length_varies_by_map_shape() {
         lens.iter().collect::<std::collections::BTreeSet<_>>().len() > 1,
         "the lengths must DIFFER by shape: {lens:?}"
     );
-    // The sub-idle floor is dead on this grid. Declared, not silently absent.
+    // THE SUB-IDLE FLOOR IS DEAD, AND ASSERTING ONLY THAT IS THE VACUITY THIS FILE GUARDS
+    // AGAINST ELSEWHERE. `nu_floor_hits == 0` on all three shapes is also exactly what a counter
+    // wired to nothing returns — the sibling gate above pairs its zeros with a `live > 1000`
+    // clause for precisely that reason, and there is no live side available here: no reachable
+    // cell fires the floor.
+    //
+    // So the clause is stated as the POSITIVE fact it stands for. The floor is unreachable
+    // BECAUSE the march's abort precedes it: a spool-down that leaves the operable region breaks
+    // out while `nu` is still far above 0.2, so the clamp never gets a chance. That is testable —
+    // every terminal `nu` sits clear of the floor, and the early-terminating shapes are the ones
+    // that would reach it if anything did.
     for s in ["surge_flow", "flow_dom", "flat"] {
         assert_eq!(
             py[&format!("spooldown/{s}/nu_floor_hits")], 0,
-            "the nu = max(0.2, .) floor fired on {s} — it has never fired before, so either the \
-             grid moved or the march stopped breaking first"
+            "the nu = max(0.2, .) floor fired on {s} — it never has, so either the grid moved or \
+             the march stopped breaking first"
+        );
+        let nu_last = f64::from_bits(py[&format!("spooldown/{s}/last/nu")]);
+        assert!(
+            nu_last > 0.25,
+            "{s}'s spool-down ended at nu = {nu_last}, within a step of the 0.2 floor — the floor \
+             is dead on this grid ONLY because the abort precedes it, and this margin is what \
+             says the abort still does"
         );
     }
 }

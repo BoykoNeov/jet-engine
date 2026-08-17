@@ -31,7 +31,9 @@
 //! **FALLIBILITY IS PER CALL SITE, NOT PER FUNCTION** (slice L step 1's rule). Rung 34 has four
 //! `try` scopes and § 5.13 probe 3 counted what reaches them: the compressor-flow bracket fires
 //! 1 312 times, the inherited `f` fixed point 1 194, the nozzle 983, the subsonic-turbine bracket
-//! 187, and the `M9 > 0.985` escalation guard **2**. All five are reachable from inside a bracket
+//! 187, and the `M9 > 0.985` escalation guard **2** — all on **`probe_p.py`'s grid**, which is
+//! NOT the oracle's; `spool_oracle.rs` reads its own census (182 raises, 2 escalations) and the
+//! probe numbers survive only as the reason the keys exist. All five are reachable from a bracket
 //! march, so all five are fallible here, with panicking twins for the callers that cannot fail.
 //! The escalation guard's two firings are the entire detector for the branch the source insists
 //! must raise rather than hide under a `"subsonic"` label, so it is gated as a COUNT.
@@ -133,8 +135,9 @@ thread_local! {
 /// **They exist because § 5.13's registered detectors are counts, not values.** Prediction 2 is
 /// that [`R34`]'s function fires and rung 31's does not — slice N's FINDING 3 caught a hook that
 /// compiled and was never reached, and only a count could see it. Prediction 5 is that the
-/// subsonic fallback fires 185 times against the escalation's 2, and a port that swapped the two
-/// arms would move no value key at all.
+/// subsonic fallback fires far more often than the escalation — 185 against 2 on the probe grid,
+/// 180 against 2 on the oracle's — and a port that swapped the two arms would move no value key
+/// at all. The two counts differ because the two GRIDS do; the gate compares the DUMP's.
 pub mod counters {
     use super::*;
 
@@ -562,7 +565,9 @@ impl SpoolTransient {
     /// Both walls are MARCHED rather than assumed — the high one in from just below the choke
     /// boundary, where `Nozzle` gives `p9 = p* > p0` and the sub-branch is invalid; the low one
     /// out from deep expansion, stepping past cells where the residual itself raises. § 5.13
-    /// probe 3 counted **187** failures of the final bracket test.
+    /// probe 3 counted **187** failures of the final bracket test on its own grid, and
+    /// `oracle/spool_pypy.tsv` records **182** on the oracle's — the census is emitted and
+    /// compared, never restated (slice N step 4).
     #[allow(clippy::too_many_arguments)]
     pub fn try_turbine_subsonic(
         &self, wgas: &Gas, tt4: f64, f: f64, pt4: f64, mdot4: f64, eta_t: f64,
@@ -656,9 +661,11 @@ impl SpoolTransient {
     /// zero from above and never crosses — so the bracket fails and the choked-star solution
     /// (whose nozzle already read subsonic, `p9 = p0`) is the right answer. That fallback is
     /// legitimate only AT the boundary: a genuine deep-subsonic bracket gap must RAISE rather than
-    /// hide under a `"subsonic"` label. § 5.13 probe 3 measured **185 fallbacks against 2
-    /// escalations**, so both arms are live and the two are one `>` apart. A port that swapped
-    /// them would move no value key at all, which is why they are counted.
+    /// hide under a `"subsonic"` label. Both arms are live and the two are one `>` apart:
+    /// § 5.13 probe 3 measured **185 fallbacks against 2 escalations** on its grid, and the
+    /// oracle's census records **180 against 2** on its own. A port that swapped them would move
+    /// no value key at all, which is why they are counted — and why each number is quoted with
+    /// the grid it came off rather than as one figure.
     #[allow(clippy::too_many_arguments)]
     pub fn try_instant_tail(
         &self, flight: &FlightCondition, nu: f64, tt4: f64, comp: &CompState, n: f64, tt2: f64,
