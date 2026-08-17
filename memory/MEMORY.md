@@ -48,6 +48,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Slice L step 3: rung 42](rust-port-slice-l-step3.md) — my smoke check witnessed 1 of the 3 methods the slice's own headline names; measure the detector (it was 2%)
 - [Slice L step 4: the oracle + suites](rust-port-slice-l-step4.md) — a claim in the SHIPPED source was false and the gate built from it passed the defect; a copied bar failed, and its 34 keys split into two populations that closed the accounting exactly
 - [Slice M: rungs 53/54](rust-port-slice-m.md) — a bar asserted in a doc comment but never measured, refuted by a third of the dump; the two measuring passes after it found defects in the INSTRUMENT, not the port
+- [Slice N pre-flight](rust-port-slice-n-preflight.md) — a body-read tells you what state a method READS, never what its CARRIER costs; and a shared counter hides a dead guard
 
 ## Shipped rungs
 

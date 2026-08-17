@@ -3879,8 +3879,12 @@ hits.
   `Copy`; `r53_at_setting` gains `.clone()`; `VariableStatorCore::with_hooks` takes a
   `&'static TwoSpoolHooks`. Baseline: `cargo test --release` re-runs **bit-identical** — every
   value oracle and every suite, at the pass/fail counts RECORDED as step 1's first action rather
-  than quoted here. *Refuted by:* one changed digit, or a fourth file entering
-  the unit. **(b) of § 5.9 applies unchanged — the oracles compare committed `include_str!`
+  than quoted here. **The RIPPLE was counted rather than hoped, because § 5.9 (a) got burned on
+  exactly this** — it enumerated three source files and the unit turned out to be four, the fourth
+  a *gate*. `VariableStatorCore::with_hooks` has **three** call sites in all: its definition,
+  `new`'s `Self::with_hooks`, and `r53_at_setting` — **all three in `stator.rs`**, and no test file
+  calls it. *Refuted by:* one changed digit, or a fourth site anywhere.
+  **(b) of § 5.9 applies unchanged — the oracles compare committed `include_str!`
   goldens, so a passing `cargo test` IS the bit-identity check.**
 * **P3 — `R55` ENTERS BOTH TABLES, AND THE DISPATCH GATE MUST ASSERT IN BOTH DIRECTIONS.**
   A rung-53 core still satisfies `hooks.hp_eta_loop as usize == R39.hp_eta_loop as usize`; a
@@ -3896,16 +3900,33 @@ hits.
   TIGHT.** *Refuted by:* the Rust computing the one-stage march instead of calling
   `ComponentMap::solve_n`.
 * **P6 — THE ARGMIN TIE-BREAK IS A GATE, NOT AN IDIOM.** The 13 design-throttle cells are
-  reproduced index-for-index. *Refuted by:* any index differing while the values agree to the bit
+  reproduced index-for-index, **and the rule is pinned on a CONSTRUCTED exact tie as well** — a
+  hand-built row vector with several bit-identical minima, asserted to return the FIRST. On the
+  measured cells alone the rule would be *incidentally* satisfied rather than pinned, which is the
+  self-comparison failure mode. *Refuted by:* any index differing while the values agree to the bit
   — which is exactly the failure a value oracle cannot see.
 * **P7 — THE `vsv_stages` SPLIT SURVIVES THE PORT AS A COUNT.** 120/160 reached, the 40 misses all
   on `vsv_stages = None`, none at `Tt4 = 1500`. *Refuted by:* any front-row-lever row failing to
   reach, or a lumped-lever miss at design.
 * **P8 — `_P_FLOOR` NEVER FIRES AND `_T_FLOOR` ALWAYS CAN.** *Refuted by:* a `_P_FLOOR` firing on
   the dump grid (which would make the source's own shared counter load-bearing after all).
-* **P9 — THE ONE-SIDED STACK IS A CONTROLLED EXPERIMENT AND STAYS ONE.** With `K_lp = 8,
-  K_hp = 1` the HP loop is *literally* rung 39's (`super()`), so the HP half of the row is
-  bit-identical to the unstacked matcher's. *Refuted by:* any HP field moving.
+* **P9 — THE ONE-SIDED STACK IS A CONTROLLED EXPERIMENT, AND THE CONTROL IS ONE-WAY — MEASURED,
+  TWO-SIDED, AND IT REPRODUCES RUNG 39's ARROW FROM A NEW LEVER.** The first draft of this bar
+  asserted the dispatch (`stack_hp is None` ⇒ `super()._hp_eta_loop`) and then *inferred* that the
+  HP fields stay put, which is a claim about the converged point and was not measured. Measured,
+  on 40 points (2 gases × 5 shapes × 4 throttles):
+
+  | armed | HP fields (`n_hp`, `phi_hp`, `eta_hpc`, `pi_hpc`) | LP fields | thrust |
+  |---|---|---|---|
+  | `K_lp = 8, K_hp = 1` | **bit-identical, 40 of 40** | move (24–35 of 40) | moves 24/40 |
+  | `K_lp = 1, K_hp = 8` | move (38 of 40) | **move, 24 of 40** | moves 24/40 |
+
+  So stacking the LP spool is a controlled experiment on the HP one and **the reverse is not** —
+  which is rung 39's own headline (*the map opens ONE arrow HP→LP; `π_LPC` cancels*) arriving from
+  a lever rung 39 never had. `thrust` is excluded from the invariant clause on purpose: it is a
+  whole-engine quantity and moves in both arms. *Refuted by:* any HP field moving in the first
+  arm, or the second arm's LP fields NOT moving (which would make the bar vacuous rather than
+  wrong).
 * **P10 — RUNG 55's `lp_disabled` REFUSAL IS UNREPRESENTABLE, LIKE RUNG 53's.** Rust has no such
   parameter, so `assert not (lp_disabled and K > 1)` has nothing to witness. Booked in
   `slice_n_deferrals`, **not owed** — the type-level refusal is strictly stronger (slice M's
@@ -3952,9 +3973,17 @@ and **drop the `slow` marker** — Python marks 6 of these 39 `slow` (5 + 1), an
 against a MEASURED cost; coverage is a **name → parameter-set diff**, never a count (slice M's
 22 + 21 became 24 + 25 from four forced `#[should_panic]` splits, and rung 55's
 `test_capacity_style_guards_reject_nonsense` plus rung 56's profile refusals will split the same
-way); and `ComponentMap::phi_max` stays booked to **phase 6** — rung 55's
-`test_cycle_untouched_transient_ladder_is_bit_for_bit_unstacked` reads the rung-34/40/43 forward
-closures, so it is **owed to phase 6** in `slice_n_deferrals`, not ported here.
+way); and `ComponentMap::phi_max` stays booked to **phase 6**, unchanged from slice M's ledger.
+
+**ONE MORE GATE IS OWED TO PHASE 6, AND THE FIRST DRAFT BOOKED IT UNDER THE WRONG NAME.** Rung 55's
+`test_cycle_untouched_transient_ladder_is_bit_for_bit_unstacked` was written here as a `phi_max`
+consequence. It is not: read, the gate runs a **rung-43 fuel transient twice** — once before a
+stage stack is live on the same hardware, once after — and demands the two point lists are
+`==`. Its content is *absence of leakage*, and what makes it unportable today is that
+`TwoSpoolFuelTransient` **does not exist in Rust yet** (phase 6), not `phi_max`. Booked in
+`slice_n_deferrals` under that reason, with the assertion quoted, so phase 6 does not re-derive
+it — and recorded here because *a deferral filed against the wrong cause is a deferral nobody can
+discharge.*
 
 ---
 
