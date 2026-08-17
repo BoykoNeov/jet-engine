@@ -26,7 +26,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL, regenerate via extract_data.py + build.py
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy leaves `open().write()` unflushed, PowerShell Get/Set-Content double-encodes UTF-8; both fail SILENTLY
 
-## The Rust port — decided 2026-08-12; **PHASES 0–5 DONE**; **PHASE 6 (transients) AUTHORISED 2026-08-17**, six slices P–U, **slice P (rungs 34/35/36) SHIPPED**
+## The Rust port — decided 2026-08-12; **PHASES 0–5 DONE**; **PHASE 6 (transients) AUTHORISED 2026-08-17**, six slices P–U, **P and Q SHIPPED; R, S, T, U remain**
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; slices are free inside an authorised phase, **phase 5 needs fresh authorisation**
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost by COMPILING and returning a silently different number
 - [Rust arithmetic IS PyPy](rust-port-arithmetic-is-pypy.md) — 100% bit-exact vs PyPy on gas AND cycle; size a solver claim by DISTINCT ROOTS, not row count
@@ -57,6 +57,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Slice O: rung 61, phase 5 done](rust-port-slice-o.md) — a deferral written into the code the NEXT slice runs came due exactly as written; the defect lived in an EDGE, not a node
 - [Phase 6 pre-flight](rust-port-phase6-preflight.md) — the same census run in the OPPOSITE direction hit a scoping bug a one-root set could not expose; the named arithmetic risk was refuted by measurement
 - [Slice P: rungs 34/35/36](rust-port-slice-p.md) — a perfectly-placed deferral note described a branch that does not exist; two of five injected defects were invisible to 132 bit-exact values
+- [Slice Q: rung 37](rust-port-slice-q.md) — a dead arm is a property of the GRID, not the code; three gates failed for three different wrong-set reasons
 
 ## Shipped rungs
 

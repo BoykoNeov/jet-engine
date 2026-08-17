@@ -32,11 +32,17 @@
 //! closure, they are `march` without its most load-bearing line.
 //!
 //! **FALLIBILITY IS PER CALL SITE — AND BOTH ARMS ARE LIVE IN THIS ONE FILE.**
-//! [`try_close_compressor_fuel_soak`] fires its bracket failure **208 of 1 373** times when it is
-//! reached from [`equilibrium_soak`]'s march-in, and **0 of 11 544** times when it is reached from
-//! [`soak_excursion`]'s RK stages. Same function, opposite treatment: the first caller must absorb
-//! (it is inside a bracket search), the second must die (Python has no `try` there). Slice L step
-//! 1's rule with both halves of it in one module for the first time.
+//! [`try_close_compressor_fuel_soak`] fires its bracket failure when it is reached from
+//! [`equilibrium_soak`]'s march-in and never when it is reached from [`soak_excursion`]'s RK
+//! stages. Same function, opposite treatment: the first caller must absorb (it is inside a bracket
+//! search), the second must die (Python has no `try` there). Slice L step 1's rule with both
+//! halves of it in one module for the first time.
+//!
+//! **Each count carries its own grid**, because there are two grids and they are not the same:
+//! § 5.14 probe 3 measured **208 of 1 373** and **0 of 11 544** on `probe_q.py`'s (which runs
+//! `equilibrium_soak` twice per cell, by construction), and `oracle/combustor_pypy.tsv` records
+//! **104 of 666** in section F and **0 of 11 544** in section G on its own. The RATIO is the
+//! claim; the totals belong to whichever grid produced them.
 //!
 //! [`plenum_frozen_peak`]: CombustorTransient::plenum_frozen_peak
 //! [`soak_excursion`]: CombustorTransient::soak_excursion
@@ -72,10 +78,10 @@ thread_local! {
 /// Census counters for rung 37's own call sites.
 ///
 /// **Two of the five failure counters are expected DEAD and are gated against zero rather than
-/// left absent** — § 5.14 probe 3 measured `_compressor_from_backpressure`'s bracket assert at
-/// **0 of 15 136** and `_plenum_pt4_at`'s `m_min < m_max` floor assert at **0**, against
-/// `_plenum_pt4_at`'s bracket assert at **116 of 225** and the soak closure's at **208 of 1 373**.
-/// A zero with a live sibling in the same table is evidence; a zero on its own is silence.
+/// left absent** — `_compressor_from_backpressure`'s bracket and `_plenum_pt4_at`'s
+/// `m_min < m_max` floor never fire, against `_plenum_pt4_at`'s bracket at **116 of 225** and the
+/// soak closure's at **104 of 666** (`oracle/combustor_pypy.tsv`, sections C and F). A zero with a
+/// live sibling in the same table is evidence; a zero on its own is silence.
 ///
 /// The call counters do a second job the failure ones cannot: because rung 37's marches have no
 /// `try`, a stage that failed would ABORT the whole march, so an evaluation count that reproduces
@@ -687,12 +693,12 @@ impl CombustorTransient {
     /// `Tt4_turb = Tt4_burner - G*(Tt4_burner - Tm)` feeds the choke and the turbine; the root
     /// find is the same NGV-continuity residual, so only the temperature is depressed.
     ///
-    /// **THE BRACKET FAILURE IS LIVE FROM ONE CALLER AND DEAD FROM THE OTHER — 208 of 1 373 from
-    /// [`equilibrium_soak`](Self::equilibrium_soak)'s march-in, 0 of 11 544 from
-    /// [`soak_excursion`](Self::soak_excursion)'s RK stages** (§ 5.14 probe 3). That is slice L
-    /// step 1's *fallibility is per call site, not per function* with both arms of it in one
-    /// module: the first caller is a bracket search and must absorb, the second has no `try` in
-    /// Python and must die.
+    /// **THE BRACKET FAILURE IS LIVE FROM ONE CALLER AND DEAD FROM THE OTHER —
+    /// 104 of 666 from [`equilibrium_soak`](Self::equilibrium_soak)'s march-in, 0 of 11 544 from
+    /// [`soak_excursion`](Self::soak_excursion)'s RK stages**, both off the oracle's own grid
+    /// (`census/F/*` and `census/G/*`). That is slice L step 1's *fallibility is per call site,
+    /// not per function* with both arms of it in one module: the first caller is a bracket search
+    /// and must absorb, the second has no `try` in Python and must die.
     pub fn try_close_compressor_fuel_soak(
         &self, tt2: f64, pt2: f64, cmap: &ComponentMap, n: f64, mdot_fuel: f64, tm: f64,
     ) -> Result<SoakClose, Abort> {

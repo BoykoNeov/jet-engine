@@ -20,7 +20,12 @@ shadows, and no sibling dispatch owed. It also settled two things the slice plan
 later: `integrate_fuel` is ported **entire** (rungs 46–52 are keywords on one method, not seven
 classes), and the `min`-select hazard the phase table's "low-risk" label would have missed is
 **refuted by measurement** — the legs never contend, so the discrete content is the arming
-predicates, not an argmin. **The next authorisation point is before phase 7.**
+predicates, not an argmin. **SLICE P (rungs 34/35/36, the port's first ODE) IS SHIPPED** — 7 300
+oracle keys bit-exact (§ 5.13). **SLICE Q (rung 37) IS SHIPPED** — 2 066 oracle keys bit-exact
+(§ 5.14); its leading result is that the `try_illinois` exhaustion arm slice P measured at ZERO
+firings and could only close with a counter is here the path 94.5 % of one call site's calls
+take, worth 456 oracle keys and **zero of ten gates**. **Slices R, S, T, U remain. The next
+authorisation point is before phase 7.**
 The architecture is settled by measurement (§ 1–2); the three forks were answered on 2026-08-12
 (§ 9); phases 0–2 were then built and gated (§ 4.1, § 4.2). Phase 1 was the first deliberate
 stopping point because it is where the arithmetic risk concentrates; phase 2 was authorised
@@ -5489,6 +5494,54 @@ sharp instrument rather than a formality.
 
 **AND THE WHOLE CRATE IS GREEN** — every target, 0 failed, with the two slice-Q targets adding
 10.1 s (oracle) and 6.6 s (suite) beside a slowest single target of 269 s.
+
+##### STEP 4 — SHIPPED, docs-only. **SLICE Q COMPLETE; THE TEN PREDICTIONS, ENUMERATED**
+
+| # | registered | outcome |
+|---|---|---|
+| 1 | oracle 100 % bit-exact vs PyPy | **HELD** — 2 066/2 066, first run (517/517 at the smoke) |
+| 2 | unifying the soak loops: 0 gates, > 0 oracle keys | **HELD, sharper** — 0 of 10, **133** keys |
+| 3 | exhaustion returns `a`: 0 gates, > 0 oracle keys | **HELD, sharper** — 0 of 10, **456** keys |
+| 4 | `march` not reused; 0 stage failures | **HELD** — three marches written out; 0 failures, gated as evaluation COUNTS |
+| 5 | the two dead bracket asserts stay 0 | **HELD** — with live siblings in the same dump |
+| 6 | no `Hooks` table | **HELD** — § 5.12's census confirmed a second time |
+| 7 | the plenum instant: hook once per call, nozzle never | **HELD** — and the oracle's per-section form of it FAILED first; see step 3 |
+| 8 | gate 5 earns no `#[ignore]` | **HELD** — 5.95 s alone: 90 % of its own file, 2.4 % of the crate's slowest target |
+| 9 | `phi_max`: only the quadratic arm | **HELD — but it was UNGATED until an enumeration found it** |
+| 10 | the both-OFF reduce is BIT-for-bit | **HELD** — asserted as bits, in the suite and the dump |
+
+**THE SLICE'S ONE-LINE RESULT.** *A dead arm is a property of the grid, not of the code.* Slice P
+measured `try_illinois`'s exhaustion arm at ZERO firings, established that no value gate could see
+which endpoint it returned, and closed the blind spot with a counter rather than deleting the
+claim. One rung later the same three lines are the path **94.5 %** of `_plenum_pt4_at`'s calls
+take — because that site passes `_N_TOL = 1e-12` as an ABSOLUTE bracket width on a `pt4` of order
+`1e5` Pa — and the `a`-vs-`b` return is worth 456 of 2 066 oracle keys while remaining invisible to
+all ten gates. The counter slice P could only justify on principle is what made slice Q's leading
+measurement possible.
+
+**FIVE INSTRUMENT DEFECTS IN ONE SLICE, AND THE LAST THREE WERE GATES.** `probe_q2.py`'s
+`_instant_tail` counter was global where the sentence said scoped; the injection harness's section
+parser swallowed cargo's own output; and then three oracle gates failed for three distinct
+wrong-set reasons (a precondition naming a section that root-finds nothing, a rate whose
+denominator counted calls that never reached the loop, and a per-section census asked a
+per-call-path question — the *same* conflation as the first one, one stage later). *A probe that
+measures nothing wastes a run; a gate that measures nothing ships.*
+
+**NOTHING IS DEFERRED OUT OF SLICE Q, AND ONE DECISION IS STRENGTHENED FOR SLICE R.** All 7 Python
+gates ported. `CombustorTransient` is a leaf — no subclasses, so nothing is owed forward. The one
+thing slice R inherits is a **second, independent reason** not to fuse the marchers: § 5.13 booked
+that decision on the two-spool bodies' differing signatures, and rung 37 refutes fusion from the
+other side — its three marches are not `march` with a different closure, they are `march` **without
+its `break`**, so routing them through it would convert a raise into a truncation no value gate
+could see. Written at `combustor.rs`'s module note, where slice R's reader will hit it (slice O's
+rule), not only here.
+
+**THE SPEC'S NUMBERS WERE RE-MEASURED AND ARE RIGHT.** § 5.14 probe 4 checked
+`docs/rung37-spec.md`'s excursion table, `split_max ≈ 22 %` and `t_accel ≈ 5.55` vs `2.15` — all
+quoted at `G = 0.1, r_m = 3`, a grid `test_rung37.py` never runs. Every one reproduces, and
+`cold < hot < adiabatic` holds on the test grid too. **A confirmation, recorded so the grid
+difference is not later re-discovered as a defect** — the spec states its own grid; only the
+relationship between the two grids was unstated.
 
 ---
 

@@ -26,7 +26,9 @@
 //! § 5.3's sweep in the opposite direction: six names cross from phase 6 into phase 7 and **every
 //! one of them is on the two-spool chain**. `CombustorTransient` (rung 37) is `SpoolTransient`'s
 //! only subclass and overrides nothing rung 34 dispatches through. So this file needs no `Hooks`
-//! table of its own, and slice Q will add rung 37 as composition, not as a virtual set.
+//! table of its own, and slice Q added rung 37 as composition rather than as a virtual set —
+//! [`crate::combustor::CombustorTransient`] holds a [`SpoolTransient`] in a field, and the census
+//! is confirmed a second time.
 //!
 //! **FALLIBILITY IS PER CALL SITE, NOT PER FUNCTION** (slice L step 1's rule). Rung 34 has four
 //! `try` scopes and § 5.13 probe 3 counted what reaches them: the compressor-flow bracket fires
