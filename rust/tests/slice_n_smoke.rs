@@ -135,6 +135,36 @@ fn cell_d() -> StageStack {
     StageStack::new(StageStackSpec { kc: KC, ..StageStackSpec::new(1, cmap, TAU_LP, PI_LP, ETA_LP) })
 }
 
+/// THE POWER-SPELLING DISCRIMINATOR, and it exists because the cell that was meant to do this
+/// job was nearly blind.
+///
+/// [`StageStack`]'s `ladder_t` under [`Split::Tau`] is the ONE place in rungs 55/56 where Python
+/// raises to a **variable integer** exponent (`r ** k`) — every other `**` in the two rungs is
+/// `0.5` or `kc`, neither of which has an alternative spelling. So it is the file's only genuine
+/// power-spelling choice, between `powp(r, k as f64)`, a running product, and the tempting
+/// "simplify the two powers into one" `powp(tau, k as f64 / k_total)`.
+///
+/// **Measured over 109 650 `(tau, K, k)` cells: the spellings differ on 34.8 % and 65.5 % of
+/// them.** But at cell B's own `(tau_lp, K = 8)` only rows 7–8 separate `pow` from the product,
+/// by ONE bit — and at `(tau_lp, K = 4)` **nothing separates them at all**. `K = 16` separates on
+/// 8 rows against the product and 14 against the single power, so here the rule is *pinned*
+/// rather than incidentally satisfied. Slice J's lesson, third instance: *exactness bounds the
+/// CELLS visited, not the RULES discriminated* — and the detector has to be measured, not assumed
+/// from the fact that an arm exists.
+///
+/// **THE DETECTOR WAS THEN MEASURED RATHER THAN TRUSTED**, which is this project's standing rule
+/// and the one `rung32.rs`'s square gate was written under. `ladder_t` was deliberately
+/// re-spelled as a running product and the dump re-run: it fails at `cellB/theta_d/7`,
+/// `0x3ff595ff5c0b5e4d` against `…4e` — one bit, on exactly the row the scan predicted would be
+/// the first to separate.
+fn cell_g() -> StageStack {
+    let cmap = ComponentMap { a: 0.20, b: 0.05, sigma: 0.1, l: 0.7, vsv: 0.10, capacity: 0.80,
+                              ..ComponentMap::flat() };
+    StageStack::new(StageStackSpec {
+        kc: KC, split: Split::Tau, vsv_stages: Some(3),
+        ..StageStackSpec::new(16, cmap, TAU_LP, PI_LP, ETA_LP) })
+}
+
 /// The DESIGN SETTING on the UNIFORM profile — where § 5.10 (iv)'s degenerate argmin lives.
 /// Nothing is moved, so at `(m, n) = (1, 1)` every row sits at `phi_k = 1` and the per-row
 /// margins collapse onto ONE value to the bit, except where the march's own `th *= tau_k`
@@ -173,7 +203,7 @@ fn stage_stack_readings_match_pypy_bit_for_bit() {
     }
 
     for (tag, st) in [("A", cell_a()), ("B", cell_b()), ("C", cell_c()), ("D", cell_d()),
-                      ("E", cell_uniform(8)), ("F", cell_uniform(4))] {
+                      ("E", cell_uniform(8)), ("F", cell_uniform(4)), ("G", cell_g())] {
         let k = st.k;
         let p = format!("cell{tag}");
 
@@ -444,6 +474,43 @@ fn the_design_row_margins_tie_and_the_argmin_is_decided_by_the_last_bit() {
     }
 }
 
+/// § 5.10 P1's FALLIBLE TWIN — the arm that makes it a twin at all.
+///
+/// `try_solve_n` ships with **two** `Err` returns, and P1's entire content is that rungs 55/56
+/// need exactly those two and nothing else. Shipping them with neither one executed would be
+/// *slice L step 3* again — a headline naming machinery no test reaches.
+///
+/// The bracket arm is reachable from numbers already measured for the floors: at `m = 8` the
+/// stack cannot do the design work at EITHER bracket end, so `flo` and `fhi` are both negative
+/// and the sign change the bisection needs does not exist.
+///
+/// The **clamped-root** arm is deliberately NOT reached here — § 5.10 (i) measured it at 1 firing
+/// in 40, and manufacturing it needs a root that exists whose march still clamps. It is booked in
+/// [`slice_n_deferrals_so_far`] and owed by step 4's oracle, where the dump grid produces it
+/// naturally. Written down rather than left silent, which is *a documented gate that doesn't
+/// exist* read the other way round.
+#[test]
+fn the_speed_line_bracket_arm_returns_err_and_the_panicking_half_agrees() {
+    let st = cell_a();
+    let err = st.try_solve_n(8.0, st.tau_d, st.eta_d)
+        .expect_err("a work the stack cannot reach at either bracket end must Err, not solve");
+    assert!(err.0.contains("rung-55 stack speed-line bracket fails"),
+            "the abort names ITS OWN frame, not `ComponentMap`'s: {}", err.0);
+
+    // The two halves are one string produced in one place — a twin whose halves said different
+    // things would make the caught edge and the uncaught crash look like different failures.
+    let panicked = std::panic::catch_unwind(|| {
+        let st = cell_a();
+        st.solve_n(8.0, st.tau_d, st.eta_d)
+    });
+    let msg = panicked.expect_err("the panicking half must panic here");
+    let msg = msg.downcast_ref::<String>().expect("panic payload is the Abort's own string");
+    assert_eq!(msg, &err.0, "the fallible and panicking halves must say the SAME thing");
+
+    // And the arm is not vacuous: the same solve at a reachable work returns Ok.
+    assert!(st.try_solve_n(1.0, st.tau_d, st.eta_d).is_ok());
+}
+
 /// What step 2 does NOT port, booked at its gate rather than silently dropped.
 ///
 /// Step 5's `rung55.rs`/`rung56.rs` take this ledger over; it lives here so that between step 2
@@ -460,6 +527,10 @@ fn slice_n_deferrals_so_far() {
 
     // 2. Python's `assert 0 <= vsv_stages` — half UNREPRESENTABLE. `usize` cannot be negative,
     //    so only the `<= K` half survives as a runtime assert. It is live and gated below.
+    // 2b. `try_solve_n`'s CLAMPED-ROOT `Err` arm — the 1-in-40 of § 5.10 (i). The BRACKET arm is
+    //    gated above; this one needs a root that exists whose march still clamps, which the
+    //    step-4 dump grid produces naturally and a hand-built cell does not. OWED BY STEP 4, and
+    //    written here so it cannot read as covered in the meantime.
     // 3. Python's `_M_of_nu` range guard is LATENT-ONLY (worst `nu^2` on § 5.10's grid is 2.7 %
     //    of the limit) and lives in `map.rs`, shipped at step 1. Its `#[should_panic]` is owed by
     //    step 5 on a hand-built profile, not reachable from any stack this file builds.

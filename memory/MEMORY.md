@@ -26,7 +26,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL, regenerate via extract_data.py + build.py
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy leaves `open().write()` unflushed, PowerShell Get/Set-Content double-encodes UTF-8; both fail SILENTLY
 
-## The Rust port — decided 2026-08-12; PHASES 0–4 DONE; **PHASE 5 AUTHORISED and under way — slices I (31/33), J (32), K (38/39), L (41/42), M (53/54) SHIPPED; slice N (55/56) IN PROGRESS — step 1 of 6 shipped; then slice O (61)**; 535 Rust tests, 0 skipped
+## The Rust port — decided 2026-08-12; PHASES 0–4 DONE; **PHASE 5 AUTHORISED and under way — slices I (31/33), J (32), K (38/39), L (41/42), M (53/54) SHIPPED; slice N (55/56) IN PROGRESS — steps 1-2 of 6 shipped; then slice O (61)**; 546 Rust tests, 0 skipped
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; slices are free inside an authorised phase, **phase 5 needs fresh authorisation**
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost by COMPILING and returning a silently different number
 - [Rust arithmetic IS PyPy](rust-port-arithmetic-is-pypy.md) — 100% bit-exact vs PyPy on gas AND cycle; size a solver claim by DISTINCT ROOTS, not row count
@@ -50,6 +50,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Slice M: rungs 53/54](rust-port-slice-m.md) — a bar asserted in a doc comment but never measured, refuted by a third of the dump; the two measuring passes after it found defects in the INSTRUMENT, not the port
 - [Slice N pre-flight](rust-port-slice-n-preflight.md) — a body-read tells you what state a method READS, never what its CARRIER costs; and a shared counter hides a dead guard
 - [Slice N step 1](rust-port-slice-n-step1.md) — a correction applied only FORWARD leaves its own precedent standing; the ±1 census delta was the only symptom
+- [Slice N step 2](rust-port-slice-n-step2.md) — the dump passed first try and taught nothing; three instruments I wrote measured NOTHING, found only by running them
 
 ## Shipped rungs
 

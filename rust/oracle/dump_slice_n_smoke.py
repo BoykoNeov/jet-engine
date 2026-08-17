@@ -92,6 +92,19 @@ CELLS = [
                                       capacity=0.80),
                tau_d=TAU_LP, pi_d=PI_LP, eta_d=ETA_LP, kc=KC, split="dT",
                vsv_stages=None, cap_profile="uniform")),
+    # G — THE POWER-SPELLING DISCRIMINATOR, and it is here because the cell that was supposed to
+    # do this job was nearly blind. `_ladder_T`'s "tau" arm is the ONE place in rungs 55/56 where
+    # Python raises to a VARIABLE integer exponent (`r ** k`), so it is the file's only genuine
+    # power-spelling choice — `pow(r, k)` against a running product against the "simplify the two
+    # powers into one" `tau ** (k/K)`. Measured over 109 650 (tau, K, k) cells: the spellings
+    # differ on 34.8 % and 65.5 % of them respectively. But at cell B's own (tau_lp, K = 8) only
+    # rows 7-8 separate `pow` from the product, by ONE bit — and at (tau_lp, K = 4) NOTHING
+    # separates them at all. K = 16 separates on 8 rows against the product and 14 against the
+    # single power, so the rule is pinned rather than incidentally satisfied.
+    ("G", dict(K=16, cmap=ComponentMap(a=0.20, b=0.05, sigma=0.1, l=0.7, vsv=0.10,
+                                       capacity=0.80),
+               tau_d=TAU_LP, pi_d=PI_LP, eta_d=ETA_LP, kc=KC, split="tau",
+               vsv_stages=3, cap_profile="derived")),
 ]
 
 # Face points: one AT design, one throttled back, one deep enough that the low-n end of
