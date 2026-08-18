@@ -97,6 +97,7 @@ thread_local! {
     static EQ_NOISE: Cell<u64> = const { Cell::new(0) };
     static EQ_DAMPED: Cell<u64> = const { Cell::new(0) };
     static EQ_DAMP_FLOOR: Cell<u64> = const { Cell::new(0) };
+    static EQ_TIES: Cell<u64> = const { Cell::new(0) };
     static POWERS_CALLS: Cell<u64> = const { Cell::new(0) };
     static INSTANT_CALLS: Cell<u64> = const { Cell::new(0) };
     static MATCH_CALLS: Cell<u64> = const { Cell::new(0) };
@@ -109,6 +110,7 @@ thread_local! {
     static STEADY_MISSES: Cell<u64> = const { Cell::new(0) };
     static STEADY_KEYS: RefCell<Vec<f64>> = const { RefCell::new(Vec::new()) };
     static STEADY_TT4: RefCell<Vec<f64>> = const { RefCell::new(Vec::new()) };
+    static STEADY_TT4_ALL: RefCell<Vec<f64>> = const { RefCell::new(Vec::new()) };
     static EIG_REAL: Cell<u64> = const { Cell::new(0) };
     static EIG_COMPLEX: Cell<u64> = const { Cell::new(0) };
 }
@@ -138,6 +140,17 @@ pub mod counters {
         pub eq_noise: u64,
         pub eq_damped: u64,
         pub eq_damp_floor: u64,
+        /// Newton passes whose residual EXACTLY equalled the incumbent `best`.
+        ///
+        /// `best`'s comparison is STRICT (`<`), so a tie keeps the EARLIEST iterate; a `<=` keeps
+        /// the LATEST. Step 1 measured that spelling INVISIBLE to all 1 174 smoke values and
+        /// registered the larger reacting grid as where it could be witnessed rather than assuming
+        /// it covered. **Step 4 measured it there and the arm IS reached**: 0 ties over the 21 CPG
+        /// cells, **22 over the 12 reacting ones — every one of them in a cell that takes the NOISE
+        /// exit**, which is the only exit that reads `best`. Spelling it `<=` then moves 9 of the
+        /// 1 120 reacting oracle keys, all in the one cell whose tie is also its minimum. So the
+        /// strict `<` is load-bearing, narrowly, and this counter is what says so.
+        pub eq_ties: u64,
         pub powers_calls: u64,
         pub instant_calls: u64,
         /// Calls to [`TwoSpoolTransientCore::match_point`] — Python's `self.match`, which is how
@@ -157,6 +170,15 @@ pub mod counters {
         /// The UNROUNDED `Tt4` behind each of those keys, in the same order — which is what makes
         /// the collision legible (`1399.9999999999984` keyed as `1400.0`).
         pub steady_tt4: Vec<f64>,
+        /// The raw `Tt4` of EVERY steady lookup, miss or hit.
+        ///
+        /// `steady_tt4` above holds only the MISSES, so counting its distinct values measures the
+        /// rounded scheme against itself. The counterfactual — how many entries an EXACT-float memo
+        /// would hold — is the distinct raw `Tt4` over the whole trajectory, and a rounded HIT whose
+        /// raw value is new is exactly the collision. Recorded here so step 4's oracle can compare
+        /// the two equivalence relations without re-marching, which would double the census the
+        /// high wall's arm is read out of.
+        pub steady_tt4_all: Vec<f64>,
     }
 
     pub fn take() -> Census {
@@ -172,6 +194,7 @@ pub mod counters {
             eq_noise: EQ_NOISE.with(|x| x.get()),
             eq_damped: EQ_DAMPED.with(|x| x.get()),
             eq_damp_floor: EQ_DAMP_FLOOR.with(|x| x.get()),
+            eq_ties: EQ_TIES.with(|x| x.get()),
             powers_calls: POWERS_CALLS.with(|x| x.get()),
             instant_calls: INSTANT_CALLS.with(|x| x.get()),
             match_calls: MATCH_CALLS.with(|x| x.get()),
@@ -186,16 +209,18 @@ pub mod counters {
             eig_complex: EIG_COMPLEX.with(|x| x.get()),
             steady_keys: STEADY_KEYS.with(|x| x.borrow().clone()),
             steady_tt4: STEADY_TT4.with(|x| x.borrow().clone()),
+            steady_tt4_all: STEADY_TT4_ALL.with(|x| x.borrow().clone()),
         };
         for z in [&CLOSE_CALLS, &CLOSE_BRACKET_FAILS, &CLOSE_NONREAL, &MARCH_IN_ADVANCES,
                   &HI_WALL_LITERAL, &HI_WALL_MAP, &EQ_CALLS, &EQ_PRIMARY, &EQ_NOISE, &EQ_DAMPED,
-                  &EQ_DAMP_FLOOR, &POWERS_CALLS, &INSTANT_CALLS, &MATCH_CALLS, &MARCH_CALLS, &MARCH_POINTS, &MARCH_BREAK_K1,
+                  &EQ_DAMP_FLOOR, &EQ_TIES, &POWERS_CALLS, &INSTANT_CALLS, &MATCH_CALLS, &MARCH_CALLS, &MARCH_POINTS, &MARCH_BREAK_K1,
                   &MARCH_BREAK_RK, &NU_FLOOR_HITS, &STEADY_CALLS, &STEADY_MISSES, &EIG_REAL,
                   &EIG_COMPLEX] {
             z.with(|x| x.set(0));
         }
         STEADY_KEYS.with(|x| x.borrow_mut().clear());
         STEADY_TT4.with(|x| x.borrow_mut().clear());
+        STEADY_TT4_ALL.with(|x| x.borrow_mut().clear());
         c
     }
 }
@@ -621,6 +646,11 @@ impl TwoSpoolTransientCore {
                 EQ_PRIMARY.with(|x| x.set(x.get() + 1));
                 return Ok((self.try_instant(flight, nl, nh, tt4)?, EqExit::Primary, it));
             }
+            if let Some((b, _, _)) = best {
+                if res == b {
+                    EQ_TIES.with(|x| x.set(x.get() + 1));
+                }
+            }
             if best.is_none() || res < best.unwrap().0 {
                 best = Some((res, nl, nh));
             }
@@ -1009,6 +1039,7 @@ impl SteadyRef<'_> {
     /// One steady lookup. A `match` failure PANICS: Python has no `try` here.
     pub fn at(&mut self, flight: &FlightCondition, tt4: f64, spool: Spool) -> f64 {
         STEADY_CALLS.with(|x| x.set(x.get() + 1));
+        STEADY_TT4_ALL.with(|x| x.borrow_mut().push(tt4));
         let key = round3(tt4);
         let pair = match self.cache.get(&key.to_bits()) {
             Some(v) => *v,

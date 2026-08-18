@@ -54,7 +54,13 @@ const TT4: f64 = 1500.0;
 // The CPG constants, written out ONCE so gate 2's reference can read them without touching `Gas`.
 const GAMMA_C: f64 = 1.4;
 const CP_C: f64 = 1004.0;
-const R_C: f64 = 286.9;
+/// **DERIVED, not `286.9`.** `test_rung40.py` hard-codes `R_c = 286.9`; `test_rung44.py` writes
+/// `R_c=(gamma_c-1.0)/gamma_c*cp_c` = `286.8571428571428`, and the two suites therefore run
+/// DIFFERENT cold sections. Step 3 shipped `286.9` here, so every gate in this file ran rung 40's
+/// gas — invisible, because every assertion below is a sign, an ordering or a spread, and step 3's
+/// own value probe used `286.9` on BOTH sides so it could not see it either. Found at step 4, by
+/// enumerating each suite's grid for the oracle instead of reading the constant off its neighbour.
+const R_C: f64 = (GAMMA_C - 1.0) / GAMMA_C * CP_C;
 const GAMMA_T: f64 = 1.3;
 const CP_T: f64 = 1239.0;
 const HPR: f64 = 42.8e6;

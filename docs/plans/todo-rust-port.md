@@ -1651,7 +1651,7 @@ next starts. The tree is green at every phase boundary; there is no big-bang cut
 | **3** | NOx & mixing, rungs 7–24. **RISK-BEARING — not bulk.** These are phase 1's largest *consumer*: every one rides the equilibrium solve and `Kp = exp(−ΔG°/RuT)`, and their findings are *shapes* (the bell's peak, the minimum pinned at `C_opt`, monotone-vs-turns-back-up) that a last-digit shift in an exponential can move. Deliberately placed straight after phase 1 as the **first real test of whether the transcendental arithmetic holds**. **DONE — slices A (7/8/9/19), B (10/11/12/20), C (13/15/16/18/21), D (22/23/24) and E (14/17) all shipped**, § 4.3–4.10; the slices are grouped in § 4.3 by DEPENDENCY, not by number | 4–6 | ✅ slice A: `nox_oracle.rs` (**1806/1806** bit-exact vs PyPy on 22+22 distinct solver roots) + 4 rung suites (43 tests) · ✅ slice B: `quench_oracle.rs` (**2507/2507**, on 165 distinct trajectory roots) + 4 rung suites (39 tests), one location key NARROWING a shipped claim · ✅ slice C: `pdf_oracle.rs` (**2448/2448**, both quadrature branches asserted exercised) + 5 rung suites (59 tests); the source's own mean-preservation guard found to have an `n_quad` FLOOR, and the port gates the REJECTION as well as the acceptance (§ 4.5) · ✅ slice D: `spatial_oracle.rs` (**462/462**, incl. 28 DISCRETE keys) + 3 rung suites (43 tests); TWO source claims of exactness CORRECTED — rung 24 applies an operation inside an accumulation and removes it outside, twice (§ 4.8) | · ✅ slice E: `nozzle_oracle.rs` (**513/513**, incl. 24 DISCRETE keys) + 2 rung suites (24 tests) + 3 gates `rung20.rs` had deferred; a THIRD claim of exactness corrected (the frozen reduce is algebraic only, and its floor is the entropy ROUTE, not the bisection's stopping rule) and rung 17's firing band edge LOCATED — past it the bulk margin goes dormant while the per-pocket one RISES (§ 4.10) |
 | **4** | Nozzle & turbine marches, rungs 25–30 — own convergence behaviour, hence separate. ~~**AUTHORISED 2026-08-12; three DEPENDENCY slices**~~ **DONE** | 2–3 | ✅ slice F: `march_oracle.rs` (**912/912** bit-exact vs PyPy, on 49 distinct march exit roots) + 2 rung suites (32 tests) in a new `march.rs`; the FOURTH "exactly"-class claim and the FIRST to survive — because it compares a COPY, not a rederivation (§ 4.12) · ✅ slice G: `no_march_oracle.rs` (**776/776**, and only 8.0 % CPython-identical — the sharpest dump in the port) + 2 rung suites (28 tests); slice F's discriminator made TWO pre-registered predictions and both HELD (§ 4.14) · ✅ slice H: `tt_oracle.rs` (**270/270**) + 2 rung suites (14 tests); RATIO ≠ ENERGY measured ANTI-correlated, and the one slice not pre-registered — all three of its guessed census bars were wrong (§ 4.15) |
 | **5** | ~~Steady matchers — rungs 31–33, 38–39, **41**, 42, 53–56, 61~~ **DONE 2026-08-17, seven slices (I·J·K·L·M·N·O).** ~~**Contains the diamond** (§ 6)~~ **PRE-FLIGHT DONE (§ 5.3); AUTHORISED 2026-08-13.** The diamond is discharged; the phase's structural content is the **five-name virtual set** (`_solve_turbine` — claimed by PHASE 6 — `match`, `_hp_eta_loop`, `_lp_eta_loop`, `at_setting`) and `_INC_MAX`'s live shadow | 4–6 | ✅ slice I (rungs 31/33): `offdesign_oracle.rs` (**3951/3951** bit-exact vs PyPy, incl. **961 discrete** keys) + 2 rung suites (17 tests) in a new `matcher.rs`; the crate's FIRST fallible paths, its FIRST virtual hook, and the two rungs re-gated as counts over BIT PATTERNS (§ 5.5) · ✅ slice J (rung 32): `map_oracle.rs` (**7 252/7 252**) + `rung32.rs`; the oracle found BLIND to a mis-spelled square, so the rule is gated directly (§ 5.6) · ✅ slice K (rungs 38/39): `two_spool_oracle.rs` (**11 812/11 812**, and only 46.3 % CPython-identical) + 2 rung suites (19 tests) in a new `two_spool.rs`; all six predictions held, and the CPython arm REFUTED an assertion inherited from slice I — the pass-count instability needs a SOLVER-derived property, not the equilibrium gas (§ 5.7) · ✅ slice L (rungs 41/42): `slice_l_oracle.rs` (**25 458 keys**) + 2 rung suites (12 + 12 tests) in a new `bleed.rs`, plus the crate's first FALLIBLE TWINS; nine predictions all settled, and a claim the SHIPPED SOURCE carried found wrong (§ 5.8) · ✅ slice M (rungs 53/54): `slice_m_oracle.rs` + 2 rung suites (24 + 25 tests) in a new `stator.rs`, all six steps shipped; its probe **OVERTURNED slice J's `solve_n` zero-firing verdict**, and a bar asserted in a shipped doc comment was refuted by a third of the dump (§ 5.9) · ✅ **PHASE 5 COMPLETE** — the last two slices were N (55/56) and O (61), sized in § 5.9; **N is PRE-REGISTERED (§ 5.10), 10 predictions**, and its probes **REFUTE § 5.9 (c) twice** — reading a method's body cannot see its state's CARRIER — **steps 1–4 SHIPPED** (step 1: P2 held at 535 names, `diff` empty, and the ±1 that would not reconcile was slice I's last `#[ignore]` surviving a rule slice M had already retired · step 2: `stage.rs` + `slice_n_smoke.rs`, **1 337 keys bit-exact first run** over seven enumerated cells, and it **CORRECTS § 5.10 (iii)** — `_P_FLOOR`'s deadness is a DERIVED threshold `e > 1.001` in the two floor constants, not a property of the sweep · step 3: `StageStackCore` + `R55`/`R55_TWO`, and the carrier lesson RECURRED — a FOURTH gated-code edit, at step 3, in a file step 1 never opened, because the plan asked what carrier `at_setting` needs and never what carrier the EFFICIENCY-LOOP hook needs; plus an `_INC_MAX` shadow § 5.3's pre-flight had called correctly and the porting slice mis-spelled · step 4: `slice_n_oracle.rs`, **72 520 keys bit-exact first run** + a 5 649-key equilibrium arm and a 41 560-key CPython one, and § 5.10's own censuses turned out to be measured on TWO grids — (i)/(iv) reproduced to the firing, (iii)/(vi) came from a 240-cell probe sweep, so the census is EMITTED and compared rather than restated; the CPython arm's *discrete → bits* tier had to SPLIT, because all 520 interpreter flips are argmin indices at the design throttle) |
-| **6** | Transients — rungs 34–37, 40, 43–52 (the fuel-side limiter family). **AUTHORISED 2026-08-17; PRE-FLIGHT DONE (§ 5.12).** The phase's structural content is a **six-name virtual set** — `integrate_fuel`, `_close`, `_close_fuel`, `_surge_fuel`, `_instant_tail`, `_powers` — **every one of which crosses into phase 7**, so there is no phase-6-internal hook and the `Hooks` table appears at slice R, not P. Six slices, ordered by `_degenerate`: **P** (34/35/36 `SpoolTransient`) · **Q** (37) · **R** (40/44) · **S** (43/45, `integrate_fuel` ENTIRE) · **T** (46/47/48 gates) · **U** (49/50/51/52 gates). The `4257–4506` object block spans two phases — `IncidenceLimiter` is rung **60** | 4–6 (**light** — 156 tests over 15 files, and phase 3 took five slices for 204) | per-rung tests pass |
+| **6** | Transients — rungs 34–37, 40, 43–52 (the fuel-side limiter family). **AUTHORISED 2026-08-17; PRE-FLIGHT DONE (§ 5.12). SLICES P, Q and R SHIPPED (§ 5.13, § 5.14, § 5.15); S, T, U remain.** The phase's structural content is a **six-name virtual set** — `integrate_fuel`, `_close`, `_close_fuel`, `_surge_fuel`, `_instant_tail`, `_powers` — **every one of which crosses into phase 7**, so there is no phase-6-internal hook and the `Hooks` table appears at slice R, not P. Six slices, ordered by `_degenerate`: **P** (34/35/36 `SpoolTransient`) · **Q** (37) · **R** (40/44) · **S** (43/45, `integrate_fuel` ENTIRE) · **T** (46/47/48 gates) · **U** (49/50/51/52 gates). The `4257–4506` object block spans two phases — `IncidenceLimiter` is rung **60** | 4–6 (**light** — 156 tests over 15 files, and phase 3 took five slices for 204) | ✅ slice P: `spool_oracle.rs` (**7 302** bit-exact) + 3 rung suites · ✅ slice Q: `combustor_oracle.rs` (**2 066**) + 1 suite · ✅ slice R: `two_spool_transient_oracle.rs` (**6 853 + 1 120** bit-exact vs PyPy on the first run, + a tiered CPython arm reproducing probe 4's 5-of-12 exactly) + `rung40.rs`/`rung44.rs` (17 tests) + `slice_r_smoke.rs`/`slice_r_dispatch.rs`; a ported suite found running its NEIGHBOUR's gas (§ 5.15 step 4) |
 | **7** | **The ladder, rungs 57–60 and 62–84** — the `Hooks` table from § 2, one module per rung. (**61 is PHASE 5's**, not this phase's — it is the steady `StatorBleedMatcher`, and it was double-listed here until the slice-K audit) | 5–8 | 27/27 reduce-to-prior bit-exact |
 | **8** | `main.py` replacement; adjudicate the fragile rungs; re-anchor the fingerprint; **delete the Python** | 2–3 | full suite green on Rust alone |
 
@@ -5905,7 +5905,7 @@ moves every extremum taken over it."*
 | the `steady` memo keyed on the EXACT float | the KEY SEQUENCE grows by one | H (no golden for `key/251`) |
 | rung 40's LINEAR reference unified with rung 44's per-instant one | **2** | G + census |
 | the high wall drops the literal `2.5` arm | **2**, both `illinois_evals` | census ONLY |
-| `best` keeps the LATEST tie (`<=` for `<`) | **0** | INVISIBLE |
+| `best` keeps the LATEST tie (`<=` for `<`) | **0** | INVISIBLE *on this grid* — the INFERENCE, not the count, is corrected at step 4 (9 keys on the reacting one) |
 | the march-in ladder as `0.02*(k+1)` | **0** | INVISIBLE |
 
 **AND TWO ROWS OF THAT TABLE ARE THE SLICE'S FIRST CONTENT.**
@@ -5958,7 +5958,8 @@ file down, found by the injection it was built for.*
 **WHAT THE SMOKE CANNOT SEE, SAID PLAINLY.** `best`'s strict `<` versus `<=` is invisible here: on
 this grid no two Newton passes leave EXACTLY equal residuals, so the tie-break is never exercised -
 step 4's larger reacting grid is where it could be, and that is registered rather than assumed
-covered. The march-in ladder's spelling is likewise unwitnessed by any value, because probe 2
+covered. **DISCHARGED AT STEP 4, AND THE READING INVERTS: 22 ties on the reacting arm against 0 on
+the CPG one, all in noise-exit cells, and a `<=` moves 9 keys.** The march-in ladder's spelling is likewise unwitnessed by any value, because probe 2
 measured the loop dead; it is gated by its counter being zero and by nothing else, which is the
 honest statement. Three Rust counters have no Python column at all - the march-in advances, the
 non-real guard and the `g` failures they come from are SWALLOWED by the shipped body, and a wrapper
@@ -6074,7 +6075,11 @@ dumped the **49 floats and 11 discrete flags** these gates read — the five sha
 decel excursions, their ratios, their damping ratios and band-existence flags, the five-point `rho`
 sweep, the six-point ramp sweep, and both margin records — and the two files **diff to nothing but
 `True`/`true` and `1.0`/`1`**. So the gates are sign gates sitting on top of bit-exact values, and
-that is now measured rather than assumed.
+that is now measured rather than assumed. **CORRECTED AT STEP 4:** that probe hard-coded
+`R_c = 286.9` on BOTH sides, and `test_rung44.py` DERIVES `286.857…` — so it measured this file
+against rung 40's gas, which is also the gas this file shipped with. The values were bit-exact; the
+GAS was its neighbour's. See § 5.15 step 4 finding 1. *An instrument that supplies the input to both
+sides cannot see a wrong input.*
 
 **THE FINDING: AN INVARIANCE CLAIM'S CONFIRMING TEST IS MAXIMALLY SATISFIED BY DELETING THE
 MECHANISM.** Ten defects were injected to size the gates. **Six** are caught by the gate whose claim they break, **two** by the step-1 smoke and no rung gate at all, and **two** by NOTHING:
@@ -6137,6 +6142,142 @@ did not rebuild and the next injection ran against the *previous* one's binary. 
 revert fixes it. *An injection harness needs its own baseline to pass before any row it prints is
 evidence* — three rows here were pure carry-over from the row above.
 
+
+##### STEP 4 — SHIPPED. **THE ARM STEP 1 REGISTERED AS UNWITNESSED IS REACHED, AND ONE SUITE'S GAS WAS ITS NEIGHBOUR'S**
+
+`oracle/dump_two_spool_transient.py` (**735** lines, three arms) +
+`tests/two_spool_transient_oracle.rs` (**1 046**, both counted after the last edit — step 2's
+postscript). **6 853 main keys and 1 120 reacting keys BIT-EXACT against PyPy on the first run**,
+over sections A–L (both suites' CPG grids) and P–S (the reacting cells), plus a tiered CPython arm.
+Two `src/` edits, both instruments — `eq_ties` and `steady_tt4_all` — and one TEST edit that is a
+defect fix.
+
+**THE ARCHITECTURE DECISION WAS SPIKED BEFORE THE DUMP WAS WRITTEN, AND IT WENT THE GOOD WAY.**
+§ 5.15 prediction 1 registered the reacting-gas `equilibrium` keys as the slice's one genuine
+exposure and pre-committed § 9 Decision 1's **Option B** — an individually-adjudicated fragile set
+with a published deviation distribution — as the route if 100 % failed. The prediction's own
+mechanism makes it binary: the exit branch is decided BELOW `_EQ_TOL`, so bit-exactness gives 100 %
+and one differing bit flips a discrete key. So probe 4's twelve cells were run through the shipped
+Rust FIRST, against a 30-second PyPy re-run of `probe_r4.py`: **all twelve agree on the exit kind,
+the pass count and both converged speeds.** The arm therefore ships at bit-equality and Option B
+stays unused — *decided by a two-cell-shaped spike costing minutes, rather than discovered after
+500 lines of dump.*
+
+**FINDING 1 — `test_rung44.py` AND `test_rung40.py` RUN DIFFERENT CPG GASES, AND `rung44.rs` HAD
+ITS NEIGHBOUR'S.** `test_rung40.py` hard-codes `R_c = 286.9`; `test_rung44.py` writes
+`R_c = (gamma_c-1)/gamma_c*cp_c` = **286.8571428571428**. Step 3 shipped `rung44.rs` with `286.9`,
+copied from the file beside it, so **every rung-44 gate ran rung 40's gas**. Nothing could see it:
+every assertion in that file is a sign, an ordering, a monotonicity or a spread — step 3 said so
+itself — and step 3's own value probe used `286.9` on BOTH sides, so the one instrument aimed at
+values was blind to it too. All nine gates still pass on the corrected constant, which is the
+measurement of how invisible it was. The Python population splits cleanly: `test_rung30/31/33/38/
+39/40/43` hard-code the number and `test_rung41` onward derive it; **every other ported suite —
+`rung41/42/53/54/55/56/61` — has it right**, so this is an isolated slip and not a family. Found by
+enumerating each suite's grid for the oracle instead of reading a constant off its neighbour, and
+the dump now carries both gases' `R_c` and `R_t` as section A so the two can never be confused
+again. *Slice N step 4's shape — two censuses on two grids, read as though they shared one — here
+as two SUITES on two gases.*
+
+**FINDING 2 — THE `best` TIE-BREAK IS REACHED, AND ONLY ON THE REACTING ARM.** Step 1's postscript
+was explicit: *"`best`'s strict `<` versus `<=` is invisible here: on this grid no two Newton passes
+leave EXACTLY equal residuals — step 4's larger reacting grid is where it could be, and that is
+registered rather than assumed covered."* The advisor's review caught that the plan's step-4 entry
+did not mention it, which is how a registered IOU rides one more step. An `eq_ties` counter was
+added and measured:
+
+| arm | `equilibrium` calls | ties | where |
+|---|---|---|---|
+| CPG (section D) | 22 | **0** | — |
+| reacting (section P) | 12 | **22** | `flat/1450` (17), `flow_press/1100` (4), `flat/1300` (1) |
+
+All three tying cells take the **NOISE exit**, which is the only exit that READS `best`; no CPG cell
+ties at all, because the residual there falls under the absolute `1e-12` bar in four or five passes
+instead of plateauing for eighty. Injecting `<=` then moves **9 of the 1 120 reacting keys** — every
+one in `P/flat/1300`, the single-tie cell, at the last bit. The 17-tie and 4-tie cells do NOT move,
+because a tie only reaches the return when the tied residual is also the minimum. **So step 1's
+injection row — *"`best` keeps the LATEST tie → 0 keys moved → INVISIBLE"* — is CORRECTED by this
+grid rather than confirmed**, and the count is gated PER ARM: a sum would have let the reacting 22
+hide behind a CPG zero, which is exactly what step 2 paid for registering a sum instead of a split.
+
+**AND THE COUNTER NEEDED A SECOND ONE TO BE HONEST.** `steady_tt4` records the raw `Tt4` behind each
+memo MISS, so counting its distinct values measures the rounded relation against itself and reports
+0 collisions always. The counterfactual — how many entries an EXACT-float memo would hold — is the
+distinct raw `Tt4` over EVERY lookup, and a rounded HIT whose raw value is new IS the collision. A
+second instrument, `steady_tt4_all`, records every lookup, so the Rust reproduces Python's
+`251 rounded / 252 exact / 1 collision` without re-marching — which would have doubled the census
+the high wall's arm is read out of. *The first draft of that key would have passed by construction.*
+
+**FINDING 3 — PREDICTION 9's REGISTERED PAIR IS REPRODUCED FROM AN INDEPENDENT CONSTRUCTION.**
+§ 5.15 registered *"245 real / 7 complex"* and step 2 corrected it to a per-gas split of 124/2 (CPG)
+and 121/5 (reacting). Sections F and R rebuild gate 5's 7 × 3 × 6 sweep from the dump's own shape
+table, and land on **124/2 and 121/5 exactly** — so the two are a corroboration rather than one
+number quoted twice, and each is asserted beside `eig_real + eig_complex == 7*3*6`, a count read
+against a grid whose size is itself asserted.
+
+**PREDICTIONS 6 AND 7 HOLD AT SCALE, AND THEY ARE ASSERTED PER SECTION RATHER THAN ONCE.** Across
+all **22** census blocks (17 main + 5 reacting): the low-wall march-in advances, the non-real guard, both march truncation
+arms, the `max(0.2, ·)` speed floor, the Newton's damper and its `1e-30` floor are **0**, and
+`illinois_exhausted` is **0** at rung 40's call site — against slice Q's **103 of 109** at
+`_plenum_pt4_at`, the same counter on the opposite population, reported with its grid and never
+summed with slice Q's. The high wall's contested `min` takes its literal arm in **10 of the 22**, which is what the census-only defect of step 1 needs to be catchable at all.
+
+**FINDING 4 — THE CPython ARM REPRODUCES PROBE 4 EXACTLY, AND IT CONTRADICTS **BOTH HALVES** OF
+SLICE N's RULE.** `slice_n_oracle.rs` states it plainly: *"iteration counts are not
+interpreter-invariant … the branch verdicts ARE, because a verdict is a comparison and not an
+iteration."* This arm was built on the opposite population and both halves fail:
+
+- **The verdicts move.** Probe 4 pre-registered 5 of 12 exit-branch flips and 10 of 12 differing
+  pass counts on the reacting Newton. The dump reproduces **5/12 and 10/12**, from a grid rebuilt
+  independently in Rust. Copying slice N's precedent would have shipped a gate that fails.
+- **An iteration count moves where every value it produces does not.**
+  `census/I/shapes/illinois_evals` reads **54 323 on PyPy and 54 322 on CPython**, and
+  `census/K/illinois_evals` 38 513 against 38 512 — on the CPG half, where **all 6 410 float keys
+  are bit-identical**. One convergence test lands on the other side of its bracket and the Illinois
+  returns the SAME double from a different last step. Slice N's first half, holding.
+
+**AND THE CPython DIFF SPLITS BY MECHANISM INTO FOUR CLASSES, EACH WITH ITS OWN CURRENCY:**
+
+| class | keys | moved | worst | why |
+|---|---|---|---|---|
+| **CPG closed-form** | **6 410** | **0** | — | bit-equal; this is the arm's coverage half |
+| reacting DIRECT | 629 | 523 | **1.06e-10 rel** | the equilibrium sub-solve's own noise |
+| reacting RESIDUAL | 30 | 30 | **8.17e-11 abs** | the same noise on a quantity whose truth is ZERO |
+| reacting DERIVATIVE | 357 | 357 | **6.37e-3 rel** | that noise divided by the Jacobian's `h = 1e-6` |
+| thermally-perfect | **1** | 1 | 1.40e-9 rel | see below |
+
+The residual class is why the bar is not one number. `L/1500/Phi` reads **1.281e+04 RELATIVE** and
+`2.9e-11` absolute; only the second is a statement about anything, and a single relative bar loose
+enough to admit it would admit everything. The derivative class is the same noise amplified a
+millionfold by the finite difference, worst on `bc` because it is the product of the two SMALL
+off-diagonals. *A finite difference inherits drift from the quantity differenced* — the golden-gate
+lesson, arriving on an interpreter arm.
+
+**FINDING 5 — ONE KEY IN 6 411 SAYS THE TPG TABLE GAS IS NOT INTERPRETER-STABLE EITHER.**
+`E/channel/gas` is the single value in the whole main dump built on `Gas.thermally_perfect()` —
+gate 4's *"the `cp(T)` curve is one of `sigma_crit`'s two breaking channels"* — and it is the ONLY
+non-reacting float that moves, at 1.40e-9 relative. Every closed-form CPG key beside it is
+bit-identical. So the instability is the TPG **table integrals'** `log`/`exp`, exposed by
+`lead_threshold`'s own `d = 25 K` finite difference, and it is a property of the GAS rather than of
+this rung. Recorded because a one-key drift in a 6 411-key bit-exact half is easy to file as a
+tolerance and it is a measurement.
+
+**TWO `src/` EDITS, AND THAT BREAKS A TWO-STEP STREAK ON PURPOSE.** Steps 2 and 3 both shipped
+test-only, verified by `git diff --stat -- rust/src/` coming back empty, and both said so. Step 4
+does not, and the reason is that neither instrument can live in a test file: `eq_ties` needs a site
+INSIDE the Newton's loop, between the tolerance check and the `best` update, and `steady_tt4_all`
+needs one inside `SteadyRef::at`. A wrapper cannot reach either — the same argument the dump makes
+for its three swallowed counters. Both are counters; neither touches an arithmetic line, which
+`git diff` shows directly.
+
+**COSTS, MEASURED, AND THE CRATE'S END STATE.** The dump: **6.2 s** (main, PyPy) / ~4 min (equil,
+PyPy) / ~25 min (cpython, one-off — CPython runs the main arm **7.6×** slower than PyPy, timed
+rather than taken from `CLAUDE.md`'s whole-suite 6.2×). The Rust: the whole 4-test file in
+**25–29 s** release, three of whose four tests re-run the reacting sweep. Slice M's rule gives no
+`#[ignore]` against that, and the crate keeps its zero. **The crate is 713 run / 0 failed /
+0 ignored over 80 targets**, measured on one clean run — step 3's 709 over 79 plus this file's four,
+which is the arithmetic checking out rather than the number being carried forward.
+`pytest` is untouched by this step: the only Python written is `rust/oracle/*.py`, and
+`pytest.ini`'s `testpaths = tests` excludes it — checked, not assumed.
 
 
 ---

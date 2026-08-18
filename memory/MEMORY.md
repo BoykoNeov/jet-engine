@@ -26,7 +26,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL, regenerate via extract_data.py + build.py
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy leaves `open().write()` unflushed, PowerShell Get/Set-Content double-encodes UTF-8; both fail SILENTLY
 
-## The Rust port — decided 2026-08-12; **PHASES 0–5 DONE**; **PHASE 6 (transients) AUTHORISED 2026-08-17**, six slices P–U, **P and Q SHIPPED; R at step 3 of 4; S, T, U remain**
+## The Rust port — decided 2026-08-12; **PHASES 0–5 DONE**; **PHASE 6 (transients) AUTHORISED 2026-08-17**, six slices P–U, **P, Q and R SHIPPED; S, T, U remain**
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; slices are free inside an authorised phase, **phase 5 needs fresh authorisation**
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost by COMPILING and returning a silently different number
 - [Rust arithmetic IS PyPy](rust-port-arithmetic-is-pypy.md) — 100% bit-exact vs PyPy on gas AND cycle; size a solver claim by DISTINCT ROOTS, not row count
@@ -61,6 +61,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Slice R step 1: rungs 40/44](rust-port-slice-r-step1.md) — a registered margin was read off the wrong assertion, and the guard I added was unreachable in the exact case it was built for
 - [Slice R step 2: rung 40's gates](rust-port-slice-r-step2.md) — the two-path gate was blind at the throttle its sweep starts on; a registered SUM is not a gated SPLIT
 - [Slice R step 3: rung 44 + slice L's last IOU](rust-port-slice-r-step3.md) — an invariance gate is satisfied BEST by deleting the variable it varies; an injection harness needs its own baseline to pass
+- [Slice R step 4: the oracle](rust-port-slice-r-step4.md) — a value probe that feeds the same wrong input to BOTH sides cannot see a wrong input; a registered IOU rides one more step unless the next plan entry names it back
 
 ## Shipped rungs
 
