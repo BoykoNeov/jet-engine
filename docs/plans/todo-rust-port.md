@@ -24,8 +24,13 @@ predicates, not an argmin. **SLICE P (rungs 34/35/36, the port's first ODE) IS S
 oracle keys bit-exact (§ 5.13). **SLICE Q (rung 37) IS SHIPPED** — 2 066 oracle keys bit-exact
 (§ 5.14); its leading result is that the `try_illinois` exhaustion arm slice P measured at ZERO
 firings and could only close with a counter is here the path 94.5 % of one call site's calls
-take, worth 456 oracle keys and **zero of ten gates**. **Slices R, S, T, U remain. The next
-authorisation point is before phase 7.**
+take, worth 456 oracle keys and **zero of ten gates**. **SLICE R (rungs 40/44) IS SHIPPED** — 6 853 main + 1 120 reacting oracle keys bit-exact,
+four steps (§ 5.15). **SLICE S (rungs 43/45, the whole `integrate_fuel`) IS PRE-REGISTERED**
+(§ 5.16): four probes measured first, and its leading result is that § 5.12's own IOU —
+the arming predicates on a gas the CPython detector can see — is **discharged with a
+measured margin**: the detector moves 391 of 398 value keys on every TPG gas the fuel path
+admits, and the nearest arming threshold sits **seven orders** away, so nothing flips.
+**Slices T and U remain. The next authorisation point is before phase 7.**
 The architecture is settled by measurement (§ 1–2); the three forks were answered on 2026-08-12
 (§ 9); phases 0–2 were then built and gated (§ 4.1, § 4.2). Phase 1 was the first deliberate
 stopping point because it is where the arithmetic risk concentrates; phase 2 was authorised
@@ -4832,6 +4837,13 @@ arm is a detector on this gas, with a measured sensitivity. Slice S still owes t
 measurement **on its own object** — the arming predicates — because a detector's sensitivity is a
 property of the quantity it watches, not of the gas alone.
 
+**AND SLICE S HAS NOW PAID IT — § 5.16 probe 1.** `_tt4_from_f` refuses an equilibrium gas,
+so the measurement had to be re-pointed at the three TPG gases the fuel path DOES admit. On
+each of them the detector moves **391 of 398** value keys, and all three arming decision
+sequences plus the cap-call and point counts are **identical** — with the nearest predicate
+margin measured at **5.0e-3 relative against ~1e-10 of drift**. The IOU is closed by
+measurement, not by impossibility, and the 100 % above still is not coverage.
+
 **THE DEFERRAL INBOX, COLLECTED ONCE AND ASSIGNED.** Six items are owed to this phase; each is
 booked to the slice that can discharge it, so none ships orphaned:
 
@@ -6279,6 +6291,373 @@ which is the arithmetic checking out rather than the number being carried forwar
 `pytest` is untouched by this step: the only Python written is `rust/oracle/*.py`, and
 `pytest.ini`'s `testpaths = tests` excludes it — checked, not assumed.
 
+
+### 5.16 SLICE S (rungs 43 + 45, `TwoSpoolFuelTransient`) — PRE-REGISTERED, four probes MEASURED first
+
+Rung 43 puts rung 35's FUEL control on rung 40's two-shaft plant — `Tt4` becomes an OUTPUT of a
+forward burner — and rung 45 marches that plant against rung 41's imposed surge line. This is the
+slice § 5.12 settled would port `integrate_fuel` **entire**, because rungs 46–52 are keywords on
+one method and not seven classes.
+
+**THE SCOPE IS SETTLED BY GREP, NOT BY THE PHASE TABLE'S PHRASE.** "The whole `integrate_fuel`"
+is the METHOD entire — all seven limiter keyword arms, its two private dispatch twins
+(`_integrate_fuel_lagged`, `_integrate_fuel_asym`), the three set-point solves they call
+(`_topping_fuel` / `_sched_fuel` / `_surge_fuel`) and the three helper classes those need
+(`AccelSchedule`, `SurgeLimiter`, `AsymmetricLag`, plus the module-level `_release_weight`). It is
+NOT the thirteen rung-46–52 READER methods at `engine.py:5437–6054`. Checked rather than assumed:
+each of those thirteen names was grepped across every suite, and **not one is called by
+`test_rung43.py` or `test_rung45.py`** — they belong to `test_rung46…52.py`, which are slices T
+and U. Shipping them here would be 618 lines carrying zero gates for two slices.
+
+*Two by-products of that grep, recorded where slices T and U will read them:* `deficit_curve`
+(`engine.py:5809`) is called by **nothing at all** — no test, no `main.py`, and its only other
+mention is a sibling docstring saying the gate is *not* it; and `lag_sweep` is reached only
+through `factorization_grid`. Slice U inherits both.
+
+**COUNTED, NOT TAKEN FROM A HEADER** (slice R step 1's correction, applied before the fact).
+`pytest --collect-only`: **20 items, 11 + 9**, and for once all three counts coincide — no
+`parametrize` in either file, and `def test` count == item count in both. Sizing: **1 103 source
+lines** (930 of the class through `transient_surge_margin_fuel`, plus 92 for `AccelSchedule` /
+`SurgeLimiter`, 28 for `_release_weight` and 53 for `AsymmetricLag`) over **689 test lines**,
+against slice R's 592/815/17 and slice P's 720/19. **This is the largest slice of phase 6**, and
+§ 5.12's own "4–6 sessions is light for six slices" gets one more datum. It ships in **FIVE**
+steps rather than four, for a reason the probes measured: ~40 % of the source is limiter
+machinery that NO phase-6 rung gate reaches (probe 2), so the armed smoke sections are the only
+coverage it has and are sized deliberately instead of being an afterthought.
+
+`M:\claud_projects\temp\rust-phase6\probe_s1.py` … `probe_s4.py`. Probes 1b/1c and probe 4 exist
+because a review of the first drafts found three things they had not measured — a margin that was
+the solver's rather than the predicate's, four limiter keywords nothing had ever executed, and an
+error path the suite tests only by bypassing it.
+
+---
+
+**PROBE 1 — § 5.12's IOU IS DISCHARGED, THE DETECTOR FIRES, AND WHAT IT WAS AIMED AT DOES NOT
+MOVE.** § 5.12 dumped the arming predicates CPython-vs-PyPy, got **9 376 keys 100 % identical**,
+and recorded explicitly that this was NOT coverage because the probe ran a **CPG** gas whose
+property calls are closed-form; it booked the reacting-gas measurement here. Slice R probe 4
+discharged the GAS half early and wrote that slice S still owes the same measurement **on its own
+object**.
+
+The complication that had to be settled first: `_tt4_from_f` asserts `not self.gas.equilibrium`,
+so `Gas.reacting_equilibrium()` — the exact gas slice R's detector fired on — is REFUSED by the
+fuel path outright. Measured: `thermally_perfect`, `reacting` and `reacting_forkb` all carry
+`equilibrium = False` and are **admitted**, and all three are TPG table gases, which slice R
+finding 5 measured moving under CPython. So the detector is pointable, and the IOU is live rather
+than vacuous.
+
+| admitted gas | value keys moved, CPython vs PyPy | worst DIRECT | `arm_T` / `arm_A` / `arm_S` | `n_cap_calls` | `n_pts` |
+|---|---:|---:|---|---:|---:|
+| CPG (both suites' recipes) | **0 of 400** | — | identical | identical | identical |
+| `thermally_perfect` | **391 of 398** | 9.93e-11 rel | **identical** | **identical** | **identical** |
+| `reacting` | **391 of 398** | 4.47e-11 rel | **identical** | **identical** | **identical** |
+| `reacting_forkb` | **391 of 398** | 4.47e-11 rel | **identical** | **identical** | **identical** |
+
+**AND "DID NOT MOVE" IS ONLY A DISCHARGE IF THE PREDICATE WAS EVER AT RISK**, so the margins were
+measured at the predicate sites — which took two attempts, and the first attempt is the lesson.
+Probe 1b timed `Tt4 − Tt4_max` at every `_instant_fuel` and reported a closest margin of **zero**;
+that population includes the ~40 evaluations inside `_topping_fuel`'s own Illinois, which converge
+ONTO the redline by construction. It had measured the SOLVER, not the predicate. Probe 1c locates
+the two branch sites exactly (`der` calls `_instant_fuel` first and `_release_weight` next, so the
+last instant before each `_release_weight` IS the predicate's):
+
+| predicate | evals | closest margin | drift, from the table above |
+|---|---:|---|---|
+| `i["Tt4"] > Tt4_max` | 84 | **6.95 K on 1380 K = 5.0e-3 rel** | ~1e-10 rel |
+| `c < mf`, ACTIVE leg | 217 | **1.4e-2 rel** | ~1e-10 rel |
+| `c < mf`, DORMANT leg | 21 | **an EXACT structural zero** | immune |
+
+**Seven orders of margin**, so the invariance is a measurement and not a property of a lucky grid.
+And the dormant row is content in its own right: `_sched_fuel` / `_surge_fuel` return `mf_sched`
+**itself**, which the source justifies purely as what makes rung 48/49's dormant reduce bit-for-bit
+rather than merely equal — and that same float-identity makes `mf < mf` unflippable on any
+interpreter. *A reduce discipline paying off as numerical robustness.*
+
+**AND THE 400 CPG KEYS WERE BLIND TO A GAS DIFFERENCE THAT IS REALLY THERE.** Slice R finding 1
+shipped `rung44.rs` running `rung40.rs`'s gas, because `test_rung40.py` hard-codes `R_c = 286.9`
+and `test_rung41` onward derive `(γ−1)/γ·cp`. **Rungs 43 and 45 straddle that same boundary** —
+`test_rung43.py:62` hard-codes `286.9`, `test_rung45.py:83` derives `286.8571428571428` — so the
+hazard repeats one rung on, and it was checked before a line of Rust was written. The two gases'
+**whole 400-key fuel-path dump is bit-identical**: every speed, temperature, pressure ratio, flow
+coefficient, applied fuel and residual. Only one channel witnesses the difference at all, and the
+probe had not dumped it:
+
+```
+R_c = 286.9              sp_thrust = 40853e9ad22b6e1f
+R_c = 286.857142857…     sp_thrust = 40853ec406183610      nu_lp, Tt4: BIT-IDENTICAL
+```
+
+`R_c` reaches the fuel path ONLY through the static/exhaust conversion, i.e. the thrust key —
+which is exactly the channel slice R's 1-ULP hunt landed on. So the oracle carries **both suites'
+`R_c`/`R_t` bits as a section-A key AND at least one thrust key per suite**; without the thrust key
+a 400-key bit-exact dump certifies nothing about which gas the port used.
+
+---
+
+**PROBE 2 — THE REACHABILITY CENSUS, and the headline is an EXACT TIE that the two languages'
+`round` disagree about.** Instrumented by taking each body with `inspect.getsource` and inserting
+counter lines by textual substitution — so the arithmetic is LITERALLY the shipped text rather
+than a retyping of it (slice O's rule), with every substitution asserted to have applied (slice N
+step 2's three instruments that measured nothing). Over both suites' full grids: **227 889
+`_close_fuel` calls, 227 856 `der` calls, 162 marches.**
+
+| arm | measured | reading |
+|---|---:|---|
+| `_close_fuel`'s low-wall march-in (`m += step`) | **0 advances / 227 889** | DEAD on the CPG grids — **but see probe 4 (A)** |
+| `g`'s off-map `AssertionError` | **0** | DEAD here, likewise |
+| the `max(lo0, 0.02)` floor | `lo0` wins **227 889 / 227 889** | DEAD |
+| the high wall `min(2.5, φ_max·n_L, hi0)` | literal **24 033** / map **200 193** / **`hi0` 3 663** | **ALL THREE arms live** |
+| both of `integrate_fuel`'s `except AssertionError: break` | **0 truncations / 162** | DEAD |
+| `equilibrium_fuel`'s damper `min(1.0, …)` | **0 binds / 8 Newton steps** | DEAD |
+| its `max(…, 1e-30)` floor | **0** | DEAD |
+| its `_EQ_MAX` exhaustion → `raise` | **0** | DEAD |
+| `der`'s `caps` list | **`{0: 227856}`** | see below |
+| `_interp`'s three arms | low **12** / interior **2 420** / high **2 752** | all live; its fall-through `return ys[-1]` **0** |
+
+**THE HIGH WALL'S THIRD ARM IS THE MEASUREMENT THAT MOVED WHEN THE GRID DID.** On a first,
+narrower sweep `hi0` won **0** times and the honest-looking write-up would have been "rung 43 adds
+a third arm to rung 40's two-way `min` and it is dead". Widened to the suites' actual `r` and `ρ`
+lists it wins **3 663**. *A census is a property of the grid; slice R said so about `illinois_
+exhausted` and it cost nothing there because the two grids were reported apart. Here the same
+mistake would have shipped a wrong verdict about live code.*
+
+**AND `der` BUILDS ZERO CAPS, 227 856 TIMES OUT OF 227 856.** Neither suite arms a single limiter
+keyword — grepped, then counted: the only keyword either file passes to any fuel entry point is
+`freeze="lp"`. So `_topping_fuel`, `_sched_fuel`, `_surge_fuel`, `faded`, both dispatch twins and
+all three helper classes are **unreached by every gate in phase 6**. § 5.12's *"not one `der` had
+two live caps, 0 contested selections out of ~600 000"* was measured over 78 deliberately armed
+cases and is **entirely off this slice's grid**; it is quoted here with that grid attached and
+never merged. The contested-`min` question belongs to slices T and U, and is booked to them.
+Gating those counters against zero on S's grid is therefore **vacuous by construction**, and the
+armed smoke sections are what covers them — which is why this slice has five steps.
+
+**THE HEADLINE — `int(round(s_end/ds))` LANDS ON AN EXACT `.5` TIE, AND PYTHON AND RUST ROUND IT
+THE OPPOSITE WAY.** Rung 43's ramps run `s_end = r + 8.0` at `ds = 0.02`, and at `r = 0.25` that
+is `8.25 / 0.02 = 412.5` **exactly** (checked as a `Fraction`: `825/2`). Python's zero-digit
+`round` is half-to-EVEN and gives **412**; Rust's `f64::round` is half-AWAY-FROM-ZERO and gives
+**413** — a whole extra marched step. Measured across every march the two suites run: **21 of 162
+land on an exact tie**, 141 on an exact integer, and **not one is inexact** (so `round` and a
+truncation never disagree here — the naive test for this hazard reports agreement on precisely the
+case that matters, which is how the first version of the counter got it wrong).
+
+**THIS IS THE THIRD VERDICT ON ONE EXPRESSION, AND IT VINDICATES A DEFENSIVE SPELLING.** Slice Q
+measured the tie **unreachable** on rung 37's grid and spelled `round_ties_even` on principle;
+slice R measured the **truncation** live at rung 40 (`1.2/0.05 = 23.999…`) and shipped
+`two_spool_transient.rs:862` as `(s_end / ds).round_ties_even() as i64`. Rung 43 is the first grid
+where the two SPELLINGS THEMSELVES disagree, on the `r` value **five of the eleven rung-43 gates
+use**. So slice S adds no decision here — it inherits slice Q's, and the finding is that a
+spelling chosen when nothing could see it is now load-bearing 47 rungs later. *Registered as an
+injection to MEASURE at step 1 (swap `round_ties_even` for `round`), not to reason about.*
+
+---
+
+**PROBE 3 — THE SHIPPED SOURCE'S OWN RESIDUAL-FLOOR CLAIM IS A CPG STATEMENT READ AS A GENERAL
+ONE, AND ON A TPG GAS THE SOLVE IS A BIT-AMPLIFIER.** `equilibrium_fuel` carries no noise-floor
+acceptance branch, unlike rung 40's `equilibrium`, and says why:
+
+> *"No noise-floor acceptance is needed here … the fuel path REFUSES an equilibrium gas outright
+> (`_tt4_from_f`), so this loop only ever runs on the non-equilibrium gases, whose residual floor
+> is ~1e-14 — comfortably under the absolute `_EQ_TOL`."*
+
+Measured at six `Tt4` on each admitted gas:
+
+| gas | accepted `\|Φ\|` range | margin under `_EQ_TOL = 1e-12` | passes |
+|---|---|---|---|
+| CPG | 3.2e-16 … 1.4e-13 | **7× … 3 161×** | 2 everywhere |
+| `thermally_perfect` | 1.2e-13 … **9.29e-13** | **1.1× … 8.5×** | 2 … **32** |
+| `reacting` | 1.0e-13 … 7.3e-13 | **1.0× … 9.7×** | 2 … 19 |
+
+The "~1e-14" is the CPG number. On the TPG gases the floor is **9.3e-13 — 65× worse, and 8 %
+under the bar it is called "comfortably under".** No cell exhausts `_EQ_MAX`, so the claim's
+CONCLUSION survives; its stated reason does not. *Slice L step 4's shape, and slice R probe 3's —
+a claim in the SHIPPED source that does not hold where a later reader points it — here for the
+third time, and for the first time inside the very method that makes it.*
+
+**AND THE CPython ARM TURNS THAT MARGIN INTO A 16-FOLD SWING IN THE ITERATION COUNT.** The same
+six cells, both interpreters:
+
+| gas | cells whose PASS COUNT differs | example |
+|---|---:|---|
+| CPG | **0 of 6** | 2 passes on both, every cell |
+| `thermally_perfect` | **6 of 6** | `Tt4 = 1400`: PyPy **2** passes, CPython **33** |
+| `reacting` | **6 of 6** | `Tt4 = 1450`: PyPy **19**, CPython **9** |
+
+The mechanism is slice R probe 4's, on a different object: an exit decided just under an ABSOLUTE
+bar by a residual that plateaus, so a last-bit difference re-rolls how many passes it takes to
+squeak under. **This is registered as an ARCHITECTURE fact, not a tolerance problem.** It does not
+threaten Rust-vs-PyPy bit-equality — the port's whole premise is that Rust reproduces PyPy's
+arithmetic bit-for-bit, and where it does the pass count is reproduced with it. What it means is
+that a TPG `equilibrium_fuel` key is the sharpest single **detector** in this slice (one ULP
+anywhere upstream does not drift it, it explodes it 16-fold) and simultaneously **unusable inside
+the CPython arm's bit-equality bar**. So: dumped and gated at bit-equality against PyPy; excluded
+from the CPython bar as a declared fragile set with its deviation published, exactly as slice R
+published its four-class split. Decided here by a six-cell spike costing minutes, on slice R
+step 4's precedent, rather than after 500 lines of dump.
+
+**AND `collapse_exponent`'s ARGMIN SITS ON A PLATEAU, SO ITS TIE-BREAK DECIDES THE REPORTED
+NUMBER.** The method scores 25 exponents `q = i/20` by a binned spread and takes `min`. Measured
+on gate 9's own 16 points: the score is **piecewise-constant in `q`** (13 distinct bin-fill shapes
+over 25 samples), and every currency's minimum is attained by **two adjacent `q`, at a gap of
+exactly `0.000e+00`**:
+
+| currency | best `q` | tied `q` | spread |
+|---|---:|---|---:|
+| `E_temp_H` | 0.05 | **{0.05, 0.10}** | 0.137845 |
+| `X` | 0.35 | **{0.35, 0.40}** | 0.141613 |
+| `E_temp_L` | 0.65 | **{0.65, 0.70}** | 0.247224 |
+
+Python's `min` keeps the FIRST of equals; Rust's `Iterator::min_by` also keeps the first — but
+`max_by` keeps the LAST, and the two are one keystroke apart. **And gate 9 cannot see the
+difference**: it asserts `qH < qX < qL` and `qL − qH > 0.3`, which a last-of-equals tie-break
+satisfies just as well (0.10 < 0.40 < 0.70, gap 0.60). *Slice R's `best`-tie-break shape exactly —
+invisible to the rung gates, visible only to the value dump — and here it is measured BEFORE the
+port rather than at step 4.* No NaN score occurs on this grid (0 of 75), so the `9e9` NaN guard in
+the `key=` lambda and the `if sp else nan` fall-back are both DEAD, and both are spelled.
+
+---
+
+**PROBE 4 (A) — THE REFUSAL IS SWALLOWED BY THE LOOP PROBE 2 MEASURED DEAD, AND THE WRONG ERROR
+ESCAPES.** `test_rung43.py:317` tests the refusal by calling `_tt4_from_f(700.0, 0.025)`
+**directly**, so it says nothing about reaching it through an ordinary entry point. Traced:
+
+| entry point, on `Gas.reacting_equilibrium()` | what escapes | refusals swallowed inside `_close_fuel` |
+|---|---|---:|
+| `_tt4_from_f` (the gate's own call) | **REFUSAL** — *"needs the forward burner … non-equilibrium gas"* | 0 |
+| `_instant_fuel` | **BRACKET** — *"does not bracket … off the modeled speed-line region"* | **46 caught, 38 of them the refusal** |
+| `equilibrium_fuel` | **BRACKET**, same message | **46 caught, 38 of them the refusal** |
+
+`_tt4_from_f`'s assert fires inside `ev`, inside `g`, and `_close_fuel` wraps `g(m)` in
+`except AssertionError: m += step; continue`. So every refusal is eaten, the march-in loop walks
+`0.04` at a time to the wall, and the bracket assertion is what the caller sees — naming a cause
+("off the modeled speed-line region") that is not the actual one. Two consequences, both for the
+port:
+
+- **The march-in loop's `{0: 227 889}` is a property of the CPG grid.** On the one input class
+  rung 43's own suite names, it runs **46 iterations**. It is a dead arm and a hot loop in the
+  same file, and the census must say which grid each number came from.
+- **The Rust must reproduce the swallow.** If the refusal becomes a `panic!` or an error variant
+  the march-in arm does not catch, the ordinary entry points return the wrong error — a difference
+  no value key can see, because on these grids they return no value at all. Gated structurally.
+
+**PROBE 4 (B) — ALL SEVEN LIMITER KEYWORDS EXECUTE, AND THE TWO DISPATCH TWINS EMIT DIFFERENT KEY
+SETS.** Nothing had ever armed `tau_gov`, `s_off`, `tau_rel` or `lag` — ~150 source lines with no
+measurement at all. Armed, one case per rung, on a 21-point march:
+
+| armed | route | clipped points | `_release_weight` calls: `w=1` / `0<w<1` / `w=0` | per-point keys |
+|---|---|---:|---|---|
+| bare (43/45) | `integrate_fuel` | 0 | 84 / 0 / 0 | 14 |
+| `Tt4_max` (46) | same | 16 | 84 / 0 / 0 | 14 |
+| `+ tau_gov` (47) | `_integrate_fuel_lagged` | 16 | 84 / 0 / 0 | **14** |
+| `accel` (48) | `integrate_fuel` | 19 | 84 / 0 / 0 | 14 |
+| `surge` (49) | same | 9 | 84 / 0 / 0 | 14 |
+| `+ s_off` (50) | same | 7 | **33 / 0 / 51** | 14 |
+| `+ tau_rel` (51) | same | 9 | **33 / 22 / 29** | 14 |
+| `lag` (52) | `_integrate_fuel_asym` | 19 | **0 / 0 / 0** | **16: `+g`, `+required`** |
+
+Three things this settles before any code: `_release_weight` is called **unconditionally** in
+`der` and short-circuits to `1.0` when `s_off is None` (84 of 84 in six of the nine cases), so the
+rung-49/50 reduce really is one branch; rung 51's fade is the only case with **all three** weight
+arms live; and **`_integrate_fuel_asym` returns a 16-key point where every other route returns
+14**, so the dump must enumerate keys PER ROUTE (slice O's three-variant-enum decision, arriving
+on a trajectory record instead of a return dict). Rung 47's twin, by contrast, adds no key at all
+— its third state `g` is not recorded, which is worth knowing because rung 52's is.
+
+---
+
+**SLICE R's PREDICTION 2 IS CORRECTED HERE, AND THE CORRECTION IS GOOD NEWS.** It registered that
+`TwoSpoolFuelTransient` overrides **none** of `_close` / `_instant_tail` / `_powers`, so slice R's
+`Hooks` table "ships with zero cells exercised inside phase 6". The override half is confirmed —
+this class defines `_close_fuel` and `_instant_fuel`, not the three hook names. But **overridden
+and exercised are different claims**: `_instant_fuel` calls `self._instant_tail`, which IS one of
+`R40`'s three cells, on this slice's hot path (227 856 `der` calls reach it). Grepped for the other
+two: `_close_fuel` replaces `_close` rather than calling it, and `equilibrium_fuel` runs its own
+2-D Newton rather than calling `_powers` — so slice S dispatches through **exactly one of the
+three cells, and exactly one**. That retires slice R's "a table nothing yet uses" caveat instead of
+carrying it forward, and it turns prediction 3's manufactured-failure gate into a real one driven
+from slice S's own call path.
+
+**THE DEFERRAL DUE HERE.** `rung55.rs` item 5 —
+`test_cycle_untouched_transient_ladder_is_bit_for_bit_unstacked` — was booked to this slice by
+§ 5.12's inbox because it needs `TwoSpoolFuelTransient` to exist. Discharged at step 3, with the
+roster line removed. **And `stage.rs:870`'s doc comment must move with it**: it currently reads
+*"`TwoSpoolFuelTransient` does not exist in Rust yet"*, which stops being true at step 1 — slice O's
+lesson is that the note which reaches the next slice is the one written where the compiler and
+tests hit it, and this is the same note going stale in place.
+
+---
+
+**THE TEN PREDICTIONS, registered before any Rust is written:**
+
+1. The oracle comes back **100 % bit-exact against PyPy** on the CPG arm. The TPG
+   `equilibrium_fuel` keys are dumped as a SEPARATE arm and are the slice's one genuine exposure
+   (probe 3): the pass count is a 16-fold amplifier of a single bit, so a divergence shows up as a
+   discrete disagreement rather than a last-bit one. If it fails, § 9 Decision 1 Option B is the
+   route and the CPG arm keeps bit-equality — decided now, and spiked at step 1 on two cells
+   before the dump is written, on slice R step 4's precedent.
+2. The CPython arm is **CPG-bit-exact and TPG-fragile**, with the fragile half published as a
+   deviation distribution and NEVER summed with the CPG half. Prediction: the CPG half moves
+   **0** float keys and the TPG half moves the exit pass count in **≥ 10 of 12** cells.
+3. Slice S dispatches through **exactly one** of `R40`'s three cells (`try_instant_tail`), and the
+   manufactured-failure gate proves it BOTH ways: swapping that cell moves slice S's values, and
+   swapping either of the other two moves **nothing** in this slice.
+4. Replacing `round_ties_even` with `f64::round` in the inherited `integrate` lengthens **21 of
+   162** marches by exactly one point. Prediction, on slice R's precedent that the values may not
+   see it: the trajectory-LENGTH keys and the census catch it, and **at least one reported
+   extremum also moves**, because rung 43's `E_temp_H`/`E_temp_L` are maxima over the whole
+   trajectory rather than over a saturating tail. Registered as an injection to MEASURE at step 1.
+5. The four dead arms of probe 2 (march-in on the CPG grid, `g`'s off-map assert, the `lo0` floor,
+   both truncation arms) and the three dead arms of `equilibrium_fuel`'s Newton stay at **0**
+   across the whole CPG dump — and the march-in counter is **non-zero and equal to 46** on the
+   equilibrium-gas refusal section, so the same counter is gated against zero and against a
+   measured number in one dump.
+6. The high wall's three arms come back **24 033 / 200 193 / 3 663** on the dump's grid, and are
+   gated as a three-way split whose total is the asserted call count — never as a sum
+   (slice R step 2's cost).
+7. `collapse_exponent`'s argmin ties at **{0.05,0.10}, {0.35,0.40}, {0.65,0.70}** and the
+   first-of-equals tie-break is gated by the reported `q` keys, since probe 3 measured gate 9
+   blind to it. Injecting a last-of-equals fold moves **3** value keys and **0** rung gates.
+8. Reaching the refusal through `_instant_fuel` / `equilibrium_fuel` raises the **BRACKET** error,
+   not the refusal, after swallowing **38** refusals in **46** march-in iterations — reproduced in
+   Rust and gated on the error's IDENTITY, because no value key exists on that path.
+9. `_integrate_fuel_asym` emits **16** per-point keys where every other route emits **14**, and
+   the dump enumerates Python's key set per route and asserts each count.
+10. The 20 Python gates port to **≥ 20** Rust gates, as a `--list` name diff with **0 removals**,
+    plus the `rung55.rs` roster discharge.
+
+**PORT DECISIONS, REGISTERED.**
+
+- **A new `src/fuel_transient.rs`**, composing over rung 40's `TwoSpoolTransientCore` through a
+  `pub inner`, as `combustor.rs` composes over `SpoolTransient` and `two_spool_transient.rs` over
+  `TwoSpoolMapCore`. `two_spool_transient.rs` is already 1 271 lines and this is a different
+  control (fuel imposed, `Tt4` an output, seven limiter arms).
+- **The refusal is a fallible path whose error the march-in arm CATCHES**, not a panic — probe
+  4 (A). The two error kinds are distinct variants so the gate can assert which one escapes.
+- **`round_ties_even` is INHERITED, not re-decided** — `two_spool_transient.rs:862` already spells
+  it, and probe 2 makes it load-bearing here for the first time.
+- **The trajectory point is an enum or a route-tagged record**, because `_integrate_fuel_asym`
+  carries two fields no other route does (probe 4 (B)) — slice O's *"a Rust struct with `Option`
+  fields would let a caller read a field Python would have raised `KeyError` on"*.
+- **`_release_weight` is a free function**, called unconditionally, short-circuiting to `1.0` — the
+  spelling that keeps rungs 49 and 50 on one branch.
+- **The three helper classes are plain frozen records**; `AccelSchedule.cap`'s clamped linear
+  interpolation and `_interp` are two SEPARATE functions in Python and stay two in Rust, because
+  their fall-through arms differ and probe 3 measured `_interp`'s dead.
+- **The two suites' gases are built by each suite's OWN expression** — `286.9` in `rung43.rs`,
+  `(γ−1)/γ·cp` in `rung45.rs` — with the bits asserted in the dump's section A, on the measured
+  grounds that only a thrust key can ever witness a mistake here.
+- **Both `slow` markers**: neither suite carries one (checked — `grep pytest.mark` is empty in
+  both), so slice M's rule needs no measurement to give no `#[ignore]`, but the armed smoke
+  sections are new cost and are timed at step 1.
+
+**THE FIVE STEPS.**
+
+| # | step | gate |
+|---|---|---|
+| 1 | `src/fuel_transient.rs` + `oracle/dump_slice_s_smoke.py` + `tests/slice_s_smoke.rs` + `tests/slice_s_dispatch.rs`, with the injections of predictions 3, 4, 7 and 8 MEASURED rather than reasoned, and an ARMED section per limiter keyword | smoke bit-exact; name diff, 0 removals |
+| 2 | `tests/rung43.rs` — the 11 collected items | 11 run / 0 failed |
+| 3 | `tests/rung45.rs` — the 9 collected items; `rung55.rs` item 5 discharged and `stage.rs:870`'s stale note corrected | 9 run / 0 failed; roster line gone |
+| 4 | `oracle/dump_fuel_transient.py` + `tests/fuel_transient_oracle.rs`, PyPy + CPython arms, the TPG arm carrying probe 3's measured expectation | bit-exact CPG; TPG fragile set published |
+| 5 | docs — the rung-43/45 specs' *What the RUST PORT measured*, this section's corrections, and the § 5.12 IOU marked discharged | docs-only |
 
 ---
 
