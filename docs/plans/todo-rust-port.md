@@ -5852,6 +5852,130 @@ reasoned. 2: `tests/rung40.rs`, the 9 Python gates. 3: `tests/rung44.rs`, the 7 
 `tests/two_spool_transient_oracle.rs`, PyPy and CPython arms — the CPython arm carrying probe 4's
 measured expectation, so it is read as a detector with a known sensitivity rather than as coverage.
 
+##### STEP 1 — SHIPPED. **PREDICTION 8 IS REFUTED IN BOTH HALVES, AND THE SUITE IS 17 TESTS, NOT 16**
+
+`src/two_spool_transient.rs` (1 250 lines) + `oracle/dump_slice_r_smoke.py` +
+`tests/slice_r_smoke.rs` + `tests/slice_r_dispatch.rs`. **1 182 values bit-exact against PyPy**, over
+nine sections chosen to touch every path once, and the crate is **691 run / 0 failed** over its
+whole test tree: the forward closure driven directly, the instant on BOTH gases, the 2-D Newton at temperatures probe 3 measured taking
+DIFFERENT exit branches, `sigma_crit` through the inherited `match`, the 2x2 with both eigenvalue
+arms and both `b*c` signs, a 25-point march dumped point-by-point, the two running-line references,
+rung 44's excursion at the ramp where the memo collision fires, and the `lp_disabled` reduce.
+
+**THE SUITE COUNT IN § 5.15's OWN OPENING IS WRONG, AND IT MOVES A STEP.** *"Two Python suites, 16
+tests (9 + 7)"*, counted rather than taken from the header — collected: **17 (9 + 8)**.
+Three counts are in play and the sentence needs its noun: `test_rung40.py` names **8 gates** in its
+docstring, defines **8 functions** and collects **9 items** (gate 5 is parametrized by gas);
+`test_rung44.py` names **6 gates**, defines **8 functions** and collects **8 items**. The plan's
+"9 + 7" is item-count language with rung 44's off by one, so **step 3 owes 8 test functions / 8
+collected items, covering the 6 gates its docstring names**. That opening paragraph exists because
+an earlier reading of the CLASS was wrong and was fixed by counting; the count of the SUITES was
+then made the same way and is off by one in the same direction. *A count is only as good
+as the thing you point it at.*
+
+**PREDICTION 8, MEASURED IN BOTH DIRECTIONS, AND WRONG IN BOTH.** It registered that replacing
+`int(round(s_end/ds))` with a truncation is *"INVISIBLE to all 16 Python gates"* — the one gate
+whose grid makes it live asserting a 0.2 threshold against a measured 0.398 — and that the oracle
+catches it *"through the trajectory length AND the values, since a march one step shorter also
+moves every extremum taken over it."*
+
+- **The Python arm: rung 40 gate 7 FAILS.** Not at the 0.2-vs-0.398 margin the prediction reasoned
+  about, but four lines earlier, at `assert elo * ehi < 0.0` — the bracket-existence check. Dropping
+  the last step turns the excursion at `rho = 0.6*sigma_crit` from positive to negative
+  (`-1.256e-03` and `-6.942e-03`, same sign), so the bisection has nothing to bisect. The prediction
+  measured the WRONG ASSERTION's margin: it read the gate's headline bar, not the bar that runs
+  first. 16 of 17 tests pass under the injection.
+- **The Rust arm: the extremum the gate uses is BIT-IDENTICAL, so "and the values" is false where
+  it matters.** The injection moves **14 of 1 155 compared keys, plus 19 that are never compared at
+  all** (point 24's fields, which a 24-point march cannot emit). `G/slip_excursion` at `rho = 1` and
+  at `rho = 2` come back bit-for-bit unchanged - those are the ramp gate 7 runs, and its extremum
+  sits at saturation. What moves is `F/npts`, ten census counts, the missing-point line, and
+  `G/slip_excursion_slow` - the NON-saturating cell, which exists only because a DIFFERENT injection
+  demanded it (below). So the length and the census are what see a short march; the excursion value
+  sees it only on a ramp § 5.15 never had a reason to run.
+
+**NINE DEFECTS INJECTED INTO THE SHIPPED RUST, AND TWO ARE INVISIBLE TO 1 174 BIT-EXACT VALUES:**
+
+| injected defect | smoke keys moved | where |
+|---|---|---|
+| `_close` returns the FACE flow as `mdot_air` | **122** | A B C E F H + census |
+| `round` -> truncation in `integrate` | **14** (+19 never compared) | F G census |
+| `best` captured AFTER the Newton step | the Newton stops converging | C (raises) |
+| the noise-floor exit deleted | the reacting cell raises | C (raises) |
+| the `steady` memo keyed on the EXACT float | the KEY SEQUENCE grows by one | H (no golden for `key/251`) |
+| rung 40's LINEAR reference unified with rung 44's per-instant one | **2** | G + census |
+| the high wall drops the literal `2.5` arm | **2**, both `illinois_evals` | census ONLY |
+| `best` keeps the LATEST tie (`<=` for `<`) | **0** | INVISIBLE |
+| the march-in ladder as `0.02*(k+1)` | **0** | INVISIBLE |
+
+**AND TWO ROWS OF THAT TABLE ARE THE SLICE'S FIRST CONTENT.**
+
+- **THE CONTESTED `min` IS WORTH NOTHING BUT AN ITERATION.** Probe 2 made a headline of the high
+  wall being *"genuinely contested"* — 1 221 literal against 5 118 map, where rung 37's comparable
+  ceiling bound 15 of 15 on one arm — and the smoke reproduces both arms (2/4 in section D, 6/9 in
+  E). Dropping the literal arm entirely moves **no value at all**: `census/D/illinois_evals` 42 → 43
+  and `census/E/illinois_evals` 99 → 101, and every root comes back BIT-IDENTICAL from a different
+  bracket. So *"both arms are live"* is a statement about which arm is TAKEN, not about what the
+  choice is WORTH — the Illinois converges to the same double either way. Probe 2's census stands;
+  the importance it implies does not.
+- **THE DEFAULT RAMP CANNOT SEE THE REFERENCE CHOICE, FOR AN EXACT REASON.** Probe 5 measured rung
+  40's linear reference and rung 44's per-instant one agreeing to seven figures at the extremum. On
+  `r_ramp = 0.5, s_end = 1.2` (gate 7's own pair) they agree **bit-for-bit**, because the extremum
+  is attained at `s = 0.5`, the instant the ramp SATURATES: there `u == 1` exactly, so the linear
+  interpolation IS the endpoint match. The first version of section G therefore reported the
+  unification as one census key and ZERO values. A non-saturating cell (`r_ramp = 3.0`, where the
+  two differ by 2.4 %: `-7.1498e-04` against `-6.9835e-04`) was added, and the injection now moves a
+  VALUE. *The pointwise keys the section already carried could not do it either — they are computed
+  in the dump and in the test, so they gate the arithmetic and not the shipped body's CHOICE.*
+
+**THE THREE MANUFACTURED-FAILURE GATES SHIP** (`tests/slice_r_dispatch.rs`, one `#[test]` in its own
+binary so the thread-local counters cannot be stolen):
+
+- **prediction 3 — the dispatch is live on BOTH tables.** Each of rung 40's three cells is swapped
+  for a wrapper perturbing ONE number by 1e-9 relative, and each is caught where it should be and
+  nowhere else: `try_close` moves the closure AND the residuals downstream, `try_instant_tail` moves
+  the thrust and NOT the closure, `powers` moves the converged speeds and NOT the closure (the
+  Newton alone reads it). Then the INHERITED rung-39 cell is swapped and both `lead_threshold` and
+  rung 44's steady reference move — the edge that is structurally new in this slice, and slice O's
+  lesson applied before the fact rather than after.
+- **prediction 5 — a truncated march is visible in the length key.** The closure is starved after 30
+  calls; the march comes back shorter, exactly one truncation arm is counted, and every point it DID
+  produce is bit-identical to the full march's. Without this, "0 truncations, gated against zero" is
+  a gate that has never fired.
+- **prediction 4 — the memo's equivalence relation is gated by the KEY SEQUENCE.** The dump builds
+  both keying schemes off the SAME trajectory: **251 rounded keys, 252 exact ones, 1 collision** —
+  and the shipped miss sequence, recovered from the `match` calls, is asserted to BE the rounded one.
+  Keying on the bits is then caught by a golden that does not exist for `H/exc/key/251`.
+
+**AND THE COMPARATOR ITSELF HAD A GATE THAT COULD NOT FIRE.** `Cmp::finish` asserted the VALUE
+diffs before the never-compared ones, so the half that exists to catch a field missing from the PORT
+was unreachable whenever any value also moved - which is exactly what a short march does. The two
+are now ONE panic carrying both halves, section G reads its points with `get` (it used to PANIC at
+point 24 and abort before either half printed), and the guard has been WATCHED TO FIRE: commenting
+out one `c.f` line makes it report `["A/v0"]` by name. *The documented gate that does not exist, one
+file down, found by the injection it was built for.*
+
+**WHAT THE SMOKE CANNOT SEE, SAID PLAINLY.** `best`'s strict `<` versus `<=` is invisible here: on
+this grid no two Newton passes leave EXACTLY equal residuals, so the tie-break is never exercised -
+step 4's larger reacting grid is where it could be, and that is registered rather than assumed
+covered. The march-in ladder's spelling is likewise unwitnessed by any value, because probe 2
+measured the loop dead; it is gated by its counter being zero and by nothing else, which is the
+honest statement. Three Rust counters have no Python column at all - the march-in advances, the
+non-real guard and the `g` failures they come from are SWALLOWED by the shipped body, and a wrapper
+cannot count what the body catches; copying the body into the dump would have made the dump's
+arithmetic a copy rather than the shipped code. Every dead arm named above is ASSERTED against zero
+in `census`, including the Newton's damper and its `1e-30` floor, which were counted but unread
+until this was written.
+
+**PORT DECISIONS THAT SURVIVED CONTACT.** `round3` is format-and-parse; `rho` is a mutable field
+with a `jacobian_at_rho` twin so the two band methods pass `1.0` explicitly; `Instant2`'s
+`PartialEq` is hand-written over the 42 floats and the branch, `wgas` excluded on the measured
+grounds that rung 44 gate 1's comparison never exercises it; and the two `mdot_air`s in `_close` are
+two named locals — which the 118-key injection says is the single most load-bearing line in the
+file. The dump enumerates PYTHON's dict keys (**21** and **44**, both asserted), and the comparator
+now fails on any golden key the Rust never asked for: without that, a field missing from the port
+would be missing from the comparison too.
+
 
 ---
 

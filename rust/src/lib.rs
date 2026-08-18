@@ -137,3 +137,4 @@ pub mod stage;
 pub mod stator;
 pub mod stator_bleed;
 pub mod two_spool;
+pub mod two_spool_transient;
