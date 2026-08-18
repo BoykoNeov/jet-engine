@@ -5976,6 +5976,168 @@ file. The dump enumerates PYTHON's dict keys (**21** and **44**, both asserted),
 now fails on any golden key the Rust never asked for: without that, a field missing from the port
 would be missing from the comparison too.
 
+##### STEP 2 — SHIPPED. **THE GATE THAT ANCHORS THE OBJECT IS BLIND AT THE THROTTLE IT STARTS ON**
+
+`rust/tests/rung40.rs` (591 lines) — the 9 collected items of `tests/test_rung40.py`, **8 test
+functions**, gate 5 split into a CPG and a reacting `#[test]` because Python parametrizes it.
+**9 run / 0 failed in 3.0 s**, and no `src/` edit: every field the port needed (`a4`/`a45`/`a8` off
+`inner.base`, the `ComponentMap` shape fields, `SpoolTransient`'s eight equilibrium names) was
+already `pub`, so the step is test-only exactly as the step table assumed. Seven of the nine passed
+on the first compile; the two that did not were gate 5's count bars, left at `0` on purpose so the
+number had to be measured rather than transcribed.
+
+**PREDICTION 9's BAR IS FOUR NUMBERS, NOT TWO, AND THE PLAN'S PAIR IS A SUM.** § 5.15 registered
+*"245 real / 7 complex on gate 5's grid"*. That is the two gases ADDED: measured per gas, the split
+is **124/2 on CPG and 121/5 on the reacting gas**, 126 each, and the two sum to exactly the
+registered pair. Both halves were then re-measured on the PYTHON side (`probe_r6_eig.py`,
+re-evaluating the shipped discriminant `tr² − 4·det ≥ 0` on the same `J`, since Python has no
+counter) and agree cell for cell. So the bar ships as four constants plus an assertion that their
+total is the grid size `7 × 3 × 6` — a count read against a grid whose size is itself asserted,
+which is what [[rust-port-slice-n-step4]] cost. *Registering a sum and gating a split are not the
+same measurement.*
+
+**PREDICTION 10's SECOND HALF HAD NO PYTHON GATE, AND IS WRITTEN HERE RATHER THAN LEFT TO PROSE.**
+The prediction is that the `lp_disabled` reduce holds bit-for-bit *"and every other method on that
+variant panics"*. Python's gate 2 tests only the forward. The panic half now sits inside gate 2 via
+`catch_unwind` — `core()` and `core_mut()` on the degenerate variant, plus the MIRROR
+(`degenerate()` on the full variant), so the guard is a discriminator and not a blanket panic that
+would satisfy the same assertion for the wrong reason. It goes inside gate 2 deliberately: a tenth
+`#[test]` would move the collected count that step 1 had just finished correcting from 16 to 17.
+
+**AND THE STEP'S CONTENT — GATE 3's FOUR REDUCE BARS ARE STRUCTURALLY BLIND AT ITS FIRST THROTTLE.**
+Gate 3 is the non-tautological one: a bare-math CPG two-shaft closure, no `Gas`/component/
+`ComponentMap`-method/solver call inside it (grepped, not assumed — the only two crate calls in its
+body are the `match_point` and `lead_threshold` it compares AGAINST). To check it is not vacuous,
+the map's linear loading slope `l` was deleted from the bare `psi`. It IS caught — but by the
+`sigma_crit` bar, not by the four speed and pressure-ratio bars four lines above it:
+
+| injected: `l` dropped from `bare_psi` | `Tt4 = 1500` (design, and FIRST in the sweep) | `Tt4 = 1300` |
+|---|---|---|
+| `\|Δnu_L\|` | **4.4e-15** — six orders INSIDE the `1e-8` bar | **2.9e-2** |
+| `\|Δnu_H\|` | 7.3e-15 | 1.1e-2 |
+| `\|Δpi_LPC\|/pi_LPC` | 9.9e-15 | 9.7e-4 |
+| `sigma_crit`, bare vs shipped | **1.0000001 vs 1.1483** — the bar that fires | — |
+
+At the design throttle the flow coefficient is `1` by construction, so `l·(phi − 1)` vanishes
+IDENTICALLY and the whole map-shape channel drops out of the reduce bars; the off-design throttles
+see it at three million times the bar, but the sweep never reaches them. This is the gate's own
+docstring — *"reproducing the `==1` identity alone would only re-check the reduce"* — shown rather
+than asserted, and it sharpens it: **which assertion in a two-path gate is the discriminator depends
+on where the sweep STARTS, and this sweep starts at the one point where three of its four bars
+cannot move.** Same family as slice J's *exactness bounds the CELLS visited, not the RULES
+discriminated*, one level up: here it is the CELL ORDER that decides which rule is under test.
+
+**THE TWO SILENT DEFAULTS PYTHON HAS AND RUST DOES NOT, WRITTEN OUT.** `lead_threshold`'s `d`
+is **not uniform inside gate 4** — (a) and (b) pass `25.0`, (c) leaves the default `5.0`
+(`engine.py:3644`); and gate 7's `slip_excursion` names only `s_end` and `ds`, leaving
+`r_ramp = 0.5` (`engine.py:3791`). Carrying `25.0` into (c), or guessing `r_ramp`, changes the
+physics without failing loudly — a defaulted argument is a value the source states exactly once,
+far from the call.
+
+**GATE 7's ASSERTION ORDER IS PRESERVED AND SAID SO AT THE SITE.** `elo * ehi < 0.0` stays four
+lines ahead of the `0.2` margin, because step 1 measured that the bracket check — not the headline
+margin — is what a truncated step count breaks. Merging the two would silently retire that finding.
+
+**BOTH `slow` MARKERS DROPPED, AGAINST A MEASURED COST.** Gate 5 (`@pytest.mark.slow`, both gases)
+and gate 7 run inside a **3.0 s** whole-file wall clock, so slice M's rule gives no `#[ignore]`.
+
+**AND THE LINE COUNT IN THIS PARAGRAPH WAS WRONG TWICE, IN OPPOSITE DIRECTIONS.** It was first
+written as 591 without ever being counted (step 1's *count the thing you name*, one step on),
+corrected to the measured **579**, and then the two doc paragraphs this section describes pushed
+the file back to **591** — so the un-measured guess is now right by coincidence and the measurement
+that replaced it is stale. *A count is measured AFTER the last edit, or it is a guess about a file
+that no longer exists.*
+
+##### STEP 3 — SHIPPED. **AN INVARIANCE GATE IS SATISFIED BEST BY DELETING THE VARIABLE IT VARIES**
+
+`tests/rung44.rs` (**607** lines, counted after the last edit) — **9 run / 0 failed**, no `src/`
+edit — verified by `git diff --stat -- rust/src/` coming back empty AFTER the injection harnesses,
+which had written to that file thirteen times — and `rung41.rs`'s roster discharged **11 → 12**.
+The crate is **709 run / 0 failed**, summed over its 79 `test result` lines by a clean run with nothing else touching cargo — the first attempt at this number overlapped the injection harnesses and reported `684 / 1`, which is an artefact of rebuilding mid-run and not a result.
+
+**NINE FUNCTIONS FOR AN EIGHT-FUNCTION FILE, AND THE NINTH IS THE DEFERRAL.** `test_rung44.py`
+names **6 gates**, defines **8** functions and collects **8** items — no `parametrize` anywhere, so
+for once two of the three counts coincide, exactly as step 1 predicted after correcting § 5.15's
+"9 + 7". The ninth `#[test]` is slice L's last outstanding item,
+`test_reduce_transient_untouched_by_surge_line_bit_for_bit`, which lands in `rung44.rs` rather than
+`rung40.rs`: what it gates is a *surge line left unread by a transient*, which is rung 44's subject,
+not rung 40's. `rung41.rs`'s roster, its header table row and its assertion message are all updated
+to point at where it went, and its `for … if !p` print loop is KEPT although the list is now
+all-`true` — it is what turns a re-opened deferral back into a visible line instead of a silently
+shorter roster. **The IOU from slice L is now CLOSED.**
+
+**THE PORT AGREES WITH PYTHON ON VALUES, NOT ONLY ON THE SIGNS ITS GATES ASSERT.** Every assertion
+in this file is a sign, an ordering, a monotonicity or a spread — none of them pins a number, so a
+port that was wrong by a few per cent would pass all nine. A throwaway probe on both sides
+(`M:/claud_projects/temp/rust-phase6/probe_r44_values.py` and a Rust twin, deleted after use)
+dumped the **49 floats and 11 discrete flags** these gates read — the five shape pairs' accel and
+decel excursions, their ratios, their damping ratios and band-existence flags, the five-point `rho`
+sweep, the six-point ramp sweep, and both margin records — and the two files **diff to nothing but
+`True`/`true` and `1.0`/`1`**. So the gates are sign gates sitting on top of bit-exact values, and
+that is now measured rather than assumed.
+
+**THE FINDING: AN INVARIANCE CLAIM'S CONFIRMING TEST IS MAXIMALLY SATISFIED BY DELETING THE
+MECHANISM.** Ten defects were injected to size the gates. **Six** are caught by the gate whose claim they break, **two** by the step-1 smoke and no rung gate at all, and **two** by NOTHING:
+
+| injected defect | who fails | reading |
+|---|---|---|
+| swap the two steady references in `phi_excursion` | gate 3, gate 4 (c) | the LP/HP split is genuinely gated |
+| store `\|extremum\|` instead of the SIGNED one | gate 3, gate 2 | the sign is the load-bearing claim, and the bare reference sees it too |
+| transient minimum read off the STEADY line | gate 5 | the flip is a real comparison, not a restatement |
+| drop the unarmed-map refusal | gate 5 | the `pytest.raises` leg ports live |
+| ramp saturates instantly (`r_ramp` dead) | gate 4 (b) | the ramp-rate monotonicity is not an artefact of the grid |
+| drop `l` from the TEST's own bare loading law | gate 2 | the non-tautological reference is not vacuous **on a marched object** — step 2's injection, one rung on, and here it fires at the headline bar rather than four lines above it |
+| **delete `rho` from the SHIPPED marcher** | **NOTHING, in either rung suite** | see below |
+| delete `rho` from the BARE march in gate 2 | **NOTHING** | the same hole, in the reference |
+| `min_phi_lp/hp` tracked as a MAX | **no rung gate** — only `slice_r_smoke` | a reported field no gate reads |
+| `s_lp` (WHERE the extremum sits) frozen at 0 | **no rung gate** — only `slice_r_smoke` | likewise |
+| **the forward closure READS `phi_surge`** (`1e-9` of it, in the loading law) | gate 1 **and** the rung-41 discharge | the REDUCE SPINE is a live discriminator, not a self-comparison that cannot fail |
+
+Gate 4 (a) asserts that the excursion moves less than 5 % as `rho` sweeps 25×. Deleting `rho` from
+the marcher outright sends that spread to **exactly zero**, which satisfies the bar *more
+comfortably than the truth does*. The same hole sits in gate 2's own `rho`-invariance leg. Nothing
+in `rung44.rs` could see either, and what caught the shipped one was
+`rung40.rs::gate7_scope_sigma_crit_is_first_instant_only`, a rung away and aimed at something else.
+**A gate that certifies a variable POWERLESS cannot, by construction, distinguish powerless from
+ABSENT — so it needs a second bar saying the variable is READ.** Both gates now carry
+`assert!(lo < hi)` beside the spread, and re-injection confirms each defect is caught by the gate
+whose claim it breaks. This is a bar Python does not have; it is written here for the same reason
+step 2's panic half was — the port is where the missing direction became visible.
+
+**THE REDUCE GATES NEEDED THEIR OWN INJECTION, BECAUSE A SELF-COMPARISON CANNOT BE VALUE-CHECKED.**
+Sorting the nine by what actually validates them splits them cleanly: gates 2, 3, 4 (a/b/c) and 5
+are bit-checked against PyPy by the probe **and** sized by an injection, while gate 1, gate 1 (b)
+and the rung-41 discharge compare two runs of the SAME code against each other — there is no
+absolute value for a probe to diff, so nothing but an injection can reach them. Making the forward
+closure read `phi_surge` at the `1e-9` level fails **both** gate 1 and the discharge test, so both
+discriminate; the discharge test is otherwise a strict SUBSET of gate 1 apart from its floor value,
+and its doc comment now says so rather than implying it adds coverage (`Instant2`'s `PartialEq`
+already compares the two power residuals it names). *Rung 63's over-claim shape, caught before it
+shipped this time.*
+
+**AND GATE 1 (b) WAS WEAKER THAN PYTHON'S UNTIL IT WAS REWRITTEN.** It first built a fresh engine
+for each of the two runs; Python re-runs ONE object. Rebuilding still sees a global that the
+diagnostics disturb, but not a mutation of the engine itself — which is the channel the gate exists
+for. It now reuses one object. Rust's `run(&self)` makes that channel hard to open at all, so the
+gate is thinner here than in Python either way, and the docstring says so instead of letting a
+green tick imply otherwise.
+
+**AND THE TWO FIELDS NO RUNG GATE READS ARE COVERED, ONE LAYER DOWN.** `min_phi_lp`/`min_phi_hp`
+and `s_lp`/`s_hp` are emitted by `phi_excursion` and asserted by nothing in either Python suite;
+corrupting them is invisible to all 17 rung tests and caught only by step 1's smoke oracle. That is
+the right architecture — a value dump is what covers reported-but-unasserted fields — but it is
+worth saying which layer holds which claim, because *"the rung suites pass"* would otherwise be
+read as covering the whole record.
+
+**THE HARNESS ITSELF PRODUCED A FALSE READING FIRST.** The first injection run reported every
+defect as a COMPILE ERROR (the detector matched cargo's own `error: test failed` line) and, once
+that was fixed, reported a **failing baseline** and three defects landing on a gate that does not
+touch them. Cause: the revert used `mv "$f.bak" "$f"`, which restores the backup's mtime, so cargo
+did not rebuild and the next injection ran against the *previous* one's binary. `cp` + `touch` on
+revert fixes it. *An injection harness needs its own baseline to pass before any row it prints is
+evidence* — three rows here were pure carry-over from the row above.
+
+
 
 ---
 

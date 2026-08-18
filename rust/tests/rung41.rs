@@ -11,7 +11,7 @@
 //! | # | `tests/test_rung41.py` | here |
 //! |---|------------------------|------|
 //! | 1 | `test_reduce_surge_line_is_pure_diagnostic_bit_for_bit` | [`gate1_surge_line_is_a_pure_diagnostic`] |
-//! | 2 | `test_reduce_transient_untouched_by_surge_line_bit_for_bit` | **DEFER → phase 6 SLICE R** (`TwoSpoolTransient`, rung 40) — the ONE still outstanding; its closing `is_flat` line **WITHDRAWN → slice M** |
+//! | 2 | `test_reduce_transient_untouched_by_surge_line_bit_for_bit` | **DISCHARGED by phase 6 SLICE R step 3** — `rung44.rs::rung41_deferred_transient_untouched_by_surge_line_bit_for_bit`; its closing `is_flat` line stays **WITHDRAWN → slice M** |
 //! | 3 | `test_cycle_untouched_rung6_bit_for_bit` | **SPLIT** — [`gate1c_cycle_untouched_rung6`] ports the bit-for-bit halves; the interleaved `SpoolTransient` construction defers |
 //! | 4 | `test_pi_c_spool_reproduces_shipped_pi_both_spools` | [`gate2_pi_c_spool_reproduces_the_shipped_pi`] |
 //! | 5 | `test_split_lp_takes_the_excursion` | [`gate3_the_split_lp_takes_the_excursion`] |
@@ -597,13 +597,15 @@ fn slice_l_deferrals() {
     // (name, ported?) — every `def test_` in tests/test_rung41.py, in file order.
     let roster: [(&str, bool); 12] = [
         ("test_reduce_surge_line_is_pure_diagnostic_bit_for_bit", true),
-        // DEFER -> phase 6: reaches TwoSpoolTransient (rung 40). Its closing
+        // DISCHARGED by PHASE 6 SLICE R step 3, in `rung44.rs`, not here: it reaches
+        // `TwoSpoolTransient` (rung 40), which did not exist until that slice, and what it gates —
+        // a surge line left UNREAD by a transient — is rung 44's own subject. Its closing
         // `ComponentMap.flat().with_phi_surge(0.6).is_flat()` line was listed by § 5.8.1 as
-        // porting NOW and is WITHDRAWN (§ 5.8.2 (b)): a Rust `is_flat` would be Python's
+        // porting NOW and stays WITHDRAWN (§ 5.8.2 (b)): a Rust `is_flat` would be Python's
         // predicate minus the `vsv` conjunct (rung 53's, slice M's), and there is no
         // flat-reduce BRANCH here for it to guard. P8's content is gated as a VALUE, in
         // `gate1_surge_line_is_a_pure_diagnostic`.
-        ("test_reduce_transient_untouched_by_surge_line_bit_for_bit", false),
+        ("test_reduce_transient_untouched_by_surge_line_bit_for_bit", true),
         // SPLIT: the bit-for-bit cycle halves are `gate1c_cycle_untouched_rung6`; the
         // interleaved `SpoolTransient.surge_margin_channels` construction defers to phase 6.
         ("test_cycle_untouched_rung6_bit_for_bit", true),
@@ -625,15 +627,19 @@ fn slice_l_deferrals() {
     assert_eq!(roster.len(), 12,
                "tests/test_rung41.py has 12 test functions — if that changed, this roster is \
                 stale and the port is gating against a file that no longer exists");
-    assert_eq!(ported, 11, "11 of rung 41's 12 test functions are now gated: 10 landed in slice L \
-                            (one of them only its non-transient half), and the 11th was \
-                            discharged by phase-6 slice P as \
+    assert_eq!(ported, 12, "ALL 12 of rung 41's test functions are now gated — the IOU is CLOSED. \
+                            10 landed in slice L (one of them only its non-transient half); the \
+                            11th was discharged by phase-6 slice P as \
                             `rung36.rs::rung41_deferred_the_verdict_survives_while_its_mechanism_\
-                            is_corrected`. The LAST one still defers to phase 6 slice R \
-                            (`TwoSpoolTransient`, rung 40).");
+                            is_corrected`; the 12th by phase-6 slice R step 3 as \
+                            `rung44.rs::rung41_deferred_transient_untouched_by_surge_line_bit_for_\
+                            bit`. If this count ever drops, a deferral was re-opened and needs a \
+                            comment above saying WHERE it went.");
+    // Kept rather than deleted now that the list is all-`true`: the loop is what turns a flipped
+    // flag back into a visible line instead of a silently shorter roster.
     for (name, p) in roster {
         if !p {
-            println!("STILL DEFERRED -> phase 6 slice R: {name}");
+            println!("STILL DEFERRED: {name}");
         }
     }
 }
