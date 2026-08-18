@@ -455,6 +455,9 @@ impl CpgSection {
     /// Infallible in fact — the closed form has no bracket to miss. Present so [`Section`] can
     /// offer one fallible interface across all four kinds (§ 5.8).
     pub fn try_t_from_pr(&self, pr: f64) -> Result<f64, Abort> { Ok(self.t_from_pr(pr)) }
+    /// Infallible in fact, for the same reason as [`try_t_from_pr`](Self::try_t_from_pr) — and
+    /// this is the arm that stays DEAD on the CPG grids slice S's census is read off.
+    pub fn try_t_from_h(&self, h: f64) -> Result<f64, Abort> { Ok(self.t_from_h(h)) }
     pub fn gamma_at(&self, _t: f64) -> f64 { self.gamma }
     pub fn r_at(&self) -> f64 { self.r }
 }
@@ -504,12 +507,37 @@ impl TpgSection {
     pub fn pr(&self, t: f64) -> f64 { self.phi(t).exp() }
 
     pub fn t_from_h(&self, h_target: f64) -> f64 {
+        self.try_t_from_h(h_target).unwrap_or_else(|e| panic!("{}", e.0))
+    }
+
+    /// The FALLIBLE twin of [`t_from_h`](Self::t_from_h) — see [`Abort`] and [`try_solve`].
+    ///
+    /// **SLICE S OVERTURNS SLICE L'S MEASUREMENT HERE, and by measurement rather than by
+    /// taste — the third time this crate has had to.** § 5.8 recorded that `t_from_h` "reaches
+    /// [`solve`] too and fires **0** times, so it keeps its `assert!` on the same rule that used
+    /// to cover" the pressure inverse. That was true of the call sites that existed then. Rung
+    /// 43's `_close_fuel` scans its bracket from the LOW wall all the way to a THREE-arm high
+    /// wall, and on the equilibrium gas — the one input class rung 43's own suite names — the
+    /// HPC ideal-temperature inversion `T_from_h_c(h25 + eta_hpc*(h3 - h25))` lands outside the
+    /// 150–4000 K bracket for a contiguous band of trial flows: measured **8 times inside
+    /// `_close_fuel`'s caught scope**, at `m_lp` in 1.739…2.019, where the HP face has run past
+    /// `psi < 0` and the ideal enthalpy rise goes negative.
+    ///
+    /// *Slice L step 1's rule, applied a phase later: fallibility is per CALL SITE, not per
+    /// function.* Rung 40's `_close` carries the identical line and never reaches that band,
+    /// because its march-in breaks at the FIRST success and its high wall has only two arms.
+    ///
+    /// The round-trip check below stays an `assert!` on [`try_t_from_pr`](Self::try_t_from_pr)'s
+    /// rule: it is the working contract's conservation check, not control flow. Only the BRACKET
+    /// is control flow.
+    pub fn try_t_from_h(&self, h_target: f64) -> Result<f64, Abort> {
         // dh/dT = cp(T)
-        let t = solve(|x| self.h(x), |x| self.cp(x), h_target, SOLVE_LO, SOLVE_HI, SOLVE_TOL);
+        let t = try_solve(|x| self.h(x), |x| self.cp(x), h_target, SOLVE_LO, SOLVE_HI,
+                          SOLVE_TOL)?;
         // Round-trip inverse -- a STANDING conservation assert (rung-3 gate 2).
         assert!((self.h(t) - h_target).abs() <= 1e-6 * h_target.abs() + 1e-3,
                 "T_from_h round-trip");
-        t
+        Ok(t)
     }
 
     pub fn t_from_pr(&self, pr_target: f64) -> f64 {
@@ -583,6 +611,10 @@ impl ReactingSection {
     /// The FALLIBLE twin — see [`Abort`]. Only the frozen mixture's bracket can miss.
     pub fn try_t_from_pr(&self, pr: f64, far: f64) -> Result<f64, Abort> {
         self.section_for(far).try_t_from_pr(pr)
+    }
+    /// The FALLIBLE twin — see [`Abort`] and [`TpgSection::try_t_from_h`].
+    pub fn try_t_from_h(&self, h: f64, far: f64) -> Result<f64, Abort> {
+        self.section_for(far).try_t_from_h(h)
     }
     pub fn gamma_at(&self, t: f64, far: f64) -> f64 { self.section_for(far).gamma_at(t) }
     pub fn r_at(&self, far: f64) -> f64 { self.section_for(far).r }
@@ -1042,6 +1074,10 @@ impl EquilibriumSection {
     pub fn try_t_from_pr(&self, pr: f64, far: f64) -> Result<f64, Abort> {
         self.section_for(far).try_t_from_pr(pr)
     }
+    /// The FALLIBLE twin — see [`Abort`] and [`TpgSection::try_t_from_h`].
+    pub fn try_t_from_h(&self, h: f64, far: f64) -> Result<f64, Abort> {
+        self.section_for(far).try_t_from_h(h)
+    }
     pub fn gamma_at(&self, t: f64, far: f64) -> f64 { self.section_for(far).gamma_at(t) }
     pub fn r_at(&self, far: f64) -> f64 { self.section_for(far).r }
 }
@@ -1108,6 +1144,16 @@ impl Section {
             Section::Tpg(s) => s.try_t_from_pr(pr),
             Section::Reacting(s) => s.try_t_from_pr(pr, far),
             Section::Equilibrium(s) => s.try_t_from_pr(pr, far),
+        }
+    }
+    /// The FALLIBLE twin of [`t_from_h`](Self::t_from_h) — see [`TpgSection::try_t_from_h`] for
+    /// why it exists at all, and which call site measured it.
+    pub fn try_t_from_h(&self, h: f64, far: f64) -> Result<f64, Abort> {
+        match self {
+            Section::Cpg(s) => s.try_t_from_h(h),
+            Section::Tpg(s) => s.try_t_from_h(h),
+            Section::Reacting(s) => s.try_t_from_h(h, far),
+            Section::Equilibrium(s) => s.try_t_from_h(h, far),
         }
     }
     pub fn gamma_at(&self, t: f64, far: f64) -> f64 {
@@ -1406,6 +1452,13 @@ impl Gas {
     pub fn h_c(&self, t: f64) -> f64 { self.cold.h(t, 0.0) }
     pub fn pr_c(&self, t: f64) -> f64 { self.cold.pr(t, 0.0) }
     pub fn t_from_h_c(&self, h: f64) -> f64 { self.cold.t_from_h(h, 0.0) }
+    /// The FALLIBLE twin of [`t_from_h_c`](Self::t_from_h_c) — see [`Abort`].
+    ///
+    /// **The ONE fallible COLD property call, and rung 43 is what made it one.** Its provenance
+    /// is measured, not stylistic: see [`TpgSection::try_t_from_h`]. Every caller that existed
+    /// before slice S keeps the panicking spelling, because slice L's measurement of them still
+    /// holds — only `fuel_transient`'s closure trial reaches the band.
+    pub fn try_t_from_h_c(&self, h: f64) -> Result<f64, Abort> { self.cold.try_t_from_h(h, 0.0) }
     pub fn t_from_pr_c(&self, pr: f64) -> f64 { self.cold.t_from_pr(pr, 0.0) }
     pub fn gamma_c_at(&self, t: f64) -> f64 { self.cold.gamma_at(t, 0.0) }
 

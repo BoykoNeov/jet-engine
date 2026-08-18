@@ -26,7 +26,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL, regenerate via extract_data.py + build.py
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy leaves `open().write()` unflushed, PowerShell Get/Set-Content double-encodes UTF-8; both fail SILENTLY
 
-## The Rust port — decided 2026-08-12; **PHASES 0–5 DONE**; **PHASE 6 (transients) AUTHORISED 2026-08-17**, six slices P–U, **P, Q, R SHIPPED; S PRE-REGISTERED (§ 5.16, 5 steps); T, U remain**
+## The Rust port — decided 2026-08-12; **PHASES 0–5 DONE**; **PHASE 6 (transients) AUTHORISED 2026-08-17**, six slices P–U, **P, Q, R SHIPPED; S STEP 1 OF 5 SHIPPED (§ 5.16); T, U remain**
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; slices are free inside an authorised phase, **phase 5 needs fresh authorisation**
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost by COMPILING and returning a silently different number
 - [Rust arithmetic IS PyPy](rust-port-arithmetic-is-pypy.md) — 100% bit-exact vs PyPy on gas AND cycle; size a solver claim by DISTINCT ROOTS, not row count
@@ -63,6 +63,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Slice R step 3: rung 44 + slice L's last IOU](rust-port-slice-r-step3.md) — an invariance gate is satisfied BEST by deleting the variable it varies; an injection harness needs its own baseline to pass
 - [Slice R step 4: the oracle](rust-port-slice-r-step4.md) — a value probe that feeds the same wrong input to BOTH sides cannot see a wrong input; a registered IOU rides one more step unless the next plan entry names it back
 - [Slice S pre-flight](rust-port-slice-s-preflight.md) — an inherited IOU named a gas the code REFUSES; and a prediction whose justification already killed a neighbour's is a reason to measure, not to write
+- [Slice S step 1: the port + smoke](rust-port-slice-s-step1.md) — the plan's table lost a row its own prose counted; two injections reporting "nothing moved" could not have moved anything
 
 ## Shipped rungs
 

@@ -127,6 +127,7 @@ pub mod bleed;
 pub mod combustor;
 pub mod components;
 pub mod engine;
+pub mod fuel_transient;
 pub mod gas;
 pub mod map;
 pub mod march;

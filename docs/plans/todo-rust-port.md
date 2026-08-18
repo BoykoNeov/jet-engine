@@ -6686,6 +6686,122 @@ harness whose revert preserved mtimes reported three defects as carry-over from 
 
 ---
 
+##### STEP 1 — SHIPPED. **THIS SECTION'S OWN TABLE LOST A ROW ITS PROSE COUNTED, AND ITS 46 IS TWO ARMS**
+
+`src/fuel_transient.rs` (2 225 lines, against 1 103 of Python), `oracle/dump_slice_s_smoke.py`, `tests/slice_s_smoke.rs`
+and `tests/slice_s_dispatch.rs`. The smoke is **5 536 values bit-exact against PyPy**; the
+name diff is **713 → 715, 0 removals**; both new binaries carry ONE `#[test]` each, because the
+counters are thread-locals.
+
+**FINDING 1 — PROBE 4 (B)'s TABLE HAS EIGHT ROWS AND ITS OWN PROSE SAYS NINE.** The paragraph
+reads *"84 of 84 in six of the nine cases"* against a table listing bare / `Tt4_max` / `+tau_gov`
+/ `accel` / `surge` / `+s_off` / `+tau_rel` / `lag` — eight, of which five are 84/84. Recovered
+from `probe_s4.py` rather than reconstructed: the missing row is **`ALL (46+47+48+49)`**, 19
+clipped, and it is the ONLY case routing through `_integrate_fuel_lagged` **with both min-select
+legs armed** — i.e. the only one exercising that twin's `faded` (which references `mf_sched`,
+where the bare marcher's same-named closure references the applied `mf`) beside a sequential,
+unfiltered min-select. An eight-section dump would have under-delivered prediction 9's own gate.
+
+**AND THE TEN CASES STILL DO NOT CONTEST A `min`.** Measured after the fact, from a gate that
+failed: the eight single-leg cases build at most ONE cap, and the composite routes to the LAGGED
+twin, whose min-select is sequential and builds no `caps` list at all — so `der_caps_2` and
+`der_caps_3` are **zero across all nine**. The bare marcher's `caps.retain(|c| c < mf)` / `min` is
+the one place in the whole family where two legs contend for the same actuator, and probe 2
+measured it building zero caps **227 856 times out of 227 856** on both suites' full grids. So the
+dump ships a **TENTH** case — the composite with `tau_gov` dropped, which puts all three legs on
+the bare route — and it is the only coverage that machinery has anywhere in the project.
+
+**FINDING 2 — THE 46 SWALLOWED REFUSALS ARE 38 + 8, AND THE 8 COME FROM A CALL SITE SLICE L
+MEASURED AT ZERO.** This section recorded *"46 caught, 38 of them the refusal"* as one number and
+left the other 8 unnamed. Measured (`probe_s6.py`, the SHIPPED body instrumented by textual
+substitution): they are **`inverse: root not bracketed`, every one out of the HPC ideal-temperature
+inversion** `T_from_h_c(h25 + eta_hpc*(h3 - h25))` at `engine.py:4591`, over a contiguous band of
+trial flows `m_lp ∈ 1.739…2.019` where the HP face has run past `psi < 0` and the ideal enthalpy
+rise goes negative. **None is the off-map/NaN guard**, which stays dead even here.
+
+That matters beyond the census. § 5.8 recorded `t_from_h` reaching `solve` and firing **0** times,
+and kept its `assert!` on that measurement — true of the call sites that existed then. Rung 43's
+closure scans from the low wall to a THREE-arm high wall and reaches the band; rung 40's identical
+line never does, because its march-in breaks at the FIRST success and its wall has two arms. So
+`gas.rs` gains **`try_t_from_h_c`** (plus the twins beneath it), added along exactly the chain
+measured to fail and nowhere else — *slice L step 1's rule, one phase on: fallibility is per CALL
+SITE, not per function.* The two arms are **two counters**, never a summed 46: *a registered SUM is
+not a gated SPLIT.*
+
+**FINDING 3 — PREDICTION 3 IS TRUE OF THE FUEL PATH AND FALSE OF THE OBJECT, and the gate that
+said otherwise was unearned twice over.** It registered that swapping either of rung 40's other two
+hook cells "moves **nothing** in this slice". Measured: on a PURE fuel-path probe both are never
+CALLED (the closure is replaced, and `equilibrium_fuel` runs its own Newton), which is a stronger
+statement than "moved nothing" and is what `slice_s_dispatch.rs` now asserts. But
+`ramp_excursion_fuel` builds its two fuel ENDPOINTS with `fuel_for_Tt4` and its running line with
+nine more `equilibrium` calls, every one of them rung 40's `Tt4`-control path — so on the OBJECT
+all three cells are live and both swaps move the answer.
+
+The first version of that gate reported a **1-ULP** difference and read as agreement. Two reasons,
+both instrument defects: it probed the object (so rung 40's Newton simply re-converged to the same
+root), and it perturbed `powers` by a **SCALE**, which cannot move a root the solver drives to
+zero. A third: the `try_close` injection scaled `pi_lpc`, which **nothing downstream reads**, so it
+moved nothing anywhere and every "nothing moved" beside it was vacuous. *Slice R step 3's lesson
+generalises — an injection harness has to be shown to express itself before any zero it reports
+means anything, and "the swap took" is not the same claim as "the swap could be seen".*
+
+**FINDING 4 — THE THIRD HIGH-WALL ARM IS DEAD ON THE SMOKE'S OWN GRID, and a partition sum cannot
+see that.** `min(2.5, phi_max*n_L, hi0)` is the closure's most prominent departure from rung 40's
+two-arm wall, and the first draft gated it with `literal + map + hi0 == close_calls` — which passes
+identically whether `hi0` binds 3 663 times or is ABSENT FROM THE SOURCE. Every one of sections
+A–K reported `hi_wall_hi0 = 0`. Located rather than assumed: `hi0` beats `min(2.5, phi_max*n_L) =
+2.1098` only for `mdot_fuel < 0.008439`, i.e. below `Tt4 ≈ 930` on this running line. Section **L**
+now drives the closure at `Tt4 = 900/800` (the arm binds, the closure returns a state) and at
+`700/650` (the arm binds and the bracket then FAILS) — which also makes it the only CPG cell in the
+file reaching the `does not bracket` assert every other section gates against zero. *Slice M's
+shape: a bar asserted in a comment and refuted by measurement.*
+
+**FINDING 5 — `collapse_exponent`'s PLATEAU IS A PROPERTY OF THE GRID, and the first grid had
+none.** A cheaper grid (2 shapes × 3 `rho` × 3 `r` at `s_settle = 2.0`) reported `tied = 0` on all
+three currencies, so a tie-break gate written against it **could not fire**. On gate 9's own
+four-`rho` × four-`r` grid at the shipped settle the plateau is exactly as predicted — argmins at
+**0.05 / 0.35 / 0.65**, each tied with its neighbour at a gap of `0.000e+00`, spreads
+0.137845 / 0.141613 / 0.247224 reproduced to the bit — and `slice_s_dispatch.rs` builds the
+last-of-equals fold and shows it moves the reported exponents while **gate 9's ordering, gap and
+interior-exponent claims all still hold**. *Slice R's `illinois_exhausted` again: a census is a
+property of the grid.*
+
+**PREDICTION 1 SPIKED AND HELD, INCLUDING THE FRAGILE HALF.** Two TPG cells per gas before a line
+of dump was written: `thermally_perfect` and `reacting` at `Tt4 = 1400/1450` come back
+**bit-identical to PyPy, pass counts included — 3, 7, 3 and 32.** The 32-pass cell IS probe 3's
+16-fold amplifier, so the sharpest detector in the slice fires on the port and agrees. § 9
+Decision 1 Option B is not needed.
+
+**PREDICTION 4 MEASURED, NOT REASONED.** `8.25/0.02` is exactly `412.5`; `round_ties_even` gives
+412, `f64::round` 413, and `int()` gives 412 — *so the naive test for this hazard reports agreement
+on precisely the case that matters.* Two marches one point apart agree **pointwise** on every
+field, the peak is attained at point 13 of 413, and only `npts` moves. **PREDICTION 8 HELD** —
+`_instant_fuel` and `equilibrium_fuel` raise the BRACKET error while the direct poke raises the
+REFUSAL.
+
+**TWO INSTRUMENT DEFECTS THE DUMP CAUGHT IN ITSELF.** The Rust reset its counters one statement too
+early and hid **39 Illinois calls** that Python's `E/bare` section legitimately carries (the two
+`fuel_for_Tt4` calls and the `equilibrium` that build the ramp sit inside that census window — *the
+census keys are sensitive to statement POSITION between `emit_census` boundaries*); and
+`EQ_PASSES` counted residual EVALUATIONS where Python's recovery counts passes COMPLETED, an
+off-by-one-per-call the pass-count keys reported directly.
+
+**DECIDED HERE RATHER THAN AT STEP 3: the degenerate path's EIGHT refusals live on the ENUM.**
+Python's `integrate_fuel` opens with seven asserts on an `lp_disabled` object and
+`_fuel_ramp_march` with an eighth; none can live on `FuelTransientCore`, which is never degenerate
+by construction. `TwoSpoolFuelTransient` gains `integrate_fuel_lp_disabled` (the seven, then EXACT
+dispatch — the `nu0` type changes across it, which is why it is a separate method) and enum-level
+`phi_excursion_fuel` / `transient_surge_margin_fuel` (the eighth). All eight are gated NOW, beside
+a BARE call asserted to be ADMITTED — *a gate whose expected result is a raise passes when
+everything raises.* Both rung-45 methods take Python's four keywords rather than the whole limiter
+set, because passing `s_off`/`lag`/`freeze` there is a `TypeError` in the source.
+
+**STILL OWED TO STEP 3:** `test_rung45.py` builds its `lp_disabled` object from a **two-spool**
+design engine where `test_rung43.py` builds one from `build_turbojet` — Python is duck-typed there
+and Rust is not, so `rung45.rs` needs that resolved. Flagged where the compiler will hit it.
+
+---
+
 ## 6. Named risks
 
 ##### STEP 4 — SHIPPED. **THE SECTION'S OWN CENSUSES WERE MEASURED ON TWO DIFFERENT GRIDS**
