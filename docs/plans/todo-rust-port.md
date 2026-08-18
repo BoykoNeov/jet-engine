@@ -4824,6 +4824,14 @@ gas**, and slice S owes that measurement before it can claim the arming decision
 Recorded now so the 100 % is not quoted later as coverage it does not have — *an oracle cannot
 see a missing gate*, applied to the instrument instead of the gate.
 
+**DISCHARGED EARLY, AT SLICE R — and the detector fires.** Rung 40 gate 1 runs
+`Gas.reacting_equilibrium()`, so the measurement booked above did not have to wait for slice S.
+§ 5.15 probe 4 re-ran the reacting arm on `equilibrium`'s exit branch: **5 of 12 cells FLIP the
+branch**, 10 of 12 disagree on the iteration count, 12 of 12 on the converged speeds. The CPython
+arm is a detector on this gas, with a measured sensitivity. Slice S still owes the same
+measurement **on its own object** — the arming predicates — because a detector's sensitivity is a
+property of the quantity it watches, not of the gas alone.
+
 **THE DEFERRAL INBOX, COLLECTED ONCE AND ASSIGNED.** Six items are owed to this phase; each is
 booked to the slice that can discharge it, so none ships orphaned:
 
@@ -5571,6 +5579,239 @@ quoted at `G = 0.1, r_m = 3`, a grid `test_rung37.py` never runs. Every one repr
 `cold < hot < adiabatic` holds on the test grid too. **A confirmation, recorded so the grid
 difference is not later re-discovered as a defect** — the spec states its own grid; only the
 relationship between the two grids was unstated.
+
+### 5.15 SLICE R (rungs 40 + 44, `TwoSpoolTransient`) — PRE-REGISTERED, five probes MEASURED first
+
+Rung 40 makes BOTH shaft speeds states under one clock ratio `rho = tau_L/tau_H`, and rung 44
+marches that plant against rung 41's imposed surge line. `TwoSpoolTransient`
+(`engine.py:3378–3969`, 592 lines, **17 methods**, of which rung 44 owns **three** —
+`_ramp_march`, `phi_excursion`, `transient_surge_margin`) subclasses rung 39's
+`TwoSpoolMapMatcher`. Two Python suites, **16 tests** (9 + 7), two of them `slow`.
+*Counted, not taken from the header: § 5.12's own scope audit shipped because nobody had ever
+counted, and my first reading of this class said 16 and four.*
+
+`M:\claud_projects\temp\rust-phase6\probe_r1.py` … `probe_r4.py` — five arms over both suites'
+grids.
+
+**PROBE 1 — THE `steady` CACHE KEY COLLIDES BETWEEN TWO DISTINCT FLOATS, AND THE COLLISION IS
+WORTH NOTHING.** `_ramp_march`'s closure memoises the per-`Tt4` running-line match under
+`key = round(Tt4, 3)` — a *decimal* key on a float dict, so the port cannot simply hash the bits
+unless the two schemes agree. Over **31 marches / 5 141 points** on the rung-40 and rung-44 gate
+grids (never the defaults — collision spacing scales with `dTt4·ds/r_ramp`, and the suites sweep
+all three):
+
+| measured | value |
+|---|---|
+| distinct keys | 1 021 |
+| legitimate memo hits (identical `Tt4` repeated) | 4 120 |
+| **collisions between DISTINCT `Tt4` floats** | **1** — `1399.9999999999984` and `1400.0` share key `1400.0` |
+| smallest gap between two distinct `Tt4` in any march | **1.592e-12 K** (a collision needs `< 1e-3`) |
+| **reported values moved by keying EXACTLY instead** | **0**, over 6 ramp cases × `phi_excursion` + `transient_surge_margin` |
+
+So the collision is real — the ramp's saturating `min(1.0, t/r_ramp)` lands one step at
+`1400 − 1.6e-12` and the next at `1400.0`, and the second reads the first's cached φ — and it is
+**not worth a single reported number**, because it happens at the saturated end while every
+extremum is attained early in the ramp. *A bit-exact oracle over the returned dicts would
+therefore be BLIND to the key scheme.* That is why the port implements the round rather than
+keying on the bits, and why the dump carries the **key sequence itself** (§ predictions 4): the
+equivalence relation gets its own gate instead of riding on values that cannot see it — *an
+oracle cannot see a missing gate*, applied before the gate is missing rather than after.
+`round(x, 3)` was checked against format-and-parse on all 11 keys that occur and on 7 adversarial
+half-way ties (`0.0005`, `1399.9995`, `2.6755`, …): **0 mismatches**, so the Rust route is
+validated on the population it will meet.
+
+**PROBE 2 — THE REACHABILITY CENSUS: FOUR ARMS DEAD, ONE ARM INVERTS SLICE Q, AND ONE ROUND IS
+LIVE WHERE SLICE Q'S WAS DEAD.**
+
+- **Four arms measured DEAD** across 20 847 closures and 5 641 marched points: `_close`'s
+  bracket assert (**0**), both of `integrate`'s `except AssertionError: break` arms (**0**
+  truncations in 51 marches), and the `max(0.2, ·)` speed floor (**0** points). They are ported
+  and gated against zero rather than left absent.
+- **`illinois_exhausted` is 0 of 20 847 calls here** (190 559 residual evaluations), against
+  slice Q's **103 of 109** at `_plenum_pt4_at`. Same counter, opposite population: rung 37 passed
+  an ABSOLUTE `1e-12` bracket width against a `pt4` of order `1e5`, rung 40 passes the same
+  literal against an `m_lp` of order 1. **Quoted with its grid and never merged with slice Q's.**
+- **`int(round(s_end/ds))` is LIVE.** Of the four `(s_end, ds)` pairs the two suites use, three
+  are exact and one is not: `1.2/0.05 = 23.99999999999999644729`. `round` gives 24, truncation
+  gives 23 — a whole missing step. Slice Q measured this same expression's tie **unreachable** on
+  rung 37's grid and spelled `round_ties_even` on principle; on rung 40's grid it is load-bearing.
+  *The same expression, opposite verdicts, two slices apart — which is exactly why slice Q spelled
+  it rather than simplifying it.*
+- **The `lp_disabled` object never builds a two-shaft state.** `__init__` returns early before
+  `super().__init__`, so only four attributes exist (`_degenerate`, `map_lp`, `map_hp`, `rho`);
+  every inherited method is still *bound* and raises `AttributeError` on call — **not**
+  `AssertionError`, so no caller in the ladder catches it. `map_lp` / `map_hp` / `rho` are set and
+  **never read** on that path.
+
+**PROBE 3 — `equilibrium`'s NOISE-FLOOR BRANCH IS LIVE, AND THE SHIPPED COMMENT'S CELL LIST DOES
+NOT HOLD WHERE RUNG 40 READS IT.** The branch (`best[0] < 1e-8` after all 80 Newton passes) was
+added by rung 43 and carries a comment asserting it is *"reached ONLY by inputs that previously
+RAISED"*, naming `Tt4 = 1300/1400` as the raising pair and `1500/1450/1200` as the ones that
+*"happened to squeak under"*. Re-measured on rung 40's own design and maps, 12 cells × 2 gases:
+
+| gas | map pair | primary | **noise** | raise |
+|---|---|---|---|---|
+| CPG | shaped + flat | **12 of 12** | 0 | 0 |
+| reacting | flow/press | 2 (`1500`, `1400`) | **4** (`1450`, `1300`, `1200`, `1100`) | 0 |
+| reacting | flat | 4 | **2** (`1450`, `1300`) | 0 |
+
+`1450` takes the noise branch on BOTH map shapes and `1200` takes it on the shaped pair, so the
+comment's list is wrong here; it was written at rung 43's settings and reads as general.
+**The branch is not a rescue path, it is the ordinary exit on the reacting gas** — 6 of 12 cells —
+so `best` tracking is load-bearing and must be ported, not elided. The acceptance bound is not
+delicate, and now that is a count rather than an assertion: the worst accepted residual is
+**6.47e-11** against the `1e-8` bar, and the initial residual is `3e-2`–`3e-1`. *Slice L step 4's
+shape — a claim in the SHIPPED source that does not hold where a later rung reads it.*
+
+**PROBE 4 — THE CPython ARM IS A DETECTOR AT LAST, AND IT FLIPS A DISCRETE BRANCH.** § 5.12
+dumped 9 376 keys CPython-vs-PyPy and got **100 % identical**, recording explicitly that this was
+NOT coverage because the probe ran a **CPG** gas, and booking the reacting-gas measurement to
+slice S. **Rung 40 gate 1 runs `Gas.reacting_equilibrium()`, so slice R can discharge it early.**
+Same 12 cells, both interpreters:
+
+| measured | CPython vs PyPy |
+|---|---|
+| **exit-branch classification (primary / noise)** | **5 of 12 FLIP** |
+| iteration count at exit | **10 of 12 differ** (e.g. shaped `1100`: PyPy noise/80 vs CPython primary/24) |
+| converged `(nu_L, nu_H)` | **12 of 12 differ**, at ~1e-11 |
+
+The mechanism is the reacting-gas equilibrium sub-solve leaving ~1e-10 of noise in `Phi` against
+an ABSOLUTE `_EQ_TOL = 1e-12`: whether a pass ever squeaks under the bar is decided below the
+solver's own floor, so a last-bit difference in `exp`/`log` re-rolls it. **And the rung-40 gates
+cannot see any of it** — gate 1 asserts `|Phi| < 1e-9`, three orders above the worst accepted
+residual, so both interpreters pass. This is the phase's first measured detector, and it
+establishes the risk to prediction 1 rather than leaving it to the dump.
+
+**PROBE 5 — RUNGS 40 AND 44 REFERENCE TWO DIFFERENT RUNNING LINES IN THE SAME WORDS, AND THE
+EXTREMUM DOES NOT NOTICE.** Both docstrings say *"referenced to the RUNNING LINE"*.
+`slip_excursion` (rung 40) subtracts a **linear interpolation in `u = (Tt4−Tt4_lo)/dTt4`** between
+two endpoint matches; `phi_excursion` / `transient_surge_margin` (rung 44) subtract a **match at
+every instantaneous `Tt4`**. On a nonlinear steady schedule those are different objects. Measured
+on the same marched trajectory, in the same variable (`slip`), so only the reference varies:
+
+| ramp | linear-ref extremum | per-instant extremum | ratio | worst pointwise gap |
+|---|---|---|---|---|
+| `1100 → 1150`, `r=0.5` | −2.733947e-03 | −2.733947e-03 | 1.0000 | 1.74e-05 |
+| `1000 → 1400`, `r=0.5` | −2.437231e-02 | −2.437231e-02 | 1.0000 | 1.24e-03 |
+| `1000 → 1400`, `r=0.1` | −3.100231e-02 | −3.100231e-02 | 1.0000 | 1.21e-03 |
+
+**The pointwise gap reaches 5 % of the extremum, and the extremum itself agrees to seven figures**
+— because the extremum is attained early, where the steady schedule has not yet curved. So rung
+40's linear reference is a bounded approximation and NOT a hidden defect, and rung 44's
+construction is the general one. *Recorded as content — the docstring's own history names an early
+probe that read a shape backwards from a bad reference choice.*
+
+**THE FOUR `** 0.5` SITES THAT CAN GO NEGATIVE — Python returns a COMPLEX, Rust returns NaN.**
+The class carries 14; eleven are on temperatures and pressures. The discriminating ones, with the
+census that decides each (42 Jacobians × 7 shapes × 2 gases × 3 throttles):
+
+| site | guard | measured |
+|---|---|---|
+| `_close`'s `g` (via `gas.pr_c`, `Tt3 < 0` off-map) | the source's own `isinstance(r, float) and r == r` | the ONE instance already patched; becomes a NaN check |
+| `eigenvalues`' `disc ** 0.5` | `disc >= 0.0`, explicit | **BOTH branches live: 245 real / 7 complex** over gate 5's `rho` sweep |
+| `oscillatory_band`'s `(B²−4AC) ** 0.5` | none — safe only GIVEN `a<0, d<0` | `min(B²−4AC) = 2.587e-02 > 0` |
+| `damping_ratio_max`'s `(−bc/(ad)) ** 0.5` | `b*c >= 0` early return | `min(a·d) = 9.438e-01 > 0`; `a<0` **42/42**, `d<0` **42/42** |
+
+The last two ride on a **measurement** (gate 5's sign structure), not a proof, so the derivation
+`B²−4AC = 16|bc|(ad+|bc|) ≥ 0` and the signs it needs are written AT the site. A sign flip turns a
+Python complex into a silent Rust NaN.
+
+**THE TEN PREDICTIONS, registered before any Rust is written:**
+
+1. The oracle comes back **100 % bit-exact against PyPy**, INCLUDING the reacting-gas
+   `equilibrium` keys — but those are the slice's one genuine exposure (probe 4), so the dump
+   carries the **exit kind and the iteration count as keys of their own**, and a divergence
+   shows up as a discrete disagreement rather than a last-bit one. First slice in the port to
+   pre-register *where* 100 % could fail.
+2. `TwoSpoolFuelTransient` (slice S) overrides **none** of `_close` / `_instant_tail` / `_powers`
+   — measured statically: all four overriders (`ScheduledStatorTransient`,
+   `ScheduledBleedTransient`, `LimitedBleedTransient`, `LaggedBleedTransient`) are phase 7. So
+   slice R's `Hooks` table ships with **zero cells exercised inside phase 6**. If slice S needs a
+   non-`R40` entry, § 5.12's census is wrong. *Slice Q's prediction 6, inverted: there the
+   prediction was no table, here it is a table nothing yet uses.*
+3. Because no value key can witness a table nobody overrides, the slice owes a
+   **dispatch-liveness gate with the failure MANUFACTURED** — swap an entry, assert a value
+   breaks — on `rung42.rs::gate_the_dispatch_is_live`'s precedent and slice Q's rule that *a gate
+   that only fires on failure needs the failure manufactured*.
+4. Keying the `steady` cache on the exact float moves **0 reported values** (measured), so the
+   round is implemented for fidelity and the **key sequence is dumped** as its own oracle keys.
+   Prediction: the key sequence differs between the two schemes in **exactly 1 position** across
+   the gate grids, and every value key is identical in both.
+5. `SpoolTransient::march` and `combustor.rs`'s three marches are **NOT** reused; `integrate` is
+   written out. Trajectory length is an OUTPUT here (rung 34's discipline, not rung 37's), and
+   the dump carries **0 truncations** so the difference is gated against zero rather than absent.
+6. The four dead arms of probe 2 stay at **0** across the whole dump.
+7. `illinois_exhausted` comes back **0** at rung 40's call site against slice Q's 103, and the
+   two populations are reported side by side, each with its grid, never summed.
+8. Replacing `int(round(s_end/ds))` with a truncation is **INVISIBLE to all 16 Python gates** and
+   caught only by the oracle's trajectory-length key — the gate whose grid makes it live
+   (rung 40 gate 7) asserts a 0.2 threshold against a measured 0.398, so it has four decades of
+   slack. Registered as an injection to MEASURE at step 1, not to reason about.
+9. Both `eigenvalues` branches are gated against their **counts** (245 real / 7 complex on gate
+   5's grid), not against silence — slice N's rule that only counting catches vacuity.
+10. Gate 2's reduce (`lp_disabled` ⇒ rung 34) holds **bit-for-bit** through a `Degenerate` enum
+    variant, and every other method on that variant **panics**, mirroring Python's uncaught
+    `AttributeError`.
+
+**THE MARCHER-FUSION DECISION — REFUSED, WITH ITS REASON, BEFORE ANY CODE.** § 5.13 booked this
+to slice R explicitly. `TwoSpoolTransient.integrate` marches a TWO-vector with `rho` dividing the
+LP equation; `SpoolTransient.march` marches a scalar; `combustor.rs`'s three marches run
+`n_steps + 1` unconditionally. Widening one marcher across them is **refused**, on three
+independent reasons: (i) the signatures differ — a two-state right-hand side with a clock ratio on
+one row is not the scalar body with a different closure; (ii) slice Q's reason — rung 37's marches
+have no `break`, so routing them through a marcher that truncates on `AssertionError` converts a
+raise into a silent truncation **no value gate can see**, and probe 2 measures **0** truncations
+here, which makes the difference LATENT rather than absent; (iii) § 5.3's `_solve_turbine`
+argument one level up — `integrate_fuel` (slice S) is a hook overridden by 11 phase-7 classes, so
+a shared marcher would put a hook's dispatch inside a body slice P's gates already cover. The
+three bodies stay written out.
+
+**PORT DECISIONS, REGISTERED** (slice O's precedent).
+
+- **Two tables, and neither hard-coded.** The transient core carries its own three-field
+  `TwoSpoolTransientHooks` (`close` / `instant_tail` / `powers`, all `R40` today) AND a
+  `&'static TwoSpoolHooks` for the INHERITED `match`, which `_ramp_march`, `jacobian` and
+  `lead_threshold` all reach through. `R39` today; slice S and phase 7 must be able to swap
+  either without surgery.
+- **`rho` is a mutable field, not a constructor-only parameter** — rung 40 gates 5, 6 and 7 all
+  assign `t.rho = …` on a built object, and gate 7 does it inside an 18-step bisection.
+- **`oscillatory_band` / `damping_ratio_max` take `rho` as a PARAMETER** instead of Python's
+  `rho0, self.rho = self.rho, 1.0` … `finally: self.rho = rho0`. This is a grep, not a probe:
+  `self.rho` is read at exactly **one** site inside the `jacobian` call tree
+  (`engine.py:3678`), so passing 1.0 explicitly is bit-identical by construction. The
+  save/restore is a Python idiom for a `&self` method, not physics.
+- **`round(Tt4, 3)` is implemented, not simplified away** — format-and-parse, validated against
+  PyPy on the whole key population and on adversarial ties (probe 1).
+- **`lp_disabled` is a `Degenerate(SpoolTransient)` enum variant**, on slice K's own
+  `TwoSpoolMapMatcher::Degenerate` precedent; `map_lp` / `map_hp` / `rho` are set-and-unread on
+  that path and are NOT carried.
+- **`equilibrium` returns a struct with `PartialEq`** — rung 44 gate 1 compares two returns with
+  `==` over a 44-key dict (42 floats, one `str` branch label, one `Gas` that is measured to be
+  the *same object* on both sides, so the comparison never actually exercises gas equality).
+
+**MODULE DECISION AND SIZING.** A new `src/two_spool_transient.rs` — `two_spool.rs` is already
+2 064 lines and this is a different plant (two states, an ODE, two diagnostics families).
+Composition over rung 39's `TwoSpoolMapCore` through a `pub inner`, as `combustor.rs` composes
+over `SpoolTransient`. **592 Python source lines and 815 test lines over 16 tests**, against slice
+P's 720/19 and slice Q's ~450/7 — so roughly slice P's size, and the largest slice of phase 6 so
+far. Both `slow` markers are measured rather than inherited: **gate 7 runs in 0.2 s** on PyPy
+(20 marches, 500 points) and gate 5 is the expensive one (two gases × 7 shapes × 3 throttles of
+2-D Jacobians). Slice M's rule stands — port the gate, drop the marker, re-introduce `#[ignore]`
+only against a MEASURED Rust cost.
+
+**THE DEFERRAL DUE HERE.** `rung41.rs`'s roster #2,
+`test_reduce_transient_untouched_by_surge_line_bit_for_bit`, is the LAST outstanding item from
+slice L and is discharged at step 3: the roster goes **11 → 12** and its printed
+`STILL DEFERRED -> phase 6 slice R` line is removed. *Slice O's lesson — the note that reached the
+next slice was the one written where its compiler and tests would hit it.*
+
+**THE FOUR STEPS.** 1: `src/two_spool_transient.rs` + `oracle/dump_slice_r_smoke.py` +
+`tests/slice_r_smoke.rs`, with the injections of predictions 3, 5 and 8 MEASURED rather than
+reasoned. 2: `tests/rung40.rs`, the 9 Python gates. 3: `tests/rung44.rs`, the 7 Python gates, and
+`rung41.rs`'s roster discharged. 4: `oracle/dump_two_spool_transient.py` +
+`tests/two_spool_transient_oracle.rs`, PyPy and CPython arms — the CPython arm carrying probe 4's
+measured expectation, so it is read as a detector with a known sensitivity rather than as coverage.
+
 
 ---
 
