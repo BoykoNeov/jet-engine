@@ -5590,8 +5590,11 @@ marches that plant against rung 41's imposed surge line. `TwoSpoolTransient`
 *Counted, not taken from the header: § 5.12's own scope audit shipped because nobody had ever
 counted, and my first reading of this class said 16 and four.*
 
-`M:\claud_projects\temp\rust-phase6\probe_r1.py` … `probe_r4.py` — five arms over both suites'
-grids.
+`M:\claud_projects\temp\rust-phase6\probe_r1.py` … `probe_r5.py` — five probes over both suites'
+grids. `probe_r5.py` exists because a review of the first four found **four things they had not
+measured**, three of which the earlier probes had silently assumed: the march-in loop, the
+Newton's damper, the `wgas` comparison the gate actually makes, and whether the cache collision
+fired inside the set that priced it. All four are folded in below, at the probe each belongs to.
 
 **PROBE 1 — THE `steady` CACHE KEY COLLIDES BETWEEN TWO DISTINCT FLOATS, AND THE COLLISION IS
 WORTH NOTHING.** `_ramp_march`'s closure memoises the per-`Tt4` running-line match under
@@ -5607,6 +5610,11 @@ all three):
 | **collisions between DISTINCT `Tt4` floats** | **1** — `1399.9999999999984` and `1400.0` share key `1400.0` |
 | smallest gap between two distinct `Tt4` in any march | **1.592e-12 K** (a collision needs `< 1e-3`) |
 | **reported values moved by keying EXACTLY instead** | **0**, over 6 ramp cases × `phi_excursion` + `transient_surge_margin` |
+| **and the collision FIRED inside those 6 cases** | **yes — 1**, in `r_ramp=5.0, s_end=6.0` (301 points) |
+
+That last row is not decoration: *"0 values moved"* means nothing unless a collision occurred in
+the measured set, and the first version of this probe never checked. It fires in exactly one of
+the six, so the zero is a measurement of the collision's price rather than of its absence.
 
 So the collision is real — the ramp's saturating `min(1.0, t/r_ramp)` lands one step at
 `1400 − 1.6e-12` and the next at `1400.0`, and the second reads the first's cached φ — and it is
@@ -5623,10 +5631,21 @@ validated on the population it will meet.
 **PROBE 2 — THE REACHABILITY CENSUS: FOUR ARMS DEAD, ONE ARM INVERTS SLICE Q, AND ONE ROUND IS
 LIVE WHERE SLICE Q'S WAS DEAD.**
 
-- **Four arms measured DEAD** across 20 847 closures and 5 641 marched points: `_close`'s
+- **FIVE arms measured DEAD** across 20 847 closures and 5 641 marched points: `_close`'s
   bracket assert (**0**), both of `integrate`'s `except AssertionError: break` arms (**0**
-  truncations in 51 marches), and the `max(0.2, ·)` speed floor (**0** points). They are ported
-  and gated against zero rather than left absent.
+  truncations in 51 marches), the `max(0.2, ·)` speed floor (**0** points), and — added after
+  the first version of this probe left it uncounted — **`_close`'s low-wall march-in loop: 0
+  advances in 6 339 calls** (69 440 `g` evaluations, histogram `{0: 6339}`). The loop
+  `while m < hi: try: g(m) … except AssertionError: m += 0.02` exists for an off-map bracket
+  artifact that never occurs on either suite's grid. All five are ported and gated against zero
+  rather than left absent. *The uncounted one was flagged in my own probe file as deferred to a
+  later arm, and that arm measured something else — slice N step 2's lesson landing on my own
+  instrument.*
+- **The high wall's `min` has BOTH arms live**, unlike everything else here:
+  `hi = min(2.5, phi_max_LP · n_L)` takes the literal `2.5` **1 221** times and the map's own
+  limit **5 118**. Slice Q's comparable ceiling (`_pic_band`'s `phi_max·n` against the same
+  literal `2.5`) bound **15 of 15** on one arm; here the same shape is genuinely contested, so
+  it is a gated two-arm census, not a spelled-but-dead branch.
 - **`illinois_exhausted` is 0 of 20 847 calls here** (190 559 residual evaluations), against
   slice Q's **103 of 109** at `_plenum_pt4_at`. Same counter, opposite population: rung 37 passed
   an ABSOLUTE `1e-12` bracket width against a `pt4` of order `1e5`, rung 40 passes the same
@@ -5662,6 +5681,14 @@ so `best` tracking is load-bearing and must be ported, not elided. The acceptanc
 delicate, and now that is a count rather than an assertion: the worst accepted residual is
 **6.47e-11** against the `1e-8` bar, and the initial residual is `3e-2`–`3e-1`. *Slice L step 4's
 shape — a claim in the SHIPPED source that does not hold where a later rung reads it.*
+
+**And the Newton's own two discrete branches are DEAD.** § 5.12 made a headline of measuring
+`der`'s `min(caps)` never contended; `equilibrium` carries a *different* `min` and a three-way
+`max` — `damp = min(1.0, 0.25 / max(|dl|, |dh|, 1e-30))` — evaluated on every pass, and with an
+initial residual of `3e-1` the damper is exactly where one would expect a step limiter to bind.
+Measured over **102 Newton steps** on the same grids: `damp < 1.0` **0 times**, the `1e-30` floor
+wins **0 times**. Both spelled, both gated against zero. *Counted because a `min` on a solver's
+step is the shape § 5.12 warned about, not because anything suggested it was live.*
 
 **PROBE 4 — THE CPython ARM IS A DETECTOR AT LAST, AND IT FLIPS A DISCRETE BRANCH.** § 5.12
 dumped 9 376 keys CPython-vs-PyPy and got **100 % identical**, recording explicitly that this was
@@ -5722,7 +5749,11 @@ Python complex into a silent Rust NaN.
    `equilibrium` keys — but those are the slice's one genuine exposure (probe 4), so the dump
    carries the **exit kind and the iteration count as keys of their own**, and a divergence
    shows up as a discrete disagreement rather than a last-bit one. First slice in the port to
-   pre-register *where* 100 % could fail.
+   pre-register *where* 100 % could fail — **and what happens if it does**, decided now rather
+   than improvised at step 4: § 9's Decision 1 (Option B) is the route. The reacting-gas
+   `equilibrium` keys become an individually-adjudicated fragile set with their deviation
+   distribution published here, exactly as § 4's fragile rungs were, and the CPG keys stay at
+   bit-equality. Phases 0–2's stricter bar is not weakened for the rest of the slice.
 2. `TwoSpoolFuelTransient` (slice S) overrides **none** of `_close` / `_instant_tail` / `_powers`
    — measured statically: all four overriders (`ScheduledStatorTransient`,
    `ScheduledBleedTransient`, `LimitedBleedTransient`, `LaggedBleedTransient`) are phase 7. So
@@ -5743,10 +5774,14 @@ Python complex into a silent Rust NaN.
 6. The four dead arms of probe 2 stay at **0** across the whole dump.
 7. `illinois_exhausted` comes back **0** at rung 40's call site against slice Q's 103, and the
    two populations are reported side by side, each with its grid, never summed.
-8. Replacing `int(round(s_end/ds))` with a truncation is **INVISIBLE to all 16 Python gates** and
-   caught only by the oracle's trajectory-length key — the gate whose grid makes it live
-   (rung 40 gate 7) asserts a 0.2 threshold against a measured 0.398, so it has four decades of
-   slack. Registered as an injection to MEASURE at step 1, not to reason about.
+8. Replacing `int(round(s_end/ds))` with a truncation is **INVISIBLE to all 16 Python gates** —
+   the one gate whose grid makes it live (rung 40 gate 7, the only user of `s_end=1.2, ds=0.05`)
+   asserts a 0.2 threshold against a measured 0.398, an 2× margin — and is caught by the oracle
+   through the **trajectory length AND the values**, since a march one step shorter also moves
+   every extremum taken over it. **This obliges the dump to carry a section at
+   `s_end=1.2, ds=0.05`**: it is the only pair of the four in use where the round is not exact,
+   so an oracle built from the other three would be as blind as the gates. Registered as an
+   injection to MEASURE at step 1, not to reason about.
 9. Both `eigenvalues` branches are gated against their **counts** (245 real / 7 complex on gate
    5's grid), not against silence — slice N's rule that only counting catches vacuity.
 10. Gate 2's reduce (`lp_disabled` ⇒ rung 34) holds **bit-for-bit** through a `Degenerate` enum
@@ -5786,8 +5821,13 @@ three bodies stay written out.
   `TwoSpoolMapMatcher::Degenerate` precedent; `map_lp` / `map_hp` / `rho` are set-and-unread on
   that path and are NOT carried.
 - **`equilibrium` returns a struct with `PartialEq`** — rung 44 gate 1 compares two returns with
-  `==` over a 44-key dict (42 floats, one `str` branch label, one `Gas` that is measured to be
-  the *same object* on both sides, so the comparison never actually exercises gas equality).
+  `==` over a 44-key dict: 42 floats, one `str` branch label, and one `Gas`. Measured **on the
+  comparison the gate actually makes** — two SEPARATE `TwoSpoolTransient` objects (`bare` and
+  `armed`, built with differently-armed maps), not one object twice: the two `wgas` are the
+  **same object** (`is` → True), because the working gas is memoised upstream of the maps. So the
+  `==` does not exercise gas value equality, and Rust needs `PartialEq` only over the floats and
+  the branch label. (`Gas` does define `__eq__` and the two compare equal anyway, so the decision
+  is safe either way — but it is now measured rather than inferred from a one-object test.)
 
 **MODULE DECISION AND SIZING.** A new `src/two_spool_transient.rs` — `two_spool.rs` is already
 2 064 lines and this is a different plant (two states, an ODE, two diagnostics families).
