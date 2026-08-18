@@ -6796,9 +6796,30 @@ a BARE call asserted to be ADMITTED — *a gate whose expected result is a raise
 everything raises.* Both rung-45 methods take Python's four keywords rather than the whole limiter
 set, because passing `s_off`/`lag`/`freeze` there is a `TypeError` in the source.
 
+**AND SIX MORE COUNTERS SHIPPED WITH NO GATE AT ALL — finding 4, five times over.**
+`topping_skips`, `topping_exhausted`, `sched_skips`, `surge_skips` and `mf_floor_hits` are exactly
+the dead-arm population the project's rule says is *ported and COUNTED rather than left absent*,
+and the first draft ported them without counting: a port that deleted either set-point loop's
+`continue` arm, or spelled the `1e-9` fuel floor as `1e-8`, went through step 1 clean. All five
+measure ZERO on every section and are now asserted; `close_g_evals` — a raw count, not a branch —
+gets a structural FLOOR (`>= 2x` the successful closures, since the scan must find a negative and
+then a positive) rather than being left as a number nothing reads. **`assert_dead_arms` covering
+*some* of a file's counters is the same defect as a partition sum covering an arm.**
+
+**`stage.rs:870` CORRECTED HERE, not at step 3.** Its doc comment said
+*"`TwoSpoolFuelTransient` does not exist in Rust yet"*, which stops being true at step 1 — this
+section said so in advance and cited slice O for why the note that reaches the next slice is the
+one written where the compiler and tests hit it. The `rung55.rs` roster item still discharges at
+step 3; only the falsehood is fixed now.
+
 **STILL OWED TO STEP 3:** `test_rung45.py` builds its `lp_disabled` object from a **two-spool**
 design engine where `test_rung43.py` builds one from `build_turbojet` — Python is duck-typed there
-and Rust is not, so `rung45.rs` needs that resolved. Flagged where the compiler will hit it.
+and Rust is not, so `rung45.rs` needs that resolved. And the degenerate `equilibrium_fuel` FORWARD
+is the one method family in the enum group still routed around: Python's forwards to the held
+single-spool object while **silently discarding a `start` the caller passed**, and section K
+reaches that object directly, so the forward is not exercised AS a forward and the
+argument-dropping is unported. No gate reaches it today; decide it with the rest of the enum
+layer.
 
 ---
 

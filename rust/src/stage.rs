@@ -868,8 +868,14 @@ impl StageStackCoreSpec {
 /// 34/40/43 and the whole limiter family 46–52) run their own forward closures off
 /// `ComponentMap::psi` and never construct a stack — deliberately, and asserted by test in
 /// Python. That gate is **owed to phase 6** and booked in `slice_n_deferrals`: it runs a rung-43
-/// fuel transient twice on the same hardware and demands the two point lists match, and
-/// `TwoSpoolFuelTransient` does not exist in Rust yet.
+/// fuel transient twice on the same hardware and demands the two point lists match.
+///
+/// **AS OF SLICE S STEP 1 THE BLOCKER IS GONE** — [`crate::fuel_transient::FuelTransientCore`]
+/// exists, so the gate is writable; it lands with `tests/rung55.rs`'s roster item at slice S
+/// step 3. This note is corrected HERE, where the next reader of this file meets it, rather than
+/// only in the plan: slice O's lesson is that the note which reaches the next slice is the one
+/// written where the compiler and the tests hit it, and a doc comment that has become false is
+/// the same defect one level down.
 pub struct StageStackCore {
     /// The rung-53 object, carrying [`R55`] in its stator slot, [`R55_TWO`] in the inner
     /// two-spool slot, [`Descendant::Stack`] as its description, and the two built stacks on

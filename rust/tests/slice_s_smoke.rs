@@ -347,9 +347,28 @@ fn assert_dead_arms(cs: &fcount::Census, where_: &str, bracket_fails: u64) {
     assert_eq!(cs.cap_fallthrough, 0, "{where_}: `cap`'s fall-through is DEAD");
     assert_eq!(cs.collapse_nan, 0, "{where_}: the 9e9 NaN guard is DEAD");
     assert_eq!(cs.collapse_empty, 0, "{where_}: the `if sp else nan` fall-back is DEAD");
+    // …and the FIVE more dead arms that shipped with no gate at all in the first draft — the
+    // same defect `hi_wall_hi0` had, five times over. Every one is a swallow or a floor the
+    // project's standing rule says is ported and COUNTED rather than left absent, and without
+    // these lines a port that deleted the two set-point loops' `continue` arms, or spelled the
+    // `1e-9` fuel floor as `1e-8`, went through step 1 clean.
+    assert_eq!(cs.topping_skips, 0, "{where_}: the topping halving loop swallows nothing here");
+    assert_eq!(cs.topping_exhausted, 0, "{where_}: …and never runs out");
+    assert_eq!(cs.sched_skips, 0, "{where_}: the rung-48 leg's off-map arm is DEAD");
+    assert_eq!(cs.surge_skips, 0, "{where_}: the rung-49 leg's is too");
+    assert_eq!(cs.mf_floor_hits, 0,
+               "{where_}: `max(1e-9, mf_sched - g)` — an arm that exists ONLY in the two dispatch \
+                twins, so a non-zero here is a finding about how deep the clip state gets");
     // The three high-wall arms are a SPLIT whose total is the call count — never a sum.
     assert_eq!(cs.hi_wall_literal + cs.hi_wall_map + cs.hi_wall_hi0, cs.close_calls,
                "{where_}: the high wall's three arms must partition the closure calls");
+    // `close_g_evals` is a raw count rather than a branch, and a number nothing reads is worse
+    // than an absent one. Its FLOOR is structural: a closure that returns a state evaluated `g`
+    // at least twice (the scan must find a negative and then a positive), and every Illinois
+    // step adds more. Asserted as a floor rather than an identity because the Illinois share is
+    // not separable from the legs' own solves on the shared counter.
+    assert!(cs.close_g_evals >= 2 * (cs.close_calls - cs.close_bracket_fails),
+            "{where_}: a successful closure evaluates `g` at least twice: {cs:?}");
 }
 
 #[test]
