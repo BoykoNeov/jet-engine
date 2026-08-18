@@ -6601,15 +6601,29 @@ tests hit it, and this is the same note going stale in place.
    manufactured-failure gate proves it BOTH ways: swapping that cell moves slice S's values, and
    swapping either of the other two moves **nothing** in this slice.
 4. Replacing `round_ties_even` with `f64::round` in the inherited `integrate` lengthens **21 of
-   162** marches by exactly one point. Prediction, on slice R's precedent that the values may not
-   see it: the trajectory-LENGTH keys and the census catch it, and **at least one reported
-   extremum also moves**, because rung 43's `E_temp_H`/`E_temp_L` are maxima over the whole
-   trajectory rather than over a saturating tail. Registered as an injection to MEASURE at step 1.
+   162** marches by exactly one point, and **the trajectory-LENGTH keys and the census are the
+   ONLY things that see it — every reported value is blind.** *The first draft of this prediction
+   said the opposite* — that at least one extremum would move, "because rung 43's
+   `E_temp_H`/`E_temp_L` are maxima over the whole trajectory rather than over a saturating tail"
+   — which is slice R's prediction 8 reasoning verbatim, and slice R's prediction 8 died of it.
+   So it was MEASURED before it shipped (`probe_s5.py`, the step count forced to 413 and 414 over
+   3 shapes × 2 `ρ` × the tie case and a non-tie control): **`Tt4_peak`, `X`, `E_temp_H`,
+   `E_temp_L` and `complete` are bit-identical in 12 of 12 cells.** The reason is structural and
+   is why no rung-43 grid could ever see it: `s_settle = 8.0` against a ramp of `r ≤ 2.0` makes
+   95 %+ of every march settling tail, and **the peak is attained at point 13 of 412** — 3 % in,
+   at the instant the ramp ends. A naive `f64::round` would therefore give the RIGHT answer to
+   every rung-43 gate and only the length would betray it, which is exactly why the length is an
+   oracle key. *Registered as measured, on the plan's own precedent, rather than as reasoning that
+   has already been refuted once.*
 5. The four dead arms of probe 2 (march-in on the CPG grid, `g`'s off-map assert, the `lo0` floor,
    both truncation arms) and the three dead arms of `equilibrium_fuel`'s Newton stay at **0**
    across the whole CPG dump — and the march-in counter is **non-zero and equal to 46** on the
    equilibrium-gas refusal section, so the same counter is gated against zero and against a
-   measured number in one dump.
+   measured number in one dump. **The counter therefore ships INSIDE `fuel_transient.rs` from
+   step 1, not bolted on at step 4**: `_close_fuel` SWALLOWS the refusal, and a wrapper cannot
+   count what the body catches — the same argument slice R's dump made for its three swallowed
+   counters, which cost it two `src/` edits at step 4 and broke a two-step test-only streak. One
+   line, no arithmetic line touched, and `git diff` shows that directly.
 6. The high wall's three arms come back **24 033 / 200 193 / 3 663** on the dump's grid, and are
    gated as a three-way split whose total is the asserted call count — never as a sum
    (slice R step 2's cost).
@@ -6653,7 +6667,18 @@ tests hit it, and this is the same note going stale in place.
 
 | # | step | gate |
 |---|---|---|
-| 1 | `src/fuel_transient.rs` + `oracle/dump_slice_s_smoke.py` + `tests/slice_s_smoke.rs` + `tests/slice_s_dispatch.rs`, with the injections of predictions 3, 4, 7 and 8 MEASURED rather than reasoned, and an ARMED section per limiter keyword | smoke bit-exact; name diff, 0 removals |
+| 1 | `src/fuel_transient.rs` + `oracle/dump_slice_s_smoke.py` + `tests/slice_s_smoke.rs` + `tests/slice_s_dispatch.rs`, with the injections of predictions 3, 4, 7 and 8 MEASURED rather than reasoned | smoke bit-exact; name diff, 0 removals |
+
+**THREE THINGS SETTLED ABOUT STEP 1 BEFORE IT STARTS.** (i) The armed limiter cases are **nine
+SECTIONS OF THE SAME DUMP**, not a second file — probe 4 (B) already fixes the nine and their clip
+counts, and the 16-key `_integrate_fuel_asym` route has its key set **enumerated and asserted per
+route**, because a field missing from that route would otherwise be missing from the comparison
+too (slice R step 1's closing finding). (ii) Prediction 5's march-in counter goes in `src/` on day
+one, per its own text. (iii) Prediction 3's gate asserts that swapping two of `R40`'s three cells
+moves **nothing**, and *a gate whose expected result is "nothing" passes when the swap silently
+fails to take*: so `try_instant_tail` is perturbed FIRST and the harness watched to report
+movement, before either zero is trusted. Slice R step 3 paid for this exact thing — an injection
+harness whose revert preserved mtimes reported three defects as carry-over from the row above.
 | 2 | `tests/rung43.rs` — the 11 collected items | 11 run / 0 failed |
 | 3 | `tests/rung45.rs` — the 9 collected items; `rung55.rs` item 5 discharged and `stage.rs:870`'s stale note corrected | 9 run / 0 failed; roster line gone |
 | 4 | `oracle/dump_fuel_transient.py` + `tests/fuel_transient_oracle.rs`, PyPy + CPython arms, the TPG arm carrying probe 3's measured expectation | bit-exact CPG; TPG fragile set published |
