@@ -289,6 +289,48 @@ around in rung 43.
 
 ---
 
+### What the RUST PORT measured about these gates (slice S, 2026-08-19)
+
+The port re-ran this rung's own grid against a bit-exact oracle and swept past it. Five things it
+found that this spec did not say:
+
+1. **Seven of the eleven gates are blind to a wrong LP derivative.** Making the LP shaft integrate
+   the HP power residual — a gross physics defect — is invisible to every FINDING gate here,
+   because they assert signs, orderings and a monotonicity that a wrong-but-similar derivative
+   still satisfies. The only gate that catches it is **gate 4**, the dynamical reduce, which
+   demands the march land on the independently solved equilibrium. A suite of sign claims needs
+   one gate that asserts a NUMBER; this rung has exactly one and it is carrying the file.
+
+2. **Gate 5's `ρ`-contrast is satisfied by removing `ρ` from the plant.** Its closing assertion is
+   `ratios == sorted(ratios, reverse=True)` — NON-STRICT — on the quantity whose whole subject is
+   that the share MOVES. Deleting the `/rho` from the LP ODE makes the three ratios bit-identical
+   and the assertion passes; gates 6, 7 and 9 all fail. Measured margin on the shipped ratios:
+   the tightest adjacent pair falls 28 %, so the port asserts the STRICT `>` and says so.
+
+3. **Gate 9's argmin sits on a PLATEAU, and the gate cannot see which side of it wins.** Every
+   currency's minimum is attained by TWO adjacent `q` at a gap of exactly `0.000e+00` (argmins at
+   0.05 / 0.35 / 0.65). Python's `min` keeps the first of equals; a last-of-equals fold moves the
+   reported exponents and leaves gate 9's ordering, gap and interior-exponent claims all standing.
+   The plateau is a property of THIS grid — a cheaper one (2 shapes × 3 `ρ` × 3 `r` at
+   `s_settle = 2.0`) has no ties at all.
+
+4. **Every `r = 0.25` cell marches `8.25 / 0.02 = 412.5` — exactly on a rounding tie.** Python's
+   `round` is banker's rounding and gives 412 steps where a naive round-half-up gives 413. Every
+   reported value is BLIND to the extra point (`Tt4_peak`, `X`, `E_temp_H`, `E_temp_L` and
+   `complete` are bit-identical across the pair, because the peak is attained at point 13 of 413 —
+   3 % into a march that is 95 % settling tail). Only the trajectory LENGTH witnesses it, and
+   **52 of the 143 marches this rung and rung 45 make between them land on that tie.**
+
+5. **The reacting-gas refusal is 46 SWALLOWED failures, in two arms, and the split moves with the
+   fuel flow.** `_close_fuel`'s bracket scan catches every failure of its own trial, so what
+   escapes on `Gas.reacting_equilibrium()` is the closure's *"does not bracket"*, naming a cause
+   that is not the actual one. Underneath: at `mdot_fuel = f_eq·mdot_air_eq(1400 K)` it is
+   **38 the refusal + 8 `inverse: root not bracketed`** out of the HPC ideal-temperature
+   inversion; at 0.020 the same 46 splits **39 / 7**; at 0.017 it is **47 = 40 / 7**. The
+   off-map/non-real guard stays dead even there.
+
+---
+
 ## Anchor
 
 `docs/plans/rung43-anchor-two-shaft-fuel.md` — the measured tables above.

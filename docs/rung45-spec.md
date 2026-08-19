@@ -241,6 +241,41 @@ set this precedent).
 
 ---
 
+### What the RUST PORT measured about these gates (slice S, 2026-08-19)
+
+The port re-ran this rung's own grid against a bit-exact oracle and swept past it. Four things it
+found that this spec did not say:
+
+1. **This suite has NO dynamical reduce, and it is the most bespoke computation of the pair.**
+   Gate 3(b) hand-writes a 19-point interpolator, runs its own 326-step march per `ρ`, and gates
+   three spreads with `< 0.02`, `> 0.20` and an ordering — bars a wrong interpolation or a wrong
+   march endpoint lands comfortably inside. The object is anchored only TRANSITIVELY, through rung
+   43's gate 1. The port therefore dumps all 19 grid values, all three march lengths, the nine
+   excursions and the three spreads as compared numbers.
+
+2. **Gate 2 writes a DELTA against an ENDPOINT, one line apart.** `phi_excursion(FLIGHT, 1000.0,
+   400.0)` beside `phi_excursion_fuel(FLIGHT, 1000.0, 1400.0)` — rung 44's method takes a `Tt4`
+   STEP where this rung's takes the high endpoint. Porting the `400.0` as an endpoint is caught by
+   **exactly one** of this suite's nine tests; every sign and ordering assertion in gates 2 and 4
+   survives it.
+
+3. **The `hp-only` shape is the ONLY cell in either suite that reaches two of the fuel closure's
+   three bracket-wall arms.** Its LP map is `ComponentMap.flat()`, which has no `φ_max` ceiling, so
+   the literal `2.5` binds on the accel (1 301 of 1 304 closure calls) and the decel's low fuel
+   drops the fuel-derived wall under both (1 207 of 1 304). Across both suites' whole grids the
+   three-arm split is **1 398 / 228 801 / 1 210**, and every one of the 2 608 non-map hits comes
+   from that single cell. Drop it and two of the three arms go dead.
+
+4. **On an UNARMED degenerate object the two rung-45 methods refuse for DIFFERENT reasons.**
+   `phi_excursion_fuel` refuses on degeneracy; `transient_surge_margin_fuel` reaches its own
+   *"needs a surge line on BOTH maps"* assert FIRST, because its body reads `self.map_lp/map_hp`
+   before `_fuel_ramp_march` runs. The gate here arms both maps, so the combination is never
+   exercised — recorded because the Rust port cannot reproduce the ordering (its degenerate
+   constructor holds no `map_lp` to read a surge line off) and the difference had to be disclosed
+   rather than discovered later.
+
+---
+
 ## Anchor
 
 `docs/plans/rung45-anchor-fuel-surge.md`. The **method** is again Cohen–Rogers–Saravanamuttoo
