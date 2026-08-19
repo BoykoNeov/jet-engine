@@ -7394,11 +7394,17 @@ finding 1 booked; `tests/rung46.rs` is **7 test fns for 6 Python ones** — the 
 see below. **327 lines added to the source, 0 changed**: the readers are pure additions over slice
 S's plant, which is what "gates only" was supposed to mean and is worth stating as a measurement
 rather than an intention. **`rung46.rs` is 7/7 in 10.0–11.8 s** (three runs, the spread quoted rather than the fastest), and `cargo build --release` is clean.
-**THE FULL-CRATE FIGURE IS NOT IN THIS COMMIT, AND THAT IS THE HONEST STATE**: the run was still in
-flight when the step was committed, so no crate number is quoted here. An earlier draft of this
+**THE FULL-CRATE FIGURE WAS NOT IN THAT COMMIT, AND THAT WAS THE HONEST STATE**: the run was still
+in flight when the step was committed, so the commit quotes no crate number. An earlier draft of this
 paragraph said *"the crate is green"* BEFORE the run finished — the same class of slip as the
 `#[ignore]` range that excluded its own most recent measurement, and corrected the same way: quote
-what was measured and leave a gap where nothing was. The figure lands with step 2.
+what was measured and leave a gap where nothing was. **THE GAP IS NOW FILLED BY A MEASUREMENT, NOT
+CLOSED BY AN ASSUMPTION**: the run finished **exit 0 — 685 tests over 70 binaries, 0 failed, 0
+ignored**, summing **606.6 s (10.1 min) of TEST EXECUTION** across the binaries. That sum is run time
+only and **excludes the release build**, which is why it is not the ~19 min figure this slice has been
+quoting for a cold gate — the two measure different things and neither replaces the other. Four
+binaries carry **72%** of the execution (144.2 s, 129.3 s, 106.7 s, 58.0 s), so `rung46.rs`'s 10 s
+is 1.7% of it and § 5.17's `#[ignore]` verdict is unchanged.
 
 **FINDING 1 — AN `assert` PYTHON CATCHES, RUST CANNOT, FOUND BY ADDING A CELL NO SUITE HAS.**
 Rung 46 gate 2 checks that an `lp_disabled` object REFUSES the governor. Python leaves the
