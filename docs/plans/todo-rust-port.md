@@ -7005,14 +7005,43 @@ ramp and never inside the settle tail the `r` buys. The ONLY channel that witnes
 is `npts`, and no rung-45 gate reads it. **STEP 4 OWES `npts` AS AN ORACLE KEY** — this is where a
 value dump earns its keep over a suite of signs.
 
-**FINDING 4 — THE SUITE IS NINE GATES OF SIGNS AND SPREADS, SO 30 VALUES WERE DIFFED BY HAND
-BEFORE STEP 4.** Step 2's finding 2 measured that seven of eleven rung-43 gates are blind to a wrong
-LP derivative; rung 45 is worse-placed, because it has NO dynamical reduce at all (its own docstring
-says the object is anchored TRANSITIVELY through rung 43's gate 1). So `probe_s8` printed Python's
-numbers for gate 5's `r` sweep, gate 3(b)'s `rho` sweep, gate 2's four shape ratios and gate 6's
-crossing cell, and the same 30 came off the Rust side: **every one bit-identical to PyPy's `repr`.**
-That is not the oracle — it is the go/no-go slice N step 5 says a measuring pass needs before it is
-trusted, and it passed.
+**FINDING 4 — THE SUITE IS NINE GATES OF SIGNS AND SPREADS, SO 64 VALUES WERE DIFFED BY HAND
+BEFORE STEP 4 — AND THE FIRST 30 LEFT OUT THE GATE THAT NEEDED IT MOST.** Step 2's finding 2
+measured that seven of eleven rung-43 gates are blind to a wrong LP derivative; rung 45 is
+worse-placed, because it has NO dynamical reduce at all (its own docstring says the object is
+anchored TRANSITIVELY through rung 43's gate 1). So `probe_s8` printed Python's numbers for gate 5's
+`r` sweep, gate 3(b)'s `rho` sweep, gate 2's four shape ratios and gate 6's crossing cell — 30
+values, **every one bit-identical to PyPy's `repr`.**
+
+**The first pass skipped gate 3(a), which is the rung's own reason for existing and the most
+bespoke computation in the file**: a hand-written 19-point interp, its own 325-step march per `rho`,
+and three spreads gated only by `< 0.02`, `> 0.20` and an ordering — bars a wrong interp or a wrong
+march endpoint lands comfortably inside. `probe_s9` covers it: the **19 grid values, the 3 march
+point counts (326 each), the 9 excursions and the 3 spreads — 34 more, all bit-identical.**
+`raw_min` 0.00632, `cmd_ext` 0.07861, `out_ext` 0.32860, against bars of `<0.02` / `>0.20` and the
+strict ordering. *The argument that a sign-only suite needs a value diff applies hardest to the gate
+the value diff leaves out.* None of this is the oracle — it is the go/no-go slice N step 5 says a
+measuring pass needs before it is trusted, and it passed.
+
+**WHAT NO INJECTION REACHES.** Thirteen injections gave nine of the ten tests teeth. The tenth,
+gate 1/cycle, is unreachable from `fuel_transient.rs` at all — its channel is `engine.rs`'s design
+run, and nothing in the fuel path can perturb a single-spool cycle. It carries the project-wide
+rung-6 invariant and its teeth are every other file's. Recorded here and in the gate's own doc
+comment rather than left to a 14-row table beside 10 tests: step 1's finding is that covering SOME
+of a set is the same defect as a partition sum covering an arm.
+
+**ONE DISCLOSED DIVERGENCE IN THE TEST HARNESS ITSELF.** `refusal()` swaps the GLOBAL panic hook to
+silence the backtrace, where `rung44.rs` calls `catch_unwind` and leaves it alone. Two tests here
+call it and cargo runs them on parallel threads, so the restore can race — it cannot change a
+`catch_unwind` result, only interleave suppressed output. The silencing is what buys the ability to
+assert WHICH refusal escaped, so the divergence is kept and named on the helper.
+
+**STEP 3 SHIPPED NO PRODUCTION CODE, AND THAT IS A PROOF RATHER THAN AN IMPRESSION.**
+`src/fuel_transient.rs` was written and reverted about fifteen times across three injection
+harnesses. `git show --stat` on the step-3 commit does not list it; the two `src`-side files it does
+list (`stage.rs`, `rung55.rs`) have every changed line beginning `///` or `//`. So nothing green at
+step 2 can have moved at step 3, by construction — which is a cheaper and stronger statement than a
+full-suite re-run, and the check that establishes it is one command.
 
 **RUNG 55's ROSTER ITEM 5 IS DISCHARGED — BY REBUILDING IT, NOT PORTING IT.** Python's gate hands
 ONE design object to a stacked matcher and a fuel transient so a WRITE by the former would surface

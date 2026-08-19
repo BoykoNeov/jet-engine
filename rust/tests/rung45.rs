@@ -196,6 +196,13 @@ fn phi_exc_bits(e: &PhiExcursionFuel) -> [u64; 9] {
 }
 
 /// The message of an `assert!` that fired, or `None` if the call returned.
+///
+/// **This swaps the GLOBAL panic hook**, where `rung44.rs` calls `catch_unwind` and leaves the
+/// hook alone — a divergence recorded rather than repaired. Two tests in this file call it and
+/// cargo runs them on parallel threads, so the restore can race; it cannot change a `catch_unwind`
+/// RESULT, only interleave the suppressed backtrace output of an unrelated failing test. The
+/// silencing is what buys the ability to assert WHICH refusal escaped, which § 5.16 registered as
+/// a port decision and finding 1 measured to matter.
 fn refusal<F: FnOnce()>(f: F) -> Option<String> {
     let hook = std::panic::take_hook();
     std::panic::set_hook(Box::new(|_| {}));
@@ -325,6 +332,14 @@ fn gate1_lp_disabled_asserts_the_split_is_two_shaft() {
 ///
 /// This is the one gate that uses `test_rung45.py`'s `SINGLE` VERBATIM — no matcher is built from
 /// it, so the missing `nozzle_convergent` is admissible exactly here.
+///
+/// **AND IT IS THE ONE TEST IN THIS FILE THAT STEP 3's INJECTIONS DO NOT REACH.** Thirteen
+/// injections gave the other nine teeth; not one of them could fire this gate, because its channel
+/// is `engine.rs`'s design run and nothing in `fuel_transient.rs` can perturb a single-spool cycle.
+/// Said out loud rather than left to a 14-row table beside 10 tests: step 1's own finding is that
+/// covering SOME of a set is the same defect as a partition sum covering an arm. What this gate
+/// carries is the project-wide rung-6 invariant, and its teeth are the same as every other file's
+/// copy of it.
 #[test]
 fn gate1_cycle_untouched_by_fuel_surge_call_bit_for_bit_rung6() {
     let eng: Engine = build_turbojet(Gas::reacting_equilibrium(), 10.0, TT4, 50_000.0, single());
