@@ -26,7 +26,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL, regenerate via extract_data.py + build.py
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy leaves `open().write()` unflushed, PowerShell Get/Set-Content double-encodes UTF-8; both fail SILENTLY
 
-## The Rust port — decided 2026-08-12; **PHASES 0–5 DONE**; **PHASE 6 (transients) AUTHORISED 2026-08-17**, six slices P–U, **P, Q, R, S SHIPPED; T PRE-REGISTERED (§ 5.17) with STEP 1 OF 4 SHIPPED; U remains**
+## The Rust port — decided 2026-08-12; **PHASES 0–5 DONE**; **PHASE 6 (transients) AUTHORISED 2026-08-17**, six slices P–U, **P, Q, R, S SHIPPED; T PRE-REGISTERED (§ 5.17) with STEPS 1–3 OF 4 SHIPPED; U remains**
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; slices are free inside an authorised phase, **phase 5 needs fresh authorisation**
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost by COMPILING and returning a silently different number
 - [Rust arithmetic IS PyPy](rust-port-arithmetic-is-pypy.md) — 100% bit-exact vs PyPy on gas AND cycle; size a solver claim by DISTINCT ROOTS, not row count
@@ -69,6 +69,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Slice S step 4: the oracle](rust-port-slice-s-step4.md) — a probe's HEADER claimed the suites' grids and its code ran another; four registered counts died
 - [Slice T step 1: readers + rung 46](rust-port-slice-t-step1.md) — an EXACT ZERO makes its own gate blind to the SIGN; the only real defect came from a cell no suite has
 - [Slice T step 2: rung 47's gates](rust-port-slice-t-step2.md) — 9/9 green and blind to a 24% value error; tabulate a suite's BAR MARGINS and the blind spot is predictable
+- [Slice T step 3: rung 48's gates](rust-port-slice-t-step3.md) — a defect can survive because every READER is invariant under it; an injection that fails a gate has not necessarily tested that gate's CLAIM
 
 ## Shipped rungs
 
