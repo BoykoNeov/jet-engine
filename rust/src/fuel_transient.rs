@@ -884,6 +884,27 @@ impl TwoSpoolFuelTransient {
         d.integrate_fuel(flight, fuel_schedule, nu0, s_end, ds, None)
     }
 
+    /// Python's `equilibrium_fuel` on an `lp_disabled` object: EXACT dispatch to rung 35's fuel
+    /// equilibrium, and rung 43's gate 2 compares the two side by side with `==`.
+    ///
+    /// **IT DROPS `start` ON THE FLOOR, AND THE DROP IS THE PORT.** Python's line is
+    /// `return self._degenerate.equilibrium_fuel(flight, mdot_fuel)` — the caller's `start` is
+    /// accepted by the signature and then never passed on, so a degenerate caller who supplies one
+    /// silently gets rung 35's own bracketing search instead. Rust could simply not offer the
+    /// parameter; that would be a nicer API and a WORSE port, because the difference would stop
+    /// being visible at the call site. So the parameter is here, `_`-bound, and named in this
+    /// comment. Likewise `cmap`: Python passes none, so the held object's own map is used.
+    ///
+    /// A separate method rather than an arm of [`FuelTransientCore::equilibrium_fuel`] for the
+    /// same reason [`integrate_fuel_lp_disabled`](Self::integrate_fuel_lp_disabled) is: the RETURN
+    /// type changes across the dispatch — rung 35's 27-field [`Instant`](crate::spool::Instant)
+    /// against the two-shaft [`FuelInstant`]. Python's duck typing hides that; Rust cannot.
+    pub fn equilibrium_fuel_lp_disabled(
+        &self, flight: &FlightCondition, mdot_fuel: f64, _start: Option<(f64, f64)>,
+    ) -> crate::spool::Instant {
+        self.degenerate().equilibrium_fuel(flight, mdot_fuel, None)
+    }
+
     /// RUNG 45's `phi_excursion_fuel`, through the enum — which REFUSES the degenerate engine.
     ///
     /// The fuel-path transient surge split is inherently two-shaft (rung 44's contract), so

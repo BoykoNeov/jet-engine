@@ -6292,7 +6292,7 @@ which is the arithmetic checking out rather than the number being carried forwar
 `pytest.ini`'s `testpaths = tests` excludes it — checked, not assumed.
 
 
-### 5.16 SLICE S (rungs 43 + 45, `TwoSpoolFuelTransient`) — PRE-REGISTERED, four probes MEASURED first
+### 5.16 SLICE S (rungs 43 + 45, `TwoSpoolFuelTransient`) — PRE-REGISTERED, four probes MEASURED first; **STEPS 1–2 SHIPPED**
 
 Rung 43 puts rung 35's FUEL control on rung 40's two-shaft plant — `Tt4` becomes an OUTPUT of a
 forward burner — and rung 45 marches that plant against rung 41's imposed surge line. This is the
@@ -6819,7 +6819,89 @@ is the one method family in the enum group still routed around: Python's forward
 single-spool object while **silently discarding a `start` the caller passed**, and section K
 reaches that object directly, so the forward is not exercised AS a forward and the
 argument-dropping is unported. No gate reaches it today; decide it with the rest of the enum
-layer.
+layer. **[STEP 2 took the `equilibrium_fuel` half of this — see below; only the `lp_disabled`
+CONSTRUCTION difference is still owed.]**
+
+---
+
+##### STEP 2 — SHIPPED. **THE SOURCE'S ONE ρ-CONTRAST ASSERTION IS SATISFIED BY ρ-INERTNESS**
+
+`tests/rung43.rs`, **11 `#[test]`, 11 run / 0 failed, 1.16 s** — the collected count step 2 was
+sized against, and 10 gates plus the scope concession, which is a test function and not a gate. The
+`--list` name diff is **715 → 726, 11 additions, 0 removals** (prediction 10's currency, half paid;
+`rung45.rs`'s 9 land at step 3). One `src/` edit, **+21 lines and purely additive**:
+`TwoSpoolFuelTransient::equilibrium_fuel_lp_disabled`.
+Step 1 booked the degenerate `equilibrium_fuel` forward to "the rest of the enum layer"; gate 2
+calls it, so it came due one step earlier than written. It carries the argument drop in its doc
+comment rather than in a nicer signature — **Python's forward accepts a `start` and never passes
+it on**, so the parameter is present and `_`-bound, because a Rust signature without it would make
+the drop invisible at the call site.
+
+**FINDING 1 — THE ONE ASSERTION ABOUT ρ IN GATE 5 IS SATISFIED BY REMOVING ρ FROM THE PLANT.**
+Python's gate 5 closes with `ratios == sorted(ratios, reverse=True)` on `d_lp/d_hp` across
+`rho ∈ {0.5, 1, 2}` — a NON-STRICT ordering on the quantity whose entire subject is that the share
+MOVES. Measured, not reasoned: deleting the `/rho` from the LP ODE makes the three ratios
+**bit-identical** (`0.7944667304020582` three times) and Python's assertion passes on that, while
+gates 6, 7 and 9 all fail. The shipped ratios fall `1.426 → 0.794 → 0.419` (flow/press, `r=0.25`)
+and `1.384 → 0.774 → 0.409` (tilted, `r=0.25`), tightest adjacent pair `1.005 → 0.728` — a 28 %
+drop — so `rung43.rs` asserts the STRICT `>` beside Python's non-strict one and says in place that
+it is stronger than the source, with the margin that licenses it. *Slice M's shape: a bar the
+source states and does not measure.*
+
+**FINDING 2 — SEVEN OF THE ELEVEN GATES ARE BLIND TO A WRONG LP DERIVATIVE.** Three injections,
+each shown to express itself before any zero beside it was read:
+
+| injection | what it breaks | gates that fire |
+|---|---|---|
+| drop `/rho` on the LP ODE | ρ leaves the plant | **5** (strict arm only), 6, 7, 9 |
+| LP ODE reads `Phi_hp` | the LP spool marches on the wrong residual | **gate 4 ALONE** |
+| the two `freeze` arms swapped | `freeze="lp"` holds the HP spool | 5, 6 |
+
+The middle row is the measurement worth keeping. A gross physics defect — the LP shaft integrating
+the HP power residual — is invisible to every FINDING gate in the file, because they assert signs,
+orderings and a monotonicity that a wrong-but-similar derivative still satisfies. The only thing
+that catches it is the DYNAMICAL reduce (gate 4), which demands the march land on the independently
+solved equilibrium. *A suite of sign claims needs one gate that asserts a NUMBER; rung 43 has
+exactly one, and it is carrying the file.*
+
+**FINDING 3 — AN INJECTION APPLIED BY LINE NUMBER AFTER A `src/` EDIT HIT A DIFFERENT STATEMENT
+AND REPORTED ALL-GREEN.** The first three injections were `sed '<n>s|…|…|'` against line numbers
+read before the +21-line addition above; the re-run of injection A landed on
+`let (k3a, k3b, _, _) =`, changed nothing, and the suite came back **11 passed** — which reads as
+"gate 5's new strict arm does not fire" and is in fact "the injection was never applied". Caught by
+the `sed -n '<n>p'` echo, not by the result. Every injection after it is a text substitution with
+its own `assert s.count(old) == 1`. *Slice R step 3's lesson, second instance inside one slice: an
+injection harness has to be shown to express itself before any zero it reports means anything —
+and a line number is not a target once the file underneath it has moved.*
+
+**FINDING 4 — ONE AXIS OF PYTHON'S GATE 2 IS UNREPRESENTABLE IN RUST, AND IT WAS DELETED AT RUNG
+40 RATHER THAN HERE.** Python builds the degenerate object with BOTH maps (`map_lp=LP_SHAPED,
+map_hp=HP_SHAPED`) and its `__init__` selects `map_hp`; gate 2 is what proves the selection picked
+the right one of the two. **Every `lp_disabled` constructor in the port takes only `map_hp`** —
+`TwoSpoolMapMatcher`'s (slice K), `TwoSpoolTransient`'s (slice R) and this slice's — so "the
+constructor held the wrong one of the two maps" cannot fail by construction, in `rung43.rs` OR in
+`rung40.rs`, and no slice had recorded it. The port-wide convention is not re-opened for one gate;
+what step 2 owes is the honest width of what survives, and that was MEASURED, not asserted: the
+CALLER's choice IS live — passing `lp_shaped()` at the call site fails the gate — but it fails by
+exactly **1 ULP on `nu` at `Tt4 = 1500`**, the first and thinnest of the gate's three cells, because
+the design point is where the running line barely reads the map. *The trap is `rust-port-ported-test-vacuity`'s:
+a better factorisation turns the source's real pin into something closer to a self-comparison.*
+
+**FINDING 5 — GATE 3's MUTATION CHANNEL IS SEVERED BY THE CLONE, and the first draft's comment
+argued the wrong thing.** Python's gate 3 hands ONE design object to both the rung-40 transient and
+the fuel transient precisely so that a MUTATION of the design by the fuel path would surface on the
+rung-40 side. `rung43.rs` clones, and the first draft justified that with "the build is a pure
+function of its arguments" — true, and an argument for EQUIVALENCE where the source's gate is about
+SHARING. The file already carried the honest version of this sentence for gate 10 ("Rust's
+`run(&self)` makes that channel hard to open in the first place, so the gate is thinner here than in
+Python"); gate 3 now carries it too. No code change — but a green tick must not imply the Python
+claim.
+
+**WHAT THE FILE DELIBERATELY DOES NOT CLAIM.** Gate 9 reproduces the Python gate and no more: § 5.16
+probe 3 measured it blind to `collapse_exponent`'s first-of-equals tie-break (the argmins tie with
+their neighbours at a gap of exactly zero, and `0.10 < 0.40 < 0.70` satisfies every assertion just
+as `0.05 < 0.35 < 0.65` does). The tie-break is pinned in `slice_s_dispatch.rs`, and the header of
+`rung43.rs` says so rather than letting a green tick imply the stronger claim.
 
 ---
 
