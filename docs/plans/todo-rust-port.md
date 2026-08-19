@@ -1660,7 +1660,7 @@ next starts. The tree is green at every phase boundary; there is no big-bang cut
 | **5** | ~~Steady matchers — rungs 31–33, 38–39, **41**, 42, 53–56, 61~~ **DONE 2026-08-17, seven slices (I·J·K·L·M·N·O).** ~~**Contains the diamond** (§ 6)~~ **PRE-FLIGHT DONE (§ 5.3); AUTHORISED 2026-08-13.** The diamond is discharged; the phase's structural content is the **five-name virtual set** (`_solve_turbine` — claimed by PHASE 6 — `match`, `_hp_eta_loop`, `_lp_eta_loop`, `at_setting`) and `_INC_MAX`'s live shadow | 4–6 | ✅ slice I (rungs 31/33): `offdesign_oracle.rs` (**3951/3951** bit-exact vs PyPy, incl. **961 discrete** keys) + 2 rung suites (17 tests) in a new `matcher.rs`; the crate's FIRST fallible paths, its FIRST virtual hook, and the two rungs re-gated as counts over BIT PATTERNS (§ 5.5) · ✅ slice J (rung 32): `map_oracle.rs` (**7 252/7 252**) + `rung32.rs`; the oracle found BLIND to a mis-spelled square, so the rule is gated directly (§ 5.6) · ✅ slice K (rungs 38/39): `two_spool_oracle.rs` (**11 812/11 812**, and only 46.3 % CPython-identical) + 2 rung suites (19 tests) in a new `two_spool.rs`; all six predictions held, and the CPython arm REFUTED an assertion inherited from slice I — the pass-count instability needs a SOLVER-derived property, not the equilibrium gas (§ 5.7) · ✅ slice L (rungs 41/42): `slice_l_oracle.rs` (**25 458 keys**) + 2 rung suites (12 + 12 tests) in a new `bleed.rs`, plus the crate's first FALLIBLE TWINS; nine predictions all settled, and a claim the SHIPPED SOURCE carried found wrong (§ 5.8) · ✅ slice M (rungs 53/54): `slice_m_oracle.rs` + 2 rung suites (24 + 25 tests) in a new `stator.rs`, all six steps shipped; its probe **OVERTURNED slice J's `solve_n` zero-firing verdict**, and a bar asserted in a shipped doc comment was refuted by a third of the dump (§ 5.9) · ✅ **PHASE 5 COMPLETE** — the last two slices were N (55/56) and O (61), sized in § 5.9; **N is PRE-REGISTERED (§ 5.10), 10 predictions**, and its probes **REFUTE § 5.9 (c) twice** — reading a method's body cannot see its state's CARRIER — **steps 1–4 SHIPPED** (step 1: P2 held at 535 names, `diff` empty, and the ±1 that would not reconcile was slice I's last `#[ignore]` surviving a rule slice M had already retired · step 2: `stage.rs` + `slice_n_smoke.rs`, **1 337 keys bit-exact first run** over seven enumerated cells, and it **CORRECTS § 5.10 (iii)** — `_P_FLOOR`'s deadness is a DERIVED threshold `e > 1.001` in the two floor constants, not a property of the sweep · step 3: `StageStackCore` + `R55`/`R55_TWO`, and the carrier lesson RECURRED — a FOURTH gated-code edit, at step 3, in a file step 1 never opened, because the plan asked what carrier `at_setting` needs and never what carrier the EFFICIENCY-LOOP hook needs; plus an `_INC_MAX` shadow § 5.3's pre-flight had called correctly and the porting slice mis-spelled · step 4: `slice_n_oracle.rs`, **72 520 keys bit-exact first run** + a 5 649-key equilibrium arm and a 41 560-key CPython one, and § 5.10's own censuses turned out to be measured on TWO grids — (i)/(iv) reproduced to the firing, (iii)/(vi) came from a 240-cell probe sweep, so the census is EMITTED and compared rather than restated; the CPython arm's *discrete → bits* tier had to SPLIT, because all 520 interpreter flips are argmin indices at the design throttle) |
 | **6** | Transients — rungs 34–37, 40, 43–52 (the fuel-side limiter family). **AUTHORISED 2026-08-17; PRE-FLIGHT DONE (§ 5.12). SLICES P, Q, R and S SHIPPED (§ 5.13–§ 5.16); T is PRE-REGISTERED (§ 5.17); U remains.** The phase's structural content is a **six-name virtual set** — `integrate_fuel`, `_close`, `_close_fuel`, `_surge_fuel`, `_instant_tail`, `_powers` — **every one of which crosses into phase 7**, so there is no phase-6-internal hook and the `Hooks` table appears at slice R, not P. Six slices, ordered by `_degenerate`: **P** (34/35/36 `SpoolTransient`) · **Q** (37) · **R** (40/44) · **S** (43/45, `integrate_fuel` ENTIRE) · **T** (46/47/48 gates) · **U** (49/50/51/52 gates). The `4257–4506` object block spans two phases — `IncidenceLimiter` is rung **60** | 4–6 (**light** — 156 tests over 15 files, and phase 3 took five slices for 204) | ✅ slice P: `spool_oracle.rs` (**7 302** bit-exact) + 3 rung suites · ✅ slice Q: `combustor_oracle.rs` (**2 066**) + 1 suite · ✅ slice R: `two_spool_transient_oracle.rs` (**6 853 + 1 120** bit-exact vs PyPy on the first run, + a tiered CPython arm reproducing probe 4's 5-of-12 exactly) + `rung40.rs`/`rung44.rs` (17 tests) + `slice_r_smoke.rs`/`slice_r_dispatch.rs`; a ported suite found running its NEIGHBOUR's gas (§ 5.15 step 4) · ✅ slice S (43/45, `integrate_fuel` ENTIRE — the phase's largest): `fuel_transient_oracle.rs` (**4 671** CPG + **1 133** gas keys bit-exact vs PyPy on the first run) + `rung43.rs`/`rung45.rs` (20 tests) + `slice_s_smoke.rs`/`slice_s_dispatch.rs`, five steps; § 5.12's CPython-detector IOU CLOSED by measurement on the three TPG gases the fuel path admits (§ 5.16) · ⏳ slice T (46/47/48 gates) PRE-REGISTERED, § 5.17 — the FIRST slice whose source already shipped, so its predictions target slice S's ungated ~40 % rather than a port |
 | **7** | **The ladder, rungs 57–60 and 62–84** — the `Hooks` table from § 2, one module per rung. (**61 is PHASE 5's**, not this phase's — it is the steady `StatorBleedMatcher`, and it was double-listed here until the slice-K audit) | 5–8 | 27/27 reduce-to-prior bit-exact |
-| **8** | `main.py` replacement; adjudicate the fragile rungs; re-anchor the fingerprint; **delete the Python** | 2–3 | full suite green on Rust alone |
+| **8** | `main.py` replacement; adjudicate the fragile rungs; re-anchor the fingerprint; **delete the Python**. **BLOCKED ON ONE OPEN PORT DIVERGENCE** — `components::sonic_throat`’s bracket `assert!` is a `panic!` where Python’s is a CATCHABLE `AssertionError` that every marcher’s `except AssertionError: break` relies on; measured at slice T step 1 (§ 5.17), 28 call sites of which ≥10 already sit in fallible chains, note at the definition | 2–3 | full suite green on Rust alone |
 
 **THE TABLE'S OWN COVERAGE WAS NEVER AUDITED UNTIL SLICE K, AND IT HAD BOTH FAILURE MODES.**
 Enumerating rungs 1–84 across the eight rows found **rung 41 in NO phase** (5 stopped at 39 and
@@ -7385,6 +7385,89 @@ tie-cell is written; predicted that `<=` passes all 31 ported gates without it.
 
 `#[ignore]` on the two `slow` gates is decided by slice M's rule against a MEASURED in-suite cost
 against the crate total — the criterion the previous commit pinned — and is not pre-judged here.
+
+##### STEP 1 — SHIPPED. **A PYTHON-CATCHABLE `assert` PANICS IN RUST, AND ONE GATE OF SIX CARRIES THE SIGN**
+
+`fuel_transient.rs` gains the four readers (`topping_relief`, `topping_command_trace`,
+`schedule_relief`, `engagement_sweep`), their three return structs, and the phase-7 deferral notes
+finding 1 booked; `tests/rung46.rs` is **7 test fns for 6 Python ones** — the seventh is not a port,
+see below. **327 lines added to the source, 0 changed**: the readers are pure additions over slice
+S's plant, which is what "gates only" was supposed to mean and is worth stating as a measurement
+rather than an intention. **`rung46.rs` is 7/7 in 10.0–11.8 s** (three runs, the spread quoted rather than the fastest), and `cargo build --release` is clean.
+**THE FULL-CRATE FIGURE IS NOT IN THIS COMMIT, AND THAT IS THE HONEST STATE**: the run was still in
+flight when the step was committed, so no crate number is quoted here. An earlier draft of this
+paragraph said *"the crate is green"* BEFORE the run finished — the same class of slip as the
+`#[ignore]` range that excluded its own most recent measurement, and corrected the same way: quote
+what was measured and leave a gap where nothing was. The figure lands with step 2.
+
+**FINDING 1 — AN `assert` PYTHON CATCHES, RUST CANNOT, FOUND BY ADDING A CELL NO SUITE HAS.**
+Rung 46 gate 2 checks that an `lp_disabled` object REFUSES the governor. Python leaves the
+`Tt4_max=None` route open on that same object, so the obvious neighbouring cell is to run it — and
+Python returns an **empty trajectory** where Rust **PANICS**. Both are the same assert:
+`_sonic_throat`'s CPG bracket check fires at the very first marched point (the gate's `mf = 0.5` is
+~25× design fuel). Python's `integrate_fuel` wraps its instant call in `except AssertionError` and
+`break`s on it; Rust's `march` breaks on an `Err`, but `components::sonic_throat` raises a
+`panic!`, which unwinds straight past the whole fallible chain.
+
+**THE DIVERGENCE IS A CLASS, NOT A CELL, AND IT WAS MEASURED RATHER THAN ESTIMATED.**
+`choked_mfp` / `sonic_throat` have **28 call sites** in the crate. Classifying them by whether the
+enclosing `fn` name starts with `try_` gives **10** — `eval_m_fuel` (`spool.rs:1041`, the route this
+cell takes) among them. **That is a LOWER BOUND from a name grep and not a measurement of the
+fallible set**, checked to be wrong in both directions: `map.rs`'s `operating_point` and
+`two_spool_transient.rs`'s `r40_try_close` are both in fallible chains and neither matches the
+prefix. Whoever owns the repair classifies by SIGNATURE. It is written as a floor rather than a
+count because this port has shipped five typed count bars and all five were wrong. Each site is
+**one line** from being faithful once a fallible twin exists, and converting one **cannot change
+behaviour on any path where the assert does not fire** — the two spellings differ only in what
+happens when it does.
+
+**NOT FIXED HERE, AND THE REASON IS SCOPE, NOT DIFFICULTY.** The repair edits shipped phase-2/4/5/6
+code across six files inside a slice whose entire content is gates, and a PARTIAL conversion would
+be worse than none: it would leave some paths refusing and some panicking with no principle
+separating them, which is harder to reason about than today's uniform "asserts panic". So it is
+**booked as an OPEN item** and the divergence is given a gate on BOTH sides —
+`disclosed_divergence_a_python_catchable_assert_panics_in_rust` asserts the escaping panic is still
+the bracket assert, with an `expect` message telling the next reader to **DELETE the test**, not
+update it, once the twins land. Slice S step 3 finding 4's precedent, one slice on.
+
+**FINDING 2 — THE GATES WERE MEASURED, NOT ASSUMED, AND ONE OF SIX CARRIES THE SIGN.** All 7 passed
+first run, which § 5.17 P1 registered as the outcome to distrust (*slice N step 2: the dump passed
+first try and taught nothing*). Three defects injected into the shipped reader:
+
+| injection | caught by |
+|---|---|
+| `relief_lp` sign flipped (`bare − top`) | **gate 6 ALONE** — 1 of 7 |
+| `held`'s bar inverted (`+1e-6` → `−1e-6`) | gates 3+4+5 alone — 1 of 7 |
+| the BARE march armed too (the differential destroyed) | gates 3+4+5 **and** 6 — 2 of 7 |
+
+**The first row is the finding, and a FOURTH injection sharpens it into a mechanism.** Gates 3+4+5
+assert `|relief_lp| < 1e-9` at moderate `r`, where the TPG re-measurement below puts `relief_lp` at
+**exactly `0.0`** — and a sign flip on an exact zero is invisible. Flipping `relief_hp` instead, whose
+bar is `> 1e-6` against measured values of 2.7e-3 to 3.6e-3, is caught by **two** gates. **So the
+blindness is not the suite's, it is the LP half's specifically, and the exact zero IS the
+mechanism**: the same measurement that makes rung 46's headline sharp — a machine-zero the port
+reproduces bit-for-bit — is what makes that half of it unable to gate its own sign. The one gate
+that can is gate 6, the fast-ramp lever, which exists to make a different point and is one of the
+two `slow`-marked. A reason to keep it unmarked. Same shape as slice S step 2's *non-strict
+ordering gate satisfied by deleting its own variable*.
+
+**THE GATE GRID IS NOT THE PROBE GRID, CHECKED BEFORE THE FILE WAS WRITTEN.** § 5.17's probes ran
+the CPG gas; rung 46's gates 3-6 run `Gas.thermally_perfect()`. Re-measured on TPG before porting:
+`held` slack **4.1e-12 to 8.6e-12** against the `1e-6` bar, `relief_lp` **exactly `0.0`** at all
+four shapes, and the mechanism ordering `1373.66 < 1480 < 1558.47` with 106 K / 78 K to spare. Same
+shape as CPG, so no finding moves — but *a census is a property of the grid*, and this port has
+paid for assuming otherwise.
+
+**`#[ignore]`: MEASURED AND NOT EARNED.** `test_rung46.py` marks two of its six `slow`. The ported
+file runs **10.04 s in full**, against a crate total in the ~19 min range — slice M's rule wants a
+MEASURED cost and this is not one, so neither gate carries a marker. Same verdict as slice S's, on
+a figure two orders smaller.
+
+**ONE PORT DECISION WORTH NAMING.** Python reaches gate 2's first refusal two calls below
+`topping_relief`, inside `phi_excursion_fuel`; Rust refuses in `TwoSpoolFuelTransient::
+topping_relief` itself, so the message names the method the caller actually invoked. The gate
+asserts the two-shaft wording, which both spellings carry — the assertion is on the REASON, not on
+the frame.
 
 ---
 

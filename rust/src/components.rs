@@ -686,6 +686,31 @@ pub fn sonic_throat_bisect(gas: &Gas, tt9: f64, far: f64, h_tt: f64, r: f64) -> 
 /// `pow` call and differs from `sqrt` about one point in 670 — the exact trap phase 2 was caught
 /// by. It is [`powp`] here. Note the CONTRAST with rung 26's `math.sqrt(J)`, which really is the
 /// sqrt instruction: the rule is per-site and cannot be applied by habit.
+/// # ⚠ THE BRACKET `assert!` BELOW IS CATCHABLE IN PYTHON AND NOT HERE — an OPEN port divergence
+///
+/// Python's `_sonic_throat` raises `AssertionError`, and its callers that march (rung 35's
+/// `integrate_fuel`, rung 43's, every `except AssertionError: break` in the ladder) CATCH it and
+/// end the trajectory cleanly. Rust's `assert!` is a `panic!` and unwinds straight past the
+/// `Result<_, Abort>` chain that was built to model exactly that. **Measured at slice T step 1**
+/// on a degenerate rung-35 march at ~25× design fuel: Python returns an EMPTY trajectory, Rust
+/// crashes. Gated on both sides by
+/// `rung46.rs::disclosed_divergence_a_python_catchable_assert_panics_in_rust`.
+///
+/// **THE REPAIR, WHEN A SLICE OWNS IT:** add `try_sonic_throat` / `try_choked_mfp` returning
+/// [`Abort`] with this same message, keep these two as `.expect()` wrappers, and convert the call
+/// sites that already sit in fallible chains — each a one-line change that cannot alter behaviour
+/// on any path where the assert does not fire.
+///
+/// **THE CENSUS IS A FLOOR, AND HERE IS HOW IT WAS COUNTED.** `choked_mfp` / `sonic_throat` have
+/// **28 call sites**; classifying them by whether the ENCLOSING `fn` name starts with `try_`
+/// gives **10**. That heuristic is wrong in both directions and was checked to be — `map.rs`’s
+/// `operating_point` and `two_spool_transient.rs`’s `r40_try_close` are both in fallible chains
+/// and neither matches the prefix — so **10 is a LOWER BOUND from a name grep, not a measurement
+/// of the fallible set**. Whoever owns the repair must classify by SIGNATURE. Recorded this way
+/// because this port has shipped five typed count bars before and all five were wrong. Slice T booked it rather than doing it: a PARTIAL conversion
+/// leaves some paths refusing and some panicking with no principle separating them. **Phase 8
+/// must not delete the Python with this open** — that is when the divergence stops being
+/// comparable to a reference.
 pub fn sonic_throat(gas: &Gas, tt9: f64, pt9: f64, far: f64) -> (f64, f64, f64) {
     let r = gas.r_t_at(far);
     let h_tt = gas.h_t(tt9, far);

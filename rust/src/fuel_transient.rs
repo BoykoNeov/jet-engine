@@ -755,6 +755,89 @@ pub struct TransientSurgeMarginFuel {
     pub npts: usize,
 }
 
+/// RUNG 46/47's `topping_relief` return — Python's 14-key dict.
+///
+/// `tt4_max` and `tau_gov` are echoed back because Python's dict echoes them; a caller that
+/// sweeps `tau_gov` reads the knob off the row rather than off its own loop variable.
+#[derive(Clone, Copy, Debug)]
+pub struct ToppingRelief {
+    pub rho: f64,
+    pub r: f64,
+    pub tt4_max: f64,
+    /// `None` is rung 46's INSTANTANEOUS min-select; `Some` is rung 47's lagged governor.
+    pub tau_gov: Option<f64>,
+    pub tt4_peak_bare: f64,
+    pub tt4_peak_top: f64,
+    /// `tt4_peak_top - tt4_max`. POSITIVE is rung 47's cost of realism — the lag breaks the hold.
+    pub overshoot: f64,
+    /// `tt4_peak_top <= tt4_max + 1e-6`. § 5.17 finding 2 measured this decision uncontested by
+    /// **5.5e7**: the governor pins the redline to ≤ 1.6e-12 or misses it by ≥ 54.7 K, with
+    /// nothing in between, so a flip here is a port defect and never a knife-edge.
+    pub held: bool,
+    pub min_phi_lp_bare: f64,
+    pub min_phi_lp_top: f64,
+    pub min_phi_hp_bare: f64,
+    pub min_phi_hp_top: f64,
+    /// `> 0` ⇔ the topped march's raw min `phi` sits ABOVE (safer than) the bare one.
+    ///
+    /// **EXACTLY `0.0` at moderate `r`, and that is structural** — § 5.17 finding 3 measured the
+    /// two marches bit-identical over their leading points with the LP minimum inside that
+    /// prefix, so the subtraction reads one float from itself.
+    pub relief_lp: f64,
+    pub relief_hp: f64,
+}
+
+/// RUNG 47's `topping_command_trace` return — Python's 5-key dict.
+#[derive(Clone, Debug)]
+pub struct ToppingCommandTrace {
+    /// The `(s, mf)` command at each ENGAGED point — where the clip fires, i.e. `Tt4` pinned at
+    /// the redline.
+    pub engaged: Vec<(f64, f64)>,
+    pub n_engaged: usize,
+    /// Whether the engaged command rises. **This is what makes a metering-VALVE lag inert**: an
+    /// instant-up valve tracks a rising command with no lag, so the topping overshoot must live
+    /// in the sensing/limiter LOOP instead.
+    pub monotone_nondecreasing: bool,
+    pub tt4_max: f64,
+    pub r: f64,
+}
+
+/// RUNG 48's `schedule_relief` return — Python's 18-key dict.
+#[derive(Clone, Copy, Debug)]
+pub struct ScheduleRelief {
+    pub margin: f64,
+    pub r: f64,
+    pub rho: f64,
+    /// WHEN the leg first engages — **`NaN` when it never does**, which is Python's
+    /// `eng[0] if eng else float("nan")`.
+    ///
+    /// § 5.17 finding 4: that arm is reachable (`margin >= 0.55` at `r = 0.5`) and **dead on every
+    /// suite cell** — the lowest any of them drives `n_engaged` is 1 — so the oracle adds a cell
+    /// for it rather than inheriting one. The `to_bits()` comparator needs no NaN special case:
+    /// PyPy's `float("nan")` and Rust's [`f64::NAN`] are both `7ff8000000000000`, measured.
+    pub s_eng: f64,
+    pub n_engaged: usize,
+    /// WHERE each spool's RAW surge minimum sits on the BARE march — not
+    /// [`PhiExcursionFuel::s_lp`], which locates the running-line-REFERENCED extremum.
+    pub s_lp_bare: f64,
+    pub s_hp_bare: f64,
+    pub relief_lp: f64,
+    pub relief_hp: f64,
+    pub min_phi_lp_bare: f64,
+    pub min_phi_lp_lim: f64,
+    pub min_phi_hp_bare: f64,
+    pub min_phi_hp_lim: f64,
+    /// `∫ (schedule − applied) ds`, trapezoid. One of the two keys that EXCLUDE the deflation
+    /// "any clip removes fuel and slows the accel, so this is rung 44's ramp-rate lever".
+    pub fuel_removed: f64,
+    pub tt4_peak_bare: f64,
+    pub tt4_peak_lim: f64,
+    /// The settled endpoint — the OTHER exclusion key. The crossing is read only where this is
+    /// unmoved from `nu_hp_end_bare`.
+    pub nu_hp_end: f64,
+    pub nu_hp_end_bare: f64,
+}
+
 /// Every limiter keyword [`integrate_fuel`](FuelTransientCore::integrate_fuel) accepts — rungs
 /// 46 through 52, which are seven arms on ONE method and not seven classes.
 ///
@@ -935,6 +1018,26 @@ impl TwoSpoolFuelTransient {
         self.core().transient_surge_margin_fuel(flight, tt4_lo, tt4_hi, r, s_settle, ds, tt4_max,
                                                 tau_gov, accel, surge)
     }
+
+    /// RUNG 46's [`topping_relief`](FuelTransientCore::topping_relief), through the enum — which
+    /// REFUSES the degenerate engine.
+    ///
+    /// **THIS IS THE ONE READER THAT NEEDS THE ENUM.** Of the four this slice ports, only
+    /// `topping_relief` is called on an `lp_disabled` object by any suite
+    /// (`test_rung46.py::test_reduce_lp_disabled_asserts_the_split_is_two_shaft`); rungs 47 and 48
+    /// exercise the same refusal through `integrate_fuel` instead. Python reaches the assert one
+    /// level down, inside `phi_excursion_fuel`; the refusal is hoisted here so the panic names the
+    /// method the caller actually invoked.
+    #[allow(clippy::too_many_arguments)]
+    pub fn topping_relief(
+        &self, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, tt4_max: f64, r: f64,
+        s_settle: f64, ds: f64, tau_gov: Option<f64>,
+    ) -> ToppingRelief {
+        assert!(matches!(self, TwoSpoolFuelTransient::Full(_)),
+                "the rung-46/47 TIT topping governor is inherently two-shaft (its finding is the \
+                 rho-loud surge relief); lp_disabled is not a reduce axis for it.");
+        self.core().topping_relief(flight, tt4_lo, tt4_hi, tt4_max, r, s_settle, ds, tau_gov)
+    }
 }
 
 /// Rung 43's object once `lp_disabled` is ruled out.
@@ -1073,6 +1176,13 @@ impl FuelTransientCore {
     /// wall-to-wall bracket can straddle nonsense. `g` rises monotonically through the physical
     /// root, so this keeps the LAST negative and takes the FIRST crossing after it. Rung 40's own
     /// closure is untouched — this is a consequence of the CONTROL change, not a fix to rung 40.
+    ///
+    /// # ⚠ PHASE 7 NEEDS THIS BEHIND A HOOK CELL — **4 classes override it**
+    ///
+    /// `ScheduledStatorTransient`, `ScheduledBleedTransient`, `LimitedBleedTransient` and
+    /// `LaggedBleedTransient` each replace Python's `_close_fuel`. One of § 5.12's six crossing
+    /// names, and one of the three [`TwoSpoolTransientHooks`] has no cell for — see
+    /// [`integrate_fuel`](Self::integrate_fuel) for why the cell is not built here.
     pub fn try_close_fuel(
         &self, nu_lp: f64, nu_hp: f64, mdot_fuel: f64, tt2: f64, pt2: f64,
     ) -> Result<FuelCloseState, Abort> {
@@ -1390,6 +1500,13 @@ impl FuelTransientCore {
     ///
     /// Structurally [`try_sched_fuel`](Self::try_sched_fuel)'s twin with **`0.9` where that one
     /// steps `0.85`**, and the same float-identical dormant return.
+    ///
+    /// # ⚠ PHASE 7 NEEDS THIS BEHIND A HOOK CELL — **`ScheduledStatorTransient` overrides it**
+    ///
+    /// The third of § 5.12's six crossing names with no [`TwoSpoolTransientHooks`] cell. Only one
+    /// overrider, so the cost of missing it is the smallest of the three — and the reason it is
+    /// written down anyway is that a single overrider is exactly the one a census skims past. See
+    /// [`integrate_fuel`](Self::integrate_fuel) for why the cell is not built here.
     pub fn try_surge_fuel(
         &self, flight: &FlightCondition, nu_lp: f64, nu_hp: f64, mf_sched: f64,
         surge: &SurgeLimiter,
@@ -1537,6 +1654,21 @@ impl FuelTransientCore {
     ///
     /// The seven limiter arms are dispatched by [`FuelLimiters`], and the asserts below are
     /// Python's, in Python's order.
+    ///
+    /// # ⚠ PHASE 7 NEEDS THIS BEHIND A HOOK CELL — **11 classes override it**
+    ///
+    /// § 5.12's census measured six names called on `self` inside phase 6 and overridden in phase
+    /// 7. [`TwoSpoolTransientHooks`] carries three of them (`try_close`, `try_instant_tail`,
+    /// `powers`); this is the largest of the three that have no cell — `LaggedBleedTransient`
+    /// through `SensedCapTransient` each replace it. **Calling it directly from a phase-7 body
+    /// would silently run rung 43's version**, which is the failure mode the ladder architecture
+    /// exists to prevent.
+    ///
+    /// No cell is built here on purpose: phase 7 is unauthorised, and a hook with one
+    /// implementation is a guess at what the second one needs. Slice T writes the note instead,
+    /// **at the definition rather than only into § 5.17** — slice O's lesson, where what actually
+    /// reached the next slice was a panic with a backtrace and the paragraph that had predicted it
+    /// correctly was read second.
     pub fn integrate_fuel<S>(
         &self, flight: &FlightCondition, fuel_schedule: S, nu0: (f64, f64), s_end: f64, ds: f64,
         lim: &FuelLimiters<'_>,
@@ -2189,6 +2321,201 @@ impl FuelTransientCore {
             min_phi_lp, min_phi_hp, crossed_lp: tr_lp < 0.0, crossed_hp: tr_hp < 0.0,
             phi_surge_lp: ml.phi_surge, phi_surge_hp: mh.phi_surge, npts: traj.len(),
         }
+    }
+
+    // =========================================================================================
+    // RUNGS 46-48 — the READERS
+    //
+    // Four thin differencers over the marches above. § 5.16 deliberately left all thirteen
+    // rung-46-52 readers unported (they carry no rung-43/45 gate); these are the four
+    // `test_rung46-48.py` reach, and the other nine are slice U's.
+    // =========================================================================================
+
+    /// RUNG 46. March the SAME accel FUEL ramp twice — BARE and TOPPED (fuel clipped to hold
+    /// `Tt4 <= tt4_max`) — and difference the surge object.
+    ///
+    /// **The finding is a SPLIT, not a relief.** Enforcing the TIT redline rebates surge margin on
+    /// the LATE, non-binding HP spool and is MACHINE-ZERO on the EARLY, binding LP one: the surge
+    /// debit is paid on early-ramp fuel, upstream of any window a redline-triggered governor can
+    /// open. Rung 35's two accel limits are coupled in CAUSE but SEQUENCED in time.
+    ///
+    /// `tau_gov` (RUNG 47) gives the governor a response LAG. It changes only the TOPPED march —
+    /// the bare stays governor-off — so the differential still isolates the governor. A lag is a
+    /// TRAILING-edge tool: it cannot reach the early LP minimum, so it erodes the HP rebate and
+    /// breaks the redline hold while buying nothing on the LP.
+    ///
+    /// Magnitudes are disclaimed (imposed maps and `phi_surge`, the fuel step, the band, the
+    /// redline); load-bearing are the RELIEF SIGN, that `Tt4` is HELD, and the dormant reduce.
+    pub fn topping_relief(
+        &self, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, tt4_max: f64, r: f64,
+        s_settle: f64, ds: f64, tau_gov: Option<f64>,
+    ) -> ToppingRelief {
+        let bare = self.phi_excursion_fuel(
+            flight, tt4_lo, tt4_hi, r, s_settle, ds, None, None, None, None);
+        let top = self.phi_excursion_fuel(
+            flight, tt4_lo, tt4_hi, r, s_settle, ds, Some(tt4_max), tau_gov, None, None);
+        ToppingRelief {
+            rho: self.rho(),
+            r,
+            tt4_max,
+            tau_gov,
+            tt4_peak_bare: bare.tt4_peak,
+            tt4_peak_top: top.tt4_peak,
+            overshoot: top.tt4_peak - tt4_max,
+            held: top.tt4_peak <= tt4_max + 1e-6,
+            min_phi_lp_bare: bare.min_phi_lp,
+            min_phi_lp_top: top.min_phi_lp,
+            min_phi_hp_bare: bare.min_phi_hp,
+            min_phi_hp_top: top.min_phi_hp,
+            relief_lp: top.min_phi_lp - bare.min_phi_lp,
+            relief_hp: top.min_phi_hp - bare.min_phi_hp,
+        }
+    }
+
+    /// RUNG 47 (secondary). March the rung-46 INSTANTANEOUS topped accel and read the applied
+    /// fuel at each ENGAGED point — the min-select topping SET POINT, where `Tt4` is pinned at the
+    /// redline.
+    ///
+    /// **This gates the valve-vs-loop-lag CONTRAST.** A pure metering-VALVE-position lag is inert
+    /// on the accel precisely when this command rises monotonically, because an instant-up valve
+    /// tracks a rising command with no lag. So the topping OVERSHOOT lives in the sensing /
+    /// limiter-LOOP lag — which lags the clip AMOUNT — and not in the valve. WHERE the lag lives
+    /// decides whether it overshoots at all.
+    ///
+    /// **The engagement selector is `|Tt4 - tt4_max| < 1e-6`, and § 5.17 finding 2 measured it
+    /// uncontested by 1.06e6**: an engaged point sits within 9.1e-13 of the redline, the nearest
+    /// unengaged one 1.064 K away.
+    pub fn topping_command_trace(
+        &self, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, tt4_max: f64, r: f64,
+        s_settle: f64, ds: f64,
+    ) -> ToppingCommandTrace {
+        let lim = &FuelLimiters { tt4_max: Some(tt4_max), ..Default::default() };
+        let (traj, _) = self.fuel_ramp_march(flight, tt4_lo, tt4_hi, r, s_settle, ds, lim);
+        let engaged: Vec<(f64, f64)> = traj.iter()
+            .filter(|p| (p.tt4 - tt4_max).abs() < 1e-6)
+            .map(|p| (p.s, p.mf))
+            .collect();
+        // Python: `all(eng[i][1] >= eng[i-1][1] - 1e-12 for i in range(1, len(eng)))` — vacuously
+        // true on 0 or 1 engaged points, which `windows(2)` reproduces without a special case.
+        let monotone_nondecreasing =
+            engaged.windows(2).all(|w| w[1].1 >= w[0].1 - 1e-12);
+        ToppingCommandTrace {
+            n_engaged: engaged.len(),
+            engaged,
+            monotone_nondecreasing,
+            tt4_max,
+            r,
+        }
+    }
+
+    /// RUNG 48. March the SAME accel FUEL ramp twice — BARE and with the `Wf/pt3` leg armed — and
+    /// difference the reference-free surge object, exactly as
+    /// [`topping_relief`](Self::topping_relief) does for the TIT governor.
+    ///
+    /// **THE RUNG IS FOUR OF THE EIGHTEEN KEYS.** The finding is the crossing
+    /// `relief_* > 0 ⟺ s_eng < s_*`: a fuel-side limiter rebates a spool IFF it engages UPSTREAM
+    /// of THAT spool's own minimum. [`fuel_removed`](ScheduleRelief::fuel_removed) and
+    /// [`nu_hp_end`](ScheduleRelief::nu_hp_end) are what exclude the deflation that this is rung
+    /// 44's ramp-rate lever restated — they vary SMOOTHLY through the crossing at which the relief
+    /// switches EXACTLY off, and at a margin where `relief_lp` is exactly 0 the SAME clip still
+    /// rebates the HP.
+    ///
+    /// `tt4_max` / `tau_gov` arm rungs 46/47's governor ON TOP (the min-select composite); the
+    /// bare leg stays governor-free so the differential isolates the `Wf/pt3` leg.
+    #[allow(clippy::too_many_arguments)]
+    pub fn schedule_relief(
+        &self, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, accel: &AccelSchedule, r: f64,
+        s_settle: f64, ds: f64, tt4_max: Option<f64>, tau_gov: Option<f64>,
+    ) -> ScheduleRelief {
+        let bare_lim = &FuelLimiters::default();
+        let lim_lim = &FuelLimiters { tt4_max, tau_gov, accel: Some(accel), ..Default::default() };
+        let (bare, _) = self.fuel_ramp_march(flight, tt4_lo, tt4_hi, r, s_settle, ds, bare_lim);
+        let (lim, _) = self.fuel_ramp_march(flight, tt4_lo, tt4_hi, r, s_settle, ds, lim_lim);
+        assert!(!bare.is_empty() && !lim.is_empty(),
+                "rung-48 schedule_relief produced no trajectory");
+
+        // Python's `min(traj, key=...)` returns the FIRST minimum on ties, so the fold is STRICT.
+        //
+        // § 5.17 finding 5: NO suite cell has a tie — the closest is a 1.61e-5 gap to the
+        // second-smallest — so a `<=` here would ship undetected past all 31 ported gates. The
+        // tie is MANUFACTURED in the oracle instead of being hoped for.
+        fn raw_min(traj: &[FuelPoint], key: fn(&FuelPoint) -> f64) -> (f64, f64) {
+            let mut best = key(&traj[0]);
+            let mut at = traj[0].s;
+            for p in &traj[1..] {
+                if key(p) < best {
+                    best = key(p);
+                    at = p.s;
+                }
+            }
+            (best, at)
+        }
+        let (mpl_b, s_lp) = raw_min(&bare, |p| p.phi_lp);
+        let (mph_b, s_hp) = raw_min(&bare, |p| p.phi_hp);
+        let (mpl_l, _) = raw_min(&lim, |p| p.phi_lp);
+        let (mph_l, _) = raw_min(&lim, |p| p.phi_hp);
+
+        // The trapezoid, in Python's instruction order: `0.5 * h * (prev + cur)` accumulated
+        // ascending. NOT hoisted, NOT rearranged — the port's `copy-vs-rederivation` rule, which
+        // has cost it an "exactly" claim before.
+        let mut removed = 0.0f64;
+        for i in 1..lim.len() {
+            let h = lim[i].s - lim[i - 1].s;
+            removed += 0.5 * h * ((lim[i - 1].mf_sched - lim[i - 1].mf)
+                                  + (lim[i].mf_sched - lim[i].mf));
+        }
+        let eng: Vec<f64> = lim.iter()
+            .filter(|p| p.mf < p.mf_sched * (1.0 - 1e-9))
+            .map(|p| p.s)
+            .collect();
+        let peak = |t: &[FuelPoint]| t.iter().fold(f64::NEG_INFINITY, |a, p| a.max(p.tt4));
+        ScheduleRelief {
+            margin: accel.margin,
+            r,
+            rho: self.rho(),
+            s_eng: eng.first().copied().unwrap_or(f64::NAN),
+            n_engaged: eng.len(),
+            s_lp_bare: s_lp,
+            s_hp_bare: s_hp,
+            relief_lp: mpl_l - mpl_b,
+            relief_hp: mph_l - mph_b,
+            min_phi_lp_bare: mpl_b,
+            min_phi_lp_lim: mpl_l,
+            min_phi_hp_bare: mph_b,
+            min_phi_hp_lim: mph_l,
+            fuel_removed: removed,
+            tt4_peak_bare: peak(&bare),
+            tt4_peak_lim: peak(&lim),
+            nu_hp_end: lim[lim.len() - 1].nu_hp,
+            nu_hp_end_bare: bare[bare.len() - 1].nu_hp,
+        }
+    }
+
+    /// RUNG 48 (the finding method). Sweep the schedule margin `m` and report, per `m`, the
+    /// engagement time and both reliefs.
+    ///
+    /// **`m` is an ENGAGEMENT-TIME instrument.** The bare march's `(Wf/pt3)/kappa_ss` ratio rises
+    /// MONOTONICALLY through both surge minima, so `m` maps continuously to `s_eng(m)` — one
+    /// scalar moves the clip ACROSS the minima with the plant, the band, the ramp rate and the
+    /// endpoint all held fixed. Watch `relief_lp` fall to EXACTLY 0 as `s_eng` passes `s_lp`,
+    /// while `relief_hp` is still positive and dies only as `s_eng` reaches `s_hp`.
+    ///
+    /// **The `m → 0` corner is the HONEST BOUNDARY, reported not hidden**: there the leg binds
+    /// from the start and never releases, and the leg HAS degenerated into rung 44's ramp-rate
+    /// lever. Read the crossing only where `nu_hp_end` is unmoved. § 5.17 finding 7 measured that
+    /// this corner COMPLETES rather than refusing — at `m = 0.02` the march runs to the end with
+    /// `nu_hp_end` 1.4e-1 below bare — so a Rust-side refusal here is a defect, not a divergence.
+    #[allow(clippy::too_many_arguments)]
+    pub fn engagement_sweep(
+        &self, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, margins: &[f64], r: f64,
+        s_settle: f64, ds: f64, n: usize,
+    ) -> Vec<ScheduleRelief> {
+        margins.iter()
+            .map(|&m| {
+                let acc = self.accel_schedule(flight, tt4_lo, tt4_hi, m, n);
+                self.schedule_relief(flight, tt4_lo, tt4_hi, &acc, r, s_settle, ds, None, None)
+            })
+            .collect()
     }
 }
 
