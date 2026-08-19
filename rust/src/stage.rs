@@ -870,12 +870,17 @@ impl StageStackCoreSpec {
 /// Python. That gate is **owed to phase 6** and booked in `slice_n_deferrals`: it runs a rung-43
 /// fuel transient twice on the same hardware and demands the two point lists match.
 ///
-/// **AS OF SLICE S STEP 1 THE BLOCKER IS GONE** — [`crate::fuel_transient::FuelTransientCore`]
-/// exists, so the gate is writable; it lands with `tests/rung55.rs`'s roster item at slice S
-/// step 3. This note is corrected HERE, where the next reader of this file meets it, rather than
-/// only in the plan: slice O's lesson is that the note which reaches the next slice is the one
-/// written where the compiler and the tests hit it, and a doc comment that has become false is
-/// the same defect one level down.
+/// **THAT GATE SHIPPED AT SLICE S STEP 3**, as `tests/rung45.rs::rung55_item5_transient_ladder_
+/// is_bit_for_bit_unstacked` — and NOT as a straight port: Rust's two constructors each take the
+/// design engine BY VALUE, so Python's shared-object leakage channel does not exist and
+/// `before == after` could not have failed. The shipped gate INJECTS a live K=8 stack into the
+/// fuel transient's own [`TwoSpoolMapCore::stack_lp`](crate::two_spool::TwoSpoolMapCore::stack_lp)
+/// instead, which asks the question the scope boundary is actually about — would these closures
+/// READ a stack sitting in the slot? — and is measured to fail when they do.
+///
+/// This note has now been corrected TWICE in two steps, which is the point of writing it here:
+/// slice O's lesson is that the note reaching the next slice is the one the compiler and the
+/// tests hit, and a doc comment that has become false is the same defect one level down.
 pub struct StageStackCore {
     /// The rung-53 object, carrying [`R55`] in its stator slot, [`R55_TWO`] in the inner
     /// two-spool slot, [`Descendant::Stack`] as its description, and the two built stacks on

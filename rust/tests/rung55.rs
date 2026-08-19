@@ -774,17 +774,21 @@ fn slice_n_deferrals() {
     //    `stage_incidence_schedule`), all UNREPRESENTABLE: `Spool` is a two-variant enum.
     let _ = (Spool::Lp, Spool::Hp);
 
-    // 5. Rung 55's `test_cycle_untouched_transient_ladder_is_bit_for_bit_unstacked` — **OWED TO
-    //    PHASE 6**, and this is the one deferral in the ledger that is a whole GATE rather than
-    //    an assert. It runs a rung-43 fuel transient twice on the same hardware — once before a
-    //    stack is live, once after — and demands the two point lists compare `==`; its content
-    //    is ABSENCE OF LEAKAGE from the stack into the transient closures. What makes it
-    //    unportable is that `TwoSpoolFuelTransient` does not exist in Rust yet, NOT `phi_max`,
-    //    which is where the first draft filed it. The assertion, quoted so phase 6 does not
-    //    re-derive it:
+    // 5. Rung 55's `test_cycle_untouched_transient_ladder_is_bit_for_bit_unstacked` —
+    //    **DISCHARGED at slice S step 3**, as `rung45.rs::rung55_item5_transient_ladder_is_
+    //    bit_for_bit_unstacked`. It landed there rather than back here for slice P's reason (the
+    //    discharged item goes where its object lives), and it is NOT a straight port.
     //
-    //        before == after   over [(s, nu_lp, nu_hp, Tt4)], with a K=8 stacked matcher
-    //                          matched at Tt4 = 1000 between the two runs
+    //    Python's gate runs a rung-43 fuel transient twice on the same hardware — once before a
+    //    stack is live, once after — and demands the two point lists compare `==`. Its CONTENT is
+    //    absence of leakage from the stack into the transient closures; its MECHANISM is a shared
+    //    Python design object reaching both. **That mechanism does not exist in Rust** —
+    //    `StageStackCoreSpec::new` and `TwoSpoolFuelTransient::new` each take a `TwoSpoolEngine`
+    //    BY VALUE — so the straight port could not have failed whatever the closures read, i.e. it
+    //    would have been VACUOUS (`rust-port-ported-test-vacuity`). The shipped gate asserts the
+    //    content directly and more strongly: a live K=8 `StageStack` is INJECTED into the fuel
+    //    transient's OWN `TwoSpoolMapCore::stack_lp`/`stack_hp`, and the march is demanded
+    //    bit-identical. Measured to have teeth — making the fuel closure read `stack_lp` fails it.
     //
     // 6. `ComponentMap.phi_max` — still booked to PHASE 6, unchanged from slice M's ledger and
     //    NOT re-opened here.

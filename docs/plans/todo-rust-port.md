@@ -6292,7 +6292,7 @@ which is the arithmetic checking out rather than the number being carried forwar
 `pytest.ini`'s `testpaths = tests` excludes it — checked, not assumed.
 
 
-### 5.16 SLICE S (rungs 43 + 45, `TwoSpoolFuelTransient`) — PRE-REGISTERED, four probes MEASURED first; **STEPS 1–2 SHIPPED**
+### 5.16 SLICE S (rungs 43 + 45, `TwoSpoolFuelTransient`) — PRE-REGISTERED, four probes MEASURED first; **STEPS 1–3 SHIPPED**
 
 Rung 43 puts rung 35's FUEL control on rung 40's two-shaft plant — `Tt4` becomes an OUTPUT of a
 forward burner — and rung 45 marches that plant against rung 41's imposed surge line. This is the
@@ -6680,7 +6680,7 @@ fails to take*: so `try_instant_tail` is perturbed FIRST and the harness watched
 movement, before either zero is trusted. Slice R step 3 paid for this exact thing — an injection
 harness whose revert preserved mtimes reported three defects as carry-over from the row above.
 | 2 | `tests/rung43.rs` — the 11 collected items | 11 run / 0 failed |
-| 3 | `tests/rung45.rs` — the 9 collected items; `rung55.rs` item 5 discharged and `stage.rs:870`'s stale note corrected | 9 run / 0 failed; roster line gone |
+| 3 | `tests/rung45.rs` — the 9 collected items; `rung55.rs` item 5 discharged and `stage.rs:870`'s stale note corrected | **SHIPPED: 10 run / 0 failed** (9 + the discharge); roster line gone |
 | 4 | `oracle/dump_fuel_transient.py` + `tests/fuel_transient_oracle.rs`, PyPy + CPython arms, the TPG arm carrying probe 3's measured expectation | bit-exact CPG; TPG fragile set published |
 | 5 | docs — the rung-43/45 specs' *What the RUST PORT measured*, this section's corrections, and the § 5.12 IOU marked discharged | docs-only |
 
@@ -6902,6 +6902,139 @@ probe 3 measured it blind to `collapse_exponent`'s first-of-equals tie-break (th
 their neighbours at a gap of exactly zero, and `0.10 < 0.40 < 0.70` satisfies every assertion just
 as `0.05 < 0.35 < 0.65` does). The tie-break is pinned in `slice_s_dispatch.rs`, and the header of
 `rung43.rs` says so rather than letting a green tick imply the stronger claim.
+
+---
+
+##### STEP 3 — SHIPPED. **AN INJECTION THAT COMPILED, APPLIED, AND COULD NOT HAVE MOVED ANYTHING**
+
+`tests/rung45.rs`, **10 `#[test]`, 10 run / 0 failed, 0.26 s** — the 9 collected items plus rung
+55's roster item 5. The `--list` name diff is **726 → 736, 10 additions, 0 removals**, which is
+prediction 10's currency paid in full (step 2 paid the 11, this pays the 9 and the discharge). Two
+`src/` edits, **both doc comments only**: `stage.rs`'s note and `rung55.rs`'s roster entry. No
+production line moved at this step.
+
+**THE `lp_disabled` CONSTRUCTION DIFFERENCE, OWED SINCE STEP 1, IS SETTLED — AND THE REASON IS
+SHARPER THAN "PYTHON IS DUCK-TYPED".** Step 1 booked that `test_rung45.py` builds its degenerate
+object from a **two-spool** design engine where `test_rung43.py` builds one from `build_turbojet`.
+Measured (`probe_s7`, `probe_s7c`): **rung 45's own `SINGLE` dict has no `nozzle_convergent`**, so
+`build_turbojet(**SINGLE)` is REFUSED by the rung-31 matcher outright — the source could not have
+fed a single-spool engine without inventing a recipe it does not contain, and feeding the two-spool
+one is the only route it had. What that produces is a HYBRID, because `OffDesignMatcher.__init__`
+takes the LAST `Compressor` and the LAST `Turbine` off the roster:
+
+| | from the TWO-spool engine | from a single-spool one |
+|---|---:|---:|
+| `eta_t` | 0.9 (the **LPT**'s) | 0.92 |
+| `pi_c_design` | 6.0 (the **HPC**'s) | 6.0 |
+| `tau_c_d` | 2.4806 (the `2→3` span, **both** compressors) | 1.7597 |
+| `A4` / `A8` | 7.508e-4 / 2.276e-3 | 2.264e-3 / 3.872e-3 |
+| `P_ref` | 425 338 | 218 230 |
+| `pi_c` at `Tt4 = 1400` | **15.41** | **5.44** |
+
+**None of it is READ.** `phi_excursion_fuel` refuses in the eighth assert opening
+`_fuel_ramp_march`; `transient_surge_margin_fuel` reads only `self.map_lp/map_hp`, which on the
+degenerate branch come from CONSTRUCTOR KWARGS. Measured: all three admissible feeds raise
+**byte-identical** messages at both methods. So `rung45.rs` feeds rung 45's own `SINGLE` with
+`nozzle_convergent: true` added, and that added flag is the one constant in the file that is not
+the source's — disclosed in the header rather than passed off as the suite's.
+
+**FINDING 1 — THE SOURCE ARMS ITS SECOND DEGENERATE OBJECT TO GET PAST A DIFFERENT ASSERT, AND
+RUST REVERSES THE ORDER.** `test_rung45.py`'s `lp_disabled` gate builds TWO objects — the first
+bare, the second `_floor(...)` on both maps — and asserts only `pytest.raises(AssertionError)` for
+each. Measured (`probe_s7b`): `transient_surge_margin_fuel` reads its **surge-line** assert FIRST,
+so on an UNARMED degenerate object it raises *"needs a surge line on BOTH maps"* and the two-shaft
+refusal is never reached. The arming is what makes that half of the gate test the assert it names;
+without it the gate would have passed having exercised a completely different one. *The project's
+own "a gate whose expected result is a raise passes when everything raises" landing in the SOURCE,
+not in the port.* So `rung45.rs` asserts WHICH refusal escapes (§ 5.16's registered port decision,
+now measured to matter) — and injection M below shows that assertion has teeth.
+
+Rust cannot reproduce the ORDER: the refusal lives on the enum, because the `Degenerate` variant
+holds a `SpoolTransient` and no maps at all, so a bare-map `transient_surge_margin_fuel` raises the
+TWO-SHAFT refusal where Python raises the SURGE-LINE one. Both inputs the source exercises agree.
+The divergence is DISCLOSED in the gate's doc comment rather than repaired — repairing it means
+carrying two maps on a variant with no use for them.
+
+**FINDING 2 — THE FILE PASSED 10/10 FIRST TRY, SO THIRTEEN INJECTIONS WERE RUN, AND ONE OF THEM
+WAS A DUD THAT LOOKED LIKE A HOLE.** Every injection is a text substitution with its own
+`count(old) == 1` (step 2's finding 3), and every one was confirmed to COMPILE before its result
+was read. The first draft of `H` seeded `ext_lp` with `map_lp.phi_surge * 1e-9` to break the
+read-only claim; it applied, it compiled, it reported **zero gates firing** — and the first marched
+point overwrites the seed, because the loop is `if e_lp.abs() > ext_lp.abs()`. **Compiling is not
+expressing.** It is kept in the harness as row `H0`, beside the repaired `H` that perturbs the
+RESULT and does fire gate 1. *Slice S step 1's own lesson, arriving two steps later inside the same
+slice, on an instrument written by the person who wrote that lesson down.*
+
+| injection | what it breaks | gates that FIRE |
+|---|---|---|
+| A `DTT4` spelled as an ENDPOINT | the rung-44 comparison spans 1000–2400 | gate 4 ALONE |
+| B running line read at `s/2` | the COMMANDED reference is sampled wrong | gate 2 |
+| C `min_phi` reads the other shaft | the surge object is the wrong spool's | gate 4 |
+| D march bound loses its `r` | the settle window stops tracking the ramp | **NONE** |
+| E `Tt4_peak` clipped to the command | the plant's `rho` signal is erased | gate 3(b) |
+| F steady min IS the transient min | gate 6's flip compares a thing with itself | gate 6 |
+| G crossing flags swapped | the crossing is reported on the wrong spool | gate 6 |
+| H the RESULT reads `phi_surge` | READ-ONLY broken | gate 1/read-only |
+| H0 the SEED reads `phi_surge` | **a DUD — overwritten at the first point** | **NONE** |
+| I `/rho` deleted from the LP ODE | `rho` leaves the plant | gate 3(a) **and** 3(b) |
+| K the fuel closure reads `stack_lp` | rung 55's scope violation, manufactured | rung-55 item 5 |
+| L the ramp ignores its own rate | every `r` applies the same schedule | gate 5 |
+| M the degenerate refusal's WORDING | it still fires, but stops saying which | gate 1/`lp_disabled` |
+| Z `min` respelled as an `if` | NO-OP CONTROL | **NONE** |
+
+Row A is the one worth keeping. § 5.16's port decisions never mentioned it, and the source writes
+`phi_excursion(FLIGHT, 1000.0, 400.0)` beside `phi_excursion_fuel(FLIGHT, 1000.0, 1400.0)` — a
+**DELTA** against an **ENDPOINT**. Porting the `400.0` as an endpoint is caught by exactly ONE of
+the file's ten tests; every sign and ordering assertion in gate 2 survives it. It is now a named
+constant, `DTT4 = HI - LO`, with the hazard in its doc comment.
+
+**FINDING 3 — `D` IS NOT A HOLE IN THE SUITE; THE CHANGE IS PHYSICALLY INERT AND ONLY `npts`
+WITNESSES IT.** Dropping `r` from `r + s_settle` fires nothing, so it was measured rather than
+filed as a gap:
+
+```
+                   BASELINE                        INJECTED
+r=1.0    npts=351  min_phi_lp=0.7511681337710964   npts=301  min_phi_lp=0.7511681337710964
+r=0.5    npts=326  min_phi_lp=0.7354659814383082   npts=301  min_phi_lp=0.7354659814383082
+r=0.3    npts=316  min_phi_lp=0.7188792876873181   npts=301  min_phi_lp=0.7188792876873181
+r=0.1    npts=306  min_phi_lp=0.6726404680613678   npts=301  min_phi_lp=0.6726404680613678
+```
+
+**Bit-for-bit identical physics at all four ramp rates**, because the minimum is attained during the
+ramp and never inside the settle tail the `r` buys. The ONLY channel that witnesses the march bound
+is `npts`, and no rung-45 gate reads it. **STEP 4 OWES `npts` AS AN ORACLE KEY** — this is where a
+value dump earns its keep over a suite of signs.
+
+**FINDING 4 — THE SUITE IS NINE GATES OF SIGNS AND SPREADS, SO 30 VALUES WERE DIFFED BY HAND
+BEFORE STEP 4.** Step 2's finding 2 measured that seven of eleven rung-43 gates are blind to a wrong
+LP derivative; rung 45 is worse-placed, because it has NO dynamical reduce at all (its own docstring
+says the object is anchored TRANSITIVELY through rung 43's gate 1). So `probe_s8` printed Python's
+numbers for gate 5's `r` sweep, gate 3(b)'s `rho` sweep, gate 2's four shape ratios and gate 6's
+crossing cell, and the same 30 came off the Rust side: **every one bit-identical to PyPy's `repr`.**
+That is not the oracle — it is the go/no-go slice N step 5 says a measuring pass needs before it is
+trusted, and it passed.
+
+**RUNG 55's ROSTER ITEM 5 IS DISCHARGED — BY REBUILDING IT, NOT PORTING IT.** Python's gate hands
+ONE design object to a stacked matcher and a fuel transient so a WRITE by the former would surface
+on the latter. `StageStackCoreSpec::new` and `TwoSpoolFuelTransient::new` each take a
+`TwoSpoolEngine` **by value**, so that channel does not exist and `before == after` could not have
+failed whatever the closures read — `rust-port-ported-test-vacuity`, and step 2's finding 5 is the
+precedent for saying so rather than shipping the tick. The shipped gate INJECTS a live K=8
+`StageStack` into the fuel transient's OWN `TwoSpoolMapCore::stack_lp`/`stack_hp` and demands the
+march bit-identical, which asks the question the scope boundary is actually about — *would these
+closures READ a stack sitting in the slot?* Injection K manufactures the failure and it fires. The
+gate also shows its injection EXPRESSES ITSELF twice over (the slot is `Some` with `K == 8`, AND the
+same stack moves `eta_lpc` on a matcher that does read it), because "nothing moved" beside an inert
+stack would be worth nothing.
+
+`stage.rs`'s note is corrected a SECOND time in two steps — step 1 killed *"does not exist in Rust
+yet"*, and step 3 kills *"lands with `rung55.rs`'s roster item at slice S step 3"*, which stops
+being true the moment this ships. That is the point of writing it where the compiler and the tests
+hit it rather than only in this plan.
+
+**STILL OWED TO STEP 4:** `npts` as an oracle key (finding 3), and both suites' `R_c`/`R_t` bits as a
+section-A key beside at least one thrust key per suite (§ 5.16 probe 1's closing measurement — only
+a thrust key can ever witness which gas the port used).
 
 ---
 
