@@ -68,6 +68,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Slice S step 3: rung 45 + rung 55's last IOU](rust-port-slice-s-step3.md) — an injection that compiled and applied could not have moved anything; a zero measured before being called a hole
 - [Slice S step 4: the oracle](rust-port-slice-s-step4.md) — a probe's HEADER claimed the suites' grids and its code ran another; four registered counts died
 - [Slice T step 1: readers + rung 46](rust-port-slice-t-step1.md) — an EXACT ZERO makes its own gate blind to the SIGN; the only real defect came from a cell no suite has
+- [Slice T step 2: rung 47's gates](rust-port-slice-t-step2.md) — 9/9 green and blind to a 24% value error; tabulate a suite's BAR MARGINS and the blind spot is predictable
 
 ## Shipped rungs
 
