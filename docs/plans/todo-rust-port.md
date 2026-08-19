@@ -26,7 +26,7 @@ oracle keys bit-exact (§ 5.13). **SLICE Q (rung 37) IS SHIPPED** — 2 066 orac
 firings and could only close with a counter is here the path 94.5 % of one call site's calls
 take, worth 456 oracle keys and **zero of ten gates**. **SLICE R (rungs 40/44) IS SHIPPED** — 6 853 main + 1 120 reacting oracle keys bit-exact,
 four steps (§ 5.15). **SLICE S (rungs 43/45, the whole `integrate_fuel`) IS SHIPPED**
-— 4 671 main + 1 133 gas oracle keys bit-exact, five steps (§ 5.16); its leading result is that
+— 4 671 main + 1 133 gas oracle keys bit-exact, all five steps (§ 5.16); its leading result is that
 FOUR of this section's own registered census numbers came off a probe whose header called its grid
 the two suites' and was not, and § 5.12's own IOU —
 the arming predicates on a gas the CPython detector can see — is **discharged with a
@@ -6302,7 +6302,7 @@ which is the arithmetic checking out rather than the number being carried forwar
 `pytest.ini`'s `testpaths = tests` excludes it — checked, not assumed.
 
 
-### 5.16 SLICE S (rungs 43 + 45, `TwoSpoolFuelTransient`) — PRE-REGISTERED, four probes MEASURED first; **STEPS 1–4 SHIPPED, 5 IS DOCS**
+### 5.16 SLICE S (rungs 43 + 45, `TwoSpoolFuelTransient`) — PRE-REGISTERED, four probes MEASURED first; **ALL FIVE STEPS SHIPPED**
 
 Rung 43 puts rung 35's FUEL control on rung 40's two-shaft plant — `Tt4` becomes an OUTPUT of a
 forward burner — and rung 45 marches that plant against rung 41's imposed surge line. This is the
@@ -6706,7 +6706,7 @@ harness whose revert preserved mtimes reported three defects as carry-over from 
 | 2 | `tests/rung43.rs` — the 11 collected items | 11 run / 0 failed |
 | 3 | `tests/rung45.rs` — the 9 collected items; `rung55.rs` item 5 discharged and `stage.rs:870`'s stale note corrected | **SHIPPED: 10 run / 0 failed** (9 + the discharge); roster line gone |
 | 4 | `oracle/dump_fuel_transient.py` + `tests/fuel_transient_oracle.rs`, PyPy + CPython arms, the TPG arm carrying probe 3's measured expectation | **SHIPPED: 5 run / 0 failed**; 4 671 + 1 133 keys bit-exact, TPG fragile set published |
-| 5 | docs — the rung-43/45 specs' *What the RUST PORT measured*, this section's corrections, and the § 5.12 IOU marked discharged | docs-only |
+| 5 | docs — the rung-43/45 specs' *What the RUST PORT measured*, this section's corrections, and the § 5.12 IOU marked discharged | **SHIPPED**, in step 4's commit; docs-only, so no gate is owed |
 
 ---
 
@@ -7099,9 +7099,11 @@ that compared them**; the CPython arm is 5 804 values and is a DETECTOR, publish
 `--list` name diff is **736 → 741, 5 additions, 0 removals** (prediction 10's currency, paid in
 full: 11 at step 2, 10 at step 3, 5 here). **Zero `src/` edits** — prediction 5 put the march-in
 counter in `fuel_transient.rs` at step 1 precisely so this step would need none, and it needed
-none. Timing: the binary is **~155–162 s** of a **~19 min** crate suite, against `two_spool_oracle`'s
-70 s and `slice_s_smoke`'s 36 s, so slice M's *"re-introduce `#[ignore]` only against a MEASURED
-cost"* is measured and **not met** — no marker.
+none. Timing: **157 s IN THE FULL-SUITE RUN** (a solo `cargo test --test` of the same binary
+reported 155 and 199 s across two runs — the in-suite figure is the one quoted, because the
+`#[ignore]` rule is about the suite's cost and not the binary's), against a **~19 min** crate
+total, `two_spool_oracle`'s 70 s and `slice_s_smoke`'s 36 s. So slice M's *"re-introduce
+`#[ignore]` only against a MEASURED cost"* is measured and **not met** — no marker.
 
 **THE HEADLINE — AN INSTRUMENT'S OWN DOCSTRING IS NOT EVIDENCE ABOUT WHAT IT MEASURED.**
 `probe_s2.py`'s header says it runs *"rungs 43 and 45's OWN grids"*. It runs a cross-product of its
@@ -7210,8 +7212,11 @@ path, and probe 3's 16-fold pass-count amplifier is the sharpest single detector
 `eq_passes` totals **157** over the three admitted gases, gated as a number because a bit-exact
 value dump cannot see an iteration count.
 
-**STILL OWED TO STEP 5:** the two rung specs' *What the RUST PORT measured*, this section's
-five corrections, and § 5.12's IOU marked discharged.
+**STEP 5 SHIPPED IN THE SAME COMMIT** — the two rung specs' *What the RUST PORT measured*, this
+section's five corrections (including forward-pointers written at probe 2's own claims, where the
+next reader hits them rather than only here), and § 5.12's CPython-detector IOU marked CLOSED.
+`pytest` is not owed: the only Python written is `rust/oracle/*.py`, which `pytest.ini`'s
+`testpaths = tests` excludes — checked, not assumed.
 
 ---
 

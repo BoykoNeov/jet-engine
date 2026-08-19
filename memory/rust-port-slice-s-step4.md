@@ -1,6 +1,6 @@
 ---
 name: rust-port-slice-s-step4
-description: "An instrument's own docstring is not evidence about what it measured — a probe claiming to run the suites' grids ran its own, and four registered numbers came off it"
+description: "An instrument's own docstring is not evidence about what it measured"
 metadata: 
   node_type: memory
   type: project
