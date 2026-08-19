@@ -7629,6 +7629,31 @@ leg return**, which is precisely the "upstream one-ULP perturbation" gate 8b exi
 moves five readings in their last two digits, and **all six zero-carrying gates fail together —
 P2 HOLDS**, with gate 8b and the two bit-for-bit reduce contracts falling beside them (10 of 16).
 
+**AND THAT CLAIM IS WITNESSED PER ASSERTION, NOT PER GATE — THE FIRST WRITE-UP OF IT WAS NOT.** The
+same error this section is about nearly went into this section: the ten panic lines were captured
+but four of them were truncated out of the first read, so "all six fired on the zero" rested on two
+gates whose messages were never seen. Both of those sit in assertions carrying a NON-zero half as
+well (gate 9's `relief_lp == 0.0 && relief_hp > 0.0`, gate 9b's zero pair after a
+`fuel_removed > 0.0`), so either could have fired on the other conjunct. Re-run with every message
+captured, the residuals are the witness: gate 8 line 606, gate 9 line 711 (`relief_lp = 3.33e-16`
+BESIDE `relief_hp = 7.49e-3`, so the failing half is the zero), gate 9b line 686
+(`(2.22e-16, −5.55e-16)` against `(0.0, 0.0)`), gate 10 line 742, gate 12 line 793, gate 13 line 815
+(`−5.55e-16`). **Six for six, each on the zero itself.**
+
+**TWO REPAIRS THE ADVISOR'S REVIEW FOUND IN THE SHIPPED FILE, BOTH IN THE SAME CLASS AS THE FINDING
+ABOVE — A CHECK THAT PASSES WHILE MEASURING SOMETHING ELSE.**
+
+1. **Gate 7 read a NEARBY point where Python reads an exact one.** Python's `ratio[s_lp]` is a DICT
+   LOOKUP over the ramp prefix and raises `KeyError` if the LP minimum is not in it; the port had
+   "the last value with `s <= s_lp`", which would silently substitute the ratio at `s = R`. Measured
+   after the repair: the exact lookup FINDS the key, so `s_lp` is in the prefix and on a grid point
+   and the two spellings agree on this cell — the divergence was latent, and it is now a panic
+   instead of a substitution.
+2. **Gates 8b and 9b could report a TRUNCATED march as a moved one.** `first_diff_s` zips, so a
+   limited march that broke out early yields "no difference" and trips the `expect` whose message
+   says the clip genuinely moved the march. One length assertion each, ahead of the diff. Python has
+   the same hole; naming it cost one line.
+
 **AND THAT INJECTION'S FIRST TWO SPELLINGS MEASURED NOTHING, WHICH IS ITSELF A MEASUREMENT.**
 Perturbing the dormant return UPWARD — by `*(1.0 + EPSILON)` and by `next_up` — moved **not one of
 the 14 readings** and passed 16 of 16. The reason is one line in the derivative's min-select,

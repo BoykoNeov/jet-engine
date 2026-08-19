@@ -31,7 +31,10 @@ as one block. Four injections split their carrier gates every time, which looked
 the messages showed every failure fired on a PRECONDITION, never on a zero. Testing the claim needed
 an injection aimed at its mechanism (a 1-ulp perturbation of the shared float), and then all six
 failed together — the prediction HELD. A subset-of-gates count is not evidence about a claim until
-you know which assertion fired.
+you know which assertion fired. **And the same error nearly went into the write-up of the fix**: four
+of the ten panic messages were truncated out of the first read, so "all six fired on the zero" rested
+on two gates whose messages were never seen — both in assertions carrying a non-zero half too. Capture
+every message, and quote the residual that proves which half fired.
 
 **AND THAT TARGETED INJECTION'S FIRST TWO SPELLINGS MEASURED NOTHING**, caught by the
 [[rust-port-slice-s-step3]] precondition rather than by their green tick: perturbing the value

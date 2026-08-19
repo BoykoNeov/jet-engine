@@ -572,7 +572,12 @@ fn gate7_the_window_exists_the_ratio_rises_through_the_lp_minimum() {
 
     let upto: Vec<f64> = ratio.iter().filter(|&&(s, _)| s <= s_lp).map(|&(_, v)| v).collect();
     assert!(upto.windows(2).all(|w| w[1] > w[0]), "monotone through s_lp*");
-    let at_lp = *ratio.iter().filter(|&&(s, _)| s <= s_lp).map(|(_, v)| v).last().unwrap();
+    // Python reads `ratio[s_lp]` — a DICT LOOKUP, which raises if the LP minimum is not in the
+    // ramp prefix this loop built. A "last value with s <= s_lp" would quietly substitute the
+    // ratio at s = R for it, so the lookup is spelled as one and the absence is a panic.
+    let at_lp = ratio.iter().find(|&&(s, _)| s == s_lp).map(|&(_, v)| v)
+        .unwrap_or_else(|| panic!("the LP minimum {s_lp} is not in the s <= {R} prefix -- Python \
+                                   raises KeyError here and so must this"));
     assert!(at_lp > 1.15,
             "the ratio at the LP min must clear kappa_ss with room -- otherwise engaging there \
              throttles the whole ramp ({at_lp})");
@@ -635,6 +640,10 @@ fn gate8b_a_downstream_clip_is_bit_identical_through_the_minimum() {
         let (lim, _) = core.fuel_ramp_march(&f, LO, HI, R, SETTLE, DS,
                                             &FuelLimiters { accel: Some(&acc),
                                                             ..Default::default() });
+        // `first_diff_s` zips, so it stops at the shorter march — a limited run that BROKE OUT
+        // early would report as "no difference" and panic below with the wrong reason. Python has
+        // the same hole; one line closes it.
+        assert_eq!(bare.len(), lim.len(), "the limited march must not truncate (m={m})");
         let s_eng = first_clip_s(&lim).unwrap_or_else(|| panic!("this gate needs a clip at m={m}"));
         let first_diff = first_diff_s(&bare, &lim)
             .unwrap_or_else(|| panic!("...that genuinely moves the march, at m={m}"));
@@ -668,6 +677,7 @@ fn gate9b_the_hp_crossing_on_a_slow_ramp() {
     let acc = core.accel_schedule(&f, LO, HI, 0.20, N_SCHED);
     let (lim, _) = core.fuel_ramp_march(&f, LO, HI, 2.0, SETTLE, DS,
                                         &FuelLimiters { accel: Some(&acc), ..Default::default() });
+    assert_eq!(bare.len(), lim.len(), "the limited march must not truncate");
     let s_eng = first_clip_s(&lim).expect("the m=0.20 leg must engage on the slow ramp");
     assert!(s_eng > s_hp && s_hp > s_lp, "({s_eng}, {s_hp}, {s_lp})");
 
