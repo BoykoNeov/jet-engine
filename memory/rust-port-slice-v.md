@@ -69,6 +69,35 @@ rather than merging them. Both bodies moved out of the `impl` **verbatim** — v
 normalising and diffing against `git show HEAD`, not by eye — so step 1a changes **zero executable
 lines**.
 
+**STEP 1 SHIPPED (1a cells, 1b carrier), GATE `CARGO_EXIT=0` / 95 suites / 847 passed. FOUR MORE
+DEFECTS, AND THREE WERE IN MY OWN INSTRUMENTS:**
+
+- **A GATE READ THROUGH A PIPE IS NOT A GATE — twice.** `cargo test | tail -45` makes the harness
+  report **`tail`'s** status (0 unconditionally) over 45 of ~90 suites. Rerun writing the log
+  whole *and* appending `CARGO_EXIT=$?` — and the harness *still* said 0, because the trailing
+  `echo` was the last command. The logged value was **101**. **Write the status into the artefact;
+  never read it off the runner.** That line is the only reason the next defect surfaced.
+- **A HAND-TYPED FILE LIST in the phase whose rule is "if it can be emitted, emit it"** — the
+  rewrite pass ran over nine files I typed off an earlier grep and missed one. Caught only because
+  a private field is a hard compile error.
+- **AND THE SCAN THAT REPAIRED IT WAS MORE COMPLETE AND ALSO WRONG.** Run blind over all 109
+  files, it rewrote the four new accessors into themselves (infinite recursion) — a global rewrite
+  cannot know which sites it just created. **Completeness and correctness are different
+  properties, and the second pass bought the first by giving up the second.**
+- **A GUESSED BAR, caught by measuring instead.** The carrier witness first asserted a coupled
+  quantity bit-for-bit; it moved 2 ULPs. Re-run as a measurement first: the driven side moves
+  **5.6e-1**, the coupled side **3.2e-16**. That fifteen-order **separation** became the
+  assertion — and it is the *only* one of three that catches an aliased-cells injection, which the
+  obvious `assert_ne!` cannot see. The guessed bar would have failed on a correct tree *and*
+  passed a broken one.
+
+**AND THE CARRIER GOT ITS OWN WITNESS BECAUSE THE PHASE GATE STRUCTURALLY CANNOT BE ONE** — until
+step 2 nothing writes through it during a march, so `set_map_lp` could be `{}` and only rung 53's
+constructor would notice. Three carrier bugs manufactured (dead setter / aliased cells /
+self-restoring write), all three caught. [[rust-port-slice-u-step1]] at this slice's first step:
+**green after a refactor proves the refactor was neutral and says nothing about whether the new
+mechanism runs at all.**
+
 **Why:** every error here is a correct measurement answering a slightly different question than
 the one that mattered. **How to apply:** when a plan hands you a classification, ask what shape
 its detector matched and what a *different* shape would look like; and when a plan says a slice
