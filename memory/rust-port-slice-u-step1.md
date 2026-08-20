@@ -9,17 +9,23 @@ metadata:
 ---
 
 Slice U step 1 (rung 49's `φ` floor: `surge_relief` + `floor_sweep` + 17 gates) shipped
-2026-08-20. Two process lessons.
+2026-08-20. Three process lessons.
 
 **BIT-EXACTNESS AND GATE POWER ARE DIFFERENT QUESTIONS, AND ONLY INJECTION ANSWERS THE SECOND.**
 The port came back 575 keys bit-exact against PyPy over all 23 cells the gates touch, on the first
-run, and 17/17 green. Both are real and neither says which gate would notice a defect. Eleven
-deliberate defects written into the shipped reader: one was caught by 8 gates, three by exactly ONE
-gate each, and **five by NONE** — `hold_err` on an HP-watched cell, both clauses of the
-`both_edges_inside_ramp` boolean, `fuel_removed`'s value, `tt4_peak_lim`, and the march
-coordinate's spelling. That list is what sizes the oracle, and it is *derived* rather than guessed.
+run, and 17/17 green. Both are real and neither says which gate would notice a defect. Twelve
+deliberate defects written into the shipped reader: one caught by 8 gates, three by exactly ONE
+gate each, and **five live ones caught by NONE**.
 [[rust-port-oracle-cannot-see-a-missing-gate]]'s companion: an oracle cannot see a missing gate,
 and a green suite cannot see a missing assertion.
+
+**AN INJECTION TABLE NEEDS A "DID IT MOVE A VALUE?" COLUMN, OR IT OVER-COUNTS.** The first writing
+had seven "no gate caught it" rows; measuring which of them actually changed a number cut it to
+five. Two were inert on the whole grid — breaking them moves nothing, which is a statement about
+the grid, not about the gates — and one moved only cells the reading gate does not sweep, so the
+honest claim was narrower than "a live defect passed 17 gates". One row was also asserted for a
+field the injection never touched, and the follow-up injection was what turned it from inference
+into measurement.
 
 **A KNIFE-EDGE VALUE CAN BE PROTECTED REDUNDANTLY, SO A ONE-FAULT TEST CLEARS IT.** The published
 boolean sits at one ulp on one cell. Cleaning the march coordinate to `k*ds` does NOT flip it (it

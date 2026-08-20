@@ -76,6 +76,13 @@
 //!   SAME `s` sequence from the same `0.0` (§ 5.18 finding 5b: 201 points at `s_end = 4.0` on all
 //!   three marchers), so the lookup is an index and the gate asserts the `s` BITS match rather
 //!   than rebuilding a float-keyed map that could silently miss.
+//! * **FIVE LIVE DEFECTS PASS ALL 17 GATES, MEASURED.** Twelve injections into the shipped reader
+//!   (§ 5.18 step 1 finding 3): `hold_err` reading the wrong spool moves only the HP rows, which
+//!   **gate 3 never sweeps**; `fuel_removed` losing its `0.5`, `tt4_peak_lim` and `tt4_peak_bare`
+//!   read off the wrong march, and the march coordinate spelled `k * ds` are all invisible here.
+//!   The two `both_edges_inside_ramp` guard clauses are a different case — each is **inert on all
+//!   23 cells**, so breaking one moves nothing at all. Those five keys are step 5's oracle's job,
+//!   not this file's.
 //! * **THE `relief_other == 0.0` SITES ARE EXACT ZEROS, not tolerances.** Gate 9's downstream arm
 //!   is the same `x − x` mechanism as rung 48's six sites: for a clip downstream of `s_lp*` the
 //!   bare and limited marches are bit-identical through the LP argmin, so the two `min` calls read
@@ -592,7 +599,9 @@ fn gate6_the_unwatched_minimum_relocates_to_just_after_the_release() {
     // ...while still descending through it (slowed, not arrested). THE LEAKED ROW — Python's
     // post-loop `row`, i.e. LP_FLOORS[-1] = 0.7400, NOT this march's 0.7450.
     let leaked = &lp_sweep()[lp_sweep().len() - 1];
-    assert_eq!(leaked.phi_lim, 0.7400, "the leaked binding must be the loop's last row");
+    assert_eq!(
+        leaked.phi_lim, 0.7400,
+        "DO NOT REPAIR THIS: the window below is filtered by the LAST SWEEP ROW's s_eng, not by          the 0.7450 march's own — Python's `row` leaks out of the loop above it and the leak is          part of the gate. If this fires, LP_FLOORS was reordered; re-point the binding at the          loop's last row, never at the march's own floor. See this file's header.");
     let win: Vec<f64> = lim.iter()
         .filter(|p| leaked.s_eng <= p.s && p.s <= 0.42)
         .map(|p| p.phi_hp)

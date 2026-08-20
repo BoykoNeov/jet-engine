@@ -8049,7 +8049,18 @@ zero executable lines changed: a pure addition over slice S's plant, measured wi
 of 56). `cargo build --release` clean; `cargo clippy --all-targets` adds no warning at any line
 this step touched (73 pre-existing, none in `rung49.rs` and none in the new source).
 
-**THE FULL-CRATE FIGURE IS MEASURED, AND ITS WALL CLOCK IS DELIBERATELY NOT QUOTED.** `cargo test --release` came back **exit 0**, and the crate now stands at **794 tests over 88 test binaries with 0 `#[ignore]`** — counted with `cargo test --release -- --list` and a `^\s*#\[ignore` grep (the 12 plain-text hits are all prose, this file's own header among them), not carried over from a previous count. **No time is recorded for that run**: it overlapped the injection battery, which held the build lock repeatedly, so its elapsed figure measures contention rather than the crate. Quoting it would have been the *never run the gate for timing* rule broken from the other end — by quoting a number that was measured but measures the wrong thing.
+**THE FULL-CRATE FIGURE IS MEASURED, AND NEITHER ITS WALL CLOCK NOR A PER-BINARY TABLE IS
+QUOTED.** `cargo test --release` came back **exit 0**, and the crate now stands at **794 tests
+over 88 test binaries with 0 `#[ignore]`** — counted with `cargo test --release -- --list` and a
+`^\s*#\[ignore` grep (the 12 plain-text hits are all prose, this file's own header among them),
+not carried over from a previous count. **The count comes from `--list`, the green from the EXIT
+CODE, and no binary-level breakdown was captured**: that run's stdout was piped through `tail`, so
+only the doc-test tail survived. `cargo test` exits non-zero if any binary fails, so exit 0 does
+cover all 88 — but this sentence is the whole of what was measured, and nothing finer should be
+read into it. **No time is recorded either.** The run overlapped the injection battery, which took
+the build lock repeatedly, so its elapsed figure measures contention rather than the crate.
+Quoting it would have been *never run the gate for timing* broken from the other end — by quoting
+a number that was genuinely measured and measures the wrong thing.
 
 **FINDING 1 — THE 17/17 WAS CHECKED AGAINST VALUES BEFORE IT WAS BELIEVED, AND IT HELD: 575 KEYS
 BIT-EXACT ON THE FIRST RUN.** P1 registered a clean first pass as the outcome to distrust, so the
@@ -8086,30 +8097,52 @@ boolean, none of which is gate 9's forecast, gate 6's placement or gate 11's col
 the tightest thing in the file: an 11 % error in `relief_other` or in the bare-march forecast breaks
 it and nothing looser would notice.
 
-**FINDING 3 — ELEVEN INJECTIONS INTO THE SHIPPED READER, AND FIVE OF THE 25 KEYS TURN OUT TO HAVE
-NO GATE AT ALL.** Bit-exactness says the port is faithful; it says nothing about which of the 17
+**FINDING 3 — TWELVE INJECTIONS INTO THE SHIPPED READER, AND FIVE LIVE DEFECTS PASS ALL 17
+GATES.** Bit-exactness says the port is faithful; it says nothing about which of the 17
 gates has POWER. Each plausible port defect was written into `surge_relief` on purpose and the
 suite asked:
 
-| injection | gates that caught it |
-|---|---|
-| **I** `relief_watched` / `relief_other` swapped | **8 of 17** |
-| **G** `hold_err` folds over EVERY point, not the engaged window | gate 3 alone |
-| **A** `s_min_other` reads the BARE argmin (the mechanical rung-48 copy) | **gate 6 alone** |
-| **B** `s_min_other` reads the WATCHED spool | **gate 6 alone** |
-| **J** `nu_hp_end` read off the BARE march | gate 11 alone |
-| **C** `hold_err` ignores which spool is floored | **NONE** |
-| **D** `both_edges_inside_ramp` uses `<=` at the ramp end | **NONE** |
-| **E** the march coordinate becomes `k * ds` | **NONE** |
-| **F** `fuel_removed`'s trapezoid loses its `0.5` | **NONE** |
-| **H** `both_edges_inside_ramp` drops its `0 < eng[0]` clause | **NONE** |
-| **K** `tt4_peak_lim` read off the BARE march | **NONE** |
+| injection | moved a value? | gates that caught it |
+|---|---|---|
+| **I** `relief_watched` / `relief_other` swapped | yes | **8 of 17** |
+| **G** `hold_err` folds over EVERY point, not the engaged window | yes | gate 3 alone |
+| **A** `s_min_other` reads the BARE argmin (the mechanical rung-48 copy) | yes | **gate 6 alone** |
+| **B** `s_min_other` reads the WATCHED spool | yes | **gate 6 alone** |
+| **J** `nu_hp_end` read off the BARE march | yes | gate 11 alone |
+| **C** `hold_err` ignores which spool is floored | yes — **HP rows only** | **NONE** |
+| **E** the march coordinate becomes `k * ds` | yes — all 8 rows | **NONE** |
+| **F** `fuel_removed`'s trapezoid loses its `0.5` | yes | **NONE** |
+| **K** `tt4_peak_lim` read off the BARE march | yes | **NONE** |
+| **L** `tt4_peak_bare` read off the LIM march | yes | **NONE** |
+| **D** `both_edges_inside_ramp` uses `<=` at the ramp end | **NO — inert on all 23 cells** | — |
+| **H** `both_edges_inside_ramp` drops its `0 < eng[0]` clause | **NO — inert on all 23 cells** | — |
 
-So the ungated surface after step 1 is **`hold_err` on any HP-watching cell** (gate 3 sweeps only
-the LP floors, where the injection is a no-op), **both clauses of `both_edges_inside_ramp`**,
-**`fuel_removed`'s VALUE**, **`tt4_peak_lim` and `tt4_peak_bare` entirely**, and **the march
-coordinate's spelling**. That list IS the sizing for step 5's oracle, derived rather than guessed.
-Two of the rows are worth naming: `fuel_removed` is **slice T step 3's finding repeating on a
+**THE TABLE HAS A "MOVED A VALUE?" COLUMN BECAUSE THE FIRST WRITING OF IT DID NOT, AND THREE ROWS
+WERE WRONG WITHOUT ONE.** A "0 gates caught it" row means two different things depending on that
+column, and lumping them together over-counts the ungated surface — exactly the deflation this
+port keeps having to exclude. Measured in a third round rather than reasoned:
+
+* **C is a NO-OP on every cell gate 3 reads.** `read_point` returns `phi_lp` for an LP-watched leg,
+  so the injection changes nothing on the LP sweep and moves only the four HP rows. The claim is
+  therefore not "a live defect passed 17 gates" but the narrower and sharper **no gate reads
+  `hold_err` on an HP-watched cell at all** — gate 3 sweeps `LP_FLOORS` only.
+* **D and H are inert on the WHOLE grid, and H's inertness was a SURPRISE.** The expectation was
+  that dropping `0 < eng[0]` would flip the boolean on the flat-lp cell, the only one with
+  `s_eng == 0`. Measured: it does not — that cell's `s_rel = 0.72` already fails `eng[-1] < r`, so
+  the dropped clause is REDUNDANT there. And the inertness is established by SWEEPING the cells
+  rather than by the gates staying green: over all 23, **no cell has `s_rel == r` exactly** (so D
+  cannot bite) and **exactly one has `s_eng == 0`** (so H can bite only there, and does not).
+  Both guard clauses are individually unreachable on this whole grid; only their conjunction
+  with the march coordinate reaches the value (finding 4).
+* **L was run because K did not test what the first writing claimed.** That draft said
+  "`tt4_peak_lim` and `tt4_peak_bare` entirely" off an injection that moved only `_lim`. `_bare` is
+  now MEASURED ungated rather than inferred — *five typed count bars, five wrong* is this port's
+  standing reason not to let an inference into a claim.
+
+So the ungated surface after step 1 is **`hold_err` on an HP-watched cell**, **`fuel_removed`'s
+VALUE**, **`tt4_peak_lim`**, **`tt4_peak_bare`**, and **the march coordinate's spelling** — five
+things, all measured live. That list IS the sizing for step 5's oracle, derived rather than
+guessed. Two rows are worth naming: `fuel_removed` is **slice T step 3's finding repeating on a
 different reader** — every consumer is scale-invariant, so doubling it is invisible — and gate 6 is
 the SOLE defender of `s_min_other`, i.e. of the key carrying the rung's own mechanism.
 
@@ -8141,6 +8174,13 @@ it, and the guard is the only reason it did not become a fifth "NONE" row above.
 nested-heredoc mistake left an injected `fuel_transient.rs` on disk; it was restored from the
 backup and the restore VERIFIED (`grep -c k_inj` = 0, `git diff --stat` back to 226/1, suite
 re-run) rather than assumed.
+
+**THE BATTERY IS NOW THE SLICE'S STANDING INSTRUMENT, RUN PER STEP.** Steps 2–4 re-derive
+`release_relief` / `rate_sweep` / `lag_relief` from this same body, and the answer to *which
+gate has power* changes as each rung's gates land — a key ungated here may acquire a reader at
+rung 50, and rung 50's own new keys start with none. So the injections are re-run at every
+step rather than once at step 5, and each step's section carries its own table with the
+"moved a value?" column.
 
 **PREDICTION STATUS.** **P1 holds in an unexpected direction** — no defect was found in slice S's
 limiter code, but eleven injections found a defect SURFACE in this step's own new code that the
