@@ -1110,6 +1110,62 @@ pub struct FactorizationGrid {
 }
 
 
+/// A marched point's `(g, required)` — rung 52's lag route and nothing else.
+///
+/// Panics on a [`PointExtra::None`] point, which means the lag leg did not dispatch to
+/// [`integrate_fuel_asym`](FuelTransientCore::integrate_fuel_asym): a defect, not a
+/// divergence.
+pub fn asym_extra(p: &FuelPoint) -> (f64, f64) {
+    match p.extra {
+        PointExtra::Asym { g, required } => (g, required),
+        PointExtra::None => panic!(
+            "rung-52 lag_relief marched a trajectory with no `g` / `required`: the lag leg \
+             did not dispatch to integrate_fuel_asym"),
+    }
+}
+
+/// RUNG 52's CROSSING: the index of the first point at which the leg's own demand falls back
+/// through the clip state `g`, and how many times the leg RE-crosses after disarming.
+///
+/// **TWO RULES IN EIGHT LINES, BOTH UNREACHABLE FROM ANY MARCHED CELL — WHICH IS WHY THIS IS
+/// A FUNCTION AND NOT A LOOP INSIDE ITS CALLER.** § 5.18 finding 2 registered both and step 4
+/// measured both at **zero moved keys over all 18 suite cells**:
+///
+/// 1. **`armed` is seeded `None`, not `false`.** Python's guard is `if armed is False`, so the
+///    FIRST crossing is not counted as a re-crossing. On every marched cell the first point
+///    with `g > 0` is still ATTACKING, so it sets `armed = Some(false)` anyway and the two
+///    seeds agree — and `test_rung52.py:224`'s `n_recross == 1` passes under the wrong one.
+/// 2. **the `g <= 0.0` arm CONTINUES rather than disarming.** An unclipped point does not
+///    break an armed run, so folding the guard into one `if / else` is wrong.
+///
+/// Both are gated on MANUFACTURED trajectories in `release_oracle.rs`, on the same template
+/// and for the same reason as [`first_raw_min`]'s tie gate: *a rule no marched cell tests has
+/// to be reachable on its own.* Lifting it out is what makes those gates hold the SHIPPED
+/// code rather than a re-spelled copy of it in the test file.
+pub fn crossing_census(lim: &[FuelPoint]) -> (Option<usize>, usize) {
+    let mut cross: Option<usize> = None;
+    let mut n_recross = 0usize;
+    let mut armed: Option<bool> = None;
+    for (i, p) in lim.iter().enumerate() {
+        let (g, required) = asym_extra(p);
+        if g <= 0.0 {
+            continue;
+        }
+        if required < g {
+            if cross.is_none() {
+                cross = Some(i);
+            }
+            if armed == Some(false) {
+                n_recross += 1;
+            }
+            armed = Some(true);
+        } else {
+            armed = Some(false);
+        }
+    }
+    (cross, n_recross)
+}
+
 /// The RAW (reference-free) minimum of one key over a marched trajectory, and the `s` at which it
 /// is attained — rung 45's surge object, as [`schedule_relief`](TwoSpoolFuelTransient::
 /// schedule_relief) reads it.
@@ -3203,36 +3259,11 @@ impl FuelTransientCore {
         let (mpl_l, s_lp_l) = first_raw_min(&lim, |p| p.phi_lp);
         let (mph_l, s_hp_l) = first_raw_min(&lim, |p| p.phi_hp);
 
-        // THE CROSSING. See the two traps in the header — `armed` is an `Option<bool>` and the
-        // `g <= 0` arm CONTINUES.
-        let asym = |p: &FuelPoint| -> (f64, f64) {
-            match p.extra {
-                PointExtra::Asym { g, required } => (g, required),
-                PointExtra::None => panic!(
-                    "rung-52 lag_relief marched a trajectory with no `g` / `required`: the lag \
-                     leg did not dispatch to integrate_fuel_asym"),
-            }
-        };
-        let mut cross: Option<&FuelPoint> = None;
-        let mut n_recross = 0usize;
-        let mut armed: Option<bool> = None;
-        for p in &lim {
-            let (g, required) = asym(p);
-            if g <= 0.0 {
-                continue;
-            }
-            if required < g {
-                if cross.is_none() {
-                    cross = Some(p);
-                }
-                if armed == Some(false) {
-                    n_recross += 1;
-                }
-                armed = Some(true);
-            } else {
-                armed = Some(false);
-            }
-        }
+        // THE CROSSING — lifted into [`crossing_census`] so the two rules in it are reachable
+        // without a march. See that function; the lift is behaviour-neutral.
+        let asym = asym_extra;
+        let (cross_i, n_recross) = crossing_census(&lim);
+        let cross: Option<&FuelPoint> = cross_i.map(|i| &lim[i]);
 
         // Python's trapezoid, in Python's instruction order.
         let mut removed = 0.0f64;

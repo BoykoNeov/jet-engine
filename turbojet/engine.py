@@ -4948,6 +4948,18 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
                 "the rung-49 phi floor is inherently two-shaft (its finding is the CREDIT on "
                 "the watched spool against the DEBIT on the other); lp_disabled is not a "
                 "reduce axis for a split BETWEEN spools.")
+            # UNREACHABLE, MEASURED -- and kept. Sweeping all 255 arming combinations of
+            # (freeze, Tt4_max, tau_gov, accel, surge, s_off, tau_rel, lag) through a
+            # degenerate object reaches this assert on ZERO of them, and the same holds
+            # for the two below it. The mechanism is an ordering: arming s_off/tau_rel/lag
+            # AT ALL requires an armed min-select leg (the composition asserts above
+            # refuse otherwise), and the `accel`/`surge` refusals precede these three
+            # inside this block. So rungs 50/51/52's own lp_disabled gates all fire the
+            # RUNG-49 assert: four gates named for four rungs are ONE claim.
+            #
+            # They stay because the ordering above them is not a contract -- add a leg
+            # whose composition assert lets s_off through and the reachability changes.
+            # Documented rather than deleted, and the Rust port copies all three.
             assert s_off is None, (
                 "the rung-50 forced release isolates a split BETWEEN spools (both minima "
                 "relocate to the release point); lp_disabled is not a reduce axis for it.")
@@ -5964,7 +5976,9 @@ class TwoSpoolFuelTransient(TwoSpoolTransient):
               MACHINE ZERO. `tau_att` owns the credit EXACTLY.
           `residual[i][j]` -- the additive-separability residual on the DEBIT,
               D(ta,tr) - D(ta,tr0) - D(ta0,tr) + D(ta0,tr0). Comes back the SAME ORDER as the
-              main effects (62-70% of them at both ramp rates measured), and the debit is not
+              main effects (58.9% at r=2.0/ds=0.02 and 65.0% at r=0.5/ds=0.01, re-measured
+              on the gates' own cells at s_settle=4.0 -- an earlier 62-70% was taken at
+              other settings), and the debit is not
               multiplicatively separable either -- the `tau_rel` ratios drift and then change
               SIGN.
 

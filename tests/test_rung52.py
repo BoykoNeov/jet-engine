@@ -280,7 +280,9 @@ def test_headline_the_two_clocks_separate_ONE_WAY():
 def test_the_non_factorization_survives_the_ramp_rate():
     """GATE 4. Rung 51 was burned by claiming beyond a swept regime (its own P2 falsified), so
     the general-sounding half of GATE 3 is checked at the OTHER ramp rate before it is claimed.
-    The interaction is 70% of the main effect at r=0.5 against 62% at r=2.0 — it persists."""
+    The interaction is 65.0% of the main effect at r=0.5 against 58.9% at r=2.0 — it
+    persists. (Both re-measured on these cells; the bar this gate asserts is 40%, and no
+    gate reads the quoted figures.)"""
     ft = _ft()
     g = ft.factorization_grid(FLIGHT, LO, HI, (0.02, 0.32), (0.01, 0.16),
                               surge=SurgeLimiter(spool="lp", phi_lim=PHI_LIM),
