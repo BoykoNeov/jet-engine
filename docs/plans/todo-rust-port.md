@@ -8506,6 +8506,101 @@ rungs 49/50/51 run **17/15/16 green**. **A full `cargo test --release` was NOT r
 is taken once more after step 4. That is the whole of what was checked, and nothing finer should
 be read into it.
 
+##### STEP 4 — SHIPPED. **A SUITE WHOSE SUBJECT IS INVARIANCE IS STRUCTURALLY BLIND TO VALUES, AND THAT EXPLAINS THREE OF ITS FOUR HOLES AT ONCE**
+
+`fuel_transient.rs` gains the 34-field `LagRelief`, `FactorizationGrid`, and `lag_relief` /
+`lag_sweep` / `factorization_grid`: **294 lines added and ZERO deleted**. `tests/rung52.rs` is
+**15 test fns for Python's 15** and runs **15/15 in 0.75 s on the first compile** — including all
+four of the slice's `slow` gates, so **no `#[ignore]`**, decided by slice M's rule on a MEASURED
+in-suite cost rather than inherited from Python's marks.
+
+**FINDING 1 — 972 KEYS OVER 18 MEMO CELLS AND TWO FACTORIZATION GRIDS, BIT-EXACT ON THE FIRST
+RUN.** The cell list is read off `test_rung52.py`'s own `_ROWS` after running all fifteen gates,
+as step 3's was, and the two `factorization_grid` calls are rebuilt explicitly because their
+DERIVED objects — `residual`, `credit_spread`, `max_residual`, `max_main_effect` — are the rung's
+headline and no `lag_relief` row carries them. Zero differences against PyPy.
+
+**§ 5.18 P5 HOLDS EXACTLY.** `credit_spread` is asserted `== 0.0` **bit-for-bit, with no
+tolerance**, on both grids, and passes. `tau_att` owns the credit exactly in Rust as in Python.
+
+**FINDING 2 — TEN INJECTIONS, AND THREE OF THE FOUR UNCAUGHT ONES HAVE THE *SAME* CAUSE.**
+
+| injection | moved a value? | keys | gates that caught it |
+|---|---|---:|---|
+| **C** `g_at_cross` / `required_at_cross` swapped | yes | 56 | **NONE** |
+| **I** `min_phi_hp_lag` / `min_phi_hp_bare` swapped | yes | 56 | **NONE** |
+| **G** `residual` drops its `+ d00` term | yes | 12 | **NONE** |
+| **E** `max_main_effect` drops its SECOND max | yes | 2 | **NONE** |
+| **D** `s_eng_<eps>` / `s_rel_<eps>` swapped | yes | 108 | gates 1, 7 |
+| **F** `credit_spread` folds the COLUMN not the row | yes | 4 | gates 3, 4 |
+| **J** `lag_sweep` becomes COLUMN-major | yes | 117 | gates 3, 4 |
+| **A** the `armed` seed becomes `false` | **NO — inert on all 18 cells** | 0 | — |
+| **B** the `g <= 0` arm DISARMS instead of skipping | **NO — inert on all 18 cells** | 0 | — |
+| **H** `g_peak` folds only the clipped points | **NO — inert on all 18 cells** | 0 | — |
+
+**THE HEADLINE IS THAT `C` AND `I` WERE BOTH PREDICTED CAUGHT AND ARE NOT, FOR ONE REASON.** Gate
+1 does read `g_at_cross` and gate 8 does read `min_phi_hp_lag` — but neither reads a VALUE. Gate 1
+asserts `|g_at_cross − g_at_cross[0]| < 1e-3 · g_at_cross[0]` **across a `tau_rel` sweep**, and
+gate 8 asserts `|min_phi_hp_lag − prev| < 1e-4` **across a `ds` sweep**. Both are comparisons of a
+key against ITSELF AT ANOTHER CELL, and a defect applied uniformly moves every cell together and
+leaves the comparison untouched.
+
+**A GATE THAT READS A KEY ONLY BY COMPARING IT WITH ITSELF CANNOT SEE WHAT THE KEY IS.** That is
+the *invariance* analogue of slice T step 3's *scale-invariance* finding, and it is not an
+accident of this file: **rung 52's whole subject IS invariance** — `tau_rel` does not move the
+crossing, does not move the credit, does not move the engagement edge — so its gates are
+structurally invariance-shaped, and a suite built to prove that nothing moves is maximally blind
+to everything being wrong by the same amount. Slice T's lesson was that every READER of a quantity
+can be scale-invariant; this is the same hole reached from the suite's THESIS rather than from its
+readers.
+
+**AND THE TWO REGISTERED TRAPS IN THE CROSSING LOOP ARE BOTH DEAD.** § 5.18 finding 2 measured the
+`armed` seed to be a dead distinction on every marched cell and registered the `g <= 0`
+continue-versus-disarm as a second trap "so the port does not tidy it", without knowing whether it
+bites. Measured here: **neither moves a single key on any of the 18 cells**. Both guard clauses in
+those eight lines are individually unreachable on this whole grid — § 5.18 step 1 finding 3's `D`
+and `H` rows repeating on a different reader, and the reason both spellings stay in the source is
+*COPY vs REDERIVATION*, not evidence. Only a MANUFACTURED trajectory separates them, and that is
+step 5's.
+
+**`E` AND `G` ARE THE OTHER SHAPE: A BAR THAT ONLY GETS EASIER.** Gates 3 and 4 assert
+`max_residual > 0.4 · max_main_effect`. Dropping the second `max` from the denominator makes the
+denominator SMALLER, so the ratio RISES and the bar is cleared more comfortably; dropping the
+`+ d00` interaction term changes the residual by 12 keys and still clears it. A one-sided bar
+cannot see an error in the direction it already allows — which is why the oracle holds
+`max_residual` and `max_main_effect` as VALUES rather than trusting the ratio.
+
+**FINDING 3 — THE BAR MARGINS, AND GATE 8's IS EXACTLY ONE CELL BY CONSTRUCTION.** Measured on
+the suite's own cells:
+
+| gate | bar | worst measured | slack |
+|---|---|---:|---:|
+| 3 | `max_residual > 0.4 · max_main_effect` | `0.589` | 1.47 × |
+| 3 | `\|ratio drift\| > 0.05` | `0.0738` | 1.48 × |
+| 4 | the same bar at `r = 0.5` | `0.650` | 1.63 × |
+| 1 | `\|Δg_at_cross\| < 1e-3` rel | `5.27e-4` | 1.90 × |
+| 8 | `\|Δs_cross\| <= 2·ds` | `0.0200` / `0.0100` | **2.00 × — EXACTLY one grid cell, both times** |
+| 8 | `\|Δmin_phi_hp_lag\| < 1e-4` | `5.74e-5` | 1.7 × |
+| 6 | the accel COMPLETES `< 1e-5` | `1.10e-6` | 9.1 × |
+| 1 | `s_rel_0.01` moved `> 0.5` | `1.180` | 2.36 × |
+| 1 / 3 / 4 | `s_cross`, `relief_watched`, `credit_spread` invariant | `0.0` exactly | structural |
+| 2 | the location claims | 4–52 GRID CELLS clear | — |
+
+Gate 8's `2.00 ×` is not slack in the usual sense: the crossing moves **exactly one grid cell per
+halving** at both steps, which is the docstring's own "resolution limit of *first recorded point
+with `required < g`*" reproduced to the cell. The bar allows two cells and the phenomenon uses
+one.
+
+**THE UNGATED SURFACE AFTER STEP 4**, derived from the table: **`g_at_cross`**,
+**`required_at_cross`**, **`min_phi_hp_lag` / `min_phi_hp_bare`** (values, not their invariance),
+**`max_main_effect`'s second `max`**, **`residual`'s `d00` term**, **`g_peak`**, and **both dead
+distinctions in the crossing loop**. Every one of the first six is emitted as a VALUE by step 5's
+oracle; the last two need manufactured trajectories and are gated there.
+
+**THE CRATE CHECK.** `cargo clippy --all-targets` at **73**, step 2's baseline, none at any line
+this step touched; the diff is a pure addition (294 insertions, 0 deletions); rungs 49/50/51/52
+run **17/15/16/15** green. The full `cargo test --release` is taken once at step 5.
+
 ## 6. Named risks
 
 ##### STEP 4 — SHIPPED. **THE SECTION'S OWN CENSUSES WERE MEASURED ON TWO DIFFERENT GRIDS**

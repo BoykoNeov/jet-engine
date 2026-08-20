@@ -1004,6 +1004,111 @@ pub struct ReleaseRelief {
     pub nu_hp_end_bare: f64,
 }
 
+/// RUNG 52's `lag_relief` return — Python's **34**-key dict, the widest of the three.
+///
+/// **THE THIRD RECORD, AND THE ONE WHOSE KEYS ARE RENAMED RATHER THAN ADDED.** § 5.18 finding 5
+/// measured rungs 49/50/52's readers at 25 / 27 / **34** keys with only 15 common to all three.
+/// Against [`ReleaseRelief`]:
+///
+/// * **its own, beyond rung 50's**: `tau_att`, `s_cross`, `g_at_cross`, `required_at_cross`,
+///   `g_peak`, `n_recross`, `Tt4_peak_bare` / `Tt4_peak_lag`, and the `eps`-indexed
+///   `s_eng_<eps>` / `s_rel_<eps>` pairs;
+/// * **RENAMED, not absent** — rungs 49/50 report `min_phi_lp_lim` / `min_phi_hp_lim`, this one
+///   reports `min_phi_lp_lag` / `min_phi_hp_lag`. The VALUE is the same quantity off the same
+///   march. A shared struct would emit one name on both sides and a key-COUNT census would pass
+///   while comparing nothing — the *documented gate that doesn't exist* family;
+/// * **absent here**: rung 50's `s_off`, `tau_rel`-as-a-forcing (`tau_rel` here is the LAG's
+///   release constant, a different object with the same name), `deficit_at_release`, `s_eng`,
+///   `s_rel`, `n_engaged`. **A lag never completes, so this reader has no plain `s_rel` at all** —
+///   the release edge is DECLARED at each `eps` instead, which is why the pairs are indexed.
+#[derive(Clone, Debug)]
+pub struct LagRelief {
+    pub tau_att: f64,
+    /// The LAG's release constant — **not rung 50/51's forced-release rate**, which this reader
+    /// refuses to compose with.
+    pub tau_rel: f64,
+    pub r: f64,
+    pub rho: f64,
+    pub ds: f64,
+    pub spool: Option<Spool>,
+    pub phi_lim: Option<f64>,
+    pub margin: Option<f64>,
+    /// THE CROSSING — the first point at which the leg's own demand falls back through the clip
+    /// state. The natural release trigger, and the thing rung 50's `s_off` had to impose.
+    /// `NaN` when there is none.
+    pub s_cross: f64,
+    pub g_at_cross: f64,
+    pub required_at_cross: f64,
+    /// **THE `armed` SEED IS A DEAD DISTINCTION AND THIS KEY IS ITS ONLY WITNESS.** Python seeds
+    /// `armed = None` and guards `if armed is False`, so the FIRST crossing is not counted as a
+    /// re-crossing; the natural Rust `let mut armed = false` counts it and puts this one high on
+    /// every row. § 5.18 finding 2 measured over six lag cells that the first point with `g > 0`
+    /// is ALWAYS still attacking, so both seeds give `1` everywhere and
+    /// `test_rung52.py:224`'s `n_recross == 1` passes under the wrong one. The `Option<bool>`
+    /// below is therefore load-bearing and untested by any marched cell; the step-5 oracle
+    /// carries a MANUFACTURED trajectory for it.
+    pub n_recross: usize,
+    pub g_peak: f64,
+    pub s_lp_bare: f64,
+    pub s_hp_bare: f64,
+    pub relief_lp: f64,
+    pub relief_hp: f64,
+    pub relief_watched: Option<f64>,
+    pub relief_other: Option<f64>,
+    pub s_min_lp: f64,
+    pub s_min_hp: f64,
+    pub min_phi_lp_bare: f64,
+    /// Python's `min_phi_lp_lag` — the `_lag` SUFFIX where rungs 49/50 say `_lim`.
+    pub min_phi_lp_lag: f64,
+    pub min_phi_hp_bare: f64,
+    pub min_phi_hp_lag: f64,
+    pub fuel_removed: f64,
+    pub tt4_peak_bare: f64,
+    pub tt4_peak_lag: f64,
+    pub nu_hp_end: f64,
+    pub nu_hp_end_bare: f64,
+    /// One `(eps, s_eng, s_rel)` triple per requested threshold, in the order given — Python's
+    /// f-string keys `s_eng_{e}` / `s_rel_{e}`.
+    ///
+    /// **BECAUSE AN EXPONENTIAL NEVER COMPLETES, THE RELEASE EDGE IS DECLARED, NOT DETECTED.**
+    /// `s_rel_<eps>` is the last point whose fractional clip is at least `eps` — the same currency
+    /// `ReleaseRelief::deficit_at_release` uses. Reported at every `eps` so that no verdict rests
+    /// on one threshold. § 5.18 finding 3 measured these bars as the SLACKEST-looking and in fact
+    /// the tightest in the slice: the nearest value inside `eps = 0.05` is `0.0505` / `0.0522`
+    /// (**1–4 %**) and inside `eps = 0.01` is `0.00916` / `0.01020` (**2–8 %**).
+    pub eps_edges: Vec<(f64, f64, f64)>,
+}
+
+/// RUNG 52's `factorization_grid` return.
+///
+/// Does rung 49's credit/debit split FACTOR across the two time constants? A real fast-attack /
+/// slow-release limiter is DESIGNED on the premise that it does. The answer is ONE WAY only.
+#[derive(Clone, Debug)]
+pub struct FactorizationGrid {
+    pub tau_atts: Vec<f64>,
+    pub tau_rels: Vec<f64>,
+    /// Row-major, as [`lag_sweep`](FuelTransientCore::lag_sweep) returns them.
+    pub rows: Vec<LagRelief>,
+    /// `rows` reshaped `[tau_att][tau_rel]`.
+    pub grid: Vec<Vec<LagRelief>>,
+    /// The additive-separability residual on the DEBIT,
+    /// `D(ta,tr) − D(ta,tr0) − D(ta0,tr) + D(ta0,tr0)`.
+    pub residual: Vec<Vec<f64>>,
+    /// The spread of `relief_watched` across each `tau_att`'s `tau_rel` row — **MACHINE ZERO**,
+    /// and § 5.18 P5 asserts it EXACTLY, with no tolerance. `tau_att` owns the credit exactly.
+    ///
+    /// **A `Vec` OF PAIRS, NOT A MAP, AND THE DIFFERENCE IS REAL.** Python builds a dict keyed on
+    /// `tau_att`, so a REPEATED `tau_att` in the input would silently collapse two rows into one
+    /// entry; this keeps both, in input order. No shipped cell repeats a `tau_att`, so the two
+    /// agree on everything the suite runs — recorded because it is a divergence, not because it
+    /// bites.
+    pub credit_spread: Vec<(f64, f64)>,
+    pub max_residual: f64,
+    pub max_main_effect: f64,
+    pub r: f64,
+    pub ds: f64,
+}
+
 
 /// The RAW (reference-free) minimum of one key over a marched trajectory, and the `s` at which it
 /// is attained — rung 45's surge object, as [`schedule_relief`](TwoSpoolFuelTransient::
@@ -3046,6 +3151,246 @@ impl FuelTransientCore {
                                     s_settle, ds, None)
             })
             .collect()
+    }
+
+    // --- RUNG 52: the asymmetric fast-attack / slow-release LAG --------------------------------
+
+    /// RUNG 52 (the finding method). March the SAME accel fuel ramp twice — BARE and with a
+    /// min-select leg whose clip is carried under an [`AsymmetricLag`] — and difference rung 45's
+    /// reference-free surge object, exactly as rungs 46/48/49/50's relief methods do.
+    ///
+    /// **THE OBJECT RUNGS 50/51 COULD NOT REACH.** `s_off` / `tau_rel` FORCE a release because
+    /// rung 49's family could not pin one; this leg pins its OWN. `s_cross` — the first point
+    /// where `required` falls back through the clip state `g` — is the natural release trigger,
+    /// and it is INVARIANT in `lag.tau_rel`, structurally, because `tau_rel` is not read before
+    /// it. Sweep the rate and everything upstream is BIT-IDENTICAL.
+    ///
+    /// **BECAUSE AN EXPONENTIAL NEVER COMPLETES, THE RELEASE EDGE IS DECLARED, NOT DETECTED**:
+    /// `s_rel_<eps>` is the last point whose fractional clip is at least `eps`. Reported at every
+    /// `eps` in the slice so that no verdict rests on a threshold.
+    ///
+    /// # TWO TRAPS IN EIGHT LINES OF CROSSING LOOP, BOTH REGISTERED BEFORE THE PORT
+    ///
+    /// § 5.18 finding 2 measured both, so neither is "tidied":
+    ///
+    /// 1. **`armed` is `Option<bool>`, seeded `None`.** Python seeds `armed = None` and guards
+    ///    `if armed is False`, so the FIRST crossing is not counted as a re-crossing. The natural
+    ///    `let mut armed = false` counts it and puts [`n_recross`](LagRelief::n_recross) one high
+    ///    on every row — and `test_rung52.py:224` asserts `n_recross == 1`, which the WRONG seed
+    ///    also satisfies on every marched cell, because the first point with `g > 0` is always
+    ///    still attacking. The seed is gated on a MANUFACTURED trajectory at step 5, not here.
+    /// 2. **The `g <= 0.0` arm CONTINUES, it does not disarm.** An unclipped point leaves `armed`
+    ///    alone, so folding the guard into one `if / else` is wrong.
+    #[allow(clippy::too_many_arguments)]
+    pub fn lag_relief(
+        &self, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, lag: AsymmetricLag,
+        surge: Option<&SurgeLimiter>, accel: Option<&AccelSchedule>, r: f64, s_settle: f64,
+        ds: f64, eps: &[f64],
+    ) -> LagRelief {
+        assert!(surge.is_some() || accel.is_some(),
+                "rung-52 lag_relief needs a leg to lag: pass surge= and/or accel=.");
+        let bare_lim = &FuelLimiters::default();
+        let lim_lim = &FuelLimiters {
+            accel, surge: surge.copied(), lag: Some(lag), ..Default::default()
+        };
+        let (bare, _) = self.fuel_ramp_march(flight, tt4_lo, tt4_hi, r, s_settle, ds, bare_lim);
+        let (lim, _) = self.fuel_ramp_march(flight, tt4_lo, tt4_hi, r, s_settle, ds, lim_lim);
+        assert!(!bare.is_empty() && !lim.is_empty(),
+                "rung-52 lag_relief produced no trajectory");
+
+        let (mpl_b, s_lp) = first_raw_min(&bare, |p| p.phi_lp);
+        let (mph_b, s_hp) = first_raw_min(&bare, |p| p.phi_hp);
+        let (mpl_l, s_lp_l) = first_raw_min(&lim, |p| p.phi_lp);
+        let (mph_l, s_hp_l) = first_raw_min(&lim, |p| p.phi_hp);
+
+        // THE CROSSING. See the two traps in the header — `armed` is an `Option<bool>` and the
+        // `g <= 0` arm CONTINUES.
+        let asym = |p: &FuelPoint| -> (f64, f64) {
+            match p.extra {
+                PointExtra::Asym { g, required } => (g, required),
+                PointExtra::None => panic!(
+                    "rung-52 lag_relief marched a trajectory with no `g` / `required`: the lag \
+                     leg did not dispatch to integrate_fuel_asym"),
+            }
+        };
+        let mut cross: Option<&FuelPoint> = None;
+        let mut n_recross = 0usize;
+        let mut armed: Option<bool> = None;
+        for p in &lim {
+            let (g, required) = asym(p);
+            if g <= 0.0 {
+                continue;
+            }
+            if required < g {
+                if cross.is_none() {
+                    cross = Some(p);
+                }
+                if armed == Some(false) {
+                    n_recross += 1;
+                }
+                armed = Some(true);
+            } else {
+                armed = Some(false);
+            }
+        }
+
+        // Python's trapezoid, in Python's instruction order.
+        let mut removed = 0.0f64;
+        for i in 1..lim.len() {
+            let h = lim[i].s - lim[i - 1].s;
+            removed += 0.5 * h * ((lim[i - 1].mf_sched - lim[i - 1].mf)
+                                  + (lim[i].mf_sched - lim[i].mf));
+        }
+        let watched = surge.map(|s| s.spool);
+        let peak = |t: &[FuelPoint]| t.iter().fold(f64::NEG_INFINITY, |a, p| a.max(p.tt4));
+        let g_peak = lim.iter().map(asym).fold(f64::NEG_INFINITY, |a, (g, _)| a.max(g));
+
+        let eps_edges: Vec<(f64, f64, f64)> = eps.iter()
+            .map(|&e| {
+                let on: Vec<f64> = lim.iter()
+                    .filter(|p| (p.mf_sched - p.mf) / p.mf_sched >= e)
+                    .map(|p| p.s)
+                    .collect();
+                (e,
+                 on.first().copied().unwrap_or(f64::NAN),
+                 on.last().copied().unwrap_or(f64::NAN))
+            })
+            .collect();
+
+        LagRelief {
+            tau_att: lag.tau_att,
+            tau_rel: lag.tau_rel,
+            r,
+            rho: self.rho(),
+            ds,
+            spool: watched,
+            phi_lim: surge.map(|s| s.phi_lim),
+            margin: accel.map(|a| a.margin),
+            s_cross: cross.map_or(f64::NAN, |p| p.s),
+            g_at_cross: cross.map_or(f64::NAN, |p| asym(p).0),
+            required_at_cross: cross.map_or(f64::NAN, |p| asym(p).1),
+            n_recross,
+            g_peak,
+            s_lp_bare: s_lp,
+            s_hp_bare: s_hp,
+            relief_lp: mpl_l - mpl_b,
+            relief_hp: mph_l - mph_b,
+            relief_watched: watched
+                .map(|w| if w == Spool::Lp { mpl_l - mpl_b } else { mph_l - mph_b }),
+            relief_other: watched
+                .map(|w| if w == Spool::Lp { mph_l - mph_b } else { mpl_l - mpl_b }),
+            s_min_lp: s_lp_l,
+            s_min_hp: s_hp_l,
+            min_phi_lp_bare: mpl_b,
+            min_phi_lp_lag: mpl_l,
+            min_phi_hp_bare: mph_b,
+            min_phi_hp_lag: mph_l,
+            fuel_removed: removed,
+            tt4_peak_bare: peak(&bare),
+            tt4_peak_lag: peak(&lim),
+            nu_hp_end: lim[lim.len() - 1].nu_hp,
+            nu_hp_end_bare: bare[bare.len() - 1].nu_hp,
+            eps_edges,
+        }
+    }
+
+    /// RUNG 52. The `(tau_att, tau_rel)` rows, in ROW-MAJOR order. Sweep one list with the other a
+    /// singleton to get a pure attack or pure release sweep.
+    ///
+    /// **A PURE `tau_rel` SWEEP IS DECONFOUNDED BY CONSTRUCTION** — the property rung 50 needed
+    /// `s_off` to manufacture and rung 51 believed a lag could not have. `s_cross` and
+    /// `relief_watched` come back invariant; only the hand-back moves.
+    ///
+    /// **A PURE `tau_att` SWEEP** is rung 48's engagement-time axis in realisable clothing: a
+    /// slower attack engages LATER and credits LESS.
+    #[allow(clippy::too_many_arguments)]
+    pub fn lag_sweep(
+        &self, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, tau_atts: &[f64],
+        tau_rels: &[f64], surge: Option<&SurgeLimiter>, accel: Option<&AccelSchedule>, r: f64,
+        s_settle: f64, ds: f64, eps: &[f64],
+    ) -> Vec<LagRelief> {
+        let mut out = Vec::with_capacity(tau_atts.len() * tau_rels.len());
+        for &ta in tau_atts {
+            for &tr in tau_rels {
+                out.push(self.lag_relief(flight, tt4_lo, tt4_hi, AsymmetricLag::new(ta, tr), surge,
+                                         accel, r, s_settle, ds, eps));
+            }
+        }
+        out
+    }
+
+    /// RUNG 52 (the headline method). DOES RUNG 49'S CREDIT/DEBIT SPLIT FACTOR ACROSS THE TWO
+    /// TIME CONSTANTS?
+    ///
+    /// A real fast-attack / slow-release limiter is DESIGNED on the premise that it does — cut
+    /// hard to protect, hand back gently, and tune the two independently. This is the first
+    /// instrument on which rung 49's two clocks are INDEPENDENTLY DIALABLE on a single
+    /// physically-realisable leg, so the premise becomes testable.
+    ///
+    /// **THE ANSWER IS THAT THE TWO CLOCKS SEPARATE ONE WAY.** `credit_spread` is MACHINE ZERO —
+    /// `tau_att` owns the credit EXACTLY — while the debit's additive-separability residual comes
+    /// back the SAME ORDER as the main effects. The design premise is HALF TRUE, and the half that
+    /// fails is the PROTECTIVE one.
+    ///
+    /// **§ 5.18 FINDING 7 CORRECTS THE DOCSTRING'S QUOTED RATIO.** The Python says "62–70 % of
+    /// them at both ramp rates measured" and `test_rung52.py`'s gate 4 says "70 % at `r = 0.5`
+    /// against 62 % at `r = 2.0`". Measured on the gates' own cells at the right settle time:
+    /// **65.0 % at `r = 0.5` (`ds = 0.01`) and 58.9 % at `r = 2.0` (`ds = 0.02`)**. Four
+    /// alternative denominators were tried and none reproduces both figures, so the correction
+    /// stands. Both clear the gate's `0.4` bar comfortably and **no gate reads the quoted
+    /// numbers**.
+    #[allow(clippy::too_many_arguments)]
+    pub fn factorization_grid(
+        &self, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, tau_atts: &[f64],
+        tau_rels: &[f64], surge: Option<&SurgeLimiter>, accel: Option<&AccelSchedule>, r: f64,
+        s_settle: f64, ds: f64, eps: &[f64],
+    ) -> FactorizationGrid {
+        assert!(surge.is_some(),
+                "rung-52 factorization_grid splits WATCHED against OTHER, so it needs a leg with \
+                 a watched spool: pass surge=. Rung 48's accel leg watches neither (it is \
+                 feedforward on pressure), so `relief_watched`/`relief_other` are undefined for \
+                 it -- read it through `lag_sweep` and difference the spools by name instead.");
+        let rows = self.lag_sweep(flight, tt4_lo, tt4_hi, tau_atts, tau_rels, surge, accel, r,
+                                  s_settle, ds, eps);
+        let n = tau_rels.len();
+        let grid: Vec<Vec<LagRelief>> =
+            (0..tau_atts.len()).map(|i| rows[i * n..(i + 1) * n].to_vec()).collect();
+        // `relief_other` is `Some` on every row because the assert above forces a watched leg.
+        let other = |x: &LagRelief| x.relief_other.expect("factorization_grid forces surge=");
+        let d00 = other(&grid[0][0]);
+        let residual: Vec<Vec<f64>> = (0..tau_atts.len())
+            .map(|i| (0..n)
+                 .map(|j| other(&grid[i][j]) - other(&grid[i][0]) - other(&grid[0][j]) + d00)
+                 .collect())
+            .collect();
+        let watched = |x: &LagRelief| x.relief_watched.expect("factorization_grid forces surge=");
+        let credit_spread: Vec<(f64, f64)> = tau_atts.iter().enumerate()
+            .map(|(i, &ta)| {
+                let hi = grid[i].iter().map(watched).fold(f64::NEG_INFINITY, f64::max);
+                let lo = grid[i].iter().map(watched).fold(f64::INFINITY, f64::min);
+                (ta, hi - lo)
+            })
+            .collect();
+        // Python's two-step `main = max(...); main = max(main, max(...))`, in that order.
+        let mut main = (0..tau_atts.len())
+            .map(|i| (other(&grid[i][0]) - d00).abs())
+            .fold(f64::NEG_INFINITY, f64::max);
+        main = main.max((0..n).map(|j| (other(&grid[0][j]) - d00).abs())
+                        .fold(f64::NEG_INFINITY, f64::max));
+        let max_residual = residual.iter().flatten().map(|v| v.abs())
+            .fold(f64::NEG_INFINITY, f64::max);
+        FactorizationGrid {
+            tau_atts: tau_atts.to_vec(),
+            tau_rels: tau_rels.to_vec(),
+            rows,
+            grid,
+            residual,
+            credit_spread,
+            max_residual,
+            max_main_effect: main,
+            r,
+            ds,
+        }
     }
 }
 
