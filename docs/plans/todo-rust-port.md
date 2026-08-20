@@ -7904,9 +7904,17 @@ and the eighth (HP floor `0.8650`) is **`−1.11e-16`**: the boolean is decided 
 **IT SURVIVES ONLY BECAUSE BOTH LANGUAGES SPELL THE MARCH COORDINATE THE SAME WAY.** Python and
 Rust both accumulate `s += ds` from `0.0`; summing `0.02` twenty-five times gives
 `0.50000000000000011` while `25 * 0.02` gives exactly `0.5`. **A "cleaner" `s = k as f64 * ds`
-flips a published boolean.** No gate reads that cell (rung 49 gate 4 reads the LP floors only) but
-`main.py:2625` PRINTS it. Registered, and the note goes at the march loop where a future reader
-will hit it — slice O's rule.
+flips a published boolean.**
+
+**AND THE FIRST WRITING OF THIS FINDING NAMED A READER THAT DOES NOT EXIST.** It said `main.py`
+PRINTS the one-ulp cell — grepped off the format string at `main.py:2625` rather than off the
+sweep that feeds it. Read: that panel sweeps **`(0.7550, 0.7500, 0.7450, 0.7400)`, `spool="lp"`**,
+and rung 49's only other reader of the boolean (gate 4) is LP-only too. The HP floors are swept by
+gates 9 and 9b, which read `s_eng` / `s_rel` / `relief_other` and **never the boolean**. So
+**nothing in either language reads `both_edges_inside_ramp` on the cell that sits at one ulp** —
+the key's exposure is the *one grid cell* of margin on the cells that ARE read, and the ulp cell
+is what shows how thin that boundary is. Registered as measured, not as gated; the note goes at
+the march loop where a future reader will hit it — slice O's rule.
 
 **FINDING 4 — BOTH NaN ARMS SHIP UNGATED; THE `Option` PAIR DOES NOT.** `surge_relief` and
 `release_relief` both return `s_eng`/`s_rel` = `NaN` when nothing engages. Minimum `n_engaged`
@@ -7922,23 +7930,67 @@ The **`Option` arms are live and need no added cell**: rung 50's accel-only swee
 surge-only sweeps return `margin` as `None`. Both arms are exercised by shipped gates, so Rust's
 `Option<…>` fields are gated by construction.
 
-**FINDING 5 — `first_raw_min` ALREADY EXISTS AND IS ALREADY GATED, SO SLICE T's P4 IS DISCHARGED
+**FINDING 5 — THE THREE READERS RETURN THREE DIFFERENT RECORDS, AND A KEY-COUNT CENSUS WOULD NOT
+SEE IT.** The obvious design — one relief record with optional fields — is wrong, and the reason
+is not just the `Option` pair. Measured with `sorted(row.keys())` on all three:
+
+| reader | keys | its OWN keys |
+|---|---:|---|
+| `surge_relief` | **25** | `hold_err`, `both_edges_inside_ramp`, `s_min_other`, `Tt4_peak_lim` |
+| `release_relief` | **27** | `s_off`, `deficit_at_release` |
+| `lag_relief` | **34** | `s_cross`, `g_at_cross`, `required_at_cross`, `g_peak`, `n_recross`, `tau_att`, `Tt4_peak_lag`, `min_phi_{lp,hp}_lag`, and the four f-string keys `s_{eng,rel}_0.05` / `_0.01` |
+
+**Only 15 keys are common to all three**, and five more (`ds`, `margin`, `s_min_lp`, `s_min_hp`,
+`tau_rel`) are shared by rungs 50 and 52 but absent from rung 49 — which reports `s_min_other`
+instead of the pair. The SUFFIX changes too (`min_phi_lp_lim` at rungs 49/50, `min_phi_lp_lag` at
+rung 52), and `relief_watched`/`relief_other` are plain floats out of `surge_relief` (its `surge`
+is a required positional) but `None`-able out of the other two. **A shared struct emits phantom or
+renamed keys, and a key-COUNT census passes on both sides while the dump compares nothing** — the
+*documented gate that doesn't exist* family. Three structs, and **25 / 27 / 34 are registered here
+as measured bars** for the oracle to assert.
+
+**FINDING 5b — THE MARCH LENGTH IS THE SAME ON ALL THREE MARCHERS, SO THE ANTI-DEFLATION PAIR IS
+SAFE.** Every reader returns `nu_hp_end = lim[-1][…]`, so a one-point length difference would move
+it silently. Python bounds the loop with `range(int(round(s_end / ds)) + 1)` and Rust with
+`(s_end / ds).round_ties_even()` — the same banker's rounding — and measured on
+`integrate_fuel`, `_lagged` and `_asym` alike: **201 points at `s_end = 4.0`, 301 at `6.0`**, last
+`s` = `4.0000000000000027` / `5.99999999999996`, identical across all three. Rungs 51/52's
+`6.0 / 0.02 = 299.99999999999994` rounds to 300 in both languages.
+
+**FINDING 6 — `first_raw_min` ALREADY EXISTS AND IS ALREADY GATED, SO SLICE T's P4 IS DISCHARGED
 RATHER THAN RE-REGISTERED.** It folds with strict `<` and carries its own manufactured tie gate.
 The three `raw_min` closures in `surge_relief` / `release_relief` / `lag_relief` REUSE it and the
 prediction is not written a second time. One API gap does remain: `SurgeLimiter::read` takes a
 `FuelInstant`, but rung 49's `hold_err` reads the floored `φ` off a **`FuelPoint`** — Python's
 `surge.key()` returns a dict key that serves both. Slice U adds the `FuelPoint`-side accessor.
 
-**FINDING 6 — A DOCSTRING NUMBER IS STALE AGAIN, AND THIS TIME IT IS THE SLICE'S HEADLINE RATIO.**
+**FINDING 7 — A DOCSTRING NUMBER IS STALE AGAIN, AND THIS TIME IT IS THE SLICE'S HEADLINE RATIO.**
 `factorization_grid`'s docstring says the additive-separability residual comes back at "62-70 % of
 them at both ramp rates measured", and `test_rung52.py` gate 4 says "70 % at r=0.5 against 62 % at
 r=2.0". Measured on the gates' own cells, at the right settle time: **65.0 % at r=0.5 (ds=0.01)
 and 58.9 % at r=2.0 (ds=0.02)**. Both clear the gate's `0.4` bar comfortably and **no gate reads
-the quoted figures**, so this is a doc correction — the third time in this port for the rung-63
-lesson, *check a quoted number was taken at THIS rung's settings*, with "settings" now measured to
-include the SETTLE TIME as well as slice T's GAS.
+the quoted figures**.
 
-**FINDING 7 — `credit_spread == 0.0` HOLDS EXACTLY ON BOTH GRIDS.** `{0.02: 0.0, 0.20: 0.0}` at
+**AND THE CORRECTION IS SHIPPED WITH ITS SEARCH STATED, BECAUSE SLICE T's SAME-NUMBERED FINDING
+WAS DIAGNOSED BACKWARDS.** Two measurements sitting ~5 points below two quoted figures is more
+often a different FORMULA than staleness, so four alternative denominators were tried against the
+code's own `max_residual / max_main_effect`:
+
+| denominator | r=0.5 (quoted 70 %) | r=2.0 (quoted 62 %) |
+|---|---:|---:|
+| `max_main_effect` — **what the code computes** | **65.0 %** | **58.9 %** |
+| the `tau_att`-direction main effect alone | 90.5 % | 77.1 % |
+| the `tau_rel`-direction main effect alone | 65.0 % | 58.9 % |
+| mean rather than max residual | 16.3 % | 14.0 % |
+| the grid corner `D(ta0,tr0)` | 69.8 % | 50.7 % |
+
+**No single alternative reproduces both.** The corner denominator lands on 69.8 % at r=0.5 —
+close enough to "70 %" to be why that half was written — but gives 50.7 % where the docstring says
+62 %, so it is a coincidence and not the missing formula. The correction stands, and this is the
+third outing in this port for the rung-63 lesson, *check a quoted number was taken at THIS rung's
+settings*, with "settings" now measured to include the SETTLE TIME as well as slice T's GAS.
+
+**FINDING 8 — `credit_spread == 0.0` HOLDS EXACTLY ON BOTH GRIDS.** `{0.02: 0.0, 0.20: 0.0}` at
 r=2.0 and `{0.02: 0.0, 0.32: 0.0}` at r=0.5. It is ONE claim with a named mechanism (`tau_rel` is
 never READ while `required > g`, so the whole pre-crossing march is bit-identical), so it passes
 or fails as a block — slice T finding 3's shape, on a different quantity.
@@ -7964,7 +8016,7 @@ else.
 **P4 — `n_recross` passes under BOTH `armed` seeds.** Finding 2. Only the manufactured cell
 separates them; predicted that `let mut armed = false` passes all 63 ported gates without it.
 
-**P5 — `credit_spread` is EXACTLY `0.0` in Rust on both grids, with no tolerance.** Finding 7.
+**P5 — `credit_spread` is EXACTLY `0.0` in Rust on both grids, with no tolerance.** Finding 8.
 
 **P6 — rung 51's step adds NO NEW LOGIC.** `release_relief` lands COMPLETE (with `tau_rel`) at
 rung 50's step, because `tau_rel` is its kwarg and not a separate path; rung 51's two readers are
@@ -7977,11 +8029,11 @@ steps.
 
 | step | content |
 |---|---|
-| **1** | `surge_relief` + `floor_sweep` + rung 49's 17 gates; the `FuelPoint`-side `φ` accessor (finding 5); the one-ulp note at the march loop (finding 3) |
+| **1** | `surge_relief` + `floor_sweep` + rung 49's 17 gates; the `FuelPoint`-side `φ` accessor (finding 6); the one-ulp note at the march loop (finding 3). **The sweeps are memoised from the start, not after the crate time is measured**: rung 49's 17 gates share ~3 `_SWEEPS` entries in Python, and an unmemoised port redoes 8 marches per gate — a `OnceLock` per sweep is a design decision, not a later optimisation |
 | **2** | `release_relief` **COMPLETE, with `tau_rel`** + `release_sweep` + rung 50's 15 gates |
 | **3** | `rate_sweep` + `deficit_curve` + rung 51's 16 gates — P6's check |
 | **4** | `lag_relief` + `lag_sweep` + `factorization_grid` + rung 52's 15 gates |
-| **5** | the oracle: the ADDED no-engagement cell (finding 4), the MANUFACTURED `armed`-seed cell (finding 2), the CPython arm; finding 6's doc correction; and finding 1's three unreachable asserts written up where the next reader hits them |
+| **5** | the oracle: the ADDED no-engagement cell (finding 4), the MANUFACTURED `armed`-seed cell (finding 2), the CPython arm; finding 7's doc correction; and finding 1's three unreachable asserts written up where the next reader hits them |
 
 `#[ignore]` on the four `slow` gates is decided by slice M's rule — a MEASURED in-suite cost
 against the crate total — and is not pre-judged here.
