@@ -21,7 +21,21 @@ double-encoded (`∫` → `âˆ«`, `§` → `Â§`) and a BOM is prepended. The
 nothing fails — the damage is only visible by reading the file. Recovery is a byte round-trip:
 strip `﻿`, `UTF8.GetString` the bytes, re-encode with codepage 1252, write raw bytes.
 
-**Why:** both corrupt files while reporting success, and this project's deliverable is prose —
+**3. BACKTICKS IN A DOUBLE-QUOTED `git commit -m` ARE COMMAND SUBSTITUTION.** Writing
+`-m "the algebra is sound (\`with_vsv\` sets only \`vsv\`)"` makes bash run `with_vsv` as a
+command and splice its (empty) output in, so the message ships with **every backtick-quoted
+identifier silently deleted** — `bash: with_vsv: command not found` scrolls past on stderr while
+the commit succeeds. This project's messages are dense with `code_names`, so the loss is
+invariably load-bearing. **Always `git commit -F -` with a quoted heredoc** (`<<'EOF'`), which is
+what the long messages already use — the hazard is only in the short `-m` path, which is exactly
+where it feels safe to skip the heredoc.
+
+**And the same class, twice, in the same session:** `cargo test | tail -45` reports **tail's**
+exit status, and `cmd; echo "X=$?" >> log` makes the *echo* the last command, so the harness
+reports the echo's success. **A status read off the runner is not the command's status — write it
+into the artefact and read it back.**
+
+**Why:** all of these corrupt output while reporting success, and this project's deliverable is prose —
 20,000+ lines of derivation comments full of `∫`, `§`, `Δ`, `φ`, `≈`. A mangling that survives
 a green build is exactly the kind of damage that gets committed.
 

@@ -19,7 +19,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Golden fingerprint gate](golden-fingerprint-gate.md) — the ONLY absolute-value gate; CPython anchor; measure a detector
 - Golden gate slices [2](golden-gate-slice2.md) [3](golden-gate-slice3.md) [4](golden-gate-slice4.md) [5](golden-gate-slice5.md) [6](golden-gate-slice6.md) [7](golden-gate-slice7.md) — drift follows CONDITIONING; a STRIDE knob is not a RESOLUTION knob; lead with the reader that BYPASSES the short-circuit; a difference inherits the drift of what was differenced; a band must clear the SMALLEST live value; a root-finding arm needs a go/no-go first
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL
-- [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding
+- [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding, backticks in `-m`, and a status read off the runner
 
 ## The Rust port — decided 2026-08-12; **PHASES 0–6 DONE** — phase 6 authorised 2026-08-17 and **COMPLETED 2026-08-20** with slice U's five steps; **PHASE 7 AUTHORISED 2026-08-20**, slice V (of V…AJ) pre-registered and in step 1
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; a new PHASE needs authorisation
