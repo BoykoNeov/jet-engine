@@ -21,7 +21,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding
 
-## The Rust port — decided 2026-08-12; **PHASES 0–5 DONE**; **PHASE 6 AUTHORISED 2026-08-17**, slices P–U, **P–T SHIPPED; U step 1 of 5 shipped 2026-08-20**
+## The Rust port — decided 2026-08-12; **PHASES 0–6 DONE** — phase 6 authorised 2026-08-17 and **COMPLETED 2026-08-20** with slice U's five steps; **phase 7 needs its own authorisation**
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; a new PHASE needs authorisation
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost
 - [Rust arithmetic IS PyPy](rust-port-arithmetic-is-pypy.md) — size a solver claim by DISTINCT ROOTS, not row count
@@ -50,6 +50,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - Slice S (43/45) [pre-flight](rust-port-slice-s-preflight.md) + steps [1](rust-port-slice-s-step1.md) [2](rust-port-slice-s-step2.md) [3](rust-port-slice-s-step3.md) [4](rust-port-slice-s-step4.md) — an inherited IOU named a gas the code REFUSES; injections reporting "nothing moved" could not have moved anything; a NON-STRICT ordering assertion is satisfied by inertness; a zero measured before being called a hole; a probe's HEADER claimed the suites' grids and its code ran another
 - [Slice U pre-flight](rust-port-slice-u-preflight.md) — sweep the arming COMBINATIONS: three shipped asserts no input can reach
 - [Slice U step 1](rust-port-slice-u-step1.md) — bit-exact + green says nothing about GATE POWER; an injection table needs a DID-IT-MOVE column; a knife-edge value protected REDUNDANTLY
+- Slice U steps [2](rust-port-slice-u-step2.md) [3](rust-port-slice-u-step3.md) [4](rust-port-slice-u-step4.md) [5](rust-port-slice-u-step5.md) — a defender and an exposure on DISJOINT cells; a function exercised only on cells chosen for INERTNESS; a gate comparing a key with ITSELF cannot see its value; the closing step wrote TWO near-vacuous gates of its own
 - Slice T (46/47/48) steps [1](rust-port-slice-t-step1.md) [2](rust-port-slice-t-step2.md) [3](rust-port-slice-t-step3.md) [4](rust-port-slice-t-step4.md) — an EXACT ZERO blinds its own gate to the SIGN; 9/9 green and blind to a 24% error, so tabulate BAR MARGINS; a defect can survive because every READER is invariant under it; an injection matching TWICE applies nothing and still reports green
 
 ## Shipped rungs
