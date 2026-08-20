@@ -181,11 +181,11 @@ fn gate1_reduce_two_axis_bit_for_bit_reacting() {
 fn gate1_reduce_map_objects_still_identical_at_design_setting() {
     let (l, h) = lp_hp();
     let m = sb(0.0, 0.0, 0.10);
-    assert_eq!(m.core.core.map_lp, l);
-    assert_eq!(m.core.core.map_hp, h);
+    assert_eq!(m.core.core.map_lp(), l);
+    assert_eq!(m.core.core.map_hp(), h);
     assert_eq!(m.core.map_lp_design, l);
     assert_eq!(m.core.map_hp_design, h);
-    assert_eq!(m.core.core.map_lp.vsv, 0.0);
+    assert_eq!(m.core.core.map_lp().vsv, 0.0);
 
     // …and `match` resolves to rung 42's, which at b = 0 forwards to rung 39's.
     assert_eq!(m.core.core.hooks.try_match_point as usize,
@@ -202,8 +202,8 @@ fn gate1_reduce_map_objects_still_identical_at_design_setting() {
 #[test]
 fn gate2_trap_stators_actually_move_under_the_mro() {
     let m = sb(0.20, 0.05, 0.10);
-    assert_eq!(m.core.core.map_lp.vsv, 0.20);
-    assert_eq!(m.core.core.map_hp.vsv, 0.05);
+    assert_eq!(m.core.core.map_lp().vsv, 0.20);
+    assert_eq!(m.core.core.map_hp().vsv, 0.05);
     assert_eq!(m.bleed(), 0.10);
     // the design references are still captured at v = 0 (rung 53's construction discipline)
     assert_eq!(m.core.map_lp_design.vsv, 0.0);
@@ -295,7 +295,7 @@ fn gate4_mechanism_compensation_forfeits_the_loading_rebate() {
     let cell = |vv: f64, bb: f64| {
         let sib = m.at_point(vv, 0.0, bb);
         let od = sib.core.core.match_point(&flight(), tt4);
-        (od.phi_lp, sib.core.core.map_lp.psi(od.phi_lp))
+        (od.phi_lp, sib.core.core.map_lp().psi(od.phi_lp))
     };
     let (bare, stator, comp) = (cell(0.0, 0.0), cell(v, 0.0), cell(v, bs));
 
@@ -319,7 +319,7 @@ fn gate4_psi_closed_form_is_a_plumbing_check() {
         let phi_b = m.at_point(0.0, 0.0, 0.0).core.core.match_point(&flight(), tt4).phi_lp;
         let bs = solved(&m.compensating_bleed(&flight(), tt4, v, Spool::Lp, Target::Phi));
         let sib = m.at_point(v, 0.0, bs);
-        let psi_meas = sib.core.core.map_lp.psi(
+        let psi_meas = sib.core.core.map_lp().psi(
             sib.core.core.match_point(&flight(), tt4).phi_lp);
         let base = 1.0 - ml.sigma * (phi_b - 1.0).powi(2) - ml.l * (phi_b - 1.0);
         assert!((psi_meas - (base - v * (1.0 + ml.l) * phi_b)).abs() <= 1e-10, "{name}");

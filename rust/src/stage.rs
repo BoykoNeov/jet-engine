@@ -931,14 +931,14 @@ impl StageStackCore {
         if k_lp > 1 {
             core.core.stack_lp = Some(StageStack::new(StageStackSpec {
                 kc, split, vsv_stages: vsv_stages_lp, cap_profile,
-                ..StageStackSpec::new(k_lp, core.core.map_lp, core.core.tau_lpc_d,
+                ..StageStackSpec::new(k_lp, core.core.map_lp(), core.core.tau_lpc_d,
                                       core.core.base.pi_lpc_design, core.core.base.eta_lpc)
             }));
         }
         if k_hp > 1 {
             core.core.stack_hp = Some(StageStack::new(StageStackSpec {
                 kc, split, vsv_stages: vsv_stages_hp, cap_profile,
-                ..StageStackSpec::new(k_hp, core.core.map_hp, core.core.tau_hpc_d,
+                ..StageStackSpec::new(k_hp, core.core.map_hp(), core.core.tau_hpc_d,
                                       core.core.base.pi_hpc_design, core.core.base.eta_hpc)
             }));
         }
@@ -1209,8 +1209,8 @@ impl StageStackCore {
     /// Rung 53's `_spool_bits`, narrowed to the two entries rungs 55/56 read.
     fn map_and_setting(&self, spool: Spool) -> (ComponentMap, f64) {
         match spool {
-            Spool::Lp => (self.core.core.map_lp, self.core.vsv_lp),
-            Spool::Hp => (self.core.core.map_hp, self.core.vsv_hp),
+            Spool::Lp => (self.core.core.map_lp(), self.core.vsv_lp),
+            Spool::Hp => (self.core.core.map_hp(), self.core.vsv_hp),
         }
     }
 }

@@ -173,7 +173,7 @@ fn test_reduce_invariance_over_capacity_and_profile() {
                 for (got, want) in fields(other.match_point(&flight(), t)).iter().zip(a.iter()) {
                     assert_eq!(got.1, want.1,
                                "rung-56 invariance broken on {} at Tt4={t}, C={}, profile={:?}",
-                               got.0, other.core.core.map_lp.capacity, other.cap_profile());
+                               got.0, other.core.core.map_lp().capacity, other.cap_profile());
                 }
             }
         }

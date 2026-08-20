@@ -256,8 +256,8 @@ pub fn try_cascade_bleed(
         // THE TRIANGLE, unchanged in shape: HP closes on itself (VERBATIM rung 39, THROUGH the
         // hook — the structural claim), THEN LP closes onto pi_HPC with the extraction in its
         // flow.
-        let hp = (core.hooks.hp_eta_loop)(core, wgas, tt4, f, tt25, tt3, mfp4, &core.map_hp)?;
-        let lp = lp_eta_loop_bleed(wgas, tt2, tt4, f, tt25, mfp4, hp.pi, &core.map_lp, b,
+        let hp = (core.hooks.hp_eta_loop)(core, wgas, tt4, f, tt25, tt3, mfp4, &core.map_hp())?;
+        let lp = lp_eta_loop_bleed(wgas, tt2, tt4, f, tt25, mfp4, hp.pi, &core.map_lp(), b,
                                    base.eta_lpc, base.a4, base.pi_b, core.mcorr_lp_d,
                                    core.tau_lpc_d)?;
 
@@ -276,8 +276,8 @@ pub fn try_cascade_bleed(
             phi_l: lp.m / lp.n, phi_h: hp.m / hp.n, nu_hpt, nu_lpt, slip: nl / nh,
         };
 
-        let t_hpt = core.map_hp.eta_t_at(base.eta_hpt, nu_hpt);
-        let t_lpt = core.map_lp.eta_t_at(base.eta_lpt, nu_lpt);
+        let t_hpt = core.map_hp().eta_t_at(base.eta_hpt, nu_hpt);
+        let t_lpt = core.map_lp().eta_t_at(base.eta_lpt, nu_lpt);
         if (t_hpt - eta_hpt).abs() <= TwoSpoolMapCore::ETA_TOL
             && (t_lpt - eta_lpt).abs() <= TwoSpoolMapCore::ETA_TOL {
             counters::note_turb(turb_pass as u64 + 1);
@@ -516,7 +516,7 @@ impl TwoSpoolBleedMatcher {
                          od.base.base.performance.tsfc),
             };
             let (mut sm_lp, mut sm_hp) = (None, None);
-            if self.core.map_lp.phi_surge > 0.0 && self.core.map_hp.phi_surge > 0.0 {
+            if self.core.map_lp().phi_surge > 0.0 && self.core.map_hp().phi_surge > 0.0 {
                 let sm = self.core.surge_margin(flight, tt4);
                 sm_lp = Some(sm.sm_lp);
                 sm_hp = Some(sm.sm_hp);

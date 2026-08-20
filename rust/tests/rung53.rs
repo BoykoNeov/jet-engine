@@ -137,7 +137,7 @@ const SPOOLS: [(Spool, &str); 2] = [(Spool::Lp, "lp"), (Spool::Hp, "hp")];
 fn test_reduce_map_objects_are_identical_at_design_setting() {
     let (lp, hp) = (lp_map(), hp_map());
     let m = vm(design(cpg_gas()), lp, hp, 0.0, 0.0);
-    for (got, want, who) in [(m.core.map_lp, lp, "map_lp"), (m.core.map_hp, hp, "map_hp"),
+    for (got, want, who) in [(m.core.map_lp(), lp, "map_lp"), (m.core.map_hp(), hp, "map_hp"),
                              (m.map_lp_design, lp, "map_lp_design"),
                              (m.map_hp_design, hp, "map_hp_design")] {
         assert_eq!(got.vsv.to_bits(), want.vsv.to_bits(), "{who} vsv");
@@ -646,7 +646,7 @@ fn slice_m_deferrals() {
     // references it captured must be the design-setting maps, NOT the moved ones.
     let sib = m.at_setting(0.2, 0.0);
     assert_eq!(sib.map_lp_design.vsv.to_bits(), 0.0f64.to_bits());
-    assert_eq!(sib.core.map_lp.vsv.to_bits(), 0.2f64.to_bits());
+    assert_eq!(sib.core.map_lp().vsv.to_bits(), 0.2f64.to_bits());
 }
 
 /// **SLICE N step 3, P3 — THE DISPATCH GATE, AND IT ASSERTS IN BOTH DIRECTIONS.**

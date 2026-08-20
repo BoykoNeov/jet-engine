@@ -416,16 +416,19 @@ impl VariableStatorCore {
         // THE ORDER IS THE RUNG: capture the hardware and both design references from the v=0
         // maps FIRST, and only then move the stators. Building the core from already-moved maps
         // would re-reference every corrected coordinate onto a machine that does not exist.
-        let mut core = TwoSpoolMapCore::with_hooks(
+        // `let core`, not `let mut core`: since slice V the two map fields are `Cell`, so the
+        // arming setter takes `&self`. That is not cosmetic — it is the whole reason rung 57 can
+        // arm from inside a `&self` hook cell, visible here nine rungs early.
+        let core = TwoSpoolMapCore::with_hooks(
             design_engine.clone(), flight_design, mdot_design, map_lp, map_hp, two_hooks);
         // At v == 0 the maps are LEFT ALONE, so the reduce is an identity and not a
         // re-construction — `with_vsv(0.0)` would be a different object carrying the same bits,
         // and Python's gate asserts the object.
         if vsv_lp != 0.0 {
-            core.map_lp = map_lp.with_vsv(vsv_lp);
+            core.set_map_lp(map_lp.with_vsv(vsv_lp));
         }
         if vsv_hp != 0.0 {
-            core.map_hp = map_hp.with_vsv(vsv_hp);
+            core.set_map_hp(map_hp.with_vsv(vsv_hp));
         }
         VariableStatorCore {
             core, vsv_lp, vsv_hp,
@@ -492,9 +495,9 @@ impl VariableStatorCore {
 
     fn spool_bits(&self, spool: Spool) -> (ComponentMap, f64, f64, f64) {
         match spool {
-            Spool::Lp => (self.core.map_lp, self.core.tau_lpc_d, self.core.base.eta_lpc,
+            Spool::Lp => (self.core.map_lp(), self.core.tau_lpc_d, self.core.base.eta_lpc,
                           self.vsv_lp),
-            Spool::Hp => (self.core.map_hp, self.core.tau_hpc_d, self.core.base.eta_hpc,
+            Spool::Hp => (self.core.map_hp(), self.core.tau_hpc_d, self.core.base.eta_hpc,
                           self.vsv_hp),
         }
     }
@@ -528,7 +531,7 @@ impl VariableStatorCore {
     pub fn try_stator_margin(
         &self, flight: &FlightCondition, tt4: f64,
     ) -> Result<StatorMargin, Abort> {
-        let (ml, mh) = (&self.core.map_lp, &self.core.map_hp);
+        let (ml, mh) = (&self.core.map_lp(), &self.core.map_hp());
         assert!(ml.phi_surge > 0.0 && mh.phi_surge > 0.0,
                 "rung-53 stator_margin needs the rung-36 floor as its incidence anchor on BOTH \
                  maps: build them with .with_phi_surge(phi_surge).");

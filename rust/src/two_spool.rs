@@ -75,6 +75,8 @@ use crate::components::{choked_mfp, ram_recovery, Burner, Component, Compressor,
 use crate::engine::{score, try_score, Engine, EngineResult, FlightCondition, Performance};
 use crate::gas::{powp, Abort, FlowState, Gas};
 use crate::map::{ComponentMap, MapMatcher, MapOffDesignResult};
+
+use std::cell::Cell;
 use crate::matcher::{OffDesignMatcher, OffDesignResult};
 
 /// Counters that live INSIDE the shipped loops, for the counts § 5.7 gates.
@@ -1206,8 +1208,18 @@ impl MatchedMap {
 /// per-FACE design references the two sets of map coordinates are normalised on.
 pub struct TwoSpoolMapCore {
     pub base: TwoSpoolCore,
-    pub map_lp: ComponentMap,
-    pub map_hp: ComponentMap,
+    /// **THE LIVE MAPS, AND THEY ARE `Cell` FOR EXACTLY ONE REASON.** Rung 57's `_arm` assigns
+    /// both from inside `_close`/`_close_fuel` and **never restores them** — not the
+    /// save/set/restore shape § 5.19 (iv)'s census matched, so that census could not see it. The
+    /// mutation is observable: § 5.20 (ii) measures a port that scopes it moving `margin_min_lp`,
+    /// rung 57's own currency, by **15.4 %** with all 59 ported gates green. `&self` cannot
+    /// assign, and the value is read deep inside a marched hook chain, so it cannot become a
+    /// parameter either — hence interior mutability, which is Python's shape exactly.
+    ///
+    /// Private on purpose: [`map_lp`](Self::map_lp) / [`set_map_lp`](Self::set_map_lp) keep ONE
+    /// spelling at 40-odd call sites and make every write greppable.
+    map_lp: Cell<ComponentMap>,
+    map_hp: Cell<ComponentMap>,
     pub tt2_d: f64,
     pub tt25_d: f64,
     pub tt4_d: f64,
@@ -1287,9 +1299,18 @@ impl TwoSpoolMapCore {
             // is Python's `self.stack_lp = self.stack_hp = None` before its two `if K > 1`.
             stack_lp: None,
             stack_hp: None,
-            base, map_lp, map_hp, hooks,
+            base, map_lp: Cell::new(map_lp), map_hp: Cell::new(map_hp), hooks,
         }
     }
+
+    /// The LIVE LP map — rung 57's arming included. See the field's note.
+    pub fn map_lp(&self) -> ComponentMap { self.map_lp.get() }
+    /// The LIVE HP map. See the field's note.
+    pub fn map_hp(&self) -> ComponentMap { self.map_hp.get() }
+    /// Rung 57's `_arm`, LP side: set and **never restore**, which is what Python does.
+    pub fn set_map_lp(&self, m: ComponentMap) { self.map_lp.set(m) }
+    /// Rung 57's `_arm`, HP side.
+    pub fn set_map_hp(&self, m: ComponentMap) { self.map_hp.set(m) }
 
     pub fn gas(&self) -> &Gas { self.base.gas() }
 
@@ -1363,9 +1384,9 @@ impl TwoSpoolMapCore {
 
             // THE TRIANGLE: HP closes on itself, THEN LP closes onto pi_HPC.
             let hp = (self.hooks.hp_eta_loop)(self, wgas, tt4, f, tt25, tt3, mfp4,
-                                              &self.map_hp)?;
+                                              &self.map_hp())?;
             let lp = (self.hooks.lp_eta_loop)(
-                self, wgas, tt2, tt4, f, tt25, mfp4, hp.pi, &self.map_lp)?;
+                self, wgas, tt2, tt4, f, tt25, mfp4, hp.pi, &self.map_lp())?;
 
             // Two physical shaft speeds — the structural novelty (rung 38 computes none).
             let nl = lp.n * powp(tt2 / self.tt2_d, 0.5);
@@ -1383,8 +1404,8 @@ impl TwoSpoolMapCore {
 
             // OUTER turbine-efficiency loop. With a_t == 0 these targets ARE the current
             // values, so this returns on the FIRST pass and the leaf above stays exact.
-            let t_hpt = self.map_hp.eta_t_at(self.base.eta_hpt, nu_hpt);
-            let t_lpt = self.map_lp.eta_t_at(self.base.eta_lpt, nu_lpt);
+            let t_hpt = self.map_hp().eta_t_at(self.base.eta_hpt, nu_hpt);
+            let t_lpt = self.map_lp().eta_t_at(self.base.eta_lpt, nu_lpt);
             if (t_hpt - eta_hpt).abs() <= Self::ETA_TOL
                 && (t_lpt - eta_lpt).abs() <= Self::ETA_TOL {
                 counters::note_turb(turb_pass as u64 + 1);
@@ -1809,9 +1830,9 @@ impl TwoSpoolMapCore {
     /// point — rung 41's gate 2 in one call.
     pub fn pi_c_spool_shipped(&self, od: &TwoSpoolMapResult, spool: Spool) -> f64 {
         match spool {
-            Spool::Lp => self.pi_c_spool(&self.map_lp, self.tau_lpc_d, self.base.eta_lpc,
+            Spool::Lp => self.pi_c_spool(&self.map_lp(), self.tau_lpc_d, self.base.eta_lpc,
                                          od.n_lp, od.phi_lp, od.base.station("2").tt),
-            Spool::Hp => self.pi_c_spool(&self.map_hp, self.tau_hpc_d, self.base.eta_hpc,
+            Spool::Hp => self.pi_c_spool(&self.map_hp(), self.tau_hpc_d, self.base.eta_hpc,
                                          od.n_hp, od.phi_hp, od.base.station("25").tt),
         }
     }
@@ -1842,7 +1863,7 @@ impl TwoSpoolMapCore {
     pub fn try_surge_margin(
         &self, flight: &FlightCondition, tt4: f64,
     ) -> Result<SurgeMargin, Abort> {
-        let (ml, mh) = (self.map_lp, self.map_hp);
+        let (ml, mh) = (self.map_lp(), self.map_hp());
         assert!(ml.phi_surge > 0.0 && mh.phi_surge > 0.0,
                 "two-spool surge_margin needs a surge line on BOTH maps: build each with \
                  .with_phi_surge(phi_surge).");

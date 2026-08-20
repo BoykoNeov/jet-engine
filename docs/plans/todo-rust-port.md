@@ -9301,7 +9301,10 @@ at the last"* — this is that slice, and the measurement is owed at step 3.
   and must be re-gated as equality-plus-a-dispatch-count, or it becomes vacuous.
 - **P4.** `map_hp` is never left mutated by the four suites (0 of 920 262). **The HP arm is
   therefore UNGATED in Python**, so the port's HP path is exercised by the oracle only if the dump
-  adds an HP-scheduled cell. It will.
+  adds an HP-scheduled cell. ~~It will.~~ *"It will" is a promise with no gate behind it* — booked
+  instead as **step-4 checklist item (a)**: `dump_slice_v.py` MUST carry an HP-scheduled section,
+  and the step-4 write-up states its key count. A deferral with a number attached survives; one
+  with an intention does not.
 - **P5 — the gate this slice owes.** A dispatch-style gate that manufactures the local-armed-core
   bug (restore the map after the close) and asserts `margin_min_lp` **breaks**. Without it the port
   ships a 15 % divergence that 59 ported gates cannot see. `slice_r_dispatch.rs`'s precedent, aimed
@@ -9309,6 +9312,16 @@ at the last"* — this is that slice, and the measurement is owed at step 3.
 - **P6.** Steps, on slice T/U's shape: **1** cells + carrier · **2** the port + `slice_v_smoke.rs`
   · **3** the four rung suites · **4** `slice_v_oracle.rs` + `dump_slice_v.py` · **5** the
   carrier/dispatch gates (P5) and the injections.
+
+**STEP-4 CHECKLIST, written here so it cannot be skipped:**
+**(a)** an HP-scheduled section in the dump — P4's promise, with a stated key count.
+**(b)** **§ (ii)'s TWELVE NUMBERS BECOME DUMP KEYS.** P2 — the slice's central prediction — is
+stated in twelve values that today live in a plan table and two files under
+`M:\claud_projects\temp\`. That is not durable in the sense the rest of this port means it, and
+it is this phase's own rule (*if it can be emitted, emit it*) applied to the numbers a prediction
+is written in. `dump_slice_v.py` carries a post-march reader section — `SM_lp`/`SM_hp`,
+`margin_min_lp`/`margin_min_hp`, over `lp_only`/`hp_only`/`both`/`const_lp` — so P2 is checked
+against a committed TSV rather than against a table someone typed from a probe.
 
 **Predictions that would REFUTE the plan rather than the port:** P1 failing means § (iii)'s algebra
 is wrong and the two shipped cells are entangled after all; P2 failing means the stale map is not
@@ -9358,6 +9371,68 @@ instrument that cannot express the failure it is watching for. Re-run with the l
 and cargo's own status read directly.
 
 **THE GATE, READ PROPERLY:** `cargo test --release`, whole log, cargo's own status — **`CARGO_EXIT=0`, 94 suites, 845 passed, 0 failed, 0 ignored.** The `0 ignored` is slice M's rule still holding at the phase boundary. `slice_r_dispatch.rs` and `slice_s_dispatch.rs` are green **unedited**, which is **P1's first half MEASURED**.
+
+##### STEP 1b — SHIPPED. **THE CARRIER, AND THREE DEFECTS IN INSTALLING IT — TWO OF THEM IN MY OWN INSTRUMENTS**
+
+`TwoSpoolMapCore`'s two map fields become `Cell<ComponentMap>` behind four accessors
+(`map_lp` / `map_hp` / `set_map_lp` / `set_map_hp`), and every read becomes a call. **52 sites
+rewritten** — 40 in `src` over six files, 12 in `tests` over four — plus the two write sites in
+`stator.rs`'s constructor. `ComponentMap` is `Copy`, so every read is a `.get()` and nothing is
+cloned.
+
+**AND THE FIRST VISIBLE CONSEQUENCE IS ONE LINE OF `stator.rs`.** Rung 53's constructor was
+`let mut core = …`; the setter takes `&self`, so the `mut` is gone. That is not cosmetic — it is
+the whole reason rung 57 can arm from inside a `&self` hook cell, showing up four rungs early in
+a file slice M shipped.
+
+**THE CARRIER HAS ITS OWN WITNESS, BECAUSE THE PHASE GATE STRUCTURALLY CANNOT BE ONE.** A green
+`cargo test --release` after this refactor says the 52 rewrites were behaviour-neutral, which is
+what it is for, and says **nothing** about whether the carrier works — nothing in the tree writes
+through it during a march until step 2, and `set_map_lp` could be `{}` with only rung 53's
+constructor noticing. That is slice U step 1's finding (*bit-exact and green says nothing about
+GATE POWER*) arriving at this slice's own first step. `tests/slice_v_carrier.rs`, 2 tests, asserts
+the property directly: **a write through a shared `&`, from a context that does not own the core,
+persists — and a downstream reader that never saw the write sees the moved map.**
+
+**AND THE WITNESS WAS MEASURED FOR GATE POWER RATHER THAN ASSUMED TO HAVE IT.** Three carrier
+bugs manufactured, all three caught:
+
+| injection | caught by |
+|---|---|
+| **no-op** `set_map_lp` — installed but dead | both tests |
+| **aliased** cells — one write reaches both maps | **the separation bar ONLY** |
+| **restoring** carrier — a `finally` Python does not have | both tests |
+
+**THE THREE DEFECTS, ALL RECORDED RATHER THAN QUIETLY FIXED.**
+
+1. **A GUESSED BAR, and it is this index's own recurring shape.** The witness first asserted the
+   HP margin bit-for-bit under an LP arming — *"rung 53's P5 zero, one ladder early"* — and it
+   moved by **2 ULPs**. Rung 53's zero is a claim about the STEADY matcher's own lever; here the
+   LP arming shifts the LP work and the HP operating point follows through the cascade. Re-run as
+   a **measurement first**: `d_lp_rel = 5.632730e-1`, `d_hp_rel = 3.220528e-16`. **Fifteen orders
+   of magnitude, and that SEPARATION is the assertion** — it is the only one of the three that
+   catches the aliased-cells injection, which a bare `assert_ne!` on the LP side cannot see. The
+   guessed bar would have failed on the clean tree AND passed the aliased bug's LP half.
+2. **A HAND-TYPED FILE LIST, in the phase whose rule is "if it can be emitted, emit it".** The
+   first rewrite pass ran over nine files I listed by reading an earlier grep. It missed
+   `tests/rung56.rs`, and the release build caught it — but only because a private field is a
+   compile error. **The list was the wrong instrument; a scan was available and I typed instead**,
+   which is § 5.19 (xi) recurring one section later on its own author.
+3. **AND THE SCAN THAT REPAIRED IT WAS *MORE COMPLETE AND ALSO WRONG*.** Re-run blind over all
+   109 `.rs` files, it rewrote **the four accessors into themselves** — `self.map_lp.get()`
+   became `self.map_lp().get()`, infinite recursion — because a global rewrite has no way to know
+   which sites it has already created. It would not have compiled, so it was cheap; the lesson is
+   not. **Completeness and correctness are different properties, and the second pass bought the
+   first by giving up the second.**
+
+**AND THE GATE WAS READ THROUGH A PIPE A SECOND TIME.** Step 1a recorded `| tail -45` reporting
+`tail`'s status. Step 1b's first run wrote the log whole and appended `CARGO_EXIT=$?` — and the
+harness *still* reported exit 0, because the trailing `echo` was the last command. **`CARGO_EXIT`
+was `101`**: the `rung56.rs` miss above. The log line caught what the status could not, which is
+the only reason defect 2 was found at all. **Write the status into the artefact, never read it
+off the runner.**
+
+**THE GATE:** `cargo test --release`, status written into the log — **`CARGO_EXIT=0`, 95 suites, 847 passed, 0 failed, 0 ignored** (845 + the carrier's 2). **P1's second half is MEASURED**: `slice_r_dispatch.rs` and `slice_s_dispatch.rs` are green with `try_instant_tail` and `powers` UNEDITED, which is § (iii)'s algebra holding in the port.
 
 ## 6. Named risks
 

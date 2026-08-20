@@ -1000,7 +1000,7 @@ impl TwoSpoolTransientCore {
     pub fn transient_surge_margin(
         &self, flight: &FlightCondition, tt4_lo: f64, dtt4: f64, r_ramp: f64, s_end: f64, ds: f64,
     ) -> TransientSurgeMargin {
-        let (ml, mh) = (self.inner.map_lp, self.inner.map_hp);
+        let (ml, mh) = (self.inner.map_lp(), self.inner.map_hp());
         assert!(ml.phi_surge > 0.0 && mh.phi_surge > 0.0,
                 "transient_surge_margin needs a surge line on BOTH maps: build each with \
                  with_phi_surge(phi_surge).");
@@ -1093,9 +1093,9 @@ fn r40_try_close(
 
     let ev = |m_lp: f64| -> Result<CloseState, Abort> {
         let phi_lp = m_lp / n_lp;
-        let tau_lpc = 1.0 + (c.tau_lpc_d - 1.0) * c.map_lp.psi(phi_lp) * n_lp * n_lp;
+        let tau_lpc = 1.0 + (c.tau_lpc_d - 1.0) * c.map_lp().psi(phi_lp) * n_lp * n_lp;
         let tt25 = tt2 * tau_lpc;
-        let eta_lpc = c.map_lp.eta_c_at(c.base.eta_lpc, phi_lp, n_lp);
+        let eta_lpc = c.map_lp().eta_c_at(c.base.eta_lpc, phi_lp, n_lp);
         let h25 = gas.h_c(tt25);
         let pi_lpc = gas.pr_c(gas.t_from_h_c(h2 + eta_lpc * (h25 - h2))) / pr2;
         let pt25 = pi_lpc * pt2;
@@ -1107,9 +1107,9 @@ fn r40_try_close(
         let m_hp = (mdot_air_face * powp(tt25, 0.5) / pt25) / c.mcorr_hp_d;
         let n_hp = nu_hp * powp(c.tt25_d / tt25, 0.5);
         let phi_hp = m_hp / n_hp;
-        let tau_hpc = 1.0 + (c.tau_hpc_d - 1.0) * c.map_hp.psi(phi_hp) * n_hp * n_hp;
+        let tau_hpc = 1.0 + (c.tau_hpc_d - 1.0) * c.map_hp().psi(phi_hp) * n_hp * n_hp;
         let tt3 = tt25 * tau_hpc;
-        let eta_hpc = c.map_hp.eta_c_at(c.base.eta_hpc, phi_hp, n_hp);
+        let eta_hpc = c.map_hp().eta_c_at(c.base.eta_hpc, phi_hp, n_hp);
         let h3 = gas.h_c(tt3);
         let pi_hpc = gas.pr_c(gas.t_from_h_c(h25 + eta_hpc * (h3 - h25))) / gas.pr_c(tt25);
         let pt4 = c.base.pi_b * pi_hpc * pt25;
@@ -1152,7 +1152,7 @@ fn r40_try_close(
     // flow), so it brackets cleanly. BOTH arms of the high wall are LIVE — 1 221 literal against
     // 5 118 map over the gate grids, unlike rung 37's comparable ceiling, which bound on one arm 15
     // of 15 times. Counted, not assumed.
-    let wall_map = c.map_lp.phi_max(0.1) * n_lp;
+    let wall_map = c.map_lp().phi_max(0.1) * n_lp;
     if 2.5 <= wall_map {
         HI_WALL_LITERAL.with(|x| x.set(x.get() + 1));
     } else {
@@ -1207,11 +1207,11 @@ fn r40_try_instant_tail(
 
     // Both turbines pinned by GEOMETRY (rung 38's choke chained twice) — no shaft balance.
     let nu_hpt = nu_hp * powp(core.tt4_d / tt4, 0.5);
-    let eta_hpt = core.map_hp.eta_t_at(core.base.eta_hpt, nu_hpt);
+    let eta_hpt = core.map_hp().eta_t_at(core.base.eta_hpt, nu_hpt);
     let (pi_hpt, tau_hpt, tt45) = core.base.try_solve_choked_turbine(
         wgas, tt4, f, core.base.a4, core.base.a45, 1.0, eta_hpt)?;
     let nu_lpt = nu_lp * powp(core.tt45_d / tt45, 0.5);
-    let eta_lpt = core.map_lp.eta_t_at(core.base.eta_lpt, nu_lpt);
+    let eta_lpt = core.map_lp().eta_t_at(core.base.eta_lpt, nu_lpt);
     let (pi_lpt, tau_lpt, tt5) = core.base.try_solve_choked_turbine(
         wgas, tt45, f, core.base.a45, core.base.a8, core.base.pi_n, eta_lpt)?;
 
@@ -1257,11 +1257,11 @@ fn r40_powers(
     let nu_hpt = nu_hp * powp(core.tt4_d / tt4, 0.5);
     let (_, _, tt45) = core.base.try_solve_choked_turbine(
         wgas, tt4, f, core.base.a4, core.base.a45, 1.0,
-        core.map_hp.eta_t_at(core.base.eta_hpt, nu_hpt))?;
+        core.map_hp().eta_t_at(core.base.eta_hpt, nu_hpt))?;
     let nu_lpt = nu_lp * powp(core.tt45_d / tt45, 0.5);
     let (_, _, tt5) = core.base.try_solve_choked_turbine(
         wgas, tt45, f, core.base.a45, core.base.a8, core.base.pi_n,
-        core.map_lp.eta_t_at(core.base.eta_lpt, nu_lpt))?;
+        core.map_lp().eta_t_at(core.base.eta_lpt, nu_lpt))?;
     let pt_hp = core.base.eta_m * (1.0 + f) * (wgas.h_t(tt4, f) - wgas.h_t(tt45, f));
     let pt_lp = core.base.eta_m * (1.0 + f) * (wgas.h_t(tt45, f) - wgas.h_t(tt5, f));
     let pc_hp = wgas.h_c(c.tt3) - wgas.h_c(c.tt25);

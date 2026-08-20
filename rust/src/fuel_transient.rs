@@ -2551,7 +2551,7 @@ impl FuelTransientCore {
         surge: Option<SurgeLimiter>,
     ) -> TransientSurgeMarginFuel {
         let lim = &FuelLimiters { tt4_max, tau_gov, accel, surge, ..Default::default() };
-        let (ml, mh) = (self.inner.inner.map_lp, self.inner.inner.map_hp);
+        let (ml, mh) = (self.inner.inner.map_lp(), self.inner.inner.map_hp());
         assert!(ml.phi_surge > 0.0 && mh.phi_surge > 0.0,
                 "transient_surge_margin_fuel needs a surge line on BOTH maps: build each with \
                  .with_phi_surge(phi_surge).");
@@ -3380,9 +3380,9 @@ fn r43_try_close_fuel(
 
     let ev = |m_lp: f64| -> Result<FuelCloseState, Abort> {
         let phi_lp = m_lp / n_lp;
-        let tau_lpc = 1.0 + (c.tau_lpc_d - 1.0) * c.map_lp.psi(phi_lp) * n_lp * n_lp;
+        let tau_lpc = 1.0 + (c.tau_lpc_d - 1.0) * c.map_lp().psi(phi_lp) * n_lp * n_lp;
         let tt25 = tt2 * tau_lpc;
-        let eta_lpc = c.map_lp.eta_c_at(c.base.eta_lpc, phi_lp, n_lp);
+        let eta_lpc = c.map_lp().eta_c_at(c.base.eta_lpc, phi_lp, n_lp);
         let h25 = gas.h_c(tt25);
         // The LPC ideal-temperature inversion. FALLIBLE for the same reason as the HPC one
         // below, and measured DEAD on every grid so far — the two are one `try` scope in
@@ -3396,9 +3396,9 @@ fn r43_try_close_fuel(
         let m_hp = (mdot_air_face * powp(tt25, 0.5) / pt25) / c.mcorr_hp_d;
         let n_hp = nu_hp * powp(c.tt25_d / tt25, 0.5);
         let phi_hp = m_hp / n_hp;
-        let tau_hpc = 1.0 + (c.tau_hpc_d - 1.0) * c.map_hp.psi(phi_hp) * n_hp * n_hp;
+        let tau_hpc = 1.0 + (c.tau_hpc_d - 1.0) * c.map_hp().psi(phi_hp) * n_hp * n_hp;
         let tt3 = tt25 * tau_hpc;
-        let eta_hpc = c.map_hp.eta_c_at(c.base.eta_hpc, phi_hp, n_hp);
+        let eta_hpc = c.map_hp().eta_c_at(c.base.eta_hpc, phi_hp, n_hp);
         let h3 = gas.h_c(tt3);
         // **THE MEASURED FALLIBLE SITE.** On the equilibrium gas this lands outside the
         // 150-4000 K table 8 times per closure, at m_lp in 1.739...2.019, where psi_H < 0
@@ -3449,7 +3449,7 @@ fn r43_try_close_fuel(
     // Python's `min(a, b, c)` spelled as the fold it IS, so the arm classification and the
     // value come out of one statement. `f64::min` would differ on NaN and would not say which
     // arm bound. Measured 24 033 / 200 193 / 3 663 — all three live.
-    let wall_map = c.map_lp.phi_max(0.1) * n_lp;
+    let wall_map = c.map_lp().phi_max(0.1) * n_lp;
     let mut cap = 2.5f64;
     let mut arm = &HI_WALL_LITERAL;
     if wall_map < cap {

@@ -769,7 +769,7 @@ fn the_per_row_surge_floor_is_read_off_the_design_anchor_not_the_moved_map() {
             "a moved front row must sit on a moved floor");
     // The discriminator against the wrong spelling: the MAP-level reader returns the front row's
     // number for every row, so a port written on `phi_surge_at()` would fail the line above.
-    let moved_map = moved.core.core.map_lp;
+    let moved_map = moved.core.core.map_lp();
     assert_eq!(rows[0].phi_surge.to_bits(), moved_map.phi_surge_at().to_bits());
     assert!(moved_map.phi_surge_at() != ml.phi_surge,
             "...and the two readers genuinely disagree here, or this gate is vacuous");
