@@ -8410,6 +8410,102 @@ step 3**: `release_relief` landed complete with `tau_rel`, and Python's `rate_sw
 `deficit_curve` are both plain loops over it — read in the source, to be gated when step 3 adds
 zero new logic. **P3/P4/P5** need rungs 51/52.
 
+##### STEP 3 — SHIPPED. **P6 DISCHARGED, AND THE ONE FUNCTION THE STEP ADDS IS EXERCISED ONLY ON CELLS CHOSEN FOR INERTNESS**
+
+`fuel_transient.rs` gains `rate_sweep` and `deficit_curve`: **65 lines added and ZERO deleted**.
+`tests/rung51.rs` is **16 test fns for Python's 16** and runs **16/16 in 0.91 s on the first
+compile**, with Python's `_ROWS` memo as a `Mutex<HashMap>` keyed on BITS.
+
+**§ 5.18 P6 IS DISCHARGED BY MEASUREMENT, NOT BY ASSERTION.** P6 was registered before rung 50's
+step was written: `release_relief` would land COMPLETE with `tau_rel` at rung 50 because `tau_rel`
+is its kwarg and not a separate path, so rung 51's two readers would be LOOPS over it. That is
+exactly what shipped — **two `map` bodies and one assert, no new field, no new branch, no new
+constant** — and the 65-line diff with no deletions is the check, the way slice T checked its
+zero-source-line steps.
+
+**FINDING 1 — 972 KEYS OVER 36 CELLS, BIT-EXACT ON THE FIRST RUN, AND THE CELL LIST WAS READ OFF
+THE SUITE RATHER THAN ENUMERATED.** P1's distrust of a clean pass again. The probe **runs all
+sixteen gates and then dumps whatever ended up in `test_rung51.py`'s own `_ROWS` memo** — 29 cells
+— plus the two `rate_sweep` calls that bypass it and three `deficit_curve` rows. A hand-written
+cell list is this port's standing way of under-covering a suite (slice S step 4); reading the memo
+cannot miss a cell a gate visits and cannot invent one it does not. Zero differences against PyPy.
+
+**AND THE MEMO CENSUS SAID SOMETHING THE GATES DO NOT.** All **29** memoised cells run at
+`r = 2.0`. `_rel`'s defaults are `phi_lim = PHI_LIM_2` and `r = R2`, where rung 50's `_sweep`
+defaults the other way, so a rung-51 gate that reads as ramp-rate-agnostic is a `r = 2.0`
+measurement. The only `r = 0.5` cells in the file are contracts 1b and 4, which build their calls
+by hand.
+
+**FINDING 2 — THE BAR MARGINS, AND ONE OF THEM IS 5 %.** Measured on the suite's own cells before
+the green was accepted:
+
+| gate | bar | worst measured | slack |
+|---|---|---:|---:|
+| 3 | faded `>1.4×` shallower | `1.470×` | **1.05 × — 5 %** |
+| 7 | relief gap `> 0.01` | `0.0131` | 1.31 × |
+| 11 | `\|s_min_hp(0.02) − s_min_hp(0.01)\| <= 0.02` | `0.0100` | 2 × — **exactly ONE cell at `ds = 0.01`** |
+| 7 | matched deficit `< 1e-3` | `2.17e-4` | 4.6 × |
+| 11 | `relief_lp` `ds` drift `< 1 %` | `0.078 %` | 12.8 × |
+| 11 | `relief_hp` `ds` drift `< 1 %` | `0.092 %` | 10.9 × |
+| 3 | the two brackets AGREE within 1 % | `0.073 %` | 13.7 × |
+| 10 | `\|nu_hp_end − bare\| < 5e-4` | `2.85e-6` | 176 × |
+| 6 | `relief_lp == 0.0` | `0.0` exactly | structural |
+| 8 | the location law | 5–10 GRID CELLS clear | — |
+
+Gate 3's `1.470×` against a `1.4×` bar is the tightest thing in the file, the same class as rung
+50's gate 4 at `2.625` against `2.5`. Two files running, the slice's tightest bar is a **ratio in
+a headline claim**, not a tolerance — which is the opposite of slice T's picture and consistent
+with step 2's.
+
+**FINDING 3 — FOUR INJECTIONS, ALL FOUR PREDICTIONS HELD, AND THE INTERESTING ROW IS SHARPER THAN
+PREDICTED.** Only two functions are new, so the battery is four rows rather than fourteen. All
+four were written down before the harness ran once:
+
+| injection | moved a value? | keys | gates that caught it |
+|---|---|---:|---|
+| **I1** `rate_sweep` DROPS `tau_rel` (always forwards `None`) | yes — **but only 2 of 972** | 2 | **NONE** |
+| **I4** `deficit_curve` watches the HP spool regardless | yes | 45 | **NONE** |
+| **I3** `rate_sweep`'s `tau_rel >= 0` assert deleted | **NO — unreachable** | 0 | — |
+| **I2** `rate_sweep` forwards `s_off` as `None` | (the plant refuses) | — | contracts 1b **and** 4 |
+
+**I1 IS THE FINDING, AND THE "2 KEYS" IS WHAT MAKES IT ONE.** Two moved keys is a suspiciously
+small number for "the rate axis stopped being forwarded", and the difference between *the physics
+was inert* and *the physics moved and nothing read it* is the whole content of the row — so it was
+measured rather than reasoned. The two keys are:
+
+```
+rate_sweep/c4[1]  tau_rel  0.04 -> None
+rate_sweep/c4[2]  tau_rel  0.32 -> None
+```
+
+**the record echoing its own argument back, and nothing else.** Every physical quantity was
+already bit-identical. The reason is structural and is the sharp version of the claim: of the four
+`rate_sweep` rows the whole suite produces, **exactly two carry a live `tau_rel`, and both are
+contract 4's — whose entire claim is that `tau_rel` is INERT there** (the trigger sits past the
+natural release, so there is no clip left to fade). Every gate that reads a genuinely faded march
+calls `release_relief` directly through the memo helper. So **`rate_sweep`'s one job is exercised
+only on cells chosen for inertness**, and the sole witness that the forwarding happened at all is
+the echoed parameter. Step 5's oracle owes a `rate_sweep` cell INSIDE the window — derived from
+this table, not guessed.
+
+**I2 IS CAUGHT BY A PLANT REFUSAL, NOT BY A VALUE COMPARISON**, and the prediction was half wrong:
+it was registered as "caught by contract 1b and NOT contract 4". Both fired — because
+`s_off = None` with a live `tau_rel` trips `integrate_fuel`'s own `tau_rel` needs `s_off`
+composition assert before any number is produced. Recorded because "two gates caught it" reads as
+two independent checks and is one refusal reaching two call sites.
+
+**I3 MOVED NOTHING, AND THAT IS ABOUT THE GRID.** No gate passes a negative `tau_rel`, so
+`rate_sweep`'s only assert is unreachable from the suite — a fifth unreachable refusal in this
+slice, beside § 5.18 finding 1's three `lp_disabled` ones and rung 50's `s_off > 0`.
+
+**THE CRATE CHECK FOR THIS STEP IS NAMED RATHER THAN IMPLIED.** `cargo clippy --all-targets` is
+back at **73** warnings — step 2's measured baseline — with **none at any line this step touched**;
+the diff is a **pure addition** (65 insertions, 0 deletions, verified with `git diff --stat`); and
+rungs 49/50/51 run **17/15/16 green**. **A full `cargo test --release` was NOT re-run here** — step
+2's was 809/0/0 over 89 binaries, this step changes no existing executable line, and the full run
+is taken once more after step 4. That is the whole of what was checked, and nothing finer should
+be read into it.
+
 ## 6. Named risks
 
 ##### STEP 4 — SHIPPED. **THE SECTION'S OWN CENSUSES WERE MEASURED ON TWO DIFFERENT GRIDS**

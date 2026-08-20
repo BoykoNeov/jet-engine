@@ -2982,6 +2982,71 @@ impl FuelTransientCore {
             })
             .collect()
     }
+
+    /// RUNG 51 (the finding method). Sweep the release RATE at a FIXED trigger `s_off`.
+    ///
+    /// Rung 50 moved WHEN the withheld fuel is handed back and found the debit monotone in the
+    /// DEFICIT at fixed release. It could not move HOW FAST, and said so. This is that axis:
+    /// everything up to `s_off` is BIT-IDENTICAL across the sweep (the clip only starts fading
+    /// there), so the trigger, the engagement edge and the whole engaged window are held fixed
+    /// while the hand-back rate alone varies.
+    ///
+    /// **DO NOT READ THE SWEEP ALONE.** `fuel_removed` RISES with `tau_rel` (the clip is held
+    /// partially on for longer), so the sweep moves the deficit and the rate TOGETHER — the same
+    /// confound rung 49 § 4 fell into. The gate is a TWO-SIDED BRACKET against the two HARD
+    /// releases at the ends of the fade's own interval, not
+    /// [`deficit_curve`](Self::deficit_curve).
+    ///
+    /// # § 5.18 P6 — THIS ADDS NO NEW LOGIC, AND THAT IS THE CHECK
+    ///
+    /// `tau_rel` is a kwarg of [`release_relief`](Self::release_relief), not a separate path, so
+    /// that method landed COMPLETE at rung 50's step and this is a loop over it. The prediction was
+    /// registered before either was written; it is discharged by this body being three statements
+    /// long, exactly as slice T registered its zero-source-line steps.
+    ///
+    /// `s_off` is a plain `f64` because Python's annotation is `s_off: float` and no caller passes
+    /// `None` — widening it to an `Option` here would be a wider API than the source's, in the
+    /// direction the port is told not to drift.
+    #[allow(clippy::too_many_arguments)]
+    pub fn rate_sweep(
+        &self, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, s_off: f64,
+        tau_rels: &[Option<f64>], surge: Option<&SurgeLimiter>, accel: Option<&AccelSchedule>,
+        r: f64, s_settle: f64, ds: f64,
+    ) -> Vec<ReleaseRelief> {
+        assert!(tau_rels.iter().all(|t| t.is_none_or(|v| v >= 0.0)),
+                "rung-51 tau_rel is a fade DURATION on the march coordinate");
+        tau_rels.iter()
+            .map(|&t| {
+                self.release_relief(flight, tt4_lo, tt4_hi, Some(s_off), surge, accel, r, s_settle,
+                                    ds, t)
+            })
+            .collect()
+    }
+
+    /// RUNG 51. Rung 50 § 5's fixed-release deficit→depth curve, rebuilt cleanly: rung 50 had to
+    /// hand-pick `phi_lim` values whose NATURAL releases happened to coincide, whereas `s_off`
+    /// pins the release by construction, so sweeping the floor walks the deficit at a genuinely
+    /// FIXED (and hard) release. Every row is a rung-50 point (`tau_rel = None`).
+    ///
+    /// **NOT THE GATE FOR [`rate_sweep`](Self::rate_sweep), AND KEPT BECAUSE FINDING THAT OUT WAS
+    /// THE WORK.** This curve was rung 51's pre-registered gate and it is CONFOUNDED: at matched
+    /// release-COMPLETION a faded run always removes LESS fuel than the hard one, and rung 50 § 5
+    /// already says less deficit ⇒ shallower dive, so "shallower at matched completion" proves
+    /// nothing. The two-sided bracket replaced it. Ported because the source ships it, not because
+    /// a gate needs it — *COPY vs REDERIVATION*.
+    #[allow(clippy::too_many_arguments)]
+    pub fn deficit_curve(
+        &self, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, s_off: f64, floors: &[f64],
+        spool: Spool, r: f64, s_settle: f64, ds: f64,
+    ) -> Vec<ReleaseRelief> {
+        floors.iter()
+            .map(|&p| {
+                let leg = SurgeLimiter::new(spool, p);
+                self.release_relief(flight, tt4_lo, tt4_hi, Some(s_off), Some(&leg), None, r,
+                                    s_settle, ds, None)
+            })
+            .collect()
+    }
 }
 
 /// The COMMANDED running-line `phi` lookup [`FuelTransientCore::fuel_ramp_march`] hands back —
