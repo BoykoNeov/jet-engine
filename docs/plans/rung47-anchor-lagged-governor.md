@@ -15,7 +15,7 @@ floating-`Tt4` two-shaft plant.
 (`γc=1.4, cp_c=1004, γt=1.3, cp_t=1239, hPR=42.8e6`; the finding is gas-independent — rung
 35/43/45/46's carried concession). Shapes (rung 45/46's set): `flow/press`, `press/flow`,
 `tilted`, `hp-only` (LP flat). Accel 1000→1400, `ρ=1`, `s_settle=2.0`, `ds=0.02`. The bare `Tt4`
-peak is ~1670 K; the redline 1480 sits in the gap (above the 1400 endpoint, below the peak).
+peak is **1690.5 / 1695.4 / 1702.4 / 1703.0 K** over the four shapes (measured by the Rust port's slice-T oracle; ~1670 was this line's figure for four rungs); the redline 1480 sits in the gap (above the 1400 endpoint, below the peak).
 
 `overshoot = Tt4_peak_top − Tt4_max`; `relief_* = min_phi_*(topped) − min_phi_*(bare)`, `>0` safer.
 

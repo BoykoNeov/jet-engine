@@ -328,6 +328,43 @@ composite is what a real accel schedule actually is.
 - **Both NGVs choked, no bypass, one `eta_m`, isentropic knobs, no bleed** — inherited from
   rungs 38–47.
 
+### What the RUST PORT measured about these gates (slice T, 2026-08-20)
+
+The port ported this suite one-to-one — sixteen test functions for sixteen — and then injected five
+defects into the shipped reader. Four were caught by 5 to 11 gates each. The fifth is the finding.
+
+1. **`fuel_removed`'s SCALE is unobservable to the whole project, in either language.** Dropping
+   the `0.5` from its trapezoid doubles the integral exactly and is caught by **0 of 16** gates.
+   The reason is not a loose bar — there is no bar to loosen. `fuel_removed` is read in exactly
+   three places in the project, and every one of those readings is either `> 0.0` or a pairwise
+   `<`; both predicates are invariant under multiplication by any positive constant. The trapezoid
+   could be a rectangle rule and nothing would know. Only a VALUE gate can hold it, and the port's
+   slice-T oracle is now that gate.
+
+2. **The six `relief == 0.0` assertions are ONE claim, not six.** For the downstream margins the
+   bare and limited marches are bit-identical for their first 14 / 16 / 20 points and the LP argmin
+   sits at index 12, inside every one of those prefixes — so the two `min` calls read the SAME
+   float and the difference is `0.0` for the reason `x - x` is. A one-ULP perturbation upstream
+   fails all six together. (They do sit on five DIFFERENT marches, so they are not a block in the
+   trivial sense — but the mechanism is one.)
+
+3. **Gate 7's `ratio[s_lp]` is an EXACT dictionary lookup, and that is load-bearing.** It raises if
+   the LP minimum is not on the ramp prefix's grid. A port that reads "the last point with
+   `s <= s_lp`" instead would silently substitute a neighbouring ratio; measured, the exact lookup
+   FINDS the key on this cell, so the divergence would have been latent rather than loud.
+
+4. **Gates 8b and 9b can report a TRUNCATED march as an unmoved one.** Both find the first
+   differing point by zipping the bare and limited trajectories, so a limited march that broke out
+   early yields "no difference" and trips the assertion whose message says the clip genuinely moved
+   the march. Python has the hole too; naming it costs one length check.
+
+5. **Two arms of `schedule_relief` are live code that no cell in this suite reaches.** `s_eng`'s
+   `float("nan")` fallback needs `n_engaged == 0`, which happens at `m >= 0.55` and which the
+   lowest suite cell (gate 12's `m = 0.78` at `r = 0.15`) misses by exactly one engagement point;
+   and the `min(traj, key=...)` first-on-tie rule is never exercised, because no `phi` array here
+   has a tie (the closest gap is 1.61e-5). Both are gated in the port by cells and a rule test
+   ADDED for the purpose, not inherited.
+
 ---
 
 ## Anchor

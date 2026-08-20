@@ -70,7 +70,11 @@ SHAPES = {
     "hp-only":    (FLAT, HP_SHAPED),   # LP FLAT => NO rung-40 complex mode (the discriminator)
 }
 
-# accel band + a redline in the GAP (above the 1400 endpoint, below the ~1670 bare peak)
+# accel band + a redline in the GAP (above the 1400 endpoint, below the bare peak, which on THIS
+# file's CPG gas is 1690.5 / 1695.4 / 1702.4 / 1703.0 K over the four shapes -- measured by the
+# Rust port's slice-T oracle, and NOT the ~1670 this line said for four rungs. Rung 46's comment
+# quotes ~1645 for the same-looking march because ITS gates run the thermally-perfect gas, whose
+# peaks are 1641-1651 K: the two files were never describing the same march.)
 LO, HI, REDLINE, R = 1000.0, 1400.0, 1480.0, 0.5
 SETTLE = 2.0   # the surge min + Tt4 peak both live inside the ramp; a short settle suffices
 

@@ -838,6 +838,30 @@ pub struct ScheduleRelief {
     pub nu_hp_end_bare: f64,
 }
 
+/// The RAW (reference-free) minimum of one key over a marched trajectory, and the `s` at which it
+/// is attained — rung 45's surge object, as [`schedule_relief`](TwoSpoolFuelTransient::
+/// schedule_relief) reads it.
+///
+/// **THE FOLD IS STRICT, AND THAT IS A RULE NO CELL TESTS.** Python's `min(traj, key=…)` returns
+/// the FIRST minimum on ties, so `<` is the faithful spelling and `<=` would return the LAST.
+/// § 5.17 finding 5 measured that **no suite cell has a tie** — the closest any of them comes is a
+/// `1.61e-5` gap to the second-smallest `phi_hp` — so a `<=` here ships past all 31 ported gates
+/// undetected. It is therefore gated on a MANUFACTURED trajectory rather than on a marched one:
+/// `topping_oracle.rs::the_raw_min_fold_is_first_on_tie`. That gate is the only reason this
+/// function is not still nested inside its caller — two marched points cannot be made to bit-tie,
+/// so the rule has to be reachable on its own.
+pub fn first_raw_min(traj: &[FuelPoint], key: fn(&FuelPoint) -> f64) -> (f64, f64) {
+    let mut best = key(&traj[0]);
+    let mut at = traj[0].s;
+    for p in &traj[1..] {
+        if key(p) < best {
+            best = key(p);
+            at = p.s;
+        }
+    }
+    (best, at)
+}
+
 /// Every limiter keyword [`integrate_fuel`](FuelTransientCore::integrate_fuel) accepts — rungs
 /// 46 through 52, which are seven arms on ONE method and not seven classes.
 ///
@@ -2434,26 +2458,13 @@ impl FuelTransientCore {
         assert!(!bare.is_empty() && !lim.is_empty(),
                 "rung-48 schedule_relief produced no trajectory");
 
-        // Python's `min(traj, key=...)` returns the FIRST minimum on ties, so the fold is STRICT.
-        //
-        // § 5.17 finding 5: NO suite cell has a tie — the closest is a 1.61e-5 gap to the
-        // second-smallest — so a `<=` here would ship undetected past all 31 ported gates. The
-        // tie is MANUFACTURED in the oracle instead of being hoped for.
-        fn raw_min(traj: &[FuelPoint], key: fn(&FuelPoint) -> f64) -> (f64, f64) {
-            let mut best = key(&traj[0]);
-            let mut at = traj[0].s;
-            for p in &traj[1..] {
-                if key(p) < best {
-                    best = key(p);
-                    at = p.s;
-                }
-            }
-            (best, at)
-        }
-        let (mpl_b, s_lp) = raw_min(&bare, |p| p.phi_lp);
-        let (mph_b, s_hp) = raw_min(&bare, |p| p.phi_hp);
-        let (mpl_l, _) = raw_min(&lim, |p| p.phi_lp);
-        let (mph_l, _) = raw_min(&lim, |p| p.phi_hp);
+        // Python's `min(traj, key=...)` returns the FIRST minimum on ties, so the fold is STRICT —
+        // see [`first_raw_min`], which is module-level PRECISELY so that rule can be gated on a
+        // manufactured tie, § 5.17 finding 5 having measured that no suite cell carries one.
+        let (mpl_b, s_lp) = first_raw_min(&bare, |p| p.phi_lp);
+        let (mph_b, s_hp) = first_raw_min(&bare, |p| p.phi_hp);
+        let (mpl_l, _) = first_raw_min(&lim, |p| p.phi_lp);
+        let (mph_l, _) = first_raw_min(&lim, |p| p.phi_hp);
 
         // The trapezoid, in Python's instruction order: `0.5 * h * (prev + cur)` accumulated
         // ascending. NOT hoisted, NOT rearranged — the port's `copy-vs-rederivation` rule, which

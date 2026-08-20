@@ -72,7 +72,9 @@ SHAPES = {
     "hp-only":    (FLAT, HP_SHAPED),   # LP FLAT => NO rung-40 complex mode (the discriminator)
 }
 
-# accel band + a redline in the GAP (above the 1400 endpoint, below the ~1645 bare peak)
+# accel band + a redline in the GAP (above the 1400 endpoint, below the ~1645 bare peak -- which
+# is this file's THERMALLY-PERFECT gas, measured 1641.4 / 1644.9 / 1650.9 / 1651.2 K over the four
+# shapes. Do not "fix" it to rung 47's number: that file is CPG and peaks 45-60 K higher.)
 LO, HI, REDLINE, R = 1000.0, 1400.0, 1480.0, 0.5
 SETTLE = 2.0   # the surge min + Tt4 peak both live inside the ramp; a short settle suffices
 

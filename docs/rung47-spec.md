@@ -77,7 +77,7 @@ direction of the LP-relief change under the lag (eroded, not enhanced).
 
 The gas is CPG for tractability; the finding is **gas-independent** (rung 35/43/45/46's carried
 concession — the forward burner asserts against a non-equilibrium gas, and the reacting reduce is
-the `Tt4`-control path). The bare peak here is ~1670 K; the redline 1480 sits in the gap.
+the `Tt4`-control path). The bare peak here is **1690.5 / 1695.4 / 1702.4 / 1703.0 K** over the four shapes (measured by the Rust port's slice-T oracle; this line said ~1670 for four rungs); the redline 1480 sits in the gap. Rung 46's spec quotes ~1645 for a march that looks identical because **its** gates run the thermally-perfect gas, whose peaks are 1641-1651 K — the two figures were never about the same march, which is why they disagreed.
 
 ### (1) THE COST OF REALISM — the lag overshoots the redline, the HP rebate erodes (`r = 0.5`, redline 1480, flow/press)
 
@@ -220,6 +220,38 @@ would constrain (rungs 42/43/45/46 set this precedent).
   no bleed** — inherited from rungs 38–46. No lead/anticipation, no rate-limit, no sensor-plus-
   actuator cascade is modelled (a lead-compensated governor COULD reach the LP — the one thing a
   pure lag cannot; that is the open door this rung leaves, having shut the pure-lag one).
+
+### What the RUST PORT measured about these gates (slice T, 2026-08-20)
+
+The port ported this suite one-to-one — nine test functions for nine — and every value it produced
+was bit-identical to PyPy on the first run. Then it asked what the gates would have caught. Four
+things it found that this spec did not say:
+
+1. **THIS SUITE HAS NO VALUE CONTENT, AND THAT IS STRUCTURAL RATHER THAN AN OVERSIGHT.** Two
+   defects injected into `_integrate_fuel_lagged` — the lag's target reading the APPLIED fuel
+   instead of the SCHEDULE, and an RK4 weight dropped from the `g` stage — move **13 of 18**
+   canonical readings by 14 to 24 % (the `r = 0.5` overshoot 137.5 -> 156.7 K, the fast-ramp one
+   218.9 -> 271.8 K, the LP relief 1.51e-2 -> 1.25e-2) and **all nine gates pass**.
+
+2. **The reason is countable.** Four gates (1, 2, 4, 5) are bit-identities between two runs of the
+   SAME code; the other five are inequalities whose measured margins are 137x / 4.5x / 27x /
+   8.9e7x / 2.19x. The tightest bar in the file is gate 8's `overshoot > 100.0` against a measured
+   218.9, so a defect must move a number by more than **2.19x** to be seen. The suite gates the
+   REFUTATION (a trailing-edge tool cannot reach an early minimum) and the COST (the hold breaks,
+   the rebate erodes) — claims about signs and orderings. It was never built to gate arithmetic,
+   and the port's slice-T oracle is what now holds the numbers underneath it.
+
+3. **Gate 1's two halves are the same call.** It compares `integrate_fuel(..., Tt4_max=REDLINE)`
+   against the same call with `tau_gov=None` — a keyword whose default IS the value passed. Python
+   at least re-enters the function; a port that builds one limiter record and marches once is
+   comparing a result with itself. The claim it means to make is real, but the spelling does not
+   make it.
+
+4. **The `~1670 K` bare peak in this file is wrong by 21-33 K.** Measured on THIS spec's CPG gas:
+   **1690.5 / 1695.4 / 1702.4 / 1703.0 K** over the four shapes. Rung 46's `~1645` is not the same
+   number wrongly copied — it is the correct figure for a different gas (thermally perfect,
+   1641-1651 K). The tell that two files quoting "one march" disagreed was real; the conclusion
+   that one of them was stale was half wrong.
 
 ---
 

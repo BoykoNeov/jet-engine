@@ -231,6 +231,36 @@ a bare-math replica would constrain (rungs 42/43/45 set this precedent).
   inherited from rungs 38–45 unchanged. No **TIT-redline-with-bleed** and no **variable-stator**
   interaction is modelled (the open list's "fuel + bleed together").
 
+### What the RUST PORT measured about these gates (slice T, 2026-08-20)
+
+The port ported this suite gate for gate, then injected defects into the shipped code to measure
+what the gates would have caught. Four things it found that this spec did not say:
+
+1. **ONE gate of the six carries `relief_lp`'s SIGN, and the reason is the finding itself.**
+   Flipping the sign of `relief_lp` in the reader is caught by gate 6 (the fast-ramp lever) ALONE.
+   Gates 3+4+5 assert `|relief_lp| < 1e-9` at moderate `r`, where the measured value is EXACTLY
+   `0.0` — and a sign flip on an exact zero is invisible. The same measurement that makes this
+   rung's headline sharp is what makes that half of it unable to gate its own sign. Flipping
+   `relief_hp` instead, whose measured values are 2.7e-3 to 3.6e-3 against a `> 1e-6` bar, is
+   caught by two gates.
+
+2. **The `held` decision has no knife edge.** Over 48 cells the governor either pins the redline to
+   machine zero (`|overshoot| <= 1.6e-12`, and every such cell is `tau_gov = None`) or misses it by
+   **54.7 to 430 K**. There is nothing in between, so the `1e-6` bar is uncontested by 5.5e7 — a
+   `held` that flips in a port is a defect and never a rounding accident.
+
+3. **An assert Python CATCHES, Rust cannot — found by running a cell no suite has.** Gate 2's
+   `lp_disabled` object leaves the `Tt4_max=None` route open. Python returns an empty trajectory
+   there (its `integrate_fuel` wraps the instant call in `except AssertionError`); Rust panics,
+   because `_sonic_throat`'s CPG bracket check is a `panic!` that unwinds past the whole fallible
+   chain. Booked as an OPEN port divergence, not repaired inside a gates-only slice.
+
+4. **This file's `~1645` bare peak is RIGHT, and rung 47's `~1670` is not — they were never the
+   same march.** Measured: 1641.4 / 1644.9 / 1650.9 / 1651.2 K over the four shapes on THIS file's
+   thermally-perfect gas, against 1690.5 / 1695.4 / 1702.4 / 1703.0 K on rung 47's CPG one. The
+   port's own first reading called both figures stale, having measured only the CPG gas — a census
+   is a property of the grid, and that includes which gas the grid runs.
+
 ---
 
 ## Anchor
