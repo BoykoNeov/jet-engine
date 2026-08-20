@@ -21,7 +21,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding
 
-## The Rust port — decided 2026-08-12; **PHASES 0–5 DONE**; **PHASE 6 AUTHORISED 2026-08-17**, slices P–U, **P–T SHIPPED; U remains**
+## The Rust port — decided 2026-08-12; **PHASES 0–5 DONE**; **PHASE 6 AUTHORISED 2026-08-17**, slices P–U, **P–T SHIPPED; U step 1 of 5 shipped 2026-08-20**
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; a new PHASE needs authorisation
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost
 - [Rust arithmetic IS PyPy](rust-port-arithmetic-is-pypy.md) — size a solver claim by DISTINCT ROOTS, not row count
@@ -48,6 +48,8 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Slice Q: rung 37](rust-port-slice-q.md) — a dead arm is a property of the GRID, not the code
 - Slice R (40/44) steps [1](rust-port-slice-r-step1.md) [2](rust-port-slice-r-step2.md) [3](rust-port-slice-r-step3.md) [4](rust-port-slice-r-step4.md) — a registered margin read off the wrong assertion; a registered SUM is not a gated SPLIT; an injection harness needs its own baseline; a probe feeding BOTH sides the same wrong input sees nothing
 - Slice S (43/45) [pre-flight](rust-port-slice-s-preflight.md) + steps [1](rust-port-slice-s-step1.md) [2](rust-port-slice-s-step2.md) [3](rust-port-slice-s-step3.md) [4](rust-port-slice-s-step4.md) — an inherited IOU named a gas the code REFUSES; injections reporting "nothing moved" could not have moved anything; a NON-STRICT ordering assertion is satisfied by inertness; a zero measured before being called a hole; a probe's HEADER claimed the suites' grids and its code ran another
+- [Slice U pre-flight](rust-port-slice-u-preflight.md) — sweep the arming COMBINATIONS: three shipped asserts no input can reach
+- [Slice U step 1](rust-port-slice-u-step1.md) — bit-exact + green says nothing about GATE POWER; a knife-edge value protected REDUNDANTLY
 - Slice T (46/47/48) steps [1](rust-port-slice-t-step1.md) [2](rust-port-slice-t-step2.md) [3](rust-port-slice-t-step3.md) [4](rust-port-slice-t-step4.md) — an EXACT ZERO blinds its own gate to the SIGN; 9/9 green and blind to a 24% error, so tabulate BAR MARGINS; a defect can survive because every READER is invariant under it; an injection matching TWICE applies nothing and still reports green
 
 ## Shipped rungs

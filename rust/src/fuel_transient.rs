@@ -511,11 +511,29 @@ impl SurgeLimiter {
         Self::new(spool, (1.0 + sm) * cmap.phi_surge)
     }
 
-    /// Python's `key()` — which `phi` of an instant this leg reads.
+    /// Python's `key()` — which `phi` of an INSTANT this leg reads. The SOLVE side: the
+    /// [`try_surge_fuel`](FuelTransientCore::try_surge_fuel) bracket evaluates this at each trial
+    /// fuel.
     pub fn read(&self, i: &FuelInstant) -> f64 {
         match self.spool {
             Spool::Lp => i.base.close.phi_lp,
             Spool::Hp => i.base.close.phi_hp,
+        }
+    }
+
+    /// The same `key()`, off a MARCHED POINT — the READ side, which
+    /// [`surge_relief`](FuelTransientCore::surge_relief)'s `hold_err` needs.
+    ///
+    /// **PYTHON HAS ONE FUNCTION HERE AND RUST NEEDS TWO, and that is a typing fact and not a
+    /// duplication.** `surge.key()` returns the STRING `"phi_lp"` / `"phi_hp"`, which indexes an
+    /// instant dict and a marched-point dict indifferently. Rust's [`FuelInstant`] and
+    /// [`FuelPoint`] are different types carrying the same two floats, so the one Python function
+    /// splits into two accessors that must agree. They are named apart (`read` / `read_point`)
+    /// rather than overloaded, so a call site says which side of the leg it is on.
+    pub fn read_point(&self, p: &FuelPoint) -> f64 {
+        match self.spool {
+            Spool::Lp => p.phi_lp,
+            Spool::Hp => p.phi_hp,
         }
     }
 }
@@ -834,6 +852,79 @@ pub struct ScheduleRelief {
     pub tt4_peak_lim: f64,
     /// The settled endpoint — the OTHER exclusion key. The crossing is read only where this is
     /// unmoved from `nu_hp_end_bare`.
+    pub nu_hp_end: f64,
+    pub nu_hp_end_bare: f64,
+}
+
+/// RUNG 49's `surge_relief` return — Python's **25**-key dict.
+///
+/// **A SEPARATE STRUCT FROM [`ScheduleRelief`], AND THE OVERLAP IS WHY.** Fifteen keys are common
+/// to rungs 49/50/52's three readers, so the obvious design is one record with `Option` fields.
+/// § 5.18 finding 5 measured why that is wrong: the three dicts are **25 / 27 / 34** keys, and
+/// they disagree on more than presence. Rung 49 reports `s_min_other` where rungs 50/52 report the
+/// PAIR `s_min_lp` / `s_min_hp`; it carries no `ds` and no `margin`; and its `relief_watched` /
+/// `relief_other` are plain floats because its `surge` is a required positional, where the other
+/// two make them `None`-able. A shared struct would emit phantom keys on one side and renamed ones
+/// on the other, and a key-COUNT census would pass on both while comparing nothing — the
+/// *documented gate that doesn't exist* family. The **25** is asserted from Python's own `len()`
+/// in the step-5 oracle, never derived here.
+///
+/// The three keys that are rung 49's ALONE beyond that: `hold_err`, `both_edges_inside_ramp` and
+/// `Tt4_peak_lim`'s partner `s_min_other`.
+#[derive(Clone, Copy, Debug)]
+pub struct SurgeRelief {
+    pub phi_lim: f64,
+    /// WHICH spool the leg watched. Python echoes the string `"lp"` / `"hp"`.
+    pub spool: Spool,
+    pub r: f64,
+    pub rho: f64,
+    /// WHEN the floor first engages — **`NaN` when it never does**, Python's
+    /// `eng[0] if eng else float("nan")`.
+    ///
+    /// § 5.18 finding 4: that arm is UNGATED by this slice's cells — the lowest `n_engaged` any
+    /// rung-49 floor cell drives is **10** — so the oracle adds a no-engagement cell rather than
+    /// inheriting one, exactly as § 5.17 finding 4 did for [`ScheduleRelief::s_eng`].
+    pub s_eng: f64,
+    /// WHEN it releases — the edge that is the point of the rung, and `NaN` on the same arm.
+    pub s_rel: f64,
+    pub n_engaged: usize,
+    /// `eng` non-empty ∧ `0 < eng[0]` ∧ `eng[-1] < r` — the object
+    /// `docs/both-edges-limiter-negative.md` proved no `pt3`-filter limiter can produce.
+    ///
+    /// **§ 5.18 FINDING 3: THIS BOOLEAN IS DECIDED AT ONE ULP ON ONE MEASURED CELL.** Over rung
+    /// 49's eight floor cells the distance `r − s_rel` is `0.06` / `0.16` inside and `−0.10` /
+    /// `−0.02` / `−0.42` / `−0.12` / `−0.02` outside — **one grid cell of margin at the tightest,
+    /// not orders** — and the eighth (the HP floor `0.8650`) sits at **`−1.11e-16`**. It survives
+    /// only because both languages accumulate the march coordinate the same way; see the note at
+    /// [`integrate_fuel`](FuelTransientCore::integrate_fuel)'s loop.
+    pub both_edges_inside_ramp: bool,
+    /// The largest deviation of the WATCHED `phi` from its floor over the engaged window. `0` to
+    /// solver tolerance is the SLIDING MODE; a non-zero value would be chatter. Reads the floored
+    /// `phi` off a marched POINT — [`SurgeLimiter::read_point`], not [`SurgeLimiter::read`].
+    pub hold_err: f64,
+    pub s_lp_bare: f64,
+    pub s_hp_bare: f64,
+    pub relief_lp: f64,
+    pub relief_hp: f64,
+    /// The WATCHED spool's relief. Definitional under a working set-point solve (`phi_lim − min
+    /// phi_bare`), which is why the rung's claims all live on the other one.
+    pub relief_watched: f64,
+    /// The UNWATCHED spool's relief — **the rung**. NEGATIVE at `r = 0.5`: one clip credits the
+    /// spool it watches and DEBITS the other.
+    pub relief_other: f64,
+    /// WHERE the unwatched spool's raw minimum sits on the LIMITED march — just AFTER `s_rel`,
+    /// which is the mechanism.
+    pub s_min_other: f64,
+    pub min_phi_lp_bare: f64,
+    pub min_phi_lp_lim: f64,
+    pub min_phi_hp_bare: f64,
+    pub min_phi_hp_lim: f64,
+    /// `∫ (schedule − applied) ds`, trapezoid — the anti-deflation pair's first half.
+    pub fuel_removed: f64,
+    pub tt4_peak_bare: f64,
+    pub tt4_peak_lim: f64,
+    /// The settled endpoint — the other half. The split is read only where this is unmoved from
+    /// `nu_hp_end_bare`.
     pub nu_hp_end: f64,
     pub nu_hp_end_bare: f64,
 }
@@ -1790,6 +1881,17 @@ impl FuelTransientCore {
 
         let mut pts: Vec<FuelPoint> = Vec::new();
         let (mut a, mut b) = nu0;
+        // THE MARCH COORDINATE IS ACCUMULATED, AND A "CLEANER" `k as f64 * ds` WOULD FLIP A
+        // PUBLISHED BOOLEAN. Python writes `s += ds` from `0.0`; summing `0.02` twenty-five times
+        // gives `0.50000000000000011` where `25 * 0.02` gives exactly `0.5`. § 5.18 finding 3
+        // measured a decision that lands inside that difference: rung 49's
+        // [`SurgeRelief::both_edges_inside_ramp`] compares the LAST engaged `s` against the ramp
+        // end `r`, and on one of its eight floor cells (the HP floor `0.8650`) the distance
+        // `r − s_rel` is **`−1.11e-16`** — ONE ULP, and the boolean is `false` only because both
+        // languages accumulate. The other cells clear by ONE GRID CELL, not by orders. So this
+        // line is a COPY and not a spelling choice; the same holds for the two dispatch twins
+        // below, which share the `s` sequence bit for bit (§ 5.18 finding 5b: 201 points at
+        // `s_end = 4.0`, 301 at `6.0`, on all three marchers).
         let mut s = 0.0f64;
         let n_steps = (s_end / ds).round_ties_even() as i64;
         for _ in 0..=n_steps {
@@ -1895,6 +1997,8 @@ impl FuelTransientCore {
 
         let mut pts: Vec<FuelPoint> = Vec::new();
         let (mut a, mut b) = nu0;
+        // `s` ACCUMULATED, never `k as f64 * ds` — see the note in [`Self::integrate_fuel`]'s
+        // loop: § 5.18 finding 3 measured a shipped boolean decided at one ulp of that difference.
         let (mut g, mut s) = (0.0f64, 0.0f64);
         let n_steps = (s_end / ds).round_ties_even() as i64;
         for _ in 0..=n_steps {
@@ -1995,6 +2099,8 @@ impl FuelTransientCore {
 
         let mut pts: Vec<FuelPoint> = Vec::new();
         let (mut a, mut b) = nu0;
+        // `s` ACCUMULATED, never `k as f64 * ds` — see the note in [`Self::integrate_fuel`]'s
+        // loop: § 5.18 finding 3 measured a shipped boolean decided at one ulp of that difference.
         let (mut g, mut s) = (0.0f64, 0.0f64);
         let n_steps = (s_end / ds).round_ties_even() as i64;
         for _ in 0..=n_steps {
@@ -2525,6 +2631,125 @@ impl FuelTransientCore {
             .map(|&m| {
                 let acc = self.accel_schedule(flight, tt4_lo, tt4_hi, m, n);
                 self.schedule_relief(flight, tt4_lo, tt4_hi, &acc, r, s_settle, ds, None, None)
+            })
+            .collect()
+    }
+
+    // --- RUNG 49: the phi floor — read BOTH edges, and both spools ----------------------------
+
+    /// RUNG 49 (the finding method). March the SAME accel FUEL ramp twice — BARE and with the
+    /// `phi` FLOOR armed — and difference rung 45's reference-free surge object (raw min `phi`),
+    /// exactly as rungs 46/48's `topping_relief` / [`schedule_relief`](Self::schedule_relief) do
+    /// for their legs.
+    ///
+    /// Reports BOTH edges of the engaged window (`s_eng`, `s_rel`) — the point of the rung. A
+    /// `pt3`-filter limiter's `s_rel` is structurally POST-ramp (`docs/both-edges-limiter-
+    /// negative.md`); a `phi` floor's can close INSIDE it, and when it does the closing edge
+    /// RE-OPENS the unwatched spool's descent.
+    ///
+    /// **THE FINDING** is the SPLIT at fixed clip: `relief_watched > 0` (the truncated descent,
+    /// rung 48's term) while `relief_other < 0` (the re-opened one, new).
+    /// [`s_min_other`](SurgeRelief::s_min_other) locates the unwatched minimum — it sits just
+    /// AFTER `s_rel`, which is the mechanism. `fuel_removed` / `nu_hp_end` are the anti-deflation
+    /// pair (rung 48's discipline).
+    ///
+    /// **IT KEEPS BOTH LIMITED ARGMIN LOCATIONS WHERE [`schedule_relief`](Self::schedule_relief)
+    /// DISCARDS THEM.** Rung 48 folds `first_raw_min(&lim, …)` and drops the `s`; rung 49's
+    /// `s_min_other` IS that `s`, picked by which spool the leg watches. Copying the neighbour's
+    /// body and binding `_` there is the one mechanical way to get this method subtly wrong.
+    #[allow(clippy::too_many_arguments)]
+    pub fn surge_relief(
+        &self, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, surge: &SurgeLimiter, r: f64,
+        s_settle: f64, ds: f64, tt4_max: Option<f64>, tau_gov: Option<f64>,
+        accel: Option<&AccelSchedule>,
+    ) -> SurgeRelief {
+        let bare_lim = &FuelLimiters::default();
+        let lim_lim =
+            &FuelLimiters { tt4_max, tau_gov, accel, surge: Some(*surge), ..Default::default() };
+        let (bare, _) = self.fuel_ramp_march(flight, tt4_lo, tt4_hi, r, s_settle, ds, bare_lim);
+        let (lim, _) = self.fuel_ramp_march(flight, tt4_lo, tt4_hi, r, s_settle, ds, lim_lim);
+        assert!(!bare.is_empty() && !lim.is_empty(),
+                "rung-49 surge_relief produced no trajectory");
+
+        // STRICT fold, first-on-tie — [`first_raw_min`], shared with rung 48 and gated on a
+        // manufactured tie in `topping_oracle.rs` because no marched cell carries one.
+        let (mpl_b, s_lp) = first_raw_min(&bare, |p| p.phi_lp);
+        let (mph_b, s_hp) = first_raw_min(&bare, |p| p.phi_hp);
+        let (mpl_l, s_lp_l) = first_raw_min(&lim, |p| p.phi_lp);
+        let (mph_l, s_hp_l) = first_raw_min(&lim, |p| p.phi_hp);
+
+        // Python's trapezoid, in Python's instruction order — NOT hoisted, NOT rearranged.
+        let mut removed = 0.0f64;
+        for i in 1..lim.len() {
+            let h = lim[i].s - lim[i - 1].s;
+            removed += 0.5 * h * ((lim[i - 1].mf_sched - lim[i - 1].mf)
+                                  + (lim[i].mf_sched - lim[i].mf));
+        }
+        let eng: Vec<f64> = lim.iter()
+            .filter(|p| p.mf < p.mf_sched * (1.0 - 1e-9))
+            .map(|p| p.s)
+            .collect();
+        let watched_lp = surge.spool == Spool::Lp;
+        // The largest deviation of the WATCHED `phi` from its floor over the engaged window. The
+        // filter is re-spelled rather than reusing `eng` because Python re-spells it: `eng` holds
+        // the `s` values, this comprehension needs the POINTS.
+        let hold = lim.iter()
+            .filter(|p| p.mf < p.mf_sched * (1.0 - 1e-9))
+            .map(|p| (surge.read_point(p) - surge.phi_lim).abs())
+            .fold(0.0f64, f64::max);
+        let peak = |t: &[FuelPoint]| t.iter().fold(f64::NEG_INFINITY, |a, p| a.max(p.tt4));
+        SurgeRelief {
+            phi_lim: surge.phi_lim,
+            spool: surge.spool,
+            r,
+            rho: self.rho(),
+            s_eng: eng.first().copied().unwrap_or(f64::NAN),
+            s_rel: eng.last().copied().unwrap_or(f64::NAN),
+            n_engaged: eng.len(),
+            both_edges_inside_ramp: !eng.is_empty()
+                && 0.0 < eng[0]
+                && eng[eng.len() - 1] < r,
+            hold_err: hold,
+            s_lp_bare: s_lp,
+            s_hp_bare: s_hp,
+            relief_lp: mpl_l - mpl_b,
+            relief_hp: mph_l - mph_b,
+            relief_watched: if watched_lp { mpl_l - mpl_b } else { mph_l - mph_b },
+            relief_other: if watched_lp { mph_l - mph_b } else { mpl_l - mpl_b },
+            s_min_other: if watched_lp { s_hp_l } else { s_lp_l },
+            min_phi_lp_bare: mpl_b,
+            min_phi_lp_lim: mpl_l,
+            min_phi_hp_bare: mph_b,
+            min_phi_hp_lim: mph_l,
+            fuel_removed: removed,
+            tt4_peak_bare: peak(&bare),
+            tt4_peak_lim: peak(&lim),
+            nu_hp_end: lim[lim.len() - 1].nu_hp,
+            nu_hp_end_bare: bare[bare.len() - 1].nu_hp,
+        }
+    }
+
+    /// RUNG 49. Sweep the `phi` floor and report, per floor, both window edges and both reliefs.
+    ///
+    /// **`phi_lim` is a WINDOW instrument where rung 48's `m` was an ENGAGEMENT-TIME one**: a
+    /// tighter floor engages EARLIER **and** releases LATER, so it opens the window at both ends
+    /// at once. `relief_watched` rises monotonically (it is the definitional
+    /// `phi_lim − min phi_bare`) while `relief_other` goes NEGATIVE and peaks in magnitude where
+    /// `s_rel` lands at the RAMP END — the two edges answering to different clocks.
+    ///
+    /// **THE HONEST BOUNDARY, reported not hidden**: a floor at or above the INITIAL running-line
+    /// `phi` binds from `s = 0` and never releases (`s_eng == 0`), the accel does not complete
+    /// (`nu_hp_end` falls away from `nu_hp_end_bare`) and the leg HAS degenerated into rung 44's
+    /// ramp-rate lever. Read the split only where `nu_hp_end` is unmoved.
+    #[allow(clippy::too_many_arguments)]
+    pub fn floor_sweep(
+        &self, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, floors: &[f64], spool: Spool,
+        r: f64, s_settle: f64, ds: f64,
+    ) -> Vec<SurgeRelief> {
+        floors.iter()
+            .map(|&p| {
+                let leg = SurgeLimiter::new(spool, p);
+                self.surge_relief(flight, tt4_lo, tt4_hi, &leg, r, s_settle, ds, None, None, None)
             })
             .collect()
     }
