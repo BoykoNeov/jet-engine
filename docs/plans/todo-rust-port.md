@@ -9183,6 +9183,26 @@ docstring names.
   panic, and Python's shape exactly: set, never restore.
 - **NO `&Scope` anywhere in slice V**, and the reason is measured, not assumed — § (v).
 
+**AND THE CARRIER'S PRICE, MEASURED BEFORE IT WAS BUILT** — because a carrier stated without a
+price is § 5.19 (xi)'s defect 2 recurring on the section that records it. `map_lp` / `map_hp`
+are `pub` fields on **`TwoSpoolMapCore` (`two_spool.rs:1209`) — rung 39, PHASE 5** — and turning
+them into `Cell` reaches:
+
+| | sites |
+|---|---|
+| `src/two_spool_transient.rs` | 11 |
+| `src/two_spool.rs` | 8 |
+| `src/stator.rs` · `src/fuel_transient.rs` | 7 · 7 |
+| `src/bleed.rs` · `src/stage.rs` | 6 · 4 |
+| **`src/` total** | **43** |
+| `tests/` | 16 |
+
+Six source files over **three phases**, all mechanical (`ComponentMap` is `Copy`, so every read
+is `.get()`), and the field keeps ONE spelling by becoming an accessor `map_lp(&self)` rather
+than a bare `Cell` at 43 call sites. **That is the real cost of slice V, and it is not the cost
+§ 5.19 named.** It is still the right carrier — it is Python's shape exactly — but the slice is
+"the risk" for this reason, a third distinct one.
+
 #### (v) **§ 5.19 (x)'s "SLICE V IS THE RISK" IS REFUTED AT ITS STATED REASON**
 
 § 5.19 (x) says slice V *"is the one slice that CHANGES A GATED SIGNATURE"* — giving
@@ -9248,10 +9268,13 @@ some descendant redefines it*), not on the narrower *rung 57's own bodies reach 
 **3 new cells + 2 phase-6 openings + 1 swap**, which is § 5.19 (x)'s count with its reason
 corrected and `at_stator` explicitly excluded rather than silently absent.
 
-Adding two FIELDS to `TwoSpoolTransientHooks` touches **7 struct literals over 3 files**
-(`two_spool_transient.rs`, `slice_r_dispatch.rs`, `slice_s_dispatch.rs`) and leaves every existing
-assertion intact — **additive**. Adding a PARAMETER would have changed 8 function signatures.
-Those are different costs, and § 5.19 priced the wrong one.
+~~Adding two FIELDS to `TwoSpoolTransientHooks` touches **7 struct literals over 3 files**
+(`two_spool_transient.rs`, `slice_r_dispatch.rs`, `slice_s_dispatch.rs`)~~ — **REFUTED AT STEP 1a,
+and by this section's own error**: those two cells are rung **43**'s methods and belong in rung
+43's table, not rung 40's. On the right table the literal count is **ZERO** and no dispatch gate is
+edited. The paragraph inherited the wrong table from the `⚠` notes without asking what type the
+cells' receiver is — see step 1a below. What survives: adding a FIELD is additive where adding a
+PARAMETER changes 8 signatures, and § 5.19 priced the wrong one.
 
 #### (vii) SIZING
 
@@ -9291,6 +9314,50 @@ at the last"* — this is that slice, and the measurement is owed at step 3.
 is wrong and the two shipped cells are entangled after all; P2 failing means the stale map is not
 the whole of the divergence and something else in the object is mutated too.
 
+
+##### STEP 1a — SHIPPED. **THE TWO `⚠` NOTES BOOKED THEIR CELLS INTO THE WRONG TABLE**
+
+The phase-6 cell openings, alone, before the carrier — so that a 43-site refactor lands on a tree
+whose hook wiring is already gated green rather than on one where both are in flight.
+
+**THE FINDING, AND IT WAS WRITTEN INTO THE SOURCE BY SLICES S AND T.** Both `⚠` notes book their
+cell into **[`TwoSpoolTransientHooks`]** — `fuel_transient.rs:1536` (*"one of the three
+[`TwoSpoolTransientHooks`] has no cell for"*) and `:1858` (*"the third of § 5.12's six crossing
+names with no [`TwoSpoolTransientHooks`] cell"*). **That is the wrong table**, and § 5.19 (x)
+repeated it. `TwoSpoolTransientHooks` is carried on `TwoSpoolTransientCore`; a cell typed
+`fn(&FuelTransientCore, …)` there would make **rung 40's table name rung 43's type** and hand
+every rung-40 object two cells it can never call. The two names are rung **43**'s methods, so they
+take rung 43's own table:
+
+- **NEW `FuelTransientHooks`** — `try_close_fuel`, `try_surge_fuel` — and **`R43`**, carried on
+  `FuelTransientCore` beside the inherited `TwoSpoolTransientHooks` on `inner`. One table per
+  composition level, as `stator.rs` carries both `StatorHooks` and `TwoSpoolHooks` rather than
+  merging them, and as § 5.19 (x)'s own `..R63` spelling assumes.
+- **`with_both_hooks`** — rung 57 swaps a cell in EACH table (`try_close` in rung 40's,
+  `try_close_fuel`/`try_surge_fuel` in rung 43's), so the constructor takes both.
+
+**AND IT MAKES THE OPENING CHEAPER THAN § 5.20 (vi) PRICED IT.** That paragraph said two new
+FIELDS on `TwoSpoolTransientHooks` would touch **7 struct literals over 3 files**, including
+`slice_r_dispatch.rs` and `slice_s_dispatch.rs`. On the right table the count is **zero** — the
+phase-6 dispatch gates are not edited at all, and `git diff` over `rust/` touches exactly one
+file. **P1's first half is therefore already measured, not predicted.**
+
+**ZERO EXECUTABLE LINES CHANGED, VERIFIED BY MACHINE.** Both bodies moved out of the `impl` to
+module-level `r43_try_close_fuel` / `r43_try_surge_fuel` — `r40_try_close`'s shape — and the
+methods became one-line dispatches. The move was checked by re-deriving it: take each body from
+`git show HEAD`, de-indent one level, rewrite `self.`→`ft.` and `Self::`→`FuelTransientCore::`,
+and compare **string-for-string** against the shipped free function. **141 → 141 and 42 → 42
+lines, both VERBATIM.** Slice N step 4's rule (*emit and compare, do not restate*) applied to a
+refactor instead of to a census — an eyeball on a 141-line move is not evidence.
+
+**THE PIPE THAT ATE THE GATE.** The first `cargo test --release` was run as `cargo test … | tail
+-45`, so the harness reported **`tail`'s** exit status — `0` unconditionally — and kept only the
+last 45 lines of ~90 suites. It happened to have passed. **A gate read through a pipe is not a
+gate**, and this is the same shape as the port's own recurring finding one level down: an
+instrument that cannot express the failure it is watching for. Re-run with the log captured whole
+and cargo's own status read directly.
+
+**THE GATE, READ PROPERLY:** `cargo test --release`, whole log, cargo's own status — **`CARGO_EXIT=0`, 94 suites, 845 passed, 0 failed, 0 ignored.** The `0 ignored` is slice M's rule still holding at the phase boundary. `slice_r_dispatch.rs` and `slice_s_dispatch.rs` are green **unedited**, which is **P1's first half MEASURED**.
 
 ## 6. Named risks
 

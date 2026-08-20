@@ -1392,6 +1392,45 @@ impl TwoSpoolFuelTransient {
     }
 }
 
+// ---------------------------------------------------------------------------------------------
+// The virtual table — RUNG 43's own
+// ---------------------------------------------------------------------------------------------
+
+/// Rung 43's two virtual names — **opened by PHASE 7 slice V**, which is the first slice with an
+/// overrider to swap in.
+///
+/// § 5.12's census measured six names called on `self` inside phase 6 and overridden in phase 7.
+/// [`TwoSpoolTransientHooks`] carries three; `integrate_fuel` waits for slice **Y** (its first
+/// overrider is rung 65); these two are rung 57's, and until slice V they carried only a `⚠` note
+/// at their definitions.
+///
+/// **THIS TABLE IS RUNG 43's, NOT RUNG 40's, AND THE ⚠ NOTES SAID OTHERWISE.** Both notes booked
+/// these cells into [`TwoSpoolTransientHooks`] — but that table is carried on
+/// [`TwoSpoolTransientCore`], and a cell typed `fn(&FuelTransientCore, …)` there would make rung
+/// 40's table name rung 43's type and hand every rung-40 object a cell it can never call. One
+/// table per composition level, as `stator.rs` carries both [`StatorHooks`] and [`TwoSpoolHooks`]
+/// rather than merging them.
+///
+/// [`StatorHooks`]: crate::stator::StatorHooks
+/// [`TwoSpoolHooks`]: crate::two_spool::TwoSpoolHooks
+pub struct FuelTransientHooks {
+    /// The FORWARD closure with FUEL imposed — `Tt4` FLOATS. Overridden by rungs 57, 62, 64, 65.
+    pub try_close_fuel:
+        fn(&FuelTransientCore, f64, f64, f64, f64, f64) -> Result<FuelCloseState, Abort>,
+    /// Rung 49's `phi`-floor leg. **One overrider only** — rung 57 — which is exactly the arity a
+    /// census skims past, and the reason its `⚠` note was written at all.
+    pub try_surge_fuel: fn(&FuelTransientCore, &FlightCondition, f64, f64, f64, &SurgeLimiter)
+        -> Result<f64, Abort>,
+}
+
+/// RUNG 43's table. Ships LIVE and, until slice V swaps a cell, unexercised by any value key —
+/// `tests/slice_v_dispatch.rs` manufactures the failure instead, on `slice_r_dispatch.rs`'s
+/// precedent.
+pub const R43: FuelTransientHooks = FuelTransientHooks {
+    try_close_fuel: r43_try_close_fuel,
+    try_surge_fuel: r43_try_surge_fuel,
+};
+
 /// Rung 43's object once `lp_disabled` is ruled out.
 ///
 /// **COMPOSES over rung 40 through a `pub inner`** — as `combustor.rs` composes over
@@ -1402,6 +1441,8 @@ pub struct FuelTransientCore {
     /// Rung 40's transient. `pub` because the reduce gates need the SAME captured hardware on
     /// both sides, and because the INHERITED [`TwoSpoolTransientHooks`] lives on it.
     pub inner: TwoSpoolTransientCore,
+    /// The leaf's rung-43-level virtual table. See [`FuelTransientHooks`].
+    pub hooks: &'static FuelTransientHooks,
 }
 
 impl FuelTransientCore {
@@ -1431,6 +1472,7 @@ impl FuelTransientCore {
         FuelTransientCore {
             inner: TwoSpoolTransientCore::new(
                 design_engine, flight_design, mdot_design, map_lp, map_hp, rho),
+            hooks: &R43,
         }
     }
 
@@ -1442,6 +1484,21 @@ impl FuelTransientCore {
         FuelTransientCore {
             inner: TwoSpoolTransientCore::with_hooks(
                 design_engine, flight_design, mdot_design, map_lp, map_hp, rho, hooks),
+            hooks: &R43,
+        }
+    }
+
+    /// Both tables at once — rung 40's INHERITED one and rung 43's OWN. Slice V's rung-57 object
+    /// needs both swapped together, which is `stator.rs`'s two-table constructor one ladder on.
+    pub fn with_both_hooks(
+        design_engine: TwoSpoolEngine, flight_design: FlightCondition, mdot_design: f64,
+        map_lp: ComponentMap, map_hp: ComponentMap, rho: f64,
+        two_hooks: &'static TwoSpoolTransientHooks, hooks: &'static FuelTransientHooks,
+    ) -> Self {
+        FuelTransientCore {
+            inner: TwoSpoolTransientCore::with_hooks(
+                design_engine, flight_design, mdot_design, map_lp, map_hp, rho, two_hooks),
+            hooks,
         }
     }
 
@@ -1538,143 +1595,7 @@ impl FuelTransientCore {
     pub fn try_close_fuel(
         &self, nu_lp: f64, nu_hp: f64, mdot_fuel: f64, tt2: f64, pt2: f64,
     ) -> Result<FuelCloseState, Abort> {
-        bump(&CLOSE_CALLS);
-        let t = &self.inner;
-        let c = &t.inner;
-        let gas = c.gas();
-        let n_lp = nu_lp * powp(c.tt2_d / tt2, 0.5);
-        let (h2, pr2) = (gas.h_c(tt2), gas.pr_c(tt2));
-
-        let ev = |m_lp: f64| -> Result<FuelCloseState, Abort> {
-            let phi_lp = m_lp / n_lp;
-            let tau_lpc = 1.0 + (c.tau_lpc_d - 1.0) * c.map_lp.psi(phi_lp) * n_lp * n_lp;
-            let tt25 = tt2 * tau_lpc;
-            let eta_lpc = c.map_lp.eta_c_at(c.base.eta_lpc, phi_lp, n_lp);
-            let h25 = gas.h_c(tt25);
-            // The LPC ideal-temperature inversion. FALLIBLE for the same reason as the HPC one
-            // below, and measured DEAD on every grid so far — the two are one `try` scope in
-            // Python, so making only the measured one fallible would panic where Python swallows.
-            let pi_lpc = gas.pr_c(gas.try_t_from_h_c(h2 + eta_lpc * (h25 - h2))?) / pr2;
-            let pt25 = pi_lpc * pt2;
-            // THE FACE FLOW — and unlike rung 40, it is RETURNED: `f` is built from it.
-            let mdot_air_face = m_lp * c.mcorr_lp_d * pt2 / powp(tt2, 0.5);
-
-            // Same physical air flow, referred to the HP face.
-            let m_hp = (mdot_air_face * powp(tt25, 0.5) / pt25) / c.mcorr_hp_d;
-            let n_hp = nu_hp * powp(c.tt25_d / tt25, 0.5);
-            let phi_hp = m_hp / n_hp;
-            let tau_hpc = 1.0 + (c.tau_hpc_d - 1.0) * c.map_hp.psi(phi_hp) * n_hp * n_hp;
-            let tt3 = tt25 * tau_hpc;
-            let eta_hpc = c.map_hp.eta_c_at(c.base.eta_hpc, phi_hp, n_hp);
-            let h3 = gas.h_c(tt3);
-            // **THE MEASURED FALLIBLE SITE.** On the equilibrium gas this lands outside the
-            // 150-4000 K table 8 times per closure, at m_lp in 1.739...2.019, where psi_H < 0
-            // makes the ideal enthalpy rise negative. Slice L left `t_from_h` panicking because
-            // the call sites that existed then never reached it; this one does.
-            let pi_hpc =
-                gas.pr_c(gas.try_t_from_h_c(h25 + eta_hpc * (h3 - h25))?) / gas.pr_c(tt25);
-            let pt4 = c.base.pi_b * pi_hpc * pt25;
-
-            // THE INVERSION vs rung 40: fuel imposed => f and Tt4 are OUTPUTS.
-            let f = mdot_fuel / mdot_air_face;
-            let tt4 = self.try_tt4_from_f(tt3, f)?;
-            let wgas = c.base.try_working_gas(f, tt4, pt4)?;
-            let wg = wgas.as_ref().unwrap_or(gas);
-            let mdot4 = c.base.a4 * pt4 * choked_mfp(wg, tt4, f) / powp(tt4, 0.5);
-            let mdot_imp = mdot4 / (1.0 + f);
-            let m_imp = (mdot_imp * powp(tt2, 0.5) / pt2) / c.mcorr_lp_d;
-            Ok(FuelCloseState {
-                base: CloseState {
-                    m_lp, m_imp, m_hp, phi_lp, phi_hp, tt2, n_lp, n_hp, tau_lpc, tau_hpc, tt25,
-                    tt3, pi_lpc, pi_hpc, pt4, f, wgas, eta_lpc, eta_hpc, mdot_air: mdot_imp,
-                    mdot4,
-                },
-                tt4,
-                mdot_air_face,
-            })
-        };
-
-        // THE OFF-MAP GUARD. Rung 40's closure carries the same one and states the case in full:
-        // **Rust returns NaN where Python returns a COMPLEX**, so the port's test is Python's
-        // `r == r` inverted. NOT `is_finite()` — Python's guard is `isinstance(r, float) and
-        // r == r`, which an INFINITY passes.
-        let g = |m: f64| -> Result<f64, Abort> {
-            bump(&CLOSE_G_EVALS);
-            let r = m - ev(m)?.base.m_imp;
-            if r.is_nan() {
-                return Err(Abort(format!(
-                    "off-map compressor trial at m_lp={m:.4}: the loading law has gone \
-                     non-physical (Tt3 < 0 => a complex pressure ratio).")));
-            }
-            Ok(r)
-        };
-
-        // The two walls. `lo0` is the flow at which f hits its physical CEILING, `hi0` the flow at
-        // which it hits the FLOOR — and `hi0` is the third arm of a `min` rung 40 spells with two.
-        let lo0 = mdot_fuel * powp(tt2, 0.5) / (Self::F_CAP * c.mcorr_lp_d * pt2);
-        let hi0 = mdot_fuel * powp(tt2, 0.5) / (Self::F_FLOOR * c.mcorr_lp_d * pt2);
-        // Python's `min(a, b, c)` spelled as the fold it IS, so the arm classification and the
-        // value come out of one statement. `f64::min` would differ on NaN and would not say which
-        // arm bound. Measured 24 033 / 200 193 / 3 663 — all three live.
-        let wall_map = c.map_lp.phi_max(0.1) * n_lp;
-        let mut cap = 2.5f64;
-        let mut arm = &HI_WALL_LITERAL;
-        if wall_map < cap {
-            cap = wall_map;
-            arm = &HI_WALL_MAP;
-        }
-        if hi0 < cap {
-            cap = hi0;
-            arm = &HI_WALL_HI0;
-        }
-        bump(arm);
-
-        // Python's `max(lo0, 0.02)` — the literal arm is DEAD (0 of 227 889) and is spelled.
-        let mut m = lo0;
-        if 0.02 > m {
-            m = 0.02;
-            bump(&LO_FLOOR_HITS);
-        }
-
-        // THE SCAN. Not rung 40's break-at-first-success: this keeps reassigning `lo` to the LAST
-        // negative and stops at the FIRST positive that follows one. `ghi` is produced INSIDE the
-        // try, so a failure at the high end advances rather than propagating.
-        let (mut lo, mut glo, mut hi, mut ghi) = (None, 0.0f64, None, 0.0f64);
-        while m < cap {
-            let gm = match g(m) {
-                Ok(v) => v,
-                Err(e) => {
-                    bump(&MARCH_IN_ADVANCES);
-                    bump(match classify(&e) {
-                        FuelAbort::Refusal => &MARCH_IN_REFUSAL,
-                        FuelAbort::InverseBracket => &MARCH_IN_INVERSE,
-                        FuelAbort::OffMap => &MARCH_IN_OFFMAP,
-                        _ => &MARCH_IN_OTHER,
-                    });
-                    m += Self::MARCH_IN_STEP;
-                    continue;
-                }
-            };
-            if gm < 0.0 {
-                lo = Some(m);
-                glo = gm;
-            } else if lo.is_some() {
-                hi = Some(m);
-                ghi = gm;
-                break;
-            }
-            m += Self::MARCH_IN_STEP;
-        }
-        // **NO SIGN FILTER.** Rung 40's guard re-tests `glo < 0 && 0 < ghi`; rung 43's tests only
-        // that both endpoints were found, because the scan's own arms already decided the signs.
-        let (Some(lo), Some(hi)) = (lo, hi) else {
-            bump(&CLOSE_BRACKET_FAILS);
-            return Err(Abort(format!(
-                "rung-43 fuel closure does not bracket at nu=({nu_lp:.4},{nu_hp:.4}), \
-                 mdot_fuel={mdot_fuel:.5} - off the modeled speed-line region.")));
-        };
-        let root = try_illinois(g, lo, hi, glo, ghi, Self::CLOSE_TOL, ILLINOIS_MAXIT)?;
-        ev(root)
+        (self.hooks.try_close_fuel)(self, nu_lp, nu_hp, mdot_fuel, tt2, pt2)
     }
 
     pub fn close_fuel(
@@ -1863,43 +1784,7 @@ impl FuelTransientCore {
         &self, flight: &FlightCondition, nu_lp: f64, nu_hp: f64, mf_sched: f64,
         surge: &SurgeLimiter,
     ) -> Result<f64, Abort> {
-        bump(&SURGE_CALLS);
-        let big_g = |w: f64| -> Result<f64, Abort> {
-            // > 0 when phi is BELOW the floor (the limiter must cut fuel)
-            Ok(surge.phi_lim - surge.read(&self.try_instant_fuel(flight, nu_lp, nu_hp, w)?))
-        };
-        let (hi, ghi) = (mf_sched, big_g(mf_sched)?);
-        if ghi <= 0.0 {
-            bump(&SURGE_DORMANT);
-            return Ok(mf_sched); // DORMANT -- the leg is not consulted
-        }
-        let mut lo = mf_sched;
-        let mut glo: Option<f64> = None;
-        for _ in 0..60 {
-            lo *= 0.9;
-            match big_g(lo) {
-                Err(_) => {
-                    bump(&SURGE_SKIPS);
-                    continue;
-                }
-                Ok(v) => glo = Some(v),
-            }
-            if glo.expect("just assigned") < 0.0 {
-                break;
-            }
-            glo = None;
-        }
-        let Some(glo) = glo else {
-            let (lim, sp) = (surge.phi_lim, match surge.spool {
-                Spool::Lp => "LP",
-                Spool::Hp => "HP",
-            });
-            return Err(Abort(format!(
-                "rung-49 phi floor {lim:.4} on the {sp} spool is UNREACHABLE at \
-                 nu=({nu_lp:.4},{nu_hp:.4}) -- no fuel this side of flame-out restores it. \
-                 Lower the floor (it must sit below the running-line phi).")));
-        };
-        try_illinois(big_g, lo, hi, glo, ghi, Self::LEG_TOL, ILLINOIS_MAXIT)
+        (self.hooks.try_surge_fuel)(self, flight, nu_lp, nu_hp, mf_sched, surge)
     }
 
     // --- the equilibrium: a 2-D root at fixed FUEL --------------------------------------------
@@ -3476,4 +3361,194 @@ fn point(
         mf_sched,
         extra,
     }
+}
+
+// ---------------------------------------------------------------------------------------------
+// RUNG 43's CELLS — the bodies behind [`R43`], moved out of the `impl` at slice V exactly as
+// `r40_try_close` sits outside `TwoSpoolTransientCore`'s. Zero executable lines changed.
+// ---------------------------------------------------------------------------------------------
+
+fn r43_try_close_fuel(
+    ft: &FuelTransientCore, nu_lp: f64, nu_hp: f64, mdot_fuel: f64, tt2: f64, pt2: f64,
+) -> Result<FuelCloseState, Abort> {
+    bump(&CLOSE_CALLS);
+    let t = &ft.inner;
+    let c = &t.inner;
+    let gas = c.gas();
+    let n_lp = nu_lp * powp(c.tt2_d / tt2, 0.5);
+    let (h2, pr2) = (gas.h_c(tt2), gas.pr_c(tt2));
+
+    let ev = |m_lp: f64| -> Result<FuelCloseState, Abort> {
+        let phi_lp = m_lp / n_lp;
+        let tau_lpc = 1.0 + (c.tau_lpc_d - 1.0) * c.map_lp.psi(phi_lp) * n_lp * n_lp;
+        let tt25 = tt2 * tau_lpc;
+        let eta_lpc = c.map_lp.eta_c_at(c.base.eta_lpc, phi_lp, n_lp);
+        let h25 = gas.h_c(tt25);
+        // The LPC ideal-temperature inversion. FALLIBLE for the same reason as the HPC one
+        // below, and measured DEAD on every grid so far — the two are one `try` scope in
+        // Python, so making only the measured one fallible would panic where Python swallows.
+        let pi_lpc = gas.pr_c(gas.try_t_from_h_c(h2 + eta_lpc * (h25 - h2))?) / pr2;
+        let pt25 = pi_lpc * pt2;
+        // THE FACE FLOW — and unlike rung 40, it is RETURNED: `f` is built from it.
+        let mdot_air_face = m_lp * c.mcorr_lp_d * pt2 / powp(tt2, 0.5);
+
+        // Same physical air flow, referred to the HP face.
+        let m_hp = (mdot_air_face * powp(tt25, 0.5) / pt25) / c.mcorr_hp_d;
+        let n_hp = nu_hp * powp(c.tt25_d / tt25, 0.5);
+        let phi_hp = m_hp / n_hp;
+        let tau_hpc = 1.0 + (c.tau_hpc_d - 1.0) * c.map_hp.psi(phi_hp) * n_hp * n_hp;
+        let tt3 = tt25 * tau_hpc;
+        let eta_hpc = c.map_hp.eta_c_at(c.base.eta_hpc, phi_hp, n_hp);
+        let h3 = gas.h_c(tt3);
+        // **THE MEASURED FALLIBLE SITE.** On the equilibrium gas this lands outside the
+        // 150-4000 K table 8 times per closure, at m_lp in 1.739...2.019, where psi_H < 0
+        // makes the ideal enthalpy rise negative. Slice L left `t_from_h` panicking because
+        // the call sites that existed then never reached it; this one does.
+        let pi_hpc =
+            gas.pr_c(gas.try_t_from_h_c(h25 + eta_hpc * (h3 - h25))?) / gas.pr_c(tt25);
+        let pt4 = c.base.pi_b * pi_hpc * pt25;
+
+        // THE INVERSION vs rung 40: fuel imposed => f and Tt4 are OUTPUTS.
+        let f = mdot_fuel / mdot_air_face;
+        let tt4 = ft.try_tt4_from_f(tt3, f)?;
+        let wgas = c.base.try_working_gas(f, tt4, pt4)?;
+        let wg = wgas.as_ref().unwrap_or(gas);
+        let mdot4 = c.base.a4 * pt4 * choked_mfp(wg, tt4, f) / powp(tt4, 0.5);
+        let mdot_imp = mdot4 / (1.0 + f);
+        let m_imp = (mdot_imp * powp(tt2, 0.5) / pt2) / c.mcorr_lp_d;
+        Ok(FuelCloseState {
+            base: CloseState {
+                m_lp, m_imp, m_hp, phi_lp, phi_hp, tt2, n_lp, n_hp, tau_lpc, tau_hpc, tt25,
+                tt3, pi_lpc, pi_hpc, pt4, f, wgas, eta_lpc, eta_hpc, mdot_air: mdot_imp,
+                mdot4,
+            },
+            tt4,
+            mdot_air_face,
+        })
+    };
+
+    // THE OFF-MAP GUARD. Rung 40's closure carries the same one and states the case in full:
+    // **Rust returns NaN where Python returns a COMPLEX**, so the port's test is Python's
+    // `r == r` inverted. NOT `is_finite()` — Python's guard is `isinstance(r, float) and
+    // r == r`, which an INFINITY passes.
+    let g = |m: f64| -> Result<f64, Abort> {
+        bump(&CLOSE_G_EVALS);
+        let r = m - ev(m)?.base.m_imp;
+        if r.is_nan() {
+            return Err(Abort(format!(
+                "off-map compressor trial at m_lp={m:.4}: the loading law has gone \
+                 non-physical (Tt3 < 0 => a complex pressure ratio).")));
+        }
+        Ok(r)
+    };
+
+    // The two walls. `lo0` is the flow at which f hits its physical CEILING, `hi0` the flow at
+    // which it hits the FLOOR — and `hi0` is the third arm of a `min` rung 40 spells with two.
+    let lo0 = mdot_fuel * powp(tt2, 0.5) / (FuelTransientCore::F_CAP * c.mcorr_lp_d * pt2);
+    let hi0 = mdot_fuel * powp(tt2, 0.5) / (FuelTransientCore::F_FLOOR * c.mcorr_lp_d * pt2);
+    // Python's `min(a, b, c)` spelled as the fold it IS, so the arm classification and the
+    // value come out of one statement. `f64::min` would differ on NaN and would not say which
+    // arm bound. Measured 24 033 / 200 193 / 3 663 — all three live.
+    let wall_map = c.map_lp.phi_max(0.1) * n_lp;
+    let mut cap = 2.5f64;
+    let mut arm = &HI_WALL_LITERAL;
+    if wall_map < cap {
+        cap = wall_map;
+        arm = &HI_WALL_MAP;
+    }
+    if hi0 < cap {
+        cap = hi0;
+        arm = &HI_WALL_HI0;
+    }
+    bump(arm);
+
+    // Python's `max(lo0, 0.02)` — the literal arm is DEAD (0 of 227 889) and is spelled.
+    let mut m = lo0;
+    if 0.02 > m {
+        m = 0.02;
+        bump(&LO_FLOOR_HITS);
+    }
+
+    // THE SCAN. Not rung 40's break-at-first-success: this keeps reassigning `lo` to the LAST
+    // negative and stops at the FIRST positive that follows one. `ghi` is produced INSIDE the
+    // try, so a failure at the high end advances rather than propagating.
+    let (mut lo, mut glo, mut hi, mut ghi) = (None, 0.0f64, None, 0.0f64);
+    while m < cap {
+        let gm = match g(m) {
+            Ok(v) => v,
+            Err(e) => {
+                bump(&MARCH_IN_ADVANCES);
+                bump(match classify(&e) {
+                    FuelAbort::Refusal => &MARCH_IN_REFUSAL,
+                    FuelAbort::InverseBracket => &MARCH_IN_INVERSE,
+                    FuelAbort::OffMap => &MARCH_IN_OFFMAP,
+                    _ => &MARCH_IN_OTHER,
+                });
+                m += FuelTransientCore::MARCH_IN_STEP;
+                continue;
+            }
+        };
+        if gm < 0.0 {
+            lo = Some(m);
+            glo = gm;
+        } else if lo.is_some() {
+            hi = Some(m);
+            ghi = gm;
+            break;
+        }
+        m += FuelTransientCore::MARCH_IN_STEP;
+    }
+    // **NO SIGN FILTER.** Rung 40's guard re-tests `glo < 0 && 0 < ghi`; rung 43's tests only
+    // that both endpoints were found, because the scan's own arms already decided the signs.
+    let (Some(lo), Some(hi)) = (lo, hi) else {
+        bump(&CLOSE_BRACKET_FAILS);
+        return Err(Abort(format!(
+            "rung-43 fuel closure does not bracket at nu=({nu_lp:.4},{nu_hp:.4}), \
+             mdot_fuel={mdot_fuel:.5} - off the modeled speed-line region.")));
+    };
+    let root = try_illinois(g, lo, hi, glo, ghi, FuelTransientCore::CLOSE_TOL, ILLINOIS_MAXIT)?;
+    ev(root)
+}
+
+fn r43_try_surge_fuel(
+    ft: &FuelTransientCore, flight: &FlightCondition, nu_lp: f64, nu_hp: f64, mf_sched: f64,
+    surge: &SurgeLimiter,
+) -> Result<f64, Abort> {
+    bump(&SURGE_CALLS);
+    let big_g = |w: f64| -> Result<f64, Abort> {
+        // > 0 when phi is BELOW the floor (the limiter must cut fuel)
+        Ok(surge.phi_lim - surge.read(&ft.try_instant_fuel(flight, nu_lp, nu_hp, w)?))
+    };
+    let (hi, ghi) = (mf_sched, big_g(mf_sched)?);
+    if ghi <= 0.0 {
+        bump(&SURGE_DORMANT);
+        return Ok(mf_sched); // DORMANT -- the leg is not consulted
+    }
+    let mut lo = mf_sched;
+    let mut glo: Option<f64> = None;
+    for _ in 0..60 {
+        lo *= 0.9;
+        match big_g(lo) {
+            Err(_) => {
+                bump(&SURGE_SKIPS);
+                continue;
+            }
+            Ok(v) => glo = Some(v),
+        }
+        if glo.expect("just assigned") < 0.0 {
+            break;
+        }
+        glo = None;
+    }
+    let Some(glo) = glo else {
+        let (lim, sp) = (surge.phi_lim, match surge.spool {
+            Spool::Lp => "LP",
+            Spool::Hp => "HP",
+        });
+        return Err(Abort(format!(
+            "rung-49 phi floor {lim:.4} on the {sp} spool is UNREACHABLE at \
+             nu=({nu_lp:.4},{nu_hp:.4}) -- no fuel this side of flame-out restores it. \
+             Lower the floor (it must sit below the running-line phi).")));
+    };
+    try_illinois(big_g, lo, hi, glo, ghi, FuelTransientCore::LEG_TOL, ILLINOIS_MAXIT)
 }
