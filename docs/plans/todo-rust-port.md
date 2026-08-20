@@ -9313,6 +9313,10 @@ at the last"* — this is that slice, and the measurement is owed at step 3.
   bug (restore the map after the close) and asserts `margin_min_lp` **breaks**. Without it the port
   ships a 15 % divergence that 59 ported gates cannot see. `slice_r_dispatch.rs`'s precedent, aimed
   at a CARRIER rather than at a cell.
+- **P6a — A NOTE STEP 2 MUST NOT MISS.** `_arm` has **four** call sites: rung 57's `_close` /
+  `_close_fuel` (7547, 7551) and **rung 62's** (8947, 9014). Rung 62 is slice **W**, so step 2
+  ports two of the four — which means `_arm` must be built as **a cell**, never inlined into
+  `r57_try_close`, or slice W re-opens it. § (vi) already books it as a cell; this is the reason.
 - **P6.** Steps, on slice T/U's shape: **1** cells + carrier · **2** the port + `slice_v_smoke.rs`
   · **3** the four rung suites · **4** `slice_v_oracle.rs` + `dump_slice_v.py` · **5** the
   carrier/dispatch gates (P5) and the injections.
@@ -9436,7 +9440,15 @@ was `101`**: the `rung56.rs` miss above. The log line caught what the status cou
 the only reason defect 2 was found at all. **Write the status into the artefact, never read it
 off the runner.**
 
-**THE GATE:** `cargo test --release`, status written into the log — **`CARGO_EXIT=0`, 95 suites, 847 passed, 0 failed, 0 ignored** (845 + the carrier's 2). **P1's second half is MEASURED**: `slice_r_dispatch.rs` and `slice_s_dispatch.rs` are green with `try_instant_tail` and `powers` UNEDITED, which is § (iii)'s algebra holding in the port.
+**THE GATE:** `cargo test --release`, status written into the log — **`CARGO_EXIT=0`, 95 suites, 847 passed, 0 failed, 0 ignored** (845 + the carrier's 2). **P1 IS HALF MEASURED AND HALF ARGUED, AND THE DIFFERENCE MATTERS.** *Measured:*
+`try_instant_tail` and `powers` are UNEDITED (the rewrite pass touched `rung53/56/61` and
+`slice_n_smoke`, not the two dispatch files) and both phase-6 dispatch gates are green.
+*Argued, not measured:* that this shows **§ (iii)'s algebra holding in the port**. It does not —
+those gates run with **no stator arming anywhere in the tree**, so they witness the cells still
+dispatching, not the cells being invariant UNDER an arming. The algebra is sound (`with_vsv` sets
+only `vsv`; `eta_t_at` reads only `a_t`; both bodies read) but it is sound **by reading**. Its
+first port-side exercise is step 2, and **step 5's injections owe it one**: arm during a march and
+assert `try_instant_tail`'s output is bit-identical.
 
 ## 6. Named risks
 
