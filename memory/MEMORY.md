@@ -52,7 +52,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Slice U step 1](rust-port-slice-u-step1.md) — bit-exact + green says nothing about GATE POWER; an injection table needs a DID-IT-MOVE column; a knife-edge value protected REDUNDANTLY
 - Slice U steps [2](rust-port-slice-u-step2.md) [3](rust-port-slice-u-step3.md) [4](rust-port-slice-u-step4.md) [5](rust-port-slice-u-step5.md) — a defender and an exposure on DISJOINT cells; a function exercised only on cells chosen for INERTNESS; a gate comparing a key with ITSELF cannot see its value; the closing step wrote TWO near-vacuous gates of its own
 - [Phase 7 pre-flight](rust-port-phase7-preflight.md) — the plan stated the SAME SET twice and nobody diffed the two; then every write-up defect was a table TYPED instead of EMITTED
-- [Slice V: phase 7 AUTHORISED](rust-port-slice-v.md) — a census matches a SHAPE, so a bare permanent assignment was invisible to one built on `try/finally`
+- Slice V (57-60) [authorised + steps 1a/1b](rust-port-slice-v.md) [step 2](rust-port-slice-v-step2.md) — a census matches a SHAPE, so a bare permanent assignment was invisible to one built on `try/finally`; a golden dump can be bit-exact and never run its own interesting branches
 - Slice T (46/47/48) steps [1](rust-port-slice-t-step1.md) [2](rust-port-slice-t-step2.md) [3](rust-port-slice-t-step3.md) [4](rust-port-slice-t-step4.md) — an EXACT ZERO blinds its own gate to the SIGN; 9/9 green and blind to a 24% error, so tabulate BAR MARGINS; a defect can survive because every READER is invariant under it; an injection matching TWICE applies nothing and still reports green
 
 ## Shipped rungs

@@ -9450,6 +9450,118 @@ only `vsv`; `eta_t_at` reads only `a_t`; both bodies read) but it is sound **by 
 first port-side exercise is step 2, and **step 5's injections owe it one**: arm during a march and
 assert `try_instant_tail`'s output is bit-identical.
 
+##### STEP 2 — SHIPPED. **THE CARRIER'S FIRST REAL EXERCISE, AND A SMOKE THAT WAS BIT-EXACT AND BLIND TO THREE OF ITS OWN BRANCHES**
+
+`src/stator_transient.rs` — **2 510 lines**, rungs 57/58/59/60's whole Python class plus
+`StatorSchedule` and `IncidenceLimiter`. Three NEW cells (`arm`, `v_of`, `stator_march`), the two
+step 1a opened, one swap into `R40`. Gated-code edits: **130 lines over three files**
+(`fuel_transient.rs`, `two_spool_transient.rs`, `lib.rs`), and **zero** in `two_spool.rs` — see
+finding 1. `tests/slice_v_smoke.rs` + `oracle/dump_slice_v_smoke.py`: **1 986 keys bit-exact
+against PyPy ON THE FIRST RUN**, eleven sections A–K.
+
+**1. THE CARRIER LEVEL WAS WRONG IN THE PLAN I WROTE, AND THE ADVISOR CORRECTED IT BEFORE A LINE
+EXISTED.** The state and the `arm`/`v_of` cells were headed for `TwoSpoolMapCore` — that is where
+`map_lp`/`map_hp` and `tt2_d` live, i.e. everything `_arm` reads and writes, and it is where
+`bleed` and `stack_lp` set the precedent. Two reasons put them on `TwoSpoolTransientCore` instead.
+The binding one: `try_close` is a **rung-40** cell, so `r57_try_close` receives only
+`&TwoSpoolTransientCore` — the SHALLOWEST type `_arm` must be reachable from, and reachable from
+`&FuelTransientCore` through `inner` for the other two cells. The second: `TwoSpoolMapCore` is
+shared with the **steady** ladder (`VariableStatorCore`, `StatorBleedMatcher`, `MapMatcher`), so a
+transient-only field there is strictly wider than `bleed`/`stack_lp`, which at least have steady
+consumers. **The precedent named the right SHAPE and the wrong LEVEL** — and the level is set by
+the shallowest hook RECEIVER, not by where the data happens to live.
+
+**2. A GATED SIGNATURE DID CHANGE — NOT THE ONE § 5.19 (x) NAMED, AND NOT FOR THE REASON
+§ 5.20 (v) REFUTED.** § (v) refuted *"slice V is the one slice that CHANGES A GATED SIGNATURE"* at
+its stated reason (`try_close` does not take a `&Scope`; that is slice Y's). It is true anyway, of
+a different cell. Python's `integrate_fuel(surge=…)` is **ONE slot holding TWO types**: rung 49's
+`SurgeLimiter` and rung 60's `IncidenceLimiter`. `SurgeLimiter` cannot represent the second — its
+floor is a CONSTANT, an incidence floor's `phi_lim` is a function of the LIVE stator setting,
+recomputed at every state — so the wire type widened to `Floor { Phi, Incidence }`, and
+`FuelTransientHooks::try_surge_fuel`, its dispatcher, `r43_try_surge_fuel` and both dispatch twins
+took it. **The label survives with a THIRD distinct reason**, after § (iv)'s carrier and § (v)'s
+refutation.
+
+**AND THE COST WAS CHOSEN, NOT ACCEPTED.** `FuelLimiters.surge` is spelled at **~130 already-gated
+sites** across eleven test files; widening THAT field to `Option<Floor>` would have churned every
+one to buy nothing. It keeps its rung-49 type, gains a rung-60 `incidence` field beside it (free —
+every site already writes `..Default::default()`), and one method `floor()` recovers Python's
+single slot and asserts the two exclusive. Measured cost: **95 lines in `fuel_transient.rs`, zero
+test edits.** One executable line was added to a body step 1a had verified string-for-string —
+`let surge = floor.phi();` — and it is called out at the site, because *zero executable lines
+changed* is a claim with a date on it.
+
+**3. AN ASSERT THAT HAD TO BE AN `Abort`, AND NO VALUE GATE WOULD HAVE FOUND IT.**
+`IncidenceLimiter.phi_lim_at`'s `assert d > 0.0` is reachable from inside `der` — `try_surge_fuel`
+→ rung 57's cell → `resolve_floor` → here — and Python's marcher SWALLOWS an `AssertionError` at
+that depth and truncates. A Rust panic would abort a march Python completes. That is § 5.16 probe
+4 (A) (the reason `try_tt4_from_f` exists) landing on a site slice V *introduces*, and it fires
+only where the floor sits at or above the critical incidence, so a bit-exact dump over admissible
+cells certifies nothing about it. The whole rungs-57–60 assert set was swept once under that rule:
+entry-point and constructor guards stay panics; everything reachable from `der` is an `Abort`.
+`Floor::phi()` is deliberately a PANIC — a rung-43 object handed an incidence floor is Python's
+`AttributeError` on `surge.phi_lim`, which nothing in the ladder catches either.
+
+**4. THE DEFAULT TABLE'S CELLS PANIC, WHICH TURNS A COMMENT INTO A GATE.** Rung 40 has no `_arm`
+in Python at all: an unarmed rung-40/43 object is not a rung-57 object with the lever at zero, it
+is one where the name does not exist. Defaulting `NO_STATOR`'s cells to rung 57's bodies would
+silently make a rung-40 object armable — a claim no value key could witness.
+`a_rung_43_object_never_dispatches_the_stator_table` marches a bare rung-43 core through the
+closure, the equilibrium, an accel-limited RK4 ramp and a `phi`-floor-limited one; every one of
+those would hit the panic if any rung-40/43 body carried an arming call, so a green run **is** the
+unreachability claim. `the_two_shipped_cells_are_rung_40s_own` compares `R57_TWO`'s entries against
+`R40`'s as raw `fn` pointers — **P1's second half, MEASURED**, which step 1b explicitly could not
+do (its two dispatch gates run with no arming anywhere in the tree). *P1's remaining half — that
+the two cells' OUTPUT is bit-identical UNDER an arming — is step 5's injection and is booked there,
+not implied by this one.*
+
+**5. THE FINDING: THE SMOKE'S FIRST CUT WAS 1 742 KEYS BIT-EXACT AND BLIND TO THREE OF ITS OWN
+BRANCHES.** It passed. Reading the flags it had just emitted — not running it — showed:
+
+| branch | first cut | why it was blind |
+|---|---|---|
+| `floor_composite`'s `both_pinned` regime | never reached — BOTH cells `dormant`, regime `armed_clears` | the floor I picked (`phi_lim = 0.5964`) never binds at `ds = 0.05`, so `pinned_prediction` — rung 60's whole derived claim, EXACTLY `v` or EXACTLY `0` — was `NaN` in every cell |
+| `schedule_invariance`'s tuple identity | `ordinate_identical` / `abscissa_identical` **false in every cell** | the source claims `==` only at `v = 0`; every armed cell lands ~1e-13 away, so both booleans were gated at `false` and the branch that makes them `true` never ran |
+| `pin_audit`'s `pinned` / `from_zero` | both `false` everywhere | downstream of the first row |
+
+Repaired by adding a SECOND `(v, m_lim)` pair — rung 60's own `(0.05, 0.500)` — and a
+zero-schedule invariance arm: `both_pinned` now lands with `pinned_prediction` **exactly `0.05`**
+(the `phi` arm, `= v`) and **exactly `0.0`** (the incidence arm), residuals `-1.80e-16` and
+`-2.22e-16`; `inv_zero` lands both identities `true` with `d_ordinate = d_abscissa = 0`. **This is
+slice U step 1's finding arriving on a DUMP's cell choice rather than on a suite's:** bit-exact and
+green says nothing about which BRANCH ran, and the only instrument that saw it was counting the
+discrete keys the dump had already emitted. Two smaller versions of the same thing in the same
+pass — a hand-typed `arrow_toggle` state `(0.82, 0.93, 0.42)` that does not bracket, and
+`vsv_hp = 0.20` that goes off-map — were caught by Python raising, i.e. for free; **the branch
+blindness was the one that would have shipped.**
+
+**6. WHAT THE SMOKE MEASURES THAT THE PLAN ONLY PREDICTED.** Section C dumps the LIVE map's `vsv`
+AFTER a march, per arming: **`0.0170`** LP-scheduled, **`0.0111`** HP, and **`0.2` exactly** for a
+CONSTANT setting — against the design `0.0`. That is § 5.20 (i)'s permanent mutation as a bit key,
+so a locally-armed-core port fails on a NUMBER rather than passing in silence. Beside it, the two
+channels the arming drives (`psi`, `phi_surge_at`) and the one § (iii) proves it cannot
+(`eta_t_at`), all read off the stale map. **P4 is half-discharged early**: the smoke already
+carries `hp_only` and `both` scheduled cells, so the HP path is exercised at step 2 rather than
+waiting for step 4's checklist item (a) — which still stands for the full dump.
+
+**P3, RE-GATED AS PRE-REGISTERED.** `_arm` hands back the SAME map OBJECT at `v == 0.0`;
+`ComponentMap` is `Copy` and has no identity, so Python's `is`-test does not survive as written.
+Section B's zero-schedule march is bit-for-bit AND section K reads `arm_lp_zero = 188 / 188` on
+that machine (against `9 / 188` where a real schedule crosses `n_ref`), which is what the identity
+claim reduces to on a value type. The counters exist because step 2 laid them, per P3's own note.
+
+**AND ONE DEFERRAL, WITH A COUNT RATHER THAN AN INTENTION (P4's rule).** `at_stator` gets **no
+cell** — § 5.19 (iii)'s pure sibling constructor — but rungs **62 and 64** override it in Python,
+and **eight** reader bodies call `self.at_stator()` (`stator_credit`, `credit_decomposition`,
+`composite_credit`, `engagement_shift`, `schedule_invariance`, `matched_credit`,
+`set_point_bands`, `floor_composite`). Those eight are INHERITED, so a rung-64 object running the
+inherited `stator_credit` would build a rung-**57** bare sibling. Rungs 57–60 construct only
+rung-57 objects, so it is inert here; it is **slice W's first job** and the note lives at
+`at_stator`'s own definition, not only here.
+
+**THE GATE:**
+`cargo test --release`, status written into the log — **`CARGO_EXIT=0`, 96 suites, 850 passed, 0 failed, 0 ignored** (step 1b's 95 / 847, plus this slice's one suite and its three tests). The `0 ignored` is slice M's rule still holding. **NO PYTHON SOURCE CHANGED**, so `pytest` is untouched by this step and is not re-run — `rust/oracle/dump_slice_v_smoke.py` is a dump, not a test, and lives outside `turbojet/` and `tests/`.
+
 ## 6. Named risks
 
 ##### STEP 4 — SHIPPED. **THE SECTION'S OWN CENSUSES WERE MEASURED ON TWO DIFFERENT GRIDS**

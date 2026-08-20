@@ -504,6 +504,33 @@ pub struct TwoSpoolTransientCore {
     pub p_ref_lp: f64,
     pub p_ref_hp: f64,
     pub hooks: &'static TwoSpoolTransientHooks,
+    /// RUNG 57's stator arming — **read by `R57`'s bodies ALONE, and UNARMED for every rung-40/43
+    /// object.** [`crate::two_spool::TwoSpoolMapCore::bleed`]'s precedent, and the same reason:
+    /// Python's `self` inside rung 40's `_close` IS the rung-57 object when one is running, so the
+    /// descendant's state goes on the shared core rather than on the leaf.
+    ///
+    /// **THIS LEVEL AND NOT ONE DEEPER, AND THAT IS A DECISION.** The obvious home is
+    /// [`crate::two_spool::TwoSpoolMapCore`] — that is where `map_lp`/`map_hp` and `tt2_d` live,
+    /// i.e. everything [`StatorArming`] reads and writes. It is the wrong home for two reasons.
+    /// The binding one is that `try_close` is a **rung-40** cell, so `r57_try_close` receives only
+    /// `&TwoSpoolTransientCore`; this is the SHALLOWEST type `_arm` must be reachable from, and it
+    /// is reachable from `&FuelTransientCore` too (via `inner`), which is what
+    /// `r57_try_close_fuel` and `r57_try_surge_fuel` need. The second is that `TwoSpoolMapCore` is
+    /// shared with the STEADY ladder ([`crate::stator::VariableStatorCore`],
+    /// [`crate::stator_bleed::StatorBleedMatcher`], [`crate::map::MapMatcher`]), so a
+    /// transient-only field there would hand every steady matcher state it can never dispatch —
+    /// strictly wider than `bleed`/`stack_lp`, which at least have steady consumers.
+    ///
+    /// [`StatorArming`]: crate::stator_transient::StatorArming
+    pub stator: crate::stator_transient::StatorArming,
+    /// RUNG 57's own three virtual names. **Defaults to a table whose cells PANIC**, not to rung
+    /// 57's bodies: rung 40 has no `_arm` at all in Python, and a default that silently made a
+    /// rung-40 object armable would be a claim no gate could see. Nothing below rung 57 dispatches
+    /// it — `r40_try_close` carries no arming call — so the panic is unreachable by construction
+    /// and `tests/slice_v_smoke.rs` asserts exactly that.
+    ///
+    /// [`StatorTransientHooks`]: crate::stator_transient::StatorTransientHooks
+    pub stator_hooks: &'static crate::stator_transient::StatorTransientHooks,
 }
 
 impl TwoSpoolTransientCore {
@@ -529,6 +556,23 @@ impl TwoSpoolTransientCore {
         map_lp: ComponentMap, map_hp: ComponentMap, rho: f64,
         hooks: &'static TwoSpoolTransientHooks,
     ) -> Self {
+        Self::with_all_hooks(
+            design_engine, flight_design, mdot_design, map_lp, map_hp, rho, hooks,
+            &crate::stator_transient::NO_STATOR,
+            crate::stator_transient::StatorArming::unarmed(map_lp, map_hp))
+    }
+
+    /// [`with_hooks`](Self::with_hooks) plus rung 57's table and arming — the constructor rung
+    /// 57's own object goes through. Additive: [`with_hooks`](Self::with_hooks) is this one with
+    /// the stators absent, so every rung-40/43 caller is unchanged.
+    #[allow(clippy::too_many_arguments)]
+    pub fn with_all_hooks(
+        design_engine: TwoSpoolEngine, flight_design: FlightCondition, mdot_design: f64,
+        map_lp: ComponentMap, map_hp: ComponentMap, rho: f64,
+        hooks: &'static TwoSpoolTransientHooks,
+        stator_hooks: &'static crate::stator_transient::StatorTransientHooks,
+        stator: crate::stator_transient::StatorArming,
+    ) -> Self {
         let inner = TwoSpoolMapCore::new(design_engine, flight_design, mdot_design, map_lp, map_hp);
         let (s2, s25, s3) = (*inner.base.reference.station("2"),
                              *inner.base.reference.station("25"),
@@ -536,7 +580,7 @@ impl TwoSpoolTransientCore {
         let gas = inner.gas();
         let p_ref_lp = mdot_design * (gas.h_c(s25.tt) - gas.h_c(s2.tt));
         let p_ref_hp = mdot_design * (gas.h_c(s3.tt) - gas.h_c(s25.tt));
-        TwoSpoolTransientCore { inner, rho, p_ref_lp, p_ref_hp, hooks }
+        TwoSpoolTransientCore { inner, rho, p_ref_lp, p_ref_hp, hooks, stator, stator_hooks }
     }
 
     pub fn gas(&self) -> &Gas { self.inner.gas() }

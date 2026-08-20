@@ -538,6 +538,52 @@ impl SurgeLimiter {
     }
 }
 
+/// WHICH floor a min-select `surge` leg IS — rung 49's, or rung 60's re-referenced one.
+///
+/// **PYTHON HAS ONE SLOT AND TWO TYPES IN IT.** `integrate_fuel(surge=...)` carries whichever
+/// object the caller built, and `_surge_fuel` reads `surge.phi_lim` (rung 49) or resolves it
+/// through `IncidenceLimiter.at(T_c, v)` first (rung 60). A `SurgeLimiter` cannot represent the
+/// second: its floor is a CONSTANT, and an incidence floor's `phi_lim` is a function of the LIVE
+/// stator setting, recomputed at every state. So the wire type widens by exactly one variant.
+///
+/// **Rung 43 can only ever see [`Phi`](Self::Phi)**, and [`phi`](Self::phi) is where that is
+/// enforced: handing rung 43's own body an incidence floor is Python's `AttributeError` on
+/// `surge.phi_lim`, i.e. a crash, so it is a panic here and not an [`Abort`].
+///
+/// [`crate::stator_transient::IncidenceLimiter`] is a rung-**60** type named in a rung-**43**
+/// file, which is [`crate::two_spool::TwoSpoolMapCore::stack_lp`]'s precedent exactly (rung 55's
+/// type on rung 39's core): the question is never which rung owns the name, but where the value
+/// has to be reachable from.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Floor {
+    /// RUNG 49. A constant `phi` floor.
+    Phi(SurgeLimiter),
+    /// RUNG 60. An INCIDENCE floor, resolved to a `phi` one at the live setting by rung 57's
+    /// `_resolve_floor` cell before rung 49's solve ever sees it.
+    Incidence(crate::stator_transient::IncidenceLimiter),
+}
+
+impl Floor {
+    /// The rung-49 leg this floor IS, for a caller that has already resolved it — or a PANIC,
+    /// which is Python's `AttributeError` when rung 43's own `_surge_fuel` is handed rung 60's
+    /// object. Nothing catches an `AttributeError` in the ladder, so nothing may catch this.
+    pub fn phi(&self) -> &SurgeLimiter {
+        match self {
+            Floor::Phi(s) => s,
+            Floor::Incidence(_) => panic!(
+                "rung-43 _surge_fuel reads surge.phi_lim: a rung-60 IncidenceLimiter reaches it                  only through rung 57's _resolve_floor, which this object does not have."),
+        }
+    }
+
+    /// Which spool's `phi` this leg watches — Python's `key()`, common to both types.
+    pub fn spool(&self) -> Spool {
+        match self {
+            Floor::Phi(s) => s.spool,
+            Floor::Incidence(i) => i.spool,
+        }
+    }
+}
+
 /// RUNG 51. The min-select leg's AUTHORITY at march coordinate `s`.
 ///
 /// ```text
@@ -1210,6 +1256,11 @@ pub struct FuelLimiters<'a> {
     pub accel: Option<&'a AccelSchedule>,
     /// RUNG 49. The `phi` feedback floor.
     pub surge: Option<SurgeLimiter>,
+    /// RUNG 60. The SAME slot, re-referenced to incidence — Python passes either object as
+    /// `surge=`, and [`floor`](Self::floor) is where the one slot is recovered from the two
+    /// fields. Two fields rather than one widened one because `surge` is spelled at ~130 already
+    /// gated sites and `Option<Floor>` would churn every one of them to buy nothing.
+    pub incidence: Option<crate::stator_transient::IncidenceLimiter>,
     /// RUNG 50. FORCE the min-select legs to disarm at `s >= s_off`.
     pub s_off: Option<f64>,
     /// RUNG 51. The RATE of that forced release.
@@ -1217,6 +1268,23 @@ pub struct FuelLimiters<'a> {
     /// RUNG 52. The realisable asymmetric lag — dispatches to
     /// [`integrate_fuel_asym`](FuelTransientCore::integrate_fuel_asym).
     pub lag: Option<AsymmetricLag>,
+}
+
+impl FuelLimiters<'_> {
+    /// Python's ONE `surge=` slot, recovered from the two fields. `None` is a dormant leg.
+    ///
+    /// The two are MUTUALLY EXCLUSIVE by assertion rather than by type, because Python's single
+    /// slot cannot hold both either and the failure a caller is most likely to write — arming a
+    /// rung-49 floor and a rung-60 one together — has no meaning to reproduce.
+    pub fn floor(&self) -> Option<Floor> {
+        assert!(self.surge.is_none() || self.incidence.is_none(),
+                "rungs 49/60 share ONE min-select slot: arm a phi floor or an incidence floor,                  not both.");
+        match (self.surge, self.incidence) {
+            (Some(s), _) => Some(Floor::Phi(s)),
+            (None, Some(i)) => Some(Floor::Incidence(i)),
+            (None, None) => None,
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1303,7 +1371,7 @@ impl TwoSpoolFuelTransient {
         assert!(lim.accel.is_none(),
                 "the rung-48 Wf/pt3 accel schedule is inherently two-shaft (its finding is the \
                  PER-SPOOL engagement crossing); lp_disabled is not a reduce axis.");
-        assert!(lim.surge.is_none(),
+        assert!(lim.floor().is_none(),
                 "the rung-49 phi floor is inherently two-shaft (its finding is the CREDIT on the \
                  watched spool against the DEBIT on the other); lp_disabled is not a reduce axis \
                  for a split BETWEEN spools.");
@@ -1419,7 +1487,7 @@ pub struct FuelTransientHooks {
         fn(&FuelTransientCore, f64, f64, f64, f64, f64) -> Result<FuelCloseState, Abort>,
     /// Rung 49's `phi`-floor leg. **One overrider only** — rung 57 — which is exactly the arity a
     /// census skims past, and the reason its `⚠` note was written at all.
-    pub try_surge_fuel: fn(&FuelTransientCore, &FlightCondition, f64, f64, f64, &SurgeLimiter)
+    pub try_surge_fuel: fn(&FuelTransientCore, &FlightCondition, f64, f64, f64, &Floor)
         -> Result<f64, Abort>,
 }
 
@@ -1782,7 +1850,7 @@ impl FuelTransientCore {
     /// [`integrate_fuel`](Self::integrate_fuel) for why the cell is not built here.
     pub fn try_surge_fuel(
         &self, flight: &FlightCondition, nu_lp: f64, nu_hp: f64, mf_sched: f64,
-        surge: &SurgeLimiter,
+        surge: &Floor,
     ) -> Result<f64, Abort> {
         (self.hooks.try_surge_fuel)(self, flight, nu_lp, nu_hp, mf_sched, surge)
     }
@@ -1913,7 +1981,8 @@ impl FuelTransientCore {
     where
         S: Fn(f64) -> f64,
     {
-        assert!(lim.lag.is_none() || lim.accel.is_some() || lim.surge.is_some(),
+        let floor = lim.floor();
+        assert!(lim.lag.is_none() || lim.accel.is_some() || floor.is_some(),
                 "rung-52 lag lags a min-select LEG's clip -- arm one (accel/surge).");
         assert!(lim.lag.is_none() || (lim.s_off.is_none() && lim.tau_rel.is_none()),
                 "rung-52 lag and rung 50/51's s_off/tau_rel are ALTERNATIVE release instruments, \
@@ -1927,19 +1996,19 @@ impl FuelTransientCore {
                 "rung-51 tau_rel is the RATE of a FORCED release -- it needs the release time \
                  s_off to be pinned.");
         assert!(lim.tau_rel.is_none_or(|t| t >= 0.0), "rung-51 tau_rel is a fade DURATION");
-        assert!(lim.s_off.is_none() || lim.accel.is_some() || lim.surge.is_some(),
+        assert!(lim.s_off.is_none() || lim.accel.is_some() || floor.is_some(),
                 "rung-50 s_off forces a min-select LEG to release early -- arm one \
                  (accel/surge).");
 
         if let Some(lag) = lim.lag {
             return self.integrate_fuel_asym(
                 flight, fuel_schedule, nu0, s_end, ds, lim.freeze, lim.tt4_max, lim.accel,
-                lim.surge.as_ref(), &lag);
+                floor.as_ref(), &lag);
         }
         if let (Some(tt4_max), Some(tau_gov)) = (lim.tt4_max, lim.tau_gov) {
             return self.integrate_fuel_lagged(
                 flight, fuel_schedule, nu0, s_end, ds, lim.freeze, tt4_max, tau_gov, lim.accel,
-                lim.surge.as_ref(), lim.s_off, lim.tau_rel);
+                floor.as_ref(), lim.s_off, lim.tau_rel);
         }
 
         bump(&MARCH_CALLS);
@@ -1971,7 +2040,7 @@ impl FuelTransientCore {
                     caps.push(faded(self.try_sched_fuel(flight, a, b, mf, accel)?));
                 }
             }
-            if let Some(surge) = lim.surge.as_ref() {
+            if let Some(surge) = floor.as_ref() {
                 if w > 0.0 {
                     caps.push(faded(self.try_surge_fuel(flight, a, b, mf, surge)?));
                 }
@@ -2068,7 +2137,7 @@ impl FuelTransientCore {
     pub fn integrate_fuel_lagged<S>(
         &self, flight: &FlightCondition, fuel_schedule: S, nu0: (f64, f64), s_end: f64, ds: f64,
         freeze: Option<Spool>, tt4_max: f64, tau_gov: f64, accel: Option<&AccelSchedule>,
-        surge: Option<&SurgeLimiter>, s_off: Option<f64>, tau_rel: Option<f64>,
+        surge: Option<&Floor>, s_off: Option<f64>, tau_rel: Option<f64>,
     ) -> Vec<FuelPoint>
     where
         S: Fn(f64) -> f64,
@@ -2168,7 +2237,7 @@ impl FuelTransientCore {
     pub fn integrate_fuel_asym<S>(
         &self, flight: &FlightCondition, fuel_schedule: S, nu0: (f64, f64), s_end: f64, ds: f64,
         freeze: Option<Spool>, tt4_max: Option<f64>, accel: Option<&AccelSchedule>,
-        surge: Option<&SurgeLimiter>, lag: &AsymmetricLag,
+        surge: Option<&Floor>, lag: &AsymmetricLag,
     ) -> Vec<FuelPoint>
     where
         S: Fn(f64) -> f64,
@@ -3512,8 +3581,12 @@ fn r43_try_close_fuel(
 
 fn r43_try_surge_fuel(
     ft: &FuelTransientCore, flight: &FlightCondition, nu_lp: f64, nu_hp: f64, mf_sched: f64,
-    surge: &SurgeLimiter,
+    floor: &Floor,
 ) -> Result<f64, Abort> {
+    // SLICE V, and the ONE executable line added to a body step 1a verified verbatim: rung 43
+    // reads `surge.phi_lim` directly, so an incidence floor is an `AttributeError` here — never
+    // silently a different number. Rung 57's cell resolves it BEFORE calling this one.
+    let surge = floor.phi();
     bump(&SURGE_CALLS);
     let big_g = |w: f64| -> Result<f64, Abort> {
         // > 0 when phi is BELOW the floor (the limiter must cut fuel)
