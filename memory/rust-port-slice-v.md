@@ -57,8 +57,10 @@ of them: staleness bites only through the CHANNELS the mutation drives.
 **AND THE CARRIER'S PRICE WAS MEASURED BEFORE IT WAS BUILT**, because stating one without a price
 is the pre-flight's own defect 2 recurring. `Cell<ComponentMap>` is right (Python's shape exactly,
 `ComponentMap` is `Copy`) but `map_lp`/`map_hp` are `pub` fields on **`TwoSpoolMapCore` — rung 39,
-PHASE 5** — so it reaches **43 `src` sites over six files in three phases** plus 16 in tests.
-That is a third distinct reason slice V is the risk, and none of the three is § 5.19's.
+PHASE 5** — so it reaches **40 code sites in `src` over six files in three phases** plus 12 in
+tests (the pre-build estimate said 43/16 because its `grep` had no comment filter — reconciled
+at step 1b rather than left as two numbers for one thing). That is a third distinct reason slice V
+is the risk, and none of the three is § 5.19's.
 
 **ALSO DECIDED AT STEP 1:** the two `⚠` notes in `fuel_transient.rs` booked `try_close_fuel` /
 `try_surge_fuel` into `TwoSpoolTransientHooks` — **wrong table.** That one is carried on

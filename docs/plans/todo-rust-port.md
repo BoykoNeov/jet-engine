@@ -9199,7 +9199,11 @@ them into `Cell` reaches:
 
 Six source files over **three phases**, all mechanical (`ComponentMap` is `Copy`, so every read
 is `.get()`), and the field keeps ONE spelling by becoming an accessor `map_lp(&self)` rather
-than a bare `Cell` at 43 call sites. **That is the real cost of slice V, and it is not the cost
+than a bare `Cell` at 43 call sites. **RECONCILED AT STEP 1b: 43 and 16 count raw occurrences
+including COMMENT mentions; the CODE sites are 40 and 12** (`stator.rs:316`, `rung45.rs:70` and
+`fuel_transient_oracle.rs:1327` are prose about Python's `self.map_lp`). The estimate was made
+with a `grep -o` that had no comment filter and the rewrite used one, so the two disagree by
+exactly the seven comment lines — stated rather than left as two numbers for one thing. **That is the real cost of slice V, and it is not the cost
 § 5.19 named.** It is still the right carrier — it is Python's shape exactly — but the slice is
 "the risk" for this reason, a third distinct one.
 
