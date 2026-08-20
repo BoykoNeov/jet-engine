@@ -31,10 +31,13 @@
 //!
 //! * **P1's second half.** `try_instant_tail` and `powers` are left UNTOUCHED by this slice
 //!    because `with_vsv` sets only `vsv`, `eta_t_at` reads only `a_t`, and `vsv` cannot reach
-//!    `a_t`. Step 1b could only measure that the two cells still DISPATCH; here
-//!    `the_two_shipped_cells_are_rung_40s_own` compares the [`R57_TWO`] entries against [`R40`]'s
-//!    as raw `fn` pointers, and section C dumps `eta_t_at` off the STALE map beside `psi` and
-//!    `phi_surge_at` off it — the two channels the arming really does drive.
+//!    `a_t`. Step 1b could only measure that the two cells still DISPATCH.
+//!    `the_two_shipped_cells_are_invariant_under_an_arming` marches a SCHEDULED machine and
+//!    calls both cells at ONE fixed state against the map `_arm` left stale and against the
+//!    design map, having first asserted the two maps differ OBSERVABLY (`psi` and
+//!    `phi_surge_at` both move with the arming). **The `fn`-pointer version of that test was
+//!    VACUOUS** — `R57_TWO` is built with `..R40`, so the equality it asserted is a
+//!    compile-time tautology; see that test's own note.
 //! * **The default table's cells PANIC.** Rung 40 has no `_arm` at all, so [`NO_STATOR`] is not
 //!    rung 57's body with the lever at zero — it is a table whose cells are unreachable by
 //!    construction. `a_rung_43_object_never_dispatches_the_stator_table` marches a bare rung-43
@@ -618,6 +621,24 @@ fn slice_v_smoke_is_bit_exact_against_pypy() {
             c.f(&format!("J/ladder_rates/{t}/{k}"), v);
         }
     }
+    // RUNG 60's OWN AXIS CLAIM, and the check that `with_r` moves `r` and NOTHING else. The
+    // credit is rung 57's CLOCK-FREE number and the excursion is the ramp's, so a 4x change in
+    // `r` at ONE setting must move the excursion and leave the credit nearly alone. A wrong
+    // `s_end` here -- `s_settle` accidentally scaled with `r` -- would move BOTH and look
+    // identical at a glance; the CONTRAST is what separates them.
+    //
+    // **THE BAR IS MEASURED, NOT GUESSED**, and the first cut of this assertion was `1e-14` on
+    // the credit and failed on the clean tree at 0.73 %: rung 57's own headline says the
+    // surviving share moves ~1 point across a 20x rate range, i.e. clock-free is APPROXIMATE and
+    // an exact-equality bar claims more than the physics. Measured here: credit **0.73 %**,
+    // excursion **66.3 %**, a **91x** contrast. The bar is on the contrast at 20x.
+    assert_eq!(lad_r.len(), 2);
+    assert!(lad_r[0].r != lad_r[1].r, "the rate ladder must actually vary r");
+    let rel = |a: f64, b: f64| (b - a).abs() / a.abs();
+    let (d_cred, d_exc) = (rel(lad_r[0].credit, lad_r[1].credit),
+                           rel(lad_r[0].excursion, lad_r[1].excursion));
+    assert!(d_exc / d_cred > 20.0,
+            "rung 60's two axes must carry DIFFERENT halves of the criterion: the credit moved              {:.3} % and the excursion {:.3} % across a {}x rate change (contrast {:.1}x,              measured 91x) -- if these move together, `with_r` is changing `s_end` as well as              `r`", d_cred * 100.0, d_exc * 100.0, lad_r[1].r / lad_r[0].r, d_exc / d_cred);
 
     for (pi, (v_set, m_lim)) in [(0.10, 0.509), (0.05, 0.500)].into_iter().enumerate() {
         for (kind, floor) in [
@@ -685,31 +706,111 @@ fn slice_v_smoke_is_bit_exact_against_pypy() {
         c.d(&format!("K/{tag}/lp_moved"), n.arm_lp_moved);
         c.d(&format!("K/{tag}/hp_zero"), n.arm_hp_zero);
         c.d(&format!("K/{tag}/hp_moved"), n.arm_hp_moved);
+        // RUST-SIDE ONLY, gated against ZERO. Python's `_read` takes a caller's `v_of` and no
+        // shipped caller in rungs 57-63 passes one (a grep of its call sites, NOT a run), so the
+        // ported parameter has to be counted rather than assumed inert -- a counter nothing reads
+        // proves nothing.
+        assert_eq!(n.read_foreign_v_of, 0,
+                   "_read's caller-supplied v_of arm is DEAD on this grid; if it fires, the                     port routed a reader through it that Python does not");
     }
 
     cmp.finish();
 }
 
-/// **P1's SECOND HALF, MEASURED RATHER THAN ARGUED.** Step 1b could only show that
-/// `try_instant_tail` and `powers` still DISPATCH — its two dispatch gates run with no stator
-/// arming anywhere in the tree, so they witness the cells existing, not the cells being invariant
-/// UNDER an arming. This compares the shipped table entries as raw `fn` pointers: rung 57 swaps
-/// exactly ONE of rung 40's three cells, and the other two are rung 40's own function, not a
-/// rung-57 copy of it.
+/// **P1's SECOND HALF, MEASURED — AND THE `fn`-POINTER VERSION OF THIS TEST WAS VACUOUS.**
 ///
-/// The *arithmetic* half — that the two cells' OUTPUT is bit-identical under an arming — is step
-/// 5's injection, and it is named here rather than left implicit.
+/// The first cut asserted `R57_TWO.try_instant_tail == R40.try_instant_tail` as raw `fn` pointers
+/// and the write-up called that *measured*. It is not: `R57_TWO` is built with `..R40`, so the
+/// equality is a **compile-time tautology** — no struct literal spelled that way can make it fail
+/// — and the two inequalities are tautologies too, since distinct `fn` items always have distinct
+/// addresses. Slice U step 5's finding (*the closing step wrote two near-vacuous gates of its
+/// own*), on this slice's own closing gate. The pointer assertions survive below as what they
+/// really are — a check on how the table is SPELLED — and the claim they used to carry moved
+/// here.
+///
+/// What this measures instead is the ALGEBRA: `with_vsv` sets only `vsv`, `eta_t_at` reads only
+/// `a_t`, so the two shipped cells are invariant under an arming. March a SCHEDULED machine, keep
+/// the stale map `_arm` leaves behind, and call both cells at one fixed `(CloseState, nu, Tt4)`
+/// against the stale map and against the design map. Bit-identical output is the claim.
+///
+/// **AND THE ANTI-VACUITY HALF IS THE POINT.** A zero here would read the same whether the cells
+/// are invariant or the two maps are equal, so the test first asserts the maps genuinely DIFFER —
+/// `vsv` moved, and `psi` and `phi_surge_at`, the two channels `with_vsv`'s own docstring names,
+/// both move with it. The difference is observable; it is just not observable THERE.
+///
+/// **THE DETECTOR WAS MEASURED, and it has a floor.** A `+ vsv * 1e-9` term added to `eta_lpt`
+/// inside `r40_try_instant_tail` fails this test (`eta_lpt moved under an arming`). The same
+/// injection at **`1e-15`** does NOT — `vsv ≈ 0.017` there, so the perturbation is ~1.7e-17
+/// against an ULP of `eta_lpt ≈ 0.9`, i.e. below the last bit. That same 1e-15 injection **IS**
+/// caught by the value dump above, because a 35-step march accumulates it. So the two
+/// instruments have complementary floors: this one is a POINTWISE bit comparison and bottoms out
+/// at an ULP; the dump is a MARCHED trajectory and amplifies. Neither subsumes the other, and
+/// the number is here so the next slice does not have to re-derive which.
 #[test]
-fn the_two_shipped_cells_are_rung_40s_own() {
-    assert!(std::ptr::fn_addr_eq(R57_TWO.try_instant_tail, R40.try_instant_tail),
-            "rung 57 must INHERIT try_instant_tail: with_vsv sets only `vsv`, eta_t_at reads \
-             only `a_t`, and `vsv` cannot reach `a_t`.");
-    assert!(std::ptr::fn_addr_eq(R57_TWO.powers, R40.powers),
-            "rung 57 must INHERIT powers, for the same algebraic reason.");
+fn the_two_shipped_cells_are_invariant_under_an_arming() {
+    let m = st(StatorArm::scheduled_lp(sched(V, N_LO)));
+    let f = flight();
+    let core = &m.fuel.inner;
+    let (traj, _) = m.stator_march(&f, &ramp(), None, &StatorLeg::default());
+
+    // What `_arm` LEFT on the object, and the design maps it was built from.
+    let (stale_lp, stale_hp) = (core.inner.map_lp(), core.inner.map_hp());
+    let (des_lp, des_hp) = (m.design_map(Spool::Lp), m.design_map(Spool::Hp));
+
+    // (1) THE MAPS DIFFER, AND OBSERVABLY — else a bit-identical tail proves nothing.
+    assert!(stale_lp.vsv != des_lp.vsv,
+            "the stale LP map must carry a MOVED setting, or this test compares a map with \
+             itself: stale {} vs design {}", stale_lp.vsv, des_lp.vsv);
+    assert!(stale_lp.psi(0.62) != des_lp.psi(0.62),
+            "`psi` is one of the two channels the arming drives -- if it does not move, the \
+             arming is inert and the invariance below is vacuous");
+    assert!(stale_lp.phi_surge_at() != des_lp.phi_surge_at(),
+            "`phi_surge_at` is the other; same reason");
+
+    // (2) ONE fixed state, taken off the march. `close` re-arms (it IS the rung-57 cell), so the
+    //     maps are re-set here and explicitly overwritten below -- never read as whatever is
+    //     left over.
+    let p = &traj[traj.len() / 2];
+    let (tt2, pt2, v0) = core.inlet(&f);
+    let c = m.fuel.close_fuel(p.nu_lp, p.nu_hp, p.mf, tt2, pt2);
+    let (nl, nh, tt4) = (p.nu_lp, p.nu_hp, c.tt4);
+
+    core.inner.set_map_lp(stale_lp);
+    core.inner.set_map_hp(stale_hp);
+    let tail_stale = core.try_instant_tail(&f, &c.base, nl, nh, tt4, v0)
+        .expect("the tail on the live map");
+    let pow_stale = core.powers(&c.base, &f, nl, nh, tt4).expect("powers on the stale map");
+
+    core.inner.set_map_lp(des_lp);
+    core.inner.set_map_hp(des_hp);
+    let tail_des = core.try_instant_tail(&f, &c.base, nl, nh, tt4, v0)
+        .expect("the tail on the live map");
+    let pow_des = core.powers(&c.base, &f, nl, nh, tt4).expect("powers on the design map");
+
+    // (3) THE CLAIM. Spelled on the two turbine efficiencies first, because those are the ONLY
+    //     values either cell reads off a map, then on the whole struct so a channel nobody
+    //     thought of cannot slip through.
+    assert_eq!(tail_stale.eta_lpt.to_bits(), tail_des.eta_lpt.to_bits(),
+               "eta_lpt moved under an arming: `vsv` reached `a_t` after all, and P1 is refuted");
+    assert_eq!(tail_stale.eta_hpt.to_bits(), tail_des.eta_hpt.to_bits(), "eta_hpt moved");
+    assert_eq!(tail_stale.sp_thrust.to_bits(), tail_des.sp_thrust.to_bits(), "sp_thrust moved");
+    assert!(tail_stale == tail_des, "try_instant_tail is NOT invariant under the arming");
+    assert_eq!(pow_stale.0.to_bits(), pow_des.0.to_bits(), "Phi_L moved under an arming");
+    assert_eq!(pow_stale.1.to_bits(), pow_des.1.to_bits(), "Phi_H moved under an arming");
+}
+
+/// How the two tables are SPELLED — which is all the `fn`-pointer comparisons above ever were.
+///
+/// Kept because the spelling IS load-bearing (`..R40` is what makes the inheritance a fact rather
+/// than a copy), and demoted to its own name so no write-up can mistake it for the invariance
+/// measurement again.
+#[test]
+fn the_table_spelling_inherits_rather_than_copies() {
+    assert!(std::ptr::fn_addr_eq(R57_TWO.try_instant_tail, R40.try_instant_tail));
+    assert!(std::ptr::fn_addr_eq(R57_TWO.powers, R40.powers));
     assert!(!std::ptr::fn_addr_eq(R57_TWO.try_close, R40.try_close),
             "rung 57 SWAPS try_close -- if this holds, the arming never runs and section C's \
              stale-map keys are measuring rung 40.");
-    // ... and the stator table itself is genuinely three DIFFERENT cells from the default.
     assert!(!std::ptr::fn_addr_eq(R57.arm, NO_STATOR.arm));
     assert!(!std::ptr::fn_addr_eq(R57.v_of, NO_STATOR.v_of));
     assert!(!std::ptr::fn_addr_eq(R57.stator_march, NO_STATOR.stator_march));

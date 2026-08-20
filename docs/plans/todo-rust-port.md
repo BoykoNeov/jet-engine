@@ -9450,7 +9450,7 @@ only `vsv`; `eta_t_at` reads only `a_t`; both bodies read) but it is sound **by 
 first port-side exercise is step 2, and **step 5's injections owe it one**: arm during a march and
 assert `try_instant_tail`'s output is bit-identical.
 
-##### STEP 2 — SHIPPED. **THE CARRIER'S FIRST REAL EXERCISE, AND A SMOKE THAT WAS BIT-EXACT AND BLIND TO THREE OF ITS OWN BRANCHES**
+##### STEP 2 — SHIPPED. **THE CARRIER'S FIRST REAL EXERCISE — AND BOTH OF THE STEP'S OWN CLOSING GATES WERE WRITTEN VACUOUS BEFORE THEY WERE WRITTEN RIGHT**
 
 `src/stator_transient.rs` — **2 510 lines**, rungs 57/58/59/60's whole Python class plus
 `StatorSchedule` and `IncidenceLimiter`. Three NEW cells (`arm`, `v_of`, `stator_march`), the two
@@ -9509,13 +9509,44 @@ silently make a rung-40 object armable — a claim no value key could witness.
 `a_rung_43_object_never_dispatches_the_stator_table` marches a bare rung-43 core through the
 closure, the equilibrium, an accel-limited RK4 ramp and a `phi`-floor-limited one; every one of
 those would hit the panic if any rung-40/43 body carried an arming call, so a green run **is** the
-unreachability claim. `the_two_shipped_cells_are_rung_40s_own` compares `R57_TWO`'s entries against
-`R40`'s as raw `fn` pointers — **P1's second half, MEASURED**, which step 1b explicitly could not
-do (its two dispatch gates run with no arming anywhere in the tree). *P1's remaining half — that
-the two cells' OUTPUT is bit-identical UNDER an arming — is step 5's injection and is booked there,
-not implied by this one.*
+unreachability claim.
 
-**5. THE FINDING: THE SMOKE'S FIRST CUT WAS 1 742 KEYS BIT-EXACT AND BLIND TO THREE OF ITS OWN
+**5. THE GATE WRITTEN TO CLOSE THE STEP WAS VACUOUS, AND THE WRITE-UP HAD ALREADY CALLED IT
+MEASURED.** The first cut asserted `R57_TWO.try_instant_tail == R40.try_instant_tail` as raw `fn`
+pointers and this section claimed *"P1's second half, MEASURED"* off it. `R57_TWO` is built with
+`..R40`, so that equality is a **compile-time tautology** — no struct literal spelled that way can
+make it fail — and the two inequalities beside it are tautologies too, since distinct `fn` items
+always have distinct addresses. It was **restated, not measured**, and slice U step 5's finding
+(*the closing step wrote TWO near-vacuous gates of its own*) landed on this slice's own closing
+gate. The advisor blocked the step on it.
+
+Replaced by `the_two_shipped_cells_are_invariant_under_an_arming`, which turns the algebra into a
+number: march a SCHEDULED machine, keep the map `_arm` leaves stale, and call BOTH cells at ONE
+fixed `(CloseState, nu, Tt4)` against the stale map and against the design map. **Bit-identical, on
+`eta_lpt`, `eta_hpt`, `sp_thrust`, the whole `Instant2`, and both power residuals — so P1's second
+half IS now measured.** The anti-vacuity half is the point: it first asserts the two maps differ
+OBSERVABLY (`vsv` moved, and `psi` and `phi_surge_at` both move with it), because a zero would
+otherwise read the same whether the cells are invariant or the maps are equal. The pointer
+assertions survive under the honest name `the_table_spelling_inherits_rather_than_copies`.
+
+**AND THE DETECTOR WAS MEASURED, WHICH SPLIT THE TWO INSTRUMENTS' FLOORS.** `+ vsv * 1e-9` on
+`eta_lpt` inside `r40_try_instant_tail` FAILS the new gate. The same injection at **`1e-15`** does
+NOT — `vsv ≈ 0.017`, so the perturbation is ~1.7e-17 against an ULP of `eta_lpt ≈ 0.9` — yet the
+**value dump catches it**, because a 35-step march accumulates. *A pointwise bit gate bottoms out
+at an ULP; a marched dump amplifies. Neither subsumes the other*, and the pair of numbers is
+recorded so slice W does not re-derive it.
+
+**6. TWO SMALLER REPAIRS FROM THE SAME REVIEW.** (a) `Ramp::with_r` is used once, in rung 60's
+RATE ladder, and a `s_settle` accidentally scaled with `r` would move the excursion without moving
+the credit — the exact pair the criterion differences. Now asserted, and **the bar is measured
+rather than guessed**: the first cut demanded the credit bit-equal across the ladder and FAILED on
+the clean tree at 0.73 %, because rung 57's own headline says clock-free is approximate (~1 point
+over a 20× range). Measured across 4×: credit **0.73 %**, excursion **66.3 %**, contrast **91×**;
+the bar sits on the contrast at 20×. (b) `READ_FOREIGN_VOF` was documented *"measured DEAD"* on the
+strength of a **grep of `_read`'s call sites**, and no test read it. The doc now says what was
+actually done, and section K gates the counter at zero — a counter nothing reads proves nothing.
+
+**7. THE FINDING: THE SMOKE'S FIRST CUT WAS 1 742 KEYS BIT-EXACT AND BLIND TO THREE OF ITS OWN
 BRANCHES.** It passed. Reading the flags it had just emitted — not running it — showed:
 
 | branch | first cut | why it was blind |
@@ -9535,7 +9566,7 @@ pass — a hand-typed `arrow_toggle` state `(0.82, 0.93, 0.42)` that does not br
 `vsv_hp = 0.20` that goes off-map — were caught by Python raising, i.e. for free; **the branch
 blindness was the one that would have shipped.**
 
-**6. WHAT THE SMOKE MEASURES THAT THE PLAN ONLY PREDICTED.** Section C dumps the LIVE map's `vsv`
+**8. WHAT THE SMOKE MEASURES THAT THE PLAN ONLY PREDICTED.** Section C dumps the LIVE map's `vsv`
 AFTER a march, per arming: **`0.0170`** LP-scheduled, **`0.0111`** HP, and **`0.2` exactly** for a
 CONSTANT setting — against the design `0.0`. That is § 5.20 (i)'s permanent mutation as a bit key,
 so a locally-armed-core port fails on a NUMBER rather than passing in silence. Beside it, the two
@@ -9560,7 +9591,7 @@ rung-57 objects, so it is inert here; it is **slice W's first job** and the note
 `at_stator`'s own definition, not only here.
 
 **THE GATE:**
-`cargo test --release`, status written into the log — **`CARGO_EXIT=0`, 96 suites, 850 passed, 0 failed, 0 ignored** (step 1b's 95 / 847, plus this slice's one suite and its three tests). The `0 ignored` is slice M's rule still holding. **NO PYTHON SOURCE CHANGED**, so `pytest` is untouched by this step and is not re-run — `rust/oracle/dump_slice_v_smoke.py` is a dump, not a test, and lives outside `turbojet/` and `tests/`.
+`cargo test --release`, status written into the log — **`CARGO_EXIT=0`, 96 suites, 851 passed, 0 failed, 0 ignored** (step 1b's 95 / 847, plus this slice's one suite and its four tests). The `0 ignored` is slice M's rule still holding. **NO PYTHON SOURCE CHANGED**, so `pytest` is untouched by this step and is not re-run — `rust/oracle/dump_slice_v_smoke.py` is a dump, not a test, and lives outside `turbojet/` and `tests/`.
 
 ## 6. Named risks
 

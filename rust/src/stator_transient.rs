@@ -76,7 +76,9 @@ thread_local! {
     static ARM_HP_MOVED: Cell<u64> = const { Cell::new(0) };
     static VOF_CALLS: Cell<u64> = const { Cell::new(0) };
     static MARCH_CALLS: Cell<u64> = const { Cell::new(0) };
-    /// `_read` was handed a CALLER'S `v_of` rather than defaulting to this machine's own.
+    /// `_read` was handed a CALLER'S `v_of` rather than defaulting to this machine's own. No
+    /// shipped caller in rungs 57-63 passes one — a grep of `_read(`'s call sites, NOT a run —
+    /// so the ported parameter is COUNTED and `slice_v_smoke.rs` section K gates it at zero.
     static READ_FOREIGN_VOF: Cell<u64> = const { Cell::new(0) };
     /// `_refine_min`'s minimum landed on an ENDPOINT, so no parabola is fitted.
     static REFINE_EDGE: Cell<u64> = const { Cell::new(0) };
@@ -1526,10 +1528,11 @@ impl ScheduledStatorCore {
     /// ```
     ///
     /// `v_of` defaults to THIS machine's own setting; a caller may pass one to read a trajectory
-    /// against a DIFFERENT machine's wall (the floor-only isolation leg). **That parameter is
-    /// MEASURED DEAD** — it exists on Python's signature and no shipped caller in rungs 57–63
-    /// passes it — so it is ported, counted through [`Census::read_foreign_v_of`], and gated
-    /// against zero rather than left absent.
+    /// against a DIFFERENT machine's wall (the floor-only isolation leg). **No shipped caller in
+    /// rungs 57–63 passes one** — established by grepping the 16 `_read(` call sites, not by
+    /// running anything — so the ported parameter is counted through
+    /// [`Census::read_foreign_v_of`] and gated at zero in `slice_v_smoke.rs` section K, rather
+    /// than left absent or asserted inert.
     pub fn read(
         &self, traj: &[FuelPoint], v_of: Option<&dyn Fn(Spool, &FuelPoint) -> f64>,
     ) -> StatorRead {
