@@ -1658,7 +1658,7 @@ next starts. The tree is green at every phase boundary; there is no big-bang cut
 | **3** | NOx & mixing, rungs 7–24. **RISK-BEARING — not bulk.** These are phase 1's largest *consumer*: every one rides the equilibrium solve and `Kp = exp(−ΔG°/RuT)`, and their findings are *shapes* (the bell's peak, the minimum pinned at `C_opt`, monotone-vs-turns-back-up) that a last-digit shift in an exponential can move. Deliberately placed straight after phase 1 as the **first real test of whether the transcendental arithmetic holds**. **DONE — slices A (7/8/9/19), B (10/11/12/20), C (13/15/16/18/21), D (22/23/24) and E (14/17) all shipped**, § 4.3–4.10; the slices are grouped in § 4.3 by DEPENDENCY, not by number | 4–6 | ✅ slice A: `nox_oracle.rs` (**1806/1806** bit-exact vs PyPy on 22+22 distinct solver roots) + 4 rung suites (43 tests) · ✅ slice B: `quench_oracle.rs` (**2507/2507**, on 165 distinct trajectory roots) + 4 rung suites (39 tests), one location key NARROWING a shipped claim · ✅ slice C: `pdf_oracle.rs` (**2448/2448**, both quadrature branches asserted exercised) + 5 rung suites (59 tests); the source's own mean-preservation guard found to have an `n_quad` FLOOR, and the port gates the REJECTION as well as the acceptance (§ 4.5) · ✅ slice D: `spatial_oracle.rs` (**462/462**, incl. 28 DISCRETE keys) + 3 rung suites (43 tests); TWO source claims of exactness CORRECTED — rung 24 applies an operation inside an accumulation and removes it outside, twice (§ 4.8) | · ✅ slice E: `nozzle_oracle.rs` (**513/513**, incl. 24 DISCRETE keys) + 2 rung suites (24 tests) + 3 gates `rung20.rs` had deferred; a THIRD claim of exactness corrected (the frozen reduce is algebraic only, and its floor is the entropy ROUTE, not the bisection's stopping rule) and rung 17's firing band edge LOCATED — past it the bulk margin goes dormant while the per-pocket one RISES (§ 4.10) |
 | **4** | Nozzle & turbine marches, rungs 25–30 — own convergence behaviour, hence separate. ~~**AUTHORISED 2026-08-12; three DEPENDENCY slices**~~ **DONE** | 2–3 | ✅ slice F: `march_oracle.rs` (**912/912** bit-exact vs PyPy, on 49 distinct march exit roots) + 2 rung suites (32 tests) in a new `march.rs`; the FOURTH "exactly"-class claim and the FIRST to survive — because it compares a COPY, not a rederivation (§ 4.12) · ✅ slice G: `no_march_oracle.rs` (**776/776**, and only 8.0 % CPython-identical — the sharpest dump in the port) + 2 rung suites (28 tests); slice F's discriminator made TWO pre-registered predictions and both HELD (§ 4.14) · ✅ slice H: `tt_oracle.rs` (**270/270**) + 2 rung suites (14 tests); RATIO ≠ ENERGY measured ANTI-correlated, and the one slice not pre-registered — all three of its guessed census bars were wrong (§ 4.15) |
 | **5** | ~~Steady matchers — rungs 31–33, 38–39, **41**, 42, 53–56, 61~~ **DONE 2026-08-17, seven slices (I·J·K·L·M·N·O).** ~~**Contains the diamond** (§ 6)~~ **PRE-FLIGHT DONE (§ 5.3); AUTHORISED 2026-08-13.** The diamond is discharged; the phase's structural content is the **five-name virtual set** (`_solve_turbine` — claimed by PHASE 6 — `match`, `_hp_eta_loop`, `_lp_eta_loop`, `at_setting`) and `_INC_MAX`'s live shadow | 4–6 | ✅ slice I (rungs 31/33): `offdesign_oracle.rs` (**3951/3951** bit-exact vs PyPy, incl. **961 discrete** keys) + 2 rung suites (17 tests) in a new `matcher.rs`; the crate's FIRST fallible paths, its FIRST virtual hook, and the two rungs re-gated as counts over BIT PATTERNS (§ 5.5) · ✅ slice J (rung 32): `map_oracle.rs` (**7 252/7 252**) + `rung32.rs`; the oracle found BLIND to a mis-spelled square, so the rule is gated directly (§ 5.6) · ✅ slice K (rungs 38/39): `two_spool_oracle.rs` (**11 812/11 812**, and only 46.3 % CPython-identical) + 2 rung suites (19 tests) in a new `two_spool.rs`; all six predictions held, and the CPython arm REFUTED an assertion inherited from slice I — the pass-count instability needs a SOLVER-derived property, not the equilibrium gas (§ 5.7) · ✅ slice L (rungs 41/42): `slice_l_oracle.rs` (**25 458 keys**) + 2 rung suites (12 + 12 tests) in a new `bleed.rs`, plus the crate's first FALLIBLE TWINS; nine predictions all settled, and a claim the SHIPPED SOURCE carried found wrong (§ 5.8) · ✅ slice M (rungs 53/54): `slice_m_oracle.rs` + 2 rung suites (24 + 25 tests) in a new `stator.rs`, all six steps shipped; its probe **OVERTURNED slice J's `solve_n` zero-firing verdict**, and a bar asserted in a shipped doc comment was refuted by a third of the dump (§ 5.9) · ✅ **PHASE 5 COMPLETE** — the last two slices were N (55/56) and O (61), sized in § 5.9; **N is PRE-REGISTERED (§ 5.10), 10 predictions**, and its probes **REFUTE § 5.9 (c) twice** — reading a method's body cannot see its state's CARRIER — **steps 1–4 SHIPPED** (step 1: P2 held at 535 names, `diff` empty, and the ±1 that would not reconcile was slice I's last `#[ignore]` surviving a rule slice M had already retired · step 2: `stage.rs` + `slice_n_smoke.rs`, **1 337 keys bit-exact first run** over seven enumerated cells, and it **CORRECTS § 5.10 (iii)** — `_P_FLOOR`'s deadness is a DERIVED threshold `e > 1.001` in the two floor constants, not a property of the sweep · step 3: `StageStackCore` + `R55`/`R55_TWO`, and the carrier lesson RECURRED — a FOURTH gated-code edit, at step 3, in a file step 1 never opened, because the plan asked what carrier `at_setting` needs and never what carrier the EFFICIENCY-LOOP hook needs; plus an `_INC_MAX` shadow § 5.3's pre-flight had called correctly and the porting slice mis-spelled · step 4: `slice_n_oracle.rs`, **72 520 keys bit-exact first run** + a 5 649-key equilibrium arm and a 41 560-key CPython one, and § 5.10's own censuses turned out to be measured on TWO grids — (i)/(iv) reproduced to the firing, (iii)/(vi) came from a 240-cell probe sweep, so the census is EMITTED and compared rather than restated; the CPython arm's *discrete → bits* tier had to SPLIT, because all 520 interpreter flips are argmin indices at the design throttle) |
-| **6** | Transients — rungs 34–37, 40, 43–52 (the fuel-side limiter family). **AUTHORISED 2026-08-17; PRE-FLIGHT DONE (§ 5.12). SLICES P, Q, R, S and T SHIPPED (§ 5.13–§ 5.17); U PRE-REGISTERED (§ 5.18).** The phase's structural content is a **six-name virtual set** — `integrate_fuel`, `_close`, `_close_fuel`, `_surge_fuel`, `_instant_tail`, `_powers` — **every one of which crosses into phase 7**, so there is no phase-6-internal hook and the `Hooks` table appears at slice R, not P. Six slices, ordered by `_degenerate`: **P** (34/35/36 `SpoolTransient`) · **Q** (37) · **R** (40/44) · **S** (43/45, `integrate_fuel` ENTIRE) · **T** (46/47/48 gates) · **U** (49/50/51/52 gates). The `4257–4506` object block spans two phases — `IncidenceLimiter` is rung **60** | 4–6 (**light** — 156 tests over 15 files, and phase 3 took five slices for 204) | ✅ slice P: `spool_oracle.rs` (**7 302** bit-exact) + 3 rung suites · ✅ slice Q: `combustor_oracle.rs` (**2 066**) + 1 suite · ✅ slice R: `two_spool_transient_oracle.rs` (**6 853 + 1 120** bit-exact vs PyPy on the first run, + a tiered CPython arm reproducing probe 4's 5-of-12 exactly) + `rung40.rs`/`rung44.rs` (17 tests) + `slice_r_smoke.rs`/`slice_r_dispatch.rs`; a ported suite found running its NEIGHBOUR's gas (§ 5.15 step 4) · ✅ slice S (43/45, `integrate_fuel` ENTIRE — the phase's largest): `fuel_transient_oracle.rs` (**4 671** CPG + **1 133** gas keys bit-exact vs PyPy on the first run) + `rung43.rs`/`rung45.rs` (20 tests) + `slice_s_smoke.rs`/`slice_s_dispatch.rs`, five steps; § 5.12's CPython-detector IOU CLOSED by measurement on the three TPG gases the fuel path admits (§ 5.16) · ✅ slice T (46/47/48 gates) § 5.17, **ALL FOUR STEPS SHIPPED** — the FIRST slice whose source already shipped, so its predictions target slice S's ungated ~40 % rather than a port. `rung46.rs` (7 fns for 6, one a DISCLOSED divergence) + `rung47.rs` (9 for 9) + `rung48.rs` (16 for 16), **0 source lines** after step 1 until step 4's one behaviour-neutral HOIST; step 2 measured the rung-47 suite to have **no value content** (two injections move 13 of 18 readings by up to 24 %, all 9 gates pass) and step 3 found its one surviving defect unobservable to the WHOLE project — every reader of `fuel_removed` is scale-invariant; step 4's `topping_oracle.rs` (**1 729** keys bit-exact vs PyPy on the first run + a CPython arm, 4 tests in 53 s) HOLDS all three of those defects and corrects the slice's OWN finding 6 — `test_rung46.py`'s `~1645` peak is right, it is measured on a different GAS · ⏳ **slice U (49/50/51/52 gates) — § 5.18, four probes measured first; 63 gates + 9 readers over 418 source lines, five steps; STEP 1 SHIPPED** — `rung49.rs` (17 fns for 17, 0.38 s) over `SurgeRelief`/`surge_relief`/`floor_sweep` and finding 6's `read_point`, **226 source lines added and 0 executable lines changed**, **575 keys over all 23 gate cells bit-exact vs PyPy on the first run** — and then ELEVEN injections found **five of the 25 keys have no gate in either language**, with the one-ulp boolean protected REDUNDANTLY by two spellings (breaking either alone is invisible, breaking both flips it, and all four builds are 17/17). Its refusal census came back COMPLETE (all 14 marcher refusals present in Rust) but found **three of Python's own `lp_disabled` refusals UNREACHABLE over all 255 arming combinations**, so four gates named for four rungs fire ONE assert; and — inverting slice T's finding 2 — one decision key (`both_edges_inside_ramp`) sits at **ONE ULP** |
+| **6** | Transients — rungs 34–37, 40, 43–52 (the fuel-side limiter family). **AUTHORISED 2026-08-17; PRE-FLIGHT DONE (§ 5.12). SLICES P, Q, R, S and T SHIPPED (§ 5.13–§ 5.17); U PRE-REGISTERED (§ 5.18).** The phase's structural content is a **six-name virtual set** — `integrate_fuel`, `_close`, `_close_fuel`, `_surge_fuel`, `_instant_tail`, `_powers` — **every one of which crosses into phase 7**, so there is no phase-6-internal hook and the `Hooks` table appears at slice R, not P. Six slices, ordered by `_degenerate`: **P** (34/35/36 `SpoolTransient`) · **Q** (37) · **R** (40/44) · **S** (43/45, `integrate_fuel` ENTIRE) · **T** (46/47/48 gates) · **U** (49/50/51/52 gates). The `4257–4506` object block spans two phases — `IncidenceLimiter` is rung **60** | 4–6 (**light** — 156 tests over 15 files, and phase 3 took five slices for 204) | ✅ slice P: `spool_oracle.rs` (**7 302** bit-exact) + 3 rung suites · ✅ slice Q: `combustor_oracle.rs` (**2 066**) + 1 suite · ✅ slice R: `two_spool_transient_oracle.rs` (**6 853 + 1 120** bit-exact vs PyPy on the first run, + a tiered CPython arm reproducing probe 4's 5-of-12 exactly) + `rung40.rs`/`rung44.rs` (17 tests) + `slice_r_smoke.rs`/`slice_r_dispatch.rs`; a ported suite found running its NEIGHBOUR's gas (§ 5.15 step 4) · ✅ slice S (43/45, `integrate_fuel` ENTIRE — the phase's largest): `fuel_transient_oracle.rs` (**4 671** CPG + **1 133** gas keys bit-exact vs PyPy on the first run) + `rung43.rs`/`rung45.rs` (20 tests) + `slice_s_smoke.rs`/`slice_s_dispatch.rs`, five steps; § 5.12's CPython-detector IOU CLOSED by measurement on the three TPG gases the fuel path admits (§ 5.16) · ✅ slice T (46/47/48 gates) § 5.17, **ALL FOUR STEPS SHIPPED** — the FIRST slice whose source already shipped, so its predictions target slice S's ungated ~40 % rather than a port. `rung46.rs` (7 fns for 6, one a DISCLOSED divergence) + `rung47.rs` (9 for 9) + `rung48.rs` (16 for 16), **0 source lines** after step 1 until step 4's one behaviour-neutral HOIST; step 2 measured the rung-47 suite to have **no value content** (two injections move 13 of 18 readings by up to 24 %, all 9 gates pass) and step 3 found its one surviving defect unobservable to the WHOLE project — every reader of `fuel_removed` is scale-invariant; step 4's `topping_oracle.rs` (**1 729** keys bit-exact vs PyPy on the first run + a CPython arm, 4 tests in 53 s) HOLDS all three of those defects and corrects the slice's OWN finding 6 — `test_rung46.py`'s `~1645` peak is right, it is measured on a different GAS · ⏳ **slice U (49/50/51/52 gates) — § 5.18, four probes measured first; 63 gates + 9 readers over 418 source lines, five steps; STEPS 1–2 SHIPPED** — `rung49.rs` (17 fns for 17, 0.38 s) over `SurgeRelief`/`surge_relief`/`floor_sweep` and finding 6's `read_point`, **226 source lines added and 0 executable lines changed**, **575 keys over all 23 gate cells bit-exact vs PyPy on the first run** — and then ELEVEN injections found **five of the 25 keys have no gate in either language**, with the one-ulp boolean protected REDUNDANTLY by two spellings (breaking either alone is invisible, breaking both flips it, and all four builds are 17/17). Its refusal census came back COMPLETE (all 14 marcher refusals present in Rust) but found **three of Python's own `lp_disabled` refusals UNREACHABLE over all 255 arming combinations**, so four gates named for four rungs fire ONE assert; and — inverting slice T's finding 2 — one decision key (`both_edges_inside_ramp`) sits at **ONE ULP**. **Step 2** adds the 27-field `ReleaseRelief` + `release_relief` (complete, with rung 51's `tau_rel`) + `release_sweep` in **229 added and ZERO deleted lines**, and `rung50.rs` (15 fns for 15, 15/15 in 0.90 s), **1 323 keys over all 49 gate cells bit-exact vs PyPy on the first run**; then FOURTEEN injections found the file's ONE reader of the release edge's LOCATION sweeps **none of the two knife-edge cells**, so a `k*ds` coordinate moves `n_engaged` 8→7 and `s_rel` by a WHOLE CELL past all 15 gates. **P2 CONFIRMED by measurement** (the gate named for rung 50 fires rung 49's assert, full-string), 16 of the 27 keys have NO reader — `deficit_at_release`, the rung's own named quantity, among them — and `fuel_removed` is held only as a DIFFERENCE between two copies: break all THREE and rungs 48/49/50 are green |
 | **7** | **The ladder, rungs 57–60 and 62–84** — the `Hooks` table from § 2, one module per rung. (**61 is PHASE 5's**, not this phase's — it is the steady `StatorBleedMatcher`, and it was double-listed here until the slice-K audit) | 5–8 | 27/27 reduce-to-prior bit-exact |
 | **8** | `main.py` replacement; adjudicate the fragile rungs; re-anchor the fingerprint; **delete the Python**. **BLOCKED ON ONE OPEN PORT DIVERGENCE** — `components::sonic_throat`’s bracket `assert!` is a `panic!` where Python’s is a CATCHABLE `AssertionError` that every marcher’s `except AssertionError: break` relies on; measured at slice T step 1 (§ 5.17), 28 call sites of which ≥10 already sit in fallible chains, note at the definition | 2–3 | full suite green on Rust alone |
 
@@ -8186,6 +8186,229 @@ step rather than once at step 5, and each step's section carries its own table w
 limiter code, but eleven injections found a defect SURFACE in this step's own new code that the
 gates cannot see, which is the same warning about instrument power P1 was written to raise. **P3
 sharpened** (finding 4). **P2** needs rungs 50–52 and **P4/P5/P6** their own steps.
+
+##### STEP 2 — SHIPPED. **A DEFECT STEP 1 MEASURED INVISIBLE BECOMES VISIBLE ONE RUNG LATER, AND THE RUNG'S OWN NAMED QUANTITY HAS NO READER ANYWHERE**
+
+`fuel_transient.rs` gains the 27-field `ReleaseRelief`, `release_relief` (complete, `tau_rel`
+included — § 5.18 P6) and `release_sweep`. **229 lines added and ZERO deleted**, measured with
+`git diff --stat`: a pure addition over slice S's plant, cleaner than step 1's 226/1.
+`tests/rung50.rs` is 15 test fns for Python's 15 and runs **15/15 in 0.90 s** with the ONE shared
+sweep behind a `OnceLock`. `cargo build --release` clean; `cargo clippy --all-targets`
+reports **73** warnings, the SAME pre-existing count step 1 measured, and **none at any line this
+step touched** — checked by grepping the clippy output for `rung50.rs` and for `fuel_transient.rs`
+line numbers in the added range, not by eyeballing the total.
+
+**THE FULL-CRATE FIGURE IS MEASURED AND ITS SCOPE IS STATED.** `cargo test --release` came back
+**exit 0** with **809 passed / 0 failed / 0 ignored**, summed over the 91 `test result` lines — which
+are **89 test binaries + the lib target + doc-tests**, counted from the run's own `Running` /
+`Doc-tests` lines rather than assumed. That is step 1's **794 over 88 binaries** plus this file's
+**15 over one**, exactly, so the addition is visible in the total rather than inferred from it.
+**No wall clock is recorded** — the run overlapped the injection battery, which took the build
+lock repeatedly, so its elapsed figure would measure contention. *Never run the gate for timing*,
+and equally never quote a genuinely-measured number that measures the wrong thing.
+
+**THE MEMO STRUCTURE IS NOT RUNG 49's, AND COPYING IT WOULD HAVE BEEN A DIFFERENT MEASUREMENT.**
+Python memoises on the OFFSET TUPLE as well as the leg, so of eleven distinct sweep keys **exactly
+one has two consumers** (gates 3 and 4). Two neighbours look foldable and are not: gate 9 runs the
+SAME offsets and floor at `settle = 4.0`, a different march length; and gate 10's `(1.10, 1.56)`
+is a SUBSET of gates 3/4's `R2_OFFS` at an otherwise identical key, which Python still recomputes.
+Slicing the larger sweep would give the same numbers here and quietly stop being a port. One
+`OnceLock`, not rung 49's two.
+
+**FINDING 1 — 1 323 KEYS OVER 49 CELLS, BIT-EXACT ON THE FIRST RUN.** § 5.18 P1 registers a clean
+first pass as the outcome to distrust, so step 1's move was repeated: every cell any of the 15
+gates touches — eleven sweeps, gate 8's three matched-release cells and contract 1b's unforced one
+— dumped from both languages and diffed. **Zero differences against PyPy.** The Python side of the
+probe IMPORTS `tests/test_rung50.py` and reads its constants and its `_sweep` off the module
+rather than copying them, which is slice S step 4's lesson applied to the instrument that lesson
+was written about; the two SETTLE values (2.0 and gate 9's 4.0) therefore cannot drift apart the
+way § 5.18's own first probe run had them.
+
+*(The first diff came back 100 % different and was an artifact: Python's text-mode `open(p, "w")`
+writes CRLF on Windows and Rust wrote LF. Recorded because "everything differs" is exactly the
+shape a real port failure has, and one minute was spent on the wrong hypothesis.)*
+
+**FINDING 2 — THE FORCED-RELEASE COMPARISON SITE IS A ONE-*CELL* KNIFE EDGE, NOT A ONE-ULP ONE —
+AND IT WAS MEASURED BEFORE A GATE WAS WRITTEN.** § 5.18 finding 3 found a published boolean decided
+at one ulp because both languages accumulate the march coordinate. Rung 50 adds a site rung 49 has
+no analogue for: `release_weight` tests `s < s_off` against that same accumulated `s`, and
+`release_sweep`'s own docstring instructs callers to pass `s_off` ON the `ds` grid — which is
+precisely where accumulated `s` and a "cleaner" `k * ds` can straddle the bar. Swept over the
+eighteen `s_off` values this suite passes at `ds ∈ {0.02, 0.01}`:
+
+| site | accumulated `s` at the index | `k * ds` | last ARMED index |
+|---|---|---|---:|
+| `ds = 0.02`, `s_off = 0.20` | `0.19999999999999998` | `0.2` | **10 vs 9** |
+| `ds = 0.02`, `s_off = 0.26` | `0.25999999999999995` | `0.26` | **13 vs 12** |
+| `ds = 0.01`, `s_off = 0.10` | `0.09999999999999999` | `0.1` | 10 vs 9 |
+| `ds = 0.01`, `s_off = 2.20` | `2.199999999999997` | `2.2` | 220 vs 219 |
+| + two more on the RK4 sub-stage coordinates | | | |
+
+**Six comparison sites move the release edge by a WHOLE GRID CELL** between the two spellings, and
+**two are live cells of this suite** — gates 5 and 10b both read `s_off = 0.26`, gate 5 reads
+`0.20`. Under the shipped accumulating spelling the leg stays armed one point LONGER. This is a
+coarser hazard than the one-ulp boolean and it lands on a different site, so the note goes at
+`release_relief` as well as at the march loop. Both languages accumulate, so both agree — the
+point is what a tidy-up would cost, and here it would cost a gate-visible cell rather than a
+key nothing reads.
+
+**FINDING 3 — 13 OF THE 27 KEYS HAVE NO READER IN THE SUITE, AND ONE OF THEM IS THE RUNG'S OWN
+NAMED QUANTITY.** Measured by stripping the docstrings out of `test_rung50.py` and counting
+`["key"]` sites, then confirmed at the call sites. Unread: `deficit_at_release`, `ds`, `margin`,
+`min_phi_hp_bare`, `min_phi_hp_lim`, `min_phi_lp_lim`, `n_engaged`, `phi_lim`, `r`,
+`relief_other`, `relief_watched`, `rho`, `s_hp_bare`, `s_lp_bare`, `spool`, `tau_rel`.
+
+`deficit_at_release` is the one worth naming: **gate 8's entire subject is the deficit** — its
+docstring is "the debit is MONOTONE INCREASING in the deficit" — and the gate reads `fuel_removed`
+as a proxy instead. The key that carries the rung's concept has no gate in either language. Its
+companion is § 5.18 finding 4's ambiguity, re-measured here: with nothing engaged the key returns
+`0.0` while the same record's `s_eng` / `s_rel` return `NaN` — two sentinels for one condition in
+one record, and `0.0` is a legitimate deficit.
+
+**FINDING 4 — § 5.18 P2 IS CONFIRMED BY MEASUREMENT RATHER THAN INFERENCE, AT ITS SECOND OF FOUR
+DATA POINTS.** P2 says the four rungs' `lp_disabled` gates pass or fail as ONE because they all
+fire the rung-49 assert. Python's own gate matches the substring `"inherently two-shaft"`, which
+cannot tell four asserts apart, so `contract5_lp_disabled_refuses` asserts the **whole message**
+and adds `assert!(!m.contains("rung-50"))`. It passes: the gate named for rung 50 fires the assert
+named for rung 49, exactly as § 5.18 finding 1's 255-combination sweep predicted. Rung 49's own
+file could not make this measurement — its gate is the one that IS named correctly.
+
+**FINDING 5 — THE BAR MARGINS SPLIT AGAIN, AND THE TIGHTEST BAR IN THIS FILE IS 5 %.** Slice T's
+lesson, third outing. Measured on the suite's own cells before the 15/15 was accepted:
+
+| gate | bar | worst measured | slack |
+|---|---|---:|---:|
+| 4 | `peak/at_star > 2.5` | `2.625` | **1.05 × — 5 %** |
+| 4 | `past/peak < 0.6` (collapse) | `0.472` | 1.27 × |
+| 9 | `last/peak < 0.6` (the same collapse) | `0.472` | 1.27 × |
+| 4 | peak `s_off > 2·s_hp*` = `1.28` | `1.56` | 1.22 × — **one grid cell** |
+| 3 | `hits >= 8` (non-vacuity) | `11` | 1.38 × |
+| 5 | worst `s_off < s_hp*` = `0.40` | `0.30` | 1.33 × |
+| 3 | `\|s_min − s_rel\| <= 3·ds` | `0.0200` | 3.00 × |
+| 10 | `r = 0.5` `ds` drift `< 0.05` | `0.0115` | 4.34 × |
+| 10 | `r = 2.0` `ds` drift `< 0.02` | `0.0066` | 3.05 × |
+| 9 | `\|nu_hp_end − bare\| < 5e-4` | `5.75e-6` | 87 × |
+| 5 | `\|relief_lp − (phi_lim − min_phi_lp_bare)\| < 1e-5` | `8.88e-16` | 1.1e10 × |
+| 7 | `relief_lp == 0.0` | `0.0` exactly | structural |
+| 10 | `\|s_min_lp − s_off\| <= ds` | `0.0000` at BOTH `ds` | structural |
+
+**Gate 4's `2.625` against a `2.5` bar is the tightest thing in the file** — a 5 % error in
+`relief_hp` at either of two rows breaks it and nothing looser would notice, tighter even than
+step 1's gate 9 at 11 %. Two of the bars are structurally EXACT rather than tight, and that
+distinction matters: gate 10's relocation offset is `0.0000` at both `ds` values on all six rows
+(the minimum lands ON the imposed release point), and gate 7's `relief_lp` is an `x − x` zero, the
+same mechanism as rung 48's six sites and rung 49's gate 9.
+
+**FINDING 6 — A DOCSTRING NUMBER IS HALF STALE, AND THE SEARCH IS STATED BECAUSE SLICE T's
+SAME-NUMBERED FINDING WAS DIAGNOSED BACKWARDS.** Gate 10's docstring says the two ramp rates
+converge at *"0.7 % against 2 %"*. Measured on the gate's own cells at its own settle: **0.656 % at
+`r = 2.0` and 1.151 % at `r = 0.5`**. The first reproduces; the second does not. Four alternatives
+were tried before the correction was written:
+
+| candidate | `r = 0.5` (quoted 2 %) |
+|---|---:|
+| the gate's own cells, `relief_hp`, max — **what the gate computes** | **1.151 %** |
+| the same at `settle = 4.0` | 1.151 % — settle-INVARIANT |
+| at the tighter floor `0.7400` | 0.872 % |
+| `relief_lp` instead of `relief_hp` | 7.808 % |
+| gate 5's wider offset set | 11.544 % |
+
+None lands on 2 %. The likeliest origin is the gate's own `tol` for `r = 2.0`, which IS `0.02` —
+a bar leaking into prose beside a measured figure — but that is offered as a hypothesis, not as
+the found formula. Both figures clear the gate's bars (`0.05` and `0.02`) and **no gate reads
+either quoted number**. Third outing in this port for the rung-63 lesson.
+
+**FINDING 7 — A MODULE CONSTANT IS DECLARED AND NEVER READ, IN PYTHON.** `S_LP_STAR = 0.240` on
+`test_rung50.py:71` occurs exactly **once** in the file's code — its own binding — measured by
+stripping docstrings and counting word occurrences. It is kept in the port under `#[allow(dead_code)]`
+with the measurement in its doc comment, because the port is a copy and not a tidy-up. The whole
+cost is the `allow`; the whole benefit is that **Rust says so and Python never does**.
+
+**FINDING 8 — FOURTEEN INJECTIONS, AND THE GATE THAT DEFENDS THE RELEASE EDGE SWEEPS THE ONLY
+CELLS THAT ARE NOT ON THE KNIFE EDGE.** The battery is the slice's standing instrument, re-run per
+step. Twelve injections were pre-registered with predictions BEFORE the harness ran once
+(`u2_injection_predictions.md`), and two more were added by what round one measured.
+
+| injection | moved a value? | keys | gates that caught it |
+|---|---|---:|---|
+| **A** the march coordinate spelled `k * ds` | yes — **`n_engaged` 8→7 and `s_rel` by a WHOLE CELL** | 546 | **NONE** |
+| **M** the release fires one cell late (`s <= s_off`) | yes — 16 armed-window keys | 94 | **gate 10 ALONE** |
+| **C** `deficit_at_release` divides by `mf` not `mf_sched` | yes | 49 | **NONE** |
+| **J** `deficit_at_release` reads `eng[0]` not `eng[-1]` | yes | 49 | **NONE** |
+| **D** `relief_watched` / `relief_other` swapped | yes | 80 | **NONE** |
+| **H** `nu_hp_end_bare` read off the LIM march | yes | 49 | **NONE** |
+| **G** `nu_hp_end` read off the BARE march | yes | 49 | contract 1b alone |
+| **B** `fuel_removed`'s trapezoid loses its `0.5` | yes, ×2 | 49 | contract 1b alone |
+| **B′** the SAME defect in ALL THREE copies in the module | yes | — | **NONE — rungs 48/49/50 all green** |
+| **K** `min_phi_lp_lim` / `_bare` swapped | yes | 90 | contract 1b, gate 5 |
+| **E** `s_min_lp` / `s_min_hp` swapped | yes | 46 | gates 3, 10 |
+| **L** `s_min_lp` reads the BARE argmin | yes | 43 | gates 3, 10 |
+| **F** `s_eng` / `s_rel` swapped | yes | 98 | contract 1b, gates 3, 4, 6, 8 |
+| **I** the engaged mask loses its `1e-9` slack | **NO — inert on all 49 cells** | 0 | — |
+
+**THREE PRE-REGISTERED PREDICTIONS WERE WRONG, WHICH IS THE POINT OF WRITING THEM DOWN FIRST.**
+
+**A was predicted CAUGHT and is not, and the mechanism is exact.** Finding 2 measured a one-CELL
+knife edge and the prediction followed straight from it: two of gate 5's and gate 10b's cells sit
+on it, so a `k * ds` spelling must be visible. It moves the edge exactly as measured —
+`s_off = 0.26` at `rho = 0.25` and at `rho = 4.0` both go `n_engaged` 8 → 7 with `s_rel` from
+`0.25999999999999995` to `0.23999999999999999`. **And no gate sees it.** `gate10` is this file's
+only reader of the release edge's LOCATION (`|s_min_lp − s_off| <= ds`), and it catches the same
+one-cell shift when that shift is written directly at the comparison site — injection M, which
+gate 10 catches ALONE. But gate 10 sweeps `0.30 / 0.40 / 0.44` and `1.10 / 1.56`, and **not one of
+those is a knife-edge cell**; the two gates that DO sweep the knife-edge cells read only "some
+`relief_lp < 0`" and "the worst row is upstream of `s_hp*`", neither of which a one-cell shift
+flips. **The defender and the exposure are on disjoint cells** — a shape neither a bar-margin
+table nor a reader census would have produced, because both instruments are blind to WHICH CELLS a
+reader reads.
+
+**AND "546 KEYS MOVED" NEEDED A SCALE BEFORE IT COULD BE QUOTED.** Step 1's lesson was that a
+"0 gates caught it" row needs a *did it move a value* column; this is that column needing a
+magnitude. Of A's 546: **499 moved by less than `1e-9`** (the coordinate feeds the fuel schedule at
+every RK4 stage, so everything drifts a little), 32 by more than `1e-3`, and **74 are armed-window
+keys**. The honest claim is the 74 and the two `n_engaged` flips, not the 546.
+
+**B AND G WERE PREDICTED UNGATED AND ARE CAUGHT — BY A REDUCE GATE, NOT A READER.** Slice T step 3
+measured every reader of `fuel_removed` in the project to be scale-invariant, and that is still
+true: gates 8 and 9 read it only through strict orderings. What catches the doubled trapezoid is
+`contract1b`, which compares `release_relief(s_off=None)` against `surge_relief` field for field —
+a CROSS-READER identity between two independent copies of the same integral. **The reduce spine
+turns out to be a VALUE gate wherever a rung re-implements its predecessor's quantity**, which is
+not what the reduce spine is for and is a real second job it does.
+
+**BUT ONLY AS A DIFFERENCE, AND B′ MEASURES THE LIMIT.** Breaking all three identical trapezoids in
+the module at once leaves rungs 48, 49 and 50 **all green**. So the protection is exactly
+"the two copies agree", never "the value is right" — § 5.18 step 1 finding 4's two-spelling shape
+INVERTED: there two faults were needed to MOVE a value, here two are needed to HIDE one. G's twin
+H makes the same point from the other side: `nu_hp_end` off the bare march is caught and
+`nu_hp_end_bare` off the lim march is not, and the ONLY difference between them is that Python's
+ten-key list in contract 1b happens to name one and not the other.
+
+**I MOVED NOTHING, AND THAT IS A STATEMENT ABOUT THE GRID.** It was registered with a question
+mark for exactly this reason. No point on any of the 49 cells sits in
+`[mf_sched·(1 − 1e-9), mf_sched)`, so the slack is unreachable and dropping it is inert — not a
+gate's achievement.
+
+**AND THE SITE-COUNT GUARD FIRED TWICE MORE.** `K`'s first anchor matched **3** sites (all three
+readers spell `min_phi_lp_bare: mpl_b,` identically) and `M`'s was indented four spaces too deep
+and matched **0**. Both printed `PATCH SITE COUNT n != 1 — NOT APPLIED` instead of running and
+reporting a green. That is slice T step 4's lesson (*an injection matching twice applies nothing
+and still reports green*) paying for the second slice running, and it is the only reason `K` and
+`M` are not two more "NONE" rows above — `M` in particular would have been a badly wrong one,
+since it is the ONE injection gate 10 catches.
+
+**THE UNGATED SURFACE AFTER STEP 2**, derived from the table rather than guessed, and therefore the
+sizing for step 5's oracle: **`deficit_at_release`** (both its value and its `eng[-1]` choice),
+**`relief_watched` / `relief_other`**, **`nu_hp_end_bare`**, **`fuel_removed`'s shared SCALE** (as
+opposed to the two copies' agreement), and **the march coordinate's spelling on the knife-edge
+cells**. Five things, all measured live.
+
+**PREDICTION STATUS.** **P1 holds in step 1's direction again** — no defect found in slice S's
+plant, but a defect surface in this step's own new code that the gates cannot see. **P2 CONFIRMED
+BY MEASUREMENT** at its second of four data points (finding 4). **P6 is on track and checkable at
+step 3**: `release_relief` landed complete with `tau_rel`, and Python's `rate_sweep` and
+`deficit_curve` are both plain loops over it — read in the source, to be gated when step 3 adds
+zero new logic. **P3/P4/P5** need rungs 51/52.
 
 ## 6. Named risks
 

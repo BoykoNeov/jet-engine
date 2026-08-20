@@ -929,6 +929,82 @@ pub struct SurgeRelief {
     pub nu_hp_end_bare: f64,
 }
 
+/// RUNG 50's `release_relief` return — Python's **27**-key dict, measured with its own `len()`.
+///
+/// **THE THIRD OF THREE SEPARATE STRUCTS, AND THE DELTAS ARE THE REASON.** § 5.18 finding 5
+/// measured rungs 49/50/52's readers at **25 / 27 / 34** keys with only **15** common to all
+/// three, so one record with `Option` fields would emit phantom keys on one side and renamed ones
+/// on the other while a key-COUNT census passed on both. Against [`SurgeRelief`]:
+///
+/// * **here and not there** — `s_off`, `tau_rel`, `ds`, `margin`, `deficit_at_release`, and the
+///   PAIR `s_min_lp` / `s_min_hp` where rung 49 reports the single `s_min_other`;
+/// * **there and not here** — `hold_err`, `both_edges_inside_ramp`, `s_min_other`, and **both**
+///   `Tt4_peak_*` keys. This reader has no peak-`Tt4` field at all, so the two injections § 5.18
+///   step 1 finding 3 measured ungated on those keys cannot even be spelled against it;
+/// * **`Option` where rung 49 is a plain float** — `spool`, `phi_lim`, `relief_watched`,
+///   `relief_other` (its `surge` is optional, rung 49's is a required positional) and `margin`
+///   (its `accel` is optional too). Both arms are live in shipped gates: gates 6/7 run
+///   accel-only, gates 3/4/5 surge-only, so the `Option`s are gated by construction — § 5.18
+///   finding 4.
+#[derive(Clone, Copy, Debug)]
+pub struct ReleaseRelief {
+    /// The FORCED release time. `None` is the unforced leg (rung 49 / rung 48).
+    pub s_off: Option<f64>,
+    /// RUNG 51's release RATE. Lands here COMPLETE (§ 5.18 P6) and is `None` on every rung-50
+    /// cell — `release_sweep` does not forward it.
+    pub tau_rel: Option<f64>,
+    pub r: f64,
+    pub rho: f64,
+    /// The march step. Rung 49's record carries no such key; gate 10's `ds` convergence is why
+    /// this one does.
+    pub ds: f64,
+    /// WHICH spool the `phi` leg watched — `None` on an accel-only cell.
+    pub spool: Option<Spool>,
+    pub phi_lim: Option<f64>,
+    /// Rung 48's schedule margin — `None` on a surge-only cell.
+    pub margin: Option<f64>,
+    /// WHEN the leg first engages — `NaN` when it never does.
+    ///
+    /// § 5.18 finding 4: the no-engagement arm is UNGATED by this slice's cells (the lowest
+    /// `n_engaged` any rung-50 `s_off` cell drives is **2**), so the step-5 oracle adds a cell
+    /// for it rather than inheriting one.
+    pub s_eng: f64,
+    /// WHEN it releases — the edge that is the point of the rung. `NaN` on the same arm.
+    pub s_rel: f64,
+    pub n_engaged: usize,
+    /// The instantaneous fractional clip at the LAST engaged point.
+    ///
+    /// **TWO SENTINELS FOR ONE CONDITION, COPIED NOT REPAIRED.** With nothing engaged this is
+    /// `0.0` while `s_eng` / `s_rel` are `NaN` — and `0.0` is a legitimate deficit, so this key
+    /// ALONE cannot separate "never engaged" from "engaged with zero deficit". Read `n_engaged`.
+    pub deficit_at_release: f64,
+    pub s_lp_bare: f64,
+    pub s_hp_bare: f64,
+    pub relief_lp: f64,
+    pub relief_hp: f64,
+    /// The WATCHED spool's relief — `None` on an accel-only cell. Rung 49 calls this definitional;
+    /// gate 5 measures it going NEGATIVE under an early forced release, which is what BOUNDS rung
+    /// 49's identity to the unforced instrument.
+    pub relief_watched: Option<f64>,
+    /// The UNWATCHED spool's relief — `None` on an accel-only cell.
+    pub relief_other: Option<f64>,
+    /// WHERE each spool's raw minimum sits on the LIMITED march. **The PAIR is the rung**: the
+    /// headline is that BOTH relocate to `s_rel`, which is why rung 49's single `s_min_other`
+    /// could not carry it.
+    pub s_min_lp: f64,
+    pub s_min_hp: f64,
+    pub min_phi_lp_bare: f64,
+    pub min_phi_lp_lim: f64,
+    pub min_phi_hp_bare: f64,
+    pub min_phi_hp_lim: f64,
+    /// `∫ (schedule − applied) ds`, trapezoid — the anti-deflation pair's first half.
+    pub fuel_removed: f64,
+    /// The settled endpoint — the other half.
+    pub nu_hp_end: f64,
+    pub nu_hp_end_bare: f64,
+}
+
+
 /// The RAW (reference-free) minimum of one key over a marched trajectory, and the `s` at which it
 /// is attained — rung 45's surge object, as [`schedule_relief`](TwoSpoolFuelTransient::
 /// schedule_relief) reads it.
@@ -2750,6 +2826,159 @@ impl FuelTransientCore {
             .map(|&p| {
                 let leg = SurgeLimiter::new(spool, p);
                 self.surge_relief(flight, tt4_lo, tt4_hi, &leg, r, s_settle, ds, None, None, None)
+            })
+            .collect()
+    }
+
+    // --- RUNG 50/51: the FORCED release edge, and its RATE --------------------------------
+
+    /// RUNG 50 (the finding method). March the SAME accel fuel ramp twice — BARE and with a
+    /// min-select leg armed but FORCED to disarm at `s_off` — and difference rung 45's
+    /// reference-free surge object, exactly as rungs 46/48/49's relief methods do.
+    ///
+    /// **WHY `s_off` AND NOT A LAG.** Rungs 48/49 could move a limiter's release edge only by
+    /// moving `m` / `phi_lim`, which drags the ENGAGEMENT edge, the window length and the clip
+    /// depth along with it — so rung 49 § 3's clock result had to be hedged as WITHIN-FAMILY.
+    /// `s_off` slides the release alone, TWO-SIDED, with everything up to it bit-identical. It is
+    /// an isolation diagnostic in the project's own tradition (`freeze = Lp` holds a spool's speed
+    /// against its own ODE); neither is a control law.
+    ///
+    /// **THE FINDING**: the release edge RELOCATES BOTH SPOOLS' MINIMA TO ITSELF —
+    /// `s_min_lp` / `s_min_hp` == `s_rel` to a grid cell — whenever the DIVE BRANCH WINS on that
+    /// spool, which is the conjunction of (a) the release landing at or AFTER that spool's own
+    /// bare minimum and (b) that spool's relief being NEGATIVE.
+    ///
+    /// `s_off = None` reproduces the unforced leg exactly (rung 49 / rung 48). `tau_rel` (RUNG 51)
+    /// fades the release over `[s_off, s_off + tau_rel]` instead of stepping it; `tau_rel = None`
+    /// is bit-for-bit rung 50. **It lands COMPLETE here rather than at rung 51's step** because it
+    /// is a kwarg of this method and not a separate path — § 5.18 P6 — and NO rung-50 cell passes
+    /// it, so it is `Option`-typed and value-inert until `tests/rung51.rs`.
+    ///
+    /// # THE COPY TRAP IS NOT [`surge_relief`](Self::surge_relief)'s, IT IS ITS MIRROR IMAGE
+    ///
+    /// Rung 49 collects `eng` as the `s` VALUES and folds `hold_err` over a re-spelled filter on
+    /// the POINTS. This method needs the opposite: `eng` holds the POINTS, because
+    /// `deficit_at_release` reads `eng[-1]`'s `mf` / `mf_sched`, and `s_eng` / `s_rel` take `.s`
+    /// off them. Copying rung 49's body gives the wrong collection type and no way to compute the
+    /// deficit at all. **And Python builds `eng` BEFORE the trapezoid here and AFTER it in rung
+    /// 49** — each file's statement order is kept, not unified.
+    ///
+    /// # THE FORCED-RELEASE COMPARISON SITE IS A ONE-*CELL* KNIFE EDGE, NOT A ONE-ULP ONE
+    ///
+    /// [`release_weight`] tests `s < s_off` against the ACCUMULATED march coordinate, and every
+    /// `s_off` the suite passes sits ON the `ds` grid — the one place accumulated `s` and a
+    /// "cleaner" `k * ds` can straddle the bar. Swept over the suite's eighteen `s_off` values at
+    /// `ds ∈ {0.02, 0.01}`, **six comparison sites change the last armed index by a WHOLE GRID
+    /// CELL** under the two spellings, and two of them are live cells of this suite: at
+    /// `ds = 0.02`, `s_off = 0.20` accumulates to `0.19999999999999998` and `s_off = 0.26` to
+    /// `0.25999999999999995`, so the leg stays armed one point LONGER than `k * ds` would keep it.
+    /// Gates 5 and 10b read exactly those rows. This is a coarser hazard than § 5.18 finding 3's
+    /// one-ulp boolean and it lands on a different site, so it is noted here as well as at the
+    /// march loop.
+    #[allow(clippy::too_many_arguments)]
+    pub fn release_relief(
+        &self, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, s_off: Option<f64>,
+        surge: Option<&SurgeLimiter>, accel: Option<&AccelSchedule>, r: f64, s_settle: f64,
+        ds: f64, tau_rel: Option<f64>,
+    ) -> ReleaseRelief {
+        assert!(surge.is_some() || accel.is_some(),
+                "rung-50 release_relief needs a leg to release: pass surge= and/or accel=.");
+        assert!(s_off.is_none_or(|x| x > 0.0),
+                "rung-50 s_off is a release TIME on the march");
+        let bare_lim = &FuelLimiters::default();
+        let lim_lim = &FuelLimiters {
+            accel, surge: surge.copied(), s_off, tau_rel, ..Default::default()
+        };
+        let (bare, _) = self.fuel_ramp_march(flight, tt4_lo, tt4_hi, r, s_settle, ds, bare_lim);
+        let (lim, _) = self.fuel_ramp_march(flight, tt4_lo, tt4_hi, r, s_settle, ds, lim_lim);
+        assert!(!bare.is_empty() && !lim.is_empty(),
+                "rung-50 release_relief produced no trajectory");
+
+        // STRICT fold, first-on-tie — [`first_raw_min`], shared with rungs 48/49 and gated on a
+        // manufactured tie in `topping_oracle.rs` because no marched cell carries one.
+        let (mpl_b, s_lp) = first_raw_min(&bare, |p| p.phi_lp);
+        let (mph_b, s_hp) = first_raw_min(&bare, |p| p.phi_hp);
+        let (mpl_l, s_lp_l) = first_raw_min(&lim, |p| p.phi_lp);
+        let (mph_l, s_hp_l) = first_raw_min(&lim, |p| p.phi_hp);
+
+        // `eng` holds the POINTS here — see the copy-trap note above — and Python builds it
+        // BEFORE the trapezoid in this method (and AFTER it in rung 49's).
+        let eng: Vec<&FuelPoint> =
+            lim.iter().filter(|p| p.mf < p.mf_sched * (1.0 - 1e-9)).collect();
+
+        // Python's trapezoid, in Python's instruction order — NOT hoisted, NOT rearranged.
+        let mut removed = 0.0f64;
+        for i in 1..lim.len() {
+            let h = lim[i].s - lim[i - 1].s;
+            removed += 0.5 * h * ((lim[i - 1].mf_sched - lim[i - 1].mf)
+                                  + (lim[i].mf_sched - lim[i].mf));
+        }
+
+        // The INSTANTANEOUS fractional clip at the LAST engaged point — the "deficit at release".
+        // **`0.0` is Python's no-engagement sentinel AND a legitimate value**, where the same
+        // row's `s_eng` / `s_rel` use `NaN`: two sentinels for one condition in one record
+        // (§ 5.18 finding 4). Copied, not repaired — read `n_engaged` to separate them.
+        let deficit = match eng.last() {
+            Some(last) => (last.mf_sched - last.mf) / last.mf_sched,
+            None => 0.0,
+        };
+        let watched = surge.map(|s| s.spool);
+        ReleaseRelief {
+            s_off,
+            tau_rel,
+            r,
+            rho: self.rho(),
+            ds,
+            spool: watched,
+            phi_lim: surge.map(|s| s.phi_lim),
+            margin: accel.map(|a| a.margin),
+            s_eng: eng.first().map_or(f64::NAN, |p| p.s),
+            s_rel: eng.last().map_or(f64::NAN, |p| p.s),
+            n_engaged: eng.len(),
+            deficit_at_release: deficit,
+            s_lp_bare: s_lp,
+            s_hp_bare: s_hp,
+            relief_lp: mpl_l - mpl_b,
+            relief_hp: mph_l - mph_b,
+            relief_watched: watched
+                .map(|w| if w == Spool::Lp { mpl_l - mpl_b } else { mph_l - mph_b }),
+            relief_other: watched
+                .map(|w| if w == Spool::Lp { mph_l - mph_b } else { mpl_l - mpl_b }),
+            s_min_lp: s_lp_l,
+            s_min_hp: s_hp_l,
+            min_phi_lp_bare: mpl_b,
+            min_phi_lp_lim: mpl_l,
+            min_phi_hp_bare: mph_b,
+            min_phi_hp_lim: mph_l,
+            fuel_removed: removed,
+            nu_hp_end: lim[lim.len() - 1].nu_hp,
+            nu_hp_end_bare: bare[bare.len() - 1].nu_hp,
+        }
+    }
+
+    /// RUNG 50. Sweep the FORCED release time at a FIXED leg — the deconfounded axis.
+    ///
+    /// `relief_hp` (or `relief_other`) deepens monotonically as `s_off` walks THROUGH the
+    /// unwatched spool's own minimum without noticing it, peaks with the release just inside the
+    /// RAMP END, and collapses past it. That ordering is rung 49 § 3's clock claim with the
+    /// engagement edge and the clip depth held fixed.
+    ///
+    /// Pass `s_offs` on the `ds` grid (the switch otherwise straddles a step) — and see
+    /// [`release_relief`](Self::release_relief)'s note on why "on the grid" is where the
+    /// accumulated coordinate is at its sharpest, not its safest.
+    ///
+    /// **NO `tau_rel`.** Python's `release_sweep` does not forward it, so a rate sweep is rung
+    /// 51's `rate_sweep` and not this loop with an extra argument.
+    #[allow(clippy::too_many_arguments)]
+    pub fn release_sweep(
+        &self, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, s_offs: &[f64],
+        surge: Option<&SurgeLimiter>, accel: Option<&AccelSchedule>, r: f64, s_settle: f64,
+        ds: f64,
+    ) -> Vec<ReleaseRelief> {
+        s_offs.iter()
+            .map(|&so| {
+                self.release_relief(flight, tt4_lo, tt4_hi, Some(so), surge, accel, r, s_settle,
+                                    ds, None)
             })
             .collect()
     }
