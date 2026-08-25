@@ -9319,7 +9319,11 @@ at the last"* — this is that slice, and the measurement is owed at step 3.
   `r57_try_close`, or slice W re-opens it. § (vi) already books it as a cell; this is the reason.
 - **P6.** Steps, on slice T/U's shape: **1** cells + carrier · **2** the port + `slice_v_smoke.rs`
   · **3** the four rung suites · **4** `slice_v_oracle.rs` + `dump_slice_v.py` · **5** the
-  carrier/dispatch gates (P5) and the injections.
+  carrier/dispatch gates (P5) and the injections. **STEPS 1a/1b/2/3 SHIPPED.** Step 3 moved the
+  injections forward — it ran six against the ported suites and MEASURED P5's necessity
+  (the local-armed-core bug: 0 of 59 caught, Python's `SM_lp` numbers reproduced to three
+  figures) — so step 5's remaining job is the GATE that fails on it, plus the one channel
+  step 3 could not reach (`margin_min_lp`, a call-order question, target 15.4 %).
 
 **STEP-4 CHECKLIST, written here so it cannot be skipped:**
 **(a)** an HP-scheduled section in the dump — P4's promise, with a stated key count.
@@ -9592,6 +9596,174 @@ rung-57 objects, so it is inert here; it is **slice W's first job** and the note
 
 **THE GATE:**
 `cargo test --release`, status written into the log — **`CARGO_EXIT=0`, 96 suites, 851 passed, 0 failed, 0 ignored** (step 1b's 95 / 847, plus this slice's one suite and its four tests). The `0 ignored` is slice M's rule still holding. **NO PYTHON SOURCE CHANGED**, so `pytest` is untouched by this step and is not re-run — `rust/oracle/dump_slice_v_smoke.py` is a dump, not a test, and lives outside `turbojet/` and `tests/`.
+
+##### STEP 3 — SHIPPED. **THE SLICE'S OWN CARRIER BUG REPRODUCES PYTHON'S NUMBERS TO THREE FIGURES AND IS CAUGHT BY 0 OF 59 GATES — AND THE FIRST RUN THAT SAID SO WAS VOID**
+
+`tests/rung57.rs` / `rung58.rs` / `rung59.rs` / `rung60.rs` — **16 + 15 + 12 + 16 = 59 `#[test]`
+against Python's 59 collected**, one to one, and **0 source lines changed** except the one doc
+comment finding 2 is about. Both counts EMITTED, not typed: `pytest --collect-only -q` over the
+four files reports **59 collected from 57 `def test_`** (the +2 are rung 57's two two-way
+`parametrize`s, expanded here into `_primary` / `_tilted` so the Rust count matches the
+COLLECTED one), and `cargo test --release` reports 59 run, 0 ignored.
+
+**THE `slow` COST, WHICH § 5.19 (viii) PARKED AT THIS SLICE.** 29 of the 59 carry
+`@pytest.mark.slow` (49.2 %, the phase ratio) and **not one becomes `#[ignore]`** — that would
+retire half the slice's gates behind a flag and break the `0 ignored` line every gate since slice
+M has carried. All 59 run every time. Wall clock, per suite: **0.47 / 1.24 / 1.66 / 2.03 s = 5.40 s**
+against Python's **12.84 / 11.41 / 9.73 / 8.43 = 42.41 s**. **That ratio is NOT like-for-like and
+the number is quoted with its caveat**: the Python figures come off `pytest`'s own summary under
+the repo's xdist `-n` default, i.e. already parallel across workers, while the Rust figures are
+four separate serial `cargo test` invocations. The usable conclusion is the absolute one — a
+`slow`-heavy suite costs **~2 s** ported, so the phase's 263 `slow`-carrying collected tests are
+not a gate-time problem.
+
+**FINDING 1 — A SHIPPED DOC COMMENT THAT IS TRUE OF THE SIGNATURES AND FALSE OF THREE OF THE FOUR
+SUITES.** `Ramp::fine`'s comment, written at step 2, calls `ds = 0.005` *"rungs 58/59/60's
+default"*. As a statement about the READER METHODS it is exactly right — `composite_credit`,
+`matched_credit`, `floor_composite` and the rest all declare `ds: float = 0.005`. It is not what
+the suites march on. Measured off the four files rather than read off the comment:
+
+| suite | `DS` declared | passed explicitly? | what the reader default would have given |
+|---|---|---|---|
+| `test_rung57.py` | **0.01** | yes | 0.01 — agrees |
+| `test_rung58.py` | **0.01** | **yes, at every call site** | 0.005 — **half the step** |
+| `test_rung59.py` | **0.01** | **yes, at every call site** | 0.005 — **half the step** |
+| `test_rung60.py` | **0.005** | yes | 0.005 — agrees |
+
+Porting rung 58 or 59 through `Ramp::fine` *because its doc comment names those rungs* would have
+halved their step and moved every number they assert, and nothing in either suite would have said
+so — the gates are relational and a finer grid moves both sides. **The comment is corrected in
+`stator_transient.rs` rather than only footnoted in a test header**, because slice W inherits it
+and would be misled the same way. This is [[rust-port-slice-l-step4]]'s lesson (*a claim in the
+SHIPPED source was false*) on a doc comment that was true of the thing it was looking at and false
+of the thing a reader would use it for.
+
+**FINDING 2 — THE FIRST INJECTION PASS WAS VOID, AND ITS VOIDNESS IS THIS PORT'S OWN LESSON
+ARRIVING ON MY OWN INSTRUMENT.** The probe was built to dump the readings the ported gates
+compare — 302 of them. Run against the two structural injections it reported
+`moved 0/302, caught 0/59` for both. **`moved 0` is not a result**: an injection whose only
+observable is OBJECT STATE looks identical to an injection that never applied, and the harness
+could not tell them apart. Slice S step 3's *injections reporting "nothing moved" could not have
+moved anything*, one level up — the earlier instance was about injections that missed, this one
+is about a probe that could not see. Repaired by adding a **witness section** counted separately:
+the live map's `vsv` after a march (§ 5.20 (i)'s permanent mutation), `arm`'s dispatch counters on
+an HP-SCHEDULED machine that no suite builds, and the steady `surge_margin`. 342 keys, of which
+**20 are witnesses and 322 are gate-visible**.
+
+**FINDING 3 — THE CARRIER BUG REPRODUCES § 5.20 (ii)'s PYTHON MEASUREMENT TO THREE SIGNIFICANT
+FIGURES, ON THE RUST SIDE, WITH ALL 59 GATES GREEN.** I1 is the local-armed-core port: save the
+maps, call `arm`, restore — the shape a natural Rust port takes, and the one § 5.20 (ii)
+measured in Python by patching Python to behave like it.
+
+| arming | key | PY baseline | PY scoped | PY rel % | **RS clean** | **RS injected** | **RS rel %** |
+|---|---|---|---|---|---|---|---|
+| lp_only | `SM_lp` | 0.06080308471 | 0.05798678588 | 4.632 | 0.0608025 | 0.0579868 | **4.631** |
+| hp_only | `SM_hp` | 0.4404934501 | 0.43011312 | 2.357 | 0.440491 | 0.430113 | **2.356** |
+| both | `SM_lp` | 0.06087379962 | 0.05798678588 | 4.743 | 0.0608732 | 0.0579868 | **4.742** |
+
+and the **live map's `vsv` moves by 100 %** on every scheduled arm (0.0171159 → 0, 0.0111379 → 0).
+**Caught by 0 of 59.** The channel is named rather than inferred: `surge_margin` sits on
+`TwoSpoolMapCore` and runs a STEADY match, so it never passes through rung 57's `try_close` and
+nothing re-arms — it reads whatever the last sub-step left. That is the port-side version of
+Python's 59/59-either-way, MEASURED rather than inherited, and it makes step 5's carrier gate
+demonstrably necessary instead of merely promised.
+
+**AND ONE HALF OF § 5.20 (ii) DID NOT REPRODUCE, WHICH IS STATED AS A BOUND AND NOT AS AN
+IMMUNITY.** Python's probe also moved `margin_min_lp` by **15.4 %** (and `npts` 61 → 62 on
+`both`). In this harness the Rust `transient_surge_margin_fuel` reading did **not** move, and the
+reason is visible: it re-marches from `equilibrium`, every close inside which fires `arm` and
+overwrites the stale map before it can reach anything. **That is a difference in CALL ORDER, not
+in exposure** — Python's probe read that key in a sequence where the staleness survived to it.
+Booked for step 5 with the number attached (P4's rule): the carrier gate must reach the transient
+reader in an order that preserves the staleness, and 15.4 % is the target it is aiming at.
+
+**THE INJECTION TABLE — the DID-IT-MOVE column measured FIRST, per slice T step 3's precondition.**
+
+| injection | moved (gate-visible) | moved (witness) | worst rel | caught |
+|---|---|---|---|---|
+| **I1 — the LOCAL-ARMED-CORE carrier** | **0 / 322** | 9 | 1.00 (`vsv`) | **0 / 59** |
+| **I2 — `arm`'s HP branch dropped** | **0 / 322** | 5 | 1.00 | **0 / 59** |
+| I3 — `Shape::Smooth` `x²(3−2x)` → `x³` | 85 | — | 4.10 | **4 / 59** |
+| I4 — `erosion` inverted | 5 | — | 3.89 | **5 / 59** |
+| I5 — the incidence floor's lever sign | 5 | — | 1.8e14 | **5 / 59** |
+| I6 — `arm` reads the WRONG SHAFT | 82 | — | 12.1 | **4 / 59** |
+
+**I2's five moved keys carry the one piece of evidence in the run that the HP arm is not inert.**
+Dropping the HP branch moves `W/live/both/vsv_lp` — the **LP** setting — from 0.0167136 to
+0.0171159, because the two schedules are coupled through the shaft state. It sits directly beside
+§ 5.20 P4's finding that no suite ever leaves `map_hp` mutated: the HP path is unexercised by the
+GATES and is not dynamically inert in the PLANT.
+
+**THE BAR-MARGIN TABLE — 64 inequalities, got-vs-bar, because green says nothing about slack**
+(slice T step 2: 9/9 green and blind to 24 %). Full table in
+`M:\claud_projects\temp\rust-phase7\bar_margins.txt`. The shape:
+
+- **Seven bars sit within 10 % of their value** and are the live ones — tightest is rung 58's
+  `v_ratio > 1.10` at **+1.5 %**, then rung 60's `gap_phi_bands > 1.0` at +5.3 % and rung 57's
+  `m_phi shut < bare` at +5.4 %.
+- **Twelve pass at more than 5× margin**, up to **+127×** (rung 57 P5's `|d_phi_lp| > 1e-3`).
+  Those are not loose magnitude tests that should be tightened — their Python docstrings say so
+  explicitly (*"the gate gives the ORDER and the SIGN headroom rather than pinning the weakest
+  measured row"*). Recorded as SIGN tests, so a later reader cannot mistake the slack for a bug.
+- **THE TIGHTEST NON-PHYSICS BAR IS A TOLERANCE BAR, and it is one solver change from flipping.**
+  Rung 59's `d_abscissa < 1e-12` on the `LP const` arm reads **7.76e-13 — 22 % of headroom**.
+  Python carries the identical bar at the identical value. Named, not loosened: the bar is
+  correct and the margin is the disclosure.
+
+**THE TWO NON-STRICT ORDERINGS, PORTED AS WRITTEN AND THEN MEASURED.** Python's
+`ss == sorted(ss, reverse=True)` is a `>=`, satisfied by an inert sequence, so `>=` is what runs
+here. Both are in fact strictly monotone, and the smallest adjacent gap is the number that says
+how much:
+
+| sequence | values over `r` = 0.1 … 2.0 | smallest adjacent gap |
+|---|---|---|
+| `share_start` | +0.2705 +0.1196 +0.0297 −0.0298 −0.0681 | 3.83e-2 (**11.3 %** of the range) |
+| `self_cancel` | +0.8963 +0.8029 +0.7689 +0.7563 +0.7541 | 2.27e-3 (**1.6 %** of the range) |
+
+`self_cancel`'s tail is nearly flat, so its ordering assertion is doing almost no work at the slow
+end — the claim it carries (*the surrender DEEPENS with r*) is real but is delivered almost
+entirely by the first gap.
+
+**THREE `is`-IDENTITY TESTS RE-GATED, EACH SAYING WHAT IT GAVE UP.** Python asserts object
+identity in three places that a `Copy` value type cannot express: rung 57's *`_arm` hands back the
+SAME map object* (§ 5.20 P3), rung 58's *the wall is literally one object*, and rung 60's *a
+`SurgeLimiter` passes the resolver by identity*. Each is re-gated as **equality PLUS the crate's
+own dispatch counter** — `arm_lp_zero == arm_calls` with `arm_lp_moved == 0`, and
+`resolve_phi == n` with `resolve_incidence == 0` — which is what the identity claim reduces to
+when the alternative is a REBUILD or a CONVERSION rather than a copy. The weakening is written
+into each test's own doc comment; a reduce gate that quietly answers a smaller question is
+[[rust-port-ported-test-vacuity]].
+
+**AND TWO OF RUNG 60's SIXTEEN TEST A REFUSAL THIS PORT MAKES UNREPRESENTABLE.**
+`floor_composite` takes a `Floor` where Python takes any leg, and `composability_ladder` takes a
+`LadderAxis` where Python takes two mutually-exclusive keyword lists — so *"hand it an
+`AccelSchedule`"* and *"hand it both axes"* cannot be written down. Kept at 1:1 and re-gated as an
+**exhaustive `match` over each enum**, which stops compiling if a third variant appears — the
+event the Python assert exists to catch — plus a runtime half asserting what the refusal protects
+(the two readers do not measure the same quantity; the two axes carry different halves of the
+criterion). **Decided the opposite way from rung 57's `Shape`**, where the bad value is a STRING a
+caller could supply and the port therefore kept a `try_from_str` entry point. Both decisions are
+stated at their own sites rather than one being applied silently to the other.
+
+**WHAT 59/59 GREEN DOES NOT ESTABLISH, WRITTEN INTO ALL FOUR FILE HEADERS.** Every one of these
+gates is RELATIONAL — it asserts a relation among values this crate computed. A Rust/Python
+arithmetic divergence moves both sides of every one of them and leaves all 59 green. That is
+§ 5.20 (ii)'s own headline one level up, and the instrument that establishes agreement with Python
+is **step 4's oracle**, not this file. The four suites also inherit Python's HP blindness exactly
+(§ 5.20 P4: 0 of 920 262 closes ever left `map_hp` mutated), so the HP path is exercised by the
+smoke's section C and by step 4's dump, not by these 59.
+
+**THE PROBE IS PRESERVED, NOT SHIPPED.** `slice_v_probe.rs` has no assertions — it prints. A
+no-assertion `#[test]` is a vacuous gate and would have added a 60th test that can never fail, so
+it is removed from `rust/tests/` and kept at
+`M:\claud_projects\temp\rust-phase7\slice_v_probe.rs.keep`, restorable by copying it back. The
+harness that drives it is `inject_v.py` in the same directory; it takes injection names as
+arguments and restores the source in a `finally`.
+
+**THE GATE:** `cargo test --release`, whole log, the status written INTO the artefact —
+**`CARGO_EXIT=0`, 100 suites, 910 passed, 0 failed, 0 ignored** (step 2's 96 / 851, plus
+this step's four suites and their 59 tests). **NO PYTHON SOURCE CHANGED**, so `pytest` is
+untouched by this step and is not re-run.
 
 ## 6. Named risks
 

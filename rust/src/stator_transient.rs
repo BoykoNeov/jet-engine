@@ -412,8 +412,25 @@ impl Ramp {
         Ramp { tt4_lo, tt4_hi, r, s_settle: 1.2, ds: 0.01 }
     }
 
-    /// Rungs 58/59/60's default `ds = 0.005` — a DIFFERENT default on the same parameter, which
-    /// is why it is spelled and not shared.
+    /// The `ds = 0.005` that rungs 58/59/60's READER METHODS declare — a DIFFERENT default on the
+    /// same parameter, which is why it is spelled and not shared.
+    ///
+    /// **AND IT IS NOT WHAT THREE OF THE FOUR SUITES MARCH ON — corrected at step 3, where the
+    /// earlier wording (*"rungs 58/59/60's default"*) nearly re-gridded two ported suites.**
+    /// A method default and a suite constant are two different claims about one parameter, and
+    /// they disagree here. Measured off the four files:
+    ///
+    /// ```text
+    /// test_rung57.py   DS = 0.01    == its readers' default
+    /// test_rung58.py   DS = 0.01    passed EXPLICITLY at every call site, overriding 0.005
+    /// test_rung59.py   DS = 0.01    passed EXPLICITLY at every call site, overriding 0.005
+    /// test_rung60.py   DS = 0.005   == its readers' default
+    /// ```
+    ///
+    /// So `fine` is the right constructor for a caller reproducing a rung-58/59/60 READER's own
+    /// default, and the WRONG one for a caller reproducing the rung-58 or rung-59 SUITE. Halving
+    /// their step moves every number they assert, and those suites' gates are relational — they
+    /// compare quantities to each other, so a finer grid moves both sides and none of them fires.
     pub fn fine(tt4_lo: f64, tt4_hi: f64, r: f64) -> Self {
         Ramp { tt4_lo, tt4_hi, r, s_settle: 1.2, ds: 0.005 }
     }
