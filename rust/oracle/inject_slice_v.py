@@ -1,8 +1,18 @@
-"""SLICE V step 3 — the injection harness.
+"""SLICE V steps 3 and 4 — the injection harness.
 
-For each named injection: patch `rust/src/stator_transient.rs`, re-run the PROBE (the
-did-it-move column, measured BEFORE any "caught" number is believed), then run the four
-ported suites and record which tests fail. Restores the file unconditionally.
+**Step 3 mode (default).** For each named injection: patch `rust/src/stator_transient.rs`,
+re-run the PROBE (the did-it-move column, measured BEFORE any "caught" number is believed),
+then run the four ported suites and record which tests fail.
+
+**Step 4 mode (`--oracle`).** The same injections against `slice_v_oracle.rs` instead, which
+answers a question the step-3 table could not: the 59 ported gates are RELATIONAL and caught
+0 of 6 on the two carrier injections, so *does the ORACLE see them?* Reports, per injection,
+how many of the oracle's keys stop matching Python — read out of the gate's own panic line, so
+the number is EMITTED rather than typed. It needs no probe and no `slice_v_probe.rs`.
+
+Restores the file unconditionally in both modes.
+
+    .venv\Scripts\python.exe rust\oracle\inject_slice_v.py --oracle
 """
 import io
 import os
@@ -89,7 +99,86 @@ def failed_tests(path):
     return bad
 
 
+def write_src(text):
+    """One writer for `stator_transient.rs`, with an explicit close. A dangling
+    `io.open(...).write(...)` leaves the write unflushed under PyPy, which is this project's
+    own recorded Windows-tooling hazard and would leave an INJECTED source on disk."""
+    with io.open(SRC, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(text)
+
+
+def oracle_keys_moved(path):
+    """`N of M compared keys differ` / `N CPG float keys drifted`, straight out of the gate's
+    own panic text. Parsed rather than recomputed: an instrument that re-derives the thing it
+    measures is measuring itself (slice R's rule)."""
+    n_diff, n_seen, arms = 0, 0, []
+    with io.open(path, encoding="utf-8", errors="replace") as fh:
+        for line in fh:
+            m = re.search(r"^(\d+) of (\d+) compared keys differ", line)
+            if m:
+                n_diff += int(m.group(1))
+                n_seen = max(n_seen, int(m.group(2)))
+            m = re.match(r"^test (\S+) \.\.\. FAILED", line)
+            if m:
+                arms.append(m.group(1))
+    return n_diff, n_seen, arms
+
+
+def main_oracle():
+    """Step 4's question: which injections does the ORACLE catch that the 59 gates do not?"""
+    original = io.open(SRC, encoding="utf-8").read()
+    rows = []
+    try:
+        only = sys.argv[1:]
+        only = [a for a in only if a != "--oracle"]
+        for name, subs in INJECTIONS:
+            if only and name not in only:
+                continue
+            text = original
+            for old, new in subs:
+                n = text.count(old)
+                if n != 1:
+                    print("!! %s: pattern matched %d times, SKIPPED" % (name, n))
+                    text = None
+                    break
+                text = text.replace(old, new)
+            if text is None:
+                rows.append((name, "PATTERN-MISS", 0, 0, []))
+                continue
+            write_src(text)
+            op = os.path.join(TMP, "oracle_%s.txt" % name)
+            run(["cargo", "test", "--release", "--test", "slice_v_oracle"], op)
+            n_diff, n_seen, arms = oracle_keys_moved(op)
+            # `0 keys differing` is AMBIGUOUS on its own -- it reads the same whether nothing
+            # moved or the run died before the comparison ran. I5 does the latter (an empty
+            # trajectory panics inside `refine_min`). Slice S step 3's lesson: an injection
+            # reporting "nothing moved" must be distinguishable from one that could not move
+            # anything. So the two cases get DIFFERENT statuses.
+            if arms and n_seen == 0:
+                status = "PANIC-BEFORE-COMPARE"
+            elif arms:
+                status = "CAUGHT"
+            else:
+                status = "MISSED"
+            rows.append((name, status, n_diff, n_seen, arms))
+            print("%-28s %-21s keys differing %5d / %d   failing gates: %s"
+                  % (name, status, n_diff, n_seen, ", ".join(arms) or "NONE"))
+    finally:
+        write_src(original)
+        print("\nsource restored")
+    out = os.path.join(TMP, "oracle_injection_table.txt")
+    with io.open(out, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write("\t".join(["injection", "status", "keys_differing", "keys_compared",
+                            "failing_gates"]) + "\n")
+        for name, status, n_diff, n_seen, arms in rows:
+            fh.write("\t".join([name, status, str(n_diff), str(n_seen),
+                                ";".join(arms)]) + "\n")
+    print("wrote oracle_injection_table.txt")
+
+
 def main():
+    if "--oracle" in sys.argv:
+        return main_oracle()
     original = io.open(SRC, encoding="utf-8").read()
     base = read_probe(os.path.join(TMP, "probe_base.txt"))
     assert base, "no baseline probe"

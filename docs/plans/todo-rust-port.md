@@ -1677,7 +1677,7 @@ next starts. The tree is green at every phase boundary; there is no big-bang cut
 | **4** | Nozzle & turbine marches, rungs 25–30 — own convergence behaviour, hence separate. ~~**AUTHORISED 2026-08-12; three DEPENDENCY slices**~~ **DONE** | 2–3 | ✅ slice F: `march_oracle.rs` (**912/912** bit-exact vs PyPy, on 49 distinct march exit roots) + 2 rung suites (32 tests) in a new `march.rs`; the FOURTH "exactly"-class claim and the FIRST to survive — because it compares a COPY, not a rederivation (§ 4.12) · ✅ slice G: `no_march_oracle.rs` (**776/776**, and only 8.0 % CPython-identical — the sharpest dump in the port) + 2 rung suites (28 tests); slice F's discriminator made TWO pre-registered predictions and both HELD (§ 4.14) · ✅ slice H: `tt_oracle.rs` (**270/270**) + 2 rung suites (14 tests); RATIO ≠ ENERGY measured ANTI-correlated, and the one slice not pre-registered — all three of its guessed census bars were wrong (§ 4.15) |
 | **5** | ~~Steady matchers — rungs 31–33, 38–39, **41**, 42, 53–56, 61~~ **DONE 2026-08-17, seven slices (I·J·K·L·M·N·O).** ~~**Contains the diamond** (§ 6)~~ **PRE-FLIGHT DONE (§ 5.3); AUTHORISED 2026-08-13.** The diamond is discharged; the phase's structural content is the **five-name virtual set** (`_solve_turbine` — claimed by PHASE 6 — `match`, `_hp_eta_loop`, `_lp_eta_loop`, `at_setting`) and `_INC_MAX`'s live shadow | 4–6 | ✅ slice I (rungs 31/33): `offdesign_oracle.rs` (**3951/3951** bit-exact vs PyPy, incl. **961 discrete** keys) + 2 rung suites (17 tests) in a new `matcher.rs`; the crate's FIRST fallible paths, its FIRST virtual hook, and the two rungs re-gated as counts over BIT PATTERNS (§ 5.5) · ✅ slice J (rung 32): `map_oracle.rs` (**7 252/7 252**) + `rung32.rs`; the oracle found BLIND to a mis-spelled square, so the rule is gated directly (§ 5.6) · ✅ slice K (rungs 38/39): `two_spool_oracle.rs` (**11 812/11 812**, and only 46.3 % CPython-identical) + 2 rung suites (19 tests) in a new `two_spool.rs`; all six predictions held, and the CPython arm REFUTED an assertion inherited from slice I — the pass-count instability needs a SOLVER-derived property, not the equilibrium gas (§ 5.7) · ✅ slice L (rungs 41/42): `slice_l_oracle.rs` (**25 458 keys**) + 2 rung suites (12 + 12 tests) in a new `bleed.rs`, plus the crate's first FALLIBLE TWINS; nine predictions all settled, and a claim the SHIPPED SOURCE carried found wrong (§ 5.8) · ✅ slice M (rungs 53/54): `slice_m_oracle.rs` + 2 rung suites (24 + 25 tests) in a new `stator.rs`, all six steps shipped; its probe **OVERTURNED slice J's `solve_n` zero-firing verdict**, and a bar asserted in a shipped doc comment was refuted by a third of the dump (§ 5.9) · ✅ **PHASE 5 COMPLETE** — the last two slices were N (55/56) and O (61), sized in § 5.9; **N is PRE-REGISTERED (§ 5.10), 10 predictions**, and its probes **REFUTE § 5.9 (c) twice** — reading a method's body cannot see its state's CARRIER — **steps 1–4 SHIPPED** (step 1: P2 held at 535 names, `diff` empty, and the ±1 that would not reconcile was slice I's last `#[ignore]` surviving a rule slice M had already retired · step 2: `stage.rs` + `slice_n_smoke.rs`, **1 337 keys bit-exact first run** over seven enumerated cells, and it **CORRECTS § 5.10 (iii)** — `_P_FLOOR`'s deadness is a DERIVED threshold `e > 1.001` in the two floor constants, not a property of the sweep · step 3: `StageStackCore` + `R55`/`R55_TWO`, and the carrier lesson RECURRED — a FOURTH gated-code edit, at step 3, in a file step 1 never opened, because the plan asked what carrier `at_setting` needs and never what carrier the EFFICIENCY-LOOP hook needs; plus an `_INC_MAX` shadow § 5.3's pre-flight had called correctly and the porting slice mis-spelled · step 4: `slice_n_oracle.rs`, **72 520 keys bit-exact first run** + a 5 649-key equilibrium arm and a 41 560-key CPython one, and § 5.10's own censuses turned out to be measured on TWO grids — (i)/(iv) reproduced to the firing, (iii)/(vi) came from a 240-cell probe sweep, so the census is EMITTED and compared rather than restated; the CPython arm's *discrete → bits* tier had to SPLIT, because all 520 interpreter flips are argmin indices at the design throttle) |
 | **6** | Transients — rungs 34–37, 40, 43–52 (the fuel-side limiter family). **AUTHORISED 2026-08-17; PRE-FLIGHT DONE (§ 5.12). ALL SIX SLICES SHIPPED (§ 5.13–§ 5.18) — PHASE 6 IS COMPLETE 2026-08-20. PHASE 7 NEEDS ITS OWN AUTHORISATION.** The phase's structural content is a **six-name virtual set** — `integrate_fuel`, `_close`, `_close_fuel`, `_surge_fuel`, `_instant_tail`, `_powers` — **every one of which crosses into phase 7**, so there is no phase-6-internal hook and the `Hooks` table appears at slice R, not P. Six slices, ordered by `_degenerate`: **P** (34/35/36 `SpoolTransient`) · **Q** (37) · **R** (40/44) · **S** (43/45, `integrate_fuel` ENTIRE) · **T** (46/47/48 gates) · **U** (49/50/51/52 gates). The `4257–4506` object block spans two phases — `IncidenceLimiter` is rung **60** | 4–6 (**light** — 156 tests over 15 files, and phase 3 took five slices for 204) | ✅ slice P: `spool_oracle.rs` (**7 302** bit-exact) + 3 rung suites · ✅ slice Q: `combustor_oracle.rs` (**2 066**) + 1 suite · ✅ slice R: `two_spool_transient_oracle.rs` (**6 853 + 1 120** bit-exact vs PyPy on the first run, + a tiered CPython arm reproducing probe 4's 5-of-12 exactly) + `rung40.rs`/`rung44.rs` (17 tests) + `slice_r_smoke.rs`/`slice_r_dispatch.rs`; a ported suite found running its NEIGHBOUR's gas (§ 5.15 step 4) · ✅ slice S (43/45, `integrate_fuel` ENTIRE — the phase's largest): `fuel_transient_oracle.rs` (**4 671** CPG + **1 133** gas keys bit-exact vs PyPy on the first run) + `rung43.rs`/`rung45.rs` (20 tests) + `slice_s_smoke.rs`/`slice_s_dispatch.rs`, five steps; § 5.12's CPython-detector IOU CLOSED by measurement on the three TPG gases the fuel path admits (§ 5.16) · ✅ slice T (46/47/48 gates) § 5.17, **ALL FOUR STEPS SHIPPED** — the FIRST slice whose source already shipped, so its predictions target slice S's ungated ~40 % rather than a port. `rung46.rs` (7 fns for 6, one a DISCLOSED divergence) + `rung47.rs` (9 for 9) + `rung48.rs` (16 for 16), **0 source lines** after step 1 until step 4's one behaviour-neutral HOIST; step 2 measured the rung-47 suite to have **no value content** (two injections move 13 of 18 readings by up to 24 %, all 9 gates pass) and step 3 found its one surviving defect unobservable to the WHOLE project — every reader of `fuel_removed` is scale-invariant; step 4's `topping_oracle.rs` (**1 729** keys bit-exact vs PyPy on the first run + a CPython arm, 4 tests in 53 s) HOLDS all three of those defects and corrects the slice's OWN finding 6 — `test_rung46.py`'s `~1645` peak is right, it is measured on a different GAS · ✅ **slice U (49/50/51/52 gates) — § 5.18, four probes measured first; 63 gates + 9 readers over 418 source lines, five steps; **ALL FIVE SHIPPED — SLICE U AND PHASE 6 COMPLETE** — `rung49.rs` (17 fns for 17, 0.38 s) over `SurgeRelief`/`surge_relief`/`floor_sweep` and finding 6's `read_point`, **226 source lines added and 0 executable lines changed**, **575 keys over all 23 gate cells bit-exact vs PyPy on the first run** — and then ELEVEN injections found **five of the 25 keys have no gate in either language**, with the one-ulp boolean protected REDUNDANTLY by two spellings (breaking either alone is invisible, breaking both flips it, and all four builds are 17/17). Its refusal census came back COMPLETE (all 14 marcher refusals present in Rust) but found **three of Python's own `lp_disabled` refusals UNREACHABLE over all 255 arming combinations**, so four gates named for four rungs fire ONE assert; and — inverting slice T's finding 2 — one decision key (`both_edges_inside_ramp`) sits at **ONE ULP**. **Step 2** adds the 27-field `ReleaseRelief` + `release_relief` (complete, with rung 51's `tau_rel`) + `release_sweep` in **229 added and ZERO deleted lines**, and `rung50.rs` (15 fns for 15, 15/15 in 0.90 s), **1 323 keys over all 49 gate cells bit-exact vs PyPy on the first run**; then FOURTEEN injections found the file's ONE reader of the release edge's LOCATION sweeps **none of the two knife-edge cells**, so a `k*ds` coordinate moves `n_engaged` 8→7 and `s_rel` by a WHOLE CELL past all 15 gates. **P2 CONFIRMED by measurement** (the gate named for rung 50 fires rung 49's assert, full-string), 16 of the 27 keys have NO reader — `deficit_at_release`, the rung's own named quantity, among them — and `fuel_removed` is held only as a DIFFERENCE between two copies: break all THREE and rungs 48/49/50 are green. **Step 3** (`rate_sweep` + `deficit_curve`, **65 added / 0 deleted** — two `map` bodies and one assert, which IS P6's check) + `rung51.rs` (16 for 16, 16/16 in 0.91 s on the FIRST compile), **972 keys over 36 cells bit-exact**, cell list READ OFF the suite's own memo; its one new function is exercised only on cells CHOSEN FOR INERTNESS — dropping `tau_rel`'s forwarding moves 2 of 972 keys and both are the record echoing its own argument back. **Step 4** (34-field `LagRelief` + `FactorizationGrid` + three readers, **294 added / 0 deleted**) + `rung52.rs` (15 for 15, 15/15 in 0.75 s including all four of Python's `slow` gates, so **no `#[ignore]`**), **972 keys bit-exact**, **P5 EXACT** (`credit_spread == 0.0` bit-for-bit); ten injections and TWO wrong predictions with ONE cause — `g_at_cross` and `min_phi_hp_lag` are read only as INVARIANCES ACROSS a sweep, so **a gate that reads a key only by comparing it with itself cannot see what the key IS**, and a suite whose THESIS is invariance is structurally that shape. **Step 5**: `release_oracle.rs` + `dump_release.py`, **4 179 keys over eight sections bit-exact vs PyPy on the first run AND vs CPython (0 drifts, 0 flips, no tolerance tier)**, 5 gates, three ADDED sections (both NaN arms reached for the first time in this port, `rate_sweep` inside the window, the knife-edge coordinate) — and TWO near-vacuous gates caught in that one step: the manufactured cells were first written against a re-spelled copy of the loop (fixed by lifting `crossing_census` out, behaviour-neutrally, + a fifth gate that the reader and the manufactured cells share it) and the CPython arm routed every disagreement to a PRINTOUT and could not fail on a number |
-| **7** | **The ladder, rungs 57–60 and 62–84** — the `Hooks` table from § 2, one module per rung. (**61 is PHASE 5's**, not this phase's — it is the steady `StatorBleedMatcher`, and it was double-listed here until the slice-K audit) **PRE-FLIGHT DONE (§ 5.19); PHASE 7 AUTHORISED 2026-08-20 — slice V is PRE-REGISTERED (§ 5.20), and its six probes REFUTE § 5.19 (x) on slice V: the `&Scope` lands at slice Y/AA, and V's real content is `_arm`'s PERMANENT mutation of `map_lp`/`map_hp` from inside a `&self` hook — a shape the pre-flight's `try/finally` census could not match. Carrier: `Cell<ComponentMap>`.** The phase's structural content is a **36-cell hook table** (§ 2 said 8, § 5.12 said 6, the enumeration says **38** = **28 new + 8 already shipped + 2 Rust deletes**), **16 non-zero-argument `super(LimitedBleedTransient, self)` pins** that `..R63` cannot express, and **23 dynamically-scoped fields behind 52 save/set/restore guards** — 9 of them the current RK4 state, which forces a `Scope` parameter on **7 of the 36 cells** and closes § 6's narrowed-view question at zero cost. Fifteen slices **V…AJ**, ordered by where the TABLE GROWS | ~~5–8~~ **15–20** (§ 5.19 (viii): **4.34×** phase 6's source, **3.49×** its collected tests, **263 of 548** carrying `slow` against phase 6's 10 of 157) | ~~27/27 reduce-to-prior bit-exact~~ **that is a spine, not a gate** — the phase owes per-slice **oracle dumps** bit-exact vs PyPy, the **488 ported gates**, the 27 reduce contracts, **and dispatch gates** (`slice_r_dispatch.rs`'s precedent — no value key can witness a hook table) — **and, from slice V, CARRIER gates**: § 5.20 (ii) measures a local-armed-core port moving `margin_min_lp` **15.4 %** with **59/59** ported gates green, so a manufactured-carrier-bug gate is owed beside the manufactured-cell-swap one |
+| **7** | **The ladder, rungs 57–60 and 62–84** — the `Hooks` table from § 2, one module per rung. (**61 is PHASE 5's**, not this phase's — it is the steady `StatorBleedMatcher`, and it was double-listed here until the slice-K audit) **PRE-FLIGHT DONE (§ 5.19); PHASE 7 AUTHORISED 2026-08-20 — slice V is PRE-REGISTERED (§ 5.20), and its six probes REFUTE § 5.19 (x) on slice V: the `&Scope` lands at slice Y/AA, and V's real content is `_arm`'s PERMANENT mutation of `map_lp`/`map_hp` from inside a `&self` hook — a shape the pre-flight's `try/finally` census could not match. Carrier: `Cell<ComponentMap>`.** The phase's structural content is a **36-cell hook table** (§ 2 said 8, § 5.12 said 6, the enumeration says **38** = **28 new + 8 already shipped + 2 Rust deletes**), **16 non-zero-argument `super(LimitedBleedTransient, self)` pins** that `..R63` cannot express, and **23 dynamically-scoped fields behind 52 save/set/restore guards** — 9 of them the current RK4 state, which forces a `Scope` parameter on **7 of the 36 cells** and closes § 6's narrowed-view question at zero cost. Fifteen slices **V…AJ**, ordered by where the TABLE GROWS | ~~5–8~~ **15–20** (§ 5.19 (viii): **4.34×** phase 6's source, **3.49×** its collected tests, **263 of 548** carrying `slow` against phase 6's 10 of 157) | ~~27/27 reduce-to-prior bit-exact~~ **that is a spine, not a gate** — the phase owes per-slice **oracle dumps** bit-exact vs PyPy, the **488 ported gates**, the 27 reduce contracts, **and dispatch gates** (`slice_r_dispatch.rs`'s precedent — no value key can witness a hook table) — **and, from slice V, CARRIER gates**: § 5.20 (ii) measures a local-armed-core port moving `margin_min_lp` **15.4 %** with **59/59** ported gates green, so a manufactured-carrier-bug gate is owed beside the manufactured-cell-swap one. **Slice V steps 1a/1b/2/3/4 SHIPPED** — step 4's `slice_v_oracle.rs` + `dump_slice_v.py` is **6 819 keys bit-exact vs PyPy on the first run AND vs CPython 3.14 (0 drifts, 0 flips, no tolerance tier)** over eight sections, and it **CATCHES both carrier injections the 59 ported gates miss** (I1 at 87 keys, I2 at 709) while REACHING the 15.431 % channel step 3 had booked forward; the manufactured gate is still owed, because a golden gate is defeated by regenerating the golden |
 | **8** | `main.py` replacement; adjudicate the fragile rungs; re-anchor the fingerprint; **delete the Python**. **BLOCKED ON ONE OPEN PORT DIVERGENCE** — `components::sonic_throat`’s bracket `assert!` is a `panic!` where Python’s is a CATCHABLE `AssertionError` that every marcher’s `except AssertionError: break` relies on; measured at slice T step 1 (§ 5.17), 28 call sites of which ≥10 already sit in fallible chains, note at the definition | 2–3 | full suite green on Rust alone |
 
 **THE TABLE'S OWN COVERAGE WAS NEVER AUDITED UNTIL SLICE K, AND IT HAD BOTH FAILURE MODES.**
@@ -9319,11 +9319,16 @@ at the last"* — this is that slice, and the measurement is owed at step 3.
   `r57_try_close`, or slice W re-opens it. § (vi) already books it as a cell; this is the reason.
 - **P6.** Steps, on slice T/U's shape: **1** cells + carrier · **2** the port + `slice_v_smoke.rs`
   · **3** the four rung suites · **4** `slice_v_oracle.rs` + `dump_slice_v.py` · **5** the
-  carrier/dispatch gates (P5) and the injections. **STEPS 1a/1b/2/3 SHIPPED.** Step 3 moved the
+  carrier/dispatch gates (P5) and the injections. **STEPS 1a/1b/2/3/4 SHIPPED.** Step 3 moved the
   injections forward — it ran six against the ported suites and MEASURED P5's necessity
   (the local-armed-core bug: 0 of 59 caught, Python's `SM_lp` numbers reproduced to three
-  figures) — so step 5's remaining job is the GATE that fails on it, plus the one channel
-  step 3 could not reach (`margin_min_lp`, a call-order question, target 15.4 %).
+  figures). ~~plus the one channel step 3 could not reach (`margin_min_lp`, a call-order
+  question, target 15.4 %)~~ **STEP 4 REACHED IT** — section A reads rung 44's
+  `transient_surge_margin` one call earlier in the chain and the move is **15.431 %** exactly, so
+  all twelve of § (ii)'s numbers are reproduced. **Step 5's remaining job is the MANUFACTURED
+  gate alone**, and it is still owed: the oracle catches I1 at 87 keys, but a golden-comparison
+  gate is defeated by regenerating the golden against buggy code and a manufactured-bug gate is
+  not.
 
 **STEP-4 CHECKLIST, written here so it cannot be skipped:**
 **(a)** an HP-scheduled section in the dump — P4's promise, with a stated key count.
@@ -9777,6 +9782,112 @@ is exactly the non-durability step-4 checklist item (b) was written to stop.
 **`CARGO_EXIT=0`, 100 suites, 910 passed, 0 failed, 0 ignored** (step 2's 96 / 851, plus
 this step's four suites and their 59 tests). **NO PYTHON SOURCE CHANGED**, so `pytest` is
 untouched by this step and is not re-run.
+
+##### STEP 4 — SHIPPED. **A CHANNEL STEP 3 MEASURED AS UNREACHABLE WAS REACHABLE ONE READER EARLIER IN THE SAME CHAIN**
+
+`rust/oracle/dump_slice_v.py` + `slice_v_pypy.tsv` + `slice_v_cpython.tsv` +
+`rust/tests/slice_v_oracle.rs`. **6 819 keys over eight sections, bit-exact against PyPy on the
+first run AND against CPython 3.14 — 0 drifts, 0 flips, no tolerance tier.** Five gates. The
+crate is **101 suites / 915 passed / 0 failed / 0 ignored**, reconciled as a name diff against
+step 3's baseline: `cargo test --release -- --list` reports **915** against step 3's 910, **+5
+additions, 0 removals** — because *exit-0 proves nothing FAILED; only the diff proves nothing
+VANISHED*. `git diff -- rust/src/` is **empty**: step 4 is test-and-oracle only, and the check was
+re-run AFTER the injection harness's `finally` restored the source rather than inherited from
+before it. **NO PYTHON SOURCE CHANGED**, so `pytest` is untouched and is not re-run.
+
+Every table is EMITTED: `docs/plans/slice-v-step4-evidence.md` is **generated from the artifacts**
+by a script, not transcribed — § 5.19 (xi)'s rule, and the specific defect phase 7's pre-flight
+found in every prior write-up.
+
+**FINDING 1 — THE ORACLE CATCHES BOTH CARRIER INJECTIONS THAT ALL 59 PORTED GATES MISS.** Step 3
+measured I1 (the locally-armed-core carrier) and I2 (`arm`'s HP branch deleted) at **0 of 302**
+gate-visible readings and **0 of 59** gates. Against the oracle:
+
+| injection | caught by the 59 (step 3) | oracle | keys differing |
+|---|---|---|---|
+| I1 — the LOCAL-ARMED-CORE carrier | **0 / 59** | CAUGHT | **87** / 6 819 |
+| I2 — `arm`'s HP branch dropped | **0 / 59** | CAUGHT | **709** / 6 819 |
+| I3 `Shape::Smooth` cubed | 4 / 59 | CAUGHT | 1 945 |
+| I4 `erosion` inverted | 5 / 59 | CAUGHT | 14 |
+| I5 the incidence lever's sign | 5 / 59 | **PANIC-BEFORE-COMPARE** | n/a |
+| I6 `arm` reads the WRONG SHAFT | 4 / 59 | CAUGHT | 1 440 |
+
+**AND THAT DOES NOT DISCHARGE P5**, which is written down rather than left for a later reader to
+infer: a golden-comparison gate is defeated by regenerating the golden against buggy code, and a
+gate that MANUFACTURES the scoped-arm behaviour inline is not. Step 5 still owes the manufactured
+carrier gate. What step 4 removes from step 5's list is only the CALL-ORDER problem — finding 2.
+
+**I5 IS CAUGHT BY A PANIC, NOT BY A KEY**, and the harness now says which. Inverting the incidence
+lever empties a trajectory and `refine_min` indexes `traj[0]`, so the run dies before the
+comparator sees anything and the row reads `0 / 0`. A bare `0` there is indistinguishable from
+*nothing moved* — slice S step 3's lesson, so `--oracle` mode gives it its own status.
+
+**FINDING 2 — THE 15.4 % CHANNEL IS REACHED AT STEP 4, AND STEP 3'S BOOKING IS CORRECTED.** Step 3
+reproduced § (ii)'s `SM_lp` numbers on the Rust side but recorded `margin_min_lp` as NOT moving,
+because its harness read `transient_surge_margin_fuel` — which re-marches from `equilibrium`, and
+every close inside that re-arms before anything stale can reach it. It booked the channel to step
+5 *"with the number attached"*. Section A reads **rung 44's** `transient_surge_margin` instead,
+one call earlier in p7o's chain, and the channel is live there:
+
+```text
+A/both/tsm/margin_min_lp   baseline 0.046234125347077270  (3fa7abffd0a65440)
+                           scoped   0.039099866681263640  (3fa404e5d15914e0)
+                           relative 15.431 %
+```
+
+with `A/both/tsm/npts` **61 → 62**. That is § (ii)'s own figure and its own bit patterns. **So all
+twelve of § (ii)'s numbers are now reproduced in Rust** — the six baseline values as committed
+golden keys, the six scoped values as the I1 reading — and § (ii)'s `const_lp` row (*every key: 0,
+no difference at all*) reproduces exactly: **0** of that arming's keys move under I1. The general
+form: *a stale field's reach is a property of WHERE IN A READER CHAIN you look, so a channel
+measured closed at one reader says nothing about the reader before it.*
+
+**FINDING 3 — § (ii)'s TABLE WAS READ OFF A CALL WHOSE THIRD ARGUMENT IS A DELTA, GIVEN THE RAMP
+TOP.** `transient_surge_margin(flight, Tt4_lo, dTt4, …)` takes an INCREMENT — `test_rung44.py`
+passes `300.0` / `400.0`. `probe_p7o.py` passed `HI` = 1400.0, so every `margin_min_*` number in
+§ (ii) is off a march from 1000 K to **2400 K**. Section A reproduces the call verbatim, because
+P2 is checked against those numbers and a "corrected" section A would make the plan's own table
+uncheckable; **section A' carries the corrected `dTt4 = HI − LO` reading beside it**, labelled
+ADDED. It is not a small difference — on `both`, `0.046234` at `npts` 61 against `0.068339` at
+`npts` 151. Nothing is retracted: § (ii)'s conclusions are about a DIFFERENCE between two modes on
+one grid, and that survives its grid being odd.
+
+**FINDING 4 — THE READER CHAIN IS A SEQUENCE, AND THAT IS GATED RATHER THAN COMMENTED.** Because
+`arm` mutates permanently, each reader in section A leaves the map where ITS last sub-step put it.
+Dropping `transient_surge_margin_fuel` from the chain moves `A/both/sm/SM_lp` from
+`3faf2ad9c5223ee0` to `3fadb071a9e7f9a0` — the DESIGN value. A claim like that living only in a
+doc comment is [[rust-port-slice-l-step4]]; `the_reader_chain_is_a_sequence_not_a_set` reproduces
+both readings and asserts they differ, and that the skipped one IS the design reading.
+
+**FINDING 5 — TWO OF MY OWN GATES CARRIED GUESSED BARS, AND THE SECOND WAS THE SAME SHAPE AS THE
+FIRST.** The gate pinning § (ii)'s six baseline values first used a blanket RELATIVE `5e-11` and
+failed at `1.2e-11` on `A/lp_only/tsm/margin_min_lp`. The plan prints **10 SIGNIFICANT figures**,
+so what a printed value licenses is half a unit in its own last printed DECIMAL place — `5e-11`
+near 0.11, `5e-12` near 0.046 — which is now a per-value column with the six measured misses
+recorded beside it. Having fixed that, the SAME defect was still sitting in
+`section_b_is_the_hp_scheduled_arm_no_suite_reaches` as `n > 400` on a measured **516**: a floor
+lets the section shrink by a fifth with the gate green and the write-up's number stale, which is
+exactly what P4's *"a deferral with a number attached survives"* was written against. Pinned as an
+equality. *Fixing an instance of a failure mode is not the same as sweeping for it.*
+
+**FINDING 6 — ZERO INTERPRETER DIVERGENCE, AND THE PROVENANCE IS NOW IN THE FILE.** The two
+goldens agree on **all 6 819 data lines** — against slice K's 46.3 % CPython-identical, and with
+no tolerance tier, since every cell in this slice is CPG. That claim needed a record it did not
+have: two files generated by the SAME interpreter are byte-identical too, and nothing in the bytes
+said which one made them. The dump now stamps itself (`# generated by pypy 3.11.15` /
+`# generated by cpython 3.14.3`), the comparator skips `#` lines, and the identity is checkable.
+*A provenance claim needs a provenance record, not a careful memory of which command was run.*
+
+**FINDING 7 — `1.4 - 1.0` IS NOT `0.4`.** The first go/no-go against § (ii)'s bits missed by 48
+ULPs, and the cause was `R_c=0.4/1.4*1004.0` where the suites write `(1.4-1.0)/1.4*1004.0`.
+`1.4 - 1.0` is `0.3999999999999999`. Both the dump and the oracle carry the reason at the
+constructor rather than only the correct spelling, because the wrong one looks better.
+
+**CHECKLIST ITEMS DISCHARGED.** (a) section B — the HP-SCHEDULED machine, **516 keys**, pinned as
+an equality, with a companion assertion that the arm is LIVE (an HP schedule leaves `map_hp` off
+its design value after a march, and leaves `map_lp` at zero) — the event **0 of 920 262** suite
+closes produce. (b) § (ii)'s twelve numbers are dump keys and injected readings, per finding 2,
+against a committed TSV rather than a table someone typed from a probe.
 
 ## 6. Named risks
 
