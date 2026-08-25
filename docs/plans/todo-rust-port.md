@@ -9681,22 +9681,29 @@ reader in an order that preserves the staleness, and 15.4 % is the target it is 
 
 | injection | moved (gate-visible) | moved (witness) | worst rel | caught |
 |---|---|---|---|---|
-| **I1 — the LOCAL-ARMED-CORE carrier** | **0 / 322** | 9 | 1.00 (`vsv`) | **0 / 59** |
-| **I2 — `arm`'s HP branch dropped** | **0 / 322** | 5 | 1.00 | **0 / 59** |
-| I3 — `Shape::Smooth` `x²(3−2x)` → `x³` | 85 | — | 4.10 | **4 / 59** |
-| I4 — `erosion` inverted | 5 | — | 3.89 | **5 / 59** |
-| I5 — the incidence floor's lever sign | 5 | — | 1.8e14 | **5 / 59** |
-| I6 — `arm` reads the WRONG SHAFT | 82 | — | 12.1 | **4 / 59** |
+| **I1 — the LOCAL-ARMED-CORE carrier** | **0 / 302** | 9 / 40 | 1.00 (`vsv`) | **0 / 59** |
+| **I2 — `arm`'s HP branch dropped** | **0 / 302** | 15 / 40 | 1.00 | **0 / 59** |
+| I3 — `Shape::Smooth` `x²(3−2x)` → `x³` | 78 / 302 | 21 / 40 | 4.10 | **4 / 59** |
+| I4 — `erosion` inverted | 5 / 302 | 0 / 40 | 3.89 | **5 / 59** |
+| I5 — the incidence floor's lever sign | 5 / 302 | 0 / 40 | 1.8e14 | **5 / 59** |
+| I6 — `arm` reads the WRONG SHAFT | 79 / 302 | 12 / 40 | 12.1 | **4 / 59** |
 
-**I2's five moved keys carry the one piece of evidence in the run that the HP arm is not inert.**
+All six re-run TOGETHER against the final 342-key probe, so the table is internally
+consistent — an earlier single-injection re-run had overwritten it, and a table whose rows
+came off different baselines is not one table. Per-gate failing names, and the 302/40 split
+per row, in `docs/plans/slice-v-step3-evidence.md`.
+
+**I2's moved keys carry the one piece of evidence in the run that the HP arm is not inert.**
 Dropping the HP branch moves `W/live/both/vsv_lp` — the **LP** setting — from 0.0167136 to
 0.0171159, because the two schedules are coupled through the shaft state. It sits directly beside
 § 5.20 P4's finding that no suite ever leaves `map_hp` mutated: the HP path is unexercised by the
 GATES and is not dynamically inert in the PLANT.
 
-**THE BAR-MARGIN TABLE — 64 inequalities, got-vs-bar, because green says nothing about slack**
-(slice T step 2: 9/9 green and blind to 24 %). Full table in
-`M:\claud_projects\temp\rust-phase7\bar_margins.txt`. The shape:
+**THE BAR-MARGIN TABLE — 63 inequalities, got-vs-bar, because green says nothing about slack**
+(slice T step 2: 9/9 green and blind to 24 %). **Full table committed at
+`docs/plans/slice-v-step3-evidence.md`**, beside the injection table — not left in a scratch
+directory, which is step-4 checklist item (b)'s own rule (*if it can be emitted, emit it*, and a
+number a later step depends on has to be IN THE REPO) applied to this step's instruments. The shape:
 
 - **Seven bars sit within 10 % of their value** and are the live ones — tightest is rung 58's
   `v_ratio > 1.10` at **+1.5 %**, then rung 60's `gap_phi_bands > 1.0` at +5.3 % and rung 57's
@@ -9722,7 +9729,12 @@ how much:
 
 `self_cancel`'s tail is nearly flat, so its ordering assertion is doing almost no work at the slow
 end — the claim it carries (*the surrender DEEPENS with r*) is real but is delivered almost
-entirely by the first gap.
+entirely by the first gap. **AND THAT IS DISCLOSED RATHER THAN REPAIRED.** At `r` = 1.0 → 2.0
+the gate is satisfied by 2.27e-3, which a grid change could erase or flip; tightening it would
+make the Rust contract STRICTER than the Python one it is porting, which is the one thing a
+ported gate must not do. Python carries the identical exposure at the identical values. Left as
+written, with the number recorded, so a future flip reads as the grid moving and not as the
+finding failing.
 
 **THREE `is`-IDENTITY TESTS RE-GATED, EACH SAYING WHAT IT GAVE UP.** Python asserts object
 identity in three places that a `Copy` value type cannot express: rung 57's *`_arm` hands back the
@@ -9756,11 +9768,12 @@ smoke's section C and by step 4's dump, not by these 59.
 **THE PROBE IS PRESERVED, NOT SHIPPED.** `slice_v_probe.rs` has no assertions — it prints. A
 no-assertion `#[test]` is a vacuous gate and would have added a 60th test that can never fail, so
 it is removed from `rust/tests/` and kept at
-`M:\claud_projects\temp\rust-phase7\slice_v_probe.rs.keep`, restorable by copying it back. The
-harness that drives it is `inject_v.py` in the same directory; it takes injection names as
-arguments and restores the source in a `finally`.
-
-**THE GATE:** `cargo test --release`, whole log, the status written INTO the artefact —
+**`rust/oracle/slice_v_probe.rs.keep`** (the `.keep` suffix is what stops cargo compiling it),
+restored by copying it to `rust/tests/slice_v_probe.rs`. Its harness is
+**`rust/oracle/inject_slice_v.py`** — it takes injection names as arguments and restores the
+source in a `finally`. Both are in the repo rather than in a scratch directory **because step 5
+is a different session and cites them**; leaving an instrument a later step depends on outside git
+is exactly the non-durability step-4 checklist item (b) was written to stop.
 **`CARGO_EXIT=0`, 100 suites, 910 passed, 0 failed, 0 ignored** (step 2's 96 / 851, plus
 this step's four suites and their 59 tests). **NO PYTHON SOURCE CHANGED**, so `pytest` is
 untouched by this step and is not re-run.

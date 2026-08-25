@@ -1,0 +1,342 @@
+//! SLICE V step 3 — the INJECTION PROBE. **Temporary; not a gate.**
+//!
+//! Prints a flat `key<TAB>value` table of the readings the four ported suites' load-bearing
+//! inequalities are written on. Two jobs, both of them preconditions rather than results:
+//!
+//! 1. **DID-IT-MOVE.** Slice S step 3's lesson: an injection that moves nothing is not evidence
+//!    that the gates are weak, it is evidence the injection missed. Every injection below is run
+//!    through this probe FIRST and its moved-reading count recorded, before any "caught by N
+//!    gates" number is believed.
+//! 2. **BAR MARGINS.** Slice T step 2's lesson (9/9 green and blind to 24 %): a bar that passes
+//!    at 900 % margin is inert, and only the got-vs-bar number says which is which.
+//!
+//! Run with:
+//!     cargo test --release --test slice_v_probe -- --nocapture
+
+use turbojet::engine::FlightCondition;
+use turbojet::fuel_transient::{Floor, SurgeLimiter};
+use turbojet::gas::{Gas, GasSpec};
+use turbojet::map::ComponentMap;
+use turbojet::stator_transient::{
+    counters as scount, IncidenceLimiter, LadderAxis, Ramp, ScheduledStatorCore,
+    ScheduledStatorTransient, StatorArm, StatorLeg, StatorSchedule,
+};
+use turbojet::two_spool::{build_two_spool_turbojet, Spool, TwoSpoolEngine, TwoSpoolLosses};
+
+const REAL: TwoSpoolLosses = TwoSpoolLosses {
+    pi_d: 0.97, eta_lpc: 0.90, eta_hpc: 0.88, eta_b: 0.99, pi_b: 0.96, eta_hpt: 0.92,
+    eta_lpt: 0.90, eta_m: 0.99, pi_n: 0.98, p_exit: None, nozzle_convergent: true,
+};
+const FLOOR: f64 = 0.55;
+const V: f64 = 0.20;
+const LO: f64 = 1000.0;
+const HI: f64 = 1400.0;
+const SETTLE: f64 = 1.2;
+const N_LO_57: f64 = 0.75574;
+const N_LO: f64 = 0.7557;
+const MARGIN: f64 = 0.25;
+const V_HP: f64 = 0.10;
+const N_SCHED: usize = 13;
+
+fn flight() -> FlightCondition {
+    FlightCondition::new(250.0, 50_000.0, 0.85)
+}
+
+fn cpg() -> Gas {
+    Gas::new(GasSpec {
+        gamma_c: 1.4, cp_c: 1004.0, r_c: (1.4 - 1.0) / 1.4 * 1004.0,
+        gamma_t: 1.3, cp_t: 1239.0, r_t: (1.3 - 1.0) / 1.3 * 1239.0,
+        hpr: 42.8e6, ..GasSpec::default()
+    })
+}
+
+fn lp_map() -> ComponentMap {
+    ComponentMap { a: 0.20, b: 0.05, sigma: 0.1, l: 0.7, ..ComponentMap::flat() }
+        .with_phi_surge(FLOOR)
+}
+
+fn hp_map() -> ComponentMap {
+    ComponentMap { a: 0.08, b: 0.15, sigma: 0.1, l: 1.0, ..ComponentMap::flat() }
+        .with_phi_surge(FLOOR)
+}
+
+fn design() -> TwoSpoolEngine {
+    build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, 50_000.0, REAL)
+}
+
+fn st(arm: StatorArm) -> ScheduledStatorCore {
+    match ScheduledStatorTransient::new(
+        design(), flight(), 1.0, Some(lp_map()), Some(hp_map()), 1.0, arm)
+    {
+        ScheduledStatorTransient::Full(c) => c,
+        ScheduledStatorTransient::Degenerate(_) => unreachable!(),
+    }
+}
+
+fn ramp(r: f64, ds: f64) -> Ramp {
+    Ramp { tt4_lo: LO, tt4_hi: HI, r, s_settle: SETTLE, ds }
+}
+
+fn p(k: &str, v: f64) {
+    println!("{k}\t{v:.17e}");
+}
+
+#[test]
+fn slice_v_probe() {
+    let f = flight();
+
+    // ---- RUNG 57 -------------------------------------------------------------------------
+    let rp = ramp(0.5, 0.01);
+    for (i, r) in [0.1f64, 0.25, 0.5, 1.0, 2.0].into_iter().enumerate() {
+        let c = st(StatorArm::constant(V, 0.0)).stator_credit(&f, &ramp(r, 0.01), Spool::Lp);
+        p(&format!("r57/credit/{i}/erosion"), c.erosion);
+        p(&format!("r57/credit/{i}/closed_form"), c.closed_form);
+        p(&format!("r57/credit/{i}/credit"), c.credit);
+        p(&format!("r57/credit/{i}/credit_pointwise"), c.credit_pointwise);
+        p(&format!("r57/credit/{i}/bare"), c.bare);
+        let d = st(StatorArm::scheduled_lp(StatorSchedule::new(V, N_LO_57)))
+            .credit_decomposition(&f, &ramp(r, 0.01), Spool::Lp);
+        p(&format!("r57/dec/{i}/full"), d.full);
+        p(&format!("r57/dec/{i}/share_start"), d.share_start);
+        p(&format!("r57/dec/{i}/self_cancel"), d.self_cancel);
+        p(&format!("r57/dec/{i}/nu0_armed"), d.nu0_armed);
+        p(&format!("r57/dec/{i}/nu0_bare"), d.nu0_bare);
+    }
+    let bare = st(StatorArm::default()).stator_transient_margin(&f, &rp);
+    let shut = st(StatorArm::constant(V, 0.0)).stator_transient_margin(&f, &rp);
+    p("r57/cur/bare/m_phi", bare.read.lp.m_phi);
+    p("r57/cur/shut/m_phi", shut.read.lp.m_phi);
+    p("r57/cur/bare/m_i", bare.read.lp.m_i);
+    p("r57/cur/shut/m_i", shut.read.lp.m_i);
+    p("r57/cur/bare/nu0_lp", bare.nu0_lp);
+    p("r57/cur/shut/nu0_lp", shut.nu0_lp);
+    let g = st(StatorArm::scheduled_lp(StatorSchedule::new(V, N_LO_57)))
+        .stator_credit(&f, &rp, Spool::Lp);
+    p("r57/lever/g_credit", g.credit);
+    p("r57/lever/v_at_min", g.v_at_min);
+    p("r57/lever/c_credit",
+      st(StatorArm::constant(g.v_at_min, 0.0)).stator_credit(&f, &rp, Spool::Lp).credit);
+    let flat_lp = ComponentMap { sigma: 0.1, l: 0.7, ..ComponentMap::flat() }.with_phi_surge(FLOOR);
+    let flat_hp = ComponentMap { sigma: 0.1, l: 1.0, ..ComponentMap::flat() }.with_phi_surge(FLOOR);
+    let state = st(StatorArm::default()).arrow_toggle(&f, &rp, V, Spool::Lp, None).state;
+    for (tag, l, h) in [("shaped", lp_map(), hp_map()), ("flat", flat_lp, flat_hp)] {
+        let mk = |l: ComponentMap, h: ComponentMap| match ScheduledStatorTransient::new(
+            design(), f, 1.0, Some(l), Some(h), 1.0, StatorArm::default()) {
+            ScheduledStatorTransient::Full(c) => c,
+            _ => unreachable!(),
+        };
+        let a = mk(l, h).arrow_toggle(&f, &rp, V, Spool::Lp, Some(state));
+        let b = mk(l, h).arrow_toggle(&f, &rp, V, Spool::Hp, Some(state));
+        p(&format!("r57/arrow/{tag}/lp/d_phi_hp"), a.d_phi_hp);
+        p(&format!("r57/arrow/{tag}/lp/d_phi_lp"), a.d_phi_lp);
+        p(&format!("r57/arrow/{tag}/lp/d_tt25"), a.d_tt25);
+        p(&format!("r57/arrow/{tag}/hp/d_phi_lp"), b.d_phi_lp);
+    }
+
+    // ---- RUNG 58 -------------------------------------------------------------------------
+    let acc = st(StatorArm::default()).fuel.accel_schedule(&f, LO, HI, MARGIN, N_SCHED);
+    let leg = StatorLeg { accel: Some(&acc), ..Default::default() };
+    for (tag, arm) in [("sched", StatorArm::scheduled_lp(StatorSchedule::new(V, N_LO))),
+                       ("const", StatorArm::constant(V, 0.0))] {
+        let d = st(arm).composite_credit(&f, &ramp(0.5, 0.01), Spool::Lp, &leg);
+        for (k, v) in [("credit_bare", d.credit_bare), ("interaction", d.interaction),
+                       ("share", d.share), ("v_ratio", d.v_ratio),
+                       ("relocation", d.relocation), ("predicted", d.predicted),
+                       ("leg_cost_bare", d.leg_cost_bare), ("leg_cost_armed", d.leg_cost_armed),
+                       ("fuel_removed_bare", d.fuel_removed_bare),
+                       ("fuel_removed_armed", d.fuel_removed_armed),
+                       ("neither_s", d.cells.neither.s),
+                       ("stator_m_phi", d.cells.stator.m_phi),
+                       ("neither_m_phi", d.cells.neither.m_phi),
+                       ("both_m_phi", d.cells.both.m_phi),
+                       ("fuel_m_phi", d.cells.fuel.m_phi)] {
+            p(&format!("r58/comp/{tag}/{k}"), v);
+        }
+    }
+    let e = st(StatorArm::scheduled_lp(StatorSchedule::new(V, N_LO)))
+        .engagement_shift(&f, &ramp(0.5, 0.01), &leg);
+    p("r58/eng/rel_limited", e.rel_limited);
+    p("r58/eng/rel_dormant", e.rel_dormant);
+    p("r58/eng/bare_dormant", e.bare_dormant);
+    let mut legs: Vec<(String, StatorArm)> = [0.60, N_LO, 0.86].iter()
+        .map(|&x| (format!("n_lo={x}"), StatorArm::scheduled_lp(StatorSchedule::new(V, x))))
+        .collect();
+    legs.push(("const".to_string(), StatorArm::constant(V, 0.0)));
+    for (i, row) in st(StatorArm::default())
+        .interaction_sweep(&f, &ramp(0.5, 0.01), &legs, Spool::Lp, &leg).iter().enumerate()
+    {
+        p(&format!("r58/knee/{i}/share"), row.share);
+        p(&format!("r58/knee/{i}/v_ratio"), row.v_ratio);
+    }
+    for (i, r) in [0.15f64, 0.25, 0.50, 1.00, 2.00].into_iter().enumerate() {
+        let d = st(StatorArm::scheduled_lp(StatorSchedule::new(V, N_LO)))
+            .composite_credit(&f, &ramp(r, 0.01), Spool::Lp, &leg);
+        p(&format!("r58/p4/{i}/share"), d.share);
+        p(&format!("r58/p4/{i}/credit_bare"), d.credit_bare);
+        p(&format!("r58/p4/{i}/interaction"), d.interaction);
+        p(&format!("r58/p4/{i}/relocation"), d.relocation);
+        p(&format!("r58/p4/{i}/fuel_removed_bare"), d.fuel_removed_bare);
+    }
+    for (tag, arm) in [("bare", StatorArm::default()),
+                       ("sched", StatorArm::scheduled_lp(StatorSchedule::new(V, N_LO))),
+                       ("const", StatorArm::constant(V, 0.0))] {
+        let (traj, _) = st(arm).stator_march(&f, &ramp(0.5, 0.01), None, &StatorLeg::default());
+        p(&format!("r58/win/{tag}/min"),
+          traj.iter().map(|q| q.phi_lp).fold(f64::INFINITY, f64::min));
+        p(&format!("r58/win/{tag}/first"), traj[0].phi_lp);
+    }
+    for (tag, arm) in [("const", StatorArm::constant(V, 0.0)),
+                       ("sched", StatorArm::scheduled_lp(StatorSchedule::new(V, N_LO)))] {
+        for (j, fl) in [0.7450f64, 0.7500].into_iter().enumerate() {
+            let c = st(arm).composite_credit(&f, &ramp(0.5, 0.01), Spool::Lp, &StatorLeg {
+                surge: Some(Floor::Phi(SurgeLimiter::new(Spool::Lp, fl))), ..Default::default() });
+            p(&format!("r58/pin/{tag}/{j}/credit_fuel"), c.credit_fuel);
+            p(&format!("r58/pin/{tag}/{j}/v_fuel"), c.v_fuel);
+            p(&format!("r58/pin/{tag}/{j}/min_phi_fuel"), c.cells.fuel.min_phi);
+            p(&format!("r58/pin/{tag}/{j}/min_phi_both"), c.cells.both.min_phi);
+        }
+    }
+
+    // ---- RUNG 59 -------------------------------------------------------------------------
+    for (tag, arm) in [("lp_const", StatorArm::constant(V, 0.0)),
+                       ("lp_sched", StatorArm::scheduled_lp(StatorSchedule::new(V, N_LO))),
+                       ("hp_const", StatorArm { vsv_hp: V_HP, ..Default::default() })] {
+        let d = st(arm).schedule_invariance(&f, LO, HI, MARGIN, N_SCHED);
+        p(&format!("r59/inv/{tag}/d_ordinate"), d.d_ordinate);
+        p(&format!("r59/inv/{tag}/d_abscissa"), d.d_abscissa);
+        let worst = d.chain.iter()
+            .map(|c| c.d_tt25.abs().max(c.d_tt3.abs()).max(c.d_f.abs())
+                      .max(c.d_mfp.abs()).max(c.d_ratio.abs()).max(c.d_kappa.abs()))
+            .fold(0.0, f64::max);
+        p(&format!("r59/inv/{tag}/chain_worst"), worst);
+    }
+    for (tag, arm, spool) in [
+        ("lp_sched", StatorArm::scheduled_lp(StatorSchedule::new(V, N_LO)), Spool::Lp),
+        ("lp_const", StatorArm::constant(V, 0.0), Spool::Lp),
+        ("hp_lp", StatorArm { vsv_hp: V_HP, ..Default::default() }, Spool::Lp),
+        ("hp_hp", StatorArm { vsv_hp: V_HP, ..Default::default() }, Spool::Hp)]
+    {
+        let d = st(arm).matched_credit(&f, &ramp(0.5, 0.01), MARGIN, spool, N_SCHED);
+        for (k, v) in [("delta_match", d.delta_match),
+                       ("interaction_matched", d.interaction_matched),
+                       ("interaction_bare_leg", d.interaction_bare_leg),
+                       ("abscissa_share", d.abscissa_share),
+                       ("ordinate_share", d.ordinate_share),
+                       ("s_eng_matched", d.s_eng_matched), ("s_eng_bare_leg", d.s_eng_bare_leg),
+                       ("removed_matched", d.removed_matched),
+                       ("removed_bare_leg", d.removed_bare_leg),
+                       ("audit_fuel_lo", d.audit_fuel.lo), ("audit_fuel_cut_lo", d.audit_fuel.cut_lo),
+                       ("audit_fuel_cut_hi", d.audit_fuel.cut_hi), ("audit_fuel_hi", d.audit_fuel.hi)] {
+            p(&format!("r59/m/{tag}/{k}"), v);
+        }
+        p(&format!("r59/m/{tag}/audit_fuel_clamped"), d.audit_fuel.clamped as f64);
+        p(&format!("r59/m/{tag}/audit_fuel_n_cuts"), d.audit_fuel.n_cuts as f64);
+    }
+
+    // ---- RUNG 60 -------------------------------------------------------------------------
+    let rp60 = ramp(0.5, 0.005);
+    let b = st(StatorArm::constant(0.20, 0.0)).set_point_bands(&f, &rp60, Spool::Lp);
+    p("r60/bands/identity_residual", b.identity_residual);
+    p("r60/bands/gap_phi_bands", b.gap_phi_bands);
+    p("r60/bands/gap_m_bands", b.gap_m_bands);
+    p("r60/bands/credit", b.credit);
+    p("r60/bands/excursion", b.excursion);
+    let mut l60: Vec<(String, StatorArm)> = [0.05, 0.15, 0.20].iter()
+        .map(|&v| (format!("const v={v}"), StatorArm::constant(v, 0.0))).collect();
+    l60.push(("sched".to_string(),
+              StatorArm::scheduled_lp(StatorSchedule::new(0.20, N_LO))));
+    for (i, row) in st(StatorArm::default())
+        .composability_ladder(&f, &rp60, LadderAxis::Legs(&l60), Spool::Lp).iter().enumerate()
+    {
+        p(&format!("r60/legs/{i}/credit"), row.credit);
+        p(&format!("r60/legs/{i}/excursion"), row.excursion);
+        p(&format!("r60/legs/{i}/criterion"), row.criterion);
+        p(&format!("r60/legs/{i}/m_adm"), row.m_admissible as u8 as f64);
+        p(&format!("r60/legs/{i}/phi_adm"), row.phi_admissible as u8 as f64);
+    }
+    let rates: Vec<(f64, StatorArm)> = [0.15, 0.25, 0.50, 0.75, 1.00].iter()
+        .map(|&r| (r, StatorArm::constant(0.20, 0.0))).collect();
+    for (i, row) in st(StatorArm::default())
+        .composability_ladder(&f, &rp60, LadderAxis::Rates(&rates), Spool::Lp).iter().enumerate()
+    {
+        p(&format!("r60/rates/{i}/credit"), row.credit);
+        p(&format!("r60/rates/{i}/excursion"), row.excursion);
+        p(&format!("r60/rates/{i}/m_adm"), row.m_admissible as u8 as f64);
+    }
+    for (i, (v, m_lim)) in [(0.05, 0.500), (0.10, 0.509), (0.15, 0.518)].into_iter().enumerate() {
+        let d = st(StatorArm::constant(v, 0.0)).floor_composite(
+            &f, &rp60, &Floor::Incidence(IncidenceLimiter::new(Spool::Lp, m_lim)), Spool::Lp);
+        for (k, x) in [("credit_fuel", d.credit_fuel), ("credit_bare", d.credit_bare),
+                       ("interaction", d.interaction), ("pinned_residual", d.pinned_residual),
+                       ("d_s_eng", d.d_s_eng), ("s_eng_bare", d.s_eng_bare),
+                       ("removed_bare", d.removed_bare), ("removed_armed", d.removed_armed)] {
+            p(&format!("r60/inc/{i}/{k}"), x);
+        }
+    }
+    for (i, v) in [0.15f64, 0.20].into_iter().enumerate() {
+        let d = st(StatorArm::constant(v, 0.0)).floor_composite(
+            &f, &rp60, &Floor::Phi(SurgeLimiter::new(Spool::Lp, 0.750)), Spool::Lp);
+        p(&format!("r60/phi/{i}/credit_fuel"), d.credit_fuel);
+        p(&format!("r60/phi/{i}/pinned_residual"), d.pinned_residual);
+    }
+    let d = st(StatorArm::constant(0.15, 0.0)).floor_composite(
+        &f, &rp60, &Floor::Incidence(IncidenceLimiter::new(Spool::Lp, 0.490)), Spool::Lp);
+    p("r60/clears/pinned_residual", d.pinned_residual);
+    p("r60/clears/removed_armed", d.removed_armed);
+    p("r60/clears/both_m_i", d.cells.both.m_i);
+    p("r60/clears/stator_m_i", d.cells.stator.m_i);
+    let m = st(StatorArm::constant(0.20, 0.0));
+    for (i, sm) in [0.02f64, 0.10, 0.25].into_iter().enumerate() {
+        let mr = m.matching_rules(sm, 0.20, Spool::Lp);
+        p(&format!("r60/rules/{i}/gap"), mr.gap);
+        p(&format!("r60/rules/{i}/residual"), mr.residual);
+    }
+
+    // ---- THE WITNESS SECTION -----------------------------------------------------------
+    //
+    // Everything above is a reading some ported GATE compares. These are not: they exist so
+    // that an injection reporting `moved 0` can be told apart from an injection that never
+    // applied. `W/` keys read the state the four suites are structurally blind to -- the LIVE
+    // map `arm` leaves behind after a march (§ 5.20 (i)'s permanent mutation), and `arm`'s own
+    // dispatch counters on an HP-SCHEDULED machine, which no suite builds (§ 5.20 P4: 0 of
+    // 920 262 Python closes ever left `map_hp` mutated).
+    //
+    // COUNT THEM SEPARATELY from the gate-visible readings. A `W/` key moving proves the
+    // injection is live; it says nothing about whether any gate can see it.
+    let none = StatorLeg::default();
+    let hp_sched = StatorArm::scheduled_hp(StatorSchedule::new(V, N_LO));
+    for (tag, arm) in [("lp_only", StatorArm::scheduled_lp(StatorSchedule::new(V, N_LO))),
+                       ("hp_only", hp_sched),
+                       ("both", StatorArm { sched_lp: Some(StatorSchedule::new(V, N_LO)),
+                                            sched_hp: Some(StatorSchedule::new(V, N_LO)),
+                                            ..Default::default() }),
+                       ("const_lp", StatorArm::constant(V, 0.0))] {
+        let c = st(arm);
+        scount::reset();
+        let _ = c.stator_march(&f, &ramp(0.5, 0.01), None, &none);
+        let cs = scount::take();
+        p(&format!("W/live/{tag}/vsv_lp"), c.fuel.inner.inner.map_lp().vsv);
+        p(&format!("W/live/{tag}/vsv_hp"), c.fuel.inner.inner.map_hp().vsv);
+        p(&format!("W/count/{tag}/arm_lp_moved"), cs.arm_lp_moved as f64);
+        p(&format!("W/count/{tag}/arm_hp_moved"), cs.arm_hp_moved as f64);
+        p(&format!("W/count/{tag}/arm_calls"), cs.arm_calls as f64);
+
+        // THE CHANNEL § 5.20 (ii)'s 15.4 % actually travels down, made reachable in Rust.
+        // A rung-44/45 reader called on an object that has ALREADY MARCHED starts from the map
+        // `arm` left behind, not from the design map -- so its own running line and every
+        // margin off it shift. Fresh-object value beside it, because the difference is the
+        // measurement and a single number would not be one.
+        let sm_stale = c.fuel.transient_surge_margin_fuel(
+            &f, LO, HI, 0.5, SETTLE, 0.01, None, None, None, None);
+        p(&format!("W/stale/{tag}/margin_min_lp"), sm_stale.margin_min_lp);
+        p(&format!("W/stale/{tag}/margin_min_hp"), sm_stale.margin_min_hp);
+        p(&format!("W/stale/{tag}/min_phi_lp"), sm_stale.min_phi_lp);
+
+        // AND THE STEADY READER, which is the one Python's probe saw move. `surge_margin` sits
+        // on `TwoSpoolMapCore` and runs a STEADY match -- it never goes through rung 57's
+        // `try_close`, so nothing re-arms and the map `arm` left behind is the map it reads.
+        let sm = c.fuel.inner.inner.surge_margin(&f, LO);
+        p(&format!("W/steady/{tag}/sm_lp"), sm.sm_lp);
+        p(&format!("W/steady/{tag}/sm_hp"), sm.sm_hp);
+    }
+}

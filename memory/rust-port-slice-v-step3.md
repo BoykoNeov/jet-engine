@@ -51,7 +51,7 @@ Four more from the same step:
   gates are relational so none would have said so. FIXED in the source, not footnoted — slice W
   inherits it. [[rust-port-slice-l-step4]] on a comment that was true of what it described and
   false of what a reader would use it for.
-- **TABULATE BAR MARGINS, and expect most of them to be loose ON PURPOSE.** 64 inequalities:
+- **TABULATE BAR MARGINS, and expect most of them to be loose ON PURPOSE.** 63 inequalities:
   seven within 10 % of their bar, twelve passing at over 5× (up to **127×**). The loose ones are
   not bugs — their Python docstrings say *"gate the claim, not the boundary value"* — but the
   **tightest non-physics bar is a TOLERANCE bar**: rung 59's `d_abscissa < 1e-12` reads 7.76e-13,
@@ -69,6 +69,13 @@ Four more from the same step:
   is a STRING a caller could supply, so the port kept a `try_from_str`. Rule: **a bad VALUE keeps
   a runtime entry point; a bad TYPE becomes an exhaustiveness check** — and both decisions get
   written at their own site.
+
+**AND THE INSTRUMENTS ARE IN THE REPO, NOT IN SCRATCH.** The probe, its harness and both
+tables are committed (`rust/oracle/slice_v_probe.rs.keep`, `rust/oracle/inject_slice_v.py`,
+`docs/plans/slice-v-step3-evidence.md`) because step 5 is a different session and cites
+them. An instrument a later step depends on, left outside git, is the same non-durability
+the phase's own step-4 checklist item (b) was written to stop — and it recurred here on my
+own tooling one step after being written down.
 
 Related: [[rust-port-slice-v-step2]] (both closing gates unfalsifiable), [[rust-port-slice-t-step2]]
 (9/9 green and blind to 24 %), [[rust-port-ported-test-vacuity]],
