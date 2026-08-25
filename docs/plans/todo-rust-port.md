@@ -9826,8 +9826,11 @@ comparator sees anything and the row reads `0 / 0`. A bare `0` there is indistin
 reproduced § (ii)'s `SM_lp` numbers on the Rust side but recorded `margin_min_lp` as NOT moving,
 because its harness read `transient_surge_margin_fuel` — which re-marches from `equilibrium`, and
 every close inside that re-arms before anything stale can reach it. It booked the channel to step
-5 *"with the number attached"*. Section A reads **rung 44's** `transient_surge_margin` instead,
-one call earlier in p7o's chain, and the channel is live there:
+5 *"with the number attached"*. **Its MEASUREMENT was right and is not retracted** — step 3 said
+so itself (*"a difference in CALL ORDER, not in exposure"*) and stated the reading as a bound
+rather than an immunity, which is exactly why the number survived to be aimed at. What step 4
+corrects is the BOOKING that followed it. Section A reads **rung 44's**
+`transient_surge_margin` instead, one call earlier in p7o's chain, and the channel is live there:
 
 ```text
 A/both/tsm/margin_min_lp   baseline 0.046234125347077270  (3fa7abffd0a65440)
