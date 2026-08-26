@@ -22,7 +22,16 @@
 //!    converged closure hides the swap — section C reads `powers`, which is where it bites.
 //! 5. **`R62_FUEL` SPREAD FROM `..R43`.** Rung 62 does not override `_surge_fuel`, so the wrong
 //!    spread silently drops rung 60's floor-resolving body. Section F runs a `phi` floor on a
-//!    bleed-armed machine.
+//!    bleed-armed machine — **and step 5 measured that this section CANNOT catch that defect.**
+//!    Two reasons, both found after this file shipped: on a `Floor::Phi` the rung-57 body's
+//!    resolution is the IDENTITY, so the two tables agree exactly whatever the plant does
+//!    (step 3, finding 4); and `F/floor_leg/fuel_removed` is **exactly 0** on this grid — the
+//!    valve has already lifted `min_phi` above the set point, so the leg is DORMANT and the
+//!    section compares two inert paths. The check item 5 describes lives in
+//!    `slice_w_dispatch.rs`'s `the_r43_spread_is_invisible_on_phi_and_fatal_on_incidence`,
+//!    which builds a `Floor::Incidence` cell and asserts `fuel_removed > 0` before comparing.
+//!    Section F is left exactly as it is — its keys are real readings of an inherited leg and
+//!    the golden is bit-exact — but its CLAIM is corrected here rather than left standing.
 //!
 //! Regenerate the golden with
 //! `.venv\Scripts\python.exe rust\oracle\dump_slice_w_smoke.py > rust\oracle\slice_w_smoke_pypy.tsv`.
@@ -292,6 +301,10 @@ fn section_e(c: &mut Cmp) {
     c.f("E/honest/d_mfp", honest.d_mfp);
 }
 
+/// An inherited `phi`-floor leg on a bleed-armed machine. **NOT a check on the `..R43` spread**
+/// — see this file's header, item 5: the leg is DORMANT here (`fuel_removed` is exactly 0) and a
+/// `Floor::Phi` cannot separate the two tables in any case. What these keys do pin is that an
+/// inherited leg reaches rung 62's plant at all and returns rung 57's own numbers.
 fn section_f(c: &mut Cmp) {
     let m = bt(&LeverArm::scheduled(sched()));
     let lim = SurgeLimiter::from_margin(&lp_map(), Spool::Lp, 0.40);

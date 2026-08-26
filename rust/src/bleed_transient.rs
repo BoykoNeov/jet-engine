@@ -1275,6 +1275,15 @@ impl ScheduledStatorCore {
             at_min: self.commanded(flight, &traj, rd.at().s, lever),
             // Python's `sum(vals)/len(vals)` — left-to-right accumulation, which is what a plain
             // `iter().sum()` also gives.
+            //
+            // **AND THAT IS TRUE OF PyPy AND FALSE OF CPython 3.12+**, measured by slice W's
+            // step-4 oracle: CPython's `sum()` uses Neumaier COMPENSATED summation for floats,
+            // so on a constant valve it returns exactly `0.1` where PyPy (and this line)
+            // accumulate to three ULPs below it. This crate matches PyPy, which is the project's
+            // interpreter and the one every golden is generated on; `slice_w_oracle.rs` carries
+            // the nine `D/cl/*/mean` keys as its single declared cross-interpreter exemption,
+            // seven of which actually differ. No shipped gate reads `mean`
+            // (`test_rung62.py:374` reads `at_min`), so nothing downstream turns on it.
             mean: vals.iter().sum::<f64>() / vals.len() as f64,
             // Python's `max` — FIRST maximum on a tie, and it PROPAGATES NaN differently from
             // `f64::max`. `fold` with `>` reproduces the comparison chain exactly.
