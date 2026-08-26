@@ -37,7 +37,8 @@ use turbojet::map::ComponentMap;
 use turbojet::stator_transient::{
     Ramp, ScheduledStatorCore, ScheduledStatorTransient, StatorArm, StatorLeg, StatorSchedule,
 };
-use turbojet::two_spool::{build_two_spool_turbojet, Branch, TwoSpoolEngine, TwoSpoolLosses};
+use turbojet::matcher::Branch;
+use turbojet::two_spool::{build_two_spool_turbojet, TwoSpoolEngine, TwoSpoolLosses};
 
 // ---------------------------------------------------------------------------- the grid
 const REAL: TwoSpoolLosses = TwoSpoolLosses {
@@ -314,10 +315,25 @@ fn the_invisible_authority_an_untouched_clamp_moves_nothing_physical() {
     let a = lt(&LeverArm::floored(BleedLimiter::new(PHI, B))).bill_cell(&fl, &rp, false);
     let b = lt(&LeverArm::floored(BleedLimiter::new(PHI, 4.0 * B))).bill_cell(&fl, &rp, false);
     assert!(a.b_peak < B, "the clamp must be UNTOUCHED for this gate to mean anything");
-    // Python iterates the dict's float values and EXCLUDES the three argmin keys by name; the
-    // port names the survivors instead, which is the same set and cannot silently shrink when a
-    // field is added, because a new field is a compile-time addition to `BillCell` and not to
-    // this list — so the list is checked against the struct's own count below.
+    // Python iterates the dict's float values and EXCLUDES the three argmin keys BY NAME, so it
+    // auto-covers any float a later rung adds. The port names the survivors instead, which
+    // FREEZES the set — so the compiler is made to enforce the coverage: this destructure is
+    // exhaustive, and adding a field to `BillCell` (rung 65 will) is a COMPILE ERROR here until
+    // the new field is classified as swept or excluded.
+    //
+    // An earlier draft of this gate merely CLAIMED that enforcement in a comment with nothing
+    // behind it — [[rust-port-documented-gate-that-doesnt-exist]], caught in review.
+    let turbojet::limited_bleed::BillCell {
+        // the three EXCLUDED by name, and the rung's own content is why: a riding floor makes the
+        // `phi` minimum a PLATEAU, so its LOCATION is a 1-ulp tie.
+        nu_at_min_lp: _, s_at_min_lp: _, b_at_min_lp: _,
+        // the fifteen swept
+        plateau_span: _, min_phi_lp: _, min_phi_hp: _, m_i_lp: _, m_i_hp: _, b_int: _,
+        b_peak: _, b_end: _, thrust_int: _, thrust_end: _, nu_lp_end: _, nu_hp_end: _,
+        tt4_peak: _, nu0_lp: _, nu0_hp: _,
+        // not floats: excluded because Python's `isinstance(v, float)` filter excludes them
+        plateau_pts: _, npts: _, traj: _,
+    } = &a;
     let pairs: [(&str, f64, f64); 15] = [
         ("plateau_span", a.plateau_span, b.plateau_span),
         ("min_phi_lp", a.min_phi_lp, b.min_phi_lp),

@@ -11218,6 +11218,62 @@ false — so rung 65 cannot delegate here to inherit the assert chain. That is n
 the assert string**, `ForcedBleed::set`'s precedent. (d) `Census64` is thread-local with no
 per-test reset, so step 5 must reset in every `#[test]` that reads it.
 
+##### STEP 3 — SHIPPED. **THE TWO ADDED GATES ARE THE ONLY THINGS THAT CATCH THE TWO HOLES, AND THE CENSUS SAYS SO BY NAME**
+
+`rung64.rs` carries **20 tests** — Python's 18 `def test_` (23 collected; the two parametrised
+pairs and the four-way become loops) plus the **two § (ii) named**. All 20 green on the first run,
+which is exactly when the instrument has to be measured, so the census was re-run in Rust.
+
+**THE CENSUS — 8 injections, 6 targets, 0 holes, and every row MOVED.** One injection per
+swapped/created cell: point rung 64's table slot at rung 62's body (for `b_at_point`, which has no
+rung-62 body, at a RECONSTRUCTION — § (ii)'s own mistake). Every one is caught, and the
+did-it-move column is never inferred.
+
+**AND THE ANSWER SPLITS BY GRID, WHICH IS THE POINT.** Against **everything** (the ported gates,
+the two added, and `slice_x_smoke`'s 318 bit-exact values): **0 holes**. Against the **PORTED
+gates alone** — the honest analogue of Python's 111 — **both holes are still holes**:
+
+| injection | which `rung64` tests redden | ported-only verdict |
+|---|---|---|
+| `b_at_point` | `the_bleed_integral_is_a_measurement_and_not_an_estimate` — **that one and no other** | **still a HOLE** |
+| `try_close` | `the_equilibrium_start_is_solved_on_the_floored_plant` + `the_bleed_integral_…` — **both ADDED** | **still a HOLE** |
+
+So § (ii)'s Python measurement reproduces exactly in Rust, and the two added gates are not
+belt-and-braces: **they are the entire detector.** The other six injections redden 1–11 ported
+gates each (`b_of` 11, `at_lever` 7, `try_close_fuel` 7, `armed_bleed` 2, `isolating` 1,
+`at_stator` 1).
+
+**FINDING 1 — THE PROBE CALLED FOUR ROWS "BUILD FAIL" AND THEY HAD ALL RUN.** The first census
+classified any non-zero exit from the witness as a build failure and then **skipped running the
+gates for that row entirely**. Four injections (`armed_bleed`, `at_lever`, `isolating`,
+`at_stator`) exit 101 — a **runtime PANIC**, on rung 64's OWN assert: *"reference sibling must
+carry the NEIGHBOUR's valve and nothing else; it reports armed=false against neighbour=true."*
+That is the strongest detector in the whole set, and the instrument was reporting it as its own
+inability to compile. Rebuilt to separate the two and to run the gates unconditionally. **A probe
+that cannot tell a crash from a compile error will call its best result a failure of itself.**
+
+**FINDING 2 — THE MODULE'S `b_of` CAVEAT IS CONFIRMED BY ARITHMETIC, NOT BY ASSERTION.** The
+witness census reads `b_of_super = 478` on a run containing a floored march — which reads like a
+contradiction of *0 within a march*. It is not: `close_unfloored 48 + close_fuel_unfloored 344 +
+b_at_point_unfloored 86 = 478`, **exactly**, so every one is on an UNFLOORED path and none is
+inside a floored solve. `b_of_forced = 2 068` is the closure-evaluation count probe 9 measured
+independently. That identity is a step-5 gate: `b_of_super == close_unfloored +
+close_fuel_unfloored + b_at_point_unfloored`, which no float can express.
+
+**FINDING 3 — A COMMENT PROMISED AN ENFORCEMENT THAT DID NOT EXIST.** `the_invisible_authority_…`
+freezes a 15-key sweep where Python's `isinstance(v, float)` filter auto-covers whatever a later
+rung adds — and its comment claimed *"the list is checked against the struct's own count below"*
+with **no such check anywhere**. [[rust-port-documented-gate-that-doesnt-exist]], and the second
+false claim in shipped slice-X source after `R64`'s *six of six*. Repaired by making the compiler
+enforce it: an **exhaustive destructure** of `BillCell` beside the list, so rung 65 adding a field
+is a COMPILE ERROR until the field is classified as swept or excluded.
+
+**THE REST OF THE CENSUS WITNESS, read for free.** `b_of_state = 0` and `solve_b_aborts = 0` —
+both dead arms confirmed on a live grid rather than argued. `saturated = 0` beside `dormant = 314
+/ riding = 164`: the headline machine reaches **two** regimes, and only `authority_ceiling`'s
+deliberately over-set floor reaches the third — P3's premise, measured on the machine rather than
+assumed from the enum.
+
 
 ## 6. Named risks
 
