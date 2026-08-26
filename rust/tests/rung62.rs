@@ -20,6 +20,30 @@
 //! the bleed's amplification alone to within 0.7 % — a **one-way arrow** running from the
 //! amplifying lever to the cancelling one. And it is the LOOP, not the LEVEL: a CONSTANT valve at
 //! the schedule's own commanded value reaches a fraction of it.
+//!
+//! **WHAT 88/88 GREEN DOES NOT ESTABLISH.** Every gate in this file is RELATIONAL — it
+//! asserts a relation among values THIS CRATE computed, so a Rust/Python arithmetic
+//! divergence moves both sides of every one of them and leaves the whole suite green.
+//! Agreement with Python is step 4's oracle, not this file. Step 3 MEASURED how far
+//! that reaches, by running 6 INJECTIONS over 5 distinct defects (I2 and I2b are two
+//! spellings of one) into `bleed_transient.rs`, counting both
+//! how many of a 871-key probe moved and how many of the 88 fired:
+//!
+//! * **I1** — `mdot_face` returning the TRIAL face flow rather than the imposed `mdot_imp/(1-b)`: **312 of 871** gate-visible keys move, 2 witness — **0 of 88 catch it**.
+//! * **I2** — `_powers`/`_instant_tail` re-reading `b_of` instead of the closure's own `bleed` key: **0 of 871** gate-visible keys move, 7 witness — **0 of 88 catch it**.
+//! * **I2b** — the same re-read confined to the branch PREDICATE (P4's own injection): **0 of 871** gate-visible keys move, 7 witness — **0 of 88 catch it**.
+//! * **I3** — `R62_FUEL` spread from `..R43`, which drops rung 57's floor-RESOLVING `_surge_fuel`: **0 of 871** gate-visible keys move, 1 witness, 3 key(s) never emitted (its section PANICS) — **0 of 88 catch it**.
+//! * **I4** — `at_stator` left un-overridden, the shape slice V shipped: **4 of 871** gate-visible keys move, 1 witness, 1 key(s) never emitted (its section PANICS) — **2 of 88 catch it**.
+//! * **I5** — the `1/(1-b)` dropped from the fuel bracket walls: **151 of 871** gate-visible keys move, 2 witness — **0 of 88 catch it**.
+//!
+//! So **5 of the 6 injections are invisible to every gate in both suites**, and the one
+//! that is
+//! caught is caught by the two written for it. The zeros are not probe blindness:
+//! `caught > 0` implies `moved_G > 0` on every row, and the two that move NOTHING
+//! gate-visible each leave a witness the gates never read — `b_of`'s call count for
+//! I2/I2b, and for I3 a deliberately un-ported `Floor::Incidence` cell that PANICS,
+//! which is what shows the channel is live at all. Both suites build only
+//! `Floor::Phi`, and that is precisely why I3 reaches nothing here.
 
 use turbojet::bleed::TwoSpoolBleedMatcher;
 use turbojet::bleed_transient::{build_scheduled_bleed, BleedSchedule, LeverArm};

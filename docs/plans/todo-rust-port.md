@@ -10373,7 +10373,223 @@ its spelling moved**: `fn(&ScheduledStatorCore, &LeverArm) -> ScheduledStatorCor
 readers are an `impl ScheduledStatorCore` block in `bleed_transient.rs`, exactly as Python's are
 methods reachable on every subclass instance.
 
-**THE GATE:** `cargo test --release`, status written into the log.
+**THE GATE:** `cargo test --release`, status written into the log. *Recorded there as 98 suites / 910 passed; re-counted at step 3 the same log reads **103 result lines / 922 passed** — see step 3's gate note. The decomposition, not the total, is the check.*
+
+##### STEP 3 — SHIPPED. **FIVE OF SIX INJECTIONS PASS ALL 88 GATES — AND THE INSTRUMENT THAT SAYS SO WAS WRONG FIVE TIMES, EVERY ONE OF THEM A ZERO THAT HAD NEVER BEEN MEASURED**
+
+`tests/rung62.rs` + `tests/rung63.rs` — **58 + 30 = 88 `#[test]` against Python's 88 COLLECTED**,
+one to one, zero source lines changed. `M:\claud_projects\temp\rust-phase7\inject_w.py`,
+`slice_w_probe.rs.keep`, `injection_w_table.txt`, `bar_margins_w.txt`, `step3.log`.
+
+**THE COUNT CENSUS, EMITTED ON BOTH SIDES AND PER FILE.** `pytest --collect-only -q` reports
+**58** from `test_rung62.py` and **30** from `test_rung63.py` (from 23 + 19 `def test_`, a 2.1×
+`parametrize` expansion) and `-m slow` reports **55 of the 88** — all three reproduce § 5.21 (vi)'s
+pre-registered numbers — while `cargo test --release -- --list` reports 58 and 30. Equal totals can
+still hide a missed port paired with an invented gate, so the NAMES were paired: a complete
+bijection, **zero unmatched Rust names in either suite**, every low-scoring pair a `parametrize`
+family member, and each family's membership checked against the Python list it came from
+(`[{}, BLEED, dict(bleed=0.15)]` → `bare` / `bleed_sched` / `bleed_const`, at 0.15).
+*A `grep -c '#\[test\]'` gives 59 and 31: line 4 of each file is the header docstring, which
+contains the literal string.*
+
+#### FINDING 1 — **THE FIRST THREE DEFECTS OF THIS STEP WERE ALL IN THE GATES, AND THE THIRD WAS A GATE FAILING ON THE MESSAGE IT EXISTS TO ACCEPT**
+
+The suites did not compile. Both `catch_unwind`s in `rung63.rs` capture `&ScheduledStatorCore`,
+which carries slice V's `Cell<ComponentMap>` and the gas caches — **7 errors from one site**,
+repaired with `AssertUnwindSafe` on `rung54.rs:517`'s precedent. `rung62.rs` read
+`od.base.pi_lpc` where the field sits one level further down. Neither is interesting.
+
+The third is. `_isolating`'s two refusals carry **different panic payload types**: the keyed one
+interpolates `{k}` and unwinds a `String`, the empty-lever one is a bare literal `assert!` and
+unwinds a `&'static str`. The gate downcast only to `String`, so a **correctly matched** refusal
+read back as the empty string and the test failed with `wrong refusal: ` — on the very message it
+was written to accept. Repaired by porting `rung57.rs`'s `panic_text`, which tries both, with the
+why written at the site. **A gate can be red for the reason it is right**, and its own failure
+text says the opposite.
+
+#### FINDING 2 — **THE INJECTION TABLE. FIVE OF SIX INJECTIONS PASS ALL 88 GATES**
+
+Six injections over **five distinct defects** (I2 and I2b are two spellings of one), five of them
+§ 5.21 (v)/P2/P4's own pre-registrations. `moved_G` counts the **871 gate-visible** probe keys —
+every reader the two suites call, on their own grids; `moved_W` counts the **86 witness** keys
+**no ported gate reads**; `absent` counts baseline keys the injected probe never emitted.
+
+| injection | moved G / 871 | moved W / 86 | absent | **caught / 88** |
+|---|---|---|---|---|
+| **I1** `mdot_face` = the TRIAL face flow | **312** | 2 | 0 | **0** |
+| **I2** `_powers`/`_instant_tail` re-read `b_of` | **0** | 7 | 0 | **0** |
+| **I2b** the same re-read, PREDICATE only (P4's) | **0** | 7 | 0 | **0** |
+| **I3** `R62_FUEL` spread from `..R43` | **0** | 1 | 3 | **0** |
+| **I4** `at_stator` left un-overridden | 4 | 1 | 1 | **2** |
+| **I5** the `1/(1-b)` off the fuel bracket walls | **151** | 2 | 0 | **0** |
+
+**I4 REPRODUCES § 5.21 (ii)'s PYTHON MEASUREMENT TO THE DIGIT, ON THE RUST SIDE.**
+`G/trap/ordinate_identical` and `abscissa_identical` flip **`true`/`true` → `false`/`false`** and
+the two `d_` keys land at **`9.54314506e-3`** and **`1.01882344e-2`** against the pre-registered
+`9.543e-3` / `1.019e-2`. The two gates that fire are exactly the two written for it, so **P2 is
+discharged on the port** and step 5's manufactured-bug gate has a measured target rather than a
+promised one.
+
+**AND THE TWO BIG ONES ARE CAUGHT BY NOTHING.** I1 moves 312 keys and I5 moves 151, and not one
+gate in either suite fires. Their real worst moves are **4.3e-12** and **2.2e-12**, medians around
+**7e-15** — every gate in both suites is relational, and a shift at the twelfth figure moves both
+sides of every relation it asserts. That is the disclosure now written into both file headers,
+**generated from this table rather than typed**.
+
+*The `worst_rel` column reads `1` on four rows and means nothing. The maximum lands on
+`G/fd/bled/row4/credit`, a difference of two near-equal numbers whose baseline is `-2.22e-16` —
+machine epsilon — so one ULP there is a "100 % relative move". The harness already excludes an
+EXACT-zero baseline (before that guard the column read **1.02e+298**, from `9.54e-3 / 1e-300`); it
+does not exclude a near-zero one. The absolute figures above are the honest ones, and the column
+is left in with this note rather than quietly patched.*
+
+#### FINDING 3 — **P4 NAMED THE WRONG COUNTER. THE `reduced`/`bled` PAIRS ARE BLIND TO THE DEFECT THEY WERE BUILT FOR**
+
+§ 5.21 (v) predicted that a `_powers` "simplified" to re-read `b_of` would be visible **only** to a
+dispatch gate counting reduced-vs-bled per cell, and P4 registered that gate as the one slice W
+owes. Measured on both spellings — I2 rebinds `b` outright, I2b changes only the branch predicate,
+which is P4's own case — on the grid that reproduces (v)'s table exactly:
+
+* **All eight `close_*`/`close_fuel_*`/`powers_*`/`tail_*` counters DO NOT MOVE.**
+  `b_of(nu_lp, Tt2)` and `c.bleed.unwrap_or(0.0)` agree at **every** call on this plant, not merely
+  where `b` is 0, so the dispatch is identical and the pairs cannot see it.
+* The only thing in the entire instrument that moves is **`b_of`'s CALL COUNT**: 409 → 818 on every
+  machine, with `b_of_sched_zero` 12 → 24 and `b_of_sched_open` 397 → 794 — the function being
+  consulted exactly twice as often.
+
+So P4's verdict survives (*no value key can see it*) and **its instrument does not**: the pairs it
+named are as blind as the 871 value keys, and what betrays the re-read is the call count of the
+re-read function. [[rust-port-slice-r-step4]] is *a probe feeding BOTH sides the same wrong input
+sees nothing*; this is one level up — **a counter can be blind because the two branches it
+separates are never actually separated.**
+
+#### FINDING 4 — **I3 IS INVISIBLE BECAUSE THE SUITES NEVER BUILD THE INPUT THAT SEPARATES THE TWO BODIES**
+
+`..R43` versus `..R57_FUEL` swaps `try_surge_fuel`, and the two are genuinely different functions —
+but `r57_try_surge_fuel` is a **wrapper**: it RESOLVES the floor and then delegates to
+`R43.try_surge_fuel`. On a `Floor::Phi` that resolution is the identity, so the two bodies agree
+exactly. **Both ported suites build only `Floor::Phi`** — once, in rung 63's
+`every_march_stays_choked` — and never `Floor::Incidence`, the one input the resolution step
+changes.
+
+A zero measured on inputs that cannot discriminate is not a measurement, so the probe carries a
+**detector**: one `Floor::Incidence` cell on a path no ported gate reaches. Under `..R43` it
+**PANICS** (rung 43's body is handed rung 60's object and `Floor::phi()` refuses), and
+`W/guard/detect` flipping `1 → 0` is the ONLY key in 957 that sees I3 at all. The finding is
+therefore not *"the carrier defect is undetectable"* but **"the 88 gates are blind to it because
+they never construct the floor kind that distinguishes the two bodies"** — slice U's *a function
+exercised only on cells chosen for INERTNESS*, arriving on an inherited table spread.
+
+#### FINDING 5 — **THE PROBE WAS WRONG FIVE TIMES, AND EVERY ONE WOULD HAVE PUBLISHED A ZERO THAT WAS NEVER MEASURED**
+
+The instrument had to be repaired five times before the table above could be believed. Each is a
+distinct way to report a zero nothing looked at.
+
+1. **THE HEADER CLAIMED COVERAGE THE CODE DID NOT HAVE.** The first version said its keys were
+   *"the readings the 88 ported gates actually compare"* while dumping `marginal_loop` on a BARE
+   machine; the headline gates call `loop_decomposition` on an ARMED one — a different reference
+   path (`bare_lever()`, not `isolating()`) — and **nine readers were missing outright**. Every
+   name the suites call on a core was then enumerated off their source and dumped: 435 keys →
+   **871**. [[rust-port-slice-s-step4]] verbatim, on my own probe.
+2. **A SECTION THAT ECHOED ITS OWN INPUT.** `floor_dichotomy`'s rows were dumped as `row{i}/sm` —
+   the `sm` grid handed in — beside `min_phi_ref`/`min_phi_armed`, which come from the leg-FREE
+   cells. The section named for the floor recorded **no floor-armed reading at all**. Replaced by
+   the rows' nine computed fields.
+3. **THE WITNESS BLOCK RAN LAST, SO A PANIC MADE ITS ZEROS COUNTERFEIT.** I4 panics in the trap
+   section; with witnesses emitted afterwards it reported `moved_W = 0` having emitted **no witness
+   key at all** — 444 absent. Witnesses now emit FIRST, every section runs under a `guard(name, …)`
+   that catches its own panic and emits `W/guard/<name>`, and the detector runs LAST so it can
+   truncate nothing. Absent counts fell to **0 / 0 / 0 / 3 / 1 / 0** — and the two survivors are
+   *reported*, not hidden: I3's 3 are the detector's own keys, and **I4's 1 is a GATE-VISIBLE key**
+   (`G/trap/sibling_armed_bleed`, emitted inside the guarded closure after the four that moved), so
+   `G/trap`'s coverage under I4 is 4 of 5 rather than 5 of 5.
+   [[rust-port-slice-s-step3]] — *injections reporting "nothing moved" could not have moved
+   anything*.
+4. **THE COHERENCE CHECK COULD NOT FAIL.** The check written to prove the probe is not blind —
+   *`caught > 0` must imply `moved_G > 0`* — filtered rows on `status == "OK"`. I4 is the ONLY
+   injection any gate catches and its probe panicked, so the filter dropped it, examined **zero
+   rows**, and printed success either way. [[rust-port-slice-v-step2]] — *both gates written to
+   CLOSE a step could not fail* — reproduced by me inside the check written to close that hazard.
+   It now prints the number of rows it examined: **1 injection had `caught > 0`, and it moved
+   gate-visible keys.**
+5. **THE WITNESS WORKLOAD WAS ON A DIFFERENT GRID FROM THE TABLE IT REPRODUCES.** § 5.21 (v)'s
+   counts come off `probe_w3.py`, whose workload is `equilibrium(FLIGHT, LO)`; the probe ran
+   `equilibrium(…, 1200)`. The **scheduled** row still reproduced exactly — 12/53, 0/344, 12/49,
+   0/348 — while **bare** came back 62 against the pre-registered 65, which reads as a port defect
+   and would have opened step 5's dispatch gate red. On `LO` all twelve pairs reproduce on all
+   three machines: bare and stator **65/0 · 344/0 · 61/0 · 348/0**, bleed **12/53 · 0/344 · 12/49 ·
+   0/348**. **One row of a table matching exactly is not the table matching**
+   ([[rust-port-slice-n-step4]], *two censuses on two grids*), and the earlier claim that "the four
+   pre-registered pairs still reproduce" was true of one machine and unverified for two.
+
+*And a sixth, on the reading rather than the instrument: a `until grep -q …` wait-loop matched the
+PREVIOUS run's output file microseconds before the new run truncated it, so a re-run's results were
+read off a stale artefact and briefly believed. The fix is to key on the task's own completion, not
+on a pattern in a file the job is about to overwrite — [[windows-tooling-file-hazards]]'s "status
+read off the runner", in a wait-loop.*
+
+#### THE BAR-MARGIN TABLE — **80 BARS, AND IT CAUGHT TWO OF ITS OWN TRANSCRIPTIONS BECAUSE IT RE-CHECKS THE VERDICT**
+
+Slice T step 2's lesson (9/9 green and blind to 24 %). Computed in Python off the probe rather than
+by adding a `bar!` macro to 89 assert sites, because mutating a 1:1 port costs more than the
+disclosure buys — so the table has a SCOPE, declared inside the artefact rather than left implicit.
+
+* **The tightest live bars are rung 62's published bands**: `bleed self_cancel < 1.11` at **1.0 %**
+  headroom, then `> 1.08` at 1.2 %, `stator < 0.85` at 2.2 %, and `bleed nu0_armed < nu0_ref` at
+  2.5 %. Rung 62's headline is gated inside a band about one part in a hundred wide on each side;
+  it is not a loose sign test.
+* **The two `floor band` identities read EXACTLY 0 against a `1e-12` bar** — exact in arithmetic,
+  so that tolerance does no work at all. [[rust-port-slice-t-step1]]'s *an EXACT ZERO blinds its own
+  gate*, recorded rather than repaired: the identity is right and the bar is simply inert.
+* **Two rows came back `**VIOLATED**` on a green suite, and both were MINE.**
+  `bleed_triples_the_surrender` arms the **stator** (with the bleed carried as neighbour on both
+  sides), not the bleed; and the floor band is asserted only on the bleed lever, so a stator band
+  row was a bar this table invented rather than one it ported. A margin table that only printed
+  headroom would have published both as plausible numbers — **it is re-checking the comparison that
+  turns a mis-transcription into a failure instead of into a datum.**
+* **EXCLUDED, and why:** ~27 pure sign tests (`> 0.0` / `< 0.0` — a sign test has no bar, only a
+  magnitude; four kept as a sample), every `to_bits()` equality (a reduce gate is exact, not
+  barred), and the bars whose operands need a NEIGHBOUR lever (`beside.surrendered`,
+  `sched > 2.2 × over`, the super-additivity trio) — the probe passes `neighbour = None` throughout.
+  That last is the one real gap.
+
+#### THE PROBE IS PRESERVED, NOT SHIPPED
+
+`slice_w_probe.rs` has no assertions — it prints. A no-assertion `#[test]` is a vacuous gate and
+would have added an 89th test that can never fail, so it lives at
+`M:\claud_projects\temp\rust-phase7\slice_w_probe.rs.keep`, restorable by copying it back;
+`inject_w.py` beside it takes injection names as arguments and restores the source in a `finally`.
+**Every substitution declares the number of sites it must match**, and that check earned itself
+immediately: I1's two `mdot_face` sites differ only by indentation, so the 12-space pattern is a
+SUFFIX of the 16-space one, matched twice, and the injection was SKIPPED rather than half-applied
+— [[rust-port-slice-t-step4]]'s *an injection matching TWICE applies nothing and still reports
+green*, refused at the door.
+
+#### WHAT STEP 5 INHERITS — TWO INSTRUMENT CORRECTIONS, REGISTERED HERE SO THEY CANNOT BE MISSED
+
+P4 and § 5.21 (v) specify gates that this step measured to be blind. Step 5 must build them
+differently:
+
+- **The dispatch gate must count `b_of_calls`, not only the four reduced/bled pairs.** Finding 3:
+  I2 and I2b move the call count (409 → 818) and leave all eight pairs untouched, so a gate on the
+  pairs alone would be exactly the instrument that measured nothing here.
+- **The carrier gate must build a `Floor::Incidence` cell.** Finding 4: on `Floor::Phi` — the only
+  kind either suite constructs — `..R43` and `..R57_FUEL` are identical, so a `Phi`-only gate
+  cannot separate them.
+
+**THE GATE:** `cargo test --release`, whole log, status derived from the LOG BODY —
+**105 result lines (103 integration suites + lib unittests + doc-tests), 1010 passed, 0 failed,
+0 ignored**, with `rung62`/`rung63` present and `slice_w_probe` absent. It DECOMPOSES:
+the crate before this step was 101 integration suites and **922** passed, and 922 + 58 + 30 =
+**1010**. *That decomposition is the check, not a remembered total — the steps-1+2 record in this
+section says "98 suites, 910 passed" and the same log re-counted now reads **103 / 922**, so the
+baseline it quotes is an undercount.* **NO PYTHON SOURCE CHANGED**, so `pytest` is untouched by
+this step and is not re-run.
+
+*Derived from the body and not from the exit code because this session watched
+`cargo test … | tail -60` return **exit 0 over a seven-error build failure** — a pipeline's status
+is the LAST command's, and `tail` always succeeds. [[windows-tooling-file-hazards]]'s "status read
+off the runner", one pipe further along.*
 
 ## 6. Named risks
 
