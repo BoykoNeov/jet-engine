@@ -263,6 +263,20 @@ pub struct CloseState {
     /// `mdot4/(1+f)` — see the type note. NOT the LP-face flow.
     pub mdot_air: f64,
     pub mdot4: f64,
+    /// RUNG 62's valve position AT THIS CLOSURE — and **`None` MODELS AN ABSENT DICT KEY, not a
+    /// zero.** Python's `_powers` and `_instant_tail` dispatch on `c.get("bleed", 0.0)`, and rung
+    /// 40's and rung 57's closures return a dict with **no `bleed` key at all**; only rung 62's
+    /// bled body sets one. A Rust struct field is always there, so the absent-key branch has no
+    /// natural spelling and filling this unconditionally would change the dispatch — invisibly,
+    /// because both branches agree wherever `b` is 0. § 5.21 (v), and the reason slice W owes a
+    /// DISPATCH gate rather than a value key. Read as `.unwrap_or(0.0)`, which IS `.get(_, 0.0)`.
+    pub bleed: Option<f64>,
+    /// RUNG 62's LP-FACE flow `mdot_imp / (1 - b)` — **NOT** `mdot_air`, which is the CORE flow
+    /// `mdot4/(1+f)`, and **NOT** [`crate::fuel_transient::FuelCloseState::mdot_air_face`], which
+    /// is the m_lp-derived TRIAL face flow. `None` on every pre-rung-62 path for the same
+    /// absent-key reason as `bleed`; Python indexes it (`c["mdot_face"]`) rather than `.get`s it,
+    /// so the port `.expect`s and a wrong dispatch panics instead of returning a plausible number.
+    pub mdot_face: Option<f64>,
 }
 
 impl CloseState {
@@ -308,6 +322,12 @@ pub struct Instant2 {
     pub nu_hpt: f64,
     pub nu_lpt: f64,
     pub sp_thrust: f64,
+    /// RUNG 62's honest per-INLET-air thrust, `(1-b)*sp_thrust - b*V0` — rung 42's booking (3),
+    /// where the dumped air carries FULL ram drag and returns no exhaust momentum. **`None` is
+    /// an ABSENT dict key**, exactly as [`CloseState::bleed`] is: rung 40's `out.update(...)`
+    /// has no such name, and `sp_thrust` itself stays CORE-referenced so it is bit-for-bit at
+    /// `b = 0`.
+    pub sp_thrust_inlet: Option<f64>,
     pub m9: f64,
     pub branch: Branch,
 }
@@ -531,6 +551,26 @@ pub struct TwoSpoolTransientCore {
     ///
     /// [`StatorTransientHooks`]: crate::stator_transient::StatorTransientHooks
     pub stator_hooks: &'static crate::stator_transient::StatorTransientHooks,
+    /// RUNG 62's valve arming — **at this level for the same reason `stator` is, plus one that is
+    /// stronger**. `b_of` is reached from inside rung-40's `try_close` and rung-43's
+    /// `try_close_fuel` cell bodies, so `&TwoSpoolTransientCore` is the shallowest type it must be
+    /// reachable from. And § 5.21 (ii): a shipped rung-63 gate calls the INHERITED rung-59 reader
+    /// `schedule_invariance` on a bleed-armed machine, whose receiver is
+    /// [`ScheduledStatorCore`] — so `at_stator`'s return must answer `armed_bleed`, which it can
+    /// only do if the valve lives at or below this level. A test forced the placement.
+    ///
+    /// **NOT [`TwoSpoolMapCore::bleed`]**, which is rung 42's STEADY valve on a sibling branch.
+    ///
+    /// [`LeverArming`]: crate::bleed_transient::LeverArming
+    /// [`ScheduledStatorCore`]: crate::stator_transient::ScheduledStatorCore
+    pub lever: crate::bleed_transient::LeverArming,
+    /// RUNGS 62–63's five virtual names. **Defaults to a table whose cells PANIC**, not to a
+    /// valve-shut answer: rungs 40/43/57 have no `b_of` and no `_armed_bleed` in Python at all,
+    /// and a default answering `false` would agree with the truth on exactly the machines the
+    /// suites build — a claim no value gate could see. [`NO_STATOR`]'s precedent.
+    ///
+    /// [`NO_STATOR`]: crate::stator_transient::NO_STATOR
+    pub lever_hooks: &'static crate::bleed_transient::LeverHooks,
 }
 
 impl TwoSpoolTransientCore {
@@ -564,7 +604,9 @@ impl TwoSpoolTransientCore {
 
     /// [`with_hooks`](Self::with_hooks) plus rung 57's table and arming — the constructor rung
     /// 57's own object goes through. Additive: [`with_hooks`](Self::with_hooks) is this one with
-    /// the stators absent, so every rung-40/43 caller is unchanged.
+    /// the stators absent, so every rung-40/43 caller is unchanged, and
+    /// [`with_lever_hooks`](Self::with_lever_hooks) is this one with the valve absent, so every
+    /// rung-57 caller stayed unchanged when slice W arrived.
     #[allow(clippy::too_many_arguments)]
     pub fn with_all_hooks(
         design_engine: TwoSpoolEngine, flight_design: FlightCondition, mdot_design: f64,
@@ -573,6 +615,31 @@ impl TwoSpoolTransientCore {
         stator_hooks: &'static crate::stator_transient::StatorTransientHooks,
         stator: crate::stator_transient::StatorArming,
     ) -> Self {
+        Self::with_lever_hooks(
+            design_engine, flight_design, mdot_design, map_lp, map_hp, rho, hooks, stator_hooks,
+            stator, &crate::bleed_transient::NO_LEVER,
+            crate::bleed_transient::LeverArming::unarmed())
+    }
+
+    /// [`with_all_hooks`](Self::with_all_hooks) plus rungs 62–84's table and valve arming — the
+    /// constructor every object from rung 62 up goes through.
+    ///
+    /// **THIS IS THE LAST TIME THIS PARAMETER LIST GROWS.** Rungs 64/68/69 each add one arming
+    /// field, and they add it to [`LeverArming`] — a struct with a `Default`, which is additive —
+    /// rather than here. § 5.21 (iii)/P5, and [[rust-port-slice-v-step2]]'s lesson about what a
+    /// gated signature costs.
+    ///
+    /// [`LeverArming`]: crate::bleed_transient::LeverArming
+    #[allow(clippy::too_many_arguments)]
+    pub fn with_lever_hooks(
+        design_engine: TwoSpoolEngine, flight_design: FlightCondition, mdot_design: f64,
+        map_lp: ComponentMap, map_hp: ComponentMap, rho: f64,
+        hooks: &'static TwoSpoolTransientHooks,
+        stator_hooks: &'static crate::stator_transient::StatorTransientHooks,
+        stator: crate::stator_transient::StatorArming,
+        lever_hooks: &'static crate::bleed_transient::LeverHooks,
+        lever: crate::bleed_transient::LeverArming,
+    ) -> Self {
         let inner = TwoSpoolMapCore::new(design_engine, flight_design, mdot_design, map_lp, map_hp);
         let (s2, s25, s3) = (*inner.base.reference.station("2"),
                              *inner.base.reference.station("25"),
@@ -580,7 +647,9 @@ impl TwoSpoolTransientCore {
         let gas = inner.gas();
         let p_ref_lp = mdot_design * (gas.h_c(s25.tt) - gas.h_c(s2.tt));
         let p_ref_hp = mdot_design * (gas.h_c(s3.tt) - gas.h_c(s25.tt));
-        TwoSpoolTransientCore { inner, rho, p_ref_lp, p_ref_hp, hooks, stator, stator_hooks }
+        TwoSpoolTransientCore {
+            inner, rho, p_ref_lp, p_ref_hp, hooks, stator, stator_hooks, lever, lever_hooks,
+        }
     }
 
     pub fn gas(&self) -> &Gas { self.inner.gas() }
@@ -1167,6 +1236,8 @@ fn r40_try_close(
         Ok(CloseState {
             m_lp, m_imp, m_hp, phi_lp, phi_hp, tt2, n_lp, n_hp, tau_lpc, tau_hpc, tt25, tt3,
             pi_lpc, pi_hpc, pt4, f, wgas, eta_lpc, eta_hpc, mdot_air: mdot_imp, mdot4,
+            // RUNG 40's dict has NEITHER key. See the field notes.
+            bleed: None, mdot_face: None,
         })
     };
 
@@ -1277,6 +1348,7 @@ fn r40_try_instant_tail(
         close: c.clone(),
         nu_lp, nu_hp, tt4, slip: nu_lp / nu_hp, phi_lp_dot, phi_hp_dot, pt_lp, pt_hp, pc_lp, pc_hp,
         tt45, tt5, tau_hpt, tau_lpt, pi_hpt, pi_lpt, eta_hpt, eta_lpt, nu_hpt, nu_lpt, sp_thrust,
+        sp_thrust_inlet: None,
         m9: exit.m9,
         branch: if exit.p9 > core.base.p_ambient + 1e-6 {
             Branch::Choked

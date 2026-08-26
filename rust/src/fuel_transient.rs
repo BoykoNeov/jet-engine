@@ -3490,6 +3490,9 @@ fn r43_try_close_fuel(
                 m_lp, m_imp, m_hp, phi_lp, phi_hp, tt2, n_lp, n_hp, tau_lpc, tau_hpc, tt25,
                 tt3, pi_lpc, pi_hpc, pt4, f, wgas, eta_lpc, eta_hpc, mdot_air: mdot_imp,
                 mdot4,
+                // RUNG 43's dict has NEITHER key either — see the two field notes on
+                // [`CloseState`]. `mdot_air_face` below is a DIFFERENT quantity.
+                bleed: None, mdot_face: None,
             },
             tt4,
             mdot_air_face,

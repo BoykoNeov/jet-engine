@@ -10273,6 +10273,108 @@ with a shape enum would make it compare two spellings. [[rust-port-copy-vs-reder
   **4** `slice_w_oracle.rs` + `dump_slice_w.py`, carrying (ii)'s eight-reader section · **5** the
   dispatch gates (P4) and the manufactured `at_stator` bug (P2).
 
+##### STEPS 1 + 2 — SHIPPED, AND GATED TOGETHER. **522 SMOKE KEYS BIT-EXACT ON THE FIRST REAL RUN — AND THE RUN BEFORE IT FAILED 243 OF THEM ON A CONSTANT I RE-SPELLED**
+
+`rust/src/bleed_transient.rs` (**1 869 lines**), the cells opened in
+`two_spool_transient.rs` / `stator_transient.rs` / `fuel_transient.rs`,
+`rust/oracle/dump_slice_w_smoke.py` and `rust/tests/slice_w_smoke.rs`.
+
+**WHY ONE GATE FOR TWO STEPS, STATED RATHER THAN ELIDED.** Step 1's `cargo test` was launched and
+then, while it ran, step 2's edits recompiled the crate underneath it — so its binaries were no
+longer the ones its result would have described. A gate whose subject changed mid-run is not a
+gate, and quoting it would be exactly the *status read off the runner* hazard
+[[windows-tooling-file-hazards]] already names. The two steps therefore share ONE run, and the
+property step 1's own gate existed to prove — that rungs 40/43/57 are untouched — is carried
+instead by **smoke section H**, which asserts the rung-57 and rung-62 objects agree
+**bit-for-bit in Rust** on 15 keys × 2 throttles × 4 armings before comparing either to Python.
+
+#### WHAT THE TWO STEPS ADDED
+
+| | |
+|---|---|
+| **CELLS CREATED** | `at_lever`, `armed_bleed`, `b_of`, `isolating`, `legs` — [`LeverHooks`], with `NO_LEVER`'s five bodies PANICKING |
+| **CELL OPENED** | `at_stator`, into rung 57's `StatorTransientHooks` — the one slice V shipped without |
+| **CELLS SWAPPED** | `try_close`, `try_close_fuel`, `try_instant_tail`, `powers` |
+| **STATE** | `LeverArming { bleed, sched }` on `TwoSpoolTransientCore`, beside `StatorArming` |
+| **CLOSURE FIELDS** | `CloseState::{bleed, mdot_face}` and `Instant2::sp_thrust_inlet`, all `Option<f64>` |
+| **CONSTRUCTORS** | `TwoSpoolTransientCore::with_lever_hooks`, `ScheduledStatorTransient::with_tables`, `build_scheduled_bleed` |
+
+**`Option<f64>` IS NOT DEFENSIVENESS, IT IS THE PORT OF AN ABSENT DICT KEY.** `_powers` and
+`_instant_tail` dispatch on `c.get("bleed", 0.0)`, and rung 40's and rung 57's closures return a
+dict with **no `bleed` key at all**. `.unwrap_or(0.0)` IS `.get(_, 0.0)`; `mdot_face` is
+`.expect`ed because Python INDEXES it and would `KeyError`. A plain `f64: 0.0` would read the same
+on every machine the suites build and differently in general — § 5.21 (v).
+
+**AND THE ONE THING THE PORT DOES THAT THE SOURCE DOES BY SHADOWING.** Python's `_close` binds a
+local `mdot_face` (the `m_lp`-derived TRIAL face flow) and then, eleven lines later, returns a dict
+key of the same name holding `mdot_imp/(1-b)` — the IMPOSED one. They agree only AT the root, so a
+converged closure hides the swap and only `_powers` reads the key. The port names the local
+`mdot_face_trial` and says so at both sites.
+
+#### FINDING 1 — **THE FIRST SMOKE RUN FAILED 243 OF 522 KEYS, AND THE SECTION THAT LOCALISED IT WAS THE ONE WITH NO VALVE IN IT**
+
+The failures were 1–10 ULP and they were everywhere: 71 in the bled closures, 40 in the fuel
+closure, 22 in the rung's own `_legs`. Every one of those is a plausible rung-62 arithmetic slip,
+and chasing them meant re-deriving `mdot4`'s spelling against rung 40's.
+
+**Section H is what made that unnecessary.** It is the REDUCE — a `bare` machine, no valve, no
+stator, a code path rung 62 never enters — and it failed 100 keys while its own in-Rust assertion
+(`rung 57 == rung 62`, bit-for-bit) PASSED. A defect that reaches a path the slice does not touch
+is not the slice's; it is the GRID's. The cause:
+
+```text
+test_rung62.py   R_c=(gamma_c - 1.0) / gamma_c * cp_c     ->  286.8571428571428
+dump (as first written)   R_c=(0.4 / 1.4) * 1004.0        ->  286.8571428571429
+```
+
+`1.4 - 1.0` is `0.3999999999999999` in IEEE-754. **I re-spelled a derived constant as its
+arithmetic value and built a gas one ULP away**, which drifted every number in the file. Fixed by
+copying `test_rung62.py`'s `_cpg` character for character — and the docstring now says why, because
+the next dump will be tempted the same way.
+
+This is [[rust-port-copy-vs-rederivation]] pointed at an INSTRUMENT rather than at the port: the
+rule is usually quoted about not factoring a deliberate duplication away, and here the same rule
+forbids evaluating a deliberate derivation. **The generalisable half is the diagnostic one**: a
+smoke dump should carry at least one section on a path the slice cannot reach, because that
+section is the only one that can tell a wrong PORT from a wrong GRID. Section H was written for
+the reduce and paid for itself as a control.
+
+*Two of the five probes (`probe_w2.py`, `probe_w3.py`) carry the same wrong spelling. Their
+published numbers are RELATIVE — ratios, differences and counts on one grid — so none of them
+moves, and § 5.21's tables stand. Recorded rather than silently repaired.*
+
+#### FINDING 2 — **THE PORT NEEDED NO NUMERICAL CORRECTION AT ALL**
+
+After the grid was fixed, **522 of 522 keys were bit-exact on the first run**, with zero tolerance
+tiers, over ten sections: the schedule twin's two shapes and both clip arms (A), `b_of` on all
+three legs including the `Tt2` referral (B), both bled closures with `_powers` and
+`_instant_tail` on top (C), the fuel closure at `b = 0.10` and `b = 0.30` (D), the `at_stator`
+trap and the honest reader beside it (E), an inherited `phi`-floor leg (F), the four dispatch
+count pairs (G), the reduce (H), `_legs` on both levers (J) and `_isolating`'s two siblings (K).
+
+**THE DISPATCH COUNTS REPRODUCE § 5.21 (v) EXACTLY** — `12 / 53`, `0 / 344`, `12 / 49`, `0 / 348`
+on a bleed-scheduled machine, and `65 / 0`, `344 / 0`, `61 / 0`, `348 / 0` on bare and
+stator-scheduled ones. Section G is the only section that can see a `_powers` re-reading `b_of`;
+sections A–F and H–K are structurally blind to it, and that is the point of counting.
+
+**AND THE TRAP REPRODUCES.** `E/trap/ordinate_identical` and `abscissa_identical` both come back
+`true` on a bleed-armed machine, with the honest `sensed_inputs` beside them at `9.543e-3` and
+`1.019e-2` — § 5.21 (ii)'s two numbers, now on the Rust side. Step 5's manufactured-bug gate has
+its target.
+
+#### THE DECISION § 5.21 (iii) REGISTERED, CORRECTED IN ITS SPELLING
+
+The registration wrote the cell as `fn(&ScheduledBleedCore, &LeverArm) -> ScheduledBleedCore`.
+There is no `ScheduledBleedCore`: a newtype over [`ScheduledStatorCore`] cannot be what
+`at_stator` returns (§ 5.21 (ii) forces that return type), so it would have bought a type
+distinction for `at_lever` alone at the price of a `Deref` on every inherited reader. **The
+decision is unchanged — one type, an arm struct, a signature no later slice re-opens — and only
+its spelling moved**: `fn(&ScheduledStatorCore, &LeverArm) -> ScheduledStatorCore`. Rung 62's
+readers are an `impl ScheduledStatorCore` block in `bleed_transient.rs`, exactly as Python's are
+methods reachable on every subclass instance.
+
+**THE GATE:** `cargo test --release`, status written into the log.
+
 ## 6. Named risks
 
 ##### STEP 4 — SHIPPED. **THE SECTION'S OWN CENSUSES WERE MEASURED ON TWO DIFFERENT GRIDS**

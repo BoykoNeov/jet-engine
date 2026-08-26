@@ -532,6 +532,17 @@ pub struct StatorTransientHooks {
     #[allow(clippy::type_complexity)]
     pub stator_march: fn(&FuelTransientCore, &FlightCondition, &Ramp, Option<(f64, f64)>,
                          &StatorLeg<'_>) -> (Vec<FuelPoint>, (f64, f64)),
+    /// A sibling on the same hardware with the STATORS re-armed. **OPENED BY SLICE W, and it is
+    /// the cell slice V shipped without.** § 5.20's closing note booked it as an inert deferral
+    /// on the strength of a body read; § 5.21 (ii) measured it and the reading is the opposite.
+    /// Rung 62 overrides it so the sibling carries THIS machine's VALVE, and
+    /// `tests/test_rung63.py::test_the_at_stator_trap_is_real_and_returns_rung59s_zero_for_free`
+    /// reads that override DIRECTLY: on a bleed-armed machine the inherited rung-59 reader
+    /// `schedule_invariance` then compares the plant with ITSELF and reports rung 59's exact
+    /// headline while measuring nothing — the counterfeit the gate exists to pin. Forcing rung
+    /// 57's body there flips both of its identities from `true` to `false`, at `9.543e-3` and
+    /// `1.019e-2`. Overridden at rung **64** as well.
+    pub at_stator: fn(&ScheduledStatorCore, StatorArm) -> ScheduledStatorCore,
 }
 
 /// **THE DEFAULT, AND ITS CELLS PANIC.** Rung 40 has no `_arm` in Python at all — an unarmed
@@ -547,6 +558,7 @@ pub const NO_STATOR: StatorTransientHooks = StatorTransientHooks {
     arm: no_stator_arm,
     v_of: no_stator_v_of,
     stator_march: no_stator_march,
+    at_stator: no_stator_at_stator,
 };
 
 /// RUNGS 57–60's table.
@@ -554,6 +566,7 @@ pub const R57: StatorTransientHooks = StatorTransientHooks {
     arm: r57_arm,
     v_of: r57_v_of,
     stator_march: r57_stator_march,
+    at_stator: r57_at_stator,
 };
 
 /// RUNG 57's swap into rung 40's table — `try_close` ARMS first. The other two cells are rung
@@ -582,6 +595,23 @@ fn no_stator_v_of(_: &TwoSpoolTransientCore, _: Spool, _: f64, _: f64, _: Option
 fn no_stator_march(_: &FuelTransientCore, _: &FlightCondition, _: &Ramp, _: Option<(f64, f64)>,
                    _: &StatorLeg<'_>) -> (Vec<FuelPoint>, (f64, f64)) {
     panic!("no stator table on this object: _stator_march is rung 57's own march.");
+}
+
+fn no_stator_at_stator(_: &ScheduledStatorCore, _: StatorArm) -> ScheduledStatorCore {
+    panic!("no stator table on this object: at_stator is rung 57's own sibling constructor.             Its receiver is a ScheduledStatorCore, which cannot exist without R57.");
+}
+
+/// RUNG 57's own `at_stator` — the BARE sibling, carrying no valve, which is exactly what made
+/// it the counterfeit rung 62 had to override. Unchanged from what slice V shipped inline; only
+/// its call site moved behind the table.
+fn r57_at_stator(core: &ScheduledStatorCore, arm: StatorArm) -> ScheduledStatorCore {
+    match ScheduledStatorTransient::new(
+        core.design_engine().clone(), *core.flight_design(), core.mdot_design(),
+        Some(core.arming().map_lp_design), Some(core.arming().map_hp_design), core.rho(), arm)
+    {
+        ScheduledStatorTransient::Full(c) => c,
+        ScheduledStatorTransient::Degenerate(_) => unreachable!("at_stator never disables LP"),
+    }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -838,6 +868,28 @@ impl ScheduledStatorTransient {
         design_engine: TwoSpoolEngine, flight_design: FlightCondition, mdot_design: f64,
         map_lp: Option<ComponentMap>, map_hp: Option<ComponentMap>, rho: f64, arm: StatorArm,
     ) -> Self {
+        Self::with_tables(design_engine, flight_design, mdot_design, map_lp, map_hp, rho, arm,
+                          &R57_TWO, &R57, &R57_FUEL, &crate::bleed_transient::NO_LEVER,
+                          crate::bleed_transient::LeverArming::unarmed())
+    }
+
+    /// [`new`](Self::new) with the four tables and the valve arming named — the constructor every
+    /// DESCENDANT goes through, and the reason rung 62 needs no object type of its own.
+    ///
+    /// **A DESCENDANT MUST NAME ITS PARENT'S TABLES IN ITS SPREADS, NOT RUNG 40's/43's.** Rung
+    /// 62's `R62_FUEL` is `{ try_close_fuel: …, ..R57_FUEL }`, because rung 62 does not override
+    /// `_surge_fuel` and Python's `super()` reaches rung 60's floor-resolving body there. Spelling
+    /// `..R43` compiles and silently drops it. § 5.21 (vi).
+    #[allow(clippy::too_many_arguments)]
+    pub fn with_tables(
+        design_engine: TwoSpoolEngine, flight_design: FlightCondition, mdot_design: f64,
+        map_lp: Option<ComponentMap>, map_hp: Option<ComponentMap>, rho: f64, arm: StatorArm,
+        two_hooks: &'static TwoSpoolTransientHooks,
+        stator_hooks: &'static StatorTransientHooks,
+        fuel_hooks: &'static FuelTransientHooks,
+        lever_hooks: &'static crate::bleed_transient::LeverHooks,
+        lever: crate::bleed_transient::LeverArming,
+    ) -> Self {
         let base_lp = map_lp.unwrap_or_else(ComponentMap::flat);
         let base_hp = map_hp.unwrap_or_else(ComponentMap::flat);
         assert!(base_lp.vsv == 0.0 && base_hp.vsv == 0.0,
@@ -869,10 +921,10 @@ impl ScheduledStatorTransient {
             map_hp_design: base_hp,
         };
         let fuel = FuelTransientCore {
-            inner: TwoSpoolTransientCore::with_all_hooks(
+            inner: TwoSpoolTransientCore::with_lever_hooks(
                 design_engine.clone(), flight_design, mdot_design, base_lp, base_hp, rho,
-                &R57_TWO, &R57, arming),
-            hooks: &R57_FUEL,
+                two_hooks, stator_hooks, arming, lever_hooks, lever),
+            hooks: fuel_hooks,
         };
         // A CONSTANT setting is applied ONCE, HERE -- after the design capture above, exactly as
         // rung 53 does it, so `equilibrium` sees the statored machine and the march starts on the
@@ -960,16 +1012,24 @@ impl ScheduledStatorCore {
     /// `matched_credit`, `set_point_bands`, `floor_composite`). Those eight are INHERITED by
     /// rungs 62/64, so a rung-64 object running the inherited `stator_credit` would build a
     /// rung-**57** bare sibling here. Not slice V's problem — rungs 57–60 construct only rung-57
-    /// objects — and slice W's first job.
+    /// objects — ~~and slice W's first job.~~
+    ///
+    /// **SLICE W DID THAT JOB, AND THE DEFERRAL'S REASONING WAS HALF WRONG.** It is a cell now
+    /// ([`StatorTransientHooks::at_stator`]), and the half that was wrong is *"inert here"* being
+    /// read as *"inert until someone overrides it"*: rung 62's override is read by a **shipped
+    /// rung-63 gate** whose whole content is that this constructor carries the valve. The
+    /// measurement is in the cell's own note. What the deferral got right is the count — eight
+    /// reader bodies, of which the suites exercise exactly **one**.
     pub fn at_stator(&self, arm: StatorArm) -> ScheduledStatorCore {
-        match ScheduledStatorTransient::new(
-            self.design_engine.clone(), self.flight_design, self.mdot_design,
-            Some(self.arming().map_lp_design), Some(self.arming().map_hp_design), self.rho, arm)
-        {
-            ScheduledStatorTransient::Full(c) => c,
-            ScheduledStatorTransient::Degenerate(_) => unreachable!("at_stator never disables LP"),
-        }
+        (self.fuel.inner.stator_hooks.at_stator)(self, arm)
     }
+
+    // --- what the cell bodies need, since the four held fields are private ------------------
+
+    pub fn design_engine(&self) -> &TwoSpoolEngine { &self.design_engine }
+    pub fn flight_design(&self) -> &FlightCondition { &self.flight_design }
+    pub fn mdot_design(&self) -> f64 { self.mdot_design }
+    pub fn rho(&self) -> f64 { self.rho }
 
     /// The BARE sibling — `at_stator()` with no arguments, which is how Python spells it eight
     /// times below.
