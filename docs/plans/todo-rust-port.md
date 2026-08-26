@@ -8852,7 +8852,12 @@ at the same time, because they are ONE decision.**
   parameter, and **nothing in the hook table changes for them.**
 - **The 9 STATE-kind take a `Scope` parameter**, because they are assigned *inside* an RK4
   derivative evaluation where `self` is behind `&self` in a hook chain and `&mut self` is not
-  available. `Scope` is a small by-value struct of `Option<f64>` / `Option<&str>`; Rust's scoping
+  available. ~~*(As written.)*~~ **SUPERSEDED FOR `_b_forced` AT SLICE X — § 5.22 (v)/(vii).**
+  Measured at rung 64: the set→read chain is **one** frame and that frame is `try_close_fuel`, a
+  SHIPPED cell with a live table and a dispatch gate, so `&Scope` is non-additive there; and
+  `_b_forced` provably never NESTS, so a `Cell<Option<f64>>` + an RAII guard whose `Drop` restores
+  keeps every signature AND is stronger than the `finally` it ports. Retired for that one field
+  only: `_b_state`/`_v_state` DO have a same-field nest candidate, at slice AH. `Scope` is a small by-value struct of `Option<f64>` / `Option<&str>`; Rust's scoping
   *is* the `finally`, so the restore stops being a discipline and becomes structural — strictly
   stronger than the Python.
 
@@ -9013,7 +9018,7 @@ by counting.
 | — | — | **phase-6 EDIT, caller r43** | **`_close_fuel`, `_surge_fuel`, `integrate_fuel`** — exactly the three code-resident ⚠ notes in `fuel_transient.rs`, opened by **V** (first two) and **Y** (the third) |
 | **V** | 57–60 | `StatorSchedule`, `IncidenceLimiter`, `ScheduledStatorTransient` | **3** — `_arm`, `_stator_march`, `v_of`; **+ the two phase-6 cells above, + `try_close`'s NON-ADDITIVE `&Scope`** (§ (iv)) |
 | **W** | 62–63 | `BleedSchedule`, `ScheduledBleedTransient` | **4** — `_armed_bleed`, `_isolating`, `_legs`, `b_of` (+ swaps `_instant_tail`/`_powers`) |
-| **X** | 64 | `BleedLimiter`, `LimitedBleedTransient` | **1** — `b_at_point`. `_closer` is **not** a cell (defined once); this is the slice of **the rung-62 PIN**, § (ii) |
+| **X** | 64 | `BleedLimiter`, `LimitedBleedTransient` | **1** — `b_at_point`. **MEASURED 1 at § 5.22 (iii) — the first row of this column the emitter confirms.** `_closer` is **not** a cell (defined once); this is the slice of **the rung-62 PIN**, § (ii) |
 | **Y** | 65 | `LaggedBleedTransient` | **0** — but it opens phase 6's `integrate_fuel` cell, and the `Scope` STATE fields go live |
 | **Z** | 66–67 | `TwoLagCascadeTransient`, `CrossLoopCascadeTransient` | **0** — swaps only |
 | **AA** | 68 | `StatorLimiter`, `ThreeLoopCascadeTransient` | **9** — `_check_v0`, `_clamp_v`, `_lagged_stator`, `_manifold_v`, `_rk4_floor`, `_solve_v`, `_stator_leg`, `_triple_laws`, `_triple_rig`. **The widest step, and it is rung 68 rather than 69** — rung 68 is the CALLER of all nine and rung 69 the overrider |
@@ -9070,8 +9075,8 @@ four times out of four. **The rule for the phase, not just for this section: if 
 be emitted, emit it.**
 
 ~~**STOP HERE.** The pre-flight is landed; **phase 7 itself is NOT authorised** and no line is
-ported until it is.~~ **PHASE 7 AUTHORISED 2026-08-20** — § 5.20 is slice V, and it **REFUTES
-§ (x)'s reading of slice V**: no cell in rungs 57–60 reads a dynamically-scoped field, so the
+ported until it is.~~ **PHASE 7 AUTHORISED 2026-08-20** — § 5.20 is slice V, § 5.21 slice W, § 5.22 slice X
+(rung 64, PRE-REGISTERED), and § 5.20 **REFUTES § (x)'s reading of slice V**: no cell in rungs 57–60 reads a dynamically-scoped field, so the
 `&Scope` on `try_close` is **slice Y's**, not V's. What V does carry is a shape this pre-flight's
 `try/finally` census could not see — see § 5.20 (i).
 
@@ -10830,6 +10835,284 @@ assertions and lives in the temp tree, as step 3 left it.
 **`git diff -- rust/src/` IS ONE COMMENT BLOCK AND NOTHING ELSE** -- nine lines at
 `bleed_transient.rs`'s `mean`, and no executable line in the crate. **NO PYTHON SOURCE CHANGED**
 by either step, so `pytest` is untouched and is not re-run.
+
+
+### 5.22 SLICE X (rung 64, `BleedLimiter` + `LimitedBleedTransient`) — PRE-REGISTERED, seven probes MEASURED first
+
+`M:\claud_projects\temp\rust-phase7\probe_x1.py` … `probe_x7b.py`, PyPy — nine files, because
+**two of them are repairs of an earlier probe rather than new questions**. Every table below is
+**EMITTED by one of them**, § 5.19 (xi)'s rule, and this section's leading finding is what that
+rule was written for.
+
+#### (i) THE LEADING FINDING — **THE FIRST CENSUS SAID ALL EIGHT SWAPPED CELLS WERE UNGATED AND ALL EIGHT INJECTIONS INERT. BOTH HALVES WERE THE INSTRUMENT; THE TRUE COUNT IS TWO**
+
+Slice X **SWAPS 8** inherited names and **CREATES 1**. The question that sizes its gate debt is:
+*if the port forgets a swap, does anything go red?* `probe_x4` asked it by DELETING rung 64's
+override, so Python's own MRO supplies the parent body — which is exactly the defect "the Rust
+table spread `..R62` and forgot to name this cell". It reported **8 of 8 UNGATED, and 8 of 8
+INERT**. Three defects, one behind the other:
+
+| # | defect | what it made every row report | repair |
+|---|---|---|---|
+| 1 | the two harness files were written `open(…).write(…)` | **INERT** — the subprocesses read EMPTY files | `with open(…)`; PyPy does not flush on refcount — [[windows-tooling-file-hazards]] |
+| 2 | the suite ran under **xdist**, whose workers re-import `turbojet.engine` in fresh processes | **GREEN** — no worker ever saw the monkeypatch | `-n0` |
+| 3 | the grid was `test_rung64.py` **ALONE** | over-counts holes | rungs **62 + 63 + 64**, one run per cell with `-x` |
+
+**Defect 3 is the one that would have survived into the write-up**, and rung 64's own module
+docstring names it: *"rung 60's tautology … pins `min phi == phi_lim` to 1e-15, **which rung 63's
+`floor_dichotomy` already published**. Every gate below is therefore about something the tautology
+does NOT own."* The suite declines, ON PURPOSE, to gate the property most of these injections
+break. "Ungated by 64, caught by 63" would not be a hole — it would be a fact about where the
+defence lives. Emitted on the repaired grid (**111 gates: 58 + 30 + 23**):
+
+| injection (`cell` NOT swapped) | pytest 62+63+64, `-x` | first failing suite | DID IT MOVE? | verdict |
+|---|---|---|---|---|
+| — (baseline) | **111 passed** | — | — | — |
+| `b_of` | 1 failed | rung 64 | YES | caught |
+| `_armed_bleed` | 1 failed | rung 64 | YES | caught |
+| **`_close`** | **111 passed** | — | **YES** | **UNGATED BY ALL THREE** |
+| `_close_fuel` | 1 failed | rung 64 | YES | caught |
+| `at_lever` | 1 failed | rung 64 | YES | caught |
+| `at_stator` | 1 failed | rung 64 | YES | caught |
+| `_isolating` | 1 failed | rung 64 | YES | caught |
+| **`b_at_point`** | **111 passed** | — | **YES** | **UNGATED BY ALL THREE** |
+
+**AND THE THIRD REPAIR CHANGED THE ANSWER BY NOTHING, WHICH IS ITSELF THE RESULT.** Widening from
+one suite to three moved no row: rungs 62 and 63 add **zero** defence for any of rung 64's own
+swaps. That is worth having measured rather than assumed — it is the difference between "I checked
+the right grid" and "I checked the grid I had".
+
+**`_isolating` also needed its WITNESS repaired**, one level below the census: probe_x4 passed an
+EMPTY neighbour, on which rung 62's `want` and rung 64's both evaluate `False`, so the two bodies
+agree by construction and the row read INERT while the suite was catching it. The separating input
+is a neighbour **carrying** the floor. *Inert on my input* is not *inert* — and this is the second
+slice running where a did-it-move column was wrong about a cell the gates could see.
+
+#### (ii) **THE TWO HOLES, MEASURED — AND ONE OF THEM ZEROES THE RUNG'S OWN PUBLISHED HEADLINE WHILE ITS GATE STAYS GREEN**
+
+A hole is a finding only once the number that SHOULD have caught it is printed beside the
+assertion that did not — [[rust-port-slice-s-step3]], *a zero measured before being called a hole*.
+
+**`b_at_point` — RE-SOLVE vs RECONSTRUCT.** Its docstring says the re-solve *"is what makes the
+bleed integral below a measurement and not an estimate"*. The injection is that sentence's own
+refused alternative. `probe_x7`, `matched_bill` at the suite's `ds = 0.005`:
+
+| key | clean | injected |
+|---|---|---|
+| `b_int` constant | 0.149876470866 | 0.149876470866 |
+| `b_int` schedule | 0.0737414799619 | 0.0737414799619 |
+| **`b_int` floor** | **0.0382488802883** | **0** |
+| **`b_peak` floor** | **0.092024528855** | **0** |
+| **`b_ratio_const`** | **0.255202701714** | **0** |
+| **`b_ratio_sched`** | **0.518688807277** | **0** |
+| gate 5's `assert f < s < c` | **True** | **True** |
+
+**The two ratios are the rung's HEADLINE** — `test_rung64.py`'s own module docstring says *"the
+closed loop pays 52 % of rung 62's schedule's bleed and 26 % of the state-blind law's"* — and
+**no gate reads either number.** The only assertion that touches them is an ORDERING, and
+`f < s < c` is satisfied by driving the SMALLEST term to zero. Slice S step 3 found *a
+NON-STRICT ordering assertion satisfied by inertness*; this is one notch over — **a STRICT
+ordering assertion satisfied by ZEROING its smallest term**, which is strictly harder to notice
+because the inequality visibly holds.
+
+**`_close` — the Tt4-IMPOSED closure.** It is live (48 `_solve_b` calls against `_close_fuel`'s
+344 on one floored march) but a reader sees it only through the march's INITIAL CONDITION: the
+ramp itself runs on `_close_fuel`, and at the settle point the floor is DORMANT
+(`equilibrium(1200)` and `fuel_for_Tt4(1200)` are bit-identical either way, because
+`phi_lp = 0.8598` clears the 0.80 floor there). `probe_x7b`:
+
+| key | clean | injected | move |
+|---|---|---|---|
+| **`nu0_lp`** | 0.7475441088051796 | **0.7557409602636336** | **+1.1 %** |
+| `nu0_hp` | 0.7901540859632924 | 0.7897924703252703 | −4.6e-2 % |
+| `b_int` | 0.038246852253226965 | 0.0386686995628587 | +1.1 % |
+| `nu_lp_end` | 0.9410178724957114 | 0.9412256041458492 | +2.2e-2 % |
+| `thrust_end` | 606.3605896041086 | 606.3261130576382 | −5.7e-3 % |
+| `min_phi_lp` | 0.7999999999999995 | 0.7999999999999992 | — (rung 60's tautology, either way) |
+
+**A 1.1 % wrong initial condition, 111 gates green.** § 5.19 (ii) records the mis-spelled pin as
+*0.018 % off with a clean build and no error*; this is the same shape two orders larger, and the
+reason it hides is that every rung-64 reader **differences two cells that are equally wrong** —
+`min_phi_lp` is pinned by the tautology and the bills are relative. Both holes are booked to step
+3 as gates the port ADDS, not as gates it ports.
+
+#### (iii) **THE SCOPE, ENUMERATED**
+
+**Source** (`ast` spans): `BleedLimiter` **67** lines (9863–9929) + `LimitedBleedTransient`
+**438** lines (9932–10369) = **505**.
+
+**Cells.** X **CREATES 1** — `b_at_point`, whose two ladder call sites are rung 64's own
+`_bill_cell` and rung 65's override — and **SWAPS 8**: `b_of`, `_armed_bleed`, `at_lever`,
+`at_stator`, `_isolating` (rung 62's table), `try_close` / `try_close_fuel` (phase 6's), and
+`__init__`, which is not a vtable cell. It defines **7 PLAIN** methods no later rung overrides,
+so none needs a cell: `_solve_b`, `_closer`, `_bill_cell`, `authority_ceiling`,
+`_match_open_loop`, `matched_bill`, `floor_refusal`. § 5.19 (x) said **1** and probe_w4's emitted
+column says **1** — **slice X is the first slice in phase 7 whose cell count the plan got right**,
+and § 5.21 (i)'s re-run over the whole ladder is why that can be stated rather than hoped.
+
+**Tests**: `test_rung64.py`, **18 `def test_` → 23 collected** (1.3× parametrize expansion,
+against slice W's 2.1×), **9 carrying `slow`**, 408 lines. The ported gate count is **23**.
+
+**Module**: `rust/src/limited_bleed.rs`, on `bleed_transient.rs`'s shape.
+
+#### (iv) **THE RUNG-62 PIN — SLICE X SHIPS THE MECHANISM AND CANNOT EXERCISE IT**
+
+§ 5.19 (ii) measured 16 two-argument `super(LimitedBleedTransient, self)` sites. Re-emitted one
+row per site by `probe_x1d.py` — **the first form of probe_x1 re-walked the enclosing class ONCE
+PER PIN SITE and printed `{_close_fuel: 29, _close: 3}` against 16 real sites, a fourth instrument
+defect in this section and the fourth of the same kind: a count assembled by a loop nobody
+checked**:
+
+| pinned ancestor | sites | methods reached | rungs that write it |
+|---|---|---|---|
+| `LimitedBleedTransient` | **16** | `_close_fuel` ×15, `_close` ×1 | 65, 66, 67, 68, 69, 70, 72, 74, 75 |
+
+**It is the ONLY two-argument `super` on the whole ladder**, measured rather than assumed — and
+**every one of its 16 sites is in a rung slice X does not port.** So the mechanism ships LIVE and
+unexercised by any value key, which is `R40`/`R43`'s situation and takes `R40`/`R43`'s answer:
+manufacture the failure. In Rust the pin is simply `r62_try_close_fuel(leaf, …)` — an `fn`, not a
+method — so slice X makes rung 62's two closure bodies `pub` and carries § 5.19 (ii)'s warning
+**at the call site**: `r62_try_close_fuel(&R62, …)` compiles, runs, and silently freezes the
+ladder at rung 62.
+
+#### (v) **`_b_forced`: THE SET→READ CHAIN IS ONE FRAME, AND THAT FRAME IS A SHIPPED GATED CELL**
+
+Rung 64 is the first rung to both SET and READ one of § 5.19 (iv)'s nine STATE-kind
+dynamically-scoped fields. Measured (`probe_x2`) on one floored march at `ds = 0.02` —
+**1 705 `b_of` calls, and every distinct frame chain from the read back to the set**:
+
+| n | frames, read (`b_of`) → set (`closer`) |
+|---|---|
+| 1 415 | `b_of` ← `_close_fuel` ← `closer` |
+| 290 | `b_of` ← `_close` ← `closer` |
+
+**Two chains, depth exactly 1 in both.** The single intervening frame is rung 62's closure body —
+in Rust `try_close_fuel` / `try_close`, **shipped cells with live tables and a dispatch gate**. So
+§ 5.19 (iv)'s `Scope` parameter costs a NON-ADDITIVE change to already-gated phase-6 code: the
+exact cost it named for slice V, which § 5.20 refuted there and re-booked to Y, and which arrives
+HERE instead.
+
+**Nothing leaks.** `_b_forced` and `_b_state` are `None` after every march, and **0 of 12 witness
+keys move** on either a bare or a floored machine — including the four map object IDENTITIES that
+[[rust-port-slice-v-step3]] put in the key set. Slice V's `Cell<ComponentMap>` is still the only
+carrier; rung 64 adds none.
+
+#### (vi) **THE REDUCE IS TWO DISPATCHES DEEP, THE INNER ONE HAS THREE OUTCOMES, AND TWO BRANCHES ARE DEAD**
+
+Emitted (`probe_x3`), one `_stator_march` per machine at `ds = 0.02`:
+
+| machine | `b_of` calls | via `_b_forced` | via `_b_state` | via super (r62) | `b == 0` | `_solve_b` | dormant | riding | saturated | closer calls min/med/max |
+|---|---|---|---|---|---|---|---|---|---|---|
+| unarmed (the rung-63 reduce) | 392 | 0 | 0 | **392** | 392 | 0 | — | — | — | — |
+| constant `b` (rung 42's leg) | 392 | 0 | 0 | **392** | 0 | 0 | — | — | — | — |
+| schedule (rung 62's leg) | 392 | 0 | 0 | **392** | 9 | 0 | — | — | — | — |
+| **FLOOR, reachable (0.80)** | **1 705** | **1 705** | 0 | **0** | 392 | **392** | 257 | 135 | **0** | 1/1/14 |
+| **FLOOR, dormant (0.60)** | 392 | 392 | 0 | **0** | 392 | 392 | **392** | 0 | 0 | 1/1/1 |
+| **FLOOR, over-set (0.90)** | 1 228 | 1 228 | 0 | **0** | 392 | 392 | 167 | 74 | **151** | 1/2/11 |
+
+**THREE ROWS OF THAT TABLE ARE HAZARDS, NOT DECORATION.**
+
+1. **`_b_state` is 0 EVERYWHERE.** The second override in `b_of` is a **dead branch at rung 64** —
+   it is rung 65's, declared at 64. A port that omits it passes every slice-X gate and breaks at
+   slice Y. Noted **at the definition with the count** (slice O's rule), not only here.
+2. **On an ARMED machine the `super` column is EXACTLY 0.** Rung 64's `b_of` fall-through is
+   unreachable whenever a floor is fitted, so the only machines exercising it are those where
+   rung 64's cell and rung 62's are behaviourally identical — [[rust-port-slice-u-step3]]'s
+   shape, *a function exercised only on cells chosen for INERTNESS*.
+3. **The reachable floor NEVER saturates** (0 of 392). All three regimes fire in one march only
+   on `authority_ceiling`'s deliberately over-set floor, at **167 / 74 / 151**. A dispatch gate
+   run on the rung's headline machine alone tests two branches of three.
+
+Split by cell on the reachable floor: `_close` **26 dormant / 22 riding**, `_close_fuel`
+**231 / 113**. The outer reduce holds — an unarmed rung-64 machine's 86-point march is
+**bit-identical** to the rung-63 class's on the same hardware. **No trial evaluation raised on any
+of the six machines**, so a Rust straight-line restore and Python's `finally` are
+indistinguishable on the suites' grid — a statement about the grid, not a licence.
+
+#### (vii) **`_b_forced` NEVER NESTS — SO THE `Scope` DECISION IS RETIRED FOR IT, AND ONLY FOR IT**
+
+The one thing that could sink a carrier: rung 64's `_closer` restores to **`None`**, not to the
+previous value, so a guard entered while the field is already set would CLOBBER — and the port
+would then owe that clobber bit-for-bit rather than a quiet repair. `probe_x6`'s runtime form
+(data descriptors over all nine fields, rungs 64–84 under `-n0`) would not have finished inside
+the session, and **a probe nobody waits for is not a measurement**; it was stopped and replaced by
+`probe_x6b`, which asks the question more directly.
+
+| | |
+|---|---|
+| guards restoring **to `None`** | **68** |
+| guards restoring **to a SAVED value** | **4** — all four in `_stator_march`, at rungs **65, 66, 67, 68**, over `_b0`, `_lag`, `_tau_gov`, `_ic_order`/`_v0` |
+
+**Python itself anticipates nesting in exactly four places, and `_b_forced` is not one of them.**
+
+| field | guards | writers | a writer reachable from inside a guard on the SAME field? |
+|---|---|---|---|
+| **`_b_forced`** | 1 | 2 | **NO** |
+| **`_v_forced`** | 1 | 2 | **NO** |
+| `_b_state` | 31 | 32 | **YES** — rungs 77–79 readers (`set_point_gains`, `gauge_scan`, `coord_census`, `root_census`, …) → `_integrate_fuel_*` |
+| `_v_state` | 24 | 25 | **YES**, same shape |
+
+**THE DECISION, AND ITS SCOPE.** `_b_forced` gets a `Cell<Option<f64>>` on
+`TwoSpoolTransientCore` plus an **RAII guard whose `Drop` restores**. No signature is re-opened —
+`try_close` / `try_close_fuel` keep the shape their dispatch gate already pins — and the property
+§ 5.19 (iv) chose `Scope` for is recovered in full, because **`Drop` runs on unwind**: it is at
+least as strong as Python's `finally`, where a straight-line restore is strictly weaker. Slice V's
+`Cell<ComponentMap>` is the precedent, at the same level of the tree.
+
+§ 5.19 (iv) is therefore **retired for `_b_forced`, and NOT for all nine.** The
+`_b_state`/`_v_state` same-field nest is a live candidate at **slice AH**; it is recorded here
+rather than solved, and **the reachability graph that found it is name-based across classes — an
+UPPER bound**, so it says *candidate*, never *confirmed*. Whoever ports AH owes it the runtime
+form this slice could not afford.
+
+#### (viii) **WHAT THE PORT ADDS**
+
+| | |
+|---|---|
+| **CELL CREATED** | `b_at_point`, into [`LeverHooks`] |
+| **CELLS SWAPPED** | `b_of`, `armed_bleed`, `at_lever`, `at_stator`, `isolating` (rung 62's table) + `try_close`, `try_close_fuel` (phase 6's) |
+| **STATE** | `lim: Option<BleedLimiter>` into `LeverArming`; `b_forced` (+ `b_state`, rung 65's, DEAD here) as `Cell<Option<f64>>` on `TwoSpoolTransientCore` |
+| **ARM** | `LeverArm::bleed_lim` — **slice W's P5 at its first test**: 6 → 7 keywords, a field with a `Default`, signature untouched |
+| **PIN** | `r62_try_close` / `r62_try_close_fuel` made `pub`, with § 5.19 (ii)'s warning at the call site |
+| **CONSTRUCTOR** | `build_limited_bleed`, on `build_scheduled_bleed`'s shape, with rung 64's THREE-way arming assert extending rung 62's two-way |
+
+#### (ix) PRE-REGISTERED — written before a line of Rust
+
+- **P1.** The 23 ported gates pass with **zero tolerance tiers** on the first oracle run, as
+  slices T/U/V/W did. If any needs a tolerance, § (v)'s "no new carrier" verdict is wrong.
+- **P2 — the reduce, by DISPATCH and per call, at THREE levels.** `bleed_lim = None` is rung 63
+  bit-for-bit; a DORMANT floor reaches rung 62's body at every state (392/392 at `ds = 0.02`) and
+  through it rung 57's; a REACHABLE floor takes both `_solve_b` branches inside one march at
+  **257 dormant / 135 riding**. No value key sees the second or the third.
+- **P3 — the SATURATED branch is reached by ONE reader.** `authority_ceiling`'s over-set floor is
+  the only machine in the suite that saturates (**167 / 74 / 151**); the reachable floor is
+  **0 / 392**. Gated at all three, not at the two the headline machine reaches.
+- **P4 — the two DEAD branches.** `b_of`'s fall-through is unreachable on every armed machine
+  (super = 0 of 1 705) and `_b_state`'s branch is dead at rung 64 entirely (0 of 1 705). Two ports
+  that drop them pass every slice-X gate. Manufactured-bug gates at step 5, not value keys.
+- **P5 — the two HOLES get gates the port ADDS.** `b_at_point` re-solves rather than reconstructs
+  (witness: `b_ratio_const` **0.2552**, `b_ratio_sched` **0.5187** — the rung's published headline,
+  currently read by nothing), and rung 64's `_close` is live in the march's INITIAL CONDITION
+  (witness: `nu0_lp` **0.7475441088051796**, which the injection moves 1.1 %). Both are ABSOLUTE
+  keys, because the existing gates are relative and that is exactly why they miss.
+- **P6 — slice W's P5 holds at its first test.** `at_lever` goes 6 → 7 keywords and its cell
+  signature `fn(&ScheduledStatorCore, &LeverArm) -> ScheduledStatorCore` is **not re-opened**.
+  Reported explicitly at ship, held or not.
+- **P7 — the rung-62 PIN ships live and unexercised**, and its gate is manufactured: call
+  `r62_try_close_fuel` once with the LEAF table and once with `&R62`, assert the values differ.
+  Falsified if they agree, which would mean the leaf table is not reached.
+- **P8 — the `Cell` + `Drop` carrier costs no gated signature.** Falsified if any `try_close` /
+  `try_close_fuel` signature has to change.
+- **P9 — the ORACLE'S GRID IS NOT THE SUITE'S, and the header says so AT THE TOP.**
+  `_match_open_loop` is a root over whole MARCHES and `matched_bill` runs two of them plus four
+  `_bill_cell`s at `ds = 0.005`. If `dump_slice_x.py` coarsens, it is disclosed in the header and
+  in the step-4 write-up — slice S step 4's lesson (*a probe's HEADER claimed the suites' grids and
+  its code ran another*).
+- **P10.** Steps, on slice W's shape: **1** the cell + `LeverArm`/`LeverArming` fields + the
+  carrier + the `pub` pin · **2** the port + `slice_x_smoke.rs` · **3** the rung-64 suite + the
+  injections + the two hole gates (P5) · **4** `slice_x_oracle.rs` + `dump_slice_x.py` · **5** the
+  dispatch gates (P2/P3) and the manufactured bugs (P4/P7).
+
 
 ## 6. Named risks
 
