@@ -11144,6 +11144,80 @@ leg carries `R64`, never `R62`, and the new panic is unreachable from there. `b_
 `bleed_lim is None` branch covers all three. Had a bare sibling carried an `R62` table, gates 4
 and 5 would have died on line one of step 2.
 
+##### STEP 2 — SHIPPED. **318 OF 318 BIT-EXACT ON THE FIRST RUN, AND THE ONE KEY THAT DISAGREED WAS A RENAMED PREDICATE**
+
+`limited_bleed.rs` is 919 lines: the six cell bodies, `r64_solve_b`, the four `R64*` tables,
+`build_limited_bleed`, and the five reading instruments (`bill_cell`, `authority_ceiling`,
+`match_open_loop`, `matched_bill`, `floor_refusal`). `slice_x_smoke.rs` + `dump_slice_x_smoke.py`
+carry **318 keys in nine sections**, every float as its IEEE-754 bits.
+
+**FINDING 1 — THE ADVISOR'S BLOCKER: STEP 1 HAD ALREADY TURNED RUNG 64's `isolating` OVERRIDE
+INTO A NO-OP, AND NO GATE COULD SEE IT.** Step 1 extended the SHARED `LeverArm::arms_valve()` to
+include the floor. But Python's rung-63 `want` is **two-way** (line 9440) and rung 64's is
+**three-way** — and the assert's OTHER side, `ref._armed_bleed()`, is DISPATCHED and gains the
+term at rung 64 by itself. So the two-way/three-way difference is the **entire content** of the
+override, and extending the shared helper made `r64_isolating` textually identical to
+`r62_isolating`. Two consequences, both invisible to step 1's 1017-green gate because no shipped
+test hands a floored NEIGHBOUR to a rung-62 machine: § (viii)'s swapped-cell list loses a row, and
+step 3's `_isolating` injection would report inert *for a reason that has nothing to do with
+Python*. Repaired by splitting `arms_valve` (rung 62's, two-way) from `arms_valve_floored` (rung
+64's), each carrying the other's name in its doc. **Smoke section H is the witness**: it isolates
+a stator against a floored neighbour — the one case rung 63's body cannot express.
+
+**FINDING 2 — THE COARSE SMOKE GRID FLIPS ONE OF THE RUNG'S OWN PUBLISHED CLAIMS, SO SECTION G
+GATES THE FLIP.** `floor_refusal`'s `inert` — claim (i), that the composite IS the valve-alone
+march — is **True at `ds` 0.005 and 0.01 and False at 0.02**. Measured: the coarse march moves the
+parabola-refined `m_i` by **2.894e-04**, four orders above the reader's own 1e-14 bar, while
+`min_phi` still agrees to **1.110e-16**. So the flip is the REFINED MINIMUM moving on a coarser
+grid, not the physics. Left at 0.02 the file would have shipped `G/inert = 0` as a bit-exact
+golden reading as a refutation of the rung. Section G runs at `ds = 0.01` and **emits the 0.02
+reading beside it** (`G/coarse/*`), so the flip is gated rather than avoided — slice S step 4's
+lesson (*a probe's HEADER claimed the suites' grids and its code ran another*) answered by
+emitting BOTH grids instead of picking one.
+
+**FINDING 3 — THE ONE KEY THAT DISAGREED WAS A PREDICATE RENAMED IN THE PORT.**
+`H/floored_neighbour/armed_is_armed_stator`: rust 1, py 0. Python's `_is_armed()` is *schedules
+only*; the port's `is_armed()` is the COMPOSITE guard `_is_armed() or vsv_lp or vsv_hp` that rungs
+58–60 open with, and the true equivalent is `is_scheduled()`. **The two agree on every machine
+with no constant stator** — the `ref` key three lines above is one, and it passed — so the only
+key in 318 that separates them is the armed leg, which carries `vsv_lp = 0.20`. Slice W step 4's
+lesson arriving again, and this time the discriminating key was in the file.
+
+**WHAT PROBE 8 SETTLED, AND WHAT IT DID NOT HAVE TO.** The advisor flagged that `_solve_b`'s
+residual cannot propagate through a plain `illinois`, so the port would need a stash (with an
+iteration-count divergence to disclose) or an `expect`. Measured first: **0 aborts in 156 373
+closure calls** over `tests/test_rung64.py`. And the crate ALREADY has `try_illinois`, whose
+residual returns `Result` — so the port propagates exactly as Python's raise does, no stash, no
+`expect`, no divergence, and the zero is carried as a gated counter rather than assumed away.
+Probe 8 also measured the regime split over that suite: **23 438 dormant / 13 519 riding / 1 002
+saturated** in 37 959 solves — all three regimes reached, which is P3's premise confirmed on the
+suite rather than on one march.
+
+**PROBE 9 — P9's GRID, MEASURED.** One floored `_bill_cell`: **478 outer solves / 2 068 closure
+evaluations at `ds = 0.02`, 1 753 / 7 385 at 0.005**. The three top-level readers at `ds = 0.02`:
+`authority_ceiling` 0.13 s, `matched_bill` 0.50 s, `floor_refusal` 0.76 s on PyPy. The advisor's
+warning that `_match_open_loop`'s multiplier would surprise is **half right**: it costs whole
+MARCHES per iteration but **no outer solves at all** (both matched laws are open-loop), which is
+why `matched_bill` shows the same 478 as a single floored cell.
+
+**THE SMOKE ALREADY WITNESSES HOLE 1.** § (ii)'s `_close` hole has the absolute anchor
+`nu0_lp = 0.7475441088051796`, and `C/floored/nu0_lp` **is that value**, bit-for-bit, with the
+unfloored `D/shut/nu0_lp = 0.7557409602636336` beside it — the 1.1 % the hole leaves wrong is now
+a golden PAIR. The march's initial condition comes through the equilibrium solve, which uses
+`try_close` and not `try_close_fuel`, so 318/318 green means `r64_try_close` is exercised AND
+bit-correct, and step 3's hole gate has its anchor already measured.
+
+**FOUR THINGS THE ADVISOR CAUGHT IN THE SHIPPED SOURCE.** (a) `R64`'s doc said *six of six cells
+swapped* two lines above *`legs` — NOT overridden*; it is **five of six**. (b) The module note's
+*0 of 1 705* fall-through zero is a **WITHIN-A-MARCH** claim — smoke section B calls `b_of`
+directly four times and every one takes that branch, so a step-5 gate written from the unscoped
+sentence would fail on a binary that merely read the valve; `b_of_state`'s zero has no such
+caveat, which makes it the stronger of the two and they are now asserted separately. (c)
+`_LAG_OK` is a Python CLASS ATTRIBUTE **rung 65 flips**, and `build_limited_bleed` hard-codes it
+false — so rung 65 cannot delegate here to inherit the assert chain. That is now written **inside
+the assert string**, `ForcedBleed::set`'s precedent. (d) `Census64` is thread-local with no
+per-test reset, so step 5 must reset in every `#[test]` that reads it.
+
 
 ## 6. Named risks
 

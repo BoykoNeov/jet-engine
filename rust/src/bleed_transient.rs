@@ -253,8 +253,24 @@ impl LeverArm {
     /// Python's `bool(kw.get("bleed")) or kw.get("bleed_sched") is not None` — the check
     /// `_isolating`'s reference-sibling assert runs on the NEIGHBOUR dict, before any object
     /// exists to ask.
+    ///
+    /// **RUNG 62's, AND IT STAYS TWO-WAY.** Rung 64's `_isolating` adds `or
+    /// neighbour.get("bleed_lim") is not None` **in its own body**, and the two-way/three-way
+    /// difference is the ENTIRE content of that override — the assert's other side,
+    /// `ref._armed_bleed()`, is dispatched and DOES gain the term at rung 64, so a rung-64
+    /// machine running rung 62's body would fire the assert on a floored neighbour. Extending
+    /// this helper in place instead would make `r64_isolating` textually identical to
+    /// `r62_isolating`: the override becomes a no-op, § 5.22 (viii)'s swapped-cell list loses a
+    /// row, and step 3's `_isolating` injection reports inert for a reason that has nothing to
+    /// do with Python. See [`arms_valve_floored`].
     pub fn arms_valve(&self) -> bool {
-        self.bleed != 0.0 || self.bleed_sched.is_some() || self.bleed_lim.is_some()
+        self.bleed != 0.0 || self.bleed_sched.is_some()
+    }
+
+    /// RUNG 64's three-way `want` — [`arms_valve`](Self::arms_valve) with the FLOOR counted as
+    /// an arming mode. Read by `r64_isolating` and by nothing below it.
+    pub fn arms_valve_floored(&self) -> bool {
+        self.arms_valve() || self.bleed_lim.is_some()
     }
 }
 
@@ -933,7 +949,7 @@ fn r62_try_instant_tail(
 // ---------------------------------------------------------------------------------------------
 
 /// RUNG 62's `_armed_bleed`.
-fn r62_armed_bleed(t: &TwoSpoolTransientCore) -> bool {
+pub fn r62_armed_bleed(t: &TwoSpoolTransientCore) -> bool {
     t.lever.bleed != 0.0 || t.lever.sched.is_some()
 }
 
@@ -941,7 +957,7 @@ fn r62_armed_bleed(t: &TwoSpoolTransientCore) -> bool {
 ///
 /// `tt2 = None` reads against the DESIGN `Tt2`. **Every reader goes through this rather than
 /// through the stored `bleed`**, which for a scheduled machine is `0.0` and means nothing.
-fn r62_b_of(t: &TwoSpoolTransientCore, nu_lp: f64, tt2: Option<f64>) -> f64 {
+pub fn r62_b_of(t: &TwoSpoolTransientCore, nu_lp: f64, tt2: Option<f64>) -> f64 {
     bump(&B_OF_CALLS);
     let Some(sched) = t.lever.sched else {
         bump(&B_OF_CONSTANT);
