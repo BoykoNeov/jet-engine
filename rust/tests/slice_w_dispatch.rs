@@ -156,7 +156,7 @@ fn injected(
     full(ScheduledStatorTransient::with_tables(
         design(), flight(), 1.0, Some(lp_map()), Some(hp_map()), 1.0, arm.stator,
         two, stator, fuel, &R62,
-        LeverArming { bleed: arm.bleed, sched: arm.bleed_sched }))
+        LeverArming { bleed: arm.bleed, sched: arm.bleed_sched, lim: None }))
 }
 
 fn bsched() -> BleedSchedule { BleedSchedule::new(B, N_LO) }

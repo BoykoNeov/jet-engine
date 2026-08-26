@@ -130,6 +130,7 @@ pub mod components;
 pub mod engine;
 pub mod fuel_transient;
 pub mod gas;
+pub mod limited_bleed;
 pub mod map;
 pub mod march;
 pub mod matcher;

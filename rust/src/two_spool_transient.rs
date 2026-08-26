@@ -571,6 +571,70 @@ pub struct TwoSpoolTransientCore {
     ///
     /// [`NO_STATOR`]: crate::stator_transient::NO_STATOR
     pub lever_hooks: &'static crate::bleed_transient::LeverHooks,
+    /// RUNG 64's TRIAL valve position — Python's `_b_forced`, one of § 5.19 (iv)'s nine
+    /// **STATE-kind dynamically-scoped** fields, and the first one the port meets.
+    ///
+    /// **WHY A `Cell` AND NOT § 5.19 (iv)'s `Scope` PARAMETER — measured, § 5.22 (v)/(vii).**
+    /// The set→read chain is **one** frame (`b_of` ← `try_close_fuel` ← the closure that sets
+    /// it), and that frame is a SHIPPED cell with a live table and a dispatch gate, so a
+    /// parameter is NOT additive there. A `Cell` + [`ForcedBleed`]'s `Drop` keeps every signature
+    /// **and** recovers what `Scope` was chosen for: `Drop` runs on unwind, so the restore is
+    /// structural rather than a discipline — strictly stronger than the straight-line restore a
+    /// naive port would write, and at least as strong as Python's `finally`.
+    ///
+    /// **AND IT IS SAFE ONLY BECAUSE THIS FIELD PROVABLY NEVER NESTS.** The guard restores to
+    /// `None`, not to the previous value, so a nested guard would CLOBBER. Measured: of 72
+    /// reload guards over the nine fields, 68 restore to `None` and the 4 that save a previous
+    /// value are all in `_stator_march` (rungs 65–68, over other fields); no writer of
+    /// `_b_forced` is reachable from inside its own guard. `_b_state` / `_v_state` do NOT have
+    /// that property — a same-field nest is a live candidate at slice AH, recorded at § 5.22
+    /// (vii) and **not** discharged here.
+    ///
+    /// [`ForcedBleed`]: crate::two_spool_transient::ForcedBleed
+    pub b_forced: Cell<Option<f64>>,
+    /// RUNG 65's LAGGED valve position, carried as a march state — Python's `_b_state`.
+    ///
+    /// **DEAD AT RUNG 64, and the count is why it is here anyway: 0 of 1 705 `b_of` calls take
+    /// this branch on any rung-64 machine** (§ 5.22 (vi)). A port that omits it passes every
+    /// slice-X gate and breaks at slice Y, so it ships with the branch that reads it and is
+    /// gated by a manufactured bug rather than by a value key — no value key can reach it.
+    pub b_state: Cell<Option<f64>>,
+}
+
+/// The RAII form of Python's `_closer`'s `try/finally` — **the restore is `Drop`, so it survives
+/// an unwind that a straight-line restore would skip.**
+///
+/// Held by value for the duration of one trial evaluation. Nothing else may set
+/// [`TwoSpoolTransientCore::b_forced`]; Python's docstring says so and the port makes it true by
+/// construction, because this is the only public way to write the field.
+pub struct ForcedBleed<'a> {
+    core: &'a TwoSpoolTransientCore,
+}
+
+impl<'a> ForcedBleed<'a> {
+    /// Force the valve to `b` for as long as the returned guard lives.
+    ///
+    /// **THE PANIC BELOW IS A DECISION, NOT A DISCOVERED INVARIANT — and it is aimed at a
+    /// reader who does not exist yet.** § 5.22 (vii) measured no writer of this field reachable
+    /// from inside its own guard, but by a name-based call graph, which is an UPPER bound; and
+    /// the paths that could break it are not slice X's. Rung 65's closures sit BETWEEN this
+    /// guard and the read, and rungs 66–75 pin through `super(LimitedBleedTransient, self)`
+    /// at **16 sites** (§ 5.19 (ii)). If one of them re-enters the solve while a trial is live,
+    /// **Python does not raise — it clobbers**, because `_closer`'s `finally` restores to `None`
+    /// rather than to the previous value. So the panic is louder than the source, on purpose,
+    /// and the message says so where a slice-Y porter will read it rather than only here.
+    pub fn set(core: &'a TwoSpoolTransientCore, b: f64) -> Self {
+        assert!(core.b_forced.get().is_none(),
+                "rung-64's `_b_forced` guard NESTED. THIS PANIC IS A PORT DECISION, NOT A BUG                  YOU JUST INTRODUCED: Python does NOT raise here. `_closer`'s `finally` restores                  to None rather than to the previous value, so Python would CLOBBER the outer                  trial silently and carry on. § 5.22 (vii) measured this path unreachable at                  rung 64 -- by a name-based graph, an UPPER bound -- and the paths that could                  break it are rung 65's closures and the 16 `super(LimitedBleedTransient, self)`                  pin sites at rungs 66-75. If you are reading this from one of those, the                  measurement no longer holds and the port owes Python's CLOBBER bit-for-bit;                  replace this assert with the clobber and gate the count, do not work around it.");
+        core.b_forced.set(Some(b));
+        ForcedBleed { core }
+    }
+}
+
+impl Drop for ForcedBleed<'_> {
+    fn drop(&mut self) {
+        self.core.b_forced.set(None);
+    }
 }
 
 impl TwoSpoolTransientCore {
@@ -649,6 +713,7 @@ impl TwoSpoolTransientCore {
         let p_ref_hp = mdot_design * (gas.h_c(s3.tt) - gas.h_c(s25.tt));
         TwoSpoolTransientCore {
             inner, rho, p_ref_lp, p_ref_hp, hooks, stator, stator_hooks, lever, lever_hooks,
+            b_forced: Cell::new(None), b_state: Cell::new(None),
         }
     }
 

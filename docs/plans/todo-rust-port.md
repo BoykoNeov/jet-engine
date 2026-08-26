@@ -11113,6 +11113,37 @@ form this slice could not afford.
   injections + the two hole gates (P5) · **4** `slice_x_oracle.rs` + `dump_slice_x.py` · **5** the
   dispatch gates (P2/P3) and the manufactured bugs (P4/P7).
 
+#### (x) THE STEP LOG
+
+##### STEP 1 — SHIPPED. **THE DECOMPOSITION WAS STATED BEFORE THE LOG WAS OPENED, AND IT HELD**
+
+Written before reading `cargo test --release`: *107 result lines, 1017 passed, 0 failed, 0
+ignored — step 1 is purely additive (two defaulted `Option` fields, two `Cell`s nothing reads,
+one cell slot nothing calls, two `fn`s made `pub`).* Measured: **107 / 1017 / 0 / 0.** Exact.
+
+Shipped: `limited_bleed.rs` (`BleedLimiter` + its four constructors + `Regime`), `LeverArming.lim`,
+`LeverArm.bleed_lim` + `merged` + `keys` + `arms_valve` + `LeverArm::floored`, the `b_at_point`
+cell with `R62` pointing at the **panic** (§ (ii)'s mistake refused from the other side), the
+`Cell<Option<f64>>` carriers + `ForcedBleed` RAII guard, and the two `pub fn r62_try_close*`.
+
+**THE ONE THING THAT WENT RED, AND IT WAS RIGHT TO.** `LeverArming` gaining `lim` broke a struct
+literal in `tests/slice_w_dispatch.rs`. That is a *non-exhaustive-literal* failure, i.e. the
+compiler enumerating the arming modes for us — the same guarantee § 5.21 (iii) chose the field
+over a parameter to get. **P8 HOLDS at step 1**: no `try_close` / `try_close_fuel` signature moved.
+
+**A PORT DECISION WRITTEN AT THE FAILURE SITE.** `ForcedBleed::set` panics if `b_forced` is
+already `Some`. **Python does not raise there — it CLOBBERS**, silently. So the panic string says
+so in as many words, names the two paths that could reach it (rung 65's closures, the 16 pin
+sites at rungs 66–75), and opens with *THIS PANIC IS A PORT DECISION, NOT A BUG YOU JUST
+INTRODUCED*. A future porter reads the reasoning where they hit it, not in a doc they would have
+to know exists.
+
+**THE CHECK THAT CLEARED BEFORE STEP 2.** `authority_ceiling`'s `"shut"` / `"schedule"` / `"full"`
+legs all go through `self.at_lever(…)`, which constructs a **`LimitedBleedTransient`** — so every
+leg carries `R64`, never `R62`, and the new panic is unreachable from there. `b_at_point`'s own
+`bleed_lim is None` branch covers all three. Had a bare sibling carried an `R62` table, gates 4
+and 5 would have died on line one of step 2.
+
 
 ## 6. Named risks
 

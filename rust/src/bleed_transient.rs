@@ -179,6 +179,10 @@ pub struct LeverArming {
     /// A schedule read off the live state at every closure — what a real handling-bleed system
     /// implements. Mutually exclusive with `bleed`, asserted at construction.
     pub sched: Option<BleedSchedule>,
+    /// RUNG 64's CLOSED loop — a floor on `phi_lp` the valve rides to hold. Mutually exclusive
+    /// with BOTH of the above: rung 62's two-way assert is EXTENDED to three, never replaced,
+    /// because the three are the legs the rung differences.
+    pub lim: Option<crate::limited_bleed::BleedLimiter>,
 }
 
 impl LeverArming {
@@ -200,6 +204,10 @@ pub struct LeverArm {
     pub stator: StatorArm,
     pub bleed: f64,
     pub bleed_sched: Option<BleedSchedule>,
+    /// RUNG 64's keyword — **the FIRST TEST of § 5.21 (iii)/P5**, and it is a field with a
+    /// `Default` rather than a parameter, so [`LeverHooks::at_lever`]'s signature is not
+    /// re-opened. `at_lever` goes 6 → 7 keywords here, 8 at rung 68, 9 at 69, then stops.
+    pub bleed_lim: Option<crate::limited_bleed::BleedLimiter>,
 }
 
 impl LeverArm {
@@ -218,6 +226,11 @@ impl LeverArm {
         LeverArm { stator: s, ..Default::default() }
     }
 
+    /// RUNG 64's leg — `at_lever(bleed_lim=…)`, the valve under a CLOSED loop.
+    pub fn floored(l: crate::limited_bleed::BleedLimiter) -> Self {
+        LeverArm { bleed_lim: Some(l), ..Default::default() }
+    }
+
     /// Python's `{**neighbour, **lever}` — the LEVER wins on every field it sets, which is what
     /// `_isolating`'s disjointness assert has already guaranteed cannot overlap.
     pub fn merged(neighbour: &LeverArm, lever: &LeverArm) -> Self {
@@ -233,6 +246,7 @@ impl LeverArm {
             },
             bleed: if lever.bleed != 0.0 { lever.bleed } else { neighbour.bleed },
             bleed_sched: lever.bleed_sched.or(neighbour.bleed_sched),
+            bleed_lim: lever.bleed_lim.or(neighbour.bleed_lim),
         }
     }
 
@@ -240,7 +254,7 @@ impl LeverArm {
     /// `_isolating`'s reference-sibling assert runs on the NEIGHBOUR dict, before any object
     /// exists to ask.
     pub fn arms_valve(&self) -> bool {
-        self.bleed != 0.0 || self.bleed_sched.is_some()
+        self.bleed != 0.0 || self.bleed_sched.is_some() || self.bleed_lim.is_some()
     }
 }
 
@@ -324,6 +338,21 @@ pub struct LeverHooks {
     /// Rung 57's START / RAMP / FULL against ANY reference machine. Overridden at rung **77**.
     pub legs: fn(&ScheduledStatorCore, &FlightCondition, &ScheduledStatorCore, &Ramp, Spool,
                  &StatorLeg<'_>) -> LegsReport,
+    /// RUNG 64's **committed** valve position at a recorded trajectory point — the ONE cell
+    /// slice X creates, and the one row of § 5.19 (x)'s hand-written cell column an emitter
+    /// confirms (§ 5.22 (iii)).
+    ///
+    /// **IT RE-SOLVES; IT DOES NOT RECONSTRUCT.** Python's docstring: *"the valve is a pure
+    /// function of the state, so this RE-SOLVES it exactly rather than reconstructing it —
+    /// which is what makes the bleed integral below a measurement and not an estimate."*
+    /// Reconstructing instead drives a floored march's `b_int` and `b_peak` to **exactly 0** and
+    /// both of the rung's PUBLISHED ratios (0.2552, 0.5187) to 0 — **and all 111 rung-62/63/64
+    /// gates still pass**, because the only assertion that reads them is the ordering
+    /// `f < s < c`, which zeroing the SMALLEST term satisfies. § 5.22 (ii); the gate that
+    /// catches it is one slice X ADDS, not one it ports.
+    ///
+    /// Overridden at rung **65**, whose lagged valve marches the position instead.
+    pub b_at_point: fn(&ScheduledStatorCore, &FlightCondition, &FuelPoint) -> f64,
 }
 
 /// **THE DEFAULT, AND ITS CELLS PANIC.** Rungs 40/43/57 have no `b_of`, no `_armed_bleed` and no
@@ -342,6 +371,7 @@ pub const NO_LEVER: LeverHooks = LeverHooks {
     b_of: no_lever_b_of,
     isolating: no_lever_isolating,
     legs: no_lever_legs,
+    b_at_point: no_lever_b_at_point,
 };
 
 fn no_lever_at_lever(_: &ScheduledStatorCore, _: &LeverArm) -> ScheduledStatorCore {
@@ -362,6 +392,11 @@ fn no_lever_b_of(_: &TwoSpoolTransientCore, _: f64, _: Option<f64>) -> f64 {
 fn no_lever_isolating(_: &ScheduledStatorCore, _: &LeverArm, _: Option<&LeverArm>)
     -> (ScheduledStatorCore, ScheduledStatorCore) {
     panic!("no lever table on this object: _isolating is rung 63's own.");
+}
+
+fn no_lever_b_at_point(_: &ScheduledStatorCore, _: &FlightCondition, _: &FuelPoint) -> f64 {
+    panic!("no lever table on this object: b_at_point is rung 64's own, and rungs 40/43/57/62 \
+            have no committed valve position to report.");
 }
 
 fn no_lever_legs(_: &ScheduledStatorCore, _: &FlightCondition, _: &ScheduledStatorCore, _: &Ramp,
@@ -404,6 +439,11 @@ impl ScheduledStatorCore {
     pub fn isolating(&self, lever: &LeverArm, neighbour: Option<&LeverArm>)
         -> (ScheduledStatorCore, ScheduledStatorCore) {
         (self.fuel.inner.lever_hooks.isolating)(self, lever, neighbour)
+    }
+
+    /// Rung 64's `b_at_point`, **through the virtual table**.
+    pub fn b_at_point(&self, flight: &FlightCondition, p: &FuelPoint) -> f64 {
+        (self.fuel.inner.lever_hooks.b_at_point)(self, flight, p)
     }
 
     /// Rung 62's `_legs`, **through the virtual table**.
@@ -563,7 +603,7 @@ pub mod counters {
 /// a valve-shut machine is rung 57 (hence rungs 43–52) bit-for-bit by DISPATCH rather than by
 /// arithmetic. A [`BleedSchedule`] is exactly `0` at and above `n_ref`, so both arms fire inside
 /// one march — measured 12 / 53.
-fn r62_try_close(
+pub fn r62_try_close(
     t: &TwoSpoolTransientCore, nu_lp: f64, nu_hp: f64, tt4: f64, tt2: f64, pt2: f64,
 ) -> Result<CloseState, Abort> {
     let b = t.b_of(nu_lp, Some(tt2));
@@ -666,7 +706,7 @@ fn r62_try_close(
 /// divides by the FACE flow. That one line is the whole of rung 63's structural channel — it is
 /// the LP shaft balance carrying `(1-b)` that moves `Tt25`, and `Tt25` sits upstream of both of
 /// the `Wf/pt3` leg's protections.
-fn r62_try_close_fuel(
+pub fn r62_try_close_fuel(
     ft: &FuelTransientCore, nu_lp: f64, nu_hp: f64, mdot_fuel: f64, tt2: f64, pt2: f64,
 ) -> Result<FuelCloseState, Abort> {
     let b = ft.inner.b_of(nu_lp, Some(tt2));
@@ -947,6 +987,13 @@ fn r62_at_stator(core: &ScheduledStatorCore, arm: StatorArm) -> ScheduledStatorC
         stator: arm,
         bleed: core.fuel.inner.lever.bleed,
         bleed_sched: core.fuel.inner.lever.sched,
+        // `None`, and DELIBERATELY: rung 62's body has no `bleed_lim` at all, so a rung-64
+        // machine reaching it would silently lose its floor. That is precisely the trap rung
+        // 64's OWN `at_stator` override exists to close — Python's "fourth instance", after
+        // rung 61's `at_setting`, rung 62's `at_stator` and rung 63's `_isolating`. Carrying
+        // `self`'s limiter here instead would make rung 64's override a no-op and its gate
+        // pass for the wrong reason.
+        bleed_lim: None,
     };
     r62_at_lever(core, &lever)
 }
@@ -962,6 +1009,12 @@ pub const R62: LeverHooks = LeverHooks {
     b_of: r62_b_of,
     isolating: r62_isolating,
     legs: r62_legs,
+    // Rung 62 has NO `b_at_point` in Python — the name does not exist below rung 64 — so this
+    // slot keeps NO_LEVER's PANIC rather than answering `b_of`. Defaulting it to `b_of` would
+    // be right on a rung-62 machine and wrong on a floored one, which is a claim no value gate
+    // could see; § 5.22 (ii) is the measurement of exactly that mistake, made from the other
+    // side.
+    b_at_point: no_lever_b_at_point,
 };
 
 /// RUNG 62's swap into rung 40's table — **THREE cells, and `..R57_TWO` is load-bearing.**
@@ -1010,7 +1063,7 @@ pub fn build_scheduled_bleed(
     let built = ScheduledStatorTransient::with_tables(
         design_engine, flight_design, mdot_design, map_lp, map_hp, rho, arm.stator,
         &R62_TWO, &R62_STATOR, &R62_FUEL, &R62,
-        LeverArming { bleed: arm.bleed, sched: arm.bleed_sched });
+        LeverArming { bleed: arm.bleed, sched: arm.bleed_sched, lim: None });
     // Rung 62's own two asserts, AFTER super()'s — see the note above.
     assert!(!(arm.bleed != 0.0 && arm.bleed_sched.is_some()),
             "rung-62: the valve gets a CONSTANT position or a SCHEDULE, not both -- they are the \
@@ -1043,6 +1096,7 @@ impl LeverArm {
         if self.stator.sched_hp.is_some() { k.push("vsv_sched_hp"); }
         if self.bleed != 0.0 { k.push("bleed"); }
         if self.bleed_sched.is_some() { k.push("bleed_sched"); }
+        if self.bleed_lim.is_some() { k.push("bleed_lim"); }
         k
     }
 }
