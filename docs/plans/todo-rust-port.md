@@ -11283,7 +11283,7 @@ four laws' cells, `b_at_point` walked at EVERY point of a floored march, `author
 value, and a four-point authority sweep.
 
 **THE FINDING: the CPython arm needs NO TOLERANCE.** Diffing the two goldens directly — **0 of
-1 744 float keys drifted and 0 of 146 discrete keys flipped**, PyPy 3.11.15 against CPython
+1 744 float keys drifted and 0 of 162 discrete keys flipped**, PyPy 3.11.15 against CPython
 3.14.3. Slice W needed exactly one exemption, for Python's built-in `sum()`, whose accumulation
 order differs between interpreters; **rung 64's 441 lines of readers contain no `sum()` at all**
 (grepped, not assumed) — every accumulation is an explicit `+=` trapezoid and every extremum a
@@ -11302,6 +11302,20 @@ job, and the dump gained them rather than the Rust losing them. (ii) Regeneratin
 2>&1` **interleaved the dump's own stderr key-count INTO the middle of a data line**, and the
 loader reported only `InvalidDigit`. [[windows-tooling-file-hazards]] a third time this slice; the
 loader now names the offending line and says what to do about it.
+
+**AND A THIRD DEFECT IN THE WRITE-UP, CAUGHT ONLY BY ADDING THE TALLY UP.** As first logged, this
+entry said 1 906 keys in one paragraph and `1 744 + 146` in the next — short by exactly the 16
+`npts` keys defect (i) had just ADDED. The drift comparison had been run on the pre-fix 1 890-key
+goldens and the numbers carried forward unchanged. **A count taken before a fix is not a count of
+what shipped**, and nothing in the gate can see it: both arms assert EXACT equality, so the
+interpreters really do agree on all 1 906 — it is the RECORD that was stale, in the document slice
+Y reads as what was measured. Re-measured against the shipped goldens by tagging every key with
+the emitter that produced it (`f` / `d` / `b`), not by classifying the file, which cannot tell
+them apart — floats are stored as IEEE-754 bit patterns and look exactly like the integers.
+**1 744 float + 162 discrete (100 `d` + 62 `b`) = 1 906**, 0 drifted, 0 flipped. The float half
+was right all along; the 16 additions were all integer-emitted, so the discrete half took the
+whole error. The commit message carries the stale pair and cannot be fixed; this is where it is
+set straight.
 
 ##### STEP 5 — SHIPPED. **NINE GATES NO FLOAT CAN CARRY, AND SIX MUTATIONS PROVE THEY FAIL**
 
