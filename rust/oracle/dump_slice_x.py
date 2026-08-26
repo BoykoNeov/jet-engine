@@ -130,6 +130,7 @@ for shape, lp, hp in SHAPES:
         for k in BILL:
             f("C/%s/cells/%s/%s" % (shape, name, k), ac["cells"][name][k])
         d("C/%s/cells/%s/plateau_pts" % (shape, name), ac["cells"][name]["plateau_pts"])
+        d("C/%s/cells/%s/npts" % (shape, name), ac["cells"][name]["npts"])
 
 # ============================================================ D -- `matched_bill`, THE RUNG
 for shape, lp, hp in SHAPES:
@@ -147,6 +148,7 @@ for shape, lp, hp in SHAPES:
         for k in BILL:
             f("D/%s/cells/%s/%s" % (shape, name, k), mb["cells"][name][k])
         d("D/%s/cells/%s/plateau_pts" % (shape, name), mb["cells"][name]["plateau_pts"])
+        d("D/%s/cells/%s/npts" % (shape, name), mb["cells"][name]["npts"])
 
 # ============================================================ E -- `floor_refusal`
 for shape, lp, hp in SHAPES:

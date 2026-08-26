@@ -63,7 +63,12 @@ fn load(text: &str) -> BTreeMap<String, u64> {
     for line in text.lines().filter(|l| !l.starts_with('#') && !l.trim().is_empty()) {
         let mut it = line.split('\t');
         let (k, b) = (it.next().expect("key"), it.next().expect("bits"));
-        assert!(m.insert(k.to_string(), b.parse::<u64>().expect("u64")).is_none(), "dup {k}");
+        // NAMES THE LINE. A bare `.expect("u64")` cost a debugging round here: redirecting the
+        // dump with `2>&1` interleaved its own stderr key-count INTO the middle of a data line,
+        // and the parse error said only `InvalidDigit` — [[windows-tooling-file-hazards]] again.
+        let v = b.parse::<u64>().unwrap_or_else(|e| panic!(
+            "slice-X golden line is not `key<TAB>u64` ({e}): {line:?}. If the second field has              text appended, the dump was redirected with `2>&1` and its stderr interleaved —              regenerate with stderr to a SEPARATE file."));
+        assert!(m.insert(k.to_string(), v).is_none(), "dup {k}");
     }
     assert!(m.len() > 1_800, "the slice-X golden did not parse ({} keys)", m.len());
     m
@@ -302,7 +307,7 @@ fn sweep(c: &mut Cmp) {
         c.b(&format!("C/{shape}/bounded_by_full"), ac.bounded_by_full);
         for (name, cell) in [("shut", &ac.shut), ("schedule", &ac.schedule),
                              ("full", &ac.full), ("over", &ac.over)] {
-            emit_bill_partial(c, &format!("C/{shape}/cells/{name}"), cell);
+            emit_bill(c, &format!("C/{shape}/cells/{name}"), cell);
         }
     }
 
@@ -335,7 +340,7 @@ fn sweep(c: &mut Cmp) {
         }
         for (name, cell) in [("shut", &mb.shut), ("constant", &mb.constant),
                              ("schedule", &mb.schedule), ("floor", &mb.floor)] {
-            emit_bill_partial(c, &format!("D/{shape}/cells/{name}"), cell);
+            emit_bill(c, &format!("D/{shape}/cells/{name}"), cell);
         }
     }
 
@@ -406,12 +411,6 @@ fn sweep(c: &mut Cmp) {
         c.b(&format!("{t}/delivered"), cell.min_phi_lp >= PHI * (1.0 - 1e-9));
         c.d(&format!("{t}/plateau_pts"), cell.plateau_pts as u64);
     }
-}
-
-/// Sections C and D emit the full [`BillCell`]; E emits a different subset. Split out so the
-/// exhaustive destructure lives in exactly one place.
-fn emit_bill_partial(c: &mut Cmp, tag: &str, x: &BillCell) {
-    emit_bill(c, tag, x);
 }
 
 /// Python's `"%g"`, which is how the dump spells a float inside a key.

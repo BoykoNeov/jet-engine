@@ -11274,6 +11274,78 @@ both dead arms confirmed on a live grid rather than argued. `saturated = 0` besi
 deliberately over-set floor reaches the third — P3's premise, measured on the machine rather than
 assumed from the enum.
 
+##### STEP 4 — SHIPPED. **BOTH INTERPRETERS ARE BIT-EXACT, SO THERE IS NO BAR TO TYPE**
+
+`slice_x_oracle.rs` + `dump_slice_x.py`: **1 906 keys**, the SUITE's own grid (`ds = 0.005` plus
+the 0.01 / 0.0025 the suite itself refines to) and **both** map shapes, in seven sections — the
+four laws' cells, `b_at_point` walked at EVERY point of a floored march, `authority_ceiling`,
+`matched_bill`, `floor_refusal`, a seven-point set-point sweep reaching all three regimes by
+value, and a four-point authority sweep.
+
+**THE FINDING: the CPython arm needs NO TOLERANCE.** Diffing the two goldens directly — **0 of
+1 744 float keys drifted and 0 of 146 discrete keys flipped**, PyPy 3.11.15 against CPython
+3.14.3. Slice W needed exactly one exemption, for Python's built-in `sum()`, whose accumulation
+order differs between interpreters; **rung 64's 441 lines of readers contain no `sum()` at all**
+(grepped, not assumed) — every accumulation is an explicit `+=` trapezoid and every extremum a
+`max`/`min`. So the arm asserts EXACT agreement rather than carrying a bar that suppresses
+nothing. [[rust-port-guessed-census-bars]] answered by measuring and finding there was nothing to
+type.
+
+**P9 IS DISCHARGED IN THE HEADER, INCLUDING WHAT IS COARSER.** Sections B/F/G run at `ds = 0.01`
+and the header says so and why — B walks every point and re-solves at each, which at 0.005 is
+~700 outer solves for a reading whose content is the SHAPE of `b(s)`. Probe 9's numbers are what
+the choice was made from.
+
+**TWO INSTRUMENT DEFECTS, BOTH CAUGHT BY THE INSTRUMENTS THEMSELVES.** (i) The Rust asked for 16
+`npts` keys sections C/D did not emit — the exhaustive `BillCell` destructure doing exactly its
+job, and the dump gained them rather than the Rust losing them. (ii) Regenerating with `> file
+2>&1` **interleaved the dump's own stderr key-count INTO the middle of a data line**, and the
+loader reported only `InvalidDigit`. [[windows-tooling-file-hazards]] a third time this slice; the
+loader now names the offending line and says what to do about it.
+
+##### STEP 5 — SHIPPED. **NINE GATES NO FLOAT CAN CARRY, AND SIX MUTATIONS PROVE THEY FAIL**
+
+`slice_x_dispatch.rs`: the reduce-by-dispatch (P2), all three regimes (P3), the two dead branches
+(P4), `R62`'s panicking slot, and **the rung-62 PIN (P7)**.
+
+**P7 HOLDS.** The same rung-62 body, same hardware, same arguments, reached once through rung
+64's table with a trial position forced and once through rung 62's own: the leaf's dispatched
+`b_of` returns the trial and rung 62's returns the stored constant, so the two `phi_lp` values
+DIFFER. Falsified if they agreed — which would have meant the leaf table is not reached and every
+`super(LimitedBleedTransient, self)` site at rungs 65–75 would freeze silently.
+
+**FINDING — THE `b_state` GATE WAS VACUOUS AS FIRST WRITTEN, AND ITS OWN MUTATION SAID SO.**
+Asserting `b_of_state == 0` on every march is satisfied by a port that DELETED the branch: the
+count stays zero either way, so the assertion could not see the defect it names.
+[[rust-port-slice-u-step4]]'s *a gate comparing a key with ITSELF cannot see its value*, one shape
+over. Rewritten to MANUFACTURE the branch reachable — set the carrier, assert `b_of` returns it,
+assert the forced trial WINS over it (Python's own precedence), assert the guard's drop exposes
+the state again rather than erasing it. The zero-count assertion is kept beside it, where it now
+means *and no shipped path reaches it*.
+
+**AND ONE GATE IS A WATCHDOG, NOT A GATE, WHICH IS NOW SAID RATHER THAN BLURRED.**
+`the_abort_arms_are_carried_and_never_taken` has the same vacuity and **cannot** be repaired the
+same way: an `Abort` cannot be manufactured from a test without a hook in production code, which
+would be worse than the gap. So the doc states what it catches (the arms starting to fire) and
+what it does not (their removal — carried instead by `r64_solve_b`'s `Result<_, Abort>` signature,
+which the compiler enforces at every call site, and by the oracle's 1 906 keys).
+
+**THE MUTATION TABLE — 6 mutations, 0 survivors**, each the realistic mistake its gate names:
+
+| mutation | reddens |
+|---|---|
+| `b_of`: STATE checked before FORCED | `the_lagged_position_override_…` |
+| `b_of`: the rung-65 STATE branch DELETED | `the_lagged_position_override_…` |
+| `R64_FUEL.try_close_fuel` left as rung 62's | `every_fall_through_…`, `the_reduce_is_a_dispatch_…` |
+| `R62`'s `b_at_point` slot defaulted to `b_of` | `a_rung62_machine_refuses_…` |
+| `ForcedBleed::set` CLOBBERS silently, as Python does | `a_nested_trial_position_is_refused_…` |
+| `ForcedBleed`'s `Drop` does not clear the carrier | **8 of 9** |
+
+The last row is the one worth reading: a leaked trial position reddens **eight of the nine**
+gates, which is the measurement behind choosing a destructor over a `finally` anyone can forget.
+And the first two rows are the repaired `b_state` gate catching both the deletion AND the
+precedence inversion — the vacuous version caught neither.
+
 
 ## 6. Named risks
 
