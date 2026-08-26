@@ -10,7 +10,7 @@ metadata:
 
 Slice W step 4 of the Rust port (rungs 62/63, the oracle), 2026-08-26. `dump_slice_w.py` +
 `slice_w_oracle.rs`: **9 422 keys bit-exact against PyPy AND CPython 3.14**, ten sections, zero
-tolerance tiers. Five process lessons, four of which cost a run.
+tolerance tiers. Six process lessons, four of which cost a run.
 
 **A CROSS-INTERPRETER ARM CAN FAIL FOR A REASON THAT IS NEITHER THE PORT NOR A TOLERANCE.** Seven
 keys disagreed between PyPy and CPython. Cause, measured: **CPython 3.12+ uses Neumaier
@@ -47,6 +47,17 @@ untaken path are the same character. A SECOND workload was added on which all fi
 and the gate asserts both directions. Related: **the Python wrappers had to move from the INSTANCE
 to the CLASS**, because the Rust counters are a thread-local global that fires on siblings too; an
 instance patch is invisible on a workload that builds none and wrong by a factor on one that does.
+
+**"NO SUITE EXERCISES IT" IS AN ARGUMENT FOR CARRYING A CELL, NOT EVIDENCE THAT IT MEASURES
+ANYTHING.** One ADDED arming (a schedule at the knee the suites deliberately moved OFF, where it
+starts the ramp saturated) was carried on exactly that argument and never checked for degeneracy —
+if it reduced to the constant-setting leg, the section was comparing one computation with itself.
+One `awk` over the golden settled it: they agree on **21 of 54 keys and those 21 are the
+lever-INDEPENDENT ones**, every headline quantity differs, and the loop-attributable part comes
+out at **35 % / 19 % / 5 %** across the ramp rates. So the cell is live AND the suites' own stated
+reason for moving the knee is confirmed with a number instead of quoted. **How to apply: for every
+cell justified as "no suite reaches this", diff it against the nearest cell that IS reached before
+claiming it adds coverage.**
 
 **TWO RUNS LOST TO PLUMBING, AND NEITHER FAILURE NAMED A KEY.** A `2>&1` merged the dump's stderr
 key-count line onto the END of the last data line, and a signed `-1` went into a `key<TAB>u64`

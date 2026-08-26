@@ -424,7 +424,22 @@ for row in bt().loop_factors(FLIGHT, (900.0, 1100.0, 1300.0, 1500.0), db=0.10, d
 # --- THE HEADLINE: `loop_decomposition` on an ARMED machine.  Its reference is `at_lever()`,
 # --- NOT `_isolating()` -- a different path from `marginal_loop` below.
 for ln, kw in (("bled", BLEED_KW), ("stat", STAT_KW), ("const", CONST_KW), ("both", BOTH_KW),
-               # ADDED -- the SATURATED schedule; no suite arms it.
+               # ADDED -- the SATURATED schedule at rung 57's knee; no suite arms it.
+               #
+               # **AND IT IS NOT DEGENERATE, WHICH WAS MEASURED RATHER THAN ASSUMED.**  The
+               # obvious worry about this arming is that it reduces to the CONSTANT one -- at
+               # 0.75574 the bleed machine idles at 0.737, BELOW the knee, so the schedule
+               # starts the ramp clipped at `b_max` with `db/dn = 0` and no loop to close.
+               # Diffed key for key against `D/ld/const/*`: they agree on 21 of 54 keys and
+               # those 21 are the LEVER-INDEPENDENT ones (`reference`, `nu0_ref`, `s_ref`, `r`
+               # and the two labels).  Every rung-62 headline quantity differs, because the
+               # ramp carries `n` back OVER the knee and the schedule comes off the clip
+               # mid-march.  `self_cancel` lands strictly BETWEEN the two legs at all three
+               # rates -- const 1.0205 / 1.0289 / 1.0349, sat 1.0480 / 1.0417 / 1.0378, bled
+               # 1.0990 / 1.0971 / 1.0930 -- so the loop-attributable part (sat - const against
+               # bled - const) is 35 % / 19 % / 5 %.  `test_rung62.py:57`'s reason for moving
+               # the knee to 0.65 is CONFIRMED and given a number: the placement ATTENUATES the
+               # loop rather than removing it, and it attenuates it more the faster the ramp.
                ("sat", dict(bleed_sched=BleedSchedule(B, N_LO_SAT)))):
     for r in (0.25, 0.50, 1.00):
         put_legs(f"D/ld/{ln}/{r:.2f}",

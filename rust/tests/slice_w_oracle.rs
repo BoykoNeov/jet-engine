@@ -56,7 +56,16 @@
 //!   `legs` all read 0 there — and a dead counter and an untaken path are the same character.
 //!   `sib_*` runs `loop_decomposition` + `marginal_loop` + `schedule_invariance`, where all five
 //!   are non-zero, which is what makes the zeros above MEASURED zeros.
-//! * **D's `sat` arming** — the saturated knee.
+//! * **D's `sat` arming** — the saturated knee, **and it is not degenerate.** The obvious worry
+//!   is that it reduces to the CONSTANT leg: at `n_lo = 0.75574` the bleed machine idles at
+//!   0.737, BELOW the knee, so the schedule starts the ramp clipped at `b_max` with `db/dn = 0`
+//!   and no loop to close. Diffed key for key against `D/ld/const/*`, they agree on **21 of 54**
+//!   and those 21 are the lever-INDEPENDENT ones (`reference`, `nu0_ref`, `s_ref`, `r`, the two
+//!   labels). Every rung-62 headline quantity differs, because the ramp carries `n` back over
+//!   the knee mid-march. `self_cancel` lands strictly BETWEEN the two legs at all three rates,
+//!   so the loop-attributable part is **35 % / 19 % / 5 %** of the properly-placed schedule's at
+//!   `r` = 0.25 / 0.50 / 1.00. `test_rung62.py:57`'s reason for moving the knee to 0.65 is
+//!   CONFIRMED and given a number: the placement ATTENUATES the loop, it does not remove it.
 //!
 //! # TWO ARMING PREDICATES, TWO KEYS — AND THE FIRST WRITING OF THIS FILE CONFLATED THEM
 //!

@@ -10688,7 +10688,33 @@ sibling: invisible on the `march` workload (which builds none) and wrong by a fa
 `siblings` one (which marches four machines). The classifiers call the SAVED ORIGINAL `b_of`, so
 they never inflate the count they are recorded beside.
 
-#### FINDING 5 — **TWO RUNS LOST TO THE INSTRUMENT'S PLUMBING, AND NEITHER FAILURE NAMED A KEY**
+#### FINDING 5 — **THE ONE `ADDED` ARMING WHOSE VALUE I HAD ASSERTED RATHER THAN MEASURED, AND IT PAYS**
+
+Section D carries a `sat` arming at rung 57's knee (`n_lo = 0.75574`) because the saturated corner
+is a real state of the schedule and no suite exercises it. The obvious worry is that it is
+DEGENERATE: at that knee the bleed machine idles at 0.737, **below** the knee, so the schedule
+starts the ramp clipped at `b_max` where `db/dn = 0` — which is exactly `test_rung62.py:57`'s
+stated reason for moving the knee to 0.65, and if it held over the whole march the arming would
+be the CONSTANT leg under another name and the `ADDED` label would oversell it.
+
+Diffed key for key against `D/ld/const/*`: they agree on **21 of 54**, and those 21 are the
+LEVER-INDEPENDENT keys — `reference`, `nu0_ref`, `s_ref`, `r`, and the two labels. **Every rung-62
+headline quantity differs**, because the ramp carries `n` back over the knee mid-march and the
+schedule comes off the clip. `self_cancel` lands strictly BETWEEN the two legs at all three rates:
+
+| `r` | const (no loop) | **sat** | bled | loop retained |
+|---|---|---|---|---|
+| 0.25 | 1.0205 | **1.0480** | 1.0990 | **35 %** |
+| 0.50 | 1.0289 | **1.0417** | 1.0971 | **19 %** |
+| 1.00 | 1.0349 | **1.0378** | 1.0930 | **5 %** |
+
+So the suite's own reason for moving the knee is **CONFIRMED and given a number**: the placement
+ATTENUATES the loop rather than removing it, and it attenuates it more the faster the ramp. The
+process point is the one this whole slice keeps making — *"the saturated corner is a real state
+and no suite exercises it"* was an argument for carrying the arming, not evidence that carrying it
+measures anything, and one `awk` over the golden was the difference between the two.
+
+#### FINDING 6 — **TWO RUNS LOST TO THE INSTRUMENT'S PLUMBING, AND NEITHER FAILURE NAMED A KEY**
 
 * **A `2>&1` CORRUPTED A GOLDEN.** The dump prints its key count to stderr; redirecting stderr into
   the tsv merged `# 9396 keys` onto the END of the last data line with no newline between them.
