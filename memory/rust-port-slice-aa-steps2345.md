@@ -8,7 +8,7 @@ metadata:
   modified: 2026-08-27T13:57:37.268Z
 ---
 
-Slice AA's port shipped: `three_loop.rs` 2 302 lines, 44 test functions across four files, the
+Slice AA's port shipped: `three_loop.rs` 2 302 lines, **47** test functions across four files, the
 oracle bit-exact at **12 084 keys** on PyPy with a four-key CPython exemption.
 
 **The oracle earned its keep on run one, and the 22 ported gates could not have.** One key was
@@ -35,7 +35,7 @@ faithful to Python and means a whole reader family is blind to those two cells.
 
 **A DEFENCE WITH NO READER IN THE SLICE IS THE RECURRING SHAPE, and it appeared four times.**
 `v_max_used` (the oracle caught it); `v_at_point`/`ic_at_point`'s refusals, called only on
-rung-68 points everywhere so a `0.0` return would pass all 45 tests; `round12`, whose one consumer
+rung-68 points everywhere so a `0.0` return would pass all **47** tests; `round12`, whose one consumer
 returns **1** and is satisfied by any rounding; and `Census68` itself, written at step 2 and read
 by nothing until the last hour. Each was found by ASKING what reads a thing, never by a failure.
 
@@ -47,3 +47,10 @@ the same sentence — this phase's most-repeated defect, now spelled `1 + 1 + 0`
 I also nearly shipped **21 of 22** ported gates: the missing one PROVES a cell had to exist, nothing
 failed, and it surfaced only by counting Python's `def test_` against cargo's own `--list`. See
 [[rust-port-slice-aa-step1]] for the same slice's step-1 lessons.
+
+**And this file shipped with the defect it names.** It first said *44 test functions* and
+*all 45 tests*, typed when the two files were 10 and 10 gates; steps 4 and 5 added one gate to
+each and the counts never propagated. The plan's write-up was corrected from the measured run
+and this file was not re-read — so the same slice produced a **typed tally standing beside its
+own emitted addends**, in the memory whose headline is that class. Corrected in a follow-up
+commit rather than an amend, because the trail is the lesson.

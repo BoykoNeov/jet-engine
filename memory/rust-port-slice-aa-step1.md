@@ -10,7 +10,8 @@ metadata:
 
 Slice AA of the Rust port (rung 68, `StatorLimiter` + `ThreeLoopCascadeTransient`) pre-registered
 at § 5.25 off six probes and shipped step 1: nine cells, four dynamically-scoped fields, four RAII
-guards, 10 gates green.
+guards, 10 gates green (**the file ships at 12** — steps 4 and 5 each added one, both
+step-1 cells whose defence had NO READER until a later step went looking).
 
 **The process lesson, and it is about the PREDICTION rather than the code.** P1 read *"`MarchScope`
 grows by two fields and zero existing struct literals move."* That held exactly. But `MarchScope`
