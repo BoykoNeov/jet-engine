@@ -13185,7 +13185,12 @@ captured lists under **both** interpreters against a naive left fold — which i
 
 **Eight of the nine sum three or four numbers; the ninth sums a whole trajectory.** CPython
 3.12+'s `sum()` is Neumaier-compensated and PyPy's is a naive fold, so the compensation only has
-somewhere to accumulate when the list is long. The exemption surface is therefore **one reader**,
+somewhere to accumulate when the list is long. ~~*(As written.)*~~ **THE SECOND SENTENCE IS
+SUPERSEDED AT SLICE AB — § 5.26 (i).** Rung 69's `_invariants` sums THREE numbers and diverges on 23
+of 256 instances, and slice AB's own replacement explanation (cancellation) is refuted by the same
+probe. The measurement below stands; the MECHANISM does not — whether the compensation survives is a
+bit-pattern property of the summands, so the only valid instrument is intercepting the actual
+summands and re-summing under both interpreters. The exemption surface is therefore **one reader**,
 not nine sites — and it is `ic_family`, whose `withheld` key is an integral of the withheld fuel
 over the ramp.
 
@@ -13675,7 +13680,8 @@ is no cost to declare.
 ### 5.26 SLICE AB (rung 69, `StatorIncidenceLimiter` + `ReferenceSplitTransient`) — PRE-REGISTERED, eleven probes MEASURED first
 
 `M:\claud_projects\temp\rust-phase7\probe_ab1.py` … `probe_ab11.py`, PyPy (plus CPython 3.14 on
-probes 6 and 7c). Every table below is **EMITTED** by one of them (§ 5.19 (xi)).
+probes 6 and 7c) — eleven numbered probes, and the sub-probes `3b`, `6b`, `7b`, `7c` that
+repaired three of them (§ (xi)). Every table below is **EMITTED** by one of them (§ 5.19 (xi)).
 
 #### (i) THE LEADING FINDING — **A THREE-ELEMENT `sum()` DIVERGES BETWEEN INTERPRETERS, WHICH SLICE AA's OWN EXPLANATION SAYS CANNOT HAPPEN — AND THE REPLACEMENT EXPLANATION IS REFUTED BY THE SAME PROBE**
 
@@ -13922,10 +13928,13 @@ measurements of PYTHON, and none of them says a RUST cell is breakable.
 
 * **P1** — `MarchScope` does **not** grow at this slice: zero of its 75 existing struct literals
   and zero `stator_march*` call sites move. Falsified if any needs an edit.
-* **P2** — Every one of the **eleven** table cells the slice touches (one added, ten swapped) is
-  **breakable in a Rust dispatch gate**: swapping it for the parent's function pointer breaks at
-  least one gate. Of those, `_rk4_floor` breaks **only** a `#[should_panic(expected = "rank
-  TWO")]` assertion, and `_solve_v` / `_manifold_v` / `_triple_rig` break **by panic** rather
+* **P2** — Every one of the **ten** table cells the slice touches is **breakable in a Rust
+  dispatch gate**: the eight `TripleHooks` swaps of § (ii), plus `at_lever` and the one added cell
+  `_with_ref`. (`__init__` is § (ii)'s tenth SWAP but is **not a cell** — no shipped table carries a
+  constructor hook; it ports as four `assert!`s, gated by the four `pytest.raises` of § (v).)
+  Breakable means swapping the cell for the parent's function pointer breaks at least one
+  gate. Of those, `_rk4_floor` breaks **only** a `#[should_panic(expected = "rank TWO")]`
+  assertion, and `_solve_v` / `_manifold_v` / `_triple_rig` break **by panic** rather
   than by a value key. Falsified per cell; a cell that cannot be broken is reported UNOBSERVABLE
   (slice Z step 5's shape), never quietly re-gated on something else.
 * **P3** — The CPython exemption is the set of names step 4's dump emits downstream of
@@ -13953,8 +13962,8 @@ measurements of PYTHON, and none of them says a RUST cell is breakable.
 3. **The 25 ported gates**, `tests/rung69.rs`, plus `slice_ab_smoke.rs`.
 4. **The oracle** — `oracle/dump_slice_ab.py` + `tests/slice_ab_oracle.rs`, bit-exact vs PyPy
    with the CPython arm and its NAMED exemption, re-read from the dump (§ (i)).
-5. **The dispatch gates** — eleven cells, `slice_ab_dispatch.rs`, four of them panic-shaped —
-   and the ledger.
+5. **The dispatch gates** — ten cells, `slice_ab_dispatch.rs`, four of them panic-shaped
+   (§ (ii)) — and the ledger.
 
 #### (xi) THREE DEFECTS IN THIS PRE-FLIGHT's OWN INSTRUMENTS
 
