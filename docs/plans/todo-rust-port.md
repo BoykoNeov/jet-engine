@@ -12753,6 +12753,150 @@ verified (`eq_op` on a deliberate NaN test) — it now reads `stator_transient.r
 `:2610` because this step inserted a doc comment above it, not because a second appeared. Zero new
 warnings from either new module.
 
+
+##### STEP 3 — SHIPPED. **The 38 ported gates, and A CENSUS WHOSE BASELINE READ ZERO**
+
+`tests/rung66.rs` (**15** gates) and `tests/rung67.rs` (**23**), Python's two suites gate for gate,
+in their order and under their names. **Both green on the first run**, 15 in **1.26 s** and 23 in
+**3.30 s** — **4.56 s against PyPy's 91.07 s, a measured 20.0x** (§ 5.24 (ix)'s prior was slice Y's
+16x). **P9 held: no `slow` marker and no `#[ignore]` is introduced**, because the measured Rust
+cost does not warrant one.
+
+#### (a) THE LEADING FINDING — **THE INJECTION HARNESS REPORTED A `0 passed / 0 failed` BASELINE AND CALLED ALL EIGHT INJECTIONS "0 red"**
+
+The census ran once and returned a clean, plausible, entirely worthless table: every injection
+invisible, including the two CONTROLS chosen precisely because a ported gate exists for them.
+
+**The cause is a two-stream parse.** `cargo test` prints `Running tests\<name>.rs` on **stderr**
+and the test harness prints `test result: ok. 15 passed; 0 failed` on **stdout**. The first
+version ran all three targets in ONE invocation and parsed `p.stdout + p.stderr`, which puts
+*every* result line BEFORE the target line that names it — so the parser's "which target am I in"
+variable was `None` for all of them, each target was recorded `[0, 0, []]`, and `sum(failed) == 0`
+for every run including the controls.
+
+**IT WAS CAUGHT BY ONE PRINTED LINE AND NOTHING ELSE.** The harness echoes its baseline, and
+`{'rung66': (0, 0), ...}` beside a suite that had just been watched go 15/15 and 23/23 is the only
+thing in the run that disagreed with itself. Had the baseline not been printed, eight rows of
+*"no gate can see this"* would have gone into a write-up. [[rust-port-slice-w-step3]] is the same
+lesson one level out — *make the instrument prove it can SEE* — and the repair is a bar rather
+than a fix: the harness now runs ONE target per invocation, parses stdout alone, and **refuses to
+proceed unless the baseline reads exactly `{rung66: 15, rung67: 23, slice_z_smoke: 19}`.**
+A census on a broken parser measures nothing, and the only defence that scales is a counted
+baseline the run must clear before it is allowed to conclude anything.
+
+#### (b) THE CENSUS, EIGHT INJECTIONS, EACH RUN TWICE
+
+Every injection is run in two variants, which is the three-column discipline four slices running
+have needed: a **LIVENESS** build (the same edit plus a `panic!` marker at the site, or one
+conditioned on the state the injection depends on) that answers *did it apply and is the site
+reached*, and a **SEMANTIC** build (the edit alone) that answers *what can the gates SEE*. `red` is
+over all **62** gates in the slice — 15 + 23 ported plus `slice_z_smoke`'s 19.
+
+| # | the injection | liveness | semantic `red` | verdict |
+|---|---|---|---|---|
+| I1 | `eig` drops its COMPLEX arm | marker fires, **5 red — all rung 67, ZERO rung 66** | **2** (`the_window_is_log_symmetric…`, `the_sum_bound_is_measured_conservative…`) | **§ 5.24 (vi) / P5 CONFIRMED BY MEASUREMENT, and the arm is NOT unguarded** |
+| I2 | rung 66's INLINE UNDAMPED joint IC routed through rung 67's DAMPED solver | marker fires, 17 red — the site is reached everywhere | **0** | **P6's blind spot, exactly as pre-registered** → step 5 |
+| I3 | rung 67's `assert lag is None` reads the CARRIER | **marker NEVER FIRES** | **0** | **PROVABLY invisible**, not merely unnoticed → P11, step 5 |
+| I4 | the `_lag` guard restores `None` not PREVIOUS | **marker NEVER FIRES** (`prev` is never `Some`) | **0** | **PROVABLY invisible** → P7a, step 5 |
+| I5 | the `_tau_gov` guard restores `None` not PREVIOUS | **marker NEVER FIRES** | **0** | **PROVABLY invisible** → P7b, step 5 |
+| I6 | `window`'s `zeta` re-spelled `sqrt(1/(1+abs P))` | site trivially live (two gates read `zeta`) | **0** | a REAL 1-ulp change nothing sees → **step 4's**, § (d) |
+| I7 | `exceed` copies rung 66's break — **CONTROL** | marker fires, 5 red | **2** incl. `the_exceedance_integral_does_not_drop_its_final_cell` | **the instrument CAN see** |
+| I8 | `violation` adopts `exceed`'s LOWER guard — **CONTROL** | marker fires, 7 red | **0** | **the prediction was WRONG** — § (c) |
+
+**THE LIVENESS COLUMN IS WHERE THREE OF THE FOUR ZEROS STOP BEING GUESSES.** I3, I4 and I5 do not
+merely go unnoticed: their markers never fire at all, so `ft.inner.lag.get()` is never `Some` where
+rung 67's refusal reads it and neither guard's `prev` is ever `Some` anywhere in the slice. Probe
+3's *max nesting depth 1, 0 nested events* is thereby re-measured in the PORT, on the port's own
+grid, rather than inherited from a Python reading — and the four manufactured gates step 5 owes are
+owed against a hole that has now been shown to exist rather than argued to.
+
+**AND I1's LIVENESS RUN IS THE STRONGEST SINGLE ROW.** Five gates go red when the complex arm
+panics, and **every one of them is in `rung67.rs`; not one is in `rung66.rs`.** That is § 5.24
+(vi)'s *"80 of 80 real, and the complex arm never runs on rung 66 at all"* re-derived from the
+Rust, by a different instrument, on the ported grid. **P5's premise therefore holds and its
+conclusion needs a qualification the pre-registration did not have**: the arm is dead on rung 66
+but it is *not* an unguarded blind spot, because two rung-67 gates catch a port that drops it. Step
+5's manufactured gate is still owed — it names the arm directly instead of catching it through an
+emergent count — but it is hardening a covered site, not closing a hole.
+
+#### (c) **I8 — THE DROPPED CELL IS NOT SMALL, IT IS EXACTLY ZERO, AND BY THE CLAMP RATHER THAN BY DECAY**
+
+I8 was written as a CONTROL — *"MUST redden; rung 66's currency is gated on the un-repaired
+integral"* — and **0 of 62 moved.** Rather than reason about why, a throwaway Rust probe computed
+`violation` both ways on the shipped cascade trajectory at all three `ds`:
+
+| `ds` | first `s > 0.5` | that `s` | area the dropped cell would add | `phi_lim − phi_lp` there |
+|---|---|---|---|---|
+| 0.01 | index 50 | `5.00000000000000222e-1` | **exactly `0.0`** | `−5.256501e-3` |
+| 0.005 | index 100 | `5.00000000000000333e-1` | **exactly `0.0`** | `−5.256604e-3` |
+| 0.0025 | index 200 | `5.00000000000000333e-1` | **exactly `0.0`** | `−5.256628e-3` |
+
+So **both halves of the source's own account are true and its adjective is an understatement.**
+The accumulated `s` really does land a float's width past `s_hi`, so the straddling cell really is
+real and really is dropped — the condition `violation`'s doc comment names, exhibited for the first
+time. But the reason it does not matter is not that the integrand has *decayed* to ~0 by `s = r`:
+`phi_lp` has recovered **above** `phi_lim` by then, so `max(0, phi_lim − phi_lp)` is **clamped to
+zero at both ends of the cell** and the two spellings agree **bit-for-bit**, at every grid.
+
+Two consequences, and the second is step 5's: the *"two functions, never one with a flag"* rule
+that keeps `violation` and `exceed` apart is protected by **nothing at all** on the shipped grid;
+and **no oracle at the suites' own grid can reach it either**, because the difference is identically
+zero rather than small. It is therefore NOT a step-4 hand-off. Step 5 owes it a gate on a
+CONSTRUCTED trajectory whose integrand is non-zero at `s_hi`, which is the only place the
+distinction exists.
+
+#### (d) **I6 — A ONE-ULP RE-SPELLING NOTHING SEES, AND IT FALSIFIED A CLAIM IN THE PORTED FILE'S OWN DOC COMMENT**
+
+`window`'s `zeta` is `1.0 / (1.0 + |P|).sqrt()`. The injection is `(1.0 / (1.0 + |P|)).sqrt()` —
+algebraically identical, and `cross_loop.rs`'s module doc already records that the two are **not**
+bit-equal and that the spelling is not a free choice. Measured over every `P` the two window gates
+evaluate: **5 of 8 differ in the last bit**, including the plant's own
+`P_mid = −2.0388646020554284e-2` and the `P → 1` limit that recovers rung 66. **Zero of 62 gates
+move.**
+
+The reason is the ported gate's own bar. `the_window_formula_recovers_rung66_as_its_p_to_one_limit`
+asserts `|zeta − 1/sqrt(1+|P|)| < 1e-15` against a gap of ~`1.1e-16`. **I had written into that
+gate's doc comment that the line "can only catch a port that changed the SPELLING"** — the
+concession offered in place of admitting it is a self-comparison. It cannot catch that either, and
+the comment is corrected in place rather than left standing. [[rust-port-ported-test-vacuity]]'s
+harder form: **a gate labelled as PARTLY vacuous, whose surviving half was also vacuous.**
+
+This one IS the oracle's — a bit-exactness dump over `cross_identity`'s published `zeta` /
+`T_over_tau` is exactly the instrument for a 1-ulp spelling, and § 5.24 (i)'s exemption block
+already puts both keys under a microscope. Booked to step 4.
+
+#### (e) THE THREE GATES THE ADVISOR FLAGGED AS POSSIBLE SELF-COMPARISONS, ASKED ONE BY ONE
+
+*Does the Rust compute both sides independently, or does one side derive from the other?*
+
+| gate | verdict |
+|---|---|
+| `the_cross_gains_are_reciprocals` | **INDEPENDENT.** `R_q` is a central difference of `try_sched_fuel`/`try_surge_fuel` in the valve POSITION; `C_g` one of `r64_solve_b` in the fuel CLIP. Two closures, two step sizes, neither reading the other — so `prod == 1` measures the identity. Stated at the gate. |
+| `the_eigenvalues_are_real_and_the_rates_add` | **HALF TAUTOLOGY, LABELLED.** `det ≡ 0` makes the discriminant `tr² ≥ 0` identically, so `all_real` cannot fail unless `det` is wrong. `rho_err` — a measured eigenvalue against a closed form in the two clocks alone — is the half with content. |
+| `the_window_formula_recovers_rung66…` | **SELF-COMPARISON, AND WEAKER THAN THAT** — § (d). The reciprocal identity, the closed branch and the two monotonicities are what it does pin. |
+
+#### (f) PREDICTIONS, AT STEP 3
+
+- **P9 — MEASURED, NOT MAPPED.** 4.56 s for 38 gates; no marker introduced.
+- **P4/P5 — SHARPENED BY MEASUREMENT.** § 5.24 (v)'s five dead arms are still step 5's, and I1
+  re-measures P5's premise in the Rust while correcting its framing (§ (b)).
+- **P6/P7/P11 — CONFIRMED AS HOLES, BY LIVENESS AND NOT BY SILENCE** (I2/I3/I4/I5). Step 5's.
+- **P12 (NEW, for step 5) — `violation`'s DROPPED CELL.** A gate on a constructed trajectory whose
+  integrand is non-zero at `s_hi`, because § (c) shows no shipped grid and no oracle can reach it.
+  Falsified if some shipped key turns out to separate the two spellings after all.
+- **P3/P8 — still step 4's**, and I6 adds a named third thing for the dump to catch (§ (d)).
+
+#### (g) THE GATE, AND THE COUNT IS A BY-PRODUCT OF IT
+
+`cargo test 2>&1 | tee <file>`, step 2's booked idiom, so the aggregate is a by-product of a run
+that was happening anyway. **Exit 0. 118 result blocks — 116 integration targets, the lib unit
+tests and the doc-tests — 1 142 passed, 0 failed, 0 ignored.** Step 2 reported *115 targets, 1 103
+tests*; the delta is **+2 targets** (`rung66.rs`, `rung67.rs`) and **+39 tests** (their 38, plus
+the 19th `slice_z_smoke` gate the follow-up commit added after step 2's number was taken), and the
+target arithmetic reconciles once the counting convention is stated rather than assumed: 117
+`Running` lines (116 integration + 1 `unittests`) plus one doc-test block. **The run does NOT
+include `slice_z_oracle.rs`**, which was written after it started — step 4 carries its own number.
+
 ### ~~The four~~ **THE EIGHT** runtime-introspection tests, one by one
 
 **CORRECTED 2026-08-20 by § 5.19 (vii) — this table named FOUR and an enumeration over the 27
