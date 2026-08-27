@@ -1623,7 +1623,12 @@ pub fn ring_visibility(
                 n_riding: rid.len(),
                 e0,
                 crossings: (1..nz.len()).filter(|&i| nz[i] * nz[i - 1] < 0.0).count(),
-                survives: v0.map(|x| e0.abs() / x.abs()),
+                // Python is `abs(e0)/abs(v0) if v0 else None`, and `if v0` is falsy for
+                // **0.0** as well as for `None`. `v0.map(..)` would divide, handing back
+                // `inf`/`NaN` where Python reports "no displacement". Unreachable at the
+                // shipped `disp = 0.05` -- which is exactly why it is spelled rather than
+                // left to a caller to discover.
+                survives: v0.filter(|x| *x != 0.0).map(|x| e0.abs() / x.abs()),
                 counter: if big { opt_fold(e.iter().map(|x| -x / e0), f64::max) } else { None },
                 v_range: (opt_fold(traj.iter().map(v_at_point), f64::min)
                               .expect("rung-69's ring march is non-empty"),

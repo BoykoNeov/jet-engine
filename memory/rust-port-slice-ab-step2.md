@@ -37,6 +37,16 @@ rung 68's body is LAZY, so a rung-69 machine's call must dispatch **none** of ru
 would now have to be true for it to fail — a step that removes a defect can remove its detector's
 only input. Related: [[rust-port-ported-test-vacuity]].
 
+**AND THE ADVISOR FOUND A THIRD, WHICH FIXING EXPOSED A FOURTH — FOUR TYPED PREDICATES IN TWO
+STEPS.** The write-up credited a one-point damping grid with *"equality at A = z, floor
+bandwidth-independent"*; one point can show neither (bandwidth-independence needs two bandwidths,
+and `A/z` was 2 there, never 1). Widening to Python's own six-point default fixed that AND gave
+`tightest` more than one live row, without which its first-minimum rule was untested. **Then the
+assertion written for the widened grid was typed from PYTHON's own docstring** — *"the grid straddles
+A/z = 1"* — and went red: the emitted set is {1, 1, 2, 2.75, 2.75, 4}, so it TOUCHES the minimiser
+and never goes below. A shipped claim measured rather than inherited. **How to apply:** widening a
+grid to fix an overclaim does not make the next sentence about that grid measured either.
+
 **A LIBRARY CALL CAN LOOK LIKE A PLATFORM EXPOSURE AND NOT BE ONE.** `cmath.sqrt(complex(d, 0.0))`
 appears to drag `hypot` into the arithmetic; CPython's own algorithm makes every step exact for a
 zero imaginary part, so the result is plain `sqrt(|d|)` and no `hypot` survives. Derived from the

@@ -16,6 +16,21 @@
 //! It also reads [`Census69`], which is the only instrument that can tell a rung-69 cell from the
 //! rung-68 body it reduces to: eight of the nine cells open with `stator_inc is None ⇒ the
 //! parent`, and a reduce arm emits rung 68's numbers BY CONSTRUCTION.
+//!
+//! # WHAT THIS FILE DOES **NOT** REACH — disclosed, because the header above would imply it does
+//!
+//! *"A body that panics, aborts, or silently produces no rows at all"* is the claim, and on this
+//! grid four branches of the readers never run. Every one of them is a DEGENERATE arm that the
+//! shipped settings do not produce, and a silent cap reads as coverage:
+//!
+//! * `DampingRow { n: 0 }` — a grid point whose march has NO riding-interior point;
+//! * `DampingRow::off_regime` — a mid-trajectory point that rides but is not interior;
+//! * `RefModesArm::all_complex == None` — an arm with no rows at all;
+//! * `RefModesRow::zeta == None` — a dominant root of exactly zero modulus.
+//!
+//! Step 3's ported gates do not reach them either (the Python suite's own grid is this one), so
+//! they are a standing hole rather than a step-2 omission — named here so step 5's dispatch gates
+//! can decide whether any of them is worth manufacturing.
 
 use turbojet::bleed_transient::LeverArm;
 use turbojet::engine::FlightCondition;
@@ -169,16 +184,60 @@ fn reference_modes_runs_both_references_over_the_clock_grid() {
 }
 
 /// `damping_floor` and `rk4_margin` — the two readers that quote the cubic's dominant root against
-/// a closed form, run on one grid point each.
+/// a closed form.
+///
+/// **THE GRID IS PYTHON's OWN SIX-POINT DEFAULT AND NOT ONE POINT, AND THAT IS A CORRECTION.**
+/// The first draft ran `[(0.05, 0.05, 0.05)]` alone — where `A = 40`, `z = 20`, so `A/z = 2` — and
+/// the write-up credited the reading with *"equality at `A = z`, floor bandwidth-independent"*.
+/// **One point can show neither**: bandwidth-independence needs at least two bandwidths, and `A/z`
+/// was never 1. The six-point grid reaches four bandwidths and gives
+/// [`DampingFloor::tightest`] more than one live row — without which its *"Python's `min` keeps the
+/// FIRST minimum, so the comparison is STRICT"* comment is untested.
+///
+/// # AND THE ASSERTION WRITTEN FOR IT WAS *ALSO* TYPED FROM A SENTENCE — PYTHON's THIS TIME
+///
+/// `damping_floor`'s own docstring says *"`A/z = 1` is the predicted minimiser and the grid
+/// straddles it"*, so the first version of the check below asked for a ratio on each side. **It
+/// went red.** Emitted from the six points, `A/z` is
+///
+/// ```text
+/// (0.05,0.05,0.05) -> 2      (0.10,0.10,0.05) -> 1
+/// (0.05,0.05,0.025) -> 1     (0.02,0.20,0.05) -> 2.75
+/// (0.05,0.05,0.10) -> 4      (0.20,0.02,0.05) -> 2.75
+/// ```
+///
+/// — it **TOUCHES** the minimiser twice and never goes below it. "Straddles" is one-sided here,
+/// which is a shipped Python claim this port measured rather than inherited. Two further readings
+/// fall out of the same table and neither is asserted, because both are step 3's: the last two
+/// points carry the SAME `(A, z)` with the two `phi` clocks swapped (so `A` is symmetric in them,
+/// not a fifth bandwidth), and at the two `A/z = 1` rows `zeta_pred` and `floor` agree — the AM-GM
+/// equality condition, which is an ALGEBRAIC identity between two of this file's own expressions
+/// and therefore not a gate (rung 70's *"a gate computing my own formula twice"*).
 #[test]
 fn the_damping_floor_and_the_rk4_margin_run() {
     let m = split_machine();
-    let grid = [(0.05, 0.05, 0.05)];
+    let grid = [(0.05, 0.05, 0.05), (0.05, 0.05, 0.025), (0.05, 0.05, 0.10),
+                (0.10, 0.10, 0.05), (0.02, 0.20, 0.05), (0.20, 0.02, 0.05)];
     let d = damping_floor(&m, &flight(), &ramp(0.005), SM, &grid, V_MAX, 3.0);
-    println!("damping rows={} holds={} tightest={:?}", d.rows.len(), d.holds, d.tightest);
-    assert_eq!(d.rows.len(), 1);
-    let live = d.tightest.expect("the mid-trajectory point must be riding-interior");
-    assert!(live.zeta.is_finite() && live.floor.is_finite() && live.det2.is_finite());
+    println!("damping rows={} holds={} worst_pred_err={:?}",
+             d.rows.len(), d.holds, d.worst_pred_err);
+    for r in &d.rows {
+        println!("  taus={:?} n={} off={:?} live={:?}", r.taus, r.n, r.off_regime, r.live);
+    }
+    assert_eq!(d.rows.len(), grid.len());
+    let live: Vec<_> = d.rows.iter().filter_map(|r| r.live).collect();
+    assert!(live.len() > 1,
+            "the six-point grid must leave more than one live row, or `tightest`'s FIRST-minimum \
+             rule is untested and `A/z` does not straddle 1");
+    assert!(live.iter().all(|x| x.zeta.is_finite() && x.floor.is_finite() && x.det2.is_finite()));
+    let ratios: Vec<f64> = live.iter().map(|x| x.a_over_z).collect();
+    assert!(ratios.iter().any(|&r| r == 1.0),
+            "the grid must REACH the predicted minimiser A = z, or the floor is never read at its \
+             own equality condition; got {ratios:?}");
+    assert!(ratios.iter().any(|&r| r > 1.0),
+            "...and LEAVE it, or one bandwidth is all `tightest` and `holds` ever see; got \
+             {ratios:?}");
+    d.tightest.expect("a live row exists, so there is a tightest one");
 
     let k = rk4_margin(&m, &flight(), &ramp(0.005), SM, &arm(), 10);
     println!("rk4 n={} max_ratio={:?} max_bound={:?} ds_lambda={}",

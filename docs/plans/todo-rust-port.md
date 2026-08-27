@@ -14261,13 +14261,62 @@ is step 4's and nothing here substitutes for it:**
 | `zeros`, all four clock arms | `inc` **[1]**, `phi` **[2]** | `n − m` = 3−2 and 3−1 |
 | `zeta`, every `phi` row | **1.0** | rung 68's spectrum is REAL |
 | `k` over the arc | **−2.0004 … −1.6643** | § 5.26 measured −1.67…−2.01 |
-| damping floor | `zeta` 0.63338767242627 vs closed form 0.63338767242299, floor 0.5972, `holds` | equality at `A = z`, floor bandwidth-independent |
+| damping floor, 6 bandwidths | `holds` on all six, `worst_pred_err` **4.3e−4** | the shipped cubic's dominant root tracks the closed form to 0.04 % |
 | displaced start `survives` | `inc` **0.224**, `phi` **2.3e−14** | a shared constraint ABSORBS it, a split one cannot |
 | stator credit, `S` cell | `inc` **−114.9 / +76.1**, `phi` **+91.7 / −57.4** | the whole sign table flips with the reference |
 | `common_max_rel` | **0e0** | the stator-free cells are identical by construction |
 | `rk4_margin` | `max_ratio` 0.8165 < `max_bound` 0.8661 < 1 | the inherited constant stays conservative |
 
-##### (g) WHAT STEP 3 OWES
+##### (g) **THE ADVISOR CAUGHT A THIRD TYPED PREDICATE, AND FIXING IT EXPOSED A FOURTH**
+
+That damping row read *"equality at `A = z`, floor bandwidth-independent"* — off a smoke that ran
+`damping_floor` on **one** grid point, `(0.05, 0.05, 0.05)`, where `A = 40`, `z = 20`, `A/z = 2`.
+**One point can show neither claim**: bandwidth-independence needs at least two bandwidths, and
+`A/z` was never 1. What one point does show is real and is what the row says now.
+
+The fix was to run Python's own six-point default, which also gives `tightest` more than one live
+row — without which its *"Python's `min` keeps the FIRST minimum, so the comparison is STRICT"*
+comment is untested. **And the assertion written for the widened grid was typed from a sentence
+too, Python's this time.** `damping_floor`'s docstring says *"`A/z = 1` is the predicted minimiser
+and the grid straddles it"*, so the check asked for a ratio on each side, and went red. Emitted:
+
+| grid point | `A/z` | | grid point | `A/z` |
+|---|---|---|---|---|
+| `(0.05, 0.05, 0.05)` | 2 | | `(0.10, 0.10, 0.05)` | **1** |
+| `(0.05, 0.05, 0.025)` | **1** | | `(0.02, 0.20, 0.05)` | 2.75 |
+| `(0.05, 0.05, 0.10)` | 4 | | `(0.20, 0.02, 0.05)` | 2.75 |
+
+**The grid TOUCHES the minimiser twice and never goes below it** — "straddles" is one-sided, and
+that is a shipped Python claim this port measured rather than inherited. Two more readings fall
+out of the same table and neither is gated, because both are step 3's: the last two points carry
+the SAME `(A, z)` with the two `phi` clocks swapped (so `A` is symmetric in them, not a fifth
+bandwidth), and at the two `A/z = 1` rows `zeta_pred` and `floor` agree — the AM-GM equality
+condition, which is an ALGEBRAIC identity between two of the smoke's OWN expressions and therefore
+**not a gate**, rung 70's *"a gate computing my own formula twice"*.
+
+**Four typed predicates in two steps, all the same shape** — § 5.26.1 (f) and (g), and § (b) and
+this one — every one a sentence about the rung asserted before the number was read.
+
+##### (h) TWO SMALLER THINGS THE SAME REVIEW FOUND
+
+* **`survives` divides where Python returns `None`.** Python is `abs(e0)/abs(v0) if v0 else None`,
+  and `if v0` is falsy for **0.0** as well as for `None`; the port's `v0.map(..)` would hand back
+  `inf`/`NaN`. Unreachable at the shipped `disp = 0.05` — which is exactly why it is now spelled
+  `v0.filter(|x| *x != 0.0)` rather than left for a caller to discover.
+* **FOUR DEGENERATE BRANCHES THE SMOKE DOES NOT REACH, DISCLOSED** rather than left implied by its
+  own header: `DampingRow { n: 0 }` (a grid point with no riding-interior march),
+  `DampingRow::off_regime`, `RefModesArm::all_complex == None` (an arm with no rows), and
+  `RefModesRow::zeta == None` (a dominant root of exactly zero modulus). Step 3's ported gates do
+  not reach them either — the Python suite marches this same grid — so they are a **standing hole**
+  for step 5 to decide about, not a step-2 omission. No silent caps.
+
+**Not a defect, checked and dismissed:** `reference_modes` reports `zeta = (1.0, 1.0)` on the
+INCIDENCE arm at `taus = (0.005, 0.05, 0.05)`, which reads oddly against *"the freed root does not
+land on the real axis"*. There `A = 220`, `z = 20`, so `A/z = 11` and
+`zeta_pred = (A+z)/(2*sqrt(A z (1-k))) ~ 1.08 > 1` — overdamped, real pair, exactly what § 3's own
+formula gives at that bandwidth.
+
+##### (i) WHAT STEP 3 OWES
 
 `tests/rung69.rs` — the **25** ported gates of `test_rung69.py` (12 of them `slow`) — and whatever
 `slice_ab_smoke.rs` still needs beyond the five structural runs it carries now. Step 3 is also
