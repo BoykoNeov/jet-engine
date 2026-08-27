@@ -62,6 +62,9 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Slice Z pre-flight](rust-port-slice-z-preflight.md) — my own probe chunked by the `n_sample` the gate PASSES, not the count the STRIDE delivers, and at the right width the answer INVERTED
 - [Slice Z step 1](rust-port-slice-z-step1.md) — a shipped refusal blind to the carrier the rung below installs, and a count bar that had already been WRITTEN DOWN once, which reads like a measurement
 - [Slice Z step 2](rust-port-slice-z-step2.md) — one scope struct for a per-rung parameter, so a junior silently ignores what Python refuses; and the route witness that caught it twice was blind the third time
+- [Slice Z step 3](rust-port-slice-z-step3.md) — the census reported a 0/0 baseline and called its own CONTROLS invisible; and a gate's doc comment claimed a coverage it did not have
+- [Slice Z step 4](rust-port-slice-z-step4.md) — a pre-registered exemption of TWO keys measured EIGHT: it counted quantities, the dump emits names
+- [Slice Z step 5](rust-port-slice-z-step5.md) — the bar written to repair one vacuity exposed a second in the same gate, and two 'dead' branches are UNOBSERVABLE rather than unexercised
 - Slice T (46/47/48) steps [1](rust-port-slice-t-step1.md) [2](rust-port-slice-t-step2.md) [3](rust-port-slice-t-step3.md) [4](rust-port-slice-t-step4.md) — an EXACT ZERO blinds its own gate to the SIGN; 9/9 green and blind to a 24% error, so tabulate BAR MARGINS; a defect can survive because every READER is invariant under it; an injection matching TWICE applies nothing and still reports green
 
 ## Shipped rungs

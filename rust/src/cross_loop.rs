@@ -478,6 +478,7 @@ pub fn joint_fixed_point(
     required_of: &dyn Fn(f64) -> f64, command_of: &dyn Fn(f64) -> f64, q0: f64, fix_q: bool,
     tol: f64, cap: usize,
 ) -> JointFixedPoint {
+    crate::two_lag::bump_jfp();
     let (mut g, mut q, mut res) = (0.0f64, 0.0f64, 0.0f64);
     let (mut its, mut w_used) = (0usize, 1.0f64);
     for w in [1.0f64, 0.5, 0.25] {

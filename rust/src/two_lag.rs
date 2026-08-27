@@ -51,6 +51,44 @@ use crate::two_spool::{Spool, TwoSpoolEngine};
 use crate::two_spool_transient::{ForcedBleed, LaggedFuel, MarchedBleed, TwoSpoolTransientHooks};
 
 // ---------------------------------------------------------------------------------------------
+// COUNTERS — WHICH joint-IC SOLVER RAN, which no value key can see
+// ---------------------------------------------------------------------------------------------
+
+// § 5.24 P6: rung 66 solves the joint initial condition INLINE and UNDAMPED; rung 67 calls
+// [`crate::cross_loop::joint_fixed_point`], whose damped sweep takes `w = 1.0` on 36 of 39 shipped
+// calls. **Routing rung 66 through that solver is bit-exact and wrong**, and slice Z step 3's
+// injection I2 measured it: 0 of 64 gates and 0 of 35 335 oracle keys move. So the thing that
+// distinguishes the two spellings is WHICH FUNCTION RAN, and that is counted rather than inferred.
+thread_local! {
+    static R66_INLINE_IC: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+    static JFP_CALLS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+}
+
+/// Slice Z's dispatch census — the instrument § 5.24 P6's manufactured gate registers against.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct CensusZ {
+    /// Rung 66's inline undamped joint-IC loop was entered.
+    pub r66_inline_ic: u64,
+    /// [`crate::cross_loop::joint_fixed_point`] was called — from ANY caller.
+    pub jfp_calls: u64,
+}
+
+impl CensusZ {
+    pub fn take() -> CensusZ {
+        CensusZ { r66_inline_ic: R66_INLINE_IC.with(std::cell::Cell::get),
+                  jfp_calls: JFP_CALLS.with(std::cell::Cell::get) }
+    }
+
+    pub fn reset() {
+        R66_INLINE_IC.with(|x| x.set(0));
+        JFP_CALLS.with(|x| x.set(0));
+    }
+}
+
+pub(crate) fn bump_r66_inline_ic() { R66_INLINE_IC.with(|x| x.set(x.get() + 1)); }
+pub(crate) fn bump_jfp() { JFP_CALLS.with(|x| x.set(x.get() + 1)); }
+
+// ---------------------------------------------------------------------------------------------
 // THE CELLS — three swaps, zero additions
 // ---------------------------------------------------------------------------------------------
 
@@ -298,6 +336,7 @@ pub fn r66_integrate_fuel_cascade(
     let mut q = match b0 { Some(x) => x, None => ic(command(a, h, mf0)) };
     let mut res = f64::INFINITY;
     let mut its = 0usize;
+    bump_r66_inline_ic();
     for k in 1..=60usize {
         its = k;
         let gn = ic(required(a, h, q, mf0));
