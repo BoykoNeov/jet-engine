@@ -14114,11 +14114,45 @@ The whole cost of that being right is **one `From` impl** and no exhaustive `mat
 the gate asserts the two references produce the **identical** arm, which is the positive statement
 that the band's SIGN lives in the CELLS (`clamp_v`, `check_v0`) and nowhere in a value.
 
-##### (i) WHAT STEP 2 OWES
+##### (i) A THIRD TAUTOLOGY, INSIDE THE FIX FOR THE SECOND
+
+The replacement width gate shipped with `assert_eq!(UNPORTED_AT_STEP1.len() + 1, 10, …)` beside
+the exhaustive literal. The array is `[&str; 9]`, so `.len()` is 9 **at compile time** and the
+line is `assert_eq!(10, 10)` — written inside the very test whose doc comment explains that class,
+and the third instance in one step. Removed in a follow-up commit; the exhaustive `TripleHooks`
+literal was always the real gate, and the two-tens arithmetic is now the comment it actually is.
+
+##### (j) **REGISTERED BEFORE STEP 2 WRITES `_triple_rig`: `_ref`'s TWO READERS HAVE DIFFERENT
+LIFETIMES, AND ONE OF THEM WOULD PASS A WRONG PORT**
+
+Read against the Python bodies rather than assumed:
+
+* `reference_bill` runs `triple_bill` **entirely inside** the scope
+  (`self._with_ref(ref, self.triple_bill, …)`), so `_ref` may be read throughout.
+* `reference_gains`, `reference_modes` and `ring_visibility` build the rig inside the scope and
+  march the returned machine **after it has closed** — `m_p = self._with_ref("phi",
+  self._triple_rig, …)[0]`, then `m_p._stator_march(…)` / `m_p._triple_gains_at(…)` well outside.
+
+**So the reference must be CONSUMED AT CONSTRUCTION** — baked into which limiter `_triple_rig`
+armed — and never re-read from the carrier by a downstream reader. A Rust reader that consults
+`ref_` after the guard drops sees `None`, falls through `_triple_rig`'s own
+`"phi" if stator_lim else "inc"`, and labels the wrong arm.
+
+**AND THE OBVIOUS KEY CANNOT SEE IT.** `reference_bill`'s `bare` / `F` / `V` / `FV` cells are
+identical between the two references **by construction** (the rung's own docstring says so), so
+`common_max_rel` would still read ~0 with the defect live. The discriminating keys are the ones
+that must **DIFFER** between the arms — `pair_RV`, `pair_CV`, `c1`, `zeros`. Step 4's dump owes
+those, and step 5's dispatch gate for `_triple_rig` owes an injection that closes the scope early.
+
+##### (k) WHAT STEP 2 OWES
 
 The eight swapped bodies plus `at_lever`, carrying the band flip by § 5.26 (iv)'s emitted table
 rather than by a body read; `_cubic_roots_c` (P4 — all 80 Newton steps, the 72 exhausted calls
-included); `_invariants`; and the six readers. `UNPORTED_AT_STEP1` shrinks to nothing as it lands.
+included); `_invariants`; and the six readers, under (j)'s constraint.
+
+**GATE 1 AND `UNPORTED_AT_STEP1` ARE STEP-1 SCAFFOLDING AND STEP 2 DISMANTLES THEM CELL BY CELL** —
+the array shrinks to nothing and the nine-panic gate goes with it. Said here so a step-3 reader
+does not wonder why the file shrank, or restore a gate whose whole content was *"not yet ported"*.
 
 ### ~~The four~~ **THE EIGHT** runtime-introspection tests, one by one
 

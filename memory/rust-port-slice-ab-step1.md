@@ -47,6 +47,12 @@ runner's exit code and believed the exit code. [[windows-tooling-file-hazards]] 
 this. **How to apply:** an exit code with no output is not a result; re-run in the foreground, or
 treat the empty output as the finding.
 
+**AND A THIRD TAUTOLOGY LANDED INSIDE THE FIX FOR THE SECOND** — the replacement width gate
+shipped with `assert_eq!(UNPORTED_AT_STEP1.len() + 1, 10)` beside the real literal, and `.len()` on
+a `[&str; 9]` is 9 at compile time. Three in one step, the last one inside the test whose doc
+comment explains the class. **How to apply:** after fixing a vacuity, re-read the fix for the same
+defect before shipping it — the habit that produced the first one is still running.
+
 **One found-not-fixed, from hoisting rung 69's `lp_disabled` guard above the build:** rung 68's
 sibling guard in `three_loop.rs` sits after a build that already refuses `lp_disabled` with a
 rung-57 message, so it is provably dead — a defence with no reader inherited from slice AA. Booked

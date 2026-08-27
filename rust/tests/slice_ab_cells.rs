@@ -275,11 +275,15 @@ fn the_triple_table_is_exactly_ten_cells_wide() {
         triple_rig: NO_TRIPLE.triple_rig,
         with_ref: NO_TRIPLE.with_ref,
     };
-    // 10 TABLE CELLS = 9 that rung 69 SWAPS + 1 it ADDS (`with_ref`).
+    // 10 TABLE CELLS = 9 that rung 69 SWAPS + 1 it ADDS (`with_ref`) -- the literal above.
     // 10 SWAPS       = those same 9 cells + `__init__`, which is NOT a cell (no shipped table
     //                  carries a constructor hook; it ports as the builder's four `assert!`s).
-    // The two tens are different tens, and this is the only place the arithmetic is written out.
-    assert_eq!(UNPORTED_AT_STEP1.len() + 1, 10, "9 swapped cells + `with_ref` = the table's width");
+    //
+    // **AND THAT ARITHMETIC IS A COMMENT, NOT AN ASSERTION, BECAUSE THE ASSERTION WAS A THIRD
+    // TAUTOLOGY.** It read `assert_eq!(UNPORTED_AT_STEP1.len() + 1, 10)` -- and the array is
+    // `[&str; 9]`, so `.len()` is 9 at compile time and the whole line is `assert_eq!(10, 10)`.
+    // Written INSIDE the test whose own doc comment explains that class. The exhaustive literal
+    // above is the real gate and needs no help from a tally.
 }
 
 // =============================================================================================
