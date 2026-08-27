@@ -1677,7 +1677,7 @@ next starts. The tree is green at every phase boundary; there is no big-bang cut
 | **4** | Nozzle & turbine marches, rungs 25–30 — own convergence behaviour, hence separate. ~~**AUTHORISED 2026-08-12; three DEPENDENCY slices**~~ **DONE** | 2–3 | ✅ slice F: `march_oracle.rs` (**912/912** bit-exact vs PyPy, on 49 distinct march exit roots) + 2 rung suites (32 tests) in a new `march.rs`; the FOURTH "exactly"-class claim and the FIRST to survive — because it compares a COPY, not a rederivation (§ 4.12) · ✅ slice G: `no_march_oracle.rs` (**776/776**, and only 8.0 % CPython-identical — the sharpest dump in the port) + 2 rung suites (28 tests); slice F's discriminator made TWO pre-registered predictions and both HELD (§ 4.14) · ✅ slice H: `tt_oracle.rs` (**270/270**) + 2 rung suites (14 tests); RATIO ≠ ENERGY measured ANTI-correlated, and the one slice not pre-registered — all three of its guessed census bars were wrong (§ 4.15) |
 | **5** | ~~Steady matchers — rungs 31–33, 38–39, **41**, 42, 53–56, 61~~ **DONE 2026-08-17, seven slices (I·J·K·L·M·N·O).** ~~**Contains the diamond** (§ 6)~~ **PRE-FLIGHT DONE (§ 5.3); AUTHORISED 2026-08-13.** The diamond is discharged; the phase's structural content is the **five-name virtual set** (`_solve_turbine` — claimed by PHASE 6 — `match`, `_hp_eta_loop`, `_lp_eta_loop`, `at_setting`) and `_INC_MAX`'s live shadow | 4–6 | ✅ slice I (rungs 31/33): `offdesign_oracle.rs` (**3951/3951** bit-exact vs PyPy, incl. **961 discrete** keys) + 2 rung suites (17 tests) in a new `matcher.rs`; the crate's FIRST fallible paths, its FIRST virtual hook, and the two rungs re-gated as counts over BIT PATTERNS (§ 5.5) · ✅ slice J (rung 32): `map_oracle.rs` (**7 252/7 252**) + `rung32.rs`; the oracle found BLIND to a mis-spelled square, so the rule is gated directly (§ 5.6) · ✅ slice K (rungs 38/39): `two_spool_oracle.rs` (**11 812/11 812**, and only 46.3 % CPython-identical) + 2 rung suites (19 tests) in a new `two_spool.rs`; all six predictions held, and the CPython arm REFUTED an assertion inherited from slice I — the pass-count instability needs a SOLVER-derived property, not the equilibrium gas (§ 5.7) · ✅ slice L (rungs 41/42): `slice_l_oracle.rs` (**25 458 keys**) + 2 rung suites (12 + 12 tests) in a new `bleed.rs`, plus the crate's first FALLIBLE TWINS; nine predictions all settled, and a claim the SHIPPED SOURCE carried found wrong (§ 5.8) · ✅ slice M (rungs 53/54): `slice_m_oracle.rs` + 2 rung suites (24 + 25 tests) in a new `stator.rs`, all six steps shipped; its probe **OVERTURNED slice J's `solve_n` zero-firing verdict**, and a bar asserted in a shipped doc comment was refuted by a third of the dump (§ 5.9) · ✅ **PHASE 5 COMPLETE** — the last two slices were N (55/56) and O (61), sized in § 5.9; **N is PRE-REGISTERED (§ 5.10), 10 predictions**, and its probes **REFUTE § 5.9 (c) twice** — reading a method's body cannot see its state's CARRIER — **steps 1–4 SHIPPED** (step 1: P2 held at 535 names, `diff` empty, and the ±1 that would not reconcile was slice I's last `#[ignore]` surviving a rule slice M had already retired · step 2: `stage.rs` + `slice_n_smoke.rs`, **1 337 keys bit-exact first run** over seven enumerated cells, and it **CORRECTS § 5.10 (iii)** — `_P_FLOOR`'s deadness is a DERIVED threshold `e > 1.001` in the two floor constants, not a property of the sweep · step 3: `StageStackCore` + `R55`/`R55_TWO`, and the carrier lesson RECURRED — a FOURTH gated-code edit, at step 3, in a file step 1 never opened, because the plan asked what carrier `at_setting` needs and never what carrier the EFFICIENCY-LOOP hook needs; plus an `_INC_MAX` shadow § 5.3's pre-flight had called correctly and the porting slice mis-spelled · step 4: `slice_n_oracle.rs`, **72 520 keys bit-exact first run** + a 5 649-key equilibrium arm and a 41 560-key CPython one, and § 5.10's own censuses turned out to be measured on TWO grids — (i)/(iv) reproduced to the firing, (iii)/(vi) came from a 240-cell probe sweep, so the census is EMITTED and compared rather than restated; the CPython arm's *discrete → bits* tier had to SPLIT, because all 520 interpreter flips are argmin indices at the design throttle) |
 | **6** | Transients — rungs 34–37, 40, 43–52 (the fuel-side limiter family). **AUTHORISED 2026-08-17; PRE-FLIGHT DONE (§ 5.12). ALL SIX SLICES SHIPPED (§ 5.13–§ 5.18) — PHASE 6 IS COMPLETE 2026-08-20. PHASE 7 NEEDS ITS OWN AUTHORISATION.** The phase's structural content is a **six-name virtual set** — `integrate_fuel`, `_close`, `_close_fuel`, `_surge_fuel`, `_instant_tail`, `_powers` — **every one of which crosses into phase 7**, so there is no phase-6-internal hook and the `Hooks` table appears at slice R, not P. Six slices, ordered by `_degenerate`: **P** (34/35/36 `SpoolTransient`) · **Q** (37) · **R** (40/44) · **S** (43/45, `integrate_fuel` ENTIRE) · **T** (46/47/48 gates) · **U** (49/50/51/52 gates). The `4257–4506` object block spans two phases — `IncidenceLimiter` is rung **60** | 4–6 (**light** — 156 tests over 15 files, and phase 3 took five slices for 204) | ✅ slice P: `spool_oracle.rs` (**7 302** bit-exact) + 3 rung suites · ✅ slice Q: `combustor_oracle.rs` (**2 066**) + 1 suite · ✅ slice R: `two_spool_transient_oracle.rs` (**6 853 + 1 120** bit-exact vs PyPy on the first run, + a tiered CPython arm reproducing probe 4's 5-of-12 exactly) + `rung40.rs`/`rung44.rs` (17 tests) + `slice_r_smoke.rs`/`slice_r_dispatch.rs`; a ported suite found running its NEIGHBOUR's gas (§ 5.15 step 4) · ✅ slice S (43/45, `integrate_fuel` ENTIRE — the phase's largest): `fuel_transient_oracle.rs` (**4 671** CPG + **1 133** gas keys bit-exact vs PyPy on the first run) + `rung43.rs`/`rung45.rs` (20 tests) + `slice_s_smoke.rs`/`slice_s_dispatch.rs`, five steps; § 5.12's CPython-detector IOU CLOSED by measurement on the three TPG gases the fuel path admits (§ 5.16) · ✅ slice T (46/47/48 gates) § 5.17, **ALL FOUR STEPS SHIPPED** — the FIRST slice whose source already shipped, so its predictions target slice S's ungated ~40 % rather than a port. `rung46.rs` (7 fns for 6, one a DISCLOSED divergence) + `rung47.rs` (9 for 9) + `rung48.rs` (16 for 16), **0 source lines** after step 1 until step 4's one behaviour-neutral HOIST; step 2 measured the rung-47 suite to have **no value content** (two injections move 13 of 18 readings by up to 24 %, all 9 gates pass) and step 3 found its one surviving defect unobservable to the WHOLE project — every reader of `fuel_removed` is scale-invariant; step 4's `topping_oracle.rs` (**1 729** keys bit-exact vs PyPy on the first run + a CPython arm, 4 tests in 53 s) HOLDS all three of those defects and corrects the slice's OWN finding 6 — `test_rung46.py`'s `~1645` peak is right, it is measured on a different GAS · ✅ **slice U (49/50/51/52 gates) — § 5.18, four probes measured first; 63 gates + 9 readers over 418 source lines, five steps; **ALL FIVE SHIPPED — SLICE U AND PHASE 6 COMPLETE** — `rung49.rs` (17 fns for 17, 0.38 s) over `SurgeRelief`/`surge_relief`/`floor_sweep` and finding 6's `read_point`, **226 source lines added and 0 executable lines changed**, **575 keys over all 23 gate cells bit-exact vs PyPy on the first run** — and then ELEVEN injections found **five of the 25 keys have no gate in either language**, with the one-ulp boolean protected REDUNDANTLY by two spellings (breaking either alone is invisible, breaking both flips it, and all four builds are 17/17). Its refusal census came back COMPLETE (all 14 marcher refusals present in Rust) but found **three of Python's own `lp_disabled` refusals UNREACHABLE over all 255 arming combinations**, so four gates named for four rungs fire ONE assert; and — inverting slice T's finding 2 — one decision key (`both_edges_inside_ramp`) sits at **ONE ULP**. **Step 2** adds the 27-field `ReleaseRelief` + `release_relief` (complete, with rung 51's `tau_rel`) + `release_sweep` in **229 added and ZERO deleted lines**, and `rung50.rs` (15 fns for 15, 15/15 in 0.90 s), **1 323 keys over all 49 gate cells bit-exact vs PyPy on the first run**; then FOURTEEN injections found the file's ONE reader of the release edge's LOCATION sweeps **none of the two knife-edge cells**, so a `k*ds` coordinate moves `n_engaged` 8→7 and `s_rel` by a WHOLE CELL past all 15 gates. **P2 CONFIRMED by measurement** (the gate named for rung 50 fires rung 49's assert, full-string), 16 of the 27 keys have NO reader — `deficit_at_release`, the rung's own named quantity, among them — and `fuel_removed` is held only as a DIFFERENCE between two copies: break all THREE and rungs 48/49/50 are green. **Step 3** (`rate_sweep` + `deficit_curve`, **65 added / 0 deleted** — two `map` bodies and one assert, which IS P6's check) + `rung51.rs` (16 for 16, 16/16 in 0.91 s on the FIRST compile), **972 keys over 36 cells bit-exact**, cell list READ OFF the suite's own memo; its one new function is exercised only on cells CHOSEN FOR INERTNESS — dropping `tau_rel`'s forwarding moves 2 of 972 keys and both are the record echoing its own argument back. **Step 4** (34-field `LagRelief` + `FactorizationGrid` + three readers, **294 added / 0 deleted**) + `rung52.rs` (15 for 15, 15/15 in 0.75 s including all four of Python's `slow` gates, so **no `#[ignore]`**), **972 keys bit-exact**, **P5 EXACT** (`credit_spread == 0.0` bit-for-bit); ten injections and TWO wrong predictions with ONE cause — `g_at_cross` and `min_phi_hp_lag` are read only as INVARIANCES ACROSS a sweep, so **a gate that reads a key only by comparing it with itself cannot see what the key IS**, and a suite whose THESIS is invariance is structurally that shape. **Step 5**: `release_oracle.rs` + `dump_release.py`, **4 179 keys over eight sections bit-exact vs PyPy on the first run AND vs CPython (0 drifts, 0 flips, no tolerance tier)**, 5 gates, three ADDED sections (both NaN arms reached for the first time in this port, `rate_sweep` inside the window, the knife-edge coordinate) — and TWO near-vacuous gates caught in that one step: the manufactured cells were first written against a re-spelled copy of the loop (fixed by lifting `crossing_census` out, behaviour-neutrally, + a fifth gate that the reader and the manufactured cells share it) and the CPython arm routed every disagreement to a PRINTOUT and could not fail on a number |
-| **7** | **The ladder, rungs 57–60 and 62–84** — the `Hooks` table from § 2, one module per rung. (**61 is PHASE 5's**, not this phase's — it is the steady `StatorBleedMatcher`, and it was double-listed here until the slice-K audit) **PRE-FLIGHT DONE (§ 5.19); PHASE 7 AUTHORISED 2026-08-20 — slice V is PRE-REGISTERED (§ 5.20), and its six probes REFUTE § 5.19 (x) on slice V: the `&Scope` lands at slice Y/AA, and V's real content is `_arm`'s PERMANENT mutation of `map_lp`/`map_hp` from inside a `&self` hook — a shape the pre-flight's `try/finally` census could not match. Carrier: `Cell<ComponentMap>`.** The phase's structural content is a **36-cell hook table** (§ 2 said 8, § 5.12 said 6, the enumeration says **38** = **28 new + 8 already shipped + 2 Rust deletes**), **16 non-zero-argument `super(LimitedBleedTransient, self)` pins** that `..R63` cannot express, and **23 dynamically-scoped fields behind 52 save/set/restore guards** — 9 of them the current RK4 state, which forces a `Scope` parameter on **7 of the 36 cells** and closes § 6's narrowed-view question at zero cost. Fifteen slices **V…AJ**, ordered by where the TABLE GROWS | ~~5–8~~ **15–20** (§ 5.19 (viii): **4.34×** phase 6's source, **3.49×** its collected tests, **263 of 548** carrying `slow` against phase 6's 10 of 157) | ~~27/27 reduce-to-prior bit-exact~~ **that is a spine, not a gate** — the phase owes per-slice **oracle dumps** bit-exact vs PyPy, the **488 ported gates**, the 27 reduce contracts, **and dispatch gates** (`slice_r_dispatch.rs`'s precedent — no value key can witness a hook table) — **and, from slice V, CARRIER gates**: § 5.20 (ii) measures a local-armed-core port moving `margin_min_lp` **15.4 %** with **59/59** ported gates green, so a manufactured-carrier-bug gate is owed beside the manufactured-cell-swap one. **SLICE V COMPLETE — all five steps SHIPPED** — step 4's `slice_v_oracle.rs` + `dump_slice_v.py` is **6 819 keys bit-exact vs PyPy on the first run AND vs CPython 3.14 (0 drifts, 0 flips, no tolerance tier)** over eight sections, and it **CATCHES both carrier injections the 59 ported gates miss** (I1 at 87 keys, I2 at 709) while REACHING the 15.431 % channel step 3 had booked forward; and step 5's `slice_v_dispatch.rs` (6 gates) DISCHARGES P5 — the manufactured carrier gate, whose four golden-free assertions survive a regenerated golden, with the `surge_margin` collapse (*a scoped port reads a SCHEDULED machine bit-for-bit as an UNSTATORED one*) as its bar-free headline. **SLICE W IS PRE-REGISTERED (§ 5.21) off five probes, and its cell census REFUTES § 5.19 (x)'s column over the WHOLE phase, not just over W: the measured total is **35** (8 shipped + 27 to build), not 28, and the four names the hand-written column missed are `at_stator` (V), `at_lever` (W — 17 overriders, 46 call sites), `_quad_gains_at` (AD) and `_with_coord` (AF). `at_stator` is NOT the inert deferral § 5.20 booked: a shipped rung-63 gate reads it directly and the port's current `-> ScheduledStatorCore` return flips its verdict from `True/True` to `False/False`.** **SLICE W COMPLETE — all five steps SHIPPED.** Step 4's `slice_w_oracle.rs` + `dump_slice_w.py` is **9 422 keys bit-exact vs PyPy AND vs CPython 3.14** over ten sections, with **ONE declared cross-interpreter exemption that is itself a finding**: CPython 3.12+'s `sum()` is Neumaier-COMPENSATED and PyPy's is naive, so 7 of the 9 `commanded_level` `mean` keys differ by LANGUAGE rather than by code — the first arm in the port to catch a divergence in the interpreter instead of the port, and it falsified a claim in the shipped Rust's own comment. Step 5's `slice_w_dispatch.rs` (5 gates, zero source lines) builds the TWO instruments step 3 measured to be blind — `b_of_calls` beside the eight inert reduced/bled pairs, and a `Floor::Incidence` cell beside the `Floor::Phi` one the suites' inputs cannot discriminate — discharges P2, and carries a **6-row mutation table** in which one of its own gates lets a HALF-APPLIED injection through. **SLICE X COMPLETE** (rung 64; 318 oracle keys bit-exact on both interpreters, and its closing step found a zero-count assertion satisfied by DELETING the branch it names). **SLICE Y COMPLETE 2026-08-27 — all five steps SHIPPED.** Step 4’s `slice_y_oracle.rs` + `dump_slice_y.py` is **35 994 keys bit-exact vs PyPy AND vs CPython 3.14 on the first run**, over nine sections, with **NOTHING coarsened** (the readers were TIMED first, so P8 is discharged by running the suite’s own grid rather than by disclosing a substitute); its six-injection census then measured WHAT THE ORACLE WOULD CATCH and found its blind spots to be **exactly** the three the pre-registration named. Step 5’s `slice_y_dispatch.rs` (8 gates, no golden read by any assertion) gates those three, REPAIRS a fourth that was a real bug (`f64::max` is not Python’s `max` — they differ on a NaN in the FIRST position, which is exactly where `laws_held` puts one), and its nine-row mutation table caught **one of its own gates testing HALF of what it named**: a save-and-restore guard whose SET and RESTORE halves were owned by two different files, with neither covering both. |
+| **7** | **The ladder, rungs 57–60 and 62–84** — the `Hooks` table from § 2, one module per rung. (**61 is PHASE 5's**, not this phase's — it is the steady `StatorBleedMatcher`, and it was double-listed here until the slice-K audit) **PRE-FLIGHT DONE (§ 5.19); PHASE 7 AUTHORISED 2026-08-20 — slice V is PRE-REGISTERED (§ 5.20), and its six probes REFUTE § 5.19 (x) on slice V: the `&Scope` lands at slice Y/AA, and V's real content is `_arm`'s PERMANENT mutation of `map_lp`/`map_hp` from inside a `&self` hook — a shape the pre-flight's `try/finally` census could not match. Carrier: `Cell<ComponentMap>`.** The phase's structural content is a **36-cell hook table** (§ 2 said 8, § 5.12 said 6, the enumeration says **38** = **28 new + 8 already shipped + 2 Rust deletes**), **16 non-zero-argument `super(LimitedBleedTransient, self)` pins** that `..R63` cannot express, and **23 dynamically-scoped fields behind 52 save/set/restore guards** — 9 of them the current RK4 state, which forces a `Scope` parameter on **7 of the 36 cells** and closes § 6's narrowed-view question at zero cost. Fifteen slices **V…AJ**, ordered by where the TABLE GROWS | ~~5–8~~ **15–20** (§ 5.19 (viii): **4.34×** phase 6's source, **3.49×** its collected tests, **263 of 548** carrying `slow` against phase 6's 10 of 157) | ~~27/27 reduce-to-prior bit-exact~~ **that is a spine, not a gate** — the phase owes per-slice **oracle dumps** bit-exact vs PyPy, the **488 ported gates**, the 27 reduce contracts, **and dispatch gates** (`slice_r_dispatch.rs`'s precedent — no value key can witness a hook table) — **and, from slice V, CARRIER gates**: § 5.20 (ii) measures a local-armed-core port moving `margin_min_lp` **15.4 %** with **59/59** ported gates green, so a manufactured-carrier-bug gate is owed beside the manufactured-cell-swap one. **SLICE V COMPLETE — all five steps SHIPPED** — step 4's `slice_v_oracle.rs` + `dump_slice_v.py` is **6 819 keys bit-exact vs PyPy on the first run AND vs CPython 3.14 (0 drifts, 0 flips, no tolerance tier)** over eight sections, and it **CATCHES both carrier injections the 59 ported gates miss** (I1 at 87 keys, I2 at 709) while REACHING the 15.431 % channel step 3 had booked forward; and step 5's `slice_v_dispatch.rs` (6 gates) DISCHARGES P5 — the manufactured carrier gate, whose four golden-free assertions survive a regenerated golden, with the `surge_margin` collapse (*a scoped port reads a SCHEDULED machine bit-for-bit as an UNSTATORED one*) as its bar-free headline. **SLICE W IS PRE-REGISTERED (§ 5.21) off five probes, and its cell census REFUTES § 5.19 (x)'s column over the WHOLE phase, not just over W: the measured total is **35** (8 shipped + 27 to build), not 28, and the four names the hand-written column missed are `at_stator` (V), `at_lever` (W — 17 overriders, 46 call sites), `_quad_gains_at` (AD) and `_with_coord` (AF). `at_stator` is NOT the inert deferral § 5.20 booked: a shipped rung-63 gate reads it directly and the port's current `-> ScheduledStatorCore` return flips its verdict from `True/True` to `False/False`.** **SLICE W COMPLETE — all five steps SHIPPED.** Step 4's `slice_w_oracle.rs` + `dump_slice_w.py` is **9 422 keys bit-exact vs PyPy AND vs CPython 3.14** over ten sections, with **ONE declared cross-interpreter exemption that is itself a finding**: CPython 3.12+'s `sum()` is Neumaier-COMPENSATED and PyPy's is naive, so 7 of the 9 `commanded_level` `mean` keys differ by LANGUAGE rather than by code — the first arm in the port to catch a divergence in the interpreter instead of the port, and it falsified a claim in the shipped Rust's own comment. Step 5's `slice_w_dispatch.rs` (5 gates, zero source lines) builds the TWO instruments step 3 measured to be blind — `b_of_calls` beside the eight inert reduced/bled pairs, and a `Floor::Incidence` cell beside the `Floor::Phi` one the suites' inputs cannot discriminate — discharges P2, and carries a **6-row mutation table** in which one of its own gates lets a HALF-APPLIED injection through. **SLICE X COMPLETE** (rung 64; 318 oracle keys bit-exact on both interpreters, and its closing step found a zero-count assertion satisfied by DELETING the branch it names). **SLICE Y COMPLETE 2026-08-27 — all five steps SHIPPED.** Step 4’s `slice_y_oracle.rs` + `dump_slice_y.py` is **35 994 keys bit-exact vs PyPy AND vs CPython 3.14 on the first run**, over nine sections, with **NOTHING coarsened** (the readers were TIMED first, so P8 is discharged by running the suite’s own grid rather than by disclosing a substitute); its six-injection census then measured WHAT THE ORACLE WOULD CATCH and found its blind spots to be **exactly** the three the pre-registration named. Step 5’s `slice_y_dispatch.rs` (8 gates, no golden read by any assertion) gates those three, REPAIRS a fourth that was a real bug (`f64::max` is not Python’s `max` — they differ on a NaN in the FIRST position, which is exactly where `laws_held` puts one), and its nine-row mutation table caught **one of its own gates testing HALF of what it named**: a save-and-restore guard whose SET and RESTORE halves were owned by two different files, with neither covering both. **SLICE Z IS PRE-REGISTERED (§ 5.24) off NINE probes** — rungs 66 + 67, **1 496 source lines (3.12× slice Y) and 38 gates**, with **0 cells added by either rung** (the emitter confirms § 5.19 (x) a third and fourth time; both swap the same three already-open cells). Its leading finding landed on its OWN INSTRUMENT: the one float `sum()` in either rung is `cross_identity`’s `P_mid`, and the probe that asked whether CPython’s compensated `sum()` diverges from PyPy’s naive one chunked the products by the `n_sample` the gate PASSES (8) rather than the count the STRIDE delivers (9). At the right width the answer INVERTS — **a probe that reads a grid parameter instead of the delivered one measures a different function, and the answer it returns can be the opposite one.** The divergence is one ulp on 1 of `cross_identity`’s 3 rows and, measured rather than feared, propagates to exactly **2 of `_window`’s 8 keys without amplifying**. |
 | **8** | `main.py` replacement; adjudicate the fragile rungs; re-anchor the fingerprint; **delete the Python**. **BLOCKED ON ONE OPEN PORT DIVERGENCE** — `components::sonic_throat`’s bracket `assert!` is a `panic!` where Python’s is a CATCHABLE `AssertionError` that every marcher’s `except AssertionError: break` relies on; measured at slice T step 1 (§ 5.17), 28 call sites of which ≥10 already sit in fallible chains, note at the definition | 2–3 | full suite green on Rust alone |
 
 **THE TABLE'S OWN COVERAGE WAS NEVER AUDITED UNTIL SLICE K, AND IT HAD BOTH FAILURE MODES.**
@@ -12195,6 +12195,278 @@ closure, so the trial solve never re-enters rung 64's) and a manufactured nest s
 tables, plus `py_max3`), `rung65.rs` (22 gates, 16× faster than PyPy's 21), `slice_y_smoke.rs`
 (4), `slice_y_oracle.rs` (35 994 keys, two interpreters, zero tolerance tiers) and
 `slice_y_dispatch.rs` (8). The next slice is **Z**.
+
+
+
+### 5.24 SLICE Z (rungs 66 + 67, `TwoLagCascadeTransient` + `CrossLoopCascadeTransient`) — PRE-REGISTERED, nine probes MEASURED first
+
+`M:\claud_projects\temp\rust-phase7\probe_z1.py` … `probe_z9.py`, PyPy (plus CPython 3.14 on
+probe 8). Every table below is **EMITTED** by one of them (§ 5.19 (xi)).
+
+#### (i) THE LEADING FINDING — **A PROBE THAT READS A GRID PARAMETER INSTEAD OF THE DELIVERED ONE MEASURES A DIFFERENT FUNCTION, AND THE ANSWER IT RETURNS CAN BE THE OPPOSITE ONE**
+
+Rung 67 has exactly ONE float `sum()` — `cross_identity`'s `P_mid = sum(prods) / len(prods)`.
+(The other three `sum(...)` sites in the two rungs are `sum(1 for …)`, integer counts, and rung
+66 has none.) That is slice W's exemption shape verbatim: CPython 3.12+'s `sum()` is
+Neumaier-COMPENSATED and PyPy's is naive, so a Rust left fold can agree with one interpreter and
+not the other. Probe 6 captured the products the shipped reader actually multiplies; probe 8 asks
+both interpreters for `sum()` of that same list.
+
+**PROBE 8's FIRST ANSWER WAS "NO DIVERGENCE", AND IT WAS WRONG.** It chunked the captured
+products by `n_sample = 8` — the value the gate PASSES. Probe 9 then printed the reader's own
+`n_sample` back and it is **9**: `sub = ride[:: max(1, len(ride) // n_sample)]` is a STRIDE, so
+the delivered count is `len(ride) // (len(ride) // n_sample)` and not `n_sample`. Chunked at 8,
+probe 8 was summing windows the reader never sums. Chunked at 9 the answer inverts:
+
+| chunk (9 wide) | PyPy `sum` | CPython 3.14 `sum` | naive left fold | verdict |
+|---|---|---|---|---|
+| 0 | `-0.1804633613623593` | `-0.1804633613623593` | `-0.1804633613623593` | agree |
+| 1 | `-0.18349781418498853` | `-0.18349781418498856` | `-0.18349781418498853` | **CPython DIFFERS** |
+| 2 | `-0.18747977463936186` | `-0.18747977463936186` | `-0.18747977463936186` | agree |
+| 3 | `-0.18349781418498853` | `-0.18349781418498856` | `-0.18349781418498853` | **CPython DIFFERS** |
+
+Chunks 1 and 3 are the SAME nine products (the `tau_gov = 0.05` row, reached twice), so **1 of
+`cross_identity`'s 3 rows** carries the divergence. `P_mid` there is
+`-0.02038864602055428` on PyPy and `-0.020388646020554284` on CPython — **one ulp**.
+
+**AND THE AMPLIFICATION QUESTION IS ANSWERED BY MEASUREMENT, NOT BY FEAR** (slice M's rule).
+`P_mid` feeds `self._window(P_mid)`, whose six numeric outputs run through `**0.5` twice. Both
+values pushed through `_window` in ONE interpreter:
+
+| `_window` key | ulps apart |
+|---|---|
+| `P` | **1** |
+| `T_over_tau` | **1** |
+| `k`, `zeta`, `rho_lo`, `rho_hi`, `reciprocal` | **0** |
+
+**Two of eight keys move, by one ulp, and five absorb it exactly.** So the CPython exemption
+slice Z owes at step 4 is a NAMED, COUNTED pair on one row — not a tolerance tier.
+
+**MEASURED ON THIS GRID, NOT PROVED OF THE READER.** The chunk width is
+`len(ride) // n_sample`, and probe 9 measured `len(ride)` at **135 / 97 / 91** for the three
+`tau_gov` values at the suite's own `ds = 0.005`. A different `ds` gives a different stride and
+possibly a different width; step 4 must re-read the delivered count rather than inherit the 9.
+
+#### (ii) THE SCOPE, ENUMERATED — **AND "0 CELLS" IS CONFIRMED BY AN EMITTER FOR BOTH RUNGS**
+
+**Source** (`ast` spans): `TwoLagCascadeTransient` **653** lines (10854–11506), 11 methods;
+`CrossLoopCascadeTransient` **843** lines (11509–12351), 15 methods — **1 496 lines.**
+
+**AND THE “LARGEST SO FAR” IS A MEASURED RANKING, NOT A SUPERLATIVE** —
+[[rust-port-guessed-census-bars]] is five typed count bars that were all wrong, and a
+phase-7 span table had never been emitted. Probe 1, over every class each phase-7 slice
+ports:
+
+| slice | Python source lines | classes |
+|---|---|---|
+| **Z (66–67)** | **1 496** | `TwoLagCascadeTransient` 653 + `CrossLoopCascadeTransient` 843 |
+| V (57–60) | 1 140 | `ScheduledStatorTransient` 1 023 + `IncidenceLimiter` 75 + `StatorSchedule` 42 |
+| W (62–63) | 908 | `ScheduledBleedTransient` 858 + `BleedSchedule` 50 |
+| X (64) | 505 | `LimitedBleedTransient` 438 + `BleedLimiter` 67 |
+| Y (65) | 479 | `LaggedBleedTransient` 479 |
+
+So Z is the largest, by 31 % over V — **and the units matter**: slice W turned 908 Python
+lines into a 1 869-line `bleed_transient.rs`, a 2.06× expansion. Carried across, slice Z's
+Rust lands near **3 000 lines**. That is an ESTIMATE, labelled as one.
+
+**Cells — probe 1's emitted census. BOTH rungs add ZERO and swap the SAME THREE:**
+
+| rung | SWAPS | PLAIN (new, never overridden) | cells ADDED |
+|---|---|---|---|
+| 66 | `_stator_march`, `at_lever`, `integrate_fuel` | `_eig`, `_gains`, `_integrate_fuel_cascade`, `_violation`, `cascade_bill`, `cascade_identity`, `marginal_mode_cascade`, `merge_identity` (8) | **0** |
+| 67 | `_stator_march`, `at_lever`, `integrate_fuel` | `_exceed`, `_gains_cross`, `_integrate_fuel_cross`, `_joint_fixed_point`, `_sign_changes`, `_window`, `cross_bill`, `cross_identity`, `detector_sensitivity`, `joint_ic_corners`, `marginal_mode_cross`, `oscillation_window` (12) | **0** |
+
+§ 5.19 (x) predicted **0** for slice Z and the emitter agrees — **the third and fourth rows of
+that column an emitter confirms**, after X's 1 and Y's 0. All three swapped cells already exist:
+`at_lever` was opened at W, `_stator_march` at V, `integrate_fuel` at Y.
+
+**Tests**: `test_rung66.py` **15 → 15** collected, **5 slow (33.3 %)**, 343 lines;
+`test_rung67.py` **23 → 23**, **9 slow (39.1 %)**, 507 lines. **No parametrize expansion at all
+in either** — the third slice in a row at 1.00× (W was 2.1×, X 1.3×). **Ported gate count 38.**
+
+**Modules**: two, on `lagged_bleed.rs`'s shape. The names are **PROVISIONAL** — the crate's
+convention is thematic and short (`lagged_bleed.rs`, `limited_bleed.rs`, `bleed_transient.rs`)
+rather than class-name transliteration, so step 1 picks them and is not bound by a sentence
+written here.
+
+#### (iii) **`MarchScope` GROWS TWICE, ADDITIVELY, AND BOTH NEW FIELDS ARE SAVE-AND-RESTORE-PREVIOUS**
+
+§ 5.23 (iii) built `MarchScope` carrying `b0` on the stated promise that 66/67/68 grow it
+additively. **Slice Z is that promise's first test.** Probe 2 emits the ladder:
+
+| rung | `_stator_march` args | ADDS | guard |
+|---|---|---|---|
+| 57–60 | 10 | *(base)* | — |
+| 65 | 11 | `b0` | `prev, self._b0 = self._b0, b0` … `finally: self._b0 = prev` |
+| **66** | **12** | **`lag`** | `prev, self._lag = self._lag, lag` … `finally: self._lag = prev` |
+| **67** | **13** | **`tau_gov`** | `prev, self._tau_gov = self._tau_gov, tau_gov` … `finally: self._tau_gov = prev` |
+| 68 | 15 | `v0`, `ic_order` | same, `ic_order` restoring through an `or` |
+
+**The two questions were asked SEPARATELY per field** — [[rust-port-slice-n-step4]] (*a carrier
+claim on ONE hook says nothing about the next*) — and both answers came back the same:
+save-and-restore-**previous**, and probe 3 measured **max nesting depth 1** for `_lag` and **1**
+for `_tau_gov` over the whole rung-62..67 grid, with **0 nested events** either way. So, exactly
+as at slice Y for `_b0`, **no value key can tell restore-previous from restore-`None`**, and the
+nest must be MANUFACTURED at step 5 — twice, once per field.
+
+`MarchScope` stays `Copy` + `Default`: `AsymmetricLag` is already `#[derive(Clone, Copy)]`, so
+`lag: Option<AsymmetricLag>` and `tau_gov: Option<f64>` are additive fields and
+`MarchScope::DEFAULT` gains two `None`s.
+
+**AND THE OTHER TWO CELLS DO NOT MOVE.** `at_lever` is 7 args at 64, 65, 66 AND 67 (68 adds
+`stator_lim`); `integrate_fuel` is 13 args at 65, 66, 67 AND 68. Slice W's P5 and § 5.23 (iv)
+both hold at their next test.
+
+#### (iv) **THE TWO JOINT INITIAL CONDITIONS ARE A DELIBERATE DUPLICATION, AND THE PORT MUST NOT FACTOR THEM**
+
+Both marches need the two laws' simultaneous equilibrium at `s = 0`, and the two rungs solve it
+differently ON PURPOSE:
+
+* **rung 66** iterates INLINE and UNDAMPED, capped at 60, and asserts on failure — because its
+  own identity pins the contraction factor `|R_q C_g|` at 1, so a stall there genuinely IS the
+  degeneracy the rung is about, and the assert says so.
+* **rung 67** calls `_joint_fixed_point`, which sweeps `w ∈ (1.0, 0.5, 0.25)` — because on
+  cascade A `|P|` is pinned by nothing, `det J = (1−P)/(t_g t_v) ≠ 0` for every `P ≠ 1`, so a
+  stall would be a SOLVER failure and reporting it as a marginal mode would be a false finding.
+
+Both docstrings say this at length. [[rust-port-copy-vs-rederivation]] is the standing rule and
+this is the reflex it exists to stop: a port that gives rung 66 a call to rung 67's damped solver
+is bit-exact on the shipped grid (probe 3: `w = 1.0` on 36 of 39 calls) and destroys the
+distinction the two asserts are FOR.
+
+Probe 3 also measured that the damping ladder is genuinely exercised: `w = 1.0` **36**,
+`w = 0.5` **2**, `w = 0.25` **1**, with `fix_q` split **33 / 6** and `converged = True` on all
+39 — so `_joint_fixed_point`'s failing assert is DEAD on the grid, and exactly one call leaves
+its inner `res <= tol` (1e-12) break unfired while the outer `res <= 1e-9` fires.
+
+#### (v) THE ARM CENSUS — **AND SLICE Y's MIRROR-ZERO SHAPE DOES *NOT* RECUR**
+
+Probe 3, over rungs 62 + 63 + 64 + 65 + 66 + 67 in one process (`-n0`; xdist workers never see a
+monkeypatch — slice X defect 2), `pytest exit = 0`:
+
+| cell | `armed=F, arg=F` | `armed=F, arg=T` | `armed=T, arg=F` | `armed=T, arg=T` |
+|---|---|---|---|---|
+| r66 `integrate_fuel` | 18 | 4 | 12 | **32** |
+| r67 `integrate_fuel` | 5 | 6 | 8 | **38** |
+
+**All four arms of both dispatches are LIVE.** Slice Y's leading finding — two mirror-image
+one-armed dispatches, each override only ever taking the arm that equals its parent's — is a
+property of rung 65 and does not carry up. Registered here because the previous slice's headline
+is exactly the thing a pre-registration is tempted to inherit.
+
+**THE FOUR ZEROS THAT DO EXIST, AND EVERY ONE IS EXHIBITED.** Probe 7 makes each counter read 1
+from a direct call, so a zero is the GRID's and not the instrument's ([[rust-port-slice-w-step3]]
+— *five of six injections passed all 88 gates and the probe was wrong five times, every one a
+zero nobody measured*):
+
+| dead arm | count on the grid | exhibited by probe 7 |
+|---|---|---|
+| r66 `_gains` with `accel` armed | **0 of 80** (all 80 are `accel=None, surge=…`) | yes, on the arguments |
+| r66 `_gains` with NEITHER leg — the `if caps else 0.0` fall-through | **0 of 80** | yes |
+| r67 `_sign_changes` `peak <= 0` early return | **0 of 10** | `_sign_changes([0,0,0]) = 0` |
+| r67 `_window`'s `P == 0` → `T_over_tau = inf` | **0 of 31** | `_window(0.0)['T_over_tau'] = inf` |
+| r66 `_violation` with the `s > s_hi` break NOT taken | **0 of 41** | `_violation(traj, 0.55, 99.0)` |
+
+#### (vi) **`_eig`'s COMPLEX ARM IS DEAD ON THE RUNG THAT DEFINES IT, AND LIVE ONLY THROUGH THE RUNG ABOVE**
+
+Probe 3 counted rung 66's `_eig` at **134 real / 57 complex** and that number is a trap: `_eig`
+is defined on rung 66 and CALLED by rung 67's `cross_identity` too. Probe 7 re-ran the census
+over `test_rung66.py` ALONE, splitting by calling function:
+
+```
+80  _eig:cascade_identity:real=True
+ 0  _eig:*:real=False
+```
+
+**80 of 80 real, and the complex arm never runs on rung 66 at all** — which is not an accident
+but rung 66's own headline: `det J ≡ 0` makes the spectrum exactly `{0, tr J}`, so the
+discriminant `tr² − 4·det` is `tr² ≥ 0` identically. The arm is kept alive one rung up, where
+`det J ≠ 0`. A port that drops it passes every rung-66 gate and breaks at rung 67 — § 5.23
+(iii)'s shape, one slice later and in the opposite direction.
+
+#### (vii) THE NUMERICS CENSUS — probe 4, and ONE ITEM IS A MEASURED NEGATIVE
+
+| hazard | rung 66 | rung 67 | verdict |
+|---|---|---|---|
+| float `sum()` | 0 | **1** (`cross_identity.P_mid`) | § (i) — CPython exemption OWED |
+| `sum(1 for …)` integer counts | 0 | 3 | inert |
+| `** 0.5` | 2 (`_eig`) | 3 (`_window`) | `.sqrt()`, never `powf(0.5)` — `gas.rs` § 2 |
+| `max(3 args)` | **1** (`marginal_mode_cascade.frozen`) | 0 | **NEGATIVE, measured** |
+| `max`/`min` with `default=` | 0 | 3 | never fires — probe 9 |
+| `min(seq, key=…)` | **1** (`cascade_bill`) | 0 | a LOCATION key: Python returns the FIRST minimum |
+| `float('nan')` literals | 11 | 15 | reached only through empty-sequence guards |
+| `int(round(s_end / ds))` | 1 | 2 | the ladder's existing step-count spelling |
+
+**THE `py_max3` DEFECT DOES NOT RECUR, AND THAT IS A MEASUREMENT.** Rung 66's one three-argument
+`max` is `frozen = max(nat["drift"], moved["lo"]["drift"], moved["hi"]["drift"])`, and `drift` is
+itself a `max` over a non-empty trajectory, so it cannot be NaN — an `f64::max` chain is exact
+there. Rung 66's `laws_held` is a SINGLE value, not a reduction. Probe 9 measured the empty-case
+guards that could have produced a NaN and none fires on the grid: `marginal_mode_cascade`'s `on`
+holds **114** points, `oscillation_window`'s `live` **3 of 3 rows**, `joint_ic_corners`'s `ok`
+**4 rows with `n_live = 1`**, and `nat["removed"] = 1.36e-3 ≠ 0` so `dremoved_rel`'s division is
+safe.
+
+#### (viii) **P8 IS AFFORDABLE — THE READERS WERE TIMED BEFORE THE DUMP WAS DESIGNED**
+
+Slice Y discharged *"the oracle's grid IS the suite's"* by timing rather than by coarsening and
+disclosing. Probe 6, at each gate's OWN arguments (copied from the calling test, not chosen):
+
+| reader | s | | reader | s |
+|---|---|---|---|---|
+| r66 `merge_identity` | 2.15 | | r67 `cross_identity` | 4.39 |
+| r66 `cascade_identity` | 2.06 | | r67 `oscillation_window` | 9.01 |
+| r66 `cascade_bill` | 2.50 | | r67 `cross_bill` | 2.92 |
+| r66 `marginal_mode_cascade` | 2.07 | | r67 `marginal_mode_cross` | 3.65 |
+| | | | r67 `joint_ic_corners` | 4.55 |
+| | | | r67 `detector_sensitivity` | 0.01 |
+| | | | **TOTAL** | **33.31** |
+
+**33 s for all ten readers at the suites' own grids**, so nothing needs coarsening and P8 is
+again discharged by not needing it.
+
+#### (ix) THE `slow` BILL, MEASURED IN PYTHON BEFORE ANY RUST EXISTS
+
+`test_rung66.py` **15 passed in 31.46 s**; `test_rung67.py` **23 passed in 59.61 s** — **91.07 s
+for 38 gates**, of which 14 carry `slow`. Slice M's rule applies unchanged: port the gate, DROP
+the marker, and re-introduce it only against a MEASURED Rust number. Slice Y's Rust suite came
+in **16×** faster than its Python original; that is the prior, not a prediction.
+
+#### (x) THE PREDICTIONS
+
+- **P1 — `MarchScope` GROWS ADDITIVELY AND NO CALL SITE MOVES.** `lag` and `tau_gov` are added
+  fields; `stator_march` keeps supplying `MarchScope::DEFAULT`; all 55 shipped call sites and
+  every `stator_march_scoped` signature stay as they are. **Falsified if any existing caller has
+  to change** — § 5.23 (iii)'s promise at its first test.
+- **P2 — SIX reduce ARMS onto FIVE distinct TARGETS, every one bit-for-bit BY DISPATCH.**
+  Rung 66 reduces to rung 64 (`_lagged()` false), rung 65 (`lag is None`) and rung 52; rung 67
+  to rung 65, rung 66 (`tau_gov is None`) and rung 47 — six arms, and rung 65 is a target of
+  both, so five targets. (The noun is named because the count is checkable at step 2 and
+  because the previous commit was a tally that did not add up.) Probe 3 measured all four
+  dispatch arms live on both cells, so unlike slice Y no reduce arm is unreachable.
+- **P3 — the CPython arm carries ONE DECLARED EXEMPTION, on `cross_identity`'s `P_mid` and the
+  `T_over_tau` it feeds** (§ (i)). **Both keys are VERIFIED REACHABLE**: `cross_identity`'s row
+  dict spreads `win`'s keys in through `**{k: win.get(k) for k in ("rho_lo", "rho_hi", "zeta",
+  "T_over_tau", "opens", "reciprocal")}`, so `T_over_tau` is a published key and not an
+  internal. Falsified if a third key moves, or if the exemption needs a tolerance tier rather
+  than a named key list.
+- **P4 — the FIVE dead arms of § (v) get MANUFACTURED gates at step 5, not value keys**, and the
+  two `_gains` arms are gated on the ARGUMENTS the way probe 7 exhibits them.
+- **P5 — `_eig`'s complex arm ships LIVE and rung-66-unexercised** (§ (vi)), gated by a direct
+  call with a negative discriminant. Falsified if any rung-66 value key can see it.
+- **P6 — the two joint-IC solves stay SEPARATE** (§ (iv)). Falsified if the port routes rung 66
+  through `_joint_fixed_point`, which would be bit-exact and wrong.
+- **P7 — the `lag` and `tau_gov` guards restore the PREVIOUS value, gated by TWO manufactured
+  nests** (§ (iii)). Falsified if any value key can tell restore-previous from restore-`None`.
+- **P8 — THE ORACLE'S GRID IS THE SUITES', with NOTHING coarsened** (§ (viii)), and the header
+  says so at the top. If anything is coarsened it is disclosed in the header AND in the step-4
+  write-up — slice S step 4's lesson.
+- **P9 — the `slow` cost is measured in Rust, never mapped from Python's markers** (§ (ix)).
+- **P10 — five steps, on slice W's two-rung shape:** **1** the `MarchScope` fields (`lag`,
+  `tau_gov`) + their `_lag`/`_tau_gov` carriers + the three cell swaps + rung 67's `_RINGS`,
+  which is a class CONSTANT a gate reads and not a carrier at all · **2** BOTH ports + `slice_z_smoke.rs` —
+  **the largest single body in phase 7 so far, 1 496 source lines** · **3** both rung suites
+  (15 + 23) + the injections · **4** `slice_z_oracle.rs` + `dump_slice_z.py`, carrying § (i)'s
+  exemption block · **5** the dispatch gates and the manufactured bugs (P4/P5/P6/P7).
 
 
 
