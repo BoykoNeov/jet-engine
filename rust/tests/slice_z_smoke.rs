@@ -143,12 +143,22 @@ fn keys(t: &[FuelPoint]) -> Vec<(f64, f64, f64, f64, f64, f64, f64, f64)> {
 }
 
 /// **WHICH MARCHER RAN, read off the one thing a trajectory carries that a float cannot fake** —
-/// its per-point key COUNT. 14 is the bare/rung-47 route, 16 rung 52's or rung 65's, **20 rung
-/// 66's and 21 rung 67's.**
+/// its per-point key COUNT. A reduce gate that compares only floats cannot tell "the right march
+/// ran" from "two marches happened to agree", and every gate in section A is exactly that
+/// comparison. This is the cheapest witness that is not a float.
 ///
-/// A reduce gate that compares only floats cannot tell "the right march ran" from "two marches
-/// happened to agree", and every gate in section A is exactly that comparison. This is the
-/// cheapest witness that is not a float.
+/// **AND IT IS NOT A RUNG WITNESS — the map is MANY-TO-ONE, which cost this file a gate.** Only
+/// four values exist and the first covers most of the ladder:
+///
+/// | keys | routes |
+/// |---|---|
+/// | **14** | the bare march, rung 46's UNLAGGED redline, rung 47's LAGGED one, rung 48–51's legs, **and rung 64's instantaneous valve** |
+/// | **16** | rung 52's clip state (`g`/`required`) **or** rung 65's valve state (`b`/`b_cmd`) — two different pairs |
+/// | **20** | rung 66's cascade |
+/// | **21** | rung 67's cross-loop |
+///
+/// So a `14 == 14` says only *neither side carried a march state*. Where the arm being gated is
+/// one 14-route against another, the discrimination has to come from somewhere else.
 fn route(t: &[FuelPoint]) -> usize {
     t[0].key_count()
 }
@@ -747,4 +757,43 @@ fn e_the_caught_panic_arm_of_joint_ic_corners_is_exhibited() {
     // `default=0`. Both are the `default=` branches § 5.24 (v) counts as never firing.
     assert!(d.all_converged, "Python's `all([])` is True and the port must agree");
     assert_eq!((d.n_live, d.max_iters, d.ever_damped), (0, 0, false));
+}
+
+/// **P2's RUNG-64 ARM, WHICH SECTION A DOES NOT GATE — AND SAYING IT DID WAS A TALLY THAT DID NOT
+/// ADD UP.**
+///
+/// `a_both_rungs_reduce_to_rung_65_on_an_unfloored_machine_too` builds `LeverArm::default()`:
+/// **no `bleed_lim` at all**, which is rung 43/57's machine and not rung 64's. Rung 64 IS the
+/// floored INSTANTANEOUS valve — a limiter present with `tau = None` — and Python's own wording
+/// (`tau=None and lag=None`) presupposes a limiter that HAS a `tau` to be None. Step 1's gate
+/// comment hedged it correctly (*"lands two rungs lower (rung 64 / rung 43)"*); step 2 hardened
+/// the loose half into a count, which is the shape the previous commit was caught on.
+///
+/// **The combination nothing else reaches is FLOORED + UNLAGGED + NO CLOCK.** Every floored
+/// fixture in this file uses [`valve()`] (`tau = Some`); `e_all_three_rungs_reduce_to_rung_52`
+/// builds the right machine and then arms `lag`. That path runs `r64_solve_b`, `ForcedBleed` and
+/// `b_of` at every closure — all of which the VALVELESS path skips entirely — so a dispatch
+/// defect visible only there passes everything else here.
+#[test]
+fn e_all_three_rungs_reduce_to_rung_64_on_a_floored_but_unlagged_valve() {
+    let inst = LeverArm::floored(BleedLimiter::new(PHI, B));
+    let leg = surge_leg();
+    let (a, nu_a) = t65(&inst).stator_march(&flight(), &ramp(), None, &leg);
+    let (b, nu_b) = t66(&inst).stator_march(&flight(), &ramp(), None, &leg);
+    let (c, nu_c) = t67(&inst).stator_march(&flight(), &ramp(), None, &leg);
+    // **14 IS A WEAK BAR HERE AND THE `assert_ne!` BELOW IS WHAT CARRIES THE DISCRIMINATION.**
+    // Rungs 43, 46, 47 and 64 all emit fourteen keys, so this only rules out the 16/20/21 routes
+    // — the same conflation that cost `e_rung_67_reduces_to_rung_47` its first draft.
+    assert_eq!(route(&a), 14, "a state-carrying marcher ran on an INSTANTANEOUS valve");
+    assert_eq!((route(&b), route(&c)), (14, 14),
+               "a cascade or valve-lag marcher ran on an INSTANTANEOUS valve");
+    assert_eq!(keys(&a), keys(&b), "rung 66 on an instantaneous valve is not rung 64");
+    assert_eq!(keys(&a), keys(&c), "rung 67 on an instantaneous valve is not rung 64");
+    assert_eq!(nu_a, nu_b, "rung 66's terminal speeds");
+    assert_eq!(nu_a, nu_c, "rung 67's terminal speeds");
+    // …and this really is the FLOORED path, not the valveless one section A already covers: the
+    // valve is solved and rides, so the trajectory differs from an unarmed machine's.
+    let bare = t65(&LeverArm::default()).stator_march(&flight(), &ramp(), None, &leg).0;
+    assert_ne!(keys(&a), keys(&bare),
+               "the floor never bit, so this gate is section A's valveless arm again");
 }

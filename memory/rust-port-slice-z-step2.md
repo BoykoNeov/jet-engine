@@ -19,10 +19,19 @@ one struct shared by every rung — a deliberate choice, so the cell's signature
 instead of four times — so the same call SUCCEEDS and the field is discarded.
 
 **Why:** it bit three of my own typed route bars, and the third bit past the witness that
-caught the first two. `key_count` (14 / 16 / 20 / 21) discriminates rung 52 from rung 65 from
-the two cascades — but **rung 46's unlagged governor and rung 47's lagged one emit the SAME
-fourteen keys**, so the bar passed on both sides of a comparison whose floats still disagreed.
-A ROUTE WITNESS IS NOT A RUNG WITNESS.
+caught the first two. `key_count` is MANY-TO-ONE: **14** covers the bare march, rung 46's
+unlagged redline, rung 47's lagged one, rungs 48–51's legs and rung 64's instantaneous valve;
+**16** covers rung 52's clip state and rung 65's valve state, two DIFFERENT pairs of keys.
+So a `14 == 14` says only *neither side carried a march state*, and the bar passed on both
+sides of a comparison whose floats disagreed. A ROUTE WITNESS IS NOT A RUNG WITNESS.
+
+**And the same conflation cost the write-up a wrong TALLY, caught in review after the
+commit.** I published "P2's six reduce arms gated six-for-six" while calling the
+`LeverArm::default()` gate the rung-64 arm. It is not — that machine has **no limiter at
+all**, which is rung 43/57's; rung 64 is the floored INSTANTANEOUS valve, and the untested
+combination (floored + unlagged + no clock) is the only path that runs `r64_solve_b`,
+`ForcedBleed` and `b_of` at every closure. Step 1's own comment had hedged it correctly and
+step 2 hardened the loose half into a count.
 
 **How to apply:**
 - When a port collapses a per-rung signature into one shared struct, ask what the SOURCE does
@@ -30,6 +39,9 @@ A ROUTE WITNESS IS NOT A RUNG WITNESS.
   caller reads it — the port will not refuse and no value key will say so.
 - Never type a count bar. Three in one file, three wrong. See
   [[rust-port-guessed-census-bars]].
+- **Do not turn a predecessor's hedge into a count.** If an earlier step wrote "lands two
+  rungs lower (X / Y)", that is two candidates, not one — resolve it by building the machine
+  and reading which, before publishing a tally.
 - **Compare the port to the source BEFORE writing a gate.** Every gate a port step can write
   is either a reduce arm (agrees by dispatch) or self-referential, so neither catches a march
   that is uniformly wrong. A throwaway bit-emitting probe pair over both marches and all ten

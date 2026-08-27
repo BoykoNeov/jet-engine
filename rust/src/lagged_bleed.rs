@@ -723,6 +723,12 @@ pub fn py_max3(a: f64, b: f64, c: f64) -> f64 {
 ///
 /// The wildcard is spelled out as named arms so the NEXT variant breaks the build here too.
 ///
+/// **`pub` RATHER THAN `pub(crate)`, AND THE REASON IS THIS TABLE.** Four test files
+/// (`rung65.rs`, `slice_y_smoke.rs`, `slice_y_oracle.rs`, `slice_z_smoke.rs`) each
+/// re-match the two keys by hand, which duplicates a decision that is documented HERE and
+/// nowhere else — so a widening or a refusal recorded above would not reach them. Exported
+/// so slice Z's own suites, and later ones, can call the audited reader instead.
+///
 /// [`asym_extra`]: crate::fuel_transient::asym_extra
 pub fn valve_of(p: &FuelPoint) -> (f64, f64) {
     match p.extra {
