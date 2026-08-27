@@ -12470,6 +12470,123 @@ in **16×** faster than its Python original; that is the prior, not a prediction
 
 
 
+##### STEP 1 — SHIPPED. **The plumbing, the refusals, and a REFUSAL THAT CANNOT SEE WHAT IT REFUSES**
+
+`MarchScope`'s two fields, their two carriers and guards, the six cell bodies (three cells x two
+rungs), the two builders, the eight tables, `RINGS`, and `tests/slice_z_smoke.rs` (**9 gates,
+green**). The two marches are declared and stubbed; they are step 2. The whole Rust suite is
+**green, exit 0, zero failures in every target**; `cargo clippy --all-targets` reports one error
+and it is PRE-EXISTING (`stator_transient.rs:2610`, `eq_op` on a deliberate NaN test) -- verified
+by stashing this step's diff and re-running, which returned the same one.
+
+**AND THE AGGREGATE PASS COUNT OF THAT RUN IS NOT QUOTED, BECAUSE I DESTROYED IT.** The run was
+piped through `sort | uniq -c | head -20`, which reports the per-target lines and drops the
+total. The count is not re-derived: re-running a 10-minute gate to recover a number it already
+computed is the *never run the gate for timing* rule one level over, and a total invented from the
+surviving rows would be exactly the typed-instead-of-emitted tally this phase has now been caught
+on three times. The verdict that matters -- exit 0, no target failed -- is intact.
+
+**P1 IS FALSIFIED AT ITS LETTER, HELD AT ITS INTENT, AND THE BILL IS PAID ONCE.** The signature
+half of P1 holds exactly -- `stator_march` and `stator_march_scoped` are character-identical to
+what slice Y shipped and no un-scoped call site moved.
+
+**AND P1's OWN "55" WAS STALE, WHICH IS A SECOND HALF TO THE VERDICT.** The number was typed into
+`MarchScope`'s doc comment at slice Y and P1 inherited it without re-running the count. Measured
+at slice Z over `src/` and `tests/`, comments excluded: **82** un-scoped call sites (91 once slice
+Z's own file lands) and **16** scoped ones. The verdict is unchanged -- none of the 82 moved --
+but this is [[rust-port-guessed-census-bars]] firing on a bar that had already been WRITTEN DOWN
+once, which is the harder version: a typed count that survives a slice reads like a measurement.
+Both stale spellings in `stator_transient.rs` are corrected and the count now lives in ONE place. But **adding a field to a
+struct is a compile error at every EXHAUSTIVE STRUCT LITERAL of it, and the port had NINE**: one
+in `src/lagged_bleed.rs` and **eight in four TEST files** (`rung65.rs` x3, `slice_y_oracle.rs` x2,
+`slice_y_smoke.rs` x2, `slice_y_dispatch.rs` x1) -- which is exactly where a `src/`-only grep
+would have missed them, and § 5.23 (iii)'s promise was written from a `src/` reading. All nine
+took the one-token repair `..MarchScope::DEFAULT`, and a functional-update literal absorbs the
+NEXT field silently, so slice AA's `v0`/`ic_order` costs zero edits at these sites. **Growth is
+free from the SECOND time on, not the first** -- booked here rather than patched quietly, because
+the precedent a later slice inherits from a silent fix is the wrong one.
+
+**AND THE LEADING STEP-1 FINDING IS ABOUT THE SOURCE, NOT THE PORT: A MARCH SCOPE CONSUMES ITS
+OWN FIELD AND DROPS THE RUNGS ABOVE IT, SO RUNG 67's `assert lag is None` CANNOT SEE RUNG 66's
+CARRIER.** The first draft of `slice_z_smoke.rs` armed the seven refusals through
+`stator_march_scoped` and could not reach a single one that names another rung's knob. The reason
+is structural and it runs both ways:
+
+* a rung-66 `_stator_march` has **no `tau_gov` parameter at all**, so cascade A is unreachable
+  from a rung-66 march;
+* a rung-67 `_stator_march` forwards `lag` to rung **66's** carrier -- and rung 67's own armed
+  branch returns before `super()`, so that carrier is never read.
+
+**MEASURED, not read off the body** (`probe_z10.py`, PyPy). On a rung-67 machine with the valve
+floored and BOTH clocks armed through the march: it does **not** raise; `self._lag` holds the
+`AsymmetricLag` at the moment the armed branch runs (1 entry, instrumented); and the trajectory is
+**bit-for-bit identical, 171/171 points, to one with no `lag` passed at all**. So the fuel lag is
+**SILENTLY IGNORED**. The same probe runs the identical question one rung down, where the carrier
+IS read, and gets `bit-for-bit equal: False` -- so the zero above is the GRID's and not the
+instrument's ([[rust-port-slice-w-step3]]'s rule, applied to my own probe before quoting it).
+
+Python's four rung-67 refusals therefore guard the **direct** `integrate_fuel` route and only
+that route; through the march, cascade B on a cascade-A machine is not refused, it is discarded.
+The port reproduces this exactly (it reads `lim.lag`, the argument) and the smoke file now takes
+the direct route, which is also the route Python's own suites take. **Nothing is repaired** -- a
+port is a translation with a bit-exactness contract, and this is a property of rung 67 for its
+spec to answer, not for the port to fix.
+
+**THE OTHER FOUR MEASUREMENTS STEP 1 OWED, ALL EMITTED RATHER THAN TYPED:**
+
+| question | answer | how |
+|---|---|---|
+| does any rung above 67 rebind `_RINGS`? | **no** -- 1 definition, 2 reads, both inside rung 67's own readers, none past 12351 | grep over all 23 066 lines + the 27 suites |
+| does rung 66 or 67 add/relax a construction assert? | **no** -- neither defines `__init__`; `_LAG_OK` stays `True` by inheritance | `ast` class-body enumeration |
+| does `AsymmetricLag` derive `PartialEq`? | **yes**, so `MarchScope`'s five derives survive the growth | source |
+| do the two guards restore PREVIOUS? | **yes, both**, asked per field rather than inherited | probe 2/3, § (iii) |
+
+So `RINGS` ships as a plain `pub const` (a table cell would be the shape if anything rebound it,
+and the const's own doc comment says where the port is wrong if a later rung ever does), and the
+two builders differ from `build_lagged_bleed` **only in the four table constants they pass** --
+stated in both bodies, because a reader who finds two constructors differing by four words should
+be told the SAMENESS was measured.
+
+**THE STEP-1 GATE IS A GATE, NOT A COMPILE CHECK.** `slice_z_smoke.rs`'s nine: both rungs reduce
+to rung 65 **bit-for-bit on every key of every point**, on a floored machine (171 pts) *and* on an
+unfloored one (68 pts, the other branch of the same `if`); `at_lever` hands back this rung's
+object, discriminated by giving all three siblings ONE arming and reading which rung's refusal
+comes back; the seven refusals; `RINGS`; both carriers travel scope -> `Cell` -> guard -> the
+resolving `or_else`, witnessed by reaching the step-2 stub; and **both guards restore through the
+unwind their own refusal causes** -- which is free here, because `catch_unwind` refuses a borrowed
+core precisely for the interior mutability those carriers are, so the `AssertUnwindSafe` is the
+claim and the following bit-for-bit re-march is the check.
+
+**P11 (NEW, for step 5) -- A MANUFACTURED GATE ON THE DISCARD.** The finding above gets an owner
+rather than staying an observation in a plan: the port reproduces the silent discard only because
+`r67_integrate_fuel` reads `lim.lag` (the argument) and not `ft.inner.lag.get()` (the carrier),
+and **that is a one-token change no value key and no current gate would catch** -- every shipped
+grid arms at most one of the two. Step 5 owes a manufactured-bug gate that pins it: arm both
+clocks through the march on a rung-67 machine, assert the trajectory is bit-for-bit the
+governor-only one, and assert the injected carrier-reading spelling BREAKS that. Falsified if the
+discard turns out to be reachable by any value key already shipped. The seam itself -- whether
+rung 67's refusal SHOULD see the carrier -- belongs to `docs/rung67-spec.md`, not to the port,
+which is a translation and not a repair.
+
+**FOUR OF STEP 1's NINE GATES ARE WRITTEN AGAINST THE STUBS AND STEP 2 MUST REWRITE THEM, NOT
+ADJUST THEM.** `d_the_lag_carrier_travels...`, `d_the_tau_gov_carrier_travels...` and both halves
+of `d_both_guards_restore...` assert on the panic string `"SLICE Z STEP 2"`, which step 2 deletes.
+That is scheduled work, booked here so step 2 meets it as a task rather than as breakage --
+slice V step 5's lesson (gates that read nothing) in its inverse form: gates that read something
+about to be removed. The carrier-travel claim survives the rewrite as *the armed march produces a
+trajectory the disarmed one does not*, which is strictly stronger.
+
+**AND THE NEXT RUN RECOVERS THE COUNT FOR FREE:** run the gate as `cargo test 2>&1 | tee <file>`
+and aggregate afterwards, rather than piping it through `head` live. The number is then a
+by-product of a run that was happening anyway, which is the only way this project permits quoting
+one.
+
+**Precedence spelled explicitly, twice:** Python's `lag = lag if lag is not None else self._lag`
+means the **ARGUMENT wins over the carrier** and the **RESOLVED** value is what `super()` receives
+-- and rung 67 forwards `lag` RAW while resolving only `tau_gov`, because the lag belongs to the
+rung below. On every shipped grid at most one of the two is set, so all three of those spellings
+agree and no value key separates them.
+
 ### ~~The four~~ **THE EIGHT** runtime-introspection tests, one by one
 
 **CORRECTED 2026-08-20 by § 5.19 (vii) — this table named FOUR and an enumeration over the 27

@@ -166,7 +166,7 @@ fn reduce_b0_none_is_the_physical_initial_condition_bit_for_bit() {
     let (a, _) = m.stator_march(&flight(), &ramp(0.01), None, &StatorLeg::default());
     let (b0, cmd0) = b_of_point(&a[0]);
     let (b, _) = m.stator_march_scoped(&flight(), &ramp(0.01), None, &StatorLeg::default(),
-                                       &MarchScope { b0: Some(b0) });
+                                       &MarchScope { b0: Some(b0), ..MarchScope::DEFAULT });
     assert_eq!(keys(&a), keys(&b));
     assert_eq!(b0, cmd0, "b(0) must be the EQUILIBRIUM command (§ 0, probe A)");
     assert!(b0 > 0.0,
@@ -319,7 +319,7 @@ fn a_leaked_state_cannot_survive_a_march() {
     // …and a SCOPED march must not leak either: `InitialBleed` restores the PREVIOUS value, and
     // outside any scope the previous value is `None`.
     m.stator_march_scoped(&flight(), &ramp(0.02), None, &StatorLeg::default(),
-                          &MarchScope { b0: Some(0.03) });
+                          &MarchScope { b0: Some(0.03), ..MarchScope::DEFAULT });
     assert!(m.fuel.inner.b0.get().is_none());
 }
 
@@ -495,7 +495,7 @@ fn the_continuums_upper_edge_is_the_valves_own_minimality_law() {
     let edge = b_of_point(&nat[0]).0;
     let drift = |b0: f64| -> f64 {
         let (t, _) = m.stator_march_scoped(&flight(), &ramp(0.01), None, &leg,
-                                           &MarchScope { b0: Some(b0) });
+                                           &MarchScope { b0: Some(b0), ..MarchScope::DEFAULT });
         let first = b_of_point(&t[0]).0;
         t.iter().map(|p| (b_of_point(p).0 - first).abs()).fold(f64::NEG_INFINITY, f64::max)
     };

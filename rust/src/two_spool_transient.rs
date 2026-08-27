@@ -616,6 +616,19 @@ pub struct TwoSpoolTransientCore {
     ///
     /// [`FuelTransientHooks::integrate_fuel`]: crate::fuel_transient::FuelTransientHooks
     pub b0: Cell<Option<f64>>,
+    /// RUNG 66's ARMED FUEL LAG — Python's `_lag`, the carrier between `_stator_march`'s `lag`
+    /// parameter and `integrate_fuel`'s read.
+    ///
+    /// **THE SECOND OF § 5.19 (iv)'s FOUR RESTORE-PREVIOUS GUARDS**, and it needs a carrier for
+    /// exactly [`b0`](Self::b0)'s reason: the parameter arrives at `_stator_march` and is read two
+    /// frames down, and the cell in between takes no such argument. Its guard is
+    /// [`LaggedFuel`].
+    pub lag: Cell<Option<crate::fuel_transient::AsymmetricLag>>,
+    /// RUNG 67's ARMED GOVERNOR CLOCK — Python's `_tau_gov`, the third restore-previous guard.
+    ///
+    /// Rung 66's carrier with the sensor moved from `phi_lp` to `Tt4`. Its guard is
+    /// [`LaggedGovernor`].
+    pub tau_gov: Cell<Option<f64>>,
 }
 
 /// The RAII form of Python's `_closer`'s `try/finally` — **the restore is `Drop`, so it survives
@@ -657,9 +670,11 @@ impl Drop for ForcedBleed<'_> {
 /// RUNG 65's `_b_state` guard — the march state, set for one derivative evaluation.
 ///
 /// Python's `der` does `self._b_state = q` … `finally: self._b_state = None`, so this restores to
-/// `None` like [`ForcedBleed`] and **unlike** [`InitialBleed`]. The three guards on this core
-/// therefore have two different restore policies, which is the whole reason they are three types
-/// and not one generic one.
+/// `None` like [`ForcedBleed`] and **unlike** [`InitialBleed`]. The guards on this core therefore
+/// have two different restore policies, which is the whole reason they are separate types and not
+/// one generic one. **Slice Y wrote "the three guards" here and slice Z makes it FIVE**
+/// ([`LaggedFuel`], [`LaggedGovernor`]) — the count is dropped rather than re-typed, because a
+/// hand-maintained tally in a doc comment is the shape that has been measured wrong five times.
 pub struct MarchedBleed<'a> {
     core: &'a TwoSpoolTransientCore,
 }
@@ -710,6 +725,74 @@ impl<'a> InitialBleed<'a> {
 impl Drop for InitialBleed<'_> {
     fn drop(&mut self) {
         self.core.b0.set(self.prev);
+    }
+}
+
+/// RUNG 66's `_lag` guard — **the SECOND of § 5.19 (iv)'s four restore-previous guards, and
+/// the reason it is a second TYPE rather than a generic one over [`InitialBleed`].**
+///
+/// The five guards on this core carry **two** restore policies: [`ForcedBleed`] and
+/// [`MarchedBleed`] restore to `None`; [`InitialBleed`], this and [`LaggedGovernor`] restore the
+/// PREVIOUS value. Folding the restore-previous three into one `Restore<T>` would erase the
+/// distinction the split exists to state, which is the standing *copy vs re-derivation* rule:
+/// a deliberate duplication is not a factoring opportunity. Each guard therefore names its own
+/// field and its own rung, and the policy is legible at the type rather than at a parameter.
+///
+/// **THE SET HALF LIVES HERE AND THE RESTORE HALF LIVES IN `Drop`, AND BOTH NEED THE SAME
+/// GATE.** Slice Y step 5 found a save-and-restore guard whose SET half was covered by the
+/// oracle and whose RESTORE half was covered by the dispatch file, with **neither covering
+/// both** — invisible until the nest was manufactured. Probe 3 measured this field's max nesting
+/// depth at **1** with **0** nested events over the whole rung-62..67 grid, so no value key can
+/// tell this `Drop` from [`ForcedBleed`]'s; slice Z step 5 owes the manufactured nest (§ 5.24
+/// P7), and it owes it for BOTH halves in ONE gate.
+pub struct LaggedFuel<'a> {
+    core: &'a TwoSpoolTransientCore,
+    prev: Option<crate::fuel_transient::AsymmetricLag>,
+}
+
+impl<'a> LaggedFuel<'a> {
+    /// Python's `prev, self._lag = self._lag, lag`. As at rung 65, `lag = None` is a REAL
+    /// assignment and not a no-op: a rung-66 `_stator_march` called without it CLEARS an outer
+    /// one for the duration.
+    pub fn set(core: &'a TwoSpoolTransientCore,
+               lag: Option<crate::fuel_transient::AsymmetricLag>) -> Self {
+        let prev = core.lag.get();
+        core.lag.set(lag);
+        LaggedFuel { core, prev }
+    }
+}
+
+impl Drop for LaggedFuel<'_> {
+    fn drop(&mut self) {
+        self.core.lag.set(self.prev);
+    }
+}
+
+/// RUNG 67's `_tau_gov` guard — **the THIRD restore-previous guard**, and [`LaggedFuel`]'s shape
+/// verbatim on the other field.
+///
+/// The two questions — *does it restore the previous value* and *does it ever nest* — were asked
+/// SEPARATELY per field rather than inherited from rung 66's answer, because a carrier claim on
+/// ONE hook says nothing about the next — and probe 3 returned the same pair: restore-previous, max depth **1**, **0**
+/// nested events. So this guard is `LaggedFuel`'s twin by MEASUREMENT and not by assumption, and
+/// it owes its own manufactured nest at step 5 rather than sharing rung 66's.
+pub struct LaggedGovernor<'a> {
+    core: &'a TwoSpoolTransientCore,
+    prev: Option<f64>,
+}
+
+impl<'a> LaggedGovernor<'a> {
+    /// Python's `prev, self._tau_gov = self._tau_gov, tau_gov`.
+    pub fn set(core: &'a TwoSpoolTransientCore, tau_gov: Option<f64>) -> Self {
+        let prev = core.tau_gov.get();
+        core.tau_gov.set(tau_gov);
+        LaggedGovernor { core, prev }
+    }
+}
+
+impl Drop for LaggedGovernor<'_> {
+    fn drop(&mut self) {
+        self.core.tau_gov.set(self.prev);
     }
 }
 
@@ -790,6 +873,7 @@ impl TwoSpoolTransientCore {
         TwoSpoolTransientCore {
             inner, rho, p_ref_lp, p_ref_hp, hooks, stator, stator_hooks, lever, lever_hooks,
             b_forced: Cell::new(None), b_state: Cell::new(None), b0: Cell::new(None),
+            lag: Cell::new(None), tau_gov: Cell::new(None),
         }
     }
 

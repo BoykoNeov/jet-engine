@@ -831,7 +831,8 @@ impl ScheduledStatorCore {
         let leg = StatorLeg { accel: None, surge: Some(Floor::Phi(fuel)), tt4_max: None };
 
         let run = |mach: &ScheduledStatorCore, b0: Option<f64>| -> MarginalCell {
-            let (traj, _) = mach.stator_march_scoped(flight, ramp, None, &leg, &MarchScope { b0 });
+            let (traj, _) = mach.stator_march_scoped(
+                flight, ramp, None, &leg, &MarchScope { b0, ..MarchScope::DEFAULT });
             let rides: Vec<&FuelPoint> = traj.iter().filter(|p| p.mf < p.mf_sched).collect();
             let tau_m = mach.fuel.inner.lever.lim.and_then(|l| l.tau).expect("lagged");
             let b_first = valve_of(&traj[0]).0;

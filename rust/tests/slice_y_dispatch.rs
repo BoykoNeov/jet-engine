@@ -261,7 +261,7 @@ fn the_b0_guard_restores_the_previous_value_through_a_manufactured_nest() {
 
         // The nest: a march that sets `b0` to something else for its own duration.
         let (t, _) = m.stator_march_scoped(&flight(), &ramp(DS), None, &StatorLeg::default(),
-                                           &MarchScope { b0: Some(inner) });
+                                           &MarchScope { b0: Some(inner), ..MarchScope::DEFAULT });
         // **AND THE SET HALF, WHICH THIS GATE DID NOT ORIGINALLY CHECK.** The step-5 mutation
         // census predicted that corrupting `r65_stator_march` to pass `None` instead of
         // `scope.b0` would fail here, and it did NOT: a guard that saves and restores the OUTER

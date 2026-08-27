@@ -138,11 +138,11 @@ fn b_b0_at_the_natural_value_is_bit_for_bit() {
     let (a, _) = m.stator_march(&flight(), &ramp(0.01), None, &Default::default());
     let b0 = match a[0].extra { PointExtra::Valve { b, .. } => b, _ => unreachable!() };
     let (b, _) = m.stator_march_scoped(&flight(), &ramp(0.01), None, &Default::default(),
-                                       &MarchScope { b0: Some(b0) });
+                                       &MarchScope { b0: Some(b0), ..MarchScope::DEFAULT });
     assert_eq!(keys(&a), keys(&b));
     // …and a DIFFERENT b0 must move it, or the instrument is inert and the gate above is vacuous.
     let (c, _) = m.stator_march_scoped(&flight(), &ramp(0.01), None, &Default::default(),
-                                       &MarchScope { b0: Some(0.03) });
+                                       &MarchScope { b0: Some(0.03), ..MarchScope::DEFAULT });
     assert_ne!(keys(&a), keys(&c));
     assert_eq!(match c[0].extra { PointExtra::Valve { b, .. } => b, _ => unreachable!() }, 0.03);
 }

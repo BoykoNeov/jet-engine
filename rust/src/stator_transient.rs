@@ -49,8 +49,8 @@ use std::cell::Cell;
 
 use crate::engine::FlightCondition;
 use crate::fuel_transient::{
-    AccelSchedule, Floor, FuelLimiters, FuelPoint, FuelTransientCore, FuelTransientHooks,
-    SurgeLimiter,
+    AccelSchedule, AsymmetricLag, Floor, FuelLimiters, FuelPoint, FuelTransientCore,
+    FuelTransientHooks, SurgeLimiter,
 };
 use crate::gas::{powp, Abort};
 use crate::map::ComponentMap;
@@ -468,22 +468,50 @@ pub struct StatorLeg<'a> {
 /// an instance attribute, assigns the parameter, calls `super()`, and restores in a `finally`.
 /// Probe 2 emitted all four and the shape is identical every time:
 ///
-/// | rung | adds | attribute |
-/// |---|---|---|
-/// | **65** | `b0` | `_b0` — the lagged valve's initial position |
-/// | 66 | `lag` | `_lag` |
-/// | 67 | `tau_gov` | `_tau_gov` |
-/// | 68 | `v0`, `ic_order` | `_v0`, `_ic_order` |
+/// | rung | adds | attribute | arrived |
+/// |---|---|---|---|
+/// | **65** | `b0` | `_b0` — the lagged valve's initial position | slice Y |
+/// | **66** | `lag` | `_lag` — the FUEL leg's asymmetric lag | **slice Z** |
+/// | **67** | `tau_gov` | `_tau_gov` — the GOVERNOR's clock | **slice Z** |
+/// | 68 | `v0`, `ic_order` | `_v0`, `_ic_order` | slice AA |
 ///
 /// So the cell's signature is opened **ONCE, here**, and this struct grows additively at 66/67/68
 /// — one non-additive change instead of four. `Scope` had been retired field-by-field twice
 /// (`try_close` at slice V, `_b_forced` at slice X) and it survives on the one cell § 5.19 (iv)
 /// actually measured it onto.
 ///
-/// **NO EXISTING CALLER MOVES.** [`FuelTransientCore::stator_march`] keeps its signature and
-/// supplies [`MarchScope::DEFAULT`]; [`stator_march_scoped`](FuelTransientCore::stator_march_scoped)
-/// is the one that takes this, and only rung 65's own readers call it. All 55 shipped call sites
-/// are untouched — § 5.23 P5.
+/// # SLICE Z's P1 VERDICT — **the growth is additive in the TYPE and SOURCE-BREAKING in the
+/// SYNTAX, and the second half had not been measured**
+///
+/// § 5.23 (iii) promised rungs 66/67/68 would grow this struct additively, and § 5.24 P1 made
+/// that a prediction with a falsification clause: *"all 55 shipped call sites and every
+/// `stator_march_scoped` signature stay as they are — falsified if any existing caller has to
+/// change."* Both halves of the SIGNATURE claim hold exactly: [`stator_march`] and
+/// [`stator_march_scoped`] are character-identical to what slice Y shipped, and **no un-scoped
+/// call site moved.**
+///
+/// **AND "55" WAS ITSELF STALE — THE COUNT IS 82.** It is a number slice Y typed into this doc
+/// comment and P1 inherited without re-running it. Counted at slice Z, over `src/` and `tests/`,
+/// excluding comments: **82 un-scoped sites** (91 once slice Z's own file lands) and **16 scoped
+/// ones**. The verdict does not change — none of the 82 moved — but a count carried forward
+/// across a slice on the strength of a doc comment is the shape this port has been caught on
+/// repeatedly, so it is re-measured here rather than re-quoted.
+///
+/// **But adding a field to a struct is a compile error at every EXHAUSTIVE STRUCT LITERAL of
+/// it, and the port had NINE** — one in `src/lagged_bleed.rs` and **eight in four test files**
+/// (`rung65.rs` ×3, `slice_y_oracle.rs` ×2, `slice_y_smoke.rs` ×2, `slice_y_dispatch.rs` ×1),
+/// which is where a `src/`-only grep would have missed them. So P1 is **falsified at its letter**
+/// and every one of the nine took the one-token repair `..MarchScope::DEFAULT`.
+///
+/// **THE COST IS PAID ONCE AND NOT PER RUNG.** A functional-update literal absorbs the next
+/// field silently, so slice AA's `v0` / `ic_order` costs zero edits at these nine sites. That is
+/// the reason the repair is a spread rather than a pair of `None`s typed nine times — and the
+/// reason it is written down here rather than fixed quietly, because the precedent a later slice
+/// inherits is *"growth is free"* and the measurement says *"growth is free from the SECOND time
+/// on."*
+///
+/// [`stator_march`]: FuelTransientCore::stator_march
+/// [`stator_march_scoped`]: FuelTransientCore::stator_march_scoped
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct MarchScope {
     /// RUNG 65's `b0` — an override of the lagged valve's INITIAL position, and `None` is the
@@ -491,12 +519,34 @@ pub struct MarchScope {
     /// bit-for-bit. It exists because rung 65 § 3's finding is that `b` is a CONSTANT OF THE
     /// MOTION, and a constant of the motion is only demonstrable by moving its value.
     pub b0: Option<f64>,
+    /// RUNG 66's `lag` — the FUEL-side leg's [`AsymmetricLag`], armed for ONE march.
+    ///
+    /// It rides here for rung 65's reason verbatim, and Python says so: `_stator_march` is called
+    /// from a dozen rung-57-to-65 readers that know nothing about a fuel lag, and every one of
+    /// them must keep reaching the IDENTICAL march. `None` leaves them all bit-for-bit.
+    ///
+    /// The carrier the value lands on is [`TwoSpoolTransientCore::lag`], through
+    /// [`LaggedFuel`](crate::two_spool_transient::LaggedFuel).
+    pub lag: Option<AsymmetricLag>,
+    /// RUNG 67's `tau_gov` — the TIT topping governor's response clock, armed for ONE march.
+    ///
+    /// Rung 66's shape with one substitution: the fuel leg's SENSOR moves from `phi_lp` to `Tt4`.
+    /// `Tt4_max` needs no plumbing of its own — it has been a rung-58 [`StatorLeg`] field since
+    /// slice V, so the governor's REDLINE already reaches the march and only its CLOCK is new.
+    ///
+    /// The carrier is [`TwoSpoolTransientCore::tau_gov`], through
+    /// [`LaggedGovernor`](crate::two_spool_transient::LaggedGovernor).
+    pub tau_gov: Option<f64>,
 }
 
 impl MarchScope {
     /// What every un-scoped caller passes. A `const` rather than `Default::default()` so the
     /// forwarding methods stay `const`-friendly and the intent reads at the call site.
-    pub const DEFAULT: MarchScope = MarchScope { b0: None };
+    ///
+    /// **AND WHAT EVERY PARTIAL LITERAL SPREADS.** `MarchScope { b0, ..MarchScope::DEFAULT }` is
+    /// the spelling slice Z's P1 verdict (above) settles on, because it survives slice AA's two
+    /// further fields without an edit.
+    pub const DEFAULT: MarchScope = MarchScope { b0: None, lag: None, tau_gov: None };
 }
 
 /// WHICH leg is armed — Python's `_one_leg` return, a string.
@@ -692,7 +742,9 @@ impl FuelTransientCore {
     /// The same march with rungs 65–68's per-march isolation parameters — see [`MarchScope`].
     ///
     /// Split from [`stator_march`](Self::stator_march) so that opening the cell's signature at
-    /// slice Y moved **no** caller: every one of the 55 shipped sites wants the default.
+    /// slice Y moved **no** caller: every one of the shipped un-scoped sites wants the default.
+    /// Slice Y wrote "55" here; re-counted at slice Z it is **82**, and the number now lives at
+    /// [`MarchScope`] alone so there is one place to keep honest instead of two.
     pub fn stator_march_scoped(
         &self, flight: &FlightCondition, ramp: &Ramp, nu0: Option<(f64, f64)>,
         leg: &StatorLeg<'_>, scope: &MarchScope,

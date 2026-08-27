@@ -587,7 +587,7 @@ fn sweep(c: &mut Cmp) {
     c.f("F/nat/removed", m_f.removed_over(&nat_f));
     for (lbl, x) in [("in", 0.99 * edge), ("on", edge), ("out", 1.01 * edge)] {
         let (t, _) = m_f.stator_march_scoped(&fl, &ramp(DS_C), None, &leg_f,
-                                             &MarchScope { b0: Some(x) });
+                                             &MarchScope { b0: Some(x), ..MarchScope::DEFAULT });
         let f0 = bc_of(&t[0]).0;
         c.f(&format!("F/{lbl}/b0"), x);
         c.f(&format!("F/{lbl}/drift"),
@@ -626,7 +626,8 @@ fn sweep(c: &mut Cmp) {
     let m_g = gt(&LeverArm::floored(valve(Some(TAU))));
     let (g_a, _) = m_g.stator_march(&fl, &ramp(DS_C), None, &StatorLeg::default());
     let (g_b, _) = m_g.stator_march_scoped(&fl, &ramp(DS_C), None, &StatorLeg::default(),
-                                           &MarchScope { b0: Some(bc_of(&g_a[0]).0) });
+                                           &MarchScope { b0: Some(bc_of(&g_a[0]).0),
+                                                         ..MarchScope::DEFAULT });
     emit_pts_g5(c, "G/b0/auto", &g_a);
     emit_pts_g5(c, "G/b0/given", &g_b);
     c.b("G/b0/equal", keys(&g_a) == keys(&g_b));
