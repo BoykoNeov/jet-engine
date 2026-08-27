@@ -344,7 +344,10 @@ pub fn cross_extra(p: &FuelPoint) -> (usize, f64, f64) {
     match p.extra {
         PointExtra::CrossCascade { ic_iters, ic_res, ic_damp, .. } => (ic_iters, ic_res, ic_damp),
         PointExtra::None | PointExtra::Asym { .. } | PointExtra::Valve { .. }
-        | PointExtra::Cascade { .. } => panic!(
+        // SLICE AA: rung 68 is REFUSED here for rung 66's exact reason -- it iterates the joint
+        // sweep UNDAMPED, so it carries `ic_iters`/`ic_res` and no `ic_damp`. Admitting it would
+        // hand a reader a damping factor that integrator never computed.
+        | PointExtra::Cascade { .. } | PointExtra::Triple { .. } => panic!(
             "rung-67 reader on a trajectory with no joint-IC record: this march did not \
              dispatch to r67_integrate_fuel_cross. Rung 66's cascade carries `ic_iters` and \
              `ic_res` but NOT `ic_damp` -- it iterates undamped -- so it is refused here rather \

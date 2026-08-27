@@ -21,7 +21,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding, backticks in `-m`, and a status read off the runner
 
-## The Rust port — decided 2026-08-12; **PHASES 0–6 DONE** — phase 6 authorised 2026-08-17 and **COMPLETED 2026-08-20** with slice U's five steps; **PHASE 7 AUTHORISED 2026-08-20**, slices V, W, X and **Y COMPLETE** — slice Y closed 2026-08-27 with all five steps; **SLICE Z (66+67) COMPLETE 2026-08-27** — all five steps: both marches + 20 method bodies, the **38 ported gates** green first run at **20.0x** PyPy, **35 335 oracle keys bit-exact on both interpreters** (CPython exempt on 8 named keys), and **8 dispatch gates** closing the four measured blind spots
+## The Rust port — decided 2026-08-12; **PHASES 0–6 DONE** — phase 6 authorised 2026-08-17 and **COMPLETED 2026-08-20** with slice U's five steps; **PHASE 7 AUTHORISED 2026-08-20**, slices V, W, X and **Y COMPLETE** — slice Y closed 2026-08-27 with all five steps; **SLICE Z (66+67) COMPLETE 2026-08-27** — all five steps: both marches + 20 method bodies, the **38 ported gates** green first run at **20.0x** PyPy, **35 335 oracle keys bit-exact on both interpreters** (CPython exempt on 8 named keys), and **8 dispatch gates** closing the four measured blind spots; **SLICE AA (68) COMPLETE 2026-08-27** — all five steps: `three_loop.rs` 2 302 lines, **47 gates**, **12 084 oracle keys bit-exact vs PyPy** (4 named CPython exemptions), full gate **124 blocks / 1 199 passed / 0 failed**
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; a new PHASE needs authorisation
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost
 - [Rust arithmetic IS PyPy](rust-port-arithmetic-is-pypy.md) — size a solver claim by DISTINCT ROOTS, not row count
@@ -65,6 +65,8 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Slice Z step 3](rust-port-slice-z-step3.md) — the census reported a 0/0 baseline and called its own CONTROLS invisible; and a gate's doc comment claimed a coverage it did not have
 - [Slice Z step 4](rust-port-slice-z-step4.md) — a pre-registered exemption of TWO keys measured EIGHT: it counted quantities, the dump emits names
 - [Slice Z step 5](rust-port-slice-z-step5.md) — the bar written to repair one vacuity exposed a second in the same gate, and two 'dead' branches are UNOBSERVABLE rather than unexercised
+- [Slice AA step 1](rust-port-slice-aa-step1.md) — a growth prediction asked of ONE struct while the step grew three, and `ptr::eq` on a `const` written a second time
+- [Slice AA steps 2-5](rust-port-slice-aa-steps2345.md) — a DEFENCE WITH NO READER appeared four times; ask what reads a thing, never wait for a failure
 - Slice T (46/47/48) steps [1](rust-port-slice-t-step1.md) [2](rust-port-slice-t-step2.md) [3](rust-port-slice-t-step3.md) [4](rust-port-slice-t-step4.md) — an EXACT ZERO blinds its own gate to the SIGN; 9/9 green and blind to a 24% error, so tabulate BAR MARGINS; a defect can survive because every READER is invariant under it; an injection matching TWICE applies nothing and still reports green
 
 ## Shipped rungs

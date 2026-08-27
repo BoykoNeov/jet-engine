@@ -364,6 +364,12 @@ fn r64_at_stator(core: &ScheduledStatorCore, arm: StatorArm) -> ScheduledStatorC
         bleed: core.fuel.inner.lever.bleed,
         bleed_sched: core.fuel.inner.lever.sched,
         bleed_lim: core.fuel.inner.lever.lim,
+        // RUNG 64's body has no `stator_lim` name — the same shape as its own complaint against
+        // rung 62's, one rung up, and **faithful**: rung 68 overrides `at_lever` but NOT
+        // `at_stator`, so Python reaching here drops the third loop too. Enumerated at slice AA
+        // step 2 (rung 68's six swaps are `__init__`, `_arm`, `_stator_march`, `at_lever`,
+        // `integrate_fuel`, `v_of`), not assumed.
+        stator_lim: None,
     };
     core.at_lever(&lever)
 }

@@ -629,6 +629,42 @@ pub struct TwoSpoolTransientCore {
     /// Rung 66's carrier with the sensor moved from `phi_lp` to `Tt4`. Its guard is
     /// [`LaggedGovernor`].
     pub tau_gov: Cell<Option<f64>>,
+    /// RUNGS 62–68's own nine virtual names for the THIRD loop — Python's `_stator_leg`,
+    /// `_solve_v`, `_rk4_floor` and six more. **Defaults to a table whose cells PANIC**
+    /// ([`NO_TRIPLE`]), not to "no stator loop": rungs 40–67 have none of those names at all, and
+    /// a default answering `None`/`false` would agree with the truth on exactly the machines the
+    /// suites build. [`NO_STATOR`](crate::stator_transient::NO_STATOR)'s precedent, third use.
+    ///
+    /// [`NO_TRIPLE`]: crate::three_loop::NO_TRIPLE
+    pub triple_hooks: &'static crate::three_loop::TripleHooks,
+    /// RUNG 68's TRIAL stator setting — Python's `_v_forced`, and rung 64's `b_forced` one lever
+    /// over. Its guard is [`ForcedStator`], which PANICS on a nest for [`ForcedBleed`]'s reason
+    /// and on [`ForcedBleed`]'s measurement: **0 overwrites in 478 511 sets** over the rung-68
+    /// suite (§ 5.25 (iii)).
+    pub v_forced: Cell<Option<f64>>,
+    /// RUNG 68's LAGGED stator setting, carried as the march's FIFTH state — Python's `_v_state`,
+    /// and rung 65's `b_state` one lever over. Its guard is [`MarchedStator`].
+    ///
+    /// **`v_forced` WINS OVER THIS ONE**, for rung 65's reason one lever over: the stator's own
+    /// command solve trials settings on a plant whose live setting is the one being commanded
+    /// away from.
+    pub v_state: Cell<Option<f64>>,
+    /// RUNG 68's OVERRIDDEN initial stator position — Python's `_v0`, the carrier between
+    /// `_stator_march`'s parameter and `_integrate_fuel_triple`'s read. [`b0`](Self::b0)'s shape
+    /// exactly, and its guard [`InitialStator`] restores the PREVIOUS value for the same reason.
+    pub v0: Cell<Option<f64>>,
+    /// RUNG 68's DECLARED joint-initial-condition sweep order — Python's `_ic_order`, and the one
+    /// scoped field in the phase that is **not** a float.
+    ///
+    /// The `s = 0` fixed points are a CURVE, not a point, so a Gauss-Seidel sweep lands on
+    /// whichever MEMBER its order selects. `"gqv"` is rung 66's order with the new actuator
+    /// appended last, DECLARED rather than inferred, and `ic_family` reports the alternatives as
+    /// the sensitivity they are.
+    ///
+    /// **ITS DEFAULT IS `"gqv"` AND NOT `None`**, which is why it is a `Cell<&'static str>`:
+    /// Python's class attribute is the string, and `_stator_march`'s `ic_order or self._ic_order`
+    /// falls back to it. Its guard is [`DeclaredOrder`], restore-previous.
+    pub ic_order: Cell<&'static str>,
 }
 
 /// The RAII form of Python's `_closer`'s `try/finally` — **the restore is `Drop`, so it survives
@@ -796,6 +832,130 @@ impl Drop for LaggedGovernor<'_> {
     }
 }
 
+/// RUNG 68's `_v_forced` guard — [`ForcedBleed`] one lever over, **panic on nest included**.
+///
+/// Python's `_closer_v` is `_closer`'s body with the field renamed, `finally` restoring to `None`
+/// rather than to the previous value; so a nested guard would CLOBBER the outer trial silently.
+/// § 5.25 (iii) measured the field at **0 overwrites in 478 511 sets** over the rung-68 suite,
+/// where an overwrite — a set to non-`None` while the previous value was non-`None` — *is* a
+/// same-field nest. The panic is therefore louder than the source on purpose, exactly as
+/// [`ForcedBleed`]'s is, and its message says which rungs would retire the measurement.
+pub struct ForcedStator<'a> {
+    core: &'a TwoSpoolTransientCore,
+}
+
+impl<'a> ForcedStator<'a> {
+    /// Force the stator setting to `v` for as long as the returned guard lives.
+    pub fn set(core: &'a TwoSpoolTransientCore, v: f64) -> Self {
+        assert!(core.v_forced.get().is_none(),
+                "rung-68's `_v_forced` guard NESTED. THIS PANIC IS A PORT DECISION, NOT A BUG \
+                 YOU JUST INTRODUCED: Python does NOT raise here. `_closer_v`'s `finally` \
+                 restores to None rather than to the previous value, so Python would CLOBBER the \
+                 outer trial silently and carry on. The measurement behind this assert is 0 \
+                 overwrites in 478 511 sets over `tests/test_rung68.py` -- taken on RUNG-68 \
+                 MACHINES ONLY, so it says nothing about rungs 69-84. If you are reading this \
+                 from one of those, the measurement no longer holds and the port owes Python's \
+                 CLOBBER bit-for-bit; replace this assert with the clobber and gate the count, \
+                 do not work around it.");
+        core.v_forced.set(Some(v));
+        ForcedStator { core }
+    }
+}
+
+impl Drop for ForcedStator<'_> {
+    fn drop(&mut self) {
+        self.core.v_forced.set(None);
+    }
+}
+
+/// RUNG 68's `_v_state` guard — [`MarchedBleed`] one lever over, restoring to `None`.
+///
+/// **THE `_b_state`/`_v_state` BOUNDARY IS THE RUNG'S OWN TRAP AND IT IS SET BY THE CALLER, NOT
+/// BY THIS TYPE.** A law that TRIALS an actuator must not see that actuator's state and MUST see
+/// the other two: the VALVE law sets `v_state` and no `b_state`, the STATOR law sets `b_state`
+/// and no `v_state`, and the FUEL law — which trials neither — sets BOTH. Getting the pair
+/// backwards converges a solver on a residual the plant never uses, with nothing raising. Python
+/// calls it rung 62's `_powers` trap in its fourth shape.
+pub struct MarchedStator<'a> {
+    core: &'a TwoSpoolTransientCore,
+}
+
+impl<'a> MarchedStator<'a> {
+    pub fn set(core: &'a TwoSpoolTransientCore, v: f64) -> Self {
+        Self::set_opt(core, Some(v))
+    }
+
+    /// Spelled as an `Option` for [`MarchedBleed::set_opt`]'s reason: an assignment of `None` is
+    /// a real assignment in Python and not an omission.
+    pub fn set_opt(core: &'a TwoSpoolTransientCore, v: Option<f64>) -> Self {
+        core.v_state.set(v);
+        MarchedStator { core }
+    }
+}
+
+impl Drop for MarchedStator<'_> {
+    fn drop(&mut self) {
+        self.core.v_state.set(None);
+    }
+}
+
+/// RUNG 68's `_v0` guard — [`InitialBleed`] one lever over, restoring the PREVIOUS value.
+///
+/// The THIRD of § 5.19 (iv)'s four restore-previous guards that live in `_stator_march`, and the
+/// fourth is [`DeclaredOrder`] beside it in the same two lines of Python.
+pub struct InitialStator<'a> {
+    core: &'a TwoSpoolTransientCore,
+    prev: Option<f64>,
+}
+
+impl<'a> InitialStator<'a> {
+    /// Python's `prev_v, self._v0 = self._v0, v0`. `v0 = None` is a real assignment: a rung-68
+    /// `_stator_march` called WITHOUT `v0` clears an outer one for the duration.
+    pub fn set(core: &'a TwoSpoolTransientCore, v0: Option<f64>) -> Self {
+        let prev = core.v0.get();
+        core.v0.set(v0);
+        InitialStator { core, prev }
+    }
+}
+
+impl Drop for InitialStator<'_> {
+    fn drop(&mut self) {
+        self.core.v0.set(self.prev);
+    }
+}
+
+/// RUNG 68's `_ic_order` guard — restore-previous, and **the one guard in the phase whose field
+/// is not a float**.
+///
+/// Python is `prev_o, self._ic_order = self._ic_order, ic_order or self._ic_order`, so an absent
+/// argument re-assigns the CURRENT value rather than leaving the field alone. That is why
+/// [`set`](Self::set) takes an `Option<&'static str>` and resolves the fallback here: writing
+/// `core.ic_order.set(order.unwrap_or(prev))` at the call site would be the same number and a
+/// different statement.
+///
+/// **AND IT IS WHY THIS FIELD BROKE MY OWN NESTING PROBE.** A nullity-driven depth counter reads
+/// every one of these assignments as a push and none as a pop, and reported the field nesting to
+/// depth 106 (§ 5.25 (iii)). A restore-previous guard cannot clobber by construction; the column
+/// that discriminates a nest is OVERWRITE, and only for the restore-to-`None` guards.
+pub struct DeclaredOrder<'a> {
+    core: &'a TwoSpoolTransientCore,
+    prev: &'static str,
+}
+
+impl<'a> DeclaredOrder<'a> {
+    pub fn set(core: &'a TwoSpoolTransientCore, order: Option<&'static str>) -> Self {
+        let prev = core.ic_order.get();
+        core.ic_order.set(order.unwrap_or(prev));
+        DeclaredOrder { core, prev }
+    }
+}
+
+impl Drop for DeclaredOrder<'_> {
+    fn drop(&mut self) {
+        self.core.ic_order.set(self.prev);
+    }
+}
+
 impl TwoSpoolTransientCore {
     /// Python's `_EQ_TOL` — ABSOLUTE, which is exactly what probe 4's detector turns on.
     pub const EQ_TOL: f64 = 1e-12;
@@ -874,7 +1034,32 @@ impl TwoSpoolTransientCore {
             inner, rho, p_ref_lp, p_ref_hp, hooks, stator, stator_hooks, lever, lever_hooks,
             b_forced: Cell::new(None), b_state: Cell::new(None), b0: Cell::new(None),
             lag: Cell::new(None), tau_gov: Cell::new(None),
+            triple_hooks: &crate::three_loop::NO_TRIPLE,
+            v_forced: Cell::new(None), v_state: Cell::new(None), v0: Cell::new(None),
+            ic_order: Cell::new(crate::three_loop::IC_ORDER_DECLARED),
         }
+    }
+
+    /// The same constructor with rung 68's THIRD-loop table attached — [`with_lever_hooks`] plus
+    /// one field, so no existing call site moves.
+    ///
+    /// [`with_lever_hooks`]: Self::with_lever_hooks
+    #[allow(clippy::too_many_arguments)]
+    pub fn with_triple_hooks(
+        design_engine: TwoSpoolEngine, flight_design: FlightCondition, mdot_design: f64,
+        map_lp: ComponentMap, map_hp: ComponentMap, rho: f64,
+        hooks: &'static TwoSpoolTransientHooks,
+        stator_hooks: &'static crate::stator_transient::StatorTransientHooks,
+        stator: crate::stator_transient::StatorArming,
+        lever_hooks: &'static crate::bleed_transient::LeverHooks,
+        lever: crate::bleed_transient::LeverArming,
+        triple_hooks: &'static crate::three_loop::TripleHooks,
+    ) -> Self {
+        let mut core = Self::with_lever_hooks(
+            design_engine, flight_design, mdot_design, map_lp, map_hp, rho, hooks, stator_hooks,
+            stator, lever_hooks, lever);
+        core.triple_hooks = triple_hooks;
+        core
     }
 
     pub fn gas(&self) -> &Gas { self.inner.gas() }

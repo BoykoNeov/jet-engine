@@ -355,6 +355,18 @@ pub struct StatorArming {
     /// function of the state rather than a latch.
     pub map_lp_design: ComponentMap,
     pub map_hp_design: ComponentMap,
+    /// RUNG 68's CLOSED loop on the LP stators — Python's `stator_lim`, and
+    /// [`LeverArming::lim`](crate::bleed_transient::LeverArming::lim) one lever over.
+    ///
+    /// **Mutually exclusive with BOTH of the constant and scheduled arms**, asserted at
+    /// construction: the LP stators get a CONSTANT setting (rung 53), a SCHEDULE (57) or a FLOOR
+    /// (68) — exactly one. That mirrors rung 64's three-way assert on the valve, and the three
+    /// are exactly the legs this family differences.
+    ///
+    /// It lives on the ARMING beside the settings rather than on the transient core beside the
+    /// table, for [`crate::two_spool_transient::TwoSpoolTransientCore::lever`]'s reason: the
+    /// state a descendant adds goes on the shared core, and this is the stator half of it.
+    pub lim: Option<crate::three_loop::StatorLimiter>,
 }
 
 impl StatorArming {
@@ -367,6 +379,7 @@ impl StatorArming {
             sched_hp: None,
             map_lp_design: map_lp,
             map_hp_design: map_hp,
+            lim: None,
         }
     }
 
@@ -537,6 +550,24 @@ pub struct MarchScope {
     /// The carrier is [`TwoSpoolTransientCore::tau_gov`], through
     /// [`LaggedGovernor`](crate::two_spool_transient::LaggedGovernor).
     pub tau_gov: Option<f64>,
+    /// RUNG 68's `v0` — an override of the LAGGED STATOR's INITIAL position, and rung 65's `b0`
+    /// one lever over, for rung 65's reason verbatim: a constant of the motion is only
+    /// demonstrable by moving its value.
+    ///
+    /// The carrier is [`TwoSpoolTransientCore::v0`], through
+    /// [`InitialStator`](crate::two_spool_transient::InitialStator). **Out-of-band values are
+    /// REFUSED**, by [`TripleHooks::check_v0`](crate::three_loop::TripleHooks::check_v0) — a cell,
+    /// because rung 69's band is the MIRROR of rung 68's.
+    pub v0: Option<f64>,
+    /// RUNG 68's `ic_order` — which member of the `s = 0` fixed-point FAMILY the joint
+    /// Gauss-Seidel sweep lands on.
+    ///
+    /// **THE ONE FIELD IN THIS STRUCT THAT IS NOT A FLOAT, AND THE ONE WHOSE `None` IS NOT A
+    /// CLEAR.** Python is `ic_order or self._ic_order`, so an absent argument re-asserts the
+    /// DECLARED order rather than clearing it — the resolution lives in
+    /// [`DeclaredOrder`](crate::two_spool_transient::DeclaredOrder) so the two spellings cannot
+    /// drift apart.
+    pub ic_order: Option<&'static str>,
 }
 
 /// **AND ONE STRUCT FOR EVERY RUNG MEANS A FIELD ITS OWNER'S JUNIORS SILENTLY IGNORE — MEASURED
@@ -566,7 +597,8 @@ impl MarchScope {
     /// **AND WHAT EVERY PARTIAL LITERAL SPREADS.** `MarchScope { b0, ..MarchScope::DEFAULT }` is
     /// the spelling slice Z's P1 verdict (above) settles on, because it survives slice AA's two
     /// further fields without an edit.
-    pub const DEFAULT: MarchScope = MarchScope { b0: None, lag: None, tau_gov: None };
+    pub const DEFAULT: MarchScope =
+        MarchScope { b0: None, lag: None, tau_gov: None, v0: None, ic_order: None };
 }
 
 /// WHICH leg is armed — Python's `_one_leg` return, a string.
@@ -1049,6 +1081,9 @@ impl ScheduledStatorTransient {
             sched_hp: arm.sched_hp,
             map_lp_design: base_lp,
             map_hp_design: base_hp,
+            // RUNG 68's floor is not a rung-57 arming — `ThreeLoopCascadeTransient`'s own
+            // constructor sets it, and rungs 57-67 build this literal.
+            lim: None,
         };
         let fuel = FuelTransientCore {
             inner: TwoSpoolTransientCore::with_lever_hooks(
@@ -1074,6 +1109,40 @@ impl ScheduledStatorTransient {
             mdot_design,
             rho,
         })
+    }
+
+    /// [`with_tables`](Self::with_tables) plus RUNG 68's two — its own nine-cell table and the
+    /// stator FLOOR that goes with it.
+    ///
+    /// A separate constructor rather than two more parameters on `with_tables`, so that none of
+    /// the rung-57..67 builders moves: slice AA already grew three structs and paid six literals
+    /// for two of them (§ 5.25.1 (d)), and this is the one place where the cost was avoidable.
+    #[allow(clippy::too_many_arguments)]
+    pub fn with_triple_tables(
+        design_engine: TwoSpoolEngine, flight_design: FlightCondition, mdot_design: f64,
+        map_lp: Option<ComponentMap>, map_hp: Option<ComponentMap>, rho: f64, arm: StatorArm,
+        two_hooks: &'static TwoSpoolTransientHooks,
+        stator_hooks: &'static StatorTransientHooks,
+        fuel_hooks: &'static FuelTransientHooks,
+        lever_hooks: &'static crate::bleed_transient::LeverHooks,
+        lever: crate::bleed_transient::LeverArming,
+        triple_hooks: &'static crate::three_loop::TripleHooks,
+        stator_lim: Option<crate::three_loop::StatorLimiter>,
+    ) -> Self {
+        match Self::with_tables(design_engine, flight_design, mdot_design, map_lp, map_hp, rho,
+                                arm, two_hooks, stator_hooks, fuel_hooks, lever_hooks, lever) {
+            ScheduledStatorTransient::Full(mut c) => {
+                // Written AFTER the inherited constructor has run, exactly where Python's
+                // `self.stator_lim = stator_lim` sits — after its own `super().__init__`. The
+                // order matters: `_arm` is reachable from the inherited constructors' STEADY
+                // solves, i.e. before this line, which is why Python declares both as CLASS-level
+                // defaults and why the `Cell`s here start empty.
+                c.fuel.inner.stator.lim = stator_lim;
+                c.fuel.inner.triple_hooks = triple_hooks;
+                ScheduledStatorTransient::Full(c)
+            }
+            d => d,
+        }
     }
 
     /// `lp_disabled=True`, BARE — Python's early return, which builds rung 34/35's single-spool

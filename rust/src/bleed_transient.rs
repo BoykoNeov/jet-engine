@@ -208,6 +208,10 @@ pub struct LeverArm {
     /// `Default` rather than a parameter, so [`LeverHooks::at_lever`]'s signature is not
     /// re-opened. `at_lever` goes 6 → 7 keywords here, 8 at rung 68, 9 at 69, then stops.
     pub bleed_lim: Option<crate::limited_bleed::BleedLimiter>,
+    /// RUNG 68's keyword — the EIGHTH, exactly as the note on `bleed_lim` predicted ("6 → 7
+    /// keywords here, 8 at rung 68, 9 at 69, then stops"). A field with a `Default`, so
+    /// [`LeverHooks::at_lever`]'s signature is not re-opened.
+    pub stator_lim: Option<crate::three_loop::StatorLimiter>,
 }
 
 impl LeverArm {
@@ -246,6 +250,7 @@ impl LeverArm {
             },
             bleed: if lever.bleed != 0.0 { lever.bleed } else { neighbour.bleed },
             bleed_sched: lever.bleed_sched.or(neighbour.bleed_sched),
+            stator_lim: lever.stator_lim.or(neighbour.stator_lim),
             bleed_lim: lever.bleed_lim.or(neighbour.bleed_lim),
         }
     }
@@ -1001,6 +1006,13 @@ fn r62_at_stator(core: &ScheduledStatorCore, arm: StatorArm) -> ScheduledStatorC
     bump(&AT_STATOR_R62);
     let lever = LeverArm {
         stator: arm,
+        // RUNG 68's floor, `None`, and **that is FAITHFUL rather than a gap** — settled at
+        // slice AA step 2 by enumerating rung 68's overrides rather than guessing. Rung 68
+        // overrides `at_lever` and NOT `at_stator`, so a rung-68 machine reaching this body runs
+        // rung 68's `at_lever` with no `stator_lim` keyword, and Python's own default drops the
+        // third loop exactly as this line does. It is the trap rung 64's override closed for the
+        // VALVE, still open one rung up — in the source, not in the port.
+        stator_lim: None,
         bleed: core.fuel.inner.lever.bleed,
         bleed_sched: core.fuel.inner.lever.sched,
         // `None`, and DELIBERATELY: rung 62's body has no `bleed_lim` at all, so a rung-64

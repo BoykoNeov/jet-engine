@@ -220,7 +220,9 @@ pub fn r65_b_at_point(core: &ScheduledStatorCore, flight: &FlightCondition, p: &
         PointExtra::Valve { b, .. } => b,
         // SLICE Z. Rungs 66/67 record `b` too, and Python reads the DICT KEY — so a wildcard
         // panic here would refuse a point Python answers. See [`valve_of`] for the audit.
-        PointExtra::Cascade { b, .. } | PointExtra::CrossCascade { b, .. } => b,
+        PointExtra::Cascade { b, .. } | PointExtra::CrossCascade { b, .. }
+        // SLICE AA: rung 68's five-state march records `b` for the same reason.
+        | PointExtra::Triple { b, .. } => b,
         PointExtra::None | PointExtra::Asym { .. } => panic!(
             "rung-65: a lagged valve's position is a march STATE and cannot be recovered from a \
              trajectory point that did not record it. This point came from a different \
@@ -733,8 +735,9 @@ pub fn py_max3(a: f64, b: f64, c: f64) -> f64 {
 pub fn valve_of(p: &FuelPoint) -> (f64, f64) {
     match p.extra {
         PointExtra::Valve { b, b_cmd } => (b, b_cmd),
-        PointExtra::Cascade { b, b_cmd, .. } | PointExtra::CrossCascade { b, b_cmd, .. } =>
-            (b, b_cmd),
+        PointExtra::Cascade { b, b_cmd, .. } | PointExtra::CrossCascade { b, b_cmd, .. }
+        // SLICE AA: rung 68's five-state march records both.
+        | PointExtra::Triple { b, b_cmd, .. } => (b, b_cmd),
         PointExtra::None | PointExtra::Asym { .. } =>
             panic!("rung-65 reader on a trajectory with no valve state: this march did not \
                     dispatch to r65_integrate_fuel_valve_lag"),

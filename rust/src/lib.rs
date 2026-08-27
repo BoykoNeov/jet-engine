@@ -142,6 +142,7 @@ pub mod stage;
 pub mod stator;
 pub mod stator_bleed;
 pub mod stator_transient;
+pub mod three_loop;
 pub mod two_lag;
 pub mod two_spool;
 pub mod two_spool_transient;

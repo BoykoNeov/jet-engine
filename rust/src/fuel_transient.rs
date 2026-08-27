@@ -747,6 +747,26 @@ pub enum PointExtra {
     /// the marginal mode rung 66 reports. `joint_ic_corners` publishes it.
     CrossCascade { g: f64, required: f64, b: f64, b_cmd: f64, ic_iters: usize, ic_res: f64,
                    ic_damp: f64 },
+    /// RUNG 68's FIVE-STATE march — **24 keys**, and the widest point in the port.
+    ///
+    /// Python: *"Every key rungs 52/65/66 record is recorded here byte-unchanged, plus
+    /// `v`/`v_cmd`/`v_regime`, so every rung-52/65/66/67 reader works on this trajectory too."*
+    /// That is the same load-bearing claim about the READERS that [`Cascade`](Self::Cascade)
+    /// makes, so [`asym_extra`], `valve_of` and `b_at_point` are widened to admit this variant
+    /// rather than left refusing it.
+    ///
+    /// **`cross_extra` is NOT widened**, and that is the same distinction rung 66 already draws
+    /// against rung 67: this march carries `ic_iters` and `ic_res` but **no `ic_damp`**, because
+    /// it iterates UNDAMPED like rung 66's. Folding it in would hand a reader a damping factor
+    /// this integrator never computed.
+    ///
+    /// `ic_order` is the DECLARED sweep order — the one non-float a marched point carries, and
+    /// the reason `ic_family` can report the `s = 0` family as the sensitivity it is.
+    ///
+    /// [`asym_extra`]: crate::fuel_transient::asym_extra
+    Triple { g: f64, required: f64, b: f64, b_cmd: f64, v: f64, v_cmd: f64,
+             v_regime: crate::limited_bleed::Regime, ic_iters: usize, ic_res: f64,
+             ic_order: &'static str },
 }
 
 /// One instant of a marched FUEL trajectory — Python's per-point dict.
@@ -786,6 +806,7 @@ impl FuelPoint {
             PointExtra::Asym { .. } | PointExtra::Valve { .. } => 16,
             PointExtra::Cascade { .. } => 20,
             PointExtra::CrossCascade { .. } => 21,
+            PointExtra::Triple { .. } => 24,
         }
     }
 }
@@ -1216,7 +1237,9 @@ pub fn asym_extra(p: &FuelPoint) -> (f64, f64) {
     match p.extra {
         PointExtra::Asym { g, required } => (g, required),
         PointExtra::Cascade { g, required, .. }
-        | PointExtra::CrossCascade { g, required, .. } => (g, required),
+        | PointExtra::CrossCascade { g, required, .. }
+        // SLICE AA: rung 68 records both keys too, and Python reads the DICT KEY.
+        | PointExtra::Triple { g, required, .. } => (g, required),
         // Rung 65's valve route is named SEPARATELY rather than folded into a `_` arm: it carries
         // 16 keys too, and a wildcard here would let a lagged-valve trajectory reach rung 52's
         // reader and report the wrong two of them. It stays REFUSING because Python raises

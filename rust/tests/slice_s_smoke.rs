@@ -284,6 +284,11 @@ fn put_traj(c: &mut Cmp, p: &str, pts: &[FuelPoint]) {
             &["b", "b_cmd", "g", "ic_iters", "ic_res", "required"],
         PointExtra::CrossCascade { .. } =>
             &["b", "b_cmd", "g", "ic_damp", "ic_iters", "ic_res", "required"],
+        // **AND IT BROKE THE BUILD A SECOND TIME**, at slice AA, which is the arm above's own
+        // stated purpose working. Rung 68's five-state route carries ten extra keys, sorted.
+        PointExtra::Triple { .. } =>
+            &["b", "b_cmd", "g", "ic_iters", "ic_order", "ic_res", "required", "v", "v_cmd",
+              "v_regime"],
     };
     c.d(&format!("{p}/extra_keys"), extra_names.len() as u64);
     for (ie, name) in extra_names.iter().enumerate() {
