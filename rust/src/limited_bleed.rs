@@ -370,6 +370,9 @@ fn r64_at_stator(core: &ScheduledStatorCore, arm: StatorArm) -> ScheduledStatorC
         // step 2 (rung 68's six swaps are `__init__`, `_arm`, `_stator_march`, `at_lever`,
         // `integrate_fuel`, `v_of`), not assumed.
         stator_lim: None,
+        // RUNG 69's, `None`, for the line above's reason one reference over: rung 69 overrides
+        // `at_lever` and NOT `at_stator`, so Python reaching here drops the incidence loop too.
+        stator_inc: None,
     };
     core.at_lever(&lever)
 }

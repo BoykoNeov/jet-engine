@@ -665,6 +665,30 @@ pub struct TwoSpoolTransientCore {
     /// Python's class attribute is the string, and `_stator_march`'s `ic_order or self._ic_order`
     /// falls back to it. Its guard is [`DeclaredOrder`], restore-previous.
     pub ic_order: Cell<&'static str>,
+    /// RUNG 69's SELECTED REFERENCE — Python's `_ref`, and the phase's first **CONFIG-kind**
+    /// dynamically-scoped field.
+    ///
+    /// Every one before it (`b_forced`, `b_state`, `v_forced`, `v_state`, `b0`, `v0`, `lag`,
+    /// `tau_gov`, `ic_order`) is STATE-kind — set inside a march, read one or two frames down.
+    /// This one is set OUTSIDE every march and read by a sibling CONSTRUCTOR: measured over the
+    /// rung-69 suite, **58 sets, every one from `_with_ref`, every one outside every march**. So
+    /// it takes phase 5's carrier precedent and [`MarchScope`] does not grow.
+    ///
+    /// **AND IT NEVER NESTS.** `'inc'` 14 + `'phi'` 15 = 29 sets to a value against 29 restores to
+    /// `None`; a restore-to-`None` that is exact means the previous value was `None` every time.
+    /// Its guard [`RefScope`] nevertheless restores the PREVIOUS value, because that is what
+    /// Python's `finally` does — the two spellings agree on every shipped path, which is what
+    /// makes a manufactured nest the only instrument that can tell them apart.
+    ///
+    /// **THE GUARD WRITES THIS FIELD THROUGH A CELL AND NOT DIRECTLY**, because rung 73 overrides
+    /// `_with_ref` to write a different field (`_ref_law`) and changes nothing else about the
+    /// call. `Option<&'static str>` and not an enum: Python compares it against the string
+    /// literals `"inc"` / `"phi"` and asserts on anything else, and that assert is a shipped
+    /// refusal a two-variant enum would delete.
+    ///
+    /// [`MarchScope`]: crate::stator_transient::MarchScope
+    /// [`RefScope`]: crate::reference_split::RefScope
+    pub ref_: Cell<Option<&'static str>>,
 }
 
 /// The RAII form of Python's `_closer`'s `try/finally` — **the restore is `Drop`, so it survives
@@ -1037,6 +1061,7 @@ impl TwoSpoolTransientCore {
             triple_hooks: &crate::three_loop::NO_TRIPLE,
             v_forced: Cell::new(None), v_state: Cell::new(None), v0: Cell::new(None),
             ic_order: Cell::new(crate::three_loop::IC_ORDER_DECLARED),
+            ref_: Cell::new(None),
         }
     }
 

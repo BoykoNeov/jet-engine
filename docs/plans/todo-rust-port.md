@@ -13986,6 +13986,140 @@ Recorded rather than quietly fixed, because each printed a number that would hav
   The `slow` grep counted lines containing the string. [[rust-port-guessed-census-bars]] — five
   typed count bars, five wrong — is the precedent, and it cost one command to avoid here.
 
+#### 5.26.1 SLICE AB step 1 — the one added cell, the nine opened swaps, and a gate that could not fail
+
+**SHIPPED**: `src/reference_split.rs` (519 lines — `StatorIncidenceLimiter`, `RefScope`,
+`build_reference_split_cascade`, the five `R69*` tables, the one added cell's body, nine
+placeholder bodies), one cell on `TripleHooks`, one field each on `TwoSpoolTransientCore`
+(`ref_`), `StatorArming` (`inc`) and `LeverArm` (`stator_inc`),
+`ScheduledStatorTransient::with_ref_tables`, and `tests/slice_ab_cells.rs` — **13 gates, green**, and the full Rust gate at **125 binaries /
+1 212 passed / 0 failed**.
+**No swapped cell body is ported**; every one of the nine panics naming itself.
+
+##### (a) THE STEP-1 GATE IS INVERTED, BECAUSE THE SLICE'S RISK IS
+
+Phase 7's rule — *step 1 of every slice is the cell addition, so a slice that forgets a cell fails
+at its own first gate* — is a statement about ADDED cells, and this slice adds one. § 5.26 (ii)
+said so before a line was written, and the file is built to the risk it named instead: **a swap
+whose Rust body is still effectively the parent's compiles, runs, and is caught by nothing.**
+
+So `R69_TRIPLE` is spelled **without a `..R68_TRIPLE` spread** — every one of the ten slots is on
+the page, and the ONE cell rung 69 inherits (`triple_laws`, which rung 70 overrides) is a decision
+a reader can see rather than the residue of a spread. And the nine swapped bodies are **named
+panics rather than `todo!()`**: `todo!()` and the parent's body are indistinguishable to a reader
+skimming the table, where a per-cell message makes the ten slots ADDRESSABLE by a gate and gives
+step 2 a progress bar.
+
+**THE TWO TENS ARE DIFFERENT TENS AND THE ARITHMETIC IS NOW WRITTEN OUT IN BOTH FILES**, because
+an unreconciled pair of counts across two files is this phase's most-repeated defect:
+
+* **10 SWAPS** = the 9 cells rung 69 overrides + `__init__`, which is **not a cell** — no shipped
+  table carries a constructor hook, and it ports as the builder's four `assert!`s.
+* **10 TABLE CELLS** = those same 9 + the one this rung ADDS, `with_ref`.
+
+##### (b) **A GATE THAT COULD NOT FAIL, CAUGHT BY THE ADVISOR AND FIXED BY MEASURING**
+
+`triple_laws_is_inherited_from_rung68…` first read
+`assert!(!msg.contains(": _triple_laws"))`. **No function in the crate emits that string** — there
+is no `r69_triple_laws` at all, and `NO_TRIPLE`'s body spells the name `(_triple_laws)` in
+parentheses — so the predicate is a tautology on every possible input. Slice V step 2's *"both
+gates written to CLOSE a step could not fail"*, third instance in this phase.
+
+The repair was to **run the closure and read the value instead of predicting it**: the message is
+**empty** — rung 68's body builds its three closures lazily and dispatches none of the eight open
+cells, so the call returns `Ok` on a half-ported machine. That is what is pinned now, and it fails
+if the slot is ever a placeholder.
+
+##### (c) THE NINE-CELL COUNT WAS TYPED ON BOTH SIDES OF ITS OWN COMPARISON
+
+`assert_eq!(got.len(), UNPORTED_AT_STEP1.len())` compares nine hand-written closures against nine
+hand-written names: a cell forgotten in **both** passes agrees.
+[[rust-port-documented-gate-that-doesnt-exist]] — *a count guard is blind to a class absent from
+BOTH sides*. Replaced by the instrument the same file already used for P1/P5: an **exhaustive
+`TripleHooks` literal with no `..` spread**, so slice AC's eleventh field is `E0063` at the file
+whose job is the cell census.
+
+##### (d) `_ref` IS THE PHASE'S FIRST **CONFIG-KIND** SCOPED FIELD, AND THE CELL IS THE SETTER
+
+Every one of the nine scoped fields before it is STATE-kind — set inside a march, read a frame or
+two down. `_ref` is set OUTSIDE every march and read by a sibling CONSTRUCTOR (§ 5.26 (vi): 58
+sets, all from `_with_ref`, all outside every march), so it takes phase 5's carrier precedent and
+**`MarchScope` does not grow — P1 settled, exactly.**
+
+Python's `_with_ref(self, ref, fn, *a, **kw)` is higher-order over a return type that varies by
+call site, which a `fn` pointer in a `const` table cannot be generic over and `&dyn Fn` does not
+rescue (it is the RETURN type that differs). Read against rung 73's override, the only thing that
+override changes is **WHICH FIELD THE GUARD WRITES** — so the cell is
+`with_ref: fn(&Core, Option<&'static str>) -> Option<&'static str>`, *set and hand back the
+displaced value*, `RefScope` is shared, and its `Drop` calls back **through the same cell** so a
+rung that moves the field moves both halves of the guard at once.
+
+The guard restores the PREVIOUS value, and § 5.26 (vi) measured that no shipped path can tell that
+from a restore-to-`None`. So the nest is **manufactured** in the gate, `slice_y_dispatch.rs`'s
+shape one carrier over.
+
+##### (e) **GUARD C IS HOISTED ABOVE THE BUILD, AND IT EXPOSES A DEAD SIBLING AT RUNG 68**
+
+Python asserts all four of rung 69's guards AFTER `super().__init__`. The port cannot for guard C:
+rung 57's `lp_disabled` early return is a SEPARATE CONSTRUCTOR here, and the shared one refuses the
+flag outright with a rung-57 message — so a post-build guard C would be **unreachable**, a defence
+with no reader. It is asserted before the build, and the observable differs from Python only for a
+doubly-invalid arming.
+
+**FOUND, NOT FIXED:** rung 68's sibling guard (`three_loop.rs`, `stator_lim.is_none() ||
+!lp_disabled`) sits AFTER a build that already refuses `lp_disabled` with the rung-57 message, so
+it is **provably dead** — inherited from slice AA, and not slice AB's to repair. Recorded here so
+the next slice to touch that builder has the finding rather than the code.
+
+##### (f) **A MECHANISM TYPED BESIDE A MEASUREMENT, INSIDE THE SLICE WHOSE PRE-FLIGHT NAMES THAT
+DEFECT**
+
+`StatorIncidenceLimiter.__post_init__` has TWO asserts where rung 68's limiter has three: there is
+no counterpart to `assert self.phi_lim > 0.0`. The first draft justified that with *"`m_lim` is a
+signed MARGIN, so the shipped floor's is negative"*, asserted it, **and the gate went red**. `T_c =
+1/phi_surge` exactly (rung 53, zero new constants) and the floor sits at or above the surge line,
+so `m_lim = 1/phi_surge - 1/phi_lim` is **non-negative for every floor this rung builds**.
+
+What actually makes the absence a decision is the BOUNDARY: at `sm = 0` the two reciprocals cancel
+and `m_lim` is **exactly zero** — the case `from_margin`'s own assert explicitly admits (*"sits AT
+or ABOVE the surge line"*), and the one a copied-over `> 0` would refuse. That is the gate now.
+[[rust-port-slice-ab-preflight]]'s own headline, reproduced one step later by its author.
+
+##### (g) THE GROWTH, MEASURED — AND A LITERAL COUNT READ OFF A RUNNER
+
+Four structs gained one field each, and the compiler named **nine** literals: **8 in `src/`**
+(`three_loop.rs` ×2, `stator_transient.rs` ×2, `bleed_transient.rs` ×2, `limited_bleed.rs`,
+`two_spool_transient.rs`) **and 1 in `tests/`** (`slice_v_dispatch.rs`).
+
+| struct | field | note |
+|---|---|---|
+| `TripleHooks` | `with_ref` | the added cell; `NO_TRIPLE` **and `R68_TRIPLE`** both take the panic |
+| `TwoSpoolTransientCore` | `ref_` | `Cell<Option<&'static str>>`, CONFIG-kind |
+| `StatorArming` | `inc` | beside rung 68's `lim`, mutually exclusive with it |
+| `LeverArm` | `stator_inc` | `at_lever`'s **ninth** keyword, and by rung 64's own note the last |
+| `MarchScope` | — | **P1 holds** |
+| `StatorLegArm` | — | **P5 holds**, and slice AA built it for exactly this |
+
+**THE `tests/` COLUMN WAS FIRST WRITTEN AS ZERO, FROM A BACKGROUNDED `cargo build --tests` THAT
+REPORTED EXIT 0 WITH EMPTY OUTPUT.** The real run does not compile until `slice_v_dispatch.rs`
+moves. [[windows-tooling-file-hazards]]'s *status read off the runner*, and
+[[rust-port-guessed-census-bars]], in one line — and it is the second typed count this step got
+wrong, after (f).
+
+##### (h) THE ONE NARROWING SLICE AA DECIDED, COLLECTED
+
+`StatorLegArm` was built at slice AA *for* this slice: `_stator_leg`'s callers touch exactly `.tau`
+and `.v_max`, so the cell's return is those two fields and not an enum over the two limiter types.
+The whole cost of that being right is **one `From` impl** and no exhaustive `match` anywhere — and
+the gate asserts the two references produce the **identical** arm, which is the positive statement
+that the band's SIGN lives in the CELLS (`clamp_v`, `check_v0`) and nowhere in a value.
+
+##### (i) WHAT STEP 2 OWES
+
+The eight swapped bodies plus `at_lever`, carrying the band flip by § 5.26 (iv)'s emitted table
+rather than by a body read; `_cubic_roots_c` (P4 — all 80 Newton steps, the 72 exhausted calls
+included); `_invariants`; and the six readers. `UNPORTED_AT_STEP1` shrinks to nothing as it lands.
+
 ### ~~The four~~ **THE EIGHT** runtime-introspection tests, one by one
 
 **CORRECTED 2026-08-20 by § 5.19 (vii) — this table named FOUR and an enumeration over the 27

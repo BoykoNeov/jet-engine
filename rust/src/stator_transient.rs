@@ -367,6 +367,16 @@ pub struct StatorArming {
     /// table, for [`crate::two_spool_transient::TwoSpoolTransientCore::lever`]'s reason: the
     /// state a descendant adds goes on the shared core, and this is the stator half of it.
     pub lim: Option<crate::three_loop::StatorLimiter>,
+    /// RUNG 69's CLOSED loop on the LP stators, referenced to INCIDENCE — Python's `stator_inc`,
+    /// and [`lim`](Self::lim)'s exact sibling with ONE thing changed: the wall it watches.
+    ///
+    /// **MUTUALLY EXCLUSIVE WITH `lim`**, asserted at construction: rung 69 is ONE stator with ONE
+    /// reference, and arming both would be two loops on one ACTUATOR — a different object again.
+    /// It sits here rather than beside the table for [`lim`]'s reason, and the two are read
+    /// together by exactly one cell (`_stator_leg`), which prefers this one.
+    ///
+    /// [`lim`]: Self::lim
+    pub inc: Option<crate::reference_split::StatorIncidenceLimiter>,
 }
 
 impl StatorArming {
@@ -380,6 +390,7 @@ impl StatorArming {
             map_lp_design: map_lp,
             map_hp_design: map_hp,
             lim: None,
+            inc: None,
         }
     }
 
@@ -1084,6 +1095,9 @@ impl ScheduledStatorTransient {
             // RUNG 68's floor is not a rung-57 arming — `ThreeLoopCascadeTransient`'s own
             // constructor sets it, and rungs 57-67 build this literal.
             lim: None,
+            // RUNG 69's is not either, one reference over — `ReferenceSplitTransient`'s own
+            // constructor sets it, and rungs 57-68 build this literal.
+            inc: None,
         };
         let fuel = FuelTransientCore {
             inner: TwoSpoolTransientCore::with_lever_hooks(
@@ -1139,6 +1153,41 @@ impl ScheduledStatorTransient {
                 // defaults and why the `Cell`s here start empty.
                 c.fuel.inner.stator.lim = stator_lim;
                 c.fuel.inner.triple_hooks = triple_hooks;
+                ScheduledStatorTransient::Full(c)
+            }
+            d => d,
+        }
+    }
+
+    /// [`with_triple_tables`] plus rung 69's INCIDENCE floor — **one more field, so no rung-57..68
+    /// builder moves.**
+    ///
+    /// The third constructor in this family and the same reason each time: `stator_lim` and now
+    /// `stator_inc` are written AFTER the inherited constructor has run, exactly where Python's
+    /// `self.stator_inc = stator_inc` sits — after its own `super().__init__`. The order matters,
+    /// because `_arm` is reachable from the inherited constructors' STEADY solves, i.e. before
+    /// that line, which is why Python declares both as CLASS-level defaults.
+    ///
+    /// [`with_triple_tables`]: Self::with_triple_tables
+    #[allow(clippy::too_many_arguments)]
+    pub fn with_ref_tables(
+        design_engine: TwoSpoolEngine, flight_design: FlightCondition, mdot_design: f64,
+        map_lp: Option<ComponentMap>, map_hp: Option<ComponentMap>, rho: f64, arm: StatorArm,
+        two_hooks: &'static TwoSpoolTransientHooks,
+        stator_hooks: &'static StatorTransientHooks,
+        fuel_hooks: &'static FuelTransientHooks,
+        lever_hooks: &'static crate::bleed_transient::LeverHooks,
+        lever: crate::bleed_transient::LeverArming,
+        triple_hooks: &'static crate::three_loop::TripleHooks,
+        stator_lim: Option<crate::three_loop::StatorLimiter>,
+        stator_inc: Option<crate::reference_split::StatorIncidenceLimiter>,
+    ) -> Self {
+        match Self::with_triple_tables(
+            design_engine, flight_design, mdot_design, map_lp, map_hp, rho, arm, two_hooks,
+            stator_hooks, fuel_hooks, lever_hooks, lever, triple_hooks, stator_lim)
+        {
+            ScheduledStatorTransient::Full(mut c) => {
+                c.fuel.inner.stator.inc = stator_inc;
                 ScheduledStatorTransient::Full(c)
             }
             d => d,

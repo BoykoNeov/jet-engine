@@ -212,6 +212,14 @@ pub struct LeverArm {
     /// keywords here, 8 at rung 68, 9 at 69, then stops"). A field with a `Default`, so
     /// [`LeverHooks::at_lever`]'s signature is not re-opened.
     pub stator_lim: Option<crate::three_loop::StatorLimiter>,
+    /// RUNG 69's keyword — the NINTH and, by the note on `bleed_lim`, the last. A field with a
+    /// `Default`, so [`LeverHooks::at_lever`]'s signature is not re-opened.
+    ///
+    /// **`at_lever`'s SEVENTH INSTANCE of the trap rungs 61–68 each hit, and the second in a row
+    /// where the signature GROWS** — so *"silently drops the third loop"* now has a sibling
+    /// failure mode, *"silently swaps its REFERENCE"*, which no float would reveal. Measured over
+    /// the rung-69 suite: 31 of 61 `at_lever` calls carry `stator_inc` IN, and **0 lose it**.
+    pub stator_inc: Option<crate::reference_split::StatorIncidenceLimiter>,
 }
 
 impl LeverArm {
@@ -251,6 +259,7 @@ impl LeverArm {
             bleed: if lever.bleed != 0.0 { lever.bleed } else { neighbour.bleed },
             bleed_sched: lever.bleed_sched.or(neighbour.bleed_sched),
             stator_lim: lever.stator_lim.or(neighbour.stator_lim),
+            stator_inc: lever.stator_inc.or(neighbour.stator_inc),
             bleed_lim: lever.bleed_lim.or(neighbour.bleed_lim),
         }
     }
@@ -1013,6 +1022,11 @@ fn r62_at_stator(core: &ScheduledStatorCore, arm: StatorArm) -> ScheduledStatorC
         // third loop exactly as this line does. It is the trap rung 64's override closed for the
         // VALVE, still open one rung up — in the source, not in the port.
         stator_lim: None,
+        // RUNG 69's INCIDENCE floor, `None`, and faithful for `stator_lim`'s reason one reference
+        // over — enumerated at slice AB step 1 rather than guessed. Rung 69 overrides `at_lever`
+        // and NOT `at_stator`, so a rung-69 machine reaching this body runs rung 69's `at_lever`
+        // with no `stator_inc` keyword and Python's own default drops the loop exactly here.
+        stator_inc: None,
         bleed: core.fuel.inner.lever.bleed,
         bleed_sched: core.fuel.inner.lever.sched,
         // `None`, and DELIBERATELY: rung 62's body has no `bleed_lim` at all, so a rung-64

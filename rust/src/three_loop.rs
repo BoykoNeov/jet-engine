@@ -415,6 +415,23 @@ pub struct TripleHooks {
         &ScheduledStatorCore,
         &TripleRigArm,
     ) -> (ScheduledStatorCore, Option<Floor>, Option<AsymmetricLag>),
+    /// RUNG **69**'s `_with_ref` — **THE ONE CELL SLICE AB ADDS, and it lives in rung 68's table
+    /// because that is where every cell this family dispatches lives.**
+    /// [`LeverHooks::b_at_point`](crate::bleed_transient::LeverHooks::b_at_point)'s precedent:
+    /// slice X added rung 64's one cell to rung 62's table and gave rung 62 the panicking body,
+    /// because a table per rung would put a second `&'static` pointer on the core for one name.
+    ///
+    /// **IT IS THE SETTER, NOT THE CALL.** Python's `_with_ref(self, ref, fn, *a, **kw)` is
+    /// higher-order over a return type that varies by call site — a tuple from `_triple_rig`, a
+    /// dict from `triple_bill`, a tuple again from rung 73's `_quad_gains_at`. A `fn` pointer in a
+    /// `const` table cannot be generic over that, and `&dyn Fn` does not rescue it because it is
+    /// the RETURN type that differs. Read against rung 73's override, the only thing that override
+    /// changes is **WHICH FIELD THE GUARD WRITES** — so the cell sets and returns the displaced
+    /// value, the RAII guard [`RefScope`](crate::reference_split::RefScope) is shared, and each
+    /// reader opens its own scope.
+    ///
+    /// **RUNG 68's SLOT PANICS**: `_with_ref` does not exist below rung 69 in Python at all.
+    pub with_ref: fn(&TwoSpoolTransientCore, Option<&'static str>) -> Option<&'static str>,
 }
 
 /// **THE DEFAULT, AND ITS CELLS PANIC.** [`NO_STATOR`](crate::stator_transient::NO_STATOR) and
@@ -437,6 +454,7 @@ pub const NO_TRIPLE: TripleHooks = TripleHooks {
     manifold_v: no_triple_manifold_v,
     triple_laws: no_triple_triple_laws,
     triple_rig: no_triple_triple_rig,
+    with_ref: no_triple_with_ref,
 };
 
 const NO_TRIPLE_MSG: &str = "no triple table on this object: rungs 40-67 have no third loop on \
@@ -504,6 +522,17 @@ fn no_triple_triple_rig(
     panic!("{NO_TRIPLE_MSG} (_triple_rig)");
 }
 
+/// **RUNG 68's OWN SLOT AS WELL AS THE DEFAULT'S**, which is why the message names rung 69 rather
+/// than the table. `_with_ref` arrives at rung 69; rungs 40–68 have no reference to select, and
+/// answering `None` here would be the same invisible claim [`NO_TRIPLE`] exists to refuse — it
+/// agrees with the truth on exactly the machines the rung-68 suite builds.
+///
+/// [`LeverHooks::b_at_point`](crate::bleed_transient::LeverHooks::b_at_point)'s shape: rung 62's
+/// shipped table carries the panicking body of rung 64's added cell for this reason.
+fn no_triple_with_ref(_: &TwoSpoolTransientCore, _: Option<&'static str>) -> Option<&'static str> {
+    panic!("_with_ref is RUNG 69's and does not exist below it: a rung-40..68 object has no             REFERENCE to select, and answering `None` would be a claim no value gate could see             because it agrees with the truth on exactly the machines those suites build.");
+}
+
 // ---------------------------------------------------------------------------------------------
 // The dispatch points, on the cores the cells' receivers name
 // ---------------------------------------------------------------------------------------------
@@ -541,6 +570,16 @@ impl TwoSpoolTransientCore {
         closer: &dyn Fn(f64) -> Result<FuelCloseState, Abort>,
     ) -> Result<(FuelCloseState, f64, Regime), Abort> {
         (self.triple_hooks.solve_v)(self, closer)
+    }
+
+    /// Rung **69**'s `_with_ref` setter, **through the virtual table** — sets the reference and
+    /// hands back what it displaced.
+    ///
+    /// Not called directly by anything but [`RefScope::set`](crate::reference_split::RefScope):
+    /// a set without a matching restore is exactly the leak Python's `finally` exists to prevent,
+    /// so the only public way to reach this is the guard.
+    pub fn with_ref(&self, r: Option<&'static str>) -> Option<&'static str> {
+        (self.triple_hooks.with_ref)(self, r)
     }
 }
 
@@ -690,6 +729,9 @@ pub const R68_TRIPLE: TripleHooks = TripleHooks {
     manifold_v: r68_manifold_v,
     triple_laws: r68_triple_laws,
     triple_rig: r68_triple_rig,
+    // RUNG 68 HAS NO `_with_ref` — the name arrives at rung 69. Rung 62's table carries rung 64's
+    // `b_at_point` panic for exactly this reason, and this is that precedent's second use.
+    with_ref: no_triple_with_ref,
 };
 
 // ---------------------------------------------------------------------------------------------

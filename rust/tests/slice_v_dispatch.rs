@@ -186,6 +186,8 @@ fn machine(arm: StatorArm, two: &'static TwoSpoolTransientHooks,
         map_lp_design: lp, map_hp_design: hp,
         // Slice AA's rung-68 floor: a rung-57 dispatch machine carries none.
         lim: None,
+        // Slice AB's rung-69 INCIDENCE floor, one reference over: it carries none of that either.
+        inc: None,
     };
     let ft = FuelTransientCore {
         inner: TwoSpoolTransientCore::with_all_hooks(design(), flight(), 1.0, lp, hp, 1.0, two,
