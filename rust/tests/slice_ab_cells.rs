@@ -15,12 +15,16 @@
 //!   shipped table carries a constructor hook, and it ports as the builder's four `assert!`s.
 //! * **10 TABLE CELLS** = those same 9 + the one this rung ADDS, `with_ref`.
 //!
-//! So the step-1 gate is inverted to match the risk:
+//! So the step-1 gate was inverted to match the risk:
 //!
-//! * **Every swapped cell has a DISTINCT rung-69 function pointer**, asserted by reading nine
-//!   panic messages that name themselves. A slot left as rung 68's answers instead of panicking,
-//!   and a slot cross-wired to a sibling names the wrong cell. Neither is visible to `ptr::eq` on
-//!   a `const` — [[rust-port-slice-y-step3]], and slice AA wrote that mistake a second time.
+//! * ~~**Every swapped cell has a DISTINCT rung-69 function pointer**, asserted by reading nine
+//!   panic messages that name themselves.~~ **DISMANTLED AT STEP 2, as § 5.26.1 (k) said it would
+//!   be.** That gate's whole content was *"not yet ported"*: it read the nine placeholder panics,
+//!   and step 2 replaced every one of them with a body. Nothing in the crate emits that message
+//!   any more, so re-adding the gate would be a tautology of exactly the kind this file's own
+//!   comments keep catching. **The step-5 dispatch gates are its successor**, and they ask the
+//!   stronger question the placeholders were standing in for: swap each cell for rung 68's
+//!   function pointer and see which gate breaks.
 //! * **The one ADDED cell is real and rung 68's slot PANICS**, because `_with_ref` does not exist
 //!   below rung 69 in Python at all and a slot answering `None` would agree with the truth on
 //!   exactly the machines the rung-68 suite builds.
@@ -46,14 +50,13 @@ use turbojet::lagged_bleed::build_lagged_bleed;
 use turbojet::limited_bleed::BleedLimiter;
 use turbojet::map::ComponentMap;
 use turbojet::reference_split::{
-    build_reference_split_cascade, RefScope, StatorIncidenceLimiter, R69_TRIPLE,
-    UNPORTED_AT_STEP1,
+    build_reference_split_cascade, Census69, RefScope, StatorIncidenceLimiter, R69_TRIPLE,
 };
 use turbojet::stator_transient::{
     MarchScope, ScheduledStatorCore, ScheduledStatorTransient, StatorArm,
 };
 use turbojet::three_loop::{
-    build_three_loop_cascade, StatorLegArm, StatorLimiter, TripleHooks, TripleRigArm, NO_TRIPLE,
+    build_three_loop_cascade, StatorLegArm, StatorLimiter, TripleHooks, NO_TRIPLE,
 };
 use turbojet::two_spool::{build_two_spool_turbojet, TwoSpoolEngine, TwoSpoolLosses};
 
@@ -165,62 +168,9 @@ fn message_of<F: FnOnce() + std::panic::UnwindSafe>(f: F) -> String {
     }
 }
 
-fn leg() -> StatorLegArm { StatorLegArm { v_max: V_MAX, tau: Some(TAU) } }
-
 // =============================================================================================
-// GATE 1 — THE NINE SWAPS ARE OPEN, DISTINCT, AND NONE OF THEM IS RUNG 68's
+// GATE 1 — THE INHERITED CELL, AND THE ONE ADDED CELL
 // =============================================================================================
-
-/// **THE WHOLE POINT OF STEP 1 AT A SWAP-DOMINATED SLICE.**
-///
-/// Nine cells, nine panics, each naming ITSELF, on a machine the ladder really builds. Three
-/// distinct defects fail here and nowhere else in the slice:
-///
-/// * a slot left as rung 68's **answers** instead of panicking — the failure the pre-flight
-///   called this slice's whole risk;
-/// * a slot cross-wired to a sibling **names the wrong cell**, which a bare `assert!(panics(…))`
-///   cannot see;
-/// * a slot forgotten entirely does not compile, because [`R69_TRIPLE`] is spelled without a
-///   `..R68_TRIPLE` spread for exactly that reason.
-#[test]
-fn all_nine_swapped_cells_are_open_and_each_names_itself() {
-    let arm = split_arm();
-    let got: Vec<String> = vec![
-        message_of(|| { let _ = split_machine(&split_arm()).at_lever(&LeverArm::default()); }),
-        message_of(|| { let _ = split_machine(&split_arm()).fuel.inner.stator_leg(); }),
-        message_of(|| { let _ = split_machine(&split_arm()).fuel.inner.lagged_stator(); }),
-        message_of(|| { let _ = split_machine(&split_arm()).fuel.inner.clamp_v(0.0, &leg()); }),
-        message_of(|| split_machine(&split_arm()).fuel.inner.check_v0(0.0, &leg())),
-        message_of(|| split_machine(&split_arm()).fuel.inner.rk4_floor(0.01, 20.0, 3, TAU)),
-        message_of(|| {
-            let _ = split_machine(&split_arm()).fuel.inner.solve_v(&|_| unreachable!());
-        }),
-        message_of(|| {
-            let _ = split_machine(&split_arm())
-                .manifold_v(&flight(), 1.0, 1.0, 1.0, 0.0, 0.0, &|_, _| unreachable!());
-        }),
-        message_of(|| {
-            let _ = split_machine(&split_arm()).triple_rig(&TripleRigArm::default());
-        }),
-    ];
-    assert_eq!(got.len(), UNPORTED_AT_STEP1.len(),
-               "the gate must exercise every name the module declares open");
-    for (msg, name) in got.iter().zip(UNPORTED_AT_STEP1) {
-        assert!(msg.ends_with(&format!(": {name}")),
-                "cell `{name}` must panic naming ITSELF -- a slot left as rung 68's would ANSWER, \
-                 and a cross-wired slot names its neighbour. Got: {msg:?}");
-        assert!(msg.contains("NOT YET PORTED"),
-                "cell `{name}` panicked for some OTHER reason, which is not what this gate \
-                 measures. Got: {msg:?}");
-    }
-    // The nine messages are pairwise distinct — the cross-wiring check stated as a count, so a
-    // future edit that points two slots at one body fails here rather than at a value key.
-    let mut sorted = got.clone();
-    sorted.sort();
-    sorted.dedup();
-    assert_eq!(sorted.len(), 9, "two cells share a function pointer");
-    let _ = arm;
-}
 
 /// **`triple_laws` IS THE ONE OF THE NINE THIS RUNG DOES *NOT* SWAP, AND THAT IS A DECISION.**
 ///
@@ -237,17 +187,38 @@ fn all_nine_swapped_cells_are_open_and_each_names_itself() {
 /// for the third time in this phase.
 ///
 /// So the message was MEASURED instead of predicted, and it is **empty** — rung 68's body builds
-/// its three closures lazily and dispatches none of the eight open cells, so the call returns
-/// `Ok` on a half-ported machine. That is what is pinned. A slot left as slice AB's placeholder
-/// would panic here, and the assertion would say so.
+/// its three closures lazily and dispatches none of the eight cells rung 69 swaps.
+///
+/// **AND STEP 2 HAD TO RE-MEASURE IT, BECAUSE THE STEP-1 FORM WENT HALF-VACUOUS THE MOMENT THE
+/// BODIES LANDED.** *"It does not panic"* was a real statement only while nine slots panicked;
+/// with them ported, nothing in the crate emits that message and the assertion survives only as a
+/// check that the slot is not [`NO_TRIPLE`](turbojet::three_loop::NO_TRIPLE)'s. The POSITIVE half
+/// is what replaces it: rung 68's body is LAZY, so a rung-69 machine's `triple_laws` call must
+/// dispatch **none** of rung 69's cells — [`Census69`] reads all-zero afterwards. That fails if
+/// the slot is ever pointed at an eager body, and it is the measurement the placeholders were
+/// only standing in for.
 #[test]
-fn triple_laws_is_inherited_from_rung68_and_is_not_a_step1_placeholder() {
-    let msg = message_of(|| {
-        let _ = split_machine(&split_arm()).triple_laws(&flight(), 1.0, 1.0, 1.0, None, None);
-    });
+fn triple_laws_is_inherited_from_rung68_and_dispatches_none_of_rung69s_cells() {
+    let m = split_machine(&split_arm());
+    // AFTER the build: the steady solve inside it reaches `_stator_leg` several times, which is
+    // this rung's own cell and not the question here.
+    Census69::reset();
+    // `AssertUnwindSafe` because the machine is built OUTSIDE the closure -- it has to be, or the
+    // build's own `_stator_leg` calls would land inside the census window. It carries `Cell`s, so
+    // the compiler asks whether a half-torn state could leak out of the unwind; nothing reads `m`
+    // after this call, which is what makes the assertion true rather than convenient.
+    let msg = message_of(std::panic::AssertUnwindSafe(|| {
+        let _ = m.triple_laws(&flight(), 1.0, 1.0, 1.0, None, None);
+    }));
     assert!(msg.is_empty(),
             "`triple_laws` must be RUNG 68's -- rung 70 overrides it, not rung 69 -- and rung \
-             68's body returns Ok here without reaching any of the eight open cells. Got: {msg:?}");
+             68's body returns Ok here. Got: {msg:?}");
+    assert_eq!(Census69::read(), Census69::default(),
+               "rung 68's `_triple_laws` builds its three laws LAZILY: it must reach no rung-69 \
+                cell at all until one of the returned closures is called. A census that is not \
+                all-zero here means the body dispatched something eagerly, which would put the \
+                `b_state`/`v_state` boundary -- this rung's own trap in its fourth shape -- on \
+                the wrong side of the call.");
 }
 
 /// **THE TABLE HAS EXACTLY TEN CELLS, AND THE COMPILER SAYS SO.**

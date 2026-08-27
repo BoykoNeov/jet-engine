@@ -740,7 +740,7 @@ pub const R68_TRIPLE: TripleHooks = TripleHooks {
 
 /// RUNG 68's `_stator_leg` — WHICH limiter is armed. One of the four seams rung 69 reaches
 /// through, and the identity of what it replaced, so every rung-68 arm is unchanged.
-fn r68_stator_leg(t: &TwoSpoolTransientCore) -> Option<StatorLegArm> {
+pub(crate) fn r68_stator_leg(t: &TwoSpoolTransientCore) -> Option<StatorLegArm> {
     t.stator.lim.map(StatorLegArm::from)
 }
 
@@ -749,7 +749,7 @@ fn r68_stator_leg(t: &TwoSpoolTransientCore) -> Option<StatorLegArm> {
 /// **THE REDUCE IS BY DISPATCH THROUGH THIS NAME.** With it false, the five-state integrator is
 /// not entered and `arm` never touches a map, so every inherited arm — rung 67, rung 66's three,
 /// rung 65, rung 64, rung 52 — leaves through the parent bit-for-bit.
-fn r68_lagged_stator(t: &TwoSpoolTransientCore) -> bool {
+pub(crate) fn r68_lagged_stator(t: &TwoSpoolTransientCore) -> bool {
     t.stator.lim.is_some_and(|l| l.tau.is_some())
 }
 
@@ -758,12 +758,12 @@ fn r68_lagged_stator(t: &TwoSpoolTransientCore) -> bool {
 /// The band is ONE-SIDED and its dormant stop is ZERO — the design setting — which is why the
 /// clamp is asymmetric where the valve's is not. Rung 69 flips the open side, which is the whole
 /// reason this is a cell.
-fn r68_clamp_v(_: &TwoSpoolTransientCore, v: f64, lim_s: &StatorLegArm) -> f64 {
+pub(crate) fn r68_clamp_v(_: &TwoSpoolTransientCore, v: f64, lim_s: &StatorLegArm) -> f64 {
     0.0f64.min((-lim_s.v_max).max(v))
 }
 
 /// RUNG 68's `_check_v0` — the same band, on an OVERRIDDEN initial position.
-fn r68_check_v0(_: &TwoSpoolTransientCore, v0: f64, lim_s: &StatorLegArm) {
+pub(crate) fn r68_check_v0(_: &TwoSpoolTransientCore, v0: f64, lim_s: &StatorLegArm) {
     assert!((-lim_s.v_max..=0.0).contains(&v0),
             "rung-68 v0 is a stator POSITION on the one-sided band: {v0} is outside [{}, 0]",
             -lim_s.v_max);
@@ -804,7 +804,7 @@ fn r68_rk4_floor(ds: f64, rate: f64, n_states: usize, tau_s: f64) {
 /// counterfeits INDEPENDENCE, so no reader may recover it by comparing `v` against a stop.
 ///
 /// [`r64_solve_b`]: crate::limited_bleed::r64_solve_b
-fn r68_solve_v(
+pub(crate) fn r68_solve_v(
     t: &TwoSpoolTransientCore,
     closer: &dyn Fn(f64) -> Result<FuelCloseState, Abort>,
 ) -> Result<(FuelCloseState, f64, Regime), Abort> {
@@ -838,7 +838,7 @@ fn r68_solve_v(
 /// manifold** and the body is `V(g, q)[0]`. At rung 69 they do not and there is no point where
 /// all three hold at once, which is why the four arguments this body ignores are carried.
 #[allow(clippy::too_many_arguments)]
-fn r68_manifold_v(
+pub(crate) fn r68_manifold_v(
     _: &ScheduledStatorCore, _: &FlightCondition, _: f64, _: f64, _: f64, g: f64, q: f64,
     v_law: &dyn Fn(f64, f64) -> Result<(f64, Regime), Abort>,
 ) -> Result<f64, Abort> {
@@ -851,7 +851,7 @@ fn r68_manifold_v(
 /// Python: *"A leaked trial setting would make the closure report a state the plant never visited
 /// — rung 62's `_powers` failure mode, and the reason both overrides are always restored in a
 /// `finally`."* Here the `finally` is [`ForcedStator`]'s `Drop`, which also runs on unwind.
-fn closer_v<'a>(
+pub(crate) fn closer_v<'a>(
     ft: &'a FuelTransientCore, a: f64, h: f64, mf: f64, tt2: f64, pt2: f64,
 ) -> impl Fn(f64) -> Result<FuelCloseState, Abort> + 'a {
     move |v: f64| {

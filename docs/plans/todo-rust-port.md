@@ -14154,6 +14154,127 @@ included); `_invariants`; and the six readers, under (j)'s constraint.
 the array shrinks to nothing and the nine-panic gate goes with it. Said here so a step-3 reader
 does not wonder why the file shrank, or restore a gate whose whole content was *"not yet ported"*.
 
+#### 5.26.2 SLICE AB step 2 — the nine bodies, the six readers, and a smoke that refuted its own gate
+
+**SHIPPED**: `src/reference_split.rs` at **1 641 lines** against **713** Python
+(`ReferenceSplitTransient` 614 + `StatorIncidenceLimiter` 99) — **2.30×**, above slice AA's 2.10×,
+slice W's 2.06× and slice Z's 1.75×, and **9 % above § 5.26 (viii)'s own ~1 500 estimate**, which
+was labelled an estimate and is now a measurement. Six of rung 68's cell bodies became
+`pub(crate)`; `tests/slice_ab_smoke.rs` (225 lines, **5** gates) is new; `tests/slice_ab_cells.rs`
+loses step 1's nine-panic gate and goes **13 → 12**. Full Rust gate **126 binaries / 1 216 passed
+/ 0 failed**, from step 1's 125 / 1 212 — and the two tallies reconcile: `+1` binary is the smoke
+file, `+5` its gates, `−1` the dismantled gate, `1 212 + 5 − 1 = 1 216`. `cargo clippy
+--all-targets`: **zero findings in any of this slice's three files**; the one error is the same
+deliberate `eq_op` NaN test slices Z and AA already recorded, now at `stator_transient.rs:2757`.
+
+##### (a) **THE REDUCE ARMS CALL RUNG 68's BODY; THEY DO NOT RE-SPELL IT**
+
+Eight of the nine cells open with `stator_inc is None ⇒ the parent`, and the contract is
+*bit-for-bit, by dispatch*. A reduce arm that transcribed rung 68's expression a second time would
+be a copy that can drift, and nothing in the ladder would ever compare the two — so
+`r68_stator_leg`, `r68_lagged_stator`, `r68_clamp_v`, `r68_check_v0`, `r68_solve_v`,
+`r68_manifold_v` and `closer_v` are `pub(crate)` and the arms are direct calls. `_rk4_floor` is the
+ninth and has **no arm at all**: it is a `@staticmethod` with no receiver to ask, so it re-derives
+the SAME constant for a DIFFERENT reason and fires on every machine carrying rung 69's table,
+including one armed with a rung-68 `phi` floor.
+
+##### (b) **THE SMOKE'S FIRST RUN FAILED, AND THE DEFECT WAS IN MY GATE**
+
+`reference_gains_runs_and_builds_both_rigs` asserted
+`leg_parent + solve_parent + manifold_parent == 0`, justified by *"the incidence stator is armed on
+every rig here"*. It came back **985 against 0**.
+
+**The port is right and the sentence was wrong.** This reader builds TWO rigs — that is its whole
+method, differencing the two references on ONE trajectory — and the `phi` rig is a rung-68 machine
+**by arming**: `stator_inc` is `None` on it, so every cell called on it MUST take the reduce arm.
+The same shape as § 5.26.1 (f) and (g), for the third time in this slice: **a predicate typed from
+a sentence about the rung instead of measured against the reader.**
+
+What replaced it is derivable from the reader's own structure rather than from its output, so it
+is a gate and not a golden:
+
+| assertion | why it is exactly that |
+|---|---|
+| `lagged_parent + clamp_parent + check_parent == 0` | those three are reached only from the MARCH, and only the INCIDENCE rig is marched |
+| `manifold_parent == n_sampled` | the `phi` rig is evaluated ON the shared manifold at every sampled point, before any regime is inspected |
+| `solve_parent == 5 * n_sampled` | one `V(g,q)` for the manifold plus the four `V±g` / `V±q` arms of the central difference |
+
+Measured: `n_sampled = 7`, `manifold_parent = 7`, `solve_parent = 35`. A cell wired to rung 68
+unconditionally would pass every reduce gate in the slice and fails **here**.
+
+##### (c) **THE STEP-1 `triple_laws` GATE WENT HALF-VACUOUS THE MOMENT THE BODIES LANDED**
+
+Its assertion was *"the call does not panic"*, and that was a real statement only while nine slots
+panicked. With them ported, nothing in the crate emits that message and the predicate survives
+only as a check that the slot is not `NO_TRIPLE`'s. **A gate whose pass condition the port itself
+removed is exactly the class § 5.26.1 (b), (c) and (i) each caught once**, so it was re-measured
+rather than left standing: rung 68's body is LAZY, so a rung-69 machine's `triple_laws` call must
+dispatch **none** of rung 69's cells, and `Census69` reads all-zero afterwards. That fails if the
+slot is ever pointed at an eager body, and it is the positive statement the placeholders were only
+standing in for. (The census is reset AFTER the machine is built — the build's own steady solve
+reaches `_stator_leg` several times, which is this rung's cell and not the question.)
+
+##### (d) **`_ref`'s TWO LIFETIMES ARE ENFORCED BY SCOPE RATHER THAN BY DISCIPLINE**
+
+§ 5.26.1 (j) registered the constraint before this step wrote a line: `reference_bill` runs
+`triple_bill` entirely inside the scope, while `reference_gains`, `reference_modes` and
+`ring_visibility` build the rig inside it and march the returned machine **after it has closed**.
+So every `RefScope` in the three latter readers is scoped to the `triple_rig` call alone —
+
+    let m_p = { let _r = RefScope::set(&core.fuel.inner, Some("phi")); core.triple_rig(&a).0 };
+
+— and a reader that wanted the carrier during the march would have to widen a `let` and say so in
+the diff. `Census69`'s `rig_inc` / `rig_phi` are the only evidence anywhere that the carrier was
+read at all, because § 5.26.1 (j) also measured that the obvious ledger key cannot see it: the
+`bare`/`F`/`V`/`FV` cells are identical between the arms BY CONSTRUCTION, and `common_max_rel`
+measures **0e0** exactly.
+
+##### (e) **`cmath.sqrt` OF A REAL ARGUMENT REDUCES TO `sqrt`, DERIVED FROM CPython's ALGORITHM RATHER THAN ASSUMED**
+
+The port's first complex number. `_cubic_roots_c` takes `cmath.sqrt(complex(d, 0.0))`, and the
+tempting reading is that this pulls `hypot` into the arithmetic. It does not: CPython's `c_sqrt`
+computes `s = 2*sqrt(ax/8 + hypot(ax/8, ay/8))`, and with `ay = 0` every step is exact — `ax/8` is a
+power-of-two scaling, `hypot(x, 0) = |x|`, the sum is `ax/4`, and `sqrt(ax/4) = sqrt(ax)/2` because
+both operations shift the exponent. **So the answer is `sqrt(|d|)` on the appropriate axis and no
+`hypot` survives into the result.** The zero case is CPython's own early return and not a
+simplification: `complex(-0.0, 0.0)` returns `+0 + 0j`, where `(-0.0).sqrt()` hands back `-0.0` and
+would flip the sign of a root's real part when `p` is also zero.
+
+**AND THE SIGN OF A ZERO IMAGINARY PART IS A PORTING DECISION.** Python promotes `-p` to
+`complex(-p, 0.0)` before subtracting, so the third root's imaginary part is `0.0 - rt.im`, which is
+`+0.0` on the real branch. The idiomatic `-rt.im` gives `-0.0` there. Spelled out.
+
+**The one platform-library exposure left is `C64::abs`** — `hypot` on a genuinely complex root,
+which is what `sorted(roots, key=abs)`, `zeta`, `n_zero` and `worst_zero` all read. Registered
+here; **step 4's oracle is what measures it**, and every row with `im == 0.0` reduces to `|re|`
+exactly on any conforming `hypot`, so only the complex-pair rows are at risk.
+
+##### (f) THE SIX READERS RUN, AND WHAT THEY PRINT AGREES WITH THE RUNG — CORROBORATION, NOT PROOF
+
+The smoke's assertions are existences and finitenesses on purpose (`tests/rung69.rs` carries the
+claims at step 3), but its `--nocapture` output is a free reading, and every line of it lands where
+rung 69 says it should. **This is Rust agreeing with the physics, NOT with Python — bit-exactness
+is step 4's and nothing here substitutes for it:**
+
+| reading | measured | the rung's claim |
+|---|---|---|
+| `zeros`, all four clock arms | `inc` **[1]**, `phi` **[2]** | `n − m` = 3−2 and 3−1 |
+| `zeta`, every `phi` row | **1.0** | rung 68's spectrum is REAL |
+| `k` over the arc | **−2.0004 … −1.6643** | § 5.26 measured −1.67…−2.01 |
+| damping floor | `zeta` 0.63338767242627 vs closed form 0.63338767242299, floor 0.5972, `holds` | equality at `A = z`, floor bandwidth-independent |
+| displaced start `survives` | `inc` **0.224**, `phi` **2.3e−14** | a shared constraint ABSORBS it, a split one cannot |
+| stator credit, `S` cell | `inc` **−114.9 / +76.1**, `phi` **+91.7 / −57.4** | the whole sign table flips with the reference |
+| `common_max_rel` | **0e0** | the stator-free cells are identical by construction |
+| `rk4_margin` | `max_ratio` 0.8165 < `max_bound` 0.8661 < 1 | the inherited constant stays conservative |
+
+##### (g) WHAT STEP 3 OWES
+
+`tests/rung69.rs` — the **25** ported gates of `test_rung69.py` (12 of them `slow`) — and whatever
+`slice_ab_smoke.rs` still needs beyond the five structural runs it carries now. Step 3 is also
+where the `#[should_panic(expected = "rank TWO")]` for `_rk4_floor` lands: § 5.26 (ii) measured 0
+value disagreements in 77 calls, so **that cell has no other gate and writing it as a value diff is
+how it ends up silently ungated.**
+
 ### ~~The four~~ **THE EIGHT** runtime-introspection tests, one by one
 
 **CORRECTED 2026-08-20 by § 5.19 (vii) — this table named FOUR and an enumeration over the 27

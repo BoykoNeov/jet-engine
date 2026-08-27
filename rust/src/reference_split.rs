@@ -8,12 +8,18 @@
 //! where `m` is the number of INDEPENDENT CONSTRAINTS and the loop count never enters. See
 //! `docs/rung69-spec.md`.
 //!
-//! # What this module is, at STEP 1
+//! # What this module is
 //!
-//! **The one added cell, the nine swapped cells' distinct function pointers, `_ref`'s carrier and
-//! guard, `stator_inc` on the arming, and [`StatorIncidenceLimiter`]. Nothing is ported.** The
-//! nine swapped bodies below PANIC with a message naming step 2, so a swap that step 2 forgets
-//! cannot silently keep running rung 68's body.
+//! [`StatorIncidenceLimiter`] and its four methods; `_ref`'s carrier and its RAII guard
+//! [`RefScope`]; [`build_reference_split_cascade`] with rung 69's four `__init__` guards and every
+//! inherited refusal re-listed in Python's order; the five `R69*` tables; **the one added cell
+//! [`TripleHooks::with_ref`] and the nine swapped bodies**; and the six readers of §§ 1, 3 and 4,
+//! with [`cubic_roots_c`] and [`invariants`] under them.
+//!
+//! **STEP 1 SHIPPED THE TABLE WITH NINE NAMED PANICS IN IT AND STEP 2 REPLACED THEM ONE AT A
+//! TIME**, which is why `UNPORTED_AT_STEP1` and the gate that read those messages are gone from
+//! `tests/slice_ab_cells.rs` — their whole content was *"not yet ported"*. Recorded here so a
+//! reader does not restore a gate whose pass condition the port itself removed.
 //!
 //! **TWO TENS APPEAR IN THIS SLICE AND THEY ARE DIFFERENT TENS**, so the addition is written out
 //! rather than left for a reader to reconcile: **10 SWAPS** = the 9 cells overridden below +
@@ -22,7 +28,7 @@
 //! one this rung ADDS, [`TripleHooks::with_ref`]. `tests/slice_ab_cells.rs` holds the arithmetic
 //! and the compiler holds the width.
 //!
-//! # WHY THAT IS THE STEP-1 GATE HERE, AND NOT THE CELL COUNT (§ 5.26 (ii))
+//! # WHY THE FILE IS SHAPED THE WAY IT IS — THE SWAPS, NOT THE CELL COUNT (§ 5.26 (ii))
 //!
 //! Phase 7's rule is *step 1 of every slice is the cell addition*, so a slice that forgets a cell
 //! fails at its own first gate rather than at a value key nine rungs downstream. **That rule buys
@@ -89,18 +95,28 @@
 //!
 //! [`TripleHooks::with_ref`]: crate::three_loop::TripleHooks::with_ref
 
+use std::cell::Cell;
+
 use crate::bleed_transient::{LeverArm, LeverArming, LeverHooks};
 use crate::engine::FlightCondition;
-use crate::fuel_transient::{AsymmetricLag, Floor, FuelCloseState, FuelTransientHooks};
-use crate::gas::Abort;
-use crate::limited_bleed::Regime;
-use crate::map::ComponentMap;
-use crate::stator_transient::{
-    ScheduledStatorCore, ScheduledStatorTransient, StatorTransientHooks,
+use crate::fuel_transient::{
+    AsymmetricLag, Floor, FuelCloseState, FuelPoint, FuelTransientHooks, PointExtra, SurgeLimiter,
 };
-use crate::three_loop::{StatorLegArm, TripleHooks, TripleRigArm};
-use crate::two_spool::TwoSpoolEngine;
-use crate::two_spool_transient::{TwoSpoolTransientCore, TwoSpoolTransientHooks};
+use crate::gas::{powp, Abort};
+use crate::lagged_bleed::py_max3;
+use crate::limited_bleed::{BleedLimiter, Regime};
+use crate::map::ComponentMap;
+use crate::spool::{try_illinois, ILLINOIS_MAXIT};
+use crate::stator_transient::{
+    MarchScope, Ramp, ScheduledStatorCore, ScheduledStatorTransient, StatorLeg,
+    StatorTransientHooks,
+};
+use crate::three_loop::{
+    riding, triple_bill, triple_gains_at, v_at_point, StatorLegArm, StatorLimiter, TripleBill,
+    TripleGains, TripleHooks, TripleRigArm,
+};
+use crate::two_spool::{Spool, TwoSpoolEngine};
+use crate::two_spool_transient::{MarchedBleed, TwoSpoolTransientCore, TwoSpoolTransientHooks};
 
 // ---------------------------------------------------------------------------------------------
 // THE DEVICE
@@ -439,81 +455,1187 @@ pub fn r69_with_ref(t: &TwoSpoolTransientCore, r: Option<&'static str>) -> Optio
 }
 
 // ---------------------------------------------------------------------------------------------
-// THE NINE SWAPPED CELLS — OPENED AT STEP 1, BODIES AT STEP 2
+// THE NINE SWAPPED CELLS — BODIES
 // ---------------------------------------------------------------------------------------------
 //
-// Each PANICS with a message naming itself, and `tests/slice_ab_cells.rs` reads those messages.
-// That is the step-1 gate: nine distinct function pointers, none of them rung 68's.
+// **EIGHT OF THE NINE OPEN WITH A REDUCE ARM, AND THAT ARM IS THE RUNG'S OWN CONTRACT**:
+// `stator_inc is None` ⇒ rung 68's body VERBATIM, by a direct call and never by a re-derivation.
+// `_rk4_floor` is the ninth and has no arm at all — it is a `@staticmethod` in Python with no
+// receiver to ask, so it re-derives the SAME constant for a DIFFERENT reason and fires on every
+// machine that carries rung 69's table.
 //
-// **A `todo!()` would have been the idiomatic spelling and it is the wrong one here.** The failure
-// this slice actually risks is a swap left pointing at the parent, and `todo!()` and the parent's
-// body are indistinguishable to a reader skimming the table — both are "something that compiles".
-// A NAMED panic per cell makes the table's ten slots addressable by a gate, and step 2 replaces
-// them one at a time with the panic count as its own progress bar.
+// **THE PARENT'S BODY IS CALLED, NOT COPIED.** `crate::three_loop::r68_*` are `pub(crate)` for
+// exactly this: a reduce arm that re-spells rung 68's expression is a second copy that can drift,
+// and the whole reduce contract is *bit-for-bit, by dispatch*.
+//
+// The counters below are why: a reduce arm and a rung-68 march are the same numbers BY
+// CONSTRUCTION, so no value key can tell which arm ran. [`Census69`] is the only instrument that
+// can, and it is written here rather than in a test file for [`Census68`]'s corrected lesson.
 
-/// The one string every unported cell below names itself with — so the gate can assert the SET of
-/// open cells rather than nine unrelated messages.
-const STEP2: &str = "rung-69 cell opened at slice AB step 1 and NOT YET PORTED";
-
-fn r69_at_lever(_: &ScheduledStatorCore, _: &LeverArm) -> ScheduledStatorCore {
-    panic!("{STEP2}: at_lever");
+/// RUNG 69's `_stator_leg` — **the incidence limiter IN PREFERENCE, and the two are mutually
+/// exclusive by construction anyway.**
+///
+/// Python is `self.stator_inc if self.stator_inc is not None else self.stator_lim`, so the
+/// preference is written even though guard A already refuses both being armed. That belt-and-
+/// braces spelling is transcribed rather than simplified to an `.or()`: the guard lives in the
+/// BUILDER, and this cell is reachable from objects the builder never saw.
+///
+/// The return is [`StatorLegArm`] — slice AA's narrowing, built for this slice — so a caller reads
+/// `.tau` and `.v_max` and cannot reach the wall or its sign. **The band's SIGN lives in
+/// [`r69_clamp_v`] and [`r69_check_v0`], never in a value a shared body could read backwards.**
+fn r69_stator_leg(t: &TwoSpoolTransientCore) -> Option<StatorLegArm> {
+    match t.stator.inc {
+        Some(l) => {
+            bump(&LEG_INC);
+            Some(StatorLegArm::from(l))
+        }
+        None => {
+            bump(&LEG_PARENT);
+            crate::three_loop::r68_stator_leg(t)
+        }
+    }
 }
 
-fn r69_stator_leg(_: &TwoSpoolTransientCore) -> Option<StatorLegArm> {
-    panic!("{STEP2}: _stator_leg");
+/// RUNG 69's `_lagged_stator` — the incidence limiter's own `tau`, else rung 68's answer.
+fn r69_lagged_stator(t: &TwoSpoolTransientCore) -> bool {
+    match t.stator.inc {
+        Some(l) => l.tau.is_some(),
+        None => {
+            bump(&LAGGED_PARENT);
+            crate::three_loop::r68_lagged_stator(t)
+        }
+    }
 }
 
-fn r69_lagged_stator(_: &TwoSpoolTransientCore) -> bool {
-    panic!("{STEP2}: _lagged_stator");
+/// RUNG 69's `_clamp_v` — **`max(0, min(v_max, v))`: THE BAND FLIPS BACK.**
+///
+/// `M_i` is INCREASING in `v`, so the incidence loop's admissible band is `[0, +v_max]` where rung
+/// 68's was `[-v_max, 0]`. Same dormant stop (`v = 0`, the design setting), opposite open side.
+///
+/// **THE UNARY MINUS IS THE WHOLE DIFFERENCE AND IT READS TO ZERO** — § 5.26 (iv)'s emitted AST
+/// diff, not a body read: rung 68 spells one negation of `v_max` here and rung 69 spells none.
+/// The pre-flight also measured why *"the clamp never binds"* would have been the wrong
+/// instrument: `v > 0` on 25 364 of 25 371 inputs, and on every one of those rung 68's
+/// `min(0, max(-v_max, v))` returns **0** where this returns `v`.
+fn r69_clamp_v(t: &TwoSpoolTransientCore, v: f64, lim_s: &StatorLegArm) -> f64 {
+    if t.stator.inc.is_none() {
+        bump(&CLAMP_PARENT);
+        return crate::three_loop::r68_clamp_v(t, v, lim_s);
+    }
+    0.0f64.max(lim_s.v_max.min(v))
 }
 
-fn r69_clamp_v(_: &TwoSpoolTransientCore, _: f64, _: &StatorLegArm) -> f64 {
-    panic!("{STEP2}: _clamp_v");
+/// RUNG 69's `_check_v0` — the same band, asserted on an OVERRIDDEN initial position.
+///
+/// `test_rung69.py` drives it with `pytest.raises(AssertionError, match="stator POSITION")` on a
+/// `v0` rung **68** would have accepted, which is why the two halves of the band flip are separate
+/// cells: the clamp is silent and this is not.
+fn r69_check_v0(t: &TwoSpoolTransientCore, v0: f64, lim_s: &StatorLegArm) {
+    if t.stator.inc.is_none() {
+        bump(&CHECK_PARENT);
+        return crate::three_loop::r68_check_v0(t, v0, lim_s);
+    }
+    assert!((0.0..=lim_s.v_max).contains(&v0),
+            "rung-69 v0 is a stator POSITION on the one-sided band: {v0} is outside [0, {}] -- \
+             and note the band is the MIRROR of rung 68's.", lim_s.v_max);
 }
 
-fn r69_check_v0(_: &TwoSpoolTransientCore, _: f64, _: &StatorLegArm) {
-    panic!("{STEP2}: _check_v0");
+/// RUNG 69's `_rk4_floor` — **THE ONE SWAP NO VALUE KEY CAN SEE, and it is not unobservable.**
+///
+/// The condition is `ds * rate <= 2.0` in BOTH rungs, character for character; § 5.26 (ii)
+/// measured 0 disagreements in 77 calls. **The entire difference is the assertion MESSAGE** — rung
+/// 68 justifies the constant by *"J has rank one, so the non-zero eigenvalue is exactly
+/// −sum(1/tau_i)"*, and under the split that reason is GONE even though the constant survives:
+/// `J` is rank TWO and the dominant root is a COMPLEX pair of modulus `sqrt(A z (1-k))`, which by
+/// AM-GM is at most `sqrt(1-k)/2` times the rate sum. The inherited `2.0` is therefore
+/// conservative for every plant with `k >= -3`, and the measured `k` on this arc is −1.67…−2.01.
+///
+/// **SO THE GATE IS A `#[should_panic(expected = "rank TWO")]` AND NEVER A VALUE DIFF** — writing
+/// it as a value diff is exactly how this cell would end up silently ungated.
+///
+/// `static` in Python, so no receiver — and therefore **no reduce arm**: it fires on every machine
+/// carrying rung 69's table, including one armed with a rung-68 `phi` floor instead.
+fn r69_rk4_floor(ds: f64, rate: f64, n_states: usize, tau_s: f64) {
+    assert!(ds * rate <= 2.0,
+            "rung-69: ds*sum(1/tau_i) = {:.3} is outside the explicit RK4 stability region for \
+             the {n_states} actuator states (ds = {ds}, tau_s = {tau_s}). Under the REFERENCE \
+             SPLIT the rates no longer simply add -- the block is rank TWO and the dominant root \
+             is a COMPLEX pair of modulus sqrt(A*z*(1-k)) -- but that modulus is bounded by \
+             sqrt(1-k)/2 times this sum, so the sum is still the conservative guard for k >= -3. \
+             Refine the grid or slow a clock.", ds * rate);
 }
 
-fn r69_rk4_floor(_: f64, _: f64, _: usize, _: f64) {
-    panic!("{STEP2}: _rk4_floor");
-}
-
+/// RUNG 69's `_solve_v` — **the smallest `v` in `[0, +v_max]` holding `M_i >= m_lim`.**
+///
+/// [`r64_solve_b`](crate::limited_bleed::r64_solve_b)'s structure **AND ORIENTATION RESTORED**:
+/// `M_i` is INCREASING in `v` (measured `dM_i/dv = +0.335`) exactly as `phi_lp` is increasing in
+/// `b`, where rung 68's `_solve_v` had to invert both clamp tests and the bracket because `phi_lp`
+/// DECREASES in `v`. Getting the orientation wrong returns a wrong regime label with nothing
+/// raising — rung 62's `_powers` trap, and this is its FIFTH reload.
+///
+/// **THE REGIME IS CARRIED, never re-derived from the float** — rung 68's saturation counterfeit
+/// applies here verbatim, and the suite gates it directly.
 fn r69_solve_v(
-    _: &TwoSpoolTransientCore,
-    _: &dyn Fn(f64) -> Result<FuelCloseState, Abort>,
+    t: &TwoSpoolTransientCore,
+    closer: &dyn Fn(f64) -> Result<FuelCloseState, Abort>,
 ) -> Result<(FuelCloseState, f64, Regime), Abort> {
-    panic!("{STEP2}: _solve_v");
+    let lim = match t.stator.inc {
+        None => {
+            bump(&SOLVE_PARENT);
+            return crate::three_loop::r68_solve_v(t, closer);
+        }
+        Some(l) => l,
+    };
+    bump(&SOLVE_V_CALLS);
+    let t_c = t.stator.map_lp_design.tan_beta1_crit();
+    let m_of = |v: f64, c: &FuelCloseState| StatorIncidenceLimiter::margin(t_c, c.base.phi_lp, v);
+    let c0 = closer(0.0)?;
+    let f0 = m_of(0.0, &c0) - lim.m_lim;
+    if f0 >= 0.0 {
+        bump(&REGIME_V_DORMANT);
+        return Ok((c0, 0.0, Regime::Dormant));
+    }
+    let c1 = closer(lim.v_max)?;
+    let f1 = m_of(lim.v_max, &c1) - lim.m_lim;
+    if f1 <= 0.0 {
+        bump(&REGIME_V_SATURATED);
+        return Ok((c1, lim.v_max, Regime::Saturated));
+    }
+    // Python's argument order is `(f, 0.0, v_max, f0, f1)` — the LOW end first, which here is the
+    // DORMANT stop where rung 68's was the saturated one. Transposing the two residuals is a
+    // wrong first secant that still converges, to a root a few ulps away.
+    let v = try_illinois(|v| closer(v).map(|c| m_of(v, &c) - lim.m_lim),
+                         0.0, lim.v_max, f0, f1, 1e-13, ILLINOIS_MAXIT)?;
+    bump(&REGIME_V_RIDING);
+    Ok((closer(v)?, v, Regime::Riding))
 }
 
+/// RUNG 69's `_manifold_v` — **the SHARED constraint's manifold, and there is no longer a point
+/// where all three laws hold at once.**
+///
+/// At rung 68 the stator's OWN root IS the shared manifold, so that body is `V(g, q)[0]` and the
+/// four arguments it ignores are carried only for this rung. Under the split, `phi = phi_lim` and
+/// `M_i = m_lim` together force `v = 0` — the stator's own dormant stop — so the only base point
+/// at which ANY row-pair of the block is exactly parallel is the wall the FUEL leg and the VALVE
+/// both hold.
+///
+/// **ROOTED UNCLAMPED, ON `[-0.6, +0.6]`** — it is a diagnostic base point and not a state. The
+/// incidence limiter's own band is `[0, v_max]` and the shared manifold sits at `v < 0` wherever
+/// the two `phi` loops are still lagging their commands, so clamping it to the band would return
+/// the stop and call it a manifold.
+///
+/// `_b_state = q` is held for the whole body, as Python's `try/finally` does — the mirror of
+/// `_triple_laws`'s `V` law, which trials `v` and so must see the VALVE as it actually is.
 #[allow(clippy::too_many_arguments)]
 fn r69_manifold_v(
-    _: &ScheduledStatorCore,
-    _: &FlightCondition,
-    _: f64,
-    _: f64,
-    _: f64,
-    _: f64,
-    _: f64,
-    _: &dyn Fn(f64, f64) -> Result<(f64, Regime), Abort>,
+    core: &ScheduledStatorCore, flight: &FlightCondition, a: f64, h: f64, mf_sched: f64, g: f64,
+    q: f64, v_law: &dyn Fn(f64, f64) -> Result<(f64, Regime), Abort>,
 ) -> Result<f64, Abort> {
-    panic!("{STEP2}: _manifold_v");
+    let inc = match core.fuel.inner.stator.inc {
+        None => {
+            bump(&MANIFOLD_PARENT);
+            return crate::three_loop::r68_manifold_v(core, flight, a, h, mf_sched, g, q, v_law);
+        }
+        Some(l) => l,
+    };
+    let ft = &core.fuel;
+    let phi_lim = inc.phi_lim_at(&ft.inner.stator.map_lp_design);
+    let (tt2, pt2, _) = ft.inner.inlet(flight);
+    let _sb = MarchedBleed::set(&ft.inner, q);
+    // **THE RUNG-62 PIN**, through rung 68's own `_closer_v`: the closure is the parent's, CALLED
+    // rather than re-spelled, so `self._closer_v(base_close, …)` stays one function.
+    let closer = crate::three_loop::closer_v(ft, a, h, 1e-9f64.max(mf_sched - g), tt2, pt2);
+    let f = |v: f64| closer(v).map(|c| c.base.phi_lp - phi_lim);
+    let (lo, hi) = (-0.6f64, 0.6f64);
+    let (flo, fhi) = (f(lo)?, f(hi)?);
+    // The two `{:.4e}` fields print `4.2e-3` where Python prints `4.2000e-03`. Nothing matches on
+    // this message — it is the one rung-69 assert with no `pytest.raises` — and reproducing
+    // Python's exponent padding would be a formatter of its own for a string only a human reads.
+    assert!(flo * fhi < 0.0,
+            "rung-69: the SHARED manifold (phi_lp = phi_lim) is not bracketed by the LP stator \
+             on [{lo}, {hi}] at ({a:.4}, {h:.4}): phi - phi_lim = ({flo:.4e}, {fhi:.4e}). s 1's \
+             identities are stated at that base point and under the split there is no substitute \
+             for it.");
+    try_illinois(f, lo, hi, flo, fhi, 1e-14, ILLINOIS_MAXIT)
 }
 
-fn r69_triple_rig(
-    _: &ScheduledStatorCore,
-    _: &TripleRigArm,
-) -> (ScheduledStatorCore, Option<Floor>, Option<AsymmetricLag>) {
-    panic!("{STEP2}: _triple_rig");
-}
-
-/// The nine names above, in the order [`R69_TRIPLE`] and [`R69`] list them — **the set a gate
-/// asserts against, so "did step 2 port them all" is a count and not a reading.**
+/// RUNG 69's `_triple_rig` — **rung 68's rig with the stator's REFERENCE as the only new axis.**
 ///
-/// It shrinks to nothing by the end of step 2. Written here rather than in the test file for
-/// [`Census68`](crate::three_loop::Census68)'s corrected lesson: a defence whose only reader is a
-/// test can be deleted with the test and nobody notices.
-pub const UNPORTED_AT_STEP1: [&str; 9] = [
-    "at_lever", "_stator_leg", "_lagged_stator", "_clamp_v", "_check_v0", "_rk4_floor",
-    "_solve_v", "_manifold_v", "_triple_rig",
-];
+/// Every cell of every table in this rung comes from here, so a cell can differ from another ONLY
+/// by which loops are armed and which coordinate the third one watches — rung 63's lesson, and the
+/// reason the two references' ledgers are differenceable at all.
+///
+/// **THE REFERENCE IS CONSUMED AT CONSTRUCTION AND NEVER RE-READ.** Python is
+/// `self._ref or ("phi" if self.stator_lim is not None else "inc")`, and three of the six readers
+/// build the rig inside the scope and march the returned machine after it has CLOSED. A body that
+/// consulted the carrier later would see `None`, fall through to the fallback, and label the wrong
+/// arm — and § 5.26.1 (j) records why the obvious ledger key cannot see that: `reference_bill`'s
+/// `bare`/`F`/`V`/`FV` cells carry no stator and are identical between the references BY
+/// CONSTRUCTION, so `common_max_rel` reads ~0 with the defect live.
+fn r69_triple_rig(
+    core: &ScheduledStatorCore, arm: &TripleRigArm,
+) -> (ScheduledStatorCore, Option<Floor>, Option<AsymmetricLag>) {
+    let t = &core.fuel.inner;
+    let reference =
+        t.ref_.get().unwrap_or(if t.stator.lim.is_some() { "phi" } else { "inc" });
+    assert!(reference == "inc" || reference == "phi",
+            "rung-69 reference is 'inc' or 'phi'; got {reference:?}");
+    let cmap = core.arming().map_lp_design;
+    let b_max = t.lever.lim.map(|l| l.b_max).unwrap_or(0.10);
+    let bl = if arm.valve {
+        Some(BleedLimiter::from_margin_tau(&cmap, b_max, arm.sm, Some(arm.tau)))
+    } else {
+        None
+    };
+    let (sl, si) = match (arm.stator, reference == "phi") {
+        (false, _) => (None, None),
+        (true, true) => {
+            bump(&RIG_PHI);
+            (Some(StatorLimiter::from_margin(&cmap, arm.v_max, arm.sm, Some(arm.tau_s))), None)
+        }
+        (true, false) => {
+            bump(&RIG_INC);
+            (None,
+             Some(StatorIncidenceLimiter::from_margin(&cmap, arm.v_max, arm.sm, Some(arm.tau_s))))
+        }
+    };
+    let m = core.at_lever(&LeverArm {
+        bleed_lim: bl, stator_lim: sl, stator_inc: si, ..Default::default() });
+    let surge = if arm.fuel {
+        Some(Floor::Phi(SurgeLimiter::from_margin(&cmap, Spool::Lp, arm.sm)))
+    } else {
+        None
+    };
+    let lag = if arm.fuel { Some(AsymmetricLag::new(arm.tau_att, arm.tau_rel)) } else { None };
+    (m, surge, lag)
+}
+
+/// RUNG 69's `at_lever` — **the SEVENTH instance of the sibling-constructor trap, and the second
+/// in a row where the signature GROWS.**
+///
+/// So *"silently drops the third loop"* now has a sibling failure mode, *"silently swaps its
+/// REFERENCE"*, and **no float would reveal it**: a machine handed back with `stator_lim` where
+/// `stator_inc` was asked for still marches five states and still reports a stator credit. The
+/// pre-flight measured the traffic — 31 of 61 calls carry `stator_inc` IN and **0 lose it** — so
+/// the keyword is load-bearing on half the call sites.
+///
+/// It routes through [`build_reference_split_cascade`] and therefore re-asserts all four of rung
+/// 69's guards on every sibling, which is what keeps a rig from being built past guard D.
+fn r69_at_lever(core: &ScheduledStatorCore, arm: &LeverArm) -> ScheduledStatorCore {
+    match build_reference_split_cascade(
+        core.design_engine().clone(), *core.flight_design(), core.mdot_design(),
+        Some(core.arming().map_lp_design), Some(core.arming().map_hp_design), core.rho(), arm)
+    {
+        ScheduledStatorTransient::Full(c) => c,
+        ScheduledStatorTransient::Degenerate(_) => unreachable!("at_lever never disables LP"),
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// COUNTERS — the reduce arms and the rig's reference are invisible to every value key
+// ---------------------------------------------------------------------------------------------
+//
+// Two things this rung does cannot be reached from a float a reader can print:
+//
+// * **THE REDUCE.** Eight cells open with `stator_inc is None ⇒ the parent`, and a reduce arm
+//   emits rung 68's numbers BY CONSTRUCTION. That is the contract, so agreement proves nothing
+//   about WHICH body ran — a cell wired to rung 68 unconditionally passes every reduce gate.
+// * **THE REFERENCE.** `_triple_rig` picks `phi` or `inc`, and § 5.26.1 (j) measured that the
+//   ledger cells a wrong pick would move are exactly the ones identical between the arms.
+//
+// Both are what `slice_ab_dispatch.rs` reads at step 5.
+
+thread_local! {
+    static SOLVE_V_CALLS: Cell<u64> = const { Cell::new(0) };
+    static REGIME_V_DORMANT: Cell<u64> = const { Cell::new(0) };
+    static REGIME_V_RIDING: Cell<u64> = const { Cell::new(0) };
+    static REGIME_V_SATURATED: Cell<u64> = const { Cell::new(0) };
+    static LEG_INC: Cell<u64> = const { Cell::new(0) };
+    static LEG_PARENT: Cell<u64> = const { Cell::new(0) };
+    static LAGGED_PARENT: Cell<u64> = const { Cell::new(0) };
+    static CLAMP_PARENT: Cell<u64> = const { Cell::new(0) };
+    static CHECK_PARENT: Cell<u64> = const { Cell::new(0) };
+    static SOLVE_PARENT: Cell<u64> = const { Cell::new(0) };
+    static MANIFOLD_PARENT: Cell<u64> = const { Cell::new(0) };
+    static RIG_INC: Cell<u64> = const { Cell::new(0) };
+    static RIG_PHI: Cell<u64> = const { Cell::new(0) };
+}
+
+fn bump(c: &'static std::thread::LocalKey<Cell<u64>>) {
+    c.with(|x| x.set(x.get() + 1));
+}
+
+/// What the counters above hold. [`Census68`](crate::three_loop::Census68)'s shape one rung on,
+/// and its corrected lesson: a defence whose only reader is a test can be deleted with the test
+/// and nobody notices, so the declaration lives beside the bodies it counts.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Census69 {
+    /// Calls to rung 69's OWN `_solve_v` body — the parent arm is counted separately.
+    pub solve_v_calls: u64,
+    pub regime_dormant: u64,
+    pub regime_riding: u64,
+    pub regime_saturated: u64,
+    /// `_stator_leg` returning the INCIDENCE limiter.
+    pub leg_inc: u64,
+    /// The six reduce arms — every one of them rung 68's body, reached by a direct call.
+    pub leg_parent: u64,
+    pub lagged_parent: u64,
+    pub clamp_parent: u64,
+    pub check_parent: u64,
+    pub solve_parent: u64,
+    pub manifold_parent: u64,
+    /// Which reference `_triple_rig` armed, which is the ONE thing this rung adds and the one
+    /// thing § 5.26.1 (j) says no ledger key can see.
+    pub rig_inc: u64,
+    pub rig_phi: u64,
+}
+
+impl Census69 {
+    pub fn read() -> Self {
+        Census69 {
+            solve_v_calls: SOLVE_V_CALLS.with(|x| x.get()),
+            regime_dormant: REGIME_V_DORMANT.with(|x| x.get()),
+            regime_riding: REGIME_V_RIDING.with(|x| x.get()),
+            regime_saturated: REGIME_V_SATURATED.with(|x| x.get()),
+            leg_inc: LEG_INC.with(|x| x.get()),
+            leg_parent: LEG_PARENT.with(|x| x.get()),
+            lagged_parent: LAGGED_PARENT.with(|x| x.get()),
+            clamp_parent: CLAMP_PARENT.with(|x| x.get()),
+            check_parent: CHECK_PARENT.with(|x| x.get()),
+            solve_parent: SOLVE_PARENT.with(|x| x.get()),
+            manifold_parent: MANIFOLD_PARENT.with(|x| x.get()),
+            rig_inc: RIG_INC.with(|x| x.get()),
+            rig_phi: RIG_PHI.with(|x| x.get()),
+        }
+    }
+
+    /// Thread-local with no per-test reset, so every gate resets first. Cargo gives each `#[test]`
+    /// its own thread today; the reset makes that irrelevant rather than relied upon.
+    pub fn reset() {
+        for c in [&SOLVE_V_CALLS, &REGIME_V_DORMANT, &REGIME_V_RIDING, &REGIME_V_SATURATED,
+                  &LEG_INC, &LEG_PARENT, &LAGGED_PARENT, &CLAMP_PARENT, &CHECK_PARENT,
+                  &SOLVE_PARENT, &MANIFOLD_PARENT, &RIG_INC, &RIG_PHI] {
+            c.with(|x| x.set(0));
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// § 1/3 — THE SPECTRUM: a COMPLEX pair, and a Newton march that does not converge
+// ---------------------------------------------------------------------------------------------
+
+/// A complex double, for [`cubic_roots_c`] and its readers alone.
+///
+/// **THE PORT'S FIRST COMPLEX NUMBER, AND IT EXISTS BECAUSE RUNG 68's ROOT FINDER THREW AWAY THE
+/// INFORMATION THIS RUNG NEEDS.** [`cubic_roots`](crate::three_loop::cubic_roots) deflates on the
+/// DOMINANT root and reports a complex pair's real part TWICE; rung 69's claim is that the freed
+/// root does NOT land on the real axis, so a reader that could not see an imaginary part could not
+/// state it.
+///
+/// Deliberately not a general complex type: three operations are needed (`abs`, and the two
+/// spellings [`cubic_roots_c`] uses), and a fuller one would invite a reader to compose operations
+/// whose Python counterpart was never called.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct C64 {
+    pub re: f64,
+    pub im: f64,
+}
+
+impl C64 {
+    /// Python's `abs(z)` — `hypot`, and **not** `sqrt(re*re + im*im)`.
+    ///
+    /// CPython's `_Py_c_abs` and PyPy's `rcomplex.c_abs` both call the platform `hypot`, and so
+    /// does Rust's [`f64::hypot`]; the naive spelling is a different function (it overflows and
+    /// loses half the significand where `hypot` does not). Every root with `im == 0.0` — which is
+    /// all three on the real branch — reduces to `|re|` exactly on any conforming `hypot`, so the
+    /// only rows where the library is load-bearing are the genuinely complex pairs. **Registered
+    /// as the slice's one platform-library exposure; step 4's oracle is what measures it.**
+    pub fn abs(self) -> f64 {
+        self.re.hypot(self.im)
+    }
+}
+
+/// Python's `cmath.sqrt(complex(d, 0.0))` for a REAL argument — the only form this rung calls.
+///
+/// CPython's `c_sqrt` computes `s = 2*sqrt(ax/8 + hypot(ax/8, ay/8))`, and with `ay = 0` every
+/// step is exact: `ax/8` is a power-of-two scaling, `hypot(x, 0) = |x|`, the sum is `ax/4`, and
+/// `sqrt(ax/4) = sqrt(ax)/2` exactly because both operations shift the exponent. So the answer is
+/// `sqrt(|d|)` on the appropriate axis, and no `hypot` survives into the result. PyPy's
+/// `rcomplex.c_sqrt` is the same algorithm.
+///
+/// **THE ZERO CASE IS CPython's OWN EARLY RETURN, NOT A SIMPLIFICATION**: `complex(-0.0, 0.0)`
+/// hits `z.real == 0 && z.imag == 0` and returns `+0 + 0j`, where `(-0.0).sqrt()` would hand back
+/// `-0.0` and change the sign of a root's real part when `p` is also zero.
+///
+/// Restricted to normal magnitudes: the subnormal rescaling branch is not reproduced, and `d` here
+/// is `p*p - 4q` with `p`, `q` of order 1e2…1e4.
+fn csqrt_real(d: f64) -> C64 {
+    if d == 0.0 {
+        return C64 { re: 0.0, im: 0.0 };
+    }
+    if d > 0.0 {
+        C64 { re: d.sqrt(), im: 0.0 }
+    } else {
+        C64 { re: 0.0, im: (-d).sqrt() }
+    }
+}
+
+/// RUNG 69's `_cubic_roots_c` — roots of `l^3 - c2 l^2 + c1 l - c0` **as complex numbers, deflating
+/// on the root nearest ZERO.**
+///
+/// [`cubic_roots`](crate::three_loop::cubic_roots) deflates on the DOMINANT root, which discards
+/// exactly what this rung measures. Here the predicted spectrum is one near-zero root and a
+/// genuinely complex pair, and `l ~ c0/c1` is its own first Newton step from `x = 0`.
+///
+/// # THE SURFACE IS SHARP, AND IT WAS MEASURED BEFORE A LINE WAS WRITTEN
+///
+/// Over the 256 calls the shipped suite makes (§ 5.26 (iii)):
+///
+/// | | measured |
+/// |---|---|
+/// | iterations | `{2: 103, 8: 9, 9: 18, 10: 15, 11: 21, 12: 12, 13: 3, 19: 3, `**`80: 72`**`}` |
+/// | exit taken | `tol` 184 · **`EXHAUSTED-80` 72** · `d == 0` 0 |
+/// | discriminant | REAL pair 192 · COMPLEX pair 64 |
+///
+/// **72 of 256 calls run out of budget rather than converging, and none of them settles into an
+/// ulp limit cycle** — the last six iterates wander over two decades and change sign, with
+/// `|f(x)|` at exit up to 1.3e−10 against a tolerance of 6e−14. The reason is in the coefficients:
+/// the near-zero pair is COMPLEX, so there is no real root near the start point and Newton on the
+/// real line cannot find one. **The exit value is an arbitrary point of a chaotic march, and the
+/// port owes all 80 steps of it bit-for-bit.**
+///
+/// That is not a hope: probe 7c replayed all 256 coefficient triples under both interpreters and
+/// the exit value AND the iteration count agree on 256/256. Plain IEEE multiply/add throughout —
+/// no `sum()`, no library call — so a Rust translation that does not fuse reproduces it. The one
+/// derived key, `reference_modes`'s `n_zero`, sits 3.5 decades from its own threshold with **0**
+/// triples within a decade of flipping it.
+///
+/// The tolerance is `1e-15 * max(|c2|, |x|, 1.0)` — a THREE-argument Python `max`, so
+/// [`py_max3`](crate::lagged_bleed::py_max3) and not a chain of [`f64::max`], which differ on NaN
+/// in the first position.
+pub fn cubic_roots_c(c2: f64, c1: f64, c0: f64) -> [C64; 3] {
+    let f = |x: f64| ((x - c2) * x + c1) * x - c0;
+    let fp = |x: f64| (3.0 * x - 2.0 * c2) * x + c1;
+    let mut x = 0.0f64;
+    for _ in 0..80 {
+        let d = fp(x);
+        if d == 0.0 {
+            break;
+        }
+        let step = f(x) / d;
+        x -= step;
+        if step.abs() <= 1e-15 * py_max3(c2.abs(), x.abs(), 1.0) {
+            break;
+        }
+    }
+    // deflate: `l^3 - c2 l^2 + c1 l - c0 = (l - x)(l^2 + p l + q)`
+    let (p, q) = (x - c2, c1 - (c2 - x) * x);
+    let rt = csqrt_real(p * p - 4.0 * q);
+    // Python promotes `-p` to `complex(-p, 0.0)` before adding, so the imaginary parts are
+    // `0.0 + rt.im` and `0.0 - rt.im` — spelled out, because `-rt.im` hands back `-0.0` on the
+    // real branch where Python has `+0.0`.
+    [C64 { re: x, im: 0.0 },
+     C64 { re: 0.5 * (-p + rt.re), im: 0.5 * (0.0 + rt.im) },
+     C64 { re: 0.5 * (-p - rt.re), im: 0.5 * (0.0 - rt.im) }]
+}
+
+/// Python's `sorted(roots, key=abs)` — **STABLE**, which is load-bearing: the real branch returns
+/// a conjugate pair with equal magnitudes, and an unstable sort would swap them.
+fn sorted_by_abs(roots: [C64; 3]) -> [C64; 3] {
+    let mut out = roots;
+    out.sort_by(|a, b| a.abs().partial_cmp(&b.abs()).expect("the roots here are finite"));
+    out
+}
+
+/// RUNG 69's `_invariants` — the characteristic polynomial's three coefficients from the six
+/// cross-gains and the three clocks.
+///
+/// `J = D A` with `D = diag(1/tau_i)` and `A` the gain matrix with `-1` on the diagonal, so
+/// `c2 = tr J`, `c1 = sum of the three 2x2 principal minors`, `c0 = det J`.
+///
+/// **`c1` IS THE ONE KEY IN THIS SLICE WHOSE INTERPRETERS DISAGREE.** Python spells both `c2` and
+/// `c1` as `sum(...)` over a three-element generator, and § 5.26 (i) measured CPython's
+/// Neumaier-compensated `sum` diverging from the naive fold on **23 of 256** instances of `c1`
+/// while `c2` agrees on all 256. Length is not the discriminator (slice AA's explanation, refuted)
+/// and neither is cancellation (my replacement, refuted by the same probe): whether the
+/// compensation survives the final rounding is a bit-pattern property of the particular summands.
+/// PyPy folds left from `0.0`, which is what this is, and adding `0.0` first is exact for every
+/// non-`-0.0` first term — the diagonal is `-1/tau_i`, so it never is one.
+pub fn invariants(gg: &TripleGains, taus: (f64, f64, f64)) -> (f64, f64, f64) {
+    let a = [[-1.0, gg.r_q, gg.r_v], [gg.c_g, -1.0, gg.c_v], [gg.v_g, gg.v_q, -1.0]];
+    let td = [taus.0, taus.1, taus.2];
+    let mut j = [[0.0f64; 3]; 3];
+    for (i, row) in j.iter_mut().enumerate() {
+        for (k, cell) in row.iter_mut().enumerate() {
+            *cell = a[i][k] / td[i];
+        }
+    }
+    let c2 = j[0][0] + j[1][1] + j[2][2];
+    let c1 = (j[0][0] * j[1][1] - j[0][1] * j[1][0])
+        + (j[0][0] * j[2][2] - j[0][2] * j[2][0])
+        + (j[1][1] * j[2][2] - j[1][2] * j[2][1]);
+    let c0 = j[0][0] * (j[1][1] * j[2][2] - j[1][2] * j[2][1])
+        - j[0][1] * (j[1][0] * j[2][2] - j[1][2] * j[2][0])
+        + j[0][2] * (j[1][0] * j[2][1] - j[1][1] * j[2][0]);
+    (c2, c1, c0)
+}
+
+// ---------------------------------------------------------------------------------------------
+// THE SIX READERS — and THREE of them march a machine after the scope has CLOSED
+// ---------------------------------------------------------------------------------------------
+//
+// § 5.26.1 (j), registered before a line of this section was written:
+//
+// * `reference_bill` runs `triple_bill` ENTIRELY inside the scope, so `_ref` may be read
+//   throughout.
+// * `reference_gains`, `reference_modes` and `ring_visibility` build the rig inside the scope and
+//   march the returned machine AFTER it has closed.
+//
+// So the reference must be CONSUMED AT CONSTRUCTION — baked into which limiter `_triple_rig`
+// armed — and never re-read from the carrier by a downstream reader. Every `RefScope` below is
+// therefore scoped to the `triple_rig` call alone and not to the march, which makes the
+// requirement structural rather than a discipline: a reader that wanted the carrier later would
+// have to widen a `let` and say so.
+
+/// One sampled point of [`reference_gains`] — the SAME point read under BOTH references.
+#[derive(Clone, Debug)]
+pub struct RefGainsRow {
+    pub s: f64,
+    /// The INCIDENCE rig, on the shared manifold — the plant that was marched.
+    pub inc: TripleGains,
+    /// The `phi` rig, at the INCIDENCE march's own points, so the two references are differenced
+    /// on ONE trajectory rather than on two.
+    pub phi: TripleGains,
+    /// The incidence rig at the LIVE marched `v` — the alternative base point, REPORTED and never
+    /// gated on (§ 0.3 degrades `pair_RC` to 0.94–0.98 there).
+    pub own: TripleGains,
+    /// `(pair_RV + pair_CV)/2` — the ONE scalar that sets the split, the cyclic product and the
+    /// damping floor.
+    pub k: f64,
+    /// `|pair_RV - pair_CV| / |k|` — the two split pairs taking the SAME value is a MEASUREMENT,
+    /// so its residual is a key.
+    pub pair_gap: f64,
+    pub v_base: f64,
+}
+
+/// RUNG 69's `reference_gains` return.
+#[derive(Clone, Debug)]
+pub struct ReferenceGains {
+    pub n_riding: usize,
+    pub n_sampled: usize,
+    pub rows: Vec<RefGainsRow>,
+    /// DISCLOSED, never a silent truncation — `(s, inc off-regime, phi off-regime)`.
+    pub skipped: Vec<(f64, Vec<&'static str>, Vec<&'static str>)>,
+    pub s_window: Option<(f64, f64)>,
+    pub k_range: (Option<f64>, Option<f64>),
+    pub worst_rc_inc: Option<f64>,
+    pub worst_rc_phi: Option<f64>,
+    pub worst_pair_gap: Option<f64>,
+    pub worst_rc_own: Option<f64>,
+}
+
+/// Python's `max(gen, default=None)` / `min(gen, default=None)` over a possibly-empty iterator.
+fn opt_fold(mut it: impl Iterator<Item = f64>, f: fn(f64, f64) -> f64) -> Option<f64> {
+    let first = it.next()?;
+    Some(it.fold(first, f))
+}
+
+/// RUNG 69 § 1 — **the six cross-gains under BOTH references at the SAME base points.**
+///
+/// THE INSTRUMENT IS THE SPLIT, not any single scalar. `pair_RC` — the two loops that still share
+/// `phi` — must stay at 1 while `pair_RV` and `pair_CV` BOTH move to `k`, so **which pairs keep
+/// rung 66's identity reads off WHICH LOOPS SHARE A CONSTRAINT.** `cyclic` is reported because
+/// rung 68 quotes it, and `k` because it sets the split, the cyclic product AND the damping floor.
+///
+/// The march is the INCIDENCE one (the new plant); the rung-68 rig is evaluated at ITS points, so
+/// the two references are differenced on ONE trajectory rather than on two.
+pub fn reference_gains(
+    core: &ScheduledStatorCore, flight: &FlightCondition, ramp: &Ramp, sm: f64,
+    arm: &TripleRigArm, every: usize,
+) -> ReferenceGains {
+    let a = TripleRigArm { sm, ..*arm };
+    let (m_i, surge, lag) = core.triple_rig(&a);
+    // The `phi` rig, built INSIDE the scope and used outside it — the whole content of § (j).
+    let m_p = {
+        let _r = RefScope::set(&core.fuel.inner, Some("phi"));
+        core.triple_rig(&a).0
+    };
+    let leg = StatorLeg { accel: None, surge, tt4_max: None };
+    let (traj, _) = m_i.stator_march_scoped(
+        flight, ramp, None, &leg, &MarchScope { lag, ..MarchScope::DEFAULT });
+    let b_max = m_i.fuel.inner.lever.lim.expect("the rig arms a valve").b_max;
+    let pts = riding(&traj, b_max);
+    let sampled: Vec<&FuelPoint> = pts.iter().step_by(every.max(1)).collect();
+    let (mut rows, mut skipped) = (Vec::new(), Vec::new());
+    for p in &sampled {
+        // Python evaluates all THREE before inspecting any regime, so the closure-call count a
+        // counter can read does not depend on which arm was off.
+        let inc = triple_gains_at(&m_i, flight, p, None, leg.surge.as_ref(),
+                                  1e-7, 1e-5, 1e-4, true, 0.0, true)
+            .expect("rung-69's gains march does not abort");
+        let own = triple_gains_at(&m_i, flight, p, None, leg.surge.as_ref(),
+                                  1e-7, 1e-5, 1e-4, false, 0.0, true)
+            .expect("rung-69's gains march does not abort");
+        let phi = triple_gains_at(&m_p, flight, p, None, leg.surge.as_ref(),
+                                  1e-7, 1e-5, 1e-4, true, 0.0, true)
+            .expect("rung-69's gains march does not abort");
+        if !(inc.interior && phi.interior) {
+            skipped.push((p.s, inc.off_regime.clone(), phi.off_regime.clone()));
+            continue;
+        }
+        let k = 0.5 * (inc.pair_rv + inc.pair_cv);
+        rows.push(RefGainsRow {
+            s: p.s,
+            pair_gap: (inc.pair_rv - inc.pair_cv).abs() / k.abs(),
+            v_base: inc.v_base,
+            k,
+            inc,
+            own,
+            phi,
+        });
+    }
+    ReferenceGains {
+        n_riding: pts.len(),
+        n_sampled: sampled.len(),
+        s_window: if pts.is_empty() { None }
+                  else { Some((pts[0].s, pts[pts.len() - 1].s)) },
+        k_range: (opt_fold(rows.iter().map(|x| x.k), f64::min),
+                  opt_fold(rows.iter().map(|x| x.k), f64::max)),
+        worst_rc_inc: opt_fold(rows.iter().map(|x| (x.inc.pair_rc - 1.0).abs()), f64::max),
+        worst_rc_phi: opt_fold(rows.iter().map(|x| (x.phi.pair_rc - 1.0).abs()), f64::max),
+        worst_pair_gap: opt_fold(rows.iter().map(|x| x.pair_gap), f64::max),
+        worst_rc_own: opt_fold(rows.iter().filter(|x| x.own.interior)
+                                   .map(|x| (x.own.pair_rc - 1.0).abs()), f64::max),
+        rows,
+        skipped,
+    }
+}
+
+/// One sampled point's spectrum under ONE reference.
+#[derive(Clone, Debug)]
+pub struct RefModesRow {
+    pub s: f64,
+    /// `(1-k)(1/(tau_g tau_s) + 1/(tau_q tau_s))` — **THE DISCRIMINATOR**, ~0 under `phi` and
+    /// decisively non-zero here, and NOT the invariant rung 68 used.
+    pub c1: f64,
+    /// `det J` — ZERO under BOTH references, because the two `phi` loops keep exactly parallel
+    /// rows whatever the third one watches. **BLIND to the split.**
+    pub c0: f64,
+    /// `tr J` — the ODE's own diagonal, not a measurement.
+    pub c2: f64,
+    pub k: f64,
+    pub pair_rc: f64,
+    pub cyclic: f64,
+    pub roots: [C64; 3],
+    /// `-Re(dom)/|dom|`, `None` only if the dominant root is exactly zero.
+    pub zeta: Option<f64>,
+    pub complex_pair: bool,
+    /// Roots under `1e-4 * rate` — **`n - m`**: TWO under `phi` (rung 68), ONE here. The rung.
+    pub n_zero: usize,
+    pub worst_zero: f64,
+    /// Both invariants RELATIVE to the rate sum's own power, because "zero" without its scale is
+    /// not a measurement either.
+    pub c1_rel: f64,
+    pub c0_rel: f64,
+}
+
+/// One reference's arm of [`reference_modes`].
+#[derive(Clone, Debug)]
+pub struct RefModesArm {
+    pub rate_sum: f64,
+    pub n: usize,
+    pub n_sampled: usize,
+    /// DISCLOSED below, never a silent truncation.
+    pub skipped: usize,
+    pub rows: Vec<RefModesRow>,
+    /// The DISTINCT `n_zero` values, sorted — Python's `sorted({...})`.
+    pub zeros: Vec<usize>,
+    pub max_c0_rel: Option<f64>,
+    pub min_c1_rel: Option<f64>,
+    pub all_complex: Option<bool>,
+    pub zeta_range: (Option<f64>, Option<f64>),
+}
+
+/// One clock triple, both references.
+#[derive(Clone, Debug)]
+pub struct RefModesClock {
+    /// `(tau_att, tau_v, tau_s)` — the `(g, q, v)` order of the state vector, which is NOT the
+    /// order the clock grid is written in.
+    pub taus: (f64, f64, f64),
+    pub inc: RefModesArm,
+    pub phi: RefModesArm,
+}
+
+impl RefModesClock {
+    /// The two arms in Python's own key order, for a reader that iterates.
+    pub fn refs(&self) -> [(&'static str, &RefModesArm); 2] {
+        [("inc", &self.inc), ("phi", &self.phi)]
+    }
+}
+
+/// RUNG 69's `reference_modes` return.
+#[derive(Clone, Debug)]
+pub struct ReferenceModes {
+    pub clocks: Vec<(f64, f64, f64)>,
+    pub ds: f64,
+    pub arms: Vec<RefModesClock>,
+}
+
+/// RUNG 69 § 1's SPECTRUM under BOTH references, on the shipped closures, across a clock grid.
+///
+/// THE THREE OBSERVABLES DO NOT CARRY THE SAME CONTENT: `zeros` is `n - m` and is the rung; `c0`
+/// is `det J` and is **blind** to the split; `c1` is the discriminator, and it is not the
+/// invariant rung 68 used. A reader that inherited rung 68's determinant test would report rank
+/// one and see nothing.
+#[allow(clippy::too_many_arguments)]
+pub fn reference_modes(
+    core: &ScheduledStatorCore, flight: &FlightCondition, ramp: &Ramp, sm: f64,
+    clocks: &[(f64, f64, f64)], v_max: f64, tau_rel_mult: f64, every: usize,
+) -> ReferenceModes {
+    let mut arms = Vec::new();
+    for &(tau_v, tau_att, tau_s) in clocks {
+        let taus = (tau_att, tau_v, tau_s);
+        let mut built: Vec<RefModesArm> = Vec::new();
+        for reference in ["inc", "phi"] {
+            let a = TripleRigArm { sm, tau: tau_v, tau_s, v_max, tau_att,
+                                   tau_rel: tau_rel_mult * tau_att, ..TripleRigArm::default() };
+            let (m, surge, lag) = {
+                let _r = RefScope::set(&core.fuel.inner, Some(reference));
+                core.triple_rig(&a)
+            };
+            let leg = StatorLeg { accel: None, surge, tt4_max: None };
+            let (traj, _) = m.stator_march_scoped(
+                flight, ramp, None, &leg, &MarchScope { lag, ..MarchScope::DEFAULT });
+            let b_max = m.fuel.inner.lever.lim.expect("the rig arms a valve").b_max;
+            let pts = riding(&traj, b_max);
+            // Python's `sum(1.0 / t for t in taus)` — a three-term LEFT FOLD in the state
+            // vector's own order; probe 6 measured this site identical on both interpreters.
+            let rate = 1.0 / taus.0 + 1.0 / taus.1 + 1.0 / taus.2;
+            let sampled: Vec<&FuelPoint> = pts.iter().step_by(every.max(1)).collect();
+            let (mut rows, mut skipped) = (Vec::new(), 0usize);
+            for p in &sampled {
+                let gg = triple_gains_at(&m, flight, p, None, leg.surge.as_ref(),
+                                         1e-7, 1e-5, 1e-4, true, 0.0, true)
+                    .expect("rung-69's spectrum march does not abort");
+                if !gg.interior {
+                    skipped += 1;
+                    continue;
+                }
+                let (c2, c1, c0) = invariants(&gg, taus);
+                let roots = cubic_roots_c(c2, c1, c0);
+                let nz = sorted_by_abs(roots);
+                let dom = nz[2];
+                rows.push(RefModesRow {
+                    s: p.s, c1, c0, c2,
+                    k: 0.5 * (gg.pair_rv + gg.pair_cv),
+                    pair_rc: gg.pair_rc,
+                    cyclic: gg.cyclic,
+                    roots,
+                    zeta: if dom.abs() > 0.0 { Some(-dom.re / dom.abs()) } else { None },
+                    complex_pair: dom.im.abs() > 1e-6 * dom.abs(),
+                    n_zero: roots.iter().filter(|x| x.abs() < 1e-4 * rate).count(),
+                    worst_zero: nz[0].abs(),
+                    // `rate ** 2` MULTIPLIES and `rate ** 3` calls `pow` — PyPy's JIT rewrites
+                    // the square and not the cube, so reproducing PyPy means doing the same
+                    // (`tests/porting_rules.rs` RULE 2).
+                    c1_rel: c1.abs() / (rate * rate),
+                    c0_rel: c0.abs() / powp(rate, 3.0),
+                });
+            }
+            let mut zeros: Vec<usize> = rows.iter().map(|x| x.n_zero).collect();
+            zeros.sort_unstable();
+            zeros.dedup();
+            built.push(RefModesArm {
+                rate_sum: -rate,
+                n: pts.len(),
+                n_sampled: sampled.len(),
+                skipped,
+                zeros,
+                max_c0_rel: opt_fold(rows.iter().map(|x| x.c0_rel), f64::max),
+                min_c1_rel: opt_fold(rows.iter().map(|x| x.c1_rel), f64::min),
+                all_complex: if rows.is_empty() { None }
+                             else { Some(rows.iter().all(|x| x.complex_pair)) },
+                zeta_range: (opt_fold(rows.iter().filter_map(|x| x.zeta), f64::min),
+                             opt_fold(rows.iter().filter_map(|x| x.zeta), f64::max)),
+                rows,
+            });
+        }
+        let phi = built.pop().expect("two arms were pushed");
+        let inc = built.pop().expect("two arms were pushed");
+        arms.push(RefModesClock { taus, inc, phi });
+    }
+    ReferenceModes { clocks: clocks.to_vec(), ds: ramp.ds, arms }
+}
+
+/// The live half of a [`DampingRow`] — present only when the mid-trajectory point was interior.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct DampingLive {
+    pub s: f64,
+    pub k: f64,
+    /// `A = 1/tau_g + 1/tau_q` — the two loops that still share `phi`.
+    pub a: f64,
+    /// `z = 1/tau_s` — the split loop.
+    pub z: f64,
+    pub a_over_z: f64,
+    /// `A z (1-k)` — the rank-2 block's determinant, i.e. `lam1 lam2`.
+    pub det2: f64,
+    pub zeta_pred: f64,
+    /// The SHIPPED cubic's own dominant root, not the closed form — the two are reported side by
+    /// side rather than one being asserted from the other.
+    pub zeta: f64,
+    /// `1/sqrt(1-k)` — the AM-GM floor, and **bandwidth-independent**.
+    pub floor: f64,
+    pub modulus: f64,
+    pub mod_pred: f64,
+    pub rate_sum: f64,
+    pub complex_pair: bool,
+}
+
+/// One grid point of [`damping_floor`] — Python's row dict, whose KEYS differ by arm.
+#[derive(Clone, Debug)]
+pub struct DampingRow {
+    pub taus: (f64, f64, f64),
+    pub n: usize,
+    /// Non-empty exactly when the mid point was off-regime, which is the arm Python spells by
+    /// putting an `off_regime` key in and leaving `zeta` out.
+    pub off_regime: Vec<&'static str>,
+    pub live: Option<DampingLive>,
+}
+
+/// RUNG 69's `damping_floor` return.
+#[derive(Clone, Debug)]
+pub struct DampingFloor {
+    pub rows: Vec<DampingRow>,
+    pub holds: bool,
+    /// The `zeta/floor`-minimal live row — Python's `min(..., key=...)`, which returns the FIRST
+    /// minimum.
+    pub tightest: Option<DampingLive>,
+    pub worst_pred_err: Option<f64>,
+}
+
+/// RUNG 69 § 3 — **`zeta >= 1/sqrt(1-k)` OVER EVERY BANDWIDTH, with equality at `A = z`.**
+///
+/// The gains do not depend on the clocks at all — `R`, `C` and `V` are control LAWS, and the
+/// clocks enter only through `D = diag(1/tau_i)`. So the honest instrument measures the gains once
+/// per grid point ON THAT POINT'S OWN MARCH and reports both the closed-form `zeta` and the
+/// shipped cubic's own dominant root, rather than pretending each clock arm is an independent
+/// measurement of `k`.
+///
+/// **NO `_with_ref` HERE** — this reader runs on whatever the machine is armed with, which on a
+/// rung-69 object is the incidence loop.
+#[allow(clippy::too_many_arguments)]
+pub fn damping_floor(
+    core: &ScheduledStatorCore, flight: &FlightCondition, ramp: &Ramp, sm: f64,
+    grid: &[(f64, f64, f64)], v_max: f64, tau_rel_mult: f64,
+) -> DampingFloor {
+    let mut rows = Vec::new();
+    for &(tau_v, tau_att, tau_s) in grid {
+        let taus = (tau_att, tau_v, tau_s);
+        let a_arm = TripleRigArm { sm, tau: tau_v, tau_s, v_max, tau_att,
+                                   tau_rel: tau_rel_mult * tau_att, ..TripleRigArm::default() };
+        let (m, surge, lag) = core.triple_rig(&a_arm);
+        let leg = StatorLeg { accel: None, surge, tt4_max: None };
+        let (traj, _) = m.stator_march_scoped(
+            flight, ramp, None, &leg, &MarchScope { lag, ..MarchScope::DEFAULT });
+        let b_max = m.fuel.inner.lever.lim.expect("the rig arms a valve").b_max;
+        let pts = riding(&traj, b_max);
+        if pts.is_empty() {
+            rows.push(DampingRow { taus, n: 0, off_regime: Vec::new(), live: None });
+            continue;
+        }
+        let p = pts[pts.len() / 2];
+        let gg = triple_gains_at(&m, flight, &p, None, leg.surge.as_ref(),
+                                 1e-7, 1e-5, 1e-4, true, 0.0, true)
+            .expect("rung-69's damping march does not abort");
+        if !gg.interior {
+            rows.push(DampingRow { taus, n: pts.len(), off_regime: gg.off_regime, live: None });
+            continue;
+        }
+        let k = 0.5 * (gg.pair_rv + gg.pair_cv);
+        let (a, z) = (1.0 / tau_att + 1.0 / tau_v, 1.0 / tau_s);
+        let det2 = a * z * (1.0 - k);
+        let (c2, c1, c0) = invariants(&gg, taus);
+        let dom = sorted_by_abs(cubic_roots_c(c2, c1, c0))[2];
+        rows.push(DampingRow {
+            taus, n: pts.len(), off_regime: Vec::new(),
+            live: Some(DampingLive {
+                s: p.s, k, a, z, a_over_z: a / z, det2,
+                zeta_pred: (a + z) / (2.0 * powp(det2, 0.5)),
+                zeta: -dom.re / dom.abs(),
+                floor: powp(1.0 - k, -0.5),
+                modulus: dom.abs(),
+                mod_pred: powp(det2, 0.5),
+                rate_sum: a + z,
+                complex_pair: dom.im.abs() > 1e-6 * dom.abs(),
+            }),
+        });
+    }
+    let live: Vec<DampingLive> = rows.iter().filter_map(|x| x.live).collect();
+    let mut tightest: Option<DampingLive> = None;
+    for x in &live {
+        // Python's `min(..., key=...)` keeps the FIRST minimum, so the comparison is STRICT.
+        if tightest.is_none_or(|b| x.zeta / x.floor < b.zeta / b.floor) {
+            tightest = Some(*x);
+        }
+    }
+    DampingFloor {
+        holds: live.iter().all(|x| x.zeta >= x.floor - 1e-9),
+        worst_pred_err: opt_fold(live.iter().map(|x| (x.zeta / x.zeta_pred - 1.0).abs()),
+                                 f64::max),
+        tightest,
+        rows,
+    }
+}
+
+/// One sampled point of [`rk4_margin`].
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Rk4MarginRow {
+    pub s: f64,
+    pub modulus: f64,
+    pub k: f64,
+    /// `|lam| / sum(1/tau)` — the ratio the derivation bounds.
+    pub ratio: f64,
+    /// `sqrt(1-k)/2` — that bound, which must stay below 1 for the inherited constant to be
+    /// conservative.
+    pub bound: f64,
+}
+
+/// RUNG 69's `rk4_margin` return.
+#[derive(Clone, Debug)]
+pub struct Rk4Margin {
+    pub rate_sum: f64,
+    /// The number of INTERIOR rows, not the number of riding points.
+    pub n: usize,
+    pub rows: Vec<Rk4MarginRow>,
+    pub max_mod: Option<f64>,
+    pub max_ratio: Option<f64>,
+    pub max_bound: Option<f64>,
+    pub ds_lambda: f64,
+}
+
+/// **THE GUARD, MEASURED AGAINST THE PLANT rather than trusted.**
+///
+/// [`r69_rk4_floor`] keeps rung 68's constant on a DIFFERENT argument — the dominant root is now a
+/// complex pair — so what must be checked is the ratio the derivation bounds,
+/// `|lam| / sum(1/tau) <= sqrt(1-k)/2`, and that it stays below 1. Rung 65 published a retraction
+/// for exactly the failure mode of a trusted stability argument, which is why this reader exists
+/// at all rather than the inequality being asserted.
+#[allow(clippy::too_many_arguments)]
+pub fn rk4_margin(
+    core: &ScheduledStatorCore, flight: &FlightCondition, ramp: &Ramp, sm: f64,
+    arm: &TripleRigArm, every: usize,
+) -> Rk4Margin {
+    let a_arm = TripleRigArm { sm, ..*arm };
+    let (m, surge, lag) = core.triple_rig(&a_arm);
+    let leg = StatorLeg { accel: None, surge, tt4_max: None };
+    let (traj, _) = m.stator_march_scoped(
+        flight, ramp, None, &leg, &MarchScope { lag, ..MarchScope::DEFAULT });
+    let b_max = m.fuel.inner.lever.lim.expect("the rig arms a valve").b_max;
+    let pts = riding(&traj, b_max);
+    let taus = (a_arm.tau_att, a_arm.tau, a_arm.tau_s);
+    let rate = 1.0 / taus.0 + 1.0 / taus.1 + 1.0 / taus.2;
+    let mut rows = Vec::new();
+    for p in pts.iter().step_by(every.max(1)) {
+        let gg = triple_gains_at(&m, flight, p, None, leg.surge.as_ref(),
+                                 1e-7, 1e-5, 1e-4, true, 0.0, true)
+            .expect("rung-69's rk4 march does not abort");
+        if !gg.interior {
+            continue;
+        }
+        let (c2, c1, c0) = invariants(&gg, taus);
+        let dom = sorted_by_abs(cubic_roots_c(c2, c1, c0))[2];
+        let k = 0.5 * (gg.pair_rv + gg.pair_cv);
+        rows.push(Rk4MarginRow { s: p.s, modulus: dom.abs(), k, ratio: dom.abs() / rate,
+                                 bound: powp(1.0 - k, 0.5) / 2.0 });
+    }
+    Rk4Margin {
+        rate_sum: rate,
+        n: rows.len(),
+        max_mod: opt_fold(rows.iter().map(|x| x.modulus), f64::max),
+        max_ratio: opt_fold(rows.iter().map(|x| x.ratio), f64::max),
+        max_bound: opt_fold(rows.iter().map(|x| x.bound), f64::max),
+        // Python's `max(gen, default=0.0)` — a ZERO fallback here, not `None`.
+        ds_lambda: ramp.ds * opt_fold(rows.iter().map(|x| x.modulus), f64::max).unwrap_or(0.0),
+        rows,
+    }
+}
+
+/// One reference's stator credit, all four ways [`reference_bill`] quotes it.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct StatorCredit {
+    /// The `S` cell, against the `phi` wall.
+    pub alone: f64,
+    /// The `S` cell, against the INCIDENCE wall — the one the stator cannot move.
+    pub alone_inc: f64,
+    /// `FVS - FV`, against `phi`.
+    pub marginal: f64,
+    pub marginal_inc: f64,
+}
+
+/// RUNG 69's `reference_bill` return.
+#[derive(Clone, Debug)]
+pub struct ReferenceBill {
+    pub inc: TripleBill,
+    pub phi: TripleBill,
+    /// The four STATOR-FREE cells, `(inc, phi)` each — identical BY CONSTRUCTION, and recomputed
+    /// so that any drift shows up in a cell that CANNOT have one.
+    pub common: Vec<(&'static str, (f64, f64))>,
+    pub common_max_rel: f64,
+    pub stator_credit_inc: StatorCredit,
+    pub stator_credit_phi: StatorCredit,
+    /// `(inc, phi)`.
+    pub delivered: (f64, f64),
+    pub delivered_inc: (f64, f64),
+}
+
+/// RUNG 69 § 4 — **rung 68's 8-cell ledger run TWICE, once per reference, one rig, both walls.**
+///
+/// The `bare`, `F`, `V` and `FV` cells carry no stator and are therefore IDENTICAL between the two
+/// references by construction; they are recomputed rather than shared so that any drift would show
+/// up as a difference in a cell that CANNOT have one — a free check on the rig, and rung 63's
+/// lesson about differenceable cells.
+///
+/// **AND THAT IS EXACTLY WHY `common_max_rel` IS NOT THE KEY THAT WOULD CATCH A LOST REFERENCE**
+/// (§ 5.26.1 (j)): those four cells agree whichever arm ran. The discriminating keys are the ones
+/// that MUST differ — `pair_RV`, `pair_CV`, `c1`, `zeros` — and they live in the other readers.
+///
+/// Unlike the three readers above, `triple_bill` runs ENTIRELY inside the scope, so the guard here
+/// spans the whole call.
+pub fn reference_bill(
+    core: &ScheduledStatorCore, flight: &FlightCondition, ramp: &Ramp, sm: f64,
+    arm: &TripleRigArm,
+) -> ReferenceBill {
+    let inc = {
+        let _r = RefScope::set(&core.fuel.inner, Some("inc"));
+        triple_bill(core, flight, ramp, sm, arm)
+    };
+    let phi = {
+        let _r = RefScope::set(&core.fuel.inner, Some("phi"));
+        triple_bill(core, flight, ramp, sm, arm)
+    };
+    let common: Vec<(&'static str, (f64, f64))> = ["bare", "F", "V", "FV"]
+        .iter()
+        .map(|c| (*c, (inc.cell(c).i, phi.cell(c).i)))
+        .collect();
+    let credit = |b: &TripleBill| StatorCredit {
+        alone: b.cell("S").credit,
+        alone_inc: b.cell("S").credit_inc,
+        marginal: b.marginal.2,
+        marginal_inc: b.marginal_incidence.2,
+    };
+    ReferenceBill {
+        common_max_rel: opt_fold(common.iter().map(|(_, (a, b))| (a / b - 1.0).abs()), f64::max)
+            .expect("the four stator-free cells"),
+        stator_credit_inc: credit(&inc),
+        stator_credit_phi: credit(&phi),
+        delivered: (inc.delivered, phi.delivered),
+        delivered_inc: (inc.cell("FVS").credit_inc, phi.cell("FVS").credit_inc),
+        common,
+        inc,
+        phi,
+    }
+}
+
+/// One displacement arm of [`ring_visibility`].
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct RingArm {
+    pub n: usize,
+    pub n_riding: usize,
+    /// The tracking error at the FIRST riding point.
+    pub e0: f64,
+    /// Sign changes of `e = v - v_cmd` over the riding points, zeros skipped.
+    pub crossings: usize,
+    /// `|e0| / |v0|` — **WHAT FRACTION OF THE DISPLACEMENT SURVIVES AS AN ERROR AT ALL.** Under a
+    /// SHARED constraint the other loops absorb it EXACTLY — the `s = 0` fixed points are a family
+    /// and a displaced stator just selects a different member — so there is nothing left to ring.
+    /// Under the split they cannot.
+    pub survives: Option<f64>,
+    /// `max(-e/e0)` — the largest counter-swing as a fraction of the initial error.
+    pub counter: Option<f64>,
+    pub v_range: (f64, f64),
+}
+
+/// One reference's pair of arms.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct RingRef {
+    pub base: RingArm,
+    pub displaced: RingArm,
+}
+
+/// RUNG 69's `ring_visibility` return.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct RingVisibility {
+    pub inc: RingRef,
+    /// Rung 68's `phi` reference on the same rig, as a **NEGATIVE CONTROL**: its spectrum is
+    /// provably real, so any crossing it shows is not a ring and sets the count's noise floor.
+    pub phi: RingRef,
+}
+
+/// **IS THE MODE OBSERVABLE?** — rung 67's question, asked of a different mechanism.
+///
+/// § 3 says `zeta >= 1/sqrt(1-k) ~ 0.58`, which allows AT MOST ONE overshoot of ~11 % of a
+/// displacement. So the probe is the textbook one: DISPLACE the stator's initial position off its
+/// own command (rung 68's `v0`, an isolation instrument) and count ZERO CROSSINGS of the tracking
+/// error while the loop is RIDING.
+///
+/// THREE THINGS MAKE IT AN INSTRUMENT RATHER THAN A PLOT: the `phi` reference runs on the same rig
+/// as a negative control; the ERROR and not the position is the signal, because `v_cmd` moves
+/// under the ramp; and the count is restricted to RIDING points, because the band is ONE-SIDED and
+/// its dormant stop would CLAMP an undershoot away. That clamp is DISCLOSED rather than worked
+/// around — an unobservable-because-clamped mode is still unobservable, but it is a different
+/// sentence from an unobservable-because-damped one.
+///
+/// **THE DISPLACEMENT'S SIGN FOLLOWS THE BAND**: `+disp` under `inc` and `-disp` under `phi`, since
+/// the two bands are mirrors and a displacement out of the band would be refused by
+/// [`r69_check_v0`].
+#[allow(clippy::too_many_arguments)]
+pub fn ring_visibility(
+    core: &ScheduledStatorCore, flight: &FlightCondition, ramp: &Ramp, sm: f64,
+    arm: &TripleRigArm, disp: f64,
+) -> RingVisibility {
+    let mut out: Vec<RingRef> = Vec::new();
+    for reference in ["inc", "phi"] {
+        let a = TripleRigArm { sm, ..*arm };
+        let (m, surge, lag) = {
+            let _r = RefScope::set(&core.fuel.inner, Some(reference));
+            core.triple_rig(&a)
+        };
+        let leg = StatorLeg { accel: None, surge, tt4_max: None };
+        let mut arms: Vec<RingArm> = Vec::new();
+        for v0 in [None, Some(if reference == "inc" { disp } else { -disp })] {
+            let (traj, _) = m.stator_march_scoped(
+                flight, ramp, None, &leg, &MarchScope { lag, v0, ..MarchScope::DEFAULT });
+            // Python filters on `p.get("v_regime") == "riding"` — the RAW label, not `_riding`'s
+            // three-loop filter, because the question is about the STATOR's own tracking.
+            let rid: Vec<&FuelPoint> = traj.iter()
+                .filter(|p| matches!(p.extra,
+                                     PointExtra::Triple { v_regime: Regime::Riding, .. }))
+                .collect();
+            let e: Vec<f64> = rid.iter().map(|p| match p.extra {
+                PointExtra::Triple { v, v_cmd, .. } => v - v_cmd,
+                _ => unreachable!("filtered to the five-state march"),
+            }).collect();
+            let nz: Vec<f64> = e.iter().copied().filter(|x| x.abs() > 1e-12).collect();
+            let e0 = e.first().copied().unwrap_or(0.0);
+            let big = e0.abs() > 1e-9;
+            arms.push(RingArm {
+                n: traj.len(),
+                n_riding: rid.len(),
+                e0,
+                crossings: (1..nz.len()).filter(|&i| nz[i] * nz[i - 1] < 0.0).count(),
+                survives: v0.map(|x| e0.abs() / x.abs()),
+                counter: if big { opt_fold(e.iter().map(|x| -x / e0), f64::max) } else { None },
+                v_range: (opt_fold(traj.iter().map(v_at_point), f64::min)
+                              .expect("rung-69's ring march is non-empty"),
+                          opt_fold(traj.iter().map(v_at_point), f64::max)
+                              .expect("rung-69's ring march is non-empty")),
+            });
+        }
+        let displaced = arms.pop().expect("two arms were pushed");
+        let base = arms.pop().expect("two arms were pushed");
+        out.push(RingRef { base, displaced });
+    }
+    let phi = out.pop().expect("two references were pushed");
+    let inc = out.pop().expect("two references were pushed");
+    RingVisibility { inc, phi }
+}
