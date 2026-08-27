@@ -13671,6 +13671,312 @@ is no cost to declare.
 - **P7** — held: the cell is forced by a PORTED TEST, and the slice nearly shipped without it.
 - **P8** — five steps, as planned.
 
+
+### 5.26 SLICE AB (rung 69, `StatorIncidenceLimiter` + `ReferenceSplitTransient`) — PRE-REGISTERED, eleven probes MEASURED first
+
+`M:\claud_projects\temp\rust-phase7\probe_ab1.py` … `probe_ab11.py`, PyPy (plus CPython 3.14 on
+probes 6 and 7c). Every table below is **EMITTED** by one of them (§ 5.19 (xi)).
+
+#### (i) THE LEADING FINDING — **A THREE-ELEMENT `sum()` DIVERGES BETWEEN INTERPRETERS, WHICH SLICE AA's OWN EXPLANATION SAYS CANNOT HAPPEN — AND THE REPLACEMENT EXPLANATION IS REFUTED BY THE SAME PROBE**
+
+§ 5.25 (i) shipped a mechanism beside its measurement: *"Eight of the nine sum three or four
+numbers; the ninth sums a whole trajectory. CPython 3.12+'s `sum()` is Neumaier-compensated and
+PyPy's is a naive fold, so the compensation only has somewhere to accumulate when the list is
+long."* Carried forward, that says a rung whose float `sum()`s are all short owes no exemption.
+
+Probe 5 intercepts (never reconstructs — slice Z's leading finding) every float `sum()` the
+rung-69 suite evaluates; probe 6 re-sums the captured lists under both interpreters against the
+naive left fold a Rust `fold` performs:
+
+| site | reader | list length | PyPy `sum` vs naive | CPython 3.14 `sum` vs naive |
+|---|---|---|---|---|
+| 13769 | `_invariants`'s `c2` | 3 | agree | agree (256/256) |
+| **13770** | **`_invariants`'s `c1`** | **3** | **agree** | ***23 of 256 DIFFER*** |
+| 13810 | `reference_modes`'s `rate` | 3 | agree | agree |
+| 13905 | `rk4_margin`'s `rate` | 3 | agree | agree |
+| 13275 | `triple_bill` (inherited, r68) | 3 | agree | agree |
+| **13369** | **`ic_family`'s `withheld`** (inherited, r68) | **101** | **agree** | ***9 of 10 DIFFER*** |
+
+**A THREE-ELEMENT SUM DIVERGES.** So length is not the discriminator, and § 5.25 (i)'s sentence
+is **too strong** — it explained a measurement it happened to fit.
+
+**AND THE OBVIOUS REPLACEMENT IS REFUTED BY MY OWN PROBE.** The natural second guess is
+CANCELLATION: `c1` is a sum of three 2×2 minors that nearly annihilate — this rung's whole claim
+is that `c1` is ≈0 under `phi` and decisively non-zero under `inc` — so the compensated low-order
+bits should become visible exactly where the partial sums are large against the result. Probe 6b
+emits the cancellation ratio `max|x_i| / |sum x|` for every instance, split by whether the two
+summations agreed:
+
+| site | n | agreeing instances | **diverging** instances |
+|---|---|---|---|
+| `_invariants:13770` | 3 | ratio 4.73e−01 … **2.11e+02** (n=233) | ratio 5.00e−01 … 9.09e−01 (n=23) |
+
+**The diverging set sits INSIDE the agreeing set's range, and the three worst-cancelling
+instances — ratio 211, a sum of three ~1e−08 terms landing on 2.67e−10 — AGREE bit-for-bit.**
+Cancellation is refuted as cleanly as length was.
+
+What is left is the honest statement, and it is a **method** finding rather than a fact about
+rung 69: Neumaier's correction is the low-order bits ordinary addition discards, and whether it
+survives into the final rounding is a **bit-pattern property of the particular summands**. It is
+not predictable from the length of the list, the magnitude of the terms, or how badly they
+cancel. **The only valid instrument is the one probes 5/6 already are** — intercept the actual
+summands at the actual call sites and re-sum under both interpreters — and every remaining slice
+inherits that, not a shortcut derived from the shape of the code.
+
+Consequence for this slice, and it is registered as NAMES: the exempt keys are whatever step 4's
+dump emits downstream of `_invariants`' `c1` (i.e. `reference_modes`' `c1` and anything derived
+from it), plus the inherited `ic_family` `withheld` subtree slice AA already owns.
+[[rust-port-slice-z-step4]] is why this is a set of names re-read at step 4 and never a count.
+
+#### (ii) THE CELL CENSUS — **ONE CELL ADDED, TEN SWAPPED, AND THE SLICE'S WHOLE RISK IS IN THE SWAPS**
+
+Probe 1, same shape as probe_aa1 / probe_z1.
+
+| rung | cells ADDED | SWAPS | PLAIN (new, never overridden) |
+|---|---|---|---|
+| 69 | **1** — `_with_ref` (overridden at rung 73, slice AE) | **10** — `__init__`, `at_lever`, and **eight of slice AA's nine cells** | 8 |
+
+§ 5.19 (x) predicted exactly one cell, `_with_ref`. **The emitter agrees name-for-name** — the
+sixth consecutive row that column has got right. § 5.25 (ii) predicted the eight swaps, all of
+AA's nine but `_triple_laws`: **AGREE**, no missing, no extra. `StatorIncidenceLimiter` adds
+nothing — five methods, none overridden anywhere, exactly like `StatorLimiter` at AA.
+
+**SO STEP 1's USUAL RULE BUYS ALMOST NOTHING HERE.** "A slice that forgets a cell fails at its
+own first gate" is a statement about ADDED cells, and there is one. AB's failure mode is a
+**swap whose Rust body is still effectively the parent's** — which compiles, runs, and is caught
+by nothing the ladder does automatically. So probe 3b asks the step-5 question in the pre-flight:
+**at every call site the shipped suite reaches, would rung 68's body have returned something
+different?**
+
+| cell | calls | **parent DISAGREES** | how a dispatch gate can see it |
+|---|---|---|---|
+| `_stator_leg` | 2 297 263 | 1 276 121 | **by value** |
+| `_clamp_v` | 40 354 | 25 364 | **by value** |
+| `_lagged_stator` | 95 | 54 | **by value** |
+| `_check_v0` | 4 | 2 | **by value** (the parent's assert fires where the child's passes) |
+| **`_rk4_floor`** | 77 | **0** | ***only through its PANIC STRING*** |
+| `_solve_v` | 162 869 | — | **by PANIC** — parent reads `stator_lim`, which is `None` on 102 064 of them |
+| `_manifold_v` | 291 | — | **by PANIC** — same, on 122 |
+| `_triple_rig` | 60 | — | **by PANIC** — same, on 60 |
+| `at_lever` | 61 | — | by value: 31 calls carry `stator_inc` IN, and 0 lose it (probe 10) |
+
+**`_rk4_floor` IS THE ONE SWAP NO VALUE KEY CAN SEE.** Probe 2's AST diff says why: the
+condition is `ds * rate <= 2.0` in **both** rungs, character for character, and the entire
+difference is the assertion MESSAGE — rung 68 explains the bound by *"J has rank one"*, rung 69
+by *"the block is rank TWO and the dominant root is a COMPLEX pair"*. It is **not** unobservable:
+`test_the_floor_still_fires_and_its_message_names_the_new_reason` does
+`pytest.raises(AssertionError, match="rank TWO")`, so the gate is real — but it is a
+`#[should_panic(expected = "rank TWO")]`, never a value diff, and writing it as a value diff is
+how the cell ends up silently ungated.
+
+**AND FOUR OF THE NINE ARE OBSERVABLE ONLY BY CRASH.** When the incidence stator is armed,
+`self.stator_lim` is `None`, so rung 68's bodies dereference it. In Rust that is
+`t.stator.lim.expect(…)` panicking. A dispatch gate for those four must **expect a panic**, which
+is a different assertion shape from every dispatch gate the phase has shipped so far.
+
+#### (iii) THE ARITHMETIC SURFACE — **A NEWTON CORRECTOR THAT DOES NOT CONVERGE ON 28 % OF ITS CALLS, AND IT IS STILL BIT-EXACT**
+
+Slice AA's P5 was about rung 68's `_cubic_roots`: one `powp(disc, 0.5)`, no cube root, a CLOSED
+FORM. **Rung 69's `_cubic_roots_c` is a different algorithm and AA's prediction must not be
+carried forward.** It deflates on the root nearest ZERO by up to 80 Newton steps with a relative
+step test, then takes `cmath.sqrt` of a possibly-negative real. Probe 7, over the 256 calls the
+suite makes:
+
+| | measured |
+|---|---|
+| iterations | `{2: 103, 8: 9, 9: 18, 10: 15, 11: 21, 12: 12, 13: 3, 19: 3, `**`80: 72`**`}` |
+| exit taken | `tol` 184 · **`EXHAUSTED-80` 72** · `d == 0` 0 |
+| discriminant | REAL pair 192 · COMPLEX pair 64 |
+| deciding step `abs(step)/tol` | min 4.24e−11 · median 6.27e−05 · max 2.47e+07; **15 calls within a decade of their own tolerance** |
+
+**72 of 256 calls run out of budget rather than converging**, and probe 7b then measured what
+they are doing: **0 of 72 settle into an ulp limit cycle.** The last six iterates wander over two
+decades and change sign (a typical tail: 1.5e−08, −8.7e−07, −4.2e−07, −1.8e−07, −1.0e−08,
+1.5e−06), with `|f(x)|` at exit up to 1.3e−10 against a tolerance of 6e−14. The reason is
+visible in the coefficients: at `c2 = −60`, `c1 ≈ 9.7e−08`, `c0 ≈ −1.7e−12` the near-zero pair is
+**complex**, so there is no real root near the start point and Newton on the real line cannot
+find one. The exit value is an arbitrary point of a chaotic march.
+
+**AND IT IS NEVERTHELESS EXACTLY REPRODUCIBLE — MEASURED, NOT ASSUMED.** Probe 7c captures all
+256 coefficient triples and replays the iteration under both interpreters: **the exit value and
+the iteration count agree on 256/256 rows**, PyPy 3.11.15 vs CPython 3.14.3. Plain IEEE
+multiply/add throughout — no `sum()`, no library call — so a Rust port that does not fuse
+reproduces it. The one derived key is `reference_modes`' `n_zero`, a count of roots under
+`1e-4 * rate`; the tightest margin over the default clock grid is **3.5e−04**, i.e. the wandering
+iterates sit three and a half decades below the threshold and **0 triples are within a decade of
+flipping it**.
+
+So the surface is sharp but closed: the port owes all 80 steps bit-for-bit, and nothing
+downstream is near a boundary.
+
+#### (iv) THE BAND FLIP, EMITTED RATHER THAN READ
+
+The rung declares its own silent failure: *"`M_i` is INCREASING in `v` where rung 68's `phi_lp`
+was DECREASING, so `_solve_v`'s bracket orientation and BOTH clamp tests flip BACK to
+`_solve_b`'s … it fails silently — a wrong orientation returns a wrong regime label with nothing
+raising."* A port that copies AA's Rust body and swaps only the residual would do exactly that,
+so probe 2 emits the evidence instead of a body-read ([[rust-port-slice-n-step1]],
+[[rust-port-slice-z-step1]]):
+
+| cell | r68 → r69 verdict | comparisons | **unary minus** |
+|---|---|---|---|
+| `_clamp_v` | RESTRUCTURED | `min(0, max(-v_max, v))` → `max(0, min(v_max, v))` | **1 → 0** |
+| `_check_v0` | RESTRUCTURED | `-v_max <= v0 <= 0` → `0 <= v0 <= v_max` | **2 → 0** |
+| `_solve_v` | RESTRUCTURED | `phi >= lim` / `phi <= lim` → `f0 >= 0` / `f1 <= 0`, bracket `[-v_max, 0]` → `[0, +v_max]` | **3 → 0** |
+| `_rk4_floor` | SHAPE-EQUAL, compares AGREE | identical condition; message only | 0 → 0 |
+| the other four | RESTRUCTURED | 7 of 8 change their comparison set | — |
+
+**The unary-minus column is the whole band flip, and it reads to zero.** Six negations of
+`v_max` across the three orientation-carrying cells, none surviving.
+
+**AND THE SUITE REACHES ALL THREE REGIMES** — the measurement that decided steps 3 and 4 owe no
+extra smoke section. Probe 3, single-process: `_solve_v` 162 869 calls, **dormant 120 039,
+riding 39 328, saturated 3 502**. Under `-n auto` the same probe printed 0/8 cells reached,
+because the counters live in the workers — probe_aa3's recorded third blindness mode, hit again.
+
+#### (v) THE ARMING GRID, AND THE REDUCE's TWO ARMS
+
+Rung 69's `__init__` carries four guards. Slice U's pre-flight found three shipped asserts no
+input can reach by sweeping the arming COMBINATIONS, so probe 4 sweeps a 96-point grid over
+`stator_inc` × `stator_lim` × `vsv_lp` × `vsv_sched_lp` × `bleed_lim` × `lp_disabled` and
+records which guard fires:
+
+| guard | what it refuses | fired |
+|---|---|---|
+| A | one stator, one reference (`stator_lim` and `stator_inc` both armed) | 4 |
+| B | constant / schedule / floor are exclusive on the LP | 20 |
+| C | an incidence floor on a disabled LP spool | 10 |
+| D | **ONE PHYSICAL WALL** — `m_lim` must BE the valve's `phi` floor at the design setting | 1 |
+
+**All four are reachable; 13 of 96 points build.** No repeat of slice U's finding.
+
+The reduce contract has **two** arms and the second is [[rust-port-slice-x-step1]]'s trap — a
+shared helper extended until an override was silently void, with 1017 green tests blind to it.
+Both are recorded rather than assumed:
+
+| arm | `_stator_leg` → | `_lagged_stator` → |
+|---|---|---|
+| `stator_inc=None`, nothing armed | `None` | `False` |
+| `stator_inc=None`, **`stator_lim` armed** | `StatorLimiter` | `True` |
+| `stator_inc` armed | `StatorIncidenceLimiter` | `True` |
+
+#### (vi) `_ref`, `_with_ref`, AND THE SHAPE THE ONE NEW CELL MUST TAKE
+
+§ 5.19 (iv) classified `_ref` as **CONFIG-kind** from a static sweep over the whole phase. Probe
+8 confirms it dynamically at rung 69: **58 sets, every one from `_with_ref`, every one outside
+every march.** So it takes phase 5's `&mut self`/carrier precedent and **`MarchScope` does not
+grow** — the mirror of slice AA's P1, and P1 below is its falsifiable form.
+
+The set/restore pairing is emitted too: `'inc'` 14 + `'phi'` 15 = 29 sets to a value, **29
+restores to `None`**. A restore-to-`None` that is exact means the previous value was `None` every
+time, so **`_ref` never nests** and slice X's `Cell<Option<_>>` + RAII guard precedent applies
+unchanged — strictly stronger than the `finally` it ports, because Rust's scoping *is* the
+restore.
+
+**AND THE CELL IS A SETTER, NOT THE CALL — DECIDED HERE SO STEP 2 DOES NOT DISCOVER IT.**
+Python's `_with_ref(self, ref, fn, *a, **kw)` is higher-order over a return type that varies by
+call site: a tuple from `_triple_rig`, a dict from `triple_bill`, and at rung 73 a tuple from
+`_quad_gains_at`. A `fn` pointer in a `const` table cannot be generic over that and `&dyn Fn`
+does not rescue it, because it is the RETURN type that differs. Read against rung 73's override
+(`engine.py:16894` — `_ref_law`), the only thing the override changes is **WHICH FIELD THE GUARD
+WRITES**. So the cell is
+
+    with_ref: fn(&Core, Option<&'static str>) -> Option<&'static str>     // sets, returns previous
+
+with the RAII guard shared and each reader opening its own scope. Rung 69's body writes `ref_`;
+rung 73's writes `ref_law`; nothing else about the call is a cell.
+
+#### (vii) THE SCOPED FIELDS, RE-MEASURED ON RUNG-69 MACHINES
+
+§ 5.25 (iii) states its own scope: *"the zeros are measured on RUNG-68 MACHINES."* Rung 69's
+`_manifold_v` is a **new** `self._b_state = q` … `finally: = None` site, and the shipped Rust
+carrier is a `Cell<Option<f64>>` whose RAII guard **panics on nest** — so the port panics where
+Python is fine if that site can ever run inside a march. Inheriting AA's zero is not a
+measurement, so probe 11 is probe_aa3 re-pointed at `ReferenceSplitTransient`:
+
+| field | #sets | →value | →None | **OVERWRITE** | verdict |
+|---|---|---|---|---|---|
+| `_v_forced` | 1 080 986 | 540 450 | 540 536 | **0** | never nests |
+| `_v_state` | 887 906 | 443 910 | 443 996 | **0** | never nests |
+| **`_b_state`** | **976 996** | 488 455 | 488 541 | **0** | **never nests — `_manifold_v`'s new site included** |
+| `_v0` | 190 | 4 | 186 | **0** | never nests |
+| `_ic_order` | 190 | 190 | 0 | 190 | restore-to-previous; the column does not apply (§ 5.25 (iii)) |
+
+#### (viii) SIZING
+
+| | measured |
+|---|---|
+| Python source | **708 lines** (`ReferenceSplitTransient` 612 + `StatorIncidenceLimiter` 96) — **0.65×** slice AA, **1.48×** slice Y |
+| tests | **25 collected**, **12 carrying `slow`** (48 %) — against rung 68's 22 / 9 |
+| new cells | **1** |
+| swaps | **10** |
+| scoped fields arriving | **1**, and it is CONFIG-kind |
+
+At slice AA's measured expansion (`three_loop.rs` 2 312 Rust lines from 1 094 Python = 2.11×) the
+Rust lands near **1 500 lines**; labelled an estimate.
+
+#### (ix) PREDICTIONS — pre-registered, to be settled at step 5
+
+Each is a statement the probes have **not** already settled — § (ii)'s disagreement counts are
+measurements of PYTHON, and none of them says a RUST cell is breakable.
+
+* **P1** — `MarchScope` does **not** grow at this slice: zero of its 75 existing struct literals
+  and zero `stator_march*` call sites move. Falsified if any needs an edit.
+* **P2** — Every one of the **eleven** table cells the slice touches (one added, ten swapped) is
+  **breakable in a Rust dispatch gate**: swapping it for the parent's function pointer breaks at
+  least one gate. Of those, `_rk4_floor` breaks **only** a `#[should_panic(expected = "rank
+  TWO")]` assertion, and `_solve_v` / `_manifold_v` / `_triple_rig` break **by panic** rather
+  than by a value key. Falsified per cell; a cell that cannot be broken is reported UNOBSERVABLE
+  (slice Z step 5's shape), never quietly re-gated on something else.
+* **P3** — The CPython exemption is the set of names step 4's dump emits downstream of
+  `_invariants`' `c1`, plus the inherited `ic_family` `withheld` subtree. Falsified if any key
+  outside those two subtrees is exempt, or if `c2`, `rate` or `triple_bill`'s sum contributes one.
+* **P4** — Rust reproduces `_cubic_roots_c` bit-for-bit on all 256 triples, **the 72 exhausted
+  ones included**, with the same iteration counts. Falsified by one differing root.
+* **P5** — `StatorLegArm` does **not** grow: `v_max` and `tau` are all any caller reads, and the
+  reference-specific wall (`m_lim`, `T_c`) is read from the core by the rung-69 cells alone.
+  Falsified if a shared struct needs a third field — which would be slice X's shared-helper
+  hazard landing again.
+* **P6** — `_ref` needs **no** `Scope` field and no signature change to any shipped cell.
+  Falsified by either.
+* **P7** — Five steps, as at V/W/X/Y/Z/AA.
+
+#### (x) THE FIVE STEPS
+
+1. **The one cell + the ten swaps opened**, `_ref`'s carrier and guard, `stator_inc` on the core,
+   `StatorIncidenceLimiter` with `from_phi` / `from_margin` / `phi_lim_at` / `margin`. Nothing
+   ported. **The step-1 gate is not the cell count here** (§ (ii)) — it is that every swapped
+   cell has a distinct rung-69 function pointer and the four `__init__` guards are live.
+2. **The port** — `src/reference_split.rs`: the eight swapped bodies (the band flip carried by
+   the emitted table of § (iv)), `at_lever`, `_with_ref`, `_cubic_roots_c`, `_invariants`, and
+   the six readers.
+3. **The 25 ported gates**, `tests/rung69.rs`, plus `slice_ab_smoke.rs`.
+4. **The oracle** — `oracle/dump_slice_ab.py` + `tests/slice_ab_oracle.rs`, bit-exact vs PyPy
+   with the CPython arm and its NAMED exemption, re-read from the dump (§ (i)).
+5. **The dispatch gates** — eleven cells, `slice_ab_dispatch.rs`, four of them panic-shaped —
+   and the ledger.
+
+#### (xi) THREE DEFECTS IN THIS PRE-FLIGHT's OWN INSTRUMENTS
+
+Recorded rather than quietly fixed, because each printed a number that would have been carried.
+
+* **Probe 3's `_triple_rig` column read `tau_rel`.** It tagged the reference as
+  `kw.get('ref', a[-1])`, and `ref` is not a parameter at all — it is derived from `self._ref`
+  *inside* the body. The column headed "ref=" printed floats (`0.15`, `0.6000000000000001`). The
+  phase's recurring defect one level down: **an instrument whose summary column answers a
+  different question than its heading claims.** Probe 3b resolves it the way the body does and
+  emits all three paths (`_ref='inc'` 21, `_ref=None`→`inc` 17, `_ref='phi'` 22).
+* **Probe 3 reported `_clamp_v` 40 354/40 354 "pass-through", which is not the question.** A
+  clamp that never binds is not a clamp that cannot be seen: `max(0, min(v_max, v))` passing `v`
+  through is `min(0, max(-v_max, v))` returning **0** whenever `v > 0`. The discriminating column
+  is the INPUT distribution, which probe 3 did not record and probe 3b does: **v > 0 on 25 364 of
+  25 371** — so the inverted clamp is caught, and the "100 % pass-through" line would have
+  suggested the opposite.
+* **The first sizing numbers written for this section were greps.** `grep -c "^def test_"` = 25
+  and `grep -c slow` = 13 are not a pytest collection; the collection says **25 tests, 12 slow**.
+  The `slow` grep counted lines containing the string. [[rust-port-guessed-census-bars]] — five
+  typed count bars, five wrong — is the precedent, and it cost one command to avoid here.
+
 ### ~~The four~~ **THE EIGHT** runtime-introspection tests, one by one
 
 **CORRECTED 2026-08-20 by § 5.19 (vii) — this table named FOUR and an enumeration over the 27
