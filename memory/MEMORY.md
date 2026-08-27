@@ -21,7 +21,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding, backticks in `-m`, and a status read off the runner
 
-## The Rust port — decided 2026-08-12; **PHASES 0–6 DONE** — phase 6 authorised 2026-08-17 and **COMPLETED 2026-08-20** with slice U's five steps; **PHASE 7 AUTHORISED 2026-08-20**, slices V, W, X and **Y COMPLETE** — slice Y closed 2026-08-27 with all five steps; **slice Z (66+67) PRE-REGISTERED 2026-08-27** — nine probes, port not started
+## The Rust port — decided 2026-08-12; **PHASES 0–6 DONE** — phase 6 authorised 2026-08-17 and **COMPLETED 2026-08-20** with slice U's five steps; **PHASE 7 AUTHORISED 2026-08-20**, slices V, W, X and **Y COMPLETE** — slice Y closed 2026-08-27 with all five steps; **slice Z (66+67) PRE-REGISTERED 2026-08-27, STEPS 1–2 SHIPPED** — both marches and all 20 method bodies ported, 785 keys bit-exact vs PyPy; steps 3–5 (suites, oracle, dispatch gates) open
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; a new PHASE needs authorisation
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost
 - [Rust arithmetic IS PyPy](rust-port-arithmetic-is-pypy.md) — size a solver claim by DISTINCT ROOTS, not row count
@@ -61,6 +61,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - Slice Y (65) steps [1](rust-port-slice-y-step1.md) [2](rust-port-slice-y-step2.md) [3](rust-port-slice-y-step3.md) [4](rust-port-slice-y-step4.md) [5](rust-port-slice-y-step5.md) — a design refused twice on body reads was revived by EMITTING the set, and a `-x` census column was measuring the repo's own duration cache; a few-ulp "port defect" was my probe simplifying `(1.4-1.0)/1.4` to `0.4/1.4`, so re-run the committed dump FIRST; `ptr::eq` on a `const` tests the optimiser, and the phase's `slow` bill is 16x, measured; a green 35,994-key oracle says nothing about COVERAGE, so inject — and its three misses were exactly the three pre-registered; mutating my own gates found one testing HALF of what it named
 - [Slice Z pre-flight](rust-port-slice-z-preflight.md) — my own probe chunked by the `n_sample` the gate PASSES, not the count the STRIDE delivers, and at the right width the answer INVERTED
 - [Slice Z step 1](rust-port-slice-z-step1.md) — a shipped refusal blind to the carrier the rung below installs, and a count bar that had already been WRITTEN DOWN once, which reads like a measurement
+- [Slice Z step 2](rust-port-slice-z-step2.md) — one scope struct for a per-rung parameter, so a junior silently ignores what Python refuses; and the route witness that caught it twice was blind the third time
 - Slice T (46/47/48) steps [1](rust-port-slice-t-step1.md) [2](rust-port-slice-t-step2.md) [3](rust-port-slice-t-step3.md) [4](rust-port-slice-t-step4.md) — an EXACT ZERO blinds its own gate to the SIGN; 9/9 green and blind to a 24% error, so tabulate BAR MARGINS; a defect can survive because every READER is invariant under it; an injection matching TWICE applies nothing and still reports green
 
 ## Shipped rungs

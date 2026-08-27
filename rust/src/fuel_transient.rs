@@ -724,6 +724,29 @@ pub enum PointExtra {
     ///
     /// [`LeverHooks::b_at_point`]: crate::bleed_transient::LeverHooks
     Valve { b: f64, b_cmd: f64 },
+    /// RUNG 66's CASCADE-B march — **20 keys, and it is the UNION of the two above plus the
+    /// joint initial condition's own two.**
+    ///
+    /// Python: *"`g`/`required` (rung 52's keys) and `b`/`b_cmd` (rung 65's) are ALL recorded per
+    /// point, so both tracking errors are readable straight off one trajectory and every rung-52
+    /// and rung-65 reader works unchanged on it."* **That last clause is a load-bearing claim
+    /// about the READERS**, and it is why [`asym_extra`] and rung 65's `valve_of` are widened to
+    /// admit this variant rather than left refusing it — a `_ => panic!()` there would be
+    /// STRICTER THAN PYTHON, silently, on a dict that carries the key.
+    ///
+    /// `ic_iters` and `ic_res` are constants over the trajectory (the joint solve runs ONCE,
+    /// before the loop) and are recorded per point anyway because Python records them per point.
+    ///
+    /// [`asym_extra`]: crate::fuel_transient::asym_extra
+    Cascade { g: f64, required: f64, b: f64, b_cmd: f64, ic_iters: usize, ic_res: f64 },
+    /// RUNG 67's CASCADE-A march — **21 keys**, [`Cascade`](Self::Cascade) plus `ic_damp`.
+    ///
+    /// The extra key is the DAMPING the joint solve needed, and it exists because rung 67's
+    /// initial condition sweeps `w ∈ (1, 1/2, 1/4)` where rung 66's iterates undamped: on
+    /// cascade A `|P|` is pinned by no identity, so a stall would be a SOLVER failure and not
+    /// the marginal mode rung 66 reports. `joint_ic_corners` publishes it.
+    CrossCascade { g: f64, required: f64, b: f64, b_cmd: f64, ic_iters: usize, ic_res: f64,
+                   ic_damp: f64 },
 }
 
 /// One instant of a marched FUEL trajectory — Python's per-point dict.
@@ -750,11 +773,19 @@ pub struct FuelPoint {
 }
 
 impl FuelPoint {
-    /// How many keys Python's dict for this route carries — 14 or 16.
+    /// How many keys Python's dict for this route carries — 14, 16, 20 or 21.
+    ///
+    /// **THE 20/21 PAIR IS EMITTED RATHER THAN TYPED.** Rung 66's dict is the fourteen plus `g`,
+    /// `required`, `b`, `b_cmd`, `ic_iters`, `ic_res`; rung 67's is that plus `ic_damp`.
+    /// [[rust-port-guessed-census-bars]] is five typed count bars that were every one wrong, so
+    /// `dump_slice_z.py` re-reads both counts off the live dict at step 4 rather than trusting
+    /// this line.
     pub fn key_count(&self) -> usize {
         match self.extra {
             PointExtra::None => 14,
             PointExtra::Asym { .. } | PointExtra::Valve { .. } => 16,
+            PointExtra::Cascade { .. } => 20,
+            PointExtra::CrossCascade { .. } => 21,
         }
     }
 }
@@ -1167,17 +1198,30 @@ pub struct FactorizationGrid {
 }
 
 
-/// A marched point's `(g, required)` — rung 52's lag route and nothing else.
+/// A marched point's `(g, required)` — **every route whose dict CARRIES those two keys, and a
+/// panic on the routes that do not.**
 ///
 /// Panics on a [`PointExtra::None`] point, which means the lag leg did not dispatch to
 /// [`integrate_fuel_asym`](FuelTransientCore::integrate_fuel_asym): a defect, not a
 /// divergence.
+///
+/// **SLICE Z WIDENED THIS, AND THE WIDENING IS THE FAITHFUL DIRECTION.** Python reads `p["g"]`
+/// and `p["required"]` off a dict; rungs 66 and 67 record both, and rung 66's own docstring says
+/// so as a CLAIM — *"every rung-52 and rung-65 reader works unchanged on it."* Leaving the two
+/// cascade routes in the refusing arm would have made the port STRICTER than the source on a
+/// dict that carries the key, and no value key could see it, because no shipped grid runs a
+/// rung-52 reader over a cascade trajectory. Caught by asking every `_ => panic!()` arm what
+/// Python does when a variant is ADDED — not by a gate, because no gate was watching.
 pub fn asym_extra(p: &FuelPoint) -> (f64, f64) {
     match p.extra {
         PointExtra::Asym { g, required } => (g, required),
+        PointExtra::Cascade { g, required, .. }
+        | PointExtra::CrossCascade { g, required, .. } => (g, required),
         // Rung 65's valve route is named SEPARATELY rather than folded into a `_` arm: it carries
         // 16 keys too, and a wildcard here would let a lagged-valve trajectory reach rung 52's
-        // reader and report the wrong two of them.
+        // reader and report the wrong two of them. It stays REFUSING because Python raises
+        // `KeyError` there; the two cascade arms above are admitted for exactly the opposite
+        // reason.
         PointExtra::None | PointExtra::Valve { .. } => panic!(
             "rung-52 lag_relief marched a trajectory with no `g` / `required`: the lag leg \
              did not dispatch to integrate_fuel_asym"),

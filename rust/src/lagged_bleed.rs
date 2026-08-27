@@ -218,7 +218,10 @@ pub fn r65_b_at_point(core: &ScheduledStatorCore, flight: &FlightCondition, p: &
     bump(&BAP_RECORDED);
     match p.extra {
         PointExtra::Valve { b, .. } => b,
-        _ => panic!(
+        // SLICE Z. Rungs 66/67 record `b` too, and Python reads the DICT KEY — so a wildcard
+        // panic here would refuse a point Python answers. See [`valve_of`] for the audit.
+        PointExtra::Cascade { b, .. } | PointExtra::CrossCascade { b, .. } => b,
+        PointExtra::None | PointExtra::Asym { .. } => panic!(
             "rung-65: a lagged valve's position is a march STATE and cannot be recovered from a \
              trajectory point that did not record it. This point came from a different \
              integrator."),
@@ -702,13 +705,33 @@ pub fn py_max3(a: f64, b: f64, c: f64) -> f64 {
     best
 }
 
-/// The valve position and command a rung-65 point carries — a PANIC on any other route, which is
-/// [`r65_b_at_point`]'s assert in reader form.
-fn valve_of(p: &FuelPoint) -> (f64, f64) {
+/// The valve position and command a point carries — **a PANIC on the routes whose dict has
+/// NEITHER key**, which is [`r65_b_at_point`]'s assert in reader form.
+///
+/// **SLICE Z's `PointExtra` AUDIT, RECORDED HERE BECAUSE THE COMPILER DID NOT ASK.** Adding a
+/// variant breaks the exhaustive matches loudly and leaves the `_ => panic!()` ones silent, and a
+/// silent one is a NARROWING: rungs 66/67 record `b` and `b_cmd`, Python reads the dict key, so
+/// refusing them would be stricter than the source with every suite green. Four arms were asked
+/// the question by hand and the answers split two-two:
+///
+/// | reader | rung 66/67 dict | verdict |
+/// |---|---|---|
+/// | this, and [`r65_b_at_point`] | has `b`, `b_cmd` | **WIDENED** |
+/// | [`asym_extra`] | has `g`, `required` | **WIDENED** |
+/// | `asym_extra` on [`PointExtra::Valve`] | no `g` — Python raises | still refuses |
+/// | this on [`PointExtra::Asym`] | no `b` — Python raises | still refuses |
+///
+/// The wildcard is spelled out as named arms so the NEXT variant breaks the build here too.
+///
+/// [`asym_extra`]: crate::fuel_transient::asym_extra
+pub fn valve_of(p: &FuelPoint) -> (f64, f64) {
     match p.extra {
         PointExtra::Valve { b, b_cmd } => (b, b_cmd),
-        _ => panic!("rung-65 reader on a trajectory with no valve state: this march did not \
-                     dispatch to r65_integrate_fuel_valve_lag"),
+        PointExtra::Cascade { b, b_cmd, .. } | PointExtra::CrossCascade { b, b_cmd, .. } =>
+            (b, b_cmd),
+        PointExtra::None | PointExtra::Asym { .. } =>
+            panic!("rung-65 reader on a trajectory with no valve state: this march did not \
+                    dispatch to r65_integrate_fuel_valve_lag"),
     }
 }
 

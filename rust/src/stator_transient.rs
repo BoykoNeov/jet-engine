@@ -539,6 +539,26 @@ pub struct MarchScope {
     pub tau_gov: Option<f64>,
 }
 
+/// **AND ONE STRUCT FOR EVERY RUNG MEANS A FIELD ITS OWNER'S JUNIORS SILENTLY IGNORE — MEASURED
+/// AT SLICE Z STEP 2, NOT REASONED ABOUT.** Python adds these fields ONE PER RUNG, so a rung-65
+/// `_stator_march` has no `lag` parameter and `m65._stator_march(..., lag=…)` raises `TypeError`.
+/// The port's single struct accepts it and the rung-65 cell never looks: the call SUCCEEDS and the
+/// lag is discarded. A smoke gate hit it as a wrong key count (14 where 16 was expected) rather
+/// than as a refusal.
+///
+/// **AND IT BIT TWICE, THE SECOND TIME PAST THE WITNESS THAT CAUGHT THE FIRST.** A rung-65
+/// machine handed `lag` fell to a 14-key route where 16 was expected — loud. A rung-65 AND a
+/// rung-66 machine handed `tau_gov` both marched rung 46's UNLAGGED redline where rung 67 marched
+/// rung 47's lagged one, and **those two routes emit the same fourteen keys**, so the count bar
+/// passed and only the floats disagreed. A route witness is not a rung witness.
+///
+/// This is step 1's finding running the other way. There, a scope CONSUMES its own field and
+/// forwards the rest, so a rung-67 march hands `lag` to rung 66's carrier that rung 67's own armed
+/// branch never reads — arming both clocks through the march is silently discarded, in Python too.
+/// Here the loss is the PORT's: Python refuses the call and the port does not. **Nothing is
+/// repaired** — a narrowed per-rung view would re-open the cell signature four times, which is the
+/// cost this struct was chosen to avoid — but it is written down where a caller will read it, and
+/// no shipped Python suite makes such a call.
 impl MarchScope {
     /// What every un-scoped caller passes. A `const` rather than `Default::default()` so the
     /// forwarding methods stay `const`-friendly and the intent reads at the call site.

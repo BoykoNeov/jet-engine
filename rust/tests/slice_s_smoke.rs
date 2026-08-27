@@ -276,7 +276,14 @@ fn put_traj(c: &mut Cmp, p: &str, pts: &[FuelPoint]) {
         PointExtra::Asym { .. } => &["g", "required"],
         // Rung 65's route, added at slice Y. Named rather than swept into a `_` arm so the next
         // route to appear breaks this match instead of silently emitting the wrong key names.
+        // **IT DID** — slice Z's two cascade routes landed here as a compile error, which is the
+        // whole reason the wildcard was refused. Neither is reachable from a slice-S cell, so
+        // both arms are unexercised here and exist so the NEXT one breaks the build too.
         PointExtra::Valve { .. } => &["b", "b_cmd"],
+        PointExtra::Cascade { .. } =>
+            &["b", "b_cmd", "g", "ic_iters", "ic_res", "required"],
+        PointExtra::CrossCascade { .. } =>
+            &["b", "b_cmd", "g", "ic_damp", "ic_iters", "ic_res", "required"],
     };
     c.d(&format!("{p}/extra_keys"), extra_names.len() as u64);
     for (ie, name) in extra_names.iter().enumerate() {
