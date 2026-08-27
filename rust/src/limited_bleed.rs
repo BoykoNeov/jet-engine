@@ -271,7 +271,7 @@ impl HasPhiLp for FuelCloseState {
 /// stash and no `expect` is needed and there is no iteration-count divergence to disclose. Probe 8
 /// measured **0 aborts in 156 373 closure calls** over `tests/test_rung64.py` — the arms are dead
 /// on that grid and counted at zero rather than assumed away.
-fn r64_solve_b<T, F>(lim: &BleedLimiter, closer: F) -> Result<(T, f64, Regime), Abort>
+pub fn r64_solve_b<T, F>(lim: &BleedLimiter, closer: F) -> Result<(T, f64, Regime), Abort>
 where
     T: HasPhiLp,
     F: Fn(f64) -> Result<T, Abort>,
@@ -344,7 +344,7 @@ fn r64_b_of(t: &TwoSpoolTransientCore, nu_lp: f64, tt2: Option<f64>) -> f64 {
 /// `_isolating`): a sibling constructor that silently drops the newest lever turns every inherited
 /// reader into an armed-vs-armed comparison that measures nothing while returning a plausible
 /// number.
-fn r64_at_lever(core: &ScheduledStatorCore, arm: &LeverArm) -> ScheduledStatorCore {
+pub fn r64_at_lever(core: &ScheduledStatorCore, arm: &LeverArm) -> ScheduledStatorCore {
     match build_limited_bleed(
         core.design_engine().clone(), *core.flight_design(), core.mdot_design(),
         Some(core.arming().map_lp_design), Some(core.arming().map_hp_design), core.rho(), arm)
@@ -399,7 +399,7 @@ fn r64_isolating(core: &ScheduledStatorCore, lever: &LeverArm, neighbour: Option
 }
 
 /// RUNG 64's `_close` — **the closure, with the loop closed.**
-fn r64_try_close(
+pub fn r64_try_close(
     t: &TwoSpoolTransientCore, nu_lp: f64, nu_hp: f64, tt4: f64, tt2: f64, pt2: f64,
 ) -> Result<CloseState, Abort> {
     let Some(lim) = t.lever.lim else {
@@ -413,7 +413,7 @@ fn r64_try_close(
 }
 
 /// RUNG 64's `_close_fuel` — the same, on the fuel-metered closure.
-fn r64_try_close_fuel(
+pub fn r64_try_close_fuel(
     ft: &FuelTransientCore, nu_lp: f64, nu_hp: f64, mdot_fuel: f64, tt2: f64, pt2: f64,
 ) -> Result<FuelCloseState, Abort> {
     let Some(lim) = ft.inner.lever.lim else {
@@ -435,7 +435,7 @@ fn r64_try_close_fuel(
 /// 111 rung-62/63/64 gates green (§ 5.22 (ii)) — because `b_of` off a march point reads no forced
 /// position and no state, so it falls through to rung 62's *constant*, which on a floored machine
 /// is `0.0`.
-fn r64_b_at_point(core: &ScheduledStatorCore, flight: &FlightCondition, p: &FuelPoint) -> f64 {
+pub fn r64_b_at_point(core: &ScheduledStatorCore, flight: &FlightCondition, p: &FuelPoint) -> f64 {
     let (tt2, pt2, _) = core.fuel.inner.inlet(flight);
     let Some(lim) = core.fuel.inner.lever.lim else {
         bump(&B_AT_POINT_UNFLOORED);

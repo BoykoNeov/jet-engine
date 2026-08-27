@@ -274,6 +274,9 @@ fn put_traj(c: &mut Cmp, p: &str, pts: &[FuelPoint]) {
         PointExtra::None => &[],
         // Python sorts the extra keys, so this order is the source's and not a choice.
         PointExtra::Asym { .. } => &["g", "required"],
+        // Rung 65's route, added at slice Y. Named rather than swept into a `_` arm so the next
+        // route to appear breaks this match instead of silently emitting the wrong key names.
+        PointExtra::Valve { .. } => &["b", "b_cmd"],
     };
     c.d(&format!("{p}/extra_keys"), extra_names.len() as u64);
     for (ie, name) in extra_names.iter().enumerate() {

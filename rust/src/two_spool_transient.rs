@@ -599,6 +599,23 @@ pub struct TwoSpoolTransientCore {
     /// slice-X gate and breaks at slice Y, so it ships with the branch that reads it and is
     /// gated by a manufactured bug rather than by a value key — no value key can reach it.
     pub b_state: Cell<Option<f64>>,
+    /// RUNG 65's OVERRIDDEN initial valve position — Python's `_b0`, and the carrier between
+    /// `_stator_march`'s parameter and `_integrate_fuel_valve_lag`'s read.
+    ///
+    /// **IT NEEDS A CARRIER EVEN THOUGH IT ARRIVES AS A PARAMETER**, because Python passes it to
+    /// `_stator_march` and reads it two frames down in the marcher, and the cell in between
+    /// ([`FuelTransientHooks::integrate_fuel`]) takes no such argument — probe 2 measured all
+    /// eleven of its signatures character-identical.
+    ///
+    /// **AND ITS GUARD IS NOT [`ForcedBleed`]'s.** Python is `prev, self._b0 = self._b0, b0` …
+    /// `finally: self._b0 = prev` — restore the PREVIOUS value, where `_b_forced`'s `finally`
+    /// restores to `None`. [`InitialBleed`] therefore stores the previous value. Probe 3
+    /// measured this guard's max nesting depth at **1** over rungs 62–65, so on every shipped
+    /// path the two spellings agree and **no value key can tell them apart** — which is exactly
+    /// why `slice_y_dispatch.rs` manufactures the nest instead of hoping.
+    ///
+    /// [`FuelTransientHooks::integrate_fuel`]: crate::fuel_transient::FuelTransientHooks
+    pub b0: Cell<Option<f64>>,
 }
 
 /// The RAII form of Python's `_closer`'s `try/finally` — **the restore is `Drop`, so it survives
@@ -634,6 +651,65 @@ impl<'a> ForcedBleed<'a> {
 impl Drop for ForcedBleed<'_> {
     fn drop(&mut self) {
         self.core.b_forced.set(None);
+    }
+}
+
+/// RUNG 65's `_b_state` guard — the march state, set for one derivative evaluation.
+///
+/// Python's `der` does `self._b_state = q` … `finally: self._b_state = None`, so this restores to
+/// `None` like [`ForcedBleed`] and **unlike** [`InitialBleed`]. The three guards on this core
+/// therefore have two different restore policies, which is the whole reason they are three types
+/// and not one generic one.
+pub struct MarchedBleed<'a> {
+    core: &'a TwoSpoolTransientCore,
+}
+
+impl<'a> MarchedBleed<'a> {
+    pub fn set(core: &'a TwoSpoolTransientCore, b: f64) -> Self {
+        Self::set_opt(core, Some(b))
+    }
+
+    /// Rung 65's `fuel_authority` writes `mach._b_state = state` where `state` is `None` on the
+    /// INSTANTANEOUS machine — an assignment, not an omission. Spelled as an `Option` so the two
+    /// sides of that reader read alike and neither is a special case.
+    pub fn set_opt(core: &'a TwoSpoolTransientCore, b: Option<f64>) -> Self {
+        core.b_state.set(b);
+        MarchedBleed { core }
+    }
+}
+
+impl Drop for MarchedBleed<'_> {
+    fn drop(&mut self) {
+        self.core.b_state.set(None);
+    }
+}
+
+/// RUNG 65's `_b0` guard — **the first guard in the port that restores the PREVIOUS value.**
+///
+/// § 5.19 (iv) measured 72 reload guards over the nine STATE-kind fields: **68 restore to `None`
+/// and the 4 that save a previous value are all in `_stator_march`, rungs 65–68.** This is the
+/// first of those four. Copying [`ForcedBleed`]'s `Drop` here would be wrong in Python's terms
+/// and — because probe 3 measured max depth **1** — invisible to every value key in the slice.
+/// That combination is what a manufactured-bug gate is for; `slice_y_dispatch.rs` nests it.
+pub struct InitialBleed<'a> {
+    core: &'a TwoSpoolTransientCore,
+    prev: Option<f64>,
+}
+
+impl<'a> InitialBleed<'a> {
+    /// Python's `prev, self._b0 = self._b0, b0`. `b0 = None` is a real assignment and not a
+    /// no-op: a rung-65 `_stator_march` called WITHOUT `b0` CLEARS an outer one for the duration,
+    /// which is why the value is taken from the scope rather than left alone.
+    pub fn set(core: &'a TwoSpoolTransientCore, b0: Option<f64>) -> Self {
+        let prev = core.b0.get();
+        core.b0.set(b0);
+        InitialBleed { core, prev }
+    }
+}
+
+impl Drop for InitialBleed<'_> {
+    fn drop(&mut self) {
+        self.core.b0.set(self.prev);
     }
 }
 
@@ -713,7 +789,7 @@ impl TwoSpoolTransientCore {
         let p_ref_hp = mdot_design * (gas.h_c(s3.tt) - gas.h_c(s25.tt));
         TwoSpoolTransientCore {
             inner, rho, p_ref_lp, p_ref_hp, hooks, stator, stator_hooks, lever, lever_hooks,
-            b_forced: Cell::new(None), b_state: Cell::new(None),
+            b_forced: Cell::new(None), b_state: Cell::new(None), b0: Cell::new(None),
         }
     }
 

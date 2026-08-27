@@ -52,7 +52,7 @@ use turbojet::gas::{Abort, Gas, GasSpec};
 use turbojet::map::ComponentMap;
 use turbojet::stator_transient::{r57_try_close, r57_try_close_fuel, r57_try_surge_fuel,
                                  ScheduledStatorTransient, StatorArm, StatorArming,
-                                 StatorSchedule, R57};
+                                 StatorSchedule, R57, R57_FUEL};
 use turbojet::two_spool::{build_two_spool_turbojet, TwoSpoolEngine, TwoSpoolLosses};
 use turbojet::two_spool_transient::{CloseState, TwoSpoolTransientCore, TwoSpoolTransientHooks,
                                     R40};
@@ -154,7 +154,9 @@ static SCOPED_TWO: TwoSpoolTransientHooks = TwoSpoolTransientHooks {
     try_close: scoped_try_close, ..R40
 };
 static SCOPED_FUEL: FuelTransientHooks = FuelTransientHooks {
-    try_close_fuel: scoped_try_close_fuel, try_surge_fuel: r57_try_surge_fuel,
+    // `..R57_FUEL` and NOT `..R43`: slice Y added `integrate_fuel` to this table, and the whole
+    // point of this pair is that the two sides differ in exactly the two WRAPPED cells.
+    try_close_fuel: scoped_try_close_fuel, try_surge_fuel: r57_try_surge_fuel, ..R57_FUEL
 };
 
 /// The SHIPPED spelling, re-declared here so the two machines differ in **one** thing: the two
@@ -164,7 +166,7 @@ static SHIPPED_TWO: TwoSpoolTransientHooks = TwoSpoolTransientHooks {
     try_close: r57_try_close, ..R40
 };
 static SHIPPED_FUEL: FuelTransientHooks = FuelTransientHooks {
-    try_close_fuel: r57_try_close_fuel, try_surge_fuel: r57_try_surge_fuel,
+    try_close_fuel: r57_try_close_fuel, try_surge_fuel: r57_try_surge_fuel, ..R57_FUEL
 };
 
 /// `ScheduledStatorTransient::new`'s body, minus its four asserts, with the two tables as

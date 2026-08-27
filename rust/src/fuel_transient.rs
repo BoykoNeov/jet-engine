@@ -713,6 +713,17 @@ pub enum PointExtra {
     None,
     /// Rung 52's asymmetric-lag twin — 16 keys.
     Asym { g: f64, required: f64 },
+    /// RUNG 65's lagged-valve march — 16 keys, and a DIFFERENT two from rung 52's.
+    ///
+    /// Python: *"`b` and `b_cmd` are recorded per point (new keys; every rung-64 key is
+    /// byte-unchanged) so the TRACKING ERROR is readable straight off a trajectory, exactly as
+    /// rung 52 made `g`/`required` readable."* The position is the ONLY route by which
+    /// [`LeverHooks::b_at_point`] can answer on a lagged machine — a lagged position carries
+    /// history and cannot be re-solved from the state, which is rung 65's correction of rung
+    /// 64's comment.
+    ///
+    /// [`LeverHooks::b_at_point`]: crate::bleed_transient::LeverHooks
+    Valve { b: f64, b_cmd: f64 },
 }
 
 /// One instant of a marched FUEL trajectory — Python's per-point dict.
@@ -743,7 +754,7 @@ impl FuelPoint {
     pub fn key_count(&self) -> usize {
         match self.extra {
             PointExtra::None => 14,
-            PointExtra::Asym { .. } => 16,
+            PointExtra::Asym { .. } | PointExtra::Valve { .. } => 16,
         }
     }
 }
@@ -1164,7 +1175,10 @@ pub struct FactorizationGrid {
 pub fn asym_extra(p: &FuelPoint) -> (f64, f64) {
     match p.extra {
         PointExtra::Asym { g, required } => (g, required),
-        PointExtra::None => panic!(
+        // Rung 65's valve route is named SEPARATELY rather than folded into a `_` arm: it carries
+        // 16 keys too, and a wildcard here would let a lagged-valve trajectory reach rung 52's
+        // reader and report the wrong two of them.
+        PointExtra::None | PointExtra::Valve { .. } => panic!(
             "rung-52 lag_relief marched a trajectory with no `g` / `required`: the lag leg \
              did not dispatch to integrate_fuel_asym"),
     }
@@ -1489,6 +1503,22 @@ pub struct FuelTransientHooks {
     /// census skims past, and the reason its `⚠` note was written at all.
     pub try_surge_fuel: fn(&FuelTransientCore, &FlightCondition, f64, f64, f64, &Floor)
         -> Result<f64, Abort>,
+    /// The rung-43 FUEL march. **OPENED BY SLICE Y** — the third and last of the code-resident
+    /// `⚠` notes, and the largest of them: **10 overriders**, rungs 65 → 76.
+    ///
+    /// **TYPED ON `&dyn Fn`, WHICH IS THE WHOLE COST OF THIS CELL.**
+    /// [`FuelTransientCore::integrate_fuel`] is generic over the schedule and a `fn`-pointer
+    /// table cannot hold a generic ([[rust-port-ladder-architecture]] — *generics are lost at a
+    /// cell boundary*). The generic method stays as a one-line dispatcher, so no caller moves.
+    ///
+    /// **AND NO OVERRIDER EVER ADDS A PARAMETER.** Probe 2 emitted all eleven signatures in the
+    /// ladder, rungs 43 → 76, and they are character-identical — so this cell, unlike
+    /// [`StatorTransientHooks::stator_march`], needs no scope and will not be re-opened.
+    ///
+    /// [`StatorTransientHooks::stator_march`]: crate::stator_transient::StatorTransientHooks
+    #[allow(clippy::type_complexity)]
+    pub integrate_fuel: fn(&FuelTransientCore, &FlightCondition, &dyn Fn(f64) -> f64,
+                           (f64, f64), f64, f64, &FuelLimiters<'_>) -> Vec<FuelPoint>,
 }
 
 /// RUNG 43's table. Ships LIVE and, until slice V swaps a cell, unexercised by any value key —
@@ -1497,6 +1527,7 @@ pub struct FuelTransientHooks {
 pub const R43: FuelTransientHooks = FuelTransientHooks {
     try_close_fuel: r43_try_close_fuel,
     try_surge_fuel: r43_try_surge_fuel,
+    integrate_fuel: r43_integrate_fuel,
 };
 
 /// Rung 43's object once `lp_disabled` is ruled out.
@@ -1960,20 +1991,21 @@ impl FuelTransientCore {
     /// The seven limiter arms are dispatched by [`FuelLimiters`], and the asserts below are
     /// Python's, in Python's order.
     ///
-    /// # ⚠ PHASE 7 NEEDS THIS BEHIND A HOOK CELL — **11 classes override it**
+    /// # THE ⚠ NOTE IS DISCHARGED — **SLICE Y OPENED THE CELL, AND THIS METHOD IS NOW A DISPATCHER**
     ///
-    /// § 5.12's census measured six names called on `self` inside phase 6 and overridden in phase
-    /// 7. [`TwoSpoolTransientHooks`] carries three of them (`try_close`, `try_instant_tail`,
-    /// `powers`); this is the largest of the three that have no cell — `LaggedBleedTransient`
-    /// through `SensedCapTransient` each replace it. **Calling it directly from a phase-7 body
-    /// would silently run rung 43's version**, which is the failure mode the ladder architecture
-    /// exists to prevent.
+    /// Slice T wrote the note here (*"⚠ phase 7 needs this behind a hook cell — 11 classes
+    /// override it"*), at the definition rather than only into § 5.17, and § 5.19 (ix) booked it
+    /// to slice **Y** because rung 65 is its first overrider. This is the **third and last** of
+    /// the three code-resident notes; `try_close_fuel` and `try_surge_fuel` went at slice V.
     ///
-    /// No cell is built here on purpose: phase 7 is unauthorised, and a hook with one
-    /// implementation is a guess at what the second one needs. Slice T writes the note instead,
-    /// **at the definition rather than only into § 5.17** — slice O's lesson, where what actually
-    /// reached the next slice was a panic with a backtrace and the paragraph that had predicted it
-    /// correctly was read second.
+    /// **THE BODY MOVED TO [`r43_integrate_fuel`] AND THE SIGNATURE HERE DID NOT.** Every one of
+    /// the ~100 call sites in `src` and `tests` still calls this generic method; it forwards to
+    /// the cell in one line. That is deliberate — § 5.23 (iv). The measured reason it is
+    /// affordable: probe 2 emitted all **eleven** `integrate_fuel` signatures in the ladder and
+    /// they are **character-identical**, so unlike `_stator_march` (four rungs, five new
+    /// parameters — § 5.23 (iii)) there is nothing to open. The only cost is that a `fn`-pointer
+    /// table cannot hold a generic, so the CELL is typed on `&dyn Fn(f64) -> f64` while this
+    /// stays `S: Fn(f64) -> f64`.
     pub fn integrate_fuel<S>(
         &self, flight: &FlightCondition, fuel_schedule: S, nu0: (f64, f64), s_end: f64, ds: f64,
         lim: &FuelLimiters<'_>,
@@ -1981,137 +2013,7 @@ impl FuelTransientCore {
     where
         S: Fn(f64) -> f64,
     {
-        let floor = lim.floor();
-        assert!(lim.lag.is_none() || lim.accel.is_some() || floor.is_some(),
-                "rung-52 lag lags a min-select LEG's clip -- arm one (accel/surge).");
-        assert!(lim.lag.is_none() || (lim.s_off.is_none() && lim.tau_rel.is_none()),
-                "rung-52 lag and rung 50/51's s_off/tau_rel are ALTERNATIVE release instruments, \
-                 not composable.");
-        assert!(lim.lag.is_none() || lim.tau_gov.is_none(),
-                "rung-52 lag and rung-47 tau_gov are both a clip AMOUNT carried as a state, on \
-                 two different legs. Running both is a two-lag cascade, not this rung.");
-        assert!(lim.tau_gov.is_none() || lim.tt4_max.is_some(),
-                "rung-47 tau_gov is a governor lag -- it needs a redline (Tt4_max) to lag.");
-        assert!(lim.tau_rel.is_none() || lim.s_off.is_some(),
-                "rung-51 tau_rel is the RATE of a FORCED release -- it needs the release time \
-                 s_off to be pinned.");
-        assert!(lim.tau_rel.is_none_or(|t| t >= 0.0), "rung-51 tau_rel is a fade DURATION");
-        assert!(lim.s_off.is_none() || lim.accel.is_some() || floor.is_some(),
-                "rung-50 s_off forces a min-select LEG to release early -- arm one \
-                 (accel/surge).");
-
-        if let Some(lag) = lim.lag {
-            return self.integrate_fuel_asym(
-                flight, fuel_schedule, nu0, s_end, ds, lim.freeze, lim.tt4_max, lim.accel,
-                floor.as_ref(), &lag);
-        }
-        if let (Some(tt4_max), Some(tau_gov)) = (lim.tt4_max, lim.tau_gov) {
-            return self.integrate_fuel_lagged(
-                flight, fuel_schedule, nu0, s_end, ds, lim.freeze, tt4_max, tau_gov, lim.accel,
-                floor.as_ref(), lim.s_off, lim.tau_rel);
-        }
-
-        bump(&MARCH_CALLS);
-        // THE MIN-SELECT. Each cap is solved INDEPENDENTLY from the SCHEDULED fuel, so arming one
-        // leg cannot perturb the other's bracket -- two Illinois solves off different brackets
-        // agree only to tolerance, not bit-for-bit, and rung 43 gate 3 demands bit-for-bit.
-        let der = |a: f64, b: f64, mf_in: f64, s: f64|
-         -> Result<(f64, f64, f64, FuelInstant), Abort> {
-            bump(&DER_CALLS);
-            let mut mf = mf_in;
-            let mut i = self.try_instant_fuel(flight, a, b, mf)?;
-            let mut caps: Vec<f64> = Vec::new();
-            // RUNG 50/51: the leg's AUTHORITY `w` is a pure function of s. `s_off = None`
-            // short-circuits to 1.0 and a falsy `tau_rel` makes it the rung-50 step, so rungs
-            // 49/50 are reached by the IDENTICAL branch and stay bit-for-bit.
-            let w = release_weight(s, lim.s_off, lim.tau_rel);
-            // RUNG 51. `w == 1.0` returns the cap ITSELF -- float-identical, which is what keeps
-            // the rung-50 reduce bit-for-bit. Note it fades toward `mf`, the applied fuel; the
-            // lagged twin's same-named closure fades toward `mf_sched` instead.
-            let faded = |c: f64| if w >= 1.0 { c } else { mf + w * (c - mf) };
-
-            if let Some(tt4_max) = lim.tt4_max {
-                if i.base.tt4 > tt4_max {
-                    caps.push(self.try_topping_fuel(flight, a, b, tt4_max, mf)?);
-                }
-            }
-            if let Some(accel) = lim.accel {
-                if w > 0.0 {
-                    caps.push(faded(self.try_sched_fuel(flight, a, b, mf, accel)?));
-                }
-            }
-            if let Some(surge) = floor.as_ref() {
-                if w > 0.0 {
-                    caps.push(faded(self.try_surge_fuel(flight, a, b, mf, surge)?));
-                }
-            }
-            bump(match caps.len() {
-                0 => &DER_CAPS_0,
-                1 => &DER_CAPS_1,
-                2 => &DER_CAPS_2,
-                _ => &DER_CAPS_3,
-            });
-            // A dormant leg returns `mf` itself, so this comparison is a float against itself --
-            // an exact structural zero rather than a near-miss.
-            caps.retain(|&c| c < mf);
-            if !caps.is_empty() {
-                bump(&DER_RESOLVES);
-                let mut m = caps[0];
-                for &c in &caps[1..] {
-                    if c < m {
-                        m = c;
-                    }
-                }
-                mf = m;
-                i = self.try_instant_fuel(flight, a, b, mf)?;
-            }
-            let da = if lim.freeze == Some(Spool::Lp) { 0.0 } else { i.base.phi_lp_dot / self.rho() };
-            let db = if lim.freeze == Some(Spool::Hp) { 0.0 } else { i.base.phi_hp_dot };
-            Ok((da, db, mf, i))
-        };
-
-        let mut pts: Vec<FuelPoint> = Vec::new();
-        let (mut a, mut b) = nu0;
-        // THE MARCH COORDINATE IS ACCUMULATED, AND A "CLEANER" `k as f64 * ds` WOULD FLIP A
-        // PUBLISHED BOOLEAN. Python writes `s += ds` from `0.0`; summing `0.02` twenty-five times
-        // gives `0.50000000000000011` where `25 * 0.02` gives exactly `0.5`. § 5.18 finding 3
-        // measured a decision that lands inside that difference: rung 49's
-        // [`SurgeRelief::both_edges_inside_ramp`] compares the LAST engaged `s` against the ramp
-        // end `r`, and on one of its eight floor cells (the HP floor `0.8650`) the distance
-        // `r − s_rel` is **`−1.11e-16`** — ONE ULP, and the boolean is `false` only because both
-        // languages accumulate. The other cells clear by ONE GRID CELL, not by orders. So this
-        // line is a COPY and not a spelling choice; the same holds for the two dispatch twins
-        // below, which share the `s` sequence bit for bit (§ 5.18 finding 5b: 201 points at
-        // `s_end = 4.0`, 301 at `6.0`, on all three marchers).
-        let mut s = 0.0f64;
-        let n_steps = (s_end / ds).round_ties_even() as i64;
-        for _ in 0..=n_steps {
-            let mf = fuel_schedule(s);
-            let Ok((k1a, k1b, mf_app, inst)) = der(a, b, mf, s) else {
-                bump(&MARCH_BREAK_K1);
-                break;
-            };
-            pts.push(point(s, a, b, &inst, mf_app, mf, PointExtra::None));
-            bump(&MARCH_POINTS);
-            let stages = (|| -> Result<(f64, f64, f64, f64, f64, f64), Abort> {
-                let mfm = fuel_schedule(s + ds / 2.0);
-                let (k2a, k2b, _, _) =
-                    der(a + ds / 2.0 * k1a, b + ds / 2.0 * k1b, mfm, s + ds / 2.0)?;
-                let (k3a, k3b, _, _) =
-                    der(a + ds / 2.0 * k2a, b + ds / 2.0 * k2b, mfm, s + ds / 2.0)?;
-                let (k4a, k4b, _, _) =
-                    der(a + ds * k3a, b + ds * k3b, fuel_schedule(s + ds), s + ds)?;
-                Ok((k2a, k2b, k3a, k3b, k4a, k4b))
-            })();
-            let Ok((k2a, k2b, k3a, k3b, k4a, k4b)) = stages else {
-                bump(&MARCH_BREAK_RK);
-                break;
-            };
-            a += ds / 6.0 * (k1a + 2.0 * k2a + 2.0 * k3a + k4a);
-            b += ds / 6.0 * (k1b + 2.0 * k2b + 2.0 * k3b + k4b);
-            s += ds;
-        }
-        pts
+        (self.hooks.integrate_fuel)(self, flight, &fuel_schedule, nu0, s_end, ds, lim)
     }
 
     /// RUNG 47. The TIT topping governor with a finite response lag — the sensing / limiter-loop
@@ -3409,7 +3311,7 @@ impl CommandedSteady {
 }
 
 /// The fourteen fields every route records, in Python's own order.
-fn point(
+pub(crate) fn point(
     s: f64, nu_lp: f64, nu_hp: f64, inst: &FuelInstant, mf: f64, mf_sched: f64,
     extra: PointExtra,
 ) -> FuelPoint {
@@ -3436,6 +3338,148 @@ fn point(
 // RUNG 43's CELLS — the bodies behind [`R43`], moved out of the `impl` at slice V exactly as
 // `r40_try_close` sits outside `TwoSpoolTransientCore`'s. Zero executable lines changed.
 // ---------------------------------------------------------------------------------------------
+
+/// RUNG 43's `integrate_fuel` — **the cell body, moved out of the `impl` block by SLICE Y.**
+///
+/// Byte-for-byte rung 43's marcher; the only edits are the receiver's name and the schedule's
+/// type. See [`FuelTransientCore::integrate_fuel`] for why the generic method above still exists
+/// and why the cell is typed on `&dyn Fn`.
+pub fn r43_integrate_fuel(
+    ft: &FuelTransientCore, flight: &FlightCondition, fuel_schedule: &dyn Fn(f64) -> f64,
+    nu0: (f64, f64), s_end: f64, ds: f64, lim: &FuelLimiters<'_>,
+) -> Vec<FuelPoint> {
+    let floor = lim.floor();
+    assert!(lim.lag.is_none() || lim.accel.is_some() || floor.is_some(),
+            "rung-52 lag lags a min-select LEG's clip -- arm one (accel/surge).");
+    assert!(lim.lag.is_none() || (lim.s_off.is_none() && lim.tau_rel.is_none()),
+            "rung-52 lag and rung 50/51's s_off/tau_rel are ALTERNATIVE release instruments, \
+             not composable.");
+    assert!(lim.lag.is_none() || lim.tau_gov.is_none(),
+            "rung-52 lag and rung-47 tau_gov are both a clip AMOUNT carried as a state, on \
+             two different legs. Running both is a two-lag cascade, not this rung.");
+    assert!(lim.tau_gov.is_none() || lim.tt4_max.is_some(),
+            "rung-47 tau_gov is a governor lag -- it needs a redline (Tt4_max) to lag.");
+    assert!(lim.tau_rel.is_none() || lim.s_off.is_some(),
+            "rung-51 tau_rel is the RATE of a FORCED release -- it needs the release time \
+             s_off to be pinned.");
+    assert!(lim.tau_rel.is_none_or(|t| t >= 0.0), "rung-51 tau_rel is a fade DURATION");
+    assert!(lim.s_off.is_none() || lim.accel.is_some() || floor.is_some(),
+            "rung-50 s_off forces a min-select LEG to release early -- arm one \
+             (accel/surge).");
+
+    if let Some(lag) = lim.lag {
+        return ft.integrate_fuel_asym(
+            flight, fuel_schedule, nu0, s_end, ds, lim.freeze, lim.tt4_max, lim.accel,
+            floor.as_ref(), &lag);
+    }
+    if let (Some(tt4_max), Some(tau_gov)) = (lim.tt4_max, lim.tau_gov) {
+        return ft.integrate_fuel_lagged(
+            flight, fuel_schedule, nu0, s_end, ds, lim.freeze, tt4_max, tau_gov, lim.accel,
+            floor.as_ref(), lim.s_off, lim.tau_rel);
+    }
+
+    bump(&MARCH_CALLS);
+    // THE MIN-SELECT. Each cap is solved INDEPENDENTLY from the SCHEDULED fuel, so arming one
+    // leg cannot perturb the other's bracket -- two Illinois solves off different brackets
+    // agree only to tolerance, not bit-for-bit, and rung 43 gate 3 demands bit-for-bit.
+    let der = |a: f64, b: f64, mf_in: f64, s: f64|
+     -> Result<(f64, f64, f64, FuelInstant), Abort> {
+        bump(&DER_CALLS);
+        let mut mf = mf_in;
+        let mut i = ft.try_instant_fuel(flight, a, b, mf)?;
+        let mut caps: Vec<f64> = Vec::new();
+        // RUNG 50/51: the leg's AUTHORITY `w` is a pure function of s. `s_off = None`
+        // short-circuits to 1.0 and a falsy `tau_rel` makes it the rung-50 step, so rungs
+        // 49/50 are reached by the IDENTICAL branch and stay bit-for-bit.
+        let w = release_weight(s, lim.s_off, lim.tau_rel);
+        // RUNG 51. `w == 1.0` returns the cap ITSELF -- float-identical, which is what keeps
+        // the rung-50 reduce bit-for-bit. Note it fades toward `mf`, the applied fuel; the
+        // lagged twin's same-named closure fades toward `mf_sched` instead.
+        let faded = |c: f64| if w >= 1.0 { c } else { mf + w * (c - mf) };
+
+        if let Some(tt4_max) = lim.tt4_max {
+            if i.base.tt4 > tt4_max {
+                caps.push(ft.try_topping_fuel(flight, a, b, tt4_max, mf)?);
+            }
+        }
+        if let Some(accel) = lim.accel {
+            if w > 0.0 {
+                caps.push(faded(ft.try_sched_fuel(flight, a, b, mf, accel)?));
+            }
+        }
+        if let Some(surge) = floor.as_ref() {
+            if w > 0.0 {
+                caps.push(faded(ft.try_surge_fuel(flight, a, b, mf, surge)?));
+            }
+        }
+        bump(match caps.len() {
+            0 => &DER_CAPS_0,
+            1 => &DER_CAPS_1,
+            2 => &DER_CAPS_2,
+            _ => &DER_CAPS_3,
+        });
+        // A dormant leg returns `mf` itself, so this comparison is a float against itself --
+        // an exact structural zero rather than a near-miss.
+        caps.retain(|&c| c < mf);
+        if !caps.is_empty() {
+            bump(&DER_RESOLVES);
+            let mut m = caps[0];
+            for &c in &caps[1..] {
+                if c < m {
+                    m = c;
+                }
+            }
+            mf = m;
+            i = ft.try_instant_fuel(flight, a, b, mf)?;
+        }
+        let da = if lim.freeze == Some(Spool::Lp) { 0.0 } else { i.base.phi_lp_dot / ft.rho() };
+        let db = if lim.freeze == Some(Spool::Hp) { 0.0 } else { i.base.phi_hp_dot };
+        Ok((da, db, mf, i))
+    };
+
+    let mut pts: Vec<FuelPoint> = Vec::new();
+    let (mut a, mut b) = nu0;
+    // THE MARCH COORDINATE IS ACCUMULATED, AND A "CLEANER" `k as f64 * ds` WOULD FLIP A
+    // PUBLISHED BOOLEAN. Python writes `s += ds` from `0.0`; summing `0.02` twenty-five times
+    // gives `0.50000000000000011` where `25 * 0.02` gives exactly `0.5`. § 5.18 finding 3
+    // measured a decision that lands inside that difference: rung 49's
+    // [`SurgeRelief::both_edges_inside_ramp`] compares the LAST engaged `s` against the ramp
+    // end `r`, and on one of its eight floor cells (the HP floor `0.8650`) the distance
+    // `r − s_rel` is **`−1.11e-16`** — ONE ULP, and the boolean is `false` only because both
+    // languages accumulate. The other cells clear by ONE GRID CELL, not by orders. So this
+    // line is a COPY and not a spelling choice; the same holds for the two dispatch twins
+    // below, which share the `s` sequence bit for bit (§ 5.18 finding 5b: 201 points at
+    // `s_end = 4.0`, 301 at `6.0`, on all three marchers).
+    let mut s = 0.0f64;
+    let n_steps = (s_end / ds).round_ties_even() as i64;
+    for _ in 0..=n_steps {
+        let mf = fuel_schedule(s);
+        let Ok((k1a, k1b, mf_app, inst)) = der(a, b, mf, s) else {
+            bump(&MARCH_BREAK_K1);
+            break;
+        };
+        pts.push(point(s, a, b, &inst, mf_app, mf, PointExtra::None));
+        bump(&MARCH_POINTS);
+        let stages = (|| -> Result<(f64, f64, f64, f64, f64, f64), Abort> {
+            let mfm = fuel_schedule(s + ds / 2.0);
+            let (k2a, k2b, _, _) =
+                der(a + ds / 2.0 * k1a, b + ds / 2.0 * k1b, mfm, s + ds / 2.0)?;
+            let (k3a, k3b, _, _) =
+                der(a + ds / 2.0 * k2a, b + ds / 2.0 * k2b, mfm, s + ds / 2.0)?;
+            let (k4a, k4b, _, _) =
+                der(a + ds * k3a, b + ds * k3b, fuel_schedule(s + ds), s + ds)?;
+            Ok((k2a, k2b, k3a, k3b, k4a, k4b))
+        })();
+        let Ok((k2a, k2b, k3a, k3b, k4a, k4b)) = stages else {
+            bump(&MARCH_BREAK_RK);
+            break;
+        };
+        a += ds / 6.0 * (k1a + 2.0 * k2a + 2.0 * k3a + k4a);
+        b += ds / 6.0 * (k1b + 2.0 * k2b + 2.0 * k3b + k4b);
+        s += ds;
+    }
+    pts
+}
 
 fn r43_try_close_fuel(
     ft: &FuelTransientCore, nu_lp: f64, nu_hp: f64, mdot_fuel: f64, tt2: f64, pt2: f64,

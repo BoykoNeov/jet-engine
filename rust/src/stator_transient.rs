@@ -461,6 +461,44 @@ pub struct StatorLeg<'a> {
     pub tt4_max: Option<f64>,
 }
 
+/// **§ 5.19 (iv)'s `Scope`, and this is the cell it was designed for.**
+///
+/// Python's rungs 65–68 each add ONE parameter to `_stator_march`, and each one is a per-MARCH
+/// **isolation diagnostic** rather than a control setting: the body saves the previous value of
+/// an instance attribute, assigns the parameter, calls `super()`, and restores in a `finally`.
+/// Probe 2 emitted all four and the shape is identical every time:
+///
+/// | rung | adds | attribute |
+/// |---|---|---|
+/// | **65** | `b0` | `_b0` — the lagged valve's initial position |
+/// | 66 | `lag` | `_lag` |
+/// | 67 | `tau_gov` | `_tau_gov` |
+/// | 68 | `v0`, `ic_order` | `_v0`, `_ic_order` |
+///
+/// So the cell's signature is opened **ONCE, here**, and this struct grows additively at 66/67/68
+/// — one non-additive change instead of four. `Scope` had been retired field-by-field twice
+/// (`try_close` at slice V, `_b_forced` at slice X) and it survives on the one cell § 5.19 (iv)
+/// actually measured it onto.
+///
+/// **NO EXISTING CALLER MOVES.** [`FuelTransientCore::stator_march`] keeps its signature and
+/// supplies [`MarchScope::DEFAULT`]; [`stator_march_scoped`](FuelTransientCore::stator_march_scoped)
+/// is the one that takes this, and only rung 65's own readers call it. All 55 shipped call sites
+/// are untouched — § 5.23 P5.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct MarchScope {
+    /// RUNG 65's `b0` — an override of the lagged valve's INITIAL position, and `None` is the
+    /// physical initial condition (the equilibrium command), which leaves every march
+    /// bit-for-bit. It exists because rung 65 § 3's finding is that `b` is a CONSTANT OF THE
+    /// MOTION, and a constant of the motion is only demonstrable by moving its value.
+    pub b0: Option<f64>,
+}
+
+impl MarchScope {
+    /// What every un-scoped caller passes. A `const` rather than `Default::default()` so the
+    /// forwarding methods stay `const`-friendly and the intent reads at the call site.
+    pub const DEFAULT: MarchScope = MarchScope { b0: None };
+}
+
 /// WHICH leg is armed — Python's `_one_leg` return, a string.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LegKind {
@@ -529,9 +567,14 @@ pub struct StatorTransientHooks {
     /// sub-step happened to be. Overridden at rung **68** (slice AA).
     pub v_of: fn(&TwoSpoolTransientCore, Spool, f64, f64, Option<f64>) -> f64,
     /// The rung-45 accel FUEL ramp on THIS machine. Overridden at rungs **65/66/67/68**.
+    ///
+    /// **THE `&MarchScope` IS SLICE Y's, AND IT IS THE ONLY NON-ADDITIVE CHANGE IN THAT SLICE.**
+    /// Rungs 65–68 each add one per-march isolation parameter to this name and to no other, so
+    /// the signature is opened once and the struct grows — see [`MarchScope`]. Callers do not
+    /// pass it: [`FuelTransientCore::stator_march`] supplies [`MarchScope::DEFAULT`].
     #[allow(clippy::type_complexity)]
     pub stator_march: fn(&FuelTransientCore, &FlightCondition, &Ramp, Option<(f64, f64)>,
-                         &StatorLeg<'_>) -> (Vec<FuelPoint>, (f64, f64)),
+                         &StatorLeg<'_>, &MarchScope) -> (Vec<FuelPoint>, (f64, f64)),
     /// A sibling on the same hardware with the STATORS re-armed. **OPENED BY SLICE W, and it is
     /// the cell slice V shipped without.** § 5.20's closing note booked it as an inert deferral
     /// on the strength of a body read; § 5.21 (ii) measured it and the reading is the opposite.
@@ -580,6 +623,10 @@ pub const R57_TWO: TwoSpoolTransientHooks = TwoSpoolTransientHooks {
 pub const R57_FUEL: FuelTransientHooks = FuelTransientHooks {
     try_close_fuel: r57_try_close_fuel,
     try_surge_fuel: r57_try_surge_fuel,
+    // NOT overridden — rung 65's is the next body, and rung 57 marches through rung 43's. Named
+    // rather than spread because slice Y's addition of this cell broke this literal, and a
+    // `..R43` here would have made the next such addition silent.
+    integrate_fuel: crate::fuel_transient::r43_integrate_fuel,
 };
 
 fn no_stator_arm(_: &TwoSpoolTransientCore, _: f64, _: f64, _: f64) {
@@ -593,7 +640,7 @@ fn no_stator_v_of(_: &TwoSpoolTransientCore, _: Spool, _: f64, _: f64, _: Option
 }
 
 fn no_stator_march(_: &FuelTransientCore, _: &FlightCondition, _: &Ramp, _: Option<(f64, f64)>,
-                   _: &StatorLeg<'_>) -> (Vec<FuelPoint>, (f64, f64)) {
+                   _: &StatorLeg<'_>, _: &MarchScope) -> (Vec<FuelPoint>, (f64, f64)) {
     panic!("no stator table on this object: _stator_march is rung 57's own march.");
 }
 
@@ -639,7 +686,18 @@ impl FuelTransientCore {
         &self, flight: &FlightCondition, ramp: &Ramp, nu0: Option<(f64, f64)>,
         leg: &StatorLeg<'_>,
     ) -> (Vec<FuelPoint>, (f64, f64)) {
-        (self.inner.stator_hooks.stator_march)(self, flight, ramp, nu0, leg)
+        self.stator_march_scoped(flight, ramp, nu0, leg, &MarchScope::DEFAULT)
+    }
+
+    /// The same march with rungs 65–68's per-march isolation parameters — see [`MarchScope`].
+    ///
+    /// Split from [`stator_march`](Self::stator_march) so that opening the cell's signature at
+    /// slice Y moved **no** caller: every one of the 55 shipped sites wants the default.
+    pub fn stator_march_scoped(
+        &self, flight: &FlightCondition, ramp: &Ramp, nu0: Option<(f64, f64)>,
+        leg: &StatorLeg<'_>, scope: &MarchScope,
+    ) -> (Vec<FuelPoint>, (f64, f64)) {
+        (self.inner.stator_hooks.stator_march)(self, flight, ramp, nu0, leg, scope)
     }
 
     /// Rung 57's `v_of`, forwarded — the spelling the rung-57 readers use, since their `self` is
@@ -758,7 +816,7 @@ pub fn r57_v_of(
 /// REDUCE.
 pub fn r57_stator_march(
     ft: &FuelTransientCore, flight: &FlightCondition, ramp: &Ramp, nu0: Option<(f64, f64)>,
-    leg: &StatorLeg<'_>,
+    leg: &StatorLeg<'_>, _scope: &MarchScope,
 ) -> (Vec<FuelPoint>, (f64, f64)) {
     bump(&MARCH_CALLS);
     let mf_lo = ft.fuel_for_tt4(flight, ramp.tt4_lo);
@@ -1043,6 +1101,14 @@ impl ScheduledStatorCore {
         leg: &StatorLeg<'_>,
     ) -> (Vec<FuelPoint>, (f64, f64)) {
         self.fuel.stator_march(flight, ramp, nu0, leg)
+    }
+
+    /// [`FuelTransientCore::stator_march_scoped`], forwarded — the spelling rung 65's readers use.
+    pub fn stator_march_scoped(
+        &self, flight: &FlightCondition, ramp: &Ramp, nu0: Option<(f64, f64)>,
+        leg: &StatorLeg<'_>, scope: &MarchScope,
+    ) -> (Vec<FuelPoint>, (f64, f64)) {
+        self.fuel.stator_march_scoped(flight, ramp, nu0, leg, scope)
     }
 }
 
