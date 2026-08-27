@@ -45,5 +45,13 @@ because the *reference* arm was non-zero.
   look identical from outside; running the same channel where the carrier IS read is what separates
   them.
 
+**And a typed tally got through all of this and was caught in advisor review.** The census
+DENOMINATOR was written as 62 at step 3 and 64 at step 4, in eight places — a consistent +5 — while
+the harness had PRINTED the addends on its own baseline line (15 + 23 + 19 = **57**, and 59 with
+the oracle). One sentence even listed its addends beside a total they do not make. It sat three
+paragraphs from a write-up lecturing about typed tallies. **The number was on the screen: add it up
+rather than remembering it, and spell every count as a visible sum.** Precedent:
+[[rust-port-guessed-census-bars]] and slice Z step 2's own tally, wrong by one.
+
 Related: [[rust-port-slice-z-step3]], [[rust-port-slice-z-step4]], [[rust-port-slice-w-step5]],
 [[rust-port-slice-y-step5]], [[rust-port-ported-test-vacuity]], [[rust-port-slice-v-step4]].

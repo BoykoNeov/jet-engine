@@ -21,7 +21,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding, backticks in `-m`, and a status read off the runner
 
-## The Rust port — decided 2026-08-12; **PHASES 0–6 DONE** — phase 6 authorised 2026-08-17 and **COMPLETED 2026-08-20** with slice U's five steps; **PHASE 7 AUTHORISED 2026-08-20**, slices V, W, X and **Y COMPLETE** — slice Y closed 2026-08-27 with all five steps; **slice Z (66+67) PRE-REGISTERED 2026-08-27, STEPS 1–2 SHIPPED** — both marches and all 20 method bodies ported, 785 keys bit-exact vs PyPy; steps 3–5 (suites, oracle, dispatch gates) open
+## The Rust port — decided 2026-08-12; **PHASES 0–6 DONE** — phase 6 authorised 2026-08-17 and **COMPLETED 2026-08-20** with slice U's five steps; **PHASE 7 AUTHORISED 2026-08-20**, slices V, W, X and **Y COMPLETE** — slice Y closed 2026-08-27 with all five steps; **SLICE Z (66+67) COMPLETE 2026-08-27** — all five steps: both marches + 20 method bodies, the **38 ported gates** green first run at **20.0x** PyPy, **35 335 oracle keys bit-exact on both interpreters** (CPython exempt on 8 named keys), and **8 dispatch gates** closing the four measured blind spots
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; a new PHASE needs authorisation
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost
 - [Rust arithmetic IS PyPy](rust-port-arithmetic-is-pypy.md) — size a solver claim by DISTINCT ROOTS, not row count

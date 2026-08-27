@@ -12790,7 +12790,7 @@ Every injection is run in two variants, which is the three-column discipline fou
 have needed: a **LIVENESS** build (the same edit plus a `panic!` marker at the site, or one
 conditioned on the state the injection depends on) that answers *did it apply and is the site
 reached*, and a **SEMANTIC** build (the edit alone) that answers *what can the gates SEE*. `red` is
-over all **62** gates in the slice — 15 + 23 ported plus `slice_z_smoke`'s 19.
+over all **57** gates in the slice — **15 + 23 + 19**, the harness's own baseline line, added up rather than typed.
 
 | # | the injection | liveness | semantic `red` | verdict |
 |---|---|---|---|---|
@@ -12822,7 +12822,7 @@ emergent count — but it is hardening a covered site, not closing a hole.
 #### (c) **I8 — THE DROPPED CELL IS NOT SMALL, IT IS EXACTLY ZERO, AND BY THE CLAMP RATHER THAN BY DECAY**
 
 I8 was written as a CONTROL — *"MUST redden; rung 66's currency is gated on the un-repaired
-integral"* — and **0 of 62 moved.** Rather than reason about why, a throwaway Rust probe computed
+integral"* — and **0 of 57 moved.** Rather than reason about why, a throwaway Rust probe computed
 `violation` both ways on the shipped cascade trajectory at all three `ds`:
 
 | `ds` | first `s > 0.5` | that `s` | area the dropped cell would add | `phi_lim − phi_lp` there |
@@ -12851,7 +12851,7 @@ distinction exists.
 algebraically identical, and `cross_loop.rs`'s module doc already records that the two are **not**
 bit-equal and that the spelling is not a free choice. Measured over every `P` the two window gates
 evaluate: **5 of 8 differ in the last bit**, including the plant's own
-`P_mid = −2.0388646020554284e-2` and the `P → 1` limit that recovers rung 66. **Zero of 62 gates
+`P_mid = −2.0388646020554284e-2` and the `P → 1` limit that recovers rung 66. **Zero of 57 gates
 move.**
 
 The reason is the ported gate's own bar. `the_window_formula_recovers_rung66_as_its_p_to_one_limit`
@@ -12958,7 +12958,7 @@ inside one file — which is the slice's leading finding exhibited rather than a
 
 #### (c) THE INJECTION CENSUS, RE-RUN WITH THE ORACLE AS A FOURTH TARGET
 
-Step 3's eight injections, over **64** gates now (15 + 23 + 19 + the oracle's 2):
+Step 3's eight injections, over **59** gates now (**15 + 23 + 19 + the oracle's 2**):
 
 | # | what it breaks | ported gates | smoke | **ORACLE** |
 |---|---|---|---|---|
@@ -13014,7 +13014,7 @@ arguments the file chooses, so regenerating `slice_z_pypy.tsv` cannot make one o
 fail. That is slice V step 5's lesson applied as a design rule rather than discovered again.
 
 **THE LIST IS MEASURED.** Step 3's eight injections, re-run at step 4 with the oracle as a fourth
-target, leave **exactly four** survivors across all 64 gates and all 35 335 keys — and they are
+target, leave **exactly four** survivors across all **59** gates (15 + 23 + 19 + 2) and all 35 335 keys — and they are
 exactly the four § 5.24 pre-registered: **P6** (I2), **P11** (I3), **P7a** (I4), **P7b** (I5).
 Three of the four are *provably* invisible rather than merely unnoticed, because their liveness
 markers never fire: `ft.inner.lag` is never `Some` where rung 67's refusal would read it, and
@@ -13090,7 +13090,7 @@ did not ask about, and slice AA's should ask it: can this branch change a value 
 #### (d) THE EIGHT GATES
 
 * **P6, in two halves.** `p6_rung_66_never_reaches_the_damped_solver_and_rung_67_always_does`
-  counts which solver ran (`CensusZ`), because *nothing else can tell* — I2 moved 0 of 64 gates and
+  counts which solver ran (`CensusZ`), because *nothing else can tell* — I2 moved 0 of 57 gates and
   0 of 35 335 keys. **Its own first draft was one-sided** and mutation of the gate's shape caught
   that: `jfp_calls == 0` passes if rung 66's march never runs at all, so `r66_inline_ic > 0` is the
   liveness half and the rung-67 arm's `r66_inline_ic == 0` is the mirror (a port that solved the IC
@@ -13145,6 +13145,15 @@ functions**: `slice_z_smoke.rs` 19 + `rung66.rs` 15 + `rung67.rs` 23 + `slice_z_
 `slice_z_oracle.rs` 2, over **35 335 oracle keys on two interpreters.** (The first draft of this
 line read *"57 gates"* — a tally TYPED rather than added up, which is the thing this phase has now
 been caught on four times. It is 19 + 15 + 23 + 8 + 2.)
+
+**AND A SECOND TYPED TALLY IN THIS SAME WRITE-UP WAS CAUGHT IN REVIEW, WHICH MAKES IT FIVE.** The
+census DENOMINATOR was typed as **62** at step 3 and **64** at step 4 — in eight places across the
+plan and `slice_z_dispatch.rs`, a consistent **+5** every time. The harness had PRINTED the answer
+on its own baseline line (`rung66: 15, rung67: 23, slice_z_smoke: 19`), so the correct figures are
+**57** and, with the oracle's 2, **59**. Step 4 § (c)'s own sentence printed its addends beside a
+total they do not make. Every instance is now spelled as a visible sum. The precedent is `1bef487`,
+step 2's tally wrong by one, and the lesson does not change with repetition: **the number is on the
+screen; add it up rather than remembering it.**
 
 ### ~~The four~~ **THE EIGHT** runtime-introspection tests, one by one
 

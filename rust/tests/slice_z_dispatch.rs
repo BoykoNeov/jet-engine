@@ -5,7 +5,7 @@
 //!
 //! Step 3 ran eight injections twice each (a LIVENESS build with a `panic!` marker, then the
 //! SEMANTIC edit) and step 4 re-ran them with the oracle as a fourth target. Four injections
-//! survive **all 64 gates and all 35 335 keys**, and they are exactly the four § 5.24
+//! survive **all 57 gates (15 + 23 + 19) and all 35 335 keys**, and they are exactly the four § 5.24
 //! pre-registered:
 //!
 //! | injection | what it breaks | prediction |
@@ -156,7 +156,7 @@ fn keys(t: &[FuelPoint]) -> Vec<[u64; 7]> {
 /// degeneracy. Rung 67 sweeps `w ∈ (1, 0.5, 0.25)`, because on cascade A `|P|` is pinned by
 /// nothing and a stall would be a SOLVER failure. **Routing rung 66 through rung 67's solver is
 /// bit-exact on the shipped grid** (`w = 1.0` on 36 of 39 calls) — step 3's injection I2 measured
-/// it at **0 of 64 gates** and step 4 at **0 of 35 335 oracle keys**.
+/// it at **0 of 57 gates** and step 4 at **0 of 35 335 oracle keys**.
 ///
 /// **MUTATION FOUND ONE DEFECT HERE, AND IT IS THE INSTRUCTIVE ONE.** The first draft asserted
 /// only `jfp_calls == 0` on the rung-66 arm. That passes if rung 66's march never runs at
@@ -236,7 +236,7 @@ fn p6_the_damped_sweep_converges_where_rung_66s_undamped_loop_cannot() {
 /// through a direct `integrate_fuel` is refused. Python does exactly this (`assert lag is None`
 /// reads the ARGUMENT), so the port is a translation and not a repair — but `lim.lag` →
 /// `lim.lag.or_else(|| ft.inner.lag.get())` is a one-token change that **no value key and no
-/// oracle key can see** (step 3's I3: 0 of 64 gates, and its liveness marker never fires).
+/// oracle key can see** (step 3's I3: 0 of 57 gates, and its liveness marker never fires).
 ///
 /// **THE SECOND HALF IS THE ONE THAT MAKES THE FIRST MEAN ANYTHING.** A discarded lag and a lag
 /// that never left the scope look identical from outside — [[rust-port-slice-v-step4]], *an
@@ -278,7 +278,7 @@ fn p11_a_rung_67_march_discards_the_fuel_lag_and_the_same_channel_delivers_one_r
 /// **THE MANUFACTURED NEST, HALF ONE.** Python is `prev, self._lag = self._lag, lag` …
 /// `finally: self._lag = prev`. Probe 3 measured max nesting depth **1** with **0** nested events
 /// over rungs 62–67, and step 3's I4 confirmed it from the other side: swapping the `Drop` body to
-/// restore `None` moves 0 of 64 gates and 0 of 35 335 oracle keys, **and its liveness marker
+/// restore `None` moves 0 of 57 gates and 0 of 35 335 oracle keys, **and its liveness marker
 /// never fires**, so `prev` is provably never `Some` on any shipped path.
 ///
 /// The inner scope is a REAL march, not a bare guard pair: `stator_march_scoped` builds its own
