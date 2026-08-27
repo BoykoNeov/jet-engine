@@ -12897,6 +12897,113 @@ target arithmetic reconciles once the counting convention is stated rather than 
 `Running` lines (116 integration + 1 `unittests`) plus one doc-test block. **The run does NOT
 include `slice_z_oracle.rs`**, which was written after it started — step 4 carries its own number.
 
+
+##### STEP 4 — SHIPPED. **35 335 keys on both interpreters, and AN EXEMPTION THAT WAS TWO KEYS AND IS EIGHT**
+
+`rust/oracle/dump_slice_z.py` + `tests/slice_z_oracle.rs`, fourteen sections A–N over both rungs.
+**35 335 keys, BIT-EXACT vs PyPy on the first run**, and vs **CPython 3.14** with exactly the
+declared exemption below. The Rust arm runs in **16.85 s**; the dump takes **70 s** per
+interpreter.
+
+**P8 HELD, AND BY NOT NEEDING ANYTHING.** Every argument is copied from the calling gate, never
+chosen — including the two places the suites NARROW a default (`oscillation_window`'s three `rhos`
+rather than the seven-wide default, `joint_ic_corners`' 2x2 corners rather than 4x2), because the
+oracle mirrors GATES and a default the suites do not use is a grid they do not have. § 5.24
+(viii)'s 33.31 s timing is what made that free, and the header states the grid rather than
+implying it.
+
+#### (a) THE LEADING FINDING — **P3's "TWO KEYS" WAS A COUNT OF QUANTITIES, AND THE DUMP EMITS NAMES**
+
+§ 5.24 (i) pre-registered the CPython exemption as *"a NAMED, COUNTED pair on one row — not a
+tolerance tier"*, and named `P_mid` and the `T_over_tau` it feeds. Diffed over the two arms, the
+measured set is **EIGHT key names**:
+
+```text
+F/rows/1/P_mid          G/P            K/window/7/P          N/0/P_mid
+F/rows/1/T_over_tau     G/window/P     K/window/7/T_over_tau
+                        G/window/T_over_tau
+```
+
+Every one is `P_mid` itself or the `T_over_tau` it feeds — **so P3 holds at its intent and its
+arithmetic does not.** `P_mid` is re-published under four further names: `oscillation_window`
+reads it as `P` and again inside its `window` sub-dict, section K re-evaluates `_window` at it, and
+section N recomputes it on a second grid. **An exempt list transcribed from § 5.24 (i) would have
+carried two entries and this oracle would have failed on six more** — the same shape as the slice's
+own leading finding, one level out: *a number written down once reads like a measurement.*
+
+`zeta` does **not** move at any of the eight, which confirms § 5.24 (i)'s propagation table
+(`P` 1 ulp, `T_over_tau` 1 ulp, the other five keys 0) on a second instrument and a wider grid.
+
+**AND THE LIST IS CHECKED IN BOTH DIRECTIONS.** `Cmp::finish` asserts the exempted set EQUALS the
+eight names — a ninth key fails the run, and so does one of the eight *ceasing* to drift, because
+an exemption nobody re-measures is a tolerance with better manners.
+
+#### (b) **THE STRIDE FINDING RECURS ON TWO ROWS OF ONE TRAJECTORY**
+
+§ 5.24 (i) is that `sub = ride[::max(1, len(ride)//n_sample)]` delivers a count that is not the
+requested one, and that a probe reading the request measures a different function. The dump EMITS
+`n_ride` and the delivered `n_sample` at every `cross_identity` row it takes, so nothing here
+inherits the 9:
+
+| section | clock | `n_ride` | requested | **DELIVERED** |
+|---|---|---|---|---|
+| F | `tau_gov` 0.005 / 0.05 / 0.5 at `ds` 0.005 | 135 / 97 / 91 | 8 | **9 / 9 / 9** |
+| N | `tau_gov` 0.05 at `ds` 0.01 / 0.005 / 0.0025 | 49 / 97 / 195 | 6 | **7 / 7 / 7** |
+
+`len(ride) = 135 / 97 / 91` reproduces § 5.24 (i)'s measurement exactly. And the two arms overlap
+on one row: **`F/rows/1` and `N/1` are the same clock on the same grid** — `tau_gov = 0.05`,
+`ds = 0.005`, `n_ride = 97` — sampled **9** wide and **7** wide. **The 9-wide one diverges from
+CPython and the 7-wide one does not.** The chunk width decides the answer, on one trajectory,
+inside one file — which is the slice's leading finding exhibited rather than argued.
+
+#### (c) THE INJECTION CENSUS, RE-RUN WITH THE ORACLE AS A FOURTH TARGET
+
+Step 3's eight injections, over **64** gates now (15 + 23 + 19 + the oracle's 2):
+
+| # | what it breaks | ported gates | smoke | **ORACLE** |
+|---|---|---|---|---|
+| I1 | `eig` drops its complex arm | 2 (rung 67 only) | — | **BOTH ARMS** |
+| I2 | rung 66's IC routed through rung 67's damped solver (**P6**) | — | — | **—** |
+| I3 | rung 67's refusal reads the CARRIER (**P11**) | — | — | **—** |
+| I4 | the `_lag` guard restores `None` (**P7a**) | — | — | **—** |
+| I5 | the `_tau_gov` guard restores `None` (**P7b**) | — | — | **—** |
+| I6 | `window`'s `zeta` re-spelled | — | — | **BOTH ARMS** |
+| I7 | `exceed` drops the straddling cell | 2 | — | **BOTH ARMS** |
+| I8 | `violation` folded into `exceed`'s guard | — | — | **BOTH ARMS** |
+
+**THE ORACLE CLOSES TWO OF STEP 3's FOUR BLIND SPOTS AND ONE OF THEM RETIRES A PREDICTION I MADE
+ONE STEP EARLIER.** Step 3 booked **P12** — *"`violation`'s dropped cell needs a step-5 gate on a
+constructed trajectory, because no shipped grid and no oracle can reach it"*. Section K runs BOTH
+upper limits on a synthetic ramp whose integrand is non-zero at `s_hi`, which is exactly that
+constructed trajectory, so **P12 is DISCHARGED HERE rather than owed to step 5.** The reasoning
+behind it stands — on every shipped march the two spellings agree bit-for-bit — and the conclusion
+about WHERE the gate belongs was wrong by one step. Recorded rather than quietly dropped.
+
+I6 likewise: step 3 handed the `zeta` spelling to step 4 and step 4 catches it, on both arms,
+because section K sweeps `_window` at all eight `P` values including the plant's own.
+
+**THE FOUR THAT SURVIVE ARE EXACTLY THE FOUR THE PRE-REGISTRATION NAMED** — P6, P11, P7a, P7b —
+and three of them are *provably* invisible rather than merely unnoticed, because their liveness
+markers never fire anywhere in the slice. Step 5 has a measured list, not an argued one.
+
+#### (d) TWO THINGS THE DUMP EMITS THAT NO GATE ASKED FOR, AND WHY
+
+* **`E/cascade/key_count` and `L/cross/key_count`, read off the LIVE dict.** `FuelPoint::key_count`
+  returns 20 and 21 from a `match`, and its own doc comment says this line is what checks them —
+  [[rust-port-guessed-census-bars]], applied to a constant the port would otherwise assert about
+  itself.
+* **`G/n_skipped` and `J/n_failed`.** Both are **0** on this grid, and a zero left un-emitted is
+  what [[rust-port-slice-w-step3]] is about: `J/all_converged` is Python's `all(...)` over the OK
+  rows and is vacuously `True` if every corner failed, so the count of failures rides beside it.
+
+#### (e) PREDICTIONS, AT STEP 4
+
+- **P3 — HELD AT ITS INTENT, ARITHMETIC CORRECTED** (§ (a)). Two quantities, eight names, no
+  tolerance tier anywhere.
+- **P8 — HELD, by not needing anything** (§ above).
+- **P12 — DISCHARGED AT STEP 4, NOT STEP 5** (§ (c)).
+- **P4/P5/P6/P7/P11 — step 5's, now against a MEASURED blind-spot list of exactly four** (§ (c)).
+
 ### ~~The four~~ **THE EIGHT** runtime-introspection tests, one by one
 
 **CORRECTED 2026-08-20 by § 5.19 (vii) — this table named FOUR and an enumeration over the 27
