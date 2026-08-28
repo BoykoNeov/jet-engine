@@ -1,57 +1,61 @@
 ---
 name: rust-port-slice-ac-preflight
-description: "Slice AC's pre-flight — my headline was an ambiguity in functions my own census had measured as unreachable, while the real defect (a swap that breaks by emptying the sample) sat buried in a sub-table"
+description: "Slice AC's pre-flight — the phase's cell predicate is by NAME, so seven slices of correctly-emitted columns could not tell an override from a name reused, and AC's only claimed cell is one"
 metadata: 
   node_type: memory
   type: project
   originSessionId: 67ab7e3b-ddec-4b0d-822d-77d5d6d5435f
-  modified: 2026-08-28T16:50:47.033Z
+  modified: 2026-08-28T16:58:42.852Z
 ---
 
 Slice AC (rungs 70/71, `CrossSplitTransient` + `FullSplitTransient`) was pre-registered on
-2026-08-28 off thirteen probes, written to `docs/plans/todo-rust-port.md` § 5.27.
+2026-08-28 off fourteen probes, written to `docs/plans/todo-rust-port.md` § 5.27.
 
-**MY FIRST DRAFT'S LEADING FINDING WAS A HYPOTHETICAL THAT MY OWN CENSUS HAD ALREADY RULED OUT.**
-I had measured that the three RK4 floors across rungs 69/70/71 assert a character-identical
-condition and differ only in their message, and that six of the eight shipped gate strings match
-more than one of the three — including the two Rust gates whose entire justification is that the
-floor has no other observable. I wrote that up as *"AB's gates stop discriminating the moment AC
-lands"*. **They do not**: probe 1 had measured, three sections earlier in the same document, that
-the floors are **not cells** — each defined exactly once, under a distinct name — so no function
-pointer exists for a floor and nothing in the dispatch harness can put the wrong body in the slot.
-The ambiguity is real; the *defect* needs a mechanism, and there isn't one. The advisor blocked it,
-and it demoted cleanly to a one-line tightening.
+**THE PHASE'S CELL PREDICATE IS BY NAME AND HAS NEVER CHECKED SUBSTITUTABILITY.** Every slice
+since § 5.19 emits its "cells ADDED" column with the predicate *new here AND overridden above*,
+and every slice has been right — seven in a row, name for name. Slice AC's column said one cell,
+`split_gains`. It is not a cell: rung 80's same-named method drops four parameters and adds five,
+and rung 70's **own inherited caller** proves it live — `rung67_control` on a rung-80 machine
+raises `TypeError: split_gains() got 3 unexpected keyword arguments`, against a control on a
+rung-70 machine that returns. Two different functions sharing a name cannot share a `fn` pointer,
+so **slice AC adds ZERO cells**, `TripleHooks` stays ten fields, and the `E0063` tripwire slice AB
+deliberately left *addressed to slice AC by name* will never fire here.
 
-**AND THE REAL FINDING WAS ALREADY IN MY OWN TABLE, ONE ROW DOWN.** Swapping rung 68's
-`_triple_laws` into rung 70's slot removes the governor, every sampled point goes off-regime, and
-the reader returns **successfully** with `rows = []` and every aggregate `None`. No value differs
-because there are no values. A dispatch gate of the shape every previous slice wrote — march both,
-diff the keys — compares two empty tables and passes; the only shipped detector is
-`assert gains["rows"]`, and the two value assertions beside it would raise `TypeError`. *A cell
-whose output is a SAMPLE can break by changing the sample's SIZE rather than its values.*
+I found it by starting to write step 1 — reaching for rung 80's signature to type the new field.
 
-**Why:** a pre-flight's headline sets what the slice's gates are built to catch, so an unreachable
-one costs the slice its focus and buries the reachable one. The discriminating question is not *is
-this true* but *what mechanism the port actually ships could exercise it* — and the answer was
-sitting in a census I had run myself.
+**A predicate that is wrong emitted seven times reads like seven confirmations.** The measurements
+were all correct; the question was wrong. That is [[rust-port-phase7-preflight]]'s own lesson one
+level further out: there, a section checked *defined exactly once* and never *overridden at least
+once*; here, seven probes checked *overridden at least once* and never *by a body that could stand
+in*. The repair is the predicate — **a cell is a name that is overridden AND substitutable** — and
+a phase-wide sweep of all 358 override pairs then found exactly one more: `_legs`, a SHIPPED cell
+from slice W whose rung-77 overrider takes a disjoint parameter list (booked to slice AH).
 
-**How to apply:** before promoting anything to a leading finding, name the mechanism that reaches
-it and check that mechanism against the census. If the answer is "a future hand-edit", it is a
-note, not a headline. Three more things this pre-flight wants carried:
+**Why:** the port's whole architecture is a `const` table of function pointers, so "is this a
+cell" is really "can one caller dispatch between these two bodies". Name equality is a proxy that
+holds until a rung reuses a name — and a ladder 31 classes deep will reuse names.
 
-* **An impossible pair of numbers in one row is the cheapest self-check there is, and it only
-  works if both are printed.** Probe 12 emitted `MAX NESTING DEPTH 37` beside `OVERWRITE 0`, which
-  cannot both be true of one carrier — a global depth counter summing thirty machines. That is the
-  *same* artifact `probe_ab11` recorded at slice AA. Per instance it is 1.
-* **A docstring saying "single process" is not `-n 0`.** Probe 4's first run printed fifteen zeros
-  because `pytest.ini` carries `-n auto`; the probe's own docstring named the blindness mode it
-  then hit. The same run also failed a shipped gate — `inspect.getsource` on a method the probe had
-  wrapped without `functools.wraps` — so an unlucky reading would have booked the probe's own
-  damage as a finding.
-* **When you trade a full-suite instrument for a cheaper one, disclose what the cheap one cannot
-  see.** The reader-driven capture runs four grid-walkers at two arms instead of 4/9/6/9, so its
-  site list is a LOWER BOUND and the exemption prediction is registered against the reduced grid.
+**How to apply:** before adding a field to a shared table, read BOTH bodies' signatures and, where
+a caller exists, run the parent's caller against the child. Three more things this pre-flight
+wants carried:
+
+* **The probe that repairs a predicate needs its own predicate checked first.** My sweep's first
+  writing called any two ladder classes an override pair (so siblings appeared as overrides — the
+  scoping error the phase-6 pre-flight already recorded, made a third time) and compared parameter
+  NAMES (so a pure rename read as incompatible). Twelve "non-substitutable" names became two.
+* **An impossible pair of numbers in one row is the cheapest self-check there is, and it only works
+  if both are printed.** Two separate probes emitted `MAX NESTING DEPTH` of 158 and 37 beside an
+  `OVERWRITE` of 0 — a global counter summing every machine. Per instance it is 1. Same artifact
+  `probe_ab11` recorded at slice AA.
+* **A docstring saying "single process" is not `-n 0`.** A probe printed fifteen zeros because
+  `pytest.ini` carries `-n auto`, and the same run failed a shipped gate by wrapping a method that
+  `inspect.getsource` reads — so an unlucky reading would have booked the probe's own damage as a
+  finding.
+
+The slice's own second headline, kept because it decides a gate shape: swapping rung 68's
+`_triple_laws` into rung 70's slot makes the reader return **successfully with zero rows**, so
+every value key agrees and a value-diff dispatch gate passes on an empty table. *A cell whose
+output is a SAMPLE can break by changing the sample's SIZE rather than its values.*
 
 Related: [[rust-port-slice-ab-step5]], [[rust-port-ported-test-vacuity]],
-[[rust-port-guessed-census-bars]], [[rust-port-oracle-cannot-see-a-missing-gate]],
-[[run-tests-below-normal]].
+[[rust-port-guessed-census-bars]], [[rust-port-slice-k]], [[run-tests-below-normal]].

@@ -75,7 +75,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Slice AB step 3](rust-port-slice-ab-step3.md) — my injection sweep ran 2 of the slice's 3 binaries and printed MISS, which reads as "nothing sees this"
 - [Slice AB step 4](rust-port-slice-ab-step4.md) — an exemption measured between the two DUMPS was 67 names wider than the one measured against the PORT
 - [Slice AB step 5](rust-port-slice-ab-step5.md) — a predicted failure SHAPE is a claim about the PARENT's body: two of four "breaks by panic" broke by value, and the silent shape is the dangerous one
-- [Slice AC pre-flight](rust-port-slice-ac-preflight.md) — my headline was an ambiguity in functions my own census had measured as unreachable, while the real defect sat one row down
+- [Slice AC pre-flight](rust-port-slice-ac-preflight.md) — the phase's cell predicate is by NAME, so seven correctly-emitted columns could not tell an override from a name reused
 - Slice T (46/47/48) steps [1](rust-port-slice-t-step1.md) [2](rust-port-slice-t-step2.md) [3](rust-port-slice-t-step3.md) [4](rust-port-slice-t-step4.md) — an EXACT ZERO blinds its own gate to the SIGN (one lesson per file)
 
 ## Shipped rungs

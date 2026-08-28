@@ -9023,7 +9023,7 @@ by counting.
 | **Z** | 66–67 | `TwoLagCascadeTransient`, `CrossLoopCascadeTransient` | **0** — swaps only |
 | **AA** | 68 | `StatorLimiter`, `ThreeLoopCascadeTransient` | **9** — `_check_v0`, `_clamp_v`, `_lagged_stator`, `_manifold_v`, `_rk4_floor`, `_solve_v`, `_stator_leg`, `_triple_laws`, `_triple_rig`. **The widest step, and it is rung 68 rather than 69** — rung 68 is the CALLER of all nine and rung 69 the overrider |
 | **AB** | 69 | `StatorIncidenceLimiter`, `ReferenceSplitTransient` | **1** — `_with_ref` |
-| **AC** | 70–71 | `CrossSplitTransient`, `FullSplitTransient` | **1** — `split_gains`. **MEASURED at § 5.27 (ii)**, and the overrider named: `SplitWallTransient` (rung 80, slice AI). The two rungs also swap `at_lever`/`integrate_fuel` EACH, so the slice needs **6** distinct function pointers |
+| **AC** | 70–71 | `CrossSplitTransient`, `FullSplitTransient` | ~~**1** — `split_gains`~~ → **0. MEASURED at § 5.27 (i): `split_gains` is NOT a cell** — rung 80's same-named body has an incompatible signature and rung 70's own inherited caller `TypeError`s on a rung-80 machine. **This column's predicate is by NAME and never checked substitutability; § 5.27 (x) sweeps all 358 override pairs and finds ONE more (`_legs`, 63→77, booked to AH).** The slice swaps `at_lever`/`integrate_fuel` at EACH rung plus `_triple_laws` at 70 = **5** distinct function pointers, no new field |
 | **AD** | 72 | `SharedActuatorTransient` | **3** — `_reference`, `_rk4_floor_shared`, `_shared_rig` |
 | **AE** | 73 | `AppliedReferenceTransient` | **0** |
 | **AF** | 74 | `DemandCoordinateTransient` | **3** — `_cap_fuel`, `_sensed_cap`, `_windup_tau` |
@@ -14760,9 +14760,9 @@ bit-for-bit identical on every shipped path. `slice_ab_cells.rs`'s
 `the_ref_guard_restores_the_previous_value_and_a_nest_proves_it` MANUFACTURES the nest no march
 reaches, and a second gate proves the restore survives an unwind. **SLICE AB IS COMPLETE.**
 
-### 5.27 SLICE AC (rungs 70 + 71, `CrossSplitTransient` + `FullSplitTransient`) — PRE-REGISTERED, thirteen probes MEASURED first
+### 5.27 SLICE AC (rungs 70 + 71, `CrossSplitTransient` + `FullSplitTransient`) — PRE-REGISTERED, fourteen probes MEASURED first
 
-`M:\claud_projects\temp\rust-phase7\probe_ac1.py` … `probe_ac12.py` (plus `probe_ac2b`, `ac5b`),
+`M:\claud_projects\temp\rust-phase7\probe_ac1.py` … `probe_ac14.py` (plus `probe_ac2b`, `ac5b`),
 PyPy — and probe 10 under **CPython 3.14** as well. Every table below is **EMITTED** by one of
 them (§ 5.19 (xi)).
 
@@ -14770,21 +14770,66 @@ them (§ 5.19 (xi)).
 here is emitted PER RUNG and then reconciled: a slice-level "swaps: N" column would hide that a
 name swapped twice needs two function pointers and two dispatch gates.
 
-#### (i) THE LEADING FINDING — **THE SWAP THAT BREAKS BY EMPTYING THE SAMPLE, SO EVERY VALUE KEY AGREES AND THE READER STILL RETURNS `Ok`**
+#### (i) THE LEADING FINDING — **THE PHASE'S CELL PREDICATE IS BY NAME, SO IT CANNOT TELL AN OVERRIDE FROM A NAME REUSED — AND SLICE AC's ONLY CLAIMED CELL IS A NAME REUSED**
 
-Probe 6 runs each of the five swaps once with the PARENT's own function installed and PRINTS
-what happened — slice AB step 5's lesson applied in the pre-flight, because a break's shape is a
-claim about the *parent's* body and it is the half nobody re-reads. Four of the five break loudly.
+§ 5.19 (x)'s emitted column says slice AC adds **one** cell, `split_gains`, and probe 1 agrees
+name-for-name — for the seventh consecutive slice. The predicate both use is the phase's own:
+*new here AND overridden above*. **It is purely by NAME, and it has never checked that the two
+bodies are INTERCHANGEABLE**, which is the entire requirement for a `fn` pointer in a `const`
+table. Probe 13 asks:
+
+| | parameters |
+|---|---|
+| `CrossSplitTransient.split_gains` (rung 70) | `self, flight, Tt4_lo, Tt4_hi, Tt4_max, `**`sm`**`, r, s_settle, ds, `**`tau, tau_gov, tau_s`**`, v_max, every` |
+| `SplitWallTransient.split_gains` (rung 80) | `self, flight, Tt4_lo, Tt4_hi, Tt4_max, `**`phi_lim, phi_airs, coord, taus, inc`**`, r, s_settle, ds, v_max, every` |
+
+Four parameters removed, five added, and **rung 70's own inherited caller proves it live**:
+`rung67_control` calls `self.split_gains(..., sm, tau=…, tau_gov=…, tau_s=…)`, and on a rung-80
+machine that is
+
+    TypeError: SplitWallTransient.split_gains() got 3 unexpected keyword arguments
+
+against a control on a rung-70 machine that returns `n = 7, ratio = 0.921`. **These are two
+different functions that share a name.**
+
+**SO SLICE AC ADDS ZERO CELLS, AND THREE THINGS FOLLOW THAT WERE ALL WRITTEN THE OTHER WAY:**
+
+* `TripleHooks` does **not** grow. It stays **ten** fields.
+* **`tests/slice_ab_cells.rs`'s E0063 tripwire will not fire at this slice**, and its doc comment
+  — *"an eleventh field added by slice AC is `E0063` here, at the file whose job is the cell
+  census"* — is wrong as written. Corrected at step 1 to name the slice that actually widens the
+  table next, rather than deleted: the tripwire is right, its addressee was a guess.
+* § 5.19 (x)'s **28** = 25 + 3 is one too many, and the row this section can settle is its own.
+
+**AND THE SWEEP THE FINDING DEMANDS WAS RUN RATHER THAN PROMISED** — § (xii): the same question
+asked of every override pair in the whole 31-class ladder. Two genuine name-reuses survive
+(`split_gains`, and `_legs` between rungs 63 and 77 — booked to slice AH), against 222 pairs that
+are identical and 91 that widen by defaulted keywords.
+
+**Why it was missed for seven slices, and it is not "nobody looked":** the column was EMITTED by a
+probe every time, which is exactly what § 5.19 (xi) demands, and the emitter answered its question
+correctly. *The predicate was wrong, not the measurement* — and a wrong predicate emitted seven
+times reads like seven confirmations. It is [[rust-port-phase7-preflight]]'s own lesson at one more
+level of remove: there, § 3 checked *defined exactly once* and never *overridden at least once*;
+here, seven probes checked *overridden at least once* and never *by a body that could stand in*.
+The repair is a predicate, not a re-count: **a cell is a name that is overridden AND
+substitutable**, and substitutability is a signature comparison the emitter can do.
+
+#### (ii) THE SECOND HEADLINE — **THE SWAP THAT BREAKS BY EMPTYING THE SAMPLE, SO EVERY VALUE KEY AGREES AND THE READER STILL RETURNS `Ok`**
+
+Probe 6 runs each of the five swaps once with the PARENT's own function installed and PRINTS what
+happened — slice AB step 5's lesson applied in the pre-flight, because a break's shape is a claim
+about the *parent's* body and it is the half nobody re-reads. Four of the five break loudly.
 **`_triple_laws` does not.**
 
 With rung 68's body in rung 70's slot the governor simply is not there: `_triple_laws` hands back
 rung 68's fuel-leg `R` instead of the clip, every sampled point comes back `interior = False`, and
 `split_gains` **returns successfully** —
 
-| | `n_riding` | `len(rows)` | `worst_CV` | `min_pair_gap` | `max_pair_gap` | `pair_RC` | `pair_RV` |
-|---|---|---|---|---|---|---|---|
-| shipped | 61 | **2** | 1.061e−10 | 1.132 | 1.163 | (−0.0167, −0.0190) | … |
-| rung 68's body | 61 | **0** | `None` | `None` | `None` | `()` | `()` |
+| | `n_riding` | `len(rows)` | `worst_CV` | `min_pair_gap` | `max_pair_gap` | `pair_RC` |
+|---|---|---|---|---|---|---|
+| shipped | 61 | **2** | 1.061e−10 | 1.132 | 1.163 | (−0.0167, −0.0190) |
+| rung 68's body | 61 | **0** | `None` | `None` | `None` | `()` |
 
 **No gain differs, because there are no gains.** A Rust dispatch gate of the shape every previous
 slice has written — march both, diff the value keys — compares two empty tables and passes. The
@@ -14792,31 +14837,28 @@ shipped Python suite catches it with exactly one assertion, `assert gains["rows"
 riding point"` (`test_rung70.py:231`), and **not** with either of the two value assertions two
 lines below it, which would raise `TypeError` on `None` rather than report a difference.
 
-So this cell's gate is a **non-emptiness** assertion and the slice registers it as such
-(§ (iv), P2). The CONTROL arm — the same six readers with nothing injected — reports six `same`s,
-so the row is a measurement and not a sentence; slice AB shipped two gates at its own step 1 that
-could not fail, and the control is the answer to that.
+So this cell's gate is a **non-emptiness** assertion and the slice registers it as such (P2). The
+CONTROL arm — the same six readers with nothing injected — reports six `same`s, so the row is a
+measurement and not a sentence; slice AB shipped two gates at its own step 1 that could not fail.
 
 **The generalisable half:** *a cell whose output is a SAMPLE can break by changing the sample's
 SIZE rather than its values, and a value-diff gate is blind to that by construction.* Rung 70's
-readers are all sample-shaped (`rows` + aggregates over `rows`), so every one of them can fail
-this way. [[rust-port-ported-test-vacuity]] is the same shape one level up — a better
-factorisation turning a real pin into self-comparison; here it is an injection turning a real
-comparison into a comparison of nothing.
+readers are all sample-shaped (`rows` + aggregates over `rows`), so every one of them can fail this
+way. [[rust-port-ported-test-vacuity]] is the same shape one level up — a better factorisation
+turning a real pin into self-comparison; here it is an injection turning a real comparison into a
+comparison of nothing.
 
-#### (ii) THE CELL CENSUS — **ONE CELL ADDED, FIVE SWAPS OVER TWO RUNGS, SIX DISTINCT FUNCTION POINTERS**
+#### (iii) THE CELL CENSUS — **ZERO CELLS ADDED, FIVE SWAPS OVER TWO RUNGS, SIX DISTINCT FUNCTION POINTERS**
 
-Probe 1, same shape as probe_ab1 / probe_aa1 / probe_z1, run once per rung.
+Probe 1, run once per rung; the ADD column then re-read through § (i)'s repaired predicate.
 
-| rung | class | cells ADDED | SWAPS | PLAIN (new, never overridden) |
-|---|---|---|---|---|
-| 70 | `CrossSplitTransient` (875 ln, 16 methods) | **1** — `split_gains` | **3** — `_triple_laws`, `at_lever`, `integrate_fuel` | 12 |
-| 71 | `FullSplitTransient` (730 ln, 11 methods) | **0** | **2** — `at_lever`, `integrate_fuel` | 9 |
+| rung | class | ADDS (by name) | ADDS (**substitutable**) | SWAPS | PLAIN |
+|---|---|---|---|---|---|
+| 70 | `CrossSplitTransient` (875 ln, 16 methods) | 1 — `split_gains` | **0** | **3** — `_triple_laws`, `at_lever`, `integrate_fuel` | 12 |
+| 71 | `FullSplitTransient` (730 ln, 11 methods) | 0 | **0** | **2** — `at_lever`, `integrate_fuel` | 9 |
 
-§ 5.19 (x) predicted exactly one cell, `split_gains`. **The emitter agrees name-for-name** — the
-seventh consecutive row that column has got right. § 5.25 (ii) predicted rung 70 would be the one
-class overriding AA's `_triple_laws`: **AGREE**; rung 71 overrides none of AA's nine and none of
-AB's one.
+§ 5.25 (ii) predicted rung 70 would be the one class overriding AA's `_triple_laws`: **AGREE**;
+rung 71 overrides none of AA's nine and none of AB's one.
 
 **AND THE RECONCILIATION IS THE ROW THE AB TEMPLATE HAS NO COLUMN FOR:**
 
@@ -14825,22 +14867,15 @@ AB's one.
 | swapped at **BOTH** 70 and 71 | `at_lever`, `integrate_fuel` |
 | swapped at 70 only | `_triple_laws` |
 | swapped at 71 only | — |
-| **distinct function pointers the slice needs** | **6** = 2×2 + 1 + 1 added |
+| **distinct function pointers the slice needs** | **5** = 2×2 + 1, **and no new table field** |
 
-`split_gains`'s only overrider is `SplitWallTransient` — **rung 80, slice AI** — which is why the
-ADD column is meaningless without the overrider named: nothing at this slice has a second body for
-it (§ (vi)).
+The tables the slice writes are therefore: `R70` (lever, `at_lever` swapped), `R70_FUEL`
+(`integrate_fuel` swapped), `R70_TRIPLE` (`triple_laws` swapped, the other nine spelled out),
+`R71` and `R71_FUEL` (one swap each), and `R70_TWO` / `R70_STATOR` / `R71_TWO` / `R71_STATOR` /
+`R71_TRIPLE` with **zero** swaps — named rather than reached through a `..` spread, for `R66_TWO`'s
+reason: a spread makes the NEXT addition to that table silent here.
 
-**AND THE STEP-1 TRIPWIRE ALREADY EXISTS AND IS ADDRESSED TO THIS SLICE BY NAME.**
-`tests/slice_ab_cells.rs:236`'s `the_triple_table_is_exactly_ten_cells_wide` builds a
-`TripleHooks` literal with **no `..` spread**, and its own doc comment says *"an eleventh field
-added by slice AC is `E0063` here, at the file whose job is the cell census"*. Measured: the
-struct has exactly **10** `pub` fields today. That is the one owed item the plan had recorded for
-AC and never aggregated (the other two lines naming AC — `_triple_laws` at § 5.25 (ii) and the
-`at_lever` return-type row at § 5.21 (iii) — are a prediction this section settles and a decision
-already taken).
-
-#### (iii) THE ARITHMETIC SURFACE — **COMPLEX DIVISION, AND IT IS THE ONE OPERATION THAT DOES NOT SURVIVE A SCHOOLBOOK SPELLING**
+#### (iv) THE ARITHMETIC SURFACE — **COMPLEX DIVISION, AND IT IS THE ONE OPERATION THAT DOES NOT SURVIVE A SCHOOLBOOK SPELLING**
 
 Rung 70's `_zeta_pair` and rung 71's `_zeta_ring` are the third and fourth rebuilds of the damping
 reader in four rungs, and the rung-71 docstring says why: *"each rebuild has the same cause: the
@@ -14856,8 +14891,8 @@ The shipped Rust `C64` (`reference_split.rs:849`) carries **two** operations —
 as `hypot`, *"and not `sqrt(re*re+im*im)`"*) and `py_half` — plus `csqrt_real`, whose doc comment
 says a REAL argument is *"the only form this rung calls"*. Rung 70 needs a complex **product**, a
 `cmath.sqrt`, and a complex **division**. Probe 10 replays all 18 captured `_zeta_pair` calls and
-prices each of the three against a schoolbook spelling — the one a port reaches for without
-reading CPython:
+prices each of the three against a schoolbook spelling — the one a port reaches for without reading
+CPython:
 
 | operation | schoolbook == Python | worst gap |
 |---|---|---|
@@ -14872,7 +14907,7 @@ conjugate pair or both real — measured **positive-real on 18 of 18**, `im != 0
 the complex pair, `nz` holds one real and one complex root and `p` is genuinely complex. Registered
 as a **gated condition** rather than an assumption — the port asserts `p.im == 0` and the oracle
 step re-reads it, because *"the only form this rung calls"* is exactly the kind of sentence this
-slice has just falsified once.
+slice has already falsified once.
 
 CPython computes complex division by **Smith's algorithm** (scale by the smaller component's
 ratio), which is what the 5 differing rows are. The precedent and the warning is `py_half`: slice
@@ -14888,27 +14923,31 @@ both arms — so neither is a measurement the suite cannot make:
 | `_zeta_pair` (r70) | 96 | **6** | 0 |
 | `_zeta_ring` (r71) | 99 | **92** | **7** |
 
-which is the two rungs' own claims read back: rung 70 predicts a REAL pair, rung 71 a ringing one.
-
 **THE INTERPRETER SPLIT, MEASURED THE ONLY WAY SLICE AB LEFT AVAILABLE.** AB (i) established that
 whether CPython's compensated `sum()` diverges from a naive fold is a bit-pattern property of the
 particular summands — not predictable from length, magnitude or cancellation — so the sites are
-intercepted and re-summed under both interpreters. Probe 5b captures, probe 10 re-sums:
+intercepted and re-summed under both interpreters. Probes 5/5b capture, probe 10 re-sums:
 
 | site | reader | len | PyPy vs naive | **CPython 3.14 vs naive** |
 |---|---|---|---|---|
-| `_invariants:13769` (`c2`) | inherited, r69 | 3 | agree (37/37) | agree (37/37) |
+| `_invariants:13769` (`c2`) | inherited, r69 | 3 | agree | agree |
 | **`_invariants:13770` (`c1`)** | inherited, r69 | 3 | agree | ***5 of 37 DIFFER*** |
 | **`cross_identity:11974`** | **rung 67's, reached by `rung67_control`** | **13** | agree | ***1 of 1 DIFFERS*** |
 | `full_modes:15391`, `split_modes:14594`, `rung67_control:14566` | this slice's | 3, 3, 7 | agree | agree |
 
-**6 of 80 instances, two sites.** One is AB's own `c1` site, inherited unchanged. The other is
-**new to this slice and does not belong to it**: `cross_identity` is rung 67's reader, pulled in
-because rung 70's `rung67_control` calls it as the built-in negative control. Every complex reader
-agrees bit-for-bit across the two interpreters (0 of 18, 0 of 13, 0 of 31, 0 of 37). P8 registers
-this as NAMES to be re-read at the oracle step, never as a count ([[rust-port-slice-z-step4]]).
+**6 of 80 instances, two sites.** One is AB's own `c1` site, inherited unchanged. The other is new
+to this slice and **does not belong to it**: `cross_identity` is rung 67's reader, pulled in because
+rung 70's `rung67_control` calls it as the built-in negative control. Every complex reader agrees
+bit-for-bit across the two interpreters (0 of 18, 0 of 13, 0 of 31, 0 of 37).
 
-#### (iv) THE FIVE SWAPS, CLASSIFIED AND THEN RUN
+**AND THE COVERAGE OF THAT MEASUREMENT IS CLOSED RATHER THAN DISCLAIMED.** Probe 5b drives the
+thirteen readers directly with four grid-walkers cut to two arms; probe 5 intercepts the same sites
+across the **whole 57-test suite** (18 min 47 s). Both report **14 distinct float-`sum()` sites, the
+same fourteen** — the reduced grid missed none, and only the instance counts differ (`_invariants`
+208 vs 37, `_zeta_pair` 96 vs 18). P8 is therefore registered against a site list that two
+independent samplings agree on.
+
+#### (v) THE FIVE SWAPS, CLASSIFIED AND THEN RUN
 
 Probe 2 classifies mechanically (statement kinds, comparison sets, unary minus); probe 6 runs each
 injection once against six readers and prints the shape.
@@ -14917,22 +14956,22 @@ injection once against six readers and prints the shape.
 |---|---|---|---|
 | `r70.at_lever` ← r69's | SHAPE-EQUAL, only the constructed class name differs | **PANIC** + **VALUE** | 3 of 6 |
 | `r70.integrate_fuel` ← r68's | RESTRUCTURED (6 → 11 comparisons) | **PANIC** | 2 |
-| `r70._triple_laws` ← r68's | RESTRUCTURED | **VALUE — an EMPTY SAMPLE** (§ (i)) | 1 |
+| `r70._triple_laws` ← r68's | RESTRUCTURED | **VALUE — an EMPTY SAMPLE** (§ (ii)) | 1 |
 | `r71.at_lever` ← r70's | SHAPE-EQUAL, only the constructed class name differs | **PANIC** + **VALUE** | 3 |
 | `r71.integrate_fuel` ← r70's | RESTRUCTURED (11 → 11, the guard set moves) | **PANIC** | 2 |
 
 **THE TWO `at_lever` SWAPS ARE THE DOCSTRINGS' OWN NAMED TRAP, CONFIRMED — AND THEIR OBSERVABILITY
-IS CONTINGENT, WHICH IS REGISTERED HERE SO STEP 7 DOES NOT INHERIT IT AS LUCK.** Both bodies differ
-only in which class they construct, so the injection makes `_split_rig` / `_full_rig` hand back the
-PARENT's class — carrying `_gov_max` as a stray instance attribute, because Python allows it. It is
-observable **only because the parent's `integrate_fuel` then REFUSES the arming**: the panic is rung
-68's *"THREE LOOPS ON ONE VARIABLE"* (resp. rung 70's *"THREE loops on TWO variables"*). In Rust
-`at_lever` returns a table pointer and nothing refuses anything until those guards are ported, so
-**`at_lever`'s dispatch gate cannot be written before the arming asserts land** — it would report
-UNOBSERVABLE for a reason that is about ordering, not about the cell. Booked into the step order
-(§ (x), steps 2/3 before 7) and into P2.
+IS CONTINGENT, WHICH IS REGISTERED HERE SO THE LAST STEP DOES NOT INHERIT IT AS LUCK.** Both bodies
+differ only in which class they construct, so the injection makes `_split_rig` / `_full_rig` hand
+back the PARENT's class — carrying `_gov_max` as a stray instance attribute, because Python allows
+it. It is observable **only because the parent's `integrate_fuel` then REFUSES the arming**: the
+panic is rung 68's *"THREE LOOPS ON ONE VARIABLE"* (resp. rung 70's *"THREE loops on TWO
+variables"*). In Rust `at_lever` returns a table pointer and nothing refuses anything until those
+guards are ported, so **`at_lever`'s dispatch gate cannot be written before the arming asserts
+land** — it would report UNOBSERVABLE for a reason that is about ordering, not about the cell.
+Booked into the step order (§ (xi)) and into P2.
 
-#### (v) THE ARMING GRID, AND A FLOOR THAT IS SHADOWED BY ANOTHER RUNG's
+#### (vi) THE ARMING GRID, AND A FLOOR THAT IS SHADOWED BY ANOTHER RUNG's
 
 Slice U's pre-flight found three shipped asserts no input can reach. Probe 7 sweeps 144 points per
 class — stator (none/`phi`/incidence) × valve (none/instant/lagged) × `tau_gov` × `Tt4_max` ×
@@ -14951,8 +14990,8 @@ class — stator (none/`phi`/incidence) × valve (none/instant/lagged) × `tau_g
 
 All the named guards are reachable by ARMING except F and G, which are **unreachable by arming by
 construction** — F needs a doctored `_ic_order` and G a plant that does not converge, so both are
-gated in Python by a poisoned attribute or a subclass and never by an input. Registered so step 4/5
-does not report them as dead.
+gated in Python by a poisoned attribute or a subclass and never by an input. Registered so the gate
+steps do not report them as dead.
 
 **AND THE TWO FLOORS ARE THE SAME CALL SERVING TWO RUNGS, WHICH MAKES "HOIST IT" A TRAP.** Rung 71's
 `integrate_fuel` calls `_rk4_floor_full` and then delegates to rung 70's
@@ -14965,33 +15004,21 @@ differing only in the MESSAGE. Probe 12 counts the calls and then removes the sh
 | r71, incidence | 1 | 1 | **full** (split is never reached — full raises first) |
 | r70, `phi` stator | 1 | 0 | **split** |
 
-* Omitting the shadowed call: the rung-71 trajectory is **identical** (341 points, 3 410 keys) and
-  the rung-71 guard still fires — **and the RUNG-70 GUARD IS GONE.** The shadowed call is not a
-  redundant copy, it is the *only* floor on the rung-70 arm; a port that hoists one floor into
-  `integrate_fuel` silently deletes rung 70's guard while every rung-71 gate stays green.
+Omitting the shadowed call: the rung-71 trajectory is **identical** (341 points, 3 410 keys) and the
+rung-71 guard still fires — **and the RUNG-70 GUARD IS GONE.** The shadowed call is not a redundant
+copy, it is the *only* floor on the rung-70 arm; a port that hoists one floor into `integrate_fuel`
+silently deletes rung 70's guard while every rung-71 gate stays green.
 
 **A SECONDARY OBSERVATION, MEASURED AND EXPLICITLY *NOT* A DEFECT.** Probe 2b cross-tabulates every
 match-string any shipped gate uses (harvested from the test files, never typed) against the three
 floor messages: `test_rung65.py`'s `stability region` and `test_rung67/75.py`'s `RK4 stability
 region` match all **3**; `test_rung69.py:534`, `rung69.rs:800` and `slice_ab_dispatch.rs:357` all
 match `rank TWO`, which is carried by **2** of the three (rungs 69 *and* 70); only `rung-70: ds` and
-`rung-71: ds` match exactly **1**. **Nothing is broken by this today and it is not this slice's
-headline** — probe 1 measured that the three floors are **not cells** (each defined once, distinct
-names), so no function pointer exists for a floor and no dispatch gate can substitute one. The cost
-of AC's own gates matching on the RUNG TAG is one line each, so they do; and AB's two `rank TWO`
-gates are tightened to `rung-69:` in the same pass. The control (`rung-72:`, a message that does not
-exist) matches 0, so the instrument can miss.
-
-#### (vi) `split_gains` — THE ADDED CELL WITH NO PARENT, AND WHY ITS GATE MUST BE A DECLARED COUNTERFEIT
-
-The one added cell is overridden **only** at rung 80 (slice AI), so at AC there is no second body to
-swap in. AB hit this once already — its `_with_ref` gate is a declared counterfeit rather than a
-parent swap — and the precedent is registered here rather than rediscovered at the last step: the
-dispatch gate installs a **deliberately wrong** `split_gains` and asserts a shipped reader notices.
-
-The **rung-68 slot** for it takes AB's `with_ref` treatment for the same reason: a `None`-ish default
-agrees with the truth on exactly the machines the rung-40…69 suites build, so no value key could see
-it. It panics naming itself.
+`rung-71: ds` match exactly **1**. **Nothing is broken by this today and it is not a headline** —
+probe 1 measured that the three floors are **not cells** (each defined once, distinct names), so no
+function pointer exists for a floor and no dispatch gate can substitute one. AC's own gates match on
+the RUNG TAG, and AB's two `rank TWO` gates are tightened to `rung-69:` in the same pass. The
+control (`rung-72:`, a message that does not exist) matches 0, so the instrument can miss.
 
 #### (vii) `_gov_max` — THE NEW CARRIER, AND A RESTORE POLICY THAT IS THE MIRROR OF AB's
 
@@ -14999,28 +15026,26 @@ it. It panics naming itself.
 **two different ways**, and a census built on `try/finally` would see only one of them (slice V's
 recorded blindness):
 
-* `_split_rig` / `_full_rig` — a **bare post-construction assignment on a FRESH machine**
-  (`m._gov_max = Tt4_max`);
+* `_split_rig` / `_full_rig` — a **bare post-construction assignment on a FRESH machine**;
 * `_with_gov` — a save/set/restore `try/finally` on **self**.
 
-Probe 12 counts every set with its caller and an `in_march` flag, over the thirteen shipped readers:
+Probe 12 counts every set with its caller and an `in_march` flag over the thirteen shipped readers,
+and probe 8 repeats it as a pytest plugin over the whole 57-test suite:
 
-| caller | sets | in march |
-|---|---|---|
-| `_with_gov` | 28 | **0** |
-| `_split_rig` | 20 | **0** |
-| `_full_rig` | 17 | **0** |
-| **total** | **65** (51 → value, 14 → `None`) | **0** |
+| instrument | sets | `_with_gov` | `_split_rig` | `_full_rig` | OVERWRITE | in march |
+|---|---|---|---|---|---|---|
+| probe 12, thirteen readers | 65 | 28 | 20 | 17 | **0** | **0** |
+| probe 8, the whole suite | **256** | 98 | 96 | 62 | **0** | **0** |
 
-**OVERWRITE = 0** and per-instance **MAX NESTING DEPTH = 1**, so a restore guard is safe and
-`MarchScope` does not grow (P4).
+Per-instance **MAX NESTING DEPTH = 1**, so a restore guard is safe and `MarchScope` does not grow
+(P4) — and the claim now rests on the full suite, not on a reader sample.
 
 **BUT SLICE AB's *REASON* DOES NOT TRANSFER, AND COPYING IT WOULD BE WRONG IN ONE DIRECTION.** AB
 measured 29 sets to a value and 29 restores to `None`, concluded the displaced value was always
 `None`, and took slice X's `Cell<Option<_>>` + RAII guard as *"strictly stronger than the `finally`
-it ports"*. Here `_with_gov` is entered to turn the governor **off** — probe 4: **35 of 35 calls with
-`val=None` and `prev=set`** — so every restore puts a VALUE back. The `Cell<Option<_>>` shape still
-fits; a restore-to-`None` guard does not.
+it ports"*. Here `_with_gov` is entered to turn the governor **off** — probe 4: **35 of 35 calls
+with `val=None` and `prev=set`** — so every restore puts a VALUE back. The `Cell<Option<_>>` shape
+still fits; a restore-to-`None` guard does not.
 
 #### (viii) SIZING
 
@@ -15028,77 +15053,124 @@ fits; a restore-to-`None` guard does not.
 |---|---|
 | Python source | **1 605 lines** (875 + 730) — **2.27×** slice AB, **1.47×** slice AA, **1.07×** slice Z |
 | tests | **57 collected** (27 + 30), **22 carrying `slow`** (38.6 %) — against rung 69's 25 / 12 |
-| new cells | **1** |
-| swaps | **5** over two rungs ⇒ **6** distinct function pointers |
-| scoped fields arriving | **1** (`_gov_max`), CONFIG-kind |
-| helper classes arriving | **0** — both AC classes are transients (AB brought `StatorIncidenceLimiter` beside its own) |
+| new cells | **0** (§ (i)) |
+| swaps | **5** over two rungs ⇒ **5** distinct function pointers, **no table field added** |
+| scoped fields arriving | **1** (`_gov_max`), CONFIG-kind on the whole suite |
+| helper classes arriving | **0** — both AC classes are transients |
 | runtime-introspection tests | **1** — `test_rung71.py:241/243`, already in § 6's table with a decided replacement (the narrowed config view); not re-decided here |
-| reduce arms | **6**, all bit-for-bit and all by DISPATCH (§ (ix) P9) |
+| reduce arms | **6**, all bit-for-bit and all by DISPATCH (P9) |
 
 At slice AB's measured expansion (1 686 Rust from 708 Python = 2.38×) and AA's (2 302 from 1 094 =
 2.10×) the Rust lands near **3 400–3 800 lines**; labelled an estimate.
 
 #### (ix) PREDICTIONS — pre-registered, to be settled at the last step
 
-* **P1** — `TripleHooks` grows by exactly **one** field (`split_gains`), and
-  `tests/slice_ab_cells.rs`'s exhaustive literal is the `E0063` that announces it. Falsified if a
-  second field is needed, or if that file compiles unchanged.
+* **P1** — `TripleHooks` **does not grow**: it stays ten fields, `tests/slice_ab_cells.rs` compiles
+  unchanged except for the corrected doc comment, and no shipped table gains a field at this slice.
+  Falsified if any cell turns out to be needed after all — which would mean § (i)'s live `TypeError`
+  was misread.
 * **P2** — All **five** swaps are breakable in a Rust dispatch gate, in the shapes probe 6 MEASURED
-  (§ (iv)) — `_triple_laws` by **sample size** and not by any value, the two `at_lever`s only once
+  (§ (v)) — `_triple_laws` by **sample size** and not by any value, the two `at_lever`s only once
   the arming asserts are ported. Falsified per cell; a cell that cannot be broken is reported
   UNOBSERVABLE, never quietly re-gated on something else.
-* **P3** — `split_gains` has **no parent body at this slice**, so its gate is a declared counterfeit
-  (§ (vi)). Falsified if a swappable parent exists.
-* **P4** — `MarchScope` does **not** grow: `_gov_max` is CONFIG-kind (65 sets, **0** in any march,
-  0 overwrites, per-instance depth 1). Falsified by one set inside a march, or by any shipped cell
-  signature moving.
+* **P3** — Rung 70's `split_gains` ports as an ordinary **method on the rung-70 type**, not as a
+  table cell, and rung 80's same-named reader will port as a *different* function on the rung-80
+  type at slice AI. Falsified if slice AI finds a caller that needs to dispatch between them.
+* **P4** — `MarchScope` does **not** grow: `_gov_max` is CONFIG-kind (256 sets over the whole suite,
+  **0** in any march, 0 overwrites, per-instance depth 1). Falsified by one set inside a march, or
+  by any shipped cell signature moving.
 * **P5** — The three `_rk4_floor*` are **not cells**, so nothing in the dispatch harness catches a
   collapse of the three into one Rust function; each is gated by a `should_panic` on its RUNG TAG,
-  and the rung-70 floor keeps its own call site inside `_integrate_fuel_cross_triple`
-  (§ (v)). Falsified if any value key can see any of the three.
+  and the rung-70 floor keeps its own call site inside `_integrate_fuel_cross_triple` (§ (vi)).
+  Falsified if any value key can see any of the three.
 * **P6** — `_zeta_pair` needs Python's **complex division** spelled as CPython spells it; the
   complex product and `cmath.sqrt` are free on this plant, the latter only because `p` is
   positive-real on 18/18 — asserted in the port, not assumed. Falsified if a schoolbook `cdiv`
   reproduces the oracle, or if `p.im != 0` ever occurs.
-* **P7** — **SEVEN steps, not five** (§ (x)). Falsified if the slice closes in fewer or needs more.
+* **P7** — **SEVEN steps, not five** (§ (xi)). Falsified if the slice closes in fewer or needs more.
 * **P8** — The CPython exemption is the names downstream of `_invariants`' `c1` **plus the
-  `cross_identity` subtree that `rung67_control` pulls in** — the second one belonging to rung 67,
-  not to this slice. Registered as NAMES re-read at the oracle step; falsified if any key outside
-  those two subtrees is exempt.
+  `cross_identity` subtree that `rung67_control` pulls in** — the second belonging to rung 67, not
+  to this slice. Registered as NAMES re-read at the oracle step; falsified if any key outside those
+  two subtrees is exempt.
 * **P9** — All **six** reduce arms stay bit-for-bit **and by dispatch**: probe 11 measured 341
-  points / 3 069 keys per arm at worst `|diff| = 0.0`, with the child's own `integrate_fuel`
-  entered once and forwarding. Falsified by one key.
+  points / 3 069 keys per arm at worst `|diff| = 0.0`, with the child's own `integrate_fuel` entered
+  once and forwarding. Falsified by one key.
 
-#### (x) THE SEVEN STEPS — **AND THE STEP COUNT IS ITSELF A PREDICTION, PRICED FROM THE SIZING**
+#### (x) THE PHASE-WIDE SUBSTITUTABILITY SWEEP — the instrument § (i) demanded, run over all 31 ladder classes
+
+Probe 14. Every override pair — *`over` is a SUBCLASS of `owner`, both define the name* — classified
+by comparing signatures. **358 pairs.**
+
+| class | n | what it is |
+|---|---|---|
+| SAME | 222 | identical parameter lists |
+| WIDENED | 91 | the overrider takes more, **all defaulted** — the ladder's usual growth (`at_lever`, `_stator_march`), already handled by the arm structs |
+| RENAMED | 2 | same arity, one parameter renamed — `_with_ref` (`ref`→`law`, rung 73) and `_with_coord` (`coord`→`ref`, rung 79). **The shipped port already holds these in ONE pointer**, correctly |
+| **INCOMPATIBLE** | **43** | a parameter removed, or a required one added |
+
+Of the 43: **39 are `__init__`**, which is not a cell in this architecture at all (it ports as the
+builder's `assert!`s); **2 are `@staticmethod` → method receiver changes** (`_sensed_cap`,
+`_windup_tau`, rungs 74→75/76) which a `fn(&Core, …)` holds without difficulty. **Two are genuine
+name-reuses:**
+
+| name | owner | overrider | what differs |
+|---|---|---|---|
+| **`split_gains`** | `CrossSplitTransient` (70) | `SplitWallTransient` (80) | −`sm, tau, tau_gov, tau_s`  +`phi_lim, phi_airs, coord, taus, inc` |
+| **`_legs`** | `ScheduledBleedTransient` (63) | `StiffnessLedgerTransient` (77) | −`reference, Tt4_lo, Tt4_hi, r, s_settle, ds, spool`  +`a, h, mf_sched` |
+
+**`_legs` IS A SHIPPED CELL — slice W added it — AND ITS RUNG-77 OVERRIDER CANNOT GO IN THE SLOT.**
+Booked to **slice AH** (rungs 77–78) as an owed item rather than repaired here: whatever AH does, it
+is not "swap the cell", and the ADD column that said so was produced by the same predicate § (i)
+repairs.
+
+**AND THE FIRST WRITING OF THIS PROBE WAS WRONG TWICE — see § (xii).** Both controls now pass: 315
+names defined exactly once produce **0** pairs, and the four sibling name-collisions (`_interp`,
+`_scan`, `_legs` across branches, `authority_ceiling`) are excluded, `_legs` keeping only its one
+real subclass pair.
+
+**A PYTHON CONSEQUENCE, RECORDED AND NOT FIXED.** `SplitWallTransient` inherits rung 70's
+`rung67_control`, which is **broken on it** — the `TypeError` of § (i). No test exercises it, and
+the port is a translation rather than a repair (§ 8), so the Rust is free of it by construction;
+recorded here so a later slice does not read the absence as a port defect.
+
+#### (xi) THE SEVEN STEPS — **AND THE STEP COUNT IS ITSELF A PREDICTION, PRICED FROM THE SIZING**
 
 Every slice since V has been five steps. **AC is 2.27× slice AB's source and 2.28× its tests**, so
 "five steps, as at V/W/X/Y/Z/AA/AB" would be a prediction made by habit against a measurement that
 contradicts it. Priced instead:
 
-1. **The one added cell + the five swaps opened**, `_gov_max`'s carrier and guard, the two cores.
-   Nothing ported; every swapped cell panics naming itself. The step-1 gate is the `E0063` of
-   § (ii) plus a distinct rung-70/71 function pointer per cell — **not** a cell count, which at AB
-   was typed on both sides of its own comparison.
-2. **The rung-70 port** — `src/cross_split.rs`: `_triple_laws`, `at_lever`, `integrate_fuel`
-   (with its five arming asserts, which § (iv) makes a prerequisite for step 7),
+1. **The five swaps opened** and the two cores — `_gov_max`'s carrier and guard, the nine tables of
+   § (iii). **No cell is added** (§ (i)), so the usual step-1 gate does not apply and the step-1
+   gate is instead: every swapped cell has a DISTINCT rung-70/71 function pointer, `TripleHooks` is
+   still ten fields wide, and `slice_ab_cells.rs`'s tripwire doc comment names the right slice.
+2. **The rung-70 port** — `src/cross_split.rs`: `_triple_laws`, `at_lever`, `integrate_fuel` (with
+   its five arming asserts, which § (v) makes a prerequisite for step 7),
    `_integrate_fuel_cross_triple`, `_split_rig`, `_with_gov`, `_assert_state_boundary`,
-   `_rk4_floor_split`, `_zeta_pair` with § (iii)'s complex division, and the seven rung-70 readers.
+   `_rk4_floor_split`, `_zeta_pair` with § (iv)'s complex division, and the seven rung-70 readers
+   (`split_gains` among them, as a plain method).
 3. **The rung-71 port** — `src/full_split.rs`: `at_lever`, `integrate_fuel` (four asserts),
    `_full_rig`, `_zeta_ring`, `_rk4_floor_full`, and the six rung-71 readers.
 4. **The rung-70 gates** — `tests/rung70.rs`, 27 ported gates.
 5. **The rung-71 gates** — `tests/rung71.rs`, 30 ported gates.
 6. **The oracle** — `oracle/dump_slice_ac.py` + `tests/slice_ac_oracle.rs`, bit-exact vs PyPy, with
-   the CPython arm and its NAMED exemption (§ (iii)) re-read from the dump. **The dump must call
-   the four grid-walking readers at their SHIPPED grids**, because § (iii)'s capture ran two of
-   their arms (§ (xi)).
-7. **The dispatch gates** — six function pointers over five swaps + the counterfeit for
-   `split_gains`, `tests/slice_ac_dispatch.rs`, in the shapes § (iv) measured — the `_triple_laws`
-   gate on SAMPLE SIZE — and the ledger, including AB's two tightened `rank TWO` gates.
+   the CPython arm and its NAMED exemption (§ (iv)) re-read from the dump, at the readers' SHIPPED
+   grids.
+7. **The dispatch gates** — five function pointers over five swaps, `tests/slice_ac_dispatch.rs`, in
+   the shapes § (v) measured — the `_triple_laws` gate on SAMPLE SIZE — and the ledger, including
+   AB's two tightened `rank TWO` gates and the corrected tripwire comment.
 
-#### (xi) DEFECTS IN THIS PRE-FLIGHT's OWN INSTRUMENTS
+#### (xii) DEFECTS IN THIS PRE-FLIGHT's OWN INSTRUMENTS
 
 Recorded rather than quietly fixed, because each printed a number that would have been carried.
 
+* **Probe 14's first writing was wrong in both of the two ways this phase has already recorded.**
+  It called any two ladder classes an override pair, so SIBLINGS (`VariableStatorMatcher._interp`
+  against `TwoSpoolFuelTransient._interp`) came back as non-substitutable overrides — the exact
+  scoping error [[rust-port-phase6-preflight]] caught, made a third time. And it compared parameter
+  NAMES, so rung 73's `_with_ref(self, law, …)` against rung 69's `_with_ref(self, ref, …)` read as
+  INCOMPATIBLE when it is a pure rename the shipped port already holds in one pointer. Twelve
+  "non-substitutable" names became **two**. *The probe that repairs a predicate needs its own
+  predicate checked first.*
 * **Probe 4's first run printed FIFTEEN ZEROS, and the docstring claiming it ran single-process was
   written before the flag was.** `pytest.ini`'s `addopts` carry `-n auto`; the probe said *"SINGLE
   PROCESS on purpose"* and did not pass `-n 0`, so every counter lived in a worker and the
@@ -15110,23 +15182,18 @@ Recorded rather than quietly fixed, because each printed a number that would hav
   method without `functools.wraps` makes `getsource` return the WRAPPER, so
   `test_forced_release_edges_and_an_instantaneous_valve_are_refused` failed. One of the phase's eight
   runtime-introspection tests, met for the first time as an obstacle to an *instrument*.
-* **Probe 12's nesting column was an artifact — the SAME artifact probe_ab11 recorded at slice AA.**
-  It printed `MAX NESTING DEPTH 37` beside `OVERWRITE 0`, which cannot both be true of one carrier:
-  the counter was global and was summing the depths of thirty-odd different machines. Re-written
-  per instance (depth **1**). *An impossible pair of numbers in one row is the cheapest self-check
-  there is, and it only works if both are printed.*
+* **The nesting column was an artifact TWICE, in two different probes, and it is the SAME artifact
+  probe_ab11 recorded at slice AA.** Probes 8 and 12 both printed a `MAX NESTING DEPTH` (158 and 37)
+  beside an `OVERWRITE` of 0, which cannot both be true of one carrier: the counter was global and
+  was summing the depths of every machine the run built. Probe 12 was rewritten per instance
+  (depth **1**); probe 8's column is left standing with this note, because its *other* columns are
+  the full-suite measurement § (vii) rests on. *An impossible pair of numbers in one row is the
+  cheapest self-check there is, and it only works if both are printed.*
 * **Probe 11's control could not be built.** *"Two different plants must not compare equal"* was
   written as a rung-69 machine marched WITH `tau_gov` — which rung 68 refuses outright, so the
   control raised an `AssertionError` instead of comparing anything. Re-written as rung 70 with the
   governor against rung 70 without (differing from index 23). A control that cannot run is not a
   control.
-* **The full-suite capture was replaced by a reader-driven one, and what that costs is DISCLOSED.**
-  Probe 5 intercepts `sum` across the whole 57-test suite; under PyPy that de-optimises the model's
-  hottest loop and the run takes the better part of an hour. Probe 5b calls the thirteen shipped
-  readers once each instead — which is what the step-6 dump will do — with the four grid-walking
-  readers reduced to TWO arms (`split_modes`, `split_floor`, `full_modes`, `window_law`). **A site
-  reached only by a dropped arm would be missed**, so § (iii)'s site list is a lower bound and P8 is
-  registered against the reduced grid, to be re-measured against the step-6 dump at full grids.
 * **`cmd //c start //belownormal //b //wait … > file` silently produced nothing.** Two probe runs
   were launched that way, created an empty output file, and hung as background tasks with no process
   alive. Replaced by PowerShell `Start-Process -PassThru -NoNewWindow -RedirectStandardOutput` with

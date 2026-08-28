@@ -33,11 +33,16 @@ slices inside an authorised phase are free. See [[rust-port-decided]].
 ## Slice AC — pre-registered, seven steps priced
 
 Rungs 70 + 71, `docs/plans/todo-rust-port.md` § 5.27. **1 605 Python lines (2.27x slice AB),
-57 collected tests (22 slow), 1 cell added (`split_gains`), 5 swaps over two rungs = 6 distinct
-function pointers, 6 reduce arms all bit-for-bit by dispatch.** Rust estimated 3 400-3 800 lines.
-**SEVEN steps, pre-registered as P7** — the port and the gates each split by rung, because five
-steps on a 2.27x slice would be habit rather than a measurement. Nine predictions P1-P9.
-See [[rust-port-slice-ac-preflight]].
+57 collected tests (22 slow), ZERO cells added, 5 swaps over two rungs = 5 distinct function
+pointers and NO new table field, 6 reduce arms all bit-for-bit by dispatch.** Rust estimated
+3 400-3 800 lines. **SEVEN steps, pre-registered as P7** — the port and the gates each split by
+rung, because five steps on a 2.27x slice would be habit rather than a measurement. Nine
+predictions P1-P9.
+
+**The plan's own column said 1 cell (`split_gains`) and it was wrong**: rung 80's same-named
+method has an incompatible signature, so it is a NAME REUSED, not an override. The phase-wide
+sweep of all 358 override pairs found one more — `_legs` (63 -> 77), a SHIPPED slice-W cell,
+booked to slice AH. See [[rust-port-slice-ac-preflight]].
 
 ## Slice AB, step by step
 
