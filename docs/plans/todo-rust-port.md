@@ -14799,7 +14799,12 @@ different functions that share a name.**
   — *"an eleventh field added by slice AC is `E0063` here, at the file whose job is the cell
   census"* — is wrong as written. Corrected at step 1 to name the slice that actually widens the
   table next, rather than deleted: the tripwire is right, its addressee was a guess.
-* § 5.19 (x)'s **28** = 25 + 3 is one too many, and the row this section can settle is its own.
+* § 5.19 (x)'s **28** = 25 + 3 loses one — and the honest statement is two statements, not one:
+  the ADD column loses AC's row, and **separately** slice AH inherits an item the column has no
+  place for (`_legs` is still ADDED at slice W; what is refuted is AH's *swap* of it, and the
+  slice table records swaps nowhere). **The valuable half is the BOUND**: probe 14 sweeps all 358
+  override pairs and finds exactly TWO genuine reuses, so every other ADD row in that column is
+  now measured-clean rather than merely unchallenged.
 
 **AND THE SWEEP THE FINDING DEMANDS WAS RUN RATHER THAN PROMISED** — § (xii): the same question
 asked of every override pair in the whole 31-class ladder. Two genuine name-reuses survive
@@ -15073,9 +15078,13 @@ At slice AB's measured expansion (1 686 Rust from 708 Python = 2.38×) and AA's 
   (§ (v)) — `_triple_laws` by **sample size** and not by any value, the two `at_lever`s only once
   the arming asserts are ported. Falsified per cell; a cell that cannot be broken is reported
   UNOBSERVABLE, never quietly re-gated on something else.
-* **P3** — Rung 70's `split_gains` ports as an ordinary **method on the rung-70 type**, not as a
-  table cell, and rung 80's same-named reader will port as a *different* function on the rung-80
-  type at slice AI. Falsified if slice AI finds a caller that needs to dispatch between them.
+* **P3 — ALREADY SETTLED, and promoted out of the prediction list into § (i): not a prediction.**
+  Probe 13's caller scan finds the ONLY non-docstring caller of `split_gains` anywhere in
+  `engine.py` is `rung67_control` (line 14556), a rung-70 method. So nothing at rung 71 or above
+  can need to dispatch on the name, and rung 70's reader ports as an ordinary **method on the
+  rung-70 type**. What remains is a check on **slice AI alone**: rung 80's same-named reader ports
+  as a *different* function on the rung-80 type. Falsified only if AI finds a caller that must
+  choose between them.
 * **P4** — `MarchScope` does **not** grow: `_gov_max` is CONFIG-kind (256 sets over the whole suite,
   **0** in any march, 0 overwrites, per-instance depth 1). Falsified by one set inside a march, or
   by any shipped cell signature moving.
@@ -15141,8 +15150,12 @@ contradicts it. Priced instead:
 
 1. **The five swaps opened** and the two cores — `_gov_max`'s carrier and guard, the nine tables of
    § (iii). **No cell is added** (§ (i)), so the usual step-1 gate does not apply and the step-1
-   gate is instead: every swapped cell has a DISTINCT rung-70/71 function pointer, `TripleHooks` is
-   still ten fields wide, and `slice_ab_cells.rs`'s tripwire doc comment names the right slice.
+   gate is instead: every swapped cell has a DISTINCT rung-70/71 function pointer and `TripleHooks`
+   is still ten fields wide. **`slice_ab_cells.rs`'s tripwire comment is corrected to name NO
+   slice at all** — its old addressee came from the column § (i) repairs, and writing another
+   letter there from the same column would repeat the error one addressee over. Likewise
+   `LeverHooks::legs`'s doc comment, whose only stated reason was *"Overridden at rung 77"*
+   (§ (x)); **both corrections are made with the finding rather than left for whoever hits them.**
 2. **The rung-70 port** — `src/cross_split.rs`: `_triple_laws`, `at_lever`, `integrate_fuel` (with
    its five arming asserts, which § (v) makes a prerequisite for step 7),
    `_integrate_fuel_cross_triple`, `_split_rig`, `_with_gov`, `_assert_state_boundary`,

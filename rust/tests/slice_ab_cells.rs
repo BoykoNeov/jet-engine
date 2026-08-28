@@ -229,9 +229,19 @@ fn triple_laws_is_inherited_from_rung68_and_dispatches_none_of_rung69s_cells() {
 /// [[rust-port-documented-gate-that-doesnt-exist]] exactly: *a count guard is blind to a class
 /// absent from BOTH sides.*
 ///
-/// This is the non-typed instrument. The literal has no `..` spread, so an eleventh field added
-/// by slice AC is `E0063` **here**, at the file whose job is the cell census, rather than being
-/// silently absorbed by a spread nine rungs downstream.
+/// This is the non-typed instrument. The literal has no `..` spread, so an eleventh field is
+/// `E0063` **here**, at the file whose job is the cell census, rather than being silently
+/// absorbed by a spread nine rungs downstream.
+///
+/// **THIS COMMENT USED TO NAME SLICE AC AS THE ELEVENTH FIELD's AUTHOR, AND THAT WAS WRONG.**
+/// § 5.19 (x)'s cell column said slice AC adds `split_gains`; § 5.27 (i) measured that rung 80's
+/// same-named method drops four parameters and adds five, so rung 70's own inherited caller
+/// `rung67_control` raises `TypeError` on a rung-80 machine. Two functions sharing a name cannot
+/// share a `fn` pointer: **slice AC adds no cell and this table stays ten fields wide.** The
+/// addressee is deliberately not replaced with another slice's letter — the old one was written
+/// on the strength of a predicate (*new here AND overridden above*) that is by NAME and never
+/// checked substitutability, and naming the next slice from the same column would repeat the
+/// error one addressee over. The tripwire needs no addressee to work.
 #[test]
 fn the_triple_table_is_exactly_ten_cells_wide() {
     let _pin = TripleHooks {

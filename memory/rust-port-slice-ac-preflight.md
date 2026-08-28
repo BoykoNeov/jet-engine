@@ -36,7 +36,12 @@ cell" is really "can one caller dispatch between these two bodies". Name equalit
 holds until a rung reuses a name — and a ladder 31 classes deep will reuse names.
 
 **How to apply:** before adding a field to a shared table, read BOTH bodies' signatures and, where
-a caller exists, run the parent's caller against the child. Three more things this pre-flight
+a caller exists, run the parent's caller against the child. **And repair the comments the old
+predicate wrote, in the same pass** — two shipped Rust doc comments stated it as fact
+(`slice_ab_cells.rs`'s tripwire named slice AC as its eleventh field's author; `LeverHooks::legs`
+gave *"Overridden at rung 77"* as its ONLY reason). The tripwire's addressee was deliberately
+replaced with NO slice rather than with the next letter: the next letter comes from the same
+column, so naming it would repeat the error one addressee over. Three more things this pre-flight
 wants carried:
 
 * **The probe that repairs a predicate needs its own predicate checked first.** My sweep's first

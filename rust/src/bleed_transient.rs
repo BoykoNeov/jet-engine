@@ -365,7 +365,20 @@ pub struct LeverHooks {
     /// **64**.
     pub isolating: fn(&ScheduledStatorCore, &LeverArm, Option<&LeverArm>)
         -> (ScheduledStatorCore, ScheduledStatorCore),
-    /// Rung 57's START / RAMP / FULL against ANY reference machine. Overridden at rung **77**.
+    /// Rung 57's START / RAMP / FULL against ANY reference machine.
+    ///
+    /// **THE "Overridden at rung 77" THIS COMMENT USED TO CARRY AS ITS ONLY REASON IS REFUTED.**
+    /// § 5.27 (x)'s sweep of all 358 override pairs in the ladder measured
+    /// `StiffnessLedgerTransient._legs` (rung 77) against `ScheduledBleedTransient._legs` (rung
+    /// 63) as **INCOMPATIBLE** — it drops `reference, Tt4_lo, Tt4_hi, r, s_settle, ds, spool` and
+    /// adds `a, h, mf_sched`. It is a name REUSED, not an override, so **slice AH will not swap
+    /// this cell** and no future body can go in this slot.
+    ///
+    /// The field stays, and its real justification is the one that was never written down: the
+    /// method does not exist below rung 62 at all, so the table is how the ladder expresses its
+    /// ARRIVAL — `no_lever_legs` below, `r62_legs` from rung 62, and `R64` inherits `R62.legs`
+    /// explicitly. That is a cell for the same reason `b_at_point` is one, not because anything
+    /// overrides it.
     pub legs: fn(&ScheduledStatorCore, &FlightCondition, &ScheduledStatorCore, &Ramp, Spool,
                  &StatorLeg<'_>) -> LegsReport,
     /// RUNG 64's **committed** valve position at a recorded trajectory point — the ONE cell
