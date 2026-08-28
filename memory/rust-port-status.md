@@ -19,7 +19,7 @@ slices inside an authorised phase are free. See [[rust-port-decided]].
 
 * **0–5 DONE.**
 * **PHASE 6** authorised 2026-08-17, **COMPLETE 2026-08-20** with slice U's five steps.
-* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, **AB complete**; AC (rung 70) is next.
+* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, **AB complete**; **AC (rungs 70+71) PRE-REGISTERED 2026-08-28** (§ 5.27, thirteen probes) — step 1 not started.
 
 ## Phase-7 slices, as they closed
 
@@ -29,6 +29,15 @@ slices inside an authorised phase are free. See [[rust-port-decided]].
 | Z | 66+67 | 2026-08-27 — both marches + 20 method bodies, **38 ported gates** green first run at **20.0×** PyPy, **35 335 oracle keys** bit-exact on both interpreters (CPython exempt on 8 named keys), **8 dispatch gates** closing the four measured blind spots |
 | AA | 68 | 2026-08-27 — `three_loop.rs` 2 302 lines, **47 gates**, **12 084 oracle keys** bit-exact vs PyPy (4 named CPython exemptions), full gate **124 blocks / 1 199 passed / 0 failed** |
 | AB | 69 | **2026-08-28, all five steps** — `reference_split.rs` 1 686 lines, 25 ported gates, **15 957 oracle keys** bit-exact vs PyPy (194 named CPython exemptions), and **14 dispatch gates** over TEN cells, every one observable; full gate **129 binaries / 1 258 passed / 0 failed** |
+
+## Slice AC — pre-registered, seven steps priced
+
+Rungs 70 + 71, `docs/plans/todo-rust-port.md` § 5.27. **1 605 Python lines (2.27x slice AB),
+57 collected tests (22 slow), 1 cell added (`split_gains`), 5 swaps over two rungs = 6 distinct
+function pointers, 6 reduce arms all bit-for-bit by dispatch.** Rust estimated 3 400-3 800 lines.
+**SEVEN steps, pre-registered as P7** — the port and the gates each split by rung, because five
+steps on a 2.27x slice would be habit rather than a measurement. Nine predictions P1-P9.
+See [[rust-port-slice-ac-preflight]].
 
 ## Slice AB, step by step
 
