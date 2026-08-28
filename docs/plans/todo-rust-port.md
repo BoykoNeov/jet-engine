@@ -13959,7 +13959,7 @@ measurements of PYTHON, and none of them says a RUST cell is breakable.
 2. **The port** — `src/reference_split.rs`: the eight swapped bodies (the band flip carried by
    the emitted table of § (iv)), `at_lever`, `_with_ref`, `_cubic_roots_c`, `_invariants`, and
    the six readers.
-3. **The 25 ported gates**, `tests/rung69.rs`, plus `slice_ab_smoke.rs`.
+3. **The 25 ported gates**, `tests/rung69.rs`, plus `slice_ab_smoke.rs`. **SHIPPED — § 5.26.3**; the smoke needed nothing new and the reason is measured there.
 4. **The oracle** — `oracle/dump_slice_ab.py` + `tests/slice_ab_oracle.rs`, bit-exact vs PyPy
    with the CPython arm and its NAMED exemption, re-read from the dump (§ (i)).
 5. **The dispatch gates** — ten cells, `slice_ab_dispatch.rs`, four of them panic-shaped
@@ -14316,13 +14316,133 @@ land on the real axis"*. There `A = 220`, `z = 20`, so `A/z = 11` and
 `zeta_pred = (A+z)/(2*sqrt(A z (1-k))) ~ 1.08 > 1` — overdamped, real pair, exactly what § 3's own
 formula gives at that bandwidth.
 
-##### (i) WHAT STEP 3 OWES
+##### (i) WHAT STEP 3 OWES — **DELIVERED, § 5.26.3**
 
 `tests/rung69.rs` — the **25** ported gates of `test_rung69.py` (12 of them `slow`) — and whatever
 `slice_ab_smoke.rs` still needs beyond the five structural runs it carries now. Step 3 is also
 where the `#[should_panic(expected = "rank TWO")]` for `_rk4_floor` lands: § 5.26 (ii) measured 0
 value disagreements in 77 calls, so **that cell has no other gate and writing it as a value diff is
 how it ends up silently ungated.**
+
+#### 5.26.3 SLICE AB step 3 — the 25 ported gates, and an injection sweep whose own coverage was the defect
+
+**SHIPPED**: `tests/rung69.rs`, **25 gates** from `test_rung69.py`'s 25 (12 of them `slow` there;
+the marker is dropped per slice M's rule and no `#[ignore]` is inherited), **851 Rust lines** where
+`tests/test_rung69.py` is **582** — a FILE-to-FILE count, and deliberately **no ratio is quoted**
+beside step 2's 2.30×, which was measured on CLASS BODIES (614 + 99) and is a different basis.
+§ 5.26 (xi)'s own lesson about the sizing greps is that two counts on two bases do not divide.
+It **compiled clean on the first attempt and all 25 passed on the first run, in 4.87 s** — which is
+exactly the reading [[rust-port-slice-u-step1]] says is worth nothing on its own, so the rest of
+this step is the measurement that green was hiding. `src/reference_split.rs` gains **13 comment
+lines** and no code. Full Rust gate **127 binaries / 1 241 passed / 0 failed**, from step 2's
+126 / 1 216 — `+1` binary and `+25` gates, and the addition is CHECKED against the tally rather
+than typed from it: `1 216 + 25 = 1 241`.
+`cargo clippy --all-targets`: **zero findings in any of this slice's four files**; the one error is
+the same deliberate `eq_op` NaN test slices Z and AA already recorded, still at
+`stator_transient.rs:2757`.
+
+##### (a) **THE GRID IS WRITTEN IN ONE TUPLE ORDER AND KEYED IN ANOTHER, AND TWO GATES LOOK IT UP**
+
+`reference_modes` takes its clock grid as `(tau_v, tau_att, tau_s)` and reports each arm's `taus`
+as `(tau_att, tau_v, tau_s)` — the STATE VECTOR's `(g, q, v)` order. So Python's grid entry
+`(0.05, 0.005, 0.05)` is keyed as `(0.005, 0.05, 0.05)`, and
+`test_a_slow_enough_stator_takes_the_pair_back_onto_the_real_axis` indexes by the **swapped**
+tuple. Three of the four entries are asymmetric in the first two slots, so a lookup written against
+the grid would have returned the wrong arm and the gate would have gone red for a reason that has
+nothing to do with the port. The port keys off `a.taus` through a helper that **panics when no arm
+matches** rather than unwrapping into one — an `Option` silently resolving to the wrong element is
+this slice's own recurring shape one level down.
+
+##### (b) **TWO OF THE 25 NAME A PYTHON-ONLY OBSERVABLE, AND BOTH ARE PORTED UP, NOT DOWN**
+
+* `test_at_lever_keeps_the_reference` opens `type(s) is ReferenceSplitTransient`. There is no
+  runtime class here — every rung in this family is a `ScheduledStatorCore` and the rung IS the
+  table. Comparing the table's ADDRESS is the defect this phase has now recorded twice
+  ([[rust-port-slice-aa-step1]], [[rust-port-slice-y-step3]]): `ptr::eq` on a `const` tests the
+  optimiser. So the sibling is instead made to **run a cell only rung 69's table has** — it must
+  refuse `v0 = -0.05`, which rung 68's band ACCEPTS. A sibling handed back with rung 68's table
+  passes every float in that gate and fails this.
+* `test_a_float_comparison_against_the_stop_is_not_the_regime` closes with
+  `{v_regime} <= {"dormant","riding","saturated"}`. `Regime` is a three-variant enum, so that
+  assertion **cannot fail in Rust** and is discharged by the type. It is recorded in the doc
+  comment rather than restated as a gate — [[rust-port-slice-ab-step1]]'s lesson, which this slice
+  has now hit in every step.
+
+##### (c) **TEN INJECTIONS, AND THE SWEEP'S OWN COVERAGE WAS NARROWER THAN ITS SUMMARY COLUMN**
+
+`M:\claud_projects\temp\rust-phase7\inject_ab3.py` — ten defects a wrong port would plausibly
+produce, each applied to `src/reference_split.rs`, gated, and reverted:
+
+| injection | what it breaks | gates that went red |
+|---|---|---|
+| I1 | `_clamp_v` reverts to rung 68's NEGATIVE band | **9** |
+| I2 | `_check_v0` reverts to rung 68's band | 3 + 1 smoke |
+| I3 | `_solve_v`'s dormant test flips orientation | **13** + 2 smoke |
+| I4 | `_rk4_floor` keeps rung 68's REASON in its message | **1** |
+| I5 | `_triple_rig` ignores the carrier — every reader gets `inc` | 5 + 2 smoke |
+| I6 | `_with_ref` returns `None` instead of what it displaced | **0** ← see below |
+| I7 | `_invariants`' `c1` forced to zero | 5 |
+| I8 | `_stator_leg` wired to the parent unconditionally | **19** + 5 smoke |
+| I9 | `_manifold_v` roots inside the BAND instead of unclamped | 8 + 3 smoke |
+| I10 | `_cubic_roots_c`'s Newton budget cut from 80 to 20 | **0** ← the real hole |
+
+**I6 IS NOT A HOLE, AND THE REASON IS THAT MY SWEEP RAN TWO OF THE SLICE'S THREE TEST BINARIES.**
+It printed `MISS`, whose column heading reads *"no gate sees this"* — and the truth was *"no gate in
+the two files I ran"*. Re-run against `slice_ab_cells.rs`, I6 fails **two** gates,
+`with_ref_sets_the_carrier_and_returns_the_displaced_value` and
+`the_ref_guard_restores_the_previous_value_and_a_nest_proves_it`, both written at **step 1**, before
+a body existed. So the ADDED cell's return value is gated by exactly the file that owns cells, which
+is where it belongs. The phase's recurring defect, one level up from the code:
+**an instrument whose summary column answers a narrower question than its heading claims** —
+§ 5.26 (xi) recorded the same shape in probe 3 during this slice's own pre-flight.
+
+##### (d) **THE ONE REAL HOLE: NO VALUE GATE IN THE SLICE CAN SEE THE NEWTON BUDGET**
+
+I10 survives every binary it was run against — and **that scope is FIVE of the crate's 127**
+(`rung69`, `slice_ab_smoke`, `slice_ab_cells`, plus `rung68` and `slice_z_dispatch` as controls),
+not the whole gate. Stating it any wider would repeat, inside the paragraph that names it, the
+defect § (c) is about. **And it is emphatically not inert** —
+[[rust-port-slice-s-step2]]'s rule is that an injection reporting *"nothing moved"* must be shown to
+have been able to move something, so the roots were dumped bit-for-bit under both budgets:
+
+| dumped key | moved | of |
+|---|---|---|
+| root components (`re`/`im` bits) | **56** | 243 |
+| `worst_zero` | **24** | 81 |
+| **`n_zero`** — the only derived key any gate reads | **0** | **81** |
+
+§ 5.26 (iii) predicted exactly this and gave the number: `n_zero`'s tightest margin over the clock
+grid is `3.5e-04`, i.e. the wandering iterates sit three and a half decades below the threshold, so
+**0 triples are within a decade of flipping it**. The consequence is now measured rather than
+inferred: the exhausted arm's exit value is **reproducible-by-contract and gated-by-nothing** in
+this slice's test files. **The instrument is step 4's oracle**, which dumps the roots themselves —
+and **P4's STATUS therefore changes here**: "Rust reproduces `_cubic_roots_c` bit-for-bit on all
+256 triples, the 72 exhausted ones included" is pre-registered as *falsified by one differing root*,
+and this step measured that **the only instrument that can produce a differing root does not exist
+yet**. P4 is not "on track" — it is **UNSETTLEABLE BEFORE STEP 4**, and step 5's ledger should read
+it that way rather than rediscover it. A note to that effect now sits on
+`cubic_roots_c` itself, so that a future thinning of the oracle's dump is a decision and not an
+accident.
+
+##### (e) NOTHING WAS ADDED TO `slice_ab_smoke.rs`, AND THAT IS A MEASUREMENT
+
+§ 5.26.2 (i) left step 3 owing *"whatever `slice_ab_smoke.rs` still needs beyond the five structural
+runs it carries now"*. The sweep answers it: of the **nine** injections some file catches, the
+smoke fires on **five** (I2, I3, I5, I8, I9) and on **none** of them is it the only file — every one
+is also caught by `tests/rung69.rs`. So there is no claim the smoke could newly carry that step 3's
+gates do not already carry, and adding one would be duplicating a gate whose Python original states
+it better (the smoke's own header says so). Its four disclosed degenerate branches (§ 5.26.2 (h)) are unreached by
+the ported gates too — the Python suite marches this same grid — so they remain a **standing hole
+for step 5**, unchanged and not silently capped.
+
+##### (f) WHAT STEP 4 OWES
+
+`oracle/dump_slice_ab.py` + `tests/slice_ab_oracle.rs`, bit-exact against PyPy with the CPython arm
+and its **NAMED** exemption re-read from the dump (§ 5.26 (i): the exempt names are whatever the
+dump emits downstream of `_invariants`' `c1`, plus the inherited `ic_family` `withheld` subtree —
+[[rust-port-slice-z-step4]] is why that is a set of names and never a count). **The dump must carry
+the roots of `_cubic_roots_c` themselves**, per § (d), and `C64::abs` — `hypot` on a genuinely
+complex root, § 5.26.2 (e)'s one remaining platform-library exposure — is measured there or nowhere.
 
 ### ~~The four~~ **THE EIGHT** runtime-introspection tests, one by one
 

@@ -910,6 +910,19 @@ fn csqrt_real(d: f64) -> C64 {
 /// derived key, `reference_modes`'s `n_zero`, sits 3.5 decades from its own threshold with **0**
 /// triples within a decade of flipping it.
 ///
+/// # AND NOTHING IN THIS SLICE'S TEST FILES CAN SEE THE BUDGET — MEASURED AT STEP 3
+///
+/// The `80` above is load-bearing and **unreachable by any value gate**. Cutting it to 20 and
+/// re-running every slice-AB binary (`rung69`, `slice_ab_smoke`, `slice_ab_cells`) leaves all of
+/// them GREEN, and the injection is emphatically not inert: it moves **56 of 243** root components
+/// and **24 of 81** `worst_zero` values on the shipped clock grid. What it does not move is
+/// `n_zero` — **0 of 81** — which is the only derived key a gate reads, and § 5.26 (iii)
+/// measured why: the threshold sits 3.5 decades away.
+///
+/// So the exhausted arm's exit value is REPRODUCIBLE-BY-CONTRACT and GATED-BY-NOTHING here.
+/// **The instrument is step 4's oracle**, which dumps the roots themselves; this note exists so
+/// that a future thinning of that dump is a decision rather than an accident.
+///
 /// The tolerance is `1e-15 * max(|c2|, |x|, 1.0)` — a THREE-argument Python `max`, so
 /// [`py_max3`](crate::lagged_bleed::py_max3) and not a chain of [`f64::max`], which differ on NaN
 /// in the first position.
