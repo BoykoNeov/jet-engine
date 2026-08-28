@@ -13940,8 +13940,17 @@ measurements of PYTHON, and none of them says a RUST cell is breakable.
 * **P3** — The CPython exemption is the set of names step 4's dump emits downstream of
   `_invariants`' `c1`, plus the inherited `ic_family` `withheld` subtree. Falsified if any key
   outside those two subtrees is exempt, or if `c2`, `rate` or `triple_bill`'s sum contributes one.
+  **FALSIFIED at step 4 (§ 5.26.4 (c))**: 134 of the 194 exempt names are CPython 3.14's changed
+  signed-zero semantics for mixed float/complex arithmetic and have no `sum()` in them at all; the
+  `withheld` subtree contributes ZERO, because no rung-69 reader calls `ic_family`. The `c1` half
+  holds, and `c2` contributes nothing.
 * **P4** — Rust reproduces `_cubic_roots_c` bit-for-bit on all 256 triples, **the 72 exhausted
   ones included**, with the same iteration counts. Falsified by one differing root.
+  **HELD at step 4 (§ 5.26.4 (b))**, and the count is restated honestly: the oracle intercepts
+  **94** triples, not 256 — 256 is a whole `pytest` session, this dump calls each reader once —
+  and **24 of the 94 exhaust the 80-step budget**. Every root agrees with PyPy bit-for-bit. The
+  iteration count is not dumped: for the exhausted arm it is 80 by definition, and for the rest the
+  exit value pins the march, so a counted copy on the Rust side would gate the copy.
 * **P5** — `StatorLegArm` does **not** grow: `v_max` and `tau` are all any caller reads, and the
   reference-specific wall (`m_lim`, `T_c`) is read from the core by the rung-69 cells alone.
   Falsified if a shared struct needs a third field — which would be slice X's shared-helper
@@ -13961,9 +13970,11 @@ measurements of PYTHON, and none of them says a RUST cell is breakable.
    the six readers.
 3. **The 25 ported gates**, `tests/rung69.rs`, plus `slice_ab_smoke.rs`. **SHIPPED — § 5.26.3**; the smoke needed nothing new and the reason is measured there.
 4. **The oracle** — `oracle/dump_slice_ab.py` + `tests/slice_ab_oracle.rs`, bit-exact vs PyPy
-   with the CPython arm and its NAMED exemption, re-read from the dump (§ (i)).
+   with the CPython arm and its NAMED exemption, re-read from the dump (§ (i)). **SHIPPED —
+   § 5.26.4**: 15 957 keys per arm, `Rust ≡ PyPy` after ONE fix, 194 named CPython exemptions.
 5. **The dispatch gates** — ten cells, `slice_ab_dispatch.rs`, four of them panic-shaped
-   (§ (ii)) — and the ledger.
+   (§ (ii)) — and the ledger. **SHIPPED — § 5.26.5**: 13 gates, ten cells observable, and only
+   **TWO** of the four predicted panics are panics.
 
 #### (xi) THREE DEFECTS IN THIS PRE-FLIGHT's OWN INSTRUMENTS
 
@@ -14435,7 +14446,7 @@ it better (the smoke's own header says so). Its four disclosed degenerate branch
 the ported gates too — the Python suite marches this same grid — so they remain a **standing hole
 for step 5**, unchanged and not silently capped.
 
-##### (f) WHAT STEP 4 OWES
+##### (f) WHAT STEP 4 OWES — **DELIVERED, § 5.26.4**
 
 `oracle/dump_slice_ab.py` + `tests/slice_ab_oracle.rs`, bit-exact against PyPy with the CPython arm
 and its **NAMED** exemption re-read from the dump (§ 5.26 (i): the exempt names are whatever the
@@ -14443,6 +14454,311 @@ dump emits downstream of `_invariants`' `c1`, plus the inherited `ic_family` `wi
 [[rust-port-slice-z-step4]] is why that is a set of names and never a count). **The dump must carry
 the roots of `_cubic_roots_c` themselves**, per § (d), and `C64::abs` — `hypot` on a genuinely
 complex root, § 5.26.2 (e)'s one remaining platform-library exposure — is measured there or nowhere.
+
+#### 5.26.4 SLICE AB step 4 — the oracle, one port defect in 15 957 keys, and an exemption measured against the wrong thing twice over
+
+**SHIPPED**: `oracle/dump_slice_ab.py` (**570 lines**), `tests/slice_ab_oracle.rs` (**1 110 lines**,
+3 gates), and the two goldens at **15 957 keys each** — `slice_ab_pypy.tsv` and
+`slice_ab_cpython.tsv`, both emitted by the same script. **`Rust ≡ PyPy` on all 15 957** after ONE
+fix to `src/reference_split.rs`; the CPython arm carries a **194-name** exemption with **two**
+causes. `tests/slice_aa_oracle.rs` gains a correction to a stale doc comment (§ (g)). Full Rust
+gate **GATE_LINE**. `cargo clippy --all-targets`: CLIPPY_LINE
+
+##### (a) **THE ORACLE FOUND A PORT DEFECT, AND ONLY ITS *DECLARED EXTRA* TABLE COULD SEE IT**
+
+One key of 15 957 disagreed with PyPy on the first run: `J/5/root/2/re`, the third root of the
+`(-2, 5, -10)` triple, **`-0.0` in Rust against `+0.0` in Python**.
+
+Python's `0.5 * z` is not a scaling of two floats. `float * complex` returns `NotImplemented`, so
+Python falls through to `complex.__rmul__`, promotes `0.5` to `complex(0.5, 0.0)` and runs the
+four-multiply product — `re = 0.5*z.re − 0.0*z.im`. The cross term is `0.0 * something`, which is
+**not** an identity on a signed zero: on that triple the deflated pair is `−0 ± 4.472j`, so the
+real part is `(−0.0) − (−0.0)` = **`+0.0`**, where the naive spelling hands back `−0.0`. The fix is
+`py_half` — the product written out per component, and never reduced, because Rust's IEEE semantics
+keep `x − 0.0*y` from folding to `x`.
+
+**STEP 2 § (e) SPELLED THE SIGN-OF-ZERO DECISION OUT FOR THE ADDITION IN THE SAME EXPRESSION AND
+STOPPED THERE.** Its note reads *"Python promotes `-p` to `complex(-p, 0.0)` before subtracting, so
+the third root's imaginary part is `0.0 - rt.im`… The idiomatic `-rt.im` gives `-0.0` there."* That
+is the correct analysis of the `+`/`−`, and the `0.5 *` on the very next line is the same kind of
+operation, unexamined. **A reader that has reasoned about one operation of an expression has said
+nothing about the next one.**
+
+**AND THE SUITE'S OWN GRID CANNOT SEE IT.** Every root sections D, E and F compute agrees
+bit-for-bit either way — the plant never lands `p` on exactly zero. What caught it is section J,
+the **declared extra table** of direct calls on triples the plant does not visit, which exists
+because § (d) of step 3 said the budget was gated by nothing. The instrument built for one blind
+spot found a different defect in the same function.
+
+The finding now has its own gate beside the golden — `the_half_is_a_complex_product_and_a_signed_zero_can_tell`
+— whose SECOND assertion is what makes the first non-vacuous: it measures that the naive spelling
+really does reach `−0.0`, so a passing first line is a statement about `py_half` and not about zero
+being unsigned.
+
+##### (b) **P4 IS SETTLED — AND THE COUNT IS 94, NOT 256, WHICH IS SAID RATHER THAN ROUNDED UP**
+
+Step 3 measured P4 **unsettleable before this step**: cutting the Newton budget from 80 to 20 left
+every slice-AB binary green. Two constructions settle it, and they are independent:
+
+* sections D/E/F emit **every root the readers compute**, as `re`/`im`/`abs` bit patterns; and
+* section I **INTERCEPTS** every `_cubic_roots_c` call those readers make — installed as a
+  `staticmethod`, because a plain function on the class would bind through the instance and hand
+  the body a fourth argument — and the Rust replays the SHIPPED solver on those exact coefficient
+  bits, with the plant taken out of the loop.
+
+The intercepted count is **94**, where § 5.26 (iii) measured 256. That is not a coverage gap and it
+is not the same question: 256 is what a whole `pytest` session makes, where several gates call the
+same reader again; this dump calls each reader once. Writing "256" in the header would be slice S
+step 4's defect — *a header claiming the suites' grids while its code ran another*. What matters is
+that the exhausted arm is covered, and it is measured rather than assumed: **24 of the 94 spend all
+80 Newton steps without converging**, printed to stderr by a counted replica that gates nothing (a
+counted copy can only gate the copy — the advisor's point, taken).
+
+Section I's `c2`/`c1`/`c0` are **INPUTS, not assertions**: `Cmp::input_f` reads them from the golden
+and marks them consumed instead of comparing them with themselves, which would be slice U step 4's
+*gate comparing a key with ITSELF*. What is asserted is the nine root components per triple, plus a
+count the Rust computes for itself — `reference_modes`, `damping_floor` and `rk4_margin` are the
+only three callers, so `I/ncalls` must equal the root-carrying rows D, E and F emit, and that
+equality is checked in the test rather than trusted.
+
+##### (c) **P3 IS FALSIFIED: THE EXEMPTION HAS TWO CAUSES AND P3 NAMED ONE**
+
+P3 read *"the CPython exemption is the set of names downstream of `_invariants`' `c1`, plus the
+inherited `ic_family` `withheld` subtree"*. Measured, over 194 names:
+
+| cause | names | what it is |
+|---|---|---|
+| the three-element `sum()` | **60** | all descended from **SIX** `c1` values in section D's `inc` arm |
+| CPython 3.14's signed-zero semantics | **134** | § (e) — nothing to do with any `sum()` |
+| the `ic_family` `withheld` subtree | **0** | no rung-69 reader calls `ic_family` at all |
+
+The `sum()` half confirms § 5.26 (i) and sharpens it: of the 94 intercepted triples, **11 carry a
+`c1` that differs between the interpreters and NOT ONE carries a differing `c0` or `c2`** — and
+`c2` is built the same way, at the same site, from the same three numbers. Cause 2 is the half P3
+could not have predicted, and it is not a rounding.
+
+##### (d) **AN EXEMPTION MEASURED BETWEEN THE TWO *DUMPS* IS 67 NAMES WIDER THAN THE ONE MEASURED AGAINST THE *PORT***
+
+The obvious way to build `EXEMPT` — and this file's first draft — is to diff the two TSVs. That
+gives **261** names. The Rust run measures **194**, and the 67-name difference is not noise: it is
+every `c1`-rooted key in section I.
+
+The reason is section I's own design. In the CPython arm the Rust is fed **CPython's own
+coefficients**, so the diverging sum drops out and what remains is a test of the solver alone. Those
+67 names differ between the two interpreters and do **not** differ between Rust and CPython, so an
+exemption transcribed from the dump diff would have declared 67 keys allowed-to-differ that in fact
+must not — and the both-directions `assert_eq!` would then have been the only thing standing
+between the file and a silent hole. **The measurement that counts is the one taken against the
+thing being gated.** [[rust-port-slice-z-step4]] is a pre-registered exemption of two keys that
+measured eight; this is the same lesson one level out — not *count vs names*, but *whose diff*.
+
+##### (e) **CPython 3.14 CHANGED WHAT MIXED float/complex ARITHMETIC MEANS ON A SIGNED ZERO**
+
+134 of the 194 exempt names are this, and it is a semantics change rather than a rounding. Measured
+directly in both interpreters rather than read out of a changelog:
+
+| expression | PyPy 3.11 | CPython 3.14 |
+|---|---|---|
+| `(-60.0) - (4+0j)`, `im` | `0.0 - 0.0` = **`+0.0`** | **`-0.0`** — the `0.0 -` is skipped |
+| `0.5 * (-0-4j)`, `re` | `0.5*-0.0 - 0.0*-4` = **`+0.0`** | **`-0.0`** — no cross term |
+| `(-60.0) + (4+0j)`, `im` | `+0.0` | `+0.0` — addition is unaffected |
+
+CPython 3.14 takes a real-operand fast path in `complex.__rsub__` and `__rmul__` that drops the zero
+cross-terms; PyPy promotes the float and runs the full formula. **The port is held to PyPy, which is
+also pre-3.14 CPython**, so this is an audit-arm note and not a defect. Every one of the 134 is a
+root's `im`, except the single `J/5/root/2/re` that § (a) is about — which is the same mechanism
+seen from the other side, and the reason the fix and the exemption were derived in one sitting.
+
+**This also retires the slice's last open arithmetic worry the other way round.** § 5.26.2 (e)
+registered `C64::abs` — `hypot` on a genuinely complex root — as *"the one platform-library
+exposure, measured at step 4 or nowhere"*. Measured: **no `abs` key is exempt for a library
+reason.** Thirteen `abs` keys are exempt and every one sits in section D downstream of a diverging
+`c1` — a different input, not a different `hypot`. **Section I contributes NO `abs` key at all**,
+and section I is precisely where the CPython arm hands Rust the interpreter's own coefficients: so
+on identical inputs, `f64::hypot`, CPython's and PyPy's agree on every root either arm produced.
+The exposure is closed, and it is closed by the arm whose inputs were controlled.
+
+##### (f) **THREE OF STEP 2's FOUR DEGENERATE BRANCHES ARE NOW REACHED, AND THE FOURTH IS UNREACHABLE BY CONSTRUCTION**
+
+§ 5.26.2 (h) disclosed four branches nothing reached, and step 3 left them a standing hole rather
+than capping them. Section K is a **declared extra grid**, numbered apart from the suite's own so
+the header's *nothing is coarsened* claim keeps meaning what it says, and it closes three:
+
+| branch | reached by |
+|---|---|
+| `DampingRow { n: 0 }` (and `tightest = None`) | a **FLAT** ramp, `1000 → 1000`: no accel, so no loop engages |
+| `RefModesArm::all_complex == None` | the same flat ramp — the arm has no rows |
+| `DampingRow::off_regime` | a 10 K ramp at the `(0.005, 0.05, 0.05)` clock: the MID riding point is not interior |
+
+**And it is the RAMP that reaches them, not the clocks** — which was worth measuring because the
+clocks are the obvious dial. probe_ab12/13/14 swept six clock grids spanning a 1000× range and
+changed nothing: a slower loop rides for *longer*, so every degenerate arm stayed live.
+
+The fourth, `RefModesRow::zeta == None`, is **unreachable by construction and is not chased**: the
+three roots sum to `c2 = −(1/τ_g + 1/τ_q + 1/τ_s)`, which is non-zero for every finite positive
+clock, so they cannot all be zero and the dominant one has non-zero modulus. That is a proof, not a
+failed search, and it is written on the file rather than left as a hole for step 5.
+
+##### (g) **A DOC COMMENT IN slice AA's ORACLE NAMED A COUNT ITS OWN ARRAY REFUTES**
+
+`tests/slice_aa_oracle.rs`'s CPython gate reads *"the exemption is a named list of **eleven** key
+names"*. `EXEMPT` beside it has **four**, and the file's own header explains at length that AA's P3
+was falsified and eleven was the pre-registered guess. The array was right and the sentence was a
+second, unchecked copy of it — [[rust-port-slice-z-step3]] (*a gate's doc comment claimed a
+coverage it did not have*) one level up. Corrected in place, with the reason, rather than quietly.
+
+##### (h) WHAT STEP 5 OWES — **DELIVERED, § 5.26.5**
+
+`slice_ab_dispatch.rs` — **ten cells**, four of them panic-shaped (§ 5.26 (ii)) — and the ledger.
+P2 is settled there and nowhere else: no value key in this file can witness a hook table, and
+§ 5.26 (ii) measured that `_solve_v`, `_manifold_v` and `_triple_rig` break only by PANIC while
+`_rk4_floor` breaks only through its assertion MESSAGE. Also still step 5's: `_ref`'s restore
+policy (0 nested events in 976 996 sets, so no reachable march distinguishes the two policies —
+`slice_ab_cells.rs` manufactures it), and P1/P5/P6/P7's ledger entries.
+
+#### 5.26.5 SLICE AB step 5 — the ten dispatch gates, and TWO of the pre-flight's four panic predictions falsified
+
+`tests/slice_ab_dispatch.rs`, **725 lines, 14 gates, green**, and the full Rust gate at
+**129 binaries / 1 258 passed / 0 failed** — the counts SUMMED from a captured log, because a
+first run of the same gate was piped through `tail -5` and its per-binary numbers were gone
+(exit 0 is still the verdict: `cargo test` fails the run if any binary fails). The slice's last instrument and its
+signature one: the oracle's 15 957 keys and the 25 ported gates are both VALUE instruments, and no
+value key can witness a hook table.
+
+##### (a) **THE PARENT'S OWN FUNCTION POINTER IS THE INJECTION, WHICH IS NOT WHAT SLICE AA DID**
+
+AA hand-wrote nine plausible-mistake bodies because AA's nine cells were **new** — there was no
+parent to point at. AB's whole risk is the opposite one, § 5.26 (ii)'s: *a swap whose Rust body is
+still effectively the parent's*, which compiles, runs and is caught by nothing. So the injection is
+`TripleHooks { <cell>: R68_TRIPLE.<cell>, ..R69_TRIPLE }`, written through a macro so that it is
+**provably the parent's pointer and not a re-spelling of it** — a hand-copied body would be a THIRD
+implementation that could agree with neither. That is also P2's letter, so settling P2 any other
+way would have settled a different question than the one pre-registered.
+
+##### (b) **TWO OF § 5.26 (ii)'s FOUR PANIC-SHAPED CELLS BREAK BY *VALUE*, AND THE REASON IS THE SAME BOTH TIMES**
+
+The pre-flight's probe 3 column reasoned that rung 68's bodies dereference `self.stator_lim`, which
+an incidence arming leaves `None`, so the parent pointer must panic. **Measured, one injection at a
+time, before a single `assert!` was written:**
+
+| cell | § 5.26 (ii) predicted | MEASURED |
+|---|---|---|
+| `stator_leg` | PANIC | **PANIC** — "rung-68's march with no stator floor" |
+| `solve_v` | PANIC | **PANIC** — "`_solve_v` on a machine with no stator floor" |
+| `triple_rig` | PANIC on 60 | **NO PANIC — by VALUE** |
+| `manifold_v` | PANIC on 122 | **NO PANIC — by VALUE, and by a SIGN** |
+| `rk4_floor` | message only | **message only**, confirmed both ways |
+
+* `r68_triple_rig` never **reads** `stator_lim`; it **builds** a `StatorLimiter` from the map. So
+  the parent hands back a perfectly well-formed sibling carrying the **wrong reference** — a `phi`
+  stator where an incidence one was asked for — that marches five states and reports a stator
+  credit. **That is the more dangerous shape, not the less.**
+* `r68_manifold_v` is `V(g, q)[0]`: it ignores every argument but the law handed to it, so it reads
+  no field at all. Its value is the stator's OWN root where rung 69's is the SHARED manifold. At the
+  sampled point (`s = 0.185`) the shipped body returns **−3.383e−3** — below the incidence band
+  entirely — and the parent **+6.171e−3**: **opposite signs**, which is what the gate asserts.
+
+The Python was re-read to be sure the port was not the thing at fault (`engine.py:12532`): rung 68's
+`_manifold_v` is `return V(g, q)[0]`, one line, no field access. **The port is faithful and the
+pre-flight's column was wrong**, which is the same defect § 5.26 (xi) recorded three times in this
+slice's own instruments: *a summary column answering a different question than its heading claims.*
+
+##### (c) **THE SIBLING-CONSTRUCTOR TRAP DECIDES EVERY OBSERVABLE IN THE FILE**
+
+Slice AA recorded it (§ 5.25.2 (d)) and it re-fires here verbatim: every reader reached through
+`_triple_rig` → `at_lever` builds its sibling through `build_reference_split_cascade`, which
+installs the **SHIPPED** `&R69_TRIPLE`. **All six of rung 69's readers do that**, so an injection
+into any `TripleHooks` cell is invisible to all of them. Asserted rather than described: with
+`manifold_v` set to the parent, `reference_gains` returns rows whose `v_base` are **bit-for-bit the
+shipped ones**. So every value injection is scored on a march of the injected machine itself, or on
+a `triple_gains_at` called against it directly.
+
+##### (d) **THE ONE NON-PARENT INJECTION, AND IT CARRIES THE SLICE'S SHARPEST FINDING**
+
+`with_ref`'s parent is a REFUSAL (there is no reference to select below rung 69), so the parent
+pointer settles P2's letter **loudly** — every reader raises. The failure this cell actually risks
+is silent: Python's `prev, self._ref = self._ref, ref` is ONE statement, and a port that returned
+`prev` without writing the field leaves every reader's scope inert. So the cell gets a second,
+**declared** injection — a setter that does not set — and it measures:
+
+| | shipped | counterfeit |
+|---|---|---|
+| `(rig_inc, rig_phi)` over `reference_gains` | `(1, 1)` | **`(2, 0)`** — the incidence rig built TWICE |
+| `leg_parent` (the reduce arms, which only the `phi` rig runs) | 260 | **0** |
+| `phi.pair_RV` per row | `1.0` (to 2.6e−10) | **bit-for-bit the incidence arm's `−1.85…`** |
+| `reference_bill.common_max_rel` | `0.0` | `0.0` |
+| `reference_bill.delivered` | `(93.83, 96.53)` | **`(93.83, 93.83)`** |
+
+**§ 5.26.1 (j) IS CONFIRMED AND SHARPENED.** It registered that the obvious ledger key cannot see a
+lost reference, because the `bare`/`F`/`V`/`FV` cells carry no stator and agree by construction —
+`common_max_rel` reads exactly `0.0` with the defect live, measured. What (j) did not say is that
+the ledger is **not blind, only its self-check is**: `delivered` returns the SAME NUMBER TWICE under
+the counterfeit. The blind key and the seeing key sit in the same struct.
+
+##### (e) **THE CONTROL: THE TEN PREDICATES RUN AGAINST THE SHIPPED TABLE MUST REPORT TEN ZEROS**
+
+The tally is parameterised, so `witnesses(false)` runs every predicate with nothing injected and
+asserts none fires. A dispatch gate's whole content is a difference, and a predicate that is true
+against the shipped table is a sentence rather than a measurement. **This slice shipped two gates
+that could not fail at its own step 1** (§ 5.26.1 (b), (i)) and both were caught by hand; the
+control makes it structural and costs one call. The observable count is likewise taken from the
+list on **both** sides of its own comparison — never a literal beside the addends.
+
+##### (f) A GATE CAUGHT ITS OWN OVER-TIGHT BAR
+
+`phi.pair_RV` was written `== 1.0` from a probe that printed nine significant digits. It is
+`1 + 2.6e−10` — the gains' own central-difference truncation, not a set-point offset — and the gate
+failed on its first run. Relaxed to `1e−8` **with the reason on the line**, because "≈ 1" is the
+claim (both loops of the `phi` rig hold ONE wall) and exact equality was a transcription of a
+printout.
+
+##### (f2) **THE SHAPE COLUMN WAS A LABEL I WROTE, AND THE FIRST TALLY COUNTED MY OWN LABELS**
+
+The section's first draft carried a `shape` string per row and then asserted
+`panics == 2` — the addends and the tally in the same hand, which is the exact defect the file's
+own header says it exists to avoid, and nothing in it MEASURED whether a break was a panic. Caught
+by the advisor before ship. The rewrite gives each cell ONE exercise, runs it TWICE (shipped
+tables, then injected) and **classifies the shape from what the two runs did**: one raised and the
+other did not (`Panic`), both raised with different text (`Message`), neither raised and the values
+differ (`Value`), or nothing at all (`Silent`). The only typed thing left in the section is
+§ 5.26 (ii)'s own prediction, which is the PRIOR, and every cell it is compared against is measured.
+The control falls out of the same machinery for free: classify the shipped tables against
+themselves, and all ten must be `Silent`.
+
+##### (f3) STEP 5 ADDED NOTHING TO `slice_ab_smoke.rs`, AND THAT IS A DECISION
+
+Step 3 recorded the same measurement and the reason still holds: the smoke builds **the machine the
+ladder really builds** and asserts existence and finiteness over the six readers. A dispatch gate
+installs tables **no shipped path constructs**, so there is nothing in this step for the smoke to
+reach. Step 5 also adds **zero `src` code** — its only source edit is the corrected census table in
+`reference_split.rs`'s module header (§ (b)), comments throughout.
+
+##### (g) THE LEDGER — all seven predictions settled
+
+* **P1 — HELD.** Settled at step 1 by `slice_ab_cells.rs::p1_the_march_scope_does_not_grow`.
+  `MarchScope` still carries **5** fields and its **91** struct literals and **273** `stator_march`
+  call sites are untouched by the slice.
+* **P2 — HELD on the verdict, FALSIFIED on the SHAPE.** All **ten** cells are observable
+  (`the_ten_cells_are_all_observable` emits the count), none UNOBSERVABLE — and the SHAPE is
+  classified from two runs rather than annotated, see (f2). § 5.26 (ii) predicted a PANIC for
+  `triple_rig` and `manifold_v`; both are measured `Value`, asserted by NAME.
+* **P3 — FALSIFIED at step 4** (§ 5.26.4 (c)): two causes, and the predicted one is the minority.
+* **P4 — HELD at step 4** (§ 5.26.4 (b)): 94 triples, 24 exhausted, every root bit-exact vs PyPy.
+* **P5 — HELD.** Settled at step 1 by
+  `slice_ab_cells.rs::p5_the_stator_leg_arm_does_not_grow_and_carries_no_sign`.
+* **P6 — HELD, and the evidence is the DIFF, not an assertion.** `_ref` lives on
+  `TwoSpoolTransientCore` as a `Cell`, not as a scope field. Over the whole slice the only edits to
+  shipped cells are **visibility** (`fn` → `pub(crate) fn` on six rung-68 bodies and `closer_v`, so
+  the reduce arms can CALL the parent rather than re-spell it): **zero parameter lists moved.**
+* **P7 — HELD.** Five steps, as at V/W/X/Y/Z/AA.
+
+##### (h) `_ref`'s RESTORE POLICY, THE LAST THING STEP 5 OWED
+
+Already discharged at step 1 and re-stated here so the owe-list closes: the displaced value is
+`None` at every one of the 29 value-sets the suite makes, so a restore-to-`None` guard would be
+bit-for-bit identical on every shipped path. `slice_ab_cells.rs`'s
+`the_ref_guard_restores_the_previous_value_and_a_nest_proves_it` MANUFACTURES the nest no march
+reaches, and a second gate proves the restore survives an unwind. **SLICE AB IS COMPLETE.**
 
 ### ~~The four~~ **THE EIGHT** runtime-introspection tests, one by one
 

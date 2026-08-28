@@ -48,9 +48,19 @@
 //! | `_check_v0` | 4 | 2 | by value (the parent's assert fires where the child's passes) |
 //! | **`_rk4_floor`** | 77 | **0** | **only through its PANIC STRING** |
 //! | `_solve_v` | 162 869 | — | **by PANIC** (the parent reads `stator_lim`, `None` on 102 064) |
-//! | `_manifold_v` | 291 | — | **by PANIC**, on 122 |
-//! | `_triple_rig` | 60 | — | **by PANIC**, on 60 |
+//! | `_manifold_v` | 291 | — | ~~**by PANIC**, on 122~~ **BY VALUE** — corrected § 5.26.5 (b) |
+//! | `_triple_rig` | 60 | — | ~~**by PANIC**, on 60~~ **BY VALUE** — corrected § 5.26.5 (b) |
 //! | `at_lever` | 61 | — | by value: 31 calls carry `stator_inc` IN and 0 lose it |
+//!
+//! **THE LAST TWO ROWS WERE WRONG AND STEP 5 MEASURED IT.** The prediction was that rung 68's
+//! bodies dereference `self.stator_lim`, which an incidence arming leaves `None`. Neither does.
+//! `r68_triple_rig` never READS that field — it BUILDS a `StatorLimiter` from the map, so the
+//! parent hands back a well-formed sibling carrying the WRONG REFERENCE with nothing raising; and
+//! `r68_manifold_v` is `V(g, q)[0]`, which reads no field at all and returns the stator's OWN root
+//! where this rung returns the SHARED manifold (opposite SIGNS at the sampled point). Corrected
+//! here rather than only in the plan, because this table is what a reader of the module sees, and
+//! **the silent shape is the dangerous one**: a gate written to expect a panic would have left both
+//! cells effectively ungated. `tests/slice_ab_dispatch.rs` carries the measurement.
 //!
 //! **`_rk4_floor` IS THE ONE SWAP NO VALUE KEY CAN SEE.** Its condition is `ds * rate <= 2.0` in
 //! BOTH rungs, character for character; the entire difference is the assertion MESSAGE — rung 68
@@ -946,10 +956,37 @@ pub fn cubic_roots_c(c2: f64, c1: f64, c0: f64) -> [C64; 3] {
     let rt = csqrt_real(p * p - 4.0 * q);
     // Python promotes `-p` to `complex(-p, 0.0)` before adding, so the imaginary parts are
     // `0.0 + rt.im` and `0.0 - rt.im` — spelled out, because `-rt.im` hands back `-0.0` on the
-    // real branch where Python has `+0.0`.
+    // real branch where Python has `+0.0`. The `0.5 *` is [`py_half`], NOT a scaling.
     [C64 { re: x, im: 0.0 },
-     C64 { re: 0.5 * (-p + rt.re), im: 0.5 * (0.0 + rt.im) },
-     C64 { re: 0.5 * (-p - rt.re), im: 0.5 * (0.0 - rt.im) }]
+     py_half(C64 { re: -p + rt.re, im: 0.0 + rt.im }),
+     py_half(C64 { re: -p - rt.re, im: 0.0 - rt.im })]
+}
+
+/// Python's `0.5 * z` — **A FULL COMPLEX PRODUCT, NOT A SCALING OF TWO FLOATS.**
+///
+/// `float * complex` returns `NotImplemented` and Python falls through to `complex.__rmul__`,
+/// which promotes `0.5` to `complex(0.5, 0.0)` and runs the four-multiply product
+/// (`_Py_c_prod` in CPython, `rcomplex.c_mul` in PyPy):
+///
+/// ```text
+/// re = 0.5*z.re - 0.0*z.im        im = 0.5*z.im + 0.0*z.re
+/// ```
+///
+/// The cross terms are `0.0 * something`, which is **not** an identity on a signed zero: on the
+/// `(-2, 5, -10)` triple the deflated pair is `-0 ± 4.472j`, so the third root's real part is
+/// `0.5*(-0.0) - 0.0*(-4.472j.im)` = `(-0.0) - (-0.0)` = **`+0.0`**, where the naive `0.5 * z.re`
+/// hands back `-0.0`.
+///
+/// **STEP 2 SPELLED OUT THE SIGN-OF-ZERO DECISION FOR THE ADDITION AND MISSED IT FOR THE
+/// SCALING** (§ 5.26.2 (e)). The shipped suite's own grid never reaches it — every root sections
+/// D, E and F compute agrees bit-for-bit either way — and it was step 4's DECLARED EXTRA table of
+/// direct calls that caught it, in one key of 15 957. The lesson is the phase's own: a reader that
+/// reasons about one operation of an expression has said nothing about the next one.
+///
+/// Not folded by the optimiser: Rust guarantees IEEE-754 semantics with no fast-math, and
+/// `x - 0.0*y` is not `x` under those rules.
+fn py_half(z: C64) -> C64 {
+    C64 { re: 0.5 * z.re - 0.0 * z.im, im: 0.5 * z.im + 0.0 * z.re }
 }
 
 /// Python's `sorted(roots, key=abs)` — **STABLE**, which is load-bearing: the real branch returns

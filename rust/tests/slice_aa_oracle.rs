@@ -695,8 +695,16 @@ fn rung68_is_bit_exact_against_pypy() {
     run(ORACLE_PYPY, "pypy", false);
 }
 
-/// The CPython arm. **The exemption is a named list of eleven key names carrying ONE reader's
-/// 101-term `sum()`**, and the assertion runs in both directions — see the header.
+/// The CPython arm. **The exemption is a named list of FOUR key names, three of them carrying one
+/// reader's 101-term `sum()` and the fourth an `_illinois` close that converges in a different
+/// number of iterations**, and the assertion runs in both directions — see the header.
+///
+/// **Corrected at slice AB step 4.** This line said *"eleven key names"*, which was the count
+/// [`EXEMPT`] carried in this file's FIRST DRAFT, transcribed from slice AA's P3 before the diff
+/// was measured; the header immediately above records that P3 was falsified and the measured set
+/// is four. The array is the truth and this sentence was stale — the same shape as
+/// [[rust-port-slice-z-step3]] (*a gate's doc comment claimed a coverage it did not have*), one
+/// level up: a doc comment that names a COUNT beside an array is a second, unchecked copy of it.
 #[test]
 fn rung68_against_cpython_with_the_declared_exemption() {
     run(ORACLE_CPYTHON, "cpython", true);
