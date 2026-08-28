@@ -22,7 +22,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding, backticks in `-m`, and a status read off the runner
 
-## The Rust port — phases 0–6 done; phase 7 in flight, slice AC (rungs 70/71) step 1 of 7
+## The Rust port — phases 0–6 done; phase 7 in flight, slice AC (rungs 70/71) step 2 of 7
 - [Rust port status](rust-port-status.md) — the running tally: phases, slices, and the numbers each closed slice landed on. **Update THAT file, not this line.**
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; a new PHASE needs authorisation
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost
@@ -77,6 +77,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Slice AB step 5](rust-port-slice-ab-step5.md) — a predicted failure SHAPE is a claim about the PARENT's body: two of four "breaks by panic" broke by value, and the silent shape is the dangerous one
 - [Slice AC pre-flight](rust-port-slice-ac-preflight.md) — the phase's cell predicate is by NAME, so seven correctly-emitted columns could not tell an override from a name reused
 - [Slice AC step 1](rust-port-slice-ac-step1.md) — the pre-flight's step list and its own census disagreed on the table count, and the gate it prescribed had a scheduled expiry date
+- [Slice AC step 2](rust-port-slice-ac-step2.md) — a gate whose CODE and whose COMMENT described different properties, and step 1's lesson only asked what the next step DELETES
 - Slice T (46/47/48) steps [1](rust-port-slice-t-step1.md) [2](rust-port-slice-t-step2.md) [3](rust-port-slice-t-step3.md) [4](rust-port-slice-t-step4.md) — an EXACT ZERO blinds its own gate to the SIGN (one lesson per file)
 
 ## Shipped rungs

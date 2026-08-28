@@ -217,9 +217,34 @@ fn the_slice_writes_ten_table_consts_and_the_preflight_said_nine() {
     assert_eq!(cross.matches("\npub const R72").count(), 0, "the counter can miss");
     assert_eq!(full.matches("\npub const R72").count(), 0, "the counter can miss");
 
-    // And ZERO cells are added at this slice, so no `pub struct .*Hooks` appears in either file.
-    assert_eq!(cross.matches("\npub struct ").count() + full.matches("\npub struct ").count(), 1,
-               "the only new struct in the slice is `GovScope` -- no table type is added");
+    // And ZERO cells are added at this slice, so no TABLE TYPE is declared in either file.
+    //
+    // **THE SPELLING IS REPAIRED AT STEP 2, AND THE SENTENCE IT REPLACES IS WHY.** Step 1 wrote
+    // this as `pub struct` == 1 ("the only new struct in the slice is `GovScope`"), which was
+    // true while the two files held one struct between them and became false the instant step 2
+    // landed the seven readers' RETURN types -- eighteen plain data structs, not one of them a
+    // table. The doc line already named the property (`pub struct .*Hooks`); the code was a
+    // PROXY for it that happened to coincide. That is this slice's own step-1 lesson in its
+    // other direction: ask whether the step that follows deletes -- or here ADDS -- the thing
+    // your gate reads. P1 is about `TripleHooks` not growing, and a count of data structs cannot
+    // see that.
+    let table_types = |s: &str| {
+        s.lines().filter(|l| l.starts_with("pub struct ") && l.contains("Hooks")).count()
+    };
+    assert_eq!(table_types(cross), 0, "rung 70 declares no table type");
+    assert_eq!(table_types(full), 0, "rung 71 declares no table type");
+    // THE POSITIVE CONTROL, because a filter that matches nothing passes an `== 0` for free: the
+    // same detector must SEE the table type this slice asserts it does not re-declare.
+    //
+    // **AND ITS REACH IS STATED RATHER THAN LEFT TO BE ASSUMED**: the filter anchors at COLUMN 0,
+    // so a `Hooks` type declared inside a `mod` or an `impl` block reads zero. Every table type in
+    // this crate is a top-level declaration, which is what makes the anchor safe here -- and is
+    // exactly the assumption the next slice should re-check rather than inherit.
+    assert_eq!(table_types(include_str!("../src/three_loop.rs")), 1,
+               "the detector must find `TripleHooks` where it IS declared, or the two zeros \
+                above are not measurements");
+    // `GovScope` is still the slice's one non-data type, named so a rename fails HERE.
+    assert!(cross.contains("\npub struct GovScope"), "GovScope is still declared here");
 }
 
 // =============================================================================================

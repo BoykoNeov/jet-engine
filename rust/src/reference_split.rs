@@ -871,9 +871,22 @@ impl Census69 {
 /// root does NOT land on the real axis, so a reader that could not see an imaginary part could not
 /// state it.
 ///
-/// Deliberately not a general complex type: three operations are needed (`abs`, and the two
-/// spellings [`cubic_roots_c`] uses), and a fuller one would invite a reader to compose operations
-/// whose Python counterpart was never called.
+/// # WHICH OPERATIONS EXIST HERE IS A CENSUS OF PYTHON's CALL SITES, AND SLICE AC's STEP 2 GREW IT
+///
+/// **This comment used to read *"three operations are needed … a fuller one would invite a reader
+/// to compose operations whose Python counterpart was never called"*, and rung 70 falsified it.**
+/// [`_zeta_pair`](crate::cross_split::zeta_pair) spells `nz[0]+nz[1]`, `nz[0]*nz[1]`,
+/// `cmath.sqrt(p)` and `-s / (2.0*rt)` — a complex sum, a complex PRODUCT and a complex
+/// DIVISION, none of which rung 69 called. So the type grows, and the ORIGINAL RULE IS KEPT
+/// RATHER THAN DROPPED: every operation below is here because a Python line calls it, spelled the
+/// way CPython and PyPy spell it, and nothing is added for symmetry. The corrected form of the
+/// sentence is *a census is only as wide as the rungs that have been read* — the same shape as
+/// [`csqrt_real`]'s *"the only form this rung calls"*, which slice AC's pre-flight flagged as
+/// exactly the kind of sentence this slice had already falsified once.
+///
+/// The one operation with a genuine numerical choice is [`c_div`]: § 5.27 (iv) priced a schoolbook
+/// spelling against Python's over all 18 captured `_zeta_pair` calls and it agrees on only
+/// **13 of 18**, worst gap 4.44e−16.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct C64 {
     pub re: f64,
@@ -1018,9 +1031,113 @@ fn py_half(z: C64) -> C64 {
     C64 { re: 0.5 * z.re - 0.0 * z.im, im: 0.5 * z.im + 0.0 * z.re }
 }
 
+/// Python's `2.0 * z` — **[`py_half`]'s trap with the other constant**, and it is in the very
+/// expression slice AC ports.
+///
+/// `float * complex` returns `NotImplemented`, Python promotes `2.0` to `complex(2.0, 0.0)` and
+/// runs the four-multiply product, so the cross terms are `0.0 * something` and are **not** an
+/// identity on a signed zero. § 5.27 (iv) measured it: `2.0 * complex(3.0, -0.0)` is `(6+0j)`
+/// where a component-wise scaling gives `(6-0j)`. Slice AB found ONE port defect in 15 957 keys
+/// and it was exactly this class at `0.5`; the reader who fixed it there had said nothing about
+/// the next constant.
+pub fn py_two(z: C64) -> C64 {
+    C64 { re: 2.0 * z.re - 0.0 * z.im, im: 2.0 * z.im + 0.0 * z.re }
+}
+
+/// Python's `z1 + z2` — componentwise, `_Py_c_sum` / `rcomplex.c_add`.
+///
+/// No sign-of-zero subtlety of its own (an addition of two componentwise sums is exactly the
+/// componentwise sum), so this is the one new operation with nothing to disclose. It is spelled
+/// out anyway because [`c_mul`]'s and [`c_div`]'s are next to it and a reader comparing the three
+/// should see all three bodies.
+pub fn c_add(a: C64, b: C64) -> C64 {
+    C64 { re: a.re + b.re, im: a.im + b.im }
+}
+
+/// Python's `z1 * z2` — the FOUR-multiply product, `_Py_c_prod` / `rcomplex.c_mul`.
+///
+/// § 5.27 (iv) replayed all 18 captured `nz[0]*nz[1]` calls against this spelling: **18 of 18**
+/// agree, so unlike [`c_div`] the schoolbook form is free HERE — measured on this plant's sample,
+/// not free in principle.
+pub fn c_mul(a: C64, b: C64) -> C64 {
+    C64 { re: a.re * b.re - a.im * b.im, im: a.re * b.im + a.im * b.re }
+}
+
+/// Python's unary `-z` — `complex.__neg__`, componentwise negation.
+///
+/// Spelled rather than folded into the division's caller because `-s / (2.0*rt)` negates BEFORE
+/// dividing, and `-(s/d)` and `(-s)/d` are not the same expression under [`c_div`]'s branch test
+/// (the branch is chosen on the DENOMINATOR, but the numerator's signs ride through three
+/// different sums).
+pub fn c_neg(z: C64) -> C64 {
+    C64 { re: -z.re, im: -z.im }
+}
+
+/// Python's `z1 / z2` — **SMITH's ALGORITHM, and this is the one operation in slice AC that does
+/// not survive a schoolbook spelling.**
+///
+/// CPython's `_Py_c_quot` and PyPy's `rcomplex.c_div` are the same body: divide top and bottom by
+/// whichever component of the denominator is LARGER in magnitude, which is what keeps the
+/// intermediate `|b|^2` from overflowing or underflowing. The textbook
+/// `(a * conj(b)) / (b.re^2 + b.im^2)` is a different function in floating point, and § 5.27 (iv)
+/// priced the difference on this rung's own sample:
+///
+/// | operation | schoolbook == Python | worst gap |
+/// |---|---|---|
+/// | complex × complex | 18 / 18 | 0 |
+/// | `cmath.sqrt(p)` | 18 / 18 | 0 |
+/// | **complex division** | **13 / 18** | **4.44e−16 abs**, and `.real` differs on the same 5 |
+///
+/// So this is not a precaution — five of eighteen shipped `_zeta_pair` values move if it is
+/// written the obvious way.
+///
+/// **THE NaN ARM IS CPython's OWN, NOT A DEFENCE.** `abs_br >= abs_bi` and `abs_bi >= abs_br` are
+/// BOTH false only when a component is NaN, and both interpreters then return `NaN + NaN j`
+/// rather than falling into either branch. Reproduced because it is a branch of the source; the
+/// zero-denominator case raises `ZeroDivisionError` in Python and its only caller here guards it
+/// with `abs(rt) == 0.0` first, so it panics rather than inventing a value.
+pub fn c_div(a: C64, b: C64) -> C64 {
+    let abs_br = if b.re < 0.0 { -b.re } else { b.re };
+    let abs_bi = if b.im < 0.0 { -b.im } else { b.im };
+    if abs_br >= abs_bi {
+        assert!(abs_br != 0.0,
+                "complex division by zero -- Python raises ZeroDivisionError here, and rung 70's                  `_zeta_pair` guards it with `abs(rt) == 0.0` BEFORE dividing. Reaching this means                  the guard was lost.");
+        let ratio = b.im / b.re;
+        let denom = b.re + b.im * ratio;
+        C64 { re: (a.re + a.im * ratio) / denom, im: (a.im - a.re * ratio) / denom }
+    } else if abs_bi >= abs_br {
+        let ratio = b.re / b.im;
+        let denom = b.re * ratio + b.im;
+        C64 { re: (a.re * ratio + a.im) / denom, im: (a.im * ratio - a.re) / denom }
+    } else {
+        // Neither comparison holds => a component is NaN. CPython's own third arm.
+        C64 { re: f64::NAN, im: f64::NAN }
+    }
+}
+
+/// Python's `cmath.sqrt(z)` for the REAL-valued argument rung 70 hands it — [`csqrt_real`] under
+/// a name a rung-70 reader can call, and the assertion that the argument IS real.
+///
+/// § 5.27 (iv) registered this as a **GATED CONDITION rather than an assumption**. `p` is the
+/// product of the two largest-modulus roots of a REAL cubic, so it is real whenever those two are
+/// a conjugate pair or both real — measured positive-real on **18 of 18** calls, `im != 0` on
+/// **0**. It is *not* covered in principle: if the near-zero root is one of the complex pair then
+/// `nz` holds one real and one complex root and `p` is genuinely complex. So the port ASSERTS it
+/// and step 6's oracle re-reads it, because *"the only form this rung calls"* is exactly the kind
+/// of sentence this slice has already falsified once.
+pub fn csqrt_gated(p: C64) -> C64 {
+    assert!(p.im == 0.0,
+            "rung-70's `_zeta_pair` calls `cmath.sqrt(p)` on the PRODUCT of the two              largest-modulus roots of a real cubic, which is real whenever those two are a              conjugate pair or both real -- measured on 18 of 18 shipped calls. Got im = {}.              This is the GATED CONDITION of P6, not a defence: a genuinely complex `p` needs              CPython's full `c_sqrt`, which is deliberately NOT ported.", p.im);
+    csqrt_real(p.re)
+}
+
 /// Python's `sorted(roots, key=abs)` — **STABLE**, which is load-bearing: the real branch returns
 /// a conjugate pair with equal magnitudes, and an unstable sort would swap them.
-fn sorted_by_abs(roots: [C64; 3]) -> [C64; 3] {
+///
+/// `pub(crate)` since slice AC: rung 70's `_zeta_pair`, `split_modes` and `split_floor` all call
+/// the SAME `sorted(roots, key=abs)`, so re-spelling a stable sort in `cross_split.rs` would be a
+/// duplication the source does not make.
+pub(crate) fn sorted_by_abs(roots: [C64; 3]) -> [C64; 3] {
     let mut out = roots;
     out.sort_by(|a, b| a.abs().partial_cmp(&b.abs()).expect("the roots here are finite"));
     out
@@ -1114,7 +1231,7 @@ pub struct ReferenceGains {
 }
 
 /// Python's `max(gen, default=None)` / `min(gen, default=None)` over a possibly-empty iterator.
-fn opt_fold(mut it: impl Iterator<Item = f64>, f: fn(f64, f64) -> f64) -> Option<f64> {
+pub(crate) fn opt_fold(mut it: impl Iterator<Item = f64>, f: fn(f64, f64) -> f64) -> Option<f64> {
     let first = it.next()?;
     Some(it.fold(first, f))
 }

@@ -15174,8 +15174,9 @@ contradicts it. Priced instead:
    letter there from the same column would repeat the error one addressee over. Likewise
    `LeverHooks::legs`'s doc comment, whose only stated reason was *"Overridden at rung 77"*
    (§ (x)); **both corrections are made with the finding rather than left for whoever hits them.**
-2. **The rung-70 port** — `src/cross_split.rs`: `_triple_laws`, `at_lever`, `integrate_fuel` (with
-   its five arming asserts, which § (v) makes a prerequisite for step 7),
+2. **The rung-70 port** — **DONE, § 5.27.2** — `src/cross_split.rs`: `_triple_laws`, `at_lever`,
+   `integrate_fuel` (with
+   its five arming asserts, which § (v) makes a prerequisite for step 7 — **DISCHARGED**),
    `_integrate_fuel_cross_triple`, `_split_rig`, `_with_gov`, `_assert_state_boundary`,
    `_rk4_floor_split`, `_zeta_pair` with § (iv)'s complex division, and the seven rung-70 readers
    (`split_gains` among them, as a plain method).
@@ -15365,6 +15366,188 @@ honours the booking: both `at_lever` swaps are observable only because the paren
 land at steps 2–3. A gate written now would report UNOBSERVABLE for a reason about ORDERING rather
 than about the cell. Written into the test file's own doc so step 7 does not read the absence as
 an oversight.
+
+#### 5.27.2 SLICE AC step 2 — the rung-70 bodies, and a step-1 gate whose PROXY this step falsified
+
+**SHIPPED**: `src/cross_split.rs` grows 290 → 1 804 lines with **all nine remaining methods of the
+Python class** — `at_lever`, `integrate_fuel` (the five arming refusals), `_rk4_floor_split`,
+`_integrate_fuel_cross_triple`, `_triple_laws`, `_split_rig`, `_assert_state_boundary`,
+`_zeta_pair`, and the **seven readers** (`split_gains`, `rung67_control`, `split_modes`,
+`c1_clock_swap`, `split_floor`, `window_overlap`, `split_bill`) — plus `Census70`. Four complex
+operations and one gated `cmath.sqrt` join `C64` in `reference_split.rs`; `closer_b`,
+`sorted_by_abs` and `opt_fold` widen to `pub(crate)`. **No swapped cell is left panicking.** Full
+Rust gate at **130 targets / 1 268 tests / 0 failed** (`cargo test`, exit 0) — the SAME 1 268 as
+step 1, because this step adds bodies and repairs one gate; the ported gates are steps 4–5.
+
+**THE METHOD COUNT IS TAKEN OFF THE CLASS BODY, NOT OFF THE PROSE.** § (iii) emits *"16 methods"*
+for `CrossSplitTransient`; a `grep` of the class body between its `class` line and rung 71's gives
+16, which reconciles as **9 non-readers + 7 readers**. This slice has now had a prose count wrong
+twice (§ 5.27.1 (a)'s nine-vs-ten tables, § 5.27.1 (c)'s 35-vs-49 `_with_gov` calls), so the
+reader list was derived rather than copied.
+
+##### (a) THE STEP-1 GATE THAT WENT VACUOUS WAS NOT THE ONE STEP 1 PROTECTED
+
+§ 5.27.1 (b) records step 1 deliberately refusing slice AB's *"read the placeholder panic
+messages"* gate, because AB had to dismantle exactly that at its own step 2. It replaced it with
+`fn_addr_eq` INEQUALITY between shipped `const`s — and **that repair held**: all five swap gates
+and all four inheritance controls in `tests/slice_ac_cells.rs` still ask the same question with the
+bodies in place, verified by re-reading the file rather than by trusting step 1's note.
+
+**A DIFFERENT ASSERTION IN THE SAME FILE BROKE, AND IT BROKE BY ADDITION RATHER THAN DELETION.**
+Gate 1 closed with
+
+```rust
+assert_eq!(cross.matches("\npub struct ").count() + full.matches("\npub struct ").count(), 1,
+           "the only new struct in the slice is `GovScope` -- no table type is added");
+```
+
+The doc line directly above it names the property correctly — *"no `pub struct .*Hooks` appears in
+either file"* — and the code was a PROXY that happened to coincide while the two files held one
+struct between them. Step 2 lands the seven readers' RETURN types: **eighteen** plain data structs,
+not one of them a table, and the gate fails on a change that P1 is entirely indifferent to.
+
+Repaired to assert the property: a per-line filter for `pub struct …Hooks`, **zero** in each of the
+two files, plus a POSITIVE CONTROL — the same detector run over `src/three_loop.rs` must find
+`TripleHooks`, because a filter that matches nothing passes an `== 0` for free (slice W step 3's
+lesson: make the instrument prove it can SEE). `GovScope`'s declaration is named separately so a
+rename fails here.
+
+**AND THE NEW DETECTOR'S REACH IS STATED IN THE FILE RATHER THAN LEFT TO BE ASSUMED**, because a
+repair that swaps one silent assumption for another has bought nothing: the filter anchors at
+COLUMN 0, so a `Hooks` type declared inside a `mod` or an `impl` reads **zero**. Every table type
+in the crate is top-level today, which is what makes the anchor safe — and is the assumption the
+next slice re-checks rather than inherits.
+
+**The generalisable half is step 1's own lesson in its other direction.** Step 1 asked *does the
+next step DELETE the thing my gate reads?* and got the right answer for the gate it was thinking
+about. The question that catches this one is *does the next step ADD something my gate counts?* —
+and the tell was available without asking either: **a gate whose code and whose comment describe
+different properties is already broken, and only one of the two will notice.**
+
+##### (b) `_split_rig` IS A BARE PERMANENT SET, AND REACHING FOR STEP 1's OWN GUARD WOULD HAVE BEEN SILENT
+
+§ (vii) measured that `_gov_max` is written **two different ways** — a bare post-construction
+assignment on a FRESH machine (`_split_rig`, `_full_rig`) and a save/set/restore `try/finally`
+(`_with_gov`) — and named a `try/finally`-shaped census as the instrument that sees only one of
+them. Step 1 shipped [`GovScope`] for the second, so the second is the one in hand while writing
+the first.
+
+Using it in `_split_rig` compiles, runs, and produces a table. The guard restores on drop,
+`_triple_laws` then finds `gov_max == None`, takes its reduce arm, and **every reader measures rung
+68** — which by § (ii) returns *successfully with zero rows*, so the value-diff gate every previous
+slice would write compares two empty tables and passes. One line, no failing test.
+
+Two corollaries, both easy to "improve" wrongly and both taken from the source:
+
+* **The set is UNCONDITIONAL**, including for `split_bill`'s `bare`/`V`/`S`/`VS` cells. Those
+  disarm the governor **at the march** (`Tt4_max=None`, `tau_gov=None`), never at the rig. Adding a
+  `gov` flag to the rig would be a second way to disarm one loop, and rung 63's one-constructor
+  rule exists to prevent exactly that.
+* **`split_gains` uses BOTH spellings in one body** — the bare rig for the `gov` arm, `GovScope`
+  for the `fuel` arm. Getting them the other way round also diffs clean.
+
+##### (c) THE FLOOR's CALL SITE, ITS ARITY AND ITS SUMMATION ORDER — three separate ways to lose P5
+
+`_rk4_floor_split` ports as a free `fn`, called **inside** `_integrate_fuel_cross_triple`:
+
+* **Not the `rk4_floor` CELL.** Python's signature is `(ds, rate, tau_s)`, three arguments against
+  the cell's four, and it is a `@staticmethod` defined once and overridden nowhere. Wiring it
+  through `TripleHooks` would break the signature AND make it dispatchable — falsifying P5
+  backwards.
+* **Not hoisted.** § (vi) measured that rung 71's own floor shadows this one on a rung-71 march, so
+  omitting the shadowed call leaves rung 71 bit-identical with its guard still firing and **deletes
+  rung 70's only floor**.
+* **Python's summation order, not rung 68's.** `1/tau_gov + (valve) + 1/tau_s`; rung 68's Rust
+  accumulates from `1/tau_s` outward, and copying that template changes the rounding of the very
+  argument the floor tests.
+
+The message keeps its `rung-70:` tag: probe 2b measured `rank TWO` matching rungs 69 **and** 70,
+so the tag is the only discriminator a `should_panic` has.
+
+##### (d) THE COMPLEX SURFACE — and `C64`'s doc comment was FALSE the moment `_zeta_pair` landed
+
+`C64` said: *"three operations are needed (`abs`, and the two spellings `cubic_roots_c` uses), and
+a fuller one would invite a reader to compose operations whose Python counterpart was never
+called."* `_zeta_pair` spells a complex **sum**, a complex **product**, `cmath.sqrt` and a complex
+**division**. **Corrected in this pass with the finding**, on § 5.27.1's own precedent
+(`slice_ab_cells.rs`'s tripwire and `LeverHooks::legs`), and the ORIGINAL RULE is kept rather than
+dropped: every operation added is one a Python line calls. The corrected sentence is *a census is
+only as wide as the rungs that have been read* — which is `csqrt_real`'s *"the only form this rung
+calls"* one level out, the sentence the pre-flight had already flagged.
+
+Added: `c_add`, `c_mul`, `c_neg`, `py_two`, `c_div` (**Smith's algorithm**), `csqrt_gated`.
+§ (iv) priced the schoolbook spellings on this rung's own 18 captured calls — product 18/18,
+`cmath.sqrt` 18/18, **division 13/18** with a 4.44e−16 worst gap — so the division is the one that
+costs, and `py_two` is `py_half`'s trap with the other constant (`2.0 * complex(3.0, -0.0)` is
+`(6+0j)`, not `(6-0j)`). `csqrt_gated` **asserts `p.im == 0.0`** rather than letting `csqrt_real`
+cover the sample by luck; that is P6's gated condition, and it did not fire in 96+ shipped calls.
+
+`sorted_by_abs` widens to `pub(crate)` instead of being re-spelled: Python calls the same stable
+`sorted(roots, key=abs)` in `_zeta_pair`, `split_modes` and `split_floor`, so a second copy would
+be a duplication the source does not make.
+
+##### (e) THE ONE READER WHOSE GRID IS NOT ITS CALLER's
+
+`rung67_control` passes only `flight, Tt4_lo, Tt4_hi, Tt4_max, tau, tau_govs` to `cross_identity`,
+so the reference march runs on **rung 67's own defaults** — `n_sample=12`, `r=0.5`,
+`s_settle=1.2`, **`ds=0.0025`** — and NOT on the `r`/`s_settle`/`ds` this reader was called with.
+Forwarding the caller's grid would re-grid the control and quietly change what the ratio compares.
+Spelled with a comment saying so, because the four arguments are in scope and forwarding them
+reads like the obvious thing.
+
+##### (f) THE DRIVE-ONCE CHECK, AND IT LANDED ON THE PRE-FLIGHT's OWN NUMBERS
+
+The pre-flight prescribes no step-2 gate, and slice AB's step 2 is where its step-1 gate went
+vacuous — so all seven readers were driven once on the shipped grid before the step closed, rather
+than leaving step 6's oracle as the first thing to execute this code. Independently measured
+against numbers § 5.27 quotes from Python:
+
+| reading | § 5.27 says | the port |
+|---|---|---|
+| `split_gains` `n_riding` | 61 | **61** |
+| `split_gains` `worst_CV` | 1.061e−10 | **1.0613e−10** |
+| `split_gains` `min_pair_gap` | 1.132 | **1.1321** |
+| `split_gains` `max_pair_gap` | 1.163 | **1.1766 — THE ONE ROW THAT DISAGREES** |
+| `rung67_control` (§ (i)'s live control) | `n = 7, ratio = 0.921` | **`n = 7, ratio = 0.9211`** |
+| `split_floor` pairs | `pair_RC ~ −0.02`, `pair_RV ~ +0.12` | **−0.0167…−0.0199, +0.113…+0.127** |
+| `split_floor` floor | *"lands at ~0.99"* | **0.9902 … 0.9920**, `holds` and `strict` |
+| `split_floor` silenced loop | the STATOR | **stator, 9 of 9 grid points** |
+| `split_modes` zeros | `n − m` = 1 | **`zeros = [1]`** on both arms |
+| `c1_clock_swap` | one-scalar null INVARIANT | **null delta −2.3e−13**, measured = predicted = −110.4137 |
+
+**THE ONE DISAGREEING ROW IS KEPT, AND IT IS THE STRIDE.** § (ii)'s row was taken at a stride
+delivering `len(rows) = 2`; this drive uses the reader's own shipped `every = 10` and gets **7**.
+The two windows START at the same `s`, so the MINIMUM gap coincides to five figures; the MAXIMUM is
+taken over five further points and is therefore larger. The same cause widens `pair_RC` from
+§ (ii)'s `(−0.0167, −0.0190)` to `−0.0167…−0.0199`. **The row is listed rather than dropped**:
+a table that reports only the matching half is the same defect as (a)'s gate — a claim enforced
+somewhere other than where it is asserted — and a disagreement that has an explanation is stronger
+evidence than an agreement that was selected. It is also falsifiable: at § (ii)'s own stride the
+port must return 1.163, which step 6's oracle marches on the SHIPPED grids and will settle.
+
+`rung67_control` is the strongest single confirmation available at this step: it is the ONLY
+reading the pre-flight quotes end-to-end from Python, and reproducing `0.921` exercises
+`split_gains`, `split_rig`'s bare set, `at_lever`'s freshly-unarmed sibling, the rung-70 march, and
+rung 67's inherited `cross_identity` on its own defaults — in one number.
+
+##### (g) THE CENSUS THE COUNTERS EMIT, AND THE ONE THAT CARRIES A CLAIM
+
+`Census70` over the seven-reader drive: `integrate_reduced = 7`, `triple_laws_parent = 14`,
+`triple_laws_gov = 55`, `split_rig_calls = 25`, `gov_scope_sets = 14`,
+**`gov_scope_restored_value = 14`**.
+
+The last is the mirror-of-AB claim, WITNESSED. Slice AB measured 29 of 29 `_with_ref` restores
+putting `None` back, so restore-previous and restore-`None` agreed on every shipped path and only a
+manufactured nest could separate them. `_with_gov` is entered to turn the governor **off** over a
+`prev` a rig has just armed, so **14 of 14** restores put a VALUE back — an ordinary value witness,
+which is what § 5.27.1's `GovScope` doc comment asserted and this counts.
+
+##### (h) WHAT STEP 2 UNBLOCKS, RECORDED SO STEP 7 DOES NOT RE-DERIVE IT
+
+§ (v) made the arming asserts a **prerequisite** for `at_lever`'s dispatch gate, and § 5.27.1 (g)
+booked the absence forward. Both are discharged: guards A–E are in `r70_integrate_fuel`, so step 7
+can write that gate directly and the injection's visible failure is the PARENT's refusal firing,
+exactly as probe 6 measured. Written into `cross_split.rs`'s own module doc, not only here.
 
 ### ~~The four~~ **THE EIGHT** runtime-introspection tests, one by one
 

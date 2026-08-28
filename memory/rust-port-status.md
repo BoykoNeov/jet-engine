@@ -19,7 +19,7 @@ slices inside an authorised phase are free. See [[rust-port-decided]].
 
 * **0–5 DONE.**
 * **PHASE 6** authorised 2026-08-17, **COMPLETE 2026-08-20** with slice U's five steps.
-* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, **AB complete**; **AC (rungs 70+71) PRE-REGISTERED 2026-08-28** (§ 5.27, thirteen probes) — step 1 not started.
+* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, **AB complete**; **AC (rungs 70+71) IN FLIGHT** (§ 5.27, fourteen probes) — **steps 1–2 of 7 done**.
 
 ## Phase-7 slices, as they closed
 
@@ -52,6 +52,14 @@ booked to slice AH. See [[rust-port-slice-ac-preflight]].
    deliberate mutations all caught. `build_reference_split_cascade` split into a
    table-parameterised body: neither rung defines `__init__`, so both inherit rung 69's eleven
    guards. See [[rust-port-slice-ac-step1]].
+2. **Step 2** — the rung-70 bodies: `src/cross_split.rs` 290 -> **1 779 lines**, all nine remaining
+   methods + the **seven readers**, `Census70`, and five complex operations beside `C64`
+   (Smith's-algorithm division is the one that costs: 13/18 against a schoolbook spelling).
+   A step-1 gate FAILED — not the one step 1 protected, but a `pub struct` count whose own doc line
+   named a narrower property. All seven readers driven once and landing on the pre-flight's own
+   numbers, `rung67_control` reproducing Python's `n = 7, ratio = 0.921` end-to-end. Full gate
+   **130 targets / 1 268 passed / 0 failed** — unchanged from step 1, since the ported gates are
+   steps 4–5. See [[rust-port-slice-ac-step2]].
 
 ## Slice AB, step by step
 

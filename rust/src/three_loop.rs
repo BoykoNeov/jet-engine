@@ -867,7 +867,7 @@ pub(crate) fn closer_v<'a>(
 }
 
 /// RUNG 68's `_closer` — rung 64's, reproduced at this rung's call sites for the pin's sake.
-fn closer_b<'a>(
+pub(crate) fn closer_b<'a>(
     ft: &'a FuelTransientCore, a: f64, h: f64, mf: f64, tt2: f64, pt2: f64,
 ) -> impl Fn(f64) -> Result<FuelCloseState, Abort> + 'a {
     move |b: f64| {
