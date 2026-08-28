@@ -14047,8 +14047,20 @@ if the slot is ever a placeholder.
 hand-written names: a cell forgotten in **both** passes agrees.
 [[rust-port-documented-gate-that-doesnt-exist]] — *a count guard is blind to a class absent from
 BOTH sides*. Replaced by the instrument the same file already used for P1/P5: an **exhaustive
-`TripleHooks` literal with no `..` spread**, so slice AC's eleventh field is `E0063` at the file
-whose job is the cell census.
+`TripleHooks` literal with no `..` spread**, so an eleventh field is `E0063` at the file whose job
+is the cell census.
+
+**CORRECTED at slice AC step 1, twice over.** (i) The sentence originally named **slice AC** as the
+author of that eleventh field. § 5.27 (i) measured that slice AC adds no cell at all, so the
+tripwire would never have fired for the reason written; the shipped Rust comment was repaired at
+b4f5a1d and this one is its twin, one file over. **No slice is named in its place** — the next
+letter would come from the same column § 5.27 (i) repairs. (ii) *"`E0063` at the file whose job is
+the cell census"* is true only on the SECOND half of a two-step sequence, and slice AC step 1 fired
+the tripwire rather than assuming it: a bare field addition never reaches a test target, because
+`src/` holds five exhaustive `TripleHooks` literals and the LIB is `E0063` first. The tripwire is
+SHADOWED, and it fires exactly in the scenario it exists for — a slice that adds a cell and repairs
+every `src/` literal because the lib must compile. Simulated that way, `slice_ab_cells.rs` and
+`slice_ac_cells.rs` are both `E0063`.
 
 ##### (d) `_ref` IS THE PHASE'S FIRST **CONFIG-KIND** SCOPED FIELD, AND THE CELL IS THE SETTER
 
@@ -15081,10 +15093,13 @@ At slice AB's measured expansion (1 686 Rust from 708 Python = 2.38×) and AA's 
 * **P3 — ALREADY SETTLED, and promoted out of the prediction list into § (i): not a prediction.**
   Probe 13's caller scan finds the ONLY non-docstring caller of `split_gains` anywhere in
   `engine.py` is `rung67_control` (line 14556), a rung-70 method. So nothing at rung 71 or above
-  can need to dispatch on the name, and rung 70's reader ports as an ordinary **method on the
-  rung-70 type**. What remains is a check on **slice AI alone**: rung 80's same-named reader ports
-  as a *different* function on the rung-80 type. Falsified only if AI finds a caller that must
-  choose between them.
+  can need to dispatch on the name, and rung 70's reader ports as an ordinary **method**, not as a
+  cell. What remains is a check on **slice AI alone**: rung 80's same-named reader ports as a
+  *different* function. Falsified only if AI finds a caller that must choose between them.
+  **WORDING CORRECTED at step 1, § 5.27.1 (d): this read "on the rung-70 type" and "on the rung-80
+  type", and there is no rung-70 type or rung-80 type** — one type carries rungs 57–84, which is
+  the same assumption the step list's "two cores" carried. `split_gains` lands as a free function
+  in `cross_split.rs`, the shape `triple_gains_at` / `triple_bill` already take.
 * **P4** — `MarchScope` does **not** grow: `_gov_max` is CONFIG-kind (256 sets over the whole suite,
   **0** in any march, 0 overwrites, per-instance depth 1). Falsified by one set inside a march, or
   by any shipped cell signature moving.
@@ -15148,11 +15163,14 @@ Every slice since V has been five steps. **AC is 2.27× slice AB's source and 2.
 "five steps, as at V/W/X/Y/Z/AA/AB" would be a prediction made by habit against a measurement that
 contradicts it. Priced instead:
 
-1. **The five swaps opened** and the two cores — `_gov_max`'s carrier and guard, the nine tables of
-   § (iii). **No cell is added** (§ (i)), so the usual step-1 gate does not apply and the step-1
+1. **The five swaps opened** and the two cores — `_gov_max`'s carrier and guard, the ~~nine~~
+   **TEN** tables of § (iii). **CORRECTED at the step, § 5.27.1 (a): this line said nine and
+   § (iii) one page earlier enumerates ten** (five per rung), and nobody diffed the two. **No cell is added** (§ (i)), so the usual step-1 gate does not apply and the step-1
    gate is instead: every swapped cell has a DISTINCT rung-70/71 function pointer and `TripleHooks`
-   is still ten fields wide. **`slice_ab_cells.rs`'s tripwire comment is corrected to name NO
-   slice at all** — its old addressee came from the column § (i) repairs, and writing another
+   is still ten fields wide — and the DISTINCTNESS half is written as pointer INEQUALITY between
+   two shipped `const`s rather than as AB's read of the placeholder panic messages, which AB had
+   to dismantle at its own step 2 (§ 5.27.1 (b)). **`slice_ab_cells.rs`'s tripwire comment is
+   corrected to name NO slice at all** — its old addressee came from the column § (i) repairs, and writing another
    letter there from the same column would repeat the error one addressee over. Likewise
    `LeverHooks::legs`'s doc comment, whose only stated reason was *"Overridden at rung 77"*
    (§ (x)); **both corrections are made with the finding rather than left for whoever hits them.**
@@ -15216,6 +15234,137 @@ Recorded rather than quietly fixed, because each printed a number that would hav
   counted every top-level `def`, helpers included. The number is used nowhere (§ (viii)'s counts come
   from `pytest --collect-only`), but it is [[rust-port-guessed-census-bars]]'s shape again: *a
   counter is only as good as the noun it counts*.
+
+#### 5.27.1 SLICE AC step 1 — zero added cells, five opened swaps, and a table count the pre-flight got wrong
+
+**SHIPPED**: `src/cross_split.rs` (287 lines) and `src/full_split.rs` (171 lines) — the slice's
+two "cores", which are MODULES and not types (see (d)); `GovScope` and `_gov_max`'s carrier on
+`TwoSpoolTransientCore`; `build_cross_split_cascade` / `build_full_split_cascade`; the **ten**
+`R70*`/`R71*` tables; the **five** swapped cells opened as named panics; and
+`tests/slice_ac_cells.rs` (541 lines) — **10 gates, green**. `build_reference_split_cascade` is split into a
+table-parameterised body, which is the only change to shipped code. Full Rust gate at
+**128 binaries / 1 268 tests / 0 failed** (`cargo test`, exit 0).
+
+**No swapped cell body is ported**; all five panic naming themselves.
+
+##### (a) THE TABLE COUNT WAS WRONG IN THIS PRE-FLIGHT, AND IT WAS WRONG THE SAME WAY THE PHASE-7 PRE-FLIGHT WAS
+
+§ 5.27 (xi) step 1 reads *"the nine tables of § (iii)"*. § (iii), one page earlier, enumerates
+`R70`, `R70_FUEL`, `R70_TRIPLE`, `R71`, `R71_FUEL` **and** `R70_TWO`, `R70_STATOR`, `R71_TWO`,
+`R71_STATOR`, `R71_TRIPLE` — five plus five. **Ten.**
+
+**AND THE LIKELY ORIGIN MAKES IT THE SAME CLASS OF ERROR AS THE ADDRESSEE BUG, NOT AN INDEPENDENT
+MISCOUNT.** § (iii)'s own description of `R70_TRIPLE` reads *"`triple_laws` swapped, the other
+**nine** spelled out"* — nine CELLS. The step line copied the adjacent nine onto the wrong NOUN.
+A number lifted from a neighbouring sentence is exactly what § 5.26.1 (c)'s "slice AC" addressee
+was, one noun over. The two numbers were written a page apart and nobody diffed them: [[rust-port-phase7-preflight]]'s own recorded lesson — *the plan stated
+the same set twice and nobody diffed the two* — one section over, in the pre-flight that records
+it.
+
+The step ships **ten** consts, and the count is now taken from the SOURCE rather than from a list
+typed in prose: `the_slice_writes_ten_table_consts_and_the_preflight_said_nine` counts
+`\npub const R70` in one file and `\npub const R71` in the other, with an absent-prefix control
+so a counter that reads zero on everything fails; and `the_two_builders_install_their_own_rungs_
+tables` names all ten in code, so a deleted one is a compile error.
+
+##### (b) THE STEP-1 GATE HAD TO BE RE-SHAPED, BECAUSE SLICE AB's EXPIRED
+
+The pre-flight's step-1 gate is *every swapped cell has a DISTINCT rung-70/71 function pointer*.
+AB wrote that gate by **reading nine placeholder panic messages** — and had to dismantle it at its
+own step 2, because step 2 deleted every one of those messages and the gate's entire content was
+*"not yet ported"*. Writing it again would be a tautology with a scheduled expiry date.
+
+The durable form of the same question is **pointer inequality between two shipped `const`s**,
+which is still a question after the bodies land and is the question a `fn` pointer in a `const`
+table actually poses. `std::ptr::fn_addr_eq` on the CELLS and never `ptr::eq` on the table
+([[rust-port-slice-y-step3]], and [[rust-port-slice-aa-step1]] where it was written a second
+time). Five inequalities, each paired with an **equality control on the same table**, so an
+instrument that could not distinguish two pointers fails visibly instead of passing everything.
+
+**AND THE PARENT EACH INEQUALITY IS TAKEN AGAINST IS NOT COSMETIC.** Rung 71's two swaps are
+compared to **rung 70's** bodies, not rung 69's: a rung-71 slot that reached back past rung 70
+would be a real defect that a rung-69 comparison calls clean. The `triple_laws` chain is gated as
+three links — 69 INHERITS 68's, 70 breaks it, 71 inherits 70's — because *"rung 70 differs from
+rung 69"* is also true if rung 69's slot had silently drifted off rung 68's.
+
+**Nine deliberate mutations were run against the ten gates and all nine were caught**, each by the
+gate that should own it: the three rung-70 swaps wired to the parent, rung 71's `integrate_fuel`
+wired to rung 70's, the rung-70 builder wired to rung 69's tables, `GovScope` restoring `None`,
+guard D neutered, guard C moved below the build, and a sixth `R70` const.
+
+##### (c) THE BUILDER SPLIT IS A PORT OF INHERITANCE, AND GUARD C IS WHY IT IS ONE BODY
+
+**Neither rung 70 nor rung 71 defines `__init__` in Python** — measured over both class bodies —
+so both run rung 69's constructor verbatim and the only thing that differs is which five tables
+the object carries. In a `const`-table architecture that is a parameter, so
+`build_reference_split_cascade` becomes a thin wrapper over `build_split_family_cascade`. This is
+NOT the hazard [[rust-port-copy-vs-rederivation]] names: a deliberate duplication is one the
+SOURCE makes, and the source makes none here.
+
+**The risk in that refactor is silent, and it is guard C's placement.** Rung 69's builder asserts
+guard C (an incidence floor on a disabled LP spool) BEFORE the build on purpose — rung 57's
+`lp_disabled` early return is a separate constructor in Rust, so a post-build guard C would be
+unreachable and rung 69's refusal would be replaced by rung 57's. One shared body keeps that
+placement true for all three builders without restating it, and the gate reads the MESSAGE, which
+is the only thing that says which refusal won. Moving guard C below the build was mutation 7 and
+both new builders caught it.
+
+##### (d) "THE TWO CORES" ARE TWO MODULES — there is no `CrossSplitCore`
+
+`crate::bleed_transient`'s own note says one type carries rungs 57–84, and neither rung defines a
+constructor. So the step's "two cores" are the two module files, each holding its rung's five
+tables, plus the carrier they share. Written into both module docs so the next reader does not go
+looking for a type that does not exist.
+
+##### (e) `_gov_max` IS THE PHASE'S SECOND CONFIG-KIND FIELD — AND ITS RESTORE POLICY IS THE MIRROR OF `_ref`'s
+
+Copying slice AB's reasoning across would have been wrong in one direction. `_with_ref` is entered
+to SET a reference over a `None`, so all 29 of its restores put `None` back, restore-previous and
+restore-`None` agree on every shipped path, and only a manufactured nest can separate them.
+**`_with_gov` is entered to turn the governor OFF** — § 5.27 (vii): 35 of 35 calls with
+`val = None` over a `prev` that is SET — so every restore puts a VALUE back and the two spellings
+disagree on every shipped path. The gate is therefore an ordinary value witness at the SHIPPED
+nesting shape, not a manufactured one.
+
+`MarchScope` does not grow (**P4**, settled at step 1): 256 sets over the whole 57-test suite, 0
+inside any march, 0 overwrites, per-instance depth 1.
+
+**AND THE CARRIER IS WRITTEN TWO WAYS IN PYTHON** — `_split_rig`/`_full_rig` do a bare
+post-construction assignment on a fresh machine, `_with_gov` a save/set/restore `finally` on self.
+A census built on `try/finally` sees only the second (slice V's recorded blindness), which is why
+the field's doc comment names both.
+
+**AND THE PRE-FLIGHT'S TWO COUNTS FOR `_with_gov` DO NOT RECONCILE, SO NEITHER IS THE WITNESS.**
+§ (vii)'s probe 8 attributes **98 sets** to `_with_gov` over the whole suite — two writes per call,
+so 49 calls — against probe 4's **35 calls**. Shipping "35 of 35" inside the paragraph that names
+unreconciled counts as this phase's most-repeated defect would have been the worst place for one,
+so it was replaced by an ENUMERATION that needs neither: `engine.py` holds exactly **three**
+`_with_gov` call sites in the whole ladder (`split_gains` at rung 70, two inherited readers at
+rungs 80/81) and **all three pass a literal `None`**. That is a source property. The two spellings
+therefore agree at the SET and differ at the RESTORE wherever a rig has armed the receiver — always
+at rungs 70/71, whose rigs assign `Tt4_max` unconditionally, and not always at rung 80's, which
+assigns `Tt4_max if gov else None`. Recorded rather than resolved in favour of the smaller number.
+
+##### (f) THE WIDTH TRIPWIRE IS SHADOWED BY THE LIB, AND IT WAS FIRED RATHER THAN ASSUMED
+
+§ 5.26.1 (c)'s sentence — *an eleventh field is `E0063` at the file whose job is the cell census* —
+is true only on the second half of a two-step sequence. Adding a field to `TripleHooks` and
+building does **not** reach any test target: `src/` holds five exhaustive `TripleHooks` literals
+(`NO_TRIPLE`, `R68_TRIPLE`, `R69_TRIPLE`, and now `R70_TRIPLE`, `R71_TRIPLE`), so the LIB is
+`E0063` first and cargo never compiles a test. Simulated the way a real slice would do it — add
+the field, repair every `src/` literal because the lib must compile — the lib builds and BOTH
+`slice_ab_cells.rs` and `slice_ac_cells.rs` are `E0063`. The tripwire is live; its trigger is one
+step later than the sentence implies. Recorded rather than quietly restated, because the same
+sentence was already wrong once about its addressee.
+
+##### (g) WHAT STEP 1 DELIBERATELY DOES NOT GATE
+
+**`at_lever`'s dispatch behaviour**, at either rung. § 5.27 (v) booked it forward and step 1
+honours the booking: both `at_lever` swaps are observable only because the parent's
+`integrate_fuel` then REFUSES the arming, and in Rust nothing refuses anything until those asserts
+land at steps 2–3. A gate written now would report UNOBSERVABLE for a reason about ORDERING rather
+than about the cell. Written into the test file's own doc so step 7 does not read the absence as
+an oversight.
 
 ### ~~The four~~ **THE EIGHT** runtime-introspection tests, one by one
 

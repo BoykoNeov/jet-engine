@@ -689,6 +689,46 @@ pub struct TwoSpoolTransientCore {
     /// [`MarchScope`]: crate::stator_transient::MarchScope
     /// [`RefScope`]: crate::reference_split::RefScope
     pub ref_: Cell<Option<&'static str>>,
+    /// RUNG 70's ARMED GOVERNOR SET POINT — Python's `_gov_max`, and the phase's **second**
+    /// CONFIG-kind dynamically-scoped field after [`ref_`](Self::ref_).
+    ///
+    /// It is what [`TripleHooks::triple_laws`](crate::three_loop::TripleHooks::triple_laws)'s
+    /// rung-70 body reads to decide whether the odd loop is rung 52's fuel leg or rung 47's
+    /// topping GOVERNOR. Unset, that cell is the parent's answer verbatim — which is how every
+    /// inherited rung-68/69 reader reached through a rung-70 machine measures rung 68/69's plant.
+    ///
+    /// **WRITTEN TWO DIFFERENT WAYS IN PYTHON, AND A CENSUS BUILT ON `try/finally` WOULD SEE ONLY
+    /// ONE OF THEM** — slice V's recorded blindness. `_split_rig` / `_full_rig` do a **bare
+    /// post-construction assignment on a FRESH machine** (`m._gov_max = Tt4_max`); `_with_gov`
+    /// does a save/set/restore `finally` on **self**. Both are ports of the same carrier.
+    ///
+    /// **CONFIG-kind, and that is a measurement rather than an inheritance** (§ 5.27 (vii)): over
+    /// the whole 57-test rung-70/71 suite, **256 sets, 0 inside any march, 0 overwrites**, and
+    /// per-instance max nesting depth **1**. So [`MarchScope`] does not grow — P4.
+    ///
+    /// **AND ITS RESTORE POLICY IS THE MIRROR OF [`ref_`](Self::ref_)'s, WHICH IS WHY THAT
+    /// FIELD'S REASONING MUST NOT BE COPIED ONTO IT.** `_ref` is entered to SET a value over a
+    /// `None`, so its 29 restores all put `None` back and a restore-to-`None` guard would agree
+    /// with `finally` on every shipped path. **`_with_gov` is entered to turn the governor OFF**,
+    /// and that is a property of the SOURCE rather than of a sample: `engine.py` has exactly
+    /// **three** `_with_gov` call sites in the whole ladder — `split_gains` (rung 70) and two
+    /// inherited readers at rungs 80/81 — and **all three pass a literal `None`**. So the two
+    /// spellings agree at the SET and can differ only at the RESTORE, and they do differ wherever
+    /// the receiver's governor is armed, which on a rung-70/71 rig it always is
+    /// (`_split_rig`/`_full_rig` assign `Tt4_max` unconditionally; rung 80's rig assigns
+    /// `Tt4_max if gov else None`, so the displaced value can be `None` there).
+    ///
+    /// **THE PRE-FLIGHT'S TWO COUNTS FOR THIS DO NOT RECONCILE AND NEITHER IS QUOTED HERE.**
+    /// § 5.27 (vii)'s probe 8 attributes **98 sets** to `_with_gov` over the whole suite — two
+    /// writes per call, so 49 calls — against probe 4's **35 calls**. The claim above needs
+    /// neither: it is a call-site enumeration. Recorded rather than silently resolved in favour
+    /// of the smaller number.
+    ///
+    /// Its guard is [`GovScope`](crate::cross_split::GovScope).
+    ///
+    /// `Option<f64>` and not `f64`: `None` is rung 68's fuel leg, a different law, not a governor
+    /// with an infinite set point.
+    pub gov_max: Cell<Option<f64>>,
 }
 
 /// The RAII form of Python's `_closer`'s `try/finally` — **the restore is `Drop`, so it survives
@@ -1062,6 +1102,7 @@ impl TwoSpoolTransientCore {
             v_forced: Cell::new(None), v_state: Cell::new(None), v0: Cell::new(None),
             ic_order: Cell::new(crate::three_loop::IC_ORDER_DECLARED),
             ref_: Cell::new(None),
+            gov_max: Cell::new(None),
         }
     }
 

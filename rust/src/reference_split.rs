@@ -353,14 +353,43 @@ pub fn build_reference_split_cascade(
     design_engine: TwoSpoolEngine, flight_design: FlightCondition, mdot_design: f64,
     map_lp: Option<ComponentMap>, map_hp: Option<ComponentMap>, rho: f64, arm: &LeverArm,
 ) -> ScheduledStatorTransient {
-    // GUARD C, hoisted — see the note above.
+    build_split_family_cascade(design_engine, flight_design, mdot_design, map_lp, map_hp, rho,
+                               arm, &R69_TWO, &R69_STATOR, &R69_FUEL, &R69, &R69_TRIPLE)
+}
+
+/// **THE GUARD SEQUENCE ITSELF, TABLE-PARAMETERISED — and it is a port of INHERITANCE, not a
+/// factoring-out of a duplication.**
+///
+/// Neither `CrossSplitTransient` (rung 70) nor `FullSplitTransient` (rung 71) defines `__init__`
+/// in Python at all — measured, not assumed — so both run **this** constructor verbatim and the
+/// only thing that differs is which five tables the object is built with. In Python that is what
+/// `class Rung70(Rung69)` with no `__init__` MEANS; in a `const`-table architecture it is a
+/// parameter. Re-spelling the eleven asserts once per rung would be the copy
+/// [[rust-port-copy-vs-rederivation]] warns about in its other direction: a deliberate
+/// duplication is one the SOURCE makes, and the source makes none here.
+///
+/// **GUARD C STAYS ON THE PRE-BUILD SIDE FOR ALL THREE CALLERS BY CONSTRUCTION**, because there
+/// is one body. That placement is the deviation the public wrapper's doc comment discloses, and
+/// having one body is what keeps the disclosure true for rungs 70 and 71 without restating it.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn build_split_family_cascade(
+    design_engine: TwoSpoolEngine, flight_design: FlightCondition, mdot_design: f64,
+    map_lp: Option<ComponentMap>, map_hp: Option<ComponentMap>, rho: f64, arm: &LeverArm,
+    two_hooks: &'static TwoSpoolTransientHooks,
+    stator_hooks: &'static StatorTransientHooks,
+    fuel_hooks: &'static FuelTransientHooks,
+    lever_hooks: &'static LeverHooks,
+    triple_hooks: &'static TripleHooks,
+) -> ScheduledStatorTransient {
+    // GUARD C, hoisted — see the note on [`build_reference_split_cascade`], which is the whole
+    // reason this body exists once rather than three times.
     assert!(arm.stator_inc.is_none() || !arm.stator.lp_disabled,
             "rung-69's incidence floor watches the LP, which a disabled LP spool does not have.");
     let built = ScheduledStatorTransient::with_ref_tables(
         design_engine, flight_design, mdot_design, map_lp, map_hp, rho, arm.stator,
-        &R69_TWO, &R69_STATOR, &R69_FUEL, &R69,
+        two_hooks, stator_hooks, fuel_hooks, lever_hooks,
         LeverArming { bleed: arm.bleed, sched: arm.bleed_sched, lim: arm.bleed_lim },
-        &R69_TRIPLE, arm.stator_lim, arm.stator_inc);
+        triple_hooks, arm.stator_lim, arm.stator_inc);
     // Rung 62's two, in Python's order.
     assert!(!(arm.bleed != 0.0 && arm.bleed_sched.is_some()),
             "rung-62: the valve gets a CONSTANT position or a SCHEDULE, not both -- they are the \

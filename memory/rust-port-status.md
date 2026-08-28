@@ -44,6 +44,15 @@ method has an incompatible signature, so it is a NAME REUSED, not an override. T
 sweep of all 358 override pairs found one more — `_legs` (63 -> 77), a SHIPPED slice-W cell,
 booked to slice AH. See [[rust-port-slice-ac-preflight]].
 
+## Slice AC, step by step
+
+1. **Step 1** — `src/cross_split.rs` + `src/full_split.rs`, `_gov_max`'s carrier + `GovScope`,
+   **ten** `R70*`/`R71*` tables (the pre-flight's step list said nine; its own census enumerates
+   ten), five swapped cells as named panics, `tests/slice_ac_cells.rs` — **10 gates**, nine
+   deliberate mutations all caught. `build_reference_split_cascade` split into a
+   table-parameterised body: neither rung defines `__init__`, so both inherit rung 69's eleven
+   guards. See [[rust-port-slice-ac-step1]].
+
 ## Slice AB, step by step
 
 1. **Step 1** — `src/reference_split.rs` 519 lines, 13 cell gates; nine swapped bodies panic.
