@@ -15837,6 +15837,54 @@ blindness, is present in step 5's reader too. Step 5 should run i02's analogue a
 it also misses in both languages, that is one inherited property of the family and not two
 coincidences.
 
+##### (e) **THE CLOSE-OUT REPEATED THE STEP'S OWN LESSON, AND CAUGHT THE CRATE'S CLIPPY CHECK NOT REACHING A SINGLE TEST TARGET**
+
+Two checks were run after the commit above, and both were worth running.
+
+**THE COMMITTED FILE HAD NEVER BEEN COMPILED.** The `slow`-count header correction (§ (a)) was
+made while `cargo test --release` was still in its *compile* phase, so which bytes of
+`tests/rung70.rs` the 131 / 1 295 run actually built is indeterminate. It is a doc comment and
+behaviour cannot turn on it, but *"the run that said so was void"* is this project's own recorded
+failure, so it was settled rather than reasoned about: `cargo test --release --test rung70` on the
+committed file reads **27 passed / 0 failed** in 4.09 s.
+
+**AND `cargo clippy --all-targets` HAS NEVER LINTED A `tests/*.rs` FILE IN THIS CRATE.** Run as
+every prior step in this slice runs it, it stops at the lib's ONE deliberate error — the `eq_op`
+NaN comparison at `src/stator_transient.rs:2757`, which slices Z, AA and AB each recorded and
+kept — and `could not compile turbojet (lib)` **aborts every dependent target**. Zero `tests/`
+paths appear anywhere in its output. So *"zero clippy findings in this slice's files"*, whenever
+the files named were TEST files, was produced by a command that could not reach them: it is the
+**`MISS` that means "no gate in the files I ran"** — § (b) repair 1, and slice AB step 3's I6 —
+arriving one level up, in this step's own close-out, and caught only because the step had just
+finished writing that lesson down.
+
+Re-run as `cargo clippy --all-targets -- -A clippy::eq_op`, the lint reaches **24 test targets**
+and finds **48 warnings** in them, `0` errors. The distribution is disclosed rather than
+summarised, because the interesting part is that it is not zero:
+
+| | |
+|---|---|
+| test targets reached | **24** (of which `slice_v_smoke` alone carries 11, `spatial_oracle` and `two_spool_transient_oracle` 4 each) |
+| total findings in test targets | **48** |
+| **`tests/rung70.rs`** | **1** — `clone_on_copy` at line 319, a `.clone()` on an `Option<Floor>` that is `Copy` |
+| `tests/rung69.rs` | **0** |
+
+**ONLY THIS STEP'S OWN FINDING IS FIXED**, and it is behaviour-free by the type (`Copy`, so the
+clone and the move are the same bytes): the `.clone()` is dropped and `tests/rung70.rs` re-runs
+**27 / 0**, after which `--all-targets -- -A clippy::eq_op` is **0 errors and 0 findings in
+`rung70`**. The other **47 are DISCLOSED AND BOOKED, NOT SILENTLY FIXED** — they belong to nine
+slices' files, a sweep through them is not step 4's scope, and quietly editing another slice's
+shipped test file is how a green gate stops meaning what its own slice recorded.
+
+**ONE PRIOR CLAIM IS CORRECTED BY THIS, IN BOTH DIRECTIONS.** Slice AB step 3 recorded *"zero
+findings in any of this slice's four files"*. Measured now: `tests/rung69.rs` genuinely is **0** —
+so the claim was true there, but **unearned**, since the instrument that produced it never opened
+the file — while `slice_ab_cells` and `slice_ab_smoke` carry **one each**, so on those it was
+simply **wrong**. A claim that is right for no reason and wrong two files over is the same defect
+either way, and the standing rule this leaves is: **`--all-targets` is not `--all-targets` while
+any target it depends on fails to compile**, so the `-A clippy::eq_op` form is the one later slices
+should quote.
+
 ### ~~The four~~ **THE EIGHT** runtime-introspection tests, one by one
 
 **CORRECTED 2026-08-20 by § 5.19 (vii) — this table named FOUR and an enumeration over the 27

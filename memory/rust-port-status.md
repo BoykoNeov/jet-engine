@@ -82,6 +82,9 @@ booked to slice AH. See [[rust-port-slice-ac-preflight]].
    and their bars are one-sided; both are booked to step 6's oracle as named value keys. The file
    header's *"15 carry `slow`"* is corrected to the **measured 11** (22 of 57 over the slice). Full
    gate **131 targets / 1 295 passed / 0 failed**, predicted before the run and held.
+   **Close-out finding:** `cargo clippy --all-targets` aborts on the lib's deliberate `eq_op`
+   error and so had **never linted any `tests/*.rs`**; with `-A clippy::eq_op` it reaches 24 test
+   targets and 48 warnings. The one in `rung70.rs` is fixed, the other 47 disclosed and booked.
    See [[rust-port-slice-ac-step4]].
 
 ## Slice AB, step by step

@@ -316,7 +316,7 @@ fn reduce_inherited_arms_bit_for_bit() {
     ];
     assert_eq!(cases.len(), 4, "Python's loop has four arms");
     for (i, (arm, surge, lg)) in cases.into_iter().enumerate() {
-        let a = march(&cross_of(&arm), DS, surge.clone(), lg, None, None);
+        let a = march(&cross_of(&arm), DS, surge, lg, None, None);
         let b = march(&ref_of(&arm), DS, surge, lg, None, None);
         assert_eq!(keys(&a), keys(&b), "case {i}");
     }
