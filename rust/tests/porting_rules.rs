@@ -18,7 +18,7 @@
 //! no oracle — and keeping it oracle-free is what makes it a detector rather than a duplicate.
 
 use turbojet::gas::powp;
-use turbojet::reference_split::{csqrt, C64};
+use turbojet::reference_split::{c_div, c_neg, csqrt, py_two, C64};
 
 /// The grid: a geometric sweep across the magnitudes the cycle actually produces — pressure
 /// ratios near 1, temperatures in the hundreds, enthalpies in the millions.
@@ -236,4 +236,40 @@ fn csqrt_matches_the_real_branch_it_replaced_and_diverges_only_at_negative_zero(
     let rt = csqrt(C64 { re: 4462.0, im: 4947.0 });
     assert_eq!(rt.re, 74.578819632228_f64);
     assert_eq!(rt.im, 33.16625299512139_f64);
+
+    // …AND THE HALF THE FIRST WRITING OF THIS RULE LEFT AS AN ARGUMENT.
+    //
+    // The sweep above drives `im: +0.0`, which the census says **5** of 96 shipped calls carry.
+    // The other **90** carry `-0.0`, and for those the claim was *"`c_div` washes the signed zero
+    // out of the `.real` the reader takes"* — a Python measurement transferred to Rust by
+    // reasoning, invisible to every value gate in the slice. It is measured here instead, on the
+    // composition `zeta_pair` actually evaluates: `(-s / (2*rt)).real`.
+    //
+    // `p.re >= 0` on all 90, so this drives that arm; the `p.re < 0` arm is the one the doc note
+    // above says would flip the sign of a NON-zero component, and it is asserted to do so, since
+    // a silent agreement there would mean this half had stopped measuring anything.
+    for (sr, si, pr) in [(-42.0_f64, 0.0_f64, 1225.0_f64),
+                         (-217.0, -25.5, 4462.0),
+                         (-3.5, 12.25, 0.75)] {
+        let s_ = C64 { re: sr, im: si };
+        let pos = c_div(c_neg(s_), py_two(csqrt(C64 { re: pr, im: 0.0 }))).re;
+        let neg = c_div(c_neg(s_), py_two(csqrt(C64 { re: pr, im: -0.0 }))).re;
+        assert_eq!(pos.to_bits(), neg.to_bits(),
+                   "the signed zero reached the returned `.real` at p.re = {pr}");
+    }
+    // THE NEGATIVE-real arm, where the same `copysign` lands on a NON-zero component: the two
+    // signs must NOT agree, or the divergence this rule exists for has quietly disappeared.
+    //
+    // **AND `s` HAS TO BE COMPLEX FOR THAT, WHICH THE FIRST WRITING OF THIS CONTROL GOT WRONG.**
+    // With a purely real `s` the quotient's `.real` comes out `+0.0` under BOTH signs — `a.re`
+    // multiplies a zero ratio and `a.im` is a signed zero, so the result is zero either way and
+    // the flip cannot show. The control failed, and it was the CONTROL that was wrong: the
+    // divergence needs a negative `p.re` **and** an `s` with a non-zero imaginary part. Measured
+    // here, the two differ in SIGN and not merely in bits (±0.19087).
+    let s_ = C64 { re: -217.0, im: -25.5 };
+    let pos = c_div(c_neg(s_), py_two(csqrt(C64 { re: -4462.0, im: 0.0 }))).re;
+    let neg = c_div(c_neg(s_), py_two(csqrt(C64 { re: -4462.0, im: -0.0 }))).re;
+    assert_ne!(pos.to_bits(), neg.to_bits(),
+               "at p.re < 0 with a complex s, the sign of the zero moves a NON-zero component —                 if these agree, this rule has stopped measuring the thing it was written for");
+    assert!(pos > 0.0 && neg < 0.0, "and the difference is a SIGN: {pos} vs {neg}");
 }

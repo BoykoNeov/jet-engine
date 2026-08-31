@@ -15964,6 +15964,20 @@ sign of a NON-zero component**, which is why that count is measured and not reas
 `tests/porting_rules.rs` gains **RULE 4**, which holds both halves: bit-equality on real arguments
 over the file's own grid, and the `-0.0` divergence asserted rather than left latent.
 
+**AND RULE 4's FIRST WRITING COVERED THE 5 CALLS AND NOT THE 90.** Its sweep drove `im: +0.0`, the
+sign **5** of 96 shipped calls carry, while the `-0.0` sign that **90** carry appeared as a single
+input asserted only to DIVERGE — so the sentence *"`c_div` washes it out of the `.real`"* was a
+Python measurement transferred to Rust by argument, and no shipped Rust gate could see it.
+Extended IN PLACE (the test count is unchanged, so the gate total above still stands) to drive the
+composition `zeta_pair` evaluates, `(-s / (2*rt)).real`, under both signs.
+
+**ITS NEGATIVE-REAL CONTROL THEN FAILED, AND THE CONTROL WAS WHAT WAS WRONG.** With a purely real
+`s` the quotient's `.real` is `+0.0` under both signs — `a.re` multiplies a zero ratio and `a.im`
+is a signed zero — so the flip cannot show, and a control that cannot see is not a control (rung
+71's own probe-11 lesson, § 5.27 (xii)). The divergence needs a negative `p.re` **and** a complex
+`s`; at `s = -217 - 25.5i`, `p.re = -4462` the two answers differ in SIGN (`±0.19087`), and that
+is what the rule now asserts.
+
 ##### (d) **THE SECOND FAILURE WAS MINE: A CENSUS COUNTER THE THING BEING MEASURED NEVER TOUCHES**
 
 `the_march_is_reused_and_not_copied` first asserted `Census70::triple_laws_gov > 0` after a rung-71
@@ -16175,13 +16189,42 @@ carries a fenced block, and the first reasoning was *"it is ` ```text `, so no d
 argument, where the arithmetic needed a measurement. The `Doc-tests turbojet` phase reports
 **`running 0 tests`**, so `1 295 + 30 + 1` is right for the reason claimed and not by luck.
 
+**THE PYTHON GATE WAS NOT RUN, AND THAT IS A STATEMENT AND NOT AN OMISSION.** No Python changed:
+the two analogue injections were reverted and `git diff --quiet` proves it, and `git status` shows
+`turbojet/` and `tests/` untouched at both commits. What the Python side DID get is more than a
+gate run would give — `test_rung71.py` was executed four times over this step (baseline plus both
+analogues plus the interception probes) and `test_rung70.py` twice, 57 collected each time.
+
 **NO TIMING IS QUOTED FROM THIS RUN, AND THAT IS DELIBERATE.** The first attempt on final bytes
 did not complete at all — three targets died with `os error 1455` (§ (h)) — and this one ran at
 `--jobs 2` on a box carrying an external `cargo test --workspace`. A duration off either is not
 documentation ([[never-run-the-gate-for-timing]]); the PASS/FAIL counts are unaffected by load and
 are the only thing taken from it.
 
-##### (l) WHAT STEP 5 DOES NOT DO
+##### (l) **P6 IS FALSIFIED, ON ITS SECOND CLAUSE, BY THIS STEP's OWN GATE** — said in P6's OWN WORDS
+
+§ (a)–(c) tell this story, and none of them says it in the vocabulary step 7's ledger will read.
+P6 was registered as:
+
+> `_zeta_pair` needs Python's complex division spelled as CPython spells it; the complex product
+> and `cmath.sqrt` are free on this plant, the latter only because `p` is positive-real on 18/18 —
+> asserted in the port, not assumed. **Falsified if a schoolbook `cdiv` reproduces the oracle, or
+> if `p.im != 0` ever occurs.**
+
+**`p.im != 0` OCCURRED** — once, in `tests/rung71.rs`'s damping gate, which is exactly the clause
+P6 named. So:
+
+| P6's clause | verdict |
+|---|---|
+| complex DIVISION needs CPython's spelling | **STANDS** — probe 10's 5-of-18 disagreement is untouched by this step |
+| `cmath.sqrt` is free, `p` positive-real on 18/18 | **FALSIFIED** — 1 of 96 calls is genuinely complex |
+| *"asserted in the port, not assumed"* | **NO LONGER TRUE** — the `assert!` is gone, replaced by the general algorithm |
+
+Recorded this way so step 7 reads P6 as **settled-and-falsified** rather than as open, and so the
+last row is not mistaken for a regression: the assertion was removed because it was WRONG about
+the population, and what stands in its place is `tests/porting_rules.rs` RULE 4.
+
+##### (m) WHAT STEP 5 DOES NOT DO
 
 The oracle (step 6) and the five dispatch gates (step 7) are still owed. **P2 remains unsettleable
 before step 7** — nothing in this step's ten injections speaks to the swapped cells, and § (f)'s
@@ -16189,12 +16232,19 @@ j09 row is the closest thing to evidence and is not one: it breaks the READERS t
 where P2's claim is about a DISPATCH harness that does not exist yet. Recorded as owed rather than
 as on track, which is slice AB step 3 § (d)'s correction now applied twice.
 
-**AND ONE ITEM IS ADDED TO STEP 6's LIST BY THIS STEP** rather than left to be rediscovered there:
+**AND TWO ITEMS ARE ADDED TO STEP 6's LIST BY THIS STEP** rather than left to be rediscovered there:
 `csqrt` is now reachable with a genuinely complex argument, but **no shipped reader reaches it that
 way** — only the gate does. So the oracle's dump cannot cover the branch § (a) opened, and the
 `assert!`-shaped protection it replaced is gone. The invariant that stands in its place is
 `tests/porting_rules.rs` RULE 4, and step 6 should read that as the coverage statement rather than
 looking for a dump key that will not exist.
+
+**AND `zeta_ring`'s DOC COMMENT QUOTES FOUR DISAGREEMENT PAIRS OF WHICH THIS STEP DROVE ONE.**
+*"0.960 vs 0.686, 1.279 vs 0.670, 1.045 vs 0.924, and 1.035 on an arm whose spectrum is entirely
+REAL"* — the second is § (a)'s, reached because a shipped gate constructs it. The other three came
+from a **12-arm** clock grid that is not the shipped default, so no reader drives them and this
+step does not manufacture a driver for them. Booked to step 6 rather than measured now, and named
+here so their absence is a decision instead of an omission.
 
 ### ~~The four~~ **THE EIGHT** runtime-introspection tests, one by one
 

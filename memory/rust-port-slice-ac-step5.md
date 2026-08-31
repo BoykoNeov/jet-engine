@@ -64,6 +64,13 @@ assertion on behalf of code that no longer exists. Scoped to the function body, 
 must. **A source-text gate must be scoped at least as tightly as the Python it ports**, and the
 scoping is what earns a count bar, not the other way round.
 
+**AND A FOURTH, IN THE REPAIR ITSELF.** The invariant written to keep the `csqrt` replacement
+honest drove `im = +0.0` — the sign **5** of 96 shipped calls carry — while the `-0.0` that **90**
+carry got one input asserted only to diverge. **An instrument written for a measured population
+must be pointed at the common case, not the tidy one.** Extended in place; its negative-real
+control then failed, and the CONTROL was wrong: with a purely real `s` the divergence cannot reach
+`.real` at all, so it needs a negative `p.re` AND a complex `s`.
+
 **How to apply:** when a port ships an `assert!` justified by a measurement, write down what
 population was measured. *Readers* and *the shipped suite* are different populations, and a
 constructed-input gate is exactly the case a reader census cannot see. And before asserting a
