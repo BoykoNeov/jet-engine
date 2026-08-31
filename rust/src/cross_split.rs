@@ -115,7 +115,7 @@ use crate::lagged_bleed::{lagged, py_max3};
 use crate::limited_bleed::{BleedLimiter, Regime};
 use crate::map::ComponentMap;
 use crate::reference_split::{
-    build_split_family_cascade, c_add, c_div, c_mul, c_neg, csqrt_gated, cubic_roots_c,
+    build_split_family_cascade, c_add, c_div, c_mul, c_neg, csqrt, cubic_roots_c,
     invariants, opt_fold, py_two, sorted_by_abs, C64,
 };
 use crate::stator_transient::{
@@ -877,16 +877,20 @@ pub fn assert_state_boundary(
 /// through [`py_two`] because a `float * complex` is a four-multiply product and not a scaling —
 /// slice AB found ONE port defect in 15 957 keys and it was that exact class at `0.5`.
 ///
-/// [`csqrt_gated`] carries P6's gated condition: `p` is measured positive-real on 18 of 18 calls
-/// and ASSERTED here rather than assumed, because *"the only form this rung calls"* is the kind of
-/// sentence this slice has already falsified once.
+/// **`p` IS NOT ALWAYS REAL, AND THE PORT LEARNED THAT FROM A SHIPPED TEST.** § 5.27 (iv) measured
+/// it positive-real on 18 of 18 calls of the rung-70 READERS and step 3 shipped that as an
+/// `assert!`; `tests/test_rung71.py`'s damping-reader gate then handed this function the spectrum
+/// `[-194, -23 +/- 25.5i]`, whose two largest moduli are one real root and ONE member of the pair,
+/// and the assertion refused a call Python answers with `1.278`. [`csqrt`] is now CPython's full
+/// `c_sqrt` and the real branch is unmoved -- see its own note, and RULE 4 in
+/// `tests/porting_rules.rs`.
 pub fn zeta_pair(roots: [C64; 3]) -> Option<f64> {
     let sorted = sorted_by_abs(roots);
     // Python's `sorted(roots, key=abs)[1:]` — the two LARGEST by modulus, stably ordered.
     let (n0, n1) = (sorted[1], sorted[2]);
     let s = c_add(n0, n1);
     let p = c_mul(n0, n1);
-    let rt = csqrt_gated(p);
+    let rt = csqrt(p);
     if rt.abs() == 0.0 {
         None
     } else {

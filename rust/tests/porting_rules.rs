@@ -18,6 +18,7 @@
 //! no oracle — and keeping it oracle-free is what makes it a detector rather than a duplicate.
 
 use turbojet::gas::powp;
+use turbojet::reference_split::{csqrt, C64};
 
 /// The grid: a geometric sweep across the magnitudes the cycle actually produces — pressure
 /// ratios near 1, temperatures in the hundreds, enthalpies in the millions.
@@ -161,4 +162,72 @@ fn multiplication_is_not_associative() {
     assert!(differs > 0,
             "the two groupings agreed everywhere, which would make gas.rs's porting rule 1 \
              vacuous — it is not, so this test has stopped measuring what it claims to.");
+}
+
+/// RULE 4 — `csqrt` is CPython's GENERAL `c_sqrt`, and it must not have moved the REAL branch it
+/// replaced.
+///
+/// Added at slice AC step 5, and the reason is a defect this file exists to catch. Step 3 shipped
+/// `csqrt_gated`, whose body was the real-argument spelling under an `assert!(p.im == 0.0)` —
+/// registered in § 5.27 (iv) as a *gated condition* on the strength of `p` being measured
+/// positive-real on **18 of 18 calls of the shipped rung-70 READERS**. Rung 71's own damping-reader
+/// gate then drove rung 70's `_zeta_pair` on a CONSTRUCTED spectrum where `p = 4462 + 4947i`, and
+/// the assertion refused a call Python answers with `1.278` — a number the port had already
+/// written into `zeta_ring`'s doc comment at the same step. **The measurement was of the readers;
+/// the claim was about the rung, and the shipped test suite is in the second set.**
+///
+/// So the general algorithm went in, and this rule is what keeps the replacement honest. It has
+/// TWO halves and the second is the one an argument would have skipped:
+///
+/// * on a real argument with `im = +0.0` the general spelling is **bit-for-bit** the real one
+///   (`ax/8` is a power-of-two scaling, `hypot(x, 0) = |x|`, and `2*sqrt(ax/4) = sqrt(ax)`
+///   exactly), so nothing the port already ships can move;
+/// * at `im = -0.0` it deliberately **does not** — CPython's `copysign(d, z.imag)` returns
+///   `-0.0` where the real-only spelling returns `+0.0`. That divergence is invisible to every
+///   value gate in the slice, so it is ASSERTED here rather than left latent.
+///
+/// **AND THE SECOND HALF IS THE COMMON CASE, NOT THE CORNER — the first writing of this comment
+/// had it backwards.** Intercepting all 96 `cmath.sqrt(p)` calls the two shipped suites make:
+/// **90 carry `im == -0.0`**, 5 carry `+0.0`, one `p` is genuinely complex, the `sqrt` differs
+/// bit-wise on **91**, and the RETURNED `zeta` differs on **1** — the complex one. The 90 are
+/// harmless only because `p.re < 0` on **zero** of them, which keeps `copysign` on the imaginary
+/// component's zero instead of flipping the sign of a non-zero one. That count is a measurement,
+/// and it is the reason this rule asserts the divergence rather than describing it.
+#[test]
+fn csqrt_matches_the_real_branch_it_replaced_and_diverges_only_at_negative_zero() {
+    // The real-only spelling `csqrt` replaced, transcribed here so the comparison has two sides.
+    fn real_only(d: f64) -> (f64, f64) {
+        if d == 0.0 {
+            (0.0, 0.0)
+        } else if d > 0.0 {
+            (d.sqrt(), 0.0)
+        } else {
+            (0.0, (-d).sqrt())
+        }
+    }
+    let mut n = 0usize;
+    for &d in &grid() {
+        for sign in [1.0f64, -1.0] {
+            let x = sign * d;
+            let g = csqrt(C64 { re: x, im: 0.0 });
+            let r = real_only(x);
+            assert_eq!((g.re.to_bits(), g.im.to_bits()), (r.0.to_bits(), r.1.to_bits()),
+                       "csqrt moved the real branch at {x}");
+            n += 1;
+        }
+    }
+    println!("csqrt == the real-only spelling, bit for bit, at {n} real arguments");
+
+    // …and the ONE place it is different, on purpose.
+    let neg0 = csqrt(C64 { re: 4.0, im: -0.0 });
+    assert_eq!(neg0.re, 2.0);
+    assert!(neg0.im.is_sign_negative() && neg0.im == 0.0,
+            "CPython's copysign carries the sign of a zero imaginary part; a real-only spelling \
+             cannot, and that is the whole reason this half is measured");
+    assert!(csqrt(C64 { re: 4.0, im: 0.0 }).im.is_sign_positive());
+
+    // THE CALL THAT FALSIFIED THE ASSERTION, at its own value — `cmath.sqrt(4462 + 4947j)`.
+    let rt = csqrt(C64 { re: 4462.0, im: 4947.0 });
+    assert_eq!(rt.re, 74.578819632228_f64);
+    assert_eq!(rt.im, 33.16625299512139_f64);
 }

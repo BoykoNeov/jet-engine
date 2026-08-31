@@ -1115,20 +1115,84 @@ pub fn c_div(a: C64, b: C64) -> C64 {
     }
 }
 
-/// Python's `cmath.sqrt(z)` for the REAL-valued argument rung 70 hands it — [`csqrt_real`] under
-/// a name a rung-70 reader can call, and the assertion that the argument IS real.
+/// Python's `cmath.sqrt(z)` for a GENERAL complex argument — CPython's `c_sqrt`, in full.
 ///
-/// § 5.27 (iv) registered this as a **GATED CONDITION rather than an assumption**. `p` is the
-/// product of the two largest-modulus roots of a REAL cubic, so it is real whenever those two are
-/// a conjugate pair or both real — measured positive-real on **18 of 18** calls, `im != 0` on
-/// **0**. It is *not* covered in principle: if the near-zero root is one of the complex pair then
-/// `nz` holds one real and one complex root and `p` is genuinely complex. So the port ASSERTS it
-/// and step 6's oracle re-reads it, because *"the only form this rung calls"* is exactly the kind
-/// of sentence this slice has already falsified once.
-pub fn csqrt_gated(p: C64) -> C64 {
-    assert!(p.im == 0.0,
-            "rung-70's `_zeta_pair` calls `cmath.sqrt(p)` on the PRODUCT of the two              largest-modulus roots of a real cubic, which is real whenever those two are a              conjugate pair or both real -- measured on 18 of 18 shipped calls. Got im = {}.              This is the GATED CONDITION of P6, not a defence: a genuinely complex `p` needs              CPython's full `c_sqrt`, which is deliberately NOT ported.", p.im);
-    csqrt_real(p.re)
+/// # THE GATED CONDITION THIS REPLACES WAS FALSIFIED BY A SHIPPED TEST ONE FILE OVER
+///
+/// § 5.27 (iv) registered `p.im == 0` as a **gated condition rather than an assumption**: `p` is
+/// the product of the two largest-modulus roots of a real cubic, so it is real whenever those two
+/// are a conjugate pair or both real — measured positive-real on **18 of 18** calls of the shipped
+/// rung-70 READERS. Step 3 shipped it as an `assert!`, with the honest caveat that a near-zero
+/// root inside the complex pair leaves `nz` holding one real and one complex root and makes `p`
+/// genuinely complex.
+///
+/// **That caveat is not hypothetical — `tests/test_rung71.py` DRIVES it on purpose.** Rung 71's
+/// damping-reader gate hands rung 70's `_zeta_pair` the constructed spectrum
+/// `[-194, -23 ± 25.5i]`, whose two largest moduli are one real root and one member of the pair:
+/// `p = 4462 + 4947i`, and Python answers `1.27809528556979`. The assertion refused it.
+///
+/// **AND THE NUMBER WAS ALREADY WRITTEN DOWN IN THIS PORT.** [`zeta_ring`]'s own doc comment
+/// quotes the four arms where the two readers disagree, *"1.279 vs 0.670"* among them — so the
+/// port published a value that its own `sqrt` could not produce, in a file committed at the same
+/// step. The measurement was of the READERS; the claim was about the RUNG. Those are different
+/// sets, and the shipped suite is in the second one.
+///
+/// # THE `assert!` CAUGHT WHAT THE GATE COULD NOT, AND THAT IS THE HALF WORTH KEEPING
+///
+/// The real-only spelling does not merely refuse this call — driven past its own assertion it
+/// returns `1.624295178664163` where Python returns `1.278095…`. **And rung 71's shipped gate
+/// passes on both**: it asks `|zeta_pair(bad) − ring| > 0.5`, and the two candidates are `0.608`
+/// and `0.954` from `ring`. A one-sided bar cannot tell a right answer from a wrong one on the
+/// same side of it, so a port that had shipped the fast path WITHOUT the assertion would have
+/// been green and wrong. Step 4 found gates too weak to catch an injection; this is the mirror
+/// — a defensive assertion catching what the ported gate structurally could not.
+///
+/// # THE SPELLING IS CPython's, AND THE REAL BRANCH IS UNMOVED IN VALUE
+///
+/// ```text
+/// ax /= 8;   s = 2*sqrt(ax + hypot(ax, ay/8));   d = ay/(2*s)
+/// re >= 0 ? (s, copysign(d, im)) : (d, copysign(s, im))
+/// ```
+///
+/// On a real argument every arithmetic step is exact — `ax/8` is a power-of-two scaling,
+/// `hypot(x, 0) = |x|`, the sum is `ax/4`, and `2*sqrt(ax/4) = sqrt(ax)` because both operations
+/// only shift the exponent. The one difference is the SIGN OF A ZERO: `copysign(d, im)` carries
+/// `im`'s sign, and the real-only spelling always returned `+0.0`.
+///
+/// **THAT IS NOT THE RARE CASE — IT IS THE COMMON ONE, AND THE FIRST WRITING OF THIS PARAGRAPH
+/// SAID THE OPPOSITE.** Intercepting all 96 `cmath.sqrt(p)` calls the two shipped suites make:
+///
+/// | | measured |
+/// |---|---|
+/// | `p.im == -0.0` | **90** of 96 — and `p.re < 0` on **0** of those |
+/// | `p.im == +0.0` | 5 |
+/// | genuinely complex `p` | **1** (rung 71's gate) |
+/// | `sqrt` differs BIT-WISE from the real-only spelling | **91** |
+/// | the RETURNED `zeta` differs | **1** |
+///
+/// So the divergence reaches 90 shipped calls and changes nothing on any of them: `p.re >= 0`
+/// throughout, which confines it to the imaginary component's zero, and [`c_div`] washes that out
+/// of the `.real` the reader takes. Had any of the 90 carried `p.re < 0` the same `copysign` would
+/// have flipped the sign of a NON-zero component instead — which is why the `re < 0` count is
+/// measured here and not reasoned about. `tests/porting_rules.rs` RULE 4 holds both halves.
+///
+/// Restricted to normal magnitudes, exactly as [`csqrt_real`] declares: CPython's subnormal
+/// rescaling branch (`CM_SCALE_UP`/`CM_SCALE_DOWN`) is not reproduced, and `p` here is a product
+/// of roots of order 1e1…1e4.
+pub fn csqrt(z: C64) -> C64 {
+    // CPython's own early return, and it PRESERVES the sign of the zero imaginary part.
+    if z.re == 0.0 && z.im == 0.0 {
+        return C64 { re: 0.0, im: z.im };
+    }
+    let ax = z.re.abs() / 8.0;
+    let ay = z.im.abs();
+    let s = 2.0 * (ax + ax.hypot(ay / 8.0)).sqrt();
+    let d = ay / (2.0 * s);
+    if z.re >= 0.0 {
+        C64 { re: s, im: d.copysign(z.im) }
+    } else {
+        C64 { re: d, im: s.copysign(z.im) }
+    }
 }
 
 /// Python's `sorted(roots, key=abs)` — **STABLE**, which is load-bearing: the real branch returns
