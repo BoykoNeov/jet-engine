@@ -16669,6 +16669,220 @@ because it was measured achievable (100 % on both oracles) and because a toleran
 real defect ride for a whole phase. Later phases may fall back to Option B, with the deviation
 distribution published here.
 
+### 5.28 SLICE AD (rung 72, `SharedActuatorTransient`) — PRE-REGISTERED, twelve probes MEASURED first
+
+Phase 7 is authorised (§ 5.19), so this slice needs no fresh sign-off. Twelve probes,
+`M:\claud_projects\temp\rust-phase7\probe_ad_{a..l}.py`, PyPy except where an arm is named.
+
+#### (i) THE LEADING FINDING — **A SHIPPED `Usage:` BLOCK CALLS A METHOD THAT DOES NOT EXIST, AND IT IS NOT THE ONLY ONE**
+
+Rung 72's class docstring ends with a four-line `Usage:` block. Three of the four methods exist.
+The fourth, `t.shared_modes(FLIGHT, 1000., 1400., 1200., sm=0.4545)`, **has zero definitions
+anywhere in `engine.py`** — 0 `def` sites, 0 `self.X =` assignments, 0 locals (probe J). A reader
+who runs the documented example gets `AttributeError`.
+
+Run over all 58 classes rather than left as one row ([[rust-port-slice-w]] — *run a refuted probe
+over the WHOLE table*), the same predicate finds **95 method names in class docstrings and three
+that do not exist on their own class**:
+
+| class | rung | phantom | what it was renamed to |
+|---|---|---|---|
+| `LaggedBleedTransient` | 65 | `restored_plant` | (`marginal_mode` / `fuel_authority`) |
+| `TwoLagCascadeTransient` | 66 | `cascade_modes` | `marginal_mode_cascade` |
+| **`SharedActuatorTransient`** | **72** | **`shared_modes`** | **`shared_cells`** |
+
+Each is a **renamed reader whose docstring kept the old name**; rung 72's `_rk4_floor_shared`
+docstring names the same phantom a second time (*"`shared_modes` MEASURES `|lam|` against it"*),
+where rung 73's exactly-parallel sentence names `applied_cells`, which **does** exist and which
+three shipped tests call. **The Rust port carries none of the three** (grep over `rust/src` and
+`rust/tests`), so the port is clean by construction and has no record that these readers were
+promised; two of the three are in rungs already ported (65, 66), and neither slice noticed.
+
+**AND THE SECOND HALF OF THAT PROBE WAS ALL INSTRUMENT — CLASSIFIED BEFORE IT WAS REPORTED.**
+Probe I also swept backticked ladder-shaped names in *method* docstrings and reported 19 misses.
+Probe J classified all 19 before a single one was written down: **4 are methods on a different
+class** (legitimate cross-references), and `_b_state` / `_b_forced` are **instance attributes**
+with 75 and 3 assignments — `hasattr(cls, x)` is False for both. **Zero of the 19 are real.** The
+class-docstring sweep survives because `t.NAME(` is call syntax, which only a method can satisfy.
+
+#### (ii) THE CELL CENSUS — **3, AND IT IS THE FIRST BACK-HALF ROW WHERE THE HAND-WRITTEN COLUMN MEASURES RIGHT**
+
+§ 5.19 (x)'s ADD column says 3 for AD. AC's said 1 and measured **0**; § 5.19 (xi).1 recorded
+`_closer` listed as a slice-X cell while being defined exactly once. So the column is checked three
+independent ways (probe A + § 5.27 (x)'s existing sweep), all emitted:
+
+| name | definers | classes | readers | signature class | verdict |
+|---|---|---|---|---|---|
+| `_reference` | **2** | 72, 73 | 2 | SAME | **CELL** |
+| `_rk4_floor_shared` | **3** | 72, 73, 74 | 2 | SAME | **CELL** |
+| `_shared_rig` | **8** | 72–80 | 4 | SAME, all eight | **CELL** |
+
+All three clear filter 1 (defined ≥ 2 ⇒ an overrider exists), filter 2 (a caller exists), and
+filter 3 (every override **behavioural**, by AST diff). On substitutability the 358-pair sweep of
+§ 5.27 (x) already booked the only two name-reuses in the phase — `split_gains` (70→80) and `_legs`
+(63→77, owed to AH) — and none of these three is among them. **The prediction that
+`_rk4_floor_shared` would be defined once and fall out is REFUTED by count.**
+
+#### (iii) THE ARITHMETIC SURFACE — **A COMPLEX QUARTIC, AND ITS THREE RISKY ROOTS ARE DEAD ON EVERY SHIPPED INPUT**
+
+AC § (iv)'s hazard was complex *division*. Here `_quartic_roots_c` is a 500-iteration Durand–Kerner
+with a start scaled by
+
+```
+scale = max(1.0, |a3|, |a2|**0.5, |a1|**(1/3.), |a0|**0.25)
+```
+
+— a complex integer power and **three real fractional powers**, one of them a cube root, which is
+the operation with the least chance of agreeing across libms. Probe F intercepted every call the
+whole rung-72 suite makes:
+
+| | measured |
+|---|---|
+| calls | **1 068** |
+| **distinct coefficient vectors** | **375** — the real size of the solver claim ([[rust-port-arithmetic-is-pypy]]) |
+| **which term wins `scale`** | **`\|a3\|`, on 1 068 of 1 068** |
+| iterations to converge | 9–29; the **500 cap is never hit** |
+| the `den == 0` guard | **never fires** |
+| complex roots per call | `{4: 717, 3: 237, 2: 92, 1: 22}` |
+| min root separation < 1e-6 | **167 of 1 068** |
+
+**So the cube root and both even roots are UNREACHABLE on the shipped suite**, and a port defect in
+any of them would be invisible to every gate — a fact to disclose, never one to gate. What is
+reachable is `complex ** k` for `k = 0..3`, and probe E settles its spelling from bit patterns:
+**repeated multiplication matches on all four exponents; `exp(k log z)` and the polar form both
+differ at `k = 1, 2, 3`** — [[rust-port-power-spelling]], confirmed rather than assumed. `x**0.5`
+equals `sqrt(x)` and `x**0.25` equals `sqrt(sqrt(x))` on all six samples. **PyPy and CPython agree
+bit-for-bit on all of it**; the first run of probe E printed *"ARMS DIFFER"* because my own diff
+compared the **version banner** — a self-inflicted false alarm, recorded because a real one would
+have looked identical.
+
+**The 3-complex-root and 1-complex-root counts are impossible for a real quartic**, whose complex
+roots come in conjugate pairs. They are Durand–Kerner leaving an asymmetric last-bit imaginary
+residue — one member of a pair at exactly `0.0` and the other not. **That makes bit-exactness the
+only achievable bar here**: a port agreeing to 1e-14 would move 259 of these counts.
+
+#### (iv) `_authority`'s TOLERANCE NEVER DOES ANY WORK — **EVERY TIE IS AN EXACT EQUALITY**
+
+`_authority(gf, gr, tol=1e-12)` returns `dormant` / `tie` / `fuel` / `gov` and is the rung's third
+regime label. Over the suite (probe H): **25 702 calls — dormant 35, fuel 4 095, gov 21 571, tie 1**
+(35 + 4 095 + 21 571 + 1 = 25 702, so the partition is exhaustive). And:
+
+| | |
+|---|---|
+| calls with `\|gf − gr\| == 0.0` | **36** |
+| calls with `\|gf − gr\| <= 1e-12` | **36** |
+| calls in the OPEN interval `0 < \|gf − gr\| <= tol` | **0** |
+
+Thirty-five of the exact zeros are caught by the `dormant` branch first, leaving the single `tie`.
+**So `gf == gr` would be bit-identical to the shipped predicate on every shipped input** — the
+tolerance is unobservable, and a gate asserting it does anything would be vacuous.
+[[rust-port-slice-t-step1]]'s exact-zero shape, in a threshold rather than a sign.
+
+#### (v) **THE ONE CELL WHOSE ENTIRE CONTENT IS A MESSAGE, AND THE SHIPPED NEEDLE DISCRIMINATES NOTHING**
+
+`_rk4_floor_shared`'s three bodies have the condition `ds * rate <= 2.0` **character for character
+identical** (probe C) — exactly `_rk4_floor`'s shape, which `src/reference_split.rs` already calls
+*"THE ONE SWAP NO VALUE KEY CAN SEE"* and gates by `#[should_panic]` on a needle. The entire cell is
+the assertion's prose.
+
+It is called 39 times and **fires once**: `tests/test_rung72.py:445` gates it with
+`match=r"FOUR actuator states"`. Measured against all three rungs' messages (probe L):
+
+| rung | message contains `FOUR actuator states` | a token that IS unique to it |
+|---|---|---|
+| 72 | **yes** | `rung-72`, `-1/tau_f` |
+| 73 | **yes** | `rung-73`, `origin`, `neutrally` |
+| 74 | **yes** | `rung-74`, `coordinate` |
+
+**The shipped Python gate would pass with rung 73's or rung 74's floor installed.** Rung 69's
+analogue does not have this defect — its needle is `match="rank TWO"`, which is unique to it. So the
+ported gate must be written on a discriminating token and **cannot** inherit the suite's.
+
+**AND THE PROBE THAT FOUND IT FIRST GOT IT WRONG.** Probe K's needle regex was `match=['"]…` and
+this site is `match=r"…"`; it reported **4 of 5** needles and the floor as *ungated*, which is a
+weaker and different claim. Probe L repairs the regex, and the repaired reading is worse for the
+suite, not better — the gate exists and cannot fail for the reason it looks like it can.
+
+#### (vi) `_reference` IS THE BITWISE IDENTITY AT THIS RUNG — **so it has no value gate and no parent pointer**
+
+Rung 72's body is `return req`, and probe H confirms it on **195 278 of 195 278 calls, bitwise**.
+Rung 72 is also the **first** definer, so there is no parent function to install. Both halves of the
+usual dispatch-gate recipe are therefore unavailable, and the gate is AB's declared exception:
+*"THE ONE INJECTION THAT IS NOT A PARENT POINTER, AND IT IS DECLARED AS SUCH"* — a sentinel that
+proves the cell is **reached**, with the value break arriving at slice AE where rung 73's override
+makes `req` move.
+
+#### (vii) THE LAUNDERING MAP — decided NOW, not at the dispatch step
+
+AC step 7's finding: `at_lever`'s body rebuilds through the cascade builder and installs the
+**shipped** tables, so an injection into a core is laundered before a rig reader sees it.
+`_shared_rig` calls `self.at_lever(...)` at its third line, so the same mechanism is live here, and
+each cell's honest scoring seat is fixed in advance:
+
+| cell | dispatched by | scored on | laundered by |
+|---|---|---|---|
+| `_shared_rig` | 5 of 8 readers, on the core | any rig reader | — |
+| `_reference` | `integrate_fuel` | a **DIRECT** march on the injected core | every `*_rig` reader |
+| `_rk4_floor_shared` | `integrate_fuel` | a **DIRECT** march | every `*_rig` reader |
+
+#### (viii) SIZING, AND THE STEP COUNT PRICED FROM IT
+
+| slice | source lines | test lines |
+|---|---|---|
+| AB (69) | 708 | 582 |
+| AC (70 + 71) | 1 608 | 1 192 |
+| **AD (72)** | **1 177** — 0.73× AC, 1.66× AB | **502** — 0.42× AC, 0.86× AB |
+
+8 public readers, 481 lines: 5 reach `_shared_rig`, `integrate_fuel` reaches the other two, and
+`charpoly_selftest` reaches none — it is **pure arithmetic and a free oracle target**, a shipped
+classmethod returning a dict of residuals. 9 asserts; 5 of 5 `pytest.raises` sites carry needles
+(probe L). The arming grid is `shared_bill`'s **16 cells** — every subset of the four loops, each a
+full march — plus `_shared_march`'s two clock arms.
+
+**SIX STEPS**, and the count is itself a prediction (AC § (xi)'s precedent):
+
+| step | what it lands |
+|---|---|
+| 1 | the **3 cells**, `R72`'s five tables, the scope fields (`_share_law`, `_ic_order4`, `_ref_law`), the four reduce arms |
+| 2 | the march — `integrate_fuel`, `_integrate_fuel_shared`, `_with_share`, `_applied_clip`, `_authority`, and the three cell bodies |
+| 3 | the **quartic chain** — `_jac4`, `_charpoly4`, `_quartic_roots_c`, `_parent_quartic`, `charpoly_selftest`, `_quad_laws`, `_quad_gains_at`, `_riding4`, `_shared_march` |
+| 4 | the **28 ported gates** of `tests/test_rung72.py` |
+| 5 | the oracle, both interpreter arms |
+| 6 | the **3 dispatch gates**, on § (vii)'s seats |
+
+#### (ix) PREDICTIONS — pre-registered, settled at the last step
+
+- **P1.** The three cells go in `TripleHooks` (10 fields today). AC step 7 measured **5 of 5
+  `TripleHooks` consts spell every field out**, so **step 1's first compile fails with exactly 5
+  `E0063` sites — one per shipped `TripleHooks` const — and 0 from the four alias tables.** This is
+  a prediction that *tests last step's finding* rather than restating it.
+- **P2.** `charpoly_selftest`'s dict agrees with Python **bit-for-bit** on both matrices — no
+  iteration-dependent key. If any key disagrees, Durand–Kerner is the reason and § (iii)'s
+  asymmetric-residue reading is the diagnosis.
+- **P3.** The oracle's `_quartic_roots_c` section agrees on **375 distinct coefficient vectors**,
+  and the 167 near-double cases are where a disagreement lands if there is one.
+- **P4.** Writing `gf == gr` for `abs(gf - gr) <= tol` changes **no** oracle key (§ (iv)) — so the
+  port keeps the tolerance and the *gate for it is declared vacuous* rather than written.
+- **P5.** The `500`-iteration cap and the `den == 0` guard are **unreachable** from any shipped
+  input; both are ported and neither is gated.
+- **P6.** `_reference`'s dispatch gate cannot be a value gate at this rung (§ (vi)); it is a
+  sentinel, and slice **AE** is where a value break first exists.
+
+#### (x) DEFECTS IN THIS PRE-FLIGHT's OWN INSTRUMENTS — three, all caught before anything was written down
+
+1. **Probe F's first run reported `calls: 0`** and would have read as *the solver is never
+   reached*. The cause was `-n auto`: xdist workers are **other processes** and the spy was
+   in-process only. Repaired with `-n0` **and an `assert stats['calls'] > 0`**, so the instrument
+   now proves it can see ([[rust-port-slice-w-step3]]).
+2. **Probe K's needle regex missed `match=r"…"`** and reported the floor as ungated — § (v). The
+   repaired reading is the sharper finding.
+3. **Probe I's second sweep was 19 for 19 false** — § (i). Classified by probe J *before* being
+   reported, which is the only reason it cost nothing.
+
+All three are the same shape as § 5.19 (xi)'s four: a claim an instrument could print, believed at
+the first printing. The rule that caught them is the one that has worked all phase — **make the
+instrument prove it can see, then re-run it against a control that must disagree.**
+
 ### Consequences for the phase table
 
 Phase 8's `main.py` row is now "Rust CLI prints the tables and dumps plot JSON; port the
