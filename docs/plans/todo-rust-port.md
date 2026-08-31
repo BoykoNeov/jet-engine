@@ -14848,6 +14848,13 @@ rung 68's fuel-leg `R` instead of the clip, every sampled point comes back `inte
 | shipped | 61 | **2** | 1.061e−10 | 1.132 | 1.163 | (−0.0167, −0.0190) |
 | rung 68's body | 61 | **0** | `None` | `None` | `None` | `()` |
 
+> **CORRECTED at step 6, § 5.27.6 (a): THIS TABLE IS AT `every = 40`, AND THE SUITE'S FIXTURE
+> PASSES `every = 10`.** At the fixture's grid `len(rows)` is **7**, `max_pair_gap` is **1.1766**
+> and `pair_RC` has seven entries. `n_riding` is the one column that agrees, and it is the only
+> one computed BEFORE the `[::every]` slice — so the agreeing column is the one that proves
+> nothing. **The verdict below is unaffected** (the swap empties the sample at any stride), but
+> step 7's gate is written against **7 → 0**.
+
 **No gain differs, because there are no gains.** A Rust dispatch gate of the shape every previous
 slice has written — march both, diff the value keys — compares two empty tables and passes. The
 shipped Python suite catches it with exactly one assertion, `assert gains["rows"], "no interior
@@ -15111,11 +15118,22 @@ At slice AB's measured expansion (1 686 Rust from 708 Python = 2.38×) and AA's 
   complex product and `cmath.sqrt` are free on this plant, the latter only because `p` is
   positive-real on 18/18 — asserted in the port, not assumed. Falsified if a schoolbook `cdiv`
   reproduces the oracle, or if `p.im != 0` ever occurs.
+  **SETTLED, § 5.27.5 + § 5.27.6, AND ITS SECOND CLAUSE IS FALSIFIED.** `p.im != 0` DOES occur —
+  step 5 found it in the shipped suite (`test_rung71.py`'s damping gate, `p = 4462 + 4947j`) and
+  the `assert!` was replaced by a full `csqrt`. Step 6 re-measured the population the condition
+  was taken over: **0 of 38** intercepted `p` from sections A–M are complex, so the READERS' grid
+  genuinely cannot reach the branch and re-reading P6 off it would have re-published the wrong
+  measurement. Section N drives the constructed spectra instead.
 * **P7** — **SEVEN steps, not five** (§ (xi)). Falsified if the slice closes in fewer or needs more.
 * **P8** — The CPython exemption is the names downstream of `_invariants`' `c1` **plus the
   `cross_identity` subtree that `rung67_control` pulls in** — the second belonging to rung 67, not
   to this slice. Registered as NAMES re-read at the oracle step; falsified if any key outside those
   two subtrees is exempt.
+  **FALSIFIED FROM BOTH ENDS, § 5.27.6 (b).** The `cross_identity` subtree contributes **ZERO**
+  names — section B is its only reader and not one B key drifts — and **119 of the 234 exempt
+  names lie outside both subtrees**, because the MARCH diverges on three of sixteen arms, always
+  first in the stator state `v`, by 10–11 ULPs out of a solve whose inputs are bit-identical.
+  The exemption's measured split is **119 / 91 / 24**.
 * **P9** — All **six** reduce arms stay bit-for-bit **and by dispatch**: probe 11 measured 341
   points / 3 069 keys per arm at worst `|diff| = 0.0`, with the child's own `integrate_fuel` entered
   once and forwarding. Falsified by one key.
@@ -15193,9 +15211,15 @@ contradicts it. Priced instead:
    `assert!` step 3 registered as a GATED CONDITION on a census of the READERS, is
    falsified by this file's damping gate — and the `assert!` was catching a wrong VALUE
    the one-sided ported bar could not (§ (a)–(c)).
-6. **The oracle** — `oracle/dump_slice_ac.py` + `tests/slice_ac_oracle.rs`, bit-exact vs PyPy, with
-   the CPython arm and its NAMED exemption (§ (iv)) re-read from the dump, at the readers' SHIPPED
-   grids.
+6. **The oracle** — **DONE, § 5.27.6** — `oracle/dump_slice_ac.py` (14 sections, **5 351 keys**)
+   + `tests/slice_ac_oracle.rs` (5 gates), **`Rust ≡ PyPy` on all 5 351, green first run**; the
+   CPython arm exempt on **234 NAMED keys, THREE causes**, read off the diff. Its own findings:
+   § (ii)'s shipped row was measured at **`every = 40`** where the fixture passes `every = 10`
+   (`len(rows)` is **7**, not 2), and **P8 is falsified from both ends** — the `cross_identity`
+   subtree contributes ZERO names, while **119 of the 234 are the MARCH itself**, diverging on
+   exactly three of sixteen arms and always first in `v`. P6 is settled by a DECLARED EXTRA GRID
+   (section N) and not off the readers', because the dump measures **0 of 38** intercepted `p`
+   complex.
 7. **The dispatch gates** — five function pointers over five swaps, `tests/slice_ac_dispatch.rs`, in
    the shapes § (v) measured — the `_triple_laws` gate on SAMPLE SIZE — and the ledger, including
    AB's two tightened `rank TWO` gates and the corrected tripwire comment.
@@ -16245,6 +16269,172 @@ REAL"* — the second is § (a)'s, reached because a shipped gate constructs it.
 from a **12-arm** clock grid that is not the shipped default, so no reader drives them and this
 step does not manufacture a driver for them. Booked to step 6 rather than measured now, and named
 here so their absence is a decision instead of an omission.
+
+#### 5.27.6 SLICE AC step 6 — the oracle, a PRE-FLIGHT TABLE TAKEN AT A GRID THE SUITE DOES NOT USE, and P8 falsified from BOTH ends
+
+**SHIPPED**: `rust/oracle/dump_slice_ac.py` (14 sections, **5 351 keys**, both arms) and
+`rust/tests/slice_ac_oracle.rs` (5 gates). **`Rust ≡ PyPy` on all 5 351 keys, green on the first
+run**, with no port fix needed — the first slice in phase 7 whose oracle found no defect, which is
+recorded as a fact and not as a boast: steps 4 and 5 had already driven every reader once and
+diffed the printed values, so the oracle's job here was the keys those drives did not print.
+
+The CPython 3.14 arm is exempt on **234 named keys, THREE causes**, and P8 named neither of the
+two that matter.
+
+##### (a) THE LEADING FINDING — **§ 5.27 (ii)'s SHIPPED ROW WAS MEASURED AT `every = 40`, AND THE SUITE'S FIXTURE PASSES `every = 10`**
+
+§ (ii) is the pre-flight's second headline: the `_triple_laws` swap **empties the sample**, so a
+value-diff gate compares two empty tables and passes. Its table prints the shipped arm as
+`n_riding = 61`, `len(rows) = 2`, `worst_CV = 1.061e−10`, `min/max_pair_gap = 1.132 / 1.163`,
+`pair_RC = (−0.0167, −0.0190)`.
+
+At `tests/test_rung70.py:114` — the module fixture every gate in that file reads —
+`split_gains` is called with `every=10`, and this dump reproduces:
+
+| | § (ii) printed | the SUITE's grid | this dump at `every = 40` |
+|---|---|---|---|
+| `n_riding` | 61 | **61** | 61 |
+| `len(rows)` | **2** | **7** | **2** |
+| `worst_CV` | 1.061e−10 | 1.061e−10 (row 4) | 1.061e−10 |
+| `min_pair_gap` | 1.132 | 1.132 | 1.132 |
+| `max_pair_gap` | **1.163** | **1.1766** | **1.1632** |
+| `pair_RC` | (−0.0167, −0.0190) | 7 values, −0.01672 … −0.01993 | (−0.0167, −0.0190) |
+
+**All five stride-dependent numbers land on `every = 40`, and the ONE column that agrees with the
+suite is the only one that cannot depend on the stride.** `n_riding` counts riding points and is
+computed before the `[::every]` slice; everything below it is a reading of the sample.
+
+**Step 2 had already published the contradiction and nobody diffed the two**: `rung67_control` returns
+`n = len(pair_RC)`, and § 5.27.2 records the Rust reproducing Python's `n = 7`. Two numbers for the
+same quantity, one page apart in the same section of this plan.
+
+**Nothing about § (ii)'s CONCLUSION changes** — the swap empties the sample at any stride, and a
+value-diff gate is blind to that by construction. What changes is step 7's gate, which is written
+against **7 → 0** and not 2 → 0, and which must therefore read a count that the shipped fixture
+actually produces. *A table that mixes a stride-independent count with stride-dependent ones reads
+as one measurement at one grid, and the agreeing column is the one that proves nothing.*
+
+##### (b) THE SECOND FINDING — **P8 IS FALSIFIED IN BOTH DIRECTIONS, AND 119 OF THE 234 EXEMPT NAMES ARE THE PLANT**
+
+P8: *"the CPython exemption is the names downstream of `_invariants`' `c1` plus the
+`cross_identity` subtree that `rung67_control` pulls in"*. Measured:
+
+* **the `cross_identity` subtree contributes ZERO names.** Section B *is* `rung67_control`, the
+  only reader that calls it, and **not one B key drifts**. § (iv) measured that 13-element sum
+  diverging 1 of 1 under CPython — and the divergence does not survive into anything the reader
+  returns, which is a different question from whether the site diverges. Slice AB's P3 named a
+  subtree (`withheld`) that did not appear either; this is that shape a second time, and the
+  repair is the same one: *name the KEYS a dump emits, not the SITES a probe finds.*
+* **119 of the 234 names are not reader-side at all — the MARCH ITSELF DIVERGES.** No `sum()` is
+  involved: `_triple_gains_at` contains none, and the drifting keys include raw central
+  differences (`D/0/fast_valve/gains/R_q`, `/V_q`) and raw marched values
+  (`H/0/by_q/2/phi_at_stator_off`).
+
+**MEASURED, not inferred** — `M:\claud_projects\temp\rust-phase7\probe_ac_step6.py`, **sixteen
+arms** marched under both interpreters and diffed point by point, bit for bit, with the arms whose
+oracle keys do NOT drift carried as controls:
+
+| arm | points | differing `(index, key)` pairs | first difference |
+|---|---|---|---|
+| `C/arm/1` — `split_modes`, `tau_gov` 0.005 | 851 | 3 096 | index 112, in **`v`** |
+| `D/0/fast_valve` — `c1_clock_swap`, `tau_q` 0.02 | 341 | 1 927 | index 28, in **`v`** |
+| `H/0/by_q/2` — `window_law`, `tau_q` 0.20 | 341 | 801 | index 30, in **`v`** |
+| the other **THIRTEEN**, all six `full_modes` arms included | 341 / 851 | **0** | — |
+
+Three properties make this a solver statement rather than a rounding one:
+
+1. **Every divergence begins in the STATOR STATE `v` and in no other.** At the first differing
+   index, every other state at that point *and the whole preceding point* are bit-identical — so
+   the solve's inputs agree exactly and its output is **10–11 ULPs** away. A formula cannot do
+   that; a termination test can.
+2. **It decays.** RK4 carries it into every state, and the loops being contracting, the two
+   trajectories are bit-equal again by the end of the ramp (`rel = 0` at index 340).
+3. **It is not monotone in any clock.** `tau_q = 0.20` diverges and `0.50` does not; `tau_gov =
+   0.005` diverges and `0.5` does not. That is slice AB (i)'s recorded property one level down —
+   *whether a compensated result survives the final rounding is a bit-pattern property of the
+   particular operands*, here applied to a Newton iterate rather than to a `sum()`.
+
+`EXEMPT` therefore carries **119 (the march) / 91 (`_invariants`' compensated `sum()`) / 24
+(CPython 3.14's signed zero, `0.0` vs `−0.0`)**, read off the diff and annotated afterwards, in
+that order — [[rust-port-slice-z-step4]]'s rule. **The port is held to PyPy**, where nothing is
+exempt, which is what makes cause 3 an audit-arm note and not a port defect.
+
+##### (c) P6 — SETTLED, AND **NOT** OFF THE READERS' GRID, WHICH IS THE WHOLE POINT
+
+§ (iv) registered `p = nz[0]*nz[1]` being real inside `_zeta_pair` as a **gated condition**,
+measured over the rung-70 READERS (18 of 18); step 5 falsified it from `test_rung71.py`'s damping
+gate, which drives the same function on a CONSTRUCTED spectrum where `p = 4462 + 4947j`. The
+plan's step list says step 6 *"re-reads the gated condition from the dump"* — **and doing that off
+sections A–M would have re-published the measurement that was already wrong.**
+
+This dump's own stderr coverage line settles it: **0 of 38 intercepted `p` are complex, and 0 have
+`p.re < 0`.** The readers genuinely cannot reach the branch. So section **N** is lettered apart as
+a DECLARED EXTRA GRID (slice AB's J/K precedent) and carries the three constructed spectra
+verbatim, with `p` and `s` emitted as keys — so `csqrt`'s complex branch and `c_div`'s Smith
+algorithm are covered by VALUE KEYS and not only by the `assert!` step 5 replaced.
+
+##### (d) STEP 5's BOOKED ITEM, DISCHARGED — AND ITS BOOKING WAS WRONG BY ONE
+
+§ 5.27.5 closed by booking `zeta_ring`'s four quoted disagreements — *"0.960 vs 0.686, 1.279 vs
+0.670, 1.045 vs 0.924, and 1.035 on an arm whose spectrum is entirely REAL"* — noting the second
+is reached by a shipped gate and that **"the other three"** come from a 12-arm clock grid no
+reader drives. Measured off this dump's intercepted `_zeta_ring` stream — the 32 rows `full_modes`
+makes on its OWN six-arm default, both readers driven on the SAME roots — the disagreement is
+exactly 4 of 32:
+
+| rows | `zeta_pair` | `zeta_ring` | the doc comment's |
+|---|---|---|---|
+| 4, 5 | 1.278 | 0.670, 0.669 | **second** pair |
+| 15, 16 | 1.035, 1.033 | `None` | **fourth** item — the REAL spectrum |
+
+So it is the other **TWO**, not three: `0.960 vs 0.686` and `1.045 vs 0.924` are the only ones off
+the shipped grid. `the_two_damping_readers_disagree_on_exactly_four_of_the_shipped_grids_32_rows`
+pins the half that is reachable, so a doc-comment number stops being prose.
+
+##### (e) THE THREE BLINDNESSES THE ORACLE WAS DESIGNED AGAINST, AND HOW EACH IS COVERED
+
+Written before the dump, because an oracle that omits them is *advertised* as the value-side
+backstop while being blind to the only break shapes this slice has measured:
+
+* **SAMPLE SIZE.** Every sample-shaped reader emits its row count, its skipped count and a
+  PRESENCE FLAG beside every `Option`. § (ii)'s swap returns `Ok` with an empty table and every
+  aggregate `None`; without the counts, every value key agrees.
+* **ARM ORDER.** Every clock arm is keyed by the grid's own index in the grid's own order, and
+  every aggregate over arms is emitted BESIDE its per-arm parts. Step 4's clock reorder shifts 25
+  of 38 printed lines and is caught by neither language's gates at rung 70.
+* **THE JOINT WINDOW.** Every `(lo, hi, n)` span emits its COUNT as a key, and section F emits
+  `joint_fraction`. Step 4's widening took 61 → 341 points and 0.179 → exactly 1.0 with every
+  ported gate green, because their bars are one-sided lower bounds. **Booking discharged.**
+
+**P5 is settled in the NEGATIVE and STATED rather than implied**: no `ds` this dump passes trips
+any of the three `_rk4_floor*` guards, and `no_value_key_in_this_oracle_can_see_an_rk4_floor`
+checks that against the guards' own `ds * rate <= 2.0` — because a silent absence from a golden
+reads like coverage.
+
+##### (f) TWO COUNTS THE RUST CHECKS FOR ITSELF, RATHER THAN TRUSTING
+
+`split_modes` and `split_floor` are the only `_zeta_pair` callers and `full_modes` the only
+`_zeta_ring` caller, so `N/pair/ncalls` and `N/ring/ncalls` must equal the rows sections C, E and
+K emit. Measured and asserted from the Rust's own tallies: **7 + 7 + 9 + 6 (C) + 9 (E) = 38** and
+**4 + 2 + 9 + 2 + 10 + 5 = 32**. Section N's roots are read through `Cmp::input_c` — consumed, not
+compared — so the replay is fed CPython's own inputs on that arm, which is slice AB's section-I
+design and the reason those inputs contribute no exempt names.
+
+##### (g) DEFECTS IN THIS STEP's OWN INSTRUMENTS
+
+* **`GOLDEN_KEYS` was typed as `39_099` before the dump ran** — a guess scaled from slice AB's
+  15 957. Measured: **5 351**, wrong by 7×. [[rust-port-guessed-census-bars]] again, and it would
+  have been caught only by the 95 % bar failing, i.e. by luck rather than by design. The constant
+  now carries its own provenance.
+* **A patch script printed `patched` unconditionally and had matched nothing.** `str.replace`
+  returns the string unchanged when the pattern is absent, so the harvest run that followed
+  reported 12 drifting keys where there were 234 — a truncation presented as a total. The rewrite
+  carries `assert old in s` before the replace, which is the only thing that makes the success
+  message a measurement.
+* **`cmd 2>&1 > file` was written where `cmd > file 2>&1` was meant**, so the panic text went to
+  the console and the file got 16 bytes. The first harvest looked like a clean run of a passing
+  test.
+
 
 ### ~~The four~~ **THE EIGHT** runtime-introspection tests, one by one
 

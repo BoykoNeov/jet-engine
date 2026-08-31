@@ -19,7 +19,7 @@ slices inside an authorised phase are free. See [[rust-port-decided]].
 
 * **0–5 DONE.**
 * **PHASE 6** authorised 2026-08-17, **COMPLETE 2026-08-20** with slice U's five steps.
-* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, **AB complete**; **AC (rungs 70+71) IN FLIGHT** (§ 5.27, fourteen probes) — **steps 1–4 of 7 done**.
+* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, **AB complete**; **AC (rungs 70+71) IN FLIGHT** (§ 5.27, fourteen probes) — **steps 1–6 of 7 done**.
 
 ## Phase-7 slices, as they closed
 
@@ -107,6 +107,23 @@ booked to slice AH. See [[rust-port-slice-ac-preflight]].
    booking. **Instrument defect:** the sweep labelled a lock-contention failure "did not build";
    re-run by hand, j06 compiles and is caught. Full gate **132 targets / 1 326
    passed / 0 failed**, predicted before the run. See [[rust-port-slice-ac-step5]].
+
+6. **Step 6** — the oracle: `oracle/dump_slice_ac.py` (14 sections, **5 351 keys**) +
+   `tests/slice_ac_oracle.rs` (5 gates). **`Rust ≡ PyPy` on all 5 351 keys, green on the FIRST
+   run and with no port fix** — the first phase-7 oracle to find no defect, because steps 2/3 had
+   already driven every reader and diffed the printed values. CPython arm exempt on **234 named
+   keys, THREE causes (119 / 91 / 24)**. **Two findings, both about numbers already written
+   down.** (i) § 5.27 (ii)'s shipped row was measured at **`every = 40`** while the fixture passes
+   `every = 10`: `len(rows)` is **7**, not 2, and all five stride-dependent numbers reproduce at
+   40 — the only column that agreed with the suite (`n_riding`) is computed BEFORE the stride, so
+   it could not have disagreed. Step 2 had already published `n = 7`. (ii) **P8 is falsified from
+   both ends**: the `cross_identity` subtree contributes ZERO names, and **119 of the 234 are the
+   PLANT** — a sixteen-arm probe found the MARCH diverging on exactly three, always first in the
+   stator state `v`, by 10–11 ULPs out of a solve whose inputs are bit-identical, decaying to
+   bit-equality by the end of the ramp. P6 settled by a DECLARED EXTRA GRID, because the dump
+   measured **0 of 38** intercepted `p` complex. Step 5's booked item discharged and corrected:
+   **two**, not three, of `zeta_ring`'s quoted pairs are off the shipped grid.
+   See [[rust-port-slice-ac-step6]].
 
 ## Slice AB, step by step
 
