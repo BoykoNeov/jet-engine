@@ -15180,8 +15180,13 @@ contradicts it. Priced instead:
    `_integrate_fuel_cross_triple`, `_split_rig`, `_with_gov`, `_assert_state_boundary`,
    `_rk4_floor_split`, `_zeta_pair` with § (iv)'s complex division, and the seven rung-70 readers
    (`split_gains` among them, as a plain method).
-3. **The rung-71 port** — `src/full_split.rs`: `at_lever`, `integrate_fuel` (four asserts),
-   `_full_rig`, `_zeta_ring`, `_rk4_floor_full`, and the six rung-71 readers.
+3. **The rung-71 port** — **DONE, § 5.27.3** — `src/full_split.rs`: `at_lever`,
+   `integrate_fuel` (four asserts), `_full_rig`, `_zeta_ring`, `_rk4_floor_full`, and the six
+   rung-71 readers. **ELEVEN methods, counted off the class body** — the step list's five names
+   plus the six readers, which reconciles. Its own finding is not in the port at all: the class
+   docstring's `zeta = 0.5895 / 0.5974` is not what `full_modes` returns on its OWN defaults
+   (`0.588974 / 0.596811`, which is what `docs/rung71-spec.md` § 5 has always said), corrected
+   in the same pass.
 4. **The rung-70 gates** — `tests/rung70.rs`, 27 ported gates.
 5. **The rung-71 gates** — `tests/rung71.rs`, 30 ported gates.
 6. **The oracle** — `oracle/dump_slice_ac.py` + `tests/slice_ac_oracle.rs`, bit-exact vs PyPy, with
@@ -15548,6 +15553,131 @@ which is what § 5.27.1's `GovScope` doc comment asserted and this counts.
 booked the absence forward. Both are discharged: guards A–E are in `r70_integrate_fuel`, so step 7
 can write that gate directly and the injection's visible failure is the PARENT's refusal firing,
 exactly as probe 6 measured. Written into `cross_split.rs`'s own module doc, not only here.
+
+#### 5.27.3 SLICE AC step 3 — the rung-71 bodies, and a number the shipped docstring publishes that the shipped reader does not produce
+
+**SHIPPED**: `src/full_split.rs` grows 171 → **1 536 lines** with **all eleven methods of the
+Python class** — `at_lever`, `_rk4_floor_full`, `integrate_fuel` (its FOUR arming refusals),
+`_full_rig`, `_zeta_ring`, and the **six readers** (`window_law`, `band_containment`,
+`full_gains`, `full_modes`, `ic_contraction`, `full_bill`) — plus `Census71`, `round10`,
+`v_or_zero` and `full_window_extra`. **Neither swapped cell is left panicking**, and the
+`UNPORTED` scaffolding const is deleted with them. **17 `pub struct`s, none of them a table
+type.** 581 Python method lines → 1 365 new Rust lines, **2.35×**, in line with step 2's 2.0× and
+slice AB's 2.30×.
+
+**THE METHOD COUNT IS TAKEN OFF THE CLASS BODY, NOT OFF THE PROSE**, on § 5.27.2's precedent: a
+`def`/`@staticmethod` scan between `class FullSplitTransient` and `class SharedActuatorTransient`
+gives **11**, reconciling as **5 non-readers + 6 readers**, which is exactly the list § (xi) step 3
+prescribes. Nothing was inferred from the step list.
+
+##### (a) THE HIGHEST-VALUE FINDING CAME FROM DRIVING THE READER ON ITS **OWN** DEFAULTS
+
+Step 2's lesson was *drive it once against a number the source already published*. Step 3 did, and
+the number did not come back.
+
+`FullSplitTransient`'s class docstring (`engine.py`) says, of the ring: *"it does not hold: at
+matched clocks `zeta = 0.5895` against rung 69's `0.5974`."* `full_modes` on **its own default
+grid** — six arms, `ds = 0.002`, `every = 4` — returns `zeta = 0.588974` at the matched-clock arm
+against that point's own floor `0.596811`. **`docs/rung71-spec.md` § 5 carries `0.588974` /
+`0.596811` verbatim, and its § 4 table carries the arm's whole range `0.5861 … 0.5890`.** So the
+spec was right and the docstring was the only place the stale pair survived.
+
+**IT IS NOT A PORT DEFECT, AND THAT IS WHAT MAKES IT WORTH RECORDING.** Python and Rust both
+return `0.5889735072824647`; the disagreement is between the shipped *prose* and the shipped
+*reader*, and nothing in 57 collected tests gates a class docstring. It survived because every
+reading of that sentence since it was written has been a reading, not a run.
+
+**Corrected in this pass with the finding**, on § 5.27.1's own precedent (*both corrections are
+made with the finding rather than left for whoever hits them*) — the docstring now quotes the
+spec's pair and says in one clause where the old one came from, so the next reader does not
+re-derive the discrepancy.
+
+*The general form: a drive-once check is worth what its ARGUMENTS are worth. Driving a reader on
+the caller's grid reproduces the caller; driving it on its OWN defaults is the only thing that can
+audit a number the prose publishes without a caller.*
+
+##### (b) FOUR PLACES WHERE RUNG 70's TEMPLATE WOULD HAVE COMPILED, RUN, AND MEANT SOMETHING ELSE
+
+Ranked by how quietly each fails. All four were registered before the bodies were written and each
+is stated in the shipped Rust rather than only here.
+
+1. **`full_modes`' `complex_pair` is `zeta is not None` — ANY root.** Rung 70's `SplitModesRow`
+   derives it from the DOMINANT root (`dom.im.abs() > 1e-6*dom.abs()`). The two disagree whenever a
+   non-dominant pair is complex, and **`arms_with_ring` / `arms_real` are aggregate keys that read
+   the difference directly** (measured 5 and 1 on the shipped grid).
+2. **`_zeta_ring` does NOT sort.** It filters the roots in the cubic solver's own order and takes
+   `cx[0]` — the FIRST complex root, not the largest — where `_zeta_pair` takes
+   `sorted(roots, key=abs)[1:]`. The rung's own docstring measures the two readers disagreeing on
+   **4 of 12** arms, so reusing the parent's body is a defect the rung itself already quantified.
+3. **`full_gains` evaluates the rung-70 control BELOW the `continue`.** Rung 70's `split_gains`
+   evaluates BOTH arms above its interior test *on purpose*, so its closure counts do not depend on
+   which arm was off; Python's rung-71 body does the opposite. A skipped sample therefore costs ONE
+   gains evaluation here and TWO there — invisible to every float, visible to a counter, and the
+   kind of thing step 7's census reads.
+4. **`full_bill`'s `v_hi` is `p.get("v", 0.0)` and the fallback is REACHABLE.** Four of the eight
+   ledger cells (`bare`, `G`, `V`, `GV`) march with the stator disarmed, so their points never
+   recorded `v`. `v_at_point` PANICS on those routes and is right to; `violation_inc` already
+   carries the same fallback for the same reason. Rung 70's ledger never read `v`, so there was no
+   precedent to copy — the only other non-`Triple` reader in the family, `triple_window_extra`, has
+   an UNREACHABLE fallback, which is the opposite conclusion from a similar-looking line.
+
+##### (c) ONE NEW NUMERIC PRIMITIVE, AND IT WAS SETTLED BEFORE THE FILE WAS WRITTEN
+
+`ic_contraction` builds a SET over `(round(g,10), round(q,10), round(v,10))` and reports its size
+as `members` — **an INTEGER, and it IS this rung's § 3 headline** (*at `n = m` the `s = 0` fixed
+point is a POINT*: 1 member on the full rig against 4 on the shared control). `round10` is
+therefore format-and-parse, not `(x*1e10).round()/1e10`: the crate already holds `round12`,
+`round6` and `round3` on that decision, each with its divergence class closed by construction
+rather than by a passing sweep.
+
+**The signed-zero normalisation is carried across too** (`(round10(x) + 0.0).to_bits()`): a Python
+set compares floats with `==`, under which `-0.0 == 0.0`, so a member reached at `-0.0` and one at
+`+0.0` are ONE member there and would be TWO here. Unreachable on the shipped grid, and therefore
+exactly the latent off-by-one no value gate could witness — rung 68's `ic_family` note, inherited
+rather than rediscovered.
+
+##### (d) THE DRIVE-ONCE, AGAINST PYTHON, ON ALL SIX READERS
+
+A throwaway harness ran the six readers at their shipped defaults on the suite's own grid and was
+diffed against the same six calls in PyPy. **Every printed value agrees, digit for digit**, before
+any oracle exists:
+
+| reader | reading | value |
+|---|---|---|
+| `window_law` | stator window / joint window | **27 of 341 (7.92 %)** / **7 (2.05 %)**, 6 interior |
+| `window_law` | right edge over the 400× `tau_q` range | **0.115 → 0.365**, monotone, `q_span` 3.174 vs `s_span` 1.259 |
+| `band_containment` | `min slack` and `min(slack − v)` where the valve delivers | **exactly 0.0** on both, 0 riding of 307 |
+| `full_gains` | `worst_det_err` / `det_scale` / `worst_cross_rung` | 1.719e−3 / 2.857 / 6.62e−3, 8 rows |
+| `full_modes` | zeros / rings / matched-clock `zeta` | **`[0]`** / 5 ring + 1 real / **0.588974** |
+| `ic_contraction` | `members`, full vs shared | **1 vs 4** |
+| `full_bill` | `delivered` (phi, Tt4, inc) | 0.9373 / 0.7404 / 0.9904 |
+
+Two of these are worth naming as more than a diff. **The containment's two exact zeros are the
+identity, not a coincidence**: where the valve saturates at `phi = phi_lim` exactly,
+`slack = 1/phi_lim − 1/phi + v` is `v`, and the stator is dormant there, so both readings are `0.0`
+in the last bit on both languages. And **`members = 1 vs 4`** is the one key `round10` could have
+moved, landing on the docstring's own prediction from a rounding chosen before the run.
+
+##### (e) THE STEP-1/2 GATES, RE-CHECKED AGAINST WHAT THIS STEP **ADDS**
+
+§ 5.27.2 (a)'s lesson — *ask what the next step ADDS as well as what it deletes* — applied to this
+step before it was written, because step 2's repaired Gate 1 was authored while `full_split.rs`
+held 171 lines and **zero** reader structs:
+
+* `\npub const R71` in `full_split.rs`: **5**, unchanged — the step adds no table const.
+* `pub struct …Hooks` at column 0 in `full_split.rs`: **0**, with 17 `pub struct`s now in the file.
+  The repaired per-line filter asks the property and is indifferent to the seventeen; the proxy it
+  replaced would have failed here for the second time in one slice.
+* The `UNPORTED` const and its two panics are deleted, and **no gate read them** — verified by
+  grep, not assumed. Step 1 refused slice AB's read-the-panic-messages gate precisely so this
+  deletion would cost nothing, and it did.
+
+##### (f) WHAT STEP 3 DOES NOT DO
+
+The **27 ported gates** of `tests/rung70.rs` (step 4) and the **30** of `tests/rung71.rs` (step 5),
+the oracle (step 6) and the five dispatch gates (step 7) are all still owed. The full Rust gate is
+therefore expected to hold at step 2's target and test counts; a rise here would mean this step
+shipped a gate it was not asked for.
 
 ### ~~The four~~ **THE EIGHT** runtime-introspection tests, one by one
 

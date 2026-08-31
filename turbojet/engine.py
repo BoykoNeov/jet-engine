@@ -14963,7 +14963,10 @@ class FullSplitTransient(CrossSplitTransient):
     budget, `lam1+lam2+lam3 = -sum 1/tau_i`. At rung 69 the third root WAS the zero, so the pair
     took the whole budget (`Re = -sum/2`) and `zeta >= 1/sqrt(1-k)` followed by AM-GM. Here the
     third loop's own pole DRAINS it, so that bound is not derived for this plant -- and it does
-    not hold: at matched clocks `zeta = 0.5895` against rung 69's `0.5974`. **The floor was a
+    not hold: at matched clocks `zeta = 0.588974` against rung 69's `0.596811`. (Both figures
+    were `0.5895` / `0.5974` here until the Rust port's rung-71 step drove `full_modes` on its
+    OWN default grid and got neither; `docs/rung71-spec.md` s 5 had the right pair all along, so
+    this docstring was the only place the stale ones survived.) **The floor was a
     property of the RANK DEFICIENCY, not of `k`.** What replaces it is a Routh certificate,
     with `a,b,c = 1/tau_i` and `u,w,z = 1 - pair_{RC,RV,CV}`:
 

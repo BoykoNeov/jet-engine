@@ -19,7 +19,7 @@ slices inside an authorised phase are free. See [[rust-port-decided]].
 
 * **0–5 DONE.**
 * **PHASE 6** authorised 2026-08-17, **COMPLETE 2026-08-20** with slice U's five steps.
-* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, **AB complete**; **AC (rungs 70+71) IN FLIGHT** (§ 5.27, fourteen probes) — **steps 1–2 of 7 done**.
+* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, **AB complete**; **AC (rungs 70+71) IN FLIGHT** (§ 5.27, fourteen probes) — **steps 1–3 of 7 done**.
 
 ## Phase-7 slices, as they closed
 
@@ -60,6 +60,16 @@ booked to slice AH. See [[rust-port-slice-ac-preflight]].
    numbers, `rung67_control` reproducing Python's `n = 7, ratio = 0.921` end-to-end. Full gate
    **130 targets / 1 268 passed / 0 failed** — unchanged from step 1, since the ported gates are
    steps 4–5. See [[rust-port-slice-ac-step2]].
+
+3. **Step 3** — the rung-71 bodies: `src/full_split.rs` 171 -> **1 536 lines**, all ELEVEN methods
+   (five non-readers + the six readers), `Census71`, `round10`, and no swapped cell left panicking.
+   581 Python method lines -> 1 365 Rust, **2.35x**. All six readers driven at their SHIPPED
+   defaults and diffed against PyPy: **every printed value identical, digit for digit** — the
+   stator window 27 of 341 (7.92 %), the joint 7 (2.05 %), `members` 1 vs 4, matched-clock
+   `zeta = 0.588974`. **The finding was in the PROSE**: the class docstring's `0.5895 / 0.5974` is
+   not what `full_modes` returns on its own grid, and `docs/rung71-spec.md` § 5 had the right pair
+   all along — corrected in the same pass. Full gate **130 targets / 1 268 passed / 0 failed**,
+   unchanged, since the ported gates are steps 4-5. See [[rust-port-slice-ac-step3]].
 
 ## Slice AB, step by step
 
