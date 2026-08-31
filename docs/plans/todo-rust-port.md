@@ -16856,6 +16856,9 @@ full march — plus `_shared_march`'s two clock arms.
   `TripleHooks` consts spell every field out**, so **step 1's first compile fails with exactly 5
   `E0063` sites — one per shipped `TripleHooks` const — and 0 from the four alias tables.** This is
   a prediction that *tests last step's finding* rather than restating it.
+  **SETTLED at § 5.28.1 (a): FALSIFIED BY COUNT, CONFIRMED IN MECHANISM — 7 sites, not 5.**
+  The prediction is left exactly as written; the two it missed are in test targets
+  `cargo check` never compiled, because the lib was broken at the time it counted.
 - **P2.** `charpoly_selftest`'s dict agrees with Python **bit-for-bit** on both matrices — no
   iteration-dependent key. If any key disagrees, Durand–Kerner is the reason and § (iii)'s
   asymmetric-residue reading is the diagnosis.
@@ -16882,6 +16885,133 @@ full march — plus `_shared_march`'s two clock arms.
 All three are the same shape as § 5.19 (xi)'s four: a claim an instrument could print, believed at
 the first printing. The rule that caught them is the one that has worked all phase — **make the
 instrument prove it can see, then re-run it against a control that must disagree.**
+
+#### 5.28.1 SLICE AD step 1 — the three cells, and **A PRE-REGISTERED COUNT MEASURED ON A BUILD THAT HAD ALREADY GIVEN UP**
+
+**SHIPPED**: `rust/src/shared_actuator.rs` (the module, five `R72*` tables, three cell bodies),
+three new `TripleHooks` fields with their refusals in `src/three_loop.rs`, two carriers on
+`TwoSpoolTransientCore`, the two width tripwires updated, and `rust/tests/slice_ad_cells.rs`
+(**12 gates**). All twelve green on the first run, and **9 of 9 mutations of this step's own source
+were killed** (§ (e)).
+
+##### (a) THE FINDING — **P1 WAS FALSIFIED BY COUNT AND CONFIRMED IN MECHANISM, AND THE REASON IS WORTH MORE THAN THE NUMBER**
+
+§ 5.28 (ix)'s P1 predicted that widening `TripleHooks` would produce **exactly 5 `E0063` sites** —
+one per shipped `TripleHooks` const — and **0** from the four whole-const alias tables. It was
+written to *test* slice AC step 7's finding rather than restate it, and it was run before the
+pre-flight was committed.
+
+**The mechanism held exactly.** Every exhaustive `TripleHooks` literal went loud; `R70_TWO`,
+`R70_STATOR`, `R71_TWO` and `R71_STATOR` said nothing, and no other error code appeared. **The
+count was 7.** Two more exhaustive literals live in `tests/slice_ab_cells.rs:247` and
+`tests/slice_ac_cells.rs:375` — the width tripwires themselves — and the probe never saw them,
+because **`cargo check --all-targets` stops when the LIB fails and never compiles the test
+targets.** The probe measured a build that had already given up, and printed a number.
+
+That is [[rust-port-slice-ab-step3]] one level down — *an injection sweep that ran 2 of the slice's
+3 binaries and printed MISS, which reads as "nothing sees this"*. **A zero from an instrument that
+never ran is indistinguishable from a zero it measured**, and here the failure was not even a zero:
+it was a plausible non-zero that matched the prediction, which is worse, because a wrong number
+that agrees with you does not prompt a second look. It was caught only because applying the change
+for real produced two errors the probe had promised would not exist.
+
+The repair is not a bigger number. **A count of compile errors is only meaningful from a build that
+reached every target, and there is no such build while the lib is broken** — so the honest
+instrument for a width prediction is *apply, fix the lib, then count what is still red*, which is
+what produced the 7. Recorded in `tests/slice_ad_cells.rs`'s own header, because the file whose job
+is the cell census is where a reader will look for it.
+
+**And the two tripwires firing IS the mechanism working.** They exist so that the next field added
+to `TripleHooks` cannot be silent, and slice AC step 7 shipped the measurement saying they are the
+only table type in the crate that behaves that way. The first slice to add a field to that table
+was stopped by them, in two files, at the first compile.
+
+##### (b) THE CELL CENSUS — 3, AND EVERY TABLE BELOW RUNG 72 REFUSES
+
+| cell | definers | `TripleHooks` width |
+|---|---|---|
+| `reference` | 2 (rungs 72, 73) | |
+| `rk4_floor_shared` | 3 (rungs 72, 73, 74) | |
+| `shared_rig` | **8** (rungs 72–80) | **10 → 13** |
+
+`NO_TRIPLE` and `R68_TRIPLE` carry a shared refusal, and rungs 69/70/71 inherit it — spelled out in
+each const, which is what the tripwires enforce.
+
+**AND ONE OF THE THREE IS THE SHARPEST INSTANCE OF `NO_TRIPLE`'s STATED REASON YET.** A tempting
+default for `reference` is `req` — which is **rung 72's own body**. A rung-40..71 slot answering it
+would agree with rung 72 on every input any suite reaches, so no value key in the crate could ever
+see the slot was wrong. The tempting default here is not a guess; it is the correct answer one rung
+up, which is exactly the shape that survives a bit-equality oracle.
+
+##### (c) TWO OF THE THREE CELLS ARE INVISIBLE TO EVERY VALUE KEY, FOR DIFFERENT REASONS
+
+`reference` is the **bitwise identity** at this rung (195 278 of 195 278 calls, § 5.28 (vi)) and
+rung 72 is its FIRST definer, so there is neither a value break nor a parent pointer. Its gate is
+an exact-bits assertion that it *is* the identity, over six `req` values including `-0.0` and
+`f64::MIN_POSITIVE`; the dispatch gate is slice AB's declared non-parent sentinel, at step 6, and
+the value break is slice AE's.
+
+`rk4_floor_shared` is `rk4_floor`'s shape — the condition identical across rungs 72/73/74, the
+whole cell being the prose. **What is new is that the shipped PYTHON gate cannot see it either**
+(§ 5.28 (v)), so the ported gate reads `rung-72` and `-1/tau_f`, asserts the shared phrase `FOUR
+actuator states` is present *and says in the assertion message that it is not enough*, and pins the
+`<=` boundary from both sides at `ds*rate = 2.0` exactly. **This is the one place in the slice where
+the port's gate is strictly stronger than the source's**, and it is stronger because the pre-flight
+measured the source's needle against all three messages instead of inheriting it.
+
+##### (d) THE CARRIERS, AND THE ONE THAT IS A `const` BECAUSE PYTHON NEVER ASSIGNS IT
+
+Rung 72 declares three class attributes. `share_law` and `ref_law` are `Cell<&'static str>` on the
+core; **`_ic_order4` is a module `const`**, because Python has 0 `self._ic_order4 =` sites against
+`_ic_order`'s guard-and-restore — measured, not chosen.
+
+`ShareScope` is `_with_share`'s RAII form, **restore-PREVIOUS**, and it writes the field
+**directly** — the opposite of `RefScope`, which goes through the `with_ref` cell. The difference is
+measured: `_with_ref` is overridden at rung 73 to write a different field, and `_with_share` is
+defined **exactly once in the whole ladder**, so a cell here would be a mechanism with no reader
+([[rust-port-slice-aa-steps2345]]). The gate manufactures a **nest**, because restore-previous and
+restore-to-default agree on every shipped path and only a nest separates them — `RefScope`'s own
+note, applied rather than cited.
+
+`ref_law` is carried at rung 72 and **read by nobody until rung 73** (0 reads in rung 72 against 3
+in rung 73). It is declared because Python declares it there and because rung 73's `_with_ref`
+override writes it through a cell that must already have a carrier. A dead field is a claim, so it
+is stated as one: a gate asserting it stays `"sched"` would pass for the reason that nothing writes
+it.
+
+##### (e) NINE MUTATIONS, NINE KILLED
+
+`M:\claud_projects\temp\rust-phase7\mutate_ad_step1.py`, each asserting its anchor before the
+replace:
+
+| mutation | gate | verdict |
+|---|---|---|
+| m1 `reference` returns `g_own` | the identity gate | killed |
+| m2 the floor's `<=` becomes `<` | the boundary gate | killed |
+| m3 the floor's message loses `rung-72` | the message gate | killed |
+| m4 `gov` flag ignored (always sets the set point) | the arming gate | killed |
+| m5 `inc` arms BOTH stators | the coordinate gate | killed |
+| m6 `ShareScope` restores the DEFAULT | the nest gate | killed |
+| m7 rung 72 inherits rung 71's refusal for `reference` | the control gate | killed |
+| m8 the refusal drops the cell name | the refusal gate | killed |
+| m9 `applied_clip` is always `max` | the composition gate | killed |
+
+**9 of 9.** m5 and m6 are the two that matter most: both are silent failures no float would reveal —
+a machine with two stators armed reports rung 71's constraint count on rung 70's arm, and a
+restore-to-default agrees with restore-previous on every path a reader actually takes.
+
+##### (f) FOUR NAMES GUESSED AND FOUR COMPILE ERRORS, RECORDED
+
+The gate file's first draft named `FuelTransientHooks::close_fuel`/`surge_fuel` (they are
+`try_close_fuel`/`try_surge_fuel`), and read the two stator limiters through `stator_lim()` /
+`stator_inc()` accessors that do not exist (they are fields, `core.fuel.inner.stator.lim` and
+`.inc`). [[rust-port-guessed-census-bars]]'s shape, cheap here only because the compiler is the
+instrument.
+
+The fifth was mine and is worth more: the first draft compared `rk4_floor_shared` and `rk4_floor` by
+casting both to `*const ()`, to assert they are different cells. **They have different `fn` types**,
+so the comparison the cast forces is one the type system already guarantees — a gate that cannot
+fail, written to check something that cannot be false. It is deleted and the reason is in its place.
 
 ### Consequences for the phase table
 

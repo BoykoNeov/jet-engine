@@ -140,6 +140,7 @@ pub mod march;
 pub mod matcher;
 pub mod nox;
 pub mod reference_split;
+pub mod shared_actuator;
 pub mod spool;
 pub mod stage;
 pub mod stator;

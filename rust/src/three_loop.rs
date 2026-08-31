@@ -432,6 +432,50 @@ pub struct TripleHooks {
     ///
     /// **RUNG 68's SLOT PANICS**: `_with_ref` does not exist below rung 69 in Python at all.
     pub with_ref: fn(&TwoSpoolTransientCore, Option<&'static str>) -> Option<&'static str>,
+    /// RUNG **72**'s `_reference` — **WHICH FUEL A LEG COMPUTES ITS CLIP FROM.**
+    ///
+    /// Rung 72's body is `return req` and § 5.28 (vi) measured it the **bitwise identity on
+    /// 195 278 of 195 278 calls**, so this cell has no value break at the rung that introduces it.
+    /// It is a cell because rung **73** overrides it to `g_own + req - clip` — the reading that
+    /// makes `F_r = R_f = 0` stop being exact — and because rung 72 is the earliest CALLER, which
+    /// is where the phase's rule says a cell must exist.
+    ///
+    /// The float-identical branch is load-bearing at rung 73 and stated there, not here.
+    pub reference: fn(&ScheduledStatorCore, f64, f64, f64, f64) -> f64,
+    /// RUNG **72**'s `_rk4_floor_shared` — **THE SECOND CELL NO VALUE KEY CAN SEE, and this time
+    /// the SHIPPED PYTHON GATE CANNOT SEE IT EITHER.**
+    ///
+    /// [`rk4_floor`](Self::rk4_floor)'s shape, one family along: the condition is
+    /// `ds * rate <= 2.0` in rungs 72, 73 and 74 **character for character**, and the entire cell
+    /// is the reason the assertion gives. § 5.28 (v) measured the difference — rung 72 argues from
+    /// *a bare pole at `-1/tau_f`*, rung 73 from *a pole EXACTLY at the origin*, rung 74 from
+    /// *which states are LIVE*.
+    ///
+    /// **AND THE NEEDLE THE PYTHON SUITE USES IS IN ALL THREE MESSAGES.**
+    /// `tests/test_rung72.py:445` fires this floor once, under `match=r"FOUR actuator states"` —
+    /// a phrase rungs 73 and 74 both carry, so that gate passes with either successor's floor
+    /// installed. Rung 69's analogue does not have the defect (`match="rank TWO"` is unique to
+    /// it). **The ported gate must therefore be written on a token that discriminates**, and it is
+    /// the one place in this slice where the port's gate is strictly stronger than the source's.
+    ///
+    /// `static` in Python, so no receiver — and no `n_states`/`tau_s` either, because unlike
+    /// [`rk4_floor`](Self::rk4_floor) this message interpolates only `ds` and `ds * rate`.
+    pub rk4_floor_shared: fn(f64, f64),
+    /// RUNG **72**'s `_shared_rig` — a machine with any SUBSET of the FOUR loops armed, plus the
+    /// fuel leg and lag that go with it. See [`SharedRigArm`](crate::shared_actuator::SharedRigArm).
+    ///
+    /// [`triple_rig`](Self::triple_rig) with two flags added: `inc` selects rung 71's INCIDENCE
+    /// stator over rung 70's `phi` one, and `gov` decides whether the sibling carries `_gov_max`.
+    /// Rung 63's one-constructor rule is why it is a single function and not five — a cell may
+    /// differ from another only by which loops are armed and which coordinate the stator watches.
+    ///
+    /// **EIGHT CLASSES DEFINE IT (rungs 72–80)**, all with an identical parameter list (§ 5.28
+    /// (ii)), so this width is final for the family.
+    #[allow(clippy::type_complexity)]
+    pub shared_rig: fn(
+        &ScheduledStatorCore,
+        &crate::shared_actuator::SharedRigArm,
+    ) -> (ScheduledStatorCore, Option<Floor>, Option<AsymmetricLag>),
 }
 
 /// **THE DEFAULT, AND ITS CELLS PANIC.** [`NO_STATOR`](crate::stator_transient::NO_STATOR) and
@@ -455,6 +499,9 @@ pub const NO_TRIPLE: TripleHooks = TripleHooks {
     triple_laws: no_triple_triple_laws,
     triple_rig: no_triple_triple_rig,
     with_ref: no_triple_with_ref,
+    reference: no_triple_reference,
+    rk4_floor_shared: no_triple_rk4_floor_shared,
+    shared_rig: no_triple_shared_rig,
 };
 
 const NO_TRIPLE_MSG: &str = "no triple table on this object: rungs 40-67 have no third loop on \
@@ -529,6 +576,32 @@ fn no_triple_triple_rig(
 ///
 /// [`LeverHooks::b_at_point`](crate::bleed_transient::LeverHooks::b_at_point)'s shape: rung 62's
 /// shipped table carries the panicking body of rung 64's added cell for this reason.
+/// The refusal all three of slice AD's cells share.
+///
+/// **A DEFAULT WOULD BE THE DANGEROUS ANSWER HERE, AND ONE OF THE THREE SHOWS WHY.**
+/// `reference` returning `req` is rung 72's own body, so a rung-40..71 object silently answering
+/// it would agree with rung 72 on every input and no value gate anywhere could see the slot was
+/// wrong. That is [`NO_TRIPLE`]'s stated reason, and this is its clearest instance yet.
+const NO_SHARED_MSG: &str = "this name is RUNG 72's and does not exist below it: a rung-40..71 \
+                             object has no SHARED actuator, so there is no second leg to compute \
+                             a reference from, no fourth clock to floor, and no four-loop rig to \
+                             build. Answering a default would agree with rung 72 on every input \
+                             the suites reach, which is exactly the claim no value gate could see.";
+
+fn no_triple_reference(_: &ScheduledStatorCore, _: f64, _: f64, _: f64, _: f64) -> f64 {
+    panic!("{NO_SHARED_MSG} (_reference)");
+}
+
+fn no_triple_rk4_floor_shared(_: f64, _: f64) {
+    panic!("{NO_SHARED_MSG} (_rk4_floor_shared)");
+}
+
+fn no_triple_shared_rig(
+    _: &ScheduledStatorCore, _: &crate::shared_actuator::SharedRigArm,
+) -> (ScheduledStatorCore, Option<Floor>, Option<AsymmetricLag>) {
+    panic!("{NO_SHARED_MSG} (_shared_rig)");
+}
+
 fn no_triple_with_ref(_: &TwoSpoolTransientCore, _: Option<&'static str>) -> Option<&'static str> {
     panic!("_with_ref is RUNG 69's and does not exist below it: a rung-40..68 object has no             REFERENCE to select, and answering `None` would be a claim no value gate could see             because it agrees with the truth on exactly the machines those suites build.");
 }
@@ -732,6 +805,10 @@ pub const R68_TRIPLE: TripleHooks = TripleHooks {
     // RUNG 68 HAS NO `_with_ref` — the name arrives at rung 69. Rung 62's table carries rung 64's
     // `b_at_point` panic for exactly this reason, and this is that precedent's second use.
     with_ref: no_triple_with_ref,
+    // AND NONE OF SLICE AD's THREE — all three names arrive at rung 72. Same precedent, third use.
+    reference: no_triple_reference,
+    rk4_floor_shared: no_triple_rk4_floor_shared,
+    shared_rig: no_triple_shared_rig,
 };
 
 // ---------------------------------------------------------------------------------------------

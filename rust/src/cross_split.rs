@@ -287,6 +287,12 @@ pub const R70_TRIPLE: TripleHooks = TripleHooks {
     triple_laws: r70_triple_laws,
     triple_rig: crate::reference_split::R69_TRIPLE.triple_rig,
     with_ref: crate::reference_split::R69_TRIPLE.with_ref,
+    // NONE OF SLICE AD's THREE — all three names arrive at rung 72, so this rung carries
+    // `NO_TRIPLE`'s refusal for each. Reached through rung 68's table, which is where the
+    // panicking slots live.
+    reference: crate::three_loop::R68_TRIPLE.reference,
+    rk4_floor_shared: crate::three_loop::R68_TRIPLE.rk4_floor_shared,
+    shared_rig: crate::three_loop::R68_TRIPLE.shared_rig,
 };
 
 // ---------------------------------------------------------------------------------------------

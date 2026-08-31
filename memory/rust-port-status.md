@@ -135,6 +135,26 @@ booked to slice AH. See [[rust-port-slice-ac-preflight]].
    measured over all five hook structs, only `TripleHooks` (5 of 5 consts) is loud. Corrected and
    pinned by a tripwire that can fail. See [[rust-port-slice-ac-step7]].
 
+## Slice AD (rung 72, `SharedActuatorTransient`) — pre-flight + step 1 of 6
+
+**Pre-flight** (§ 5.28, twelve probes): the cell column measures **3** — the first back-half row
+where the hand-written number is right. Four findings, all vacuity: **`shared_modes` does not
+exist** (3 phantom `Usage:` methods across rungs 65/66/72, none inherited by the port); the
+quartic's **three risky roots are dead** (`|a3|` wins `scale`'s max on 1068 of 1068 calls, over
+**375 distinct coefficient vectors**); **`_authority`'s 1e-12 tolerance never does any work** (0 of
+25 702 calls in the open interval); and **the floor's shipped needle discriminates nothing**
+(`"FOUR actuator states"` is in rungs 72/73/74's messages, whose conditions are identical).
+Six steps priced from sizing (1 177 source / 502 test lines). See
+[[rust-port-slice-ad-preflight]].
+
+1. **Step 1** — `src/shared_actuator.rs`, the three cells in `TripleHooks` (10 → 13) with their
+   refusals, `ShareScope`, two carriers, five `R72*` tables, and `tests/slice_ad_cells.rs`
+   (**12 gates**, green first run, **9 of 9 mutations killed**). **P1 was falsified by count and
+   confirmed in mechanism**: it predicted 5 `E0063` sites and the landed edit needed **7**, because
+   `cargo check` stops at the lib and never compiled the two test targets carrying the width
+   tripwires. The wrong number AGREED with the prediction, which is why it nearly stood. See
+   [[rust-port-slice-ad-step1]].
+
 ## Slice AB, step by step
 
 1. **Step 1** — `src/reference_split.rs` 519 lines, 13 cell gates; nine swapped bodies panic.

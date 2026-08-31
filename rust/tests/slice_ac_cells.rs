@@ -353,7 +353,7 @@ fn the_triple_laws_chain_is_three_links_and_rung70_breaks_the_last() {
 /// Written as an exhaustive literal with no `..` spread, so a field added by any future slice is
 /// `E0063` here. Slice AB's own tripwire lives in `slice_ab_cells.rs`; this is the same instrument
 /// at this slice's table, and it is written because AB's tripwire named **slice AC** as the author
-/// of the eleventh field — a guess taken from the very column § 5.27 (i) repairs, corrected to
+/// of the fourteenth field — a guess taken from the very column § 5.27 (i) repairs, corrected to
 /// name no slice at all.
 ///
 /// **AND THE CELL COUNT IS THE PREDICTION, NOT THE SWAP COUNT.** Five swaps, zero additions: a
@@ -361,17 +361,24 @@ fn the_triple_laws_chain_is_three_links_and_rung70_breaks_the_last() {
 /// nothing about whether the swaps landed and Gate 3 exists.
 ///
 /// **THE TRIPWIRE WAS FIRED RATHER THAN ASSUMED, AND THE FIRST ATTEMPT MEASURED THE WRONG THING.**
-/// Adding an eleventh field to `TripleHooks` and building does NOT reach this file: `src/` holds
+/// Adding a fourteenth field to `TripleHooks` and building does NOT reach this file: `src/` holds
 /// five exhaustive `TripleHooks` literals of its own (`NO_TRIPLE`, `R68_TRIPLE`, `R69_TRIPLE`,
 /// `R70_TRIPLE`, `R71_TRIPLE`), so the LIB is `E0063` first and `cargo build --tests` never
 /// compiles a test target. **The tripwire is SHADOWED, and that is a property of the ordering, not
 /// a defect** — the scenario it exists for is a slice that adds a cell and repairs every `src/`
 /// literal, because the lib must compile before anything else can. Simulated exactly that way, the
-/// lib builds and this literal is `E0063` at line 339. Recorded because *"an eleventh field is
+/// lib builds and this literal is `E0063` at line 339. Recorded because *"a fourteenth field is
 /// `E0063` at the file whose job is the cell census"* is true only on the second half of that
 /// sequence, and slice AB's version of this sentence was already wrong once about its addressee.
+/// **UPDATED AT SLICE AD, AND THE UPDATE IS THE TRIPWIRE WORKING.** Rung 72 adds `reference`,
+/// `rk4_floor_shared` and `shared_rig`, and this literal stopped compiling — which is the entire
+/// point of spelling the fields out. Slice AD's own P1 predicted five `E0063` sites (the five
+/// `TripleHooks` consts in `src`) and the landed edit needed **seven**: `cargo check` stops at the
+/// lib, so the probe never reached this file or its sibling. The mechanism P1 was testing —
+/// exhaustive literals go loud, `..` spreads and whole-const aliases stay silent — held; only its
+/// count was short, and short for a reason worth more than the number.
 #[test]
-fn the_triple_table_is_still_exactly_ten_cells_wide() {
+fn the_triple_table_is_still_exactly_thirteen_cells_wide() {
     let ten = TripleHooks {
         stator_leg: R70_TRIPLE.stator_leg,
         lagged_stator: R70_TRIPLE.lagged_stator,
@@ -383,6 +390,11 @@ fn the_triple_table_is_still_exactly_ten_cells_wide() {
         triple_laws: R70_TRIPLE.triple_laws,
         triple_rig: R70_TRIPLE.triple_rig,
         with_ref: R70_TRIPLE.with_ref,
+        // THE THREE SLICE AD ADDS — this file failed to compile until they
+        // were written, which is what a width tripwire is for.
+        reference: R70_TRIPLE.reference,
+        rk4_floor_shared: R70_TRIPLE.rk4_floor_shared,
+        shared_rig: R70_TRIPLE.shared_rig,
     };
     // THESE TWO ASSERTS ARE NOT THE PIN AND MUST NOT BE READ AS ONE. Every field of `ten` was
     // copied FROM the table it is compared against, so they are self-comparisons —

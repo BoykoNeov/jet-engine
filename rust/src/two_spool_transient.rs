@@ -689,6 +689,33 @@ pub struct TwoSpoolTransientCore {
     /// [`MarchScope`]: crate::stator_transient::MarchScope
     /// [`RefScope`]: crate::reference_split::RefScope
     pub ref_: Cell<Option<&'static str>>,
+    /// RUNG **72**'s `_share_law` — **THE COMPOSITION LAW ON THE SHARED ACTUATOR, and the rung's
+    /// one modelling decision.**
+    ///
+    /// `"max"` is MIN-SELECT and IS the plant; `"sum"` double-clips and is § 3's isolation
+    /// instrument, never the plant. Python declares it as a class attribute with the default
+    /// `"max"`, so this is `Cell<&'static str>` and not `Option` — there is no unset state, and
+    /// `integrate_fuel` carries a shipped refusal for anything outside the pair, which an enum
+    /// would delete ([`ref_`](Self::ref_)'s reason, verbatim).
+    ///
+    /// Its guard is [`ShareScope`](crate::shared_actuator::ShareScope), restore-previous, and
+    /// **it writes this field DIRECTLY rather than through a cell** — the opposite of
+    /// [`RefScope`](crate::reference_split::RefScope). The difference is measured, not stylistic:
+    /// `_with_ref` is overridden at rung 73 to write a different field, and `_with_share` is
+    /// defined **exactly once in the whole ladder**, so there is no rung for a cell to serve.
+    pub share_law: Cell<&'static str>,
+    /// RUNG **72**'s `_ref_law` — **DECLARED HERE AND READ BY NOBODY UNTIL RUNG 73.**
+    ///
+    /// Python puts it beside `_share_law` as a class attribute with the comment *"RUNG 73's
+    /// knob"*, and no rung-72 code reads it: measured, 0 reads in `SharedActuatorTransient`
+    /// against 3 in `AppliedReferenceTransient`. It is carried at rung 72 because the port is a
+    /// translation and Python declares it at rung 72 — and because rung 73's `_with_ref` override
+    /// writes THIS field through [`with_ref`](crate::three_loop::TripleHooks::with_ref), so the
+    /// carrier has to exist before that cell can be swapped.
+    ///
+    /// **A DEAD FIELD IS A CLAIM, SO IT IS STATED AS ONE**: slice AE settles it, and a gate here
+    /// that asserted it stays `"sched"` would pass for the reason that nothing writes it.
+    pub ref_law: Cell<&'static str>,
     /// RUNG 70's ARMED GOVERNOR SET POINT — Python's `_gov_max`, and the phase's **second**
     /// CONFIG-kind dynamically-scoped field after [`ref_`](Self::ref_).
     ///
@@ -1101,6 +1128,8 @@ impl TwoSpoolTransientCore {
             triple_hooks: &crate::three_loop::NO_TRIPLE,
             v_forced: Cell::new(None), v_state: Cell::new(None), v0: Cell::new(None),
             ic_order: Cell::new(crate::three_loop::IC_ORDER_DECLARED),
+            share_law: Cell::new(crate::shared_actuator::SHARE_LAW_DEFAULT),
+            ref_law: Cell::new(crate::shared_actuator::REF_LAW_DEFAULT),
             ref_: Cell::new(None),
             gov_max: Cell::new(None),
         }

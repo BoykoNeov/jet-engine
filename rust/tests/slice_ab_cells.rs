@@ -229,7 +229,7 @@ fn triple_laws_is_inherited_from_rung68_and_dispatches_none_of_rung69s_cells() {
 /// [[rust-port-documented-gate-that-doesnt-exist]] exactly: *a count guard is blind to a class
 /// absent from BOTH sides.*
 ///
-/// This is the non-typed instrument. The literal has no `..` spread, so an eleventh field is
+/// This is the non-typed instrument. The literal has no `..` spread, so a fourteenth field is
 /// `E0063` **here**, at the file whose job is the cell census, rather than being silently
 /// absorbed by a spread nine rungs downstream.
 ///
@@ -237,13 +237,20 @@ fn triple_laws_is_inherited_from_rung68_and_dispatches_none_of_rung69s_cells() {
 /// § 5.19 (x)'s cell column said slice AC adds `split_gains`; § 5.27 (i) measured that rung 80's
 /// same-named method drops four parameters and adds five, so rung 70's own inherited caller
 /// `rung67_control` raises `TypeError` on a rung-80 machine. Two functions sharing a name cannot
-/// share a `fn` pointer: **slice AC adds no cell and this table stays ten fields wide.** The
+/// share a `fn` pointer: **slice AC adds no cell and this table stays thirteen fields wide.** The
 /// addressee is deliberately not replaced with another slice's letter — the old one was written
 /// on the strength of a predicate (*new here AND overridden above*) that is by NAME and never
 /// checked substitutability, and naming the next slice from the same column would repeat the
 /// error one addressee over. The tripwire needs no addressee to work.
+/// **UPDATED AT SLICE AD, AND THE UPDATE IS THE TRIPWIRE WORKING.** Rung 72 adds `reference`,
+/// `rk4_floor_shared` and `shared_rig`, and this literal stopped compiling — which is the entire
+/// point of spelling the fields out. Slice AD's own P1 predicted five `E0063` sites (the five
+/// `TripleHooks` consts in `src`) and the landed edit needed **seven**: `cargo check` stops at the
+/// lib, so the probe never reached this file or its sibling. The mechanism P1 was testing —
+/// exhaustive literals go loud, `..` spreads and whole-const aliases stay silent — held; only its
+/// count was short, and short for a reason worth more than the number.
 #[test]
-fn the_triple_table_is_exactly_ten_cells_wide() {
+fn the_triple_table_is_exactly_thirteen_cells_wide() {
     let _pin = TripleHooks {
         stator_leg: NO_TRIPLE.stator_leg,
         lagged_stator: NO_TRIPLE.lagged_stator,
@@ -255,6 +262,11 @@ fn the_triple_table_is_exactly_ten_cells_wide() {
         triple_laws: NO_TRIPLE.triple_laws,
         triple_rig: NO_TRIPLE.triple_rig,
         with_ref: NO_TRIPLE.with_ref,
+        // THE THREE SLICE AD ADDS — this file failed to compile until they
+        // were written, which is what a width tripwire is for.
+        reference: NO_TRIPLE.reference,
+        rk4_floor_shared: NO_TRIPLE.rk4_floor_shared,
+        shared_rig: NO_TRIPLE.shared_rig,
     };
     // 10 TABLE CELLS = 9 that rung 69 SWAPS + 1 it ADDS (`with_ref`) -- the literal above.
     // 10 SWAPS       = those same 9 cells + `__init__`, which is NOT a cell (no shipped table
