@@ -15679,6 +15679,164 @@ the oracle (step 6) and the five dispatch gates (step 7) are all still owed. The
 therefore expected to hold at step 2's target and test counts; a rise here would mean this step
 shipped a gate it was not asked for.
 
+#### 5.27.4 SLICE AC step 4 — the 27 ported gates, and TWO BLINDNESSES THE PORT DID NOT INTRODUCE BUT INHERITED
+
+**SHIPPED**: `tests/rung70.rs`, **754 Rust lines**, **27 gates** from `tests/test_rung70.py`'s 27
+(**11** of them `slow` there; the marker is dropped per slice M's rule and no `#[ignore]` is
+inherited against an unmeasured cost). All 27 green, **in 5.75 s**.
+
+**THE FILE'S OWN HEADER SAID 15, AND IT IS CORRECTED IN THIS PASS.** `pytest -m slow
+--collect-only` over the slice's two suites reports **22 of 57, eleven in each file** — which is
+exactly what § 5.27 (viii)'s sizing row has said since the pre-flight, so the 15 was never anything
+but a typed number. Step 3's finding was a shipped prose number its own reader does not produce;
+this is the same shape in the file that step 3's lesson was written for, caught only because the
+number was re-measured instead of re-read.
+
+`src/cross_split.rs` is unchanged by this step — the diff is one added file. Full Rust gate
+**131 targets / 1 295 passed / 0 failed / 0 ignored**, from step 3's 130 / 1 268. **Both numbers were PREDICTED before the run and both held**,
+and the addition is CHECKED rather than typed off the log: `1 268 + 27 = 1 295`.
+
+**THE TARGET COUNT IS STATED IN ITS CONVENTION**, because this slice has already lost a count to an
+unstated one. `131` is **130 `Running` lines plus the one doctest phase** = 131 `test result:`
+blocks, which is the same convention step 3's `130` was taken in (129 `Running` + 1). Read as
+`Running` lines alone the two numbers are 130 and 129, and the `+1` this step adds is the same
+either way.
+
+##### (a) **THE COUNT WAS RECONCILED BY NAME, AND THE FIRST COUNT WAS WRONG**
+
+A `grep -c '#\[test\]'` on the file returns **28** while `cargo test` runs **27**. The gap is real
+and its explanation had to be measured rather than assumed: the 28th hit is at **line 232, inside a
+doc comment** (*"each `#[test]` is its own thread"*). Had it instead been a real attribute behind a
+`#[cfg]`, this file would ship a **silently dead gate** and the totals would still have reconciled
+— which is the shape § 5.27.1 (a) and § 5.27.2's Gate 1 have already produced twice inside this
+slice.
+
+The mapping was then done **name by name**, because other stories also sum to 27 (two Python tests
+collapsing into one Rust gate plus one added gate, say) and the total agreeing would hide them:
+
+| | |
+|---|---|
+| Python `def test_` | **27** |
+| Rust `#[test]` | **27** |
+| pairing | **1:1, IN ORDER**, differing only by case-folding (Python's shouted `CV` / `RC` / `P8` / `DIFFERENT` lowercased) |
+| added | **0** |
+| collapsed | **0** |
+| **bodies substituted** | **1** — `at_lever_returns_this_class` |
+
+The one substitution is the file's own declared Python-only observable: Python opens with
+`type(m) is CrossSplitTransient` and there is no runtime class here, so the sibling is instead made
+to **exercise a cell only rung 70's table has** — it must march under `tau_gov` with a `phi` stator
+armed, which rung 69's inherited table refuses outright. A sibling handed back carrying the
+parent's table passes every float in that gate and panics on this. The NAME is kept, so the table
+above is a pairing and not a rename.
+
+##### (b) **THE SWEEP: 10 INJECTIONS, TWO BINARIES, AND THE SECOND WRITING REPAIRS THREE DEFECTS IN THE FIRST**
+
+`M:\claud_projects\temp\ac4_sweep2\run.sh` — ten defects a wrong port would plausibly produce, each
+applied to `src/cross_split.rs`, gated, and reverted. Its predecessor
+(`M:\claud_projects\temp\ac4_inject\run.sh`) is kept beside it because the three differences are
+the step's methodological content:
+
+1. **BOTH binaries that link `cross_split` are run per injection, and the catch is attributed PER
+   BINARY** (`rung70` *and* `slice_ac_cells`). The first writing ran `rung70` alone and would have
+   reported a **step-1** catch as step 4's own — slice AB step 3's I6 defect (§ 5.26.3 (c)),
+   repeated one slice later, where a `MISS` column meant *"no gate in the files I ran"*.
+2. **i09 COMPILES.** Its first writing set `live_R_v = 0.0` — an `f32` inference error, `E0689` —
+   *and* disabled the assert that would have caught it. Two changes, one of which never built, so
+   the row read `NO RESULT LINE` and measured nothing.
+3. **THE RESTORE IS PROVEN, NOT ANNOUNCED.** The first writing printed *"source restored"* while
+   the working tree still differed from `HEAD`. `git diff --quiet` is the bar now and the log says
+   FAILED if it does not hold; the backup is taken with `git show HEAD:…` and never `cp` from the
+   tree, so re-entering the driver cannot poison it with a live injection.
+
+**A DISCLOSURE ABOUT THIS SESSION'S OWN STARTING STATE**, on that third point. At the start of the
+session the working tree held **two live injections** — i04 (`split_floor`'s `min` spelled `max`)
+in `rust/src/cross_split.rs`, and the Python form of i10 (`window_overlap`'s `joint` `and` spelled
+`or`) in `turbojet/engine.py`. Neither is at `HEAD`, both were verified against the Python source
+before being discarded, and both are re-derived as sweep rows below. Everything measured here ran
+afterwards, on a tree `git status` shows clean but for the one added test file, and the sweep's own
+backups are immune to the tree state by construction.
+
+| | injection | what it breaks | verdict |
+|---|---|---|---|
+| **i01** | `split_gains` swaps its two arms — the governor's gains read under the fuel control and vice versa | the rung's whole contrast | **CAUGHT**, 6 gates |
+| **i02** | `split_modes` destructures the clock grid as `(tau_g, tau_q, …)` for `(tau_q, tau_g, …)` | the documented in/out reorder | **MISS** — § (c) |
+| **i03** | `split_floor`'s `silenced` names the other loop | which loop the equality set quiets | **CAUGHT**, 1 |
+| **i04** | `split_floor`'s `floor` takes `max(pair_RC, pair_RV)` for `min` | the bound itself | **CAUGHT**, 2 |
+| **i05** | `_rk4_floor_split`'s bound relaxed `2.0` → `200.0` | the stability refusal never fires | **CAUGHT**, 1 |
+| **i06** | `integrate_fuel`'s guard A short-circuited to `true ||` | an incidence stator beside the governor is admitted | **CAUGHT**, 1 |
+| **i07** | `split_floor`'s `a_over_loud` divides by the QUIET rate | the ray's second coordinate | **CAUGHT**, 1 |
+| **i08** | `cyclic_is_rc` reads `cyclic − pair_RC` for `cyclic + pair_RC` | the cyclic product's sign | **CAUGHT**, 1 |
+| **i09** | `assert_state_boundary`'s `live_R_v` built from the BLIND closure | the state boundary — the rung's one silent failure mode | **CAUGHT**, 7 |
+| **i10** | `window_overlap`'s `joint` predicate `&&` → `||` | the three-way intersection becomes a union | **MISS** — § (c) |
+
+`slice_ac_cells` caught **none** of the ten and stayed 10/0 throughout, which is the right answer
+and is now recorded rather than assumed: step 1's gates hold the *table*, not the bodies, so an
+injection into a body should leave them alone. The per-binary attribution is what makes that a
+measurement instead of a hope.
+
+##### (c) **THE TWO MISSES ARE NOT PORT DEFECTS — PYTHON'S OWN 27 GATES MISS THEM TOO**
+
+Both survivors were made in **Python** as well (`py_inherit.sh`: the same two changes, at
+`engine.py`'s rung-70 copies only) and `pytest tests/test_rung70.py` was run on each:
+
+| | Rust `rung70` | Python `test_rung70.py` |
+|---|---|---|
+| baseline | 27 / 0 | **27 passed**, 61 s |
+| **i02** | 27 / 0 | **27 passed**, 67 s |
+| **i10** | 27 / 0 | **27 passed**, 112 s |
+
+So the port did not **introduce** these holes; it **inherited** them, and the honest sentence is
+that rung 70's 27 assertions do not pin these two quantities in *either* language. Both restores
+are proven clean by `git diff --quiet`.
+
+**AND NEITHER MISS IS INERT — THE RULE THAT AN INJECTION REPORTING "NOTHING MOVED" MUST BE SHOWN
+ABLE TO MOVE SOMETHING IS APPLIED, NOT WAIVED.** That is slice S step 2's rule, and slice W step 3
+is what it costs to skip: five injections that "passed 88 gates" and were every one a zero nobody
+had measured. A throwaway probe (`rust/tests/ac4_probe.rs`, generated from this file's own
+fixtures, run under each injection, **deleted afterwards**) drove the **shipped** readers — no
+re-spelling, so the measurement cannot be of a copy:
+
+* **i02 moves 25 of the 38 printed lines.** Three of the four clock arms genuinely change plant;
+  grid entry 1 is symmetric in the first two slots and comes back bit-for-bit identical, which is
+  the built-in control. Arm 2's `min_c1_rel` goes **0.13145 → 0.07688** and its `zeta` range
+  **1.3758 → 1.8020**; arm 3's row count **9 → 8** and its `n` **188 → 162**. All four gates still
+  pass because all four assert a **structural** property — `zeros == [1]`, `c0 < 1e-9`,
+  `c1 > 1e-2`, `c1_err < 1e-7` — that holds at *any* admissible clock triple. The gate set pins the
+  SHAPE and never the LOCATION, which is the shape-key lesson arriving on a whole reader instead of
+  on one key.
+* **i10 moves the joint window from 61 points to 341** — the entire trajectory — and
+  `joint_fraction` from **0.17889 to exactly 1.0**, the span opening from `(0.115, 0.415)` to
+  `(0.0, 1.700)`. The gate passes because both of its bars are **one-sided lower bounds**
+  (`joint.2 >= 20`, `overlaps`), and a union satisfies a lower bound on an intersection maximally.
+  The `MODES` and `ROW` lines are untouched under it, confirming the injection is scoped to the
+  window reader and is not moving the spectrum by a side effect.
+
+**CLASSIFICATION, so that neither is left as a bare `MISS`:** both are **VALUE holes owed to the
+step-6 oracle**, and both are named to it here rather than rediscovered there — `split_modes`'
+per-arm `taus`, `min_c1_rel`, `zeta_range` and per-row `c1` / `c0`, and `window_overlap`'s `joint`
+span and `joint_fraction`. Neither is a candidate for a strengthened gate at this step: the Python
+original carries the identical blindness, and § 8's rule is that the port is a **translation and
+not a repair**, so tightening `all_three_windows_overlap` with an upper bound Python does not carry
+would make the two suites disagree about what rung 70 claims.
+
+##### (d) WHAT STEP 4 DOES NOT DO
+
+`tests/rung71.rs`'s 30 gates (step 5), the oracle (step 6) and the five dispatch gates (step 7) are
+still owed. **P2 remains unsettleable before step 7** — the five swapped cells are broken in a
+*dispatch* harness that does not exist yet, and nothing in this step's ten injections speaks to it.
+It is recorded that way here so step 7's ledger reads it as owed rather than as on track, which is
+slice AB step 3 § (d)'s correction re-applied one slice on.
+
+**AND ONE QUESTION IS HANDED FORWARD TO STEP 5 RATHER THAN LEFT TO BE REDISCOVERED THERE.**
+`py_inherit.sh`'s i02 patch asserts `len(hits) == 2` for `for tau_q, tau_g, tau_s in clocks:` and
+deliberately edits only the first — because **rung 71's `full_modes` carries the identical line**.
+So the in/out clock reorder, and with it the possibility of the identical structural-not-locational
+blindness, is present in step 5's reader too. Step 5 should run i02's analogue against
+`tests/rung71.rs` **and** against `test_rung71.py`, and report the pair the way § (c) does here; if
+it also misses in both languages, that is one inherited property of the family and not two
+coincidences.
+
 ### ~~The four~~ **THE EIGHT** runtime-introspection tests, one by one
 
 **CORRECTED 2026-08-20 by § 5.19 (vii) — this table named FOUR and an enumeration over the 27

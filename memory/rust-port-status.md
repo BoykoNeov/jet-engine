@@ -19,7 +19,7 @@ slices inside an authorised phase are free. See [[rust-port-decided]].
 
 * **0–5 DONE.**
 * **PHASE 6** authorised 2026-08-17, **COMPLETE 2026-08-20** with slice U's five steps.
-* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, **AB complete**; **AC (rungs 70+71) IN FLIGHT** (§ 5.27, fourteen probes) — **steps 1–3 of 7 done**.
+* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, **AB complete**; **AC (rungs 70+71) IN FLIGHT** (§ 5.27, fourteen probes) — **steps 1–4 of 7 done**.
 
 ## Phase-7 slices, as they closed
 
@@ -70,6 +70,19 @@ booked to slice AH. See [[rust-port-slice-ac-preflight]].
    not what `full_modes` returns on its own grid, and `docs/rung71-spec.md` § 5 had the right pair
    all along — corrected in the same pass. Full gate **130 targets / 1 268 passed / 0 failed**,
    unchanged, since the ported gates are steps 4-5. See [[rust-port-slice-ac-step3]].
+
+4. **Step 4** — the rung-70 gates: `tests/rung70.rs` **754 lines, 27 gates**, green first run in
+   5.75 s. The Python↔Rust mapping is **1:1 IN ORDER** (0 added, 0 collapsed, 1 body substituted —
+   `at_lever_returns_this_class`), reconciled by NAME after a `grep` said 28 and `cargo` ran 27
+   (the 28th sits inside a doc comment). Ten injections into `src/cross_split.rs`, **two** binaries
+   each: **8 caught, 2 missed** — and both misses are missed by **Python's own 27 gates too**
+   (27 passed under each), so they are INHERITED, not introduced. Both proven able to move: the
+   clock-grid swap shifts 25 of 38 printed lines; the widened joint window goes 61 → 341 points and
+   `joint_fraction` 0.179 → exactly 1.0. The gates survive because they pin SHAPE, not LOCATION,
+   and their bars are one-sided; both are booked to step 6's oracle as named value keys. The file
+   header's *"15 carry `slow`"* is corrected to the **measured 11** (22 of 57 over the slice). Full
+   gate **131 targets / 1 295 passed / 0 failed**, predicted before the run and held.
+   See [[rust-port-slice-ac-step4]].
 
 ## Slice AB, step by step
 
