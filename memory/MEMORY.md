@@ -80,6 +80,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Slice AC step 2](rust-port-slice-ac-step2.md) — a gate whose CODE and whose COMMENT described different properties, and step 1's lesson only asked what the next step DELETES
 - [Slice AC step 3](rust-port-slice-ac-step3.md) — a shipped docstring published a number its own reader does not return, and only driving the reader on its OWN defaults could find it
 - [Slice AC step 4](rust-port-slice-ac-step4.md) — both injections that survived the ported gates survive the PYTHON gates too: the holes were inherited, not introduced
+- [Slice AC step 5](rust-port-slice-ac-step5.md) — a gated condition measured over the READERS was falsified by the shipped TEST SUITE, and the ported gate could not have told the wrong answer from the right one
 - Slice T (46/47/48) steps [1](rust-port-slice-t-step1.md) [2](rust-port-slice-t-step2.md) [3](rust-port-slice-t-step3.md) [4](rust-port-slice-t-step4.md) — an EXACT ZERO blinds its own gate to the SIGN (one lesson per file)
 
 ## Shipped rungs

@@ -15188,7 +15188,11 @@ contradicts it. Priced instead:
    (`0.588974 / 0.596811`, which is what `docs/rung71-spec.md` § 5 has always said), corrected
    in the same pass.
 4. **The rung-70 gates** — `tests/rung70.rs`, 27 ported gates.
-5. **The rung-71 gates** — `tests/rung71.rs`, 30 ported gates.
+5. **The rung-71 gates** — **DONE, § 5.27.5** — `tests/rung71.rs`, **30** ported gates,
+   1:1 in order. Its own finding is not in the gates at all: rung 70's `csqrt_gated`, an
+   `assert!` step 3 registered as a GATED CONDITION on a census of the READERS, is
+   falsified by this file's damping gate — and the `assert!` was catching a wrong VALUE
+   the one-sided ported bar could not (§ (a)–(c)).
 6. **The oracle** — `oracle/dump_slice_ac.py` + `tests/slice_ac_oracle.rs`, bit-exact vs PyPy, with
    the CPython arm and its NAMED exemption (§ (iv)) re-read from the dump, at the readers' SHIPPED
    grids.
@@ -15884,6 +15888,313 @@ simply **wrong**. A claim that is right for no reason and wrong two files over i
 either way, and the standing rule this leaves is: **`--all-targets` is not `--all-targets` while
 any target it depends on fails to compile**, so the `-A clippy::eq_op` form is the one later slices
 should quote.
+
+#### 5.27.5 SLICE AC step 5 — the 30 ported gates, a GATED CONDITION THE SHIPPED SUITE FALSIFIED, and the two analogues answered
+
+**SHIPPED**: `tests/rung71.rs`, **1 016 Rust lines**, **30 gates** from `tests/test_rung71.py`'s
+30 (**11** of them `slow` there — MEASURED by `pytest -m slow --collect-only`, which is the number
+step 4 got wrong by reading it off a neighbouring sentence). The marker is dropped per slice M's
+rule and no `#[ignore]` is inherited against an unmeasured cost.
+
+**TWO OF THE 30 FAILED ON THE FIRST RUN AND NEITHER WAS A TRANSCRIPTION SLIP.** One is a defect in
+step 3's shipped port; the other is a defect in this step's own first writing. Both are below.
+
+##### (a) **THE LEADING FINDING — A GATED CONDITION MEASURED OVER THE *READERS* WAS FALSIFIED BY THE *SHIPPED TEST SUITE*, ONE FILE OVER**
+
+§ 5.27 (iv) registered `p.im == 0` in rung 70's `_zeta_pair` as a **gated condition rather than an
+assumption**: `p` is the product of the two largest-modulus roots of a real cubic, measured
+positive-real on **18 of 18** calls, with the caveat written down at the time — *if the near-zero
+root is one of the complex pair, `nz` holds one real and one complex root and `p` is genuinely
+complex.* Step 3 shipped that as an `assert!` in `csqrt_gated`, and the pre-flight even added the
+warning that *"the only form this rung calls" is exactly the kind of sentence this slice has
+already falsified once.*
+
+**It was falsified a second time, by rung 71's own gate.**
+`test_the_damping_reader_had_to_be_REBUILT_a_third_time` hands rung 70's reader the CONSTRUCTED
+spectrum `[-194, -23 ± 25.5i]` — whose two largest moduli are one REAL root and ONE MEMBER of the
+pair — so `p = 4462 + 4947i` and Python answers `1.27809528556979`. The port panicked.
+
+**AND THE NUMBER WAS ALREADY WRITTEN DOWN IN THE PORT, AT THE SAME STEP.** `zeta_ring`'s doc
+comment in `src/full_split.rs` lists the four arms where the two readers disagree — *"0.960 vs
+0.686, **1.279 vs 0.670**, 1.045 vs 0.924, and 1.035"*. Step 3 published a value that step 3's own
+`sqrt` could not produce. The measurement was of the **READERS**; the claim was about the **RUNG**,
+and the shipped suite is in the second population. That is the generalisable half:
+*a census over the callers a reader has today does not bound the callers a shipped gate creates.*
+
+##### (b) **AND THE `assert!` CAUGHT WHAT THE PORTED GATE STRUCTURALLY COULD NOT — THE MIRROR OF STEP 4**
+
+Driven past its own assertion, the real-only spelling does not merely refuse: it returns
+`1.624295178664163` where Python returns `1.278095…`. **Rung 71's shipped gate passes on both.**
+
+| | value | `\|zeta − ring\|` | gate `> 0.5` |
+|---|---|---|---|
+| CPython `c_sqrt` (correct) | 1.278095 | 0.6083 | **passes** |
+| step 3's real-only spelling | 1.624295 | 0.9545 | **passes** |
+
+A one-sided bar cannot tell a right answer from a wrong one on the same side of it. **A port that
+had shipped the fast path WITHOUT the assertion would have been green and wrong** — and the oracle
+would not have caught it either, because `_zeta_pair` is not called with a complex `p` by any
+reader the dump drives. Step 4's finding was that ported gates were too weak to catch injected
+defects; this is its mirror, and the pair is the honest statement about what this slice's gates do:
+**they pin shape, and the defensive asserts are carrying the locations.**
+
+##### (c) **THE FIX IS CPython's `c_sqrt` IN FULL, AND THE SIGNED-ZERO COUNT WENT THE OPPOSITE WAY FROM MY FIRST WRITING**
+
+`csqrt_gated` becomes `csqrt`, CPython's `c_sqrt` for a general argument
+(`ax/=8; s = 2*sqrt(ax + hypot(ax, ay/8)); d = ay/(2s)`, then `copysign`). On a real argument every
+step is exact, so the value branch is unmoved — **except at `im == -0.0`**, where `copysign` carries
+the sign and the real-only spelling always returned `+0.0`.
+
+The first writing of that paragraph called the `-0.0` case rare and said the shipped values carry
+`+0.0`. **Both halves were wrong**, and intercepting all 96 `cmath.sqrt(p)` calls the two shipped
+suites make says so:
+
+| | measured |
+|---|---|
+| `p.im == -0.0` | **90** of 96 — and `p.re < 0` on **0** of those |
+| `p.im == +0.0` | 5 |
+| genuinely complex `p` | **1** (rung 71's gate) |
+| `sqrt` differs BIT-WISE from step 3's spelling | **91** |
+| the **returned** `zeta` differs | **1** |
+
+So the divergence reaches 90 shipped calls and changes nothing on any of them — `p.re >= 0`
+throughout, which confines `copysign` to a zero component, and `c_div` washes it out of the `.real`
+the reader takes. **Had any of the 90 carried `p.re < 0` the same `copysign` would have flipped the
+sign of a NON-zero component**, which is why that count is measured and not reasoned about.
+`tests/porting_rules.rs` gains **RULE 4**, which holds both halves: bit-equality on real arguments
+over the file's own grid, and the `-0.0` divergence asserted rather than left latent.
+
+##### (d) **THE SECOND FAILURE WAS MINE: A CENSUS COUNTER THE THING BEING MEASURED NEVER TOUCHES**
+
+`the_march_is_reused_and_not_copied` first asserted `Census70::triple_laws_gov > 0` after a rung-71
+march, on the theory that rung 70's `_triple_laws` runs at every step. It does not — the five-state
+integrator calls `solve_v`, and `triple_laws` is a **READER-side** cell. All six of `Census70`'s
+counters read `0` on a march that had plainly run.
+
+Rewritten around a counter with **its own control**, which is what the first writing lacked: run
+the REDUCE arm first and assert `Census71::integrate_reduced == 1` (the instrument is shown able to
+move), then the armed arm and assert `0`. Read alone the zero proves nothing, because an entry that
+was never called reports zero too.
+
+##### (e) THE PAIRING, NAME BY NAME
+
+| | |
+|---|---|
+| Python `def test_` | **30** |
+| Rust `#[test]` | **30** |
+| pairing | **1:1, IN ORDER**, differing only by case-folding |
+| added | **0** |
+| collapsed | **0** |
+| **bodies substituted** | **1** — `at_lever_returns_this_class` |
+
+The substitution is the same shape step 4 used one rung down: Python opens with
+`type(m) is FullSplitTransient` and there is no runtime class, so the sibling is made to exercise a
+cell only rung 71's table has — it must march with an INCIDENCE stator beside `tau_gov`, which rung
+70's inherited table refuses outright (*"n = m = 3"*). **Not an address comparison**: `ptr::eq` on a
+`const` is slice AA step 1's recorded trap. Python's second half (`stator_inc is not None and
+stator_lim is None`) ports as a plain field check beside it.
+
+**AND THE SLICE's ONE RUNTIME-INTROSPECTION TEST IS HERE** (§ 5.27 (viii)), with § 6's two decided
+replacements rather than a third invention: the `_stator_march`-signature half becomes an
+EXHAUSTIVE destructuring of `StatorLeg` and `MarchScope` with no `..` — the only form that fails to
+COMPILE when a field is added, which is § 6's *"not reachable becomes a compile error"* — and the
+`inspect.getsource` half becomes `include_str!` + `.contains`.
+
+**AND THE FIRST WRITING OF THAT SECOND HALF REBUILT STEP 4 § (a)'s DEFECT IN ITS DANGEROUS
+DIRECTION.** It searched the WHOLE module and asserted `count() == 1`, where Python scopes to
+`inspect.getsource(FullSplitTransient.integrate_fuel)` — the METHOD — and uses a bare `in` with no
+count at all. Step 4 found a `#[test]` inside a doc comment inflating a `grep` from 27 to 28; the
+same stray-copy mechanism runs the other way here, and it was **MEASURED rather than reasoned
+about**. With the guard deleted from the body and a doc comment above the function quoting the
+expression:
+
+| | `contains` | `count() == 1` | verdict |
+|---|---|---|---|
+| the first writing, whole module | `true` | `true` | **PASSES ON A DELETED GUARD** |
+| the shipped form, function body only | `false` | — | **FAILS**, as it must |
+
+The scoping is what earns the count bar rather than the other way round: splitting at the `fn` line
+drops every `///` (a doc comment precedes its item) and `
+}
+` ends it (only a top-level item
+closes at column zero), so the body cannot contain a commented copy — and a `!body.contains("///")`
+assertion beside it fails loudly if the scope ever slips.
+
+##### (f) **THE SWEEP: 10 INJECTIONS, BOTH BINARIES, 7 CAUGHT AND 3 MISSED**
+
+`M:\claud_projects\temp\ac5\sweep\run.sh` — ten defects a wrong port would plausibly produce, each
+applied to `src/full_split.rs`, gated, and reverted. **Both binaries that link the module are
+enumerated rather than assumed** (`grep -l full_split tests/*.rs` → `rung71`, `slice_ac_cells`) and
+the catch is attributed per binary; the backup comes from `git show HEAD:` and the restore is proven
+by `git diff --quiet`, both of which held on all ten.
+
+| | injection | what it breaks | verdict |
+|---|---|---|---|
+| **j01** | `full_modes` destructures the clock grid as `(tau_g, tau_q, …)` | the documented in/out reorder — **step 4's i02 ANALOGUE** | **MISS** — § (g) |
+| **j02** | `window_law`'s `joint` predicate `&&` → `\|\|` | the three-way intersection becomes a union — **step 4's i10 ANALOGUE** | **CAUGHT**, 1 |
+| **j03** | `zeta_ring` divides by the IMAGINARY PART, not the modulus | the damping reader's own scale | **CAUGHT**, 2 |
+| **j04** | `det_pred` reads `pair_RV` where it must read `pair_CV` | the headline factoring, through the gain it is BLIND to | **CAUGHT**, 1 |
+| **j05** | the ledger's `marginal.stator` read in the `phi` currency, not incidence | which wall the third loop is credited against | **MISS** — § (g) |
+| **j06** | `band_containment`'s `delivering` test inverted | § 0's containment sample | **CAUGHT**, 1 — but see § (h) |
+| **j07** | `_rk4_floor_full`'s bound relaxed `2.0` → `200.0` | the stability refusal never fires | **CAUGHT**, 1 |
+| **j08** | `integrate_fuel`'s guard B short-circuited to `true \|\|` | a rung-52 fuel leg admitted beside the governor | **CAUGHT**, 1 |
+| **j09** | `full_rig`'s bare, permanent `gov_max` set dropped | **§ 5.27 (ii)'s EMPTY-SAMPLE break** — every reader silently measures rung 68 | **CAUGHT**, 10 |
+| **j10** | `ic_contraction`'s set key stops rounding | `members`, an INTEGER that IS § 3's headline | **MISS** — § (g), and it is not a hole |
+
+`slice_ac_cells` caught **none** of the ten and stayed 10/0 throughout, which is the right answer
+and is recorded rather than assumed: step 1's gates hold the TABLE, not the bodies.
+
+**§ 5.27 (ii)'s registered break shape is CONFIRMED and it is the loudest row here.** j09 is the
+empty-sample injection the pre-flight predicted a value-diff gate would sleep through — and it is
+caught by **10 of 30** gates, because rung 71's readers assert non-emptiness (`assert!(!rows
+.is_empty())`, `.expect("rows exist")`) rather than only comparing values. The prediction was that
+a DISPATCH gate would be blind to it; that gate is step 7's and is unaffected.
+
+##### (g) **EVERY MISS IS SHOWN ABLE TO MOVE SOMETHING — AND ONE OF THE THREE TURNS OUT NOT TO BE**
+
+Slice S step 2's rule, applied and not waived (slice W step 3 is what skipping it costs). None of
+the three needed a patch: all three defects are re-derivations from a reader's own shipped output,
+so the correct and the injected quantity come from ONE call — and that call is **PYTHON's**, which
+makes the inherited/introduced classification a measurement rather than a second pytest run.
+
+* **j01 MOVES, and the grid is NOT the fixed point I first assumed.** The swap is nearly a
+  permutation of the six-arm grid — entries 1/5/6 are symmetric in the first two slots and entries
+  2 and 4 are each other's swap, so only entry 3 is genuinely new. **Measured: 3 of 6 arms move**
+  (2 and 4 exchange their numbers verbatim, `min_root_rel` 0.14305 ↔ 0.08397; arm 3's
+  `max_mod_ratio` goes 0.8150 → 0.5119 and its `any_below_r69` flips). **Two of the eight
+  aggregates the gates read MOVE**: `arms_below_r69` **2 → 1** and `max_mod_ratio` 0.81498 →
+  0.80857. Every gate survives because its bar is a loose one-sided bound — `arms_below_r69 >= 1`
+  absorbs the 2 → 1 outright. **So this is not shape-vs-location as at rung 70; it is a gate whose
+  bar is looser than the quantity it watches.** And the PYTHON suite misses it too (30 passed under
+  the same edit, applied to `full_modes`' copy only), so it is INHERITED — which answers step 4
+  § (d)'s handoff: one property of the family, not two coincidences.
+* **j05 MOVES, and changes SIGN.** `kept["stator"]` goes `+0.05490` → `−0.00639`. The gate asks
+  `kept["stator"] < 0.25`, a one-sided UPPER bound that a negative number satisfies maximally —
+  step 4's i10 shape exactly, one rung on. Computed off Python's own `full_bill`, so Python's gate
+  is blind for the same reason and the miss is INHERITED.
+* **j10 DOES NOT MOVE, AND THAT IS A DIFFERENT FINDING.** `members` is `1` on the full rig and `4`
+  on the shared control under BOTH the rounded and the raw key, over all 24 converged sweeps per
+  rig. So `round10` is not something the gates fail to watch — it is a **DEFENCE WITH NO READER on
+  this plant**: every converged sweep lands on values that agree to full precision, not merely to
+  ten decimals. No gate in either language can distinguish `round10` from the identity today.
+  Booked as such rather than as a value hole, because the two call for opposite things — a hole
+  wants a tighter gate, a reader-less defence wants recording and leaving alone.
+  **AND THE COST OF THAT CLASSIFICATION IS STATED, so a later slice does not read it as
+  permission.** `round10`'s spelling is deliberate — its own doc comment argues that
+  `(x*1e10).round()/1e10` is WRONG because it rounds the scaled value and the scaling is itself
+  inexact. What this measurement shows is that **nothing in either language can tell that careful
+  spelling from the identity today**, so the SPELLING argument is unverified as well as the
+  rounding. *Defence with no reader* means leave it and record it, never *safe to simplify.*
+
+**CLASSIFICATION for the step-6 oracle**, so nothing is left as a bare `MISS`: j01's per-arm
+`taus`, `min_root_rel`, `max_mod_ratio` and `any_below_r69`, and j05's `marginal`/`kept` triples,
+are **VALUE keys owed to the oracle**. j10 is **not** owed — there is nothing for a dump to
+disagree about.
+
+##### (h) **AND THE SWEEP MISDIAGNOSED ITS OWN FAILURE, WHICH IS THIS STEP'S INSTRUMENT DEFECT**
+
+j06's row read **`NO RESULT LINE (did not build)`**. Re-run by hand with the full output kept, the
+same injection **compiles and is CAUGHT by 1 gate** (29 passed / 1 failed). The sweep greps cargo's
+output for `^test result` and discards the rest, so a missing line can only be labelled by a guess
+— and the guess was wrong twice over.
+
+**THE FIRST WRITING OF THIS PARAGRAPH THEN GUESSED A SECOND TIME**, naming build-lock contention
+from an external `cargo test --workspace --no-fail-fast` as the cause. **That is not knowable and
+should not have been written**: the output that would say was thrown away. What IS measured came
+later, when the full gate on final bytes failed the same way with its message intact —
+`error: failed to build archive from rlib …: The paging file is too small for this operation to
+complete. (os error 1455)`, three targets down, with 28.6 GB of physical RAM free and **4.25 GB of
+74.16 GB commit** left. So the failure class on this machine is virtual-memory exhaustion under
+concurrent `-C lto=thin -C codegen-units=1` links, and the honest sentence about j06 is that its
+cause **cannot be recovered**, only its verdict re-measured.
+
+This is step 4 § (b) repair 2 one level up. There the fix was *make the injection compile*; here it
+is **keep the output that would say whether it did**. A driver that cannot distinguish *compile
+error* from *lost the lock* from *the binary was never run* is producing the same `MISS`-means-
+three-things defect this phase has now recorded at slice AB step 3 (I6), at slice AC step 4 § (b),
+and now inside step 5's own sweep. **The standing rule this leaves: a per-injection row must record
+the exit code and keep the output, not just the line it hoped to find.**
+
+##### (i) **THE TWO ANALOGUES STEP 4 HANDED FORWARD, ANSWERED — AND THEY SPLIT**
+
+Step 4 § (d) named one of these by hand: *"rung 71's `full_modes` carries the identical line, so the
+in/out clock reorder is present in step 5's reader too. Step 5 should run i02's analogue against
+`tests/rung71.rs` AND against `test_rung71.py`, and report the pair the way § (c) does here."* Both
+were run, and the second — `window_law`'s `joint`, which carries i10's `and` — was added beside it.
+
+| | rung 70 (step 4) | rung 71 (step 5) |
+|---|---|---|
+| the clock triple reordered | MISS Rust, MISS Python | **MISS Rust, MISS Python** |
+| the `joint` predicate widened | MISS Rust, MISS Python | **CAUGHT Rust, CAUGHT Python** |
+
+**THE CLOCK-ORDER BLINDNESS IS INHERITED AND IS A FAMILY PROPERTY** — one property seen at two
+rungs in two languages, exactly the reading step 4 asked for, and not two coincidences.
+
+**THE `joint` HOLE DOES NOT PROPAGATE, AND THE REASON IS THE BAR AND NOT THE READER.** Rung 70's
+`all_three_windows_overlap` asserts `joint.2 >= 20` and `overlaps` — two one-sided LOWER bounds,
+which a union satisfies maximally. Rung 71's `test_the_third_loops_window_is_the_SECOND_loops_lag`
+asserts `0.0 < joint_fraction < 0.05`, **two-sided**, and a union drives that to 1.0. The same
+defect, the same reader shape, opposite verdicts — **from the bar, one rung apart.** Both languages
+fail the SAME named test.
+
+**THIS PARTLY DISCHARGES STEP 4's OWN BOOKING.** § 5.27.4 (c) booked `window_overlap`'s `joint` span
+and `joint_fraction` to the step-6 oracle as value holes. They are owed for **rung 70's reader
+only**: at rung 71 the quantity is pinned by a shipped gate in both languages, so the oracle is not
+the only thing standing behind it there.
+
+##### (j) CLIPPY, RUN THE ONLY WAY THAT REACHES A TEST TARGET
+
+Step 4's close-out found that `cargo clippy --all-targets` aborts on the lib's ONE deliberate
+`eq_op` error and had therefore **never linted a `tests/*.rs` file in this crate**, so `-A
+clippy::eq_op` is the form later slices were told to quote. Run that way here: **0 errors**, and
+**zero findings in every file this step touched** — `tests/rung71.rs`, `tests/porting_rules.rs`,
+`src/reference_split.rs`, `src/cross_split.rs`, `src/full_split.rs` appear nowhere in the output.
+
+**AND THE TEST-TARGET TALLY RECONCILES WITH STEP 4's, WHICH IS WHAT MAKES IT A CHECK AND NOT A
+RE-COUNT**: 24 test targets carry **47** findings, against step 4's measured 48 with one fixed —
+`48 − 1 = 47`, and `tests/rung71.rs` adds none. **One number step 4 did not report is added here**:
+the LIB itself carries **42**, in eight files led by `fuel_transient.rs` (8), `two_spool.rs` and
+`spool.rs` (5 each). Step 4's sentence was about test targets only and is not contradicted; the lib
+column simply was never printed, and 89 total is what `--all-targets -- -A clippy::eq_op` actually
+reports. Disclosed and booked, not fixed — they belong to a dozen slices' files.
+
+##### (k) THE COUNTS, IN THEIR CONVENTION
+
+Full Rust gate **132 targets / 1 326 passed / 0 failed / 0 ignored**, from step 4's
+131 / 1 295. **Both were PREDICTED before the run**, and the addition is CHECKED rather than typed
+off the log: `1 295 + 30 (rung71) + 1 (porting_rules RULE 4) = 1 326`, and `131 + 1 = 132` targets
+because `tests/rung71.rs` is one new binary while RULE 4 lands in an existing one.
+
+**THE TARGET COUNT IS STATED IN ITS CONVENTION**, as step 4 was forced to do: `132` is 131
+`Running` lines plus the one doctest phase = 132 `test result:` blocks. Read as `Running` lines
+alone it is 131. **And 1 326 is the SUM of all 132 blocks**, computed from the log rather than
+read off its last line.
+
+**THE DOCTEST QUESTION WAS SETTLED FROM THE LOG, NOT FROM THE FENCE.** `csqrt`'s new doc comment
+carries a fenced block, and the first reasoning was *"it is ` ```text `, so no doctest" —* an
+argument, where the arithmetic needed a measurement. The `Doc-tests turbojet` phase reports
+**`running 0 tests`**, so `1 295 + 30 + 1` is right for the reason claimed and not by luck.
+
+**NO TIMING IS QUOTED FROM THIS RUN, AND THAT IS DELIBERATE.** The first attempt on final bytes
+did not complete at all — three targets died with `os error 1455` (§ (h)) — and this one ran at
+`--jobs 2` on a box carrying an external `cargo test --workspace`. A duration off either is not
+documentation ([[never-run-the-gate-for-timing]]); the PASS/FAIL counts are unaffected by load and
+are the only thing taken from it.
+
+##### (l) WHAT STEP 5 DOES NOT DO
+
+The oracle (step 6) and the five dispatch gates (step 7) are still owed. **P2 remains unsettleable
+before step 7** — nothing in this step's ten injections speaks to the swapped cells, and § (f)'s
+j09 row is the closest thing to evidence and is not one: it breaks the READERS through the rig,
+where P2's claim is about a DISPATCH harness that does not exist yet. Recorded as owed rather than
+as on track, which is slice AB step 3 § (d)'s correction now applied twice.
+
+**AND ONE ITEM IS ADDED TO STEP 6's LIST BY THIS STEP** rather than left to be rediscovered there:
+`csqrt` is now reachable with a genuinely complex argument, but **no shipped reader reaches it that
+way** — only the gate does. So the oracle's dump cannot cover the branch § (a) opened, and the
+`assert!`-shaped protection it replaced is gone. The invariant that stands in its place is
+`tests/porting_rules.rs` RULE 4, and step 6 should read that as the coverage statement rather than
+looking for a dump key that will not exist.
 
 ### ~~The four~~ **THE EIGHT** runtime-introspection tests, one by one
 

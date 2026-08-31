@@ -193,6 +193,12 @@ fn multiplication_is_not_associative() {
 /// harmless only because `p.re < 0` on **zero** of them, which keeps `copysign` on the imaginary
 /// component's zero instead of flipping the sign of a non-zero one. That count is a measurement,
 /// and it is the reason this rule asserts the divergence rather than describing it.
+///
+/// **AND `p.re < 0` ON ZERO OF 90 IS A PROPERTY OF THIS PLANT's SPECTRA, NOT A THEOREM.** `p` is a
+/// product of two cubic roots, and nothing forbids its real part being negative — it simply is not
+/// on the trajectories rungs 70 and 71 march today. If the plant's roots move, that count is the
+/// one to re-measure, because it is the only thing standing between the signed-zero divergence and
+/// a sign flip on a non-zero component.
 #[test]
 fn csqrt_matches_the_real_branch_it_replaced_and_diverges_only_at_negative_zero() {
     // The real-only spelling `csqrt` replaced, transcribed here so the comparison has two sides.

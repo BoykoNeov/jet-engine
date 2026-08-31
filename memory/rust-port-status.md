@@ -87,6 +87,27 @@ booked to slice AH. See [[rust-port-slice-ac-preflight]].
    targets and 48 warnings. The one in `rung70.rs` is fixed, the other 47 disclosed and booked.
    See [[rust-port-slice-ac-step4]].
 
+5. **Step 5** — the rung-71 gates: `tests/rung71.rs` **1 016 lines, 30 gates** (11 `slow` in
+   Python, MEASURED not typed). **TWO failed on the first run and neither was a transcription
+   slip.** (i) Step 3's `assert!(p.im == 0.0)` inside rung 70's `zeta_pair` — a condition § 5.27
+   (iv) measured over the READERS (18/18) — is falsified by rung 71's own damping gate, which
+   drives a CONSTRUCTED spectrum where `p = 4462 + 4947i`; the port had already published the
+   resulting `1.279` in `zeta_ring`'s doc comment at the same step. Replaced by `csqrt`, CPython's
+   full `c_sqrt`, plus `porting_rules.rs` **RULE 4**. **And the `assert!` caught what the gate could
+   not**: the wrong value is 1.624 vs Python's 1.278 and the gate's one-sided `> 0.5` bar passes on
+   both — the mirror of step 4. (ii) My own gate asserted `Census70::triple_laws_gov > 0` on a
+   march; that cell is READER-side, so all six counters read 0. Rewritten with its own control.
+   Signed-zero census: **90 of 96** shipped `cmath.sqrt(p)` calls carry `im == -0.0` (I had it
+   backwards), `p.re < 0` on **0** of them, `sqrt` bits differ on 91, the returned value on 1.
+   Ten injections, both binaries: **7 caught, 3 missed**; every miss shown able to move something
+   except j10, whose `round10` is a **defence with no reader** (`members` identical under both
+   keys). The two analogues step 4 handed forward SPLIT: the clock reorder misses in both languages
+   at both rungs (INHERITED family property), the `joint` widening is CAUGHT at rung 71 in both
+   because its bar is two-sided where rung 70's were one-sided — partly discharging step 4's oracle
+   booking. **Instrument defect:** the sweep labelled a lock-contention failure "did not build";
+   re-run by hand, j06 compiles and is caught. Full gate **132 targets / 1 326
+   passed / 0 failed**, predicted before the run. See [[rust-port-slice-ac-step5]].
+
 ## Slice AB, step by step
 
 1. **Step 1** — `src/reference_split.rs` 519 lines, 13 cell gates; nine swapped bodies panic.

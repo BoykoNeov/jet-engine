@@ -505,11 +505,27 @@ fn forced_release_edges_and_an_instantaneous_valve_are_refused() {
     // `include_str!` reads at COMPILE time from a path relative to this file, where Python
     // re-reads from disk at import-cached line numbers. The needle is the port's spelling of
     // Python's `"s_off is None and tau_rel is None"`.
+    //
+    // **THE SEARCH IS SCOPED TO THE FUNCTION BODY, AND THAT IS THE WHOLE CARE IN THIS GATE.**
+    // Python reads `inspect.getsource(FullSplitTransient.integrate_fuel)` — the METHOD — and the
+    // faithful port is not `include_str!` searched whole. A module-wide `.contains` would pass on
+    // a DELETED guard as soon as any doc comment quoted the expression, which is step 4 § (a)'s
+    // doc-comment `#[test]` (a `grep` counting 28 where `cargo` ran 27) running in its dangerous
+    // direction: there the stray copy inflated a count, here it would satisfy the assertion on
+    // behalf of code that no longer exists. Splitting at the `fn` line drops every `///` line,
+    // because a doc comment precedes its item; `\n}\n` is the end, because only a top-level item
+    // closes at column zero in rustfmt'd source.
     const SRC: &str = include_str!("../src/full_split.rs");
-    assert!(SRC.contains("lim.s_off.is_none() && lim.tau_rel.is_none()"),
+    let body = SRC.split("\nfn r71_integrate_fuel(").nth(1)
+                  .expect("rung-71's `integrate_fuel` is still spelled `fn r71_integrate_fuel(`")
+                  .split("\n}\n").next()
+                  .expect("a top-level fn ends at a column-zero brace");
+    assert!(!body.contains("///"), "the scope slipped past the function body");
+    assert!(body.contains("lim.s_off.is_none() && lim.tau_rel.is_none()"),
             "rung-71's `integrate_fuel` no longer carries the forced-release guard");
-    // …and it is carried exactly ONCE, so a second, weaker copy cannot shadow it unnoticed.
-    assert_eq!(SRC.matches("lim.s_off.is_none() && lim.tau_rel.is_none()").count(), 1);
+    // …and it is carried exactly ONCE **inside that body**, which is a bar the scoping earns:
+    // module-wide the same count would have been satisfiable by a comment.
+    assert_eq!(body.matches("lim.s_off.is_none() && lim.tau_rel.is_none()").count(), 1);
 
     // (3) AND THE INSTANTANEOUS VALVE, WHICH IS AN ORDINARY REFUSAL.
     assert!(panics_with(|| {
