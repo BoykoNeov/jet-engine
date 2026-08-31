@@ -22,7 +22,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding, backticks in `-m`, and a status read off the runner
 
-## The Rust port — phases 0–6 done; phase 7 in flight, slice AC (rungs 70/71) step 5 of 7
+## The Rust port — phases 0–6 done; phase 7 in flight, slice AC (rungs 70/71) CLOSED
 - [Rust port status](rust-port-status.md) — the running tally: phases, slices, and the numbers each closed slice landed on. **Update THAT file, not this line.**
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; a new PHASE needs authorisation
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost
@@ -82,6 +82,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Slice AC step 4](rust-port-slice-ac-step4.md) — both injections that survived the ported gates survive the PYTHON gates too: the holes were inherited, not introduced
 - [Slice AC step 5](rust-port-slice-ac-step5.md) — a gated condition measured over the READERS was falsified by the shipped TEST SUITE, and the ported gate could not have told the wrong answer from the right one
 - [Slice AC step 6](rust-port-slice-ac-step6.md) — the one column of a table that agreed with the suite was the only one that could not disagree, and 119 of 234 exempt keys were the PLANT, not the readers
+- [Slice AC step 7 — slice closed](rust-port-slice-ac-step7.md) — four comments gave a REASON that was testable and false, and the injection every reader launders needed a declared carrier
 - Slice T (46/47/48) steps [1](rust-port-slice-t-step1.md) [2](rust-port-slice-t-step2.md) [3](rust-port-slice-t-step3.md) [4](rust-port-slice-t-step4.md) — an EXACT ZERO blinds its own gate to the SIGN (one lesson per file)
 
 ## Shipped rungs

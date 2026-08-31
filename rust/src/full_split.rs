@@ -130,7 +130,10 @@ pub const R71: LeverHooks = LeverHooks {
     ..crate::cross_split::R70
 };
 
-/// RUNG 71's `TwoSpoolTransientHooks` — **ZERO cells swapped**, named for `R66_TWO`'s reason.
+/// RUNG 71's `TwoSpoolTransientHooks` — **ZERO cells swapped**. `R66_TWO`'s reason, which this
+/// used to cite, is measured FALSE at [`R70_TWO`]; the width is pinned by the tripwire named there.
+///
+/// [`R70_TWO`]: crate::cross_split::R70_TWO
 pub const R71_TWO: TwoSpoolTransientHooks = crate::cross_split::R70_TWO;
 
 /// RUNG 71's fuel table — ONE swap, `integrate_fuel`: **four arming asserts where rung 70 has
@@ -140,7 +143,10 @@ pub const R71_FUEL: FuelTransientHooks = FuelTransientHooks {
     ..crate::cross_split::R70_FUEL
 };
 
-/// RUNG 71's stator table — **ZERO cells swapped**, named for the same reason.
+/// RUNG 71's stator table — **ZERO cells swapped**, and the "same reason" is [`R70_TWO`]'s,
+/// which step 7 measured false. The width is pinned by the tripwire named there.
+///
+/// [`R70_TWO`]: crate::cross_split::R70_TWO
 pub const R71_STATOR: StatorTransientHooks = crate::cross_split::R70_STATOR;
 
 /// RUNG 71's third-loop table — **ZERO of the ten cells swapped.**

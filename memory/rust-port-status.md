@@ -30,7 +30,7 @@ slices inside an authorised phase are free. See [[rust-port-decided]].
 | AA | 68 | 2026-08-27 — `three_loop.rs` 2 302 lines, **47 gates**, **12 084 oracle keys** bit-exact vs PyPy (4 named CPython exemptions), full gate **124 blocks / 1 199 passed / 0 failed** |
 | AB | 69 | **2026-08-28, all five steps** — `reference_split.rs` 1 686 lines, 25 ported gates, **15 957 oracle keys** bit-exact vs PyPy (194 named CPython exemptions), and **14 dispatch gates** over TEN cells, every one observable; full gate **129 binaries / 1 258 passed / 0 failed** |
 
-## Slice AC — pre-registered, seven steps priced
+## Slice AC — CLOSED, all seven steps done
 
 Rungs 70 + 71, `docs/plans/todo-rust-port.md` § 5.27. **1 605 Python lines (2.27x slice AB),
 57 collected tests (22 slow), ZERO cells added, 5 swaps over two rungs = 5 distinct function
@@ -124,6 +124,16 @@ booked to slice AH. See [[rust-port-slice-ac-preflight]].
    measured **0 of 38** intercepted `p` complex. Step 5's booked item discharged and corrected:
    **two**, not three, of `zeta_ring`'s quoted pairs are off the shipped grid.
    See [[rust-port-slice-ac-step6]].
+
+7. **Step 7 — SLICE AC CLOSED** — `tests/slice_ac_dispatch.rs`, **9 gates**, five function pointers
+   over five swaps, all green first run and **6 of 6 mutations of this file's own gates killed**.
+   **Every reader rebuilds its machine through `at_lever`, so four of the five injections are
+   LAUNDERED before any value is read** — the pre-flight's "seen by 1 of 6 readers" is a Python
+   number that does not transfer, and `triple_laws` needs a DECLARED carrier (with its own control)
+   to be observable. § (ii)'s break reproduced at the fixture's own stride, **7 rows -> 0**, both
+   endpoints `assert_eq!`. And **four doc comments claimed an alias is louder than a `..` spread**:
+   measured over all five hook structs, only `TripleHooks` (5 of 5 consts) is loud. Corrected and
+   pinned by a tripwire that can fail. See [[rust-port-slice-ac-step7]].
 
 ## Slice AB, step by step
 

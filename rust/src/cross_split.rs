@@ -235,8 +235,22 @@ pub const R70: LeverHooks = LeverHooks {
     ..crate::reference_split::R69
 };
 
-/// RUNG 70's `TwoSpoolTransientHooks` — **ZERO cells swapped**, named for `R66_TWO`'s reason: a
-/// spread of the parent would make the NEXT addition to that table silent here.
+/// RUNG 70's `TwoSpoolTransientHooks` — **ZERO cells swapped.**
+///
+/// **THE REASON THIS CONST USED TO GIVE IS FALSE, AND STEP 7 MEASURED IT.** It read *"named
+/// rather than reached through a `..` spread, for `R66_TWO`'s reason: a spread of the parent would
+/// make the NEXT addition to that table silent here"*. **An alias is exactly as silent as a
+/// spread** — neither produces a diagnostic when the struct grows — and `R66_TWO` is itself an
+/// alias (`= R65_TWO`), so the cited precedent never carried the property either.
+///
+/// MEASURED by adding a probe field to each of the five hook structs and reading which sites
+/// raise `E0063`: **2 of the 11** `TwoSpoolTransientHooks` consts, **2 of 11** `StatorTransientHooks`,
+/// **2 of 11** `FuelTransientHooks`, **3 of 10** `LeverHooks` — and **5 of 5** `TripleHooks`, which
+/// are the only ones that spell every field out. § 5.27.7.
+///
+/// The width is pinned instead by a tripwire that CAN fail:
+/// `tests/slice_ac_dispatch.rs`'s `the_four_alias_tables_are_the_same_pointer_as_rung_70s`
+/// destructures this type exhaustively, so a new field stops compiling there.
 pub const R70_TWO: TwoSpoolTransientHooks = crate::reference_split::R69_TWO;
 
 /// RUNG 70's fuel table — ONE swap, `integrate_fuel`: the march that owns rung 70's five arming
@@ -246,7 +260,8 @@ pub const R70_FUEL: FuelTransientHooks = FuelTransientHooks {
     ..crate::reference_split::R69_FUEL
 };
 
-/// RUNG 70's stator table — **ZERO cells swapped**, named for the same reason.
+/// RUNG 70's stator table — **ZERO cells swapped**. The "same reason" this used to cite is the
+/// one [`R70_TWO`] now records as FALSE; the width is pinned by the tripwire named there.
 pub const R70_STATOR: StatorTransientHooks = crate::reference_split::R69_STATOR;
 
 /// **RUNG 70's THIRD-LOOP TABLE — ONE of the ten cells swapped, and it is the one rung 69 left

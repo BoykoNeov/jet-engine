@@ -15220,9 +15220,16 @@ contradicts it. Priced instead:
    exactly three of sixteen arms and always first in `v`. P6 is settled by a DECLARED EXTRA GRID
    (section N) and not off the readers', because the dump measures **0 of 38** intercepted `p`
    complex.
-7. **The dispatch gates** — five function pointers over five swaps, `tests/slice_ac_dispatch.rs`, in
-   the shapes § (v) measured — the `_triple_laws` gate on SAMPLE SIZE — and the ledger, including
-   AB's two tightened `rank TWO` gates and the corrected tripwire comment.
+7. **The dispatch gates** — **DONE, § 5.27.7. SLICE AC IS CLOSED** — `tests/slice_ac_dispatch.rs`,
+   **9 gates**, five function pointers over five swaps, all green first run and **6 of 6 mutations
+   of this file's own gates killed**. Its findings: **every reader rebuilds its machine, so four of
+   the five injections are LAUNDERED before any value is read** — § (v)'s *"seen by 1 of 6 readers"*
+   is a PYTHON measurement that does not transfer, and `triple_laws` needs a DECLARED CARRIER (with
+   its own control) to be observable at all. § (ii)'s break reproduced at the fixture's own stride,
+   **7 rows → 0**, both endpoints `assert_eq!`. And **four doc comments in this slice's own files
+   claimed an alias is louder than a `..` spread when it is not** — measured across all five hook
+   structs, only `TripleHooks` (5 of 5 consts) is loud; corrected, and pinned by a tripwire that can
+   fail.
 
 #### (xii) DEFECTS IN THIS PRE-FLIGHT's OWN INSTRUMENTS
 
@@ -16435,6 +16442,149 @@ design and the reason those inputs contribute no exempt names.
   the console and the file got 16 bytes. The first harvest looked like a clean run of a passing
   test.
 
+
+#### 5.27.7 SLICE AC step 7 — the dispatch gates, a REBUILD THAT LAUNDERS THE INJECTION, and four doc comments claiming a property MEASURED FALSE
+
+**SHIPPED**: `rust/tests/slice_ac_dispatch.rs` (**9 gates**) plus four corrected doc comments in
+`src/cross_split.rs` / `src/full_split.rs`. All nine green on the first run — and, because a gate
+green on its first run has proved nothing about its own power, **six mutations were run against
+this file's own gates and all six were killed** (§ (d)). **Slice AC is closed.**
+
+##### (a) THE LEADING FINDING — **EVERY READER REBUILDS ITS MACHINE, SO FOUR OF THE FIVE INJECTIONS ARE LAUNDERED BEFORE ANY VALUE IS READ**
+
+Slice AB recorded the sibling-constructor trap: a reader reached through `_triple_rig` → `at_lever`
+builds its sibling through the cascade builder, which installs the **shipped** table. At this slice
+the same mechanism is **stronger**, because *every* rung-70/71 reader opens by calling `split_rig`
+or `full_rig`, and both of those call `core.at_lever(…)`. So an injection into a core's
+`TripleHooks` or `FuelTransientHooks` table never survives to the first row.
+
+`the_rig_launders_a_triple_injection` measures it rather than asserting it in prose: `split_gains`
+on a core carrying rung 68's `triple_laws` returns a reading **bit-identical** to the shipped one,
+seven rows and all, and the gate asserts the shipped side is non-trivial so it cannot pass by both
+sides being empty.
+
+**THIS IS AN ARCHITECTURAL DIFFERENCE FROM PYTHON, NOT A PORT DEFECT, AND IT RETIRES A NUMBER
+§ (v) PUBLISHED.** In Python `_triple_laws` is a METHOD ON THE CLASS, so a monkeypatch survives the
+rebuild — the sibling is the same class. In Rust the sibling is a table pointer the builder chooses.
+**§ 5.27 (v)'s "seen by 1 of 6 readers" is therefore a PYTHON measurement that does not transfer**,
+and a gate scoring `triple_laws` through `split_gains` on an injected core would have reported
+UNOBSERVABLE — for a reason about the builder rather than about the cell. That is precisely the
+ordering artifact § (v) booked once already, for `at_lever`, one level up.
+
+Each swap is scored where it is actually dispatched:
+
+| swap | scored on | measured shape |
+|---|---|---|
+| `r70.at_lever` | `split_gains` — the rig dispatches this cell | **PANIC**, message names rung 68 |
+| `r70.integrate_fuel` | a DIRECT march, no rig | **PANIC**, message names rung 68 |
+| `r70.triple_laws` | `split_gains` through a declared CARRIER | **VALUE — 7 rows → 0** |
+| `r71.at_lever` | `full_gains` — the rig dispatches this cell | **PANIC**, message names rung 70 |
+| `r71.integrate_fuel` | a DIRECT march, no rig | **PANIC**, message names rung 70 |
+
+**THE CARRIER IS DECLARED AND HAS ITS OWN CONTROL.** `R70_CARRIER` is an `at_lever` that rebuilds
+through `with_ref_tables` and re-installs whichever triple table it was built around — the Rust
+stand-in for Python's class-wide patch, not part of the injection. `the_carrier_alone_is_silent`
+runs it with the **shipped** triple table and requires a bit-identical reading, so gate 3's delta is
+the cell and nothing else. Mutation **m6** confirms that control can fail.
+
+##### (b) § 5.27 (ii)'s BREAK SHAPE REPRODUCED **AT THE FIXTURE'S OWN STRIDE — 7 → 0, BOTH ENDPOINTS ASSERTED**
+
+§ 5.27.6 (a) corrected the pre-flight's table from `every = 40` to the fixture's `every = 10`, and
+this is the gate that inherits the correction:
+
+| | shipped | injected |
+|---|---|---|
+| `n_riding` | 61 | **61** — the RIDE is unchanged; the break is downstream of it |
+| `n_sampled` | 7 | **7** — and so is the SAMPLE; the same seven points are visited |
+| `n_rows` | **7** | **0** — every row dropped, rung 68's laws are off-regime |
+| `n_skipped` | 0 | **7** — each one DISCLOSED, never silently truncated |
+| `max_pair_gap`, `worst_CV` | numbers | **`None`** on an empty table |
+
+**Written as `assert_eq!` on BOTH endpoints, never `assert!(injected < shipped)`.** § 5.27.6 (e)
+recorded three ported gates blind to exactly this shape because their bars were one-sided lower
+bounds; a one-sided bar passes at every stride and on every empty table. The skipped count is
+asserted as the MIRROR (0 → 7) so a reader that lost the rows *silently* — showing 0 → 0 — fails
+here too.
+
+##### (c) THE SECOND FINDING — **FOUR DOC COMMENTS IN THIS SLICE'S OWN FILES CLAIMED A PROPERTY THAT DOES NOT EXIST, AND THE PRECEDENT THEY CITE NEVER HAD IT EITHER**
+
+`R70_TWO`, `R70_STATOR`, `R71_TWO` and `R71_STATOR` each read *"named rather than reached through a
+`..` spread, for `R66_TWO`'s reason: a spread of the parent would make the NEXT addition to that
+table silent here."* All four are **whole-const aliases** (`pub const R70_TWO: … = R69_TWO;`), and
+**an alias is exactly as silent as a spread** — neither produces a diagnostic when the struct grows.
+`R66_TWO`, the cited precedent, is itself an alias (`= R65_TWO`).
+
+MEASURED, not argued — a probe field added to each of the five hook structs, then `cargo check
+--all-targets` and the `E0063` sites counted:
+
+| type | consts in the crate | sites that go LOUD | this slice's copies |
+|---|---|---|---|
+| `TripleHooks` | 5 | **5 — all of them** | `R70_TRIPLE`, `R71_TRIPLE` — loud, and their comment is TRUE |
+| `LeverHooks` | 10 | 3 | `R70`, `R71` — `..` spread, silent |
+| `TwoSpoolTransientHooks` | 11 | 2 | `R70_TWO`, `R71_TWO` — alias, silent |
+| `StatorTransientHooks` | 11 | 2 | `R70_STATOR`, `R71_STATOR` — alias, silent |
+| `FuelTransientHooks` | 11 | 2 | `R70_FUEL`, `R71_FUEL` — spread, silent |
+
+Only the `TripleHooks` consts, which spell all ten fields out, do what the prose claimed — and they
+are the ones `slice_ac_cells.rs` already guards. **The crate had a width gate for one of five table
+types and four comments asserting it had five.**
+
+Corrected in the same pass, on § 5.27.1's own precedent, and turned into a tripwire that CAN fail:
+`the_four_alias_tables_are_the_same_pointer_as_rung_70s` destructures both alias types
+exhaustively, so a new field stops compiling there. **NOT `ptr::eq` on the consts** — a reference to
+a `const` is a fresh temporary each time it is written, so that comparison tests the optimiser
+([[rust-port-slice-aa-step1]] recorded it); the first draft of this gate had it, inside a `||` whose
+other arm made it unfalsifiable, which is a gate that cannot fail hiding inside a gate that can.
+
+##### (d) THIS FILE'S OWN GATES WERE MUTATED, AND ALL SIX MUTATIONS DIED
+
+Nine gates green on the first run says nothing about their power
+([[rust-port-slice-u-step1]], [[rust-port-slice-w-step5]]). `M:\claud_projects\temp\rust-phase7\mutate_ac_step7.py`
+turns each injection back into the SHIPPED pointer, one at a time, and requires the matching gate to
+fail:
+
+| mutation | gate | verdict |
+|---|---|---|
+| m1 `r70.at_lever` ← shipped | swap 1 | killed |
+| m2 `r70.integrate_fuel` ← shipped | swap 2 | killed |
+| m3 `r70.triple_laws` ← shipped | swap 3 | killed |
+| m4 `r71.at_lever` ← shipped | swap 4 | killed |
+| m5 `r71.integrate_fuel` ← shipped | swap 5 | killed |
+| m6 the CARRIER's shipped arm ← injected | `the_carrier_alone_is_silent` | killed |
+
+**6 of 6.** Every replacement asserts its anchor is present before running — § 5.27.6 (g)'s patch
+script printed `patched` having matched nothing, and the same script here would have reported six
+mutations surviving.
+
+##### (e) THE SHAPES ARE DERIVED AND THE TALLY IS EMITTED
+
+`Shape` is `Silent` / `Value` / `Panic(msg)` and falls out of a shipped-vs-injected PAIR — slice
+AB's doc records its first draft carrying a `shape` string per row and counting the strings, *"the
+labels were mine, and nothing measured whether a break was a panic."* The tally
+(**5 observable, 0 silent, and the split `(4 panic, 1 value)`**) is computed from re-running the
+five injections, never typed.
+
+**AND THE PANIC MESSAGE IS THE EVIDENCE, NOT THE PANIC.** Four of the five are observable only
+because the PARENT's `integrate_fuel` refuses this rung's arming, and the refusal text names the
+rung it came from — rung 68's *"THREE LOOPS ON ONE VARIABLE"*, rung 70's *"THREE loops on TWO
+variables"*. A bare `is_err()` would pass on any panic and could not tell a wrong-class construction
+from an unrelated abort.
+
+§ (v)'s Python column reads **PANIC + VALUE** for both `at_lever` rows; here the value half is
+unreachable for (a)'s laundering reason, so both are scored on the panic. That divergence was
+pre-registered in the file header before the run, on slice AB's precedent — AB predicted four
+panic-shaped cells and two broke by value instead — with **the measured Rust shape winning**.
+
+##### (f) THE LEDGER, AND THE TWO STEP-1 CORRECTIONS VERIFIED RATHER THAN TAKEN ON TRUST
+
+Step 1 claimed both corrections were *"made with the finding rather than left for whoever hits
+them"*. Grepped, not assumed (§ 5.27.6 (g)'s lesson — a claimed edit is not an applied edit until
+grepped): `slice_ab_cells.rs:244` now reads *"The tripwire needs no addressee to work"*, and
+`bleed_transient.rs:370` opens *"THE 'Overridden at rung 77' THIS COMMENT USED TO CARRY AS ITS ONLY
+REASON IS REFUTED."* Both landed.
+
+Slice AB's two tightened `rank TWO` gates are unchanged by this step and stay as AB left them; this
+slice adds no rank claim of its own.
 
 ### ~~The four~~ **THE EIGHT** runtime-introspection tests, one by one
 
