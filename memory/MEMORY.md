@@ -22,7 +22,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding, backticks in `-m`, a status read off the runner, and a log still being written
 
-## The Rust port — phases 0–6 done; phase 7 in flight, slice AD (rung 72) step 4 of 6
+## The Rust port — phases 0–6 done; phase 7 in flight, slice AD (rung 72) DONE — 6 of 6
 - [Rust port status](rust-port-status.md) — the running tally: phases, slices, and the numbers each closed slice landed on. **Update THAT file, not this line.**
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; a new PHASE needs authorisation
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost
@@ -89,6 +89,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Slice AD step 3](rust-port-slice-ad-step3.md) — a census predicate written in CALL SYNTAX is blind to a method that is only ever PASSED, and CPython's compensated `sum()` reaches complex too
 - [Slice AD step 4](rust-port-slice-ad-step4.md) — a self-test gated on a BOUND is blind to a defect that moves 8 of its own 10 numbers, and a count can be satisfied by an accident where a bijection cannot
 - [Slice AD step 5](rust-port-slice-ad-step5.md) — an INPUT-FED section measures the function where a self-feeding one measures the plant, so 5 022 golden differences became a 180-name exemption
+- [Slice AD step 6 — slice closed](rust-port-slice-ad-step6.md) — a first definer still has a parent pointer, because the parent slot carries a REFUSAL; and my header typed nine tests beside the ten that disprove it
 - Slice T (46/47/48) steps [1](rust-port-slice-t-step1.md) [2](rust-port-slice-t-step2.md) [3](rust-port-slice-t-step3.md) [4](rust-port-slice-t-step4.md) — an EXACT ZERO blinds its own gate to the SIGN (one lesson per file)
 
 ## Shipped rungs

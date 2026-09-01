@@ -16848,7 +16848,7 @@ full march — plus `_shared_march`'s two clock arms.
 | 3 | the **quartic chain** — `_jac4`, `_charpoly4`, `_quartic_roots_c`, `_parent_quartic`, `charpoly_selftest`, `_quad_laws`, `_quad_gains_at`, `_riding4`, `_shared_march` |
 | 4 | the **28 ported gates** of `tests/test_rung72.py` — **DONE, § 5.28.4** |
 | 5 | the oracle, both interpreter arms — **DONE, § 5.28.5: 54 116 keys, 6 gates** |
-| 6 | the **3 dispatch gates**, on § (vii)'s seats |
+| 6 | the **3 dispatch gates**, on § (vii)'s seats — **DONE, § 5.28.6: 3 injections, 10 tests, slice CLOSED** |
 
 #### (ix) PREDICTIONS — pre-registered, settled at the last step
 
@@ -16889,8 +16889,20 @@ full march — plus `_shared_march`'s two clock arms.
   so no oracle key can witness either. What step 5 CAN say is adjacent and is measured — `|a3|`
   wins `scale`'s max on **374 of 374** distinct vectors, emitted per vector and gated, so the
   three risky roots' deadness is a KEY here rather than a claim.
+  **CLOSED UNSETTLED AT § 5.28.6 (e), with the reason and the destination stated.** Step 6
+  confirms it from the other side: a dispatch gate reads WHICH FUNCTION POINTER was called, and
+  both of P5's subjects are BRANCHES INSIDE ONE BODY, which no pointer-level instrument can reach.
+  Settling it needs a reader that publishes the iteration count — a source change no rung on the
+  ladder asks for. The adjacent measurement above stands as the strongest available statement.
 - **P6.** `_reference`'s dispatch gate cannot be a value gate at this rung (§ (vi)); it is a
   sentinel, and slice **AE** is where a value break first exists.
+  **SETTLED at § 5.28.6 (e), CLAUSE BY CLAUSE — (i) CONFIRMED, (ii) FALSIFIED, (iii) STANDS.**
+  (i) *cannot be a value gate* holds, for § (vi)'s own reason: the break is a panic. (ii) *it is a
+  sentinel* is **wrong, and so is the premise it rests on** — `R71_TRIPLE` holds a pointer in all
+  three of this slice's slots (the shared refusal, the SAME ADDRESS in `NO_TRIPLE`, `R68_TRIPLE`
+  and `R71_TRIPLE`), so all three gates are plain PARENT-POINTER injections and slice AB's *rule*
+  applies where the pre-flight cited its *exception*. (iii) is unsettleable here by construction
+  and carried to slice AE.
 
 #### (x) DEFECTS IN THIS PRE-FLIGHT's OWN INSTRUMENTS — three, all caught before anything was written down
 
@@ -17837,6 +17849,162 @@ headers rather than re-reading them:
   The dump asserts `_sigs[sig] == traj` on a repeated signature — full trajectory equality, not
   length — and 4 of the 10 signatures are driven more than once (14 calls, 10 signatures). A plant
   that carried state would give the same number of DIFFERENT points and pass a length check.
+
+#### 5.28.6 SLICE AD step 6 — the dispatch gates, and **A FIRST DEFINER STILL HAS A PARENT POINTER, BECAUSE THE PARENT CARRIES A REFUSAL**
+
+**SHIPPED**: `rust/tests/slice_ad_dispatch.rs` — **three injections across ten `#[test]`
+functions**, no source file touched. All ten green on the first run. **This closes slice AD**, and
+with it rung 72.
+
+##### (a) THE FINDING — **§ 5.28 (vi) REASONED FROM "FIRST DEFINER" TO "NO PARENT POINTER", AND THE SECOND DOES NOT FOLLOW FROM THE FIRST**
+
+§ 5.28 (vi) wrote, of `_reference`: *rung 72 is the **first** definer, so there is no parent
+function to install. Both halves of the usual dispatch-gate recipe are therefore unavailable, and
+the gate is AB's declared exception* — slice AB's *"THE ONE INJECTION THAT IS NOT A PARENT POINTER,
+AND IT IS DECLARED AS SUCH"*, a body written by hand in the test file. § (ix)'s **P6** carries the
+same reading.
+
+**Measured: `R71_TRIPLE` holds a pointer in all three of this slice's slots.** It is
+`no_triple_reference` / `no_triple_rk4_floor_shared` / `no_triple_shared_rig`, the shared refusal
+`NO_TRIPLE` installs, and `the_three_injected_pointers_are_the_crates_own_shared_refusal` asserts
+it is the **same address** in `NO_TRIPLE`, `R68_TRIPLE` and `R71_TRIPLE` — so *"inherited unchanged
+from the bottom of the ladder"* is a measurement across the whole range rather than a reading at
+one end.
+
+So the premise is right and the conclusion is wrong. A first definer has no parent **body**; it
+still has a parent **pointer**, because `NO_TRIPLE`'s whole design is that every slot is occupied
+by something that refuses. Installing it is **slice AB's RULE and not slice AB's exception**: AB's
+own `parent_swap!(P_WITH_REF, with_ref)` does exactly this — rung 68's `with_ref` slot is also a
+refusal — and AB's gate `cell_9a_with_ref_is_reached_by_every_reader` reads that refusal's message.
+AB's *exception* is the **second** injection into that same cell (`C_WITH_REF`, a silent
+counterfeit), which exists because a refusal is a loud break and cannot expose a quiet one.
+**The pre-flight cited AB's exception where AB's rule applied**, and it did so having read the same
+file this step read.
+
+**The difference is not bookkeeping.** A counterfeit's observability is a property of the body *I*
+wrote, so a gate on it can be satisfied by having written a satisfiable body; a shipped constant's
+is not, and the message it raises is the crate's own. Three gates in this file therefore rest on
+nothing the file itself authored.
+
+**What IS unavailable at this rung is the counterfeit's half — a VALUE break** — and for exactly
+§ (vi)'s stated reason: `reference` is the bitwise identity here (195 278 of 195 278 calls), so no
+body substituted for it can move a number. That clause of P6 stands untouched.
+
+##### (b) THE SEAT MATRIX — **18 SEATS, 7 PANICS AND 11 SILENCES, AND THE ELEVEN ARE NOT ONE PHENOMENON**
+
+§ 5.28 (vii) fixed one seat per cell and a *"laundered by"* column, decided before the step. Run
+over all six seats — a direct march plus each of the **five** rig readers — the picture is:
+
+| cell | a DIRECT march | each of the 5 rig readers | row |
+|---|---|---|---|
+| `reference` | **PANIC** `(_reference)` | silent, bit-identical | 1 / 5 |
+| `rk4_floor_shared` | **PANIC** `(_rk4_floor_shared)` | silent, bit-identical | 1 / 5 |
+| `shared_rig` | **silent**, bit-identical | **PANIC** `(_shared_rig)`, all five | 5 / 1 |
+
+Every cell of that table is re-run by `the_tally` and the split is asserted as the pair `(7, 11)`,
+never as an inequality.
+
+**The pre-flight's column names three of the eighteen seats and one of the two kinds of silence.**
+Ten of the eleven silences are laundering — `shared_rig`'s third line is `core.at_lever(…)`, whose
+body rebuilds through the cascade builder and installs the **shipped** tables, so an injection into
+a core is washed out before any reader downstream of the rig reads anything. The eleventh is not:
+the direct march is handed an already-built machine and **never calls the rig at all**. Two
+different mechanisms, and to an instrument that reports *did it panic* they are the same reading.
+
+**What separates them is the OTHER seat, which is why the matrix is run whole rather than on the
+diagonal.** Each cell is proved live on its injected core by raising somewhere in its own row, so
+every silence in that row is demonstrably a property of the PATH and not of an injection that
+failed to take. `the_tally` enforces exactly this — it refuses to report a silence for any cell
+that is silent at all six seats. A one-seat-per-cell file has no such control: three panics are
+entirely consistent with the other fifteen seats being quiet because the table never got installed.
+
+**And a silence had to be made to mean something before it could be reported.** With a refusal
+injection, laundering *is* the absence of a panic — equally what "never reached" looks like — so
+`the_five_readers_launder_both_march_cells` asserts three things per seat: the reader **completes**,
+its reading is **bit-identical** to the shipped one, and the shipped one is **non-trivial**. Slice
+AC step 7's version (`the_rig_launders_a_triple_injection`) already carries two of the three — the
+identity and a shipped row count — because § 5.27 (ii)'s registered break shape is an EMPTY SAMPLE.
+**The COMPLETION half is what a refusal injection adds**, and it is the half that matters here: AC
+injected a rival BODY, which cannot raise, so *"it returned"* was never in question there.
+
+##### (c) `shared_rig` IS SCORED ON ALL FIVE READERS, BECAUSE FOUR OF THEM COULD HAVE INLINED IT
+
+Eight rungs define this cell (72–80) and five readers dispatch it — four through `shared_march`,
+and `shared_bill` by calling the cell itself once per each of its sixteen arming cells. A
+one-reader gate passes on a crate where four fifths of the dispatch is missing. AB's `cell_9a` is
+*named* "…is reached by EVERY reader"; here the census is **run**, and the count emitted.
+
+##### (d) AND MY OWN NEW HEADER TYPED **NINE** WHERE THE BINARY RUNS **TEN**
+
+§ 5.28.5 (i)'s close-out lesson is *re-measure every testable sentence in your own new header*.
+The header written one step later says *"three injections across NINE tests"*, and the same nine
+was pre-registered as the run's predicted count. **The binary runs ten.** Nothing measured it — the
+number was counted from memory while looking at the ten functions that disprove it, which is
+§ 5.27.6 (g)'s shape (a constant typed at `39_099` beside the addends that measured 5 351) and
+§ 5.28.5 (g)'s (a histogram that summed to its own print cap). It was caught by the runner's own
+`running 10 tests` line, not by re-reading.
+
+The repair is not a corrected number. **The count is now read off this file's own source** —
+`include_str!` on itself, counting lines that are exactly `#[test]` — and pinned, so adding or
+removing a test fails *there* rather than leaving a stale figure in a doc comment. A count that
+describes an artifact from memory is a claim; a count read out of the artifact is a gate.
+
+##### (e) THE LEDGER — P6 SCORED CLAUSE BY CLAUSE, P5 CLOSED AS UNSETTLEABLE, AND THE STEP COUNT HELD
+
+- **P6** (*"`_reference`'s dispatch gate cannot be a value gate at this rung; it is a sentinel, and
+  slice AE is where a value break first exists"*), scored in three clauses:
+  - (i) *cannot be a value gate* — **CONFIRMED**, for § (vi)'s own reason. The break is a panic.
+  - (ii) *it is a sentinel* — **FALSIFIED**, § (a). It is a plain parent-pointer injection, three
+    of them, each a shipped crate constant. The clause's premise — *"there is no parent function to
+    install"* — is what fails.
+  - (iii) *slice AE is where a value break first exists* — **STANDS, and is unsettleable here by
+    construction**: rung 73 is the first rung at which `reference` stops being the identity.
+    Carried to slice AE.
+- **P5** (*the `500`-iteration cap and the `den == 0` guard are unreachable; both ported, neither
+  gated*) — **CLOSES UNSETTLED AT SLICE AD, with the reason and the destination stated.** Step 5
+  said so and this step confirms it from the other side: a dispatch gate reads *which function
+  pointer was called*, and both of P5's subjects are **branches inside one body**, which no
+  pointer-level instrument can reach. Settling it needs an instrument that publishes the iteration
+  count, i.e. a reader that returns it — a source change no rung on the ladder asks for. The
+  strongest available statement remains the adjacent one step 5 shipped and gated: `|a3|` wins
+  `scale`'s max on **374 of 374** distinct vectors, so the three risky roots are dead as a KEY
+  rather than as a claim.
+- **THE SIX-STEP COUNT** (§ (viii): *"SIX STEPS, and the count is itself a prediction"*) —
+  **CONFIRMED.** Six steps predicted, six run, the slice closes at step 6 with nothing deferred
+  into a seventh.
+  **And its precedent was never scored.** AC's **P7** predicted *"SEVEN steps, not five"* and AC
+  closed at § 5.27.7 — so it held, and no line in AC's ledger says so. A prediction that comes true
+  and is never marked is the quieter half of the same failure as one that is marked without being
+  measured; recorded here rather than left as two unscored entries.
+
+##### (f) THE GATE ROW, PREDICTED BEFORE THE RUN AND VERIFIED STRUCTURALLY
+
+Predicted ahead of the run (§ 5.28.5 (h)'s form): 138 + 1 targets, 1 399 + 10 passed, one new
+binary carrying ten `#[test]` functions and no source file gaining or losing a test.
+
+| check | predicted | measured |
+|---|---|---|
+| `     Running ` lines | 138 | **138** |
+| `Doc-tests` blocks | 1 | **1** |
+| `^test result:` blocks | 139 | **139** |
+| blocks reading `ok` | 139 of 139 | **139 of 139** |
+| passed / failed / ignored | 1 409 / 0 / 0 | **1 409 / 0 / 0** |
+| `error[E` occurrences | 0 | **0** |
+
+Every row held. The log is read for its CONTENT and never for an exit status, and the
+`Running`-line count is carried because **a sum over result blocks cannot detect a MISSING result
+block; only a count of the things that ANNOUNCE a target can.**
+
+**AND THE LOG IS NOT QUITE A READING OF THE SHIPPED TREE, WHICH IS SAID RATHER THAN GLOSSED.** Two
+edits landed after the run was launched: the § (b) sentence about slice AC's laundering gate
+(§ 5.28.6's own re-measurement of this step's header — see the paragraph above it) and a
+`type_complexity` fix on the reader table, both comment-or-signature only. `cargo` may or may not
+have hashed the file before compiling that target, and there is no way to tell from the log — so
+the target was **re-run on the final tree: 10 passed / 0 failed**, and `cargo clippy --test
+slice_ad_dispatch -- -A clippy::eq_op` reports **0** warnings pointing into this file. Neither edit
+adds or removes a `#[test]`, so the 139/1 409 structural row is unchanged by construction; that is
+an argument, and the re-run is the measurement. **A gate row quoted from a log taken before the
+last edit is § 5.28.4 (h)'s trap** — a number read off a run that is not the run you shipped.
 
 ### Consequences for the phase table
 

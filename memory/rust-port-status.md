@@ -19,7 +19,7 @@ slices inside an authorised phase are free. See [[rust-port-decided]].
 
 * **0–5 DONE.**
 * **PHASE 6** authorised 2026-08-17, **COMPLETE 2026-08-20** with slice U's five steps.
-* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, AB, **AC complete**; **AD (rung 72) IN FLIGHT** (§ 5.28, twelve probes) — **steps 1–5 of 6 done**.
+* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, AB, AC, **AD complete** (rung 72, § 5.28, twelve probes, all six steps). **No slice in flight.**
 
 ## Phase-7 slices, as they closed
 
@@ -135,7 +135,7 @@ booked to slice AH. See [[rust-port-slice-ac-preflight]].
    measured over all five hook structs, only `TripleHooks` (5 of 5 consts) is loud. Corrected and
    pinned by a tripwire that can fail. See [[rust-port-slice-ac-step7]].
 
-## Slice AD (rung 72, `SharedActuatorTransient`) — pre-flight + steps 1–5 of 6
+## Slice AD (rung 72, `SharedActuatorTransient`) — **CLOSED, all six steps**
 
 **Pre-flight** (§ 5.28, twelve probes): the cell column measures **3** — the first back-half row
 where the hand-written number is right. Four findings, all vacuity: **`shared_modes` does not
@@ -227,6 +227,31 @@ Six steps priced from sizing (1 177 source / 502 test lines). See
    first run though its 21 reduce-spine-invisible fields had never been diffed, and the plant
    carries no state between reader calls (full-trajectory equality on 4 repeated signatures).
    See [[rust-port-slice-ad-step5]].
+
+6. **Step 6 - the 3 dispatch gates, and THE SLICE CLOSES.** `tests/slice_ad_dispatch.rs`, **three
+   injections across TEN tests**, no source file touched, all ten green first run.
+   **THE FINDING: a FIRST DEFINER still has a PARENT POINTER, because the parent slot carries a
+   REFUSAL.** The pre-flight reasoned from "rung 72 defines all three cells first" to "there is no
+   parent function to install", and concluded the gates had to be hand-written sentinels (AB's
+   declared exception). Measured: `R71_TRIPLE` holds a pointer in all three slots - the shared
+   refusal, the **same address** in `NO_TRIPLE`, `R68_TRIPLE` and `R71_TRIPLE`. So all three gates
+   are plain parent-pointer injections, i.e. **AB's RULE where the pre-flight cited AB's
+   EXCEPTION**; a counterfeit's observability is a property of the body I wrote, a shipped
+   constant's is not. **The SEAT MATRIX run whole is 3 cells x 6 seats = 18 readings, 7 panics and
+   11 silences, where § 5.28 (vii)'s table names 3** - and the eleven silences are TWO mechanisms
+   that read identically (ten laundered by the rig's `at_lever` rebuild, the eleventh a path that
+   never calls the cell), separable only by the OTHER seat. `shared_rig` scored as a **census over
+   all five readers**, not one. **And my own new header typed NINE tests above the TEN that
+   disprove it** - the same nine pre-registered as the run's count - caught by the runner, not by
+   re-reading; the count is now **read off the file's own source** and pinned. Re-measuring the
+   header's other countable claims found one more wrong (AC's laundering gate asserts a row count
+   as well as the identity). **P6 settled clause by clause (i CONFIRMED / ii FALSIFIED / iii
+   carried to AE); P5 CLOSED UNSETTLED** with reason and destination - its subjects are branches
+   inside one body, which no pointer-level instrument reaches; **the six-step count CONFIRMED**,
+   and AC's own seven-step precedent noted as having held and never been marked. Full gate
+   **139 blocks (138 Running + 1 Doc-tests) / 1 409 passed / 0 failed / 0 ignored**, every row
+   predicted before the run and held, plus a re-run of the target on the final tree after two
+   post-launch comment-level edits. See [[rust-port-slice-ad-step6]].
 
 ## Slice AB, step by step
 
