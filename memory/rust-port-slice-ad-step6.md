@@ -63,6 +63,14 @@ is not.
 - **A prediction that comes true and is never marked is the quiet half of a bad ledger.** AD's
   six-step count held and was scored; its own cited precedent — AC's "SEVEN steps" — also held and
   no line in AC's ledger ever said so.
+- **And I asserted that absence from two regexes, one of which matched a DIFFERENT slice's P7.**
+  Caught in review, then established properly by reading the ledger block: AC's P7 bullet is one
+  sentence and the next line starts P8, where P6/P8/P9 all carry continuation lines. **An absence
+  is established by reading the neighbourhood, never by a pattern that fails to match** — a grep
+  for the tag would have returned the same verdict for the wrong reason. Same shape as the
+  nine-vs-ten miss, one document over: I re-measured the TEST FILE's header and not my own longer
+  close-out text. **Re-measure every new text you wrote this step, not just the one you remember
+  writing.**
 
 Related: [[rust-port-slice-ad-step5]] (the step this closes out from), [[rust-port-slice-ad-preflight]]
 (where the § (vi) reasoning and P6 were written), [[rust-port-slice-ab-step5]] (the dispatch-gate

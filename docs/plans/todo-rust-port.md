@@ -17930,7 +17930,8 @@ injected a rival BODY, which cannot raise, so *"it returned"* was never in quest
 ##### (c) `shared_rig` IS SCORED ON ALL FIVE READERS, BECAUSE FOUR OF THEM COULD HAVE INLINED IT
 
 Eight rungs define this cell (72–80) and five readers dispatch it — four through `shared_march`,
-and `shared_bill` by calling the cell itself once per each of its sixteen arming cells. A
+and `shared_bill` by calling the cell itself **inside** its `0..16` loop — so sixteen arming
+cells are sixteen CALLS, not sixteen readings off fewer. A
 one-reader gate passes on a crate where four fifths of the dispatch is missing. AB's `cell_9a` is
 *named* "…is reached by EVERY reader"; here the census is **run**, and the count emitted.
 
@@ -17973,9 +17974,13 @@ describes an artifact from memory is a claim; a count read out of the artifact i
   **CONFIRMED.** Six steps predicted, six run, the slice closes at step 6 with nothing deferred
   into a seventh.
   **And its precedent was never scored.** AC's **P7** predicted *"SEVEN steps, not five"* and AC
-  closed at § 5.27.7 — so it held, and no line in AC's ledger says so. A prediction that comes true
-  and is never marked is the quieter half of the same failure as one that is marked without being
-  measured; recorded here rather than left as two unscored entries.
+  closed at § 5.27.7 with no § 5.27.8 — so it held, and no line in AC's ledger says so.
+  **That is a claim about an ABSENCE, so it is established by reading the block rather than by
+  grepping for a tag**: AC's P7 bullet is one sentence and the next line begins `* **P8**`, where
+  P6, P8 and P9 each carry continuation lines (*SETTLED* / *FALSIFIED FROM BOTH ENDS*). The
+  neighbours are what make the gap visible; a regex for `SETTLED` would have found AD's P7 and
+  reported the same answer for the wrong reason. A prediction that comes true and is never marked
+  is the quieter half of the same failure as one marked without being measured.
 
 ##### (f) THE GATE ROW, PREDICTED BEFORE THE RUN AND VERIFIED STRUCTURALLY
 
