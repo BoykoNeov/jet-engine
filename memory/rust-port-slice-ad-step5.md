@@ -16,7 +16,9 @@ port fix. See [[rust-port-status]] for the tally; details in `docs/plans/todo-ru
 **The lesson: where a section gets its ARGUMENTS decides what it is measuring.** The quartic
 section reads its 374 coefficient vectors from the golden as INPUTS and replays only the solver.
 On the CPython arm that means the Rust runs Durand–Kerner on *CPython's own* coefficients — and
-reproduces CPython's roots bit-for-bit on every vector. So of the **5 022 keys the two goldens
+reproduces CPython's roots bit-for-bit on every vector. (That is a PAIRWISE result on each arm's
+own inputs; only 1 of the 374 vectors is bit-identical across arms, so the three-way version needed
+its own run — PyPy fed CPython's 374 vectors, 0 of 4 488 root keys differ.) So of the **5 022 keys the two goldens
 differ on, the port drifts on 180, and the solver section contributes ZERO**; all 4 842 of its
 differences are upstream, in the `sum()`-built polynomial. **Read off the golden diff instead, the
 step would have shipped a 5 022-name exemption naming the root finder as a cause it has nothing to
@@ -37,7 +39,7 @@ and "the plant agrees" separable claims at all.
   "exempt on keys downstream of a `sum()`, and on nothing else", with clause (ii) predicting the
   plant's own drift — which an earlier slice had already measured as *not* a `sum()`. The two
   halves cannot both hold. Measured: (i) exactly 4 keys and the right 4 BY NAME, (iii) exactly 0,
-  (ii) confirmed — and the headline falsified by **6 keys**, march values at 2 points of 1 294,
+  (ii) confirmed — and the headline falsified by **6 keys**, march values at 2 points of 1 302,
   1–4 ULPs, no `sum()` within reach. Do not reinterpret a clause to rescue a headline; that is
   what writing the prediction down beforehand is for. Fourth phase-7 exemption falsified this way.
 - **Re-score a booked injection in the SHIPPED key space, never by carrying the old count.** j05
@@ -62,6 +64,17 @@ and "the plant agrees" separable claims at all.
   march was uncovered; it is not — every reader reaches it. What is uncovered is the per-point
   FIELDS, and perturbing each in turn showed several moving **0** of the 3 216 reader keys. The
   advisor's demand for that measurement changed the section's justification, not just its size.
+- **RE-MEASURE EVERY TESTABLE SENTENCE IN YOUR OWN NEW HEADER, AFTER the push, not before it.**
+  Three claims in this step's shipped text were checkable and two were wrong. (a) *"a defect
+  isolated to a hidden point still has to move a key"* is **FALSE** — the min/max/last backstop
+  catches a defect moving a column's EXTREME or FINAL value, not one at a hidden interior point:
+  perturbing a field at index 137 moves **0 of 54 116** while the control at 135 moves 10.
+  (b) *"fed the same coefficients, all three root finders agree"* was **measured as two PAIRWISE
+  agreements on DISJOINT inputs** — only 1 of 374 vectors is bit-identical across arms, so the
+  cross-feed had to be run before the sentence was true (it now is: 0 of 4 488 root keys).
+  (c) *"1 294 emitted points"* was typed where the golden can be counted; it is **1 302**. The
+  test for this class: **can the sentence be turned into a run?** If yes, run it. A sentence in a
+  header you just wrote has had no reader but you.
 - **And my own histogram summed to my own print cap.** The first j05 split read `A 8, D 11, E 7,
   H 374` — total exactly **400**, the `.take(400)` I had installed on the panic message. The count
   was never capped; the NAMES were. Section H's true share is **2 911**. A total that equals a

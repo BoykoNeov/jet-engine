@@ -33,7 +33,13 @@
 //! while the points under them move. The suite's own reduce spine compares **9 of the march's 30
 //! recorded fields**. Section G emits every field of every fifth point of every distinct march the
 //! readers drive, **plus the `min`, `max` and LAST of every float field over ALL points** — the
-//! stride's backstop, so a defect isolated to a hidden point still has to move a key.
+//! stride's backstop. **That backstop is real and it is weaker than "nothing can hide"**: it
+//! catches a defect moving a column's EXTREME or its FINAL value wherever that defect sits, and
+//! NOT one at a hidden point that moves neither. Measured at close-out — perturbing `sp_thrust`
+//! at index 137 (`137 % 5 = 2`) moves **0 of 54 116 keys**, injection applied on 24 marches,
+//! against a control at index 135 that moves 10. **1 302 of 6 470 points are emitted (20.1 %)**,
+//! so what section G pins is every field at one point in five, plus both extremes and the
+//! endpoint of all 240 columns.
 //!
 //! **2. A CELL CAN BREAK BY EMPTYING THE SAMPLE.** § 5.27 (ii) ran a parent's body in a child's
 //! slot and the reader **returned successfully with an EMPTY table** — every aggregate `None`, no
@@ -164,7 +170,7 @@ const GOLDEN_KEYS: usize = 54_116;
 /// P7 reads *"exempt on the keys downstream of a float or complex `sum()`, **and on nothing
 /// else**"*, with the falsifier *"any exempt key that is not downstream of a `sum()` falsifies
 /// P7"*. These six are march values — `required`, `required_gov`, `f`, `g`, `g_gov`, `mf` — at
-/// **two points** (`sig/6/pt/465`, `sig/7/pt/395`) of the 1 294 section G emits, in 2 of the 10
+/// **two points** (`sig/6/pt/465`, `sig/7/pt/395`) of the 1 302 section G emits, in 2 of the 10
 /// signatures, differing by **1–4 ULPs**. There is no `sum()` anywhere in the six-state march.
 /// This is [[rust-port-slice-ac-step6]]'s cause 3 — *a solve terminating differently* — arriving
 /// at rung 72, which is exactly what P7's own clause (ii) says and exactly what its headline

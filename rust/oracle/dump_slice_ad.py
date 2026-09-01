@@ -48,9 +48,15 @@ section F, so what they capture is exactly what sections A-F drove.
     `shared_cells` sample at `every = 2` and `mask_discriminator` at `every = 4`, so a stride of 2
     or 4 here would emit exactly the points their gain rows already cover and nothing else -- an
     extra grid that is not extra. 5 shares no factor with either, so section G's points and the
-    readers' samples interleave. **And the stride is backstopped**: `G/sig/i/agg/...` carries the
-    `min`, `max` and LAST value of every float field over ALL points, not the strided ones, so a
-    defect isolated to a hidden point still has to move a key.
+    readers' samples interleave. **And the stride is backstopped, but NOT as far as it
+    looks**: `G/sig/i/agg/...` carries the `min`, `max` and LAST value of every float field over
+    ALL points, not the strided ones -- so a defect that moves a column's EXTREME or its FINAL
+    value is caught wherever it sits. **A defect at a hidden point that moves neither is NOT
+    caught, and that is MEASURED rather than reasoned**: perturbing `sp_thrust` at index 137
+    (`137 % 5 = 2`) moves **0 of the 54 116 keys**, with the injection applied on 24 marches,
+    against a control at index 135 that moves 10. **1 302 of 6 470 points are emitted (20.1 %)**,
+    so what this section pins is every field at one point in five, plus both extremes and the
+    endpoint of all 240 columns.
 
   * **H -- `_quartic_roots_c`, PER DISTINCT COEFFICIENT VECTOR.** § 5.28 (iii) measured the solver
     at **1 068 calls over 375 distinct vectors, 167 of them near-double, ON THE WHOLE SUITE**.

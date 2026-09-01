@@ -17336,7 +17336,7 @@ nothing. Registered now, off step 3's own measurement rather than off a guess:
 **SETTLED at § 5.28.5 (b): (i) and (iii) CONFIRMED EXACTLY, (ii) CONFIRMED, THE HEADLINE
 FALSIFIED.** The exempt set is **180 names**: `charpoly_selftest` contributes exactly **4**, and
 they are the four named, BY NAME; `resid`, `diag_err` and `max_imag` drift on **0**. But **6 of the
-180 are section G's march values** — 2 points of 1 294, 1–4 ULPs — and there is no `sum()` anywhere
+180 are section G's march values** — 2 points of 1 302, 1–4 ULPs — and there is no `sum()` anywhere
 in the six-state march. That is [[rust-port-slice-ac-step6]]'s cause 3, which clause (ii) predicts
 and the headline forbids, so the falsifier clause fires on P7's own (ii). **The headline falls and
 (ii) stands, rather than (ii) being reinterpreted to rescue it** — the fourth phase-7 exemption
@@ -17603,9 +17603,16 @@ Durand–Kerner on **CPython's own coefficients**.
 | of which section H | **4 842** |
 | the RUST's own drift against CPython | **180** — and section H contributes **ZERO** |
 
-**Fed the same coefficients, PyPy's, CPython's and the Rust's root finder agree bit-for-bit on all
-374 vectors.** So the 4 842 differences are **entirely upstream of the solver**, in the polynomial
-`_charpoly4` builds out of two `sum()` traces — and *none* of them is a Durand–Kerner property.
+Each arm's solver reproduces its OWN arm's roots from its OWN arm's coefficients, bit-for-bit on
+all 374 vectors. **That is two pairwise agreements on DISJOINT inputs, and it does not by itself
+say the three solvers agree** — only **1 of the 374** coefficient vectors is bit-identical across
+the two arms, so the overlap on which a three-way claim could rest is a single vector. The
+discriminating run was therefore done at close-out rather than inferred: **PyPy's `_quartic_roots_c`
+fed CPYTHON's 374 vectors reproduces CPython's roots bit-for-bit — 0 of 4 488 root keys differ**,
+with the same-arm control at 0. **Now** the three-way statement is measured. Either way the
+load-bearing inference stands on the pairwise halves alone: the 4 842 differences are **entirely
+upstream of the solver**, in the polynomial `_charpoly4` builds out of two `sum()` traces, and
+*none* of them is a Durand–Kerner property.
 
 **Read off the golden diff instead, this step would have shipped a 5 022-name exemption naming the
 root finder as a cause it has nothing to do with**, and the file would have passed. The number
@@ -17633,7 +17640,7 @@ the diff:
 | **the headline**: exempt *"on the keys downstream of a float or complex `sum()`, **and on nothing else**"* | **FALSIFIED — 6 of the 180 are not** |
 
 The six are section G's: `required` and `required_gov` at `sig/6/pt/465`, and `f`, `g`, `g_gov`,
-`mf` at `sig/7/pt/395` — **two points of the 1 294 the section emits, in 2 of the 10 march
+`mf` at `sig/7/pt/395` — **two points of the 1 302 the section emits, in 2 of the 10 march
 signatures, differing by 1–4 ULPs.** There is no `sum()` anywhere in the six-state march. This is
 [[rust-port-slice-ac-step6]]'s **cause 3** — *a solve terminating differently, not a formula
 rounding differently* — arriving at rung 72.
@@ -17761,7 +17768,7 @@ The stride is **5, and it is chosen to be COPRIME to the readers' own sampling**
 4): a stride of 2 or 4 would emit exactly the points the gain rows already carry — an extra grid
 that is not extra. That is a gate (`the_march_stride_is_coprime_to_the_readers_sampling`), because
 a later edit to the constant would silently undo it. And the stride is BACKSTOPPED: every float
-field's `min`, `max` and LAST are computed over **all** 6 470 points, not the 1 294 emitted ones.
+field's `min`, `max` and LAST are computed over **all** 6 470 points, not the 1 302 emitted ones.
 
 ##### (g) AND MY OWN SWEEP's PER-SECTION HISTOGRAM SUMMED TO ITS OWN PRINT CAP
 
@@ -17794,6 +17801,42 @@ gaining or losing a test.
 
 **A sum over result blocks cannot detect a MISSING result block; only a count of the things that
 ANNOUNCE a target can** — and the log is read for its CONTENT, never for an exit status.
+
+##### (i) CLOSE-OUT — **THREE CLAIMS IN THIS STEP's OWN SHIPPED TEXT, MEASURED AFTER THE PUSH, AND TWO OF THEM WERE WRONG**
+
+§ 5.28.3 (f) records *a doc comment written in this same step measuring FALSE*. It happened again,
+in the step that recorded it, so the close-out re-measured every testable sentence in the two new
+headers rather than re-reading them:
+
+1. **"a defect isolated to a hidden point still has to move a key" — FALSE, and now a number.**
+   The `min`/`max`/`last` aggregates run over all 6 470 points, so a defect that moves a column's
+   EXTREME or its FINAL value is caught wherever it sits — but one at a hidden point that moves
+   neither is not. Measured with a control: `sp_thrust` perturbed at index **137** (`137 % 5 = 2`)
+   moves **0 of 54 116 keys** with the injection provably applied on 24 marches, while the same
+   perturbation at index **135** moves **10** — one per signature. **1 302 of 6 470 points are
+   emitted (20.1 %)**, and both headers now say what the backstop actually is.
+2. **"fed the same coefficients, PyPy's, CPython's and the Rust's root finder agree" — TRUE, but it
+   had been MEASURED as two pairwise agreements on DISJOINT inputs.** Rust ≡ PyPy on PyPy's
+   vectors, Rust ≡ CPython on CPython's, and **1 of 374** vectors bit-identical across arms — so
+   the population supporting a three-way reading was one vector. The cross-feed was then run:
+   **PyPy's solver on CPYTHON's 374 vectors reproduces CPython's roots bit-for-bit, 0 of 4 488 root
+   keys**, control 0. The sentence now stands *and* names how.
+3. **"1 294 emitted points" — WRONG in six places; it is 1 302.** A typed number where the golden
+   can be counted: `6 × ceil(851/5) + 4 × ceil(341/5)`. Same class as § (g)'s histogram — a figure
+   that looked right and was never added up. Corrected in the plan, both headers and both memory
+   files.
+
+**AND TWO POSITIVES THAT WOULD OTHERWISE GO UNREPORTED, because nothing failed:**
+
+* **Section G was green on the first run, and it had never been diffed before.** The prediction
+  going in was that a first-run oracle failure would live exactly there, since steps 2/3 drove the
+  READERS and the readers' aggregates hide 14 of the march's 30 fields (§ (f)). They did not hide a
+  defect: **the 21 fields the suite's reduce spine never compares were bit-exact without ever
+  having been compared.**
+* **The march carries no state between reader calls, and that is measured rather than assumed.**
+  The dump asserts `_sigs[sig] == traj` on a repeated signature — full trajectory equality, not
+  length — and 4 of the 10 signatures are driven more than once (14 calls, 10 signatures). A plant
+  that carried state would give the same number of DIFFERENT points and pass a length check.
 
 ### Consequences for the phase table
 

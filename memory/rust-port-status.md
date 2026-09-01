@@ -210,7 +210,7 @@ Six steps priced from sizing (1 177 source / 502 test lines). See
    of the solver section's differences are UPSTREAM, in the `sum()`-built polynomial. Read off the
    golden diff instead, the step ships a 5 022-name exemption blaming the root finder. **P7's two
    checkable clauses CONFIRMED exactly (4 keys, by name; 0 of the three non-drifters) and its
-   headline FALSIFIED by 6** - march values at 2 points of 1 294, 1-4 ULPs, no `sum()` in reach:
+   headline FALSIFIED by 6** - march values at 2 points of 1 302, 1-4 ULPs, no `sum()` in reach:
    AC step 6's plant drift, which P7's own clause (ii) predicts and its headline forbids. All three
    bookings discharged by key: **j05 CAUGHT at 2 937** (A/D/E share = step 4's 26 exactly, the two
    unmoved keys the same two BY NAME, and `n_complex` - a DISCRETE key - flips on 163 of 374),
@@ -219,7 +219,14 @@ Six steps priced from sizing (1 177 source / 502 test lines). See
    tolerance). P3 re-measured on this grid - **417 calls / 374 vectors / 69 near-double**, not the
    suite-wide 1 068 / 375 / 167 - with a tripwire against re-transcribing the old pair. And my own
    sweep's per-section histogram **summed to exactly 400, its own print cap**; section H's true
-   share is 2 911. See [[rust-port-slice-ad-step5]].
+   share is 2 911. **Close-out re-measured every testable sentence in the two new headers: the
+   stride backstop's "a hidden-point defect still has to move a key" is FALSE (index 137 moves 0
+   of 54 116, control at 135 moves 10), the three-way solver claim had been two PAIRWISE runs on
+   disjoint inputs (cross-feed then run: PyPy on CPython's 374 vectors, 0 of 4 488 root keys), and
+   "1 294 emitted points" is 1 302 in six places.** Two unreported positives: section G was green
+   first run though its 21 reduce-spine-invisible fields had never been diffed, and the plant
+   carries no state between reader calls (full-trajectory equality on 4 repeated signatures).
+   See [[rust-port-slice-ad-step5]].
 
 ## Slice AB, step by step
 
