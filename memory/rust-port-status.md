@@ -286,8 +286,8 @@ defect is the
 ### Slice AE step 1 — SHIPPED 2026-09-01
 
 `rust/src/applied_reference.rs` (five `R73*` tables, **six re-aimed pointers, ZERO new table
-fields**) + `rust/tests/slice_ae_cells.rs`, **15 gates green first run**; **13 mutations of the
-step's own source, 12 killed, 1 predicted survivor.** Plan § 5.29.1.
+fields**) + `rust/tests/slice_ae_cells.rs`, **15 gates green first run**; **15 mutations, 14 killed,
+1 predicted survivor.** Plan § 5.29.1.
 
 **THE FINDING: my own exact-bits gate was VACUOUS on the branch it existed for.** P5's injection
 (fold `_reference`'s float-identity branch away) **passed** a `to_bits` gate driven at the probe's

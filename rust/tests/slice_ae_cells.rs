@@ -490,14 +490,19 @@ fn refuses_an_undeclared_reference() {
                 "and quotes the offending law {law:?}: {msg:?}");
         assert!(msg.contains("DECLARED"), "and says the reference is declared: {msg:?}");
     }
-    // THE CONTROL — both declared laws get past this assert. They then run a real march, so the
-    // gate reads only that the refusal did NOT fire.
+    // THE CONTROL, AND IT ASSERTS A CLEAN RETURN RATHER THAN AN ABSENT SUBSTRING.
+    //
+    // *"the refusal did not fire"* is satisfied by an UNRELATED abort just as well as by a passing
+    // march — and this arming really can abort elsewhere: driven on the source with a hand-built
+    // `nu0`, probe L5's two declared rows died on `rung-43 fuel closure does not bracket`. Measured
+    // here rather than assumed: through the RAMP both declared laws return cleanly, so the control
+    // asserts the empty message and would go red if this arming ever started aborting for a second
+    // reason.
     for law in REF_LAWS_DECLARED {
         let m = applied(&valve_arm());
         m.fuel.inner.ref_law.set(law);
-        let msg = message_of(|| { bare_march(&m); });
-        assert!(!msg.contains("the fuel reference is this rung's subject"),
-                "{law:?} is declared and must pass the refusal: {msg:?}");
+        assert_eq!(message_of(|| { bare_march(&m); }), "",
+                   "{law:?} is declared: the bare march must RETURN, not merely miss the refusal");
     }
 }
 
@@ -516,12 +521,13 @@ fn refuses_the_applied_reference_on_top_of_the_sum_law() {
             "the conjunction is refused by name: {msg:?}");
     assert!(msg.contains("change one law at a time"), "rung 63's lesson, quoted: {msg:?}");
 
-    // THE CONTROL — `sum` under the SCHEDULED reference is rung 72 and is allowed.
+    // THE CONTROL — `sum` under the SCHEDULED reference is rung 72 and is allowed. A CLEAN RETURN
+    // and not an absent substring, for the reason given on the gate above.
     let m2 = applied(&valve_arm());
     m2.fuel.inner.share_law.set("sum");
     m2.fuel.inner.ref_law.set("sched");
-    assert!(!message_of(|| { bare_march(&m2); }).contains("SUM composition"),
-            "`sum` is rung 72's own isolation instrument and only the CONJUNCTION is refused");
+    assert_eq!(message_of(|| { bare_march(&m2); }), "",
+               "`sum` is rung 72's own isolation instrument and only the CONJUNCTION is refused");
 }
 
 /// A march with **neither the governor clock nor the fuel leg armed** — the arming on which rung
@@ -695,3 +701,4 @@ fn the_scheduled_reduce_is_not_vacuous() {
                  .fold(0.0f64, f64::max);
     assert!(worst > 1.0, "and it differs in the PLANT, not only in the masked state: {worst}");
 }
+

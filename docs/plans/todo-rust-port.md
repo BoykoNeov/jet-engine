@@ -18358,7 +18358,10 @@ of this step's own source, 12 killed and the 13th predicted to survive** (§ (e)
 
 **GATE: full `cargo test`, EXIT 0** — every target reporting `0 failed`. **The grand total is
 recorded as UNMEASURED and not typed**: the capture was a `tail -50` window, so the 50 targets it
-holds are all green and the summing line fell outside it. [[rust-port-guessed-census-bars]] and
+holds are all green and the summing line fell outside it. **The background task's own output file
+was then CHECKED for it** — 4 752 bytes, 50 `test result:` lines — because *"I cannot see it"* is a
+claim about a place, and the place had not been looked at; the truncation was in the pipeline and
+not in the display, so the note stands as measured rather than as assumed. [[rust-port-guessed-census-bars]] and
 [[never-run-the-gate-for-timing]] together say the same thing here — a number that was not in front
 of me does not get written down, and the gate is not re-run to manufacture one.
 
@@ -18416,6 +18419,13 @@ L5): rung 72's body early-returns into rung 71's table when neither the governor
 fuel leg is armed, and on exactly that arming `_ref_law = 'inc'` still raises. So the ported gate
 drives a BARE march, which is the arming a refusal placed after a copied entry test would skip.
 
+**AND BOTH REFUSAL GATES' CONTROLS ASSERT A CLEAN RETURN, NOT AN ABSENT SUBSTRING.** *"The refusal
+did not fire"* is satisfied by an UNRELATED abort as readily as by a passing march, and this arming
+really can abort elsewhere — driven on the source with a hand-built `nu0`, probe L5's two declared
+rows died on `rung-43 fuel closure does not bracket`. Measured through the RAMP instead: both
+declared laws return cleanly, and so does `sum` under `sched`, so the controls assert the EMPTY
+message and go red if this arming ever starts aborting for a second reason.
+
 ##### (c) P7 IS TRUE FOR STEP 1 AND ALREADY KNOWN FALSE FOR STEP 2 — **PRE-REGISTERED, NOT DISCOVERED**
 
 § 5.29 (ix)'s P7 was falsified before step 1 and restated as *no new field at all: every one of the
@@ -18447,10 +18457,12 @@ port's to remove), and the fact is **pre-registered for step 5: this swap has no
 no discriminator exists and none should be hunted. Mutation M11 deletes the carry and **survives
 all 15 gates**, which is the prediction driven rather than asserted.
 
-##### (e) THIRTEEN MUTATIONS — TWELVE KILLED, ONE PREDICTED SURVIVOR
+##### (e) FIFTEEN MUTATIONS — FOURTEEN KILLED, ONE PREDICTED SURVIVOR
 
 `M:\claud_projects\temp\rust-ae\mutate_step1.py`, each asserting its anchor matched exactly once
-before the replace:
+before the replace. **M14 and M15 live in `shared_actuator.rs`, not in this step's own file**, and
+they test the direction M01 does not \u2014 the class default LEAKING DOWN the family rather than being
+dropped:
 
 | mutation | gate that died | verdict |
 |---|---|---|
@@ -18467,11 +18479,22 @@ before the replace:
 | M11 `_shared_rig` drops the carry | — | **SURVIVED, as predicted** |
 | M12 the floor keeps rung 72's message | the floor-message gate | killed |
 | M13 `R73_TRIPLE.reference` left as rung 72's | the pointer gate (+3 more) | killed |
+| M14 rung 72's OWN builder sets `applied` too | the class-default gate's rung-72 CONTROL | killed |
+| M15 `REF_LAW_DEFAULT` itself flips to `applied` | the same gate's `assert_ne!` | killed |
 
 M06 is § (a). M11 is § (d). **M02 is the one worth naming beside them**: a body that writes BOTH
 fields is what a one-sided *"`ref_law` moved"* assertion admits, and it is the exact shape § 5.27
 (x)'s signature sweep could not see — so the gate asserts the field that moved **and** the field
 that did not, on both machines.
+
+**AND M15 IS THE ONE THAT CHANGED WHAT A LINE MEANS.** The class-default gate's rung-72 control
+reads `REF_LAW_DEFAULT` rather than the literal `"sched"`, so flipping that constant would make it
+compare the built machine against the very constant that built it — the
+shipped-instrument-agrees-with-itself pattern, arriving in a CONTROL. It does not, and **the line
+that stops it is `assert_ne!(REF_LAW_APPLIED, REF_LAW_DEFAULT)`** — which reads like a restatement
+of two declarations, and is measured rather than argued to be the assertion M15 dies on, at
+`slice_ae_cells.rs:286`. **A gate that compares against a NAMED CONSTANT needs a second assertion
+pinning that the constant is not the other one.**
 
 ##### (f) ONE NAME GUESSED, ONE COMPILE ERROR
 

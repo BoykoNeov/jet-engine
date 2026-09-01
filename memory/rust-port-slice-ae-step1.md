@@ -10,7 +10,7 @@ metadata:
 
 Slice AE step 1 (rung 73 Rust port) shipped `rust/src/applied_reference.rs` — five `R73*` tables,
 **six re-aimed pointers, ZERO new table fields** — and `rust/tests/slice_ae_cells.rs`, **15 gates**,
-all green first run. **13 mutations of the step's own source: 12 killed, 1 predicted survivor.**
+all green first run. **15 mutations: 14 killed, 1 predicted survivor.**
 Plan § 5.29.1.
 
 **THE LESSON: an exact-bits gate is only as sharp as the arithmetic it is handed.** The pre-flight
@@ -48,6 +48,18 @@ the field that moved **and** the field that did not, on both machines
 at 13") holds exactly for step 1's six pointers and is already known false for the seventh —
 `_quad_gains_at` has no field in any of the five table types, so step 2 takes it to 14.
 Pre-registered rather than met as a surprise.
+
+**A CONTROL THAT READS A NAMED CONSTANT CAN COMPARE A MACHINE AGAINST THE CONSTANT THAT BUILT
+IT.** The rung-72 control asserts `shared(...).ref_law == REF_LAW_DEFAULT`, so flipping that
+constant would pass. It does not — and the line that stops it is
+`assert_ne!(REF_LAW_APPLIED, REF_LAW_DEFAULT)`, measured (not argued) to be the assertion the
+mutation dies on. A gate comparing against a named constant needs a second assertion pinning that
+the constant is not the other one.
+
+**AND A CONTROL THAT ASSERTS AN ABSENT SUBSTRING IS SATISFIED BY AN UNRELATED ABORT.** Both
+refusal gates' controls now assert the march RETURNS CLEANLY — not merely that the refusal's words
+are missing. Measured first: the same arming really does abort elsewhere when driven with a
+hand-built initial condition instead of through the ramp.
 
 See [[rust-port-status]], [[rust-port-copy-vs-rederivation]] (the `_shared_rig` carry is a MEASURED
 no-op — `at_lever` already carries the law — ported anyway and pre-registered as having no value
