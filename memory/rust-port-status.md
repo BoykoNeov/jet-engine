@@ -19,7 +19,7 @@ slices inside an authorised phase are free. See [[rust-port-decided]].
 
 * **0–5 DONE.**
 * **PHASE 6** authorised 2026-08-17, **COMPLETE 2026-08-20** with slice U's five steps.
-* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, AB, **AC complete**; **AD (rung 72) IN FLIGHT** (§ 5.28, twelve probes) — **steps 1–3 of 6 done**.
+* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, AB, **AC complete**; **AD (rung 72) IN FLIGHT** (§ 5.28, twelve probes) — **steps 1–4 of 6 done**.
 
 ## Phase-7 slices, as they closed
 
@@ -135,7 +135,7 @@ booked to slice AH. See [[rust-port-slice-ac-preflight]].
    measured over all five hook structs, only `TripleHooks` (5 of 5 consts) is loud. Corrected and
    pinned by a tripwire that can fail. See [[rust-port-slice-ac-step7]].
 
-## Slice AD (rung 72, `SharedActuatorTransient`) — pre-flight + step 1 of 6
+## Slice AD (rung 72, `SharedActuatorTransient`) — pre-flight + steps 1–4 of 6
 
 **Pre-flight** (§ 5.28, twelve probes): the cell column measures **3** — the first back-half row
 where the hand-written number is right. Four findings, all vacuity: **`shared_modes` does not
@@ -180,6 +180,25 @@ Six steps priced from sizing (1 177 source / 502 test lines). See
    `riding4`'s foreign-point arm made a REFUSAL, matching Python's bare index; and the deferred
    cell's MRO trap for rungs 74/80/81) and **P7, the CPython exemption PRE-REGISTERED** so step 5
    cannot produce it post-hoc. See [[rust-port-slice-ad-step3]].
+
+4. **Step 4** — the 28 ported gates: `tests/rung72.rs` **949 lines, 28 gates**, green first run in
+   8.63 s; the Python↔Rust map 1:1 IN ORDER, **0 added / 0 collapsed / 1 body substituted / 3 split
+   by parameter**, reconciled by a machine-checked **BIJECTION** (0 unmapped, 0 extra, 0 collisions)
+   after `grep` said 30 where `cargo` ran 28 — the two extras inside this file's own sentence
+   *documenting that trap*, its third instance in the phase. Ten injections plus one declared
+   control, **three binaries each**: **7 caught, 3 missed**, and every miss re-scored BY KEY against
+   step 3's preserved 3 216-key dump rather than left as a word. **The headline is j05**: deleting
+   the `|a3|` term that wins the root finder's start scale on 1 068 of 1 068 calls moves **26 keys —
+   8 of `charpoly_selftest`'s own 10** — and **all 28 gates pass in Rust AND in Python**, so the
+   hole is INHERITED; the two unmoved keys are the only two computed from a coefficient rather than
+   a root, which turns the reading into a mechanism. j06 moves **0 of 3 216** (unobservable, margin
+   3.5e−2 against a 0.1-wide interval, 165 of 165 points strictly interior) and j09 moves **3** that
+   no gate in either language reads. j05 and j09 booked to step 5's oracle; P4's control `c11`
+   missed as pre-registered, but on the GATE seat only, so P4 is **corroborated, not settled**.
+   Full gate **137 targets / 1 393 passed / 0 failed / 0 ignored**, predicted before the run and
+   held — and the number was nearly taken off a log that was still being written (125 blocks /
+   1 335 passed, both plausible), so the bar is now structural: `Running` lines + `Doc-tests` must
+   equal the result blocks. See [[rust-port-slice-ad-step4]].
 
 ## Slice AB, step by step
 

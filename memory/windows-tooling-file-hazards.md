@@ -35,6 +35,18 @@ exit status, and `cmd; echo "X=$?" >> log` makes the *echo* the last command, so
 reports the echo's success. **A status read off the runner is not the command's status — write it
 into the artefact and read it back.**
 
+**5. AND A LOG THAT IS STILL BEING WRITTEN IS A VALID PREFIX OF A GOOD ONE.** On 2026-09-01 the
+full Rust gate's log held 125 `test result: ok` blocks summing to 1 335 passed, 0 failed — both
+numbers plausible, both within a couple of targets of the real answer, and **no line anywhere
+saying it was incomplete**. The run had not finished; twelve minutes later it exited 0 at
+**137 blocks / 1 393 passed**. Read at the wrong minute the gate row would have said *down two
+targets and thirty tests*, which reads as a regression and sends you chasing nothing. A truncated
+`cargo test` or `pytest` log carries no error text, because every line in it is true. **Never sum a
+log you did not watch exit.** The check is structural, not a sum: a sum over result blocks cannot
+detect a *missing* result block, so count the lines that ANNOUNCE a target (`     Running `, plus
+`Doc-tests`) and require them to equal the result blocks — and take the exit status from the
+process object, not from a tail.
+
 **Why:** all of these corrupt output while reporting success, and this project's deliverable is prose —
 20,000+ lines of derivation comments full of `∫`, `§`, `Δ`, `φ`, `≈`. A mangling that survives
 a green build is exactly the kind of damage that gets committed.

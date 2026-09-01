@@ -16862,10 +16862,17 @@ full march — plus `_shared_march`'s two clock arms.
 - **P2.** `charpoly_selftest`'s dict agrees with Python **bit-for-bit** on both matrices — no
   iteration-dependent key. If any key disagrees, Durand–Kerner is the reason and § (iii)'s
   asymmetric-residue reading is the diagnosis.
+  **SETTLED at § 5.28.3 (d): CONFIRMED vs PyPy — all ten keys bit-for-bit, on the reader ported
+  FIRST so the prediction fell at the earliest point in the step where it could.** The 4-of-10
+  CPython split is an interpreter difference, not a Durand–Kerner one, and is P7's. *(This mark was
+  owed by step 3's close-out and is added here, with the ledger it belongs to.)*
 - **P3.** The oracle's `_quartic_roots_c` section agrees on **375 distinct coefficient vectors**,
   and the 167 near-double cases are where a disagreement lands if there is one.
 - **P4.** Writing `gf == gr` for `abs(gf - gr) <= tol` changes **no** oracle key (§ (iv)) — so the
   port keeps the tolerance and the *gate for it is declared vacuous* rather than written.
+  **CORROBORATED, NOT SETTLED, at § 5.28.4 (b):** run as the sweep's declared control `c11`, it is
+  missed by all three binaries and by all 28 gates — but that is the GATE seat, and the *oracle
+  key* half is step 5's. The second clause is settled: no gate for it was written.
 - **P5.** The `500`-iteration cap and the `den == 0` guard are **unreachable** from any shipped
   input; both are ported and neither is gated.
 - **P6.** `_reference`'s dispatch gate cannot be a value gate at this rung (§ (vi)); it is a
@@ -17331,6 +17338,211 @@ taking one. Two attempts died:
 Both were caught by reading the file's CONTENT for `test result:` and `error[E`, never its exit
 status. The count in the header is the third run, taken on the step-2 tree with the step-3
 additions parked out.
+
+#### 5.28.4 SLICE AD step 4 — the 28 ported gates, and **A SELF-TEST WHOSE OWN NUMBERS ALL MOVE WHILE IT PASSES**
+
+**SHIPPED**: `rust/tests/rung72.rs` — **949 lines, 28 gates**, green on the **first run** in 8.63 s,
+`cargo clippy --all-targets -- -A clippy::eq_op` clean on this target — **re-measured at
+close-out: 0 errors and 0 lines naming `rung72.rs`** (§ (i)). The Python↔Rust map is
+**1:1 IN ORDER — 0 added, 0 collapsed, 1 body substituted (`at_lever_returns_this_class`), 3 split
+by parameter** — and it is reconciled BY NAME and machine-checked bijective, not by a count. Full gate
+**137 targets / 1 393 passed / 0 failed / 0 ignored** (`cargo test`, exit 0) — **1 365 + 28, and
+PREDICTED BEFORE THE RUN REPORTED**, the prediction written to a file and timestamped ahead of it
+rather than asserted afterwards (§ (h)).
+
+##### (a) THE FINDING — **A BOUND-SHAPED SELF-TEST IS BLIND TO A DEFECT THAT MOVES EIGHT OF ITS OWN TEN KEYS, IN BOTH LANGUAGES**
+
+`charpoly_selftest` is this rung's declared instrument-gated-against-itself: § 5.28.3 (d) and the
+Python docstring both say it exists because `_charpoly4`'s first version returned a WRONG
+polynomial with entirely plausible downstream numbers. Injection **j05** attacks the OTHER half of
+the chain — Durand–Kerner's start scale, with the `|a3|` term deleted, the term § 5.28 (iii)
+measured winning `scale`'s max on **1 068 of 1 068 calls**.
+
+Measured against step 3's own 3 216-key dump, j05 moves **26 keys**:
+
+| where | moved |
+|---|---|
+| `charpoly_selftest` | **8 of its 10** |
+| `shared_cells`' free-pole keys | 11 |
+| `mask_discriminator`'s pole / `worst_re` keys | 7 |
+
+**And all 28 Rust gates pass. And all 28 PYTHON gates pass** — the same edit made to
+`turbojet/engine.py:16253`, `28 passed in 218 s`. So the hole is **INHERITED, not introduced**,
+which is the AC step 4 result in a sharper place: there the two misses were shape-vs-location
+gates, here it is the rung's own self-test failing to see a root-finder defect.
+
+**THE MECHANISM IS EXACT AND THE TWO KEYS THAT DO NOT MOVE PROVE IT.** The unmoved pair is
+`general.det_vs_a0` and `triangular.det_vs_a0` — the only two of the ten computed from `coef[4]`
+rather than from a root. Every root-derived key moves; every non-root key does not. The gate
+survives because its bars are **one-sided** (`< 1e-9`, and `md`'s `< 1e-12` / `> 1e-3`) and the
+perturbed values stay inside them: a different start converges to the same roots to within the same
+tolerance, so the residuals move in the last digits and never across a bar.
+
+That is the exact seat step 5's oracle occupies — it compares BITS, not bounds — so j05 is booked
+to it as a named prediction rather than repaired by widening a gate here. **A tolerance gate cannot
+be made to catch it without inventing a bar nobody measured**, which is this phase's own rule
+against a number typed instead of added up.
+
+##### (b) THE INJECTION SWEEP — 10 + 1, THREE BINARIES EACH, **7 CAUGHT / 3 MISSED**
+
+Slice AB step 3's lesson (*a sweep that ran 2 of the slice's 3 binaries and printed MISS*) is taken
+literally: every injection runs `rung72`, `slice_ad_cells` **and** `slice_ad_march`. The clean tree
+is asserted green first, so the instrument proves it can see, and a build failure is a third
+outcome that is never reported as a miss (§ 5.27.5's lock-contention defect).
+
+| id | injection | outcome |
+|---|---|---|
+| j01 | min-select inverted (`max` → `min`) | CAUGHT — `rung72` (4), `slice_ad_cells` (2) |
+| j02 | the authority label inverted | CAUGHT — `rung72` (8), `slice_ad_march` (1) |
+| j03 | `parent_quartic`'s constant term × (1+1e−7) | CAUGHT — `rung72` (1) |
+| j04 | **the historical bug**: `A` where Faddeev–LeVerrier needs `M_{k−1}` | CAUGHT — `rung72` (6) |
+| j05 | Durand–Kerner's start scale loses `\|a3\|` | **MISSED** — § (a) |
+| j06 | `riding4` widened to a CLOSED valve interval | **MISSED** — § (c) |
+| j07 | a fake `F_r` coupling in `jac4`'s masked row | CAUGHT — `rung72` (2) |
+| j08 | the RK4 floor weakened, `ds*rate <= 2` → `<= 4` | CAUGHT — `rung72` (1), `slice_ad_cells` (2) |
+| j09 | `shared_bill`'s stator currency stops depending on the arm | **MISSED** — § (d) |
+| j10 | `reference` stops being the bitwise identity (1e−9) | CAUGHT — `slice_ad_cells` (1) |
+| **c11** | **P4's control**: `_authority`'s `tol` → exact equality | **MISSED, AS PRE-REGISTERED** — gate seat only, § (b) |
+
+**c11 SETTLES THE HALF OF P4 THAT THIS STEP CAN REACH, AND NOT THE OTHER HALF — WHICH IS THE
+DISTINCTION § (a) IS ABOUT.** § 5.28 (ix) predicted that writing `gf == gr` for
+`abs(gf − gr) <= tol` changes **no oracle key**, off § (iv)'s measurement of 25 702 calls with **0**
+in the open interval. Running it as a declared expected-MISS beside ten expected-CATCHes is the
+only arrangement in which "it changed nothing" is a reading rather than an absence — but what it
+reads is that **28 gates do not move**, and § (a) is this step's own proof that a gate not moving
+is compatible with 26 keys moving.
+
+So the ledger is split, deliberately: j05, j06 and j09 were re-dumped and scored **by key**, c11
+was scored **by gate only**. Its oracle half is step 5's, alongside the two booked misses, and
+until then P4 is **corroborated, not settled**. Conflating the two scoring seats inside a single
+sweep table is exactly the error the step's leading finding is about, and it was in this
+paragraph's first draft.
+
+##### (c) j06 MOVES **0 OF 3 216 KEYS** — an UNOBSERVABLE edit, not a hole, and the margin is 3.5e−2
+
+`_riding4`'s valve condition is `0 < b_cmd < b_max`; widening it to the closed interval changes
+**nothing anywhere in the port's five readers**. Driven directly at `shared_gains`' own grid
+(`ds = 0.002`, matched clocks, `phi` arm): of 851 marched points, **165 satisfy the other three
+riding conditions and all 165 are strictly interior** — `b_cmd` runs over `[0.0354, 0.0608]` against
+`b_max = 0.100`, so the nearer endpoint is **3.54e−02** away and **0 points** sit exactly on either.
+
+So the strict-vs-closed distinction is not a near miss; it is **wider than the interval it lives
+in**. That is a number and not the word "unreachable" — § 5.28.3 (f)'s discipline, in its second
+place in the slice — and unlike j05 and j09 it is **not booked to the oracle**, because a bit-exact
+dump has already shown it moves nothing to book.
+
+##### (d) j09 MOVES THREE KEYS AND NOTHING READS THEM — **the ledger's stator row is a defence with no reader**
+
+`shared_bill`'s `own` table gives the stator the `M` currency on the incidence arm and `I` on the
+`phi` arm, because *a `phi` stator and an incidence stator do not defend the same wall*. Deleting
+that dependence moves exactly **3 of 3 216 keys** — `sb.1.marginal.S`, `sb.1.alone.S`,
+`sb.1.kept.S`, the incidence arm's stator row — and **no gate in either language reads any of
+them**: Python's `test_the_masked_leg_still_buys_something` reads `kept["F"]`, the two fuel
+marginals, the two `phi`/`Tt4` pairs and the `F` cell, and stops.
+
+[[rust-port-slice-aa-steps2345]]'s *defence with no reader*, in the ledger rather than in a hook
+table, and **inherited** — 28 Python gates pass under the same edit. Booked to step 5's oracle as
+three named value keys.
+
+##### (e) THE READERS' DEFAULTS ARE FIVE DIFFERENT GRIDS, AND THE PYTHON FILE PASSES ONE OF THEM
+
+Every rung-72 reader call in the shipped suite passes exactly `FLIGHT, LO, HI, TT4_MAX, SM` plus at
+most `inc=` or `clocks=`. Everything below the fifth argument is the READER's own default, read off
+`turbojet/engine.py`'s `def` line — and they are not one set:
+
+| reader | `ds` | `every` | grid |
+|---|---|---|---|
+| `authority_law` | **0.005** | — | the two-arm `CLOCKS` |
+| `shared_gains` | **0.002** | **2** | matched `taus` |
+| `shared_cells` | **0.002** | **2** | the two-arm `CLOCKS` |
+| `mask_discriminator` | **0.002** | **4** | **its OWN THREE-arm grid** |
+| `shared_bill` | **0.005** | — | matched `taus` |
+
+Three distinct `ds`, two distinct `every`, three distinct grids. This module's `DS` is `0.005` and
+agrees with **two of the five**; transcribing it into the other three would have moved every § 1,
+§ 2 and § 3 number without failing anything, which is § 5.27.6 (i) exactly — there a shipped row
+was measured at `every = 40` while the fixture passed `every = 10`. Written into the file's header
+as a table so the next reader inherits the measurement and not the risk.
+
+**AND `CLOCKS` IS BIT-IDENTICAL TO THE TWO DEFAULTS IT IS PASSED TO**, so the two call sites that
+spell it substitute nothing — recorded, because the opposite reading of the same sentence is the
+defect.
+
+##### (f) THE `grep` / `cargo` COUNT TRAP FIRED AGAIN — **AND THE SENTENCE THAT CAUSED IT IS THE ONE DOCUMENTING THE TRAP**
+
+`grep -c '#\[test\]'` on `tests/rung72.rs` returns **30**; `cargo test -- --list` returns **28**.
+The two extras are both inside this file's own module header — one in the sentence recording that
+AC step 4 saw `grep` say 28 where `cargo` ran 27, and one in the sentence explaining that the three
+parametrised Python tests land as two `#[test]` functions apiece.
+
+So the third instance of this trap in the phase was manufactured by the prose warning about the
+second. It cost nothing only because the count was never the check: the 28 Rust names were mapped
+to Python's 28 collected node ids programmatically and the mapping came back **bijective — 0
+unmapped, 0 extra, 0 collisions**. **A count can be satisfied by an accident; a bijection cannot**,
+and that is the form the next slice should use rather than a sharper `grep`.
+
+##### (g) AND MY OWN MISS-PROBE REPORTED ZERO ON ITS FIRST RUN
+
+The instrument for § (a)/(c)/(d) is step 3's preserved 3 216-key dump program, reinstalled as a
+temporary target. Its first driver parsed the keys out of **stdout** — but that program WRITES A
+FILE and prints only a count, so the driver reported `BASELINE keys: 0`, which reads as *the
+readers emit nothing*. It was caught immediately by the assertion the phase's own rule requires
+(`assert len(clean) > 3000`, *the instrument must prove it can see*), before any miss was scored
+against it. [[rust-port-slice-w-step3]], fourth instance.
+
+##### (h) THE GATE NUMBER WAS ALMOST TAKEN OFF A RUN THAT HAD NOT FINISHED
+
+The close-out opened by reading the step's own `full_gate.txt`, which at that moment held **125
+`test result: ok` blocks summing to 1 335 passed, 0 failed** and ended mid-`slice_y_oracle`. Both
+numbers are plausible — 125 is within two of the phase's recent counts and 1 335 is within two
+targets of the answer — and **nothing in the file says it is incomplete**: a truncated `cargo test`
+log is a prefix of a good one, so every line in it is true.
+
+The file was not truncated. **The run was still going**, in a process started before this session,
+and it reported exit 0 twelve minutes later with the real numbers. Read at the wrong minute, the
+gate row would have said 125 / 1 335 — down two targets and thirty tests from step 3, which reads
+as *a regression*, and the diagnosis chased would have been imaginary.
+
+This is [[rust-port-slice-ad-step1]] verbatim — *a pre-registered count of compile errors, measured
+on a build that had already given up, came back plausible and WRONG* — with **"had already given
+up" replaced by "had not yet finished"**, which is the harder half because there is no error text
+anywhere. So the completeness bar is structural rather than a sum, and it is written into the
+prediction file beside the number:
+
+| check | measured |
+|---|---|
+| exit status | **0** |
+| `     Running ` lines | **136** |
+| `Doc-tests` blocks | **1** |
+| `^test result:` blocks | **137 = 136 + 1** |
+| blocks reading `ok` | **137 of 137** |
+
+**A sum over result blocks cannot detect a missing result block; only a count of the things that
+ANNOUNCE a target can.** The two counts agreeing is the check, and it is the one the earlier read
+would have failed — 125 blocks against 136 `Running` lines, in the same file.
+
+The row is then a REPLICATE, not a reading: the gate was run a second time, independently, on the
+same tree, and lands on **136 / 1 / 137 blocks, 137 of 137 `ok`, 1 393 passed, 0 failed, 0
+ignored** — identical in every field. Neither run's exit status is what settles it: the second
+runner's `$p.ExitCode` came back **empty** through `Start-Process -PassThru`, which is hazard 4 of
+[[windows-tooling-file-hazards]] in a fresh costume, so both runs are verified the way § 5.28.3
+(i) already prescribes — by reading the file's CONTENT for `test result:` and `error[E`, of which
+there are **0** in either capture.
+
+##### (i) AND THE LINT RUN THAT SUBSTANTIATED IT DISAGREES WITH ITSELF BY 43
+
+The clippy claim above was inherited from the step's own draft, so it was re-run rather than
+copied: 0 errors, and **0 of the output's lines name `rung72.rs`**, which is the claim.
+
+What the same run also shows is that **its 26 per-target summaries sum to 134 warnings while only
+91 individual warning lines are printed** — a 43-line gap in one invocation, between two numbers
+the same program emitted. The gap is not diagnosed here and no mechanism is asserted for it;
+cached targets keeping a summary while dropping its body is the obvious candidate and is exactly
+the kind of guess this phase does not write down. It is booked as a MEASUREMENT: **a clippy total
+read off the summaries and one read off the bodies are different numbers on this tree**, so
+§ 5.27.4's disclosed backlog of 47 must be re-taken by a stated method before it is compared with
+anything. That backlog is untouched by this step either way — no line in it is in a file this
+step adds.
 
 ### Consequences for the phase table
 
