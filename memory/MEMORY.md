@@ -88,6 +88,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Slice AD step 2](rust-port-slice-ad-step2.md) — a convention that a new enum variant breaks the build held at 7 of 20 sites, and my own gate compared the plant against the function that produced it
 - [Slice AD step 3](rust-port-slice-ad-step3.md) — a census predicate written in CALL SYNTAX is blind to a method that is only ever PASSED, and CPython's compensated `sum()` reaches complex too
 - [Slice AD step 4](rust-port-slice-ad-step4.md) — a self-test gated on a BOUND is blind to a defect that moves 8 of its own 10 numbers, and a count can be satisfied by an accident where a bijection cannot
+- [Slice AD step 5](rust-port-slice-ad-step5.md) — an INPUT-FED section measures the function where a self-feeding one measures the plant, so 5 022 golden differences became a 180-name exemption
 - Slice T (46/47/48) steps [1](rust-port-slice-t-step1.md) [2](rust-port-slice-t-step2.md) [3](rust-port-slice-t-step3.md) [4](rust-port-slice-t-step4.md) — an EXACT ZERO blinds its own gate to the SIGN (one lesson per file)
 
 ## Shipped rungs

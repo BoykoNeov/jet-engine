@@ -19,7 +19,7 @@ slices inside an authorised phase are free. See [[rust-port-decided]].
 
 * **0–5 DONE.**
 * **PHASE 6** authorised 2026-08-17, **COMPLETE 2026-08-20** with slice U's five steps.
-* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, AB, **AC complete**; **AD (rung 72) IN FLIGHT** (§ 5.28, twelve probes) — **steps 1–4 of 6 done**.
+* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, AB, **AC complete**; **AD (rung 72) IN FLIGHT** (§ 5.28, twelve probes) — **steps 1–5 of 6 done**.
 
 ## Phase-7 slices, as they closed
 
@@ -135,7 +135,7 @@ booked to slice AH. See [[rust-port-slice-ac-preflight]].
    measured over all five hook structs, only `TripleHooks` (5 of 5 consts) is loud. Corrected and
    pinned by a tripwire that can fail. See [[rust-port-slice-ac-step7]].
 
-## Slice AD (rung 72, `SharedActuatorTransient`) — pre-flight + steps 1–4 of 6
+## Slice AD (rung 72, `SharedActuatorTransient`) — pre-flight + steps 1–5 of 6
 
 **Pre-flight** (§ 5.28, twelve probes): the cell column measures **3** — the first back-half row
 where the hand-written number is right. Four findings, all vacuity: **`shared_modes` does not
@@ -199,6 +199,27 @@ Six steps priced from sizing (1 177 source / 502 test lines). See
    held — and the number was nearly taken off a log that was still being written (125 blocks /
    1 335 passed, both plausible), so the bar is now structural: `Running` lines + `Doc-tests` must
    equal the result blocks. See [[rust-port-slice-ad-step4]].
+
+5. **Step 5** - the oracle: `oracle/dump_slice_ad.py` (nine sections - A-F the five readers plus
+   `charpoly_selftest` at their OWN defaults, G/H/J three declared extra grids) + two goldens at
+   **54 116 keys each**, the phase's largest (1.5x slice Z's 35 335), and `tests/slice_ad_oracle.rs`
+   (**6 gates**). **`Rust == PyPy` on all 54 116, green on the FIRST run, no port fix**; CPython arm
+   exempt on **180 names, two causes (174 / 6)**. **THE FINDING: the two goldens differ on 5 022
+   keys and the port drifts on 180**, because section H reads its 374 coefficient vectors as INPUTS
+   - fed CPython's own coefficients the Rust reproduces CPython's roots bit-for-bit, so all 4 842
+   of the solver section's differences are UPSTREAM, in the `sum()`-built polynomial. Read off the
+   golden diff instead, the step ships a 5 022-name exemption blaming the root finder. **P7's two
+   checkable clauses CONFIRMED exactly (4 keys, by name; 0 of the three non-drifters) and its
+   headline FALSIFIED by 6** - march values at 2 points of 1 294, 1-4 ULPs, no `sum()` in reach:
+   AC step 6's plant drift, which P7's own clause (ii) predicts and its headline forbids. All three
+   bookings discharged by key: **j05 CAUGHT at 2 937** (A/D/E share = step 4's 26 exactly, the two
+   unmoved keys the same two BY NAME, and `n_complex` - a DISCRETE key - flips on 163 of 374),
+   **j09 CAUGHT at 3**, **j06 still 0** in a 17x larger space, **c11 0 => P4 SETTLED** with the
+   margin emitted (`n_open` 0 over 12 676 calls; smallest non-zero gap 2.74e-07 = **273 641x** the
+   tolerance). P3 re-measured on this grid - **417 calls / 374 vectors / 69 near-double**, not the
+   suite-wide 1 068 / 375 / 167 - with a tripwire against re-transcribing the old pair. And my own
+   sweep's per-section histogram **summed to exactly 400, its own print cap**; section H's true
+   share is 2 911. See [[rust-port-slice-ad-step5]].
 
 ## Slice AB, step by step
 

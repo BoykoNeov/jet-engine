@@ -16846,8 +16846,8 @@ full march — plus `_shared_march`'s two clock arms.
 | 1 | the **3 cells**, `R72`'s five tables, the scope fields (`_share_law`, `_ic_order4`, `_ref_law`), the four reduce arms |
 | 2 | the march — `integrate_fuel`, `_integrate_fuel_shared`, `_with_share`, `_applied_clip`, `_authority`, and the three cell bodies |
 | 3 | the **quartic chain** — `_jac4`, `_charpoly4`, `_quartic_roots_c`, `_parent_quartic`, `charpoly_selftest`, `_quad_laws`, `_quad_gains_at`, `_riding4`, `_shared_march` |
-| 4 | the **28 ported gates** of `tests/test_rung72.py` |
-| 5 | the oracle, both interpreter arms |
+| 4 | the **28 ported gates** of `tests/test_rung72.py` — **DONE, § 5.28.4** |
+| 5 | the oracle, both interpreter arms — **DONE, § 5.28.5: 54 116 keys, 6 gates** |
 | 6 | the **3 dispatch gates**, on § (vii)'s seats |
 
 #### (ix) PREDICTIONS — pre-registered, settled at the last step
@@ -16868,13 +16868,27 @@ full march — plus `_shared_march`'s two clock arms.
   owed by step 3's close-out and is added here, with the ledger it belongs to.)*
 - **P3.** The oracle's `_quartic_roots_c` section agrees on **375 distinct coefficient vectors**,
   and the 167 near-double cases are where a disagreement lands if there is one.
+  **SETTLED at § 5.28.5 (e): CONFIRMED, and BOTH NUMBERS ARE ABOUT A DIFFERENT POPULATION.** They
+  were measured over the whole rung-72 SUITE (1 068 calls); the oracle drives the five readers —
+  **417 calls, 374 distinct vectors, 69 near-double** — and agrees on every one. A tripwire now
+  fails if the suite-wide pair is transcribed back in. Sharper than predicted: fed the SAME
+  coefficients all three arms' root finders agree bit-for-bit, so the 4 842 cross-interpreter
+  differences in this section are entirely UPSTREAM of the solver.
 - **P4.** Writing `gf == gr` for `abs(gf - gr) <= tol` changes **no** oracle key (§ (iv)) — so the
   port keeps the tolerance and the *gate for it is declared vacuous* rather than written.
   **CORROBORATED, NOT SETTLED, at § 5.28.4 (b):** run as the sweep's declared control `c11`, it is
   missed by all three binaries and by all 28 gates — but that is the GATE seat, and the *oracle
   key* half is step 5's. The second clause is settled: no gate for it was written.
+  **SETTLED at § 5.28.5 (d): CONFIRMED — 0 of 54 116 keys**, and the zero is a READING rather than
+  an absence because the grid's own census is emitted: **12 676 calls, 0 in the open interval, and
+  a margin of 2.736e−07 — 273 641× the tolerance.** The `tie` branch is reached 0 times here where
+  the suite reaches it once, which is a GATE and not a silent absence.
 - **P5.** The `500`-iteration cap and the `den == 0` guard are **unreachable** from any shipped
   input; both are ported and neither is gated.
+  **NOT SETTLED BY STEP 5, AND SAID SO.** Neither is a value: the port exposes no iteration count,
+  so no oracle key can witness either. What step 5 CAN say is adjacent and is measured — `|a3|`
+  wins `scale`'s max on **374 of 374** distinct vectors, emitted per vector and gated, so the
+  three risky roots' deadness is a KEY here rather than a claim.
 - **P6.** `_reference`'s dispatch gate cannot be a value gate at this rung (§ (vi)); it is a
   sentinel, and slice **AE** is where a value break first exists.
 
@@ -17319,6 +17333,15 @@ nothing. Registered now, off step 3's own measurement rather than off a guess:
 > The prediction that can fail: **any exempt key that is not downstream of a `sum()` falsifies P7**,
 > and the count `4` is exact, not a bound.
 
+**SETTLED at § 5.28.5 (b): (i) and (iii) CONFIRMED EXACTLY, (ii) CONFIRMED, THE HEADLINE
+FALSIFIED.** The exempt set is **180 names**: `charpoly_selftest` contributes exactly **4**, and
+they are the four named, BY NAME; `resid`, `diag_err` and `max_imag` drift on **0**. But **6 of the
+180 are section G's march values** — 2 points of 1 294, 1–4 ULPs — and there is no `sum()` anywhere
+in the six-state march. That is [[rust-port-slice-ac-step6]]'s cause 3, which clause (ii) predicts
+and the headline forbids, so the falsifier clause fires on P7's own (ii). **The headline falls and
+(ii) stands, rather than (ii) being reinterpreted to rescue it** — the fourth phase-7 exemption
+prediction falsified in an instructive direction.
+
 Step 5 also inherits a written instrument: `probe_ad3_readers.py` already emits **3 216 keys** over
 all five readers at their shipped defaults, so the dump is seeded rather than started.
 
@@ -17555,6 +17578,222 @@ read off the summaries and one read off the bodies are different numbers on this
 § 5.27.4's disclosed backlog of 47 must be re-taken by a stated method before it is compared with
 anything. That backlog is untouched by this step either way — no line in it is in a file this
 step adds.
+
+#### 5.28.5 SLICE AD step 5 — the oracle, and **A SECTION FED ITS INPUTS MEASURES THE FUNCTION; A SECTION THAT RECOMPUTES THEM MEASURES THE PLANT**
+
+**SHIPPED**: `rust/oracle/dump_slice_ad.py` (nine sections — **A–F** the five readers plus
+`charpoly_selftest` at their OWN defaults, **G/H/J** three declared extra grids), the two goldens
+`slice_ad_pypy.tsv` / `slice_ad_cpython.tsv` at **54 116 keys each** — the largest oracle in the
+phase, 1.5× slice Z's 35 335 — and `rust/tests/slice_ad_oracle.rs` (**6 gates**). **`Rust ≡ PyPy`
+on all 54 116 keys, green on the FIRST run and with no port fix**, the second phase-7 oracle to
+find no defect, for slice AC step 6's reason: steps 2/3 had already driven every reader and diffed
+the printed values. The CPython arm is exempt on **180 named keys, two causes (174 / 6)**. Full
+gate **138 targets / 1 399 passed / 0 failed / 0 ignored**, predicted before the run and held.
+
+##### (a) THE FINDING — **THE TWO GOLDENS DIFFER ON 5 022 KEYS AND THE PORT DRIFTS ON 180, AND THE 28× GAP IS A DESIGN CHOICE ABOUT WHERE A SECTION GETS ITS ARGUMENTS**
+
+Section H replays `_quartic_roots_c` on **374 distinct coefficient vectors**, and the coefficients
+are read from the golden as **INPUTS** — slice Z's *intercept, never reconstruct*, applied to the
+solver's arguments rather than to its call site. On the CPython arm that means the Rust runs
+Durand–Kerner on **CPython's own coefficients**.
+
+| measured | keys |
+|---|---|
+| PyPy golden vs CPython golden, whole file | **5 022** of 54 116 |
+| of which section H | **4 842** |
+| the RUST's own drift against CPython | **180** — and section H contributes **ZERO** |
+
+**Fed the same coefficients, PyPy's, CPython's and the Rust's root finder agree bit-for-bit on all
+374 vectors.** So the 4 842 differences are **entirely upstream of the solver**, in the polynomial
+`_charpoly4` builds out of two `sum()` traces — and *none* of them is a Durand–Kerner property.
+
+**Read off the golden diff instead, this step would have shipped a 5 022-name exemption naming the
+root finder as a cause it has nothing to do with**, and the file would have passed. The number
+that makes the two readings distinguishable does not exist unless the section is input-fed:
+a section that recomputes its own arguments measures the composition of the plant and the
+function, and can only report their sum. **The same 4 842 keys are a solver defect under one
+reading and a `sum()` defect under the other, and the difference is where the section got its
+arguments.** § 5.28 (iii) had already priced the risk in the right place — *"a complex integer
+power and three real fractional powers, the operation with the least chance of agreeing across
+libms"* — and the answer is that the operation is not where the arms part.
+
+The 180 split into exactly two causes, and both are annotated in `EXEMPT` **after** being read off
+the diff, never before ([[rust-port-slice-z-step4]]).
+
+##### (b) **P7 IS CONFIRMED ON BOTH ITS CHECKABLE CLAUSES AND ITS HEADLINE IS FALSIFIED BY SIX KEYS**
+
+§ 5.28.3 (h) registered P7 before this step could produce a list. Scored clause by clause, from
+the diff:
+
+| clause | measured |
+|---|---|
+| (i) `charpoly_selftest` contributes exactly **4 of 10**, named `general.trace_err`, `general.det_err`, `general.det_vs_a0`, `triangular.trace_err` | **CONFIRMED — 4, and the set matches EXACTLY, by name** |
+| (iii) `resid`, `diag_err` and `max_imag` do NOT drift | **CONFIRMED — 0 of the three drift anywhere** |
+| (ii) the reader keys inherit the plant's own long-known drift and NOT a new cause | **CONFIRMED — see below** |
+| **the headline**: exempt *"on the keys downstream of a float or complex `sum()`, **and on nothing else**"* | **FALSIFIED — 6 of the 180 are not** |
+
+The six are section G's: `required` and `required_gov` at `sig/6/pt/465`, and `f`, `g`, `g_gov`,
+`mf` at `sig/7/pt/395` — **two points of the 1 294 the section emits, in 2 of the 10 march
+signatures, differing by 1–4 ULPs.** There is no `sum()` anywhere in the six-state march. This is
+[[rust-port-slice-ac-step6]]'s **cause 3** — *a solve terminating differently, not a formula
+rounding differently* — arriving at rung 72.
+
+**P7's own falsifier clause fires on its own clause (ii).** The prediction says *"any exempt key
+that is not downstream of a `sum()` falsifies P7"* while (ii) predicts the plant's drift, which AC
+step 6 measured as **not** a `sum()`. The two halves cannot both hold, and the measurement picks
+(ii). **The headline falls and (ii) stands; it is not reinterpreted to rescue the headline** —
+which is the whole reason a prediction is written before the run rather than after it, and the
+fourth phase-7 exemption prediction to be falsified in an instructive direction.
+
+**AND NO AGGREGATE KEY DRIFTS.** `G/sig/*/agg/*/{min,max,last}` are computed over EVERY point of
+every trajectory, not the strided ones, and not one of them differs. That **BOUNDS** the excursion
+— it reaches neither extreme nor the last point of any of the 240 columns — and the stronger claim
+that it *decays* is not made, because a strided sample cannot support it.
+
+##### (c) THE THREE BOOKED ITEMS, RE-SCORED IN THE SHIPPED KEY SPACE — **and step 4's mechanism reproduces BY NAME**
+
+Step 4's counts were measured in step 3's 3 216-key space. This file's space is 17× larger and its
+keys are re-prefixed, so *"the oracle catches j05"* would be arithmetic on an old number rather
+than a measurement. All four were re-run against the shipped golden, by key:
+
+| id | step 4 (3 216 keys, 28 gates) | **HERE (54 116 keys)** |
+|---|---|---|
+| **j05** Durand–Kerner's start scale loses `\|a3\|` | 26 moved, **0 gates caught** | **CAUGHT — 2 937 keys** |
+| j06 `riding4` widened to a closed interval | 0 moved | **MISS — still 0, now in a 17× larger space** |
+| **j09** the ledger's stator currency stops depending on the arm | 3 moved, **no gate in either language reads them** | **CAUGHT — 3 keys** |
+| **c11** P4's control: the tolerance → exact equality | MISS (gate seat only) | **MISS — 0 keys. P4 SETTLED** |
+
+**j05's 2 937 split `A 8 · D 11 · E 7 · H 2 911`, and the A/D/E part is step 4's 26 exactly** — 8
+in `charpoly_selftest`, 11 in `shared_cells`' free-pole keys, 7 in `mask_discriminator`'s. The two
+`A` keys that do **not** move are `A/general/det_vs_a0` and `A/triangular/det_vs_a0`, **the same
+two by name**, and they are the only two of the ten computed from a coefficient rather than from a
+root. An independent measurement in a different key space landing on the same two names is what
+turns step 4's reading into a mechanism.
+
+**AND THE DEFECT IS NOT ONLY A LAST-DIGIT ONE.** Inside section H, j05 moves `root/*` on 2 540
+keys, `min_sep` on 208 — and **`n_complex` on 163 of the 374 vectors.** That is a **DISCRETE** key:
+the number of roots with a non-zero imaginary part *changes*. § 5.28 (iii) named the mechanism in
+advance (Durand–Kerner leaves an asymmetric last-bit imaginary residue, one member of a conjugate
+pair at exactly `0.0` and the other not, which is why 3- and 1-complex-root counts appear for a
+real quartic) and priced it at *"a port agreeing to 1e-14 would move 259 of these counts"*. **No
+tolerance gate can absorb an integer that changes**, which is the strongest available statement
+that the bit-exact seat was the right one for this booking and not merely a convenient one.
+
+j09's three are `F/1/marginal/S`, `F/1/alone/S`, `F/1/kept/S` — step 4's three names, re-keyed.
+The *defence with no reader* now has one.
+
+##### (d) **P4 IS SETTLED, AND THE ZERO IS A READING RATHER THAN AN ABSENCE, BECAUSE THE GRID's OWN CENSUS IS A KEY**
+
+P4 predicted that writing `gf == gr` for `abs(gf − gr) <= tol` changes no oracle key. It changes
+**0 of 54 116**. That would be worth nothing if this dump's grid never reached `_authority`, and
+four instruments in this slice's own history printed a confident zero from a run that reached
+nothing (§ 5.28 (x)). So section J emits the census as keys and the Rust ties them into a
+consistency web it asserts:
+
+| key | this grid | the WHOLE SUITE (§ 5.28 (iv)) |
+|---|---|---|
+| `J/n_calls` | **12 676** | 25 702 |
+| `J/n_distinct` pairs | **7 450** | — |
+| `J/n_zero` (distinct pairs at `\|gf−gr\| == 0`) | **1** | 36 calls |
+| **`J/n_open`** — the key P4 lives or dies on | **0** | 0 |
+| `J/min_nonzero_gap` — **THE MARGIN** | **2.736e−07** | — |
+| `J/min_nonzero_gap_over_tol` | **273 641×** | — |
+| labels: dormant / tie / fuel / gov | 19 / **0** / 2 270 / 10 387 | 35 / 1 / 4 095 / 21 571 |
+
+**The tolerance is not inert by a near miss; it is inert by 5.4 decades** — a number, not the word
+"unreachable" (§ 5.28.3 (f)'s discipline, in its third place in the slice).
+
+**AND THE `tie` BRANCH IS NOT REACHED ON THIS GRID AT ALL**, where the whole suite reaches it once.
+So no key in this file can witness `tie`, and that is written as a **gate**
+(`section_j_reaches_three_of_the_four_authority_labels`) rather than left as a silent absence,
+because a silent absence reads as coverage. The gate also fails if `tie` ever *starts* being
+reached, with a message saying that is an improvement and not a failure.
+
+##### (e) P3's TWO NUMBERS WERE ABOUT A DIFFERENT POPULATION, AND A TRIPWIRE NOW SAYS SO
+
+P3 reads *"the oracle's `_quartic_roots_c` section agrees on **375 distinct coefficient vectors**,
+and the **167 near-double** cases are where a disagreement lands"*. Both were measured by probe F
+over the **whole rung-72 suite** — 1 068 calls. This dump drives the five readers:
+
+| | § 5.28 (iii), whole suite | **this dump's grid** |
+|---|---|---|
+| calls | 1 068 | **417** |
+| distinct coefficient vectors | 375 | **374** |
+| near-double (min root separation `< 1e-6`) | 167 of 1 068 calls | **69 of 417 calls; 58 of 374 vectors** |
+| which term wins `scale` | `\|a3\|`, 1 068 of 1 068 | **`\|a3\|`, 374 of 374** |
+
+**P3's first clause is CONFIRMED and its number is 374, not 375** — the readers reach all but one
+of the suite's distinct vectors from 39 % of its calls. Its second clause is **scoreable at all
+only because `near_double` is emitted per vector**; a count without the flag cannot say where a
+disagreement *would* land. `the_quartic_census_is_this_grids_own` is a tripwire that FAILS if the
+suite-wide `(1 068, 167)` pair is ever transcribed back in, and a second one asserts `|a3|` still
+wins on every vector — so § 5.28 (iii)'s *"the cube root and both even roots are DEAD"* is a
+MEASURED key here and not a claim, and it goes red the day they become reachable.
+
+##### (f) SECTION G's SIZE WAS MEASURED BEFORE IT WAS WRITTEN, AND THE FIRST GUESS WAS WRONG
+
+The step opened by asserting that `integrate_fuel` was uncovered by step 3's 3 216 keys. **It is
+not**: `_shared_march` → `_stator_march` → `self.integrate_fuel`, so all five readers drive the
+six-state march. The inference was replaced by a measurement — each of the recorded point's 30
+fields perturbed in turn, and the reader keys re-diffed:
+
+| outcome | fields | which |
+|---|---|---|
+| **moves 0 of the 3 216 reader keys** | **14** | `f`, `pi_lpc`, `pi_hpc`, `phi_hp`, `mdot_air`, `sp_thrust`, `branch`, `mf`, `required`, `v_cmd`, `ic_iters`, `ic_res`, `ic_order`, `share_law` |
+| moves reader keys | 13 | `s` 396, `nu_lp` 1 461, `nu_hp` 1 456, `Tt4` 99, `phi_lp` 188, `mf_sched` 1 456, `g` 26, `g_fuel` 667, `g_gov` 820, `required_fuel` 8, `b` 1 449, `b_cmd` 8, `v` 45 |
+| changes the reader key **SET**, not its values | 2 | `required_gov` (3 216 -> 3 237), `authority` (-> 3 220) |
+| **RAISES** | 1 | `v_regime` -- every point fails the regime filter, `seen` is empty, and `shared_cells` dies on `max()` of an empty sequence |
+
+**A field that moves 0 reader keys is invisible to every one of step 3's 3 216 values.** Section G
+emits all thirty — a subset would be a second grid to justify — but those **fourteen** are its
+MARGINAL content, the part no aggregate could have reached. The suite's own reduce spine reads
+**9 of the 30** (`_keys`'s tuple), so the same conclusion arrives from the tests as well as from
+the readers.
+
+**AND THE THIRD OUTCOME IS THE INSTRUCTIVE ONE.** `v_regime` moves no value: it makes every point
+fail the regime filter, empties `seen`, and `shared_cells` dies on `max()` of an empty sequence.
+That is § 5.27 (ii)'s *break by emptying the sample* in its sharpest form — a reader whose whole
+table is gone. Two more (`required_gov`, `authority`) change the number of keys the readers EMIT
+rather than their values. So a value-diff over the readers alone is blind to 14 of 30 fields and
+mis-shaped on 3 more; only a per-point section closes that.
+
+The stride is **5, and it is chosen to be COPRIME to the readers' own sampling** (`every` of 2 and
+4): a stride of 2 or 4 would emit exactly the points the gain rows already carry — an extra grid
+that is not extra. That is a gate (`the_march_stride_is_coprime_to_the_readers_sampling`), because
+a later edit to the constant would silently undo it. And the stride is BACKSTOPPED: every float
+field's `min`, `max` and LAST are computed over **all** 6 470 points, not the 1 294 emitted ones.
+
+##### (g) AND MY OWN SWEEP's PER-SECTION HISTOGRAM SUMMED TO ITS OWN PRINT CAP
+
+The first scoring of j05 reported the split `A 8, D 11, E 7, H 374`. **Those four numbers sum to
+exactly 400, which is the `.take(400)` cap that run had installed on the panic message.** The
+count 2 937 was never capped — it is `bad.len()` — but the NAMES were, so the histogram was a
+reading of the instrument's limit wearing the shape of a measurement, and section H's true
+contribution is **2 911** rather than 374. Re-taken with the cap at 99 999 and an assertion that
+the printed names EQUAL the reported count, which is the check that makes the second reading
+trustworthy where the first was not.
+
+This is [[rust-port-slice-ad-preflight]]'s rule in a new costume — *a count of things a probe never
+reached is not a zero, and neither is a plausible non-zero* — with "never reached" replaced by
+"never printed". A total that equals a round number the instrument itself chose is the tell.
+
+##### (h) THE GATE ROW, PREDICTED BEFORE THE RUN AND VERIFIED STRUCTURALLY
+
+Written to `gate_prediction.txt` and timestamped ahead of the run (§ 5.28.4 (h)'s form): 137 + 1
+targets, 1 393 + 6 passed, one new binary carrying six `#[test]` functions and no source file
+gaining or losing a test.
+
+| check | predicted | measured |
+|---|---|---|
+| `     Running ` lines | 137 | **137** |
+| `Doc-tests` blocks | 1 | **1** |
+| `^test result:` blocks | 138 | **138** |
+| blocks reading `ok` | 138 of 138 | **138 of 138** |
+| passed / failed / ignored | 1 399 / 0 / 0 | **1 399 / 0 / 0** |
+| `error[E` occurrences | 0 | **0** |
+
+**A sum over result blocks cannot detect a MISSING result block; only a count of the things that
+ANNOUNCE a target can** — and the log is read for its CONTENT, never for an exit status.
 
 ### Consequences for the phase table
 
