@@ -58,7 +58,13 @@ newline-brace-newline pattern: that separator does not exist in a CRLF file, so 
 the end of the file and the gate fired. **Read AND write with `newline=""`**, and have any
 script that restores a file assert the restore is **byte for byte**, not merely that the file is
 back. When a gate over raw source fails on a step that added three lines, suspect the ENCODING
-before the lines.
+before the lines. **AND IT WAS COMMITTED ONCE MORE IN THE SAME SESSION, BY ME.**
+The insertion that added this very paragraph used a bare newline against a CRLF file, leaving
+**three memory files MIXED** (1, 25 and 13 bare LFs). The plan insertion in the same session did
+NOT, because it matched the target file's ending first — so the guard existed and was applied at
+one of four sites. Caught by measuring the endings after committing, not before. **Any script
+that inserts text into a file must take the ending FROM THAT FILE**, at every site, and the check
+is one line: bare LFs (`LF count - CRLF count`) must be 0 or the whole count.
 
 **Why:** all of these corrupt output while reporting success, and this project's deliverable is prose —
 20,000+ lines of derivation comments full of `∫`, `§`, `Δ`, `φ`, `≈`. A mangling that survives
