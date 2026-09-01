@@ -48,8 +48,9 @@ is not.
   covers one of the two.
 - **With a refusal injection, "silent" needs three assertions before it means laundered:** the
   reader COMPLETES, its reading is BIT-IDENTICAL to shipped, and the shipped reading is
-  NON-TRIVIAL. AC's version asserted the identity alone; a refusal makes the completion half
-  load-bearing, because *no panic* is equally what "never reached" looks like.
+  NON-TRIVIAL. AC's version already carries two of the three (identity + a shipped row count); the
+  COMPLETION half is what a refusal injection adds, because *no panic* is equally what "never
+  reached" looks like, where AC's rival-body injection could not raise at all.
 - **Score a cell that many readers dispatch as a CENSUS.** `shared_rig` has five readers; a
   one-reader gate passes on a crate where four fifths of the dispatch is inlined.
 - **And I typed NINE tests in a header sitting above the TEN that disprove it** — the same number
