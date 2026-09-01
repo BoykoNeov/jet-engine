@@ -32,7 +32,11 @@ argument says which misses are NOT holes at all.
   value dump under the injection and diff by key. Three outcomes, not two: *moves keys and nothing
   catches it* = a real hole, book it to the oracle; *moves nothing* = an unobservable edit, a
   stronger statement than "missed"; *moves keys nothing reads* = a defence with no reader.
-  Rung 72's three misses were one of each — 26 keys, 0 keys, 3 keys.
+  Rung 72's three misses were one of each — 26 keys, 0 keys, 3 keys. **And re-diff them at
+  close-out rather than quoting the run that produced them** — all four dumps were still on disk,
+  and re-scoring took one script: 26 / 0 / 3 exactly, the self-test's 8 of 10, and the two
+  survivors right by NAME (`det_vs_a0` on both matrices), which is the half that makes it a
+  mechanism. In the same pass one inherited claim in the same section did NOT survive.
 - **Then ask whether the SOURCE misses it too.** Apply the same edit to the Python and run its
   suite. Both real holes here passed 28 Python gates, so they are INHERITED, not introduced by the
   port — a different and much smaller liability.

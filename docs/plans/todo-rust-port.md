@@ -17378,6 +17378,18 @@ survives because its bars are **one-sided** (`< 1e-9`, and `md`'s `< 1e-12` / `>
 perturbed values stay inside them: a different start converges to the same roots to within the same
 tolerance, so the residuals move in the last digits and never across a bar.
 
+**RE-MEASURED AT CLOSE-OUT, because every number above was inherited from the step's own draft.**
+The four preserved dumps were re-diffed by key rather than re-read: the three-outcome ledger is
+**26 / 0 / 3 exactly**; the self-test contributes **8 of its 10**; j09's three names are
+`sb.1.marginal.S`, `sb.1.alone.S`, `sb.1.kept.S` as stated; and the other 18 split **11 to
+`shared_cells`' pole keys, 7 to `mask_discriminator`'s**. The mechanism sentence is the one that
+had to be checked BY NAME rather than by count, because it is what makes this a mechanism and not
+a reading — and the two survivors are **`cp.general.det_vs_a0` and `cp.triangular.det_vs_a0`**,
+which is the claim. Each of the three injected dumps also carries the **same 3 216 key SET** as the
+clean one, so no count above is a comparison between differently-shaped dumps. One inherited claim
+in this section did NOT survive the same treatment (§ (b)'s c11), which is the reason the rest were
+re-run at all.
+
 That is the exact seat step 5's oracle occupies — it compares BITS, not bounds — so j05 is booked
 to it as a named prediction rather than repaired by widening a gate here. **A tolerance gate cannot
 be made to catch it without inventing a bar nobody measured**, which is this phase's own rule
