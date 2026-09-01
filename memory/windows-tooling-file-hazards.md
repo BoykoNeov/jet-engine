@@ -1,6 +1,6 @@
 ---
 name: windows-tooling-file-hazards
-description: "PyPy leaves open().write() unflushed, and PowerShell Get/Set-Content silently destroys UTF-8 source files"
+description: "Six silent file-tooling hazards on this box: PyPy unflushed writes, PowerShell UTF-8 double-encoding, backticks in a -m message, a status read off the runner, a log still being written, and a text-mode rewrite that flips every line ending behind git's normalisation"
 metadata: 
   node_type: memory
   type: feedback
@@ -46,6 +46,19 @@ log you did not watch exit.** The check is structural, not a sum: a sum over res
 detect a *missing* result block, so count the lines that ANNOUNCE a target (`     Running `, plus
 `Doc-tests`) and require them to equal the result blocks — and take the exit status from the
 process object, not from a tail.
+
+**6. AND A PYTHON TEXT-MODE REWRITE FLIPS EVERY LINE ENDING, WHICH `git diff` THEN HIDES.**
+`io.open(p, encoding=...).read()` collapses CRLF to LF and `io.open(p, "w", encoding=...).write(s)`
+translates every LF back to `os.linesep`, so on Windows a file that was LF comes back **CRLF in
+full**. With git's `text=auto` the endings are normalised on read, so `git diff`, the diffstat and
+`git show` all report only the lines you meant to change — on 2026-09-01 a **3-line** diff had
+rewritten **1 569** line endings and nothing in the review path could see it. It surfaced only in a
+gate that reads raw source bytes at compile time (`include_str!`) and scopes its search with a
+newline-brace-newline pattern: that separator does not exist in a CRLF file, so the scope ran to
+the end of the file and the gate fired. **Read AND write with `newline=""`**, and have any
+script that restores a file assert the restore is **byte for byte**, not merely that the file is
+back. When a gate over raw source fails on a step that added three lines, suspect the ENCODING
+before the lines.
 
 **Why:** all of these corrupt output while reporting success, and this project's deliverable is prose —
 20,000+ lines of derivation comments full of `∫`, `§`, `Δ`, `φ`, `≈`. A mangling that survives

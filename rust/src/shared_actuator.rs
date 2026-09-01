@@ -318,10 +318,14 @@ pub const R72_TRIPLE: TripleHooks = TripleHooks {
     triple_laws: crate::full_split::R71_TRIPLE.triple_laws,
     triple_rig: crate::full_split::R71_TRIPLE.triple_rig,
     with_ref: crate::full_split::R71_TRIPLE.with_ref,
-    // THE THREE THIS SLICE ADDS.
+    // THE THREE SLICE AD ADDS.
     reference: r72_reference,
     rk4_floor_shared: r72_rk4_floor_shared,
     shared_rig: r72_shared_rig,
+    // AND THE FOURTEENTH, ADDED BY SLICE AE STEP 2 — rung 72 is its FIRST DEFINER, so the body is
+    // this file's own. Slice AD measured it a cell and booked it forward as unreachable; § 5.29
+    // (iv) refuted that by value, which is why the slot exists at all.
+    quad_gains_at: quad_gains_at,
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -995,6 +999,18 @@ pub struct QuadGains {
     pub masked: Option<Authority>,
     /// The masked leg's own coupling into the plant — **predicted EXACTLY zero, not small.**
     pub mask_leak: Option<f64>,
+    /// **RUNG 73's THREE, AND THEY ARE `None` AT RUNG 72 BECAUSE PYTHON HAS NO SUCH KEY THERE.**
+    ///
+    /// § 1's BRANCH INDICATOR, measured rather than written: the masked leg's own self-gain
+    /// ([`self_masked`](Self::self_masked)), its cross-gain onto the AUTHORITATIVE axis
+    /// ([`cross_masked`](Self::cross_masked)), and the holding leg's self-gain
+    /// ([`self_live`](Self::self_live)). Under the applied reference these are exactly `+1`, `-1`
+    /// and `0`; under rung 72 all three are `0` — but rung 72 does not COMPUTE them, and the
+    /// difference between *absent* and *zero* is the whole of § 5.29 (iv)'s 70 vanishing keys.
+    /// `None` is therefore Python's missing key and never a value.
+    pub self_masked: Option<f64>,
+    pub cross_masked: Option<f64>,
+    pub self_live: Option<f64>,
 }
 
 impl QuadGains {
@@ -1004,7 +1020,7 @@ impl QuadGains {
     /// [`interior`](QuadGains::interior) produces a NaN rather than a plausible zero — the same
     /// choice [`TripleGains`](crate::three_loop::TripleGains) makes, and for the same reason: at
     /// this rung a plausible zero is *indistinguishable from the headline*.
-    fn dropped(s: f64, v_base: f64, off_regime: Vec<&'static str>, near_switch: bool) -> Self {
+    pub(crate) fn dropped(s: f64, v_base: f64, off_regime: Vec<&'static str>, near_switch: bool) -> Self {
         QuadGains {
             interior: false,
             off_regime,
@@ -1032,6 +1048,11 @@ impl QuadGains {
             pair_rv: f64::NAN,
             masked: None,
             mask_leak: None,
+            // NOT `NaN`: Python's dropped dict has no such key AT EITHER RUNG, and `f_f`/`r_r`
+            // stay `0.0` above for the same reason — `jac4` reads them through `.get(…, 0.0)`.
+            self_masked: None,
+            cross_masked: None,
+            self_live: None,
         }
     }
 }
@@ -1210,14 +1231,20 @@ pub fn quad_gains_at(
         pair_rv: r_v * v_r,
         masked,
         mask_leak,
+        // RUNG 72's DICT CARRIES NO SUCH KEY — see their doc comment. Writing `Some(0.0)` here
+        // would be true of rung 72's plant and would delete the discrete half of § 5.29 (iv)'s
+        // witness, which is 70 keys that are ABSENT rather than zero.
+        self_masked: None,
+        cross_masked: None,
+        self_live: None,
     })
 }
 
-fn leg4(k: &'static str, x: (f64, LegRegime)) -> (&'static str, f64, bool) {
+pub(crate) fn leg4(k: &'static str, x: (f64, LegRegime)) -> (&'static str, f64, bool) {
     (k, x.0, x.1 == LegRegime::Riding)
 }
 
-fn reg4(k: &'static str, x: (f64, Regime)) -> (&'static str, f64, bool) {
+pub(crate) fn reg4(k: &'static str, x: (f64, Regime)) -> (&'static str, f64, bool) {
     (k, x.0, x.1 == Regime::Riding)
 }
 
@@ -1975,7 +2002,7 @@ pub fn shared_gains(
     for p in sampled.iter() {
         let gg = {
             let _sh = ShareScope::set(&m, "max");
-            quad_gains_at(&m, flight, p, None, surge.as_ref(), tt4_max,
+            (m.triple_hooks().quad_gains_at)(&m, flight, p, None, surge.as_ref(), tt4_max,
                           1e-7, 1e-5, 1e-4, true, 4.0)?
         };
         if !gg.interior {
@@ -2043,7 +2070,7 @@ pub fn shared_gains(
 
 /// Python's `max` as a fold seed — the first item wins outright, then `>` decides. Seeded with
 /// `f64::NAN`, which is what makes the first comparison a no-op rather than a bound.
-fn py_running_max(acc: f64, x: f64) -> f64 {
+pub(crate) fn py_running_max(acc: f64, x: f64) -> f64 {
     if acc.is_nan() || x > acc {
         x
     } else {
@@ -2163,7 +2190,7 @@ pub fn shared_cells(
             for p in sampled.iter() {
                 let gg = {
                     let _sh = ShareScope::set(&m, "max");
-                    quad_gains_at(&m, flight, p, None, surge.as_ref(), tt4_max,
+                    (m.triple_hooks().quad_gains_at)(&m, flight, p, None, surge.as_ref(), tt4_max,
                                   1e-7, 1e-5, 1e-4, true, 4.0)?
                 };
                 if !gg.interior {
@@ -2421,7 +2448,7 @@ pub fn mask_discriminator(
             for p in sampled.iter() {
                 let gg = {
                     let _sh = ShareScope::set(&m, law);
-                    quad_gains_at(&m, flight, p, None, surge.as_ref(), tt4_max,
+                    (m.triple_hooks().quad_gains_at)(&m, flight, p, None, surge.as_ref(), tt4_max,
                                   1e-7, 1e-5, 1e-4, true, 4.0)?
                 };
                 if !gg.interior {

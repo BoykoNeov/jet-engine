@@ -239,24 +239,29 @@ fn the_slice_re_aims_exactly_six_pointers_and_inherits_the_rest() {
                        turbojet::shared_actuator::R72_FUEL.try_surge_fuel));
 }
 
-/// **`TripleHooks` STAYS AT 13 AT THIS STEP — and the count is spelled as an exhaustive
-/// destructuring, which is the only form that fails when the struct grows.**
+/// **`TripleHooks` IS 14 AFTER STEP 2 — and the count is spelled as an exhaustive destructuring,
+/// which is the only form that fails when the struct grows.**
 ///
 /// § 5.29 (ix)'s P7 was FALSIFIED before step 1 (it had said 13 → 14) and restated as *no new
 /// field at all*. It holds for step 1's six pointers, every one of which re-aims an existing slot.
 ///
 /// **AND IT IS ALREADY KNOWN FALSE FOR THE SEVENTH.** § 5.29 (iv) commits this slice to installing
 /// `_quad_gains_at` as a cell, and that name has **no field in any of the five table types** — it
-/// is a free `pub fn` in `shared_actuator`. So step 2 takes this struct to 14 and this gate is the
-/// tripwire that will say so. Recorded now rather than met as a surprise, because P7's repair
+/// was a free `pub fn` in `shared_actuator`. So step 2 takes this struct to 14 and this gate is
+/// the tripwire that said so — **it went `E0027` on the step-2 build, and the field below is the
+/// discharge.** Recorded at step 1 rather than met as a surprise, because P7's repair
 /// fixed one of the two inconsistencies it was written against and left the other — § 5.29 (x)'s
 /// sixth defect, a second time inside the same section.
 #[test]
-fn the_third_loop_table_is_still_thirteen_fields_wide() {
+fn the_third_loop_table_is_fourteen_fields_wide() {
     let TripleHooks {
         stator_leg: _, lagged_stator: _, clamp_v: _, check_v0: _, rk4_floor: _, solve_v: _,
         manifold_v: _, triple_laws: _, triple_rig: _, with_ref: _, reference: _,
         rk4_floor_shared: _, shared_rig: _,
+        // THE FOURTEENTH, ADDED AT STEP 2 EXACTLY AS THIS GATE'S DOC COMMENT PREDICTED. The
+        // destructuring went `E0027` the moment the field landed; the prediction was written at
+        // step 1 and is discharged here rather than met as a surprise.
+        quad_gains_at: _,
     } = R73_TRIPLE;
 }
 

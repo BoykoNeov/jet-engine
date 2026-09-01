@@ -19,7 +19,7 @@ slices inside an authorised phase are free. See [[rust-port-decided]].
 
 * **0–5 DONE.**
 * **PHASE 6** authorised 2026-08-17, **COMPLETE 2026-08-20** with slice U's five steps.
-* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, AB, AC, **AD complete** (rung 72, § 5.28, twelve probes, all six steps). **Slice AE (rung 73) IN FLIGHT — pre-flight + STEP 1 of 5 done 2026-09-01 (§ 5.29, 5.29.1).**
+* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, AB, AC, **AD complete** (rung 72, § 5.28, twelve probes, all six steps). **Slice AE (rung 73) IN FLIGHT — pre-flight + STEPS 1 AND 2 of 5 done 2026-09-01 (§ 5.29, 5.29.1, 5.29.2).**
 
 ## Phase-7 slices, as they closed
 
@@ -253,7 +253,7 @@ Six steps priced from sizing (1 177 source / 502 test lines). See
    predicted before the run and held, plus a re-run of the target on the final tree after two
    post-launch comment-level edits. See [[rust-port-slice-ad-step6]].
 
-## Slice AE (rung 73, `AppliedReferenceTransient`) — IN FLIGHT, step 1 of 5 done
+## Slice AE (rung 73, `AppliedReferenceTransient`) — IN FLIGHT, steps 1 and 2 of 5 done
 
 § 5.29, ten probes. **684 source / 518 test lines, 27 collected (13 slow), 12 methods** — AB's
 shape (706/582), so **FIVE steps predicted**, with the step table emitted and checked to be a
@@ -304,6 +304,31 @@ arm keeps passing, because the reduce IS that identity.
 Pre-registered. **`_shared_rig`'s carry is a MEASURED no-op** (`at_lever` already carries the law;
 mutation M11 survives all 15 gates) and is pre-registered as having no value break for step 5.
 See [[rust-port-slice-ae-step1]].
+
+### Slice AE step 2 — SHIPPED 2026-09-01
+
+The gains chain and **all five public readers**: `rust/src/applied_reference.rs` **401 → 1 653
+lines**, `TripleHooks` **13 → 14** (`quad_gains_at`, the slice's one ADD, with the shared refusal in
+every table below rung 72). **`Rust == PyPy` on all 5 066 keys, bit for bit** — 0 differing,
+0 missing, 0 extra. No gate file (the ported gates are step 3). Full gate **140 blocks (139
+Running + 1 Doc-tests) / 1 424 passed / 0 failed / 0 ignored**, every row predicted before the run
+and held. Plan § 5.29.2.
+
+**TWO DEFECTS, BOTH FROM ONE TOOL THAT OUTLIVED ITS SESSION.** The previous session's mutation
+sweep was **still running** — it deleted the dump this session had just driven, left the source
+mutated at rest, and the backup taken against exactly that was itself mutated **at byte-identical
+size** (its mutation was length-preserving). Recovered from **two independently mutated snapshots
+reverted by their own anchors, byte-identical afterwards**. The same tool also rewrote every line
+ending LF→CRLF in six files: a **3-line diff that changed 1 569 lines**, invisible to `git diff`
+under `text=auto`, which failed the one gate in the crate that reads raw source bytes (1 of 6
+`include_str!` sites is ending-dependent — measured).
+
+**NINE MUTATIONS ON TWO SEATS** (does it move a value / would a gate catch it): six move a value,
+**one** moves a gate — the step's shape, not a hole, since the only gates present are step 1's
+plumbing gates. M11 re-run rather than cited: **0 keys and 0 gates alone, 122 keys and 1 gate when
+BOTH law-carries go**, so the shipped docstring is true of the pair and false of the member.
+M17–M21 pre-registered for step 3; M22's zero measured (**101 `-0.0` keys exist**, none in the four
+sets it re-keys) and booked to step 4. See [[rust-port-slice-ae-step2]].
 
 ## Slice AB, step by step
 

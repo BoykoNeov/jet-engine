@@ -476,6 +476,55 @@ pub struct TripleHooks {
         &ScheduledStatorCore,
         &crate::shared_actuator::SharedRigArm,
     ) -> (ScheduledStatorCore, Option<Floor>, Option<AsymmetricLag>),
+    /// RUNG **72**'s `_quad_gains_at` — **THE FOURTEENTH CELL, ADDED BY SLICE AE STEP 2, AND THE
+    /// ONE SLICE AD BOOKED FORWARD AS "UNREACHABLE".**
+    ///
+    /// Two definers (rungs 72 and 73) with an identical signature, so it is a cell by every filter
+    /// the phase uses. Slice AD § (b) measured it a cell and then declined to install it, having
+    /// asked *does shipped code sit in the seat* — all 19 call sites of rung 72's five readers
+    /// build a rung-72 machine, so the answer was no. **That is the weaker question, and § 5.29
+    /// (iv) refuted the booking BY VALUE**: hold the machine at rung 73, swap only the pointer, and
+    /// 32 keys move while 70 vanish — `rows[10].gains.F_r` going `-1.000000000002735` to `0.0`,
+    /// which is the rung's own headline number replaced by rung 72's block-triangular zero.
+    ///
+    /// **THE DIFFERENCE BETWEEN THE TWO BODIES IS THE REFERENCE, AND IT IS FOUR EXTRA ARMS —
+    /// WHICH ARE MEASURED, AND WHICH OBSERVE NOTHING.**
+    /// Rung 72 takes TWELVE central differences and evaluates 24 arms; rung 73 takes FOURTEEN
+    /// (adding `F_f` and `R_r`) and evaluates 28, because each leg's law is wrapped in
+    /// [`reference`](Self::reference) before it is differenced — which makes `F` a function of
+    /// `gf` where at rung 72 it was not. Probe M drove both bodies on the SAME receiver at every
+    /// sampled point of both `applied_gains` arms: the arm count differs by **exactly 4 at every
+    /// one of the 101 points**, and `interior` **DISAGREES ON ZERO OF THEM**, with the twelve
+    /// shared gains identical to the bit. So the extra arms can in principle drop a point the
+    /// parent keeps, and on the shipped grid they never do — written down because the first
+    /// draft of this comment offered that possibility as the discriminator, which would have been
+    /// a gate with nothing to catch.
+    ///
+    /// **THE OBSERVABLE IS DISCRETE AND IT IS THE ABSENT KEYS.** Rung 72's dict has no `F_f`,
+    /// `R_r`, `self_masked`, `cross_masked` or `self_live` — five per point, **505 over the same
+    /// 101 points** — and a key that is absent cannot be passed by a one-sided bar. That is
+    /// § 5.29 (iv)'s 70 shipped-only keys, re-measured on this step's own grid.
+    ///
+    /// **AND IT IS DISPATCHED, NOT CALLED**, at every one of rung 72's own reader sites: Python
+    /// reaches it as `m._quad_gains_at` on the machine the rig hands back, so an inherited rung-72
+    /// reader run on a rung-73 machine takes rung 73's body. A census restricted to `self.NAME`
+    /// scored this method at ZERO readers when it has ELEVEN call sites — § 5.29 (x)'s first
+    /// instrument defect — and the port must not repeat the same reading by calling
+    /// [`quad_gains_at`](crate::shared_actuator::quad_gains_at) directly.
+    #[allow(clippy::type_complexity)]
+    pub quad_gains_at: fn(
+        &ScheduledStatorCore,
+        &FlightCondition,
+        &FuelPoint,
+        Option<&AccelSchedule>,
+        Option<&Floor>,
+        f64,
+        f64,
+        f64,
+        f64,
+        bool,
+        f64,
+    ) -> Result<crate::shared_actuator::QuadGains, Abort>,
 }
 
 /// **THE DEFAULT, AND ITS CELLS PANIC.** [`NO_STATOR`](crate::stator_transient::NO_STATOR) and
@@ -502,6 +551,7 @@ pub const NO_TRIPLE: TripleHooks = TripleHooks {
     reference: no_triple_reference,
     rk4_floor_shared: no_triple_rk4_floor_shared,
     shared_rig: no_triple_shared_rig,
+    quad_gains_at: no_triple_quad_gains_at,
 };
 
 const NO_TRIPLE_MSG: &str = "no triple table on this object: rungs 40-67 have no third loop on \
@@ -600,6 +650,20 @@ fn no_triple_shared_rig(
     _: &ScheduledStatorCore, _: &crate::shared_actuator::SharedRigArm,
 ) -> (ScheduledStatorCore, Option<Floor>, Option<AsymmetricLag>) {
     panic!("{NO_SHARED_MSG} (_shared_rig)");
+}
+
+/// The FOURTH member of [`NO_SHARED_MSG`]'s family — slice AE step 2's added cell.
+///
+/// Same reason as its three siblings, and the sharpest instance of it: rung 72's body is a
+/// perfectly well-typed answer for a rung-68..71 object, and it would return the twelve gains
+/// those rungs' own readers never ask for. A default here agrees with rung 72 on every input,
+/// which is exactly the claim no value gate can see.
+#[allow(clippy::too_many_arguments)]
+fn no_triple_quad_gains_at(
+    _: &ScheduledStatorCore, _: &FlightCondition, _: &FuelPoint, _: Option<&AccelSchedule>,
+    _: Option<&Floor>, _: f64, _: f64, _: f64, _: f64, _: bool, _: f64,
+) -> Result<crate::shared_actuator::QuadGains, Abort> {
+    panic!("{NO_SHARED_MSG} (_quad_gains_at)");
 }
 
 fn no_triple_with_ref(_: &TwoSpoolTransientCore, _: Option<&'static str>) -> Option<&'static str> {
@@ -809,6 +873,9 @@ pub const R68_TRIPLE: TripleHooks = TripleHooks {
     reference: no_triple_reference,
     rk4_floor_shared: no_triple_rk4_floor_shared,
     shared_rig: no_triple_shared_rig,
+    // AND SLICE AE STEP 2's ADDED CELL — the FOURTH name of that family, arriving at rung 72
+    // as well. Fourth use of the same precedent.
+    quad_gains_at: no_triple_quad_gains_at,
 };
 
 // ---------------------------------------------------------------------------------------------

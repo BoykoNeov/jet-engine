@@ -20,7 +20,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Golden fingerprint gate](golden-fingerprint-gate.md) — the ONLY absolute-value gate; CPython anchor; measure a detector
 - Golden gate slices [2](golden-gate-slice2.md) [3](golden-gate-slice3.md) [4](golden-gate-slice4.md) [5](golden-gate-slice5.md) [6](golden-gate-slice6.md) [7](golden-gate-slice7.md) — drift follows CONDITIONING (one lesson per file)
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL
-- [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding, backticks in `-m`, a status read off the runner, and a log still being written
+- [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding, backticks in `-m`, a status read off the runner, a log still being written, and a text-mode rewrite that flips every line ending
 
 ## The Rust port — phases 0–6 done; phase 7 in flight, slice AE (rung 73) step 1 of 5 done
 - [Rust port status](rust-port-status.md) — the running tally: phases, slices, and the numbers each closed slice landed on. **Update THAT file, not this line.**
@@ -92,6 +92,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Slice AD step 6 — slice closed](rust-port-slice-ad-step6.md) — a first definer still has a parent pointer, because the parent slot carries a REFUSAL; and my header typed nine tests beside the ten that disprove it
 - [Slice AE pre-flight](rust-port-slice-ae-preflight.md) — a prior sweep SAW both name reuses, NAMED them, and cleared them on the wrong property; and four of my own probes were void
 - [Slice AE step 1](rust-port-slice-ae-step1.md) — an exact-bits gate written for a float-identity injection was PASSED by it, because the triple it was driven at cancelled exactly
+- [Slice AE step 2](rust-port-slice-ae-step2.md) — a mutation sweep from the previous session was still rewriting the tree, and the backup I took against exactly that was itself mutated, at byte-identical size
 - Slice T (46/47/48) steps [1](rust-port-slice-t-step1.md) [2](rust-port-slice-t-step2.md) [3](rust-port-slice-t-step3.md) [4](rust-port-slice-t-step4.md) — an EXACT ZERO blinds its own gate to the SIGN (one lesson per file)
 
 ## Shipped rungs

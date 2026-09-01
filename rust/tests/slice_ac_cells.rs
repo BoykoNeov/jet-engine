@@ -378,7 +378,7 @@ fn the_triple_laws_chain_is_three_links_and_rung70_breaks_the_last() {
 /// exhaustive literals go loud, `..` spreads and whole-const aliases stay silent — held; only its
 /// count was short, and short for a reason worth more than the number.
 #[test]
-fn the_triple_table_is_still_exactly_thirteen_cells_wide() {
+fn the_triple_table_is_still_exactly_fourteen_cells_wide() {
     let ten = TripleHooks {
         stator_leg: R70_TRIPLE.stator_leg,
         lagged_stator: R70_TRIPLE.lagged_stator,
@@ -395,6 +395,9 @@ fn the_triple_table_is_still_exactly_thirteen_cells_wide() {
         reference: R70_TRIPLE.reference,
         rk4_floor_shared: R70_TRIPLE.rk4_floor_shared,
         shared_rig: R70_TRIPLE.shared_rig,
+        // AND THE FOURTEENTH, ADDED BY SLICE AE STEP 2 — `quad_gains_at`. This literal stopped
+        // compiling when it landed, which is the fourth time this tripwire has done its job.
+        quad_gains_at: R70_TRIPLE.quad_gains_at,
     };
     // THESE TWO ASSERTS ARE NOT THE PIN AND MUST NOT BE READ AS ONE. Every field of `ten` was
     // copied FROM the table it is compared against, so they are self-comparisons —

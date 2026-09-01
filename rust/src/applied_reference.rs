@@ -94,14 +94,21 @@
 use crate::bleed_transient::{LeverArm, LeverHooks};
 use crate::engine::FlightCondition;
 use crate::fuel_transient::{
-    AsymmetricLag, Floor, FuelLimiters, FuelPoint, FuelTransientCore, FuelTransientHooks,
+    AccelSchedule, AsymmetricLag, Floor, FuelLimiters, FuelPoint, FuelTransientCore,
+    Authority, FuelTransientHooks, PointExtra,
 };
+use crate::gas::Abort;
 use crate::map::ComponentMap;
-use crate::shared_actuator::{applied_clip_core, SharedRigArm};
+use crate::reference_split::{c_add, c_real, opt_fold, RefScope, C64};
+use crate::shared_actuator::{
+    applied_clip, applied_clip_core, assert_fuel_boundary, authority, charpoly4, jac4, leg4,
+    py_running_max, quad_laws, quartic_roots_c, reg4, riding4, BoundaryCheck, QuadGains,
+    SharedBill, SharedRigArm,
+};
 use crate::stator_transient::{
     ScheduledStatorCore, ScheduledStatorTransient, StatorTransientHooks,
 };
-use crate::three_loop::TripleHooks;
+use crate::three_loop::{LegRegime, TripleHooks};
 use crate::two_spool::TwoSpoolEngine;
 use crate::two_spool_transient::{TwoSpoolTransientCore, TwoSpoolTransientHooks};
 
@@ -209,6 +216,11 @@ pub const R73_TRIPLE: TripleHooks = TripleHooks {
     reference: r73_reference,
     rk4_floor_shared: r73_rk4_floor_shared,
     shared_rig: r73_shared_rig,
+    // AND THE SEVENTH POINTER, WHICH STEP 1 PRE-REGISTERED AS THE ONE THAT WOULD BREAK P7.
+    // `_quad_gains_at` had no field in any of the five table types, so this is the slice's ONE
+    // added cell and `TripleHooks` goes 13 -> 14 here. Step 1 wrote that down rather than meeting
+    // it as a surprise.
+    quad_gains_at: r73_quad_gains_at,
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -398,4 +410,1254 @@ fn r73_shared_rig(
     let (m, surge, lag) = (crate::shared_actuator::R72_TRIPLE.shared_rig)(core, arm);
     m.fuel.inner.ref_law.set(core.fuel.inner.ref_law.get());
     (m, surge, lag)
+}
+
+// ---------------------------------------------------------------------------------------------
+// THE SEVENTH POINTER — the ONE cell this slice ADDS, and step 2's first body
+// ---------------------------------------------------------------------------------------------
+
+/// RUNG 73's `_quad_gains_at` — **THE FOURTEEN CENTRAL DIFFERENCES: rung 72's twelve, plus `F_f`
+/// and `R_r`.**
+///
+/// Rung 72 never took those two, because its [`jac4`] could write `-1/tau_i` on the diagonal BY
+/// CONSTRUCTION — correct there, since neither law reads its own state. **Reading B does**, so the
+/// diagonal has to be MEASURED, and that is also what keeps this rung's headline off rung 72
+/// § 1.2's list: a pole at the origin reported from a diagonal the instrument itself wrote would
+/// be the FOURTH instance of the shipped instrument agreeing with itself (rung 67 gate 9, rung 71
+/// § 1.4's `c1`, rung 72 § 4's matched clocks). Here `F_f` is a difference through the SHIPPED
+/// closure, and it comes back EXACTLY 1 when the leg is masked and EXACTLY 0 when it holds.
+///
+/// # THE REFERENCE IS REACHED THROUGH THE TABLE, NEVER BY CALLING [`r73_reference`]
+///
+/// Python spells it `self._reference(...)`, and the whole mechanism the five readers depend on is
+/// [`RefScope`](crate::reference_split::RefScope) flipping `ref_law` under this body: driven at
+/// `"sched"` the reference is the identity, `F` stops depending on `gf`, and the twelve shared
+/// gains come back rung 72's — which is what [`applied_gains`] differences against. A direct call
+/// to [`r73_reference`] would still honour the law (it reads the same field), but rungs 74/80/81
+/// inherit THIS body with THEIR tables, and a hard-wired callee is the shape
+/// [`at_lever`](crate::bleed_transient::LeverHooks::at_lever)'s trap has taken twelve times.
+///
+/// # THE EVALUATION ORDER IS PYTHON'S AND IT IS NOT RUNG 72's
+///
+/// Rung 72 evaluates 24 arms in the order `F±r F±q F±v · R±f R±q R±v · C · V`; this rung evaluates
+/// **28**, `F±f` first and `R±r` in the middle, because both legs gained a self-difference. The
+/// order is load-bearing for the same reason it is at rung 72 — every arm runs before any regime
+/// is inspected, so a short circuit would change how many closure calls the plant sees. The four
+/// EXTRA arms are the only route by which this body's `interior` could disagree with rung 72's on
+/// a point where every shared gain agrees, and **probe M measured that route DEAD on the shipped
+/// grid: 0 disagreements over 101 points, at both `inc` arms.**
+///
+/// **COUNT ARMS, NOT LAW CALLS.** Probe M's raw per-call totals are `29/25` on the `inc = False`
+/// arm and `28/24` on the `inc = True` one, which reads like the difference moving. It does not:
+/// probe N splits the counter per law and the ARM LIST is `F 8 / R 8 / C 6 / V 6` against rung
+/// 72's `6/6/6/6` at BOTH arms. The seventh `V` is not an arm — probe O attributes it to
+/// [`manifold_v`](crate::three_loop::TripleHooks::manifold_v), resolved to RUNG 69's override,
+/// whose first line falls through to the parent when `stator_inc` is `None` (one `V` call) and
+/// otherwise runs an Illinois root on `phi_lp - phi_lim` that never touches `V` at all: 70 of 70
+/// evaluations disarmed against 0 of 31 armed. It is rung 69's branch, present under BOTH
+/// bodies, so it cancels from the difference.
+///
+/// [`jac4`]: crate::shared_actuator::jac4
+#[allow(clippy::too_many_arguments)]
+fn r73_quad_gains_at(
+    core: &ScheduledStatorCore, flight: &FlightCondition, p: &FuelPoint,
+    accel: Option<&AccelSchedule>, surge: Option<&Floor>, tt4_max: f64,
+    dg: f64, dq: f64, dv: f64, manifold: bool, switch_guard: f64,
+) -> Result<QuadGains, Abort> {
+    let (a, h, mf_sched) = (p.nu_lp, p.nu_hp, p.mf_sched);
+    let (gf, gr, q, v_live) = match p.extra {
+        PointExtra::Shared { g_fuel, g_gov, b, v, .. } => (g_fuel, g_gov, b, v),
+        _ => panic!("rung-73's gains need a SIX-state trajectory: the point carries no \
+                     `g_fuel`/`g_gov` pair, so there is no authority to difference across."),
+    };
+    let laws = quad_laws(core, flight, a, h, mf_sched, accel, surge, tt4_max);
+    let v = if manifold {
+        let vlaw = |g_: f64, q_: f64| (laws.v)(g_, 0.0, q_);
+        core.manifold_v(flight, a, h, mf_sched, applied_clip(core, gf, gr), q, &vlaw)?
+    } else {
+        v_live
+    };
+    if core.fuel.inner.share_law.get() == "max" && (gf - gr).abs() <= switch_guard * dg {
+        return Ok(QuadGains::dropped(p.s, v, vec!["switch"], true));
+    }
+
+    // `self._reference(...)`, THROUGH THE TABLE — see the header. `&core.fuel.inner` is the
+    // receiver the cell's signature names, and it is the same core `RefScope` writes `ref_law` on.
+    let refr = |raw: f64, g_own: f64, gf_: f64, gr_: f64| {
+        (core.fuel.inner.triple_hooks.reference)(&core.fuel.inner, raw, g_own, gf_, gr_)
+    };
+    // Python's `F(gf_, gr_, q_, v_)`: rung 52's leg through `F0`, then the reference with the
+    // FUEL leg's own clip as `g_own`. `F0` ignores `gf_`, so the ONLY route by which `F` depends
+    // on `gf_` is the reference — which is exactly what `F_f` measures.
+    let f_law = |gf_: f64, gr_: f64, q_: f64, v_: f64| -> Result<(f64, LegRegime), Abort> {
+        let (raw, reg) = (laws.f)(gr_, q_, v_)?;
+        Ok((refr(raw, gf_, gf_, gr_), reg))
+    };
+    // and `R(...)`: rung 47's clip through `R0`, then the reference with the GOVERNOR's clip as
+    // `g_own`. Note `R0` takes `gf_` and ignores it — rung 72's `R_f == 0` — so `R_r` is the
+    // mirror measurement.
+    let r_law = |gf_: f64, gr_: f64, q_: f64, v_: f64| -> Result<(f64, LegRegime), Abort> {
+        let (raw, reg) = (laws.r)(gf_, q_, v_)?;
+        Ok((refr(raw, gr_, gf_, gr_), reg))
+    };
+
+    // PYTHON'S OWN ORDER, all 28 arms evaluated before any regime is read.
+    let ev: Vec<(&'static str, f64, bool)> = vec![
+        leg4("F+f", f_law(gf + dg, gr, q, v)?),
+        leg4("F-f", f_law(gf - dg, gr, q, v)?),
+        leg4("F+r", f_law(gf, gr + dg, q, v)?),
+        leg4("F-r", f_law(gf, gr - dg, q, v)?),
+        leg4("F+q", f_law(gf, gr, q + dq, v)?),
+        leg4("F-q", f_law(gf, gr, q - dq, v)?),
+        leg4("F+v", f_law(gf, gr, q, v + dv)?),
+        leg4("F-v", f_law(gf, gr, q, v - dv)?),
+        leg4("R+f", r_law(gf + dg, gr, q, v)?),
+        leg4("R-f", r_law(gf - dg, gr, q, v)?),
+        leg4("R+r", r_law(gf, gr + dg, q, v)?),
+        leg4("R-r", r_law(gf, gr - dg, q, v)?),
+        leg4("R+q", r_law(gf, gr, q + dq, v)?),
+        leg4("R-q", r_law(gf, gr, q - dq, v)?),
+        leg4("R+v", r_law(gf, gr, q, v + dv)?),
+        leg4("R-v", r_law(gf, gr, q, v - dv)?),
+        reg4("C+f", (laws.c)(gf + dg, gr, v)?),
+        reg4("C-f", (laws.c)(gf - dg, gr, v)?),
+        reg4("C+r", (laws.c)(gf, gr + dg, v)?),
+        reg4("C-r", (laws.c)(gf, gr - dg, v)?),
+        reg4("C+v", (laws.c)(gf, gr, v + dv)?),
+        reg4("C-v", (laws.c)(gf, gr, v - dv)?),
+        reg4("V+f", (laws.v)(gf + dg, gr, q)?),
+        reg4("V-f", (laws.v)(gf - dg, gr, q)?),
+        reg4("V+r", (laws.v)(gf, gr + dg, q)?),
+        reg4("V-r", (laws.v)(gf, gr - dg, q)?),
+        reg4("V+q", (laws.v)(gf, gr, q + dq)?),
+        reg4("V-q", (laws.v)(gf, gr, q - dq)?),
+    ];
+    let off: Vec<&'static str> = ev.iter().filter(|(_, _, r)| !r).map(|(k, _, _)| *k).collect();
+    if !off.is_empty() {
+        return Ok(QuadGains::dropped(p.s, v, off, false));
+    }
+    let at = |k: &str| ev.iter().find(|(n, _, _)| *n == k).expect("the 28 keys above").1;
+    let d = |kp: &str, km: &str, h2: f64| (at(kp) - at(km)) / (2.0 * h2);
+    let (f_f, f_r) = (d("F+f", "F-f", dg), d("F+r", "F-r", dg));
+    let (f_q, f_v) = (d("F+q", "F-q", dq), d("F+v", "F-v", dv));
+    let (r_f, r_r) = (d("R+f", "R-f", dg), d("R+r", "R-r", dg));
+    let (r_q, r_v) = (d("R+q", "R-q", dq), d("R+v", "R-v", dv));
+    let (c_f, c_r, c_v) = (d("C+f", "C-f", dg), d("C+r", "C-r", dg), d("C+v", "C-v", dv));
+    let (v_f, v_r, v_q) = (d("V+f", "V-f", dg), d("V+r", "V-r", dg), d("V+q", "V-q", dq));
+    let auth = authority(gf, gr);
+    let masked = match auth {
+        Authority::Gov => Some(Authority::Fuel),
+        Authority::Fuel => Some(Authority::Gov),
+        _ => None,
+    };
+    let mask_leak = match masked {
+        Some(Authority::Fuel) => Some(c_f.abs().max(v_f.abs())),
+        Some(Authority::Gov) => Some(c_r.abs().max(v_r.abs())),
+        _ => None,
+    };
+    // § 1's BRANCH INDICATOR, MEASURED: the masked leg's own self-gain, its cross-gain onto the
+    // AUTHORITATIVE axis, and the holding leg's self-gain. Under reading B these are exactly
+    // 1, -1 and 0; under rung 72 all three are 0 — and rung 72's body returns them ABSENT.
+    let (self_masked, cross_masked, self_live) = match masked {
+        Some(Authority::Fuel) => (Some(f_f), Some(f_r), Some(r_r)),
+        Some(Authority::Gov) => (Some(r_r), Some(r_f), Some(f_f)),
+        _ => (None, None, None),
+    };
+    Ok(QuadGains {
+        interior: true,
+        off_regime: Vec::new(),
+        near_switch: false,
+        s: p.s,
+        v_base: v,
+        authority: Some(auth),
+        f_f,
+        r_r,
+        f_r,
+        f_q,
+        f_v,
+        r_f,
+        r_q,
+        r_v,
+        c_f,
+        c_r,
+        c_v,
+        v_f,
+        v_r,
+        v_q,
+        pair_fr: f_r * r_f,
+        pair_rc: r_q * c_r,
+        pair_cv: c_v * v_q,
+        pair_rv: r_v * v_r,
+        masked,
+        mask_leak,
+        self_masked,
+        cross_masked,
+        self_live,
+    })
+}
+
+// ---------------------------------------------------------------------------------------------
+// THE FIVE READERS — §§ 0, 1, 2, 3, 4
+// ---------------------------------------------------------------------------------------------
+
+/// Python's `round(v, 12)` — [`round10`](crate::full_split::round10) at this rung's own width.
+///
+/// Formatted and re-parsed rather than scaled, for `round10`'s stated reason: `x * 1e12` rounds
+/// twice. Rust's `{:.12}` and CPython's `round` are both correctly-rounded decimal conversions
+/// with ties to even, which is why the two agree bit for bit rather than nearly.
+pub fn round12(x: f64) -> f64 {
+    format!("{x:.12}").parse::<f64>().expect("a formatted finite double parses back")
+}
+
+/// **PYTHON'S `sorted({…})` OVER FLOATS, AND THE SET IS NOT A `BTreeSet`.**
+///
+/// A `set` deduplicates by `==`, so `0.0` and `-0.0` collapse to ONE member and the survivor is
+/// **whichever was inserted first**; `sorted` then compares with `<`, which cannot separate them
+/// either. So a sign that reaches this function's output is a fact about INSERTION ORDER, and the
+/// only reader here that can meet the pair is [`AppliedGains::self_live`], whose whole claim is
+/// that the holding leg's self-gain is exactly zero.
+///
+/// Reproduced literally: dedup by `==` keeping the FIRST, then a stable sort. Anything that sorted
+/// the values first, or that keyed on `to_bits`, would report `-0.0` and `0.0` as two members —
+/// a set Python cannot produce.
+fn py_float_set(vals: impl Iterator<Item = f64>) -> Vec<f64> {
+    let mut out: Vec<f64> = Vec::new();
+    for v in vals {
+        if !out.iter().any(|x| *x == v) {
+            out.push(v);
+        }
+    }
+    out.sort_by(|a, b| a.partial_cmp(b).expect("no NaN reaches a reported float set"));
+    out
+}
+
+/// The same, over the integer counts §§ 2 and 3 report as `sorted({…})`.
+fn py_int_set(vals: impl Iterator<Item = i64>) -> Vec<i64> {
+    let mut out: Vec<i64> = Vec::new();
+    for v in vals {
+        if !out.contains(&v) {
+            out.push(v);
+        }
+    }
+    out.sort_unstable();
+    out
+}
+
+/// The six-state fields §§ 0–3 read off a point, refused on any other march.
+fn shared_of(p: &FuelPoint) -> (f64, f64, f64, f64, usize, f64) {
+    match p.extra {
+        PointExtra::Shared { g_fuel, g_gov, required_fuel, required_gov, ic_iters, ic_res, .. } =>
+            (g_fuel, g_gov, required_fuel, required_gov, ic_iters, ic_res),
+        _ => panic!("rung-73's readers march the SHARED-actuator rig, so every point carries the \
+                     two clips and the two requirements. This one does not, which means the \
+                     trajectory came from a different integrator."),
+    }
+}
+
+/// Python's `traj[i]["authority"]` — a **bare index**, so a point without the key raises.
+///
+/// § 0 always marches the full rung-73 rig, so every point has one; the refusal STATES that
+/// invariant rather than skipping, which would report a smaller census and no error at all.
+/// [`authority_law`](crate::shared_actuator::authority_law)'s own note, one rung on.
+fn auth_at(p: &FuelPoint) -> Authority {
+    crate::shared_actuator::authority_of(p).expect(
+        "rung-73: a point on this march carries no `authority` label. Python indexes the key \
+         directly and raises here; answering `Dormant` would report a hand-over that never \
+         happened.")
+}
+
+// --- § 0: THE HAND-OVER MOVES, AND THE MASKED LEG WINDS DOWN ----------------------------------
+
+/// One law's reading at one `(inc, taus)` arm of [`handover_law`].
+#[derive(Clone, Debug, PartialEq)]
+pub struct HandoverRead {
+    pub n: usize,
+    /// Every `s` at which authority changed hands between two NON-dormant labels.
+    pub handovers: Vec<f64>,
+    /// `gov -> fuel`, which § 0 predicts never happens.
+    pub hands_back: Vec<f64>,
+    pub first_gov: Option<f64>,
+    /// The largest clip the MASKED leg ever wound up to — the windup check, and § 0's feasibility
+    /// gate. `None` when no point on the arm had a live authority at all.
+    pub max_masked: Option<f64>,
+    pub final_g_fuel: f64,
+    pub final_g_gov: f64,
+    pub max_tt4: f64,
+    pub min_phi: f64,
+    pub ic_iters: usize,
+    pub ic_res: f64,
+}
+
+/// One `(inc, taus)` arm of [`handover_law`] — both laws, and the four differences.
+#[derive(Clone, Debug, PartialEq)]
+pub struct HandoverArm {
+    pub inc: bool,
+    pub taus: (f64, f64, f64, f64),
+    pub sched: HandoverRead,
+    pub applied: HandoverRead,
+    /// Did the APPLIED reference take the actuator LATER? § 0's sign.
+    pub later: bool,
+    pub delay: Option<f64>,
+    pub d_tt4: f64,
+    pub d_phi: f64,
+}
+
+/// [`handover_law`]'s whole reading.
+#[derive(Clone, Debug, PartialEq)]
+pub struct HandoverLaw {
+    pub arms: Vec<HandoverArm>,
+    pub clocks: Vec<(f64, f64, f64, f64)>,
+    pub ds: f64,
+    pub always_later: bool,
+    pub never_back: bool,
+    pub one_handover: bool,
+    /// **VACUOUSLY TRUE ON THE `sched` HALF, AND PORTED THAT WAY.** Python compares each law's `n`
+    /// against `a["laws"]["sched"]["n"]` — including the `sched` arm itself, which is comparing a
+    /// number with itself. The claim it can actually carry is *the applied march runs to the same
+    /// length as the scheduled one*; the spelling is reproduced rather than repaired, because a
+    /// port that tightened it would no longer be measuring the shipped reader.
+    pub full_march: bool,
+    pub worst_d_tt4: f64,
+    pub worst_d_phi: f64,
+    /// **A `min`, DESPITE THE NAME** — Python's `min(a["delay"] for a in out)`. The worst case of a
+    /// quantity predicted POSITIVE is its smallest value, so the name is right and the reduction
+    /// is the one that looks wrong.
+    pub worst_delay: f64,
+}
+
+/// RUNG 73's `handover_law` — **§ 0 MEASURED: the hand-over is LATE under the applied reference,
+/// on every arm — and the masked leg winds DOWN, not up.**
+///
+/// The sign is derivable and it is this rung's first correction of rung 72. A masked governor
+/// referenced to the SCHEDULE races toward `req_sched`, the clip the SCHEDULE would need — so it
+/// is given credit for a cut the fuel leg has already made. Referenced to the APPLIED fuel it
+/// integrates `req_sched - gf`, the cut still OWED. **The physically-correct governor is therefore
+/// the SLOWER one**: it takes the actuator later and the redline is approached with less margin.
+///
+/// THE WINDUP CHECK IS REPORTED HERE, AND IT WAS THE FEASIBILITY GATE. A masked integrator with
+/// only a floor under it is textbook min-select windup; had `g_masked` run away, the hand-over
+/// would slam a wound-up clip onto the actuator and starve the engine — which is how rung 72 § 4's
+/// SUM law died, at 84 points of 341. It does not: masked means `gr > gf ~ req_f`, so the
+/// integrand is negative and the leg winds DOWN.
+#[allow(clippy::too_many_arguments)]
+pub fn handover_law(
+    core: &ScheduledStatorCore, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, tt4_max: f64,
+    sm: f64, clocks: &[(f64, f64, f64, f64)], r: f64, s_settle: f64, ds: f64, v_max: f64,
+) -> HandoverLaw {
+    let mut out: Vec<HandoverArm> = Vec::new();
+    for inc in [false, true] {
+        for taus in clocks.iter().copied() {
+            let mut reads: Vec<HandoverRead> = Vec::new();
+            for law in REF_LAWS_DECLARED {
+                // `self._with_ref(law, self._shared_march, …)` — the rig, and every sibling it
+                // builds, run under THIS law. `shared_rig` and `at_lever` carry it onto the
+                // machine, which is what step 1's two copies exist for.
+                let traj = {
+                    let _rs = RefScope::set(&core.fuel.inner, Some(law));
+                    crate::shared_actuator::shared_march(
+                        core, flight, tt4_lo, tt4_hi, tt4_max, sm, taus, r, s_settle, ds, v_max,
+                        inc).3
+                };
+                let mut hand: Vec<f64> = Vec::new();
+                let mut back: Vec<f64> = Vec::new();
+                for i in 1..traj.len() {
+                    let (a, b) = (auth_at(&traj[i]), auth_at(&traj[i - 1]));
+                    if a != b && a != Authority::Dormant && b != Authority::Dormant {
+                        hand.push(traj[i].s);
+                    }
+                    if a == Authority::Fuel && b == Authority::Gov {
+                        back.push(traj[i].s);
+                    }
+                }
+                // THE MASKED leg's clip at every point where SOMETHING holds the actuator: the
+                // governor's own `g_gov` where the FUEL leg holds, and `g_fuel` where the
+                // governor does. Getting the two the wrong way round would report the leg that
+                // is riding as if it were wound up.
+                let masked: Vec<f64> = traj.iter()
+                    .filter(|p| matches!(auth_at(p), Authority::Fuel | Authority::Gov))
+                    .map(|p| {
+                        let (g_fuel, g_gov, ..) = shared_of(p);
+                        if auth_at(p) == Authority::Gov { g_fuel } else { g_gov }
+                    })
+                    .collect();
+                let last = traj.last().expect("§ 0's march emits at least one point");
+                let (lf, lg, ..) = shared_of(last);
+                let (.., ic_iters, ic_res) = shared_of(&traj[0]);
+                reads.push(HandoverRead {
+                    n: traj.len(),
+                    handovers: hand,
+                    hands_back: back,
+                    first_gov: traj.iter().find(|p| auth_at(p) == Authority::Gov).map(|p| p.s),
+                    max_masked: opt_fold(masked.iter().copied(), f64::max),
+                    final_g_fuel: lf,
+                    final_g_gov: lg,
+                    max_tt4: opt_fold(traj.iter().map(|p| p.tt4), f64::max)
+                        .expect("§ 0's march emits at least one point"),
+                    min_phi: opt_fold(traj.iter().map(|p| p.phi_lp), f64::min)
+                        .expect("§ 0's march emits at least one point"),
+                    ic_iters,
+                    ic_res,
+                });
+            }
+            let applied = reads.pop().expect("both declared laws ran");
+            let sched = reads.pop().expect("both declared laws ran");
+            let (s0, s1) = (sched.first_gov, applied.first_gov);
+            out.push(HandoverArm {
+                inc,
+                taus,
+                later: matches!((s0, s1), (Some(a), Some(b)) if b > a),
+                delay: match (s0, s1) {
+                    (Some(a), Some(b)) => Some(b - a),
+                    _ => None,
+                },
+                d_tt4: applied.max_tt4 - sched.max_tt4,
+                d_phi: applied.min_phi - sched.min_phi,
+                sched,
+                applied,
+            });
+        }
+    }
+    let arms = out;
+    HandoverLaw {
+        always_later: arms.iter().all(|a| a.later),
+        never_back: arms.iter().all(|a| a.sched.hands_back.is_empty()
+                                     && a.applied.hands_back.is_empty()),
+        one_handover: arms.iter().all(|a| a.sched.handovers.len() <= 1
+                                       && a.applied.handovers.len() <= 1),
+        // See `HandoverLaw::full_march`: the `sched` term compares `n` with itself.
+        full_march: arms.iter().all(|a| a.sched.n == a.sched.n && a.applied.n == a.sched.n),
+        worst_d_tt4: opt_fold(arms.iter().map(|a| a.d_tt4), f64::max)
+            .expect("§ 0 sweeps at least one arm"),
+        worst_d_phi: opt_fold(arms.iter().map(|a| a.d_phi.abs()), f64::max)
+            .expect("§ 0 sweeps at least one arm"),
+        // Python's `min(a["delay"] …)` over a list that may hold `None` raises `TypeError`, so
+        // the absence of a hand-over under EITHER law is a loud stop and not a skipped arm.
+        worst_delay: opt_fold(
+            arms.iter().map(|a| a.delay.expect(
+                "rung-73 § 0: an arm where one law never hands over has `delay = None`, and \
+                 Python's `min` over `None` raises rather than dropping it.")),
+            f64::min).expect("§ 0 sweeps at least one arm"),
+        arms,
+        clocks: clocks.to_vec(),
+        ds,
+    }
+}
+
+// --- § 1: THE FOURTEEN GAINS, AND THE ENTRYWISE J-DELTA ---------------------------------------
+
+/// One sampled point of [`applied_gains`].
+#[derive(Clone, Debug, PartialEq)]
+pub struct AppliedGainRow {
+    pub s: f64,
+    pub authority: Option<Authority>,
+    pub masked: Option<Authority>,
+    pub gains: QuadGains,
+    pub taus: (f64, f64, f64, f64),
+    pub self_masked: Option<f64>,
+    pub cross_masked: Option<f64>,
+    pub self_live: Option<f64>,
+    pub mask_leak: Option<f64>,
+    /// The TWO entries of `J73 - J72` that move, each already multiplied by `tau_masked` — so the
+    /// prediction *"both move by exactly `1/tau_masked`"* is read as a pure number.
+    pub delta_moved: (f64, f64),
+    /// The largest of the OTHER fourteen, unscaled.
+    pub delta_rest: f64,
+    pub det: f64,
+}
+
+/// [`applied_gains`]'s whole reading.
+#[derive(Clone, Debug, PartialEq)]
+pub struct AppliedGains {
+    pub inc: bool,
+    pub taus: (f64, f64, f64, f64),
+    pub ds: f64,
+    pub rows: Vec<AppliedGainRow>,
+    pub skipped_switch: usize,
+    pub skipped_regime: usize,
+    pub boundary: Vec<BoundaryCheck>,
+    pub n_riding: usize,
+    pub n_sampled: usize,
+    pub by_authority_fuel: usize,
+    pub by_authority_gov: usize,
+    /// THE EXACT ONES — gated as `== 1.0` / `== -1.0` / `== 0.0`, never as `< tol`.
+    pub self_masked: Vec<f64>,
+    pub cross_masked: Vec<f64>,
+    pub self_live: Vec<f64>,
+    pub worst_mask_leak: Option<f64>,
+    pub worst_delta_rest: Option<f64>,
+    pub moved_scaled: Vec<f64>,
+    /// and the LIVE gains, so "exactly zero everywhere" is not bought with a dead reader.
+    pub min_live_gain: Option<f64>,
+    pub det_range: Option<(f64, f64)>,
+}
+
+/// RUNG 73's `applied_gains` — **§ 1 MEASURED: the masked leg's self-gain is EXACTLY 1 and the
+/// holding leg's EXACTLY 0**, and the masked COLUMN is still exactly zero.
+///
+/// ```text
+/// self_masked  == +1.0   the masked leg reads its OWN state (rung 72: 0)
+/// cross_masked == -1.0   and the AUTHORITATIVE one (rung 72: 0) -- § 11's `F_r != 0`
+/// self_live    ==  0.0   the holding leg's applied reference IS the scheduled one
+/// mask_leak    ==  0.0   and the masked leg STILL reaches the plant through nothing
+/// ```
+///
+/// The last line is the headline: **the seam's premise holds and its conclusion does not.**
+///
+/// AND THE J-DELTA IS REPORTED ENTRYWISE, at the SAME base points under both references (rung 71's
+/// device, rung 72 § 4's) — 14 of the 16 entries are EXACTLY `0.0`, and the two that move are BOTH
+/// exactly `1/tau_masked`.
+///
+/// # `g72` IS THIS BODY UNDER `sched`, NOT RUNG 72's BODY
+///
+/// Python differences against `m._with_ref("sched", m._quad_gains_at, …)` — rung 73's own cell with
+/// the law flipped, which is why [`r73_quad_gains_at`] reaches the reference through the table.
+/// Under `sched` the reference is the identity, `F` stops depending on `gf`, and the twelve shared
+/// gains come back rung 72's — **measured, not argued: probe M ran both bodies on the same
+/// receiver at all 101 sampled points of both arms and the worst difference over those twelve is
+/// EXACTLY `0.0`.** What does not come back is the arm COUNT (28 against 24, a difference of
+/// exactly four at every point) — and that count **observes nothing here**: `interior` disagrees
+/// on 0 of 101. The separation that does exist is DISCRETE and it is the five keys rung 72 never
+/// writes (`F_f`, `R_r` and the three branch indicators), 505 of them over the same points.
+///
+/// So a port that called rung 72's own body for `g72` would pass every gate this reader can
+/// state, and step 5's pointer-level gate is where that is caught — not here.
+#[allow(clippy::too_many_arguments)]
+pub fn applied_gains(
+    core: &ScheduledStatorCore, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, tt4_max: f64,
+    sm: f64, taus: (f64, f64, f64, f64), inc: bool, r: f64, s_settle: f64, ds: f64, v_max: f64,
+    every: usize,
+) -> Result<AppliedGains, Abort> {
+    let (m, surge, lag, traj) = crate::shared_actuator::shared_march(
+        core, flight, tt4_lo, tt4_hi, tt4_max, sm, taus, r, s_settle, ds, v_max, inc);
+    let b_max = m.fuel.inner.lever.lim.expect("the rig arms a valve").b_max;
+    let pts = riding4(&traj, b_max);
+    let lag = lag.expect("§ 1's rig arms the fuel leg, so it carries the lag");
+    let mut rows: Vec<AppliedGainRow> = Vec::new();
+    let mut boundary: Vec<BoundaryCheck> = Vec::new();
+    let (mut sk_switch, mut sk_regime) = (0usize, 0usize);
+    let sampled: Vec<&FuelPoint> = pts.iter().step_by(every).collect();
+    for p in sampled.iter() {
+        let gg = {
+            let _rs = RefScope::set(&m.fuel.inner, Some(REF_LAW_APPLIED));
+            (m.triple_hooks().quad_gains_at)(
+                &m, flight, p, None, surge.as_ref(), tt4_max, 1e-7, 1e-5, 1e-4, true, 4.0)?
+        };
+        if !gg.interior {
+            if gg.near_switch {
+                sk_switch += 1;
+            } else {
+                sk_regime += 1;
+            }
+            continue;
+        }
+        let g72 = {
+            let _rs = RefScope::set(&m.fuel.inner, Some(REF_LAWS_DECLARED[0]));
+            (m.triple_hooks().quad_gains_at)(
+                &m, flight, p, None, surge.as_ref(), tt4_max, 1e-7, 1e-5, 1e-4, true, 4.0)?
+        };
+        if !g72.interior {
+            // Python has no `near_switch` branch here: the switch guard is law-independent, so a
+            // second drop on the same point can only be a REGIME.
+            sk_regime += 1;
+            continue;
+        }
+        boundary.push(assert_fuel_boundary(&m, flight, p, tt4_max, surge.as_ref(), 1e-5, 1e-4)?);
+        let (g_fuel, _, required_fuel, ..) = shared_of(p);
+        let tt = (lag.tau(required_fuel, g_fuel), taus.1, taus.2, taus.3);
+        let (j73, j72) = (jac4(&gg, tt), jac4(&g72, tt));
+        let masked = gg.masked;
+        let tau_m = if masked == Some(Authority::Fuel) { tt.0 } else { taus.1 };
+        let moved: [(usize, usize); 2] = if masked == Some(Authority::Fuel) {
+            [(0, 0), (0, 1)]
+        } else {
+            [(1, 1), (1, 0)]
+        };
+        let delta = |i: usize, j: usize| j73[i][j] - j72[i][j];
+        let mut rest = f64::NAN;
+        for i in 0..4 {
+            for j in 0..4 {
+                if !moved.contains(&(i, j)) {
+                    rest = py_running_max(rest, delta(i, j).abs());
+                }
+            }
+        }
+        rows.push(AppliedGainRow {
+            s: p.s,
+            authority: gg.authority,
+            masked,
+            taus: tt,
+            self_masked: gg.self_masked,
+            cross_masked: gg.cross_masked,
+            self_live: gg.self_live,
+            mask_leak: gg.mask_leak,
+            delta_moved: (delta(moved[0].0, moved[0].1) * tau_m,
+                          delta(moved[1].0, moved[1].1) * tau_m),
+            delta_rest: rest,
+            det: charpoly4(&j73)[4],
+            gains: gg,
+        });
+    }
+    let live_min = |x: &AppliedGainRow| -> f64 {
+        let g = &x.gains;
+        opt_fold([g.f_q.abs(), g.f_v.abs(), g.r_q.abs(), g.r_v.abs()].into_iter(), f64::min)
+            .expect("four gains")
+    };
+    // `sorted({x["self_masked"] …})` over a set that held a `None` raises in Python, so the three
+    // branch indicators are read with an `expect` rather than filtered — a row whose authority is
+    // neither leg would be a march this reader is not entitled to summarise.
+    let ind = |sel: fn(&AppliedGainRow) -> Option<f64>| -> Vec<f64> {
+        py_float_set(rows.iter().map(|x| sel(x).expect(
+            "rung-73 § 1: a sampled row has no masked leg, so its branch indicator is `None` and \
+             Python's `sorted` over the resulting set raises.")))
+    };
+    Ok(AppliedGains {
+        inc,
+        taus,
+        ds,
+        skipped_switch: sk_switch,
+        skipped_regime: sk_regime,
+        n_riding: pts.len(),
+        n_sampled: sampled.len(),
+        by_authority_fuel: rows.iter().filter(|x| x.authority == Some(Authority::Fuel)).count(),
+        by_authority_gov: rows.iter().filter(|x| x.authority == Some(Authority::Gov)).count(),
+        self_masked: ind(|x| x.self_masked),
+        cross_masked: ind(|x| x.cross_masked),
+        self_live: ind(|x| x.self_live),
+        worst_mask_leak: opt_fold(rows.iter().filter_map(|x| x.mask_leak.map(f64::abs)), f64::max),
+        worst_delta_rest: opt_fold(rows.iter().map(|x| x.delta_rest), f64::max),
+        moved_scaled: py_float_set(rows.iter()
+            .flat_map(|x| [round12(x.delta_moved.0), round12(x.delta_moved.1)])),
+        min_live_gain: opt_fold(rows.iter().map(live_min), f64::min),
+        det_range: match (opt_fold(rows.iter().map(|x| x.det), f64::min),
+                          opt_fold(rows.iter().map(|x| x.det), f64::max)) {
+            (Some(lo), Some(hi)) => Some((lo, hi)),
+            _ => None,
+        },
+        boundary,
+        rows,
+    })
+}
+
+// --- § 2: THE FOUR CELLS — every zero count PLUS ONE, and a determinant that dies -------------
+
+/// One authority cell of one [`applied_cells`] arm.
+#[derive(Clone, Debug, PartialEq)]
+pub struct AppliedCellStat {
+    pub n: usize,
+    pub n_parent: usize,
+    /// The DISTINCT zero counts seen in this cell — a `set`, sorted. § 2's law says it has exactly
+    /// one member, and that member is rung 72's count PLUS ONE.
+    pub zeros: Vec<usize>,
+    pub gap: f64,
+    /// The same comparison **with the trace coefficient left out** — see [`applied_cells`].
+    pub gap_hi: f64,
+    pub vgap: f64,
+    /// `min |z| / rate` — the distance of the NEAREST root to the ORIGIN, which is rung 72's
+    /// `pole` measured against a different point. Not the same quantity as
+    /// [`CellStat::pole`](crate::shared_actuator::CellStat::pole), which measures the distance to
+    /// `-1/tau_masked`.
+    pub pole: f64,
+    pub null: f64,
+    pub lam_max: f64,
+    /// `(min, max)` of `coef[4]` over the cell — Python collapses its list here.
+    pub det: (f64, f64),
+    pub s: (f64, f64),
+    pub parent: &'static str,
+}
+
+/// One `(inc, taus)` arm of [`applied_cells`].
+#[derive(Clone, Debug, PartialEq)]
+pub struct AppliedCellsArm {
+    pub inc: bool,
+    pub taus: (f64, f64, f64, f64),
+    pub cells: Vec<(Authority, AppliedCellStat)>,
+    pub skipped_switch: usize,
+    pub skipped_regime: usize,
+    pub skipped_parent: usize,
+    pub n_riding: usize,
+    pub n_sampled: usize,
+}
+
+/// The union of one `(inc, authority)` key across every arm — Python's `seen`.
+#[derive(Clone, Debug, PartialEq)]
+pub struct AppliedSeenCell {
+    pub parent: &'static str,
+    pub zeros: Vec<usize>,
+    pub gap: f64,
+    pub gap_hi: f64,
+    pub vgap: f64,
+    pub pole: f64,
+    pub null: f64,
+    pub lam_max: f64,
+    /// **THE FOLD RUNS OVER AN ALREADY-COLLAPSED 2-TUPLE.** Python writes
+    /// `max(abs(x) for x in c["det"])` where `c["det"]` is by then `(min, max)`, not the list of
+    /// per-point determinants. The two agree whenever the extreme `|det|` is at an end of the
+    /// range — which it is, `abs` being monotone off zero — so this is a spelling and not a bug;
+    /// it is written down because a reader who assumed the list would compute the same number by a
+    /// different route and never learn that the list was gone.
+    pub det: f64,
+    pub n: usize,
+    pub n_parent: usize,
+}
+
+/// [`applied_cells`]'s whole reading.
+#[derive(Clone, Debug, PartialEq)]
+pub struct AppliedCells {
+    pub arms: Vec<AppliedCellsArm>,
+    pub clocks: Vec<(f64, f64, f64, f64)>,
+    pub ds: f64,
+    pub cells: Vec<((bool, Authority), AppliedSeenCell)>,
+    pub law_holds: bool,
+    /// rung 72's per-cell counts, EACH PLUS ONE.
+    pub predicted: [((bool, Authority), usize); 4],
+    pub rung72: [((bool, Authority), usize); 4],
+    pub all_four_cells: bool,
+    pub worst_parent_gap: f64,
+    /// the INDEPENDENT half of the comparison — see [`applied_cells`]'s `gap_hi` note.
+    pub worst_parent_gap_hi: f64,
+    pub worst_v_gap: f64,
+    pub worst_null: f64,
+    pub worst_det: f64,
+    pub worst_lam: f64,
+    pub pole_at_origin: f64,
+}
+
+/// RUNG 73's `applied_cells` — **§ 2 MEASURED, AND IT IS THE RUNG: the plant is STILL rung
+/// 68/69/70/71 plus a pole, and the pole is now at the ORIGIN.**
+///
+/// ```text
+/// | stator watches | fuel leg holds          | governor holds        |
+/// | phi            | RUNG 68 + a zero  (3)   | RUNG 70 + a zero (2)  |
+/// | M_i            | RUNG 69 + a zero  (2)   | RUNG 71 + a zero (1)  |
+/// ```
+///
+/// `zeros = n_live - m_live + n_masked`. Every one of rung 72's four counts gains exactly one, and
+/// **rung 71's cell — the only full-rank plant in the family, `det J = +5.9e4` under rung 72 —
+/// goes to zero.** A reference is not a gain, not a clock and not a loop.
+///
+/// THE TEST IS THE SAME POLYNOMIAL IDENTITY with the pole moved: `p4 = (lam + a) * p3` with
+/// `a = 1/tau_m -> 0`, so [`parent_quartic`] is called with `tau_m = f64::INFINITY` and states it
+/// exactly, reusing rung 72's instrument unchanged. **Coefficients, not roots** — and the argument
+/// is STRONGER here than at rung 72, because the added root is exactly zero, so every cell now has
+/// at least a DOUBLE zero root and a root match would resolve it only to `sqrt(eps)`.
+///
+/// THE ZERO EIGENVECTOR's DIRECTION IS THE GATED HALF (rung 72 § 1.2's discipline, and the reason
+/// this rung does not gate its own pole): `A e_masked = 0` is a claim about the MEASURED masked
+/// column, whereas the eigenvalue would be a claim about a diagonal — and here that diagonal is
+/// measured too, so the pole is REPORTED and the null direction and the COUNT are gated.
+///
+/// # THE `gap_hi` COLUMN EXISTS BECAUSE `gap` AND `null` ARE NOT TWO MEASUREMENTS
+///
+/// The masked column's only non-zero entry is its own diagonal (`F_f - 1`, which is `~0` only up
+/// to the cancellation in `gf + req - gf`), and `a3` IS minus the trace — so `j = 1` reproduces
+/// `null` entry for entry. Quoting both as agreement would be this family's SIXTH
+/// instrument-agrees-with-itself. `gap_hi` (`j = 2, 3, 4`) is where the two INDEPENDENT readers
+/// actually meet.
+///
+/// A THIRD CLOCK ARM is carried and disclosed: the applied reference delays the hand-over, so rung
+/// 72's coverage does not transfer — at matched clocks the incidence/governor cell is EMPTY. All
+/// four entries are swept march coordinates and no physical constant enters.
+///
+/// [`parent_quartic`]: crate::shared_actuator::parent_quartic
+#[allow(clippy::too_many_arguments)]
+pub fn applied_cells(
+    core: &ScheduledStatorCore, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, tt4_max: f64,
+    sm: f64, clocks: &[(f64, f64, f64, f64)], r: f64, s_settle: f64, ds: f64, v_max: f64,
+    every: usize,
+) -> Result<AppliedCells, Abort> {
+    let mut arms: Vec<AppliedCellsArm> = Vec::new();
+    for inc in [false, true] {
+        for taus in clocks.iter().copied() {
+            let (m, surge, lag, traj) = crate::shared_actuator::shared_march(
+                core, flight, tt4_lo, tt4_hi, tt4_max, sm, taus, r, s_settle, ds, v_max, inc);
+            let b_max = m.fuel.inner.lever.lim.expect("the rig arms a valve").b_max;
+            let pts = riding4(&traj, b_max);
+            let lag = lag.expect("§ 2's rig arms the fuel leg");
+            let mut cells: Vec<(Authority, AppliedCellStat)> = Vec::new();
+            let (mut sk_switch, mut sk_regime, mut sk_parent) = (0usize, 0usize, 0usize);
+            let sampled: Vec<&FuelPoint> = pts.iter().step_by(every).collect();
+            for p in sampled.iter() {
+                let gg = {
+                    let _rs = RefScope::set(&m.fuel.inner, Some(REF_LAW_APPLIED));
+                    (m.triple_hooks().quad_gains_at)(
+                        &m, flight, p, None, surge.as_ref(), tt4_max, 1e-7, 1e-5, 1e-4, true, 4.0)?
+                };
+                if !gg.interior {
+                    if gg.near_switch {
+                        sk_switch += 1;
+                    } else {
+                        sk_regime += 1;
+                    }
+                    continue;
+                }
+                let auth = gg.authority.expect("an interior point carries a label");
+                if auth != Authority::Fuel && auth != Authority::Gov {
+                    continue;
+                }
+                let (g_fuel, _, required_fuel, ..) = shared_of(p);
+                let tau_f = lag.tau(required_fuel, g_fuel);
+                let tt = (tau_f, taus.1, taus.2, taus.3);
+                let a_mat = jac4(&gg, tt);
+                let coef = charpoly4(&a_mat);
+                let roots = quartic_roots_c(&coef);
+                let rate = 1.0 / tt.0 + 1.0 / tt.1 + 1.0 / tt.2 + 1.0 / tt.3;
+                let nz = roots.iter().filter(|z| z.abs() < 1e-4 * rate).count();
+                // `im = 0 if auth == "gov" else 1` — THE MASKED COLUMN's index, not the live
+                // one: the governor holding means the FUEL leg (row/column 0) is masked.
+                let im = if auth == Authority::Gov { 0 } else { 1 };
+                let null_res = opt_fold((0..4).map(|i| a_mat[i][im].abs()), f64::max)
+                    .expect("four rows") / rate;
+                let (g3, t3) = if auth == Authority::Gov {
+                    (crate::three_loop::triple_gains_at(&m, flight, p, None, None,
+                                                        1e-7, 1e-5, 1e-4, true, 0.0, true)?,
+                     (taus.1, taus.2, taus.3))
+                } else {
+                    let _g = crate::cross_split::GovScope::set(&m.fuel.inner, None);
+                    (crate::three_loop::triple_gains_at(&m, flight, p, None, surge.as_ref(),
+                                                        1e-7, 1e-5, 1e-4, true, 0.0, true)?,
+                     (tau_f, taus.2, taus.3))
+                };
+                let (mut gap, mut gap_hi, mut vgap) = (None, None, None);
+                if g3.interior {
+                    // `float("inf")` — the added root is at the ORIGIN, so `a = 1/tau_m = 0`.
+                    // `parent_quartic` never multiplies by `tau_m`, so the infinity reaches the
+                    // arithmetic only as that exact zero and no NaN can enter the coefficients.
+                    let pred = crate::shared_actuator::parent_quartic(
+                        crate::reference_split::invariants(&g3, t3), f64::INFINITY);
+                    gap = opt_fold(
+                        (1..5usize).map(|j| (coef[j] - pred[j]).abs() / rate.powi(j as i32)),
+                        f64::max);
+                    gap_hi = opt_fold(
+                        (2..5usize).map(|j| (coef[j] - pred[j]).abs() / rate.powi(j as i32)),
+                        f64::max);
+                    vgap = Some((g3.v_base - gg.v_base).abs());
+                } else {
+                    sk_parent += 1;
+                }
+                let lam_max = opt_fold(roots.iter().map(|z| z.abs()), f64::max)
+                    .expect("a quartic has four roots") / rate;
+                let pole = opt_fold(roots.iter().map(|z| z.abs()), f64::min)
+                    .expect("a quartic has four roots") / rate;
+                let slot = match cells.iter().position(|(k, _)| *k == auth) {
+                    Some(i) => i,
+                    None => {
+                        cells.push((auth, AppliedCellStat {
+                            n: 0,
+                            n_parent: 0,
+                            zeros: Vec::new(),
+                            gap: 0.0,
+                            gap_hi: 0.0,
+                            vgap: 0.0,
+                            pole: 0.0,
+                            null: 0.0,
+                            lam_max: 0.0,
+                            det: (f64::NAN, f64::NAN),
+                            s: (f64::NAN, f64::NAN),
+                            parent: applied_parent_of(inc, auth),
+                        }));
+                        cells.len() - 1
+                    }
+                };
+                let c = &mut cells[slot].1;
+                c.n += 1;
+                if !c.zeros.contains(&nz) {
+                    c.zeros.push(nz);
+                }
+                // Python appends to a list and collapses after the loop; the running `(min, max)`
+                // is the same collapse taken one point at a time, seeded with `NaN` so the first
+                // point wins outright ([`py_running_max`]'s device, mirrored for `min`).
+                c.det = (py_running_min(c.det.0, coef[4]), py_running_max(c.det.1, coef[4]));
+                c.s = (py_running_min(c.s.0, p.s), py_running_max(c.s.1, p.s));
+                c.null = c.null.max(null_res);
+                c.lam_max = c.lam_max.max(lam_max);
+                c.pole = c.pole.max(pole);
+                if let (Some(g), Some(gh), Some(vg)) = (gap, gap_hi, vgap) {
+                    c.n_parent += 1;
+                    c.gap = c.gap.max(g);
+                    c.gap_hi = c.gap_hi.max(gh);
+                    c.vgap = c.vgap.max(vg);
+                }
+            }
+            for (_, c) in cells.iter_mut() {
+                c.zeros.sort_unstable();
+            }
+            arms.push(AppliedCellsArm {
+                inc,
+                taus,
+                cells,
+                skipped_switch: sk_switch,
+                skipped_regime: sk_regime,
+                skipped_parent: sk_parent,
+                n_riding: pts.len(),
+                n_sampled: sampled.len(),
+            });
+        }
+    }
+    let mut seen: Vec<((bool, Authority), AppliedSeenCell)> = Vec::new();
+    for a in arms.iter() {
+        for (auth, c) in a.cells.iter() {
+            let k = (a.inc, *auth);
+            let slot = match seen.iter().position(|(kk, _)| *kk == k) {
+                Some(i) => i,
+                None => {
+                    seen.push((k, AppliedSeenCell {
+                        parent: c.parent,
+                        zeros: Vec::new(),
+                        gap: 0.0,
+                        gap_hi: 0.0,
+                        vgap: 0.0,
+                        pole: 0.0,
+                        null: 0.0,
+                        lam_max: 0.0,
+                        det: 0.0,
+                        n: 0,
+                        n_parent: 0,
+                    }));
+                    seen.len() - 1
+                }
+            };
+            let d = &mut seen[slot].1;
+            for z in c.zeros.iter() {
+                if !d.zeros.contains(z) {
+                    d.zeros.push(*z);
+                }
+            }
+            d.gap = d.gap.max(c.gap);
+            d.gap_hi = d.gap_hi.max(c.gap_hi);
+            d.vgap = d.vgap.max(c.vgap);
+            d.pole = d.pole.max(c.pole);
+            d.null = d.null.max(c.null);
+            d.lam_max = d.lam_max.max(c.lam_max);
+            // The 2-tuple, iterated — see `AppliedSeenCell::det`.
+            d.det = d.det.max(c.det.0.abs().max(c.det.1.abs()));
+            d.n += c.n;
+            d.n_parent += c.n_parent;
+        }
+    }
+    for (_, d) in seen.iter_mut() {
+        d.zeros.sort_unstable();
+    }
+    Ok(AppliedCells {
+        law_holds: seen.iter().all(|(_, d)| d.zeros.len() == 1),
+        predicted: [((false, Authority::Fuel), 3), ((false, Authority::Gov), 2),
+                    ((true, Authority::Fuel), 2), ((true, Authority::Gov), 1)],
+        rung72: [((false, Authority::Fuel), 2), ((false, Authority::Gov), 1),
+                 ((true, Authority::Fuel), 1), ((true, Authority::Gov), 0)],
+        all_four_cells: seen.len() == 4,
+        worst_parent_gap: seen.iter().map(|(_, d)| d.gap).fold(f64::NAN, py_running_max),
+        worst_parent_gap_hi: seen.iter().map(|(_, d)| d.gap_hi).fold(f64::NAN, py_running_max),
+        worst_v_gap: seen.iter().map(|(_, d)| d.vgap).fold(f64::NAN, py_running_max),
+        worst_null: seen.iter().map(|(_, d)| d.null).fold(f64::NAN, py_running_max),
+        worst_det: seen.iter().map(|(_, d)| d.det).fold(f64::NAN, py_running_max),
+        worst_lam: seen.iter().map(|(_, d)| d.lam_max).fold(f64::NAN, py_running_max),
+        pole_at_origin: seen.iter().map(|(_, d)| d.pole).fold(f64::NAN, py_running_max),
+        cells: seen,
+        arms,
+        clocks: clocks.to_vec(),
+        ds,
+    })
+}
+
+/// Which parent rung a cell IS — § 2's table.
+///
+/// The SAME four pairs [`parent_of`](crate::shared_actuator::shared_cells) names at rung 72, and
+/// deliberately a second definition rather than a widened import: the two tables are equal today
+/// **because rung 73 adds a pole and not a loop**, which is the finding, and sharing one function
+/// would make the port assert it by construction.
+fn applied_parent_of(inc: bool, auth: Authority) -> &'static str {
+    match (inc, auth) {
+        (false, Authority::Fuel) => "rung 68",
+        (false, Authority::Gov) => "rung 70",
+        (true, Authority::Fuel) => "rung 69",
+        (true, Authority::Gov) => "rung 71",
+        _ => panic!("rung-73's § 2 has four cells, indexed by a LIVE authority; \
+                     `Dormant`/`Tie` name no parent because no leg holds the actuator there."),
+    }
+}
+
+/// [`py_running_max`]'s mirror — Python's `min` as a fold seeded with `NaN`.
+fn py_running_min(acc: f64, x: f64) -> f64 {
+    if acc.is_nan() || x < acc {
+        x
+    } else {
+        acc
+    }
+}
+
+// --- § 3: THE ISOLATION INSTRUMENT — reading C, which moves the OTHER half --------------------
+
+/// One sampled point of [`ref_discriminator`].
+#[derive(Clone, Debug, PartialEq)]
+pub struct RefDiscRow {
+    pub s: f64,
+    pub authority: Option<Authority>,
+    pub masked: Option<Authority>,
+    pub taus: (f64, f64, f64, f64),
+    pub tau_live: f64,
+    /// Does a root sit AT THE ORIGIN? (B: yes. C and rung 72: no.)
+    pub origin_b: f64,
+    pub origin_c: f64,
+    pub origin_72: f64,
+    /// Does a root sit at `-1/tau_masked`? (C and rung 72: yes. B: not by law.)
+    pub pole_b: f64,
+    pub pole_c: f64,
+    pub pole_72: f64,
+    /// The LIVE leg's own diagonal: B leaves it at rung 72's, C moves it by `-1`.
+    pub live_diag_b: f64,
+    pub live_diag_c: f64,
+    pub zeros_b: i64,
+    pub zeros_c: i64,
+    pub zeros_72: i64,
+}
+
+/// [`ref_discriminator`]'s whole reading.
+#[derive(Clone, Debug, PartialEq)]
+pub struct RefDiscriminator {
+    pub inc: bool,
+    pub taus: (f64, f64, f64, f64),
+    pub ds: f64,
+    pub rows: Vec<RefDiscRow>,
+    pub n: usize,
+    pub worst_origin_b: Option<f64>,
+    pub best_origin_c: Option<f64>,
+    pub best_origin_72: Option<f64>,
+    pub worst_pole_c: Option<f64>,
+    pub worst_pole_72: Option<f64>,
+    pub best_pole_b: Option<f64>,
+    pub live_diag_b: Vec<f64>,
+    pub live_diag_c: Vec<f64>,
+    /// `("B", "C", "72")`, in Python's key order.
+    pub zeros: [(&'static str, Vec<i64>); 3],
+    /// **DIFFERENCED PER POINT, NEVER POOLED** — see [`ref_discriminator`].
+    pub dzeros_b: Vec<i64>,
+    pub dzeros_c: Vec<i64>,
+}
+
+/// RUNG 73's `ref_discriminator` — **§ 3: reading C, read at reading B's own base points** — one
+/// law swapped, nothing else (rung 71's device, rung 72 § 4's, third instance).
+///
+/// C is the LITERAL reading of rung 72 § 11 (`req = mf_app - cap`, no increment) and it is a
+/// well-posed proportional law with 2x droop. It is not the plant, and it is **NOT MARCHED**: a leg
+/// that lands at half its own required clip holds neither floor, so its trajectory would confound
+/// the reference with the state — rung 72 § 4's reason, verbatim. So `gc` is built from the SAME
+/// measured differences as `g72`, with four entries overwritten, and never from a second march.
+///
+/// **THE POINT OF CARRYING IT IS THAT IT MOVES THE OTHER HALF OF THE MATRIX.** Under C the masked
+/// row is `(-1/tau_m, -1/tau_m, ., .)`: the diagonal is rung 72's, so THE POLE STAYS at
+/// `-1/tau_masked` — while the AUTHORITATIVE leg picks up `-1` on its own diagonal, so `M3` is NO
+/// LONGER the parent's block.
+///
+/// ```text
+/// B: the pole MOVES to the origin, `M3` IS the parent's        (the plant)
+/// C: the pole STAYS at -1/tau_m, `M3` is NOT the parent's      (the instrument)
+/// ```
+///
+/// Two readings of one seam that agree on `F_r != 0` and disagree on everything it was supposed to
+/// imply. That is what makes the headline a measurement rather than a choice of law — and it is
+/// why C is carried instead of dismissed (rung 63's lesson).
+///
+/// # THE COUNTS ARE DIFFERENCED PER POINT
+///
+/// This reader spans BOTH authority cells, whose counts already differ by one under rung 72 alone,
+/// so a pooled `min(B) > max(72)` compares the `phi` arm's fuel cell against its governor cell and
+/// says nothing. Per point, B adds EXACTLY one zero everywhere and C never adds one — it REMOVES
+/// one wherever the live leg's droop restores full rank.
+#[allow(clippy::too_many_arguments)]
+pub fn ref_discriminator(
+    core: &ScheduledStatorCore, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, tt4_max: f64,
+    sm: f64, taus: (f64, f64, f64, f64), inc: bool, r: f64, s_settle: f64, ds: f64, v_max: f64,
+    every: usize,
+) -> Result<RefDiscriminator, Abort> {
+    let (m, surge, lag, traj) = crate::shared_actuator::shared_march(
+        core, flight, tt4_lo, tt4_hi, tt4_max, sm, taus, r, s_settle, ds, v_max, inc);
+    let b_max = m.fuel.inner.lever.lim.expect("the rig arms a valve").b_max;
+    let pts = riding4(&traj, b_max);
+    let lag = lag.expect("§ 3's rig arms the fuel leg");
+    let mut rows: Vec<RefDiscRow> = Vec::new();
+    let sampled: Vec<&FuelPoint> = pts.iter().step_by(every).collect();
+    for p in sampled.iter() {
+        let gb = {
+            let _rs = RefScope::set(&m.fuel.inner, Some(REF_LAW_APPLIED));
+            (m.triple_hooks().quad_gains_at)(
+                &m, flight, p, None, surge.as_ref(), tt4_max, 1e-7, 1e-5, 1e-4, true, 4.0)?
+        };
+        if !gb.interior
+            || !matches!(gb.authority, Some(Authority::Fuel) | Some(Authority::Gov)) {
+            continue;
+        }
+        let g72 = {
+            let _rs = RefScope::set(&m.fuel.inner, Some(REF_LAWS_DECLARED[0]));
+            (m.triple_hooks().quad_gains_at)(
+                &m, flight, p, None, surge.as_ref(), tt4_max, 1e-7, 1e-5, 1e-4, true, 4.0)?
+        };
+        if !g72.interior {
+            continue;
+        }
+        let (g_fuel, _, required_fuel, ..) = shared_of(p);
+        let tau_f = lag.tau(required_fuel, g_fuel);
+        let tt = (tau_f, taus.1, taus.2, taus.3);
+        let masked = gb.masked;
+        let m_fuel = masked == Some(Authority::Fuel);
+        // `live = "gov" if masked == "fuel" else "fuel"`.
+        let tau_m = if m_fuel { tau_f } else { taus.1 };
+        let tau_l = if m_fuel { taus.1 } else { tau_f };
+        // READING C, built from the SAME measured differences (`req = req_sched - clip`): the
+        // masked leg keeps rung 72's diagonal and gains the cross term, and the LIVE leg's own
+        // diagonal picks up the `-1` that B's identity branch removes.
+        let mut gc = g72.clone();
+        gc.f_r = if m_fuel { gb.f_r } else { 0.0 };
+        gc.r_f = if !m_fuel { gb.r_f } else { 0.0 };
+        gc.f_f = if m_fuel { 0.0 } else { -1.0 };
+        gc.r_r = if !m_fuel { 0.0 } else { -1.0 };
+        let rate = 1.0 / tt.0 + 1.0 / tt.1 + 1.0 / tt.2 + 1.0 / tt.3;
+        let rb = quartic_roots_c(&charpoly4(&jac4(&gb, tt)));
+        let rc = quartic_roots_c(&charpoly4(&jac4(&gc, tt)));
+        let r72 = quartic_roots_c(&charpoly4(&jac4(&g72, tt)));
+        // `min(abs(z + 1.0/tau_m) …) * tau_m` — `z + float` is a PROMOTED complex add, so the
+        // imaginary part is `z.im + 0.0` and not `z.im`; the spelling is rung 72's and kept.
+        let pole_of = |rs: &[C64; 4]| opt_fold(
+            rs.iter().map(|z| c_add(*z, c_real(1.0 / tau_m)).abs()), f64::min)
+            .expect("a quartic has four roots") * tau_m;
+        let origin_of = |rs: &[C64; 4]| opt_fold(rs.iter().map(|z| z.abs()), f64::min)
+            .expect("a quartic has four roots") / rate;
+        let zeros_of = |rs: &[C64; 4]| rs.iter().filter(|z| z.abs() < 1e-4 * rate).count() as i64;
+        rows.push(RefDiscRow {
+            s: p.s,
+            authority: gb.authority,
+            masked,
+            taus: tt,
+            tau_live: tau_l,
+            origin_b: origin_of(&rb),
+            origin_c: origin_of(&rc),
+            origin_72: origin_of(&r72),
+            pole_b: pole_of(&rb),
+            pole_c: pole_of(&rc),
+            pole_72: pole_of(&r72),
+            // `live == "fuel"` exactly when the GOVERNOR is masked.
+            live_diag_b: if m_fuel { gb.r_r } else { gb.f_f },
+            live_diag_c: if m_fuel { gc.r_r } else { gc.f_f },
+            zeros_b: zeros_of(&rb),
+            zeros_c: zeros_of(&rc),
+            zeros_72: zeros_of(&r72),
+        });
+    }
+    Ok(RefDiscriminator {
+        inc,
+        taus,
+        ds,
+        n: rows.len(),
+        worst_origin_b: opt_fold(rows.iter().map(|x| x.origin_b), f64::max),
+        best_origin_c: opt_fold(rows.iter().map(|x| x.origin_c), f64::min),
+        best_origin_72: opt_fold(rows.iter().map(|x| x.origin_72), f64::min),
+        worst_pole_c: opt_fold(rows.iter().map(|x| x.pole_c), f64::max),
+        worst_pole_72: opt_fold(rows.iter().map(|x| x.pole_72), f64::max),
+        best_pole_b: opt_fold(rows.iter().map(|x| x.pole_b), f64::min),
+        live_diag_b: py_float_set(rows.iter().map(|x| x.live_diag_b)),
+        live_diag_c: py_float_set(rows.iter().map(|x| x.live_diag_c)),
+        zeros: [("B", py_int_set(rows.iter().map(|x| x.zeros_b))),
+                ("C", py_int_set(rows.iter().map(|x| x.zeros_c))),
+                ("72", py_int_set(rows.iter().map(|x| x.zeros_72)))],
+        dzeros_b: py_int_set(rows.iter().map(|x| x.zeros_b - x.zeros_72)),
+        dzeros_c: py_int_set(rows.iter().map(|x| x.zeros_c - x.zeros_72)),
+        rows,
+    })
+}
+
+// --- § 4: THE LEDGER — what the SCHEDULED reference was quietly buying ------------------------
+
+/// [`applied_bill`]'s whole reading — rung 72's ledger under both references, and the differences.
+#[derive(Clone, Debug, PartialEq)]
+pub struct AppliedBill {
+    pub inc: bool,
+    pub taus: (f64, f64, f64, f64),
+    pub ds: f64,
+    pub sched: SharedBill,
+    pub applied: SharedBill,
+    /// THE PEAK `Tt4` DEBIT the fuel leg imposes, under each reference.
+    pub debit_sched: f64,
+    pub debit_applied: f64,
+    pub debit_ratio: Option<f64>,
+    /// and the `phi` credit, which should not move.
+    pub phi_marginal_sched: f64,
+    pub phi_marginal_applied: f64,
+    pub phi_full_sched: f64,
+    pub phi_full_applied: f64,
+    pub kept_sched: Option<f64>,
+    pub kept_applied: Option<f64>,
+    pub handover_sched: Option<f64>,
+    pub handover_applied: Option<f64>,
+    /// the governor's own currency as an INTEGRAL, both references.
+    pub tt4_integral_sched: f64,
+    pub tt4_integral_applied: f64,
+}
+
+/// RUNG 73's `applied_bill` — **§ 4: rung 72's own 16-cell ledger, run under BOTH references and
+/// differenced.**
+///
+/// The spectral finding says the reference reaches only the masked leg's own two entries, and a
+/// masked leg is coupled to nothing. The ledger is where that stops being the whole story:
+/// **authority is a function of `s`**, the reference moves the HAND-OVER, and the hand-over is when
+/// the redline stops being defended by a leg that is not watching it.
+///
+/// THE PREDICTION UNDER TEST (anchor P6): rung 72 § 5 reports the fuel leg's marginal peak `Tt4`
+/// debit as `+0.29 K` / `+1.86 K` and calls the `phi` credit the finding. Under the correct
+/// reference the debit should be more than TEN TIMES larger on both arms, with the `phi` column
+/// unmoved — because the fuel leg's own authority window is EARLY, where the reference is the
+/// identity, while the governor's is LATE, where it is not.
+///
+/// # THIS IS THE FIRST READER THAT BUILDS ITS CELLS THROUGH `_shared_rig`
+///
+/// Every cell is built by [`shared_rig`](crate::three_loop::TripleHooks::shared_rig) (rung 63's
+/// lesson: a cell may differ from another only by which loops are armed), and rung 73's override
+/// carries `_ref_law` onto each — *"without which every cell here would march rung 72 while the
+/// caller reported rung 73"*, in the shipped docstring's own words. **Step 1 measured that carry a
+/// NO-OP** (probe L2: `at_lever` has already copied the law by the time rung 72's body returns) and
+/// pre-registered it as having no value break. The two statements are not in conflict — the carry
+/// is redundant, not inert — but this reader is the one that would expose it if the redundancy ever
+/// failed, and it is the grid step 5's discriminator must be re-measured on rather than inheriting
+/// step 1's fifteen-gate verdict.
+///
+/// # `super().shared_bill` IS A NON-DISPATCHED CALL, ON PURPOSE
+///
+/// Python names the PARENT's body explicitly, so this reader runs rung 72's ledger even on a rung-74
+/// machine. [`shared_bill`](crate::shared_actuator::shared_bill) is therefore called directly and
+/// not through a table — the one place in this file where that is right.
+#[allow(clippy::too_many_arguments)]
+pub fn applied_bill(
+    core: &ScheduledStatorCore, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, tt4_max: f64,
+    sm: f64, taus: (f64, f64, f64, f64), inc: bool, r: f64, s_settle: f64, ds: f64, v_max: f64,
+) -> AppliedBill {
+    let one = |law: &'static str| {
+        let _rs = RefScope::set(&core.fuel.inner, Some(law));
+        crate::shared_actuator::shared_bill(
+            core, flight, tt4_lo, tt4_hi, tt4_max, sm, taus, inc, r, s_settle, ds, v_max)
+    };
+    let s = one(REF_LAWS_DECLARED[0]);
+    let a = one(REF_LAW_APPLIED);
+    let kept_of = |b: &SharedBill| b.kept.iter().find(|(k, _)| *k == "F")
+        .expect("the ledger's four legs are named F, G, V, S").1;
+    AppliedBill {
+        inc,
+        taus,
+        ds,
+        debit_sched: s.tt4_full - s.tt4_no_fuel,
+        debit_applied: a.tt4_full - a.tt4_no_fuel,
+        debit_ratio: if s.tt4_full != s.tt4_no_fuel {
+            Some((a.tt4_full - a.tt4_no_fuel) / (s.tt4_full - s.tt4_no_fuel))
+        } else {
+            None
+        },
+        phi_marginal_sched: s.fuel_marginal_phi,
+        phi_marginal_applied: a.fuel_marginal_phi,
+        phi_full_sched: s.phi_full,
+        phi_full_applied: a.phi_full,
+        kept_sched: kept_of(&s),
+        kept_applied: kept_of(&a),
+        handover_sched: s.handover,
+        handover_applied: a.handover,
+        tt4_integral_sched: s.fuel_marginal_tt4,
+        tt4_integral_applied: a.fuel_marginal_tt4,
+        sched: s,
+        applied: a,
+    }
 }

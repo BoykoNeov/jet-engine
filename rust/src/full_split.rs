@@ -172,6 +172,9 @@ pub const R71_TRIPLE: TripleHooks = TripleHooks {
     reference: crate::three_loop::R68_TRIPLE.reference,
     rk4_floor_shared: crate::three_loop::R68_TRIPLE.rk4_floor_shared,
     shared_rig: crate::three_loop::R68_TRIPLE.shared_rig,
+    // AND SLICE AE STEP 2's FOURTEENTH CELL — `_quad_gains_at` also arrives at rung 72, so this
+    // rung carries the same refusal, reached through rung 68's table.
+    quad_gains_at: crate::three_loop::R68_TRIPLE.quad_gains_at,
 };
 
 // ---------------------------------------------------------------------------------------------

@@ -18508,6 +18508,255 @@ IDENTITY test (`clip == g_own`), so a reader that re-derived the clip through `a
 `&ScheduledStatorCore` form would be comparing against a second expression of the same algebra —
 one body, one clip, which is why `_applied_clip` is defined exactly once in Python too.
 
+#### 5.29.2 SLICE AE step 2 — the gains chain and all five readers, and **A MUTATION SWEEP THAT OUTLIVED THE SESSION THAT LAUNCHED IT, KEPT MUTATING THE WORKING TREE, AND HANDED ME A CONTAMINATED BACKUP OF EXACTLY THE RIGHT SIZE**
+
+**SHIPPED**: the slice's ONE added cell (`TripleHooks` 13 → 14, `quad_gains_at`, with the shared
+refusal in every table below rung 72), rung 73's `_quad_gains_at` body, and **all five public
+readers** — `handover_law`, `applied_gains`, `applied_cells`, `ref_discriminator`, `applied_bill`
+— in `rust/src/applied_reference.rs`, which goes **401 → 1 653 lines** (both counts read off the
+tree, not typed: `git show HEAD:…| wc -l` and `wc -l`). Three width tripwires went `E0063`/`E0027`
+and were discharged. **No gate file: the ported gates are step 3**, and slice AC's steps 2/3 and
+AD's step 3 set the precedent that a body step proves itself by DRIVING every reader and diffing
+the printed values.
+
+**THE DIFF: `Rust == PyPy` on all 5 066 keys, bit for bit — 0 differing, 0 missing, 0 extra.**
+The key count has an INDEPENDENT witness rather than only the `lines().count()` that printed it:
+the PyPy dump is 154 754 bytes with CRLF endings, the Rust dump 149 688 with LF, and the
+difference is **exactly 5 066** — one byte per line, measured (`\r\n` count 5 066 against 0).
+
+##### (a) THE FINDING — **AN INSTRUMENT FROM THE PREVIOUS SESSION WAS STILL RUNNING, AND MY FIRST ACT OF THIS ONE WAS TO BACK UP A FILE IT HAD MUTATED**
+
+The step's mutation sweep was launched in the background at the end of the previous session and
+that session was cleared while it ran. **`mutate_step2.py` (PID 24344) was still alive** — writing
+a mutated `applied_reference.rs`, building, restoring, and going round again — and its stdout,
+which was the whole point of running it, had gone to a terminal that no longer existed (the task's
+capture file holds one line: `[exited with code 0]`). Three things followed from that, and the
+ORDER OF DISCOVERY is part of the lesson — the first is what exposed the sweep at all; the other
+two were found by measuring afterwards, not by noticing:
+
+1. **It deleted the artifact I had just made.** Its `run()` starts with `os.remove(step2_rs.tsv)`,
+   so the fresh dump this session drove — printed as written, exit code 0 — was gone by the time
+   anything compared it. The test said `keys 5066 -> …\step2_rs.tsv` and the file did not exist.
+2. **The working tree's source was mutated at rest**, and its timestamp had an innocent
+   explanation ready: 21:01, later than the 20:53 baseline, exactly what a doc-comment correction
+   would look like.
+3. **The backup I took to protect against exactly this was itself contaminated.** `SHIPPED.rs`,
+   copied three minutes into the session, carries **M19** — and it is **86 016 bytes, byte for byte
+   the size of the clean file**, because M19 swaps `{ 0 } else { 1 }` for `{ 1 } else { 0 }` and is
+   length-preserving. A size that matches is not a checksum.
+
+**The recovery is the part worth keeping.** There was no commit to fall back on — the whole step is
+uncommitted — so the clean source was reconstructed from **two independently mutated snapshots**:
+the on-disk file (carrying M22, +19 bytes) and the backup (carrying M19, +0 bytes). Each was
+reverted by its OWN single mutation, using the sweep's own anchor strings, and **the two results
+are byte-identical at 86 016 bytes**. That agreement is the evidence; either revert alone would
+have been a hope. The restored tree then re-drove the dump and reproduced the 20:53 baseline
+**exactly**, which is what makes the 5 066-key `Rust == PyPy` result a measurement of the shipped
+code and not of whatever the sweep happened to have installed.
+
+**The general lesson: a background instrument outlives the session that launched it, and its
+output does not.** A sweep that mutates the tree in place must be treated as a live writer for as
+long as its process exists — checked for by PID before any file in its blast radius is read,
+copied, or trusted. And the process that was killed was killed **by the PID captured from its own
+command line**, never by image name: two other `cargo` runs on this machine belonged to a
+different repository entirely.
+
+##### (b) PROBE M's ARM COUNTS — **THE TABLE AND THE PROSE WERE COUNTING TWO DIFFERENT OBJECTS, AND PROBE N SAYS WHICH**
+
+`applied_gains` and `ref_discriminator` difference `gg` (rung 73's body under `applied`) against
+`g72` (**rung 73's body under `sched`**, not rung 72's). Under `sched` the reference is the
+identity, so a port that called rung 72's own body for `g72` would return the same twelve gains.
+The first draft of this step's doc comments offered the ARM COUNT as the thing that separates them.
+
+Probe M holds the machine fixed at rung 73 and swaps only the FUNCTION (probe J's device), at
+every sampled point of both `applied_gains` arms:
+
+| | `inc = False` | `inc = True` |
+|---|---|---|
+| sampled points | 70 | 31 |
+| **law invocations** per call, rung-73 body / rung-72 body | **29 / 25** | **28 / 24** |
+| of which the ARM LIST (`F± R± C± V±`) | **28 / 24** | **28 / 24** |
+| `interior` DISAGREES | **0 of 70** | **0 of 31** |
+| the twelve shared gains differ | **0 points, worst `\|delta\|` exactly `0.0`** | **0 points, `0.0`** |
+| keys in rung 73's dict, ABSENT from rung 72's | **350** (5 per point) | **155** |
+
+**The first writing of this table put `29 / 25` under a heading that said "arms" while the
+neighbouring prose said 28 and 24, and both were right about different objects.** Probe N splits
+the counter per law: the arm list is `F 8 / R 8 / C 6 / V 6` against rung 72's `F 6 / R 6 / C 6 /
+V 6` — **exactly four more at every one of the 101 points, on both arms** — and the seventh `V` at
+`inc = False` is **not an arm at all**. Probe O attributes it: it is the base-point solve
+`_manifold_v`, resolved to **rung 69's** override, whose first line is
+`if self.stator_inc is None: return super()._manifold_v(…)`. With the incidence limiter disarmed
+it falls through to the parent, which evaluates the `V` law once; with it armed it runs an
+Illinois root on `phi_lp - phi_lim` and **never touches `V`** — 70 of 70 evaluations against 0 of
+31, measured. It is rung 69's branch, identical under both bodies, so it cancels from the
+difference.
+
+So the arm-count difference is real, is exactly four, **and it observes nothing on the shipped
+grid.** The separation that does exist is **DISCRETE**: `F_f`, `R_r`, `self_masked`, `cross_masked`
+and `self_live` are five keys rung 72 never writes — **505 over the same 101 points** — and a key
+that is ABSENT cannot be passed by a one-sided bar. That is § 5.29 (iv)'s 70 shipped-only keys
+re-measured on this step's own grid, and it is why the pointer-level gate is step 5's and not a
+value gate here.
+
+##### (c) THE FOURTEENTH CELL, AND ITS REFUSAL
+
+`TripleHooks` goes **13 → 14**, exactly as step 1 § (c) pre-registered, and the added field is
+`quad_gains_at` (measured off both trees, not read off the diff). It has two definers (rungs 72
+and 73), so rungs 68–71 and `NO_TRIPLE` carry `NO_SHARED_MSG`'s refusal — the FOURTH member of the
+family slice AD installed, reached through `R68_TRIPLE`'s slot exactly as its three siblings are.
+**That is what keeps step 5's gate a plain parent-pointer injection** rather than the hand-written
+sentinel slice AB's exception would have required (AD step 6's finding: a first definer still has a
+parent pointer, because the parent slot carries a refusal).
+
+Three exhaustive literals stopped compiling and were discharged: `slice_ab_cells.rs`,
+`slice_ac_cells.rs` (both `E0063`) and `slice_ae_cells.rs` (`E0027`, the destructuring whose own
+doc comment predicted this step would break it). **The count was measured and not typed**: AD
+step 1's P1 predicted five `E0063` sites and needed seven because `cargo check` stops at the lib,
+so the sites here were found with a full `cargo build --tests` rather than a lib check.
+
+##### (d) `_shared_rig`'s CARRY — **STEP 1's VERDICT RE-RUN ON A GRID IT COULD NOT REACH, NEVER CITED**
+
+Step 1 pre-registered the `_shared_rig` law-carry as a MEASURED NO-OP (probe L2) and mutation M11
+survived all fifteen of its gates. **`applied_bill` is the first reader that builds its cells
+through `_shared_rig`**, and Python's docstring for it says the opposite in as many words —
+*"`_shared_rig` carries `_ref_law` -- without which every cell here would march rung 72 while the
+caller reported rung 73."* Citing step 1 here would be § 5.29 (i)'s own finding in miniature: a
+cleared hazard closing a question that the next grid can still ask.
+
+So it was re-run on this step's 5 066-key grid, on **both seats** — does it move a value, and would
+a shipped gate have caught it:
+
+* **M11**, `_shared_rig`'s copy deleted: **0 of 5 066 keys move, 0 of 15 gates fire.** Step 1's
+  verdict reproduced on a grid 5 066 keys wide instead of fifteen assertions.
+* **M11b**, **BOTH** copies deleted — `_shared_rig`'s and `at_lever`'s: **122 keys move** (57 in
+  `handover_law`, 36 + 29 in the two `applied_bill` arms) and **1 of 15 gates fires.**
+
+So the docstring is true of the PAIR and false of the member: `at_lever` carries the law first, and
+`_shared_rig`'s copy is redundant rather than inert. **M11 alone could never have said that** — its
+zero is a property of `at_lever`, which is the blind-instrument shape § 5.29 (x)'s probes F/G were
+withdrawn for. The value seat and the gate seat agree here, and they agree because the second arm
+exists; a sweep that scores only *"did a key move"* answers a different question from *"would a
+gate have caught it"*, and this step runs both for every mutation.
+
+##### (e) NINE MUTATIONS, SCORED ON **TWO SEATS** — AND SIX MOVE A VALUE WHILE ONE MOVES A GATE
+
+`M:\claud_projects\temp\rust-ae\mutate_step2b.py`, each asserting its anchor matched exactly once
+before the replace, each rebuilding and re-driving the whole dump. **Every mutation is run against
+both binaries** — the 5 066-key dump (does it move a VALUE) and `slice_ae_cells.rs` (would a
+shipped GATE have caught it) — because a dump-only sweep answers the first question and reads like
+an answer to the second.
+
+| mutation | value seat, of 5 066 | gate seat, of 15 | verdict |
+|---|---|---|---|
+| M11 `_shared_rig` drops the carry | **0** | 0 | **SURVIVES** — step 1's verdict, re-driven |
+| M11b **BOTH** carries dropped | **122** (A 57, G 36, H 29) | **1** — `at_lever_and_the_rig_both_carry_the_reference` | killed |
+| M16 the reference by NAME, not through the table — **DECLARED CONTROL** | **0** | 0 | survives, as declared |
+| M17 `F_f`/`R_r` differenced with the WRONG step | **332**, +5 new (B 203, D 53, E 76) | 0 | value only |
+| M18 `self_live` reads the MASKED leg's diagonal | **105**, +6 new (B 72, C 33) | 0 | value only |
+| M19 § 2's masked-column index inverted | **16** (D) | 0 | value only |
+| M20 § 2 keeps rung 72's pole instead of the origin | **32** (D) | 0 | value only |
+| M21 § 3's reading C moves the MASKED leg | **191**, 1 vanished, +1 new (E 122, F 69) | 0 | value only |
+| M22 the `sorted({…})` set keyed by BITS | **0** | 0 | **UNOBSERVABLE on this grid** — measured, § below |
+
+**THE ONE-OF-FIFTEEN IS NOT A HOLE, IT IS THIS STEP'S SHAPE, AND SAYING SO IS THE POINT OF RUNNING
+THE SECOND SEAT.** Step 2 ships no gate file; the only gates in the tree are step 1's, which pin
+the PLUMBING — pointers, refusals, the two-sided field assertion — and are blind to the gains chain
+**by construction**. So the value seat is the instrument here, and the gate seat's job is to say
+that out loud instead of leaving it to be assumed. **M17–M21 are pre-registered for step 3**, where
+the 27 ported gates land: each is re-run on both seats there, and any that still misses is re-scored
+against **Python's own 27 gates** before it is called a hole (AD step 4's method — a miss shared by
+both languages is INHERITED, not introduced).
+
+**AND THE GATE M11b KILLED IS NAMED FOR TWO CARRIERS AND CAN ONLY FAIL ON ONE.**
+`at_lever_and_the_rig_both_carry_the_reference` survives M11 (the rig's copy deleted) and dies on
+M10 (step 1) and M11b (both) — because the rig's copy is redundant, so no single-carrier deletion
+on that side is observable. The gate is not wrong and its name is not a lie; it is a **one-sided
+detector wearing a two-sided name**, and that is only visible with a mutation that removes both.
+
+**M22, MEASURED RATHER THAN SHRUGGED AT.** A zero on the value seat is not evidence that a defence
+is unnecessary — AC step 5's j10 is the precedent (a defence with no reader). Read straight off the
+shipped dump's raw bits: **101 keys are exactly `-0.0`**, and every one of them is `*.g.pair_FR`;
+**925 are exactly `+0.0`**; and inside the four `sorted({…})` lists M22 re-keys, `+0.0` appears
+**twice** (`B.self_live`, `C.self_live`) and `-0.0` appears **not at all**. So the hazard the
+defence is written against is real *in this dump* and simply never enters one of those four sets on
+this grid. Booked to step 4's oracle, which is where a wider grid could put the two zeros in one
+set.
+
+##### (f) THE GATE ROW — **A THREE-LINE DIFF THAT REWROTE 1 569 LINES, AND THE ONE GATE IN THE CRATE THAT COULD SEE IT**
+
+Predicted before the run, in the § 5.28.5 (h) form: 139 `Running` lines (138 test files + 1 lib),
+1 `Doc-tests` block, 140 result blocks, **1 424 passed** (AD step 6's 1 409 + step 1's 15 gates,
+step 2 adding no test) / 0 failed / 0 ignored, 0 `error[E`.
+
+**THE FIRST RUN STOPPED AT TARGET 86 OF 139 WITH EXIT 101**, on one test:
+
+```
+tests\rung71.rs:523: the scope slipped past the function body
+    forced_release_edges_and_an_instantaneous_valve_are_refused
+```
+
+**And the three lines this step added to `full_split.rs` are provably not the cause.** That gate
+is slice AC's source-introspection guard: it `include_str!`s `../src/full_split.rs`, splits at
+`\nfn r71_integrate_fuel(`, takes everything up to the first `\n}\n` as the function body, and
+refuses a body containing `///` — the scope-slip check that stops a module-wide search from
+passing on behalf of a deleted guard. Reproduced outside the compiler, four ways:
+
+| the bytes the gate would read | `\n}\n` after the anchor | extracted body | contains `///` |
+|---|---|---|---|
+| worktree, as it stood | **0** | **65 145** chars | **yes → the assertion fires** |
+| `HEAD:rust/src/full_split.rs` as stored | 34 | 4 229 chars | no → passes, guard found once |
+| **HEAD's own bytes, converted to CRLF** | **0** | **65 145** | **yes → fails identically** |
+| the worktree's bytes, converted to LF | 34 | 4 229 | no → passes identically |
+
+**The file had been flipped from LF to CRLF in its entirety, and `git diff` said `3 +++`.** With
+`text=auto` git normalises line endings on read, so the working copy's 1 569 rewritten line
+endings are invisible to every review instrument the phase uses — the diff, the diffstat, a
+`git show`. The only thing in the crate that can see them is a gate that reads the file's RAW
+BYTES at compile time, and it reported the symptom precisely (*the scope slipped past the function
+body*) while being unable to say why.
+
+**THE CAUSE IS A TOOL, AND IT IS THE SAME TOOL AS § (a)'s.** `mutate_step2.py` reads with
+universal newlines (`\r\n` → `\n`) and writes with `newline=None`, which on Windows translates
+every `\n` back to `os.linesep`. A file that was LF comes back CRLF, whole. The replacement sweep
+this step actually used (`mutate_step2b.py`) reads and writes with `newline=""`, and it asserts
+the source is restored **byte for byte** rather than merely restored.
+
+**THE BLAST RADIUS WAS MEASURED, NOT ASSUMED — TWICE.** A census of the crate: **171 `.rs` files,
+141 LF, 30 CRLF, 0 mixed**, and the CRLF set is exactly the files port tooling has rewritten over
+the phase. And of the **six** `include_str!` sites that read a `.rs` source, **only this one is
+line-ending dependent**: `slice_ac_cells.rs`'s counts anchor at `\npub const R7…` and use
+`.lines()`, `slice_y_dispatch.rs` matches a single-line expression, `slice_ad_dispatch.rs` filters
+`.lines()` on a trimmed `#[test]` — every one of those matches identically under both endings,
+checked rather than argued. So `rung71` was not the first casualty alphabetically; it was **the
+only device in the crate that could have failed at all.**
+
+The nine files this step touched were converted back to the repo's canonical LF, `git diff`
+reported the same `3 +++` and `67 +++++` afterwards (which is the point), and the gate was re-run
+whole with `--no-fail-fast` so a second failure could not hide behind the first.
+
+**THE RE-RUN, EVERY ROW PREDICTED BEFORE IT AND EVERY ROW HELD:**
+
+| check | predicted | measured |
+|---|---|---|
+| `     Running ` lines | 139 | **139** |
+| `Doc-tests` blocks | 1 | **1** |
+| `^test result:` blocks | 140 | **140** |
+| blocks reading `ok` | 140 of 140 | **140 of 140** |
+| passed / failed / ignored | 1 424 / 0 / 0 | **1 424 / 0 / 0** |
+| `error[E` occurrences | 0 | **0** |
+| exit | 0 | **0** |
+
+The structural bar AD step 4 installed is carried: `Running` + `Doc-tests` **equals** the result
+blocks (139 + 1 = 140), so a MISSING target cannot hide inside a sum that still looks plausible.
+**Step 2 adds no `#[test]`**, so the 1 424 is 1 409 + step 1's 15 by construction and the row is a
+prediction rather than a reading.
+
+**AND THE FIRST RUN IS RECORDED AS A FAILURE RATHER THAN OVERWRITTEN BY THE SECOND.** Its log is
+kept at `M:\claud_projects\temp\rust-ae\gate_step2.txt` (86 of 139 targets, exit 101), because the
+whole content of § (f) is a defect that a green re-run erases every trace of.
+
+
 ### Consequences for the phase table
 
 Phase 8's `main.py` row is now "Rust CLI prints the tables and dumps plot JSON; port the
