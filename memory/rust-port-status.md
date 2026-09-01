@@ -176,7 +176,10 @@ Six steps priced from sizing (1 177 source / 502 test lines). See
    unreachable today). Also: `charpoly_selftest` splits **4 of 10** keys on CPython 3.14, and one
    cause is a **COMPLEX** `sum()`, which five shipped comments in this repo call float-only; and a
    doc comment written in this same step measured FALSE — deleting the guard it defended moves 0 of
-   3 216 keys. See [[rust-port-slice-ad-step3]].
+   3 216 keys. Closes with three disclosures a bit-exact dump cannot reach (`manifold=false` dead;
+   `riding4`'s foreign-point arm made a REFUSAL, matching Python's bare index; and the deferred
+   cell's MRO trap for rungs 74/80/81) and **P7, the CPython exemption PRE-REGISTERED** so step 5
+   cannot produce it post-hoc. See [[rust-port-slice-ad-step3]].
 
 ## Slice AB, step by step
 

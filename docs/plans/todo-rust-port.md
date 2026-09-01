@@ -17267,7 +17267,55 @@ difference between a disclosure and a guess. [[rust-port-slice-ac-step7]] is the
 doc comments that gave a REASON that was testable and false — reproduced here by a reader who had
 that lesson open.
 
-##### (g) THE STEP-2 BASELINE WAS DESTROYED TWICE, BY MY OWN RUNNERS
+##### (g) THREE THINGS A 3 216-KEY DIFF CANNOT SEE, ASKED FOR RATHER THAN WAITED FOR
+
+A bit-exact dump is evidence about everything it touches and silent about what no shipped input
+reaches. Three such, each MEASURED and then disclosed in the port rather than left implicit:
+
+1. **`manifold = false` is DEAD at this rung.** `_quad_gains_at` is never called — it is passed as
+   a bound method at **twelve** sites over six rungs, and **not one supplies a `manifold=`
+   keyword**. So the `else` arm, which is the ONLY reader of a rung-72 point's live `v` inside that
+   function, is unreachable. The contrast is `_triple_gains_at`, whose callers DO pass
+   `manifold=False` at four sites — which is why rung 68 needs both arms and rung 72 does not.
+   § (iii)'s rule for the quartic's three dead roots, in its second place in the file.
+2. **`riding4`'s non-Shared arm was a `_ => false` where Python RAISES.** `_riding4` reads
+   `p["required_fuel"]`, `p["required_gov"]` and `p["b_cmd"]` with a BARE index — only `v_regime`
+   goes through `.get` — so a foreign trajectory raises there exactly as it does in
+   `authority_law`'s census. The port had given the two sites OPPOSITE treatments one screen apart,
+   and **§ 5.28.2 (a) had already measured `false`-in-a-filter to be the quietest of the three
+   silent-fallback shapes.** Now a refusal; the `v_regime: None` arm stays `false`, because there
+   `false` is Python's own answer.
+3. **The `_quad_gains_at` deferral leaves a trap no gate can see.** Only rungs 72 and 73 define the
+   method, so the MRO resolves it to **rung 73's body** for `demand_gains` (74), `split_gains` (80)
+   and `authority_mask` (81) — measured on the live classes. A later slice that wires any of those
+   three to this slice's `quad_gains_at` is a silent value error with no value key that would
+   notice. Written into the module doc, which is the cheap version of installing the field.
+
+All three verified against the dump afterwards: **still 3 216 / 3 216 bit-exact.**
+
+##### (h) **P7 — THE CPython EXEMPTION, PRE-REGISTERED BEFORE STEP 5 CAN PRODUCE IT**
+
+Slices Z, AB and AC each carried a pre-registered CPython-exemption prediction (P3 / P8) and each
+one was falsified in an instructive direction; § 5.28's P1–P6 carry none, which would leave step 5's
+exemption a POST-HOC list — the shape § 5.26.4 and § 5.27.6 both record as passing while asserting
+nothing. Registered now, off step 3's own measurement rather than off a guess:
+
+> **P7.** The slice's CPython arm is exempt on the keys downstream of a float or complex `sum()`,
+> and on nothing else. Concretely: (i) `charpoly_selftest` contributes exactly **4 of its 10** keys
+> — `general.trace_err`, `general.det_err`, `general.det_vs_a0`, `triangular.trace_err` — attributed
+> at step 3 to the two float traces (`det_err`, `det_vs_a0`) and to `sum(roots)` (`trace_err`), with
+> `_charpoly4`'s inner matrix product measured **INERT** on both matrices; (ii) the reader keys
+> inherit the plant's own long-known drift and NOT a new cause, because `sum(roots)` is the ladder's
+> ONLY complex `sum()` and every other `sum()` over roots is `sum(1 for z in …)`, an integer count
+> on CPython's int path; (iii) `resid`, `diag_err` and `max_imag` do NOT drift.
+>
+> The prediction that can fail: **any exempt key that is not downstream of a `sum()` falsifies P7**,
+> and the count `4` is exact, not a bound.
+
+Step 5 also inherits a written instrument: `probe_ad3_readers.py` already emits **3 216 keys** over
+all five readers at their shipped defaults, so the dump is seeded rather than started.
+
+##### (i) THE STEP-2 BASELINE WAS DESTROYED TWICE, BY MY OWN RUNNERS
 
 Steps 1 and 2 are the only two in the slice with no full-gate count in the plan, so step 3 opened by
 taking one. Two attempts died:

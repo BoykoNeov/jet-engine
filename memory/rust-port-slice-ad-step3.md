@@ -55,6 +55,15 @@ MARGIN, which is the part worth keeping: the closest shipped point sits **4.08x*
 69's 3.5. [[rust-port-slice-ac-step7]] recorded exactly this shape one slice earlier and I
 reproduced it anyway.
 
+**THREE THINGS THE DIFF CANNOT SEE, ASKED FOR RATHER THAN WAITED FOR** — a bit-exact dump is
+evidence about what it touches and silent about what no input reaches. Measured, then disclosed in
+the port: `manifold=false` is DEAD (all twelve pass sites omit the keyword, where
+`_triple_gains_at`'s callers set it False at four); `riding4`'s non-Shared arm was a `_ => false`
+where Python's bare `p["required_fuel"]` RAISES — **opposite treatments one screen apart, and step
+2's own lesson is that `false`-in-a-filter is the quietest failure shape**; and the
+`_quad_gains_at` deferral leaves a trap no gate can see, because the MRO resolves that name to rung
+**73's** body for rungs 74, 80 and 81. All three re-verified: still 3 216 / 3 216.
+
 **Two more, both about my own instruments:**
 - The step-3 row of the plan enumerated **9 of 15** methods — the five readers and
   `_assert_fuel_boundary`, the 481 lines the pre-flight itself attributes to readers, appear in NO

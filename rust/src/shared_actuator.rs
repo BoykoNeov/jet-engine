@@ -69,6 +69,26 @@
 //! The port carries none of the three, so it is clean by construction; it is recorded here so a
 //! later reader of this module does not go looking for a rung-72 reader that was never written.
 //!
+//! # A FOURTH CELL THE PRE-FLIGHT's CENSUS COULD NOT SEE — **AND THE TRAP ITS DEFERRAL LEAVES**
+//!
+//! [`quad_gains_at`] has **two definers** (rungs 72 and 73), an identical signature and a
+//! behavioural override, so it clears every filter § 5.28 (ii) applied except *"a caller exists"* —
+//! and it fails that one because **nothing calls it**. It is handed to `_with_share` / `_with_ref`
+//! as a bound method at twelve sites across six rungs, so neither `"." + name + "("` nor an AST
+//! `Call` node ever matches it. The cell column measures **4**, not 3.
+//!
+//! No [`TripleHooks`] field is installed, because on the shipped ladder the dispatch is
+//! unreachable: all five rung-72 readers are redefined by NOBODY among the twelve descendants, and
+//! no rung-73-or-later code calls one. A pointer nothing can select differently is a defence with
+//! no reader. Booked to slice **AE** on § 5.27 (x)'s `_legs` precedent.
+//!
+//! **THE TRAP THAT DEFERRAL LEAVES, WRITTEN DOWN HERE BECAUSE NO GATE CAN SEE IT.** Only rungs 72
+//! and 73 define the method, so Python's MRO resolves it to **rung 73's body** for
+//! `demand_gains` (74), `split_gains` (80) and `authority_mask` (81) — measured over the live
+//! classes, not read off the source. A later slice that wires any of those three readers to
+//! [`quad_gains_at`] below is a silent value error, and the port has no value key that would
+//! notice. Wire them to rung 73's body, or install the cell at that point.
+//!
 //! [`shared_cells`]: https://example.invalid/ "landed at slice AD step 3"
 
 use std::cell::Cell;
@@ -1070,6 +1090,18 @@ pub fn jac4(gg: &QuadGains, taus: (f64, f64, f64, f64)) -> [[f64; 4]; 4] {
 /// `manifold = true` puts the stator on the shared manifold before differencing (rung 68's exact
 /// statement of the algebra, inherited unchanged), with the APPLIED clip standing in for rung 68's
 /// single `g`.
+///
+/// # AND `manifold = false` IS DEAD AT THIS RUNG — a SECOND unreachable branch, measured
+///
+/// `_quad_gains_at` is never CALLED; it is passed to `_with_share` / `_with_ref` as a bound method
+/// at **twelve** sites over six rungs, and **not one of them supplies a `manifold=` keyword**. So
+/// the parameter is `True` on every shipped input and the `else` arm below — which is the ONLY
+/// reader of a rung-72 point's live `v` inside this function — is unreachable. The contrast is
+/// [`triple_gains_at`](crate::three_loop::triple_gains_at), whose own callers DO pass
+/// `manifold=False` at four sites, which is why rung 68 needs both arms and rung 72 does not.
+///
+/// Ported faithfully and **disclosed, never gated** — § 5.28 (iii)'s rule for the quartic's three
+/// dead roots, in its second place in this file.
 #[allow(clippy::too_many_arguments)]
 pub fn quad_gains_at(
     core: &ScheduledStatorCore, flight: &FlightCondition, p: &FuelPoint,
@@ -1198,7 +1230,17 @@ pub fn riding4(traj: &[FuelPoint], b_max: f64) -> Vec<FuelPoint> {
             PointExtra::Shared { required_fuel, required_gov, b_cmd, v_regime: Some(vr), .. } =>
                 required_fuel > 0.0 && required_gov > 0.0
                     && 0.0 < b_cmd && b_cmd < b_max && vr == Regime::Riding,
-            _ => false,
+            // A stator-less rung-72 point is not RIDING a stator it does not have: `false` is
+            // the answer Python's `p.get("v_regime") == "riding"` gives on `None`, not a fallback.
+            PointExtra::Shared { v_regime: None, .. } => false,
+            // **AND EVERY OTHER VARIANT REFUSES, WHICH IS THE OPPOSITE OF A FILTER's USUAL ARM.**
+            // Python reads `p["required_fuel"]`, `p["required_gov"]` and `p["b_cmd"]` with a BARE
+            // index — only `v_regime` goes through `.get` — so a non-six-state point raises
+            // `KeyError` here exactly as it does in `authority_law`'s census. Slice AD step 2
+            // measured `false`-in-a-filter to be the QUIETEST of the three silent-fallback shapes
+            // (the reader computes over an empty set and reports perfect tracking), and this
+            // function is a filter, so the two sites get the SAME treatment and not opposite ones.
+            _ => panic!("rung-72's `_riding4` reads `required_fuel`/`required_gov`/`b_cmd` with a                          bare index, so a trajectory that is not this rung's raises rather than                          filtering to nothing. An empty riding set reports PERFECT tracking and                          every statistic downstream of it is then computed over nothing."),
         })
         .copied()
         .collect()
