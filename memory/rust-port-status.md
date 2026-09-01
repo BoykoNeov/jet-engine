@@ -276,7 +276,11 @@ BY VALUE**: machine held fixed, pointer swapped — **32 keys move and 70 vanish
 −1.000000000002735 → 0.0.
 
 Eight predictions P1–P8, including the CPython exemption pre-registered as a named set with a
-falsifier. See [[rust-port-slice-ae-preflight]].
+falsifier — and **P1/P7 were jointly impossible as first written** (one claimed a new hook
+field, the other that re-aiming the existing one is the defect, but that slot ships since AB).
+Settled by measurement: **0 reads of  on a rung-73 machine** against a liveness control
+at 1, so the re-aim is RIGHT,  stays at **13**, and the shippable defect is the
+**missing refusal**. P7 stands FALSIFIED before step 1 rather than quietly rewritten. See [[rust-port-slice-ae-preflight]].
 
 ## Slice AB, step by step
 

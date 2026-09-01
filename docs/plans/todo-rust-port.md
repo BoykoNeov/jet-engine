@@ -18226,9 +18226,16 @@ which is unsound for a message split across adjacent literals:
 |---|---|---|
 | `TWO declared` | rung 73 only | discriminates |
 | `rung-73.*origin` | rung 73 only | discriminates |
-| `DECLARED` | 4 classes (72, 73, 74, 75) | does not |
+| `DECLARED` | 5 classes (72–76) | does not |
 | `no set point` | 4 classes (70, 71, 72, 74) — **not 73** | fires an INHERITED assert |
-| `FORCED release` | 5 classes (68, 70, 71, 72, 74) — **not 73** | fires an INHERITED assert |
+| `FORCED release` | **9 classes** (43, 65, 66, 67, 68, 70, 71, 72, 74) — **not 73** | fires an INHERITED assert |
+
+**THIS TABLE WAS WRONG ON TWO ROWS WHEN IT WAS FIRST WRITTEN, AND THE CAUSE WAS THE WINDOW.**
+The first run swept an **8-class** neighbourhood (rungs 68–75) and read the rung numbers off
+column positions; re-run over **all 58 classes in `engine.py` with the names EMITTED**, `DECLARED`
+is 5 rather than 4 and `FORCED release` is **9 rather than 5** — it reaches back to rung 43. A
+needle census scoped to the rungs you expect to match measures the window, not the needle, which
+is [[rust-port-slice-w]]'s rule arriving for the third time in this pre-flight.
 
 **Two of the five gates filed under rung 73 assert a refusal rung 73 does not own** — slice U's P2
 one family on (*the gate named for rung 50 fires rung 49's assert*). Disclosed, ported as-is, and
@@ -18268,9 +18275,19 @@ the table and asserts it:
 
 #### (ix) THE PREDICTIONS
 
-* **P1.** `_with_ref` gets its **OWN field** at rung 73, not a re-aim of AB's pointer. A port that
-  re-aims the single slot compiles, runs, and **passes all 27 ported gates**, because no shipped
-  rung-73 test calls a rung-69 reader. Step 5 owes the manufactured pairing that catches it.
+* **P1 — RE-SPECIFIED BEFORE STEP 1, BECAUSE ITS FIRST WRITING CONTRADICTED P7.** `with_ref` is
+  **already a shipped slot** (slice AB installed `TripleHooks::with_ref`; `cross_split.rs:289` and
+  `full_split.rs:168` forward it), so *"rung 73 gets a new field"* names two structurally different
+  ports and § (i) does not choose between them: **(1)** rung 69's slot is left alone and rung 73
+  gets a second, differently-named field — under which a rung-69 reader on a rung-73 table writes
+  `_ref` **correctly**, which is *not* what Python does; or **(2)** rung 73 **re-aims** `with_ref`
+  and the REFUSAL is the guard, which is Python exactly. **Probe K settles it by measurement**: a
+  data descriptor on `_ref` counts **0 reads** across a full rung-73 reader run, against a liveness
+  control that counts a deliberate read as 1. Nothing on a rung-73 machine reads `_ref`, so **(2)
+  is the correct port**, and the prediction is restated: *the re-aim is RIGHT, and the shippable
+  defect is the **MISSING REFUSAL** — a port that re-aims the slot and omits rung 73's
+  `integrate_fuel` assert compiles, runs, and **passes all 27 ported gates**, because no shipped
+  rung-73 test calls a rung-69 reader.* Step 5 owes the manufactured pairing that catches it.
 * **P2.** Rung 73's `integrate_fuel` refusal (`_ref_law in ('sched','applied')`) is what makes the
   wrong pairing LOUD in Python. Ported at **step 1**, with a gate that drives it — otherwise the
   Rust failure shape is a silent fallback, and § 5.28.5's lesson is that the silent shape is the
@@ -18293,11 +18310,24 @@ the table and asserts it:
   it.**
 * **P6.** The two inherited-refusal gates of § (vii) port as-is, and their Rust assertion messages
   name the rung that OWNS the refusal rather than rung 73.
-* **P7.** No new `Hooks` field beyond `with_ref`: `TripleHooks` goes 13 → **14**, and the other
-  five pointers re-aim existing slots.
+* **P7 — FALSIFIED BEFORE STEP 1, BY P1's OWN REPAIR.** As written it said `TripleHooks` goes
+  13 → **14**. Under P1's measured reading (2) there is **no new field at all**: every one of the
+  six pointers re-aims an existing slot, so **`TripleHooks` stays at 13**. Recorded as falsified
+  rather than silently corrected, because *a prediction that is already false costs more at step 5
+  than a correction costs today* — and because the two predictions were inconsistent with each
+  other on the day they were written, which no amount of re-reading had caught.
 * **P8.** **FIVE steps**, and the count is a prediction on § (viii)'s pricing.
 
 #### (x) DEFECTS IN THIS PRE-FLIGHT's OWN INSTRUMENTS — five, all caught before anything was written down
+
+**AND A SIXTH THAT IS NOT AN INSTRUMENT BUT A PAIR OF CLAIMS.** **P1 and P7 contradicted each
+other**, and neither says so: P7 asserted a new `Hooks` field while P1 asserted that re-aiming the
+existing one is the defect — but `with_ref` has been a shipped slot since slice AB, so both cannot
+hold. It was not caught by re-reading the section; it was caught by asking *which of the two ports
+does Python's behaviour force*, and then measuring (probe K, § (ix) P1). **Two predictions written
+in one sitting can be individually plausible and jointly impossible, and the check for that is not
+proof-reading — it is naming the object they disagree about.** The § (vii) window defect above is
+the same failure in a table rather than in a prediction.
 
 1. **Probe B's reader census scored `_quad_gains_at` at 0 readers** and it has **11 call sites**.
    The predicate counted `self.NAME` / `cls.NAME`; every site is `m._quad_gains_at`, on the LOCAL

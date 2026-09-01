@@ -47,4 +47,13 @@ the pointer** — 32 keys move, 70 vanish, and the rung's own headline number `F
 −1.000000000002735 → 0.0. Asking *does shipped code sit in the seat* is the weaker question;
 *does a discriminating input exist* is the cell question.
 
+**And two predictions written in one sitting were jointly impossible.** One said a new hook
+field, the other said re-aiming the existing one is the defect -- but that slot has been
+shipped since slice AB, so both could not hold. Re-reading never caught it; naming the object
+they disagreed about did, and then one measurement settled it (0 reads of the parent field on
+a child machine, against a liveness control at 1). **The check for a contradiction between two
+claims is not proof-reading -- it is naming what they disagree about.** The same sitting also
+ran a needle census over the 8 classes I expected to match and got two counts wrong; widened
+to all 58, one needle went from 5 classes to 9 and reached back thirty rungs.
+
 Related: [[rust-port-slice-ad-step6]], [[rust-port-status]], [[rust-port-guessed-census-bars]].
