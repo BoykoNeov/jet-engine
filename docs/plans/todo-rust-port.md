@@ -18513,8 +18513,9 @@ one body, one clip, which is why `_applied_clip` is defined exactly once in Pyth
 **SHIPPED**: the slice's ONE added cell (`TripleHooks` 13 → 14, `quad_gains_at`, with the shared
 refusal in every table below rung 72), rung 73's `_quad_gains_at` body, and **all five public
 readers** — `handover_law`, `applied_gains`, `applied_cells`, `ref_discriminator`, `applied_bill`
-— in `rust/src/applied_reference.rs`, which goes **401 → 1 653 lines** (both counts read off the
-tree, not typed: `git show HEAD:…| wc -l` and `wc -l`). Three width tripwires went `E0063`/`E0027`
+— in `rust/src/applied_reference.rs`, which goes **401 → 1 663 lines** (both counts read off the
+tree, not typed: `git show HEAD:…| wc -l` and `wc -l` — and § (g) is why the first writing of
+this sentence said 1 653). Three width tripwires went `E0063`/`E0027`
 and were discharged. **No gate file: the ported gates are step 3**, and slice AC's steps 2/3 and
 AD's step 3 set the precedent that a body step proves itself by DRIVING every reader and diffing
 the printed values.
@@ -18523,6 +18524,13 @@ the printed values.
 The key count has an INDEPENDENT witness rather than only the `lines().count()` that printed it:
 the PyPy dump is 154 754 bytes with CRLF endings, the Rust dump 149 688 with LF, and the
 difference is **exactly 5 066** — one byte per line, measured (`\r\n` count 5 066 against 0).
+
+**THE DUMP WAS DRIVEN ON THE CRLF TREE AND THE SHIPPED TREE IS LF, AND THAT IS ARGUED RATHER THAN
+RE-RUN.** § (f)'s conversion came after the drive, and the throwaway harness was deleted before
+it. The claim transfers because **`src/` contains ZERO `include_str!` sites** (measured): no line
+ending in this crate reaches the plant, and none of the six source-reading sites reads
+`applied_reference.rs`. Restoring the harness to re-drive would have been the weaker move — it
+would show that the two agree without showing that they must.
 
 ##### (a) THE FINDING — **AN INSTRUMENT FROM THE PREVIOUS SESSION WAS STILL RUNNING, AND MY FIRST ACT OF THIS ONE WAS TO BACK UP A FILE IT HAD MUTATED**
 
@@ -18549,8 +18557,9 @@ two were found by measuring afterwards, not by noticing:
 uncommitted — so the clean source was reconstructed from **two independently mutated snapshots**:
 the on-disk file (carrying M22, +19 bytes) and the backup (carrying M19, +0 bytes). Each was
 reverted by its OWN single mutation, using the sweep's own anchor strings, and **the two results
-are byte-identical at 86 016 bytes**. That agreement is the evidence; either revert alone would
-have been a hope. The restored tree then re-drove the dump and reproduced the 20:53 baseline
+are byte-identical at 86 016 bytes**, a figure that is **AS AT RECOVERY** — on the then-CRLF
+tree, before § (b)'s doc comment landed (§ (g)). That agreement is the evidence; either revert
+alone would have been a hope. The restored tree then re-drove the dump and reproduced the 20:53 baseline
 **exactly**, which is what makes the 5 066-key `Rust == PyPy` result a measurement of the shipped
 code and not of whatever the sweep happened to have installed.
 
@@ -18722,10 +18731,16 @@ every `\n` back to `os.linesep`. A file that was LF comes back CRLF, whole. The 
 this step actually used (`mutate_step2b.py`) reads and writes with `newline=""`, and it asserts
 the source is restored **byte for byte** rather than merely restored.
 
-**THE BLAST RADIUS WAS MEASURED, NOT ASSUMED — TWICE.** A census of the crate: **171 `.rs` files,
-141 LF, 30 CRLF, 0 mixed**, and the CRLF set is exactly the files port tooling has rewritten over
-the phase. And of the **six** `include_str!` sites that read a `.rs` source, **only this one is
-line-ending dependent**: `slice_ac_cells.rs`'s counts anchor at `\npub const R7…` and use
+**THE BLAST RADIUS WAS MEASURED, NOT ASSUMED — TWICE, AND THE FIRST MEASUREMENT MIS-NAMED ITS
+OWN POPULATION.** The census read **171 files, 141 LF, 30 CRLF, 0 mixed** and reported them as
+*"171 `.rs` files"*; **167 were Rust and 4 were Python**, swept in by a glob that also took
+`../turbojet/*.py` (§ (g)). The Rust-only split at that moment was **137 LF / 30 CRLF**, and the
+CRLF set is exactly the files port tooling has rewritten over the phase. **Re-run after this step's
+conversion: 167 Rust files, 146 LF, 21 CRLF** — 137 + 9 and 30 − 9, the arithmetic check the first
+count could not offer. **So the trap is DORMANT, not gone**: twenty-one files are still CRLF,
+harmless only for as long as no gate scopes on a brace-newline in one of them. And of the **six**
+`include_str!` sites that read a `.rs` source, **only this one is line-ending dependent**:
+`slice_ac_cells.rs`'s counts anchor at `\npub const R7…` and use
 `.lines()`, `slice_y_dispatch.rs` matches a single-line expression, `slice_ad_dispatch.rs` filters
 `.lines()` on a trimmed `#[test]` — every one of those matches identically under both endings,
 checked rather than argued. So `rung71` was not the first casualty alphabetically; it was **the
@@ -18756,6 +18771,38 @@ prediction rather than a reading.
 kept at `M:\claud_projects\temp\rust-ae\gate_step2.txt` (86 of 139 targets, exit 101), because the
 whole content of § (f) is a defect that a green re-run erases every trace of.
 
+
+
+##### (g) THREE NUMBERS READ OFF THE TREE AT THE MOMENT THEY WERE TRUE, AND STALE BY THE TIME THEY SHIPPED
+
+This section's own header said **1 653 lines**, and the file is **1 663**. The count was read off
+the tree immediately after § (a)'s recovery — and then § (b)'s ten-line doc comment landed **in
+this same step**, after the reading. The provenance clause makes it worse rather than better:
+*"both counts read off the tree, not typed"* is TRUE, and it buys the number a credibility a typed
+one would not have had, while the tree moved underneath it. **A measured number carries a TIMESTAMP
+as well as a value, and a step that keeps editing is a step whose measurements expire.**
+
+Two more of the same, found by re-running each figure against the shipped tree rather than by
+re-reading the prose:
+
+* **`86 016` bytes** (§ (a)) is the two snapshots' agreement AT RECOVERY, on the then-CRLF tree.
+  It is a fact about the incident, so it is TIMESTAMPED rather than refreshed — refreshing it would
+  destroy the reading it exists to record.
+* **the line-ending census** (§ (f)) was taken BEFORE this step converted nine files, and it
+  **mis-named its own population**: *"171 `.rs` files"* was 167 Rust and 4 Python, because the glob
+  also swept `../turbojet/*.py`. Corrected in place, with the after-state beside it so the two can
+  be checked against each other by arithmetic (137 + 9 = 146, 30 − 9 = 21).
+
+**AND THE PYTHON GATE IS A MEASURED NO-OP HERE, WHICH IS RECORDED RATHER THAN LEFT HANGING.**
+No `.py` file is in this step's diff and `CLAUDE.md` is untouched, so `test_claude_md_reference.py`
+cannot fire and no Python input has changed. `pytest` is not run, and the reason is a property of
+the diff rather than a judgement about risk.
+
+**AND THE TOOL THAT CAUSED § (a) AND § (f) IS STILL ON DISK AND STILL A TEMPLATE.**
+`mutate_step2.py` reads and writes in text mode, and this step's replacement `mutate_step2b.py`
+**execs its header** to reuse the mutation set verbatim rather than re-type it — so the broken file
+stays live and is exactly what step 3 would copy. Its docstring now carries the hazard at the top,
+because a memory entry protects the next SESSION and a docstring protects the next READER.
 
 ### Consequences for the phase table
 

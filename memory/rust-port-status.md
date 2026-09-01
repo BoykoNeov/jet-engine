@@ -307,7 +307,7 @@ See [[rust-port-slice-ae-step1]].
 
 ### Slice AE step 2 — SHIPPED 2026-09-01
 
-The gains chain and **all five public readers**: `rust/src/applied_reference.rs` **401 → 1 653
+The gains chain and **all five public readers**: `rust/src/applied_reference.rs` **401 → 1 663
 lines**, `TripleHooks` **13 → 14** (`quad_gains_at`, the slice's one ADD, with the shared refusal in
 every table below rung 72). **`Rust == PyPy` on all 5 066 keys, bit for bit** — 0 differing,
 0 missing, 0 extra. No gate file (the ported gates are step 3). Full gate **140 blocks (139

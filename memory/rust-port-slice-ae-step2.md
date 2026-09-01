@@ -10,8 +10,10 @@ metadata:
 
 Slice AE step 2 (rung 73 Rust port) shipped the slice's one added cell (`TripleHooks` 13 → 14,
 `quad_gains_at`), rung 73's gains body and **all five public readers** in
-`M:\claud_projects\jet engine\rust\src\applied_reference.rs` (**401 → 1 653 lines**, both counts
-read off the tree). **`Rust == PyPy` on all 5 066 keys, bit for bit.** Plan § 5.29.2.
+`M:\claud_projects\jet engine\rust\src\applied_reference.rs` (**401 → 1 663 lines**, both counts
+read off the tree — and the write-up first said 1 653, because the count was taken before this
+same step's last doc-comment edit landed: **a measured number carries a timestamp as well as a
+value**). **`Rust == PyPy` on all 5 066 keys, bit for bit.** Plan § 5.29.2.
 
 **THE LESSON: a background instrument outlives the session that launched it, and its output does
 not.** The step's mutation sweep had been launched in the background at the end of the previous
@@ -42,9 +44,12 @@ the diffstat and `git show` all reported exactly the three intended lines. The f
 at target 86 of 139: a slice-AC gate that `include_str!`s a source file and scopes its search with a
 newline-brace-newline pattern extracted 65 145 chars instead of 4 229 and fired *"the scope slipped past the function
 body"*. Proven not to be the code change by converting **HEAD's own bytes** to CRLF (fails
-identically) and the worktree's to LF (passes identically). Census: 171 `.rs` files, 141 LF,
-30 CRLF, and the CRLF set is exactly what port tooling has rewritten; of the six `include_str!`
-sites reading a `.rs` file, **only that one is line-ending dependent** — checked, not assumed.
+identically) and the worktree's to LF (passes identically). Census: **171 files, 141 LF, 30 CRLF** — and that
+census mis-named its own population (167 Rust, 4 Python, from a stray glob); the Rust split was
+137 LF / 30 CRLF, and **21 files are still CRLF today**, so the trap is dormant, not gone. Of the
+six `include_str!` sites reading a `.rs` file, **only that one is line-ending dependent** —
+checked, not assumed, and `src/` has **zero** such sites, which is why the bit-exact dump driven
+on the CRLF tree transfers to the LF one without a re-run.
 
 **How to apply:** a tool that rewrites a source file must read AND write with `newline=""`, and
 assert the restore is **byte for byte**, not merely that the file is back. And when a gate that
