@@ -1573,7 +1573,14 @@ pub struct WindowOverlap {
 /// trajectory before `sta` does, so any non-`Triple` point raises there first.
 fn triple_window_extra(p: &FuelPoint) -> (f64, f64, Regime) {
     match p.extra {
-        PointExtra::Triple { required, b_cmd, v_regime, .. } => (required, b_cmd, v_regime),
+        PointExtra::Triple { required, b_cmd, v_regime, .. }
+        // SLICE AD: rung 72 records all three, with `required` the BINDING one — but only
+        // a rung-72 march WITH a stator can answer a rung-70 reader.
+        | PointExtra::Shared { required, b_cmd, v_regime: Some(v_regime), .. } =>
+            (required, b_cmd, v_regime),
+        PointExtra::Shared { v_regime: None, .. } => panic!(
+            "rung-70's reader on a STATOR-LESS rung-72 trajectory: `v_regime` is `None` \
+             because no stator solve ran, and there is no regime to report"),
         PointExtra::None
         | PointExtra::Asym { .. }
         | PointExtra::Valve { .. }

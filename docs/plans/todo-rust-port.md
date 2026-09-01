@@ -17013,6 +17013,109 @@ casting both to `*const ()`, to assert they are different cells. **They have dif
 so the comparison the cast forces is one the type system already guarantees — a gate that cannot
 fail, written to check something that cannot be false. It is deleted and the reason is in its place.
 
+#### 5.28.2 SLICE AD step 2 — the six-state march, **THIRTEEN READERS THAT WOULD HAVE MISTREATED ITS TRAJECTORY IN SILENCE**, and a gate of mine that compared the plant with itself
+
+**SHIPPED**: rung 72's `integrate_fuel` + `r72_integrate_fuel_shared` (the six-state RK4),
+`PointExtra::Shared` (30 keys), the `Authority` label, `applied_clip`, `py_max4`, nineteen widened
+reader sites, and `rust/tests/slice_ad_march.rs` (**13 gates**). **10 of 10 mutations killed —
+after the first run killed 9 and found one of my own gates blind.** Full gate **136 targets /
+1 365 passed / 0 failed** — taken at step 3's opening, because steps 1 and 2 are the only two in
+the slice that quoted none, and taken on a tree with step 3's additions PARKED OUT so it is a
+reading of step 2 and not of a mixture (§ 5.28.3 (f) is what two earlier attempts cost).
+
+##### (a) THE FINDING — **THE CRATE'S "THE NEXT VARIANT BREAKS THE BUILD" CONVENTION HOLDS AT 7 OF 20 SITES**
+
+`cross_extra`'s doc comment states the rule this slice leaned on: *"The arms are spelled out rather
+than left to a wildcard so that the NEXT `PointExtra` variant breaks the build here and gets the
+same question asked of it — see rung 65's `valve_of`, whose wildcard is what slice Z's audit had to
+unpick by hand."*
+
+Adding `PointExtra::Shared` measured how far it reaches. Over the 20 `match … .extra` sites in
+`src`: **7 exhaustive, 13 carrying a `_ =>` wildcard.** The compiler stopped at 6 of the 7. The
+other 13 compiled silently, and each would have answered a rung-72 trajectory wrongly:
+
+| fallback | sites | what a rung-72 point would have got |
+|---|---|---|
+| `_ => 0.0` | 3 | the DESIGN stator setting for a march that recorded a live one |
+| `_ => false` (in a filter) | 3 | **silently dropped** — the reader computes over an EMPTY set |
+| `_ => panic!` / `unreachable!` | 7 | a refusal Python does not raise, on a dict that carries the key |
+
+**The `false`-in-a-filter three are the quietest**: `riding` returning an empty set reports perfect
+tracking, and every statistic downstream is then computed over nothing. Python's rung-72 march says
+in so many words that *"every inherited reader works on this trajectory"*, so all thirteen are
+widened. **The one widening question answered NO is `cross_extra`**, which refuses rung 72 for the
+reason it already refuses rungs 66 and 68 — this march iterates the joint sweep UNDAMPED and
+carries no `ic_damp`. Four more sites live in `tests/` (the slice-AA/AB oracle writers); those
+**refuse**, because a skipped variant makes a golden agree by recording nothing.
+
+##### (b) AND THE PROBE THAT COUNTED THE SITES WAS WRONG TWICE, IN THE SAME DIRECTION
+
+It reported **12** wildcards, then 12 again, before 13. Both misses were the same site —
+`three_loop.rs:2032`, a `match` written entirely on one line. The first regex anchored `_ =>` to a
+line start; the repaired one still scanned a body beginning at the line *after* the `match`, which
+for a single-line match is empty. **An instrument that undercounts silent fallbacks is the exact
+defect it was built to find**, and it undercounted twice before it agreed with the compiler.
+
+##### (c) THE GATE THAT COMPARED THE PLANT WITH ITSELF — **CAUGHT BY MUTATION, NOT BY REVIEW**
+
+Mutation **m7** swapped `gf > gr` to `gr > gf` inside `authority()`, inverting the label on every
+point where the two legs disagree. **The gate passed.** It asserted
+`au == authority(g_fuel, g_gov)` — the recorded label against *the same function that recorded it* —
+and its counting half survived because inverting a bijection just exchanges two non-zero counts.
+
+That is the defect **rung 72's own spec names**: *"the fifth instance of the
+shipped-instrument-agrees-with-itself pattern in this family (rung 67 gate 9, rung 71 § 1.4, rung 72
+§ 4 and § 8's `_charpoly4`) … the only defence that has ever worked is a gate that FAILS when the
+two laws are the same one."* Reproduced by me, in a gate written to check that very rung, and found
+only because the mutation sweep ran. The expectation is now spelled out from the two clips, plus an
+independent cross-check that the named leg is the larger one; **m7 is killed on the second run.**
+
+##### (d) `v_regime` IS AN `Option` HERE AND A BARE `Regime` EVERYWHERE ELSE
+
+Rung 70's march *requires* a stator; rung 72's does not, because 8 of `shared_bill`'s 16 cells
+disarm it and Python's `stator()` returns the constant `(0, None)` there. `Regime::Dormant` is a
+real regime meaning `b = 0` **after a solve ran**, so reusing it would put a label in the trajectory
+the integrator never produced. Six reader sites bind the field; each gets an explicit
+`v_regime: None` arm — `false` in the two filters (Python compares `None` to a string and gets
+`False`) and a refusal in the four that need a regime.
+
+##### (e) A BAR OF MINE THAT FAILED FOR THE PHYSICS BEING RIGHT
+
+`both_admissible_composition_laws_march` first asserted `len() > 100` on each arm, and the `sum`
+arm returned **84**. `sum` double-clips, starves the burner, and takes the march's break arm
+earlier. Driven at these exact settings, **Python returns 341 points on `max` and 84 on `sum`** —
+the same two lengths. The bar was a guess about the physics dressed as a check on the port; it is
+rewritten as a **same-run comparison** (`n_sum < n_max`), because this file reads no golden.
+
+##### (f) THE CENSUS THE MARCH NEEDED, AND ITS ONE FLAG
+
+Every name `_integrate_fuel_shared` reaches through `self.` — **26** — classified before a line was
+written, because the march is where a missed cell becomes a silent wrong-parent dispatch: 9 fields,
+8 defined-once plain functions, 6 cells already in a shipped table, 3 cells this slice adds, and
+**one flag**. `_instant_fuel` has two definers, `SpoolTransient` and `TwoSpoolFuelTransient` — and
+they are **SIBLINGS**, neither in the other's MRO. Not an override, not a cell. **My probe's
+predicate was `defined >= 2` and never checked the MRO, which is exactly the defect § 5.19 (i)
+records the phase-5 census making**; reproduced here by an instrument I wrote after reading that
+paragraph.
+
+##### (g) THE TWO `except AssertionError: break` ARMS ARE REACHABLE, AND MORE THAN ONE THING FIRES
+
+Measured over the whole rung-72 suite: **38 marches — 34 run to the end, 3 END EARLY** (456 points
+lost), and **1 raises out of the method entirely** (an assertion outside `der`). The assertions that
+reach the arms are **four distinct (function, message) pairs**, not one:
+
+| raiser | message | n |
+|---|---|---|
+| `_close_fuel` | *rung-43 fuel closure does not bracket* | 82 |
+| `_instant_fuel` | *rung-43 fuel closure does not bracket* | 82 |
+| `_surge_fuel` | *rung-43 fuel closure does not bracket* | 4 |
+| `_surge_fuel` | *rung-49 phi floor* | 2 |
+
+So a `Result` collapsing distinct failures into one would lose information — the port's `Abort`
+carries the message, which is the shape the parent already uses, and the measurement is what makes
+that a decision rather than a copy ([[rust-port-slice-i]]: a bare `except` makes the question
+REACHABILITY).
+
 ### Consequences for the phase table
 
 Phase 8's `main.py` row is now "Rust CLI prints the tables and dumps plot JSON; port the

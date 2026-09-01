@@ -1874,11 +1874,19 @@ pub fn ring_visibility(
             // Python filters on `p.get("v_regime") == "riding"` — the RAW label, not `_riding`'s
             // three-loop filter, because the question is about the STATOR's own tracking.
             let rid: Vec<&FuelPoint> = traj.iter()
+                // SLICE AD (3 of 13): a `matches!` is a wildcard by construction, and
+                // without the second pattern every rung-72 point is filtered OUT -- the
+                // reader would return an EMPTY riding set and report perfect tracking.
                 .filter(|p| matches!(p.extra,
-                                     PointExtra::Triple { v_regime: Regime::Riding, .. }))
+                                     PointExtra::Triple { v_regime: Regime::Riding, .. }
+                                     | PointExtra::Shared {
+                                         v_regime: Some(Regime::Riding), .. }))
                 .collect();
             let e: Vec<f64> = rid.iter().map(|p| match p.extra {
-                PointExtra::Triple { v, v_cmd, .. } => v - v_cmd,
+                PointExtra::Triple { v, v_cmd, .. }
+                // SLICE AD (4 of 13): the filter above now admits rung 72, so this
+                // `unreachable!` would BECOME reachable without the matching arm.
+                | PointExtra::Shared { v, v_cmd, .. } => v - v_cmd,
                 _ => unreachable!("filtered to the five-state march"),
             }).collect();
             let nz: Vec<f64> = e.iter().copied().filter(|x| x.abs() > 1e-12).collect();

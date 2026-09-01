@@ -289,6 +289,16 @@ fn put_traj(c: &mut Cmp, p: &str, pts: &[FuelPoint]) {
         PointExtra::Triple { .. } =>
             &["b", "b_cmd", "g", "ic_iters", "ic_order", "ic_res", "required", "v", "v_cmd",
               "v_regime"],
+        // **AND A THIRD TIME**, at slice AD. Rung 72's shared-actuator route carries
+        // SIXTEEN extra keys — rung 68's ten plus the two clips split per leg, the two
+        // requirements split per leg, the authority label and the composition law.
+        // Sorted, because Python sorts them; the list is TYPED here and step 5's dump
+        // re-reads it off the live dict, which is `key_count`'s own discipline
+        // ([[rust-port-guessed-census-bars]]: five typed count bars, five wrong).
+        PointExtra::Shared { .. } =>
+            &["authority", "b", "b_cmd", "g", "g_fuel", "g_gov", "ic_iters", "ic_order",
+              "ic_res", "required", "required_fuel", "required_gov", "share_law", "v",
+              "v_cmd", "v_regime"],
     };
     c.d(&format!("{p}/extra_keys"), extra_names.len() as u64);
     for (ie, name) in extra_names.iter().enumerate() {

@@ -60,7 +60,7 @@ use turbojet::full_split::R71_TRIPLE;
 use turbojet::gas::{Gas, GasSpec};
 use turbojet::limited_bleed::BleedLimiter;
 use turbojet::map::ComponentMap;
-use turbojet::reference_split::{StatorIncidenceLimiter, R69_TRIPLE};
+use turbojet::reference_split::R69_TRIPLE;
 use turbojet::shared_actuator::{
     applied_clip, build_shared_actuator_cascade, SharedRigArm, ShareScope, IC_ORDER4_DECLARED,
     REF_LAW_DEFAULT, SHARE_LAW_DEFAULT, R72, R72_FUEL, R72_STATOR, R72_TRIPLE, R72_TWO,
@@ -112,10 +112,6 @@ fn design() -> TwoSpoolEngine {
 fn valve() -> BleedLimiter { BleedLimiter::with_tau(PHI, B, Some(TAU)) }
 
 fn phi_stator() -> StatorLimiter { StatorLimiter::from_margin(&lp_map(), V_MAX, SM, Some(TAU)) }
-
-fn inc_stator() -> StatorIncidenceLimiter {
-    StatorIncidenceLimiter::from_margin(&lp_map(), V_MAX, SM, Some(TAU))
-}
 
 /// Rung 72's arming: rung 70's machine — the governor is armed by a MARCH argument and `_gov_max`,
 /// never by an `at_lever` keyword.
@@ -183,7 +179,7 @@ fn every_table_below_rung_72_refuses_all_three_cells_by_name() {
         ("R71_TRIPLE", &R71_TRIPLE),
     ];
     for (name, t) in tables {
-        let a = message_of(|| { (t.reference)(&m, 1.0, 2.0, 3.0, 4.0); });
+        let a = message_of(|| { (t.reference)(&m.fuel.inner, 1.0, 2.0, 3.0, 4.0); });
         let b = message_of(|| { (t.rk4_floor_shared)(0.005, 20.0); });
         let c = message_of(|| { (t.shared_rig)(&m, &arm); });
         for (cell, msg) in [("_reference", &a), ("_rk4_floor_shared", &b), ("_shared_rig", &c)] {
@@ -201,7 +197,8 @@ fn every_table_below_rung_72_refuses_all_three_cells_by_name() {
 fn rung_72s_own_three_cells_answer() {
     let m = shared_machine(&shared_arm());
     let arm = SharedRigArm { sm: SM, tt4_max: TT4_MAX, ..Default::default() };
-    assert_eq!(message_of(|| { (R72_TRIPLE.reference)(&m, 1.0, 2.0, 3.0, 4.0); }), "");
+    assert_eq!(message_of(|| { (R72_TRIPLE.reference)(&m.fuel.inner, 1.0, 2.0, 3.0, 4.0); }),
+               "");
     assert_eq!(message_of(|| { (R72_TRIPLE.rk4_floor_shared)(0.005, 20.0); }), "");
     assert_eq!(message_of(|| { (R72_TRIPLE.shared_rig)(&m, &arm); }), "");
 }
@@ -278,7 +275,7 @@ fn reference_returns_req_bit_for_bit_at_this_rung() {
     let m = shared_machine(&shared_arm());
     for req in [0.0_f64, -0.0, 1.0, -3.25e-7, 1.7976931348623157e308, f64::MIN_POSITIVE] {
         for (g_own, gf, gr) in [(0.0, 0.0, 0.0), (1.0, 2.0, 3.0), (-5.0, 1e9, -1e9)] {
-            let got = (R72_TRIPLE.reference)(&m, req, g_own, gf, gr);
+            let got = (R72_TRIPLE.reference)(&m.fuel.inner, req, g_own, gf, gr);
             assert_eq!(got.to_bits(), req.to_bits(),
                        "rung 72's `_reference` is `return req`: {req} with ({g_own}, {gf}, {gr})");
         }

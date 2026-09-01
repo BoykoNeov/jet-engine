@@ -604,6 +604,11 @@ fn put_point(c: &mut Cmp, p: &str, pt: &FuelPoint) {
             c.f(&format!("{p}/g"), g);
             c.f(&format!("{p}/required"), required);
         }
+        // SLICE AD: a rung-72 point cannot reach a slice-AB dump. It is REFUSED
+        // rather than skipped -- a skipped variant makes a golden agree by recording
+        // nothing, which is the one way an oracle can pass while measuring less.
+        PointExtra::Shared { .. } => panic!(
+            "slice AB's oracle received a rung-72 SHARED-actuator point: this march \n             dispatched to the wrong integrator"),
         PointExtra::Valve { b, b_cmd } => {
             c.f(&format!("{p}/b"), b);
             c.f(&format!("{p}/b_cmd"), b_cmd);
@@ -757,6 +762,11 @@ fn point_bits(p: &FuelPoint) -> Vec<u64> {
             v.extend([g.to_bits(), required.to_bits(), b.to_bits(), b_cmd.to_bits(),
                       vv.to_bits(), v_cmd.to_bits(), fnv1a(regime_name(v_regime)),
                       ic_iters as u64, ic_res.to_bits(), fnv1a(ic_order)]),
+        // SLICE AD: a rung-72 point cannot reach a slice-AB dump. It is REFUSED
+        // rather than skipped -- a skipped variant makes a golden agree by recording
+        // nothing, which is the one way an oracle can pass while measuring less.
+        PointExtra::Shared { .. } => panic!(
+            "slice AB's oracle received a rung-72 SHARED-actuator point: this march \n             dispatched to the wrong integrator"),
     }
     v
 }

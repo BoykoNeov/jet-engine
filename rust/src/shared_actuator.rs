@@ -75,7 +75,14 @@ use std::cell::Cell;
 
 use crate::bleed_transient::{LeverArm, LeverHooks};
 use crate::engine::FlightCondition;
-use crate::fuel_transient::{AsymmetricLag, Floor, FuelTransientHooks, SurgeLimiter};
+use crate::fuel_transient::{
+    Authority, AsymmetricLag, Floor, FuelInstant, FuelLimiters, FuelTransientHooks,
+    PointExtra, SurgeLimiter,
+};
+use crate::gas::Abort;
+use crate::limited_bleed::Regime;
+use crate::three_loop::{closer_b, closer_v};
+use crate::two_spool_transient::{MarchedBleed, MarchedStator};
 use crate::limited_bleed::BleedLimiter;
 use crate::map::ComponentMap;
 use crate::reference_split::StatorIncidenceLimiter;
@@ -323,7 +330,10 @@ fn r72_at_lever(core: &ScheduledStatorCore, arm: &LeverArm) -> ScheduledStatorCo
 /// **195 278 CALLS, 195 278 RETURNED `req` BITWISE UNCHANGED** — so no value gate at this rung can
 /// see this cell, and there is no parent pointer to install because rung 72 is the first definer.
 /// Slice AE is where the break lives.
-fn r72_reference(_core: &ScheduledStatorCore, req: f64, _g_own: f64, _gf: f64, _gr: f64) -> f64 {
+fn r72_reference(
+    _core: &crate::two_spool_transient::TwoSpoolTransientCore, req: f64, _g_own: f64,
+    _gf: f64, _gr: f64,
+) -> f64 {
     req
 }
 
@@ -407,25 +417,397 @@ fn r72_shared_rig(
     (m, surge, lag)
 }
 
-/// RUNG 72's `integrate_fuel` — **STEP 2 LANDS THIS BODY.**
+/// The thirteen values rung 72's derivative returns — Python's 13-tuple, named.
 ///
-/// It panics rather than delegating to rung 71's, and the difference matters: delegating would
-/// make every rung-72 march silently a rung-71 one — one fuel-side leg where this rung has two —
-/// and no value gate could see it, because rung 71's marcher answers every call without raising.
-/// That is [`NO_TRIPLE`](crate::three_loop::NO_TRIPLE)'s stated reason applied to a swap instead
-/// of a cell.
-#[allow(clippy::too_many_arguments)]
+/// Two more than [`CrossTripleDer`](crate::cross_split) because the fuel leg's clip is a SIXTH
+/// state and its requirement is read beside the governor's: `dgf`/`dgr` where rung 70 has one
+/// `dg`, and `rf`/`rr` where it has one `req`.
+struct SharedDer {
+    da: f64,
+    dh: f64,
+    dgf: f64,
+    dgr: f64,
+    dq: f64,
+    dv: f64,
+    mf: f64,
+    inst: FuelInstant,
+    rf: f64,
+    rr: f64,
+    cmd: f64,
+    vcmd: f64,
+    /// `None` where no stator is armed — Python's `(0, None)`, and the reason
+    /// [`PointExtra::Shared`]'s field is an `Option`.
+    vreg: Option<Regime>,
+}
+
+/// RUNG 72's `integrate_fuel` — **the entry test, four guards, and the marcher.**
+///
+/// # THE STATOR IS NOT PART OF THE ENTRY TEST, AND THAT IS DELIBERATE
+///
+/// The SHARED ACTUATOR is this rung's subject, so the two fuel-side legs together are what it
+/// owns — with a stator (§ 2's four cells) or without (`shared_bill`'s `FG` and `FGV` cells,
+/// which have **no inherited home at all**: rung 52's own integrator refuses `lag` beside
+/// `tau_gov` in so many words, and rung 71's guard B refuses exactly this arming). Gating entry on
+/// a stator would leave those two cells unmarchable and the 16-cell ledger with a hole precisely
+/// where the fourth loop is alone.
+///
+/// # AND EVERY INHERITED ARM LEAVES THROUGH THE IMMEDIATE PARENT's TABLE
+///
+/// `super()` from this class is rung 71, so the reduce goes through [`R71_FUEL`] and not through a
+/// grandparent spelling that is only ACCIDENTALLY the same pointer today — rung 71's own note,
+/// applied one rung on.
+///
+/// [`PointExtra::Shared`]: crate::fuel_transient::PointExtra::Shared
+/// [`R71_FUEL`]: crate::full_split::R71_FUEL
 fn r72_integrate_fuel(
-    _core: &crate::fuel_transient::FuelTransientCore,
-    _flight: &FlightCondition,
-    _sched: &dyn Fn(f64) -> f64,
-    _nu0: (f64, f64),
-    _s_end: f64,
-    _ds: f64,
-    _lim: &crate::fuel_transient::FuelLimiters<'_>,
+    ft: &crate::fuel_transient::FuelTransientCore, flight: &FlightCondition,
+    fuel_schedule: &dyn Fn(f64) -> f64, nu0: (f64, f64), s_end: f64, ds: f64,
+    lim: &FuelLimiters<'_>,
 ) -> Vec<crate::fuel_transient::FuelPoint> {
-    unimplemented!(
-        "rung-72 `integrate_fuel` lands at slice AD step 2. It panics rather than delegating to \
-         rung 71's, because a delegation would march ONE fuel-side leg where this rung has two \
-         and no value gate could see the difference.");
+    let lag = lim.lag.or_else(|| ft.inner.lag.get());
+    // RUNG 67's clock rides on an instance attribute and `_stator_march` does not forward it as a
+    // keyword (rung 68's note, inherited through rungs 70/71), so reading only the argument would
+    // let a rung-72 march silently become a rung-68/69 one.
+    let tau_gov = lim.tau_gov.or_else(|| ft.inner.tau_gov.get());
+    let has_fuel = lag.is_some() && (lim.accel.is_some() || lim.floor().is_some());
+    if tau_gov.is_none() || !has_fuel {
+        return (crate::full_split::R71_FUEL.integrate_fuel)(
+            ft, flight, fuel_schedule, nu0, s_end, ds,
+            &FuelLimiters { tau_gov, lag, ..lim.clone() });
+    }
+    let tt4_max = lim.tt4_max;
+    assert!(tt4_max.is_some(),
+            "rung-72: `tau_gov` without `Tt4_max` is a governor with no set point. It would \
+             march as rung 68/69 -- ONE fuel-side leg -- while every reader reported the shared \
+             actuator (rungs 70/71's assert, inherited word for word).");
+    assert!(lim.s_off.is_none() && lim.tau_rel.is_none(),
+            "rung-72: rungs 50/51's FORCED release edges are an isolation instrument for a leg \
+             that could not pin its own trigger. All four legs here pin their own (rung 68's \
+             argument, verbatim through rungs 70/71).");
+    assert!(ft.inner.lever.lim.is_none() || crate::lagged_bleed::lagged(&ft.inner),
+            "rung-72: an INSTANTANEOUS valve beside lagged fuel-side legs is not a control but a \
+             different plant (rung 65 called the instantaneous limit singular, rung 66 refused \
+             the comparison for that reason). Give the valve a `tau` or leave it out.");
+    let share_law = ft.inner.share_law.get();
+    assert!(share_law == "max" || share_law == "sum",
+            "rung-72: the composition law on the SHARED actuator is this rung's one modelling \
+             decision and it is DECLARED; got {share_law:?}. 'max' is MIN-SELECT (the plant); \
+             'sum' double-clips and is s 3's isolation instrument, never the plant.");
+    r72_integrate_fuel_shared(
+        ft, flight, fuel_schedule, nu0, s_end, ds, lim.freeze,
+        tt4_max.expect("asserted above"), tau_gov.expect("the entry test returned if None"),
+        lim.accel, lim.floor(), &lag.expect("has_fuel"))
+}
+
+/// RUNG 72's MARCH — **rung 70/71's five-state integrator with rung 52's fuel clip as a SIXTH
+/// state, and the two clips composed on ONE actuator.**
+///
+/// **IT IS A SIBLING, NOT AN EDIT, AND HERE THAT IS FORCED.** Rung 71 could re-enter its parent's
+/// march because nothing was added; a STATE is genuinely added here, so rung 71's *reuse, do not
+/// copy* argument does not carry and rungs 68/69/70's precedent does.
+///
+/// # THREE THINGS DIFFER FROM RUNG 70's MARCH, AND ONLY THE FIRST IS NEW
+///
+/// * **`mf = mf_sched - applied_clip(gf, gr)`** — ONE call, so the plant and every reader compose
+///   the two clips the same way or neither does.
+/// * **BOTH `required` closures solve from the SCHEDULED fuel** — rung 47's discipline and rung
+///   52's, each verbatim — so neither leg's bracket is perturbed by the other's clip and their
+///   mutual cross-gains are structurally ZERO. That is a property of the two INHERITED laws, not a
+///   modelling choice made here.
+/// * **`Tt4_max` reaches the plant ONLY through the governor's state.** Rung 52's unlagged
+///   min-select on top would clip twice and hold the redline with an instrument that is not the
+///   loop under study — rung 70's note, with more force now that a second lagged leg is present.
+///
+/// # THE FOUR-WAY JOINT INITIAL CONDITION, AND A NEW WAY FOR IT TO FAIL
+///
+/// Rungs 68/70/71 sweep `g -> q -> v`; the new loop is APPENDED (`r -> q -> v -> f`), so the
+/// rung-70/71 arm is reached unchanged and the fuel leg takes up only what the triple leaves.
+/// **Under MIN-SELECT the sweep can CYCLE**: the fuel leg takes authority, which changes the plant
+/// the governor solves against, which hands authority back. That is a FINDING about the
+/// composition law and it is reported — the residual, the order and both clips — never repaired by
+/// raising the cap.
+///
+/// **THE STATE FLOOR BELONGS IN THE SWEEP, NOT ONLY IN THE MARCH.** The march floors both clips at
+/// zero after every step, so the settled state the sweep solves for must respect the same physical
+/// stop. It is a NO-OP at this rung — both `required` closures already return `max(0, ·)` — and it
+/// is load-bearing at rung 73, whose hook returns an INCREMENT that can be negative.
+#[allow(clippy::too_many_arguments)]
+fn r72_integrate_fuel_shared(
+    ft: &crate::fuel_transient::FuelTransientCore, flight: &FlightCondition,
+    fuel_schedule: &dyn Fn(f64) -> f64, nu0: (f64, f64), s_end: f64, ds: f64,
+    freeze: Option<Spool>, tt4_max: f64, tau_gov: f64,
+    accel: Option<&crate::fuel_transient::AccelSchedule>, surge: Option<Floor>,
+    lag: &AsymmetricLag,
+) -> Vec<crate::fuel_transient::FuelPoint> {
+    let has_v = ft.inner.lagged_stator();
+    let lim_s = if has_v { ft.inner.stator_leg() } else { None };
+    let tau_s = lim_s.and_then(|l| l.tau);
+    let has_q = crate::lagged_bleed::lagged(&ft.inner);
+    let tau_q = if has_q {
+        ft.inner.lever.lim.expect("has_q").tau
+    } else {
+        None
+    };
+    // PYTHON's OWN SUMMATION ORDER: governor, then the fuel lag, then valve, then stator.
+    (ft.inner.triple_hooks.rk4_floor_shared)(
+        ds,
+        1.0 / tau_gov + 1.0 / lag.tau_att.min(lag.tau_rel)
+            + (if has_q { 1.0 / tau_q.expect("has_q") } else { 0.0 })
+            + (if has_v { 1.0 / tau_s.expect("has_v") } else { 0.0 }));
+    let (tt2, pt2, _) = ft.inner.inlet(flight);
+
+    // THE VALVE law — rungs 68/70/71's, verbatim.
+    let command = |a: f64, h: f64, mf: f64, v: f64| -> Result<f64, Abort> {
+        if !has_q {
+            return Ok(0.0);
+        }
+        let _sv = MarchedStator::set(&ft.inner, v);
+        let bl = ft.inner.lever.lim.expect("has_q");
+        Ok(crate::limited_bleed::r64_solve_b(&bl, closer_b(ft, a, h, mf, tt2, pt2))?.1)
+    };
+
+    // THE STATOR law — rungs 68/70/71's, verbatim, plus Python's stator-less constant `(0, None)`.
+    let stator = |a: f64, h: f64, mf: f64, q: f64| -> Result<(f64, Option<Regime>), Abort> {
+        if !has_v {
+            return Ok((0.0, None));
+        }
+        let _sb = MarchedBleed::set(&ft.inner, q);
+        let (_, v, reg) = ft.inner.solve_v(&closer_v(ft, a, h, mf, tt2, pt2))?;
+        Ok((v, Some(reg)))
+    };
+
+    // RUNG 52's leg — rung 68's `required`, verbatim including its `max(0, ·)` kink.
+    let required_fuel = |a: f64, h: f64, q: f64, v: f64, mf_sched: f64| -> Result<f64, Abort> {
+        let _sb = MarchedBleed::set(&ft.inner, q);
+        let _sv = MarchedStator::set(&ft.inner, v);
+        let mut caps: Vec<f64> = Vec::new();
+        if let Some(acc) = accel {
+            caps.push(ft.try_sched_fuel(flight, a, h, mf_sched, acc)?);
+        }
+        if let Some(fl) = surge.as_ref() {
+            caps.push(ft.try_surge_fuel(flight, a, h, mf_sched, fl)?);
+        }
+        if caps.is_empty() {
+            return Ok(0.0);
+        }
+        // Python's `min(caps)` over a list built in THIS order — `min` on ties returns the FIRST,
+        // and `f64::min` is not that function, so the fold is written the way Python folds.
+        let mut lo = caps[0];
+        for &c in &caps[1..] {
+            if c < lo {
+                lo = c;
+            }
+        }
+        Ok(0.0f64.max(mf_sched - lo))
+    };
+
+    // RUNG 47's clip — rung 70's `required`, verbatim.
+    let required_gov = |a: f64, h: f64, q: f64, v: f64, mf_sched: f64| -> Result<f64, Abort> {
+        let _sb = MarchedBleed::set(&ft.inner, q);
+        let _sv = MarchedStator::set(&ft.inner, v);
+        let i = ft.try_instant_fuel(flight, a, h, mf_sched)?;
+        if i.base.tt4 <= tt4_max {
+            return Ok(0.0);
+        }
+        Ok(0.0f64.max(mf_sched - ft.try_topping_fuel(flight, a, h, tt4_max, mf_sched)?))
+    };
+
+    let core_ref = |req: f64, g_own: f64, gf: f64, gr: f64| -> f64 {
+        // THROUGH THE CELL, never inlined: rung 72's body is `return req` and rung 73's is not.
+        (ft.inner.triple_hooks.reference)(&ft.inner, req, g_own, gf, gr)
+    };
+
+    let der = |a: f64, h: f64, gf: f64, gr: f64, q: f64, v: f64, s: f64|
+     -> Result<SharedDer, Abort> {
+        let mf_sched = fuel_schedule(s);
+        let rf = core_ref(required_fuel(a, h, q, v, mf_sched)?, gf, gf, gr);
+        let rr = core_ref(required_gov(a, h, q, v, mf_sched)?, gr, gf, gr);
+        let mf = 1e-9f64.max(mf_sched - applied_clip_core(&ft.inner, gf, gr));
+        let inst = {
+            let _sb = MarchedBleed::set(&ft.inner, q);
+            let _sv = MarchedStator::set(&ft.inner, v);
+            ft.try_instant_fuel(flight, a, h, mf)?
+        };
+        let cmd = command(a, h, mf, v)?;
+        let (vcmd, vreg) = stator(a, h, mf, q)?;
+        let da = if freeze == Some(Spool::Lp) { 0.0 } else { inst.base.phi_lp_dot / ft.rho() };
+        let dh = if freeze == Some(Spool::Hp) { 0.0 } else { inst.base.phi_hp_dot };
+        Ok(SharedDer {
+            da, dh,
+            dgf: (rf - gf) / lag.tau(rf, gf),
+            dgr: (rr - gr) / tau_gov,
+            dq: if has_q { (cmd - q) / tau_q.expect("has_q") } else { 0.0 },
+            dv: if has_v { (vcmd - v) / tau_s.expect("has_v") } else { 0.0 },
+            mf, inst, rf, rr, cmd, vcmd, vreg,
+        })
+    };
+
+    // --- THE JOINT INITIAL CONDITION: four-way, and the ORDER IS DECLARED ----------------------
+    let (mut a, mut h) = nu0;
+    let mf0 = fuel_schedule(0.0);
+    let v0 = ft.inner.v0.get();
+    if let (Some(x), Some(l)) = (v0, lim_s) {
+        ft.inner.check_v0(x, &l);
+    }
+    // Python raises out of the whole method here — the initial solves sit BEFORE the loop's `try`.
+    let raise = |e: Abort| -> ! { panic!("{}", e.0) };
+    let (mut gf, mut gr) = (0.0f64, 0.0f64);
+    let mut q = command(a, h, mf0, 0.0).unwrap_or_else(|e| raise(e));
+    let mut v = if v0.is_some() && has_v { v0.expect("is_some") } else { 0.0 };
+    let b0 = ft.inner.b0.get();
+    if let Some(x) = b0 {
+        q = x;
+    }
+    let order = IC_ORDER4_DECLARED;
+    assert!({
+                let mut cs: Vec<char> = order.chars().collect();
+                cs.sort_unstable();
+                cs == ['f', 'q', 'r', 'v']
+            },
+            "rung-72 ic_order4 is a permutation of 'frqv'; got {order:?}");
+    let mut res = f64::INFINITY;
+    let mut its = 0usize;
+    for i in 1..=60usize {
+        its = i;
+        let (mut gfn, mut grn, mut qn, mut vn) = (gf, gr, q, v);
+        for k in order.chars() {
+            match k {
+                'f' => {
+                    gfn = 0.0f64.max(core_ref(
+                        required_fuel(a, h, qn, vn, mf0).unwrap_or_else(|e| raise(e)),
+                        gfn, gfn, grn));
+                }
+                'r' => {
+                    grn = 0.0f64.max(core_ref(
+                        required_gov(a, h, qn, vn, mf0).unwrap_or_else(|e| raise(e)),
+                        grn, gfn, grn));
+                }
+                'q' => {
+                    if b0.is_none() {
+                        qn = command(a, h,
+                                     1e-9f64.max(mf0 - applied_clip_core(&ft.inner, gfn, grn)),
+                                     vn)
+                            .unwrap_or_else(|e| raise(e));
+                    }
+                }
+                'v' => {
+                    if v0.is_none() && has_v {
+                        vn = stator(a, h,
+                                    1e-9f64.max(mf0 - applied_clip_core(&ft.inner, gfn, grn)),
+                                    qn)
+                            .unwrap_or_else(|e| raise(e)).0;
+                    }
+                }
+                _ => unreachable!("the permutation assert above admits only f/q/r/v"),
+            }
+        }
+        // Python's `max(abs(n[i] - x) for i, x in enumerate((gf, gr, q, v)))` — the tuple order is
+        // `(gf, gr, q, v)` and NOT the sweep order, which is `_ic_order4`'s.
+        res = py_max4((gfn - gf).abs(), (grn - gr).abs(), (qn - q).abs(), (vn - v).abs());
+        gf = gfn;
+        gr = grn;
+        q = qn;
+        v = vn;
+        if res <= 1e-12 {
+            break;
+        }
+    }
+    assert!(res <= 1e-9,
+            "rung-72: the joint initial condition did not converge (residual {res:.3e} after \
+             {its} iterations) in order {order:?}, at gf = {gf:.6e}, gr = {gr:.6e}. Two loops \
+             share the fuel actuator, so a sweep under MIN-SELECT can cycle between 'the fuel \
+             leg holds it' and 'the governor holds it'. That is a FINDING about the composition \
+             law: report the state, the order and both clips; do not raise the cap.");
+
+    // --- THE RK4 LOOP -------------------------------------------------------------------------
+    let share_law = ft.inner.share_law.get();
+    let mut pts: Vec<crate::fuel_transient::FuelPoint> = Vec::new();
+    let mut s = 0.0f64;
+    let n_steps = (s_end / ds).round_ties_even() as i64;
+    for _ in 0..=n_steps {
+        let Ok(k1) = der(a, h, gf, gr, q, v, s) else { break };
+        let clip = applied_clip_core(&ft.inner, gf, gr);
+        pts.push(crate::fuel_transient::point(
+            s, a, h, &k1.inst, k1.mf, fuel_schedule(s),
+            PointExtra::Shared {
+                g: clip, required: k1.rf.max(k1.rr), b: q, b_cmd: k1.cmd,
+                v, v_cmd: k1.vcmd, v_regime: k1.vreg,
+                ic_iters: its, ic_res: res, ic_order: order,
+                g_fuel: gf, g_gov: gr, required_fuel: k1.rf, required_gov: k1.rr,
+                authority: authority(gf, gr), share_law,
+            }));
+        let stages = (|| -> Result<[f64; 18], Abort> {
+            let k2 = der(a + ds / 2.0 * k1.da, h + ds / 2.0 * k1.dh, gf + ds / 2.0 * k1.dgf,
+                         gr + ds / 2.0 * k1.dgr, q + ds / 2.0 * k1.dq, v + ds / 2.0 * k1.dv,
+                         s + ds / 2.0)?;
+            let k3 = der(a + ds / 2.0 * k2.da, h + ds / 2.0 * k2.dh, gf + ds / 2.0 * k2.dgf,
+                         gr + ds / 2.0 * k2.dgr, q + ds / 2.0 * k2.dq, v + ds / 2.0 * k2.dv,
+                         s + ds / 2.0)?;
+            let k4 = der(a + ds * k3.da, h + ds * k3.dh, gf + ds * k3.dgf, gr + ds * k3.dgr,
+                         q + ds * k3.dq, v + ds * k3.dv, s + ds)?;
+            Ok([k2.da, k2.dh, k2.dgf, k2.dgr, k2.dq, k2.dv,
+                k3.da, k3.dh, k3.dgf, k3.dgr, k3.dq, k3.dv,
+                k4.da, k4.dh, k4.dgf, k4.dgr, k4.dq, k4.dv])
+        })();
+        let Ok([k2a, k2h, k2gf, k2gr, k2q, k2v,
+                k3a, k3h, k3gf, k3gr, k3q, k3v,
+                k4a, k4h, k4gf, k4gr, k4q, k4v]) = stages else { break };
+        a += ds / 6.0 * (k1.da + 2.0 * k2a + 2.0 * k3a + k4a);
+        h += ds / 6.0 * (k1.dh + 2.0 * k2h + 2.0 * k3h + k4h);
+        gf += ds / 6.0 * (k1.dgf + 2.0 * k2gf + 2.0 * k3gf + k4gf);
+        gr += ds / 6.0 * (k1.dgr + 2.0 * k2gr + 2.0 * k3gr + k4gr);
+        q += ds / 6.0 * (k1.dq + 2.0 * k2q + 2.0 * k3q + k4q);
+        v += ds / 6.0 * (k1.dv + 2.0 * k2v + 2.0 * k3v + k4v);
+        // Every position is PHYSICAL (rung 65, verbatim): the actuators' own hardware stops,
+        // applied to the STATE and never to a command. BOTH clips are floored at zero — a
+        // negative clip is fuel ADDED by a limiter, which no leg here can do.
+        if has_q {
+            let bmax = ft.inner.lever.lim.expect("has_q").b_max;
+            q = bmax.min(0.0f64.max(q));
+        }
+        if has_v {
+            v = ft.inner.clamp_v(v, &lim_s.expect("has_v"));
+        }
+        gf = 0.0f64.max(gf);
+        gr = 0.0f64.max(gr);
+        s += ds;
+    }
+    pts
+}
+
+/// Python's `max(...)` over the FOUR-element residual — [`py_max3`]'s sibling, and it exists for
+/// the same reason: `f64::max` is not Python's `max`, which returns the FIRST of equal arguments
+/// and propagates a NaN the moment one appears rather than swallowing it.
+///
+/// [`py_max3`]: crate::lagged_bleed::py_max3
+fn py_max4(a: f64, b: f64, c: f64, d: f64) -> f64 {
+    let mut m = a;
+    if b > m { m = b; }
+    if c > m { m = c; }
+    if d > m { m = d; }
+    m
+}
+
+/// [`applied_clip`] on the shared core, for the march's own use.
+fn applied_clip_core(t: &crate::two_spool_transient::TwoSpoolTransientCore, gf: f64, gr: f64)
+ -> f64 {
+    if t.share_law.get() == "max" { gf.max(gr) } else { gf + gr }
+}
+
+/// Python's `_authority(gf, gr)` — see [`Authority`].
+///
+/// The `tol` is Python's `1e-12` and it is **inert on every shipped input** (§ 5.28 (iv)): 36 calls
+/// land at `|gf - gr| == 0.0`, 36 at `<= tol`, and ZERO in the open interval between. It is ported
+/// because Python has it, and it is not gated, because a gate on it could not fail.
+pub fn authority(gf: f64, gr: f64) -> Authority {
+    const TOL: f64 = 1e-12;
+    if gf <= TOL && gr <= TOL {
+        Authority::Dormant
+    } else if (gf - gr).abs() <= TOL {
+        Authority::Tie
+    } else if gf > gr {
+        Authority::Fuel
+    } else {
+        Authority::Gov
+    }
 }

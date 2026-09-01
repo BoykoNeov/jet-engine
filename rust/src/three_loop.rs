@@ -441,7 +441,7 @@ pub struct TripleHooks {
     /// is where the phase's rule says a cell must exist.
     ///
     /// The float-identical branch is load-bearing at rung 73 and stated there, not here.
-    pub reference: fn(&ScheduledStatorCore, f64, f64, f64, f64) -> f64,
+    pub reference: fn(&TwoSpoolTransientCore, f64, f64, f64, f64) -> f64,
     /// RUNG **72**'s `_rk4_floor_shared` — **THE SECOND CELL NO VALUE KEY CAN SEE, and this time
     /// the SHIPPED PYTHON GATE CANNOT SEE IT EITHER.**
     ///
@@ -588,7 +588,7 @@ const NO_SHARED_MSG: &str = "this name is RUNG 72's and does not exist below it:
                              build. Answering a default would agree with rung 72 on every input \
                              the suites reach, which is exactly the claim no value gate could see.";
 
-fn no_triple_reference(_: &ScheduledStatorCore, _: f64, _: f64, _: f64, _: f64) -> f64 {
+fn no_triple_reference(_: &TwoSpoolTransientCore, _: f64, _: f64, _: f64, _: f64) -> f64 {
     panic!("{NO_SHARED_MSG} (_reference)");
 }
 
@@ -1524,7 +1524,10 @@ impl Census68 {
 /// not record `v` came from a different integrator.
 pub fn v_at_point(p: &FuelPoint) -> f64 {
     match p.extra {
-        PointExtra::Triple { v, .. } => v,
+        PointExtra::Triple { v, .. }
+        // SLICE AD (5 of 13): rung 72 records `v`, so refusing here would be stricter
+        // than Python on a dict that carries the key.
+        | PointExtra::Shared { v, .. } => v,
         _ => panic!(
             "rung-68: a lagged stator setting is a march STATE and cannot be recovered from a \
              trajectory point that did not record it. This point came from a different \
@@ -1535,7 +1538,9 @@ pub fn v_at_point(p: &FuelPoint) -> f64 {
 /// The `(ic_iters, ic_res, ic_order)` a rung-68 point carries — a PANIC on every other route.
 pub fn ic_at_point(p: &FuelPoint) -> (usize, f64, &'static str) {
     match p.extra {
-        PointExtra::Triple { ic_iters, ic_res, ic_order, .. } => (ic_iters, ic_res, ic_order),
+        PointExtra::Triple { ic_iters, ic_res, ic_order, .. }
+        // SLICE AD (6 of 13): rung 72 runs a FOUR-way sweep and records all three.
+        | PointExtra::Shared { ic_iters, ic_res, ic_order, .. } => (ic_iters, ic_res, ic_order),
         _ => panic!("rung-68: this trajectory carries no joint initial condition"),
     }
 }
@@ -1596,7 +1601,9 @@ pub fn triple_gains_at(
 ) -> Result<TripleGains, Abort> {
     let (a, h, mf_sched) = (p.nu_lp, p.nu_hp, p.mf_sched);
     let g = match p.extra {
-        PointExtra::Triple { g, .. } => g,
+        PointExtra::Triple { g, .. }
+        // SLICE AD (7 of 13): `g` is the APPLIED clip on a rung-72 point.
+        | PointExtra::Shared { g, .. } => g,
         _ => panic!("rung-68's gains need a five-state trajectory"),
     };
     // `valve_of` returns `(b, b_cmd)`; the gains are differenced against the POSITION.
@@ -1671,8 +1678,16 @@ fn reg_ev(k: &'static str, x: (f64, Regime)) -> (&'static str, f64, bool) {
 pub fn riding(traj: &[FuelPoint], b_max: f64) -> Vec<FuelPoint> {
     traj.iter()
         .filter(|p| match p.extra {
-            PointExtra::Triple { required, b_cmd, v_regime, .. } =>
+            PointExtra::Triple { required, b_cmd, v_regime, .. }
+            // SLICE AD (8 of 13): a `false` fallback in a FILTER is the quietest failure
+            // of the thirteen -- the reader returns an empty set and every downstream
+            // statistic is computed over nothing at all.
+            | PointExtra::Shared { required, b_cmd, v_regime: Some(v_regime), .. } =>
                 required > 0.0 && 0.0 < b_cmd && b_cmd < b_max && v_regime == Regime::Riding,
+            // A stator-less rung-72 point is not RIDING a stator it does not have. `false`
+            // here is the same answer Python gives (`p.get("v_regime") == "riding"` on
+            // `None`), not a fallback.
+            PointExtra::Shared { v_regime: None, .. } => false,
             _ => false,
         })
         .copied()
@@ -2029,7 +2044,12 @@ pub fn violation_inc(traj: &[FuelPoint], m_lim: f64, t_c: f64, s_hi: f64) -> f64
     let mi = |p: &FuelPoint| -> f64 {
         // Python's `p.get('v', 0.0)` — a trajectory with no stator state reads ZERO, which is the
         // design setting and makes the rung-66 ledger cells comparable rather than refused.
-        let v = match p.extra { PointExtra::Triple { v, .. } => v, _ => 0.0 };
+        // SLICE AD (9 of 13). This one is a SINGLE-LINE match, and probe O called it
+        // `exhaustive` twice before its regex was repaired -- see § (b).
+        let v = match p.extra {
+            PointExtra::Triple { v, .. } | PointExtra::Shared { v, .. } => v,
+            _ => 0.0,
+        };
         t_c - (1.0 / p.phi_lp - v)
     };
     let mut out = 0.0f64;
@@ -2141,12 +2161,15 @@ pub fn triple_bill(
         let (traj, _) = m.stator_march_scoped(
             flight, ramp, None, &leg, &MarchScope { lag, ..MarchScope::DEFAULT });
         let v_of_point = |p: &FuelPoint| match p.extra {
-            PointExtra::Triple { v, .. } => v,
+            // SLICE AD (10 of 13).
+            PointExtra::Triple { v, .. } | PointExtra::Shared { v, .. } => v,
             _ => 0.0,
         };
         let b_of_point = |p: &FuelPoint| match p.extra {
+            // SLICE AD (11 of 13).
             PointExtra::Triple { b, .. } | PointExtra::Cascade { b, .. }
-            | PointExtra::CrossCascade { b, .. } | PointExtra::Valve { b, .. } => b,
+            | PointExtra::CrossCascade { b, .. } | PointExtra::Valve { b, .. }
+            | PointExtra::Shared { b, .. } => b,
             _ => 0.0,
         };
         cells.push((name, BillCell {
@@ -2253,8 +2276,12 @@ pub fn saturation_counterfeit(
         flight, ramp, None, &leg, &MarchScope { lag, ..MarchScope::DEFAULT });
     let b_max = m.fuel.inner.lever.lim.expect("the rig arms a valve").b_max;
     let sat: Vec<FuelPoint> = traj.iter().filter(|p| match p.extra {
-        PointExtra::Triple { required, b_cmd, v_regime, .. } =>
+        // SLICE AD (12 of 13): `riding`'s sibling, and the same silent-empty-set failure.
+        PointExtra::Triple { required, b_cmd, v_regime, .. }
+        | PointExtra::Shared { required, b_cmd, v_regime: Some(v_regime), .. } =>
             required > 0.0 && 0.0 < b_cmd && b_cmd < b_max && v_regime == Regime::Saturated,
+        // As in `riding`: Python compares `None` against a string and gets `False`.
+        PointExtra::Shared { v_regime: None, .. } => false,
         _ => false,
     }).copied().collect();
     let rid = riding(&traj, b_max);
@@ -2285,8 +2312,13 @@ pub fn saturation_counterfeit(
         rows.push(CounterfeitRow {
             s: p.s,
             regime: match p.extra {
-                PointExtra::Triple { v_regime, .. } => v_regime,
-                _ => unreachable!("filtered to Triple points above"),
+                // SLICE AD (13 of 13): the filter above now admits rung 72, so this
+                // `unreachable!` would BECOME reachable without the matching arm --
+                // the same pairing as sites 3 and 4.
+                PointExtra::Triple { v_regime, .. }
+                | PointExtra::Shared { v_regime: Some(v_regime), .. } => v_regime,
+                _ => unreachable!(
+                    "filtered to Triple or stator-carrying Shared points above"),
             },
             off_regime: gg.off_regime.clone(),
             v_g: gg.v_g, v_q: gg.v_q,

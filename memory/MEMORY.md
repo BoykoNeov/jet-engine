@@ -22,7 +22,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding, backticks in `-m`, and a status read off the runner
 
-## The Rust port — phases 0–6 done; phase 7 in flight, slice AD (rung 72) step 1 of 6
+## The Rust port — phases 0–6 done; phase 7 in flight, slice AD (rung 72) step 2 of 6
 - [Rust port status](rust-port-status.md) — the running tally: phases, slices, and the numbers each closed slice landed on. **Update THAT file, not this line.**
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; a new PHASE needs authorisation
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost
@@ -85,6 +85,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Slice AC step 7 — slice closed](rust-port-slice-ac-step7.md) — four comments gave a REASON that was testable and false, and the injection every reader launders needed a declared carrier
 - [Slice AD pre-flight](rust-port-slice-ad-preflight.md) — a shipped `Usage:` block documents a method with ZERO definitions, and the quartic's three risky roots never win the max on any input the suite reaches
 - [Slice AD step 1](rust-port-slice-ad-step1.md) — a pre-registered count of compile errors, measured on a build that stopped at the lib, came back plausible and wrong
+- [Slice AD step 2](rust-port-slice-ad-step2.md) — a convention that a new enum variant breaks the build held at 7 of 20 sites, and my own gate compared the plant against the function that produced it
 - Slice T (46/47/48) steps [1](rust-port-slice-t-step1.md) [2](rust-port-slice-t-step2.md) [3](rust-port-slice-t-step3.md) [4](rust-port-slice-t-step4.md) — an EXACT ZERO blinds its own gate to the SIGN (one lesson per file)
 
 ## Shipped rungs

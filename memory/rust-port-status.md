@@ -155,6 +155,14 @@ Six steps priced from sizing (1 177 source / 502 test lines). See
    tripwires. The wrong number AGREED with the prediction, which is why it nearly stood. See
    [[rust-port-slice-ad-step1]].
 
+2. **Step 2** — the six-state march, `PointExtra::Shared` (30 keys), the `Authority` label,
+   nineteen widened reader sites, and `tests/slice_ad_march.rs` (**13 gates**, **10 of 10 mutations
+   killed on the SECOND run**). **The crate's "the next variant breaks the build" convention holds
+   at 7 of 20 sites** — 13 wildcards compiled silently, 3 of them a `false` inside a FILTER, which
+   drops a rung-72 point and reports perfect tracking over an empty set. And **my own authority gate
+   compared the recorded label against the function that produced it**, so an inverted comparison
+   passed; the mutation sweep found it, not review. See [[rust-port-slice-ad-step2]].
+
 ## Slice AB, step by step
 
 1. **Step 1** — `src/reference_split.rs` 519 lines, 13 cell gates; nine swapped bodies panic.

@@ -767,6 +767,80 @@ pub enum PointExtra {
     Triple { g: f64, required: f64, b: f64, b_cmd: f64, v: f64, v_cmd: f64,
              v_regime: crate::limited_bleed::Regime, ic_iters: usize, ic_res: f64,
              ic_order: &'static str },
+    /// RUNG 72's SHARED-ACTUATOR march — **30 keys, the widest point in the port**, and
+    /// [`Triple`](Self::Triple)'s ten extras plus **six** of its own.
+    ///
+    /// Python: *"Every key rungs 52/65/66/67/68/70/71 record is recorded byte-unchanged, with `g`
+    /// the APPLIED clip and `required` the BINDING requirement, so every inherited reader works on
+    /// this trajectory."* That is the load-bearing claim about the READERS that
+    /// [`Cascade`](Self::Cascade) and [`Triple`](Self::Triple) each make in turn, and it is why
+    /// every reader admitting `Triple` is widened to admit this variant rather than left refusing
+    /// it — a refusal there would be **stricter than Python, silently, on a dict that carries the
+    /// key**.
+    ///
+    /// **`g` AND `required` ARE NOT NEW FIELDS HERE, AND THAT IS THE WHOLE POINT.** `g` is the
+    /// APPLIED clip — `_applied_clip(gf, gr)`, one call, so the plant and every reader compose the
+    /// two the same way or neither does — and `required` is `max(rf, rr)`, the BINDING
+    /// requirement. An inherited reader asking "what did the limiter take off" gets the answer for
+    /// the loop that HOLDS the actuator, which is the only answer that keeps `mf = mf_sched - g`
+    /// true.
+    ///
+    /// The six new ones split those two per leg (`g_fuel`/`g_gov`, `required_fuel`/`required_gov`),
+    /// name who holds the actuator (`authority`), and record the composition law (`share_law`) —
+    /// which, like `ic_order`, is a CONSTANT over the trajectory and cannot disagree with
+    /// anything. Recorded per point because Python records it per point.
+    Shared { g: f64, required: f64, b: f64, b_cmd: f64, v: f64, v_cmd: f64,
+             // `Option`, where every variant above is a bare `Regime`: rung 72's march runs
+             // WITHOUT a stator in 8 of `shared_bill`'s 16 cells, and Python's `stator()`
+             // returns the constant `(0, None)` there. `Dormant` is a real regime meaning
+             // `b = 0` after a solve, so reusing it for "no solve ran" would be a label
+             // the integrator never produced.
+             v_regime: Option<crate::limited_bleed::Regime>, ic_iters: usize, ic_res: f64,
+             ic_order: &'static str, g_fuel: f64, g_gov: f64, required_fuel: f64,
+             required_gov: f64, authority: Authority, share_law: &'static str },
+}
+
+/// RUNG 72's `_authority` — **WHO HOLDS THE ACTUATOR, the third regime label, and the one no
+/// prior rung needed.**
+///
+/// A leg that is CUTTING but not named here is RIDING-MASKED: nowhere near a stop, and coupled to
+/// nothing. Rung 67's *a zero cross-gain is saturation, never decoupling* acquires a second
+/// exception — it can also be MASKING, which saturation-filtering does not catch.
+///
+/// # AN ENUM, WHERE `ref_` AND `share_law` ARE `&'static str`, AND THE REASON IS MEASURED
+///
+/// Those two are strings because Python **asserts** on anything outside a named set, and an enum
+/// would delete a shipped refusal. `_authority` is total — four outcomes, no assert, no reachable
+/// other value — so an enum deletes nothing.
+///
+/// **AND ITS `tol` DOES NOTHING ON ANY SHIPPED INPUT.** § 5.28 (iv) measured 25 702 calls: 36 with
+/// `|gf - gr| == 0.0`, 36 with `<= 1e-12`, and **ZERO in the open interval between**. Thirty-five
+/// of the exact zeros are taken by `Dormant` first, leaving a single `Tie`. So `gf == gr` would be
+/// bit-identical here, the tolerance is unobservable, and **a gate asserting it does anything
+/// would be vacuous** — the constant is ported because Python has it, and it is not gated.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Authority {
+    /// Neither leg is cutting.
+    Dormant,
+    /// The switch itself, where the Jacobian is discontinuous and a central difference straddles
+    /// the kink.
+    Tie,
+    /// Rung 52's `phi` leg holds the actuator.
+    Fuel,
+    /// Rung 47's `Tt4` governor holds it.
+    Gov,
+}
+
+impl Authority {
+    /// Python's own spelling, for the oracle and for any reader that compares against the string.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Authority::Dormant => "dormant",
+            Authority::Tie => "tie",
+            Authority::Fuel => "fuel",
+            Authority::Gov => "gov",
+        }
+    }
 }
 
 /// One instant of a marched FUEL trajectory — Python's per-point dict.
@@ -807,6 +881,7 @@ impl FuelPoint {
             PointExtra::Cascade { .. } => 20,
             PointExtra::CrossCascade { .. } => 21,
             PointExtra::Triple { .. } => 24,
+            PointExtra::Shared { .. } => 30,
         }
     }
 }
@@ -1239,7 +1314,11 @@ pub fn asym_extra(p: &FuelPoint) -> (f64, f64) {
         PointExtra::Cascade { g, required, .. }
         | PointExtra::CrossCascade { g, required, .. }
         // SLICE AA: rung 68 records both keys too, and Python reads the DICT KEY.
-        | PointExtra::Triple { g, required, .. } => (g, required),
+        | PointExtra::Triple { g, required, .. }
+        // SLICE AD: rung 72 records both too, and Python reads the DICT KEY. `g` is the
+        // APPLIED clip and `required` the BINDING requirement, which is the pair that
+        // keeps `mf = mf_sched - g` true for a reader that never heard of two legs.
+        | PointExtra::Shared { g, required, .. } => (g, required),
         // Rung 65's valve route is named SEPARATELY rather than folded into a `_` arm: it carries
         // 16 keys too, and a wildcard here would let a lagged-valve trajectory reach rung 52's
         // reader and report the wrong two of them. It stays REFUSING because Python raises

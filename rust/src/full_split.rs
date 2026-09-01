@@ -456,7 +456,11 @@ pub fn round10(x: f64) -> f64 {
 /// takes this fallback, and it takes it for the same reason.
 fn v_or_zero(p: &FuelPoint) -> f64 {
     match p.extra {
-        crate::fuel_transient::PointExtra::Triple { v, .. } => v,
+        crate::fuel_transient::PointExtra::Triple { v, .. }
+        // SLICE AD (wildcard site 1 of 13): without this arm a rung-72 trajectory takes
+        // the `0.0` fallback and this reader silently reports the DESIGN stator setting
+        // for a march that recorded a live one.
+        | crate::fuel_transient::PointExtra::Shared { v, .. } => v,
         _ => 0.0,
     }
 }
@@ -484,7 +488,12 @@ fn v_or_zero(p: &FuelPoint) -> f64 {
 fn full_window_extra(p: &FuelPoint) -> (f64, f64, Regime) {
     use crate::fuel_transient::PointExtra;
     match p.extra {
-        PointExtra::Triple { required, b_cmd, v_regime, .. } => (required, b_cmd, v_regime),
+        PointExtra::Triple { required, b_cmd, v_regime, .. }
+        // SLICE AD: as at rung 70's reader, one file over.
+        | PointExtra::Shared { required, b_cmd, v_regime: Some(v_regime), .. } =>
+            (required, b_cmd, v_regime),
+        PointExtra::Shared { v_regime: None, .. } => panic!(
+            "rung-71's reader on a STATOR-LESS rung-72 trajectory: no stator solve ran"),
         PointExtra::None
         | PointExtra::Asym { .. }
         | PointExtra::Valve { .. }
@@ -1287,7 +1296,9 @@ pub fn ic_contraction(
                 Some((span(|x| x.g), span(|x| x.q), span(|x| x.v)))
             },
             marched: (match p0.extra {
-                          crate::fuel_transient::PointExtra::Triple { g, .. } => g,
+                          crate::fuel_transient::PointExtra::Triple { g, .. }
+                          // SLICE AD (2 of 13).
+                          | crate::fuel_transient::PointExtra::Shared { g, .. } => g,
                           _ => panic!("rung-71's IC reader needs a five-state trajectory"),
                       },
                       crate::lagged_bleed::valve_of(p0).0,
