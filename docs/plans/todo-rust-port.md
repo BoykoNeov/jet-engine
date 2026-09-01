@@ -9025,7 +9025,7 @@ by counting.
 | **AB** | 69 | `StatorIncidenceLimiter`, `ReferenceSplitTransient` | **1** — `_with_ref` |
 | **AC** | 70–71 | `CrossSplitTransient`, `FullSplitTransient` | ~~**1** — `split_gains`~~ → **0. MEASURED at § 5.27 (i): `split_gains` is NOT a cell** — rung 80's same-named body has an incompatible signature and rung 70's own inherited caller `TypeError`s on a rung-80 machine. **This column's predicate is by NAME and never checked substitutability; § 5.27 (x) sweeps all 358 override pairs and finds ONE more (`_legs`, 63→77, booked to AH).** The slice swaps `at_lever`/`integrate_fuel` at EACH rung plus `_triple_laws` at 70 = **5** distinct function pointers, no new field |
 | **AD** | 72 | `SharedActuatorTransient` | **3** — `_reference`, `_rk4_floor_shared`, `_shared_rig` |
-| **AE** | 73 | `AppliedReferenceTransient` | **0** |
+| **AE** | 73 | `AppliedReferenceTransient` | ~~**0**~~ → **1 ADD + 6 SWAPS. MEASURED at § 5.29 (ii)** — `_with_ref` (69 → 73) is a **NAME REUSED**, not an override: identical arity, but the two bodies write DISJOINT FIELDS (`_ref` / `_ref_law`), and rung 69's own inherited caller RAISES on a rung-73 machine (driven, with a passing control). **§ 5.27 (x) saw the pair and cleared it as a harmless RENAME** — its predicate compared signatures; the same sentence clears `_with_coord` (74 → 79), now booked to AF **and** AI. `_quad_gains_at` is a swap here too — **AD's "unreachable today" booking REFUTED BY VALUE** (§ 5.29 (iv)): with the machine held fixed and only the pointer swapped, 32 keys move and 70 vanish, `F_r` going −1.000000000002735 → 0.0 |
 | **AF** | 74 | `DemandCoordinateTransient` | **3** — `_cap_fuel`, `_sensed_cap`, `_windup_tau` |
 | **AG** | 75–76 | `AntiWindupTransient`, `SensedCapTransient` | **0** |
 | **AH** | 77–78 | `StiffnessLedgerTransient`, `ResidualGaugeTransient` | **0** |
@@ -18010,6 +18010,314 @@ slice_ad_dispatch -- -A clippy::eq_op` reports **0** warnings pointing into this
 adds or removes a `#[test]`, so the 139/1 409 structural row is unchanged by construction; that is
 an argument, and the re-run is the measurement. **A gate row quoted from a log taken before the
 last edit is § 5.28.4 (h)'s trap** — a number read off a run that is not the run you shipped.
+
+### 5.29 SLICE AE (rung 73, `AppliedReferenceTransient`) — PRE-REGISTERED, ten probes MEASURED first
+
+Phase 7 is authorised (§ 5.19), so this slice needs no fresh sign-off. Ten probes,
+`M:\claud_projects\temp\rust-ae\probe_ae_{a,a2,b,c,d,e,f,g,h,i,j}.py`, PyPy.
+
+#### (i) THE LEADING FINDING — **§ 5.27 (x) SAW BOTH NAME REUSES, PUT THEM IN A NAMED CLASS OF TWO, AND CLEARED THEM ON A PROPERTY THAT WAS NEVER THE ONE THAT MATTERED**
+
+AC's phase-wide substitutability sweep classified `_with_ref` (69 → 73) and `_with_coord`
+(74 → 79) as **RENAMED**: *"same arity, one parameter renamed … **The shipped port already holds
+these in ONE pointer**, correctly"*. Its predicate compared **signatures**. Measured (probes B–E):
+
+| | rung 69's `_with_ref` | rung 73's `_with_ref` |
+|---|---|---|
+| arity | `(self, ref, fn, *a, **kw)` | `(self, law, fn, *a, **kw)` — identical |
+| **the field it MUTATES** | **`self._ref`** | **`self._ref_law`** |
+
+Both fields exist on a rung-73 machine (`_ref` inherited, default `None`; `_ref_law` default
+`'applied'`), so nothing type-errors and no signature comparison can reach it. The discriminator
+is AC's own — *does the inherited CALLER still work on the downstream machine* — and it is
+**DRIVEN, never inferred** (probe C):
+
+* rung 69's `reference_bill` on a **rung-73** machine →
+  `AssertionError: rung-73: the fuel reference is this rung's subject and it is DECLARED; got 'inc'.`
+* **the CONTROL**, the same call on a rung-69 machine → returns, `common_max_rel = 0.0`.
+
+So this is `split_gains`'s shape with the signature filed off: **a name reuse whose two bodies
+differ by which FIELD they write.** AC's *count* is not in question — its 358 pairs contain both,
+by name, in a table that names them. **Only its classification is**, and the sentence that cleared
+them is the one the port then acted on.
+
+**AND THE SHIPPED PORT IS NOT BROKEN, WHICH IS THE HALF WORTH WRITING DOWN.**
+`rust/src/reference_split.rs:279` had already decided *"THE GUARD IS SHARED AND THE SETTER IS THE
+CELL … rung 73 overrides `_with_ref` to write a DIFFERENT field (`_ref_law`), and that is the only
+thing its override changes — so the field choice is dispatched through `TripleHooks::with_ref`"*,
+and `rust/src/cross_split.rs:156` repeats the reasoning from the mirror side. **The port reached
+the right structure from the right observation while the plan's sweep was recording the pair as
+harmless** — the two disagreed in the plan's favour and nobody diffed them, which is § 5.21's
+finding about the ADD column, one instrument on.
+
+**What AE owes is therefore not the cell — it is the REFUSAL.** Python RAISES on the wrong
+pairing; a Rust `with_ref` slot re-aimed at rung 73's setter has nothing that does, so a rung-69
+reader run on a rung-73 table would write `ref_law`, leave `_ref` at `None`, and fall through
+`_triple_rig`'s `self._ref or (…)` — marching a plant nobody asked for, **silently**. Rung 73's
+`integrate_fuel` assert is that refusal, and it is step 1's, not step 3's.
+
+#### (ii) THE CELL CENSUS — **the ADD column says 0; the answer is 5 SWAPS + 1 NEW FIELD**
+
+Probe B, emitted from the source over all 12 of rung 73's methods, with ADD (rung 73 is the FIRST
+definer, i.e. a new table field) and SWAP (an earlier rung owns the field, i.e. a re-aimed
+pointer) reported **separately** — AC's row is the precedent for why one number cannot carry both
+(*0 cells, five distinct function pointers*):
+
+| name | definers | field owned by | verdict |
+|---|---|---|---|
+| `_reference` | 2 (72, 73) | rung 72 | **SWAP** |
+| `_with_ref` | 2 (69, 73) | ~~rung 69~~ | **NEW FIELD** — § (i): not substitutable |
+| `at_lever` | 18 (62 → 80) | rung 62 | **SWAP** |
+| `_rk4_floor_shared` | 3 (72, 73, 74) | rung 72 | **SWAP** |
+| `integrate_fuel` | 13 (34 → 76) | rung 34 | **SWAP** |
+| `_shared_rig` | 8 (72 → 80) | rung 72 | **SWAP** |
+| `_quad_gains_at` | 2 (72, 73) | rung 72 | **SWAP** — § (iv), AD's booking refuted |
+| the five public readers | 1 each | — | single definer, not cells |
+
+**The swap count follows AC's convention, in which `at_lever` and `integrate_fuel` are counted as
+swapped pointers at each rung** (§ 5.27's row: *"swaps `at_lever`/`integrate_fuel` at EACH rung
+plus `_triple_laws` at 70 = 5"*), and NOT § 5.19 (i)'s, which lists `at_lever` among the two
+"Rust deletes". Stated here because the two conventions give **6** and **5** for the same slice.
+
+**So the ADD column is wrong for AE, and in the UPWARD direction — the first back-half row where
+that happens.** AC's said 1 and measured 0; AD's said 3 and measured 3, then 4 (§ (iv)); AE's says
+0 and measures **1**.
+
+#### (iii) AD's P6 (iii) — **SETTLED, CONFIRMED, and all three paths LIVE**
+
+AD § 5.28.6 (e) carried clause (iii) — *slice AE is where a value break first exists* — as
+unsettleable at AD by construction. It is settled here **first**, before anything else was
+designed, because everything downstream depends on it: if rung 73's third path were dead the
+dispatch gates could not be value gates and the oracle would need a manufactured grid. AD found
+exactly that shape twice (the quartic's three risky roots; `_authority`'s tolerance at 0 of
+25 702), so this is a measurement and not a formality.
+
+Probe A intercepts **every** `_reference` call the whole shipped rung-73 suite makes — driven
+through the march, never fed synthetic `(req, g_own, gf, gr)` tuples (§ 5.28.5's lesson: a section
+fed its inputs measures the FUNCTION where one that recomputes them measures the PLANT) — with
+`-n0` and an `assert calls > 0`, so a zero reads as a defect and not as an answer:
+
+| path | what it is | calls | returned `req` bitwise? |
+|---|---|---|---|
+| 1 | `_ref_law != 'applied'` → `req` | **41 346** | yes, 41 346 of 41 346 |
+| 2 | `clip == g_own` → `req` — the FLOAT-IDENTICAL branch | **109 537** | yes, 109 537 of 109 537 |
+| **3** | **`g_own + req - clip`** | **109 307** | **NO — 0 of 109 307** |
+| | | **260 190** | every call on `AppliedReferenceTransient` |
+
+**Path 3 fires on 42.01 % of calls and not one of them returns `req`.** P6 (iii) is **CONFIRMED**,
+the dispatch gates at step 5 are plain value gates, and no manufactured grid is needed.
+
+Its size, in **ABSOLUTE** terms, because a relative one is not defined here: `|out − req|` is
+**min 1.396e−07, median 8.712e−03, max 2.129e−02**, and **6 380 of the 109 307 calls have
+`req == 0.0` exactly** — on those a ratio has no meaning, and the first writing of this probe
+divided by a `1e-300` guard and produced a headline `5.4e+297`. That number is an artifact of the
+guard meeting the zero, and it is recorded here because a header carrying it would have been the
+next re-measured-and-wrong claim. Where `req` is non-zero it spans `9.775e−07 … 1.284e−02`. The
+whole census was re-run for these figures and **reproduced all four path counts exactly**, which
+is a free determinism check on a 260 190-call interception.
+
+**AND PATH 2 IS THE LARGEST OF THE THREE, WHICH MAKES THE PORT'S HAZARD THE OPPOSITE OF THE
+OBVIOUS ONE.** `clip == g_own → return req` is a **deliberate float-identity device**, not a
+tidy-up: the shipped docstring records that `g_own + req - g_own` is not `req` in binary floating
+point, and that through a central difference of step `1e-7` the cancellation appears as a `4e-11`
+entry on the authoritative leg's own diagonal — which would turn *`M3` is the parent's block ENTRY
+FOR ENTRY* from an exact claim into a `1e-11` one. A port that folds the branch away sits **below
+every relative bar in the crate**, so step 1 owes it an **exact-bits** gate and the branch must not
+be factored out as redundant algebra. This is rung 48's `_sched_fuel` device, second instance.
+
+#### (iv) AD's `_quad_gains_at` BOOKING — **REFUTED, with a value witness**
+
+AD § (b) booked `_quad_gains_at` to this slice, having measured it a cell by the filters and
+**unreachable on the shipped ladder**: rung 72's five readers are redefined by nobody, and all 19
+of their call sites build a rung-72 machine. That reasoning asks *does shipped code sit in the
+seat*. The cell question is *does a discriminating input exist*, and probe H shows one does:
+
+* rung 72's inherited `shared_gains` on a **rung-73** machine dispatches to **rung 73's body**,
+  14 times; the CONTROL on a rung-72 machine dispatches to rung 72's body, 17 times.
+* rungs **74, 80 and 81 all RESOLVE `_quad_gains_at` to rung 73's body** — it is what every later
+  rung runs.
+
+**But a seat is not an observable**, and probe H's own 17-against-14 is two different
+trajectories, so nothing in it is a value comparison of the two bodies — the gap where this port's
+vacuities have lived (j06 at 0 of 3 216 and then 0 of 54 116; `round12`; `v_of`'s dead live arm).
+So probe J holds the machine fixed at rung 73 and swaps **only the pointer**:
+
+| | shipped rung-73 body | injected rung-72 body |
+|---|---|---|
+| float keys returned | **595** | **525** |
+| shared keys | 525 | 525 |
+| **keys MOVED** | — | **32** |
+| **shipped-only keys** | **70** | 0 — a DISCRETE observable |
+| largest move | `rows[10].gains.F_r` | **−1.000000000002735 → 0.0** |
+
+The largest move is **the rung's own headline number**: `F_r = −1` is what rung 73 exists to
+report, and the parent's body puts rung 72's block-triangular `0.0` in its place. The 70
+shipped-only keys are `F_f`, `R_r`, `cross_masked` and `self_live` — the two diagonals rung 73
+adds, which rung 72 never measures. **OBSERVABLE BY VALUE. AE installs the cell**, and § (ii)'s
+count of six pointers includes it.
+
+#### (v) `_with_coord` (74 → 79) — the same shape, **UNDRIVEN**, and booked at BOTH ends
+
+Probe D re-runs the sweep over the whole table rather than over this row
+([[rust-port-slice-w]]) with a predicate that can see what a signature comparison cannot — *the
+two bodies mutate DISJOINT sets of instance attributes* — at AC's own all-ancestor denominator:
+
+| | n |
+|---|---|
+| all-ancestor override pairs (36 subclassing classes) | **366** |
+| disjoint-write hits, raw | 46 |
+| minus children that call `super()` — they COMPOSE, so disjointness is by construction | **5** |
+| **of which SAME SIGNATURE — the class AC's sweep clears** | **2** |
+
+The two are `_with_ref` (69 → 73) and `_with_coord` (74 → 79), and that is the whole set: **the
+error class is two members wide and both were already named by AC**, in the very row that cleared
+them. **The 366 is not a correction of AC's 358** — AC scoped its sweep to 31 ladder classes and
+this one covers all 36 classes in `engine.py` that have a base; the three sibling collisions AC
+excludes contribute 0 pairs to an ancestor-based predicate, so the residue is scope and the two
+numbers are not comparable term by term. **This slice corrects AC's classification, not its count.**
+
+`_with_coord`'s field claim is measured with a **sentinel** (probe F), because probe E's first
+reading printed `_lag_coord: 'clip'` on a rung-79 machine and `'clip'` is rung 74's own class
+default (`engine.py:17555`) — a spy that cannot tell *set by this call* from *was already that*:
+
+* rung-74 machine, `_with_coord(SENTINEL, …)` moves **`_lag_coord`** only;
+* rung-79 machine, the same call moves **`_phi_ref`** only; both restore in the `finally`, asserted.
+
+**Its BEHAVIOURAL verdict is UNDRIVEN and is left that way.** Probe F ran rung 74's `demand_gains`
+on both machines, got 0 of 54 float keys differing, and read it as a silent reuse. Probe G then
+forced `_lag_coord` by hand on the CONTROL machine and got **0 of 54 as well** — the instrument is
+**blind**, because `demand_gains` pins its own coordinate at `engine.py:18267` before the scope is
+ever entered, so the zero was never evidence of anything. **The claim is withdrawn rather than
+shipped**, which is [[rust-port-slice-w-step3]]'s rule applied to my own probe.
+
+**BOOKED AT BOTH ENDS, because one booking would ship the defect and then inherit it** — exactly
+the shape § (i) just found:
+
+* **slice AF (rung 74)** installs `_with_coord`'s field. It must NOT be installed as a slot AI can
+  re-aim; the two rungs need separate fields. AF's own pre-flight owes the drive test probe G was
+  blind to — a reader that does not pin the coordinate (`_cap_march` is the candidate).
+* **slice AI (rungs 79–80)** is where the value break can first be observed, on § (iii)'s pattern.
+
+#### (vi) THE ARITHMETIC SURFACE — **rung 73 adds NO solver, so the CPython exemption is INHERITED**
+
+Rung 73's own bodies against rung 72's, by AST census over both classes:
+
+| | rung 72 | rung 73 |
+|---|---|---|
+| `complex(…)` | 1 | **0** |
+| `**` | 6 | 2 |
+| `sum(…)` | 12 | 7 |
+| `max` / `min` / `abs` | 56 / 16 / 33 | 35 / 17 / 26 |
+
+**The quartic chain is inherited entire** — `_jac4`, `_charpoly4` and `_quartic_roots_c` are rung
+72's and this rung redefines none of them. So AE introduces no new cross-interpreter hazard, and
+P3 pre-registers the exemption from AC's and AD's *measured* causes rather than from this rung's
+arithmetic.
+
+#### (vii) THE SHIPPED NEEDLES — **3 of 5 discriminate nothing, and 2 of those match NO rung-73 message**
+
+AD § (v) found the rung-72 floor's needle present in rungs 72/73/74's identical messages, so it
+discriminated nothing. The same measurement here, over `test_rung73.py`'s five
+`pytest.raises(…, match=…)` sites, run against the **reconstructed runtime message** of every
+`assert` in each class — not against the source text, which is what the first attempt did and
+which is unsound for a message split across adjacent literals:
+
+| needle | matches | verdict |
+|---|---|---|
+| `TWO declared` | rung 73 only | discriminates |
+| `rung-73.*origin` | rung 73 only | discriminates |
+| `DECLARED` | 4 classes (72, 73, 74, 75) | does not |
+| `no set point` | 4 classes (70, 71, 72, 74) — **not 73** | fires an INHERITED assert |
+| `FORCED release` | 5 classes (68, 70, 71, 72, 74) — **not 73** | fires an INHERITED assert |
+
+**Two of the five gates filed under rung 73 assert a refusal rung 73 does not own** — slice U's P2
+one family on (*the gate named for rung 50 fires rung 49's assert*). Disclosed, ported as-is, and
+the ported gate says so in its own assertion message. AD probe K's `match=['"]…` regex defect does
+**not** recur in this file: the naive and the repaired regex both find 5 (measured, not assumed).
+
+#### (viii) SIZING, AND THE STEP COUNT PRICED FROM IT — **FIVE, on AB's shape, not AD's six**
+
+| slice | source lines | test lines | collected | `slow` | steps |
+|---|---|---|---|---|---|
+| AB (69) | 706 | 582 | — | — | 5 |
+| AC (70 + 71) | 1 606 | — | 57 | 22 | 7 |
+| AD (72) | 1 176 | 502 | — | — | 6 |
+| **AE (73)** | **684** | **518** | **27** | **13** | **5** |
+
+AE is **0.97× AB's source and 0.89× its tests** — AB's shape, not AD's — and it is the smallest
+back-half slice so far, with **12 methods against AB's 24 and AD's 24**. The test counts are
+MEASURED off `--collect-only` (27 collected, 13 `slow`); a `grep` for `def test_` says **23**,
+because four are parametrised, and that gap is the reason the number is collected rather than
+typed ([[rust-port-guessed-census-bars]]).
+
+**THE STEP TABLE IS A PARTITION, CHECKED BEFORE IT WAS WRITTEN DOWN.** AD § (c) found its own step
+row enumerating 9 of 15 methods and noted AC had done the same one slice earlier — *a step row is
+a list of names, and a list of names is not a partition until something adds it up*. Probe I emits
+the table and asserts it:
+
+| step | methods | lines |
+|---|---|---|
+| **1** plumbing: the 6 pointers, the NEW `with_ref` field, the refusals | `_reference`, `_with_ref`, `at_lever`, `_rk4_floor_shared`, `integrate_fuel`, `_shared_rig` | **94** |
+| **2** the gains chain and all five readers | `_quad_gains_at`, `handover_law`, `applied_gains`, `applied_cells`, `ref_discriminator`, `applied_bill` | **486** |
+| **3** the 27 ported gates | — | — |
+| **4** the oracle | — | — |
+| **5** the dispatch gates | — | — |
+| | **12 of 12 placed, 0 missing, 0 extra, 0 duplicated** | **580** |
+
+**The five-step count is itself a prediction (P8).**
+
+#### (ix) THE PREDICTIONS
+
+* **P1.** `_with_ref` gets its **OWN field** at rung 73, not a re-aim of AB's pointer. A port that
+  re-aims the single slot compiles, runs, and **passes all 27 ported gates**, because no shipped
+  rung-73 test calls a rung-69 reader. Step 5 owes the manufactured pairing that catches it.
+* **P2.** Rung 73's `integrate_fuel` refusal (`_ref_law in ('sched','applied')`) is what makes the
+  wrong pairing LOUD in Python. Ported at **step 1**, with a gate that drives it — otherwise the
+  Rust failure shape is a silent fallback, and § 5.28.5's lesson is that the silent shape is the
+  dangerous one.
+* **P3 — the CPython exemption, PRE-REGISTERED AS A NAMED SET WITH A FALSIFIER.** The step-4
+  CPython arm will be exempt on keys from **exactly two INHERITED causes**: (a) the `sum()`-built
+  polynomial in rung 72's `_charpoly4`, which § 5.28.5 measured as the upstream of all 4 842 of
+  its solver differences, and (b) § 5.27's plant drift — march values, first in the stator state
+  `v`, at 1–11 ULPs, decaying to bit-equality by the end of the ramp. Order of magnitude: **the
+  `_charpoly4` cause dominates; the plant cause is single-digit to low-tens of keys.**
+  **FALSIFIED BY** any exempt key attributable to an operation defined in rung 73's own bodies —
+  § (vi) measures `complex` at 0 there, so such a key would mean the census missed a hazard.
+* **P4.** `_quad_gains_at`'s cell is observable at step 5 through § (iv)'s seat — a rung-72 reader
+  on a rung-73 machine, a **DECLARED EXTRA GRID**, since no shipped test sits in it. The witness
+  is `rows[*].gains.F_r` plus the 70-key set difference, and the **discrete** half is the stronger
+  one because a key that is absent cannot be passed by a one-sided bar.
+* **P5.** Path 2's float-identity branch is invisible to every RELATIVE bar in the crate (`4e-11`
+  on a diagonal), so an injection that folds it away passes the ported gates and is caught only by
+  an exact-bits gate at step 1 and by the step-4 oracle. Predicted: **0 of 27 ported gates catch
+  it.**
+* **P6.** The two inherited-refusal gates of § (vii) port as-is, and their Rust assertion messages
+  name the rung that OWNS the refusal rather than rung 73.
+* **P7.** No new `Hooks` field beyond `with_ref`: `TripleHooks` goes 13 → **14**, and the other
+  five pointers re-aim existing slots.
+* **P8.** **FIVE steps**, and the count is a prediction on § (viii)'s pricing.
+
+#### (x) DEFECTS IN THIS PRE-FLIGHT's OWN INSTRUMENTS — five, all caught before anything was written down
+
+1. **Probe B's reader census scored `_quad_gains_at` at 0 readers** and it has **11 call sites**.
+   The predicate counted `self.NAME` / `cls.NAME`; every site is `m._quad_gains_at`, on the LOCAL
+   the rig hands back. **AD's caller filter scored the same 0 by a different mechanism**, and the
+   two instruments agreeing is what made it look settled. A census restricted to `self.` is
+   structurally blind to a method dispatched through a REBUILT machine — the laundering shape
+   AC step 7 named, now showing up in a census rather than in a gate.
+2. **Probe E's `_with_coord` field reading was ambiguous** — it printed a value that was the class
+   DEFAULT, not a mutation. Repaired with a sentinel no default can be (probe F).
+3. **Probe F's behavioural reading was VOID, and probe G proved it** — 0 of 54 keys move under the
+   wrong machine, and 0 of 54 move under a forced coordinate, so the instrument was blind and the
+   zero meant nothing. Withdrawn, not shipped; the verdict is UNDRIVEN.
+4. **Probes E and H were first run with WRONG KEYWORDS** and raised `TypeError` on both arms. Both
+   were caught by their own CONTROL — probe H by its `assert sum(seen.values()) > 0`, the bar AD
+   probe F installed after its own `calls: 0`. **That bar earned its keep twice in one pre-flight.**
+5. **§ (vii)'s first needle census searched the SOURCE text** and reported `rung-73.*origin`
+   matching nothing anywhere, including on the class that owns it. The message is split across
+   adjacent literals, so `.` never crossed the join. Re-run against reconstructed runtime messages
+   it matches rung 73, and only rung 73. **A needle census that reads source is measuring a
+   different object from the one `pytest.raises` reads.**
 
 ### Consequences for the phase table
 

@@ -19,7 +19,7 @@ slices inside an authorised phase are free. See [[rust-port-decided]].
 
 * **0–5 DONE.**
 * **PHASE 6** authorised 2026-08-17, **COMPLETE 2026-08-20** with slice U's five steps.
-* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, AB, AC, **AD complete** (rung 72, § 5.28, twelve probes, all six steps). **No slice in flight.**
+* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, AB, AC, **AD complete** (rung 72, § 5.28, twelve probes, all six steps). **Slice AE (rung 73) PRE-FLIGHT DONE 2026-09-01 (§ 5.29, ten probes); no step shipped yet.**
 
 ## Phase-7 slices, as they closed
 
@@ -252,6 +252,31 @@ Six steps priced from sizing (1 177 source / 502 test lines). See
    **139 blocks (138 Running + 1 Doc-tests) / 1 409 passed / 0 failed / 0 ignored**, every row
    predicted before the run and held, plus a re-run of the target on the final tree after two
    post-launch comment-level edits. See [[rust-port-slice-ad-step6]].
+
+## Slice AE (rung 73, `AppliedReferenceTransient`) — PRE-FLIGHT ONLY
+
+§ 5.29, ten probes. **684 source / 518 test lines, 27 collected (13 slow), 12 methods** — AB's
+shape (706/582), so **FIVE steps predicted**, with the step table emitted and checked to be a
+PARTITION (12 of 12 placed, 0 missing / extra / duplicated).
+
+**The cell column says 0 and measures 1 ADD + 6 SWAPS.** `_with_ref` (69→73) is a **NAME REUSED**,
+not an override — identical arity, disjoint fields (`_ref` / `_ref_law`), and rung 69's inherited
+`reference_bill` **raises** on a rung-73 machine (with a passing control). **§ 5.27 (x) saw the
+pair and cleared it as a harmless RENAME**; the same sentence clears `_with_coord` (74→79), now
+booked to **AF (install) and AI (observe)**, its behavioural verdict left UNDRIVEN because my own
+probe was measured blind. The shipped port is NOT broken — it already dispatches the setter
+through the cell for this exact reason — so what AE owes is the **REFUSAL**, not the cell.
+
+**AD's two carried items both settled.** P6 (iii) **CONFIRMED**: `_reference`'s three paths are
+all live over 260 190 intercepted calls — 41 346 / 109 537 / **109 307 (42.01 %) on the value
+break**, none of which return `req` bitwise; absolute gap median 8.7e−03, and 6 380 calls have
+`req == 0.0` exactly, where a relative spread is undefined (my first headline was a `1e-300`
+guard artifact and is recorded as such). `_quad_gains_at`'s **"unreachable today" booking REFUTED
+BY VALUE**: machine held fixed, pointer swapped — **32 keys move and 70 vanish**, `F_r` going
+−1.000000000002735 → 0.0.
+
+Eight predictions P1–P8, including the CPython exemption pre-registered as a named set with a
+falsifier. See [[rust-port-slice-ae-preflight]].
 
 ## Slice AB, step by step
 
