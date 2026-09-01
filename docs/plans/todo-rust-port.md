@@ -18349,6 +18349,142 @@ the same failure in a table rather than in a prediction.
    it matches rung 73, and only rung 73. **A needle census that reads source is measuring a
    different object from the one `pytest.raises` reads.**
 
+#### 5.29.1 SLICE AE step 1 — the six re-aimed pointers, and **A GATE WRITTEN FOR AN INJECTION THAT THE INJECTION PASSED, BECAUSE ITS NUMBERS WERE TOO WELL BEHAVED**
+
+**SHIPPED**: `rust/src/applied_reference.rs` (the module, five `R73*` tables, six re-aimed
+bodies), `applied_clip_core` widened to `pub(crate)` with its reason, `lib.rs`, and
+`rust/tests/slice_ae_cells.rs` (**15 gates**). All fifteen green on the first run; **13 mutations
+of this step's own source, 12 killed and the 13th predicted to survive** (§ (e)).
+
+**GATE: full `cargo test`, EXIT 0** — every target reporting `0 failed`. **The grand total is
+recorded as UNMEASURED and not typed**: the capture was a `tail -50` window, so the 50 targets it
+holds are all green and the summing line fell outside it. [[rust-port-guessed-census-bars]] and
+[[never-run-the-gate-for-timing]] together say the same thing here — a number that was not in front
+of me does not get written down, and the gate is not re-run to manufacture one.
+
+##### (a) THE FINDING — **MY OWN EXACT-BITS GATE WAS VACUOUS ON THE ONE BRANCH IT EXISTED FOR**
+
+§ 5.29 (ix)'s P5 says an injection that folds `_reference`'s float-identity branch away is
+invisible to every RELATIVE bar in the crate, and that only an exact-bits gate reaches it. So the
+gate was written on `to_bits`. **It was still passed by the injection**, and the reason is not the
+comparison — it is the numbers.
+
+The first version drove all three paths at probe L3's tuple, `(req, g_own, gf, gr) =
+(3.5, 2.0, 2.0, 1.0)`. At those magnitudes `(2.0 + 3.5) - 2.0` **is** `3.5`, bit for bit: the
+branch and its fold-away agree, so deleting the branch changed nothing the gate could see. An
+exact-bits comparison is only as sharp as the arithmetic it is handed, and a triple picked for
+being easy to read is picked for being easy to cancel.
+
+Re-driven at `(0.3, 0.1, 0.1, 0.05)` — measured against the source, not chosen in Rust — the
+shipped branch returns `0.3` and the fold-away returns `0.30000000000000004`, a relative gap of
+**1.85e-16**. That is P5's point made concrete: **the defect is a full ULP at realistic
+magnitudes and still four orders below the loosest relative bar in the crate.** The benign triple
+is kept beside it and LABELLED as discriminating nothing, because the next reader to reach for a
+round number needs to know why it is there.
+
+**It was caught by mutating this step's own source, and by nothing else** — 15 green gates, a
+bit-for-bit reduce march and its vacuity control all passed with the branch deleted.
+[[rust-port-slice-w-step3]]'s rule (*make the instrument prove it can SEE*) is usually applied to
+a census; here it applies to a two-line assertion, and the operational form is: **an exact-bits
+gate must assert, in the same test, that the defect it is written for would have moved the
+answer.** The repaired gate does, on the line below the one that matters.
+
+##### (b) THE TWO SILENT FAILURES THE STEP EXISTS TO PREVENT, AND ONE WAS NOT IN THE PRE-FLIGHT
+
+**THE CLASS DEFAULT.** `TwoSpoolTransientCore`'s constructor writes `ref_law = "sched"` for every
+rung in the family; Python declares `_ref_law = "applied"` at rung 73 (probe L1: a fresh
+`AppliedReferenceTransient` reads `'applied'`, a fresh `SharedActuatorTransient` reads `'sched'`).
+A port that omitted the overwrite hands back a machine that
+
+* **PASSES** rung 73's own `integrate_fuel` refusal, because `"sched"` is one of the two declared
+  laws;
+* marches rung 72's plant, because `_reference` is then the identity;
+* and reports rung 73 in every reader.
+
+**And the reduce arm would have gone on passing**, because the reduce *is* "rung 73 under
+`sched` IS rung 72". This is the `at_lever` trap one level up — the trap the pre-flight's § (i)
+names for the sibling constructor, arriving at the CONSTRUCTOR — and it is not in § 5.29 at all.
+`build_applied_reference_cascade` sets it; `r73_at_lever` and `r73_shared_rig` then **overwrite
+from the source core**, because a sibling built inside a `RefScope`-set `"sched"` must be
+`"sched"` and not the class default.
+
+**THE MISSING REFUSAL**, which is § 5.29 (ix)'s P2 and is ported here rather than at step 3.
+Without it a rung-69 reader on a rung-73 machine writes `"inc"` into `ref_law`, leaves `ref_` at
+`None`, falls through `triple_rig`'s `self._ref or (…)` fallback and marches a plant nobody asked
+for, silently. **Both of Python's asserts precede the entry test — measured, not assumed** (probe
+L5): rung 72's body early-returns into rung 71's table when neither the governor clock nor the
+fuel leg is armed, and on exactly that arming `_ref_law = 'inc'` still raises. So the ported gate
+drives a BARE march, which is the arming a refusal placed after a copied entry test would skip.
+
+##### (c) P7 IS TRUE FOR STEP 1 AND ALREADY KNOWN FALSE FOR STEP 2 — **PRE-REGISTERED, NOT DISCOVERED**
+
+§ 5.29 (ix)'s P7 was falsified before step 1 and restated as *no new field at all: every one of the
+six pointers re-aims an existing slot, so `TripleHooks` stays at 13*. **It holds, exactly, for
+step 1's six** — `reference`, `with_ref`, `rk4_floor_shared`, `shared_rig` in `TripleHooks`,
+`at_lever` in `LeverHooks`, `integrate_fuel` in `FuelTransientHooks` — and neither width tripwire
+fires.
+
+**It is already false for the seventh.** § 5.29 (iv) commits this slice to installing
+`_quad_gains_at` as a cell, and that name has **no field in ANY of the five table types** —
+grepped over all five, it is a free `pub fn` in `shared_actuator`. So **step 2 takes `TripleHooks`
+13 → 14**, and `slice_ae_cells.rs`'s exhaustive destructuring is the tripwire that will say so.
+
+That is § 5.29 (x)'s sixth defect a second time inside the same section: **P1's repair fixed one of
+the two inconsistencies the pair contained and left the other, because the repair reasoned about
+the six pointers step 1 installs and the contradiction lives in the seventh.** Written down at the
+step that can still see it cheaply.
+
+##### (d) A CARRY THAT IS A MEASURED NO-OP, PORTED ANYWAY AND PRE-REGISTERED AS ONE
+
+Python's `_shared_rig` override sets `m._ref_law = self._ref_law` on the machine
+`super()._shared_rig` handed back, and its docstring calls that *the other half of the fix* beside
+`at_lever`. It is not: rung 72's body reaches its sibling through `self.at_lever(…)`, which at rung
+73 has **already carried the law**. Driven both ways on the same receiver under both laws (probe
+L2 — the override, and rung 72's body called directly on a rung-73 `self`), **the two agree**.
+
+Ported unchanged ([[rust-port-copy-vs-rederivation]] — a duplication the source makes is not the
+port's to remove), and the fact is **pre-registered for step 5: this swap has no value break**, so
+no discriminator exists and none should be hunted. Mutation M11 deletes the carry and **survives
+all 15 gates**, which is the prediction driven rather than asserted.
+
+##### (e) THIRTEEN MUTATIONS — TWELVE KILLED, ONE PREDICTED SURVIVOR
+
+`M:\claud_projects\temp\rust-ae\mutate_step1.py`, each asserting its anchor matched exactly once
+before the replace:
+
+| mutation | gate that died | verdict |
+|---|---|---|
+| M01 the builder drops the class-default set | the class-default gate (+4 more) | killed |
+| M02 `_with_ref` writes BOTH fields | the two-sided field gate | killed |
+| M03 `_with_ref` returns the NEW law, not `prev` | the nest gate | killed |
+| M04 `_with_ref` accepts `None` silently | the `None` refusal gate | killed |
+| M05 `_reference` drops path 1 (the source's own first bug) | the rung-72 reduce | killed |
+| M06 `_reference` drops path 2 — **P5's injection** | the three-paths gate | **SURVIVED, then killed** |
+| M07 `_reference` rearranges the association | the association gate | killed |
+| M08 the undeclared-reference refusal removed | the bare-march refusal gate | killed |
+| M09 the applied+sum refusal removed | the conjunction gate | killed |
+| M10 `at_lever` drops the carry | the scoped-sibling gate | killed |
+| M11 `_shared_rig` drops the carry | — | **SURVIVED, as predicted** |
+| M12 the floor keeps rung 72's message | the floor-message gate | killed |
+| M13 `R73_TRIPLE.reference` left as rung 72's | the pointer gate (+3 more) | killed |
+
+M06 is § (a). M11 is § (d). **M02 is the one worth naming beside them**: a body that writes BOTH
+fields is what a one-sided *"`ref_law` moved"* assertion admits, and it is the exact shape § 5.27
+(x)'s signature sweep could not see — so the gate asserts the field that moved **and** the field
+that did not, on both machines.
+
+##### (f) ONE NAME GUESSED, ONE COMPILE ERROR
+
+`BleedLimiter::from_margin` takes three arguments; the four-argument form is `from_margin_tau`.
+[[rust-port-guessed-census-bars]]'s shape, and cheap only because the compiler is the instrument.
+The module itself compiled on the first attempt.
+
+**AND ONE VISIBILITY CHANGE WITH A REASON, NOT A CONVENIENCE.** `applied_clip_core` is now
+`pub(crate)` so `r73_reference` uses the SAME body the march does. Its middle branch is a float
+IDENTITY test (`clip == g_own`), so a reader that re-derived the clip through `applied_clip`'s
+`&ScheduledStatorCore` form would be comparing against a second expression of the same algebra —
+one body, one clip, which is why `_applied_clip` is defined exactly once in Python too.
+
 ### Consequences for the phase table
 
 Phase 8's `main.py` row is now "Rust CLI prints the tables and dumps plot JSON; port the

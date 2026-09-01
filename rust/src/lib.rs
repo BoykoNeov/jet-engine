@@ -123,6 +123,7 @@
 //! - **Conservation checks are `assert!`**, not `debug_assert!` — they run on every execution,
 //!   in every profile. That is the working contract, not a debugging convenience.
 
+pub mod applied_reference;
 pub mod bleed;
 pub mod bleed_transient;
 pub mod combustor;

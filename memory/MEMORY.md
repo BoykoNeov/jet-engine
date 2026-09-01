@@ -22,7 +22,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding, backticks in `-m`, a status read off the runner, and a log still being written
 
-## The Rust port — phases 0–6 done; phase 7 in flight, slice AD (rung 72) DONE — 6 of 6
+## The Rust port — phases 0–6 done; phase 7 in flight, slice AE (rung 73) step 1 of 5 done
 - [Rust port status](rust-port-status.md) — the running tally: phases, slices, and the numbers each closed slice landed on. **Update THAT file, not this line.**
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; a new PHASE needs authorisation
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost
@@ -91,6 +91,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Slice AD step 5](rust-port-slice-ad-step5.md) — an INPUT-FED section measures the function where a self-feeding one measures the plant, so 5 022 golden differences became a 180-name exemption
 - [Slice AD step 6 — slice closed](rust-port-slice-ad-step6.md) — a first definer still has a parent pointer, because the parent slot carries a REFUSAL; and my header typed nine tests beside the ten that disprove it
 - [Slice AE pre-flight](rust-port-slice-ae-preflight.md) — a prior sweep SAW both name reuses, NAMED them, and cleared them on the wrong property; and four of my own probes were void
+- [Slice AE step 1](rust-port-slice-ae-step1.md) — an exact-bits gate written for a float-identity injection was PASSED by it, because the triple it was driven at cancelled exactly
 - Slice T (46/47/48) steps [1](rust-port-slice-t-step1.md) [2](rust-port-slice-t-step2.md) [3](rust-port-slice-t-step3.md) [4](rust-port-slice-t-step4.md) — an EXACT ZERO blinds its own gate to the SIGN (one lesson per file)
 
 ## Shipped rungs

@@ -813,7 +813,13 @@ fn py_max4(a: f64, b: f64, c: f64, d: f64) -> f64 {
 }
 
 /// [`applied_clip`] on the shared core, for the march's own use.
-fn applied_clip_core(t: &crate::two_spool_transient::TwoSpoolTransientCore, gf: f64, gr: f64)
+///
+/// `pub(crate)` because RUNG 73's `_reference` needs the SAME spelling: its middle branch is
+/// `clip == g_own`, a float-IDENTITY test, so a reader that re-derived the clip through
+/// [`applied_clip`]'s `&ScheduledStatorCore` form would be comparing against a second
+/// expression of the same algebra. One body, one clip — rung 72's own discipline, and the
+/// reason `_applied_clip` is defined exactly once in Python too.
+pub(crate) fn applied_clip_core(t: &crate::two_spool_transient::TwoSpoolTransientCore, gf: f64, gr: f64)
  -> f64 {
     if t.share_law.get() == "max" { gf.max(gr) } else { gf + gr }
 }

@@ -19,7 +19,7 @@ slices inside an authorised phase are free. See [[rust-port-decided]].
 
 * **0–5 DONE.**
 * **PHASE 6** authorised 2026-08-17, **COMPLETE 2026-08-20** with slice U's five steps.
-* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, AB, AC, **AD complete** (rung 72, § 5.28, twelve probes, all six steps). **Slice AE (rung 73) PRE-FLIGHT DONE 2026-09-01 (§ 5.29, ten probes); no step shipped yet.**
+* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, AB, AC, **AD complete** (rung 72, § 5.28, twelve probes, all six steps). **Slice AE (rung 73) IN FLIGHT — pre-flight + STEP 1 of 5 done 2026-09-01 (§ 5.29, 5.29.1).**
 
 ## Phase-7 slices, as they closed
 
@@ -253,7 +253,7 @@ Six steps priced from sizing (1 177 source / 502 test lines). See
    predicted before the run and held, plus a re-run of the target on the final tree after two
    post-launch comment-level edits. See [[rust-port-slice-ad-step6]].
 
-## Slice AE (rung 73, `AppliedReferenceTransient`) — PRE-FLIGHT ONLY
+## Slice AE (rung 73, `AppliedReferenceTransient`) — IN FLIGHT, step 1 of 5 done
 
 § 5.29, ten probes. **684 source / 518 test lines, 27 collected (13 slow), 12 methods** — AB's
 shape (706/582), so **FIVE steps predicted**, with the step table emitted and checked to be a
@@ -282,6 +282,28 @@ Settled by measurement: **0 reads of `_ref` on a rung-73 machine** against a liv
 control at 1, so the re-aim is RIGHT, `TripleHooks` stays at **13**, and the shippable
 defect is the
 **missing refusal**. P7 stands FALSIFIED before step 1 rather than quietly rewritten. See [[rust-port-slice-ae-preflight]].
+
+### Slice AE step 1 — SHIPPED 2026-09-01
+
+`rust/src/applied_reference.rs` (five `R73*` tables, **six re-aimed pointers, ZERO new table
+fields**) + `rust/tests/slice_ae_cells.rs`, **15 gates green first run**; **13 mutations of the
+step's own source, 12 killed, 1 predicted survivor.** Plan § 5.29.1.
+
+**THE FINDING: my own exact-bits gate was VACUOUS on the branch it existed for.** P5's injection
+(fold `_reference`'s float-identity branch away) **passed** a `to_bits` gate driven at the probe's
+tuple, because `(2.0 + 3.5) - 2.0` is `3.5` exactly. Re-driven at `(0.3, 0.1, 0.1, 0.05)`:
+`0.3` against `0.30000000000000004`, gap `1.85e-16`. Caught only by mutating the step's own source.
+
+**A SECOND SILENT FAILURE THE PRE-FLIGHT DID NOT HAVE**, found by the advisor and measured
+(probe L1): the core's ctor writes `ref_law = "sched"` for the whole family, so a rung-73 machine
+that kept it **passes rung 73's own refusal**, marches rung 72 and reports rung 73 — and the reduce
+arm keeps passing, because the reduce IS that identity.
+
+**P7 holds for step 1's six pointers and is already known false for the seventh** —
+`_quad_gains_at` has no field in any of the five table types, so step 2 takes `TripleHooks` 13 → 14.
+Pre-registered. **`_shared_rig`'s carry is a MEASURED no-op** (`at_lever` already carries the law;
+mutation M11 survives all 15 gates) and is pre-registered as having no value break for step 5.
+See [[rust-port-slice-ae-step1]].
 
 ## Slice AB, step by step
 
