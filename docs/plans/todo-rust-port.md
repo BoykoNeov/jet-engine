@@ -17116,6 +17116,174 @@ carries the message, which is the shape the parent already uses, and the measure
 that a decision rather than a copy ([[rust-port-slice-i]]: a bare `except` makes the question
 REACHABILITY).
 
+#### 5.28.3 SLICE AD step 3 — the quartic chain and the five readers, and **A CELL CENSUS WHOSE CALLER FILTER CANNOT SEE A METHOD THAT IS PASSED RATHER THAN CALLED**
+
+**SHIPPED**: rung 72's `_quad_laws`, `_quad_gains_at`, `_jac4`, `_charpoly4`, `_quartic_roots_c`,
+`_parent_quartic`, `charpoly_selftest`, `_riding4`, `_shared_march`, `_assert_fuel_boundary` and
+**all five public readers** (`authority_law`, `shared_gains`, `shared_cells`, `mask_discriminator`,
+`shared_bill`); four new complex operations on `C64` (`c_sub`, `c_real`, `c_is_zero`, `c_powu`) and
+`py_max5`. `src/shared_actuator.rs` **813 -> 2 659 lines** and `src/reference_split.rs`
+1 920 -> 1 989; **726 Python lines -> 1 915 Rust, 2.64x**. No gate file — the ported gates are step
+4, and slice AC's steps 2/3 set the precedent that a step which lands bodies proves itself by
+DRIVING them and diffing against PyPy first. Full gate **136 targets / 1 365 passed / 0 failed** —
+**unchanged from step 2**, predicted before the run and held, since a body-only step adds no
+target.
+
+##### (a) THE FINDING — **THE CELL COLUMN MEASURES 4, NOT 3, AND THE MISSING ONE IS INVISIBLE TO A PREDICATE WRITTEN IN CALL SYNTAX**
+
+§ 5.28 (ii) reported the cell census as **3** and called it *"the first back-half row where the
+hand-written column measures right"*. Re-run from the other end — every method rung 72 defines,
+against every one of its **12 descendants** — the answer is **4**:
+
+| name | definers | classes | same signature | `.name(` call sites | bound-method PASS lines |
+|---|---|---|---|---|---|
+| `_reference` | 2 | 72, 73 | yes | 6 | 0 |
+| `_rk4_floor_shared` | 3 | 72, 73, 74 | yes | 2 | 0 |
+| `_shared_rig` | 8 | 72–80 | yes | 14 | 0 |
+| **`_quad_gains_at`** | **2** | **72, 73** | **yes** | **0** | **11** |
+
+`_quad_gains_at` clears filter 1 (an overrider exists) and filter 3 (the override is behavioural, by
+AST diff). It fails filter 2 — *a caller exists* — because **nothing calls it.** It is passed as a
+BOUND METHOD to `_with_share` / `_with_ref` at eleven lines across six rungs
+(`shared_gains`, `shared_cells`, `mask_discriminator`, `applied_gains` ×2, `applied_cells`,
+`ref_discriminator` ×2, `demand_gains`, `split_gains`, `authority_mask`), so `"." + name + "("`
+never matches and neither does an AST `Call` node.
+
+**AND THE PROBE THAT REPORTED 3 HAD THE THREE NAMES HARD-CODED.** `probe_ad_a.py` opens with
+`TARGETS = ['_reference', '_rk4_floor_shared', '_shared_rig']` — it *verified* a list § 5.19 (x)
+had already handed it. Its one sweeping half, the control at the foot of the file, counts a name as
+READ only where it appears as `self.NAME` or `cls.NAME`. **Rung 72's readers build a rig into a
+local `m` and dispatch on THAT** (`m._with_share("max", m._quad_gains_at, …)`), so every one of
+rung 72's own dispatches is invisible to it — the control's own answer is 54 names, and widening the
+attribute base to ANY receiver gives **61**.
+
+Run over the whole ladder rather than the one row that refuted it
+([[rust-port-slice-w]]), the seven names the narrow predicate could not see split cleanly:
+
+| name | why the narrow predicate missed it | real? |
+|---|---|---|
+| `__init__`, `from_margin`, `key`, `run`, `solve_n`, `authority_ceiling` | called on a `cls`/instance that is not `self` — 2 to 41 CALL sites each | not a ladder cell of this slice |
+| **`_quad_gains_at`** | **0 call sites of any kind; only PASSED** | **YES** |
+
+It is the only one of the seven with **zero call syntax**, which is the shape a `self.NAME` reader
+census is structurally blind to.
+
+##### (b) IT IS A CELL BY THE FILTERS AND UNREACHABLE ON THE SHIPPED LADDER — **BOOKED TO SLICE AE, NOT INSTALLED**
+
+The port does **not** widen `TripleHooks` for it, and the reason is measured rather than economised:
+
+* **all five rung-72 readers are redefined by NOBODY** downstream (12 descendants, 0 redefinitions);
+* **no rung-73-or-later code calls any of them** — every one of the 19 call sites across
+  `engine.py`, `main.py` and `tests/` builds a rung-72 machine.
+
+So rung 72's `_quad_gains_at` dispatch never reaches rung 73's body on the shipped ladder: rung 73
+has its OWN readers (`applied_gains`, `applied_cells`, `ref_discriminator`), which in the port will
+call rung 73's function directly. A `TripleHooks` field today would be a pointer nothing could
+select differently — **[[rust-port-slice-aa-steps2345]]'s "defence with no reader", installed
+deliberately.** Booked to slice AE on § 5.27 (x)'s `_legs` precedent (found, measured, deferred to
+the slice that can observe it).
+
+##### (c) THE STEP ROW ENUMERATED 9 OF 15 METHODS — the second slice running
+
+§ 5.28 (viii)'s step table names nine private helpers for step 3 and stops. The **five public
+readers plus `_assert_fuel_boundary` — the 481 lines § (viii) itself attributes to the readers —
+appear in NO step**, and step 4 is the ported gates, which cannot ship the things they gate. They
+land here. The six-step count is a pre-registered prediction and is kept.
+
+This is AC step 1's lesson verbatim one slice on (*the pre-flight's step list and its own census
+disagreed on the table count*), and two instances make it a pattern: **a step row is a list of
+names, and a list of names is not a partition until something adds it up.**
+
+##### (d) `charpoly_selftest` IS BIT-EXACT vs PyPy ON RUN ONE, AND THE CPython ARM SPLITS 4 OF 10 — **WITH THE ATTRIBUTION MEASURED, NOT REASONED**
+
+The reader was ported FIRST, before a line of plant: it is a classmethod with no arguments, no
+march and no rig, and it exercises `_charpoly4`, `_quartic_roots_c` and every complex operation this
+slice adds on two fixed matrices. **All ten keys agree with PyPy bit-for-bit.** P2 is settled at the
+earliest point in the step where it could be, which is the whole reason it went first.
+
+Against **CPython 3.14**, four keys differ. The cause is the project's known one — CPython 3.12+'s
+`sum()` is Neumaier-COMPENSATED and PyPy's is a naive fold — and the three `sum()` sites that feed
+this reader were separated by substituting a naive fold into each in turn:
+
+| site | keys it moves |
+|---|---|
+| `_charpoly4`'s inner matrix product `sum(A[i][t]*T[t][j] …)` | **NONE — inert on both matrices** |
+| the float traces (`sum(M[i][i] …)` and `sum(A[i][i] …)`) | `general.det_err`, `general.det_vs_a0` |
+| `sum(roots)` — **a COMPLEX sum** | `triangular.trace_err` |
+| both of the above together | `general.trace_err` |
+
+##### (e) AND CPython's COMPENSATION REACHES **COMPLEX**, WHERE FIVE SHIPPED COMMENTS IN THIS REPO SAY "FOR FLOATS"
+
+`src/bleed_transient.rs`, `src/cross_loop.rs`, `src/reference_split.rs` and this plan's own § 5.21 /
+§ 5.24 / § 5.26 / § 5.27 lines all state the divergence as *`sum()` … for floats*. Measured
+directly:
+
+```text
+xs = [1e16+1e16j, 1+1j, -1e16-1e16j, 1+1j]
+CPython 3.14  sum(xs) = (2+2j)   naive fold = (1+1j)   COMPENSATED
+PyPy 3.11     sum(xs) = (1+1j)   naive fold = (1+1j)   naive
+```
+
+So the exposure is one class wider than the repo has been recording. Swept for consequences: **every
+other `sum()` over root-derived data in the whole ladder is `sum(1 for z in roots if …)`, an INTEGER
+count on CPython's int path** — `sum(roots)` at rung 72 line 16310 is the ladder's **only** complex
+`sum()`. The wider fact is recorded; the wider exposure is exactly one site, and it is in this
+slice.
+
+##### (f) THE PORT IS BIT-EXACT vs PyPy ON **3 216 KEYS**, FIRST RUN — AND THE READER's ONE NEW FILTER NEVER FIRES
+
+Slice AC steps 2/3's precedent: a step that lands bodies proves itself by DRIVING them and diffing
+against the source before a gate is written. A throwaway probe pair emits every scalar of all five
+readers plus `charpoly_selftest` as a hex bit pattern — both `inc` arms of `shared_gains` and
+`shared_bill`, all four `(inc, clocks)` arms of `shared_cells`, all three clock arms of
+`mask_discriminator`, every gain row, every one of the 32 ledger cells — at the readers' OWN
+defaults (the suite passes only `inc=` and `clocks=CLOCKS`, and `CLOCKS` is bit-identical to the
+default tuple, so no stride is substituted; § 5.27.6 (i)'s lesson). **3 216 keys per arm,
+`Rust ≡ PyPy` on every one**, at **29 s against PyPy's minutes**.
+
+§ 2's whole table lands: all four cells present, `law_holds` true, and the zero counts
+`(phi, fuel) = 2`, `(phi, gov) = 1`, `(M_i, fuel) = 1`, `(M_i, gov) = 0` — exactly § 5.28's
+prediction, with `worst_parent_gap` 7.1e−17 and `worst_v_gap` **exactly 0**. § 1's four exact zeros
+are `0.0` in the port as in the source.
+
+**AND `skipped.switch` IS ZERO ON ALL SIX SAMPLING ARMS.** The switch-proximity filter is
+`_quad_gains_at`'s one genuinely NEW filter — the whole reason its docstring exists — and no
+shipped input reaches it. That made a claim I had just written into the port's own doc comment
+testable, and it is **FALSE**: the comment said dropping the `share_law == "max"` half of the guard
+*"would silently thin the arm carrying § 3's whole discriminator"*, and **deleting that half moves
+0 of 3 216 keys**, because the filter fires under neither law. Corrected in the same pass, and
+replaced by the MARGIN, which is the part worth keeping:
+
+| arm | sampled | min `abs(gf − gr)` | × the bar (4e−7) |
+|---|---|---|---|
+| `md` arm 3, incidence | 38 | 1.63e−6 | **4.08** |
+| `md` arm 3, `phi` | 49 | 3.44e−6 | 8.61 |
+| `sc` wide-cell, `phi` | 80 | 7.62e−6 | 19.0 |
+| the other seven | | | 39 … 145 |
+
+So `switch_guard ≈ 16.4` rather than `4.0` would start dropping points: **dead, but by 0.6 of a
+decade, not rung 69's 3.5.** That is a number and not the word "unreachable", which is the whole
+difference between a disclosure and a guess. [[rust-port-slice-ac-step7]] is the same shape — four
+doc comments that gave a REASON that was testable and false — reproduced here by a reader who had
+that lesson open.
+
+##### (g) THE STEP-2 BASELINE WAS DESTROYED TWICE, BY MY OWN RUNNERS
+
+Steps 1 and 2 are the only two in the slice with no full-gate count in the plan, so step 3 opened by
+taking one. Two attempts died:
+
+1. `cargo test 2>&1 > file &` — the redirect order sends **stdout** to the file and leaves stderr on
+   the terminal, and the pipeline's exit status belongs to the last command, not to `cargo`. A
+   failing gate would have exited 0 with a plausible-looking file. It also ran ACROSS the step-3
+   edits, which makes its 111 targets a reading of no particular tree.
+2. The re-run died on `LNK1104: cannot open file … slice_y_oracle…exe` — the previous run still held
+   the output. **A linker lock is not a test failure**, and it is the same class as § 5.27.5's
+   *"the sweep labelled a lock-contention failure 'did not build'"*.
+
+Both were caught by reading the file's CONTENT for `test result:` and `error[E`, never its exit
+status. The count in the header is the third run, taken on the step-2 tree with the step-3
+additions parked out.
+
 ### Consequences for the phase table
 
 Phase 8's `main.py` row is now "Rust CLI prints the tables and dumps plot JSON; port the

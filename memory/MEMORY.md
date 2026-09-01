@@ -86,6 +86,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Slice AD pre-flight](rust-port-slice-ad-preflight.md) — a shipped `Usage:` block documents a method with ZERO definitions, and the quartic's three risky roots never win the max on any input the suite reaches
 - [Slice AD step 1](rust-port-slice-ad-step1.md) — a pre-registered count of compile errors, measured on a build that stopped at the lib, came back plausible and wrong
 - [Slice AD step 2](rust-port-slice-ad-step2.md) — a convention that a new enum variant breaks the build held at 7 of 20 sites, and my own gate compared the plant against the function that produced it
+- [Slice AD step 3](rust-port-slice-ad-step3.md) — a census predicate written in CALL SYNTAX is blind to a method that is only ever PASSED, and CPython's compensated `sum()` reaches complex too
 - Slice T (46/47/48) steps [1](rust-port-slice-t-step1.md) [2](rust-port-slice-t-step2.md) [3](rust-port-slice-t-step3.md) [4](rust-port-slice-t-step4.md) — an EXACT ZERO blinds its own gate to the SIGN (one lesson per file)
 
 ## Shipped rungs

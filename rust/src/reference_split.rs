@@ -1079,6 +1079,75 @@ pub fn c_neg(z: C64) -> C64 {
     C64 { re: -z.re, im: -z.im }
 }
 
+/// Python's `z1 - z2` — componentwise, `_Py_c_diff` / `rcomplex.c_sub`.
+///
+/// **SLICE AD GREW THE CENSUS A SECOND TIME, AND THE RULE ABOVE IS WHY THAT IS NOT A SURPRISE.**
+/// Rung 72's `_quartic_roots_c` spells `z[i] - z[j]` (Durand–Kerner's denominator) and
+/// `z[i] -= d`, neither of which rungs 69 or 70 called. The type's own doc already records that
+/// *a census is only as wide as the rungs that have been read*; this is the third reading.
+pub fn c_sub(a: C64, b: C64) -> C64 {
+    C64 { re: a.re - b.re, im: a.im - b.im }
+}
+
+/// Python's promotion of a `float` to a `complex` before a mixed-type arithmetic op.
+///
+/// `complex.__mul__` / `__add__` return `NotImplemented` for a `float` operand only after
+/// `TO_COMPLEX` has widened it to `(x, 0.0)`; every mixed expression in `_quartic_roots_c`
+/// (`z + a3`, `x * scale`, `den == 0`) therefore runs the FULL complex op with a zero imaginary
+/// part, not a componentwise shortcut. [`py_half`] and [`py_two`] are this function specialised to
+/// the two constants slice AB and AC met; rung 72 multiplies by a *variable*, so the promotion is
+/// spelled once and handed to [`c_mul`] / [`c_add`] rather than open-coded per call site.
+pub fn c_real(x: f64) -> C64 {
+    C64 { re: x, im: 0.0 }
+}
+
+/// Python's `complex == 0` — **BOTH components, and the `int` is promoted, not the complex
+/// demoted.**
+///
+/// `_quartic_roots_c` guards its Durand–Kerner denominator with `if den == 0:`. Python widens the
+/// `int` to `complex(0.0, 0.0)` and compares componentwise, so a denominator of `0 + 1e-30j` is
+/// **not** zero and the guard does not fire. A port that tested `den.re == 0.0` alone would fire
+/// the guard where Python does not.
+///
+/// § 5.28 (iii) measured the guard **never firing** on any of the 1 068 shipped calls, so this is
+/// ported for faithfulness and **disclosed rather than gated** — a gate on an unreachable branch
+/// passes forever and says nothing.
+pub fn c_is_zero(z: C64) -> bool {
+    z.re == 0.0 && z.im == 0.0
+}
+
+/// Python's `z ** k` for a small non-negative `int` — **CPython's `c_powu`, which is BINARY
+/// exponentiation and not a naive repeated product.**
+///
+/// `complex_pow` takes the integer fast path when the exponent is real, integral and `|k| <= 100`,
+/// and `c_powi` then calls `c_powu`: a `mask`-doubling loop that squares `p` each round and
+/// multiplies the accumulator `r` (which starts at `1 + 0j`) by `p` on each set bit. PyPy's
+/// `rcomplex` takes the same path.
+///
+/// **THE ASSOCIATION ORDER IS OBSERVABLE, WHICH IS WHY THE LOOP IS COPIED RATHER THAN
+/// SUMMARISED.** At `k = 3` this computes `z * (z*z)`; a naive `((z*z)*z)` is a different
+/// expression in floating point. § 5.28 (iii)'s probe E measured a naive repeated product agreeing
+/// with both interpreters on all four exponents *for the one base rung 72 uses*
+/// (`complex(0.4, 0.9)`) — a measurement on one value, not a licence, and `exp(k log z)` and the
+/// polar form both DIFFER at `k = 1, 2, 3`. The algorithm below cannot be wrong on any base.
+///
+/// The `r = c_1 * p` products are kept: `_Py_c_prod(1+0j, p)` is `(1*p.re - 0*p.im, 1*p.im +
+/// 0*p.re)`, whose cross terms are `0.0 * something` and are therefore **not** an identity on a
+/// signed zero — [`py_half`]'s trap, at the multiplicative unit.
+pub fn c_powu(z: C64, k: u32) -> C64 {
+    let mut r = C64 { re: 1.0, im: 0.0 };
+    let mut p = z;
+    let mut mask: u32 = 1;
+    while mask > 0 && k >= mask {
+        if k & mask != 0 {
+            r = c_mul(r, p);
+        }
+        mask <<= 1;
+        p = c_mul(p, p);
+    }
+    r
+}
+
 /// Python's `z1 / z2` — **SMITH's ALGORITHM, and this is the one operation in slice AC that does
 /// not survive a schoolbook spelling.**
 ///

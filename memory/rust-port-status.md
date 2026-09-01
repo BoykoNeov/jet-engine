@@ -19,7 +19,7 @@ slices inside an authorised phase are free. See [[rust-port-decided]].
 
 * **0–5 DONE.**
 * **PHASE 6** authorised 2026-08-17, **COMPLETE 2026-08-20** with slice U's five steps.
-* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, **AB complete**; **AC (rungs 70+71) IN FLIGHT** (§ 5.27, fourteen probes) — **steps 1–6 of 7 done**.
+* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, AB, **AC complete**; **AD (rung 72) IN FLIGHT** (§ 5.28, twelve probes) — **steps 1–3 of 6 done**.
 
 ## Phase-7 slices, as they closed
 
@@ -162,6 +162,21 @@ Six steps priced from sizing (1 177 source / 502 test lines). See
    drops a rung-72 point and reports perfect tracking over an empty set. And **my own authority gate
    compared the recorded label against the function that produced it**, so an inverted comparison
    passed; the mutation sweep found it, not review. See [[rust-port-slice-ad-step2]].
+
+3. **Step 3** — the quartic chain (`_jac4`, `_charpoly4`, `_quartic_roots_c`, `_parent_quartic`,
+   `charpoly_selftest`), `_quad_laws`, `_quad_gains_at`, `_riding4`, `_shared_march`,
+   `_assert_fuel_boundary` and **all five public readers**; `shared_actuator.rs` 813 -> **2 659
+   lines**, four new `C64` operations and `py_max5`. No gate file — the ported gates are step 4, and
+   slice AC's steps 2/3 set the precedent that a body step proves itself by DRIVING and diffing.
+   **3 216 keys, `Rust == PyPy` bit-for-bit on the FIRST run**, at 29 s against PyPy's minutes; § 2's
+   four cells land with the predicted zero counts 2/1/1/0 and `worst_v_gap` exactly 0. **THE CELL
+   COLUMN MEASURES 4, NOT 3**: `_quad_gains_at` has two definers and an identical signature but
+   **zero call sites of any kind** — it is PASSED as a bound method at eleven lines over six rungs,
+   so the pre-flight's caller filter scored it 0 and dropped it. Booked to slice AE (measured
+   unreachable today). Also: `charpoly_selftest` splits **4 of 10** keys on CPython 3.14, and one
+   cause is a **COMPLEX** `sum()`, which five shipped comments in this repo call float-only; and a
+   doc comment written in this same step measured FALSE — deleting the guard it defended moves 0 of
+   3 216 keys. See [[rust-port-slice-ad-step3]].
 
 ## Slice AB, step by step
 
