@@ -9026,7 +9026,7 @@ by counting.
 | **AC** | 70–71 | `CrossSplitTransient`, `FullSplitTransient` | ~~**1** — `split_gains`~~ → **0. MEASURED at § 5.27 (i): `split_gains` is NOT a cell** — rung 80's same-named body has an incompatible signature and rung 70's own inherited caller `TypeError`s on a rung-80 machine. **This column's predicate is by NAME and never checked substitutability; § 5.27 (x) sweeps all 358 override pairs and finds ONE more (`_legs`, 63→77, booked to AH).** The slice swaps `at_lever`/`integrate_fuel` at EACH rung plus `_triple_laws` at 70 = **5** distinct function pointers, no new field |
 | **AD** | 72 | `SharedActuatorTransient` | **3** — `_reference`, `_rk4_floor_shared`, `_shared_rig` |
 | **AE** | 73 | `AppliedReferenceTransient` | ~~**0**~~ → **1 ADD + 6 SWAPS. MEASURED at § 5.29 (ii)** — `_with_ref` (69 → 73) is a **NAME REUSED**, not an override: identical arity, but the two bodies write DISJOINT FIELDS (`_ref` / `_ref_law`), and rung 69's own inherited caller RAISES on a rung-73 machine (driven, with a passing control). **§ 5.27 (x) saw the pair and cleared it as a harmless RENAME** — its predicate compared signatures; the same sentence clears `_with_coord` (74 → 79), now booked to AF **and** AI. `_quad_gains_at` is a swap here too — **AD's "unreachable today" booking REFUTED BY VALUE** (§ 5.29 (iv)): with the machine held fixed and only the pointer swapped, 32 keys move and 70 vanish, `F_r` going −1.000000000002735 → 0.0 |
-| **AF** | 74 | `DemandCoordinateTransient` | **3** — `_cap_fuel`, `_sensed_cap`, `_windup_tau` |
+| **AF** | 74 | `DemandCoordinateTransient` | ~~**3**~~ → **4 ADD + 4 SWAPS. MEASURED at § 5.30 (ii)** — the missing fourth ADD is `_with_coord`, which **slice W’s phase-wide census had already named** among *the four names the hand-written column missed*; this row was simply never updated. Its two definers are rungs 74 and 79, so the census **re-derives § 5.29 (v)’s separate-field obligation from the source** instead of inheriting it as a booking. SWAPS are 4 under AC’s convention and 2 under § 5.19 (i)’s (`at_lever`/`_shared_rig` are Rust deletes) — both stated, because the same slice scores differently under the two |
 | **AG** | 75–76 | `AntiWindupTransient`, `SensedCapTransient` | **0** |
 | **AH** | 77–78 | `StiffnessLedgerTransient`, `ResidualGaugeTransient` | **0** |
 | **AI** | 79–80 | `StateCoordinateTransient`, `SplitWallTransient` | **0** |
@@ -19601,3 +19601,201 @@ by `git status`.
 
 Phase 8's `main.py` row is now "Rust CLI prints the tables and dumps plot JSON; port the
 chart script; verify it is fast" rather than a three-way choice.
+
+### 5.30 SLICE AF (rung 74, `DemandCoordinateTransient`) — PRE-REGISTERED, nine probes MEASURED first
+
+Rung 74 is the demand coordinate — the fuel-side lag carrying the fuel it would ALLOW instead of
+the CUT. Slice AE booked exactly one thing forward to here, and § (i) settles it. Every number
+below was produced before a line of this section was written; the scripts live in
+`M:\claud_projects\temp\slice-af-preflight\` and the transcription source is that folder's
+`measurements.md` (AE step 5's rule: a gate is transcribed FROM the table, never from a sentence).
+
+#### (i) THE LEADING FINDING — **A SCOPE GUARD WHOSE ONE READER IS THE IDENTITY EVERYWHERE ITS ONE CALL SITE LOOKS, SO THE DRIVE TEST AE BOOKED HERE CANNOT BE WRITTEN — AND AE's STATED REASON FOR THAT WAS THE WRONG ONE**
+
+§ 5.29 (v) withdrew `_with_coord`'s behavioural claim, booked the drive test to AF, named
+`_cap_march` as the candidate reader, and gave the reason:
+
+> `demand_gains` pins its own coordinate at `engine.py:18267` before the scope is ever entered,
+> so the zero was never evidence of anything.
+
+**Both halves are wrong, and the truth is sharper.** `_cap_march` is rung 76's method and rung
+79's call site (`engine.py:19265`, called at 21163/21171); it is not a rung-74 reader at all. And
+the coordinate is not unread — it is read, by exactly one method, on exactly one line:
+
+| reader of `_lag_coord` inside one `_demand_gains_at` call | line | reads |
+|---|---|---|
+| `_demand_target` | `engine.py:17661` | **16** |
+| | | **16 total — one reader, one line** |
+
+That line is `return min(mf_sched, cap) if self._lag_coord == "demand-latched" else cap`: **a
+THREE-valued tag read by a TWO-valued test**, so `clip` and `demand` are indistinguishable to it
+by construction, and the third value is distinguishable only where `cap > mf_sched`.
+
+**It never is, anywhere `_with_coord`'s one call site looks.** Probes B/C/F, over every `phi_lim`
+arm `tests/test_rung74.py` ships:
+
+| `phi_lim` | interior readings | `_demand_target` calls | `cap > mf_sched` | max `cap/mf_sched` | moved vs `clip` (`demand` / `demand-latched`) | positive control |
+|---|---|---|---|---|---|---|
+| 0.80 `PHI_ARREST` — **the arm the shipped `demand_gains` test uses** | 65 | 1 040 | **0** | 0.991680 | 0/65, 0/65 | **4 keys** |
+| 0.76 `PHI_BOTH` | 39 | 624 | **0** | 0.994895 | 0/39, 0/39 | **4 keys** |
+| 0.70 `PHI_GOV` | — | — | — | — | **the reader REFUSES** | — |
+
+The third arm is not a gap — it raises a **shipped** guard by name (`rung-74: the UNFLOORED cap is
+unreachable above mf_sched = 2.340547e-02 (searched to 3.963737e-02) ... the operating point is
+outside what this rung measured`), and the shipped suite never calls `demand_gains` there.
+
+**And the instrument was proved able to see before the zero was believed** — the check AE step 5's
+lesson demands, and the one § 5.29 (v)'s probe G never ran. Replace `_demand_target` with one
+returning `0.5*cap` under the latch and **4 of 20 float keys move** (`F_q`, `F_v`, `R_q`, `R_v`),
+on every arm. So the zero is **ARITHMETIC, not blindness**: the latch is `min(mf_sched, cap)` and
+`cap <= mf_sched` at **1 040 of 1 040** and **624 of 624** of the calls this reader makes.
+
+**The branch is NOT dead in general** — it is dead only on the path through `_with_coord`. Inside
+`_coord_march`, which sets the field directly (`engine.py:18031`) and is what `latch_discriminator`
+and `windup_law` use:
+
+| march arm | `_demand_target` calls | `cap > mf_sched` | max `cap/mf_sched` |
+|---|---|---|---|
+| `clip` | **0** — the march is not entered (exact dispatch, the reduce arm) | — | — |
+| `demand-latched` | 2 730 | **120** | **1.3039** |
+| `demand` | 2 732 | **139** | **1.3039** |
+
+`1.3039` independently reproduces the class docstring's own *`1.303 * mf_sched` at the start of the
+ramp* — a shipped number CONFIRMED rather than quoted. **The over-schedule region and the
+interior-filter region are disjoint on this plant**, which is why the two live side by side.
+
+**So AE's booking resolves by MEASUREMENT, not by a gate**: the behavioural claim stays withdrawn,
+AF's obligation is discharged here, and the value break remains slice AI's. What survives is the
+STRUCTURAL half, and § (ii) re-derives it without needing the booking at all.
+
+#### (ii) THE CELL CENSUS — **the row says 3; the answer is 4 ADD, and the missing name is the one AE booked**
+
+AST census over all 58 `engine.py` classes. Both conventions are given, because AE § (ii) records
+the same slice scoring **6** under AC's and **5** under § 5.19 (i)'s:
+
+| | AC's convention (`at_lever`/`integrate_fuel` are swaps at each rung) | § 5.19 (i)'s (`at_lever` + `_shared_rig` are **Rust deletes**) |
+|---|---|---|
+| **SWAP** | **4** — `at_lever` (18 definers), `integrate_fuel` (13), `_shared_rig` (8), `_rk4_floor_shared` (3) | **2** — `integrate_fuel`, `_rk4_floor_shared` |
+| **ADD** | **4** — `_cap_fuel`, `_sensed_cap`, `_windup_tau`, **`_with_coord`** | the same 4 |
+
+25 methods on the class; the other 17 are single definers and are not cells.
+
+**The phase table's AF row read `3 — _cap_fuel, _sensed_cap, _windup_tau`.** The missing fourth is
+`_with_coord` — and **slice W's phase-wide census already named it**, in the sentence listing *the
+four names the hand-written column missed*: `at_stator` (V), `at_lever` (W), `_quad_gains_at` (AD)
+and **`_with_coord` (AF)**. So probe D is a confirmation of a correction already on record, and the
+finding is that **the row was never updated** — corrected in this commit.
+
+**The census re-derives AF's structural obligation without AE's booking**: `_with_coord` has
+**exactly 2 definers, rung 74 and rung 79**, which IS the override pair § 5.29 (v) describes. That
+is a stronger warrant than the booking, because it comes from the source rather than from a
+sentence in a prior slice. **The field must be rung 74's own — not a slot AI can re-aim — and by
+§ (i) it can be gated only by DISPATCH, since no value gate exists at this rung.**
+
+#### (iii) THE ARITHMETIC SURFACE — **the exemption is NOT inherited, and it is also NOT needed**
+
+AE § (vi) reads *rung 73 adds NO solver, so the CPython exemption is INHERITED*. **Rung 74 is not
+that shape.** `_cap_free` (a `@staticmethod` it is the sole definer of, `engine.py:17566`) walks a
+geometric bracket (`grow = 1/0.9`, `n = 60`) and then calls **`_illinois`** — the exact function
+slice AA measured taking **8 iterations on one interpreter and 7 on the other from bit-identical
+inputs**. Measured on the anchor demand march, both interpreters, rather than assumed:
+
+| | PyPy 3.11.15 | CPython 3.14.3 |
+|---|---|---|
+| `_cap_free` calls | 2 732 | 2 732 |
+| short-circuit (`G(mf_sched) > 0`, leg BINDING — the shipped solve returned untouched) | 2 593 | 2 593 |
+| **bracket + `_illinois` actually RUN** (the SLACK regime) | **139** | **139** |
+| **returned caps bitwise identical across interpreters** | **2 732 of 2 732** | |
+
+The 139 is **the same 139** § (i)'s table counts as `cap > mf_sched` on the demand arm: the slack
+regime and the over-schedule region are one set, measured twice by two instruments that did not
+know about each other. **So AF adds a solver where AE added none, and it is measured bit-clean
+instead of inherited clean** — a falsifiable claim, settled at the oracle step.
+
+Operator census over rung 74's own bodies: `Sub` 71, `Add` 63, `Mult` 59, `Div` 55, `max` 45,
+`abs` 20, `min` 15, **`sum` 4**, `FloorDiv` 3, `sorted` 1, `round` 1. **No complex arithmetic** —
+AC § (iv)'s hazard is absent. The four `sum()` calls are the CPython-compensated-`sum` hazard
+slices W and Z both hit; **to be checked at the oracle, not assumed either way**, and slice Z's
+lesson applies: chunk by the width the STRIDE delivers, not the one the gate passes.
+
+#### (iv) THE SHIPPED NEEDLES — **9 messages, all tagged, and 7 of them ungated**
+
+Rung 74 ships **9** `assert` messages and **all 9 open with `rung-74:`** — none is inherited
+verbatim, so a port that raises the parent's message fails a `match=` on every one. The suite uses
+only **2** needles (`DECLARED`, `two declared laws`), each matching **1 of 9**. **7 of 9 shipped
+messages are ungated today**, which is where the port can drift silently and where AF's refusal
+gates belong. (Contrast AE § (vii), where 3 of 5 needles discriminated nothing — here the needles
+discriminate, there are just too few of them.)
+
+#### (v) SIZING, AND THE STEP COUNT PRICED FROM IT
+
+| class | rung | slice | total lines | methods | body without docstrings |
+|---|---|---|---|---|---|
+| `SharedActuatorTransient` | 72 | AD (six steps) | 1 177 | 24 | 701 |
+| `AppliedReferenceTransient` | 73 | AE (five steps) | 685 | 12 | 389 |
+| **`DemandCoordinateTransient`** | **74** | **AF** | **1 059** | **25** | **632** |
+
+**1.55× AE by total lines, 1.63× by body, 0.90× AD** — and AD's six steps were priced from a
+1 177-line class. **AF is priced at SIX steps**, on AD's shape rather than AE's, and the step count
+is itself a prediction (AC § (xi)'s precedent):
+
+1. the plumbing, the four ADD cells + four SWAPs, the refusals, and a smoke file;
+2. `_cap_free` / `_cap_gov` / `_cap_fuel` / `_sensed_cap` and the demand laws;
+3. `_integrate_fuel_demand` — the six-state march with the joint IC fixed point;
+4. the readers (`demand_law`, `demand_gains`, `latch_discriminator`, `windup_law`,
+   `flat_schedule_identity`, `forcing_openloop`);
+5. the ported gates + the oracle;
+6. the dispatch gates, including § (ii)'s separate-field gate.
+
+#### (vi) PREDICTIONS — pre-registered, settled at the last step
+
+* **P1.** The Rust is **1.6–1.9× the Python** by line count (slice Z 1.72×, W 2.06×, AA 2.10×).
+* **P2.** The CPython arm needs **no exemption for `_cap_free`** (§ (iii) measured 2 732 of 2 732
+  bit-identical) but **may** need one for a `sum()`-fed key. Naming which, in advance:
+  **`forcing_openloop`**, because it is the only reader whose published quantity is an average
+  over the ramp.
+* **P3.** The `clip` reduce arm is **exact by dispatch** — the march is not entered, so none of the
+  Rust march's lines execute (§ (i)'s table measured 0 `_demand_target` calls on that arm).
+* **P4.** The `demand-latched`-on-a-flat-schedule reduce arm is the one that can fail, because it
+  is the only arm in which this rung's own integrator runs and still has to agree bit-for-bit.
+* **P5.** The dispatch step finds **`_with_coord` unobservable by value** at this rung and gates it
+  structurally — and if a value gate IS found, § (i) is wrong and the finding inverts.
+* **P6.** At least one of the **7 ungated shipped messages** (§ (iv)) is reachable by a port defect
+  that every ported gate passes.
+
+#### (vii) DEFECTS IN THIS PRE-FLIGHT's OWN INSTRUMENTS — four, all caught before anything was written down
+
+1. **Probe A's part (b) sampled a non-interior point** and reported "2 float keys, 0 differ" — a
+   reading of a dict with no gains in it. Caught by the key count being 2 where the reader
+   publishes 20.
+2. **Probe B's 0-of-39 was written up as a verdict before probe C existed.** It is the same number
+   § 5.29 (v)'s blind probes produced, and it was believed for the same reason. The positive
+   control was added only after asking what supplies the value — § (viii)'s item, applied to this
+   file.
+3. **The first verdict said "cannot be written" from ONE `phi_lim`**, while probe E had already
+   shown `cap > mf_sched` reachable on the same plant, so the identity might have been a property
+   of where the interior filter admits points rather than of the reader. The sweep (probe F) was
+   run before the sentence shipped, and the third arm's shipped refusal is disclosed rather than
+   dropped.
+4. **Probe H's first spy had the wrong signature** — `_cap_free` is a `@staticmethod`, so the
+   `self`-taking wrapper raised `TypeError: got multiple values for argument 'grow'`, and its
+   default `n` was typed as 40 against the shipped 60. A probe that had merely *passed* with the
+   wrong `n` would have measured a different bracket walk and reported it as the shipped one.
+
+#### (viii) THE STANDING ITEM THIS SECTION ADDS TO EVERY § (x) FROM HERE — **WHAT SUPPLIES THE VALUE UNDER TEST?**
+
+AC, AD and AE each shipped one instance of a single defect class, and each survived to the LAST
+step: AC's *gate computing my own formula twice*, AD's *gate comparing the plant against the
+function that produced it*, AE step 5's *install proof passing because the machine held the pointer
+my own fixture had handed the builder*. Three consecutive slices is a pattern, and the pre-flight
+§ (x) that exists to catch instrument defects caught none of them, because it never asked the
+question that finds this one. From this slice on, § (x) carries it as a named item:
+
+1. Of every planned gate, control, fixture and install proof — **what supplies the value under
+   test?** If the answer is the code under test, or the fixture itself, the gate is void before it
+   is written.
+2. Score the mutation sweep on **every binary in the slice, not just the new one** — that is what
+   turned both of AE step 5's blind spots from suspicions into numbers.
+3. An install proof must be independent of what it certifies **by construction** — an
+   address-identity comparison against a source the fixture never touches, under an exhaustive
+   destructuring so a landed field is a compile error.

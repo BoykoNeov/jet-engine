@@ -19,7 +19,7 @@ slices inside an authorised phase are free. See [[rust-port-decided]].
 
 * **0–5 DONE.**
 * **PHASE 6** authorised 2026-08-17, **COMPLETE 2026-08-20** with slice U's five steps.
-* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, AB, AC, AD, **AE complete** (rung 73, § 5.29–5.29.5, ten probes, all five steps). **Next: slice AF (rung 74, `DemandCoordinateTransient`, 3 cells) — and its pre-flight owes `_with_coord`'s drive test, which § 5.29 (v) left UNDRIVEN and booked to AF *and* AI.**
+* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, AB, AC, AD, **AE complete** (rung 73, § 5.29–5.29.5, ten probes, all five steps). **Slice AF PRE-REGISTERED 2026-09-03 (§ 5.30, nine probes) — rung 74, `DemandCoordinateTransient`, measured 4 ADD + 4 SWAPS (the row said 3), priced at SIX steps on AD's shape (1 059 lines, 1.55x AE). AE's owed drive test is DISCHARGED BY MEASUREMENT rather than by a gate: `_with_coord` has ONE call site whose ONE reader (`_demand_target`) is arithmetically the identity on every arm it admits, so no value gate exists here and the field is gated structurally; the value break stays AI's. Next: step 1.**
 
 ## Phase-7 slices, as they closed
 
