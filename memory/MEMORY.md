@@ -22,7 +22,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding, backticks in `-m`, a status read off the runner, a log still being written, and a text-mode rewrite that flips every line ending
 
-## The Rust port — phases 0–6 done; phase 7 in flight, slice AE (rung 73) step 4 of 5 done
+## The Rust port — phases 0–6 done; phase 7 in flight, slice AE (rung 73) CLOSED, all 5 steps
 - [Rust port status](rust-port-status.md) — the running tally: phases, slices, and the numbers each closed slice landed on. **Update THAT file, not this line.**
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; a new PHASE needs authorisation
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost
@@ -61,40 +61,12 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Slice W step 5](rust-port-slice-w-step5.md) — a "did it move" assertion passes a HALF-APPLIED injection; assert the exact delta, and mutate your own gates to find out
 - Slice X (64) steps [1](rust-port-slice-x-step1.md) [2](rust-port-slice-x-step2.md) [3](rust-port-slice-x-step3.md) [4](rust-port-slice-x-step4.md) [5](rust-port-slice-x-step5.md) — extending a SHARED helper silently voided an override and 1017 green tests could not see it (one lesson per file)
 - Slice Y (65) steps [1](rust-port-slice-y-step1.md) [2](rust-port-slice-y-step2.md) [3](rust-port-slice-y-step3.md) [4](rust-port-slice-y-step4.md) [5](rust-port-slice-y-step5.md) — a design refused twice on body reads was revived by EMITTING the set (one lesson per file)
-- [Slice Z pre-flight](rust-port-slice-z-preflight.md) — my own probe chunked by the `n_sample` the gate PASSES, not the count the STRIDE delivers, and at the right width the answer INVERTED
-- [Slice Z step 1](rust-port-slice-z-step1.md) — a shipped refusal blind to the carrier the rung below installs, and a count bar that had already been WRITTEN DOWN once, which reads like a measurement
-- [Slice Z step 2](rust-port-slice-z-step2.md) — one scope struct for a per-rung parameter, so a junior silently ignores what Python refuses (one lesson per file)
-- [Slice Z step 3](rust-port-slice-z-step3.md) — the census reported a 0/0 baseline and called its own CONTROLS invisible (one lesson per file)
-- [Slice Z step 4](rust-port-slice-z-step4.md) — a pre-registered exemption of TWO keys measured EIGHT: it counted quantities, the dump emits names
-- [Slice Z step 5](rust-port-slice-z-step5.md) — the bar written to repair one vacuity exposed a second in the same gate, and two 'dead' branches are UNOBSERVABLE rather than unexercised
-- [Slice AA step 1](rust-port-slice-aa-step1.md) — a growth prediction asked of ONE struct while the step grew three, and `ptr::eq` on a `const` written a second time
-- [Slice AA steps 2-5](rust-port-slice-aa-steps2345.md) — a DEFENCE WITH NO READER appeared four times; ask what reads a thing, never wait for a failure
-- [Slice AB pre-flight](rust-port-slice-ab-preflight.md) — a shipped section carried a MECHANISM beside its measurement and both it and my replacement were refuted (one lesson per file)
-- [Slice AB step 1](rust-port-slice-ab-step1.md) — two gates that could not fail, and two counts typed instead of added up — one read off a runner reporting exit 0 with EMPTY output
-- [Slice AB step 2](rust-port-slice-ab-step2.md) — the smoke refuted its own gate, and a step-1 gate went vacuous the moment the bodies landed
-- [Slice AB step 3](rust-port-slice-ab-step3.md) — my injection sweep ran 2 of the slice's 3 binaries and printed MISS, which reads as "nothing sees this"
-- [Slice AB step 4](rust-port-slice-ab-step4.md) — an exemption measured between the two DUMPS was 67 names wider than the one measured against the PORT
-- [Slice AB step 5](rust-port-slice-ab-step5.md) — a predicted failure SHAPE is a claim about the PARENT's body: two of four "breaks by panic" broke by value, and the silent shape is the dangerous one
-- [Slice AC pre-flight](rust-port-slice-ac-preflight.md) — the phase's cell predicate is by NAME, so seven correctly-emitted columns could not tell an override from a name reused
-- [Slice AC step 1](rust-port-slice-ac-step1.md) — the pre-flight's step list and its own census disagreed on the table count, and the gate it prescribed had a scheduled expiry date
-- [Slice AC step 2](rust-port-slice-ac-step2.md) — a gate whose CODE and whose COMMENT described different properties, and step 1's lesson only asked what the next step DELETES
-- [Slice AC step 3](rust-port-slice-ac-step3.md) — a shipped docstring published a number its own reader does not return, and only driving the reader on its OWN defaults could find it
-- [Slice AC step 4](rust-port-slice-ac-step4.md) — both injections that survived the ported gates survive the PYTHON gates too: the holes were inherited, not introduced
-- [Slice AC step 5](rust-port-slice-ac-step5.md) — a gated condition measured over the READERS was falsified by the shipped TEST SUITE, and the ported gate could not have told the wrong answer from the right one
-- [Slice AC step 6](rust-port-slice-ac-step6.md) — the one column of a table that agreed with the suite was the only one that could not disagree, and 119 of 234 exempt keys were the PLANT, not the readers
-- [Slice AC step 7 — slice closed](rust-port-slice-ac-step7.md) — four comments gave a REASON that was testable and false, and the injection every reader launders needed a declared carrier
-- [Slice AD pre-flight](rust-port-slice-ad-preflight.md) — a shipped `Usage:` block documents a method with ZERO definitions, and the quartic's three risky roots never win the max on any input the suite reaches
-- [Slice AD step 1](rust-port-slice-ad-step1.md) — a pre-registered count of compile errors, measured on a build that stopped at the lib, came back plausible and wrong
-- [Slice AD step 2](rust-port-slice-ad-step2.md) — a convention that a new enum variant breaks the build held at 7 of 20 sites, and my own gate compared the plant against the function that produced it
-- [Slice AD step 3](rust-port-slice-ad-step3.md) — a census predicate written in CALL SYNTAX is blind to a method that is only ever PASSED, and CPython's compensated `sum()` reaches complex too
-- [Slice AD step 4](rust-port-slice-ad-step4.md) — a self-test gated on a BOUND is blind to a defect that moves 8 of its own 10 numbers, and a count can be satisfied by an accident where a bijection cannot
-- [Slice AD step 5](rust-port-slice-ad-step5.md) — an INPUT-FED section measures the function where a self-feeding one measures the plant, so 5 022 golden differences became a 180-name exemption
-- [Slice AD step 6 — slice closed](rust-port-slice-ad-step6.md) — a first definer still has a parent pointer, because the parent slot carries a REFUSAL; and my header typed nine tests beside the ten that disprove it
-- [Slice AE pre-flight](rust-port-slice-ae-preflight.md) — a prior sweep SAW both name reuses, NAMED them, and cleared them on the wrong property; and four of my own probes were void
-- [Slice AE step 1](rust-port-slice-ae-step1.md) — an exact-bits gate written for a float-identity injection was PASSED by it, because the triple it was driven at cancelled exactly
-- [Slice AE step 2](rust-port-slice-ae-step2.md) — a mutation sweep from the previous session was still rewriting the tree, and the backup I took against exactly that was itself mutated, at byte-identical size
-- [Slice AE step 3](rust-port-slice-ae-step3.md) — I made a needle two-sided and left its own CONTROL a bare `== 0`, on a file whose comments warn against that exact string
-- [Slice AE step 4](rust-port-slice-ae-step4.md) — the one aggregate detector that fired, I tried to exempt with a structural argument that cancels arithmetically
+- Slice Z (66/67) [pre-flight](rust-port-slice-z-preflight.md) [1](rust-port-slice-z-step1.md) [2](rust-port-slice-z-step2.md) [3](rust-port-slice-z-step3.md) [4](rust-port-slice-z-step4.md) [5](rust-port-slice-z-step5.md) — a probe chunked by the width the gate PASSES, not the one the stride delivers, and at the right width the answer INVERTED (one lesson per file)
+- Slice AA (68) [1](rust-port-slice-aa-step1.md) [2-5](rust-port-slice-aa-steps2345.md) — a DEFENCE WITH NO READER appeared four times; ask what reads a thing, never wait for a failure (one lesson per file)
+- Slice AB (69) [pre-flight](rust-port-slice-ab-preflight.md) [1](rust-port-slice-ab-step1.md) [2](rust-port-slice-ab-step2.md) [3](rust-port-slice-ab-step3.md) [4](rust-port-slice-ab-step4.md) [5](rust-port-slice-ab-step5.md) — an exemption measured between the two DUMPS was 67 names wider than one measured against the PORT (one lesson per file)
+- Slice AC (70/71) [pre-flight](rust-port-slice-ac-preflight.md) [1](rust-port-slice-ac-step1.md) [2](rust-port-slice-ac-step2.md) [3](rust-port-slice-ac-step3.md) [4](rust-port-slice-ac-step4.md) [5](rust-port-slice-ac-step5.md) [6](rust-port-slice-ac-step6.md) [7 closed](rust-port-slice-ac-step7.md) — a predicate by NAME cannot tell an override from a name reused, and every reader launders an injection through `at_lever` (one lesson per file)
+- Slice AD (72) [pre-flight](rust-port-slice-ad-preflight.md) [1](rust-port-slice-ad-step1.md) [2](rust-port-slice-ad-step2.md) [3](rust-port-slice-ad-step3.md) [4](rust-port-slice-ad-step4.md) [5](rust-port-slice-ad-step5.md) [6 closed](rust-port-slice-ad-step6.md) — a shipped block documents a method with ZERO definitions, and a gate compared the plant against the function that produced it (one lesson per file)
+- Slice AE (73) [pre-flight](rust-port-slice-ae-preflight.md) [1](rust-port-slice-ae-step1.md) [2](rust-port-slice-ae-step2.md) [3](rust-port-slice-ae-step3.md) [4](rust-port-slice-ae-step4.md) [5 closed](rust-port-slice-ae-step5.md) — a FIXTURE is a claim nobody re-reads as one; and a control, an exact-bits gate and an aggregate each measured nothing (one lesson per file)
 - Slice T (46/47/48) steps [1](rust-port-slice-t-step1.md) [2](rust-port-slice-t-step2.md) [3](rust-port-slice-t-step3.md) [4](rust-port-slice-t-step4.md) — an EXACT ZERO blinds its own gate to the SIGN (one lesson per file)
 
 ## Shipped rungs

@@ -19,7 +19,7 @@ slices inside an authorised phase are free. See [[rust-port-decided]].
 
 * **0–5 DONE.**
 * **PHASE 6** authorised 2026-08-17, **COMPLETE 2026-08-20** with slice U's five steps.
-* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, AB, AC, **AD complete** (rung 72, § 5.28, twelve probes, all six steps). **Slice AE (rung 73) IN FLIGHT — pre-flight + STEPS 1–4 of 5 done (§ 5.29, 5.29.1, 5.29.2, 5.29.3, 5.29.4).**
+* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, AB, AC, AD, **AE complete** (rung 73, § 5.29–5.29.5, ten probes, all five steps). **Next: slice AF (rung 74, `DemandCoordinateTransient`, 3 cells) — and its pre-flight owes `_with_coord`'s drive test, which § 5.29 (v) left UNDRIVEN and booked to AF *and* AI.**
 
 ## Phase-7 slices, as they closed
 
@@ -388,6 +388,53 @@ supplies) and it would have presented as a total port failure.
 
 **The full Rust gate: 141 `Running` + 1 `Doc-tests` = 142 blocks, 142 of 142 ok, 1 458 / 0 / 0, 0 `error[E`** - six of six countable predictions hit, so 1 458 = 1 451 + 7 and step 3's enumeration is confirmed to have excluded this binary. **The SEVENTH row could not be read**: the launch was rebuilt so `$p.ExitCode` would be cargo's own and not `echo`'s, then nothing wrote it to a file and the shell exited - a status is measured when it is ON DISK.
 See [[rust-port-slice-ae-step4]].
+
+### Slice AE step 5 — SHIPPED, SLICE CLOSED
+
+`rust/tests/slice_ae_dispatch.rs` — **1 144 lines, 10 gates**, green. Plan § 5.29.5. Closes the
+three things the slice deferred: P1's **manufactured pairing**, P4's **`_quad_gains_at` seat**, and
+the oracle header's *`at_lever` is the LAUNDERER … that is step 5's subject*.
+
+**THE FINDING: `ptr::eq` on a `const` table is not a table-identity test, and where it PASSED it
+was worse than where it failed.** Every hook table here is a `pub const`, so `&R72_TRIPLE` is a
+fresh promotion per use site; it failed on the one row where the crate's builder supplies the
+pointer, and passed elsewhere only because the machine held the pointer **my own fixture had
+handed the builder three lines earlier** — the agrees-with-itself pattern inside an *install
+proof*. Replaced by 14 `fn_addr_eq`s under an exhaustive destructuring.
+
+**Two gates failed on the first run, both typed from the narrative with the counterexample already
+in my own measurement file** (*the largest move is a cross term* — it is a tie to 1e-15, so not a
+pinnable property; *every injection is live somewhere* — false for two of seven). **And a silent
+panic hook is process-wide**: six gates expect panics, so both real failures printed `FAILED` with
+no message at all. Now one `Once`-installed hook consulting a thread-local.
+
+**MEASURED.** The pairing refuses (`rung-73` … `got "inc"`, in order); **delete the refusal and
+the reader returns the same number twice** — both ledger arms identical, a comparison instrument
+reporting perfect agreement having compared one thing with itself. With rung 69's setter installed,
+`reference_bill` reproduces a real rung-69 machine's reading **byte for byte, all 6 033 chars** —
+but my draft's next sentence (*such a port would ship green*) was **falsified by my own sweep: 24
+of 59 gates fire**, and that injection is not P1 option (1) but option (1) minus the replacement
+setter.
+
+**P4 CONFIRMED, and a THIRD of the break is a SIGN BIT**: 3 keys vanish and 3 move at every one of
+70 / 31 points, and `pair_fr` is `-0.0` under rung 73 against `+0.0` under rung 72, so `==` scores
+140/62 where `to_bits` scores 210/93. That is the **mechanism** under step 2's M22 and step 4's
+P11, which both measured that all 101 `-0.0` oracle keys are `pair_FR` and neither said why. The
+port's discrete set is **3 where Python's is 5** (`f_f`/`r_r` are `f64` fields written `0.0`).
+
+**The seat matrix, 7 pointers x 7 seats**, rediscovers the source's call-site census
+(`quad_gains_at` loud at `applied_gains`, moving `applied_cells`/`ref_discriminator`, invisible at
+`handover_law`/`applied_bill`/a bare march). **Two pointers are silent at all seven seats**, so
+AD's behavioural control is unavailable for them and the live set is a measured partition.
+
+**The sweep, six mutations x four binaries** (baseline 10/15/27/7 = 59 gates green):
+**j5 is caught by this file alone — 3/10 against 0/15, 0/27, 0/7**, pre-registered as such, and it
+is the ABSENT-vs-ZERO distinction `shared_actuator.rs`'s own doc comment claims is load-bearing.
+**j4 is missed by this file, 0/10**, because `injection!`'s `at_lever` re-implements the very carry
+the mutation deletes — a second fixture vacuity, disclosed in the header along with the matrix's
+baseline-relative blindness.
+**The full Rust gate: 142 `Running` + 1 `Doc-tests` = 143 blocks, 143 of 143 ok, 1 468 / 0 / 0, 0 `error[E`, and `CARGO_EXIT=0` READ OFF DISK** — **seven of seven**, and the seventh is the row § 5.29.3 (j) left empty and § 5.29.4 (g) could only derive. The rule those two wrote was followed literally: the redirect that captures stdout captures the code beside it in the same command.
+See [[rust-port-slice-ae-step5]].
 
 ## Slice AB, step by step
 

@@ -19259,6 +19259,344 @@ reports failure, and this log has 0 `error[E`, 0 `test result: FAILED` and 142 o
 **The rule the next launch carries: a status is measured when it is ON DISK, and the redirect that
 captures stdout must capture the code beside it in the same command.**
 
+#### 5.29.5 SLICE AE step 5 — the dispatch gates, **SLICE AE CLOSED**, and **AN INSTALL PROOF THAT PASSED BY COMPARING THE MACHINE AGAINST THE POINTER MY OWN FIXTURE HAD JUST HANDED THE BUILDER, AND FAILED ONLY WHERE THE CRATE SUPPLIED ITS OWN**
+
+**SHIPPED**: `rust/tests/slice_ae_dispatch.rs` — **1 144 lines, 10 gates**, LF, green. Both counts
+read off the tree (`wc -l`, and `cargo test -- --list`'s own total rather than a `grep` for
+`#[test]`, which § 5.29.3 (g) records as the third-instance trap).
+
+This is the step the whole slice was deferring three things to, and all three are registered in
+writing: § 5.29 (ix) P1's **manufactured pairing**, § 5.29 (iv) / P4's **`_quad_gains_at` seat on
+a declared extra grid**, and the oracle's own header naming `at_lever` as *the LAUNDERER … no
+value key can witness which function pointer sat in a slot. **That is step 5's subject.***
+
+**AND THE FILE IS NOT PURELY ABOUT REFUSALS**, which its header says in its own second
+paragraph: two of the three obligations are control flow and the third is a plain value break.
+A header that had claimed otherwise would have had no reason to own § (d), which is the sharpest
+number in the step.
+
+**THE THREE CHECKS, AND WHAT EACH TURNED OUT TO BE.** The pairing is a refusal and its two
+injections are refusals; the gains cell is a value break; the matrix is neither — it is a census
+of which slots are READ. Ten gates, because the count follows the obligations and not the other
+way round.
+
+##### (a) THE FINDING — **`ptr::eq` ON A `const` TABLE IS NOT A TABLE-IDENTITY TEST, AND WHERE IT PASSED IT WAS WORSE THAN WHERE IT FAILED**
+
+The install proof each injected reading is preceded by asks *did the injection survive the
+rebuild* — the question AC step 7 made mandatory, since every reader on this ladder rebuilds its
+machine through `at_lever` and a lone table injection is laundered before any value is read. It
+was first written as `std::ptr::eq(sib.triple_hooks(), triple)`.
+
+**Every table in this family is a `pub const`, not a `static`.** `&R72_TRIPLE` is therefore a
+fresh rvalue promotion at each use site, and two promotions of the same constant need not share
+an address. The assertion failed on the one row where the crate's own builder supplies the
+pointer — `at_lever` re-aimed at rung 72's sibling constructor.
+
+**And where it passed, it passed for a worse reason than luck.** Two rows had already run it
+green before the matrix reached `at_lever` and died — the remaining four never executed, so the
+count is **2 observed passes, 1 failure, 4 unreached**, and it is written that way rather than as
+a tidier six. On every one of those rows the machine holds the pointer *this fixture handed the
+builder three lines earlier*, so the assertion was comparing the instrument against itself — rung 67 gate 9 / rung 71 § 1.4 / rung 72 § 4 / `rung73.rs` gate 9's
+shipped-instrument-agrees-with-itself pattern, arriving inside an install proof, which is the one
+place in a gate file whose whole job is to be independent of the thing it certifies. The repair
+is `triple_diff`: **fourteen `fn_addr_eq`s under an exhaustive destructuring**, comparing FUNCTION
+addresses, which are stable across promotions — and the destructuring is the same `E0027`
+tripwire `slice_ae_cells.rs` carries, so the claim *only this slot differs* is checked against
+all fourteen fields rather than against the one the caller names.
+[[rust-port-slice-aa-step1]] recorded `ptr::eq` on a `const` once already; what is new is that
+its failure mode here was a PASS.
+
+##### (b) **TWO GATES FAILED ON THE FIRST RUN AND BOTH WERE ASSERTIONS TYPED FROM THE NARRATIVE, WITH THE COUNTEREXAMPLE ALREADY IN MY OWN MEASUREMENT TABLE**
+
+Every number in this file was measured first, into
+`M:\claud_projects\temp\rust-ae\step5_measurements.md`, before a line of the gate was written —
+and two assertions were then written from the sentence I wanted rather than from that file.
+
+* **`the largest move is a CROSS term`.** The measurement table says `r_f` on the `inc = false`
+  arm and **`r_r`** on the `inc = true` one. Reading B puts `+1` on the masked leg's own diagonal
+  and `-1` on its cross-gain; **the two are the same magnitude to 1e-15**, so *the largest* is a
+  tie broken by the last bits and is not a property a gate may pin at all. Restated as what was
+  measured — one self term and one cross term move at every point, each at unit magnitude — with
+  the tie itself asserted, so the reason the original was wrong is now gated.
+* **`every injection is live at some seat`.** AD step 6 could assert that, and it is what makes a
+  silence readable. Here it is FALSE for two of the seven: `rk4_floor_shared` differs only in a
+  MESSAGE and `shared_rig`'s carry is redundant because `at_lever` carries first — both rows are
+  all-silent in the very table I had measured an hour earlier. Restated as an exact PARTITION of
+  the seven, which is a stronger statement and a true one.
+
+The general form is not *check your work*: both assertions were checked, against the sentence.
+**A measurement file is only an instrument if the gate is transcribed FROM it**, and the tell is
+a gate whose expected value is stated in words that never appear in the table.
+
+##### (c) **A SILENT PANIC HOOK IS PROCESS-WIDE, AND IT ATE THE FAILURE MESSAGES OF BOTH FAILING GATES**
+
+The crate's idiom for `pytest.raises` (`rung69.rs`, `rung73.rs`) is take-hook / set an empty hook
+/ catch / restore. `std::panic::set_hook` is **process-wide** and `#[test]`s run concurrently;
+six of this file's ten gates expect panics, so on the first run the empty hook was installed
+almost continuously and **both real failures printed `FAILED` with no message, no file and no
+line.** They had to be re-run one at a time to be read at all.
+
+Repaired with a hook installed **once** for the binary behind a `Once`, consulting a
+thread-local: a thread inside `caught` or `run_seat` is quiet and every other thread keeps the
+default hook. Recorded rather than left as tooling, because a test file that cannot show why it
+failed is not a gate — and because the idiom it inherits has this defect everywhere, it is just
+never load-bearing in a file that expects one panic instead of six.
+
+##### (d) **P4 IS CONFIRMED, AND A THIRD OF THE BREAK IS A SIGN BIT**
+
+Probe J's device — machine held fixed at rung 73, only the pointer swapped, both calls on the
+same `&FuelPoint` under the same scope — re-run at `applied_gains`' OWN grid (`ds = 0.002`,
+`every = 2`), because § 5.29 (iv)'s **70** and § 5.29.2 (b)'s **505** are the same fact on two
+different grids and neither number transfers (§ 5.29.4 (b) (ii)'s defect).
+
+| | `inc = false` | `inc = true` |
+|---|---|---|
+| usable points | **70** | **31** |
+| fuel-masked / gov-masked | 48 / 22 | 0 / 31 |
+| keys VANISHED per point | **3, at every point** | **3, at every point** |
+| the vanished set | `self_masked`, `cross_masked`, `self_live` | same |
+| keys MOVED per point, by `to_bits` | **3** | **3** |
+| keys moved by `==` | **2** | **2** |
+| `pair_fr` is `-0.0` under rung 73 | 70 of 70 | 31 of 31 |
+| `pair_fr` is `-0.0` under rung 72 | **0** | **0** |
+
+**`pair_fr` is `f_r * r_f`, and reading B puts a `-1` against an exact `0` at every point — so
+the product is `-0.0`, where rung 72 multiplies two `+0.0`s.** One of the three moves per point
+is therefore a SIGN BIT: a detector written with `==` scores **140 against 210** on one arm and
+**62 against 93** on the other, returns two thirds of the break, and still reads as a
+confirmation.
+
+**THIS IS THE MECHANISM UNDER TWO NUMBERS THAT WERE ALREADY WRITTEN DOWN AND NEITHER EXPLAINED.**
+Step 2 § (e)'s M22 measured 101 keys exactly `-0.0` in the 5 066-key dump and noted that *every
+one of them is a `*.g.pair_FR`*; step 4 § (d) re-measured the same 101 on a grid fifteen times
+wider and reported it unchanged. Both recorded WHERE the negative zeros are. This says why they
+are there, and that they are the observable.
+
+**AND THE PORT'S DISCRETE SET IS NARROWER THAN PYTHON'S, BY THREE TO FIVE.** Python's rung-72
+dict carries neither `F_f` nor `R_r`, so its shipped-only set is five keys; the port declares
+those two as plain `f64` fields that rung 72 writes as `0.0` (its own doc comment says so). So of
+Python's five, **three stay discrete here and two become value moves** — a representation
+difference, gated from both sides: the vanished set is asserted to be exactly the three, and
+rung 72's diagonal is asserted to be exactly `0.0` at every point.
+
+##### (e) **THE SWEEP — SIX MUTATIONS, SCORED ON ALL FOUR OF THE SLICE's BINARIES**
+
+`M:\claud_projects\temp\rust-ae\mutate_step5.py`, derived from `mutate_step2b.py` and never from
+`mutate_step2.py` (§ 5.29.2 (g)); every read and write `newline=""`, the restore asserted byte for
+byte after each mutation and again in the `finally`; `Get-CimInstance Win32_Process` run before
+the first file was read. Baseline green on all four: **10 / 15 / 27 / 7 = 59 gates.**
+
+A dispatch file's claim is about COVERAGE, so the question is never *is it green* but *what does
+it reach that the value instruments do not*. Hence four binaries per row, not one.
+
+| mutation | `slice_ae_dispatch` | `slice_ae_cells` | `rung73` | `slice_ae_oracle` |
+|---|---|---|---|---|
+| j1 the undeclared-reference refusal deleted | **3/10** | 1/15 | 1/27 | 0/7 |
+| j2 `with_ref` re-aimed at rung 69's body | 6/10 | 6/15 | **10/27** | 2/7 |
+| j3 `quad_gains_at` re-aimed at the parent | 5/10 | **0/15** | 10/27 | 2/7 |
+| j4 `at_lever` drops the law carry | **0/10** | 1/15 | 0/27 | 0/7 |
+| j5 rung 72's three indicators become `Some(0.0)` | **3/10** | **0/15** | **0/27** | **0/7** |
+| j6 the class default dropped from the builder | 2/10 | **8/15** | 6/27 | 2/7 |
+
+**j5 IS THE ROW THE FILE EXISTS FOR, AND IT WAS PRE-REGISTERED AS SUCH** — written down before
+the sweep ran, with both falsifiers stated (*if another binary catches it the claim was already
+covered; if none does, § 3 is vacuous*). It collapses the ABSENT-versus-ZERO distinction, and
+`shared_actuator.rs`'s own doc comment asserts that doing so *"would delete the discrete half of
+§ 5.29 (iv)'s witness"*. **Until this step nothing in the crate could test that sentence**: the
+three fields are only ever read out of rung 73's body, where they are always `Some`. 3 of 10
+here, **0 of 49 everywhere else.**
+
+**AND j3 SPLITS THE TWO FILES THAT LOOK ALIKE.** `slice_ae_cells.rs` scores **0 of 15** on the
+shipped table being re-aimed at the parent's gains body, because it gates the cell BODIES; the
+pointer is this file's question. That is the clearest single justification for the file existing
+beside the cells one.
+
+##### (f) **THE MISS, AND IT IS A VACUITY THIS FILE's OWN FIXTURE CREATES**
+
+j4 deletes the law carry from the SHIPPED `r73_at_lever`. **`slice_ae_dispatch` catches 0 of 10**;
+`slice_ae_cells` catches it at 1 of 15, with the one-sided gate this file's § 6 already names.
+
+The reason is not that the seat is wrong. It is that **[`injection!`]'s own `at_lever` copies the
+law**, on the line after it rebuilds — it has to, or a sibling built under a scoped law would
+read the class default and the matrix would be measuring step 1 § (b)'s first silent failure
+instead of the injection. Every machine in this file is built through one of those, so **the
+fixture re-implements exactly the statement the mutation removes** and no seat can see it.
+
+That is the shipped-instrument-agrees-with-itself shape once more, and it is the second instance
+in this one file after § (a) — both in the FIXTURE rather than in a gate, which is where it is
+hardest to notice, because a fixture is written to make the measurement possible and is not
+itself read as a claim.
+
+**AND THE MATRIX HAS A SECOND, STRUCTURAL BLINDNESS OF THE SAME FAMILY**: every verdict in it is
+a difference against a baseline computed from the SAME tree, so a source mutation that moves the
+baseline and all seven rows together is invisible to it by construction. Both are disclosed in
+the file's header rather than left to be discovered — a dispatch file's whole claim is about
+coverage, so its holes are part of the claim.
+
+##### (g) **THE SEAT MATRIX — 7 POINTERS x 7 SEATS, AND `quad_gains_at`'s ROW REDISCOVERS THE SOURCE's OWN CALL-SITE CENSUS**
+
+| injection (the parent's pointer) | march | pairing69 | handover | gains | cells | ref_disc | bill |
+|---|---|---|---|---|---|---|---|
+| `at_lever` -> R72 | DIFF | **RETURNS** | DIFF | BROKE | DIFF | DIFF | DIFF |
+| `with_ref` -> R69 | same | **RETURNS** | DIFF | DIFF | same | DIFF | DIFF |
+| `reference` -> R72 | DIFF | refused | DIFF | DIFF | DIFF | DIFF | DIFF |
+| `rk4_floor_shared` -> R72 | same | refused | same | same | same | same | same |
+| `shared_rig` -> R72 | same | refused | same | same | same | same | same |
+| `integrate_fuel` -> R72 | same | **RETURNS** | same | same | same | same | same |
+| `quad_gains_at` -> R72 | same | refused | same | BROKE | DIFF | DIFF | same |
+
+`quad_gains_at` is loud at `applied_gains`, moves the reading at `applied_cells` and
+`ref_discriminator`, and is **invisible at `handover_law`, `applied_bill` and a bare march** —
+which is exactly the source's call-site census (three readers dispatch the cell, two do not),
+recovered by running the matrix rather than by grepping for the slot.
+
+**AND AD's OWN CONTROL IS UNAVAILABLE FOR TWO OF THE SEVEN**, which is § (b)'s second failure
+turned into the gate's content: `rk4_floor_shared` and `shared_rig` are silent at all seven
+seats, so for those two the only evidence the injection took is the STRUCTURAL one. The two
+pointers with no behavioural control are precisely the two that would most benefit from one, and
+each has a gate of its own giving its reason — the floor's message (driven past `ds*rate <= 2.0`
+at both rungs, reading `rung-73`/`origin` against `rung-72`, and asserting that the shipped
+Python needle `"FOUR actuator states"` is in BOTH messages and so discriminates nothing) and the
+rig's redundancy (step 1 § (d) / step 2 § (d): M11 at 0 of 5 066, M11b at 122).
+
+##### (h) **P1: AT THE PAIRING'S OWN SEAT, THE PORT PYTHON REFUSES IS THE ONE THAT WORKS PERFECTLY**
+
+The pairing is rung 69's `reference_bill` on a rung-73 machine, at rung 69's own arming. Shipped,
+it refuses — `rung-73 … got "inc"`, the two tokens § 5.29 (vii) measured to discriminate, in that
+ORDER, since `match=` is a regex and `str::contains` is not. The CONTROL asserts a POSITIVE
+reading rather than an absent panic (step 1 § (b): this arming really can abort on
+`rung-43 fuel closure does not bracket`): the rung-69 machine returns, its four stator-free cells
+agree exactly, and **its two arms differ**, which is the whole content of a ledger run once per
+reference.
+
+Then the two injections P1 names, and **both answers are sharper than the prediction**:
+
+* **The refusal deleted** (`integrate_fuel` -> the parent's). The reader RETURNS, and what it
+  returns is `delivered = (93.828…, 93.828…)` — **the same number twice.** A reader whose entire
+  content is a comparison reports a perfect agreement, having compared one thing with itself.
+  That is `rung73.rs` gate 9's finding — the first `_reference` applied reading B unconditionally
+  and returned a perfect confirmation from an instrument that had measured nothing — arriving in
+  the PLUMBING. The gate asserts both halves, because *it no longer panics* is satisfied by any
+  change at all.
+* **`with_ref` left pointing at rung 69's body**, which writes `_ref`. The reader returns, and its
+  reading is **byte-identical to the one the rung-69 machine itself produces** — the whole
+  6 033-character `Debug` fingerprint, and all five headline numbers by `to_bits`.
+
+**So rung 73's refusal refuses a pairing that reproduces the parent's own answer exactly** — at
+that seat it is not a safety net against garbage, it is a deliberate refusal of a reading that is
+right. The reason it must be blocked is that Python blocks it, and the field the two bodies write
+is the only place that decision is recorded.
+
+##### (i) **AND THE SENTENCE I WANTED TO WRITE UNDER § (h) WAS FALSIFIED BY MY OWN SWEEP, TWICE OVER**
+
+The draft of § (h) closed: *a port that had reasoned "the pairing must be blocked because it
+would go wrong" would have chosen (1) and shipped a green tree.* **Both halves are wrong, and
+each is wrong in a different way.**
+
+* **It is not a green tree.** j2 is caught by **24 of the slice's 59 gates** — 6/10, 6/15, 10/27,
+  2/7. The mechanism is immediate once looked at: rung 73's own five readers reach `ref_law`
+  through `RefScope`, which writes THROUGH THE CELL, so pointing the cell at rung 69's body
+  leaves every A-vs-B reader differencing the plant against itself. That is the ORIGINAL rung-73
+  Python bug (`rung73.rs` gate 9's `Broken`) arriving through the table instead of through the
+  law, and the suite catches it loudly.
+* **And j2 is not P1 option (1).** § 5.29 (ix) P1's option (1) is *rung 69's slot is left alone
+  and rung 73 gets a **second, differently-named** field*. j2 installs the first half and not the
+  second, so it is option (1) MINUS the replacement setter. A faithful option (1) would keep
+  rung 73's readers working; it is not built here and nothing in this step measures it.
+
+What the gate actually measures is the half the two share, and it is stated that way in the
+file: **at the rung-69 reader's seat the two ports are indistinguishable**, because under either
+one that reader writes `_ref` and gets rung 69's answer. Everything OUTSIDE that seat separates
+them. The over-claim was reaching from *the pairing cannot tell them apart* to *nothing can* —
+[[rust-port-slice-w-step3]]'s rule (run the probe over the whole table, not the row) applied to a
+sentence rather than to a census, and caught only because the sweep scores four binaries instead
+of one.
+
+##### (j) **WHAT THE SWEEP WAS ASKED, PRE-REGISTERED BEFORE IT RAN**
+
+
+Not *is the file green*. A dispatch file's whole claim is that it reaches what the value
+instruments cannot, so every mutation is scored on **all four** of the slice's binaries —
+`slice_ae_dispatch` (10), `slice_ae_cells` (15), `rung73` (27), `slice_ae_oracle` (7) — and the
+row records which caught it. A mutation caught only by the new file is the file earning its
+keep; a mutation caught by everything is a confirmation and says so.
+
+**PRE-REGISTERED, before the sweep ran:**
+
+* **j5 is the one that should be CAUGHT ONLY BY THIS FILE.** It collapses rung 72's three
+  `None` branch indicators to `Some(0.0)` — the ABSENT-versus-ZERO distinction whose whole
+  content is a discrete key. `shared_actuator.rs`'s own doc comment claims writing `Some(0.0)`
+  *"would delete the discrete half of § 5.29 (iv)'s witness"*, and until this step nothing in the
+  crate could test that claim: the three fields are only ever read out of rung 73's body, where
+  they are always `Some`. If j5 is caught by another binary the claim was already covered and
+  this prediction is wrong; if it is caught by NONE the file's § 3 is vacuous.
+* **j3 should be caught broadly** — re-aiming the shipped `quad_gains_at` at the parent trips
+  `applied_gains`' own `expect`, which `rung73.rs` drives.
+* **j1, j4 and j6 are step 1's M08/M10/M01 re-scored on a wider set of binaries**, and are
+  expected to be caught by `slice_ae_cells` as they were there. What is new is whether the
+  dispatch file catches them too — it should, at § 1/§ 2 for j1 and via the matrix for j4/j6.
+* **j2 has no precedent at all.** It is P1 option (1) installed in the SHIPPED table: the port
+  that reproduces rung 69's reading exactly. Its whole point is that it is not obviously wrong,
+  so a binary that misses it is telling the truth about its own coverage.
+
+**SCORED, AFTER.** Four of the five clauses hold and two of them are sharper than predicted;
+**one is falsified and one built a sentence that had to be withdrawn** (§ (i)).
+
+| clause | verdict |
+|---|---|
+| j5 caught by this file and no other | **CONFIRMED** — 3/10 against 0/15, 0/27, 0/7, exactly |
+| j3 caught broadly | **held, and SHARPER**: `rung73` 10/27 and the oracle 2/7 as predicted, but `slice_ae_cells` scores **0 of 15** — that file gates the cell BODIES and is blind to the shipped table being re-aimed, which is the clearest single reason this file exists beside it |
+| j1 caught here as well as at the cells file | held — 3/10, and it is the highest score any binary gives j1 |
+| j6 likewise | held — 2/10 |
+| **j4 likewise, "via the matrix"** | **FALSIFIED, 0 of 10** — § (f): the fixture re-implements the carry the mutation deletes |
+| j2, *"a binary that misses it is telling the truth about its own coverage"* | **VACUOUSLY TRUE** — a conditional whose antecedent never fired, since all four caught it. That is not the same as *no subject*, and the first writing of this row said so: what the sweep actually falsified is the NARRATIVE built beside the clause, withdrawn in § (i). A prediction and the story told around it are two objects, and only one of them was scored |
+
+**The two clauses that moved a conclusion are the falsified one and the vacuously-true one**, which is
+the argument for scoring a pre-registration clause by clause rather than as a verdict: had this
+been recorded as *the sweep confirmed the file's coverage*, both § (f) and § (i) would have gone
+unwritten.
+
+##### (k) THE FULL RUST GATE — PREDICTED FIRST, AND THE ROW THIS SLICE HAD FAILED TWICE IS FINALLY READ
+
+Step 4 read 141 `Running` + 1 `Doc-tests` = 142 blocks, 1 458 passed. This step adds **one binary
+carrying 10 tests** and its diff touches **no `src/` file and no `.py` file**, so no other target's
+count can move. The row below was written before the gate was launched.
+
+| check | predicted | measured |
+|---|---|---|
+| `     Running ` lines | 142 | **142** OK |
+| `Doc-tests` blocks | 1 | **1** OK |
+| `^test result:` blocks | 143 | **143** OK |
+| blocks reading `ok` | 143 of 143 | **143 of 143** OK |
+| passed / failed / ignored | 1 468 / 0 / 0 | **1 468 / 0 / 0** OK |
+| `error[E` occurrences | 0 | **0** OK |
+| **exit** | **0, AND ON DISK** | **`CARGO_EXIT=0`, READ OFF THE FILE** OK |
+
+**SEVEN OF SEVEN, AND THE SEVENTH IS THE POINT.** § 5.29.3 (j) recorded `exit=` EMPTY off a
+runner; § 5.29.4 (g) fixed the SOURCE of the number and never made it DURABLE, so the row read
+NOT READ and the plan closed on a derivation. The rule it wrote — *the redirect that captures
+stdout must capture the code beside it in the same command* — was followed literally here
+(`( cargo test > FILE 2>&1; echo "CARGO_EXIT=$?" >> FILE )`), and the number is a READING.
+
+AD step 4's structural bar is carried and it is the row to check FIRST: `Running` + `Doc-tests`
+must EQUAL the result blocks, `142 + 1 = 143`. Had `Running` read 143, the doc-test block would be
+folded into the wrong count and `1 468` would still have looked plausible.
+
+**AND ONE HONEST FOOTNOTE: THE LOG PREDATES A ONE-LINE DOC-COMMENT EDIT.** While the gate was
+running I scoped a gate's doc-comment heading (`THE PORT PYTHON REFUSES…` → `AT THIS SEAT, THE
+PORT PYTHON REFUSES…`), after § (i) narrowed the claim. The exposure was measured rather than
+argued: the log carries **one** `Compiling turbojet` at line 1 and `Finished` at line 57 with no
+later recompile, so all 143 targets are the pre-edit build; and **nothing in the crate reads
+`slice_ae_dispatch.rs` as text** (`rung73.rs` gate 22 `include_str!`s `applied_reference.rs` and
+`shared_actuator.rs`, not this file), so no other target could see the line either way.
+`cargo test --test slice_ae_dispatch` on the current tree: **10 passed / 0 failed, 75.25 s,
+`CARGO_EXIT=0`**. The other 142 blocks stand on the gate log.
+
+**`pytest` IS NOT RUN, AND THE REASON IS A PROPERTY OF THE DIFF** — § 5.29.3 (j)'s precedent: no
+`.py` file is in it and `CLAUDE.md` is untouched, step 5 adding no rung. The mutation sweep did
+edit `src/*.rs`, and the tree is asserted restored byte for byte by the sweep's own `finally` and
+by `git status`.
+
 ### Consequences for the phase table
 
 Phase 8's `main.py` row is now "Rust CLI prints the tables and dumps plot JSON; port the
