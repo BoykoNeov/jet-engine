@@ -19067,6 +19067,98 @@ three times against injected trees (§ (c), § (d)), and its **baseline arm — 
 — is a green Python run on the shipped source**, with `turbojet/engine.py` asserted restored byte
 for byte (1 395 138 bytes) and `git status` confirming it afterwards.
 
+#### 5.29.4 SLICE AE step 4 — the oracle. **THE PRE-REGISTRATION, WRITTEN BEFORE THE RUST WAS COMPILED ONCE**
+
+`rust/oracle/dump_slice_ae.py` (766 lines, 13 sections) and both goldens exist, at **76 770 keys
+per arm**; `rust/tests/slice_ae_oracle.rs` (1 134 lines, 6 gates) is written and **has never been
+built**. This subsection is committed in that state, on purpose. AB step 4's finding is that an
+exemption measured between the two DUMPS is a different object from one measured against the PORT
+— there it was 67 names wider — so the second number is predicted from the first, in the open,
+with a falsifier, before the instrument that measures it has run.
+
+##### (a) THE MEASUREMENT IN HAND — golden vs golden
+
+Both goldens carry **identical key sets** and every discrete census in the trailer reproduces
+across interpreters (22 march calls / 18 distinct signatures / 145 876 `_reference` calls,
+37 000 / 54 505 / 54 371 by path / 490 `_charpoly4` / 389 `_quartic_roots_c`). **1 574 keys differ.**
+
+| section | keys | what it is |
+|---|---|---|
+| L | **1 124** | `cp4/out` 233, `qr/in` 193, `qr/out` 698 |
+| E | 201 | `ref_discriminator`, `inc = False` |
+| F | 84 | `ref_discriminator`, `inc = True` |
+| B | 72 | `applied_gains`, `inc = False` |
+| D | 54 | `applied_cells` |
+| C | 31 | `applied_gains`, `inc = True` |
+| J | **7** | the march, per point |
+| M | 1 | `M/n_pos_zero`, 8 157 vs 8 166 |
+
+**`L/cp4/*/in` differs on ZERO keys.** The 4x4 matrices are bit-identical between interpreters and
+the coefficients out of them are not — so `_charpoly4`'s `sum()` is the ORIGIN, proven INSIDE the
+dump by identical inputs, where AD step 5 could only reach the same conclusion by a cross-feed run
+after it had already shipped a 5 022-name exemption blaming the stage downstream.
+
+##### (b) P9 — THE CPYTHON EXEMPTION, PREDICTED AS A NAMED SET
+
+**683 names**, composed as:
+
+* the **450 self-computed keys** — B 72, C 31, D 54, E 201, F 84, J 7, M 1 — because the Rust
+  recomputes every one and its arithmetic follows PyPy ([[rust-port-arithmetic-is-pypy]]);
+* plus **`L/cp4/*/out`, 233**, for the same reason: the matrices are read as INPUTS and are
+  bit-identical, so the Rust reproduces PyPy's coefficients and differs from CPython's;
+* plus **ZERO from `L/qr/*/out`**, despite 698 golden differences there — on that arm the Rust
+  replays the root finder on **CPython's own coefficients**, so it must reproduce CPython's roots;
+* and `L/qr/*/in`, 193, contributes nothing, being read as an input and never compared.
+
+**FALSIFIED BY** any `L/qr/*/out` name in the measured set, or by any total other than 683. A
+total that is merely *close* is not a pass: `EXEMPT` is asserted for EQUALITY, name by name, in
+both directions — a key that STOPPED drifting fails it too.
+
+##### (c) P10 — on P3's two clauses
+
+* **Clause (a), the `_charpoly4` cause dominates: CONFIRMED**, and by more than a majority —
+  1 124 of 1 574 golden differences are in section L, whose first stage differs on 233 keys from
+  bit-identical inputs.
+* **Clause (b) is SPLIT.** Its MAGNITUDE half holds: section J drifts on **7 keys**, at 3 points
+  across 2 of 18 signatures, 1–3 ULPs — "single-digit to low-tens" exactly. Its MECHANISM half does
+  not: it says the drift appears *"first in the stator state `v`"*, and the earliest drifting
+  signature here (`J/sig/11/pt/330`) moves `required` and `required_gov` and **does not touch `v`
+  at all**; `v` moves only in signature 15. Recorded as a partial falsification rather than rounded
+  into a confirmation.
+
+##### (d) P11 — M22, step 2's booked question, on a 15x wider grid
+
+Step 2 measured the four `sorted({...})` sets keyed by BITS at **0 of 5 066** and booked it here,
+*"where a wider grid could put the two zeros in one set"*. Measured on 76 770 keys:
+
+| | pypy | cpython |
+|---|---|---|
+| `M/n_neg_zero` (whole dump) | **101** | **101** |
+| `M/n_pos_zero` (whole dump) | 8 157 | **8 166** |
+| `self_live` set: n / n_neg / n_pos | 2 / **0** / 2 | 2 / **0** / 2 |
+| the other three sets: n_neg / n_pos | 0 / 0 | 0 / 0 |
+
+**Still 0, and the reason is unchanged: `-0.0` never enters one of the four guarded sets.** The
+whole-dump `-0.0` count is **101 on a grid fifteen times wider**, identical to step 2's, because
+every one of them is a `*/g/pair_FR` in sections B and C, whose rows the wider grid does not add
+to. So M22 is a **second measured zero with its cause**, not a carry-forward. `M/n_pos_zero` is
+the one census key that differs between interpreters, which is a consequence of the drift above
+and not of the defence.
+
+##### (e) MEASURED — PENDING
+
+| reading | predicted | measured |
+|---|---|---|
+| `Rust == PyPy` on all 76 770 | yes | **PENDING** |
+| port fixes needed to get there | unknown | **PENDING** |
+| CPython exemption, total | 683 | **PENDING** |
+| `L/qr/*/out` names in it | 0 | **PENDING** |
+| P9 verdict | — | **PENDING** |
+
+**THE ORDER IS NOT NEGOTIABLE**: the PyPy arm must be green on all 76 770 keys BEFORE the CPython
+set is read. If the Rust differs from PyPy anywhere, the 450 self-computed keys are not a known
+quantity and P9 is unscoreable — the exemption would be measured off a broken port.
+
 ### Consequences for the phase table
 
 Phase 8's `main.py` row is now "Rust CLI prints the tables and dumps plot JSON; port the
