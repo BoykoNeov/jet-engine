@@ -34,6 +34,15 @@ written by copying the shape of the last one.
 - **A new rung extends the last family's range** — two characters — rather than adding a line.
   That is what keeps the grouping O(1) as the project grows.
 
+**The index's line budget is 200, raised 2026-09-03** from the ~140 it had been held to, which
+156 lines had already passed at 201 memory files. The raise follows
+`tests/test_claude_md_reference.py`'s ledger habit — dated, reasoned, and naming what would have
+been illegitimate — because a budget nobody can argue with later is not a budget. What is
+legitimate here is **one line per new memory**. What actually moves the number is the Rust-port
+section, whose slice lines *widen* as each step's link is appended: judge the next raise against
+that, and if it is a widened slice line, the fix is [[rust-port-status]]'s own rule — an index
+line that grows is not an index line — not another bump.
+
 **The startup cost is not the reason.** Measured the same day: the three always-loaded files
 (project CLAUDE.md, global CLAUDE.md, this index) came to ~63 KB, roughly 2% of context, growing
 ~470 B/rung. That is affordable for a hundred more rungs. The reason to keep both indexes tight is

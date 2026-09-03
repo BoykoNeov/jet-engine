@@ -5,12 +5,22 @@ file; never re-expand these lines. A rung hook carries the **process lesson** (w
 what to do differently), never the physical headline — that is already in CLAUDE.md's rung
 table, which loads beside this file. Rung entries follow that table's families and numbering.
 
+**Line budget: 200 lines.** Raised 2026-09-03 from the ~140 this file had been held to and had
+already passed (156 lines, 201 memory files). Stated here, not enforced: the repo's size guard
+covers CLAUDE.md, not this file, which the repo only mirrors. **Legitimate growth is one line
+per new entry** — and the engine that actually moves the number is the Rust-port section, whose
+slice lines *widen* as step links are appended. **Illegitimate growth is a line that restates the
+file it links.** If 200 trips, compact — move detail into the entry, or behind a status pointer
+as `rust-port-status.md` already does — and judge any further raise against which of the two it
+is.
+
 ## Working agreements
 - [Session-end routine](session-end-routine.md) — at session end: update memory + docs, commit, push
 - [Git remote setup](git-remote-setup.md) — github.com/BoykoNeov/jet-engine, branch main, origin over SSH
 - [Always commit and push](always-commit-and-push.md) — auto-commit + push green work; gate is bare `pytest`
 - [CLAUDE.md is a reference](claude-md-is-a-reference.md) — one line per rung, detail → the spec; a guard test enforces it
 - [Two indexes, one spine](two-indexes-one-spine.md) — CLAUDE.md carries the PHYSICAL verdict, this file the PROCESS lesson
+- [Instrument fed by what it certifies](instrument-fed-by-what-it-certifies.md) — AC/AD/AE all shipped a gate that agreed with itself; ask what SUPPLIES the value
 - [Never run the gate for timing](never-run-the-gate-for-timing.md) — a quoted run time is documentation, not a signal
 - [Run tests below normal](run-tests-below-normal.md) — launch every suite at BELOW-NORMAL priority, and capture its full output
 - [Test-suite speed policy](test-suite-speed-policy.md) — ONE gate; the tiering's blocker inverts under COST
