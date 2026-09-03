@@ -19715,8 +19715,11 @@ instead of inherited clean** — a falsifiable claim, settled at the oracle step
 Operator census over rung 74's own bodies: `Sub` 71, `Add` 63, `Mult` 59, `Div` 55, `max` 45,
 `abs` 20, `min` 15, **`sum` 4**, `FloorDiv` 3, `sorted` 1, `round` 1. **No complex arithmetic** —
 AC § (iv)'s hazard is absent. The four `sum()` calls are the CPython-compensated-`sum` hazard
-slices W and Z both hit; **to be checked at the oracle, not assumed either way**, and slice Z's
-lesson applies: chunk by the width the STRIDE delivers, not the one the gate passes.
+slices W and Z both hit, and they are **attributed rather than counted**: `forcing_openloop`
+owns **two** of them (`engine.py:18523`, `18525`), `demand_gains` one (`18303`) and
+`flat_schedule_identity` one (`18459`). **To be checked at the oracle, not assumed either
+way**, and slice Z's lesson applies: chunk by the width the STRIDE delivers, not the one the
+gate passes.
 
 #### (iv) THE SHIPPED NEEDLES — **9 messages, all tagged, and 7 of them ungated**
 
@@ -19737,7 +19740,10 @@ discriminate, there are just too few of them.)
 
 **1.55× AE by total lines, 1.63× by body, 0.90× AD** — and AD's six steps were priced from a
 1 177-line class. **AF is priced at SIX steps**, on AD's shape rather than AE's, and the step count
-is itself a prediction (AC § (xi)'s precedent):
+is itself a prediction (AC § (xi)'s precedent). **Priced on LINES — and the METHOD count disagrees
+in the other direction**, 25 here against AD's 24 and AE's 12, so if AD's split was driven by
+method count rather than by volume then **six is the FLOOR, not the estimate**. The last step
+scores which of the two axes actually priced it:
 
 1. the plumbing, the four ADD cells + four SWAPs, the refusals, and a smoke file;
 2. `_cap_free` / `_cap_gov` / `_cap_fuel` / `_sensed_cap` and the demand laws;
@@ -19751,9 +19757,11 @@ is itself a prediction (AC § (xi)'s precedent):
 
 * **P1.** The Rust is **1.6–1.9× the Python** by line count (slice Z 1.72×, W 2.06×, AA 2.10×).
 * **P2.** The CPython arm needs **no exemption for `_cap_free`** (§ (iii) measured 2 732 of 2 732
-  bit-identical) but **may** need one for a `sum()`-fed key. Naming which, in advance:
-  **`forcing_openloop`**, because it is the only reader whose published quantity is an average
-  over the ramp.
+  bit-identical) but **may** need one for a `sum()`-fed key. Naming which, in advance and by
+  MEASUREMENT rather than by reasoning: **`forcing_openloop`**, to which § (iii) attributes **two
+  of the four** `sum()` calls — the largest share, and the only reader whose published quantity
+  is an average over the ramp. The other two candidates, one each, are `demand_gains` and
+  `flat_schedule_identity`.
 * **P3.** The `clip` reduce arm is **exact by dispatch** — the march is not entered, so none of the
   Rust march's lines execute (§ (i)'s table measured 0 `_demand_target` calls on that arm).
 * **P4.** The `demand-latched`-on-a-flat-schedule reduce arm is the one that can fail, because it
@@ -19782,14 +19790,14 @@ is itself a prediction (AC § (xi)'s precedent):
    default `n` was typed as 40 against the shipped 60. A probe that had merely *passed* with the
    wrong `n` would have measured a different bracket walk and reported it as the shipped one.
 
-#### (viii) THE STANDING ITEM THIS SECTION ADDS TO EVERY § (x) FROM HERE — **WHAT SUPPLIES THE VALUE UNDER TEST?**
+#### (viii) THE STANDING ITEM THIS SECTION ADDS TO EVERY PRE-FLIGHT FROM HERE — **WHAT SUPPLIES THE VALUE UNDER TEST?**
 
 AC, AD and AE each shipped one instance of a single defect class, and each survived to the LAST
 step: AC's *gate computing my own formula twice*, AD's *gate comparing the plant against the
 function that produced it*, AE step 5's *install proof passing because the machine held the pointer
 my own fixture had handed the builder*. Three consecutive slices is a pattern, and the pre-flight
 § (x) that exists to catch instrument defects caught none of them, because it never asked the
-question that finds this one. From this slice on, § (x) carries it as a named item:
+question that finds this one. From this slice on, **the instrument-defects section carries it as a named item — whatever letter that section happens to have** (§ (x) in AC/AD/AE, § (vii) here). Naming a letter is how a booking goes stale, which is § (i)'s own finding turned on this section:
 
 1. Of every planned gate, control, fixture and install proof — **what supplies the value under
    test?** If the answer is the code under test, or the fixture itself, the gate is void before it
