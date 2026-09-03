@@ -19145,19 +19145,119 @@ to. So M22 is a **second measured zero with its cause**, not a carry-forward. `M
 the one census key that differs between interpreters, which is a consequence of the drift above
 and not of the defence.
 
-##### (e) MEASURED — PENDING
+##### (e) MEASURED
 
 | reading | predicted | measured |
 |---|---|---|
-| `Rust == PyPy` on all 76 770 | yes | **PENDING** |
-| port fixes needed to get there | unknown | **PENDING** |
-| CPython exemption, total | 683 | **PENDING** |
-| `L/qr/*/out` names in it | 0 | **PENDING** |
-| P9 verdict | — | **PENDING** |
+| `Rust == PyPy` on all 76 770 | yes | **YES, on the first run that ever compiled** |
+| port fixes needed to get there | unknown | **ZERO** |
+| CPython exemption, total | 683 | **683** |
+| `L/qr/*/out` names in it | 0 | **0** |
+| P9 verdict | - | **CONFIRMED, composition and all seven section counts included** |
 
-**THE ORDER IS NOT NEGOTIABLE**: the PyPy arm must be green on all 76 770 keys BEFORE the CPython
-set is read. If the Rust differs from PyPy anywhere, the 450 self-computed keys are not a known
-quantity and P9 is unscoreable — the exemption would be measured off a broken port.
+The order held: the PyPy arm was green before `EXEMPT` was read, so the 450 self-computed names
+were a known quantity when P9 was scored. **The exemption was measured, not fitted** - the run that
+produced it had `EXEMPT` empty, wrote all four sets to a file, and the names were spliced in
+unedited. `finish` then asserts that list against a fresh measurement for equality **in both
+directions**, and a second gate asserts it against P9's table, so the list cannot be re-fitted to
+the measurement nor the prediction quietly re-fitted to the list.
+
+**P9's sharpest clause is the one that carried the most:** `L/qr/*/out` differs on **698** keys
+between the goldens and contributes **0** to the exemption, because that stage's coefficients are
+declared INPUTS - fed CPython's own coefficients, the port reproduces CPython's roots bit-for-bit.
+The quartic root finder is thereby MEASURED to be interpreter-portable, and `_charpoly4`'s `sum()`
+is left as the sole origin, now from two independent directions: bit-identical inputs inside the
+dump (a), and a replay that repairs everything downstream of it (here).
+
+##### (f) WHAT THE PORT RUN ADDED THAT THE GOLDENS COULD NOT SHOW
+
+**(i) Five compile errors, and the one the compiler could not have caught.** The oracle had never
+been built, and its fixture had been typed from memory: `ComponentMap::new` (no such constructor),
+a `TwoSpoolLosses` missing `p_exit` and `nozzle_convergent`, `QuadGains` imported from
+`applied_reference` where it is defined in `shared_actuator`, and `GasSpec { h_pr: ... }` for
+`hpr`. Four are loud. **The fifth was silent: the gas omitted `r_c` and `r_t`**, which
+`GasSpec::default()` supplies, so it would have compiled and run a DIFFERENT GAS - and every key
+would then have disagreed with PyPy at once, which reads like a port defect rather than a fixture
+defect. All six spellings are now copied verbatim from `rust/tests/rung73.rs`, which is green.
+
+**(ii) The green is 71 044 checks, not 76 770.** The success line said "76 770 values compared" and
+that was false: `input_*` records a key in `seen` without ever comparing it, and **5 726 keys are
+declared-grid inputs** - sections J and K's grid, stride, replay coordinates and path counts. An
+input cannot disagree with the file it was read from. The line now reports the three numbers
+separately, because a scoped green is a measurement and an unscoped one is a slogan.
+
+**(iii) The aggregate that fired, and was read rather than exempted.** `M/n_pos_zero` disagreed at
+8 164 against CPython's 8 166, and the first reading offered - that a census over a mixed
+population cannot equal either pure number - was WRONG and would have suppressed the signal. The
+input-fed half of the census is the arm's own golden **on both sides** and cancels exactly, so the
+residue is a statement about the self-computed half alone: a deficit of exactly **2**, which is
+`E/row/6/pole_72` and `F/row/15/pole_72`, each `1.7763568394002506e-16` here against an exact `0.0`
+in CPython, both already in the drift list by name. **An aggregate is admitted to an exemption only
+after the thing it aggregates has been named**; otherwise it is a tolerance wearing a name.
+
+**AND THE FIX LEFT TWO STATEMENTS OF THE RULE DISAGREEING.** Admitting `M/n_pos_zero` to `EXEMPT` made the module doc's rule 3 (*"a discrete key that flips between interpreters is a hard failure and never a rounding"*) and the `flips` assert's own message false by exactly one name - the key is a COUNT OVER FLOAT VALUES, so a rounding does move it. Both now carry the exception and its derivation. **A gate's CODE and its COMMENT describing different properties is slice AC step 2's finding; here the exemption that repaired the measurement CREATED the divergence, so the audit belongs to whoever writes the exemption, not to a later reader.**
+
+**AND THE REPAIR's FIRST DRAFT WAS A DEFENCE WITH NO READER - the FOURTH instance (`rust-port-slice-aa-steps2345`).** Saying in the header that `M/n_pos_zero` is the only discrete key allowed to differ enforced NOTHING, and the runtime was structurally incapable of enforcing it: `raw()` tests `EXEMPT.contains(&key)` **before** it tests `discrete`, so a second discrete exempt name is absorbed in silence on the branch above. `Cmp::discrete_exempt` now records every exempted key that arrived through a discrete emitter and `finish()` asserts the set is exactly that one name. **The gate proves it can SEE by passing**: a dead recorder gives the empty set, which fails the equality - so green is evidence the branch ran, not evidence it was never reached.
+
+**(iv) The real/complex classification of a quartic root is interpreter-dependent.** Closing the
+census arithmetic end to end: **63** keys flip `+0.0`-ness between the goldens, netting the -9 that
+separates 8 157 from 8 166 - the 2 `*/pole_72` above, and **61 in `L/qr/*/out/*/im`**, the
+IMAGINARY PARTS of the quartic's roots. Whether a marginal root is real or complex differs by
+interpreter on 61 of the grid's slots. It is driven entirely by the coefficients: the port matches
+CPython on every one of them when fed CPython's coefficients, so the flip belongs to
+`_charpoly4`'s `sum()` and never to the solver. **This is the physical content of P10 clause (a),
+and it is sharper than "the cause dominates": the cause is the only cause.**
+
+**(v) P11's second clause, on the port.** `M/n_neg_zero` is **101 on both arms**, and every one of
+the 101 is a `*/g/pair_FR` row - measured by name shape, not by count alone. `-0.0` still never
+enters one of the four guarded sets.
+
+##### (g) THE FULL RUST GATE - PREDICTED FIRST, THEN MEASURED
+
+Step 3's gate read 140 `Running` + 1 `Doc-tests` = 141 result blocks and 1 451 tests, twice, off
+two independent runs. This step adds exactly one binary, `tests/slice_ae_oracle.rs`, carrying 7
+tests. **The row below is written before the gate is launched**, because a number typed after the
+fact is not a prediction and § 5.29.3 (j) has one row that could not be read at all.
+
+**AND THE PREMISE IS CHECKED, NOT ASSUMED.** 141 is only right if step 3's gate ran WITHOUT
+`slice_ae_oracle.rs`, which was in the working tree by 12:21 while both gate runs started at 11:40
+- compatible only if cargo enumerated targets before the file landed. Measured: both step-3 logs
+contain **one** mention of `rung73` and **ZERO** of `slice_ae_oracle`, so enumeration caught the
+one and not the other. **1 458 is 1 451 + 7 and nothing else moved**, because this step's diff
+touches no `src/` file - so no other binary's count can have changed.
+
+| reading | predicted | measured |
+|---|---|---|
+| `     Running ` lines | 141 | **141** OK |
+| `Doc-tests` blocks | 1 | **1** OK |
+| `^test result:` blocks | 142 | **142** OK |
+| blocks reading `ok` | 142 of 142 | **142 of 142** OK |
+| passed / failed / ignored | 1 458 / 0 / 0 | **1 458 / 0 / 0** OK |
+| `error[E` occurrences | 0 | **0** OK |
+| exit | 0 | **NOT READ** - see below |
+
+Six of seven hit exactly, so the premise paragraph above is confirmed from the other side too: the
+enumeration DID exclude `slice_ae_oracle.rs` from step 3's run, and 1 458 = 1 451 + 7 with nothing
+else moved. `slice_ae_oracle`'s own block is inside this log - `running 7 tests` at line 1 836,
+all seven named and `ok`, closing at line 1 846 with `test result: ok. 7 passed; 0 failed`,
+**finished in 110.80s**. The timing is what makes that a READING: five blocks in this log say
+`7 passed`, and a count of five attributes none of them - 110.80s is unique among the five and
+sits ten lines under the seven test names. So the arm that measures the exemption is gated by
+the same run as the other 140 binaries, not beside it. **The first writing of this paragraph
+QUOTED that result line without having read it** - the `sed` window stopped two lines short -
+three lines under a paragraph of my own saying a derivation is not a reading.
+
+**THE SEVENTH ROW IS THE SAME DEFECT § 5.29.3 (j) RECORDS, COMMITTED AGAIN BY THE HAND THAT WROTE
+THE ROW TO PREVENT IT.** The launch was rebuilt specifically so cargo's own status would be
+readable - `Start-Process ... -PassThru`, so `$p.ExitCode` is cargo's and not `echo`'s. But
+`$p` lived in the launching shell, that shell exited, and **nothing ever wrote the code to a
+file**. Windows keeps no exit status for a dead PID, so the reading is gone: the launcher was
+fixed to make the number correct and never made it DURABLE. What can honestly be said is a
+DERIVATION, not a reading - cargo exits non-zero iff a target fails to build or a test binary
+reports failure, and this log has 0 `error[E`, 0 `test result: FAILED` and 142 of 142 blocks `ok`
+- so the exit was 0. That inference is sound and it is still not what the row asked for.
+**The rule the next launch carries: a status is measured when it is ON DISK, and the redirect that
+captures stdout must capture the code beside it in the same command.**
 
 ### Consequences for the phase table
 

@@ -58,7 +58,10 @@
 //! **3. A REGIME IS THE ONE THING NO FLOAT WITNESSES.** Every authority label, nozzle branch,
 //! stator regime, `ic_order`, `share_law`, ledger cell name and cell parent is emitted as an
 //! FNV-1a hash through [`Cmp::s`], and a discrete key that flips between interpreters is a hard
-//! failure and never a rounding.
+//! failure and never a rounding — with exactly ONE exception, `M/n_pos_zero`, which is
+//! a COUNT OVER FLOAT VALUES, so a rounding CAN move it. It is named in `EXEMPT` with its
+//! derivation down to the two keys that cause it, and it is the only discrete key this file
+//! lets differ - asserted, not merely stated, by [`Cmp::discrete_exempt`].
 //!
 //! **4. A COUNT IS ONLY EVIDENCE IF SOMETHING RE-DERIVES IT.** Sections J, K and L emit their own
 //! census. Wherever the Rust can recompute one from its own values it does, and asserts it — the
@@ -107,7 +110,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use turbojet::applied_reference::{
     applied_bill, applied_cells, applied_gains, build_applied_reference_cascade, handover_law,
-    ref_discriminator, AppliedGains, QuadGains, RefDiscriminator, R73_TRIPLE,
+    ref_discriminator, AppliedGains, RefDiscriminator, R73_TRIPLE,
 };
 use turbojet::bleed_transient::LeverArm;
 use turbojet::engine::FlightCondition;
@@ -117,7 +120,7 @@ use turbojet::limited_bleed::{BleedLimiter, Regime};
 use turbojet::map::ComponentMap;
 use turbojet::reference_split::RefScope;
 use turbojet::shared_actuator::{
-    applied_clip, charpoly4, quartic_roots_c, shared_march, SharedBill, ShareScope,
+    applied_clip, charpoly4, quartic_roots_c, shared_march, QuadGains, SharedBill, ShareScope,
 };
 use turbojet::stator_transient::{ScheduledStatorCore, ScheduledStatorTransient};
 use turbojet::two_spool::{build_two_spool_turbojet, TwoSpoolEngine, TwoSpoolLosses};
@@ -132,14 +135,730 @@ const ORACLE_CPYTHON: &str = include_str!("../oracle/slice_ae_cpython.tsv");
 /// [[rust-port-guessed-census-bars]], [[windows-tooling-file-hazards]].
 const GOLDEN_KEYS: usize = 76_770;
 
-/// **THE CPYTHON EXEMPTION — measured against the PORT, name by name.** See the header.
-const EXEMPT: [&str; 0] = [];
+/// **THE CPYTHON EXEMPTION - 683 names, MEASURED AGAINST THE PORT, name by name.**
+///
+/// Read off a run of this file with `AE_ORACLE_SETS` set, after the PyPy arm was green on all
+/// 71 044 compared keys - never off a golden-vs-golden diff, which is a different object: slice AB
+/// step 4 measured one 67 names wider than the truth, and here it is 891 names WIDER in section L
+/// alone (1 574 golden differences, 683 of them reaching the port).
+///
+/// **WHY THE TWO NUMBERS DIVERGE, AND IT IS NOT NOISE.** `L/qr/*`'s coefficients are declared
+/// INPUTS, so on the CPython arm the root finder is fed CPython's own coefficients and reproduces
+/// CPython's roots bit-for-bit: all 698 golden differences under `L/qr/*/out` contribute ZERO
+/// here, and the quartic solver is thereby measured to be interpreter-portable. `L/cp4/*/in` is
+/// bit-identical between interpreters, so `_charpoly4`'s `sum()` has nowhere to hide, and all 233
+/// of its outputs survive. The exemption is exactly the set of keys the port COMPUTES ITSELF, and
+/// its arithmetic is PyPy's ([[rust-port-arithmetic-is-pypy]]).
+///
+/// **`M/n_pos_zero` IS THE ONE DISCRETE MEMBER, AND IT IS EARNED RATHER THAN WAIVED.** `raw()`
+/// refuses to exempt a discrete key on the ground that a flipped count is a different physical
+/// reading; that ground does not hold for an AGGREGATE OVER FLOAT VALUES, which a rounding can
+/// move. It is admitted only because its move is DERIVED from this very list: the census counts
+/// `+0.0` slots over the 76 755 keys before section M, its input-fed half is the arm's own golden
+/// on both sides and cancels exactly, and the residue is 8 164 vs 8 166 - a deficit of exactly 2,
+/// which is `E/row/6/pole_72` and `F/row/15/pole_72`, both carrying `1.7763568394002506e-16` here
+/// against an exact `0.0` in CPython, and both already named below. An aggregate admitted without
+/// naming what it aggregates would be a tolerance wearing a name.
+const EXEMPT: [&str; 683] = [
+    // ---- B, 72: `applied_gains`, `inc = False`
+    "B/det_range/hi",
+    "B/det_range/lo",
+    "B/row/0/det",
+    "B/row/1/det",
+    "B/row/10/det",
+    "B/row/11/det",
+    "B/row/12/det",
+    "B/row/13/det",
+    "B/row/14/det",
+    "B/row/15/det",
+    "B/row/16/det",
+    "B/row/17/det",
+    "B/row/18/det",
+    "B/row/19/det",
+    "B/row/2/det",
+    "B/row/20/det",
+    "B/row/21/det",
+    "B/row/22/det",
+    "B/row/23/det",
+    "B/row/24/det",
+    "B/row/25/det",
+    "B/row/26/det",
+    "B/row/27/det",
+    "B/row/28/det",
+    "B/row/29/det",
+    "B/row/3/det",
+    "B/row/30/det",
+    "B/row/31/det",
+    "B/row/32/det",
+    "B/row/33/det",
+    "B/row/34/det",
+    "B/row/35/det",
+    "B/row/36/det",
+    "B/row/37/det",
+    "B/row/38/det",
+    "B/row/39/det",
+    "B/row/4/det",
+    "B/row/40/det",
+    "B/row/41/det",
+    "B/row/42/det",
+    "B/row/43/det",
+    "B/row/44/det",
+    "B/row/45/det",
+    "B/row/46/det",
+    "B/row/47/det",
+    "B/row/48/det",
+    "B/row/49/det",
+    "B/row/5/det",
+    "B/row/50/det",
+    "B/row/51/det",
+    "B/row/52/det",
+    "B/row/53/det",
+    "B/row/54/det",
+    "B/row/55/det",
+    "B/row/56/det",
+    "B/row/57/det",
+    "B/row/58/det",
+    "B/row/59/det",
+    "B/row/6/det",
+    "B/row/60/det",
+    "B/row/61/det",
+    "B/row/62/det",
+    "B/row/63/det",
+    "B/row/64/det",
+    "B/row/65/det",
+    "B/row/66/det",
+    "B/row/67/det",
+    "B/row/68/det",
+    "B/row/69/det",
+    "B/row/7/det",
+    "B/row/8/det",
+    "B/row/9/det",
+    // ---- C, 31: `applied_gains`, `inc = True`
+    "C/det_range/hi",
+    "C/det_range/lo",
+    "C/row/0/det",
+    "C/row/1/det",
+    "C/row/10/det",
+    "C/row/11/det",
+    "C/row/12/det",
+    "C/row/13/det",
+    "C/row/14/det",
+    "C/row/16/det",
+    "C/row/17/det",
+    "C/row/18/det",
+    "C/row/19/det",
+    "C/row/2/det",
+    "C/row/20/det",
+    "C/row/21/det",
+    "C/row/22/det",
+    "C/row/23/det",
+    "C/row/24/det",
+    "C/row/25/det",
+    "C/row/26/det",
+    "C/row/27/det",
+    "C/row/29/det",
+    "C/row/3/det",
+    "C/row/30/det",
+    "C/row/4/det",
+    "C/row/5/det",
+    "C/row/6/det",
+    "C/row/7/det",
+    "C/row/8/det",
+    "C/row/9/det",
+    // ---- D, 54: `applied_cells`
+    "D/arm/0/cell/fuel/det/hi",
+    "D/arm/0/cell/fuel/det/lo",
+    "D/arm/0/cell/fuel/gap_hi",
+    "D/arm/0/cell/fuel/pole",
+    "D/arm/0/cell/gov/det/hi",
+    "D/arm/0/cell/gov/det/lo",
+    "D/arm/0/cell/gov/gap_hi",
+    "D/arm/0/cell/gov/lam_max",
+    "D/arm/0/cell/gov/pole",
+    "D/arm/1/cell/fuel/det/hi",
+    "D/arm/1/cell/fuel/det/lo",
+    "D/arm/1/cell/fuel/gap_hi",
+    "D/arm/1/cell/fuel/pole",
+    "D/arm/1/cell/gov/det/hi",
+    "D/arm/1/cell/gov/det/lo",
+    "D/arm/1/cell/gov/gap_hi",
+    "D/arm/1/cell/gov/pole",
+    "D/arm/2/cell/fuel/det/hi",
+    "D/arm/2/cell/fuel/det/lo",
+    "D/arm/2/cell/fuel/gap_hi",
+    "D/arm/2/cell/fuel/pole",
+    "D/arm/2/cell/gov/det/hi",
+    "D/arm/2/cell/gov/det/lo",
+    "D/arm/2/cell/gov/pole",
+    "D/arm/3/cell/fuel/det/hi",
+    "D/arm/3/cell/fuel/det/lo",
+    "D/arm/3/cell/fuel/pole",
+    "D/arm/4/cell/fuel/det/hi",
+    "D/arm/4/cell/fuel/det/lo",
+    "D/arm/4/cell/fuel/gap_hi",
+    "D/arm/4/cell/fuel/pole",
+    "D/arm/4/cell/gov/det/hi",
+    "D/arm/4/cell/gov/det/lo",
+    "D/arm/4/cell/gov/lam_max",
+    "D/arm/4/cell/gov/pole",
+    "D/arm/5/cell/fuel/det/hi",
+    "D/arm/5/cell/fuel/det/lo",
+    "D/arm/5/cell/fuel/pole",
+    "D/arm/5/cell/gov/det/hi",
+    "D/arm/5/cell/gov/det/lo",
+    "D/arm/5/cell/gov/gap_hi",
+    "D/arm/5/cell/gov/pole",
+    "D/cell/0_fuel/det",
+    "D/cell/0_fuel/gap_hi",
+    "D/cell/0_fuel/pole",
+    "D/cell/0_gov/det",
+    "D/cell/0_gov/gap_hi",
+    "D/cell/0_gov/pole",
+    "D/cell/1_fuel/det",
+    "D/cell/1_fuel/pole",
+    "D/cell/1_gov/det",
+    "D/cell/1_gov/pole",
+    "D/pole_at_origin",
+    "D/worst_det",
+    // ---- E, 201: `ref_discriminator`, `inc = False`
+    "E/best_origin_72",
+    "E/best_origin_C",
+    "E/row/0/origin_72",
+    "E/row/0/origin_B",
+    "E/row/0/origin_C",
+    "E/row/0/pole_72",
+    "E/row/0/pole_B",
+    "E/row/0/pole_C",
+    "E/row/1/origin_72",
+    "E/row/1/origin_B",
+    "E/row/1/origin_C",
+    "E/row/1/pole_72",
+    "E/row/1/pole_B",
+    "E/row/10/origin_72",
+    "E/row/10/origin_B",
+    "E/row/10/origin_C",
+    "E/row/10/pole_B",
+    "E/row/11/origin_72",
+    "E/row/11/origin_B",
+    "E/row/11/origin_C",
+    "E/row/11/pole_72",
+    "E/row/11/pole_C",
+    "E/row/12/origin_72",
+    "E/row/12/origin_B",
+    "E/row/12/origin_C",
+    "E/row/12/pole_72",
+    "E/row/12/pole_B",
+    "E/row/12/pole_C",
+    "E/row/13/origin_72",
+    "E/row/13/origin_B",
+    "E/row/13/origin_C",
+    "E/row/13/pole_72",
+    "E/row/13/pole_B",
+    "E/row/13/pole_C",
+    "E/row/14/origin_72",
+    "E/row/14/origin_B",
+    "E/row/14/origin_C",
+    "E/row/14/pole_72",
+    "E/row/14/pole_B",
+    "E/row/14/pole_C",
+    "E/row/15/origin_72",
+    "E/row/15/origin_B",
+    "E/row/15/origin_C",
+    "E/row/15/pole_72",
+    "E/row/15/pole_B",
+    "E/row/15/pole_C",
+    "E/row/16/origin_72",
+    "E/row/16/origin_B",
+    "E/row/16/origin_C",
+    "E/row/16/pole_72",
+    "E/row/16/pole_B",
+    "E/row/16/pole_C",
+    "E/row/17/origin_72",
+    "E/row/17/origin_B",
+    "E/row/17/origin_C",
+    "E/row/17/pole_72",
+    "E/row/17/pole_B",
+    "E/row/18/origin_72",
+    "E/row/18/origin_B",
+    "E/row/18/origin_C",
+    "E/row/18/pole_72",
+    "E/row/18/pole_B",
+    "E/row/18/pole_C",
+    "E/row/19/origin_72",
+    "E/row/19/origin_B",
+    "E/row/19/origin_C",
+    "E/row/19/pole_72",
+    "E/row/19/pole_B",
+    "E/row/19/pole_C",
+    "E/row/2/origin_72",
+    "E/row/2/origin_B",
+    "E/row/2/origin_C",
+    "E/row/2/pole_72",
+    "E/row/2/pole_B",
+    "E/row/2/pole_C",
+    "E/row/20/origin_72",
+    "E/row/20/origin_B",
+    "E/row/20/origin_C",
+    "E/row/20/pole_B",
+    "E/row/20/pole_C",
+    "E/row/21/origin_72",
+    "E/row/21/origin_B",
+    "E/row/21/origin_C",
+    "E/row/21/pole_72",
+    "E/row/21/pole_B",
+    "E/row/21/pole_C",
+    "E/row/22/origin_72",
+    "E/row/22/origin_B",
+    "E/row/22/origin_C",
+    "E/row/22/pole_72",
+    "E/row/22/pole_B",
+    "E/row/23/origin_72",
+    "E/row/23/origin_B",
+    "E/row/23/origin_C",
+    "E/row/23/pole_72",
+    "E/row/23/pole_B",
+    "E/row/23/pole_C",
+    "E/row/24/origin_72",
+    "E/row/24/origin_B",
+    "E/row/24/origin_C",
+    "E/row/24/pole_72",
+    "E/row/24/pole_C",
+    "E/row/25/origin_72",
+    "E/row/25/origin_B",
+    "E/row/25/origin_C",
+    "E/row/25/pole_72",
+    "E/row/25/pole_B",
+    "E/row/25/pole_C",
+    "E/row/26/origin_72",
+    "E/row/26/origin_B",
+    "E/row/26/origin_C",
+    "E/row/26/pole_C",
+    "E/row/27/origin_72",
+    "E/row/27/origin_B",
+    "E/row/27/origin_C",
+    "E/row/27/pole_72",
+    "E/row/27/pole_B",
+    "E/row/27/pole_C",
+    "E/row/28/origin_72",
+    "E/row/28/origin_B",
+    "E/row/28/origin_C",
+    "E/row/28/pole_72",
+    "E/row/28/pole_B",
+    "E/row/28/pole_C",
+    "E/row/29/origin_72",
+    "E/row/29/origin_B",
+    "E/row/29/origin_C",
+    "E/row/29/pole_72",
+    "E/row/29/pole_B",
+    "E/row/29/pole_C",
+    "E/row/3/origin_72",
+    "E/row/3/origin_B",
+    "E/row/3/origin_C",
+    "E/row/3/pole_72",
+    "E/row/3/pole_B",
+    "E/row/3/pole_C",
+    "E/row/30/origin_72",
+    "E/row/30/origin_B",
+    "E/row/30/origin_C",
+    "E/row/30/pole_72",
+    "E/row/30/pole_B",
+    "E/row/30/pole_C",
+    "E/row/31/origin_72",
+    "E/row/31/origin_B",
+    "E/row/31/origin_C",
+    "E/row/31/pole_72",
+    "E/row/31/pole_B",
+    "E/row/31/pole_C",
+    "E/row/32/origin_72",
+    "E/row/32/origin_B",
+    "E/row/32/origin_C",
+    "E/row/32/pole_72",
+    "E/row/32/pole_B",
+    "E/row/32/pole_C",
+    "E/row/33/origin_72",
+    "E/row/33/origin_B",
+    "E/row/33/origin_C",
+    "E/row/33/pole_72",
+    "E/row/33/pole_B",
+    "E/row/33/pole_C",
+    "E/row/34/origin_72",
+    "E/row/34/origin_B",
+    "E/row/34/origin_C",
+    "E/row/34/pole_72",
+    "E/row/34/pole_B",
+    "E/row/34/pole_C",
+    "E/row/4/origin_72",
+    "E/row/4/origin_B",
+    "E/row/4/origin_C",
+    "E/row/4/pole_B",
+    "E/row/5/origin_72",
+    "E/row/5/origin_B",
+    "E/row/5/origin_C",
+    "E/row/5/pole_72",
+    "E/row/5/pole_B",
+    "E/row/5/pole_C",
+    "E/row/6/origin_72",
+    "E/row/6/origin_B",
+    "E/row/6/origin_C",
+    "E/row/6/pole_72",
+    "E/row/6/pole_B",
+    "E/row/7/origin_72",
+    "E/row/7/origin_B",
+    "E/row/7/origin_C",
+    "E/row/7/pole_72",
+    "E/row/7/pole_B",
+    "E/row/8/origin_72",
+    "E/row/8/origin_B",
+    "E/row/8/origin_C",
+    "E/row/8/pole_72",
+    "E/row/8/pole_B",
+    "E/row/8/pole_C",
+    "E/row/9/origin_72",
+    "E/row/9/origin_B",
+    "E/row/9/origin_C",
+    "E/row/9/pole_72",
+    "E/row/9/pole_B",
+    "E/row/9/pole_C",
+    "E/worst_origin_B",
+    "E/worst_pole_72",
+    "E/worst_pole_C",
+    // ---- F, 84: `ref_discriminator`, `inc = True`
+    "F/best_origin_72",
+    "F/best_origin_C",
+    "F/best_pole_B",
+    "F/row/0/origin_72",
+    "F/row/0/origin_B",
+    "F/row/0/origin_C",
+    "F/row/0/pole_72",
+    "F/row/0/pole_B",
+    "F/row/0/pole_C",
+    "F/row/1/origin_72",
+    "F/row/1/origin_B",
+    "F/row/1/pole_72",
+    "F/row/1/pole_B",
+    "F/row/10/origin_72",
+    "F/row/10/origin_B",
+    "F/row/10/origin_C",
+    "F/row/10/pole_72",
+    "F/row/10/pole_C",
+    "F/row/11/origin_72",
+    "F/row/11/origin_B",
+    "F/row/11/pole_72",
+    "F/row/12/origin_72",
+    "F/row/12/origin_B",
+    "F/row/12/origin_C",
+    "F/row/12/pole_C",
+    "F/row/13/origin_72",
+    "F/row/13/origin_B",
+    "F/row/13/origin_C",
+    "F/row/13/pole_72",
+    "F/row/13/pole_C",
+    "F/row/14/origin_72",
+    "F/row/14/pole_72",
+    "F/row/14/pole_C",
+    "F/row/15/origin_72",
+    "F/row/15/origin_B",
+    "F/row/15/origin_C",
+    "F/row/15/pole_72",
+    "F/row/15/pole_B",
+    "F/row/2/origin_72",
+    "F/row/2/origin_B",
+    "F/row/2/origin_C",
+    "F/row/2/pole_72",
+    "F/row/2/pole_B",
+    "F/row/3/origin_72",
+    "F/row/3/origin_B",
+    "F/row/3/origin_C",
+    "F/row/3/pole_B",
+    "F/row/3/pole_C",
+    "F/row/4/origin_72",
+    "F/row/4/origin_B",
+    "F/row/4/origin_C",
+    "F/row/4/pole_72",
+    "F/row/4/pole_B",
+    "F/row/4/pole_C",
+    "F/row/5/origin_72",
+    "F/row/5/origin_B",
+    "F/row/5/origin_C",
+    "F/row/5/pole_B",
+    "F/row/5/pole_C",
+    "F/row/6/origin_72",
+    "F/row/6/origin_B",
+    "F/row/6/origin_C",
+    "F/row/6/pole_72",
+    "F/row/6/pole_B",
+    "F/row/6/pole_C",
+    "F/row/7/origin_72",
+    "F/row/7/origin_B",
+    "F/row/7/origin_C",
+    "F/row/7/pole_72",
+    "F/row/7/pole_C",
+    "F/row/8/origin_72",
+    "F/row/8/origin_B",
+    "F/row/8/origin_C",
+    "F/row/8/pole_72",
+    "F/row/8/pole_B",
+    "F/row/8/pole_C",
+    "F/row/9/origin_72",
+    "F/row/9/origin_B",
+    "F/row/9/origin_C",
+    "F/row/9/pole_72",
+    "F/row/9/pole_C",
+    "F/worst_origin_B",
+    "F/worst_pole_72",
+    "F/worst_pole_C",
+    // ---- J, 7: the march, per point
+    "J/sig/11/pt/330/required",
+    "J/sig/11/pt/330/required_gov",
+    "J/sig/15/pt/20/g",
+    "J/sig/15/pt/20/g_fuel",
+    "J/sig/15/pt/20/required_gov",
+    "J/sig/15/pt/20/v",
+    "J/sig/15/pt/25/v",
+    // ---- L/cp4/*/out, 233: `_charpoly4`'s `sum()`, out of bit-identical inputs
+    "L/cp4/0/out/2",
+    "L/cp4/0/out/3",
+    "L/cp4/0/out/4",
+    "L/cp4/1/out/2",
+    "L/cp4/1/out/3",
+    "L/cp4/1/out/4",
+    "L/cp4/10/out/3",
+    "L/cp4/10/out/4",
+    "L/cp4/11/out/3",
+    "L/cp4/11/out/4",
+    "L/cp4/12/out/3",
+    "L/cp4/12/out/4",
+    "L/cp4/13/out/2",
+    "L/cp4/13/out/3",
+    "L/cp4/13/out/4",
+    "L/cp4/14/out/3",
+    "L/cp4/14/out/4",
+    "L/cp4/15/out/3",
+    "L/cp4/15/out/4",
+    "L/cp4/16/out/3",
+    "L/cp4/16/out/4",
+    "L/cp4/17/out/3",
+    "L/cp4/17/out/4",
+    "L/cp4/18/out/3",
+    "L/cp4/18/out/4",
+    "L/cp4/19/out/2",
+    "L/cp4/19/out/3",
+    "L/cp4/19/out/4",
+    "L/cp4/2/out/3",
+    "L/cp4/2/out/4",
+    "L/cp4/20/out/3",
+    "L/cp4/20/out/4",
+    "L/cp4/21/out/3",
+    "L/cp4/21/out/4",
+    "L/cp4/22/out/2",
+    "L/cp4/22/out/3",
+    "L/cp4/22/out/4",
+    "L/cp4/23/out/2",
+    "L/cp4/23/out/3",
+    "L/cp4/23/out/4",
+    "L/cp4/24/out/3",
+    "L/cp4/24/out/4",
+    "L/cp4/25/out/1",
+    "L/cp4/25/out/2",
+    "L/cp4/25/out/3",
+    "L/cp4/25/out/4",
+    "L/cp4/26/out/4",
+    "L/cp4/27/out/3",
+    "L/cp4/27/out/4",
+    "L/cp4/28/out/3",
+    "L/cp4/28/out/4",
+    "L/cp4/29/out/3",
+    "L/cp4/29/out/4",
+    "L/cp4/3/out/3",
+    "L/cp4/3/out/4",
+    "L/cp4/30/out/3",
+    "L/cp4/30/out/4",
+    "L/cp4/31/out/3",
+    "L/cp4/31/out/4",
+    "L/cp4/32/out/3",
+    "L/cp4/32/out/4",
+    "L/cp4/33/out/2",
+    "L/cp4/33/out/3",
+    "L/cp4/33/out/4",
+    "L/cp4/34/out/2",
+    "L/cp4/34/out/3",
+    "L/cp4/34/out/4",
+    "L/cp4/35/out/3",
+    "L/cp4/35/out/4",
+    "L/cp4/36/out/2",
+    "L/cp4/36/out/3",
+    "L/cp4/36/out/4",
+    "L/cp4/37/out/2",
+    "L/cp4/37/out/3",
+    "L/cp4/37/out/4",
+    "L/cp4/38/out/3",
+    "L/cp4/38/out/4",
+    "L/cp4/39/out/2",
+    "L/cp4/39/out/3",
+    "L/cp4/39/out/4",
+    "L/cp4/4/out/3",
+    "L/cp4/4/out/4",
+    "L/cp4/40/out/3",
+    "L/cp4/40/out/4",
+    "L/cp4/41/out/3",
+    "L/cp4/41/out/4",
+    "L/cp4/42/out/2",
+    "L/cp4/42/out/3",
+    "L/cp4/42/out/4",
+    "L/cp4/43/out/3",
+    "L/cp4/43/out/4",
+    "L/cp4/44/out/3",
+    "L/cp4/44/out/4",
+    "L/cp4/45/out/3",
+    "L/cp4/45/out/4",
+    "L/cp4/46/out/3",
+    "L/cp4/46/out/4",
+    "L/cp4/47/out/3",
+    "L/cp4/47/out/4",
+    "L/cp4/48/out/3",
+    "L/cp4/48/out/4",
+    "L/cp4/49/out/3",
+    "L/cp4/49/out/4",
+    "L/cp4/5/out/2",
+    "L/cp4/5/out/3",
+    "L/cp4/5/out/4",
+    "L/cp4/50/out/3",
+    "L/cp4/50/out/4",
+    "L/cp4/51/out/3",
+    "L/cp4/51/out/4",
+    "L/cp4/52/out/3",
+    "L/cp4/52/out/4",
+    "L/cp4/53/out/2",
+    "L/cp4/53/out/3",
+    "L/cp4/53/out/4",
+    "L/cp4/54/out/3",
+    "L/cp4/54/out/4",
+    "L/cp4/55/out/4",
+    "L/cp4/57/out/3",
+    "L/cp4/57/out/4",
+    "L/cp4/58/out/3",
+    "L/cp4/58/out/4",
+    "L/cp4/59/out/1",
+    "L/cp4/59/out/2",
+    "L/cp4/59/out/3",
+    "L/cp4/59/out/4",
+    "L/cp4/6/out/3",
+    "L/cp4/6/out/4",
+    "L/cp4/60/out/1",
+    "L/cp4/60/out/2",
+    "L/cp4/60/out/3",
+    "L/cp4/60/out/4",
+    "L/cp4/61/out/4",
+    "L/cp4/62/out/3",
+    "L/cp4/62/out/4",
+    "L/cp4/63/out/3",
+    "L/cp4/63/out/4",
+    "L/cp4/64/out/2",
+    "L/cp4/64/out/3",
+    "L/cp4/64/out/4",
+    "L/cp4/65/out/4",
+    "L/cp4/66/out/4",
+    "L/cp4/67/out/3",
+    "L/cp4/67/out/4",
+    "L/cp4/68/out/3",
+    "L/cp4/68/out/4",
+    "L/cp4/69/out/3",
+    "L/cp4/69/out/4",
+    "L/cp4/7/out/3",
+    "L/cp4/7/out/4",
+    "L/cp4/70/out/3",
+    "L/cp4/70/out/4",
+    "L/cp4/71/out/4",
+    "L/cp4/72/out/2",
+    "L/cp4/72/out/3",
+    "L/cp4/72/out/4",
+    "L/cp4/73/out/3",
+    "L/cp4/73/out/4",
+    "L/cp4/74/out/1",
+    "L/cp4/74/out/2",
+    "L/cp4/74/out/3",
+    "L/cp4/74/out/4",
+    "L/cp4/75/out/1",
+    "L/cp4/75/out/2",
+    "L/cp4/75/out/3",
+    "L/cp4/75/out/4",
+    "L/cp4/76/out/1",
+    "L/cp4/76/out/2",
+    "L/cp4/76/out/3",
+    "L/cp4/76/out/4",
+    "L/cp4/77/out/1",
+    "L/cp4/77/out/2",
+    "L/cp4/77/out/3",
+    "L/cp4/77/out/4",
+    "L/cp4/78/out/3",
+    "L/cp4/78/out/4",
+    "L/cp4/79/out/1",
+    "L/cp4/79/out/2",
+    "L/cp4/79/out/3",
+    "L/cp4/79/out/4",
+    "L/cp4/8/out/3",
+    "L/cp4/8/out/4",
+    "L/cp4/80/out/1",
+    "L/cp4/80/out/2",
+    "L/cp4/80/out/3",
+    "L/cp4/80/out/4",
+    "L/cp4/81/out/3",
+    "L/cp4/81/out/4",
+    "L/cp4/82/out/1",
+    "L/cp4/82/out/2",
+    "L/cp4/82/out/3",
+    "L/cp4/82/out/4",
+    "L/cp4/83/out/1",
+    "L/cp4/83/out/2",
+    "L/cp4/83/out/3",
+    "L/cp4/83/out/4",
+    "L/cp4/84/out/3",
+    "L/cp4/84/out/4",
+    "L/cp4/85/out/1",
+    "L/cp4/85/out/2",
+    "L/cp4/85/out/3",
+    "L/cp4/85/out/4",
+    "L/cp4/86/out/1",
+    "L/cp4/86/out/2",
+    "L/cp4/86/out/3",
+    "L/cp4/86/out/4",
+    "L/cp4/87/out/2",
+    "L/cp4/87/out/3",
+    "L/cp4/87/out/4",
+    "L/cp4/88/out/2",
+    "L/cp4/88/out/3",
+    "L/cp4/88/out/4",
+    "L/cp4/89/out/3",
+    "L/cp4/89/out/4",
+    "L/cp4/9/out/3",
+    "L/cp4/9/out/4",
+    "L/cp4/90/out/3",
+    "L/cp4/90/out/4",
+    "L/cp4/91/out/4",
+    "L/cp4/92/out/2",
+    "L/cp4/92/out/3",
+    "L/cp4/92/out/4",
+    "L/cp4/93/out/3",
+    "L/cp4/93/out/4",
+    "L/cp4/94/out/2",
+    "L/cp4/94/out/3",
+    "L/cp4/94/out/4",
+    "L/cp4/95/out/2",
+    "L/cp4/95/out/3",
+    "L/cp4/95/out/4",
+    "L/cp4/97/out/2",
+    "L/cp4/97/out/3",
+    "L/cp4/97/out/4",
+    // ---- M, 1: THE ONE DISCRETE MEMBER, and the only one whose reason is not 'the port follows PyPy'
+    "M/n_pos_zero",
+];
 
 // ============================================================================ the suite's constants
 
 const REAL: TwoSpoolLosses = TwoSpoolLosses {
     pi_d: 0.97, eta_lpc: 0.90, eta_hpc: 0.88, eta_b: 0.99, pi_b: 0.96,
-    eta_hpt: 0.92, eta_lpt: 0.90, eta_m: 0.99, pi_n: 0.98,
+    eta_hpt: 0.92, eta_lpt: 0.90, eta_m: 0.99, pi_n: 0.98, p_exit: None,
+    nozzle_convergent: true,
 };
 const PI_LPC: f64 = 3.0;
 const PI_HPC: f64 = 6.0;
@@ -178,16 +897,20 @@ fn flight() -> FlightCondition { FlightCondition::new(250.0, 50_000.0, 0.85) }
 
 fn cpg() -> Gas {
     Gas::new(GasSpec {
-        gamma_c: 1.4, cp_c: 1004.0, gamma_t: 1.3, cp_t: 1239.0, h_pr: 42.8e6, ..GasSpec::default()
+        gamma_c: 1.4, cp_c: 1004.0, r_c: (1.4 - 1.0) / 1.4 * 1004.0,
+        gamma_t: 1.3, cp_t: 1239.0, r_t: (1.3 - 1.0) / 1.3 * 1239.0,
+        hpr: 42.8e6, ..GasSpec::default()
     })
 }
 
 fn lp() -> ComponentMap {
-    ComponentMap::new(0.20, 0.05, 0.1, 0.7).with_phi_surge(FLOOR)
+    ComponentMap { a: 0.20, b: 0.05, sigma: 0.1, l: 0.7, ..ComponentMap::flat() }
+        .with_phi_surge(FLOOR)
 }
 
 fn hp() -> ComponentMap {
-    ComponentMap::new(0.08, 0.15, 0.1, 1.0).with_phi_surge(FLOOR)
+    ComponentMap { a: 0.08, b: 0.15, sigma: 0.1, l: 1.0, ..ComponentMap::flat() }
+        .with_phi_surge(FLOOR)
 }
 
 fn design() -> TwoSpoolEngine {
@@ -259,12 +982,26 @@ struct Cmp {
     exempted: BTreeSet<String>,
     drifts: Vec<(String, f64)>,
     flips: Vec<String>,
+    /// **THE READER FOR THE DOC'S ONE EXCEPTION.** Rule 3 in this file's header says
+    /// `M/n_pos_zero` is the only DISCRETE key allowed to differ, and nothing enforced that:
+    /// `raw()` tests `EXEMPT` BEFORE it tests `discrete`, so a second discrete exempt name would
+    /// be absorbed in silence. Every exempted key that arrived through a discrete emitter lands
+    /// here and [`Cmp::finish`] asserts the set is exactly that one name - a claim in a comment
+    /// with no reader is the defence slice AA kept re-finding.
+    discrete_exempt: BTreeSet<String>,
+    /// **THE KEYS THE RUST READS OUT OF THE GOLDEN INSTEAD OF COMPUTING.** `seen` counts these
+    /// too, so `seen.len()` is NOT a count of checks — sections J/K declare their grid, their
+    /// stride and their replay coordinates as INPUTS, and an input can never disagree with the
+    /// file it was read from. Reported beside the compared count so the green is scoped rather
+    /// than over-read.
+    n_input: usize,
 }
 
 impl Cmp {
     fn new(py: BTreeMap<String, u64>, cpython: bool) -> Self {
         Cmp { py, seen: BTreeSet::new(), mine: BTreeMap::new(), bad: Vec::new(), cpython,
-              exempted: BTreeSet::new(), drifts: Vec::new(), flips: Vec::new() }
+              exempted: BTreeSet::new(), drifts: Vec::new(), flips: Vec::new(),
+              discrete_exempt: BTreeSet::new(), n_input: 0 }
     }
 
     fn f(&mut self, key: &str, got: f64) {
@@ -330,12 +1067,14 @@ impl Cmp {
     /// honest without pretending they were checked.
     fn input_f(&mut self, key: &str) -> f64 {
         assert!(self.seen.insert(key.to_string()), "the Rust read {key} twice");
+        self.n_input += 1;
         f64::from_bits(*self.py.get(key)
             .unwrap_or_else(|| panic!("{key}: NO GOLDEN — a declared-grid input is missing")))
     }
 
     fn input_d(&mut self, key: &str) -> usize {
         assert!(self.seen.insert(key.to_string()), "the Rust read {key} twice");
+        self.n_input += 1;
         *self.py.get(key)
             .unwrap_or_else(|| panic!("{key}: NO GOLDEN — a declared-grid input is missing"))
             as usize
@@ -349,6 +1088,33 @@ impl Cmp {
         panic!("{key}: hash {h} is none of the four law strings this dump can emit")
     }
 
+    /// **THE FOUR SETS, IN FULL, BEFORE THE FIRST ASSERT** — off unless `AE_ORACLE_SETS` names a
+    /// directory. `finish` asserts in severity order and each assert prints only its own set, so
+    /// on a run with more than one kind of disagreement the later sets are never seen. That is how
+    /// the CPython exemption gets MEASURED: the list is read off a file, name by name, against the
+    /// PORT — never off a golden-vs-golden diff, which slice AB step 4 measured 67 names wider.
+    /// **Reading is all this does. It never widens `EXEMPT`, and it never changes an assert.**
+    fn dump_sets(&self, arm: &str, missed: &[&String]) {
+        let Ok(dir) = std::env::var("AE_ORACLE_SETS") else { return };
+        let mut out = String::new();
+        out.push_str(&format!("# arm={arm} compared={} input={} missed={}
+",
+                              self.seen.len() - self.n_input, self.n_input, missed.len()));
+        for (tag, names) in [
+            ("bad", self.bad.clone()),
+            ("flip", self.flips.clone()),
+            ("drift", self.drifts.iter().map(|(l, r)| format!("{l} | rel {r:.6e}")).collect()),
+            ("exempted", self.exempted.iter().cloned().collect::<Vec<_>>()),
+            ("missed", missed.iter().map(|s| (*s).clone()).collect()),
+        ] {
+            out.push_str(&format!("# {tag} = {}
+", names.len()));
+            for n in names { out.push_str(&format!("{tag}	{n}
+")); }
+        }
+        std::fs::write(format!("{dir}/sets_{arm}.txt"), out).expect("AE_ORACLE_SETS is not writable");
+    }
+
     fn raw(&mut self, key: &str, got: u64, discrete: bool) {
         assert!(self.seen.insert(key.to_string()), "the Rust emitted {key} twice");
         self.mine.insert(key.to_string(), got);
@@ -357,6 +1123,7 @@ impl Cmp {
             Some(&want) if want != got => {
                 if self.cpython && EXEMPT.contains(&key) {
                     self.exempted.insert(key.to_string());
+                    if discrete { self.discrete_exempt.insert(key.to_string()); }
                 } else if self.cpython && discrete {
                     self.flips.push(format!("{key}: rust {got} vs cpython {want}"));
                 } else if self.cpython {
@@ -377,10 +1144,14 @@ impl Cmp {
 
     fn finish(&self, arm: &str) {
         let missed: Vec<&String> = self.py.keys().filter(|k| !self.seen.contains(*k)).collect();
+        self.dump_sets(arm, &missed);
         assert!(self.flips.is_empty(),
                 "{} DISCRETE keys flipped between interpreters — a flipped count, flag, authority \
                  label, nozzle branch, stator regime, cell parent or ledger cell name is a \
-                 different physical reading, never a rounding:\n  {}",
+                 different physical reading, never a rounding. The ONE exception is a census OVER \
+                 FLOAT VALUES: `M/n_pos_zero` counts +0.0-valued keys, so a float that rounds \
+                 differently DOES move it — it is in EXEMPT, derived down to the two keys \
+                 that cause it, and it is the only discrete key allowed to differ:\n  {}",
                 self.flips.len(),
                 self.flips.iter().take(12).cloned().collect::<Vec<_>>().join("\n  "));
         let worst = self.drifts.iter().map(|(_, r)| *r).fold(0.0_f64, f64::max);
@@ -402,10 +1173,15 @@ impl Cmp {
                        self.exempted.len(),
                        want.difference(&self.exempted).take(20).collect::<Vec<_>>(),
                        self.exempted.difference(&want).take(20).collect::<Vec<_>>());
+            let one: BTreeSet<String> = ["M/n_pos_zero"].iter().map(|s| (*s).to_string()).collect();
+            assert_eq!(self.discrete_exempt, one,
+                       "this file's rule 3 says exactly ONE discrete key may differ,                         `M/n_pos_zero`, because it is a COUNT OVER FLOAT VALUES. The exempt-and-                        discrete set is now {:?}. `raw()` tests EXEMPT before `discrete`, so                         without this assert a second one would pass in silence - and a flipped                         count, flag, authority label or regime name is a different physical                         reading, never a rounding.",
+                       self.discrete_exempt);
         }
         if self.bad.is_empty() && missed.is_empty() {
-            println!("slice_ae_oracle ({arm}): {} values compared, {} exempt",
-                     self.seen.len(), self.exempted.len());
+            println!("slice_ae_oracle ({arm}): {} keys COMPARED against the port's own value,                       {} READ from the golden as declared inputs ({} keys total), {} exempt",
+                     self.seen.len() - self.n_input, self.n_input, self.seen.len(),
+                     self.exempted.len());
             return;
         }
         panic!(
@@ -1019,6 +1795,13 @@ fn walk(cmp: &mut Cmp) {
             if k.starts_with("M/") {
                 continue;
             }
+            // **THE FALLBACK IS LIVE, AND IT IS THE HONEST HALF OF A HYBRID.** `input_*`
+            // records a key in `seen` but NOT in `mine`, so every declared-grid input lands here
+            // and contributes THE ARM's OWN GOLDEN value. Python's census runs over `OUT`, which
+            // holds those same emitted inputs, so that half is identical on both sides and
+            // CANCELS: a disagreement on this key is a statement about the SELF-COMPUTED half
+            // alone, never about the mixing. Anything else read into it is an aggregate being
+            // asked for a mechanism it cannot carry.
             let v = *cmp.mine.get(k).unwrap_or(gold);
             nb += 1;
             nn += usize::from(v == neg0);
@@ -1064,6 +1847,30 @@ fn rust_equals_cpython_outside_the_named_exemption() {
 
 /// **THE TWO GOLDENS MUST HAVE THE SAME KEY SET.** A dump that emitted a key on one interpreter
 /// and not the other would make the exemption a comparison between differently-shaped files.
+#[test]
+fn the_exemption_has_the_composition_p9_predicted() {
+    // P9 (plan section 5.29.4 (b)) predicted the exemption as a COMPOSITION, not just a total, and
+    // a total that is merely close is not a pass. `finish` already ties this list to the measured
+    // set by equality in both directions; this ties the list to the PREDICTION, so neither can be
+    // quietly re-fitted to the other.
+    let n_l_cp4 = EXEMPT.iter().filter(|k| k.starts_with("L/cp4/")).count();
+    let n_l_qr = EXEMPT.iter().filter(|k| k.starts_with("L/qr/")).count();
+    let n_self = EXEMPT.iter().filter(|k| !k.starts_with("L/")).count();
+    assert_eq!(EXEMPT.len(), 683, "P9's total");
+    assert_eq!(n_l_cp4, 233, "P9's `_charpoly4` half");
+    assert_eq!(n_l_qr, 0, "P9's sharpest clause: a replayed root finder fed CPython's own                            coefficients reproduces CPython's roots, so `L/qr/*/out` contributes 0                            despite 698 golden differences there");
+    assert_eq!(n_self, 450, "P9's self-computed half");
+    for (sec, want) in [("B/", 72), ("C/", 31), ("D/", 54), ("E/", 201), ("F/", 84), ("J/", 7),
+                        ("M/", 1)] {
+        assert_eq!(EXEMPT.iter().filter(|k| k.starts_with(sec)).count(), want,
+                   "section {sec} of P9's table");
+    }
+    let mut sorted = EXEMPT.to_vec();
+    sorted.sort_unstable();
+    sorted.dedup();
+    assert_eq!(sorted.len(), EXEMPT.len(), "a name appears twice in EXEMPT");
+}
+
 #[test]
 fn the_two_goldens_have_the_same_key_set() {
     let (a, b) = (load(ORACLE_PYPY), load(ORACLE_CPYTHON));
@@ -1118,6 +1925,17 @@ fn the_inherited_quartic_chain_is_reached() {
 /// suite-wide triple against this grid would be [[rust-port-slice-ac-step6]]'s `every = 40`-vs-
 /// `10` defect: a number measured at one population, asserted against another.
 #[test]
+/// **THIS GATE COMPARES THE DUMP AGAINST ITSELF, AND THAT IS ALL IT DOES.** Every value it reads -
+/// `K/path/{1,2,3}`, `K/n_calls`, `K/returns_req_bitwise/3`, `K/gap3/n` - comes out of the golden,
+/// so it is a CONSISTENCY WEB over one file and not a check of the port. It earns its place by
+/// catching a dump that silently drifted onto the suite-wide triple or lost its stratification,
+/// which no amount of Rust-vs-PyPy agreement could see: bit-exactness says nothing about coverage
+/// ([[rust-port-oracle-cannot-see-a-missing-gate]]).
+///
+/// **WHAT THE PORT DOES CHECK INDEPENDENTLY IS ELSEWHERE**, and it is worth naming so this gate is
+/// not read as doing it: the walk re-derives every replayed tuple's PATH from its own
+/// `applied_clip` and asserts the per-path counts against `k_path[p] / k_stride`. The census here
+/// is the input; that is the measurement.
 fn the_reference_census_is_this_grids_own() {
     let py = load(ORACLE_PYPY);
     let get = |k: &str| *py.get(k).unwrap_or_else(|| panic!("{k} missing")) as usize;

@@ -19,7 +19,7 @@ slices inside an authorised phase are free. See [[rust-port-decided]].
 
 * **0–5 DONE.**
 * **PHASE 6** authorised 2026-08-17, **COMPLETE 2026-08-20** with slice U's five steps.
-* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, AB, AC, **AD complete** (rung 72, § 5.28, twelve probes, all six steps). **Slice AE (rung 73) IN FLIGHT — pre-flight + STEPS 1, 2 AND 3 of 5 done (§ 5.29, 5.29.1, 5.29.2, 5.29.3).**
+* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, AB, AC, **AD complete** (rung 72, § 5.28, twelve probes, all six steps). **Slice AE (rung 73) IN FLIGHT — pre-flight + STEPS 1–4 of 5 done (§ 5.29, 5.29.1, 5.29.2, 5.29.3, 5.29.4).**
 
 ## Phase-7 slices, as they closed
 
@@ -253,7 +253,7 @@ Six steps priced from sizing (1 177 source / 502 test lines). See
    predicted before the run and held, plus a re-run of the target on the final tree after two
    post-launch comment-level edits. See [[rust-port-slice-ad-step6]].
 
-## Slice AE (rung 73, `AppliedReferenceTransient`) — IN FLIGHT, steps 1, 2 and 3 of 5 done
+## Slice AE (rung 73, `AppliedReferenceTransient`) — IN FLIGHT, steps 1–4 of 5 done
 
 § 5.29, ten probes. **684 source / 518 test lines, 27 collected (13 slow), 12 methods** — AB's
 shape (706/582), so **FIVE steps predicted**, with the step table emitted and checked to be a
@@ -355,6 +355,39 @@ from the unreachable-rung-69-reader one P1 names, which stays step 5's.
 inapplicable with the reason. Declared control fires 13 of 27. `grep` said 28 `#[test]` where
 `cargo` ran 27 — third instance, **first one the file's own header predicted in advance**.
 See [[rust-port-slice-ae-step3]].
+
+### Slice AE step 4 — SHIPPED
+
+`rust/oracle/dump_slice_ae.py` (766 lines, 13 sections) + `rust/tests/slice_ae_oracle.rs` —
+**76 770 keys per arm**, of which **71 044 COMPARED and 5 726 read as declared inputs**. Plan
+§ 5.29.4. **`Rust ≡ PyPy` on every compared key with ZERO port fixes**, on the first run that ever
+compiled — every defect this step found was in the instrument.
+
+**THE FINDING: the one aggregate detector that fired, I tried to EXEMPT with a structural argument
+that cancels arithmetically.** `M/n_pos_zero` read 8 164 against CPython's 8 166 and I argued a
+census mixing port-computed and golden-read values "cannot equal either pure number". **The read
+half contributes the same term to both sides and cancels**, so the residue is the self-computed
+half alone: a deficit of exactly 2, resolving by name to `E/row/6/pole_72` and `F/row/15/pole_72`
+(`1.776e-16` here vs an exact `0.0`) — both already in the drift list I had not yet read, because
+the flips assert aborts before drifts print. **An aggregate is a detector; admit it to an exemption
+only after naming what it aggregates.**
+
+**P9 CONFIRMED WHOLE** — 683 names, the composition (450 self-computed + 233 `L/cp4/*/out` + **0**
+from `L/qr/*/out`) and all seven section counts. Its sharpest clause carried the most: 698 golden
+differences under `L/qr/*/out` reach the port on **zero** keys, because those coefficients are
+declared inputs — fed CPython's own, the port reproduces CPython's roots, so **the quartic root
+finder is MEASURED interpreter-portable** and `_charpoly4`'s `sum()` is the sole origin from a
+second direction. Golden-vs-golden was **891 names wider in L alone** (1 574 vs 683).
+
+**Two more measured:** the success line had been calling 5 726 golden READS "values compared";
+and **63 keys flip `+0.0`-ness between the goldens** — the 2 `*/pole_72` plus **61 imaginary parts
+of quartic roots**, so a marginal root's real/complex classification is interpreter-dependent,
+driven wholly by the coefficients. The oracle had been committed **never having been compiled**:
+five errors, four loud, **the fifth silent** (a gas missing `r_c`/`r_t`, which `GasSpec::default()`
+supplies) and it would have presented as a total port failure.
+
+**The full Rust gate: 141 `Running` + 1 `Doc-tests` = 142 blocks, 142 of 142 ok, 1 458 / 0 / 0, 0 `error[E`** - six of six countable predictions hit, so 1 458 = 1 451 + 7 and step 3's enumeration is confirmed to have excluded this binary. **The SEVENTH row could not be read**: the launch was rebuilt so `$p.ExitCode` would be cargo's own and not `echo`'s, then nothing wrote it to a file and the shell exited - a status is measured when it is ON DISK.
+See [[rust-port-slice-ae-step4]].
 
 ## Slice AB, step by step
 
