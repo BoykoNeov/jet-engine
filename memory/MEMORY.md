@@ -78,6 +78,7 @@ is.
 - Slice AD (72) [pre-flight](rust-port-slice-ad-preflight.md) [1](rust-port-slice-ad-step1.md) [2](rust-port-slice-ad-step2.md) [3](rust-port-slice-ad-step3.md) [4](rust-port-slice-ad-step4.md) [5](rust-port-slice-ad-step5.md) [6 closed](rust-port-slice-ad-step6.md) — a shipped block documents a method with ZERO definitions, and a gate compared the plant against the function that produced it (one lesson per file)
 - Slice AE (73) [pre-flight](rust-port-slice-ae-preflight.md) [1](rust-port-slice-ae-step1.md) [2](rust-port-slice-ae-step2.md) [3](rust-port-slice-ae-step3.md) [4](rust-port-slice-ae-step4.md) [5 closed](rust-port-slice-ae-step5.md) — a FIXTURE is a claim nobody re-reads as one; and a control, an exact-bits gate and an aggregate each measured nothing (one lesson per file)
 - Slice T (46/47/48) steps [1](rust-port-slice-t-step1.md) [2](rust-port-slice-t-step2.md) [3](rust-port-slice-t-step3.md) [4](rust-port-slice-t-step4.md) — an EXACT ZERO blinds its own gate to the SIGN (one lesson per file)
+- [Slice AF pre-flight](rust-port-slice-af-preflight.md) — an inherited booking named the wrong reader, the wrong mechanism AND the wrong fix; a zero that reproduces a prior zero is the most dangerous number to inherit
 
 ## Shipped rungs
 
