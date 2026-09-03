@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 57f6e146-1b56-46c8-a924-d490be2f24f2
-  modified: 2026-08-28T09:14:08.040Z
+  modified: 2026-09-03T08:27:37.448Z
 ---
 
 The living status line for the Rust port. **This file is the only place the running tally lives**;
@@ -19,7 +19,7 @@ slices inside an authorised phase are free. See [[rust-port-decided]].
 
 * **0–5 DONE.**
 * **PHASE 6** authorised 2026-08-17, **COMPLETE 2026-08-20** with slice U's five steps.
-* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, AB, AC, **AD complete** (rung 72, § 5.28, twelve probes, all six steps). **Slice AE (rung 73) IN FLIGHT — pre-flight + STEPS 1 AND 2 of 5 done 2026-09-01 (§ 5.29, 5.29.1, 5.29.2).**
+* **PHASE 7** authorised 2026-08-20. Slices V, W, X, Y, Z, AA, AB, AC, **AD complete** (rung 72, § 5.28, twelve probes, all six steps). **Slice AE (rung 73) IN FLIGHT — pre-flight + STEPS 1, 2 AND 3 of 5 done (§ 5.29, 5.29.1, 5.29.2, 5.29.3).**
 
 ## Phase-7 slices, as they closed
 
@@ -253,7 +253,7 @@ Six steps priced from sizing (1 177 source / 502 test lines). See
    predicted before the run and held, plus a re-run of the target on the final tree after two
    post-launch comment-level edits. See [[rust-port-slice-ad-step6]].
 
-## Slice AE (rung 73, `AppliedReferenceTransient`) — IN FLIGHT, steps 1 and 2 of 5 done
+## Slice AE (rung 73, `AppliedReferenceTransient`) — IN FLIGHT, steps 1, 2 and 3 of 5 done
 
 § 5.29, ten probes. **684 source / 518 test lines, 27 collected (13 slow), 12 methods** — AB's
 shape (706/582), so **FIVE steps predicted**, with the step table emitted and checked to be a
@@ -329,6 +329,32 @@ plumbing gates. M11 re-run rather than cited: **0 keys and 0 gates alone, 122 ke
 BOTH law-carries go**, so the shipped docstring is true of the pair and false of the member.
 M17–M21 pre-registered for step 3; M22's zero measured (**101 `-0.0` keys exist**, none in the four
 sets it re-keys) and booked to step 4. See [[rust-port-slice-ae-step2]].
+
+### Slice AE step 3 — SHIPPED
+
+`rust/tests/rung73.rs` — **1 073 lines, 27 ported gates**, 1:1 in order (0 added / 0 collapsed /
+4 split by parameter), **26 of 27 green on the first run**. Plan § 5.29.3.
+
+**THE FINDING: I made the source-count NEEDLE two-sided and left its own CONTROL a bare `== 0`** —
+on a file whose comments warn against that exact string, with the second occurrence already in a
+`grep` output I had read and labelled DOC. It read **2** (both prose: `:309` explains the pin,
+`:324` forbids the rewrite). The two-sided repair is strictly stronger than the `== 0`: the CODE
+count says it is not written, the PROSE count says the counter can SEE.
+
+**TWO PRE-REGISTERED PREDICTIONS MOVED, BOTH BY MEASURING PYTHON AS WELL.**
+**P5 FALSIFIED at 6 of 27 against a predicted 0** — its premise (invisible to every RELATIVE bar)
+is true, but four ported bars are EXACT EQUALITIES and the Python file's own docstring says why.
+The minimal fold is caught by **the same 6 in both languages, name for name** — a bijection between
+the catch sets. **P1's CONCLUSION FALSIFIED at 2 of 27 (and the same 2 in Python) with its REASON
+untouched**: gates 18/19 drive the asserts directly, so blanket deletion is a different injection
+from the unreachable-rung-69-reader one P1 names, which stays step 5's.
+
+**Seats: value discharged by GIT IDENTITY** (the step's whole diff is one new test file), gate seat
+15 → 42. **All five of step 2's value-only rows now CAUGHT (6/2/1/1/2 of 27) — ZERO misses**, so the
+"re-score a miss against Python's own 27" clause has no subject among them and is recorded
+inapplicable with the reason. Declared control fires 13 of 27. `grep` said 28 `#[test]` where
+`cargo` ran 27 — third instance, **first one the file's own header predicted in advance**.
+See [[rust-port-slice-ae-step3]].
 
 ## Slice AB, step by step
 

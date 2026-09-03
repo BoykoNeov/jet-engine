@@ -18804,6 +18804,269 @@ the diff rather than a judgement about risk.
 stays live and is exactly what step 3 would copy. Its docstring now carries the hazard at the top,
 because a memory entry protects the next SESSION and a docstring protects the next READER.
 
+#### 5.29.3 SLICE AE step 3 — the 27 ported gates, and **A CONTROL WRITTEN AS A BARE COUNT BESIDE A NEEDLE I HAD JUST DECIDED NEEDED TWO SIDES, ON A FILE WHOSE OWN COMMENTS WARN AGAINST THE EXACT STRING**
+
+**SHIPPED**: `rust/tests/rung73.rs` — **1 073 lines, 27 gates**, LF, green. Every count in the
+header is MEASURED rather than typed, **this session and with the exact commands the header
+names**: 27 off `cargo test -- --list`, and 27 collected / 13 `slow` off
+`pytest --collect-only -q -n0` run twice (a `grep` for `def test_` says **23**, because four sites
+are parametrised). The provenance clause is not inherited from § 5.29 (viii) — a sentence that says
+*"MEASURED"* while citing someone else's reading is § 5.29.2 (g)'s defect, and it buys a number
+credibility a typed one would not have had.
+
+**AND THE MAP IS A MACHINE-CHECKED BIJECTION, NOT A TABLE SOMEONE READ.** AD step 4's method: a map
+in a header is a list of names, and a list of names is not a bijection until something adds it up —
+the failure modes are an unmapped Python test, an extra Rust test, and two Python tests colliding
+on one Rust name, none of which a reader spots. `bijection.py` takes the Python names from
+`--collect-only` and the Rust names from `cargo test -- --list` — **neither side read off the header
+table, which is the object under test** — and normalises with exactly three rules (drop `test_`,
+lower-case, `[False]`/`[True]` → `_on_the_phi_arm`/`_on_the_incidence_arm`):
+
+| | |
+|---|---|
+| python collected / rust collected / mapped | **27 / 27 / 27** |
+| unmapped / extra / collisions | **0 / 0 / 0** |
+| order preserved in the file | **yes** |
+
+So the map is **1:1 IN ORDER, 0 added / 0 collapsed / 4 split by parameter — and, stronger than any
+previous slice's, 0 RENAMED**: three mechanical rules with no exception list carry every name
+across. The two substitutions this file does make (gate 21's introspection, gate 9's counterfeit
+table) are in BODIES, which is why they leave the name bijection untouched.
+
+**26 of 27 green on the first run. The one failure was not a transcription slip and is § (a).**
+
+##### (a) THE FINDING — **THE CONTROL WAS THE ONE-SIDED HALF OF A GATE WHOSE OTHER HALF I HAD JUST MADE TWO-SIDED**
+
+Gate 22 ports `test_rung73.py:488`'s `src.count("g_own + req - clip") == 1` and `:492`'s
+`psrc.count("self._reference(") == 4`. **Neither number transfers**, and both were re-measured
+before the gate was written:
+
+* **The needle differs and the denominator differs.** The port spells the expression
+  `(g_own + req) - clip` — the parenthesis is PINNED (probe L4: at `g_own = 1e16` the
+  rearrangement is a full unit apart) — and `applied_reference.rs:308` **quotes that string in a
+  doc comment**. Python's `inspect.getsource(AppliedReferenceTransient)` has a CLASS-sized
+  denominator; an `include_str!` has a FILE-sized one, so a naive `== 1` reads 2. The gate takes
+  the CODE count and the DOC count separately and asserts both, because a filter that silently
+  dropped the code line as well would leave `0 == 0` and gate nothing.
+* **The count changes, 4 → 1 SEAT and 4 CALLS.** Python reaches the law at four
+  `self._reference(` sites inside `_integrate_fuel_shared`. The port hoists them into ONE closure,
+  `core_ref` (`shared_actuator.rs:643`), which holds the single dispatch
+  `(ft.inner.triple_hooks.reference)(…)` and is called at exactly the same four places — twice in
+  `der`, twice in the initial-condition sweep, once per leg in each. So Python's `== 4` ports as
+  the CALL count and **the port gains a SEAT count of 1 that Python cannot state.**
+
+**And then, one line further down, I wrote the CONTROL as a bare file-wide `== 0`** — *the
+rearrangement `req + (g_own - clip)` is not written* — on a file whose own comments warn against
+that exact string. **It read 2.** Both occurrences are prose: `:309` explains why the association
+is pinned, `:324` is the inline `// PYTHON'S ASSOCIATION, PINNED. Do not rewrite as
+`req + (g_own - clip)`.` sitting beside the expression. **`:324` was already in a `grep` output I
+had read and labelled DOC** before the gate was written.
+
+The repair is **strictly stronger than the `== 0` it replaces**: the CODE count says the
+rearrangement is not written, and the PROSE count of **2** says the counter can find the string at
+all — which a needle absent everywhere can never demonstrate. That is `slice_ac_cells.rs`'s
+deliberately-absent-pattern rule made two-sided, and the general lesson is that **a control is an
+instrument, and the reflex is to give the subject of a gate the careful treatment and its control
+a one-liner.** A control's whole job is to prove the instrument can see; a bare zero on an absent
+needle is indistinguishable from a broken matcher.
+
+##### (b) THE SWEEP — TWO SEATS, AND **THE VALUE SEAT IS DISCHARGED BY GIT IDENTITY RATHER THAN RE-DRIVEN**
+
+§ 5.29.2 (e) pre-registered M17–M21 for re-run *"on both seats"* here. **Step 3's whole diff is ONE
+new test file** — `git status` reports `?? rust/tests/rung73.rs` and `git diff --stat -- rust/src
+turbojet` is empty — so the VALUE seat's answer is a function of (shipped source, mutation) and
+BOTH are byte-identical to step 2's. **The premise is verified by git identity rather than argued**,
+which is more than step 2 could offer for its own CRLF/LF dump transfer, since step 2 was
+uncommitted and had nothing to compare against. Step 2's value column is cited; rebuilding a
+~500-line dumper to reproduce a number that cannot have changed is the weaker move.
+
+What is NEW is the gate seat, **15 → 42**: this step's 27 plus step 1's 15.
+
+| mutation | step 2 VALUE (5 066) | step 2 GATE (15) | **step 3 GATE (27)** | step 3 GATE (15) |
+|---|---|---|---|---|
+| M17 `F_f`/`R_r` differenced with the WRONG step | 332 | 0 | **6** | 0 |
+| M18 `self_live` reads the MASKED leg's diagonal | 105 | 0 | **2** | 0 |
+| M19 § 2's masked-column index inverted | 16 | 0 | **1** | 0 |
+| M20 § 2 keeps rung 72's pole instead of the origin | 32 | 0 | **1** | 0 |
+| M21 § 3's reading C moves the MASKED leg | 191 | 0 | **2** | 0 |
+| **P5** fold path 2 away — MINIMAL, § (c) | — | — | **6** | 1 |
+| **P1a** BOTH refusals deleted — § (d) | — | — | **2** | 2 |
+| **CTL** `reference` re-aimed at rung 72 — DECLARED CONTROL | — | — | **13** | 4 |
+
+**ZERO MISSES.** Every one of step 2's five value-only rows is caught here, by the gates whose
+absence made them value-only — so § 5.29.2 (e)'s *"the one-of-fifteen is not a hole, it is this
+step's shape"* is **discharged by measurement**. Its third clause — *any that still misses is
+re-scored against Python's own 27 before it is called a hole* — therefore **has no subject among
+M17–M21**, and that is recorded with the reason rather than silently skipped. It is exercised
+twice instead, on P5 and P1a, and both times the answer changed a prediction.
+
+The **DECLARED CONTROL** earns its keep for the reason AD probe F installed it: a sweep reporting
+nothing but misses cannot be told from a broken runner. A **baseline row** runs first, and both
+binaries are green before any mutation.
+
+**TOOLING.** The sweep is derived from `mutate_step2b.py` and **never** from `mutate_step2.py`,
+which § 5.29.2 (g) named as *"exactly what step 3 would copy"*. Every read and write passes
+`newline=""`; the restore is asserted **byte for byte** (84 847 bytes, 1 663 LF, 0 CRLF) after each
+mutation and again in the `finally`. No process from a previous session was alive — checked by
+`Get-CimInstance Win32_Process` before the first file was read, which is § 5.29.2 (a)'s lesson
+applied as a precondition rather than learned again.
+
+##### (c) **P5 IS FALSIFIED, 6 OF 27 AGAINST A PREDICTED 0 — AND FALSIFIED IN PYTHON TOO, SO IT WAS NEVER A CLAIM ABOUT THE PORT**
+
+§ 5.29 (ix) P5: *"Path 2's float-identity branch is invisible to every RELATIVE bar in the crate
+(`4e-11` on a diagonal), so an injection that folds it away passes the ported gates … **Predicted:
+0 of 27 ported gates catch it.**"*
+
+**Its PREMISE is true and its CONCLUSION does not follow, because four of the ported bars are not
+relative — they are EXACT EQUALITIES**, and `tests/test_rung73.py`'s own docstring says why two
+paragraphs above the assertions it is describing:
+
+> *"`self_live` is exact because the hook takes an explicit identity BRANCH … An exact zero
+> survives a difference quotient; an exact one does not."*
+
+Folding path 2 away is precisely the removal of that explicit identity branch. Measured on the
+MINIMAL fold — the three lines of the branch, no comment touched:
+
+| | caught |
+|---|---|
+| Rust, `cargo test --test rung73` | **6 of 27** |
+| Python, `pytest tests/test_rung73.py` | **6 of 27** |
+| the two sets | **IDENTICAL BY NAME**, parametrize split included |
+
+The six are `the_masked_leg_couples_and_still_reaches_nothing`,
+`only_two_entries_of_j_move_and_both_by_one_over_tau` and
+`the_two_readings_move_disjoint_halves_of_the_matrix`, **both arms of each**, against Python's
+`test_…[False]` / `test_…[True]` for the same three. **That is a BIJECTION between the two
+languages' catch sets**, which is a stronger statement about the port's fidelity than green is,
+and it independently confirms the header's `False → phi arm / True → incidence arm` mapping.
+Python's baseline is `27 passed`, an independent confirmation of the collected count.
+
+**AND MY FIRST P5 NUMBER WAS 7, WITH THE SEVENTH A COMMENT.** The sweep's first P5 replacement
+deleted two COMMENT lines beside the branch, and one of the "seven" gates it caught was
+`the_reference_lives_in_one_place` — § (a)'s own source-count gate, firing on the
+`// Do not rewrite as …` line the injection happened to remove. A mutation confined to the
+expression does not touch it. **Score a mutation confined to the thing you mean to mutate**; the 7
+is kept here rather than overwritten, because it is § (a)'s finding arriving one file over.
+
+##### (d) **P1's CONCLUSION IS FALSE AND ITS REASON IS UNTOUCHED, AND THEY ARE TWO DIFFERENT INJECTIONS**
+
+§ 5.29 (ix) P1: *"a port that re-aims the slot and omits rung 73's `integrate_fuel` assert
+compiles, runs, and **passes all 27 ported gates**, because no shipped rung-73 test calls a rung-69
+reader."*
+
+The REASON clause is about the rung-69 pairing; the CONCLUSION is about the asserts' absence in
+general. **Gates 18 and 19 drive both asserts DIRECTLY**, by hand-setting the field — they never go
+near a rung-69 reader. Measured (P1a, both asserts deleted):
+
+| | caught |
+|---|---|
+| Rust `rung73` | **2 of 27** — `refuses_an_undeclared_reference`, `refuses_the_applied_reference_on_top_of_the_sum_law` |
+| Rust `slice_ae_cells` | **2 of 15** — the same two names |
+| Python `pytest` | **2 of 27** — `test_refuses_an_undeclared_reference`, `test_refuses_the_applied_reference_on_top_of_the_sum_law` |
+
+So **P1's conclusion is FALSIFIED, identically in both languages**, and its reason stands
+untouched: the narrower injection it actually describes — both asserts PRESENT but unreachable from
+a rung-69 reader — is **step 5's manufactured pairing** and is measured by neither arm.
+**Scoring the two as one prediction would have reported "P1 falsified" having measured an injection
+P1 does not name**, which is § 5.29 (x)'s sixth defect (P1 and P7 individually plausible, jointly
+impossible) arriving a second time inside the same prediction. Separated before the sweep ran.
+
+##### (e) **P6 CONFIRMED — BY READING THE SHIPPED STRINGS FIRST, NOT BY STRENGTHENING A NEEDLE**
+
+§ 5.29 (vii) measured `"no set point"` in rungs 70/71/72/74's messages (**not** 73's) and
+`"FORCED release"` in **nine** classes back to rung 43 — so both shipped gates filed under rung 73
+assert a refusal rung 73 does not own, and neither needle discriminates. P6 predicts the ported
+gates name the OWNING rung. Measured on the Rust source before the gate was written:
+`shared_actuator.rs:508` and `:512` both open `"rung-72: …"`, and rung 73's fuel table delegates to
+`R72_FUEL`. So gate 21 asserts `"rung-72"` beside each needle **and** — by `fn_addr_eq` — that the
+call went through `R73_FUEL.integrate_fuel`, which is what makes *"rung 73's own two refusals ran
+first and passed"* a measurement rather than a hope.
+
+##### (f) THE ONE NEEDLE THAT CANNOT PORT: **A REGEX MET A SUBSTRING MATCHER**
+
+`match=r"rung-73.*origin"` is a regex; `panics_with` is `str::contains`. Split into the two
+literals **plus `msg.find("rung-73") < msg.find("origin")`**, which is the `.*`'s actual content —
+a pair of `contains` alone would be strictly weaker than the source. Disclosed in the file's header
+and in the gate's own doc comment, with a negative control (rung 72's `-1/tau_f` argument must NOT
+appear) that separates the two rungs' messages where the shipped `"FOUR actuator states"` cannot.
+
+##### (g) THE DOC-COMMENT COUNT TRAP, **THIRD INSTANCE AND THE FIRST ONE PREDICTED IN ADVANCE**
+
+`grep -c '#\[test\]'` reads **28**; `cargo test -- --list` reads **27**. The 28th is at
+`rung73.rs:24`, inside this file's own sentence explaining that Python's four parametrized sites
+*"land here as two `#[test]` functions apiece"*. AC step 4 and AD step 4 each hit this and each
+found it by reconciling afterwards; **this file's header names the trap before the run and states
+that the count is taken off `cargo`**, so it was found by the rule rather than by the surprise.
+
+##### (h) WHAT THE PORT DOES NOT INHERIT, AND WHAT IT GAINS
+
+* **Gate 21's `inspect.signature` half has no runtime analogue.** `s_off`/`tau_rel` are absent from
+  `StatorLeg` and `MarchScope` by TYPE, so the port spells an exhaustive destructuring with no
+  `..` — a compile error when a field is added, strictly stronger than a runtime assert. § 6's
+  decided replacement, third use; a runtime version would be ceremony.
+* **Gate 9's Python `Broken` SUBCLASS becomes a counterfeit TABLE PAIR.** `BROKEN_TRIPLE` re-aims
+  `reference`; `BROKEN_LEVER` re-aims `at_lever` to rebuild with both — which is Python's
+  `m.__class__ = Broken`, present for the same reason (every reader rebuilds its machine through
+  `at_lever`, AC step 7's laundering finding). **The gate makes the instrument prove it can see
+  three ways before it is read**: the counterfeit survives the rig rebuild (`fn_addr_eq` both
+  ways), its re-spelled clip IS the plant's public `applied_clip`, and it ignores `ref_law` where
+  the shipped cell returns `req` bitwise. Without the second table the reader would launder the
+  injection and the gate would be vacuous — which is § 5.29.1's own finding, in a different dress.
+* **The five reader-default rows are read off `engine.py`'s `def` lines**, never off this module's
+  `DS`, which agrees with only two of the five. **Exactly one call in the Python file overrides a
+  default** — the broken-instrument probe's `ds = 0.01, every = 8` — transcribed from the call site
+  and not from the table, § 5.27.6 (i)'s defect in its own shape.
+* **Gate 13 declares `PREDICTED`/`RUNG72` in the test file** and reads the port's own
+  `AppliedCells::predicted` only in a SEPARATE assertion, so the loop cannot compare a machine
+  against the constant that built it.
+* **Five gates overlap `slice_ae_cells.rs` and are ported anyway**, on `rung72.rs`'s precedent: the
+  file's contract is a 1:1 map of the shipped suite, a hole in it is invisible to every count on
+  both sides, and the two files drive the same cells through different entries.
+
+##### (i) LINE ENDINGS — **THE FIRST READING OF THE STEP WAS WRONG, AND THE BYTE-LEVEL ONE REPRODUCED § 5.29.2 (f) EXACTLY**
+
+The step opened by checking the CRLF trap, because § 5.29.2 (f) left it **dormant, not gone**.
+`grep -c $'\r'` under Git Bash reported **every line as CRLF in all seven files checked**, which is
+a Git-Bash artifact; the byte-level census disagreed and reproduced § (f)'s after-state exactly —
+**167 Rust files, 146 LF, 21 CRLF, 0 mixed** — with both files gate 22 reads (`applied_reference.rs`,
+`shared_actuator.rs`) on the LF side. After this step: **168 files, 147 LF, 21 CRLF**, the
+arithmetic check the first count could not offer. **Gate 22 scopes with `.lines()` and never with a
+brace-newline anchor**, which is the construct that took `rung71.rs` down.
+
+##### (j) THE GATE ROW — PREDICTED BEFORE THE RUN
+
+| check | predicted | measured |
+|---|---|---|
+| `     Running ` lines | 140 | **140** |
+| `Doc-tests` blocks | 1 | **1** |
+| `^test result:` blocks | 141 | **141** |
+| blocks reading `ok` | 141 of 141 | **141 of 141** |
+| passed / failed / ignored | 1 451 / 0 / 0 | **1 451 / 0 / 0** |
+| `error[E` occurrences | 0 | **0** |
+| exit | 0 | **NOT CAPTURED — the runner printed `exit=` EMPTY** |
+
+AD step 4's structural bar is carried: `Running` + `Doc-tests` must EQUAL the result blocks
+(140 + 1 = 141), so a MISSING target cannot hide inside a sum that still looks plausible. The
+**1 451 is 1 424 + 27 by construction** — step 3 touches no other target — so the row is a
+prediction and not a reading.
+
+**THE ONE ROW THAT COULD NOT BE READ IS THE EXIT CODE, and it is recorded as UNREAD rather than
+inferred.** The background runner's own trailer is `PID=14184` / `exit= wall_min=92.38` — the
+`exit=` field came back **EMPTY**, so the number a reader would happily transcribe as *0* was never
+captured, and the wrapper's exit is not `cargo`'s. That is [[windows-tooling-file-hazards]]'s
+*status read off the runner* for the second time in this slice. The substitute is the structural
+bar above, which is stronger than an exit code anyway: **140 `Running` + 1 `Doc-tests` = 141 result
+blocks, 141 of 141 reading `ok`, 1 451 passed / 0 failed / 0 ignored, 0 `error[E`** — all four
+read off the 100 854-byte log by counting, and the log's last block is the `Doc-tests` one, so it
+is a finished run and not a truncated one. **A green run that cannot show its exit code is scored
+on its own output or it is not scored.**
+
+**`pytest` IS NOT RUN ON THE SHIPPED TREE FOR THIS STEP, AND THE REASON IS A PROPERTY OF THE DIFF.**
+No `.py` file is in it and `CLAUDE.md` is untouched. The step DID run `pytest tests/test_rung73.py`
+three times against injected trees (§ (c), § (d)), and its **baseline arm — `27 passed in 62.41 s`
+— is a green Python run on the shipped source**, with `turbojet/engine.py` asserted restored byte
+for byte (1 395 138 bytes) and `git status` confirming it afterwards.
+
 ### Consequences for the phase table
 
 Phase 8's `main.py` row is now "Rust CLI prints the tables and dumps plot JSON; port the

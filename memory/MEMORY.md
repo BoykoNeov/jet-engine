@@ -22,7 +22,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding, backticks in `-m`, a status read off the runner, a log still being written, and a text-mode rewrite that flips every line ending
 
-## The Rust port — phases 0–6 done; phase 7 in flight, slice AE (rung 73) step 1 of 5 done
+## The Rust port — phases 0–6 done; phase 7 in flight, slice AE (rung 73) step 3 of 5 done
 - [Rust port status](rust-port-status.md) — the running tally: phases, slices, and the numbers each closed slice landed on. **Update THAT file, not this line.**
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; a new PHASE needs authorisation
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost
@@ -93,6 +93,7 @@ table, which loads beside this file. Rung entries follow that table's families a
 - [Slice AE pre-flight](rust-port-slice-ae-preflight.md) — a prior sweep SAW both name reuses, NAMED them, and cleared them on the wrong property; and four of my own probes were void
 - [Slice AE step 1](rust-port-slice-ae-step1.md) — an exact-bits gate written for a float-identity injection was PASSED by it, because the triple it was driven at cancelled exactly
 - [Slice AE step 2](rust-port-slice-ae-step2.md) — a mutation sweep from the previous session was still rewriting the tree, and the backup I took against exactly that was itself mutated, at byte-identical size
+- [Slice AE step 3](rust-port-slice-ae-step3.md) — I made a needle two-sided and left its own CONTROL a bare `== 0`, on a file whose comments warn against that exact string
 - Slice T (46/47/48) steps [1](rust-port-slice-t-step1.md) [2](rust-port-slice-t-step2.md) [3](rust-port-slice-t-step3.md) [4](rust-port-slice-t-step4.md) — an EXACT ZERO blinds its own gate to the SIGN (one lesson per file)
 
 ## Shipped rungs
