@@ -41,7 +41,18 @@
 //! **The port had already reached the right structure from the right observation.**
 //! [`RefScope`](crate::reference_split::RefScope) goes through the
 //! [`with_ref`](TripleHooks::with_ref) cell *because* rung 73 moves the field, and says so;
-//! `cross_split.rs`'s `CoordScope` repeats the reasoning from the mirror side. What was missing is
+//! `cross_split.rs`'s [`GovScope`](crate::cross_split::GovScope) states the MIRROR of that
+//! reasoning — it writes its field DIRECTLY, because `_with_gov` is defined once in the whole
+//! ladder and there is no second field for a cell to choose between.
+//!
+//! **THAT SENTENCE USED TO NAME `cross_split.rs`'s `CoordScope`, WHICH HAS NEVER EXISTED.**
+//! `git log -S "CoordScope"` returns exactly one commit — the one that wrote the sentence — so the
+//! name was invented in prose, and the substance was wrong with it: the type it meant writes its
+//! field directly, which the sentence credited as REPEATING the cell decision when the guard's own
+//! doc calls it *the opposite*. Corrected at slice AF, whose § (i) is this defect class one slice
+//! on, and urgently: that slice introduces the crate's first real
+//! [`CoordScope`](crate::demand_coordinate::CoordScope), so the stale reference would have
+//! resolved to a live type and told a reader a wrong story. What was missing is
 //! not the cell — it is **the REFUSAL**. A re-aimed slot on its own means a rung-69 reader run on
 //! a rung-73 machine writes `ref_law`, leaves `ref_` at `None`, falls through `triple_rig`'s
 //! `self._ref or (…)` fallback, and marches a plant nobody asked for **silently**. Python's loud
@@ -221,6 +232,13 @@ pub const R73_TRIPLE: TripleHooks = TripleHooks {
     // added cell and `TripleHooks` goes 13 -> 14 here. Step 1 wrote that down rather than meeting
     // it as a surprise.
     quad_gains_at: r73_quad_gains_at,
+    // NONE OF SLICE AF's FOUR — all four names arrive at rung 74, so this rung carries
+    // `NO_TRIPLE`'s refusal for each. Reached through rung 68's table, which is where the
+    // panicking slots live.
+    cap_fuel: crate::three_loop::R68_TRIPLE.cap_fuel,
+    sensed_cap: crate::three_loop::R68_TRIPLE.sensed_cap,
+    windup_tau: crate::three_loop::R68_TRIPLE.windup_tau,
+    with_coord: crate::three_loop::R68_TRIPLE.with_coord,
 };
 
 // ---------------------------------------------------------------------------------------------

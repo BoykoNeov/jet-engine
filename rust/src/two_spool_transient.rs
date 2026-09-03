@@ -716,6 +716,51 @@ pub struct TwoSpoolTransientCore {
     /// **A DEAD FIELD IS A CLAIM, SO IT IS STATED AS ONE**: slice AE settles it, and a gate here
     /// that asserted it stays `"sched"` would pass for the reason that nothing writes it.
     pub ref_law: Cell<&'static str>,
+    /// RUNG **74**'s `_lag_coord` — **WHICH COORDINATE THE TWO FUEL-SIDE LAGS CARRY**, and the
+    /// third declared law of this family after [`share_law`] and [`ref_law`].
+    ///
+    /// `"clip"` is the state `g` (the CUT, floored at zero) and IS rungs 52–73; `"demand"` is the
+    /// state `w` (the fuel the leg would ALLOW, floored on the COMPOSITION) and is the plant;
+    /// `"demand-latched"` is § 3's isolation instrument — the demand state with the target capped
+    /// at the schedule, which is exactly the clip plant plus the forcing.
+    ///
+    /// **THE CLASS DEFAULT IS `"clip"`, WHICH IS THE REDUCE ARM — so unlike [`ref_law`] there is
+    /// no builder overwrite here and no silent-wrong-plant failure to gate for.** Slice AE's
+    /// second step-1 finding was a constructor writing `"sched"` for every rung while Python
+    /// declares `"applied"` at rung 73; measured on this rung the two agree, so the corresponding
+    /// gate would pass for the reason that nothing writes the field. [`ref_law`]'s own recorded
+    /// lesson — a dead field is a claim, so it is stated as one — applied to the mirror case.
+    ///
+    /// `Cell<&'static str>` and not an enum, for [`share_law`]'s reason exactly: Python compares
+    /// against the three literals and `integrate_fuel` carries a shipped refusal for anything
+    /// outside them, which a three-variant enum would delete.
+    ///
+    /// Its guard is [`CoordScope`](crate::demand_coordinate::CoordScope), restore-previous, and it
+    /// writes this field **through a cell** rather than directly — [`RefScope`]'s decision and not
+    /// [`ShareScope`]'s, because rung 79 overrides `_with_coord` to write `_phi_ref` and that
+    /// override changes nothing else about the call.
+    ///
+    /// [`share_law`]: Self::share_law
+    /// [`ref_law`]: Self::ref_law
+    /// [`RefScope`]: crate::reference_split::RefScope
+    /// [`ShareScope`]: crate::shared_actuator::ShareScope
+    pub lag_coord: Cell<&'static str>,
+    /// RUNG **74**'s `_ic_cap` — the pass cap on its march's JOINT INITIAL-CONDITION fixed point.
+    ///
+    /// **READ BY THIS RUNG's OWN MARCH AND WRITTEN BY NOBODY UNTIL RUNG 75**, which is measured
+    /// rather than assumed: `engine.py:17941` is `for its in range(1, self._ic_cap + 1)` inside
+    /// `_integrate_fuel_demand`, and the only writer in the ladder is rung 75's `_with_ic_cap`
+    /// (`engine.py:19022`), raised there ONLY to measure a derived iteration count. Every PLANT in
+    /// the family keeps the inherited `60`.
+    ///
+    /// So it is a `Cell` rather than a `const` even though nothing at this rung sets it: the
+    /// reader is here and the writer is one rung up, and a `const` would have to be converted back
+    /// — the churn [`ref_law`](Self::ref_law) avoided by being carried at rung 72 for rung 73's
+    /// cell. **No value gate exists for it at this rung**, and that is a claim, not an omission:
+    /// rung 74's own march reads the declared literal on every path.
+    ///
+    /// Its default is [`IC_CAP_DECLARED`](crate::demand_coordinate::IC_CAP_DECLARED).
+    pub ic_cap: Cell<usize>,
     /// RUNG 70's ARMED GOVERNOR SET POINT — Python's `_gov_max`, and the phase's **second**
     /// CONFIG-kind dynamically-scoped field after [`ref_`](Self::ref_).
     ///
@@ -1130,6 +1175,8 @@ impl TwoSpoolTransientCore {
             ic_order: Cell::new(crate::three_loop::IC_ORDER_DECLARED),
             share_law: Cell::new(crate::shared_actuator::SHARE_LAW_DEFAULT),
             ref_law: Cell::new(crate::shared_actuator::REF_LAW_DEFAULT),
+            lag_coord: Cell::new(crate::demand_coordinate::LAG_COORD_CLIP),
+            ic_cap: Cell::new(crate::demand_coordinate::IC_CAP_DECLARED),
             ref_: Cell::new(None),
             gov_max: Cell::new(None),
         }

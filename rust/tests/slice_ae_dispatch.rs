@@ -412,6 +412,10 @@ fn triple_diff(a: &'static TripleHooks, b: &'static TripleHooks) -> Vec<&'static
     let TripleHooks {
         stator_leg, lagged_stator, clamp_v, check_v0, rk4_floor, solve_v, manifold_v, triple_laws,
         triple_rig, with_ref, reference, rk4_floor_shared, shared_rig, quad_gains_at,
+        // SLICE AF's FOUR. Named and CHECKED below, not bound and dropped: the whole content of
+        // this function is *only the named slot differs*, and a field left unchecked would make
+        // that sentence false for four slots at once.
+        cap_fuel, sensed_cap, windup_tau, with_coord,
     } = *a;
     let mut out = Vec::new();
     let mut chk = |name, same: bool| if !same { out.push(name) };
@@ -429,6 +433,10 @@ fn triple_diff(a: &'static TripleHooks, b: &'static TripleHooks) -> Vec<&'static
     chk("rk4_floor_shared", fn_addr_eq(rk4_floor_shared, b.rk4_floor_shared));
     chk("shared_rig", fn_addr_eq(shared_rig, b.shared_rig));
     chk("quad_gains_at", fn_addr_eq(quad_gains_at, b.quad_gains_at));
+    chk("cap_fuel", fn_addr_eq(cap_fuel, b.cap_fuel));
+    chk("sensed_cap", fn_addr_eq(sensed_cap, b.sensed_cap));
+    chk("windup_tau", fn_addr_eq(windup_tau, b.windup_tau));
+    chk("with_coord", fn_addr_eq(with_coord, b.with_coord));
     out
 }
 

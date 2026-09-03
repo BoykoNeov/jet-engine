@@ -175,6 +175,13 @@ pub const R71_TRIPLE: TripleHooks = TripleHooks {
     // AND SLICE AE STEP 2's FOURTEENTH CELL — `_quad_gains_at` also arrives at rung 72, so this
     // rung carries the same refusal, reached through rung 68's table.
     quad_gains_at: crate::three_loop::R68_TRIPLE.quad_gains_at,
+    // NONE OF SLICE AF's FOUR — all four names arrive at rung 74, so this rung carries
+    // `NO_TRIPLE`'s refusal for each. Reached through rung 68's table, which is where the
+    // panicking slots live.
+    cap_fuel: crate::three_loop::R68_TRIPLE.cap_fuel,
+    sensed_cap: crate::three_loop::R68_TRIPLE.sensed_cap,
+    windup_tau: crate::three_loop::R68_TRIPLE.windup_tau,
+    with_coord: crate::three_loop::R68_TRIPLE.with_coord,
 };
 
 // ---------------------------------------------------------------------------------------------

@@ -253,7 +253,7 @@ fn the_slice_re_aims_exactly_six_pointers_and_inherits_the_rest() {
 /// fixed one of the two inconsistencies it was written against and left the other — § 5.29 (x)'s
 /// sixth defect, a second time inside the same section.
 #[test]
-fn the_third_loop_table_is_fourteen_fields_wide() {
+fn the_third_loop_table_is_eighteen_fields_wide() {
     let TripleHooks {
         stator_leg: _, lagged_stator: _, clamp_v: _, check_v0: _, rk4_floor: _, solve_v: _,
         manifold_v: _, triple_laws: _, triple_rig: _, with_ref: _, reference: _,
@@ -262,6 +262,14 @@ fn the_third_loop_table_is_fourteen_fields_wide() {
         // destructuring went `E0027` the moment the field landed; the prediction was written at
         // step 1 and is discharged here rather than met as a surprise.
         quad_gains_at: _,
+        // AND SLICE AF's FOUR, WHICH TOOK IT 14 -> 18 — this destructuring went `E0027` on that
+        // slice's first `--all-targets` build. **AND THAT BUILD FOUND THIS GATE AND ITS SIBLING
+        // IN `slice_ae_dispatch.rs` WHERE THE PHASE RECORD NAMED ONLY TWO TRIPWIRES**, both of
+        // them `E0063` initializer literals in slice AB's and AC's cells files. An exhaustive
+        // DESTRUCTURING is a second, differently-typed instrument for the same job, this file
+        // shipped two of them, and no comment in the crate called them tripwires. Slice AF § (ii)'s
+        // own lesson — check the ROW, not just whether the correction exists somewhere.
+        cap_fuel: _, sensed_cap: _, windup_tau: _, with_coord: _,
     } = R73_TRIPLE;
 }
 

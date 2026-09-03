@@ -525,6 +525,96 @@ pub struct TripleHooks {
         bool,
         f64,
     ) -> Result<crate::shared_actuator::QuadGains, Abort>,
+    /// RUNG **74**'s `_cap_fuel` — **THE FUEL LEG's UNFLOORED SET POINT**, and the first of slice
+    /// AF's four.
+    ///
+    /// Rung 52's leg read as a DEMAND: the minimum of its (up to two) set points, each solved
+    /// ABOVE the schedule by [`cap_free`](crate::demand_coordinate::cap_free) rather than floored
+    /// at it. THREE definers — rungs 74, 78 and 79 — measured over all 58 `engine.py` classes,
+    /// with an identical parameter list at each, so it is a cell by every filter the phase uses.
+    ///
+    /// **`mf_app` IS RUNG 76's ARGUMENT AND RUNG 74 IGNORES IT.** It is carried from the first
+    /// definer because a cell's width is the family's, not the introducing rung's — the same
+    /// decision [`quad_gains_at`](Self::quad_gains_at) records one name over. Only a cap that
+    /// DEPENDS on the fuel it is asked about can read it, and this rung has none.
+    ///
+    /// **FALLIBLE, and that is measured at the CALL SITE rather than chosen.** Python's march
+    /// wraps its whole derivative in `except AssertionError: break`
+    /// (`engine.py:17965`/`17989`), and [`cap_free`]'s unreachable-cap refusal is an
+    /// `AssertionError` — so a `panic!` here would end the process where Python ends the march.
+    /// Slice L's rule, applied per call site.
+    ///
+    /// [`cap_free`]: crate::demand_coordinate::cap_free
+    #[allow(clippy::type_complexity)]
+    pub cap_fuel: fn(
+        &FuelTransientCore,
+        &FlightCondition,
+        f64,
+        f64,
+        f64,
+        Option<&AccelSchedule>,
+        Option<&Floor>,
+        Option<f64>,
+    ) -> Result<f64, Abort>,
+    /// RUNG **74**'s `_sensed_cap` — **RUNG 76's ONE HOOK, DECLARED AT ITS EARLIEST CALLER.**
+    ///
+    /// Two definers, rungs 74 and 76. Rung 74's body returns `None`, which is rung 73 § 6's
+    /// concession stated as code: every cap in this family is a SET-POINT SOLVE, a function of the
+    /// STATE alone, so `d(cap)/d(mf) = 0`.
+    ///
+    /// **`static` IN PYTHON AT RUNG 74 AND AN INSTANCE METHOD AT RUNG 76**, which is invisible to
+    /// `self._sensed_cap(…)` at the one call site — so the cell carries a receiver the rung-74
+    /// body ignores and rung 76's body needs (it reads `_cap_law`, `_instant_fuel` and `pi_b`).
+    /// [`rk4_floor`](Self::rk4_floor)'s opposite case: there the receiver was dropped because no
+    /// definer in the family ever grew one.
+    ///
+    /// `Result` for [`cap_fuel`](Self::cap_fuel)'s reason — rung 76's body calls `_instant_fuel`.
+    #[allow(clippy::type_complexity)]
+    pub sensed_cap: fn(
+        &FuelTransientCore,
+        &FlightCondition,
+        f64,
+        f64,
+        &AccelSchedule,
+        Option<f64>,
+    ) -> Result<Option<f64>, Abort>,
+    /// RUNG **74**'s `_windup_tau` — **RUNG 75's ONE HOOK INTO RUNG 74's MARCH.**
+    ///
+    /// Two definers, rungs 74 and 75. Rung 74 returns `None` and every branch guarded by it is
+    /// skipped, so the reduce is a DISPATCH and not a tolerance — [`reference`](Self::reference)'s
+    /// shape, with the difference rung 74's own source states: this hook is genuinely inside the
+    /// march, where rung 73's was in a reader.
+    ///
+    /// **NOT `Result`, and the asymmetry with its two siblings is measured.** Python calls it at
+    /// `engine.py:17816`, at the TOP of `_integrate_fuel_demand` and outside every
+    /// `except AssertionError` in that body — so rung 75's two declared-knob asserts propagate out
+    /// of the march rather than ending it, and a `panic!` is the faithful spelling.
+    ///
+    /// `static` in Python at rung 74 and an instance method at rung 75, [`sensed_cap`]'s note.
+    ///
+    /// [`sensed_cap`]: Self::sensed_cap
+    pub windup_tau: fn(&TwoSpoolTransientCore) -> Option<f64>,
+    /// RUNG **74**'s `_with_coord` — **THE SETTER, NOT THE CALL**, and
+    /// [`with_ref`](Self::with_ref)'s exact shape one field over.
+    ///
+    /// Two definers, rungs 74 and 79, with an IDENTICAL signature and a DIFFERENT mutated field:
+    /// rung 74 writes [`lag_coord`], rung 79 writes `_phi_ref`. Both would exist on a rung-79
+    /// machine, so nothing type-errors and no signature comparison can see it — which is the
+    /// `_with_ref` name reuse slice AE had to repair, arriving a second time and this time
+    /// **before** the second definer is ported. § 5.30 (ii) re-derives the obligation from the
+    /// census rather than inheriting it: the field must be rung 74's own, and `phi_ref` stays
+    /// unborn until rung 79's slice.
+    ///
+    /// **`&'static str` AND NOT `Option`, which is where it differs from `with_ref`.** Rung 69's
+    /// `_ref` is optional and rung 73's `_ref_law` is not, so that cell's shared signature had to
+    /// carry a `None` one of its two bodies refuses. Both definers here declare a plain `str` with
+    /// a class default — `_lag_coord = "clip"`, `_phi_ref = "phi"` — so there is no unset state to
+    /// spell and no refusal to write.
+    ///
+    /// **RUNGS 40–73's SLOT PANICS**, [`with_ref`](Self::with_ref)'s precedent.
+    ///
+    /// [`lag_coord`]: crate::two_spool_transient::TwoSpoolTransientCore::lag_coord
+    pub with_coord: fn(&TwoSpoolTransientCore, &'static str) -> &'static str,
 }
 
 /// **THE DEFAULT, AND ITS CELLS PANIC.** [`NO_STATOR`](crate::stator_transient::NO_STATOR) and
@@ -552,6 +642,10 @@ pub const NO_TRIPLE: TripleHooks = TripleHooks {
     rk4_floor_shared: no_triple_rk4_floor_shared,
     shared_rig: no_triple_shared_rig,
     quad_gains_at: no_triple_quad_gains_at,
+    cap_fuel: no_triple_cap_fuel,
+    sensed_cap: no_triple_sensed_cap,
+    windup_tau: no_triple_windup_tau,
+    with_coord: no_triple_with_coord,
 };
 
 const NO_TRIPLE_MSG: &str = "no triple table on this object: rungs 40-67 have no third loop on \
@@ -666,6 +760,44 @@ fn no_triple_quad_gains_at(
     panic!("{NO_SHARED_MSG} (_quad_gains_at)");
 }
 
+/// The refusal all four of slice AF's cells share.
+///
+/// **AND THE DEFAULT THAT IS TEMPTING HERE IS `None`, TWICE, WHICH IS THE DANGEROUS ANSWER.**
+/// `sensed_cap` and `windup_tau` BOTH return `None` at rung 74 — it is their whole body — so a
+/// rung-40..73 object answering `None` would agree with rung 74 on every input any suite reaches
+/// and no value gate anywhere could see the slot was wrong. That is [`NO_TRIPLE`]'s stated reason
+/// in its sharpest form yet: the right answer at the wrong rung, twice over, and it is exactly
+/// the trap slice AD recorded for `reference` returning `req`.
+const NO_DEMAND_MSG: &str = "this name is RUNG 74's and does not exist below it: a rung-40..73 \
+                             object carries its fuel-side legs in the CLIP coordinate, so there \
+                             is no unfloored cap to solve, no sensed cap to read, no tracking \
+                             clock to declare and no coordinate to select. Answering `None` -- \
+                             which is rung 74's OWN body for two of these four -- would agree \
+                             with rung 74 on every input the suites reach, which is exactly the \
+                             claim no value gate could see.";
+
+#[allow(clippy::too_many_arguments)]
+fn no_triple_cap_fuel(
+    _: &FuelTransientCore, _: &FlightCondition, _: f64, _: f64, _: f64,
+    _: Option<&AccelSchedule>, _: Option<&Floor>, _: Option<f64>,
+) -> Result<f64, Abort> {
+    panic!("{NO_DEMAND_MSG} (_cap_fuel)");
+}
+
+fn no_triple_sensed_cap(
+    _: &FuelTransientCore, _: &FlightCondition, _: f64, _: f64, _: &AccelSchedule, _: Option<f64>,
+) -> Result<Option<f64>, Abort> {
+    panic!("{NO_DEMAND_MSG} (_sensed_cap)");
+}
+
+fn no_triple_windup_tau(_: &TwoSpoolTransientCore) -> Option<f64> {
+    panic!("{NO_DEMAND_MSG} (_windup_tau)");
+}
+
+fn no_triple_with_coord(_: &TwoSpoolTransientCore, _: &'static str) -> &'static str {
+    panic!("{NO_DEMAND_MSG} (_with_coord)");
+}
+
 fn no_triple_with_ref(_: &TwoSpoolTransientCore, _: Option<&'static str>) -> Option<&'static str> {
     panic!("_with_ref is RUNG 69's and does not exist below it: a rung-40..68 object has no             REFERENCE to select, and answering `None` would be a claim no value gate could see             because it agrees with the truth on exactly the machines those suites build.");
 }
@@ -717,6 +849,16 @@ impl TwoSpoolTransientCore {
     /// so the only public way to reach this is the guard.
     pub fn with_ref(&self, r: Option<&'static str>) -> Option<&'static str> {
         (self.triple_hooks.with_ref)(self, r)
+    }
+
+    /// Rung **74**'s `_with_coord` setter, **through the virtual table** — sets the coordinate and
+    /// hands back what it displaced.
+    ///
+    /// [`with_ref`](Self::with_ref)'s note, verbatim: the only public way to reach this is
+    /// [`CoordScope::set`](crate::demand_coordinate::CoordScope::set), because a set without a
+    /// matching restore is the leak Python's `finally` exists to prevent.
+    pub fn with_coord(&self, coord: &'static str) -> &'static str {
+        (self.triple_hooks.with_coord)(self, coord)
     }
 }
 
@@ -876,6 +1018,12 @@ pub const R68_TRIPLE: TripleHooks = TripleHooks {
     // AND SLICE AE STEP 2's ADDED CELL — the FOURTH name of that family, arriving at rung 72
     // as well. Fourth use of the same precedent.
     quad_gains_at: no_triple_quad_gains_at,
+    // AND SLICE AF's FOUR — all four names arrive at rung 74. FIFTH use of the same precedent,
+    // and the widest single arrival the table has had.
+    cap_fuel: no_triple_cap_fuel,
+    sensed_cap: no_triple_sensed_cap,
+    windup_tau: no_triple_windup_tau,
+    with_coord: no_triple_with_coord,
 };
 
 // ---------------------------------------------------------------------------------------------

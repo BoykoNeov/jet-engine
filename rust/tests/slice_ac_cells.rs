@@ -377,8 +377,15 @@ fn the_triple_laws_chain_is_three_links_and_rung70_breaks_the_last() {
 /// lib, so the probe never reached this file or its sibling. The mechanism P1 was testing —
 /// exhaustive literals go loud, `..` spreads and whole-const aliases stay silent — held; only its
 /// count was short, and short for a reason worth more than the number.
+/// **UPDATED AT SLICE AF, THE FIFTH FIRING, AND IT FOUND TWO TRIPWIRES THE PHASE HAD NOT NAMED.**
+/// Rung 74 adds `cap_fuel`, `sensed_cap`, `windup_tau` and `with_coord` — 14 → 18, the widest
+/// single arrival — and the count was measured AD's way (apply, fix the lib, count what is still
+/// red) rather than predicted. It came back **FOUR test-target sites, not two**: this literal, its
+/// sibling in the other cells file, and **two exhaustive DESTRUCTURINGS in `slice_ae_cells.rs` and
+/// `slice_ae_dispatch.rs`** that go `E0027` on the same event. A destructuring is a second,
+/// differently-typed instrument for this job and nothing in the crate called it a tripwire.
 #[test]
-fn the_triple_table_is_still_exactly_fourteen_cells_wide() {
+fn the_triple_table_is_still_exactly_eighteen_cells_wide() {
     let ten = TripleHooks {
         stator_leg: R70_TRIPLE.stator_leg,
         lagged_stator: R70_TRIPLE.lagged_stator,
@@ -398,6 +405,12 @@ fn the_triple_table_is_still_exactly_fourteen_cells_wide() {
         // AND THE FOURTEENTH, ADDED BY SLICE AE STEP 2 — `quad_gains_at`. This literal stopped
         // compiling when it landed, which is the fourth time this tripwire has done its job.
         quad_gains_at: R70_TRIPLE.quad_gains_at,
+        // AND SLICE AF's FOUR — the FIFTH firing, and the widest single arrival the table has
+        // had. `_cap_fuel`, `_sensed_cap`, `_windup_tau` and `_with_coord` all land at rung 74.
+        cap_fuel: R70_TRIPLE.cap_fuel,
+        sensed_cap: R70_TRIPLE.sensed_cap,
+        windup_tau: R70_TRIPLE.windup_tau,
+        with_coord: R70_TRIPLE.with_coord,
     };
     // THESE TWO ASSERTS ARE NOT THE PIN AND MUST NOT BE READ AS ONE. Every field of `ten` was
     // copied FROM the table it is compared against, so they are self-comparisons —

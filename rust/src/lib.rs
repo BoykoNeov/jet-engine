@@ -130,6 +130,7 @@ pub mod combustor;
 pub mod components;
 pub mod cross_loop;
 pub mod cross_split;
+pub mod demand_coordinate;
 pub mod engine;
 pub mod fuel_transient;
 pub mod full_split;

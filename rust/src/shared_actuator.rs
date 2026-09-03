@@ -326,6 +326,13 @@ pub const R72_TRIPLE: TripleHooks = TripleHooks {
     // this file's own. Slice AD measured it a cell and booked it forward as unreachable; § 5.29
     // (iv) refuted that by value, which is why the slot exists at all.
     quad_gains_at: quad_gains_at,
+    // NONE OF SLICE AF's FOUR — all four names arrive at rung 74, so this rung carries
+    // `NO_TRIPLE`'s refusal for each. Reached through rung 68's table, which is where the
+    // panicking slots live.
+    cap_fuel: crate::three_loop::R68_TRIPLE.cap_fuel,
+    sensed_cap: crate::three_loop::R68_TRIPLE.sensed_cap,
+    windup_tau: crate::three_loop::R68_TRIPLE.windup_tau,
+    with_coord: crate::three_loop::R68_TRIPLE.with_coord,
 };
 
 // ---------------------------------------------------------------------------------------------

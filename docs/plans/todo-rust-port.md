@@ -9026,7 +9026,7 @@ by counting.
 | **AC** | 70–71 | `CrossSplitTransient`, `FullSplitTransient` | ~~**1** — `split_gains`~~ → **0. MEASURED at § 5.27 (i): `split_gains` is NOT a cell** — rung 80's same-named body has an incompatible signature and rung 70's own inherited caller `TypeError`s on a rung-80 machine. **This column's predicate is by NAME and never checked substitutability; § 5.27 (x) sweeps all 358 override pairs and finds ONE more (`_legs`, 63→77, booked to AH).** The slice swaps `at_lever`/`integrate_fuel` at EACH rung plus `_triple_laws` at 70 = **5** distinct function pointers, no new field |
 | **AD** | 72 | `SharedActuatorTransient` | **3** — `_reference`, `_rk4_floor_shared`, `_shared_rig` |
 | **AE** | 73 | `AppliedReferenceTransient` | ~~**0**~~ → **1 ADD + 6 SWAPS. MEASURED at § 5.29 (ii)** — `_with_ref` (69 → 73) is a **NAME REUSED**, not an override: identical arity, but the two bodies write DISJOINT FIELDS (`_ref` / `_ref_law`), and rung 69's own inherited caller RAISES on a rung-73 machine (driven, with a passing control). **§ 5.27 (x) saw the pair and cleared it as a harmless RENAME** — its predicate compared signatures; the same sentence clears `_with_coord` (74 → 79), now booked to AF **and** AI. `_quad_gains_at` is a swap here too — **AD's "unreachable today" booking REFUTED BY VALUE** (§ 5.29 (iv)): with the machine held fixed and only the pointer swapped, 32 keys move and 70 vanish, `F_r` going −1.000000000002735 → 0.0 |
-| **AF** | 74 | `DemandCoordinateTransient` | ~~**3**~~ → **4 ADD + 4 SWAPS. MEASURED at § 5.30 (ii)** — the missing fourth ADD is `_with_coord`, which **slice W’s phase-wide census had already named** among *the four names the hand-written column missed*; this row was simply never updated. Its two definers are rungs 74 and 79, so the census **re-derives § 5.29 (v)’s separate-field obligation from the source** instead of inheriting it as a booking. SWAPS are 4 under AC’s convention and 2 under § 5.19 (i)’s (`at_lever`/`_shared_rig` are Rust deletes) — both stated, because the same slice scores differently under the two |
+| **AF** | 74 | `DemandCoordinateTransient` | ~~**3**~~ → **4 ADD + 4 SWAPS. MEASURED at § 5.30 (ii)** — the missing fourth ADD is `_with_coord`, which **slice W’s phase-wide census had already named** among *the four names the hand-written column missed*; this row was simply never updated. Its two definers are rungs 74 and 79, so the census **re-derives § 5.29 (v)’s separate-field obligation from the source** instead of inheriting it as a booking. SWAPS are 4 under AC’s convention and 2 under § 5.19 (i)’s (`at_lever`/`_shared_rig` are Rust deletes) — both stated, because the same slice scores differently under the two. **LANDED at § 5.30.1: 4 ADD + 4 SWAPS, `TripleHooks` 14 → 18.** The width toll was MEASURED AD's way (apply, fix the lib, count what is still red) and came back **7 `src` literals + 4 TEST sites where this plan and the crate's own comments say TWO** — slice AE ships two exhaustive DESTRUCTURINGS (`E0027`) that nothing calls tripwires. |
 | **AG** | 75–76 | `AntiWindupTransient`, `SensedCapTransient` | **0** |
 | **AH** | 77–78 | `StiffnessLedgerTransient`, `ResidualGaugeTransient` | **0** |
 | **AI** | 79–80 | `StateCoordinateTransient`, `SplitWallTransient` | **0** |
@@ -19807,3 +19807,217 @@ question that finds this one. From this slice on, **the instrument-defects secti
 3. An install proof must be independent of what it certifies **by construction** — an
    address-identity comparison against a source the fixture never touches, under an exhaustive
    destructuring so a landed field is a compile error.
+
+#### 5.30.1 SLICE AF step 1 — the four added cells, and **A WIDTH ARRIVAL THAT FIRED FOUR TRIPWIRES WHERE THE PHASE RECORD NAMED TWO, BECAUSE TWO OF THEM ARE A DIFFERENT INSTRUMENT NOBODY HAD CALLED ONE**
+
+`rust/src/demand_coordinate.rs` (rung 74's module, five R74* tables, four added cells, four re-aimed
+bodies, `CoordScope` and the two cap solves), two new carriers on `TwoSpoolTransientCore`,
+`TripleHooks` **14 → 18** with every literal in the crate repaired, and
+`rust/tests/slice_af_cells.rs` (17 gates). **Green on the THIRD run, and the count matters**: run 1
+was 15/17, run 2 reported the SAME 15/17 because the patch meant to fix it **never applied** — its
+own post-patch guard, `"drive(&m" not in t`, is matched by the replacement `forced_release_drive(&m)`
+it was checking for, so the script aborted before writing and the run measured an unedited file.
+Run 3 was 17/17. **That is § (h)'s `PATCH-MISS` defect in a SECOND tool inside the same step**, and
+the pair is the stronger form of the lesson: a patch that does not apply reports as a RESULT, and
+here it reported the previous result exactly, which is the shape that does not prompt a second look.
+The one genuine red was a CONTROL, and it was right — § (e).
+
+**SIZES, for P1's running total:** `demand_coordinate.rs` **685 lines** (237 excluding doc comments
+and blanks) and `slice_af_cells.rs` **876**, against the 1 059-line Python class this slice ports.
+
+##### (a) THE LEADING FINDING — **THE WIDTH TOLL WAS MEASURED, NOT PREDICTED, AND IT CAME BACK FOUR TEST SITES WHERE THE CRATE'S OWN COMMENTS SAY TWO**
+
+Slice AD's recorded rule is that a width prediction can only be measured as *apply, fix the lib,
+count what is still red* — `cargo check --all-targets` stops when the lib fails and never compiles
+a test target, so AD's P1 predicted five `E0063` sites and the landed edit needed seven. **No count
+was pre-registered here**, and the measurement was run AD's way.
+
+| where | kind | named as a tripwire in the crate? |
+|---|---|---|
+| `src`: `NO_TRIPLE`, `R68`…`R73_TRIPLE` | 7 x `E0063` initializer literal | yes, by each table's own comment |
+| `tests/slice_ab_cells.rs:254` | `E0063` initializer literal | **yes** |
+| `tests/slice_ac_cells.rs:382` | `E0063` initializer literal | **yes** |
+| `tests/slice_ae_cells.rs:257` | **`E0027` exhaustive destructuring** | **NO** |
+| `tests/slice_ae_dispatch.rs:412` | **`E0027` exhaustive destructuring** | **NO** |
+
+**A destructuring is a second, differently-typed instrument for the same job, slice AE shipped two
+of them, and nothing in the crate calls them tripwires** — `slice_ae_cells.rs`'s own gate says its
+destructuring *went `E0027` on the step-2 build*, i.e. it describes the firing without ever naming
+the class. AD's sentence, copied verbatim into both AB's and AC's doc comments, says *the two width
+tripwires*, and that count has been stale since slice AE landed. It is § 5.30 (ii)'s own lesson
+turned on the crate: **check the ROW, not just whether the correction exists somewhere.** All four
+are now named as tripwires in the two `_cells` files, and the AE dispatch one gained the four
+`chk(…)` lines its own doc comment's claim (*only this slot differs*) requires — binding four fields
+and dropping them would have made that sentence false for four slots at once.
+
+##### (b) A TYPE THAT NEVER EXISTED, NAMED IN A SHIPPED DOC COMMENT, AND THIS SLICE WAS ABOUT TO GIVE THE NAME A REAL REFERENT
+
+`applied_reference.rs:44` reads *"`cross_split.rs`'s `CoordScope` repeats the reasoning from the
+mirror side"*. `git log -S "CoordScope" -- rust/` returns **exactly one commit — e594e56, the one
+that wrote that sentence.** The name was invented in prose. The type it meant is `cross_split.rs`'s
+`GovScope`, and **the substance is wrong too**: `GovScope`'s own doc says it writes its field
+DIRECTLY and not through a cell, *"the opposite of `RefScope`'s decision"* — so the sentence
+credited it with REPEATING a decision it documents as inverting.
+
+This is § 5.30 (i)'s finding one slice on — *verify the name owns what the sentence says it owns* —
+and it was urgent rather than cosmetic: **step 1 introduces the crate's first real `CoordScope`**, so
+the stale reference would have silently resolved to a live type and told the next reader a wrong
+story about it. Corrected at its source, with the measurement in the comment.
+
+##### (c) THE STEP LIST ASSIGNED TWO CELLS TWICE, AND THE BOUNDARY IS RE-CUT WITH A REASON
+
+§ 5.30 (v) gives step 1 *"the four ADD cells"* and step 2 *"`_cap_free` / `_cap_gov` / `_cap_fuel` /
+`_sensed_cap`"* — `_cap_fuel` and `_sensed_cap` are in both. **That is § 5.30's own recurring defect
+(two claims individually plausible and jointly impossible) a third time inside the same section**,
+and it is recorded rather than silently resolved.
+
+All four ADD cells land at step 1, with `cap_free` / `cap_gov` pulled forward. The deciding argument
+is § (a): a field added to `TripleHooks` costs eleven repairs, so splitting the arrival 14 → 17 → 18
+would pay that toll twice and measure nothing in between — and the alternative, a `cap_fuel` field
+pointing at a `todo!()`, is a live panic sitting in a `const` table for a whole step. **Step 2 keeps
+the sentence's second half**: `_applied_demand`, `_demand_target`, `_demand_reference`,
+`_demand_tau`, `_demand_authority`, `_demand_laws`.
+
+The file is `tests/slice_af_cells.rs` and not the `slice_af_smoke.rs` the step list names: a smoke
+file runs READERS end to end (`slice_ab_smoke.rs` is the pattern) and this step has none — rung 74's
+six readers land at step 4.
+
+**AND THE SIX-STEP PRICE STILL STANDS — stated here so the last step settles P-for-six against a
+boundary that is on record as having moved.** § 5.30 (v) prices the slice at six and calls the count
+itself a prediction; step 1 has just absorbed four names from step 2's list, so the question is live.
+Six holds: step 2 keeps six methods of its own (`_applied_demand`, `_demand_target`,
+`_demand_reference`, `_demand_tau`, `_demand_authority`, `_demand_laws`), of which
+`_demand_reference` carries rung 73's float-identity branch into this coordinate and `_demand_tau`
+carries the ARGUMENT SWAP § (i) names — a full step by content, not a remainder. **If the last step
+finds five, that is the re-cut and not a miss**, and this sentence is what makes the two
+distinguishable.
+
+##### (d) THE REFUSAL SPLIT — the one thing the inherited habit gets wrong
+
+Python fires ONE assert above the entry test and FOUR below it (`engine.py:17759`–`17787`). **Slice
+AE's rung-73 body has BOTH its asserts above** (probe L5 measured it), so *hoist the refusals* is the
+habit this port arrives with, and here it is wrong in both directions:
+
+* hoisting all five raises on arms Python passes — a `clip` machine with no governor clock is rung 73
+  and legal, and the `share_law == "max"` assert would reject a legal `sum` run;
+* sinking all five skips the coordinate refusal on exactly the `clip` arm, where an undeclared
+  coordinate then dispatches quietly into rung 73.
+
+Both are silent, so the two halves are gated separately: the coordinate refusal is driven on a BARE
+arming (no governor clock, no fuel leg — the arming the body early-returns on, so a sunk refusal
+could not fire), and each of the other four is driven twice, changing only the coordinate, with the
+`clip` twin asserting that the message names **rung-72** and not rung-74.
+
+**And the demand arm is `unimplemented!` until step 3, deliberately.** The most dangerous thing this
+step could ship is a demand arm that quietly delegates to the parent: it would pass every reduce gate
+in the crate, because **the reduce IS *rung 74 under `clip` is rung 73***. So the arm panics by name
+and a gate asserts a fully legal demand call REACHES it.
+
+**All 7 of the 9 shipped `rung-74:` messages this step ports are gated here** — the cap abort, the
+floor, and the five in `integrate_fuel` — where § 5.30 (iv) measured the Python suite reading 2
+needles across all 9. (The other two, `ic_order4`'s permutation check and the joint-IC convergence,
+are step 3's march.) The 9-of-9-tagged count was re-derived by AST enumeration rather than taken
+from the pre-flight's sentence.
+
+##### (e) THE ONE RED WAS A CONTROL, AND THE STRONG FORM CAUGHT ITS OWN DRIVER
+
+The first driver called `integrate_fuel` directly with a hand-written `|_s| 1.0` schedule —
+`rung73.rs`'s spelling, which uses it only to trigger refusals. The `clip` control, which asserts a
+**clean return** rather than an absent needle, went red with
+
+> `rung-43 fuel closure does not bracket at nu=(1.0000,1.0000), mdot_fuel=1.00000 — off the modeled
+> speed-line region.`
+
+One kilogram per second is off the modelled speed line, so the control was measuring an unrelated
+abort. **That is slice AE's own recorded reason for asserting the empty message rather than a missing
+substring, and here the strong form caught the test's own driver**: the weaker spelling would have
+passed on a march that never ran. The refusals now go through the real march entry, whose ramp
+supplies the schedule the plant is matched to; the one refusal a march cannot reach (`s_off`, which
+neither `StatorLeg` nor `MarchScope` carries — itself rung 73's structural guard) keeps the direct
+call, where the crude schedule is provably never consulted because every refusal precedes the first
+derivative.
+
+##### (f) TWO CARRIERS ADDED, AND ONLY ONE OF THEM IS A BUILDER PROPERTY
+
+`lag_coord` and `ic_cap` join the core. **Neither takes slice AE's class-default gate, and for
+opposite reasons, both measured:**
+
+* **`lag_coord`'s class default IS the reduce arm.** Python declares `_lag_coord = "clip"` and the
+  core's constructor already writes `"clip"`, so there is nothing for the builder to overwrite — and
+  a gate asserting the builder SET it would pass for the reason that nothing writes the field. Slice
+  AE's *a dead field is a claim* lesson, mirrored.
+* **`ic_cap` is NOT dead, which the pre-flight had left unchecked.** One grep settles it:
+  `engine.py:17941` is `for its in range(1, self._ic_cap + 1)` inside this rung's own march, and the
+  only writer in the ladder is rung 75's `_with_ic_cap` at `19022`. So it is a `Cell` and not a
+  `const` — the reader is here, the writer is one rung up — and it carries no value gate at this
+  rung, stated as a claim.
+
+What IS a builder property here is **rung 73's `_ref_law` overwrite, which is INHERITED**: Python's
+class attribute reaches rung 74 through the subclass, while the core's constructor writes `"sched"`
+for the whole family. A rung-74 builder that dropped it hands back a machine that passes its own
+refusals, marches rung 72's reference and reports rung 74 — slice AE step 1's second finding,
+arriving again in the one place a new cascade builder would forget it. Gated, with rung 72's own
+default as the control.
+
+##### (g) `_shared_rig`'s CARRY IS A MEASURED NO-OP, WITH A POSITIVE CONTROL THAT SEPARATES THE ANSWERS
+
+Rung 72's body reaches its sibling through `self.at_lever(…)`, which on a rung-74 receiver has
+already copied both laws — slice AE's probe-L2 argument, one knob over. Rather than assert it, the
+gate calls the **parent's** `shared_rig` directly on a rung-74 receiver and compares; and because a
+bare agreement is exactly the shape that passes for a broken instrument, it adds the arm that
+separates them: the same parent cell on a **rung-73** receiver LOSES the coordinate to the class
+default. Pre-registered: **this swap has no value break**, so step 5 must not hunt one.
+
+##### (h) MUTATION SWEEP — this step's own source
+
+**16 mutations of this step's own source, 13 KILLED and 3 SURVIVED — and the sweep is the only
+instrument that found § (a)'s companion finding.**
+
+| survivor | predicted | why it survives |
+|---|---|---|
+| `CoordScope::drop` writes the field DIRECTLY, bypassing the cell | SURVIVE | at rung 74 the cell and the direct write are the same field; only rung 79 separates them, and that is slice AI's gate to write |
+| `_cap_fuel`'s `min` fold reversed | SURVIVE | only ONE cap is ever armed at this step, so the fold has nothing to order — booked as a known blind spot for step 2 |
+| the dispatch forwards `lim` unchanged, dropping the resolved clocks | **KILL** | **the prediction was wrong and the port is right**: rung 73 passes `lim` straight through and rung 72 re-resolves both with the identical `or_else`, so the two spellings agree on every input. **A survivor is a question, not a verdict** — and the code comment defending the forwarding claimed the parent *"would march a different plant"*, which is false and is corrected |
+
+**AND ONE KILLED MUTATION IS THIS STEP'S SHARPEST FINDING, because it did not kill on the first
+attempt.** `CAP_GROW = 1.0 / 0.85` — `_sched_fuel`'s own shrink, the likeliest wrong neighbour —
+**SURVIVED all 17 green gates.** The bracket-walk gate logs every abscissa `cap_free` probes and
+asserts the ratio off that log, and its own doc comment said this measured the constant *"through
+the behaviour rather than restating it"*. It asserted `log[k] == prev * CAP_GROW`: **the reference
+came from the code under test.** § 5.30 (viii) item 1 — *what supplies the value under test?* —
+applies to a gate's REFERENCE and not only to its subject, and naming the item in the pre-flight did
+not discharge it while writing the gate. Repaired against Python's literal transcribed from
+`engine.py:17567`, plus a compounded-magnitude bar: `(1/0.9)^60 = 557.4` against
+`(1/0.85)^60 = 1.7e4` and `(1/0.95)^60 = 21.7`, because the one-sided *"> 500x"* line the gate
+already carried passes **every** growing constant. Re-run against the repaired gate: KILLED.
+
+**Two mispredictions were the MUTATION's fault, not the gate's**, and both are instrument defects
+of the kind § 5.30 (vii) exists for:
+
+* one was **mislabelled** — it deleted the coordinate refusal where the label said *sunk below the
+  entry test*, so it tested nothing about placement. Re-run properly, by splicing the assert's real
+  text out of the file and moving it rather than retyping it, it was KILLED;
+* one **never applied at all** — a `PATCH-MISS` from retyping a message containing a line
+  continuation. **A mutation that does not apply reports as a misprediction and reads like a
+  finding.** The sweep now prints the match count, and zero is treated as an instrument failure
+  rather than a result.
+
+##### (i) THE FULL GATE
+
+`cargo test`, **exit 0** — which is the whole claim, because cargo returns non-zero if any target
+reports a failure. **The grand totals are recorded as UNMEASURED and not typed**: the capture was a
+`tail -25` window and the summing lines fell outside it, exactly as at § 5.29.1. The gate is not
+re-run to manufacture a number ([[never-run-the-gate-for-timing]]) — the last targets visible in the
+window are `two_spool_oracle` (2 passed) and `two_spool_transient_oracle` (4 passed), both `ok`, and
+`slice_af_cells` is 17 passed / 0 failed from its own run.
+
+##### (j) WHAT STEP 2 INHERITS
+
+* the demand laws (`_applied_demand`, `_demand_target`, `_demand_reference`, `_demand_tau`,
+  `_demand_authority`, `_demand_laws`) — § (c)'s re-cut boundary;
+* `_demand_tau`'s **ARGUMENT SWAP**, which rung 74's own source calls the trap: attack in clip
+  coordinates is `required > g`, which in demand coordinates is `cap < w`, so a port keeping the
+  shipped argument order selects `tau_rel` on ATTACK — a 3x clock error in the direction that SLOWS
+  protection, and one that would have read as a finding;
+* `_cap_fuel`'s `min` fold, whose tie and NaN behaviour no gate at this step reaches (only one cap is
+  ever armed here) — booked as a known blind spot rather than left to be discovered.
