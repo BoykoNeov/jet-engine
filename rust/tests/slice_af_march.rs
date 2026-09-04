@@ -617,6 +617,11 @@ fn the_windup_hook_is_dispatched_and_disarms_itself_on_the_leg_that_holds() {
     let injected = |tau_t: Option<f64>| -> ScheduledStatorCore {
         TAU_T.with(|c| c.set(tau_t));
         let m = with_triple(&marching(LAG_COORD_DEMAND), &arm(), &INJ);
+        // A PLUMBING SANITY CHECK AND **NOT** AN INSTALL PROOF: the fixture handed `&INJ` to the
+        // builder on the line above, so this compares an address against its own source, which is
+        // § 5.30 (viii) item 3's shape. It is kept because a silently-dropped table would waste a
+        // debugging hour, and it is labelled so the next reader does not count it as evidence —
+        // what this gate actually rests on is the BEHAVIOURAL difference below.
         assert!(std::ptr::eq(m.fuel.inner.triple_hooks, &INJ), "the injected table is installed");
         m
     };
@@ -711,10 +716,16 @@ fn the_widened_readers_answer_on_a_rung_74_trajectory() {
     let PointExtra::Demand { g, required, b, .. } = traj[NPTS - 1].extra else { panic!() };
     assert!(g != 0.0 && required != 0.0 && b != 0.0);
 
-    // **`v_at_point` IS NOT VALUE-DISCRIMINATING ON THIS ARM AND THAT IS BOOKED.** Its un-widened
-    // form falls back to `0.0`, and the stator sits within `1.8e-15` of its design setting for
-    // the whole march, so no assertion on `v` can separate the two. The site is covered
-    // structurally (it is in the widened set) and by the crate's other trajectories, not here.
+    // **`v_at_point` IS VALUE-GATED HERE, AND THE COMMENT THAT SAID OTHERWISE WAS FALSE.** It
+    // read *not value-discriminating on this arm — the stator sits within `1.8e-15` of its design
+    // setting, so no assertion on `v` can separate the two*, and it was ASSERTED rather than
+    // measured. Typing the mutation (the widened arm replaced by a `0.0` fallback, the way M20 was
+    // finally typed) KILLS: the stator is not AT its design setting, it is at
+    // `-3.544154491931811e-17`, and an exact comparison sees that as readily as it sees `1e-2`.
+    //
+    // That is step 1 § (h)'s recorded lesson landing on this file — *a survivor defended by a code
+    // comment that was FALSE, and the comment shipped* — except the survivor here was imaginary
+    // too. **A blindness is a claim, and it needs a mutation like any other.**
     for p in traj.iter() {
         let PointExtra::Demand { v, .. } = p.extra else { panic!() };
         assert_eq!(turbojet::three_loop::v_at_point(p), v);

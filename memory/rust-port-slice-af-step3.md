@@ -53,6 +53,23 @@ variant's DOMAIN is, at each arm, not just whether the key is present.**
   different code path from the reader — plus an assertion that the compared values are non-zero.
   [[rust-port-slice-t-step1]]'s exact-zero class met FORWARDS instead of after the fact.
 
+## A BOOKED BLINDNESS THAT WAS FALSE — and it shipped in the first commit
+
+The reader gate carried a comment saying one widened reader *could not* be value-gated on this
+arm, because the actuator it reads sits within `1.8e-15` of its design setting. **It was asserted,
+not measured, and it was wrong.** Typed as a mutation — the widened arm replaced by a `0.0`
+fallback — it is KILLED, at `v = -3.544154491931811e-17`: an exact comparison sees a value that
+small as readily as it sees `1e-2`, and "essentially zero" is not zero.
+
+**A claimed blind spot is a claim, and it needs a mutation like any other.** Two of the three
+gate defects this step already repaired were the same shape (an `is_finite()` a zero satisfies; a
+max over a trajectory that could not isolate a derivative term), which makes it the step's own
+recurring defect rather than an incident. It is also step 1's recorded lesson with the survivor
+imaginary too: there, a CORRECT survivor was defended by a FALSE comment and the comment shipped;
+here the comment shipped and there was no survivor at all.
+
+Caught by a reviewer asking *is that measured?* about a sentence, one commit after it landed.
+
 ## Two mispredictions that were the SWEEP working, and the fact behind them
 
 Two mutations predicted KILL survived and were RIGHT to: both were typed on one of the two

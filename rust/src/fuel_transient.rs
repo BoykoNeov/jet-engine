@@ -916,13 +916,21 @@ pub struct FuelPoint {
 }
 
 impl FuelPoint {
-    /// How many keys Python's dict for this route carries — 14, 16, 20 or 21.
+    /// How many keys Python's dict for this route carries — **14, 16, 20, 21, 24, 30 or 35.**
     ///
-    /// **THE 20/21 PAIR IS EMITTED RATHER THAN TYPED.** Rung 66's dict is the fourteen plus `g`,
-    /// `required`, `b`, `b_cmd`, `ic_iters`, `ic_res`; rung 67's is that plus `ic_damp`.
-    /// [[rust-port-guessed-census-bars]] is five typed count bars that were every one wrong, so
-    /// `dump_slice_z.py` re-reads both counts off the live dict at step 4 rather than trusting
-    /// this line.
+    /// **EVERY ONE OF THESE IS EMITTED RATHER THAN TYPED**, and the sentence used to name only
+    /// four of them: it said *14, 16, 20 or 21* through slices AA, AD and AF, three widenings
+    /// after it stopped being true. That is step 1 § (a)'s stale tripwire count and step 2 §
+    /// (b)'s stale module header a THIRD time, in the doc comment of the function each of those
+    /// slices edited — *check the ROW, not just whether the correction exists somewhere.*
+    ///
+    /// Rung 66's dict is the fourteen plus `g`, `required`, `b`, `b_cmd`, `ic_iters`, `ic_res`;
+    /// rung 67's is that plus `ic_damp`; rung 68's adds `v`/`v_cmd`/`v_regime`/`ic_order`; rung
+    /// 72's splits the two clips and the two requirements per leg and adds `authority` and
+    /// `share_law`; and rung 74's adds the two demand STATES, their two unfloored set points and
+    /// the coordinate tag. [[rust-port-guessed-census-bars]] is five typed count bars that were
+    /// every one wrong, so each number here is read off the live dict — `dump_slice_z.py` at slice
+    /// Z's step 4, and `len(traj[0])` on the shipped march for the 35.
     pub fn key_count(&self) -> usize {
         match self.extra {
             PointExtra::None => 14,

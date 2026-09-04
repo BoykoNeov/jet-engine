@@ -20367,7 +20367,7 @@ step's shape: **two instruments, because one is structurally blind to the larger
 (`sorted(traj[0])` is 35 names, 14 of them the base) rather than counted off the Rust struct —
 [[rust-port-guessed-census-bars]]'s discipline, and the same 35 the point gates assert.
 
-##### (f) THE MUTATION SWEEP — **26 mutations over all THREE slice-AF binaries, 16 KILLED, and FOUR MISPREDICTIONS OF WHICH TWO WERE GATE DEFECTS AND TWO WERE REACHABILITY FACTS**
+##### (f) THE MUTATION SWEEP — **27 mutations over all THREE slice-AF binaries, 17 KILLED, and FOUR MISPREDICTIONS OF WHICH TWO WERE GATE DEFECTS AND TWO WERE REACHABILITY FACTS**
 
 Pre-registered before the gates were written, with a proof typed for every predicted SURVIVE
 (step 2 § (c)), dry-run for its substitution count first, and scored over `slice_af_cells`,
@@ -20401,6 +20401,7 @@ Pre-registered before the gates were written, with a proof typed for every predi
 | M22 | `riding`'s `Demand` arm removed | KILL | **KILL** | the 66-point set |
 | M23 | `cross_extra` WIDENED to admit rung 74 | KILL | **KILL** | the refusal gate |
 | M24 | `key_count` reports the parent's 30 | KILL | **KILL** | the 35-key row |
+| M25 | `v_at_point`'s `Demand` arm replaced by a `0.0` fallback | — | **KILL** | added AFTER the sweep, § (g) 7 |
 
 **M17 and M18 are the sweep working, not failing.** Both were typed on the fuel leg, and both are
 arithmetically inert there for reasons this step then measured: `cap_fuel > mf_sched` at **0 of
@@ -20444,6 +20445,19 @@ implied.
    Python's — step 2 § (g)'s *a gate's exit code does not survive a pipe* landing on a different
    command one step later. A sweep that mutates the working tree must write to a LOG, never into a
    pipe that can close early.
+7. **A BOOKED BLINDNESS THAT WAS FALSE, AND IT SHIPPED IN THE FIRST COMMIT.** The reader gate
+   carried a comment saying `v_at_point` could not be value-gated on this arm, because the stator
+   sits within `1.8e-15` of its design setting. **It was asserted, not measured.** Typed as a
+   mutation (M25 above, the widened arm replaced by a `0.0` fallback) it is KILLED at
+   `v = -3.544154491931811e-17` — an exact comparison sees that as readily as it sees `1e-2`.
+   This is step 1 § (h)'s lesson — *a survivor defended by a code comment that was FALSE, and the
+   comment shipped* — with the survivor imaginary as well: **a claimed blind spot is a claim, and
+   it needs a mutation like any other.** Two of the three claims § (g) 1 and 2 repaired were of
+   this shape too, which makes it the step's own recurring defect rather than an incident.
+8. **A `ptr::eq` install check whose reference is the fixture's own argument.** § 5.30 (viii)
+   item 3's forbidden shape, in the windup gate. It is not load-bearing — the gate rests on the
+   behavioural difference — so it is LABELLED as a plumbing check rather than removed, so the next
+   reader does not count it as an install proof.
 
 ##### (h) THE FULL GATE
 
