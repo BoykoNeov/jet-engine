@@ -19,14 +19,17 @@
 //! | swap | `at_lever` | `LeverHooks::at_lever` | [`R74`] |
 //! | swap | `integrate_fuel` | `FuelTransientHooks::integrate_fuel` | [`R74_FUEL`] |
 //!
-//! **`TripleHooks` GOES 14 → 18 HERE — the widest single arrival the table has had**, and the two
-//! width tripwires in `tests/slice_ab_cells.rs` and `tests/slice_ac_cells.rs` both fired on the
-//! first compile, which is the mechanism working rather than a gap. No count was pre-registered
-//! for it: slice AD's P1 predicted five `E0063` sites and needed seven, because
-//! `cargo check --all-targets` stops when the lib fails and never reaches the test targets where
-//! two of the tripwires live. A width prediction can only be measured as *apply, fix the lib,
-//! count what is still red* — so it is reported below as what it was, not as what it was guessed
-//! to be.
+//! **`TripleHooks` GOES 14 → 18 HERE — the widest single arrival the table has had**, and it fired
+//! **FOUR** test-target tripwires, not the two this very paragraph claimed until slice AF step 2
+//! read it back: two `E0063` initializer literals (`tests/slice_ab_cells.rs`,
+//! `tests/slice_ac_cells.rs`) and two `E0027` exhaustive destructurings (`tests/slice_ae_cells.rs`,
+//! `tests/slice_ae_dispatch.rs`). Step 1 measured all four and renamed them in the two `_cells`
+//! files; **this header — the one that reports the finding — kept the stale two.** That is
+//! § 5.30 (ii)'s own lesson landing on the file that states it: check the ROW, not just whether
+//! the correction exists somewhere. No count was pre-registered: slice AD's P1 predicted five
+//! `E0063` sites and needed seven, because `cargo check --all-targets` stops when the lib fails
+//! and never reaches the test targets. A width prediction can only be measured as *apply, fix the
+//! lib, count what is still red*.
 //!
 //! # § 5.30 (v)'s STEP LIST ASSIGNED TWO OF THESE CELLS TWICE, AND THE BOUNDARY IS RE-CUT HERE
 //!
@@ -95,14 +98,18 @@ use crate::fuel_transient::{
     AccelSchedule, AsymmetricLag, Floor, FuelLimiters, FuelPoint, FuelTransientCore,
     FuelTransientHooks,
 };
+use crate::applied_reference::REF_LAW_APPLIED;
+use crate::fuel_transient::Authority;
 use crate::gas::Abort;
+use crate::limited_bleed::Regime;
 use crate::map::ComponentMap;
 use crate::shared_actuator::SharedRigArm;
 use crate::spool::{try_illinois, ILLINOIS_MAXIT};
 use crate::stator_transient::{
     ScheduledStatorCore, ScheduledStatorTransient, StatorTransientHooks,
 };
-use crate::three_loop::TripleHooks;
+use crate::three_loop::{closer_b, closer_v, LegRegime, TripleHooks};
+use crate::two_spool_transient::{MarchedBleed, MarchedStator};
 use crate::two_spool::TwoSpoolEngine;
 use crate::two_spool_transient::{TwoSpoolTransientCore, TwoSpoolTransientHooks};
 
@@ -530,6 +537,297 @@ fn r74_cap_fuel(
     Ok(caps.into_iter()
         .reduce(|x, y| if y < x { y } else { x })
         .unwrap_or(f64::INFINITY))
+}
+
+// ---------------------------------------------------------------------------------------------
+// THE DEMAND LAWS — § 1 IN THE NEW COORDINATE, AND SIX BODIES THAT ARE **NOT** CELLS
+// ---------------------------------------------------------------------------------------------
+//
+// An AST census over all 58 `engine.py` classes settles the shape of this step before a line of it
+// is written: `_applied_demand`, `_demand_target`, `_demand_reference`, `_demand_tau`,
+// `_demand_authority` and `_demand_laws` have **exactly one definer each** — this class. So step 2
+// adds **no** `TripleHooks` field and pays **none** of step 1's width toll, and a table slot for
+// any of the six would be a mechanism with no reader (`_with_share`'s case). The only DISPATCHED
+// call inside this section is `_cap_fuel`, which step 1 already wired and which has three definers
+// (rungs 74, 78 and 79).
+//
+// Rung 72's siblings score the same way and are plain functions for the same reason:
+// `_applied_clip`, `_authority` and `_quad_laws` are single-definer too.
+
+/// RUNG 74's `_applied_demand` — **MIN-SELECT in the coordinate a fuel control actually uses.**
+///
+/// The schedule is just another input and the LOWEST demand wins. Identical in VALUE to
+/// `mf_sched - max(0, gf, gr)` and **not** identical as a plant, which is § 3.
+///
+/// # THE `min` IS PYTHON's, NOT `f64::min` — [`r74_cap_fuel`]'s rule at this rung's other fold
+///
+/// `min(mf_sched, wf, wr)` folds left from `mf_sched` and keeps the FIRST of equals; it has no NaN
+/// rule, where `f64::min` returns the non-NaN operand. Spelled as the fold so the tie behaviour is
+/// the source's, and the ARGUMENT ORDER is load-bearing for the same reason: `mf_sched` seeds the
+/// fold, so a three-way tie returns `mf_sched` and not `wf`.
+pub fn applied_demand(mf_sched: f64, wf: f64, wr: f64) -> f64 {
+    let mut m = mf_sched;
+    if wf < m {
+        m = wf;
+    }
+    if wr < m {
+        m = wr;
+    }
+    m
+}
+
+/// RUNG 74's `_demand_target` — **THE LATCH, and the only thing `demand-latched` changes.**
+///
+/// Capping the target at the schedule is exactly rung 52's `max(0, ·)` seen from the other
+/// coordinate.
+///
+/// # A THREE-VALUED TAG READ BY A TWO-VALUED TEST — the module header's measurement, as code
+///
+/// [`LAG_COORD_CLIP`] and [`LAG_COORD_DEMAND`] are indistinguishable here **by construction**, and
+/// [`LAG_COORD_LATCHED`] is distinguishable only where `cap > mf_sched`. § 5.30 (i) measured that
+/// region EMPTY on the one path through [`TripleHooks::with_coord`] (0 of 1 040 and 0 of 624
+/// calls) and NON-empty inside `_coord_march` (120 of 2 730 and 139 of 2 732, max ratio
+/// **1.3039** — which independently reproduces the class docstring's own *`1.303 * mf_sched` at
+/// the start of the ramp*).
+///
+/// **So a gate on this line that runs only on the interior-filter arm is VOID and a mutation sweep
+/// will report it green.** `slice_af_laws.rs` drives the truth table on hand-picked floats, where
+/// `cap > mf_sched` is reachable by construction rather than by luck.
+pub fn demand_target(t: &TwoSpoolTransientCore, cap: f64, mf_sched: f64) -> f64 {
+    if t.lag_coord.get() != LAG_COORD_LATCHED {
+        return cap;
+    }
+    // Python's `min(mf_sched, cap)`: the fold seeds at `mf_sched`, so a tie returns `mf_sched`.
+    if cap < mf_sched {
+        cap
+    } else {
+        mf_sched
+    }
+}
+
+/// RUNG 74's `_demand_reference` — **RUNG 73's hook, TERM FOR TERM, in demand coordinates.**
+///
+/// ```text
+/// req_applied = g_own + req_sched - max(gf, gr)   <=>   w = w_own + cap - mf_app
+/// ```
+///
+/// # THE FLOAT-IDENTITY BRANCH IS LOAD-BEARING FOR RUNG 73's OWN REASON
+///
+/// When the leg HOLDS, `mf_app == w_own` and this returns `cap` ITSELF, so the authoritative leg's
+/// diagonal carries no cancellation and rung 73's `M3`-entry-for-entry claim survives the change of
+/// coordinate. `w_own + cap - w_own` is not `cap` in binary floating point — rung 73 measured the
+/// `4e-11` it would otherwise put on that diagonal. **Do not epsilonize the `==`.**
+///
+/// # THIS IS NOT A DISPATCH, AND THE CENSUS IS WHY
+///
+/// Rung 73's `_reference` IS a cell (two definers) and goes through the table. `_demand_reference`
+/// has ONE definer, so `self._demand_reference(…)` can only ever reach this body — and it reads
+/// `_ref_law` DIRECTLY rather than delegating to `R73_TRIPLE`'s `reference`, whose signature is the
+/// clip coordinate's. A port that routed this through the table would be running rung 73's
+/// `_applied_clip` on demands.
+///
+/// **PYTHON's ASSOCIATION IS PINNED**: `(w_own + cap) - mf_app`, never `cap + (w_own - mf_app)`.
+/// Rung 73's probe L4 measured the two disagreeing at `1e16`-scale arguments.
+pub fn demand_reference(t: &TwoSpoolTransientCore, cap: f64, w_own: f64, mf_app: f64) -> f64 {
+    if t.ref_law.get() != REF_LAW_APPLIED {
+        return cap;
+    }
+    if mf_app == w_own {
+        return cap;
+    }
+    (w_own + cap) - mf_app
+}
+
+/// RUNG 74's `_demand_tau` — **RUNG 52's asymmetric lag, ARGUMENTS SWAPPED, and the swap is the
+/// whole point.**
+///
+/// Attack in clip coordinates is `required > g`. Substituting `w = mf_sched - g` and
+/// `cap = mf_sched - required` gives `required > g  <=>  cap < w`, so the shipped call is
+/// `lag.tau(w, cap)` with the DEMAND in the `required` slot and the CAP in the `g` slot.
+///
+/// # THE TRAP, NAMED BY THE SOURCE ITSELF
+///
+/// A port that kept the shipped argument ORDER — `lag.tau(cap, w)` — selects
+/// [`tau_rel`](AsymmetricLag::tau_rel) on ATTACK. On this family's rig `tau_rel = 3 * tau_att`, so
+/// it is a **3x clock error in the direction that SLOWS protection**, and it would have read as a
+/// finding (*the demand coordinate is less protective*) rather than as a bug. It is gated
+/// two-sided on a known-attack and a known-release point, against the LITERAL constants the test
+/// sets — never against [`AsymmetricLag::tau`], which is the code under test.
+pub fn demand_tau(lag: &AsymmetricLag, cap: f64, w: f64) -> f64 {
+    lag.tau(w, cap)
+}
+
+/// The `tol` of [`demand_authority`] — Python's `tol: float = 1e-12` default, named so the gate can
+/// straddle it rather than restate it.
+pub const DEMAND_AUTH_TOL: f64 = 1e-12;
+
+/// RUNG 74's `_demand_authority` — **rung 72's label in the new coordinate, and BOTH senses
+/// invert.**
+///
+/// Who holds the actuator is who DEMANDS LEAST, and `dormant` is now a statement about the
+/// SCHEDULE (neither leg is below it) rather than about a state sitting on a stop — which is § 3's
+/// finding in one method.
+///
+/// # IT MAY NOT DELEGATE TO RUNG 72's `authority`, AND THE DIFF IS TWO LINES, NOT ONE
+///
+/// | | rung 72, on clips | rung 74, on demands |
+/// |---|---|---|
+/// | dormant | `gf <= tol && gr <= tol` | `wf >= mf_sched - tol && wr >= mf_sched - tol` |
+/// | holder | `fuel` iff `gf > gr` | `fuel` iff `wf < wr` |
+///
+/// The tie test is the only line the two share. **The BRANCH ORDER is the content**: `dormant` is
+/// tested FIRST, so a point that is both tied and at/above the schedule returns `dormant` and not
+/// `tie` — reversing the two is a silent relabel that no aggregate over a march would show.
+pub fn demand_authority(wf: f64, wr: f64, mf_sched: f64) -> Authority {
+    if wf >= mf_sched - DEMAND_AUTH_TOL && wr >= mf_sched - DEMAND_AUTH_TOL {
+        return Authority::Dormant;
+    }
+    if (wf - wr).abs() <= DEMAND_AUTH_TOL {
+        return Authority::Tie;
+    }
+    if wf < wr {
+        Authority::Fuel
+    } else {
+        Authority::Gov
+    }
+}
+
+/// The FOUR control laws of § 1 in DEMAND coordinates, as closures of the other three states —
+/// what [`demand_laws`] returns.
+///
+/// [`QuadLaws`](crate::shared_actuator::QuadLaws) one coordinate over, and the SIGNATURES differ
+/// where the coordinate makes them: rung 72's `F` takes `(gr, q, v)` and `R` takes `(gf, q, v)`,
+/// each blind to its own leg because each solves from the SCHEDULED fuel. Here **both take
+/// `(wf, wr, q, v)`** — not because the caps changed (they did not; `_cap_fuel` ignores `mf_app` at
+/// this rung) but because the REFERENCE reads both demands. That is the only route by which `F`
+/// depends on `wf`, and it is exactly what `F_f` differences.
+#[allow(clippy::type_complexity)]
+pub struct DemandLaws<'a> {
+    /// **F** — rung 52's leg as a demand, `(wf, wr, q, v) -> (w, regime)`.
+    pub f: Box<dyn Fn(f64, f64, f64, f64) -> Result<(f64, LegRegime), Abort> + 'a>,
+    /// **R** — rung 47's governor as a demand, `(wf, wr, q, v) -> (w, regime)`.
+    pub r: Box<dyn Fn(f64, f64, f64, f64) -> Result<(f64, LegRegime), Abort> + 'a>,
+    /// **C** — the VALVE law, `(wf, wr, v) -> (b, regime)`.
+    pub c: Box<dyn Fn(f64, f64, f64) -> Result<(f64, Regime), Abort> + 'a>,
+    /// **V** — the STATOR law, `(wf, wr, q) -> (v, regime)`.
+    pub v: Box<dyn Fn(f64, f64, f64) -> Result<(f64, Regime), Abort> + 'a>,
+}
+
+/// RUNG 74's `_demand_laws` — **the four laws as closures of the other three states, none knowing
+/// the others exist.**
+///
+/// # `C` AND `V` TAKE THE DEMAND AS THE FUEL, NOT `mf_sched - clip`
+///
+/// This is the one place the coordinate changes an ARGUMENT rather than a label. Rung 72 spells the
+/// closed-loop fuel `max(1e-9, mf_sched - _applied_clip(gf, gr))`; here it is
+/// `max(1e-9, _applied_demand(wf, wr, mf_sched))`, because in this coordinate the applied demand IS
+/// the fuel. The two agree in value on the interior and are different plants at the edges, which is
+/// § 3. A port carrying rung 72's spelling forward would converge the valve and stator solves on a
+/// residual this rung never uses — rung 62's `_powers` failure mode, and invisible wherever
+/// `_applied_demand` happens to equal `mf_sched - max(gf, gr)`.
+///
+/// Under MIN-SELECT the masked demand reaches `C` and `V` through a function that is FLAT in it —
+/// `min()` where rung 72 had `max()` — which is § 1's whole reason the triangularity survives a
+/// change of coordinate.
+///
+/// # THE REGIME LABEL READS THE UNLATCHED `cap`, AND THAT IS NOT A SLIP
+///
+/// Both `F` and `R` label `riding` from `cap < mf_sched` and **not** from the latched target. After
+/// [`demand_target`] the latched target satisfies `tgt <= mf_sched` unconditionally, so a port
+/// reading `tgt` would be correct on every point of the interior-filter arm (§ 5.30 (i): 1 040 of
+/// 1 040 and 624 of 624) and wrong only over-schedule. It is gated where the two differ.
+///
+/// # THE `b_state` / `v_state` BOUNDARY IS INHERITED VERBATIM
+///
+/// Rung 68's table, unchanged: a law that TRIALS an actuator must not see that actuator's state and
+/// MUST see the other two. `F` and `R` trial neither and set BOTH; `C` trials `b` and sets
+/// `v_state` only; `V` trials `v` and sets `b_state` only. Both guards write `None` on the way out,
+/// which is Python's `finally`, and the SCOPE is Python's too — the caps are computed inside the
+/// guard and the reference and the label outside it.
+///
+/// # `F` GOES THROUGH THE TABLE AND `R` DOES NOT, AND THE CENSUS IS THE REASON
+///
+/// `_cap_fuel` has three definers (rungs 74, 78, 79), so an inherited rung-74 reader run on a
+/// rung-79 machine must take rung 79's body — hence [`TripleHooks::cap_fuel`].
+///
+/// # AND `C` CALLS `_solve_b` DIRECTLY WHILE `V` GOES THROUGH THE TABLE — **CENSUSED, NOT COPIED**
+///
+/// That asymmetry is inherited from rung 72's `_quad_laws` spelling, which is not a warrant: a
+/// frozen dispatch is invisible at the rung that owns it, because that rung is the only machine a
+/// slice instantiates. So the four helpers this body reaches were censused over all 58 classes
+/// alongside the six laws themselves:
+///
+/// | helper | definers | so |
+/// |---|---|---|
+/// | `_solve_b`, `_closer` (`LimitedBleedTransient`) | **1** | direct calls, and a table slot would be dead |
+/// | `_closer_v` (`ThreeLoopCascadeTransient`) | **1** | the same |
+/// | `_cap_gov`, `_cap_free` (this class) | **1** | the same |
+/// | **`_solve_v`** (`ThreeLoopCascadeTransient`, `ReferenceSplitTransient`) | **2** | **which is exactly why it IS a cell** |
+///
+/// So the asymmetry is the census's and not the sibling's, and `_cap_gov`'s single definer is
+/// re-derived from the source rather than inherited from step 1's sentence.
+#[allow(clippy::too_many_arguments)]
+pub fn demand_laws<'a>(
+    core: &'a ScheduledStatorCore, flight: &'a FlightCondition, a: f64, h: f64, mf_sched: f64,
+    accel: Option<&'a AccelSchedule>, surge: Option<&'a Floor>, tt4_max: f64,
+) -> DemandLaws<'a> {
+    let ft = &core.fuel;
+    let (tt2, pt2, _) = ft.inner.inlet(flight);
+
+    // **F** — RUNG 52's leg as a DEMAND. `ma` is formed BEFORE the state guards, which is Python's
+    // order; the cap is solved INSIDE them and the reference and the label outside.
+    let f = move |wf: f64, wr: f64, q: f64, v: f64| -> Result<(f64, LegRegime), Abort> {
+        let ma = applied_demand(mf_sched, wf, wr);
+        let cap = {
+            let _sb = MarchedBleed::set(&ft.inner, q);
+            let _sv = MarchedStator::set(&ft.inner, v);
+            // THROUGH THE TABLE — rung 78's and rung 79's bodies are what their machines must take.
+            (ft.inner.triple_hooks.cap_fuel)(ft, flight, a, h, mf_sched, accel, surge, Some(ma))?
+        };
+        let tgt = demand_target(&ft.inner, cap, mf_sched);
+        Ok((
+            demand_reference(&ft.inner, tgt, wf, ma),
+            if cap < mf_sched { LegRegime::Riding } else { LegRegime::Dormant },
+        ))
+    };
+
+    // **R** — RUNG 47's governor as a DEMAND. `_cap_gov` is single-definer, so it is a direct call;
+    // and note Python re-forms the applied demand INLINE in the reference argument rather than
+    // reusing a name, so `R` and `F` reach it by two different spellings of one expression.
+    let r = move |wf: f64, wr: f64, q: f64, v: f64| -> Result<(f64, LegRegime), Abort> {
+        let cap = {
+            let _sb = MarchedBleed::set(&ft.inner, q);
+            let _sv = MarchedStator::set(&ft.inner, v);
+            cap_gov(ft, flight, a, h, mf_sched, tt4_max)?
+        };
+        let tgt = demand_target(&ft.inner, cap, mf_sched);
+        Ok((
+            demand_reference(&ft.inner, tgt, wr, applied_demand(mf_sched, wf, wr)),
+            if cap < mf_sched { LegRegime::Riding } else { LegRegime::Dormant },
+        ))
+    };
+
+    // **C** — the VALVE law: it trials `b`, so NO `b_state`, but `v_state = v`.
+    let c = move |wf: f64, wr: f64, v: f64| -> Result<(f64, Regime), Abort> {
+        let _sv = MarchedStator::set(&ft.inner, v);
+        let bl = ft.inner.lever.lim.expect("rung-74's valve law on an unfloored machine");
+        // `1e-9f64.max(..)` is rung 72's own spelling at the identical Python `max(1e-9, ·)`, kept
+        // rather than re-derived — a deliberate duplication is not a factoring opportunity.
+        let (_, b, reg) = crate::limited_bleed::r64_solve_b(
+            &bl,
+            closer_b(ft, a, h, 1e-9f64.max(applied_demand(mf_sched, wf, wr)), tt2, pt2))?;
+        Ok((b, reg))
+    };
+
+    // **V** — the STATOR law: the exact mirror, trialling `v` with `b_state = q`.
+    let v = move |wf: f64, wr: f64, q: f64| -> Result<(f64, Regime), Abort> {
+        let _sb = MarchedBleed::set(&ft.inner, q);
+        let (_, vv, reg) = ft.inner.solve_v(&closer_v(
+            ft, a, h, 1e-9f64.max(applied_demand(mf_sched, wf, wr)), tt2, pt2))?;
+        Ok((vv, reg))
+    };
+
+    DemandLaws { f: Box::new(f), r: Box::new(r), c: Box::new(c), v: Box::new(v) }
 }
 
 // ---------------------------------------------------------------------------------------------

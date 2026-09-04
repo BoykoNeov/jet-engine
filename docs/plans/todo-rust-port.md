@@ -9026,7 +9026,7 @@ by counting.
 | **AC** | 70–71 | `CrossSplitTransient`, `FullSplitTransient` | ~~**1** — `split_gains`~~ → **0. MEASURED at § 5.27 (i): `split_gains` is NOT a cell** — rung 80's same-named body has an incompatible signature and rung 70's own inherited caller `TypeError`s on a rung-80 machine. **This column's predicate is by NAME and never checked substitutability; § 5.27 (x) sweeps all 358 override pairs and finds ONE more (`_legs`, 63→77, booked to AH).** The slice swaps `at_lever`/`integrate_fuel` at EACH rung plus `_triple_laws` at 70 = **5** distinct function pointers, no new field |
 | **AD** | 72 | `SharedActuatorTransient` | **3** — `_reference`, `_rk4_floor_shared`, `_shared_rig` |
 | **AE** | 73 | `AppliedReferenceTransient` | ~~**0**~~ → **1 ADD + 6 SWAPS. MEASURED at § 5.29 (ii)** — `_with_ref` (69 → 73) is a **NAME REUSED**, not an override: identical arity, but the two bodies write DISJOINT FIELDS (`_ref` / `_ref_law`), and rung 69's own inherited caller RAISES on a rung-73 machine (driven, with a passing control). **§ 5.27 (x) saw the pair and cleared it as a harmless RENAME** — its predicate compared signatures; the same sentence clears `_with_coord` (74 → 79), now booked to AF **and** AI. `_quad_gains_at` is a swap here too — **AD's "unreachable today" booking REFUTED BY VALUE** (§ 5.29 (iv)): with the machine held fixed and only the pointer swapped, 32 keys move and 70 vanish, `F_r` going −1.000000000002735 → 0.0 |
-| **AF** | 74 | `DemandCoordinateTransient` | ~~**3**~~ → **4 ADD + 4 SWAPS. MEASURED at § 5.30 (ii)** — the missing fourth ADD is `_with_coord`, which **slice W’s phase-wide census had already named** among *the four names the hand-written column missed*; this row was simply never updated. Its two definers are rungs 74 and 79, so the census **re-derives § 5.29 (v)’s separate-field obligation from the source** instead of inheriting it as a booking. SWAPS are 4 under AC’s convention and 2 under § 5.19 (i)’s (`at_lever`/`_shared_rig` are Rust deletes) — both stated, because the same slice scores differently under the two. **LANDED at § 5.30.1: 4 ADD + 4 SWAPS, `TripleHooks` 14 → 18.** The width toll was MEASURED AD's way (apply, fix the lib, count what is still red) and came back **7 `src` literals + 4 TEST sites where this plan and the crate's own comments say TWO** — slice AE ships two exhaustive DESTRUCTURINGS (`E0027`) that nothing calls tripwires. |
+| **AF** | 74 | `DemandCoordinateTransient` | ~~**3**~~ → **4 ADD + 4 SWAPS. MEASURED at § 5.30 (ii)** — the missing fourth ADD is `_with_coord`, which **slice W’s phase-wide census had already named** among *the four names the hand-written column missed*; this row was simply never updated. Its two definers are rungs 74 and 79, so the census **re-derives § 5.29 (v)’s separate-field obligation from the source** instead of inheriting it as a booking. SWAPS are 4 under AC’s convention and 2 under § 5.19 (i)’s (`at_lever`/`_shared_rig` are Rust deletes) — both stated, because the same slice scores differently under the two. **LANDED at § 5.30.1: 4 ADD + 4 SWAPS, `TripleHooks` 14 → 18.** The width toll was MEASURED AD's way (apply, fix the lib, count what is still red) and came back **7 `src` literals + 4 TEST sites where this plan and the crate's own comments say TWO** — slice AE ships two exhaustive DESTRUCTURINGS (`E0027`) that nothing calls tripwires. **STEP 2 at § 5.30.2: the six demand laws, all SINGLE-DEFINER by census, so no table field and no width toll; `slice_af_laws.rs` 13 gates, sweep 21/21 as predicted (18 killed).** Its leading finding is a rig point COPIED from step 1's cells file that sat inside a shipped refusal — and the gate that did not abort there had been passing its min-select flatness equality between two SATURATED ZEROS. |
 | **AG** | 75–76 | `AntiWindupTransient`, `SensedCapTransient` | **0** |
 | **AH** | 77–78 | `StiffnessLedgerTransient`, `ResidualGaugeTransient` | **0** |
 | **AI** | 79–80 | `StateCoordinateTransient`, `SplitWallTransient` | **0** |
@@ -20021,3 +20021,197 @@ window are `two_spool_oracle` (2 passed) and `two_spool_transient_oracle` (4 pas
   protection, and one that would have read as a finding;
 * `_cap_fuel`'s `min` fold, whose tie and NaN behaviour no gate at this step reaches (only one cap is
   ever armed here) — booked as a known blind spot rather than left to be discovered.
+
+#### 5.30.2 SLICE AF step 2 — the six demand laws, and **A RIG CONSTANT COPIED FROM THE SIBLING TEST FILE THAT SAT INSIDE A REFUSAL THIS RUNG SHIPS, WHOSE FLATNESS GATE HAD BEEN PASSING BETWEEN TWO SATURATED ZEROS**
+
+`_applied_demand`, `_demand_target`, `_demand_reference`, `_demand_tau`, `_demand_authority` and
+`_demand_laws` — step 1 § (c)'s re-cut boundary, all six of it, so the SIX-step price still stands.
+`rust/src/demand_coordinate.rs` grows **685 → 977 lines** (237 → 343 excluding doc comments and
+blanks) and `rust/tests/slice_af_laws.rs` lands at **733 lines / 13 gates**. Both slice-AF targets:
+**17 + 13 = 30 passed, 0 failed.**
+
+**NO `TripleHooks` FIELD AND NO WIDTH TOLL — MEASURED BEFORE A LINE WAS WRITTEN.** An AST census
+over all 58 `engine.py` classes scores every one of the six at **exactly one definer**, so none is
+a cell and a table slot for any would be a mechanism with no reader (`_with_share`'s case). Rung
+72's siblings score identically — `_applied_clip`, `_authority` and `_quad_laws` are single-definer
+too, and are plain functions in the port for the same reason. The only DISPATCHED call inside step
+2's code is `_cap_fuel` (three definers: rungs 74, 78, 79), which step 1 wired.
+
+##### (a) THE LEADING FINDING — **THE OPERATING POINT WAS INHERITED FROM THE SIBLING FILE, AND IT SAT INSIDE A GUARD THIS RUNG SHIPS**
+
+The first draft of `slice_af_laws.rs` took its rig point `(a, h, mf_sched) = (1.0, 1.0, 0.02)` from
+`slice_af_cells.rs`, where it works. **It does not work here, and the reason is that step 1's one
+call armed a DIFFERENT cap through a DIFFERENT path**: that file calls `_cap_fuel` with an ACCEL
+schedule and no floor, while `_demand_laws`' `F` arms the SURGE floor. Through the floor at the
+design speed pair `_cap_free` cannot bracket at all and `F` raises rung 74's own shipped guard —
+*the UNFLOORED cap is unreachable above mf_sched* — the same guard § 5.30 (i)'s third `phi_lim` arm
+hit. **Four of the thirteen gates aborted there.**
+
+**AND THE FIFTH FAILURE IS THE SHARPER HALF.** `c_and_v_read_the_applied_demand` asserts the valve
+law returns the SAME position, bit for bit, at two `(wf, wr)` pairs sharing an applied demand —
+§ 1's min-select flatness in the masked leg, which is the whole reason the triangularity survives a
+change of coordinate. **That equality HELD. It held between `0.0` and `0.0`**: at the copied point
+the valve sits on its stop at every demand the gate probes, so an equality gate certified this
+rung's headline from an actuator that was not solving at all. The only thing that failed was the
+`assert_ne` control beside it, and it failed reading `left: 0.0, right: 0.0`.
+
+That is slice T's recorded class — *an EXACT ZERO blinds its own gate* — **in a new shape: the zero
+is an ACTUATOR'S STOP and not an arithmetic identity**, so nothing in the arithmetic hints at it
+and the gate reads exactly like a passing measurement. A `min` over two saturated solves is flat
+for the same reason a constant function is.
+
+**THE REPAIR IS A MEASUREMENT, NOT A NUDGE.** A Python sweep over five speed pairs x six schedules
+was run against the shipped `_demand_laws`, printing all four laws' returns and regimes.
+`(0.85, 0.90, 0.040)` is the only cell in that grid where **all four laws return, both fuel-side
+legs are RIDING, and the valve and the stator are both OFF their stops** (`b = 7.569e-03`,
+`v = -1.021e-02`; the third probe point falls back to the stop, which is what makes the moving
+control a real difference). A permanent `assert_ne!(masked_far.0, 0.0)` now stands IN FRONT of the
+flatness equality. The accel schedule's `kappa` was measured the same way: every value from `1e-6`
+up aborts the accel cap's own bracket at this point, and `1e-8` is the only one of seven that
+returns on all three armings.
+
+**The general form, and it is § 5.30 (viii)'s standing item turned on a fixture:** *what supplies
+the value under test?* has a companion no pre-flight had named — **what supplies the POINT the test
+is DRIVEN AT?** A rig constant inherited from a sibling file is a claim about the plant, and it is
+only as true as the call that file happened to make.
+
+##### (b) THE MODULE HEADER THAT REPORTS STEP 1's OWN FINDING KEPT THE COUNT STEP 1 CORRECTED
+
+`demand_coordinate.rs:23` read *"the two width tripwires in `tests/slice_ab_cells.rs` and
+`tests/slice_ac_cells.rs` both fired on the first compile"*. Step 1 § (a) measured **four** test
+sites — two `E0063` initializer literals and two `E0027` exhaustive destructurings in slice AE's
+files — and renamed all four as tripwires in the two `_cells` files. **It did not fix the header of
+the module whose own step reports the finding.** § 5.30 (ii)'s lesson — *check the ROW, not just
+whether the correction exists somewhere* — landing on the file that states it, one step later.
+Corrected, with all four named and the `E0027` half called out as the differently-typed instrument
+it is.
+
+##### (c) THREE PREDICTED SURVIVORS, TWO OF THEM PROVED IN ADVANCE — AND ONE HAD BEEN NOMINATED A MUST-KILL
+
+The sweep was pre-registered before the gates were written (§ 5.30 (viii) item 2), with a predicted
+verdict for each of twenty-one mutations. Three are predicted to SURVIVE, two of them with proofs
+written before the run:
+
+* **`_applied_demand`'s two `if`s swapped (M2).** Each fires iff its operand is strictly below the
+  running minimum, and `<` is false in both directions against a NaN, so both orders land on the
+  least element, keep the FIRST of equals, and return NaN from a NaN seed. **The two spellings are
+  the same function on every input**, so the survivor is the port being right rather than a gate
+  being blind.
+* **`F`/`R`'s regime label read off the LATCHED target instead of the cap (M17).** This was
+  nominated a must-kill — the label reads the UNLATCHED cap while the latch is what
+  `demand-latched` changes — and it is **arithmetically inert**: under `clip` and `demand`
+  `tgt == cap` identically, and under `demand-latched`
+  `min(mf_sched, cap) < mf_sched  <=>  cap < mf_sched`. The port keeps `cap` because the source
+  spells `cap`, and `the_regime_label_cannot_be_moved_by_the_coordinate` gates the INVARIANCE that
+  makes the mutation inert — driven over all three tags, with the label asserted `Riding` so the
+  three-way agreement is a measurement and not three equal `Dormant`s.
+* **`C` also setting `b_state` (M16)** is the one survivor booked as a genuine BLIND SPOT: only `F`
+  reaches a spy at this step, through the injected `cap_fuel` table. Booked rather than left to be
+  discovered.
+
+Recording a predicted survivor WITH its proof is step 1 § (h)'s lesson paid forward: there, a
+correct survivor was defended by a code comment that was FALSE, and the comment shipped.
+
+##### (d) THE MUTATION SWEEP — **21 mutations, 21 AS PREDICTED, 18 KILLED**
+
+Run over BOTH slice-AF binaries (§ 5.30 (viii) item 2), with the source restored from a byte-for-
+byte snapshot after each. Every mutation printed its substitution count first and the counts were
+dry-run against the file before the sweep started — 21 of 21 matched, so no `PATCH-MISS` reached
+the scoring.
+
+| # | mutation | predicted | got | the gate that saw it |
+|---|---|---|---|---|
+| M1 | `applied_demand` respelled `mf_sched.min(wf).min(wr)` | KILL | **KILL** | the NaN-seed row |
+| M2 | its two `if`s swapped | SURVIVE | **SURVIVE** | — (proved identical) |
+| M3 | the fold seeded at `wf` | KILL | **KILL** | the NaN rows |
+| M4 | `demand_target`'s latch deleted | KILL | **KILL** | the truth table |
+| M5 | the latch armed by `!= LAG_COORD_CLIP` (widened to `demand`) | KILL | **KILL** | the `clip == demand` row |
+| M6 | the latch returns `mf_sched` unconditionally | KILL | **KILL** | the under-schedule column |
+| M7 | `demand_reference`'s `ref_law` early return dropped | KILL | **KILL** | the builder-armed gate |
+| M8 | its `==` epsilonized to `1e-12` | KILL | **KILL** | the `1e-13` row, added for exactly this |
+| M9 | its association rearranged | KILL | **KILL** | the `1e16` association gate |
+| M10 | `demand_tau` keeps the shipped argument ORDER | KILL | **KILL** | the two-sided literal gate |
+| M11 | `demand_authority`'s `dormant`/`tie` branches swapped | KILL | **KILL** | the both-conditions point |
+| M12 | its holder sense reversed to `wf > wr` | KILL | **KILL** | the rung-72 disagreement table |
+| M13 | its dormant test spelled rung 72's way | KILL | **KILL** | the same |
+| M14a | `C`'s fuel spelled `mf_sched - max(wf, wr)` | KILL | **KILL** | the valve solve ABORTS |
+| M14b | `V`'s fuel, the same | KILL | **KILL** | the stator solve ABORTS |
+| M15 | `F` calls `r74_cap_fuel` directly, not through the table | KILL | **KILL** | the injected-table gate |
+| M16 | `C` sets `b_state` as well | SURVIVE | **SURVIVE** | — booked blind spot |
+| M17 | the regime read off `tgt` | SURVIVE | **SURVIVE** | — (proved inert) |
+| M18 | **step 1's `r74_cap_fuel` `min` fold reversed to a `max`** | KILL | **KILL** | the three-arming fold gate |
+| M19 | `F` drops the two march-state guards | KILL | **KILL** | the spy in the injected body |
+| M20 | `R` passes `wf` as `w_own` | KILL | **KILL** | `R`-blind-to-`wf` |
+
+**M18 DISCHARGES STEP 1 § (j)'s BOOKED BLIND SPOT.** That mutation SURVIVED at step 1 — correctly,
+because only one cap was ever armed there and the fold had nothing to order. `demand_laws`' `F`
+arms the accel schedule and the surge floor together, and `the_two_cap_fold_is_a_min…` measures
+each cap alone with the other disarmed, asserts the two are DIFFERENT numbers, and then asserts the
+both-armed answer is the SMALLER of the two, bit for bit. **The reference comes from two other runs
+of the same code under different armings, never from the fold** — § 5.30 (viii) item 1.
+
+**AND TWO KILLS CAME BY A DIFFERENT MECHANISM THAN PREDICTED, WHICH IS RECORDED RATHER THAN
+ROUNDED UP.** M14a/M14b were predicted to die on the flatness comparison; they died on the
+`.expect` in front of it, because rung 72's spelling drives the closed-loop fuel to the `1e-9`
+clamp and the solve ABORTS. The verdict is right and the route is not the one the prediction named.
+
+##### (e) THREE DEFECTS IN THIS STEP's OWN INSTRUMENTS, all caught before the sweep scored them
+
+1. **The dispatch gate's own arguments put the reference on its IDENTITY branch.** With
+   `(wf, wr) = (0.9 mf, 1.1 mf)` the applied demand EQUALS `F`'s own `w_own`, so
+   `_demand_reference` returns the cap untouched and the gate's value assertion would have been
+   checking the formula against a body that never ran it — § 5.30 (viii) item 1 in its purest
+   shape. Caught by reading the arguments against the three branches before the gate ran, and
+   repaired by putting `wf` ABOVE the schedule so `wr` supplies the demand.
+2. **A patch needle silently lost a line continuation, and the count guard caught it.** The repair
+   script was written as a shell heredoc, where `\\` collapsed to `\`; Python then read it as a
+   line continuation, so the needle lost both the backslash and the newline and matched nothing. It
+   reported `PATCH-MISS: 0 != 1` and aborted before writing — **step 1 § (h)'s rule doing exactly
+   its job, one step after the lesson that produced it.** Repaired by SPLICING the assertion out of
+   the file rather than retyping it, which is that lesson's other half.
+3. **`3.0 * 0.05` is `0.15000000000000002`.** A scene-setting `assert_eq!(TAU_REL, 3.0 * TAU_ATT)`
+   failed on a TRUE statement about the rig. Rewritten as a ratio bar; the two LAW assertions
+   beside it stay exact, because those compare against the literals the test itself set.
+
+##### (f) THE CENSUS WAS RUN AGAIN, ON THE FOUR HELPERS `_demand_laws` REACHES — **AND IT TURNED AN INHERITED SPELLING INTO A MEASURED ONE**
+
+`demand_laws`' `C` calls `_solve_b` **directly** while `V` goes through the table, and that
+asymmetry arrived by copying rung 72's `_quad_laws`. Copying is not a warrant: **a frozen dispatch
+is invisible at the rung that owns it**, because that rung is the only machine the slice
+instantiates — which is the exact defect `f_reaches_cap_fuel_through_the_table` exists to prevent,
+one call over. The step's own census covered the six METHOD names and stopped there, so the four
+helpers were censused separately, over the same 58 classes:
+
+| helper | definers | so |
+|---|---|---|
+| `_solve_b`, `_closer` (`LimitedBleedTransient`) | **1** | the direct call is right, and a table slot would be dead |
+| `_closer_v` (`ThreeLoopCascadeTransient`) | **1** | the same |
+| `_cap_gov`, `_cap_free` (this class) | **1** | the same — and `_cap_gov`'s count is now re-derived from the source instead of inherited from step 1's sentence |
+| **`_solve_v`** (`ThreeLoopCascadeTransient`, `ReferenceSplitTransient`) | **2** | **which is exactly why it IS a cell** |
+
+**So the asymmetry is the census's, not the sibling's**, and the finding is that the warrant was
+missing rather than that the code was wrong. Written into `demand_laws`' own doc comment, where the
+next reader meets the asymmetry.
+
+##### (g) THE FULL GATE, AND **THE EXIT CODE STEP 1 RESTED ITS CLAIM ON WAS NOT AVAILABLE HERE**
+
+§ 5.30.1 § (i) reports *`cargo test`, exit 0 — which is the whole claim, because cargo returns
+non-zero if any target reports a failure*. **That guarantee does not survive a pipe.** This step's
+first full-gate run was `cargo test … | grep -E …`, and without `pipefail` the exit status recorded
+is **grep's**, not cargo's — so the line that made step 1's claim load-bearing would have been
+reporting the filter's health. The run was discarded rather than reported, and the gate re-run
+UNPIPED over the final tree, with the totals read from the summed per-target lines.
+
+`cargo test` over the whole crate, UNPIPED: **exit 0, 145 result blocks, 1 498 passed, 0 failed, 0 ignored** — and the totals are read from the summed per-target lines rather than from the exit code alone, so the two agree instead of one standing in for the other. (Step 1 § (i) recorded its grand totals as UNMEASURED because a `tail -25` window cut them off; they are measured here, and the run is not repeated to produce a timing [[never-run-the-gate-for-timing]].)
+
+**`pytest` was NOT run, and that is a decision rather than an omission**: this step changes no Python at all (`git status` shows four Rust/docs/memory paths and no `turbojet/` or `tests/` file), so the Python gate would be measuring a tree byte-identical to the last green one.
+
+##### (h) WHAT STEP 3 INHERITS
+
+* `_integrate_fuel_demand` — the six-state march with the joint IC fixed point, and step 1's
+  `unimplemented!` arm with its gate asserting a legal demand call REACHES it;
+* **the measured rig point** `(0.85, 0.90, 0.040)` with `kappa = 1e-8`, and the reason it is not the
+  design speed pair — a step-3 march that re-derives its own point must re-measure, not re-copy;
+* the `b_state`/`v_state` boundary on `C`, `V` and `R` — only `F` reaches a spy at this step
+  (M16), booked;
+* `ic_cap`, still a `Cell` whose reader is this rung's march and whose only writer is rung 75.
