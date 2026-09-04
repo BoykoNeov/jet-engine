@@ -95,19 +95,25 @@
 use crate::bleed_transient::{LeverArm, LeverHooks};
 use crate::engine::FlightCondition;
 use crate::fuel_transient::{
-    AccelSchedule, AsymmetricLag, Floor, FuelInstant, FuelLimiters, FuelPoint, FuelTransientCore,
-    FuelTransientHooks,
+    asym_extra, AccelSchedule, AsymmetricLag, Floor, FuelInstant, FuelLimiters, FuelPoint,
+    FuelTransientCore, FuelTransientHooks, PointExtra,
 };
 use crate::applied_reference::REF_LAW_APPLIED;
 use crate::fuel_transient::Authority;
 use crate::gas::Abort;
+use crate::lagged_bleed::valve_of;
 use crate::limited_bleed::Regime;
 use crate::map::ComponentMap;
-use crate::shared_actuator::{py_max4, SharedRigArm, IC_ORDER4_DECLARED};
+use crate::reference_split::{opt_fold, RefScope};
+use crate::shared_actuator::{
+    charpoly4, jac4, leg4, py_max4, reg4, QuadGains, SharedRigArm, IC_ORDER4_DECLARED,
+};
 use crate::spool::{try_illinois, ILLINOIS_MAXIT};
 use crate::stator_transient::{
-    ScheduledStatorCore, ScheduledStatorTransient, StatorTransientHooks,
+    MarchScope, Ramp, ScheduledStatorCore, ScheduledStatorTransient, StatorLeg,
+    StatorTransientHooks,
 };
+use crate::three_loop::v_at_point;
 use crate::three_loop::{closer_b, closer_v, LegRegime, TripleHooks};
 use crate::two_spool_transient::{MarchedBleed, MarchedStator};
 use crate::two_spool::{Spool, TwoSpoolEngine};
@@ -1309,10 +1315,17 @@ fn r74_integrate_fuel_demand(
             break;
         }
     }
+    // **THE FOUR FORMATTING CELLS, REPAIRED AT STEP 4 AND SHIPPED WRONG AT STEP 3.** Every one of
+    // them lands inside the 240 characters `windup_law` keeps, and that reader — the first in the
+    // crate to compare a shipped message's CONTENT — is what turned them from cosmetic into
+    // load-bearing. Rust's `{:.3e}` writes `2.898e-3` where Python writes `2.898e-03`, and its
+    // `{:?}` on a `&str` writes double quotes where Python's `!r` writes single ones. See
+    // [`py_e`] and [`py_repr`]; the other 42 `{:.Ne}` sites in the crate stay as they are, because
+    // nothing reads them, and that is a BOOKING rather than a claim they are right.
     assert!(res <= 1e-9,
-            "rung-74: the joint initial condition did not converge (residual {res:.3e} after \
-             {its} iterations) in order {order:?}, at wf = {wf:.6e}, wr = {wr:.6e}, under \
-             ({:?}, {:?}). Under MIN-SELECT the sweep can cycle between the two fuel-side legs \
+            "rung-74: the joint initial condition did not converge (residual {} after \
+             {its} iterations) in order {}, at wf = {}, wr = {}, under \
+             ({}, {}). Under MIN-SELECT the sweep can cycle between the two fuel-side legs \
              (rung 72's reason) -- and under ('demand', 'applied') there is a SECOND, structural \
              reason, which is this rung's s 4: a MASKED applied-referenced leg obeys dw/ds = \
              (cap - mf_app)/tau, which is state-independent and POSITIVE, so with no stop in its \
@@ -1320,7 +1333,8 @@ fn r74_integrate_fuel_demand(
              INTO the floor at g = 0 and halts there, which is what rung 73 s 0.2 read as \
              self-anti-winding. Neither is a cap to raise: report the state, the order and both \
              demands.",
-            ft.inner.lag_coord.get(), ft.inner.ref_law.get());
+            py_e(res, 3), py_repr(order), py_e(wf, 6), py_e(wr, 6),
+            py_repr(ft.inner.lag_coord.get()), py_repr(ft.inner.ref_law.get()));
 
     // --- THE RK4 LOOP --------------------------------------------------------------------------
     let share_law = ft.inner.share_law.get();
@@ -1405,3 +1419,1239 @@ fn r74_integrate_fuel_demand(
     pts
 }
 
+
+// =============================================================================================
+// STEP 4 — THE SIX READERS, THE SECOND GAINS CHAIN, AND THE RIG HELPER THEY ALL GO THROUGH
+//
+// § 5.30 (v)'s step 4 is *"the readers (`demand_law`, `demand_gains`, `latch_discriminator`,
+// `windup_law`, `flat_schedule_identity`, `forcing_openloop`)"*. Two things come with them that
+// the sentence does not name, and both are measured rather than assumed:
+//
+//   * **`_coord_march`** (`engine.py:18021`) — twelve lines, unported until now, and the entry
+//     point of four of the six. It is `_shared_march` with the two knobs written onto the
+//     SIBLING rather than scoped, which is the difference this file's [`coord_march`] carries.
+//   * **`_demand_gains_at`** (`engine.py:18172`) — not a reader at all but a SECOND gains chain,
+//     28 perturbed evaluations of [`demand_laws`] plus a manifold solve. `demand_gains` drives
+//     it BESIDE rung 73's and differences the two Jacobians, so the step ports both halves of a
+//     comparison whose whole content is that they disagree entry by entry and agree in spectrum.
+//
+// # THE MEASUREMENT THIS STEP WAS OPENED WITH, AND WHY IT CAME FIRST
+//
+// Every one of these readers folds over a FILTERED SUBSET — `both_riding`, the masked-leg list,
+// the late half of the ramp, the on-ramp indices — and Python's `max(…, default=None)` returns
+// `None` on an empty one. **An `Option` that is `None` on both sides agrees perfectly and
+// measures nothing**, which is step 3 § (g) 2's `is_finite()`-satisfied-by-a-zero defect in
+// `Option` clothing and would have been this slice's fourth instance of one defect class.
+//
+// So the six readers were driven in Python FIRST, at the arguments their shipped callers use,
+// and every subset counted before a line here was written:
+//
+// | reader | the folds it takes, and over how many | `None` keys |
+// |---|---|---|
+// | `demand_law` | 6 arms × 3 coords × 341 points, 0 refusals | **4** — `first_gov`, on the two ARREST arms' two demand coords |
+// | `demand_gains` | 41 interior rows of 512, skipped `{regime: 171, switch: 1}` | 0 — `mask_leak` present on 41 of 41 |
+// | `latch_discriminator` | `n = 341`, `both_riding` **332**, ramp 100, post 241 | 0 |
+// | `windup_law` | 4 cells, **1 refuses**, masked lists non-empty on all 3 that read | 0 |
+// | `flat_schedule_identity` | `n = 241`, `riding` **241** | 0 |
+// | `forcing_openloop` | 341 rows, on-ramp-riding **77**, post 241, late half **39** | 0 |
+//
+// **3 569 leaf keys, of which exactly 4 are `None`** — and those four are a MEASUREMENT rather
+// than a vacuity: at `phi_lim = 0.80` the demand plant never accelerates, so no point is ever
+// held by the governor and `first_gov` is absent for the reason § 2 reports. Their siblings on
+// the other four arms are `Some`, so the presence flag discriminates instead of agreeing with
+// itself. No fold in this file is taken over an empty set on any shipped grid.
+//
+// # `demand_gains`'s SWITCH FILTER FIRES HERE, AND RUNG 73's NEVER DID
+//
+// [`r73_quad_gains_at`](crate::applied_reference)'s own header records *the switch filter never
+// fires on the shipped grid — measured*. On this rung's grid it fires **once** in 512 points,
+// and the two filters are not the same predicate: rung 72/73 guard `share_law == "max" &&
+// |gf - gr| <= 4*dg`, and `_demand_gains_at` drops the law half entirely — `|wf - wr| <= 4*dg`
+// and nothing else. A port that carried the sibling's guard forward would admit that point and
+// return the slope of neither branch of the `min()` kink. Ported as written, and the count is a
+// gate's subject rather than a comment's claim.
+//
+// # THE REFUSAL MESSAGE STEP 3 SHIPPED IS FOUR FORMATTING DIVERGENCES WIDE, AND THIS STEP IS THE
+// FIRST TO READ ONE
+//
+// `windup_law` catches its cell's `AssertionError` and records `str(exc)[:240]`. That makes the
+// TEXT of step 3's joint-IC refusal a compared value for the first time — and measured against
+// Python it does not match, in four places inside those 240 characters:
+//
+// | | Python | Rust `{…}` | reached at |
+// |---|---|---|---|
+// | `{res:.3e}` | `2.898e-03` | `2.898e-3` | char ~62 |
+// | `{wf:.6e}`, `{wr:.6e}` | `7.635049e-02` | `7.635049e-2` | ~135 |
+// | `{self._ic_order4!r}` | `'rqvf'` | `"rqvf"` | ~120 |
+// | `({…!r}, {…!r})` | `('demand', 'applied')` | `("demand", "applied")` | ~185 |
+//
+// Rust's `{:e}` writes the exponent bare and unpadded; Python's always signs it and pads to two
+// digits. The two agree only where the exponent is negative and already two digits wide — which
+// is why `1.500000e-12` matches and `2.898e-03` does not. **43 sites in 14 `src` files use
+// `{:.Ne}` inside a message**, and `reference_split.rs:706` already records the divergence as
+// known-and-unmatched. That was true while no gate read one. It stops being true here, so rung
+// 74's message is repaired through [`py_e`] and [`py_repr`] and the class is BOOKED rather than
+// swept: the other 42 sites stay as they are until a reader reads them.
+
+/// Python's `f"{x:.Ne}"` — **Rust's `{:e}` with the exponent field made Python's.**
+///
+/// Rust writes `2.898e-3`; Python writes `2.898e-03`. CPython's float `__format__` always emits a
+/// SIGN and pads the exponent to at least two digits, and Rust does neither. The mantissa is
+/// already identical — both are correctly-rounded decimal conversions with ties to even — so only
+/// the exponent field is rewritten, and it is rewritten by parsing Rust's rather than by
+/// recomputing a decimal exponent from the value.
+///
+/// `{:02}` gives Python's minimum width without capping it, so an exponent of three digits
+/// (`1e-300`) comes out at three on both sides.
+pub fn py_e(x: f64, prec: usize) -> String {
+    let s = format!("{:.*e}", prec, x);
+    let (mant, exp) = s.split_once('e').expect("Rust's `{:e}` always emits the `e`");
+    let n: i32 = exp.parse().expect("Rust's exponent field is a bare signed integer");
+    format!("{mant}e{}{:02}", if n < 0 { '-' } else { '+' }, n.abs())
+}
+
+/// Python's `f"{s!r}"` for a `str` — **single quotes, where Rust's `{:?}` writes double ones.**
+///
+/// Only the quoting differs for the strings this rung formats (`'clip'`, `'demand'`, `'sched'`,
+/// `'applied'`, `'rqvf'`): none contains a quote, a backslash or a non-ASCII character, so
+/// Python's `repr` escaping never engages. Stated rather than assumed — a general `repr` would
+/// have to choose between `'` and `"` by content, and this one is only correct because the set of
+/// values is closed and declared.
+pub fn py_repr(s: &str) -> String {
+    format!("'{s}'")
+}
+
+/// `"sched"` — [`REF_LAWS_DECLARED`]'s first member, named rather than spelled at each of its nine
+/// call sites below.
+///
+/// It is NOT a new constant: rung 73 declares the pair and exports only the `applied` half by
+/// name. Reaching for the array element keeps the two in one place, so a rung that renames a law
+/// moves both halves at once.
+///
+/// [`REF_LAWS_DECLARED`]: crate::applied_reference::REF_LAWS_DECLARED
+const REF_SCHED: &str = crate::applied_reference::REF_LAWS_DECLARED[0];
+
+/// **THE READERS' COORDINATE ORDER, WHICH IS NOT [`LAG_COORDS_DECLARED`]'s.**
+///
+/// The declared array is `[clip, demand, demand-latched]` — the order Python's `assert … in
+/// (…)` lists them, i.e. the order a REFUSAL enumerates. Every reader here iterates
+/// `clip → demand-latched → demand`, because that is the order the DIFFERENCES are taken in
+/// (`latched - clip` is the coordinate, `demand - latched` is the floor's address) and it is the
+/// order the returned dicts are keyed in. Using the declared array would reorder three marches
+/// and every aggregate keyed off them without failing anything — slice AC step 6's `every`
+/// defect in a third shape, so the two orders are named separately instead of one standing in
+/// for the other.
+const COORD_ORDER3: [&str; 3] = [LAG_COORD_CLIP, LAG_COORD_LATCHED, LAG_COORD_DEMAND];
+
+// ---------------------------------------------------------------------------------------------
+// THE POINT ACCESSORS — rung 74's own, because the sibling's are private to its module
+// ---------------------------------------------------------------------------------------------
+
+/// Python's `p["authority"]` — a **bare index**, so a point without the key raises.
+///
+/// [`auth_at`](crate::applied_reference)'s reasoning verbatim, one rung on: answering `Dormant`
+/// for a point that carries no label would report a hand-over that never happened.
+fn auth74(p: &FuelPoint) -> Authority {
+    crate::shared_actuator::authority_of(p).expect(
+        "rung-74: a point on this march carries no `authority` label. Python indexes the key \
+         directly and raises here.")
+}
+
+/// Python's `p["g_fuel"], p["g_gov"]` — the two legs' clips, **UNFLOORED on a rung-74 point.**
+///
+/// Admitted from BOTH variants because Python's bare index admits both: `demand_gains` reads a
+/// CLIP trajectory's points and everything else reads this rung's own. Step 3 § (a) measured the
+/// consequence — on the `demand` arm `g_gov` is negative at 21 of 341 points and on
+/// `demand-latched` at 0 of 341 — so a caller that treats `> 0` as *is this leg live* is asking
+/// a question this variant does not answer. No caller in this file does; they difference and
+/// fold, which is sign-agnostic.
+fn legs74(p: &FuelPoint) -> (f64, f64) {
+    match p.extra {
+        PointExtra::Shared { g_fuel, g_gov, .. } | PointExtra::Demand { g_fuel, g_gov, .. } =>
+            (g_fuel, g_gov),
+        _ => panic!("rung-74's readers march the shared-actuator rig, so every point carries the \
+                     two clips. This one does not, which means the trajectory came from a \
+                     different integrator."),
+    }
+}
+
+/// Python's `p["w_fuel"], p["w_gov"]` — and **it REFUSES on a clip point, which is the point.**
+///
+/// `windup_law` indexes these directly on a trajectory it has just marched under a demand tag, so
+/// a clip point reaching here is a dispatch error and Python raises `KeyError`. The one reader
+/// that must survive their absence is [`demand_gains`], and it does not use this function: it
+/// spells Python's `if "w_fuel" in p else` fallback explicitly, inside [`demand_gains_at`].
+fn demands74(p: &FuelPoint) -> (f64, f64) {
+    match p.extra {
+        PointExtra::Demand { w_fuel, w_gov, .. } => (w_fuel, w_gov),
+        _ => panic!("rung-74: this point carries no `w_fuel`/`w_gov` pair, so it was NOT marched \
+                     by `_integrate_fuel_demand`. Python raises `KeyError` here; projecting \
+                     `mf_sched - g` instead would silently answer for a plant that never ran."),
+    }
+}
+
+/// Python's `traj[0]["ic_iters"], traj[0]["ic_res"]`.
+fn ic74(p: &FuelPoint) -> (usize, f64) {
+    match p.extra {
+        PointExtra::Shared { ic_iters, ic_res, .. } | PointExtra::Demand { ic_iters, ic_res, .. } =>
+            (ic_iters, ic_res),
+        _ => panic!("rung-74: this point carries no joint-IC record."),
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// § 0 — `_coord_march`: ONE RIG, ONE MARCH, UNDER A NAMED COORDINATE
+// ---------------------------------------------------------------------------------------------
+
+/// RUNG 74's `_coord_march` — **the entry point of four of the six readers.**
+///
+/// # IT WRITES THE TWO KNOBS ONTO THE SIBLING, AND DOES NOT SCOPE THEM
+///
+/// Python is `m._lag_coord, m._ref_law = coord, ref` — a plain assignment on the machine
+/// `_shared_rig` just built, with no `finally` and no restore. That is NOT
+/// [`CoordScope`]/[`RefScope`]'s shape, and the difference is observable in principle: the
+/// returned `m` carries the coordinate for the rest of its life. Only [`forcing_openloop`] keeps
+/// the machine, and it never marches it again — so on every shipped path the two spellings agree,
+/// and the assignment is ported as an assignment anyway. A guard here would restore the class
+/// default at the end of the call and hand the caller a machine Python does not hand it.
+///
+/// Both writes go THROUGH THE TABLE for [`CoordScope`]'s own recorded reason: rung 79 redefines
+/// `_with_coord` onto a different field, and a direct `lag_coord.set(…)` would move the wrong one
+/// there.
+///
+/// # `_shared_march` SETS `share_law` AND THIS DOES NOT
+///
+/// Rung 72's `_shared_march` wraps its march in `_with_share("max", …)`; `_coord_march` has no
+/// such wrapper, so the march runs under whatever the sibling inherited. `at_lever` copies
+/// `_ref_law` and `_lag_coord` and **not** `_share_law`, so the sibling reads the class default —
+/// which IS `"max"` (`engine.py:15698`). **So a `ShareScope("max")` here would be INERT**, and
+/// the omission is ported because it is Python's line, not because any shipped grid can see it.
+/// Stated that way round deliberately: writing *the omission is observable* would be the same
+/// unmeasured claim [`demand_gains_at`]'s switch-filter paragraph had to retract.
+///
+/// # `nu0` IS `None` FOR FIVE OF SIX CALLERS
+///
+/// Only [`flat_schedule_identity`] passes one, and it passes an OFF-running-line start on
+/// purpose: two plants at rest agree trivially, so the reduce would be vacuous from the running
+/// line. Threaded rather than defaulted so the vacuity defence is visible at the call site.
+#[allow(clippy::too_many_arguments)]
+pub fn coord_march(
+    core: &ScheduledStatorCore, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, tt4_max: f64,
+    sm: f64, taus: (f64, f64, f64, f64), r: f64, s_settle: f64, ds: f64, v_max: f64, inc: bool,
+    coord: &'static str, ref_law: &'static str, nu0: Option<(f64, f64)>,
+) -> (ScheduledStatorCore, Option<Floor>, Option<AsymmetricLag>, Vec<FuelPoint>) {
+    let (tau_f, tau_gov, tau_q, tau_s) = taus;
+    let (m, surge, lag) = (core.triple_hooks().shared_rig)(core, &SharedRigArm {
+        sm,
+        tau: tau_q,
+        tau_s,
+        v_max,
+        tt4_max,
+        tau_att: tau_f,
+        tau_rel: 3.0 * tau_f,
+        inc,
+        ..Default::default()
+    });
+    // `m._lag_coord, m._ref_law = coord, ref` — a PERMANENT write on the sibling, through the
+    // table. The displaced values are discarded exactly as Python discards them.
+    (m.fuel.inner.triple_hooks.with_coord)(&m.fuel.inner, coord);
+    (m.fuel.inner.triple_hooks.with_ref)(&m.fuel.inner, Some(ref_law));
+    let leg = StatorLeg { accel: None, surge, tt4_max: Some(tt4_max) };
+    let ramp = Ramp { tt4_lo, tt4_hi, r, s_settle, ds };
+    let traj = m.stator_march_scoped(
+        flight, &ramp, nu0, &leg,
+        &MarchScope { tau_gov: Some(tau_gov), lag, ..MarchScope::DEFAULT }).0;
+    (m, surge, lag, traj)
+}
+
+/// [`coord_march`] with Python's `except AssertionError` around it — the shape
+/// [`demand_law`] and [`windup_law`] both need and nothing else does.
+///
+/// The panic-catch is [`joint_ic_corners`](crate::cross_loop)'s, verbatim in its reasoning:
+/// `AssertUnwindSafe` is legitimate because every dynamically-scoped field on this core is
+/// restored by `Drop`, which runs on the unwind, so the machine on the far side is the machine
+/// that went in. **The panic HOOK is not touched** — Python prints nothing and Rust's default hook
+/// writes a line to stderr per caught panic. One shipped cell raises here, so one line appears.
+/// No value differs; suppressing it would mean a process-global `set_hook` racing the test files'
+/// own pairs, which is a real hazard traded for cosmetic quiet.
+#[allow(clippy::too_many_arguments)]
+fn try_coord_march(
+    core: &ScheduledStatorCore, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, tt4_max: f64,
+    sm: f64, taus: (f64, f64, f64, f64), r: f64, s_settle: f64, ds: f64, v_max: f64, inc: bool,
+    coord: &'static str, ref_law: &'static str, nu0: Option<(f64, f64)>,
+) -> Result<Vec<FuelPoint>, String> {
+    let ran = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        coord_march(core, flight, tt4_lo, tt4_hi, tt4_max, sm, taus, r, s_settle, ds, v_max, inc,
+                    coord, ref_law, nu0).3
+    }));
+    match ran {
+        Ok(t) => Ok(t),
+        Err(e) => Err(match e.downcast_ref::<String>() {
+            Some(s) => s.clone(),
+            None => e.downcast_ref::<&str>().map(|s| (*s).to_string())
+                     .unwrap_or_else(|| "<non-string panic>".into()),
+        }),
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// § 1 — `_demand_gains_at`: THE SECOND GAINS CHAIN
+// ---------------------------------------------------------------------------------------------
+
+/// RUNG 74's `_demand_gains_at` — **the FOURTEEN central differences in DEMAND coordinates.**
+///
+/// Rung 73's list with `wf`/`wr` in place of `gf`/`gr`, through [`demand_laws`] instead of
+/// `_quad_laws`, and returning the SAME [`QuadGains`] so [`jac4`] can be handed either. Three of
+/// that struct's fields ([`self_masked`](QuadGains::self_masked) and its two siblings) stay `None`
+/// here because Python's dict has no such key at this rung — the *absent versus zero* distinction
+/// slice AE measured at 70 vanishing keys, kept rather than flattened.
+///
+/// # THE PROJECTION IS THE POINT OF ENTRY, AND THE FALLBACK IS A KEY-PRESENCE TEST
+///
+/// Python is `p["w_fuel"] if "w_fuel" in p else mf_sched - p["g_fuel"]`. A Jacobian is a function
+/// of the STATE, not of which plant's trajectory passed through it (§ 1.3), so this reader takes a
+/// CLIP trajectory's point too — and `w = mf_sched - g` IS the coordinate change. [`demand_gains`]
+/// drives it on exactly such a trajectory, so **the fallback arm is the one the shipped grid takes
+/// and the direct arm is the one no shipped caller reaches.** A port that always projected would
+/// pass every gate driven from `demand_gains`; a port that never did would pass none of them but
+/// would also be untestable from any other caller, since no shipped reader hands this a rung-74
+/// point. Both arms are written, and which is live is a measurement rather than a comment.
+///
+/// # THE SWITCH FILTER HAS NO `share_law` HALF, ITS SIBLING'S DOES, AND THAT HALF IS INERT HERE
+///
+/// `_quad_gains_at` guards `self._share_law == "max" and abs(gf - gr) <= switch_guard * dg`;
+/// this body drops the first conjunct. **The first writing of this comment said that carrying
+/// the sibling's spelling here would admit a point straddling the `min()` kink. That is FALSE,
+/// and it was asserted rather than measured** — `_share_law` is a class attribute whose declared
+/// default is `"max"` (`engine.py:15698`), rung 74's `at_lever` copies only `_ref_law` and
+/// `_lag_coord`, and nothing on any path into this body writes it. The conjunct is therefore TRUE
+/// at every call the shipped grid makes, and adding it back changes nothing. Booked as an inert
+/// difference and mutation-scored as one — step 3 § (g) 7's lesson (*a claimed blind spot is a
+/// claim*) turned on a claimed LIVE spot instead.
+///
+/// What IS live is the STATE PAIR the guard reads: `|wf - wr|` here against `|gf - gr|` there, at
+/// the same points. Rung 73's filter fires **0** times on its grid and this one fires **1** in
+/// 512 on this one — and that is the coordinate, not the conjunct.
+///
+/// # THE MANIFOLD ARGUMENT IS THE MIRROR OF RUNG 73's, NOT A COPY
+///
+/// Rung 73 passes `_applied_clip(gf, gr)` and a law wrapper pinning the GOVERNOR's clip at `0.0`;
+/// here the clip is `mf_sched - _applied_demand(wf, wr, mf_sched)` and the wrapper pins the
+/// governor's DEMAND at `mf_sched`. Those are the same point in the two coordinates — `g = 0` is
+/// `w = mf_sched` — and the wrapper also converts its own argument back (`V(mf_sched - g_, …)`),
+/// because [`ScheduledStatorCore::manifold_v`] is rung 68's and speaks clips.
+#[allow(clippy::too_many_arguments)]
+pub fn demand_gains_at(
+    core: &ScheduledStatorCore, flight: &FlightCondition, p: &FuelPoint,
+    accel: Option<&AccelSchedule>, surge: Option<&Floor>, tt4_max: f64,
+    dg: f64, dq: f64, dv: f64, manifold: bool, switch_guard: f64,
+) -> Result<QuadGains, Abort> {
+    let (a, h, mf_sched) = (p.nu_lp, p.nu_hp, p.mf_sched);
+    // Python's `if "w_fuel" in p` — see the header. The clip arm is the one `demand_gains` takes.
+    let (wf, wr, q, v_live) = match p.extra {
+        PointExtra::Demand { w_fuel, w_gov, b, v, .. } => (w_fuel, w_gov, b, v),
+        PointExtra::Shared { g_fuel, g_gov, b, v, .. } =>
+            (mf_sched - g_fuel, mf_sched - g_gov, b, v),
+        _ => panic!("rung-74's gains need a SIX-state trajectory: the point carries neither a \
+                     `w_fuel`/`w_gov` pair nor a `g_fuel`/`g_gov` one to project from."),
+    };
+    let laws = demand_laws(core, flight, a, h, mf_sched, accel, surge, tt4_max);
+    let v = if manifold {
+        // `lambda g_, q_: V(mf_sched - g_, mf_sched, q_)` — the clip comes IN and the demand goes
+        // OUT, with the governor pinned at the schedule (its own clip zero).
+        let vlaw = |g_: f64, q_: f64| (laws.v)(mf_sched - g_, mf_sched, q_);
+        core.manifold_v(flight, a, h, mf_sched,
+                        mf_sched - applied_demand(mf_sched, wf, wr), q, &vlaw)?
+    } else {
+        v_live
+    };
+    if (wf - wr).abs() <= switch_guard * dg {
+        return Ok(QuadGains::dropped(p.s, v, vec!["switch"], true));
+    }
+
+    // PYTHON'S OWN ORDER, all 28 arms evaluated before any regime is read — rung 73's rule, and
+    // for its reason: a short circuit would change how many closure calls the plant sees.
+    let ev: Vec<(&'static str, f64, bool)> = vec![
+        leg4("F+f", (laws.f)(wf + dg, wr, q, v)?),
+        leg4("F-f", (laws.f)(wf - dg, wr, q, v)?),
+        leg4("F+r", (laws.f)(wf, wr + dg, q, v)?),
+        leg4("F-r", (laws.f)(wf, wr - dg, q, v)?),
+        leg4("F+q", (laws.f)(wf, wr, q + dq, v)?),
+        leg4("F-q", (laws.f)(wf, wr, q - dq, v)?),
+        leg4("F+v", (laws.f)(wf, wr, q, v + dv)?),
+        leg4("F-v", (laws.f)(wf, wr, q, v - dv)?),
+        leg4("R+f", (laws.r)(wf + dg, wr, q, v)?),
+        leg4("R-f", (laws.r)(wf - dg, wr, q, v)?),
+        leg4("R+r", (laws.r)(wf, wr + dg, q, v)?),
+        leg4("R-r", (laws.r)(wf, wr - dg, q, v)?),
+        leg4("R+q", (laws.r)(wf, wr, q + dq, v)?),
+        leg4("R-q", (laws.r)(wf, wr, q - dq, v)?),
+        leg4("R+v", (laws.r)(wf, wr, q, v + dv)?),
+        leg4("R-v", (laws.r)(wf, wr, q, v - dv)?),
+        reg4("C+f", (laws.c)(wf + dg, wr, v)?),
+        reg4("C-f", (laws.c)(wf - dg, wr, v)?),
+        reg4("C+r", (laws.c)(wf, wr + dg, v)?),
+        reg4("C-r", (laws.c)(wf, wr - dg, v)?),
+        reg4("C+v", (laws.c)(wf, wr, v + dv)?),
+        reg4("C-v", (laws.c)(wf, wr, v - dv)?),
+        reg4("V+f", (laws.v)(wf + dg, wr, q)?),
+        reg4("V-f", (laws.v)(wf - dg, wr, q)?),
+        reg4("V+r", (laws.v)(wf, wr + dg, q)?),
+        reg4("V-r", (laws.v)(wf, wr - dg, q)?),
+        reg4("V+q", (laws.v)(wf, wr, q + dq)?),
+        reg4("V-q", (laws.v)(wf, wr, q - dq)?),
+    ];
+    let off: Vec<&'static str> = ev.iter().filter(|(_, _, r)| !r).map(|(k, _, _)| *k).collect();
+    if !off.is_empty() {
+        return Ok(QuadGains::dropped(p.s, v, off, false));
+    }
+    let at = |k: &str| ev.iter().find(|(n, _, _)| *n == k).expect("the 28 keys above").1;
+    let d = |kp: &str, km: &str, h2: f64| (at(kp) - at(km)) / (2.0 * h2);
+    let (f_f, f_r) = (d("F+f", "F-f", dg), d("F+r", "F-r", dg));
+    let (f_q, f_v) = (d("F+q", "F-q", dq), d("F+v", "F-v", dv));
+    let (r_f, r_r) = (d("R+f", "R-f", dg), d("R+r", "R-r", dg));
+    let (r_q, r_v) = (d("R+q", "R-q", dq), d("R+v", "R-v", dv));
+    let (c_f, c_r, c_v) = (d("C+f", "C-f", dg), d("C+r", "C-r", dg), d("C+v", "C-v", dv));
+    let (v_f, v_r, v_q) = (d("V+f", "V-f", dg), d("V+r", "V-r", dg), d("V+q", "V-q", dq));
+    // `_demand_authority`, NOT rung 72's `authority` — both senses invert, and step 3 § (i)
+    // records the substitution `g = ms - w` that makes them branch-for-branch identical on the
+    // shipped points. Identical in ARITHMETIC is not identical in SPELLING, and this is the
+    // spelling Python calls.
+    let auth = demand_authority(wf, wr, mf_sched);
+    let masked = match auth {
+        Authority::Gov => Some(Authority::Fuel),
+        Authority::Fuel => Some(Authority::Gov),
+        _ => None,
+    };
+    let mask_leak = match masked {
+        Some(Authority::Fuel) => Some(c_f.abs().max(v_f.abs())),
+        Some(Authority::Gov) => Some(c_r.abs().max(v_r.abs())),
+        _ => None,
+    };
+    Ok(QuadGains {
+        interior: true,
+        off_regime: Vec::new(),
+        near_switch: false,
+        s: p.s,
+        v_base: v,
+        authority: Some(auth),
+        f_f, r_r, f_r, f_q, f_v, r_f, r_q, r_v, c_f, c_r, c_v, v_f, v_r, v_q,
+        pair_fr: f_r * r_f,
+        pair_rc: r_q * c_r,
+        pair_cv: c_v * v_q,
+        pair_rv: r_v * v_r,
+        masked,
+        mask_leak,
+        // Python's dict has no such key at this rung — `None` is the MISSING KEY and never a value.
+        self_masked: None,
+        cross_masked: None,
+        self_live: None,
+    })
+}
+
+// ---------------------------------------------------------------------------------------------
+// § 2 — `demand_law`: THE COORDINATE IS A CUT, AND THE CUT IS THE SCHEDULE'S SLOPE TIMES THE CLOCK
+// ---------------------------------------------------------------------------------------------
+
+/// One coordinate's reading inside one arm of [`demand_law`] — Python's
+/// `row["coords"][coord]`, which is a **five-key failure dict OR a ten-key reading** and never
+/// both.
+///
+/// An enum rather than a struct of `Option`s because Python's two dicts share no key: a reader
+/// that got a `Failed` and asked for `max_Tt4` raises, and `row.get("dTt4_coord")` is absent
+/// rather than `None` on an arm where either side failed. **On the shipped grid nothing fails
+/// here — 0 of 18 (6 arms × 3 coords) — so the `Failed` arm is a refusal this rung ships and no
+/// shipped call reaches**, which is stated because an unreachable arm that is not named reads as
+/// coverage.
+#[derive(Clone, Debug)]
+pub enum CoordRead {
+    /// `dict(failed=str(exc)[:200])`.
+    Failed(String),
+    Read(CoordStats),
+}
+
+/// The ten keys [`demand_law`] reads off one coordinate's march.
+#[derive(Clone, Debug)]
+pub struct CoordStats {
+    pub n: usize,
+    pub max_tt4: f64,
+    pub min_phi: f64,
+    /// `max_Tt4 - Tt4_max` — SIGNED, so a plant that holds the redline reports a negative.
+    pub overshoot: f64,
+    /// `min_phi - phi_lim`, likewise signed.
+    pub breach: f64,
+    /// The `s` of every point whose authority differs from its predecessor's with NEITHER
+    /// dormant — Python's hand-over list.
+    pub handovers: Vec<f64>,
+    /// **`None` IS A MEASUREMENT ON THE ARREST ARM.** At `phi_lim = 0.80` the demand plant never
+    /// accelerates, so the governor never takes the actuator and Python's `next(…, None)` returns
+    /// the default. 4 of the 18 readings on the shipped grid are `None`, all of them the two
+    /// demand tags on the two arrest arms; the other 14 are `Some`.
+    pub first_gov: Option<f64>,
+    pub arrested: bool,
+    pub max_clip: f64,
+    pub ic_iters: usize,
+}
+
+/// One `(inc, phi_lim)` cell of [`demand_law`].
+#[derive(Clone, Debug)]
+pub struct DemandLawArm {
+    pub inc: bool,
+    pub phi_lim: f64,
+    pub sm: f64,
+    pub clip: CoordRead,
+    pub latched: CoordRead,
+    pub demand: CoordRead,
+    /// Python writes these three keys only when BOTH `clip` and `demand` read, and the fourth only
+    /// when both `demand-latched` and `demand` do — so `None` here is an ABSENT KEY, not a value.
+    pub dtt4_coord: Option<f64>,
+    pub dphi_coord: Option<f64>,
+    pub holds_redline: Option<bool>,
+    pub dtt4_floor: Option<f64>,
+}
+
+/// RUNG 74's `demand_law` return.
+#[derive(Clone, Debug)]
+pub struct DemandLaw {
+    pub arms: Vec<DemandLawArm>,
+    pub taus: (f64, f64, f64, f64),
+    pub ds: f64,
+    pub floors: Vec<f64>,
+    pub tt4_max: f64,
+    /// **THE HEADLINE CELL** — every arm where the clip plant breaches the redline and the demand
+    /// plant holds it, same clocks, same maps, same schedule.
+    pub redline_flips: Vec<(bool, f64)>,
+    pub arrested: Vec<(bool, f64)>,
+}
+
+/// RUNG 74 § 2 — **the coordinate is a CUT, and the cut is the schedule's own slope times the
+/// clock, so the lag stops breaking the redline.**
+///
+/// # `sm` IS AN ARGUMENT AND IS IGNORED, WHICH IS PYTHON's DISCLOSURE
+///
+/// The signature takes `sm` and the body computes its own from `floors`. At the inherited floor
+/// the surge cap sits AT the scheduled fuel from `s = 0`, so a leg that TRACKS it pins `phi` on
+/// the floor and permits no acceleration at all — a reportable extreme, reported, but not a
+/// trajectory anything can be differenced on. `main.py` passes `0.0` there. The parameter is kept
+/// rather than dropped because dropping it would make the port's signature disagree with the
+/// source's on a caller that supplies it positionally.
+///
+/// # THE REFERENCE IS HELD FIXED AT `sched` ON EVERY ARM
+///
+/// Python's own comment records that the FIRST version of this reader did not do that — it read
+/// the clip plant under rung 73's APPLIED reference and the two demand plants under `sched`, so
+/// every quoted number was the coordinate PLUS the reference (32 K and 71 K of a 315 K / 354 K
+/// effect). The port carries the fixed reference and the comment, because a constant that looks
+/// arbitrary is exactly the one a later edit removes.
+#[allow(clippy::too_many_arguments)]
+pub fn demand_law(
+    core: &ScheduledStatorCore, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, tt4_max: f64,
+    _sm: f64, taus: (f64, f64, f64, f64), floors: &[f64], r: f64, s_settle: f64, ds: f64,
+    v_max: f64,
+) -> DemandLaw {
+    let phi_surge = core.arming().map_lp_design.phi_surge;
+    let mut arms: Vec<DemandLawArm> = Vec::new();
+    for inc in [false, true] {
+        for &phi_lim in floors {
+            let sm_i = phi_lim / phi_surge - 1.0;
+            let mut reads: Vec<CoordRead> = Vec::new();
+            for coord in COORD_ORDER3 {
+                let traj = match try_coord_march(
+                    core, flight, tt4_lo, tt4_hi, tt4_max, sm_i, taus, r, s_settle, ds, v_max,
+                    inc, coord, REF_SCHED, None) {
+                    Ok(t) => t,
+                    // `str(exc)[:200]`, by CHARACTERS — these messages are ASCII, so the count is
+                    // the same in bytes; stated because it would not be for one carrying an em
+                    // dash.
+                    Err(msg) => {
+                        reads.push(CoordRead::Failed(msg.chars().take(200).collect()));
+                        continue;
+                    }
+                };
+                let mut hand: Vec<f64> = Vec::new();
+                for i in 1..traj.len() {
+                    let (a, b) = (auth74(&traj[i]), auth74(&traj[i - 1]));
+                    if a != b && a != Authority::Dormant && b != Authority::Dormant {
+                        hand.push(traj[i].s);
+                    }
+                }
+                let max_tt4 = opt_fold(traj.iter().map(|p| p.tt4), f64::max)
+                    .expect("the march emits at least one point");
+                let min_phi = opt_fold(traj.iter().map(|p| p.phi_lp), f64::min)
+                    .expect("the march emits at least one point");
+                reads.push(CoordRead::Read(CoordStats {
+                    n: traj.len(),
+                    max_tt4,
+                    min_phi,
+                    overshoot: max_tt4 - tt4_max,
+                    breach: min_phi - phi_lim,
+                    handovers: hand,
+                    first_gov: traj.iter().find(|p| auth74(p) == Authority::Gov).map(|p| p.s),
+                    arrested: (max_tt4 - tt4_lo).abs() < 1e-6,
+                    // `max(p["g"] for p in traj)` — the APPLIED clip, which on a rung-74 point is
+                    // the UNFLOORED projection `mf_sched - mf_app`.
+                    max_clip: opt_fold(traj.iter().map(|p| asym_extra(p).0), f64::max)
+                        .expect("the march emits at least one point"),
+                    ic_iters: ic74(&traj[0]).0,
+                }));
+            }
+            let demand = reads.pop().expect("three coordinates ran");
+            let latched = reads.pop().expect("three coordinates ran");
+            let clip = reads.pop().expect("three coordinates ran");
+            let (mut dtt4_coord, mut dphi_coord, mut holds_redline, mut dtt4_floor) =
+                (None, None, None, None);
+            if let (CoordRead::Read(c), CoordRead::Read(d)) = (&clip, &demand) {
+                dtt4_coord = Some(d.max_tt4 - c.max_tt4);
+                dphi_coord = Some(d.min_phi - c.min_phi);
+                // Python's `d["overshoot"] <= 0.0 < c["overshoot"]` — a CHAINED comparison, so
+                // both halves must hold. Spelled as two, which is what Python evaluates.
+                holds_redline = Some(d.overshoot <= 0.0 && 0.0 < c.overshoot);
+            }
+            if let (CoordRead::Read(l), CoordRead::Read(d)) = (&latched, &demand) {
+                dtt4_floor = Some(d.max_tt4 - l.max_tt4);
+            }
+            arms.push(DemandLawArm {
+                inc, phi_lim, sm: sm_i, clip, latched, demand,
+                dtt4_coord, dphi_coord, holds_redline, dtt4_floor,
+            });
+        }
+    }
+    // `a.get("holds_redline")` is FALSY when absent as well as when false — one predicate, two
+    // reasons, and the port must not turn the absent case into a panic.
+    let redline_flips = arms.iter().filter(|a| a.holds_redline == Some(true))
+                            .map(|a| (a.inc, a.phi_lim)).collect();
+    let arrested = arms.iter()
+                       .filter(|a| matches!(&a.demand, CoordRead::Read(d) if d.arrested))
+                       .map(|a| (a.inc, a.phi_lim)).collect();
+    DemandLaw {
+        arms, taus, ds, floors: floors.to_vec(), tt4_max, redline_flips, arrested,
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// § 1 — `demand_gains`: THE ENTRIES MOVE AND THE SPECTRUM DOES NOT
+// ---------------------------------------------------------------------------------------------
+
+/// One interior point of [`demand_gains`] — the two Jacobians compared at ONE state.
+#[derive(Clone, Debug)]
+pub struct GainRow {
+    pub s: f64,
+    pub authority: Authority,
+    pub poly_gap: f64,
+    pub poly_scale: f64,
+    pub worst_flip: f64,
+    pub worst_keep: f64,
+    /// How many fuel↔non-fuel entries genuinely changed sign at `O(1)` magnitude — **the gate that
+    /// matters**, because a port that silently did nothing would pass every other reading.
+    pub n_sign_changed: usize,
+    pub biggest_moved: f64,
+    pub mask_leak_w: Option<f64>,
+    pub mask_leak_g: Option<f64>,
+    pub pairs_gap: f64,
+}
+
+/// RUNG 74's `demand_gains` return.
+#[derive(Clone, Debug)]
+pub struct DemandGains {
+    pub inc: bool,
+    pub phi_lim: f64,
+    pub taus: (f64, f64, f64, f64),
+    pub ds: f64,
+    pub n: usize,
+    pub rows: Vec<GainRow>,
+    /// Python's `skipped` dict, `(regime, switch)`. **The switch count is 1 on the shipped grid**
+    /// and rung 73's equivalent is 0 — see [`demand_gains_at`]'s header.
+    pub skipped: (usize, usize),
+    pub worst_poly_gap: Option<f64>,
+    /// RELATIVE, because the charpoly's own coefficients run to `~1/tau^4 ~ 1e5` and an absolute
+    /// gap on those is not a statement about the spectrum.
+    pub worst_poly_rel: Option<f64>,
+    pub worst_flip: Option<f64>,
+    pub worst_keep: Option<f64>,
+    pub worst_pairs_gap: Option<f64>,
+    pub worst_mask_leak: Option<f64>,
+    pub min_sign_changed: Option<usize>,
+    pub biggest_moved: Option<f64>,
+}
+
+/// RUNG 74 § 1 — **the ENTRIES move and the SPECTRUM does not.**
+///
+/// The two Jacobians are taken AT THE SAME STATE through DIFFERENT closures
+/// ([`demand_gains_at`] against `_quad_gains_at`), so the agreement is a measurement and not a
+/// restatement.
+///
+/// # THE STATES ARE THE **CLIP** PLANT's, WHICH IS A DISCLOSURE AND NOT A CONVENIENCE
+///
+/// A Jacobian is a function of the state, not of which trajectory passed through it — but only one
+/// plant has all FOUR legs riding. `phi_lim` is shared by the surge leg, the valve and the stator,
+/// so at the lowered floor § 2's arms need, the valve is off its regime at every point and there
+/// is no interior cell at all; at the inherited floor the clip plant rides all four and the demand
+/// plant does not accelerate. **This is also why [`demand_gains_at`]'s projection arm is the live
+/// one**: every point handed to it is a `PointExtra::Shared`.
+///
+/// # THE RIG IS BUILT HERE AND NOT THROUGH [`coord_march`]
+///
+/// Python calls `_shared_rig` directly and writes `("clip", "sched")` onto the sibling, then
+/// marches. Routing it through `_coord_march` would be the same three lines — and would ALSO be
+/// the same three lines if `_coord_march` ever gained a fourth, which is the failure mode this
+/// keeps out. Ported as the source spells it.
+#[allow(clippy::too_many_arguments)]
+pub fn demand_gains(
+    core: &ScheduledStatorCore, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, tt4_max: f64,
+    phi_lim: f64, taus: (f64, f64, f64, f64), inc: bool, r: f64, s_settle: f64, ds: f64,
+    v_max: f64, every: usize,
+) -> DemandGains {
+    let sm = phi_lim / core.arming().map_lp_design.phi_surge - 1.0;
+    let (tau_f, tau_gov, tau_q, tau_s) = taus;
+    let (m, surge, lag) = (core.triple_hooks().shared_rig)(core, &SharedRigArm {
+        sm, tau: tau_q, tau_s, v_max, tt4_max,
+        tau_att: tau_f, tau_rel: 3.0 * tau_f, inc, ..Default::default()
+    });
+    (m.fuel.inner.triple_hooks.with_coord)(&m.fuel.inner, LAG_COORD_CLIP);
+    (m.fuel.inner.triple_hooks.with_ref)(&m.fuel.inner, Some(REF_SCHED));
+    let leg = StatorLeg { accel: None, surge, tt4_max: Some(tt4_max) };
+    let ramp = Ramp { tt4_lo, tt4_hi, r, s_settle, ds };
+    let traj = m.stator_march_scoped(
+        flight, &ramp, None, &leg,
+        &MarchScope { tau_gov: Some(tau_gov), lag, ..MarchScope::DEFAULT }).0;
+
+    let (mut skip_regime, mut skip_switch) = (0usize, 0usize);
+    let mut rows: Vec<GainRow> = Vec::new();
+    for p in traj.iter().step_by(every) {
+        // `m._with_ref("sched", m._quad_gains_at, …)` — rung 73's chain, through the table.
+        let gg = {
+            let _rs = RefScope::set(&m.fuel.inner, Some(REF_SCHED));
+            (m.triple_hooks().quad_gains_at)(&m, flight, p, None, surge.as_ref(), tt4_max,
+                                             1e-7, 1e-5, 1e-4, true, 4.0)
+                .unwrap_or_else(|e| panic!("{}", e.0))
+        };
+        if !gg.interior {
+            if gg.near_switch { skip_switch += 1; } else { skip_regime += 1; }
+            continue;
+        }
+        // `m._with_coord("demand", m._demand_gains_at, …)`. **The second miss is booked to
+        // `regime` even when it is a SWITCH**, which is Python's line and not a slip: the two
+        // branches are not symmetric, and a port that mirrored the first branch here would move
+        // counts between two keys that sum to the same total.
+        let gw = {
+            let _cs = CoordScope::set(&m.fuel.inner, LAG_COORD_DEMAND);
+            demand_gains_at(&m, flight, p, None, surge.as_ref(), tt4_max, 1e-7, 1e-5, 1e-4,
+                            true, 4.0).unwrap_or_else(|e| panic!("{}", e.0))
+        };
+        if !gw.interior {
+            skip_regime += 1;
+            continue;
+        }
+        let jw = jac4(&gw, taus);
+        let jg = jac4(&gg, taus);
+        let pw = charpoly4(&jw);
+        let pg = charpoly4(&jg);
+        // The SIGN-FLIP pattern: rows/cols 0,1 are the fuel-side block.
+        let mut flips: Vec<(f64, f64)> = Vec::new();
+        let mut keeps: Vec<(f64, f64)> = Vec::new();
+        for i in 0..4 {
+            for j in 0..4 {
+                if i == j { continue; }
+                let (fuel_i, fuel_j) = (i < 2, j < 2);
+                let tgt = if fuel_i != fuel_j { -jg[i][j] } else { jg[i][j] };
+                let err = (jw[i][j] - tgt).abs();
+                let scale = 1.0f64.max(jg[i][j].abs());
+                // Python appends the 4-tuple `(err/scale, |Jg|, i, j)` and takes `max(...)[0]`,
+                // which is a LEXICOGRAPHIC max. Only the first component is ever read, and equal
+                // firsts give the same first whichever tuple wins — so the pair carries what is
+                // used and the index halves are dropped. Named, because dropping a tie-break is
+                // only safe when the tie-broken value is not the one returned.
+                if fuel_i != fuel_j { flips.push((err / scale, jg[i][j].abs())); }
+                else { keeps.push((err / scale, jg[i][j].abs())); }
+            }
+        }
+        rows.push(GainRow {
+            s: p.s,
+            authority: gw.authority.expect("an interior point carries an authority"),
+            poly_gap: opt_fold(pw.iter().zip(pg.iter()).map(|(x, y)| (x - y).abs()), f64::max)
+                .expect("charpoly4 returns five coefficients"),
+            poly_scale: opt_fold(pg.iter().map(|x| x.abs()), f64::max)
+                .expect("charpoly4 returns five coefficients"),
+            worst_flip: opt_fold(flips.iter().map(|x| x.0), f64::max)
+                .expect("eight fuel<->non-fuel off-diagonals"),
+            worst_keep: opt_fold(keeps.iter().map(|x| x.0), f64::max)
+                .expect("four same-block off-diagonals"),
+            n_sign_changed: flips.iter().filter(|x| x.1 > 1e-6).count(),
+            biggest_moved: opt_fold(flips.iter().map(|x| x.1), f64::max).unwrap_or(0.0),
+            mask_leak_w: gw.mask_leak,
+            mask_leak_g: gg.mask_leak,
+            pairs_gap: opt_fold([
+                (gw.pair_fr - gg.pair_fr).abs(), (gw.pair_rc - gg.pair_rc).abs(),
+                (gw.pair_cv - gg.pair_cv).abs(), (gw.pair_rv - gg.pair_rv).abs(),
+            ].into_iter(), f64::max).expect("four pair products"),
+        });
+    }
+    DemandGains {
+        inc, phi_lim, taus, ds, n: rows.len(),
+        worst_poly_gap: opt_fold(rows.iter().map(|x| x.poly_gap), f64::max),
+        worst_poly_rel: opt_fold(rows.iter().map(|x| x.poly_gap / x.poly_scale), f64::max),
+        worst_flip: opt_fold(rows.iter().map(|x| x.worst_flip), f64::max),
+        worst_keep: opt_fold(rows.iter().map(|x| x.worst_keep), f64::max),
+        worst_pairs_gap: opt_fold(rows.iter().map(|x| x.pairs_gap), f64::max),
+        // `max(x["mask_leak_w"] or 0.0, x["mask_leak_g"] or 0.0)` — Python's `or` on a float, so
+        // an ABSENT leak and a leak of exactly `0.0` both become `0.0` here. Measured: 0 of 41
+        // rows have either absent, so the two cases never meet on this grid.
+        worst_mask_leak: opt_fold(
+            rows.iter().map(|x| x.mask_leak_w.unwrap_or(0.0).max(x.mask_leak_g.unwrap_or(0.0))),
+            f64::max),
+        min_sign_changed: rows.iter().map(|x| x.n_sign_changed).min(),
+        biggest_moved: opt_fold(rows.iter().map(|x| x.biggest_moved), f64::max),
+        skipped: (skip_regime, skip_switch),
+        rows,
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// § 3 — `latch_discriminator`: THE COORDINATE vs THE FLOOR'S ADDRESS
+// ---------------------------------------------------------------------------------------------
+
+/// RUNG 74's `latch_discriminator` return.
+#[derive(Clone, Debug)]
+pub struct LatchDiscriminator {
+    pub inc: bool,
+    pub phi_lim: f64,
+    pub taus: (f64, f64, f64, f64),
+    pub ds: f64,
+    pub n: usize,
+    pub slope: f64,
+    /// `slope * tau_gov` — the closed form § 1.2 predicts, carried here so the ratio below is a
+    /// comparison rather than a restatement.
+    pub forcing: f64,
+    pub coord_dtt4: f64,
+    pub coord_dg_ramp: Option<f64>,
+    pub coord_dg_post: Option<f64>,
+    pub coord_dg_at_mid: Option<f64>,
+    pub forcing_ratio: Option<f64>,
+    pub floor_dtt4: f64,
+    /// **THE FLOOR HALF, AND IT IS A BOUNDARY PROPERTY** — zero wherever both legs ride. The
+    /// subset is `both_riding`, measured at **332 of 341** on the shipped grid, so this is a fold
+    /// over a nearly-full set and not a `default=None`.
+    pub floor_dg_riding: Option<f64>,
+    pub n_both_riding: usize,
+    /// `(clip, demand-latched, demand)` — [`COORD_ORDER3`]'s order.
+    pub max_tt4: (f64, f64, f64),
+    pub min_phi: (f64, f64, f64),
+}
+
+/// RUNG 74 § 3 — **the ISOLATION INSTRUMENT: which half of this rung is the coordinate, and which
+/// is the floor's address.**
+///
+/// `demand-latched` is EXACTLY the clip plant plus the forcing, so differencing the three arms
+/// splits the rung in two — `latched - clip` is the COORDINATE and `demand - latched` is the
+/// FLOOR'S ADDRESS. Without it the rung changes two laws at once and no cell is attributable.
+///
+/// # NOTHING IN THE SHIPPED TREE CALLS THIS — MEASURED
+///
+/// `latch_discriminator` appears in `turbojet/engine.py` and in the port plan and **nowhere
+/// else**: not in `tests/test_rung74.py`, not in `main.py`. It is the one reader of the six whose
+/// only caller will ever be this port, so its grid is its OWN defaults rather than a shipped
+/// caller's, and the step-4 dump drives it at `phi_lim = 0.76` for the same reason § 2 gives —
+/// the arrest arm has no trajectory to difference.
+#[allow(clippy::too_many_arguments)]
+pub fn latch_discriminator(
+    core: &ScheduledStatorCore, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, tt4_max: f64,
+    phi_lim: f64, taus: (f64, f64, f64, f64), inc: bool, r: f64, s_settle: f64, ds: f64,
+    v_max: f64,
+) -> LatchDiscriminator {
+    let sm = phi_lim / core.arming().map_lp_design.phi_surge - 1.0;
+    let t: Vec<Vec<FuelPoint>> = COORD_ORDER3.iter().map(|&coord| {
+        coord_march(core, flight, tt4_lo, tt4_hi, tt4_max, sm, taus, r, s_settle, ds, v_max, inc,
+                    coord, REF_SCHED, None).3
+    }).collect();
+    let (clip, latched, demand) = (&t[0], &t[1], &t[2]);
+    let n = t.iter().map(|x| x.len()).min().expect("three marches");
+    // `max(p["mf_sched"] for p in t["clip"])` — over the WHOLE clip march, not the first `n`.
+    let mf_hi = opt_fold(clip.iter().map(|p| p.mf_sched), f64::max)
+        .expect("the march emits at least one point");
+    let slope = (mf_hi - clip[0].mf_sched) / r;
+
+    let ramp: Vec<usize> = (0..n).filter(|&i| clip[i].s < r).collect();
+    let post: Vec<usize> = (0..n).filter(|&i| clip[i].s >= r).collect();
+    let both_riding: Vec<usize> = (0..n).filter(|&i| {
+        matches!(auth74(&demand[i]), Authority::Fuel | Authority::Gov)
+            && matches!(auth74(&latched[i]), Authority::Fuel | Authority::Gov)
+    }).collect();
+    // `gap("demand-latched", "clip", "g_gov")` — the GOVERNOR's clip, second of the pair.
+    let dg: Vec<f64> = (0..n).map(|i| (legs74(&latched[i]).1 - legs74(&clip[i]).1).abs()).collect();
+
+    LatchDiscriminator {
+        inc, phi_lim, taus, ds, n, slope,
+        forcing: slope * taus.1,
+        coord_dtt4: opt_fold((0..n).map(|i| (latched[i].tt4 - clip[i].tt4).abs()), f64::max)
+            .expect("n >= 1"),
+        coord_dg_ramp: opt_fold(ramp.iter().map(|&i| dg[i]), f64::max),
+        coord_dg_post: opt_fold(post.iter().map(|&i| dg[i]), f64::max),
+        // Python indexes `dg[len(ramp) // 2]`, which is an index into the FULL list and not into
+        // `ramp` — they coincide only because the ramp is the trajectory's own prefix. Ported as
+        // the index Python writes.
+        coord_dg_at_mid: if ramp.is_empty() { None } else { Some(dg[ramp.len() / 2]) },
+        forcing_ratio: if ramp.is_empty() { None }
+                       else { Some(dg[ramp.len() / 2] / (slope * taus.1)) },
+        floor_dtt4: opt_fold((0..n).map(|i| (demand[i].tt4 - latched[i].tt4).abs()), f64::max)
+            .expect("n >= 1"),
+        floor_dg_riding: opt_fold(
+            both_riding.iter().map(|&i| (legs74(&demand[i]).1 - legs74(&latched[i]).1).abs()),
+            f64::max),
+        n_both_riding: both_riding.len(),
+        max_tt4: (
+            opt_fold(clip[..n].iter().map(|p| p.tt4), f64::max).expect("n >= 1"),
+            opt_fold(latched[..n].iter().map(|p| p.tt4), f64::max).expect("n >= 1"),
+            opt_fold(demand[..n].iter().map(|p| p.tt4), f64::max).expect("n >= 1"),
+        ),
+        min_phi: (
+            opt_fold(clip[..n].iter().map(|p| p.phi_lp), f64::min).expect("n >= 1"),
+            opt_fold(latched[..n].iter().map(|p| p.phi_lp), f64::min).expect("n >= 1"),
+            opt_fold(demand[..n].iter().map(|p| p.phi_lp), f64::min).expect("n >= 1"),
+        ),
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// § 4 — `windup_law`: THE STOP WAS DOING THE ANTI-WINDUP
+// ---------------------------------------------------------------------------------------------
+
+/// One `(coordinate, reference)` cell of [`windup_law`] — **and one of the four does not exist.**
+#[derive(Clone, Debug)]
+pub enum WindupCell {
+    /// `dict(exists=False, why=str(exc)[:240])`. **The `demand × applied` cell takes this arm on
+    /// the shipped grid**, and its text is the joint-IC refusal — which is the first shipped
+    /// message in this crate whose CONTENT a reader compares. See [`py_e`].
+    Absent { why: String },
+    Present(WindupRead),
+}
+
+/// The seven keys [`windup_law`] reads off a cell that exists.
+#[derive(Clone, Debug)]
+pub struct WindupRead {
+    pub n: usize,
+    pub ic_iters: usize,
+    pub ic_res: f64,
+    /// The MASKED leg's own demand at every point something holds the actuator — the governor's
+    /// `w_gov` where the FUEL leg holds, and `w_fuel` where the governor does. Getting the two the
+    /// wrong way round would report the leg that is riding as if it were wound up.
+    pub max_masked_w: Option<f64>,
+    pub max_masked_over_sched: Option<f64>,
+    pub max_tt4: f64,
+}
+
+/// RUNG 74's `windup_law` return.
+#[derive(Clone, Debug)]
+pub struct WindupLaw {
+    pub inc: bool,
+    pub phi_lim: f64,
+    pub taus: (f64, f64, f64, f64),
+    pub ds: f64,
+    /// The four cells in Python's own insertion order:
+    /// `demand|sched`, `demand|applied`, `demand-latched|sched`, `demand-latched|applied`.
+    pub cells: [WindupCell; 4],
+    /// **THE FINDING IN ONE BOOLEAN** — the STOP is what made rung 73's leg settle.
+    pub no_equilibrium_without_a_stop: bool,
+    pub both_sched_exist: bool,
+}
+
+/// RUNG 74 § 4 — **rung 73's self-anti-winding is a property of the COORDINATE'S STOP, not of the
+/// composition.**
+///
+/// The motion is real and this rung reproduces it. What is not a property of the composition is
+/// where it STOPS: in clip coordinates the leg runs INTO the floor at `g = 0`; in demand
+/// coordinates the identical motion is `dw/ds = (cap - mf_app)/tau > 0` with nothing in its path,
+/// and the leg has no interior equilibrium at all — the joint IC sweep cannot converge and the
+/// march never starts.
+///
+/// # IT IS A CELL TABLE AND NOT AN ASSERTION, BECAUSE *THE PLANT DOES NOT EXIST* IS A MEASUREMENT
+///
+/// Three of the four cells are readings and the fourth is the finding. That makes this the one
+/// reader in the file whose output depends on a REFUSAL's text rather than on a float, and step 4
+/// is where that stopped being free: see the module header's table of the four formatting
+/// divergences step 3's message carried, all four inside the 240 characters Python keeps.
+#[allow(clippy::too_many_arguments)]
+pub fn windup_law(
+    core: &ScheduledStatorCore, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, tt4_max: f64,
+    phi_lim: f64, taus: (f64, f64, f64, f64), inc: bool, r: f64, s_settle: f64, ds: f64,
+    v_max: f64,
+) -> WindupLaw {
+    let sm = phi_lim / core.arming().map_lp_design.phi_surge - 1.0;
+    let mut cells: Vec<WindupCell> = Vec::new();
+    for coord in [LAG_COORD_DEMAND, LAG_COORD_LATCHED] {
+        for ref_law in [REF_SCHED, REF_LAW_APPLIED] {
+            let traj = match try_coord_march(
+                core, flight, tt4_lo, tt4_hi, tt4_max, sm, taus, r, s_settle, ds, v_max, inc,
+                coord, ref_law, None) {
+                Ok(t) => t,
+                Err(msg) => {
+                    cells.push(WindupCell::Absent { why: msg.chars().take(240).collect() });
+                    continue;
+                }
+            };
+            let held: Vec<&FuelPoint> = traj.iter()
+                .filter(|p| matches!(auth74(p), Authority::Fuel | Authority::Gov)).collect();
+            let masked = |p: &FuelPoint| {
+                let (wf, wr) = demands74(p);
+                if auth74(p) == Authority::Gov { wf } else { wr }
+            };
+            let (ic_iters, ic_res) = ic74(&traj[0]);
+            cells.push(WindupCell::Present(WindupRead {
+                n: traj.len(),
+                ic_iters,
+                ic_res,
+                max_masked_w: opt_fold(held.iter().map(|p| masked(p)), f64::max),
+                max_masked_over_sched: opt_fold(
+                    held.iter().map(|p| masked(p) / p.mf_sched), f64::max),
+                max_tt4: opt_fold(traj.iter().map(|p| p.tt4), f64::max).expect("n >= 1"),
+            }));
+        }
+    }
+    let exists = |i: usize| matches!(cells[i], WindupCell::Present(_));
+    let (no_equilibrium_without_a_stop, both_sched_exist) =
+        (!exists(1) && exists(3), exists(0) && exists(2));
+    WindupLaw {
+        inc, phi_lim, taus, ds,
+        cells: [cells.remove(0), cells.remove(0), cells.remove(0), cells.remove(0)],
+        no_equilibrium_without_a_stop,
+        both_sched_exist,
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// THE REDUCE BY IDENTITY — `flat_schedule_identity`
+// ---------------------------------------------------------------------------------------------
+
+/// RUNG 74's `flat_schedule_identity` return.
+#[derive(Clone, Debug)]
+pub struct FlatScheduleIdentity {
+    pub inc: bool,
+    pub phi_lim: f64,
+    pub n: usize,
+    pub nu0: (f64, f64),
+    /// The worst absolute gap per key, in [`FLAT_KEYS`]'s order.
+    pub worst: [f64; 9],
+    pub worst_any: f64,
+    /// **MEASURED `false`, and the suite says so** — the two marches compute the same quantity
+    /// through different float expressions (`cap - w` against `-(req - g)`), so the agreement is
+    /// `~1e-15` relative rather than exact. Anchor P7, scored REFUTED-as-stated.
+    pub bit_identical: bool,
+    pub riding: usize,
+    pub non_vacuous: bool,
+    pub span_tt4: (f64, f64),
+}
+
+/// The nine keys [`flat_schedule_identity`] differences, in Python's own tuple order.
+pub const FLAT_KEYS: [&str; 9] =
+    ["nu_lp", "nu_hp", "Tt4", "phi_lp", "mf", "b", "v", "g_fuel", "g_gov"];
+
+/// **THE REDUCE THAT MATTERS — and the only one in which this rung's own march runs.**
+///
+/// `_lag_coord = "clip"` reduces by DISPATCH (the march is not entered), which is exact and says
+/// nothing about the new integrator. On a FLAT schedule the forcing `mf_dot*tau` is identically
+/// zero and the latch's stop coincides with the clip plant's, so `demand-latched` IS the clip
+/// plant — **by identity, not by dispatch.**
+///
+/// # IT IS GATED NON-VACUOUS, AND THE DEFENCE IS THE `nu_offset`
+///
+/// A flat schedule at the running line is a plant at rest, and two plants at rest agree trivially.
+/// So the march starts OFF the running line and the reader reports how many points actually had a
+/// leg riding: **241 of 241** on the shipped grid, with `Tt4` spanning more than 20 K. Both halves
+/// are returned rather than asserted, because the suite's gate is the place that decides what
+/// counts as non-vacuous.
+#[allow(clippy::too_many_arguments)]
+pub fn flat_schedule_identity(
+    core: &ScheduledStatorCore, flight: &FlightCondition, tt4_flat: f64, phi_lim: f64,
+    taus: (f64, f64, f64, f64), inc: bool, s_end: f64, ds: f64, v_max: f64, tt4_max: f64,
+    nu_offset: f64,
+) -> FlatScheduleIdentity {
+    let sm = phi_lim / core.arming().map_lp_design.phi_surge - 1.0;
+    let eq = core.fuel.inner.equilibrium(flight, tt4_flat);
+    let nu0 = (eq.nu_lp * nu_offset, eq.nu_hp * nu_offset);
+    // `r = 0.5` and `s_settle = s_end - 0.5` are LITERALS in Python, not parameters — a flat
+    // schedule has no ramp to size, so the split is arbitrary and fixed rather than exposed.
+    let t: Vec<Vec<FuelPoint>> = [LAG_COORD_CLIP, LAG_COORD_LATCHED].iter().map(|&coord| {
+        coord_march(core, flight, tt4_flat, tt4_flat, tt4_max, sm, taus, 0.5, s_end - 0.5, ds,
+                    v_max, inc, coord, REF_SCHED, Some(nu0)).3
+    }).collect();
+    let (clip, latched) = (&t[0], &t[1]);
+    let n = clip.len().min(latched.len());
+    let key = |p: &FuelPoint, k: usize| -> f64 {
+        match k {
+            0 => p.nu_lp,
+            1 => p.nu_hp,
+            2 => p.tt4,
+            3 => p.phi_lp,
+            4 => p.mf,
+            5 => valve_of(p).0,
+            6 => v_at_point(p),
+            7 => legs74(p).0,
+            8 => legs74(p).1,
+            _ => unreachable!("FLAT_KEYS has nine members"),
+        }
+    };
+    let mut worst = [0.0f64; 9];
+    let mut bit_identical = true;
+    for (k, w) in worst.iter_mut().enumerate() {
+        *w = opt_fold((0..n).map(|i| (key(&clip[i], k) - key(&latched[i], k)).abs()), f64::max)
+            .expect("n >= 1");
+        for i in 0..n {
+            if key(&clip[i], k) != key(&latched[i], k) { bit_identical = false; }
+        }
+    }
+    FlatScheduleIdentity {
+        inc, phi_lim, n, nu0, worst,
+        worst_any: opt_fold(worst.into_iter(), f64::max).expect("nine keys"),
+        bit_identical,
+        riding: (0..n).filter(|&i| matches!(auth74(&clip[i]), Authority::Fuel | Authority::Gov))
+                      .count(),
+        non_vacuous: (0..n)
+            .filter(|&i| matches!(auth74(&clip[i]), Authority::Fuel | Authority::Gov)).count() > 0,
+        span_tt4: (
+            opt_fold(clip[..n].iter().map(|p| p.tt4), f64::min).expect("n >= 1"),
+            opt_fold(clip[..n].iter().map(|p| p.tt4), f64::max).expect("n >= 1"),
+        ),
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// § 1.2 — `forcing_openloop`: THE FORCING, ISOLATED
+// ---------------------------------------------------------------------------------------------
+
+/// One point of [`forcing_openloop`]'s open-loop integration.
+#[derive(Clone, Copy, Debug)]
+pub struct ForcingRow {
+    pub s: f64,
+    pub on_ramp: bool,
+    pub cap: f64,
+    pub req: f64,
+    pub g_clip: f64,
+    pub g_dem: f64,
+    pub delta: f64,
+    pub riding: bool,
+}
+
+/// RUNG 74's `forcing_openloop` return.
+#[derive(Clone, Debug)]
+pub struct ForcingOpenloop {
+    pub inc: bool,
+    pub phi_lim: f64,
+    pub taus: (f64, f64, f64, f64),
+    pub ds: f64,
+    pub n: usize,
+    pub slope: f64,
+    /// `slope * tau_gov` — **the rung's central number, and it is a DERIVATION** rather than a fit.
+    pub predicted: f64,
+    pub n_on_ramp: usize,
+    pub n_post: usize,
+    pub mean_delta_late: Option<f64>,
+    pub ratio_late: Option<f64>,
+    pub worst_rel_late: Option<f64>,
+    pub delta_post_first: Option<f64>,
+    pub delta_post_last: Option<f64>,
+    pub decayed: Option<bool>,
+    pub rows: Vec<ForcingRow>,
+}
+
+/// RUNG 74 § 1.2 — **THE FORCING, ISOLATED, and the reader that exists because § 3's closed-loop
+/// difference CANNOT isolate it.**
+///
+/// Two plants that differ at all differ EVERYWHERE downstream: by mid-ramp the demand march is at
+/// a different state, so `latched - clip` measures the forcing PLUS every consequence of having
+/// applied it, and it does not vanish after the ramp the way the forcing does. So the forcing is
+/// read OPEN LOOP, along ONE trajectory — the clip march's own — with both lag laws integrated
+/// against their own targets at the same states.
+///
+/// # THE CAPS COME OFF `self`, NOT OFF THE MARCHED SIBLING
+///
+/// Python computes `self._cap_gov(…)` with `self._b_state, self._v_state` set from the trajectory
+/// point, and the machine `_coord_march` handed back is never used again. That is not a slip and
+/// the port does not tidy it: the reader's own machine and the rig differ in their arming (the rig
+/// is built from `sm`, the reader from whatever the caller constructed), and swapping one for the
+/// other would change every cap on the open-loop path while leaving the closed-loop trajectory
+/// untouched — a difference no aggregate here would show.
+///
+/// # THE TWO `sum()` CALLS ARE THIS READER's, AND P2 NAMES IT FOR THAT REASON
+///
+/// § 5.30 (iii) attributes two of rung 74's four `sum()` calls to this body — the largest share,
+/// and the only reader whose published quantity is an AVERAGE over the ramp. The fold here is a
+/// naive left-to-right accumulation starting at `0.0`, which is PyPy's `sum` and Rust's; CPython
+/// 3.12+'s is Neumaier-compensated and may differ. Which of the two this reader needs an exemption
+/// for is the ORACLE step's measurement, not this one's — step 4 compares against PyPy.
+///
+/// # THE LATE HALF IS 39 POINTS OF 77, AND THAT IS WHY IT IS A SUBSET AT ALL
+///
+/// A first-order lag needs `~3 tau` to reach its steady tracking error and the leg does not even
+/// ride before that, so the closed form is only meant to hold on the ramp's late half. `on[len/2:]`
+/// is Python's slice; the count is measured rather than assumed, because an empty `late` would
+/// make three of this reader's published keys `None` and the comparison against `predicted`
+/// vacuous.
+#[allow(clippy::too_many_arguments)]
+pub fn forcing_openloop(
+    core: &ScheduledStatorCore, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, tt4_max: f64,
+    phi_lim: f64, taus: (f64, f64, f64, f64), inc: bool, r: f64, s_settle: f64, ds: f64,
+    v_max: f64,
+) -> ForcingOpenloop {
+    let sm = phi_lim / core.arming().map_lp_design.phi_surge - 1.0;
+    let traj = coord_march(core, flight, tt4_lo, tt4_hi, tt4_max, sm, taus, r, s_settle, ds,
+                           v_max, inc, LAG_COORD_CLIP, REF_SCHED, None).3;
+    let tau_gov = taus.1;
+    let slope = (opt_fold(traj.iter().map(|p| p.mf_sched), f64::max).expect("n >= 1")
+                 - traj[0].mf_sched) / r;
+    // The governor's DEMAND and its CLIP, both open loop and both started at the coordinate's own
+    // zero: `w = mf_sched(0)` IS `g = 0`.
+    let mut wg = traj[0].mf_sched;
+    let mut gg = 0.0f64;
+    let mut rows: Vec<ForcingRow> = Vec::with_capacity(traj.len());
+    for p in traj.iter() {
+        let ms = p.mf_sched;
+        let cap = {
+            let _sb = MarchedBleed::set(&core.fuel.inner, valve_of(p).0);
+            let _sv = MarchedStator::set(&core.fuel.inner, v_at_point(p));
+            cap_gov(&core.fuel, flight, p.nu_lp, p.nu_hp, ms, tt4_max)
+                .unwrap_or_else(|e| panic!("{}", e.0))
+        };
+        // Python's `max(0.0, ms - cap)`: the FLOOR is on the clip law only — the demand law has
+        // none, which is § 3's whole subject.
+        let x = ms - cap;
+        let req = if x > 0.0 { x } else { 0.0 };
+        rows.push(ForcingRow {
+            s: p.s, on_ramp: p.s < r, cap, req,
+            g_clip: gg, g_dem: ms - wg, delta: (ms - wg) - gg, riding: cap < ms,
+        });
+        // EXPLICIT EULER, and the two states are stepped AFTER the row is recorded — so row `i`
+        // holds the state entering step `i`, which is what makes `delta` at `s = 0` exactly zero.
+        wg += ds * (cap - wg) / tau_gov;
+        gg += ds * (req - gg) / tau_gov;
+    }
+    let on: Vec<&ForcingRow> = rows.iter().filter(|x| x.on_ramp && x.riding).collect();
+    let off: Vec<&ForcingRow> = rows.iter().filter(|x| !x.on_ramp && x.riding).collect();
+    let late: Vec<&ForcingRow> = if on.is_empty() { Vec::new() }
+                                 else { on[on.len() / 2..].to_vec() };
+    // `sum(...) / len(...)` — a naive left fold from `0.0`, which is PyPy's `sum`. See the header.
+    let mean_late = if late.is_empty() { None } else {
+        Some(late.iter().fold(0.0f64, |acc, x| acc + x.delta) / late.len() as f64)
+    };
+    ForcingOpenloop {
+        inc, phi_lim, taus, ds,
+        n: rows.len(),
+        slope,
+        predicted: slope * tau_gov,
+        n_on_ramp: on.len(),
+        n_post: off.len(),
+        mean_delta_late: mean_late,
+        ratio_late: mean_late.map(|m| m / (slope * tau_gov)),
+        worst_rel_late: if late.is_empty() { None } else {
+            opt_fold(late.iter().map(|x| (x.delta - slope * tau_gov).abs()), f64::max)
+                .map(|w| w / (slope * tau_gov))
+        },
+        delta_post_first: off.first().map(|x| x.delta),
+        delta_post_last: off.last().map(|x| x.delta),
+        // Python's guard is `len(off) > 1 and off[0]["delta"] != 0.0`, and `None` where it fails —
+        // a THIRD state beside true and false, kept because "the difference did not decay" and
+        // "there was nothing to decay" are different readings.
+        decayed: if off.len() > 1 && off[0].delta != 0.0 {
+            Some(off[off.len() - 1].delta.abs() < 0.1 * off[0].delta.abs())
+        } else { None },
+        rows,
+    }
+}

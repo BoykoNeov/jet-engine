@@ -9026,7 +9026,7 @@ by counting.
 | **AC** | 70–71 | `CrossSplitTransient`, `FullSplitTransient` | ~~**1** — `split_gains`~~ → **0. MEASURED at § 5.27 (i): `split_gains` is NOT a cell** — rung 80's same-named body has an incompatible signature and rung 70's own inherited caller `TypeError`s on a rung-80 machine. **This column's predicate is by NAME and never checked substitutability; § 5.27 (x) sweeps all 358 override pairs and finds ONE more (`_legs`, 63→77, booked to AH).** The slice swaps `at_lever`/`integrate_fuel` at EACH rung plus `_triple_laws` at 70 = **5** distinct function pointers, no new field |
 | **AD** | 72 | `SharedActuatorTransient` | **3** — `_reference`, `_rk4_floor_shared`, `_shared_rig` |
 | **AE** | 73 | `AppliedReferenceTransient` | ~~**0**~~ → **1 ADD + 6 SWAPS. MEASURED at § 5.29 (ii)** — `_with_ref` (69 → 73) is a **NAME REUSED**, not an override: identical arity, but the two bodies write DISJOINT FIELDS (`_ref` / `_ref_law`), and rung 69's own inherited caller RAISES on a rung-73 machine (driven, with a passing control). **§ 5.27 (x) saw the pair and cleared it as a harmless RENAME** — its predicate compared signatures; the same sentence clears `_with_coord` (74 → 79), now booked to AF **and** AI. `_quad_gains_at` is a swap here too — **AD's "unreachable today" booking REFUTED BY VALUE** (§ 5.29 (iv)): with the machine held fixed and only the pointer swapped, 32 keys move and 70 vanish, `F_r` going −1.000000000002735 → 0.0 |
-| **AF** | 74 | `DemandCoordinateTransient` | ~~**3**~~ → **4 ADD + 4 SWAPS. MEASURED at § 5.30 (ii)** — the missing fourth ADD is `_with_coord`, which **slice W’s phase-wide census had already named** among *the four names the hand-written column missed*; this row was simply never updated. Its two definers are rungs 74 and 79, so the census **re-derives § 5.29 (v)’s separate-field obligation from the source** instead of inheriting it as a booking. SWAPS are 4 under AC’s convention and 2 under § 5.19 (i)’s (`at_lever`/`_shared_rig` are Rust deletes) — both stated, because the same slice scores differently under the two. **LANDED at § 5.30.1: 4 ADD + 4 SWAPS, `TripleHooks` 14 → 18.** The width toll was MEASURED AD's way (apply, fix the lib, count what is still red) and came back **7 `src` literals + 4 TEST sites where this plan and the crate's own comments say TWO** — slice AE ships two exhaustive DESTRUCTURINGS (`E0027`) that nothing calls tripwires. **STEP 2 at § 5.30.2: the six demand laws, all SINGLE-DEFINER by census, so no table field and no width toll; `slice_af_laws.rs` 13 gates, sweep 21/21 as predicted (18 killed).** Its leading finding is a rig point COPIED from step 1's cells file that sat inside a shipped refusal — and the gate that did not abort there had been passing its min-select flatness equality between two SATURATED ZEROS. |
+| **AF** | 74 | `DemandCoordinateTransient` | ~~**3**~~ → **4 ADD + 4 SWAPS. MEASURED at § 5.30 (ii)** — the missing fourth ADD is `_with_coord`, which **slice W’s phase-wide census had already named** among *the four names the hand-written column missed*; this row was simply never updated. Its two definers are rungs 74 and 79, so the census **re-derives § 5.29 (v)’s separate-field obligation from the source** instead of inheriting it as a booking. SWAPS are 4 under AC’s convention and 2 under § 5.19 (i)’s (`at_lever`/`_shared_rig` are Rust deletes) — both stated, because the same slice scores differently under the two. **LANDED at § 5.30.1: 4 ADD + 4 SWAPS, `TripleHooks` 14 → 18.** The width toll was MEASURED AD's way (apply, fix the lib, count what is still red) and came back **7 `src` literals + 4 TEST sites where this plan and the crate's own comments say TWO** — slice AE ships two exhaustive DESTRUCTURINGS (`E0027`) that nothing calls tripwires. **STEP 2 at § 5.30.2: the six demand laws, all SINGLE-DEFINER by census, so no table field and no width toll; `slice_af_laws.rs` 13 gates, sweep 21/21 as predicted (18 killed).** Its leading finding is a rig point COPIED from step 1's cells file that sat inside a shipped refusal — and the gate that did not abort there had been passing its min-select flatness equality between two SATURATED ZEROS. **STEP 3 at § 5.30.3: the six-state march (`_coord_rig`/`_coord_ic`/`_march`), `slice_af_march.rs` 15 gates, sweep 17/17 as predicted (12 killed).** Its leading finding is a gate that read a SPLIT PRODUCED BY STEP 2's OWN CODE as evidence of its clamp working, when that clamp fires 0 of 340 times. **STEP 4 at § 5.30.4: `_coord_march`, `_demand_gains_at` and all six readers; NO gate file (they are step 5's), proved by DRIVING every reader — 3 731 keys, `Rust == PyPy` bit for bit on the first run, and the port independently reproduces `docs/rung74-spec.md` § 3's `65.2 K`/332-of-341 and § 4's exact `1.0`. Sweep 19 mutations, 11 killed, 19/19 as predicted.** Its leading finding is TWO DOC COMMENTS asserting a difference was LIVE that nothing had measured, one of them FALSE — and a shipped refusal message found to be FOUR formatting divergences wide the moment a reader first read one as a value. |
 | **AG** | 75–76 | `AntiWindupTransient`, `SensedCapTransient` | **0** |
 | **AH** | 77–78 | `StiffnessLedgerTransient`, `ResidualGaugeTransient` | **0** |
 | **AI** | 79–80 | `StateCoordinateTransient`, `SplitWallTransient` | **0** |
@@ -20487,3 +20487,229 @@ gate would be measuring a tree byte-identical to the last green one — step 2 �
   gate that drives only the fuel side is measuring an identity;
 * `PointExtra::Demand`'s 35 keys and the 32 widened arms — every reader step 4 ports must be checked
   against the SIGN change, not only against the key's presence.
+
+#### 5.30.4 SLICE AF step 4 — the six readers, and **TWO DOC COMMENTS THAT SAID A DIFFERENCE MATTERED, NEITHER OF WHICH HAD BEEN MEASURED AND ONE OF WHICH WAS FALSE**
+
+`_coord_march`, `_demand_gains_at` and all six public readers — `demand_law`, `demand_gains`,
+`latch_discriminator`, `windup_law`, `flat_schedule_identity`, `forcing_openloop` — in
+`rust/src/demand_coordinate.rs`, which goes **1 407 → 2 657 lines** (596 → 1 328 excluding doc
+comments and blanks). **No gate file: the ported gates are step 5**, and slice AE step 2's
+precedent is that a body step proves itself by DRIVING every reader and diffing the printed
+values.
+
+**THE DIFF: `Rust == PyPy` on all 3 731 keys, bit for bit — 0 differing, 0 missing, 0 extra**, on
+the first run. The count has an independent witness rather than one side's tally: two separately
+written emitters, in two languages, each produced **3 731** lines, and the key SETS are equal both
+ways round. The harness is a throwaway (`rust/tests/slice_af_step4_drive.rs`, deleted before the
+commit; the Python dumper, the differ and a copy of the driver live in
+`M:\claud_projects\temp\slice-af-step4\`) — `rust/oracle/dump_slice_af.py` and
+`tests/slice_af_oracle.rs` are step 5's.
+
+**AND THE PORT REPRODUCES THREE NUMBERS THE SHIPPED SPEC ALREADY QUOTES**, which is a check the
+diff cannot make because the diff compares the port against the source rather than against the
+record: `docs/rung74-spec.md` § 3's *`floor_dTt4 = 65.2 K` with 332 of 341 points riding* comes back
+`65.16914676462795` at `n_both_riding = 332`, and § 4's *`1.0` — exactly the stop* comes back
+exactly `1.0`. So the grid this step chose for `latch_discriminator` — the one reader with **no
+caller anywhere in the tree** — is the grid its published numbers were taken at.
+
+##### (a) THE MEASUREMENT THE STEP OPENED WITH, BECAUSE IT WOULD OTHERWISE HAVE BEEN THE FOURTH INSTANCE OF ONE DEFECT
+
+Every one of these readers folds over a FILTERED SUBSET — `both_riding`, the masked-leg list, the
+late half of the ramp, the on-ramp indices — and Python's `max(…, default=None)` returns `None` on
+an empty one. **An `Option` that is `None` on both sides agrees perfectly and measures nothing**,
+which is step 3 § (g) 2's `is_finite()`-satisfied-by-a-zero defect in `Option` clothing. So the six
+readers were driven in PYTHON FIRST, at the arguments their shipped callers use, and every subset
+counted before a line of Rust was written:
+
+| reader | the folds, and over how many | `None` keys |
+|---|---|---|
+| `demand_law` | 6 arms × 3 coords × 341 points, **0 refusals** | **4** |
+| `demand_gains` | **41** interior rows of 213, skipped `{regime: 171, switch: 1}` | 0 |
+| `latch_discriminator` | `n = 341`, `both_riding` **332**, ramp 100, post 241 | 0 |
+| `windup_law` | 4 cells, **1 refuses**, all three readings' masked lists non-empty | 0 |
+| `flat_schedule_identity` | `n = 241`, `riding` **241** | 0 |
+| `forcing_openloop` | 341 rows, on-ramp-riding **77**, post 241, **late half 39** | 0 |
+
+**3 569 leaf keys in Python's own structures, of which exactly FOUR are `None`** — every one a
+`first_gov`, on the two ARREST arms' two demand tags, where the plant never accelerates so the
+governor never takes the actuator. Their fourteen siblings are `Some`, so the presence flag
+DISCRIMINATES rather than agreeing with itself. **No fold in this step is taken over an empty set
+on any shipped grid**, and that is a measurement rather than a hope.
+
+##### (b) THE LEADING FINDING — **A CONJUNCT DESCRIBED AS LOAD-BEARING THAT A CLASS ATTRIBUTE MAKES INERT**
+
+`_demand_gains_at`'s switch filter is `abs(wf - wr) <= switch_guard * dg`. Rung 72/73's is
+`self._share_law == "max" and abs(gf - gr) <= switch_guard * dg`. The first writing of the port's
+doc comment read:
+
+> On the shipped grid it fires **1 time in 512** where rung 73's fires 0 — so the difference is not
+> decorative, and carrying the sibling's spelling here would admit a point straddling the `min()`
+> kink and return the slope of neither branch.
+
+**Both counts are right and the conclusion does not follow.** `_share_law` is a class attribute
+declared `"max"` (`engine.py:15698`); rung 74's `at_lever` copies `_ref_law` and `_lag_coord` and
+**not** `_share_law`; and nothing on any path into this body writes it. The conjunct is therefore
+TRUE at every call the shipped grid makes, and adding it back changes nothing — **M2, a predicted
+SURVIVE at 0 of 3 731 keys.** What IS live is the STATE PAIR the guard reads (`|wf - wr|` against
+`|gf - gr|`), which is the coordinate and not the conjunct.
+
+**The same sentence shape had already shipped once in the same file**, in `coord_march`: *the
+omission is Python's line and is the reason `test_demand_refuses_the_sum_composition` has to set
+the law on the reader's own machine.* That test never enters `_coord_march` — it calls `_march` on
+the reader's own machine — so the causal clause was invented whole. **M14 scores it: installing
+`_shared_march`'s own `ShareScope("max")` here moves 0 of 3 731 keys.**
+
+**THE GENERAL FORM, AND IT IS THE HARDER DIRECTION OF STEP 3 § (g) 7.** That step recorded a
+booked BLINDNESS that was false — *a claimed blind spot is a claim, and it needs a mutation like
+any other.* These two are claimed LIVE spots, and they are harder to catch for a reason worth
+naming: **a sentence saying *this matters* reads like diligence, so nothing prompts a second look
+at it**, whereas a sentence saying *this cannot be seen* invites the question by construction. What
+caught both was writing the mutation sweep, because a predicted SURVIVE needs a proof and neither
+claim could supply one. **So: type a mutation for every doc comment that asserts a difference is
+observable, not only for the code. If you cannot name the mutation, you have not named a
+mechanism.**
+
+##### (c) THE SECOND — **A SHIPPED REFUSAL FOUR FORMATTING DIVERGENCES WIDE, AND THIS IS THE FIRST STEP THAT COULD SEE IT**
+
+`windup_law` catches its cell's `AssertionError` and records `str(exc)[:240]`, which makes the TEXT
+of step 3's joint-IC refusal a COMPARED VALUE for the first time in this crate. Measured against
+Python it did not match, in four places inside those 240 characters:
+
+| | Python | Rust, as step 3 shipped it | at char |
+|---|---|---|---|
+| `{res:.3e}` | `2.898e-03` | `2.898e-3` | ~62 |
+| `{self._ic_order4!r}` | `'rqvf'` | `"rqvf"` | ~120 |
+| `{wf:.6e}`, `{wr:.6e}` | `7.635049e-02` | `7.635049e-2` | ~135 |
+| `({…!r}, {…!r})` | `('demand', 'applied')` | `("demand", "applied")` | ~185 |
+
+Rust's `{:e}` writes the exponent bare and unpadded; CPython's float `__format__` always signs it
+and pads to two digits. **The two agree only where the exponent is negative and already two digits
+wide** — measured on both interpreters rather than reasoned: `1.500000e-12` matches and
+`2.898e-03` does not. Repaired through two new helpers, [`py_e`] and [`py_repr`], and scored twice
+— **M11 (step 3's spelling restored) and M17 (`py_e` stops padding) each move EXACTLY ONE key of
+3 731.** That single key is `D/cell1/why`, and quoting it is the honest measure of the repair's
+coverage: the whole finding is visible through one hash.
+
+**AND THE CLASS IS BOOKED RATHER THAN SWEPT.** **43 sites in 14 `src` files** format a float as
+`{:.Ne}` inside a message, and `reference_split.rs:706` already recorded the divergence — *the two
+`{:.4e}` fields print `4.2e-3` where Python prints `4.2000e-03`. Nothing matches on them.* **That
+was true only while nothing read one.** The other 42 stay as they are, because nothing reads them,
+and that is a BOOKING and not a claim they are right. The general form: **a divergence that is
+inert because nothing reads it is not fixed, it is DEFERRED — so the moment a reader arrives,
+re-audit the class and not just the one site.**
+
+This is **P6 landing** — *at least one of the 7 ungated shipped messages is reachable by a port
+defect that every ported gate passes* — one step earlier than the prediction expected, and by a
+READER rather than by a gate.
+
+##### (d) THE THIRD — **THE BRANCH NO SHIPPED CALLER TAKES, NAMED BEFORE IT COULD READ AS COVERAGE**
+
+`_demand_gains_at` opens with `p["w_fuel"] if "w_fuel" in p else mf_sched - p["g_fuel"]` — a
+key-presence test, which in Rust is a `PointExtra` match. `demand_gains` drives it on the **CLIP**
+plant's trajectory (§ 1's own disclosure: only that plant has all four legs riding), so **the
+PROJECTION arm is the one every shipped caller takes and the direct arm is reached by nothing.**
+M3 deletes the direct arm and SURVIVES at 0 keys, which is the measurement; **M4 swaps the
+projected pair and KILLS at 168**, which is what says the live arm is gated at all. A port that
+always projected would have passed the entire 3 731-key diff, and a port that never did would have
+been untestable from any shipped caller.
+
+##### (e) THE MUTATION SWEEP — **19 mutations, PRE-REGISTERED, 11 KILLED and 8 SURVIVED, 19 of 19 AS PREDICTED**
+
+Every prediction was written before the mutation ran, and every predicted SURVIVE carries a proof
+(step 2 § (c)'s rule). Scored on the 3 731-key diff itself, so the column is *how many keys can see
+this* rather than caught/not-caught.
+
+| # | mutation | predicted | got | keys moved |
+|---|---|---|---|---|
+| M1 | `authority` on the PROJECTIONS for `demand_authority` | SURVIVE | **SURVIVE** | 0 — step 3 § (i)'s algebra, confirmed |
+| M2 | the sibling's `share_law == "max"` conjunct ADDED | SURVIVE | **SURVIVE** | 0 — § (b) |
+| M3 | `demand_gains_at` ALWAYS projects | SURVIVE | **SURVIVE** | 0 — § (d) |
+| M4 | the projection swaps the two legs | KILL | **KILL** | **168** |
+| M5 | `latch_discriminator` takes the DECLARED coordinate order | KILL | **KILL** | 9 |
+| M6 | `holds_redline` drops the chain's second half | SURVIVE | **SURVIVE** | 0 — every arm's clip overshoots 79–83 K |
+| M7 | `forcing_openloop` steps its states BEFORE recording | KILL | **KILL** | **1 005** |
+| M8 | the clip law's `max(0, ·)` floor dropped | KILL | **KILL** | **708** |
+| M9 | `windup_law`'s masked leg read the wrong way round | KILL | **KILL** | 6 |
+| M10 | `flat_schedule_identity` passes `s_end` for `s_end - 0.5` | KILL | **KILL** | 3 |
+| M11 | step 3's refusal-message spelling restored | KILL | **KILL** | **1** |
+| M12 | the second gains miss booked as `switch` | SURVIVE | **SURVIVE** | 0 — no `gw` miss is near-switch |
+| M13 | the forcing read off the FUEL leg's clip | KILL | **KILL** | 4 |
+| M14 | `_shared_march`'s `ShareScope` added to `coord_march` | SURVIVE | **SURVIVE** | 0 — § (b) |
+| M15 | rung 73's manifold wrapper copied (governor pinned at 0) | KILL | **KILL (panic)** | — |
+| M16 | `arrested` measured against the redline | KILL | **KILL** | 9 |
+| M17 | `py_e` stops padding the exponent | KILL | **KILL** | **1** |
+| M18 | the two knobs SCOPED instead of written permanently | SURVIVE | **NOBUILD → M18b SURVIVE** | 0 — § (f) 1 |
+| M19 | an EXTRA law call in the 28-arm chain | SURVIVE | **SURVIVE** | 0 — the plant is stateless across calls |
+
+**M15 is a weaker kill than the rest and is labelled so.** It died by PANIC, not by moved values:
+with the governor pinned at rung 73's zero the manifold solve does not converge at all. That is a
+legitimate catch — Python raises there too — but *the mutant crashed* is less evidence than *the
+mutant produced different numbers*, and reporting it as a plain KILL would overstate the diff's
+reach.
+
+**The three one-and-three-key kills (M11, M17, M10) are the useful end of the table.** They say the
+diff's power is NOT uniform: a defect in a refusal's text is visible through exactly one of 3 731
+keys, and if that key were dropped from the dump the whole of § (c) would be invisible.
+
+##### (f) DEFECTS IN THIS STEP's OWN INSTRUMENTS — **THREE, ALL IN THE SWEEP, AND TWO OF THEM WERE FOUND BY READING IT RATHER THAN BY A FAILURE**
+
+1. **A BUILD FAILURE WAS SCORED AS A KILL.** The first `drive_and_diff` returned the same failure
+   tuple for *the mutant compiled and its values moved* and for *the mutant did not compile*, and
+   the scorer wrote `KILL` for both — so **a mutation that never ran would CONFIRM a predicted
+   KILL.** That is step 1 § (h)'s *a mutation that does not apply reports as a misprediction and
+   looks like a finding*, in the quieter direction where it looks like a CONFIRMATION and prompts
+   nothing. Found by re-reading the scorer, and the fix paid within the hour: **M18 came back
+   `NOBUILD`** (the guards borrow the machine the function then moves), was flagged as an
+   instrument failure rather than a result, re-typed as **M18b** with the guards scoped around the
+   march only, and SURVIVED as predicted. Under the unfixed scorer M18 would have been a KILL
+   against a predicted SURVIVE — a fabricated finding about a distinction the borrow checker had
+   merely refused to express.
+2. **THE SWEEP CRASHED WITH A MUTANT IN THE WORKING TREE.** Its first run died inside the drive on
+   `PermissionError: [WinError 32]` — `os.remove` on an output file another process still held —
+   and the restore, which sat after the call rather than in a `finally`, never ran. **The tree was
+   left carrying M1**, and nothing in the script could have noticed: its *is the tree clean?* check
+   is the LAST line of the run, which a crash never reaches. Step 3 § (g) 5's hazard by a different
+   route, and the same lesson one turn further on — **a clean-tree check that only runs on the
+   happy path is not a check.** Repaired three ways: the restore is in a `finally`, the outer loop
+   is in a `finally`, and each mutation writes to its OWN output path so nothing has to be deleted
+   to prove it was rewritten.
+3. **`py_e` was very nearly written as a decimal-exponent recomputation** rather than as a rewrite
+   of Rust's own exponent field. It is not, and the reason is worth keeping: recomputing would put
+   a second rounding decision beside CPython's, and the mantissa is exactly the half that already
+   agrees. Only the field that differs is touched.
+
+##### (g) THE FULL GATE
+
+`cargo test` over the whole crate, unpiped with the exit code appended to the same log:
+**1 510 passed, 0 failed** across 146 `test result` blocks, `CARGO_EXIT=0`. That is step 3's
+figure to the test — **the delta is exactly zero**, which is the intended reading: the drive
+harness that produced the 3 731-key dump is a THROWAWAY and was deleted before the gate ran, so
+this step adds 1 328 non-comment lines of `src` and not one test. **The gates for this body are
+step 5's**, and the six-step price is why that sentence can be written instead of quietly
+absorbed here.
+
+**`pytest` was NOT run, and that is a decision rather than an omission**: this step changes no
+Python at all (`git status` lists one path, `rust/src/demand_coordinate.rs`), so the Python gate
+would be measuring a tree byte-identical to the last green one — step 2 § (g)'s and step 3 § (h)'s
+precedent.
+
+##### (h) WHAT STEP 5 INHERITS
+
+* **the whole reader surface, driven and diffed**, plus a Python dumper and a differ in
+  `M:\claud_projects\temp\slice-af-step4\` that the shipped `dump_slice_af.py` can be built from
+  rather than written cold. The grids are settled and cross-checked against the spec's own numbers;
+* **P2, still open and now sharper.** `forcing_openloop`'s two `sum()` calls are folds over a
+  **39-element** late half, and step 4 compares against PyPy only. Whether CPython's compensated
+  `sum` moves `mean_delta_late` / `ratio_late` / `worst_rel_late` is the ORACLE's measurement, and
+  the reader § 5.30 (iii) named in advance is the one that owns the fold;
+* **the one-key finding.** `D/cell1/why` is the ONLY key in 3 731 that witnesses a refusal's text.
+  Any oracle that drops it loses § (c) entirely, and the same is true of every other shipped
+  message a future reader starts reading;
+* **the 42 unrepaired `{:.Ne}` sites**, booked in § (c). They are not defects today because nothing
+  reads them; the trigger for re-auditing the class is a READER, not a rung;
+* **M15's shape** — a kill by panic rather than by value. Step 5's ported gates should be able to
+  say which of the two a given defect produces, because a suite that only asks *did it fail* cannot;
+* **`latch_discriminator` has no caller in the shipped tree** (the name appears in
+  `turbojet/engine.py` and this plan and nowhere else), so its ported gate has no Python test to
+  mirror — its bars have to come from `docs/rung74-spec.md` § 3, which is where its numbers are
+  published.
