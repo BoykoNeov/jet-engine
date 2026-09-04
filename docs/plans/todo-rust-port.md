@@ -20598,6 +20598,18 @@ and that is a BOOKING and not a claim they are right. The general form: **a dive
 inert because nothing reads it is not fixed, it is DEFERRED — so the moment a reader arrives,
 re-audit the class and not just the one site.**
 
+**AND THE CLASS HAS A SECOND READER, WHICH THE DIFF CANNOT SEE.** The sentence above was written
+saying *for the first time*, singular, and that had not been counted. `demand_law` catches the same
+`AssertionError` and records `dict(failed=str(exc)[:200])` — a second message-as-value site, at a
+DIFFERENT truncation, so it is not even the same slice of the same string. It is DORMANT on every
+shipped grid (**0 of 18 = 6 arms x 3 coords take it**, already booked at the `CoordRead::Failed`
+doc comment), and the proof that it is dormant is a number already in the table above: **M11 moves
+exactly ONE key.** Had the second arm fired, it would have moved two. So the repair is correct on
+the reader that runs and UNTESTED on the reader that does not — booked to step 5, whose oracle can
+drive the refusal deliberately. The two caught types are `AssertionError` and nothing else: swept
+across the whole reader range, so no `KeyError` or other repr is ever recorded, and `demands74`'s
+refusal on a clip point propagates rather than being written down.
+
 This is **P6 landing** — *at least one of the 7 ungated shipped messages is reachable by a port
 defect that every ported gate passes* — one step earlier than the prediction expected, and by a
 READER rather than by a gate.
@@ -20687,6 +20699,17 @@ harness that produced the 3 731-key dump is a THROWAWAY and was deleted before t
 this step adds 1 328 non-comment lines of `src` and not one test. **The gates for this body are
 step 5's**, and the six-step price is why that sentence can be written instead of quietly
 absorbed here.
+
+**AND THE WARNINGS WERE COUNTED, WHICH THE FAILURE GREP CANNOT DO.** A pass looking for `FAILED`,
+`error` and `panicked` is blind to `warning`, and this step is the one where that matters: the
+1 328 added `src` lines had exactly ONE caller, the drive harness, and it was DELETED before the
+gate ran — so anything not reachable from the crate root is now unreferenced, and *a thing with no
+reader* is this port's own repeated finding (slice AA, four instances). Counted: **10 `^warning`
+lines = 7 warnings + 3 per-target summaries, ALL of them in TEST targets** (`rung24` x2,
+`spatial_oracle` x4, `rung23` x1), all pre-existing, all `non_snake_case` or `unused_mut`.
+**ZERO warnings in `src`, and in particular zero `dead_code`** — which is the measurement that every
+private item this step added, `REF_SCHED` and `COORD_ORDER3` included, still has a reader once the
+harness is gone. Reasoning would have said the same thing; only the count establishes it.
 
 **`pytest` was NOT run, and that is a decision rather than an omission**: this step changes no
 Python at all (`git status` lists one path, `rust/src/demand_coordinate.rs`), so the Python gate

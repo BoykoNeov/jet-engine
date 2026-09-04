@@ -41,6 +41,15 @@ repaired through two helpers; the other 42 are BOOKED, not swept.
 **The general form: a divergence that is inert because nothing reads it is not fixed, it is
 DEFERRED — so the moment a reader arrives, re-audit the class rather than the one site.**
 
+And the sentence that said *for the first time*, singular, had not been counted either: `demand_law`
+catches the same exception and records `str(exc)[:200]` — a second reader of the class, at a
+different truncation, DORMANT on every shipped grid (0 of 18). Its dormancy is provable from a
+number already measured — the repair's mutation moves exactly ONE key, where two live readers
+would have moved two. **So the repair is correct where it runs and untested where it does not**,
+which is a booking rather than a silence only because someone asked which OTHER arms read a
+message.
+
+
 ## The measurement that opened the step, and why it went first
 
 Every one of the six readers folds over a FILTERED subset and Python's `max(…, default=None)`
