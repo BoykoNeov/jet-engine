@@ -815,7 +815,13 @@ fn r72_integrate_fuel_shared(
 /// and propagates a NaN the moment one appears rather than swallowing it.
 ///
 /// [`py_max3`]: crate::lagged_bleed::py_max3
-fn py_max4(a: f64, b: f64, c: f64, d: f64) -> f64 {
+///
+/// **`pub(crate)` SINCE SLICE AF**, because rung 74's march runs the SAME four-way sweep over
+/// `(wf, wr, q, v)` and folds its residual with the same Python `max`. Re-spelling it there would
+/// be a second expression of one decision — [`applied_clip_core`]'s recorded reason for being
+/// shared rather than inlined — and the two would then be free to drift on the NaN row that is
+/// the whole point of the helper.
+pub(crate) fn py_max4(a: f64, b: f64, c: f64, d: f64) -> f64 {
     let mut m = a;
     if b > m { m = b; }
     if c > m { m = c; }
@@ -1144,7 +1150,10 @@ pub fn quad_gains_at(
 ) -> Result<QuadGains, Abort> {
     let (a, h, mf_sched) = (p.nu_lp, p.nu_hp, p.mf_sched);
     let (gf, gr, q, v_live) = match p.extra {
-        PointExtra::Shared { g_fuel, g_gov, b, v, .. } => (g_fuel, g_gov, b, v),
+        PointExtra::Shared { g_fuel, g_gov, b, v, .. }
+        // SLICE AF (13 of 31): rung 74's point carries the same four names in the DEMAND
+        // coordinate -- `g_fuel`/`g_gov` are `mf_sched - w`, unfloored.
+        | PointExtra::Demand { g_fuel, g_gov, b, v, .. } => (g_fuel, g_gov, b, v),
         _ => panic!("rung-72's gains need a SIX-state trajectory: the point carries no \
                      `g_fuel`/`g_gov` pair, so there is no authority to difference across."),
     };
@@ -1267,12 +1276,24 @@ pub(crate) fn reg4(k: &'static str, x: (f64, Regime)) -> (&'static str, f64, boo
 pub fn riding4(traj: &[FuelPoint], b_max: f64) -> Vec<FuelPoint> {
     traj.iter()
         .filter(|p| match p.extra {
-            PointExtra::Shared { required_fuel, required_gov, b_cmd, v_regime: Some(vr), .. } =>
+            PointExtra::Shared { required_fuel, required_gov, b_cmd, v_regime: Some(vr), .. }
+            // SLICE AF (14 of 31): **AND THE SIGN QUESTION IS LIVE AT THIS ARM.** Every
+            // variant above floors its requirements, so `required_* > 0.0` reads *is this leg
+            // cutting*. Rung 74's are UNFLOORED projections `mf_sched - cap`, and
+            // `cap > mf_sched` is reachable on its own shipped arms (measured: 21/22/22
+            // points of 341 on the governor leg and 0/9/261 on the fuel leg, over
+            // `test_rung74.py`'s three `phi` arms), so a NEGATIVE arrives here and the
+            // predicate answers *not riding*. That is exactly what Python's `p["..."] > 0`
+            // does on the same dict, so the arm is admitted with the sign named rather than
+            // widened as if the domain had not changed.
+            | PointExtra::Demand { required_fuel, required_gov, b_cmd, v_regime: Some(vr), .. } =>
                 required_fuel > 0.0 && required_gov > 0.0
                     && 0.0 < b_cmd && b_cmd < b_max && vr == Regime::Riding,
             // A stator-less rung-72 point is not RIDING a stator it does not have: `false` is
             // the answer Python's `p.get("v_regime") == "riding"` gives on `None`, not a fallback.
-            PointExtra::Shared { v_regime: None, .. } => false,
+            PointExtra::Shared { v_regime: None, .. }
+            // SLICE AF (15 of 31).
+            | PointExtra::Demand { v_regime: None, .. } => false,
             // **AND EVERY OTHER VARIANT REFUSES, WHICH IS THE OPPOSITE OF A FILTER's USUAL ARM.**
             // Python reads `p["required_fuel"]`, `p["required_gov"]` and `p["b_cmd"]` with a BARE
             // index — only `v_regime` goes through `.get` — so a non-six-state point raises
@@ -1327,7 +1348,9 @@ pub fn assert_fuel_boundary(
 ) -> Result<BoundaryCheck, Abort> {
     let (a, h, mf_sched) = (p.nu_lp, p.nu_hp, p.mf_sched);
     let (q, v) = match p.extra {
-        PointExtra::Shared { b, v, .. } => (b, v),
+        PointExtra::Shared { b, v, .. }
+        // SLICE AF (16 of 31).
+        | PointExtra::Demand { b, v, .. } => (b, v),
         _ => panic!("rung-72's boundary check needs a six-state point"),
     };
     let laws = quad_laws(core, flight, a, h, mf_sched, None, surge, tt4_max);
@@ -1737,7 +1760,13 @@ pub fn charpoly_selftest() -> [(&'static str, SelftestArm); 2] {
 /// as a `_ =>` arm at each of the sites that ask.
 pub fn authority_of(p: &FuelPoint) -> Option<Authority> {
     match p.extra {
-        PointExtra::Shared { authority, .. } => Some(authority),
+        PointExtra::Shared { authority, .. }
+        // SLICE AF (17 of 31): rung 74 records `authority` too -- `_demand_authority`'s
+        // label, whose two senses are INVERTED but whose four outcomes are the same enum.
+        // Without this arm every rung-72/73 authority reader answers `None` on a rung-74
+        // trajectory, which is the quietest of the fallbacks: no panic and no wrong number,
+        // just a census that finds nothing.
+        | PointExtra::Demand { authority, .. } => Some(authority),
         _ => None,
     }
 }
@@ -1745,7 +1774,9 @@ pub fn authority_of(p: &FuelPoint) -> Option<Authority> {
 /// The stator regime a point carries, `None` where it has no stator or no such key.
 fn v_regime_of(p: &FuelPoint) -> Option<Regime> {
     match p.extra {
-        PointExtra::Shared { v_regime, .. } => v_regime,
+        PointExtra::Shared { v_regime, .. }
+        // SLICE AF (18 of 31).
+        | PointExtra::Demand { v_regime, .. } => v_regime,
         PointExtra::Triple { v_regime, .. } => Some(v_regime),
         _ => None,
     }
@@ -1754,7 +1785,9 @@ fn v_regime_of(p: &FuelPoint) -> Option<Regime> {
 /// The valve COMMAND a point carries, `None` where it has no valve.
 fn b_cmd_of(p: &FuelPoint) -> Option<f64> {
     match p.extra {
-        PointExtra::Shared { b_cmd, .. } => Some(b_cmd),
+        PointExtra::Shared { b_cmd, .. }
+        // SLICE AF (19 of 31).
+        | PointExtra::Demand { b_cmd, .. } => Some(b_cmd),
         PointExtra::Triple { b_cmd, .. } => Some(b_cmd),
         _ => None,
     }
@@ -1886,11 +1919,17 @@ pub fn authority_law(
                 && !hand.is_empty()
                 && hand.iter().any(|s| joint[0].s <= *s && *s <= joint[joint.len() - 1].s);
             let req_fuel = |p: &FuelPoint| match p.extra {
-                PointExtra::Shared { required_fuel, .. } => required_fuel > 0.0,
+                PointExtra::Shared { required_fuel, .. }
+                // SLICE AF (20 of 31): site 14's sign question again, in a liveness
+                // predicate rather than a filter.
+                | PointExtra::Demand { required_fuel, .. } => required_fuel > 0.0,
                 _ => false,
             };
             let req_gov = |p: &FuelPoint| match p.extra {
-                PointExtra::Shared { required_gov, .. } => required_gov > 0.0,
+                PointExtra::Shared { required_gov, .. }
+                // SLICE AF (21 of 31): and its twin -- this is the leg on which rung 74's
+                // requirement actually goes negative at every measured `phi` arm.
+                | PointExtra::Demand { required_gov, .. } => required_gov > 0.0,
                 _ => false,
             };
             out.push(AuthorityArm {
@@ -2022,7 +2061,10 @@ pub fn shared_gains(
         }
         boundary.push(assert_fuel_boundary(&m, flight, p, tt4_max, surge.as_ref(), 1e-5, 1e-4)?);
         let (rf, gfv) = match p.extra {
-            PointExtra::Shared { required_fuel, g_fuel, .. } => (required_fuel, g_fuel),
+            PointExtra::Shared { required_fuel, g_fuel, .. }
+            // SLICE AF (22 of 31): `riding4` above now admits rung 74, so this
+            // `unreachable!` would BECOME reachable without the matching arm.
+            | PointExtra::Demand { required_fuel, g_fuel, .. } => (required_fuel, g_fuel),
             _ => unreachable!("`riding4` admits only six-state points"),
         };
         let tt = (lag.tau(rf, gfv), taus.1, taus.2, taus.3);
@@ -2213,7 +2255,9 @@ pub fn shared_cells(
                     continue;
                 }
                 let (rf, gfv) = match p.extra {
-                    PointExtra::Shared { required_fuel, g_fuel, .. } => (required_fuel, g_fuel),
+                    PointExtra::Shared { required_fuel, g_fuel, .. }
+                    // SLICE AF (23 and 24 of 31): the same pairing, twice more.
+                    | PointExtra::Demand { required_fuel, g_fuel, .. } => (required_fuel, g_fuel),
                     _ => unreachable!("`riding4` admits only six-state points"),
                 };
                 let tau_f = lag.tau(rf, gfv);
@@ -2462,7 +2506,9 @@ pub fn mask_discriminator(
                     continue;
                 }
                 let (rf, gfv) = match p.extra {
-                    PointExtra::Shared { required_fuel, g_fuel, .. } => (required_fuel, g_fuel),
+                    PointExtra::Shared { required_fuel, g_fuel, .. }
+                    // SLICE AF (23 and 24 of 31): the same pairing, twice more.
+                    | PointExtra::Demand { required_fuel, g_fuel, .. } => (required_fuel, g_fuel),
                     _ => unreachable!("`riding4` admits only six-state points"),
                 };
                 let tau_f = lag.tau(rf, gfv);

@@ -470,7 +470,9 @@ fn v_or_zero(p: &FuelPoint) -> f64 {
         // SLICE AD (wildcard site 1 of 13): without this arm a rung-72 trajectory takes
         // the `0.0` fallback and this reader silently reports the DESIGN stator setting
         // for a march that recorded a live one.
-        | crate::fuel_transient::PointExtra::Shared { v, .. } => v,
+        | crate::fuel_transient::PointExtra::Shared { v, .. }
+        // SLICE AF (6 of 31): the same silent-fallback failure one variant on.
+        | crate::fuel_transient::PointExtra::Demand { v, .. } => v,
         _ => 0.0,
     }
 }
@@ -500,10 +502,13 @@ fn full_window_extra(p: &FuelPoint) -> (f64, f64, Regime) {
     match p.extra {
         PointExtra::Triple { required, b_cmd, v_regime, .. }
         // SLICE AD: as at rung 70's reader, one file over.
-        | PointExtra::Shared { required, b_cmd, v_regime: Some(v_regime), .. } =>
+        | PointExtra::Shared { required, b_cmd, v_regime: Some(v_regime), .. }
+        // SLICE AF (7 of 31): as at rung 70's reader, one file over.
+        | PointExtra::Demand { required, b_cmd, v_regime: Some(v_regime), .. } =>
             (required, b_cmd, v_regime),
-        PointExtra::Shared { v_regime: None, .. } => panic!(
-            "rung-71's reader on a STATOR-LESS rung-72 trajectory: no stator solve ran"),
+        PointExtra::Shared { v_regime: None, .. } | PointExtra::Demand { v_regime: None, .. } =>
+            panic!(
+            "rung-71's reader on a STATOR-LESS rung-72/74 trajectory: no stator solve ran"),
         PointExtra::None
         | PointExtra::Asym { .. }
         | PointExtra::Valve { .. }
@@ -1308,7 +1313,9 @@ pub fn ic_contraction(
             marched: (match p0.extra {
                           crate::fuel_transient::PointExtra::Triple { g, .. }
                           // SLICE AD (2 of 13).
-                          | crate::fuel_transient::PointExtra::Shared { g, .. } => g,
+                          | crate::fuel_transient::PointExtra::Shared { g, .. }
+                          // SLICE AF (8 of 31).
+                          | crate::fuel_transient::PointExtra::Demand { g, .. } => g,
                           _ => panic!("rung-71's IC reader needs a five-state trajectory"),
                       },
                       crate::lagged_bleed::valve_of(p0).0,

@@ -63,7 +63,7 @@ use turbojet::demand_coordinate::{
 };
 use turbojet::engine::FlightCondition;
 use turbojet::fuel_transient::{
-    AccelSchedule, AsymmetricLag, Floor, FuelLimiters, SurgeLimiter,
+    AccelSchedule, AsymmetricLag, Floor, FuelLimiters, FuelPoint, PointExtra, SurgeLimiter,
 };
 use turbojet::gas::{Abort, Gas, GasSpec};
 use turbojet::limited_bleed::BleedLimiter;
@@ -201,12 +201,16 @@ fn bare_march(m: &ScheduledStatorCore) {
 /// abort. That is slice AE's recorded reason for asserting the empty message rather than a missing
 /// needle, and here the strong form caught its own driver: a weaker control would have passed on a
 /// march that never ran. The ramp supplies the schedule the plant is actually matched to.
-fn armed_march(m: &ScheduledStatorCore, tt4_max: Option<f64>, tau_gov: Option<f64>) {
+///
+/// **IT RETURNS THE TRAJECTORY SINCE STEP 3**, because the converted anti-delegation gate has to
+/// read the point VARIANT and not only the absence of a panic.
+fn armed_march(m: &ScheduledStatorCore, tt4_max: Option<f64>, tau_gov: Option<f64>)
+ -> Vec<FuelPoint> {
     let leg = StatorLeg { accel: None::<&AccelSchedule>, surge: Some(Floor::Phi(surge())),
                           tt4_max };
     let ramp = Ramp { tt4_lo: LO, tt4_hi: HI, r: R, s_settle: SETTLE, ds: DS };
     m.stator_march_scoped(&flight(), &ramp, None, &leg,
-                          &MarchScope { lag: Some(lag()), tau_gov, ..MarchScope::DEFAULT });
+                          &MarchScope { lag: Some(lag()), tau_gov, ..MarchScope::DEFAULT }).0
 }
 
 /// The ONE refusal a march cannot reach: `s_off` is rungs 50/51's forced release edge, and neither
@@ -628,32 +632,48 @@ fn the_other_four_refusals_fire_only_below_it() {
             "THE CONTROL — the parent's, under `clip`: {d2:?}");
 }
 
-/// **A LEGAL DEMAND MARCH REACHES THIS RUNG's OWN MARCH — which does not exist yet, by design.**
+/// **A LEGAL DEMAND MARCH REACHES THIS RUNG's OWN MARCH — CONVERTED AT STEP 3, NOT RETIRED.**
 ///
-/// Every refusal has passed at this point, so the only two things that can happen are *rung 74's
-/// march runs* and *the call silently became rung 73's*. The second is the most dangerous defect
-/// this step could ship — it would pass every reduce gate in the crate, because the reduce IS
-/// *rung 74 under `clip` is rung 73* — so the arm panics by name and this gate asserts it is
-/// reached.
+/// Step 1 shipped the demand arm as an `unimplemented!` and this gate asserted it was REACHED.
+/// Every refusal has passed by that line, so the only two things that can happen are *rung 74's
+/// march runs* and *the call silently became rung 73's* — and the second is the most dangerous
+/// defect the slice could ship, because it would pass every reduce gate in the crate: the reduce
+/// IS *rung 74 under `clip` is rung 73*.
 ///
-/// At step 3 this gate becomes the entry point of the real march and the assertion moves from
-/// *reached* to *marched*; it is not an expiry, it is the same claim with a body behind it.
+/// **THE BODY LANDED AND THE OBLIGATION DID NOT EXPIRE, IT CHANGED SHAPE.** Both demand tags now
+/// enter code no rung-73 machine has, and each proves it a different way on THIS file's arming
+/// (a valve, no stator, and the builder's inherited `"applied"` reference):
+///
+/// * `demand-latched` MARCHES, and its points are [`PointExtra::Demand`] — a variant rung 73's
+///   integrator cannot construct;
+/// * `demand` raises **rung 74's own joint-IC refusal**, which is § 4's finding and a message no
+///   parent owns. `('demand', 'applied')` has no interior equilibrium, so the sweep cannot settle.
+///
+/// The VALUE half — that the two coordinates are different plants by 36% of the applied fuel on
+/// one arming — is `tests/slice_af_march.rs`'s, where a trajectory can be compared point by point.
 #[test]
-fn a_legal_demand_march_reaches_the_unimplemented_march() {
-    for coord in [LAG_COORD_DEMAND, LAG_COORD_LATCHED] {
-        let m = demand(&valve_arm());
-        m.fuel.inner.lag_coord.set(coord);
-        let msg = message_of(|| { armed_march(&m, Some(TT4_MAX), Some(TAU_GOV)); });
-        assert!(msg.contains("_integrate_fuel_demand") && msg.contains("step 3"),
-                "{coord:?}: the demand arm is REACHED and says where its body lands: {msg:?}");
-        assert!(msg.contains("would pass every reduce gate"),
-                "and says why it is a panic rather than a delegation: {msg:?}");
-    }
-    // THE CONTROL — the SAME arming under `clip` marches cleanly all the way through rung 73.
+fn a_legal_demand_march_reaches_this_rungs_own_march() {
     let m = demand(&valve_arm());
-    assert_eq!(message_of(|| { armed_march(&m, Some(TT4_MAX), Some(TAU_GOV)); }), "",
-               "P3 — `clip` is rung 73 by NOT ENTERING, so the reduce is a dispatch and this \
-                arming must run to completion");
+    m.fuel.inner.lag_coord.set(LAG_COORD_LATCHED);
+    let traj = armed_march(&m, Some(TT4_MAX), Some(TAU_GOV));
+    assert!(traj.len() > 100, "the latched demand arm MARCHES: {} points", traj.len());
+    assert!(traj.iter().all(|p| matches!(p.extra, PointExtra::Demand { .. })),
+            "and every point is this rung's own variant, which rung 73's integrator cannot build");
+
+    let d = demand(&valve_arm());
+    d.fuel.inner.lag_coord.set(LAG_COORD_DEMAND);
+    let msg = message_of(|| { armed_march(&d, Some(TT4_MAX), Some(TAU_GOV)); });
+    assert!(msg.contains("rung-74") && msg.contains("NO INTERIOR EQUILIBRIUM AT ALL"),
+            "the unlatched arm reaches THIS rung's joint-IC refusal, which is s 4 and which no \
+             parent can raise: {msg:?}");
+
+    // THE CONTROL — the SAME arming under `clip` marches cleanly all the way through rung 73,
+    // and comes back as the PARENT's variant.
+    let c = demand(&valve_arm());
+    let ct = armed_march(&c, Some(TT4_MAX), Some(TAU_GOV));
+    assert!(ct.iter().all(|p| matches!(p.extra, PointExtra::Shared { .. })),
+            "P3 — `clip` is rung 73 by NOT ENTERING, so the reduce is a dispatch and its points \
+             are the parent's");
 }
 
 // =============================================================================================

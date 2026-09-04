@@ -355,6 +355,10 @@ fn put_point(c: &mut Cmp, p: &str, pt: &FuelPoint) {
             c.f(&format!("{p}/g"), g);
             c.f(&format!("{p}/required"), required);
         }
+        // SLICE AF: nor can a rung-74 DEMAND-coordinate point, refused for the identical
+        // reason. The message names the rung so a mis-dispatch says WHICH integrator ran.
+        PointExtra::Demand { .. } => panic!(
+            "slice AA's oracle received a rung-74 DEMAND-coordinate point: this march              dispatched to the wrong integrator"),
         // SLICE AD: a rung-72 point cannot reach a slice-AA dump. It is REFUSED
         // rather than skipped -- a skipped variant makes a golden agree by recording
         // nothing, which is the one way an oracle can pass while measuring less.
@@ -691,6 +695,10 @@ fn point_bits(p: &FuelPoint) -> Vec<u64> {
             v.extend([g.to_bits(), required.to_bits(), b.to_bits(), b_cmd.to_bits(),
                       vv.to_bits(), v_cmd.to_bits(), fnv1a(regime_name(v_regime)),
                       ic_iters as u64, ic_res.to_bits(), fnv1a(ic_order)]),
+        // SLICE AF: nor can a rung-74 DEMAND-coordinate point, refused for the identical
+        // reason. The message names the rung so a mis-dispatch says WHICH integrator ran.
+        PointExtra::Demand { .. } => panic!(
+            "slice AA's oracle received a rung-74 DEMAND-coordinate point: this march              dispatched to the wrong integrator"),
         // SLICE AD: a rung-72 point cannot reach a slice-AA dump. It is REFUSED
         // rather than skipped -- a skipped variant makes a golden agree by recording
         // nothing, which is the one way an oracle can pass while measuring less.

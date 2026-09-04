@@ -295,6 +295,16 @@ fn put_traj(c: &mut Cmp, p: &str, pts: &[FuelPoint]) {
         // Sorted, because Python sorts them; the list is TYPED here and step 5's dump
         // re-reads it off the live dict, which is `key_count`'s own discipline
         // ([[rust-port-guessed-census-bars]]: five typed count bars, five wrong).
+        // **AND A FOURTH TIME**, at slice AF. Rung 74's demand-coordinate route carries
+        // TWENTY-ONE extra keys - rung 72's sixteen plus the two demand STATES, their two
+        // unfloored set points, and the coordinate tag. The list is READ OFF THE LIVE PYTHON
+        // DICT (`sorted(traj[0])` is 35 names, 14 of them the base) rather than typed from
+        // the struct, which is `key_count`'s own discipline
+        // ([[rust-port-guessed-census-bars]]: five typed count bars, five wrong).
+        PointExtra::Demand { .. } =>
+            &["authority", "b", "b_cmd", "cap_fuel", "cap_gov", "g", "g_fuel", "g_gov",
+              "ic_iters", "ic_order", "ic_res", "lag_coord", "required", "required_fuel",
+              "required_gov", "share_law", "v", "v_cmd", "v_regime", "w_fuel", "w_gov"],
         PointExtra::Shared { .. } =>
             &["authority", "b", "b_cmd", "g", "g_fuel", "g_gov", "ic_iters", "ic_order",
               "ic_res", "required", "required_fuel", "required_gov", "share_law", "v",

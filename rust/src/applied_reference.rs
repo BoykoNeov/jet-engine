@@ -484,7 +484,12 @@ fn r73_quad_gains_at(
 ) -> Result<QuadGains, Abort> {
     let (a, h, mf_sched) = (p.nu_lp, p.nu_hp, p.mf_sched);
     let (gf, gr, q, v_live) = match p.extra {
-        PointExtra::Shared { g_fuel, g_gov, b, v, .. } => (g_fuel, g_gov, b, v),
+        PointExtra::Shared { g_fuel, g_gov, b, v, .. }
+        // SLICE AF (1 of 31): rung 74 records the same four. The two clips are UNFLOORED
+        // projections `mf_sched - w` there, so this reader can now be handed a NEGATIVE
+        // `g_fuel`/`g_gov` -- which is the number Python's bare dict index returns, so
+        // admitting is the faithful arm and refusing would be stricter than the source.
+        | PointExtra::Demand { g_fuel, g_gov, b, v, .. } => (g_fuel, g_gov, b, v),
         _ => panic!("rung-73's gains need a SIX-state trajectory: the point carries no \
                      `g_fuel`/`g_gov` pair, so there is no authority to difference across."),
     };
@@ -664,7 +669,10 @@ fn py_int_set(vals: impl Iterator<Item = i64>) -> Vec<i64> {
 /// The six-state fields §§ 0–3 read off a point, refused on any other march.
 fn shared_of(p: &FuelPoint) -> (f64, f64, f64, f64, usize, f64) {
     match p.extra {
-        PointExtra::Shared { g_fuel, g_gov, required_fuel, required_gov, ic_iters, ic_res, .. } =>
+        PointExtra::Shared { g_fuel, g_gov, required_fuel, required_gov, ic_iters, ic_res, .. }
+        // SLICE AF (2 of 31): rung 74's march records all six, and runs the SAME four-way
+        // joint sweep -- `ic_iters` is 2 on the `demand` arm against 1 on `clip`, measured.
+        | PointExtra::Demand { g_fuel, g_gov, required_fuel, required_gov, ic_iters, ic_res, .. } =>
             (g_fuel, g_gov, required_fuel, required_gov, ic_iters, ic_res),
         _ => panic!("rung-73's readers march the SHARED-actuator rig, so every point carries the \
                      two clips and the two requirements. This one does not, which means the \

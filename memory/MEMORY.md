@@ -32,7 +32,7 @@ is.
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding, backticks in `-m`, a status read off the runner, a log still being written, and a text-mode rewrite that flips every line ending
 
-## The Rust port — phases 0–6 done; phase 7 in flight, slice AF (rung 74) steps 1–2 of six done
+## The Rust port — phases 0–6 done; phase 7 in flight, slice AF (rung 74) steps 1–3 of six done
 - [Rust port status](rust-port-status.md) — the running tally: phases, slices, and the numbers each closed slice landed on. **Update THAT file, not this line.**
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; a new PHASE needs authorisation
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost
@@ -77,7 +77,7 @@ is.
 - Slice AC (70/71) [pre-flight](rust-port-slice-ac-preflight.md) [1](rust-port-slice-ac-step1.md) [2](rust-port-slice-ac-step2.md) [3](rust-port-slice-ac-step3.md) [4](rust-port-slice-ac-step4.md) [5](rust-port-slice-ac-step5.md) [6](rust-port-slice-ac-step6.md) [7 closed](rust-port-slice-ac-step7.md) — a predicate by NAME cannot tell an override from a name reused, and every reader launders an injection through `at_lever` (one lesson per file)
 - Slice AD (72) [pre-flight](rust-port-slice-ad-preflight.md) [1](rust-port-slice-ad-step1.md) [2](rust-port-slice-ad-step2.md) [3](rust-port-slice-ad-step3.md) [4](rust-port-slice-ad-step4.md) [5](rust-port-slice-ad-step5.md) [6 closed](rust-port-slice-ad-step6.md) — a shipped block documents a method with ZERO definitions, and a gate compared the plant against the function that produced it (one lesson per file)
 - Slice AE (73) [pre-flight](rust-port-slice-ae-preflight.md) [1](rust-port-slice-ae-step1.md) [2](rust-port-slice-ae-step2.md) [3](rust-port-slice-ae-step3.md) [4](rust-port-slice-ae-step4.md) [5 closed](rust-port-slice-ae-step5.md) — a FIXTURE is a claim nobody re-reads as one; and a control, an exact-bits gate and an aggregate each measured nothing (one lesson per file)
-- Slice AF (74) [pre-flight](rust-port-slice-af-preflight.md) [1](rust-port-slice-af-step1.md) [2](rust-port-slice-af-step2.md) — *what supplies the value under test?* has a companion: what supplies the POINT it is driven at — a rig constant copied from a sibling file sat inside a shipped refusal, and its flatness gate had been passing between two SATURATED ZEROS (one lesson per file)
+- Slice AF (74) [pre-flight](rust-port-slice-af-preflight.md) [1](rust-port-slice-af-step1.md) [2](rust-port-slice-af-step2.md) [3](rust-port-slice-af-step3.md) — *what supplies the value under test?* has grown two companions: what supplies the POINT the test is driven at, and what supplies the DIFFERENCE a gate reads (one lesson per file)
 - Slice T (46/47/48) steps [1](rust-port-slice-t-step1.md) [2](rust-port-slice-t-step2.md) [3](rust-port-slice-t-step3.md) [4](rust-port-slice-t-step4.md) — an EXACT ZERO blinds its own gate to the SIGN (one lesson per file)
 
 ## Shipped rungs

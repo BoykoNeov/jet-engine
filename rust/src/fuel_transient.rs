@@ -798,6 +798,55 @@ pub enum PointExtra {
              v_regime: Option<crate::limited_bleed::Regime>, ic_iters: usize, ic_res: f64,
              ic_order: &'static str, g_fuel: f64, g_gov: f64, required_fuel: f64,
              required_gov: f64, authority: Authority, share_law: &'static str },
+    /// RUNG 74's DEMAND-COORDINATE march — **35 keys, the widest point in the port**, and it is
+    /// [`Shared`](Self::Shared)'s sixteen extras plus **five** of its own.
+    ///
+    /// Python: *"EVERY RECORDED KEY IS THE PARENT'S, with `g_fuel`/`g_gov` the CLIP PROJECTIONS
+    /// `mf_sched - w`, so every inherited reader works on this trajectory unchanged."* That is
+    /// the load-bearing claim about the READERS that [`Cascade`](Self::Cascade),
+    /// [`Triple`](Self::Triple) and [`Shared`](Self::Shared) each make in turn, and it is why
+    /// every arm admitting `Shared` is widened to admit this variant rather than left refusing
+    /// it — a refusal there would be **stricter than Python, silently, on a dict that carries
+    /// the key**.
+    ///
+    /// # THE FIVE NEW KEYS ARE THE COORDINATE ITSELF
+    ///
+    /// `w_fuel`/`w_gov` are the STATES this rung marches (the fuel each leg would ALLOW),
+    /// `cap_fuel`/`cap_gov` their unfloored set points, and `lag_coord` records which of the
+    /// three declared coordinates produced the trajectory — a CONSTANT over it, recorded per
+    /// point because Python records it per point, exactly as `share_law` and `ic_order` are.
+    ///
+    /// # AND THE INHERITED ONES ARE **PROJECTIONS**, WHICH IS WHERE WIDENING IS NOT ENOUGH
+    ///
+    /// Every variant above floors its clips: rung 52's `max(0, ·)` is applied to the state after
+    /// every RK4 step, so `g_fuel`, `g_gov`, `required_fuel` and `required_gov` are `>= 0` by
+    /// construction. **Here they are unfloored projections** — `g_fuel = mf_sched - w_fuel` and
+    /// `required_fuel = mf_sched - cap_fuel` — and `cap > mf_sched` is REACHABLE on this rung's
+    /// own shipped arms, so all four go NEGATIVE. Measured over `test_rung74.py`'s three `phi`
+    /// arms on the `demand` coordinate (341 points each): `g_gov < 0` at **21 / 22 / 22** points
+    /// and `g_fuel < 0` at **0 / 9 / 261**, with `max(cap_fuel / mf_sched) = 1.7137`.
+    ///
+    /// So an inherited arm reading `required_fuel > 0.0` as a LIVENESS predicate now receives a
+    /// negative number and answers *not live* — which is what Python's own dict read does, and
+    /// therefore what the port must do. The sign question was asked at each such arm rather than
+    /// treating the widening as mechanical; see [`crate::shared_actuator`]'s `leg_live`.
+    ///
+    /// **`demand-latched` NEVER PRODUCES A NEGATIVE**, because the latch caps each target at the
+    /// schedule: 0 of 341 at every arm. The two tags therefore differ in the SIGN SET a reader
+    /// sees, which is the sharpest thing the coordinate does to an inherited reader.
+    Demand { g: f64, required: f64, b: f64, b_cmd: f64, v: f64, v_cmd: f64,
+             v_regime: Option<crate::limited_bleed::Regime>, ic_iters: usize, ic_res: f64,
+             ic_order: &'static str, g_fuel: f64, g_gov: f64, required_fuel: f64,
+             required_gov: f64, authority: Authority, share_law: &'static str,
+             /// The two STATES — the fuel each leg would allow. Unfloored: this rung has no
+             /// state stop under `demand`, which is § 4's finding and rung 75's whole subject.
+             w_fuel: f64, w_gov: f64,
+             /// The two unfloored SET POINTS, before [`demand_target`]'s latch.
+             ///
+             /// [`demand_target`]: crate::demand_coordinate::demand_target
+             cap_fuel: f64, cap_gov: f64,
+             /// Which of the three declared coordinates marched this trajectory.
+             lag_coord: &'static str },
 }
 
 /// RUNG 72's `_authority` — **WHO HOLDS THE ACTUATOR, the third regime label, and the one no
@@ -882,6 +931,7 @@ impl FuelPoint {
             PointExtra::CrossCascade { .. } => 21,
             PointExtra::Triple { .. } => 24,
             PointExtra::Shared { .. } => 30,
+            PointExtra::Demand { .. } => 35,
         }
     }
 }
@@ -1318,7 +1368,10 @@ pub fn asym_extra(p: &FuelPoint) -> (f64, f64) {
         // SLICE AD: rung 72 records both too, and Python reads the DICT KEY. `g` is the
         // APPLIED clip and `required` the BINDING requirement, which is the pair that
         // keeps `mf = mf_sched - g` true for a reader that never heard of two legs.
-        | PointExtra::Shared { g, required, .. } => (g, required),
+        | PointExtra::Shared { g, required, .. }
+        // SLICE AF (5 of 31): rung 74 records both -- `g` the applied clip PROJECTION
+        // `mf_sched - mf_app` and `required` the binding requirement. Both UNFLOORED.
+        | PointExtra::Demand { g, required, .. } => (g, required),
         // Rung 65's valve route is named SEPARATELY rather than folded into a `_` arm: it carries
         // 16 keys too, and a wildcard here would let a lagged-valve trajectory reach rung 52's
         // reader and report the wrong two of them. It stays REFUSING because Python raises

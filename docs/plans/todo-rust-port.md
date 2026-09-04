@@ -20232,3 +20232,244 @@ UNPIPED over the final tree, with the totals read from the summed per-target lin
   on the shipped grid. If the joint IC fixed point converges in two passes everywhere, the answer
   is *nothing*, and that is a MEASUREMENT to book — § 5.30 (i)'s discharge-by-measurement move for
   `_with_coord`, not a gate to manufacture.
+
+#### 5.30.3 SLICE AF step 3 — the six-state march, and **A GATE THAT READ A SPLIT PRODUCED BY THE PREVIOUS STEP'S CODE AS ITS OWN CLAMP WORKING, WHEN THAT CLAMP FIRES 0 OF 340 TIMES**
+
+`_integrate_fuel_demand` — rung 72/73's six states with the two fuel-side ones carrying the DEMAND
+instead of the CLIP, the joint initial condition in the new coordinate, and the point variant that
+records it. `rust/src/demand_coordinate.rs` grows **977 → 1 407 lines** (343 → 735 excluding doc
+comments and blanks), `rust/tests/slice_af_march.rs` lands at **774 lines / 12 gates, green on the
+first run**, and step 1's `unimplemented!` gate is CONVERTED rather than deleted. All three
+slice-AF targets: **17 + 13 + 12 = 42 passed, 0 failed.**
+
+##### (a) THE LEADING FINDING — **WIDENING THE READERS IS NECESSARY AND NOT SUFFICIENT, BECAUSE THIS IS THE FIRST POINT VARIANT WHOSE INHERITED KEYS CHANGE SIGN**
+
+Slice AD added `PointExtra::Shared` and measured how far the crate's *the next variant breaks the
+build* convention reaches: 7 of 20 sites. Adding `PointExtra::Demand` re-runs that measurement one
+variant on, and the shape repeats almost exactly:
+
+| | slice AD (`Shared`) | slice AF (`Demand`) |
+|---|---|---|
+| `match … .extra` sites in `src` | 20 | **32** |
+| exhaustive (the compiler can name them) | 7 | **7** |
+| actually named by `cargo build` | 6 | **6** — the seventh is `key_count`, already updated |
+| behind a `_ =>` wildcard, compiling in silence | 13 | **25** |
+| widening questions answered NO | 1 (`cross_extra`) | **1** (`cross_extra`, third slice running) |
+
+**But the arms that now admit a rung-74 point are handed a DIFFERENT DOMAIN, and no amount of
+widening notices.** Every variant before this one FLOORS its clips — rung 52's `max(0, ·)` runs
+after every RK4 step — so `g_fuel`, `g_gov`, `required_fuel` and `required_gov` are `>= 0` by
+construction, and eight inherited arms read exactly that as a LIVENESS predicate
+(`required_fuel > 0.0` = *is this leg cutting*). Rung 74's are UNFLOORED projections
+`mf_sched - w`, and `cap > mf_sched` is reachable on its own shipped arms:
+
+| arm | `required_gov < 0` | min | what the inherited predicate answers |
+|---|---|---|---|
+| `demand` | **21 of 341** | `-2.8638e-03` | *not live*, on 21 points where the leg IS tracking |
+| `demand-latched` | **0 of 341** | `0.0` | unchanged |
+
+Python reads the dict key and gets the negative number, so ADMITTING is faithful and REFUSING
+would be stricter than the source — but **the two coordinate tags now hand the same reader two
+different SIGN SETS**, and that is the sharpest thing this coordinate does to code that predates
+it. Slice AD's own version of this gate asserts `g >= 0.0 && req >= 0.0` in so many words. The
+sign question was asked at each of the eight arms rather than treating the widening as mechanical.
+
+##### (b) **THE GATE THAT OVERCLAIMED, CAUGHT BY MEASURING WHAT IT WAS ABOUT TO ASSERT**
+
+The blocking item entering this step was *do not carry the parent's `gf = max(0, gf)` pair*: rung
+74 REPLACES it with a conditional latch clamp, under plain `"demand"` there is no state stop at all
+(§ 4's *no interior equilibrium*), and a copied floor would hand the unlatched arm an anti-windup
+device by accident **and pass every reduce gate in the crate**, because the `clip` arm never enters
+this function. That is right, and the port does not carry it.
+
+**The first draft of the gate written for it was wrong, in the direction that reads like success.**
+It asserted *the latch bites*, taking the 20-vs-0 split between the two tags as the march's own
+clamp working. It is not the clamp: `demand_target` — **step 2's code** — already caps each TARGET
+at the schedule under `demand-latched`, and the ramp is non-decreasing, so a state that starts at
+`mf_sched(0)` and tracks a target never above the schedule can never rise above the NEXT schedule
+value. **Measured against the shipped Python: the clamp fires 0 of 340 times.** The one exact
+equality in that trajectory sits at `s = 0` and belongs to the joint IC's `_stop`.
+
+What the step can hold, and now does:
+
+* **the `if latched` GUARD is live** — applying the clamp unconditionally cuts the unlatched arm's
+  20 above-schedule states (M2, KILLED);
+* **the IC's `_stop` is live** — latched, the governor demand starts exactly AT `mf_sched(0)`;
+  unlatched it settles above it;
+* **the clamp's own arithmetic is a DEAD SITE** — both the `min` fold and the `s + ds` read, so
+  mutations to either SURVIVE (M1 and M3, predicted and confirmed). The one shape that would reach
+  it is a DECREASING schedule, and that route is closed by a second shipped refusal: a decel ramp
+  down from `mf_hi` raises `_cap_free`'s *the UNFLOORED cap is unreachable above mf_sched*, the same
+  guard step 2 § (a) hit. Disclosed rather than dropped.
+
+**The general form is § 5.30 (viii)'s standing item pointed at an ATTRIBUTION rather than a value.**
+A gate whose content is *these two arms differ* has to ask which of the two arms' changes produced
+the difference, and here the answer was a body ported at the PREVIOUS step. *What supplies the
+value under test* and *what supplies the point it is driven at* now have a third companion:
+**what supplies the DIFFERENCE the gate reads?**
+
+##### (c) `ic_cap` — STEP 2's BOOKED QUESTION, ANSWERED BOTH WAYS AT ONCE
+
+Step 2 § (h) asked what distinguishes `ic_cap = 60` from `ic_cap = 1000` on the shipped grid and
+warned that if the answer is *nothing*, that is a MEASUREMENT to book and not a gate to
+manufacture. It is half of each, and the half nobody predicted is the useful one:
+
+| `ic_cap` | the `demand` arm | the `demand × applied` arm |
+|---|---|---|
+| 1 | **RAISES** — *residual 2.864e-03 after 1 iterations* | raises |
+| 2 | marches, `ic_iters = 2`, `ic_res` **exactly 0.0** | raises |
+| 60 (declared) | marches, bit-identical to `ic_cap = 2` | raises, *after 60 iterations* |
+| 1000 | identical to 60 | raises |
+
+The sweep settles in two passes to an EXACT zero, so 60 and 1000 cannot differ — **and the
+threshold sits one below the declared value**, where the field becomes observable in the OUTCOME
+rather than in a float. On the non-converging arm the refusal's own iteration count tracks the cap
+exactly. A port that hardcoded the parent's `1..=60` passes the first two rows and fails the third
+(M5, KILLED). The field gained its first reader at this step, and it is not a dead one.
+
+##### (d) THE `windup_tau` HOOK IS THE POSITIVE CONTROL, AND IT MEASURED RUNG 75's OWN CLAIM ON THE WAY
+
+Rung 75's hook returns `None` at rung 74, so three ported sites are unreachable here — the
+`2/tau_t` term in the RK4 rate sum, the two back-calculation lines in `der`, and `_relax`'s far
+branch. The lazy move is to book three blind survivors. Instead the hook is INJECTED through
+`TripleHooks` and the march measured:
+
+* **`Some(1.0)` moves `w_gov` and leaves `w_fuel` EXACTLY unchanged** — not approximately, bit for
+  bit, on all 341 points. `(mf_app - w)/tau_t` is identically zero on whichever leg HOLDS the
+  actuator, and the fuel leg holds it on 340 of 341 points here. **That is rung 75's headline — the
+  device disarms itself on the authoritative leg — arriving as a step-3 measurement, one slice
+  before the rung that claims it.**
+* **`_relax`'s far branch is isolated by POINT ZERO**, whose states come from the joint sweep alone.
+  `w_gov(0)` moves by `1.363735e-04` under the injection and `w_fuel(0)` does not move at all — the
+  same self-disarming algebra, because at the fixed point of a leg that holds,
+  `(tau_t·tgt + tau·w)/(tau + tau_t)` is `tgt` identically.
+* **`Some(0.005)` trips the RK4 floor at exactly `2.400`** = `0.005 × (80 + 2/0.005)`, which is the
+  factor TWO and nothing else in the sum: a port summing `1/tau_t` prints `1.400`.
+
+##### (e) THE WIDTH TOLL, MEASURED AD's WAY AND IN ROUNDS
+
+AD's recorded rule is that a width prediction can only be measured as *apply, fix the lib, count
+what is still red* — `cargo build` stops when the lib fails and never compiles a test target. No
+count was pre-registered. What the compiler named, round by round:
+
+| round | sites | files |
+|---|---|---|
+| lib | **6** `E0004` | `cross_loop`, `cross_split`, `fuel_transient`, `full_split`, `lagged_bleed` ×2 |
+| tests, round 1 | **3** `E0004` | `slice_ab_oracle` ×2, `slice_s_smoke` |
+| tests, round 2 | **2** `E0004` | `slice_aa_oracle` ×2 |
+
+Five test sites over two rounds, and **the 25 wildcard sites in `src` appeared in none of them.**
+They came from a second instrument — an audit that reads every `match`/`matches!` over a
+`PointExtra` and reports whether it carries a `_ =>` arm — which is step 1 § (a)'s lesson in this
+step's shape: **two instruments, because one is structurally blind to the larger half.**
+
+`slice_s_smoke.rs`'s twenty-one extra key NAMES were read off the live Python dict
+(`sorted(traj[0])` is 35 names, 14 of them the base) rather than counted off the Rust struct —
+[[rust-port-guessed-census-bars]]'s discipline, and the same 35 the point gates assert.
+
+##### (f) THE MUTATION SWEEP — **26 mutations over all THREE slice-AF binaries, 16 KILLED, and FOUR MISPREDICTIONS OF WHICH TWO WERE GATE DEFECTS AND TWO WERE REACHABILITY FACTS**
+
+Pre-registered before the gates were written, with a proof typed for every predicted SURVIVE
+(step 2 § (c)), dry-run for its substitution count first, and scored over `slice_af_cells`,
+`slice_af_laws` and `slice_af_march` together (§ 5.30 (viii) item 2).
+
+| # | mutation | predicted | got | what saw it, or why not |
+|---|---|---|---|---|
+| M1 | the latch reads the schedule at `s`, not `s + ds` | SURVIVE | **SURVIVE** | dead site — 0 of 340 firings |
+| M2 | the `if latched` GUARD dropped | KILL | **KILL** | the 20-above-schedule count |
+| M3 | the march's latch clamp deleted | SURVIVE | **SURVIVE** | the same dead site |
+| M4 | rung 72's `max(0, w)` pair ADDED | SURVIVE | **SURVIVE** | inert: min `w` = `9.444498e-03` |
+| M5 | `ic_cap` hardcoded to the parent's 60 | KILL | **KILL** | the `ic_cap = 1` row |
+| M6 | `windup_tau` inlined instead of dispatched | KILL | **KILL** | the injected table |
+| M7 | `1/tau_t` in the RK4 rate sum | KILL | **KILL** | the `2.400` needle |
+| M8 | the two back-calculation lines deleted | KILL | **SURVIVE → KILL** | **gate defect**, § (g) 1 |
+| M9 | `relax`'s far branch returns the target | KILL | **KILL** | point zero |
+| M10 | `g_fuel`/`g_gov` recorded swapped | KILL | **KILL** | the 21-negative count |
+| M11 | `required` folded as a `min` | KILL | **KILL** | `asym_extra`'s sign |
+| M12 | `authority` via rung 72's label on the projections | SURVIVE | **SURVIVE** | proved identical, § (i) |
+| M13 | the RAW applied demand recorded | SURVIVE | **SURVIVE** | the `1e-9` clamp is inert |
+| M14 | `round` for `round_ties_even` | SURVIVE | **SURVIVE** | `1.7/0.005 = 340`, no tie |
+| M15 | the joint IC seeded at zero | KILL | **KILL** | every value gate |
+| M16 | `stop`'s fold reversed | SURVIVE | **SURVIVE** | ties and NaN only |
+| M17 | `demand_target` skipped, **FUEL** leg | KILL | **SURVIVE** | **inert**: 0 of 341 over-schedule |
+| M17b | the same, **GOVERNOR** leg | KILL | **KILL** | the latched arm's zero negatives |
+| M18 | `demand_reference` skipped, **FUEL** leg | KILL | **SURVIVE** | **inert**: that leg HOLDS |
+| M18b | the same, **GOVERNOR** leg | KILL | **KILL** | the `applied`-vs-`sched` latched pair |
+| M19 | the `q`/`v` hardware clamps dropped | SURVIVE | **SURVIVE** | never reached on this arm |
+| M20 | `asym_extra`'s `Demand` arm removed | KILL | **SURVIVE ×2 → KILL** | **gate defect**, § (g) 2 |
+| M21 | `authority_of`'s `Demand` arm removed | KILL | **KILL** | the `Some(Fuel)` row |
+| M22 | `riding`'s `Demand` arm removed | KILL | **KILL** | the 66-point set |
+| M23 | `cross_extra` WIDENED to admit rung 74 | KILL | **KILL** | the refusal gate |
+| M24 | `key_count` reports the parent's 30 | KILL | **KILL** | the 35-key row |
+
+**M17 and M18 are the sweep working, not failing.** Both were typed on the fuel leg, and both are
+arithmetically inert there for reasons this step then measured: `cap_fuel > mf_sched` at **0 of
+341** points against the governor's 21, so the latch has nothing to cut on that leg; and the fuel
+leg HOLDS the actuator on 340 of 341 points, so `mf_app == wf` and `_demand_reference` takes the
+float-identity branch step 2 gated directly. **The reachability of a body is per-LEG at this rung**,
+and the twins on the governor leg both KILL. The counts are now stated in the gates rather than
+implied.
+
+##### (g) DEFECTS IN THIS STEP's OWN INSTRUMENTS — **SIX, AND THE SWEEP FOUND TWO OF THEM**
+
+1. **The windup gate could not tell the sweep's `relax` from the march's back-calculation.** It
+   asserted `max |Δw_gov| > 1e-5` over the trajectory, and the joint IC's own `_relax` shifts
+   `w_gov(0)` by exactly that amount — so the mutation that DELETES the two derivative lines
+   satisfied it. The repair reads the LAST point instead: `tau_gov = 0.05` against `s_end = 1.7` is
+   thirty-four time constants, so a shift still present at the end can only be held by a term in
+   the derivative. Re-run: KILLED.
+2. **The reader gate asserted `is_finite()`, which a zero fallback satisfies.** `asym_extra`'s
+   rung-74 arm replaced by `(0.0, 0.0)` passed it, and passed `required >= 0.0` beside it. That is
+   slice T's *an exact zero blinds its own gate* met FORWARDS rather than after the fact. The
+   repair compares every widened reader's return against the point's own destructured keys — the
+   reference being the test's `match` on the variant, a different code path from the reader's — and
+   asserts the compared values are non-zero at the point it uses. Re-run: KILLED.
+3. **A patch script lost its line continuations to a shell heredoc, TWICE**, and both times the
+   count guard reported `matches=0` and wrote nothing. Step 2 § (e)'s defect verbatim, one step
+   later; the fix is the one that file already records — write the patch to a FILE when any needle
+   carries a backslash. Belongs with [[windows-tooling-file-hazards]].
+4. **A needle that matched TWICE was reported as a PATCH-MISS on a correct patch** — two
+   byte-identical arms in two different functions. The expected count is now typed per needle
+   rather than defaulted to one, so a site that later diverges is caught instead of half-patched.
+5. **`shutil.copy2` PRESERVES mtime, so the sweep's restore was invisible to `cargo`.** Every
+   mutation WRITE bumped the timestamp and was therefore compiled, but every RESTORE handed back a
+   file OLDER than the artifact just built from the mutant — so the run ended with the source
+   reading clean and **the test binary compiled from the LAST mutation**. The next run's baseline
+   check measured that stale binary and declared the unmutated tree red. `copyfile` + `utime(None)`
+   is the repair. **The thing that caught it was the baseline check, and the thing that did NOT was
+   my own "is the tree clean?" grep, which checked two of twenty-four mutation markers and reported
+   clean.** A leftover-check that samples the mutation set is not a check.
+6. **The sweep's own record was TRUNCATED by a `head -40`** on its stdout: twelve of twenty-four
+   verdicts were never printed, and the exit code the harness reported was the FILTER's, not
+   Python's — step 2 § (g)'s *a gate's exit code does not survive a pipe* landing on a different
+   command one step later. A sweep that mutates the working tree must write to a LOG, never into a
+   pipe that can close early.
+
+##### (h) THE FULL GATE
+
+`cargo test` over the whole crate, **UNPIPED and with the exit code written to the same log in the same command** (step 2 § (g)'s rule, and § (g) 6 below is what happens when it is not followed): **`CARGO_EXIT=0`, 146 result blocks all `ok` — 145 `Running` targets plus the doc-tests — 1 510 passed, 0 failed, 0 ignored, 0 `error[E`.** The totals are summed off the per-target lines so the exit code and the arithmetic agree instead of one standing in for the other, and the run is not repeated to produce a timing ([[never-run-the-gate-for-timing]]). Against step 2's 1 498 that is **+12**, which is `slice_af_march.rs`'s twelve gates exactly.
+
+**`pytest` was NOT run, and that is a decision rather than an omission**: this step changes no
+Python at all (`git status` lists fifteen paths, every one under `rust/` or `docs/`), so the Python
+gate would be measuring a tree byte-identical to the last green one — step 2 § (g)'s precedent.
+
+##### (i) WHAT STEP 4 INHERITS
+
+* the six readers — `demand_law`, `demand_gains`, `latch_discriminator`, `windup_law`,
+  `flat_schedule_identity`, `forcing_openloop` — on a trajectory that now exists;
+* **the `authority` label's arithmetic identity with rung 72's** (M12, a predicted survivor with
+  its proof). Substituting `g = ms - w`: `gf <= tol && gr <= tol` IS `wf >= ms-tol && wr >= ms-tol`,
+  `|gf - gr| <= tol` IS `|wr - wf| <= tol`, and `gf > gr` IS `wf < wr` — branch for branch, so only
+  the float rounding of `ms - w` could separate them and no shipped point sits that close. A step-4
+  gate on `authority` is therefore gating `demand_authority`'s SPELLING, not its value;
+* **three sites that are live only under an injected `windup_tau`** — the `2/tau_t` term, the
+  back-calculation pair and `_relax`'s far branch — so any step-4 gate that wants them must inject,
+  and the isolation that works is the LAST point (for the derivative) and POINT ZERO (for the
+  sweep);
+* **the clamp's dead arithmetic** (§ (b)) and the decel route that is closed to it by a second
+  shipped refusal;
+* **per-LEG reachability** (§ (f)): at this arm the fuel leg never rides above the schedule and
+  always holds the actuator, so the latch and the applied reference are both inert on it. A reader
+  gate that drives only the fuel side is measuring an identity;
+* `PointExtra::Demand`'s 35 keys and the 32 widened arms — every reader step 4 ports must be checked
+  against the SIGN change, not only against the key's presence.

@@ -95,7 +95,7 @@
 use crate::bleed_transient::{LeverArm, LeverHooks};
 use crate::engine::FlightCondition;
 use crate::fuel_transient::{
-    AccelSchedule, AsymmetricLag, Floor, FuelLimiters, FuelPoint, FuelTransientCore,
+    AccelSchedule, AsymmetricLag, Floor, FuelInstant, FuelLimiters, FuelPoint, FuelTransientCore,
     FuelTransientHooks,
 };
 use crate::applied_reference::REF_LAW_APPLIED;
@@ -103,14 +103,14 @@ use crate::fuel_transient::Authority;
 use crate::gas::Abort;
 use crate::limited_bleed::Regime;
 use crate::map::ComponentMap;
-use crate::shared_actuator::SharedRigArm;
+use crate::shared_actuator::{py_max4, SharedRigArm, IC_ORDER4_DECLARED};
 use crate::spool::{try_illinois, ILLINOIS_MAXIT};
 use crate::stator_transient::{
     ScheduledStatorCore, ScheduledStatorTransient, StatorTransientHooks,
 };
 use crate::three_loop::{closer_b, closer_v, LegRegime, TripleHooks};
 use crate::two_spool_transient::{MarchedBleed, MarchedStator};
-use crate::two_spool::TwoSpoolEngine;
+use crate::two_spool::{Spool, TwoSpoolEngine};
 use crate::two_spool_transient::{TwoSpoolTransientCore, TwoSpoolTransientHooks};
 
 // ---------------------------------------------------------------------------------------------
@@ -938,13 +938,14 @@ fn r74_rk4_floor_shared(ds: f64, rate: f64) {
 /// all**, so none of this rung's march lines execute and the reduce is not a tolerance. § 5.30 (i)
 /// measured 0 `_demand_target` calls on that arm, which is the same fact from the other side.
 ///
-/// # THE DEMAND ARM IS `unimplemented!` UNTIL STEP 3, DELIBERATELY
+/// # THE DEMAND ARM — [`r74_integrate_fuel_demand`], LANDED AT STEP 3
 ///
-/// `_integrate_fuel_demand` is the six-state march with the joint IC fixed point and it lands at
-/// step 3. The most dangerous thing this step could ship is a demand arm that quietly delegates to
-/// the parent — it would pass every reduce gate in the crate, because the reduce IS *rung 74 under
-/// `clip` is rung 73*. So the arm panics by name, and the step-1 gate asserts that a fully legal
-/// demand call REACHES it.
+/// Step 1 shipped this arm as an `unimplemented!` that panicked by name, because the most
+/// dangerous thing that step could have shipped is a demand arm quietly delegating to the parent:
+/// it would pass every reduce gate in the crate, since the reduce IS *rung 74 under `clip` is rung
+/// 73*. **That obligation did not expire when the body arrived, it changed shape** — the gate that
+/// asserted the panic was REACHED now asserts the march RAN and produced a trajectory the parent
+/// could not have produced. See `tests/slice_af_march.rs`.
 fn r74_integrate_fuel(
     ft: &FuelTransientCore, flight: &FlightCondition, fuel_schedule: &dyn Fn(f64) -> f64,
     nu0: (f64, f64), s_end: f64, ds: f64, lim: &FuelLimiters<'_>,
@@ -991,10 +992,416 @@ fn r74_integrate_fuel(
     assert!(ft.inner.lever.lim.is_none() || crate::lagged_bleed::lagged(&ft.inner),
             "rung-74: an INSTANTANEOUS valve beside lagged fuel-side legs is not a control but a \
              different plant (rung 65/66's refusal, inherited).");
-    unimplemented!(
-        "rung-74: `_integrate_fuel_demand` lands at slice AF step 3. Every refusal above has \
-         already fired, so reaching this line means a LEGAL demand march was requested and there \
-         is no march yet. It is a panic and not a delegation to rung 73 on purpose: delegating \
-         would pass every reduce gate in the crate, because the reduce IS `rung 74 under clip is \
-         rung 73`.");
+    r74_integrate_fuel_demand(
+        ft, flight, fuel_schedule, nu0, s_end, ds, lim.freeze,
+        lim.tt4_max.expect("asserted above"), tau_gov.expect("the entry test returned if None"),
+        lim.accel, lim.floor(), lag.as_ref().expect("has_fuel"))
 }
+
+/// One RK4 stage of rung 74's march — [`SharedDer`](crate::shared_actuator) one coordinate over.
+///
+/// **`mf` IS THE CLAMPED APPLIED DEMAND AND NOT THE RAW ONE, AND PYTHON KEEPS BOTH NAMES ALIVE.**
+/// `der` computes `mf_app = _applied_demand(...)`, uses THAT for the two caps and both references,
+/// and only then binds a SECOND name `mf = max(1e-9, mf_app)` for the instant solve, the valve, the
+/// stator and the recorded point. A port that clamped in place would feed the clamped value back
+/// into `_demand_reference` and change the plant wherever the demand fell below `1e-9`.
+struct DemandDer {
+    da: f64,
+    dh: f64,
+    dwf: f64,
+    dwr: f64,
+    dq: f64,
+    dv: f64,
+    /// Python's `mf` — `max(1e-9, mf_app)`, which is what the recorded point carries.
+    mf: f64,
+    inst: FuelInstant,
+    /// The two LATCHED targets, `cf` / `cr`. The point records these under `cap_fuel` / `cap_gov`.
+    cf: f64,
+    cr: f64,
+    cmd: f64,
+    vcmd: f64,
+    /// `None` where no stator is armed — Python's `(0, None)`.
+    vreg: Option<Regime>,
+    /// The schedule at this stage's `s`. Python reads it once per `der` call and the recorded
+    /// point takes `k1`'s, never a second evaluation.
+    ms: f64,
+}
+
+/// RUNG 74's MARCH — **rung 72/73's six states, with the two fuel-side ones carrying the DEMAND
+/// instead of the CLIP.**
+///
+/// # IT IS A SIBLING, AND HERE THAT IS FORCED FOR A NEW REASON
+///
+/// Rung 72 sired one because a STATE was added; nothing is added here, and the temptation is
+/// therefore to add the forcing term `d(mf_sched)/ds` to the parent's march and be done. **That
+/// would make § 1 a construction**: the identity `dg/ds = (req - g)/tau + d(mf_sched)/ds` is what
+/// this rung CLAIMS, and a march built on it could not measure it. `w` is marched as a genuine
+/// state, the schedule is never differentiated, and the identity is left to be differenced against
+/// the parent — which also handles the ramp's two KINKS exactly, where a derivative would have had
+/// to pick a branch.
+///
+/// In Rust the temptation is stronger than in Python, because [`r72_integrate_fuel_shared`] is
+/// ~90% identical and one file away. It is NOT parameterised to serve both
+/// ([[rust-port-copy-vs-rederivation]]): a shared marcher would put the rung's own claim inside
+/// the code that is supposed to test it.
+///
+/// [`r72_integrate_fuel_shared`]: crate::shared_actuator
+///
+/// # THE PARENT's LAST TWO LINES ARE **NOT** COPIED, AND THAT IS THE ONE THING THAT MUST NOT CARRY
+///
+/// Rung 72 ends every step with `gf = max(0, gf); gr = max(0, gr)` — rung 52's floor on the STATE.
+/// Rung 74 **replaces** that pair with a conditional clamp:
+///
+/// ```text
+/// if latched:   nxt = fuel_schedule(s + ds);   wf, wr = min(nxt, wf), min(nxt, wr)
+/// ```
+///
+/// Under plain `"demand"` **there is no state stop at all** — § 4's *no interior equilibrium*, and
+/// what rung 75's device exists to supply. Carrying the parent's floors forward would hand the
+/// unlatched arm an anti-windup device by accident, make the rung's central finding unmeasurable,
+/// and **pass every reduce gate in the crate**, because the `clip` arm never enters this function.
+/// The `q` and `v` hardware stops above it DO carry verbatim: those are metal, not a coordinate.
+///
+/// Two details of the clamp are load-bearing and neither is the obvious spelling: the schedule is
+/// read at `s + ds` (the NEXT point, not this one), and Python's `min(nxt, w)` seeds the fold at
+/// `nxt`, so a tie returns `nxt`.
+///
+/// # THREE PLACES WHERE THE PARENT's CONSTANT IS A CELL HERE
+///
+/// * **`ic_cap`.** Rung 72 hardcodes `1..=60`; Python reads `self._ic_cap`, whose only writer in
+///   the ladder is rung 75's `_with_ic_cap`. This step is where that field gains its first reader.
+///   It is **not** unobservable at rung 74: on the converging arms the sweep settles in 2 passes
+///   with `ic_res` exactly `0.0`, so 60 and 1000 are identical — but at `ic_cap = 1` the same arm
+///   RAISES, and on the `demand × applied` arm (which never converges) the refusal's own iteration
+///   count tracks the cap exactly. Measured, not assumed.
+/// * **`tau_t`.** `self._windup_tau()` is a DISPATCHED call and goes through
+///   [`TripleHooks::windup_tau`]. Inlining `None` would freeze rung 75's dispatch — the defect
+///   step 2 § (f) censused against, one call over.
+/// * **`lag_coord`.** Read once, before the loop, exactly as Python binds `latched`.
+///
+/// # `tau_t` LEAVES THREE DEAD SITES AT THIS RUNG, PRE-REGISTERED AS SUCH
+///
+/// `windup_tau` returns `None` at rung 74, so the `2.0 / tau_t` term in the RK4 rate sum, the two
+/// back-calculation lines in `der`, and [`relax`]'s far branch are all UNREACHABLE here. A mutation
+/// deleting any of the three SURVIVES, and that is predicted with its proof rather than discovered
+/// in the sweep (step 2 § (c)'s lesson). They are ported because Python has them and because rung
+/// 75 is the reader that makes them live.
+///
+/// # EVERY RECORDED KEY IS THE PARENT's, PLUS FIVE
+///
+/// `g_fuel` / `g_gov` are the CLIP PROJECTIONS `mf_sched - w` and `g` is `mf_sched - mf_app`, so
+/// every inherited reader works on this trajectory unchanged — see
+/// [`PointExtra::Demand`](crate::fuel_transient::PointExtra::Demand) for the thirty-one arms that
+/// claim makes load-bearing, and for the SIGN it changes under them.
+#[allow(clippy::too_many_arguments)]
+fn r74_integrate_fuel_demand(
+    ft: &FuelTransientCore, flight: &FlightCondition, fuel_schedule: &dyn Fn(f64) -> f64,
+    nu0: (f64, f64), s_end: f64, ds: f64, freeze: Option<Spool>, tt4_max: f64, tau_gov: f64,
+    accel: Option<&AccelSchedule>, surge: Option<Floor>, lag: &AsymmetricLag,
+) -> Vec<FuelPoint> {
+    let has_v = ft.inner.lagged_stator();
+    let lim_s = if has_v { ft.inner.stator_leg() } else { None };
+    let tau_s = lim_s.and_then(|l| l.tau);
+    let has_q = crate::lagged_bleed::lagged(&ft.inner);
+    let tau_q = if has_q { ft.inner.lever.lim.expect("has_q").tau } else { None };
+    // RUNG 75's ONE HOOK INTO THIS MARCH, and it is DISPATCHED. `None` here is rung 74, and every
+    // branch guarded by it is NOT TAKEN — so this rung's floats are untouched by construction and
+    // the inherited bit-for-bit gates are what say so.
+    let tau_t = (ft.inner.triple_hooks.windup_tau)(&ft.inner);
+    // PYTHON's OWN SUMMATION ORDER: governor, fuel lag, valve, stator, then rung 75's pair.
+    (ft.inner.triple_hooks.rk4_floor_shared)(
+        ds,
+        1.0 / tau_gov + 1.0 / lag.tau_att.min(lag.tau_rel)
+            + (if has_q { 1.0 / tau_q.expect("has_q") } else { 0.0 })
+            + (if has_v { 1.0 / tau_s.expect("has_v") } else { 0.0 })
+            + (if let Some(t) = tau_t { 2.0 / t } else { 0.0 }));
+    let (tt2, pt2, _) = ft.inner.inlet(flight);
+    let latched = ft.inner.lag_coord.get() == LAG_COORD_LATCHED;
+
+    // THE VALVE law — rung 72's, verbatim.
+    let command = |a: f64, h: f64, mf: f64, v: f64| -> Result<f64, Abort> {
+        if !has_q {
+            return Ok(0.0);
+        }
+        let _sv = MarchedStator::set(&ft.inner, v);
+        let bl = ft.inner.lever.lim.expect("has_q");
+        Ok(crate::limited_bleed::r64_solve_b(&bl, closer_b(ft, a, h, mf, tt2, pt2))?.1)
+    };
+
+    // THE STATOR law — rung 72's, verbatim, including the stator-less constant `(0, None)`.
+    let stator = |a: f64, h: f64, mf: f64, q: f64| -> Result<(f64, Option<Regime>), Abort> {
+        if !has_v {
+            return Ok((0.0, None));
+        }
+        let _sb = MarchedBleed::set(&ft.inner, q);
+        let (_, v, reg) = ft.inner.solve_v(&closer_v(ft, a, h, mf, tt2, pt2))?;
+        Ok((v, Some(reg)))
+    };
+
+    // THE TWO CAPS, each inside BOTH state guards — Python's `cap_fuel` / `cap_gov` closures,
+    // whose `finally` writes `None` to both, which is what the two `Drop`s do.
+    let cap_fuel_at = |a: f64, h: f64, q: f64, v: f64, mf_sched: f64, mf_app: f64|
+     -> Result<f64, Abort> {
+        let _sb = MarchedBleed::set(&ft.inner, q);
+        let _sv = MarchedStator::set(&ft.inner, v);
+        // THROUGH THE TABLE: rungs 78 and 79 redefine `_cap_fuel`, so a march inherited by one of
+        // their machines must take their body.
+        (ft.inner.triple_hooks.cap_fuel)(
+            ft, flight, a, h, mf_sched, accel, surge.as_ref(), Some(mf_app))
+    };
+    let cap_gov_at = |a: f64, h: f64, q: f64, v: f64, mf_sched: f64| -> Result<f64, Abort> {
+        let _sb = MarchedBleed::set(&ft.inner, q);
+        let _sv = MarchedStator::set(&ft.inner, v);
+        // A DIRECT call: `_cap_gov` has exactly one definer in the ladder (step 2 § (f)'s census),
+        // so a table slot for it would be a mechanism with no reader.
+        cap_gov(ft, flight, a, h, mf_sched, tt4_max)
+    };
+
+    let der = |a: f64, h: f64, wf: f64, wr: f64, q: f64, v: f64, s: f64|
+     -> Result<DemandDer, Abort> {
+        let mf_sched = fuel_schedule(s);
+        let mf_app = applied_demand(mf_sched, wf, wr);
+        let cf = demand_target(&ft.inner, cap_fuel_at(a, h, q, v, mf_sched, mf_app)?, mf_sched);
+        let cr = demand_target(&ft.inner, cap_gov_at(a, h, q, v, mf_sched)?, mf_sched);
+        let tf = demand_reference(&ft.inner, cf, wf, mf_app);
+        let tr = demand_reference(&ft.inner, cr, wr, mf_app);
+        // Python's SECOND name. `mf_app` stays RAW for everything above and for rung 75's
+        // back-calculation below; only the plant sees the clamp.
+        //
+        // **`1e-9f64.max(·)` IS RUNG 72's SPELLING AND IT IS THE THIRD OF THE UNMEASURED `max`
+        // CELLS STEP 2 NAMED.** Python's `max(1e-9, x)` returns `x` for a NaN `x`; Rust's
+        // `1e-9f64.max(x)` returns `1e-9`. Step 3's own measurement closes the reachability half
+        // rather than the algebra: over `test_rung74.py`'s three `phi` arms on both demand tags,
+        // **0 of 2 046 marched points carry a NaN `mf`**. So the divergence is unreachable on
+        // everything this rung ships — recorded as a measurement, not repaired into a difference
+        // from the sibling it was copied from.
+        let mf = 1e-9f64.max(mf_app);
+        let inst = {
+            let _sb = MarchedBleed::set(&ft.inner, q);
+            let _sv = MarchedStator::set(&ft.inner, v);
+            ft.try_instant_fuel(flight, a, h, mf)?
+        };
+        let cmd = command(a, h, mf, v)?;
+        let (vcmd, vreg) = stator(a, h, mf, q)?;
+        let da = if freeze == Some(Spool::Lp) { 0.0 } else { inst.base.phi_lp_dot / ft.rho() };
+        let dh = if freeze == Some(Spool::Hp) { 0.0 } else { inst.base.phi_hp_dot };
+        let mut dwf = (tf - wf) / demand_tau(lag, tf, wf);
+        let mut dwr = (tr - wr) / tau_gov;
+        if let Some(t) = tau_t {
+            // RUNG 75, THE DECLARED DEVICE: back-calculation onto the APPLIED fuel. Identically
+            // zero on whichever leg HOLDS the actuator (`mf_app == w_auth`), so it disarms itself
+            // on the authoritative leg and acts only on the masked one. DEAD at rung 74.
+            dwf += (mf_app - wf) / t;
+            dwr += (mf_app - wr) / t;
+        }
+        Ok(DemandDer {
+            da, dh, dwf, dwr,
+            dq: if has_q { (cmd - q) / tau_q.expect("has_q") } else { 0.0 },
+            dv: if has_v { (vcmd - v) / tau_s.expect("has_v") } else { 0.0 },
+            mf, inst, cf, cr, cmd, vcmd, vreg, ms: mf_sched,
+        })
+    };
+
+    // --- THE JOINT INITIAL CONDITION, IN THE NEW COORDINATE ------------------------------------
+    // Rung 72's order (`r -> q -> v -> f`) and its cap, unchanged. The STARTING point is
+    // `w = mf_sched` (i.e. `g = 0`, the parent's own start) and the STOP is the LATCH's, applied
+    // only when the latch is armed — an unlatched leg has no state stop at all, which is § 3's
+    // whole subject and must not be smuggled in through the sweep.
+    let (mut a, mut h) = nu0;
+    let mf0 = fuel_schedule(0.0);
+    let v0 = ft.inner.v0.get();
+    if let (Some(x), Some(l)) = (v0, lim_s) {
+        ft.inner.check_v0(x, &l);
+    }
+    // Python raises out of the whole method here — the initial solves sit BEFORE the loop's `try`.
+    let raise = |e: Abort| -> ! { panic!("{}", e.0) };
+    let (mut wf, mut wr) = (mf0, mf0);
+    let mut q = command(a, h, mf0, 0.0).unwrap_or_else(|e| raise(e));
+    let mut v = if v0.is_some() && has_v { v0.expect("is_some") } else { 0.0 };
+    let b0 = ft.inner.b0.get();
+    if let Some(x) = b0 {
+        q = x;
+    }
+
+    // Python's `_stop`. `min(mf0, w)` seeds the fold at `mf0`, so a tie returns `mf0`.
+    let stop = |w: f64| -> f64 {
+        if !latched {
+            return w;
+        }
+        if w < mf0 { w } else { mf0 }
+    };
+    // Python's `_relax` — RUNG 75's fixed point of BOTH terms. `tau_t is None` returns the target
+    // ITSELF, so rung 74's sweep is this expression with the branch not taken.
+    //
+    // **`w` IS A PARAMETER THE BODY NEVER READS**, in Python too: the state enters only through
+    // the `tau` the caller computed from it. Kept in the signature because the source has it, and
+    // named `_w` so the fact is on the page rather than looking like a dropped argument.
+    let relax = |tgt: f64, _w: f64, mf_app: f64, tau: f64| -> f64 {
+        match tau_t {
+            None => tgt,
+            Some(t) => (t * tgt + tau * mf_app) / (tau + t),
+        }
+    };
+
+    let order = IC_ORDER4_DECLARED;
+    // TRANSCRIBED FROM `engine.py:17947`, not from the parent with the number swapped: this is the
+    // ONE shipped rung-74 message that does NOT open `rung-74:` — there is no colon after the tag
+    // — so a needle built on the pre-flight's *all 9 open with `rung-74:`* would miss it.
+    assert!({
+                let mut cs: Vec<char> = order.chars().collect();
+                cs.sort_unstable();
+                cs == ['f', 'q', 'r', 'v']
+            },
+            "rung-74 ic_order4 is a permutation of 'frqv'; got {order:?}");
+    let mut res = f64::INFINITY;
+    let mut its = 0usize;
+    for i in 1..=ft.inner.ic_cap.get() {
+        its = i;
+        let (mut wfn, mut wrn, mut qn, mut vn) = (wf, wr, q, v);
+        for k in order.chars() {
+            match k {
+                'f' => {
+                    let ma = applied_demand(mf0, wfn, wrn);
+                    let tgt = demand_reference(
+                        &ft.inner,
+                        demand_target(
+                            &ft.inner,
+                            cap_fuel_at(a, h, qn, vn, mf0, ma).unwrap_or_else(|e| raise(e)),
+                            mf0),
+                        wfn, ma);
+                    wfn = stop(relax(tgt, wfn, ma, demand_tau(lag, tgt, wfn)));
+                }
+                'r' => {
+                    let ma = applied_demand(mf0, wfn, wrn);
+                    let tgt = demand_reference(
+                        &ft.inner,
+                        demand_target(
+                            &ft.inner,
+                            cap_gov_at(a, h, qn, vn, mf0).unwrap_or_else(|e| raise(e)),
+                            mf0),
+                        wrn, ma);
+                    wrn = stop(relax(tgt, wrn, ma, tau_gov));
+                }
+                'q' => {
+                    if b0.is_none() {
+                        qn = command(a, h, 1e-9f64.max(applied_demand(mf0, wfn, wrn)), vn)
+                            .unwrap_or_else(|e| raise(e));
+                    }
+                }
+                'v' => {
+                    if v0.is_none() && has_v {
+                        vn = stator(a, h, 1e-9f64.max(applied_demand(mf0, wfn, wrn)), qn)
+                            .unwrap_or_else(|e| raise(e))
+                            .0;
+                    }
+                }
+                _ => unreachable!("the permutation assert above admits only f/q/r/v"),
+            }
+        }
+        // Python's `max(abs(n[i] - x) for i, x in enumerate((wf, wr, q, v)))` — the tuple order is
+        // `(wf, wr, q, v)` and NOT the sweep order, which is `_ic_order4`'s.
+        res = py_max4((wfn - wf).abs(), (wrn - wr).abs(), (qn - q).abs(), (vn - v).abs());
+        wf = wfn;
+        wr = wrn;
+        q = qn;
+        v = vn;
+        if res <= 1e-12 {
+            break;
+        }
+    }
+    assert!(res <= 1e-9,
+            "rung-74: the joint initial condition did not converge (residual {res:.3e} after \
+             {its} iterations) in order {order:?}, at wf = {wf:.6e}, wr = {wr:.6e}, under \
+             ({:?}, {:?}). Under MIN-SELECT the sweep can cycle between the two fuel-side legs \
+             (rung 72's reason) -- and under ('demand', 'applied') there is a SECOND, structural \
+             reason, which is this rung's s 4: a MASKED applied-referenced leg obeys dw/ds = \
+             (cap - mf_app)/tau, which is state-independent and POSITIVE, so with no stop in its \
+             path it has NO INTERIOR EQUILIBRIUM AT ALL. The same motion in CLIP coordinates runs \
+             INTO the floor at g = 0 and halts there, which is what rung 73 s 0.2 read as \
+             self-anti-winding. Neither is a cap to raise: report the state, the order and both \
+             demands.",
+            ft.inner.lag_coord.get(), ft.inner.ref_law.get());
+
+    // --- THE RK4 LOOP --------------------------------------------------------------------------
+    let share_law = ft.inner.share_law.get();
+    let lag_coord = ft.inner.lag_coord.get();
+    let mut pts: Vec<FuelPoint> = Vec::new();
+    let mut s = 0.0f64;
+    let n_steps = (s_end / ds).round_ties_even() as i64;
+    for _ in 0..=n_steps {
+        let Ok(k1) = der(a, h, wf, wr, q, v, s) else { break };
+        let ms = k1.ms;
+        // Python's `clip = ms - mf_app`, where its `mf_app` at this point is the CLAMPED `mf`
+        // returned from `der` — the same name rebound in the caller. So `g` and the recorded `mf`
+        // are the same quantity, and `mf = mf_sched - g` stays true for an inherited reader.
+        let clip = ms - k1.mf;
+        // Python's `max(ms - cf, ms - cr)`, spelled as the fold rather than `f64::max`: the two
+        // differ when an operand is NaN and Python's is what the source runs. (Rung 72's port
+        // spells the same construct `rf.max(rr)` — a latent divergence at a place no NaN reaches,
+        // recorded here rather than silently matched.)
+        let required = {
+            let (x, y) = (ms - k1.cf, ms - k1.cr);
+            if y > x { y } else { x }
+        };
+        pts.push(crate::fuel_transient::point(
+            s, a, h, &k1.inst, k1.mf, ms,
+            crate::fuel_transient::PointExtra::Demand {
+                g: clip, required, b: q, b_cmd: k1.cmd, v, v_cmd: k1.vcmd, v_regime: k1.vreg,
+                ic_iters: its, ic_res: res, ic_order: order,
+                g_fuel: ms - wf, g_gov: ms - wr,
+                required_fuel: ms - k1.cf, required_gov: ms - k1.cr,
+                authority: demand_authority(wf, wr, ms), share_law,
+                w_fuel: wf, w_gov: wr, cap_fuel: k1.cf, cap_gov: k1.cr, lag_coord,
+            }));
+        let stages = (|| -> Result<[f64; 18], Abort> {
+            let k2 = der(a + ds / 2.0 * k1.da, h + ds / 2.0 * k1.dh, wf + ds / 2.0 * k1.dwf,
+                         wr + ds / 2.0 * k1.dwr, q + ds / 2.0 * k1.dq, v + ds / 2.0 * k1.dv,
+                         s + ds / 2.0)?;
+            let k3 = der(a + ds / 2.0 * k2.da, h + ds / 2.0 * k2.dh, wf + ds / 2.0 * k2.dwf,
+                         wr + ds / 2.0 * k2.dwr, q + ds / 2.0 * k2.dq, v + ds / 2.0 * k2.dv,
+                         s + ds / 2.0)?;
+            let k4 = der(a + ds * k3.da, h + ds * k3.dh, wf + ds * k3.dwf, wr + ds * k3.dwr,
+                         q + ds * k3.dq, v + ds * k3.dv, s + ds)?;
+            Ok([k2.da, k2.dh, k2.dwf, k2.dwr, k2.dq, k2.dv,
+                k3.da, k3.dh, k3.dwf, k3.dwr, k3.dq, k3.dv,
+                k4.da, k4.dh, k4.dwf, k4.dwr, k4.dq, k4.dv])
+        })();
+        let Ok([k2a, k2h, k2wf, k2wr, k2q, k2v,
+                k3a, k3h, k3wf, k3wr, k3q, k3v,
+                k4a, k4h, k4wf, k4wr, k4q, k4v]) = stages else { break };
+        a += ds / 6.0 * (k1.da + 2.0 * k2a + 2.0 * k3a + k4a);
+        h += ds / 6.0 * (k1.dh + 2.0 * k2h + 2.0 * k3h + k4h);
+        wf += ds / 6.0 * (k1.dwf + 2.0 * k2wf + 2.0 * k3wf + k4wf);
+        wr += ds / 6.0 * (k1.dwr + 2.0 * k2wr + 2.0 * k3wr + k4wr);
+        q += ds / 6.0 * (k1.dq + 2.0 * k2q + 2.0 * k3q + k4q);
+        v += ds / 6.0 * (k1.dv + 2.0 * k2v + 2.0 * k3v + k4v);
+        // The two HARDWARE stops carry from rung 72 verbatim: a valve position and a stator
+        // setting are metal, and a change of coordinate on the FUEL lag does not move them.
+        if has_q {
+            let bmax = ft.inner.lever.lim.expect("has_q").b_max;
+            q = bmax.min(0.0f64.max(q));
+        }
+        if has_v {
+            v = ft.inner.clamp_v(v, &lim_s.expect("has_v"));
+        }
+        if latched {
+            // THE LATCH — the clip plant's `g >= 0`, in this coordinate, and the ONLY state stop
+            // this march has. Applied here and nowhere else: an unlatched demand has no stop, and
+            // that is the finding rather than an oversight (§ 3).
+            //
+            // **THIS IS WHERE RUNG 72's `gf = max(0, gf)` PAIR WOULD HAVE LANDED IF IT HAD BEEN
+            // COPIED**, and it would have been invisible: `w` never goes negative on any arm the
+            // suite runs (measured — minimum `9.44e-03` over 2 046 marched points, and 0 of them
+            // below zero), so an added `max(0, w)` is arithmetically inert HERE and would still
+            // have given the unlatched arm a stop the moment a plant reached one.
+            let nxt = fuel_schedule(s + ds);
+            // Python's `min(nxt, w)`: the fold seeds at `nxt`, so a tie returns `nxt` and so
+            // does a NaN state -- `f64::min` would return the other operand on both rows.
+            wf = if wf < nxt { wf } else { nxt };
+            wr = if wr < nxt { wr } else { nxt };
+        }
+        s += ds;
+    }
+    pts
+}
+
