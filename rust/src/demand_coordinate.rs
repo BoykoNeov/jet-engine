@@ -813,6 +813,13 @@ pub fn demand_laws<'a>(
         let bl = ft.inner.lever.lim.expect("rung-74's valve law on an unfloored machine");
         // `1e-9f64.max(..)` is rung 72's own spelling at the identical Python `max(1e-9, ·)`, kept
         // rather than re-derived — a deliberate duplication is not a factoring opportunity.
+        //
+        // **AND IT IS THE ONE `min`/`max` CELL THIS STEP DID NOT DECIDE.** Every other fold here is
+        // spelled Python's way because the two disagree on a NaN operand (`applied_demand`'s gate
+        // drives exactly that row). Python's `max(1e-9, x)` returns `x` for a NaN `x`; Rust's
+        // `1e-9f64.max(x)` returns `1e-9`. Nothing at this rung shows `x` cannot be NaN, and
+        // nothing here measures that it can — so this is an UNMEASURED cell, not a decided one,
+        // and it is named rather than left to look like the rest.
         let (_, b, reg) = crate::limited_bleed::r64_solve_b(
             &bl,
             closer_b(ft, a, h, 1e-9f64.max(applied_demand(mf_sched, wf, wr)), tt2, pt2))?;

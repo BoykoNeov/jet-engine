@@ -33,6 +33,13 @@ shape: the zero is an ACTUATOR'S STOP, not an arithmetic identity.** Nothing in 
 hints at it, and a `min` over two saturated solves is flat for the same reason a constant function
 is. A permanent `assert_ne!(value, 0.0)` now stands in FRONT of the equality.
 
+**AND THE MECHANISM IS NARROWER THAN *the point was wrong*, which is what makes the lesson
+recursive.** The point was TRUE — for a different ARMING than the code under test exercises. So the
+question is not *is this constant good?* but *which arming was it measured under, and is that
+mine?* **The point this step then MEASURED is, at the next step, an inherited constant with exactly
+the same property**, because the next step arms a third thing again. A measured constant is only
+measured for the arming that measured it; carry it forward as a starting guess, never as a warrant.
+
 **How to apply it:** for any gate whose content is *these two differ* or *these two agree*, ask
 what the operating point supplies before asking what the code does — and put the off-the-stop /
 non-degenerate check in front of the comparison, not beside it. Fix it by MEASURING a point (a

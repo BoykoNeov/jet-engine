@@ -20210,8 +20210,25 @@ UNPIPED over the final tree, with the totals read from the summed per-target lin
 
 * `_integrate_fuel_demand` — the six-state march with the joint IC fixed point, and step 1's
   `unimplemented!` arm with its gate asserting a legal demand call REACHES it;
-* **the measured rig point** `(0.85, 0.90, 0.040)` with `kappa = 1e-8`, and the reason it is not the
-  design speed pair — a step-3 march that re-derives its own point must re-measure, not re-copy;
+* **the measured rig point** `(0.85, 0.90, 0.040)` with `kappa = 1e-8` — **AND § (a)'s LESSON
+  APPLIES TO THIS VERY LINE.** The mechanism there was narrower than *the point was wrong*: the
+  point was TRUE for a different ARMING (one cap, through an accel schedule) than the code
+  exercised (the surge floor). **Step 3 arms a full six-state march, which is a THIRD arming**, so
+  this pair is now itself an inherited constant with exactly the property that broke step 2. It is
+  booked as a STARTING GUESS to be re-measured, never as a rig constant to be copied — and if step
+  3 copies it and it works, that is luck, not warrant;
+* **the one `min` cell this step did not decide.** M1 established that `f64::min` and Python's fold
+  differ observably on a NaN seed, and every fold in step 2's own code is spelled Python's way
+  because of it — except `1e-9f64.max(applied_demand(…))` in `C` and `V`, which is kept as rung
+  72's spelling under COPY-vs-REDERIVATION. Python's `max(1e-9, x)` and Rust's `1e-9f64.max(x)`
+  disagree when `x` is NaN, and nothing at this rung shows `x` cannot be. **Not a defect — an
+  unmeasured cell in a table whose other entries were measured**, and the cheapest place to settle
+  it is the step-3 march, which is the first thing that drives these two laws in anger;
 * the `b_state`/`v_state` boundary on `C`, `V` and `R` — only `F` reaches a spy at this step
   (M16), booked;
-* `ic_cap`, still a `Cell` whose reader is this rung's march and whose only writer is rung 75.
+* `ic_cap`, still a `Cell` whose reader is this rung's march and whose only writer is rung 75 —
+  **so step 3 is where a field with no reader becomes a field with one.** The question to ask
+  FIRST, before writing any gate for it, is what distinguishes `ic_cap = 60` from `ic_cap = 1000`
+  on the shipped grid. If the joint IC fixed point converges in two passes everywhere, the answer
+  is *nothing*, and that is a MEASUREMENT to book — § 5.30 (i)'s discharge-by-measurement move for
+  `_with_coord`, not a gate to manufacture.
