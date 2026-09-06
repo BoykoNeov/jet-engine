@@ -17542,9 +17542,9 @@ class DemandCoordinateTransient(AppliedReferenceTransient):
         t = DemandCoordinateTransient(design, FLIGHT, 1.0, map_lp=..., map_hp=..., bleed_lim=bl)
         t._lag_coord = "demand"
         t.demand_law(FLIGHT, 1000., 1400., 1200., sm=0.4545)      # the BILL and the hand-over
-        t.demand_gains(FLIGHT, 1000., 1400., 1200., sm=0.4545)    # entries move, spectrum stays
-        t.latch_discriminator(FLIGHT, 1000., 1400., 1200., sm=0.4545)  # coordinate vs floor
-        t.flat_schedule_identity(FLIGHT, 1200., sm=0.4545)        # the reduce BY IDENTITY
+        t.demand_gains(FLIGHT, 1000., 1400., 1200., phi_lim=0.76)  # entries move, spectrum stays
+        t.latch_discriminator(FLIGHT, 1000., 1400., 1200., phi_lim=0.76)  # coordinate vs floor
+        t.flat_schedule_identity(FLIGHT, 1200., phi_lim=0.76)     # the reduce BY IDENTITY
 
     THE REDUCE: `_lag_coord = 'clip'` is rung 73 bit-for-bit on all six of its arms (the march
     is not even entered -- exact dispatch), and `demand-latched` on a FLAT schedule is the clip
