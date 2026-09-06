@@ -14473,8 +14473,11 @@ complex root, § 5.26.2 (e)'s one remaining platform-library exposure — is mea
 3 gates), and the two goldens at **15 957 keys each** — `slice_ab_pypy.tsv` and
 `slice_ab_cpython.tsv`, both emitted by the same script. **`Rust ≡ PyPy` on all 15 957** after ONE
 fix to `src/reference_split.rs`; the CPython arm carries a **194-name** exemption with **two**
-causes. `tests/slice_aa_oracle.rs` gains a correction to a stale doc comment (§ (g)). Full Rust
-gate **GATE_LINE**. `cargo clippy --all-targets`: CLIPPY_LINE
+causes. `tests/slice_aa_oracle.rs` gains a correction to a stale doc comment (§ (g)). **The full-crate gate
+and clippy numbers for this step were never written down.** The two placeholders this sentence
+replaces (`GATE_LINE`, `CLIPPY_LINE`) shipped in `0cbd10e` on 2026-08-28 and stood unfilled through
+58 commits and five later slices. Whether the runs happened is not recorded either way, so nothing
+is reconstructed here: this is a documentation debt, booked as one.
 
 ##### (a) **THE ORACLE FOUND A PORT DEFECT, AND ONLY ITS *DECLARED EXTRA* TABLE COULD SEE IT**
 
@@ -21957,3 +21960,191 @@ CLAUDE.md instead paid for naming the new guard by compressing three clauses in 
 (`a class docstring's`, `the SAME run` → `ONE run`, and the CPython-anchor sentence): **35 949 →
 35 962 bytes against a 35 970 budget, 8 left.** The budget was not raised, which is that file's own
 banner rule.
+
+#### 5.31.2 SLICE AG step 2 — the device itself, and **THREE GATES THAT FAILED INSIDE RUNG 74's OWN REFUSAL, PLUS A FIVE-WAY BLINDNESS THE SWEEP FOUND IN THE GATE MEANT TO CATCH IT**
+
+`rust/src/anti_windup.rs` 353 → 601 lines: `WindupScope`, `windup_march`, and `rhs_laws` with its
+own `RhsLaws` return type. `rust/tests/slice_ag_laws.rs` (11 gates). Step 2 of seven; the three
+names § 5.31 (vi) assigns it, and not one more — `_rhs_gains_at` sits at `engine.py:18789`,
+immediately after the last of them, and it is step 3's.
+
+##### (a) THE LEADING FINDING — **THE DEVICE CREATES A PLANT THAT DOES NOT EXIST ONE RUNG DOWN, AND THE PORT SAID SO BY FAILING**
+
+Three of the four march gates failed on their first run, all three inside the SAME shipped refusal —
+rung 74's joint-IC message, which reads *a MASKED applied-referenced leg obeys
+`dw/ds = (cap − mf_app)/tau`, state-independent and POSITIVE, so with no stop in its path it has NO
+INTERIOR EQUILIBRIUM AT ALL*. The gates had been written against the cell rung 75's own readers
+drive — `demand × applied × track` — with `none` as the control, and **the control is the half that
+cannot run at rung 74.**
+
+Read as a measurement rather than as a bug, the 2×2 IS the rung:
+
+| law | reference | outcome |
+|---|---|---|
+| `none` | `sched` | 341 points |
+| `track` | `sched` | 341 points |
+| **`none`** | **`applied`** | **RAISES** — residual stalls at `2.864e-03` after 60 sweeps |
+| **`track`** | **`applied`** | **341 points** |
+
+So the tracking term is what gives the masked leg an equilibrium to converge to, and the port
+reproduces rung 74 § 4 and rung 75 § 0.2 in one table without either being typed into a gate.
+`the_device_creates_the_plant_rung_74_says_does_not_exist` is that table, `none` included, because
+*the armed march returns* on its own would be satisfied by a cell that was never hard.
+
+**This is step 1's lesson recurring inside the same slice** — when a gate written to demonstrate one
+thing fails, read the failure before fixing the gate. Step 1 had two; this step had three, and all
+three were the same fact.
+
+##### (b) THE LAWS CHANGE **KIND**, AND A SHARED RETURN TYPE WOULD HAVE MADE THAT UNASKABLE
+
+Rung 74's `demand_laws` returns TARGETS on the fuel rows and the SOLVED `b`/`v` on the others.
+Every row of `_rhs_laws` returns a RATE. The port therefore ships a separate `RhsLaws` type, and the
+reason is not tidiness — it is that `F` and `R` have the identical Rust signature in both rungs, so
+one shared type would make a target and a derivative interchangeable at every call site in the
+crate, and step 3's `_rhs_gains_at` would consume either without complaint.
+
+**The type is the cheap half; the gate is the real one.** At one point,
+`the_four_laws_are_RATES_where_rung_74s_are_TARGETS` requires the two `F`s to return **different
+numbers**, and the rung-75 one to equal `(rung74_F − wf)/tau_f` **to the bit** — and the same for
+the other three rows, each against its own state and its own clock. An equality-only gate would have
+passed a port that returned the target.
+
+`C` and `V` change ARITY too — three states at rung 74, four here — because a rate needs the state
+it is a rate against. That is a compile-time discriminator the fuel rows do not have.
+
+**AND THE TRAP THE PYTHON DOCSTRING NAMES IS THE ONE THE PORT MUST NOT REBUILD.** The tracking term
+is in no leg's target and `tau_t` is not in `taus`, so an inherited gains reader run on the `track`
+cell would report the masked diagonal unchanged and the spectrum invariant — *a perfect refutation
+of this rung's headline, having measured nothing.* Two spellings would have rebuilt it: `demand_laws`
+plus a division at the call site, and `tau_t` added to `taus` so `_jac4` writes `−1/tau_t` onto the
+diagonal. Both are named in the module doc as refused, with the six prior instances this project has
+booked.
+
+##### (c) **THE GATE THAT OWNS THAT SENTENCE COULD NOT HAVE SEEN EITHER SPELLING, BECAUSE ALL FIVE CLOCKS IN ITS GRID WERE THE SAME NUMBER**
+
+Sweep A injected *`F` divides by `tau_gov`* — a defect whose whole subject is the gate just quoted —
+and it **SURVIVED**. The cause is not the assertions, which name the right clock four times; it is
+the grid underneath them. `TAU`, `TAU_S`, `TAU_ATT`, `TAU_GOV` and `TAU_T` were all `0.05`,
+inherited from the slice-AF file this one was seeded from, and **on a uniform grid every permutation
+of the five divisors satisfies every assertion in the section.**
+
+The inheritance is the interesting half. Rung 74's four laws return targets and solved values, so
+**no clock appears in their algebra at all** — a uniform grid is harmless there, and rung 75 is the
+first rung in the ladder where a divisor permutation is even expressible. The instrument was carried
+across the exact boundary at which the defect class comes into existence.
+
+**And it is a precondition for step 3, not a tidy-up of step 2.** `_jac4` writes `−1/tau` on the
+diagonal, and this rung's central refused spelling — `tau_t` added to `taus` — is detectable only if
+`−1/tau_t` and `−1/tau_f` are different numbers. On the grid as inherited they are the same number,
+so the detector for the trap the module doc pre-registers **could not have existed**. The gains
+gates inherit the repaired constants, and the reason both grids exist is written in the file.
+
+The repair is five distinct clocks (`0.05 / 0.07 / 0.11 / 0.13 / 0.17`) on a second rig,
+`arm_clocks()`, used by the four law gates; the march gates keep the uniform grid deliberately,
+because their cells were measured on it and a march is not where a divisor permutation shows.
+**With one guard**: a limiter's `tau` is a lag clock and has no business inside `_solve_b` /
+`_solve_v`, but if it leaked in, both sides of `xc == (b − q)/tau_q` would move together and the new
+rig would measure LESS while looking stronger. So the two solved values are pinned bit-for-bit
+against the uniform rig, inside the same gate.
+
+**SWEEP C — the proof the repair bought what it was for.** One injection per row, each swapping that
+row's divisor for another row's, run against the repaired grid. **5 of 5 KILLED, where the first of
+them had survived the identical injection an hour earlier:**
+
+| injection | measured |
+|---|---|
+| `F` divides by `tau_gov` — sweep A's SURVIVOR | **KILLED** — `the_four_laws_are_RATES_where_rung_74s_are_TARGETS` |
+| `R` divides by `tau_f` | **KILLED** — same gate |
+| `C` divides by the STATOR's clock | **KILLED** — same gate |
+| `V` divides by the VALVE's clock | **KILLED** — same gate |
+| the tracking term divides by `tau_f`, not `tau_t` | **KILLED** — `the_tracking_term_is_the_only_difference_between_the_two_arms` |
+
+The fifth lands on a different gate than the other four, and correctly: the RATES gate runs the
+`none` arm, where `tau_t` is not read at all. Four rows and the device's own clock, five distinct
+numbers, five kills — and the same five assertions scored **zero** against the first of them before
+the grid changed.
+
+##### (d) `_windup_march` IS A COPY OF RUNG 74's `_coord_march`, AND HERE THE FACTORED SPELLING IS **WRONG**, NOT MERELY UNFAITHFUL
+
+The two Python bodies differ by exactly one line (`engine.py:18694`) and by `ref` losing its default.
+The port keeps the duplication for the recorded reason — a deliberate duplication is not the port's
+to remove — but at this rung there is a second, harder reason: **rung 74's body RUNS THE MARCH before
+it returns.** A `windup_march` that delegated and then set the three knobs would hand back a
+correctly-labelled sibling carrying a rung-74 trajectory; every field assertion would pass, the
+reduce arm would be exact, and the device would be reported by a reader that never saw it.
+
+`the_march_sets_the_knobs_before_it_marches` is the discriminator, and on the `applied` cell it is
+sharper than a difference: the parent RAISES there, so a delegating body could not return a
+trajectory to mislabel at all. The sweep kills the delegating spelling on four gate lines.
+
+##### (e) `_with_windup` SAVES A **PAIR**, AND A HALF-RESTORE IS SILENT
+
+`prev = (self._windup_law, self._tau_t)`. A guard that restored only the law would leave `_tau_t`
+armed on the receiver — and `_windup_tau` refuses an UNSET clock while saying nothing about a stale
+one, so the next reader to declare `"track"` would silently run on the previous one's clock. The
+gate reads both fields after the drop, and again after a NESTED guard, which is the case a
+single-field save cannot even express.
+
+`WindupScope` writes its two fields **directly**, where `CoordScope` and `RefScope` go through their
+cells: `_with_windup` has exactly one definer over all 58 classes (§ 5.31 (iii)), so a slot would be
+dead. That is `ShareScope`'s decision on the same evidence, and it is re-derived here rather than
+inherited from the sibling's shape.
+
+##### (f) THE `_ic_cap` CARRY IS LIVE **AS A SET OF THREE**, AND NO SINGLE-LINE MUTATION CAN TOUCH IT
+
+The draft of this section called the march's `_ic_cap` line load-bearing. **It is not, and the sweep
+is what said so** — dropping it changes nothing anywhere in the slice. The reason is structural
+rather than local: rung 75 writes that field from the same source at THREE sites (`engine.py:18673`
+in `at_lever`, `18682` in `_shared_rig`, `18694` in `_windup_march`), the march reaches its sibling
+through the second of them, and **any one of the three suffices**. A single-line mutation therefore
+has nothing to prove either way, in the port or in Python.
+
+Removing **all three at once** kills in both binaries —
+`the_march_carries_five_knobs_and_the_parent_carries_three` here, and step 1's
+`at_lever_carries_four_knobs_at_rung_75_and_five_at_rung_76` in `slice_ag_cells.rs`. So: one live
+set, three faithful copies, individually unobservable, and the duplication is the SOURCE's rather
+than the port's to remove.
+
+What survives from the draft is the between-rung control and the behavioural half, both measured and
+neither mis-attributed: rung 74's `_shared_rig` genuinely does NOT carry `_ic_cap` (its sibling
+reads `IC_CAP_DECLARED` under the identical arming), and on the cell that needs the device a cap of
+7 makes the same march RAISE with the residual already down at `2.2e-05`, where the inherited 60
+returns 341 points. The carried number reaches the joint-IC sweep itself, which is step 3's subject.
+
+**The generalisation is the one worth booking.** A mutation sweep scores a LINE; when a value is
+written from one source at N sites, every single-line score is a foregone `SURVIVED` that says
+nothing about gate power. The question a single-line sweep answers is *can anything see this LINE* —
+the question worth asking is *can anything see this VALUE*, and only the N-site injection asks it.
+
+##### (g) SWEEP A — nine injections, predictions typed first
+
+Nine one-line injections into `rust/src/anti_windup.rs`, each scored against BOTH slice binaries,
+each prediction typed before the run. **6 killed, 3 survived — 1 pre-registered, and the other two
+are §§ (c) and (f).**
+
+| # | injection | predicted | measured |
+|---|---|---|---|
+| 1 | `windup_march` DELEGATES: the knobs are set AFTER the march | KILLED — the parent raises on `applied`, so there is no trajectory to mislabel | **KILLED**, 4 gate lines |
+| 2 | the `_ic_cap` carry dropped from the march | KILLED — on the field AND on the `after 7 iterations` half | **SURVIVED** → § (f) |
+| 3 | `WindupScope` restores the LAW only | KILLED by the clock assertion; every law-only assertion still passes | **KILLED**, 3 |
+| 4 | the track term reads a FROZEN `w` instead of the state | KILLED by the disarm gate in both directions, and by the tracking-term gate | **KILLED**, 3 |
+| 5 | the track term's sign flipped | KILLED by the tracking-term gate; the disarm gate survives it (`0` is `0` either way) | **KILLED**, 2 |
+| 6 | `F` divides by `tau_gov` | KILLED by the RATES gate ONLY — *"a survivor here would be the finding"* | **SURVIVED** → § (c) |
+| 7 | `C` returns the difference without dividing | KILLED by the RATES gate; the march gates survive (the laws are not marched yet) | **KILLED**, 2 |
+| 8 | the clock is read LAZILY, inside the closure | KILLED by the refusal gate and the tracking-term gate | **KILLED**, 4 |
+| 9 | `windup_tau` called DIRECTLY, not through the table | **SURVIVES** — rung 76 does not override this cell, so no machine in the slice can tell | **SURVIVED**, as registered |
+
+Row 9 needs no repair and gets none: slice AF step 6's four call-site fixes are the standing reason
+the table call stays regardless of whether the CURRENT rung overrides the cell — the pin is against
+the rung that adds the override later, and a gate for it cannot exist until one does.
+
+**SWEEP B — the N-site injection row 2 demanded.** All three `_ic_cap` carries removed at once:
+**KILLED in both binaries**, `the_march_carries_five_knobs_and_the_parent_carries_three` and
+`at_lever_carries_four_knobs_at_rung_75_and_five_at_rung_76`. Source SHA-256 verified back to
+pristine after every run in all three sweeps.
+
+##### (h) GATES
+
+`cargo test --test slice_ag_laws` **11 passed / 0 failed**, warning-free; `slice_ag_cells` unchanged
+at 15. Full crate, `cargo test --release`: **151 blocks / 1 565 passed / 0 failed** — 151 test blocks, slice AG's
+two among them. Nothing in this step touches Python, so no `pytest` run is owed by it.
