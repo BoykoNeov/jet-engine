@@ -21389,3 +21389,367 @@ Nothing of slice AF's. Of § 5.30.6 (ix)'s three inherited items, the four-site 
 stated in the crate and comes due at slice AI, `sensed_cap`'s unreachability is slice AG's to
 close by arming rung 76's accel arm, and this one is **CLOSED**. **SLICE AF IS FULLY
 DISCHARGED — six steps and one debt.**
+
+### 5.31 SLICE AG (rungs 75 + 76, `AntiWindupTransient` + `SensedCapTransient`) — PRE-REGISTERED, fourteen probes MEASURED first
+
+Rung 75 is the declared anti-windup device — back-calculation onto the fuel actually applied, on
+its own clock `tau_t`. Rung 76 is the sensed cap — rung 48's `Wf/pt3` schedule evaluated at the
+fuel it is asked about instead of solved as a fixed point. Slice AF booked exactly one thing
+forward to here (§ 5.30.6 (ix), § 5.30.7 (vii)) and § (i) settles it. Every number below was
+produced before a line of this section was written; the scripts live in
+`M:\claud_projects\temp\slice-ag-preflight\` and the transcription source is that folder's
+`measurements.md` (AE step 5's rule: a gate is transcribed FROM the table, never from a sentence).
+
+#### (i) THE LEADING FINDING — **THE ARM DECIDES, NOT THE ARMING: `sensed_cap` GOES FROM UNREACHABLE TO DISPATCHED AT 1 366 OF 1 366 CALLS THE MOMENT AN ACCEL IS ARMED, AND ON THE ARM WHERE EVERY JACOBIAN IS READ IT STILL MOVES NOTHING — WHILE THE SHIPPED COMMENT THAT SAYS WHERE TO LOOK IS TRUE OF ONE POPULATION, FALSE OF THE OTHER, AND NAMES NEITHER**
+
+§ 5.30.6 (v) measured `sensed_cap` unreachable from every rung-74 reader, because not one of the
+seven seats arms an `AccelSchedule`, and booked the closure here:
+
+> Rung 76 replaces the body, and the accel arm is where it lands.
+
+**The booking is right and it is not sufficient, in a way that has a number.** Every marched arm
+`tests/test_rung76.py` ships arms a schedule (`_accel` → `accel_for`) — the one exception is the
+refusal that exists to check a schedule's ABSENCE — so arming is free; what is not free is whether
+a value ever moves. Measured on both plants — `_rig` + `_stator_march` (the reduce spine) and
+`_shared_rig` via `_cap_march` (the plant every rung-76 reader marches), which return **identical**
+numbers rather than assumed-identical ones:
+
+| arm | law | `_cap_fuel` calls | accel ARMED | `_sensed_cap` DISPATCHED | branch TAKEN | accel leg **WON** the `min` | `\|sensed−solve\|/\|solve\|` |
+|---|---|---|---|---|---|---|---|
+| `PHI_JAC` 0.80 | `solve` | 1 366 | 1 366 | 1 366 | 0 | **0** | — |
+| `PHI_JAC` 0.80 | `sensed` | 1 366 | 1 366 | 1 366 | **1 366** | **0** | 2.320859e−02, constant |
+| `PHI_BOTH` 0.76 | `solve` | 1 366 | 1 366 | 1 366 | 0 | 1 325 | — |
+| `PHI_BOTH` 0.76 | `sensed` | 1 366 | 1 366 | 1 366 | **1 366** | **1 366** | 4.023e−03 … 2.283e−02 |
+
+`sensed < solve` at **1 366 of 1 366** on both arms, which reproduces the shipped *the sensed leg
+cuts harder over the whole ramp* independently. And the marched trajectory:
+
+| arm | rung 75 == rung 76/`solve` | `solve` vs `sensed` |
+|---|---|---|
+| `PHI_JAC` 0.80 | **True**, 341 of 341 | **0 of 341 differ**, `max\|ΔTt4\| = 0.0` |
+| `PHI_BOTH` 0.76 | **True**, 341 of 341 | **341 of 341 differ**, `max\|ΔTt4\| = 1.025497e+01` |
+
+So the sensed cap is computed at every call on both arms, is 2.32 % below the solve at every one
+of them at `PHI_JAC`, **and the min-select one level down discards it every time**. The value
+break is not created by arming the arm; it is created by the φ leg losing, which is a property of
+the arm. `1.025497e+01` independently reproduces `docs/rung76-spec.md` § 1.3's shipped
+`1179.24 → 1168.98 K` (`−10.25`) — a shipped number CONFIRMED rather than quoted.
+
+**AND THE READERS ARE ON THE OTHER SIDE OF THE SAME SPLIT.** `solve_gain` at `PHI_JAC` — the arm
+whose march is bit-identical — makes 60 `_cap_fuel` calls with the accel leg winning **60 of 60**,
+because `_c_at` MANUFACTURES its points instead of marching to them. **A gate that asked *does the
+knob move the plant?* at the arm the shipped Jacobian fixture uses would read an exact zero and be
+right; the same question one call deeper reads 60 of 60.** That is why AF's P5 had to be
+three-sided, and it is the shape AG's arming gate inherits — reader discrimination, plant
+reachability and scope entry are three different questions here, and at `PHI_JAC` they have three
+different answers.
+
+**AND THE SHIPPED COMMENT ABOUT ALL THIS IS TRUE, FALSE, AND SILENT ABOUT WHICH.**
+`tests/test_rung76.py:57-60` reads:
+
+> RUNG 48's OWN already-imposed scalar, and the ONE imposition this rung carries. At 0.10 the
+> accel leg is the binding cap on this trajectory; above ~0.20 the phi leg takes over and the
+> knob is INERT by construction (spec § 1.3).
+
+Swept over `margin` on **both populations**, at the arm the sentence sits next to — accel leg WON,
+with `cap_gains`' live-cell count beside it:
+
+| population at `PHI_JAC` 0.80 | 0.05 | 0.10 | 0.20 | 0.40 |
+|---|---|---|---|---|
+| **`cap_gains`'s manufactured points** | 360 / 360 | **540 / 540** | 548 / 612 | **64 / 576** |
+| its LIVE CELLS | 2 of 8 | 4 of 8 | **8 of 8** | **0 of 8** |
+| `solve_gain`'s points | 60 / 60 | 60 / 60 | 54 / 54 | 54 / 54 |
+| **the MARCH** | **0 / 1 366** | **0 / 1 366** | **0 / 1 366** | **0 / 1 366** |
+
+| the MARCH at `PHI_BOTH` 0.76 | 0.05 | 0.10 | 0.20 | 0.40 |
+|---|---|---|---|---|
+| accel leg WON, `solve` | 1 366 | 1 325 | 971 | **491** |
+| accel leg WON, `sensed` | 1 366 | 1 366 | 1 011 | **659** |
+| trajectory points differing, of 341 | 341 | 341 | 252 | **164** |
+
+**THE SENTENCE IS TRUE OF THE POPULATION IT WAS WRITTEN ABOUT AND FALSE OF THE ONE STANDING NEXT
+TO IT, AND IT NAMES NEITHER.** On `cap_gains`' points at `PHI_JAC` the accel leg binds at 540 of
+540 at margin 0.10, and `~0.20` is a real cliff — 8 of 8 cells live at 0.20, **0 of 8 at 0.40** —
+so *above ~0.20 … the knob is INERT* is exactly right there. On the MARCH at the same arm and the
+same margin the accel leg binds **0 of 1 366**, at every margin including 0.05; and at `PHI_BOTH`
+it never goes inert at all — still 491 of 1 366 and 164 moving trajectory points at 0.40, double
+the stated threshold. **One scalar, one arm, two populations, opposite answers** — and
+`docs/rung76-spec.md` § 1.3, which the comment cites, states the min-select CONDITION (*inert
+wherever the φ cap is the lower one*) that both populations obey, and no threshold at all.
+
+**The repair therefore ADDS and deletes nothing** (§ (ix)): the shipped sentence stays, with the
+two tables above written under it and the populations named. **This is the pre-flight's own
+near-miss and is recorded as one in § (viii) item 5** — the first draft of this section called the
+comment false, from a margin sweep run on the march alone, and would have deleted a true statement.
+
+#### (ii) THE CELL CENSUS FOR THIS SLICE — **the row says 0, and for the first time in four slices the row is RIGHT**
+
+AST census over all 58 `engine.py` classes. 22 distinct method names across the two classes;
+**5 are multi-definer and every one of them already has a `TripleHooks` field** — AF took that
+table 14 → 18 and two of its four ADDs are exactly the names this slice needs.
+
+| name | definers | earliest definer | AG's job |
+|---|---|---|---|
+| `_sensed_cap` | 2 — rungs 74, **76** | 74 | SWAP |
+| `_windup_tau` | 2 — rungs 74, **75** | 74 | SWAP |
+| `_shared_rig` | 8 — 72…80 | 72 | SWAP ×2 |
+| `at_lever` | 18 — 62…80 | 62 | SWAP ×2 |
+| `integrate_fuel` | 13 — 34, 43, 65…76 | 34 | SWAP ×2 |
+
+The other **17 names are single-definer over all 58 classes** and are therefore not cells:
+`_c_at`, `_cap_march`, `_cap_rows`, `_rhs_gains_at`, `_rhs_laws`, `_windup_march`, `_windup_rows`,
+`_with_cap`, `_with_windup`, `accel_for`, `cap_bill`, `cap_gains`, `contraction_law`,
+`device_control`, `solve_gain`, `windup_bill`, `windup_gains`. **ADD = 0**, and both conventions
+are given because AE § (ii) records the same slice scoring differently under each:
+
+| | AC's convention | § 5.19 (i)'s (`at_lever` + `_shared_rig` are Rust deletes) |
+|---|---|---|
+| **SWAP** | **8** — `at_lever` ×2, `integrate_fuel` ×2, `_shared_rig` ×2, `_sensed_cap`, `_windup_tau` | **4** — `integrate_fuel` ×2, `_sensed_cap`, `_windup_tau` |
+| **ADD** | **0** | **0** |
+
+**THE PHASE TABLE'S AG ROW IS CONFIRMED AS WRITTEN.** AC's `1` measured `0`, AE's `0` measured
+`1 ADD + 6 SWAPS`, AF's `3` measured `4 ADD` — this is the first of the four the emitter agrees
+with, and it is recorded as a confirmation rather than skipped, because *the row happened to be
+right* and *the row was checked* are different facts and only one of them is evidence about the
+next row.
+
+**THE CONSEQUENCE FOR STEP 1 IS THE PART WITH NO PRECEDENT SINCE SLICE Z.** § (x) states *step 1
+of every slice is the cell addition, so a slice that forgets a cell fails at its own first gate
+rather than at a value key nine rungs downstream*. **With 0 ADD that safety net is absent** — a
+missed SWAP does not fire a width tripwire, it silently runs the parent's body, which for
+`_sensed_cap` returns `None` and for `_windup_tau` returns `None`, and in BOTH cases **that is the
+reduce arm**, so every reduce gate in the crate would go on passing. Slices Y and Z are the
+templates for what step 1 has to be here, not AF's.
+
+#### (iii) THE `_with_*` RE-RUN AF EXPLICITLY OWED TO THIS SLICE — **NEGATIVE, and that is the answer, not the absence of one**
+
+§ 5.30.6 (viii) swept the `_with_*` family over all 58 classes, found exactly two field-divergent
+names (`_with_coord`, `_with_ref`), and closed with the one sentence it left for a future slice:
+
+> if a later rung gives one of those seven a second definer, that is the moment to re-run this
+> census.
+
+**AG is that slice**: `_with_windup` (rung 75) and `_with_cap` (rung 76) are two of the seven, and
+this is where their rungs are ported. Re-run, with the assigned field read off the AST:
+
+| name | definers | fields written |
+|---|---|---|
+| `_with_coord` | 2 | `_lag_coord` (74) / `_phi_ref` (79) — **DIVERGENT** |
+| `_with_ref` | 2 | `_ref` (69) / `_ref_law` (73) — **DIVERGENT** |
+| **`_with_windup`** | **1** | `_tau_t` + `_windup_law` |
+| **`_with_cap`** | **1** | `_cap_law` |
+| `_with_air` / `_with_gauge` / `_with_gov` / `_with_probe` / `_with_share` | 1 each | `_sm_air` · `_gauge_k` · `_gov_max` · (none) · `_share_law` |
+
+Still exactly two, still not AG's, **no third** — so AF's four-site assignment rule stays slice
+AI's to exercise and this slice inherits no version of it. Recorded because a census whose answer
+is *nothing changed* is worth something only if it was actually run.
+
+**AND THE SUBSTITUTABILITY SWEEP FINDS THE `_legs` SHAPE ABSENT AND A DIFFERENT ONE PRESENT.**
+Across every definer of each AG cell, `_shared_rig` has ONE signature, `at_lever`'s 12 definers
+from rung 69 up share one, and `integrate_fuel`'s 12 from rung 43 up share one — so there is no
+63→77 `_legs`-style break to book. But **2 of the 5 cells are RECEIVER-divergent**: `_sensed_cap`
+is a `@staticmethod` at rung 74 and an instance method at rung 76, and `_windup_tau` likewise at
+74/75. Python cannot see it, because `self._x(…)` binds a staticmethod without a receiver;
+`three_loop.rs` already carries the receiver for both, which is AF pre-solving this slice's one
+signature hazard, and it is confirmed here rather than rediscovered.
+
+#### (iv) THE ARITHMETIC SURFACE — **nine `sum()` calls, of which five sum a LITERAL 1 and two sum a 341-long trajectory, and the CPython exemption is MEASURED to two named keys**
+
+AF § 5.30.5 (b)'s pre-registered exemption was falsified in both clauses because *a `sum()` census
+counted call sites and never asked what each one sums*. That lesson is applied at the pre-flight
+here rather than at the oracle, so the candidate is named from what is added and not from how many
+sites a method owns:
+
+| rung | method | line | what it sums |
+|---|---|---|---|
+| 75 | `_windup_rows` | 18885 | `1.0/t` over three clocks — **3 floats** |
+| 75 | `_windup_rows` | 18896, 18897 | `1 for z in rt if …` — **a literal 1** |
+| 75 | `contraction_law` | 19038 | `1 for x in hit if …` — **a literal 1** |
+| 76 | `_cap_rows` | 19380 | `1.0/t` over three clocks — **3 floats** |
+| 76 | `_cap_rows` | 19396, 19397 | `1 for z in rt if …` — **a literal 1** |
+| 76 | **`cap_bill`** | 19539 (×2) | **`sum(key(a,"mf"))` / `sum(key(b,"mf"))` — a full 341-point trajectory each** |
+
+**Five of nine are integer counts and cannot diverge; two add three terms; exactly two add at
+width, and both are in one reader.** Operator census over the two classes' own bodies: rung 75
+`Div` 27, `Sub` 24, `Mult` 10, `Add` 5, `Mod` 1, `max` 29, `min` 17, `abs` 15; rung 76 `Sub` 25,
+`Div` 18, `Mult` 13, `Add` 6, `max` 35, `abs` 20, `min` 14. **No complex arithmetic in either** —
+AC § (iv)'s hazard is absent, as it was at AF.
+
+Neither class calls `_illinois` directly; both reach it through rung 74's inherited `_cap_free`,
+which AF measured bit-clean across the two interpreters at 2 732 of 2 732 returned caps. **What is
+new here and has never been measured across interpreters** is (a) the schedule `accel_for` builds
+off the plant's own equilibria and `accel.cap(…)` then INTERPOLATES, which is on `_sensed_cap`'s
+own path, (b) rung 75's tracking term inside the march, and (c) `cap_bill`'s two width sums. All
+three are dumped as hex floats and compared, PyPy 3.11.15 against CPython 3.14.3:
+
+| dump | keys per arm | DIFFERING |
+|---|---|---|
+| the `accel_for` schedule + six marches (rung 76 `solve`/`sensed` and rung 75 `track`, both arms) | **59 386** | **0** |
+| **`cap_bill`, whole return value** | **23 887** | **2** |
+| | **83 273** | **2** |
+
+**AND THE TWO ARE EXACTLY THE TWO KEYS THE CONTENT CENSUS NAMED**, `cap_bill/fuel_int/0` and `/1`
+— `0x1.4ea5cbbac59dcp-6` vs `…dep-6`, and `0x1.4a8a4546a0a93p-6` vs `…a8fp-6`, one ULP and two.
+Nothing else in `cap_bill`'s 23 887 keys moves, and nothing in the plant moves at all. **So the
+CPython exemption for this slice is not a prediction to be settled at the oracle; it is a measured
+pair of key names** — reached by asking what each `sum()` ADDS rather than which method owns the
+most of them.
+
+Finite differences, both declared and both this slice's to reproduce exactly: rung 75's
+`_rhs_gains_at` central-differences at `dg = 1e-7` and `dq = 1e-5`; rung 76's `_c_at` at
+`rel = 1e-6`.
+
+**AND ONE INHERITED CLAIM SURVIVES WITH ITS REASON REPLACED.** `three_loop.rs` declares
+`windup_tau` as `-> Option<f64>` and not `Result`, on the argument that Python calls it at
+`engine.py:17816`, outside every `except AssertionError` in `_integrate_fuel_demand`. That
+argument is made from ONE call site, and **slice L's rule is per call site** — so the others were
+swept. There are three, and **the third is inside a `try/except AssertionError`**: rung 75's own
+`contraction_law` wraps `self._windup_march(…)` at `engine.py:19022-19031`, and that path reaches
+`integrate_fuel` (`18654`) and `_integrate_fuel_demand` (`17816`), both of which call the cell.
+**So the premise — no caller catches — is FALSE.**
+
+**The conclusion holds anyway, for a reason AF did not give: the catching caller cannot supply an
+input that raises.** `_windup_tau`'s two refusals fire on a non-`demand` coordinate and on a
+non-positive `tau_t`; `contraction_law` hardcodes `"demand"`, and it computes
+`sigma = tau_t/(taus[0]+tau_t)` and `math.log(sigma)` **before** the march, so `tau_t = 0.0` raises
+`ValueError: math domain error` and `tau_t = -0.05` raises `ZeroDivisionError`, both with
+`_windup_tau` never called. Driven: on the shipped-shape sweep all three rows hit and the cell
+returns `ok` 6 times (twice per march); at `tau_t = 0.005`, below this rung's own RK4 floor of
+`0.00625`, the reader absorbs a refusal (`measured = [32, None]`) and **`_windup_tau` raised 0 of
+4 times** — what that `except` actually catches is `_rk4_floor_shared`'s. `panic!` stays faithful;
+the crate's stated reason is narrowed to the measured one at step 1. **The other four
+`except AssertionError` below rung 75 were swept too** and none reaches this cell: `20224` /
+`20256` are rung 78's Newton and root-count walks, `21281` / `21295` rung 79's forced bracket, all
+four wrapping a single `G(w)` evaluation rather than a march.
+
+#### (v) THE SHIPPED NEEDLES — **9 messages, one of them not tagged, and two of the suite's needles pin a different rung entirely**
+
+| class | `assert` messages | tagged with its OWN rung | GATED by a suite `match=` | UNGATED |
+|---|---|---|---|---|
+| `AntiWindupTransient` | 4 | **4 of 4** | 3 | **1** |
+| `SensedCapTransient` | 5 | **4 of 5** | 3 | **2** |
+
+Rung 76's untagged message is `cap_bill`'s *"the two cap laws marched different grids"*
+(`engine.py:19523`) — **the only message in either class that does not name its rung**, where all
+nine of rung 74's did (§ 5.30 (iv)). A port that raised a parent's message there passes any
+`rung-76:` prefix check.
+
+**AND THE SUITE's OWN NEEDLES SPLIT IN A WAY THAT MATTERS FOR THE PORT.** `test_rung75.py` uses
+five `match=` needles, of which **two pin no rung-75 message at all**: `"RK4 stability region"`
+matches exactly **1** message file-wide (rung 65's, `engine.py:10538`) and is therefore sharp, but
+`"did not converge"` matches **18** messages across `engine.py`, so the gate that asserts
+`demand × applied` has no plant without the device cannot say WHICH of eighteen refusals fired.
+That is AE § (vii)'s *needles that discriminate nothing* in its weaker form — it discriminates a
+rung, just not a site — and it is where a ported refusal can drift while the gate stays green.
+`test_rung76.py`'s three needles each match exactly 1 of its 5.
+
+#### (vi) SIZING, AND A STEP COUNT THAT IS A TEST BETWEEN TWO LAWS
+
+| slice | rungs | classes | total lines | methods | body w/o docstrings | steps |
+|---|---|---|---|---|---|---|
+| AC | 70+71 | `CrossSplitTransient` + `FullSplitTransient` | 1 608 | 27 | 862 | **7** |
+| AD | 72 | `SharedActuatorTransient` | 1 177 | 24 | 746 | **6** |
+| AE | 73 | `AppliedReferenceTransient` | 685 | 12 | 397 | **5** |
+| AF | 74 | `DemandCoordinateTransient` | 1 059 | 25 | 669 | **6** |
+| **AG** | **75+76** | `AntiWindupTransient` + `SensedCapTransient` | **1 073** | **25** | **603** | **7, predicted** |
+
+§ 5.30.6 (vii) scored AF's own step count and concluded **METHODS** priced it, not lines. AG is
+**25 methods — exactly AF's — and 1.01× AF by lines**, so that law says SIX. **AC says SEVEN**: it
+is the only other two-class slice, and a two-class slice carries two ported-gate files, two reduce
+contracts and two refusal sets regardless of volume. **The two laws disagree, so the step count is
+pre-registered at SEVEN and the disagreement is the prediction** — if six land, the class count is
+not a driver and AF's method law survives a two-class test it has never had.
+
+1. the plumbing — the five SWAPs at both rungs, `R75_TRIPLE` / `R76_TRIPLE`, both refusal sets,
+   and a cells gate file that can see a MISSED swap (§ (ii)'s consequence);
+2. rung 75's device — `_windup_tau`, `_windup_march`, `_with_windup`, `_rhs_laws`;
+3. rung 75's readers — `_rhs_gains_at`, `_windup_rows`, `windup_gains`, `contraction_law`,
+   `device_control`, `windup_bill`;
+4. rung 76's cap — `_sensed_cap`, `_cap_march`, `_with_cap`, `accel_for`, `_c_at`;
+5. rung 76's readers — `_cap_rows`, `cap_gains`, `cap_bill`, `solve_gain`;
+6. the two ported gate files + the oracle;
+7. the dispatch gates, **including the arming gate that closes § 5.30.6 (v)'s obligation**.
+
+**"First inherited obligation" is first in the list AG owes, not first in the order it can be
+built.** The arming gate needs rung 76's body, so it lands at step 7; saying so here is what stops
+the step plan being contorted to put it at step 1.
+
+#### (vii) PREDICTIONS — pre-registered, settled at the last step
+
+* **P1.** The Rust is **2.0–2.6× the Python** by line count. The band is set from the three data
+  points AF's own falsification produced (W 2.06×, AA 2.10×, **AF 2.53×**) rather than from the
+  1.6–1.9× band AF wrote and its own parenthesis contradicted.
+* **P2 — ALREADY SETTLED, and kept as a prediction only so the oracle can falsify its WIDTH.**
+  § (iv) measured the CPython arm needing an exemption for exactly `cap_bill/fuel_int/0` and `/1`,
+  2 of 83 273 keys, with every other reader and the whole plant bit-identical. **What is still open
+  is whether the oracle's own key set finds a THIRD**: this pre-flight drove ONE reader end to end
+  plus the marches, not `cap_gains` / `windup_gains` / `contraction_law` / `device_control` /
+  `windup_bill` / `solve_gain`. The prediction is that the oracle's exemption list stays **exactly
+  these two names** — falsifiable, and pointed at the gap the measurement leaves rather than at
+  the part it closed.
+* **P3.** Both reduce arms are **exact by dispatch**: `_windup_law = 'none'` and
+  `_cap_law = 'solve'` are the branch not being taken, and § (i) measured rung 75 == rung 76/solve
+  at 341 of 341 on both arms.
+* **P4.** The arm that can fail is `PHI_BOTH` under `sensed`, because it is the only one in which
+  the hook changes a float AND the march has to agree bit-for-bit — 341 of 341 points move there.
+* **P5.** The arming gate finds **`sensed_cap` reachable but the trajectory INERT at `PHI_JAC`**,
+  and the discriminating value break only at `PHI_BOTH` — so the gate must be three-sided, and a
+  two-sided one written at `PHI_JAC` would report an exact zero and be right for the wrong reason.
+  If a `PHI_JAC` trajectory break IS found, § (i) is wrong and the finding inverts.
+* **P6.** At least one of the **3 ungated shipped messages** (§ (v)) is reachable by a port defect
+  that every ported gate passes — and rung 76's untagged one is named as the candidate, because a
+  `rung-76:` prefix check cannot see it.
+* **P7.** The step count lands on **7**, not the 6 the method-count law predicts (§ (vi)).
+
+#### (viii) DEFECTS IN THIS PRE-FLIGHT's OWN INSTRUMENTS — **five, and the fifth was already written down as a verdict**
+
+**§ 5.30 (viii) is a standing item on every pre-flight from here, whatever letter the section has,
+and it is item 1 because it is what caught items 2 and 5.**
+
+1. **WHAT SUPPLIES THE VALUE UNDER TEST?** Of every planned gate, control, fixture and install
+   proof — if the answer is the code under test, or the fixture itself, the gate is void before it
+   is written. Score the mutation sweep on **every binary in the slice**, not just the new one. An
+   install proof must be independent of what it certifies **by construction**.
+2. **THE SPY'S DISPATCH COUNT WAS DOUBLE, BECAUSE IT CALLED THE METHOD IT WAS COUNTING.** Probe D
+   reported `_sensed_cap` dispatched 2 732 times against 1 366 `_cap_fuel` calls — a 2:1 ratio on a
+   method with one call site. The spy computed *what the sensed branch would say* in order to
+   compare it with the solve, and that computation is itself a call. Caught by the ratio being an
+   exact integer, fixed with a re-entrancy flag; the corrected count is 1 366. **A spy that
+   evaluates the thing it measures is the instrument-side spelling of item 1.**
+3. **TWO STATOR ARMS CAME BACK BIT-IDENTICAL IN ALL FOUR COLUMNS, WHICH IS EITHER A FINDING OR A
+   PROBE THAT NEVER APPLIED ITS ARGUMENT.** Those are the same number and a different fact, so a
+   control was run: `lim` vs `inc`, same law, same margin. At `PHI_JAC` the two arms differ at
+   **339 of 341** points (`max|v| = 8.5249e−17` on one, exactly `0.0` on the other) and at
+   `PHI_BOTH` at **0 of 341** with `max|v| = 0.0` on both. So the identity is ARITHMETIC — the
+   stator loop is machine-zero here — and it independently reproduces rung 76's own
+   `test_the_cap_march_MOVES_but_TWO_OF_FOUR_LOOPS_ARE_INERT_at_this_wall`. **Without the control
+   the rows were unreadable in exactly the direction that flatters them.**
+4. **A VERDICT WAS ABOUT TO BE GENERALISED FROM THE WRONG PLANT.** Probe D drove `_stator_march` on
+   `_rig`'s machine, and every rung-76 reader marches `_shared_rig`'s through `_cap_march` instead.
+   Probe E re-ran the whole table there before the sentence shipped; the two agree number for
+   number, which makes *the reduce spine's plant and the readers' plant behave identically here* a
+   MEASUREMENT rather than the assumption it was one probe away from being.
+5. **THE COMMENT REFUTATION IN § (i) WAS DRAFTED FROM ONE POPULATION AND WOULD HAVE DELETED A TRUE
+   STATEMENT.** Its first draft read *neither clause survives*, on a margin sweep run against the
+   MARCH — while this same section's own `solve_gain` reading (60 of 60 at `PHI_JAC`, margin 0.10)
+   already said the readers answer the opposite way at that exact point. **The contradiction was
+   inside the section before anyone looked for it**, and the discriminating measurement had not
+   been made: the margin sweep ran on the march, and the one reader probe ran at ONE margin. Run
+   properly, `cap_gains` at `PHI_JAC` goes 2/8 → 4/8 → 8/8 → **0 of 8 live cells** across the four
+   margins, so the shipped `~0.20` is a real cliff on the population the sentence was about.
+   **Item 1 asks what SUPPLIES the value; this is its sibling — what POPULATION is the value drawn
+   from, and did the claim sweep that one, or a different one?**
+
+#### (ix) WHAT SLICE AG OWES BEFORE ITS STEP 1 — **one item, and it is CLOSED in the same session**
+
+* **`tests/test_rung76.py:57-60`'s missing population**, § (i). Repaired in its own commit, not
+  folded into a Rust step: **12 lines added, 0 removed** — the shipped sentence is true and stays,
+  with § (i)'s two tables written under it and both populations named, so the next reader gets the
+  measurement rather than a second unqualified threshold. No line citation of that file exists
+  anywhere in `rust/` or `docs/`, so the +12 shift breaks nothing — checked, because AF § 5.30.6
+  cites `tests/test_rung80.py:110` from a Rust doc comment and this project has shipped a commit
+  about numbers that were true when read and stale when they landed. `pytest` is run for it on AE
+  step 2's standing reason — a reasoned *this cannot move anything* is worth exactly one run.
+  **Nothing else is owed**: § (iii)'s `_with_*` re-run came back negative, § (iv)'s CPython
+  exemption is measured to two named keys and its `windup_tau` fallibility claim is re-reasoned
+  rather than inherited, and the four-site assignment rule stays slice AI's.
