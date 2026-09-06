@@ -9026,7 +9026,7 @@ by counting.
 | **AC** | 70–71 | `CrossSplitTransient`, `FullSplitTransient` | ~~**1** — `split_gains`~~ → **0. MEASURED at § 5.27 (i): `split_gains` is NOT a cell** — rung 80's same-named body has an incompatible signature and rung 70's own inherited caller `TypeError`s on a rung-80 machine. **This column's predicate is by NAME and never checked substitutability; § 5.27 (x) sweeps all 358 override pairs and finds ONE more (`_legs`, 63→77, booked to AH).** The slice swaps `at_lever`/`integrate_fuel` at EACH rung plus `_triple_laws` at 70 = **5** distinct function pointers, no new field |
 | **AD** | 72 | `SharedActuatorTransient` | **3** — `_reference`, `_rk4_floor_shared`, `_shared_rig` |
 | **AE** | 73 | `AppliedReferenceTransient` | ~~**0**~~ → **1 ADD + 6 SWAPS. MEASURED at § 5.29 (ii)** — `_with_ref` (69 → 73) is a **NAME REUSED**, not an override: identical arity, but the two bodies write DISJOINT FIELDS (`_ref` / `_ref_law`), and rung 69's own inherited caller RAISES on a rung-73 machine (driven, with a passing control). **§ 5.27 (x) saw the pair and cleared it as a harmless RENAME** — its predicate compared signatures; the same sentence clears `_with_coord` (74 → 79), now booked to AF **and** AI. `_quad_gains_at` is a swap here too — **AD's "unreachable today" booking REFUTED BY VALUE** (§ 5.29 (iv)): with the machine held fixed and only the pointer swapped, 32 keys move and 70 vanish, `F_r` going −1.000000000002735 → 0.0 |
-| **AF** | 74 | `DemandCoordinateTransient` | ~~**3**~~ → **4 ADD + 4 SWAPS. MEASURED at § 5.30 (ii)** — the missing fourth ADD is `_with_coord`, which **slice W’s phase-wide census had already named** among *the four names the hand-written column missed*; this row was simply never updated. Its two definers are rungs 74 and 79, so the census **re-derives § 5.29 (v)’s separate-field obligation from the source** instead of inheriting it as a booking. SWAPS are 4 under AC’s convention and 2 under § 5.19 (i)’s (`at_lever`/`_shared_rig` are Rust deletes) — both stated, because the same slice scores differently under the two. **LANDED at § 5.30.1: 4 ADD + 4 SWAPS, `TripleHooks` 14 → 18.** The width toll was MEASURED AD's way (apply, fix the lib, count what is still red) and came back **7 `src` literals + 4 TEST sites where this plan and the crate's own comments say TWO** — slice AE ships two exhaustive DESTRUCTURINGS (`E0027`) that nothing calls tripwires. **STEP 2 at § 5.30.2: the six demand laws, all SINGLE-DEFINER by census, so no table field and no width toll; `slice_af_laws.rs` 13 gates, sweep 21/21 as predicted (18 killed).** Its leading finding is a rig point COPIED from step 1's cells file that sat inside a shipped refusal — and the gate that did not abort there had been passing its min-select flatness equality between two SATURATED ZEROS. **STEP 3 at § 5.30.3: the six-state march (`_coord_rig`/`_coord_ic`/`_march`), `slice_af_march.rs` 15 gates, sweep 17/17 as predicted (12 killed).** Its leading finding is a gate that read a SPLIT PRODUCED BY STEP 2's OWN CODE as evidence of its clamp working, when that clamp fires 0 of 340 times. **STEP 4 at § 5.30.4: `_coord_march`, `_demand_gains_at` and all six readers; NO gate file (they are step 5's), proved by DRIVING every reader — 3 731 keys, `Rust == PyPy` bit for bit on the first run, and the port independently reproduces `docs/rung74-spec.md` § 3's `65.2 K`/332-of-341 and § 4's exact `1.0`. Sweep 19 mutations, 11 killed, 19/19 as predicted.** Its leading finding is TWO DOC COMMENTS asserting a difference was LIVE that nothing had measured, one of them FALSE — and a shipped refusal message found to be FOUR formatting divergences wide the moment a reader first read one as a value. |
+| **AF** | 74 | `DemandCoordinateTransient` | ~~**3**~~ → **4 ADD + 4 SWAPS. MEASURED at § 5.30 (ii)** — the missing fourth ADD is `_with_coord`, which **slice W’s phase-wide census had already named** among *the four names the hand-written column missed*; this row was simply never updated. Its two definers are rungs 74 and 79, so the census **re-derives § 5.29 (v)’s separate-field obligation from the source** instead of inheriting it as a booking. SWAPS are 4 under AC’s convention and 2 under § 5.19 (i)’s (`at_lever`/`_shared_rig` are Rust deletes) — both stated, because the same slice scores differently under the two. **LANDED at § 5.30.1: 4 ADD + 4 SWAPS, `TripleHooks` 14 → 18.** The width toll was MEASURED AD's way (apply, fix the lib, count what is still red) and came back **7 `src` literals + 4 TEST sites where this plan and the crate's own comments say TWO** — slice AE ships two exhaustive DESTRUCTURINGS (`E0027`) that nothing calls tripwires. **STEP 2 at § 5.30.2: the six demand laws, all SINGLE-DEFINER by census, so no table field and no width toll; `slice_af_laws.rs` 13 gates, sweep 21/21 as predicted (18 killed).** Its leading finding is a rig point COPIED from step 1's cells file that sat inside a shipped refusal — and the gate that did not abort there had been passing its min-select flatness equality between two SATURATED ZEROS. **STEP 3 at § 5.30.3: the six-state march (`_coord_rig`/`_coord_ic`/`_march`), `slice_af_march.rs` 15 gates, sweep 17/17 as predicted (12 killed).** Its leading finding is a gate that read a SPLIT PRODUCED BY STEP 2's OWN CODE as evidence of its clamp working, when that clamp fires 0 of 340 times. **STEP 4 at § 5.30.4: `_coord_march`, `_demand_gains_at` and all six readers; NO gate file (they are step 5's), proved by DRIVING every reader — 3 731 keys, `Rust == PyPy` bit for bit on the first run, and the port independently reproduces `docs/rung74-spec.md` § 3's `65.2 K`/332-of-341 and § 4's exact `1.0`. Sweep 19 mutations, 11 killed, 19/19 as predicted.** Its leading finding is TWO DOC COMMENTS asserting a difference was LIVE that nothing had measured, one of them FALSE — and a shipped refusal message found to be FOUR formatting divergences wide the moment a reader first read one as a value. **STEP 5 at § 5.30.5 in TWO COMMITS: (a) the 17 ported gates, whose finding is a shipped `Usage:` block with THREE of four documented calls raising, swept file-wide to 10 bind fails in three causes; (b) the oracle, 20 643 keys x2 goldens, whose finding is P2 FALSIFIED IN BOTH CLAUSES because a `sum()` census counted call sites and half of them sum a literal 1.** **STEP 6 at § 5.30.6 — SLICE CLOSED: `slice_af_dispatch.rs`, 8 gates, ten injections x seven seats, plus a FOUR-LINE REPAIR. Its finding is FOUR PRODUCTION CALL SITES THAT DISPATCHED A WRITE PYTHON MAKES BY PLAIN ASSIGNMENT — identical at rung 74, and at rung 79 (a second definer writing `_phi_ref`) they would have marched the PARENT while reporting this rung, on a path `tests/test_rung80.py:110` already walks. Reach measured BEFORE the fix (6 of 7 seats → 0), neutrality proved against UNREGENERATED goldens, and the registered *no other row moves* FALSIFIED by `at_lever`: a dispatched pin on a machine without the cell hits the parent's PANIC, so the port was turning a benign attribute assignment into a REFUSAL. The `_with_*` family swept over all 58 classes: the two field-divergent names are exactly the two repaired, and there is no third. P1 FALSIFIED (2.53x), P3/P4/P5/P6 HELD. |
 | **AG** | 75–76 | `AntiWindupTransient`, `SensedCapTransient` | **0** |
 | **AH** | 77–78 | `StiffnessLedgerTransient`, `ResidualGaugeTransient` | **0** |
 | **AI** | 79–80 | `StateCoordinateTransient`, `SplitWallTransient` | **0** |
@@ -21052,3 +21052,181 @@ to the one that just returned 1 364 passed — steps 2/3/4's precedent, stated w
   across four closed slices' classes plus a new Python gate is its own commit.
 * **P5, still open** — the dispatch step is where `_with_coord` is either gated structurally
   (§ 5.30 (i)'s reading) or found observable by value, in which case § (i) inverts.
+
+#### 5.30.6 SLICE AF step 6 — the dispatch gates, and **FOUR PRODUCTION CALL SITES THAT DISPATCHED A WRITE PYTHON MAKES BY PLAIN ASSIGNMENT, ONE OF THEM ON A PATH A SHIPPED TEST SIX RUNGS UP ALREADY WALKS**
+
+`rust/tests/slice_af_dispatch.rs` — **8 gates**, ten injections against seven seats — plus a
+four-line repair in `rust/src/demand_coordinate.rs` and a correction to `CoordScope`'s own rule.
+
+###### (i) THE LEADING FINDING
+
+Python writes this rung's two knobs by PLAIN ASSIGNMENT in four places and dispatches through
+`_with_coord` in exactly ONE:
+
+| site | Python | port, before |
+|---|---|---|
+| `at_lever` (`engine.py:17711`) | `m._lag_coord = self._lag_coord` | `lag_coord.set(…)` ✓ |
+| `_shared_rig` (`:17722`) | `m._lag_coord = self._lag_coord` | `lag_coord.set(…)` ✓ |
+| `_coord_march` (`:18031`) | `m._lag_coord, m._ref_law = coord, ref` | **through the cells** ✗ |
+| `demand_gains` (`:18267`) | `m._lag_coord, m._ref_law = "clip", "sched"` | **through the cells** ✗ |
+| `demand_gains` (`:18276`) | `m._with_coord("demand", m._demand_gains_at, …)` | `CoordScope` ✓ |
+
+**THE CHEAPEST EVIDENCE THAT IT IS A SLIP AND NOT A DECISION IS ALREADY IN THE SLICE.** Three
+spellings against two, and one of the three is a **test fixture that states the rule the
+production code broke**: `rung74.rs`'s `demand_rig` says *the two knobs are set by PLAIN
+ASSIGNMENT … not through `_with_coord`. Routing them through the table here would test a different
+line.* It was written at step 5 (a); the two production pins were written at steps 3 and 4.
+
+**AT RUNG 74 THE TWO SPELLINGS ARE THE SAME FUNCTION**, which is exactly why 20 643 oracle keys,
+17 ported gates and 42 cell/law/march gates are all blind to it. `_with_coord` has **two definers**
+— rung 74 writes `_lag_coord`, rung 79 writes `_phi_ref` — and `_coord_march`, `demand_law`,
+`demand_gains`, `latch_discriminator`, `windup_law`, `flat_schedule_identity` and
+`forcing_openloop` are all **single-definer**, so rungs 75–84 inherit rung 74's bodies unchanged.
+**`tests/test_rung80.py:110` calls `m._coord_march(…, coord="demand", …)` on a
+`SplitWallTransient`** — a rung-80 object, which carries rung 79's setter. Python writes
+`_lag_coord` there and marches the demand arm; the port would have written `_phi_ref`, left the
+coordinate at the class default `"clip"` and marched **rung 73**, while that test's own
+`len(r0) == len(r1) == 341` went on passing because the clip march returns 341 points too.
+
+The crate's own rule — `CoordScope`'s *dispatch the setter iff a later rung overrides `_with_*` to
+write a DIFFERENT field* — is correct and was **OVER-APPLIED**: it governs the `_with_coord`
+METHOD, not every write of the field. Corrected at its source in this commit.
+
+###### (ii) THE FIX'S REACH — the matrix was run BEFORE the four lines were touched
+
+Ten injections × seven seats, at a declared coarse grid. Only the four rows that MOVED are shown;
+the other six are cell for cell identical, which is what makes these four attributable.
+
+| injection | before | after |
+|---|---|---|
+| `WithCoordElsewhere` (a setter pointed at another carrier) | live at **6 of 7** | **`same` ×7** |
+| `WithCoordParent` (rung 73's panicking slot) | live at **7 of 7** | **`BROKE` at `demand_gains` only** |
+| `WithRefR69` (rung 69's setter, which writes `_ref`) | one `DIFF`, at `windup_law` | **`same` ×7** |
+| `AtLever` (rung 73's sibling constructor) | `BROKE DIFF BROKE BROKE DIFF BROKE BROKE` | `DIFF DIFF BROKE DIFF BROKE DIFF same` |
+
+**THE FOURTH ROW FALSIFIES THIS STEP'S OWN REGISTERED PREDICTION AND SHARPENS THE DIAGNOSIS.**
+P-d said *the other seven rows are unchanged, cell for cell*. `AtLever` moved, and the reason is
+that a dispatched pin on a machine whose table does not carry the cell hits the parent slot's
+**panic** — so the port was turning a benign Python attribute assignment into a hard REFUSAL.
+`m._lag_coord = coord` succeeds on any Python object, including a rung-73 one that never reads the
+attribute; four of `AtLever`'s seven seats went from refusing to READING once the pins became
+assignments. **The four sites were not spelling a no-op the long way: they changed which
+configurations are answerable at all, in the direction of refusing more than Python does.**
+
+The `with_ref` half is a measured partition rather than an argument: `_with_ref` has exactly two
+definers (rungs 69 and 73) and every machine at rung ≥ 74 carries rung 73's, so the cell and the
+raw write agree forever — **inert in the ladder, live under a counterfeit**, which is what the
+`WithRefR69` row's single pre-fix `DIFF` says (`windup_law`'s four cells are the only place the
+pinned reference varies).
+
+**AND THE FIX IS PROTECTED, NOT MERELY APPLIED.** Both after-rows are ASSERTED in
+`the_seat_matrix`: `WithCoordElsewhere` must be `same` at all seven seats and `WithCoordParent`
+must be `BROKE` at `demand_gains` and `same` at the other six. Re-routing either pin through the
+cell flips both, so the defect cannot come back silently — which is the half a repair without a
+regression gate would leave open.
+
+###### (iii) THE NEUTRALITY PROOF, AND IT ONLY WORKS BECAUSE THE INSTRUMENT DID NOT MOVE
+
+`slice_af_oracle` re-run against the **UNREGENERATED** goldens: **20 643 keys COMPARED, 0 read as
+declared inputs, 4 gates green**, plus `rung74` 17, `slice_af_cells` 17, `slice_af_laws` 13,
+`slice_af_march` 12 — all unchanged. Regenerating the goldens first would have made the claim
+vacuous, which is this project's own recorded lesson about an instrument fed by what it certifies.
+
+###### (iv) P5, SETTLED — and it needed THREE sides, not two
+
+§ 5.30 (vi)'s **P5** predicted `_with_coord` **unobservable by value** at this rung. **HELD**, and
+the shape of the evidence is the point: a silent matrix row is AE's recorded shape and § 5.30
+(vii) item 2 is the recorded criticism of believing one. So the gate is three-sided:
+
+1. **the reader can discriminate** — on a manufactured `cap > mf_sched` pair the latched
+   coordinate returns `mf_sched` where the other two return `cap`, asserted FIRST;
+2. **the plant reaches the region where it does** — over the demand march's two legs at
+   `PHI_BOTH` and the shipped `ds = 0.005`, **34 of 682** finite caps sit above the schedule, and
+   the latch bites on exactly those. (At `PHI_ARREST` it is **0 of 86** — that arm permits no
+   acceleration at all, and a gate that had only run it would have reported § 5.30 (i)'s 139 as
+   unreproducible.)
+3. **and it is the identity where the SCOPE looks** — `demand_gains` is bit-identical under
+   `WithCoordElsewhere`, with the same slot pointed at the panicking parent as the control, which
+   refuses by the cell's own name and so proves the scope is entered.
+
+§ 5.30 (ii)'s separate-field obligation is discharged beside it, through the shipped guard rather
+than by hand: `CoordScope` moves `lag_coord` and not `ref_law`, restores previous, and on the
+re-aimed table moves the OTHER carrier while this rung's field never leaves its default.
+
+###### (v) THE REACHABILITY CENSUS, RECOVERED BY RUNNING THE MATRIX
+
+* **`sensed_cap` is unreachable from every rung-74 reader** — `r74_cap_fuel` reaches it only inside
+  `if let Some(accel)`, and not one of the seven seats arms an `AccelSchedule`. Its row is silent
+  at all seven, so no value gate for it exists at this rung; `slice_af_cells.rs`'s
+  `cap_fuel_reaches_sensed_cap_through_the_table` owns it structurally. Rung 76 replaces the body,
+  and the accel arm is where it lands.
+* **`cap_fuel` is reached by 6 of 7** — all but `forcing_openloop`, which consults `cap_gov`.
+* **`windup_tau` by 5 of 7** — all but `demand_gains` and `forcing_openloop`, both of which march
+  the CLIP arm and so never enter this rung's own integrator.
+* **`rk4_floor_shared` and `shared_rig` are silent at all seven, for two different reasons** — the
+  floor differs only in its MESSAGE (driven past the boundary in § 6, both bodies, with the
+  shipped Python needle asserted to discriminate NOTHING), and the rig's carry is REDUNDANT
+  because `at_lever` carries first.
+
+###### (vi) THIS STEP'S OWN INSTRUMENT DEFECTS — three, all caught before a row was believed
+
+1. **The matrix's perturbation left the region the rung declares.** `(0.20, 0.01, 0.50, 0.05)`
+   puts `ds*sum(1/tau)` at **2.540** against the shipped bar of 2.0, so `coord_march` refused and
+   the can-it-see control reported a seat that "changed kind". `r74_rk4_floor_shared` caught it BY
+   NAME — § 6's own cell working on this file's instrument. The replacement asserts admissibility
+   before it perturbs.
+2. **A refusal asserted into a baseline that does not have one.** § 5.30 (i)'s refusal table is
+   `demand_gains`'s, not `demand_law`'s; at 0.70 `demand_law` reaches the same floor through
+   `try_coord_march` and, on this grid, gets a clean march. Reported now instead of asserted — a
+   recorded failure appearing or disappearing is a DIFF like any other.
+3. **The P5 census was first run on the arm with no acceleration**, and returned 0 of 86. That is
+   § 5.30 (vii) item 3's shape: a zero taken from a population the effect cannot be in.
+
+###### (vii) THE PREDICTIONS, SETTLED
+
+* **P1 — FALSIFIED.** `demand_coordinate.rs` is **2 675 lines against the class's 1 059**:
+  **2.53×**, outside the 1.6–1.9× band. **And the band excluded two of the three data points its
+  own parenthesis cited** (W 2.06×, AA 2.10×) — a prediction whose stated evidence already
+  contradicted it.
+* **P2 — FALSIFIED IN BOTH CLAUSES at step 5 (b)**; see § 5.30.5 (b).
+* **P3 — HELD.** The `clip` reduce arm is exact by dispatch; `slice_af_march.rs` gates it.
+* **P4 — HELD.** The `demand-latched`-on-a-flat-schedule arm agrees bit-for-bit
+  (`flat_schedule_identity`, section E of the oracle).
+* **P5 — HELD**, three-sidedly; § (iv).
+* **P6 — HELD.** Of the seven ungated shipped messages, `_with_coord`'s parent refusal is reached
+  by a port defect every ported gate passes: the `WithCoordParent` row.
+* **THE STEP COUNT.** § 5.30 (v) priced the slice at SIX on LINES and said the last step scores
+  which axis actually priced it. Six steps landed, and the answer is **METHODS**: AD's six-step
+  slice is 1 177 lines / 24 methods, AF's is 1 059 / 25, and AF needed the same six while being
+  0.90× AD by volume. Lines predicted the count correctly here only because the two axes happened
+  to agree; the method count is the one that did not have to be argued.
+
+###### (viii) THE DEFECT CLASS, SWEPT OVER THE WHOLE TABLE AND CLOSED
+
+Slice W's recorded lesson is *run a refuted probe over the WHOLE table, not the row*, and § (i) is
+a two-name census. The class is *a Python attribute ASSIGNMENT ported as a virtual DISPATCH*, and
+it can only bite where a setter cell has **two definers writing DIFFERENT fields**. So the
+`_with_*` family was enumerated over all 58 classes, with the field each body assigns read off the
+AST rather than off a name:
+
+| name | definers | fields written |
+|---|---|---|
+| **`_with_coord`** | **2** | `_lag_coord` (74) / `_phi_ref` (79) — **DIVERGENT** |
+| **`_with_ref`** | **2** | `_ref` (69) / `_ref_law` (73) — **DIVERGENT** |
+| `_with_air` / `_with_cap` / `_with_gauge` / `_with_gov` / `_with_probe` / `_with_share` / `_with_windup` | 1 each | `_sm_air` · `_cap_law` · `_gauge_k` · `_gov_max` · (none) · `_share_law` · `_tau_t`+`_windup_law` |
+
+**The two field-divergent names are EXACTLY the two this step repaired, and there is no third.**
+The other seven are single-definer, so by the crate's own rule they are not cells at all and no
+assignment can be mis-routed through one. The class is closed rather than left as a habit —
+and if a later rung gives one of those seven a second definer, that is the moment to re-run this
+census, which is the one sentence a future slice needs from here.
+
+###### (ix) WHAT SLICE AG INHERITS
+
+* **the four-site rule, now stated where it can be read**: `CoordScope`'s doc and `coord_march`'s.
+  Rung 79's port (slice AI) is the one that will exercise it, and its `_with_coord` writes
+  `_phi_ref`, so the pins must stay assignments.
+* **the seven remaining broken `Usage:` calls** (rungs 63 ×3, 65 ×2, 66, 72) and the Python guard
+  test that would stop the class regrowing — still booked, still their own commit, and now the
+  only thing slice AF owes.
+* **`sensed_cap`'s unreachability**, which rung 76 (slice AG) closes by arming the accel arm.

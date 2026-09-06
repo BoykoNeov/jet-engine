@@ -192,6 +192,13 @@ pub const CAP_BRACKET_N: usize = 60;
 /// is: dispatch the setter iff a later rung overrides `_with_*` to write a DIFFERENT field. Rung
 /// 79 does exactly that (`_phi_ref`), so this one is dispatched.
 ///
+/// **AND THE RULE GOVERNS THE SETTER, NOT EVERY WRITE OF THE FIELD** — which is how slice AF step
+/// 6 found it OVER-APPLIED. Python assigns `_lag_coord` directly in three places at this rung
+/// (`at_lever`, `_shared_rig`, `_coord_march`) and a fourth inside `demand_gains`, and dispatches
+/// through `_with_coord` in exactly ONE (`engine.py:18276`, the scope this type is). Two of the
+/// port's pins had been routed through the cell; at rung 74 that is the same function, and at
+/// rung 79 it is not. See [`coord_march`]'s note for what it would have cost.
+///
 /// **AND THE SENTENCE THAT USED TO POINT HERE NAMED A TYPE THAT NEVER EXISTED.**
 /// `applied_reference.rs`'s header said *"`cross_split.rs`'s `CoordScope` repeats the reasoning
 /// from the mirror side"*. `git log -S "CoordScope"` returns exactly one commit — the one that
@@ -1652,10 +1659,18 @@ pub fn coord_march(
         inc,
         ..Default::default()
     });
-    // `m._lag_coord, m._ref_law = coord, ref` — a PERMANENT write on the sibling, through the
-    // table. The displaced values are discarded exactly as Python discards them.
-    (m.fuel.inner.triple_hooks.with_coord)(&m.fuel.inner, coord);
-    (m.fuel.inner.triple_hooks.with_ref)(&m.fuel.inner, Some(ref_law));
+    // `m._lag_coord, m._ref_law = coord, ref` — a PERMANENT write on the sibling, and a **PLAIN
+    // ASSIGNMENT**, never a dispatch. See [`r74_at_lever`] and [`r74_shared_rig`], which spell the
+    // identical Python construct the identical way; the first writing of these two lines went
+    // through the cells and slice AF step 6 is where that was caught.
+    //
+    // **WHY IT MATTERS, AND IT IS NOT STYLE.** `_with_coord` has two definers — rung 74's writes
+    // `_lag_coord`, rung 79's writes `_phi_ref` — and this method is SINGLE-DEFINER, so a rung-79
+    // or rung-80 object runs THIS body. Python's assignment writes `_lag_coord` there; a dispatch
+    // would write `_phi_ref`, leave the coordinate at the class default `"clip"` and march rung 73
+    // while reporting rung 74. `tests/test_rung80.py:110` calls exactly that.
+    m.fuel.inner.lag_coord.set(coord);
+    m.fuel.inner.ref_law.set(ref_law);
     let leg = StatorLeg { accel: None, surge, tt4_max: Some(tt4_max) };
     let ramp = Ramp { tt4_lo, tt4_hi, r, s_settle, ds };
     let traj = m.stator_march_scoped(
@@ -2107,8 +2122,11 @@ pub fn demand_gains(
         sm, tau: tau_q, tau_s, v_max, tt4_max,
         tau_att: tau_f, tau_rel: 3.0 * tau_f, inc, ..Default::default()
     });
-    (m.fuel.inner.triple_hooks.with_coord)(&m.fuel.inner, LAG_COORD_CLIP);
-    (m.fuel.inner.triple_hooks.with_ref)(&m.fuel.inner, Some(REF_SCHED));
+    // `m._lag_coord, m._ref_law = "clip", "sched"` — a PLAIN ASSIGNMENT, [`coord_march`]'s note.
+    // The `_with_coord` DISPATCH in this reader is the one below, at the gains call, which is a
+    // SCOPE; this is the pin the scope is taken against.
+    m.fuel.inner.lag_coord.set(LAG_COORD_CLIP);
+    m.fuel.inner.ref_law.set(REF_SCHED);
     let leg = StatorLeg { accel: None, surge, tt4_max: Some(tt4_max) };
     let ramp = Ramp { tt4_lo, tt4_hi, r, s_settle, ds };
     let traj = m.stator_march_scoped(
