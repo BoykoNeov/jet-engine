@@ -20736,3 +20736,319 @@ precedent.
   `turbojet/engine.py` and this plan and nowhere else), so its ported gate has no Python test to
   mirror — its bars have to come from `docs/rung74-spec.md` § 3, which is where its numbers are
   published.
+
+#### 5.30.5 SLICE AF step 5 — the ported gates and the oracle, in **TWO COMMITS UNDER ONE STEP NUMBER**
+
+§ 5.30 (v) prices this step as *"the ported gates + the oracle"* and says in the same breath that
+**six is the FLOOR, not the estimate**. Slice AE gave those two things a step each (§ 5.29.3 and
+§ 5.29.4); slice AC ran to SEVEN steps against a six-step price and **AD step 6 recorded that its
+precedent "held and never been marked."** So this one is marked in advance rather than absorbed:
+step 5 lands as **(a) `tests/rung74.rs`** and **(b) the oracle**, two commits, one number. If the
+slice closes at six steps the price was right by volume; if the dispatch gates make it a seventh,
+§ (v)'s own floor clause is what predicted it.
+
+##### 5.30.5 (a) — the 17 ported gates, and **A SHIPPED `Usage:` BLOCK IN WHICH THREE OF FOUR DOCUMENTED CALLS RAISE `TypeError`, WHERE THE PHASE RECORD HAD MEASURED THE SAME DEFECT AT THREE AND STOPPED**
+
+`rust/tests/rung74.rs` — **757 lines, 17 gates, green on the first run in 7.15 s.**
+
+**THE COUNTS ARE MEASURED ON BOTH SIDES.** `pytest --collect-only -q -n0` says **16 collected**,
+and again with `-m slow` says **8** — never read off the `@pytest.mark.slow` lines, though here
+the two happen to agree. On the Rust side the header PREDICTED 17 and `cargo test -- --list` ran
+17; **`grep -c '#\[test\]'` also said 17**, so the four-instance streak (AC step 4, AC step 5, AD
+step 4, AE step 3 — every one an extra `#[test]` inside the file's own prose) **did not continue**,
+and that is worth writing down in the direction it landed: the trap is a property of files that
+DISCUSS the trap in a code-fence, not of ported gate files as such.
+
+###### (i) THE LEADING FINDING — the `Usage:` block
+
+The class docstring of `DemandCoordinateTransient` (`turbojet/engine.py:17540`) ships a four-line
+`Usage:` block. **Three of its four calls raise `TypeError`**, because `sm=` was never a parameter
+of `demand_gains`, `latch_discriminator` or `flat_schedule_identity` — all three take `phi_lim=`,
+and only `demand_law` takes `sm`. Found while answering *what supplies the value under test?* for
+`latch_discriminator`'s bars: the only thing in the tree that even mentions the reader is this
+block, so it was read, and reading it is what showed it does not run.
+
+**AD's pre-flight found this defect class and measured it at THREE**, over the same file: *"3
+phantom `Usage:` methods across rungs 65/66/72."* Slice W's lesson is to run a refuted probe over
+the WHOLE table rather than the row, so the sweep was re-run as a **static bind** of every written
+call in every `Usage:` block against `inspect.signature` — no plant built, so a failure is a
+property of the signature alone and cannot be confused with a runtime error inside the body:
+
+| | count |
+|---|---|
+| classes in `turbojet/engine.py` | 58 |
+| with a `Usage:` block | 34 |
+| calls written in those blocks | 102 |
+| skipped (`**kw`, or an argument list that is not Python) | 5 |
+| **bind OK** | **87** |
+| **BIND FAILS** | **10** |
+
+and the ten split into **three causes where the record names one**:
+
+| cause | n | where |
+|---|---|---|
+| **NO SUCH METHOD** | 3 | rung 65 `restored_plant`, rung 66 `cascade_modes`, rung 72 `shared_modes` — **exactly AD's three, reproduced by a different instrument** |
+| **missing a required argument** | 4 | rung 63's `marginal_loop` / `pair_interaction` / `clock_sweep` (all want `lever`), rung 65's `bandwidth_ceiling` (wants `phi_lim`) |
+| **unexpected keyword `sm=`** | 3 | rung 74's three |
+
+**Rung 74's three are FIXED in this commit** (`phi_lim=0.76`, the reader's own default), and the
+sweep re-run measures **10 -> 7**. The other seven belong to closed slices (W, Y, Z, AD) and are
+DISCLOSED and BOOKED rather than fixed here: a docs-only edit across four other rungs' classes,
+plus the Python guard test that would stop the class regrowing, is its own commit and would put a
+17-minute `pytest` inside a step whose subject is Rust.
+
+**The general form, and it is § 5.30 (viii) item 1 pointed at PROSE:** *what supplies the value*
+has a sibling — *what has ever RUN the sentence?* A `Usage:` block is the one kind of
+documentation that is executable in principle and executed by nothing, so it decays with exactly
+the signature it documents and no gate anywhere notices. AD measured the loudest cause (the name
+is not there at all) and stopped; the two quieter causes — the name is there and the ARGUMENTS are
+wrong — are 7 of the 10.
+
+###### (ii) THE MAP — 1:1 IN ORDER, **1 ADDED**, 0 collapsed, 0 split
+
+The Python file carries no `parametrize`, so nothing splits. The one ADD is declared in the file's
+own header table with its reason: **`latch_discriminator` has no caller anywhere in the shipped
+tree** (§ 5.30.4 (h) measured it), so it is the one reader of six with no Python test to mirror,
+and a file that ported only what the suite gates would leave § 3's isolation instrument ungated in
+both languages.
+
+**ITS BARS COME FROM `docs/rung74-spec.md` § 3's PROSE AND NOT FROM STEP 4's DRIVE OUTPUT** —
+*"Measured `floor_dTt4 = 65.2 K` with 332 of 341 points riding"*, a sentence written from the
+PYTHON reader long before this module existed. That distinction is the whole of § 5.30 (viii)
+item 1: a number the port produced is not a bar on the port. The two integers are asserted
+exactly; `65.2` is quoted to three figures, so its bar is the rounding bracket `[65.15, 65.25)`
+rather than an equality. **Green first run.**
+
+The gate also asserts anchor **P6's REFUTATION in the direction it was refuted** — `floor_dg_riding
+> 1e-9`, where P6 predicted machine zero — so a port that accidentally made the two arms agree
+fails here instead of looking tidy.
+
+###### (iii) THE TWO NEEDLES ARE PYTHON's LITERALS
+
+Python gates 2 of rung 74's 9 shipped messages (§ 5.30 (iv)), with `match="DECLARED"` and
+`match="two declared laws"`. Both are transcribed from `turbojet/engine.py:17759` and `:17773`,
+**never from `demand_coordinate.rs`** — step 4 § (c) measured the port's own refusal text FOUR
+formatting divergences wide against Python's, so a needle copied from the Rust side would certify
+the divergence rather than catch it. Neither needle is a regex here (`rung73.rs` had to split one
+that was), so no `.*` is silently dropped.
+
+###### (iv) THE ONE GATE WHOSE SHAPE IS PORT-AGAINST-PORT, AND WHAT MAKES IT A TEST ANYWAY
+
+Gate 16 compares `_cap_fuel`'s return against `_surge_fuel`'s — **two functions of the port**, which
+is the shape § 5.30 (viii) item 1 exists to refuse. It ports as written because Python's gate has
+the same shape, but it is only a test because of a THIRD, external assertion Python also makes:
+`shipped < mf_sched`, i.e. *the probe point must BIND*. Without it both sides short-circuit and the
+equality is two identical no-ops. The probe point itself is taken off a MARCH rather than guessed,
+which is the other half.
+
+###### (v) THE SWEEP
+
+The sweep was pre-registered before it ran, with a per-injection prediction, and **scored on
+EVERY binary in the slice** — § 5.30 (viii) item 2, which is what turned both of AE step 5's blind
+spots from suspicions into numbers. **Five injections x four binaries = 20 readings; 5 of 5
+KILLED, 5 of 5 AS PREDICTED, 14 of 20 readings are kills.**
+
+The source is restored from a byte-exact backup after every injection and its SHA-256 re-verified
+against the pristine hash then and again at the end — AE step 2 lost a dump and left the source
+mutated at byte-identical size because a sweep outlived its session, so the restore is checked and
+not assumed. **Final hash equals pristine, printed.**
+
+| # | injection | rung74 | cells | laws | march | killed |
+|---|---|---|---|---|---|---|
+| m01 | `demand_tau`'s arguments back to rung 52's order (anchor P8's inversion) | KILLED/value | pass | KILLED/value | KILLED/value | 3/4 |
+| m02 | the LATCH deleted — `demand-latched` becomes `demand` | **KILLED/panic** | pass | KILLED/value | KILLED/value | 3/4 |
+| m03 | `applied_demand` drops the GOVERNOR's demand from the min-select | KILLED/value | pass | KILLED/value | **pass** | 2/4 |
+| m04 | `applied_demand`'s seed — the schedule stops being an input | **KILLED/panic** | pass | KILLED/value | **pass** | 2/4 |
+| m05 | the latch's own tag test INVERTED | KILLED/value | **KILLED/panic** | KILLED/value | KILLED/value | 4/4 |
+
+**STEP 4's BOOKED M15 SHAPE IS NOW DATA, AND IT SPLITS 11 VALUE / 3 PANIC.** Step 4 asked that a
+suite be able to say *which of the two a defect produces, because a suite that only asks "did it
+fail" cannot*. Measured: m02 and m04 kill `rung74.rs` by ABORT rather than by disagreement —
+deleting the latch or changing the composition's seed makes the flat-schedule reduce's machine
+refuse, not merely differ — and m05 aborts `slice_af_cells.rs`. The distinction is not cosmetic:
+**a panic kill means no number was ever compared**, so an injection that kills only by panic has
+not been shown to be visible to any VALUE gate, which is what the oracle step is for.
+
+**TWO MEASUREMENTS THE NEW FILE PAID FOR.**
+
+1. **`rung74.rs` is the only binary besides `slice_af_laws.rs` that catches EITHER `applied_demand`
+   mutation.** `slice_af_march.rs` — the file that drives the six-state march directly — passes
+   both m03 and m04, because its gates pin the march's SHAPE and dispatch rather than the
+   composition's value. That is the ported suite earning its keep in the direction `rung72.rs`'s
+   precedent predicted: a 1:1 map of the shipped gates is not redundant with the step files.
+2. **`slice_af_cells.rs` scores 1 of 5 and that is its shape, not a hole.** It is the plumbing and
+   dispatch file; four of five injections are arithmetic and it is blind to arithmetic by
+   construction. The one it does catch (m05) is the one that changes which PLANT marches — which
+   is exactly what a cells file is for. Recorded so a later reader does not read the 1/5 as a gap.
+
+###### (vi) THE FULL GATE, PREDICTED BEFORE IT RAN
+
+Step 4 landed **146 `test result` blocks / 1 510 passed / 0 failed, `CARGO_EXIT=0`**. This commit
+adds ONE binary with 17 gates, so the prediction is **147 blocks / 1 527 passed / 0 failed**, and
+the structural bar AD step 4 introduced holds: `Running` lines + `Doc-tests` must equal the result
+blocks. Read off a log written UNPIPED with the exit code appended to it, never off one still
+being written.
+
+`pytest` IS run for this commit and that is a decision rather than a habit: unlike steps 2/3/4,
+this one changes Python — `turbojet/engine.py`'s `Usage:` block, § (i)'s three lines. The change is
+inside a docstring and can move no value **by reasoning** — and this project's own record is that
+a reasoned *cannot move anything* is worth exactly one run: slice AE step 2's LF->CRLF rewrite was
+a 3-line diff that changed 1 569 lines and failed the one gate in the crate that reads raw source
+bytes. So it is measured rather than argued.
+
+**MEASURED: 147 `test result` blocks / 1 527 passed / 0 failed / 0 ignored — the prediction held on
+both numbers.** The structural bar holds too: **146 `Running` + 1 `Doc-tests` = 147**, all 147
+blocks read `ok`, and `error[E` / `panicked` / `test result: FAILED` are each **0**.
+
+**`pytest`: 1 364 passed, 0 failed** — the documented count, unchanged, which is the whole point of
+running it on a docstring-only Python edit. **Its 54:00 is NOT a timing measurement and the
+documented ~17:21 is left alone**: it ran concurrently with the cargo gate and with three other
+projects' suites, which is exactly the *never run the gate for timing* rule's subject.
+
+###### (vii) A THIRD INSTANCE OF *A STATUS IS MEASURED WHEN IT IS ON DISK*, AND THE FIRST ONE WAS SILENT FOR HALF AN HOUR
+
+Slice AE step 4 could not read its seventh row because *"nothing wrote it to a file and the shell
+exited — a status is measured when it is ON DISK."* This step wrote it to a file **twice** and
+neither reading is usable:
+
+1. **The first launch never ran cargo at all.** `Start-Process -ArgumentList @('test','--manifest-path','M:\claud_projects\jet engine
+ust\Cargo.toml')` split the path on its space, cargo exited with *"manifest path `M:\claud_projects\jet` does not exist"* — and the failure presented as **a 0-byte stdout log**, which is byte-for-byte what a build still compiling looks like. It was only caught by reading the *stderr* file, ~30 minutes later.
+2. **The second launch ran correctly and still wrote `CARGO_EXIT=` EMPTY**, because `$p.ExitCode`
+   came back null out of the backgrounded shell. Same for `PYTEST_EXIT=`.
+
+**So the exit code was never the evidence and the log always was.** The verdict here rests on four
+counts read off the two log files — 147 `ok` blocks, 146 + 1 = 147 structurally, and zero each of
+`error[E`, `panicked` and `FAILED` — which is stronger than a single integer anyway, and is what
+AD step 4's structural bar was introduced to be. **The rule sharpens: a status is measured when it
+is on disk AND NON-EMPTY, and an empty status file is indistinguishable from a run in progress.**
+The counted form has no such failure mode.
+
+##### 5.30.5 (b) — the oracle, and **A PRE-REGISTERED EXEMPTION FALSIFIED IN BOTH CLAUSES, BECAUSE THE CENSUS THAT PICKED IT COUNTED CALL SITES AND NEVER ASKED WHAT EACH ONE SUMS**
+
+`rust/oracle/dump_slice_af.py` (eight sections A–H plus the Z censuses) + two goldens at
+**20 643 keys each** + `rust/tests/slice_af_oracle.rs`.
+
+###### (i) THE LEADING FINDING — P2
+
+§ 5.30 (vi)'s **P2** predicted the CPython arm *"may need one for a `sum()`-fed key. Naming which,
+in advance and by MEASUREMENT rather than by reasoning: `forcing_openloop`, to which § (iii)
+attributes two of the four `sum()` calls — the largest share, and the only reader whose published
+quantity is an average over the ramp."* The falsifier was written into the dumper's own header
+before the CPython arm had ever run: *if the CPython arm differs on a key outside that set and
+outside section G's plant keys, P2 is wrong and the cause is not `sum()`.*
+
+**IT FIRED, AND ON BOTH CLAUSES.**
+
+| | predicted | measured |
+|---|---|---|
+| the reader | `forcing_openloop` | **`demand_gains`** |
+| the keys | `F/mean_delta_late`, `F/ratio_late`, `F/worst_rel_late` | **49 keys, every one `B/*/poly_gap` or `B/*/poly_scale` plus `B/worst_poly_gap` / `B/worst_poly_rel`** |
+| the three named keys | differ | **bit-identical, asserted rather than merely absent from the list** |
+| the cause | one of rung 74's four `sum()` calls | **none of them** |
+
+**THE MECHANISM, AND IT IS THE SHARPER HALF.** Rung 74 owns four `sum()` calls and § 5.30 (iii)
+attributed them by line number, calling that *"attributed rather than counted"*. It was counted.
+Two of the four are `sum(1 for ...)` over a generator of ones (`engine.py:18303`, `:18459`) —
+**INTEGER counts, which no compensated summation can move**, so they were never candidates at all;
+and the two that really are float folds are `forcing_openloop`'s, which differ on **nothing**. The
+drift enters upstream in **`_charpoly4`'s** float `sum()` — **rung 72's, INHERITED** — which AD
+step 5 and AE step 4 each measured independently as the sole origin of this crate's interpreter
+drift, and which a rung-74 census of rung-74 bodies could not see.
+
+**A `sum()` CENSUS IS NOT AN ATTRIBUTION UNTIL THE SUMMAND'S TYPE AND CONDITIONING ARE IN IT.**
+Half of rung 74's four sum a `1`. And of the two that sum floats, both are means over 39 terms of
+similar magnitude, where compensation changes nothing; the charpoly sums terms spanning
+`~1/tau^4 ~ 1e5` down to `O(1)`, where it changes the last bits. The worst relative gap on the 49
+is **2.48e-04** — four orders larger than an input ULP — because `poly_gap` is a DIFFERENCE of two
+nearly-equal polynomials, so the reading amplifies whatever the coefficients did. Picking the
+reader by SHARE OF CALL SITES was the wrong instrument twice over.
+
+The exemption shipped is therefore **read off the diff and labelled as such**, and it is pinned
+two-sidedly: `diff.len() == EXEMPT.len()` (a name that STOPS differing is as much a change as one
+that starts), every differing key asserted to be `demand_gains`'s and a charpoly reading, and the
+three P2 keys asserted **equal** — because *it is not in the diff* is also what a key the dumper
+forgot to emit looks like.
+
+###### (ii) THE DIFF — **`Rust == PyPy` ON ALL 20 643 KEYS, GREEN ON THE FIRST RUN THAT EVER COMPILED, WITH NO PORT FIX**
+
+`rust/tests/slice_af_oracle.rs`, **4 gates**, all green. Both arms report the same number and the
+success line says what the number counts: **20 643 keys COMPARED, 0 read as declared inputs** —
+unlike AD's section H and AE's sections K/L this slice replays no captured argument, so the
+declared-read term is stated as ZERO rather than omitted. AE step 4's success line had been calling
+5 726 golden READS "values compared", and the distinction is kept alive by naming the zero.
+
+The two goldens have identical KEY SETS (20 643 both ways, 0 only-PyPy, 0 only-CPython), which is
+asserted before any value is compared: a structural difference between the arms is a different
+defect from an arithmetic one, and AD step 5's headline was a golden-vs-golden gap the
+port-vs-golden run could not have attributed.
+
+| section | keys | what it is |
+|---|---|---|
+| **G** | **16 572** | THE PLANT — `_coord_march` at 3 coordinates x 2 floors, every 5th point WHOLE plus min/max/last of all 28 float columns and a per-column NEGATIVE count |
+| F | 2 753 | `forcing_openloop`, all 341 rows |
+| B | 560 | `demand_gains`, 41 interior rows |
+| H | 337 | the DECLARED EXTRA GRID — `demand_law` swept one floor at a time, `main.py`'s own shape |
+| A | 317 | `demand_law` at its three-floor default |
+| D / C / E | 43 / 29 / 29 | `windup_law`, `latch_discriminator`, `flat_schedule_identity` |
+| Z | 3 | the censuses |
+
+**Section G is 80 % of the file, and that is the design.** A–F are folds; step 4 § (a) measured
+every one of them and the suite's own reduce spine compares NINE of the march's THIRTY-FIVE fields.
+
+###### (iii) THE EXEMPTION'S OWN NUMBERS SETTLE THE MECHANISM, ON THE SAME ROWS
+
+The 49 exempted keys are two readings of the SAME coefficient vector, and they drift by twelve
+orders of magnitude apart:
+
+| reading | what it computes | measured drift |
+|---|---|---|
+| `poly_scale` | `max(abs(x))` over the coefficients | **1.19e-16 … 4.78e-16** — one to four ULPs |
+| `poly_gap` | `max(abs(x - y))`, a DIFFERENCE of two nearly-equal polynomials | **4.5e-07 … 2.48e-04** |
+
+Row 26 is the extreme: `poly_scale` `1.196e-16`, `poly_gap` `2.478e-04` — **the same upstream
+perturbation, amplified 2.1e12 by the subtraction.** That is catastrophic cancellation measured
+side by side in one reader rather than argued, and it is why the reader's own gate (`rung74.rs`
+gate 4) sits at `1e-8` on the RELATIVE poly residual: a bar on `poly_gap` is a bar on the
+cancellation, not on the spectrum.
+
+**So the golden-gate lesson — *drift follows CONDITIONING* — gets its sharpest form yet.** Every
+previous instance compared two different quantities; this one holds the input fixed and reads it
+through two functions in the same row.
+
+###### (iv) THE THREE HAZARDS, ANSWERED BY COUNT RATHER THAN BY HOPE
+
+* **`None`.** 8 keys are legitimately `None` on both arms — every one a `first_gov`, on an arrested
+  arm's demand tag, where the plant never accelerates so the governor never takes the actuator
+  (step 4 § (a) measured 4 over sections A-F; H's three extra `demand_law` calls supply the rest).
+  `None == None` measures nothing, so `Z/n_none` is emitted as a key and computed by the PORT's own
+  emitters on one side and the dumper's on the other. A port that turned every `Option` into `None`
+  fails on one key instead of passing on all of them.
+* **SIGNED ZERO.** `Z/n_neg_zero = 0`, `Z/n_pos_zero = 1 710`, both arms. Values compare as bit
+  patterns, so `-0.0` and `+0.0` are different values; AE step 4 found 63 keys flipping
+  `+0.0`-ness between its goldens and this rung has none.
+* **THE MESSAGE.** `D/cell1/why` is the ONLY key in 20 643 that witnesses a refusal's text — the
+  `demand x applied` cell's joint-IC failure, § 4's finding — and it AGREES. Section G's six
+  marches all succeed, so it is the only one: measured, and the reason step 4 booked it here by
+  name.
+
+###### (v) THE GATE FOR THIS HALF, PREDICTED
+
+Step 5 (a) landed **147 blocks / 1 527 passed**. This commit adds ONE binary with 4 gates, so the
+prediction is **148 blocks / 1 531 passed / 0 failed**, with the structural bar `Running` +
+`Doc-tests` = blocks. `pytest` is NOT re-run: this half changes no Python that the suite collects
+(`rust/oracle/dump_slice_af.py` is outside `tests/`), so the tree the suite sees is byte-identical
+to the one that just returned 1 364 passed — steps 2/3/4's precedent, stated with its reason.
+
+###### (vi) WHAT STEP 6 INHERITS
+
+* **the value seat, SHIPPED.** Step 4's 3 731-key seat died with its throwaway harness; this is
+  20 643 keys that survive the session, so a dispatch injection at step 6 can be scored BY KEY and
+  not merely as caught / not caught.
+* **the kill-SHAPE ledger.** Step 5 (a) measured 11 value kills against 3 panic kills over five
+  injections. A panic kill means no number was ever compared, so those injections are NOT yet
+  known to be visible to any value gate — the three are step 6's first candidates.
+* **the seven remaining broken `Usage:` calls** (rungs 63 x3, 65 x2, 66, 72) and the Python guard
+  test that would stop the class regrowing. Both booked, neither fixed here: a docs-only edit
+  across four closed slices' classes plus a new Python gate is its own commit.
+* **P5, still open** — the dispatch step is where `_with_coord` is either gated structurally
+  (§ 5.30 (i)'s reading) or found observable by value, in which case § (i) inverts.
