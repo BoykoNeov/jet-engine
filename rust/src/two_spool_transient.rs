@@ -748,10 +748,25 @@ pub struct TwoSpoolTransientCore {
     /// RUNG **74**'s `_ic_cap` — the pass cap on its march's JOINT INITIAL-CONDITION fixed point.
     ///
     /// **READ BY THIS RUNG's OWN MARCH AND WRITTEN BY NOBODY UNTIL RUNG 75**, which is measured
-    /// rather than assumed: `engine.py:17941` is `for its in range(1, self._ic_cap + 1)` inside
-    /// `_integrate_fuel_demand`, and the only writer in the ladder is rung 75's `_with_ic_cap`
-    /// (`engine.py:19022`), raised there ONLY to measure a derived iteration count. Every PLANT in
-    /// the family keeps the inherited `60`.
+    /// rather than assumed: `engine.py:17943` is `for its in range(1, self._ic_cap + 1)` inside
+    /// `_integrate_fuel_demand`, and the only rung that RAISES it is 75 — in `contraction_law`,
+    /// only to measure a derived iteration count. Every PLANT in the family keeps the inherited
+    /// `60`.
+    ///
+    /// **AND IT IS RAISED BY A BARE `try/finally` INSIDE THAT READER, NOT BY ANY `_with_*`
+    /// METHOD** — corrected at slice AG step 1, where this sentence and its twin in
+    /// `demand_coordinate.rs` both named *rung 75's `_with_ic_cap` (`engine.py:19022`)*. **A
+    /// method by that name exists nowhere in `turbojet/`** — and the LINE NUMBER was right:
+    /// `19022` was, when that sentence was written, the bare
+    /// `prev, self._ic_cap = self._ic_cap, ic_cap`, which commit `a592a0d` then pushed two lines
+    /// down to `19024` (restored at `19033`). **So the invented thing was the METHOD NAME on a
+    /// correctly-located line**, which is the harder defect to see. The error is
+    /// not cosmetic: this crate's rule for a carrier is *dispatch the setter iff a later rung
+    /// overrides `_with_*` to write a different field*, so an invented `_with_*` name invites a
+    /// cell for a write Python makes by plain assignment — which is exactly the four-site defect
+    /// slice AF step 6 had to repair. Rung 75's five writers of this field are the three sibling
+    /// carries (`at_lever`, `_shared_rig`, `_windup_march`) and that one reader's save/restore.
+    /// Slice AD's *a shipped block documents a method with ZERO definitions*, one slice on.
     ///
     /// So it is a `Cell` rather than a `const` even though nothing at this rung sets it: the
     /// reader is here and the writer is one rung up, and a `const` would have to be converted back
@@ -761,6 +776,49 @@ pub struct TwoSpoolTransientCore {
     ///
     /// Its default is [`IC_CAP_DECLARED`](crate::demand_coordinate::IC_CAP_DECLARED).
     pub ic_cap: Cell<usize>,
+    /// RUNG **75**'s `_windup_law` — **WHICH ANTI-WINDUP DEVICE THE MASKED FUEL LEG CARRIES**, and
+    /// the fourth declared law of this family after [`share_law`], [`ref_law`] and [`lag_coord`].
+    ///
+    /// `"none"` is rung 74 — no declared device, which is that rung's § 4 finding — and `"track"`
+    /// is back-calculation onto the fuel actually applied, on the clock [`tau_t`](Self::tau_t).
+    /// **The class default IS the reduce arm**, so [`lag_coord`]'s note applies verbatim: there is
+    /// no builder overwrite here and no silent-wrong-plant failure to gate for.
+    ///
+    /// `Cell<&'static str>` and not an enum, for [`share_law`]'s reason: `integrate_fuel` carries
+    /// a shipped refusal for anything outside the two literals, which a two-variant enum deletes.
+    ///
+    /// **ITS GUARD WRITES THIS FIELD DIRECTLY AND NOT THROUGH A CELL**, which is
+    /// [`ShareScope`](crate::shared_actuator::ShareScope)'s decision rather than
+    /// [`RefScope`](crate::reference_split::RefScope)'s, and it is MEASURED: `_with_windup` has
+    /// exactly ONE definer over all 58 classes (§ 5.31 (iii)), so there is no later rung for a
+    /// cell to serve.
+    ///
+    /// [`share_law`]: Self::share_law
+    /// [`ref_law`]: Self::ref_law
+    /// [`lag_coord`]: Self::lag_coord
+    pub windup_law: Cell<&'static str>,
+    /// RUNG **75**'s `_tau_t` — the tracking clock, and **the first new constant since rung 65**.
+    ///
+    /// `Option` and not a `0.0` sentinel, because Python's `_tau_t = None` is a genuinely UNSET
+    /// state and its refusal covers two different failures at once —
+    /// `isinstance(self._tau_t, (int, float)) and self._tau_t > 0.0`. Collapsing `None` onto `0.0`
+    /// would make the refusal fire for the wrong reason while printing the right message.
+    ///
+    /// It is DECLARED, never defaulted: rung 75 has no derivation for it from anything shipped, so
+    /// every finding at that rung is a property of the SWEEP and not of a chosen value — the
+    /// treatment `phi_lim` has had since rungs 36/49.
+    pub tau_t: Cell<Option<f64>>,
+    /// RUNG **76**'s `_cap_law` — **WHETHER RUNG 48's `Wf/pt3` LEG IS A SET-POINT SOLVE OR THE
+    /// SCHEDULE AS WRITTEN**, and the fifth declared law of this family.
+    ///
+    /// `"solve"` asks what fuel is self-consistent with the `pt3` that fuel would itself produce
+    /// (rungs 48–75, shipped); `"sensed"` evaluates the inequality at the fuel actually burning,
+    /// which is the first cap in the ladder that can read `mf_app`. **The class default is again
+    /// the reduce arm**, and this knob adds NO constant of its own.
+    ///
+    /// Its guard writes this field directly for [`windup_law`](Self::windup_law)'s measured
+    /// reason: `_with_cap` also has exactly one definer.
+    pub cap_law: Cell<&'static str>,
     /// RUNG 70's ARMED GOVERNOR SET POINT — Python's `_gov_max`, and the phase's **second**
     /// CONFIG-kind dynamically-scoped field after [`ref_`](Self::ref_).
     ///
@@ -1177,6 +1235,9 @@ impl TwoSpoolTransientCore {
             ref_law: Cell::new(crate::shared_actuator::REF_LAW_DEFAULT),
             lag_coord: Cell::new(crate::demand_coordinate::LAG_COORD_CLIP),
             ic_cap: Cell::new(crate::demand_coordinate::IC_CAP_DECLARED),
+            windup_law: Cell::new(crate::anti_windup::WINDUP_LAW_NONE),
+            tau_t: Cell::new(None),
+            cap_law: Cell::new(crate::sensed_cap::CAP_LAW_SOLVE),
             ref_: Cell::new(None),
             gov_max: Cell::new(None),
         }

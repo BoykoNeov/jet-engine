@@ -540,7 +540,7 @@ pub struct TripleHooks {
     ///
     /// **FALLIBLE, and that is measured at the CALL SITE rather than chosen.** Python's march
     /// wraps its whole derivative in `except AssertionError: break`
-    /// (`engine.py:17965`/`17989`), and [`cap_free`]'s unreachable-cap refusal is an
+    /// (`engine.py:17967`/`17991`), and [`cap_free`]'s unreachable-cap refusal is an
     /// `AssertionError` — so a `panic!` here would end the process where Python ends the march.
     /// Slice L's rule, applied per call site.
     ///
@@ -585,10 +585,27 @@ pub struct TripleHooks {
     /// shape, with the difference rung 74's own source states: this hook is genuinely inside the
     /// march, where rung 73's was in a reader.
     ///
-    /// **NOT `Result`, and the asymmetry with its two siblings is measured.** Python calls it at
-    /// `engine.py:17816`, at the TOP of `_integrate_fuel_demand` and outside every
-    /// `except AssertionError` in that body — so rung 75's two declared-knob asserts propagate out
-    /// of the march rather than ending it, and a `panic!` is the faithful spelling.
+    /// **NOT `Result`, and the asymmetry with its two siblings is measured — but NOT by the
+    /// argument this comment used to give.** It read: *Python calls it at `engine.py:17816`, at
+    /// the TOP of `_integrate_fuel_demand` and outside every `except AssertionError` in that
+    /// body* — and **the line number in that quotation is itself wrong by two**, corrected to
+    /// `17818` in `demand_coordinate.rs` in this same commit; the quote is kept verbatim because
+    /// what it said is the thing being refuted. That is one call site, and slice L's rule is PER
+    /// CALL SITE. Swept (§ 5.31 (iv)),
+    /// there are **three** — `17818`, rung 75's `integrate_fuel` (`18653`) and its `_rhs_laws`
+    /// (`18738`) — and rung 75's own `contraction_law` wraps `self._windup_march(…)` in
+    /// `try/except AssertionError` (`19025`–`19031`), a path that reaches two of the three. **So
+    /// the premise *no caller catches* is FALSE.**
+    ///
+    /// **The conclusion survives for a different, measured reason: the catching caller cannot
+    /// supply an input that raises.** `_windup_tau`'s two refusals fire on a non-`demand`
+    /// coordinate and on a non-positive `tau_t`; `contraction_law` hardcodes `"demand"` and
+    /// computes `math.log(tau_t / (taus[0] + tau_t))` **before** the march, so `tau_t = 0.0`
+    /// raises `ValueError` and `tau_t = -0.05` raises `ZeroDivisionError`, both with this cell
+    /// never called. Driven at `tau_t = 0.005` — below rung 75's own RK4 floor of `0.00625` — the
+    /// reader absorbs a refusal and this cell raised **0 of 4 times**: what that `except` actually
+    /// catches is `_rk4_floor_shared`'s. `panic!` stays the faithful spelling; the reason is now
+    /// the one that was measured.
     ///
     /// `static` in Python at rung 74 and an instance method at rung 75, [`sensed_cap`]'s note.
     ///

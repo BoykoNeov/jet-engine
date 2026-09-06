@@ -224,16 +224,16 @@ A compact map.
 - `tests/` — per-rung `test_rungN.py` (N = 1…84; plus the rung-1/2b/3/4/5 files). Every rung file
   carries that rung's **reduce-to-prior** gate plus its load-bearing claims.
   `test_phi_rate_limiter_negative.py` is the only NEGATIVE carrying a gate;
-  `test_usage_blocks.py` binds every call a class docstring's `Usage:` block writes; and
-  `test_numeric_fingerprint.py` is the only **ABSOLUTE-value** gate — the reduce spine compares
-  two quantities from the SAME run, so it is blind to anything that moves both sides together.
-  Its goldens are a committed **CPython** anchor; regenerating them needs CPython, never PyPy.
+  `test_usage_blocks.py` binds every call a `Usage:` block writes; `test_rust_line_citations.py`
+  pins the `engine.py` lines the Rust port cites; and `test_numeric_fingerprint.py` is the only
+  **ABSOLUTE-value** gate — the reduce spine compares two quantities from ONE run, so it is blind
+  to what moves both. Its goldens are a committed **CPython** anchor, never regenerated on PyPy.
 - `docs/rungN-spec.md` (contents: see the banner); `docs/plans/rungN-anchor-*.md` — that rung's
   verified anchor data. `docs/plans/` also holds the living plan/tasks.
 
 ## Commands
 - Run the model: `python main.py` · Install: see `requirements.txt` (a PyPy venv — § Stack)
-- **The gate: `pytest`** — **EVERYTHING**, 1364 tests, **~17:21 at 1355** (PyPy, box load unknown;
+- **The gate: `pytest`** — **EVERYTHING**, 1373 tests, **~17:21 at 1355** (PyPy, box load unknown;
   a 40:28 at 1294 came off a LOADED box — neither differences nor replaces it).
   ONE gate; nothing is ever silently deselected, so no regression can hide.
 - **Iterate: `pytest -m "not slow"`** — 977 tests, **~1:54 at 890**.

@@ -351,7 +351,7 @@ impl VariableStatorCore {
     /// per-cell parameter, never a literal in the ported body"* — and slice M shipped the literal
     /// anyway, in both loops, with a comment pointing the next reader at the wrong slice. Read:
     /// `StatorBleedMatcher` declares `_B_TOL`/`_B_MAX`/`_B_CAP`/`_B_STEP` and **no** `_INC_MAX`;
-    /// `StageStackMatcher` declares `_INC_MAX = 200` (`engine.py:7282`). So the shadow was live at
+    /// `StageStackMatcher` declares `_INC_MAX = 200` (`engine.py:7296`). So the shadow was live at
     /// SLICE N, not slice O, and it is read from THREE places — rung 55's own
     /// `stage_incidence_schedule` plus these two inherited solver loops, which a stacked object
     /// enters with 200 in Python and would enter with 80 here if the cap were read as a literal.

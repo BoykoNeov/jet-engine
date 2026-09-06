@@ -21753,3 +21753,207 @@ and it is item 1 because it is what caught items 2 and 5.**
   **Nothing else is owed**: § (iii)'s `_with_*` re-run came back negative, § (iv)'s CPython
   exemption is measured to two named keys and its `windup_tau` fallibility claim is re-reasoned
   rather than inherited, and the four-site assignment rule stays slice AI's.
+
+#### 5.31.1 SLICE AG step 1 — the plumbing, and **A LINE CITATION IS A CLAIM WITH AN EXPIRY DATE: 18 OF THE PORT'S 50 POINTED AT THE WRONG LINE, AND THE CORRECTION THAT FOUND THEM HAD ALREADY INHERITED ONE**
+
+`rust/src/anti_windup.rs` (rung 75: five `R75*` tables, four re-aimed bodies, three declared
+constants) and `rust/src/sensed_cap.rs` (rung 76: five `R76*` tables, four re-aimed bodies, three
+declared constants), **three new carriers on `TwoSpoolTransientCore` and ZERO new `TripleHooks`
+fields**, and `rust/tests/slice_ag_cells.rs` (15 gates). Plus this step's debt sweep:
+`tests/test_rust_line_citations.py` + `tests/golden/rust_engine_citations.json`, 5 gates, § (a).
+
+**SIZES, for P1's running total:** `anti_windup.rs` **353 lines** (119 excluding comments and
+blanks), `sensed_cap.rs` **305** (126), `slice_ag_cells.rs` **869** (504), against the 1 073-line
+pair of Python classes this slice ports.
+
+##### (a) THE LEADING FINDING — **A COMMIT THAT ADDED A GUARD AGAINST DOCUMENTATION DECAY SILENTLY DECAYED 17 CITATIONS ON ITS WAY PAST, AND THE FIRST SWEEP FOR THEM COULD NOT SEE THE 19 SITES WRITTEN IN THE OTHER FORM**
+
+It began as a two-number contradiction inside one uncommitted diff. `demand_coordinate.rs` said
+*Python calls it at `engine.py:17816`*; the `three_loop.rs` correction written beside it, in the
+same step, said the three call sites are `17818` / `18653` / `18738`. **One of them is wrong and
+nothing in the repo could say which**, so the file was read: the call is at `17818`.
+
+Then the question that matters — *how many others?*
+
+| | sites | stale | mechanism |
+|---|---|---|---|
+| `engine.py:N` form | 31 | **14** | 13 × `+2`, 1 × `+14` |
+| bare `` `N` `` in the same comment block | 19 | **4** | 4 × `+2` |
+| **total, over 9 files** | **50** | **18** | |
+
+The `+2` — **17 of the 18** — is commit **`a592a0d`** — slice AF's last debt, *the seven broken `Usage:` calls, a Python
+guard, and a SKIP category…* — which edited 34 lines of `engine.py` and left it two lines longer
+above line ~11 000. **Every citation below that point moved and none of them was updated.** Verified
+per citation rather than assumed: each Rust line was blamed, `engine.py` was reconstructed at THAT
+commit, and the cited line's five-line context was compared with today's; all 18 resolved to a
+unique new location, 0 unresolved. The `+14` one (`stator.rs`, `_INC_MAX`) is an older shift the
+same sweep caught for free.
+
+**THE SWEEP'S OWN FIRST PASS UNDER-COUNTED BY FOUR, AND THE REASON IS THIS SLICE'S OWN § (viii)
+ITEM 5.** The regex was `engine\.py:(\d+)`, so `(`engine.py:17967`/`17991`)` contributed ONE
+citation where a reader sees two: the second site of a pair never repeats the file name. The
+population was *citations that name the file*, and the claim being made was about *citations*. Four
+of the 18 live in that gap. **What supplies the value has a sibling — what population is the value
+drawn from — and here the instrument was mine, one step after the pre-flight wrote that sentence
+down about a shipped comment.**
+
+**AND ONE OF THE 18 WAS WRITTEN BY THIS STEP.** `anti_windup.rs`'s `at_lever` note contrasts rung
+75's copy line with rung 74's, citing `17711` — copied out of the very comment it was correcting,
+in a file that did not exist an hour earlier. A stale citation propagates by being quoted.
+
+**THE GUARD.** `tests/golden/rust_engine_citations.json` records, per cited line, the TEXT that line
+held when a human verified it; `tests/test_rust_line_citations.py` asserts `engine.py` still says
+the same thing at the same number, and when it does not, the failure message names the line the
+recorded text is at NOW — the repair, not just the complaint. Census frozen at **9 files / 50 sites
+/ 38 distinct lines**, for `test_usage_blocks.py`'s stated reason: a guard that asserts *no drift*
+passes when the scanner finds nothing at all. The can-see gate drives a synthetic engine — an
+insertion above two citations must report `+3` on both, and an EDIT of the cited line must report
+that the text is gone rather than invent a destination.
+
+**AND IT WAS SCORED AGAINST THE REAL DEFECT, not only the synthetic one.** One repaired citation
+was reverted to its stale number and the suite re-run: **3 of the 5 gates fail** — the drift gate,
+the blessed-set gate and the census gate, the last because the distinct-line count moves 38 → 39.
+A hand-edited citation reports as NEVER BLESSED rather than as drift, which is the honest reading:
+the ground did not move, the comment did.
+
+**WHAT IT CANNOT SEE, stated in the file:** it detects DRIFT, not wrongness. A citation blessed
+while pointing at the wrong line stays wrong forever, because no instrument can know what a sentence
+MEANT to point at. That is also why blessing prints every changed anchor and is a deliberate run of
+the file, not a flag on the test.
+
+**TWO CITATIONS ARE EXEMPT AND BOTH WERE CREATED BY THIS COMMIT**, which is the honest shape rather
+than an awkward one: `three_loop.rs`'s `17816` and `two_spool_transient.rs`'s `19022` are quoted as
+HISTORY — a comment reporting what an earlier comment said — so the number must NOT track the file.
+The exemption set is frozen and a gate asserts every member is still cited, because an exemption for
+a citation nobody writes is an exemption for nothing.
+
+##### (b) `_with_ic_cap` HAS ZERO DEFINITIONS — **AND THE LINE NUMBER BESIDE IT WAS RIGHT**
+
+Two shipped Rust doc comments named *rung 75's `_with_ic_cap` (`engine.py:19022`)* as the writer of
+`_ic_cap`. **No method by that name exists anywhere in `turbojet/`.** The write is a bare
+`try/finally` inside `contraction_law` — `prev, self._ic_cap = self._ic_cap, ic_cap`, restored in the
+`finally`.
+
+It matters because of the crate's carrier rule — *dispatch the setter iff a later rung overrides
+`_with_*` to write a different field* — so an invented `_with_*` name invites a hook cell for a write
+Python makes by plain assignment, which is exactly the four-site defect slice AF step 6 had to
+repair. Slice AD's *a shipped block documents a method with ZERO definitions*, one slice on.
+
+**AND THE FIRST CORRECTION OF IT, WRITTEN EARLIER IN THIS SAME STEP, WAS ITSELF WRONG.** It said
+*`19022` is the docstring line above the assignment*. It is not: under the numbering of the day that
+sentence was written, `19022` **was** the assignment, and `a592a0d` then pushed it to `19024`. So the
+defect was an invented METHOD NAME on a correctly-located line — the harder half to see, and one
+that § (a)'s sweep is structurally blind to. Corrected in place, with the mechanism named.
+
+##### (c) `max(1e-9, x)` ON A NaN — **THREE CELLS WERE FILED AS *UNMEASURED* AGAINST A PREMISE THAT IS FALSE, AND THE PARAGRAPH REPLACING IT GOT ITS OWN POPULATION WRONG ON THE FIRST DRAFT**
+
+Slice AF left three `1e-9f64.max(·)` sites labelled *the `min`/`max` cells this step did not decide*,
+on the claim: *Python's `max(1e-9, x)` returns `x` for a NaN `x`; Rust's `1e-9f64.max(x)` returns
+`1e-9`*. Run: `max(1e-9, nan)` is **`1e-9`**, and so is `min(1e-9, nan)`. Python seeds the fold at
+argument 0 and replaces only on a strict comparison, which a NaN never satisfies — so a NaN
+propagates **only from argument 0** (`max(nan, 1e-9)` is `nan`), and Rust discards it from either
+side. **With a literal in argument 0 the two spellings agree on every input**, and all three cells
+are DECIDED — by algebra, where AF's step 3 had closed only the reachability half.
+
+The census, re-run independently at this commit rather than quoted: `engine.py` has **800**
+`max`/`min` calls, **532** one-iterable, **268** n-ary, of which **103 literal-first** and **165
+expression-first**. Every one of the **25** `1e-9f64.max(·)` sites in `rust/src` was then matched to
+its Python line **one at a time** — all 25 are literal-first — so *the crate's other sites are decided
+too* is a measurement, not an extrapolation from a census of a different population.
+
+**A FIRST DRAFT OF THAT PARAGRAPH FILED `applied_demand`'s GATE AMONG THE 165 EXPRESSION-FIRST, AND
+THE LINE THREE BELOW IT REFUTES THAT.** Same error class as § (a)'s and as the pre-flight's own item
+5, three times in one step.
+
+**AND THE PACKAGE HOLDS EXACTLY ONE EXPRESSION-FIRST `1e-9` FOLD — rung 76's, landing at THIS SLICE's
+STEP 4.** `_c_at`'s `dw = rel * max(w, 1e-9)` (`engine.py:19308`). There `w.max(1e-9)` is the WRONG
+spelling on a NaN `w` — `nan` in Python, `1e-9` in Rust — and `if 1e-9 > w { 1e-9 } else { w }` is
+the faithful one. **Pre-registered here so step 4 inherits an obligation instead of a habit.**
+
+##### (d) THE INSTRUMENT — **`0 ADD` DELETES THE WIDTH TRIPWIRE, SO THE GATE IS FUNCTION-POINTER IDENTITY IN BOTH DIRECTIONS**
+
+Every step 1 from slice AA to AF widened `TripleHooks`, so a forgotten cell was an `E0063` compile
+error. Here § (ii)'s census is `0 ADD`: a forgotten re-aim **compiles**, silently runs the rung-74
+parent, and both parents return exactly this slice's reduce-arm answer (`None`, `Ok(None)`) — so
+**every reduce gate in the crate would go on passing**. The replacement instrument works with no
+bodies at all: each of the eight swapped slots must DIFFER from its parent's function pointer and
+every inherited slot must be EQUAL to it, across all five tables at both rungs. The second direction
+is not decoration — it is the only witness for a STRAY re-aim, rung 76 silently disarming rung 75's
+device.
+
+It also caught something no value gate could: rung 76's `_shared_rig` carry of `_cap_law` is
+redundant on the VALUE (its `at_lever` already copied it) and load-bearing on the IDENTITY — delete
+the line and the remaining body forwards straight to rung 75's, the linker folds the two functions
+into one address, and the pointer gate fires.
+
+##### (e) BOTH OF THIS STEP's OWN GATE FAILURES WERE MEASUREMENTS, AND WERE READ AS MEASUREMENTS
+
+* *A missed re-aim is silent on the march* **failed on the `applied` reference** — because rung 74
+  has no plant there, so the missing device hits rung 74's joint-IC refusal and the defect is
+  **LOUD**. Under `sched` rung 74 does have a plant and the identical defect is bit-for-bit silent.
+  **Whether a forgotten swap is loud is a property of the cell you happen to drive, not of the
+  defect**, and the gate now says so in both cells.
+* Then the POSITIVE control failed: with the cell correctly aimed, `Tt4` is **bit-identical**. That
+  is rung 75's own headline — the device sits in the MASKED leg's law and `min`-select hides it from
+  the plant — so a control on the output reads an exact zero and calls a correct cell inert.
+  Re-aimed onto the two masked states (`w_fuel` / `w_gov`), it passes. Slice T step 1's *an EXACT
+  ZERO blinds its own gate*, one slice on.
+
+##### (f) THE STEP BOUNDARY IS RE-CUT IN TWO PLACES — **AND P7 IS RULED ON NOW, NOT AT STEP 7**
+
+§ (vi) put `_windup_tau` at step 2 and `_sensed_cap` at step 4, and *both refusal sets* at step 1.
+**Those are jointly impossible in both cases**: two of rung 75's four asserts ARE `_windup_tau`'s
+body, and rung 76's cap refusal IS one of its five. The alternative — a slot answering the reduce arm
+and `unimplemented!()`ing the other — is a live panic sitting in a `const` table for three steps,
+which slice AF's own header rejects. **Both cells land at step 1 in full.** Step 2 keeps
+`_windup_march`, `_with_windup`, `_rhs_laws`; step 4 keeps `_cap_march`, `_with_cap`, `accel_for`,
+`_c_at`.
+
+That is § 5.30's recurring defect — two claims individually plausible and jointly impossible inside
+one section — arriving in the next slice's plan, twice.
+
+**THE RULING ON P7, WRITTEN BEFORE THE OUTCOME IS KNOWN.** P7 predicts the slice lands on SEVEN steps
+against the method-count law's six, and the re-cut has just moved two method bodies out of steps 2
+and 4 into step 1 — which biases the count DOWN. P7 is a claim about the TOTAL, and the moved bodies
+stayed inside the slice, so the re-cut does not by itself void it. What would void it is a step
+becoming a REMAINDER, so the discriminator is registered here:
+
+* **P7 is falsified cleanly** if the slice closes in six steps while steps 2 and 4 each still carry
+  at least three method bodies of their own (they currently carry three and four). Then the class
+  count is not a driver and AF's method-count law survives its first two-class test.
+* **P7 is VOID, not falsified**, if six lands because step 2 or step 4 degenerated to fewer than
+  three bodies — that would be the re-cut showing up as the answer, and it would say nothing about
+  either law.
+
+##### (g) A DERIVED BOUND IS NOT ITS OWN ROUNDED DECIMAL
+
+`2*ds/(2 − ds*Σ(1/tau_i))` is `0.0062499999999999995` in **both** languages — one ULP below the
+`0.00625` rung 75's docstring quotes. `WINDUP_TAU_GRID_FLOOR` is therefore spelled as the derivation
+and not as a typed decimal, which is `CAP_GROW`'s rule one slice on: a typed decimal would hide which
+of the step and the four clocks the number answers to, and would be a different float from some other
+expansion of the same idea.
+
+##### (h) WHAT THIS STEP LEAVES OWED
+
+**Nothing but § (c)'s pre-registered spelling obligation at step 4.** The fallibility argument for
+`windup_tau` was re-reasoned rather than inherited (§ 5.31 (iv)): the crate's *no caller catches* is
+FALSE at the third of three call sites, and the conclusion survives only because `contraction_law`
+computes `math.log(tau_t/(taus[0]+tau_t))` before the march, so every input that would trip the
+refusal raises first. That correction is in `three_loop.rs`, at the hook, and not repeated at the
+rung-74 body.
+
+##### (i) GATES, AND WHAT THE NEW GUARD COST CLAUDE.md
+
+`cargo test --release`: **150 blocks / 1 554 passed / 0 failed** — exactly `+1` block and `+15`
+tests on slice AF step 6's 149 / 1 539, which is the arithmetic a step that adds one gate file and
+no behaviour has to satisfy. No new warning from either module. `pytest`: **1 373 passed**, again
+`1 364 + 4 + 5` exactly (AF's debt guard, then this step's). **Its 1:23:20 wall clock is NOT a
+timing** — it ran beside the full Rust gate on the same box, which is the LOADED-box case CLAUDE.md
+already warns about, so the quoted `~17:21 at 1355` stands untouched. That warning was on this
+step's short list of things to delete for budget headroom, and the run that would have paid for the
+deletion is the one that re-earned the sentence.
+
+CLAUDE.md instead paid for naming the new guard by compressing three clauses in the same paragraph
+(`a class docstring's`, `the SAME run` → `ONE run`, and the CPython-anchor sentence): **35 949 →
+35 962 bytes against a 35 970 budget, 8 left.** The budget was not raised, which is that file's own
+banner rule.

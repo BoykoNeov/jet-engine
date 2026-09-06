@@ -152,7 +152,7 @@ pub const LAG_COORDS_DECLARED: [&str; 3] = [LAG_COORD_CLIP, LAG_COORD_DEMAND, LA
 /// so `60` is a cut across a geometric sequence and not a property of any plant. It is raised only
 /// in a rung-75 READER, to measure a derived iteration count; every plant in the family keeps it.
 ///
-/// Its one reader is this rung's own march (`engine.py:17941`), which lands at step 3 — measured,
+/// Its one reader is this rung's own march (`engine.py:17943`), which lands at step 3 — measured,
 /// not assumed, and the reason it is a `Cell` on the core rather than a bare constant is written
 /// at [`ic_cap`](crate::two_spool_transient::TwoSpoolTransientCore::ic_cap).
 pub const IC_CAP_DECLARED: usize = 60;
@@ -195,7 +195,7 @@ pub const CAP_BRACKET_N: usize = 60;
 /// **AND THE RULE GOVERNS THE SETTER, NOT EVERY WRITE OF THE FIELD** — which is how slice AF step
 /// 6 found it OVER-APPLIED. Python assigns `_lag_coord` directly in three places at this rung
 /// (`at_lever`, `_shared_rig`, `_coord_march`) and a fourth inside `demand_gains`, and dispatches
-/// through `_with_coord` in exactly ONE (`engine.py:18276`, the scope this type is). Two of the
+/// through `_with_coord` in exactly ONE (`engine.py:18278`, the scope this type is). Two of the
 /// port's pins had been routed through the cell; at rung 74 that is the same function, and at
 /// rung 79 it is not. See [`coord_march`]'s note for what it would have cost.
 ///
@@ -394,10 +394,13 @@ fn r74_sensed_cap(
 /// enters the march.
 ///
 /// **NOT `Result`, unlike its two cap siblings, and the asymmetry is measured rather than chosen.**
-/// Python calls it at `engine.py:17816`, at the top of `_integrate_fuel_demand` and outside every
-/// `except AssertionError` in that body, so rung 75's two declared-knob asserts propagate out of
-/// the march instead of ending it. A `panic!` is the faithful spelling there; an `Abort` would be
-/// caught by the march's own `break` and would silently truncate a trajectory.
+/// Python calls it at `engine.py:17818`, at the top of `_integrate_fuel_demand` and outside every
+/// `except AssertionError` in that body. **That is ONE call site of three, and slice L's rule is
+/// per call site** — the argument is corrected at
+/// [`TripleHooks::windup_tau`](crate::three_loop::TripleHooks::windup_tau) rather than repeated
+/// here, because rung 75's `contraction_law` DOES catch, and the conclusion survives only because
+/// that caller raises before this cell is reached. A `panic!` is still the faithful spelling; an
+/// `Abort` would be caught by the march's own `break` and would silently truncate a trajectory.
 fn r74_windup_tau(_: &TwoSpoolTransientCore) -> Option<f64> {
     None
 }
@@ -418,7 +421,7 @@ fn r74_windup_tau(_: &TwoSpoolTransientCore) -> Option<f64> {
 /// # WHY THIS IS AN `Abort` AND NOT A `panic!` — measured at the call site, not chosen
 ///
 /// Python's refusal is an `AssertionError`, and the march wraps its whole derivative in
-/// `except AssertionError: break` (`engine.py:17965` and `17989`). A `panic!` here would end the
+/// `except AssertionError: break` (`engine.py:17967` and `17991`). A `panic!` here would end the
 /// process where Python ends the march and truncates the trajectory. That is slice L's recorded
 /// rule — fallibility is a property of the CALL SITE — and it is the difference between reporting
 /// a short march and reporting nothing at all.
@@ -474,7 +477,7 @@ pub fn cap_free(
 /// `required_gov`'s short-circuit is exactly what has to be removed — it is a guard on the
 /// BRACKET, and in this coordinate it is a guard on the ANSWER.
 ///
-/// **NOT A CELL.** One definer in the whole ladder (`engine.py:17604`), measured over all 58
+/// **NOT A CELL.** One definer in the whole ladder (`engine.py:17606`), measured over all 58
 /// classes, so a table field would be a mechanism with no reader — `_with_share`'s case, and the
 /// rule those two comments state together.
 pub fn cap_gov(
@@ -827,12 +830,34 @@ pub fn demand_laws<'a>(
         // `1e-9f64.max(..)` is rung 72's own spelling at the identical Python `max(1e-9, ·)`, kept
         // rather than re-derived — a deliberate duplication is not a factoring opportunity.
         //
-        // **AND IT IS THE ONE `min`/`max` CELL THIS STEP DID NOT DECIDE.** Every other fold here is
-        // spelled Python's way because the two disagree on a NaN operand (`applied_demand`'s gate
-        // drives exactly that row). Python's `max(1e-9, x)` returns `x` for a NaN `x`; Rust's
-        // `1e-9f64.max(x)` returns `1e-9`. Nothing at this rung shows `x` cannot be NaN, and
-        // nothing here measures that it can — so this is an UNMEASURED cell, not a decided one,
-        // and it is named rather than left to look like the rest.
+        // **THIS WAS RECORDED AS `THE ONE min/max CELL THIS STEP DID NOT DECIDE`, AND THE PYTHON
+        // HALF OF THAT SENTENCE IS FALSE — MEASURED AT SLICE AG STEP 1.** It read: *Python's
+        // `max(1e-9, x)` returns `x` for a NaN `x`; Rust's `1e-9f64.max(x)` returns `1e-9`*.
+        // Run: `max(1e-9, nan)` is **`1e-9`** and `min(1e-9, nan)` is **`1e-9`**, because Python
+        // seeds the fold at argument 0 and replaces only on a strict comparison, which a NaN never
+        // satisfies. A NaN PROPAGATES only from argument 0 — `max(nan, 1e-9)` is `nan` — and Rust
+        // discards it from either side. **So the two spellings agree here on every input, for a
+        // structural reason: argument 0 is a LITERAL.**
+        //
+        // Censused over `engine.py` (`temp/slice-ag/census_minmax.py`, re-run at this commit): 800
+        // `max`/`min` calls, 532 of them the one-iterable form, 268 n-ary — and **103 of those 268
+        // put a literal first**, every one exactly faithful under `lit.max(x)`. The 165 with an
+        // EXPRESSION first are the ones where the spelling is a decision.
+        //
+        // **THIS SITE IS LITERAL-FIRST — `max(1e-9, self._applied_demand(…))` at `engine.py:17936`,
+        // `18156`, `18166`, `18771`, `18781` — SO IT IS DECIDED, AND THE POPULATION IS NAMED RATHER
+        // THAN JUMPED.** A first draft of this paragraph filed `applied_demand`'s gate among the
+        // 165, which the line three below it refutes. All **25** `1e-9f64.max(·)` sites in
+        // `rust/src` were then matched to their Python line one at a time: every one is a
+        // literal-first `max(1e-9, ·)`, so every one is decided for this same structural reason —
+        // *the crate's other sites are decided too* is a MEASUREMENT here, not an extrapolation
+        // from a census of a different population.
+        //
+        // And the package holds exactly **ONE** expression-first `1e-9` fold: rung 76's `_c_at`,
+        // `dw = rel * max(w, 1e-9)` at `engine.py:19308`, **which lands at step 4 of THIS slice**.
+        // There `w.max(1e-9)` is the WRONG spelling on a NaN `w` — `nan` in Python, `1e-9` in Rust
+        // — and `if 1e-9 > w { 1e-9 } else { w }` is the faithful one. Written down here so step 4
+        // inherits an obligation instead of a habit.
         let (_, b, reg) = crate::limited_bleed::r64_solve_b(
             &bl,
             closer_b(ft, a, h, 1e-9f64.max(applied_demand(mf_sched, wf, wr)), tt2, pt2))?;
@@ -864,7 +889,7 @@ pub fn demand_laws<'a>(
 ///
 /// **`_ic_cap` IS NOT CARRIED HERE, AND THAT IS PYTHON's LINE AND NOT AN OMISSION.** Rung 74's
 /// `at_lever` copies `_ref_law` and `_lag_coord` only; rung 75's copies `_windup_law`, `_tau_t` and
-/// `_ic_cap` as well (`engine.py:17711` against `18671`). At this rung nothing writes `_ic_cap`, so
+/// `_ic_cap` as well (`engine.py:17713` against `18673`). At this rung nothing writes `_ic_cap`, so
 /// source and sibling both read the declared `60` and the copy would be invisible — which is the
 /// same argument that keeps it out of [`build_demand_coordinate_cascade`].
 fn r74_at_lever(core: &ScheduledStatorCore, arm: &LeverArm) -> ScheduledStatorCore {
@@ -931,7 +956,7 @@ fn r74_rk4_floor_shared(ds: f64, rate: f64) {
 ///
 /// # ONE FIRES ABOVE THE ENTRY TEST AND FOUR BELOW IT — measured from the source, not assumed
 ///
-/// Python's order (`engine.py:17759`–`17787`): the declared-coordinate assert fires FIRST; then
+/// Python's order (`engine.py:17761`–`17789`): the declared-coordinate assert fires FIRST; then
 /// `lag` and `tau_gov` resolve; then the `clip or tau_gov is None or not has_fuel` early return to
 /// `super()`; then the other four. Slice AE's rung-73 body has BOTH its asserts above the entry
 /// test (probe L5) and the port hoisted both, so *hoist the refusals* is the inherited habit and it
@@ -1081,8 +1106,10 @@ struct DemandDer {
 ///
 /// # THREE PLACES WHERE THE PARENT's CONSTANT IS A CELL HERE
 ///
-/// * **`ic_cap`.** Rung 72 hardcodes `1..=60`; Python reads `self._ic_cap`, whose only writer in
-///   the ladder is rung 75's `_with_ic_cap`. This step is where that field gains its first reader.
+/// * **`ic_cap`.** Rung 72 hardcodes `1..=60`; Python reads `self._ic_cap`, whose only RAISER in
+///   the ladder is rung 75's `contraction_law` — a bare `try/finally`, **not a `_with_*` method**;
+///   the name `_with_ic_cap` this line used to give exists nowhere in `turbojet/` (slice AG step
+///   1). This step is where that field gains its first reader.
 ///   It is **not** unobservable at rung 74: on the converging arms the sweep settles in 2 passes
 ///   with `ic_res` exactly `0.0`, so 60 and 1000 are identical — but at `ic_cap = 1` the same arm
 ///   RAISES, and on the `demand × applied` arm (which never converges) the refusal's own iteration
@@ -1181,13 +1208,14 @@ fn r74_integrate_fuel_demand(
         // Python's SECOND name. `mf_app` stays RAW for everything above and for rung 75's
         // back-calculation below; only the plant sees the clamp.
         //
-        // **`1e-9f64.max(·)` IS RUNG 72's SPELLING AND IT IS THE THIRD OF THE UNMEASURED `max`
-        // CELLS STEP 2 NAMED.** Python's `max(1e-9, x)` returns `x` for a NaN `x`; Rust's
-        // `1e-9f64.max(x)` returns `1e-9`. Step 3's own measurement closes the reachability half
-        // rather than the algebra: over `test_rung74.py`'s three `phi` arms on both demand tags,
-        // **0 of 2 046 marched points carry a NaN `mf`**. So the divergence is unreachable on
-        // everything this rung ships — recorded as a measurement, not repaired into a difference
-        // from the sibling it was copied from.
+        // **`1e-9f64.max(·)` IS RUNG 72's SPELLING, AND THE THIRD OF THE THREE `max` CELLS STEP 2
+        // CALLED UNMEASURED — ALL THREE ARE NOW DECIDED, BY ALGEBRA AND NOT BY REACHABILITY.**
+        // The claim was *Python's `max(1e-9, x)` returns `x` for a NaN `x`*; measured at slice AG
+        // step 1, it returns `1e-9`, exactly as `1e-9f64.max(x)` does, because Python seeds the
+        // fold at argument 0 and a NaN never satisfies the strict `>`. See the C law's note in
+        // [`demand_laws`] for the census. Step 3's own reachability measurement — over
+        // `test_rung74.py`'s three `phi` arms on both demand tags, **0 of 2 046 marched points
+        // carry a NaN `mf`** — still stands and is now the SECOND reason rather than the only one.
         let mf = 1e-9f64.max(mf_app);
         let inst = {
             let _sb = MarchedBleed::set(&ft.inner, q);
@@ -1257,7 +1285,7 @@ fn r74_integrate_fuel_demand(
     };
 
     let order = IC_ORDER4_DECLARED;
-    // TRANSCRIBED FROM `engine.py:17947`, not from the parent with the number swapped: this is the
+    // TRANSCRIBED FROM `engine.py:17949`, not from the parent with the number swapped: this is the
     // ONE shipped rung-74 message that does NOT open `rung-74:` — there is no colon after the tag
     // — so a needle built on the pre-flight's *all 9 open with `rung-74:`* would miss it.
     assert!({
@@ -1434,10 +1462,10 @@ fn r74_integrate_fuel_demand(
 // `windup_law`, `flat_schedule_identity`, `forcing_openloop`)"*. Two things come with them that
 // the sentence does not name, and both are measured rather than assumed:
 //
-//   * **`_coord_march`** (`engine.py:18021`) — twelve lines, unported until now, and the entry
+//   * **`_coord_march`** (`engine.py:18023`) — twelve lines, unported until now, and the entry
 //     point of four of the six. It is `_shared_march` with the two knobs written onto the
 //     SIBLING rather than scoped, which is the difference this file's [`coord_march`] carries.
-//   * **`_demand_gains_at`** (`engine.py:18172`) — not a reader at all but a SECOND gains chain,
+//   * **`_demand_gains_at`** (`engine.py:18174`) — not a reader at all but a SECOND gains chain,
 //     28 perturbed evaluations of [`demand_laws`] plus a manifold solve. `demand_gains` drives
 //     it BESIDE rung 73's and differences the two Jacobians, so the step ports both halves of a
 //     comparison whose whole content is that they disagree entry by entry and agree in spectrum.
@@ -1631,7 +1659,7 @@ fn ic74(p: &FuelPoint) -> (usize, f64) {
 /// Rung 72's `_shared_march` wraps its march in `_with_share("max", …)`; `_coord_march` has no
 /// such wrapper, so the march runs under whatever the sibling inherited. `at_lever` copies
 /// `_ref_law` and `_lag_coord` and **not** `_share_law`, so the sibling reads the class default —
-/// which IS `"max"` (`engine.py:15698`). **So a `ShareScope("max")` here would be INERT**, and
+/// which IS `"max"` (`engine.py:15700`). **So a `ShareScope("max")` here would be INERT**, and
 /// the omission is ported because it is Python's line, not because any shipped grid can see it.
 /// Stated that way round deliberately: writing *the omission is observable* would be the same
 /// unmeasured claim [`demand_gains_at`]'s switch-filter paragraph had to retract.
@@ -1738,7 +1766,7 @@ fn try_coord_march(
 /// this body drops the first conjunct. **The first writing of this comment said that carrying
 /// the sibling's spelling here would admit a point straddling the `min()` kink. That is FALSE,
 /// and it was asserted rather than measured** — `_share_law` is a class attribute whose declared
-/// default is `"max"` (`engine.py:15698`), rung 74's `at_lever` copies only `_ref_law` and
+/// default is `"max"` (`engine.py:15700`), rung 74's `at_lever` copies only `_ref_law` and
 /// `_lag_coord`, and nothing on any path into this body writes it. The conjunct is therefore TRUE
 /// at every call the shipped grid makes, and adding it back changes nothing. Booked as an inert
 /// difference and mutation-scored as one — step 3 § (g) 7's lesson (*a claimed blind spot is a
