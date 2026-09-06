@@ -22148,3 +22148,274 @@ pristine after every run in all three sweeps.
 `cargo test --test slice_ag_laws` **11 passed / 0 failed**, warning-free; `slice_ag_cells` unchanged
 at 15. Full crate, `cargo test --release`: **151 blocks / 1 565 passed / 0 failed** — 151 test blocks, slice AG's
 two among them. Nothing in this step touches Python, so no `pytest` run is owed by it.
+
+#### 5.31.3 SLICE AG step 3 — the six readers, and **A PLAIN ASSIGNMENT I PREDICTED WAS INERT, BECAUSE I ENUMERATED THE TAG'S READERS ONE RUNG DOWN AND THIS RUNG ADDS THE ONE THAT REFUSES**
+
+**SHIPPED**: `src/anti_windup.rs` **601 → 1 531 lines** — `rhs_gains_at` (the sixteen central
+differences, diagonals included), `windup_rows`, `windup_gains`, `contraction_law`,
+`device_control`, `windup_bill`, plus the two helpers Python spells inline (`IcCapScope`,
+`try_windup_march`). **NO gate file**: slice AF step 4's precedent — a readers step proves itself by
+DRIVING every reader end to end, the ported gates are step 6's, and pulling them forward would make
+that step a remainder. **`Rust == PyPy` bit for bit on all 1 304 keys, on the first run that ever
+compiled, both key sets equal, no port fix.** Sweep: **15 injections, 12 KILLED, 3 SURVIVED, ONE
+MISPREDICTION** — and the misprediction is § (a).
+
+##### (a) THE LEADING FINDING — **THE READERS OF A CARRIER ARE A PER-RUNG FACT, AND THE ONE THAT MAKES THIS WRITE LOAD-BEARING IS BORN AT THIS RUNG**
+
+`_windup_rows` writes `m._lag_coord = "demand"` on the marched sibling by PLAIN ASSIGNMENT, after
+the march and before the filter. Slice AF step 6 had just repaired four production call sites that
+DISPATCHED such a write, so the port spells this one as a direct `set` — no scope, no hook — and
+§ (h) row 6 was the injection that scores it: **drop the line entirely.**
+
+**I pre-registered `SURVIVED`, with a reason.** The reason was rung 74's own measurement, quoted in
+`demand_target`'s doc: `clip` and `demand` are indistinguishable there BY CONSTRUCTION, because the
+latch reads only `demand-latched`. On that enumeration the tag has one reader, the write is a no-op,
+and no gate in the crate could see it.
+
+**MEASURED: KILLED, by a PANIC** — `anti_windup.rs:261`, which is `r75_windup_tau`'s own refusal:
+
+> rung-75: `track` is REFUSED outside the plain DEMAND coordinate. In `clip` rung 52's `max(0, .)`
+> is still there and in `demand-latched` the latch is, so either cell would run TWO anti-windup
+> devices at once and attribute the result to this one.
+
+So the tag acquired a SECOND reader at exactly this rung, and it is the cell the whole slice is
+about. `_windup_rows` marches under `clip` × `none` — legal, because the device is disarmed — and
+then flips the tag so that the `track` scope two lines later is legal. **The write is not a no-op;
+it is the reader's admission ticket**, and dropping it converts a benign attribute assignment into a
+hard refusal exactly as AF step 6's four dispatched writes did, by the opposite route.
+
+**The generalisation is step 1 § (a)'s, on a different object.** That step found that a LINE
+CITATION has an expiry date. This one finds that an ENUMERATION OF READERS does: *who reads this
+field* was measured at rung 74, was true when measured, and is false at the rung that adds a reader
+— which is the rung whose port is being written. The instrument that would have caught it before the
+sweep is the one AF's own leading finding names: **ask what reads a thing, at THIS rung, and never
+inherit the answer.**
+
+##### (b) THE SECOND — **A DROPPED POINT IS A COVERAGE CLAIM, AND THIS RUNG STOPPED MAKING IT**
+
+**The measured claim is a same-object, adjacent-rung comparison, and it is the narrow one.** Rung
+74's `demand_gains` — the direct parent of the reader being ported — counts BOTH of its drop
+branches into a `skipped` pair, with Python's own comment on the line: *DISCLOSED: a dropped point is
+a coverage claim.* Rung 75's `_windup_rows` has the same two branches and counts neither.
+
+Around that, one weaker observation, stated as what it is: a grep for the literal `skipped=` finds
+no occurrence between `demand_gains` (`engine.py:18311`) and rung 80's `split_gains`
+(`engine.py:21767`). **That is one spelling, not a swept set** — it does not establish that rungs
+76–79 lack a skip census under another name, and two of them are reader-only rungs with no Jacobian
+at all, so the question may not even arise there. The finding is rung 75's; the span is context.
+
+`_windup_rows` drops a point at TWO filters — `not g["interior"] or g["masked"] is None`, then `not
+g0["interior"]` — and `continue`s past both without counting either. `windup_gains` therefore
+returns `n` and `n_riding` and nothing else, and **on the shipped grid those are 7 and 56**: 49 of
+56 points are discarded, and the return value cannot say why, or even that two different reasons are
+involved.
+
+**The port measured what the source declines to report**, in the drive's section E — a declared
+extra whose whole purpose is the three arms every fold above hides. The SAME march, unfiltered,
+every sixteenth point:
+
+| reading | measured |
+|---|---|
+| points sampled | **22** |
+| INTERIOR | **4** |
+| near-switch (`["switch"]`, the one non-positional label) | **1** |
+| off-regime, 16 labels wide (every law off its regime) | **14** |
+| off-regime, 8 labels wide (exactly one law off) | **3** |
+
+So the dropped points are not a tail: the reader's own filter rejects **18 of 22**, in two distinct
+populations. Neither count is recoverable from `windup_gains`, and **no gate written against
+`windup_gains` can distinguish a port that drops the right points from one that drops all but
+seven** — `n = 7` is consistent with both. § (h) row 2 proves the exposure rather than asserting it:
+short-circuiting the regime scan is invisible to every key in sections A–D and KILLED by seventeen
+keys in E alone.
+
+This is not a defect to repair in the port — the port's job is to reproduce the reader, and it does,
+bit for bit. It is booked as what step 6's ported gates must not assume, and as the reason section E
+exists.
+
+##### (c) THE READER IS NOT `QuadGains`, AND THE DIFFERENCE IS THE WHOLE RUNG
+
+Every inherited gains reader in the crate returns FOURTEEN off-diagonal entries and hands them to
+`jac4`, which CONSTRUCTS the diagonal as `(dcmd_i/dx_i − 1)/tau_i`. `tau_t` is deliberately not in
+`taus` (step 2 § (b)), so a constructed diagonal cannot contain the device — the reader would report
+the masked diagonal unchanged, `det J` still dead and the spectrum invariant, a perfect refutation of
+the rung's headline having measured nothing.
+
+`rhs_gains_at` returns **sixteen MEASURED entries and has no assembly step**, and the reading that
+follows is the rung, reproduced by the port without being told the answer:
+
+| cell | `masked_diag0` (no device) | `masked_diag` (device) | `zeros0` → `zeros` | `det0_alive` → `det_alive` |
+|---|---|---|---|---|
+| `applied`, `tau_t = 0.05` | **exactly 0.0** | −19.999999999881 | **1 → 0** | 6.58e−11 → **1.281** |
+| `applied`, `tau_t = 0.0125` | **exactly 0.0** | −79.999999999525 | **1 → 0** | 6.58e−11 → **5.124** |
+| `sched`, `tau_t = 0.05` | −19.99999999988 | −39.99999999976 | 0 → 0 | 453.7 → 5.386 |
+| `sched`, `tau_t = 0.0125` | −19.99999999988 | −99.99999999954 | 0 → 0 | 453.7 → 13.47 |
+
+`−19.999999999881` against `−20` is the central difference measuring rather than asserting. The
+`applied` rows are the revival — a diagonal EXACTLY zero for two rungs; the `sched` rows are the
+same mechanism's other face, where the diagonal was `−1/tau` all along and the device adds to it.
+Ratios between the two clocks: `4.0` (diag) and `3.9999999997…4.0000000001` (det) on `applied`, `2.5`
+on `sched` — block-triangularity, measured.
+
+**AND THE PRE-REGISTERED TRAP IS DETECTABLE, WHICH HAD TO BE MEASURED.** `windup_rows` builds its
+zero threshold as `rate = 1/tau_f + Σ 1/taus[1..]`, EXCLUDING the device's clock — the same refusal
+`rhs_laws` makes by keeping `tau_t` out of `taus`. Whether that matters is not obvious: the
+threshold is `1e-4 * rate`, and a 25–100 % change in it can easily move nothing. § (h) row 7 adds
+`1/tau_t` and **KILLS**, moving a `zeros` count at the fast cell. So the exclusion is a live
+decision and not a stylistic one, and step 6 can gate it.
+
+##### (d) FOUR OF THE SIX PRE-REGISTERED READINGS ARE **EXACTLY 0.0**, WHICH IS WHERE A GATE GOES BLIND
+
+`auth_diag_moved`, `track_leak`, `mask_leak` and `mask_leak0` are `0.0` — the bit pattern, not a
+tolerance — at **every one of the four cells**. That is the rung being right (the device is the zero
+FUNCTION on the leg that holds, and the masked COLUMN is untouched, so `n_live <= 3` a fourth time),
+and it is simultaneously [[rust-port-slice-t-step1]]'s hazard: *an exact zero blinds its own gate.*
+An assertion `< 1e-9` against a quantity that is identically zero passes for a port that computes
+the right thing, for one that computes a different thing that is also zero, and for one that
+computes nothing.
+
+The sweep is what separates them. Row 4 widens `mask_leak`'s fold to include the diagonal and
+**KILLS on 60 keys** — so that zero is live. Row 5 drops one of `track_leak`'s three terms and
+**SURVIVES, as registered with the proof written first**: all three are exactly zero on the leg that
+holds, so no single-term deletion can move a maximum of zeros. **`track_leak` is therefore the one
+of the four that no mutation of its own body can score** — the same shape as step 2's `_ic_cap`
+finding, one level down: it is not that the value is wrong, it is that the instrument cannot see the
+line.
+
+##### (e) `row_err`'s TARGET IS AN EXACT ZERO ON THREE ROWS OF SEVEN AND `13.33` ON THE OTHER FOUR
+
+The `applied` arm's target for the masked ROW is `1/tau_t − 1/tau_masked`, and `tau_masked` is the
+LAG's `tau_f` where the FUEL leg is masked and `taus[1]` where the governor is. On the shipped grid
+those are two different numbers, and the cell splits:
+
+| rows | authority | masked | `tau_masked` | target | `row_auth` measured | `row_auth0` |
+|---|---|---|---|---|---|---|
+| `s` 0.15–0.23 | fuel | **gov** | 0.05 = `tau_t` | **0.0, exactly** | **0.0, exactly** | −20.0 |
+| `s` 0.27–0.39 | gov | **fuel** | **0.15** (the lag's RELEASE clock) | 13.3333 | 13.3333 | −6.6667 |
+
+So the fold is a `max` over three degenerate rows and four discriminating ones, and the four carry
+it — `row_err` is **not** vacuous on the shipped grid, which had to be measured rather than assumed.
+**And the degenerate rows are a reading of their own**: where the device's clock equals the masked
+leg's, the `+1/tau_t` it adds cancels the reference's `−1/tau_masked` exactly, and the masked row's
+coupling to the authoritative leg goes to `0.0` on the bit. A coincidence of the shipped grid and not
+a law — written down because a gate sampling only those three rows would read a decoupling that the
+next `tau_t` removes. § (h) row 8 confirms the split is live: pinning `tau_masked` to the governor's
+clock kills on the four fuel-masked rows and on nothing else.
+
+##### (f) `contraction_law`'s PREDICTIONS WERE DERIVED BEFORE THE PORT RAN, AND ONE OF ITS INPUTS IS A SIBLING's OUTPUT ROUNDED
+
+`ceil(ln(tol/res0)/ln sigma)` at `res0 = 2.898e-3`, `tol = 1e-12`, `taus[0] = 0.05` gives **185, 98,
+54, 32, 20, 14** for the six-clock default and **185, 98, 54, 32** for the shipped four. Typed from
+the closed form into this section before any output was read
+([[instrument-fed-by-what-it-certifies]]); the run returns `measured == predicted` on all four, with
+`within_inherited_cap` `[False, False, True, True]` — the two slowest clocks are exactly the ones the
+inherited `60` cannot reach, which is what the `400` is for and what § (h) row 11 kills on.
+
+**AND `res0` IS A ROUNDED DECIMAL OF A NUMBER A SIBLING READER COMPUTES IN FULL.**
+`device_control` on the same plant measures `dormant_state = 0.0028982406470635016` at
+`tau_t = 0.05` and `0.0007245601618158636` at `0.0125` — a ratio of exactly 4, the park law's
+`tau_t/tau`. The first is rung 74's `2.898e-3` to four figures. So the reader's typed input is its
+sibling's measured output, rounded: harmless because `ceil` absorbs it, and booked because step 1
+§ (g) found the same shape on `WINDUP_TAU_GRID_FLOOR` and this is its second instance in one slice.
+
+While there, § 5.31 (i)'s grid-floor question is settled. `_rk4_floor_shared` asserts
+`ds * rate <= 2.0`, so it **admits equality**, and at both spellings of the floor —
+`0.0062499999999999995` from the derivation and the literal `0.00625` the docstring quotes —
+`ds * rate` is `2.0` exactly. Both are admissible and both sit ON the boundary. The two spellings of
+the clock sum (`4.0/0.05`, and `1/0.05` four times added) are `80.0` in both languages, so that half
+of the hazard does not bite.
+
+##### (g) THE `_ic_cap` SCOPE, AND THE ONE PLACE PYTHON's `try/except/finally` DOES **NOT** REACH
+
+`contraction_law` is the only reader in the family that raises the cap, and it does so as
+`prev, self._ic_cap = …` / `try` / `except AssertionError` / `finally`. Ported as a `Drop` guard
+(`IcCapScope`) plus `catch_unwind` (`try_windup_march`) — `try_coord_march`'s shape one rung on,
+**with one deliberate difference.** Python's `try` covers `traj[0]["ic_iters"]` as well as the
+march, but an `IndexError` is not an `AssertionError` and propagates; a `catch_unwind` around both
+would swallow an empty trajectory and return a `None` indistinguishable from a converged-too-slow
+cell. So the index read sits OUTSIDE the catch, and the comment says why.
+
+##### (h) THE MUTATION SWEEP — 15 injections, predictions typed first, **12 KILLED / 3 SURVIVED / 1 MISPREDICTED**
+
+The instrument is the drive itself: each injection rebuilds, re-runs the harness and diffs its 1 304
+keys against the PyPy golden. Source SHA-256 verified back to pristine after every run
+(`4cf3e863d4568fb884f815a424fd05e274dfc9829d59c6ec37a077f2faf3f1a0`). **That hash PREDATES the
+ten-line doc comment § (a) added to `windup_rows` afterwards, so it is not the shipped file's**; the
+shipped file is `aa478aa01db42cfa521694f270ee5630aa415efe2fe051b67749f6b01e72487b`. A doc comment cannot move a float, but this project's own rule
+is that a reasoned *this cannot move anything* is worth exactly one run — the full gate in § (i) is
+that run, and it is on the patched source.
+
+| # | injection | predicted | measured |
+|---|---|---|---|
+| 1 | the two SIGNS evaluated in the other order | KILLED — every difference flips sign | **KILLED**, 241 keys |
+| 2 | the regime scan SHORT-CIRCUITS on the first off arm | KILLED **by E only** — A cannot see an uncounted drop | **KILLED**, 17 keys, all in E |
+| 3 | the Jacobian TRANSPOSED | KILLED — E's sixteen entries and A's folds | **KILLED**, 265 keys |
+| 4 | `mask_leak` includes the DIAGONAL | KILLED — the column is `0.0` and the diagonal is `−1/tau_t` | **KILLED**, 60 keys |
+| 5 | `track_leak` drops the BASE-POINT term | **SURVIVES** — all three terms are exactly `0.0` there | **SURVIVED**, as registered |
+| 6 | `_lag_coord = "demand"` dropped from `windup_rows` | SURVIVES — rung 74 measured `clip` ≡ `demand` | **KILLED by PANIC** → § (a) |
+| 7 | `rate` INCLUDES the device's clock | *unpredicted, a measurement* | **KILLED**, 12 keys → § (c) |
+| 8 | `tau_masked` always the GOVERNOR's clock | *unpredicted* | **KILLED**, 10 keys → § (e) |
+| 9 | `diag_err` uses the `sched` formula on both arms | KILLED on the two `applied` cells | **KILLED**, exactly 2 keys |
+| 10 | the ratios taken the other way up | KILLED — `4.0` would read `0.25` | **KILLED**, 4 keys |
+| 11 | the `_ic_cap` SCOPE never entered | KILLED — 185 and 98 against a cap of 60 | **KILLED**, 6 keys + 4 absent |
+| 12 | `all_exact` loses its NON-EMPTY guard | **SURVIVES** — `hit` is all four rows here | **SURVIVED**, as registered |
+| 13 | the DORMANT set symmetrised onto `a` alone | *unpredicted* — live only where the two trajectories disagree | **KILLED**, 2 keys, **cell 0 only** |
+| 14 | `tau_t_holds` takes the FIRST holding clock | KILLED — `0.0625` against `0.0125` | **KILLED**, exactly 1 key |
+| 15 | the hand-over span over ALL rows, `None` as `0.0` | *unpredicted* — live only if some row never hands over | **SURVIVED** |
+
+Three of the four unpredicted rows came back live and one did not, and the two that matter are read
+rather than shrugged at:
+
+* **Row 13 kills on ONE cell of two, and the live one is the SLOW clock.** The drive passes
+  `tau_ts = (0.05, 0.0125)`, so cell 0 is `tau_t = 0.05`; the injection moves `C/cell0/n_dormant`
+  and `C/cell0/dormant_output` and nothing at `0.0125`. The two plants disagree about dormancy only
+  at the slower clock. **This is a hazard for step 6's NEW gates and not a hole in the shipped
+  test** — `tests/test_rung75.py` loops both cells — but any gate that picked one cell to keep the
+  runtime down would score the symmetrised bug as correct if it picked the fast one.
+* **Row 15 survives because every row on the shipped grid hands over** (0.695, 0.700, 0.700, 0.700,
+  0.705, against the accident's 1.065). So `handover_monotone`'s `None`-filter is untested by any
+  shipped caller, and `handover_monotone` itself would be VACUOUSLY TRUE on a grid where at most one
+  row hands over — Python carries no key for the surviving count, and neither does the port. **Step
+  6 must assert the count beside the flag**, or the flag says nothing.
+
+##### (i) GATES
+
+`cargo test --release` **151 blocks / 1 565 passed / 0 failed** — **delta ZERO against step 2**,
+which is this step's own prediction: it adds no test file and deletes its harness, so the count is
+the one to expect and a change in it would have been the finding. The two slice-AG binaries are
+unchanged at 15 and 11, by design.
+
+**`cargo clippy --all-targets` DOES NOT PASS, AND HAS NOT FOR SOME TIME.** Exit 101, on **two
+errors and 51 warnings**, and **not one of them is this step's**:
+
+* the two errors are `clippy::eq_op` on `applied_reference.rs:854` and `stator_transient.rs:2757` —
+  both are deliberate `x == x` / `x != x` NaN self-comparisons ported faithfully from Python, which
+  is exactly the construct that lint exists to catch and exactly the construct this port must keep.
+  They are a lint-configuration debt, not a code defect.
+* **four of the 51 warnings ARE slice AG's, and they were shipped by STEP 2**: `RhsLaws`'s four
+  `Box<dyn Fn…>` fields trip `clippy::type_complexity`, where its rung-74 twin `DemandLaws` carries
+  `#[allow(clippy::type_complexity)]` on the struct. The allow was not copied when the type was
+  written, and **nothing noticed because clippy has never been green on this crate** — which is also
+  why slice AB step 4's `CLIPPY_LINE` placeholder was fillable-in-principle and never filled.
+
+The one-line repair is NOT made here, and that is a decision rather than an oversight: the full gate
+above ran on this exact source, and re-opening it for an attribute — even one that cannot reach
+codegen — spends a 56-minute run to prove a tautology. **Booked for step 4**, which rebuilds and
+re-gates anyway. What IS recorded now is the honest state, so the next reader does not have to
+re-derive that a red clippy is expected here. The drive harness
+(`rust/tests/tmp_drive_ag3.rs` and its PyPy twin under the session's temp folder) is
+DELETED, as slice AF step 4's was: it is an instrument for one step, and leaving it would ship a
+binary whose golden lives outside the repo. Nothing in this step touches Python, so no `pytest` run
+is owed by it.
+
+##### (j) WHAT STEP 4 INHERITS
+
+* **Rung 76's cap** — `_sensed_cap`, `_cap_march`, `_with_cap`, `accel_for`, `_c_at` — with step 1
+  § (c)'s pre-registered spelling obligation on `_c_at`'s `max(1e-9, w)`: the package's ONE
+  expression-first fold, so `if 1e-9 > w { 1e-9 } else { w }` is the NaN-faithful spelling and a
+  `.max()` there would differ from Python on a NaN.
+* **Two vacuity facts to gate rather than inherit**, both measured in § (h): the hand-over count
+  beside `handover_monotone`, and `device_control`'s dormant asymmetry at the SLOW cell.
+* **§ (b)'s census gap.** Step 6's ported gates run against `windup_gains`, which cannot report why
+  a point was dropped. Any gate whose content is *the reader kept the right points* has to reach
+  past it, the way section E did here.
