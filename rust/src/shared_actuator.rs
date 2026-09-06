@@ -69,6 +69,14 @@
 //! The port carries none of the three, so it is clean by construction; it is recorded here so a
 //! later reader of this module does not go looking for a rung-72 reader that was never written.
 //!
+//! **ALL THREE ARE REPAIRED IN PYTHON as of slice AF's closing commit (plan § 5.30.7)** — each
+//! RETARGETED to the reader it was renamed to, none deleted, and this module's guess above
+//! ([`shared_cells`]) is the one that landed. The paragraph is kept in the past tense it now
+//! belongs to because the CENSUS is the durable part: `tests/test_usage_blocks.py` binds every
+//! call in every `Usage:` block on every run, so the defect cannot come back silently, and the
+//! same commit found SIX further statements in those blocks that are not Python at all — which
+//! the census that produced the three above had counted as *skipped*.
+//!
 //! # A FOURTH CELL THE PRE-FLIGHT's CENSUS COULD NOT SEE — **AND THE TRAP ITS DEFERRAL LEAVES**
 //!
 //! [`quad_gains_at`] has **two definers** (rungs 72 and 73), an identical signature and a

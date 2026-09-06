@@ -223,8 +223,8 @@ A compact map.
   check it on every ship.
 - `tests/` — per-rung `test_rungN.py` (N = 1…84; plus the rung-1/2b/3/4/5 files). Every rung file
   carries that rung's **reduce-to-prior** gate plus its load-bearing claims.
-  `test_claude_md_reference.py` is the size guard on this file;
-  `test_phi_rate_limiter_negative.py` is the only NEGATIVE carrying a gate; and
+  `test_phi_rate_limiter_negative.py` is the only NEGATIVE carrying a gate;
+  `test_usage_blocks.py` binds every call a class docstring's `Usage:` block writes; and
   `test_numeric_fingerprint.py` is the only **ABSOLUTE-value** gate — the reduce spine compares
   two quantities from the SAME run, so it is blind to anything that moves both sides together.
   Its goldens are a committed **CPython** anchor; regenerating them needs CPython, never PyPy.

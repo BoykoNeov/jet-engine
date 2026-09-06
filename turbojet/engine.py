@@ -358,7 +358,7 @@ class OffDesignMatcher:
     pi_c falls out of the shaft balance rather than being specified. See docs/rung31-spec.md.
 
     Usage:
-        design = build_turbojet(gas, pi_c=10, Tt4=1500, p0, **losses, nozzle_convergent=True)
+        design = build_turbojet(gas, 10, 1500, p0, **losses, nozzle_convergent=True)
         matcher = OffDesignMatcher(design, FLIGHT_design, mdot_design=1.0)
         od = matcher.match(FLIGHT_od, Tt4_od)     # -> OffDesignResult (pi_c is an OUTPUT)
     """
@@ -1112,7 +1112,7 @@ class MapMatcher(OffDesignMatcher):
     (via eta_c) and labels the line with N. Flat map => rung 31 bit-for-bit. See docs/rung32-spec.md.
 
     Usage:
-        design = build_turbojet(gas, pi_c=10, Tt4=1500, p0, **losses, nozzle_convergent=True)
+        design = build_turbojet(gas, 10, 1500, p0, **losses, nozzle_convergent=True)
         mm = MapMatcher(design, FLIGHT_design, 1.0, comp_map=ComponentMap.flow_dominated())
         od = mm.match(FLIGHT_od, Tt4_od)          # -> MapOffDesignResult (eta_c, N are OUTPUTS)
     """
@@ -1302,7 +1302,7 @@ class SpoolTransient(MapMatcher):
     closure — never by calling the steady matchers (that would make the reduce circular).
 
     Usage:
-        design = build_turbojet(gas, pi_c=10, Tt4=1500, p0, **losses, nozzle_convergent=True)
+        design = build_turbojet(gas, 10, 1500, p0, **losses, nozzle_convergent=True)
         st = SpoolTransient(design, FLIGHT, 1.0, comp_map=ComponentMap.flow_dominated())
         st.equilibrium(FLIGHT, 1200.0)          # -> the running-line instant at Tt4=1200 (== rung 32)
         st.integrate(FLIGHT, schedule, nu0=..., s_end=..., ds=...)   # -> [TransientPoint]
@@ -2033,7 +2033,7 @@ class CombustorTransient(SpoolTransient):
     is the point; the combined 3-state model is a further seam.
 
     Usage:
-        design = build_turbojet(gas, pi_c=10, Tt4=1500, p0, **losses, nozzle_convergent=True)
+        design = build_turbojet(gas, 10, 1500, p0, **losses, nozzle_convergent=True)
         # volume-filling: plenum clock r_v = tau_fill/tau_spool
         ct = CombustorTransient(design, FLIGHT, 1.0, comp_map=cmap, plenum_ratio=0.05)
         ct.plenum_frozen_peak(FLIGHT, 1100., 1400.)      # -> peak == E0 (rung 35), + the mdot split
@@ -2543,8 +2543,8 @@ class TwoSpoolMatcher:
     """RUNG 38. Two-spool (LPC+HPC, no bypass) off-design matching.
 
     Usage:
-        design = build_two_spool_turbojet(gas, pi_lpc=3, pi_hpc=6, Tt4=1500, p0,
-                                           **losses, nozzle_convergent=True)
+        design = build_two_spool_turbojet(gas, 3, 6, 1500, p0,
+                                         **losses, nozzle_convergent=True)
         matcher = TwoSpoolMatcher(design, FLIGHT_design, mdot_design=1.0)
         od = matcher.match(FLIGHT_od, Tt4_od)   # -> TwoSpoolResult (pi_lpc, pi_hpc OUTPUTS)
 
@@ -3394,7 +3394,7 @@ class TwoSpoolTransient(TwoSpoolMapMatcher):
         tt = TwoSpoolTransient(design, FLIGHT, 1.0, map_lp=..., map_hp=..., rho=2.0)
         tt.equilibrium(FLIGHT, 1200.0)        # 2-D root -> reproduces rung 39's match
         tt.lead_threshold(FLIGHT, 1200.0)     # sigma_crit (dagger)
-        tt.integrate(FLIGHT, schedule, nu0=(.., ..), s_end=.., ds=..)
+        tt.integrate(FLIGHT, schedule, nu0=(..., ...), s_end=..., ds=...)
 
     lp_disabled=True dispatches to rung 34's SpoolTransient -- exact dispatch, no two-shaft
     state is ever built (the rung 38/39 contract, one rung on).
@@ -8856,9 +8856,10 @@ class ScheduledBleedTransient(ScheduledStatorTransient):
                                      bleed_sched=bs, vsv_sched_lp=sc)
         t.loop_decomposition(FLIGHT, 1000., 1400., r=0.5)    # START/RAMP/FULL  <- THE RUNG
         t.loop_factors(FLIGHT, (1500., 1100.))               # dn_L/db and dn_L/dv, signed
-        t.marginal_loop(FLIGHT, 1000., 1400., r=0.5)         # a lever's loop BESIDE another
-        t.pair_interaction(FLIGHT, 1000., 1400., r=0.5)      # the four cells, credit + cost
-        t.clock_sweep(FLIGHT, 1000., 1400.)                  # the ramp-rate control
+        BLED, STAT = dict(bleed_sched=bs), dict(vsv_sched_lp=sc)  # a lever IS a kwarg dict
+        t.marginal_loop(FLIGHT, 1000., 1400., BLED, r=0.5)   # a lever's loop BESIDE another
+        t.pair_interaction(FLIGHT, 1000., 1400., STAT, BLED, r=0.5)  # four cells, credit+cost
+        t.clock_sweep(FLIGHT, 1000., 1400., dict(bleed=0.10), 0.10)  # the ramp-rate control
 
     THE REDUCE, by exact dispatch and PER CALL. `b_of` is a pure function of the live state,
     and every overridden closure returns to its rung-57 parent verbatim whenever that value
@@ -10412,8 +10413,8 @@ class LaggedBleedTransient(LimitedBleedTransient):
     Usage:
         lim = BleedLimiter.from_margin(LP, b_max=0.10, sm=0.4545, tau=0.05)
         t   = LaggedBleedTransient(design, FLIGHT, 1.0, map_lp=..., map_hp=..., bleed_lim=lim)
-        t.bandwidth_ceiling(FLIGHT, 1000., 1400., sm=0.4545)   # protection + the plateau
-        t.restored_plant(FLIGHT, 1000., 1400., sm=0.4545)      # rung 64 s 3, un-deleted
+        t.bandwidth_ceiling(FLIGHT, 1000., 1400., phi_lim=0.80)  # protection + the plateau
+        t.marginal_mode(FLIGHT, 1000., 1400., sm=0.4545)       # rung 64 s 3, un-deleted
         t.fuel_authority(FLIGHT, 1000., 1400., sm=0.4545)      # the discriminator
 
     THE REDUCE HAS TWO ARMS AND THEY DISAGREE ON PURPOSE:
@@ -10952,7 +10953,7 @@ class TwoLagCascadeTransient(LaggedBleedTransient):
         lim  = BleedLimiter.from_margin(LP, b_max=0.10, sm=0.4545, tau=0.05)
         t    = TwoLagCascadeTransient(design, FLIGHT, 1.0, map_lp=..., map_hp=..., bleed_lim=lim)
         t.merge_identity(FLIGHT, 1000., 1400., sm=0.4545)     # P6 -- the merge validator
-        t.cascade_modes(FLIGHT, 1000., 1400., sm=0.4545)      # the eigenvalues + the floor
+        t.cascade_identity(FLIGHT, 1000., 1400., sm=0.4545)   # the eigenvalues + the floor
         t.marginal_mode_cascade(FLIGHT, 1000., 1400., sm=0.4545)   # THE RUNG
         t.cascade_bill(FLIGHT, 1000., 1400., sm=0.4545)       # what the pair delivers
 
@@ -10974,7 +10975,8 @@ class TwoLagCascadeTransient(LaggedBleedTransient):
         asymmetric. Asymmetry on both is a third constant and is not taken.
       * Cascade A is asserted against, not run.
       * `phi_lim` and `b_max` remain IMPOSED (rung 64's concession, verbatim).
-      * The spectral radius of `cascade_modes` is evaluated at finitely many trajectory points,
+      * The spectral radius of `cascade_identity` is evaluated at finitely many trajectory
+        points,
         so it is a DIAGNOSTIC that can miss a brief excursion -- a guard against rung 65's
         retracted trap, not a proof of convergence. Grid convergence is checked separately.
     """
@@ -15685,7 +15687,7 @@ class SharedActuatorTransient(FullSplitTransient):
         t = SharedActuatorTransient(design, FLIGHT, 1.0, map_lp=..., map_hp=..., bleed_lim=bl)
         t.authority_law(FLIGHT, 1000., 1400., 1200., sm=0.4545)   # who holds the actuator, when
         t.shared_gains(FLIGHT, 1000., 1400., 1200., sm=0.4545)    # 12 gains, det = -det parent
-        t.shared_modes(FLIGHT, 1000., 1400., 1200., sm=0.4545)    # zeros on BOTH arms
+        t.shared_cells(FLIGHT, 1000., 1400., 1200., sm=0.4545)    # zeros on BOTH arms
         t.mask_discriminator(FLIGHT, 1000., 1400., 1200., sm=0.4545)  # MAX vs SUM, + eigenvector
 
     THE REDUCE HAS FOUR BIT-FOR-BIT ARMS, ALL BY DISPATCH:
@@ -15749,7 +15751,7 @@ class SharedActuatorTransient(FullSplitTransient):
         because at full rank the trace is shared three ways. **Here the argument is new again**:
         the masked leg's eigenvalue is EXACTLY `-1/tau_f` (a decoupled first-order lag) and the
         other three share the remainder, so no root can exceed the rate sum in magnitude and
-        the inherited constant stays conservative for a fourth reason. `shared_modes` MEASURES
+        the inherited constant stays conservative for a fourth reason. `shared_cells` MEASURES
         `|lam|` against it rather than trusting it -- rung 65 published a retraction for exactly
         the failure mode of a trusted stability argument."""
         assert ds * rate <= 2.0, (

@@ -9026,7 +9026,7 @@ by counting.
 | **AC** | 70–71 | `CrossSplitTransient`, `FullSplitTransient` | ~~**1** — `split_gains`~~ → **0. MEASURED at § 5.27 (i): `split_gains` is NOT a cell** — rung 80's same-named body has an incompatible signature and rung 70's own inherited caller `TypeError`s on a rung-80 machine. **This column's predicate is by NAME and never checked substitutability; § 5.27 (x) sweeps all 358 override pairs and finds ONE more (`_legs`, 63→77, booked to AH).** The slice swaps `at_lever`/`integrate_fuel` at EACH rung plus `_triple_laws` at 70 = **5** distinct function pointers, no new field |
 | **AD** | 72 | `SharedActuatorTransient` | **3** — `_reference`, `_rk4_floor_shared`, `_shared_rig` |
 | **AE** | 73 | `AppliedReferenceTransient` | ~~**0**~~ → **1 ADD + 6 SWAPS. MEASURED at § 5.29 (ii)** — `_with_ref` (69 → 73) is a **NAME REUSED**, not an override: identical arity, but the two bodies write DISJOINT FIELDS (`_ref` / `_ref_law`), and rung 69's own inherited caller RAISES on a rung-73 machine (driven, with a passing control). **§ 5.27 (x) saw the pair and cleared it as a harmless RENAME** — its predicate compared signatures; the same sentence clears `_with_coord` (74 → 79), now booked to AF **and** AI. `_quad_gains_at` is a swap here too — **AD's "unreachable today" booking REFUTED BY VALUE** (§ 5.29 (iv)): with the machine held fixed and only the pointer swapped, 32 keys move and 70 vanish, `F_r` going −1.000000000002735 → 0.0 |
-| **AF** | 74 | `DemandCoordinateTransient` | ~~**3**~~ → **4 ADD + 4 SWAPS. MEASURED at § 5.30 (ii)** — the missing fourth ADD is `_with_coord`, which **slice W’s phase-wide census had already named** among *the four names the hand-written column missed*; this row was simply never updated. Its two definers are rungs 74 and 79, so the census **re-derives § 5.29 (v)’s separate-field obligation from the source** instead of inheriting it as a booking. SWAPS are 4 under AC’s convention and 2 under § 5.19 (i)’s (`at_lever`/`_shared_rig` are Rust deletes) — both stated, because the same slice scores differently under the two. **LANDED at § 5.30.1: 4 ADD + 4 SWAPS, `TripleHooks` 14 → 18.** The width toll was MEASURED AD's way (apply, fix the lib, count what is still red) and came back **7 `src` literals + 4 TEST sites where this plan and the crate's own comments say TWO** — slice AE ships two exhaustive DESTRUCTURINGS (`E0027`) that nothing calls tripwires. **STEP 2 at § 5.30.2: the six demand laws, all SINGLE-DEFINER by census, so no table field and no width toll; `slice_af_laws.rs` 13 gates, sweep 21/21 as predicted (18 killed).** Its leading finding is a rig point COPIED from step 1's cells file that sat inside a shipped refusal — and the gate that did not abort there had been passing its min-select flatness equality between two SATURATED ZEROS. **STEP 3 at § 5.30.3: the six-state march (`_coord_rig`/`_coord_ic`/`_march`), `slice_af_march.rs` 15 gates, sweep 17/17 as predicted (12 killed).** Its leading finding is a gate that read a SPLIT PRODUCED BY STEP 2's OWN CODE as evidence of its clamp working, when that clamp fires 0 of 340 times. **STEP 4 at § 5.30.4: `_coord_march`, `_demand_gains_at` and all six readers; NO gate file (they are step 5's), proved by DRIVING every reader — 3 731 keys, `Rust == PyPy` bit for bit on the first run, and the port independently reproduces `docs/rung74-spec.md` § 3's `65.2 K`/332-of-341 and § 4's exact `1.0`. Sweep 19 mutations, 11 killed, 19/19 as predicted.** Its leading finding is TWO DOC COMMENTS asserting a difference was LIVE that nothing had measured, one of them FALSE — and a shipped refusal message found to be FOUR formatting divergences wide the moment a reader first read one as a value. **STEP 5 at § 5.30.5 in TWO COMMITS: (a) the 17 ported gates, whose finding is a shipped `Usage:` block with THREE of four documented calls raising, swept file-wide to 10 bind fails in three causes; (b) the oracle, 20 643 keys x2 goldens, whose finding is P2 FALSIFIED IN BOTH CLAUSES because a `sum()` census counted call sites and half of them sum a literal 1.** **STEP 6 at § 5.30.6 — SLICE CLOSED: `slice_af_dispatch.rs`, 8 gates, ten injections x seven seats, plus a FOUR-LINE REPAIR. Its finding is FOUR PRODUCTION CALL SITES THAT DISPATCHED A WRITE PYTHON MAKES BY PLAIN ASSIGNMENT — identical at rung 74, and at rung 79 (a second definer writing `_phi_ref`) they would have marched the PARENT while reporting this rung, on a path `tests/test_rung80.py:110` already walks. Reach measured BEFORE the fix (6 of 7 seats → 0), neutrality proved against UNREGENERATED goldens, and the registered *no other row moves* FALSIFIED by `at_lever`: a dispatched pin on a machine without the cell hits the parent's PANIC, so the port was turning a benign attribute assignment into a REFUSAL. The `_with_*` family swept over all 58 classes: the two field-divergent names are exactly the two repaired, and there is no third. P1 FALSIFIED (2.53x), P3/P4/P5/P6 HELD. |
+| **AF** | 74 | `DemandCoordinateTransient` | ~~**3**~~ → **4 ADD + 4 SWAPS. MEASURED at § 5.30 (ii)** — the missing fourth ADD is `_with_coord`, which **slice W’s phase-wide census had already named** among *the four names the hand-written column missed*; this row was simply never updated. Its two definers are rungs 74 and 79, so the census **re-derives § 5.29 (v)’s separate-field obligation from the source** instead of inheriting it as a booking. SWAPS are 4 under AC’s convention and 2 under § 5.19 (i)’s (`at_lever`/`_shared_rig` are Rust deletes) — both stated, because the same slice scores differently under the two. **LANDED at § 5.30.1: 4 ADD + 4 SWAPS, `TripleHooks` 14 → 18.** The width toll was MEASURED AD's way (apply, fix the lib, count what is still red) and came back **7 `src` literals + 4 TEST sites where this plan and the crate's own comments say TWO** — slice AE ships two exhaustive DESTRUCTURINGS (`E0027`) that nothing calls tripwires. **STEP 2 at § 5.30.2: the six demand laws, all SINGLE-DEFINER by census, so no table field and no width toll; `slice_af_laws.rs` 13 gates, sweep 21/21 as predicted (18 killed).** Its leading finding is a rig point COPIED from step 1's cells file that sat inside a shipped refusal — and the gate that did not abort there had been passing its min-select flatness equality between two SATURATED ZEROS. **STEP 3 at § 5.30.3: the six-state march (`_coord_rig`/`_coord_ic`/`_march`), `slice_af_march.rs` 15 gates, sweep 17/17 as predicted (12 killed).** Its leading finding is a gate that read a SPLIT PRODUCED BY STEP 2's OWN CODE as evidence of its clamp working, when that clamp fires 0 of 340 times. **STEP 4 at § 5.30.4: `_coord_march`, `_demand_gains_at` and all six readers; NO gate file (they are step 5's), proved by DRIVING every reader — 3 731 keys, `Rust == PyPy` bit for bit on the first run, and the port independently reproduces `docs/rung74-spec.md` § 3's `65.2 K`/332-of-341 and § 4's exact `1.0`. Sweep 19 mutations, 11 killed, 19/19 as predicted.** Its leading finding is TWO DOC COMMENTS asserting a difference was LIVE that nothing had measured, one of them FALSE — and a shipped refusal message found to be FOUR formatting divergences wide the moment a reader first read one as a value. **STEP 5 at § 5.30.5 in TWO COMMITS: (a) the 17 ported gates, whose finding is a shipped `Usage:` block with THREE of four documented calls raising, swept file-wide to 10 bind fails in three causes; (b) the oracle, 20 643 keys x2 goldens, whose finding is P2 FALSIFIED IN BOTH CLAUSES because a `sum()` census counted call sites and half of them sum a literal 1.** **STEP 6 at § 5.30.6 — SLICE CLOSED: `slice_af_dispatch.rs`, 8 gates, ten injections x seven seats, plus a FOUR-LINE REPAIR. Its finding is FOUR PRODUCTION CALL SITES THAT DISPATCHED A WRITE PYTHON MAKES BY PLAIN ASSIGNMENT — identical at rung 74, and at rung 79 (a second definer writing `_phi_ref`) they would have marched the PARENT while reporting this rung, on a path `tests/test_rung80.py:110` already walks. Reach measured BEFORE the fix (6 of 7 seats → 0), neutrality proved against UNREGENERATED goldens, and the registered *no other row moves* FALSIFIED by `at_lever`: a dispatched pin on a machine without the cell hits the parent's PANIC, so the port was turning a benign attribute assignment into a REFUSAL. The `_with_*` family swept over all 58 classes: the two field-divergent names are exactly the two repaired, and there is no third. P1 FALSIFIED (2.53x), P3/P4/P5/P6 HELD. **THE DEBT CLOSED at § 5.30.7 — SLICE AF FULLY DISCHARGED:** the seven `Usage:` calls repaired (three RETARGETED, none deleted) plus `tests/test_usage_blocks.py`, whose finding is that the step-5 (a) census's SKIP category was hiding SIX statements that are not Python at all, in six blocks that parse WHOLE for nobody and document 19 further unchecked calls. |
 | **AG** | 75–76 | `AntiWindupTransient`, `SensedCapTransient` | **0** |
 | **AH** | 77–78 | `StiffnessLedgerTransient`, `ResidualGaugeTransient` | **0** |
 | **AI** | 79–80 | `StateCoordinateTransient`, `SplitWallTransient` | **0** |
@@ -21230,3 +21230,162 @@ census, which is the one sentence a future slice needs from here.
   test that would stop the class regrowing — still booked, still their own commit, and now the
   only thing slice AF owes.
 * **`sensed_cap`'s unreachability**, which rung 76 (slice AG) closes by arming the accel arm.
+
+#### 5.30.7 SLICE AF's LAST DEBT — the seven broken `Usage:` calls, a Python guard, and **SIX DOCUMENTED STATEMENTS THAT ARE NOT PYTHON AT ALL, WHICH THE FIRST CENSUS COUNTED AS *SKIPPED* RATHER THAN AS THE WORSE DEFECT THEY ARE**
+
+`turbojet/engine.py` (docstrings only) + `tests/test_usage_blocks.py` — the commit § 5.30.5 (a)
+booked and § 5.30.6 (ix) carried forward as *the only thing slice AF owes*. It changes no plant
+code in either language, and no signature: every repair is inside a docstring.
+
+###### (i) THE SEVEN, SPLIT BY CAUSE BEFORE ANYTHING WAS TOUCHED
+
+They are not one batch, and three of them cannot be fixed by adding an argument:
+
+| cause | n | what was written | what it became |
+|---|---|---|---|
+| **missing a required argument** | 4 | rung 63's `marginal_loop` / `pair_interaction` / `clock_sweep`, all documented without the `lever` they exist to sweep; rung 65's `bandwidth_ceiling` | the lever dicts the shipped tests use (`test_rung62.py`'s own `BLED` / `STAT` shape, built from the `bs` / `sc` the block already constructs), and `phi_lim=0.80` |
+| **NO SUCH METHOD** | 3 | rung 65 `restored_plant`, rung 66 `cascade_modes`, rung 72 `shared_modes` | **RETARGETED, none deleted** — `marginal_mode`, `cascade_identity`, `shared_cells` |
+
+`phi_lim=0.80` is not a new constant: `bandwidth_ceiling` builds `BleedLimiter(phi_lim=…)`
+directly, and 0.80 is what the block's own first line (`from_margin(LP, …, sm=0.4545)`) produces
+against `test_rung65.py`'s `FLOOR = 0.55`. The written `sm=0.4545` and the parameter the reader
+actually takes are the same physical setting in two currencies, which is why the wrong keyword
+was survivable enough to ship.
+
+**EACH RETARGET WAS SETTLED FROM A SOURCE THAT IS NOT THE NAME**, and that mattered. AD's
+pre-flight (§ 5.28 (i)) guessed all three from naming alone: it left rung 65's undecided
+(*`marginal_mode` / `fuel_authority`*) and named rung 66's as `marginal_mode_cascade`, **which is
+already on its own line in the same block** — that rename would have documented one reader twice
+and left the real one undocumented. What settles them:
+
+* rung 65 — the block's own trailing comment says *rung 64 s 3, un-deleted*, and the section
+  header above `marginal_mode` reads *s 3: THE MARGINAL MODE — the degeneracy rung 64 s 3 found,
+  CONSERVED*. `fuel_authority` is already the block's third line.
+* rung 66 — the comment says *the eigenvalues + the floor*; `cascade_identity` is the only reader
+  that forms a spectrum (`rho_max` against the closed form `1/t_g + 1/t_v`, the a-priori floor
+  `docs/rung66-spec.md` § 2 argues for), and it is the one reader of five missing from the block.
+* rung 72 — `docs/rung72-spec.md`'s own FINDING-sweep list reads *`authority_law`,
+  `shared_gains`, `shared_cells`, `mask_discriminator`*, in the block's order, with `shared_cells`
+  standing exactly where the block writes `shared_modes`.
+
+**AND TWO OF THE PHANTOMS ARE IN PROSE AS WELL, WHERE NO CALL-SYNTAX PREDICATE CAN REACH THEM.**
+Rung 72's `_rk4_floor_shared` docstring says *`shared_modes` MEASURES `|lam|` against it* and rung
+66's concession list says *the spectral radius of `cascade_modes`* — both repaired here, both
+found only because the retarget forced a sweep of the three names over the whole tree. That gap is
+stated in the new test's own docstring rather than left for a later reader to rediscover.
+
+###### (ii) THE LEADING FINDING — **A SKIP CATEGORY WAS HIDING A WORSE DEFECT THAN THE ONE BEING COUNTED**
+
+§ 5.30.5 (a)'s census reported **10 bind fails and 5 skipped**, the skip line reading *`**kw`, or
+an argument list that is not Python*. Re-run per STATEMENT instead of per block, the second half of
+that skip line resolves into **six statements that do not parse** — and a line that cannot be
+TYPED is strictly worse than a call that raises when you type it:
+
+| block | written | why it is not Python |
+|---|---|---|
+| rungs 31, 32, 34, 37 | `build_turbojet(gas, pi_c=10, Tt4=1500, p0, **losses, …)` | a positional argument after a keyword one — **and `p0` is not a parameter of the builder, which takes `p_ambient`**, so the line carries a second defect underneath the first |
+| rung 38 | `build_two_spool_turbojet(gas, pi_lpc=3, pi_hpc=6, Tt4=1500, p0, …)` | the same |
+| rung 40 | `tt.integrate(FLIGHT, schedule, nu0=(.., ..), s_end=.., ds=..)` | `..` is not an expression |
+
+**THE FIRST CENSUS COULD NOT SEE THEM BECAUSE IT PARSED EACH BLOCK WHOLE**, and the cost of that
+is measured rather than asserted: **0 of the six blocks parse whole, and they document 19 further
+calls between them** — every one unchecked, on top of the six untypable lines themselves.
+Grouping the block into logical statements (join forward until it parses; if no extension ever
+parses, that ONE line is the casualty and the scan resumes) is the whole of the difference.
+
+**THE TELL WAS AGAIN ONE CONSTRUCT SPELLED TWO WAYS IN THE SAME FILE** — § 5.30.6 (i)'s lesson,
+second instance in two commits, and it decided both repairs without an argument from first
+principles. Rung 40's own block writes `build_two_spool_turbojet(gas, 3, 6, 1500, p0, **losses,
+…)` **positionally and correctly**, a few hundred lines below the rung-38 block that writes the
+same call with keywords; rung 34's block writes `nu0=..., s_end=..., ds=...` with a real Ellipsis
+beside rung 40's `..`. Every fix here is the sibling spelling, copied.
+
+###### (iii) THE CENSUS, BEFORE AND AFTER — measured on both trees, with the SAME instrument
+
+The new checker was run against `HEAD:turbojet/engine.py` (a copy of the package with the
+pre-fix file) and against the working tree, in one process:
+
+| | classes | blocks | calls | uncheckable | bind OK | **FAIL** |
+|---|---|---|---|---|---|---|
+| **BEFORE** | 58 | 34 | 167 | 7 | 146 | **14** |
+| **AFTER** | 58 | 34 | 166 | 12 | 154 | **0** |
+
+The 14 are the 7 bind fails plus 7 not-Python rows — 7 rows for 6 statements, because rung 38's
+wrapped call yields one row per line when no grouping of it ever parses. The call count falls by
+one for the same reason (that statement is now ONE resolved call, a `**losses` skip), and the
+uncheckable set grows by exactly the 5 builder lines that now parse.
+
+**§ 5.30.5 (a)'s OWN TABLE IS NOT REUSED, AND THE TWO ARE NOT COMPARABLE.** That instrument
+counted only `t.method(…)` calls; this one also resolves constructors and module-level builder
+calls, which is why it says 166 where the old one said 102. The two agree on the only quantity
+both measure — the same seven bind fails, by name, from two independently written predicates.
+
+###### (iv) THE GUARD, AND THE THREE WAYS IT WOULD OTHERWISE BE WORTHLESS
+
+`tests/test_usage_blocks.py` — 4 gates, of which *0 bind fails* is the least interesting:
+
+1. **the census SIZE is asserted**, not just the fail count — 58 classes / 34 blocks / 166 calls.
+   A guard that asserts only *0 fails* passes when a refactor stops the parser finding a single
+   block, which is this project's recorded *a documented gate that doesn't exist* shape.
+2. **the uncheckable set is FROZEN BY IDENTITY** — twelve `(class, call, reason)` triples, not a
+   count. A skip is where a broken line goes invisible, which is precisely how the six above hid,
+   so a NEW skip fails the gate. All twelve are a `**kwargs` in the WRITTEN call, where a static
+   bind genuinely cannot decide anything; nothing else is permitted to be uncheckable.
+3. **the instrument is shown to SEE a break.** A synthetic module carries one clean call and one
+   of each defect — an unexpected keyword, a method that does not exist, a not-Python line, a
+   `**kw` — and the gate asserts the checker returns exactly those, by kind and by count.
+
+**AND ITEM 3 IMMEDIATELY EARNED ITSELF.** The first `_statements` kept joining lines forward and,
+when a group never parsed, emitted the whole remainder as one casualty — so an untypable line
+still swallowed everything after it, which is the very defect this file exists to remove, rebuilt
+one layer down. The synthetic gate failed on its call count (5 against 6) and named it; nothing
+else in the file could have, because on the repaired tree every block parses and the difference is
+invisible. The bars in this section were re-measured after that repair.
+
+###### (v) SCOPE, AND THE GATE
+
+* **THE PYTHON EDIT PUTS NOTHING RUST IN SCOPE, AND THAT WAS CHECKED RATHER THAN ASSUMED.** No
+  `include_str!` or `fs::read` anywhere in `rust/` names `turbojet/engine.py`; the 41 Rust files
+  that mention it do so in doc comments, as line citations. **`cargo test` runs anyway** — for
+  the stale doc comment below, which is a separate reason and is stated separately so the
+  first sentence is not quietly doing the second one's work.
+* **`tests/test_usage_blocks.py` is NOT marked `slow`, deliberately** — 1.06 s serially, which
+  is under every bar `conftest.py` names. Recorded because that file's own warning is that the
+  `-m "not slow"` loop has no backstop, so an unmarked gate is a DECISION now and not an
+  omission a later reader has to re-derive.
+* **`pytest` is run even though the diff is docstrings only** — AE step 2's LF→CRLF incident is
+  this project's standing reason a reasoned *this cannot move anything* is still worth exactly one
+  run. For the same reason the edit was applied through a script that pre-checks the file for CRLF
+  and writes with `newline=''`; the diff is 18 insertions / 16 deletions, not a rewritten file.
+* **`main.py` is unaffected** — it carries no `Usage:` block.
+* **ONE Rust file changes, and it is a doc comment that had gone STALE THE MOMENT THE FIX
+  LANDED.** `shared_actuator.rs`'s header records the three phantom readers as a live
+  property of the Python tree (*that method has zero definitions anywhere in `engine.py`*),
+  and it is where AD's pre-flight wrote its guess for rung 72 — [`shared_cells`], the one
+  guess that landed, arrived at there independently of this commit's three sources. It is
+  moved to the past tense with the census named as the durable part, rather than left as a
+  present-tense claim that is now false. `cargo test` is therefore in scope after all, for
+  a comment: `rung73.rs` reads this exact file with `include_str!` and counts a needle in
+  it, so *a comment cannot break a build* is not the question — and this project's own
+  record (AE step 2) is that a reasoned *this cannot move anything* is worth one run.
+
+###### (vi) THE TWO GATES, PREDICTED BEFORE THEY RAN
+
+* **`cargo test`: 149 `test result` blocks / 1 539 passed / 0 failed**, step 6's numbers
+  UNMOVED — the only Rust change is a doc comment, it adds no `#[test]`, and the one gate
+  that reads this file (`rung73.rs`'s `the_reference_lives_in_one_place`) counts a needle in
+  CODE lines and a different one in DOC lines, neither of which the addendum contains.
+* **`pytest`: 1 368 passed** — 1 364 at step 5 (a) plus this file's 4.
+
+**BOTH LANDED EXACTLY, no clause spent.** `cargo test`: **149 blocks / 1 539 passed / 0 failed**,
+0 ignored, 0 `error[`; the 10 warnings are the pre-existing snake-case test names and one unused
+`mut` in `spatial_oracle.rs`, none from `shared_actuator.rs`. `pytest`: **1 368 passed, 0 failed
+in 3 585.16 s (59:45)**. The pytest gate's own exit code did not survive my waiter, so the
+authority for it is the log's terminal line, stated rather than papered over.
+
+###### (vii) WHAT REMAINS
+
+Nothing of slice AF's. Of § 5.30.6 (ix)'s three inherited items, the four-site assignment rule is
+stated in the crate and comes due at slice AI, `sensed_cap`'s unreachability is slice AG's to
+close by arming rung 76's accel arm, and this one is **CLOSED**. **SLICE AF IS FULLY
+DISCHARGED — six steps and one debt.**
