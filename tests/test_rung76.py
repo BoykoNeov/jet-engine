@@ -57,6 +57,18 @@ PHI_JAC, PHI_BOTH = 0.80, 0.76
 # RUNG 48's OWN already-imposed scalar, and the ONE imposition this rung carries. At 0.10 the
 # accel leg is the binding cap on this trajectory; above ~0.20 the phi leg takes over and the
 # knob is INERT by construction (spec § 1.3).
+#
+# THAT SENTENCE IS ABOUT THE READERS' POINTS, NOT THE MARCH, AND THE TWO ANSWER OPPOSITELY AT
+# THE SAME MARGIN. Measured (plan § 5.31 (i)), accel-leg wins over margin 0.05/0.10/0.20/0.40:
+#   `cap_gains` cells at PHI_JAC -- 360/360, 540/540, 548/612, 64/576, with live cells
+#       2/8, 4/8, 8/8 and 0/8, so ~0.20 IS the threshold and 0.40 is inert;
+#   the MARCH at PHI_JAC       -- 0/1366 at ALL FOUR, and the trajectory is BIT-IDENTICAL
+#       under the two cap laws, so the knob is inert there at 0.10 as well;
+#   the MARCH at PHI_BOTH      -- 1366/1325/971/491 (`solve`), 1366/1366/1011/659
+#       (`sensed`), and 164 of 341 points still move at 0.40, so it never goes inert.
+# So every TRAJECTORY finding here is PHI_BOTH's, and PHI_JAC's are Jacobian readings on points
+# `_c_at` MANUFACTURES rather than marches to. Spec § 1.3's own statement is the min-select
+# CONDITION (inert wherever the phi cap is lower), which is what both populations obey.
 MARGIN = 0.10
 
 # The DIFFERENCING FLOOR, and it is arithmetic rather than taste: `_rhs_gains_at` central-
