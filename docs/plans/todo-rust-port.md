@@ -23199,3 +23199,264 @@ together only if you check.** With the fourth form in, 143 sites across 30 files
 That is § (a)'s finding — *a repair scoped to the instrument's reach rather than to the defect's* —
 recurring **one step later, in the same file, by the same author**, which is the reason it is
 written down twice.
+
+#### 5.31.7 SLICE AG step 7 — the dispatch gates, and **A COUNTING POINTER ANSWERS, PER CELL, THE QUESTION EVERY DISPATCH MATRIX SINCE SLICE AD HAS HAD TO INFER FROM THE REST OF THE ROW**
+
+**SHIPPED**: `rust/tests/slice_ag_dispatch.rs`, **8 gates**, green. Five injections per rung — this
+slice's eight swaps, each pointed back at the parent it was re-aimed FROM — scored against **seven
+seats**, which are slice AG's OWN readers (`windup_gains`, `contraction_law`, `device_control`,
+`windup_bill`, `cap_gains`, `cap_bill`, `solve_gain`) and not slice AF's rung-74 names. Every seat
+runs on BOTH rungs' machines. Plus four PURE OBSERVERS, the three-sided arming gate that closes
+§ 5.30.6 (v), and P6.
+
+##### (a) THE LEADING FINDING — **A SILENT ROW SPLITS IN TWO BY MEASUREMENT, AND THE TWO HALVES LOOK IDENTICAL**
+
+AD step 6's rule, carried by every dispatch step since: with a parent-pointer injection a *silence*
+is either **laundering** (the cell ran, on a machine `at_lever` rebuilt around the shipped tables)
+or **a path that never reaches the cell**, and a did-it-break instrument cannot tell those apart —
+so what separates them is *the OTHER seats in the same ROW*.
+
+**That rule is a workaround for an instrument that reports only one bit.** A pointer that COUNTS
+and then delegates to the shipped body reports the other bit — *was this cell entered* — at every
+cell, for the price of one `Cell<usize>`. Two rows of this matrix are verdict-for-verdict
+identical and mean opposite things:
+
+| row | seven verdicts | tally | what the silence IS |
+|---|---|---|---|
+| `shared_rig` → parent | `same` x 7, both rungs | **2, 1, 4, 2, 3, 3, 2** | **REDUNDANCY** — it ran everywhere |
+| `sensed_cap` → rung 75 | `same, same, same, same, DIFF, DIFF, DIFF` | **0, 0, 0, 0, 144, 1100, 24** | **UNREACHABILITY** at the four zeros |
+
+The four zeros and the four silences are **THE SAME CELLS**. Without the tally the two rows are
+one reading; with it they are two facts. `slice_ag_cells.rs`'s
+`both_shared_rig_carries_are_no_ops_because_at_lever_already_did_them` PRE-REGISTERED the first as
+a measured no-op before this file existed, so its row is a confirmation **with a number under it**
+rather than an absence — which is the difference between *we predicted nothing would move* and *we
+watched it run and move nothing*.
+
+Every observer's reading at every seat is asserted **bit-identical to the baseline** first
+(`the_counting_pointers_are_pure_observers`, 28 comparisons). A reading that moved would mean the
+tally belonged to a different plant, which is [[instrument-fed-by-what-it-certifies]] in its
+dispatch-shaped form.
+
+##### (b) § 5.30.6 (v)'s OBLIGATION, CLOSED — **THREE SIDES, AND THE SAME INJECTION IS LOUD AT ONE ARM AND EXACTLY INVISIBLE AT THE OTHER**
+
+Slice AF measured `sensed_cap` unreachable from every rung-74 reader and booked the closure here:
+*rung 76 replaces the body, and the accel arm is where it lands.* § 5.31 (i) measured, before the
+slice began, that the booking is right and not sufficient. The gate is therefore three-sided, and
+each side is scored at the arm it is true of:
+
+| side | measured | how |
+|---|---|---|
+| **DISPATCHED** | **1 366** calls under `solve` AND **1 366** under `sensed`, 341 points each | the counting pointer |
+| **DISCRIMINATING** | `(sensed - solve)/\|solve\|` in **[-2.3208594004417025e-2, -2.320859400441414e-2]** over **1 366 of 1 366** probed calls | the accel leg isolated at the live call site |
+| **PLANT-REACHABLE** | `PHI_BOTH`: **333 of 341** on `Tt4`, **341 of 341** whole-point, `max\|dTt4\| = 1.0254967637311893e1`; `PHI_JAC`: **0** | the marched trajectory |
+
+**The equality of the two dispatch counts is the sharper half of side 1.** The cell is entered just
+as often on the arm where it returns `None`, so **the reduce is a DISPATCH and not a tolerance**
+(P3) — and a gate that had counted only on the `sensed` arm could not have said so. The control
+beside it reproduces slice AF's own row from this rung's machine: driven through `coord_march`,
+with no `AccelSchedule` armed, the tally is **0**.
+
+**AND THE TRAP IS NAMED, THEN SPRUNG ON PURPOSE.** Pointing `sensed_cap` at rung 75's body moves
+**333 of 341** points at `PHI_BOTH` and **0 of 341** at `PHI_JAC`. The two arms differ in ONE
+scalar. A trajectory-scored gate written at `PHI_JAC` would read an exact zero — the same reading a
+DROPPED pointer gives, and the same reading an UNREACHED cell gives. Slice T step 1's *an EXACT
+ZERO blinds its own gate*, one phase on, which is why side 1 counts and side 2 compares the
+returned value.
+
+##### (c) THE ROWS THEMSELVES — **`at_lever` AND `windup_tau` PRODUCE THE IDENTICAL ROW, AND `integrate_fuel` PRODUCES NONE**
+
+| rung | injection | windup_gains | contraction_law | device_control | windup_bill | cap_gains | cap_bill | solve_gain |
+|---|---|---|---|---|---|---|---|---|
+| 75 | `at_lever` -> 74 | DIFF | DIFF | BROKE | BROKE | same | same | same |
+| 75 | `integrate_fuel` -> 74 | same | same | same | same | same | same | same |
+| 75 | `shared_rig` -> 74 | same | same | same | same | same | same | same |
+| 75 | `windup_tau` -> 74 | DIFF | DIFF | BROKE | BROKE | same | same | same |
+| 76 | `at_lever` -> 75 | same | same | same | same | DIFF | DIFF | DIFF |
+| 76 | `integrate_fuel` -> 75 | same | same | same | same | same | same | same |
+| 76 | `shared_rig` -> 75 | same | same | same | same | same | same | same |
+| 76 | `sensed_cap` -> 75 | same | same | same | same | DIFF | DIFF | DIFF |
+
+**`at_lever` and `windup_tau` are not the same injection and their rows are identical.** Rung 75's
+sibling constructor exists to CARRY THE DEVICE, so removing the constructor and removing the
+device's own hook are the same deletion as far as every reader in the slice can see. The agreement
+is the finding, not a redundancy.
+
+**`integrate_fuel` is silent at all seven seats, at BOTH rungs**, with the install proof run on
+every cell (the sibling is rebuilt through the injected `at_lever` and its fuel table checked by
+pointer). So both swaps are **pure REFUSAL carriers on this grid**: the bodies add guards and a
+call made for its side effect, and on arms where no guard fires the parent's march is the same
+march. `slice_ag_cells.rs` gates them by hand, which is the only instrument that can — and this
+row is what says so with a measurement instead of an argument.
+
+**AND ONE TALLY IS ZERO WHERE ITS ROW IS SILENT FOR THE THIRD REASON.** `windup_tau`'s count is
+`14, 2, 6, 3, 16, 2, 0` — zero at `solve_gain` alone, which marches `clip x none x solve` and never
+enters this rung's integrator. Its `same` there is unreachability; its `same` at `cap_gains` (count
+16) is redundancy. Same row, same verdict, two reasons, and only the tally separates them.
+
+##### (d) THE COARSE GRID WAS TYPED WRONG — **SLICE AF's OWN INSTRUMENT DEFECT NUMBER ONE, ONE SLICE LATER, AT THE SAME PLACE**
+
+The first writing typed `ds = 0.02` and the baseline REFUSED, by name:
+`rung-74: ds*sum(1/tau_i) = 2.400 is outside the explicit RK4 stability region`. AF § 5.30.6 (vi)
+item 1 records the identical failure — *the matrix's perturbation left the region the rung
+declares* — and prescribed *assert admissibility before it perturbs*. The baseline assertion IS
+that repair and it worked; what was missing is that the STEP is bounded by rung 75's own floor,
+`ds * (1/tau_gov + 1/tau_lag + 1/tau_q + 1/tau_s + 2/tau_t) <= 2`, which on this rig is
+`ds * 120 <= 2`. `MX_DS` is now **0.0125** with the derivation written beside it, and `MX_TAU_TS`
+drops the fast clock because `tau_t = 0.0125` puts `2/tau_t` at 160 and forces `ds` BELOW the
+shipped `0.005` — a coarsening that costs more than it saves.
+
+That is the third time in two slices that a defect class recurred one step after being written
+down (§ 5.31.6's citation-guard root, § 5.31.6 (c)'s census, and now this), and it is recorded for
+the same reason: **a repair scoped to the instrument's reach rather than to the defect's**.
+
+##### (e) THE OTHER TWO INSTRUMENT DEFECTS THIS STEP FOUND IN ITSELF
+
+1. **A GATE THAT READ ITS OWN EXPECTATION.** The `at_lever` positive control — *this row must move
+   somewhere, or no reader in the slice rebuilds a sibling* — was first written against `rows`, the
+   table of EXPECTED verdicts two lines above it, instead of against `tally`, what the seats
+   returned. That is rung 70's *a gate computing my own formula twice*: it would have passed on a
+   machine where nothing ran at all.
+2. **A `n_diff_tuple` THAT WAS THE SAME POPULATION TWICE.** § 5.31 (i) publishes *341 of 341* and
+   § 5.31.4 (e) records `n_diff` 333 / `n_diff_tuple` **341** / `n_diff_mf` 333 — one measurement
+   on two populations. The first whole-point helper here compared only `FuelPoint`'s base fields
+   and read **333**, i.e. it reproduced the `Tt4` number and called it the tuple. The eight
+   disagreeing points are the first eight (`s = 0 … 0.035`), where the two LEG STATES have already
+   parted while `Tt4` is still bit-equal — and those states live in `PointExtra`, which the helper
+   was not reading. Both numbers are now asserted, each against its named population.
+
+##### (f) P6 — **CONFIRMED, AND THE WINDOW IS NARROWER THAN THE PREDICTION: OUTSIDE IT, A DEFECT IN RUNG 76's CELL IS REPORTED BY RUNG 43**
+
+§ 5.31 (v) censused nine `assert` messages across the two classes; three carry no suite `match=`
+needle and **exactly one names no rung at all** — `cap_bill`'s *"the two cap laws marched different
+grids"* (`engine.py:19523`). P6 predicted at least one of the three reachable by a port defect that
+every ported gate passes, with this one named.
+
+The demand march is `for _ in 0..=n_steps` with `let Ok(k1) = der(...) else { break }` at the top,
+so the two laws produce trajectories of different length **exactly when one aborts a derivative
+PART-WAY and the other does not**. That is a narrow window and it was SWEPT rather than guessed:
+
+| perturbation of the shipped sensed cap | solve marched | sensed marched | what `cap_bill` said |
+|---|---|---|---|
+| `pt4` without `pi_b` (a real transcription slip) | 341 | 341 | *nothing* |
+| `cap`'s two same-typed args swapped | 341 | **0** | **rung 43's** bracket refusal |
+| x 0.999 / 0.99 / 0.95 / 0.9 / 0.8 | 341 | 341 | *nothing* |
+| **x 0.6** | 341 | **166** | **the untagged message** |
+| **x 0.4** | 341 | **99** | **the untagged message** |
+| x 0.2 | 341 | 0 | **rung 43's** bracket refusal |
+| x 1.05 / 1.2 / 1.5 | 341 | 341 | *nothing* |
+
+**THE MESSAGE IS REACHABLE — and neither realistic slip reaches it.** Too small a perturbation and
+both laws march the full grid; too large and the sensed arm dies at `s = 0`, where what surfaces is
+**a message from EIGHT RUNGS DOWN**. So a needle scoped to `rung-76:` cannot see the untagged
+message (P6's own point) **and cannot see the argument swap either**, because that one reports as
+rung 43. The gate pins both halves: the message text, and — through a control that drives a TAGGED
+refusal from the same class — that *this one carries no tag* is a measurement rather than a
+property of how the needle was written.
+
+**The argument swap is the defect class worth naming.** `AccelSchedule::cap(n_h: f64, pt3: f64)`
+takes two `f64`, so `cap(pt3, n_h)` COMPILES; a `Result` cannot report it and a reduce gate cannot
+see it. It is the same class as slice AG step 1's eighteen wrong line citations — two things of the
+same type in the wrong order — and the only instrument in the slice that catches it is a value
+oracle.
+
+##### (g) P6's SECOND HALF — **BOTH REALISTIC SLIPS ARE CAUGHT, AND P6 IS REFUTED FOR ITS OWN CANDIDATE**
+
+*Reachable* is only half of P6; the other half is *by a defect that every ported gate passes*, and
+no runtime pointer injection can test it — `rung75.rs`, `rung76.rs`, `slice_ag_cells.rs`,
+`slice_ag_laws.rs` and `slice_ag_oracle.rs` all build their machines through the shipped cascade.
+So both slips were run as SOURCE mutations of `r76_sensed_cap`'s last line, each scored against
+**every binary in the slice**, SHA-256 verified back to pristine after each (`25fa42c25047d445`,
+both times).
+
+| mutation | rung75 | rung76 | cells | laws | oracle | dispatch |
+|---|---|---|---|---|---|---|
+| `pt4` without `/ pi_b` | pass | **5 failed** | pass | pass | **2 failed** | **1 failed** |
+| `cap(pt3, n_h)` — args swapped | pass | **9 failed** | pass | pass | **3 failed** | **5 failed** |
+
+**Neither passes every ported gate, so P6 is REFUTED at the message it named.** The three blind
+binaries are blind for a reason that is not a hole: `rung75.rs` is a different rung, and
+`slice_ag_cells.rs` / `slice_ag_laws.rs` gate POINTERS and LAWS, neither of which is a cap value.
+
+**And the reason P6 was wrong is worth more than the verdict. P6 reasoned about NEEDLES; the cell
+is covered by VALUES.** A `rung-76:` prefix check genuinely cannot see the untagged message — that
+part of P6 is true and is now gated — but nothing needs it to: `slice_ag_oracle.rs` compares 38 100
+numbers and `rung76.rs` gates nine relations over the same cell. An untagged message is a weakness
+in the instrument that reads MESSAGES, and this cell's defects are all caught by the instrument
+that reads NUMBERS. The five `rung76.rs` gates the first mutation trips
+(`the_two_laws_agree_at_the_solves_own_answer`,
+`the_solve_amplifies_the_cap_by_one_over_one_minus_c`,
+`the_fixed_point_identity_is_scored_where_it_is_not_already_exact`,
+`the_move_is_identical_in_both_references`,
+`the_authoritative_diagonal_moves_and_the_law_is_c_minus_one`) are the shipped rung's own
+identities, and they are what actually protects the site.
+
+**The residual, stated rather than closed.** What P6 was pointing at survives in a narrower form:
+the untagged message is reachable, and outside the narrow band a defect at rung 76's cell is
+reported by **rung 43**. So a reader who lands on either message is told the wrong rung — once by
+omission and once by attribution. Nothing in the slice fixes that, and adding a `rung-76:` prefix
+now would settle a prediction the port deliberately left open; the finding is the measurement, and
+the message stays as Python writes it.
+
+##### (h) THE PREDICTIONS, SETTLED
+
+* **P1 — FALSIFIED, AND THE BAND HAS NOW MISSED HIGH TWICE.** `anti_windup.rs` **1 540** +
+  `sensed_cap.rs` **1 390** = **2 930** against the two classes' **601 + 472 = 1 073** — **2.73x**,
+  outside the pre-registered **2.0–2.6**. That band was itself re-fit from three points after AF
+  falsified the earlier 1.6–1.9 one, and it has now missed in the same direction twice
+  (AF **2.53x** was inside; AG is not). **A ratio re-fit to the last three points is an estimator
+  with no theory in it**, and the plausible driver is the one AC and AG share: a two-class slice
+  carries two module headers, two exhaustive table literals and two refusal sets, none of which
+  scales with the Python line count. The number is also a LOWER bound — AG's own state fields
+  (`windup_law`, `tau_t`, `cap_law`) live in `two_spool_transient.rs`, so the strict numerator is
+  larger; the module-only convention is kept because it is AF's, and the disclosure is what makes
+  the comparison honest.
+* **P2 — settled at step 6**, 398 keys wide, and not re-scored here.
+* **P3 — CONFIRMED, and by a measurement no earlier step could make.** `sensed_cap` is dispatched
+  **1 366 times on BOTH cap laws**. The reduce arm is the branch not taken, not a tolerance, and
+  the equality of the two counts is what says so.
+* **P4 — CONFIRMED.** The arm that moves is `PHI_BOTH` under `sensed`: the parent-pointer
+  injection moves **333 of 341** points there and **0 of 341** at `PHI_JAC`.
+* **P5 — CONFIRMED, INCLUDING ITS OWN FALSIFIER.** The cell is reachable (1 366), the trajectory
+  is inert at `PHI_JAC` (0 of 341), and the break is at `PHI_BOTH`. P5 declared that a `PHI_JAC`
+  trajectory break would invert § 5.31 (i); none was found.
+* **P6 — REFUTED at its named message**, § (g).
+* **P7 — CONFIRMED, CLEANLY.** The slice lands on **SEVEN** steps against the method-count law's
+  six, and the VOID clause does not apply: steps 2 and 4 still carry three and four method bodies
+  of their own. **So AF § 5.30.6 (vii)'s method-count law fails its first two-class test, and AC's
+  class-count reading survives it.** Two classes cost a step regardless of volume — AG is 1.01x AF
+  by lines and 25 methods to AF's 25, and it needed one more step than AF for the two ported gate
+  files, the two reduce contracts and the two refusal sets that a second class brings.
+
+##### (i) GATES
+
+`cargo test --release --test slice_ag_dispatch`: **8 passed / 0 failed**, warning-free, 155 s.
+Full crate, `cargo test --release`: **1 613 passed / 0 failed / 0 ignored** over **155 result
+blocks** = 154 `Running` + 1 `Doc-tests`, `0 error[E`, build 11m34s, `CARGO_EXIT=0`. The count was
+**PRE-COMMITTED before the log was read**: step 5's addendum stood at 151 blocks / 1 565 passed,
+step 6 added three binaries (17 + 19 + 4) and step 7 one (8), and the eleven modified files changed
+no `#[test]` count against `1fbf50d` -- so 155 blocks / 1 613 passed, which is what landed. The ten
+warnings are all pre-existing snake-case names in `rung23` / `rung24` / `spatial_oracle`; slice AG's
+files contribute none. `pytest`: **1 387 passed / 0 failed**, `PYTEST_EXIT=0` -- run for the
+citation-guard re-blessing (31/144/95), which is the step's only Python change, and the test count
+is unchanged because that change is three constants. **The 35:47 wall time is NOT a timing anchor**
+-- the two gates shared the box, and CLAUDE.md's 15-21 min figure stands.
+
+##### (j) WHAT SLICE AH INHERITS
+
+* **The counting pointer is now a shipped instrument, and it belongs in every dispatch step from
+  here.** AD step 6's rule — *a silence is separated by the other seats in the row* — is not
+  wrong, it is a workaround for a one-bit instrument. A pointer that counts and delegates costs
+  one `Cell<usize>` and answers *was this cell entered* directly. Two rows of this matrix are
+  verdict-for-verdict identical and mean opposite things; nothing before this step could have said
+  which was which without an argument.
+* **A pure observer must be PROVED pure.** Every tally here is preceded by 28 bit-identity
+  comparisons against the baseline. A counting pointer that perturbed the plant would report a
+  count for a machine nobody else runs.
+* **A coarsened grid is a claim about the region the rung declares.** This step typed one outside
+  it, exactly as AF step 6 did, one slice after that was written down. The step is now derived
+  from rung 75's own floor. **Any grid a step coarsens should be checked against the floor the
+  march asserts, not against the shipped value it was scaled from.**
+* **Nothing else is owed.** § 5.31 (ix)'s single pre-step item was closed before step 1; steps 1–6
+  left no arrears; and step 7's own two disclosures — P1's lower-bound numerator and P6's residual
+  wrong-rung attribution — are stated above rather than booked forward.

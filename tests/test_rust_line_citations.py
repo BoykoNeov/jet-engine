@@ -136,8 +136,17 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # (`4694`, `19283`, `19301`, `19351`, `19373`, `19375`, `19591`, `19598`) and one is step
 # 2's arrears. Both asserts that would have caught it — the blessed-set equality and this
 # census — were already here and green-by-not-being-run.
-FILES = 30
-SITES = 143
+#
+# RE-BLESSED AT SLICE AG STEP 7 (30/143/95 -> 31/144/95), AND **THE THIRD NUMBER DID NOT
+# MOVE, WHICH IS THE POINT.** `rust/tests/slice_ag_dispatch.rs` cites `engine.py:19523` --
+# `cap_bill`'s untagged grid-equality message, the subject of that step's P6 -- and that line
+# was ALREADY cited, from `sensed_cap.rs`. So the site count grew by one and the count of
+# `engine.py` lines under guard did not. Step 6 recorded the mirror of this: a census that
+# GROWS is not evidence that coverage grew. Here a census that grows is evidence that it did
+# NOT -- same distinction, opposite direction, and both are only visible because the three
+# numbers are blessed separately rather than as one total.
+FILES = 31
+SITES = 144
 LINES = 95
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment
