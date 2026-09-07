@@ -1,7 +1,8 @@
 # Extract model data for the interactive visuals page (docs/visuals/).
 #
-# Runs the actual turbojet package at the rung-1 design point (M0=0.85, pi_c=10,
-# Tt4=1500 K) and dumps data.json for template.html (spliced by build.py).
+# Runs the actual turbojet package at main.py's design point (the rung-1 case:
+# M0=0.85, pi_c=10, Tt4=1500 K) and dumps data.json for template.html (spliced by
+# build.py) and cutaway-template.html (spliced by build_cutaway.py).
 # Sweep grids are REDUCED vs the production defaults where noted -- these are
 # illustration curves (shape, not digits); the verification gates live in tests/.
 #
@@ -13,7 +14,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[1]))          # repo root -> import turbojet
 
-from turbojet.engine import FlightCondition, build_turbojet
+from turbojet.engine import build_turbojet   # FLIGHT comes from main.py, below
 from turbojet.gas import (
     Gas, JetMixing, Unmixedness, MixingPDF, PocketQuenchPDF, SpatialPDF,
     SpatialDwellPDF, PromptNO,
@@ -22,10 +23,14 @@ from turbojet.gas import (
     _ideal_bell_ei, _spatial_segregation, _two_stream_ceiling, _Ru,
 )
 
-FLIGHT = FlightCondition(T0=250.0, p0=50_000.0, M0=0.85)
-PI_C, TT4 = 10.0, 1500.0
-REAL_LOSSES = dict(pi_d=0.97, eta_c=0.88, eta_b=0.99, pi_b=0.96,
-                   eta_t=0.90, eta_m=0.99, pi_n=0.98)
+# The design point is IMPORTED from main.py, not re-declared here: these pages'
+# whole claim is that they show the engine the project shows, so a second copy of
+# the constants is a second engine waiting to happen. main.py forces matplotlib's
+# Agg backend and guards its run under __main__, so importing it is cheap
+# (~0.4 s) and draws nothing. tests/test_visuals_data.py additionally pins the
+# committed data.json's `design` block back to these values, which catches a
+# STALE dump — a thing an import cannot catch.
+from main import FLIGHT, PI_C, TT4, REAL_LOSSES  # noqa: E402
 TAU = 3e-3
 OUT = {}
 T0 = time.time()

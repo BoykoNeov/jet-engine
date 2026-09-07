@@ -30,6 +30,8 @@ is.
 - [Golden fingerprint gate](golden-fingerprint-gate.md) — the ONLY absolute-value gate; CPython anchor; measure a detector
 - Golden gate slices [2](golden-gate-slice2.md) [3](golden-gate-slice3.md) [4](golden-gate-slice4.md) [5](golden-gate-slice5.md) [6](golden-gate-slice6.md) [7](golden-gate-slice7.md) — drift follows CONDITIONING (one lesson per file)
 - [Visuals artifact](visuals-artifact.md) — docs/visuals/ page is artifact 56cde230…; update the SAME URL
+- [Cutaway artifact](cutaway-artifact.md) — the animated engine cutaway is a SECOND artifact (968af1ea…, favicon ⚙️); file:// is refused, serve locally and kill by PID
+- [Visuals ↔ model binding](visuals-model-binding.md) — the pages had NO test and looked fine; in SYNC is not BOUND, and the page's own design point was typed markup
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding, backticks in `-m`, a status read off the runner, a log still being written, and a text-mode rewrite that flips every line ending
 
 ## The Rust port — phases 0–6 done; phase 7 in flight, slice AF DISCHARGED, slice AG (75/76) at STEP 5 of 7

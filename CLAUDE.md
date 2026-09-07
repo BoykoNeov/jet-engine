@@ -221,22 +221,22 @@ A compact map.
 - `main.py` — the design-point run: ideal-vs-real tables, the overlaid T–s diagram, and **one panel
   per rung** (each states that rung's load-bearing claim and its honest scope). It has NO test —
   check it on every ship.
-- `tests/` — per-rung `test_rungN.py` (N = 1…84; plus the rung-1/2b/3/4/5 files). Every rung file
-  carries that rung's **reduce-to-prior** gate plus its load-bearing claims.
+- `tests/` — per-rung `test_rungN.py` (N = 1…84; plus the rung-1/2b/3/4/5 files).
   `test_phi_rate_limiter_negative.py` is the only NEGATIVE carrying a gate;
   `test_usage_blocks.py` binds every call a `Usage:` block writes; `test_rust_line_citations.py`
   pins the `engine.py` lines the Rust port cites; and `test_numeric_fingerprint.py` is the only
-  **ABSOLUTE-value** gate — the reduce spine compares two quantities from ONE run, so it is blind
-  to what moves both. Its goldens are a committed **CPython** anchor, never regenerated on PyPy.
+  **ABSOLUTE-value** gate. Its goldens are a committed **CPython** anchor, never regenerated on PyPy.
+- `docs/visuals/` — two **BUILT** pages (charts, cutaway): `extract_data.py` → `data.json` →
+  templates. Cycle change ⇒ rebuild **and republish**; `test_visuals_data.py` gates the joints.
 - `docs/rungN-spec.md` (contents: see the banner); `docs/plans/rungN-anchor-*.md` — that rung's
-  verified anchor data. `docs/plans/` also holds the living plan/tasks.
+  verified anchor data. `docs/plans/` holds the plan/tasks.
 
 ## Commands
 - Run the model: `python main.py` · Install: see `requirements.txt` (a PyPy venv — § Stack)
-- **The gate: `pytest`** — **EVERYTHING**, 1373 tests, **15–21 min on a quiet box** (PyPy,
-  below-normal; the SAME 1373 took **83:20** on a loaded one, so a time is not a signal).
+- **The gate: `pytest`** — **EVERYTHING**, 1385 tests, **15–21 min on a quiet box** (PyPy,
+  below-normal; the SAME 1385 took **83:20** on a loaded one, so a time is not a signal).
   ONE gate; nothing is ever silently deselected, so no regression can hide.
-- **Iterate: `pytest -m "not slow"`** — 977 tests, **~1:54 at 890**.
+- **Iterate: `pytest -m "not slow"`** — 989 tests, **~1:54 at 890**.
   `slow` is a LABEL you opt out of by typing, never a default. Only those: `pytest -m slow`.
 - **WHEN to run the gate:** at session end (unless run shortly before), and after a code change.
   NOT at session start, NOT on a docs-only change, NOT "just to be sure", and **NEVER to refresh

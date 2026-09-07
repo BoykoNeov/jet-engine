@@ -138,13 +138,7 @@ footer p{margin:4px 0;max-width:80ch}
     <h1 class="display">Turbojet Cutaway</h1>
     <p class="lede">A two-dimensional cut through the engine the simulator models. Rotor rows turn on one shaft, air parcels are colored by their temperature as they are compressed, burned and expanded, and every station readout is the model's own number.</p>
   </div>
-  <div class="chips" aria-label="Flight and design condition">
-    <span class="chip"><b>M0</b>0.85</span>
-    <span class="chip"><b>T0</b>250 K</span>
-    <span class="chip"><b>p0</b>50 kPa</span>
-    <span class="chip"><b>π_c</b>10</span>
-    <span class="chip"><b>Tt4</b>1500 K</span>
-  </div>
+  <div class="chips" id="chips" aria-label="Flight and design condition"></div>
 </header>
 
 <div class="stage-outer">
@@ -190,13 +184,14 @@ footer p{margin:4px 0;max-width:80ch}
 
 <section class="wrap" id="reading">
   <h2 class="display">Reading the picture</h2>
-  <p class="sub">The geometry is schematic. Everything the colors and readouts say is computed by the model.</p>
+  <p class="sub">The geometry is schematic. The station readouts, the performance table and the T–s diagram are the model’s own numbers; the colors interpolate between those station values. The footer says which is which.</p>
   <ul class="legend" id="legend"></ul>
 </section>
 
 <footer class="wrap">
-  <p>Stations follow the usual numbering: 0 free stream, 2 compressor face, 3 compressor exit, 4 turbine inlet, 5 turbine exit, 9 nozzle exit. Numbers come from the turbojet package run at the design point by <span class="mono">docs/visuals/extract_data.py</span>.</p>
-  <p>Real-components losses: π_d 0.97 · η_c 0.88 · η_b 0.99 · π_b 0.96 · η_t 0.90 · η_m 0.99 · π_n 0.98. Parcel speeds, blade counts and the primary-zone temperature are illustrative; the primary zone is drawn hotter than the 1500 K turbine inlet because the combustor burns near stoichiometric before dilution, which is what the zoned-combustor rungs model.</p>
+  <p>Stations follow the usual numbering: 0 free stream, 2 compressor face, 3 compressor exit, 4 turbine inlet, 5 turbine exit, 9 nozzle exit. Numbers come from the turbojet package run at the design point by <span class="mono">docs/visuals/extract_data.py</span>; the flight and design condition above, the losses below and every station and performance figure on this page are read from that run, not typed in.</p>
+  <p id="losses"></p>
+  <p><b>What is the model's, and what is drawn.</b> <b>The model's:</b> the six station readouts (Tt, pt, f), the performance table, the T–s diagram, the exhaust velocity and exit Mach, and the flight and design condition. <b>Drawn:</b> all geometry and proportions, the eight compressor and two turbine stages, the shaft speed, the parcel speeds and streak lengths, and the primary-zone flame temperature — the cycle carries one mixed-out Tt4, so a hotter near-stoichiometric primary zone is the zoned-combustor rungs' picture, illustrated here rather than solved. The hover probe reports the model's value at a station and a smooth interpolation between stations, so read it as a profile, not as a solved field. Parcel color is a fixed 250–2200 K ramp.</p>
 </footer>
 
 <script>
@@ -568,6 +563,22 @@ function frame(now) {
 const STN = [['0', X.s0, 'free stream'], ['2', X.face, 'compressor face'], ['3', X.s3, 'compressor exit'], ['4', X.s4, 'turbine inlet'], ['5', X.s5, 'turbine exit'], ['9', X.s9, 'nozzle exit']];
 document.getElementById('stations').innerHTML = STN.map(([n, x, l]) => `<div class="st" style="left:${(x / W * 100).toFixed(2)}%"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('');
 const fmt = { K: v => `${Math.round(v)} K`, kPa: v => `${(v / 1000).toFixed(1)} kPa`, f: v => v.toFixed(4) };
+/* The stated design point and losses are RENDERED from DATA.design, never typed
+   into the markup: docs/visuals/extract_data.py records what it actually ran at,
+   and tests/test_visuals_data.py pins that block to main.py's own constants. So
+   moving the project's design point moves this page's chips and footer with it. */
+const LOSS_LABEL = { pi_d: 'π_d', eta_c: 'η_c', eta_b: 'η_b', pi_b: 'π_b', eta_t: 'η_t', eta_m: 'η_m', pi_n: 'π_n' };
+function paintChrome() {
+  const g = DATA.design;
+  document.getElementById('chips').innerHTML = [
+    ['M0', (+g.M0).toFixed(2)], ['T0', fmt.K(g.T0)], ['p0', fmt.kPa(g.p0)],
+    ['π_c', (+g.pi_c).toFixed(0)], ['Tt4', fmt.K(g.Tt4)],
+  ].map(([k, v]) => `<span class="chip"><b>${k}</b>${v}</span>`).join('');
+  const order = ['pi_d', 'eta_c', 'eta_b', 'pi_b', 'eta_t', 'eta_m', 'pi_n'];
+  const shown = order.filter(k => k in g.losses).concat(Object.keys(g.losses).filter(k => !order.includes(k)));
+  document.getElementById('losses').textContent = 'Real-components losses: ' +
+    shown.map(k => `${LOSS_LABEL[k] || k} ${(+g.losses[k]).toFixed(2)}`).join(' · ') + '.';
+}
 function paintReadouts() {
   const st = D().stations;
   document.getElementById('readouts').innerHTML = STN.map(([n, x, l]) => {
@@ -617,8 +628,8 @@ function paintLegend() {
   const cs = getComputedStyle(document.documentElement), g = n => cs.getPropertyValue(n).trim();
   const items = [
     [`linear-gradient(90deg,${g('--rotor')},${g('--rotor')})`, 'Rotor rows turn; stator rows do not', 'Light blades belong to the rotor and sweep across the annulus on one shaft: eight compressor stages and two turbine stages at the same speed. The dimmer, opposite-leaning rows are stators fixed to the casing. You see the far half of each row because the near half is cut away.'],
-    [`linear-gradient(90deg,${g('--air-cold')},${g('--air-mid')},${g('--air-hot')},${g('--air-white')})`, 'Parcel color is temperature', 'Blue is free-stream air at 250 K. It warms through the compressor, flashes to the primary-zone flame temperature, is diluted to the 1500 K turbine inlet, gives up work in the turbine, and cools as it expands through the nozzle. Colors are read off the station table for the selected case.'],
-    [`radial-gradient(circle at 40% 50%,${g('--flame-core')},${g('--flame-mid')} 40%,${g('--flame-out')} 75%,transparent)`, 'The burn: two zones', 'Fuel enters through the dome injectors and burns near stoichiometric in the primary zone. Cooler air in the gaps around the liner enters through the dilution holes and brings the mixture down to Tt4 before the turbine.'],
+    [`linear-gradient(90deg,${g('--air-cold')},${g('--air-mid')},${g('--air-hot')},${g('--air-white')})`, 'Parcel color is temperature', `Blue is free-stream air at ${fmt.K(DATA.design.T0)}. It warms through the compressor, flashes to the drawn primary-zone flame temperature, is diluted to the ${fmt.K(DATA.design.Tt4)} turbine inlet, gives up work in the turbine, and cools as it expands through the nozzle. The station values the ramp is anchored to are the model's; the profile between stations is interpolated.`],
+    [`radial-gradient(circle at 40% 50%,${g('--flame-core')},${g('--flame-mid')} 40%,${g('--flame-out')} 75%,transparent)`, 'The burn: two zones', `Fuel enters through the dome injectors and burns near stoichiometric in the primary zone. Cooler air in the gaps around the liner enters through the dilution holes and brings the mixture down to Tt4 = ${fmt.K(DATA.design.Tt4)} before the turbine. The primary-zone temperature itself is drawn, not solved — the cycle carries one mixed-out Tt4.`],
     [`repeating-linear-gradient(90deg,${g('--air-warm')} 0 6px,transparent 6px 14px)`, 'Streak length is speed', 'Each parcel trails a streak proportional to its illustrative speed: fast in the free stream, slow in the combustor, fastest leaving the divergent nozzle at the model’s exhaust velocity. Dot weight grows with total pressure, so the compressor exit is the densest region.'],
     [`linear-gradient(90deg,${g('--metal-hi')},${g('--metal-lo')})`, 'Convergent–divergent nozzle', 'The design run expands fully to a specified exit pressure and leaves at a supersonic Mach number, so the drawn nozzle has a throat and a divergent section; the plume beyond station 9 is shown at the exit static temperature.'],
     [`linear-gradient(90deg,${g('--accent')},${g('--accent')})`, 'Ideal vs real', 'The ideal case has no losses, so its compression and expansion are vertical on the T–s diagram. The real case adds inlet, burner and nozzle pressure drops and compressor, turbine and mechanical efficiencies; the readouts and the highlight update when you switch.'],
@@ -649,7 +660,7 @@ const sp = document.getElementById('speed'), spo = document.getElementById('spee
 sp.addEventListener('input', () => { speedMul = parseFloat(sp.value); spo.textContent = speedMul.toFixed(2).replace(/0$/, '') + '×'; });
 
 /* ---------- boot ---------- */
-readTokens(); paintLegend();
+paintChrome(); readTokens(); paintLegend();
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { readTokens(); paintLegend(); });
 new MutationObserver(() => { readTokens(); paintLegend(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 window.addEventListener('resize', resize);
