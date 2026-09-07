@@ -23105,3 +23105,97 @@ wrong AT BIRTH, which the guard's docstring says it cannot catch; it caught all 
 of step 5 was caught, because a NEW anchor prints the line it lands on and the printed text did not
 match the sentence. Two instruments in a row, same failure, same detector. Census → **`27 / 129 /
 85`** with the step's own files in.
+
+##### (c) THE ORACLE — **P2 NAMED THE RIGHT CAUSE AND SIZED IT BY THE WRONG PROPERTY: IT EXEMPTED THE SUMS THAT ADD 341 THINGS, AND THE ONE THAT MOVED 398 KEYS ADDS FOUR**
+
+`rust/oracle/dump_slice_ag.py` walks the returned dicts generically; `rust/tests/slice_ag_oracle.rs`
+hand-lists. Key-set equality then catches a key EITHER side forgot, which a matched pair of
+transcriptions cannot. **38 100 keys**, eight sections (six readers, three marches, the censuses),
+`inc` on every one. **Rust is bit-identical to PyPy on all 38 100.**
+
+**THE FINDING IS P2.** Pre-registered in the dumper's header before the CPython arm had ever run:
+the exemption would be *exactly* `cap_bill`'s two `fuel_int` keys per cell — the `sum()` calls that
+add a 341-long trajectory, where CPython 3.12+'s Neumaier compensation parts company with PyPy's
+and Rust's naive fold. A falsifier was stated so it could lose.
+
+**MEASURED: 406 of 38 100 differ.** All eight `fuel_int` keys P2 named DO differ, so the **cause is
+confirmed**. The **scope is wrong by 398**, and the falsifier's own wording — *"the cause is not
+summation order"* — is the half that failed: it IS summation order, in a place the prediction's
+reasoning had excluded.
+
+| | keys | where |
+|---|---|---|
+| P2's prediction | 8 | `cap_bill`'s `fuel_int`, one reader |
+| also differing | **398** | `det`, `det0`, `det_alive`, `det0_alive`, `det_err`, `det_ratio` — **three sections, six readers** |
+
+**P2 SIZED THE EXEMPTION BY THE LENGTH OF THE SUM.** It reasoned about the calls that add 341
+things and implicitly held a short sum safe. `_charpoly4` — Faddeev–LeVerrier,
+`turbojet/engine.py:16235` and `:16237` — is built on two `sum()` calls of **FOUR TERMS**, a matrix
+product and a trace, and both diverge. Compensated summation parts company with a naive fold as
+soon as the addends have **mixed magnitudes**, which a Jacobian's characteristic polynomial has by
+construction. `n` was never the criterion.
+
+**AND THE BLAST RADIUS IS SET BY SHARING, NOT BY SIZE.** The suspected 341-term sum sits in ONE
+reader and moved 8 keys. The unsuspected 4-term sum sits in a **shared static helper**, so it
+reached every reader that reports a determinant — 398 keys across sections A, E and F. **How many
+keys a divergence touches is a property of how shared the CODE is, not of how big the SUM is**, and
+the prediction sized it by the sum. Section H — the one place the dumper's header refused to
+pre-exempt, because AF's P2 was falsified by pre-exempting — is **CLEAN**.
+
+The gate is therefore written as the **CAUSAL PATH** (*this value came out of `_charpoly4`, or out
+of a trajectory `sum()`*) and not as the list of keys that came back different, with **both counts
+asserted** (398 and 8): an exemption that stops matching what it exempts fails, and so does one
+that grows to cover the whole `det` family.
+
+##### (c) THE THREE INSTRUMENT DEFECTS THIS STEP'S OWN ORACLE FOUND IN ITSELF
+
+**1. A HELPER THAT BOTH BUILDS A KEY AND EMITS ONE IS ONLY SAFE AT THE DEPTH ITS EMISSION BELONGS
+TO.** `arms()` returns a prefix AND writes the arm flag. Sections E, F and G each have a second
+axis and each called it inside that inner loop, writing `arm_inc` once per cell. Three at once,
+all caught by the dumper's duplicate-key assert. Two earlier collisions were the same shape from
+the other side: a container length written `key/n` collided with readers whose own field is called
+`n`, and `/margin` collided with the `margin` the readers return. **A key scheme is a namespace,
+and a generic walker shares it with whatever the data happens to be called.**
+
+**2. THE SIGN CENSUS CLASSIFIED ITS OWN POPULATION BY PATTERN-MATCHING KEY NAMES, AND OVER-COUNTED
+BY 173.** The Rust side decided which keys hold a float from a hand-typed list of integer leaf
+names. `Z/n_pos_zero` came back 2837 against Python's 2664 — the census caught it, which is the
+defence working, and also the point: the list needed a new entry every time a reader grew an
+integer field. Replaced by a measurement at the emission site — `raw_f` and `V::F` are the only two
+float paths and both now record the key — which is exactly what Python does inside `f()`. **The two
+sides count the same population by the same rule instead of agreeing about a list.**
+
+**3. THE CENSUS'S TWO SILENT COUNTERS NOW PROVE THEY CAN FIRE.** `n_neg_zero` and `n_nan` come back
+0 on this plant, and a 0 from a counter that has never incremented is indistinguishable from one
+that CANNOT. The trap is one line wide: `-0.0 == 0.0` is `True`, so a classifier written
+`if x == 0.0: pos_zero += 1` would fold every negative zero into the positive count. `f()` branches
+on the sign BIT and is correct — but that was a reading, not a measurement. It now pushes `+0.0`,
+`-0.0`, a NaN and an ordinary value through the real `f()` at every run, asserts each counter moves
+by exactly one, and undoes every side effect (proved inert: the golden is byte-identical across the
+change). Slice W step 3's lesson, applied before a failure rather than after one.
+
+**AND SECTION F IS NOT SYMMETRIC IN ITS TWO ARMS, WHICH BOTH SIDES DISCOVERED THE SAME WAY.**
+`cap_bill` marches the DEMAND coordinate directly — unlike `cap_rows` and `solve_gain`, which march
+the CLIP plant — so `("applied", "none")` is rung 74 § 4's cell with **no interior equilibrium**
+and the march refuses, at residual `2.898e-03`, rung 74's own reported number. Python hit it first;
+the Rust side then hit it at the identical residual, which is fidelity worth having seen. The
+applied arm is reachable ONLY with rung 75's device armed, so it is driven at `law="track"`.
+**Widening a grid along one axis can require ARMING A DIFFERENT ONE.**
+
+##### (c) THE CITATION GUARD, AGAIN — **A THIRD ROOT, AND A CENSUS THAT GREW WHILE THE COVERAGE DID NOT**
+
+§ (a) widened the guard from one directory to two. **There are three.** `rust/oracle` holds the
+Python dumpers and they cite `engine.py` as well — four sites, and unlike § (a)'s 24, **all four
+are correct today**, which is exactly when a guard is worth adding: § 5.31.1 built this file
+because citations *are right when written and rot silently afterwards*.
+
+**THE SHARP HALF IS WHAT HAPPENED ON THE WAY.** Adding the root with a `#` comment marker moved the
+census from 139 sites to **140** — one of the four. The other three are in a module DOCSTRING,
+which is not a comment in any sense a marker-based scanner can reach. Had the number not been
+checked against what was known to be there, the census would have grown by one and been read as
+coverage of the directory. **A census that grows is not evidence that coverage grew; the two move
+together only if you check.** With the fourth form in, 143 sites across 30 files.
+
+That is § (a)'s finding — *a repair scoped to the instrument's reach rather than to the defect's* —
+recurring **one step later, in the same file, by the same author**, which is the reason it is
+written down twice.

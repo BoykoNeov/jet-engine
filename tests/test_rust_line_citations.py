@@ -85,9 +85,10 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ENGINE_PY = os.path.join(ROOT, "turbojet", "engine.py")
 RUST_SRC = os.path.join(ROOT, "rust", "src")
 RUST_TESTS = os.path.join(ROOT, "rust", "tests")
+RUST_ORACLE = os.path.join(ROOT, "rust", "oracle")
 # BOTH ROOTS. `rust/tests` is slice AG step 6's repair: it held 47 citation
 # sites this guard had never looked at, and 24 of them were stale.
-RUST_DIRS = (RUST_SRC, RUST_TESTS)
+RUST_DIRS = (RUST_SRC, RUST_TESTS, RUST_ORACLE)
 ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
                        "rust_engine_citations.json")
 
@@ -135,9 +136,9 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # (`4694`, `19283`, `19301`, `19351`, `19373`, `19375`, `19591`, `19598`) and one is step
 # 2's arrears. Both asserts that would have caught it — the blessed-set equality and this
 # census — were already here and green-by-not-being-run.
-FILES = 27
-SITES = 129
-LINES = 85
+FILES = 30
+SITES = 143
+LINES = 95
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment
 # SAID, where the number is part of the quotation and must not track the file.
@@ -151,9 +152,55 @@ HISTORICAL = frozenset({
 })
 
 
+Q3 = chr(34) * 3
+Q3S = chr(39) * 3
+
+
 # --- the instrument ----------------------------------------------------------------------
 
-def _blocks(lines):
+def _py_blocks(lines):
+    """`#` runs PLUS every triple-quoted region, for the Python dumpers.
+
+    **THE FOURTH FORM, AND IT WAS FOUND THE WAY THE OTHER THREE WERE** -- by widening
+    the scanner and then CHECKING WHAT THE NUMBER MOVED BY. Pointing this file at
+    `rust/oracle` with a `#` marker added ONE site of the four that are there. The other
+    three are in a module DOCSTRING, which is not a comment in any sense a marker-based
+    scanner can reach, and the census would have gone up while the coverage did not.
+
+    A census that grows is not evidence that coverage grew. The two numbers move
+    together only if you check.
+
+    A region is only considered at all if it names `engine.py`, which is what keeps an
+    ordinary code string out of the sweep.
+    """
+    out, i, n = [], 0, len(lines)
+    while i < n:
+        if lines[i].lstrip().startswith("#"):
+            j = i
+            while j < n and lines[j].lstrip().startswith("#"):
+                j += 1
+            out.append((i, "\n".join(lines[i:j])))
+            i = j
+            continue
+        k = lines[i].find("#")
+        if k >= 0:
+            out.append((i, lines[i][k:]))
+        q = None
+        for cand in (Q3, Q3S):
+            if cand in lines[i]:
+                q = cand if q is None or lines[i].find(cand) < lines[i].find(q) else q
+        if q is not None and lines[i].count(q) == 1:
+            j = i + 1
+            while j < n and q not in lines[j]:
+                j += 1
+            out.append((i, "\n".join(lines[i:min(j + 1, n)])))
+            i = j + 1
+            continue
+        i += 1
+    return out
+
+
+def _blocks(lines, mark="//"):
     """Contiguous runs of `//`-comment lines, PLUS trailing `//` comments on code.
 
     The trailing form is the third one this scanner was blind to, and like the other
@@ -162,17 +209,28 @@ def _blocks(lines):
     step 6 measured exactly one such site — and it was stale. It is yielded as a
     one-line block of its own, which leaves the bare form's block scope meaning what
     it meant.
+
+    **`mark` EXISTS BECAUSE THERE IS A THIRD ROOT AND IT IS NOT RUST.** `rust/oracle`
+    holds the Python dumpers, and they cite `engine.py` too -- in `#` comments, which a
+    scanner keyed on `//` cannot see at all. Widening the roots to it WITHOUT this
+    parameter would have added a directory and checked NOTHING in it, reporting a
+    larger census as evidence of wider coverage. That is 5.31.6 (a)'s own finding --
+    *a repair scoped to the instrument's reach rather than to the defect's* -- in the
+    shape it takes on its SECOND occurrence, one step later, in the same file, by the
+    same author. The four sites there are all CORRECT today, which is exactly when a
+    guard is worth adding: 5.31.1 built this file because citations *are right when
+    written and rot silently afterwards*.
     """
     out, i = [], 0
     while i < len(lines):
-        if lines[i].lstrip().startswith("//"):
+        if lines[i].lstrip().startswith(mark):
             j = i
-            while j < len(lines) and lines[j].lstrip().startswith("//"):
+            while j < len(lines) and lines[j].lstrip().startswith(mark):
                 j += 1
             out.append((i, "\n".join(lines[i:j])))
             i = j
         else:
-            k = lines[i].find("//")
+            k = lines[i].find(mark)
             if k >= 0:
                 out.append((i, lines[i][k:]))
             i += 1
@@ -204,11 +262,15 @@ def citations(dirs=RUST_DIRS, n_engine_lines=None):
     for d in dirs:
         root = os.path.basename(d)
         for fn in sorted(os.listdir(d)):
-            if not fn.endswith(".rs"):
+            # The comment marker is the FILE's, not the scanner's: `rust/oracle` is Python.
+            mark = {".rs": "//", ".py": "#"}.get(os.path.splitext(fn)[1])
+            if mark is None:
                 continue
             text = io.open(os.path.join(d, fn), encoding="utf-8").read()
             key = root + "/" + fn
-            for _, block in _blocks(text.split("\n")):
+            lns = text.split("\n")
+            blocks = _py_blocks(lns) if mark == "#" else _blocks(lns, mark)
+            for _, block in blocks:
                 if "engine.py" not in block:
                     continue
                 for m in re.finditer(r"engine\.py:(\d+)", block):
