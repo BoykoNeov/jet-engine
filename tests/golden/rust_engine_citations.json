@@ -36,6 +36,7 @@
   "18738": "tau_t = self._windup_tau()",
   "18771": "base_close, a, h, max(1e-9, self._applied_demand(wf, wr, mf_sched)),",
   "18781": "base_close, a, h, max(1e-9, self._applied_demand(wf, wr, mf_sched)),",
+  "18789": "def _rhs_gains_at(self, flight, p, accel, surge, Tt4_max, tau_f, tau_gov, dg=1e-7,",
   "19024": "prev, self._ic_cap = self._ic_cap, ic_cap",
   "19025": "try:",
   "19031": "got, res = None, None",
@@ -43,9 +44,12 @@
   "19283": "def _with_cap(self, law, fn, *a, **kw):",
   "19301": "return m.accel_schedule(flight, Tt4_lo, Tt4_hi, margin)",
   "19308": "dw = rel * max(w, 1e-9)",
+  "19341": "m._lag_coord = \"demand\"",
   "19351": "return m._with_windup(law, tau_t, m._with_cap, cl, m._rhs_gains_at,",
+  "19352": "flight, p, accel, surge, Tt4_max, tau_f, taus[1])",
   "19373": "cap_a = m._with_cap(\"solve\", m._cap_fuel, flight, p[\"nu_lp\"], p[\"nu_hp\"],",
   "19375": "cap_a2 = m._with_cap(\"sensed\", m._cap_fuel, flight, p[\"nu_lp\"], p[\"nu_hp\"],",
+  "19523": "assert len(a) == len(b), \"the two cap laws marched different grids\"",
   "19591": "return m._with_cap(\"solve\", m._cap_fuel, flight, a, h, ms, accel, None)",
   "19598": "return m._with_cap(\"sensed\", m._cap_fuel, flight, a, h, ms, accel, None,"
  }

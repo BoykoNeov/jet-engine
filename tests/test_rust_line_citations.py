@@ -64,6 +64,16 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # repaired tree. `SITES` counts every occurrence, so a line citing two numbers
 # counts twice; `LINES` counts the distinct `engine.py` lines they point at.
 #
+# RE-BLESSED AT SLICE AG STEP 5 (10/59/47 -> 10/63/51): four new citations, all step 5's own
+# (`18789` is `_rhs_gains_at`'s defaults line, `19341` the plain `_lag_coord` write, `19352` the
+# `accel` argument `_cap_rows` passes where rung 75 passes `None`, `19523` the untagged grid
+# assert). NO ARREARS this time -- step 4's procedural repair held, and this guard was run BEFORE
+# the step shipped rather than after. **AND IT PAID ON ITS FIRST INTENDED USE**: the fourth
+# citation was typed as `19353`, which is `g = read("sensed")`; the argument the sentence is about
+# is one line up. A citation that is wrong AT BIRTH is the one failure this guard's own docstring
+# says it cannot catch -- and it caught this one, because a NEW anchor prints the line it lands on
+# and the printed text did not match the sentence.
+#
 # RE-BLESSED AT SLICE AG STEP 4 (9/50/38 -> 10/59/47), AND **THE GUARD HAD BEEN RED FOR TWO
 # STEPS BEFORE ANYONE LOOKED.** Step 2 cited `engine.py:18694` in `windup_march`'s doc and
 # never re-blessed; steps 2 and 3 both reported `cargo test` alone and neither ran `pytest`,
@@ -73,8 +83,8 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # 2's arrears. Both asserts that would have caught it — the blessed-set equality and this
 # census — were already here and green-by-not-being-run.
 FILES = 10
-SITES = 59
-LINES = 47
+SITES = 63
+LINES = 51
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment
 # SAID, where the number is part of the quotation and must not track the file.
