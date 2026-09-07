@@ -102,7 +102,7 @@ const R: f64 = 0.5;
 const SETTLE: f64 = 2.0;
 /// `topping_relief` / `phi_excursion_fuel` / `integrate_fuel`'s step — the suite writes `0.02`
 /// explicitly at the two `integrate_fuel` calls and leans on the same value as a default
-/// everywhere else (`engine.py:5439`, `:5346`).
+/// everywhere else (`engine.py:5451`, `:5358`).
 const DS: f64 = 0.02;
 
 fn flight() -> FlightCondition {

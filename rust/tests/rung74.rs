@@ -60,8 +60,8 @@
 //! # THE TWO NEEDLES ARE TRANSCRIBED FROM **PYTHON's** LITERALS, NOT FROM THE PORT's
 //!
 //! Python gates two of rung 74's nine shipped messages, with `match="DECLARED"` and
-//! `match="two declared laws"`. Both needles here are read off `turbojet/engine.py:17759` and
-//! `:17773` — never off `demand_coordinate.rs`. Step 4 § (c) measured the port's own refusal text
+//! `match="two declared laws"`. Both needles here are read off `turbojet/engine.py:17762` and
+//! `:17776` — never off `demand_coordinate.rs`. Step 4 § (c) measured the port's own refusal text
 //! **four formatting divergences wide** against Python's (`{:.3e}` vs `%e`, `{:?}` vs `!r`), so a
 //! needle copied from the Rust side would certify the divergence instead of catching it. The other
 //! seven shipped messages stay ungated HERE because Python leaves them ungated (§ 5.30 (iv)); they
@@ -638,7 +638,7 @@ fn the_lag_returns_attack_on_a_known_attack_point() {
 /// rather than pick a plant.
 ///
 /// The needle `"DECLARED"` is Python's `match=` at `tests/test_rung74.py:387`, and the message it
-/// matches is `turbojet/engine.py:17759`'s literal — transcribed from THERE, not from
+/// matches is `turbojet/engine.py:17762`'s literal — transcribed from THERE, not from
 /// `demand_coordinate.rs`, for the module header's reason.
 #[test]
 fn the_coordinate_is_declared() {
@@ -653,7 +653,7 @@ fn the_coordinate_is_declared() {
 /// reasoning.
 ///
 /// The needle `"two declared laws"` is Python's `match=`, and the message it matches is
-/// `turbojet/engine.py:17773`'s literal.
+/// `turbojet/engine.py:17776`'s literal.
 #[test]
 fn demand_refuses_the_sum_composition() {
     let m = demand_rig(SM, false, "demand", REF_LAW_DEFAULT);

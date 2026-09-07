@@ -89,7 +89,7 @@ const ORACLE_CPYTHON: &str = include_str!("../oracle/slice_af_cpython.tsv");
 /// dressed up as a prediction.
 ///
 /// **AND THE MECHANISM IS NOT `sum()` AT THIS RUNG AT ALL.** Of rung 74's four calls, two are
-/// `sum(1 for ...)` over a generator of ones (`engine.py:18303`, `:18459`) — INTEGER counts, which
+/// `sum(1 for ...)` over a generator of ones (`engine.py:18305`, `:18461`) — INTEGER counts, which
 /// no compensated summation can move, so they were never candidates; and the two that really are
 /// float folds are `forcing_openloop`'s, which differ on nothing. The drift enters upstream, in
 /// `_charpoly4`'s float `sum()` — **rung 72's, INHERITED** — which AD step 5 and AE step 4 each

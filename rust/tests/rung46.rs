@@ -19,7 +19,7 @@
 //!
 //! * **`SETTLE = 2.0`, not rung 45's `6.0`.** `test_rung46.py:80` shortens the settle because the
 //!   surge minimum and the `Tt4` peak both live inside the ramp. Every call here writes it out;
-//!   `topping_relief` also defaults `r = 0.5` and `ds = 0.02` (`engine.py:5438`), which the suite
+//!   `topping_relief` also defaults `r = 0.5` and `ds = 0.02` (`engine.py:5450`), which the suite
 //!   leans on at gate 2 and names everywhere else.
 //! * **TWO GASES, AND THE SPLIT IS NOT COSMETIC.** Gates 1, 7 and 8 run the CPG gas; gates 3-6 run
 //!   `Gas::thermally_perfect()`. § 5.17's probes measured the reader grid on CPG, so the gate cells
@@ -65,7 +65,7 @@ const REDLINE: f64 = 1480.0;
 const R: f64 = 0.5;
 /// `test_rung46.py:80`. Rung 45 settles for `6.0`; this suite needs only `2.0`.
 const SETTLE: f64 = 2.0;
-/// `topping_relief` / `phi_excursion_fuel`'s silent `ds` default (`engine.py:5439`, `:5346`).
+/// `topping_relief` / `phi_excursion_fuel`'s silent `ds` default (`engine.py:5451`, `:5358`).
 const DS: f64 = 0.02;
 
 fn flight() -> FlightCondition {

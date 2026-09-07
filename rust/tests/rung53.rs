@@ -730,7 +730,7 @@ fn the_stacked_dispatch_is_live() {
 /// be a per-cell parameter, never a literal in the ported body"*); slice M shipped the literal in
 /// both loops and named the wrong rung beside it. Read: `StatorBleedMatcher` declares
 /// `_B_TOL`/`_B_MAX`/`_B_CAP`/`_B_STEP` and no `_INC_MAX`; `StageStackMatcher` declares
-/// `_INC_MAX = 200` (`engine.py:7282`). Three read sites — rung 55's own
+/// `_INC_MAX = 200` (`engine.py:7296`). Three read sites — rung 55's own
 /// `stage_incidence_schedule` and the two INHERITED rung-53/54 solver loops, which a stacked
 /// object enters with 200 in Python.
 ///

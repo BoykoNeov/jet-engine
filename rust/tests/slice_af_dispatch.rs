@@ -53,13 +53,13 @@
 //!
 //! | site | Python | what it writes |
 //! |---|---|---|
-//! | `at_lever` (`engine.py:17711`) | `m._lag_coord = self._lag_coord` | the field |
-//! | `_shared_rig` (`:17722`) | `m._lag_coord = self._lag_coord` | the field |
-//! | `_coord_march` (`:18031`) | `m._lag_coord, m._ref_law = coord, ref` | the field |
-//! | `demand_gains` (`:18267`) | `m._lag_coord, m._ref_law = "clip", "sched"` | the field |
+//! | `at_lever` (`engine.py:17713`) | `m._lag_coord = self._lag_coord` | the field |
+//! | `_shared_rig` (`:17723`) | `m._lag_coord = self._lag_coord` | the field |
+//! | `_coord_march` (`:18033`) | `m._lag_coord, m._ref_law = coord, ref` | the field |
+//! | `demand_gains` (`:18269`) | `m._lag_coord, m._ref_law = "clip", "sched"` | the field |
 //!
 //! and dispatches through `_with_coord` in exactly ONE place — `demand_gains`'s
-//! `m._with_coord("demand", m._demand_gains_at, …)` at `:18276`, which is a SCOPE.
+//! `m._with_coord("demand", m._demand_gains_at, …)` at `:18278`, which is a SCOPE.
 //!
 //! **The port had the first two right and the last two wrong.** [`r74_at_lever`] and
 //! [`r74_shared_rig`] spell it `lag_coord.set(…)`; `coord_march` and `demand_gains` routed the
@@ -158,7 +158,7 @@
 //! * **A CPython arm.** Nothing here reads a golden. Every assertion is a panic, a same-run
 //!   difference, or a compile-time property.
 //! * **`_ic_cap`'s carry.** Rung 74's `at_lever` does not copy it and rung 75's does
-//!   (`engine.py:17711` against `:18671`); nothing at this rung writes the field, so the copy
+//!   (`engine.py:17713` against `:18673`); nothing at this rung writes the field, so the copy
 //!   would be invisible. `slice_af_cells.rs` records it; this file adds nothing.
 
 use std::panic::{catch_unwind, AssertUnwindSafe};
@@ -741,7 +741,7 @@ fn the_seat_matrix() {
     // **AND THIS IS THE ROW THE FOUR-SITE FIX IS MEASURED BY.** Before it, the parent's panicking
     // slot was reached at SIX of the seven seats, because `coord_march` and `demand_gains` pinned
     // the field through the cell. After it, the only dispatch left is [`CoordScope`] inside
-    // `demand_gains` — which is Python's one call site, `engine.py:18276` — and the row says so.
+    // `demand_gains` — which is Python's one call site, `engine.py:18278` — and the row says so.
     let p = row_of(Inj::WithCoordParent);
     assert_eq!(p[seat("demand_gains")], "BROKE");
     assert!(p.iter().enumerate().all(|(i, v)| i == seat("demand_gains") || *v == "same"),
@@ -986,7 +986,7 @@ fn the_coordinate_setter_writes_this_rungs_own_field_and_a_re_aimed_one_does_not
 
 /// **P5, AS A VALUE READING THROUGH THE SHIPPED READER — NOT AS AN ABSENCE.**
 ///
-/// `demand_gains` is `_with_coord`'s ONE call site (`engine.py:18276`). Point the setter at
+/// `demand_gains` is `_with_coord`'s ONE call site (`engine.py:18278`). Point the setter at
 /// another carrier and the reader's scope becomes a no-op, so `_demand_target` sees `"clip"`
 /// where it would have seen `"demand"` — **and every published number is bit-identical**, because
 /// this reader's interior filter admits only points at which `cap <= mf_sched`, where the latch

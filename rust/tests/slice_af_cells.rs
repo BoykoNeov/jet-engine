@@ -9,7 +9,7 @@
 //! # THE THREE SILENT FAILURES THIS FILE EXISTS TO CATCH
 //!
 //! **1 — THE REFUSAL SPLIT.** Python fires ONE assert above the entry test and FOUR below it
-//! (`engine.py:17759`–`17787`). Slice AE's rung-73 body has BOTH its asserts above, so *hoist the
+//! (`engine.py:17761`–`17787`). Slice AE's rung-73 body has BOTH its asserts above, so *hoist the
 //! refusals* is the inherited habit and it is wrong here: hoisting all five raises on arms Python
 //! passes, and sinking all five skips the coordinate refusal on exactly the `clip` arm. **Both
 //! failures are silent**, so [`the_coordinate_refusal_fires_above_the_entry_test`] and
@@ -478,8 +478,8 @@ fn the_coord_scope_restores_previous_on_drop_and_on_unwind() {
 /// came back reading the class default `"clip"` would march rung 73 silently.
 ///
 /// `_ic_cap` is deliberately NOT asserted as carried: rung 74's `at_lever` copies `_ref_law` and
-/// `_lag_coord` only, and rung 75's is the one that adds `_ic_cap` (`engine.py:17711` against
-/// `18671`). Asserting a carry Python does not make would be gating the port against a habit.
+/// `_lag_coord` only, and rung 75's is the one that adds `_ic_cap` (`engine.py:17713` against
+/// `18673`). Asserting a carry Python does not make would be gating the port against a habit.
 #[test]
 fn at_lever_hands_back_a_rung_74_machine_carrying_both_laws() {
     let m = demand(&valve_arm());
@@ -773,7 +773,7 @@ fn the_bracket_walk_is_geometric_in_one_over_zero_point_nine_and_sixty_steps_lon
     // **SURVIVED IT**: the bar was the walk's self-consistency with the constant, not the
     // constant's value. § 5.30 (viii) item 1 — *what supplies the value under test?* — caught in
     // this slice's own instrument by its own mutation sweep.
-    const PY_GROW: f64 = 1.0 / 0.9; // `engine.py:17567`, transcribed from the SOURCE
+    const PY_GROW: f64 = 1.0 / 0.9; // `engine.py:17569`, transcribed from the SOURCE
     for k in 1..log.len() {
         let prev = if k == 1 { 0.02 } else { log[k - 1] };
         assert_eq!(log[k].to_bits(), (prev * PY_GROW).to_bits(),
@@ -799,7 +799,7 @@ fn the_bracket_walk_is_geometric_in_one_over_zero_point_nine_and_sixty_steps_lon
 /// **IT IS AN `Abort` AND NOT A `panic!`, WHICH IS A PROPERTY OF THE CALL SITE.**
 ///
 /// Python's refusal is an `AssertionError` and the march wraps its whole derivative in
-/// `except AssertionError: break` (`engine.py:17965`, `17989`), so this failure ENDS THE MARCH
+/// `except AssertionError: break` (`engine.py:17967`, `17991`), so this failure ENDS THE MARCH
 /// where a panic would end the process. Slice L's rule: fallibility is decided per call site.
 #[test]
 fn the_unreachable_cap_is_recoverable_because_the_march_catches_it() {

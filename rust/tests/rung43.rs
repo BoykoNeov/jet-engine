@@ -31,8 +31,8 @@
 //!   in that file could see it. So each suite's gas is built from its OWN expression here, and
 //!   this comment is the reason.
 //! * **Three silent defaults.** `ramp_excursion_fuel` and `freeze_channels` both default to
-//!   `s_settle = 8.0, ds = 0.02` (`engine.py:5180`, `:5237`) and `collapse_exponent` to `nb = 6`
-//!   (`:5261`); the suite never names any of them. Rust has no defaults, so every call below
+//!   `s_settle = 8.0, ds = 0.02` (`engine.py:5192`, `:5249`) and `collapse_exponent` to `nb = 6`
+//!   (`:5273`); the suite never names any of them. Rust has no defaults, so every call below
 //!   writes them out.
 //! * **`==` on a returned record.** Python compares floats out of dicts with `==`; the records
 //!   here have no `PartialEq`, so the exact comparisons are on `to_bits()`, which is STRICTER

@@ -286,7 +286,7 @@ const DS: f64 = 0.02;
 /// the same value in both by coincidence of authorship rather than by sharing.
 const LOCAL_1440: f64 = 1440.0;
 const MARGINS: [f64; 6] = [0.15, 0.25, 0.35, 0.42, 0.45, 0.48];
-/// `accel_schedule`'s `n` default (`engine.py:5554`), which `engagement_sweep` passes through.
+/// `accel_schedule`'s `n` default (`engine.py:4694`), which `engagement_sweep` passes through.
 const NSCHED: usize = 13;
 
 fn flight() -> FlightCondition {

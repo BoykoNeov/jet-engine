@@ -34,7 +34,7 @@
 //!   witnesses the difference at all. Slice R step 3 shipped rung 40's constant into `rung44.rs`
 //!   and no gate in that file could see it, so each suite's gas is built from its OWN expression.
 //! * **Six silent defaults.** `phi_excursion_fuel` and `transient_surge_margin_fuel` both default
-//!   to `r = 0.5, s_settle = 6.0, ds = 0.02` (`engine.py:5345`, `:5391`), and the suite leans on
+//!   to `r = 0.5, s_settle = 6.0, ds = 0.02` (`engine.py:5358`, `:5401`), and the suite leans on
 //!   the last two at every one of its call sites while naming `r` at most of them. Rust has no
 //!   defaults, so every call below writes all three out.
 //! * **`==` on a returned record.** Python compares whole dicts; [`PhiExcursionFuel`] has no
@@ -98,7 +98,7 @@ const HI: f64 = 1400.0;
 /// sign assertion in gates 2 and 4 still passes.
 const DTT4: f64 = HI - LO;
 
-/// `phi_excursion_fuel` / `transient_surge_margin_fuel`'s silent defaults (`engine.py:5346`).
+/// `phi_excursion_fuel` / `transient_surge_margin_fuel`'s silent defaults (`engine.py:5358`).
 const S_SETTLE: f64 = 6.0;
 const DS: f64 = 0.02;
 

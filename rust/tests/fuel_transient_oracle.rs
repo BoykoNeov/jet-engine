@@ -280,9 +280,9 @@ const HI45: f64 = 1400.0;
 /// ENDPOINT. Step 3 measured that porting rung 45's `400.0` as an endpoint is caught by exactly
 /// ONE of `rung45.rs`'s ten tests.
 const DTT4: f64 = HI45 - LO45;
-/// Both rung-45 methods' silent defaults (`engine.py:5346`).
+/// Both rung-45 methods' silent defaults (`engine.py:5358`).
 const S_SETTLE45: f64 = 6.0;
-/// `ramp_excursion_fuel`'s (`engine.py:5180`) — and the reason the `r = 0.25` cells sit on the tie:
+/// `ramp_excursion_fuel`'s (`engine.py:5192`) — and the reason the `r = 0.25` cells sit on the tie:
 /// `(0.25 + 8.0) / 0.02 = 412.5` exactly.
 const S_SETTLE43: f64 = 8.0;
 const DS: f64 = 0.02;
