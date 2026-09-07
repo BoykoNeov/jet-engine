@@ -74,3 +74,12 @@ a green build is exactly the kind of damage that gets committed.
 round-trips. Reserve PowerShell for running commands. If a bulk edit really needs scripting,
 operate on bytes, or verify afterwards by grepping for `âˆ|Â§|Ã|ï»¿`. Related:
 [[rust-port-decided]], [[pypy-switch-shipped]].
+
+**`Start-Process -PassThru -NoNewWindow` leaves `$p.ExitCode` EMPTY after `WaitForExit()`.** Slice
+AG step 4 launched the `pytest` gate that way to get BelowNormal priority, and the status file on
+disk read `PYTEST_EXIT=` — the run's verdict had to rest on the summary line instead. This is the
+other half of *a status is measured when it is ON DISK*: there, the number was on disk and the
+status was not written; here, the write happened and the value was empty. **The fix is
+`$p.Refresh()` before reading `ExitCode`, or `(Start-Process ... -Wait -PassThru).ExitCode`.** Use
+one of them whenever a run's exit code is going to be quoted, and never re-run a 15-minute suite
+just to recover a status you can capture correctly the first time.

@@ -233,8 +233,8 @@ A compact map.
 
 ## Commands
 - Run the model: `python main.py` · Install: see `requirements.txt` (a PyPy venv — § Stack)
-- **The gate: `pytest`** — **EVERYTHING**, 1373 tests, **~15:18 at 1373** (PyPy, box load unknown;
-  a 40:28 at 1294 came off a LOADED box — neither differences nor replaces it).
+- **The gate: `pytest`** — **EVERYTHING**, 1373 tests, **~15:18 at 1373** (PyPy, below-normal, quiet
+  box; the SAME 1373 took **83:20** on a loaded one, so a time is not a signal).
   ONE gate; nothing is ever silently deselected, so no regression can hide.
 - **Iterate: `pytest -m "not slow"`** — 977 tests, **~1:54 at 890**.
   `slow` is a LABEL you opt out of by typing, never a default. Only those: `pytest -m slow`.

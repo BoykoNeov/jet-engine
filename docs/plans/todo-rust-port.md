@@ -22631,9 +22631,22 @@ commit** (`8b28fa3`) and never blessed — and the census constants were still s
 against a live `10 / 59 / 47`.
 
 **So two of that guard's four asserts — the blessed-set equality and the census size — had been
-failing since step 2, and both steps shipped green.** Steps 2 and 3 each report `cargo test
---release` and nothing else; CLAUDE.md's own rule is *run the gate after a code change*, and a
-Rust-only reading of "the gate" skips the Python suite where this guard lives. **An instrument
+failing since step 2, and both steps shipped green.**
+
+**AND THE CAUSE IS SOURCED, NOT INFERRED FROM THE PLAN.** *The sections report `cargo test` only*
+is equally consistent with never running `pytest` and with running it, seeing the failure and not
+recording it — a distinction that matters because a procedural rule is being written out of the
+diagnosis. The slice's own log directory settles it: `M:\claud_projects\temp\slice-ag\logs\`
+holds `pytest_step1.log` (**1 373 passed, 1:23:20**, Sep 6 22:10) and then `cargo_step1.log`,
+`cargo_step2.log`, `cargo_step3.log`, `clippy_step3.log` — **and no `pytest` log after step 1 at
+all**. CLAUDE.md's own rule is *run the gate after a code change*, and a Rust-only reading of "the
+gate" skips the Python suite where this guard lives.
+
+**A SECOND THING FELL OUT OF THAT DIRECTORY, AND IT MOVED A SHIPPED NUMBER.** Step 1's `pytest`
+took **1:23:20** on the same 1 373 tests this step ran in **15:18** — a 5.4× spread, against
+CLAUDE.md's standing note of a 40:28 outlier at 1 294. The timing line is refreshed with the
+SPREAD rather than with the fast end, because a reader who plans around `~15:18` and meets 83
+minutes has been misled by a number that was accurate. **An instrument
 built one step earlier to catch citations rotting silently rotted silently**, for exactly the
 reason it was built: nobody re-read it.
 
