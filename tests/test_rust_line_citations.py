@@ -135,9 +135,9 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # (`4694`, `19283`, `19301`, `19351`, `19373`, `19375`, `19591`, `19598`) and one is step
 # 2's arrears. Both asserts that would have caught it — the blessed-set equality and this
 # census — were already here and green-by-not-being-run.
-FILES = 25
-SITES = 118
-LINES = 78
+FILES = 27
+SITES = 129
+LINES = 85
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment
 # SAID, where the number is part of the quotation and must not track the file.
