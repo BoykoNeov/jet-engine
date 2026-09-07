@@ -44,3 +44,18 @@ main.py's 56, because 56 trips the beta-PDF mean-preservation assert at J=36 —
 rung 22's own result), and the quadrature is hardest to converge on that climb.
 main.py's J grid steps 16 -> 64, straight over the spot. The correlation signal
 is only ~1-5%, so the same rule runs at every point.
+
+## The engine cutaway page
+
+`turbojet-cutaway.html` is a second, stand-alone page: an animated 2-D
+cutaway of the single-spool engine (rotor rows sweeping on one shaft, fixed
+stators, spinner and shaft helices, a two-zone annular combustor with fuel
+spray, flame and dilution jets, a convergent–divergent nozzle and plume),
+with air parcels colored by temperature, a hover probe, the six station
+readouts, the ideal-vs-real T–s diagram and a performance table. Its numbers
+are the `ideal` / `real` blocks of `data.json`; its geometry, parcel speeds,
+blade counts and the primary-zone temperature are illustrative.
+
+```
+python build_cutaway.py   # splices data.json into cutaway-template.html
+```

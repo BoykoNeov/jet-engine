@@ -1,0 +1,660 @@
+<meta charset="utf-8">
+<title>Turbojet Cutaway</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#EEF1F4; --surface:#FFFFFF; --stage:#E3E8EE; --stage-vig:#D2D9E1;
+  --ink:#16202B; --muted:#5B6B7C; --faint:#8E9BAA; --line:#CBD3DC; --line-strong:#9AA7B5;
+  --metal:#C2CBD5; --metal-hi:#DDE3EA; --metal-lo:#A3AEBB; --metal-edge:#5F6E80;
+  --hub:#AEB9C5; --hub-hi:#D3DBE3; --hub-lo:#7F8B99;
+  --bore:#CAD2DB; --bore-lo:#B4BEC9;
+  --rotor:#2C3D52; --stator:#6F8096; --liner:#3C4B5C; --fuel:#4A34A6;
+  --air-cold:#2F7FE0; --air-cool:#6C9BC8; --air-mid:#7A8A9A; --air-warm:#E08A3C; --air-hot:#F26A1B; --air-glow:#FFB347; --air-white:#FFE9B8;
+  --flame-out:rgba(242,106,27,.55); --flame-mid:rgba(255,178,71,.85); --flame-core:rgba(255,240,200,.95); --flame-glow:rgba(255,140,40,.28);
+  --plume:rgba(240,138,60,.16); --plume-edge:rgba(240,138,60,0);
+  --accent:#D8621A; --accent-ink:#FFFFFF; --focus:#2F7FE0;
+  --station:#16202B;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0D1219; --surface:#141C26; --stage:#0A0F16; --stage-vig:#05080C;
+    --ink:#E6ECF2; --muted:#93A1B1; --faint:#5F6D7C; --line:#243040; --line-strong:#3D4B5C;
+    --metal:#2C3745; --metal-hi:#3E4B5C; --metal-lo:#1F2833; --metal-edge:#6B7B90;
+    --hub:#3A4756; --hub-hi:#5B6A7C; --hub-lo:#1E2731;
+    --bore:#111821; --bore-lo:#0B1016;
+    --rotor:#A9BBD0; --stator:#5E7088; --liner:#8C9BAD; --fuel:#D9CCFF;
+    --air-cold:#6FB1FF; --air-cool:#9DBBDD; --air-mid:#C3CDD6; --air-warm:#F0A45A; --air-hot:#FF8A3D; --air-glow:#FFC46B; --air-white:#FFF6D0;
+    --flame-out:rgba(255,122,26,.55); --flame-mid:rgba(255,209,102,.85); --flame-core:rgba(255,248,220,.97); --flame-glow:rgba(255,140,40,.35);
+    --plume:rgba(255,170,90,.09); --plume-edge:rgba(255,170,90,0);
+    --accent:#FF8A3D; --accent-ink:#14100B; --focus:#6FB1FF;
+    --station:#E6ECF2;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0D1219; --surface:#141C26; --stage:#0A0F16; --stage-vig:#05080C;
+  --ink:#E6ECF2; --muted:#93A1B1; --faint:#5F6D7C; --line:#243040; --line-strong:#3D4B5C;
+  --metal:#2C3745; --metal-hi:#3E4B5C; --metal-lo:#1F2833; --metal-edge:#6B7B90;
+  --hub:#3A4756; --hub-hi:#5B6A7C; --hub-lo:#1E2731;
+  --bore:#111821; --bore-lo:#0B1016;
+  --rotor:#A9BBD0; --stator:#5E7088; --liner:#8C9BAD; --fuel:#D9CCFF;
+  --air-cold:#6FB1FF; --air-cool:#9DBBDD; --air-mid:#C3CDD6; --air-warm:#F0A45A; --air-hot:#FF8A3D; --air-glow:#FFC46B; --air-white:#FFF6D0;
+  --flame-out:rgba(255,122,26,.55); --flame-mid:rgba(255,209,102,.85); --flame-core:rgba(255,248,220,.97); --flame-glow:rgba(255,140,40,.35);
+  --plume:rgba(255,170,90,.09); --plume-edge:rgba(255,170,90,0);
+  --accent:#FF8A3D; --accent-ink:#14100B; --focus:#6FB1FF;
+  --station:#E6ECF2;
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+.display{font-family:"Barlow Condensed","Arial Narrow",Impact,sans-serif;font-weight:600;letter-spacing:.005em;text-wrap:balance}
+.mono{font-family:"IBM Plex Mono",Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+.eyebrow{font-family:"IBM Plex Mono",Menlo,Consolas,monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+header.wrap{padding-top:40px;padding-bottom:18px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end}
+h1{margin:6px 0 8px;font-size:clamp(44px,7vw,84px);line-height:.92;font-weight:700}
+.lede{max-width:62ch;margin:0;color:var(--muted);font-size:16px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;max-width:440px}
+.chip{font-family:"IBM Plex Mono",Menlo,Consolas,monospace;font-size:12px;padding:5px 9px;border:1px solid var(--line-strong);border-radius:3px;color:var(--ink);white-space:nowrap}
+.chip b{font-weight:500;color:var(--muted);margin-right:5px}
+
+/* stage */
+.stage-outer{padding:0 12px}
+.stage{position:relative;max-width:1400px;margin:0 auto;background:var(--stage);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+#cutaway{display:block;width:100%;aspect-ratio:1400/500;height:auto;cursor:crosshair}
+.stations{position:absolute;left:0;top:0;width:100%;height:0;pointer-events:none}
+.st{position:absolute;top:14px;transform:translateX(-50%);text-align:center;color:var(--station);line-height:1}
+.st .n{font-family:"Barlow Condensed","Arial Narrow",Impact,sans-serif;font-weight:700;font-size:clamp(16px,2.4vw,30px)}
+.st .l{font-family:"IBM Plex Mono",Menlo,Consolas,monospace;font-size:clamp(8px,.85vw,11px);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:3px;max-width:7em;line-height:1.2}
+.probe{position:absolute;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--line-strong);border-radius:4px;padding:8px 10px;font-size:12.5px;line-height:1.4;min-width:170px;box-shadow:0 6px 20px rgba(0,0,0,.25);transform:translate(14px,-50%)}
+.probe[hidden]{display:none}
+.probe .r{font-weight:600;margin-bottom:3px}
+.probe .v{font-family:"IBM Plex Mono",Menlo,Consolas,monospace;color:var(--muted);display:flex;justify-content:space-between;gap:12px}
+.probe .v span:last-child{color:var(--ink)}
+
+.controls{max-width:1400px;margin:10px auto 0;display:flex;flex-wrap:wrap;align-items:center;gap:14px 22px;padding:0 4px}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:4px;overflow:hidden}
+.seg button{appearance:none;border:0;background:transparent;color:var(--muted);font:inherit;font-weight:500;padding:7px 14px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.btn{appearance:none;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);font:inherit;font-weight:500;padding:7px 14px;border-radius:4px;cursor:pointer;min-width:84px}
+.btn:hover,.seg button:hover{border-color:var(--metal-edge)}
+.slider{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px}
+.slider input{width:150px;accent-color:var(--accent)}
+.slider output{font-family:"IBM Plex Mono",Menlo,Consolas,monospace;color:var(--ink);min-width:4ch}
+.ctl-note{margin-left:auto;color:var(--faint);font-size:12.5px}
+
+/* readouts */
+.readouts{max-width:1400px;margin:22px auto 0;display:grid;grid-template-columns:repeat(6,1fr);gap:10px;padding:0 4px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:12px 14px 12px 16px;position:relative;overflow:hidden}
+.tile::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--sw,var(--line))}
+.tile .num{font-family:"Barlow Condensed","Arial Narrow",Impact,sans-serif;font-weight:700;font-size:38px;line-height:1;color:var(--ink)}
+.tile .name{font-size:12.5px;color:var(--muted);margin:2px 0 10px;line-height:1.25;min-height:2.5em}
+.tile dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-family:"IBM Plex Mono",Menlo,Consolas,monospace;font-size:12.5px;font-variant-numeric:tabular-nums}
+.tile dt{color:var(--faint);margin:0}
+.tile dd{margin:0;text-align:right;color:var(--ink)}
+.cbar{max-width:1400px;margin:14px auto 0;padding:0 4px;display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;color:var(--muted);font-size:12.5px}
+.cbar .bar{height:10px;border-radius:2px;border:1px solid var(--line)}
+.cbar .ticks{display:flex;justify-content:space-between;font-family:"IBM Plex Mono",Menlo,Consolas,monospace;font-size:11px;margin-top:4px}
+
+section.wrap{padding-top:56px}
+h2{margin:0 0 6px;font-size:clamp(28px,3.4vw,40px);line-height:1;font-weight:600}
+.sub{margin:0 0 22px;color:var(--muted);max-width:66ch}
+.two{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:28px;align-items:start}
+figure{margin:0}
+figure svg{width:100%;height:auto;display:block}
+figcaption{font-size:13px;color:var(--muted);margin-top:8px;max-width:60ch}
+table.perf{width:100%;border-collapse:collapse;font-size:14px}
+table.perf th,table.perf td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
+table.perf th{font-weight:500;color:var(--muted);font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+table.perf td:first-child,table.perf th:first-child{text-align:left}
+table.perf td.sel{color:var(--ink);font-weight:600}
+table.perf td.oth{color:var(--muted)}
+table.perf .u{color:var(--faint);font-size:12px;margin-left:4px}
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px 28px;margin:0;padding:0;list-style:none}
+.legend li{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:start}
+.legend .k{width:44px;height:30px;border-radius:3px;border:1px solid var(--line)}
+.legend b{display:block;font-weight:600;margin-bottom:2px}
+.legend p{margin:0;color:var(--muted);font-size:13.5px}
+footer.wrap{padding:48px 24px 40px;color:var(--faint);font-size:12.5px;max-width:1240px}
+footer p{margin:4px 0;max-width:80ch}
+
+@media (max-width:900px){
+  header.wrap{grid-template-columns:1fr}
+  .chips{justify-content:flex-start;max-width:none}
+  .readouts{grid-template-columns:repeat(3,1fr)}
+  .two{grid-template-columns:1fr}
+  .ctl-note{margin-left:0;flex-basis:100%}
+}
+@media (max-width:540px){.readouts{grid-template-columns:repeat(2,1fr)}}
+</style>
+
+<header class="wrap">
+  <div>
+    <div class="eyebrow">Single-spool turbojet · rung-1 design point</div>
+    <h1 class="display">Turbojet Cutaway</h1>
+    <p class="lede">A two-dimensional cut through the engine the simulator models. Rotor rows turn on one shaft, air parcels are colored by their temperature as they are compressed, burned and expanded, and every station readout is the model's own number.</p>
+  </div>
+  <div class="chips" aria-label="Flight and design condition">
+    <span class="chip"><b>M0</b>0.85</span>
+    <span class="chip"><b>T0</b>250 K</span>
+    <span class="chip"><b>p0</b>50 kPa</span>
+    <span class="chip"><b>π_c</b>10</span>
+    <span class="chip"><b>Tt4</b>1500 K</span>
+  </div>
+</header>
+
+<div class="stage-outer">
+  <div class="stage" id="stage">
+    <canvas id="cutaway" aria-label="Animated cutaway of a single-spool turbojet: spinner, eight-stage axial compressor, annular combustor with fuel injectors and flame, two-stage turbine, convergent-divergent nozzle and exhaust jet. Air parcels are colored by temperature and move through the engine."></canvas>
+    <div class="stations" id="stations"></div>
+    <div class="probe" id="probe" hidden></div>
+  </div>
+  <div class="controls">
+    <div class="seg" role="group" aria-label="Component model">
+      <button type="button" id="btn-real" aria-pressed="true">Real components</button>
+      <button type="button" id="btn-ideal" aria-pressed="false">Ideal cycle</button>
+    </div>
+    <button type="button" class="btn" id="btn-play">Pause</button>
+    <label class="slider">Flow speed
+      <input type="range" id="speed" min="0.25" max="3" step="0.25" value="1" aria-label="Flow speed multiplier">
+      <output id="speed-out">1.0×</output>
+    </label>
+    <span class="ctl-note">Hover the cutaway to probe the local gas state.</span>
+  </div>
+
+  <div class="readouts" id="readouts"></div>
+  <div class="cbar">
+    <span>Parcel color = temperature</span>
+    <div><div class="bar" id="cbar"></div><div class="ticks"><span>250 K</span><span>600 K</span><span>1000 K</span><span>1500 K</span><span>2200 K</span></div></div>
+  </div>
+</div>
+
+<section class="wrap" id="cycle">
+  <h2 class="display">The same air on a T–s diagram</h2>
+  <p class="sub">Compression and expansion are vertical on the ideal cycle; with real component efficiencies each leg tilts right because every component generates entropy. Switch cases above to move the highlight.</p>
+  <div class="two">
+    <figure>
+      <svg id="ts" viewBox="0 0 560 380" role="img" aria-label="Temperature–entropy diagram of the turbojet cycle, ideal and real-components cases, stations 0, 2, 3, 4, 5 and 9 labeled"></svg>
+      <figcaption>Total temperature against specific entropy relative to the free stream. Solid: the selected case. Dashed: the other.</figcaption>
+    </figure>
+    <div>
+      <table class="perf" id="perf"></table>
+      <figcaption style="margin-top:10px">Per kilogram per second of air captured. The ideal cycle has no losses; the real run applies the losses listed in the footer.</figcaption>
+    </div>
+  </div>
+</section>
+
+<section class="wrap" id="reading">
+  <h2 class="display">Reading the picture</h2>
+  <p class="sub">The geometry is schematic. Everything the colors and readouts say is computed by the model.</p>
+  <ul class="legend" id="legend"></ul>
+</section>
+
+<footer class="wrap">
+  <p>Stations follow the usual numbering: 0 free stream, 2 compressor face, 3 compressor exit, 4 turbine inlet, 5 turbine exit, 9 nozzle exit. Numbers come from the turbojet package run at the design point by <span class="mono">docs/visuals/extract_data.py</span>.</p>
+  <p>Real-components losses: π_d 0.97 · η_c 0.88 · η_b 0.99 · π_b 0.96 · η_t 0.90 · η_m 0.99 · π_n 0.98. Parcel speeds, blade counts and the primary-zone temperature are illustrative; the primary zone is drawn hotter than the 1500 K turbine inlet because the combustor burns near stoichiometric before dilution, which is what the zoned-combustor rungs model.</p>
+</footer>
+
+<script>
+const DATA = /*__DATA__*/;
+
+/* ---------- geometry (logical canvas units, 1400 × 500) ---------- */
+const W = 1400, H = 500, CY = 272;
+const X = { s0: 90, lip: 170, tip: 176, face: 270, s3: 560, dome: 612, s4: 800, s5: 900, jp: 980, throat: 1085, s9: 1180 };
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const seg = (x, a, b) => clamp((x - a) / (b - a), 0, 1);
+const smooth = t => t * t * (3 - 2 * t);
+function pw(knots, x, sm) {
+  if (x <= knots[0][0]) return knots[0][1];
+  for (let i = 1; i < knots.length; i++) {
+    if (x <= knots[i][0]) {
+      let t = seg(x, knots[i - 1][0], knots[i][0]);
+      if (sm) t = smooth(t);
+      return lerp(knots[i - 1][1], knots[i][1], t);
+    }
+  }
+  return knots[knots.length - 1][1];
+}
+const RC_K = [[0, 130], [170, 130], [270, 146], [560, 118], [600, 138], [760, 138], [800, 124], [900, 144], [980, 150], [1085, 108], [1180, 124], [1400, 124]];
+function Rc(x) { return pw(RC_K, x, true); }
+const RH_K = [[270, 70], [560, 92], [605, 62], [800, 62], [900, 70]];
+function Rh(x) {
+  if (x < X.tip) return 0;
+  if (x < X.face) { const s = seg(x, X.tip, X.face); return 70 * Math.sqrt(1 - (1 - s) * (1 - s)); }
+  if (x <= 900) return pw(RH_K, x, true);
+  if (x < 1000) return 70 * (1 - seg(x, 900, 1000));
+  return 0;
+}
+const SKIN = 12;
+/* compressor rows */
+const COMP = [];
+{ const n = 8, pitch = (556 - 274) / n; for (let i = 0; i < n; i++) { const xa = 274 + i * pitch; COMP.push({ rotor: [xa, xa + 14], stator: [xa + 19, xa + 33] }); } }
+const TURB = [{ stator: [802, 822], rotor: [828, 850] }, { stator: [856, 872], rotor: [878, 898] }];
+/* combustor liner radii and holes */
+const LIN_IN = 74, LIN_OUT = 128, LIN_X0 = 612, LIN_X1 = 792;
+const HOLES = [[690, 700], [735, 745]];
+
+/* ---------- gas profiles along x ---------- */
+let CASE = 'real';
+const D = () => DATA[CASE];
+const T_PRIMARY = 2150;
+function Tgas(x) {
+  const d = D(), st = d.stations;
+  const T0 = DATA.design.T0, Tt2 = st['2'].Tt, Tt3 = st['3'].Tt, Tt4 = st['4'].Tt, Tt5 = st['5'].Tt, T9 = d.T9;
+  if (x < X.lip) return T0;
+  if (x < X.face) return lerp(T0, Tt2, seg(x, X.lip, X.face));
+  if (x < X.s3) return lerp(Tt2, Tt3, seg(x, X.face, X.s3));
+  if (x < X.dome) return Tt3;
+  if (x < 668) return lerp(Tt3, T_PRIMARY, smooth(seg(x, X.dome, 668)));
+  if (x < X.s4) return lerp(T_PRIMARY, Tt4, smooth(seg(x, 668, X.s4)));
+  if (x < X.s5) return lerp(Tt4, Tt5, seg(x, X.s4, X.s5));
+  if (x < X.throat) return lerp(Tt5, Tt5 * 0.87, smooth(seg(x, X.jp, X.throat)));
+  if (x < X.s9) return lerp(Tt5 * 0.87, T9, seg(x, X.throat, X.s9));
+  return T9;
+}
+function ptgas(x) {
+  const st = D().stations;
+  const k = [[X.s0, st['0'].pt], [X.face, st['2'].pt], [X.s3, st['3'].pt], [X.s4, st['4'].pt], [X.s5, st['5'].pt], [X.s9, st['9'].pt]];
+  if (x <= k[0][0]) return k[0][1];
+  for (let i = 1; i < k.length; i++) if (x <= k[i][0]) { const t = seg(x, k[i - 1][0], k[i][0]); return Math.exp(lerp(Math.log(k[i - 1][1]), Math.log(k[i][1]), t)); }
+  return k[k.length - 1][1];
+}
+function speedAt(x) {  /* illustrative parcel speed, px per second */
+  const V0 = D().V0, V9 = D().V9, k = 0.5;
+  if (x < X.lip) return V0 * k;
+  if (x < X.face) return lerp(V0, 150, seg(x, X.lip, X.face)) * k;
+  if (x < X.s3) return 150 * k;
+  if (x < X.dome) return lerp(150, 60, seg(x, X.s3, X.dome)) * k;
+  if (x < X.s4) return lerp(60, 95, seg(x, X.dome, X.s4)) * k;
+  if (x < X.s5) return lerp(95, 260, seg(x, X.s4, X.s5)) * k;
+  if (x < X.jp) return 260 * k;
+  if (x < X.s9) return lerp(260, V9, smooth(seg(x, X.jp, X.s9))) * k;
+  return V9 * k * lerp(1, 0.8, seg(x, X.s9, W));
+}
+function regionAt(x) {
+  if (x < X.lip) return 'Free stream';
+  if (x < X.face) return 'Inlet diffuser';
+  if (x < X.s3) { const i = clamp(Math.floor((x - 274) / ((556 - 274) / 8)) + 1, 1, 8); return `Compressor · stage ${i} of 8`; }
+  if (x < X.dome) return 'Pre-diffuser';
+  if (x < 690) return 'Combustor · primary zone';
+  if (x < X.s4) return 'Combustor · dilution zone';
+  if (x < X.s5) return `Turbine · stage ${x < 852 ? 1 : 2} of 2`;
+  if (x < X.jp) return 'Jet pipe';
+  if (x < X.throat) return 'Nozzle · convergent';
+  if (x < X.s9) return 'Nozzle · divergent';
+  return 'Exhaust jet';
+}
+
+/* ---------- theme tokens ---------- */
+let TK = {};
+function readTokens() {
+  const cs = getComputedStyle(document.documentElement);
+  const g = n => cs.getPropertyValue(n).trim();
+  TK = {
+    stage: g('--stage'), vig: g('--stage-vig'), metal: g('--metal'), metalHi: g('--metal-hi'), metalLo: g('--metal-lo'), metalEdge: g('--metal-edge'),
+    hub: g('--hub'), hubHi: g('--hub-hi'), hubLo: g('--hub-lo'), bore: g('--bore'), boreLo: g('--bore-lo'),
+    rotor: g('--rotor'), stator: g('--stator'), liner: g('--liner'), fuel: g('--fuel'),
+    flameOut: g('--flame-out'), flameMid: g('--flame-mid'), flameCore: g('--flame-core'), flameGlow: g('--flame-glow'),
+    plume: g('--plume'), plumeEdge: g('--plume-edge'), station: g('--station'), muted: g('--muted'), line: g('--line-strong'),
+    stops: [[250, g('--air-cold')], [450, g('--air-cool')], [620, g('--air-mid')], [950, g('--air-warm')], [1250, g('--air-hot')], [1550, g('--air-glow')], [2200, g('--air-white')]]
+  };
+  buildLUT();
+  document.getElementById('cbar').style.background = `linear-gradient(90deg, ${TK.stops.map(s => `${s[1]} ${((s[0] - 250) / 1950 * 100).toFixed(1)}%`).join(', ')})`;
+  paintReadouts();
+  drawTS();
+}
+function hexToRgb(h) { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); const n = parseInt(h, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+let LUT = [];
+function buildLUT() {
+  LUT = [];
+  const st = TK.stops.map(s => [s[0], hexToRgb(s[1])]);
+  for (let i = 0; i < 256; i++) {
+    const T = 250 + i / 255 * 1950;
+    let j = 1; while (j < st.length - 1 && T > st[j][0]) j++;
+    const t = seg(T, st[j - 1][0], st[j][0]);
+    const c = st[j - 1][1].map((v, k) => Math.round(lerp(v, st[j][1][k], t)));
+    LUT.push(`rgb(${c[0]},${c[1]},${c[2]})`);
+  }
+}
+const colorT = T => LUT[clamp(Math.round((T - 250) / 1950 * 255), 0, 255)];
+
+/* ---------- particles ---------- */
+const N_IN = 620, N_OUT = 110, N_FUEL = 90;
+const P = [], OUT = [], FUEL = [];
+function rnd(a, b) { return a + Math.random() * (b - a); }
+function spawn(p, x) {
+  const s = Math.random() < .5 ? -1 : 1;
+  p.x = x; p.rn = s * rnd(.04, .97); p.rt = p.rn; p.burn = false; p.T = Tgas(p.x); p.seed = Math.random() * 6.28;
+}
+function yOf(p) { const x = p.x, a = Math.abs(p.rn); return CY - Math.sign(p.rn) * (Rh(x) + a * (Rc(x) - Rh(x))); }
+for (let i = 0; i < N_IN; i++) { const p = {}; spawn(p, rnd(-20, W)); if (p.x > X.s4) p.burn = true; else if (p.x > X.dome) { const a = Math.abs(p.rn); p.burn = a > .16 && a < .86; } P.push(p); }
+for (let i = 0; i < N_OUT; i++) OUT.push({ x: rnd(-20, W), s: Math.random() < .5 ? -1 : 1, e: Math.random() });
+for (let i = 0; i < N_FUEL; i++) FUEL.push({ x: 0, y: 0, vy: 0, life: 0, dead: true, s: 1 });
+function stepParticles(dt, t) {
+  const st = D().stations;
+  for (const p of P) {
+    const v = speedAt(p.x);
+    p.x += v * dt;
+    if (p.x > W + 12) { spawn(p, -12); continue; }
+    const a = Math.abs(p.rn);
+    let Tt;
+    if (p.x < X.dome) { p.burn = false; p.rt = p.rn; Tt = Tgas(p.x); }
+    else if (p.x < X.s4) {
+      if (!p.burn) {
+        if (a > .16 && a < .86) p.burn = true;
+        else for (const h of HOLES) if (p.x > h[0] && p.x < h[1] && Math.random() < dt * 5) { p.burn = true; p.rt = Math.sign(p.rn) * rnd(.3, .7); }
+      }
+      Tt = p.burn ? Tgas(p.x) : st['3'].Tt;
+      if (p.burn && p.x < 720) Tt += 160 * Math.sin(t * 17 + p.seed) * Math.sin(t * 5.1 + p.seed * 2);
+    } else { p.burn = true; Tt = Tgas(p.x); }
+    p.rn += (p.rt - p.rn) * Math.min(1, dt * 7);
+    p.T += (Tt - p.T) * Math.min(1, dt * 9);
+  }
+  const V0 = D().V0 * 0.5;
+  for (const o of OUT) { o.x += V0 * dt; if (o.x > W + 12) { o.x = -12; o.e = Math.random(); o.s = Math.random() < .5 ? -1 : 1; } }
+  /* fuel droplets */
+  let toSpawn = dt * 70;
+  for (const f of FUEL) {
+    if (f.dead) { if (toSpawn >= 1 || Math.random() < toSpawn) { toSpawn -= 1; f.dead = false; f.x = X.dome + 6; f.s = Math.random() < .5 ? -1 : 1; f.y = CY - f.s * (LIN_IN + LIN_OUT) / 2 + rnd(-3, 3); f.vy = rnd(-22, 22); f.life = rnd(.35, .7); } continue; }
+    f.x += 55 * dt; f.y += f.vy * dt; f.life -= dt; if (f.life <= 0) f.dead = true;
+  }
+}
+
+/* ---------- drawing ---------- */
+const canvas = document.getElementById('cutaway');
+const ctx = canvas.getContext('2d');
+let dpr = 1, scale = 1;
+function resize() {
+  dpr = Math.min(2, window.devicePixelRatio || 1);
+  const w = canvas.clientWidth; const h = w * H / W;
+  canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+  scale = canvas.width / W;
+}
+function casingPath(top) {
+  const s = top ? -1 : 1;
+  ctx.beginPath();
+  ctx.moveTo(X.lip, CY + s * (Rc(X.lip) + SKIN * .5));
+  for (let x = X.lip + 4; x <= X.s9; x += 4) ctx.lineTo(x, CY + s * (Rc(x) + SKIN));
+  ctx.lineTo(X.s9, CY + s * Rc(X.s9));
+  for (let x = X.s9 - 4; x >= X.lip; x -= 4) ctx.lineTo(x, CY + s * Rc(x));
+  ctx.closePath();
+}
+function hubPath() {
+  ctx.beginPath();
+  ctx.moveTo(X.tip, CY);
+  for (let x = X.tip; x <= 1000; x += 3) ctx.lineTo(x, CY - Rh(x));
+  ctx.lineTo(1000, CY);
+  for (let x = 1000; x >= X.tip; x -= 3) ctx.lineTo(x, CY + Rh(x));
+  ctx.closePath();
+}
+function bladeRow(xa, xb, n, phase, stag, color, alphaBase) {
+  const rh0 = Rh(xa), rh1 = Rh(xb), rc0 = Rc(xa), rc1 = Rc(xb);
+  ctx.fillStyle = color;
+  for (let i = 0; i < n; i++) {
+    const th = phase + i * 2 * Math.PI / n;
+    const s = Math.sin(th); if (s >= 0) continue;           /* the near half is cut away */
+    const c = Math.cos(th), c2 = Math.cos(th + stag);
+    ctx.globalAlpha = alphaBase + (1 - alphaBase) * (-s);
+    ctx.beginPath();
+    ctx.moveTo(xa, CY - rh0 * c); ctx.lineTo(xb, CY - rh1 * c2); ctx.lineTo(xb, CY - rc1 * c2); ctx.lineTo(xa, CY - rc0 * c);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+function helix(x0, x1, rFn, turns, phase, color, width, near) {
+  ctx.strokeStyle = color; ctx.lineWidth = width;
+  const n = 60; let on = false;
+  ctx.beginPath();
+  for (let i = 0; i <= n; i++) {
+    const s = i / n, x = lerp(x0, x1, s), th = phase + s * turns * 2 * Math.PI;
+    const vis = near ? Math.sin(th) > 0 : Math.sin(th) < 0;
+    if (!vis) { on = false; continue; }
+    const y = CY - rFn(x) * Math.cos(th);
+    if (!on) { ctx.moveTo(x, y); on = true; } else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+}
+function flame(t, top) {
+  const s = top ? -1 : 1, yc = CY + s * (LIN_IN + LIN_OUT) / 2;
+  const x0 = X.dome + 8, x1 = 786;
+  const layers = [[1, TK.flameOut, x1], [.66, TK.flameMid, 745], [.36, TK.flameCore, 700]];
+  for (const [k, col, xe] of layers) {
+    ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x0, yc);
+    const pts = [];
+    for (let x = x0; x <= xe; x += 6) {
+      const u = seg(x, x0, xe);
+      const env = Math.pow(Math.sin(Math.PI * Math.min(1, u * 1.15)), .7) * lerp(1, .55, u);
+      const wob = 1 + .22 * Math.sin(x * .07 + t * 9 + k * 3) * Math.sin(x * .031 - t * 6.3) + .1 * Math.sin(t * 13 + x * .11);
+      pts.push([x, 19 * k * env * wob]);
+    }
+    for (const [x, h] of pts) ctx.lineTo(x, yc - h);
+    for (let i = pts.length - 1; i >= 0; i--) ctx.lineTo(pts[i][0], yc + pts[i][1] * (1 + .15 * Math.sin(t * 7 + i)));
+    ctx.closePath(); ctx.fill();
+  }
+}
+function drawFrame(t) {
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  /* stage ground with vignette */
+  ctx.fillStyle = TK.stage; ctx.fillRect(0, 0, W, H);
+  const vg = ctx.createRadialGradient(W * .5, CY, 200, W * .5, CY, 900); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, TK.vig);
+  ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+
+  /* exhaust plume */
+  {
+    const g = ctx.createLinearGradient(X.s9, 0, W, 0); g.addColorStop(0, TK.plume); g.addColorStop(1, TK.plumeEdge);
+    ctx.fillStyle = g; ctx.beginPath();
+    ctx.moveTo(X.s9, CY - Rc(X.s9));
+    for (let x = X.s9; x <= W; x += 10) { const r = Rc(X.s9) + (x - X.s9) * .12 + 4 * Math.sin(x * .05 - t * 8); ctx.lineTo(x, CY - r); }
+    for (let x = W; x >= X.s9; x -= 10) { const r = Rc(X.s9) + (x - X.s9) * .12 + 4 * Math.sin(x * .05 - t * 8 + 2); ctx.lineTo(x, CY + r); }
+    ctx.closePath(); ctx.fill();
+  }
+
+  /* bore: the far inner wall of the casing */
+  {
+    const g = ctx.createLinearGradient(0, CY - 150, 0, CY + 150); g.addColorStop(0, TK.boreLo); g.addColorStop(.5, TK.bore); g.addColorStop(1, TK.boreLo);
+    ctx.fillStyle = g; ctx.beginPath();
+    ctx.moveTo(X.lip, CY - Rc(X.lip));
+    for (let x = X.lip; x <= X.s9; x += 4) ctx.lineTo(x, CY - Rc(x));
+    for (let x = X.s9; x >= X.lip; x -= 4) ctx.lineTo(x, CY + Rc(x));
+    ctx.closePath(); ctx.fill();
+  }
+
+  /* blades (far half) */
+  const phase = -ROT.phase;
+  for (const r of COMP) { bladeRow(r.stator[0], r.stator[1], 22, 0.31, -0.42, TK.stator, .3); bladeRow(r.rotor[0], r.rotor[1], 22, phase, 0.42, TK.rotor, .35); }
+  for (const r of TURB) { bladeRow(r.stator[0], r.stator[1], 16, 0.19, -0.7, TK.stator, .3); bladeRow(r.rotor[0], r.rotor[1], 16, phase, 0.7, TK.rotor, .35); }
+
+  /* combustor liners, glow, flame, injectors */
+  for (const top of [true, false]) {
+    const s = top ? -1 : 1;
+    const yc = CY + s * (LIN_IN + LIN_OUT) / 2;
+    const gl = ctx.createRadialGradient(660, yc, 4, 660, yc, 120); gl.addColorStop(0, TK.flameGlow); gl.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = gl; ctx.fillRect(560, yc - 120, 260, 240);
+    flame(t, top);
+    ctx.strokeStyle = TK.liner; ctx.lineWidth = 2; ctx.lineCap = 'round';
+    for (const r of [LIN_IN, LIN_OUT]) {
+      const y = CY + s * r;
+      let xs = LIN_X0;
+      for (const h of HOLES) { ctx.beginPath(); ctx.moveTo(xs, y); ctx.lineTo(h[0], y); ctx.stroke(); xs = h[1]; }
+      ctx.beginPath(); ctx.moveTo(xs, y); ctx.lineTo(LIN_X1, y); ctx.stroke();
+    }
+    /* dome */
+    ctx.beginPath(); ctx.moveTo(LIN_X0, CY + s * LIN_IN); ctx.quadraticCurveTo(LIN_X0 - 14, yc, LIN_X0, CY + s * LIN_OUT); ctx.stroke();
+    /* injector */
+    ctx.fillStyle = TK.liner; ctx.beginPath(); ctx.moveTo(LIN_X0 - 12, yc - 4); ctx.lineTo(LIN_X0 + 6, yc - 2.5); ctx.lineTo(LIN_X0 + 6, yc + 2.5); ctx.lineTo(LIN_X0 - 12, yc + 4); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = TK.liner; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(LIN_X0 - 12, yc); ctx.lineTo(LIN_X0 - 40, yc); ctx.stroke();
+  }
+  /* fuel droplets */
+  ctx.fillStyle = TK.fuel;
+  for (const f of FUEL) { if (f.dead) continue; ctx.globalAlpha = clamp(f.life * 2, 0, 1) * .9; ctx.beginPath(); ctx.arc(f.x, f.y, 1.3, 0, 6.29); ctx.fill(); }
+  ctx.globalAlpha = 1;
+
+  /* air parcels */
+  const pt0 = D().stations['0'].pt;
+  ctx.lineCap = 'round';
+  for (const p of P) {
+    const y = yOf(p), v = speedAt(p.x), sz = 1.4 + (Math.pow(ptgas(p.x) / pt0, .35) - 1) * 1.0;
+    const tail = clamp(v * .045, 1.5, 30);
+    ctx.strokeStyle = colorT(p.T); ctx.lineWidth = sz * 1.5;
+    ctx.globalAlpha = p.x < X.lip ? .75 : .95;
+    ctx.beginPath(); ctx.moveTo(p.x - tail, y); ctx.lineTo(p.x, y); ctx.stroke();
+  }
+  /* exterior stream */
+  const V0px = D().V0 * .5, tail0 = clamp(V0px * .045, 1.5, 30);
+  ctx.strokeStyle = colorT(DATA.design.T0); ctx.lineWidth = 1.6; ctx.globalAlpha = .45;
+  for (const o of OUT) {
+    const y = CY + o.s * (Rc(clamp(o.x, X.lip, X.s9)) + SKIN + 10 + o.e * 50);
+    ctx.beginPath(); ctx.moveTo(o.x - tail0, y); ctx.lineTo(o.x, y); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  /* hub / spinner / tailcone with cylindrical shading */
+  {
+    const g = ctx.createLinearGradient(0, CY - 95, 0, CY + 95); g.addColorStop(0, TK.hubLo); g.addColorStop(.42, TK.hubHi); g.addColorStop(.6, TK.hub); g.addColorStop(1, TK.hubLo);
+    hubPath(); ctx.fillStyle = g; ctx.fill(); ctx.strokeStyle = TK.metalEdge; ctx.lineWidth = 1; ctx.stroke();
+    ctx.save(); hubPath(); ctx.clip();
+    /* spinner helix, near side */
+    helix(X.tip + 2, X.face, Rh, 2.2, ROT.phase, TK.metalEdge, 1.6, true);
+    helix(X.tip + 2, X.face, Rh, 2.2, ROT.phase + Math.PI, TK.metalEdge, 1.6, true);
+    /* shaft stripes under the combustor */
+    for (let k = 0; k < 5; k++) helix(600, 800, Rh, 1.4, ROT.phase + k * 2 * Math.PI / 5, TK.hubLo, 2.2, true);
+    /* disk rims */
+    ctx.strokeStyle = TK.hubLo; ctx.lineWidth = 1;
+    for (const r of COMP) { ctx.beginPath(); ctx.moveTo(r.rotor[0], CY - Rh(r.rotor[0])); ctx.lineTo(r.rotor[0], CY + Rh(r.rotor[0])); ctx.stroke(); }
+    ctx.restore();
+  }
+
+  /* casing, top and bottom */
+  for (const top of [true, false]) {
+    const g = ctx.createLinearGradient(0, CY - 165, 0, CY + 165);
+    if (top) { g.addColorStop(0, TK.metalHi); g.addColorStop(.5, TK.metalLo); } else { g.addColorStop(.5, TK.metalLo); g.addColorStop(1, TK.metalHi); }
+    casingPath(top); ctx.fillStyle = g; ctx.fill(); ctx.strokeStyle = TK.metalEdge; ctx.lineWidth = 1; ctx.lineJoin = 'round'; ctx.stroke();
+  }
+  /* stator roots on the casing: small ticks */
+  ctx.strokeStyle = TK.metalEdge; ctx.lineWidth = 1;
+  for (const r of COMP.concat(TURB)) for (const s of [-1, 1]) { const x = (r.stator[0] + r.stator[1]) / 2; ctx.beginPath(); ctx.moveTo(x, CY + s * Rc(x)); ctx.lineTo(x, CY + s * (Rc(x) + SKIN)); ctx.stroke(); }
+
+  /* station lines */
+  ctx.setLineDash([3, 5]); ctx.strokeStyle = TK.station; ctx.globalAlpha = .55; ctx.lineWidth = 1;
+  for (const x of [X.s0, X.face, X.s3, X.s4, X.s5, X.s9]) {
+    const r = x < X.lip || x > X.s9 ? 150 : Rc(x) + SKIN;
+    ctx.beginPath(); ctx.moveTo(x, 88); ctx.lineTo(x, CY - r); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x, CY + r); ctx.lineTo(x, H - 10); ctx.stroke();
+  }
+  ctx.setLineDash([]); ctx.globalAlpha = 1;
+}
+
+/* ---------- animation loop ---------- */
+const ROT = { phase: 0 };
+let speedMul = 1, playing = !window.matchMedia('(prefers-reduced-motion: reduce)').matches, last = null, tAnim = 0;
+function frame(now) {
+  if (last == null) last = now;
+  let dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (playing) {
+    dt *= speedMul; tAnim += dt;
+    ROT.phase += dt * 2 * Math.PI * .45;
+    stepParticles(dt, tAnim);
+  }
+  drawFrame(tAnim);
+  requestAnimationFrame(frame);
+}
+
+/* ---------- HTML pieces ---------- */
+const STN = [['0', X.s0, 'free stream'], ['2', X.face, 'compressor face'], ['3', X.s3, 'compressor exit'], ['4', X.s4, 'turbine inlet'], ['5', X.s5, 'turbine exit'], ['9', X.s9, 'nozzle exit']];
+document.getElementById('stations').innerHTML = STN.map(([n, x, l]) => `<div class="st" style="left:${(x / W * 100).toFixed(2)}%"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('');
+const fmt = { K: v => `${Math.round(v)} K`, kPa: v => `${(v / 1000).toFixed(1)} kPa`, f: v => v.toFixed(4) };
+function paintReadouts() {
+  const st = D().stations;
+  document.getElementById('readouts').innerHTML = STN.map(([n, x, l]) => {
+    const s = st[n];
+    return `<div class="tile" style="--sw:${colorT(s.Tt)}"><div class="num">${n}</div><div class="name">${l}</div><dl><dt>Tt</dt><dd>${fmt.K(s.Tt)}</dd><dt>pt</dt><dd>${fmt.kPa(s.pt)}</dd><dt>f</dt><dd>${fmt.f(s.far)}</dd></dl></div>`;
+  }).join('');
+  const I = DATA.ideal, R = DATA.real;
+  const rows = [
+    ['Specific thrust', I.specific_thrust, R.specific_thrust, v => v.toFixed(0), 'N·s/kg'],
+    ['TSFC', I.tsfc * 1e6, R.tsfc * 1e6, v => v.toFixed(1), 'mg/(N·s)'],
+    ['Fuel–air ratio', I.stations['4'].far, R.stations['4'].far, v => v.toFixed(4), ''],
+    ['Exhaust velocity V9', I.V9, R.V9, v => v.toFixed(0), 'm/s'],
+    ['Exit Mach M9', I.M9, R.M9, v => v.toFixed(2), ''],
+    ['Exit static T9', I.T9, R.T9, v => v.toFixed(0), 'K'],
+    ['η thermal', I.eta_thermal, R.eta_thermal, v => (v * 100).toFixed(1), '%'],
+    ['η propulsive', I.eta_propulsive, R.eta_propulsive, v => (v * 100).toFixed(1), '%'],
+    ['η overall', I.eta_overall, R.eta_overall, v => (v * 100).toFixed(1), '%'],
+  ];
+  const cI = CASE === 'ideal' ? 'sel' : 'oth', cR = CASE === 'real' ? 'sel' : 'oth';
+  document.getElementById('perf').innerHTML = `<thead><tr><th>Quantity</th><th>Ideal</th><th>Real</th></tr></thead><tbody>` +
+    rows.map(([n, a, b, f, u]) => `<tr><td>${n}</td><td class="${cI} mono">${f(a)}<span class="u">${u}</span></td><td class="${cR} mono">${f(b)}<span class="u">${u}</span></td></tr>`).join('') + `</tbody>`;
+}
+function drawTS() {
+  const svg = document.getElementById('ts');
+  const L = 54, Rm = 16, T_ = 14, B = 40, w = 560, h = 380;
+  const sMin = -60, sMax = 1120, TMin = 200, TMax = 1600;
+  const sx = s => L + (s - sMin) / (sMax - sMin) * (w - L - Rm), sy = T => h - B - (T - TMin) / (TMax - TMin) * (h - T_ - B);
+  const cs = getComputedStyle(document.documentElement), ink = cs.getPropertyValue('--ink').trim(), mut = cs.getPropertyValue('--muted').trim(), ln = cs.getPropertyValue('--line').trim(), acc = cs.getPropertyValue('--accent').trim();
+  let out = '';
+  for (let T = 200; T <= 1600; T += 200) out += `<line x1="${L}" x2="${w - Rm}" y1="${sy(T)}" y2="${sy(T)}" stroke="${ln}" stroke-width="1"/><text x="${L - 8}" y="${sy(T) + 4}" text-anchor="end" font-size="11" fill="${mut}" font-family="IBM Plex Mono, monospace">${T}</text>`;
+  for (let s = 0; s <= 1000; s += 250) out += `<line x1="${sx(s)}" x2="${sx(s)}" y1="${h - B}" y2="${h - B + 5}" stroke="${mut}"/><text x="${sx(s)}" y="${h - B + 18}" text-anchor="middle" font-size="11" fill="${mut}" font-family="IBM Plex Mono, monospace">${s}</text>`;
+  out += `<text x="${(L + w - Rm) / 2}" y="${h - 6}" text-anchor="middle" font-size="11.5" fill="${mut}" font-family="IBM Plex Sans, sans-serif">s − s₀  [J/(kg·K)]</text>`;
+  out += `<text x="14" y="${(T_ + h - B) / 2}" text-anchor="middle" font-size="11.5" fill="${mut}" font-family="IBM Plex Sans, sans-serif" transform="rotate(-90 14 ${(T_ + h - B) / 2})">Tt  [K]</text>`;
+  const order = CASE === 'real' ? ['ideal', 'real'] : ['real', 'ideal'];
+  for (const c of order) {
+    const d = DATA[c], sel = c === CASE;
+    const col = sel ? acc : mut, dash = sel ? '' : 'stroke-dasharray="5 4"', wdt = sel ? 2.4 : 1.4;
+    for (const leg of d.legs) out += `<polyline fill="none" stroke="${col}" stroke-width="${wdt}" ${dash} stroke-linejoin="round" points="${leg.map(([s, T]) => `${sx(s).toFixed(1)},${sy(T).toFixed(1)}`).join(' ')}"/>`;
+    if (sel) for (const [k, [s, T]] of Object.entries(d.points)) {
+      const dx = (k === '4' || k === '5' || k === '9') ? 10 : -10, anc = dx > 0 ? 'start' : 'end';
+      out += `<circle cx="${sx(s)}" cy="${sy(T)}" r="3.6" fill="${acc}" stroke="${cs.getPropertyValue('--ground').trim()}" stroke-width="1.5"/><text x="${sx(s) + dx}" y="${sy(T) + 4}" text-anchor="${anc}" font-size="12" font-weight="600" fill="${ink}" font-family="Barlow Condensed, sans-serif">${k}</text>`;
+    }
+  }
+  svg.innerHTML = out;
+}
+function paintLegend() {
+  const cs = getComputedStyle(document.documentElement), g = n => cs.getPropertyValue(n).trim();
+  const items = [
+    [`linear-gradient(90deg,${g('--rotor')},${g('--rotor')})`, 'Rotor rows turn; stator rows do not', 'Light blades belong to the rotor and sweep across the annulus on one shaft: eight compressor stages and two turbine stages at the same speed. The dimmer, opposite-leaning rows are stators fixed to the casing. You see the far half of each row because the near half is cut away.'],
+    [`linear-gradient(90deg,${g('--air-cold')},${g('--air-mid')},${g('--air-hot')},${g('--air-white')})`, 'Parcel color is temperature', 'Blue is free-stream air at 250 K. It warms through the compressor, flashes to the primary-zone flame temperature, is diluted to the 1500 K turbine inlet, gives up work in the turbine, and cools as it expands through the nozzle. Colors are read off the station table for the selected case.'],
+    [`radial-gradient(circle at 40% 50%,${g('--flame-core')},${g('--flame-mid')} 40%,${g('--flame-out')} 75%,transparent)`, 'The burn: two zones', 'Fuel enters through the dome injectors and burns near stoichiometric in the primary zone. Cooler air in the gaps around the liner enters through the dilution holes and brings the mixture down to Tt4 before the turbine.'],
+    [`repeating-linear-gradient(90deg,${g('--air-warm')} 0 6px,transparent 6px 14px)`, 'Streak length is speed', 'Each parcel trails a streak proportional to its illustrative speed: fast in the free stream, slow in the combustor, fastest leaving the divergent nozzle at the model’s exhaust velocity. Dot weight grows with total pressure, so the compressor exit is the densest region.'],
+    [`linear-gradient(90deg,${g('--metal-hi')},${g('--metal-lo')})`, 'Convergent–divergent nozzle', 'The design run expands fully to a specified exit pressure and leaves at a supersonic Mach number, so the drawn nozzle has a throat and a divergent section; the plume beyond station 9 is shown at the exit static temperature.'],
+    [`linear-gradient(90deg,${g('--accent')},${g('--accent')})`, 'Ideal vs real', 'The ideal case has no losses, so its compression and expansion are vertical on the T–s diagram. The real case adds inlet, burner and nozzle pressure drops and compressor, turbine and mechanical efficiencies; the readouts and the highlight update when you switch.'],
+  ];
+  document.getElementById('legend').innerHTML = items.map(([k, b, p]) => `<li><span class="k" style="background:${k}"></span><div><b>${b}</b><p>${p}</p></div></li>`).join('');
+}
+
+/* ---------- probe ---------- */
+const probe = document.getElementById('probe');
+canvas.addEventListener('mousemove', e => {
+  const r = canvas.getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width * W;
+  const st = D().stations, f = x < X.dome ? 0 : st['4'].far;
+  probe.hidden = false;
+  probe.innerHTML = `<div class="r">${regionAt(x)}</div><div class="v"><span>T</span><span>${fmt.K(Tgas(x))}</span></div><div class="v"><span>pt</span><span>${fmt.kPa(ptgas(x))}</span></div><div class="v"><span>f</span><span>${fmt.f(f)}</span></div>`;
+  const px = e.clientX - r.left, py = e.clientY - r.top;
+  probe.style.left = (px + 190 > r.width ? px - 210 : px) + 'px'; probe.style.top = py + 'px';
+});
+canvas.addEventListener('mouseleave', () => { probe.hidden = true; });
+
+/* ---------- controls ---------- */
+const bReal = document.getElementById('btn-real'), bIdeal = document.getElementById('btn-ideal'), bPlay = document.getElementById('btn-play');
+function setCase(c) { CASE = c; bReal.setAttribute('aria-pressed', c === 'real'); bIdeal.setAttribute('aria-pressed', c === 'ideal'); paintReadouts(); drawTS(); }
+bReal.addEventListener('click', () => setCase('real')); bIdeal.addEventListener('click', () => setCase('ideal'));
+bPlay.textContent = playing ? 'Pause' : 'Play';
+bPlay.addEventListener('click', () => { playing = !playing; bPlay.textContent = playing ? 'Pause' : 'Play'; });
+const sp = document.getElementById('speed'), spo = document.getElementById('speed-out');
+sp.addEventListener('input', () => { speedMul = parseFloat(sp.value); spo.textContent = speedMul.toFixed(2).replace(/0$/, '') + '×'; });
+
+/* ---------- boot ---------- */
+readTokens(); paintLegend();
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { readTokens(); paintLegend(); });
+new MutationObserver(() => { readTokens(); paintLegend(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+window.addEventListener('resize', resize);
+resize();
+/* settle the flow so the first frame is full */
+for (let i = 0; i < 90; i++) stepParticles(1 / 30, tAnim += 1 / 30);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => requestAnimationFrame(frame)); else requestAnimationFrame(frame);
+</script>
