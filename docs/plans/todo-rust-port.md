@@ -9028,7 +9028,7 @@ by counting.
 | **AE** | 73 | `AppliedReferenceTransient` | ~~**0**~~ → **1 ADD + 6 SWAPS. MEASURED at § 5.29 (ii)** — `_with_ref` (69 → 73) is a **NAME REUSED**, not an override: identical arity, but the two bodies write DISJOINT FIELDS (`_ref` / `_ref_law`), and rung 69's own inherited caller RAISES on a rung-73 machine (driven, with a passing control). **§ 5.27 (x) saw the pair and cleared it as a harmless RENAME** — its predicate compared signatures; the same sentence clears `_with_coord` (74 → 79), now booked to AF **and** AI. `_quad_gains_at` is a swap here too — **AD's "unreachable today" booking REFUTED BY VALUE** (§ 5.29 (iv)): with the machine held fixed and only the pointer swapped, 32 keys move and 70 vanish, `F_r` going −1.000000000002735 → 0.0 |
 | **AF** | 74 | `DemandCoordinateTransient` | ~~**3**~~ → **4 ADD + 4 SWAPS. MEASURED at § 5.30 (ii)** — the missing fourth ADD is `_with_coord`, which **slice W’s phase-wide census had already named** among *the four names the hand-written column missed*; this row was simply never updated. Its two definers are rungs 74 and 79, so the census **re-derives § 5.29 (v)’s separate-field obligation from the source** instead of inheriting it as a booking. SWAPS are 4 under AC’s convention and 2 under § 5.19 (i)’s (`at_lever`/`_shared_rig` are Rust deletes) — both stated, because the same slice scores differently under the two. **LANDED at § 5.30.1: 4 ADD + 4 SWAPS, `TripleHooks` 14 → 18.** The width toll was MEASURED AD's way (apply, fix the lib, count what is still red) and came back **7 `src` literals + 4 TEST sites where this plan and the crate's own comments say TWO** — slice AE ships two exhaustive DESTRUCTURINGS (`E0027`) that nothing calls tripwires. **STEP 2 at § 5.30.2: the six demand laws, all SINGLE-DEFINER by census, so no table field and no width toll; `slice_af_laws.rs` 13 gates, sweep 21/21 as predicted (18 killed).** Its leading finding is a rig point COPIED from step 1's cells file that sat inside a shipped refusal — and the gate that did not abort there had been passing its min-select flatness equality between two SATURATED ZEROS. **STEP 3 at § 5.30.3: the six-state march (`_coord_rig`/`_coord_ic`/`_march`), `slice_af_march.rs` 15 gates, sweep 17/17 as predicted (12 killed).** Its leading finding is a gate that read a SPLIT PRODUCED BY STEP 2's OWN CODE as evidence of its clamp working, when that clamp fires 0 of 340 times. **STEP 4 at § 5.30.4: `_coord_march`, `_demand_gains_at` and all six readers; NO gate file (they are step 5's), proved by DRIVING every reader — 3 731 keys, `Rust == PyPy` bit for bit on the first run, and the port independently reproduces `docs/rung74-spec.md` § 3's `65.2 K`/332-of-341 and § 4's exact `1.0`. Sweep 19 mutations, 11 killed, 19/19 as predicted.** Its leading finding is TWO DOC COMMENTS asserting a difference was LIVE that nothing had measured, one of them FALSE — and a shipped refusal message found to be FOUR formatting divergences wide the moment a reader first read one as a value. **STEP 5 at § 5.30.5 in TWO COMMITS: (a) the 17 ported gates, whose finding is a shipped `Usage:` block with THREE of four documented calls raising, swept file-wide to 10 bind fails in three causes; (b) the oracle, 20 643 keys x2 goldens, whose finding is P2 FALSIFIED IN BOTH CLAUSES because a `sum()` census counted call sites and half of them sum a literal 1.** **STEP 6 at § 5.30.6 — SLICE CLOSED: `slice_af_dispatch.rs`, 8 gates, ten injections x seven seats, plus a FOUR-LINE REPAIR. Its finding is FOUR PRODUCTION CALL SITES THAT DISPATCHED A WRITE PYTHON MAKES BY PLAIN ASSIGNMENT — identical at rung 74, and at rung 79 (a second definer writing `_phi_ref`) they would have marched the PARENT while reporting this rung, on a path `tests/test_rung80.py:110` already walks. Reach measured BEFORE the fix (6 of 7 seats → 0), neutrality proved against UNREGENERATED goldens, and the registered *no other row moves* FALSIFIED by `at_lever`: a dispatched pin on a machine without the cell hits the parent's PANIC, so the port was turning a benign attribute assignment into a REFUSAL. The `_with_*` family swept over all 58 classes: the two field-divergent names are exactly the two repaired, and there is no third. P1 FALSIFIED (2.53x), P3/P4/P5/P6 HELD. **THE DEBT CLOSED at § 5.30.7 — SLICE AF FULLY DISCHARGED:** the seven `Usage:` calls repaired (three RETARGETED, none deleted) plus `tests/test_usage_blocks.py`, whose finding is that the step-5 (a) census's SKIP category was hiding SIX statements that are not Python at all, in six blocks that parse WHOLE for nobody and document 19 further unchecked calls. |
 | **AG** | 75–76 | `AntiWindupTransient`, `SensedCapTransient` | **0** |
-| **AH** | 77–78 | `StiffnessLedgerTransient`, `ResidualGaugeTransient` | **0** |
+| **AH** | 77–78 | `StiffnessLedgerTransient`, `ResidualGaugeTransient` | **0 — MEASURED at § 5.32 (ii), and probe 7 makes it DURABLE past AI/AJ**: 4 substitutable SWAPs (`at_lever` ×2, `_shared_rig`, `_cap_fuel`), all already fields; 1 INCOMPATIBLE name-reuse (`_legs`, rungs 63→77 — § 5.28 (x)'s booking, DISCHARGED both halves); 20 single-definers, none of which becomes a cell at rungs 79–84. `TripleHooks` stays at 18. **The zero has a forced consequence**: no `E0063` width tripwire, so step 1's instrument is function-pointer identity in BOTH directions and AG step 1's linker-folding defect is live again. **PRE-REGISTERED at § 5.32 off FOURTEEN probes**, priced at SEVEN steps as a DISCRIMINATING prediction (4 swaps against AG's 5, and rung 77's `at_lever` carries NOTHING NEW — the first in the chain — so classes⇒7 and bodies⇒6 finally separate). Leading finding: **a booking NO GATE CAN CLOSE is a claim in the WRONG CURRENCY** — § 5.22 (vii)'s same-field nest is CONFIRMED at SIX sites across BOTH rungs, every one firing at runtime, the source handles it THREE incompatible ways in one slice and records that it shipped wrong once, and the Rust guard that removes it is value-identical everywhere — so what is owed is a STRUCTURAL claim, not a test. **And the census that found four of the six was SCOPED BY AN UNMEASURED PREMISE**: it named `_c_at` as the only freezing method where the source has 37, and the two sites it missed are precisely the two that falsify its own stated reason. Caught by the RUNTIME counter, not by a reading — **a hand reading validates a probe's LOGIC and cannot validate its SCOPE.** |
 | **AI** | 79–80 | `StateCoordinateTransient`, `SplitWallTransient` | **0** |
 | **AJ** | 81–84 | `AuthorityClock…StaircaseLawTransient` | **0** — the reader-only rungs |
 | | | | **25 + 3 phase-6 = 28** |
@@ -23460,3 +23460,393 @@ is unchanged because that change is three constants. **The 35:47 wall time is NO
 * **Nothing else is owed.** § 5.31 (ix)'s single pre-step item was closed before step 1; steps 1–6
   left no arrears; and step 7's own two disclosures — P1's lower-bound numerator and P6's residual
   wrong-rung attribution — are stated above rather than booked forward.
+
+### 5.32 SLICE AH (rungs 77 + 78, `StiffnessLedgerTransient` + `ResidualGaugeTransient`) — PRE-REGISTERED, fourteen probes MEASURED first
+
+Phase 7 is authorised (§ 1's phase table) and slice AG closed at § 5.31.7 owing nothing, so
+this slice needs no authorisation and inherits no debt from its predecessor. It does inherit
+**four items booked to it BY NAME** by earlier slices in the phase — § (iii).
+
+#### (i) THE LEADING FINDING — **THE ONE HAZARD SLICE AC BOOKED TO THIS SLICE IS HANDLED THREE INCOMPATIBLE WAYS INSIDE THESE TWO CLASSES, THE SOURCE RECORDS THAT IT SHIPPED WRONG ONCE, AND THE RUST IDIOM THAT REMOVES IT CANNOT BE STATED BY ANY VALUE GATE**
+
+A method **freezes** when it sets `_b_state`/`_v_state` and restores them to `None` in its
+own `finally`. Probe 14 DERIVES that set from the source rather than naming it: **37 methods
+in the ladder freeze.** A **NEST** is a call to one of them from inside a block that is
+already frozen. There are **six**, at five code locations, and they sit at **BOTH** of this
+slice's rungs:
+
+| site | rung | caller | callee | enclosing set | what the callee is handed |
+|---|---|---|---|---|---|
+| `engine.py:19829` | **77** | `leg_slopes` | `_c_at` | `:19821` | the enclosing `q, v` |
+| `engine.py:20412` | 78 | `gauge_scan` | `_c_at` | `:20410` | the enclosing `q, v` |
+| `engine.py:20503` | 78 | `root_census` | `_c_at` | `:20498` | the enclosing `q, v` |
+| `engine.py:20591` | 78 | `gauge_vs_device` | `_phi_at` | `:20577` | **`q + dq`, `v` — NOT the enclosing value** |
+| `engine.py:20592` | 78 | `gauge_vs_device` | `_phi_at` | `:20577` | **`q - dq`, `v` — NOT the enclosing value** |
+| `engine.py:20691` | 78 | `gauge_march` | `_c_at` | `:20685` | the enclosing `p0['b'], p0['v']` |
+
+`engine.py:19359`, `:19604` and `:20642` call a freezer and are **not** nested. **The last of
+those is not nested ON PURPOSE, and that is where the finding turns.** One hazard, three
+treatments, one slice:
+
+1. **`leg_slopes` (77) nests and never re-freezes.** After `_c_at` returns, the plant is
+   thawed for the rest of the block. It is safe — but only because the single statement that
+   follows (`row["c_err"]`) is arithmetic over numbers already computed. Nothing states that
+   invariant anywhere; it is a property of statement order.
+2. **`root_census` (78) nests and MUST re-freeze**, and does, at `:20504`, carrying the
+   comment *"`_c_at` un-freezes in its OWN `finally`"*. Here the block continues into real
+   plant work, so the omission that is harmless one rung down would be a defect.
+3. **`_c_on_frozen` (78) closes its block BEFORE calling `_c_at` at all** — and its docstring
+   records that an earlier version of the same method did not: *"the root came off the plant
+   with the valve loop CLOSED and was then handed to `_c_at`, which freezes internally — two
+   different plants, one number. That is the trap s 5.1 is about, and it had shipped inside
+   s 5's own code."*
+
+**So the hazard is real, it is live at both of this slice's rungs, and the source's own record
+is that it defeated the author once.** § 5.19 (iv) / § 5.22 (vii) booked it here off a
+NAME-BASED reachability graph and called that an upper bound. It is now measured **twice, by
+two instruments that disagreed and then converged** — § (viii) defect 5. The runtime probe
+counts nests PER SITE over the two rungs' own suites, and every one of the five static
+locations fires:
+
+| site | runtime nests |
+|---|---|
+| `leg_slopes:19829` (via `stiffness_ledger:20038`, and directly) | 120 + 30 |
+| `gauge_scan:20412` | 50 |
+| `root_census:20503` | 20 |
+| `gauge_vs_device:20591` → `_phi_at` | 20 |
+| `gauge_march:20691` | 1 |
+
+**The static census and the runtime counter agree site for site**, which is the validation
+neither has on its own. The booking was right and its upper-bound caveat is discharged.
+
+**One number is NOT reportable, and saying so is part of the measurement.** Two runs of the
+same probe over the same two files with the same selection and ordering, both `29 passed`,
+returned **211 nests / 1 437 759 sets** and **241 nests / 1 461 031 sets** — a 14 % difference
+in nests. The wall times differed by 70 % (574 s against 978 s) because the box was busier, so
+a load- or time-dependent path in the suite is the obvious suspect, but it is **not
+diagnosed**. **The SITE SET is stable and is what the booking asked for; the COUNT is
+reported as an observation and must not be gated on.**
+
+**AND THE REPAIR IS FREE, EXCEPT THAT NOTHING CAN GATE IT.** A Rust `Cell<Option<f64>>`
+behind an RAII guard whose `Drop` restores **the PREVIOUS value** rather than `None` is:
+
+* **value-identical to the Python at all six nests — but NOT for the reason this section
+  first gave.** The first writing said *each receives the enclosing block's own `(q, v)`*.
+  Probe 14 falsifies that: `gauge_vs_device` hands `_phi_at` **`q ± dq`**, so at two of the six
+  the two restore semantics genuinely leave different values behind. The criterion that
+  actually holds is weaker and has to be checked per site: **the window in which the two
+  semantics disagree is DEAD** — between an inner freezer's return and the next set or
+  `finally`, nothing reads the plant. Verified by reading all six: `:19829` is followed by one
+  arithmetic assignment; `:20412`, `:20691` by their `finally`; `:20503` by the re-freeze at
+  `:20504`; `:20591`/`:20592` are the two halves of one central difference, with only a
+  division and an assignment after them. **Right conclusion, wrong stated cause — which is
+  § 5.31.6's own lesson, one slice on;**
+* **structurally STRONGER** — site 1's accidental safety becomes real safety, site 2's
+  re-freeze becomes a redundant no-op, site 3's defensive double-freeze becomes unnecessary,
+  and the failure mode the author hit once becomes unrepresentable;
+* **invisible to every value gate the port can write.** The two restore semantics produce
+  identical numbers on identical inputs at every reachable site. That is precisely why slice
+  AC could not close this booking with a gate and had to book it forward.
+
+**The lesson this slice starts from: a booking that no gate can close is not a gate that was
+never written, it is a claim in the wrong currency.** The discharge owed here is a STRUCTURAL
+claim, verified per call site and stated in the port's own doc comments — and § (ix) records
+it as such rather than promising a test that cannot exist.
+
+#### (ii) THE CELL CENSUS — **the row says 0, it is right for the fifth slice running, and probe 7 makes it DURABLE rather than merely correct**
+
+Probes 1 and 6, from the Python, under slice AC's repaired predicate (*a cell is a name that
+is overridden **and** substitutable*, substitutability being a signature comparison):
+
+* **24 distinct method names** across the two classes — rung 77 has 9, rung 78 has 16,
+  `at_lever` being the shared one.
+* **4 substitutable SWAPs**, every one already a field: `at_lever` (twice — rungs 77 and 78,
+  `LeverHooks::at_lever`), `_shared_rig` (78, `TripleHooks::shared_rig`) and `_cap_fuel`
+  (78, `TripleHooks::cap_fuel`).
+* **1 INCOMPATIBLE name-reuse**: `_legs` — § (iii) items C/D.
+* **20 single-definers**, which are not cells.
+* ⇒ **0 ADD. `TripleHooks` stays at 18 fields and `LeverHooks` is untouched.**
+
+**Probe 7 asks slice K's question and makes the zero DURABLE.** Six classes follow rung 78 in
+`engine.py`. The only AH method names any of them redefine are `at_lever`, `_shared_rig` and
+`_cap_fuel` — **the three that already have fields**. No single-definer of rungs 77/78 becomes
+a cell at rungs 79–84, so AH is not silently deferring a field for a later slice to discover.
+
+**AND THE ZERO HAS A FORCED CONSEQUENCE THAT IS THIS SLICE'S REAL STRUCTURAL RISK.** With
+`0 ADD` there is **no `E0063` width tripwire** — nothing in the crate goes red if a re-aim is
+missed. The step-1 instrument must therefore be **function-pointer identity in BOTH
+directions**, as it was at slice AG step 1, and **that step's linker-folding defect is live
+again by construction**: the linker folds a pass-through body onto its parent's address, so a
+carry that is redundant on the VALUE is load-bearing on the IDENTITY.
+
+**Probe 8 sharpens this to ONE cell, and it is the sharpest structural fact in the slice.**
+Measuring what each `at_lever` in the chain actually copies forward:
+
+| rung | class | carries | NEW this rung |
+|---|---|---|---|
+| 74 | `DemandCoordinateTransient` | 2 | — |
+| 75 | `AntiWindupTransient` | 5 | `_windup_law, _tau_t, _ic_cap` |
+| 76 | `SensedCapTransient` | 6 | `_cap_law` |
+| **77** | **`StiffnessLedgerTransient`** | **6** | **NONE** |
+| 78 | `ResidualGaugeTransient` | 7 | `_gauge_k` |
+| 79 | `StateCoordinateTransient` | 8 | `_phi_ref` |
+
+**Rung 77's `at_lever` is the FIRST in the entire chain that carries nothing new.** Its field
+list is identical to rung 76's; its ONLY difference is the class it constructs — and the
+Python docstring says so outright: *"THE FIFTEENTH INSTANCE, and the thing not carried is the
+CLASS."* In the Rust port the class **is** the hooks table. So a defect at this cell cannot
+move a copied field (they are identical either way) and can only be a wrong table — **loud to
+pointer identity, silent to every value gate.** Probe 7's missing tripwire and probe 8's empty
+diff converge on the same instrument; § (vii) P2 is their falsifiable form.
+
+**Scoped, because the temptation is to overstate it:** this is a claim about the `at_lever`
+CELL, **not** about rung 77. The rung ships seven single-definer readers (`_slope_at`,
+`_residuals`, `_ledger_march`, `leg_slopes`, `set_point_gains`, `singular_limit`,
+`stiffness_ledger`) that produce numbers rung 76 does not, and those are gated by values in
+the ordinary way.
+
+#### (iii) THE FOUR ITEMS BOOKED TO THIS SLICE BY NAME — **two discharged here, two are one item, and that one is § (i)**
+
+Earlier slices name slice AH in four places. Enumerated rather than inherited, because
+§ 5.31's own pre-flight found a phase table that stated the same set twice and a booking that
+named a branch which does not exist.
+
+| # | booked at | claim | status |
+|---|---|---|---|
+| A | § 5.19 (iv) / § 5.22 (vii) | `_b_state`/`_v_state` same-field NEST is a live CANDIDATE at AH; the graph that found it is name-based, an UPPER bound; AH owes the RUNTIME form | **CONFIRMED, probes 12–13** — 4 static sites, both rungs; 211 runtime nests. § (i). |
+| B | § 5.26 (iii) | the RAII guard's panic message must name the rungs the zero-overwrite measurement was taken on (rung-68 machines) | **OWED TO STEP 1**, § (ix) |
+| C | § 5.28 (i) | the ADD column loses AC's row, and AH separately inherits an item the column has no place for | **DISCHARGED, probe 6** — the column is right at 0 ADD, and the item is D |
+| D | § 5.28 (x) | `_legs` is a SHIPPED cell whose rung-77 overrider **cannot go in the slot**; whatever AH does, it is not *swap the cell* | **DISCHARGED, probe 5, BOTH halves** |
+
+**Item D, and the claim the shipped Rust makes in its own doc comment.**
+`rust/src/bleed_transient.rs:370-380` says, of `LeverHooks::legs`: *"It is a name REUSED, not
+an override, so **slice AH will not swap this cell** and no future body can go in this slot."*
+Probe 5 measures both halves from the Python, independently of that comment:
+
+* `_legs` is defined **exactly twice in the whole 31-class ladder** — rung 63
+  (`engine.py:9176`) and rung 77 (`engine.py:19711`) — and rung 77's drops `reference,
+  Tt4_lo, Tt4_hi, r, s_settle, ds, spool` and adds `a, h, mf_sched`. **INCOMPATIBLE.** First
+  half discharged.
+* **No class after rung 77 defines `_legs` at all.** The second half — a claim about slices
+  AI and AJ, which probe 1 did not reach — is therefore not merely true; it has no candidate
+  to be false about. **Discharged more strongly than it was asserted.**
+
+**And the block carries no `engine.py:N` citation** — it is anchored to plan § 5.27 (x). So it
+sits outside the 31/144/95 citation census and slice AG step 1's decay guard cannot watch it.
+Recorded, not repaired: the claim is now measured true, and adding a citation here would be a
+NEW site rather than a corrected one.
+
+**And the same scope note applies to THIS SECTION.** `tests/test_rust_line_citations.py`
+watches `rust/src`, `rust/tests` and `rust/oracle` — **not `docs/`**. Every
+`engine.py:N` in the tables above is therefore UNWATCHED, and the census stays at
+31/144/95. A reader must not take a line number in this plan as guarded merely because the
+port's are: slice AG step 1's *a line citation is a claim with an expiry date* applies to
+prose with no guard behind it MORE strongly, not less.
+
+#### (iv) THE ARITHMETIC SURFACE — **there is no compensated-summation surface at all, and the probe that said otherwise was wrong TWICE about the SAME site**
+
+Probe 10, over both classes:
+
+* `StiffnessLedgerTransient`: **zero** `sum()`, **zero** `**`, zero `pow`.
+* `ResidualGaugeTransient`: **one** `sum()`, at `engine.py:20462` —
+  `sum(0 if d["ok"] else 1 for d in keep)`, whose summed values are the integer literals `0`
+  and `1`. **A COUNT.** Zero `**`, zero `pow`.
+
+⇒ **AH has no float-summation site.** The CPython-Neumaier-vs-PyPy-naive divergence that
+produced named oracle exemptions at slices W, Z and AA **has nowhere to land here**, and the
+port's split power-spelling rule (multiply the square, `pow` above it) has no surface either.
+`abs`/`max`/`min`/`sorted` are present in quantity (77: 13/16/8/4; 78: 31/28/13/7) and carry
+the ordinary hazards the crate already has rules for — `f64::max` is not Python's `max` on a
+leading NaN (slice Y), and `max(…, default=)` is not `fold(0.0, max)` when every element is
+negative (slice AA).
+
+**Stated at the right width:** this is *no compensated-summation surface*, **not** no
+arithmetic-divergence surface. Slice AA's `_illinois` iteration-count difference lives in the
+plant, not in these two classes, and is reachable through every reader here.
+
+> **INSTRUMENT DEFECT, and it was wrong TWICE ON THE SAME SITE.** The first classifier tested
+> whether the summed element was a bare literal `1` and called `:20462` a float sum. The
+> repair walked the element's constants — and still called it one, because `d["ok"]`
+> contributes the STRING `"ok"` to that walk. Reading the single site settled it in a second.
+> **A general AST predicate for "is this arithmetic risky" kept answering about the wrong
+> sub-expression; at n = 1 the enumeration IS the measurement.**
+
+#### (v) THE SHIPPED NEEDLES — **the suite asserts NEITHER of rung 78's refusals, and rung 77 has none to assert**
+
+Probes 4 and 11, on both sides:
+
+| | refusals SHIPPED | `match=` needles in the suite | `raises` in the suite |
+|---|---|---|---|
+| rung 75 | 4 | — | — |
+| rung 76 | 5 | — | — |
+| **rung 77** | **0** | **0** | **0** |
+| **rung 78** | **2**, both tagged `rung-78:` (`engine.py:20173`, `:20188`) | **0** | **0** |
+
+`tests/test_rung77.py` is 349 lines and 17 test functions; `tests/test_rung78.py` is 216 lines
+and 12. Between them, **zero refusal assertions of any kind.**
+
+⇒ **AH's ported gate files inherit NO refusal gate, because there is none in the suite to
+port.** This is slice AG step 6's *what is the census DECLINING to check?* one slice on, and at
+AH the answer is *this entire category*. Two consequences, both pre-registered:
+
+* rung 77's reduce contract can only be gated by **values and dispatch**. There is no third
+  channel here, and § (vii) P4 says so falsifiably.
+* rung 78's two refusals will be ported and gated **by the port, with no suite precedent to
+  copy** — the first time in the phase that a ported gate file's refusal section is written
+  from the source rather than translated from a Python test.
+
+#### (vi) SIZING — **and P1 IS RE-SPECIFIED ONTO THE RUST LINE COUNT, BECAUSE THE RATIO IS THE WORSE-CONDITIONED QUANTITY AND AT THIS SLICE IT WOULD REPORT A SUCCESS FOR NOTHING**
+
+Probe 9, all rows re-measured under one stated rule (non-blank, non-comment lines inside the
+class, minus every docstring's own lines) because the plan's earlier body column used a
+convention that is not recoverable from the text. The total and method columns reproduce the
+plan's exactly.
+
+| slice | rungs | classes | total | methods | body | steps |
+|---|---|---|---|---|---|---|
+| AC | 70+71 | 2 | 1 608 | 27 | 840 | 7 |
+| AF | 74 | 1 | 1 059 | 25 | 666 | 6 |
+| AG | 75+76 | 2 | 1 073 | 25 | 628 | 7 |
+| **AH** | **77+78** | **2** | **1 125** | **25** | **636** | **? — § (vii) P7** |
+
+**AH is AG's shape to within 5 % on every axis** — same class count, same method count, 1.05×
+the lines. It is the tightest shape replication in the phase.
+
+**AND THAT IS EXACTLY WHY P1 MUST NOT BE A RATIO.** The history, at the module-only
+convention:
+
+| slice | Python | Rust | ratio |
+|---|---|---|---|
+| Z (66+67) | 1 496 | 2 576 | 1.72× |
+| AA (68) | ~1 096 | 2 302 | 2.10× |
+| AF (74) | 1 059 | 2 675 | 2.53× |
+| AG (75+76) | 1 073 | 2 930 | 2.73× |
+
+The **Rust** column has a coefficient of variation near **10 %**; the **ratio** column's is
+near **20 %**. And the ratio's monotone rise is mostly its DENOMINATOR falling — Python went
+1 496 → 1 073 while Rust rose 2 576 → 2 930. **The ratio is the noisier quantity and its trend
+is an artefact of the wrong axis.**
+
+At AH's **1 125** Python lines, *any* Rust count inside the historical range (2 302–2 930)
+lands the ratio between **2.05× and 2.60×** — that is, **inside the 2.0–2.6 band AG just
+retired for missing high twice.** Scoring the ratio here would log *"the band is restored"* as
+a success when nothing whatever about the port had changed. **So P1 is pre-registered on the
+Rust LINE COUNT, and the ratio is reported as a derived output that is NOT scored.**
+
+#### (vii) PREDICTIONS — pre-registered, settled at the last step
+
+* **P1 — the Rust line count, as a test between two MECHANISMS rather than a re-fit band.**
+  § 5.31.7 concluded a two-class slice pays a fixed cost that does not scale with Python
+  volume (two module headers, two exhaustive table literals, two refusal sets). That mechanism
+  and its rival make different point predictions here:
+  * **per-CLASS fixed cost** (volume nearly irrelevant) ⇒ `stiffness_ledger.rs` +
+    `residual_gauge.rs` ≈ **2 930**, AG's own total;
+  * **per-LINE cost** (AG's ratio holds at 1.05× the lines) ⇒ ≈ **3 071**.
+
+  **P1 predicts the sum lands in 2 800 – 3 150**, and the two mechanisms are separated by the
+  ~140 lines between their point predictions. The derived ratio (2.49× – 2.80×) is reported
+  and **NOT scored** — § (vi) says why it can discriminate nothing here.
+
+* **P2 — the `at_lever` cell at rung 77 is invisible to VALUES and visible only to POINTER
+  IDENTITY.** Probe 8 measures its carried-field list as identical to rung 76's. P2 predicts a
+  step-1 injection re-aiming `R77_LEVER.at_lever` at `r76_at_lever` moves **no oracle key and
+  no ported gate**, and is caught **only** by the function-pointer identity assertion — and,
+  per probe 7, that there is **no `E0063` anywhere** to catch a missed re-aim. Falsified if
+  any value gate sees it, which would mean the two bodies differ in something probe 8 did not
+  measure.
+
+* **P3 — restore-to-PREVIOUS is value-identical at all SIX nests, on the DEAD-WINDOW
+  criterion and not on the same-`(q,v)` one.** § (i). Predicts the port's RAII guard,
+  restoring the previous value rather than `None`, reproduces every oracle key bit for bit.
+  **The prediction is deliberately stated on the weaker criterion**, because probe 14 falsified
+  the stronger one before step 1: at `:20591`/`:20592` the callee is handed `q ± dq`, so the
+  two semantics DO leave different values behind and the safety comes from nothing reading them.
+  Falsified by any key that moves. **This is the only form in which the § (i) claim is testable
+  at all** — the two semantics cannot be distinguished by a gate, so what IS gated is that the
+  chosen one changes nothing.
+
+* **P4 — rung 77's reduce contract is gated by VALUES and DISPATCH only.** § (v) measures zero
+  shipped refusals at rung 77 and zero refusal assertions in either suite file. Falsified if a
+  third channel is found — a refusal reachable at rung 77 through an INHERITED message that
+  names rung 77, which probe 4 did not sweep.
+
+* **P5 — rung 78's two refusals are both REACHABLE, and both need a ported gate written from
+  the SOURCE.** Neither has a suite precedent. Falsified if either is unreachable on every
+  admissible arm, which would be slice AG step 7's P6 shape one slice on.
+
+* **P6 — 0 ADD, and `TripleHooks` ends the slice at 18 fields.** Probe 7 makes this durable
+  past AI/AJ as well. Falsified by any new field.
+
+* **P7 — SEVEN steps, and unlike AG this is a DISCRIMINATING prediction rather than a
+  replication.** AG already ran class-count against method-count and seven landed, so
+  predicting seven again on the same two axes would test nothing. **AH differs from AG in
+  exactly the axis that separates them**: 4 substitutable swaps against AG's 5, and one of
+  those four (rung 77's `at_lever`, probe 8) carries nothing new — so by BODY VOLUME AH is
+  materially lighter than AG at identical class and method counts. **Classes price steps ⇒ 7.
+  Cells and bodies price steps ⇒ 6.** AG could not separate these; AH can.
+
+#### (viii) DEFECTS IN THIS PRE-FLIGHT'S OWN INSTRUMENTS — **five, every one a confident WRONG answer rather than an error, and THE LAST ONE INVERTS THE FIRST FOUR'S LESSON**
+
+1. **The static nest census was wrong in BOTH directions** (probe 12). Its first writing called
+   `leg_slopes` not-nested when it is, and `_c_on_frozen` nested when it is deliberately not.
+   One root cause: an `open_set` that did not survive the recursion, plus an `ast.walk` at
+   statement level that recorded a verdict before the recursion could correct it. **It was
+   caught only because both sites had been READ first.** A structural probe whose verdicts are
+   not checked against a hand reading of at least one POSITIVE and one NEGATIVE site is an
+   unvalidated instrument — slice W step 3's lesson, and the cheapest possible re-learning.
+2. **The runtime nest probe's first run reported 0 sets and 0 nests, and that was a BLIND
+   INSTRUMENT rather than a zero** (probe 13). `pytest.ini` injects `-n auto`, so the tests ran
+   in eight worker subprocesses while the controller — which observed nothing — wrote the
+   shared tally file last and clobbered theirs at exit. Repaired with `-n0`, one tally file per
+   PID, **and a POSITIVE CONTROL that runs before any test** (two sets and one nest on a bare
+   instance of each patched class, asserted, then zeroed), so a later zero means measured-zero
+   and not never-wired-in.
+3. **The runtime probe's first WORKING version kept the first twelve nest FRAMES, and all
+   twelve were the same site** — so it could not say whether the other three static nest sites
+   ever run: a one-bit reading of a four-valued question. Replaced by a PER-SITE COUNTER, which
+   is § 5.31.7's counting pointer in a different language, one slice later.
+4. **The `sum()` classifier was wrong twice about the same site** (§ (iv)), the second time for
+   a different reason than the first.
+5. **The nest census was scoped by a PREMISE THAT WAS NEVER MEASURED, and the premise was
+   false.** Probe 12 censused calls to `_c_at` only, on the stated ground that it *"is the only
+   method in the ladder that sets both fields from inside another method's live freeze"*. Probe
+   14 derives that set from the source instead of naming it: **37 methods freeze**, and the
+   census goes from 4 nests to **6**. The two it had missed are `gauge_vs_device` →
+   `_phi_at`, and they are the ONLY two that hand the callee a value the enclosing block did not
+   set — so the missing sites were exactly the ones that falsify § (i)'s first stated reason.
+
+**The first four share a shape: the instrument answered CONFIDENTLY and about the WRONG THING**
+— the wrong scope, the wrong process, the wrong sub-expression, the wrong resolution. None
+returned an error; all four returned a clean, plausible, false number, and three were caught by
+a hand reading of the site rather than by any tooling.
+
+**AND DEFECT 5 INVERTS THAT LESSON, WHICH IS WHY IT IS WORTH MORE THAN THE OTHER FOUR.** It was
+NOT caught by reading — a hand reading is what produced the false premise, and a careful review
+of that reading repeated it. It was caught by the **per-site runtime counter**, which reported
+a nest at a call site no reading had looked at. **A hand reading validates a probe's LOGIC and
+cannot validate its SCOPE**, because a scope error deletes the evidence of itself: the sites
+the census never visits produce no output to look wrong. The repair is not to read harder, it
+is to **DERIVE the set the census ranges over from the source instead of naming it** — which is
+what probe 14 does, and what turned two instruments that disagreed into two that agree site for
+site.
+
+#### (ix) WHAT SLICE AH OWES BEFORE ITS STEP 1 — **one item, and it is a STRUCTURAL claim by construction**
+
+**Item B of § (iii): the RAII guard's panic message.** § 5.26 (iii) requires it to name the
+rungs the zero-overwrite measurement was taken on (rung-68 machines), so a reader cannot
+mistake a scoped measurement for a ladder-wide one; the wording is
+`two_spool_transient.rs:657`'s, one lever over. **That message is a STEP-1 deliverable.** It is
+now more than a formality: probe 14 measures **six** genuine nests at five sites across rungs
+77/78 and probe 13 sees every one of them fire at runtime, so the guard this slice ships is
+**the first in the port whose nest arm is REACHABLE.** Its message must say so — and it must
+name the DEAD-WINDOW criterion, because two of the six are safe only by that and not by the
+`(q,v)` agreement the other four have.
+
+**And the § (i) discharge is owed as a DOC CLAIM, not as a gate — deliberately.** The choice
+between restoring `None` and restoring the previous value is value-invisible at every reachable
+site, so no test can assert the port picked one. What CAN be gated is P3: that the choice moves
+no key. The claim itself belongs in the port's doc comments, per call site, with probe 14's
+table as its evidence **and probe 13's runtime column beside it**, so a later slice can see
+both that the sites exist and that they run. **A booking no gate can close does not become closed by writing a gate
+that measures something else** — which is § 5.31.5's *an instrument fed by what it certifies*,
+arriving from the opposite side.

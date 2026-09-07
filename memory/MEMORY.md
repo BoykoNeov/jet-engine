@@ -34,7 +34,7 @@ is.
 - [Visuals ↔ model binding](visuals-model-binding.md) — the pages had NO test and looked fine; in SYNC is not BOUND, and the page's own design point was typed markup
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding, backticks in `-m`, a status read off the runner, a log still being written, and a text-mode rewrite that flips every line ending
 
-## The Rust port — phases 0–6 done; phase 7 in flight, slice AF DISCHARGED, slice AG (75/76) COMPLETE in 7 steps
+## The Rust port — phases 0–6 done; phase 7 in flight, slice AG (75/76) COMPLETE in 7 steps, slice AH (77/78) PRE-REGISTERED
 - [Rust port status](rust-port-status.md) — the running tally: phases, slices, and the numbers each closed slice landed on. **Update THAT file, not this line.**
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; a new PHASE needs authorisation
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost
@@ -81,6 +81,7 @@ is.
 - Slice AE (73) [pre-flight](rust-port-slice-ae-preflight.md) [1](rust-port-slice-ae-step1.md) [2](rust-port-slice-ae-step2.md) [3](rust-port-slice-ae-step3.md) [4](rust-port-slice-ae-step4.md) [5 closed](rust-port-slice-ae-step5.md) — a FIXTURE is a claim nobody re-reads as one; and a control, an exact-bits gate and an aggregate each measured nothing (one lesson per file)
 - Slice AF (74) [pre-flight](rust-port-slice-af-preflight.md) [1](rust-port-slice-af-step1.md) [2](rust-port-slice-af-step2.md) [3](rust-port-slice-af-step3.md) [4](rust-port-slice-af-step4.md) [5a](rust-port-slice-af-step5a.md) [5b](rust-port-slice-af-step5b.md) [6](rust-port-slice-af-step6.md) [debt closed](rust-port-slice-af-usage-guard.md) — *what supplies the value?* has three siblings: *what has ever RUN the sentence?*, *is this line a DISPATCH in the source at all?*, and *what is the census DECLINING to check?* (one lesson per file)
 - Slice AG (75/76) [pre-flight](rust-port-slice-ag-preflight.md) [step 1](rust-port-slice-ag-step1.md) [step 2](rust-port-slice-ag-step2.md) [step 3](rust-port-slice-ag-step3.md) [step 4](rust-port-slice-ag-step4.md) [step 5](rust-port-slice-ag-step5.md) [step 6](rust-port-slice-ag-step6.md) [step 7](rust-port-slice-ag-step7.md) — a line citation, a gate grid, an enumeration of a field's READERS, an enumeration of what a REFUSAL protects and a SWEEP GRID copied from — or NARROWED from — the suite all have an EXPIRY DATE, and each expires at the boundary its own defect class is born on; and a prediction can name the right CAUSE and size it by the wrong PROPERTY — blast radius follows SHARING, not SIZE; and a “did it move?” matrix reports ONE BIT, so a delegating COUNTER splits a silent row into *ran and redundant* vs *never entered* (one lesson per file)
+- Slice AH (77/78) [pre-flight](rust-port-slice-ah-preflight.md) — a booking NO GATE CAN CLOSE is a claim in the WRONG CURRENCY, and four instruments in a row returned a confident WRONG NUMBER rather than an error (one lesson per file)
 - Slice T (46/47/48) steps [1](rust-port-slice-t-step1.md) [2](rust-port-slice-t-step2.md) [3](rust-port-slice-t-step3.md) [4](rust-port-slice-t-step4.md) — an EXACT ZERO blinds its own gate to the SIGN (one lesson per file)
 
 ## Shipped rungs
