@@ -1,6 +1,6 @@
 ---
 name: rust-port-slice-ag-step5
-description: "Slice AG step 5 (rung 76's readers) — a mutation sweep's verdict is a property of the GRID, and a grid copied from the test suite inherits the suite's coverage, not the code's"
+description: "Slice AG step 5 (rung 76's readers) — a mutation sweep's verdict is a property of the GRID; a grid copied from the suite inherits the suite's coverage, and one NARROWED from it inherits nothing"
 metadata: 
   node_type: memory
   type: project
@@ -11,9 +11,11 @@ metadata:
 Slice AG step 5, 2026-09-07 (§ 5.31.5). Rung 76's four readers ported into
 `M:\claud_projects\jet engine\rust\src\sensed_cap.rs` (578 → 1 319 lines): `cap_rows`,
 `cap_gains`, `cap_bill`, `solve_gain`, their row/cell types, the Python-faithful folds
-`py_max`/`py_min`, and `REF_SCHED`. No gate file — steps 3/4's precedent. **1 814 keys,
-`Rust == PyPy` bit for bit on the first run that ever compiled, both key sets equal, no port fix.**
-Sweep: 16 injections, 12 killed, 4 survived, **16 of 16 verdicts right**.
+`py_max`/`py_min`, `REF_SCHED` and seven named reader defaults. No gate file — steps 3/4's precedent.
+**2 691 keys, `Rust == PyPy` bit for bit on the first run that ever compiled, both key sets equal,
+no port fix.** Sweep: 16 injections, 12 killed, 4 survived — **15 one-sided predictions all
+right, plus one hedged that could not lose** (scored *16 of 16* in the first draft, corrected in
+place).
 
 **THE LESSON: a mutation sweep's verdict is a property of the GRID it is scored on, and a grid
 copied from the test suite inherits the SUITE's coverage, not the CODE's.** The drive was built
@@ -26,7 +28,7 @@ a second margin (0.20) made both live — and then **two injections that score S
 suite's grid score KILLED on the wider one**: `accel_binds` folding `min` for `max` (0 keys → 33)
 and `row_err`'s two targets inverted (0 → 4). Both are real defects in load-bearing expressions,
 and on the first grid this step would have written them up as *defences with no reader* beside the
-four genuine ones.
+five genuine ones — seven in all, two of them false.
 
 **Why:** [[rust-port-slice-w-step3]]'s *make the instrument prove it can SEE* has to be asked of
 the GOLDEN before the sweep runs, not only of the probe. A suite's grid is chosen to make the
@@ -46,28 +48,55 @@ can know what a comment MEANT to point at*. But blessing a NEW anchor **prints t
 on**, and `19353: None -> 'g = read("sensed")'` did not match the sentence, which is about the
 `accel` argument one line up. So the stated limit binds only for a citation blessed silently; when
 the blessing prints, birth defects are caught for free. Now in the guard's own census comment.
-Census `10 / 59 / 47` → `10 / 63 / 51`, **no arrears** — step 4's procedural repair held, and this
-step ran `pytest` before shipping rather than two steps later.
+Census `10 / 59 / 47` → `10 / 63 / 51`, then → **`10 / 70 / 56`** in the addendum's own five
+signature citations, **no arrears** at either — step 4's procedural repair held, and this step ran
+`pytest` before shipping rather than two steps later.
 
 **THIRD: five defences with no reader in one step, all five pre-registered.** Step 4 shipped one.
 A READERS step ships more because an aggregate's edge cases are exactly the states a converged
 march does not visit: the `tau_auth`/`tau_masked` distinction (both clocks are `0.05`), the two
 scope orders (disjoint fields), `masked_moved`'s conditional (a live 4×4 diagonal is never within
 `1e-30` of zero), `s_tail`'s `max(taus)` (four equal clocks), and `py_max`/`py_min`'s NaN
-faithfulness (`dS == 0` at 0 of 29 rows). Not a regression — a property of the kind of step.
+faithfulness (`dS == 0` at 0 of 36 rows, both stator arms). Not a regression — a property of the
+kind of step.
 
 **FOURTH: an identity that holds EXACTLY makes the obvious gate on it self-certifying.**
-`solve_gain`'s `fixed_point` is `+0.0` bit for bit at **8 of 10 rows at the suite's own margin**, so
-a reader that wrongly compared the solve with ITSELF returns the same float there; the injection is
-caught only by the minority of rows where the last bits differ (17 keys of 1 814, none at those
-eight). [[instrument-fed-by-what-it-certifies]] with a twist — the exactness doing the certifying
+`solve_gain`'s `fixed_point` is `+0.0` bit for bit at **8 of 10 rows at the suite's own margin** and
+18 of the 36 driven rows overall, so a reader that wrongly compared the solve with ITSELF returns
+the same float there; the injection is caught only by the rows where the last bits differ (28 keys
+of 2 691, of which the suite's own cell contributes 4). [[instrument-fed-by-what-it-certifies]] with a twist — the exactness doing the certifying
 IS the fact being certified. Booked as a requirement on step 6.
 
-Also measured: dropping the `accel` argument in the READER is **silent** — killed by value at 144
+Also measured: dropping the `accel` argument in the READER is **silent** — killed by value at 216
 keys with no panic — where step 4 measured the same deletion in the MARCH panicking on
 `integrate_fuel`'s third refusal. So that refusal defends the march's callers and **nothing**
 defends the readers; three steps, three answers to *what refuses this*, and the third is *nothing*.
-`fuel_int`'s fold direction moves **exactly 4 keys**, which is P2 asked of the port. Sizing
+`fuel_int`'s fold direction moves **exactly 6 keys** — two arms of each of the three driven bill
+cells — which is P2 asked of the port. Sizing
 **2.48× by region, 2.35× by body**, both inside P1's band, against step 4's 5.09×/3.15×. And the
 sweep's own classifier scored two panics as compile errors, because cargo prints `error: test
 failed` — no verdict moved, the label was wrong, recorded rather than quietly fixed.
+
+**FIFTH, and it is the same lesson turned on itself: I did not COPY the suite's grid on the `inc`
+axis, I NARROWED it.** Every reader call passed `inc = false`, so none of the first 1 814 keys
+touched rung 69's incidence-referenced plant — while `test_rung76.py` sweeps `for inc in (False,
+True)` in three tests, all three of them `solve_gain`, the reader whose gate the FOURTH finding had
+just booked as self-certifying. `LeverArm` already carries `stator_inc`, so this was a gap in the
+drive and not a width gap in the port — checked first, because if it had not carried it that
+would have been a step-1 finding rather than a reason to skip the arm. Re-driven and the whole
+sweep re-run on 2 691 keys: **verdicts unchanged**, and three things sharpen. The `tau_auth`
+row — the claim genuinely at risk, since `cap_march` marches past the ramp end with
+`tau_rel = 3·tau_f` and a RELEASING point would have split the clocks — survives on a second
+plant (`n_tau_split = 0` at all four cells). The two grid-sensitive injections stay confined to
+(`phi` arm, `margin = 0.20`), and the incidence arm does NOT open a second route even though the
+`accel_binds` guard is LIVE there at the suite's own margin: **a branch being live is not the same
+claim as a mutation of it being observable.** And the identity's exact-zero count is 18 of 36 rows,
+1 of 1/2/4 on the incidence arm against 8 of 10 on the suite's — so the sharper population for
+step 6's gate is also the thinner one.
+
+**And the sweep's own attribution columns went blind on that same edit.** They bucket keys by the
+prefixes `E/0.1/`/`F/0.1/`; the new axis renamed everything to `E/i0/0.1/`, so all sixteen rows
+reported `0 @0.10, 0 @0.20` — including the two whose entire point is the split. Caught because
+two rows that must be one-sided read zero on both sides beside a nonzero total, which is
+arithmetically impossible. **An instrument that partitions can stop matching the data, and it stops
+on exactly the edit that makes the partition worth having.**

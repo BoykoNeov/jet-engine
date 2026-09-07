@@ -340,6 +340,59 @@ pub const ACCEL_SCHEDULE_N: usize = 13;
 /// Python and would be invisible at neither in Rust.
 pub const C_AT_REL: f64 = 1e-6;
 
+// --- THE READERS' OWN UNSPELLED DEFAULTS ------------------------------------------------------
+//
+// [`ACCEL_SCHEDULE_N`]'s rule, applied one step on and with its PREMISE re-derived rather than
+// inherited. Step 4 named two constants because **the crate itself relies on them** — `accel_for`
+// calls `accel_schedule` with no `n`, so the number had to be carried by hand. **Not one of step
+// 5's four readers is called from anywhere in `rust/src`**, so on that premise alone nothing here
+// needs a name.
+//
+// The rule still bites, for the other half of its stated reason: *a bare literal at the call site
+// is a number nobody can check against a signature.* Step 6's ported gates ARE the call sites, and
+// they will type these values from `test_rung76.py`, which **does not spell them** — nor does
+// `main.py`, which passes `phi_lim` and `margin` and nothing else, nor `engine.py`'s own `Usage:`
+// block, which passes four positional arguments. So every default below is a fact about a
+// SIGNATURE that no caller in the repository writes down, and a wrong one in step 6 would be
+// invisible in exactly the way a wrong `n` would have been at step 4. Named here, beside the
+// functions whose signature declares them, rather than at the gate that will use them.
+//
+// The defaults NOT named are the ones the suite spells for itself — `phi_lim`, `margin`, `taus`,
+// `r`, `s_settle`, `ds`, `v_max`, `inc`, `cap_bill`'s `ref`/`law` and `cap_gains`'s `every` — and
+// a const for one of those would be a second home for a number step 6 transcribes from the suite,
+// which is how two copies of one value start to disagree.
+
+/// Python's `cap_gains(…, refs = ("sched", "applied"))` — `engine.py:19403`.
+pub const CAP_GAINS_REFS: [&str; 2] = [REF_SCHED, crate::applied_reference::REF_LAW_APPLIED];
+
+/// Python's `cap_gains(…, laws = ("none", "track"))` — `engine.py:19403`, and it is
+/// [`WINDUP_LAWS_DECLARED`](crate::anti_windup::WINDUP_LAWS_DECLARED) in the same order.
+///
+/// Spelled as its own constant rather than aliased to that array, because the two are equal by
+/// COINCIDENCE of the shipped grid and not by construction: rung 75's is the set
+/// `r75_windup_tau` REFUSES outside, this is the set this reader happens to sweep. An alias would
+/// make a later widening of either silently widen the other.
+pub const CAP_GAINS_LAWS: [&str; 2] =
+    [WINDUP_LAW_NONE, crate::anti_windup::WINDUP_LAW_TRACK];
+
+/// Python's `cap_bill(…, tau_t = 0.05)` — `engine.py:19497`. Read only on the `track` arm.
+pub const CAP_BILL_TAU_T: f64 = 0.05;
+
+/// Python's `cap_bill(…, tail = 3.0)` — `engine.py:19500`. The tail window is
+/// `r + tail · max(taus)`, so this is the one number deciding which points **P10** is read on.
+pub const CAP_BILL_TAIL: f64 = 3.0;
+
+/// Python's `solve_gain(…, ref = "sched")` — `engine.py:19550`.
+pub const SOLVE_GAIN_REF: &str = REF_SCHED;
+
+/// Python's `solve_gain(…, dq = 1e-5)` — `engine.py:19552`. The VALVE-direction central
+/// difference, and the same step `rhs_gains_at` takes for that column.
+pub const SOLVE_GAIN_DQ: f64 = 1e-5;
+
+/// Python's `solve_gain(…, every = 8)` — `engine.py:19552`. `cap_gains`'s `every` is NOT named,
+/// because every caller in the repository spells that one.
+pub const SOLVE_GAIN_EVERY: usize = 8;
+
 /// RUNG 76's `_with_cap` — **a named CAP LAW for the length of one reader, restored in a
 /// `finally`.** Rung 62's reason, TENTH reload.
 ///
@@ -607,7 +660,7 @@ pub fn c_at(
 // re-reads rung 48's schedule, so there must BE one*) — from which the domain was written as *the
 // blindness is the `solve` arm's, and the arm this rung is about is defended*. Deleting the leg
 // HERE is a different question with a different answer: step 5's sweep measured **KILLED by VALUE,
-// 144 of 1 814 keys, NO panic**, because a reader reaches `_cap_fuel` directly and never enters
+// 216 of 2 691 keys, NO panic**, because a reader reaches `_cap_fuel` directly and never enters
 // `integrate_fuel`, so that refusal is not on the path at all. The refusal defends the MARCH's
 // callers; it does not defend the READERS, and nothing else does either. What catches it is a
 // POSITIVE count of what the two laws differ by — which is what §§ E/F of the drive are.
@@ -644,11 +697,20 @@ pub struct CapRow {
     /// Python would propagate.
     ///
     /// **AND THE WHOLE GUARD IS INERT AT THE SUITE'S OWN MARGIN.** Step 5's drive measured
-    /// `n_inert = 0` in every cell at `margin = 0.10` — 10 of 10 rows bind under both laws, so
-    /// nothing is filtered and the three caps above are computed to decide a constant. Replacing
-    /// this `max` with a `min` moves **0 keys at 0.10 and 33 at 0.20**, where 7 of 9 rows bind.
-    /// That is step 4 § (b)'s *a drive that picks one cell scores the bug as correct* moved from a
-    /// reload guard onto a min-select, and it is why the drive carries two margins.
+    /// `n_inert = 0` in every cell at `margin = 0.10` on the `phi`-referenced stator arm — 10 of
+    /// 10 rows bind under both laws, so nothing is filtered and the three caps above are computed
+    /// to decide a constant. Replacing this `max` with a `min` moves **0 keys there and 33 at
+    /// `margin = 0.20`**, where 7 of 9 rows bind. That is step 4 § (b)'s *a drive that picks one
+    /// cell scores the bug as correct* moved from a reload guard onto a min-select, and it is why
+    /// the drive carries two margins.
+    ///
+    /// **AND THE INCIDENCE ARM DOES NOT PROVIDE A SECOND ROUTE, WHICH IS WORTH MORE THAN IF IT
+    /// DID.** Rung 69's incidence-referenced rig has `n_inert = 1` of its 2 rows at the suite's
+    /// own margin — the guard is LIVE there where it is dead on the `phi` arm — and the same
+    /// injection still moves **0 keys on it**, because its one filtered row is filtered under both
+    /// folds. So exactly ONE of the four driven (arm, margin) cells can score this expression at
+    /// all, and *a branch being live* is not the same claim as *a mutation of it being
+    /// observable*.
     pub accel_binds: bool,
     /// The accel cap under `solve` — Python's `cap_a`. `cap_a2`, the sensed one, is NOT recorded:
     /// it exists only inside [`accel_binds`](CapRow::accel_binds), exactly as in the source.
@@ -661,9 +723,16 @@ pub struct CapRow {
     /// **THE TWO ARE THE SAME NUMBER ON EVERY SHIPPED GRID, so this pair is a DEFENCE WITH NO
     /// READER** ([[rust-port-slice-aa-steps2345]]). `taus[1]` is `0.05` and rung 52's lag returns
     /// its ATTACK clock, also `0.05`, at every riding point of an accel ramp — so step 5's sweep
-    /// SWAPPED the two conditions and **0 of 1 814 keys moved**, at both margins. The distinction
-    /// is real in the source and undrivable on this plant; it is written the source's way and the
-    /// unreachability is disclosed here rather than left for a later slice to wonder about.
+    /// SWAPPED the two conditions and **0 of 2 691 keys moved**.
+    ///
+    /// **AND THAT IS MEASURED ON TWO STRUCTURALLY DIFFERENT PLANTS, WHICH IS WHY IT IS A CLAIM
+    /// ABOUT THE READER AND NOT ABOUT ONE ARM.** `cap_march` sets `tau_rel = 3·tau_f = 0.15` and
+    /// marches to `s_settle = 1.2`, well past the ramp end `r = 0.5`, so a RELEASING point among
+    /// the `riding4` survivors would make the two clocks differ and kill the swap — and whether
+    /// one occurs is a property of the trajectory, not of the expression. The drive therefore
+    /// carries both stator arms, the `phi`-referenced limiter and rung 69's INCIDENCE-referenced
+    /// one, at two margins each: `n_tau_split = 0` at all four. Undrivable on either plant, and
+    /// the unreachability is disclosed here rather than left for a later slice to wonder about.
     pub tau_auth: f64,
     pub tau_masked: f64,
     pub auth_diag: f64,
@@ -775,7 +844,7 @@ pub fn cap_rows(
         // OUTSIDE, the cap scope INSIDE. Rust drops in reverse declaration order, which is
         // Python's inner-`finally`-first unwind exactly. **The ORDER is unobservable and is
         // measured to be**: the two guards write disjoint fields, so step 5's sweep nested them
-        // the other way round and 0 of 1 814 keys moved. Written the source's way because the
+        // the other way round and 0 of 2 691 keys moved. Written the source's way because the
         // source is what a later reader will diff against, not because a gate could tell.
         let read = |cl: &'static str| {
             let _ws = WindupScope::set(&m.fuel.inner, law, tau_t);
@@ -1005,7 +1074,7 @@ pub fn cap_gains(
                     // where the base is nonzero, the ABSOLUTE one where it is not. A single
                     // `/max(1e-30, .)` would agree numerically on every live point and lose the
                     // source's shape at the one it was written for — MEASURED: collapsing it to
-                    // the relative form alone moves 0 of 1 814 keys, because a live 4x4's masked
+                    // the relative form alone moves 0 of 2 691 keys, because a live 4x4's masked
                     // diagonal is never within `1e-30` of zero. A third defence with no reader in
                     // this step, disclosed rather than discovered later.
                     masked_moved: py_max(&rr, |x| if x.masked_diag0.abs() > 1e-30 {
@@ -1109,12 +1178,12 @@ pub struct CapBill {
 ///
 /// [`py_max`]'s rule, on four constants rather than on a row field — and a **FOURTH defence with
 /// no reader**: every shipped grid in this family sets all four clocks to `0.05`, so `min` and
-/// `max` return the same number and step 5's sweep measured the substitution at 0 of 1 814 keys.
+/// `max` return the same number and step 5's sweep measured the substitution at 0 of 2 691 keys.
 ///
 /// # AND `fuel_int`'s FOLD DIRECTION IS THE ONE SUMMATION IN THIS STEP THAT IS LOAD-BEARING
 ///
-/// Folding the 341-point trajectory right-to-left instead of left-to-right moves **exactly 4
-/// keys** — the two arms of the two driven bill cells and nothing else in the file. That is
+/// Folding the 341-point trajectory right-to-left instead of left-to-right moves **exactly 6
+/// keys** — the two arms of each of the three driven bill cells, and nothing else in the file. That is
 /// § 5.31 (vii)'s **P2** asked of the port rather than of the interpreters: the two
 /// [`fuel_int`](CapBill::fuel_int) values are the only place in either class where summation
 /// ORDER can be observed, which is why they are also the only two keys the CPython arm needs an
@@ -1181,15 +1250,18 @@ pub struct SolveGainRow {
     /// `|cap_sensed(cap_solve) - cap_solve|` — identity (1), and it is EXACT, not small.
     ///
     /// **AND *EXACT* IS THE PROBLEM, WHICH IS A REQUIREMENT ON STEP 6 AND NOT A PORT DEFECT.**
-    /// Step 5's drive measured this quantity at `+0.0` **BIT FOR BIT at 8 of 10 rows at the
-    /// suite's own margin** (4 of 10 at `0.05`, 3 of 9 at `0.40`). At every one of those rows
-    /// `sensed(q, w0)` returns `w0` itself, so a reader that had wrongly written `solve(q) - w0`
-    /// — comparing the solve with itself — would report the identical `0.0` and be scored as
-    /// verifying the identity. The sweep catches it only through the minority of rows where the
-    /// last bits differ: **17 keys of 1 814, none of them at `margin = 0.10`'s eight zeros.** So a
-    /// step-6 gate on identity (1) must assert on a row where this field is NONZERO, or it is
+    /// Step 5's drive measured this quantity at `+0.0` **BIT FOR BIT at 18 of the 36 driven
+    /// rows**, and the split across the six (arm, margin) cells is the useful part: on the
+    /// `phi`-referenced stator arm it is **8 of 10 at the suite's own margin**, 4 of 10 at `0.05`
+    /// and 3 of 9 at `0.40`; on rung 69's INCIDENCE arm it is 1 of 1, 1 of 2 and 1 of 4. At every
+    /// one of those rows `sensed(q, w0)` returns `w0` itself, so a reader that had wrongly written
+    /// `solve(q) - w0` — comparing the solve with itself — reports the identical `0.0` and is
+    /// scored as verifying the identity. The sweep catches it only through the rows where the last
+    /// bits differ: **28 keys of 2 691, of which the suite's own cell contributes 4.** So a step-6
+    /// gate on identity (1) must assert on a row where this field is NONZERO, or it is
     /// [[instrument-fed-by-what-it-certifies]] in its purest form — an instrument certified by
-    /// the exactness it exists to report.
+    /// the exactness it exists to report. The incidence arm is the better population and the
+    /// thinner one (1, 2 and 4 rows), which is its own constraint on how such a gate is written.
     pub fixed_point: f64,
     /// `d(cap_sensed)/dq` and `d(cap_solve)/dq` at the SAME `w = cap_solve`.
     pub d_s: f64,
@@ -1245,8 +1317,8 @@ pub struct SolveGain {
 /// [`gain`](SolveGain::gain) and [`gain_err`](SolveGain::gain_err), where Python's `min`/`max`
 /// propagate it only if it arrives FIRST and the crate's older `fold(±INF, f64::min)` would discard
 /// it always. Step 5's drive COUNTS the exact-zero `dS` occurrences rather than reasoning about
-/// them, and the count is **0 of 29 rows across all three margins** — so the NaN is unreachable on
-/// this plant, the two fold spellings are indistinguishable by any value it can produce, and
+/// them, and the count is **0 of 36 rows — all three margins, both stator arms** — so the NaN is
+/// unreachable on this plant, the two spellings are indistinguishable by any value it produces, and
 /// [`py_max`]/[`py_min`] are themselves a **defence with no reader**, the fifth this step ships.
 /// They are used throughout it anyway, because the alternative is a fold that is wrong for a
 /// reason no one would find later; the unreachability is disclosed here, at the step that shipped

@@ -49,7 +49,12 @@
   "19352": "flight, p, accel, surge, Tt4_max, tau_f, taus[1])",
   "19373": "cap_a = m._with_cap(\"solve\", m._cap_fuel, flight, p[\"nu_lp\"], p[\"nu_hp\"],",
   "19375": "cap_a2 = m._with_cap(\"sensed\", m._cap_fuel, flight, p[\"nu_lp\"], p[\"nu_hp\"],",
+  "19403": "refs=(\"sched\", \"applied\"), laws=(\"none\", \"track\"), inc: bool = False,",
+  "19497": "taus=(0.05, 0.05, 0.05, 0.05), tau_t: float = 0.05,",
+  "19500": "tail: float = 3.0) -> dict:",
   "19523": "assert len(a) == len(b), \"the two cap laws marched different grids\"",
+  "19550": "taus=(0.05, 0.05, 0.05, 0.05), ref: str = \"sched\", inc: bool = False,",
+  "19552": "v_max: float = 0.20, dq: float = 1e-5, every: int = 8) -> dict:",
   "19591": "return m._with_cap(\"solve\", m._cap_fuel, flight, a, h, ms, accel, None)",
   "19598": "return m._with_cap(\"sensed\", m._cap_fuel, flight, a, h, ms, accel, None,"
  }

@@ -64,6 +64,13 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # repaired tree. `SITES` counts every occurrence, so a line citing two numbers
 # counts twice; `LINES` counts the distinct `engine.py` lines they point at.
 #
+# RE-BLESSED AGAIN IN STEP 5's OWN ADDENDUM COMMIT (10/63/51 -> 10/70/56): five more, every one
+# a SIGNATURE line for a reader default that no caller in the repository spells (`19403` is
+# `cap_gains`'s `refs`/`laws`, `19497`/`19500` `cap_bill`'s `tau_t`/`tail`, `19550`/`19552`
+# `solve_gain`'s `ref` and its `dq`/`every`). Step 4 named two constants because the CRATE relied
+# on them; these are named because step 6's ported gates are the only call sites and the suite
+# they are transcribed from does not write the numbers down either.
+#
 # RE-BLESSED AT SLICE AG STEP 5 (10/59/47 -> 10/63/51): four new citations, all step 5's own
 # (`18789` is `_rhs_gains_at`'s defaults line, `19341` the plain `_lag_coord` write, `19352` the
 # `accel` argument `_cap_rows` passes where rung 75 passes `None`, `19523` the untagged grid
@@ -83,8 +90,8 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # 2's arrears. Both asserts that would have caught it — the blessed-set equality and this
 # census — were already here and green-by-not-being-run.
 FILES = 10
-SITES = 63
-LINES = 51
+SITES = 70
+LINES = 56
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment
 # SAID, where the number is part of the quotation and must not track the file.
