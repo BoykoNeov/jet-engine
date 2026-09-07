@@ -63,9 +63,18 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # Read off the run in the commit that repaired the 18 stale citations, on the
 # repaired tree. `SITES` counts every occurrence, so a line citing two numbers
 # counts twice; `LINES` counts the distinct `engine.py` lines they point at.
-FILES = 9
-SITES = 50
-LINES = 38
+#
+# RE-BLESSED AT SLICE AG STEP 4 (9/50/38 -> 10/59/47), AND **THE GUARD HAD BEEN RED FOR TWO
+# STEPS BEFORE ANYONE LOOKED.** Step 2 cited `engine.py:18694` in `windup_march`'s doc and
+# never re-blessed; steps 2 and 3 both reported `cargo test` alone and neither ran `pytest`,
+# so an instrument shipped one step earlier TO CATCH DOCUMENTATION DECAY went two steps
+# unconsulted while failing. Of step 4's nine new anchors, eight are step 4's own
+# (`4694`, `19283`, `19301`, `19351`, `19373`, `19375`, `19591`, `19598`) and one is step
+# 2's arrears. Both asserts that would have caught it — the blessed-set equality and this
+# census — were already here and green-by-not-being-run.
+FILES = 10
+SITES = 59
+LINES = 47
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment
 # SAID, where the number is part of the quotation and must not track the file.

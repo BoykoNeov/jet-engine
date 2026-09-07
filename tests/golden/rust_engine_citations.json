@@ -10,6 +10,7 @@
   "3378": "class TwoSpoolTransient(TwoSpoolMapMatcher):",
   "3678": "return i[\"Phi_lp\"] / self.rho, i[\"Phi_hp\"]",
   "4507": "class TwoSpoolFuelTransient(TwoSpoolTransient):",
+  "4694": "margin: float, n: int = 13) -> \"AccelSchedule\":",
   "7296": "_INC_MAX = 200",
   "7385": "class StatorSchedule:",
   "15700": "_share_law = \"max\"      # \"max\" = MIN-SELECT, the plant. \"sum\" = s 3's isolation instrument.",
@@ -31,6 +32,7 @@
   "18650": "# THE REFUSALS ARE CHECKED HERE AND NOT ONLY IN `_windup_tau`, because `clip`",
   "18653": "self._windup_tau()",
   "18673": "m._windup_law, m._tau_t, m._ic_cap = self._windup_law, self._tau_t, self._ic_cap",
+  "18694": "m._windup_law, m._tau_t, m._ic_cap = law, tau_t, self._ic_cap",
   "18738": "tau_t = self._windup_tau()",
   "18771": "base_close, a, h, max(1e-9, self._applied_demand(wf, wr, mf_sched)),",
   "18781": "base_close, a, h, max(1e-9, self._applied_demand(wf, wr, mf_sched)),",
@@ -38,6 +40,13 @@
   "19025": "try:",
   "19031": "got, res = None, None",
   "19033": "self._ic_cap = prev",
-  "19308": "dw = rel * max(w, 1e-9)"
+  "19283": "def _with_cap(self, law, fn, *a, **kw):",
+  "19301": "return m.accel_schedule(flight, Tt4_lo, Tt4_hi, margin)",
+  "19308": "dw = rel * max(w, 1e-9)",
+  "19351": "return m._with_windup(law, tau_t, m._with_cap, cl, m._rhs_gains_at,",
+  "19373": "cap_a = m._with_cap(\"solve\", m._cap_fuel, flight, p[\"nu_lp\"], p[\"nu_hp\"],",
+  "19375": "cap_a2 = m._with_cap(\"sensed\", m._cap_fuel, flight, p[\"nu_lp\"], p[\"nu_hp\"],",
+  "19591": "return m._with_cap(\"solve\", m._cap_fuel, flight, a, h, ms, accel, None)",
+  "19598": "return m._with_cap(\"sensed\", m._cap_fuel, flight, a, h, ms, accel, None,"
  }
 }

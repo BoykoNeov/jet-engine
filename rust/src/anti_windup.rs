@@ -523,6 +523,7 @@ pub fn windup_march(
 /// `self.bleed_lim.tau` and `self._stator_leg().tau` are `None` on an unlagged valve and a
 /// stator-free machine; Python raises `TypeError` dividing by them, so `expect` is the faithful
 /// spelling and the message says which arm the caller is on.
+#[allow(clippy::type_complexity)]
 pub struct RhsLaws<'a> {
     /// **F** — rung 52's leg, as a RATE: `(wf, wr, q, v) -> (dwf/ds, regime)`.
     pub f: Box<dyn Fn(f64, f64, f64, f64) -> Result<(f64, LegRegime), Abort> + 'a>,
