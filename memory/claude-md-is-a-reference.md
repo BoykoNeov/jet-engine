@@ -40,6 +40,16 @@ three collapsed duplication sites re-growing — it was the TABLE ITSELF, one ro
 time.** Write the row short at ship time; compacting later re-reads five specs to prove
 nothing was lost.
 
+**The TEST COUNTS in § Commands are a MEASUREMENT, not a running total.** On
+2026-09-07 the file said 989 for `pytest -m "not slow"`. It was wrong by 11: 989
+had been reached by adding 12 to a previously-documented 977, which had itself been
+reached the same way — an arithmetic chain nobody had re-collected. A `--collect-only`
+run (2 min, no gate) gave 1387 total / 1000 not-slow. **Increment nothing; run
+`pytest --collect-only -q` and read the two numbers off it.** This is
+[[rust-port-guessed-census-bars]] in the one file that is read every session, and it is
+distinct from [[never-run-the-gate-for-timing]] — a count is cheap to measure and must
+be; a TIME must not be, and stays stale on purpose.
+
 **How to apply:** When adding a rung, add ONE table row + a couple of one-line status
 entries; put everything else in the spec. The mechanical backstop is
 `tests/test_claude_md_reference.py` (byte + line budget, runs in the fast `pytest`

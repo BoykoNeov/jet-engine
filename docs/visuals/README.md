@@ -54,12 +54,21 @@ file in the repo does not update a published page.
 - **Every field the cutaway reads survives `build_cutaway.py`'s `KEEP` trim**, and
   every dumped field is either kept or named as deliberately dropped. A trimmed
   field renders `undefined` in the browser and is invisible to every other test.
+- **Every `getElementById(...)` target is declared in the same template.** An
+  unguarded lookup (`getElementById('chips').innerHTML = ...`) throws when the div
+  is renamed and takes the rest of the script with it; a guarded one renders
+  nothing. Both are invisible to the splice check, which compares the built page
+  against the template that already has the defect.
 - **The sweep blocks are checked for shape only** — present, non-empty, finite.
   They cost ~10 minutes to produce and are never recomputed by a test.
 
-The cutaway also **renders** the design point and the loss factors from
-`data.json` rather than carrying them as typed markup, so moving the project's
-design point moves that page's chips and footer with it.
+**Both pages now RENDER the design point** rather than carrying it as typed
+markup: the cutaway's chips and loss footer (`paintChrome()`), and the charts
+page's figure subtitle, footer provenance paragraph and T-s lede
+(`paintDesignPoint()`). Moving the project's design point moves both pages with
+it. This is gated separately because the splice check structurally cannot see
+it — a constant typed into a *template* is copied into the *built page*, so the
+splice matches perfectly while the sentence is wrong.
 
 Deliberately *not* bound: the sweep curves' numbers (illustration grids, below);
 the cutaway's geometry, blade counts and primary-zone temperature (drawn — the
@@ -67,6 +76,12 @@ page's own footer says which is which); and the rung map's coverage — the ladd
 is at **rung 84** while the computed panels cover **1–23** and the map lists
 **29**. That last one is a scope statement, not a defect, and nothing gates it: a
 gate on it would fire on every new rung.
+
+Also not bound, and worth knowing: the rung-map bodies quote findings in prose
+(`C_opt~2.5`, `a~250`, `dT5/T5 = 0.011%`). Those come from the specs, not from
+`data.json`, so no test can reach them - they are the same class as the typed
+design point, minus a data source to render from. Check them against
+`docs/rungN-spec.md` by hand when a rung's numbers move.
 
 ## Honesty note
 

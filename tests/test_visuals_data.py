@@ -401,6 +401,91 @@ def test_the_cutaway_renders_its_design_point_from_the_data():
     )
 
 
+# The design-point spellings that used to be typed into template.html's prose.
+# This is a NAMED-FORM gate, not a general one: a future session could re-type the
+# design point in a spelling this list does not carry. It catches the regression that
+# actually happened, which is the one a splice test structurally cannot see.
+_TYPED_DESIGN_POINT = (
+    "M<sub>0</sub>=0.85",
+    "π<sub>c</sub>=10",
+    "T<sub>t4</sub>=1500",
+    "η<sub>c</sub>=0.88",
+    "η<sub>t</sub>=0.90",
+)
+
+
+def test_the_charts_page_renders_its_design_point_from_the_data():
+    """The charts page states WHICH ENGINE it shows in prose — three times.
+
+    The figure subtitle, the footer's provenance paragraph and the T-s lede all
+    named `M0=0.85, pi_c=10, Tt4=1500 K` (and the lede two efficiencies) as literal
+    markup. That is invisible to `test_visuals_html_is_the_current_splice`: a
+    constant typed into the template lands in the built page too, so the splice
+    matches perfectly while the sentence is false. `paintDesignPoint()` now fills
+    three spans from `DATA.design`, and this pins that it stays that way.
+    """
+    tpl = _text("template.html")
+    assert "function paintDesignPoint()" in tpl and "\npaintDesignPoint();" in tpl, (
+        "template.html no longer defines/calls paintDesignPoint() — if the design point "
+        "went back to being typed into the prose, the page can announce an engine the "
+        "model has left, and the splice test will not notice."
+    )
+    for span in ("ts-design", "footer-design", "lede-eta"):
+        assert f'id="{span}"' in tpl, (
+            f"template.html has no `id={span}` for paintDesignPoint() to fill — the "
+            "sentence it belongs to is either gone or back to being typed."
+        )
+    typed = [t for t in _TYPED_DESIGN_POINT if t in tpl]
+    assert not typed, (
+        f"template.html types the design point again as {typed}. Render it from "
+        "DATA.design through paintDesignPoint() instead — a typed constant is copied "
+        "into the built page by build.py, so no splice or data gate can see it drift."
+    )
+    design = _data()["design"]
+    for field in ("M0", "pi_c", "Tt4", "losses"):
+        assert field in design, f"data.json['design'] has no `{field}`, which paintDesignPoint() reads"
+    for loss in ("eta_c", "eta_t"):
+        assert loss in design["losses"], (
+            f"data.json['design'].losses has no `{loss}`, which the T-s lede renders"
+        )
+
+
+def test_every_element_the_pages_look_up_actually_exists():
+    """Every `getElementById(...)` target must be declared in the same template.
+
+    This is the DOM half of the typed-design-point defect, and it is the wider
+    class: `paintChrome()` does `document.getElementById('chips').innerHTML = ...`
+    with no null guard, so deleting that div throws and kills the REST of boot —
+    the page renders half-drawn while every test here stays green. The guarded
+    spellings (`paintDesignPoint()` uses `if (n)`) fail silently instead, which is
+    worse to notice and no better to have.
+
+    Measured when written: 15 lookups in the cutaway, 21 in the charts page, all
+    resolving. So this gate has no current failure to paper over — it exists to
+    catch the next rename that touches only one side.
+    """
+    for name in ("cutaway-template.html", "template.html"):
+        src = _text(name)
+        looked_up = sorted(set(
+            m.group(2) for m in re.finditer(r"getElementById\((['\"])([A-Za-z0-9_-]+)\1\)", src)
+        ))
+        # Instrument self-check: if the census parses nothing, the assert below is
+        # vacuous. Both pages drive their whole DOM this way, so a handful is a bug
+        # in this regex, not a page that stopped using ids.
+        assert len(looked_up) >= 10, (
+            f"the getElementById census parsed only {looked_up} out of {name} — it no "
+            "longer matches how the page looks elements up, so this check is vacuous."
+        )
+        declared = set(re.findall(r"""\bid=["']([A-Za-z0-9_-]+)["']""", src))
+        missing = [i for i in looked_up if i not in declared]
+        assert not missing, (
+            f"{name} looks up {missing} but declares no such id. An UNGUARDED lookup "
+            "(`getElementById(x).innerHTML = ...`) throws and stops the rest of the "
+            "script; a guarded one renders nothing. Either way the page is wrong and "
+            "the splice gate cannot see it — the built page has the same defect."
+        )
+
+
 def test_the_cutaway_station_labels_all_exist():
     """The station tiles are a literal list in the template; every one must resolve."""
     tpl = _text("cutaway-template.html")

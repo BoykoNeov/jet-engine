@@ -233,10 +233,10 @@ A compact map.
 
 ## Commands
 - Run the model: `python main.py` · Install: see `requirements.txt` (a PyPy venv — § Stack)
-- **The gate: `pytest`** — **EVERYTHING**, 1385 tests, **15–21 min on a quiet box** (PyPy,
-  below-normal; the SAME 1385 took **83:20** on a loaded one, so a time is not a signal).
+- **The gate: `pytest`** — **EVERYTHING**, 1387 tests, **15–21 min on a quiet box** (PyPy,
+  below-normal; the SAME 1387 took **83:20** on a loaded one, so a time is not a signal).
   ONE gate; nothing is ever silently deselected, so no regression can hide.
-- **Iterate: `pytest -m "not slow"`** — 989 tests, **~1:54 at 890**.
+- **Iterate: `pytest -m "not slow"`** — 1000 tests, **~1:54 at 890**.
   `slow` is a LABEL you opt out of by typing, never a default. Only those: `pytest -m slow`.
 - **WHEN to run the gate:** at session end (unless run shortly before), and after a code change.
   NOT at session start, NOT on a docs-only change, NOT "just to be sure", and **NEVER to refresh

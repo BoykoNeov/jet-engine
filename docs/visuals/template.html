@@ -303,12 +303,12 @@ footer code { font-size: 12px; }
     <p class="eyebrow">Rungs 1–6 · the cycle</p>
     <h2>Ideal vs real: the legs tilt right</h2>
     <p class="lede">The rung-1 ideal cycle has vertical isentropic legs. Turn on rung-2's real
-    components — η<sub>c</sub>=0.88, η<sub>t</sub>=0.90, pressure losses — and every leg leans
+    components — <span id="lede-eta"></span>, pressure losses — and every leg leans
     right: that lean is entropy generated, and the lost loop area is thrust the losses cost.</p>
   </div>
   <div class="fig">
     <div class="fig-title">T–s diagram — the same design point, two machines</div>
-    <div class="fig-sub">M<sub>0</sub>=0.85, π<sub>c</sub>=10, T<sub>t4</sub>=1500 K. Hover the station points.</div>
+    <div class="fig-sub"><span id="ts-design"></span>. Hover the station points.</div>
     <div class="legend" id="ts-legend"></div>
     <div class="chart-box" id="ts-chart"></div>
     <details class="tbl" id="ts-table"></details>
@@ -496,7 +496,7 @@ footer code { font-size: 12px; }
     <p>Every curve on this page was computed by the model in this repository —
     <code>extract_data.py</code> runs the actual <code>turbojet</code> package (CPG cycle,
     equilibrium gas, Zeldovich integrator, quench, β-PDF and spatial closures) at the rung-1
-    design point (M<sub>0</sub>=0.85, π<sub>c</sub>=10, T<sub>t4</sub>=1500 K). Sweep grids are
+    design point (<span id="footer-design"></span>). Sweep grids are
     reduced vs the production defaults for speed; the verification gates live in
     <code>tests/</code>, not here.</p>
   </div>
@@ -516,6 +516,23 @@ const fmt = (v, sig = 3) => {
   const digits = a >= 100 ? 0 : a >= 10 ? 1 : a >= 1 ? 2 : 3;
   return v.toLocaleString("en-US", { maximumFractionDigits: digits });
 };
+/* Which engine this page shows is the MODEL'S statement, not typed markup: every
+   place the design point is named renders from DATA.design. A constant typed into
+   the prose would land in the built page too, so the splice test cannot see it —
+   tests/test_visuals_data.py gates this separately. */
+function paintDesignPoint() {
+  const g = DATA.design;
+  const dp = `M<sub>0</sub>=${(+g.M0).toFixed(2)}, π<sub>c</sub>=${(+g.pi_c).toFixed(0)}, `
+    + `T<sub>t4</sub>=${Math.round(g.Tt4)} K`;
+  for (const id of ["ts-design", "footer-design"]) {
+    const n = document.getElementById(id);
+    if (n) n.innerHTML = dp;
+  }
+  const L = g.losses, eta = document.getElementById("lede-eta");
+  if (eta) eta.innerHTML = `η<sub>c</sub>=${(+L.eta_c).toFixed(2)}, η<sub>t</sub>=${(+L.eta_t).toFixed(2)}`;
+}
+paintDesignPoint();
+
 const el = (tag, attrs = {}, parent = null) => {
   const ns = "http://www.w3.org/2000/svg";
   const node = ["svg","g","path","line","circle","rect","text","polyline"].includes(tag)

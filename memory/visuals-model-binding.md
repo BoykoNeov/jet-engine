@@ -15,13 +15,18 @@ just `extract_data.py`'s 6-significant-figure rounding — so nothing looked wro
 That is the trap: *in sync* and *bound* are different properties, and only the
 second survives the next cycle change.
 
-`tests/test_visuals_data.py` now gates the **joints** (12 tests, ~1.5 s, in the
+`tests/test_visuals_data.py` now gates the **joints** (14 tests, ~6 s, in the
 fast subset): the built `.html` is the splice of its template and `data.json`;
-`data.json`'s design point equals `main.py`'s `FLIGHT`/`PI_C`/`TT4`/`REAL_LOSSES`
-(`extract_data.py` re-declares them); the `ideal`/`real` blocks are recomputed
+`extract_data.py` **imports** `FLIGHT`/`PI_C`/`TT4`/`REAL_LOSSES` from `main.py`
+rather than re-declaring them, and the committed `data.json`'s design point is
+gated against `main.py` **as well** — the import cannot catch a stale dump,
+because the dump is committed and its generator takes ten minutes; the
+`ideal`/`real` blocks are recomputed
 live at 1e-5 relative; every field the cutaway reads survives `build_cutaway.py`'s
-`KEEP` trim, and every dumped field is kept or named as deliberately dropped. The
-~10-minute sweep blocks are shape-checked only and never recomputed.
+`KEEP` trim, and every dumped field is kept or named as deliberately dropped;
+every `getElementById` target in either template is declared in that same
+template. The ~10-minute sweep blocks are shape-checked only and never
+recomputed.
 
 **Why:** a page whose whole claim is "these are the model's numbers" needs the
 claim checked, and the failure was silent in both directions — a stale dump has
@@ -30,12 +35,17 @@ where no Python test can see it.
 
 **How to apply:**
 - Three lessons the build itself taught, worth carrying forward:
-  1. **The page's own statement of which engine it shows was typed markup.** The
-     design-point chips and the loss list were literal HTML. They are now
-     rendered from `DATA.design`, so moving the project's design point moves the
-     page. Look for typed physical constants in any page that claims to be
-     data-driven — the census that finds field *reads* (`I.x`, `D().x`) will not
-     find them.
+  1. **The page's own statement of which engine it shows was typed markup — on
+     BOTH pages.** The cutaway's design-point chips and loss list, and the charts
+     page's figure subtitle, footer provenance paragraph and T-s lede, were all
+     literal HTML. They now render from `DATA.design` (`paintChrome()` /
+     `paintDesignPoint()`). This class is invisible to the splice gate by
+     construction: a constant typed into the *template* is copied into the
+     *built page*, so the splice matches perfectly while the sentence is false.
+     It is also invisible to a census of field *reads* (`I.x`, `D().x`). **I only
+     found the second page because the advisor asked whether the same grep had
+     been run there** — fixing a defect class on one instance is not fixing the
+     class. Grep every sibling artifact for the constants you just un-typed.
   2. **A fact I "handled" was inferred, not measured.** I wrote a both-None-or-
      both-numbers branch for `far` on the strength of the page showing 0 upstream
      of the burner. `FlowState` declares `far: float = 0.0` — never None. The
