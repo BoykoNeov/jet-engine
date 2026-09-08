@@ -154,9 +154,14 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # found. **A guard that watches the right directory still needs someone to run it**, and the
 # arrears line above records the same shape at slice AG. Every one of the seventeen was checked
 # by hand against the failure report's own `now` text before re-blessing.
-FILES = 33
-SITES = 181
-LINES = 112
+# RE-BLESSED AT SLICE AH STEP 3 (33/181/112 -> 34/183/114). **TWO anchors, ZERO arrears** --
+# `slice_ah_ledger.rs` cites `19944` (`def singular_limit`) and `20009` (`def stiffness_ledger`),
+# both checked by hand against the failure report's own `now` text before re-blessing. The step
+# ran this file as part of ITSELF rather than at the end of the slice, which is the whole content
+# of the paragraph above: the arrears there existed only because step 1 did not.
+FILES = 34
+SITES = 183
+LINES = 114
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment
 # SAID, where the number is part of the quotation and must not track the file.

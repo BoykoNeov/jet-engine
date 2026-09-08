@@ -24133,3 +24133,155 @@ or `error` token.)
   CORE carrier written at step 1, not a hooks-table cell, which is the distinction P6 is about.
 * **P7** — six of rung 77's nine methods at step 2, with § 3/§ 4 sized for one more. Nothing yet
   separates the classes-price-steps (7) reading from the cells-and-bodies one (6).
+
+#### 5.32.3 STEP 3 — RUNG 77's LAST TWO READERS, AND **THE SAME LATE BINDING IS § 2's SHIPPED DEFECT AND § 3's ONLY INSTRUMENT**
+
+`rust/src/stiffness_ledger.rs` 846 → **1 208** (+362); `residual_gauge.rs` untouched. Module total
+**1 740**, on P1's road to 2 800–3 150. `rust/tests/slice_ah_ledger.rs` (428), **9 gates**, and
+**zero new fields** — P6 holds for the third step running. `singular_limit` (§ 3) and
+`stiffness_ledger` (§ 4) close rung 77 at **nine of nine methods**; everything from here is rung 78.
+
+> **A MEASUREMENT CORRECTION TO § 5.32.2's OWN TALLY, MADE HERE BECAUSE P1 IS SCORED ON IT.**
+> That step recorded `residual_gauge.rs` at *518 → 524* and a module total of *1 370*. The file
+> committed at `7c0c978` is **532 lines** and has been since it was created, so the measured step-2
+> total is **1 378**. The 524 describes an intermediate state that was never committed; the cause of
+> the remaining eight lines is **not diagnosed** and is recorded as unexplained rather than guessed.
+> P1's running total is quoted on the measured basis from here.
+
+##### (a) THE LEADING FINDING — **`_residuals`' DOCSTRING CLOSES WITH A CLAIM ITS OWN CLASS BREAKS 195 LINES LATER, AND § 3 DOES NOT MERELY VIOLATE IT — IT DEPENDS ON VIOLATING IT**
+
+`engine.py`'s `_residuals` docstring ends:
+
+> *"Splitting the closures out makes the fix structural: § 2 rebuilds them at each `qq` INSIDE that
+> `qq`'s own block, **so a residual can only ever be evaluated on the plant it was built for**."*
+
+The clause after the comma is quantified over every residual in the class. `singular_limit`
+(`engine.py:19944`) builds all three inside the frozen block, lets the block close, re-freezes the
+**stator only**, and re-evaluates the SAME closures on the valve's closed loop. **That second
+reading IS rung 64's measurement** — the whole of § 3.
+
+So the split is **not structural**. It is per-call-site discipline, and the two call sites in one
+class want OPPOSITE things from one property: § 2 is a defect if a residual outlives its block,
+§ 3 is DEAD if one does not. The port had copied the claim in its own words — *"Splitting the
+closures out makes the repair structural"* — and it is repaired **where it stands**, in
+`Residuals`' doc comment, rather than contradicted in a note one screen down.
+
+**This is step 2's finding in a second costume, and that is what makes it worth a rule rather than
+a fix.** Step 2 found `c_at`'s *"the single expression-first `1e-9` fold in the whole package"* to
+be a SET claim written before the set had its last member. This is the same shape at a different
+scale: *"a residual can only ever be…"* is a claim about every member of a set the author was still
+adding to. **Two in two steps, in the same two files, both authored by someone who had just written
+the counterexample.** The generalisation is not *check the "only" sentences* — it is that **a
+universally-quantified sentence in a doc comment is a claim about code that does not exist yet**,
+and the cheapest defence is to scope it to the body it is attached to.
+
+##### (b) IT IS MEASURED, NOT ASSERTED — AND THE MEASUREMENT IS A BIT-FOR-BIT EQUALITY
+
+`the_closed_reading_is_a_function_of_the_CELL_and_re_arming_the_valve_guard_restores_the_open_one`
+takes ONE closure at ONE set point and calls it three times, differing only in what the two
+frozen-state `Cell`s hold at the moment of the call:
+
+| block | `b_state` | `v_state` | reading |
+|---|---|---|---|
+| 1 — OPEN, where the closure was built | `Some(q)` | `Some(v)` | `abs(G_s') > 1` |
+| 2 — CLOSED, as shipped | **`None`** | `Some(v)` | `abs(G_s') < 1e-6` |
+| 2′ — the valve guard RE-ARMED beside the stator's | `Some(q)` | `Some(v)` | **block 1's number, `to_bits`-equal** |
+
+Block 2′ is the single most natural "tidy the two asymmetric blocks into one" edit, and it returns
+`phi_closed ≈ 10` against a `1e-6` bar. **Loud — but only because the bar exists**, which is the
+same argument step 2 made for `ift_err` and the reason the demonstration is worth writing twice.
+
+**And the two `Cell`s are read at the instant `cl_s` is taken**, not inferred from the number that
+comes out. A port that got block 2 wrong would still produce entirely plausible § 3 output — it
+would just be the open loop's — so `b_state == None` and `v_state == Some(v)` are asserted directly.
+That is the advisor's *the only thing separating "§ 3 is measuring the closed valve" from "§ 3
+happens to produce plausible numbers"*, and it costs two lines.
+
+The consequence for the port's shape is recorded in `singular_limit`'s doc: `ls` is deliberately
+**not** put in a nested scope (it must outlive the guards), and the guards are dropped **by name**.
+The one arrangement Rust makes tempting — a block expression — is the one arrangement that is wrong.
+
+##### (c) **THE PYTHON SUITE'S OWN DISCRETE COUNT, REPRODUCED — AND THE TWO BARS TYPED BESIDE IT WERE BOTH FALSE**
+
+`test_the_order_needs_the_dormancy_guard`'s docstring says *"Raw, 3 of 24 cells invert — every one
+at `margin = 0.40`."* That is a count in the suite's own text, so it ports, and it is the **only
+absolute cross-language agreement available at a step with no oracle**:
+
+| | measured |
+|---|---|
+| cells | **24 live of 24**, as pre-registered |
+| raw orderings, as a SET | **2** — `[accel, gov, phi]` and `[gov, accel, phi]` |
+| cells whose first-point order is the inverted one | **3**, and every one at `margin = 0.40` |
+| guarded orderings, as a SET | exactly `{[accel, gov, phi], [gov, phi]}` |
+| `sep` / `ift_err` / `gov_norm` / `c_max` | `4.45e-2` / `1.89e-8` / `0.706` / `0.223` |
+
+Every one of those four aggregates is inside its suite bar (`> 1e-2`, `< 3e-8`, `> 0.5`, `< 0.35`),
+and `ift_err` has the least headroom at **1.6×** — worth recording, because the suite's own comment
+measures the differencing optimum near `7e-9` and the bar was set at the shoulder.
+
+**AND THE FIRST WRITING OF THIS FILE ASSERTED `order_stable` AND `guarded_stable` TRUE. BOTH ARE
+FALSE.** Neither is a bar `tests/test_rung77.py` states — the suite returns both and gates neither —
+and both were typed from the § 4 narrative rather than from its asserts. That is the port's recorded
+*typed from the narrative with the counterexample already in my own measurement file*, and the
+repair is **not to delete the reading**: the structure behind it is asserted instead. Every unstable
+cell, raw or guarded, sits at `margin = 0.40`. A cell whose guarded ordering moves point to point is
+admissible under § 4 exactly because § 4 reports a SET; **instability where the accel leg is still
+acting would be the finding**, and that is now the gate.
+
+##### (d) THE SMALL ONES
+
+* **`c_max` is a seeded fold over a SPAN PAIR, and the gate proves the seed is not what is
+  reported.** Python's `max(cmax, max(1.0 - x for x in s1["c"]))` ranges the inner `max` over the
+  two-element span `(lo, hi)`, not over the rows, into an outer seed of `0.0` — the
+  `max(…, default=)` shape § 5.32 (iv) names live at this slice. The port writes it as an explicit
+  two-element fold, and `c_never_approaches_one` adds a non-vacuity half the suite does not have:
+  `c_max > 0.0` **and** attained by a named cell, so a family whose `c` never went positive could
+  not pass `< 0.35` having measured nothing.
+* **`GAINS_DQ = 1e-5` is a named constant** because § 4's forwarding call names every other knob and
+  omits this one, so the default is load-bearing at exactly one call site.
+* **An `n = 0` cell carries `None` and not a zero** in every aggregated field, because Python
+  `continue`s before `leg_slopes` runs and a zero would enter the aggregates where a `None` cannot.
+  There are none on this grid; the gate says so separately from the arithmetic ones, because a
+  silent empty cell is a MARCH defect and the two would otherwise share a failure message.
+* **`Leg`'s derived `Ord`** already carries step 2's note that it reproduces Python's string sort
+  only because alphabetical and declaration order coincide. § 4's `sorted(set(...))` on both order
+  sets relies on it a second time; nothing new is claimed.
+
+##### (e) THE CITATION GUARD RAN AS PART OF THIS STEP, WHICH IS THE WHOLE OF § 5.32.2 (e)
+
+Two new anchors — `engine.py:19944` (`def singular_limit`) and `:20009` (`def stiffness_ledger`) —
+checked by hand against the failure report's own `now` text, re-blessed **33/181/112 → 34/183/114**,
+**zero arrears**. Step 2's paragraph exists because step 1 ran `cargo test` and not `pytest`; the
+answer to it is not a note, it is running the guard inside the step that creates the citations.
+
+##### (f) THE GATES
+
+**The new file alone: 9 of 9, and 7 of the 9 green on the first run.** The two that were not are
+§ (c)'s pair, and their failure was the finding.
+
+**The full Rust gate**, unpiped, exit code written into the same log in the same command (§ 5.29's
+rule): **158 `test result` blocks (157 `Running` targets + 1 `Doc-tests`), 158 of 158 ok, 1 634
+passed / 0 failed / 0 ignored, 0 `error[E`, `CARGO_EXIT=0` READ OFF DISK** — seven of seven. The
+block delta against step 2 is **+1**, which is `slice_ah_ledger.rs` exactly, and the item delta is
+**+9**, which is its nine gates exactly. Both predicted before the run.
+
+**`pytest tests/test_rust_line_citations.py`: 5 of 5** after the re-bless (3 of 5 red before it).
+The full `pytest` gate is owed at slice end and is not re-run here — this step edits one Python file
+and that file's own five gates are the ones that can see the edit.
+
+##### (g) PREDICTIONS, RUNNING
+
+* **P1** — modules at **1 740** of the predicted 2 800–3 150, with all sixteen of rung 78's methods
+  still to come. On the per-CLASS mechanism (`≈ 2 930`) rung 78 has ~1 190 lines left; on the
+  per-LINE one (`≈ 3 071`), ~1 330. Both are live.
+* **P3** — untested still. The RAII question was settled at step 1 (BLOCKED, not free), and the
+  six nests § 3 does not touch are rung 78's, so the first key that could move is the oracle step's.
+* **P6** — **0 ADD holds**, three steps running. `TripleHooks` is 18 fields.
+* **P7 — AND STEP 3 IS THE FIRST EVIDENCE, POINTING AT SIX.** Rung 77 is CLOSED in three steps
+  (plumbing, six methods, three methods) with nine of nine ported and gated. Rung 78 has sixteen
+  methods and two refusals, and the slice still owes a ported-suite step, an oracle step and a
+  dispatch step. If rung 78's bodies take **two** steps the slice lands on **six**; if they take
+  **three** it lands on seven. **The cells-and-bodies reading is now the one to beat**, because the
+  axis P7 named — rung 77's `at_lever` carrying nothing new — is exactly what let step 1 be pure
+  plumbing and step 3 be a two-method step rather than a full one. Settled at the last step, but
+  the direction is on the record before it.

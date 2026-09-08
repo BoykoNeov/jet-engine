@@ -258,8 +258,27 @@ impl Leg {
 /// **Python records that this shipped once.** § 2's first version did exactly that: both `q ± dq`
 /// readings landed on the same closed-valve plant, `G_q` came back **identically zero**, and the
 /// relative error against `direct` was a clean `1.000e+00` — a number with no noise in it, which is
-/// what gave it away. Splitting the closures out makes the repair structural, and
-/// [`set_point_gains`] rebuilds them inside each perturbed block for that reason alone.
+/// what gave it away. [`set_point_gains`] rebuilds them inside each perturbed block for that
+/// reason alone.
+///
+/// # **AND THE PYTHON DOCSTRING'S LAST CLAUSE IS FALSIFIED BY § 3 OF ITS OWN CLASS**
+///
+/// `_residuals`' docstring closes *"Splitting the closures out makes the fix structural: § 2
+/// rebuilds them at each `qq` INSIDE that `qq`'s own block, **so a residual can only ever be
+/// evaluated on the plant it was built for**."* The clause after the colon is a claim about EVERY
+/// residual in the class, and [`singular_limit`] — 195 lines further down the same class — breaks
+/// it deliberately and depends on breaking it: it builds all three residuals inside the frozen
+/// block, lets the block close, re-freezes the STATOR ONLY, and re-evaluates the SAME closures on
+/// the valve's CLOSED loop. That second reading is the entire rung-64 measurement.
+///
+/// So the split is **not** structural. It is per-call-site discipline, and the two call sites in
+/// this module want OPPOSITE things from the same property: § 2 is a defect if a residual outlives
+/// its block, § 3 is dead if one does not. This module's first writing copied the Python claim as
+/// *"makes the repair structural"* — the same shape as the `"only"` sentence
+/// [`slope_at`] repairs one screen up: **a sentence quantified over a SET, written before the set
+/// had its last member.** Repaired where it stands rather than contradicted in a later note, and
+/// `tests/slice_ah_ledger.rs` builds the eager variant and measures what § 3 reads without the
+/// late binding.
 pub struct Residuals<'a> {
     pub accel: Option<Box<dyn Fn(f64) -> Result<f64, Abort> + 'a>>,
     pub gov: Option<Box<dyn Fn(f64) -> Result<f64, Abort> + 'a>>,
@@ -842,5 +861,348 @@ pub fn set_point_gains(
             .filter(|x| x.live.contains(&Leg::Phi))
             .all(|x| *order_of(x, &x.live).last().expect("live is non-empty here") == Leg::Phi),
         rows,
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// § 3 — THE SINGULAR LIMIT, AND RUNG 64's DERIVATION MEASURED
+// ---------------------------------------------------------------------------------------------
+
+/// One point of [`singular_limit`].
+#[derive(Clone, Copy, Debug)]
+pub struct SingularRow {
+    pub s: f64,
+    /// The phi leg's set point, and the fuel the spread is taken about.
+    pub w_phi: f64,
+    pub w_gov: f64,
+    /// `G_s'` with BOTH states frozen — the loop rungs 64–76 have always read.
+    pub phi_open: f64,
+    /// `G_s'` with only the STATOR frozen, so the valve re-solves at every trial fuel.
+    pub phi_closed: f64,
+    pub gov_open: f64,
+    pub gov_closed: f64,
+    /// `|cl_g − op_g| / max(|op_g|, 1e-30)` — **THE CONTROL.**
+    pub gov_rel: f64,
+    /// `max(phis) − min(phis)` — the blunt form, immune to any differencing argument.
+    pub phi_spread: f64,
+    /// `max |phi − phi_lim|` over the three trial fuels.
+    pub phi_off: f64,
+}
+
+/// [`singular_limit`]'s return — § 3 of the spec.
+#[derive(Clone, Debug)]
+pub struct SingularLimit {
+    pub phi_lim: f64,
+    pub margin: f64,
+    pub inc: bool,
+    pub spread: f64,
+    pub n: usize,
+    pub rows: Vec<SingularRow>,
+    /// **P6, the SMALLEST open reading** — `min |phi_open|`, so the claim is about every point.
+    pub phi_open: Option<f64>,
+    /// **P6, the LARGEST closed one** — `max |phi_closed|`.
+    pub phi_closed: Option<f64>,
+    pub phi_off: Option<f64>,
+    pub phi_spread: Option<f64>,
+    /// The control's worst reading: `max` over the points.
+    pub gov_rel: Option<f64>,
+    /// The control's smallest open slope: `min |gov_open|`.
+    pub gov_open: Option<f64>,
+}
+
+/// RUNG 77 § 3 — **`dw*/dq` diverges iff `G_w → 0`, and this family reaches that ONE way.**
+///
+/// Rung 64 DERIVED, in its own words *"DERIVED, not measured"*, that where the bleed valve rides it
+/// re-pins `phi_lp` to `phi_lim` at ANY fuel, so `dphi/dW_f = 0` and rung 49's set-point solve is
+/// degenerate across its whole bracket. **This measures it.** The phi residual is read twice at the
+/// same states: OPEN (both fields frozen — every reader from 64 to 76) and CLOSED (the valve
+/// re-solving at every trial fuel, which is the plant rung 64 is talking about).
+///
+/// `phi_spread` is the blunt form of the same statement, because a derivative can be small for
+/// reasons a VALUE cannot. **The governor is read in both too, and that is the control** — nothing
+/// in this family pins `Tt4` at a fixed fuel, so `G_g'` must be indifferent to the valve's loop, and
+/// without that reading § 3 would be an artefact rather than a confirmation.
+///
+/// # THE LATE BINDING IS THE INSTRUMENT HERE, NOT THE DEFECT — AND THE ASYMMETRY IS LOAD-BEARING
+///
+/// [`Residuals`]' doc records that § 2 shipped once with residuals outliving their frozen block.
+/// **§ 3 does that deliberately and depends on it**: `ls` is built inside the frozen block, the
+/// block's guards are dropped, and the SAME closures are evaluated again with only the stator
+/// re-frozen. The two blocks are NOT symmetric and the port must not tidy them into one:
+///
+/// | | `b_state` | `v_state` | what is read |
+/// |---|---|---|---|
+/// | block 1 (OPEN) | `Some(q)` | `Some(v)` | `_legs`, `op_s`, `op_g` |
+/// | block 2 (CLOSED) | **`None`** | `Some(v)` | `cl_s`, `cl_g`, the three `phi` values |
+///
+/// Python spells block 2 as a bare `m._v_state = v` whose `finally` clears **only** that field, and
+/// it is correct only because block 1's `finally` already cleared the other. A Rust reader that
+/// re-armed [`MarchedBleed`] here, or that held block 1's guard one line too long, would read the
+/// OPEN plant twice and every § 3 number would come back plausible and wrong. So `ls` is
+/// deliberately NOT put in a nested scope — it has to outlive the guards — the two guards are
+/// dropped by name, and `tests/slice_ah_ledger.rs` asserts both `Cell`s directly at the moment
+/// `cl_s` is taken rather than inferring the state from the numbers that come out.
+#[allow(clippy::too_many_arguments)]
+pub fn singular_limit(
+    core: &ScheduledStatorCore, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, tt4_max: f64,
+    phi_lim: f64, margin: f64, taus: (f64, f64, f64, f64), inc: bool, r: f64, s_settle: f64,
+    ds: f64, v_max: f64, spread: f64, every: usize,
+) -> SingularLimit {
+    let sm = phi_lim / core.arming().map_lp_design.phi_surge - 1.0;
+    let (m, surge, _lag, traj, accel) = ledger_march(
+        core, flight, tt4_lo, tt4_hi, tt4_max, sm, taus, r, s_settle, ds, v_max, inc, margin);
+    let surge = surge.expect("`_ledger_march` arms rung 49's floor on every admissible arm");
+    // Python's `k = surge.key()`, read ONCE and outside every block — `residuals` does the same.
+    let k = surge.spool();
+    let phi_lim_read = surge.phi().phi_lim;
+    let b_max = m.fuel.inner.lever.lim.expect("`_shared_rig` arms the valve").b_max;
+    let pts = riding4(&traj, b_max);
+    let mut rows: Vec<SingularRow> = Vec::new();
+    for p in pts.iter().step_by(every) {
+        let (a, h, ms) = (p.nu_lp, p.nu_hp, p.mf_sched);
+        let (q, v) = bv_of(p);
+        // --- BLOCK 1: OPEN. Both states frozen at the trajectory's own values.
+        let sb = MarchedBleed::set(&m.fuel.inner, q);
+        let sv = MarchedStator::set(&m.fuel.inner, v);
+        let ls = legs(&m.fuel, flight, a, h, ms, Some(&accel), Some(&surge), Some(tt4_max))
+            .unwrap_or_else(|e| panic!("{}", e.0));
+        let (ws, wg) = (ls.at(Leg::Phi).w, ls.at(Leg::Gov).w);
+        let op_s = slope_at(&*ls.at(Leg::Phi).g, ws, SLOPE_AT_REL)
+            .unwrap_or_else(|e| panic!("{}", e.0));
+        let op_g = slope_at(&*ls.at(Leg::Gov).g, wg, SLOPE_AT_REL)
+            .unwrap_or_else(|e| panic!("{}", e.0));
+        // Python's `finally: m._b_state, m._v_state = None, None` — by NAME and not by scope,
+        // because `ls` must survive and its closures are exactly what block 2 re-evaluates.
+        drop(sv);
+        drop(sb);
+        // --- BLOCK 2: CLOSED. Only the valve's loop is closed; the stator is not.
+        let sv2 = MarchedStator::set(&m.fuel.inner, v);
+        let cl_s = slope_at(&*ls.at(Leg::Phi).g, ws, SLOPE_AT_REL)
+            .unwrap_or_else(|e| panic!("{}", e.0));
+        let cl_g = slope_at(&*ls.at(Leg::Gov).g, wg, SLOPE_AT_REL)
+            .unwrap_or_else(|e| panic!("{}", e.0));
+        let phis: Vec<f64> = [1.0 - spread, 1.0, 1.0 + spread]
+            .into_iter()
+            .map(|f| {
+                let i = m.fuel.instant_fuel(flight, a, h, ws * f);
+                match k {
+                    Spool::Lp => i.base.close.phi_lp,
+                    Spool::Hp => i.base.close.phi_hp,
+                }
+            })
+            .collect();
+        drop(sv2);
+        let (plo, phi_hi) = py_span(phis.iter().copied()).expect("three trial fuels");
+        // Python's `max(abs(op_g), 1e-30)` — argument 0 is an EXPRESSION, so the explicit fold.
+        let ag = op_g.abs();
+        let den = if 1e-30 > ag { 1e-30 } else { ag };
+        rows.push(SingularRow {
+            s: p.s,
+            w_phi: ws,
+            w_gov: wg,
+            phi_open: op_s,
+            phi_closed: cl_s,
+            gov_open: op_g,
+            gov_closed: cl_g,
+            gov_rel: (cl_g - op_g).abs() / den,
+            phi_spread: phi_hi - plo,
+            phi_off: py_max(phis.iter().map(|x| (x - phi_lim_read).abs()))
+                .expect("three trial fuels"),
+        });
+    }
+    SingularLimit {
+        phi_lim,
+        margin,
+        inc,
+        spread,
+        n: rows.len(),
+        // P6: the phi leg's slope DIES when the valve closes around its variable.
+        phi_open: py_min(rows.iter().map(|x| x.phi_open.abs())),
+        phi_closed: py_max(rows.iter().map(|x| x.phi_closed.abs())),
+        // the blunt form: `phi_lp` is `phi_lim` at every fuel in the band.
+        phi_off: py_max(rows.iter().map(|x| x.phi_off)),
+        phi_spread: py_max(rows.iter().map(|x| x.phi_spread)),
+        // THE CONTROL: the governor's slope does NOT care about the valve's loop.
+        gov_rel: py_max(rows.iter().map(|x| x.gov_rel)),
+        gov_open: py_min(rows.iter().map(|x| x.gov_open.abs())),
+        rows,
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// § 4 — THE ORDER, OVER THE ARMS
+// ---------------------------------------------------------------------------------------------
+
+/// [`set_point_gains`]'s `dq` default, which § 4 relies on by NOT passing one.
+///
+/// Python's `set_point_gains(..., dq: float = 1e-5, ...)`; `stiffness_ledger` names every other knob
+/// in its forwarding call and omits this one. A Rust caller has to supply it, so the default is a
+/// named constant rather than a literal at the single call site that depends on it being the same
+/// number the suite's own § 2 fixture uses.
+pub const GAINS_DQ: f64 = 1e-5;
+
+/// ONE cell of [`stiffness_ledger`] — one `(inc, phi_lim, margin, Tt4_max)` corner.
+///
+/// **A cell with `n == 0` carries ONLY its four coordinates and the count.** Python appends a
+/// five-key dict and `continue`s before [`leg_slopes`] ever runs, so every other field is `None`
+/// here rather than a zero: a zero would enter the aggregates and a `None` cannot.
+#[derive(Clone, Debug)]
+pub struct LedgerCell {
+    pub inc: bool,
+    pub phi_lim: f64,
+    pub margin: f64,
+    pub tt4_max: f64,
+    pub n: usize,
+    pub order: Option<[Leg; 3]>,
+    pub stable: Option<bool>,
+    pub ift_err: Option<f64>,
+    /// § 1's `(min, max)` of the accel leg's `G_w`, which IS `1 − c`.
+    pub c: Option<(f64, f64)>,
+    pub norm: Option<[(f64, f64); 3]>,
+    pub sep: Option<f64>,
+    /// § 1's `norm["gov"]` SPAN — the aggregate reads element 0, so the pair is kept whole.
+    pub gov_norm: Option<(f64, f64)>,
+    pub guarded: Option<Vec<Leg>>,
+    pub n_guarded: usize,
+    pub guarded_stable: Option<bool>,
+    pub phi_top: Option<bool>,
+}
+
+/// [`stiffness_ledger`]'s return — § 4 of the spec.
+#[derive(Clone, Debug)]
+pub struct StiffnessLedger {
+    pub n_cells: usize,
+    pub n_live: usize,
+    pub cells: Vec<LedgerCell>,
+    /// **P4**: the SET of raw orderings, sorted. Returned whole so a single inverting cell cannot
+    /// hide behind a representative.
+    pub orders: Vec<[Leg; 3]>,
+    pub order_invariant: bool,
+    pub order_stable: bool,
+    /// The same, GUARDED to the legs that are actually acting.
+    pub guarded_orders: Vec<Vec<Leg>>,
+    pub guarded_invariant: bool,
+    pub guarded_stable: bool,
+    /// The half of the ordering that has to survive alone.
+    pub phi_top: bool,
+    pub ift_err: Option<f64>,
+    /// **P5** over the whole sweep.
+    pub sep: Option<f64>,
+    /// **P7**: the governor's normalised slope never collapses.
+    pub gov_norm: Option<f64>,
+    /// **P8**: how close `c` gets to 1 anywhere in this family.
+    pub c_max: f64,
+}
+
+/// RUNG 77 § 4 — **does the ORDER survive the arms?**
+///
+/// § 2's ordering is one trajectory at one setting, which is exactly the shape of claim rung 63 was
+/// caught over-reading. So it is re-taken over both stator arms, three `margin`s, two `Tt4_max` and
+/// two `phi_lim` — and the reported result is the SET of orderings seen, not a representative one.
+/// A single inverting cell is the finding, and `orders` is returned whole so it cannot be hidden
+/// behind a max.
+///
+/// `c_max` rides along because rung 76 § 8's fourth seam (`c → 1`, the solve whose gain diverges) is
+/// a claim about REACHABILITY, and the honest way to say it is unreachable here is to report how
+/// close the whole sweep gets.
+///
+/// # `c_max` IS A SEEDED FOLD OVER A SPAN PAIR, AND THAT IS THE SLICE-AA HAZARD
+///
+/// Python is `cmax = max(cmax, max(1.0 - x for x in s1["c"]))`. The inner `max` ranges over the
+/// two-element SPAN `(lo, hi)` and not over the rows; the outer is seeded at `0.0`, so a family
+/// whose `c` never went positive would report `0.0` rather than its largest element. That is
+/// `max(…, default=)`-shaped — plan § 5.32 (iv) names the class live at this slice — and it is
+/// written here as an explicit fold over exactly those two endpoints into a `0.0` seed, so the floor
+/// is visible instead of implied.
+///
+/// # THIS READER RUNS TWO MARCHES PER CELL
+///
+/// [`set_point_gains`] and [`leg_slopes`] each call [`ledger_march`] for themselves, so a 24-cell
+/// sweep is 48 marches. Python marks both of its § 4 gates `slow` for that reason. The port's live
+/// in `tests/slice_ah_ledger.rs` and are not separately tiered, because `cargo test` has no
+/// equivalent opt-out and the crate's gate is already a single run.
+#[allow(clippy::too_many_arguments)]
+pub fn stiffness_ledger(
+    core: &ScheduledStatorCore, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64,
+    phi_lims: &[f64], margins: &[f64], tt4_maxes: &[f64], arms: &[bool],
+    taus: (f64, f64, f64, f64), r: f64, s_settle: f64, ds: f64, v_max: f64, every: usize,
+) -> StiffnessLedger {
+    let mut cells: Vec<LedgerCell> = Vec::new();
+    let mut orders: Vec<[Leg; 3]> = Vec::new();
+    let mut gorders: Vec<Vec<Leg>> = Vec::new();
+    let mut cmax = 0.0f64;
+    let mut seps: Vec<f64> = Vec::new();
+    for &inc in arms {
+        for &phi_lim in phi_lims {
+            for &margin in margins {
+                for &tmax in tt4_maxes {
+                    let g = set_point_gains(
+                        core, flight, tt4_lo, tt4_hi, tmax, phi_lim, margin, taus, inc, r,
+                        s_settle, ds, v_max, GAINS_DQ, every);
+                    if g.n == 0 {
+                        cells.push(LedgerCell {
+                            inc, phi_lim, margin, tt4_max: tmax, n: 0, order: None, stable: None,
+                            ift_err: None, c: None, norm: None, sep: None, gov_norm: None,
+                            guarded: None, n_guarded: 0, guarded_stable: None, phi_top: None,
+                        });
+                        continue;
+                    }
+                    let s1 = leg_slopes(
+                        core, flight, tt4_lo, tt4_hi, tmax, phi_lim, margin, taus, inc, r,
+                        s_settle, ds, v_max, every);
+                    orders.push(g.order.expect("`n > 0`, so § 2 ordered at least one point"));
+                    gorders.extend(g.guarded_orders.iter().cloned());
+                    // `max(1.0 - x for x in s1["c"])` over the SPAN PAIR, folded into `cmax`'s
+                    // `0.0` seed. This function's doc says why it is not an `f64::max` chain.
+                    let (lo, hi) = s1.c.expect("`n > 0`, so § 1 has rows and therefore a span");
+                    for x in [lo, hi] {
+                        let d = 1.0 - x;
+                        if d > cmax {
+                            cmax = d;
+                        }
+                    }
+                    seps.push(s1.sep.expect("`n > 0`, so § 1 has at least one pair gap"));
+                    cells.push(LedgerCell {
+                        inc, phi_lim, margin, tt4_max: tmax, n: g.n,
+                        order: g.order,
+                        stable: g.order_stable,
+                        ift_err: g.ift_err,
+                        c: s1.c,
+                        norm: s1.norm,
+                        sep: s1.sep,
+                        gov_norm: s1.norm.map(|n| n[Leg::Gov as usize]),
+                        guarded: g.guarded.clone(),
+                        n_guarded: g.n_guarded,
+                        guarded_stable: g.guarded_stable,
+                        phi_top: Some(g.phi_top),
+                    });
+                }
+            }
+        }
+    }
+    let live: Vec<&LedgerCell> = cells.iter().filter(|c| c.n > 0).collect();
+    // Python's `sorted(set(...))` on both — a SET count, so a repeated ordering counts once.
+    orders.sort();
+    orders.dedup();
+    gorders.sort();
+    gorders.dedup();
+    StiffnessLedger {
+        n_cells: cells.len(),
+        n_live: live.len(),
+        order_invariant: orders.len() == 1,
+        order_stable: live.iter().all(|c| c.stable == Some(true)),
+        guarded_invariant: gorders.len() == 1,
+        guarded_stable: live
+            .iter()
+            .filter(|c| c.n_guarded > 0)
+            .all(|c| c.guarded_stable == Some(true)),
+        phi_top: live.iter().all(|c| c.phi_top == Some(true)),
+        ift_err: py_max(live.iter().filter_map(|c| c.ift_err)),
+        sep: py_min(seps.iter().copied()),
+        gov_norm: py_min(live.iter().filter_map(|c| c.gov_norm).map(|(lo, _)| lo)),
+        c_max: cmax,
+        orders,
+        guarded_orders: gorders,
+        cells,
     }
 }

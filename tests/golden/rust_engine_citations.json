@@ -103,6 +103,8 @@
   "19711": "def _legs(self, flight: \"FlightCondition\", a: float, h: float, mf_sched: float,",
   "19821": "m._b_state, m._v_state = q, v",
   "19829": "row[\"c\"] = m._c_at(flight, a, h, accel, legs[\"accel\"][\"w\"], q, v)",
+  "19944": "def singular_limit(self, flight: \"FlightCondition\", Tt4_lo: float, Tt4_hi: float,",
+  "20009": "def stiffness_ledger(self, flight: \"FlightCondition\", Tt4_lo: float, Tt4_hi: float,",
   "20173": "assert self._cap_law != \"sensed\", (",
   "20188": "assert ok and abs(w - w0) <= 1e-6 * abs(w0), (",
   "20221": "dw = 1e-7 * max(abs(w), 1e-9)",
