@@ -1,6 +1,6 @@
 ---
 name: windows-tooling-file-hazards
-description: "Eight silent file-tooling hazards on this box: PyPy unflushed writes, PowerShell UTF-8 double-encoding, backticks in a -m message, a status read off the runner, a log still being written, and a text-mode rewrite that flips every line ending behind git's normalisation — plus `cmd`'s parse-time `%ERRORLEVEL%`, which can only ever report success"
+description: "The running catalogue of silent file-tooling hazards on this box — each one corrupts output or misreports a status while reporting success. PyPy unflushed writes, PowerShell UTF-8 double-encoding, backticks in a -m message, a status read off the runner, a log still being written, and a text-mode rewrite that flips every line ending behind git's normalisation — plus `cmd`'s parse-time `%ERRORLEVEL%`, which can only ever report success"
 metadata: 
   node_type: memory
   type: feedback
@@ -80,6 +80,17 @@ three times, each time producing a bare `EXIT=`. It is recorded here and it stil
 hand writing the command. **A hazard file only works if it is read before the command, not after
 the surprise** — so the two fixes are stated once more, together: `$p.Refresh()` before reading
 `ExitCode`, or `(Start-Process ... -Wait -PassThru).ExitCode`.
+
+**AND THE CHECK FOR HAZARD 6 WAS ITSELF ONE.** On 2026-09-08 the line-ending audit was
+`grep -c $'\r' FILE`. In this shell the `$'...'` escape was NOT interpreted, so grep searched for
+the LETTER `r` and reported every file — prose, JSON, Rust — as pure CRLF at exactly its own line
+count. The conclusion drawn from it, *no flips*, was stated to the user and was wrong: measured
+properly over raw bytes, one `.rs` file HAD been flipped to CRLF by a text-mode repair script and
+one memory file had been left MIXED. **The instrument for a hazard in this file was an instance of
+the hazard class in this file**, and its failure mode was the flattering one — a uniform,
+plausible, wrong answer with no error in it. **Measure line endings in Python over `open(p,"rb")`
+bytes** — count `\r\n`, count `\n` minus that, and require one of the two to be zero — never with a
+shell escape whose interpretation you have not checked on a file you know the answer for.
 
 **Why:** all of these corrupt output while reporting success, and this project's deliverable is prose —
 20,000+ lines of derivation comments full of `∫`, `§`, `Δ`, `φ`, `≈`. A mangling that survives
