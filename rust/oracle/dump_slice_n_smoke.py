@@ -20,7 +20,7 @@ Run:  .venv\Scripts\pypy.exe M:\claud_projects\temp\slice_n\smoke55.py > <tsv>
 import os
 import sys
 
-sys.path.insert(0, r"M:\claud_projects\jet engine")
+sys.path.insert(0, r"W:\Claude_projects\jet engine")
 
 from turbojet.gas import Gas
 from turbojet.engine import (

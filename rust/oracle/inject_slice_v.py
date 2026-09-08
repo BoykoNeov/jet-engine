@@ -34,9 +34,9 @@ import re
 import subprocess
 import sys
 
-ROOT = r"M:\claud_projects\jet engine"
+ROOT = r"W:\Claude_projects\jet engine"
 SRC = os.path.join(ROOT, "rust", "src", "stator_transient.rs")
-TMP = r"M:\claud_projects\temp\rust-phase7"
+TMP = r"W:\temp\claude\rust-phase7"
 SUITES = ["rung57", "rung58", "rung59", "rung60"]
 
 # (name, [(old, new), ...])

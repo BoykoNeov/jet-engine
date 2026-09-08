@@ -24,7 +24,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 RUST = os.path.join(ROOT, "rust")
-TMP = r"M:\claud_projects\temp\rust-phase7"
+TMP = r"W:\temp\claude\rust-phase7"
 OUT = os.path.join(ROOT, "docs", "plans", "slice-v-step5-evidence.md")
 
 # Pre-registered at `M:\claud_projects\temp\rust-phase7\step5_predictions.txt` BEFORE the
