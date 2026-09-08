@@ -819,6 +819,22 @@ pub struct TwoSpoolTransientCore {
     /// Its guard writes this field directly for [`windup_law`](Self::windup_law)'s measured
     /// reason: `_with_cap` also has exactly one definer.
     pub cap_law: Cell<&'static str>,
+    /// RUNG **78**'s `_gauge_k` — **THE ONE-PARAMETER FAMILY THAT HOLDS A SET POINT FIXED WHILE
+    /// SWEEPING ITS RESIDUAL'S SLOPE**, and the sixth declared law of this family.
+    ///
+    /// `cap_k(w) = w0 + k·(cap(w) − w0)` anchored at the `k = 1` root, so `G_k' = 1 − k·c` is a
+    /// free dial reaching zero at `k = 1/c`. **The class default is again the reduce arm** —
+    /// [`GAUGE_K_IDENTITY`](crate::residual_gauge::GAUGE_K_IDENTITY), `1.0`, at which
+    /// `cap_fuel` dispatches to the parent and not one float in this family moves — and this knob
+    /// adds NO constant of its own: `k` is SWEPT, never set, and `w0` is the plant's own
+    /// already-solved set point.
+    ///
+    /// `Cell<f64>` and not `Cell<Option<f64>>` for [`cap_law`](Self::cap_law)'s reason: Python's
+    /// class attribute is the number, there is no unset state, and the dispatch is an exact `==`
+    /// against the default rather than a nullity test.
+    ///
+    /// Its guard writes this field directly, `_with_gauge` having exactly one definer.
+    pub gauge_k: Cell<f64>,
     /// RUNG 70's ARMED GOVERNOR SET POINT — Python's `_gov_max`, and the phase's **second**
     /// CONFIG-kind dynamically-scoped field after [`ref_`](Self::ref_).
     ///
@@ -1238,6 +1254,7 @@ impl TwoSpoolTransientCore {
             windup_law: Cell::new(crate::anti_windup::WINDUP_LAW_NONE),
             tau_t: Cell::new(None),
             cap_law: Cell::new(crate::sensed_cap::CAP_LAW_SOLVE),
+            gauge_k: Cell::new(crate::residual_gauge::GAUGE_K_IDENTITY),
             ref_: Cell::new(None),
             gov_max: Cell::new(None),
         }

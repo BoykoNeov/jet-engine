@@ -1,6 +1,6 @@
 ---
 name: windows-tooling-file-hazards
-description: "Six silent file-tooling hazards on this box: PyPy unflushed writes, PowerShell UTF-8 double-encoding, backticks in a -m message, a status read off the runner, a log still being written, and a text-mode rewrite that flips every line ending behind git's normalisation"
+description: "Eight silent file-tooling hazards on this box: PyPy unflushed writes, PowerShell UTF-8 double-encoding, backticks in a -m message, a status read off the runner, a log still being written, and a text-mode rewrite that flips every line ending behind git's normalisation — plus `cmd`'s parse-time `%ERRORLEVEL%`, which can only ever report success"
 metadata: 
   node_type: memory
   type: feedback
@@ -65,6 +65,21 @@ NOT, because it matched the target file's ending first — so the guard existed 
 one of four sites. Caught by measuring the endings after committing, not before. **Any script
 that inserts text into a file must take the ending FROM THAT FILE**, at every site, and the check
 is one line: bare LFs (`LF count - CRLF count`) must be 0 or the whole count.
+
+**AND `cmd /c "cargo test > LOG 2>&1 & echo CARGO_EXIT=%ERRORLEVEL%"` WRITES THE ERRORLEVEL FROM
+BEFORE THE COMMAND.** `cmd` expands `%VAR%` when it PARSES the line, so the status is baked in at
+parse time and the log says `CARGO_EXIT=0` whatever happened. Caught on 2026-09-08 only because a
+build with three `error[E0271]`s still wrote `CARGO_EXIT=0` beside them. **A status facet that
+cannot report anything but success is a decoration**, and this is the same class as the `tail`
+and trailing-`echo` cases above — third instance. Use `cmd /v:on /c "... & echo X=!ERRORLEVEL!"`,
+or better the POSIX subshell the plan already mandates:
+`( cargo test > FILE 2>&1; echo "CARGO_EXIT=$?" >> FILE )`.
+
+**AND THE `$p.ExitCode` HAZARD BELOW WAS HIT AGAIN IN THE SAME SESSION THAT WROTE THE LINE ABOVE**,
+three times, each time producing a bare `EXIT=`. It is recorded here and it still did not reach the
+hand writing the command. **A hazard file only works if it is read before the command, not after
+the surprise** — so the two fixes are stated once more, together: `$p.Refresh()` before reading
+`ExitCode`, or `(Start-Process ... -Wait -PassThru).ExitCode`.
 
 **Why:** all of these corrupt output while reporting success, and this project's deliverable is prose —
 20,000+ lines of derivation comments full of `∫`, `§`, `Δ`, `φ`, `≈`. A mangling that survives

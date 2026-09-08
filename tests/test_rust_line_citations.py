@@ -145,9 +145,18 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # GROWS is not evidence that coverage grew. Here a census that grows is evidence that it did
 # NOT -- same distinction, opposite direction, and both are only visible because the three
 # numbers are blessed separately rather than as one total.
-FILES = 31
-SITES = 144
-LINES = 95
+# RE-BLESSED AT SLICE AH STEP 2 (31/144/95 -> 33/181/112), AND **TEN OF THE SEVENTEEN NEW
+# ANCHORS WERE STEP 1's ARREARS.** Slice AH step 1 shipped `residual_gauge.rs` citing eight
+# `engine.py` lines (`20173`, `20188`, `20412`, `20503`, `20504`, `20591`, `20592`, `20691`)
+# and `stiffness_ledger.rs` citing two more (`19821`, `19829`), none of them blessed -- so
+# THREE of this file's five gates were red from the moment step 1 was written, and stayed red
+# because that step ran `cargo test` and not `pytest`. Step 2 ran it, which is how they were
+# found. **A guard that watches the right directory still needs someone to run it**, and the
+# arrears line above records the same shape at slice AG. Every one of the seventeen was checked
+# by hand against the failure report's own `now` text before re-blessing.
+FILES = 33
+SITES = 181
+LINES = 112
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment
 # SAID, where the number is part of the quotation and must not track the file.

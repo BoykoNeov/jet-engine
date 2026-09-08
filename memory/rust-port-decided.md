@@ -13,6 +13,14 @@ On 2026-08-12 the user decided to rewrite the whole project in Rust. Python surv
 the rule the user gave is "the ENGINE is pure Rust", so everything computational, including the
 station tables, is Rust.
 
+**Restated by the user on 2026-09-07, unprompted: getting rid of Python is an AIM of the port,
+and it includes ALL the Python TESTS.** So the per-slice habit of porting each rung's gates
+1:1 into `rust/tests/rungN.rs` is not a nicety — it is the only thing that makes phase 8's
+"full suite green on Rust alone" reachable. Two consequences to hold: a Rust gate that leans on
+a Python-produced artefact is only portable if that artefact is a COMMITTED golden (the dump
+SCRIPTS are Python and die); and any Python test with no Rust counterpart is an undeclared
+phase-8 blocker, so coverage of the source suite is a running obligation, not a final audit.
+
 The plan is `docs/plans/todo-rust-port.md` — read it rather than re-deriving. Three decisions
 are already locked: `main.py` **split** (Rust prints tables + emits plot JSON, Python draws
 only); the `const Hooks` ladder architecture; and **stop-and-re-decide at each phase boundary**.

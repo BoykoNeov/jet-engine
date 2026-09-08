@@ -23850,3 +23850,286 @@ table as its evidence **and probe 13's runtime column beside it**, so a later sl
 both that the sites exist and that they run. **A booking no gate can close does not become closed by writing a gate
 that measures something else** — which is § 5.31.5's *an instrument fed by what it certifies*,
 arriving from the opposite side.
+
+#### 5.32.1 STEP 1 — THE PLUMBING, AND **THE PRE-FLIGHT'S "FREE" REPAIR IS BLOCKED BY A GATE SLICE Y WROTE ON PURPOSE**
+
+`rust/src/stiffness_ledger.rs` (166) + `rust/src/residual_gauge.rs` (513) = **679 module lines**,
+against slice AG step 1's 658. `rust/tests/slice_ah_cells.rs`, **5 gates, green on the first run**;
+one new core carrier (`gauge_k`) and **ZERO new `TripleHooks` fields** — P6 holds so far.
+
+**FOUR RE-AIMED POINTERS**, as § (ii) predicted: `at_lever` at rung 77 (the first in the chain
+carrying nothing new), then `at_lever`, `_shared_rig` and `_cap_fuel` at rung 78. With `0 ADD` there
+is no `E0063` width tripwire, so the instrument is **function-pointer identity in both directions**
+plus a positive control that a machine built by each cascade carries THAT rung's table.
+
+**THE LEADING FINDING — § (i)'s repair is measured FREE below rung 77 AND BLOCKED ANYWAY.**
+The pre-flight proposed one repair for all six nests: an RAII guard restoring the PREVIOUS value.
+Four of the six are inside rung 76's `_c_at`, which in the port is `sensed_cap::c_at` using
+`MarchedBleed`/`MarchedStator` — so the proposal is a change to those two `Drop`s across **66 call
+sites in 11 modules**. Both halves were measured:
+
+* **Value-invisible below rung 77, now measured rather than argued.** § 5.25 (iii) covered rungs
+  ≤ 68 and § 5.26 (vii) rung 69; **rungs 70–76 had never been measured**, and they hold most of the
+  66 sites. Probe 13 re-pointed at them, 161 tests, nine per-worker tallies each with a passing
+  positive control: **0 nests in 5 182 138 `_b_state` sets and 4 856 210 `_v_state` sets.** The
+  SECOND shape — an explicit `= None` over a live value, which the nest counter cannot see and which
+  restore-previous would also change — is **5 018 510 events at 46 innermost sites, every one a
+  `finally` restore, ZERO guard entries.** That second counter did not exist before this step; it was
+  added because a `set_opt(_, None)` is a real assignment and the first counter is blind to it.
+* **And it is blocked.** `tests/slice_y_dispatch.rs`'s
+  `the_b_state_guard_restores_none_which_is_the_opposite_policy` MANUFACTURES this exact nest and
+  asserts the inner guard CLEARS the outer, with the message *"Two guards, two policies — do not
+  unify them."* Slice Y measured the choice value-invisible, chose Python's spelling, and built a
+  hand nest to pin it. **Overturning that is its own decision with its own authorisation, not a side
+  effect of a step 1.**
+
+⇒ **§ (i)'s structural claim shrinks from SIX sites to TWO.** Sites 1/2/3/6 keep Python's clobber and
+are safe **by the dead-window criterion, not by construction** — which is why getting that criterion
+right (the pre-flight's own correction of its `(q,v)` reason) was load-bearing rather than pedantic.
+Restore-previous is used only where this slice writes NEW code: `_phi_at`'s two sites, where the
+callee is handed `q ± dq`; **§ 5.26 (iii)'s owed panic message moves onto THAT guard**, and carries
+the rungs both zero-overwrite measurements were taken on, the dead-window criterion, and the fact
+that it is the first guard in the port whose nest arm is reachable.
+
+> **CORRECTED AT STEP 2.** This paragraph and `residual_gauge.rs`'s header both said the guard lands
+> *"at step 2"*. Step 2 is rung 77's reader layer; `_phi_at` is a rung-78 leaf whose only caller is
+> `gauge_vs_device`. The promise is re-aimed at the BODY rather than at a step number — § 5.32.2 (b).
+**THE LESSON, and it is this slice's own from the other side: a booking that no gate can CLOSE can
+still be BLOCKED by one.** The pre-flight looked for a gate that could STATE the claim and found
+none; it never looked for a gate that had already DECIDED it.
+
+**THREE MORE, EVERY ONE ABOUT AN INSTRUMENT RATHER THAN THE PORT.**
+
+* **A documented manufactured nest that does not exist.** `tests/slice_aa_oracle.rs`'s header lists
+  *"`ForcedStator`'s and `MarchedStator`'s restore POLICY … Manufactured in `slice_aa_cells.rs`"*.
+  That file manufactures nests for `InitialStator` and `DeclaredOrder` only; its `MarchedStator`
+  block is a single set entered from `None`, which passes under EITHER policy and pins neither. The
+  real pin for this pair is `MarchedBleed`'s, a different field in a different file in a different
+  slice. Recorded, not repaired — a THIRD instance of the class.
+* **The identity gate's own power was written down backwards.** This file was drafted saying
+  `cargo test` runs in the **dev** profile, so a folding defect could hide under `--release`.
+  `Cargo.toml` sets `[profile.test] opt-level = 2` and the build line reads *Finished `test` profile
+  [optimized + debuginfo]*: the gate runs in the folding-FRIENDLY profile and is at its STRONGEST
+  here. The error had the sign that flatters the author — it would have excused a future miss as a
+  profile artefact. **A claim about the instrument's own power is a measurement, not a default.**
+* **AND THE GATE IS NOT YET SHOWN LOAD-BEARING, WHICH IS DISCLOSED IN IT.** Slice AG step 1 proved
+  its identity gate by BUILDING the defect — a counterfeit table with one cell left at the parent's
+  body, marched, measured silent. That needs a cascade built on a table the test chooses, and
+  `reference_split::build_split_family_cascade` is `pub(crate)`, unreachable from an integration
+  test. So this file asserts the four swaps and does **not** demonstrate that a dropped one passes
+  everything else. Written into the header rather than left as an absence.
+
+**A RUNNING-COST NOTE.** The rungs 70–76 probe ran under `pytest.ini`'s own `-n 8` with one tally
+file per PID (the pre-flight forced `-n0` after a controller clobbered the workers' file; per-PID
+files make the parallel form safe, and nine passing controls prove every worker was instrumented).
+**161 tests in 16:21.**
+
+#### 5.32.2 STEP 2 — RUNG 77's READER LAYER, AND **A DOC COMMENT THAT SAYS "THIS IS THE ONLY ONE" IS A CLAIM ABOUT A SET, WHILE THE CENSUS BEHIND IT REPORTED A TOTAL**
+
+`rust/src/stiffness_ledger.rs` 166 → **846** (+680); `residual_gauge.rs` 518 → **524** (+6, a
+spelling repair and its note). Module total **1 370** against step 1's 679, on P1's road to
+2 800–3 150. `rust/tests/slice_ah_laws.rs` (329), **7 gates, green on the first run**, and
+**zero new fields** — P6 holds for the second step running.
+
+**SIX OF RUNG 77's NINE METHODS**: the instrument (`_slope_at`), the three residuals
+(`_residuals`), the three set-point solves (`_legs`), the rig (`_ledger_march`), and readers § 1
+(`leg_slopes`) and § 2 (`set_point_gains`). § 3 (`singular_limit`) and § 4 (`stiffness_ledger`)
+are step 3's — the two that read the plant with the valve LOOP CLOSED and sweep the arms.
+
+**SEVEN of the suite's own bars are reproduced with no golden read anywhere** — four tolerances and three magnitudes. The tolerances: `c_err < 3e-9`
+(the instrument — `1 − G_a'` IS rung 76's `c`), `sep > 1e-2` (P5's non-vacuity), `ift_err < 3e-8`
+(the implicit function theorem, per leg, by two independent computations) and the discrete
+ordering `accel < gov < phi`, stable at every point, with `phi_top`. Every number in the gate file
+is a same-run difference, a discrete ordering, or a tolerance quoted from
+`tests/test_rung77.py`'s own text.
+
+**AND WHAT THIS STEP IS DECLINING TO CHECK, SAID HERE RATHER THAN LEFT IMPLICIT.** No oracle
+comparison runs at step 2: the reader layer is pinned by BARS and has **not** been shown to
+compute PyPy's numbers. Bit-equality is the oracle step's. Until then the failure this file has to
+work hardest to see is a **UNIFORM SCALE ERROR** in the `norm`/`stiff` column, because `c_err`
+differences two readings that would share one, `ift_err` compares two computations that would
+share one, `sep` scales with one, and § 1's raw-slope chain is a ladder of RATIOS. So the suite's
+three MAGNITUDE bars are ported alongside the four tolerances: the accel column's stiffness
+against rung 76 § 3's independently measured gain (`1.22799 … 1.24573`, read by a different route
+— `1/G_a'` off one residual, never `solve_gain`), the governor's normalised slope `> 0.5`, and
+φ's gain at more than 20× the governor's. **The first of those is the only ABSOLUTE bar available
+before the oracle**, and it is the port's recorded *a residual needs an absolute bar* applied to a
+reader rather than to a residual.
+
+**And it PASSES** — the ported reader's accel stiffness lands inside `1.22 < lo < 1.24 < hi < 1.26`
+first time, so the column is not merely self-consistent: it sits on rung 76 § 3's number, measured
+there by a route this code does not use. That is the strongest evidence available at a step with no
+oracle, and it is worth exactly that much and no more.
+
+##### (a) THE LEADING FINDING — **`c_at`'s "the single expression-first `1e-9` fold in the whole package" WAS FALSE AT BIRTH, AND STEP 1 SHIPPED THE DEFECT IT SAID COULD NOT EXIST**
+
+Slice AG step 1 censused all 268 n-ary `max`/`min` calls in `engine.py` and found 103 with a
+literal in argument 0 — every one of those faithful under `lit.max(x)`, because Python seeds its
+fold at argument 0 and replaces only on a strict comparison, so a NaN in argument 1 is discarded
+exactly as `f64::max` discards it. Where the EXPRESSION is argument 0 the two spellings disagree:
+`max(w, 1e-9)` is `nan` for a NaN `w` where `w.max(1e-9)` is `1e-9`. `sensed_cap::c_at` therefore
+spells its fold explicitly, and its doc comment says **"This call is the single expression-first
+`1e-9` fold in the whole package."**
+
+Rung 77's `_slope_at` is `dw = rel * max(abs(w), 1e-9)`. Re-running the census at this step:
+
+| | |
+|---|---|
+| literal-first / expression-first / total | **103 / 165 / 268** — AG step 1's numbers, exactly |
+| expression-first folds containing `1e-9` | **4**, not 1 |
+
+`engine.py:19308` (`_c_at`, rung 76, ported correctly), **`:19708`** (`_slope_at`, this step),
+**`:20221`** (`_gauge_root`, rung 78) and `:21029` (rung 79's `slope`, unported — **booked to
+slice AI**).
+
+**Every one of those four lines was already in `engine.py` when the census ran.** So this is not a
+citation that decayed, it is slice AG step 5's *wrong at birth* — and the shape of the error is
+the finding: **the census measured a TOTAL (how many folds put a literal first) and the sentence
+asserted a SET (which folds are expression-first with this literal).** A total cannot answer a set
+question, and nothing in the census's output would have looked wrong.
+
+**AND IT WAS NOT INERT.** `residual_gauge::gauge_root`, shipped at **step 1 of this same slice**,
+spells `:20221` as `1e-7 * w.abs().max(1e-9)` — the `f64::max` form the sentence one module over
+says is never needed. Repaired here to the explicit fold, with the census in its note. The
+reachability of the divergence is a separate question and is **not** claimed: Newton's `w` is
+guarded to `w > 0.0` on every path that re-enters the loop, so a NaN `w` at the top of an iteration
+has no route measured. What is repaired is the SPELLING, on the port's stated rule, and the
+unreachability is recorded as unmeasured rather than asserted.
+
+⇒ **The rule this writes down: a doc comment's "only" is a set claim, and it expires the moment a
+later rung adds a member.** Every other "the only … in the crate/package" sentence in the port is
+now a candidate with the same shape. Not swept here — that is a census of its own — but named, so
+the next slice that wants one has a place to start.
+
+##### (b) A PROMISE THAT NAMED A STEP THAT COULD NOT KEEP IT
+
+§ 5.32.1 and `residual_gauge.rs`'s header both said § 5.26 (iii)'s owed panic message *"lands with
+that body at step 2"*. **Step 2 is rung 77's reader layer**; `_phi_at` is a rung-78 leaf whose only
+caller is `gauge_vs_device`. Both sentences are re-aimed at the BODY rather than at a step number —
+the only form of that claim that cannot decay. This slice has already logged a THIRD instance of
+*a documented gate that does not exist* (§ 5.32.1's `slice_aa_oracle.rs` note); a fourth authored
+in the port's own header, one step after recording the third, would have been the cheapest possible
+one to avoid.
+
+##### (c) THE LOAD-BEARING DEMONSTRATION STEP 1 COULD NOT DO FOR ITS GATE, DONE HERE FOR THIS ONE
+
+`slice_ah_cells.rs`'s header discloses that its pointer-identity gate asserts the four swaps and
+does **not** show that a dropped one would pass everything else, because
+`build_split_family_cascade` is `pub(crate)`. That is a property of THAT defect, not of the method.
+
+Rung 77's late-binding trap is module-local and every piece of it is `pub`, so
+`a_hoisted_residual_reads_the_closed_valve_plant_and_G_q_is_EXACTLY_zero` **builds the defect** —
+residuals constructed inside the frozen block and evaluated one `}` later, which is what Python's
+`_residuals` docstring records shipping — and measures its signature at the first marched point:
+
+| | measured |
+|---|---|
+| `G_q`, hoisted | **exactly `0.0`** — both `q ± dq` readings land on the same closed-valve plant |
+| `err`, hoisted | **exactly `1.0`** — `ift` collapses, so the error is `|direct|/|direct|` |
+| `G_q`, shipped body, same point | non-zero |
+| `err`, shipped body, same point | `< 3e-8` |
+
+So `ift_err < 3e-8` is not a bar with no demonstrated way to fail. **The failure it excludes is
+exhibited**, and an EXACT `1.000e+00` is a signature no tolerance could be tuned around — which is
+why Python's own author noticed it: *"a number with no noise in it, which is what gave it away."*
+A Rust closure over `&FuelTransientCore` inherits the trap exactly, because the two frozen-state
+carriers are `Cell`s on the core it borrows, so the port cannot design the hazard away by typing.
+
+##### (d) THE SMALL ONES, AND ONE NON-REPAIR
+
+* **`_legs` is a free function, and the cell keeps rung 63's body** — § 5.32 (iii) item D, honoured
+  where it lands rather than only where it was measured.
+* **`_slope_at`'s `rel` is re-typed, not shared with `C_AT_REL`.** Python has two independent
+  defaults and the port's COPY-vs-REDERIVATION rule protects a deliberate duplication. What the
+  gate file asserts instead is the BINDING: `SLOPE_AT_REL == C_AT_REL`, with the reason — § 1's
+  roundoff cancels only because the two readings share a step, and a divergence would leave
+  `c_err` passing WEAKLY rather than failing.
+* **The phi residual reads its SPOOL at build time and its LIMIT at call time**, because Python's
+  `key()` is outside the closure and `surge.phi_lim` inside it, and the only observable difference
+  is when a rung-60 incidence floor raises. `r78_cap_fuel` resolves both outside because its own
+  source line does; the two are not factored together.
+* **Python's `min`/`max` over a list is a FOLD, not `f64::min`/`f64::max`** — one helper
+  (`py_span`) states the NaN rule once for both readers.
+* **NOT REPAIRED**: `rust/oracle/dump_slice_n_smoke.py`'s `Run:` line and
+  `emit_slice_v_step5_evidence.py`'s pre-registration comment still name `M:\claud_projects\…`.
+  Those are RECORDS of where a past run happened and rewriting them would falsify the record; the
+  two LIVE `TMP` output roots were repaired (a separate commit, not this step's).
+
+##### (e) **STEP 1 LEFT THE CITATION GUARD RED, AND ONLY STEP 2 RAN IT**
+
+`tests/test_rust_line_citations.py` blesses every `engine.py:N` written in `rust/src`,
+`rust/tests` and `rust/oracle`, and it has five gates. Running it at this step:
+
+```
+FAILED test_the_blessed_set_is_exactly_the_cited_set
+FAILED test_every_citation_still_points_where_it_was_blessed
+FAILED test_the_census_is_the_size_it_was_measured   (33/181/112 against 31/144/95)
+```
+
+**Seventeen citations had never been blessed, and TEN of them are step 1's**:
+`residual_gauge.rs` cites `engine.py:20173`, `:20188`, `:20412`, `:20503`, `:20504`, `:20591`,
+`:20592`, `:20691` (the two refusals and the six nest sites) and `stiffness_ledger.rs` cites
+`:19821`, `:19829` (the rung-77 nest). Step 1 ran `cargo test`; it did not run `pytest`, and
+`pytest` is where this guard lives. **Three of five gates were red from the moment step 1 was
+written and would have stayed red until somebody ran the Python suite.**
+
+That is slice AG step 4's *a guard shipped at step 1 that had been red since step 2 and was never
+run*, one slice on and in the other language — and it is the sharper half of § 5.32 (iii)'s scope
+note. That note said the plan's OWN `engine.py:N` citations are unwatched because the guard does
+not scan `docs/`; true, and it drew the reader's eye to the prose while **the watched directory
+was the one actually in arrears.** A guard that watches the right files still needs somebody to
+run it.
+
+Re-blessed to **33 files / 181 sites / 112 distinct lines**, with the ten arrears named in the
+constant's own comment. Every one of the seventeen was checked by hand against the failure
+report's `now` text first — including the three that matter to § (a) (`:19708`, `:20221`,
+`:21029` all read `max(abs(w), 1e-9)`), which is the census re-verified through a second
+instrument that had no idea what it was confirming.
+
+##### (f) THE GATES
+
+**The full Rust gate, on the state these two steps commit** — `cargo test` over the whole crate,
+unpiped, with the exit code written into the same log in the same command (§ 5.29's rule): **157
+`test result` blocks (156 `Running` targets + 1 `Doc-tests`), 157 of 157 ok, 1 625 passed / 0
+failed / 0 ignored, 0 `error[E`, `CARGO_EXIT=0` READ OFF DISK** — seven of seven. The block delta
+against slice AG's close is **+2**, which is `slice_ah_cells.rs` and `slice_ah_laws.rs` exactly.
+
+> **A NOTE ON THE INSTRUMENT, because it was wrong in this session before it was right.** The
+> first two runs captured the status as `cmd /c "cargo test > LOG 2>&1 & echo CARGO_EXIT=%ERRORLEVEL%"`.
+> `cmd` expands `%ERRORLEVEL%` when it PARSES the line, so that spelling writes the errorlevel from
+> BEFORE the command — it printed `CARGO_EXIT=0` over a build with three `error[E0271]`s, which is
+> how it was caught. § 5.29's own rule already spells the working form (`( cargo test > FILE 2>&1;
+> echo "CARGO_EXIT=$?" >> FILE )`, a POSIX subshell), and the gate above uses it. **A seventh facet
+> that cannot report anything but success is six facets with a decoration**, and this is the third
+> time in the port that a status has been read off the wrong side of a runner.
+
+**The full `pytest` gate** — owed because this step edits `tests/test_rust_line_citations.py` and
+its blessed anchors, and because § (e) is precisely the argument against calling a Rust-only run
+the gate: **1 387 passed in 19:02, zero failed, zero error.** The item count is unchanged, which is
+the right answer — this step added Rust gates, not Python ones, and re-blessing anchors moves no
+test. (`PYTEST_EXIT=` came back EMPTY for the third time this session, the recorded
+`Start-Process -PassThru` hazard; the verdict rests on the summary line, which carries no `failed`
+or `error` token.)
+
+> **AND A LINE-ENDING AUDIT AFTER THE GATE, WITH ITS OWN INSTRUMENT DEFECT.** The recorded hazard
+> is that a Python text-mode rewrite flips every ending and `git diff` hides it. The check run
+> first was `grep -c $'\r'`, which in this shell did not interpret the escape and counted lines
+> containing the LETTER `r` — it reported every file as pure CRLF, prose and JSON alike, and the
+> conclusion drawn from it (*no flips*) was wrong. Measured properly in Python over raw bytes:
+> `stiffness_ledger.rs` HAD been flipped to CRLF by the boom-closure repair, and
+> `windows-tooling-file-hazards.md` had been left MIXED. Both normalised, everything else clean.
+> **The full Rust gate above ran on the CRLF `stiffness_ledger.rs` and is NOT re-run**, and that is
+> a measured call rather than a shrug: Rust's lexer treats the two identically, and the phase's
+> `include_str!` gates read `full_split.rs`, `applied_reference.rs`, `shared_actuator.rs`,
+> `cross_split.rs`, `three_loop.rs` and `lagged_bleed.rs` — **none of them a file this step
+> re-wrote**. Enumerated rather than assumed, because *no gate reads this file* is exactly the kind
+> of set claim § (a) is about.
+
+##### (g) PREDICTIONS, RUNNING
+
+* **P1** — modules at **1 370** of the predicted 2 800–3 150, with § 3, § 4 and all of rung 78's
+  readers still to come.
+* **P6** — **0 ADD holds.** `TripleHooks` is 18 fields, and this step added none; `gauge_k` is a
+  CORE carrier written at step 1, not a hooks-table cell, which is the distinction P6 is about.
+* **P7** — six of rung 77's nine methods at step 2, with § 3/§ 4 sized for one more. Nothing yet
+  separates the classes-price-steps (7) reading from the cells-and-bodies one (6).

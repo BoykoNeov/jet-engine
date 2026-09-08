@@ -618,11 +618,24 @@ pub fn accel_for(
 /// `dw = rel * max(w, 1e-9)`. Slice AG step 1 censused all 268 n-ary `max`/`min` calls in
 /// `engine.py`: 103 put a literal first — every one faithful under `lit.max(x)`, because Python
 /// seeds its fold at argument 0 and replaces only on a strict comparison, so a NaN in argument 1 is
-/// discarded exactly as Rust's `f64::max` discards it. **This call is the single expression-first
-/// `1e-9` fold in the whole package**, and there the two spellings DISAGREE: `max(w, 1e-9)` is
+/// discarded exactly as Rust's `f64::max` discards it. This call is an expression-first `1e-9`
+/// fold, and there the two spellings DISAGREE: `max(w, 1e-9)` is
 /// `nan` for a NaN `w` where `w.max(1e-9)` is `1e-9`. So it is written as the explicit fold. The
 /// obligation was written down at [`demand_coordinate`](crate::demand_coordinate)'s C-law note at
 /// step 1, naming this method and this step, and it is discharged here rather than re-derived.
+///
+/// # **AND THE SENTENCE THIS COMMENT USED TO CARRY — *"the single expression-first `1e-9` fold in
+/// the whole package"* — WAS FALSE AT BIRTH**
+///
+/// Slice AH step 2 re-ran that census. It reproduces the 103-literal-first-of-268 total exactly and
+/// finds **FOUR** expression-first `1e-9` folds, not one: `engine.py:19308` (this method),
+/// `:19708` ([`slope_at`](crate::stiffness_ledger::slope_at)), `:20221`
+/// ([`gauge_root`](crate::residual_gauge)) and `:21029` (rung 79, unported, booked to slice AI).
+/// Every one of those lines was already in `engine.py` when the census ran, so this is slice AG
+/// step 5's *wrong at birth* rather than a citation that decayed — and the claim's own shape is
+/// what hid it: an "only one of these exists" sentence is a claim about a SET, and the census
+/// behind it reported a TOTAL. Corrected in place; the finding is recorded at
+/// [`slope_at`](crate::stiffness_ledger::slope_at), which is where it was found.
 pub fn c_at(
     core: &ScheduledStatorCore, flight: &FlightCondition, a: f64, h: f64, accel: &AccelSchedule,
     w: f64, q: f64, v: f64, rel: f64,
