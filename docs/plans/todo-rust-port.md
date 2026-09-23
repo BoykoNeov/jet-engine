@@ -24285,3 +24285,183 @@ and that file's own five gates are the ones that can see the edit.
   axis P7 named — rung 77's `at_lever` carrying nothing new — is exactly what let step 1 be pure
   plumbing and step 3 be a two-method step rather than a full one. Settled at the last step, but
   the direction is on the record before it.
+
+#### 5.32.4 STEP 4 — RUNG 78 §§ 1–3, AND **THE SLICE'S LEADING HAZARD HAS A SECOND INSTANCE ON A VARIABLE ITS CENSUS WAS NOT SCOPED TO SEE**
+
+`rust/src/residual_gauge.rs` 532 → **1 165** (+633); `stiffness_ledger.rs` +1 line (`bv_of` becomes
+`pub(crate)`). Module total **2 373** of P1's 2 800–3 150. `rust/tests/slice_ah_gauge.rs` (526),
+**12 gates**, and **zero new fields** — P6 holds a fourth step. [`gauge_scan`] (§ 1/§ 2),
+[`root_census`] (§ 3), `root_count`, `accel_cap_fn` and `gauge_points` ship; rung 78's remaining
+bodies (`gauge_vs_device`, `_c_on_frozen`, `_phi_at`, `gauge_march`) are step 5's.
+
+##### (a) THE LEADING FINDING — **ONE HAZARD, THREE TREATMENTS, ONE CLASS — AGAIN, ON `_gauge_k`, AND UNBOOKED**
+
+§ 5.32 (i) opens this slice on the `_b_state`/`_v_state` freeze being handled three incompatible
+ways inside these two classes, and prices that as the slice's leading finding. **The SIXTH DECLARED
+KNOB has the same shape, one section apart, and the census could not see it because it was scoped to
+the freeze pair:**
+
+| site | how `_gauge_k` is put back |
+|---|---|
+| `engine.py:20394` / `:20404` (`gauge_scan`) | hand-rolled, saves `prev` and restores `prev` |
+| `engine.py:20508` / `:20514` (`root_census`) | hand-rolled, restores the **literal `1.0`** |
+| `engine.py:20705` / `:20714` (`gauge_march`) | the declared helper `_with_gauge`, which saves `prev` |
+
+The class **declares** the helper that would make this structural (`engine.py:20335`) and then does
+not use it in either of the two sections that need it most, and one of those substitutes a clobber
+for a restore. That is § 5.32.3's lesson promoted from a sentence about one docstring to a property
+of the class: **the discipline is per-call-site, and a class with three call sites gets three
+answers.**
+
+**AND THE CLOBBER IS REACHABLE-WRONG INSIDE A SINGLE CALL.** `_shared_rig` propagates the caller's
+gauge onto the marched machine (`engine.py:20332`), so a `root_census` entered at a non-identity
+gauge builds row 1's cap under that gauge and every later row under the identity — different plants
+inside one table. Measured in Python at `k = 2.5`, the gauge seen at each row's `_accel_cap_fn`:
+
+| reader | row 1 | row 2 | row 3 |
+|---|---|---|---|
+| `root_census` | 2.5 | **1.0** | **1.0** |
+| `gauge_scan` | 2.5 | 2.5 | 2.5 |
+
+It is invisible today only because every shipped caller enters at the identity — the same *safe by
+accident of the call graph* that § 5.32 (i) records for `leg_slopes`' missing re-arm, which is safe
+by accident of statement order. Both policies are ported (`GaugeRestored`, `GaugeClobbered`) and
+both sequences are reproduced by hand in
+`the_census_clobbers_the_gauge_where_the_scan_restores_it`.
+
+**The first probe of this measured the WRONG OBJECT and reported no clobber at all.** `root_census`
+writes the knob on the MARCHED machine, not on `self`, so reading `self._gauge_k` after the call
+shows the caller's own value untouched and the finding looks like a non-event. Recorded because it
+is the cheap version of a recurring error: *the thing a method mutates is not always the thing you
+have a handle on.*
+
+##### (b) THE MIRROR OF § 5.32.3, AND WHY GETTING IT RIGHT BY ACCIDENT IS THE DANGEROUS CASE
+
+Step 3's hazard was that the natural Rust shape — a nested scope — is **wrong** for
+`singular_limit`, which depends on a residual outliving its block. `gauge_scan`'s `at` depends on
+exactly the opposite, so here the natural shape is **right** and the port cannot get it wrong by
+carelessness. That is when a gate is worth most, because nothing would ever have failed.
+
+The discriminator was already in the arithmetic and cost one assertion: a leaked freeze makes `at`
+ignore its `qq`, so `at(q + dq)` and `at(q − dq)` would agree bit for bit and `direct` would be an
+exact `0.0`. Measured, it is `−2.64e-4` at every gauge of every row.
+
+##### (c) **SIX DEFECTS WERE INJECTED AND THE FIRST ELEVEN GATES COULD NOT SEE THREE OF THEM**
+
+The eleven gates were green on the first run, which by § 5.32.3's lesson is the moment to ask
+whether they can see anything. Each defect was applied to the port alone and the whole file re-run:
+
+| injection | gates that failed |
+|---|---|
+| the walk PROPAGATES a refusal instead of absorbing it | 10 |
+| the census's clobber TIDIED into a restore | 1 |
+| the bisection budget halved (60 → 30) | 1 |
+| **the slope read at the SOLVED root instead of the anchor** | **0 → 1 after the repair** |
+| the exclusion reads only its own gauge, not its two neighbours | **0** |
+| `mult = 0.0` divides instead of short-circuiting to a literal | **0** |
+
+**The slope one is the repair, and its own first version did not catch it either.** Python's comment
+says reading `G_w` at the solved root "would report the slope at whatever root the solver reached,
+and inside the band that is the other one" — and that is true, but the cells where the two readings
+differ are **exactly the cells the exclusion drops**, so no aggregate the suite computes could ever
+contain one. The first gate written for it demonstrated the physics by calling `slope_at` directly
+and never went through the shipped reader, so the injection stayed invisible. What closes it is a
+claim about the reader's own output: `gw` matches `1 − k·c` at **every** cell, dropped ones
+included, because the anchor is a root at every gauge. **The exclusion is about the SET POINT's
+well-posedness, not about the slope** — which is a sharper statement of § 3 than either the suite or
+the spec makes.
+
+That gate also carries § 3's headline on one cell: at the second riding point, gauge `1.1/c`, the
+residual has roots at `1.0` and `1.613·w0`; the damped Newton started from `mf_sched` converges onto
+the **spurious** one and **reports success**; and the slope there is `+0.055` where the anchor's is
+`−0.100`. Opposite signs, `ok = true`. That is "inside that band a solver returns *a* root, not
+*the* root" made arithmetic.
+
+**The other two are recorded, not gated, because on this grid neither is observable.** The
+three-argument exclusion never disagrees with the centre's own count — `n_roots > 1` and the shipped
+`excluded` flag agree at 100 of 100 cells — so the two neighbour reads are a defence with no reader
+(§ 5.26's pattern); and `0.0 / c` is exactly `0.0` for every finite positive `c`, so Python's falsy
+short-circuit is arithmetically a no-op that could only separate at `c = 0`, `±inf` or NaN. Writing
+a gate for either would mean inventing a grid the rung does not run on.
+
+##### (d) THE ARMS THAT ARE NOT REACHED, AND THE ONE THAT IS REACHED CONSTANTLY
+
+Probe, run before any Rust was written, because `root_count`'s fallibility is asymmetric in the
+source and the tidier Rust would flatten it:
+
+| | `gauge_scan` | `root_census` |
+|---|---|---|
+| walk points | 39 930 | 40 100 |
+| `except AssertionError` on the WALK | **6 171 (15.5 %)** | **5 980 (14.9 %)** |
+| bisection calls (UNCAUGHT in Python) | 25 200 | 9 720 |
+| refusals there | **0** | **0** |
+| `g1 == 0.0` clause fires | 0 | 0 |
+| NaN residuals | 0 | 0 |
+
+So the `None` sentinel is load-bearing at a sixth of every walk — a port that propagated there would
+abort on the first row — while the propagating arm is never reached. **The zero is a property of the
+grid, not of the code** (slice Q's rule), so both arms are driven by hand-built residuals rather than
+left to the sweep: one refusing outside every bracket must be absorbed, one refusing at a bracket's
+midpoint must propagate. The `g1 == 0.0` clause is ported for its NaN semantics (`0.0 * NaN` is
+`NaN`, and `NaN >= 0.0` is false, so folding it into the product test would bisect a bracket Python
+skips) and is likewise unexercised.
+
+##### (e) THE CITATION GUARD RAN INSIDE THE STEP — **AND FOUND SIXTEEN CITATIONS IT WAS BLIND TO BY SPELLING**
+
+Two new anchors (`engine.py:20332`, `engine.py:20514`) were checked by hand and the guard went red
+as expected. **What was not expected is that six of the step's own eight line references were
+invisible to it**, written as a bare `` `:20404` `` shorthand where the census's pattern matches
+`engine.py:20404`. Ten more of the same spelling were already in `residual_gauge.rs` from step 1.
+All sixteen were expanded to the guarded form and every distinct line verified by hand, which is
+why `SITES` jumps by 13 rather than by 2: **33/181/112 → 34/183/114 → 35/196/121.**
+
+§ 5.32.2 (e)'s paragraph is *a guard that watches the right directory still needs someone to run
+it*. This is its sibling: **a guard that matches one spelling is blind to the other, and the file
+carrying that paragraph was itself carrying ten unguarded citations while it said so.**
+
+##### (f) THE SMALL ONES
+
+* **`mult not in (1.0,)` is INERT in both languages.** The suite's reduce-direction test filters the
+  swept cells on it, and `GAUGE_SCAN_MULTS` contains no `1.0`, so it filters nothing. Ported because
+  the source has it, annotated because it reads like a live guard.
+* **`GAUGE_SCAN_DQ`, `ROOT_COUNT_LO/HI/N`, `ROOT_CENSUS_N` and `ROOT_COUNT_BISECT` are named** —
+  every one is a Python default that a caller takes by omission, which is the same reason
+  § 5.32.3 named `GAUGE_DQ`.
+* **`gauge_residual`, `gauge_root` and its three constants became `pub`** so the gates can rebuild a
+  cell by hand. That is the shape § 5.32.3's `the_shipped_reader_reproduces_the_hand_built_first_point`
+  needed and the shape (c)'s repair needed; it is not new API surface for the ladder.
+* **The empty-sequence arms are ported and gated where they can be.** `true_found` is Python's `all`
+  over a possibly-empty sequence and therefore `true` on an empty census; `pick(...)` is the
+  `if seq else None` shape at six sites. None empties on the shipped grid.
+* **`root_census` re-arms the freeze at `engine.py:20504` and `leg_slopes` does not** — § 5.32 (i)
+  sites 1 and 3, both now ported with their asymmetry intact and stated at the call site.
+
+##### (g) THE GATES
+
+**The new file alone: 12 of 12.** Eleven were green on the first run; the twelfth exists because the
+injection sweep found a defect none of the eleven could see, and its own first version could not see
+it either.
+
+**`pytest tests/test_rust_line_citations.py`: 5 of 5** after the re-bless (3 of 5 red before it).
+
+**The full Rust gate**, unpiped, exit code written into the same log in the same command
+(§ 5.29's rule): **158 `Running` + 1 `Doc-tests` = 159 blocks, 159 of 159 ok, 1 646 passed /
+0 failed, 0 `error[E`, and `CARGO_EXIT=0` read off disk** — as predicted before the run: 1 634 plus
+this step's 12, in one new binary.
+
+##### (h) PREDICTIONS, RUNNING
+
+* **P1** — modules at **2 373** of the predicted 2 800–3 150. Rung 78's remaining bodies are about
+  212 Python lines against the 419 this step ported for its 633 Rust, which extrapolates to roughly
+  **+320**, landing near **2 690** — BELOW the band. The per-CLASS mechanism (≈ 2 930) needs the
+  oracle and dispatch steps to carry ~240 lines of module code, which they have not done at every
+  slice. **P1 is now live in the DOWNWARD direction for the first time in this slice**, and that is
+  recorded before the steps that settle it.
+* **P6** — **0 ADD holds**, four steps running. `TripleHooks` is 18 fields.
+* **P7 — THE ARITHMETIC, NOT A VERDICT.** Rung 78's bodies will have taken **two** steps (4 and 5),
+  so the slice stands at five with a ported-suite step, an oracle step and a dispatch step still
+  owed. Three more lands on **eight**, which neither reading predicted; two lands on **seven**
+  (classes); and only if two of those three merge does it land on **six** (cells-and-bodies).
+  § 5.32.3 recorded the direction as pointing at six off rung 77 closing in three steps — **that
+  reading is now the weaker one**, and whether the closing steps can merge has not been checked. No
+  verdict until step 5.

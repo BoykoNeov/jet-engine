@@ -159,9 +159,16 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # both checked by hand against the failure report's own `now` text before re-blessing. The step
 # ran this file as part of ITSELF rather than at the end of the slice, which is the whole content
 # of the paragraph above: the arrears there existed only because step 1 did not.
-FILES = 34
-SITES = 183
-LINES = 114
+# RE-BLESSED AT SLICE AH STEP 4 (34/183/114 -> 35/196/121). Seven anchors, zero arrears, and
+# **a NINTH site that was invisible to this census by SPELLING.** `slice_ah_gauge.rs` and
+# `residual_gauge.rs` carried sixteen references written as a bare `` `:20404` `` shorthand
+# instead of `engine.py:20404`, which is the form this file's regex matches -- so they were
+# citations no gate could check, in the very file whose step-2 paragraph is about citations no
+# gate had checked. Thirteen of the sixteen were step 1's. All sixteen were expanded to the
+# guarded spelling and every new line verified by hand, which is why SITES jumps by 13.
+FILES = 35
+SITES = 196
+LINES = 121
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment
 # SAID, where the number is part of the quotation and must not track the file.

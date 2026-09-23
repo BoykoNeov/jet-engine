@@ -108,12 +108,19 @@
   "20173": "assert self._cap_law != \"sensed\", (",
   "20188": "assert ok and abs(w - w0) <= 1e-6 * abs(w0), (",
   "20221": "dw = 1e-7 * max(abs(w), 1e-9)",
+  "20332": "m._gauge_k = self._gauge_k",
+  "20394": "prev, m._gauge_k = m._gauge_k, k",
+  "20404": "m._gauge_k = prev",
   "20412": "c = m._c_at(flight, a, h, accel, w1, q, v)",
   "20503": "c = m._c_at(flight, a, h, accel, w0, q, v)",
   "20504": "m._b_state, m._v_state = q, v      # `_c_at` un-freezes in its OWN `finally`",
+  "20508": "m._gauge_k = k",
+  "20514": "m._gauge_k = 1.0",
   "20591": "open_q = (m._phi_at(flight, a, h, w_phi, key, q + dq, v)",
   "20592": "- m._phi_at(flight, a, h, w_phi, key, q - dq, v)) / (2.0 * dq)",
   "20691": "c0 = m0._c_at(flight, p0[\"nu_lp\"], p0[\"nu_hp\"], accel, w00, p0[\"b\"], p0[\"v\"])",
+  "20705": "sk = self._with_gauge(k, self.accel_for, flight, Tt4_lo, Tt4_hi, sm, Tt4_max,",
+  "20714": "_, _, _, traj = self._with_gauge(",
   "21029": "d = rel * max(abs(w), 1e-9)"
  }
 }

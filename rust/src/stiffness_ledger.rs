@@ -474,7 +474,7 @@ pub fn ledger_march(
 
 /// Which `(b, v)` a filtered point was riding at — rung 76's own destructuring, narrowed to the
 /// two fields this rung reads.
-fn bv_of(p: &FuelPoint) -> (f64, f64) {
+pub(crate) fn bv_of(p: &FuelPoint) -> (f64, f64) {
     match p.extra {
         PointExtra::Demand { b, v, .. } => (b, v),
         PointExtra::Shared { b, v, .. } => (b, v),

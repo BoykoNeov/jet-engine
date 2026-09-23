@@ -52,6 +52,20 @@
 //! section has no Python precedent to copy: both refusals are written here from the source, and
 //! their gates at step 3 are written from this module.
 //!
+//! # WHAT STEP 4 ADDS — **§§ 1–3, AND THE SIXTH KNOB'S SECOND RESTORE POLICY**
+//!
+//! [`gauge_scan`] (§ 1/§ 2), [`root_census`] (§ 3), [`root_count`], [`accel_cap_fn`] and
+//! [`gauge_points`]. Rung 78's remaining sections (`gauge_vs_device`, `gauge_march`) are step 5's.
+//!
+//! **The step's finding is that this slice's leading hazard has a second instance on a different
+//! variable.** Plan § 5.32 (i) opens on the `_b_state`/`_v_state` freeze being handled three
+//! incompatible ways across these two classes; its census was scoped to that pair, and so could
+//! not see that `_gauge_k` is too — `engine.py:20394` / `engine.py:20404` save and restore `prev`,
+//! `engine.py:20508` / `engine.py:20514` clobber to the literal identity, and
+//! `engine.py:20705` / `engine.py:20714` use the declared helper `_with_gauge` that the other two
+//! ignore. Both policies are ported, as [`GaugeRestored`] and [`GaugeClobbered`], and the clobber
+//! is measured to be reachable-wrong inside a single call.
+//!
 //! # THE COUNTERS ARE PROCESS-GLOBAL BECAUSE PYTHON'S ARE CLASS ATTRIBUTES
 //!
 //! [`GAUGE_HITS`] and [`GAUGE_BINDS`] are `static`s, not fields on the core. Python writes
@@ -82,12 +96,12 @@
 //! Every static site fires at runtime, which is the validation neither instrument has alone.
 //! **The runtime counter cannot separate the last two**, and that is a property of the reading
 //! rather than of the code: both `_phi_at` calls belong to one multi-line statement and Python
-//! attributes both frames to its FIRST line, so the tally shows a single key at `:20591` holding
+//! attributes both frames to its FIRST line, so the tally shows a single key at `engine.py:20591` holding
 //! 20 — ten central differences, twenty nests. The static census sees two calls; the counter sees
 //! one site. They agree, and the row above says so rather than quoting 20 twice.
 //! **The source handles the hazard three incompatible ways in one slice** — `leg_slopes` nests and
 //! never re-freezes (safe only because the one statement after it is arithmetic over numbers
-//! already computed); `root_census` nests and MUST re-freeze, and does, at `:20504`; and
+//! already computed); `root_census` nests and MUST re-freeze, and does, at `engine.py:20504`; and
 //! `_c_on_frozen` closes its block BEFORE calling `_c_at` at all, its docstring recording that an
 //! earlier version did not and shipped wrong.
 //!
@@ -97,8 +111,8 @@
 //! restore semantics genuinely leave different values behind. What holds at all six is weaker and
 //! checked per site: **the window in which the two semantics disagree is DEAD** — between an inner
 //! freezer's return and the next set or `finally`, nothing reads the plant. Verified by reading
-//! all six: `:19829` is followed by one arithmetic assignment; `:20412` and `:20691` by their
-//! `finally`; `:20503` by the re-freeze at `:20504`; `:20591`/`:20592` are the two halves of one
+//! all six: `engine.py:19829` is followed by one arithmetic assignment; `engine.py:20412` and `engine.py:20691` by their
+//! `finally`; `engine.py:20503` by the re-freeze at `engine.py:20504`; `engine.py:20591`/`engine.py:20592` are the two halves of one
 //! central difference with only a division and an assignment after them.
 //!
 //! **AND THIS IS WHY THE DISCHARGE IS A DOC CLAIM AND NOT A GATE.** The two restore semantics
@@ -139,7 +153,7 @@
 //! `gauge_march`, all through `_c_at`) keep Python's clobber and are safe **by the dead-window
 //! criterion, not by construction** — which is exactly the reading verified per site above, and it
 //! is why that criterion had to be got right. Restore-previous is used only where this slice writes
-//! NEW code: `_phi_at`, sites `:20591`/`:20592`, the two where the callee is handed `q ± dq` and the
+//! NEW code: `_phi_at`, sites `engine.py:20591`/`engine.py:20592`, the two where the callee is handed `q ± dq` and the
 //! two semantics genuinely differ. No shipped gate pins those, and the guard that carries them —
 //! with § 5.26 (iii)'s owed message — lands **with `gauge_vs_device`'s `_phi_at`**, the rung-78 leaf
 //! that is its only caller.
@@ -172,15 +186,20 @@ use crate::bleed_transient::{LeverArm, LeverHooks};
 use crate::demand_coordinate::cap_free;
 use crate::engine::FlightCondition;
 use crate::fuel_transient::{
-    AccelSchedule, AsymmetricLag, Floor, FuelTransientCore, FuelTransientHooks,
+    AccelSchedule, AsymmetricLag, Floor, FuelPoint, FuelTransientCore, FuelTransientHooks,
 };
 use crate::gas::Abort;
 use crate::map::ComponentMap;
-use crate::shared_actuator::SharedRigArm;
+use crate::sensed_cap::{c_at, C_AT_REL};
+use crate::shared_actuator::{riding4, SharedRigArm};
+use crate::stiffness_ledger::SLOPE_AT_REL;
 use crate::stator_transient::{ScheduledStatorCore, ScheduledStatorTransient, StatorTransientHooks};
 use crate::three_loop::TripleHooks;
 use crate::two_spool::TwoSpoolEngine;
-use crate::two_spool_transient::TwoSpoolTransientHooks;
+use crate::two_lag::{py_max_of, py_min_of};
+use crate::two_spool_transient::{
+    MarchedBleed, MarchedStator, TwoSpoolTransientCore, TwoSpoolTransientHooks,
+};
 
 // ---------------------------------------------------------------------------------------------
 // THE DECLARED KNOB AND THE TWO INSTRUMENTS
@@ -354,7 +373,7 @@ fn r78_shared_rig(
 ///
 /// Returned as a boxed closure rather than an `enum` of two shapes because both callers use it
 /// exactly once, through [`gauge_root`], and the branch is Python's own.
-fn gauge_residual<'a>(
+pub fn gauge_residual<'a>(
     k: f64, cap: &'a dyn Fn(f64) -> Result<f64, Abort>, w0: f64,
 ) -> Box<dyn Fn(f64) -> Result<f64, Abort> + 'a> {
     if k == GAUGE_K_IDENTITY {
@@ -380,7 +399,7 @@ fn gauge_residual<'a>(
 /// Returns `(w, ok)`. **`ok` is NOT a correctness guard** — § 3's whole content is that inside the
 /// collision band this converges cleanly onto the WRONG root. Every caller that needs correctness
 /// checks `|w − w0|/w0` instead.
-fn gauge_root(
+pub fn gauge_root(
     big_g: &dyn Fn(f64) -> Result<f64, Abort>, guess: f64, rel: f64, n: usize, trust: f64,
 ) -> (f64, bool) {
     let (mut w, mut prev): (f64, Option<f64>) = (guess, None);
@@ -431,9 +450,9 @@ fn gauge_root(
 
 /// Python's `_gauge_root` defaults, carried as named constants so the gate and the call site read
 /// the same numbers — `rel`, `n`, `trust`.
-const GAUGE_ROOT_REL: f64 = 1e-10;
-const GAUGE_ROOT_N: usize = 400;
-const GAUGE_ROOT_TRUST: f64 = 0.25;
+pub const GAUGE_ROOT_REL: f64 = 1e-10;
+pub const GAUGE_ROOT_N: usize = 400;
+pub const GAUGE_ROOT_TRUST: f64 = 0.25;
 
 /// The accel leg's set point UNDER THE GAUGE, solved from the plant's own guess — **and BOTH of
 /// rung 78's shipped refusals.**
@@ -529,4 +548,618 @@ fn r78_cap_fuel(
         GAUGE_BINDS.fetch_add(1, Ordering::Relaxed);
     }
     Ok(out)
+}
+
+// =============================================================================================
+// § 1 / § 2 — THE SET POINT, THE SLOPE, AND THE SENSITIVITY
+// =============================================================================================
+
+/// `cap(w)` for the accel leg — Python's `_accel_cap_fn`, and **the one cap in this family that
+/// depends on the fuel it is asked about**, hence the only one that HAS a `c`.
+///
+/// Structurally the accel arm of [`residuals`](crate::stiffness_ledger::residuals) with the
+/// `w −` removed: rung 77 wants a RESIDUAL, this rung wants the CAP itself, because the gauge is
+/// applied to the cap and the residual is rebuilt around it.
+pub fn accel_cap_fn<'a>(
+    ft: &'a FuelTransientCore, flight: &'a FlightCondition, a: f64, h: f64,
+    accel: &'a AccelSchedule,
+) -> Box<dyn Fn(f64) -> Result<f64, Abort> + 'a> {
+    let pi_b = ft.inner.inner.base.pi_b;
+    Box::new(move |w: f64| {
+        let i = ft.try_instant_fuel(flight, a, h, w)?;
+        Ok(accel.cap(i.base.close.n_hp, i.base.close.pt4 / pi_b))
+    })
+}
+
+/// The readers' refusal arm: rung 77's `.unwrap_or_else(|e| panic!("{}", e.0))`, generic so one
+/// spelling serves every return type in § 1–§ 3. Python's readers catch nothing.
+fn boom<T>(e: Abort) -> T {
+    panic!("{}", e.0)
+}
+
+/// § 1's walk bounds and resolution — Python's `_root_count` defaults, which [`gauge_scan`] takes
+/// by omission and [`root_census`] overrides (`n = 400`).
+pub const ROOT_COUNT_LO: f64 = 0.2;
+/// See [`ROOT_COUNT_LO`].
+pub const ROOT_COUNT_HI: f64 = 3.0;
+/// See [`ROOT_COUNT_LO`].
+pub const ROOT_COUNT_N: usize = 120;
+/// [`root_count`]'s refinement budget — a fixed iteration count, not a tolerance.
+const ROOT_COUNT_BISECT: usize = 60;
+
+/// **SIGN CHANGES OF `G` ON `[lo, hi]·w0` — A COUNT, NOT A SOLVE.** Python's `_root_count`.
+///
+/// § 3's whole content is that inside the collision band a solver converges cleanly onto the
+/// WRONG root, so uniqueness cannot be tested with a solver: a root finder started anywhere
+/// reports only the one it reached. The walk is therefore exhaustive on a grid.
+///
+/// # THE FALLIBILITY IS ASYMMETRIC IN THE SOURCE, AND THE PORT KEEPS IT THAT WAY
+///
+/// Python wraps **only the initial walk** in `except AssertionError`, storing `None` for a point
+/// the model refuses; the 60-iteration bisection calls `G(xm)` **uncaught**, so a refusal there
+/// propagates out of the reader entirely. Both arms are reproduced: `.ok()` on the walk, `?` in
+/// the bisection. Making `G` uniformly fallible — the tidier Rust — would change behaviour at the
+/// one site Python leaves propagating.
+///
+/// **AND BOTH ARMS WERE MEASURED BEFORE THEY WERE WRITTEN, WITH OPPOSITE ANSWERS.** Over the two
+/// shipped grids the walk's refusal arm fires **6 171 of 39 930** points in [`gauge_scan`] and
+/// **5 980 of 40 100** in [`root_census`] — a sixth of every walk, so the `None` sentinel is
+/// load-bearing and a port that propagated there would abort on the first row. The bisection's
+/// arm fires **0 of 25 200** and **0 of 9 720**. That zero is a property of THIS GRID and not of
+/// the code — slice Q's rule — so it is recorded rather than relied on, and no gate can see a
+/// wrong port of it.
+///
+/// The skip predicate is ported clause by clause in source order, including `g1 == 0.0`, which is
+/// **not** redundant under a NaN `g2`: `0.0 * NaN` is `NaN` and `NaN >= 0.0` is false, so folding
+/// it into the product test would bisect a bracket Python skips. Probe: it fires **0** times on
+/// both grids and no residual is ever NaN there, so this clause too ships unexercised.
+pub fn root_count(
+    big_g: &dyn Fn(f64) -> Result<f64, Abort>, w0: f64, lo: f64, hi: f64, n: usize, locate: bool,
+) -> Result<Vec<f64>, Abort> {
+    let mut vals: Vec<(f64, Option<f64>)> = Vec::with_capacity(n + 1);
+    for i in 0..=n {
+        let x = w0 * (lo + (hi - lo) * i as f64 / n as f64);
+        vals.push((x, big_g(x).ok()));
+    }
+    let mut roots: Vec<f64> = Vec::new();
+    for pair in vals.windows(2) {
+        let ((mut x1, g1), (mut x2, g2)) = (pair[0], pair[1]);
+        let (mut g1, g2) = match (g1, g2) {
+            (Some(p), Some(q)) => (p, q),
+            _ => continue,
+        };
+        if g1 == 0.0 || g1 * g2 >= 0.0 {
+            continue;
+        }
+        if locate {
+            for _ in 0..ROOT_COUNT_BISECT {
+                let xm = 0.5 * (x1 + x2);
+                // UNCAUGHT in Python — see this function's doc.
+                let gm = big_g(xm)?;
+                // Python also rebinds `g2` on the upper branch; it is never read again, so the
+                // assignment is dropped here rather than kept as a dead binding.
+                if g1 * gm <= 0.0 {
+                    x2 = xm;
+                } else {
+                    x1 = xm;
+                    g1 = gm;
+                }
+            }
+        }
+        roots.push(0.5 * (x1 + x2) / w0);
+    }
+    roots.sort_by(|a, b| a.partial_cmp(b).expect("§ 1 measured no NaN residual on either grid"));
+    Ok(roots)
+}
+
+// ---------------------------------------------------------------------------------------------
+// THE SIXTH KNOB'S TWO RESTORE POLICIES — **AND THEY DISAGREE INSIDE ONE CLASS**
+// ---------------------------------------------------------------------------------------------
+
+/// Python's `_with_gauge`: set `_gauge_k`, restore **the previous value** in a `finally`.
+///
+/// This is the policy [`gauge_scan`]'s inner solve hand-rolls (`engine.py:20394`
+/// … `engine.py:20404`) and the one the declared helper `_with_gauge` implements. It is
+/// correct under nesting.
+pub struct GaugeRestored<'a> {
+    core: &'a TwoSpoolTransientCore,
+    prev: f64,
+}
+
+impl<'a> GaugeRestored<'a> {
+    /// Set the gauge, remembering what was there.
+    pub fn set(core: &'a TwoSpoolTransientCore, k: f64) -> Self {
+        let prev = core.gauge_k.get();
+        core.gauge_k.set(k);
+        GaugeRestored { core, prev }
+    }
+}
+
+impl Drop for GaugeRestored<'_> {
+    fn drop(&mut self) {
+        self.core.gauge_k.set(self.prev);
+    }
+}
+
+/// [`root_census`]'s policy: set `_gauge_k`, restore **the literal identity** in a `finally`.
+///
+/// # THIS IS A CLOBBER, NOT A RESTORE, AND IT IS REACHABLE-WRONG INSIDE ONE CALL
+///
+/// `engine.py:20514` writes `m._gauge_k = 1.0`, not `m._gauge_k = prev`. Because the write lands
+/// on the MARCHED machine and `_shared_rig` propagates the caller's gauge onto it
+/// (`engine.py:20332`), a `root_census` entered at a non-identity gauge builds its FIRST row's cap
+/// under that gauge and every LATER row under the identity — different plants inside one table.
+/// Measured, at `k = 2.5`: the gauge seen at each row's `_accel_cap_fn` is `[2.5, 1.0, 1.0]` for
+/// [`root_census`] and `[2.5, 2.5, …]` for [`gauge_scan`].
+///
+/// It is invisible today only because every shipped caller enters at the identity. **That is this
+/// slice's own leading finding on a SECOND variable**: plan § 5.32 (i) found one hazard given
+/// three treatments across these two classes on `_b_state`/`_v_state`, and its census was scoped
+/// to that pair, so it could not see that the SIXTH DECLARED KNOB has the same shape — a declared
+/// helper (`_with_gauge`) that would make it structural, used by § 4 and by neither of the two
+/// sections that need it most, with one of them substituting a clobber for a restore.
+///
+/// Ported as written. The gate is `the_census_clobbers_the_gauge_where_the_scan_restores_it`,
+/// which manufactures the nesting no shipped caller creates.
+pub struct GaugeClobbered<'a> {
+    core: &'a TwoSpoolTransientCore,
+}
+
+impl<'a> GaugeClobbered<'a> {
+    /// Set the gauge, forgetting what was there.
+    pub fn set(core: &'a TwoSpoolTransientCore, k: f64) -> Self {
+        core.gauge_k.set(k);
+        GaugeClobbered { core }
+    }
+}
+
+impl Drop for GaugeClobbered<'_> {
+    fn drop(&mut self) {
+        self.core.gauge_k.set(GAUGE_K_IDENTITY);
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// THE POINTS BOTH READERS SHARE
+// ---------------------------------------------------------------------------------------------
+
+/// Python's `_gauge_points` — **rung 77's own march, at rung 77's own settings, read at its own
+/// points**, so § 1's `k = 1` column IS rung 77 § 1 and can be differenced against it.
+///
+/// Rung 63's lesson in one call: a number quoted from another rung's settings is not a comparison.
+#[allow(clippy::too_many_arguments)]
+pub fn gauge_points(
+    core: &ScheduledStatorCore, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, tt4_max: f64,
+    margin: f64, taus: (f64, f64, f64, f64), r: f64, s_settle: f64, ds: f64, v_max: f64,
+    inc: bool, phi_lim: f64, every: usize,
+) -> (ScheduledStatorCore, Option<Floor>, AccelSchedule, Vec<FuelPoint>) {
+    let sm = phi_lim / core.arming().map_lp_design.phi_surge - 1.0;
+    let (m, surge, _lag, traj, accel) = crate::stiffness_ledger::ledger_march(
+        core, flight, tt4_lo, tt4_hi, tt4_max, sm, taus, r, s_settle, ds, v_max, inc, margin);
+    let b_max = m.fuel.inner.lever.lim.expect("`_shared_rig` arms the valve").b_max;
+    // Python slices AFTER filtering (`_riding4(...)[::every]`), so the stride runs over the
+    // FILTERED list and not over the trajectory.
+    let pts: Vec<FuelPoint> = riding4(&traj, b_max).into_iter().step_by(every).collect();
+    (m, surge, accel, pts)
+}
+
+/// ONE gauge's reading at one riding point — Python's `row["ks"][mult]`.
+///
+/// **A `Vec` and not a map**, because Python's dict is keyed by the sweep multiple and read in
+/// insertion order everywhere it is read.
+#[derive(Clone, Copy, Debug)]
+pub struct GaugeCell {
+    /// The sweep multiple. `k` is swept in multiples of `1/c`, **each point's own**, so the
+    /// singular gauge sits at `k·c = 1` in every row.
+    pub mult: f64,
+    /// `mult / c`, or an exact `0.0` — Python's `mult / c if mult else 0.0` is a FALSY test on a
+    /// float, so `mult = 0.0` short-circuits to a literal rather than dividing.
+    pub k: f64,
+    /// The gauged set point.
+    pub w: f64,
+    /// Whether this reading AND both of its `q ± dq` neighbours converged. **Not a correctness
+    /// guard** — see [`gauge_root`].
+    pub ok: bool,
+    /// `G_w` at the anchor.
+    pub gw: f64,
+    /// `1 − k·c` — the prediction `gw` is scored against.
+    pub gw_pred: f64,
+    /// The `k = 1` root this gauge is anchored at.
+    pub anchor: f64,
+    /// How many roots the residual has here — [`root_count`], and the EXCLUSION's only input.
+    pub n_roots: usize,
+    /// `|w − w1| / |w1|` — P1's quantity.
+    pub w_move: f64,
+    /// `|gw − gw_pred| / max(|gw_pred|, 1e-30)` — P2's.
+    pub gw_err: f64,
+    /// `dw*/dq`, taken by RE-SOLVING the whole gauged set point at `q ± dq` rather than by
+    /// reading `−G_q/G_w`, which would be computing the formula under test.
+    pub direct: f64,
+    /// **MEASURED, NOT CHOSEN**: excluded iff the residual is multi-rooted at this gauge or at
+    /// either of its two neighbours.
+    pub excluded: bool,
+    /// `|direct − base| / max(|base|, 1e-30)` — P3's, filled in after the row's `base` is taken.
+    pub gain_move: f64,
+}
+
+/// One riding point of [`gauge_scan`].
+#[derive(Clone, Debug)]
+pub struct GaugeRow {
+    /// Path distance along the march.
+    pub s: f64,
+    /// Rung 76's `c` here, read by [`c_at`](crate::sensed_cap::c_at) at the `k = 1` set point.
+    pub c: f64,
+    /// `1/c` — the gauge at which `G_w` vanishes.
+    pub k_crit: f64,
+    /// The `k = 1` set point.
+    pub w1: f64,
+    /// `G_w` at it.
+    pub gw1: f64,
+    /// **THE NON-VACUITY ANCHOR**: `|(1 − gw1) − c|`. The `k = 1` column must BE rung 77 § 1's
+    /// `G_a'` and rung 76's `c`, or this sweep is measuring its own solver.
+    pub c_err: f64,
+    /// The sweep, in order.
+    pub ks: Vec<GaugeCell>,
+    /// `dw*/dq` at `k = 1`, taken by the SAME `at` the sweep uses so the two share a differencing
+    /// floor — rung 77 § 2.2's reason.
+    pub base: f64,
+}
+
+/// § 1 / § 2's whole reading — Python's `gauge_scan` return dict.
+#[derive(Clone, Debug)]
+pub struct GaugeScan {
+    pub phi_lim: f64,
+    pub margin: f64,
+    pub inc: bool,
+    pub n: usize,
+    pub rows: Vec<GaugeRow>,
+    /// How many readings the multi-root test dropped, and how many it kept. **A rung that drops
+    /// points must say what it dropped.**
+    pub n_excluded: usize,
+    /// See [`n_excluded`](Self::n_excluded).
+    pub n_kept: usize,
+    /// Which multiples were dropped, as a SET — Python's `sorted({...})`.
+    pub excluded_mults: Vec<f64>,
+    /// The worst `w_move` among the dropped. If the dropped points were harmless, excluding them
+    /// bought the hold for nothing and § 1.2 is wrong.
+    pub excluded_worst: Option<f64>,
+    /// Worst [`c_err`](GaugeRow::c_err) over the rows.
+    pub c_err: Option<f64>,
+    /// **P1**: the set point does not move, anywhere outside the collision band.
+    pub w_move: Option<f64>,
+    /// **P2**: the slope IS `1 − k·c` …
+    pub gw_err: Option<f64>,
+    /// … and it spans BOTH signs.
+    pub gw_span: Option<(f64, f64)>,
+    /// See [`gw_span`](Self::gw_span).
+    pub sign_change: Option<bool>,
+    /// **P3 — THE RUNG**: and neither does the sensitivity, so the singularity is REMOVABLE.
+    pub gain_move: Option<f64>,
+    /// Kept readings whose solve did not converge.
+    pub n_bad: usize,
+    /// The span of rung 76's `c` over the march.
+    pub c: Option<(f64, f64)>,
+}
+
+/// [`gauge_scan`]'s default sweep — and it **DELIBERATELY includes `1.05` and `1.1`**, where the
+/// anchor's refuted `1e-3` window said nothing is wrong and § 3 says the residual is multi-rooted.
+/// A sweep that stepped over them would report a clean hold by choosing where to look.
+pub const GAUGE_SCAN_MULTS: [f64; 10] = [-0.5, 0.0, 0.25, 0.5, 0.9, 1.05, 1.1, 1.5, 2.0, 3.0];
+
+/// [`gauge_scan`]'s perturbation for `dw*/dq`.
+pub const GAUGE_SCAN_DQ: f64 = 1e-5;
+
+/// § 1 / § 2: **`w*(k)`, `G_w(k)` and `dw*/dq(k)` at each riding point.** Python's `gauge_scan`.
+///
+/// # WHAT IS EXCLUDED IS MEASURED, NOT CHOSEN
+///
+/// The anchor registered the exclusion as `|1 − k·c| < 1e-3`, and that number is **REFUTED** — the
+/// disturbed region is about 2.5 decades wider. Widening it to a round `0.30` would have been a
+/// tuned pass wearing a pre-registered threshold's clothes, so the exclusion here is not a width
+/// at all: a point is excluded iff `G_k` has MORE THAN ONE ROOT there, counted by [`root_count`].
+/// § 1 then has no constant that could cover for § 3's content — the band is an OUTPUT of the
+/// sweep rather than an input to it.
+///
+/// # EVERY READING IS TAKEN INSIDE ITS OWN FREEZE BLOCK, AND THAT IS THE MIRROR OF § 3 OF RUNG 77
+///
+/// [`singular_limit`](crate::stiffness_ledger::singular_limit) DEPENDS on a residual outliving its
+/// block; this reader depends on the opposite. `at` rebuilds the cap, the anchor, the residual and
+/// the root INSIDE each `qq`'s own block, because a closure carried out of one reads the plant with
+/// the valve loop CLOSED whatever `qq` it was asked about — and it then returns a clean
+/// `1.000e+00`. The first version of § 3 of this rung walked into exactly that and read a broken
+/// identity that was a difference between two PLANTS.
+///
+/// **So here the natural Rust shape is the CORRECT one, which is why the gate has to prove it
+/// rather than rely on it.** The discriminator is already in the arithmetic: a leaked freeze makes
+/// `at` ignore `qq`, so `hi_` and `lo_` would agree bit-for-bit and [`direct`](GaugeCell::direct)
+/// would be an exact `0.0`. Measured on the shipped grid it is `−2.64e-4` at every gauge in the
+/// first row, and the gate reads the frozen cells at the instant the residual is built as well.
+#[allow(clippy::too_many_arguments)]
+pub fn gauge_scan(
+    core: &ScheduledStatorCore, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, tt4_max: f64,
+    phi_lim: f64, margin: f64, taus: (f64, f64, f64, f64), inc: bool, r: f64, s_settle: f64,
+    ds: f64, v_max: f64, dq: f64, every: usize, mults: &[f64],
+) -> GaugeScan {
+    let (m, _surge, accel, pts) = gauge_points(
+        core, flight, tt4_lo, tt4_hi, tt4_max, margin, taus, r, s_settle, ds, v_max, inc,
+        phi_lim, every);
+    let mut rows: Vec<GaugeRow> = Vec::new();
+    for p in pts.iter() {
+        let (a, h, ms) = (p.nu_lp, p.nu_hp, p.mf_sched);
+        let (q, v) = crate::stiffness_ledger::bv_of(p);
+
+        // THE WHOLE GAUGED SOLVE on the plant AS THE VALVE IS AT `qq`. Everything is rebuilt in
+        // here; nothing escapes. The gauge guard is declared LAST so it drops FIRST, which is
+        // Python's nesting (the inner `finally` restores `_gauge_k`, the outer clears the freeze).
+        let at = |qq: f64, k: f64| -> Result<(f64, bool, f64, f64, usize), Abort> {
+            let _sb = MarchedBleed::set(&m.fuel.inner, qq);
+            let _sv = MarchedStator::set(&m.fuel.inner, v);
+            let cap = accel_cap_fn(&m.fuel, flight, a, h, &accel);
+            let g0 = |w: f64| -> Result<f64, Abort> { Ok(w - cap(w)?) };
+            let w0 = cap_free(&g0, ms, &|| m.fuel.try_sched_fuel(flight, a, h, ms, &accel))?;
+            let _gk = GaugeRestored::set(&m.fuel.inner, k);
+            // Python's `_gauge_residual` reads `self._gauge_k` at BUILD time, so the knob is read
+            // back out of the cell here rather than passed straight through from `k`.
+            let big_g = gauge_residual(m.fuel.inner.gauge_k.get(), &*cap, w0);
+            let (w, ok) = gauge_root(&*big_g, ms, GAUGE_ROOT_REL, GAUGE_ROOT_N, GAUGE_ROOT_TRUST);
+            // THE SLOPE IS READ AT THE ANCHOR, which is a root at every gauge by construction.
+            // Reading it at `w` would report the slope at whatever root the solver reached, and
+            // inside the band that is the other one.
+            let gw = crate::stiffness_ledger::slope_at(&*big_g, w0, SLOPE_AT_REL)?;
+            let nr = root_count(&*big_g, w0, ROOT_COUNT_LO, ROOT_COUNT_HI, ROOT_COUNT_N, true)?
+                .len();
+            Ok((w, ok, gw, w0, nr))
+        };
+        // Python discards `ok1` and `w01`; only `w1` and `gw1` reach the row.
+        let (w1, _ok1, gw1, _w01, _nr1) = at(q, 1.0).unwrap_or_else(boom);
+        let c = {
+            // The freeze here is Python's, and it is REDUNDANT: `c_at` sets both cells itself and
+            // clears them in its own `finally`. Kept because the source keeps it.
+            let _sb = MarchedBleed::set(&m.fuel.inner, q);
+            let _sv = MarchedStator::set(&m.fuel.inner, v);
+            c_at(&m, flight, a, h, &accel, w1, q, v, C_AT_REL).unwrap_or_else(boom)
+        };
+        let mut ks: Vec<GaugeCell> = Vec::with_capacity(mults.len());
+        for &mult in mults {
+            let k = if mult != 0.0 { mult / c } else { 0.0 };
+            let (w, ok, gw, w0, nr) = at(q, k).unwrap_or_else(boom);
+            let hi_ = at(q + dq, k).unwrap_or_else(boom);
+            let lo_ = at(q - dq, k).unwrap_or_else(boom);
+            let pred = 1.0 - k * c;
+            // Python's `max(abs(1 - k*c), 1e-30)` — argument 0 is an EXPRESSION, so the fold is
+            // written out rather than spelled `f64::max`.
+            let ap = pred.abs();
+            let den = if 1e-30 > ap { 1e-30 } else { ap };
+            ks.push(GaugeCell {
+                mult,
+                k,
+                w,
+                ok: ok && hi_.1 && lo_.1,
+                gw,
+                gw_pred: pred,
+                anchor: w0,
+                n_roots: nr,
+                w_move: (w - w1).abs() / w1.abs(),
+                gw_err: (gw - pred).abs() / den,
+                direct: (hi_.0 - lo_.0) / (2.0 * dq),
+                // Integers, so `max` needs no expression-first care here.
+                excluded: nr.max(hi_.4).max(lo_.4) > 1,
+                gain_move: f64::NAN,
+            });
+        }
+        let base = (at(q + dq, 1.0).unwrap_or_else(boom).0
+            - at(q - dq, 1.0).unwrap_or_else(boom).0) / (2.0 * dq);
+        let ab = base.abs();
+        let bden = if 1e-30 > ab { 1e-30 } else { ab };
+        for d in ks.iter_mut() {
+            d.gain_move = (d.direct - base).abs() / bden;
+        }
+        rows.push(GaugeRow {
+            s: p.s,
+            c,
+            k_crit: 1.0 / c,
+            w1,
+            gw1,
+            c_err: ((1.0 - gw1) - c).abs(),
+            ks,
+            base,
+        });
+    }
+    let keep: Vec<&GaugeCell> = rows.iter().flat_map(|x| x.ks.iter()).filter(|d| !d.excluded)
+        .collect();
+    let drop: Vec<&GaugeCell> = rows.iter().flat_map(|x| x.ks.iter()).filter(|d| d.excluded)
+        .collect();
+    let mut excluded_mults: Vec<f64> = drop.iter().map(|d| d.mult).collect();
+    excluded_mults.sort_by(|a, b| a.partial_cmp(b).expect("the sweep's multiples are literals"));
+    excluded_mults.dedup();
+    let pick = |xs: Vec<f64>| -> Option<f64> {
+        if xs.is_empty() { None } else { Some(py_max_of(&xs)) }
+    };
+    let gws: Vec<f64> = keep.iter().map(|d| d.gw).collect();
+    GaugeScan {
+        phi_lim,
+        margin,
+        inc,
+        n: rows.len(),
+        n_excluded: drop.len(),
+        n_kept: keep.len(),
+        excluded_mults,
+        excluded_worst: pick(drop.iter().map(|d| d.w_move).collect()),
+        c_err: pick(rows.iter().map(|x| x.c_err).collect()),
+        w_move: pick(keep.iter().map(|d| d.w_move).collect()),
+        gw_err: pick(keep.iter().map(|d| d.gw_err).collect()),
+        gw_span: if gws.is_empty() { None } else { Some((py_min_of(&gws), py_max_of(&gws))) },
+        sign_change: if keep.is_empty() {
+            None
+        } else {
+            Some(keep.iter().any(|d| d.gw < 0.0) && keep.iter().any(|d| d.gw > 0.0))
+        },
+        gain_move: pick(keep.iter().map(|d| d.gain_move).collect()),
+        n_bad: keep.iter().filter(|d| !d.ok).count(),
+        c: if rows.is_empty() {
+            None
+        } else {
+            let cs: Vec<f64> = rows.iter().map(|x| x.c).collect();
+            Some((py_min_of(&cs), py_max_of(&cs)))
+        },
+        rows,
+    }
+}
+
+// =============================================================================================
+// § 3 — THE SECOND ROOT, AND WHERE IT COLLIDES
+// =============================================================================================
+
+/// One gauge's walk at one riding point — Python's `cells[mult]`.
+#[derive(Clone, Debug)]
+pub struct CensusCell {
+    pub mult: f64,
+    pub k: f64,
+    /// `G_k(w0)`. **The construction, CHECKED**: `w0` is a root at every gauge, and this is the
+    /// one thing that would make §§ 1–2 meaningless if it were false.
+    pub g_at_w0: f64,
+    pub n_roots: usize,
+    /// Every root, as a fraction of the anchor.
+    pub roots: Vec<f64>,
+    /// The roots that are NOT the true one — everything further than `1e-6` from `1.0`.
+    pub spurious: Vec<f64>,
+}
+
+/// One riding point of [`root_census`].
+#[derive(Clone, Debug)]
+pub struct CensusRow {
+    pub s: f64,
+    pub w0: f64,
+    pub c: f64,
+    pub k_crit: f64,
+    pub cells: Vec<CensusCell>,
+}
+
+/// § 3's whole reading — Python's `root_census` return dict.
+#[derive(Clone, Debug)]
+pub struct RootCensus {
+    pub phi_lim: f64,
+    pub margin: f64,
+    pub inc: bool,
+    pub n: usize,
+    pub rows: Vec<CensusRow>,
+    /// Worst `|G_k(w0)|` anywhere — the construction, checked rather than assumed.
+    pub g_at_w0: Option<f64>,
+    /// Whether the walk found the true root at every gauge. Python's `all` over an EMPTY sequence
+    /// is `True`, so an empty census reports `true` here — reproduced.
+    pub true_found: bool,
+    /// The distinct root counts seen, as a sorted SET.
+    pub n_roots: Vec<usize>,
+    /// The multiples at which the residual is multi-rooted.
+    pub multi_mults: Vec<f64>,
+    /// Their span …
+    pub band: Option<(f64, f64)>,
+    /// … and whether it BRACKETS the singular gauge. If it does not, the collision is not at
+    /// `k·c = 1` and § 3's mechanism is wrong.
+    pub brackets: Option<bool>,
+    /// How close the spurious root gets to the true one, at the band's edges.
+    pub approach: Option<f64>,
+}
+
+/// [`root_census`]'s default sweep — denser around `1.0` than [`GAUGE_SCAN_MULTS`], because this
+/// section is looking for the COLLISION rather than for the slope.
+pub const ROOT_CENSUS_MULTS: [f64; 10] = [0.5, 0.9, 0.99, 1.01, 1.05, 1.1, 1.2, 1.5, 2.0, 3.0];
+
+/// [`root_census`]'s walk resolution — three times [`ROOT_COUNT_N`], because a collision is only
+/// visible while the two roots are still resolvable on the grid.
+pub const ROOT_CENSUS_N: usize = 400;
+
+/// § 3: **the gauge preserves the root and destroys its UNIQUENESS.** Python's `root_census`.
+///
+/// `G_k(w0)` must be ZERO at every `k` — that is the construction, and it is checked rather than
+/// assumed. Then the residual is walked across `[lo, hi]·w0` and its sign changes COUNTED, because
+/// a root finder started anywhere would only ever report the one it happened to reach, which is
+/// exactly the failure this section explains.
+///
+/// # THE RE-FREEZE AT `engine.py:20504` IS NOT OPTIONAL, AND THE CLOBBER AT `engine.py:20514` IS NOT A RESTORE
+///
+/// Two same-shaped hazards, one loop apart, treated differently:
+///
+/// * `c_at` clears both frozen cells in its own `finally`, and this block continues into real
+///   plant work afterwards, so the freeze is **re-armed**. Plan § 5.32 (i) site 3. Rung 77's
+///   `leg_slopes` omits the same re-arm and is safe only because the single statement after its
+///   own nested call is arithmetic over numbers already computed.
+/// * the gauge, by contrast, is restored to the **literal identity** rather than to what was
+///   there — see [`GaugeClobbered`], where it is measured to be reachable-wrong inside one call.
+#[allow(clippy::too_many_arguments)]
+pub fn root_census(
+    core: &ScheduledStatorCore, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, tt4_max: f64,
+    phi_lim: f64, margin: f64, taus: (f64, f64, f64, f64), inc: bool, r: f64, s_settle: f64,
+    ds: f64, v_max: f64, every: usize, mults: &[f64], lo: f64, hi: f64, n: usize,
+) -> RootCensus {
+    let (m, _surge, accel, pts) = gauge_points(
+        core, flight, tt4_lo, tt4_hi, tt4_max, margin, taus, r, s_settle, ds, v_max, inc,
+        phi_lim, every);
+    let mut rows: Vec<CensusRow> = Vec::new();
+    for p in pts.iter() {
+        let (a, h, ms) = (p.nu_lp, p.nu_hp, p.mf_sched);
+        let (q, v) = crate::stiffness_ledger::bv_of(p);
+        let _sb = MarchedBleed::set(&m.fuel.inner, q);
+        let _sv = MarchedStator::set(&m.fuel.inner, v);
+        let cap = accel_cap_fn(&m.fuel, flight, a, h, &accel);
+        let g0 = |w: f64| -> Result<f64, Abort> { Ok(w - cap(w)?) };
+        let w0 = cap_free(&g0, ms, &|| m.fuel.try_sched_fuel(flight, a, h, ms, &accel))
+            .unwrap_or_else(boom);
+        let c = c_at(&m, flight, a, h, &accel, w0, q, v, C_AT_REL).unwrap_or_else(boom);
+        // `c_at` un-freezes in its OWN `finally`, and this block keeps going — so re-arm.
+        let _sb2 = MarchedBleed::set(&m.fuel.inner, q);
+        let _sv2 = MarchedStator::set(&m.fuel.inner, v);
+        let mut cells: Vec<CensusCell> = Vec::with_capacity(mults.len());
+        for &mult in mults {
+            let k = mult / c;
+            let (at_w0, roots) = {
+                let _gk = GaugeClobbered::set(&m.fuel.inner, k);
+                let big_g = gauge_residual(m.fuel.inner.gauge_k.get(), &*cap, w0);
+                let at_w0 = big_g(w0).unwrap_or_else(boom);
+                (at_w0, root_count(&*big_g, w0, lo, hi, n, true).unwrap_or_else(boom))
+            };
+            cells.push(CensusCell {
+                mult,
+                k,
+                g_at_w0: at_w0,
+                n_roots: roots.len(),
+                spurious: roots.iter().copied().filter(|x| (x - 1.0).abs() > 1e-6).collect(),
+                roots,
+            });
+        }
+        rows.push(CensusRow { s: p.s, w0, c, k_crit: 1.0 / c, cells });
+    }
+    let allc: Vec<&CensusCell> = rows.iter().flat_map(|x| x.cells.iter()).collect();
+    let mut n_roots: Vec<usize> = allc.iter().map(|d| d.n_roots).collect();
+    n_roots.sort_unstable();
+    n_roots.dedup();
+    let mut multi: Vec<f64> = allc.iter().filter(|d| d.n_roots > 1).map(|d| d.mult).collect();
+    multi.sort_by(|a, b| a.partial_cmp(b).expect("the sweep's multiples are literals"));
+    multi.dedup();
+    let spur: Vec<f64> = allc.iter()
+        .flat_map(|d| d.spurious.iter().map(|x| (x - 1.0).abs()))
+        .collect();
+    RootCensus {
+        phi_lim,
+        margin,
+        inc,
+        n: rows.len(),
+        g_at_w0: if allc.is_empty() {
+            None
+        } else {
+            Some(py_max_of(&allc.iter().map(|d| d.g_at_w0.abs()).collect::<Vec<f64>>()))
+        },
+        // Python's `all(...)` over an empty sequence is `True`.
+        true_found: allc.iter().all(|d| d.roots.iter().any(|x| (x - 1.0).abs() <= 1e-6)),
+        n_roots,
+        band: if multi.is_empty() { None } else { Some((multi[0], multi[multi.len() - 1])) },
+        brackets: if multi.is_empty() {
+            None
+        } else {
+            Some(multi[0] < 1.0 && 1.0 < multi[multi.len() - 1])
+        },
+        multi_mults: multi,
+        approach: if spur.is_empty() { None } else { Some(py_min_of(&spur)) },
+        rows,
+    }
 }

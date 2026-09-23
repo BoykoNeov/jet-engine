@@ -330,6 +330,43 @@ Full Rust gate at that state: **158 blocks (157 `Running` + 1 `Doc-tests`), 158 
 1 634 / 0 / 0, 0 `error[E`, `CARGO_EXIT=0` off disk** — the +1 block and +9 items predicted
 before the run, matching exactly.
 
+### Slice AH step 4 — SHIPPED, RUNG 78 §§ 1–3
+
+`gauge_scan` (§ 1/§ 2), `root_census` (§ 3), `root_count`, `accel_cap_fn`, `gauge_points`:
+`residual_gauge.rs` 532 → **1 165** (+633), module total **2 373** of P1's 2 800–3 150.
+`tests/slice_ah_gauge.rs` — **526 lines, 12 gates**. Plan § 5.32.4.
+
+**THE LEADING FINDING: eleven gates, green on the first run, could not see THREE OF SIX injected
+defects — and the one that mattered was hidden by the shipped reader's own exclusion.** Reading
+the residual's slope at the SOLVED root instead of the anchor is exactly what Python's comment
+forbids, and it is invisible because the cells where the two differ are precisely the cells the
+reader drops. **The first gate written for it did not catch it either** — it demonstrated the
+physics by calling the helper directly and never went through the reader. What closes it is a
+claim about the reader's own output (`gw == 1 − k·c` at EVERY cell, dropped ones included), which
+is a sharper statement of § 3 than the suite or the spec makes. The two that stayed blind were
+recorded, not gated: a three-argument `max` that agrees with its first argument at 100 of 100
+cells, and a falsy short-circuit that is arithmetically a no-op.
+
+That gate carries § 3's headline on one cell: at riding point 2, gauge `1.1/c`, the roots are
+`1.0` and `1.613·w0`; the damped Newton converges onto the **spurious** one and **reports
+success**; the slope there is `+0.055` where the anchor's is `−0.100`.
+
+**AND THE SLICE'S LEADING HAZARD HAS A SECOND INSTANCE THE PRE-FLIGHT COULD NOT SEE.** § 5.32 (i)
+priced "one hazard, three treatments, one class" on the freeze pair; the sixth declared knob
+`_gauge_k` has the same shape one section apart (save/restore `prev` · clobber to the literal
+`1.0` · the declared helper both ignore), and the clobber is **reachable-wrong inside one call** —
+`_shared_rig` propagates the caller's gauge onto the marched machine, so at `k = 2.5` row 1 runs
+at 2.5 and rows 2–3 at 1.0. A census scoped by a variable NAME cannot see the same defect on a
+different variable.
+
+**The citation guard, run inside the step, found a blindness of its own**: sixteen references
+written as a bare `` `:20404` `` where its pattern matches `engine.py:20404` — ten of them shipped
+by step 1, in the file whose own comment is about citations nobody ran. 33/181/112 → **35/196/121**,
+zero arrears. Measured before writing: `root_count`'s walk-refusal arm fires on ~15 % of all
+79 000 points; its bisection arm fires on 0 of 34 920, so both are driven by hand-built residuals.
+Full Rust gate **159 blocks, 1 646 passed / 0 failed, `CARGO_EXIT=0`**, as predicted.
+See [[rust-port-slice-ah-step4]].
+
 ## Slice AE (rung 73, `AppliedReferenceTransient`) — IN FLIGHT, steps 1–4 of 5 done
 
 § 5.29, ten probes. **684 source / 518 test lines, 27 collected (13 slow), 12 methods** — AB's
