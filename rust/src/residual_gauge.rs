@@ -55,7 +55,7 @@
 //! # WHAT STEP 4 ADDS — **§§ 1–3, AND THE SIXTH KNOB'S SECOND RESTORE POLICY**
 //!
 //! [`gauge_scan`] (§ 1/§ 2), [`root_census`] (§ 3), [`root_count`], [`accel_cap_fn`] and
-//! [`gauge_points`]. Rung 78's remaining sections (`gauge_vs_device`, `gauge_march`) are step 5's.
+//! [`gauge_points`]. Rung 78's remaining sections are step 5's, below.
 //!
 //! **The step's finding is that this slice's leading hazard has a second instance on a different
 //! variable.** Plan § 5.32 (i) opens on the `_b_state`/`_v_state` freeze being handled three
@@ -65,6 +65,14 @@
 //! `engine.py:20705` / `engine.py:20714` use the declared helper `_with_gauge` that the other two
 //! ignore. Both policies are ported, as [`GaugeRestored`] and [`GaugeClobbered`], and the clobber
 //! is measured to be reachable-wrong inside a single call.
+//!
+//! # WHAT STEP 5 ADDS — **§§ 4–5, RUNG 78'S LAST BODIES, AND THE ONE GUARD THAT RESTORES `prev`**
+//!
+//! [`gauge_vs_device`] (§ 4), [`phi_at`] under [`PhiAtFreeze`], [`c_on_frozen`] and
+//! [`gauge_march`] (§ 5). `PhiAtFreeze` is the restore-previous guard the section below books to
+//! `_phi_at`, and it carries § 5.26 (iii) item B as its DOC — it has no panic arm, because its nest
+//! fires 20 times per call on purpose. Of § 5's six outputs only `hits` and `binds` carry
+//! information on the shipped grid; see [`gauge_march`].
 //!
 //! # THE COUNTERS ARE PROCESS-GLOBAL BECAUSE PYTHON'S ARE CLASS ATTRIBUTES
 //!
@@ -156,7 +164,8 @@
 //! NEW code: `_phi_at`, sites `engine.py:20591`/`engine.py:20592`, the two where the callee is handed `q ± dq` and the
 //! two semantics genuinely differ. No shipped gate pins those, and the guard that carries them —
 //! with § 5.26 (iii)'s owed message — lands **with `gauge_vs_device`'s `_phi_at`**, the rung-78 leaf
-//! that is its only caller.
+//! that is its only caller. **It landed at step 5 as [`PhiAtFreeze`], and the owed message landed as
+//! its doc, not as a panic message**: the guard has no panic arm to carry one.
 //!
 //! > This sentence and plan § 5.32.1's both said *"at step 2"* when they were written. Step 2 is
 //! > rung 77's reader layer and `_phi_at` is a rung-78 leaf, so the promise named a step that could
@@ -187,6 +196,7 @@ use crate::demand_coordinate::cap_free;
 use crate::engine::FlightCondition;
 use crate::fuel_transient::{
     AccelSchedule, AsymmetricLag, Floor, FuelPoint, FuelTransientCore, FuelTransientHooks,
+    PointExtra,
 };
 use crate::gas::Abort;
 use crate::map::ComponentMap;
@@ -1161,5 +1171,521 @@ pub fn root_census(
         multi_mults: multi,
         approach: if spur.is_empty() { None } else { Some(py_min_of(&spur)) },
         rows,
+    }
+}
+
+// =============================================================================================
+// § 4 — A GAUGE AGAINST A DEVICE, AND THE PHI LEG'S OTHER ROUTE
+// =============================================================================================
+
+/// `_phi_at`'s freeze — **restore the PREVIOUS `(b_state, v_state)`, the one guard in this slice
+/// that does NOT spell Python's `finally`.**
+///
+/// Python's `_phi_at` restores `(None, None)`. This guard restores what was there, and it is the
+/// only place in the port that departs from the source's spelling on these two fields, for the
+/// reason plan § 5.32.1 gives: `gauge_vs_device` calls `_phi_at` from INSIDE its own freeze
+/// (`engine.py:20591`, `engine.py:20592`) and hands it **`q ± dq`**, not the enclosing `q` — so
+/// here, unlike at the four `_c_at` nests, the two policies leave genuinely different values
+/// behind. After the inner call returns, Python's plant is thawed; this one is back at `(q, v)`.
+///
+/// # WHY THAT IS STILL THE SAME NUMBERS — THE DEAD-WINDOW CRITERION
+///
+/// Between the inner call's return and the enclosing block's `finally`, nothing reads the plant:
+/// the two `_phi_at` calls are the halves of one central difference, followed by one division and
+/// one assignment. So the window in which the two policies disagree is DEAD, and every value the
+/// reader returns is identical under either. **That criterion, and not a `(q, v)` agreement, is
+/// what makes all six of this slice's nests safe** — at two of them (these two) the agreement is
+/// false.
+///
+/// # THIS IS THE FIRST GUARD IN THE PORT WHOSE NEST ARM IS REACHABLE
+///
+/// [`ForcedBleed`](crate::two_spool_transient::ForcedBleed) and
+/// [`ForcedStator`](crate::two_spool_transient::ForcedStator) PANIC on a nest, because theirs was
+/// measured unreachable. This one cannot: the nest fires **20 times** per `gauge_vs_device` on the
+/// shipped grid (ten central differences, two nests each — plan § 5.32 (i), probe 13), and that is
+/// the reader working as written. So there is no panic arm.
+///
+/// **And that means plan § 5.32 (iii) item B — owed as this guard's PANIC MESSAGE — lands here as
+/// its DOC, because there is no message to carry it.** Saying "the message landed" would be a
+/// documented gate that does not exist, which this slice has logged three times already. The
+/// content item B asked for is this: the zero-overwrite measurements that justify restoring `None`
+/// everywhere ELSE were taken on **rungs ≤ 68** (§ 5.25 (iii)), **rung 69** (§ 5.26 (vii)) and
+/// **rungs 70–76** (§ 5.32.1: 0 nests in 5 182 138 `_b_state` and 4 856 210 `_v_state` sets) —
+/// **not on rungs 77–78**, where six genuine nests exist and fire. A reader from rung 79 onward
+/// holds no measurement at all.
+///
+/// # AND IT IS PINNED, BECAUSE HERE A HAND-BUILT NEST CAN TELL THE POLICIES APART
+///
+/// `the_phi_at_guard_restores_the_enclosing_freeze` holds an outer `(q, v)`, calls [`phi_at`] at
+/// `q + dq`, and reads `b_state == Some(q)` afterwards — the one observation Python's spelling
+/// would fail. Slice Y's `MarchedBleed` pin asserts the OPPOSITE on the other type, which is why
+/// these are two types and not one: *"Two guards, two policies — do not unify them."*
+pub struct PhiAtFreeze<'a> {
+    core: &'a TwoSpoolTransientCore,
+    prev_b: Option<f64>,
+    prev_v: Option<f64>,
+}
+
+impl<'a> PhiAtFreeze<'a> {
+    /// Freeze the valve at `q` (`None` = the loop CLOSED) and the stator at `v`, remembering both.
+    pub fn set(core: &'a TwoSpoolTransientCore, q: Option<f64>, v: Option<f64>) -> Self {
+        let (prev_b, prev_v) = (core.b_state.get(), core.v_state.get());
+        core.b_state.set(q);
+        core.v_state.set(v);
+        PhiAtFreeze { core, prev_b, prev_v }
+    }
+}
+
+impl Drop for PhiAtFreeze<'_> {
+    fn drop(&mut self) {
+        self.core.b_state.set(self.prev_b);
+        self.core.v_state.set(self.prev_v);
+    }
+}
+
+/// `phi_lp` at a fuel, with the valve held at `q` (`None` = the loop CLOSED, re-solving at this
+/// very fuel) and the stator at `v`. Python's `_phi_at` — "in its own block, always", under
+/// [`PhiAtFreeze`].
+///
+/// `q` and `v` are `Option` because Python's docstring gives `None` a meaning; the one shipped
+/// caller passes floats at both.
+pub fn phi_at(
+    ft: &FuelTransientCore, flight: &FlightCondition, a: f64, h: f64, w: f64, surge: &Floor,
+    q: Option<f64>, v: Option<f64>,
+) -> Result<f64, Abort> {
+    let _f = PhiAtFreeze::set(&ft.inner, q, v);
+    Ok(surge.phi().read(&ft.try_instant_fuel(flight, a, h, w)?))
+}
+
+/// One riding point of [`gauge_vs_device`].
+#[derive(Clone, Copy, Debug)]
+pub struct DeviceRow {
+    pub s: f64,
+    /// The accel leg's shipped set point (`"solve"`).
+    pub w_solve: f64,
+    /// Rung 76's SENSED cap — the same schedule evaluated at the fuel actually burning.
+    pub w_sensed: f64,
+    /// **P6**: `|w_sensed − w_solve| / |w_solve|`. A DEVICE moves the root.
+    pub device: f64,
+    /// The phi leg's set point, OPEN (valve frozen).
+    pub w_phi: f64,
+    /// `G_w` of the phi leg, OPEN.
+    pub phi_open_w: f64,
+    /// `dphi/dq`, OPEN — the only reading in which `q` is an input at all.
+    pub phi_open_q: f64,
+    /// `G_w` of the phi leg, CLOSED (valve re-solving). **Measured an exact `0.0` at 4 of the
+    /// shipped 10 rows**: the riding valve pins `phi_lp` to `phi_lim` bit for bit.
+    pub phi_closed_w: f64,
+    /// `|closed| / max(|open|, 1e-30)`.
+    pub kill_w: f64,
+    /// `phi_lp`'s spread over a `±spread` fuel band, CLOSED.
+    pub phi_spread: f64,
+}
+
+/// § 4's whole reading — Python's `gauge_vs_device` return dict. Every aggregate is `None` on an
+/// empty table, which is Python's `if rows else None` at seven sites.
+#[derive(Clone, Debug)]
+pub struct GaugeVsDevice {
+    pub phi_lim: f64,
+    pub margin: f64,
+    pub inc: bool,
+    pub n: usize,
+    pub rows: Vec<DeviceRow>,
+    /// **P6**: rung 76's re-writing MOVES the root — the smallest move over the rows.
+    pub device: Option<f64>,
+    pub device_max: Option<f64>,
+    /// **P5**: the phi leg's slope DIES when the valve closes around its variable …
+    pub kill_w: Option<f64>,
+    pub phi_open_w: Option<f64>,
+    pub phi_closed_w: Option<f64>,
+    /// … while `dphi/dq` is FINITE in the only reading that has a `q` at all.
+    pub phi_open_q: Option<f64>,
+    pub phi_spread: Option<f64>,
+}
+
+/// [`gauge_vs_device`]'s defaults that the suite takes by omission — `every`, `dq`, `spread`.
+pub const DEVICE_EVERY: usize = 8;
+/// See [`DEVICE_EVERY`].
+pub const DEVICE_DQ: f64 = 1e-5;
+/// See [`DEVICE_EVERY`].
+pub const DEVICE_SPREAD: f64 = 0.10;
+
+/// § 4: **what separates a GAUGE from a DEVICE, and what the phi leg's route really is.** Python's
+/// `gauge_vs_device`.
+///
+/// **P6** — rung 76 survives iff `solve` → `sensed` MOVES the root; a gauge does not. **P5** —
+/// `dw*/dq` is an OPEN-loop object: it exists because `q` is an input, which is what freezing
+/// `b_state` makes it. With the valve CLOSED there is no `q` to differentiate against, so rung
+/// 77 § 3's "`dw*/dq` diverges where the valve pins `phi_lp`" put two different derivatives on one
+/// axis. Measured here as `G_w` open (finite, ~10) against `G_w` closed (dead, ≤ 2e-8).
+///
+/// # TWO BLOCKS, AND THE SECOND FREEZES ONLY THE STATOR
+///
+/// The open block sets BOTH frozen cells (the fuel law trials neither actuator); the closed block
+/// sets `v_state` ALONE, so the valve re-solves at every trial — rung 64's plant. `gs` is built
+/// before either block and read inside both: it reads the cells at CALL time, which is Python's
+/// late binding and is exactly what makes the one closure measure two plants.
+///
+/// # THE NEST AT `engine.py:20591` IS THE ONE WHERE THE TWO RESTORE POLICIES DIFFER
+///
+/// See [`PhiAtFreeze`]. The other freeze in this body is Python's own clobber to `None`,
+/// [`MarchedBleed`]/[`MarchedStator`], unchanged.
+#[allow(clippy::too_many_arguments)]
+pub fn gauge_vs_device(
+    core: &ScheduledStatorCore, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, tt4_max: f64,
+    phi_lim: f64, margin: f64, taus: (f64, f64, f64, f64), inc: bool, r: f64, s_settle: f64,
+    ds: f64, v_max: f64, every: usize, dq: f64, spread: f64,
+) -> GaugeVsDevice {
+    let (m, surge, accel, pts) = gauge_points(
+        core, flight, tt4_lo, tt4_hi, tt4_max, margin, taus, r, s_settle, ds, v_max, inc,
+        phi_lim, every);
+    let surge = surge.expect("`_shared_rig` arms the phi leg: `surge.key()` is read unguarded");
+    let ft = &m.fuel;
+    let sensed_cap = m.triple_hooks().sensed_cap;
+    let mut rows: Vec<DeviceRow> = Vec::with_capacity(pts.len());
+    for p in pts.iter() {
+        let (a, h, ms) = (p.nu_lp, p.nu_hp, p.mf_sched);
+        let (q, v) = crate::stiffness_ledger::bv_of(p);
+        // Python's `Gs` is DEFINED inside the open block and CALLED inside both. A closure reads
+        // the frozen cells when it is called, not when it is built, so defining it here instead is
+        // the same object.
+        let gs = |w: f64| -> Result<f64, Abort> {
+            Ok(surge.phi().phi_lim - surge.phi().read(&ft.try_instant_fuel(flight, a, h, w)?))
+        };
+        let (w_solve, w_sensed, w_phi, open_w, open_q) = {
+            let _sb = MarchedBleed::set(&ft.inner, q);
+            let _sv = MarchedStator::set(&ft.inner, v);
+            let cap = accel_cap_fn(ft, flight, a, h, &accel);
+            let g0 = |w: f64| -> Result<f64, Abort> { Ok(w - cap(w)?) };
+            let w_solve = cap_free(&g0, ms, &|| ft.try_sched_fuel(flight, a, h, ms, &accel))
+                .unwrap_or_else(boom);
+            // rung 76's SENSED cap: the same law, evaluated at the fuel actually burning
+            let w_sensed = {
+                let _cs = crate::sensed_cap::CapScope::set(
+                    &ft.inner, crate::sensed_cap::CAP_LAW_SENSED);
+                sensed_cap(ft, flight, a, h, &accel, Some(ms)).unwrap_or_else(boom)
+                    .expect("under `sensed` the cell returns a cap, never rung 75's `None`")
+            };
+            // the phi leg, OPEN (valve frozen) -- rung 77 § 1's reading
+            let w_phi = cap_free(&gs, ms, &|| ft.try_surge_fuel(flight, a, h, ms, &surge))
+                .unwrap_or_else(boom);
+            let open_w = crate::stiffness_ledger::slope_at(&gs, w_phi, SLOPE_AT_REL)
+                .unwrap_or_else(boom);
+            // THE NEST. Each call is handed `q ± dq`, not the enclosing `q` -- see `PhiAtFreeze`.
+            let open_q = (phi_at(ft, flight, a, h, w_phi, &surge, Some(q + dq), Some(v))
+                .unwrap_or_else(boom)
+                - phi_at(ft, flight, a, h, w_phi, &surge, Some(q - dq), Some(v))
+                    .unwrap_or_else(boom))
+                / (2.0 * dq);
+            (w_solve, w_sensed, w_phi, open_w, open_q)
+        };
+        // ... and CLOSED: the valve re-solving at every trial, which is rung 64's plant
+        let (closed_w, phis) = {
+            let _sv = MarchedStator::set(&ft.inner, v);
+            let closed_w = crate::stiffness_ledger::slope_at(&gs, w_phi, SLOPE_AT_REL)
+                .unwrap_or_else(boom);
+            let phis: Vec<f64> = [1.0 - spread, 1.0, 1.0 + spread].iter()
+                .map(|f| surge.phi().read(
+                    &ft.try_instant_fuel(flight, a, h, w_phi * f).unwrap_or_else(boom)))
+                .collect();
+            (closed_w, phis)
+        };
+        // Python's `max(abs(open_w), 1e-30)` -- the EXPRESSION is argument 0, so the fold is
+        // written out rather than spelled `f64::max`.
+        let ao = open_w.abs();
+        let oden = if 1e-30 > ao { 1e-30 } else { ao };
+        rows.push(DeviceRow {
+            s: p.s,
+            w_solve,
+            w_sensed,
+            device: (w_sensed - w_solve).abs() / w_solve.abs(),
+            w_phi,
+            phi_open_w: open_w,
+            phi_open_q: open_q,
+            phi_closed_w: closed_w,
+            kill_w: closed_w.abs() / oden,
+            phi_spread: py_max_of(&phis) - py_min_of(&phis),
+        });
+    }
+    let agg = |f: &dyn Fn(&DeviceRow) -> f64, hi: bool| -> Option<f64> {
+        if rows.is_empty() {
+            return None;
+        }
+        let xs: Vec<f64> = rows.iter().map(f).collect();
+        Some(if hi { py_max_of(&xs) } else { py_min_of(&xs) })
+    };
+    GaugeVsDevice {
+        phi_lim,
+        margin,
+        inc,
+        n: rows.len(),
+        device: agg(&|x| x.device, false),
+        device_max: agg(&|x| x.device, true),
+        kill_w: agg(&|x| x.kill_w, true),
+        phi_open_w: agg(&|x| x.phi_open_w.abs(), false),
+        phi_closed_w: agg(&|x| x.phi_closed_w.abs(), true),
+        phi_open_q: agg(&|x| x.phi_open_q.abs(), false),
+        phi_spread: agg(&|x| x.phi_spread, true),
+        rows,
+    }
+}
+
+// =============================================================================================
+// § 5 — THE TRAJECTORY, WHICH IS WHERE A GAUGE HAS TO BE INERT
+// =============================================================================================
+
+/// `c` at a trajectory point, with the ANCHOR SOLVED ON THE FROZEN PLANT. Python's
+/// `_c_on_frozen`, a `@staticmethod` taking the machine as an argument.
+///
+/// **Plan § 5.32 (i)'s site 3, and the one of the three treatments that avoids the nest
+/// altogether**: the freeze is CLOSED before [`c_at`] is called, and `c_at` takes its own. The
+/// docstring records that the first version of § 5 did not do this — it solved the anchor with no
+/// freeze around it, so the root came off the plant with the valve loop CLOSED and was then handed
+/// to `c_at`, which freezes internally: two plants, one number.
+pub fn c_on_frozen(
+    m: &ScheduledStatorCore, flight: &FlightCondition, p: &FuelPoint, accel: &AccelSchedule,
+) -> Result<f64, Abort> {
+    let (a, h, ms) = (p.nu_lp, p.nu_hp, p.mf_sched);
+    let (q, v) = crate::stiffness_ledger::bv_of(p);
+    let w0 = {
+        let _sb = MarchedBleed::set(&m.fuel.inner, q);
+        let _sv = MarchedStator::set(&m.fuel.inner, v);
+        let cap = accel_cap_fn(&m.fuel, flight, a, h, accel);
+        let g0 = |w: f64| -> Result<f64, Abort> { Ok(w - cap(w)?) };
+        cap_free(&g0, ms, &|| m.fuel.try_sched_fuel(flight, a, h, ms, accel))?
+    };
+    c_at(m, flight, a, h, accel, w0, q, v, C_AT_REL)
+}
+
+/// One gauge's run of the whole march — Python's `cells[i]`.
+#[derive(Clone, Copy, Debug)]
+pub struct MarchCell {
+    pub mult: f64,
+    /// `mult / c0`, or an exact `0.0` — Python's falsy `if mult`.
+    pub k: f64,
+    /// Steps compared: `min(len(traj), len(traj0))`.
+    pub n: usize,
+    pub same_len: bool,
+    /// Worst relative difference over `nu_lp, nu_hp, mf, b, v` at every compared step.
+    pub worst: f64,
+    /// Where it sits: `(key, step)`, or `None` if nothing differed — Python's strict `>` from 0.
+    pub where_: Option<(&'static str, usize)>,
+    /// The span of `k·c` over every fourth riding point of the BASE march.
+    pub kc: (f64, f64),
+    /// Executions of the gauged branch in this run — [`GAUGE_HITS`], zeroed before the run.
+    pub hits: u64,
+    /// Times its value won the min-select — [`GAUGE_BINDS`].
+    pub binds: u64,
+    /// `!(kc.0 ≤ 1 ≤ kc.1)` — the swept `k·c` stayed out of § 3's collision band.
+    pub clear: bool,
+}
+
+/// § 5's whole reading — Python's `gauge_march` return dict.
+#[derive(Clone, Debug)]
+pub struct GaugeMarch {
+    pub phi_lim: f64,
+    pub margin: f64,
+    pub inc: bool,
+    /// `c` at the first riding point, against which every `k` is taken and then HELD.
+    pub c0: f64,
+    /// Length of the base (`k = 1`) trajectory.
+    pub n: usize,
+    pub cells: Vec<MarchCell>,
+    /// THE REDUCE'S OTHER HALF: a gauge is INERT on the plant it re-writes.
+    pub worst: Option<f64>,
+    pub same_len: bool,
+    /// NON-VACUITY: the gauged branch must actually have RUN. `0` on an empty sweep, Python's
+    /// `if cells else 0`.
+    pub hits: u64,
+    pub binds: u64,
+    /// The schedule is NOT a function of the gauge. `None` on an empty sweep.
+    pub sched_moved: Option<f64>,
+    /// No run's swept `k·c` crossed the collision band. Python's `all` — `true` when empty.
+    pub clear: bool,
+    pub kc: Vec<(f64, (f64, f64))>,
+}
+
+/// [`gauge_march`]'s default sweep. `0.0` is the zero gauge, not the identity — `k = 0` takes the
+/// gauged branch like every other non-`1.0` value.
+pub const GAUGE_MARCH_MULTS: [f64; 4] = [0.0, 0.5, 2.0, 3.0];
+
+/// The five trajectory keys § 5 compares, in Python's order — which is load-bearing, because
+/// `where_` reports the FIRST strict maximum in key-major order.
+const MARCH_KEYS: [&str; 5] = ["nu_lp", "nu_hp", "mf", "b", "v"];
+
+/// Python's `traj[i].get(key)` behind its `isinstance(x, float)` filter.
+///
+/// `b` and `v` live in the point's coordinate-dependent extra, so a point that does not carry them
+/// answers `None` and the pair is skipped — the filter, ported. **It never fires on the shipped
+/// march** (measured: 0 of 341 points lack either), because § 5 marches the demand coordinate and
+/// every such point carries both. Kept because the source has it.
+fn march_key(p: &FuelPoint, key: &str) -> Option<f64> {
+    match key {
+        "nu_lp" => Some(p.nu_lp),
+        "nu_hp" => Some(p.nu_hp),
+        "mf" => Some(p.mf),
+        "b" | "v" => match p.extra {
+            PointExtra::Demand { b, v, .. } | PointExtra::Shared { b, v, .. } => {
+                Some(if key == "b" { b } else { v })
+            }
+            _ => None,
+        },
+        _ => unreachable!("MARCH_KEYS is closed"),
+    }
+}
+
+/// Python's `max(abs(x - y) / max(abs(y), floor))` term — the inner `max` is expression-first.
+fn rel_err(x: f64, y: f64, floor: f64) -> f64 {
+    let ay = y.abs();
+    (x - y).abs() / if floor > ay { floor } else { ay }
+}
+
+/// § 5: **the whole march, re-run under each gauge.** Python's `gauge_march`.
+///
+/// §§ 1–3 read set points at frozen states; this runs the PLANT, so `_cap_fuel`'s accel branch is
+/// the gauged one at every RK4 stage of every step. `k` is chosen per RUN against the FIRST riding
+/// point's `c` and then held.
+///
+/// # WHAT THIS SECTION MEASURES ON THE SHIPPED GRID — **LESS THAN ITS DOCSTRING SAYS, AND THE SUITE
+/// ALREADY DISCLOSES THE LARGEST PART**
+///
+/// * **The trajectory is bit-identical (`worst == 0.0`) and that is NOT evidence**: the gauged cap
+///   runs 1 366 times a march and wins the min-select **zero** times, so the accel leg is MASKED
+///   and the plant cannot see its value. `tests/test_rung78.py` pins `binds == 0` as a disclosure.
+/// * **`sched_moved` cannot fail by construction.** The schedule is read off EQUILIBRIA and the
+///   gauge enters only the march's cap, so no equilibrium moves; measured an exact `0.0`.
+/// * **The docstring's "harder test" does not occur here.** It says `c` DRIFTS along the march so a
+///   held `k` makes `k·c` SWEEP a range. Measured over the 15 points read: `c` spans
+///   `0.2022732900`–`0.2022732914`, a relative drift of **7e-9**, so each run's `k·c` is its
+///   multiple to eight digits and `clear` is decided by the multiple, never by the sweep. The
+///   `mult = 0` cell has `kc = (0, 0)` identically.
+///
+/// So of this section's six outputs, the two that carry information are `hits` (the branch RAN —
+/// the guard against § 5.1's clip-coordinate vacuity) and `binds` (it never BOUND). Recorded,
+/// not repaired: the port is a translation.
+///
+/// # THE GAUGE IS SET WITH THE DECLARED HELPER HERE, AND ONLY HERE
+///
+/// `_with_gauge` is [`GaugeRestored`]: the third of the sixth knob's three restore treatments,
+/// and the one § 1 hand-rolls and § 3 replaces with a clobber. It is set on `core` — Python's
+/// `self` — and reaches the marched rig through [`r78_shared_rig`].
+///
+/// # THE COUNTERS ARE PROCESS-GLOBAL, SO THIS READER IS NOT SAFE TO RUN CONCURRENTLY WITH
+/// ANYTHING ELSE THAT DRIVES A GAUGED CAP
+///
+/// Python's are class attributes and its readers reset-then-read; so does this. Under cargo's
+/// parallel test threads a sibling test that bumps [`GAUGE_HITS`] mid-run would corrupt `hits` —
+/// which is why its gate sits alone in its own test binary.
+#[allow(clippy::too_many_arguments)]
+pub fn gauge_march(
+    core: &ScheduledStatorCore, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, tt4_max: f64,
+    phi_lim: f64, margin: f64, taus: (f64, f64, f64, f64), inc: bool, r: f64, s_settle: f64,
+    ds: f64, v_max: f64, mults: &[f64],
+) -> GaugeMarch {
+    let sm = phi_lim / core.arming().map_lp_design.phi_surge - 1.0;
+    let accel0 = crate::sensed_cap::accel_for(
+        core, flight, tt4_lo, tt4_hi, sm, tt4_max, taus, v_max, inc, margin);
+    let (m0, _surge, _lag, traj0) = crate::sensed_cap::cap_march(
+        core, flight, tt4_lo, tt4_hi, tt4_max, sm, taus, r, s_settle, ds, v_max, inc,
+        "demand", "sched", "none", None, "solve", &accel0, None);
+    let accel = &accel0;
+    let b_max = m0.fuel.inner.lever.lim.expect("`_shared_rig` arms the valve").b_max;
+    let riding = riding4(&traj0, b_max);
+    let p0 = &riding[0];
+    let c0 = {
+        let (q0, v0) = crate::stiffness_ledger::bv_of(p0);
+        let _sb = MarchedBleed::set(&m0.fuel.inner, q0);
+        let _sv = MarchedStator::set(&m0.fuel.inner, v0);
+        let cap = accel_cap_fn(&m0.fuel, flight, p0.nu_lp, p0.nu_hp, accel);
+        let g0 = |w: f64| -> Result<f64, Abort> { Ok(w - cap(w)?) };
+        let w00 = cap_free(&g0, p0.mf_sched, &|| {
+            m0.fuel.try_sched_fuel(flight, p0.nu_lp, p0.nu_hp, p0.mf_sched, accel)
+        }).unwrap_or_else(boom);
+        // Plan § 5.32 (i) site 6: a nest, safe by the dead window -- the `finally` follows.
+        c_at(&m0, flight, p0.nu_lp, p0.nu_hp, accel, w00, q0, v0, C_AT_REL).unwrap_or_else(boom)
+    };
+    // THE SCHEDULE MUST NOT MOVE WITH `k` -- Python rebuilds it here rather than reusing
+    // `accel0`, and so does the port.
+    let sched0 = crate::sensed_cap::accel_for(
+        core, flight, tt4_lo, tt4_hi, sm, tt4_max, taus, v_max, inc, margin);
+    let mut sched_moved: Option<f64> = None;
+    let mut cells: Vec<MarchCell> = Vec::with_capacity(mults.len());
+    for &mult in mults {
+        let k = if mult != 0.0 { mult / c0 } else { 0.0 };
+        let sk = {
+            let _gk = GaugeRestored::set(&core.fuel.inner, k);
+            crate::sensed_cap::accel_for(
+                core, flight, tt4_lo, tt4_hi, sm, tt4_max, taus, v_max, inc, margin)
+        };
+        let diffs: Vec<f64> = sk.kappa.iter().zip(sched0.kappa.iter())
+            .chain(sk.n_h.iter().zip(sched0.n_h.iter()))
+            .map(|(&x, &y)| rel_err(x, y, 1e-30))
+            .collect();
+        let moved = py_max_of(&diffs);
+        // Python's two-argument `max(sched_moved, moved)` -- argument 0 kept unless strictly beaten.
+        sched_moved = Some(match sched_moved {
+            None => moved,
+            Some(s) => if moved > s { moved } else { s },
+        });
+        reset_gauge_counters();
+        let traj = {
+            let _gk = GaugeRestored::set(&core.fuel.inner, k);
+            crate::sensed_cap::cap_march(
+                core, flight, tt4_lo, tt4_hi, tt4_max, sm, taus, r, s_settle, ds, v_max, inc,
+                "demand", "sched", "none", None, "solve", &accel0, None).3
+        };
+        let (hits, binds) = gauge_counters();
+        let n = traj.len().min(traj0.len());
+        let (mut worst, mut where_): (f64, Option<(&'static str, usize)>) = (0.0, None);
+        for key in MARCH_KEYS {
+            for i in 0..n {
+                let (x, y) = match (march_key(&traj[i], key), march_key(&traj0[i], key)) {
+                    (Some(x), Some(y)) => (x, y),
+                    _ => continue,
+                };
+                let e = rel_err(x, y, 1e-12);
+                if e > worst {
+                    worst = e;
+                    where_ = Some((key, i));
+                }
+            }
+        }
+        let cs: Vec<f64> = riding.iter().step_by(4)
+            .map(|pp| c_on_frozen(&m0, flight, pp, accel).unwrap_or_else(boom))
+            .collect();
+        let mut kc: Vec<f64> = cs.iter().map(|x| k * x).collect();
+        kc.sort_by(|a, b| a.partial_cmp(b).expect("`c_at` returns no NaN on this march"));
+        let span = (kc[0], kc[kc.len() - 1]);
+        cells.push(MarchCell {
+            mult,
+            k,
+            n,
+            same_len: traj.len() == traj0.len(),
+            worst,
+            where_,
+            kc: span,
+            hits,
+            binds,
+            clear: !(span.0 <= 1.0 && 1.0 <= span.1),
+        });
+    }
+    GaugeMarch {
+        phi_lim,
+        margin,
+        inc,
+        c0,
+        n: traj0.len(),
+        worst: if cells.is_empty() {
+            None
+        } else {
+            Some(py_max_of(&cells.iter().map(|x| x.worst).collect::<Vec<f64>>()))
+        },
+        same_len: cells.iter().all(|x| x.same_len),
+        hits: cells.iter().map(|x| x.hits).min().unwrap_or(0),
+        binds: cells.iter().map(|x| x.binds).min().unwrap_or(0),
+        sched_moved,
+        clear: cells.iter().all(|x| x.clear),
+        kc: cells.iter().map(|x| (x.mult, x.kc)).collect(),
+        cells,
     }
 }

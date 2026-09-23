@@ -24442,7 +24442,9 @@ carrying that paragraph was itself carrying ten unguarded citations while it sai
 injection sweep found a defect none of the eleven could see, and its own first version could not see
 it either.
 
-**`pytest tests/test_rust_line_citations.py`: 5 of 5** after the re-bless (3 of 5 red before it).
+**`pytest tests/test_rust_line_citations.py`: 5 of 5** after the re-bless (3 of 5 red before it). **CORRECTED at § 5.32.5 (a): true
+when it ran, FALSE at the commit** — six more sites were written after it, so step 4 shipped the
+count gate red (202 against 196).
 
 **The full Rust gate**, unpiped, exit code written into the same log in the same command
 (§ 5.29's rule): **158 `Running` + 1 `Doc-tests` = 159 blocks, 159 of 159 ok, 1 646 passed /
@@ -24465,3 +24467,120 @@ this step's 12, in one new binary.
   § 5.32.3 recorded the direction as pointing at six off rung 77 closing in three steps — **that
   reading is now the weaker one**, and whether the closing steps can merge has not been checked. No
   verdict until step 5.
+
+#### 5.32.5 STEP 5 — RUNG 78 §§ 4–5, RUNG 78'S BODIES COMPLETE, AND **THE PREVIOUS STEP SHIPPED A RED GATE WHILE ITS OWN SECTION SAID GREEN**
+
+`rust/src/residual_gauge.rs` 1 165 → **1 691** (+526). Module total **2 899**, back inside P1's
+2 800–3 150. `rust/tests/slice_ah_march.rs` (234), **4 gates**, and **zero new fields** — P6 holds
+a fifth step. `gauge_vs_device` (§ 4), `phi_at` under the new guard `PhiAtFreeze`, `c_on_frozen`
+and `gauge_march` (§ 5) ship. **With them every rung-78 body is ported.**
+
+##### (a) THE LEADING FINDING — **STEP 4 SHIPPED THE CITATION GUARD RED, AND ITS SECTION SAID 5 OF 5**
+
+Step 5's census read **205** sites against the **196** step 4 blessed. Only **three** are step 5's
+(`engine.py:20591` twice and `engine.py:20592`, in `PhiAtFreeze`'s and `gauge_vs_device`'s docs).
+The census run on an extracted snapshot of step 4's own commit (3c01e20) reads **202**. So **six
+sites were step 4's**, written into doc comments AFTER its re-bless, and step 4 was pushed with
+`test_the_census_is_the_size_it_was_measured` failing while § 5.32.4 (g) recorded *"5 of 5 after
+the re-bless"*. The four drift gates were green throughout; every one of the nine sites cites a
+line already pinned, so **LINES stayed at 121 and no citation was ever wrong**. Only the count was.
+
+This is the paragraph step 3 wrote, from the other side. Step 3 said to run the guard **inside** the
+step and not at the end of the slice. Step 4 did run it, then kept editing. **"Run it inside the
+step" is not the rule. "Run it after the step's LAST doc edit" is**, and step 5's re-bless comment in
+`tests/test_rust_line_citations.py` now says that. The re-bless 196 → 205 settles both steps.
+
+**The Python gate had not been run on step 4 either.** Step 4 changed a Python test file and recorded
+only the Rust gate and this one test file. Step 5's closing `pytest` is the first full Python run
+over either step (see (g)).
+
+##### (b) BIT-EXACT ON EVERY VALUE THE TWO READERS RETURN, NOT ONLY ON THE SUITE'S BARS
+
+Python's suite bars are one-sided thresholds (`device > 1e-3`, `kill_w < 1e-6`, `worst < 1e-9`, …).
+A reader passing them says little about the port. So both Python readers were run first
+(`gauge_vs_device` 6.2 s, `gauge_march` 37 s). A throwaway Rust probe then printed the same fields,
+and the two were compared on `float.hex`: **129 of 129 identical**. That covers all ten rows × ten
+fields, the four cells' `mult`/`k`/`worst`/`kc` span/`hits`/`binds`, and `c0 =
+0.20227329020697024`. The gate file pins the discrete counts exactly where the suite only bounds
+them (`n == 10`, `n == 341`, `hits == 1 366` per cell).
+
+##### (c) THE GUARD ITEM B WAS OWED TO HAS NO PANIC ARM, SO ITEM B LANDED AS A DOC
+
+§ 5.26 (iii) item B was owed as a **panic message** on the `_phi_at` guard. `PhiAtFreeze` has no
+panic arm: its nest fires **20 times per `gauge_vs_device`**, on purpose, since the reader hands it
+`q ± dq` from inside its own freeze. It is the first freeze guard in the port whose nest arm is
+**reachable**. So the content item B asked for is the guard's DOC: the zero-overwrite measurements
+cover rungs ≤ 68, 69 and 70–76 and **not** 77–78; the dead-window criterion; and why these are two
+types and not one. The module header says the same thing plainly. Saying "the message landed" would
+be a fifth *documented gate that does not exist*.
+
+**It is also the first guard in the port that restores `prev` where Python clobbers to `None`.**
+Every output is identical under either policy, by the dead-window criterion, and (d)'s M6 confirms
+that no reader value can tell them apart. So the policy is pinned by a hand-built nest,
+`the_phi_at_guard_restores_the_enclosing_freeze`, which reads `b_state == Some(q)` after an inner
+`phi_at(q + dq)`. The first run of that gate **failed on its own fixture**: it matched only the
+demand-coordinate point extra, and `_gauge_points` rides the SHARED rig. Fixed in the test and not
+in the port. It is a test defect and was recorded as one.
+
+##### (d) THE INJECTION SWEEP — SEVEN DEFECTS, FIVE CAUGHT, TWO MEASURED EXACT NO-OPS
+
+| # | defect | caught by |
+|---|---|---|
+| M1 | closed block also freezes the valve | `kill_w` = 1.000 (bar 1e-6) |
+| M2 | `phi_at` ignores its `q` | `phi_open_q` = 0 **and** the guard pin's `assert_ne` |
+| M3 | `CapScope(sensed)` omitted | § 4's two gates (the cell returns rung 75's `None`) |
+| M4 | closed block drops the STATOR freeze | **nothing** — 129 of 129 values unchanged |
+| M5 | `_with_gauge` dropped around the march | `hits` = 0 against 1 366 |
+| M6 | `PhiAtFreeze` clobbers to `None` (Python's spelling) | the guard pin only |
+| M7 | the reference schedule built under a gauge | **nothing** — 129 of 129 values unchanged |
+
+M4 and M7 were not left as "passes all gates". Each was re-run through the value probe and **no
+float moves**. M7 is `sched_moved`'s by-construction zero (the schedule is read off equilibria, and
+the gauge enters only the march's cap). M4 means the riding stator's value does not depend on
+whether it is frozen or re-solved at these states. That is a property of this grid, and Python's own
+suite cannot see it either. Both are recorded, not gated. A gate that cannot fail would be vacuous.
+
+##### (e) THREE OF § 5's BARS CANNOT FAIL ON THIS GRID, AND THE DOCSTRING OVERSTATES THE FOURTH
+
+* `worst == 0.0` because the gauged cap **never binds** (1 366 executions, 0 wins); the suite
+  already pins `binds == 0` as a disclosure.
+* `sched_moved == 0.0` by construction (M7).
+* **The docstring's "`c` drifts, so a held `k` makes `k·c` sweep a range — the harder test" is
+  measured FALSE here**: over the 15 points read, `c` spans 0.2022732900–0.2022732914, a relative
+  drift of **7e-9**. Each run's `k·c` is its multiple to eight digits, so `clear` is decided by the
+  multiple and never by a sweep.
+
+So of § 5's six outputs, `hits` and `binds` carry the information. The `isinstance(float)` filter is
+ported, and it fires on 0 of 341 points. All of this is recorded in `gauge_march`'s doc. The port is
+a translation, so none of it is repaired.
+
+##### (f) FIRST-RUN RECORD
+
+Compiled first time, zero new warnings. **3 of 4 gates green on the first run.** The fourth was the
+fixture defect in (c).
+
+##### (g) GATES
+
+`slice_ah_march.rs` **4 of 4**. `pytest tests/test_rust_line_citations.py` **5 of 5**, after the re-bless
+and after the step's last doc edit (4 of 5 before it).
+
+**The full Rust gate**, predicted before the run: **160 blocks, 1 650 passed** (1 646 + 4, in one
+new binary).
+
+**Measured: 160 blocks, 1 650 passed, 0 failed, exit code 0**, prediction met exactly. Zero new warnings.
+
+**The full Python gate** (`pytest`, the first over steps 4 and 5): **1 387 passed, 0 failed, exit code 0**.
+
+##### (h) PREDICTIONS, RUNNING
+
+* **P1** — modules at **2 899**, inside 2 800–3 150. **But not the way § 5.32.4 (h) reasoned.**
+  That section extrapolated rung 78's remaining bodies at step 4's Rust/Python ratio to about +320
+  and put the slice BELOW the band. The step landed +526 because its doc comments are the heaviest
+  in the slice (item B's content, the vacuity record in (e), the counters' concurrency warning). The
+  band was reached by documentation, not code. That still counts as reaching it, since P1 counts
+  module lines. But the mechanism was not what was predicted, and that is recorded here.
+* **P6** — **0 ADD holds**, five steps running. `TripleHooks` is 18 fields.
+* **P7** — rung 78's bodies took **two** steps (4 and 5), as § 5.32.4 (h) assumed. Three steps are
+  still owed: the ported suite, the oracle and the dispatch step. Step 5 changed none of that
+  arithmetic (eight separately, seven if two merge, six if all three do). Whether they can merge is
+  step 6's question.

@@ -166,8 +166,15 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # citations no gate could check, in the very file whose step-2 paragraph is about citations no
 # gate had checked. Thirteen of the sixteen were step 1's. All sixteen were expanded to the
 # guarded spelling and every new line verified by hand, which is why SITES jumps by 13.
+# RE-BLESSED AT SLICE AH STEP 5 (35/196/121 -> 35/205/121). Nine sites, ZERO new anchors --
+# every one cites a line already pinned, so LINES stands. **But only THREE are step 5's**
+# (`20591` x2, `20592`, in `PhiAtFreeze`/`gauge_vs_device`'s docs). **The other SIX were
+# step 4's ARREARS**: its commit (3c01e20) measures 202 on a snapshot of itself, against the
+# 196 it blessed -- doc lines written AFTER its own re-bless -- so step 4 shipped this gate RED
+# while its plan section said 5 of 5. The paragraph for step 3 said to run this file inside
+# the step; step 4 did, and then kept editing. **Run it LAST, after the final doc edit.**
 FILES = 35
-SITES = 196
+SITES = 205
 LINES = 121
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment

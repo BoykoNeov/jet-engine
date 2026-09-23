@@ -367,6 +367,18 @@ zero arrears. Measured before writing: `root_count`'s walk-refusal arm fires on 
 Full Rust gate **159 blocks, 1 646 passed / 0 failed, `CARGO_EXIT=0`**, as predicted.
 See [[rust-port-slice-ah-step4]].
 
+### Slice AH step 5 — SHIPPED, RUNG 78 §§ 4–5, EVERY RUNG-78 BODY PORTED
+
+`gauge_vs_device` (§ 4), `phi_at` + `PhiAtFreeze`, `c_on_frozen`, `gauge_march` (§ 5):
+`residual_gauge.rs` 1 165 → **1 691** (+526), module total **2 899**, inside P1's 2 800–3 150 by
+DOC lines. `tests/slice_ah_march.rs` — **234 lines, 4 gates**. Plan § 5.32.5. **129 of 129**
+returned values bit-identical to a Python run. Injection sweep: 5 of 7 caught, the other 2
+measured exact no-ops. **LEADING FINDING: step 4 shipped the citation guard's count gate RED**
+(its commit reads 202 vs the blessed 196; it re-blessed, then added six citing doc lines) while
+§ 5.32.4 (g) said 5 of 5. Re-blessed 196 → 205 here; rule now: run it after the LAST doc edit.
+Full Rust gate: **160 blocks, 1 650 passed, 0 failed** (as predicted). Full Python gate: **1 387 passed, 0 failed**.
+Owed: ported suite, oracle, dispatch steps. See [[rust-port-slice-ah-step5]].
+
 ## Slice AE (rung 73, `AppliedReferenceTransient`) — IN FLIGHT, steps 1–4 of 5 done
 
 § 5.29, ten probes. **684 source / 518 test lines, 27 collected (13 slow), 12 methods** — AB's
