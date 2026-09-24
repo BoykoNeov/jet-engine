@@ -24584,3 +24584,130 @@ new binary).
   still owed: the ported suite, the oracle and the dispatch step. Step 5 changed none of that
   arithmetic (eight separately, seven if two merge, six if all three do). Whether they can merge is
   step 6's question.
+
+#### 5.32.6 STEP 6 — THE TWO PORTED SUITES, AND **RUNG 78's TWO REFUSALS SURFACE THROUGH ONE ENTRY IN OPPOSITE WAYS: ONE RAISES, THE OTHER IS SWALLOWED INTO A SHORT TRAJECTORY**
+
+`rust/tests/rung77.rs` (621 lines, **17 gates** — 1:1 with `tests/test_rung77.py`, nothing added)
+and `rust/tests/rung78.rs` (541 lines, **14 gates** — the suite's 12 plus **two declared**, P5's
+refusal gates). **No module line changed**: P1 stands at 2 899 and P6 at 0 ADD, six steps running.
+Both files compiled first time with zero warnings and were **green on their first run**, which is
+why (c) exists.
+
+##### (a) THE LEADING FINDING — **P5 HOLDS, AND THE WAY IT HOLDS IS THE FINDING**
+
+P5 predicted both of rung 78's refusals REACHABLE. They are. Each added gate drives its refusal by
+two routes: the cap hook called directly at a riding point (the refusal's own `Err`, with a control
+beside it that returns), and the REAL entry, a gauged `_cap_march`. The first route settles P5.
+**The second route shows that the two refusals of one rung surface through one entry in OPPOSITE
+ways**, and a throwaway probe measured it in **both** languages before any gate was written:
+
+| gauged march | Python (PyPy) | Rust | gauged hits |
+|---|---|---|---|
+| `sensed`, `k = 2/c0` | **raises** the refusal | **panics** with it | 1 / 1 |
+| `solve`, `k = 1.1/c0` | 27 of 341 steps, no error | 27, no error | 110 / 110 |
+| `solve`, `k = 1.05/c0` | 18, no error | 18, no error | 74 / 74 |
+| `solve`, `k = 1.2/c0` | 45, no error | 45, no error | 182 / 182 |
+| `solve`, `k = 0.9/c0` | 341 (the whole march) | 341 | 1 366 / 1 366 |
+
+**Why they differ is WHERE each first fires.** `sensed × gauge` refuses on every call, so it fires
+at the march's initial solve, which sits BEFORE the loop's `try` — Python raises out of the method,
+and the port's `raise` in `demand_coordinate.rs` panics. The anchored-root refusal depends on the
+STATE, so it first fires mid-march, INSIDE the loop's `try`, whose `except AssertionError: break`
+(`engine.py:17967`/`:17991`) turns it into an **early stop that returns normally**. The refusal's
+own message ends *"A march must not run on either"* — and the march indeed does not run on. **But
+nothing tells the caller it stopped.** The trajectory is simply short, and the only trace is its
+length.
+
+So `gauge_march`'s `same_len` and `clear` bars — which § 5.32.5 (e) listed among the bars that
+*cannot fail on this grid* — are not decoration. They are the only instrument in the rung that would
+notice this refusal firing on a march, and the suite's grid (`0.0, 0.5, 2.0, 3.0`) is chosen OFF
+the band so it never does. Recorded, not repaired: the port is a translation, and Python does the
+same thing at the same step.
+
+Needles are `engine.py:20174`'s and `:20189`'s literals up to the first formatted value, because
+the port writes `{k:.6}` where Python writes `{k:.6g}`. Each matches exactly one message file-wide.
+**Two cross-language pins come out of this**: the raised march's hit count is exactly **1** (the
+branch is counted before it refuses), and the swallowed marches' lengths are `[27, 18, 45, 341]`.
+
+##### (b) **A PORTED `isinstance` WAS VACUOUS UNDER THE DEFECT IT EXISTS FOR**
+
+`test_at_lever_carries_the_class` and `test_reduces_on_an_at_lever_rig` assert
+`isinstance(rig, StiffnessLedgerTransient)`. The first writing ported that as
+`fn_addr_eq(rig.at_lever, R77.at_lever)`. **Under the one defect this gate exists for — `R77`'s
+`at_lever` re-aimed at rung 76's body — `R77.at_lever` IS rung 76's, and the equality passes.**
+`isinstance` rejects the parent class; the equality half alone does not. Both gates now assert the
+negative half too (`!fn_addr_eq(…, R76.at_lever)`). Caught by reasoning about the injection
+BEFORE running it, then confirmed by running it — (c)'s I3.
+
+The `SensedCapTransient` arm of the reduce is held STRICTER than Python, whose
+`isinstance(m, SensedCapTransient)` would accept a rung-77 subclass; `base` was built as rung 76,
+so anything else is a leak. Declared in the gate.
+
+##### (c) THE INJECTION SWEEP — THREE DEFECTS, THREE CAUGHT, EACH BY EXACTLY ITS INTENDED GATE
+
+| # | defect | `rung77.rs` | `rung78.rs` |
+|---|---|---|---|
+| I1 | the `sensed × gauge` refusal disabled | 17/17 green | **+1 fails** (`must refuse`), 13 green |
+| I2 | the anchored-root check reduced to `ok` alone | 17/17 green | **+2 fails** (`finds the other root`), 13 green |
+| I3 | `R77.at_lever` re-aimed at rung 76's | **2 fail**, both on the NEW negative half | 14/14 green |
+
+**I3 is P2 arriving early, on the ported files**: all 15 VALUE gates in `rung77.rs` stayed green,
+and only pointer identity saw it. P2 itself is scored at the dispatch step; this is the ported
+suite's half of the same measurement.
+
+##### (d) THE GAUGE COUNTERS, AND WHY `rung78.rs` HOLDS A LOCK WHERE `slice_ah_march.rs` HELD A BINARY
+
+`GAUGE_HITS`/`GAUGE_BINDS` are process-global. `slice_ah_march.rs` kept `gauge_march` safe by being
+alone in its binary. `rung78.rs` cannot, because both added gates drive a GAUGED cap and bump the
+counter before refusing. So gate 12, `+1` and `+2` hold one file-level `Mutex` (taken through a
+poisoned lock, so one failure does not turn the other two into poisoning reports). Checked, not
+assumed: `gauge_scan` and `root_census` solve the gauged residual directly and never reach
+`_cap_fuel`, and `gauge_vs_device` runs at the identity.
+
+##### (e) `stiffness_ledger`'s FOURTH ARGUMENT BINDS A PARAMETER ITS BODY NEVER READS
+
+The suite calls `stiffness_ledger(FLIGHT, LO, HI, TT4_MAX)`. Python's body sweeps its own
+`Tt4_maxes=(1180.0, 1200.0)`, and its only use of `Tt4_max` is the `Tt4_max=tmax` it passes down.
+The port dropped the parameter. So the suite's `TT4_MAX` has no counterpart at gates 15/16, and the
+`1180.0` is the signature's default. Recorded in `rung77.rs`'s header, so a reader comparing the two
+calls does not see an argument vanish unexplained.
+
+##### (f) THE UNSPELLED DEFAULTS ARE TYPED IN THE TEST, NOT PROMOTED TO `pub const`
+
+§ 5.31.5 (l) promoted a reader's defaults to module constants because *that file was their only call
+site*. Here it is not: `slice_ah_laws.rs` and `slice_ah_ledger.rs` already pass them, so a module
+constant would be a third home for the numbers, not a single one. They are typed from `engine.py`'s
+signatures (six cited lines), and `residual_gauge.rs`'s existing exports are used where they exist.
+The consequence is that no module line moved.
+
+##### (g) GATES
+
+`rung77.rs` **17 of 17**, `rung78.rs` **14 of 14**. The citation guard **4 of 5 → 5 of 5** after
+the re-bless (**35/205/121 → 37/219/129**: two new files, fourteen sites, eight new anchors, zero
+arrears), run after the step's last Rust edit.
+
+**The full Rust gate**, predicted before the run: **162 blocks, 1 681 passed** (1 650 + 17 + 14, in
+two new binaries). **MEASURED: 162 blocks, 1 681 passed, 0 failed, 0 ignored**, with no `FAILED`
+and no `error[E` in the log. The verdict is read **from the log**, not from the captured exit code.
+That capture used `cmd`'s `%ERRORLEVEL%`, which is expanded when the line is parsed, before cargo
+runs, so its `CARGO_EXIT=0` would have read 0 whatever cargo returned.
+
+**The Python gate** (owed because the re-bless edited a Python test file), bare `pytest` at
+below-normal priority: **1 387 passed, 0 failed** in 21:30. Again the verdict is read from the log.
+PowerShell's `Start-Process` handle returned an **empty** exit code, which is not the same as a zero.
+
+##### (h) PREDICTIONS, RUNNING
+
+* **P1** — **2 899**, unchanged; this step wrote no module line (by (f)'s choice).
+* **P4** — **holds**: `rung77.rs` has no refusal section because there is nothing to port, and its
+  reduce is gated by values (gates 1–3) and by pointer identity (gates 2 and 4). No inherited
+  message naming rung 77 turned up while writing the file.
+* **P5** — **HELD** (see (a)). Both refusals reached from the real entry as well as directly, and
+  the route each takes is recorded, since that is where the finding was.
+* **P6** — **0 ADD holds**, six steps running.
+* **P7** — **CAN NO LONGER DISCRIMINATE, AND THAT IS RECORDED RATHER THAN SCORED.** Step 6 is the
+  ported suites alone. The oracle and the dispatch gates are still owed. AF and AG each shipped their
+  oracle as a second commit under the ported-suite step's number, and doing the same here would
+  make the slice **seven** by numbering, not by work. Separately they make it **eight**, which
+  neither reading predicted. Either way, the number is now set by a bookkeeping choice, so P7 is
+  recorded as not measured, and neither 6 nor 7 is claimed.

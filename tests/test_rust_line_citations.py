@@ -173,9 +173,14 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # 196 it blessed -- doc lines written AFTER its own re-bless -- so step 4 shipped this gate RED
 # while its plan section said 5 of 5. The paragraph for step 3 said to run this file inside
 # the step; step 4 did, and then kept editing. **Run it LAST, after the final doc edit.**
-FILES = 35
-SITES = 205
-LINES = 121
+# RE-BLESSED AT SLICE AH STEP 6 (35/205/121 -> 37/219/129). Two new files (`rung77.rs`,
+# `rung78.rs`), fourteen sites, eight new anchors, ZERO arrears -- the ported suites cite the
+# readers' signatures for their unspelled defaults (`19799`, `19856`, `20347`, `20477`, `20542`,
+# `20655`) and rung 78's two refusal messages (`20174`, `20189`); each printed line was checked
+# against its sentence, and all eight landed. Run after the step's last Rust edit.
+FILES = 37
+SITES = 219
+LINES = 129
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment
 # SAID, where the number is part of the quotation and must not track the file.
