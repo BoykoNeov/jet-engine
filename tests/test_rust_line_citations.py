@@ -182,9 +182,12 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # (`dump_slice_ah.py`), one site, one anchor: `20462`, `gauge_scan`'s integer `n_bad` count --
 # the ONLY model `sum()` the oracle's drive reaches, which is why the dumper cites it. The
 # printed line was checked against the sentence and landed. Run after the last oracle edit.
-FILES = 38
-SITES = 220
-LINES = 130
+# RE-BLESSED AT SLICE AH STEP 7, THE DISPATCH GATES (38/220/130 -> 39/221/131). One file
+# (`slice_ah_dispatch.rs`), one site, one anchor: `17849`, the DEMAND march's call into
+# `_cap_fuel` -- the reason that cell's tally is zero at every CLIP-march seat. Checked, landed.
+FILES = 39
+SITES = 221
+LINES = 131
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment
 # SAID, where the number is part of the quotation and must not track the file.

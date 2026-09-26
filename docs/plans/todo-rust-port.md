@@ -24801,3 +24801,148 @@ written before it runs: the rung-77 `at_lever → r76` injection moves **no orac
 the rung-78 `at_lever → r77` injection loses the carried `_gauge_k`, so it is **expected** to move
 `gauge_march`'s `hits` and section P's `gauged_hits`. That is not a P2 failure, because rung 78's
 `at_lever` carries a knob and rung 77's carries nothing new.
+
+> **TWO CORRECTIONS TO § 5.32.6 (i)/(j), ADDED RATHER THAN EDITED.** (1) **The readers number
+> EIGHT, not nine**: four per rung, sections A–H. (i) and its commit message (`1332fc0`) say
+> nine. (2) (j)'s closing sentence predicts that the rung-78 `at_lever → r77` injection *loses the
+> carried `_gauge_k`*. **The mechanism is wrong**, and step 7 measured it: `r78_shared_rig` re-sets
+> `gauge_k` on the sibling regardless, so the KNOB survives. What is lost is the TABLE: the
+> sibling is a rung-77 machine whose `cap_fuel` is rung 76's, which has no gauged branch.
+> `the_rung_78_at_lever_row_loses_the_table_not_the_knob` reads both off the marched machine.
+
+#### 5.32.7 STEP 7 — THE DISPATCH GATES, P2 SCORED BOTH WAYS, AND **THE `OnceLock` THAT WAS SUPPOSED TO REMOVE THE COUNTER RACE DID NOT: ANOTHER GATE IN THE SAME BINARY MARCHED A GAUGED MACHINE, AND 838 + 528 = 1 366 GAUGED HITS LANDED ON A RUNG-77 BASELINE**
+
+**SHIPPED**: `rust/tests/slice_ah_dispatch.rs`, **8 gates**, green. It contains:
+
+* four swaps, each pointed back at its parent;
+* two pure-observer counters on rung 78, plus a counter on rung 77's `at_lever`;
+* a `MacroNone` row per rung, proving this file's rebuild helper IS the shipped constructor;
+* **eight seats**: the slice's own eight readers, each run on both rungs' machines at the shipped
+  `ds`, with no coarsening.
+
+`stiffness_ledger` is narrowed to ONE declared cell, `margin = 0.40`. That is where the accel leg is
+dormant, so the seat is not a re-read of A/B. The matrix is computed once, behind a `OnceLock`
+(169 s).
+
+##### (a) THE ROWS
+
+| rung | row | leg_slopes | set_point_gains | singular_limit | stiffness_ledger | gauge_scan | root_census | gauge_vs_device | gauge_march |
+|---|---|---|---|---|---|---|---|---|---|
+| 77 | `at_lever` → 76 | same | same | same | same | same | same | same | same |
+| 78 | `at_lever` → 77 | same | same | same | same | same | same | same | **DIFF** |
+| 78 | `shared_rig` → 77 | same | same | same | same | same | same | same | same |
+| 78 | `cap_fuel` → 77 | same | same | same | same | same | same | same | **DIFF** |
+
+**Rung 77's row and all three rung-78 rows landed as predicted before the first run.**
+`gauge_march`'s reading under `at_lever → 77` is IDENTICAL to its reading under `cap_fuel → 77`. To
+the only seat that can see either, the two are one deletion.
+
+##### (b) THE TALLIES — **ONE PREDICTION WAS WRONG, AND IT IS THE ONE THE COUNTER EXISTS FOR**
+
+| cell | tally per seat | what the silences ARE |
+|---|---|---|
+| rung 77 `at_lever` | **2, 2, 2, 4, 2, 2, 2, 11** | REDUNDANCY everywhere: P2's row ran and moved nothing |
+| rung 78 `shared_rig` | **2, 2, 2, 4, 2, 2, 2, 11** | REDUNDANCY: `r78_at_lever` had already carried the gauge |
+| rung 78 `cap_fuel` | **0, 0, 0, 0, 0, 0, 0, 6 830** | **UNREACHABILITY at seven seats** |
+| gauged branch (`GAUGE_HITS`), shipped rung 78 | 0 x 7, **1 366** | runs at `gauge_march` alone |
+| gauged branch, shipped rung 77 / `at_lever→77` / `cap_fuel→77` | 0 x 8 | no gauged branch reached |
+
+**Pre-registered: `cap_fuel` is entered at every seat. MEASURED: it is entered at one.** The
+advisor's premise was the same belief: that every march enters `cap_fuel`'s identity branch. It is
+false, for a reason the source states in one place. `_cap_fuel`'s only callers are the DEMAND
+march's closures (`engine.py:17849`, and `cap_fuel_at` in `demand_coordinate.rs`), and seven of the
+eight readers stand on `_ledger_march`, which marches CLIP.
+
+**So `same` means *ran, and made no difference* at `shared_rig`'s seven seats, and *never entered*
+at `cap_fuel`'s seven.** A one-bit matrix prints the same row for both. This is § 5.31.7 (a)'s
+finding recurring on the next slice's cells.
+
+##### (c) THE RACE — **A `OnceLock` SERIALISES A COMPUTATION, NOT A PROCESS-GLOBAL COUNTER**
+
+The first run failed three gates, and a number said why before any reading did. The RUNG-77
+baseline reported **838** gauged hits at `leg_slopes` and **528** at `set_point_gains`, on a
+machine with no gauged branch. **838 + 528 = 1 366, exactly one gauged march.**
+
+The matrix WAS computed once. But `the_rung_78_at_lever_row_loses_the_table_not_the_knob` also
+marches a gauged machine, on its own thread, and `GAUGE_HITS` is process-global. The advisor's
+item 5 prescribed the `OnceLock` *to remove the counter race*. It removed the race between readers
+of the MATRIX, and left the race between the matrix and every other writer of the COUNTER.
+
+Repaired with one `Mutex`, held by the matrix for its whole computation and by the mechanism gate.
+**A lock protects the resource you wrap it around, and the resource here was the counter, not the
+matrix.** `rung78.rs` already held such a lock for its three gauged gates (§ 5.32.6 (d)), so this
+file had to learn the same thing a second time.
+
+##### (d) THE REBUILD HELPER, PROVED — AND AN INSTALL PROOF AT RUNG 77 THAT IS NOT VACUOUS
+
+`the_rebuild_helper_is_the_shipped_constructor` works in three moves:
+
+1. It sets all seven knobs OFF their defaults, including `gauge_k = 2.5`, on a receiver on the
+   valve+stator arm.
+2. It rebuilds onto the INCIDENCE arm twice: once through the shipped constructor, and once through
+   this file's `injection!`.
+3. It compares the two knob for knob: seven at rung 78, and six at rung 77, where the gauge must
+   stay 1.0 because `r77_at_lever` does not carry it.
+
+The `MacroNone` rows then read `same` at all eight seats, with identical gauged counts.
+
+The `at_lever` rows' install proof reads the LEVER POINTER, in both directions. AG's
+triple-table comparison is not used, because at rung 77 it is vacuous: `R77_TRIPLE` is an alias of
+`R76_TRIPLE`, and the gate says so.
+
+##### (e) P2 — **SCORED BY SOURCE MUTATION, WITH BOTH HALVES OF ITS WORDING RECORDED**
+
+The mutation is the realistic slip, not a typed one: **delete `at_lever: r77_at_lever,`** so that
+`..R76` fills the slot. Nine binaries were run with `--no-fail-fast`, then SHA-restored
+(`bb95fcb1d34070f5`). The first attempt omitted `--no-fail-fast`, and cargo stopped after the first
+failing binary, so it reported one binary out of nine.
+
+| binary | result | what failed |
+|---|---|---|
+| `rung77.rs` | **15 / 17** | `at_lever_carries_the_class`, `reduces_on_an_at_lever_rig`: the ported `isinstance`'s negative halves |
+| `slice_ah_cells.rs` | **3 / 5** | both pointer-identity gates |
+| `slice_ah_dispatch.rs` | **2 / 8** | the table gate, and the install proof (*"R77 Shipped: the sibling is not a parent machine"*), which aborts the matrix before any seat runs |
+| `rung78.rs`, `slice_ah_laws`, `_ledger`, `_gauge`, `_march` | all green | — |
+| **`slice_ah_oracle.rs`** | **4 / 4, all 29 288 values unmoved** | — |
+
+**There are thirteen failures, and every one is a pointer comparison.** So P2's CHANNEL claim holds
+exactly: *visible only to pointer identity*.
+
+P2's WORDING is *moves no oracle key AND NO PORTED GATE*, and **its second clause is false**. Two
+ported gates fail, because Python's `isinstance` ports to a pointer check (§ 5.32.6 (b)). Both
+halves are recorded, and the clause is not allowed to pass on the strength of the channel claim.
+
+**AND A TRIPWIRE THE PRE-FLIGHT DID NOT COUNT.** The mutated build warns *function `r77_at_lever`
+is never used*. Probe 7's "no `E0063` anywhere" is right, because nothing FAILS to compile. But a
+forgotten re-aim of a PRIVATE body leaves that body dead, and rustc says so. It is a warning, not a
+gate, and the full build already carries ten pre-existing warnings, so it is easy to miss. It costs
+nothing, and it fires for exactly the deletion slip. It would stay silent if any other path still
+named the body.
+
+##### (f) THE PREDICTIONS, SETTLED — SLICE AH CLOSES
+
+* **P1 — HELD, and the mechanism is per-CLASS.** `stiffness_ledger.rs` 1 208 + `residual_gauge.rs`
+  1 691 = **2 899**, inside 2 800–3 150. No module line moved after step 5. The two point
+  predictions were 2 930 (per-class) and 3 071 (per-line), and 2 899 is 31 from the first and 172
+  from the second. The derived ratio is 2.58x, and it is not scored.
+* **P2 — CHANNEL CONFIRMED, CLAUSE REFUTED.** See (e).
+* **P3 — CONFIRMED** at § 5.32.6 (i), on a drive measured to visit every nest site.
+* **P4 — HELD** (§ 5.32.6 (h)). Rung 77's reduce is gated by values and by dispatch; (a)'s first row
+  and (e) are the dispatch half.
+* **P5 — HELD** (§ 5.32.6 (a)).
+* **P6 — 0 ADD, with `TripleHooks` at 18 fields**, seven steps running.
+* **P7 — NOT MEASURED, as § 5.32.6 (h) booked it.** By step numbering the slice is SEVEN steps, with
+  the oracle as 6 (b), which is what classes-price-steps predicted. By commit count it is eight. The
+  number is a bookkeeping choice, and neither reading is claimed.
+
+##### (g) GATES
+
+`slice_ah_dispatch.rs` passes **8 of 8** (169 s). The citation guard was re-blessed after the step's
+last edit, because the new file cites `engine.py:17849`.
+
+##### (h) THE FULL GATES — MEASURED, AS PREDICTED
+
+Both gates ran after the step's last code and citation edit, at below-normal priority, logs captured
+in full. **Rust: 164 test binaries, 1 693 passed, 0 failed, 0 ignored**, with no `FAILED` and no
+`error[E` in either stream. **pytest: 1 387 passed** (21:03 on this box; a time is not a signal).
+Both numbers were written down before the runs, and both landed. **SLICE AH IS CLOSED.**
