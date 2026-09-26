@@ -9029,7 +9029,7 @@ by counting.
 | **AF** | 74 | `DemandCoordinateTransient` | ~~**3**~~ → **4 ADD + 4 SWAPS. MEASURED at § 5.30 (ii)** — the missing fourth ADD is `_with_coord`, which **slice W’s phase-wide census had already named** among *the four names the hand-written column missed*; this row was simply never updated. Its two definers are rungs 74 and 79, so the census **re-derives § 5.29 (v)’s separate-field obligation from the source** instead of inheriting it as a booking. SWAPS are 4 under AC’s convention and 2 under § 5.19 (i)’s (`at_lever`/`_shared_rig` are Rust deletes) — both stated, because the same slice scores differently under the two. **LANDED at § 5.30.1: 4 ADD + 4 SWAPS, `TripleHooks` 14 → 18.** The width toll was MEASURED AD's way (apply, fix the lib, count what is still red) and came back **7 `src` literals + 4 TEST sites where this plan and the crate's own comments say TWO** — slice AE ships two exhaustive DESTRUCTURINGS (`E0027`) that nothing calls tripwires. **STEP 2 at § 5.30.2: the six demand laws, all SINGLE-DEFINER by census, so no table field and no width toll; `slice_af_laws.rs` 13 gates, sweep 21/21 as predicted (18 killed).** Its leading finding is a rig point COPIED from step 1's cells file that sat inside a shipped refusal — and the gate that did not abort there had been passing its min-select flatness equality between two SATURATED ZEROS. **STEP 3 at § 5.30.3: the six-state march (`_coord_rig`/`_coord_ic`/`_march`), `slice_af_march.rs` 15 gates, sweep 17/17 as predicted (12 killed).** Its leading finding is a gate that read a SPLIT PRODUCED BY STEP 2's OWN CODE as evidence of its clamp working, when that clamp fires 0 of 340 times. **STEP 4 at § 5.30.4: `_coord_march`, `_demand_gains_at` and all six readers; NO gate file (they are step 5's), proved by DRIVING every reader — 3 731 keys, `Rust == PyPy` bit for bit on the first run, and the port independently reproduces `docs/rung74-spec.md` § 3's `65.2 K`/332-of-341 and § 4's exact `1.0`. Sweep 19 mutations, 11 killed, 19/19 as predicted.** Its leading finding is TWO DOC COMMENTS asserting a difference was LIVE that nothing had measured, one of them FALSE — and a shipped refusal message found to be FOUR formatting divergences wide the moment a reader first read one as a value. **STEP 5 at § 5.30.5 in TWO COMMITS: (a) the 17 ported gates, whose finding is a shipped `Usage:` block with THREE of four documented calls raising, swept file-wide to 10 bind fails in three causes; (b) the oracle, 20 643 keys x2 goldens, whose finding is P2 FALSIFIED IN BOTH CLAUSES because a `sum()` census counted call sites and half of them sum a literal 1.** **STEP 6 at § 5.30.6 — SLICE CLOSED: `slice_af_dispatch.rs`, 8 gates, ten injections x seven seats, plus a FOUR-LINE REPAIR. Its finding is FOUR PRODUCTION CALL SITES THAT DISPATCHED A WRITE PYTHON MAKES BY PLAIN ASSIGNMENT — identical at rung 74, and at rung 79 (a second definer writing `_phi_ref`) they would have marched the PARENT while reporting this rung, on a path `tests/test_rung80.py:110` already walks. Reach measured BEFORE the fix (6 of 7 seats → 0), neutrality proved against UNREGENERATED goldens, and the registered *no other row moves* FALSIFIED by `at_lever`: a dispatched pin on a machine without the cell hits the parent's PANIC, so the port was turning a benign attribute assignment into a REFUSAL. The `_with_*` family swept over all 58 classes: the two field-divergent names are exactly the two repaired, and there is no third. P1 FALSIFIED (2.53x), P3/P4/P5/P6 HELD. **THE DEBT CLOSED at § 5.30.7 — SLICE AF FULLY DISCHARGED:** the seven `Usage:` calls repaired (three RETARGETED, none deleted) plus `tests/test_usage_blocks.py`, whose finding is that the step-5 (a) census's SKIP category was hiding SIX statements that are not Python at all, in six blocks that parse WHOLE for nobody and document 19 further unchecked calls. |
 | **AG** | 75–76 | `AntiWindupTransient`, `SensedCapTransient` | **0** |
 | **AH** | 77–78 | `StiffnessLedgerTransient`, `ResidualGaugeTransient` | **0 — MEASURED at § 5.32 (ii), and probe 7 makes it DURABLE past AI/AJ**: 4 substitutable SWAPs (`at_lever` ×2, `_shared_rig`, `_cap_fuel`), all already fields; 1 INCOMPATIBLE name-reuse (`_legs`, rungs 63→77 — § 5.28 (x)'s booking, DISCHARGED both halves); 20 single-definers, none of which becomes a cell at rungs 79–84. `TripleHooks` stays at 18. **The zero has a forced consequence**: no `E0063` width tripwire, so step 1's instrument is function-pointer identity in BOTH directions and AG step 1's linker-folding defect is live again. **PRE-REGISTERED at § 5.32 off FOURTEEN probes**, priced at SEVEN steps as a DISCRIMINATING prediction (4 swaps against AG's 5, and rung 77's `at_lever` carries NOTHING NEW — the first in the chain — so classes⇒7 and bodies⇒6 finally separate). Leading finding: **a booking NO GATE CAN CLOSE is a claim in the WRONG CURRENCY** — § 5.22 (vii)'s same-field nest is CONFIRMED at SIX sites across BOTH rungs, every one firing at runtime, the source handles it THREE incompatible ways in one slice and records that it shipped wrong once, and the Rust guard that removes it is value-identical everywhere — so what is owed is a STRUCTURAL claim, not a test. **And the census that found four of the six was SCOPED BY AN UNMEASURED PREMISE**: it named `_c_at` as the only freezing method where the source has 37, and the two sites it missed are precisely the two that falsify its own stated reason. Caught by the RUNTIME counter, not by a reading — **a hand reading validates a probe's LOGIC and cannot validate its SCOPE.** |
-| **AI** | 79–80 | `StateCoordinateTransient`, `SplitWallTransient` | **0 — MEASURED at § 5.33 (ii)**: 6 substitutable SWAPs over 4 names (`at_lever` ×2, `_shared_rig` ×2, `_cap_fuel`, and `_with_coord` — the name reuse onto another field the cell was built for), all already fields; 1 INCOMPATIBLE name reuse (`split_gains`, 70→80 — § 5.27's booking DISCHARGED: its Python `TypeError` is unreachable by shipped code); 16 single-definers; rungs 81–84 override NOTHING, not even `at_lever`. Two core carriers (`phi_ref`, `sm_air`). `TripleHooks` stays at 18. **PRE-REGISTERED at § 5.33 off ELEVEN probes.** Leading finding: **the `_with_coord` value break booked here since slice AE is REAL and REACHED — on a rung-79/80 machine rung 74's `demand_gains` ends its scope with BOTH coordinate fields wrong and enters rung 79's branch 128 times — and two masks hide it: 0 of 196 values move.** Only rung 79's process-global counters see it, which forces THREAD-LOCAL instruments |
+| **AI** | 79–80 | `StateCoordinateTransient`, `SplitWallTransient` | **0 — MEASURED at § 5.33 (ii)**: 6 substitutable SWAPs over 4 names (`at_lever` ×2, `_shared_rig` ×2, `_cap_fuel`, and `_with_coord` — the name reuse onto another field the cell was built for), all already fields; 1 INCOMPATIBLE name reuse (`split_gains`, 70→80 — § 5.27's booking DISCHARGED: its Python `TypeError` is unreachable by shipped code); 16 single-definers; rungs 81–84 override NOTHING, not even `at_lever`. Two core carriers (`phi_ref`, `sm_air`). `TripleHooks` stays at 18. **PRE-REGISTERED at § 5.33 off ELEVEN probes.** Leading finding: **the `_with_coord` value break booked here since slice AE is REAL and REACHED — on a rung-79/80 machine rung 74's `demand_gains` ends its scope with BOTH coordinate fields wrong and enters rung 79's branch 128 times — and two masks hide it: 0 of 196 values move — at every one of nine walls where the scope runs.** Only a field read and rung 79's process-global counters see it, which forces THREAD-LOCAL instruments |
 | **AJ** | 81–84 | `AuthorityClock…StaircaseLawTransient` | **0** — the reader-only rungs |
 | | | | **25 + 3 phase-6 = 28** |
 
@@ -24958,7 +24958,7 @@ rungs 79–80**, each a sentence about code not yet written. § (iii) checks eve
 Probes live in `W:\temp\claude\slice-ai-preflight\`. `engine.py:N` in this section is
 **unwatched** — `tests/test_rust_line_citations.py` guards `rust/` only (§ 5.32 (iii)).
 
-#### (i) THE LEADING FINDING — **THE VALUE BREAK BOOKED HERE SINCE SLICE AE IS REAL AND REACHED, AND TWO SEPARATE MECHANISMS HIDE IT: 0 OF 196 VALUES MOVE, 128 BRANCH ENTRIES DO, AND THE ONLY INSTRUMENTS THAT SEE IT ARE RUNG 79's PROCESS-GLOBAL COUNTERS**
+#### (i) THE LEADING FINDING — **THE VALUE BREAK BOOKED HERE SINCE SLICE AE IS REAL AND REACHED, AND TWO SEPARATE MECHANISMS HIDE IT: 0 OF 196 VALUES MOVE, 128 BRANCH ENTRIES DO, AND ONLY A FIELD READ AND RUNG 79's PROCESS-GLOBAL COUNTERS SEE IT**
 
 `_with_coord` has two definers — rung 74's writes `_lag_coord`, rung 79's writes `_phi_ref` — and
 § 5.29 (v) / § 5.30 (ii) booked *"the value break can first be observed at slice AI"*. Probe 4 finds
@@ -24994,6 +24994,24 @@ masks, each already on record for its own reason:
    incidence branch is entered 128 times. **But `fb_inc = calls_inc = 128`**: every one of those
    calls short-circuited to `_surge_fuel`, which brackets its own HARDCODED `phi` residual (rung 79
    § 5.1). The coordinated residual was never bracketed once.
+
+**AND IT IS NOT A PROPERTY OF ONE SETTING — measured, after the advisor's objection that mask 2 had
+only been seen where every call binds** (`demand_gains` reads GAINS, which need not pass through the
+applied fuel rung 79 § 5.3's complementarity is about). The same drive over nine walls, with a spy
+on every `_quad_gains_at` entry:
+
+| `phi_lim` | 0.70 – 0.74 (four walls) | 0.75 | 0.76 | 0.78 | 0.80 | 0.85 |
+|---|---|---|---|---|---|---|
+| scopes entered (interior cells) | **0** | 6 | 10 | 16 | 16 | 24 |
+| rung-79 branch: `calls_inc` / `fb_inc` | 0 / 0 | 48 / 48 | 80 / 80 | 128 / 128 | 128 / 128 | 192 / 192 |
+| keys ≠ rung 78 | 0 / 20 | 0 / 86 | 0 / 130 | 0 / 196 | 0 / 196 | 0 / 284 |
+
+**Wherever the scope runs, every rung-79 call short-circuits; where a slack leg could exist, the
+scope never runs.** The non-vacuity condition `fb_inc < calls_inc` is met at none of the nine. The
+likely mechanism — an interior cell is one where the fuel leg rides its wall, i.e. BINDS — is a
+reading, not a measurement. And the spy measures the post-scope state P2 had only predicted: all
+86 `_quad_gains_at` entries per run on a rung-79/80 machine read `("clip", "phi")` — the scope
+restores `_phi_ref`, and `_lag_coord` was never the scope's to move.
 
 **So the booking resolves, but not the way it was written.** The break IS observable at AI — by a
 field read inside the scope and by rung 79's counters — and it is **not** observable by any value
@@ -25093,8 +25111,10 @@ flag is up. Rung 78 had two such counters; rung 79 has **six, plus a log**.
 **THE DECISION: `thread_local!`, not `static`s — made on three measured grounds, and rung 78's
 statics are knowingly left as they are.**
 
-1. **The library spawns no threads.** `rust/src` has zero `thread::spawn`, zero `rayon`, zero
-   `par_iter` (probe 11). A reader's march therefore runs on its caller's thread, so per-thread
+1. **Nothing in the crate spawns a thread.** `rust/src`, `rust/tests`, `rust/oracle` and
+   `rust/examples` have zero `thread::spawn`, zero `thread::scope`, zero `thread::Builder`, zero
+   `rayon`, zero `par_iter` (probe 11 — first run over `src` alone; widened on the advisor's
+   point that a TEST marching on a spawned thread and reading on its parent would under-count). A reader's march therefore runs on its caller's thread, so per-thread
    counters equal Python's per-process ones for every value any reader returns. **Falsified the
    day a march crosses a thread** — P3.
 2. **A `static` would be corrupted by any other test in the binary that marches an incidence
@@ -25195,8 +25215,11 @@ is already non-`None`); `_c_at`'s own `finally` thaws the plant; the second call
 **It is AH § (i)'s SITE 1 shape** (`leg_slopes`: nest, never re-freeze, safe by statement order),
 handed the enclosing `(q, v)`, with a DEAD window: between the first `_c_at`'s return and the
 second's own set, nothing reads the plant. So restore-to-`None` and restore-previous agree on
-every value here — **but the ported `rung79.rs` must port `_a_cap` WITH its outer guard**, and it
-will be the first ported TEST in the phase that holds a guard across a call to a guarded reader.
+every value here — **but the ported `rung79.rs` must port `_a_cap` WITH its outer guard.** It is
+not the crate's first test of that shape: `rust/tests/slice_ah_march.rs:169`
+(`the_phi_at_guard_restores_the_enclosing_freeze`) holds one on purpose, to read the restore policy.
+It is the first measured nest that comes FROM the Python suite — whether any earlier Python test
+file holds one is not measured, because no runtime nest probe has run over the suite as a whole.
 
 **Item D is closed by measurement, and not the way the static probe said.** From rung 79 on the
 ENGINE holds zero nests; the SUITE holds four, at one site. § 5.32 (viii) defect 5 said *a scope
@@ -25224,12 +25247,19 @@ apart, AI's are ~480 — § (ix) P1.
   the two modules ≈ **2 900** (AG 2 930, AH 2 899). Per-line: 2 899 × 530 / 636 ≈ **2 420**.
   **P1 predicts per-class: `state_coordinate.rs` + `split_wall.rs` in 2 700 – 3 100.** Below 2 600
   the per-line mechanism wins. The ratio is reported and not scored (§ 5.32 (vi)).
-* **P2 — the `with_coord` re-aim is invisible to every VALUE and visible to COUNTERS and FIELDS.**
-  The Rust oracle's `demand_gains` on an R79 machine reproduces § (i): every value key bit-identical
-  to R78, `calls_inc = fb_inc = hits = binds = 128` at `every = 4`, `(lag_coord, phi_ref) =
-  ("clip", "demand")` inside the scope and `("clip", "phi")` after it. And item L's survivor,
-  injected, is caught by the post-scope readback and by NO value key. Falsified by any value key
-  moving under the shipped table, any counter differing, or the survivor moving a value.
+* **P2 — two claims, kept apart (the advisor's split).**
+  * **P2a, the PORT claim: Rust R79 == Python R79, counters included.** `demand_gains` on an R79
+    machine, at `every = 4` and at least two walls (0.80 and 0.76), matches the Python bit for bit
+    on every value key AND on the six counters. `demand_gains` does not RETURN the counters, so
+    `dump_slice_ai.py` snapshots them around the call and emits them as keys, and the Rust side
+    needs a public reader for its thread-locals — **a step-1 deliverable**. Falsified by any key.
+  * **P2b, the PYTHON fact the port inherits: the re-aim is value-invisible on this rig.** Every
+    value key R79 == R78, while `calls_inc = fb_inc` and `(lag_coord, phi_ref)` is `("clip",
+    "demand")` inside the scope and `("clip", "phi")` after it. Measured over nine walls in § (i);
+    a Rust gate re-asserts it at the two oracle walls.
+  * **Item L's survivor, injected, is caught by the post-scope readback AND by the counters** — it
+    leaves `phi_ref` stuck at `"demand"`, so every later `_quad_gains_at` entry bumps them — and by
+    NO value key. Falsified if it moves a value, or if either catcher misses it.
 * **P3 — thread-local instruments are value-identical to Python under the default PARALLEL harness,
   with no lock.** Every counter a reader returns matches the oracle bit for bit. Falsified by any
   counter mismatch in a parallel `cargo test`.
@@ -25239,7 +25269,8 @@ apart, AI's are ~480 — § (ix) P1.
 * **P6 — 0 ADD; `TripleHooks` ends the slice at 18 fields**; two core carriers added.
 * **P7 — the step count is NOT scored.** § 5.32.7 (f) found it a bookkeeping choice. The PLANNED
   list, on AH's shape: **1** plumbing — the two modules, `R79`/`R80` tables (six re-aims), the
-  `phi_ref`/`sm_air` carriers, the thread-local instruments, items E and H corrected,
+  `phi_ref`/`sm_air` carriers, the thread-local instruments WITH a public reader (P2a), items E and
+  H corrected,
   `slice_ai_cells.rs` with pointer identity both ways; **2** rung 79 §§ 1–4 (`_phi_residual`,
   `_phi_cap`, `_cap_fuel`, `_coord_at`, `coord_scan`, `coord_census`); **3** rung 79 §§ 5–5.2
   (`_with_probe`, `coord_march`, `_forced_cap`, `coord_forced`); **4** rung 80 whole; **5** the two
@@ -25282,6 +25313,11 @@ bare name. `split_gains` follows the same rule (`cross_split::` vs `split_wall::
    the site is rung 79's own body on a rung-79 machine — but a census of dispatch sites that
    ranges over call syntax is scoped by SYNTAX, which is § 5.31.6's *a scanner is a claim about
    syntax as well as scope*, again.
+6. **The first push of this section stated § (i)'s invisibility from ONE setting, the one where
+   every call binds** — so *masked* was measured only in the regime where mask 2 is guaranteed. The
+   advisor's catch; the nine-wall sweep in § (i) is the repair, and it came back regime-general.
+   The same pass retracted a *"first ported test of its shape"* claim in § (vii), false by a test
+   the crate already ships, and widened probe 11 from `rust/src` to the whole crate.
 
 #### (xi) WHAT SLICE AI OWES BEFORE ITS STEP 1 — **nothing blocking**
 
