@@ -178,9 +178,13 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # readers' signatures for their unspelled defaults (`19799`, `19856`, `20347`, `20477`, `20542`,
 # `20655`) and rung 78's two refusal messages (`20174`, `20189`); each printed line was checked
 # against its sentence, and all eight landed. Run after the step's last Rust edit.
-FILES = 37
-SITES = 219
-LINES = 129
+# RE-BLESSED AT SLICE AH STEP 6 (b), THE ORACLE (37/219/129 -> 38/220/130). One file
+# (`dump_slice_ah.py`), one site, one anchor: `20462`, `gauge_scan`'s integer `n_bad` count --
+# the ONLY model `sum()` the oracle's drive reaches, which is why the dumper cites it. The
+# printed line was checked against the sentence and landed. Run after the last oracle edit.
+FILES = 38
+SITES = 220
+LINES = 130
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment
 # SAID, where the number is part of the quotation and must not track the file.

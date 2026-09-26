@@ -24711,3 +24711,93 @@ PowerShell's `Start-Process` handle returned an **empty** exit code, which is no
   make the slice **seven** by numbering, not by work. Separately they make it **eight**, which
   neither reading predicted. Either way, the number is now set by a bookkeeping choice, so P7 is
   recorded as not measured, and neither 6 nor 7 is claimed.
+
+##### (i) THE ORACLE — SECOND COMMIT UNDER STEP 6 (AF/AG's precedent), AND **THE CPYTHON ARM NEEDS NO EXEMPTION, WHICH MADE AG's PROVENANCE GATE UNSATISFIABLE**
+
+`rust/oracle/dump_slice_ah.py` (walks) + `rust/tests/slice_ah_oracle.rs` (hand-lists), **29 288
+compared keys** over nine readers on both stator arms (A–C rung 77, D `stiffness_ledger` once at
+its own 24-cell default, E–H rung 78), two plants (P: the CLIP `_ledger_march` every reader stands
+on, and rung 78's gauged DEMAND march at `2/c0`) and section Z's censuses. **Rust is bit-identical
+to PyPy on all 29 288 AND to CPython on all 29 288. Four gates, green.** No module line changed.
+
+**1. P3 — CONFIRMED, AND MEASURED ON A DRIVE THAT VISITS ITS SITES.** A bit-identical PyPy arm is
+only P3's measurement if the drive reaches the nests, so the pre-flight's per-site nest counter
+(probe 13, positive control first) was re-run over THIS drive before any golden was compared:
+**110 nests in 811 465 `_b_state` sets**, at all five static sites — `leg_slopes`→`_c_at` 12
+(+60 via `stiffness_ledger`), `gauge_scan` 12, `root_census` 12, `gauge_march` 2, and
+**`gauge_vs_device`→`_phi_at` 12**, the site safe only by the dead-window criterion. Precisely:
+the port restores the previous value at ONE guard type, `PhiAtFreeze`; every `MarchedBleed` /
+`MarchedStator` restores `None`, as Python does. So P3's live content is that one guard, and the
+injection sweep's K1 scores it from the other side: **`PhiAtFreeze` switched to Python's
+restore-`None` moves 0 of 29 284 keys.** Both semantics, every key, identical — which is § 5.32
+(ix)'s claim in the only form a gate can hold it.
+
+**2. THE CPYTHON PREDICTION WAS WRITTEN FROM A DERIVED SET, AND IT HELD AT ZERO.** § 5.32 (iv)
+scoped *no compensated-summation surface* to the two classes' own bodies; AG's P2 is what
+happens when an exemption is sized from the code someone reasoned about (`_charpoly4`, 398 keys).
+So `builtins.sum` was wrapped for one run of the drive, every call recorded by caller `file:line`
+and float-ness: **exactly one model site is reached, `engine.py:20462`, an integer count.**
+Pre-registered in the dumper header before either golden existed: *CPython bit-identical on every
+key; falsifier — any key.* **MEASURED: the two goldens differ in exactly one line, the sentinel.**
+The first zero-exemption CPython arm since slice V.
+
+**3. AND THAT ZERO WOULD HAVE BROKEN AG's GATE.** `the_two_goldens_are_not_the_same_file` asserts
+the goldens differ SOMEWHERE — true at AG because 406 keys differed, **unsatisfiable by a correct
+zero**, and indistinguishable from a copied file. Replaced by `_interp/sum_probe`, the bits of
+`sum([1e16, 1.0, -1e16])` in each interpreter (CPython 1.0, PyPy 0.0), excluded from every
+comparison by name and asserted per arm. **A provenance claim should be read off the key built to
+carry it, not inferred from whichever other key happened to differ** — the inference AG relied on
+was a property of AG's arithmetic, not of the instrument.
+
+**4. THE INJECTION SWEEP — five, predicted before running, each file SHA-restored after:**
+
+| # | defect | predicted | measured |
+|---|---|---|---|
+| K1 | `PhiAtFreeze` restores `None` (Python's semantics) | 0 move | **0 of 29 284** — P3's dual |
+| K2 | `root_census`' re-arm after `c_at` deleted | F moves | **531 values + 14 missing / 238 extra keys** |
+| K3 | `phi_open_q` differenced `q+dq` against itself | G moves | **15 keys** |
+| K4 | float dict keys formatted `{}` not `{:?}` | key-set fails | **1 392 missing / 1 392 extra** |
+| K5 | the gauge dropped from section P's gauged march | 0 move | **0 of 29 284** |
+
+**K5 IS THE FINDING, AND IT WAS REPAIRED RATHER THAN RECORDED.** The gauge is inert on this march
+(`gauge_march`'s `worst` is exactly 0.0 at all four multiples, both arms), so the gauged trajectory
+is bit-identical to the ungauged one and section P could not tell a march that applied the gauge
+from one that never did. That is § 5.31.7's *a did-it-move instrument reports one bit*, in a
+plant section this time: the trajectory answers *did the value move*, never *did the branch run*.
+**So section P now carries `gauged_hits` / `gauged_binds` beside the trajectory**, the same
+process-global counter `gauge_march` reads, reset and read around P's own march on both sides.
+Re-run: **K5 now fails** (see (j)). The counters are why `drive()` sits behind a `OnceLock`: they
+are process-global and cargo runs tests on parallel threads.
+
+**5. A PLANT SECTION OVER A DERIVED COLUMN SET.** AG's section H walked a DEMAND list of 28
+columns; every rung-77/78 reader stands on CLIP (`PointExtra::Shared`, 30 keys), where that list
+raises on the first point. P walks each strided point generically and folds min/max/last/neg over
+the float fields the POINT carries — `traj[0]` in Python, `v_point`'s own entries in Rust — so the
+column set is derived on both sides rather than typed on either (§ 5.32 (viii) defect 5, applied).
+`min`/`max` are Python's first-extremum rule, not `f64::min`, so a `±0.0` tie cannot differ.
+
+**6. THIN ARMS, STATED.** The incidence arm (`inc = True`) yields **2 riding rows** where the
+suite's arm yields 10 (A, E, G alike). Driven, not skipped: two rows are where § 5.31.5 (k)'s
+defect would have lived.
+
+##### (j) GATES, AND K5 RE-RUN
+
+**K5 after the repair:** the same injection (the gauge dropped from section P's march) now fails
+**2 of 29 288** keys, `P/i0/gauged_hits` and `P/i1/gauged_hits` (1 366 each), and nothing else.
+`gauged_binds` does NOT see it: it is **0 on both arms** in the shipped run, so dropping the
+gauge leaves it at 0. That is slice T step 1's *an exact zero blinds its own gate*, one more
+time, and it is why `hits` rather than `binds` is the key that does the work here.
+
+`slice_ah_oracle.rs` **4 of 4** (70 s; `drive()` runs once). The citation guard **3 of 5 → 5 of
+5** after the re-bless (**37/219/129 → 38/220/130**: one file, one site, one anchor, `20462`,
+checked against the sentence), run after the last oracle edit. **Full Rust gate, predicted before
+the run: 163 blocks / 1 685 passed** (1 681 + 4, one new binary). **MEASURED: 163 blocks, 1 685
+passed, 0 failed, 0 ignored**, no `FAILED` and no `error[E` in either log. **`pytest`: 1 387
+passed** (20:28, shared box, not a timing anchor), owed because the re-bless edited a Python test
+file. Both verdicts were read from the logs.
+
+**Step 7 (dispatch) is what is left of the slice.** It inherits two predictions from here, both
+written before it runs: the rung-77 `at_lever → r76` injection moves **no oracle key** (P2), and
+the rung-78 `at_lever → r77` injection loses the carried `_gauge_k`, so it is **expected** to move
+`gauge_march`'s `hits` and section P's `gauged_hits`. That is not a P2 failure, because rung 78's
+`at_lever` carries a knob and rung 77's carries nothing new.

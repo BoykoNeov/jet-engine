@@ -117,6 +117,7 @@
   "20394": "prev, m._gauge_k = m._gauge_k, k",
   "20404": "m._gauge_k = prev",
   "20412": "c = m._c_at(flight, a, h, accel, w1, q, v)",
+  "20462": "n_bad=sum(0 if d[\"ok\"] else 1 for d in keep),",
   "20477": "def root_census(self, flight: \"FlightCondition\", Tt4_lo: float, Tt4_hi: float,",
   "20503": "c = m._c_at(flight, a, h, accel, w0, q, v)",
   "20504": "m._b_state, m._v_state = q, v      # `_c_at` un-freezes in its OWN `finally`",
