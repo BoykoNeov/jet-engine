@@ -1,6 +1,6 @@
 ---
 name: windows-tooling-file-hazards
-description: "The running catalogue of silent file-tooling hazards on this box — each one corrupts output or misreports a status while reporting success. PyPy unflushed writes, PowerShell UTF-8 double-encoding, backticks in a -m message, a status read off the runner, a log still being written, and a text-mode rewrite that flips every line ending behind git's normalisation — plus `cmd`'s parse-time `%ERRORLEVEL%`, which can only ever report success"
+description: "The running catalogue of silent file-tooling hazards on this box — each one corrupts output or misreports a status while reporting success. PyPy unflushed writes, PowerShell UTF-8 double-encoding, backticks in a -m message, a status read off the runner, a log still being written, and a text-mode rewrite that flips every line ending behind git's normalisation — plus `cmd`'s parse-time `%ERRORLEVEL%`, which can only ever report success, and `start` eating the first quoted argument as a window title"
 metadata: 
   node_type: memory
   type: feedback
@@ -91,6 +91,15 @@ the hazard class in this file**, and its failure mode was the flattering one —
 plausible, wrong answer with no error in it. **Measure line endings in Python over `open(p,"rb")`
 bytes** — count `\r\n`, count `\n` minus that, and require one of the two to be zero — never with a
 shell escape whose interpretation you have not checked on a file you know the answer for.
+
+**7. `cmd //c start //belownormal //b //wait "<python.exe path>" script.py` DOES NOT RUN THAT PYTHON.**
+`start` takes its FIRST QUOTED ARGUMENT as the WINDOW TITLE. The quoted interpreter path became the title, so
+`script.py` was launched through the `.py` file association (`C:\WINDOWS\py.exe`, system CPython, not the
+PyPy venv), and a `-m pytest` launch never started at all: it sat on a hidden error with `/wait` holding
+the shell until it was killed by its captured PID. Hit 2026-09-26 in the slice AI pre-flight. Nothing
+errors. The output looks right, because the wrong interpreter also runs the script. **Always
+`start "" //belownormal //b //wait "<exe>" args`.** Then confirm the child's interpreter and priority
+(Win32_Process CommandLine + Priority 6) before trusting what it prints.
 
 **Why:** all of these corrupt output while reporting success, and this project's deliverable is prose —
 20,000+ lines of derivation comments full of `∫`, `§`, `Δ`, `φ`, `≈`. A mangling that survives
