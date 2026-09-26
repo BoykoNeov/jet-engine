@@ -614,7 +614,11 @@ pub struct TripleHooks {
     /// RUNG **74**'s `_with_coord` — **THE SETTER, NOT THE CALL**, and
     /// [`with_ref`](Self::with_ref)'s exact shape one field over.
     ///
-    /// Two definers, rungs 74 and 79, with an IDENTICAL signature and a DIFFERENT mutated field:
+    /// Two definers, rungs 74 and 79, with a SUBSTITUTABLE signature — the same arity and one
+    /// parameter renamed, `coord` (`engine.py:17726`) → `ref` (`engine.py:20973`), passed
+    /// positionally at all five dispatch sites — and a DIFFERENT mutated field. *(Slice AI step 1,
+    /// plan § 5.33 (iii) item H: this said "an IDENTICAL signature", which a keyword call would
+    /// have falsified.)*
     /// rung 74 writes [`lag_coord`], rung 79 writes `_phi_ref`. Both would exist on a rung-79
     /// machine, so nothing type-errors and no signature comparison can see it — which is the
     /// `_with_ref` name reuse slice AE had to repair, arriving a second time and this time

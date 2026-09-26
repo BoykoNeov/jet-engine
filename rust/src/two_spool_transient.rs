@@ -835,6 +835,43 @@ pub struct TwoSpoolTransientCore {
     ///
     /// Its guard writes this field directly, `_with_gauge` having exactly one definer.
     pub gauge_k: Cell<f64>,
+    /// RUNG **79**'s `_phi_ref` — **WHICH COORDINATE THE PHI LEG'S SET-POINT RESIDUAL IS WRITTEN
+    /// IN**, and the seventh declared law of this family.
+    ///
+    /// `"phi"` is rung 49's `Gs(w) = phi_lim − phi(w)` and IS rungs 49–78; `"incidence"` is rung
+    /// 60's currency, `Gi(w) = 1/phi(w) − 1/phi_lim`. **The class default is again the reduce
+    /// arm** — [`PHI_REF_PHI`](crate::state_coordinate::PHI_REF_PHI) — and the knob adds no
+    /// constant: `T_c` and `v` cancel out of the residual identically.
+    ///
+    /// **`Cell<&'static str>` AND NOT AN ENUM, AND HERE THAT IS MEASURED RATHER THAN INHERITED.**
+    /// Rung 79's `_cap_fuel` tests `== "phi"` and treats everything else as incidence, and a THIRD
+    /// value is reached on a callable path: rung 74's `demand_gains`, run on a rung-79 machine,
+    /// dispatches `_with_coord("demand", …)` to rung 79's setter, which writes `"demand"` HERE
+    /// (plan § 5.33 (i)). A two-variant enum, or a `match` with an `unreachable!()` arm, would turn
+    /// Python's silent proceed into a panic — slice AF step 6's *the port refuses more than Python
+    /// does*. [`lag_coord`](Self::lag_coord)'s reason, one knob over.
+    ///
+    /// **ITS GUARD GOES THROUGH A CELL**, and it is the cell [`lag_coord`](Self::lag_coord)'s
+    /// guard already uses: rung 79 overrides `_with_coord` to write THIS field, so
+    /// [`CoordScope`](crate::demand_coordinate::CoordScope) on a rung-79 machine moves `phi_ref`
+    /// and leaves `lag_coord` where it was. That is the rule's own case — and it is the latent
+    /// Python defect § 5.33 (i)(c) records and the port reproduces on purpose. The plain
+    /// assignments (`at_lever`, `_shared_rig`) write it directly (§ 5.30.6's four-site rule).
+    pub phi_ref: Cell<&'static str>,
+    /// RUNG **80**'s `_sm_air` — **THE AIRFLOW LEGS' OWN MARGIN**, and the eighth declared law.
+    ///
+    /// `None` is rungs 49–79's SHARED wall — one `sm` feeding the fuel leg, the valve and the
+    /// stator through one `from_margin` factory — and it is the reduce arm by EXACT DISPATCH: rung
+    /// 80's `_shared_rig` returns rung 79's machine untouched on an `is None` test. `Some(sm_air)`
+    /// rebuilds the valve's and the stator's floors at `(1 + sm_air)·phi_surge`.
+    ///
+    /// `Cell<Option<f64>>` and not a `0.0` sentinel, for [`tau_t`](Self::tau_t)'s reason: Python's
+    /// `None` is a genuinely unset state, and `sm_air = sm` is a DIFFERENT object from `None` that
+    /// must agree with it to the last bit (rung 80's reduce gate). A sentinel would merge them.
+    ///
+    /// Its guard writes this field directly: `_with_air` has exactly one definer over all 58
+    /// classes (§ 5.33 (ii)).
+    pub sm_air: Cell<Option<f64>>,
     /// RUNG 70's ARMED GOVERNOR SET POINT — Python's `_gov_max`, and the phase's **second**
     /// CONFIG-kind dynamically-scoped field after [`ref_`](Self::ref_).
     ///
@@ -857,12 +894,20 @@ pub struct TwoSpoolTransientCore {
     /// `None`, so its 29 restores all put `None` back and a restore-to-`None` guard would agree
     /// with `finally` on every shipped path. **`_with_gov` is entered to turn the governor OFF**,
     /// and that is a property of the SOURCE rather than of a sample: `engine.py` has exactly
-    /// **three** `_with_gov` call sites in the whole ladder — `split_gains` (rung 70) and two
-    /// inherited readers at rungs 80/81 — and **all three pass a literal `None`**. So the two
+    /// **three** `_with_gov` call sites in the whole ladder — `split_gains` (rung 70,
+    /// `engine.py:14515`), `shared_cells` (rung 72, `engine.py:16591`) and `applied_cells` (rung
+    /// 73, `engine.py:17269`) — and **all three pass a literal `None`**. *(Corrected at slice AI
+    /// step 1: this sentence first said "two inherited readers at rungs 80/81". The count and the
+    /// literal were right; the LOCATION was not — no class after rung 73 calls `_with_gov` at
+    /// all. Plan § 5.33 (iii) item E.)* So the two
     /// spellings agree at the SET and can differ only at the RESTORE, and they do differ wherever
     /// the receiver's governor is armed, which on a rung-70/71 rig it always is
-    /// (`_split_rig`/`_full_rig` assign `Tt4_max` unconditionally; rung 80's rig assigns
-    /// `Tt4_max if gov else None`, so the displaced value can be `None` there).
+    /// (`_split_rig`/`_full_rig` assign `Tt4_max` unconditionally; rung 72's `_shared_rig`
+    /// assigns `Tt4_max if gov else None` at `engine.py:16059`, so the displaced value can be
+    /// `None` there). *(Also corrected at slice AI step 1: this said "rung 80's rig". Rung 80's
+    /// `_shared_rig` never writes `_gov_max`; it inherits rung 72's line through five `super()`
+    /// calls. The same misattribution as item E, one clause over — and the pre-flight's census of
+    /// crate claims about rungs 79–80 listed the sentence before it and not this one.)*
     ///
     /// **THE PRE-FLIGHT'S TWO COUNTS FOR THIS DO NOT RECONCILE AND NEITHER IS QUOTED HERE.**
     /// § 5.27 (vii)'s probe 8 attributes **98 sets** to `_with_gov` over the whole suite — two
@@ -1255,6 +1300,8 @@ impl TwoSpoolTransientCore {
             tau_t: Cell::new(None),
             cap_law: Cell::new(crate::sensed_cap::CAP_LAW_SOLVE),
             gauge_k: Cell::new(crate::residual_gauge::GAUGE_K_IDENTITY),
+            phi_ref: Cell::new(crate::state_coordinate::PHI_REF_PHI),
+            sm_air: Cell::new(None),
             ref_: Cell::new(None),
             gov_max: Cell::new(None),
         }

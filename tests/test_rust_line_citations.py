@@ -185,9 +185,18 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # RE-BLESSED AT SLICE AH STEP 7, THE DISPATCH GATES (38/220/130 -> 39/221/131). One file
 # (`slice_ah_dispatch.rs`), one site, one anchor: `17849`, the DEMAND march's call into
 # `_cap_fuel` -- the reason that cell's tally is zero at every CLIP-march seat. Checked, landed.
-FILES = 39
-SITES = 221
-LINES = 131
+# RE-BLESSED AT SLICE AI STEP 1 (39/221/131 -> 43/254/154). Four files newly citing --
+# `state_coordinate.rs`, `split_wall.rs`, `slice_ai_cells.rs`, and `applied_reference.rs`, whose
+# item-H correction is its first `engine.py:` citation -- and twenty-three new anchors: the rung
+# 79/80 definitions and carry lines the two modules port, rung 79's refusal (`20910`) and rung
+# 80's second (`21486`), rung 74's `demand_gains` pin and dispatch (`18269`, `18278`), the three
+# `_with_gov` call sites and rung 72's `_gov_max` line that item E's correction names (`14515`,
+# `16591`, `17269`, `16059`), and the four `def` lines that show the two renamed setters
+# (`13677`/`16899`, `17726`/`20973`). All twenty-three were read off `engine.py` by hand against
+# their sentences BEFORE this re-bless, and the file was run after the step's last Rust edit.
+FILES = 43
+SITES = 254
+LINES = 154
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment
 # SAID, where the number is part of the quotation and must not track the file.

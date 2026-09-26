@@ -53,7 +53,9 @@
 //!
 //! # THE NAME REUSE, CAUGHT BEFORE ITS SECOND DEFINER RATHER THAN AFTER
 //!
-//! `_with_coord` is defined at rung 74 and again at rung **79** with an identical signature and a
+//! `_with_coord` is defined at rung 74 and again at rung **79** with a substitutable signature —
+//! one parameter renamed, `coord` → `ref`, and every call positional (corrected at slice AI step
+//! 1; this said "identical") — and a
 //! different mutated field: rung 74 writes `_lag_coord`, rung 79 writes `_phi_ref`. This is
 //! `_with_ref`'s defect (rung 69 writes `_ref`, rung 73 writes `_ref_law`) — which slice AE had to
 //! repair after the fact, because both fields exist on the downstream machine so nothing

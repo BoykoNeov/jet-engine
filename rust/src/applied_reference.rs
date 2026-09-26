@@ -33,8 +33,10 @@
 //!
 //! # THE NAME REUSE, AND WHY THE PORT IS THE RE-AIM AND NOT A SECOND FIELD
 //!
-//! `_with_ref` is defined at rung 69 and again here with an **identical signature** and a
-//! **different mutated field**: rung 69 writes `_ref`, rung 73 writes `_ref_law`. Both fields
+//! `_with_ref` is defined at rung 69 and again here with a **substitutable signature** — one
+//! parameter renamed, `ref` (`engine.py:13677`) → `law` (`engine.py:16899`), and every call
+//! positional; slice AI step 1 corrected "identical" here, the same slip as `_with_coord`'s — and
+//! a **different mutated field**: rung 69 writes `_ref`, rung 73 writes `_ref_law`. Both fields
 //! exist on a rung-73 machine, so nothing type-errors and no signature comparison can see it —
 //! which is why § 5.27 (x)'s phase-wide sweep classified the pair as harmlessly RENAMED.
 //!

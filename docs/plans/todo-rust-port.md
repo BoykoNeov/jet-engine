@@ -25326,3 +25326,97 @@ decision stated in `state_coordinate.rs`'s module doc beside rung 78's contrary 
 as a string cell with the `== "phi"` test (§ (i)(b)). Booked forward to slice AJ: § (ii)'s *rungs
 81–84 build rung-80 machines*.
 
+
+#### 5.33.1 STEP 1 — THE PLUMBING AND RUNG 79's PLANT, AND **THE FIRST TEST STATE COULD NOT REACH THE CODE UNDER TEST: THE VALVE HOLDS `phi` AT EXACTLY THE WALL THE PHI LEG WATCHES**
+
+`rust/src/state_coordinate.rs` (rung 79) + `rust/src/split_wall.rs` (rung 80), two new core carriers
+(`phi_ref: Cell<&'static str>`, default `"phi"`; `sm_air: Cell<Option<f64>>`, default `None`), and
+`rust/tests/slice_ai_cells.rs` — **10 gates**. **SIX RE-AIMED POINTERS, as § (ii) predicted**:
+`at_lever`, `_shared_rig`, `_cap_fuel`, `_with_coord` at rung 79; `at_lever`, `_shared_rig` at rung
+80. **ZERO new `TripleHooks` fields** — P6 holds at step 1.
+
+**THE STEP BOUNDARY IS RE-CUT BY ONE SECTION** (the advisor's call, and slice AG's precedent). § (ix)
+P7 put `_phi_residual`, `_phi_cap` and `_cap_fuel` at step 2; a re-aimed pointer needs a body, and a
+stub — or leaving the cell at rung 78's body — would make step 1's own identity gate report a swap
+that had not happened. So rung 79's PLANT lands here, and **step 2 is now `_coord_at`, `coord_scan`
+and `coord_census`**. `_with_probe` stays at step 3; the probe FLAG and LOG are declared now because
+the plant reads the flag. Rung 80's `_walls_of` also lands here: the re-aimed rig's second refusal
+reads the walls back through it. `_with_air` and the rest of rung 80 stay at step 4.
+
+**§ (iv)'s decision is shipped**: rung 79's six counters, flag and log are `thread_local!`, read
+through a public `coord_counters()` / `reset_coord_counters()` pair that clears all six at once (P2a's
+step-1 deliverable). The module doc states it beside rung 78's contrary `static`s, which are knowingly
+left alone. **Measured, not asserted**: the counters move on the REAL incidence plant on the test's
+thread and read zero from a spawned one.
+
+**§ (i)'s setter re-aim is gated by FIELD READBACK, and the defect is BUILT.** On a rung-78 machine
+`CoordScope::set(…, "demand")` moves `lag_coord`; on a rung-79 or rung-80 machine the same guard
+leaves `lag_coord` at `"clip"` and writes `"demand"` into `phi_ref`, then restores `phi_ref` —
+§ (i)'s pair, reproduced on purpose. A rung-79 table with `with_coord` left at rung 74's body
+(`with_ref_tables` is public, so a test can choose the table — the demonstration slice AH step 1
+could not make) moves `lag_coord` instead, so the readback is a gate and not a restatement. **The
+inside-the-scope pair is ONE tuple assertion**, so a future repair of the Python defect flips
+exactly one line.
+
+**THE THIRD VALUE REACHES THE REFUSAL** (P4's cell half): an incidence or `"demand"` phi leg with
+`gauge_k = 2` returns `engine.py:20910`'s message as an `Abort` (rung 78's precedent — Python's
+`assert` sits under a march's `except AssertionError`), and the `phi` arm at the same gauge proceeds.
+The reader end — rung 74's `demand_gains` turning that `Abort` into a panic — is read in the source
+(`.unwrap_or_else(|e| panic!("{}", e.0))` at the `CoordScope` site) and is step 6's oracle arm.
+
+#### (a) THE LEADING FINDING — THE FIRST TEST STATE NEVER REACHED RUNG 79's CODE
+
+The plant gates were first written at `slice_af_cells.rs`'s state `(a, h, mf) = (1, 1, 0.02)` on the
+valve rig. **Three of ten failed, all inside RUNG 74's cap**: *"the UNFLOORED cap is unreachable"*.
+A probe of `phi_lp(w)` found why, and it is not a test-point accident. On the valve rig `phi` reads
+**exactly `0.8000`** wherever it would fall below the wall, at every spool speed probed — the valve
+is armed at the SAME `0.80` floor as the phi leg and holds `phi` there inside every instant solve.
+So `G = phi_lim − phi` is pinned at zero from above and the bracket can never find `G > 0`. That is
+rung 74's own measured fact (the airflow levers act only inside the fuel leg's tracking error; the
+four-loop cell does not exist at a shared wall), arriving as a gate that could not reach the code it
+was written for. With the valve off, `(0.8, 0.9)` gives `phi(0.02) = 0.8600`, `phi(0.035) = 0.7705`:
+a SLACK state where the incidence residual is bracketed and a BINDING one where the shipped fallback
+answers.
+
+**And the slack state is load-bearing, measured.** The two coordinates' solves differ by **1 ulp**
+at `mf_sched = 0.02` and by **0** at `0.028` on the same spools. So the gate asserts the bits DIFFER
+at SLACK and AGREE at BINDING. Without the first half, injection I1 (the incidence arm written as
+`Gs`) passes every other gate in the file — "same root to 1e-9" is exactly what it returns.
+
+#### (b) TWO MORE MISATTRIBUTIONS BESIDE ITEM E, AND ITEM H WAS THREE SITES PLUS A FOURTH ON ANOTHER NAME
+
+* **Item E corrected** (`two_spool_transient.rs`): the `_with_gov` call sites are `split_gains`
+  (`:14515`), `shared_cells` (`:16591`) and `applied_cells` (`:17269`). **The very next clause had the
+  same defect**: it credited *"rung 80's rig"* with `Tt4_max if gov else None`, which is rung 72's
+  `_shared_rig` at `:16059`. § (iii)'s census listed the first sentence and not this one.
+* **Item H was one site in the census and three in the crate**: `three_loop.rs` (the one listed),
+  `demand_coordinate.rs`'s module header and `slice_af_cells.rs`'s gate doc all said *"identical
+  signature"*. And **`applied_reference.rs` said the same of `_with_ref`**, whose rename is `ref` →
+  `law` (`:13677` / `:16899`) — § (ii)'s own table files it RENAMED. All four corrected. The two
+  `quad_gains_at` "identical signature" sites were not touched and not verified.
+
+#### (c) THE INJECTION SWEEP — 8 injections, 6 killed, 2 survived, 1 misprediction
+
+| # | injection | predicted | result |
+|---|---|---|---|
+| I1 | incidence arm written as `Gs` | killed | **KILLED** — the slack bit-difference gate, and only it |
+| I2 | rung 79's setter writes `lag_coord` | killed | **KILLED** ×3 — readback, P4, and POINTER identity (the body becomes rung 74's and folds onto it) |
+| I3 | rung 80 `at_lever` drops `sm_air` | killed | **KILLED** |
+| I4 | rung 80 `_shared_rig` drops its `sm_air` set | killed | **SURVIVED — the misprediction** |
+| I6 | the fallback counted on the `phi` side | killed | **KILLED** |
+| I7 | `min` spelled `f64::min` | survived | **SURVIVED** — no tie and no NaN reaches it here; pre-registered |
+| I8 | rung 79 `at_lever` drops `phi_ref` | killed | **KILLED** |
+| I9 | rung 79 `_shared_rig` drops its `phi_ref` set | ? | **KILLED by pointer identity** — the remaining body is a pure pass-through and the linker folds it onto rung 78's, slice AG's measurement at a new site |
+
+**I4 is AG step 2's N-site lesson again**: the rig's `sm_air` is written from the same source twice
+(`at_lever` inside rung 72's rig, then rung 80's own line), so removing one is invisible to every
+value — and here, unlike I9, the rest of the body is not a pass-through, so the linker cannot fold it
+and pointer identity cannot see it either. The line is Python's and is ported; no gate in the port
+can score it alone, and this row says so rather than leaving a green sweep to imply otherwise.
+
+#### (d) WHAT STEP 1 LEAVES
+
+`R80`'s carry chain is the last one (§ (ii)); booked to AJ as written. The ulp band at `:21486`
+(P5) and every refusal gate are step 5's. Gate for this step: full `cargo test --release` + full
+`pytest` (the citation guard re-blessed for the new sites, each verified by hand against
+`engine.py`) — the numbers are in the commit.

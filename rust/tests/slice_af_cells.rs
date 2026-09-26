@@ -398,15 +398,19 @@ fn a_fresh_machine_reads_clip_and_the_inherited_applied() {
 
 /// **`_with_coord` MOVES `lag_coord` AND LEAVES EVERY NEIGHBOURING CARRIER ALONE.**
 ///
-/// Rung 79 defines the same name with the same signature and writes `_phi_ref`. Both fields will
+/// Rung 79 defines the same name with a substitutable signature (one parameter renamed, `coord`
+/// → `ref`, every call positional — slice AI step 1 corrected "the same signature" here) and
+/// writes `_phi_ref`. Both fields will
 /// exist on a rung-79 machine, so nothing type-errors and no signature comparison can reach the
 /// difference — which is exactly how slice AE's `_with_ref` pair got filed as *harmlessly
 /// renamed*. **The gate has to be two-sided or it measures nothing**: a body that wrote BOTH
 /// fields would pass *"`lag_coord` moved"*.
 ///
-/// `phi_ref` does not exist yet, so the negative half is taken on the two carriers that DO —
-/// `ref_` (rung 69's) and `ref_law` (rung 73's), the two a mis-aimed setter would most plausibly
-/// hit, since they are the fields the neighbouring guards write.
+/// `phi_ref` did not exist when this was written, so the negative half is taken on the two
+/// carriers that did — `ref_` (rung 69's) and `ref_law` (rung 73's), the two a mis-aimed setter
+/// would most plausibly hit, since they are the fields the neighbouring guards write. **Slice AI
+/// step 1 added `phi_ref`**; the readback against IT, from both rungs' sides, is
+/// `slice_ai_cells.rs`'s `coord_scope_moves_lag_coord_at_78_and_phi_ref_at_79`.
 #[test]
 fn with_coord_moves_lag_coord_and_leaves_the_neighbouring_carriers_alone() {
     let m = demand(&valve_arm());
