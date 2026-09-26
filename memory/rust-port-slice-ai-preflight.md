@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: ee285e2a-3c55-4a91-a8f2-79c5d6df3685
-  modified: 2026-09-26T17:35:59.149Z
+  modified: 2026-09-26T17:42:14.194Z
 ---
 
 Slice AI (rungs 79 + 80, `StateCoordinateTransient` + `SplitWallTransient`) was PRE-REGISTERED on
@@ -26,6 +26,10 @@ a different answer. The scope really does leave both fields wrong: `("clip", "de
 `("demand", "phi")` was meant. Rung 79's branch runs **128 times**, and **0 of 196** values move,
 because of two masks already on record. So the booking resolves as *real, reached, value-invisible*.
 Its gate has to be a counter plus a field readback, never a value diff.
+The advisor's second pass then asked whether that held only where every call binds. A sweep over
+nine walls (0.70–0.85) answered it: wherever the scope runs, every rung-79 call short-circuits, and
+below 0.75 the scope never runs. So the result holds across the regime, not just at one setting.
+**Measure a claim across settings before pushing it**, not after.
 
 **THE SECOND LESSON: a static census is scoped by the FILES it opens.** The derived nest census over
 `engine.py` found 0 `_b_state`/`_v_state` nests at rungs 79/80. The runtime counter found **4**. All
