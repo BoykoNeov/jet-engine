@@ -194,9 +194,13 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # `16591`, `17269`, `16059`), and the four `def` lines that show the two renamed setters
 # (`13677`/`16899`, `17726`/`20973`). All twenty-three were read off `engine.py` by hand against
 # their sentences BEFORE this re-bless, and the file was run after the step's last Rust edit.
+# RE-BLESSED AT SLICE AI STEP 2 (43/254/154 -> 43/257/157). No new file -- the gate file
+# `slice_ai_scan.rs` cites nothing -- and three new anchors in `state_coordinate.rs`: the two
+# readers' `def` lines (`21006` `_coord_at`, `21084` `coord_census`) and `21035`, the line that
+# reads BOTH slopes at `w_p`. All three printed lines were checked against their sentences.
 FILES = 43
-SITES = 254
-LINES = 154
+SITES = 257
+LINES = 157
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment
 # SAID, where the number is part of the quotation and must not track the file.

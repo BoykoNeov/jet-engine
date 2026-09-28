@@ -25420,3 +25420,84 @@ can score it alone, and this row says so rather than leaving a green sweep to im
 (P5) and every refusal gate are step 5's. Gate for this step: full `cargo test --release` + full
 `pytest` (the citation guard re-blessed for the new sites, each verified by hand against
 `engine.py`) — the numbers are in the commit.
+
+#### 5.33.2 STEP 2 — RUNG 79 §§ 1–4's READERS, AND **TWO OF THE SCAN'S FOUR NUMBERS ARE THE FALLBACK COMPARED WITH ITSELF: 30 OF 30 INCIDENCE SOLVES NEVER SOLVED THE INCIDENCE RESIDUAL**
+
+`coord_at`, `coord_scan`, `coord_census` in `rust/src/state_coordinate.rs`, and
+`rust/tests/slice_ai_scan.rs` — **3 gates**, every value **bit for bit** against a Python probe of
+`tests/test_rung79.py`'s rig (per-row `s`, `w_phi`, both slopes, `ratio`, `dw*/dq`, `w0`, the located
+roots, `predicted_ratio`, `ratio_err`), embedded as `f64::from_bits` literals. Green on the first run.
+
+#### (a) THE FINDING — MEASURED IN PYTHON BEFORE THE PORT WAS WRITTEN
+
+Probed with the six counters snapshotted around each reader: **the scan moves them by
+`[hits, binds, fb_phi, fb_inc, calls_phi, calls_inc] = [0, 0, 30, 30, 30, 30]`**. Every one of the
+scan's 60 set-point solves — 3 per coordinate per point, 10 points — short-circuits in `_cap_free` to
+the shipped `_surge_fuel`, which brackets its own HARDCODED `phi` residual whatever coordinate asked.
+So `w_inc == w_phi` to the bit at all 10 rows, `dwdq_inc == dwdq_phi` to the bit, and **`d_set = 0`
+and D3's `dwdq_err = 0` are the fallback compared with itself.** Rung 79 § 5.1 records exactly this
+mechanism — for the MARCH ("the plant's `d_set = 0.0` says nothing about coordinate invariance");
+its § 1 table still reads D3 as *"`0.000e+00` — not small, *exactly* zero"*, and
+`test_sensitivity_is_coordinate_invariant` gates that zero. **Not a new mechanism; a new SITE for
+it** — the grep of the spec, the anchor, and the rung-79 and slice-AI memory entries found no record
+of the scan falling back. The census moves them by `[0, 0, 10, 0, 10, 0]`: its one solve per point is
+the `phi` anchor, and it never solves the incidence residual at all.
+
+**So only D2 — the slope ratio, `1.5625` to `4.33e−09`, read straight off `_phi_residual` — is a
+number in §§ 1–4 that a wrong coordinate would move.** The census DOES evaluate `Gi` (unlike the
+scan), but reads only its sign; see (c)'s I8.
+
+**The spec is NOT edited in this commit** (the advisor's call): the correction is a docs-only change
+to `docs/rung79-spec.md`'s D3 row, offered to the user separately, and a port commit is the wrong
+place for a physics doc's rewording.
+
+#### (b) THE PORT
+
+* **Both slopes are read at `w_phi`** (`engine.py:21035`) — ported from the source, because on this
+  rig no gate can tell it from `w_inc` (I2).
+* Each `solve` freezes `(qq, v)` at its OWN perturbed `qq`; `slope` freezes `(q, v)`; the census one
+  freeze per point. All three CLOBBER to `None` on exit, as Python's `finally` does — gated by a
+  manufactured nesting (the caller's freeze is up on entry; both cells read `None` after).
+* The three `max(abs(x), c)` folds are written expression-first, never `f64::max`. `sum(same_float)`
+  is a plain count (Python has no `if rows else None` there); the four other scan aggregates are
+  `Option`s. The census's per-row `worst` defaults to `0.0`, its top-level one to `None` — two
+  defaults, both ported.
+* `gauge_points`' `Option<Floor>` is `.expect`ed per row: Python reads `surge.phi_lim` and raises
+  on `None` only when there is a row to read.
+* **`predicted_ratio` is `0x3ff8ffffffffffff`, not `1.5625`**: `0.8 * 0.8` rounds below `0.64`.
+  Rung 79 § 0.2's "`1/φ_lim² = 1.5625` exactly" is the algebra, not the float.
+
+#### (c) THE INJECTION SWEEP — 12 injections, predicted in writing first, **12 of 12 predictions right**
+
+| # | injection | result |
+|---|---|---|
+| I1 | the two set-point solves at `q` in swapped order | SURVIVED — predicted; no value depends on order, counters are totals |
+| I2 | incidence slope read at `w_inc` | SURVIVED — predicted; `w_inc` IS `w_phi` here (the finding) |
+| I3 | incidence `dw*/dq` leg solved in `phi` | **KILLED by the COUNTER VECTOR ONLY** — every value passes |
+| I4 | slope step spelled `f64::max` | SURVIVED — predicted; no `NaN` reached |
+| I5 | `solve` freezes `q`, not `qq` | **KILLED** ×2 — `dw*/dq` dead (the bar) and its bits |
+| I6 | census per-row `default = 1.0` | SURVIVED — predicted; no empty zip on this grid |
+| I7 | census `locate = false` | **KILLED** — roots move to grid-cell midpoints |
+| I8 | census walks `Gs` in `Gi`'s place | SURVIVED — predicted; see below |
+| I9 | incidence slope taken off `Gs` | **KILLED** — D2 `ratio_err = 0.36` |
+| I10 | `coord_at` restores the caller's freeze | **KILLED** — the manufactured-nesting gate |
+| I11 | `dwdq_err` fold spelled `f64::max` | SURVIVED — predicted; no `NaN` reached |
+| I12 | `w_inc` solved in `phi` | **KILLED by the COUNTER VECTOR ONLY** — every value passes |
+
+**I3 and I12 are the step's lesson at the instrument**: two coordinate defects that move no value,
+each caught solely because the counter vector is pinned in the same test that runs the scan (reset,
+run, read on one thread — slice AH step 7's rule, never through a cache).
+
+**I8 is not a coverage hole the port can close.** The walk and its bisection read only the residual's
+SIGN, and D1's content is that `h > 0` makes the two signs one — so the census's located roots agree
+to the BIT between coordinates (measured, all 10 rows), and a census that compared `Gs` with itself
+is identical. Building a residual bumps no counter, so nothing splits it. **D1's census is evidence
+that the incidence residual has ONE root on rung 78's window, not that it was the one walked**; the
+only thing in §§ 1–4 that sees the coordinate applied is D2 (I9).
+
+#### (d) WHAT STEP 2 LEAVES
+
+`coord_march`, `coord_forced`, `_with_probe` (step 3); rung 80 (step 4); refusals and the ulp band
+(step 5); the oracle (step 6). The citation guard is re-blessed for three new anchors (`21006`,
+`21035`, `21084`, each checked by hand). Gate for this step: full `cargo test --release` + full
+`pytest` — the numbers are in the commit.

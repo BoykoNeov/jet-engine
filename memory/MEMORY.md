@@ -8,11 +8,12 @@ table, which loads beside this file. Rung entries follow that table's families a
 **Line budget: 200 lines.** Raised 2026-09-03 from the ~140 this file had been held to and had
 already passed (156 lines, 201 memory files). Stated here, not enforced: the repo's size guard
 covers CLAUDE.md, not this file, which the repo only mirrors. **Legitimate growth is one line
-per new entry** — and the engine that actually moves the number is the Rust-port section, whose
-slice lines *widen* as step links are appended. **Illegitimate growth is a line that restates the
-file it links.** If 200 trips, compact — move detail into the entry, or behind a status pointer
-as `rust-port-status.md` already does — and judge any further raise against which of the two it
-is.
+per new entry**. **Illegitimate growth is a line that restates the file it links.** If 200 trips,
+compact — move detail into the entry, or behind a status pointer as `rust-port-status.md` already
+does — and judge any further raise against which of the two it is. **A BYTE limit binds too**: the
+index is read up to ~24.4 KB, and on 2026-09-26 it reached 22.8 KB, almost all of it the Rust-port
+slice lines (which *widen* as step links are appended). Those moved to `rust-port-slice-index.md`;
+new slices and step links go THERE, not here.
 
 ## Working agreements
 - [Session-end routine](session-end-routine.md) — at session end: update memory + docs, commit, push
@@ -34,7 +35,7 @@ is.
 - [Visuals ↔ model binding](visuals-model-binding.md) — the pages had NO test and looked fine; in SYNC is not BOUND, and the page's own design point was typed markup
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding, backticks in `-m`, a status read off the runner, a log still being written, and a text-mode rewrite that flips every line ending, `cmd`'s parse-time `%ERRORLEVEL%`, and the EOL check that was itself the hazard
 
-## The Rust port — phases 0–6 done; phase 7 in flight, slice AG (75/76) COMPLETE in 7 steps, slice AH (77/78) COMPLETE in 7 steps, slice AI (79/80) step 1 DONE, step 2 next
+## The Rust port — phases 0–6 done; phase 7 in flight, slice AG (75/76) COMPLETE in 7 steps, slice AH (77/78) COMPLETE in 7 steps, slice AI (79/80) steps 1–2 DONE, step 3 next
 - [Rust port status](rust-port-status.md) — the running tally: phases, slices, and the numbers each closed slice landed on. **Update THAT file, not this line.**
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; a new PHASE needs authorisation
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost
@@ -50,40 +51,7 @@ is.
 - [An oracle cannot see a MISSING GATE](rust-port-oracle-cannot-see-a-missing-gate.md) — bit-exactness says nothing about COVERAGE
 - [Guessed census bars](rust-port-guessed-census-bars.md) — five typed count bars, five wrong; measure counts
 - [Phase 5 pre-flight](rust-port-phase5-preflight.md) — a "closed set" claim is only as wide as the set you swept
-- [Slice I: rungs 31/33](rust-port-slice-i.md) — a bare `except` makes the question REACHABILITY
-- [Slice J: rung 32](rust-port-slice-j.md) — exactness bounds the CELLS visited, not the RULES discriminated
-- [Slice K: rungs 38/39](rust-port-slice-k.md) — the phase table's scope list had never been ENUMERATED
-- Slice L (41/42) steps [1](rust-port-slice-l-step1.md) [3](rust-port-slice-l-step3.md) [4](rust-port-slice-l-step4.md) — fallibility is per CALL SITE (one lesson per file)
-- [Slice M: rungs 53/54](rust-port-slice-m.md) — a bar asserted in a doc comment but never measured
-- Slice N (55/56) [pre-flight](rust-port-slice-n-preflight.md) + steps [1](rust-port-slice-n-step1.md) [2](rust-port-slice-n-step2.md) [3](rust-port-slice-n-step3.md) [4](rust-port-slice-n-step4.md) [5](rust-port-slice-n-step5.md) — a body-read never tells you what its CARRIER costs (one lesson per file)
-- [Slice O: rung 61, phase 5 done](rust-port-slice-o.md) — the defect lived in an EDGE, not a node
-- [Phase 6 pre-flight](rust-port-phase6-preflight.md) — the same census run in the OPPOSITE direction hit a scoping bug
-- [Slice P: rungs 34/35/36](rust-port-slice-p.md) — a perfectly-placed deferral described a branch that does not exist
-- [Slice Q: rung 37](rust-port-slice-q.md) — a dead arm is a property of the GRID, not the code
-- Slice R (40/44) steps [1](rust-port-slice-r-step1.md) [2](rust-port-slice-r-step2.md) [3](rust-port-slice-r-step3.md) [4](rust-port-slice-r-step4.md) — a registered margin read off the wrong assertion (one lesson per file)
-- Slice S (43/45) [pre-flight](rust-port-slice-s-preflight.md) + steps [1](rust-port-slice-s-step1.md) [2](rust-port-slice-s-step2.md) [3](rust-port-slice-s-step3.md) [4](rust-port-slice-s-step4.md) — an inherited IOU named a gas the code REFUSES (one lesson per file)
-- [Slice U pre-flight](rust-port-slice-u-preflight.md) — sweep the arming COMBINATIONS: three shipped asserts no input can reach
-- [Slice U step 1](rust-port-slice-u-step1.md) — bit-exact + green says nothing about GATE POWER (one lesson per file)
-- Slice U steps [2](rust-port-slice-u-step2.md) [3](rust-port-slice-u-step3.md) [4](rust-port-slice-u-step4.md) [5](rust-port-slice-u-step5.md) — a defender and an exposure on DISJOINT cells (one lesson per file)
-- [Phase 7 pre-flight](rust-port-phase7-preflight.md) — the plan stated the SAME SET twice and nobody diffed the two (one lesson per file)
-- Slice V (57-60) [authorised + steps 1a/1b](rust-port-slice-v.md) [step 2](rust-port-slice-v-step2.md) [step 3](rust-port-slice-v-step3.md) [step 4](rust-port-slice-v-step4.md) — a census matches a SHAPE, so a bare permanent assignment was invisible to one built on `try/finally` (one lesson per file)
-- [Slice W (62/63) steps 1-2](rust-port-slice-w.md) — run a refuted probe over the WHOLE table, not the row (one lesson per file)
-- [Slice W step 3](rust-port-slice-w-step3.md) — five of six injections pass all 88 gates, and the probe was wrong five times: every one a zero nobody measured, so make the instrument prove it can SEE
-- [Slice W step 4](rust-port-slice-w-step4.md) — a second-interpreter arm can disagree because the LANGUAGE differs (one lesson per file)
-- [Slice W step 5](rust-port-slice-w-step5.md) — a "did it move" assertion passes a HALF-APPLIED injection; assert the exact delta, and mutate your own gates to find out
-- Slice X (64) steps [1](rust-port-slice-x-step1.md) [2](rust-port-slice-x-step2.md) [3](rust-port-slice-x-step3.md) [4](rust-port-slice-x-step4.md) [5](rust-port-slice-x-step5.md) — extending a SHARED helper silently voided an override and 1017 green tests could not see it (one lesson per file)
-- Slice Y (65) steps [1](rust-port-slice-y-step1.md) [2](rust-port-slice-y-step2.md) [3](rust-port-slice-y-step3.md) [4](rust-port-slice-y-step4.md) [5](rust-port-slice-y-step5.md) — a design refused twice on body reads was revived by EMITTING the set (one lesson per file)
-- Slice Z (66/67) [pre-flight](rust-port-slice-z-preflight.md) [1](rust-port-slice-z-step1.md) [2](rust-port-slice-z-step2.md) [3](rust-port-slice-z-step3.md) [4](rust-port-slice-z-step4.md) [5](rust-port-slice-z-step5.md) — a probe chunked by the width the gate PASSES, not the one the stride delivers, and at the right width the answer INVERTED (one lesson per file)
-- Slice AA (68) [1](rust-port-slice-aa-step1.md) [2-5](rust-port-slice-aa-steps2345.md) — a DEFENCE WITH NO READER appeared four times; ask what reads a thing, never wait for a failure (one lesson per file)
-- Slice AB (69) [pre-flight](rust-port-slice-ab-preflight.md) [1](rust-port-slice-ab-step1.md) [2](rust-port-slice-ab-step2.md) [3](rust-port-slice-ab-step3.md) [4](rust-port-slice-ab-step4.md) [5](rust-port-slice-ab-step5.md) — an exemption measured between the two DUMPS was 67 names wider than one measured against the PORT (one lesson per file)
-- Slice AC (70/71) [pre-flight](rust-port-slice-ac-preflight.md) [1](rust-port-slice-ac-step1.md) [2](rust-port-slice-ac-step2.md) [3](rust-port-slice-ac-step3.md) [4](rust-port-slice-ac-step4.md) [5](rust-port-slice-ac-step5.md) [6](rust-port-slice-ac-step6.md) [7 closed](rust-port-slice-ac-step7.md) — a predicate by NAME cannot tell an override from a name reused, and every reader launders an injection through `at_lever` (one lesson per file)
-- Slice AD (72) [pre-flight](rust-port-slice-ad-preflight.md) [1](rust-port-slice-ad-step1.md) [2](rust-port-slice-ad-step2.md) [3](rust-port-slice-ad-step3.md) [4](rust-port-slice-ad-step4.md) [5](rust-port-slice-ad-step5.md) [6 closed](rust-port-slice-ad-step6.md) — a shipped block documents a method with ZERO definitions, and a gate compared the plant against the function that produced it (one lesson per file)
-- Slice AE (73) [pre-flight](rust-port-slice-ae-preflight.md) [1](rust-port-slice-ae-step1.md) [2](rust-port-slice-ae-step2.md) [3](rust-port-slice-ae-step3.md) [4](rust-port-slice-ae-step4.md) [5 closed](rust-port-slice-ae-step5.md) — a FIXTURE is a claim nobody re-reads as one; and a control, an exact-bits gate and an aggregate each measured nothing (one lesson per file)
-- Slice AF (74) [pre-flight](rust-port-slice-af-preflight.md) [1](rust-port-slice-af-step1.md) [2](rust-port-slice-af-step2.md) [3](rust-port-slice-af-step3.md) [4](rust-port-slice-af-step4.md) [5a](rust-port-slice-af-step5a.md) [5b](rust-port-slice-af-step5b.md) [6](rust-port-slice-af-step6.md) [debt closed](rust-port-slice-af-usage-guard.md) — *what supplies the value?* has three siblings: *what has ever RUN the sentence?*, *is this line a DISPATCH in the source at all?*, and *what is the census DECLINING to check?* (one lesson per file)
-- Slice AG (75/76) [pre-flight](rust-port-slice-ag-preflight.md) [step 1](rust-port-slice-ag-step1.md) [step 2](rust-port-slice-ag-step2.md) [step 3](rust-port-slice-ag-step3.md) [step 4](rust-port-slice-ag-step4.md) [step 5](rust-port-slice-ag-step5.md) [step 6](rust-port-slice-ag-step6.md) [step 7](rust-port-slice-ag-step7.md) — a line citation, a gate grid, an enumeration of a field's READERS, an enumeration of what a REFUSAL protects and a SWEEP GRID copied from — or NARROWED from — the suite all have an EXPIRY DATE, and each expires at the boundary its own defect class is born on; and a prediction can name the right CAUSE and size it by the wrong PROPERTY — blast radius follows SHARING, not SIZE; and a “did it move?” matrix reports ONE BIT, so a delegating COUNTER splits a silent row into *ran and redundant* vs *never entered* (one lesson per file)
-- Slice AH (77/78) [pre-flight](rust-port-slice-ah-preflight.md) [step 1](rust-port-slice-ah-step1.md) [step 2](rust-port-slice-ah-step2.md) [step 3](rust-port-slice-ah-step3.md) [step 4](rust-port-slice-ah-step4.md) [step 5](rust-port-slice-ah-step5.md) [step 6](rust-port-slice-ah-step6.md) [6b oracle](rust-port-slice-ah-step6b-oracle.md) [7 closed](rust-port-slice-ah-step7.md) — a booking NO GATE CAN CLOSE is a claim in the WRONG CURRENCY, and four instruments in a row returned a confident WRONG NUMBER rather than an error; and a booking no gate can CLOSE can still be BLOCKED by one — grep the tests for a gate that already pins the opposite before adopting a "free" repair; and a doc comment's ONLY is a claim about a SET while the census behind it counted a TOTAL, so the sentence was false at birth and the port shipped the defect it excluded, and a Rust-only step still owes the PYTHON gate; and a doc comment's UNIVERSAL sentence is a claim about code not yet written — the very property it forbids was the next section's only instrument, and two bars typed from the narrative beside it were both false where the suite gates neither; and eleven gates green on the first run could not see three of six INJECTED defects, the one that mattered hidden by the reader's own exclusion — while the same slice's leading hazard turned up on a second variable its census was not scoped by NAME to see; and a guard run inside a step was voided by the step's own LATER doc edits, so it shipped red while saying green; and a ported `isinstance` compared against the very table the defect rewrites; and a CORRECT zero-exemption arm made the "goldens differ somewhere" provenance gate unsatisfiable — give provenance its own sentinel key; and a OnceLock serialises a COMPUTATION, not a process-global COUNTER (one lesson per file)
-- Slice AI (79/80) [pre-flight](rust-port-slice-ai-preflight.md) [step 1](rust-port-slice-ai-step1.md) — a zero value-diff is two findings and only a counter splits them; and a borrowed test state never reached the code under test, for a PHYSICAL reason (one lesson per file)
-- Slice T (46/47/48) steps [1](rust-port-slice-t-step1.md) [2](rust-port-slice-t-step2.md) [3](rust-port-slice-t-step3.md) [4](rust-port-slice-t-step4.md) — an EXACT ZERO blinds its own gate to the SIGN (one lesson per file)
+- [Rust port slice index](rust-port-slice-index.md) — every slice I…AI and its step files, one line each with its process lessons; append new slices THERE (moved out 2026-09-26 at 22.8 KB)
 
 ## Shipped rungs
 

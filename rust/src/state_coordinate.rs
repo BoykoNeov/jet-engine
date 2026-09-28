@@ -37,6 +37,20 @@
 //! `_coord_at`, `coord_scan` and `coord_census`. `_with_probe` stays at step 3; its flag and log
 //! are declared here only because the plant READS the flag.
 //!
+//! # WHAT STEP 2 ADDS — **THE §§ 1–4 READERS, AND TWO OF THE SCAN'S ZEROS ARE THE FALLBACK'S**
+//!
+//! [`coord_at`], [`coord_scan`] and [`coord_census`], on rung 78's own points through
+//! [`gauge_points`](crate::residual_gauge::gauge_points). Bit for bit against a Python probe of
+//! `tests/test_rung79.py`'s rig, gated in `tests/slice_ai_scan.rs`.
+//!
+//! **The finding is the counters.** Every set-point solve in the scan — 30 in `phi`, 30 in
+//! incidence — short-circuits to the shipped `_surge_fuel`, which brackets the hardcoded `phi`
+//! residual whatever coordinate asked. So `w_inc == w_phi` to the bit at every row and the spec's
+//! D3 *"exactly zero"* and `d_set = 0` are the fallback compared with itself: rung 79 § 5.1's
+//! mechanism, recorded there for the march, reaching § 1's table. Only D2 (the slope ratio) is a
+//! number a wrong coordinate would move; the census evaluates `Gi` but reads only its sign. See
+//! [`coord_scan`] and [`coord_census`], and plan § 5.33.2 for the twelve-injection sweep.
+//!
 //! # THE SETTER RE-AIM IS § 5.33 (i)'s LATENT PYTHON DEFECT, REPRODUCED ON PURPOSE
 //!
 //! Rung 74's `demand_gains` pins `m._lag_coord = "clip"` by assignment (`engine.py:18269`) and then
@@ -97,12 +111,19 @@ use crate::fuel_transient::{
 };
 use crate::gas::Abort;
 use crate::map::ComponentMap;
-use crate::residual_gauge::{GAUGE_K_IDENTITY, R78, R78_FUEL, R78_STATOR, R78_TRIPLE, R78_TWO};
+use crate::fuel_transient::FuelPoint;
+use crate::residual_gauge::{
+    gauge_points, root_count, GAUGE_K_IDENTITY, R78, R78_FUEL, R78_STATOR, R78_TRIPLE, R78_TWO,
+    ROOT_CENSUS_N, ROOT_COUNT_HI, ROOT_COUNT_LO,
+};
 use crate::shared_actuator::SharedRigArm;
 use crate::stator_transient::{ScheduledStatorCore, ScheduledStatorTransient, StatorTransientHooks};
 use crate::three_loop::TripleHooks;
+use crate::two_lag::{py_max_default, py_max_of, py_min_of};
 use crate::two_spool::TwoSpoolEngine;
-use crate::two_spool_transient::{TwoSpoolTransientCore, TwoSpoolTransientHooks};
+use crate::two_spool_transient::{
+    MarchedBleed, MarchedStator, TwoSpoolTransientCore, TwoSpoolTransientHooks,
+};
 
 // ---------------------------------------------------------------------------------------------
 // THE DECLARED KNOB
@@ -457,4 +478,312 @@ fn r79_cap_fuel(
         bump(&COORD_BINDS);
     }
     Ok(if p_cap < a_cap { p_cap } else { a_cap })
+}
+
+// =============================================================================================
+// §§ 1–3 — THE SET POINT, THE SLOPE RATIO, AND THE SENSITIVITY (step 2)
+// =============================================================================================
+
+/// The readers' refusal arm — Python's readers catch nothing, so an `Abort` ends the reader.
+/// [`residual_gauge`](crate::residual_gauge)'s own `boom`, one module over.
+fn boom<T>(e: Abort) -> T {
+    panic!("{}", e.0)
+}
+
+/// [`coord_at`]'s perturbation of the valve position for `dw*/dq` — Python's `dq` default.
+pub const COORD_AT_DQ: f64 = 1e-5;
+
+/// [`coord_at`]'s relative step for the slope — Python's `rel` default.
+pub const COORD_AT_REL: f64 = 1e-7;
+
+/// Both coordinates read at one frozen trajectory point — Python's `_coord_at` row dict.
+#[derive(Clone, Copy, Debug)]
+pub struct CoordRow {
+    /// Path distance along the march.
+    pub s: f64,
+    /// The phi leg's set point, solved in `phi` …
+    pub w_phi: f64,
+    /// … and in incidence.
+    pub w_inc: f64,
+    /// `|w_inc − w_phi| / max(|w_phi|, 1e-30)` — P1, reported as a NUMBER.
+    pub d_set: f64,
+    /// `w_inc == w_phi`. **On the shipped rig this is `true` at every row, and not because the
+    /// coordinate is exact** — see [`coord_scan`].
+    pub same_float: bool,
+    /// The residual's slope at `w_phi`, in `phi` …
+    pub slope_phi: f64,
+    /// … and in incidence, **at the SAME `w_phi`**, not at `w_inc`.
+    pub slope_inc: f64,
+    /// `slope_inc / slope_phi`, or `NaN` on a zero `slope_phi` — D2's quantity.
+    pub ratio: f64,
+    /// `dw*/dq` by re-solving at `q ± dq`, in `phi` …
+    pub dwdq_phi: f64,
+    /// … and in incidence — D3's pair.
+    pub dwdq_inc: f64,
+}
+
+/// §§ 1–3's whole reading — Python's `coord_scan` return dict.
+#[derive(Clone, Debug)]
+pub struct CoordScan {
+    pub phi_lim: f64,
+    pub margin: f64,
+    pub inc: bool,
+    pub n: usize,
+    pub rows: Vec<CoordRow>,
+    /// `1/phi_lim²` — the derived slope factor.
+    pub predicted_ratio: f64,
+    /// **D2**: worst `|ratio/pred − 1|`. `None` on an empty scan, as Python's `if rows else None`.
+    pub ratio_err: Option<f64>,
+    /// **D3**: worst `|dwdq_inc − dwdq_phi| / max(|dwdq_phi|, 1e-30)`.
+    pub dwdq_err: Option<f64>,
+    /// **P1**: worst and best [`d_set`](CoordRow::d_set).
+    pub d_set: Option<f64>,
+    /// See [`d_set`](Self::d_set).
+    pub d_set_min: Option<f64>,
+    /// Rows whose two set points are the same float. **NOT an `Option`**: Python's `sum` over no
+    /// rows is `0` and carries no `if rows else None`.
+    pub n_same_float: usize,
+}
+
+/// Python's `max(abs(x), floor)` — argument 0 is an EXPRESSION, so the fold is written out rather
+/// than spelled `f64::max`, which would discard a `NaN` Python keeps.
+fn py_abs_floor(x: f64, floor: f64) -> f64 {
+    let ax = x.abs();
+    if floor > ax { floor } else { ax }
+}
+
+/// Both coordinates read at ONE frozen trajectory point — Python's `_coord_at`
+/// (`engine.py:21006`).
+///
+/// # THE FREEZE IS TAKEN AROUND EVERY SOLVE, AND EACH TAKES ITS OWN
+///
+/// `solve` freezes `(qq, v)` with `qq` the PERTURBED valve position; `slope` freezes `(q, v)`.
+/// Python sets both cells and clears both to `None` in a `finally` — a clobber, which
+/// [`MarchedBleed`]/[`MarchedStator`] reproduce by restoring to `None`.
+///
+/// # BOTH SLOPES ARE READ AT `w_phi`, AND ON THE SHIPPED RIG NO GATE CAN SEE IT
+///
+/// `slope("incidence", w_p)` (`engine.py:21035`) — the incidence slope at the PHI root, so the
+/// ratio compares two residuals at one point. Reading it at `w_inc` would be a different
+/// quantity, and on the shipped rig it is the SAME number, because `w_inc == w_phi` bit for bit at
+/// every row ([`coord_scan`]'s finding). So this is ported from the source and not from a test.
+///
+/// # THE CALL ORDER IS PYTHON's
+///
+/// `phi` then incidence at `q`, both slopes, then `phi` at `q+dq`, `q−dq`, then incidence at
+/// `q+dq`, `q−dq`. No value depends on the order and nothing reads the counters in between, so
+/// the order is invisible to every gate — kept because the source keeps it.
+pub fn coord_at(
+    flight: &FlightCondition, m: &ScheduledStatorCore, p: &FuelPoint, surge: &Floor, dq: f64,
+    rel: f64,
+) -> CoordRow {
+    let (a, h, ms) = (p.nu_lp, p.nu_hp, p.mf_sched);
+    let (q, v) = crate::stiffness_ledger::bv_of(p);
+    let solve = |coord: &'static str, qq: f64| -> f64 {
+        let _sb = MarchedBleed::set(&m.fuel.inner, qq);
+        let _sv = MarchedStator::set(&m.fuel.inner, v);
+        phi_cap(&m.fuel, flight, a, h, ms, surge, Some(coord)).unwrap_or_else(boom)
+    };
+    let slope = |coord: &'static str, w: f64| -> f64 {
+        let _sb = MarchedBleed::set(&m.fuel.inner, q);
+        let _sv = MarchedStator::set(&m.fuel.inner, v);
+        let big_g = phi_residual(&m.fuel, flight, a, h, surge, Some(coord));
+        let d = rel * py_abs_floor(w, 1e-9);
+        (big_g(w + d).unwrap_or_else(boom) - big_g(w - d).unwrap_or_else(boom)) / (2.0 * d)
+    };
+    let w_p = solve(PHI_REF_PHI, q);
+    let w_i = solve(PHI_REF_INCIDENCE, q);
+    let s_p = slope(PHI_REF_PHI, w_p);
+    let s_i = slope(PHI_REF_INCIDENCE, w_p);
+    let dwdq = |coord: &'static str| -> f64 {
+        let hi_ = solve(coord, q + dq);
+        let lo_ = solve(coord, q - dq);
+        (hi_ - lo_) / (2.0 * dq)
+    };
+    let dwdq_phi = dwdq(PHI_REF_PHI);
+    let dwdq_inc = dwdq(PHI_REF_INCIDENCE);
+    CoordRow {
+        s: p.s,
+        w_phi: w_p,
+        w_inc: w_i,
+        d_set: (w_i - w_p).abs() / py_abs_floor(w_p, 1e-30),
+        same_float: w_i == w_p,
+        slope_phi: s_p,
+        slope_inc: s_i,
+        ratio: if s_p != 0.0 { s_i / s_p } else { f64::NAN },
+        dwdq_phi,
+        dwdq_inc,
+    }
+}
+
+/// §§ 1–3: **the set point, the slope ratio `1/phi_lim²`, and `dw*/dq`.** Python's `coord_scan`.
+///
+/// Every number here confirms an identity; the spec declares the section UNSCORED in advance.
+/// Read at rung 78's own points and settings, through [`gauge_points`].
+///
+/// # ON THE SHIPPED RIG, TWO OF ITS FOUR NUMBERS COMPARE THE FALLBACK WITH ITSELF
+///
+/// Measured in Python before this port was written, and gated in `tests/slice_ai_scan.rs`: over
+/// the scan's 10 points, **all 30 `phi` solves and all 30 incidence solves short-circuit to the
+/// shipped `_surge_fuel`** (counters `fb_phi = fb_inc = calls_phi = calls_inc = 30`). That
+/// fallback brackets its own hardcoded `phi` residual whatever coordinate asked, so
+/// `w_inc == w_phi` bit for bit at every row, and `d_set` and D3's `dwdq_err` are exact zeros
+/// **by substitution, not by invariance** — rung 79 § 5.1's mechanism, which the spec records for
+/// the MARCH, arriving at § 1's table. The spec's D3 row reads that zero as *"not small, exactly
+/// zero"*. **Only D2** — the slope ratio, read straight off [`phi_residual`] — is a number a
+/// wrong coordinate would move; § 4's census walks `Gi` for real but reads only its SIGN (see
+/// [`coord_census`]).
+///
+/// **So this reader's aggregates cannot tell a correct port from several wrong ones** — see
+/// [`coord_at`]'s notes — and the gate for them is the counters, not the values. Measured by
+/// injection (plan § 5.33.2): solving the incidence `dw*/dq` leg, or `w_inc`, in `phi` instead
+/// moves NO value and is caught only by the counter vector.
+#[allow(clippy::too_many_arguments)]
+pub fn coord_scan(
+    core: &ScheduledStatorCore, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, tt4_max: f64,
+    phi_lim: f64, margin: f64, taus: (f64, f64, f64, f64), inc: bool, r: f64, s_settle: f64,
+    ds: f64, v_max: f64, dq: f64, every: usize,
+) -> CoordScan {
+    let (m, surge, _accel, pts) = gauge_points(
+        core, flight, tt4_lo, tt4_hi, tt4_max, margin, taus, r, s_settle, ds, v_max, inc,
+        phi_lim, every);
+    // Python passes `surge` straight into `_phi_residual`, which reads `surge.phi_lim` — an
+    // AttributeError on `None`, raised only if there is a row to read.
+    let rows: Vec<CoordRow> = pts.iter()
+        .map(|p| coord_at(flight, &m, p,
+                          surge.as_ref().expect("rung-79 § 1: `_gauge_points` armed no phi floor"),
+                          dq, COORD_AT_REL))
+        .collect();
+    let pred = 1.0 / (phi_lim * phi_lim);
+    let pick = |xs: Vec<f64>, f: fn(&[f64]) -> f64| -> Option<f64> {
+        if xs.is_empty() { None } else { Some(f(&xs)) }
+    };
+    CoordScan {
+        phi_lim,
+        margin,
+        inc,
+        n: rows.len(),
+        predicted_ratio: pred,
+        ratio_err: pick(rows.iter().map(|x| (x.ratio / pred - 1.0).abs()).collect(), py_max_of),
+        dwdq_err: pick(rows.iter()
+            .map(|x| (x.dwdq_inc - x.dwdq_phi).abs() / py_abs_floor(x.dwdq_phi, 1e-30))
+            .collect(), py_max_of),
+        d_set: pick(rows.iter().map(|x| x.d_set).collect(), py_max_of),
+        d_set_min: pick(rows.iter().map(|x| x.d_set).collect(), py_min_of),
+        n_same_float: rows.iter().filter(|x| x.same_float).count(),
+        rows,
+    }
+}
+
+// =============================================================================================
+// § 4 — THE ROOT CENSUS, IN BOTH COORDINATES (step 2)
+// =============================================================================================
+
+/// One riding point of [`coord_census`].
+#[derive(Clone, Debug)]
+pub struct CoordCensusRow {
+    pub s: f64,
+    /// The phi leg's set point in `phi` — the walk's anchor for BOTH coordinates.
+    pub w0: f64,
+    pub n_phi: usize,
+    pub n_inc: usize,
+    /// Every sign change of `Gs`, as a fraction of `w0`, located by bisection.
+    pub roots_phi: Vec<f64>,
+    /// … and of `Gi`.
+    pub roots_inc: Vec<f64>,
+    /// `max(|x − y|)` over the two lists ZIPPED — Python's `zip` truncates to the shorter, as
+    /// Rust's does — and `0.0` when either is empty (`default=0.0`).
+    pub worst: f64,
+}
+
+/// § 4's whole reading — Python's `coord_census` return dict.
+#[derive(Clone, Debug)]
+pub struct CoordCensus {
+    pub phi_lim: f64,
+    pub margin: f64,
+    pub inc: bool,
+    pub n: usize,
+    pub rows: Vec<CoordCensusRow>,
+    /// **D1**: equal counts at every row. Python's `all` over no rows is `True` — reproduced.
+    pub counts_equal: bool,
+    /// The distinct `n_phi` values, as a sorted SET — `n_inc` does not enter it.
+    pub n_roots: Vec<usize>,
+    /// The worst row [`worst`](CoordCensusRow::worst) — `None` over no rows (`default=None`), a
+    /// DIFFERENT default from the per-row one.
+    pub worst: Option<f64>,
+}
+
+/// [`coord_census`]'s walk defaults — Python's `lo = 0.2, hi = 3.0, n = 400`, rung 78 § 3's.
+pub const COORD_CENSUS_WALK: (f64, f64, usize) = (ROOT_COUNT_LO, ROOT_COUNT_HI, ROOT_CENSUS_N);
+
+/// § 4: **the root COUNT, walked in both coordinates over rung 78's own window.** Python's
+/// `coord_census` (`engine.py:21084`).
+///
+/// A count, not a solve — rung 78 § 3's [`root_count`], with `locate` at its default `true`.
+/// **Unlike [`coord_scan`], this reader never passes the incidence residual through `_cap_free`'s
+/// short-circuit**: it walks `Gs` and `Gi` directly. Only the anchor `w0` is a solve, in `phi`, and
+/// that one falls back (counters `fb_phi = calls_phi = 10`, incidence untouched). So unlike
+/// [`coord_scan`]'s D3, this reader really does evaluate the incidence residual.
+///
+/// # AND ITS OUTPUT IS THE SAME WHETHER OR NOT IT DOES
+///
+/// The walk and its bisection read only the SIGN of the residual, and D1's whole content is that
+/// `h > 0` makes the two signs one. So the located roots agree to the BIT (measured, all 10 rows),
+/// and a port that walked `Gs` twice returns the identical census — injected, and invisible to
+/// every gate, with no counter to split it because building a residual bumps nothing. That is the
+/// theorem, not a defect: D1 is the claim that the two walks cannot differ, so a walk that
+/// compares a residual with itself confirms it just as well. The census is evidence that the
+/// incidence residual has ONE root on rung 78's window, not evidence that it was the one walked.
+///
+/// One freeze per point, set before the anchor solve and cleared after the second walk.
+#[allow(clippy::too_many_arguments)]
+pub fn coord_census(
+    core: &ScheduledStatorCore, flight: &FlightCondition, tt4_lo: f64, tt4_hi: f64, tt4_max: f64,
+    phi_lim: f64, margin: f64, taus: (f64, f64, f64, f64), inc: bool, r: f64, s_settle: f64,
+    ds: f64, v_max: f64, every: usize, lo: f64, hi: f64, n: usize,
+) -> CoordCensus {
+    let (m, surge, _accel, pts) = gauge_points(
+        core, flight, tt4_lo, tt4_hi, tt4_max, margin, taus, r, s_settle, ds, v_max, inc,
+        phi_lim, every);
+    let mut rows: Vec<CoordCensusRow> = Vec::with_capacity(pts.len());
+    for p in pts.iter() {
+        let surge = surge.as_ref().expect("rung-79 § 4: `_gauge_points` armed no phi floor");
+        let (a, h, ms) = (p.nu_lp, p.nu_hp, p.mf_sched);
+        let (q, v) = crate::stiffness_ledger::bv_of(p);
+        let (w0, rp, ri) = {
+            let _sb = MarchedBleed::set(&m.fuel.inner, q);
+            let _sv = MarchedStator::set(&m.fuel.inner, v);
+            let w0 = phi_cap(&m.fuel, flight, a, h, ms, surge, Some(PHI_REF_PHI))
+                .unwrap_or_else(boom);
+            let gp = phi_residual(&m.fuel, flight, a, h, surge, Some(PHI_REF_PHI));
+            let rp = root_count(&*gp, w0, lo, hi, n, true).unwrap_or_else(boom);
+            let gi = phi_residual(&m.fuel, flight, a, h, surge, Some(PHI_REF_INCIDENCE));
+            let ri = root_count(&*gi, w0, lo, hi, n, true).unwrap_or_else(boom);
+            (w0, rp, ri)
+        };
+        let diffs: Vec<f64> = rp.iter().zip(ri.iter()).map(|(x, y)| (x - y).abs()).collect();
+        rows.push(CoordCensusRow {
+            s: p.s,
+            w0,
+            n_phi: rp.len(),
+            n_inc: ri.len(),
+            worst: py_max_default(&diffs, 0.0),
+            roots_phi: rp,
+            roots_inc: ri,
+        });
+    }
+    let mut n_roots: Vec<usize> = rows.iter().map(|x| x.n_phi).collect();
+    n_roots.sort_unstable();
+    n_roots.dedup();
+    let worsts: Vec<f64> = rows.iter().map(|x| x.worst).collect();
+    CoordCensus {
+        phi_lim,
+        margin,
+        inc,
+        n: rows.len(),
+        counts_equal: rows.iter().all(|x| x.n_phi == x.n_inc),
+        n_roots,
+        worst: if worsts.is_empty() { None } else { Some(py_max_of(&worsts)) },
+        rows,
+    }
 }
