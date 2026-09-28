@@ -67,7 +67,7 @@ appear at all.
 |---|---|---|
 | **D1** | root SET preserved **pointwise** (`sign Gi ≡ sign Gs`), so equal counts on any window | counts **equal** at 10/10, `n_roots = [1]`, located roots agree to `0.000e+00` (§ 4) |
 | **D2** | slope at the root scales by exactly `1/φ_lim²` — a **derived** factor, no fitted content | `1.5625` to **`4.33e−09`** over 10 points |
-| **D3** | `dw*/dq` **invariant** (both halves carry the same `h(w*)`) | **`0.000e+00`** — not small, *exactly* zero |
+| **D3** | `dw*/dq` **invariant** (both halves carry the same `h(w*)`) | `0.000e+00` — **but NOT a measurement of this claim** (corrected 2026-09-28, found porting it). Every incidence solve in the scan falls back to `_surge_fuel` (counters `[hits, binds, fb_phi, fb_inc, calls_phi, calls_inc]` move `[0, 0, 30, 30, 30, 30]`), so `w_inc` and `dwdq_inc` **are** the `φ` solve, bit for bit: the fallback compared with itself — § 5.1's mechanism, at this table. `test_sensitivity_is_coordinate_invariant` guards the plumbing, not the coordinate. § 5.2's bypass reaches the set point (`≤ 6.14e−15`), not its slope, so D3 rests on the `h(w*)` algebra alone; **D2 is §§ 1–4's only number a wrong coordinate would move** |
 | **D4** | monotonicity survives, so the **shipped** bracket applies in both coordinates | 2 732 `_cap_free` calls, **zero** failures; no damped Newton anywhere in this rung |
 
 ### 1.1 The structural point, and it is why this BOUNDS rung 78
