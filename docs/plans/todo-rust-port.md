@@ -25501,3 +25501,91 @@ only thing in §§ 1–4 that sees the coordinate applied is D2 (I9).
 (step 5); the oracle (step 6). The citation guard is re-blessed for three new anchors (`21006`,
 `21035`, `21084`, each checked by hand). Gate for this step: full `cargo test --release` + full
 `pytest` — the numbers are in the commit.
+
+#### 5.33.3 STEP 3 — RUNG 79 §§ 5–5.2, AND **THE ONLY SECTION ON THE PLANT ASKS THE KNOB THREE TIMES IN 1 366, AND ITS REFERENCE MARCH COULD BE RUN IN EITHER COORDINATE**
+
+`with_probe`, `coord_march` (+ `coord_march_logged`), `forced_cap`, `coord_forced` in
+`rust/src/state_coordinate.rs`, and `rust/tests/slice_ai_march.rs` — **4 gates**, every key of both
+readings **bit for bit** against a Python probe (`W:\temp\claude\slice-ai-step3\probe_py.py`), the
+counter vector read in the SAME test that runs the march, and the probe LOG pinned as an FNV-1a digest
+over every row's IEEE bits (`0xdeae979b79b07cde`, 1 366 rows) plus its first and last rows. Green on
+the first run; 3 s in Rust against 74 s on PyPy. `march_key`, `rel_err` and `MARCH_KEYS` in
+`residual_gauge.rs` became `pub(crate)` and are shared: Python repeats that loop verbatim in rungs 78
+and 79, and the two readers are never compared with each other, so one body cannot turn a reduce into
+a self-comparison (slice F's rule, checked before sharing).
+
+#### (a) WHAT PYTHON MEASURED, BEFORE THE PORT
+
+* **The march** — counters `[hits, binds, fb_phi, fb_inc, calls_phi, calls_inc] =
+  [1366, 1366, 1363, 1363, 1366, 1366]`, so `br_inc = 3`: of 1 366 incidence set-point solves on the
+  plant, THREE bracketed the incidence residual. `d_max = 0.0` exactly, `vacuous = True`,
+  `n_live = 3`, `n_reach = 1363`, `n_both = 0`. The test suite asserts all of this as a disclosure,
+  so it is § 5.1 as shipped — recorded here because it is now a Rust gate too.
+* **Neither `accel_for` call moves a counter** (wrapped and snapshotted), and the `phi` march
+  dispatches to rung 78's body. So Python's mid-reader reset is value-equivalent to a reset at the top
+  — the advisor's registered survivor, J1.
+* **§ 5.2** — every point binds (`n_binding = 10`), `d_forced = 6.1e-15` (1 of 10 rows the same
+  float), `d_shipped = 0.0` at every row. `coord_forced` moves no counter: it never calls `_phi_cap`.
+
+#### (b) THE PORT
+
+* **`with_probe`** is a guard that saves the previous flag AND log, installs `Some(vec![])`, and
+  restores both on drop; the log is TAKEN before the guard restores, as Python reads `_coord_log`
+  inside its `finally`. On an unwind it only restores. Gated by a manufactured NEST (outer logs a
+  SLACK call, inner a BINDING one, outer another SLACK: inner 1 row, outer 2) and by an unwind gate.
+* **The four coordinate scopes go through `CoordScope`**, so through the table: at rung 79 the cell
+  writes `phi_ref` and `r79_shared_rig` carries it onto every rig. The test rig sets `_rig`'s four
+  knobs (`demand`/`sched`/`none`/`solve`) — step 2 could omit them, this step cannot (advisor), because
+  `accel_for` and `cap_march` build off the core through `at_lever`. After the march the gate reads the
+  core back: `(lag_coord, phi_ref) == ("demand", "phi")`.
+* **`forced_cap` is ported to the letter, with its own `FORCED_TOL = 1e-13`** rather than `LEG_TOL`
+  (same value today). Its `phi` arm is `_surge_fuel`'s instruction sequence, which is the whole
+  content of `d_shipped == 0`. Two differences from `_surge_fuel` are Python's and kept: the binding
+  walk does not reset `glo` after a non-negative reading, and the two walks treat a failed evaluation
+  differently (`continue` down, `break` with `ghi = None` up).
+* **`br_*` are `i64`** (a fallback bumps before `_surge_fuel` can raise; a call bumps only after the
+  solve returns). `vacuous` is `Option<bool>`, `Some(true)` on `d_max == 0`. `gap_med`/`d_med` are
+  upper-median INDICES. `n_distinct*` count like a Python `set` (`-0.0` merged with `0.0`, each `NaN`
+  its own). `sched_moved` is `py_max_of` with no default — Python's `max([…] + […])` raises on empty.
+
+#### (c) THE INJECTION SWEEP — 16 injections, predicted in writing first (`predictions.md`), **16 of 16 right**
+
+| # | injection | result |
+|---|---|---|
+| J1 | counter reset moved to the top of `coord_march` | SURVIVED — predicted (advisor); nothing bumps before Python's reset |
+| J2 | `gap_med` as the LOWER median | SURVIVED — predicted (lean); neighbours at 682/683 are equal floats (129 distinct over 1 366) |
+| J3 | `vacuous`: `d_max == 0` → `None` (Python's recorded first version) | **KILLED** |
+| J4 | `forced_cap` tol = `LEG_TOL` | SURVIVED — predicted; same value |
+| J5 | binding walk resets `glo` after a non-negative reading | SURVIVED — predicted; the walk breaks on the first negative |
+| J6 | slack walk grows by `shrink` | SURVIVED — predicted; **the slack arm is UNREACHED on this rig** (all 10 points bind) — step 5's `:21301` refusal gate drives it |
+| J7 | `with_probe` restores the log to `None` | **KILLED** — the nest gate |
+| J8 | `with_probe` does not reset an existing log | **KILLED** — the nest gate (inner gets 2 rows) |
+| J9 | incidence scope entered outside the probe | SURVIVED — predicted; restore order unobservable |
+| J10 | `n_reach` via `f64::min` | SURVIVED — predicted; no NaN |
+| J11 | set size deduped on bits | SURVIVED — predicted; no `-0.0` |
+| J12 | the REFERENCE march (`traj0`) run at incidence | SURVIVED — predicted; see below |
+| J13 | `coord_forced`'s `w_inc` solved in `phi` | **KILLED** |
+| J14 | `w_shipped` taken from `forced_cap("phi")` | SURVIVED — predicted; see below |
+| J15 | the probe's `p_phi` solved in the machine's coordinate | **KILLED by the COUNTER VECTOR** (`fb_phi` 1363→0, `fb_inc` →2726, `calls_inc` →2732); the digest cannot see it, because `d_max = 0` means `p_phi == p_cap` bitwise at every row already |
+| J16 | `CoordScope::drop` writes `lag_coord` directly (item L's survivor) | **KILLED twice** — step 1's readback gate AND this step's post-march readback, `("phi", "incidence")` |
+
+The first sweep ran without `--no-fail-fast`, so a kill in `slice_ai_cells` stopped cargo before
+`slice_ai_march` ran; J15 and J16 were re-run with it to see WHICH gate kills. Item L (§ 5.33 (iii)) now
+has its killing gate on a real reader, as owed.
+
+**J12 and J14 are the step's reading.** J12: § 5's P4 (`worst = 0`) compares the incidence march with a
+reference march, and on this rig the reference could be run in EITHER coordinate with every key
+identical — the march is value-invisible to the coordinate, which is `d_max = 0` seen from the
+trajectory. J14: § 5.2's `d_shipped == 0` compares the forced `phi` solve with `_surge_fuel`, and
+since the first is a COPY of the second's arithmetic, substituting one for the other is invisible. That
+is the gate's purpose (it proves the bypass measures the SAME set point) and also its limit: it cannot
+tell the reference from the instrument. **The only number in §§ 5–5.2 that sees the coordinate is
+`d_forced`** (J13) — § 5.2 is where rung 79's knob is actually measured, as the spec says.
+
+#### (d) WHAT STEP 3 LEAVES
+
+Rung 80 (step 4); the two ported suites, the seven refusals and `:21486`'s ulp band (step 5 — which
+also owes `forced_cap`'s SLACK arm, J6); the oracle (step 6); the dispatch gates (step 7). The citation
+guard is re-blessed for eight new anchors (`20983`, `21125`, `21151`, `21157`, `21165`, `21172`,
+`21256`, `21306`), each read by hand. Gate for this step: full `cargo test --release` + full `pytest` —
+the numbers are in the commit.

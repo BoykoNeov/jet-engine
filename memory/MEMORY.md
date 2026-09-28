@@ -35,7 +35,7 @@ new slices and step links go THERE, not here.
 - [Visuals ↔ model binding](visuals-model-binding.md) — the pages had NO test and looked fine; in SYNC is not BOUND, and the page's own design point was typed markup
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding, backticks in `-m`, a status read off the runner, a log still being written, and a text-mode rewrite that flips every line ending, `cmd`'s parse-time `%ERRORLEVEL%`, and the EOL check that was itself the hazard
 
-## The Rust port — phases 0–6 done; phase 7 in flight, slice AG (75/76) COMPLETE in 7 steps, slice AH (77/78) COMPLETE in 7 steps, slice AI (79/80) steps 1–2 DONE, step 3 next
+## The Rust port — phases 0–6 done; phase 7 in flight, slice AG (75/76) COMPLETE in 7 steps, slice AH (77/78) COMPLETE in 7 steps, slice AI (79/80) steps 1–3 DONE, step 4 next
 - [Rust port status](rust-port-status.md) — the running tally: phases, slices, and the numbers each closed slice landed on. **Update THAT file, not this line.**
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; a new PHASE needs authorisation
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost

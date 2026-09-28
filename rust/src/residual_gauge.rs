@@ -1511,7 +1511,7 @@ pub const GAUGE_MARCH_MULTS: [f64; 4] = [0.0, 0.5, 2.0, 3.0];
 
 /// The five trajectory keys § 5 compares, in Python's order — which is load-bearing, because
 /// `where_` reports the FIRST strict maximum in key-major order.
-const MARCH_KEYS: [&str; 5] = ["nu_lp", "nu_hp", "mf", "b", "v"];
+pub(crate) const MARCH_KEYS: [&str; 5] = ["nu_lp", "nu_hp", "mf", "b", "v"];
 
 /// Python's `traj[i].get(key)` behind its `isinstance(x, float)` filter.
 ///
@@ -1519,7 +1519,12 @@ const MARCH_KEYS: [&str; 5] = ["nu_lp", "nu_hp", "mf", "b", "v"];
 /// answers `None` and the pair is skipped — the filter, ported. **It never fires on the shipped
 /// march** (measured: 0 of 341 points lack either), because § 5 marches the demand coordinate and
 /// every such point carries both. Kept because the source has it.
-fn march_key(p: &FuelPoint, key: &str) -> Option<f64> {
+///
+/// **SHARED WITH RUNG 79's `coord_march`**, as are [`MARCH_KEYS`] and [`rel_err`]: Python repeats
+/// this loop verbatim in both readers. Neither reader's output is ever compared with the other's,
+/// so one Rust body cannot turn a reduce into a self-comparison — the case in which slice F's
+/// rule says a duplication must stay duplicated.
+pub(crate) fn march_key(p: &FuelPoint, key: &str) -> Option<f64> {
     match key {
         "nu_lp" => Some(p.nu_lp),
         "nu_hp" => Some(p.nu_hp),
@@ -1535,7 +1540,7 @@ fn march_key(p: &FuelPoint, key: &str) -> Option<f64> {
 }
 
 /// Python's `max(abs(x - y) / max(abs(y), floor))` term — the inner `max` is expression-first.
-fn rel_err(x: f64, y: f64, floor: f64) -> f64 {
+pub(crate) fn rel_err(x: f64, y: f64, floor: f64) -> f64 {
     let ay = y.abs();
     (x - y).abs() / if floor > ay { floor } else { ay }
 }

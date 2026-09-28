@@ -118,3 +118,10 @@ status was not written; here, the write happened and the value was empty. **The 
 `$p.Refresh()` before reading `ExitCode`, or `(Start-Process ... -Wait -PassThru).ExitCode`.** Use
 one of them whenever a run's exit code is going to be quoted, and never re-run a 15-minute suite
 just to recover a status you can capture correctly the first time.
+
+**`cmd /c start /b /wait x.cmd` runs the batch under `cmd /K` — the shell NEVER EXITS.** Slice AI
+steps 2–3 (2026-09-28) launched their gates that way for below-normal priority. The batch finished,
+but its `cmd /K` window stayed open, so the background task never reported done and the session
+sat polling a marker file for hours with no signal. **The fix is an `exit` as the batch's LAST
+line** (or `start ... cmd /c x.cmd`). Check with `Get-CimInstance Win32_Process` for a leftover
+`cmd.exe /K <your batch>`, and close it by that PID.

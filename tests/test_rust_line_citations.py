@@ -198,9 +198,14 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # `slice_ai_scan.rs` cites nothing -- and three new anchors in `state_coordinate.rs`: the two
 # readers' `def` lines (`21006` `_coord_at`, `21084` `coord_census`) and `21035`, the line that
 # reads BOTH slopes at `w_p`. All three printed lines were checked against their sentences.
+# RE-BLESSED AT SLICE AI STEP 3 (43/257/157 -> 43/265/165). No new file -- `slice_ai_march.rs`
+# cites nothing -- and eight new anchors in `state_coordinate.rs`: the four readers' `def` lines
+# (`20983` `_with_probe`, `21125` `coord_march`, `21256` `_forced_cap`, `21306` `coord_forced`)
+# and `coord_march`'s four `_with_coord` dispatches (`21151`, `21157`, `21165`, and `21172`, the
+# `_with_probe` line whose next line hands it the bound method). All eight read by hand.
 FILES = 43
-SITES = 257
-LINES = 157
+SITES = 265
+LINES = 165
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment
 # SAID, where the number is part of the quotation and must not track the file.
