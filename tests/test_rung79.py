@@ -447,8 +447,8 @@ def test_the_probe_flag_is_written_on_the_class(design):
     SCOPE: this checks the FLAG's storage, not the PLUMBING. It builds a fresh machine directly
     rather than going through `_cap_march` -> `_shared_rig` -> `at_lever`, so it would still pass
     if a future edit dropped the flag somewhere in that chain. The real regression guard for the
-    chain is `n_log > 100` in `test_the_gap_log_records_distinct_states`; do not read this test
-    as covering it."""
+    chain is `n_log > 100` in `test_the_gap_log_records_distinct_FLOATS_not_distinct_states`;
+    do not read this test as covering it."""
     m = _rig(design)
     seen = {}
 

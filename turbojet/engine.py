@@ -21070,7 +21070,7 @@ class StateCoordinateTransient(ResidualGaugeTransient):
                     predicted_ratio=pred,
                     # D2: the slope scales by the DERIVED factor, with no fitted content
                     ratio_err=max(abs(x["ratio"] / pred - 1.0) for x in rows) if rows else None,
-                    # D3: ... and the SENSITIVITY does not move at all
+                    # D3's PLUMBING only: incidence falls back to the phi solve, so 0 by wiring
                     dwdq_err=max(abs(x["dwdq_inc"] - x["dwdq_phi"])
                                  / max(abs(x["dwdq_phi"]), 1e-30) for x in rows)
                     if rows else None,

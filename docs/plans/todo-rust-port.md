@@ -25746,7 +25746,8 @@ small, exactly zero"* — false since `ea43d9c`. Corrected, with `slice_ai_scan.
 plan's § 5.33.2 and its memory entry pointed at `ea43d9c`/`9f1d11a`. Two stale Python lines are
 LISTED, not edited: `engine.py:21073`'s comment (*"the SENSITIVITY does not move at all"*) and
 `test_rung79.py`'s probe-flag docstring naming `test_the_gap_log_records_distinct_states`, a test
-since renamed.
+since renamed. **Both fixed after step 5**, wording only, the comment kept on its one line so no
+cited `engine.py` line number moves.
 
 ##### (f) WHAT STEP 5 LEAVES
 
