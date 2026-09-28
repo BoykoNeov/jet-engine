@@ -203,9 +203,14 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # (`20983` `_with_probe`, `21125` `coord_march`, `21256` `_forced_cap`, `21306` `coord_forced`)
 # and `coord_march`'s four `_with_coord` dispatches (`21151`, `21157`, `21165`, and `21172`, the
 # `_with_probe` line whose next line hands it the bound method). All eight read by hand.
+# RE-BLESSED AT SLICE AI STEP 4 (43/265/165 -> 43/280/178). No new file -- `slice_ai_split.rs`
+# cites nothing -- and thirteen new anchors in `split_wall.rs`: the seven `def` lines (`21512`
+# `_with_air`, `21524` `_split_march`, `21535` `_split_row`, `21583`, `21623`, `21679`, `21716` the
+# four readers), `21531` (the `_coord_march` call), the two asserts (`21551`, `21647`), `21742`
+# (the gains call), `21750` (`rate`), and `21792`, the last line of the class. All read by hand.
 FILES = 43
-SITES = 265
-LINES = 165
+SITES = 280
+LINES = 178
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment
 # SAID, where the number is part of the quotation and must not track the file.

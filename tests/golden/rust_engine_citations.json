@@ -165,6 +165,19 @@
   "21447": "m._sm_air = self._sm_air",
   "21450": "def _shared_rig(self, sm, tau, tau_s, v_max, Tt4_max, tau_att=0.05, tau_rel=0.15,",
   "21486": "assert (self._sm_air == sm or w[\"phi_air\"] is None or w[\"phi_lim\"] is None",
-  "21495": "def _walls_of(m, surge) -> dict:"
+  "21495": "def _walls_of(m, surge) -> dict:",
+  "21512": "def _with_air(self, sm_air, fn, *a, **kw):",
+  "21524": "def _split_march(self, flight, Tt4_lo, Tt4_hi, Tt4_max, phi_lim, phi_air, coord,",
+  "21531": "return self._with_air(sm_air, self._coord_march, flight, Tt4_lo, Tt4_hi, Tt4_max, sm,",
+  "21535": "def _split_row(m, surge, traj, Tt4_lo, phi_lim, phi_air, coord, tol=1e-12) -> dict:",
+  "21551": "assert m.bleed_lim is not None, (",
+  "21583": "def split_liveness(self, flight: \"FlightCondition\", Tt4_lo: float, Tt4_hi: float,",
+  "21623": "def split_arrest(self, flight: \"FlightCondition\", Tt4_lo: float, Tt4_hi: float,",
+  "21647": "assert phi_air_hi > max(walls) and phi_lim_lo < min(walls), (",
+  "21679": "def split_saturation(self, flight: \"FlightCondition\", Tt4_lo: float, Tt4_hi: float,",
+  "21716": "def split_gains(self, flight: \"FlightCondition\", Tt4_lo: float, Tt4_hi: float,",
+  "21742": "gg = m._with_share(\"max\", m._quad_gains_at, flight, p, None, surge, Tt4_max)",
+  "21750": "rate = sum(1.0 / t for t in tt)",
+  "21792": "max_mask_leak=max((c[\"mask_leak\"] for c in cells_all), default=None))"
  }
 }

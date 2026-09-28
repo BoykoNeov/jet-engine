@@ -25589,3 +25589,93 @@ also owes `forced_cap`'s SLACK arm, J6); the oracle (step 6); the dispatch gates
 guard is re-blessed for eight new anchors (`20983`, `21125`, `21151`, `21157`, `21165`, `21172`,
 `21256`, `21306`), each read by hand. Gate for this step: full `cargo test --release` + full `pytest` —
 the numbers are in the commit.
+
+#### 5.33.4 STEP 4 — RUNG 80 WHOLE, AND **ON EVERY RUNG-80 READER RUNG 79's SIX COUNTERS STAY AT ZERO: THE INSTRUMENT THAT CAUGHT STEPS 2–3's COORDINATE DEFECTS IS BLIND HERE, AND THE FIELD READBACK TAKES ITS PLACE**
+
+`AirScope` (`_with_air`), `split_march`, `split_row` and the four readers `split_liveness`,
+`split_arrest`, `split_saturation`, `split_wall::split_gains` in `rust/src/split_wall.rs`, and
+`rust/tests/slice_ai_split.rs` — **7 gates**, every value of every reading **bit for bit** against a
+Python probe (`W:\temp\claude\slice-ai-step4\probe_py.py`, spliced in by `gen.py`): 38 table rows
+field by field, 21 interior gain cells, each reader's aggregates, the counter vector read in the same
+test, and the caller's rig read back after each reader. All single-definer: **no table cell, P6
+holds.** Green on the first run, no warnings; 12 s in Rust against 80 s on PyPy for the same five
+readings.
+
+#### (a) WHAT PYTHON MEASURED, BEFORE THE PORT
+
+* **Settings**: `tests/test_rung80.py`'s fixtures and the fingerprint's `kernel_r80` — liveness
+  (`phi_lim = 0.75`), arrest (`phi_lim_lo = 0.75`), gains in `clip` AND `demand` at
+  `(None, 0.77, 0.80)` — plus **`split_saturation` at its EIGHT default walls**, the ones
+  `docs/rung80-spec.md` § 4 reports. No Python test calls `split_saturation`; the fingerprint pins
+  four of the eight. This gate is the only one on all eight.
+* **Rung 79's six counters move by `[0, 0, 0, 0, 0, 0]` around all five readings.** Rung 80 marches
+  in `phi` reference throughout, so `_cap_fuel`'s incidence branch is never entered. Steps 2 and 3
+  each had two injections caught by the counter vector ALONE; on this rung that instrument cannot
+  catch anything. What can: the built rig of every march carries `(lag_coord, phi_ref) =
+  (coord, "phi")`, and the caller's `_sm_air` is `None` again after each reader — both read back in
+  Python and gated in Rust.
+* **Branch census, both values reached**: `arrested` (3 of 32 rows — the shared arm above
+  `0.7731`), `riding4_valid`, `b_max_hit` (3), `vacuous` (clip `False`, demand `True`),
+  `control_nonzero` (`Some`/`None`), `zeros ∈ {1, 2}`, one `regime` skip (the clip shared wall), a
+  negative `max_req_fuel` (4 rows — the unfloored `demand` projection), `masked` holding two labels.
+  **UNREACHED on this rig, recorded rather than implied by a green sweep**: `monotone = False`,
+  `impossible = True`, a non-empty `owner`, the `switch` skip, and every `TypeError`-shaped arm of
+  the `max`/`sorted` folds over `None`.
+* **The built wall is not always the requested wall.** `sm_air = phi_air / ps - 1.0` and the rebuild
+  `(1 + sm_air)·ps` round-trip `0.76` to `0.7599999999999999` (2 of 24 split rows; every other
+  wall, and every fuel wall, returns itself). The rows carry both, and K3 below is what that bit is
+  for.
+
+#### (b) THE PORT
+
+* **`AirScope` is a direct-write guard** (single-definer, § 5.33 (ii)'s setter rule), restoring on
+  drop and on an unwind — gated nested and through a `catch_unwind`.
+* **`split_march` calls `crate::demand_coordinate::coord_march` fully qualified**, `ref = "sched"`,
+  `nu0 = None`, the margins spelled divide-then-subtract. `split_gains` is named
+  `split_wall::split_gains` at its test call (§ 5.33 (ix)).
+* **Python's fold semantics throughout**: `py_max_of`/`py_min_of` for the sequence folds, a
+  two-argument `py_max2` for `max(abs(fwd), abs(rev))`, `py_max_opt` for `max(…, default=None)`
+  that refuses where Python raises `TypeError` (two or more elements with a `None`), `sorted(set(…))`
+  of the masked labels in STRING order, the `auth` dict insertion-ordered, `rate` a naive left
+  fold, `cyc_*` multiplied left to right, `every = 5`.
+* **Both refusals ported as bodies** — `:21551` (`_split_row`, after the three reads Python makes
+  first) and `:21647` (`split_arrest`, before any march). Their gates are step 5's.
+* **The four readers' defaults are named constants** (`LIVENESS_PHI_AIRS`, `ARREST_WALLS`,
+  `SATURATION_PHI_AIRS`, `GAINS_PHI_AIRS`, `GAINS_EVERY`, `ROW_TOL`) for step 5's suite and step 6's
+  oracle.
+
+#### (c) THE INJECTION SWEEP — 16 injections, predicted in writing first (`predictions.md`), `--no-fail-fast`, **16 of 16 verdicts right, 2 mechanisms wrong**
+
+| # | injection | result |
+|---|---|---|
+| K1 | rung 74's `coord_march` writes the coordinate THROUGH THE CELL | **KILLED** ×6 — the readback, and VALUES in every reader. **Mechanism mispredicted**: I expected `demand` marches to keep their values (the fallback answers) and die on the counters; they move by 1 ulp, because a few slack calls bracket the incidence residual — step 1's slack finding |
+| K2 | `AirScope::drop` restores nothing | **KILLED** ×7 — by the restore readbacks ONLY, every value passes (each march sets its own margin) — predicted |
+| K3 | `sm_air = pa * (1/ps) - 1` | **KILLED** — `phi_air_built` at 0.76, 0.7725, 0.85 |
+| K4 | `arrested` with `<` | SURVIVED — predicted |
+| K5 | `valve_moved` with `>=` | SURVIVED — predicted |
+| K6 | `b_max_hit` with `>` | SURVIVED — predicted |
+| K7 | `cyc_fwd` reassociated | **KILLED** — gains clip only (the shared-wall `|cyclic| ≈ 1` cells) |
+| K8 | `rate` summed in reverse | SURVIVED — predicted |
+| K9 | stride 4 | **KILLED** — both gains |
+| K10 | `masked` unsorted | **KILLED** — gains clip (`[gov, fuel]` by insertion) |
+| K11 | `authority` sorted | SURVIVED — predicted; insertion order equals label order on every arm |
+| K13 | `split_march` with `ref = "applied"` | **KILLED** ×6 — **mechanism mispredicted**: not by values but by a REFUSAL, rung 74's joint initial condition failing to converge under `('demand', 'applied')` |
+| K14 | arrest `fuel` arm built as the shared one | **KILLED** — arrest |
+| K16 | `walls_of` reads the stator before the valve | SURVIVED — predicted; both are rebuilt by the same `(1 + sm)·ps` spelling and are one float |
+| K17 | the `ShareScope("max")` around the gains removed | SURVIVED — predicted; the rig's `share_law` default IS `"max"`, the scope is inert |
+| K19 | `control_nonzero` over fuel-masked cells | **KILLED** — both gains |
+
+#### (d) P1, READ EARLY AND NOT SCORED
+
+Every rung-79 and rung-80 method now has a body: `state_coordinate.rs` 1 285 + `split_wall.rs` 899
+= **2 184**, below P1's per-class band (2 700 – 3 100) and near its per-line figure (≈ 2 420).
+Steps 5–7 are tests, an oracle and dispatch gates, so the modules should move little; scored at the
+last step.
+
+#### (e) WHAT STEP 4 LEAVES
+
+The two ported suites, the seven refusals (two of them now bodies here) and `:21486`'s ulp band
+(step 5, which also owes `forced_cap`'s SLACK arm); the oracle, which carries § 5.33 (i)'s
+`demand_gains`-on-R79 arm (step 6); the dispatch gates (step 7). The citation guard is re-blessed for
+thirteen new anchors in `split_wall.rs` (43 / 280 / 178), each read by hand. Gate for this step: full
+`cargo test --release` + full `pytest` — the numbers are in the commit.
