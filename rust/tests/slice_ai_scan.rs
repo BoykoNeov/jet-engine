@@ -8,7 +8,9 @@
 //! short-circuit to the shipped `_surge_fuel`, which brackets its own hardcoded `phi` residual
 //! whatever coordinate asked. So `w_inc == w_phi` bit for bit at every row, and `d_set` and D3's
 //! `dwdq_err` are exact zeros BY SUBSTITUTION. Rung 79 § 5.1 records that mechanism for the MARCH;
-//! its § 1 table still reads D3's zero as *"not small, exactly zero"*.
+//! its § 1 table read D3's zero as *"not small, exactly zero"* when this file was written. Since
+//! corrected: the spec's D3 row in commit `ea43d9c`, `main.py`'s rung-79 panel and the two
+//! `test_rung79.py` docstrings in `9f1d11a`.
 //!
 //! A zero value-diff is two findings and only a counter splits them (slice AI's pre-flight), so
 //! [`the_scan_is_python_bit_for_bit_and_every_incidence_solve_fell_back`] pins the counter vector

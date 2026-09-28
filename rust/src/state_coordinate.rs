@@ -644,8 +644,10 @@ pub fn coord_at(
 /// fallback brackets its own hardcoded `phi` residual whatever coordinate asked, so
 /// `w_inc == w_phi` bit for bit at every row, and `d_set` and D3's `dwdq_err` are exact zeros
 /// **by substitution, not by invariance** — rung 79 § 5.1's mechanism, which the spec records for
-/// the MARCH, arriving at § 1's table. The spec's D3 row reads that zero as *"not small, exactly
-/// zero"*. **Only D2** — the slope ratio, read straight off [`phi_residual`] — is a number a
+/// the MARCH, arriving at § 1's table. The spec's D3 row read that zero as *"not small, exactly
+/// zero"* until commit `ea43d9c` corrected it (`9f1d11a` did the same for `main.py`'s rung-79
+/// panel and two `test_rung79.py` docstrings). **Only D2** — the slope ratio, read straight off
+/// [`phi_residual`] — is a number a
 /// wrong coordinate would move; § 4's census walks `Gi` for real but reads only its SIGN (see
 /// [`coord_census`]).
 ///

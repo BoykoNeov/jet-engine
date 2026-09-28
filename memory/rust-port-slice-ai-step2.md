@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 65a3b767-e1f4-4dbf-a92c-2813854b3f78
-  modified: 2026-09-26T19:20:24.250Z
+  modified: 2026-09-28T20:32:57.691Z
 ---
 
 Slice AI step 2 shipped 2026-09-26 (plan `W:\Claude_projects\jet engine\docs\plans\todo-rust-port.md`
@@ -34,4 +34,6 @@ Also measured: the census walks `Gi` for real but reads only SIGNS, so a census 
 is bit-identical — D1's theorem is exactly what blinds it; only D2 (the slope ratio) sees the
 coordinate. `predicted_ratio` is `0x3ff8ffffffffffff`, not 1.5625. Sweep: 12 injections, predicted
 in writing first, 12 of 12 right (6 killed, 6 survived for stated reasons). The spec's D3 row was
-NOT edited in the port commit — offered to the user as a separate docs-only change.
+NOT edited in the port commit — offered to the user as a separate docs-only change. **Since done, at
+the user's word (2026-09-28)**: the spec's D3 row in `ea43d9c`; `main.py`'s rung-79 panel and the two
+`test_rung79.py` docstrings in `9f1d11a`.
