@@ -6261,10 +6261,12 @@ def print_state_coordinate_table(flight):
     print("    ... %d more rows." % (s["n"] - 5))
     print("    The slope scales by the DERIVED factor 1/phi_lim^2 = %.6f to %.2e, `dw*/dq`"
           % (s["predicted_ratio"], s["ratio_err"]))
-    print("    moves %.3e -- EXACTLY zero, not small -- and the set point is the SAME FLOAT"
-          % s["dwdq_err"])
-    print("    at %d of %d. Both halves carry the same h(w*), so the quotient is invariant."
-          % (s["n_same_float"], s["n"]))
+    print("    moves %.3e and the set point is the SAME FLOAT at %d of %d -- but NEITHER is a"
+          % (s["dwdq_err"], s["n_same_float"], s["n"]))
+    print("    measurement: every incidence solve here falls back to the phi solve, so both")
+    print("    compare the fallback with ITSELF. The invariance rests on the algebra (both")
+    print("    halves carry the same h(w*)); the slope ratio is the only number above a wrong")
+    print("    coordinate would move.")
 
     c = rig().coord_census(flight, LO, HI, TMAX, phi_lim=PHI)
     print("\n  s 4 -- THE ROOT CENSUS, and the instrument has an INHERITED POSITIVE CONTROL:")

@@ -170,13 +170,18 @@ def test_slope_scales_by_the_derived_factor(scan):
 
 
 def test_sensitivity_is_coordinate_invariant(scan):
-    """D3: `dw*/dq` does not move — rung 78's headline half, arriving on the STATE side."""
+    """D3's PLUMBING, not D3. Every incidence solve in this scan falls back to `_surge_fuel`
+    (spec s 1, the D3 row), so `dwdq_inc` IS the phi solve and this differences the fallback
+    with itself: it fails only if the two paths stop being wired to the same solve. The
+    invariance itself rests on the `h(w*)` algebra; D2 is the reading a wrong coordinate moves."""
     assert scan["dwdq_err"] < 1e-9, scan["dwdq_err"]
 
 
 def test_the_sensitivity_reading_is_not_trivially_zero(scan):
-    """NON-VACUITY for D3: `dwdq_err == 0` proves invariance only if `dwdq` is itself NONZERO.
-    Two identically-dead readings difference to zero and pass (rung 77 s 8's `1.000e+00`)."""
+    """The phi leg's `dw*/dq` is ALIVE — two dead readings would difference to zero and pass
+    (rung 77 s 8's `1.000e+00`). That is all it shows. It does NOT make `dwdq_err == 0` a proof
+    of invariance: both sides are the same fallback solve (spec s 1, the D3 row), so a live
+    reading compared with itself still differences to exactly zero."""
     for row in scan["rows"]:
         assert abs(row["dwdq_phi"]) > 1e-4, ("dw*/dq is dead; the invariance is vacuous", row)
 
