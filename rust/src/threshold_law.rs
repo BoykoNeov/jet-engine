@@ -53,7 +53,8 @@
 //!   `gap_falls`/`ratio_rises` test `is not None`. Each is kept as written ([`truthy`]).
 //! * **Every refusal is Python's exception**: `TypeError` for a `None` compared or subtracted on
 //!   the `b` side of `threshold_terms`' P5, `ZeroDivisionError` for a zero denominator
-//!   ([`py_div`]), `IndexError` for `kappa[0]` on an empty list.
+//!   ([`py_div`]). (`kappa[0]` cannot raise: [`kappa0`] reads it only when `kappa_pure`, i.e.
+//!   exactly one element.)
 
 use crate::authority_clock::{authority_of, b_max_of, criterion_at, Criterion};
 use crate::demand_coordinate::py_g;
@@ -359,10 +360,12 @@ impl Bisect {
 ///
 /// **The WINDOW is tested before the straddle, and only a both-ends-empty bracket can see the
 /// order.** At `r = 1.0` the default bracket's `0.30` end is NOT empty — 14 riding points, all
-/// fuel, measured — so V1 fires off the low end alone, and the reverse order returns the same void
-/// there. Rung 82's own *"at `r >= 1.0` there is no four-loop point at all"*
-/// (`engine.py:22329`) holds at the `tau_f = 0.05` its suite checks, not at `0.30` (plan
-/// § 5.34.3).
+/// fuel, on a VALID march (`riding4_valid`, `max_Tt4` 1198.6 K), measured — so V1 fires off the
+/// low end alone, and the reverse order returns the same void there. Rung 82's docstring
+/// *"at `r >= 1.0` there is no four-loop point at all"* (`engine.py:22329`) drops the scope its
+/// anchor's E1 states — measured *"at rung 80's clocks"*, i.e. `tau_f = 0.05` — and is false at
+/// `0.30`. The void verdict at `r = 1.0` stands (V1 fires on EITHER empty end); only its stated
+/// reason is too wide (plan § 5.34.3 and its addendum).
 pub fn bisect(
     core: &ScheduledStatorCore, key: impl Fn(&ThresholdScan) -> bool, lo: f64, hi: f64, n: usize,
     kw: &ScanKw,

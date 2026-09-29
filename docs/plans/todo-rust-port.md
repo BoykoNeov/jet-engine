@@ -26544,9 +26544,15 @@ voids; `ds_stable = False`; a reference with no hats (`fwd = None`); `grows_* = 
 | K21 | `scan_cells` keeps trajectory ENDS | SURVIVED — no riding point at an end |
 | K22 | `n_fuel` over cells, not `ride` | SURVIVED — same |
 
-Eleven survivors are IDENTITIES on this plant (K1–K4, K6, K9, K12, K14, K19, K21, K22 — each
-written down with its reason before it ran) and one is unreached (K17): none is a gate seat for
-step 7.
+The twelve survivors are NOT one kind (corrected at the closing review — the first version called
+eleven of them identities): **two are IDENTITIES** no input can separate (K4 — the march is
+deterministic; K12 — `fix` is never read when `meas` voids); **two are CONDITIONAL on a measured
+plant property** (K1 on kappa being pure, rung 82's E5; K3 on no slope-excluded cell); and **eight
+are COVERAGE GAPS** — the gate is blind because no reading reaches the case, not because there is
+nothing to see: K2 (no exact tie), K6 (no gap exactly 0), K9 (no reading voids `meas` and `fix`
+with DIFFERENT strings), K14 and K19 (`slope_r` never 0), K17 (mid-bisection V1 unreached), K21
+and K22 (no riding point at a trajectory end). Only the two identities are free of a step-7 seat;
+the gaps are recorded, not discharged.
 
 #### (d) THE FINDING — **THE MISPREDICTION WAS A SCOPE ERROR IN RUNG 82's OWN DOCSTRING, INHERITED**
 
@@ -26575,5 +26581,18 @@ Rung 82 has 259 Python body lines and landed at 1 004 Rust lines — ≈ 3.9 per
 Citation guard re-blessed 55/361/218 → **56/373/229**: eleven new anchors, each read by hand
 against the printed line, none wrong at birth. Gate: full `cargo test --release` + full `pytest` —
 the numbers are in the commit.
+
+**Addendum (the advisor's closing review, same day).** Three corrections. **(1) The `0.30` window
+was checked for VALIDITY before the finding may stand** — a riding count read without
+`riding4_valid` is the frozen-plant census rung 80 § 8 warns about. Rerun: `riding4_valid = True`,
+`max_Tt4` 1198.6 K (floor 1000 K), 441 points — the plant accelerated, the 14 points are real.
+**(2) The attribution is sharpened:** the anchor's E1 (`docs/plans/rung82-anchor-threshold-law.md`)
+MEASURED the closing window *"at rung 80's clocks"* (`tau_f = 0.05`) and says so; it is the
+docstring (`engine.py:22329`, *"no four-loop point at all"*) and `docs/rung82-spec.md` § 2 (*"At
+`r ≥ 1.0` `n_riding4 = 0`"*) that drop the qualifier. The VERDICT at `r = 1.0` is unchanged — V1
+fires on EITHER empty end, and the low end is empty — only its stated reason is too wide. Neither
+Python file is edited in a port step. **(3)** (c)'s survivor paragraph is rewritten above (it had
+called coverage gaps identities), and the module header's `IndexError` clause is withdrawn — no
+path reaches it, since `kappa0` indexes only a one-element list.
 
 **Next: step 4 — rungs 83 + 84** (`corrector_law.rs`, `staircase_law.rs`; ten methods).

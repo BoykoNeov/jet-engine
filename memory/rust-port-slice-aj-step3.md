@@ -20,8 +20,10 @@ Next: step 4 = rungs 83 + 84 (`corrector_law.rs`, `staircase_law.rs`).
 prediction's OWN arguments.** K16 (bisect tests the straddle before the window) was predicted
 killed because rung 82's docstring (`engine.py:22329`) says *"at `r >= 1.0` there is no four-loop
 point at all"*. It survived: at `r = 1.0` the bracket's `0.30` end has 14 riding points (all
-fuel); the claim holds only at the `tau_f = 0.05` `test_rung82.py` checks. The fix was a
-both-ends-empty reading (`bisect_v1`), which kills K16 alone.
+fuel, on a VALID march — `riding4_valid`, max Tt4 1198.6 K); the claim holds only at the
+`tau_f = 0.05` `test_rung82.py` checks. The anchor's E1 had the scope ("at rung 80's clocks");
+the docstring and spec dropped it. The fix was a both-ends-empty reading (`bisect_v1`), which
+kills K16 alone.
 
 **Why:** a docstring sentence reads as universal but was measured at one setting; inheriting it as
 a premise imports its scope error silently.
@@ -30,6 +32,11 @@ a premise imports its scope error silently.
 the arguments your reading actually passes (here: three scans, seconds).
 
 Also:
+- **Closing-review catches (addendum):** I first quoted the 14 riding points WITHOUT
+  `riding4_valid` — a count read without its validity flag may be the frozen-plant census; check it
+  before a finding stands. And I called eleven sweep survivors "identities"; only two were (K4, K12).
+  Two were conditional on a plant property, eight were COVERAGE GAPS. Don't stretch "no input can
+  see it" over "no reading reaches it".
 - The advisor's `%g` catch held: on the default bracket `%g` and Rust `{}` print the same, so only
   `lo = 0.0123456789` killed K5. Pick arguments where the two spellings DIFFER.
 - NaN `tau_star_eff` is unreachable on this rig (kappa `[3.0]` on 45 searched marches) — recorded
