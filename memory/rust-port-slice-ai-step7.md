@@ -1,6 +1,6 @@
 ---
 name: rust-port-slice-ai-step7
-description: "Slice AI step 7 (CLOSED) — a call count on a cell says the cell RAN, not that what it built was USED: rung 79's at_lever builds a rung-78 rig at three seats that never dispatch it; and rung 80's at_lever is visible to pointer identity alone, in both languages"
+description: "Slice AI step 7 (CLOSED) — a call count on a cell says the cell RAN, not that what it built was USED: rung 79's at_lever builds a rung-78 rig at three seats that never dispatch it; and rung 80's at_lever is invisible to every value-bearing seat, caught only structurally (measured in Rust through rung 80)"
 metadata:
   node_type: memory
   type: project
@@ -31,8 +31,13 @@ the third kind, and it must not be reported as redundancy.
 
 Also measured:
 - Counting SCOPES under-predicts dispatches 2×: a `CoordScope` dispatches on set AND drop.
-- The closing mutation (delete `at_lever: r80_at_lever,`) was caught by pointer gates only; I
-  predicted the ported `rung80.rs` would fail and it was 16/16 — `test_rung80.py` has no carry gate.
+- The closing mutation (delete `at_lever: r80_at_lever,`) was caught only by STRUCTURAL gates —
+  pointer identity AND a readback of the sibling's `sm_air` (I first wrote "pointers only"; the
+  advisor caught it from my own table). I predicted the ported `rung80.rs` would fail: 16/16, since
+  `test_rung80.py` has no carry gate. The Python side and rungs 81–84 were NOT run — booked as
+  slice AJ's first pre-flight probe.
+- `split_saturation`'s +3 `cap_fuel` entries: I first wrote "one march is 3 calls longer", which
+  the arithmetic refutes (a point = 4 entries); a probe found +1 at each of the 3 top walls.
 - Rows ran on parallel threads with no lock, on the thread-local counters' guarantee.
 - A bare `` `:N` `` citation in a comment that never names `engine.py` is unscanned by the guard.
 - `Start-Process .venv\Scripts\pytest.exe` exited 1 with empty logs; `python.exe -m pytest` works.

@@ -47,10 +47,13 @@
 //!   behind `at_lever`'s carriage); *never entered* (`cap_fuel` at every CLIP-only seat); and a third,
 //!   *entered, built a different machine, never dispatched it*: under `at_lever → R78` the three
 //!   gauge-point readers march a rig carrying RUNG 78's `cap_fuel` and `with_coord` and read `same`,
-//!   because they call the plant with an explicit coordinate and never touch the rig's table.
-//! * **Rung 80's `at_lever` is visible to pointer identity alone** — silent at all nine seats, on
-//!   values and counters, while entered at every one: `r80_shared_rig` re-reads `sm_air` off the
-//!   CORE. The closing source mutation (plan § 5.33.7) is that claim tested on the whole crate.
+//!   because they call the plant with an explicit coordinate and never touch the rig's table
+//!   (*never dispatched* is read off the `Count` row — an inference across rows, sound because
+//!   the dispatch sites belong to the readers, not the tables).
+//! * **Rung 80's `at_lever` is invisible to every value-bearing seat** — silent at all nine seats,
+//!   on values and counters, while entered at every one: `r80_shared_rig` re-reads `sm_air` off
+//!   the CORE. The closing source mutation (plan § 5.33.7 (e)) is caught only by STRUCTURAL gates
+//!   — pointer identity AND a readback of the sibling's `sm_air`. Measured in Rust through rung 80.
 //!
 //! # THE REBUILD HELPER IS PROVED AGAINST THE SHIPPED CONSTRUCTOR BEFORE ANY ROW IS READ
 //!
@@ -781,8 +784,9 @@ fn the_rung_79_rows() {
 ///   REDUNDANCY, not unreachability**: the `Count` row enters the cell at every seat, and
 ///   [`the_rung_80_at_lever_row_keeps_the_split_on_a_rung_79_rig`] reads the mechanism off the rig
 ///   — `r80_shared_rig` re-reads `sm_air` off the CORE and splits the parent's machine, and no
-///   reader dispatches that rig's `shared_rig` again. So rung 80's `at_lever` re-aim is visible to
-///   pointer identity and to nothing else — AH P2's shape, one rung on (the closing mutation).
+///   reader dispatches that rig's `shared_rig` again. So rung 80's `at_lever` re-aim is invisible
+///   to every value-bearing seat and caught only structurally — pointer identity and the
+///   sibling-knob readback (the closing mutation, plan § 5.33.7 (e)).
 /// * **`shared_rig → R79`**: rung 79's four readers and `demand_gains` are exact dispatch
 ///   (`sm_air = None` on their rigs); the four split readers DIFF — the rig marches the SHARED
 ///   wall while the reader reports a split one — and none refuses, since `engine.py:21486`'s guard lives in
@@ -816,8 +820,10 @@ fn the_rung_80_rows() {
 /// * **`cap_fuel` at `demand_gains` is 128 = the incidence hits**: every entry there took rung 79's
 ///   branch. `coord_march`'s 2 732 = two marches × 1 366. Zero at every CLIP-only seat — the three
 ///   gauge-point readers and `split_gains` in `clip` — AH's *only the DEMAND march calls it*.
-/// * **`split_saturation` enters `cap_fuel` 10 931 times, not 8 × 1 366 = 10 928** — one of its eight
-///   marches is three calls longer. Pinned, not explained.
+/// * **`split_saturation` enters `cap_fuel` 10 931 times, not 8 × 1 366 = 10 928.** Not a longer
+///   march (a point is 4 entries): a throwaway probe measured all eight at 341 points, with the
+///   three highest walls (0.855, 0.86, 0.88) at 1 367 entries each. One extra entry per march at
+///   the top walls, from a site not traced.
 /// * `at_lever` and `shared_rig` are one column: every rig is built by `shared_rig` through
 ///   `at_lever`, once per march.
 #[test]

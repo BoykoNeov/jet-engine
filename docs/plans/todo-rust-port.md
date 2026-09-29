@@ -25831,7 +25831,7 @@ re-blessed 45/305/182 → 46/308/182 (one new file, three sites, no new anchor: 
 `21750`, read by hand). Gate predicted before the run: **171 blocks / 1 767 passed / 0 failed**,
 pytest **1 387** — **measured exactly that**: `cargo test --release --no-fail-fast` 171 result blocks / 1 767 passed / 0 failed, `CARGO_EXIT=0` read off disk, zero `error[E`, zero `FAILED`/`panicked` lines; `pytest` 1 387 passed, `PYTEST_EXIT=0`. Both below normal, run after the step's last code edit.
 
-#### 5.33.7 STEP 7 — THE DISPATCH GATES, AND **THREE KINDS OF SILENCE: RUNG 79's THREE TABLE SWAPS ARE ONE DELETION TO EVERY SEAT, AND RUNG 80's `at_lever` IS VISIBLE TO POINTER IDENTITY AND TO NOTHING ELSE — IN EITHER LANGUAGE**
+#### 5.33.7 STEP 7 — THE DISPATCH GATES, AND **THREE KINDS OF SILENCE: RUNG 79's THREE TABLE SWAPS ARE ONE DELETION TO EVERY SEAT, AND RUNG 80's `at_lever` IS INVISIBLE TO EVERY VALUE-BEARING SEAT — CAUGHT ONLY BY STRUCTURAL GATES, MEASURED IN RUST THROUGH RUNG 80**
 
 **SHIPPED**: `rust/tests/slice_ai_dispatch.rs`, **9 gates**, green in 32 s. Six swaps, each pointed
 back at the parent it was re-aimed FROM — rung 79's `at_lever` (→ 78's), `shared_rig`, `cap_fuel`,
@@ -25889,7 +25889,9 @@ AH § 5.32.7 (b) separated *ran, no difference* from *never entered*. This slice
    scan/census/forced. `the_rung_79_at_lever_rig_differs_where_no_reader_dispatches_it` reads the
    rig `gauge_points` builds: it carries RUNG 78's `cap_fuel` and `with_coord`, and the `Count`
    row enters neither at those seats. A nonzero `at_lever` count there does NOT mean *ran and made
-   no difference*; the difference was built and then never consulted.
+   no difference*; the difference was built and then never consulted. *Never dispatched* is an
+   INFERENCE across rows — the `Count` row is a different rig from the `AtLever` row — sound
+   because the dispatch sites belong to the READERS, not to the tables.
 
 ##### (d) THE TALLIES — PINNED, AND ONE DETAIL MISPREDICTED
 
@@ -25905,8 +25907,11 @@ AH § 5.32.7 (b) separated *ran, no difference* from *never entered*. This slice
   SCOPES; every `CoordScope` dispatches the cell TWICE, on set and on drop — the restore goes back
   THROUGH the table. That second dispatch is exactly the path item L's survivor bypassed (step 6).
 * `cap_fuel` at `demand_gains` is 128 = the incidence hits: every entry there took rung 79's branch.
-* `split_saturation`'s 10 931 is 3 more than 8 × 1 366: one of its eight marches is three calls
-  longer. Pinned, not explained.
+* `split_saturation`'s 10 931 is 3 more than 8 × 1 366. **First written as "one march is three
+  calls longer" — which the arithmetic refutes** (a point is 4 entries; the advisor's catch). A
+  throwaway per-march probe measured it: all eight marches are 341 points; the THREE highest
+  walls (0.855, 0.86, 0.88) each enter `cap_fuel` 1 367 times, the five lower 1 366. One extra
+  entry per march at the top walls, from a site not traced.
 * Rung 80's `at_lever` is ENTERED at every one of the nine seats, so its all-`same` row is
   REDUNDANCY. `the_rung_80_at_lever_row_keeps_the_split_on_a_rung_79_rig` reads the mechanism:
   under the swap the marched rig is a RUNG-79 machine (its `shared_rig` and `at_lever` pointers)
@@ -25929,12 +25934,17 @@ blob hash verified (`f18dcef1`).
 Plus rustc's *function `r80_at_lever` is never used* — AH's free tripwire, present again.
 
 **The miss is the finding.** `tests/test_rung80.py` has no `at_lever`, `isinstance` or carry test
-at all (grepped), so the ported suite is faithfully blind, not under-ported. The override is
-redundant on every shipped path in PYTHON too — `_shared_rig` re-sets `_sm_air` off `self` — so
-rung 80's `at_lever` is visible to Rust pointer identity and to nothing value-bearing in either
-language. This measures slice AJ's booking (§ 5.33 (ii)) at its first rung: at rung 80 no reader
-depends on the rebuilt machine being its own rung. Whether one at 81–84 does stays AJ's question.
-The Python half is inferred from the grep and the port's fidelity, not re-run.
+at all (grepped), so the ported suite is faithfully blind, not under-ported. **What caught the
+mutation is STRUCTURAL, and not only pointers**: of the 11 failures, the pointer census, the
+install proof and the mechanism gate compare pointers, but `slice_ai_cells.rs`'s carry gate and
+this file's rebuild-helper proof READ BACK the sibling's `sm_air` knob. No value-bearing seat —
+the oracle, either ported suite — sees it. **Measured in Rust, through rung 80 only.** That
+Python's `test_rung80.py` is blind too is INFERRED (the grep, the port's fidelity), not run; and
+Python rungs 81–84 INHERIT `SplitWallTransient.at_lever`, so deleting it there changes the class
+of every rig those rungs build — their suites and kernels were never run under it, and the Rust
+port cannot yet. **Booked as slice AJ's first pre-flight probe**: delete the method in
+`engine.py`, run `test_rung80.py`…`test_rung84.py` and kernels r80–r84, restore by checkout +
+hash. That is § 5.33 (ii)'s booked question in its sharpest form.
 
 ##### (f) THE PREDICTIONS, SETTLED — SLICE AI CLOSES
 
@@ -25966,5 +25976,5 @@ blocks / 1 776 passed / 0 failed / 0 ignored**, `CARGO_EXIT=0` read off disk, ze
 `FAILED`/`panicked` lines. **pytest: 1 387 passed**, `PYTEST_EXIT=0` — on the SECOND launch: the
 first went through `.venv\Scripts\pytest.exe`, whose launcher exits 1 with no output even run
 directly, and it "finished" in seconds with a 0-byte log. Relaunched as `python.exe -m pytest`.
-**SLICE AI IS CLOSED.** Next: slice AJ (rungs 81–84), which owes its pre-flight — including § 5.33
-(ii)'s booking, now measured at rung 80 by (e).
+**SLICE AI IS CLOSED.** Next: slice AJ (rungs 81–84), which owes its pre-flight — opening with
+(e)'s booked Python mutation, § 5.33 (ii)'s question asked at rungs 81–84.
