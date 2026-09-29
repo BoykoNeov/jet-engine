@@ -217,8 +217,13 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # the oracle), three sites, NO new anchor: `16235` / `16237` (`_charpoly4`'s two float `sum()`s)
 # and `21750` (`split_gains`' `rate`), the CPython prediction's two paths -- all three already
 # anchored. Read by hand against their sentences.
-FILES = 46
-SITES = 308
+# RE-BLESSED AT SLICE AI STEP 7 (46/308/182 -> 47/309/182). One new file (`slice_ai_dispatch.rs`,
+# the dispatch gates), one site, NO new anchor: `21486`, rung 80's second refusal, cited as the
+# guard that lives in the deleted `shared_rig` cell. First written as a bare `` `:21486` `` in a
+# comment block that never names `engine.py`, which this scanner does not open -- an unwatched
+# citation by FORM, caught only because the census did not move. Read by hand.
+FILES = 47
+SITES = 309
 LINES = 182
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment
