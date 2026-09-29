@@ -233,9 +233,15 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # the colon form inside a comment block that names `engine.py` only on the PREVIOUS citation, which
 # this scanner did not attribute. An unwatched citation by FORM, slice AI step 7 again; respelled
 # `engine.py:22217–22220` at the advisor's closing review and read by hand.
-FILES = 54
-SITES = 348
-LINES = 208
+# RE-BLESSED AT SLICE AJ STEP 2 (54/348/208 -> 55/361/218). One newly citing file
+# (`oracle/probe_slice_aj_step2.py`, whose docstring cites the rung-81 class line, already
+# blessed). Ten new anchors, all rung 81's in `authority_clock.rs`: the five `def` lines, the two
+# fuel-clock lookups (`21874`, `21882`), the control march (`21980`), the mask's `lag.tau`
+# (`22100`) and the end of the rig-call range (`22103`). Each read by hand against the printed
+# line; none wrong at birth this time.
+FILES = 55
+SITES = 361
+LINES = 218
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment
 # SAID, where the number is part of the quotation and must not track the file.

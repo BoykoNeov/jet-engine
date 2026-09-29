@@ -293,8 +293,8 @@ pub const GAINS_EVERY: usize = 5;
 pub const ROW_TOL: f64 = 1e-12;
 
 /// Python's two-argument `max(x, y)` — `x` unless `y` is STRICTLY larger. Never `f64::max`,
-/// which returns the other argument on a `NaN`.
-fn py_max2(x: f64, y: f64) -> f64 {
+/// which returns the other argument on a `NaN`. Crate-visible for rung 81's readers.
+pub(crate) fn py_max2(x: f64, y: f64) -> f64 {
     if y > x { y } else { x }
 }
 
