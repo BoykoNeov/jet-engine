@@ -43,6 +43,16 @@
 //!   coordinate through rung 79's setter would march the `clip` arm here, and Python's
 //!   `len == 341` passes on that too.
 //! * **#3 also reads the caller's `sm_air` back after the refusal** — `_with_air`'s `finally`.
+//! * **#3 also asserts the built rig is a RUNG-80 machine** (slice AJ step 1, plan § 5.34 (i)).
+//!   Python's catcher is INCIDENTAL: `tests/test_rung80.py:126` reads the walls as
+//!   `rig._walls_of(rig, surge)`, a method looked up ON THE REBUILT RIG, so a rig of rung 79's
+//!   class dies there with `AttributeError` — which is how Python catches the deletion of rung
+//!   80's `at_lever`. [`walls_of`] is a free function here and accepts any core, so without this
+//!   assert the port passed that deletion 16/16 (slice AI step 7). The rig's TABLE is this crate's
+//!   only spelling of its class. **The pointer compared is `shared_rig`, not `at_lever`:** the
+//!   deletion re-fills `R80.at_lever` from `..R79`, so an `at_lever` compare would test the rig
+//!   against the very function that built it and pass; a rung-79 rig carries `R79_TRIPLE`, whose
+//!   `shared_rig` differs from [`R80_TRIPLE`]'s, and the deletion cannot move that reference.
 //! * `pytest.approx(x, rel=r)` with no `abs` is `|a − x| ≤ r·|x|`, and is written so.
 //!
 //! # THE FOUR ADDED GATES — rung 80's other three refusals, every one written from the source
@@ -61,6 +71,7 @@
 //!   survive behind the other.
 
 use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::ptr::fn_addr_eq;
 use std::sync::OnceLock;
 
 use turbojet::bleed_transient::LeverArm;
@@ -73,7 +84,7 @@ use turbojet::shared_actuator::SharedRigArm;
 use turbojet::split_wall::{
     build_split_wall_cascade, split_arrest, split_liveness, split_march, split_row, walls_of,
     AirScope, SplitArrest, SplitGains, SplitLiveness, SplitRow, ARREST_WALLS, GAINS_EVERY,
-    LIVENESS_COORDS, LIVENESS_PHI_AIRS, ROW_TOL,
+    LIVENESS_COORDS, LIVENESS_PHI_AIRS, R80_TRIPLE, ROW_TOL,
 };
 use turbojet::state_coordinate::{build_state_coordinate_cascade, coord_scan, CoordScan, COORD_AT_DQ};
 use turbojet::stator_transient::{ScheduledStatorCore, ScheduledStatorTransient};
@@ -307,6 +318,9 @@ fn the_knob_is_loud() {
         let _air = AirScope::set(&m, Some(0.80 / FLOOR - 1.0));
         (m.fuel.inner.triple_hooks.shared_rig)(&m, &shared_arm(sm))
     };
+    assert!(fn_addr_eq(built.triple_hooks().shared_rig, R80_TRIPLE.shared_rig),
+            "DECLARED: the built rig is not a RUNG-80 machine -- Python dies here looking up \
+             `_walls_of` on it (tests/test_rung80.py:126); was rung 80's `at_lever` dropped?");
     let w = walls_of(&built, surge.as_ref());
     let (lim, air) = (w.phi_lim.expect("a fuel wall"), w.phi_air.expect("an airflow wall"));
     assert!(approx(lim, PHI_FUEL, 1e-12), "{lim}");

@@ -42,7 +42,10 @@
 //!
 //! **THE CARRY CHAIN ENDS HERE** (§ 5.33 (ii), probe 8): the four classes after rung 80 define no
 //! `at_lever` at all, so every rig a rung-81–84 machine builds is a `SplitWallTransient` by class.
-//! Booked forward to slice AJ: its `R81`…`R84` lever tables must carry [`R80`]'s `at_lever`.
+//! Slice AJ's pre-flight (plan § 5.34 (ii)) found the booking this sentence used to carry — *its
+//! `R81`…`R84` lever tables must carry [`R80`]'s `at_lever`* — MOOT: rungs 81–84 swap no cell, so
+//! there are no `R81`…`R84` tables and their readers run on an `R80` machine. What sees the carry
+//! is `tests/rung80.rs::the_knob_is_loud`'s pointer assert on the built rig (AJ step 1).
 //!
 //! # THE TWO REFUSALS PANIC, AND ONE OF THEM FIRES ON A LEGAL INPUT
 //!

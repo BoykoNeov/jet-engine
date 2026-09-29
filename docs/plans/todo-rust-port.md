@@ -26244,3 +26244,24 @@ a factor of two: AI's 2 195 Rust lines per 530 body lines scales to **≈ 2 700*
 
 Step 1 carries § (i)'s `rung80.rs` pointer assert and the memory correction, § (iii)'s items B, C
 and D, the `%g` helper and `riding4` by index. Nothing is booked forward past rung 84.
+
+#### 5.34.1 STEP 1, PART 1 — **THE `rung80.rs` POINTER ASSERT: THE RUST SUITE NOW CATCHES WHAT PYTHON's DOES** (2026-09-29)
+
+§ (i)'s booking, done first and alone; the rest of step 1 (the four modules, the `%g` helper,
+`riding4` by index, items C and D) is still owed.
+
+* **`rust/tests/rung80.rs::the_knob_is_loud`** now asserts, before `walls_of` reads the walls, that
+  the built rig's `shared_rig` is `R80_TRIPLE.shared_rig` — the crate's spelling of Python's lookup
+  of `_walls_of` ON THE RIG (`tests/test_rung80.py:126`). Inside the existing test, so the 1:1 map
+  and the count (16) stand; declared in the header's *WHERE THE PORT DIFFERS* list.
+* **Why `shared_rig` and not `at_lever`** (the advisor's catch, before writing): the deletion
+  re-fills `R80.at_lever` from `..R79`, so comparing the rig's `at_lever` with `R80.at_lever` would
+  compare the rig with the function that built it and pass under the very mutation it guards. A
+  rung-79 rig carries `R79_TRIPLE`, and the deletion cannot move `R80_TRIPLE.shared_rig`.
+* **MEASURED, not inferred** — `at_lever: r80_at_lever,` deleted from `split_wall.rs`,
+  `cargo test --release --test rung80`: **15 passed, 1 FAILED — `the_knob_is_loud`, on the new
+  message**; the build succeeded (one `r80_at_lever is never used` warning, not an error). Restored,
+  16/16. Slice AI step 7 measured the same deletion at 16/16. **P5's second half is thereby
+  pre-checked at rung 80; its first half (every AJ value unchanged) waits for step 7.**
+* **Item B done:** `split_wall.rs:44–45`'s *"R81…R84 lever tables must carry R80's at_lever"* is
+  rewritten as moot, pointing at the assert.
