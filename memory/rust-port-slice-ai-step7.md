@@ -37,8 +37,9 @@ Also measured:
   I then called it "faithfully blind" because `test_rung80.py` has no carry gate — **WRONG,
   corrected 2026-09-29 by AJ's pre-flight** ([[rust-port-slice-aj-preflight]]): run in Python,
   the deletion FAILS `test_the_knob_is_loud`, whose `rig._walls_of(...)` is a method lookup on the
-  rebuilt rig's class. The Rust port spells it as a free function, so `rung80.rs` is UNDER-PORTED
-  at that test. A grep for the words of a carry test cannot find an incidental structural catcher.
+  rebuilt rig's class. The Rust port spells it as a free function, so `rung80.rs` WAS UNDER-PORTED
+  at that test — **REPAIRED at AJ step 1** (pointer assert on the rig's `shared_rig`; the Rust
+  deletion now fails it, 15/1, measured). A grep for the words of a carry test cannot find an incidental structural catcher.
 - `split_saturation`'s +3 `cap_fuel` entries: I first wrote "one march is 3 calls longer", which
   the arithmetic refutes (a point = 4 entries); a probe found +1 at each of the 3 top walls.
 - Rows ran on parallel threads with no lock, on the thread-local counters' guarantee.
