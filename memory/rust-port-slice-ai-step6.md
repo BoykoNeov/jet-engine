@@ -13,7 +13,8 @@ Slice AI step 6 shipped 2026-09-29 (plan `W:\Claude_projects\jet engine\docs\pla
 reader on BOTH stator arms, rung 74's `demand_gains` on R78/R79/R80 with rung 79's counter deltas, both
 plants. Rust ≡ PyPy on every key, first run. CPython: 227 differ, ALL on the 340 keys of the two float
 `sum()` paths a runtime census found before the golden was opened (`_charpoly4`, `split_gains`' `rate`);
-no `zeros` count moved. P3 measured by marching on two threads at once (a single drive cannot test it).
+no `zeros` count moved. P3 measured by marching on two threads at once (a single drive cannot test it) — and the gate
+was then shown to CATCH process-global counters (serial: the only failing oracle gate, 53 keys).
 
 **THE LESSON: WHERE A VALUE CAN REACH AN OUTPUT IS MEASURED BY INJECTING INTO IT, NOT BY REASONING.**
 Two reach claims, both false:

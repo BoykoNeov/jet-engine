@@ -25809,7 +25809,7 @@ prediction was written into the gate as a PATH predicate (`via_sum`: `split_gain
 A single drive cannot separate thread-local from process-global counters (one marching thread is
 the same for both). `p3_two_threads_marching_at_once_both_match_the_golden` runs every
 counter-bearing section (C, I, P's rung-79 plant: 13 654 keys) on TWO spawned threads at once;
-both equal the golden and each other. **P3 CONFIRMED.** § (iv)'s *"zero `thread::spawn`/`scope`"*
+both equal the golden and each other. **P3 CONFIRMED — and the gate is shown to be a CATCHER, not only a demonstration** (the advisor's point: a passing gate says nothing about whether it would fail). Injection P3G made the six counters process-global atomics, predicted in writing first: with `--test-threads=1` the P3 gate is the ONLY oracle gate that fails (thread A: 53 of 13 654 keys); under the default parallel harness it fails (59) and so does the full PyPy gate (16 of 37 945, its drive overlapping P3's threads). `slice_ai_cells.rs`'s per-thread gate fails in both modes. Every prediction right; restored by SHA. § (iv)'s *"zero `thread::spawn`/`scope`"*
 census is now TWO, both tests and both written to exercise the decision (`slice_ai_cells.rs:488`
 reads the counters from a second thread, since step 1; this gate marches on two). `rust/src` still
 has none. `state_coordinate.rs`'s module doc, which still stated the zero, is corrected: the
