@@ -99,7 +99,7 @@ PyPy venv), and a `-m pytest` launch never started at all: it sat on a hidden er
 the shell until it was killed by its captured PID. Hit 2026-09-26 in the slice AI pre-flight. Nothing
 errors. The output looks right, because the wrong interpreter also runs the script. **Always
 `start "" //belownormal //b //wait "<exe>" args`.** Then confirm the child's interpreter and priority
-(Win32_Process CommandLine + Priority 6) before trusting what it prints.
+(Win32_Process CommandLine + Priority 6) before trusting what it prints. **HIT AGAIN 2026-09-29** (slice AJ step 4): a whole `*_pypy.tsv` oracle written by CPython 3.14, because [[run-tests-below-normal]]'s recipe did not carry this warning — now it does. Prefer PowerShell `Start-Process -FilePath`, and make the script print `sys.version`.
 
 **Why:** all of these corrupt output while reporting success, and this project's deliverable is prose —
 20,000+ lines of derivation comments full of `∫`, `§`, `Δ`, `φ`, `≈`. A mangling that survives

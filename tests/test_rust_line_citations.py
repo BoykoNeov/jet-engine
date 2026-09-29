@@ -245,9 +245,15 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # (`22201` … `22511`), `22316` (`_bisect`'s fresh scan at `b`) and `22329` (`threshold_law`'s
 # *"at `r >= 1.0` there is no four-loop point at all"*, cited as a claim true only at the
 # `tau_f` its suite checks). Each read by hand against the printed line; none wrong at birth.
-FILES = 56
-SITES = 373
-LINES = 229
+# RE-BLESSED AT SLICE AJ STEP 4 (56/373/229 -> 57/395/239). One newly citing file
+# (`oracle/probe_slice_aj_step4.py`, whose docstring cites the rung-83 and rung-84 class lines,
+# already blessed). Ten new anchors: the ten reader `def` lines (`22672` … `23044`), each read by
+# hand against the printed line. The rewritten `staircase_law.rs` header first DROPPED step 1's
+# `22881` (`edge = round(ride[0]["s"], 9)`) -- the first run un-blessed it -- and gave `22879`
+# a spacing the Python comment does not say; both repaired before the census was typed.
+FILES = 57
+SITES = 395
+LINES = 239
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment
 # SAID, where the number is part of the quotation and must not track the file.

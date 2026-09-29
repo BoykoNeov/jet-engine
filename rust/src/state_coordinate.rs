@@ -940,7 +940,7 @@ fn py_upper_median(xs: &[f64]) -> f64 {
 }
 
 /// Python's two-argument `min(x, y)` — `x` unless `y` is STRICTLY smaller.
-fn py_min2(x: f64, y: f64) -> f64 {
+pub(crate) fn py_min2(x: f64, y: f64) -> f64 {
     if y < x { y } else { x }
 }
 

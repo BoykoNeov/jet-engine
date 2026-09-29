@@ -93,29 +93,29 @@ pub const DS_FINE: f64 = 0.0025;
 
 /// Python's `bool(x)` for an optional float: `None` and `0.0` are false, and so is NOTHING else —
 /// `nan` is true, as in Python.
-fn truthy(x: Option<f64>) -> bool {
+pub(crate) fn truthy(x: Option<f64>) -> bool {
     matches!(x, Some(v) if v != 0.0)
 }
 
 /// Python's `a / b` on floats — `ZeroDivisionError` where Rust would return an infinity.
-fn py_div(a: f64, b: f64) -> f64 {
+pub(crate) fn py_div(a: f64, b: f64) -> f64 {
     assert!(b != 0.0, "rung-82: float division by zero -- Python raises ZeroDivisionError here");
     a / b
 }
 
 /// A `None` that Python would subtract or compare — its `TypeError`.
-fn need(x: Option<f64>, what: &str) -> f64 {
+pub(crate) fn need(x: Option<f64>, what: &str) -> f64 {
     x.unwrap_or_else(|| panic!("rung-82: `{what}` is None where Python does arithmetic on it -- \
                                 Python raises TypeError here"))
 }
 
 /// Python's `kappa[0] if kappa_pure else …` — the one read of a pure scan's clock map.
-fn kappa0(s: &ThresholdScan) -> Option<f64> {
+pub(crate) fn kappa0(s: &ThresholdScan) -> Option<f64> {
     if s.kappa_pure { Some(s.kappa[0]) } else { None }
 }
 
 /// Python's `sorted(xs)` on floats — stable, and it refuses a NaN rather than guess its order.
-fn sorted_f(xs: &[f64]) -> Vec<f64> {
+pub(crate) fn sorted_f(xs: &[f64]) -> Vec<f64> {
     let mut v = xs.to_vec();
     v.sort_by(|a, b| a.partial_cmp(b).expect("rung-82: sorted() over a NaN"));
     v
