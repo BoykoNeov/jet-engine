@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: c14405f8-ddd5-496b-b034-53ed9e781f29
-  modified: 2026-09-29T13:56:06.321Z
+  modified: 2026-09-29T15:03:02.025Z
 ---
 
 Slice AJ step 2 COMPLETE 2026-09-29 (plan `W:\Claude_projects\jet engine\docs\plans\todo-rust-port.md`
@@ -18,8 +18,9 @@ Next: step 3 = rung 82's nine readers in `threshold_law.rs`.
 **THE LESSON: before keeping two code paths apart "because merging them would be a departure",
 check whether they are the same function on the domain the code actually sees.** The advisor warned
 not to merge `_demand_tau(lag, cap, w)` and `lag.tau(required, g)`. On a `demand` point
-`required = mf_sched - cap` and `g = mf_sched - w`, so `required > g ⇔ w > cap` — the swap IS the
-change of variables. I predicted both merge-injections would SURVIVE from that algebra, and they did.
+`required = mf_sched - cap` and `g = mf_sched - w` (UNCLAMPED — checked in Python at
+`engine.py:17970`/`:17978`, not in the Rust port's own doc), so `required > g ⇔ w > cap` — the swap
+IS the change of variables. I predicted both merge-injections would SURVIVE from that algebra, and they did.
 
 **Why:** a distinction that no value can see costs a gate seat that would be vacuous, and a doc
 sentence implying a value would move is a small false claim.

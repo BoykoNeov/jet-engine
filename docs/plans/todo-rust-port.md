@@ -26436,7 +26436,8 @@ argument-swapped `_demand_tau(lag, cap_fuel, w_fuel)` while `authority_mask` rea
 `lag.tau(required_fuel, g_fuel)` in either coordinate, and that merging them *"would look like a
 fix"*. Both directions of the merge (J2a, J2b) SURVIVED, as predicted — and not by luck of the
 grid. On a `demand` point `required_fuel = mf_sched - cap_fuel` and `g_fuel = mf_sched - w_fuel`
-(the unfloored projections `fuel_transient.rs`'s `Demand` doc names), so
+(built UNCLAMPED at `engine.py:17970` and `:17978` — plain subtractions, no `max(0, ·)`, no
+latch rewrite; `_demand_tau`'s own docstring at `engine.py:17684` states the substitution), so
 `required > g  ⇔  cap < w`, which is precisely the comparison `demand_tau`'s swap performs. The
 swap IS the change of variables; the two spellings can differ only where `mf_sched - cap` and
 `mf_sched - w` round to the same float while `cap ≠ w`, which no point here does. So the port
