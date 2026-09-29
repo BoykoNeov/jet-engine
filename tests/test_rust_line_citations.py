@@ -239,9 +239,15 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # fuel-clock lookups (`21874`, `21882`), the control march (`21980`), the mask's `lag.tau`
 # (`22100`) and the end of the rig-call range (`22103`). Each read by hand against the printed
 # line; none wrong at birth this time.
-FILES = 55
-SITES = 361
-LINES = 218
+# RE-BLESSED AT SLICE AJ STEP 3 (55/361/218 -> 56/373/229). One newly citing file
+# (`oracle/probe_slice_aj_step3.py`, whose docstring cites the rung-82 class line, already
+# blessed). Eleven new anchors, all rung 82's in `threshold_law.rs`: the nine `def` lines
+# (`22201` … `22511`), `22316` (`_bisect`'s fresh scan at `b`) and `22329` (`threshold_law`'s
+# *"at `r >= 1.0` there is no four-loop point at all"*, cited as a claim true only at the
+# `tau_f` its suite checks). Each read by hand against the printed line; none wrong at birth.
+FILES = 56
+SITES = 373
+LINES = 229
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment
 # SAID, where the number is part of the quotation and must not track the file.

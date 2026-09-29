@@ -92,7 +92,7 @@ pub const MASK_EVERY: usize = 1;
 
 /// Python's `d[k] = v` on an insertion-ordered dict: a repeated key keeps its FIRST position and
 /// takes the LAST value.
-fn dict_put<K: PartialEq, V>(d: &mut Vec<(K, V)>, k: K, v: V) {
+pub(crate) fn dict_put<K: PartialEq, V>(d: &mut Vec<(K, V)>, k: K, v: V) {
     match d.iter_mut().find(|(key, _)| *key == k) {
         Some(e) => e.1 = v,
         None => d.push((k, v)),
@@ -152,7 +152,7 @@ fn py_float_str(x: f64) -> String {
 /// reads beside them. A key the point does not carry is Python's `KeyError`: `cap_*`/`w_*` exist
 /// only on a rung-74 [`Demand`](PointExtra::Demand) point, `required_*`/`g_fuel` on it and on
 /// rung 72's [`Shared`](PointExtra::Shared).
-fn key_of(p: &FuelPoint, key: &str) -> f64 {
+pub(crate) fn key_of(p: &FuelPoint, key: &str) -> f64 {
     match (key, &p.extra) {
         ("s", _) => p.s,
         ("cap_fuel", PointExtra::Demand { cap_fuel, .. }) => *cap_fuel,
@@ -169,7 +169,7 @@ fn key_of(p: &FuelPoint, key: &str) -> f64 {
 }
 
 /// Python's `p["authority"]` — rung 72's label, on the two six-state routes only.
-fn authority_of(p: &FuelPoint) -> Authority {
+pub(crate) fn authority_of(p: &FuelPoint) -> Authority {
     match p.extra {
         PointExtra::Shared { authority, .. } | PointExtra::Demand { authority, .. } => authority,
         _ => panic!("rung-81: this point carries no `authority` -- Python raises KeyError here"),
@@ -185,7 +185,7 @@ fn b_v(p: &FuelPoint) -> (f64, f64) {
 }
 
 /// Python's `m.bleed_lim.b_max` — `AttributeError` on a valve-less rig.
-fn b_max_of(m: &ScheduledStatorCore) -> f64 {
+pub(crate) fn b_max_of(m: &ScheduledStatorCore) -> f64 {
     m.fuel.inner.lever.lim
         .unwrap_or_else(|| panic!("rung-81: `m.bleed_lim.b_max` on a rig with no valve -- \
                                    Python raises AttributeError here"))
@@ -193,7 +193,7 @@ fn b_max_of(m: &ScheduledStatorCore) -> f64 {
 }
 
 /// The rig's fuel lag — Python's `lag.tau(...)` on `None` is `AttributeError`.
-fn lag_of(lag: Option<&AsymmetricLag>) -> &AsymmetricLag {
+pub(crate) fn lag_of(lag: Option<&AsymmetricLag>) -> &AsymmetricLag {
     lag.unwrap_or_else(|| panic!("rung-81: `lag.tau` on a rig with no fuel lag -- Python raises \
                                   AttributeError here"))
 }
