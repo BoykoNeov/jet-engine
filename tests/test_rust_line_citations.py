@@ -229,9 +229,13 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # **ONE WAS WRONG AT BIRTH, AGAIN**: `authority_clock.rs` cited `22097` as the first of
 # `authority_mask`'s five calls on the rig; the guard printed `if not gg["interior"]:` and the call
 # is `22096`. Plan § 5.34 (i)'s own `22099–22103` is off the same way -- the plan is not watched.
+# AND THEN (54/347/207 -> 54/348/208), same step: `shared_actuator.rs` cited `` `:22217–22220` `` --
+# the colon form inside a comment block that names `engine.py` only on the PREVIOUS citation, which
+# this scanner did not attribute. An unwatched citation by FORM, slice AI step 7 again; respelled
+# `engine.py:22217–22220` at the advisor's closing review and read by hand.
 FILES = 54
-SITES = 347
-LINES = 207
+SITES = 348
+LINES = 208
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment
 # SAID, where the number is part of the quotation and must not track the file.

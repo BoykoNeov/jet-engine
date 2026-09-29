@@ -1291,7 +1291,7 @@ pub fn riding4(traj: &[FuelPoint], b_max: f64) -> Vec<FuelPoint> {
 /// [`riding4`] as TRAJECTORY INDICES — **the port of rungs 81/82's `id(p)` round trip.** Slice
 /// AJ step 1.
 ///
-/// `authority_clock` (`engine.py:21940–21946`) and `_scan_cells` (`:22217–22220`) both take
+/// `authority_clock` (`engine.py:21940–21946`) and `_scan_cells` (`engine.py:22217–22220`) both take
 /// `ride = self._riding4(traj, …)`, build `seen = {id(p) for p in ride}`, and walk
 /// `enumerate(traj)` keeping the indices `i` whose point is in `seen` — they need the INDEX,
 /// because `_criterion_at` central-differences `traj[i-1]` and `traj[i+1]`. The crate's `riding4`
@@ -1303,7 +1303,9 @@ pub fn riding4(traj: &[FuelPoint], b_max: f64) -> Vec<FuelPoint> {
 /// the predicate is a pure function of the point, so every occurrence of an object passes or
 /// fails together, and `id` membership admits exactly the passing ones. So the port does not rest
 /// on a no-aliasing premise it never checked. Matching on `s` instead of index would be a
-/// DIFFERENT claim (two points can share an `s` value across a restart) and is not used.
+/// DIFFERENT claim — equality of a float, not identity of a point — and is refused (plan § 5.34
+/// (v)); on the three marches `slice_aj_plumbing.rs` pins, all 341 `s` values are distinct, so
+/// it would even agree there, which is not a reason to use it.
 ///
 /// Indices are ascending, because the filter walks `traj` in order.
 pub fn riding4_idx(traj: &[FuelPoint], b_max: f64) -> Vec<usize> {

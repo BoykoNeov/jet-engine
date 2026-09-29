@@ -9,7 +9,7 @@ metadata:
 ---
 
 Slice AJ step 1 COMPLETE 2026-09-29 (plan `W:\Claude_projects\jet engine\docs\plans\todo-rust-port.md`
-§ 5.34.1 part 1 = the `rung80.rs` pointer assert; § 5.34.2 = the rest). Landed: four header-only
+§ 5.34.1 part 1 = the `rung80.rs` pointer assert; § 5.34.1 (cont.) = the rest). Landed: four header-only
 modules (`authority_clock.rs`, `threshold_law.rs`, `corrector_law.rs`, `staircase_law.rs` — no
 tables, NO builder), `demand_coordinate::py_g` (Python `%g`) gated on a 10 511-row oracle
 (`rust/oracle/dump_py_g.py`, PyPy = CPython byte for byte), `shared_actuator::riding4_idx` (the

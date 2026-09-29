@@ -190,6 +190,7 @@
   "22096": "gg = m._with_share(\"max\", m._quad_gains_at, flight, p, None, surge, Tt4_max)",
   "22104": "rate = sum(1.0 / t for t in tt)",
   "22148": "class ThresholdLawTransient(AuthorityClockTransient):",
+  "22217": "ride = self._riding4(traj, m.bleed_lim.b_max)",
   "22218": "seen = {id(p) for p in ride}",
   "22220": "for i, p in enumerate(traj) if id(p) in seen and 0 < i < len(traj) - 1]",
   "22255": "arg = min(hats, key=lambda t: t[0] - t[1]) if hats else None",

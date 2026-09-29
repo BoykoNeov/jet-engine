@@ -26266,7 +26266,7 @@ and D, the `%g` helper and `riding4` by index. Nothing is booked forward past ru
 * **Item B done:** `split_wall.rs:44–45`'s *"R81…R84 lever tables must carry R80's at_lever"* is
   rewritten as moot, pointing at the assert.
 
-#### 5.34.2 STEP 1, PART 2 — **THE REST OF THE PLUMBING: FOUR HEADER-ONLY MODULES, `py_g`, `riding4_idx`, ITEMS C AND D — AND ONE GUARD THAT COULD NEVER FIRE** (2026-09-29)
+#### 5.34.1 (cont.) STEP 1, PART 2 — **THE REST OF THE PLUMBING: FOUR HEADER-ONLY MODULES, `py_g`, `riding4_idx`, ITEMS C AND D — AND ONE GUARD THAT COULD NEVER FIRE** (2026-09-29)
 
 Step 1 is now complete. What landed:
 
@@ -26293,7 +26293,8 @@ Step 1 is now complete. What landed:
   why index-set = `id`-set without a no-aliasing premise (the predicate is a pure function of the
   point, so repeated objects would pass or fail together). **Not gated against `riding4`** — that
   is the function compared with itself now — but against a Python probe of `test_rung81.py`'s rig
-  (`W:\temp\claude\slice-aj-step1\idx_probe.py`): three marches of 341 points each, kept indices
+  (`W:\temp\claude\slice-aj-step1\idx_probe.py`): three marches of 341 points each (all 341 `s`
+  values distinct on each, `s_probe.py`), kept indices
   `38..=70` (MATCHED `demand`, the 33-point control), `31..=77` (SLOW_FUEL `demand`), `52..=74`
   (SLOW_FUEL `clip`). None at a trajectory end; the probe asserted no trajectory repeats an object.
 * **Item C** (`state_coordinate.rs`): the clause *"including every rung-80–84 march slice AJ will
@@ -26324,8 +26325,8 @@ formatter's design exists to avoid; the generated set did, on four rows chosen f
 Re-blessed 47/309/182 → **54/347/207** (seven newly citing files, twenty-five new anchors, each
 read by hand against the line the guard printed). `authority_clock.rs` first cited
 `engine.py:22097` as the first of `authority_mask`'s five calls on the rig; the guard printed
-`if not gg["interior"]:` — the call is **`22096`**. **§ (i) and § (ii) above cite the same five
-calls as `22099–22103`, also wrong** (`22099` is `continue`); this plan is not watched by the
+`if not gg["interior"]:` — the call is **`22096`**. **§ (i) above cites the same five calls
+as `22099–22103`, also wrong** (`22099` is `continue`); this plan is not watched by the
 guard, so the correction is recorded here rather than silently edited upstream.
 
 #### (c) PROCESS
@@ -26338,3 +26339,11 @@ by that PID alone. Another session's Python processes on the box were left alone
 
 **Next: step 2 — rung 81's five readers** (`_central`, `_criterion_at`, `authority_clock`,
 `_tau_f_inert`, `authority_mask`) in `authority_clock.rs`.
+
+**Addendum (the advisor's closing review, same day).** This section is numbered 5.34.1 (cont.) so
+step 2 keeps § 5.34.2, as every earlier slice numbers step N as 5.3x.N. The sentence in (b) that
+blamed § (ii) as well as § (i) for `22099–22103` was itself a misattribution (only § (i) has it),
+now corrected. `shared_actuator.rs`'s `` `:22217–22220` `` was a citation FORM the guard does not
+read — slice AI step 7's defect, repeated — respelled `engine.py:22217–22220` and re-blessed. And
+`riding4_idx`'s doc gave an unmeasured reason (*two points can share an `s` across a restart*):
+measured, none do on the three pinned marches, so the doc now says only what § (v) said.
