@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: f93faeff-92b7-4da9-91f1-02870ee45210
-  modified: 2026-09-29T04:43:56.170Z
+  modified: 2026-09-29T09:26:48.380Z
 ---
 
 Slice AI step 7 shipped 2026-09-29 (plan `W:\Claude_projects\jet engine\docs\plans\todo-rust-port.md`
@@ -33,9 +33,12 @@ Also measured:
 - Counting SCOPES under-predicts dispatches 2×: a `CoordScope` dispatches on set AND drop.
 - The closing mutation (delete `at_lever: r80_at_lever,`) was caught only by STRUCTURAL gates —
   pointer identity AND a readback of the sibling's `sm_air` (I first wrote "pointers only"; the
-  advisor caught it from my own table). I predicted the ported `rung80.rs` would fail: 16/16, since
-  `test_rung80.py` has no carry gate. The Python side and rungs 81–84 were NOT run — booked as
-  slice AJ's first pre-flight probe.
+  advisor caught it from my own table). I predicted the ported `rung80.rs` would fail: 16/16.
+  I then called it "faithfully blind" because `test_rung80.py` has no carry gate — **WRONG,
+  corrected 2026-09-29 by AJ's pre-flight** ([[rust-port-slice-aj-preflight]]): run in Python,
+  the deletion FAILS `test_the_knob_is_loud`, whose `rig._walls_of(...)` is a method lookup on the
+  rebuilt rig's class. The Rust port spells it as a free function, so `rung80.rs` is UNDER-PORTED
+  at that test. A grep for the words of a carry test cannot find an incidental structural catcher.
 - `split_saturation`'s +3 `cap_fuel` entries: I first wrote "one march is 3 calls longer", which
   the arithmetic refutes (a point = 4 entries); a probe found +1 at each of the 3 top walls.
 - Rows ran on parallel threads with no lock, on the thread-local counters' guarantee.
