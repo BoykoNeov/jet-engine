@@ -25756,3 +25756,77 @@ The citation guard is re-blessed for four new anchors (43/280/178 → 45/305/182
 `21301`, `21467`), each read by hand, run after the step's last Rust edit. Gate for this step: full
 `cargo test --release` + full `pytest`, predicted before the run at 170 blocks / 1 761 passed and
 1 387 — the numbers are in the commit.
+
+#### 5.33.6 STEP 6 — THE ORACLE, AND **ITEM L's SURVIVOR IS INVISIBLE TO ALL 37 945 KEYS, COUNTERS INCLUDED: THE STUCK FIELD IS LEFT ON A RIG NOTHING READS AGAIN**
+
+`rust/oracle/dump_slice_ai.py` (walks) + `rust/tests/slice_ai_oracle.rs` (hand-lists), AH's
+template: **37 945 compared keys**, every reader of both rungs on BOTH stator arms (neither suite
+sweeps one), § (i)'s `demand_gains` arm on R78/R79/R80 at walls 0.80 and 0.76 with rung 79's six
+counter DELTAS beside it, and the two plants (rung 79's incidence `_cap_march`, rung 80's
+`_split_march` at 0.75/0.77 in both coordinates) walked every fifth point plus column folds.
+PyPy golden 534 s; CPython golden 2 552 s.
+
+##### (a) RUST ≡ PyPy ON EVERY KEY, FIRST RUN — AND THE KEYS ARE MEASUREMENTS, NOT ZEROS
+
+Counters read off the golden: section I's rung-79 branch runs **128 / 80** times at 0.80 / 0.76 on
+the `phi` arm (the pre-flight's own numbers, which were taken at `every = 4`, not the probe's
+default 16) and **56 / 40** on the incidence arm, `fb_inc = calls_inc` throughout, and **0** on
+R78. `coord_march` and P's incidence plant read `1366 / 1363` on both arms (`br_inc = 3`,
+`vacuous = True`). Every split plant reads 0 hits.
+
+The incidence arm is a DIFFERENT plant, not a copy: rung 79's `_gauge_points` finds **2** riding
+points where the `phi` arm finds 10, `split_liveness`' first split row has `n_riding4 = 0` against
+31, and `split_gains` is vacuous on every incidence arm (`n_interior` `[2,0,0]` clip, `[0,0,0]`
+demand). Recorded, not scored.
+
+##### (b) THE CPYTHON ARM — PREDICTED FROM A RUNTIME `sum()` CENSUS BEFORE THE GOLDEN WAS COMPARED
+
+`W:\temp\claude\slice-ai-step6\probe_drive.py`, wrapper installed BEFORE `turbojet` imports (its
+own run reproduces the PyPy golden byte for byte). Two float summations in the model are reached:
+`_charpoly4` (`engine.py:16235`/`16237`, 1 004 calls) and `split_gains`' `rate` (`:21750`, 23
+calls). Everything else is an integer count, the sentinel, or `gas.py`'s import constants. The
+prediction was written into the gate as a PATH predicate (`via_sum`: `split_gains`' `c1`/`c0`/
+`zeros`, `demand_gains`' `poly_gap`/`poly_scale`/two worsts) before the CPython file was opened.
+**Result: CONFIRMED.** 227 of 37 945 keys differ, **every one on the 340 keys of the two paths** (`c0` 23, `c1` 18 in `split_gains`; `poly_gap` 84, `poly_scale` 78 and the two worsts 12 + 12 in `demand_gains`, on all three rungs alike). **No `zeros` count moved** — `rate`'s compensated sum never shifted a root across the `1e-4·rate` threshold, so the path it opens is predicted and empty. Every rung-79 key, every other rung-80 key, both plants and every counter are bit-identical across the interpreters. `_interp/sum_probe` reads 0.0 / 1.0 as built (CPython 3.14).
+
+##### (c) P2 SCORED — P2a CONFIRMED, P2b CONFIRMED, ITEM L's HALF OF P2 HALF-REFUTED
+
+* **P2a** — Rust R79/R80 `demand_gains` ≡ Python on every value key AND the six counter deltas.
+* **P2b** — `p2b_the_re_aim_moves_counters_and_no_value`: 2 176 value keys equal R78's across two
+  walls × two arms × two rungs, with `hits > 0` and `fb_inc = calls_inc` at every cell (a MASKED
+  branch, not an unreached one). The inside-scope field half is `slice_ai_cells.rs`'s.
+* **Item L's survivor, injected** (`CoordScope::drop` writing `lag_coord` directly). Predicted in
+  writing (`W:\temp\claude\slice-ai-step6\predictions.md`): counters move, values do not.
+  **Measured: NOTHING moves — 0 of 37 945 keys, counters included.** The only catcher is
+  `slice_ai_cells.rs`'s `coord_scope_moves_lag_coord_at_78_and_phi_ref_at_79`. The stuck `phi_ref`
+  is left on `demand_gains`' own BUILT rig, and the next sample point's scope overwrites it before
+  anything reads it. P2's *"and by the counters"* is **REFUTED**; *"by the readback"* CONFIRMED —
+  the pre-flight's own § (iii) L sentence (*"the killing gate is the post-scope field readback,
+  not a value diff"*) was the right one.
+
+##### (d) P3 — MEASURED UNDER PARALLEL EXECUTION, AS A SINGLE DRIVE CANNOT
+
+A single drive cannot separate thread-local from process-global counters (one marching thread is
+the same for both). `p3_two_threads_marching_at_once_both_match_the_golden` runs every
+counter-bearing section (C, I, P's rung-79 plant: 13 654 keys) on TWO spawned threads at once;
+both equal the golden and each other. **P3 CONFIRMED.** § (iv)'s *"zero `thread::spawn`/`scope`"*
+census is now TWO, both tests and both written to exercise the decision (`slice_ai_cells.rs:488`
+reads the counters from a second thread, since step 1; this gate marches on two). `rust/src` still
+has none. `state_coordinate.rs`'s module doc, which still stated the zero, is corrected: the
+premise that carries the decision is *no march is started on one thread and read on another*.
+
+##### (e) A CLAIM THIS STEP HAD WRITTEN, AND A SHIPPED DOC CLAIM, BOTH REFUTED BY INJECTION
+
+The dumper's first header said the incidence arm drives `_walls_of`'s round trip through
+`phi_lim_at`, *"which decides `engine.py:21486`'s band"* — `split_wall.rs`'s `Walls` doc says the
+same. **Injected `999.0` for that wall: 0 of 37 945 keys, `slice_ai_split` 16/16, `rung80` 7/7.**
+Every rig arms the valve and `phi_air` reads the valve's wall first; `_split_row` refuses a
+valve-less machine; `phi_stator` enters no field. The branch is dead on every shipped path. All
+three texts corrected to say so.
+
+##### (f) WHAT STEP 6 LEAVES
+
+The dispatch gates (step 7), and P1 / P6 / P7's scoring at the slice's close. Citation guard
+re-blessed 45/305/182 → 46/308/182 (one new file, three sites, no new anchor: `16235`, `16237`,
+`21750`, read by hand). Gate predicted before the run: **171 blocks / 1 767 passed / 0 failed**,
+pytest **1 387** — **measured exactly that**: `cargo test --release --no-fail-fast` 171 result blocks / 1 767 passed / 0 failed, `CARGO_EXIT=0` read off disk, zero `error[E`, zero `FAILED`/`panicked` lines; `pytest` 1 387 passed, `PYTEST_EXIT=0`. Both below normal, run after the step's last code edit.

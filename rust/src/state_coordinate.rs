@@ -85,10 +85,13 @@
 //! ([`GAUGE_HITS`](crate::residual_gauge::GAUGE_HITS)); **this rung's are `thread_local!`**, on
 //! three grounds from plan § 5.33 (iv):
 //!
-//! 1. **Nothing in the crate spawns a thread** — `rust/src`, `rust/tests`, `rust/oracle` and
-//!    `rust/examples` hold zero `thread::spawn`/`scope`/`Builder`, zero `rayon`. A march runs on its
-//!    caller's thread, so per-thread counts equal Python's per-process ones for every value a reader
-//!    returns. **Falsified the day a march crosses a thread** (§ 5.33 (ix) P3).
+//! 1. **No march crosses a thread** — when this was decided `rust/src`, `rust/tests`,
+//!    `rust/oracle` and `rust/examples` held zero `thread::spawn`/`scope`/`Builder`, zero `rayon`.
+//!    `rust/src` still holds none; two TESTS now spawn, each to exercise this very decision
+//!    (`slice_ai_cells.rs` reads the counters from a second thread, `slice_ai_oracle.rs`'s P3 gate
+//!    marches on two threads at once and matches the golden on both). A march runs on its caller's
+//!    thread, so per-thread counts equal Python's per-process ones for every value a reader
+//!    returns. **Falsified the day a march is started on one thread and read on another.**
 //! 2. **A `static` is corrupted by any other test in the binary that marches an incidence
 //!    machine**, and the plant bumps on EVERY incidence call — including every rung-80–84 march
 //!    slice AJ will port. That is slice AH step 7's race at six counters instead of two, and the

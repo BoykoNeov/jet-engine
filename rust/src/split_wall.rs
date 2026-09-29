@@ -183,6 +183,12 @@ fn r80_at_lever(core: &ScheduledStatorCore, arm: &LeverArm) -> ScheduledStatorCo
 /// back through [`phi_lim_at`](StatorIncidenceLimiter::phi_lim_at), a ROUND TRIP through `m_lim`,
 /// not re-derived as `(1 + sm)·phi_surge`. Which wall is read decides the ulp band at
 /// `engine.py:21486`, so neither the order nor the round trip is a free choice.
+///
+/// **BUT ON EVERY SHIPPED PATH THE ROUND TRIP IS NEVER READ** — measured at slice AI step 6 (plan
+/// § 5.33.6). Every rung-80 rig arms the VALVE, `phi_air` takes the valve's wall first, and
+/// [`split_row`] refuses a valve-less machine; `phi_stator` enters no reported field. Reading the
+/// incidence wall as `999.0` moved 0 of the oracle's 37 945 keys and no suite gate. The branch
+/// is Python's shape kept, and it decides the band only on a valve-less rig no reader builds.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Walls {
     /// The fuel leg's floor, off `surge`.

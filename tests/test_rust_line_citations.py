@@ -213,8 +213,12 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # cited for its unspelled defaults), `_forced_cap`'s two refusals (`21285`, `21301`) and rung 80's
 # first (`21467`) -- the other refusals they gate were anchored at steps 1 and 4. All four read by
 # hand against their sentences; run after the step's last Rust edit.
-FILES = 45
-SITES = 305
+# RE-BLESSED AT SLICE AI STEP 6 (45/305/182 -> 46/308/182). One new file (`slice_ai_oracle.rs`,
+# the oracle), three sites, NO new anchor: `16235` / `16237` (`_charpoly4`'s two float `sum()`s)
+# and `21750` (`split_gains`' `rate`), the CPython prediction's two paths -- all three already
+# anchored. Read by hand against their sentences.
+FILES = 46
+SITES = 308
 LINES = 182
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment
