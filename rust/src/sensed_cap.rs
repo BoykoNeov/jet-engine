@@ -593,7 +593,11 @@ pub fn accel_for(
 /// The one number this whole rung rests on. **It is NOT implied by the shipped bracket working**:
 /// a bracketing root-finder converges on a sign change whether or not `G = w − cap(w)` is monotone,
 /// so `_sched_fuel` bracketing buys *a root exists*, never `G' > 0` (anchor § 0.3). That
-/// distinction is rung 83's whole subject, arriving seven rungs early as a measurement.
+/// distinction — a root against its slope, i.e. its UNIQUENESS — is rung 78's subject, arriving
+/// two rungs early as a measurement. **The premise holds here and not everywhere:** rung 76's `G`
+/// is continuous, so a bracket does buy a root; rung 83 shows that on a residual built as a `min`
+/// a bracket locates only a SIGN CHANGE, which need not be a root at all. (Corrected at slice AJ
+/// step 1, plan § 5.34 (iii) D — this sentence used to credit the root-vs-slope point to rung 83.)
 ///
 /// # IT RE-SPELLS [`r76_sensed_cap`]'s FORMULA WITHOUT THE LAW CHECK, AND THAT IS DELIBERATE
 ///

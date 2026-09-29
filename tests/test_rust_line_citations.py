@@ -222,9 +222,16 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # guard that lives in the deleted `shared_rig` cell. First written as a bare `` `:21486` `` in a
 # comment block that never names `engine.py`, which this scanner does not open -- an unwatched
 # citation by FORM, caught only because the census did not move. Read by hand.
-FILES = 47
-SITES = 309
-LINES = 182
+# RE-BLESSED AT SLICE AJ STEP 1 (47/309/182 -> 54/347/207). Seven newly citing files: the four
+# rung-81-84 module headers, `shared_actuator.rs` (`riding4_idx`'s `id(p)` sites),
+# `slice_aj_plumbing.rs` and `oracle/dump_py_g.py`. Twenty-five new anchors: the four `class` lines,
+# the `id(p)` round trips, the `round`/`min`/`sorted` sites, the NaN, and the four `%g` messages.
+# **ONE WAS WRONG AT BIRTH, AGAIN**: `authority_clock.rs` cited `22097` as the first of
+# `authority_mask`'s five calls on the rig; the guard printed `if not gg["interior"]:` and the call
+# is `22096`. Plan § 5.34 (i)'s own `22099–22103` is off the same way -- the plan is not watched.
+FILES = 54
+SITES = 347
+LINES = 207
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment
 # SAID, where the number is part of the quotation and must not track the file.

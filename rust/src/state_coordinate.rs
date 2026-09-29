@@ -93,8 +93,12 @@
 //!    thread, so per-thread counts equal Python's per-process ones for every value a reader
 //!    returns. **Falsified the day a march is started on one thread and read on another.**
 //! 2. **A `static` is corrupted by any other test in the binary that marches an incidence
-//!    machine**, and the plant bumps on EVERY incidence call — including every rung-80–84 march
-//!    slice AJ will port. That is slice AH step 7's race at six counters instead of two, and the
+//!    machine**, and the plant bumps on EVERY incidence call. (This sentence used to add
+//!    *including every rung-80–84 march slice AJ will port*; slice AJ's pre-flight, plan § 5.34
+//!    (iii) C, measured that no shipped rung-80–84 march is an incidence march — every rung-81–84
+//!    reader and every call site passes `inc = False`, all 1 306 `_split_march` entries — so
+//!    those ports never touch these counters. The decision stands on the incidence marches the
+//!    binary DOES run.) That is slice AH step 7's race at six counters instead of two, and the
 //!    lock that answers it would have to spread into every later test file. A lock protects the
 //!    resource you wrap it around; a thread-local removes the shared resource.
 //! 3. **The crate's own counters are already thread-local** — nine modules use `thread_local!` +

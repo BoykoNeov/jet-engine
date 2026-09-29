@@ -26265,3 +26265,76 @@ and D, the `%g` helper and `riding4` by index. Nothing is booked forward past ru
   pre-checked at rung 80; its first half (every AJ value unchanged) waits for step 7.**
 * **Item B done:** `split_wall.rs:44–45`'s *"R81…R84 lever tables must carry R80's at_lever"* is
   rewritten as moot, pointing at the assert.
+
+#### 5.34.2 STEP 1, PART 2 — **THE REST OF THE PLUMBING: FOUR HEADER-ONLY MODULES, `py_g`, `riding4_idx`, ITEMS C AND D — AND ONE GUARD THAT COULD NEVER FIRE** (2026-09-29)
+
+Step 1 is now complete. What landed:
+
+* **Four modules, header only** — `rust/src/authority_clock.rs` (81), `threshold_law.rs` (82),
+  `corrector_law.rs` (83), `staircase_law.rs` (84). No tables, **no builder** (the advisor's call:
+  a `build_authority_clock_cascade` would name a machine that does not exist and invite the vacuous
+  *is it `R81`'s?* check P6 rules out; a ported test that wants the Python class name aliases
+  `build_split_wall_cascade` locally). Each header records only what the pre-flight MEASURED and
+  what its step must honour — the `_scan`/`classify` naming decision, the `id(p)` sites, the
+  keyed orderings, the merge key, the NaN, the `%g` sites, the two misnamed voids. P6 holds:
+  `TripleHooks` at 18, 0 ADD, 0 tables.
+* **`demand_coordinate::py_g`** — Python's `'%g' % x`, beside `py_e`. Built from Rust's `{:.5e}`
+  (the correctly rounded six digits AND the exponent read after rounding), with the fixed form laid
+  out from those digits, never re-formatted. Gated in `rust/tests/slice_aj_plumbing.rs` against
+  `rust/oracle/dump_py_g.py`'s output — **10 511 values, `py_g_pypy.tsv` and `py_g_cpython.tsv`
+  byte-identical** — and on P3's driven arguments and the four driven messages written out.
+  **Exact ties are in the set on purpose:** 462 rows are exact six-digit decimal ties (integers
+  whose seventh digit is 5), and on **231** of them round-half-away would print a different
+  string, so the oracle does test the tie rule the pre-flight's `round(x, n >= 1)` stress could
+  not reach. Rust's `{:e}` rounds them half-to-even, as Python does.
+* **`shared_actuator::riding4_idx`** — `_riding4` as trajectory INDICES, the port of the `id(p)`
+  round trips at `engine.py:21941/21944` and `:22218/22220`. It holds the ONE copy of the
+  predicate; `riding4` now maps over it, so every earlier caller sees the same `Vec`. Its doc says
+  why index-set = `id`-set without a no-aliasing premise (the predicate is a pure function of the
+  point, so repeated objects would pass or fail together). **Not gated against `riding4`** — that
+  is the function compared with itself now — but against a Python probe of `test_rung81.py`'s rig
+  (`W:\temp\claude\slice-aj-step1\idx_probe.py`): three marches of 341 points each, kept indices
+  `38..=70` (MATCHED `demand`, the 33-point control), `31..=77` (SLOW_FUEL `demand`), `52..=74`
+  (SLOW_FUEL `clip`). None at a trajectory end; the probe asserted no trajectory repeats an object.
+* **Item C** (`state_coordinate.rs`): the clause *"including every rung-80–84 march slice AJ will
+  port"* re-scoped to what § (iii) measured — no shipped rung-80–84 march is an incidence march —
+  with the thread-local decision left standing.
+* **Item D** (`sensed_cap.rs`): root-vs-slope (uniqueness) credited to **rung 78**; the premise
+  *"a bracket buys a root"* kept as TRUE on rung 76's continuous `G`, and rung 83 cited for where
+  it fails (a `min`-built residual, where a bracket buys only a sign change).
+* **Sibling-phrasing sweep** (the item-H lesson): `src`, `tests`, `oracle`, `examples` grepped for
+  `whole subject`, `slice AJ will`, `rung-80–84`, `rung 8[1-4]`. No third site; item E's three are
+  true as § (iii) says.
+
+#### (a) THE FINDING — **A GUARD WRITTEN AT THE ADVISOR's WARNING COULD NEVER BE FALSE**
+
+The advisor warned that stripping trailing zeros must happen only where a decimal point exists, or
+`100000` becomes `1`. The first `py_g` carried a `contains('.')` guard for exactly that. **An
+injection deleting it moved none of the 10 511 rows** — because both bodies are BUILT with a point
+(`100000` is laid out as `100000.`, whose last character is the point, so the zero-strip stops
+there). The warning was right about a formatter that can emit a pointless string; this one cannot,
+so the guard was dead code that read as protection. It was removed and the comment now says why.
+The second injection — reading the exponent off the UNROUNDED value — **was killed, by 4 rows of
+10 511, all carry cases** (`9.999995e-05`, `9.9999951e-05` → `0.0001`; `999999.5` → `1e+06`, …) and
+by **none** of the hand-typed pins. The hand-typed set could not have caught the defect the
+formatter's design exists to avoid; the generated set did, on four rows chosen for it.
+
+#### (b) THE CITATION GUARD — **ONE ANCHOR WRONG AT BIRTH, AGAIN**
+
+Re-blessed 47/309/182 → **54/347/207** (seven newly citing files, twenty-five new anchors, each
+read by hand against the line the guard printed). `authority_clock.rs` first cited
+`engine.py:22097` as the first of `authority_mask`'s five calls on the rig; the guard printed
+`if not gg["interior"]:` — the call is **`22096`**. **§ (i) and § (ii) above cite the same five
+calls as `22099–22103`, also wrong** (`22099` is `continue`); this plan is not watched by the
+guard, so the correction is recorded here rather than silently edited upstream.
+
+#### (c) PROCESS
+
+A stray `python -` in one probe command blocked on stdin and hung the shell; it was found by its
+parent chain (`C:\Python314\python.exe -`, a child of this session's own command line) and killed
+by that PID alone. Another session's Python processes on the box were left alone.
+
+**Gate:** full `cargo test --release` — 173 binaries, **1 780 passed, 0 failed** (`slice_aj_plumbing.rs` 4 of 4); full `pytest` — **1 387 passed**, the citation guard re-blessed at 54/347/207 and run after the last Rust edit.
+
+**Next: step 2 — rung 81's five readers** (`_central`, `_criterion_at`, `authority_clock`,
+`_tau_f_inert`, `authority_mask`) in `authority_clock.rs`.

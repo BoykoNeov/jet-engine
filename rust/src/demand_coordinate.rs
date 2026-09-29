@@ -1547,6 +1547,59 @@ pub fn py_e(x: f64, prec: usize) -> String {
     format!("{mant}e{}{:02}", if n < 0 { '-' } else { '+' }, n.abs())
 }
 
+/// Python's `'%g' % x` — **six significant digits, trailing zeros dropped, and the notation
+/// chosen by the ROUNDED exponent.** Slice AJ step 1; rungs 82–84 build four returned messages
+/// with it (`engine.py:22305`, `:22784`, `:23030`, `:23061`).
+///
+/// CPython's rule (`format_float_short`, precision 6): round to six significant digits, read the
+/// decimal exponent `X` OFF THE ROUNDED RESULT, then write fixed notation if `-4 <= X < 6` and
+/// exponential otherwise, stripping trailing zeros (and a bare point) from either. So this takes
+/// Rust's `{:.5e}` — already the correctly rounded six digits and their exponent — and lays the
+/// fixed form out from THOSE DIGITS rather than formatting the value a second time: a second
+/// rounding could disagree with the first, and reading `X` after rounding is what makes a carry
+/// (`999999.5` → `1e+06`, `9.999995e-05` → `0.0001`) land in the notation Python picks.
+///
+/// **The one case the pre-flight's rounding stress could not cover is covered by the oracle:**
+/// an exact decimal tie at the sixth digit (`1234565.0`). `round(x, n >= 1)` never meets one in
+/// a binary float; `%g` on an integer does. Rust's `{:e}` rounds it half-to-even, as Python
+/// does — measured over `rust/oracle/py_g_*.tsv`, 10 511 values, PyPy and CPython byte-identical.
+///
+/// NaN and the infinities are spelled out: Rust writes `NaN`/`inf`, Python `nan`/`inf`/`-inf`.
+pub fn py_g(x: f64) -> String {
+    if x.is_nan() {
+        return "nan".to_string();
+    }
+    if x.is_infinite() {
+        return if x > 0.0 { "inf" } else { "-inf" }.to_string();
+    }
+    const P: i32 = 6;
+    let s = format!("{:.*e}", (P - 1) as usize, x);
+    let (mant, exp) = s.split_once('e').expect("Rust's `{:e}` always emits the `e`");
+    let e: i32 = exp.parse().expect("Rust's exponent field is a bare signed integer");
+    let (sign, mant) = match mant.strip_prefix('-') {
+        Some(m) => ("-", m),
+        None => ("", mant),
+    };
+    let digits: String = mant.chars().filter(|c| *c != '.').collect();
+    // Both bodies below are built WITH a point, even when nothing follows it (`100000` is laid out
+    // as `100000.`), so stripping zeros stops at the point and `100000` cannot become `1`. A
+    // `contains('.')` guard here was written first and removed: an injection that deleted it moved
+    // none of the 10 511 oracle rows, because by construction it could never be false.
+    let strip = |t: String| -> String { t.trim_end_matches('0').trim_end_matches('.').to_string() };
+    if (-4..P).contains(&e) {
+        let body = if e >= 0 {
+            let (int, frac) = digits.split_at((e + 1) as usize);
+            format!("{int}.{frac}")
+        } else {
+            format!("0.{}{}", "0".repeat((-e - 1) as usize), digits)
+        };
+        format!("{sign}{}", strip(body))
+    } else {
+        let body = strip(format!("{}.{}", &digits[..1], &digits[1..]));
+        format!("{sign}{body}e{}{:02}", if e < 0 { '-' } else { '+' }, e.abs())
+    }
+}
+
 /// Python's `f"{s!r}"` for a `str` — **single quotes, where Rust's `{:?}` writes double ones.**
 ///
 /// Only the quoting differs for the strings this rung formats (`'clip'`, `'demand'`, `'sched'`,

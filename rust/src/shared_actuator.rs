@@ -1281,9 +1281,35 @@ pub(crate) fn reg4(k: &'static str, x: (f64, Regime)) -> (&'static str, f64, boo
 /// A point with no stator (`v_regime: None`) is not RIDING a stator it does not have — `false`
 /// here is the same answer Python gives for `p.get("v_regime") == "riding"` on `None`, not a
 /// fallback.
+///
+/// Built on [`riding4_idx`], which holds the ONE copy of the predicate; this returns the points
+/// it indexes, in the same order, so every caller before slice AJ sees the same `Vec`.
 pub fn riding4(traj: &[FuelPoint], b_max: f64) -> Vec<FuelPoint> {
+    riding4_idx(traj, b_max).into_iter().map(|i| traj[i]).collect()
+}
+
+/// [`riding4`] as TRAJECTORY INDICES — **the port of rungs 81/82's `id(p)` round trip.** Slice
+/// AJ step 1.
+///
+/// `authority_clock` (`engine.py:21940–21946`) and `_scan_cells` (`:22217–22220`) both take
+/// `ride = self._riding4(traj, …)`, build `seen = {id(p) for p in ride}`, and walk
+/// `enumerate(traj)` keeping the indices `i` whose point is in `seen` — they need the INDEX,
+/// because `_criterion_at` central-differences `traj[i-1]` and `traj[i+1]`. The crate's `riding4`
+/// returns copies, which have no identity to look up, so this returns the indices directly.
+///
+/// **Why the two are the same set, stated rather than assumed.** Python's set is *the indices
+/// whose point OBJECT is one `_riding4` kept*. If `traj` never repeats an object, that is *the
+/// indices whose point passes the predicate*. If it DID repeat one, the two would still agree:
+/// the predicate is a pure function of the point, so every occurrence of an object passes or
+/// fails together, and `id` membership admits exactly the passing ones. So the port does not rest
+/// on a no-aliasing premise it never checked. Matching on `s` instead of index would be a
+/// DIFFERENT claim (two points can share an `s` value across a restart) and is not used.
+///
+/// Indices are ascending, because the filter walks `traj` in order.
+pub fn riding4_idx(traj: &[FuelPoint], b_max: f64) -> Vec<usize> {
     traj.iter()
-        .filter(|p| match p.extra {
+        .enumerate()
+        .filter(|(_, p)| match p.extra {
             PointExtra::Shared { required_fuel, required_gov, b_cmd, v_regime: Some(vr), .. }
             // SLICE AF (14 of 31): **AND THE SIGN QUESTION IS LIVE AT THIS ARM.** Every
             // variant above floors its requirements, so `required_* > 0.0` reads *is this leg
@@ -1311,7 +1337,7 @@ pub fn riding4(traj: &[FuelPoint], b_max: f64) -> Vec<FuelPoint> {
             // function is a filter, so the two sites get the SAME treatment and not opposite ones.
             _ => panic!("rung-72's `_riding4` reads `required_fuel`/`required_gov`/`b_cmd` with a                          bare index, so a trajectory that is not this rung's raises rather than                          filtering to nothing. An empty riding set reports PERFECT tracking and                          every statistic downstream of it is then computed over nothing."),
         })
-        .copied()
+        .map(|(i, _)| i)
         .collect()
 }
 

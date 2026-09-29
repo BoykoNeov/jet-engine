@@ -125,10 +125,12 @@
 
 pub mod anti_windup;
 pub mod applied_reference;
+pub mod authority_clock;
 pub mod bleed;
 pub mod bleed_transient;
 pub mod combustor;
 pub mod components;
+pub mod corrector_law;
 pub mod cross_loop;
 pub mod cross_split;
 pub mod demand_coordinate;
@@ -149,12 +151,14 @@ pub mod shared_actuator;
 pub mod split_wall;
 pub mod spool;
 pub mod stage;
+pub mod staircase_law;
 pub mod state_coordinate;
 pub mod stator;
 pub mod stator_bleed;
 pub mod stator_transient;
 pub mod stiffness_ledger;
 pub mod three_loop;
+pub mod threshold_law;
 pub mod two_lag;
 pub mod two_spool;
 pub mod two_spool_transient;
