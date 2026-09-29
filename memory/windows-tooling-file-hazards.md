@@ -126,3 +126,9 @@ piled up. **It cost no time** — a marker file the batch writes still fires; th
 gates themselves (cargo 47 min, pytest 28 min) on a box loaded by other work. **The fix is an `exit` as the batch's LAST
 line** (or `start ... cmd /c x.cmd`). Check with `Get-CimInstance Win32_Process` for a leftover
 `cmd.exe /K <your batch>`, and close it by that PID.
+
+**The venv's `pytest.exe` launcher exits 1 with NO output, even run directly** (slice AI step 7,
+2026-09-29: `pytest.exe --version` → exit 1, empty stdout/stderr). A background gate launched through
+it "completed" in seconds with `PYTEST_EXIT=1` and a 0-byte log — only the exit file and the
+implausible duration said so. Not diagnosed (likely a stale launcher path). **Launch the gate as
+`.venv\Scripts\python.exe -m pytest`**, which works, and treat a gate that ends in seconds as not run.
