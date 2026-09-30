@@ -24,7 +24,10 @@ recorded this exact fact (*"a void's order is visible only where both bracket en
 its `slice_aj_threshold.rs` reading killed I13 alone in a follow-up predicted in writing first.
 **How to apply:** when predicting a kill for a reordering, trace the mutated code to its RETURN on
 the gate's input, not to the first branch that differs; and for an order of N checks, the gate
-needs an input that trips at least the two being swapped.
+needs an input that trips at least the two being swapped. **And apply it to your OWN gates the
+moment you write it down**: the advisor found two more unlisted instances in this step's own void
+gates (`corrector_step` V4/V5, `root_class` carry/V6); both got a both-conditions arm, measured on
+PyPy first, and their reorder injections I14/I15 were killed by those arms ONLY (sweep 15, 14 right).
 
 Also:
 - **Two of four reduce tests were self-comparisons in Rust** (the advisor's catch, before code):

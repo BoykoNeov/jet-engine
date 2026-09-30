@@ -318,6 +318,11 @@ fn void_v4_the_step_on_an_empty_window() {
     assert!(!rd.window_open && rd.f.is_none(), "the premise: no window, no forward reading");
     assert_eq!(corrector_step(&rd, 0.5),
                CorrectorStep::Void { c: 0.5, forward: None, void: "V4: kappa impure".into() });
+    // THE ORDER: no `F` AND `c = 1` trips both voids' conditions, and V4 is tested first
+    // (`engine.py:22716`, measured on PyPy). The `c = 0.5` arm above and +3's `F`-present arm each
+    // trip ONE, so neither sees a port that tested V5 first (injection I14, plan § 5.34.5 (g)).
+    assert_eq!(corrector_step(&rd, 1.0),
+               CorrectorStep::Void { c: 1.0, forward: None, void: "V4: kappa impure".into() });
 }
 
 /// **+2 — V4 at a start point, `engine.py:22776`**: both starts empty; then the FIRST empty and

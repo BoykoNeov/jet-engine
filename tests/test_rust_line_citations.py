@@ -255,9 +255,10 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # suites `rung81.rs` … `rung84.rs`. Six new anchors, all void literals the added gates pin:
 # `22302` (V1), `22716`/`22717` (V4/V5), `22776` (V4 at a start), `23001` (V3), `23027` (V2);
 # the other cited lines (`22305`, `22784`, `23030`, `23061`, the reader `def`s) were already
-# blessed. Each read by hand against the printed line; no removal printed.
+# blessed. Each read by hand against the printed line; no removal printed. Then 420 -> 421 in
+# the same step's follow-up: one more site (`rung83.rs` citing the already-blessed `22716`).
 FILES = 61
-SITES = 420
+SITES = 421
 LINES = 245
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment

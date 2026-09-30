@@ -26904,5 +26904,25 @@ The four modules stand at 2 749 lines (no `src/` change). The four suites add 1 
 Citation guard 57/395/239 → **61/420/245**: four newly citing files, six new anchors (`22302`,
 `22716`, `22717`, `22776`, `23001`, `23027`). **Closing gates, predicted before the run (181 blocks / 1 879 and 1 387) and run after the last test-file edit, below-normal:** `cargo test --release --no-fail-fast` **181 blocks, 1 879 passed, 0 failed**; `pytest` **1 387 passed** (27:04 on a box running both gates at once — not a timing).
 
+##### (g) FOLLOW-UP, THE SAME DAY — THE LESSON OF (d) APPLIED TO THIS STEP's OWN GATES (the advisor's closing review)
+
+(d)'s lesson — an order of two checks is visible only on an input that trips BOTH — had two more
+unlisted instances in the gates this step shipped, each pinning its two voids on inputs that trip
+ONE: `corrector_step`'s V4-vs-V5 (`rung83.rs` +1 at `c = 0.5`, +3 with `F` present) and
+`root_class`'s carried-void-vs-V6 (`rung84.rs` +4, V6 where the bisection does not void, the carry
+where V6 cannot fire). `staircase_number`'s V2-vs-V5 was already covered — I12 was killed on an
+input tripping both. **Measured on PyPy first** (`probe_order.py`, entry control, `3.11.15 …
+[PyPy 7.3.23 …]`): at `r = 1.0`, `tau = 0.05`, `c = 1.0` the step returns `V4: kappa impure`; at
+`r = 1.0`, `n_bisect = 0`, `eps = 1.0` `root_class` returns the CARRIED V1 (span 0.296 < 1).
+Both arms added. Two injections, predicted in writing first: **I14** (V5's condition tested
+before V4's) **KILLED — `rung83` +1 ONLY**; **I15** (a V6 test on the bracket's width before the
+carry) **KILLED — `rung84` +4 ONLY**. That both would have SURVIVED before the arms is reasoned
+from the inputs, not measured. **Sweep total: 15 injections, 14 of 15 verdicts right.** Also
+declared in `rung84.rs`: #6's `is_some_and(|d| d != 0.0)` is STRICTER than Python's
+`d_membership != 0.0`, which is `True` on a `None`. Citation census 61/420/245 → **61/421/245**
+(one more site on the already-blessed `22716`; no anchor changed). Re-run for this follow-up:
+`rung83` 12/12 and `rung84` 13/13, the citation guard 5/5 — the only binaries and the only Python
+file the follow-up touched; the full gates above were not re-run for it.
+
 **Next: step 6 — the oracle** (`dump_slice_aj.py` over all four rungs; P2 scored, with step 4's
 27-key CPython refutation carried).

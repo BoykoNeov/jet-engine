@@ -41,6 +41,9 @@
 //!   converted exactly. The `r = 0.20` control asserts `moved == 0.0` EXACTLY.
 //! * **`x["root_exists"]` on a VOID `root_class` is `None`**, so #8's sequence is compared as
 //!   `Option<bool>`s: a void at any step fails it, as it does in Python.
+//! * **#6 is STRICTER than Python on one clause, declared:** `coarse["d_membership"] != 0.0` is
+//!   `True` on a `None` in Python, while `is_some_and(|d| d != 0.0)` fails on it. On this rig the
+//!   jump always carries a membership term, so the two agree here.
 //! * **`ia - im >= 1` on Python ints** is `i64` arithmetic on `edge_index`; a `None` index is
 //!   Python's `TypeError`, here a panic by name.
 //!
@@ -467,6 +470,12 @@ fn void_v6_and_the_carried_v1_in_root_class() {
     assert_eq!(staircase_law::root_class(&m, BRACKET, 0, 1.0, &kw(&f, 0.25, DS)),
                RootClass::Void { void: "V6: bracket narrower than 1".into(), r: 0.25, ds: DS });
     assert_eq!(staircase_law::root_class(&m, BRACKET, 0, EPS, &kw(&f, 1.0, DS)),
+               RootClass::Void { void: "V1: four-loop window empty at a bracket end".into(),
+                                 r: 1.0, ds: DS });
+    // THE ORDER: at `r = 1.0` with `eps = 1.0` the bisection voids AND its span (0.296) is under
+    // `eps`, so both voids' conditions hold, and the CARRY comes first (measured on PyPy). The two
+    // arms above each trip ONE, so neither sees a port that tested V6 first (injection I15).
+    assert_eq!(staircase_law::root_class(&m, BRACKET, 0, 1.0, &kw(&f, 1.0, DS)),
                RootClass::Void { void: "V1: four-loop window empty at a bracket end".into(),
                                  r: 1.0, ds: DS });
 }
