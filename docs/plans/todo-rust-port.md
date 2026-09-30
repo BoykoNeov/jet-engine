@@ -26926,3 +26926,108 @@ file the follow-up touched; the full gates above were not re-run for it.
 
 **Next: step 6 — the oracle** (`dump_slice_aj.py` over all four rungs; P2 scored, with step 4's
 27-key CPython refutation carried).
+
+#### 5.34.6 STEP 6 — THE ORACLE, AND **CPYTHON's WHOLE DIFFERENCE IS TWO MECHANISMS, PROVED BY RUNNING CPYTHON WITH BOTH REMOVED: BYTE-IDENTICAL TO PYPY ON ALL 24 324 LINES** (2026-09-30)
+
+`rust/oracle/dump_slice_aj.py` + `rust/tests/slice_aj_oracle.rs` (5 gates), goldens
+`slice_aj_pypy.tsv` (594 s) and `slice_aj_cpython.tsv` (3 071 s), and the frozen list
+`slice_aj_cpython_diffs.txt`. Predictions in `W:\temp\claude\slice-aj-step6\predictions.md`,
+written before any golden was compared. **Rust ≡ PyPy on all 24 323 compared lines, first run.**
+
+##### (a) THE DESIGN — three changes from AH/AI's template, all on the advisor's pre-build review
+
+* **Steps 2–4's line format, not AH/AI's walked keys.** One `path<TAB>token` per value in
+  PYTHON's dict order. Python writes every key it returns, so a forgotten field still fails by
+  path (the reason AH/AI hand-listed keys), and ORDER is pinned too — which AH/AI's sorted walk
+  could not see. [`the_paths_are_equal_in_order`] runs before any token is compared.
+* **The converters are LIFTED, not rewritten.** Steps 2–4's four binaries each carried their own
+  `Flat` and per-struct flatteners (one `scan` twice). All moved into
+  `rust/tests/slice_aj_flat/mod.rs` (a subdirectory module, not a test target); the four files
+  now `use` it and lost 1 103 lines. Their gates re-verify the shared module against their own
+  goldens: **5 + 11 + 16 + 12 = 44 green** after the move, zero warnings. The one helper that
+  differed — step 2's `f` wrote a NaN's raw bits, steps 3/4's `f:nan` — is reconciled to
+  `f:nan`; step 2's golden has no NaN, and its gates prove it. Only the march point is new.
+* **The readings (P2's budget: one ramp, one `ds` pair per reader).** Regular-stator arm: rung
+  81's two fixtures at their defaults; `threshold_law` at `rs = (0.25,)` with `ds_fine =
+  0.0025`; `threshold_reference` defaults; `threshold_terms` three walls; the direct readers of
+  rungs 83/84 on step 4's settings; step 4's `scan_p4` and `secant_iter_v4` VERBATIM (CPython
+  positive controls); a `residual_shape` at `n = 4` (`n - 1 = 3`), AIMED at step 4's coverage gap C6 — and
+  MISSING it, see (e). Incidence-stator arm at `r = 0.25`. Both arms walk the
+  PLANT: `scan_cells`' march every fifth point + column folds, `_riding4` as INDICES (Python's
+  `id(p)`), every scored cell.
+
+##### (b) THE INCIDENCE ARM — THE FIRST GATE THAT CAN SEE A PORT DROP `inc`
+
+§ 5.34 (iii) C: every rung-81–84 call in the suites, steps 2–5's oracles and the kernels passes
+`inc = False`. Probed on PyPy first (`probe_inc.py`): at `r = 0.25` the window is open and
+NON-MONOTONE (`n_fuel` 4, 10, 4, 3 at `tau_f` 0.004 / 0.02 / 0.05 / 0.30); at `r >= 0.35` mostly
+empty; at rung 81's `r = 0.5` every row zero. The bisecting readers VOID there (the detector is on
+at `0.004`), so the arm carries ONE void (`i_law`: `V3: threshold not strictly inside [0.004,
+0.3]`) and aims its direct readers inside `[0.004, 0.05]`. `the_incidence_arm_is_live` pins it
+non-vacuous (`i_scan` n_fuel 10, `i_plant` 10 riding, `i_clock` 103 riding). **Two readings came
+out thinner than meant, recorded not rerun** (a rerun costs the ~50-min CPython runs): `i_secant`
+stops at once on `S2: flat pair` — its two starts `0.01`/`0.0125` lie on one stair — and
+`i_mask` is VACUOUS.
+
+**P-D, three injections, predicted in writing first — 3 of 3 exact, readings NAMED by the gate**
+(the gate first reported only a length mismatch; a per-reading breakdown, `moved_readings`, was
+added so reach is read by name, not inferred):
+
+| # | injection | result |
+|---|---|---|
+| J1 | `scan_cells`' `split_march(…, kw.inc)` → `false` | **oracle KILLED; exactly the 11 predicted** — `i_law`, `i_scan`, `i_read`, `i_shape`, `i_secant`, `i_edge_lo/hi`, `i_ladder`, `i_lattice`, `i_plant`, `i_classify`; no `p_*`. `slice_aj_threshold/corrector/staircase`, `rung82/83/84` ALL GREEN — **before this step J1 was invisible to the crate**: those six plus the oracle are EVERY test binary that names `threshold_law`, `corrector_law` or `staircase_law` (grepped), so no other can reach `scan_cells` |
+| J2 | `authority_clock`'s grid march (`authority_clock.rs:404`) → `false` | **`i_clock` ONLY**; `rung81`, `slice_aj_clock` green |
+| J3 | `authority_mask`'s march → `false` | **`i_mask` ONLY** — a vacuous reading still moves; `rung81`, `slice_aj_clock` green |
+
+Each restored by `git checkout`, blob hashes verified (`a97d55f8`, `04e30070`).
+
+##### (c) THE CPYTHON ARM — P2 SCORED, AND A REVERSE RUN THAT EXPLAINS ALL OF IT
+
+**The per-reading census I first planned was DEAD before it was built** (the advisor's call,
+measured, `rust/oracle/probe_slice_aj_step6_powrate.py`): one ordinary CPython march evaluates `eta_c_at` 1 291 982 times, and 26 of its squares
+differ from the multiply. Every reading would be flagged; the census predicts nothing.
+
+* **P2's CPython half** (*"bit-exact except `authority_mask`'s `c0`/`c1`"*) — **REFUTED**, by step 4,
+  already; recorded as such, not re-scored.
+* **P-B, the REVERSE run — CONFIRMED.** CPython 3.14.3 with every literal `** 2` in `turbojet/`
+  rewritten `x * x` by an AST import hook (27 sites: `engine` 12, `gas` 12, `components` 3;
+  1 116 742 416 calls in the drive; `.pyc` bypassed) and `builtins.sum` a naive left fold, running
+  the unmodified dumper: **byte-identical to the PyPy golden, 24 324 of 24 324 lines, the sum
+  sentinel included.** CPython's whole difference from PyPy on this slice is those two mechanisms.
+  No site was enumerated by hand, so none could be missed. (`rust/oracle/reverse_slice_aj.py`, scored by `compare_slice_aj.py`.)
+* **P-C, the plain CPython golden — 421 lines differ** (+ the sentinel):
+  1. **CONFIRMED** — step 4's two readings move at exactly its 27 values (`p_scan_p4` 21 + 3
+     `summands` at ladder points 4 and 5; `p_secant_iter_v4` step 2's `F`, `g`, and `final_g`).
+  2. **HALF** — `p_mask` 155 lines, every one `c0`/`c1` (the pre-flight's r81m count); `i_mask`
+     NONE: vacuous, no cell to move.
+  3. **Not predicted, recorded** — `p_plant` 11, `i_clock` 63, `i_edge_hi` 6, `i_plant` 159. The
+     incidence plant drifts most, in its valve/stator states (`v` 55, `b` 29). Every BISECTING
+     reader (`p_law`, `p_ref`, `p_terms`, `p_root`) is CPython-exact.
+  4. **CONFIRMED** — all 421 are FLOAT lines: no count, label, void string or shape moves.
+
+Frozen: the 421 paths (`slice_aj_cpython_diffs.txt`), a per-reading tally typed in the gate, and
+P-C4 asserted live. Rust ≡ PyPy line for line, so Rust-vs-CPython IS PyPy-vs-CPython.
+
+##### (d) WHAT STEP 6 LEAVES
+
+Step 7: P4's rig-dispatch injection and P5's closing deletion (§ (ix)); P1/P6/P7 scored at the
+close. P1 read, not scored: `src/` unchanged at 2 749. Citation guard: **unchanged**, 5/5 — no
+new file cites `engine.py`, and the lifted converters carried no citation.
+
+##### (e) C6, CHECKED AFTER THE BUILD — THE `n = 4` READING DOES NOT REACH IT (the advisor's closing review)
+
+(a) first claimed the `n = 4` `residual_shape` reading closed step 4's C6 (the ladder spelled
+`lo + i*step` instead of `lo + (hi-lo)*i/(n-1)`). The advisor asked for the injection instead of
+the claim. **Predicted in writing first: SURVIVES** — computed, the two spellings are
+BIT-IDENTICAL at every point of both `n = 4` ladders the oracle drives (`p_shape_n4` on
+`[0.016, 0.024]`, `i_shape` on `[0.004, 0.05]`). **Result: SURVIVES** — the mutant at
+`corrector_law.rs:208` passed `every_token_equals_the_pypy_golden` (174 s). Restored by
+checkout, blob `16002890` verified; the full `slice_aj_oracle` 5/5 after. **C6 stays OPEN.** It
+is not a rare gap: of 589 nearby ladders computed, 271 separate the two spellings (e.g.
+`[0.004, 0.024]` at `n = 11`) — so closing it is one reading on such a ladder, left to whoever
+next touches `residual_shape`. The dumper and oracle headers and (a) say "aimed at C6, missing it".
+
+Closing gates, both predicted exactly: `cargo test --release --no-fail-fast` **182 result blocks,
+1 884 passed, 0 failed**; `pytest` **1 387 passed** (32:05, below normal). Guards
+`test_rust_line_citations.py` + `test_usage_blocks.py`: 9 passed with the new `rust/oracle`
+scripts in place.

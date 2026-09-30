@@ -25,10 +25,7 @@
 //! (`lag_coord`, `_sm_air`); a derived one (`step_*`) ran none and has no readback.
 
 use turbojet::bleed_transient::LeverArm;
-use turbojet::corrector_law::{
-    self, Change, CorrectorRead, CorrectorSecant, CorrectorStep, ResidualShape, SecantStep, CAP,
-    FLAT,
-};
+use turbojet::corrector_law::{self, CAP, FLAT};
 use turbojet::engine::FlightCondition;
 use turbojet::gas::{Gas, GasSpec};
 use turbojet::limited_bleed::BleedLimiter;
@@ -36,7 +33,7 @@ use turbojet::map::ComponentMap;
 use turbojet::split_wall::build_split_wall_cascade;
 use turbojet::stator_transient::{ScheduledStatorCore, ScheduledStatorTransient};
 use turbojet::three_loop::StatorLimiter;
-use turbojet::threshold_law::{ScanKw, ThresholdScan, BRACKET};
+use turbojet::threshold_law::{ScanKw, BRACKET};
 use turbojet::two_spool::{build_two_spool_turbojet, TwoSpoolEngine, TwoSpoolLosses};
 
 const ORACLE: &str = include_str!("../oracle/slice_aj_step4_pypy.tsv");
@@ -136,199 +133,12 @@ fn kw(f: &FlightCondition, r: f64) -> ScanKw<'_> {
 }
 
 // ---------------------------------------------------------------------------- the flattening
+//
+// Every flattener lives in `tests/slice_aj_flat/mod.rs` since step 6: this file's gates are
+// what VERIFY them, and `slice_aj_oracle.rs` reuses them, so no struct has two descriptions.
 
-#[derive(Default)]
-struct Flat(Vec<(String, String)>);
-
-impl Flat {
-    fn put(&mut self, p: &str, t: String) {
-        self.0.push((p.to_string(), t));
-    }
-    fn f(&mut self, p: &str, x: f64) {
-        if x.is_nan() {
-            self.put(p, "f:nan".into());
-        } else {
-            self.put(p, format!("f:{:016x}", x.to_bits()));
-        }
-    }
-    fn of(&mut self, p: &str, x: Option<f64>) {
-        match x {
-            Some(x) => self.f(p, x),
-            None => self.none(p),
-        }
-    }
-    fn i(&mut self, p: &str, x: usize) {
-        self.put(p, format!("i:{x}"));
-    }
-    fn b(&mut self, p: &str, x: bool) {
-        self.put(p, format!("b:{}", x as u8));
-    }
-    fn ob(&mut self, p: &str, x: Option<bool>) {
-        match x {
-            Some(x) => self.b(p, x),
-            None => self.none(p),
-        }
-    }
-    fn s(&mut self, p: &str, x: &str) {
-        self.put(p, format!("s:{x}"));
-    }
-    fn os(&mut self, p: &str, x: Option<&str>) {
-        match x {
-            Some(x) => self.s(p, x),
-            None => self.none(p),
-        }
-    }
-    fn none(&mut self, p: &str) {
-        self.put(p, "n".into());
-    }
-    fn len(&mut self, p: &str, n: usize) {
-        self.put(p, format!("len:{n}"));
-    }
-    fn keys(&mut self, p: &str, n: usize) {
-        self.put(p, format!("keys:{n}"));
-    }
-    fn fs(&mut self, p: &str, xs: &[f64]) {
-        self.len(p, xs.len());
-        for (k, &x) in xs.iter().enumerate() {
-            self.f(&format!("{p}.{k}"), x);
-        }
-    }
-}
-
-fn scan(o: &mut Flat, p: &str, s: &ThresholdScan) {
-    o.keys(p, 28);
-    o.f(&format!("{p}.tau_f"), s.tau_f);
-    o.f(&format!("{p}.tau_gov"), s.tau_gov);
-    o.f(&format!("{p}.r"), s.r);
-    o.f(&format!("{p}.ds"), s.ds);
-    o.f(&format!("{p}.phi_lim"), s.phi_lim);
-    o.of(&format!("{p}.phi_air"), s.phi_air);
-    o.i(&format!("{p}.npts"), s.npts);
-    o.i(&format!("{p}.n_riding4"), s.n_riding4);
-    o.f(&format!("{p}.max_Tt4"), s.max_tt4);
-    o.f(&format!("{p}.min_phi"), s.min_phi);
-    o.b(&format!("{p}.riding4_valid"), s.riding4_valid);
-    o.b(&format!("{p}.window_open"), s.window_open);
-    o.i(&format!("{p}.n_scored"), s.n_scored);
-    o.i(&format!("{p}.n_slope_excluded"), s.n_slope_excluded);
-    o.i(&format!("{p}.n_fuel"), s.n_fuel);
-    o.i(&format!("{p}.n_gov"), s.n_gov);
-    o.i(&format!("{p}.n_pred_fuel"), s.n_pred_fuel);
-    o.i(&format!("{p}.n_agree"), s.n_agree);
-    o.of(&format!("{p}.h"), s.h);
-    o.of(&format!("{p}.tau_hat_min"), s.tau_hat_min);
-    o.of(&format!("{p}.s_bind"), s.s_bind);
-    o.of(&format!("{p}.tau_eff_bind"), s.tau_eff_bind);
-    o.fs(&format!("{p}.kappa"), &s.kappa);
-    o.b(&format!("{p}.kappa_pure"), s.kappa_pure);
-    o.of(&format!("{p}.gap_bind"), s.gap_bind);
-    o.of(&format!("{p}.ratio_bind"), s.ratio_bind);
-    o.of(&format!("{p}.slope_f_bind"), s.slope_f_bind);
-    o.of(&format!("{p}.slope_r_bind"), s.slope_r_bind);
-}
-
-fn read(o: &mut Flat, p: &str, r: &CorrectorRead) {
-    o.keys(p, 16);
-    o.f(&format!("{p}.tau_f"), r.tau_f);
-    o.of(&format!("{p}.F"), r.f);
-    o.of(&format!("{p}.g"), r.g);
-    o.of(&format!("{p}.h"), r.h);
-    o.of(&format!("{p}.kappa"), r.kappa);
-    o.b(&format!("{p}.kappa_pure"), r.kappa_pure);
-    o.b(&format!("{p}.exact"), r.exact);
-    o.of(&format!("{p}.identity_pred"), r.identity_pred);
-    o.ob(&format!("{p}.below_root"), r.below_root);
-    o.of(&format!("{p}.s_bind"), r.s_bind);
-    o.i(&format!("{p}.n_fuel"), r.n_fuel);
-    o.i(&format!("{p}.n_scored"), r.n_scored);
-    o.b(&format!("{p}.window_open"), r.window_open);
-    o.b(&format!("{p}.riding4_valid"), r.riding4_valid);
-    o.of(&format!("{p}.tau_hat_min"), r.tau_hat_min);
-    scan(o, &format!("{p}.scan"), &r.scan);
-}
-
-fn step(o: &mut Flat, p: &str, s: &CorrectorStep) {
-    o.keys(p, 5);
-    match s {
-        CorrectorStep::Void { c, forward, void } => {
-            o.none(&format!("{p}.tau_hat"));
-            o.f(&format!("{p}.c"), *c);
-            o.of(&format!("{p}.forward"), *forward);
-            o.none(&format!("{p}.correction"));
-            o.s(&format!("{p}.void"), void);
-        }
-        CorrectorStep::Ok { tau_hat, c, forward, correction } => {
-            o.f(&format!("{p}.tau_hat"), *tau_hat);
-            o.f(&format!("{p}.c"), *c);
-            o.none(&format!("{p}.void"));
-            o.f(&format!("{p}.forward"), *forward);
-            o.f(&format!("{p}.correction"), *correction);
-        }
-    }
-}
-
-fn change(o: &mut Flat, p: &str, c: &Change) {
-    o.keys(p, 11);
-    o.f(&format!("{p}.tau_lo"), c.tau_lo);
-    o.f(&format!("{p}.tau_hi"), c.tau_hi);
-    o.f(&format!("{p}.g_lo"), c.g_lo);
-    o.f(&format!("{p}.g_hi"), c.g_hi);
-    o.of(&format!("{p}.s_lo"), c.s_lo);
-    o.of(&format!("{p}.s_hi"), c.s_hi);
-    o.b(&format!("{p}.argmin_moved"), c.argmin_moved);
-    o.f(&format!("{p}.smallest_g"), c.smallest_g);
-    o.f(&format!("{p}.step"), c.step);
-    o.f(&format!("{p}.ratio"), c.ratio);
-    o.of(&format!("{p}.jump_in_F"), c.jump_in_f);
-}
-
-fn shape(o: &mut Flat, p: &str, s: &ResidualShape) {
-    o.keys(p, 9);
-    o.f(&format!("{p}.lo"), s.lo);
-    o.f(&format!("{p}.hi"), s.hi);
-    o.i(&format!("{p}.n"), s.n);
-    o.f(&format!("{p}.step"), s.step);
-    o.len(&format!("{p}.points"), s.points.len());
-    for (k, x) in s.points.iter().enumerate() {
-        read(o, &format!("{p}.points.{k}"), x);
-    }
-    o.len(&format!("{p}.changes"), s.changes.len());
-    for (k, x) in s.changes.iter().enumerate() {
-        change(o, &format!("{p}.changes.{k}"), x);
-    }
-    o.i(&format!("{p}.n_changes"), s.n_changes);
-    o.i(&format!("{p}.n_kappa_impure"), s.n_kappa_impure);
-    o.i(&format!("{p}.n_argmin_switches"), s.n_argmin_switches);
-}
-
-fn trace_step(o: &mut Flat, p: &str, x: &SecantStep) {
-    o.keys(p, 5);
-    o.f(&format!("{p}.tau"), x.tau);
-    o.f(&format!("{p}.F"), x.f);
-    o.f(&format!("{p}.g"), x.g);
-    o.of(&format!("{p}.s_bind"), x.s_bind);
-    o.b(&format!("{p}.clamped"), x.clamped);
-}
-
-fn secant(o: &mut Flat, p: &str, s: &CorrectorSecant) {
-    o.keys(p, 11);
-    o.f(&format!("{p}.t0"), s.t0);
-    o.f(&format!("{p}.t1"), s.t1);
-    o.i(&format!("{p}.cap"), s.cap);
-    o.len(&format!("{p}.trace"), s.trace.len());
-    for (k, x) in s.trace.iter().enumerate() {
-        trace_step(o, &format!("{p}.trace.{k}"), x);
-    }
-    o.i(&format!("{p}.clamps"), s.clamps);
-    o.os(&format!("{p}.abort"), s.abort.as_deref());
-    o.i(&format!("{p}.marches"), s.marches);
-    o.of(&format!("{p}.tau"), s.tau);
-    o.of(&format!("{p}.final_g"), s.final_g);
-    o.len(&format!("{p}.marches_vs_bisect"), 2);
-    o.i(&format!("{p}.marches_vs_bisect.0"), s.marches_vs_bisect.0);
-    o.i(&format!("{p}.marches_vs_bisect.1"), s.marches_vs_bisect.1);
-    o.b(&format!("{p}.converged"), s.converged);
-}
+mod slice_aj_flat;
+use slice_aj_flat::*;
 
 // ---------------------------------------------------------------------------- the comparison
 
