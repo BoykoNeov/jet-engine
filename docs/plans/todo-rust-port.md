@@ -26814,3 +26814,95 @@ the sweep, and only doc comments changed in `src/` since. Full `pytest` was NOT 
 opens by running both gates whole.**
 
 **Next: step 5 — the four ported suites plus the ten driven voids written from the source.**
+
+#### 5.34.5 STEP 5 — THE FOUR PORTED SUITES AND THE TEN DRIVEN VOIDS, AND **TWO OF FOUR REDUCE TESTS WOULD HAVE COMPARED `split_march` WITH ITSELF; AND ONE VOID GATE CANNOT SEE THE ORDER OF THE CHECKS IT PINS** (2026-09-30)
+
+`rust/tests/rung81.rs` (12 gates), `rung82.rs` (18 = 16 + 2), `rung83.rs` (12 = 8 + 4) and
+`rung84.rs` (13 = 9 + 4) — **55 gates**: the suites' **45** (COLLECTED, `pytest --collect-only`:
+12 / 16 / 8 / 9), 1:1 in order, plus the **ten** voids of § (vi) as declared gates. No `src/` line
+changed: P6 holds (0 ADD, 0 tables, `TripleHooks` at 18). All four files compiled first time with
+zero warnings and were green 55 of 55 on their first run.
+
+##### (a) THE OPENING GATES — step 4's unfinished ones, run whole first
+
+`cargo test --release`: **177 blocks, 1 824 passed, 0 failed.** `pytest`: **1 386 passed, 1
+failed** — `test_rust_line_citations.py::test_the_census_is_the_size_it_was_measured`, which
+scans `rust/tests` AT RUN TIME and so saw this step's four new files (61 / 420 / 245 against the
+typed 57 / 395 / 239). Not a step-4 defect: step 4's state is green on both gates. Re-blessed
+(six new anchors, each read by hand against the printed text, no removal printed) and the census
+retyped; the guard file passes alone.
+
+##### (b) TWO REDUCE TESTS SUBSTITUTED — the vacuity the port's own factorisation creates
+
+Python's rung-81 and rung-82 reduces march two CLASSES (`AuthorityClockTransient` vs
+`SplitWallTransient`, `ThresholdLawTransient` vs `AuthorityClockTransient`) and demand the same
+march. The port has no rung-81/82 class (§ (ii)): both sides would be ONE `split_march` on ONE
+`build_split_wall_cascade` core — a function compared with itself (`rust-port-ported-test-vacuity`,
+the advisor's catch before any code). What a Rust reader CAN get wrong is the THREADING of its
+arguments into that march, so each gate now takes the reader's own output at DISTINCT clocks —
+`authority_clock`'s `(demand, 0.20, 0.02)` row; `threshold_scan` at `(0.12, 0.02, 0.05, 0.08)` —
+and requires every count, `max_Tt4`, and (rung 81) every cell's `s`/`setpoint_gap`/`tau_gov` to
+equal an independent `split_march` at the same clocks, read off the points' own `authority` and
+`required_*` fields. Python's `341` is kept on the matched march with every point a `Demand` point.
+The rung-83 and rung-84 reduces are NOT self-comparisons (`corrector_read` threads its `kw`;
+`edge_read` computes `h` by its own path) and are ported as written, the rung-83 one as a `Debug`
+equality of two whole `ThresholdScan`s.
+
+##### (c) THE TEN VOIDS — p_drive.py's inputs, strings from `engine.py`, measured on PyPy first
+
+`W:\temp\claude\slice-aj-step5\probe_voids.py` (entry control: prints `sys.version`, refuses a
+`*pypy*` output off PyPy; log opens `3.11.15 … [PyPy 7.3.23 …]`) re-drove every § (vi) input and
+recorded every asserted field. All ten strings as written from the source. Placement: `rung82.rs`
+V1 (`_bisect`), V3; `rung83.rs` V4 (step), V4 (start), V5, S2; `rung84.rs` V3 (`lattice_count`),
+V2, V5 (`staircase_number`), V6 + `root_class`'s carried V1.
+
+**One arm added beyond the pre-flight, and it DISCHARGES step 4's coverage gap C13.** § (vi)'s V4
+start input `(0.05, 0.06)` at `r = 1.0` fails at BOTH starts, so `break` and `continue` agree.
+`(0.05, 0.30)` fails at the first and is VALID at the second (step 3: the `0.30` window is open;
+PyPy `g = −0.14885…`), and Python's trace stays EMPTY — so a port that `continue`d marches once.
+
+**What the formatted voids cannot see, stated before the sweep:** `%g` and Rust's `{}` print the
+same text for `0.004`/`0.3` (V3), `0.0198` (V5) and `1` (V6). Only S2's `1e-12` separates them.
+Step 4's `sn_v5`/`root_v6` readings are the ones that pin `py_g`.
+
+**Suite literals, not reader defaults:** `law` runs `rs = (0.25, 0.35, 0.50)`, `ds_fine = None`;
+`terms` three walls; `T_START` is `powf(0.5)` and pinned with `T_START1` to PyPy's bits; the ten
+`round(root·f, 7)` arguments and both `spacing`s are pinned to PyPy's bits before any read.
+
+##### (d) THE INJECTION SWEEP — 13 injections over the four new binaries, predicted in writing first (`W:\temp\claude\slice-aj-step5\predictions.md`), `--no-fail-fast`, **12 of 13 verdicts right**
+
+| # | injection | result |
+|---|---|---|
+| I1 | `authority_clock` marches `(tg, tf, …)` | **KILLED** — the substituted reduce (the floor) + 4 more rung-81 gates |
+| I2 | `scan_cells` swaps `tau_q`/`tau_s` | **KILLED — `rung82` reduce ONLY** |
+| I3 | `authority_clock` swaps `tau_q`/`tau_s` | SURVIVED — predicted: the fixture has q = s = 0.05 (coverage gap) |
+| I4 | `threshold_scan` echoes `tau_gov: kw.tau_q` | **KILLED — `rung82` reduce ONLY** |
+| I5 | a failed secant START `continue`s (C13) | **KILLED — `rung83` +2 ONLY** (the added arm) |
+| I6 | step void always V5 | **KILLED — `rung83` +1 ONLY** |
+| I7 | S2 message with `{}` | **KILLED — `rung83` +4 ONLY** |
+| I8 / I9 / I10 | V3 / V5 / V6 messages with `{}` | SURVIVED ×3 — predicted: identical text at these inputs |
+| I11 | `lattice_count`'s void string changed | **KILLED — `rung84` +1 ONLY** |
+| I12 | `staircase_number` checks V5 before V2 | **KILLED — `rung84` +2 ONLY** |
+| I13 | `_bisect` tests the straddle before the window | **SURVIVED — MISPREDICTED** |
+
+**The miss, and the lesson.** I predicted `rung82` +1 would kill I13, reasoning that at `r = 1.0`
+the straddle HOLDS (low end `n_fuel = 0`, high end all fuel) and the reordered code *"falls
+through"*. The premise was right and the conclusion wrong: falling through reaches the window
+test, which still runs next and returns the SAME V1. An order of two checks is visible only where
+the input FAILS BOTH — step 3's finding, re-learned. Follow-up, predicted in writing before it ran:
+I13 against step 3/4's binaries **KILLED `slice_aj_threshold::v1_both_ends_empty_bit_for_bit`
+ONLY**; `slice_aj_staircase` survived (its `root_v1` is the same blind input). The kill exists in
+the crate; `rung82.rs` +1 and `rung84.rs` +4 now say in their headers that they cannot see the order.
+
+##### (e) P1, READ, NOT SCORED
+
+The four modules stand at 2 749 lines (no `src/` change). The four suites add 1 701 lines
+(`rung81` 390, `rung82` 475, `rung83` 364, `rung84` 472), outside P1's `src` count.
+
+##### (f) BOOKKEEPING AND THE CLOSING GATES
+
+Citation guard 57/395/239 → **61/420/245**: four newly citing files, six new anchors (`22302`,
+`22716`, `22717`, `22776`, `23001`, `23027`). **Closing gates, predicted before the run (181 blocks / 1 879 and 1 387) and run after the last test-file edit, below-normal:** `cargo test --release --no-fail-fast` **181 blocks, 1 879 passed, 0 failed**; `pytest` **1 387 passed** (27:04 on a box running both gates at once — not a timing).
+
+**Next: step 6 — the oracle** (`dump_slice_aj.py` over all four rungs; P2 scored, with step 4's
+27-key CPython refutation carried).

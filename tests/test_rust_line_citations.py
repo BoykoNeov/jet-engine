@@ -251,9 +251,14 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # hand against the printed line. The rewritten `staircase_law.rs` header first DROPPED step 1's
 # `22881` (`edge = round(ride[0]["s"], 9)`) -- the first run un-blessed it -- and gave `22879`
 # a spacing the Python comment does not say; both repaired before the census was typed.
-FILES = 57
-SITES = 395
-LINES = 239
+# RE-BLESSED AT SLICE AJ STEP 5 (57/395/239 -> 61/420/245). Four newly citing files, the ported
+# suites `rung81.rs` … `rung84.rs`. Six new anchors, all void literals the added gates pin:
+# `22302` (V1), `22716`/`22717` (V4/V5), `22776` (V4 at a start), `23001` (V3), `23027` (V2);
+# the other cited lines (`22305`, `22784`, `23030`, `23061`, the reader `def`s) were already
+# blessed. Each read by hand against the printed line; no removal printed.
+FILES = 61
+SITES = 420
+LINES = 245
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment
 # SAID, where the number is part of the quotation and must not track the file.
