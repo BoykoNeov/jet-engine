@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: fb2b383d-f72c-4bcf-8257-553aa2604718
-  modified: 2026-09-30T12:05:59.174Z
+  modified: 2026-09-30T12:12:05.559Z
 ---
 
 Slice AJ step 6 COMPLETE 2026-09-30 (plan `W:\Claude_projects\jet engine\docs\plans\todo-rust-port.md`
@@ -42,7 +42,9 @@ Also:
   `n = 4` `residual_shape` reading was written up as closing step 4's C6 (ladder spelling). The
   advisor asked for the injection; computed first, the two spellings are bit-identical at both
   `n = 4` ladders, and the mutant SURVIVED the oracle. C6 stays OPEN (271 of 589 nearby ladders
-  would separate them, e.g. `[0.004, 0.024]` at `n = 11`).
+  put a point elsewhere, e.g. `[0.004, 0.024]` at `n = 11` — `rust/oracle/probe_slice_aj_step6_ladder.py`;
+  that a shifted point moves a REPORTED value is still a prediction). A typed count with no
+  committed script behind it was caught only on review — commit the probe with the number.
 - `cargo test -- --exact-not` is not a flag; a bad libtest flag fails every binary instantly
   with "Unrecognized option" — read the error, not the exit code.
 

@@ -45,7 +45,8 @@ order AH/AI's sorted walk could not see.
 4. **A LADDER WHOSE `n - 1` IS NOT A POWER OF TWO** (`p_shape_n4`) — aimed at step 4's coverage gap
    C6 (`lo + (hi-lo)*i/(n-1)` vs `lo + i*step`), and it MISSES: the two spellings are bit-identical
    at all four points of this ladder, and of `i_shape`'s. Separation depends on `(lo, hi, n)`
-   JOINTLY, not on `n` (271 of 589 nearby ladders separate, e.g. `[0.004, 0.024]` at `n = 11`).
+   JOINTLY, not on `n` (271 of 589 nearby ladders separate, e.g. `[0.004, 0.024]` at `n = 11`;
+   `probe_slice_aj_step6_ladder.py`).
    C6 stays OPEN; the injection survived (plan § 5.34.6 (e)).
 
 # P2's BUDGET

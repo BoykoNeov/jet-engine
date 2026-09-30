@@ -27023,9 +27023,12 @@ BIT-IDENTICAL at every point of both `n = 4` ladders the oracle drives (`p_shape
 `[0.016, 0.024]`, `i_shape` on `[0.004, 0.05]`). **Result: SURVIVES** — the mutant at
 `corrector_law.rs:208` passed `every_token_equals_the_pypy_golden` (174 s). Restored by
 checkout, blob `16002890` verified; the full `slice_aj_oracle` 5/5 after. **C6 stays OPEN.** It
-is not a rare gap: of 589 nearby ladders computed, 271 separate the two spellings (e.g.
-`[0.004, 0.024]` at `n = 11`) — so closing it is one reading on such a ladder, left to whoever
-next touches `residual_shape`. The dumper and oracle headers and (a) say "aimed at C6, missing it".
+is not a rare gap: of 589 nearby ladders, 271 put at least one point elsewhere under the two
+spellings (e.g. `[0.004, 0.024]` at `n = 11`, point 9; grid and count in
+`rust/oracle/probe_slice_aj_step6_ladder.py`, same on PyPy and CPython). A shifted point is a
+different INPUT to the reader; that it moves a reported value is PREDICTED, not shown — so a
+reading on such a ladder is the candidate to close C6, left to whoever next touches
+`residual_shape`. The dumper and oracle headers and (a) say "aimed at C6, missing it".
 
 Closing gates, both predicted exactly: `cargo test --release --no-fail-fast` **182 result blocks,
 1 884 passed, 0 failed**; `pytest` **1 387 passed** (32:05, below normal). Guards
