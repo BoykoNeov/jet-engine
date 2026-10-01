@@ -69,7 +69,7 @@
 //! that distinction call site by call site, because it is what decides whether a cell returns a
 //! number or aborts.
 
-use crate::components::{choked_mfp, ram_recovery, Burner, Component, Compressor, Inlet, Nozzle,
+use crate::components::{choked_mfp, try_choked_mfp, ram_recovery, Burner, Component, Compressor, Inlet, Nozzle,
                         Turbine};
 use crate::engine::{score, Engine, EngineResult, FlightCondition, Performance};
 use crate::gas::{powp, Abort, FlowState, Gas};
@@ -189,12 +189,16 @@ pub struct SubsonicOp {
 /// the whole receiver it needs, and phase 6 will not have to widen this signature.
 pub struct MatcherHooks {
     /// Solve `pi_t` from the (★) MFP-ratio constraint. Returns `(pi_t, tau_t, Tt5)`.
-    pub solve_turbine:
-        fn(&OffDesignMatcher, &Gas, f64, f64, Option<f64>) -> (f64, f64, f64),
+    ///
+    /// FALLIBLE since the phase-8 pre-repair: both bodies evaluate [`try_choked_mfp`] inside
+    /// their residual, and Python's `_solve_turbine` sits under `except AssertionError` wherever
+    /// a marcher reaches it — so the sonic-throat assert must arrive as an [`Abort`], not a panic.
+    pub try_solve_turbine:
+        fn(&OffDesignMatcher, &Gas, f64, f64, Option<f64>) -> Result<(f64, f64, f64), Abort>,
 }
 
 /// RUNG 31's table — bisection on (★).
-pub const R31: MatcherHooks = MatcherHooks { solve_turbine: r31_solve_turbine };
+pub const R31: MatcherHooks = MatcherHooks { try_solve_turbine: try_r31_solve_turbine };
 
 /// RUNG 31. Capture fixed hardware from a design run, then match off-design points.
 ///
@@ -407,7 +411,14 @@ impl OffDesignMatcher {
     pub fn solve_turbine(
         &self, gas: &Gas, tt4: f64, f: f64, eta_t: Option<f64>,
     ) -> (f64, f64, f64) {
-        (self.hooks.solve_turbine)(self, gas, tt4, f, eta_t)
+        self.try_solve_turbine(gas, tt4, f, eta_t).unwrap_or_else(|e| panic!("{}", e.0))
+    }
+
+    /// The FALLIBLE twin of [`solve_turbine`](Self::solve_turbine), through the same hook.
+    pub fn try_solve_turbine(
+        &self, gas: &Gas, tt4: f64, f: f64, eta_t: Option<f64>,
+    ) -> Result<(f64, f64, f64), Abort> {
+        (self.hooks.try_solve_turbine)(self, gas, tt4, f, eta_t)
     }
 
     // --- the burner f-solve (reuses the shipped burner formulas) ---------------------------
@@ -633,7 +644,7 @@ impl OffDesignMatcher {
         let owned = self.try_working_gas(f, tt4, pt4)?;
         let wgas = owned.as_ref().unwrap_or(self.gas());
         // NGV choke supply.
-        let mdot4_ngv = self.a4 * pt4 * choked_mfp(wgas, tt4, f) / powp(tt4, 0.5);
+        let mdot4_ngv = self.a4 * pt4 * try_choked_mfp(wgas, tt4, f)? / powp(tt4, 0.5);
         let pt5 = pi_t * pt4;
         let s5 = FlowState { tt: tt5, pt: pt5, mdot: 1.0, far: f };
         let exit = Nozzle::convergent(self.p_ambient, self.pi_n).try_apply(&s5, wgas)?;
@@ -812,22 +823,32 @@ pub(crate) struct Rebuilt {
 pub fn r31_solve_turbine(
     m: &OffDesignMatcher, gas: &Gas, tt4: f64, f: f64, eta_t: Option<f64>,
 ) -> (f64, f64, f64) {
-    R31_CALLS.with(|c| c.set(c.get() + 1));
-    let mfp4 = choked_mfp(gas, tt4, f);
+    try_r31_solve_turbine(m, gas, tt4, f, eta_t).unwrap_or_else(|e| panic!("{}", e.0))
+}
 
-    let resid = |pi_t: f64| -> f64 {
+/// The FALLIBLE twin of [`r31_solve_turbine`] — the sonic-throat [`Abort`] from either
+/// [`try_choked_mfp`] passes through at the first failing evaluation, as Python's raise does.
+/// The bracket-straddle guard below STAYS an `assert!`: slice I measured it unreachable from any
+/// bracket march, and it is NOT the divergence this repair closes.
+pub fn try_r31_solve_turbine(
+    m: &OffDesignMatcher, gas: &Gas, tt4: f64, f: f64, eta_t: Option<f64>,
+) -> Result<(f64, f64, f64), Abort> {
+    R31_CALLS.with(|c| c.set(c.get() + 1));
+    let mfp4 = try_choked_mfp(gas, tt4, f)?;
+
+    let resid = |pi_t: f64| -> Result<f64, Abort> {
         let (tau_t, tt5) = m.tau_t_of_pi_t(gas, tt4, f, pi_t, eta_t);
-        let mfp9 = choked_mfp(gas, tt5, f);        // at the turbine-exit total Tt9 = Tt5
+        let mfp9 = try_choked_mfp(gas, tt5, f)?;   // at the turbine-exit total Tt9 = Tt5
         let rhs = m.a4 * mfp4 / (m.a8 * m.pi_n * mfp9);
-        pi_t / powp(tau_t, 0.5) - rhs
+        Ok(pi_t / powp(tau_t, 0.5) - rhs)
     };
 
     let (mut lo, mut hi) = (0.02f64, 0.999f64);
-    let (mut flo, fhi) = (resid(lo), resid(hi));
+    let (mut flo, fhi) = (resid(lo)?, resid(hi)?);
     assert!(flo < 0.0 && 0.0 < fhi, "turbine choke-match bracket does not straddle the root");
     for _ in 0..OffDesignMatcher::MAX {
         let mid = 0.5 * (lo + hi);
-        let fm = resid(mid);
+        let fm = resid(mid)?;
         if flo * fm <= 0.0 {
             hi = mid;
         } else {
@@ -840,7 +861,7 @@ pub fn r31_solve_turbine(
     }
     let pi_t = 0.5 * (lo + hi);
     let (tau_t, tt5) = m.tau_t_of_pi_t(gas, tt4, f, pi_t, eta_t);
-    (pi_t, tau_t, tt5)
+    Ok((pi_t, tau_t, tt5))
 }
 
 thread_local! {

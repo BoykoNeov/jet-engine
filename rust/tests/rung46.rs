@@ -245,67 +245,39 @@ fn gate2_lp_disabled_asserts_the_split_is_two_shaft() {
     assert!(m2.contains("two-shaft"), "the refusal must name the reason: {m2}");
 }
 
-// =========================================================== a DISCLOSED PORT DIVERGENCE
-/// **NOT A PORT OF ANY PYTHON TEST — a DISCLOSED DIVERGENCE, found by adding a cell no suite has.**
+// ============================================== a CLOSED PORT DIVERGENCE (phase 8, step 0)
+/// **NOT A PORT OF ANY PYTHON TEST — the cell that found a divergence, kept as its gate now that it
+/// is CLOSED.**
 ///
 /// Gate 2 above arms the governor and checks the refusal. Running the SAME degenerate object with
 /// the governor DISARMED — the rung-35 dispatch Python leaves open — reaches a second refusal
-/// entirely, and the two languages handle it differently:
+/// entirely: `_sonic_throat`'s CPG bracket `assert` fires at the very first point (on a station-4
+/// `Tt` of **−3414.48 K**, measured — `mf = 0.5` is ~25x design fuel, not an operating point), and
+/// `integrate_fuel`'s `except AssertionError` catches it and `break`s. **Python returns an EMPTY
+/// trajectory**, re-measured with PyPy at the repair: `len(pts) == 0`, the assert firing exactly
+/// once, via `_instant_fuel → _close_compressor_fuel → g → eval_m → choked_mfp`.
 ///
-/// | | `integrate_fuel(..., Tt4_max=None)` on the degenerate object at `mf = 0.5` |
-/// |---|---|
-/// | **Python** | returns an **empty trajectory**: `_sonic_throat`'s bracket `assert` fires at the very first point, and `integrate_fuel`'s `except AssertionError` catches it and `break`s |
-/// | **Rust** | **PANICS** — `components::sonic_throat`'s `assert!` is a panic, and nothing between it and the marcher converts it to an [`Abort`](turbojet::gas::Abort) the `march` loop can `break` on |
-///
-/// `mf = 0.5` is ~25x the design fuel flow, so this is not a physical operating point; Python's own
-/// gate passes it only to trigger a refusal and never reads the result. But the divergence is a
-/// CLASS, not this cell: **an `assert` that Python code catches, Rust cannot.** Measured census —
-/// `choked_mfp` / `sonic_throat` have **28 call sites** in the crate and **at least 10 sit inside
-/// functions already returning `Result<_, Abort>`**, every one of them one line from being
-/// faithful once a fallible twin exists (`eval_m_fuel`, the route this test takes, is
-/// `spool.rs:1041`).
-///
-/// **NOT FIXED IN SLICE T, DELIBERATELY.** The repair is contained and mechanical — add
-/// `try_sonic_throat` / `try_choked_mfp` and convert the call sites already in fallible chains,
-/// which cannot change behaviour on any path where the assert does not fire — but it edits shipped
-/// phase-2/4/5/6 code across six files inside a slice whose whole content is gates. It is booked
-/// in § 5.17 and at [`turbojet::components::sonic_throat`] instead. Slice S step 3 finding 4's
-/// precedent: a divergence gets a gate on BOTH sides, never a comment on one.
-///
-/// **BOTH BRANCHES BELOW ARE ASSERTIONS, AND THAT IS THE POINT.** An earlier draft made the
-/// panic-free branch an `expect` carrying prose — which fires as a bare test failure the next
-/// reader repairs by deleting the assert rather than the test, and which would also have been
-/// satisfied by a clean return arriving for some unrelated reason. So the second branch asserts
-/// **Python's own measured answer at this cell — a trajectory of length 0**, and the test keeps
-/// passing when the repair lands. Delete it then; until then it is the gate.
+/// From slice T step 1 until the phase-8 pre-repair, Rust PANICKED here: the bracket check was an
+/// `assert!`, which unwinds straight past the `Result<_, Abort>` chain the marcher breaks on. The
+/// repair gave the sonic throat, `choked_mfp` and the turbine-solve hook fallible twins and
+/// converted every call site reachable from a `Result` chain (plan § 8.0). This gate asserts
+/// **Python's answer** — and, so that a clean return arriving for some unrelated reason cannot
+/// satisfy it, that the refusal the march broke on IS the bracket assert, by reading the fallible
+/// leaf at the same `Tt` directly. The per-layer pass-through gates are in `sonic_abort.rs`.
 #[test]
-fn disclosed_divergence_a_python_catchable_assert_panics_in_rust() {
+fn the_sonic_bracket_assert_is_catchable_and_the_march_returns_pythons_empty_trajectory() {
     let se: Engine = build_turbojet(cpg_gas(), 10.0, TT4, 50_000.0, single_matchable());
     let deg = TwoSpoolFuelTransient::lp_disabled(se, flight(), 1.0, hp_shaped());
-    let hook = std::panic::take_hook();
-    std::panic::set_hook(Box::new(|_| {}));
     let r = catch_unwind(AssertUnwindSafe(|| {
         deg.integrate_fuel_lp_disabled(&flight(), |_s| 0.5, 1.0, 1.0, 0.05,
                                        &FuelLimiters::default())
     }));
-    std::panic::set_hook(hook);
-    match r {
-        // TODAY: the bracket assert escapes as a panic. Asserted by MESSAGE so an unrelated panic
-        // arriving here fails rather than passing as "the known divergence".
-        Err(e) => {
-            let m = e.downcast_ref::<String>().cloned()
-                .or_else(|| e.downcast_ref::<&str>().map(|s| (*s).to_string()))
-                .unwrap_or_else(|| "<non-string panic>".to_string());
-            assert!(m.contains("CPG sonic-throat root outside the physical bracket"),
-                    "the escaping panic must still be the bracket assert, not something new: {m}");
-        }
-        // AFTER THE REPAIR: the assert becomes an `Abort` the marcher breaks on, and the answer
-        // must be Python's — measured with PyPy at this exact cell, `len(pts) == 0`, because the
-        // refusal fires at the FIRST point and nothing is ever pushed.
-        Ok(pts) => assert_eq!(pts.len(), 0,
-                              "the fallible-twin repair has landed; Python returns an EMPTY \
-                               trajectory here, so anything else is a new divergence"),
-    }
+    let pts = r.unwrap_or_else(|_| panic!("the sonic-throat assert escaped as a PANIC again — \
+                                          the fallible-twin repair has regressed"));
+    assert_eq!(pts.len(), 0, "Python returns an EMPTY trajectory at this cell (PyPy, measured)");
+    let e = turbojet::components::try_choked_mfp(&cpg_gas(), -3414.4849172987224, 0.02)
+        .expect_err("Python's assert fires at the measured station-4 Tt");
+    assert_eq!(e.0, "CPG sonic-throat root outside the physical bracket");
 }
 
 // ============================================================================== gates 3+4+5

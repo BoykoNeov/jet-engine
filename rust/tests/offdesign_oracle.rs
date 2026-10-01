@@ -38,8 +38,8 @@
 use std::collections::{HashMap, HashSet};
 use turbojet::components::{choked_mfp, ram_recovery};
 use turbojet::engine::{build_turbojet, FlightCondition, Losses};
-use turbojet::gas::{Gas, GasSpec};
-use turbojet::matcher::{r31_solve_turbine, Branch, MatcherHooks, OffDesignMatcher};
+use turbojet::gas::{Abort, Gas, GasSpec};
+use turbojet::matcher::{try_r31_solve_turbine, Branch, MatcherHooks, OffDesignMatcher};
 
 const ORACLE_CPYTHON: &str = include_str!("../oracle/offdesign_cpython.tsv");
 const ORACLE_PYPY: &str = include_str!("../oracle/offdesign_pypy.tsv");
@@ -118,12 +118,12 @@ const GASES: &[&str] = &["cpg", "tpg", "eq"];
 /// read zero and the `n_solve_turbine` keys would all fail at once.
 fn counting_solve_turbine(
     m: &OffDesignMatcher, gas: &Gas, tt4: f64, f: f64, eta_t: Option<f64>,
-) -> (f64, f64, f64) {
+) -> Result<(f64, f64, f64), Abort> {
     SOLVE_TURBINE_CALLS.with(|c| c.set(c.get() + 1));
-    r31_solve_turbine(m, gas, tt4, f, eta_t)
+    try_r31_solve_turbine(m, gas, tt4, f, eta_t)
 }
 
-static COUNTING: MatcherHooks = MatcherHooks { solve_turbine: counting_solve_turbine };
+static COUNTING: MatcherHooks = MatcherHooks { try_solve_turbine: counting_solve_turbine };
 
 fn matcher_for(tag: &str) -> OffDesignMatcher {
     let design = build_turbojet(gas_for(tag), PI_C, TT4, 50_000.0, losses());

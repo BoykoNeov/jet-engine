@@ -50,7 +50,7 @@
 //! [`try_close_compressor_fuel_soak`]: CombustorTransient::try_close_compressor_fuel_soak
 //! [`equilibrium_soak`]: CombustorTransient::equilibrium_soak
 
-use crate::components::{choked_mfp, ram_recovery};
+use crate::components::{try_choked_mfp, ram_recovery};
 use crate::engine::FlightCondition;
 use crate::gas::{powp, Abort, Gas};
 use crate::map::ComponentMap;
@@ -522,10 +522,10 @@ impl CombustorTransient {
         let tt4 = self.inner.tt4_from_f(tt3, f);
         let wgas = mm.try_working_gas(f, tt4, pt4)?;
         let wg: &Gas = wgas.as_ref().unwrap_or_else(|| mm.gas());
-        let mdot_ngv = mm.a4 * pt4 * choked_mfp(wg, tt4, f) / powp(tt4, 0.5); // NGV TOTAL drain
+        let mdot_ngv = mm.a4 * pt4 * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5); // NGV TOTAL drain
         let nu_t = nu * powp(self.inner.inner.tt4_d / tt4, 0.5);
         let eta_t = cmap.eta_t_at(mm.eta_t, nu_t);
-        let (_pi_t, tau_t, tt5) = mm.solve_turbine(wg, tt4, f, Some(eta_t));
+        let (_pi_t, tau_t, tt5) = mm.try_solve_turbine(wg, tt4, f, Some(eta_t))?;
         let p_t = mm.eta_m * mdot_ngv * (wg.h_t(tt4, f) - wg.h_t(tt5, f));
         let p_c = mdot_c * (wg.h_c(tt3) - wg.h_c(tt2));
         let phi = (p_t - p_c) / (self.inner.p_ref * nu);
@@ -729,7 +729,7 @@ impl CombustorTransient {
             let tt4_t = tt4_b - g_gain * (tt4_b - tm); // metal heat sink
             let wgas = mm.try_working_gas(f, tt4_t, pt4)?;
             let wg: &Gas = wgas.as_ref().unwrap_or(gas);
-            let mdot4 = mm.a4 * pt4 * choked_mfp(wg, tt4_t, f) / powp(tt4_t, 0.5);
+            let mdot4 = mm.a4 * pt4 * try_choked_mfp(wg, tt4_t, f)? / powp(tt4_t, 0.5);
             let mdot_air_ngv = mdot4 / (1.0 + f);
             let m_imp = (mdot_air_ngv * powp(tt2, 0.5) / pt2) / self.inner.inner.mdot_corr_d;
             Ok(SoakClose {

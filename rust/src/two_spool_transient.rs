@@ -73,7 +73,7 @@
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 
-use crate::components::{choked_mfp, ram_recovery, Nozzle};
+use crate::components::{try_choked_mfp, ram_recovery, Nozzle};
 use crate::engine::{Engine, FlightCondition};
 use crate::gas::{powp, Abort, FlowState, Gas};
 use crate::map::ComponentMap;
@@ -1907,7 +1907,7 @@ fn r40_try_close(
         let f = c.base.try_solve_f(tt3, pt4, tt4)?;
         let wgas = c.base.try_working_gas(f, tt4, pt4)?;
         let wg = wgas.as_ref().unwrap_or(gas);
-        let mdot4 = c.base.a4 * pt4 * choked_mfp(wg, tt4, f) / powp(tt4, 0.5);
+        let mdot4 = c.base.a4 * pt4 * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5);
         let mdot_imp = mdot4 / (1.0 + f);
         let m_imp = (mdot_imp * powp(tt2, 0.5) / pt2) / c.mcorr_lp_d;
         Ok(CloseState {

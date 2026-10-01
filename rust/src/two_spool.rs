@@ -70,7 +70,7 @@
 //! `pi_hpc` — the single arrow the whole rung is about. Folding them together would erase the
 //! finding into a parameter. Slice F's lesson, twice.
 
-use crate::components::{choked_mfp, ram_recovery, Burner, Component, Compressor, Inlet, Nozzle,
+use crate::components::{choked_mfp, try_choked_mfp, ram_recovery, Burner, Component, Compressor, Inlet, Nozzle,
                         Turbine};
 use crate::engine::{score, try_score, Engine, EngineResult, FlightCondition, Performance};
 use crate::gas::{powp, Abort, FlowState, Gas};
@@ -803,10 +803,10 @@ impl TwoSpoolCore {
     pub fn try_solve_choked_turbine(
         &self, gas: &Gas, tt_in: f64, f: f64, a_in: f64, a_out: f64, pi_loss: f64, eta: f64,
     ) -> Result<(f64, f64, f64), Abort> {
-        let mfp_in = choked_mfp(gas, tt_in, f);
+        let mfp_in = try_choked_mfp(gas, tt_in, f)?;
         let resid = |pi_t: f64| -> Result<f64, Abort> {
             let (tau_t, tt_out) = self.try_tau_of(gas, tt_in, f, pi_t, eta)?;
-            let mfp_out = choked_mfp(gas, tt_out, f);
+            let mfp_out = try_choked_mfp(gas, tt_out, f)?;
             let rhs = a_in * mfp_in / (a_out * pi_loss * mfp_out);
             Ok(pi_t / powp(tau_t, 0.5) - rhs)
         };
@@ -1367,7 +1367,7 @@ impl TwoSpoolMapCore {
         &self, wgas: &Gas, tt2: f64, _pt2: f64, tt4: f64, f: f64,
     ) -> Result<CascadeMap, Abort> {
         counters::bump_cascade();
-        let mfp4 = choked_mfp(wgas, tt4, f);
+        let mfp4 = try_choked_mfp(wgas, tt4, f)?;
         let (mut eta_hpt, mut eta_lpt) = (self.base.eta_hpt, self.base.eta_lpt);
         for turb_pass in 0..Self::TURB_MAX {
             // Steps 1–2: both turbines pinned by geometry, at the current turbine efficiencies.
@@ -1574,7 +1574,7 @@ fn r39_try_match_point(
 
     let owned = b.try_working_gas(f, tt4, pt4)?;
     let wgas = owned.as_ref().unwrap_or(b.gas());
-    let mdot_air = b.a4 * pt4 * choked_mfp(wgas, tt4, f) / powp(tt4, 0.5) / (1.0 + f);
+    let mdot_air = b.a4 * pt4 * try_choked_mfp(wgas, tt4, f)? / powp(tt4, 0.5) / (1.0 + f);
 
     // Rebuild FORWARD at the MAP-CONSISTENT efficiencies.
     let r = b.try_rebuild(flight, pi_d, c.c.pi_lpc, c.c.pi_hpc, tt4, mdot_air,

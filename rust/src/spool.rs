@@ -40,7 +40,7 @@
 //! The escalation guard's two firings are the entire detector for the branch the source insists
 //! must raise rather than hide under a `"subsonic"` label, so it is gated as a COUNT.
 
-use crate::components::{choked_mfp, ram_recovery, Nozzle};
+use crate::components::{try_choked_mfp, ram_recovery, Nozzle};
 use crate::engine::FlightCondition;
 use crate::gas::{powp, Abort, FlowState, Gas};
 use crate::map::{ComponentMap, MapMatcher};
@@ -207,7 +207,7 @@ pub mod counters {
 /// The second and last entry in [`MatcherHooks`]. See the module note for why naming
 /// [`r34_solve_turbine`] from a rung-31 body (or the reverse) is the failure this table exists
 /// to make impossible.
-pub const R34: MatcherHooks = MatcherHooks { solve_turbine: r34_solve_turbine };
+pub const R34: MatcherHooks = MatcherHooks { try_solve_turbine: try_r34_solve_turbine };
 
 /// A faster turbine choke solve (Illinois) — `SpoolTransient._solve_turbine` (`engine.py:1325`).
 ///
@@ -231,25 +231,35 @@ pub const R34: MatcherHooks = MatcherHooks { solve_turbine: r34_solve_turbine };
 pub fn r34_solve_turbine(
     m: &OffDesignMatcher, gas: &Gas, tt4: f64, f: f64, eta_t: Option<f64>,
 ) -> (f64, f64, f64) {
+    try_r34_solve_turbine(m, gas, tt4, f, eta_t).unwrap_or_else(|e| panic!("{}", e.0))
+}
+
+/// The FALLIBLE twin of [`r34_solve_turbine`]: the sonic-throat [`Abort`] passes through
+/// [`try_illinois`] at the first failing evaluation. The passing path is the same arithmetic —
+/// [`illinois`] has always been `try_illinois` on an `Ok`-wrapped residual — and the bracket
+/// guard stays a panic, as above.
+pub fn try_r34_solve_turbine(
+    m: &OffDesignMatcher, gas: &Gas, tt4: f64, f: f64, eta_t: Option<f64>,
+) -> Result<(f64, f64, f64), Abort> {
     R34_SOLVE_TURBINE_CALLS.with(|c| c.set(c.get() + 1));
     let eta_t = eta_t.unwrap_or(m.eta_t);
-    let mfp4 = choked_mfp(gas, tt4, f);
+    let mfp4 = try_choked_mfp(gas, tt4, f)?;
 
-    let resid = |pi_t: f64| -> f64 {
+    let resid = |pi_t: f64| -> Result<f64, Abort> {
         let (tau_t, tt5) = m.tau_t_of_pi_t(gas, tt4, f, pi_t, Some(eta_t));
-        let mfp9 = choked_mfp(gas, tt5, f);
-        pi_t / powp(tau_t, 0.5) - m.a4 * mfp4 / (m.a8 * m.pi_n * mfp9)
+        let mfp9 = try_choked_mfp(gas, tt5, f)?;
+        Ok(pi_t / powp(tau_t, 0.5) - m.a4 * mfp4 / (m.a8 * m.pi_n * mfp9))
     };
 
     let (lo, hi) = (0.02, 0.999);
-    let (flo, fhi) = (resid(lo), resid(hi));
+    let (flo, fhi) = (resid(lo)?, resid(hi)?);
     assert!(
         flo < 0.0 && 0.0 < fhi,
         "turbine choke-match bracket does not straddle the root"
     );
-    let pi_t = illinois(resid, lo, hi, flo, fhi, 1e-11, ILLINOIS_MAXIT);
+    let pi_t = try_illinois(resid, lo, hi, flo, fhi, 1e-11, ILLINOIS_MAXIT)?;
     let (tau_t, tt5) = m.tau_t_of_pi_t(gas, tt4, f, pi_t, Some(eta_t));
-    (pi_t, tau_t, tt5)
+    Ok((pi_t, tau_t, tt5))
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -509,7 +519,7 @@ impl SpoolTransient {
         let f = mm.try_solve_f(tt3, pt4, tt4)?;
         let wgas = mm.try_working_gas(f, tt4, pt4)?;
         let wg = wgas.as_ref().unwrap_or(gas);
-        let mdot4 = mm.a4 * pt4 * choked_mfp(wg, tt4, f) / powp(tt4, 0.5);
+        let mdot4 = mm.a4 * pt4 * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5);
         let mdot_air = mdot4 / (1.0 + f);
         let m_imp = (mdot_air * powp(tt2, 0.5) / pt2) / self.inner.mdot_corr_d;
         Ok(CompState {
@@ -684,7 +694,7 @@ impl SpoolTransient {
 
         // Assume choked; solve the rung-31 geometry (★), rebuild the nozzle, and DISPATCH exactly
         // as rung 33 does (the convergent Nozzle decides choked vs subsonic).
-        let (mut pi_t, mut tau_t, mut tt5) = mm.solve_turbine(wgas, tt4, f, Some(eta_t));
+        let (mut pi_t, mut tau_t, mut tt5) = mm.try_solve_turbine(wgas, tt4, f, Some(eta_t))?;
         let s5 = FlowState { tt: tt5, pt: pi_t * pt4, mdot: mdot_air, far: f };
         let mut exit = Nozzle::convergent(mm.p_ambient, mm.pi_n).try_apply(&s5, wgas)?;
         let branch = if exit.p9 > mm.p_ambient + 1e-6 { Branch::Choked } else { Branch::Subsonic };
@@ -1038,7 +1048,7 @@ impl SpoolTransient {
         let tt4 = self.tt4_from_f(tt3, f);
         let wgas = mm.try_working_gas(f, tt4, pt4)?;
         let wg = wgas.as_ref().unwrap_or(gas);
-        let mdot4 = mm.a4 * pt4 * choked_mfp(wg, tt4, f) / powp(tt4, 0.5);
+        let mdot4 = mm.a4 * pt4 * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5);
         let mdot_air_ngv = mdot4 / (1.0 + f);
         let m_imp = (mdot_air_ngv * powp(tt2, 0.5) / pt2) / self.inner.mdot_corr_d;
         Ok(CompState {

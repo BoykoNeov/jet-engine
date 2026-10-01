@@ -162,19 +162,17 @@ because after retirement there is no second implementation for them to be findin
 
 ---
 
-## 6. THE ONE OPEN BLOCKER, ALREADY MEASURED
+## 6. THE ONE OPEN BLOCKER — CLOSED 2026-10-01
 
-The phase-8 row carries it, and it is still open at HEAD (`rust/src/components.rs:689`):
-
-> **`components::sonic_throat`'s bracket `assert!` is a `panic!` where Python's is a catchable
-> `AssertionError`** — and every marcher's `except AssertionError: break` in the ladder relies on
-> catching it. Measured at slice T step 1: **28 call sites, ≥10 already in fallible chains.**
-
-The repair is prescribed at the definition site (`try_sonic_throat` / `try_choked_mfp` returning the
-`Result<_, Abort>` chain that already exists for exactly this), and it is disclosed by a live gate,
-`rung46.rs::disclosed_divergence_a_python_catchable_assert_panics_in_rust`. It is a divergence
-between the two implementations, so — like the oracles — **it is cheapest to settle while both still
-run**. It is not large; it is just ordered.
+The phase-8 row carried it: **`components::sonic_throat`'s bracket `assert!` was a `panic!` where
+Python's is a catchable `AssertionError`**, which every marcher's `except AssertionError: break`
+relies on. It was settled while both implementations still run, as this section asked — see
+`todo-rust-port.md` § 8.0. The fallible twins (`try_sonic_throat`, `try_choked_mfp`, and the
+turbine-solve hook `try_solve_turbine`) carry Python's messages byte-for-byte; every site reachable
+from a `Result` chain is converted; the 11 call sites the compiler reports as still panicking have no
+Python `except` above them. The disclosing gate was replaced by
+`rung46.rs::the_sonic_bracket_assert_is_catchable_and_the_march_returns_pythons_empty_trajectory`
+(Python's empty trajectory) and `tests/sonic_abort.rs` (one gate per layer).
 
 ---
 
@@ -216,11 +214,12 @@ Decision 1 reads as answering this too, and the literature anchors already exist
 
 ## 9. ORDER OF WORK
 
-1. **Slices AC (finish) → AD → AE → AF → AG → AH → AI → AJ.** Rungs 70–84 ported, each with its
+1. **DONE 2026-10-01 — slices AC (finish) → AD → AE → AF → AG → AH → AI → AJ.** Rungs 70–84 ported, each with its
    Python-generated oracle. **This is the schedule; nothing else moves the date.**
 2. **From AD onward, harvest deliberately** (§ 3): one line in each oracle header saying the table is
    frozen testimony, not a cache.
-3. **Settle `sonic_throat`** (§ 6) in whichever slice's path it sits on — while both languages run.
+3. ~~**Settle `sonic_throat`** (§ 6) in whichever slice's path it sits on — while both languages run.~~
+   **DONE 2026-10-01** (`todo-rust-port.md` § 8.0).
 4. **Build `rust/src/bin/`** (§ 7) — the emitter. Any time; no ordering constraint.
 5. **Port the display**: `main.py` and `docs/visuals/extract_data.py` become renderers over that
    binary's JSON.

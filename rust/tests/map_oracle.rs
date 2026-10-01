@@ -46,9 +46,9 @@
 
 use std::collections::{HashMap, HashSet};
 use turbojet::engine::{build_turbojet, FlightCondition, Losses};
-use turbojet::gas::{Gas, GasSpec};
+use turbojet::gas::{Abort, Gas, GasSpec};
 use turbojet::map::{psi_calls, ComponentMap, MapMatcher};
-use turbojet::matcher::{r31_solve_turbine, Branch, MatcherHooks, OffDesignMatcher};
+use turbojet::matcher::{try_r31_solve_turbine, Branch, MatcherHooks, OffDesignMatcher};
 
 const ORACLE_CPYTHON: &str = include_str!("../oracle/map_cpython.tsv");
 const ORACLE_PYPY: &str = include_str!("../oracle/map_pypy.tsv");
@@ -166,12 +166,12 @@ thread_local! {
 /// happens, and the `n_solve_turbine` keys all fail at once.
 fn counting_solve_turbine(
     m: &OffDesignMatcher, gas: &Gas, tt4: f64, f: f64, eta_t: Option<f64>,
-) -> (f64, f64, f64) {
+) -> Result<(f64, f64, f64), Abort> {
     SOLVE_TURBINE_CALLS.with(|c| c.set(c.get() + 1));
-    r31_solve_turbine(m, gas, tt4, f, eta_t)
+    try_r31_solve_turbine(m, gas, tt4, f, eta_t)
 }
 
-static COUNTING: MatcherHooks = MatcherHooks { solve_turbine: counting_solve_turbine };
+static COUNTING: MatcherHooks = MatcherHooks { try_solve_turbine: counting_solve_turbine };
 
 /// Abort codes, contiguous from 1. Codes 7-9 are rung 32's OWN raise sites — the outer secant's
 /// cap, the physicality assert and the speed-line bracket. All three are dead on this grid, and

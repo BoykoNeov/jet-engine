@@ -643,11 +643,19 @@ pub struct Nozzle {
 /// `h_tt` and `r` are passed in rather than recomputed: they are loop invariants the caller
 /// already holds, and sharing them keeps this byte-for-byte the loop that shipped.
 pub fn sonic_throat_bisect(gas: &Gas, tt9: f64, far: f64, h_tt: f64, r: f64) -> f64 {
+    try_sonic_throat_bisect(gas, tt9, far, h_tt, r).unwrap_or_else(|e| panic!("{}", e.0))
+}
+
+/// The FALLIBLE twin of [`sonic_throat_bisect`] — its bracket `assert` as an [`Abort`] carrying
+/// the same message, so a marcher that Python lets `except AssertionError` can `break` on it.
+pub fn try_sonic_throat_bisect(
+    gas: &Gas, tt9: f64, far: f64, h_tt: f64, r: f64,
+) -> Result<f64, Abort> {
     let resid = |t: f64| -> f64 { (h_tt - gas.h_t(t, far)) - 0.5 * gas.gamma_t_at(t, far) * r * t };
 
     let (mut lo, mut hi) = (0.5 * tt9, tt9); // T*/Tt ~ 0.85–0.87; safely bracketed
     let mut flo = resid(lo); // > 0 (big drop), resid(hi) < 0 (no drop)
-    assert!(flo > 0.0 && resid(hi) <= 0.0, "sonic-throat bracket does not straddle M=1");
+    check(flo > 0.0 && resid(hi) <= 0.0, || "sonic-throat bracket does not straddle M=1".into())?;
     for _ in 0..200 {
         let mid = 0.5 * (lo + hi);
         let fm = resid(mid);
@@ -661,7 +669,7 @@ pub fn sonic_throat_bisect(gas: &Gas, tt9: f64, far: f64, h_tt: f64, r: f64) -> 
             break;
         }
     }
-    0.5 * (lo + hi)
+    Ok(0.5 * (lo + hi))
 }
 
 /// RUNG 30. The M=1 (choking) exit state of a convergent nozzle: `(T*, p*, V*)`.
@@ -686,32 +694,27 @@ pub fn sonic_throat_bisect(gas: &Gas, tt9: f64, far: f64, h_tt: f64, r: f64) -> 
 /// `pow` call and differs from `sqrt` about one point in 670 — the exact trap phase 2 was caught
 /// by. It is [`powp`] here. Note the CONTRAST with rung 26's `math.sqrt(J)`, which really is the
 /// sqrt instruction: the rule is per-site and cannot be applied by habit.
-/// # ⚠ THE BRACKET `assert!` BELOW IS CATCHABLE IN PYTHON AND NOT HERE — an OPEN port divergence
+/// # The bracket `assert` is an [`Abort`] in [`try_sonic_throat`] — the divergence is CLOSED
 ///
 /// Python's `_sonic_throat` raises `AssertionError`, and its callers that march (rung 35's
 /// `integrate_fuel`, rung 43's, every `except AssertionError: break` in the ladder) CATCH it and
-/// end the trajectory cleanly. Rust's `assert!` is a `panic!` and unwinds straight past the
-/// `Result<_, Abort>` chain that was built to model exactly that. **Measured at slice T step 1**
-/// on a degenerate rung-35 march at ~25× design fuel: Python returns an EMPTY trajectory, Rust
-/// crashes. Gated on both sides by
-/// `rung46.rs::disclosed_divergence_a_python_catchable_assert_panics_in_rust`.
+/// end the trajectory cleanly. Until the phase-8 pre-repair this function was the only spelling,
+/// its `assert!` a `panic!` that unwound straight past the `Result<_, Abort>` chain built to model
+/// exactly that (measured at slice T step 1: a degenerate rung-35 march at ~25x design fuel, where
+/// Python returns an EMPTY trajectory and Rust crashed).
 ///
-/// **THE REPAIR, WHEN A SLICE OWNS IT:** add `try_sonic_throat` / `try_choked_mfp` returning
-/// [`Abort`] with this same message, keep these two as `.expect()` wrappers, and convert the call
-/// sites that already sit in fallible chains — each a one-line change that cannot alter behaviour
-/// on any path where the assert does not fire.
-///
-/// **THE CENSUS IS A FLOOR, AND HERE IS HOW IT WAS COUNTED.** `choked_mfp` / `sonic_throat` have
-/// **28 call sites**; classifying them by whether the ENCLOSING `fn` name starts with `try_`
-/// gives **10**. That heuristic is wrong in both directions and was checked to be — `map.rs`’s
-/// `operating_point` and `two_spool_transient.rs`’s `r40_try_close` are both in fallible chains
-/// and neither matches the prefix — so **10 is a LOWER BOUND from a name grep, not a measurement
-/// of the fallible set**. Whoever owns the repair must classify by SIGNATURE. Recorded this way
-/// because this port has shipped five typed count bars before and all five were wrong. Slice T booked it rather than doing it: a PARTIAL conversion
-/// leaves some paths refusing and some panicking with no principle separating them. **Phase 8
-/// must not delete the Python with this open** — that is when the divergence stops being
-/// comparable to a reference.
+/// **THE REPAIR (phase 8, step 0):** [`try_sonic_throat`] / [`try_sonic_throat_bisect`] /
+/// [`try_choked_mfp`] return [`Abort`] with Python's message byte-for-byte, and every call site
+/// REACHABLE from a `Result` chain was converted — classified by what each site can reach, not by
+/// its enclosing name (the turbine-solve hook and [`Nozzle::try_apply`] included). The three
+/// infallible spellings remain as wrappers that panic with the same message, for the callers no
+/// Python `except` sits above. The census and the reverse check are in the plan, § 8.0.
 pub fn sonic_throat(gas: &Gas, tt9: f64, pt9: f64, far: f64) -> (f64, f64, f64) {
+    try_sonic_throat(gas, tt9, pt9, far).unwrap_or_else(|e| panic!("{}", e.0))
+}
+
+/// The FALLIBLE twin of [`sonic_throat`] — see [`Abort`].
+pub fn try_sonic_throat(gas: &Gas, tt9: f64, pt9: f64, far: f64) -> Result<(f64, f64, f64), Abort> {
     let r = gas.r_t_at(far);
     let h_tt = gas.h_t(tt9, far);
 
@@ -719,14 +722,15 @@ pub fn sonic_throat(gas: &Gas, tt9: f64, pt9: f64, far: f64) -> (f64, f64, f64) 
         let t = h_tt / (gas.cp_t_at(tt9, far) + 0.5 * gas.gamma_t_at(tt9, far) * r);
         // The bracket the bisection asserted, kept as a check but paid for in arithmetic rather
         // than in gas calls: a physical sonic throat sits at T*/Tt ~ 0.85–0.87.
-        assert!(0.5 * tt9 < t && t < tt9, "CPG sonic-throat root outside the physical bracket");
+        check(0.5 * tt9 < t && t < tt9,
+              || "CPG sonic-throat root outside the physical bracket".into())?;
         t
     } else {
-        sonic_throat_bisect(gas, tt9, far, h_tt, r)
+        try_sonic_throat_bisect(gas, tt9, far, h_tt, r)?
     };
     let pstar = pt9 * gas.pr_t(tstar, far) / gas.pr_t(tt9, far);
     let vstar = powp(2.0 * (h_tt - gas.h_t(tstar, far)), 0.5);
-    (tstar, pstar, vstar)
+    Ok((tstar, pstar, vstar))
 }
 
 /// RUNG 31. The sonic (M = 1) mass-flow parameter of the hot gas: `MFP* = mdot*sqrt(Tt)/(A*pt)`.
@@ -753,11 +757,16 @@ pub fn sonic_throat(gas: &Gas, tt9: f64, pt9: f64, far: f64) -> (f64, f64, f64) 
 /// site was pre-registered as a trap before the port was written (`todo-rust-port.md` § 5.4, P4)
 /// precisely because a `sqrt` here would be a silent one-bit defect that a tolerance would hide.
 pub fn choked_mfp(gas: &Gas, tt: f64, far: f64) -> f64 {
+    try_choked_mfp(gas, tt, far).unwrap_or_else(|e| panic!("{}", e.0))
+}
+
+/// The FALLIBLE twin of [`choked_mfp`] — [`try_sonic_throat`]'s [`Abort`] passed through.
+pub fn try_choked_mfp(gas: &Gas, tt: f64, far: f64) -> Result<f64, Abort> {
     // pt cancels in the ratio p*/pt, so any positive pt gives the same MFP*; use 1.0.
-    let (tstar, pstar, vstar) = sonic_throat(gas, tt, 1.0, far);
+    let (tstar, pstar, vstar) = try_sonic_throat(gas, tt, 1.0, far)?;
     let r = gas.r_t_at(far);
     let rho_over_pt = pstar / (r * tstar); // = (p*/pt)/(R·T*), the pt-independent group
-    rho_over_pt * vstar * powp(tt, 0.5)
+    Ok(rho_over_pt * vstar * powp(tt, 0.5))
 }
 
 impl Nozzle {
@@ -799,7 +808,7 @@ impl Nozzle {
         // p9 = p* > p0); if subcritical, p9 = p0 and control falls through to the shared
         // expansion — bit-for-bit the default nozzle at that condition, which is the reduce.
         let p9 = if self.convergent {
-            let (tstar, pstar, vstar) = sonic_throat(gas, tt9, pt9, f);
+            let (tstar, pstar, vstar) = try_sonic_throat(gas, tt9, pt9, f)?;
             if pstar > self.p_ambient {
                 let (p9, t9, v9) = (pstar, tstar, vstar);
                 let a9 = powp(gas.gamma_t_at(t9, f) * r * t9, 0.5);

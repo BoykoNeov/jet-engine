@@ -83,7 +83,7 @@
 //!
 //! [`Abort`]: crate::gas::Abort
 
-use crate::components::{choked_mfp, ram_recovery, Burner, Compressor, Inlet, Nozzle, Turbine};
+use crate::components::{try_choked_mfp, ram_recovery, Burner, Compressor, Inlet, Nozzle, Turbine};
 use crate::engine::{try_score, FlightCondition};
 use crate::gas::{powp, Abort, FlowState, Gas};
 use crate::map::ComponentMap;
@@ -235,7 +235,7 @@ pub fn try_cascade_bleed(
     counters::bump_cascade();
     let b = core.bleed;
     let base = &core.base;
-    let mfp4 = choked_mfp(wgas, tt4, f);
+    let mfp4 = try_choked_mfp(wgas, tt4, f)?;
     let (mut eta_hpt, mut eta_lpt) = (base.eta_hpt, base.eta_lpt);
     for turb_pass in 0..TwoSpoolMapCore::TURB_MAX {
         let (pi_hpt, tau_hpt, tt45) = base.try_solve_choked_turbine(
@@ -350,7 +350,7 @@ pub fn try_match_bleed(
 
     let owned = base.try_working_gas(f, tt4, pt4)?;
     let wgas = owned.as_ref().unwrap_or(base.gas());
-    let mdot_core = base.a4 * pt4 * choked_mfp(wgas, tt4, f) / powp(tt4, 0.5) / (1.0 + f);
+    let mdot_core = base.a4 * pt4 * try_choked_mfp(wgas, tt4, f)? / powp(tt4, 0.5) / (1.0 + f);
     let mdot_air = mdot_core / (1.0 - b);          // what the INLET ingests
 
     // --- the SEPARATE rebuild body (module note § 1) --------------------------------------

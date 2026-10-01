@@ -102,7 +102,7 @@
 
 // The turbine / nozzle / thrust tail is rung 40's and is reached through its hook table, so
 // this module imports the burner-side pieces ONLY -- `Nozzle` appears nowhere below.
-use crate::components::choked_mfp;
+use crate::components::try_choked_mfp;
 use crate::engine::FlightCondition;
 use crate::gas::{powp, Abort, Gas};
 use crate::map::ComponentMap;
@@ -3733,7 +3733,7 @@ fn r43_try_close_fuel(
         let tt4 = ft.try_tt4_from_f(tt3, f)?;
         let wgas = c.base.try_working_gas(f, tt4, pt4)?;
         let wg = wgas.as_ref().unwrap_or(gas);
-        let mdot4 = c.base.a4 * pt4 * choked_mfp(wg, tt4, f) / powp(tt4, 0.5);
+        let mdot4 = c.base.a4 * pt4 * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5);
         let mdot_imp = mdot4 / (1.0 + f);
         let m_imp = (mdot_imp * powp(tt2, 0.5) / pt2) / c.mcorr_lp_d;
         Ok(FuelCloseState {

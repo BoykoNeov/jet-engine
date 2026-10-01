@@ -50,7 +50,7 @@
 
 use std::cell::Cell;
 
-use crate::components::{choked_mfp, Nozzle};
+use crate::components::{try_choked_mfp, Nozzle};
 use crate::engine::FlightCondition;
 use crate::fuel_transient::{
     AccelSchedule, Floor, SurgeLimiter, FuelCloseState, FuelPoint, FuelTransientCore, FuelTransientHooks,
@@ -687,7 +687,7 @@ pub fn r62_try_close(
         let f = c.base.try_solve_f(tt3, pt4, tt4)?;
         let wgas = c.base.try_working_gas(f, tt4, pt4)?;
         let wg = wgas.as_ref().unwrap_or(gas);
-        let mdot4 = c.base.a4 * pt4 * choked_mfp(wg, tt4, f) / powp(tt4, 0.5);
+        let mdot4 = c.base.a4 * pt4 * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5);
         // CORE air the NGV choke imposes, and the FACE flow that implies.
         let mdot_imp = mdot4 / (1.0 + f);
         let m_imp = (mdot_imp / (1.0 - b) * powp(tt2, 0.5) / pt2) / c.mcorr_lp_d;
@@ -790,7 +790,7 @@ pub fn r62_try_close_fuel(
         let tt4 = ft.try_tt4_from_f(tt3, f)?;
         let wgas = c.base.try_working_gas(f, tt4, pt4)?;
         let wg = wgas.as_ref().unwrap_or(gas);
-        let mdot4 = c.base.a4 * pt4 * choked_mfp(wg, tt4, f) / powp(tt4, 0.5);
+        let mdot4 = c.base.a4 * pt4 * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5);
         let mdot_imp = mdot4 / (1.0 + f);
         let m_imp = (mdot_imp / (1.0 - b) * powp(tt2, 0.5) / pt2) / c.mcorr_lp_d;
         Ok(FuelCloseState {

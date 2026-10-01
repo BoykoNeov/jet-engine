@@ -35,7 +35,7 @@ new slices and step links go THERE, not here.
 - [Visuals ↔ model binding](visuals-model-binding.md) — the pages had NO test and looked fine; in SYNC is not BOUND, and the page's own design point was typed markup
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding, backticks in `-m`, a status read off the runner, a log still being written, and a text-mode rewrite that flips every line ending, `cmd`'s parse-time `%ERRORLEVEL%`, a `start /b` batch that never exits, the EOL check that was itself the hazard, and a silent `pytest.exe` launcher
 
-## The Rust port — phases 0–7 DONE (7 closed 2026-10-01; phase 8 needs authorisation); slice AG (75/76) COMPLETE in 7 steps, slice AH (77/78) COMPLETE in 7 steps, slice AI (79/80) COMPLETE in 7 steps; slice AJ (81–84) COMPLETE in 7 steps — the ladder is ported through rung 84; one item forward (C6)
+## The Rust port — phases 0–7 DONE (7 closed 2026-10-01; phase 8 needs authorisation, its sonic_throat blocker CLOSED 2026-10-01); slice AG (75/76) COMPLETE in 7 steps, slice AH (77/78) COMPLETE in 7 steps, slice AI (79/80) COMPLETE in 7 steps; slice AJ (81–84) COMPLETE in 7 steps — the ladder is ported through rung 84; one item forward (C6)
 - [Rust port status](rust-port-status.md) — the running tally: phases, slices, and the numbers each closed slice landed on. **Update THAT file, not this line.**
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; a new PHASE needs authorisation
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost
@@ -50,6 +50,7 @@ new slices and step links go THERE, not here.
 - [A documented gate that doesn't exist](rust-port-documented-gate-that-doesnt-exist.md) — a count guard is blind to a class absent from BOTH sides
 - [An oracle cannot see a MISSING GATE](rust-port-oracle-cannot-see-a-missing-gate.md) — bit-exactness says nothing about COVERAGE
 - [Guessed census bars](rust-port-guessed-census-bars.md) — five typed count bars, five wrong; measure counts
+- [Census by compiler, not by name](census-by-compiler-not-by-name.md) — the sonic_throat repair: a name grep missed the turbine hook; renaming the panicking wrapper on a scratch copy listed the real holdouts
 - [Phase 5 pre-flight](rust-port-phase5-preflight.md) — a "closed set" claim is only as wide as the set you swept
 - [Rust port slice index](rust-port-slice-index.md) — every slice I…AI and its step files, one line each with its process lessons; append new slices THERE (moved out 2026-09-26 at 22.8 KB)
 
