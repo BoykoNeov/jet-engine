@@ -46,8 +46,9 @@
 //!   `_with_share`, `_quad_gains_at`, `_jac4`, `_charpoly4`, `_quartic_roots_c`) are made on the
 //!   machine `_split_march` RETURNS, not on `self`: the one cell among them, `quad_gains_at`, is
 //!   read off `m.triple_hooks()`. With no swaps the two carry the same pointers, so no value gate
-//!   can tell a port that reads the caller's table from one that reads the rig's; step 7 owes the
-//!   injection that does (P4).
+//!   can tell a port that reads the caller's table from one that reads the rig's. Step 7's
+//!   `tests/slice_aj_dispatch.rs` separates them: a counter on each table reads caller 0, rig
+//!   once per sampled point, and an `f_q` distortion moves the mask on the rig's table only (P4).
 //! * **One float sum** — `rate = sum(1.0 / t for t in tt)` (`engine.py:22104`), four terms, used
 //!   only as `zeros`' bar: a naive left fold, as the four precedents at rungs 72/73/75/76 port it.
 //!   The pre-registered CPython exemption is `_charpoly4`'s `c0`/`c1`, not this sum (§ 5.34 (v)).

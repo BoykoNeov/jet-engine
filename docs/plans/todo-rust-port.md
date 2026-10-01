@@ -9030,7 +9030,7 @@ by counting.
 | **AG** | 75–76 | `AntiWindupTransient`, `SensedCapTransient` | **0** |
 | **AH** | 77–78 | `StiffnessLedgerTransient`, `ResidualGaugeTransient` | **0 — MEASURED at § 5.32 (ii), and probe 7 makes it DURABLE past AI/AJ**: 4 substitutable SWAPs (`at_lever` ×2, `_shared_rig`, `_cap_fuel`), all already fields; 1 INCOMPATIBLE name-reuse (`_legs`, rungs 63→77 — § 5.28 (x)'s booking, DISCHARGED both halves); 20 single-definers, none of which becomes a cell at rungs 79–84. `TripleHooks` stays at 18. **The zero has a forced consequence**: no `E0063` width tripwire, so step 1's instrument is function-pointer identity in BOTH directions and AG step 1's linker-folding defect is live again. **PRE-REGISTERED at § 5.32 off FOURTEEN probes**, priced at SEVEN steps as a DISCRIMINATING prediction (4 swaps against AG's 5, and rung 77's `at_lever` carries NOTHING NEW — the first in the chain — so classes⇒7 and bodies⇒6 finally separate). Leading finding: **a booking NO GATE CAN CLOSE is a claim in the WRONG CURRENCY** — § 5.22 (vii)'s same-field nest is CONFIRMED at SIX sites across BOTH rungs, every one firing at runtime, the source handles it THREE incompatible ways in one slice and records that it shipped wrong once, and the Rust guard that removes it is value-identical everywhere — so what is owed is a STRUCTURAL claim, not a test. **And the census that found four of the six was SCOPED BY AN UNMEASURED PREMISE**: it named `_c_at` as the only freezing method where the source has 37, and the two sites it missed are precisely the two that falsify its own stated reason. Caught by the RUNTIME counter, not by a reading — **a hand reading validates a probe's LOGIC and cannot validate its SCOPE.** |
 | **AI** | 79–80 | `StateCoordinateTransient`, `SplitWallTransient` | **0 — MEASURED at § 5.33 (ii)**: 6 substitutable SWAPs over 4 names (`at_lever` ×2, `_shared_rig` ×2, `_cap_fuel`, and `_with_coord` — the name reuse onto another field the cell was built for), all already fields; 1 INCOMPATIBLE name reuse (`split_gains`, 70→80 — § 5.27's booking DISCHARGED: its Python `TypeError` is unreachable by shipped code); 16 single-definers; rungs 81–84 override NOTHING, not even `at_lever`. Two core carriers (`phi_ref`, `sm_air`). `TripleHooks` stays at 18. **PRE-REGISTERED at § 5.33 off ELEVEN probes.** Leading finding: **the `_with_coord` value break booked here since slice AE is REAL and REACHED — on a rung-79/80 machine rung 74's `demand_gains` ends its scope with BOTH coordinate fields wrong and enters rung 79's branch 128 times — and two masks hide it: 0 of 196 values move — at every one of nine walls where the scope runs.** Only a field read and rung 79's process-global counters see it, which forces THREAD-LOCAL instruments |
-| **AJ** | 81–84 | `AuthorityClock…StaircaseLawTransient` | **0 — MEASURED at § 5.34 (ii)**: 24 methods, every one single-definer; 0 SWAP; no class after rung 80 defines any cell, `at_lever` included — so **no `R81`…`R84` tables**, the readers run on an `R80` machine. No carriers, no class state, no `assert`. `TripleHooks` stays at 18. **PRE-REGISTERED at § 5.34 off NINE probes.** Leading finding: **deleting rung 80's `at_lever` in Python moves 0 kernel keys (the rebuild path ENTERED in all six kernels) and fails no rung-81–84 test — but it fails `test_rung80.py::test_the_knob_is_loud`, by a method lookup on the rig, which REFUTES § 5.33.7 (e)'s *"faithfully blind"*: the Rust `rung80.rs` is under-ported at that test** |
+| **AJ** | 81–84 | `AuthorityClock…StaircaseLawTransient` | **0 — MEASURED at § 5.34 (ii)**: 24 methods, every one single-definer; 0 SWAP; no class after rung 80 defines any cell, `at_lever` included — so **no `R81`…`R84` tables**, the readers run on an `R80` machine. No carriers, no class state, no `assert`. `TripleHooks` stays at 18. **PRE-REGISTERED at § 5.34 off NINE probes. COMPLETE 2026-10-01 in seven steps (§ 5.34.7): P1–P6 confirmed, one item (C6) booked forward.** Leading finding: **deleting rung 80's `at_lever` in Python moves 0 kernel keys (the rebuild path ENTERED in all six kernels) and fails no rung-81–84 test — but it fails `test_rung80.py::test_the_knob_is_loud`, by a method lookup on the rig, which REFUTES § 5.33.7 (e)'s *"faithfully blind"*: the Rust `rung80.rs` is under-ported at that test** |
 | | | | **25 + 3 phase-6 = 28** |
 
 **Slice V is the risk, and for a reason the first writing of this table did not have: it is the one
@@ -27034,3 +27034,100 @@ Closing gates, both predicted exactly: `cargo test --release --no-fail-fast` **1
 1 884 passed, 0 failed**; `pytest` **1 387 passed** (32:05, below normal). Guards
 `test_rust_line_citations.py` + `test_usage_blocks.py`: 9 passed with the new `rust/oracle`
 scripts in place.
+
+#### 5.34.7 STEP 7 — THE RIG DISPATCH, AND THE CLOSING DELETION: **THE PARENT's POINTER IS A REDUCE TEST AT THE SUITES' SETTING, NOT A DISPATCH TEST — A COUNTER AND A DISTORTION CARRY P4; AND THE STEP-1 POINTER ASSERT CATCHES THE DELETION EXACTLY WHERE PYTHON's INCIDENTAL LOOKUP DOES** (2026-10-01)
+
+**SHIPPED**: `rust/tests/slice_aj_dispatch.rs`, **7 gates**, green on the first run (4.4 s). Predictions
+in `W:\temp\claude\slice-aj-step7\predictions.md`, written before the file ran and, for Part B,
+before the mutation. One source comment repointed (`authority_clock.rs`'s *"step 7 owes the
+injection (P4)"* now names this file and its result).
+
+##### (a) THE DESIGN — the advisor's pre-build review, all three items built in
+
+* **The parent swap is not the verdict row.** Every slice before this one pointed a swapped cell
+  back at the parent it was re-aimed FROM. Here the cell is `quad_gains_at`, re-aimed at rung 73,
+  and at the suites' `ref_law = "sched"` rung 73's reference is the identity and its twelve shared
+  gains ARE rung 72's — so pointing it back can read `same` for a reason unrelated to which table
+  is read. It runs as an INFORMATIVE row (`RigR72`), outcome pre-registered `same`.
+* **P4 is carried by two other rows.** `Count`: a counter on the CALLER's `quad_gains_at` and a
+  second on the RIG's, both delegating to the shipped body, in ONE machine and ONE run. `RigDistort`
+  / `CallerDistort`: `f_q × 2` after the shipped body, on one table at a time.
+* **Every row proves its install first** — the caller's and the rig's `quad_gains_at` by pointer,
+  and every other slot equal to `R80_TRIPLE`'s, read off the rig `split_march` actually returns.
+  The `MacroNone` row (this file's rebuild helper, shipped tables) must read `same`, and
+  `the_rebuild_helper_is_the_shipped_constructor` checks all nine knobs off-default against
+  `R80.at_lever`, `sm_air` the non-vacuity half.
+* **An entry control for P5 inside the file** — `the_shipped_rig_is_a_rung_80_machine`, by
+  `shared_rig`, `rung80.rs`'s reason (the deletion re-fills `at_lever` from `..R79`).
+
+##### (b) THE ROWS — every one as pre-registered
+
+Seat: rung 81's `authority_mask` at `tests/rung81.rs`'s fixture (`MASK_CLOCKS`, `demand`, walls
+0.75 / 0.77, every 1). Shipped mask: 47 fuel-authority + 33 governor-authority interior cells,
+Σ `n_sampled` = 80 (each clock rides under ONE authority).
+
+| row | caller | rig | reading |
+|---|---|---|---|
+| `MacroNone` | shipped | shipped (helper) | **same** |
+| `Count` | counter A | counter B | **same**; **A = 0, B = 80 = Σ `n_sampled`** |
+| `RigDistort` | shipped | `f_q × 2` | **DIFF** — `cyc_fuel_auth` 1.04375933991827 → 2.08751867983654; governor `cyc` 0.0 both (its mask is exactly zero, rung 80's own finding), `zeros` unmoved |
+| `CallerDistort` | `f_q × 2` | shipped | **same**, bit for bit |
+| `RigR72` | shipped | rung 72's body | **same** — the reduce contract, measured |
+
+**P4 — CONFIRMED.** The gains are dispatched on the rig's table, once per sampled point, and never
+on the caller's — and B = Σ `n_sampled` exactly also measures that the MARCH itself never
+dispatches `quad_gains_at` on either core.
+
+##### (c) THE CLOSING SOURCE MUTATION — delete `at_lever: r80_at_lever,` (compiles: `..R79` fills it)
+
+Blob `87947cef` recorded before; restored by `git checkout`, the same blob verified after. Sixteen
+binaries, `--no-fail-fast`, below normal; rustc warned `r80_at_lever` is never used.
+
+| binary | predicted | result |
+|---|---|---|
+| **`rung80.rs`** | **15 / 16, `the_knob_is_loud`** | **15 / 16 — at `rung80.rs:321`, the step-1 pointer assert** |
+| `rung81` … `rung84` | green | 12, 18, 12, 13 — green |
+| `slice_aj_clock`, `_threshold`, `_corrector`, `_staircase`, `_plumbing` | green | green |
+| `slice_aj_oracle` | 5 / 5, 0 tokens moved | 5 / 5 |
+| **`slice_aj_dispatch`** | **4 / 7** — entry control, helper proof, `CallerDistort`'s install | **4 / 7, those three**; `CallerDistort`'s rig differs from `R80_TRIPLE` in `["shared_rig"]` only |
+| `slice_ai_cells` / `slice_ai_dispatch` | 8 / 10 / 0 / 9 (AI step 7 (e)) | 8 / 10 / 0 / 9 |
+| `slice_ai_oracle` / `slice_ai_split` | green | 6 / 6 / 7 / 7 |
+
+**P5 — CONFIRMED.** Python's result reproduces in Rust through rung 84: no rung-81–84 value or
+oracle token moves, and the ported `rung80.rs` now fails where Python's `test_rung80.py` does. AI
+step 7 (e) measured `rung80.rs` 16 / 16 under the same deletion; the difference is step 1's
+assert, which is the crate's only spelling of Python's attribute lookup on the rig's class. The
+oracle's zero is *ran, no difference*, shown in the binary by the entry control failing beside it.
+
+##### (d) THE PREDICTIONS, SETTLED — SLICE AJ CLOSES
+
+* **P1 — CONFIRMED, at the floor.** `wc -l`: `authority_clock.rs` 816 + `threshold_law.rs` 1 007
+  + `corrector_law.rs` 349 + `staircase_law.rs` 578 = **2 750**, inside 2 700 – 3 700 and far
+  below the per-field 5 700: the port again followed the BODY, not the returned-field count —
+  AI's mechanism, now on a slice 2.6× denser in returned structure. 50 lines above the floor; the
+  one line this step added is a repointed comment.
+* **P2** — scored at step 6 (CONFIRMED on PyPy; CPython's difference two mechanisms, frozen).
+* **P3** — scored at steps 3–5 (every void string byte for byte).
+* **P4, P5 — CONFIRMED** ((b), (c)).
+* **P6 — CONFIRMED**: `TripleHooks` 18 fields (counted off the struct), 0 ADD, 0 `pub const`
+  `R81`…`R84`, all seven steps.
+* **P7 — NOT SCORED**, as registered: seven steps by numbering.
+
+##### (e) WHAT SLICE AJ BOOKS FORWARD — ONE ITEM
+
+§ (xi) said nothing is booked past rung 84. Step 6 left one: **C6** — `corrector_law.rs:208`
+spells the `residual_shape` ladder as Python does, `lo + (hi-lo)*i/(n-1)`, but a mutant spelling
+it `lo + i*step` SURVIVES every gate: the two are bit-identical on every ladder the oracle drives,
+while 271 of 589 nearby ladders separate them (`rust/oracle/probe_slice_aj_step6_ladder.py`). A reading on such a ladder closes it;
+booked to whoever next touches `residual_shape`. Nothing else is owed. With rung 84 the ladder is
+ported through the last shipped rung.
+
+##### (f) GATES
+
+The citation guard re-blessed 61/421/245 → **62/424/245**: one new file, three sites, no new
+anchor (`22096`, `21444`, `21447`, all already blessed), each written in the `engine.py:N` form.
+
+Closing gates, both predicted exactly in `predictions.md` before they ran, below normal, logs
+captured in full: `cargo test --release --no-fail-fast` **183 result blocks, 1 891 passed, 0
+failed** (step 6's 182 / 1 884 plus this file's one block and seven gates; no warning from it);
+`pytest` **1 387 passed** (18:56).

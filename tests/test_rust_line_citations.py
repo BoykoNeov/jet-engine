@@ -257,8 +257,11 @@ ANCHORS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden",
 # the other cited lines (`22305`, `22784`, `23030`, `23061`, the reader `def`s) were already
 # blessed. Each read by hand against the printed line; no removal printed. Then 420 -> 421 in
 # the same step's follow-up: one more site (`rung83.rs` citing the already-blessed `22716`).
-FILES = 61
-SITES = 421
+# RE-BLESSED AT SLICE AJ STEP 7 (61/421/245 -> 62/424/245). One newly citing file, the dispatch
+# gates `slice_aj_dispatch.rs`; three sites, NO new anchor: `22096` (`authority_mask`'s gains
+# call on the rig) and `21444`/`21447` (`r80_at_lever`'s knob carriage), all already blessed.
+FILES = 62
+SITES = 424
 LINES = 245
 
 # Citations quoted as HISTORY: a comment that reports what an earlier comment
