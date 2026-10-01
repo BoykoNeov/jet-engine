@@ -261,9 +261,10 @@ fn gate2_lp_disabled_asserts_the_split_is_two_shaft() {
 /// `assert!`, which unwinds straight past the `Result<_, Abort>` chain the marcher breaks on. The
 /// repair gave the sonic throat, `choked_mfp` and the turbine-solve hook fallible twins and
 /// converted every call site reachable from a `Result` chain (plan § 8.0). This gate asserts
-/// **Python's answer** — and, so that a clean return arriving for some unrelated reason cannot
-/// satisfy it, that the refusal the march broke on IS the bracket assert, by reading the fallible
-/// leaf at the same `Tt` directly. The per-layer pass-through gates are in `sonic_abort.rs`.
+/// **Python's answer**, and that the fallible leaf refuses with Python's message at the `Tt` Python
+/// measured. It does NOT itself show the march broke on that refusal: that link was established by
+/// reverting the one site this cell crosses (`spool.rs`'s `eval_m_fuel`) and watching this gate fail
+/// with the old panic (plan § 8.0). The per-layer pass-through gates are in `sonic_abort.rs`.
 #[test]
 fn the_sonic_bracket_assert_is_catchable_and_the_march_returns_pythons_empty_trajectory() {
     let se: Engine = build_turbojet(cpg_gas(), 10.0, TT4, 50_000.0, single_matchable());

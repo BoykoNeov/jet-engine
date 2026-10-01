@@ -27171,7 +27171,7 @@ authorisation.
   hook. The two root finders are NOT folded into one (*COPY vs REDERIVATION*). The turbine's own
   bracket-straddle `assert!` stays a panic — measured unreachable at slices I and P, and not this
   divergence.
-* **16 direct sites converted** in `Result` functions or `Result`-returning closures (bleed ×2,
+* **15 direct sites converted** in `Result` functions or `Result`-returning closures (bleed ×2,
   bleed_transient ×2, combustor ×2, fuel_transient ×1, matcher ×1, spool ×2, two_spool ×4,
   two_spool_transient ×1), plus the nozzle and the two hook calls. The two oracle files' counting
   hooks moved to the fallible signature.
@@ -27187,7 +27187,7 @@ authorisation.
   `.ok()` — plus two `catch_unwind` readers (`try_coord_march`, `try_windup_march`). Each of them
   sits on a `try_` chain down to the converted sites.
 * *The holdouts, from the compiler, not from names.* On a scratch copy with the panicking wrappers
-  renamed, the lib fails at exactly **11 sites in four functions**: `OffDesignMatcher::with_hooks`
+  renamed, the lib fails at exactly **11 call sites in SIX functions**: `OffDesignMatcher::with_hooks`
   (the design capture ×2), rung 31's `match_point` (+ its `solve_turbine` call) and
   `match_subsonic`, rung 32's `MapMatcher::operating_point` (+ its `solve_turbine` call), and rung
   38's `TwoSpoolMatcher::new` (×3) and `match_point`. **None has a Python `except` above it**: the
@@ -27201,9 +27201,27 @@ authorisation.
   have seen a panic — which is Python's order: the march's own `except AssertionError: break` is
   the innermost catch.
 
+* *Transitively, not one level deep* (the advisor's closing review). Renaming only the leaf and
+  hook wrappers misses a panicking wrapper whose OWN fallible twin now carries the sonic `Abort`
+  (`Nozzle::apply`, `cascade_map`, `instant_fuel`, … — 47 such wrappers in the crate). A name-level
+  call graph of `rust/src` from the sonic leaf (constructors excluded: a design capture replays a
+  point that already ran), filtered to call sites inside a `-> Result<` function or closure whose
+  callee has NO `Result`/`Option` definition, leaves 26 candidates: the `*_gains_at` / `*_laws` /
+  `split_march` / `residuals` readers (no Python `except` above any of them, so a panic there IS
+  Python's uncaught raise), `try_coord_march` (a deliberate `catch_unwind`), and twelve `apply`
+  calls in `try_match_bleed` / `try_rebuild` that are name collisions — the nozzle in both is
+  already `try_apply`, the rest are inlet/compressor/burner/turbine. **Zero real escapes.** The
+  callbacks handed to the 8 callback-catches (`find_equilibrium_nu`, `cap_free`, `gauge_root`,
+  `root_count`, `forced_cap`) were read at every call site: each is built on `try_` calls with `?`.
+* **Correction.** The pushed commit `5b0470b`'s message said *"16 direct sites"* and *"11 holdouts
+  in four functions"*; the measured figures are **15** and **six** functions (the function list it
+  gave already named six). Corrected here rather than by amending — *guessed census bars*, again,
+  and both caught only by re-adding the list.
+
 **Gates.** `tests/rung46.rs`: the disclosed-divergence test is REPLACED (not edited) by
 `the_sonic_bracket_assert_is_catchable_and_the_march_returns_pythons_empty_trajectory`, asserting
-Python's `len == 0` and that the refusal is the bracket assert. New `tests/sonic_abort.rs` (4 gates)
+Python's `len == 0`, and that the fallible leaf refuses at the measured `Tt` — the link between the
+two (that the march broke on THAT refusal) is the mutation below, not an assertion in the gate. New `tests/sonic_abort.rs` (4 gates)
 pins each layer's message and the passing path bit-for-bit. **Mutation:** reverting the one site this
 cell goes through (`spool.rs` `eval_m_fuel`) fails the rung-46 gate with the old panic.
 

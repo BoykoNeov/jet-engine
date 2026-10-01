@@ -83,9 +83,9 @@ fn the_leaf_refuses_with_pythons_message_on_both_gas_branches() {
 #[test]
 fn the_infallible_wrapper_still_panics_with_the_same_message() {
     let cpg = cpg_gas();
-    std::panic::set_hook(Box::new(|_| {}));
+    // No hook suppression: a process-global `set_hook` races the other gates in this binary (the
+    // hazard `demand_coordinate.rs` names). The default hook prints one line; no value depends on it.
     let r = catch_unwind(AssertUnwindSafe(|| choked_mfp(&cpg, f64::NAN, 0.02)));
-    let _ = std::panic::take_hook();
     assert_eq!(panic_text(r), CPG_MSG);
 }
 
