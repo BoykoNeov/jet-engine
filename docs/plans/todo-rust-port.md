@@ -27589,3 +27589,56 @@ the gate's run time is watched, not pinned.
 
 **Next: slice AM** — rungs 25–37's panels (the nozzle/turbine marches and the single-spool
 off-design ladder: `main.py`'s `print_finite_rate_nozzle_table` … `print_combustor_dynamics_table`).
+
+### 8.4 SLICE AM — RUNGS 25–37's PANELS, BYTE-EXACT (2026-10-02)
+
+Thirteen panels (`main.py` lines 794–1528) in two new files: `rust/src/panels/marches.rs`
+(rungs 25–30: the nozzle/turbine marches and the choked nozzle) and
+`rust/src/panels/offdesign.rs` (rungs 31–37: the single-spool matchers and the transient).
+**`PORTED = 39`: steps 1–39 byte-exact on the first compile** — no shim change, no new helper
+beyond `pub(crate)` on `mixing::py_min`. Every call landed on an already-ported, already-gated
+entry point; the work was matching Python's keyword defaults to the Rust positional arguments
+(`ds_frac = 1/15`, `ds = 0.05`, `s_end = 12`, `couple = True`, `ComponentMap(...)` partial
+construction = `..ComponentMap::default()`, `MapMatcher`'s default map = `flat()`).
+
+#### (i) Two Python-side facts the port surfaced
+
+* **Rung 33's "SUB-IDLE" rows are NOT the sub-idle assertion.** The panel catches every
+  `AssertionError` from `m.match(flight, Tt4)` and prints *"(net thrust <= 0: below
+  thrust-neutral idle)"*. At `Tt4 = 440` and `420 K` the assertion that actually fires — in the
+  Rust (`matcher.rs:381`, the `Abort` from `try_working_gas`) AND, checked under PyPy, in the
+  Python — is *"equilibrium Newton did not converge in 200 steps at (T=440.0, p=747441…)"*: the
+  rung-6 equilibrium solve fails at the burner before the thrust check is reached. The printed
+  text is identical either way, so the port reproduces it (the catch is `catch_unwind`, the
+  `anti_windup` precedent, hook untouched — two lines of stderr noise). That precedent ran in
+  tests only, so the SHIPPED binary was run too: `Cargo.toml` sets no `panic = "abort"`, and
+  `target/release/turbojet.exe`'s stdout is **byte-equal to the golden's first 71 451 bytes**
+  (steps 1–39); its stderr carries the two `thread 'main' panicked … equilibrium Newton` lines,
+  which Python does not print. **Booked for AU (cosmetic): silence the default hook around that
+  one catch, or accept the stderr lines.** **The label is a
+  `main.py` honesty item, not a port item: OPEN, for the user** — the rung-33 panel's catch is
+  broader than its message, and whether the reacting-gas engine is past thrust-neutral idle at
+  440 K is not what those rows measured.
+* **Rung 34 calls `ramp_excursion(…, r=5)` twice** (the table row, then the summary line). The
+  port reuses the loop's value — the same deterministic call on the same inputs, so the bytes
+  cannot differ; it saves one RK4 march. And Python builds an `OffDesignMatcher` `base` in
+  rung 34 that it never reads; not ported (construction has no output and no shared state).
+
+#### (ii) What the gate saw, measured
+
+One non-equivalent injection, chosen to move a printed digit: rung 31's drift
+`100·(h−c)/h` → `100·(h−c)/c`. **FAILED** at step 32 (`print_offdesign_table`), line 19,
+`DRIFTS 2.8%` vs `2.9%`. Reverted to the exact passing line.
+
+#### (iii) Cost
+
+`cli_golden.rs` at 39 steps: **174.5 s** (118 s on the failing run, which stops at step 32;
+240.9 s inside the full suite, sharing the box). Still watched, not pinned.
+
+**The ship gate** (Rust-only change): `cargo test --release --no-fail-fast` at below-normal —
+**187 result blocks, 1 902 passed, 0 failed**, with `cli_golden`'s own block at **3 passed** (the
+injection's revert is exact) — plus `tests/test_rust_line_citations.py` +
+`tests/test_claude_md_reference.py`, **7 passed**.
+
+**Next: slice AN** — rungs 38–45's panels (the two-spool family: `main.py`'s
+`print_two_spool_matching_table` … `print_transient_fuel_surge_table`).

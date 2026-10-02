@@ -21,7 +21,7 @@ use crate::pyf;
 use crate::pyfmt::Printer;
 
 /// Python's `min(xs)` over floats: the first minimum (`x < best` replaces).
-fn py_min(xs: &[f64]) -> f64 {
+pub(crate) fn py_min(xs: &[f64]) -> f64 {
     let mut best = xs[0];
     for &x in &xs[1..] {
         if x < best {

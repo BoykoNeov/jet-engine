@@ -19,8 +19,10 @@ use crate::gas::Gas;
 use crate::pyfmt::Printer;
 
 pub mod cycle;
+pub mod marches;
 pub mod mixing;
 pub mod nox;
+pub mod offdesign;
 
 /// `TS_DIAGRAM_PATH` — the chart file `main.py` names in its last line.
 pub const TS_DIAGRAM_PATH: &str = "ts_diagram.png";
@@ -97,4 +99,18 @@ pub const PANELS: &[(&str, Panel)] = &[
     ("print_spatial_pdf_table", mixing::spatial_pdf_table),
     ("print_dwell_spectrum_table", mixing::dwell_spectrum_table),
     ("print_local_mixing_table", mixing::local_mixing_table),
+    // ---- slice AM: rungs 25–37, the marches and the single-spool off-design ladder
+    ("print_finite_rate_nozzle_table", marches::finite_rate_nozzle_table),
+    ("print_freeze_out_nozzle_table", marches::freeze_out_nozzle_table),
+    ("print_no_freeze_out_table", marches::no_freeze_out_table),
+    ("print_coupled_no_march_table", marches::coupled_no_march_table),
+    ("print_shifting_turbine_table", marches::shifting_turbine_table),
+    ("print_choked_nozzle_table", marches::choked_nozzle_table),
+    ("print_offdesign_table", offdesign::offdesign_table),
+    ("print_component_map_table", offdesign::component_map_table),
+    ("print_subsonic_matching_table", offdesign::subsonic_matching_table),
+    ("print_spool_transient_table", offdesign::spool_transient_table),
+    ("print_fuel_metering_table", offdesign::fuel_metering_table),
+    ("print_surge_line_table", offdesign::surge_line_table),
+    ("print_combustor_dynamics_table", offdesign::combustor_dynamics_table),
 ];
