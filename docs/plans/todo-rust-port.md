@@ -27516,5 +27516,24 @@ oracles' job, and a panel's local arithmetic (`_aft_ch2`, `_cycle_points`, `_mea
 committed beside them (`dump_pyfmt.py`, `dump_main_capture.py`, `make_main_segments.py`); like
 the other 63 `rust/oracle/*.py` they die at AU and their outputs stay.
 
+**AK's gate:** `cargo test --release` green (1 711 + 189 + 1 doc test, 0 failed) and the two Python
+files that read Rust or CLAUDE.md (`test_rust_line_citations.py`, `test_claude_md_reference.py`,
+7 passed). The full `pytest` suite was NOT run, by the user's decision: no `.py` the suite tests
+changed, so a Rust-only slice owes cargo plus those two guards.
+
+**Owed to AR, written down so it cannot drift silently:** the golden's LAST segment
+(`plot_ts_diagram`, 57 bytes) is the line `T–s diagram (ideal vs real) written to ts_diagram.png`.
+Once the Rust CLI emits the chart's arrays as JSON and the slimmed Python only draws them, that
+line is either printed byte-exact by the Rust (and the JSON + PNG step is the Python's) or AR
+changes it ON PURPOSE — re-cutting that one segment with the reason recorded beside the pin.
+
 **Next: slice AL** — rungs 7–24's panels (≈ 1 400 lines of `main.py`, the NOx / mixing strand),
-each extending `PANELS` and moving `PORTED`.
+each extending `PANELS` and moving `PORTED`. **Its pre-flight, from AK's closing review:**
+(a) the shim's `py_tuple` / `py_list` have NO oracle rows and `None` is not supported, while the
+census shows bare `{x}` / `str(…)` on values that can be `None` (`measured`, `tau_att`) — add
+container rows (incl. the one-element `(a,)` and a str element) and `None` to `dump_pyfmt.py`
+WHILE PyPy exists; (b) the pre-flight's 179/181 API match was by NAME — check the argument shapes
+of the private helpers AL's panels call (`_quench_trajectory`, `_bell_interpolator`,
+`_beta_pdf_nodes_weights`, and `main.py`'s own `_mean_grad_sq`, `_j_opt_from`) against their Rust
+twins first; (c) every panel with local arithmetic (bisections, sums) carries AK's caveat — the
+byte gate does not see a last-bit slip that printing rounds away.

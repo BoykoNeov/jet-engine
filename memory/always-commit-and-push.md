@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: 8c26fd4b-a96a-48b1-b4d0-d6638ba4a998
-  modified: 2026-09-07T00:00:00.000Z
+  modified: 2026-10-02T08:13:07.702Z
 ---
 
 When work reaches a green, complete state, commit it and push to `main`
@@ -47,6 +47,14 @@ docs-only commit (a `docs/*.md` negative record, a `rungN-spec.md` correction,
 real gate for commits that touch `turbojet/`, `tests/`, `main.py` or `conftest.py`
 — and when the change reaches exactly one test file, running THAT file is the
 proportionate check, not the whole gate.
+
+**A RUST-ONLY change does not owe the Python suite either (2026-10-02, user: "stop it and
+proceed").** When a commit touches only `rust/` (+ docs/memory) and no `.py` under `turbojet/`,
+`tests/`, `main.py` or `conftest.py`, the gate is `cargo test --release` plus the two Python files
+that READ Rust or CLAUDE.md: `tests/test_rust_line_citations.py` and
+`tests/test_claude_md_reference.py`. The other ~1 380 tests check an unchanged Python model and
+cannot move. Phase 8 slice AK launched the full suite anyway (an advisor read "green = bare pytest"
+literally); the user stopped it. New `rust/oracle/*.py` dump scripts are not tests and do not count.
 
 **More generally, do not run the gate without a reason (2026-07-31, user):** at
 **session end** (unless it ran shortly before) and after a **code** change — but
