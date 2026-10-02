@@ -27687,10 +27687,10 @@ that row. The gate caught it one row later. Reverted to the exact passing line.
 `cli_golden.rs` at 47 steps: **61.6 s** on a quiet box (the 200 s at 43 steps was taken while a
 `cargo build` shared it). Still watched, not pinned.
 
-**The ship gate — PARTIAL at commit** (the user asked to commit while it ran): `cargo test
---release --no-fail-fast` at below-normal had finished **131 of 187 result blocks, 1 606 passed,
-0 failed**, `cli_golden`'s own block **3 passed**; the two Python guards **7 passed**. The
-remaining 56 blocks are owed a read at the next session start (`W:\temp\claude\phase8-ak\cargo_an.out`).
+**The ship gate** — committed while it ran (the user asked), read to its end afterwards: `cargo test
+--release --no-fail-fast` at below-normal, **187 of 187 result blocks, 1 902 passed, 0 failed**,
+exit 0 — the same count as AM's, as it should be (AN added panels, not test functions);
+`cli_golden`'s own block **3 passed**; the two Python guards **7 passed**.
 
 **Next: slice AO** — rungs 46–52's panels (the fuel-side limiter family: `main.py`'s
 `print_topping_governor_table` … `print_asymmetric_lag_table`, in `main()`'s order).
