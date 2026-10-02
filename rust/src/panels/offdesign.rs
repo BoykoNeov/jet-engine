@@ -25,7 +25,7 @@ fn eq_matcher(d: &Design) -> OffDesignMatcher {
 }
 
 /// `Gas(gamma_c=1.4, cp_c=1004.0, R_c=286.9, gamma_t=…, cp_t=…, R_t=…, hPR=42.8e6)`.
-fn cpg(gamma_t: f64, cp_t: f64, r_t: f64) -> Gas {
+pub(crate) fn cpg(gamma_t: f64, cp_t: f64, r_t: f64) -> Gas {
     Gas::new(GasSpec { gamma_c: 1.4, cp_c: 1004.0, r_c: 286.9, gamma_t, cp_t, r_t, hpr: 42.8e6,
                        ..GasSpec::default() })
 }

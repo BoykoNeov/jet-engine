@@ -23,6 +23,7 @@ pub mod marches;
 pub mod mixing;
 pub mod nox;
 pub mod offdesign;
+pub mod twospool;
 
 /// `TS_DIAGRAM_PATH` — the chart file `main.py` names in its last line.
 pub const TS_DIAGRAM_PATH: &str = "ts_diagram.png";
@@ -113,4 +114,13 @@ pub const PANELS: &[(&str, Panel)] = &[
     ("print_fuel_metering_table", offdesign::fuel_metering_table),
     ("print_surge_line_table", offdesign::surge_line_table),
     ("print_combustor_dynamics_table", offdesign::combustor_dynamics_table),
+    // ---- slice AN: rungs 38–45, the two-spool family
+    ("print_two_spool_matching_table", twospool::two_spool_matching_table),
+    ("print_two_spool_map_table", twospool::two_spool_map_table),
+    ("print_two_shaft_transient_table", twospool::two_shaft_transient_table),
+    ("print_two_spool_surge_table", twospool::two_spool_surge_table),
+    ("print_interstage_bleed_table", twospool::interstage_bleed_table),
+    ("print_two_shaft_fuel_table", twospool::two_shaft_fuel_table),
+    ("print_transient_surge_table", twospool::transient_surge_table),
+    ("print_transient_fuel_surge_table", twospool::transient_fuel_surge_table),
 ];

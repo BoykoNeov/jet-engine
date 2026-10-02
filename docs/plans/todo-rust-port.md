@@ -27642,3 +27642,55 @@ injection's revert is exact) — plus `tests/test_rust_line_citations.py` +
 
 **Next: slice AN** — rungs 38–45's panels (the two-spool family: `main.py`'s
 `print_two_spool_matching_table` … `print_transient_fuel_surge_table`).
+
+### 8.5 SLICE AN — RUNGS 38–45's PANELS, BYTE-EXACT (2026-10-02)
+
+Eight panels (`main.py` lines 1530–2408) in one new file, `rust/src/panels/twospool.rs`.
+**`PORTED = 47`: steps 1–47 byte-exact on the first compile of each half** (38–41, then 42–45),
+through byte 102 264 of the golden. No shim change. Shared helpers: `ts_losses()` (the nine-knob
+two-spool loss dict + `nozzle_convergent`), `ts_design(gas, pi_lpc, pi_hpc, d)`, `cpg13()` (the
+panels' local `cpg()`); `offdesign::cpg` became `pub(crate)`.
+
+#### (i) Port decisions, each one the Python's own semantics
+
+* **Python's `setattr` perturbations** (rung 38: `eta_* = 0.55`; rung 39: `eta_* -= 0.01`) go
+  through `core_mut()` on the CAPTURED efficiency fields and are restored after the one cascade —
+  the precedent rung 38 gate 3 / rung 39 gate 4 already ported. The working gas is cloned out of
+  the core first so the mutable borrow is legal; the cascade only reads it.
+* **`None` maps are `ComponentMap::flat()`**, which is what the Python constructors substitute;
+  `ComponentMap()` (rung 42's `FLAT`) is `ComponentMap::default()`.
+* **Rung 45 builds `design` ONCE** and hands it to four constructors; the port clones it (each
+  constructor only reads the design run).
+* **Python keyword defaults made positional**: `lead_threshold` `d=5.0` (25.0 where passed),
+  `jacobian` `h=1e-6`, `phi_excursion` `r_ramp=0.5, s_end=3.0, ds=0.02`,
+  `ramp_excursion_fuel` / `freeze_channels` `s_settle=8.0, ds=0.02`, `phi_excursion_fuel` /
+  `transient_surge_margin_fuel` `s_settle=6.0, ds=0.02` and four `None` limiters,
+  `collapse_exponent` `nb=6`.
+* **Rung 43's `{a!r}` and `{a == b}`** print through `py_str()` (Python `repr` / `True`).
+
+#### (ii) The two caught failures, read off stderr (slice AM's rule)
+
+Run with `--nocapture`: the only new caught panic is rung 38's `m.match(flight, 600.0)`, and it is
+the failure the panel's text names — *"nozzle UNCHOKED -- OUT OF SCOPE"* (`two_spool.rs:972`).
+Rung 41's `surge_margin_channels` loop never reaches its `except AssertionError: break` (all seven
+rows print). No mislabel this slice.
+
+#### (iii) What the gate saw, measured
+
+One non-equivalent injection: rung 42's LP gap fraction `100·dL/gL` → `100·dL/gH`. **FAILED** at
+step 43 (`print_interstage_bleed_table`), line 68, `22.1%` vs `18.5%` — and NOT on the row above
+it: at `Tt4 = 1500` both flow coefficients are 1, so `gL == gH` and the mutant is equivalent on
+that row. The gate caught it one row later. Reverted to the exact passing line.
+
+#### (iv) Cost
+
+`cli_golden.rs` at 47 steps: **61.6 s** on a quiet box (the 200 s at 43 steps was taken while a
+`cargo build` shared it). Still watched, not pinned.
+
+**The ship gate — PARTIAL at commit** (the user asked to commit while it ran): `cargo test
+--release --no-fail-fast` at below-normal had finished **131 of 187 result blocks, 1 606 passed,
+0 failed**, `cli_golden`'s own block **3 passed**; the two Python guards **7 passed**. The
+remaining 56 blocks are owed a read at the next session start (`W:\temp\claude\phase8-ak\cargo_an.out`).
+
+**Next: slice AO** — rungs 46–52's panels (the fuel-side limiter family: `main.py`'s
+`print_topping_governor_table` … `print_asymmetric_lag_table`, in `main()`'s order).

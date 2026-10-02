@@ -50,4 +50,5 @@ tally stays in [[rust-port-status]].
 - Phase 8 slice AK [capture + shim + steps 1–8](rust-port-phase8-slice-ak.md) — a byte gate certifies PRINTED text, not the arithmetic under it; the oracle interpreter's own quirk (PyPy `%f` at 1e50) is refused and counted, not reproduced (one lesson per file)
 - Phase 8 slice AL [rungs 7–24 panels](rust-port-phase8-slice-al.md) — a surviving injection was an EQUIVALENT mutant (field symmetry), not a blind gate; pick injections that must move the printed digits (one lesson per file)
 - Phase 8 slice AM [rungs 25–37 panels](rust-port-phase8-slice-am.md) — a catch-all except printed a cause it never checked; read caught panics in stderr, the byte gate cannot see them (one lesson per file)
+- Phase 8 slice AN [rungs 38–45 panels](rust-port-phase8-slice-an.md) — a planted error was invisible on the row where two gaps coincide; read which row failed
 - Slice T (46/47/48) steps [1](rust-port-slice-t-step1.md) [2](rust-port-slice-t-step2.md) [3](rust-port-slice-t-step3.md) [4](rust-port-slice-t-step4.md) — an EXACT ZERO blinds its own gate to the SIGN (one lesson per file)
