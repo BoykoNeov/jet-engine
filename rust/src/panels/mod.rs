@@ -1,0 +1,79 @@
+//! **`main.py`, ported byte for byte** — the design-point run and one teaching panel per rung
+//! (phase 8; `docs/plans/todo-rust-port.md` § 8.1).
+//!
+//! Every panel is a function writing into a [`Printer`], in the order `main.py`'s `main()` calls
+//! it, and [`PANELS`] is that order. The gate (`tests/cli_golden.rs`) holds each panel to EXACT
+//! equality with its own segment of the PyPy stdout golden (`rust/oracle/main_stdout.txt`, cut at
+//! the byte offsets in `rust/oracle/main_segments.tsv`), so a panel can be neither short, long,
+//! nor out of place. The binary (`src/main.rs`) runs [`PANELS`] in order and writes each panel's
+//! text to stdout as it finishes.
+//!
+//! **Porting rules for a panel.** The Python is presentation code, but it is not arithmetic-free:
+//! keep each expression's operation ORDER exactly (`100 * a / tot` is `(100*a)/tot`), spell a
+//! non-square power with [`crate::gas::powp`] and a square as a multiply, sum in the source's
+//! iteration order, and format through [`crate::pyf!`] / [`crate::pct!`] with the spec copied
+//! verbatim. The byte gate catches a miss, but a slice late.
+
+use crate::engine::{build_turbojet, EngineResult, FlightCondition, Losses};
+use crate::gas::Gas;
+use crate::pyfmt::Printer;
+
+pub mod cycle;
+
+/// `TS_DIAGRAM_PATH` — the chart file `main.py` names in its last line.
+pub const TS_DIAGRAM_PATH: &str = "ts_diagram.png";
+/// `PI_C` — the design compressor pressure ratio (the rung-1 validation case).
+pub const PI_C: f64 = 10.0;
+/// `TT4` — the design turbine-inlet temperature, K.
+pub const TT4: f64 = 1500.0;
+
+/// `FLIGHT = FlightCondition(T0=250.0, p0=50_000.0, M0=0.85)`.
+pub fn flight() -> FlightCondition {
+    FlightCondition::new(250.0, 50_000.0, 0.85)
+}
+
+/// `REAL_LOSSES` — one gas, fully expanded, so the only difference from the ideal run is the
+/// entropy each component generates.
+pub fn real_losses() -> Losses {
+    Losses { pi_d: 0.97, eta_c: 0.88, eta_b: 0.99, pi_b: 0.96, eta_t: 0.90, eta_m: 0.99, pi_n: 0.98,
+             ..Losses::default() }
+}
+
+/// What `main()` computes before its first print and hands to the panels that need it.
+pub struct Design {
+    pub flight: FlightCondition,
+    /// `gas = Gas()` — the single cold-air-standard gas of the design-point comparison.
+    pub gas: Gas,
+    pub ideal: EngineResult,
+    pub real: EngineResult,
+}
+
+impl Design {
+    pub fn new() -> Self {
+        let flight = flight();
+        let gas = Gas::default();
+        let ideal = build_turbojet(gas.clone(), PI_C, TT4, flight.p0, Losses::default()).run(&flight, 1.0);
+        let real = build_turbojet(gas.clone(), PI_C, TT4, flight.p0, real_losses()).run(&flight, 1.0);
+        Design { flight, gas, ideal, real }
+    }
+}
+
+impl Default for Design {
+    fn default() -> Self { Design::new() }
+}
+
+/// One `main()` step: a `print_*` call, or a line `main()` prints itself.
+pub type Panel = fn(&mut Printer, &Design);
+
+/// `main()`'s calls, in order, each named as the golden's segment file names it (a `print_*`
+/// function's name, or `main:<what>` for text `main()` prints inline).
+pub const PANELS: &[(&str, Panel)] = &[
+    ("print_station_table", cycle::station_table_ideal),
+    ("print_station_table", cycle::station_table_real),
+    ("main:losses_cost", cycle::losses_cost),
+    ("print_polytropic_table", cycle::polytropic_table),
+    ("print_variable_cp_table", cycle::variable_cp_table),
+    ("print_reacting_table", cycle::reacting_table),
+    ("print_forkb_table", cycle::forkb_table),
+    ("print_equilibrium_table", cycle::equilibrium_table),
+];

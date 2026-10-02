@@ -27440,3 +27440,81 @@ has chosen.**
 **CHOSEN 2026-10-02 by the user: the FULL PORT** (*"full port"*) — every panel byte-exact against
 the PyPy stdout golden, slices AK…AU as the table above reads, ≈ 11–14 sessions. The slimmer CLI
 is not built.
+
+### 8.2 SLICE AK — CAPTURE WHILE THE ORACLE LIVES, THE SHIM, AND THE FIRST EIGHT STEPS (2026-10-02)
+
+Scripts and raw outputs: `W:\temp\claude\phase8-ak\`. Every Python run below was PyPy 3.11.15
+(7.3.23), printed its own `sys.version` into its log, and ran below normal.
+
+#### (i) What was captured, and what it was checked against
+
+* **The stdout golden** — `rust/oracle/main_stdout.txt`, the pre-flight's LF form committed as-is
+  (§ 8.1 (ii) allowed it): no `.py` changed between `0003753` and `5338ac4`, the working tree was
+  clean, and the file re-hashed to `fc3a287997b268d8…` before the copy.
+* **The segment map** — `rust/oracle/main_segments.tsv`: an INSTRUMENTED second run of `main.py`
+  wrapped each top-level `print_*`/`plot_*` call and recorded the byte range it wrote. Its own
+  stdout was **byte-identical to the golden** (`cmp`, all 229 987 bytes; 85 calls in 1 642 s of
+  panel time), so the ranges cut the committed
+  file, and two runs a day apart printed the same 229 987 bytes. The one gap between calls is
+  the line `main()` prints itself (`Losses cost: …`), named `main:losses_cost` by hand — the
+  builder refuses an unnamed gap.
+* **The T–s chart's arrays** — `rust/oracle/ts_diagram_pypy.tsv`: the same run patched
+  matplotlib's `Axes.plot` / `scatter` / `annotate` and recorded, as u64 bit patterns, exactly
+  what each call RECEIVED — 26 calls per the file: per cycle two 3-point work legs, two 80-point
+  isobars and six station points, then the six real-cycle labels; the empty legend-proxy `plot([], [])`
+  calls are skipped. Recorded at the call, not recomputed — a dumper that
+  re-derived `Ta + (Tb-Ta)*i/79` would be an instrument fed by what it certifies. Slice AR gates
+  the Rust chart JSON against it.
+* **`data.json`** — `extract_data.py` re-run under PyPy at `5338ac4` into the temp folder (a
+  wrapper redirected its output, so the tree was never touched): **byte-identical to the committed
+  file** (27 393 bytes). The committed file IS the reference, and the two published pages need no
+  republish. It took 94 s, not the ~10 min its header says.
+
+#### (ii) The shim — `rust/src/pyfmt.rs`, gated by `tests/pyfmt.rs`
+
+The census the advisor asked for before writing it (an `ast` walk of `main.py`): **250 distinct
+new-style specs**, every one inside `[[fill]align][sign][width][.prec][type]` with types
+`f e g % d s`; **no** `0`-padding, `#`, grouping or `=` alignment; **every `print` takes one
+argument**; ~60 `%`-templates (conversions `s d f e g`, flags `-` `+`); `str()` of bools, floats
+and tuples; two `!r`. The shim accepts exactly that grammar and PANICS outside it.
+
+`rust/oracle/dump_pyfmt.py` wrote Python's output over committed batteries (616 floats DEEP
+through `str`/`repr`/`f`/`e`/`g`/`%` at precisions 0–8, 10, 12, 15; every census spec and its
+neighbours BROAD over 80 floats, 24 ints, 14 strs with `Δ·≡≈`, 2 bools). **72 666 cells, all
+byte-equal**, after one round:
+
+* **86 cells differed first, on exactly TWO values (`1e300`, `f64::MAX`), in two classes.**
+  (a) **PyPy keeps Python 2's rule that `'%f'` of a value above ~1e50 is written as `'%g'`**
+  (`'%.2f' % 1e300 == '1e+300'`; CPython 3.14 prints every digit — measured). No panel prints
+  anything near it, so the shim REFUSES it (panics) and the gate counts the 70 exempt cells
+  rather than reproducing a quirk the golden never exercises. (b) **A real shim bug**: `'%d'` of
+  a float went through an `i128` cast that saturates at 2¹²⁷; Python's `int()` is unbounded. Now
+  the digits come from `{:.0}` of the truncated value.
+* Pinned: 1 212 rows, 72 666 compared cells, 32 cells Python itself refuses, 70 exempt.
+
+#### (iii) The CLI and its gate
+
+`rust/src/panels/` holds the panels (`PANELS`, in `main()`'s order), `rust/src/main.rs` runs them
+and streams each panel to stdout. `tests/cli_golden.rs` holds **each ported step to EXACT
+equality with its own segment**, the segments to tiling the golden with no gap, and the port to
+`main()`'s order by name; the number ported is pinned (`PORTED = 8`). Slice AK ports eight steps
+— both station tables, `main:losses_cost`, rungs 2b, 3, 4, 5, 6 — **byte-exact on the first
+compile**, and the built binary's real stdout equals the golden's first 5 949 bytes (no CRLF on
+Windows: Rust writes the bytes it is given).
+
+**What the gate cannot see, measured:** two injections into the rung-6 panel. A text change
+(`f > 0.06` → `0.07`, dropping the `(≈stoich)` tag) FAILS, naming line 17 and both strings.
+Re-associating `n_fuel = f * M_AIR / M_CH2` as `f * (M_AIR / M_CH2)` PASSES: the flame
+temperature is printed to `.1f` after a 100-step bisection, so a last-bit move never reaches the
+text. **The byte gate certifies the PRINTED text, not the arithmetic under it** — that is the
+oracles' job, and a panel's local arithmetic (`_aft_ch2`, `_cycle_points`, `_mean_grad_sq`,
+`_j_opt_from`) is held to porting rules by reading, not by this gate.
+
+**Pins after AK:** `cli_golden.rs` — golden 229 987 bytes / 3 413 lines / FNV-1a
+`15 355 211 642 347 498 699`, **86 segments** (85 `main()` calls + `main:losses_cost`) tiling it,
+`PORTED = 8`. `pyfmt.rs` — 1 212 / 72 666 / 32 / 70. The scripts that wrote the oracles are
+committed beside them (`dump_pyfmt.py`, `dump_main_capture.py`, `make_main_segments.py`); like
+the other 63 `rust/oracle/*.py` they die at AU and their outputs stay.
+
+**Next: slice AL** — rungs 7–24's panels (≈ 1 400 lines of `main.py`, the NOx / mixing strand),
+each extending `PANELS` and moving `PORTED`.

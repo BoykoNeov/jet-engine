@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: 454e5108-5b41-4abd-b607-eac9932757b5
-  modified: 2026-10-01T16:21:23.593Z
+  modified: 2026-10-02T07:51:57.539Z
 ---
 
 Two file-writing hazards hit in one session on this box, both silent.
@@ -134,3 +134,5 @@ implausible duration said so. Not diagnosed (likely a stale launcher path). **La
 `.venv\Scripts\python.exe -m pytest`**, which works, and treat a gate that ends in seconds as not run.
 
 **A Windows path inside Python source typed through the Bash tool becomes a TAB.** `W:` + backslash + `temp` reaches Python as `W:` + TAB + `emp`, because backslash-t is an escape in a non-raw literal and a doubled backslash did not survive the trip either. Phase 8's pre-flight (2026-10-01) wrote one into the plan this way; THREE repair scripts failed identically (their own replacement literal was collapsed too, so they swapped a tab for a tab and printed `fixed 1`); and writing THIS note through a script mangled it a fourth time. A pre-existing instance (plan line 22909, slice AG) had the same origin. **Fix: put path-bearing text in with the Write/Edit tools, or build the backslash as `bytes([92])`; verify by counting tab bytes in the file (`grep -c` with a literal tab), never by the script's own success count.**
+
+**It is not only paths: the Bash tool collapses EVERY doubled backslash, even inside a QUOTED heredoc (`<<'EOF'`).** Phase 8 slice AK (2026-10-02) hit it twice in one session: a Python `'''…"# DEEP\\n"…'''` replacement landed as a REAL newline inside a string literal (a syntax error found only on reading the file), and a regex `r"tests[\\/](\w+)"` landed as `[\/]`, so it matched nothing and the script died on an empty list. **Any script containing a backslash goes in through the Write tool**, then is run by path.

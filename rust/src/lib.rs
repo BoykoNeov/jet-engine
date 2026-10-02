@@ -144,6 +144,8 @@ pub mod map;
 pub mod march;
 pub mod matcher;
 pub mod nox;
+pub mod panels;
+pub mod pyfmt;
 pub mod reference_split;
 pub mod residual_gauge;
 pub mod sensed_cap;
