@@ -379,7 +379,8 @@ impl PyFormat for str {
     }
 }
 
-impl PyFormat for &str {
+/// A reference prints as what it refers to (Python has no references to tell apart).
+impl<T: PyFormat + ?Sized> PyFormat for &T {
     fn py_format(&self, spec: &Spec) -> String { (**self).py_format(spec) }
     fn py_str(&self) -> String { (**self).py_str() }
     fn py_repr(&self) -> String { (**self).py_repr() }
@@ -393,22 +394,65 @@ impl PyFormat for String {
     fn py_printf(&self, spec: &Spec) -> String { self.as_str().py_printf(spec) }
 }
 
+/// Python's `None`: `Option<T>` prints `None` when empty and as `T` otherwise. A spec on `None`
+/// is a `TypeError` in Python, so it panics here.
+impl<T: PyFormat> PyFormat for Option<T> {
+    fn py_format(&self, spec: &Spec) -> String {
+        match self {
+            Some(v) => v.py_format(spec),
+            None => {
+                assert!(*spec == Spec::parse(""), "pyfmt: Python refuses format(None, {spec:?})");
+                "None".to_string()
+            }
+        }
+    }
+    fn py_str(&self) -> String { self.as_ref().map_or_else(|| "None".to_string(), |v| v.py_str()) }
+    fn py_repr(&self) -> String { self.as_ref().map_or_else(|| "None".to_string(), |v| v.py_repr()) }
+    fn py_printf(&self, spec: &Spec) -> String {
+        match self {
+            Some(v) => v.py_printf(spec),
+            None => {
+                assert!(matches!(spec.ty, Some('s') | Some('r')), "pyfmt: Python refuses '%{:?}' % None", spec.ty);
+                pad("None".to_string(), &Spec { ty: Some('s'), ..*spec }, '>')
+            }
+        }
+    }
+}
+
+/// An already-rendered container (a tuple, list or dict): its `str` and `repr` are the same
+/// text, so it nests inside another container unquoted. Python refuses a non-empty spec on a
+/// container — port `f"{str(t):>9}"` as `pyf!("{:>9}", t.py_str())`, which formats the STR.
+#[derive(Clone, Debug, PartialEq)]
+pub struct PyRaw(pub String);
+
+impl PyFormat for PyRaw {
+    fn py_format(&self, spec: &Spec) -> String {
+        assert!(*spec == Spec::parse(""), "pyfmt: Python refuses a spec on a container: {spec:?}");
+        self.0.clone()
+    }
+    fn py_str(&self) -> String { self.0.clone() }
+    fn py_printf(&self, spec: &Spec) -> String {
+        assert!(matches!(spec.ty, Some('s') | Some('r')), "pyfmt: a container only takes '%s'/'%r'");
+        pad(self.0.clone(), &Spec { ty: Some('s'), ..*spec }, '>')
+    }
+}
+
 /// `str(tuple)` — `(a, b)`, `(a,)`, `()` — each element by its `repr`.
-pub fn py_tuple(items: &[&dyn PyFormat]) -> String {
+pub fn py_tuple(items: &[&dyn PyFormat]) -> PyRaw {
     let inner: Vec<String> = items.iter().map(|v| v.py_repr()).collect();
-    if inner.len() == 1 { format!("({},)", inner[0]) } else { format!("({})", inner.join(", ")) }
+    PyRaw(if inner.len() == 1 { format!("({},)", inner[0]) } else { format!("({})", inner.join(", ")) })
 }
 
 /// `str(list)` — `[a, b]` — each element by its `repr`.
-pub fn py_list(items: &[&dyn PyFormat]) -> String {
+pub fn py_list(items: &[&dyn PyFormat]) -> PyRaw {
     let inner: Vec<String> = items.iter().map(|v| v.py_repr()).collect();
-    format!("[{}]", inner.join(", "))
+    PyRaw(format!("[{}]", inner.join(", ")))
 }
 
 /// `str(dict)` — `{k: v, …}` in the order given (Python's insertion order), each side by `repr`.
-pub fn py_dict(items: &[(&dyn PyFormat, &dyn PyFormat)]) -> String {
+pub fn py_dict(items: &[(&dyn PyFormat, &dyn PyFormat)]) -> PyRaw {
     let inner: Vec<String> = items.iter().map(|(k, v)| format!("{}: {}", k.py_repr(), v.py_repr())).collect();
-    format!("{{{}}}", inner.join(", "))
+    PyRaw(format!("{{{}}}", inner.join(", ")))
 }
 
 /// The engine behind [`pyf!`]: a Python f-string with every `{expr}` hoisted into `args`, in

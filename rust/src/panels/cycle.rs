@@ -4,6 +4,7 @@
 //! for line; the docstrings that carry each panel's lesson are not repeated here — they are in
 //! `main.py` at the `python-final` tag and in each rung's spec.
 
+use super::nox::{at, total};
 use super::{Design, PI_C, TT4};
 use crate::engine::{build_turbojet, EngineResult, Losses};
 use crate::gas::{
@@ -14,16 +15,6 @@ use crate::pyf;
 use crate::pyfmt::{py_dict, PyFormat, Printer};
 
 const LABELS: [&str; 6] = ["0", "2", "3", "4", "5", "9"];
-
-/// `sum(comp.values())` — a left fold in the composition's own (Python dict) order.
-fn total(comp: &[(&'static str, f64)]) -> f64 {
-    comp.iter().fold(0.0, |a, &(_, v)| a + v)
-}
-
-/// `comp['X']` for a composition kept as Python's ordered dict.
-fn at(comp: &[(&'static str, f64)], key: &str) -> f64 {
-    comp.iter().find(|&&(s, _)| s == key).unwrap_or_else(|| panic!("no species {key:?}")).1
-}
 
 /// `print_station_table(title, result)`.
 fn station_table(p: &mut Printer, title: &str, result: &EngineResult) {

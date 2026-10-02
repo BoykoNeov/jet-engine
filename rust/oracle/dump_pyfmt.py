@@ -91,3 +91,28 @@ with open(OUT + "_expect.tsv", "w", encoding="utf-8", newline="\n") as fh:
         for sp in sorted(pspecs):
             row(fh, "pct", sp, kind, vals, lambda v, sp=sp: sp % (v,))
 print(len(F), len(I), len(S), len(specs), len(pspecs), file=sys.stderr)
+
+# ---- CONTAINERS and None (slice AL pre-flight, added 2026-10-02) -------------------------
+# str()/repr()/'%s' of the containers and of None the panels print. Each is named; the Rust
+# test builds the SAME value under the same name, so the inputs live in both files by design.
+CONTAINERS = {
+    "none": None,
+    "tuple_floats": (0.05, 0.2),
+    "tuple_one": (0.05,),
+    "tuple_empty": (),
+    "tuple_ints": (3, 7, 12),
+    "tuple_strs": ("demand", "applied"),
+    "tuple_mixed": (1, 0.5, "x", True, None),
+    "tuple_small_big": (1e-05, 1e16, -0.0, 2.5e-07),
+    "list_floats": [0.1, 1e-05, 2.0, 1500.0],
+    "list_strs": ["clip", "demand", "demand-latched"],
+    "list_empty": [],
+    "list_nested": [(0.2, 1.0), (5.0,)],
+    "list_bools": [True, False],
+    "dict_str_str": {"CO": "0.0123%", "OH": "1.5000%"},
+    "dict_str_float": {"a": 0.25, "b": 1e-07},
+}
+with open(OUT + "_containers.tsv", "w", encoding="utf-8", newline="\n") as fh:
+    fh.write("# name\tstr(v)\trepr(v)\t'%s' % (v,)\tformat(v, '')\n")
+    for name, v in CONTAINERS.items():
+        fh.write("\t".join([name, safe(str(v)), safe(repr(v)), safe("%s" % (v,)), safe(format(v, ""))]) + "\n")

@@ -19,6 +19,8 @@ use crate::gas::Gas;
 use crate::pyfmt::Printer;
 
 pub mod cycle;
+pub mod mixing;
+pub mod nox;
 
 /// `TS_DIAGRAM_PATH` — the chart file `main.py` names in its last line.
 pub const TS_DIAGRAM_PATH: &str = "ts_diagram.png";
@@ -76,4 +78,23 @@ pub const PANELS: &[(&str, Panel)] = &[
     ("print_reacting_table", cycle::reacting_table),
     ("print_forkb_table", cycle::forkb_table),
     ("print_equilibrium_table", cycle::equilibrium_table),
+    // ---- slice AL: rungs 7–24, the NOx / mixing strand
+    ("print_nox_table", nox::nox_table),
+    ("print_zoning_table", nox::zoning_table),
+    ("print_rql_table", nox::rql_table),
+    ("print_finite_quench_table", nox::finite_quench_table),
+    ("print_jet_mixing_table", nox::jet_mixing_table),
+    ("print_unmixedness_table", nox::unmixedness_table),
+    ("print_mixing_pdf_table", nox::mixing_pdf_table),
+    ("print_nozzle_flow_table", nox::nozzle_flow_table),
+    ("print_pdf_quench_table", mixing::pdf_quench_table),
+    ("print_pocket_quench_table", mixing::pocket_quench_table),
+    ("print_exhaust_clamp_table", mixing::exhaust_clamp_table),
+    ("print_transported_variance_table", mixing::transported_variance_table),
+    ("print_super_eq_prompt_table", mixing::super_eq_prompt_table),
+    ("print_super_eq_quench_table", mixing::super_eq_quench_table),
+    ("print_ideal_bell_lift_table", mixing::ideal_bell_lift_table),
+    ("print_spatial_pdf_table", mixing::spatial_pdf_table),
+    ("print_dwell_spectrum_table", mixing::dwell_spectrum_table),
+    ("print_local_mixing_table", mixing::local_mixing_table),
 ];

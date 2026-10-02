@@ -105,6 +105,49 @@ fn the_shim_reproduces_python_on_every_oracle_cell() {
     assert_eq!((rows, cells, refused, exempt), (1212, 72_666, 32, 70), "the oracle's size moved");
 }
 
+const CONTAINERS: &str = include_str!("../oracle/pyfmt_containers.tsv");
+
+/// `None` and the containers (slice AL pre-flight): each row of `pyfmt_containers.tsv` is a value
+/// `dump_pyfmt.py` NAMED; the same value is built here under that name, and its `str`, `repr`,
+/// `'%s'` and `format(v, '')` must all equal PyPy's.
+#[test]
+fn none_and_the_containers_match_python() {
+    use turbojet::pyfmt::{printf, py_dict, py_list, py_tuple, PyRaw};
+    let none: Option<f64> = None;
+    let build = |name: &str| -> PyRaw {
+        match name {
+            "none" => PyRaw(none.py_str()),
+            "tuple_floats" => py_tuple(&[&0.05, &0.2]),
+            "tuple_one" => py_tuple(&[&0.05]),
+            "tuple_empty" => py_tuple(&[]),
+            "tuple_ints" => py_tuple(&[&3i64, &7i64, &12i64]),
+            "tuple_strs" => py_tuple(&[&"demand", &"applied"]),
+            "tuple_mixed" => py_tuple(&[&1i64, &0.5, &"x", &true, &none]),
+            "tuple_small_big" => py_tuple(&[&1e-05, &1e16, &-0.0, &2.5e-07]),
+            "list_floats" => py_list(&[&0.1, &1e-05, &2.0, &1500.0]),
+            "list_strs" => py_list(&[&"clip", &"demand", &"demand-latched"]),
+            "list_empty" => py_list(&[]),
+            "list_nested" => py_list(&[&py_tuple(&[&0.2, &1.0]), &py_tuple(&[&5.0])]),
+            "list_bools" => py_list(&[&true, &false]),
+            "dict_str_str" => py_dict(&[(&"CO", &"0.0123%"), (&"OH", &"1.5000%")]),
+            "dict_str_float" => py_dict(&[(&"a", &0.25), (&"b", &1e-07)]),
+            n => panic!("the oracle names a container this test does not build: {n}"),
+        }
+    };
+    let mut n = 0;
+    for line in CONTAINERS.lines().filter(|l| !l.starts_with('#')) {
+        let f: Vec<&str> = line.split('\t').collect();
+        let v = build(f[0]);
+        let got = [v.py_str(), v.py_repr(), printf("%s", &[&v]), v.py_format(&Spec::parse(""))];
+        assert_eq!(got.iter().map(String::as_str).collect::<Vec<_>>(), f[1..].to_vec(), "{}", f[0]);
+        n += 1;
+    }
+    assert_eq!(n, 15, "the container oracle lost or gained rows");
+    // None directly (not through PyRaw): bare, '%s', and inside an f-string.
+    assert_eq!(turbojet::pyf!("{} {!r}", none, none), "None None");
+    assert_eq!(printf("%-6s|", &[&none]), "None  |");
+}
+
 /// The rules written out, so the expected strings are readable here and not only in a TSV.
 #[test]
 fn the_spelling_rules_by_hand() {
