@@ -19,6 +19,7 @@ use crate::gas::Gas;
 use crate::pyfmt::Printer;
 
 pub mod airflow;
+pub mod cascades;
 pub mod cycle;
 pub mod limiters;
 pub mod marches;
@@ -145,4 +146,13 @@ pub const PANELS: &[(&str, Panel)] = &[
     ("print_stator_bleed_table", schedules::stator_bleed_table),
     ("print_bleed_schedule_table", schedules::bleed_schedule_table),
     ("print_fuel_bleed_table", schedules::fuel_bleed_table),
+    // ---- slice AQ: rungs 64–84, the valve, the cascades, the splits and the reader-only rungs
+    ("print_bleed_limiter_table", cascades::bleed_limiter_table),
+    ("print_lagged_valve_table", cascades::lagged_valve_table),
+    ("print_two_lag_cascade_table", cascades::two_lag_cascade_table),
+    ("print_cascade_a_table", cascades::cascade_a_table),
+    ("print_three_loop_table", cascades::three_loop_table),
+    ("print_reference_split_table", cascades::reference_split_table),
+    ("print_cross_split_table", cascades::cross_split_table),
+    ("print_full_split_table", cascades::full_split_table),
 ];
