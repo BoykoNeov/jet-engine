@@ -21,3 +21,6 @@ env/
 Thumbs.db
 .vscode/
 .idea/
+
+# Chart data the Rust CLI writes to the working directory (plot_ts_diagram.py draws it)
+ts_diagram.json

@@ -19,8 +19,19 @@ light/dark aware, keyboard-navigable, and every chart has a data-table twin).
 
 ## Regenerating
 
+From the repository root:
+
 ```
-python extract_data.py    # runs the turbojet package at the design point (~10 min)
+cargo run --release --manifest-path rust/Cargo.toml -- visuals   # run the model, write data.json, splice both pages (~20 s)
+cargo run --release --manifest-path rust/Cargo.toml -- splice    # template-only edit: re-splice both pages from data.json
+```
+
+That is the Rust port of the three scripts below (`rust/src/visuals.rs`, phase 8 slice AR,
+`docs/plans/todo-rust-port.md` § 8.9). It writes `data.json` and both pages **byte-identical**
+to what the scripts write. The scripts stay until slice AU deletes the Python:
+
+```
+python extract_data.py    # runs the turbojet package at the design point (~10 min; 94 s on PyPy)
 python build.py           # splices data.json into template.html
 python build_cutaway.py   # splices a trimmed data.json into cutaway-template.html
 ```
@@ -59,8 +70,16 @@ file in the repo does not update a published page.
   is renamed and takes the rest of the script with it; a guarded one renders
   nothing. Both are invisible to the splice check, which compares the built page
   against the template that already has the defect.
-- **The sweep blocks are checked for shape only** — present, non-empty, finite.
-  They cost ~10 minutes to produce and are never recomputed by a test.
+- **The sweep blocks are checked for shape only** by the Python — present,
+  non-empty, finite. They cost ~10 minutes to produce there and are never
+  recomputed by a Python test.
+
+`rust/tests/visuals.rs` is the Rust twin of all fourteen gates, under the same
+names, and goes further on the one that mattered: it **regenerates the whole of
+`data.json`** (~20 s in Rust) and compares it byte for byte, so a model change
+that leaves a sweep block stale now fails a test. Its template censuses are
+hand-written (the crate has no regex dependency), so each is pinned to the exact
+set Python's own pattern finds on the committed templates.
 
 **Both pages now RENDER the design point** rather than carrying it as typed
 markup: the cutaway's chips and loss footer (`paintChrome()`), and the charts

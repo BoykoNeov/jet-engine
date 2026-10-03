@@ -27917,3 +27917,93 @@ applied; for a panels-only change, `cli_golden` plus a compile is the proportion
 
 **Next: slice AR** — the visuals (`data.json`, the cutaway JSON, both splices, the T–s data and
 the slimmed matplotlib script), which also owes the golden's last line.
+
+### 8.9 SLICE AR — THE VISUALS AND THE T–s CHART, BYTE-EXACT (2026-10-03)
+
+`rust/src/visuals.rs` ports `docs/visuals/extract_data.py`, `build.py`, `build_cutaway.py` and
+the physics half of `main.py`'s `plot_ts_diagram`; `rust/tests/visuals.rs` ports
+`tests/test_visuals_data.py`'s fourteen gates under their own names and adds six. Scratch files:
+`W:\temp\claude\phase8-ar\`. **The reference was confirmed current first**: `git diff --stat
+5338ac4 HEAD -- turbojet main.py docs/visuals` is empty, so AK's finding (the committed
+`data.json` is byte-identical to a PyPy re-run) still holds.
+
+#### (i) What shipped, and what it matched on the first run
+
+* **`turbojet visuals [DIR]`** (`cargo run --release -- visuals`) runs the model, writes
+  `data.json` and splices both pages; **`splice [DIR]`** re-splices from the committed
+  `data.json` (`build.py` + `build_cutaway.py` alone). Run into the scratch folder: **`data.json`
+  (27 393 bytes) and both pages byte-identical to the committed files on the first run**, in
+  **17.6 s** against PyPy's 94 s. The pages are compared after CRLF→LF: the working copies of
+  `template.html` and `turbojet-visuals.html` are CRLF (git stores LF, `ls-files --eol`), which is
+  why the Python test reads text mode; the Rust reads the template the same way and writes LF.
+* **A JSON value type, writer and reader** in `visuals.rs` (the crate takes no dependency):
+  Python's two separator styles, floats as `repr`, `int` kept as `int` (`m_of_T`'s `T` comes from
+  `range`, so it is written `1500`, not `1500.0`), `ensure_ascii` escapes (the chart title carries
+  `–`, `π`, `η` and a newline). The writer refuses a non-finite float.
+* **`r(x, sig)`** — Python's `round(x, sig−1−floor(log10|x|))` through Rust's correctly rounded
+  `{:.n}` (the `pyfmt` battery's evidence). **The negative-`ndigits` branch PANICS** (no dumped
+  value reaches it: the largest is `pt ≈ 8.0e5`), gated by a `should_panic` test.
+* **The rung-17 ladder's `try/except` is not ported**: a Rust failure panics where the Python
+  wrote `null`. The reference has the ladder, so the byte gate would see either.
+* **The T–s chart.** `visuals::ts_diagram` returns both cycles' work legs, the two 80-point
+  isobar-shaped legs per cycle, the station points and the title; the CLI writes them to
+  `ts_diagram.json` (working directory, as `main.py` wrote its PNG; git-ignored), and the new
+  root script **`plot_ts_diagram.py` only draws** — no engine import, no physics, `main.py`'s
+  calls in `main.py`'s order. **The title is now rendered** from `real_losses()` — `main.py` typed
+  `η_c=0.88, η_t=0.90`, the defect `test_the_charts_page_renders_its_design_point_from_the_data`
+  exists for. A third subcommand, `ts-diagram`, writes the JSON alone.
+
+#### (ii) The gates
+
+* `the_ts_diagram_is_what_plot_ts_diagram_drew` — all **26 recorded calls** of
+  `rust/oracle/ts_diagram_pypy.tsv` (AK's capture AT the matplotlib call), bit for bit, plus the
+  title string. The TSV's `style` rows are keyword text, not bits — the first run tripped on
+  parsing them as hex, a test-side bug.
+* **The PNG, byte for byte.** The TSV holds only the arrays; styles, order, legend proxies and
+  title are held by rendering twice under PyPy — `main.plot_ts_diagram` called directly (no
+  30-minute run) and `plot_ts_diagram.py` from the Rust JSON. **Both 80 058 bytes, sha256
+  `CC409EA6…`, and equal to the committed `ts_diagram.png`.** A one-line-width change in a copy of
+  the script moves the hash, so the comparison is not blind. This is evidence, not a standing
+  test: it needs matplotlib and the Python reference, which AU deletes.
+* `data_json_is_the_models_byte_for_byte` — **the whole file regenerated and compared** (~16 s);
+  on a miss it names the first differing block. The Python gated only the cycle blocks (its sweeps
+  were too slow to recompute); this closes its docstring's failure mode 1 for every block.
+  `data_json_cycle_blocks_match_the_live_model` keeps the cheap twin, as TEXT rather than at 1e-5.
+* `keep_is_build_cutaways` — `visuals::KEEP` equals `build_cutaway.py`'s `KEEP` while both exist
+  (the Python suite imports its own); AU retires it.
+* **The template censuses are hand-written** (no regex crate) and each is **PINNED to the set
+  Python's own pattern finds** on the committed templates (`census.py`): the read census (15
+  names), `getElementById` (15 / 21), `id=` (18 / 47 declared), `LOSS_LABEL` (7), `STN` (6).
+  Stronger than the Python's five-name self-check; a legitimate template edit re-pins on purpose.
+* `extract_data_imports_the_design_point_rather_than_copying_it` becomes a source check on
+  `visuals.rs`: it imports `flight`/`real_losses`/`PI_C`/`TT4` from `panels` and declares none.
+
+**Injections** (`inject.py`, three, predicted first): I1 — the isobar grid as
+`ta + (tb−ta)·(i/79)` instead of `((tb−ta)·i)/79` → **FAILED**, `the_ts_diagram_…` at call 2 (the
+first isobar). I3 — `prompt_shape`'s `phi` unrounded → **FAILED**, `data_json_is_the_models_…`.
+I2 — the two `C_opt = 1/(4·kp²)` spelled `(4·kp)·kp` → **SURVIVED, as predicted**: a multiply by
+a power of two is exact, so the association cannot move a bit; the module doc first claimed it
+mattered and was corrected. **A process trap, caught:** the first I2 attempt did not apply (the
+text occurs twice), yet its run "failed" with I1's message — the restore was `Copy-Item`, which
+keeps the backup's OLD mtime, so cargo did not rebuild and ran the I1 binary
+(`inject_I2.log.err` has no `Compiling` line; every other run does). Restores now write the file.
+
+#### (iii) The golden's last line — RE-CUT ON PURPOSE
+
+`main.py` ended `T–s diagram (ideal vs real) written to ts_diagram.png`. The Rust binary writes
+no PNG, so it prints **`T–s diagram data (ideal vs real) written to ts_diagram.json; draw it
+with: python plot_ts_diagram.py`**. `main_stdout.txt` and its fingerprint are NOT edited:
+`cli_golden.rs` holds a named `RECUT` — the golden segment must still equal the OLD line exactly,
+and the panel must equal the new one. **`PORTED = 86`: every step of `main()`.**
+
+#### (iv) Gates run, and cost
+
+`cli_golden` (**3 passed, 288.0 s**, `PORTED = 86`) and `visuals` (**20 passed, ~16 s**); every
+test target compiled (`--no-run`, 0 errors; the warnings are older files'); doc tests 1 passed.
+Python: `test_rust_line_citations.py`, `test_claude_md_reference.py` and **`test_visuals_data.py`
+untouched and green — 21 passed**. The full `cargo test` was not run: AR adds a module, a test file
+and one `PANELS` row, and only `cli_golden` runs `PANELS`. No `.py` under `turbojet/`, `main.py`
+or `docs/visuals/` changed; the Python scripts stay until AU.
+
+**Next: slice AS** — re-anchor the fingerprint (§ 8.1 (vi)) and adjudicate the fragile rungs
+(§ 8.1 (vii)).

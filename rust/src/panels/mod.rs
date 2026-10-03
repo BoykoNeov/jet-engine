@@ -31,8 +31,9 @@ pub mod readers;
 pub mod schedules;
 pub mod twospool;
 
-/// `TS_DIAGRAM_PATH` — the chart file `main.py` names in its last line.
-pub const TS_DIAGRAM_PATH: &str = "ts_diagram.png";
+/// The chart DATA the CLI writes to the working directory, as `main.py` wrote its PNG there.
+/// `plot_ts_diagram.py` draws it (slice AR); the last line names this file, not a PNG.
+pub const TS_DIAGRAM_JSON: &str = "ts_diagram.json";
 /// `PI_C` — the design compressor pressure ratio (the rung-1 validation case).
 pub const PI_C: f64 = 10.0;
 /// `TT4` — the design turbine-inlet temperature, K.
@@ -170,4 +171,6 @@ pub const PANELS: &[(&str, Panel)] = &[
     ("print_threshold_law_table", readers::threshold_law_table),
     ("print_corrector_law_table", readers::corrector_law_table),
     ("print_staircase_law_table", readers::staircase_law_table),
+    // ---- slice AR: the chart's line (the data itself is written by `src/main.rs`)
+    ("plot_ts_diagram", cycle::ts_diagram_line),
 ];

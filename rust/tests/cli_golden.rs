@@ -24,8 +24,20 @@ const SEGMENTS: &str = include_str!("../oracle/main_segments.tsv");
 /// and rungs 2b, 3, 4, 5, 6 (26 after slice AL: rungs 7–24; 39 after AM: rungs 25–37; 47 after
 /// AN: rungs 38–45; 54 after AO: rungs 46–52; 64 after AP: rungs 53–63, which has no rung-59 panel;
 /// 72 after AQ's first part: rungs 64–71; 78 after its second: rungs 72–77; 85 after its third:
-/// rungs 78–84 — every `print_*` panel. Only `plot_ts_diagram`'s line is left, owed to slice AR).
-const PORTED: usize = 85;
+/// rungs 78–84 — every `print_*` panel; 86 after AR: `plot_ts_diagram`'s line, RE-CUT below).
+const PORTED: usize = 86;
+
+/// **The one segment the port changes ON PURPOSE** (slice AR, `docs/plans/todo-rust-port.md`
+/// § 8.9). `main.py` drew `ts_diagram.png` and said so; the Rust CLI computes the chart's DATA and
+/// writes `ts_diagram.json`, and `plot_ts_diagram.py` draws the PNG (byte-identical to the one
+/// `main.py` drew — checked when AR shipped). Printing the old line would name a file this binary
+/// never writes. The golden is NOT edited (it stays the PyPy capture, fingerprint and all): the
+/// gate holds the golden's segment to the OLD text exactly, and the panel to the NEW one.
+const RECUT: (&str, &str, &str) = (
+    "plot_ts_diagram",
+    "\nT–s diagram (ideal vs real) written to ts_diagram.png\n",
+    "\nT–s diagram data (ideal vs real) written to ts_diagram.json; draw it with: python plot_ts_diagram.py\n",
+);
 
 struct Segment {
     name: String,
@@ -83,7 +95,11 @@ fn every_ported_panel_reproduces_its_segment_exactly() {
         assert_eq!(*name, seg.name, "step {i}: the port's order is not main()'s");
         let mut p = Printer::new();
         panel(&mut p, &design);
-        let want = &GOLDEN[seg.start..seg.end];
+        let mut want = &GOLDEN[seg.start..seg.end];
+        if *name == RECUT.0 {
+            assert_eq!(want, RECUT.1, "the re-cut segment is no longer the line it replaces");
+            want = RECUT.2;
+        }
         let got = p.as_str();
         if got != want {
             let line = want.lines().zip(got.lines()).position(|(a, b)| a != b);

@@ -47,6 +47,16 @@ pub fn losses_cost(p: &mut Printer, d: &Design) {
     p.print(pyf!("\nLosses cost: specific thrust {:+.1f}%, TSFC {:+.1f}% (less thrust, burned harder).", df, ds));
 }
 
+/// `plot_ts_diagram(ideal, real, flight)`'s closing line — RE-CUT ON PURPOSE (slice AR). The
+/// Python drew the PNG and said so; the Rust computes the chart's data (`visuals::ts_diagram`),
+/// `src/main.rs` writes it to [`super::TS_DIAGRAM_JSON`], and `plot_ts_diagram.py` draws it. A
+/// line still naming `ts_diagram.png` would claim a file this binary never writes, so this one
+/// names what it does write. `tests/cli_golden.rs` holds the substitution, with the old line.
+pub fn ts_diagram_line(p: &mut Printer, _d: &Design) {
+    p.print(format!("\nT–s diagram data (ideal vs real) written to {}; draw it with: python plot_ts_diagram.py",
+                    super::TS_DIAGRAM_JSON));
+}
+
 /// `print_polytropic_table(gas, flight)` — rung 2b: `η_c < e < η_t`.
 pub fn polytropic_table(p: &mut Printer, d: &Design) {
     let (gas, flight) = (&d.gas, &d.flight);
