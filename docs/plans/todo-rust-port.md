@@ -27808,10 +27808,10 @@ passing file.
 
 #### (iv) Cost
 
-`cli_golden.rs` at 58 steps: 99.3 s; at **64 steps: 288.1 s** — the transient half alone costs
-~190 s (rungs 57–63 march dozens of ramps each). Still watched, not pinned.
-Inside the full gate below, `cli_golden` took 124.8 s — less than the standalone 288 s, so that
-standalone time was taken on a busier box; neither was re-run to settle it.
+`cli_golden.rs` at 64 steps: **≈ 125 s** — 124.8 s inside the full gate below, and the injection
+run (which stops at step 60) 129.3 s; 99.3 s at 58 steps after the first half. One standalone
+run at 64 steps took **288.1 s**: an unexplained outlier, recorded and not used, and not re-run
+to settle it. Still watched, not pinned.
 
 **The ship gate** — `cargo test --release --no-fail-fast` at below-normal, read to its end:
 **187 of 187 result blocks, 1 902 passed, 0 failed**, exit 0 — the same count as AO's, as it
