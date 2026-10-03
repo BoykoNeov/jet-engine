@@ -28005,5 +28005,21 @@ untouched and green — 21 passed**. The full `cargo test` was not run: AR adds 
 and one `PANELS` row, and only `cli_golden` runs `PANELS`. No `.py` under `turbojet/`, `main.py`
 or `docs/visuals/` changed; the Python scripts stay until AU.
 
+**Which run covered the committed tree.** The 288 s `cli_golden` pass ran BEFORE one last edit:
+two string literals (the new panel's line and `RECUT`'s two texts) had been written through a
+Python edit script whose `"\\n"` the Bash tool collapsed into REAL line breaks — the hazard
+`memory/windows-tooling-file-hazards.md` records. The text was identical, so every gate passed; it
+was found by reading the file and rewritten as `\n` escapes. The committed tree was then gated by
+a recompile plus `cli_golden` with `--skip every_ported_panel` (2 passed) and `visuals` (20
+passed). Skipping the 288 s test there is safe because a raw newline and `\n` in a Rust literal are
+the same bytes; it is a reasoned skip, not a run. `turbojet splice` (never run before the commit)
+was run afterwards into the scratch folder: both pages equal the committed ones.
+
+**Booked for slice AT — `plot_ts_diagram.py` has no gate.** After AU it is the only Python left,
+and the PNG comparison above was one-off evidence. If `ts_diagram_json`'s keys (`title`,
+`work_legs`, `isobars`, `points`, `s`, `T`, `label`) are renamed, the script breaks with no test
+failing — the gap the cutaway read census closes for its page. AT's coverage ledger should carry
+a Rust census of the script's `["…"]` reads against the JSON's keys.
+
 **Next: slice AS** — re-anchor the fingerprint (§ 8.1 (vi)) and adjudicate the fragile rungs
 (§ 8.1 (vii)).
