@@ -28033,6 +28033,7 @@ Three producers, one set of numbers:
 | file | written by | role |
 |---|---|---|
 | `tests/golden/numeric_fingerprint.json` | CPython 3.14.3, 2026-08-11 | the original anchor — **untouched**, kept as the audit trail |
+| `rust/oracle/numeric_fingerprint_cpython.json` | a byte copy of the row above | what the Rust gate reads, so it compiles once AU deletes `tests/` (§ 8.1 (viii)); `the_cpython_copy_is_the_audit_record` asserts the bytes match while the original exists |
 | `rust/oracle/fingerprint_pypy.tsv` | `rust/oracle/dump_fingerprint.py` on PyPy, calling the module's OWN `KERNELS` | the key set and the bit-exact target; also carries the module's `TOL` / `ABS_TOL` as `_tol` / `_abs_tol` lines |
 | `rust/oracle/fingerprint_rust.tsv` | `FINGERPRINT_REGEN=1 cargo test --release --test fingerprint regenerate_anchor` | **the anchor from here on** |
 | `rust/oracle/fingerprint_deviation.tsv` | the same regeneration run | the published deviation table, re-derived and compared on every run |
@@ -28081,7 +28082,7 @@ with `the_vacuity_detector_fires` proving the detector refuses an emptied row li
 arm; and `cpython_golden_declares_its_provenance`. The other two (`…_has_a_disclosed_tolerance`,
 `…_is_actually_GATED`) are `tolerance_tables_match_the_module` and `coverage`.
 
-`cargo test --release --test fingerprint`: **55 tests, ~55 s** (the regeneration run, single
+`cargo test --release --test fingerprint`: **56 tests, ~52 s** (the regeneration run, single
 threaded, 184 s). The CPython comparison reuses the module's `_close` verbatim — `==` first, so
 `0.0 == -0.0` and `True == 1` — and r76's three `_UNSTABLE` keys are dropped after flattening as
 `_s3` drops them. **Not covered here:** whether a fragile claim FLIPS at CPython — that is part
@@ -28115,7 +28116,7 @@ spec-resolution claim on its own.
 | 10 | 21 | the O-lift is SHAPE-PRESERVING (two argmins equal) | `rung21.rs::the_lift_preserves_the_shape_and_the_optimum` — argmin equality | `pdf_oracle` `jsweep/*/{eq,su}/argmin` and `loc_agree`: identical | SURVIVES |
 | 11 | 22 | `C_opt` EMERGES as an output | `rung22.rs::c_opt_is_the_derived_closed_form_and_the_argmin_tracks_it` + `::a_larger_k_p_moves_c_opt_down_and_the_argmin_follows` | `spatial_oracle` `*/idx` (bar 0) and the knot/stagnant counts: **39** keys, 0 differ | SURVIVES |
 | 12 | 24 | `F(C)` U-shaped, ⟨EI⟩ MONOTONE | `rung24.rs::the_split_F_turns_but_the_emissions_do_not` — both halves off ONE sweep | `spatial_oracle`: **88** J-sweeps compared as rise/fall patterns — 86 identical; the 2 that differ are `d24` RESIDUALS (~1e-17, the file's own last-bit class), not the claim | SURVIVES |
-| 13 | 83 | 1 of 5 ramps has NO root | `rung83.rs::the_r025_sign_change_is_a_jump_and_no_root_exists_there` + `::the_r035_sign_change_is_a_crossing_…` | `slice_aj`: **422** CPython differences, **all floats** — no count, flag, string or structure differs; the jump (r = 0.25) and the crossing (r = 0.35) are both in the record | SURVIVES **on the two ramps recorded**; the other three are in no CPython record |
+| 13 | 83 | 1 of 5 ramps has NO root | `rung83.rs::the_r025_sign_change_is_a_jump_and_no_root_exists_there` + `::the_r035_sign_change_is_a_crossing_…` | `slice_aj`: **422** CPython differences, **a float on BOTH sides** (classified by each side's token kind, so a root in one and `None` in the other would show) — no count, flag, string or structure differs; the jump (r = 0.25) and the crossing (r = 0.35) are both in the record | SURVIVES **on the two ramps recorded**; the other three are in no CPython record |
 | 14 | 84 | a minimum over a MARCHED grid | `rung84.rs::p1_…`, `::p4_an_argmin_move_and_a_set_change_are_the_same_event`, `::p7_…` | `slice_aj`: as row 13 — 0 non-float differences | SURVIVES (on the oracle's grid) |
 | 15 | 81 | 0 of 1 364 floats moved | `rung81.rs::the_masked_legs_clock_moves_not_one_bit` — a COUNT | fingerprint `r81`: **0 of 11 462** differ; `slice_aj`: floats only | SURVIVES, exact |
 | 16 | 78/79 | counts of exact zeros | `rung78.rs` / `rung79.rs` (`::the_complementarity_is_exact`, `::the_min_never_flips_and_that_is_vacuous`, …) | fingerprint `r78`/`r79`: 0 differ; `slice_ah`: 29 288 keys, only the interpreter sentinel differs; `slice_ai`: 227 differ, every one a float (`poly_gap`, `poly_scale`, `c0`, `c1`) | SURVIVES |
@@ -28129,6 +28130,8 @@ for bit.
 
 **Slice AS is complete.** Booked for **AT**'s coverage ledger: nothing new from (vii); from (vi),
 `rust/oracle/dump_fingerprint.py` joins the `rust/oracle/*.py` set that dies at AU (its outputs
-stay).
+stay). Booked for **AU**'s docs rewrite: CLAUDE.md § Layout still names
+`test_numeric_fingerprint.py` as the only ABSOLUTE-value gate — after the delete that is
+`rust/tests/fingerprint.rs` (left alone here: CLAUDE.md has 8 bytes of headroom).
 
 **Next: slice AT** — the coverage ledger (§ 8.1 (v)) and the gap ports.

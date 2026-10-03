@@ -11,7 +11,8 @@
 //!   because two emitters writing the same name is a port defect a map would silently resolve).
 //! * The TWO goldens: [`load_pypy`] reads `rust/oracle/fingerprint_pypy.tsv` (the bit-exact
 //!   target, written by `rust/oracle/dump_fingerprint.py` from the Python module's own `KERNELS`
-//!   table) and [`load_cpython`] reads the CPython JSON with a minimal reader for that one file's
+//!   table) and [`load_cpython`] reads the CPython JSON (`rust/oracle/numeric_fingerprint_cpython.json`,
+//!   a byte copy of the one under `tests/golden/`) with a minimal reader for that one file's
 //!   shape — no dependency.
 //! * [`close`] — Python's `_close`, verbatim: `==` first (so `0.0 == -0.0` and `True == 1`), then
 //!   the absolute leg, then the relative one; `tol == abs_tol == 0` is bit-equality.
@@ -209,7 +210,10 @@ pub fn tree_from_flat(lines: &[(String, String)]) -> Tree {
 // ------------------------------------------------------------------------------- the goldens
 
 pub const PYPY_TSV: &str = include_str!("../../oracle/fingerprint_pypy.tsv");
-pub const CPYTHON_JSON: &str = include_str!("../../../tests/golden/numeric_fingerprint.json");
+/// A BYTE-IDENTICAL copy of `tests/golden/numeric_fingerprint.json` (the CPython anchor, left
+/// untouched there as the audit record), kept inside `rust/` so this gate compiles with no Python
+/// tree present — plan § 8.1 (viii)'s delete proof removes `tests/`.
+pub const CPYTHON_JSON: &str = include_str!("../../oracle/numeric_fingerprint_cpython.json");
 
 /// THE RUST ANCHOR — written ONLY by `FINGERPRINT_REGEN=1 cargo test --release --test fingerprint
 /// regenerate_anchor`, from Rust's own kernels. Read at RUN time (not `include_str!`) so the

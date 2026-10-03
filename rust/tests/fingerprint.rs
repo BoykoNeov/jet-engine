@@ -1961,6 +1961,19 @@ fn the_vacuity_detector_fires() {
     assert!(vacuity(&idle).is_err(), "an idle instrument went unseen");
 }
 
+/// The gate reads a COPY of the CPython anchor kept under `rust/oracle/`, so it still compiles once
+/// AU deletes `tests/`. While the original exists, the copy must be its exact bytes; after the
+/// delete the copy IS the record, and this says so instead of failing.
+#[test]
+fn the_cpython_copy_is_the_audit_record() {
+    let original = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("..").join("tests").join("golden").join("numeric_fingerprint.json");
+    match std::fs::read_to_string(&original) {
+        Ok(text) => assert!(text == CPYTHON_JSON, "the rust/oracle copy has drifted from {original:?}"),
+        Err(_) => eprintln!("{original:?} is absent (the Python tree is deleted); the copy is the record"),
+    }
+}
+
 /// THE MODULE's `test_golden_file_declares_its_provenance`: the CPython golden's whole value is
 /// being CPython's, so its meta block must say so, completely. The Rust anchor's provenance is
 /// `anchor_is_byte_identical_to_the_pypy_capture` — it carries no meta of its own.
