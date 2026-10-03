@@ -28054,7 +28054,9 @@ Three producers, one set of numbers:
   those slices' own rule (a band ≥ 4× the measured drift, i.e. ≤ 25 %), not inside 10.5 %. The ten
   exact arms (`cpg`, `r66`, `r68`, `r77`, `r78`, `r79`, `r81`, `r82`, `r82r`, `r82t`) differ on 0
   values. The full table is `rust/oracle/fingerprint_deviation.tsv`; `max_used` is the fraction of
-  the band the worst value spends, on whichever leg passes it.
+  the band the worst value spends, on whichever leg passes it, and its `leg` column records WHICH
+  leg decided it (added after review: the first draft of this paragraph named `r70`'s leg before
+  the table recorded it — the measurement now agrees, `abs`).
 
 #### (ii) How the port reads the keys
 
@@ -28072,11 +28074,61 @@ second time.
 
 #### (iii) What it costs, and what it does not cover
 
-`cargo test --release --test fingerprint`: **52 tests, ~53 s** (the regeneration run, single
+**The module's two non-kernel gates are ported too**, both read from stored values:
+`instrument_arms_are_not_vacuous` (its four rules, now run against the RUST anchor — the
+regeneration mode is the only writer, and nothing else would stop it pinning an emptied arm),
+with `the_vacuity_detector_fires` proving the detector refuses an emptied row list and an idle
+arm; and `cpython_golden_declares_its_provenance`. The other two (`…_has_a_disclosed_tolerance`,
+`…_is_actually_GATED`) are `tolerance_tables_match_the_module` and `coverage`.
+
+`cargo test --release --test fingerprint`: **55 tests, ~55 s** (the regeneration run, single
 threaded, 184 s). The CPython comparison reuses the module's `_close` verbatim — `==` first, so
 `0.0 == -0.0` and `True == 1` — and r76's three `_UNSTABLE` keys are dropped after flattening as
 `_s3` drops them. **Not covered here:** whether a fragile claim FLIPS at CPython — that is part
 (vii), next.
 
-**Next: slice AS part (vii)** — the fragile-rung adjudication (§ 8.1 (vii)), read against
-`rust/oracle/fingerprint_deviation.tsv` and the committed `*_cpython.tsv` files.
+### 8.11 SLICE AS, PART (vii) — THE FRAGILE RUNGS, ADJUDICATED (2026-10-03)
+
+§ 4's register (the table *"The rungs where a tolerance is NOT a valid substitute"*, ~line 1632)
+has **15 rows** — rung 13 twice, 78/79 as one — plus the two location claims its closing paragraph
+names (22, 24): **17 entries**. Each is asked § 8.1 (vii)'s two questions. **Q1:** does a Rust gate
+assert the claim as a COUNT, LOCATION or COMPARISON (not a value tolerance)? **Q2:** does the
+committed CPython record show it FLIP? Q2 is read from each oracle's CPython file **by meaning**,
+not by a raw diff — the older formats store counts and float bits alike as `u64`, so location keys
+are read by name (`argmax`, `argmin`, `idx`, `loc_agree`), thresholds by SIDE of 1, orderings as
+orderings, and sweeps as rise/fall patterns. Corroboration on every row with a kernel: the
+fingerprint's `deviation_table_is_the_published_one` scores a differing discrete value as `inf`,
+and none exists — but its kernels run at REDUCED resolution, so it cannot settle a
+spec-resolution claim on its own.
+
+| # | rung | claim | Q1 — the Rust gate (how it asserts) | Q2 — CPython (source) | verdict |
+|---|---|---|---|---|---|
+| 1 | 9 | EI bell peaks near φ ≈ 0.95 | `rung9.rs::ei_no_bell_falls_on_rich_flank` — argmax φ ∈ [0.9, 1.05] + strict rich-flank ordering | `nox_oracle` `bell/*/argmax_phi`, class `shape_argmax`: identical | SURVIVES, location-gated |
+| 2 | 10 | `T(β)` peaks AT the stoich crossing | lean: `rung10.rs::trajectory_monotone_fall_for_lean_stoich_primary` — argmax is index 0, BIT-equal; rich: `::public_wiring_and_rich_smoking_gun` — `T_peak > T_primary + 100 K` and in 2400–2500 K (interior by a 100 K margin, not by index) | `quench_oracle` `argmax_i`, class `shape_location` (bar 0): identical | SURVIVES; the rich side is a margin gate, adequate at 100 K |
+| 3 | 12 | EI-min AT `C_opt`, off it past `S/S_x ≈ 1.2` | `rung12.rs::optimum_is_at_holdeman_c_opt_and_shifts_as_h_over_s_squared` (argmin J BIT-equal `J_opt`) + `::the_pin_at_c_opt_has_a_spacing_limit` (pinned AND broken sides) | `quench_oracle` `r12/*/argmin_J`, `r12shift/*/argmin_i`: identical | SURVIVES, location-gated both sides |
+| 4 | 13 | ⟨EI⟩(g) HUMPED | `rung13.rs::the_mean_ei_is_humped_in_the_segregation` — interior argmax + a neighbour margin the scheme switch cannot supply | `pdf_oracle` `hump/*/argmax` (bar 0): identical | SURVIVES |
+| 5 | 13 | min AT `C_opt`, shifting as `(H/S)²` | `rung13.rs::the_optimum_sits_at_the_holdeman_group_and_shifts_as_h_over_s_squared` — argmin at four spacings | `pdf_oracle` `jsweep/*/argmin`: identical | SURVIVES |
+| 6 | 16 | which near-degenerate optimum is lowest — **DECLINED** | correctly UNGATED: `rung16.rs` carries no argmin (its header says so); the sublinearity RATIO is gated (`::the_per_pocket_dwell_is_sublinear`) | n/a — not a claim | SURVIVES as declined |
+| 7 | 14 | the dropped clamp FIRES (`max_a > 1`) | `rung14.rs::clamp_fires_with_realistic_zoned_no` (> 1 and > 10 × rung 10's 0.677); the dormant side `rung17.rs::rung14_contrast_mixed_out_fires_lean_dormant_rich`, `::clamp_dormant_at_station4` | `nozzle_oracle`: **53** threshold keys, **0** side-of-1 flips | SURVIVES |
+| 8 | 17 | ORDERING `a_mixed < a_bulk < a_pocket` | `rung17.rs::ladder_direction_the_load_bearing_gate` — three comparisons + the two predicates | `nozzle_oracle`: **7** full ladders, **0** ordering flips; 24 discrete keys identical | SURVIVES |
+| 9 | 18 | mean-field ω has NO interior optimum; the spatial one does | `rung18.rs::a_mean_field_omega_is_monotone_and_has_no_optimum` + `::only_the_spatial_coverage_produces_an_interior_optimum` (interior index, `J = 16`) | `pdf_oracle` `mf/*/argmin`: identical | SURVIVES |
+| 10 | 21 | the O-lift is SHAPE-PRESERVING (two argmins equal) | `rung21.rs::the_lift_preserves_the_shape_and_the_optimum` — argmin equality | `pdf_oracle` `jsweep/*/{eq,su}/argmin` and `loc_agree`: identical | SURVIVES |
+| 11 | 22 | `C_opt` EMERGES as an output | `rung22.rs::c_opt_is_the_derived_closed_form_and_the_argmin_tracks_it` + `::a_larger_k_p_moves_c_opt_down_and_the_argmin_follows` | `spatial_oracle` `*/idx` (bar 0) and the knot/stagnant counts: **39** keys, 0 differ | SURVIVES |
+| 12 | 24 | `F(C)` U-shaped, ⟨EI⟩ MONOTONE | `rung24.rs::the_split_F_turns_but_the_emissions_do_not` — both halves off ONE sweep | `spatial_oracle`: **88** J-sweeps compared as rise/fall patterns — 86 identical; the 2 that differ are `d24` RESIDUALS (~1e-17, the file's own last-bit class), not the claim | SURVIVES |
+| 13 | 83 | 1 of 5 ramps has NO root | `rung83.rs::the_r025_sign_change_is_a_jump_and_no_root_exists_there` + `::the_r035_sign_change_is_a_crossing_…` | `slice_aj`: **422** CPython differences, **all floats** — no count, flag, string or structure differs; the jump (r = 0.25) and the crossing (r = 0.35) are both in the record | SURVIVES **on the two ramps recorded**; the other three are in no CPython record |
+| 14 | 84 | a minimum over a MARCHED grid | `rung84.rs::p1_…`, `::p4_an_argmin_move_and_a_set_change_are_the_same_event`, `::p7_…` | `slice_aj`: as row 13 — 0 non-float differences | SURVIVES (on the oracle's grid) |
+| 15 | 81 | 0 of 1 364 floats moved | `rung81.rs::the_masked_legs_clock_moves_not_one_bit` — a COUNT | fingerprint `r81`: **0 of 11 462** differ; `slice_aj`: floats only | SURVIVES, exact |
+| 16 | 78/79 | counts of exact zeros | `rung78.rs` / `rung79.rs` (`::the_complementarity_is_exact`, `::the_min_never_flips_and_that_is_vacuous`, …) | fingerprint `r78`/`r79`: 0 differ; `slice_ah`: 29 288 keys, only the interpreter sentinel differs; `slice_ai`: 227 differ, every one a float (`poly_gap`, `poly_scale`, `c0`, `c1`) | SURVIVES |
+
+**Verdict: all 17 survive; no claim flips at CPython in any committed record, and every discrete
+claim already has a count / location / comparison gate in Rust — so NO gate is added.** Two
+honest limits: row 2's rich side is gated by a 100 K margin rather than an index (equivalent here,
+not identical in kind); and row 13's *"1 of 5"* is CPython-checked on the two ramps the AJ oracle
+recorded, not all five — the other three were only ever measured on PyPy, which Rust equals bit
+for bit.
+
+**Slice AS is complete.** Booked for **AT**'s coverage ledger: nothing new from (vii); from (vi),
+`rust/oracle/dump_fingerprint.py` joins the `rust/oracle/*.py` set that dies at AU (its outputs
+stay).
+
+**Next: slice AT** — the coverage ledger (§ 8.1 (v)) and the gap ports.

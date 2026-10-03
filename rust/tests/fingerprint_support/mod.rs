@@ -266,11 +266,15 @@ pub struct Deviation {
     pub max_rel: f64,
     pub max_abs: f64,
     pub max_used: f64,
+    /// Which leg decided `max_used` — `rel` or `abs` — for the worst value; `-` when none differ.
+    pub leg: &'static str,
 }
 
 pub fn deviation(name: &str, got: &BTreeMap<String, V>, golden: &BTreeMap<String, V>) -> Deviation {
     let (t, a) = (tol(name), abs_tol(name));
-    let mut d = Deviation { n: golden.len(), n_differ: 0, max_rel: 0.0, max_abs: 0.0, max_used: 0.0 };
+    let mut d = Deviation {
+        n: golden.len(), n_differ: 0, max_rel: 0.0, max_abs: 0.0, max_used: 0.0, leg: "-",
+    };
     for (k, w) in golden {
         let g = &got[k];
         if py_eq(g, w) {
@@ -285,14 +289,16 @@ pub fn deviation(name: &str, got: &BTreeMap<String, V>, golden: &BTreeMap<String
         let rel = if *y != 0.0 { ab / y.abs() } else { x.abs() };
         d.max_abs = d.max_abs.max(ab);
         d.max_rel = d.max_rel.max(rel);
-        let mut used = f64::INFINITY;
-        if t > 0.0 {
-            used = used.min(rel / t);
+        let (mut used, mut leg) = (f64::INFINITY, "-");
+        if t > 0.0 && rel / t < used {
+            (used, leg) = (rel / t, "rel");
         }
-        if a > 0.0 {
-            used = used.min(ab / a);
+        if a > 0.0 && ab / a < used {
+            (used, leg) = (ab / a, "abs");
         }
-        d.max_used = d.max_used.max(used);
+        if used >= d.max_used {
+            (d.max_used, d.leg) = (used, leg);
+        }
     }
     d
 }

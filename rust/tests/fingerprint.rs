@@ -1847,14 +1847,15 @@ type Golden = std::collections::BTreeMap<String, std::collections::BTreeMap<Stri
 /// The published table, one line per kernel, from the ANCHOR against the CPython golden.
 fn deviation_text(anchor: &Golden) -> String {
     let cp = load_cpython();
-    let mut s = String::from("kernel\tn_values\tn_differ\tmax_rel\tmax_abs\ttol\tabs_tol\tmax_used\n");
+    let mut s = String::from(
+        "kernel\tn_values\tn_differ\tmax_rel\tmax_abs\ttol\tabs_tol\tmax_used\tleg\n");
     for (name, golden) in &cp.kernels {
         let got: std::collections::BTreeMap<String, V> =
             anchor[name].iter().map(|(k, t)| (k.clone(), v_from_token(t))).collect();
         let dv = deviation(name, &got, golden);
-        s.push_str(&format!("{name}\t{}\t{}\t{:.3e}\t{:.3e}\t{:e}\t{:e}\t{:.4}\n", dv.n,
+        s.push_str(&format!("{name}\t{}\t{}\t{:.3e}\t{:.3e}\t{:e}\t{:e}\t{:.4}\t{}\n", dv.n,
                             dv.n_differ, dv.max_rel, dv.max_abs, tol(name), abs_tol(name),
-                            dv.max_used));
+                            dv.max_used, dv.leg));
     }
     s
 }
@@ -1896,8 +1897,82 @@ fn deviation_table_is_the_published_one() {
     let published = std::fs::read_to_string(deviation_path()).expect("the published table exists");
     assert!(table == published, "the deviation table no longer matches its published copy");
     for line in table.lines().skip(1) {
-        let used: f64 = line.rsplit('\t').next().unwrap().parse().unwrap();
+        let used: f64 = line.split('\t').nth(7).unwrap().parse().unwrap();
         assert!(used < 1.0, "a kernel spends its whole tolerance: {line}");
+    }
+}
+
+/// THE MODULE's `test_instrument_arms_are_not_vacuous`, read from the ANCHOR. The regeneration
+/// mode is the only writer of the anchor, and nothing else stops it pinning an arm whose
+/// instrument sampled no live base point — every row list empty, every derived field `None` — an
+/// arm that passes its own gate forever and guards nothing. Same four rules, same thresholds:
+/// no EMPTY `rows` / `govs` / `walls` list; at least one non-empty `cells` list where any exist
+/// (the WEAK rule — rung 80's shared-wall `demand` arm is empty on purpose); at most 15 % of the
+/// pinned values `None`; at least 8 distinct floats.
+#[test]
+fn instrument_arms_are_not_vacuous() {
+    let anchor = load_anchor();
+    let instrument = ["r67", "r68", "r69", "r70", "r71", "r72", "r73", "r74", "r75", "r76", "r77",
+                      "r78", "r79", "r80", "r81", "r81m", "r82", "r82r", "r82t"];
+    for name in instrument {
+        if let Err(e) = vacuity(&anchor[name]) {
+            panic!("{name}: {e}");
+        }
+    }
+}
+
+/// The four rules, as a function so the detector itself can be shown to fire.
+fn vacuity(arm: &std::collections::BTreeMap<String, String>) -> Result<(), String> {
+    let empty: Vec<&String> = arm.iter()
+        .filter(|(k, t)| (k.ends_with("rows#n") || k.ends_with("govs#n") || k.ends_with("walls#n"))
+                         && t.as_str() == "i:0")
+        .map(|(k, _)| k).collect();
+    if !empty.is_empty() {
+        return Err(format!("EMPTY row list(s) {empty:?} — the arm pins nothing"));
+    }
+    let cells: Vec<&String> = arm.iter().filter(|(k, _)| k.ends_with("cells#n")).map(|(_, t)| t).collect();
+    if !(cells.is_empty() || cells.iter().any(|t| t.as_str() != "i:0")) {
+        return Err(format!("EVERY one of its {} cell lists is empty", cells.len()));
+    }
+    let nones = arm.values().filter(|t| t.as_str() == "n").count();
+    if nones as f64 > 0.15 * arm.len() as f64 {
+        return Err(format!("{nones}/{} pinned values are None — the instrument was idle", arm.len()));
+    }
+    let floats: std::collections::BTreeSet<&String> = arm.values().filter(|t| t.starts_with("f:")).collect();
+    if floats.len() < 8 {
+        return Err(format!("only {} distinct floats pinned — vacuous", floats.len()));
+    }
+    Ok(())
+}
+
+/// The detector FIRES: a real arm passes, and the same arm with one row list emptied, or with
+/// every float replaced by `None`, is refused — so a green `instrument_arms_are_not_vacuous` is a
+/// measurement and not a detector that cannot see.
+#[test]
+fn the_vacuity_detector_fires() {
+    let anchor = load_anchor();
+    let real = anchor["r68"].clone();
+    assert!(vacuity(&real).is_ok());
+    let mut emptied = real.clone();
+    emptied.insert("g.rows#n".into(), "i:0".into());
+    assert!(vacuity(&emptied).is_err(), "an emptied row list went unseen");
+    let idle: std::collections::BTreeMap<String, String> =
+        real.iter().map(|(k, t)| (k.clone(), if t.starts_with("f:") { "n".into() } else { t.clone() })).collect();
+    assert!(vacuity(&idle).is_err(), "an idle instrument went unseen");
+}
+
+/// THE MODULE's `test_golden_file_declares_its_provenance`: the CPython golden's whole value is
+/// being CPython's, so its meta block must say so, completely. The Rust anchor's provenance is
+/// `anchor_is_byte_identical_to_the_pypy_capture` — it carries no meta of its own.
+#[test]
+fn cpython_golden_declares_its_provenance() {
+    let cp = load_cpython();
+    let get = |k: &str| cp.meta.iter().find(|(n, _)| n == k).map(|(_, v)| v.clone());
+    assert!(matches!(get("implementation"), Some(Json::Str(s)) if s == "cpython"),
+            "the CPython golden no longer says it was generated by CPython");
+    for k in ["version", "generated", "repo_sha"] {
+        assert!(matches!(get(k), Some(Json::Str(s)) if !s.is_empty()),
+                "golden meta is missing {k:?} — provenance must be complete");
     }
 }
 

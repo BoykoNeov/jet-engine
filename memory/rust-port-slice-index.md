@@ -55,4 +55,5 @@ tally stays in [[rust-port-status]].
 - Phase 8 slice AP [rungs 53–63 panels](rust-port-phase8-slice-ap.md) — `ds` is per CALL SITE; the first line an injection trips can be its weakest witness, so diff the mutant's whole segment (in bytes)
 - Phase 8 slice AQ [rungs 64–84 panels](rust-port-phase8-slice-aq.md) — a scratch checker outside the repo runs only the new panels; a reader NAME can be defined twice in engine.py, so count the `def`s
 - Phase 8 slice AR [visuals + T–s chart](rust-port-phase8-slice-ar.md) — a Copy-Item restore keeps the OLD mtime, so cargo ran a stale mutant; pin a hand-written census to the regex's output
+- Phase 8 slice AS [fingerprint re-anchor + fragile rungs](rust-port-phase8-slice-as.md) — capture the target in the oracle's OWN key space first; a doc claim must not get ahead of its instrument
 - Slice T (46/47/48) steps [1](rust-port-slice-t-step1.md) [2](rust-port-slice-t-step2.md) [3](rust-port-slice-t-step3.md) [4](rust-port-slice-t-step4.md) — an EXACT ZERO blinds its own gate to the SIGN (one lesson per file)
