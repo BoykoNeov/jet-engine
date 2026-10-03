@@ -19,6 +19,7 @@ use crate::gas::Gas;
 use crate::pyfmt::Printer;
 
 pub mod cycle;
+pub mod limiters;
 pub mod marches;
 pub mod mixing;
 pub mod nox;
@@ -123,4 +124,12 @@ pub const PANELS: &[(&str, Panel)] = &[
     ("print_two_shaft_fuel_table", twospool::two_shaft_fuel_table),
     ("print_transient_surge_table", twospool::transient_surge_table),
     ("print_transient_fuel_surge_table", twospool::transient_fuel_surge_table),
+    // ---- slice AO: rungs 46–52, the fuel-side limiter family
+    ("print_topping_governor_table", limiters::topping_governor_table),
+    ("print_lagged_governor_table", limiters::lagged_governor_table),
+    ("print_accel_schedule_table", limiters::accel_schedule_table),
+    ("print_phi_limiter_table", limiters::phi_limiter_table),
+    ("print_release_edge_table", limiters::release_edge_table),
+    ("print_release_rate_table", limiters::release_rate_table),
+    ("print_asymmetric_lag_table", limiters::asymmetric_lag_table),
 ];

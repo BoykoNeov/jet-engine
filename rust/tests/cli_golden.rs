@@ -22,8 +22,8 @@ const SEGMENTS: &str = include_str!("../oracle/main_segments.tsv");
 
 /// How many of `main()`'s steps are ported. Slice AK: the two station tables, the losses line,
 /// and rungs 2b, 3, 4, 5, 6 (26 after slice AL: rungs 7–24; 39 after AM: rungs 25–37; 47 after
-/// AN: rungs 38–45).
-const PORTED: usize = 47;
+/// AN: rungs 38–45; 54 after AO: rungs 46–52).
+const PORTED: usize = 54;
 
 struct Segment {
     name: String,

@@ -27694,3 +27694,55 @@ exit 0 — the same count as AM's, as it should be (AN added panels, not test fu
 
 **Next: slice AO** — rungs 46–52's panels (the fuel-side limiter family: `main.py`'s
 `print_topping_governor_table` … `print_asymmetric_lag_table`, in `main()`'s order).
+
+### 8.6 SLICE AO — RUNGS 46–52's PANELS, BYTE-EXACT (2026-10-03)
+
+Seven panels (`main.py` lines 2411–2790 and 3206–3288 — rung 52's panel sits out of line in the
+file, after rung 56's, but `main()` calls it seventh) in one new file,
+`rust/src/panels/limiters.rs`. **`PORTED = 54`: steps 48–54 byte-exact on the first compile**,
+through byte 116 670 of the golden. No shim change; `twospool.rs`'s `ts_design` / `cpg13` reused.
+
+#### (i) Port decisions, each one the Python's own semantics
+
+* **`min(tj, key=…)` / `max(tj, key=…)`** on a marched trajectory are a local `first_min` /
+  `first_max` — a STRICT compare, so the FIRST point at the extremum wins, as in Python. They
+  return the point (the panel reads `s` and `Tt4` off it); `first_raw_min` returns `(value, s)`
+  and was not reused.
+* **Python's keyword defaults made positional**, each read off the Python signature, not the
+  panel: `ds = 0.02` everywhere; `accel_schedule` / `engagement_sweep` `n = 13`; `lag_relief`
+  `eps = (0.05, 0.01)` (also what `factorization_grid` → `lag_sweep` passes, since Python's
+  `lag_sweep` takes no `eps`); `release_relief` `tau_rel = None`.
+* **`x['s_rel_0.01']`** is the `eps_edges` entry whose `eps == 0.01`, last field.
+* **Rung 48's `ratio(p)`** reads `ft._instant_fuel(...)["n_hp"]` / `["pt4"]` as
+  `instant_fuel(...).base.close.{n_hp, pt4}` and `ft.pi_b` as `core.inner.inner.base.pi_b` —
+  the same field `accel_schedule` divides by.
+* **Rung 46 builds on `Gas.thermally_perfect()`**; rungs 47–52 on the panels' local `cpg()`.
+  Rung 46 shares one `design` across three constructors (cloned, as rung 45's port does).
+* **Mixed header tuples** (`('inst', 0.05, 0.2, 0.8)` each `>10`) format the floats with no type
+  — the shim's `repr` branch, which is Python's `format(0.05, '>10')`.
+
+#### (ii) Caught failures, read off stderr with `--nocapture`
+
+No new ones. The three on stderr are rung 33's two (the equilibrium solve, booked OPEN in § 8.4
+(i)) and rung 38's nozzle unchoke (§ 8.5 (ii)). None of the seven limiter panels catches anything.
+
+#### (iii) What the gate saw, measured
+
+One non-equivalent injection, chosen to move every value on its line: rung 48's ratio
+`pt4 / pi_b` → `pt4`. **FAILED** at step 49 (`print_accel_schedule_table`), line 9, all six
+ratios moved (`1.000 … 1.486` vs `1.042 … 1.548`). Reverted from a byte copy of the passing file.
+
+#### (iv) Cost
+
+`cli_golden.rs` at 54 steps: **94.2 s** (78.7 s on the failing run). Still watched, not pinned.
+
+In the full gate below, `cli_golden` took 112.6 s while sharing the box with the rest of the suite.
+
+**The ship gate** — `cargo test --release --no-fail-fast` at below-normal, read to its end:
+**187 of 187 result blocks, 1 902 passed, 0 failed**, exit 0 — the same count as AN's, as it
+should be (AO added panels, not test functions); `cli_golden`'s own block **3 passed**; the two
+Python guards **7 passed**. Clippy: nothing in `limiters.rs` (the crate's 67 standing findings
+are all older).
+
+**Next: slice AP** — rungs 53–63's panels (the airflow levers and the schedules, in `main()`'s
+order).
