@@ -52,4 +52,5 @@ tally stays in [[rust-port-status]].
 - Phase 8 slice AM [rungs 25–37 panels](rust-port-phase8-slice-am.md) — a catch-all except printed a cause it never checked; read caught panics in stderr, the byte gate cannot see them (one lesson per file)
 - Phase 8 slice AN [rungs 38–45 panels](rust-port-phase8-slice-an.md) — a planted error was invisible on the row where two gaps coincide; read which row failed
 - Phase 8 slice AO [rungs 46–52 panels](rust-port-phase8-slice-ao.md) — read keyword defaults off the Python SIGNATURE; pytest.ini injects -n, so -p no:xdist breaks the run
+- Phase 8 slice AP [rungs 53–63 panels](rust-port-phase8-slice-ap.md) — `ds` is per CALL SITE; the first line an injection trips can be its weakest witness, so diff the mutant's whole segment (in bytes)
 - Slice T (46/47/48) steps [1](rust-port-slice-t-step1.md) [2](rust-port-slice-t-step2.md) [3](rust-port-slice-t-step3.md) [4](rust-port-slice-t-step4.md) — an EXACT ZERO blinds its own gate to the SIGN (one lesson per file)
