@@ -27374,7 +27374,7 @@ over 92 files. Rust: **1 929 `#[test]`** over 182 files, and **zero `#[ignore]` 
 
 #### (vi) THE FINGERPRINT RE-ANCHOR — DECISION 1 ALREADY FIXES THE PROCEDURE
 
-`tests/golden/numeric_fingerprint.json` is **35 089 CPython values over 45 kernels**, compared
+`tests/golden/numeric_fingerprint.json` is **35 089 CPython values over 45 kernels** (measured **35 075** at § 8.10), compared
 under a per-kernel tolerance table (`TOL`, `ABS_TOL`); the test file is 2 299 lines. § 9 item 1:
 agreement to the declared tolerance, the deviation distribution PUBLISHED, the fragile rungs
 adjudicated, *only then* Rust's values frozen, the CPython golden kept as the audit trail. So:
@@ -28023,3 +28023,60 @@ a Rust census of the script's `["…"]` reads against the JSON's keys.
 
 **Next: slice AS** — re-anchor the fingerprint (§ 8.1 (vi)) and adjudicate the fragile rungs
 (§ 8.1 (vii)).
+
+### 8.10 SLICE AS, PART (vi) — THE FINGERPRINT RE-ANCHORED ON RUST (2026-10-03)
+
+`tests/test_numeric_fingerprint.py` — the only ABSOLUTE-value gate — now has a Rust twin,
+`rust/tests/fingerprint.rs` (+ `rust/tests/fingerprint_support/mod.rs`), and a Rust-written anchor.
+Three producers, one set of numbers:
+
+| file | written by | role |
+|---|---|---|
+| `tests/golden/numeric_fingerprint.json` | CPython 3.14.3, 2026-08-11 | the original anchor — **untouched**, kept as the audit trail |
+| `rust/oracle/fingerprint_pypy.tsv` | `rust/oracle/dump_fingerprint.py` on PyPy, calling the module's OWN `KERNELS` | the key set and the bit-exact target; also carries the module's `TOL` / `ABS_TOL` as `_tol` / `_abs_tol` lines |
+| `rust/oracle/fingerprint_rust.tsv` | `FINGERPRINT_REGEN=1 cargo test --release --test fingerprint regenerate_anchor` | **the anchor from here on** |
+| `rust/oracle/fingerprint_deviation.tsv` | the same regeneration run | the published deviation table, re-derived and compared on every run |
+
+#### (i) What was measured
+
+* **The count is 35 075, not § 8.1 (vi)'s 35 089** — measured twice (the JSON, the dump), and
+  asserted by `the_two_goldens_have_one_shape` and `anchor_is_byte_identical_to_the_pypy_capture`.
+* **PyPy vs CPython, directly** (the dump runs the module's own `_close`): **0 of 35 075 beyond
+  tolerance.** The PyPy capture was taken TWICE (558.7 s and 597.7 s) and is byte-identical across
+  runs.
+* **Rust vs PyPy: bit-identical on all 35 075 values, all 45 kernels.** 44 of 45 on their first
+  run; the one miss (`r80`) was the CONVERTER, not the model — `split_wall::GainsArm.skipped` is
+  `(switch, regime)`, the opposite order to rung 74's `(regime, switch)`.
+* **The Rust anchor is byte-identical to the PyPy capture** — two independent producers.
+* **§ 8.1 (vi)'s expectation was half right.** *"PyPy … inside every tolerance at ≤ 10.5 % of
+  budget"* holds for slices 1–2 (max **10.45 %**, `B`); the control ladder (slices 3–7) reaches
+  **22.2 %** (`r70`, on its absolute leg), 17.6 % (`r75`), 17.4 % (`r67`), 13.9 % (`r71`) — inside
+  those slices' own rule (a band ≥ 4× the measured drift, i.e. ≤ 25 %), not inside 10.5 %. The ten
+  exact arms (`cpg`, `r66`, `r68`, `r77`, `r78`, `r79`, `r81`, `r82`, `r82r`, `r82t`) differ on 0
+  values. The full table is `rust/oracle/fingerprint_deviation.tsv`; `max_used` is the fraction of
+  the band the worst value spends, on whichever leg passes it.
+
+#### (ii) How the port reads the keys
+
+Slices 1–2's kernels walk `dir()` on a result object (`_floats_of`), so a Python PROPERTY is a key
+— each is ported as the Rust method of the same meaning (`ei_no_quenched_total`, `dV9_frac`,
+`bracket_filled`, …) and an unset `Option` is skipped exactly as `isinstance(v, float)` skips a
+`None`. Slices 3–7's readers return dicts, flattened by `_flat`; the port builds the same tree
+(`Tree`) per reader and flattens it with the same rules. Three Python shapes the struct does not
+show had to be read from the source: `_triple_gains_at` / `_quad_gains_at` return a FOUR/FIVE-key
+dict for an off-regime point; rung 73's `_quad_gains_at` re-definition adds five keys rung 72's
+lacks; `_window` omits `reciprocal` when the window is closed. Rungs 81–82 reuse slice AJ's
+converters (`tests/slice_aj_flat/mod.rs`, verified against PyPy at AJ step 6): their `keys:N` /
+`len:N` stream is re-read into the tree by `tree_from_flat`, so no rung-81/82 struct is described a
+second time.
+
+#### (iii) What it costs, and what it does not cover
+
+`cargo test --release --test fingerprint`: **52 tests, ~53 s** (the regeneration run, single
+threaded, 184 s). The CPython comparison reuses the module's `_close` verbatim — `==` first, so
+`0.0 == -0.0` and `True == 1` — and r76's three `_UNSTABLE` keys are dropped after flattening as
+`_s3` drops them. **Not covered here:** whether a fragile claim FLIPS at CPython — that is part
+(vii), next.
+
+**Next: slice AS part (vii)** — the fragile-rung adjudication (§ 8.1 (vii)), read against
+`rust/oracle/fingerprint_deviation.tsv` and the committed `*_cpython.tsv` files.
