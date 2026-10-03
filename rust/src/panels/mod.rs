@@ -27,6 +27,7 @@ pub mod marches;
 pub mod mixing;
 pub mod nox;
 pub mod offdesign;
+pub mod readers;
 pub mod schedules;
 pub mod twospool;
 
@@ -162,4 +163,11 @@ pub const PANELS: &[(&str, Panel)] = &[
     ("print_anti_windup_table", actuator::anti_windup_table),
     ("print_sensed_cap_table", actuator::sensed_cap_table),
     ("print_stiffness_ledger_table", actuator::stiffness_ledger_table),
+    ("print_residual_gauge_table", readers::residual_gauge_table),
+    ("print_state_coordinate_table", readers::state_coordinate_table),
+    ("print_split_wall_table", readers::split_wall_table),
+    ("print_authority_clock_table", readers::authority_clock_table),
+    ("print_threshold_law_table", readers::threshold_law_table),
+    ("print_corrector_law_table", readers::corrector_law_table),
+    ("print_staircase_law_table", readers::staircase_law_table),
 ];

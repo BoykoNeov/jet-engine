@@ -56,6 +56,13 @@ that READ Rust or CLAUDE.md: `tests/test_rust_line_citations.py` and
 cannot move. Phase 8 slice AK launched the full suite anyway (an advisor read "green = bare pytest"
 literally); the user stopped it. New `rust/oracle/*.py` dump scripts are not tests and do not count.
 
+**Narrower still: run only the tests that CAN break (2026-10-03, user: "arent you running too many
+tests now, except only ones, where something can break?").** Even `cargo test --release` whole is
+too much when a change reaches one test binary. A panels-only change (`rust/src/panels/*` +
+`PANELS` rows) is reached only by `cli_golden` — run `cargo test --release --test cli_golden`
+(which compiles the crate) plus the two Python guards, and commit on that. Ask what reads the
+changed code; the full cargo run is for changes to shared `src/` modules many binaries import.
+
 **More generally, do not run the gate without a reason (2026-07-31, user):** at
 **session end** (unless it ran shortly before) and after a **code** change — but
 **NOT** at session start, **NOT** on a docs-only change, and **NOT** "just to be
