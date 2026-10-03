@@ -18,12 +18,14 @@ use crate::engine::{build_turbojet, EngineResult, FlightCondition, Losses};
 use crate::gas::Gas;
 use crate::pyfmt::Printer;
 
+pub mod airflow;
 pub mod cycle;
 pub mod limiters;
 pub mod marches;
 pub mod mixing;
 pub mod nox;
 pub mod offdesign;
+pub mod schedules;
 pub mod twospool;
 
 /// `TS_DIAGRAM_PATH` — the chart file `main.py` names in its last line.
@@ -132,4 +134,15 @@ pub const PANELS: &[(&str, Panel)] = &[
     ("print_release_edge_table", limiters::release_edge_table),
     ("print_release_rate_table", limiters::release_rate_table),
     ("print_asymmetric_lag_table", limiters::asymmetric_lag_table),
+    // ---- slice AP: rungs 53–63, the airflow levers and the schedules
+    ("print_variable_stator_table", airflow::variable_stator_table),
+    ("print_throat_capacity_table", airflow::throat_capacity_table),
+    ("print_stage_stack_table", airflow::stage_stack_table),
+    ("print_per_row_capacity_table", airflow::per_row_capacity_table),
+    ("print_stator_schedule_table", schedules::stator_schedule_table),
+    ("print_composite_minselect_table", schedules::composite_minselect_table),
+    ("print_matched_floor_table", schedules::matched_floor_table),
+    ("print_stator_bleed_table", schedules::stator_bleed_table),
+    ("print_bleed_schedule_table", schedules::bleed_schedule_table),
+    ("print_fuel_bleed_table", schedules::fuel_bleed_table),
 ];

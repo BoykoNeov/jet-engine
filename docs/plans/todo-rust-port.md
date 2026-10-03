@@ -27746,3 +27746,79 @@ are all older).
 
 **Next: slice AP** — rungs 53–63's panels (the airflow levers and the schedules, in `main()`'s
 order).
+
+### 8.7 SLICE AP — RUNGS 53–63's PANELS, BYTE-EXACT (2026-10-03)
+
+Ten panels — rungs 53, 54, 55, 56, 57, 58, 60, 61, 62, 63; **rung 59 prints no panel of its own**
+— in two new files, ported in two halves as AN was: `rust/src/panels/airflow.rs` (53–56, the
+steady matcher; `main.py` lines 2793–3205) and `rust/src/panels/schedules.rs` (57–63, the
+transient schedules and the bleed; lines 4264–4723). **`PORTED = 64`: both halves byte-exact on
+their first compile** (58 after the first), through byte 147 027 of the golden. No shim change;
+`twospool.rs`'s `ts_design` / `cpg13` reused, and `airflow.rs` exports the two maps and the
+design to `schedules.rs`.
+
+#### (i) Port decisions, each one the Python's own semantics
+
+* **The march step is chosen per call site, off the SIGNATURE** — the trap `tests/rung58.rs`'s
+  header names. `Ramp::new` (`ds = 0.01`) for rung 57's `stator_credit` / `credit_decomposition` /
+  `arrow_toggle` and rung 62's `loop_decomposition` / `marginal_loop` / `commanded_level` /
+  `pair_interaction`; `Ramp::fine` (`ds = 0.005`) for rung 58's `composite_credit` /
+  `engagement_shift` and rung 63's `leg_retiming` / `floor_dichotomy`; **`Ramp::new` again for rung
+  60**, whose panel passes `ds=DS=0.01` over its readers' 0.005 default. Rung 58's
+  `_stator_march(…, 0.5, 1.2, 0.005)` spells every field.
+* **Enums that Python prints as strings** map locally: `Binds` → `"throat"|"peak"|"edge"`,
+  `Regime` → `"both_pinned"|"armed_clears"|"mixed"`. Rung 61's `why_hp` is `Compensating::reason()`,
+  which already returns Python's text.
+* **Python bools printed through `str()`** go through `py_str()`: `format(True, '>8')` is
+  `'       1'` in Python, so passing the bool itself to a padded field would be wrong, not just
+  different.
+* **Flat Python keys that live in nested Rust `Option`s are unwrapped** — rung 54's `area` /
+  `throat_loading` / `c_min` (`.throat`) and `m_c` (`.throat.choke`), `schedule_throat`'s
+  `found` / `choke`, `authority_ceiling`'s `v_ch`, rung 61's `b_star` and its `.comp` fields,
+  `compensability`'s `b_lp` / `why_hp`. Python raises where they are absent, so the golden proves
+  them present.
+* **Rung 55's `m._V_SCAN = 0.01`** is `.with_v_scan(0.01)` on the top-level core only (its
+  siblings keep the class default, as in Python). **Rung 62's `neighbour={}`** is `None`
+  (`_isolating` reads `dict(neighbour or {})`).
+* **Keyword defaults made positional**, read off the Python signatures: `currency_split`
+  `dv = None`; `authority_ceiling` `capacity = None`; `design_throat_mach` `gamma = 1.4`;
+  `accel_schedule` `n = 13`; `loop_factors` `db = 0.10, dv = 0.20`; `sensed_inputs` `margin = 0.25,
+  n = 9` (the panel's), which reads only the ramp's two throttle ends.
+* **`max(list)` / `min(list)`** are a strict-compare fold from the first element (`py_max` /
+  `py_min`), and rung 53's `abs(max(residuals))` takes the max FIRST.
+
+#### (ii) Caught failures, read off stderr with `--nocapture`
+
+No new ones. Stderr carries exactly the three already booked: rung 33's two equilibrium-solve
+failures (§ 8.4 (i)) and rung 38's nozzle unchoke (§ 8.5 (ii)). Rung 61's `compensability`
+skips a refused throttle point silently; all four rows print, so none was skipped.
+
+#### (iii) What the gate saw, measured
+
+One injection, chosen to be the slice's own trap: rung 60's march step `0.01` → `0.005` (what a
+port through `Ramp::fine` would do). **FAILED** at step 60 (`print_matched_floor_table`), line 9 (the gate's count) —
+but on the FIRST table's noise digits (`-2.2e-16` → `-8.9e-16` on an identity that is zero by
+construction), not on the physics. Running the mutant binary and diffing the whole panel: **9 of its
+33 lines moved** — the three tautology rows in their last digits, and the set-point bands and the
+ramp-rate ladder in the 5th–6th decimal (credit spread 0.91 % → 0.97 %). Two physics lines did
+NOT move at printed precision (the `M_i` gap and the `r = 0.15` ladder row). The gate catches this
+trap, and on a row that would survive a shorter table; it is not an every-line injection, and the
+line that tripped first is the weakest witness in the panel. Reverted from a byte copy of the
+passing file.
+
+#### (iv) Cost
+
+`cli_golden.rs` at 58 steps: 99.3 s; at **64 steps: 288.1 s** — the transient half alone costs
+~190 s (rungs 57–63 march dozens of ramps each). Still watched, not pinned.
+Inside the full gate below, `cli_golden` took 124.8 s — less than the standalone 288 s, so that
+standalone time was taken on a busier box; neither was re-run to settle it.
+
+**The ship gate** — `cargo test --release --no-fail-fast` at below-normal, read to its end:
+**187 of 187 result blocks, 1 902 passed, 0 failed**, exit 0 — the same count as AO's, as it
+should be (AP added panels, not test functions); `cli_golden`'s own block **3 passed**; the two
+Python guards **7 passed**. Clippy: nothing in `airflow.rs` or `schedules.rs` (the crate's 67
+standing findings are all older).
+
+**Next: slice AQ** — rungs 64–84's 21 panels (`print_bleed_limiter_table` …
+`print_staircase_law_table`, in `main()`'s order; ≈ 2 060 lines, possibly split), after which only
+the `plot_ts_diagram` line (owed to AR) remains of the golden.
