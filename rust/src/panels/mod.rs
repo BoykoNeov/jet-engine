@@ -18,6 +18,7 @@ use crate::engine::{build_turbojet, EngineResult, FlightCondition, Losses};
 use crate::gas::Gas;
 use crate::pyfmt::Printer;
 
+pub mod actuator;
 pub mod airflow;
 pub mod cascades;
 pub mod cycle;
@@ -155,4 +156,10 @@ pub const PANELS: &[(&str, Panel)] = &[
     ("print_reference_split_table", cascades::reference_split_table),
     ("print_cross_split_table", cascades::cross_split_table),
     ("print_full_split_table", cascades::full_split_table),
+    ("print_shared_actuator_table", actuator::shared_actuator_table),
+    ("print_applied_reference_table", actuator::applied_reference_table),
+    ("print_demand_coordinate_table", actuator::demand_coordinate_table),
+    ("print_anti_windup_table", actuator::anti_windup_table),
+    ("print_sensed_cap_table", actuator::sensed_cap_table),
+    ("print_stiffness_ledger_table", actuator::stiffness_ledger_table),
 ];

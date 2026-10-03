@@ -37,18 +37,18 @@ use crate::two_lag::build_two_lag_cascade;
 use crate::two_spool::TwoSpoolEngine;
 
 /// `FLOOR = 0.55` — rung 36/41's imposed `phi_surge`.
-const FLOOR: f64 = 0.55;
-const LO: f64 = 1000.0;
-const HI: f64 = 1400.0;
-const B: f64 = 0.10;
-const PHI: f64 = 0.80;
+pub(crate) const FLOOR: f64 = 0.55;
+pub(crate) const LO: f64 = 1000.0;
+pub(crate) const HI: f64 = 1400.0;
+pub(crate) const B: f64 = 0.10;
+pub(crate) const PHI: f64 = 0.80;
 
 /// The transient builders' common signature: `Cls(design, flight, 1.0, map_lp=LP, map_hp=HP,
 /// rho=1.0, **kw)`.
-type Build = fn(TwoSpoolEngine, FlightCondition, f64, Option<ComponentMap>, Option<ComponentMap>,
+pub(crate) type Build = fn(TwoSpoolEngine, FlightCondition, f64, Option<ComponentMap>, Option<ComponentMap>,
                 f64, &LeverArm) -> ScheduledStatorTransient;
 
-fn machine(build: Build, d: &Design, arm: &LeverArm) -> ScheduledStatorCore {
+pub(crate) fn machine(build: Build, d: &Design, arm: &LeverArm) -> ScheduledStatorCore {
     match build(design13(d), d.flight, 1.0, Some(lp_map()), Some(hp_map()), 1.0, arm) {
         ScheduledStatorTransient::Full(c) => c,
         ScheduledStatorTransient::Degenerate(_) => unreachable!("both maps are passed"),
