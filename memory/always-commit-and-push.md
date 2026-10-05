@@ -27,10 +27,16 @@ the [[session-end-routine]] (also refresh memory + docs at session end) and
 still IS a question: anything outward-facing that a commit is not — publishing
 or re-minting an artifact URL, for instance ([[visuals-artifact]]).
 
-**The green-gate is `cargo test --release` (in `rust/`) — it runs EVERYTHING
-(since 2026-10-05, phase 8 slice AU deleted the Python; the pytest gate it replaces
-is at tag `python-final`).** Its size and duration live in CLAUDE.md § Commands,
-measured, not tracked here. Launch it below-normal ([[run-tests-below-normal]]).
+**The green-gate is `rust\test-all.ps1` — every test program of the crate, the same
+tests as `cargo test --release`, run SEVERAL AT ONCE, all below-normal (user, 2026-10-05:
+"paralel run ok, but keep the bellow normal priority").** It replaced the pytest gate when
+phase 8 slice AU deleted the Python (tag `python-final`). Its size and duration live in
+CLAUDE.md § Commands, measured, not tracked here. Plain `cargo test --release` runs the
+192 programs ONE AFTER ANOTHER and took 80 min of mostly idle cores; never fall back to it
+for the gate. **Keep the programs SEPARATE** — the user asked whether merging them into one
+would make every change rebuild everything, and it would for a test-file edit (today that
+rebuilds only its own program); a `src/` change rebuilds them all either way. **Never run
+the gate in a fresh checkout/worktree** unless proving a clean tree: that forces a full build.
 Nothing is deselected, so a green run is a green run. `main.py`'s old "untested"
 risk is gone too: `cli_golden` holds the CLI byte-equal to the last Python output.
 

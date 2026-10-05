@@ -216,8 +216,9 @@ tag **`python-final`** keeps it, and every `engine.py:N` / `test_rungN.py` citat
 From the repo root; every `cargo` command takes `--manifest-path rust/Cargo.toml` (or run in `rust/`).
 - Run the model: `cargo run --release` (writes `ts_diagram.json` HERE) · chart: `python plot_ts_diagram.py`.
   Chart data alone: `-- ts-diagram`; the pages: `-- visuals` / `-- splice`.
-- **The gate: `cargo test --release`** — **EVERYTHING**, 2002 tests in 192 binaries; **89 min** incl. a clean build (2026-10-05).
-  Launch it at below-normal priority. ONE gate; nothing is ever deselected.
+- **The gate: `powershell -File rust\test-all.ps1`** — **EVERYTHING** (`cargo test --release`'s
+  2002 tests, 192 programs) run 8 at a time, all below-normal: **~16 min**, + ~4 min rebuild after a
+  `src/` change. Plain `cargo test --release` runs them one by one (80 min). Nothing is deselected.
 - **Iterate: `cargo test --release --test rungN`** — one binary. Run what a change can reach.
 - **WHEN to run the gate:** at session end (unless run shortly before), and after a code change.
   NOT at session start, NOT on a docs-only change, NOT "just to be sure", and **NEVER to refresh

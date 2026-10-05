@@ -24,7 +24,7 @@ update**, or whenever the user says **"session end"**, always do all four, in or
    updates.
 4. **Push to main** — push the `main` branch to `origin`.
 
-**The pre-commit gate is `cargo test --release` in `rust/` — it runs EVERYTHING (since
+**The pre-commit gate is `rust\test-all.ps1` (= `cargo test --release`, parallel, below-normal; see [[always-commit-and-push]]) — it runs EVERYTHING (since
 2026-10-05, when phase 8 slice AU deleted the Python and its `pytest` gate).** **At SESSION
 END run it** — unless it already ran shortly before and nothing has changed since, in which
 case do not re-run it "just to be sure" (user, 2026-07-31). Skip it entirely for a docs-only
