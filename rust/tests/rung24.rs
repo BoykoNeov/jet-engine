@@ -30,7 +30,7 @@ use turbojet::engine::{build_turbojet, FlightCondition, Losses};
 use turbojet::gas::{self, Gas};
 use turbojet::nox::{
     spatial_local_field, spatial_local_stagnant_cells, spatial_segregation, JetMixing,
-    SpatialDwellPdf, SpatialLocalPdf, ZonedNoxOpts,
+    SpatialDwellPdf, SpatialLocalPdf, SpatialPdf, ZonedNoxOpts,
 };
 
 const TAU: f64 = 3e-3;
@@ -585,4 +585,96 @@ fn the_config_rejects_bad_input_and_has_no_nt() {
         .unwrap_or_default();
     assert!(msg.contains("must be positive"), "wrong panic: {msg}");
     cfg().validate();
+}
+
+// ------------------------------------------------------------------------------------------
+// THE THREE GATES THE COVERAGE LEDGER FOUND UNPORTED (slice AT). `tests/test_rung24.py` carried
+// them and no Rust file named them or said why not; `rust/tests/coverage_ledger.tsv` rows them.
+// All three go through PRODUCTION `zoned_nox` at the Python's own grids — `ny = nz = 32`,
+// `n_bell = 40`, `n_quad = 160`, the quench at 24 × 200 — not this file's house constants, so
+// the bars mean what they meant there.
+// ------------------------------------------------------------------------------------------
+
+/// The Python's `test_tau_scales_linearly_in_tau_mix`, at its own two jets and at the HELPER level
+/// (per cell, not the β-PDF mean): with `F` fixed, every cell's `τ` is `∝ τ_mix` to `1e-15`.
+/// [`the_dwell_scales_linearly_in_tau_mix`] gates the same factorisation through production at
+/// one jet; this restores the per-cell reading and the second jet the ledger found missing.
+#[test]
+fn every_cells_dwell_scales_linearly_in_tau_mix() {
+    let far = 0.02718; // the Python's fixed `_FAR`, as its `_field` uses
+    let xibar = far / (1.0 + far);
+    for j in [4.0f64, 16.0] {
+        let base = mix(j).tau_q();
+        let t1 = spatial_local_field(far, PHI_P, S0, H0, j, base, 0.316, 0.28, 0.28, 32, 32).1;
+        let t5 =
+            spatial_local_field(far, PHI_P, S0, H0, j, 5.0 * base, 0.316, 0.28, 0.28, 32, 32).1;
+        for xi in [0.5 * xibar, xibar, 2.0 * xibar, 3.0 * xibar] {
+            let (a, b) = (t1.at(xi), t5.at(xi));
+            assert!((b - 5.0 * a).abs() < 1e-15, "tau(xi={xi}) not linear in tau_mix at J={j}");
+        }
+    }
+}
+
+fn py_opts(j: f64) -> ZonedNoxOpts {
+    ZonedNoxOpts { mixing: Some(mix(j)), quench_ngrid: 24, quench_nsteps: 200, ..opts() }
+}
+fn py_cfg() -> SpatialLocalPdf {
+    SpatialLocalPdf { s: S0, ny: 32, nz: 32, n_bell: 40, n_quad: 160, ..SpatialLocalPdf::default() }
+}
+
+/// The Python's `test_production_width_matches_spatial_pdf`: the SHIPPED `zoned_nox` width equals
+/// rung 22's `SpatialPDF` width at the same grid — both ARE the terminal field. GATE 1 above
+/// gates the same pair at the FIELD level; this is the production wiring, at the Python's
+/// absolute `1e-12` (GATE 1's finding says rounding is all that separates them).
+#[test]
+fn the_production_width_matches_rung_22s_through_zoned_nox() {
+    let dp = design_point();
+    let z = |o: ZonedNoxOpts| dp.g.zoned_nox(dp.far, dp.tt3, dp.tt4, dp.p, PHI_P, o);
+    let s24 = z(ZonedNoxOpts { spatial_local: Some(py_cfg()), ..py_opts(16.0) });
+    let s22 = z(ZonedNoxOpts {
+        spatial: Some(SpatialPdf { s: S0, ny: 32, nz: 32, n_quad: 160, ..SpatialPdf::default() }),
+        ..py_opts(16.0)
+    });
+    let (a, b) = (s24.g_spatial_local.unwrap(), s22.g_spatial.unwrap());
+    assert!((a - b).abs() < 1e-12, "production rung-24 width {a} vs rung-22 {b}");
+}
+
+/// The Python's `test_g_below_two_stream_ceiling`: rung 18's two-stream ceiling still bounds the
+/// resolved field, carried from rungs 22/23, at the same three jets.
+#[test]
+fn the_width_stays_below_the_two_stream_ceiling() {
+    let dp = design_point();
+    for j in [4.0f64, 16.0, 64.0] {
+        let s = dp.g.zoned_nox(
+            dp.far, dp.tt3, dp.tt4, dp.p, PHI_P,
+            ZonedNoxOpts { spatial_local: Some(py_cfg()), ..py_opts(j) },
+        );
+        let (g, c) = (s.g_spatial_local.unwrap(), s.g_ceiling.unwrap());
+        assert!(g < c, "g {g} must sit below the ceiling {c} at J={j}");
+    }
+}
+
+/// The Python's `test_local_rate_moves_ei_only_modestly_vs_rung23`: the whole locally-resolved
+/// upgrade is worth only a few % of `⟨EI⟩` — the honest scale of what localising the RATE (not
+/// the SCALE) buys. A BOUND, not a value: `|e24/e23 − 1| < 0.10` at `J = 4` and `16`.
+#[test]
+fn the_local_rate_moves_ei_only_modestly_against_rung_23() {
+    let dp = design_point();
+    for j in [4.0f64, 16.0] {
+        let z = |o: ZonedNoxOpts| dp.g.zoned_nox(dp.far, dp.tt3, dp.tt4, dp.p, PHI_P, o);
+        let e24 = z(ZonedNoxOpts { spatial_local: Some(py_cfg()), ..py_opts(j) })
+            .ei_no_spatial_local
+            .unwrap();
+        let e23 = z(ZonedNoxOpts {
+            spatial_dwell: Some(SpatialDwellPdf {
+                s: S0, ny: 32, nz: 32, nt: 24, n_bell: 40, n_quad: 160,
+                ..SpatialDwellPdf::default()
+            }),
+            ..py_opts(j)
+        })
+        .ei_no_spatial_dwell
+        .unwrap();
+        let moved = e24 / e23 - 1.0;
+        assert!(moved.abs() < 0.10, "J={j}: rung 24 moved <EI> {:.1}% against rung 23", 100.0 * moved);
+    }
 }

@@ -562,3 +562,104 @@ fn the_ts_json_round_trips_the_bits() {
     assert_eq!(back, j);
     assert_eq!(back.at("title"), &Json::Str(ts.title.clone()));
 }
+
+// ------------------------------------------------------------------------------------------
+// SLICE AT — `plot_ts_diagram.py`'s READ CENSUS. After the delete at slice AU that script is the
+// only Python left, and it reads `ts_diagram.json` by key with no test of its own: rename a key in
+// `ts_diagram_json` and it breaks with every gate green (slice AR booked this, plan § 8.9). So the
+// script's subscripts are read off its source and each must be a key the JSON actually writes.
+//
+// What the census can and cannot see, said here so it is not mistaken for more:
+// * it reads LITERAL subscripts, `["k"]` and `['k']` (the f-string's `pt['label']` is the second
+//   form). Any other way of reading — `.get(`, `.items()`, `.keys()`, `.values()`, `**`,
+//   `getattr` — is REFUSED outright, so a later edit cannot route around the census silently;
+// * it checks NAMES, not paths: `s` and `T` are written at three depths, so a rename at one depth
+//   alone would pass. That is the honest scope of a name census and is not claimed beyond it.
+// ------------------------------------------------------------------------------------------
+
+const TS_SCRIPT: &str = include_str!("../../plot_ts_diagram.py");
+
+/// Every literal-string subscript in `src`, in order of first appearance.
+fn script_keys(src: &str) -> Vec<String> {
+    let b = src.as_bytes();
+    let mut out: Vec<String> = Vec::new();
+    let mut i = 0;
+    while i + 1 < b.len() {
+        if b[i] == b'[' && (b[i + 1] == b'"' || b[i + 1] == b'\'') {
+            let q = b[i + 1];
+            if let Some(len) = b[i + 2..].iter().position(|&c| c == q) {
+                let end = i + 2 + len;
+                if b.get(end + 1) == Some(&b']') {
+                    let k = &src[i + 2..end];
+                    if !out.iter().any(|x| x == k) {
+                        out.push(k.to_string());
+                    }
+                    i = end + 2;
+                    continue;
+                }
+            }
+        }
+        i += 1;
+    }
+    out
+}
+
+/// Every object key anywhere in `j`.
+fn json_keys(j: &Json, acc: &mut Vec<String>) {
+    match j {
+        Json::Obj(kv) => {
+            for (k, v) in kv {
+                if !acc.contains(k) {
+                    acc.push(k.clone());
+                }
+                json_keys(v, acc);
+            }
+        }
+        Json::List(xs) => xs.iter().for_each(|x| json_keys(x, acc)),
+        _ => {}
+    }
+}
+
+/// The census: the script keys the JSON does NOT write (empty = clean).
+fn unwritten_reads(src: &str, j: &Json) -> Vec<String> {
+    let mut have = Vec::new();
+    json_keys(j, &mut have);
+    script_keys(src).into_iter().filter(|k| !have.contains(k)).collect()
+}
+
+/// A copy of `j` with every object key `from` renamed `to` — the defect the census exists for.
+fn rename(j: &Json, from: &str, to: &str) -> Json {
+    match j {
+        Json::Obj(kv) => Json::Obj(
+            kv.iter()
+                .map(|(k, v)| (if k == from { to.to_string() } else { k.clone() }, rename(v, from, to)))
+                .collect(),
+        ),
+        Json::List(xs) => Json::List(xs.iter().map(|x| rename(x, from, to)).collect()),
+        other => other.clone(),
+    }
+}
+
+#[test]
+fn the_ts_script_reads_only_keys_the_json_writes() {
+    for form in [".get(", ".items(", ".keys(", ".values(", "**", "getattr"] {
+        assert!(
+            !TS_SCRIPT.contains(form),
+            "plot_ts_diagram.py reads the JSON through `{form}`, which this census cannot follow — \
+             extend the census before shipping that form"
+        );
+    }
+    // PINNED: the census sees exactly the reads the script makes today, so a scanner that went
+    // blind (zero keys) or a script that grew a read is a deliberate re-pin, not a quiet pass.
+    let keys = script_keys(TS_SCRIPT);
+    assert_eq!(
+        keys,
+        ["work_legs", "s", "T", "isobars", "points", "ideal", "real", "label", "title"],
+        "the script's literal subscripts, in first-appearance order"
+    );
+    let j = visuals::ts_diagram_json(&visuals::ts_diagram(&Design::new()));
+    assert_eq!(unwritten_reads(TS_SCRIPT, &j), Vec::<String>::new(), "the script reads keys the JSON does not write");
+    // THE INSTRUMENT, SHOWN TO SEE: a renamed key is reported, under either quote style.
+    assert_eq!(unwritten_reads(TS_SCRIPT, &rename(&j, "work_legs", "legs")), vec!["work_legs"]);
+    assert_eq!(unwritten_reads(TS_SCRIPT, &rename(&j, "label", "name")), vec!["label"]);
+}

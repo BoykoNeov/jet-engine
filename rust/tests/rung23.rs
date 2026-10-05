@@ -222,6 +222,73 @@ fn the_correlation_sign_is_one_signed_across_tau_mix() {
     }
 }
 
+/// The Python's `test_correlation_concentrated_under_penetration`, which the coverage ledger
+/// (slice AT) found unported: GATE 2 above reads `corr_ratio` at `J = 16` only. The correlation is
+/// LARGEST under-penetration — long dwell AND a strong ξ–τ link — and fades toward `C_opt`. That
+/// is the certified SHAPE, so it is asserted as an ordering across two `J`. At the Python's own
+/// grids (`ny = nz = 32`, `nt = 24`, `n_bell = 40`, `n_quad = 56`, the quench at 24 × 200), not
+/// this file's coarser house constants, so the bar means what it meant there.
+#[test]
+fn the_correlation_is_concentrated_under_penetration() {
+    let dp = design_point();
+    let at = |j: f64| {
+        dp.g.zoned_nox(
+            dp.far, dp.tt3, dp.tt4, dp.p, PHI_P,
+            ZonedNoxOpts {
+                mixing: Some(mix(j)),
+                spatial_dwell: Some(SpatialDwellPdf {
+                    s: S0, ny: 32, nz: 32, nt: 24, n_bell: 40, n_quad: 56,
+                    ..SpatialDwellPdf::default()
+                }),
+                quench_ngrid: 24,
+                quench_nsteps: 200,
+                ..opts()
+            },
+        )
+        .corr_ratio
+        .unwrap()
+    };
+    let (r_under, r_opt) = (at(4.0), at(16.0)); // C ≈ 1.25 under-penetration; C ≈ 2.5 at C_opt
+    assert!(
+        r_under > r_opt && r_opt > 1.0,
+        "under-penetration {r_under} must exceed C_opt {r_opt} > 1"
+    );
+}
+
+/// The Python's `test_g_below_two_stream_ceiling` and `test_clamp_dormant_at_station4`, each at its
+/// OWN jets. [`the_width_stays_below_the_two_stream_ceiling_and_the_clamp_stays_dormant`] merges
+/// the two on `J ∈ {4, 16, 64}`; the ledger (slice AT) recorded that the ceiling's two extremes
+/// (`J = 1`, `400`) and the clamp's `J = 100` were never visited, so they are here, at the
+/// Python's grids.
+#[test]
+fn the_ceiling_and_the_clamp_hold_at_the_pythons_own_jets() {
+    let dp = design_point();
+    let at = |j: f64| {
+        dp.g.zoned_nox(
+            dp.far, dp.tt3, dp.tt4, dp.p, PHI_P,
+            ZonedNoxOpts {
+                mixing: Some(mix(j)),
+                spatial_dwell: Some(SpatialDwellPdf {
+                    s: S0, ny: 32, nz: 32, nt: 24, n_bell: 40, n_quad: 56,
+                    ..SpatialDwellPdf::default()
+                }),
+                quench_ngrid: 24,
+                quench_nsteps: 200,
+                ..opts()
+            },
+        )
+    };
+    for j in [1.0f64, 16.0, 400.0] {
+        let s = at(j);
+        let (g, c) = (s.g_spatial_dwell.unwrap(), s.g_ceiling.unwrap());
+        assert!(g < c, "g {g} !< ceiling {c} at J={j}");
+    }
+    for j in [4.0f64, 16.0, 100.0] {
+        let a = at(j).max_a_quench.unwrap();
+        assert!(a < 1.0, "clamp fired at station 4 (max_a={a}) at J={j}");
+    }
+}
+
 // ------------------------------------------------------------------------------------------
 // GATE 3 — the `Dwell` enum's own reduce, and the rung-16 identity.
 // ------------------------------------------------------------------------------------------

@@ -377,6 +377,14 @@ fn cycle_untouched() {
     assert_eq!(r.v9.to_bits(), v9_before.to_bits());
 }
 
+/// The `L = 0` arm of the Python's `test_guards`, which the coverage ledger (slice AT) found
+/// missing here: the length must be positive.
+#[test]
+#[should_panic(expected = "L=0 must be positive")]
+fn guard_length_must_be_positive() {
+    NoFreezeOut { l: 0.0, ..Default::default() }.validate();
+}
+
 #[test]
 #[should_panic(expected = "too coarse")]
 fn guard_nstep_below_100_is_refused() {

@@ -549,6 +549,41 @@ fn no_barely_moves_despite_the_da_ratios() {
 
 /// Depletion wins at EVERY `Tt4` once the pool chemistry runs faster than anchored — the
 /// structural claim, not a single-point one.
+/// The Python's `test_depletion_unbounded_heat_release_saturates`, which the coverage ledger
+/// (slice AT) found unported: [`depletion_wins_decisively_at_a_faster_pool`] compares the
+/// anchored pool with ONE fast one, so it never sees the SHAPE that makes "deeper frozen"
+/// structural. Driven up six decades, channel 1 collapses monotonically toward zero (UNBOUNDED)
+/// while channel 2 rises and SATURATES — the last decade barely moves it.
+#[test]
+fn depletion_is_unbounded_while_the_heat_release_saturates() {
+    let d = dp(2200.0);
+    let (mut dep, mut heat, mut net) = (Vec::new(), Vec::new(), Vec::new());
+    for rs in [1.0f64, 1e1, 1e2, 1e3, 1e4, 1e6] {
+        let c = cpl(&d, CoupledNoFreezeOut { pool_rate_scale: rs, ..Default::default() }, true);
+        dep.push(c.depletion_factor());
+        heat.push(c.heat_release_factor());
+        net.push(c.net_factor());
+    }
+    assert!(dep.windows(2).all(|w| w[0] > w[1]), "depletion not monotone: {dep:?}");
+    assert!(dep[5] < 1e-3, "depletion should run away, got {}", dep[5]);
+    assert!(heat.windows(2).all(|w| w[0] < w[1]), "heat release not monotone: {heat:?}");
+    assert!(heat[5] < 1.5, "heat release must stay bounded, got {}", heat[5]);
+    assert!((heat[5] - heat[4]).abs() < 1e-3, "heat release must SATURATE: {} -> {}", heat[4], heat[5]);
+    assert!(net.iter().all(|&n| n < 1.0), "the net must deepen at every rate: {net:?}");
+    assert!(net[5] < 1e-3, "depletion must win by orders, got {}", net[5]);
+}
+
+/// The Python's `test_net_is_deeper_frozen_across_the_band`, at its own six-point band. The
+/// channel gate above reads three temperatures; this is the verdict across the whole band.
+#[test]
+fn the_net_is_deeper_frozen_across_the_band() {
+    for tt4 in [1500.0, 1650.0, 1800.0, 2000.0, 2200.0, 2400.0] {
+        let c = cpl(&dp(tt4), CoupledNoFreezeOut::default(), true);
+        assert!(c.net_factor() < 1.0, "net must deepen at Tt4={tt4}, got {}", c.net_factor());
+        assert!(c.deeper_frozen());
+    }
+}
+
 #[test]
 fn depletion_wins_at_every_tt4_in_the_limit() {
     for tt4 in [1800.0, 2000.0, 2200.0, 2400.0] {
@@ -572,6 +607,22 @@ fn cycle_untouched() {
     let r = build_turbojet(Gas::reacting_equilibrium(), PI_C, 2200.0, 50_000.0, losses())
         .run(&flight(), 1.0);
     assert_eq!(r.station("4").far.to_bits(), far_before.to_bits());
+}
+
+/// The `L = 0` arm of the Python's `test_guards`, which the coverage ledger (slice AT) found
+/// missing here: the length must be positive.
+#[test]
+#[should_panic(expected = "L=0 must be positive")]
+fn guard_length_must_be_positive() {
+    CoupledNoFreezeOut { l: 0.0, ..Default::default() }.validate();
+}
+
+/// The `rate_scale = 0` arm of the Python's `test_guards` (slice AT, as above). Distinct from
+/// the POOL's rate scale, which [`guard_pool_rate_scale_must_be_positive`] refuses.
+#[test]
+#[should_panic(expected = ".rate_scale=0 must be positive")]
+fn guard_rate_scale_must_be_positive() {
+    CoupledNoFreezeOut { rate_scale: 0.0, ..Default::default() }.validate();
 }
 
 #[test]

@@ -28135,3 +28135,85 @@ stay). Booked for **AU**'s docs rewrite: CLAUDE.md § Layout still names
 `rust/tests/fingerprint.rs` (left alone here: CLAUDE.md has 8 bytes of headroom).
 
 **Next: slice AT** — the coverage ledger (§ 8.1 (v)) and the gap ports.
+
+### 8.12 SLICE AT — THE COVERAGE LEDGER AND THE GAP PORTS (2026-10-05)
+
+**The ledger exists and has no unexplained row.** `rust/tests/coverage_ledger.tsv` rows every
+`def test_` the Python suite carries — **1 203 functions, 1 387 collected cases, 92 files** — with
+the Rust test(s) that carry each, or why none does, under a closed status list:
+
+| status | rows | | status | rows |
+|---|---|---|---|---|
+| PORTED | 1 044 | | RE-ANCHORED (fingerprint kernels) | 45 |
+| LOOPED | 34 | | PORTED-IN-AT | 18 |
+| SPLIT | 34 | | RETIRED (`usage_blocks`, `rust_line_citations`) | 9 |
+| DECLARED-NONPORT | 8 | | MERGED | 5 |
+| CORRECTED | 5 | | NARROWED | 1 |
+
+`rust/tests/coverage_ledger.rs` (3 gates) keeps it honest after AU: the frozen counts, the status
+list (there is no `GAP` status, so a gap cannot be committed), a reason on every non-`PORTED` row,
+and every cited `file::fn` a `#[test]` in `rust/tests/file.rs` today; its third gate corrupts a
+copy four ways and must see each. `rust/oracle/check_coverage_ledger.py` checked the other side
+once, while both exist: the rows ARE the AST's 1 203 functions in order, and each `py_cases`
+equals pytest's collection (it dies at AU with the rest of `rust/oracle/*.py`).
+
+**How the rows were made** (source run `W:\temp\claude\slice_at`): Rust tests from
+`cargo test -- --list` (1 978 = 1 977 + 1 doctest; a source regex found 1 925 — it misses the
+fingerprint `gate!` macro and multi-line attributes, so the regex was not used as the list).
+Tiers: name (828 rows — exact, gate-prefixed, reworded), the porters' OWN header tables
+(141 — `| test_x | [`fn`] |` lines, from phase 6 on), word-overlap pairs read side by side
+(108), and a hand-read of everything else (117), plus 9 by policy. Every parametrized row's case
+values were checked as literals in its Rust body (or read by hand where they were opaque).
+
+**THE FINDING: EIGHT tests were never ported and nothing said so** — all in the early "by gate"
+ports (rungs 22, 23, 24, 28; slices C–F), none after phase 6, whose files carry a roster or a
+mapping table. Each claim was checked by NO Rust test:
+
+| rung | Python test | what went unchecked |
+|---|---|---|
+| 22 | `reduce_primary_diagnostic_bit_identical` | a SPATIAL call leaves `ei_no`/`x_no_mix` bit-identical (the Rust reduce never runs one) |
+| 22 | `derived_floor_sits_below_the_hump_peak` | why the emissions basin is narrow — quoted in a comment, never asserted |
+| 22 | `grid_converged` | `C_opt` agrees across `ny = nz` 32/48/64 |
+| 23 | `correlation_concentrated_under_penetration` | the correlation is larger at `J = 4` than at `C_opt` |
+| 24 | `production_width_matches_spatial_pdf` | the production widths of rungs 24 and 22 agree through `zoned_nox` |
+| 24 | `g_below_two_stream_ceiling` | the ceiling bounds rung 24's width |
+| 24 | `local_rate_moves_ei_only_modestly_vs_rung23` | rung 24 moves ⟨EI⟩ < 10 % against rung 23 |
+| 28 | `depletion_unbounded_heat_release_saturates` | the six-decade sweep: one channel runs away, the other SATURATES |
+
+All eight are ported (green first run, at the Python's own grids), and six NARROWINGS were found
+beside them; five are closed (rung 23's ceiling at `J = 1, 400` and clamp at `J = 100`; rung 24's
+per-cell `τ ∝ τ_mix` at `J = 4`; rung 27's `L = 0` guard; rung 28's `L`/`rate_scale` guards and its
+six-point band) and one stays NARROWED with its reason (rung 41's cycle gate does not interleave
+the single-spool `SpoolTransient`; Rust diagnostics take `&self`, so it cannot perturb the run).
+
+**The two named gap ports.** `rust/tests/claude_md_reference.rs` — the byte/line budget, constants
+verbatim, `include_bytes!` so a `CLAUDE.md` edit rebuilds it (the budget's history stays in the
+Python file at `python-final`). `rust/tests/phi_rate_limiter_negative.rs` — the four gates 1:1 on
+`FuelTransientCore::try_instant_fuel`, plus a declared addition pinning the walk's coverage to the
+Python's MEASURED cuts (PyPy probe, before the Rust was written): **14 / 16 / 14 / 16** evaluable,
+first refusal at cut 15 / 17 / 15 / 17, every refusal the rung-43 closure's *"does not bracket"* —
+reproduced exactly on the first run, so the fallible twin skips the cuts Python's `except
+AssertionError` skips. Measured ratios `|d_rate|/|d_level|` 5.17 / 5.91 / 3.47 / 3.92: the
+Python comment's *"3.5–5.9"* rounds the HP-0.10 cell UP (3.47); the bar (`> 1`) is unaffected.
+
+**The T–s script census** (booked by § 8.9). `rust/tests/visuals.rs::the_ts_script_reads_only_keys_the_json_writes`
+reads `plot_ts_diagram.py`'s literal subscripts (`["k"]` and `['k']` — the f-string's `pt['label']`
+is the second form), pins them (9 keys), checks each is a key `ts_diagram_json` writes, refuses
+any other read form (`.get(`, `.items(`, `**`, …), and shows a renamed key reported. It checks
+NAMES, not paths: `s`/`T` are written at three depths, so a one-depth rename would pass.
+
+**Limits.** A row says where a test went, not that every assertion inside it went too: an
+assertion dropped inside a test that kept its name is invisible to the ledger (rung 23's design-
+point gate, for one, does not transcribe an excess-field identity line, and says so in its row).
+And the instrument's own miss, caught by the gate rather than in silence: the first `#[test]`
+scanner did not read one-line `#[test] fn name() { … }`, which is how rungs 62/63 spell a
+pytest case each — 46 cited tests read as missing until it did; the scanner gate now pins
+rung 62's 58.
+
+**Gates:** the nine touched/new Rust test binaries in full (126 passed, 0 failed); `pytest
+tests/test_rust_line_citations.py tests/test_claude_md_reference.py` (7 passed — no new
+`engine.py:N` citation); the ledger checker (1 203 / 1 387). `CLAUDE.md` untouched (8 B headroom,
+AU's rewrite).
+
+**Slice AT is complete. Next: slice AU — the delete** (plan § 8.1 (viii)/(ix)), the last,
+separately-gated step.

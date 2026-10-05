@@ -30,9 +30,10 @@
 
 use std::panic::catch_unwind;
 use turbojet::engine::{build_turbojet, FlightCondition, Losses};
-use turbojet::gas::Gas;
+use turbojet::gas::{hf_fuel_default, Gas};
 use turbojet::nox::{
-    spatial_segregation, two_stream_ceiling, JetMixing, MixingPdf, SpatialPdf, ZonedNoxOpts,
+    pdf_mean_ei, spatial_segregation, two_stream_ceiling, JetMixing, MixingPdf, SpatialPdf,
+    ZonedNoxOpts,
 };
 
 const TAU: f64 = 3e-3;
@@ -448,4 +449,88 @@ fn the_config_rejects_non_positive_geometry() {
         assert!(catch_unwind(move || bad.validate()).is_err(), "{bad:?} must be rejected");
     }
     cfg().validate(); // the shipped one is valid
+}
+
+// ------------------------------------------------------------------------------------------
+// THE THREE GATES THE COVERAGE LEDGER FOUND UNPORTED (slice AT). `tests/test_rung22.py` carried
+// them and no Rust file named them or said why not; `rust/tests/coverage_ledger.tsv` rows them.
+// Each is transcribed at the Python's OWN grids, not this file's coarser house constants, so the
+// bars mean what they meant there.
+// ------------------------------------------------------------------------------------------
+
+/// The Python's `test_reduce_primary_diagnostic_bit_identical`. GATE 1's reduce above never runs
+/// a SPATIAL call — it compares `spatial: None` with an omitted field. This is the other half: a
+/// spatial call touches only the rung-22 fields, and the PRIMARY diagnostic is bit-identical to a
+/// mixing-only call. Rung 22 adds a closure; it never perturbs the primary.
+#[test]
+fn a_spatial_call_leaves_the_primary_diagnostic_bit_identical() {
+    let dp = design_point();
+    let base = dp.g.zoned_nox(
+        dp.far, dp.tt3, dp.tt4, dp.p, PHI_P,
+        ZonedNoxOpts { mixing: Some(mix(16.0, H0)), ..opts() },
+    );
+    let st = dp.run(16.0, cfg());
+    assert!(st.g_spatial.is_some(), "the spatial closure must actually have run");
+    assert_eq!(st.ei_no().to_bits(), base.ei_no().to_bits(), "ei_no moved under a spatial call");
+    assert_eq!(st.x_no_mix.to_bits(), base.x_no_mix.to_bits(), "x_no_mix moved under a spatial call");
+}
+
+/// The Python's `test_derived_floor_sits_below_the_hump_peak` — WHY the `C_opt` emissions basin
+/// is narrow. GATE 5 above quotes this in a comment and never asserts it. The derived floor
+/// `g(C_opt) ≈ 0.018` sits just BELOW the ideal-bell `⟨EI⟩(g)` hump peak (≈ 0.021): same curve as
+/// rung 18's, a different floor placement. At the Python's grids — `ny = nz = 40`, `n_bell = 48`
+/// for the floor, and the production `n_quad = 200` for the one-off hump scan, because the coarse
+/// quadrature drifts the mean at the larger `g` the scan reaches.
+#[test]
+fn the_derived_floor_sits_just_below_the_hump_peak() {
+    let dp = design_point();
+    let g_floor = dp
+        .run(16.0, SpatialPdf { ny: 40, nz: 40, n_bell: 48, ..cfg() })
+        .g_spatial
+        .unwrap();
+    let gs: Vec<f64> = (0..40).map(|i| 0.008 + 0.0006 * i as f64).collect();
+    let ei: Vec<f64> = gs
+        .iter()
+        .map(|&g| pdf_mean_ei(dp.far, dp.tt3, dp.p, hf_fuel_default(), TAU, g, 48, 200, false))
+        .collect();
+    let mut k = 0;
+    for (i, &e) in ei.iter().enumerate() {
+        if e > ei[k] {
+            k = i;
+        }
+    }
+    let g_star = gs[k];
+    assert!(k > 0 && k < gs.len() - 1, "the hump peak must be INTERIOR to the scan, got g={g_star}");
+    assert!(g_floor < g_star, "the derived floor {g_floor:.4} must sit below the hump peak {g_star:.4}");
+    assert!(
+        g_star - g_floor < 0.01,
+        "the floor {g_floor:.4} must sit JUST below the peak {g_star:.4} — that is why the basin is narrow"
+    );
+}
+
+/// The Python's `test_grid_converged`: `C_opt` is settled on the cross-plane grid — `ny = nz` of
+/// 32, 48 and 64 agree to 0.05 in `C` over the Python's own 81-point log sweep of `J ∈ [1, 400]`.
+/// The coarse location grid this file uses everywhere else would make the check vacuous (its
+/// nodes are ~2× apart), so the fine sweep is the point here, not a taste.
+#[test]
+fn the_located_optimum_is_grid_converged() {
+    let far = design_point().far;
+    let npts = 81;
+    let cs: Vec<f64> = [32usize, 48, 64]
+        .iter()
+        .map(|&n| {
+            let mut best = (f64::INFINITY, 0.0);
+            for i in 0..npts {
+                let j = 400.0f64.powf(i as f64 / (npts - 1) as f64);
+                let g = spatial_segregation(far, PHI_P, S0, H0, j, 0.316, 0.28, 0.28, n, n);
+                if g < best.0 {
+                    best = (g, j);
+                }
+            }
+            (S0 / H0) * best.1.sqrt()
+        })
+        .collect();
+    let spread = cs.iter().cloned().fold(f64::NEG_INFINITY, f64::max)
+        - cs.iter().cloned().fold(f64::INFINITY, f64::min);
+    assert!(spread < 0.05, "C_opt must be grid-converged over ny=nz in {{32,48,64}}, got {cs:?}");
 }
