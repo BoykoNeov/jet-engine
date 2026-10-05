@@ -186,7 +186,9 @@ fn the_entry_clock_is_path_independent() {
 /// correction. The NET still lands below 1, which is the confirmation.
 #[test]
 fn the_two_channels_oppose_and_the_net_is_still_deeper_frozen() {
-    for tt4 in [1800.0, 2200.0, 2300.0] {
+    // 2400 K is the Python's hot end for the channel signs; the coverage ledger (slice AT) found
+    // this loop stopping at 2300, so it is added rather than left to the band gate's net reading.
+    for tt4 in [1800.0, 2200.0, 2300.0, 2400.0] {
         let d = dp(tt4);
         let c = cpl(&d, CoupledNoFreezeOut::default(), true);
         assert!(

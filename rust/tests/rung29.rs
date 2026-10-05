@@ -402,12 +402,18 @@ fn the_margin_helper_reproduces_the_certified_flight_anchor() {
     );
 }
 
-/// The verdict survives the flight axis too.
+/// The verdict survives the flight axis too — and the earned/not-earned boundary stays bracketed
+/// `1800 < Tt4* < 2200` at every `M0`, with the design bound under `2e-4`. Those three were the
+/// Python's and this gate carried only the first until the coverage ledger (slice AT) read the
+/// bodies side by side.
 #[test]
 fn earned_at_design_is_m0_robust() {
     for m0 in M0_SCAN {
         let (_, _, s) = bracket(1500.0, PI_C, m0);
         assert!(s.frozen_turbine_earned(), "M0={m0}: the design point should stay EARNED");
+        assert!(s.dt5_fraction().abs() < 2e-4, "M0={m0}: design bound drifted: {:.3e}", s.dt5_fraction());
+        assert!(bracket(1800.0, PI_C, m0).2.frozen_turbine_earned(), "M0={m0}: 1800 K should be earned");
+        assert!(!bracket(2200.0, PI_C, m0).2.frozen_turbine_earned(), "M0={m0}: 2200 K should NOT be earned");
     }
 }
 

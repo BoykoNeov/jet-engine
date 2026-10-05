@@ -28144,11 +28144,11 @@ the Rust test(s) that carry each, or why none does, under a closed status list:
 
 | status | rows | | status | rows |
 |---|---|---|---|---|
-| PORTED | 1 044 | | RE-ANCHORED (fingerprint kernels) | 45 |
-| LOOPED | 34 | | PORTED-IN-AT | 18 |
-| SPLIT | 34 | | RETIRED (`usage_blocks`, `rust_line_citations`) | 9 |
-| DECLARED-NONPORT | 8 | | MERGED | 5 |
-| CORRECTED | 5 | | NARROWED | 1 |
+| PORTED | 1 036 | | RE-ANCHORED (fingerprint kernels) | 45 |
+| SPLIT | 36 | | PORTED-IN-AT | 18 |
+| LOOPED | 34 | | RETIRED (`usage_blocks`, `rust_line_citations`) | 9 |
+| DECLARED-NONPORT | 8 | | NARROWED | 6 |
+| CORRECTED | 6 | | MERGED | 5 |
 
 `rust/tests/coverage_ledger.rs` (3 gates) keeps it honest after AU: the frozen counts, the status
 list (there is no `GAP` status, so a gap cannot be committed), a reason on every non-`PORTED` row,
@@ -28161,9 +28161,21 @@ equals pytest's collection (it dies at AU with the rest of `rust/oracle/*.py`).
 `cargo test -- --list` (1 978 = 1 977 + 1 doctest; a source regex found 1 925 — it misses the
 fingerprint `gate!` macro and multi-line attributes, so the regex was not used as the list).
 Tiers: name (828 rows — exact, gate-prefixed, reworded), the porters' OWN header tables
-(141 — `| test_x | [`fn`] |` lines, from phase 6 on), word-overlap pairs read side by side
-(108), and a hand-read of everything else (117), plus 9 by policy. Every parametrized row's case
-values were checked as literals in its Rust body (or read by hand where they were opaque).
+(141 — `| test_x | [`fn`] |` lines, from phase 6 on), word-overlap pairs (108), and a hand-read
+of everything else (117), plus 9 by policy. Every parametrized row's case values were checked as
+literals in its Rust body (or read by hand where they were opaque). **The 108 pairs were first
+accepted on their NAMES** — docstrings were compared for rungs 10–24 only — and the advisor
+blocked the slice on it: those are exactly the rows no porter's table covered. They were then
+re-checked by NUMBERS (every distinctive number in the Python body looked for in the Rust body):
+68 carried all of theirs; the 40 that did not were read side by side. Most were noise (a rung
+number in a message, a constant the Rust names), but **two were mis-paired** (rung 9's soot guard
+and rung 33's envelope each SPLIT over a second Rust test the pair tier never saw) and **five were
+NARROWED** — fewer temperatures or a weaker bar than the Python (rungs 23, 27, 29 ×2, 30) — with
+rung 29's helper re-aim relabelled CORRECTED. The same number check over the 952 name/table rows is too
+noisy to read whole (553 flagged); restricted to its one telling signal — a Python TEMPERATURE
+the Rust body lacks — it flagged 27, of which ONE was a real narrowing (rung 29's
+`earned_at_design_is_M0_robust` had dropped the 1800/2200 K bracket and the `2e-4` bar at every
+`M0`; restored).
 
 **THE FINDING: EIGHT tests were never ported and nothing said so** — all in the early "by gate"
 ports (rungs 22, 23, 24, 28; slices C–F), none after phase 6, whose files carry a roster or a
@@ -28180,11 +28192,14 @@ mapping table. Each claim was checked by NO Rust test:
 | 24 | `local_rate_moves_ei_only_modestly_vs_rung23` | rung 24 moves ⟨EI⟩ < 10 % against rung 23 |
 | 28 | `depletion_unbounded_heat_release_saturates` | the six-decade sweep: one channel runs away, the other SATURATES |
 
-All eight are ported (green first run, at the Python's own grids), and six NARROWINGS were found
-beside them; five are closed (rung 23's ceiling at `J = 1, 400` and clamp at `J = 100`; rung 24's
-per-cell `τ ∝ τ_mix` at `J = 4`; rung 27's `L = 0` guard; rung 28's `L`/`rate_scale` guards and its
-six-point band) and one stays NARROWED with its reason (rung 41's cycle gate does not interleave
-the single-spool `SpoolTransient`; Rust diagnostics take `&self`, so it cannot perturb the run).
+All eight are ported (green first run, at the Python's own grids). Narrowings found beside them
+and closed: rung 23's ceiling at `J = 1, 400` and clamp at `J = 100`; rung 24's per-cell
+`τ ∝ τ_mix` at `J = 4`; rung 27's `L = 0` guard; rung 28's `L`/`rate_scale` guards, its six-point
+band and its channel signs at 2400 K; rung 29's M0 bracket. **Six stay NARROWED, each with its
+reason in the row**: rung 41's cycle gate does not interleave the single-spool `SpoolTransient`
+(Rust diagnostics take `&self`, so it cannot perturb the run), and the five the number check
+found (fewer temperatures, or a code threshold where the Python had absolute bars) — narrowings,
+not gaps: every claim still has a Rust gate, on fewer points.
 
 **The two named gap ports.** `rust/tests/claude_md_reference.rs` — the byte/line budget, constants
 verbatim, `include_bytes!` so a `CLAUDE.md` edit rebuilds it (the budget's history stays in the
@@ -28203,14 +28218,16 @@ any other read form (`.get(`, `.items(`, `**`, …), and shows a renamed key rep
 NAMES, not paths: `s`/`T` are written at three depths, so a one-depth rename would pass.
 
 **Limits.** A row says where a test went, not that every assertion inside it went too: an
-assertion dropped inside a test that kept its name is invisible to the ledger (rung 23's design-
+assertion dropped inside a test that kept its name is invisible to the ledger, except where the
+number check reached it (all 108 pairs; the 952 name/table rows only on the temperature signal) (rung 23's design-
 point gate, for one, does not transcribe an excess-field identity line, and says so in its row).
 And the instrument's own miss, caught by the gate rather than in silence: the first `#[test]`
 scanner did not read one-line `#[test] fn name() { … }`, which is how rungs 62/63 spell a
 pytest case each — 46 cited tests read as missing until it did; the scanner gate now pins
 rung 62's 58.
 
-**Gates:** the nine touched/new Rust test binaries in full (126 passed, 0 failed); `pytest
+**Gates:** the eleven touched/new Rust test binaries in full (rung22/23/24/27/28/29, visuals,
+`porting_rules`, and the three new files — all green); `pytest
 tests/test_rust_line_citations.py tests/test_claude_md_reference.py` (7 passed — no new
 `engine.py:N` citation); the ledger checker (1 203 / 1 387). `CLAUDE.md` untouched (8 B headroom,
 AU's rewrite).

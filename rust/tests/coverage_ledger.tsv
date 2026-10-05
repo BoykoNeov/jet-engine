@@ -208,7 +208,7 @@ test_rung21	test_shape_preserved_optimum_at_jopt	1	PORTED	rung21::the_lift_prese
 test_rung22	test_reduce_none_leaves_prior_path_untouched	1	PORTED	rung22::reduce_none_leaves_the_prior_path_untouched	
 test_rung22	test_reduce_primary_diagnostic_bit_identical	1	PORTED-IN-AT	rung22::a_spatial_call_leaves_the_primary_diagnostic_bit_identical	ported at slice AT from this ledger
 test_rung22	test_group_collapse_gmin_geometry_independent	1	PORTED	rung22::the_minimum_value_is_geometry_independent	
-test_rung22	test_j_opt_shifts_as_H_over_S_squared	1	PORTED	rung22::j_opt_shifts_exactly_as_h_over_s_squared	
+test_rung22	test_j_opt_shifts_as_H_over_S_squared	1	PORTED	rung22::j_opt_shifts_exactly_as_h_over_s_squared	on rung22.rs's coarse location grid: an EXACT grid ratio replaces the Python's 81-point sweep at 15 % (rung22.rs J_COARSE note)
 test_rung22	test_C_opt_is_an_output_matching_the_closed_form	1	PORTED	rung22::c_opt_is_the_derived_closed_form_and_the_argmin_tracks_it	
 test_rung22	test_k_p_sets_C_opt_and_the_collapse_is_robust	1	PORTED	rung22::a_larger_k_p_moves_c_opt_down_and_the_argmin_follows	
 test_rung22	test_no_C_opt_knob_it_is_derived	1	DECLARED-NONPORT		rung22.rs header: an unknown struct field is a compile error in Rust; the derivation is gated instead (c_opt_is_the_derived_closed_form_and_the_argmin_tracks_it)
@@ -227,7 +227,7 @@ test_rung23	test_reduce_spatial_dwell_none_is_prior_path	1	PORTED	rung23::reduce
 test_rung23	test_terminal_field_reproduces_rung22	1	PORTED	rung23::the_terminal_field_reproduces_rung_22_BIT_for_bit	tightened to bit equality; J{4,16,100} x ny{16,20,32}
 test_rung23	test_production_g_matches_spatialpdf	1	PORTED	rung23::production_reports_the_same_width_as_rung_22_at_a_matched_grid	tightened to bit equality
 test_rung23	test_correlation_adds_no_at_design_point	1	PORTED	rung23::the_correlation_adds_no_and_the_instrument_is_alive	the Python's excess-field identity line is not transcribed; a dead-instrument bar is added
-test_rung23	test_correlation_sign_one_signed_across_tau_mix	1	PORTED	rung23::the_correlation_sign_is_one_signed_across_tau_mix	
+test_rung23	test_correlation_sign_one_signed_across_tau_mix	1	NARROWED	rung23::the_correlation_sign_is_one_signed_across_tau_mix	Python J{4,16} x tau_mix scale{0.2,1,5}; Rust J=16 x five C_e (tau_mix x0.2-x5). J=4 at scale 1 is gated by the_correlation_is_concentrated_under_penetration
 test_rung23	test_correlation_concentrated_under_penetration	1	PORTED-IN-AT	rung23::the_correlation_is_concentrated_under_penetration	ported at slice AT from this ledger; Python grids
 test_rung23	test_g_below_two_stream_ceiling	1	PORTED-IN-AT	rung23::the_ceiling_and_the_clamp_hold_at_the_pythons_own_jets	ported at slice AT from this ledger; J{1,16,400} as the Python (the merged house gate visits J{4,16,64})
 test_rung23	test_clamp_dormant_at_station4	1	PORTED-IN-AT	rung23::the_ceiling_and_the_clamp_hold_at_the_pythons_own_jets	ported at slice AT from this ledger; J{4,16,100} as the Python
@@ -275,7 +275,7 @@ test_rung27	test_da_off_is_rung14_clamp_bit_for_bit	1	PORTED	rung27::da_off_is_t
 test_rung27	test_rate_scale_infinity_dormant_clamp	1	PORTED	rung27::rate_scale_infinity_makes_the_clamp_dormant	
 test_rung27	test_frozen_from_entry_at_every_tt4	1	PORTED	rung27::no_is_frozen_from_entry_at_every_tt4_unlike_the_major_pool	
 test_rung27	test_kill_test_both_terms_drive_inverting_rung26	1	PORTED	rung27::kill_test_both_terms_drive_inverting_rung26	
-test_rung27	test_margin_narrows_with_tt4_no_crossing	1	PORTED	rung27::the_margin_narrows_with_tt4_without_crossing	
+test_rung27	test_margin_narrows_with_tt4_no_crossing	1	NARROWED	rung27::the_margin_narrows_with_tt4_without_crossing	Python Tt4{1500,1650,1800,2000,2200}; Rust {1500,1800,2200}, same four assertions (the end-to-end collapse bar reads the same endpoints)
 test_rung27	test_clamp_fires_on_marched_no	1	PORTED	rung27::the_clamp_fires_on_the_marched_no	
 test_rung27	test_clamp_scales_linearly_with_no_level	1	PORTED	rung27::the_clamp_scales_with_the_no_level_exactly_frozen_and_affine_when_relaxing	
 test_rung27	test_cycle_untouched	1	PORTED	rung27::cycle_untouched	
@@ -286,7 +286,7 @@ test_rung28	test_uncoupled_is_rung27_bit_for_bit	1	PORTED	rung28::uncoupled_is_r
 test_rung28	test_frozen_trajectory_matches_the_rung27_path	1	PORTED	rung28::the_frozen_trajectory_matches_the_rung27_path	
 test_rung28	test_no_rate_off_recovers_the_clamp	1	PORTED	rung28::no_rate_off_recovers_the_clamp	
 test_rung28	test_entry_da_is_path_independent_and_frozen_everywhere	1	PORTED	rung28::the_entry_clock_is_path_independent	
-test_rung28	test_both_channels_are_real_and_oppose	1	MERGED	rung28::the_two_channels_oppose_and_the_net_is_still_deeper_frozen	Python Tt4{1800,2200,2400}; Rust {1800,2200,2300}; the net verdict at 2400 is the_net_is_deeper_frozen_across_the_band
+test_rung28	test_both_channels_are_real_and_oppose	1	MERGED	rung28::the_two_channels_oppose_and_the_net_is_still_deeper_frozen	Python Tt4{1800,2200,2400}; the Rust loop {1800,2200,2300,2400} (2400 added at slice AT) carries the same four assertions plus the net verdict
 test_rung28	test_opposing_channel_grows_monotonically_with_tt4	1	PORTED	rung28::the_channel_ratio_rises_with_tt4	
 test_rung28	test_net_is_deeper_frozen_across_the_band	1	PORTED-IN-AT	rung28::the_net_is_deeper_frozen_across_the_band	ported at slice AT from this ledger; the Python's six-point BAND
 test_rung28	test_depletion_unbounded_heat_release_saturates	1	PORTED-IN-AT	rung28::depletion_is_unbounded_while_the_heat_release_saturates	ported at slice AT from this ledger; the six-decade sweep
@@ -300,18 +300,18 @@ test_rung28	test_beta_falls_with_pressure_ratio	1	PORTED	rung28::beta_falls_with
 test_rung28	test_no_barely_moves_despite_the_da_ratios	1	PORTED	rung28::no_barely_moves_despite_the_da_ratios	
 test_rung28	test_cycle_untouched	1	PORTED	rung28::cycle_untouched	
 test_rung28	test_guards	1	SPLIT	rung28::guard_length_must_be_positive;rung28::guard_nstep_below_100_is_refused;rung28::guard_rate_scale_must_be_positive;rung28::guard_pool_rate_scale_must_be_positive;rung28::guard_requires_the_equilibrium_gas;rung28::guard_rejects_back_pressure_above_total	all six Python arms; the L=0 and rate_scale=0 arms added at slice AT
-test_rung29	test_reduce_to_prior_frozen_is_the_shipped_turbine	1	PORTED	rung29::the_frozen_bound_is_the_shipped_turbine_bit_for_bit	
-test_rung29	test_work_limited_solver_agrees_with_the_closed_form	1	PORTED	rung29::the_solver_frozen_branch_agrees_with_the_closed_form	
+test_rung29	test_reduce_to_prior_frozen_is_the_shipped_turbine	1	NARROWED	rung29::the_frozen_bound_is_the_shipped_turbine_bit_for_bit	Python Tt4{1500,1800,2100,2400}; Rust {1500,2200}, and against an actual Turbine rather than the retyped two lines
+test_rung29	test_work_limited_solver_agrees_with_the_closed_form	1	PORTED	rung29::the_solver_frozen_branch_agrees_with_the_closed_form	Tt4{1500,2200} for the Python's {1500,2100}; the T5 bar tightened 1e-6 -> 1e-8
 test_rung29	test_cycle_untouched	1	PORTED	rung29::cycle_untouched	
-test_rung29	test_verdict_earned_at_design_bites_hot	1	PORTED	rung29::the_freeze_is_earned_at_design_and_bites_hot	
+test_rung29	test_verdict_earned_at_design_bites_hot	1	NARROWED	rung29::the_freeze_is_earned_at_design_and_bites_hot	Rust walks a five-point ladder 1300-2300 against the code's SHIFT_EARNED_TOL; the Python's absolute bars at 2400 K (design < 2e-4, hot > 1e-2, hot/design > 100) are not asserted
 test_rung29	test_the_inversion_ratio_is_not_energy	1	PORTED	rung29::the_super_equilibrium_ratio_is_anti_correlated_with_the_energy	
 test_rung29	test_direction_recombination_reheats	1	PORTED	rung29::the_shifting_exit_is_warmer_and_at_higher_pressure	
 test_rung29	test_earned_at_design_is_pi_c_robust	1	PORTED	rung29::earned_at_design_is_pi_c_robust	
 test_rung29	test_pi_c_channels_oppose	1	PORTED	rung29::pi_c_channels_oppose	
 test_rung29	test_pi_c_is_not_simply_protective	1	PORTED	rung29::pi_c_is_not_simply_protective	
 test_rung29	test_inventory_alone_fails_on_the_pi_c_axis	1	PORTED	rung29::inventory_alone_fails_on_the_pi_c_axis	
-test_rung29	test_M0_helper_reproduces_the_certified_flight_anchor	1	PORTED	rung29::the_margin_helper_reproduces_the_certified_flight_anchor	
-test_rung29	test_earned_at_design_is_M0_robust	1	PORTED	rung29::earned_at_design_is_m0_robust	
+test_rung29	test_M0_helper_reproduces_the_certified_flight_anchor	1	CORRECTED	rung29::the_margin_helper_reproduces_the_certified_flight_anchor	rung29.rs: one parameterised helper in Rust, so the Python's helper-vs-helper equality is a self-comparison; re-aimed at helper vs the main construction, anchor kept
+test_rung29	test_earned_at_design_is_M0_robust	1	PORTED	rung29::earned_at_design_is_m0_robust	the 2e-4 design bar and the 1800/2200 K bracket at every M0 were missing from the Rust body; added at slice AT
 test_rung29	test_M0_shift_is_monotone_protective	1	PORTED	rung29::the_m0_shift_is_monotone_protective	
 test_rung29	test_M0_channels_are_lopsided	1	PORTED	rung29::the_m0_channels_are_lopsided	
 test_rung29	test_delta_h_swing_not_headroom_is_the_discriminator	1	PORTED	rung29::the_delta_h_swing_not_headroom_is_the_discriminator	
@@ -321,7 +321,7 @@ test_rung30	test_solver_reproduces_cpg_closed_form	1	PORTED	rung30::the_cpg_thro
 test_rung30	test_solver_m9_is_one_on_reacting_gas	1	PORTED	rung30::the_reacting_throat_exits_at_mach_one	
 test_rung30	test_verdict_design_point_chokes_and_costs_thrust	1	PORTED	rung30::it_chokes_at_design_and_the_pressure_term_rescues_most_of_the_deficit	
 test_rung30	test_direction_pressure_term_partially_cancels_momentum_loss	1	MERGED	rung30::it_chokes_at_design_and_the_pressure_term_rescues_most_of_the_deficit	the verdict and the direction are one Rust gate: momentum falls, the pressure term recovers > half
-test_rung30	test_cycle_untouched_default_nozzle	1	PORTED	rung30::the_default_nozzle_path_is_untouched	
+test_rung30	test_cycle_untouched_default_nozzle	1	NARROWED	rung30::the_default_nozzle_path_is_untouched	Rust asserts the default nozzle bit-equal to the design run; the Python's absolute rung-6 anchors are not re-asserted here (F/mdot 798.37 is, in rung31-34/38; the station values are the fingerprint's absolute gate)
 test_rung31	test_reduce_to_design	1	PORTED	rung31::gate1_reduce_to_design	
 test_rung31	test_cpg_closed_form_referencing	1	PORTED	rung31::gate2_cpg_closed_form_referencing	
 test_rung31	test_cycle_untouched	1	PORTED	rung31::gate3_cycle_untouched	
@@ -340,7 +340,7 @@ test_rung33	test_reduce_choked_bitforbit	1	PORTED	rung33::gate1_reduce_choked_bi
 test_rung33	test_dispatch_and_boundary_continuity	1	PORTED	rung33::gate2_dispatch_and_boundary_continuity	
 test_rung33	test_the_rung_cpg_tau_t_varies	1	PORTED	rung33::gate3_the_rung_cpg_tau_t_varies	
 test_rung33	test_nontautological_independent_solve	1	PORTED	rung33::gate4_nontautological_independent_solve	
-test_rung33	test_envelope_monotone_and_subidle	1	PORTED	rung33::gate5_envelope_monotone	
+test_rung33	test_envelope_monotone_and_subidle	1	SPLIT	rung33::gate5_envelope_monotone;rung33::gate5_subidle_is_reported_not_force_fit	the monotone envelope and the SUB-IDLE refusal are two Rust gates
 test_rung33	test_homogeneity_coupling_through_pi_c	1	PORTED	rung33::gate6_homogeneity_coupling_through_pi_c	
 test_rung33	test_cycle_untouched_and_map_out_of_scope	1	SPLIT	rung33::gate7_cycle_untouched;rung32::rung33_gate7_second_half_map_does_not_inherit_subsonic	rung33.rs header: the map half is a claim about rung 32 and lives in rung32.rs
 test_rung34	test_reduce_equilibrium_is_the_steady_matcher	1	PORTED	rung34::gate1_reduce_equilibrium_is_the_steady_matcher	
@@ -1162,7 +1162,7 @@ test_rung9	test_rich_pool_is_CO_H2_major_and_wgs_consistent	1	PORTED	rung9::rich
 test_rung9	test_ei_no_bell_falls_on_rich_flank	1	PORTED	rung9::ei_no_bell_falls_on_rich_flank	
 test_rung9	test_rich_mixout_returns_to_Tt4_split_independent	1	PORTED	rung9::rich_mixout_returns_to_tt4_split_independent	
 test_rung9	test_rich_dilution_drops_fraction_not_index	1	PORTED	rung9::rich_dilution_drops_fraction_not_index	
-test_rung9	test_soot_bound_guard	1	PORTED	rung9::soot_bound_rejects_30	
+test_rung9	test_soot_bound_guard	1	SPLIT	rung9::soot_bound_accepts_exactly_two;rung9::soot_bound_rejects_22;rung9::soot_bound_rejects_30	the accepted bound and both refused arms, one Rust test each (the pair tier had found only the 3.0 arm)
 test_rung9	test_kcheck_and_trace_hold_at_rich_primary	1	PORTED	rung9::kcheck_and_trace_hold_at_rich_primary	
 test_rust_line_citations	test_every_citation_still_points_where_it_was_blessed	1	RETIRED		guards engine.py:N citation DRIFT; a deleted file cannot drift. Citations resolve at the python-final tag (plan § 8.1 (v))
 test_rust_line_citations	test_the_blessed_set_is_exactly_the_cited_set	1	RETIRED		guards engine.py:N citation DRIFT; a deleted file cannot drift. Citations resolve at the python-final tag (plan § 8.1 (v))
