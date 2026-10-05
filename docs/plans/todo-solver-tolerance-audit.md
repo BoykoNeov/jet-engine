@@ -222,3 +222,40 @@ temperatures there sit lower than the cell's label was not checked.
 drop floored species pushing further down from the step test. On a currently-converging solve
 the floor is inactive at exit, so the iterate sequence should be unchanged — to be proven by the
 oracle gates, not assumed. Decision: the user's.
+
+### (d) CORRECTION to (c), same day — measured after review (`examples/probe_eq4.rs`, `probe_r33*.rs`)
+
+**(c)'s "every other species has converged" was NOT shown, and is false in general.** The
+damping `scale = 1/step` is computed from the PRE-floor step too, so the pinned species throttles
+EVERY species' update to ~`1/step` (~14 % of a Newton step at 440 K, ~2 % at 300 K). Re-measured
+against the same solve with the floor lowered to -300 (the unfloored answer), on 848 failing
+`(f, T, p)` cases (f 1e-14–0.0675, p 3e4–2e6, T 300–900):
+
+| `f` band | Failing solves | Max relative error, any species above 1e-20 mol |
+|---|---|---|
+| `f >= 1e-3` (real mixtures) | 447 | **5e-4** (OH, a trace radical) — close, not converged |
+| `f < 1e-3` (the burner bisection's low end) | 401 | **5.8e4** (H2O, itself a trace there) — far from converged |
+
+So a fix must remove floored species pushing further down from the **damping scale** as well as
+from the step test; changing the convergence test alone would exit on a still-damped composition.
+
+**Passing solves never touch the floor: 0 of 1 787** successful solves on the same grid hit it at
+any iteration. A fix gated on "a floored species still pushing down" is therefore invisible on
+every currently-passing point of this grid — by measurement.
+
+**Attribution through rung 33's REAL matcher** (reacting-equilibrium, `M0` in {0, 0.3, 0.5, 0.85,
+1.2, 1.6}, `Tt4` 420–800):
+- The panel's 440 / 420 K `SUB-IDLE` rows: the first failure IS this floor (H pinned, on the
+  burner's FIRST bisection trial, an ordinary `f`), at every `M0` that reaches the burner.
+- With the floor lowered to -300 those rows STILL fail — now at `inverse: root not bracketed`.
+  **So a floor fix moves the failure, not the label:** the panel would print the same two rows.
+- The 480 K row (floor failures swallowed inside the march at `M0` 0.5 / 0.85): lowered floor
+  gives `pi_c 2.3471, F/mdot 27.32`; the published row is `2.347, 27.3` — **unchanged at printed
+  precision** (bits not compared).
+- **The recorded 600 / 650 K raises did NOT reproduce** on this grid — zero equilibrium failures
+  at 600 / 650 at any `M0`. Their attribution stays open (the original census swept 3 gases and
+  may have used other Machs).
+
+**Net:** the floor is a real solver defect, but on the shipped panels it changes no printed number
+found so far; its cost is a mislabelled failure and swallowed bracket trials. Decision still the
+user's.
