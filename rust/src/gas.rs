@@ -937,8 +937,20 @@ pub fn try_equil_solve(
         // Damping: cap the log-step at 1.
         let scale = if step < 1.0 { 1.0 } else { 1.0 / step };
         for j in 0..8 {
-            // Floor: n >= ~1e-35, for the trace species.
-            y[j] = (y[j] + scale * dy[j]).max(-80.0);
+            // Floor: n >= ~5e-131, for the trace species.
+            //
+            // **LOWERED from -80 (n >= ~1e-35) on 2026-10-05 — the one deliberate divergence from
+            // `python-final`'s `gas.py:643`.** The step above is measured BEFORE this floor, so a
+            // species whose EQUILIBRIUM lies below it (H below ~460 K at any f, up to ~580 K as
+            // f -> 0; CO at tiny f) asked for the same downward step forever: `step` stuck near 7,
+            // `scale` throttled every OTHER species too, and the solve spun to the cap and raised
+            // on a perfectly well-posed equilibrium. At -300 all 392 such lean cases of a 4 425-
+            // case grid converge, and **every solve that converged at -80 is bit-identical** (4 023
+            // of 4 023 — none of them ever reached -80, so this line never bound). Still failing:
+            // cold (<= 400 K) RICH mixtures, where O2 walks one log unit per step from its seed
+            // and runs out of iterations, not floor; no caller reaches them. See
+            // `docs/plans/todo-solver-tolerance-audit.md` § "Rust-era re-audit" (c)-(e).
+            y[j] = (y[j] + scale * dy[j]).max(-300.0);
         }
         if step * scale < 1e-13 {
             converged = true;
@@ -948,7 +960,9 @@ pub fn try_equil_solve(
 
     // CONVERGENCE (rung-6 standing assert, the Newton twin of the burner's fixed-point
     // `else: assert False`): the atom balances below can hold with the log-Kp residuals still
-    // open, so guard the FULL solve explicitly. Measured ~10-20 steps, far under 200.
+    // open, so guard the FULL solve explicitly. Measured ~10-20 steps, far under 200 — on the
+    // HOT path; a trace species seeded far above a deep equilibrium walks one log unit per step,
+    // and on the 2026-10-05 floor fix's grid every lean solve stayed at or under 160.
     //
     // The MESSAGE is Python's verbatim, and that is load-bearing rather than cosmetic: this is
     // the one guard rung 33's march catches by exception TYPE, so the text is all that

@@ -720,6 +720,8 @@ impl TwoSpoolCore {
     /// `flow_coefficient_turn`), and the equilibrium Newton raises **14 times** inside their
     /// caught scope on the dump grid. The twin below is what that costs. Kept as a pair of
     /// functions rather than a rewrite, so slice K's gated body is the one still running.
+    /// (2026-10-05: the Newton's `-80` floor, now lowered, was behind those raises; the twin
+    /// stays — the burner's own `f >= 0` refusal reaches the same scope as an `Abort`.)
     ///
     /// [`Abort`]: crate::gas::Abort
     pub fn working_gas(&self, f: f64, tt4: f64, pt4: f64) -> Option<Gas> {

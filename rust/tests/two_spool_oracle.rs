@@ -45,6 +45,10 @@ use turbojet::matcher::OffDesignMatcher;
 use turbojet::two_spool::{build_two_spool_turbojet, counters, Matched, MatchedMap,
                           TwoSpoolLosses, TwoSpoolMapMatcher, TwoSpoolMatcher};
 
+// The 2026-10-05 equilibrium-floor divergence — one rule, shared by the three oracle gates.
+#[path = "common/eq_floor.rs"]
+mod eq_floor;
+
 const ORACLE_CPYTHON: &str = include_str!("../oracle/two_spool_cpython.tsv");
 const ORACLE_PYPY: &str = include_str!("../oracle/two_spool_pypy.tsv");
 
@@ -141,6 +145,7 @@ fn abort_code(msg: &str) -> f64 {
         ("turbine-efficiency loop did not converge", 12.0),
         ("speed-line bracket fails", 13.0),
         ("shaft does not close", 14.0),
+        ("equilibrium burner balance", eq_floor::BALANCE),
     ] {
         if msg.contains(tag) {
             return code;
@@ -150,7 +155,7 @@ fn abort_code(msg: &str) -> f64 {
 }
 
 const ALL_CODES: &[f64] = &[0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0,
-                            12.0, 13.0, 14.0];
+                            12.0, 13.0, 14.0, eq_floor::BALANCE];
 
 thread_local! {
     static EXPECTING_PANIC: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
@@ -541,8 +546,7 @@ fn bar_for(quant: &str, strict: bool) -> f64 {
 }
 
 fn compare_against(oracle_text: &str, label: &str, require_bit_exact: bool) {
-    let oracle = load_oracle(oracle_text);
-    let ours = rust_values();
+    let (ours, oracle) = eq_floor::reconcile(rust_values(), load_oracle(oracle_text));
     println!("\n=== Rust vs {label} ===");
     assert_eq!(ours.len(), oracle.len(),
                "key COUNT differs: rust {} vs oracle {} — the dump and the gate have drifted \

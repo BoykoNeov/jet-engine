@@ -41,6 +41,10 @@ use turbojet::engine::{build_turbojet, FlightCondition, Losses};
 use turbojet::gas::{Abort, Gas, GasSpec};
 use turbojet::matcher::{try_r31_solve_turbine, Branch, MatcherHooks, OffDesignMatcher};
 
+// The 2026-10-05 equilibrium-floor divergence — one rule, shared by the three oracle gates.
+#[path = "common/eq_floor.rs"]
+mod eq_floor;
+
 const ORACLE_CPYTHON: &str = include_str!("../oracle/offdesign_cpython.tsv");
 const ORACLE_PYPY: &str = include_str!("../oracle/offdesign_pypy.tsv");
 
@@ -140,6 +144,7 @@ fn abort_code(msg: &str) -> f64 {
         ("equilibrium Newton", 4.0),
         ("off-design burner f did not converge", 5.0),
         ("nozzle back-pressure", 6.0),
+        ("equilibrium burner balance", eq_floor::BALANCE),
     ] {
         if msg.contains(tag) {
             return code;
@@ -458,8 +463,7 @@ fn bar_for(quant: &str, strict: bool) -> f64 {
 }
 
 fn compare_against(oracle_text: &str, label: &str, require_bit_exact: bool) {
-    let oracle = load_oracle(oracle_text);
-    let ours = rust_values();
+    let (ours, oracle) = eq_floor::reconcile(rust_values(), load_oracle(oracle_text));
     println!("\n=== Rust vs {label} ===");
     assert_eq!(ours.len(), oracle.len(),
                "key COUNT differs: rust {} vs oracle {} — the dump and the gate have drifted \

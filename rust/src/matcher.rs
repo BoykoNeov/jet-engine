@@ -431,6 +431,11 @@ impl OffDesignMatcher {
     /// [`Burner::try_solve_equilibrium`] (26 raises, on five cells that go on to bracket). The
     /// second is the one § 5.4 (f) could not see, because it never passes through
     /// `freeze_equilibrium`.
+    ///
+    /// **2026-10-05: those 26 are no longer Newton raises.** They were the Newton's `-80` floor
+    /// (`gas.rs`); with it lowered, the same trials are refused by the burner itself — `Tt3 >
+    /// Tt4`, no `f >= 0` — as an `Abort` from `try_solve_equilibrium`, so the march rejects the
+    /// SAME trials and its brackets are bit-identical (`tests/common/eq_floor.rs`).
     pub fn try_solve_f(&self, tt3: f64, pt4: f64, tt4: f64) -> Result<f64, Abort> {
         let gas = self.gas();
         if gas.is_equilibrium() {

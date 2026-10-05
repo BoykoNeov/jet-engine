@@ -403,6 +403,16 @@ impl Burner {
     /// Its OWN 200-step guard stays an `assert!` and that is a measurement, not an oversight:
     /// over the recorded sweep it never fires. Only the Newton beneath it does.
     ///
+    /// **2026-10-05 — those five cells no longer raise here.** They were the equilibrium
+    /// Newton's `-80` floor (see `gas.rs`), not the burner; with the floor lowered the march
+    /// reaches the same matched points from `0.15`, bit-identical. What the floor had been
+    /// HIDING is the refusal below: at `M0 = 2` the ram-heated `Tt3` exceeds a 500 / 600 K
+    /// `Tt4`, no `f >= 0` closes the balance, and the bisection pins at `f ~ 4e-25`. That was
+    /// caught only by `apply`'s balance `assert!` — a PANIC on a route where the Newton's
+    /// `Abort` had been skippable, so rung 41's scans would have crashed on it. It is returned
+    /// here as an `Abort` with `apply`'s own message, gated so it can fire only where that
+    /// assert would: the bracket never left `f = 0` AND the balance is open.
+    ///
     /// `pub` (like [`sonic_throat_bisect`]) so a gate can reach it without a later visibility
     /// churn — rung 31's `solve_f` is its only production caller besides `apply`.
     pub fn try_solve_equilibrium(&self, tt3: f64, pt4: f64, gas: &Gas) -> Result<f64, Abort> {
@@ -410,13 +420,16 @@ impl Burner {
         let (mut lo, mut hi) = (0.0f64, gas.f_stoich_lean() * (1.0 - 1e-6)); // lean bracket
         let mut f = 0.0f64;
         let mut ok = false;
+        let (mut res_last, mut prod_last) = (0.0f64, 0.0f64);
         for _ in 0..Self::FP_MAX {
             f = 0.5 * (lo + hi);
             let comp = gas.try_equilibrium_composition(f, self.tt4, pt4)?;
             let n_fuel = gas.n_fuel_per_air(f);
+            let prod = gas.h_products_abs_b(&comp, self.tt4);
             let res = h_air + n_fuel * gas.hf_fuel_molar()
-                - gas.h_products_abs_b(&comp, self.tt4)
+                - prod
                 - (1.0 - self.eta_b) * n_fuel * gas.lhv_molar();
+            (res_last, prod_last) = (res, prod);
             if hi - lo <= Self::FP_TOL * (f + 1e-12) {
                 ok = true;
                 break;
@@ -428,6 +441,10 @@ impl Burner {
             }
         }
         assert!(ok, "rung-6 burner root-find did not converge in {} steps", Self::FP_MAX);
+        if lo == 0.0 && !(res_last.abs() < 1e-6 * prod_last.abs()) {
+            return Err(Abort(
+                "rung-6 equilibrium burner balance: h_air + n_f*hf != Σ n_i h_i + loss".to_string()));
+        }
         Ok(f)
     }
 }

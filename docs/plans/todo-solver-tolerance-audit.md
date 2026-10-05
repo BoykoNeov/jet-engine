@@ -1,9 +1,9 @@
 # TODO — audit the iterative solvers for absolute-tolerance-below-noise-floor
 
-**Status:** CLOSED NEGATIVE for its own hypothesis — the six `_ETA_TOL` sites (2026-07-23)
-and every Rust-era site added since (2026-10-05, last section). **One finding stays OPEN,
-awaiting the user's decision: the rung-6 equilibrium Newton's `y >= -80` floor** (§ "Rust-era
-re-audit" (c)). Not a rung. A code-health / correctness audit, raised by a real defect found in
+**Status:** CLOSED. NEGATIVE for its own hypothesis — the six `_ETA_TOL` sites (2026-07-23)
+and every Rust-era site added since (2026-10-05). **One defect found and FIXED (2026-10-05, by
+the user's decision): the rung-6 equilibrium Newton's `y >= -80` floor** — § "Rust-era
+re-audit" (c)–(e). Not a rung. A code-health / correctness audit, raised by a real defect found in
 rung 43.
 
 ## The observation that raised it
@@ -221,7 +221,8 @@ temperatures there sit lower than the cell's label was not checked.
 **Candidate fix, NOT applied:** measure convergence on the step actually taken (post-floor), or
 drop floored species pushing further down from the step test. On a currently-converging solve
 the floor is inactive at exit, so the iterate sequence should be unchanged — to be proven by the
-oracle gates, not assumed. Decision: the user's.
+oracle gates, not assumed. Decision: the user's. *(Superseded by (e): a different fix was
+applied — the floor itself lowered.)*
 
 ### (d) CORRECTION to (c), same day — measured after review (`examples/probe_eq4.rs`, `probe_r33*.rs`)
 
@@ -259,3 +260,44 @@ every currently-passing point of this grid — by measurement.
 **Net:** the floor is a real solver defect, but on the shipped panels it changes no printed number
 found so far; its cost is a mislabelled failure and swallowed bracket trials. Decision still the
 user's.
+
+### (e) THE FIX, APPLIED (2026-10-05, user's decision) — the floor lowered, not the step test
+
+**`gas.rs`: the floor is `-300` (n >= ~5e-131), was `-80`.** Chosen over (c)'s candidate
+(exclude floored species from the step and the damping) because it returns the TRUE equilibrium
+— the candidate would have reported "converged" with H pinned and its reaction relation open by
+~7 in log, the same over-claim (d) corrected — and because it was the one already measured.
+Grid of 4 425 `(f, T, p)` cases, lean AND rich (`f` 1e-14–0.2, 300–3 200 K, 3e4–4e6 Pa):
+
+- **4 023 / 4 023 solves that converged at -80 are bit-identical at -300**, iteration counts too
+  (none ever reached -80, so the line never bound for them).
+- 392 / 402 previous failures now converge. Lean solves all finish in <= 160 of 200 steps.
+- 10 still fail: RICH (`f >= 0.135`) at 300 K, where O2 walks one log unit per step from its
+  seed to ~e^-203 and runs out of ITERATIONS, not floor. No caller reaches cold rich mixtures
+  (the flame-temperature bisection lives in 800–3 200 K). Recorded, not fixed.
+
+**What the floor had been hiding — a true refusal, now an `Abort`.** At `M0 = 2` the ram-heated
+`Tt3` (545 / 608 K) exceeds a 500 / 600 K `Tt4`: no `f >= 0` closes the burner balance, the
+bisection pins at `f ~ 4e-25`, and `Burner::apply`'s balance `assert!` caught it — a PANIC on a
+route where the Newton's `Abort` had been skippable, so rung 41's scans would have crashed.
+`components.rs` `try_solve_equilibrium` now returns that refusal as an `Abort` with `apply`'s
+own message, gated on "the bracket never left `f = 0` AND the balance is open".
+
+**This also ATTRIBUTES the 600 / 650 K rung-33 raises** that (c)/(d) left open: they are bracket-
+march trials at `M0` 1.2–2.0 (outside (d)'s grid) where `Tt3 > Tt4` — burner refusals the floor
+mislabelled as Newton failures. With the refusal now an `Abort`, the marches reject the SAME
+trials as Python and every bracket is bit-identical.
+
+**The oracle gates — one RULE, not a key list** (`rust/tests/common/eq_floor.rs`, included by
+`offdesign_oracle`, `two_spool_oracle`, `slice_l_oracle`; the `rust/oracle/` files untouched).
+A cell Python aborted with the Newton (code 4) may abort for a different KNOWN reason — `inverse:
+root not bracketed` (the 400 K cells: they still fail, one step later) or the burner refusal (new
+code 15) — never match; Rust may raise the Newton nowhere; abort-code censuses may move counts
+only among 4 / 3 / 15 with each group's total conserved and the moved total equal to the cells
+re-classified. Measured: 7 + 29 + 28 cells re-classified across the three gates, every other
+key bit-identical to PyPy. A second license (a bracket march rejecting FEWER trials) was drafted,
+measured UNUSED, and removed — an unused license is a hole.
+
+**Printed output unchanged**: `cli_golden` passes — rung 33's 440 / 420 K rows still print
+`SUB-IDLE` (they now fail at the inverse, not the Newton; the label's honesty item in
+`todo-rust-port.md` stays open), and its 480 K row is unchanged. `fingerprint` passes.
