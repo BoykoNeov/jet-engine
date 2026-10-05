@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: 8c26fd4b-a96a-48b1-b4d0-d6638ba4a998
-  modified: 2026-10-02T08:13:07.702Z
+  modified: 2026-10-05T13:06:44.595Z
 ---
 
 When work reaches a green, complete state, commit it and push to `main`
@@ -27,40 +27,30 @@ the [[session-end-routine]] (also refresh memory + docs at session end) and
 still IS a question: anything outward-facing that a commit is not — publishing
 or re-minting an artifact URL, for instance ([[visuals-artifact]]).
 
-**The green-gate is bare `pytest` — it runs EVERYTHING (2026-07-31, the
-three-gate collapse).** See [[test-suite-speed-policy]]. In short:
-- **`pytest` = the gate.** Nothing is deselected, so a green run is a green run
-  — there is no weaker gate to commit on. Its size and duration live in
-  CLAUDE.md § Commands, measured, not tracked here.
-- `pytest -m "not slow"` is an ITERATION opt-out you TYPE. Never green-commit on
-  it — it sheds the expensive FINDING sweeps.
-- `--affected`, `--runslow`-as-a-tier and the every-3rd-rung cadence are GONE.
-  `--runslow` is still accepted as a no-op, so old commands keep working.
-- **The former ACCEPTED RISK is retired**: no gate is unreached any more, so a
-  regression can no longer hide for up to 3 rungs. (`main.py` is still untested.)
+**The green-gate is `cargo test --release` (in `rust/`) — it runs EVERYTHING
+(since 2026-10-05, phase 8 slice AU deleted the Python; the pytest gate it replaces
+is at tag `python-final`).** Its size and duration live in CLAUDE.md § Commands,
+measured, not tracked here. Launch it below-normal ([[run-tests-below-normal]]).
+Nothing is deselected, so a green run is a green run. `main.py`'s old "untested"
+risk is gone too: `cli_golden` holds the CLI byte-equal to the last Python output.
 
 **DO NOT run the gate when ONLY docs changed (2026-07-27, user instruction).** A
 docs-only commit (a `docs/*.md` negative record, a `rungN-spec.md` correction,
 `CLAUDE.md`) cannot move a test — commit and push it directly. The one exception is
 `CLAUDE.md` itself, which has a size guard: run just
-`python tests/test_claude_md_reference.py` (instant), not the suite. Reserve the
-real gate for commits that touch `turbojet/`, `tests/`, `main.py` or `conftest.py`
-— and when the change reaches exactly one test file, running THAT file is the
+`cargo test --release --test claude_md_reference` (seconds once built), not the gate.
+When a change reaches exactly one test binary, running THAT binary is the
 proportionate check, not the whole gate.
 
-**A RUST-ONLY change does not owe the Python suite either (2026-10-02, user: "stop it and
-proceed").** When a commit touches only `rust/` (+ docs/memory) and no `.py` under `turbojet/`,
-`tests/`, `main.py` or `conftest.py`, the gate is `cargo test --release` plus the two Python files
-that READ Rust or CLAUDE.md: `tests/test_rust_line_citations.py` and
-`tests/test_claude_md_reference.py`. The other ~1 380 tests check an unchanged Python model and
-cannot move. Phase 8 slice AK launched the full suite anyway (an advisor read "green = bare pytest"
-literally); the user stopped it. New `rust/oracle/*.py` dump scripts are not tests and do not count.
+(2026-10-02, user: "stop it and proceed" — when Python still existed, a Rust-only change
+owed only `cargo test` plus the two Python guards, not the whole pytest suite. Superseded
+by the delete; kept for the principle: ask what can actually break.)
 
 **Narrower still: run only the tests that CAN break (2026-10-03, user: "arent you running too many
 tests now, except only ones, where something can break?").** Even `cargo test --release` whole is
 too much when a change reaches one test binary. A panels-only change (`rust/src/panels/*` +
 `PANELS` rows) is reached only by `cli_golden` — run `cargo test --release --test cli_golden`
-(which compiles the crate) plus the two Python guards, and commit on that. Ask what reads the
+(which compiles the crate), and commit on that. Ask what reads the
 changed code; the full cargo run is for changes to shared `src/` modules many binaries import.
 
 **More generally, do not run the gate without a reason (2026-07-31, user):** at

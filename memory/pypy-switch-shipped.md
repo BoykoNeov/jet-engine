@@ -8,6 +8,8 @@ metadata:
   modified: 2026-07-31T10:37:08.279Z
 ---
 
+**HISTORICAL since 2026-10-05 (phase 8 slice AU): the Python, its pytest suite and the PyPy venv are deleted — they live at the git tag `python-final`. The gate is now `cargo test --release` (see [[always-commit-and-push]]). Read what follows as a lesson, not as a procedure.**
+
 PyPy 3.11 (v7.3.23) is the project's interpreter as of 2026-07-31, via a repo venv `.venv` built
 from `M:\claud_projects\tools\pypy3.11-v7.3.23-win64`. Plan + full write-up:
 `docs/plans/todo-pypy-switch.md` § 4. Slices 0–3 built the detector first

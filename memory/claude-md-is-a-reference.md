@@ -45,15 +45,17 @@ nothing was lost.
 had been reached by adding 12 to a previously-documented 977, which had itself been
 reached the same way — an arithmetic chain nobody had re-collected. A `--collect-only`
 run (2 min, no gate) gave 1387 total / 1000 not-slow. **Increment nothing; run
-`pytest --collect-only -q` and read the two numbers off it.** This is
+`pytest --collect-only -q` and read the two numbers off it** (since 2026-10-05: count the
+`test result:` lines of a `cargo test --release` run that happened anyway, or
+`cargo test --release -- --list`). This is
 [[rust-port-guessed-census-bars]] in the one file that is read every session, and it is
 distinct from [[never-run-the-gate-for-timing]] — a count is cheap to measure and must
 be; a TIME must not be, and stays stale on purpose.
 
 **How to apply:** When adding a rung, add ONE table row + a couple of one-line status
 entries; put everything else in the spec. The mechanical backstop is
-`tests/test_claude_md_reference.py` (byte + line budget, runs in the fast `pytest`
-subset). If it trips because content was written as an essay, move it to the spec —
+`rust/tests/claude_md_reference.rs` (byte + line budget; it was `tests/test_claude_md_reference.py`
+until 2026-10-05). If it trips because content was written as an essay, move it to the spec —
 do NOT raise the budget; bump the budget only for genuine one-line-per-rung growth.
 The facts that live ONLY in CLAUDE.md (OPEN seams, NEGATIVE-result docs) must keep
 their doc pointer when compressing. See [[session-end-routine]], [[always-commit-and-push]].

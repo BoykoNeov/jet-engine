@@ -22,6 +22,7 @@ Please follow these while building. They matter more than usual because the goal
 6. **Stop and explain surprises.** If a number looks off or a result is counterintuitive, pause and reason about the physics with me rather than silently moving on.
 7. **Stay in scope.** Build *only* rung 1 (ideal cycle). Do not add component efficiencies, pressure losses, variable cp, or off-design matching yet — those are later rungs. But *do* design the interfaces so they can be added without a rewrite.
 8. **Language:** Python (clear, great plotting, matches the pyCycle ecosystem). Use only the standard library plus `matplotlib` for the plot. No heavy frameworks.
+   *(2026-10-05: the model was ported to Rust, dependency-free, and the Python deleted — tag `python-final` keeps it. `matplotlib` still draws the T–s chart, from data the Rust writes. See `CLAUDE.md` § Stack.)*
 
 ---
 

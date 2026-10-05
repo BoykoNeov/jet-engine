@@ -13,7 +13,7 @@ teaching, not for features or polish.
 > honest concessions, reduce-to-prior contract and verification gates live in its
 > **spec** (`docs/rungN-spec.md`), not here. "Deferred seams" is a **one-line-per-entry
 > status map** (`BUILT BY RUNG N` | `NEGATIVE → doc` | `OPEN`), never an essay.
-> A guard test (`tests/test_claude_md_reference.py`) fails if this file exceeds its
+> A guard test (`rust/tests/claude_md_reference.rs`) fails if this file exceeds its
 > size budget: **if it trips, move detail into a spec — do not raise the budget.**
 > **Write each new rung row in ≤350 bytes** — name, HEADLINE, cross-rung verdict.
 > No measured numbers, no mechanism, no class names (those live in the spec and § Layout).
@@ -180,73 +180,50 @@ Never re-open one, and never re-enumerate them here.
   static only at the nozzle exit (station 9) for exhaust velocity.
 
 ## Layout
-A compact map.
-- `turbojet/gas.py` — **the core.** `FlowState`; the dual-section `Gas` (cold/hot, `unified()`)
-  with the CPG closed-form / TPG NASA-integral property interface (hot methods carry `far`); the
-  gas factories (`thermally_perfect` / `reacting` / `reacting_forkb` / `reacting_equilibrium`); the
-  `_equil_solve` Newton + frozen `_EquilibriumSection`; and **every rung-7+ diagnostic** on `Gas`
-  (`thermal_nox`, `zoned_nox`, `nozzle_flow`, `exhaust_no_clamp`, and the nozzle/turbine marches
-  `finite_rate_` / `freeze_out_` / `no_freeze_out_` / `coupled_no_freeze_out_nozzle`,
-  `shifting_turbine`) with their configs — the mutually-exclusive mixing closures
-  `JetMixing…SpatialLocalPDF`, and `FiniteRate`…`CoupledNOFreezeOut`.
-- `turbojet/components.py` — `Inlet, Compressor, Burner, Turbine, Nozzle` as pure `apply(state, gas)`
-  in `h`/`pr` form (+ loss params, `ram_recovery(M0)`, the polytropic knob). The Nozzle branches
-  CPG/TPG and carries rung-30's `convergent=True` choke via the module-level `_sonic_throat`; rung-31's
-  `choked_mfp` (the `pt`-independent sonic mass-flow parameter) lives here too. The `Burner` runs the
-  implicit `f = g(f)` fixed point, or `_solve_equilibrium` for an equilibrium gas.
-- `turbojet/engine.py` — chains the components, solves the `Δh` + `η_m` shaft balance, scores
-  performance (`_score`). Home to the **off-design / transient matcher ladders** (the
-  design `run` is untouched). Single-spool: `OffDesignMatcher` (31) → `MapMatcher`
-  + `ComponentMap` (32) → `._match_subsonic` (33) → `SpoolTransient` (34, + fuel 35, + surge 36) →
-  `CombustorTransient` (37). Two-spool: `build_two_spool_turbojet` / `TwoSpoolMatcher` (38) →
-  `TwoSpoolMapMatcher` (39) → `TwoSpoolTransient` (40, + surge 41, + transient surge 44) →
-  `TwoSpoolBleedMatcher` (42) → `TwoSpoolFuelTransient` (43, + transient surge 45) — then the whole
-  **fuel-side limiter family** as keywords on its `integrate_fuel`: TIT topping governor (46), its
-  lag `τ_gov` (47), the feedforward `Wf/pt3` `AccelSchedule` (48), the **φ-FEEDBACK** `SurgeLimiter`
-  (49), forced release `s_off` (50), its rate `τ_rel` (51), the realisable `AsymmetricLag` (52).
-  Off the fuel path, on the **steady** matcher: `VariableStatorMatcher` (53) — the first
-  **floor-moving** lever, with derived `ComponentMap` channels (`with_vsv`, `phi_surge_at`,
-  `tan_beta1`) plus 54's `with_capacity`; then `StageStack` + `StageStackMatcher` (55–56),
-  the compressor in `K` stage blocks (replaces the speed-line inversion ONLY; the
-  **transient** ladders never see it), and `StatorBleedMatcher` (61). Back on the **transient**
-  ladder, `ScheduledStatorTransient` (57–60: `StatorSchedule`, one fuel leg beside it, matched,
-  `IncidenceLimiter`) → `ScheduledBleedTransient` (62–63: `BleedSchedule` threaded through the
-  FORWARD closure, then 63's READERS beside a fuel leg, built on `at_lever`) →
-  `LimitedBleedTransient` (64: the `BleedLimiter` φ FLOOR, an outer root over closures) →
-  `LaggedBleedTransient` (65: that limiter's `tau` makes the POSITION a third state) → then
-  **exactly ONE class per rung, 66→84**, `TwoLagCascadeTransient` (66) … `StaircaseLawTransient`
-  (84). Each adds ONE thing — a state, a clock, a knob, or (77/81/82/83/84) nothing but a reader — and
-  reduces to its predecessor; **each is named in its own spec's header, and what it adds, its
-  method names and its reduce contract are there, not here** — so this entry never grows.
-- `main.py` — the design-point run: ideal-vs-real tables, the overlaid T–s diagram, and **one panel
-  per rung** (each states that rung's load-bearing claim and its honest scope). It has NO test —
-  check it on every ship.
-- `tests/` — per-rung `test_rungN.py` (N = 1…84; plus the rung-1/2b/3/4/5 files).
-  `test_phi_rate_limiter_negative.py` is the only NEGATIVE carrying a gate;
-  `test_usage_blocks.py` binds every call a `Usage:` block writes; `test_rust_line_citations.py`
-  pins the `engine.py` lines the Rust port cites; and `test_numeric_fingerprint.py` is the only
-  **ABSOLUTE-value** gate. Its goldens are a committed **CPython** anchor, never regenerated on PyPy.
-- `docs/visuals/` — two **BUILT** pages (charts, cutaway): `extract_data.py` → `data.json` →
-  templates. Cycle change ⇒ rebuild **and republish**; `test_visuals_data.py` gates the joints.
+A compact map. The code is the Rust crate `rust/`. The Python was deleted at phase 8's last slice;
+tag **`python-final`** keeps it, and every `engine.py:N` / `test_rungN.py` citation means that tag.
+- `rust/src/gas.rs` — **the core.** `FlowState`; the dual-section `Gas` (cold/hot) with the CPG
+  closed-form / TPG NASA-integral property interface, the gas factories (thermally perfect /
+  reacting / Fork B / equilibrium) and the equilibrium Newton. `components.rs` — the five pure
+  components (`Inlet … Nozzle`, rung 30's choke, rung 31's `choked_mfp`, the burner's `f = g(f)` /
+  equilibrium solve). `engine.rs` — chains them, solves the shaft balance, scores performance.
+- **Beside the cycle:** `nox.rs` (rungs 7–24 — NOx, zoning, the mixing closures, the nozzle
+  bracket, the clamp ladder) and `march.rs` (25–30).
+- **The matcher / transient ladders**, one module per family, then per rung: `matcher.rs` (31, 33)
+  → `map.rs` (32) → `spool.rs` (34–36) → `combustor.rs` (37) → `two_spool.rs` (38, 39, 41) →
+  `two_spool_transient.rs` (40, 44) → `bleed.rs` (42) → `fuel_transient.rs` (43, 45, and the
+  fuel-side limiters 46–52) → `stator.rs` (53–54) → `stage.rs` (55–56) → `stator_transient.rs`
+  (57–60) → `stator_bleed.rs` (61) → `bleed_transient.rs` (62–63) → `limited_bleed.rs` (64) →
+  `lagged_bleed.rs` (65) → **exactly ONE module per rung, 66→84** (`two_lag.rs` …
+  `staircase_law.rs`). A rung is a core plus a `const` table of function pointers, and reduces to
+  its predecessor; **each module's header names its rung, and what it adds is in its spec** — so
+  this entry never grows.
+- `rust/src/main.rs` + `panels/` + `pyfmt.rs` — the CLI: the design-point tables and **one panel per
+  rung**, held byte-equal to the last Python run's output by `tests/cli_golden.rs`. It writes
+  `ts_diagram.json`; `plot_ts_diagram.py` (matplotlib, the one Python file — it draws, no physics)
+  turns that into `ts_diagram.png`.
+- `rust/tests/` — per-rung `rungN.rs`; the `*_oracle.rs` gates, Rust ≡ PyPy bit for bit against the
+  Python's committed outputs in `rust/oracle/`; `fingerprint.rs`, the only **ABSOLUTE-value** gate
+  (its CPython anchor is kept as the audit record); `phi_rate_limiter_negative.rs`, the only
+  NEGATIVE with a gate; `coverage_ledger.tsv` — where every Python test went.
+- `docs/visuals/` — two **BUILT** pages (charts, cutaway): `cargo run --release -- visuals` writes
+  `data.json` and splices both (`-- splice` re-splices only). Cycle change ⇒ rebuild **and
+  republish**; `tests/visuals.rs` gates the joints.
 - `docs/rungN-spec.md` (contents: see the banner); `docs/plans/rungN-anchor-*.md` — that rung's
   verified anchor data. `docs/plans/` holds the plan/tasks.
 
 ## Commands
-- Run the model: `python main.py` · Install: see `requirements.txt` (a PyPy venv — § Stack)
-- **The gate: `pytest`** — **EVERYTHING**, 1387 tests, **15–21 min on a quiet box** (PyPy,
-  below-normal; the SAME 1387 took **83:20** on a loaded one, so a time is not a signal).
-  ONE gate; nothing is ever silently deselected, so no regression can hide.
-- **Iterate: `pytest -m "not slow"`** — 1000 tests, **~1:54 at 890**.
-  `slow` is a LABEL you opt out of by typing, never a default. Only those: `pytest -m slow`.
+From the repo root; every `cargo` command takes `--manifest-path rust/Cargo.toml` (or run in `rust/`).
+- Run the model: `cargo run --release` (writes `ts_diagram.json` HERE) · chart: `python plot_ts_diagram.py`.
+  Chart data alone: `-- ts-diagram`; the pages: `-- visuals` / `-- splice`.
+- **The gate: `cargo test --release`** — **EVERYTHING**, 2002 tests in 192 binaries; **89 min** incl. a clean build (2026-10-05).
+  Launch it at below-normal priority. ONE gate; nothing is ever deselected.
+- **Iterate: `cargo test --release --test rungN`** — one binary. Run what a change can reach.
 - **WHEN to run the gate:** at session end (unless run shortly before), and after a code change.
   NOT at session start, NOT on a docs-only change, NOT "just to be sure", and **NEVER to refresh
   a timing** — take that from a run already happening, or leave it stale.
-- One rung by hand: `python tests/test_rung2.py`
-
-`conftest.py` holds the policy and why the three-gate tiering was retired; `--runslow` is accepted
-and ignored.
 
 ## Stack
-**PyPy 3.11** in the repo venv `.venv` (`.venv\Scripts\activate`), not CPython — the gate is 6.2×
-faster, and `psutil` is REQUIRED (without it `-n auto` means 16 workers). Install + why:
-`docs/plans/todo-pypy-switch.md`. Otherwise stdlib + matplotlib for the plot.
+**Rust**, stable, **no dependencies** (by decision). Python survives only as `plot_ts_diagram.py`
+(`requirements.txt`: matplotlib). The Python model, its pytest suite and the PyPy venv live at tag
+`python-final`; the port's record is `docs/plans/todo-rust-port.md`.

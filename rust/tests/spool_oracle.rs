@@ -367,7 +367,7 @@ fn rust_values() -> Rec {
 
 fn load(path: &str) -> BTreeMap<String, u64> {
     let text = std::fs::read_to_string(path)
-        .unwrap_or_else(|e| panic!("{path}: {e} — regenerate with oracle/dump_spool.py"));
+        .unwrap_or_else(|e| panic!("{path}: {e} — a committed Python capture; it cannot be regenerated (its dumper, oracle/dump_spool.py, is at tag python-final)"));
     let mut m = BTreeMap::new();
     for line in text.lines().filter(|l| !l.starts_with('#')) {
         let mut it = line.split('\t');

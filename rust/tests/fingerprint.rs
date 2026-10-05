@@ -1961,17 +1961,19 @@ fn the_vacuity_detector_fires() {
     assert!(vacuity(&idle).is_err(), "an idle instrument went unseen");
 }
 
-/// The gate reads a COPY of the CPython anchor kept under `rust/oracle/`, so it still compiles once
-/// AU deletes `tests/`. While the original exists, the copy must be its exact bytes; after the
-/// delete the copy IS the record, and this says so instead of failing.
+/// The gate reads a COPY of the CPython anchor kept under `rust/oracle/`, so it still compiles now
+/// that slice AU has deleted `tests/`. Until AU this test compared the copy with the original byte
+/// for byte; the original is gone (it is `tests/golden/numeric_fingerprint.json` at the git tag
+/// `python-final`), so the copy IS the record, and it is pinned by size and FNV-1a 64 — both
+/// measured on the ORIGINAL while it existed, and the two files were `cmp`-identical then. An
+/// audit record that can change in silence is not one.
 #[test]
 fn the_cpython_copy_is_the_audit_record() {
-    let original = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("..").join("tests").join("golden").join("numeric_fingerprint.json");
-    match std::fs::read_to_string(&original) {
-        Ok(text) => assert!(text == CPYTHON_JSON, "the rust/oracle copy has drifted from {original:?}"),
-        Err(_) => eprintln!("{original:?} is absent (the Python tree is deleted); the copy is the record"),
-    }
+    let fnv1a = |b: &[u8]| b.iter().fold(0xcbf2_9ce4_8422_2325u64, |h, &x| (h ^ x as u64).wrapping_mul(0x0000_0100_0000_01b3));
+    assert_eq!(CPYTHON_JSON.len(), 2_205_606, "the CPython audit record's size moved");
+    assert!(!CPYTHON_JSON.contains('\r'), "the CPython audit record must be the LF form");
+    assert_eq!(fnv1a(CPYTHON_JSON.as_bytes()), 12_269_066_863_011_411_715,
+               "the CPython audit record's bytes moved — it is the original's copy and must never change");
 }
 
 /// THE MODULE's `test_golden_file_declares_its_provenance`: the CPython golden's whole value is

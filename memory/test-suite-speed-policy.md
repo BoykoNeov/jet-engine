@@ -8,6 +8,8 @@ metadata:
   modified: 2026-07-31T10:32:35.340Z
 ---
 
+**HISTORICAL since 2026-10-05 (phase 8 slice AU): the Python, its pytest suite and the PyPy venv are deleted — they live at the git tag `python-final`. The gate is now `cargo test --release` (see [[always-commit-and-push]]). Read what follows as a lesson, not as a procedure.**
+
 **ONE GATE (2026-07-31, slice 5 of the PyPy plan — user's call: "make all tests run by default").**
 - `pytest` — **EVERYTHING**, 1002 tests, **2:18**. THE gate. Nothing is ever silently deselected.
 - `pytest -m "not slow"` — **1:31**, 778 tests. The iteration opt-out. A convenience you **TYPE**,

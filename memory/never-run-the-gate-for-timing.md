@@ -5,10 +5,11 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: ee1bb5b3-3bf3-438a-840d-81bfcc41dd85
-  modified: 2026-08-10T05:15:24.382Z
+  modified: 2026-10-05T13:06:49.778Z
 ---
 
-Do **not** run `pytest` (or any subset) for the purpose of measuring or refreshing a
+Do **not** run the gate — `cargo test --release` since 2026-10-05, `pytest` before (or any
+subset) — for the purpose of measuring or refreshing a
 quoted run time. If CLAUDE.md's gate timing looks stale, either take the number from a
 gate run that was already happening for a real reason (a code change, session end), or
 leave it stale and say so.

@@ -18,7 +18,7 @@ new slices and step links go THERE, not here.
 ## Working agreements
 - [Session-end routine](session-end-routine.md) — at session end: update memory + docs, commit, push
 - [Git remote setup](git-remote-setup.md) — github.com/BoykoNeov/jet-engine, branch main, origin over SSH
-- [Always commit and push](always-commit-and-push.md) — auto-commit + push green work; gate is bare `pytest`
+- [Always commit and push](always-commit-and-push.md) — auto-commit + push green work; gate is `cargo test --release` (pytest until 2026-10-05)
 - [CLAUDE.md is a reference](claude-md-is-a-reference.md) — one line per rung, detail → the spec; a guard test enforces it
 - [Two indexes, one spine](two-indexes-one-spine.md) — CLAUDE.md carries the PHYSICAL verdict, this file the PROCESS lesson
 - [Instrument fed by what it certifies](instrument-fed-by-what-it-certifies.md) — AC/AD/AE all shipped a gate that agreed with itself; ask what SUPPLIES the value
@@ -35,7 +35,7 @@ new slices and step links go THERE, not here.
 - [Visuals ↔ model binding](visuals-model-binding.md) — the pages had NO test and looked fine; in SYNC is not BOUND, and the page's own design point was typed markup
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding, backticks in `-m`, a status read off the runner, a log still being written, and a text-mode rewrite that flips every line ending, `cmd`'s parse-time `%ERRORLEVEL%`, a `start /b` batch that never exits, the EOL check that was itself the hazard, a silent `pytest.exe` launcher, a scripted Windows path that becomes a TAB, and a `Copy-Item` restore whose OLD mtime cargo never rebuilds
 
-## The Rust port — phases 0–7 DONE (7 closed 2026-10-01; phase 8 AUTHORISED 2026-10-01, pre-flight § 8.1 done; FULL port chosen 2026-10-02, slices AK–AT done, next AU = the delete, ask first); slice AG (75/76) COMPLETE in 7 steps, slice AH (77/78) COMPLETE in 7 steps, slice AI (79/80) COMPLETE in 7 steps; slice AJ (81–84) COMPLETE in 7 steps — the ladder is ported through rung 84; one item forward (C6)
+## The Rust port — DONE 2026-10-05 (phases 0–8; slice AU deleted the Python on top of tag `python-final`; the gate is `cargo test --release`)
 - [Rust port status](rust-port-status.md) — the running tally: phases, slices, and the numbers each closed slice landed on. **Update THAT file, not this line.**
 - [Rust port decided](rust-port-decided.md) — plan is docs/plans/todo-rust-port.md; a new PHASE needs authorisation
 - [Ladder architecture](rust-port-ladder-architecture.md) — a const table of fn pointers per rung; generics lost

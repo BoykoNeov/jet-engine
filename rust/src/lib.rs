@@ -10,7 +10,8 @@
 //! # Port status
 //!
 //! This crate is the Rust port of `turbojet/`, following `docs/plans/todo-rust-port.md`. The
-//! Python remains the **oracle** the Rust is validated against, and is deleted at phase 8.
+//! Python was the **oracle** the Rust was validated against, and was deleted at phase 8's last
+//! slice (AU); the history below is the port as it was built.
 //!
 //! **Phases 0–3 are complete and green**: the gas core ([`gas`], rungs 1–6), the five
 //! components ([`components`]), the design-point cycle ([`engine`]) and the whole NOx / mixing /
@@ -106,6 +107,15 @@
 //!
 //! The remaining transient ladders arrive in phases 6–7 and leave the design run untouched, as
 //! they do in the Python.
+//!
+//! # Citations into the deleted Python
+//!
+//! Every `engine.py:N`, `gas.py:N`, `components.py:N`, `main.py:N` or `test_*.py` citation in
+//! this crate — and in `docs/` — names a line **at the git tag `python-final`**, the last commit
+//! that carried the Python (`git show python-final:turbojet/engine.py`). They are left exactly as
+//! written: the guard that once caught them drifting is retired with the files, because a deleted
+//! file cannot drift, and the tag pins every one. The `rust/oracle/*.tsv` captures are the
+//! Python's committed outputs and cannot be regenerated; their dump scripts are at the same tag.
 //!
 //! # Porting rules that are NOT optional
 //!

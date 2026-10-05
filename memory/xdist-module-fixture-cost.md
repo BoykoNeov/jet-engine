@@ -8,6 +8,8 @@ metadata:
   modified: 2026-07-31T17:27:04.899Z
 ---
 
+**HISTORICAL since 2026-10-05 (phase 8 slice AU): the Python, its pytest suite and the PyPy venv are deleted — they live at the git tag `python-final`. The gate is now `cargo test --release` (see [[always-commit-and-push]]). Read what follows as a lesson, not as a procedure.**
+
 **A module-scoped fixture is materialised once PER XDIST WORKER, not once per session.** With
 `--dist load` (this repo's `pytest.ini`), N tests consuming one expensive fixture can land on N
 different workers and pay for it N times.

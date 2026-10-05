@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: d6ed48ca-d67d-48f6-b698-b30b3ba4c4b9
-  modified: 2026-07-28T12:17:05.739Z
+  modified: 2026-10-05T13:06:48.284Z
 ---
 
 **Standing authorization (2026-06-29):** the user said "always commit and push —
@@ -24,12 +24,11 @@ update**, or whenever the user says **"session end"**, always do all four, in or
    updates.
 4. **Push to main** — push the `main` branch to `origin`.
 
-**The pre-commit gate is bare `pytest` — it runs EVERYTHING (2026-07-31, the three-gate
-collapse; 1002 tests, 2:18).** `pytest -m "not slow"` is an iteration opt-out only; never
-commit green on it. **At SESSION END run the full `pytest`** — unless it already ran
-shortly before and nothing has changed since, in which case do not re-run it "just to be
-sure" (user, 2026-07-31). Skip it entirely for a docs-only session end. See
-[[test-suite-speed-policy]], [[always-commit-and-push]], CLAUDE.md Commands + `conftest.py`.
+**The pre-commit gate is `cargo test --release` in `rust/` — it runs EVERYTHING (since
+2026-10-05, when phase 8 slice AU deleted the Python and its `pytest` gate).** **At SESSION
+END run it** — unless it already ran shortly before and nothing has changed since, in which
+case do not re-run it "just to be sure" (user, 2026-07-31). Skip it entirely for a docs-only
+session end. See [[always-commit-and-push]], CLAUDE.md § Commands.
 
 **Why:** the user wants a consistent wrap-up so memory, docs, and git stay in
 sync and nothing is lost between sessions. The action needs judgment (what to

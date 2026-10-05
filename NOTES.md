@@ -4,6 +4,10 @@ A running, plain-language companion to the code: what each station does and *why
 written to learn from. Built up station by station as the cycle is derived. See
 `SPEC.md` for the formal equations and `CLAUDE.md` for the working contract.
 
+> **2026-10-05 — the code is Rust now.** Where this file says `python main.py` or names a
+> `tests/test_*.py` file, read `cargo run --release` and the matching `rust/tests/*.rs`; the
+> Python it describes is at the git tag `python-final`. The physics below did not change.
+
 ## The big picture
 A turbojet is a **Brayton cycle**: squeeze air (compressor), burn fuel in it
 (burner), let it expand through a turbine, and shove what's left out a nozzle

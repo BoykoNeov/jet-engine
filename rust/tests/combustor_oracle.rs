@@ -94,7 +94,7 @@ const RMS: [(&str, f64); 2] = [("1.0", 1.0), ("5.0", 5.0)];
 // ------------------------------------------------------------------------------ the harness
 fn load(path: &str) -> BTreeMap<String, u64> {
     let text = std::fs::read_to_string(path)
-        .unwrap_or_else(|e| panic!("{path}: {e} — regenerate with oracle/dump_combustor.py"));
+        .unwrap_or_else(|e| panic!("{path}: {e} — a committed Python capture; it cannot be regenerated (its dumper, oracle/dump_combustor.py, is at tag python-final)"));
     let mut m = BTreeMap::new();
     for line in text.lines().filter(|l| !l.starts_with('#') && !l.trim().is_empty()) {
         let mut it = line.split('\t');

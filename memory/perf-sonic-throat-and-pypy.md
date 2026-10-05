@@ -8,6 +8,8 @@ metadata:
   modified: 2026-07-31T10:32:19.214Z
 ---
 
+**HISTORICAL since 2026-10-05 (phase 8 slice AU): the Python, its pytest suite and the PyPy venv are deleted — they live at the git tag `python-final`. The gate is now `cargo test --release` (see [[always-commit-and-push]]). Read what follows as a lesson, not as a procedure.**
+
 Asked whether `engine.py` should be split and whether a **Rust rewrite** would buy speed. Both
 answers inverted the question's framing. Full write-up: `docs/plans/todo-engine-size-and-speed.md`.
 

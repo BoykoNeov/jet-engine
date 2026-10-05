@@ -1,5 +1,7 @@
 # Retiring Python — the sequencing, and the one thing that has a deadline
 
+**DONE 2026-10-05 — the Python is deleted** (phase 8 slice AU, `docs/plans/todo-rust-port.md` § 8.13; tag `python-final`). The analysis below is kept as written.
+
 **STATUS: ANALYSIS ONLY. Nothing here has been applied.** No file was deleted, no test removed, no
 `Cargo.toml` key changed to produce it. Written 2026-08-31, immediately after slice AC step 3.
 

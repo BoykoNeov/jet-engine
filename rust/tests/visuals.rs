@@ -9,8 +9,10 @@
 //!   ~10 minutes, measured 94 s under PyPy); the Rust run is ~20 s, so the sweeps are gated too —
 //!   the failure mode the Python file's docstring names first ("a cycle change ... leaves
 //!   `data.json` on yesterday's numbers") is now caught for every block, not five.
-//! * `keep_is_build_cutaways` — the Rust `KEEP` and `build_cutaway.py`'s are one list while both
-//!   exist (the Python suite imports its own; the delete at slice AU retires this test).
+//! * (retired at slice AU) `keep_is_build_cutaways` held the Rust `KEEP` equal to
+//!   `build_cutaway.py`'s while both existed; the script is deleted, so the Rust list is the only
+//!   one, and `the_trim_drops_nothing_unnamed` / `every_field_the_cutaway_reads_survives_the_trim`
+//!   still bind it to the data and the page.
 //! * `the_ts_diagram_is_what_plot_ts_diagram_drew` — every array `main.py`'s chart handed to
 //!   matplotlib, bit for bit (`rust/oracle/ts_diagram_pypy.tsv`, recorded at the call in slice AK).
 //!
@@ -337,14 +339,6 @@ fn every_field_the_cutaway_reads_survives_the_trim() {
                      renders undefined/NaN there");
         }
     }
-}
-
-#[test]
-fn keep_is_build_cutaways() {
-    let src = text("build_cutaway.py");
-    let body = block(&src, "KEEP = [", "]").expect("build_cutaway.py no longer declares KEEP = [...]");
-    let py: Vec<String> = body.split(',').map(|s| s.trim().trim_matches('"').to_string()).filter(|s| !s.is_empty()).collect();
-    assert_eq!(py, KEEP.to_vec(), "visuals::KEEP and build_cutaway.py's KEEP differ — one page, two trims");
 }
 
 #[test]
