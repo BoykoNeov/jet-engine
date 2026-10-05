@@ -8,6 +8,8 @@ metadata:
   modified: 2026-09-07T08:32:13.767Z
 ---
 
+**Since 2026-10-05 the Python below is deleted (tag `python-final`); the same bindings live in `rust/tests/visuals.rs`, and `cargo run --release -- visuals` replaced the three scripts. Read what follows as the lesson.**
+
 On 2026-09-07 the two published pages in `docs/visuals/` (charts + engine
 cutaway, see [[visuals-artifact]] and [[cutaway-artifact]]) had **no test at
 all**. Their numbers happened to still agree with the model to 3.3e-6 — which is

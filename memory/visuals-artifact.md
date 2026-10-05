@@ -31,10 +31,11 @@ of the HTML):
 - `favicon`: ✈️
 - title: comes from `<title>` on line 1 of `template.html` — don't pass `title`.
 
-Source of truth is `docs/visuals/` in the repo: `extract_data.py` (runs the model,
-~10 min) → `data.json`, `build.py` splices it into `template.html` →
+Source of truth is `docs/visuals/` in the repo, built by the Rust CLI (since 2026-10-05; the
+Python scripts are at tag `python-final`): `cargo run --release -- visuals` (runs the model,
+~20 s) → `data.json`, spliced into `template.html` (`-- splice` re-splices only) →
 `turbojet-visuals.html`. Rebuild is only half the loop — republish too. The joints
-between the pages and the model are gated by `tests/test_visuals_data.py`; see
+between the pages and the model are gated by `rust/tests/visuals.rs`; see
 [[visuals-model-binding]] for what is bound and what deliberately is not. Charts
 read CSS tokens at build time and re-render on theme flip; every chart has a
 data-table twin. Illustration grids are reduced (shape, not digits).

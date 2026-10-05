@@ -8,6 +8,8 @@ metadata:
   modified: 2026-07-31T06:41:26.856Z
 ---
 
+**Since 2026-10-05 the gate is `rust/tests/fingerprint.rs`; the Python file below is deleted (tag `python-final`). The CPython golden survives as a frozen audit record (`rust/oracle/numeric_fingerprint_cpython.json`, FNV-pinned); the Rust anchor `rust/oracle/fingerprint_rust.tsv` is regenerated only by `FINGERPRINT_REGEN=1 cargo test --release --test fingerprint regenerate_anchor` — still a PROCEDURE: say which values moved, by how much, and why.**
+
 **The hole it closes:** every other tight assertion in the suite (185 at <=1e-9) is a **same-run
 relative identity** — it computes two quantities in one process and asserts they agree. That is
 the right shape for the reduce-to-prior spine, but it is **blind to anything that moves BOTH

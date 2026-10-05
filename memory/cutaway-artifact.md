@@ -9,7 +9,8 @@ metadata:
 ---
 
 The animated 2-D engine cutaway lives at `docs/visuals/turbojet-cutaway.html`
-(built by `docs/visuals/build_cutaway.py` from `cutaway-template.html` +
+(built by `cargo run --release -- visuals` or `-- splice`, i.e. `rust/src/visuals.rs` — it was
+`docs/visuals/build_cutaway.py` until 2026-10-05 — from `cutaway-template.html` +
 `data.json`). It is a separate artifact from the visuals page in
 [[visuals-artifact]] — a new deliverable the user asked for on 2026-09-07
 ("engine diagram with moving components, air flow, burn - 2d"), not an update
