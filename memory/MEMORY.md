@@ -51,6 +51,7 @@ new slices and step links go THERE, not here.
 - [An oracle cannot see a MISSING GATE](rust-port-oracle-cannot-see-a-missing-gate.md) — bit-exactness says nothing about COVERAGE
 - [Guessed census bars](rust-port-guessed-census-bars.md) — five typed count bars, five wrong; measure counts
 - [Census by compiler, not by name](census-by-compiler-not-by-name.md) — the sonic_throat repair: a name grep missed the turbine hook; renaming the panicking wrapper on a scratch copy listed the real holdouts
+- [Solver audit, Rust era](solver-audit-rust-era.md) — a CLAMP between step and convergence test is a floor no precision fixes; equilibrium -80 floor OPEN for the user
 - [Phase 5 pre-flight](rust-port-phase5-preflight.md) — a "closed set" claim is only as wide as the set you swept
 - [Rust port slice index](rust-port-slice-index.md) — every slice I…AI and its step files, one line each with its process lessons; append new slices THERE (moved out 2026-09-26 at 22.8 KB)
 

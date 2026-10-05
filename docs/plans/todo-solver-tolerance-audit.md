@@ -1,7 +1,10 @@
 # TODO — audit the iterative solvers for absolute-tolerance-below-noise-floor
 
-**Status:** open. Not a rung. A code-health / correctness audit, raised by a real
-defect found in rung 43.
+**Status:** CLOSED NEGATIVE for its own hypothesis — the six `_ETA_TOL` sites (2026-07-23)
+and every Rust-era site added since (2026-10-05, last section). **One finding stays OPEN,
+awaiting the user's decision: the rung-6 equilibrium Newton's `y >= -80` floor** (§ "Rust-era
+re-audit" (c)). Not a rung. A code-health / correctness audit, raised by a real defect found in
+rung 43.
 
 ## The observation that raised it
 
@@ -148,3 +151,74 @@ The discriminator the audit was built to apply — *a raise that is non-monotone
 above every site's floor. The fix shape (best-so-far acceptance after the loop, reachable
 only by inputs that previously raised) stays **on file** for a future steeper-map/CFD
 map that could genuinely floor a site above `1e-11`; it is deliberately NOT added now.
+
+## Rust-era re-audit (2026-10-05) — the sites added after rung 43
+
+The July sweep covered the six `_ETA_TOL` loops only. After the port, every `did not converge`
+in `rust/src/` was censused (by message, then each site read). Probes ran on a scratch COPY of
+the crate (`W:\temp\claude\solver_audit\rust`, instrumented there; the repo was never edited and
+restored): `examples/probe_r55.rs`, `examples/probe_eq*.rs`, outputs `r55.tsv`, `eq*.tsv`.
+
+### (a) Cleared by structure — no probe needed
+
+| Site | Why it cannot floor-trip |
+|---|---|
+| Joint initial condition, rungs 66 / 68 / 70 / 72 / 74 (inline, undamped) | Exit `1e-12`, but the assert bar is **`1e-9`** — a 1000x built-in gap, so any floor between the two just runs the cap and passes. Inner solves are ~1e-11 or tighter. And each assert's own message declares a failure a FINDING (the degeneracy / min-select cycle): a best-so-far clause there would hide the signal, so it is out of bounds by design. |
+| Joint initial condition, rung 67 (`joint_fixed_point`, damped `w = 1, 0.5, 0.25`) | Same `1e-12` / `1e-9` gap. A stall there IS a solver failure (its message says so), but no gas noise reaches it: the fuel path refuses equilibrium gases (`try_tt4_from_f`). |
+| Burner fixed point / rung-31 / rung-38 off-design `f` | RELATIVE tolerances (`<= TOL * f_new`). The equilibrium burner is a bisection on a relative bracket width — it always terminates. The documented hot-throttle non-convergence (rung 31 § 5.4) is physical and stays closed. |
+| `stator.rs` / `stator_bleed.rs` / `stage.rs` incidence and bleed solves, `spool.rs`, `state_coordinate.rs` | Bisections with a bracket-width fallback (`|| hi - lo <= 1e-14/1e-15`) or Illinois — out of scope as in July. `split_wall` / `shared_actuator` / `demand_coordinate` `*_TOL`s are comparisons, not solvers. |
+
+### (b) Rung 55's two stacked-efficiency secants — MEASURED, SAFE
+
+The one Rust-era site with July's exact shape: exit bar = raise bar = `ETA_TOL = 1e-11`, on the
+two-spool map matcher, which runs on the reacting-equilibrium gas — and rung 55's own tests run
+that gas only at `K = 1`, which bypasses these loops. New inside the loop: a 48-pass bisection
+for `n` (`try_solve_n`, `N_TOL = 1e-14`).
+
+Sweep: 2 gases x 5 shapes x `K` in {2,3,4,6} x stator {(0,0),(0.2,0.1)} x `Tt4` 800–1550 by 5 K;
+each loop's history recorded to the shipped exit, then **60 secant steps PAST it** (July's trap:
+the exit residual clusters just under the bar and reads as a thin margin).
+
+| Gas | Loop solves | Raises / aborts / panics | True floor `min|R|` | Wander past exit (max of last 20) | Max iterations |
+|---|---|---|---|---|---|
+| CPG | 95 472 | 0 / 0 / 0 | 4.4e-16 | 8.9e-16 | 5 |
+| reacting-equilibrium | 1 280 276 | 0 / 0 / 0 | 6.9e-15 | **4.1e-13** | 5 |
+
+The reacting gas DOES inject jitter (wander 4e-13 vs 9e-16 on CPG; 389 solves above 1e-13, 11
+above 3e-13, all HP spool) — but at its worst 25x under the bar, and the secant crosses the bar
+by iteration 5 every time. No fix: an acceptance branch no input reaches is dead code.
+
+### (c) OPEN — the rung-6 equilibrium Newton's floor makes the solve UNSOLVABLE below ~500–580 K
+
+`gas.rs` `try_equil_solve`: Newton on `y = ln n`, converged iff the step `max|dy| * scale < 1e-13`,
+200-step cap, then `Err("equilibrium Newton did not converge…")`. After each step every
+`y_j` is floored at `-80` (`n >= ~1e-35`). **The step is measured BEFORE the floor is applied.**
+
+Below ~460 K (any `f`), and up to ~580 K as `f -> 0` (the burner bisection's low end samples
+`f` down to ~1e-14), the equilibrium `ln n_H` (and at tiny `f`, `ln n_CO`) lies **below -80**
+(~-87 at 440 K). Newton asks for the same downward step every iteration, the floor undoes it,
+the measured step sticks at ~7, and the solve spins to 200 and raises. Full history at
+`(f, T, p) = (0.01, 440, 747 441)`: `dy_H` falls 66 -> 7 while `y_H` walks to -80, then holds at
+`6.950` for 140 iterations. Every other species has converged; the residual is the H reaction
+relation alone, and the species it concerns is ~1e-35 mol. **This is a solver artifact — the
+equilibrium exists and the composition is converged — of a NEW kind: not a noise floor but a
+REPRESENTATION floor.** It is monotone in `T` (a clean threshold), so July's non-monotonicity
+discriminator would NOT have flagged it.
+
+Measured: 138 of 690 `(f, T, p)` cases fail at `T <= 460` (f 0.002–0.03, p 1e5–2e6); 71 of
+1 400 at `T <= 500` (f 1e-5–0.0675); 214 of 1 350 at `T <= 580` (f 1e-14–1e-6). Species at the
+floor: H, plus CO at tiny `f`.
+
+**Why it is not a quiet fix.** These raises are LOAD-BEARING (`todo-rust-port.md` § 5.4 (f)):
+they move rung 33's low bracket on five cells and produce the rung-33 panel's 440 / 420 K rows
+labelled "net thrust <= 0: below thrust-neutral idle" — rows that measured this Newton, not
+idle (already booked there as an OPEN `main.py` honesty item for the user). Python raises at the
+same points, so any fix deliberately breaks Rust ≡ Python parity at exactly those points and
+changes published panel output. **Not yet attributed:** the recorded rung-33 raises at
+`Tt4` = 600 / 650 K — above this probe's highest failing `T` (580 K); whether the march's trial
+temperatures there sit lower than the cell's label was not checked.
+
+**Candidate fix, NOT applied:** measure convergence on the step actually taken (post-floor), or
+drop floored species pushing further down from the step test. On a currently-converging solve
+the floor is inactive at exit, so the iterate sequence should be unchanged — to be proven by the
+oracle gates, not assumed. Decision: the user's.
