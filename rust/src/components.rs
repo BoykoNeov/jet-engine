@@ -411,7 +411,10 @@ impl Burner {
     /// caught only by `apply`'s balance `assert!` — a PANIC on a route where the Newton's
     /// `Abort` had been skippable, so rung 41's scans would have crashed on it. It is returned
     /// here as an `Abort` with `apply`'s own message, gated so it can fire only where that
-    /// assert would: the bracket never left `f = 0` AND the balance is open.
+    /// assert would: the bracket never left `f = 0` AND the balance is open. Measured past the
+    /// gates' grids (single- and two-spool, `M0` 0–3, `Tt4` 400–1200 K): 34 firings, and at
+    /// every one the OLD code (floor -80, no refusal) failed too — it rejects nothing Python
+    /// accepted, on that sweep.
     ///
     /// `pub` (like [`sonic_throat_bisect`]) so a gate can reach it without a later visibility
     /// churn — rung 31's `solve_f` is its only production caller besides `apply`.

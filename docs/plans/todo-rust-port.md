@@ -2042,6 +2042,11 @@ there returns nothing where Python returns a number. **So `gas.rs` DOES need a f
 but as an **additive `try_` twin** whose panicking original delegates to it, which is not the
 signature change through gated code that (f) refused: **no phase-1 gate sees any change at all.**
 
+> **2026-10-05 note (post-port):** those 26 raises were the equilibrium Newton's `-80` FLOOR, not
+> its physics — the floor is now `-300` (`gas.rs`). The same trials are now refused by the burner
+> itself (`Tt3 > Tt4`, no `f >= 0`) as an `Abort` from `try_solve_equilibrium`, so the brackets
+> are unchanged. The fallible path stays. See `docs/plans/todo-solver-tolerance-audit.md` (e).
+
 **THE RULE, stated once and applied per site:** *an assert becomes fallible iff it is reachable
 from inside `resid` during the bracket march* — which is exactly Python's `try` scope. Its two
 edges were both measured rather than assumed:
@@ -27621,6 +27626,9 @@ construction = `..ComponentMap::default()`, `MapMatcher`'s default map = `flat()
   `main.py` honesty item, not a port item: OPEN, for the user** — the rung-33 panel's catch is
   broader than its message, and whether the reacting-gas engine is past thrust-neutral idle at
   440 K is not what those rows measured.
+  *2026-10-05:* with the Newton's floor lowered, those rows no longer fail at the equilibrium
+  Newton — they fail one step later at `inverse: root not bracketed` (still not a thrust check),
+  so the printed text is unchanged and the label item stays OPEN.
 * **Rung 34 calls `ramp_excursion(…, r=5)` twice** (the table row, then the summary line). The
   port reuses the loop's value — the same deterministic call on the same inputs, so the bytes
   cannot differ; it saves one RK4 march. And Python builds an `OffDesignMatcher` `base` in

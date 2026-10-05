@@ -203,7 +203,8 @@ tag **`python-final`** keeps it, and every `engine.py:N` / `test_rungN.py` citat
   `ts_diagram.json`; `plot_ts_diagram.py` (matplotlib, the one Python file — it draws, no physics)
   turns that into `ts_diagram.png`.
 - `rust/tests/` — per-rung `rungN.rs`; the `*_oracle.rs` gates, Rust ≡ PyPy bit for bit against the
-  Python's committed outputs in `rust/oracle/`; `fingerprint.rs`, the only **ABSOLUTE-value** gate
+  Python's committed outputs in `rust/oracle/` — save one licensed divergence, the equilibrium
+  floor fix, as a rule in `tests/common/eq_floor.rs`; `fingerprint.rs`, the only **ABSOLUTE-value** gate
   (its CPython anchor is kept as the audit record); `phi_rate_limiter_negative.rs`, the only
   NEGATIVE with a gate; `coverage_ledger.tsv` — where every Python test went.
 - `docs/visuals/` — two **BUILT** pages (charts, cutaway): `cargo run --release -- visuals` writes

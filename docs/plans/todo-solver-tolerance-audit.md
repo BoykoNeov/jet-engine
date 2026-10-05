@@ -273,8 +273,9 @@ Grid of 4 425 `(f, T, p)` cases, lean AND rich (`f` 1e-14–0.2, 300–3 200 K, 
   (none ever reached -80, so the line never bound for them).
 - 392 / 402 previous failures now converge. Lean solves all finish in <= 160 of 200 steps.
 - 10 still fail: RICH (`f >= 0.135`) at 300 K, where O2 walks one log unit per step from its
-  seed to ~e^-203 and runs out of ITERATIONS, not floor. No caller reaches cold rich mixtures
-  (the flame-temperature bisection lives in 800–3 200 K). Recorded, not fixed.
+  seed to ~e^-203 and runs out of ITERATIONS, not floor. They failed identically at -80, so
+  their behaviour is unchanged (whether any caller reaches cold rich mixtures was not checked;
+  the flame-temperature bisection lives in 800–3 200 K). Recorded, not fixed.
 
 **What the floor had been hiding — a true refusal, now an `Abort`.** At `M0 = 2` the ram-heated
 `Tt3` (545 / 608 K) exceeds a 500 / 600 K `Tt4`: no `f >= 0` closes the burner balance, the
@@ -282,11 +283,15 @@ bisection pins at `f ~ 4e-25`, and `Burner::apply`'s balance `assert!` caught it
 route where the Newton's `Abort` had been skippable, so rung 41's scans would have crashed.
 `components.rs` `try_solve_equilibrium` now returns that refusal as an `Abort` with `apply`'s
 own message, gated on "the bracket never left `f = 0` AND the balance is open".
+**Does the refusal reject anything Python ACCEPTED?** Swept past every gate's grid (single-spool
+rung 31/33 and two-spool rung 38 matchers, `M0` 0–3, `Tt4` 400–1 200 K by 50; nothing shipped
+flies above `M0 = 2`): the refusal fired 34 times, and at each one the burner re-run the OLD way
+(floor -80, refusal off) failed too. So on that sweep it rejects nothing the old code accepted.
 
 **This also ATTRIBUTES the 600 / 650 K rung-33 raises** that (c)/(d) left open: they are bracket-
 march trials at `M0` 1.2–2.0 (outside (d)'s grid) where `Tt3 > Tt4` — burner refusals the floor
 mislabelled as Newton failures. With the refusal now an `Abort`, the marches reject the SAME
-trials as Python and every bracket is bit-identical.
+trials as Python and every bracket on the gates' grids is bit-identical.
 
 **The oracle gates — one RULE, not a key list** (`rust/tests/common/eq_floor.rs`, included by
 `offdesign_oracle`, `two_spool_oracle`, `slice_l_oracle`; the `rust/oracle/` files untouched).

@@ -948,7 +948,8 @@ pub fn try_equil_solve(
             // case grid converge, and **every solve that converged at -80 is bit-identical** (4 023
             // of 4 023 — none of them ever reached -80, so this line never bound). Still failing:
             // cold (<= 400 K) RICH mixtures, where O2 walks one log unit per step from its seed
-            // and runs out of iterations, not floor; no caller reaches them. See
+            // and runs out of iterations, not floor; they failed the same way at -80, so their
+            // behaviour is unchanged. See
             // `docs/plans/todo-solver-tolerance-audit.md` § "Rust-era re-audit" (c)-(e).
             y[j] = (y[j] + scale * dy[j]).max(-300.0);
         }
