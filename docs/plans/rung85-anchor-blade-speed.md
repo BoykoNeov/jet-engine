@@ -134,10 +134,12 @@ host a physical blade speed).** Taken to the user.
   strongly rising pressure losses with increasing pre-shock Mach number"* and shock/boundary-layer
   interaction. Same chapter: today's high-efficiency transonic stages run *"tip speed in the order
   of 500 m/s"*. *Supplies:* the LOW end of the swept band, **`M_rel,lim` = 1.3, as the typical
-  CIVIL level**, and the mechanism (shock loss ⇒ efficiency, not a hard wall). With TP 1659's
-  Rotor 37 (1.49, a research rotor its own report calls beyond state of the art) as the HIGH end,
-  the shipped sweep **{1.3, 1.4, 1.5}** is sourced at both ends — and remains a disclosed LEVEL,
-  verdicts as thresholds on it (CR-797's framing, rung 54's pattern).
+  CIVIL level**, and the mechanism (shock loss ⇒ efficiency, not a hard wall). Only that
+  end is SOURCED as a typical level. The sweep's upper values **1.4 and 1.5 are DISCLOSED levels**,
+  not sourced limits: TP 1659's Rotor 37 (1.49, a research rotor whose own report calls its parent
+  design beyond the state of the art) is an EXAMPLE that a design ran there — a design example, not
+  a limit. The whole sweep `{1.3, 1.4, 1.5}` stays a disclosed LEVEL, verdicts as thresholds on it
+  (CR-797's framing, rung 54's pattern).
 - **NOT read first-hand, NOT cited as a source:** a standard TEXTBOOK statement (Mattingly /
   Cumpsty / Saravanamuttoo / Dixon). A search-engine summary attributes to Dixon & Hall *"rotor
   inlet relative Mach numbers of up to 1.7 are now used"*; the excerpt page (ScienceDirect) and an
