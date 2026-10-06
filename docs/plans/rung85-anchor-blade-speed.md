@@ -8,8 +8,10 @@ choice … a row-level stress or tip-Mach limit that pins `U` from outside the s
 a STRENGTH wall (centrifugal blade-root stress) — with whichever binds winning, per spool.
 
 **Status:** § 0 (pre-check probes) and § 1 (sources) are DONE. § 2 (the knob table) is written.
-§ 3 (open design decisions) and § 4 (predictions) are DRAFTS awaiting the advisor check-in. **No
-code has been written.** Probes: plain arithmetic on the shipped design numbers, no model code.
+§ 3 (open design decisions) and § 4 (predictions) were revised after the FIRST advisor check-in
+(2026-10-06); **§ 0 P-C BLOCKS the rung's design and is with the user.** No code has been written.
+Probes: plain arithmetic on the shipped design numbers (rung 56's CPG rig, `cp` = 1004 exactly, so
+`Δh = cp·ΔT` IS the model's own enthalpy there; default shape `flow/press`, `l` = 0.7 LP / 1.0 HP).
 
 ---
 
@@ -53,6 +55,34 @@ design `U_tip` at `M0` = 0.85 (wall 1.3–1.5, `h` 0.4–0.7): **314–389 m/s**
 `M0` ≈ **2.6 – 5.0** (`Tt2` 584–1473 K) — where titanium's strength itself falls with temperature,
 which the simple law ignores. **So the strength wall's role at this design point is the REDLINE,
 not the design speed.**
+
+**FINDING P-C — BLOCKING: the airflow wall and `φ_d` = 1 cannot coexist with a capacity margin.**
+`φ_d` = 1 forces `Vx = U`, so an airflow-limited `U` forces a near-sonic AXIAL Mach at the front
+row. The capacity level each wall-derived design implies (`C` = MFP(M)/MFP(1), rung 54's own
+definition), over `M_rel,lim` ∈ {1.3, 1.4, 1.5} × `h` ∈ {0.4, 0.5, 0.7}, both spools:
+
+```
+    at the wall (continuous K*)   C = 0.939 … 0.9993
+    at the integer K              C = 0.908 … 0.9975      (LP K = 3–4, HP K = 5–8)
+```
+
+Every cell sits at or past rung 56's shipped 0.90, most of them in the near-choke band where
+`per-row-blading-negative.md` § 3 found its `+463 %` artifact and against rung 54's own `C < 1`
+assertion. Real transonic rotors run `Vx` well below `U` (a flow coefficient around 0.5–0.6 is the usual
+textbook figure — **NOT yet sourced first-hand**); this model has `Vx = U` by construction since
+rung 55. **So the rung cannot simply "add the walls": either `φ_d` becomes a design input
+(re-founding rung 55's kinematics, `β₁` = 45°, and `t₂ = l/(1+l)`), or the walls are read with the
+capacity channel switched off, or P-C itself is the result (a NEGATIVE: the stack's sizing cannot
+host a physical blade speed).** Taken to the user.
+
+**Settled by the pre-check — no credit taken (moved here from § 4 at the advisor's check-in):**
+- `K` out of the walls at `M0` = 0.85: LP **3–4**, HP **5–8** (P-C's table).
+- The AIRFLOW wall binds the design on both spools at `M0` = 0.85 in every cell (P-B, P-C).
+- Redline headroom `N_red/N_d − 1` is +43 … +127 % (P-B); rounding `K` up only enlarges it.
+- **Which ROW binds is true BY CONSTRUCTION, not a measurement** (retracting draft D5): `U` is the
+  same at every row (constant mean radius), rear rows are hotter (lower relative Mach) and their
+  blades shorter (higher `h`, lower root stress), and strength is temperature-independent here. So
+  both walls bind at each spool's front row under these laws — stated, never "measured".
 
 ## 1. SOURCES — verified, with what each does and does NOT supply
 
@@ -121,21 +151,26 @@ not the design speed.**
   rungs 53–61's speed bills live); the design-space crossover is reported as § 0's probe only.
   Off design, the airflow wall reads CORRECTED speed/flow (`n`, `m`) and the strength wall reads
   PHYSICAL speed `N/N_d = n·sqrt(θ₂/θ₂,d)` — each spool its own pair.
-- **D5 — which ROW binds.** Both walls are expected at each spool's FRONT row (coldest, longest
-  blade). To be MEASURED per row, not assumed — especially on the HP spool.
+- **D5** — retracted; see § 0 (true by construction).
 - **D6 — the panel.** Rung 85 is the first rung with no Python segment in `cli_golden`. It needs a
   Rust-owned golden and a stated meaning for the panel count. Its own commit, before the physics.
 
-## 4. PREDICTIONS (DRAFT — not yet registered; scored only once closed)
+## 4. PREDICTIONS (DRAFT — not registered until P-C is resolved)
 
-- **Q1** `K` out of the walls at `M0` = 0.85: LP **2–4**, HP **6–9** (from § 0's arithmetic).
-- **Q2** the airflow wall binds the design on BOTH spools at `M0` = 0.85 (§ 0 P-B).
-- **Q3** redline headroom `N_red/N_d − 1` is LARGE (tens of percent) on both spools.
-- **Q4** rung 53's lumped stator overspeed (`+66.7 %` `N_L` at `Tt4` = 1000) CROSSES the LP
-  strength redline; rung 55's front-row stator (`+2.3 %`) does NOT — the positional law (rung 55)
-  survives as an ADMISSIBILITY result, not just a cost result.
-- **Q5** off design, the AIRFLOW wall is reached before the strength wall in every overspeed the
-  shipped transients produce (because it is the design-binding one and both scale with `N`).
+- **Q4 (re-posed)** — a LEVEL against a LEVEL, not a cost against a level. On the machine the walls
+  produce (its own `K`, re-measured — NOT rung 53/55's published `+66.7 %` / `+2.3 %`, which are
+  part-power CHANGES at `K` = 8, and rung 55's cost scales ~`1/K`, so ~2.7× larger at LP `K` ≈ 3):
+  read `N_L/N_L,d` WITH the lever at each cell, against `N_red/N_d`. Prediction: the lumped stator
+  crosses the strength redline somewhere in the shipped throttle range; the front-row stator
+  does not.
+- **Q5 (re-posed, two-sided)** — the stator's setting `v` adds face pre-swirl, `tan β₁ = 1/φ − v`,
+  which LOWERS the rotor's relative inlet Mach (the purpose of a real IGV). So under a stator lever
+  physical `N` can rise while `M_rel,tip` FALLS. The off-design tip Mach is computed from
+  `(φ, v, n)` through the stack's own `β₁`. Prediction to be written only after that function
+  exists and its design value is checked to equal the wall level.
+- **NEGATIVE decision rule (fixed now):** if the walls re-derive `K` and `C` but NO verdict of rungs
+  53–61 changes, and strength never binds inside the shipped envelope, this is a NEGATIVE
+  (`docs/…-negative.md`), not a rung.
 
 ## 5. Concessions already known
 
@@ -143,5 +178,9 @@ not the design speed.**
   usually come from the DISC, and from temperature-dependent strength; neither is modelled. The
   hot rear rows' material switch (titanium → nickel) is out of scope: both walls are applied at
   the cold front row only.
+- **The strength wall is an OPTIMISTIC upper bound** (no disc, no temperature, yield rather than
+  the no-burst rule's ultimate — the latter would lift the redline ~4 %; yield vs ultimate is a
+  disclosed choice). So its verdicts are ONE-SIDED: "crosses the redline" survives the model's
+  error; "stays under it" does not, and is worded as such.
 - `φ_d` = 1 forces `Vx = U`, which raises the relative Mach for a given `U` relative to real
   designs (Rotor 37 runs `U_tip` 454 m/s at `M_rel` 1.49; this sizing hits 1.5 near 377–389 m/s).
