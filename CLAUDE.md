@@ -24,12 +24,12 @@ planned: an interactive web page running the Rust model live.
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is anchored to a
-published case. All rungs are live; the current scope is **rung 84**.
+published case. All rungs are live; the current scope is **rung 85**.
 
 **Families** (contiguous): 1–6 cycle · 7–24 NOx & mixing · 25–30 nozzle/turbine marches ·
 31–33 off-design steady · 34–37 1-spool transient · 38–45 two-spool · 46–52 fuel limiters ·
 53–56 + 61 airflow levers (steady) · 57–60, 62–63 schedules · 64–68 valve/lag/cascades ·
-69–84 reference splits & rank. **Read-only diagnostics: 7–30, 36, 41, 44, 45**; all else
+69–84 reference splits & rank · 85 blade-speed walls (knobs). **Read-only diagnostics: 7–30, 36, 41, 44, 45**; all else
 STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 
 | Rung | Adds (one-line hook) | Spec |
@@ -119,6 +119,7 @@ STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 | 82 | **THE THRESHOLD'S OWN LAW** — 81's seam, answered **NO**. **HEADLINE: a criterion read FORWARD inherits the SIGN of its own reference** — it reports where the reader STARTED, so only the FIXED POINT lands. **BOUNDS 81 to the trajectory it labels.** | `docs/rung82-spec.md` |
 | 83 | **THE CORRECTOR'S OWN BAR** — 82's seam, answered **NO**. **HEADLINE: a bracketing solve locates a SIGN CHANGE, a corrector needs a ROOT** — on a `min`-built residual those differ, and 1 of 5 ramps has NONE. **CORRECTS 82 § 6 — the SIDE is free.** | `docs/rung83-spec.md` |
 | 84 | **THE MARCHED MINIMUM'S STAIRCASE** — 83's map seam. **HEADLINE: a minimum over a MARCHED set is a reading on a MOVING GRID BOUNDARY, so the residual carries the march's own SAWTOOTH** — a missing root is a crossing landing on a step. **CORRECTS 83's reason, CONFIRMS its verdict; SCALES 82's step control.** | `docs/rung84-spec.md` |
+| 85 | **THE BLADE-SPEED WALLS** — a physical blade speed; `K`, `C`, a REDLINE become OUTPUTS; the first rung shipped as KNOBS (+ the user's rounding knob `λ`). **HEADLINE: holding design incidence CANCELS the map slope** (lumped), so `λ` reaches a schedule only via the droop. **BOUNDS 55's resolution.** | `docs/rung85-spec.md` |
 
 ## Working contract (from SPEC.md — these override convenience)
 - **Derive before you code.** For each station, write the governing equation and
@@ -134,7 +135,7 @@ STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 - **Every new rung reduces to its predecessor**, exactly and by test (`X=None` ⇒
   the prior code path). This is the project's spine — see any `docs/rungN-spec.md`.
 
-**Current scope (rung 84).** The **cycle solve** is a thermally-perfect, reacting,
+**Current scope (rung 85).** The **cycle solve** is a thermally-perfect, reacting,
 dissociation-equilibrium gas (`Gas.reacting_equilibrium()`) through ideal + real components
 (rungs 2/2b's knobs, mutually exclusive; specified exit pressure). The burner root-finds `f` over the scale-B
 absolute balance, then freezes the station-4 mixture through turbine + nozzle; Fork A/B and
@@ -155,7 +156,7 @@ Never re-open one, and never re-enumerate them here.
 - Anchored `δ(J)` law via a JICF trajectory — `docs/mixing-jicf-anchor-negative.md` (a SECOND unanchored exponent).
 - Lagged/filtered `pt3` sensor on 48's leg — `docs/pt3-sensor-lag-negative.md` (CONFIRMS 48, corrects its SIGN).
 - A limiter with BOTH edges inside the ramp — `docs/both-edges-limiter-negative.md`. Closes the WHOLE `pt3`-filter family; **UPGRADES 48's law**.
-- **PER-ROW BLADING** (56's seam) — `docs/per-row-blading-negative.md`. **OVER-DETERMINED** ⇒ capacity inert. **CORRECTS 55.**
+- **PER-ROW BLADING** (56's seam) — `docs/per-row-blading-negative.md`. **OVER-DETERMINED** ⇒ capacity inert. **CORRECTS 55.** Its § 5 anchor: BUILT BY 85.
 - The **φ-RATE limiter** (60's seam) — `docs/phi-rate-limiter-negative.md`. **Fuel's authority over `φ` INVERTS between LEVEL and DERIVATIVE**. BOUNDS 49; the one negative with a gate.
 
 **Checked, CONFIRMATION / CORRECTION — not a rung:**
@@ -171,7 +172,6 @@ Never re-open one, and never re-enumerate them here.
 - **Reacting-gas fuel control** (35/43 defer — the forward burner asserts against an equilibrium gas).
 - **The subsonic / unchoked LP branch** in the two-spool solves (38 flags, unsolved) and its **transient**.
 - **Rung 33's dispatch floor**: below ~455 K its choked trial leaves the gas tables, ABOVE idle — `docs/rung33-spec.md`.
-- An **ANCHOR for the blading**: a stress / tip-Mach limit pinning `U` externally, or an annulus law `Vx(k)`.
 - **Fuel + bleed + STATOR** on one plant (rung 63's seam, untouched by 64/65).
 - **Rungs 69–84's seams — in each rung's spec, not here.** `n`=4 needs a 4th non-fuel lever or a non-`min` composition; every route TRIED (72–76, 80) is CLOSED.
 - **Rung 37's internal clocks on two shafts** + the combined 3-state; **customer/cooling bleed** at station 3.
@@ -198,8 +198,8 @@ tag **`python-final`** keeps it, and every `engine.py:N` / `test_rungN.py` citat
   `two_spool_transient.rs` (40, 44) → `bleed.rs` (42) → `fuel_transient.rs` (43, 45, and the
   fuel-side limiters 46–52) → `stator.rs` (53–54) → `stage.rs` (55–56) → `stator_transient.rs`
   (57–60) → `stator_bleed.rs` (61) → `bleed_transient.rs` (62–63) → `limited_bleed.rs` (64) →
-  `lagged_bleed.rs` (65) → **exactly ONE module per rung, 66→84** (`two_lag.rs` …
-  `staircase_law.rs`). A rung is a core plus a `const` table of function pointers, and reduces to
+  `lagged_bleed.rs` (65) → **exactly ONE module per rung, 66→85** (`two_lag.rs` …
+  `staircase_law.rs`, `blade_speed.rs`). A rung is a core plus a `const` table of function pointers, and reduces to
   its predecessor; **each module's header names its rung, and what it adds is in its spec** — so
   this entry never grows.
 - `rust/src/main.rs` + `panels/` + `pyfmt.rs` — the CLI: the design-point tables and **one panel per
@@ -223,7 +223,7 @@ From the repo root; every `cargo` command takes `--manifest-path rust/Cargo.toml
   Chart data alone: `-- ts-diagram`; the pages: `-- visuals` / `-- splice`; one panel:
   `-- panel NAME` (`--write` captures a Rust-owned panel's golden, `rust/oracle/rust_owned/`).
 - **The gate: `powershell -File rust\test-all.ps1`** — **EVERYTHING** (`cargo test --release`'s
-  2002 tests, 192 programs) run 8 at a time, all below-normal: **~16 min**, + ~4 min rebuild after a
+  2022 tests, 193 programs) run 8 at a time, all below-normal: **~13 min**, + ~4 min rebuild after a
   `src/` change. Plain `cargo test --release` runs them one by one (80 min). Nothing is deselected.
 - **Iterate: `cargo test --release --test rungN`** — one binary. Run what a change can reach.
 - **WHEN to run the gate:** at session end (unless run shortly before), and after a code change.

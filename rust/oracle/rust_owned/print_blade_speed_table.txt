@@ -1,0 +1,56 @@
+
+THE BLADE-SPEED WALLS (rung 85): the stack gets a physical blade speed, and the stage
+count K, the capacity C and a REDLINE R = N_red/N_d become OUTPUTS. Two walls per spool:
+an AIRFLOW level (front-row relative tip Mach -- an efficiency target that SIZES the design)
+and a STRENGTH wall (blade-root pull, Ti-6Al-4V AMS 4911 min 827.4 MPa / 4429 kg/m^3,
+with 14 CFR 33.27's 120 % overspeed) -- the only OFF-design wall. Design flow coefficient
+Phi_d = 0.537 (NASA Rotor 37's mean line).
+
+  THE ROUNDING KNOB lambda: K must be whole, so K = ceil(K*) leaves a gap below the wall.
+  lambda = 0 slows the blades to close it (rungs 55/56's machine); lambda = 1 keeps them AT
+  the wall and loads every row lighter (r = its work vs the unswirled row) through a design
+  pre-swirl -- exactly a reshaped map: l' = (1+l)/r - 1, sigma' = sigma/r (droop switch A).
+
+  THE SIZED MACHINES (shape flow/press; the airflow level binds every cell; m/s, degrees):
+  spool   h M_lim |    K*  K |   U_tip  M_rel      C      R |   U_tip      r  swirl  M_rel      R
+                  |          | lambda = 0                   | lambda = 1
+  LP    0.5  1.30 |  2.23  3 |   344.3  1.114  0.649  1.708 |   399.5  0.743   15.7  1.176  1.472
+  LP    0.5  1.40 |  1.94  2 |   421.7  1.376  0.761  1.395 |   428.7  0.968    2.0  1.383  1.372
+  LP    0.5  1.50 |  1.70  2 |   421.7  1.376  0.761  1.395 |   457.5  0.850    9.4  1.416  1.286
+  LP    0.7  1.30 |  1.82  2 |   372.1  1.238  0.761  1.917 |   389.7  0.912    5.5  1.253  1.830
+  LP    0.7  1.40 |  1.59  2 |   372.1  1.238  0.761  1.917 |   417.9  0.793   12.8  1.283  1.707
+  LP    0.7  1.50 |  1.39  2 |   372.1  1.238  0.761  1.917 |   445.6  0.697   18.3  1.321  1.601
+  HP    0.5  1.30 |  4.86  5 |   467.7  1.281  0.723  1.258 |   474.3  0.972    1.5  1.288  1.240
+  HP    0.5  1.40 |  4.22  5 |   467.7  1.281  0.723  1.258 |   509.0  0.844    8.2  1.331  1.156
+  HP    0.5  1.50 |  3.71  4 |   522.9  1.441  0.785  1.125 |   543.2  0.927    3.9  1.465  1.083
+  HP    0.7  1.30 |  3.98  4 |   461.4  1.296  0.785  1.546 |   462.7  0.994    0.3  1.297  1.541
+  HP    0.7  1.40 |  3.46  4 |   461.4  1.296  0.785  1.546 |   496.1  0.865    7.2  1.335  1.438
+  HP    0.7  1.50 |  3.04  4 |   461.4  1.296  0.785  1.546 |   529.1  0.760   12.6  1.378  1.348
+  The staircase: at lambda = 0 several levels build ONE machine (same K, same R); at
+  lambda = 1 R moves smoothly with the level and only K steps.
+
+  THE LEVERS AGAINST THE REDLINE (constant-incidence stator schedules, Tt4 = 1000; N/N_d is
+  PHYSICAL shaft speed vs design; a schedule that never reaches its target is read at the
+  last setting its scan reached -- V1):
+  lever (spool), cell             K L/H  reached      v*    N/N_d       R  verdict
+  lumped (LP) h.5 M1.4              1/1      yes  1.2436   1.2601   1.395  under
+  lumped (HP) h.5 M1.4              1/1      yes  0.1847   0.8848   1.258  under
+  all rows (LP) h.5 M1.4            2/5  NO (V1)  2.4000   1.8439   1.395  CROSSES
+  front row (LP) h.5 M1.4           2/5      yes  0.4803   0.8603   1.395  under
+  all rows (HP) h.5 M1.5            2/4      yes  0.5032   1.1073   1.125  under
+  front row (HP) h.5 M1.5           2/4      yes  0.1247   0.8396   1.125  under
+  lumped (LP) h0.5 M1.5 lam=1 A     1/1      yes  1.2976   1.2872   1.286  CROSSES
+  lumped (LP) h0.7 M1.5 lam=1 A     1/1      yes  1.4024   1.3392   1.601  under
+  lumped (LP) h0.5 M1.5 lam=1 B     1/1      yes  1.2445   1.2604   1.286  under
+  lumped (LP) h0.7 M1.5 lam=1 B     1/1      yes  1.2468   1.2612   1.601  under
+
+  WHAT IT SAYS:
+  * Holding the design incidence pins 1/phi - v = 1, and then psi = 1 - sigma u^2 - l u - v(1+l)phi
+    collapses to 1 + u - sigma u^2: on the lumped machine the held speed carries NO map slope l.
+    So lambda reaches a held schedule only through the droop sigma -- switch A (droop tied to
+    blade speed) raises it, switch B (droop shrinks with row work) leaves it within 0.1 %.
+  * lambda = 1 lowers every redline (faster blades); on switch A the h=0.5 M=1.5 cell's lumped
+    LP schedule then crosses its redline, by under 0.1 %.
+  * The all-rows LP schedule never reaches its target at Tt4 = 1100/1000 and passes the redline
+    on the way (V1); the HP all-rows one stays 1.6 % under the tightest HP redline.
+  * The front-row lever raises N_L but LOWERS the front row's tip Mach (a reading, never a wall).

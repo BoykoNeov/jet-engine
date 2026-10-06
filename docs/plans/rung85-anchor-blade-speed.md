@@ -1,4 +1,4 @@
-# Rung 85 anchor — THE BLADE-SPEED WALLS (pre-registered 2026-10-06 — § 4; no code yet)
+# Rung 85 anchor — THE BLADE-SPEED WALLS (pre-registered 2026-10-06 — § 4; SHIPPED the same day, scored in `docs/rung85-spec.md`)
 
 **Seam:** `docs/per-row-blading-negative.md` § 5 — *"an anchor supplied by physics rather than by
 choice … a row-level stress or tip-Mach limit that pins `U` from outside the stack"*; carried in
@@ -22,6 +22,11 @@ identity, the bare-speed note). **§ 4.5 (same day, pre-code):** the user's ROUN
 the D1 gap absorbed by blade speed (`λ` = 0, § 4.1's machine) or by lighter row loading (`λ` = 1),
 derived as a reshaped map of the shipped family; Q0–Q3 registered. Next: D6 (the Rust-owned
 golden, its own commit), then code.
+**SHIPPED 2026-10-06:** D6 (`a21d14d`), code + gates (`rust/src/blade_speed.rs`,
+`rust/tests/rung85.rs`), the panel. § 4 / § 4.5 are scored in `docs/rung85-spec.md` § 3 — no bar
+here was edited after code ran. The A4 / old-Q3 estimates' reasoning (bill ∝ slope `l`) is
+CORRECTED there (§ 4: holding design incidence cancels `l`); after scoring, the user added the
+droop switch (A `σ/r` default, B `σ`).
 Probes: plain arithmetic on the shipped design numbers (rung 56's CPG rig, `cp` = 1004 exactly, so
 `Δh = cp·ΔT` IS the model's own enthalpy there; default shape `flow/press`, `l` = 0.7 LP / 1.0 HP).
 

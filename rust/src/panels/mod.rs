@@ -20,6 +20,7 @@ use crate::pyfmt::Printer;
 
 pub mod actuator;
 pub mod airflow;
+pub mod blade_speed;
 pub mod cascades;
 pub mod cycle;
 pub mod limiters;
@@ -90,7 +91,7 @@ pub type Panel = fn(&mut Printer, &Design);
 /// a mistyped Python panel name pass as a new panel against a fresh capture of itself. Each name
 /// must sit in [`PANELS`] exactly once, in the contiguous block just before the chart line, and in
 /// no Python segment (`tests/cli_golden.rs`).
-pub const RUST_OWNED: &[&str] = &[];
+pub const RUST_OWNED: &[&str] = &["print_blade_speed_table"];
 
 /// `main()`'s calls, in order, each named as the golden's segment file names it (a `print_*`
 /// function's name, or `main:<what>` for text `main()` prints inline).
@@ -186,6 +187,8 @@ pub const PANELS: &[(&str, Panel)] = &[
     ("print_threshold_law_table", readers::threshold_law_table),
     ("print_corrector_law_table", readers::corrector_law_table),
     ("print_staircase_law_table", readers::staircase_law_table),
+    // ---- born in Rust: rung 85 on, each held to its own capture (RUST_OWNED)
+    ("print_blade_speed_table", blade_speed::blade_speed_table),
     // ---- slice AR: the chart's line (the data itself is written by `src/main.rs`)
     ("plot_ts_diagram", cycle::ts_diagram_line),
 ];

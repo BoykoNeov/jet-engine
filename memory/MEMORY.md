@@ -16,7 +16,7 @@ slice lines (which *widen* as step links are appended). Those moved to `rust-por
 new slices and step links go THERE, not here.
 
 ## Working agreements
-- [Sandbox direction](sandbox-direction.md) — user 2026-10-06: a SANDBOX, not pass/fail lessons; ship knobs, no NEGATIVE gates; web page later
+- [Sandbox direction](sandbox-direction.md) — user 2026-10-06: a SANDBOX, not pass/fail lessons; ship knobs, prefer realistic absorbers; rung 85 done ⇒ web page NEXT (plan first)
 - [Session-end routine](session-end-routine.md) — at session end: update memory + docs, commit, push
 - [Git remote setup](git-remote-setup.md) — github.com/BoykoNeov/jet-engine, branch main, origin over SSH
 - [Always commit and push](always-commit-and-push.md) — auto-commit + push green work; gate is `rust/test-all.ps1`: cargo tests run in parallel, below-normal (pytest until 2026-10-05)
@@ -135,7 +135,7 @@ new slices and step links go THERE, not here.
 - [Rung 82 threshold law](rung82-threshold-law.md) — two bars VOID for comparing a physical quantity to a loop count
 - [Rung 83 corrector law](rung83-corrector-law.md) — an identity round-trip sold as verification
 - [Rung 84 staircase law](rung84-staircase-law.md) — a small integer COUNT cannot carry a RATE
-- [Rung 85 blade speed — IN DESIGN](rung85-blade-speed-in-progress.md) — convert every input to the quantity a new wall reads BEFORE adding the wall
+- [Rung 85 blade speed](rung85-blade-speed.md) — list EVERY parameter two cases differ in before extrapolating; an identity gate fed (1,1) by hand compared a function with itself
 
 ## Margin sweeps — confirmations, not rungs
 - Margin sweeps — [72–77 march audit](rungs72-77-march-audit.md), [74 arrest interval](rung74-arrest-interval.md), [79 gap](rung79-gap-margin.md), [29 π_c](rung29-pi-c-margin.md), [29 M0](rung29-M0-margin.md), [28 β](rung28-beta-margin-hardened.md) — a liveness counter on a FROZEN plant reports FULL activity (one lesson per file)

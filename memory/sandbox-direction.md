@@ -25,5 +25,9 @@ after rung 85. (2) Form: an **interactive web page**, the Rust model running liv
 scored HIT/MISS, but a miss is a finding, never a reason to withhold the knob or to write a
 negative instead of shipping. Don't start the web sandbox until rung 85 is done, unless the user
 says so; when it starts, plan it first (which knobs, how the model reaches the browser).
-CLAUDE.md carries a one-line "Direction" note under its intro. See [[rung85-blade-speed-in-progress]],
+**Rung 85 SHIPPED 2026-10-06** — the web sandbox is now the next work; plan it first.
+**User, 2026-10-06, on rung 85:** "make it closer to reality, maybe don't round so much" — when a
+model is forced to round or quantise (whole blade rows), ask what a real designer lets ABSORB the
+leftover and offer that as a knob, rather than letting one quantity jump. See [[rung85-blade-speed]].
+CLAUDE.md carries a one-line "Direction" note under its intro. See
 [[visuals-artifact]], [[cutaway-artifact]].
