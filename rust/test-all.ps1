@@ -65,6 +65,10 @@ $programs = @(Get-Content "$logs\build.json" |
 # the doc tests are not a program of their own; cargo builds and runs them in one step
 $programs += [pscustomobject]@{ Name = 'doc-tests'; Exe = 'cargo';
     Args = @('test', '--release', '--doc', '--manifest-path', "`"$root\Cargo.toml`"") }
+# the web sandbox's browser checks: its own wasm build, Node and a headless Chrome, so not a cargo
+# test program -- rust\sandbox-wasm\check.ps1 (docs/plans/sandbox-plan.md section 6, user decision 9.5)
+$programs += [pscustomobject]@{ Name = 'sandbox-browser'; Exe = 'powershell';
+    Args = @('-NoProfile', '-File', "`"$root\sandbox-wasm\check.ps1`"") }
 $programs = @($programs | Where-Object { $_.Name -like $Only })
 Write-Host ("built in {0:N0} s; {1} programs to run, {2} at a time" -f $clock.Elapsed.TotalSeconds, $programs.Count, $Jobs)
 

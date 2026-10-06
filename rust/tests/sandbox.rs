@@ -222,3 +222,18 @@ fn the_entry_point_answers_every_op() {
     assert!(matches!(ex.get("plain"), Some(Json::Str(t)) if t.contains("rich")));
     assert_eq!(Json::parse(&call(r#"{"op":"nope"}"#)).get("ok"), Some(&Json::Int(0)));
 }
+
+#[test]
+fn the_curved_legs_land_on_their_stations_on_every_gas() {
+    for g in GasModel::ALL {
+        let o = run(&Settings { gas: g, ..Settings::defaults() }).unwrap();
+        let at = |l: &str| { let p = o.ts.iter().find(|p| p.0 == l).unwrap(); (p.1, p.2) };
+        for (curve, a, b) in [(&o.curves[0], "3", "4"), (&o.curves[1], "9", "0")] {
+            let (first, last) = (curve[0], curve[curve.len() - 1]);
+            assert_eq!(first, at(a), "{g:?}: curve leaves {a} exactly");
+            assert!((last.0 - at(b).0).abs() < 1e-9 && last.1 == at(b).1, "{g:?}: curve reaches {b}: {last:?} vs {:?}", at(b));
+            // Heating raises T monotonically along the burner; cooling lowers it.
+            assert!(curve.windows(2).all(|w| (w[1].1 - w[0].1) * (at(b).1 - at(a).1) > 0.0), "{g:?}: {a}->{b} not monotone");
+        }
+    }
+}

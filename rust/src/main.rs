@@ -19,12 +19,19 @@
 //!   the one panel must be [`RUST_OWNED`], and its text is written to
 //!   `rust/oracle/rust_owned/NAME.txt` — the ONLY way that capture is made (the file is written
 //!   here, byte for byte, so no shell redirect can re-encode it).
+//! * `sandbox WASM [OUT]` — splice the browser build `WASM` into `docs/sandbox/template.html`,
+//!   writing `OUT` (default `docs/sandbox/turbojet-sandbox.html`). `rust/sandbox-wasm/build.ps1`
+//!   runs it; see `docs/sandbox/README.md`.
+//! * `sandbox-native` — print each of the sandbox check grid's requests and its native reply,
+//!   `REQUEST<TAB>REPLY` per line, for the browser check to compare against
+//!   (`rust/sandbox-wasm/check.mjs`).
 
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use turbojet::panels::{Design, PANELS, RUST_OWNED, TS_DIAGRAM_JSON};
 use turbojet::pyfmt::Printer;
+use turbojet::sandbox;
 use turbojet::visuals;
 
 fn visuals_dir() -> PathBuf {
@@ -131,8 +138,28 @@ fn main() {
                 std::io::stdout().write_all(text.as_bytes()).expect("stdout closed");
             }
         }
+        Some("sandbox") => {
+            let wasm_path = args.get(1).map(PathBuf::from).unwrap_or_else(|| {
+                eprintln!("usage: sandbox WASM [OUT]");
+                std::process::exit(2);
+            });
+            let dir = visuals_dir().join("..").join("sandbox");
+            let out = args.get(2).map(PathBuf::from).unwrap_or_else(|| dir.join("turbojet-sandbox.html"));
+            let wasm = std::fs::read(&wasm_path)
+                .unwrap_or_else(|e| panic!("cannot read {}: {e}", wasm_path.display()));
+            let page = sandbox::splice_page(&read(&dir.join("template.html")), &wasm);
+            write(&out, &page);
+            println!("{} bytes ({} of model) -> {}", page.len(), wasm.len(), out.display());
+        }
+        Some("sandbox-native") => {
+            let stdout = std::io::stdout();
+            let mut out = stdout.lock();
+            for req in sandbox::check_requests() {
+                writeln!(out, "{req}\t{}", sandbox::call(&req)).expect("stdout closed");
+            }
+        }
         Some(other) => {
-            eprintln!("unknown subcommand {other:?}; expected none, `visuals [DIR]`, `splice [DIR]`, `ts-diagram` or `panel NAME [--write]`");
+            eprintln!("unknown subcommand {other:?}; expected none, `visuals [DIR]`, `splice [DIR]`, `ts-diagram`, `panel NAME [--write]`, `sandbox WASM [OUT]` or `sandbox-native`");
             std::process::exit(2);
         }
     }

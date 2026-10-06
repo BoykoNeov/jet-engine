@@ -1,11 +1,13 @@
 # The web sandbox — plan
 
-**Status: PLAN, not started.** Drafted 2026-10-06, after rung 85 shipped. Direction (user,
+**Status: SLICE 1 BUILT 2026-10-06** — `docs/sandbox/` (what shipped, and how it is gated: its
+README). Slices 2 and 3 not started. Drafted 2026-10-06, after rung 85 shipped. Direction (user,
 2026-10-06): the project becomes a **sandbox** — change the engine's components and design numbers
 and watch it respond — delivered as an **interactive web page running the Rust model live**, beside
 the charts page and the cutaway (`docs/visuals/`).
 
-Nothing here is decided until the user answers § 9.
+§ 9 holds the user's answers. Built beyond the plan: the burner and exhaust legs of the T–s
+diagram as curves (`sandbox::ts_curves`), after a screenshot showed a straight 3 → 4 line.
 
 ## 1. What the spike measured (2026-10-06)
 

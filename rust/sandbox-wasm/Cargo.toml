@@ -1,0 +1,20 @@
+[package]
+name = "sandbox-wasm"
+version = "0.1.0"
+edition = "2021"
+
+# The web sandbox's browser shell (docs/plans/sandbox-plan.md § 2) -- ONLY the exports. Every
+# piece of logic is `turbojet::sandbox`, tested natively by the normal gate. A separate crate, not
+# a workspace member, so `cargo test` of the model never builds it. Its one dependency is the
+# model itself, by path: the no-dependency rule (rust/Cargo.toml) is about OTHER people's code.
+[lib]
+crate-type = ["cdylib"]
+path = "src/lib.rs"
+
+[dependencies]
+turbojet = { path = ".." }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1

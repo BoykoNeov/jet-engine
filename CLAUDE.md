@@ -9,7 +9,7 @@ forces every thermodynamic assumption into the open. Optimize the work for
 teaching, not for features or polish.
 **Direction (user, 2026-10-06): a SANDBOX** — the user changes components and designs and watches
 the engine respond. A new effect ships as KNOBS with every result shown, not a pass/fail verdict;
-planned: an interactive web page running the Rust model live.
+the web page running the Rust model live is `docs/sandbox/` (slice 1 built; plan `docs/plans/sandbox-plan.md`).
 
 > **⚠ This file is a REFERENCE / index — not a handout.** Keep it compact.
 > The rung table is **one line per rung**; each rung's derivation, assumptions,
@@ -214,6 +214,8 @@ tag **`python-final`** keeps it, and every `engine.py:N` / `test_rungN.py` citat
 - `docs/visuals/` — two **BUILT** pages (charts, cutaway): `cargo run --release -- visuals` writes
   `data.json` and splices both (`-- splice` re-splices only). Cycle change ⇒ rebuild **and
   republish**; `tests/visuals.rs` gates the joints.
+- `docs/sandbox/` — the SANDBOX page (not a rung): `src/sandbox.rs` + `src/atmosphere.rs`, browser shell
+  `rust/sandbox-wasm/`. Cycle/template change ⇒ `rust/sandbox-wasm/build.ps1` + commit (gated). See its README.
 - `docs/rungN-spec.md` (contents: see the banner); `docs/plans/rungN-anchor-*.md` — that rung's
   verified anchor data. `docs/plans/` holds the plan/tasks.
 

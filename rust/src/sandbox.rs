@@ -293,6 +293,8 @@ pub struct Outcome {
     pub result: EngineResult,
     /// `(label, s, T)` for the T–s diagram — see [`ts_points`].
     pub ts: Vec<(&'static str, f64, f64)>,
+    /// The burner and exhaust-cooling legs as `(s, T)` curves — see [`ts_curves`].
+    pub curves: [Vec<(f64, f64)>; 2],
 }
 
 /// Run one design. The solve itself is `build_turbojet(…).run(…)`, the CLI's own call.
@@ -301,7 +303,8 @@ pub fn run(s: &Settings) -> Result<Outcome, DoesNotRun> {
     let engine = build_turbojet(s.gas.gas(), s.pi_c, s.tt4, s.p0, s.losses());
     let result = engine.run(&s.flight(), s.mdot);
     let ts = ts_points(&engine.gas, &result, &s.flight());
-    Ok(Outcome { settings: *s, result, ts })
+    let curves = ts_curves(&engine.gas, &result, &ts);
+    Ok(Outcome { settings: *s, result, ts, curves })
 }
 
 /// Entropy at each station for the T–s diagram, ON THE RUN'S OWN GAS and from the run's OWN
@@ -341,6 +344,42 @@ pub fn ts_points(gas: &Gas, r: &EngineResult, fl: &FlightCondition) -> Vec<(&'st
         ("9", s_hot(r.t9, r.p9), r.t9),
     ]
 }
+
+/// The two heat-exchange legs of the T–s diagram as CURVES, `TS_CURVE_POINTS` each: the burner
+/// (3 → 4) and the exhaust cooling back to the outside air (9 → 0). The compression and expansion
+/// legs are drawn straight between stations; these two are not, because heat added or removed at
+/// near-constant pressure follows a curve, and a straight 3 → 4 line misdraws the cycle's biggest leg.
+///
+/// The SHAPE is the burned gas's own constant-pressure line on the run's gas (`cp ln T` on the
+/// perfect gas, `R ln pr(T)` from the tables), from the leg's first station; whatever that misses
+/// the second station by (the pressure loss, the change of mixture) is spread linearly in `T` —
+/// the charts page's `ts_legs` method, there on the perfect gas only. Both ends land on the
+/// stations, so the curve and the points agree (`tests/sandbox.rs`).
+pub fn ts_curves(gas: &Gas, r: &EngineResult, pts: &[(&'static str, f64, f64)]) -> [Vec<(f64, f64)>; 2] {
+    let far = r.station("4").far;
+    let at = |l: &str| { let p = pts.iter().find(|p| p.0 == l).unwrap(); (p.1, p.2) };
+    let shape = |t: f64, ta: f64| {
+        if gas.hot_is_cpg() {
+            gas.spec.cp_t * (t / ta).ln()
+        } else {
+            gas.r_t_at(far) * (gas.pr_t(t, far).ln() - gas.pr_t(ta, far).ln())
+        }
+    };
+    let leg = |a: &str, b: &str| {
+        let ((sa, ta), (sb, tb)) = (at(a), at(b));
+        let residual = sb - (sa + shape(tb, ta));
+        (0..TS_CURVE_POINTS)
+            .map(|i| {
+                let t = ta + (tb - ta) * i as f64 / (TS_CURVE_POINTS - 1) as f64;
+                (sa + shape(t, ta) + residual * (t - ta) / (tb - ta), t)
+            })
+            .collect()
+    };
+    [leg("3", "4"), leg("9", "0")]
+}
+
+/// Points per curved T–s leg.
+pub const TS_CURVE_POINTS: usize = 32;
 
 /// Plain words for a message the MODEL panicked with — shown above the message itself, which the
 /// page always prints verbatim. Unrecognised messages get a general line; a wrong guess here
@@ -397,6 +436,14 @@ pub fn outcome_json(o: &Outcome) -> Result<Json, DoesNotRun> {
     for &(l, sv, t) in &o.ts {
         ts.push(jobj! { "label" => l, "s" => finite(sv, "entropy")?, "T" => finite(t, "temperature")? });
     }
+    let mut curves = Vec::new();
+    for c in &o.curves {
+        let mut line = Vec::new();
+        for &(sv, t) in c {
+            line.push(Json::List(vec![Json::Float(finite(sv, "entropy")?), Json::Float(finite(t, "temperature")?)]));
+        }
+        curves.push(Json::List(line));
+    }
     let f = r.station("4").far;
     let thrust = finite(p.specific_thrust, "specific thrust")? * s.mdot;
     Ok(jobj! {
@@ -416,6 +463,8 @@ pub fn outcome_json(o: &Outcome) -> Result<Json, DoesNotRun> {
         "eta_propulsive" => finite(p.eta_propulsive, "efficiency")?,
         "eta_overall" => finite(p.eta_overall, "efficiency")?,
         "ts" => Json::List(ts),
+        "ts_burner" => curves[0].clone(),
+        "ts_reject" => curves[1].clone(),
     })
 }
 
@@ -488,4 +537,78 @@ pub fn call(request: &str) -> String {
         other => refusal(&format!("unknown op {other:?}")),
     };
     out.dump_compact()
+}
+
+// ---------------------------------------------------------------------------------------------
+// The page: the browser build is spliced into `docs/sandbox/template.html` as base64, so the page
+// is ONE self-contained file that runs from a double-click (`file://` refuses a fetch of a
+// sibling `.wasm`) and stays fully offline, like the charts and cutaway pages.
+
+/// Where the template takes the base64 of the browser build.
+pub const WASM_PLACEHOLDER: &str = "/*__SANDBOX_WASM_B64__*/";
+
+/// Standard base64 (RFC 4648, with padding) — the crate has no dependency to borrow one from.
+pub fn base64(bytes: &[u8]) -> String {
+    const A: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
+    for c in bytes.chunks(3) {
+        let n = (c[0] as u32) << 16 | (*c.get(1).unwrap_or(&0) as u32) << 8 | *c.get(2).unwrap_or(&0) as u32;
+        for (i, shift) in [18, 12, 6, 0].into_iter().enumerate() {
+            out.push(if i <= c.len() { A[(n >> shift & 63) as usize] as char } else { '=' });
+        }
+    }
+    out
+}
+
+/// The inverse of [`base64`] — the page gate reads the shipped build back out of the page.
+pub fn unbase64(text: &str) -> Vec<u8> {
+    let val = |c: u8| -> u32 {
+        match c {
+            b'A'..=b'Z' => (c - b'A') as u32,
+            b'a'..=b'z' => (c - b'a' + 26) as u32,
+            b'0'..=b'9' => (c - b'0' + 52) as u32,
+            b'+' => 62,
+            b'/' => 63,
+            _ => panic!("base64: bad byte {c:?}"),
+        }
+    };
+    let mut out = Vec::with_capacity(text.len() / 4 * 3);
+    for q in text.as_bytes().chunks(4) {
+        let pad = q.iter().filter(|&&c| c == b'=').count();
+        let n = q.iter().take(4 - pad).enumerate().fold(0u32, |n, (i, &c)| n | val(c) << (18 - 6 * i));
+        out.extend_from_slice(&[(n >> 16) as u8, (n >> 8) as u8, n as u8][..3 - pad]);
+    }
+    out
+}
+
+/// The built page: the template with the browser build in place of [`WASM_PLACEHOLDER`].
+pub fn splice_page(template: &str, wasm: &[u8]) -> String {
+    assert_eq!(template.matches(WASM_PLACEHOLDER).count(), 1, "the template must hold the placeholder exactly once");
+    template.replacen(WASM_PLACEHOLDER, &base64(wasm), 1)
+}
+
+/// The designs the browser check runs natively AND in the browser build, and compares. Every gas,
+/// every nozzle, both efficiency spellings, subsonic and supersonic, a high and a low altitude.
+pub fn check_grid() -> Vec<Settings> {
+    let mut out = Vec::new();
+    for g in GasModel::ALL {
+        for n in NozzleMode::ALL {
+            for &(pi_c, tt4, m0) in &[(10.0, 1500.0, 0.85), (25.0, 1700.0, 0.6), (4.0, 1200.0, 2.0)] {
+                for &(t0, p0) in &[(250.0, 50_000.0), (216.65, 19_330.4)] {
+                    out.push(Settings { gas: g, nozzle: n, pi_c, tt4, m0, t0, p0, p_exit: 0.9 * p0,
+                                        compressor_polytropic: out.len() % 2 == 1,
+                                        turbine_polytropic: out.len() % 3 == 1, ..Settings::defaults() });
+                }
+            }
+        }
+    }
+    out
+}
+
+/// One request line per grid design, as the page sends it — led by the page's opening request
+/// (empty settings = the defaults), which the browser test also reads back off the page.
+pub fn check_requests() -> Vec<String> {
+    let mut out = vec![r#"{"op":"run","settings":{}}"#.to_string()];
+    out.extend(check_grid().iter().map(|s| jobj! { "op" => "run", "settings" => s.to_json() }.dump_compact()));
+    out
 }
