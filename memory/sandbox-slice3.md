@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: c96236c2-c5ed-4e6d-b683-063ff12b223e
-  modified: 2026-10-06T21:55:19.135Z
+  modified: 2026-10-06T22:23:05.805Z
 ---
 
 Slice 3 of the web sandbox ([[sandbox-direction]], after [[sandbox-slice1]]) shipped 2026-10-07: the
@@ -35,4 +35,8 @@ caches in `gas.rs` (b3a5e3b, gate bit-identical, reacting/Fork B ~10x faster).
 - **Screenshots again found what checks missed**: propulsive efficiency 113.9 % (rung 2's
   kinetic-energy split with an underexpanded nozzle; labelled, not changed), a cut-off label, a
   grammar slip. Behaviour checks were green throughout ([[sandbox-slice1]]).
+- **"The last result on screen" can belong to an OLDER request.** Fly it captured the design's
+  thrust from the last arrived result; clicked right after a change, that was the previous design.
+  Ask for the value afresh in the ordered queue instead of reading whatever arrived last. Found only
+  because a review asked to show a number the plan had promised and the first build had dropped.
 - **Backslash collapse re-hit 3x** — see [[windows-tooling-file-hazards]].
