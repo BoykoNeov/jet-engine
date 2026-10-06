@@ -75,6 +75,17 @@ try {
     for (let t = 0; t < ms; t += 100) { if (await ev(expr)) return true; await sleep(100); }
     return false;
   };
+  const shot = async (name, width = 1280, dark = false) => {
+    if (!process.env.SANDBOX_SHOTS) return;
+    const { writeFileSync } = await import('node:fs');
+    mkdirSync(process.env.SANDBOX_SHOTS, { recursive: true });
+    await s.send('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 1, mobile: width < 500 });
+    await s.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: dark ? 'dark' : 'light' }] });
+    await sleep(400);
+    const r = await s.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true });
+    writeFileSync(join(process.env.SANDBOX_SHOTS, `${name}.png`), Buffer.from(r.result.data, 'base64'));
+    await s.send('Emulation.clearDeviceMetricsOverride'); await s.send('Emulation.setEmulatedMedia', { features: [] });
+  };
   await s.send('Page.navigate', { url: pathToFileURL(page).href });
   const native = JSON.parse(readFileSync(nativeTxt, 'utf8').split(/\r?\n/)[0].split('\t')[1]);
 
@@ -123,7 +134,9 @@ try {
   // 8. FLY IT (slice 3). Back to the opening design, then freeze it: the first fly point is the
   // design flown at its own point -- the native `{"op":"fly","fly":{}}` -- and lands on 100 % speed.
   await ev(`document.getElementById('reset').click()`);
-  await waitFor(`window.sandbox.state === 'ran' && window.sandbox.last.nu === undefined`);
+  // Wait for the RESET's own run (an older finished run also reads 'ran').
+  await waitFor(`window.sandbox.state === 'ran' && window.sandbox.last.nu === undefined && window.sandbox.last.thrust === ${first.thrust}`);
+  await shot('design-light');
   await ev(`document.getElementById('mode-fly').click()`);
   const flew = await waitFor(`window.sandbox.view() === 'fly' && window.sandbox.state === 'ran' && window.sandbox.last && window.sandbox.last.nu !== undefined`);
   const fly0 = await ev('window.sandbox.last');
@@ -132,6 +145,11 @@ try {
   check('fly_it_opens_on_the_design_point_and_matches_native', flew && !e8 && Math.abs(fly0.nu - 1) < 1e-9, e8 || `nu ${fly0 && fly0.nu}`);
   const vis = await ev(`['fly-set','fly-tiles','map-card','cycle-set'].map(i => document.getElementById(i).hidden)`);
   check('fly_mode_shows_its_knobs_and_hides_the_design', JSON.stringify(vis) === '[false,false,false,true]', JSON.stringify(vis));
+  // The frozen line shows BOTH: the design as set (slice 1's own run) and the convergent re-run.
+  const frozen = await ev(`document.getElementById('frozen').textContent`);
+  const kn = (frozen.match(/[\d,.]+ kN/g) || []).map(t => parseFloat(t.replace(/,/g, '')));
+  check('the_frozen_line_shows_the_design_as_set_and_the_re_run', /As you set it \(a fully expanded nozzle, equilibrium-chemistry gas\)/.test(frozen)
+        && kn.length === 2 && Math.abs(kn[0] - first.thrust / 1e3) < 0.01 && Math.abs(kn[1] - fly0.design_point.thrust / 1e3) < 0.01, frozen);
 
   // 9. Throttle back: the shaft slows, and the running line streams onto the map.
   await ev(`(() => { const a = document.getElementById('fly-Tt4'); a.value = '1200'; a.dispatchEvent(new Event('input')); })()`);
@@ -159,17 +177,11 @@ try {
   check('fly_altitude_moves_the_flight_not_the_design', climbed && designBefore === designAfter, `${climbed} ${where}`);
 
   if (process.env.SANDBOX_SHOTS) {
-    const { writeFileSync } = await import('node:fs');
-    mkdirSync(process.env.SANDBOX_SHOTS, { recursive: true });
-    const shot = async (name, width, dark) => {
-      await s.send('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 1, mobile: width < 500 });
-      await s.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: dark ? 'dark' : 'light' }] });
-      await sleep(400);
-      const r = await s.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true });
-      writeFileSync(join(process.env.SANDBOX_SHOTS, `${name}.png`), Buffer.from(r.result.data, 'base64'));
-    };
-    await shot('fly-light', 1280, false); await shot('fly-dark', 1280, true); await shot('fly-phone', 390, false);
-    await s.send('Emulation.clearDeviceMetricsOverride'); await s.send('Emulation.setEmulatedMedia', { features: [] });
+    await shot('fly-light'); await shot('fly-dark', 1280, true); await shot('fly-phone', 390);
+    // The states nobody had looked at: the nozzle unchoked (the stall tile's words) and a failure.
+    await ev(`window.sandbox.fly({T0: 250, p0: 50000, Tt4: 450})`); await shot('fly-unchoked');
+    await ev(`window.sandbox.fly({Tt4: 400})`); await shot('fly-failed');
+    await ev(`window.sandbox.fly({Tt4: 1300})`);
   }
 
   // 12. The slow gas runs when the knob is let go, not per step of a drag.

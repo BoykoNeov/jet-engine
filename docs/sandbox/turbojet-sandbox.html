@@ -134,9 +134,9 @@ footer p { max-width: 90ch; }
         <select id="fly-gas" style="grid-column: 1 / -1">
           <option value="thermally_perfect">Thermally perfect (live: ~20 ms a point)</option>
           <option value="perfect">Perfect gas (live: under 1 ms)</option>
-          <option value="reacting">Reacting products (~50 ms a point)</option>
-          <option value="fork_b">Reacting, formation enthalpies (~50 ms)</option>
-          <option value="equilibrium">Equilibrium chemistry (slow: ~1 s a point, runs when you let go)</option>
+          <option value="reacting">Reacting products (live: ~30 ms a point)</option>
+          <option value="fork_b">Reacting, formation enthalpies (live: ~30 ms)</option>
+          <option value="equilibrium">Equilibrium chemistry (slow: ~0.5 s a point, runs when you let go)</option>
         </select></div>
       <div class="knob"><label for="fly-map">Compressor map shape</label>
         <select id="fly-map" style="grid-column: 1 / -1">
@@ -293,8 +293,10 @@ footer p { max-width: 90ch; }
   modelled while the nozzle is unchoked.</p>
   <p><b>Efficiencies.</b> Overall efficiency is thrust power per fuel power. The model splits it into a thermal and a
   propulsive part using the jet's speed alone. When the jet leaves the nozzle above the outside pressure (a fixed
-  convergent nozzle, especially high up), part of the thrust is that pressure push, which the speed-based split does
-  not count, so the propulsive part can read above 100 %. The overall figure is unaffected.</p>
+  convergent nozzle, especially high up), part of the thrust is that pressure push, which the speed-based split
+  does not count, so the propulsive part can read above 100 %. It can also near zero thrust (around idle): the jet
+  then barely outruns the flight, and the fuel's own mass, which the model counts as accelerated, dominates both
+  the thrust and the energy gain. The overall figure is unaffected.</p>
   <p>Numbers computed here agree with the command-line model to the last few digits. The browser uses a
   different maths library, and the project's test run checks that difference stays below a measured bound.</p>
 </footer>
@@ -380,7 +382,7 @@ const NUM = ["T0", "p0", "M0", "pi_c", "Tt4", "mdot", "pi_d_max", "eta_c", "e_c"
              "eta_t", "e_t", "eta_m", "pi_n", "p_exit"];
 // Fly it (slice 3): F is the fly settings (turbojet::sandbox::FlySettings). The flight knobs are
 // shared: in fly mode they move the FLIGHT, not the design. FLY_NUM maps a knob id to its setting.
-let mode = "design", F = null, FLY_DEFAULTS = null;
+let mode = "design", F = null, FLY_DEFAULTS = null, designAsSet = null;
 const FLY_NUM = { "fly-Tt4": "Tt4", "phi_surge": "phi_surge" };
 const FLIGHT = ["T0", "p0", "M0"];
 const SLOW = ["equilibrium"];                 // ~1 s a point: run when a slider is let go
@@ -441,7 +443,7 @@ function showAmbient(a) {
 async function runNow() {
   const my = ++gen;
   const fly = mode === "fly";
-  if (fly && slow()) $("status").textContent = "Computing on the equilibrium gas (about a second)…";
+  if (fly && slow()) $("status").textContent = "Computing on the equilibrium gas (about half a second)…";
   const t = await model.ask(JSON.stringify(fly ? { op: "fly", fly: F } : { op: "run", settings: S }));
   if (my !== gen) return;                       // a newer change is already on its way
   $("timing").textContent = `${t.ms.toFixed(1)} ms in the ${model.mode}`;
@@ -485,7 +487,13 @@ async function fromAltitude(run = true) {
 }
 
 // ---------------------------------------------------------------- fly it
-function enterFly() {
+async function enterFly() {
+  if (mode === "fly") return;
+  // The design as the user set it (its own nozzle and gas), to show beside the frozen re-run. Asked
+  // for afresh: the last result on screen can be an OLDER design whose run arrived before the
+  // newest one (a click on Fly it right after a change -- the browser test caught it).
+  const t = await model.ask(JSON.stringify({ op: "run", settings: S }));
+  designAsSet = (!t.trap && t.reply.ok) ? { thrust: t.reply.thrust, nozzle: S.nozzle, gas: S.gas } : null;
   if (mode === "fly") return;
   // Freeze THIS design; fly it at its own point first (the reduce: shaft speed 100 %).
   F = { ...FLY_DEFAULTS, design: { ...S }, Tt4: S.Tt4, T0: S.T0, p0: S.p0, M0: S.M0 };
@@ -497,11 +505,18 @@ function leaveFly() {
   mode = "design"; lineGen++; pinned = null; $("unpin").hidden = true; $("pin-legend").hidden = true;
   showSettings(); change();
 }
+const NOZZLE_WORDS = { expanded: "a fully expanded nozzle", exit_pressure: "the exit pressure you set",
+                       convergent: "a fixed convergent nozzle" };
 function showFrozen() {
   const d = last.design_point, s = F.design;
+  const asSet = designAsSet
+    ? `As you set it (${NOZZLE_WORDS[designAsSet.nozzle]}, ${GAS_WORDS[designAsSet.gas]}) your design makes ` +
+      `${fmt(designAsSet.thrust / 1e3)} kN. `
+    : "";
   $("frozen").textContent = `Frozen from your design: pressure ratio ${fmt(d.pi_c)}, turbine inlet ${fmt(d.Tt4)} K, ` +
-    `${fmt(d.mdot)} kg/s of air, at Mach ${fmt(s.M0, 3)} in ${fmt(s.T0)} K / ${fmt(s.p0 / 1e3)} kPa air. ` +
-    `Re-run with a fixed convergent nozzle on this gas, it makes ${fmt(d.thrust / 1e3)} kN.`;
+    `${fmt(d.mdot)} kg/s of air, at Mach ${fmt(s.M0, 3)} in ${fmt(s.T0)} K / ${fmt(s.p0 / 1e3)} kPa air. ` + asSet +
+    `Frozen, it needs a fixed convergent nozzle (to have a throat), and on the ${GAS_WORDS[F.gas]} it makes ` +
+    `${fmt(d.thrust / 1e3)} kN at its own design point.`;
 }
 
 // The compressor map: speed lines + the stall line (op map_lines), the running line streamed one
@@ -590,7 +605,7 @@ const PERF = [
   ["Fuel per thrust (TSFC)", r => r.tsfc * 1e6, "g/(kN·s)", false],
   ["Overall efficiency (thrust power per fuel power)", r => r.eta_overall * 100, "%", true],
   ["Thermal efficiency (jet speed energy per fuel energy)", r => r.eta_thermal * 100, "%", true],
-  ["Propulsive efficiency (from jet speed alone: passes 100 % when the jet leaves above the outside pressure)", r => r.eta_propulsive * 100, "%", true],
+  ["Propulsive efficiency (from jet speed alone: can pass 100 % when the jet leaves above the outside pressure, or near zero thrust)", r => r.eta_propulsive * 100, "%", true],
   ["Brayton ideal 1 − Tt2/Tt3", r => r.eta_brayton * 100, "%", true],
   ["Flight speed", r => r.V0, "m/s"],
   ["Jet speed", r => r.V9, "m/s"],
@@ -730,7 +745,7 @@ function wire() {
 window.sandbox = {
   state: "loading", last: null, trap: null, mode: null, line: 0,
   set: async patch => { Object.assign(S, patch); showSettings(); await runNow(); return window.sandbox.state; },
-  fly: async patch => { if (mode !== "fly") enterFly(); Object.assign(F, patch); showSettings(); await runNow(); return window.sandbox.state; },
+  fly: async patch => { if (mode !== "fly") await enterFly(); Object.assign(F, patch); showSettings(); await runNow(); return window.sandbox.state; },
   design: async () => { leaveFly(); await runNow(); return window.sandbox.state; },
   view: () => mode,
 };

@@ -342,7 +342,14 @@ as its own commit, proven bit-identical by the full gate.
   the compressor heats the air past the throttle setting). `explain_fly` reads the search's ends.
   A throttle not above the compressor-face temperature is now a pre-check.
 - **Propulsive efficiency passes 100 %** with an underexpanded convergent nozzle: rung 2's split
-  counts jet KINETIC energy only, while the thrust carries the pressure push. Labelled on the page
-  (slice 1 showed it too, unlabelled); the model's definition is unchanged.
+  counts jet KINETIC energy only, while the thrust carries the pressure push. It ALSO passes 100 % near
+  zero thrust with the jet fully expanded (135 % at an unchoked idle point): with `V9 ≈ V0` the fuel
+  mass term `f·V0` dominates both `F` and `ΔKE/2 ≈ ½f·V0² + V0·ΔV`, so the ratio tends to 2. Both
+  causes labelled on the page (slice 1 showed the first too, unlabelled); the model is unchanged.
+- **The frozen line shows both designs** (the plan's own § 10.4 promise, missed by the first build
+  and caught on review): the design as set (its nozzle, its gas) and the convergent re-run.
+- **Speed labels re-measured in the page's build after the speed-up** (fly point, median): perfect
+  0.7 ms, thermally perfect 21 ms, reacting 32 ms, Fork B 27 ms, equilibrium 0.42 s (max 0.87 s) —
+  the reacting gases now run live; only equilibrium runs on release.
 - **Measured browser-vs-native drift with the fly requests:** perfect 6.8e-15, table 9.4e-11 (worst
   at the constant-flow stall margin). Slice 1's bars stand.

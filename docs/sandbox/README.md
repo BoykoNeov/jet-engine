@@ -55,9 +55,11 @@ the current point.
   throttle in fast flight, no workable speed. Each is driven by a measured failing point, from a
   27 610-call sweep.
 
-**Propulsive efficiency can read above 100 %** in fly mode: the model's efficiency split counts the
-jet's speed only, and a convergent nozzle high up releases the jet well above the outside pressure.
-The page says so; overall efficiency is unaffected.
+**Propulsive efficiency can read above 100 %** in fly mode, for two reasons the page names: the
+model's efficiency split counts the jet's speed only, and a convergent nozzle high up releases the jet
+well above the outside pressure; and near zero thrust (idle) the fuel's own mass, counted as
+accelerated, dominates both the thrust and the jet's energy gain (135 % measured at an unchoked idle
+point with the jet at outside pressure). Overall efficiency is unaffected.
 
 ## How it is built
 
