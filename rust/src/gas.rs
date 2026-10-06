@@ -37,6 +37,7 @@
 //!    which differs in the last bit ~1 in 2500. Integer powers are explicit products.
 
 use std::cell::RefCell;
+use std::collections::HashMap;
 
 /// Python's `x ** y`: a REAL `pow` call, never a strength-reduced substitute.
 ///
@@ -578,9 +579,14 @@ impl TpgSection {
 /// the whole cycle downstream calls at ONE fixed f. Keyed on the exact bit pattern of f (which
 /// is what `FlowState.far` carries and threads verbatim), so it is a memo cache and not hidden
 /// state -- the same f always maps to the same section.
+///
+/// A HASH map, not a list (2026-10-06): the cache never shrinks, and an off-design matcher
+/// that keeps one gas alive visits thousands of distinct f -- with a linear scan, points late in
+/// a sweep ran tens of times slower than the same solve on a fresh gas. The lookup returns the same section either
+/// way, so every number is unchanged (the full gate, bit for bit).
 #[derive(Debug, Default)]
 pub struct ReactingSection {
-    cache: RefCell<Vec<(u64, TpgSection)>>,
+    cache: RefCell<HashMap<u64, TpgSection>>,
 }
 
 impl Clone for ReactingSection {
@@ -594,12 +600,12 @@ impl ReactingSection {
 
     pub fn section_for(&self, far: f64) -> TpgSection {
         let key = far.to_bits();
-        if let Some(&(_, sec)) = self.cache.borrow().iter().find(|&&(k, _)| k == key) {
+        if let Some(&sec) = self.cache.borrow().get(&key) {
             return sec;
         }
         let (a_low, a_high, r) = mixture(&products_composition(far));
         let sec = TpgSection::new(a_low, a_high, r);
-        self.cache.borrow_mut().push((key, sec));
+        self.cache.borrow_mut().insert(key, sec);
         sec
     }
 
@@ -1028,8 +1034,9 @@ pub fn try_equilibrium_composition(f: f64, t: f64, p: f64)
 /// the guard. That restores "pure function of far for a fixed burn config" — no hidden state.
 #[derive(Debug, Default)]
 pub struct EquilibriumSection {
-    cache: RefCell<Vec<(u64, TpgSection)>>,
-    comp: RefCell<Vec<(u64, Vec<(&'static str, f64)>)>>,
+    /// Hash maps for the reason on [`ReactingSection`].
+    cache: RefCell<HashMap<u64, TpgSection>>,
+    comp: RefCell<HashMap<u64, Vec<(&'static str, f64)>>>,
     burn: RefCell<Option<(f64, f64)>>,
 }
 
@@ -1063,18 +1070,18 @@ impl EquilibriumSection {
             }
         }
         let key = far.to_bits();
-        if !self.cache.borrow().iter().any(|&(k, _)| k == key) {
+        if !self.cache.borrow().contains_key(&key) {
             let comp = try_equilibrium_composition(far, t_burn, p_burn)?;
             let (a_low, a_high, r) = mixture(&comp);
-            self.cache.borrow_mut().push((key, TpgSection::new(a_low, a_high, r)));
-            self.comp.borrow_mut().push((key, comp));
+            self.cache.borrow_mut().insert(key, TpgSection::new(a_low, a_high, r));
+            self.comp.borrow_mut().insert(key, comp);
         }
-        Ok(self.comp.borrow().iter().find(|&&(k, _)| k == key).unwrap().1.clone())
+        Ok(self.comp.borrow()[&key].clone())
     }
 
     fn section_for(&self, far: f64) -> TpgSection {
         let key = far.to_bits();
-        let hit = self.cache.borrow().iter().find(|&&(k, _)| k == key).map(|&(_, s)| s);
+        let hit = self.cache.borrow().get(&key).copied();
         hit.unwrap_or_else(|| panic!(
             "equilibrium hot section not frozen for far={far}: the burner must run \
              (freeze the station-4 mixture) before any downstream property call"))

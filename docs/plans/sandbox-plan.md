@@ -303,6 +303,11 @@ Each is a pre-check (before the solve) or an `explain()` entry driven by a test,
 
 ### 10.7 Questions for the user
 
+**ANSWERED (user, 2026-10-06): all three as recommended** — (1) a: *Fly it* opens on the
+thermally-perfect gas, live; equilibrium one click away, computed on release with progress.
+(2) the stall-line knob + map-shape choice, labelled. (3) yes — the memo-cache speed-up ships FIRST,
+as its own commit, proven bit-identical by the full gate.
+
 1. **Speed on the realistic gas.** Equilibrium off-design takes 0.5–2.5 s per point in the browser;
    thermally perfect 10–45 ms. (a) *Fly it* opens on the thermally-perfect gas (live dragging), the
    equilibrium gas one click away and computed when the slider is released, with a progress mark —
