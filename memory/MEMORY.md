@@ -30,7 +30,7 @@ new slices and step links go THERE, not here.
 - [PyPy switch shipped](pypy-switch-shipped.md) — SLOW_SECONDS kept with its reason INVERTED; psutil load-bearing
 - [Golden fingerprint gate](golden-fingerprint-gate.md) — the ONLY absolute-value gate; CPython anchor; measure a detector
 - Golden gate slices [2](golden-gate-slice2.md) [3](golden-gate-slice3.md) [4](golden-gate-slice4.md) [5](golden-gate-slice5.md) [6](golden-gate-slice6.md) [7](golden-gate-slice7.md) — drift follows CONDITIONING (one lesson per file)
-- [Visuals artifact](visuals-artifact.md) — the CHARTS page's artifact is GONE (56cde230… not found); ask before minting a replacement URL
+- [Visuals artifact](visuals-artifact.md) — the CHARTS page, re-minted 2026-10-06 at G5uobeC9…; read its prose for staleness before a republish
 - [Cutaway artifact](cutaway-artifact.md) — the animated engine cutaway is a SECOND artifact (968af1ea…, favicon ⚙️); file:// is refused, serve locally and kill by PID
 - [Visuals ↔ model binding](visuals-model-binding.md) — the pages had NO test and looked fine; in SYNC is not BOUND, and the page's own design point was typed markup
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding, backticks in `-m`, a status read off the runner, a log still being written, and a text-mode rewrite that flips every line ending, `cmd`'s parse-time `%ERRORLEVEL%`, a `start /b` batch that never exits, the EOL check that was itself the hazard, a silent `pytest.exe` launcher, a scripted Windows path that becomes a TAB, and a `Copy-Item` restore whose OLD mtime cargo never rebuilds
