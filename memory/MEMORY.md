@@ -16,7 +16,8 @@ slice lines (which *widen* as step links are appended). Those moved to `rust-por
 new slices and step links go THERE, not here.
 
 ## Working agreements
-- [Sandbox direction](sandbox-direction.md) — user 2026-10-06: a SANDBOX, not pass/fail lessons; ship knobs, prefer realistic absorbers; rung 85 done ⇒ web page NEXT (plan first)
+- [Sandbox direction](sandbox-direction.md) — user 2026-10-06: a SANDBOX, not pass/fail lessons; ship knobs, prefer realistic absorbers; web page slice 1 BUILT
+- [Sandbox slice 1](sandbox-slice1.md) — screenshots found what 122 green checks missed; a bar measured on a toy spike was 4 decades too tight
 - [Session-end routine](session-end-routine.md) — at session end: update memory + docs, commit, push
 - [Git remote setup](git-remote-setup.md) — github.com/BoykoNeov/jet-engine, branch main, origin over SSH
 - [Always commit and push](always-commit-and-push.md) — auto-commit + push green work; gate is `rust/test-all.ps1`: cargo tests run in parallel, below-normal (pytest until 2026-10-05)

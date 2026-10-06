@@ -28,7 +28,9 @@ says so; when it starts, plan it first (which knobs, how the model reaches the b
 **Rung 85 SHIPPED 2026-10-06** — the web sandbox is now the next work; plan it first.
 **Plan written + pushed 2026-10-06: `docs/plans/sandbox-plan.md`** (a Node spike proved the crate
 runs as wasm with no deps; ~2 ms/equilibrium run; one last-place drift vs native). Its § 9 holds six
-user decisions — get answers before building slice 1.
+user decisions — ANSWERED the same day (altitude<->T0/p0 linked, equilibrium default, local only,
+tolerance OK, browser check in the gate, slices 2+3 both). **Slice 1 SHIPPED 2026-10-06** —
+[[sandbox-slice1]]; next: slice 2 (blade speeds) or 3 (off-design), user: either order.
 **User, 2026-10-06, on rung 85:** "make it closer to reality, maybe don't round so much" — when a
 model is forced to round or quantise (whole blade rows), ask what a real designer lets ABSORB the
 leftover and offer that as a knob, rather than letting one quantity jump. See [[rung85-blade-speed]].

@@ -8,6 +8,10 @@ written to learn from. Built up station by station as the cycle is derived. See
 > `tests/test_*.py` file, read `cargo run --release` and the matching `rust/tests/*.rs`; the
 > Python it describes is at the git tag `python-final`. The physics below did not change.
 
+> **2026-10-06 — try it yourself:** double-click `docs/sandbox/turbojet-sandbox.html`. Every knob
+> below (pressure ratio, turbine temperature, the losses, the gas model, flight conditions) is live
+> there, and the engine re-solves as you move it.
+
 ## The big picture
 A turbojet is a **Brayton cycle**: squeeze air (compressor), burn fuel in it
 (burner), let it expand through a turbine, and shove what's left out a nozzle
