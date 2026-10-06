@@ -1,8 +1,8 @@
 # The web sandbox — plan
 
 **Status: SLICE 1 BUILT 2026-10-06** — `docs/sandbox/` (what shipped, and how it is gated: its
-README). **Slice 3 (off-design) PLANNED 2026-10-06 — § 10**, its questions in § 10.7. Slice 2 not
-started. Drafted 2026-10-06, after rung 85 shipped. Direction (user,
+README). **Slice 3 (off-design, "Fly it") BUILT 2026-10-07 — § 10**; what the build found beyond
+the plan is § 10.8. Slice 2 not started. Drafted 2026-10-06, after rung 85 shipped. Direction (user,
 2026-10-06): the project becomes a **sandbox** — change the engine's components and design numbers
 and watch it respond — delivered as an **interactive web page running the Rust model live**, beside
 the charts page and the cutaway (`docs/visuals/`).
@@ -316,3 +316,33 @@ as its own commit, proven bit-identical by the full gate.
    (*recommended*); or show only the trend (an arrow, no percentage); or leave it off.
 3. **The memo-cache speed-up** (§ 10.2) — ship it now as its own change (full gate must stay
    bit-identical; reacting/Fork B ~10× faster everywhere, not only the page), or leave it.
+   **Shipped 2026-10-07 (b3a5e3b), full gate bit-identical.**
+
+### 10.8 What the build found beyond the plan (2026-10-07)
+
+- **The off-design nozzle's back-pressure is the DESIGN ambient.** `OffDesignMatcher::p_ambient` is
+  captured from the design run and used only as the nozzle's back-pressure (every use in
+  `matcher.rs` / `spool.rs`); the thrust's pressure term reads the flight's `p0`. Every shipped
+  caller flies off design at the design `p0` (rung 33's `p0` test re-captures per `p0`), so it never
+  mattered. The sandbox is the first to change altitude with the hardware frozen: `fly_solver` sets
+  the back-pressure to the flight's `p0`. At the design `p0` it is the shipped solver bit for bit;
+  at 12.5 kPa without it, the solve fails outright (both pinned, `tests/sandbox_fly.rs`, and the
+  override removed once to see that test go red). A model-side fix would be bit-identical for every
+  shipped caller — a candidate seam, not done here.
+- **Rung 36's constant-flow margin crashes the gas tables with a low stall line** (it reads a speed
+  line at `n·φ_op/φ_surge`, >4× design at `φ_surge` 0.3). The sandbox reads it through
+  `try_pi_c_map`, a copy of `pi_c_map` with the fallible inverse, held bit-equal to the original at
+  >1000 map points and refusing exactly where it panics. A 160 % speed cap was tried first and
+  rejected: at the default stall line it hid the reading just above design power.
+- **Rung 36's `surge_margin` re-solves the equilibrium**; `stall_reading` reads the solved point
+  (bit-equal to `surge_margin`, half the cost).
+- **"Equilibrium does not bracket" means opposite things.** The 27 610-call sweep found it for the
+  shaft slowing at every workable speed (below idle), speeding up to the search's top (overspeed),
+  and speeding up where only the SLOWEST speeds are workable (fast flight, low throttle: above them
+  the compressor heats the air past the throttle setting). `explain_fly` reads the search's ends.
+  A throttle not above the compressor-face temperature is now a pre-check.
+- **Propulsive efficiency passes 100 %** with an underexpanded convergent nozzle: rung 2's split
+  counts jet KINETIC energy only, while the thrust carries the pressure push. Labelled on the page
+  (slice 1 showed it too, unlabelled); the model's definition is unchanged.
+- **Measured browser-vs-native drift with the fly requests:** perfect 6.8e-15, table 9.4e-11 (worst
+  at the constant-flow stall margin). Slice 1's bars stand.

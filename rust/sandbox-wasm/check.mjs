@@ -20,6 +20,11 @@ import { readFileSync } from 'node:fs';
 // - ENTROPY is compared ABSOLUTELY: it is a difference from the ambient datum, so a small value
 //   makes its relative change meaningless (one station read 1.25e-10 "relative" for a 1.1e-8
 //   J/(kg K) shift). Worst seen 1.1e-8 (table gases), 4.6e-13 (perfect). Bars 1e-6 / 1e-10.
+// RE-MEASURED 2026-10-07 with slice 3's fly requests added (111 requests, 22348 numbers, 16969
+// bit-identical): perfect 6.8e-15, table 9.4e-11 relative -- both worst at the constant-flow stall
+// margin, a pressure-ratio quotient minus 1, which magnifies the solvers' last digits. The bars
+// stand: 15x and 10x headroom. (A margin near 0 would make even that quotient's relative change
+// meaningless; no grid point sits within 10 % of its stall line.)
 // Entropy lives in the station points (`.s`) and as the first element of each curve pair
 // (`ts_burner.N.0`, `ts_reject.N.0`) -- where it can be exactly 0 (the cooling curve ends ON the
 // ambient datum), so only an absolute bar means anything.
@@ -79,7 +84,8 @@ for (const [i, line] of lines.entries()) {
   let browser;
   try { browser = JSON.parse(call(req)); }
   catch (e) { fails.push('the browser build trapped: ' + e); ex = (await WebAssembly.instantiate(bytes, {})).instance.exports; ex.init(); }
-  const kind = JSON.parse(req).settings?.gas === 'perfect' ? 'perfect' : 'table';
+  const r = JSON.parse(req), gas = r.settings ? r.settings.gas : (r.fly ? (r.fly.gas ?? 'thermally_perfect') : undefined);
+  const kind = gas === 'perfect' ? 'perfect' : 'table';
   if (browser !== undefined) compare(browser, JSON.parse(native), `#${i}`, fails, kind);
   if (fails.length) { failed++; console.log(`test grid #${i} ... FAILED\n  ${fails.slice(0, 5).join('\n  ')}`); }
   else passed++;

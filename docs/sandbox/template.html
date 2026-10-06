@@ -77,6 +77,20 @@ legend { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-sp
 .bad p { margin: 4px 0; }
 .bad code { font-size: 12px; color: var(--ink-2); white-space: pre-wrap; word-break: break-word; }
 .stale { opacity: .45; transition: opacity .15s; }
+.toggle.mode { margin: 0 0 6px; }
+.toggle.mode button { font-size: 13px; padding: 5px 6px; font-weight: 600; }
+.frozen { font-size: 12px; color: var(--ink-2); margin: 2px 0 8px; }
+.note { font-size: 12px; color: var(--muted); margin: 4px 0 0; }
+.tile .v.text { font-size: 15px; font-weight: 500; }
+.chart .speed { fill: none; stroke: var(--axis); stroke-width: 1; }
+.chart .speedl { fill: var(--muted); font-size: 10px; }
+.chart .stall { fill: none; stroke: var(--s-red); stroke-width: 1.6; stroke-dasharray: 6 4; }
+.chart .rline { fill: none; stroke: var(--accent); stroke-width: 2; }
+.chart .rpt { fill: var(--accent); opacity: .55; }
+.chart .now { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+.chart .pinpt { fill: none; stroke: var(--pin); stroke-width: 2; }
+.sw.stall { border-top: 2px dashed var(--s-red); }
+.sw.grey { border-top: 1px solid var(--axis); }
 h2.sec { font-size: 14px; margin: 0 0 8px; }
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 13px; }
 th, td { text-align: right; padding: 4px 6px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
@@ -107,6 +121,34 @@ footer p { max-width: 90ch; }
 </header>
 <main>
   <section class="card knobs" aria-label="Design knobs">
+    <div class="toggle mode" role="group" aria-label="Design the engine, or fly it">
+      <button type="button" id="mode-design" aria-pressed="true">Design the engine</button>
+      <button type="button" id="mode-fly" aria-pressed="false">Fly it</button></div>
+    <p class="note" id="mode-note">Every change redesigns the engine. Press <b>Fly it</b> to freeze this design's hardware and move the throttle instead.</p>
+    <fieldset id="fly-set" hidden>
+      <legend>Fly it</legend>
+      <p class="frozen" id="frozen"></p>
+      <div class="knob"><label for="fly-Tt4">Throttle: turbine inlet temperature <small>K</small></label><input type="number" id="fly-Tt4" step="5">
+        <input type="range" id="fly-Tt4-r" min="600" max="2400" step="5" aria-label="Throttle slider"></div>
+      <div class="knob"><label for="fly-gas">Gas model</label>
+        <select id="fly-gas" style="grid-column: 1 / -1">
+          <option value="thermally_perfect">Thermally perfect (live: ~20 ms a point)</option>
+          <option value="perfect">Perfect gas (live: under 1 ms)</option>
+          <option value="reacting">Reacting products (~50 ms a point)</option>
+          <option value="fork_b">Reacting, formation enthalpies (~50 ms)</option>
+          <option value="equilibrium">Equilibrium chemistry (slow: ~1 s a point, runs when you let go)</option>
+        </select></div>
+      <div class="knob"><label for="fly-map">Compressor map shape</label>
+        <select id="fly-map" style="grid-column: 1 / -1">
+          <option value="flow">Curved mostly along the flow</option>
+          <option value="pressure">Curved mostly along the pressure</option>
+          <option value="tilted">Tilted efficiency island</option>
+        </select>
+        <div class="derived">Invented, representative maps: the model has no measured compressor map.</div></div>
+      <div class="knob"><label for="phi_surge">Stall line <small>flow coefficient</small></label><input type="number" id="phi_surge" step="0.01">
+        <input type="range" id="phi_surge-r" min="0.3" max="0.95" step="0.01" aria-label="Stall line slider">
+        <div class="derived">A number you choose, not data. The stall margin depends on it and on the map: read its trend, not its size.</div></div>
+    </fieldset>
     <fieldset>
       <legend>Flight</legend>
       <div class="knob"><label for="altitude">Altitude <small>m</small></label><input type="number" id="altitude" step="50">
@@ -119,7 +161,7 @@ footer p { max-width: 90ch; }
       <div class="knob"><label for="M0">Flight Mach number</label><input type="number" id="M0" step="0.01">
         <input type="range" id="M0-r" min="0.05" max="3.5" step="0.01" aria-label="Mach slider"></div>
     </fieldset>
-    <fieldset>
+    <fieldset id="cycle-set">
       <legend>Cycle</legend>
       <div class="knob"><label for="pi_c">Compressor pressure ratio</label><input type="number" id="pi_c" step="0.1">
         <input type="range" id="pi_c-r" min="1.5" max="60" step="0.1" aria-label="Pressure ratio slider"></div>
@@ -128,7 +170,7 @@ footer p { max-width: 90ch; }
       <div class="knob"><label for="mdot">Air mass flow <small>kg/s</small></label><input type="number" id="mdot" step="1">
         <input type="range" id="mdot-r" min="1" max="200" step="1" aria-label="Mass flow slider"></div>
     </fieldset>
-    <fieldset>
+    <fieldset id="components-set">
       <legend>Components</legend>
       <div class="knob"><label for="pi_d_max">Inlet pressure recovery</label><input type="number" id="pi_d_max" step="0.005">
         <input type="range" id="pi_d_max-r" min="0.8" max="1" step="0.005" aria-label="Inlet recovery slider">
@@ -156,7 +198,7 @@ footer p { max-width: 90ch; }
       <div class="knob"><label for="pi_n">Nozzle pressure ratio</label><input type="number" id="pi_n" step="0.005">
         <input type="range" id="pi_n-r" min="0.9" max="1" step="0.005" aria-label="Nozzle pressure ratio slider"></div>
     </fieldset>
-    <fieldset>
+    <fieldset id="nozzle-set">
       <legend>Nozzle and gas</legend>
       <div class="knob"><label for="nozzle">Nozzle</label>
         <select id="nozzle" style="grid-column: 1 / -1">
@@ -184,7 +226,7 @@ footer p { max-width: 90ch; }
   <section class="results" aria-live="polite">
     <div class="status"><span id="status">Loading the model…</span><span id="timing"></span></div>
     <div class="bad" id="bad" role="alert">
-      <h2>This design does not run</h2>
+      <h2 id="bad-title">This design does not run</h2>
       <p id="bad-plain"></p>
       <p><code id="bad-raw"></code></p>
       <p style="font-size:12px;color:var(--muted)">The numbers below are the last design that ran.</p>
@@ -196,6 +238,19 @@ footer p { max-width: 90ch; }
         <div class="tile"><div class="k">Fuel per thrust (TSFC)</div><div class="v"><span id="v-tsfc">–</span> <span class="u">g/(kN·s)</span></div><div class="d" id="d-tsfc"></div></div>
         <div class="tile"><div class="k">Overall efficiency</div><div class="v"><span id="v-eo">–</span> <span class="u">%</span></div><div class="d" id="d-eo"></div></div>
       </div>
+      <div class="tiles" id="fly-tiles" hidden style="margin-top:10px">
+        <div class="tile"><div class="k">Shaft speed</div><div class="v"><span id="v-nu">–</span> <span class="u">% of design</span></div><div class="d" id="d-nu"></div></div>
+        <div class="tile"><div class="k">Compressor pressure ratio</div><div class="v"><span id="v-pic">–</span></div><div class="d" id="d-pic"></div></div>
+        <div class="tile"><div class="k">Air mass flow</div><div class="v"><span id="v-mdot">–</span> <span class="u">kg/s</span></div><div class="d" id="d-mdot"></div></div>
+        <div class="tile"><div class="k">Stall margin <small>(trend only)</small></div><div class="v" id="v-sm-box"><span id="v-sm">–</span> <span class="u" id="u-sm">%</span></div><div class="d" id="d-sm"></div></div>
+      </div>
+    </div>
+    <div class="card chart" id="map-card" hidden>
+      <h2 class="sec">Compressor map</h2>
+      <svg id="map" viewBox="0 0 640 360" role="img" aria-label="Compressor pressure ratio against corrected air flow: speed lines, the stall line, the running line and this operating point"></svg>
+      <div class="legend"><span><span class="sw"></span>running line (every throttle at this flight)</span><span><span class="sw stall"></span>stall line you set</span>
+        <span><span class="sw grey"></span>speed lines (labelled % corrected speed)</span><span id="map-progress"></span></div>
+      <p class="note">The big dot is this operating point. The map is a representative shape, not measured data, and the stall line is the number you chose.</p>
     </div>
     <div class="card chart">
       <h2 class="sec">Temperature–entropy diagram</h2>
@@ -228,6 +283,18 @@ footer p { max-width: 90ch; }
   constant-pressure line, and whatever that misses the next station by (the pressure loss, the change of mixture)
   is spread evenly along the way, so the curves meet the station points exactly. With the perfect gas, the textbook constants (cp = 1004, R = 287, γ = 1.4) do not quite agree
   with each other. An ideal compressor then shows a tiny, exactly predictable slope instead of a vertical line.</p>
+  <p><b>Fly it.</b> The design's hardware is frozen: the turbine and nozzle throat areas, and the flow and
+  speed it was designed for. Moving the throttle or the flight then lets the engine find its own pressure ratio,
+  airflow and shaft speed (the project's rungs 31–36: a choked turbine, a fixed convergent nozzle that may
+  unchoke at low power, and a representative compressor map). Capturing a throat area needs a convergent nozzle,
+  so the frozen design is re-run with one; its numbers can differ from a "fully expanded" design. The exhaust
+  pushes against the air pressure of the flight you set. The stall margin is rung 36's: it rests on a stall line
+  you choose and a map shape you pick, so only its trend (thinner at low power) is meaningful. It is not
+  modelled while the nozzle is unchoked.</p>
+  <p><b>Efficiencies.</b> Overall efficiency is thrust power per fuel power. The model splits it into a thermal and a
+  propulsive part using the jet's speed alone. When the jet leaves the nozzle above the outside pressure (a fixed
+  convergent nozzle, especially high up), part of the thrust is that pressure push, which the speed-based split does
+  not count, so the propulsive part can read above 100 %. The overall figure is unaffected.</p>
   <p>Numbers computed here agree with the command-line model to the last few digits. The browser uses a
   different maths library, and the project's test run checks that difference stays below a measured bound.</p>
 </footer>
@@ -259,7 +326,10 @@ async function ask(text) {
     let message = String(err);
     try { message = dec.decode(new Uint8Array(ex.memory.buffer, ex.panic_ptr(), ex.panic_len())) || message; } catch (_) {}
     await fresh();
-    const plain = JSON.parse(raw(JSON.stringify({ op: "explain", message }))).plain;
+    // The fly view's failures get its own plain words (turbojet::sandbox::explain_fly).
+    let view = "design";
+    try { if (["fly", "running_point"].includes(JSON.parse(text).op)) view = "fly"; } catch (_) {}
+    const plain = JSON.parse(raw(JSON.stringify({ op: "explain", message, view }))).plain;
     return { trap: { message, plain }, ms: performance.now() - t0 };
   }
 }
@@ -308,6 +378,16 @@ onmessage = (ev) => inOrder(async () => {
 let model = null, S = null, DEFAULTS = null, last = null, pinned = null, gen = 0;
 const NUM = ["T0", "p0", "M0", "pi_c", "Tt4", "mdot", "pi_d_max", "eta_c", "e_c", "eta_b", "pi_b",
              "eta_t", "e_t", "eta_m", "pi_n", "p_exit"];
+// Fly it (slice 3): F is the fly settings (turbojet::sandbox::FlySettings). The flight knobs are
+// shared: in fly mode they move the FLIGHT, not the design. FLY_NUM maps a knob id to its setting.
+let mode = "design", F = null, FLY_DEFAULTS = null;
+const FLY_NUM = { "fly-Tt4": "Tt4", "phi_surge": "phi_surge" };
+const FLIGHT = ["T0", "p0", "M0"];
+const SLOW = ["equilibrium"];                 // ~1 s a point: run when a slider is let go
+const GAS_WORDS = { perfect: "perfect gas", thermally_perfect: "thermally perfect gas", reacting: "reacting-products gas",
+                    fork_b: "reacting gas with formation enthalpies", equilibrium: "equilibrium-chemistry gas" };
+const target = () => (mode === "fly" ? F : S);
+const slow = () => mode === "fly" && SLOW.includes(F.gas);
 const STATION = { "0": "0 · outside air", "2": "2 · compressor face", "3": "3 · compressor exit",
                   "4": "4 · turbine inlet", "5": "5 · turbine exit", "9": "9 · nozzle exit" };
 
@@ -321,9 +401,25 @@ function fmt(x, sig = 4) {
 
 function showSettings() {
   for (const k of NUM) {
-    const n = $(k); if (n && document.activeElement !== n) n.value = +S[k].toPrecision(8);
-    const r = $(k + "-r"); if (r) r.value = S[k];
+    const v = FLIGHT.includes(k) ? target()[k] : S[k];
+    const n = $(k); if (n && document.activeElement !== n) n.value = +v.toPrecision(8);
+    const r = $(k + "-r"); if (r) r.value = v;
   }
+  if (F) {
+    for (const [id, k] of Object.entries(FLY_NUM)) {
+      if (document.activeElement !== $(id)) $(id).value = +F[k].toPrecision(8);
+      $(id + "-r").value = F[k];
+    }
+    $("fly-gas").value = F.gas; $("fly-map").value = F.map;
+  }
+  const fly = mode === "fly";
+  $("mode-design").setAttribute("aria-pressed", String(!fly)); $("mode-fly").setAttribute("aria-pressed", String(fly));
+  for (const id of ["cycle-set", "components-set", "nozzle-set"]) $(id).hidden = fly;
+  for (const id of ["fly-set", "fly-tiles", "map-card"]) $(id).hidden = !fly;
+  $("mode-note").innerHTML = fly
+    ? "The hardware is frozen. Move the throttle or the flight; press <b>Design the engine</b> to change the design."
+    : "Every change redesigns the engine. Press <b>Fly it</b> to freeze this design's hardware and move the throttle instead.";
+  $("pin").textContent = fly ? "Pin this point" : "Pin this design";
   $("nozzle").value = S.nozzle; $("gas").value = S.gas;
   $("p_exit-row").hidden = S.nozzle !== "exit_pressure";
   const cp = S.compressor_eff === "polytropic", tp = S.turbine_eff === "polytropic";
@@ -344,26 +440,32 @@ function showAmbient(a) {
 // ---------------------------------------------------------------- running
 async function runNow() {
   const my = ++gen;
-  const t = await model.ask(JSON.stringify({ op: "run", settings: S }));
+  const fly = mode === "fly";
+  if (fly && slow()) $("status").textContent = "Computing on the equilibrium gas (about a second)…";
+  const t = await model.ask(JSON.stringify(fly ? { op: "fly", fly: F } : { op: "run", settings: S }));
   if (my !== gen) return;                       // a newer change is already on its way
   $("timing").textContent = `${t.ms.toFixed(1)} ms in the ${model.mode}`;
+  $("bad-title").textContent = fly ? "The engine does not run here" : "This design does not run";
   if (t.trap || !t.reply.ok) {
     const plain = t.trap ? t.trap.plain : t.reply.reason;
     $("bad-plain").textContent = plain;
     $("bad-raw").textContent = t.trap ? "Model message: " + t.trap.message : "";
     $("bad").classList.add("show");
-    for (const id of ["out", "ts", "stations", "perf"]) $(id).classList.add("stale");
-    $("status").textContent = "This design does not run.";
+    for (const id of ["out", "ts", "stations", "perf", "map"]) $(id).classList.add("stale");
+    $("status").textContent = fly ? "The engine does not run at this throttle and flight." : "This design does not run.";
     window.sandbox.state = "does-not-run";
     window.sandbox.trap = t.trap || { plain };
     return;
   }
   last = t.reply;
   $("bad").classList.remove("show");
-  for (const id of ["out", "ts", "stations", "perf"]) $(id).classList.remove("stale");
-  $("status").textContent = "Running: " + $("gas").selectedOptions[0].textContent + ".";
+  for (const id of ["out", "ts", "stations", "perf", "map"]) $(id).classList.remove("stale");
+  $("status").textContent = fly
+    ? `Flying on the ${GAS_WORDS[F.gas]}; the nozzle is ${last.choked ? "choked" : "unchoked"}.`
+    : "Running: " + $("gas").selectedOptions[0].textContent + ".";
   showAmbient(last.ambient);
   render();
+  if (fly) { showFrozen(); refreshMap(); }
   window.sandbox.last = last; window.sandbox.state = "ran"; window.sandbox.trap = null;
 }
 
@@ -374,12 +476,102 @@ function change() {
   requestAnimationFrame(() => { queued = false; runNow(); });
 }
 
-async function fromAltitude() {
+async function fromAltitude(run = true) {
   const z = +$("altitude").value, dt = +$("delta_t").value;
   const r = (await model.ask(JSON.stringify({ op: "atmosphere", altitude: z, delta_t: dt }))).reply;
   if (!r || r.ok === 0) { $("atmo-note").textContent = r ? r.reason : "atmosphere failed"; return; }
-  S.T0 = r.T0; S.p0 = r.p0; $("atmo-note").textContent = "";
+  target().T0 = r.T0; target().p0 = r.p0; $("atmo-note").textContent = "";
+  showSettings(); if (run) change();
+}
+
+// ---------------------------------------------------------------- fly it
+function enterFly() {
+  if (mode === "fly") return;
+  // Freeze THIS design; fly it at its own point first (the reduce: shaft speed 100 %).
+  F = { ...FLY_DEFAULTS, design: { ...S }, Tt4: S.Tt4, T0: S.T0, p0: S.p0, M0: S.M0 };
+  mode = "fly"; mapKey = null; lineKey = null; pinned = null; $("unpin").hidden = true; $("pin-legend").hidden = true;
   showSettings(); change();
+}
+function leaveFly() {
+  if (mode === "design") return;
+  mode = "design"; lineGen++; pinned = null; $("unpin").hidden = true; $("pin-legend").hidden = true;
+  showSettings(); change();
+}
+function showFrozen() {
+  const d = last.design_point, s = F.design;
+  $("frozen").textContent = `Frozen from your design: pressure ratio ${fmt(d.pi_c)}, turbine inlet ${fmt(d.Tt4)} K, ` +
+    `${fmt(d.mdot)} kg/s of air, at Mach ${fmt(s.M0, 3)} in ${fmt(s.T0)} K / ${fmt(s.p0 / 1e3)} kPa air. ` +
+    `Re-run with a fixed convergent nozzle on this gas, it makes ${fmt(d.thrust / 1e3)} kN.`;
+}
+
+// The compressor map: speed lines + the stall line (op map_lines), the running line streamed one
+// throttle at a time (op running_point) so a throttle move never waits behind more than one point.
+let mapLines = null, mapKey = null, line = [], lineKey = null, lineGen = 0;
+async function refreshMap() {
+  const k1 = JSON.stringify([F.design, F.gas, F.map, F.phi_surge]);
+  if (k1 !== mapKey) {
+    mapKey = k1;
+    const t = await model.ask(JSON.stringify({ op: "map_lines", fly: F }));
+    mapLines = (!t.trap && t.reply.speed_lines) ? t.reply : null;
+  }
+  const k2 = JSON.stringify([F.design, F.gas, F.map, F.T0, F.p0, F.M0]);
+  drawMap();
+  if (k2 === lineKey) return;
+  lineKey = k2; line = [];
+  const my = ++lineGen;
+  window.sandbox.line = 0;
+  const grid = (await model.ask(JSON.stringify({ op: "running_grid", fly: F }))).reply;
+  if (!Array.isArray(grid)) return;
+  for (let i = 0; i < grid.length; i++) {
+    if (my !== lineGen) return;
+    $("map-progress").textContent = `running line: ${i + 1} of ${grid.length} throttles`;
+    const t = await model.ask(JSON.stringify({ op: "running_point", fly: { ...F, Tt4: grid[i] } }));
+    if (my !== lineGen) return;
+    if (!t.trap && t.reply.ok) { line.push(t.reply); drawMap(); }
+  }
+  $("map-progress").textContent = line.length
+    ? `running line: Tt4 ${fmt(line[0].Tt4)}–${fmt(line[line.length - 1].Tt4)} K runs`
+    : "no throttle on the grid runs here";
+  window.sandbox.line = line.length || -1;
+}
+
+function drawMap() {
+  const svg = $("map"), W = 640, H = 360, L = 58, R = 16, T = 14, B = 40;
+  if (!last || last.m_corr === undefined) { svg.innerHTML = ""; return; }
+  const pts = [[last.m_corr, last.settings.pi_c]].concat(line.map(q => [q.m_corr, q.pi_c]));
+  if (mapLines) for (const q of mapLines.stall_line) pts.push(q);
+  if (pinned && pinned.m_corr !== undefined) pts.push([pinned.m_corr, pinned.settings.pi_c]);
+  let x0 = Math.min(...pts.map(q => q[0])), x1 = Math.max(...pts.map(q => q[0]));
+  let y0 = Math.min(...pts.map(q => q[1])), y1 = Math.max(...pts.map(q => q[1]));
+  const px = (x1 - x0) * 0.12 || 0.1, py = (y1 - y0) * 0.12 || 1;
+  x0 = Math.max(0, x0 - px); x1 += px; y0 = Math.max(1, y0 - py); y1 += py;
+  const X = x => L + (x - x0) / (x1 - x0) * (W - L - R), Y = y => H - B - (y - y0) / (y1 - y0) * (H - T - B);
+  const inside = q => q[0] >= x0 && q[0] <= x1 && q[1] >= y0 && q[1] <= y1;
+  const ticks = (a, b, n) => { const st = Math.pow(10, Math.floor(Math.log10((b - a) / n))); const m = [1, 2, 5, 10].find(k => (b - a) / (st * k) <= n) * st; const out = []; for (let v = Math.ceil(a / m) * m; v <= b + 1e-12; v += m) out.push(+v.toPrecision(6)); return out; };
+  let g = "";
+  for (const v of ticks(y0, y1, 6)) g += `<line class="gridl" x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end">${v}</text>`;
+  for (const v of ticks(x0, x1, 7)) g += `<line class="gridl" y1="${T}" y2="${H - B}" x1="${X(v)}" x2="${X(v)}"/><text x="${X(v)}" y="${H - B + 16}" text-anchor="middle">${v}</text>`;
+  g += `<line class="axis" x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/><line class="axis" x1="${L}" x2="${L}" y1="${T}" y2="${H - B}"/>`;
+  g += `<text x="${(L + W - R) / 2}" y="${H - 6}" text-anchor="middle">corrected air flow (design = 1)</text>`;
+  g += `<text transform="translate(14 ${(T + H - B) / 2}) rotate(-90)" text-anchor="middle">compressor pressure ratio</text>`;
+  const path = q => q.map((p, i) => (i ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1)).join(" ");
+  g += `<defs><clipPath id="mapclip"><rect x="${L}" y="${T}" width="${W - L - R}" height="${H - T - B}"/></clipPath></defs><g clip-path="url(#mapclip)">`;
+  if (mapLines) {
+    for (const sl of mapLines.speed_lines) {
+      if (sl.points.length < 2) continue;
+      g += `<path class="speed" d="${path(sl.points)}"/>`;
+      const lab = sl.points.filter(inside).pop();
+      const right = lab && X(lab[0]) > W - R - 34;
+      if (lab) g += `<text class="speedl" x="${X(lab[0]) + (right ? -3 : 3)}" y="${Y(lab[1]) - 3}" text-anchor="${right ? "end" : "start"}">${Math.round(sl.n * 100)}%</text>`;
+    }
+    if (mapLines.stall_line.length > 1) g += `<path class="stall" d="${path(mapLines.stall_line)}"/>`;
+  }
+  if (line.length > 1) g += `<path class="rline" d="${path(line.map(q => [q.m_corr, q.pi_c]))}"/>`;
+  for (const q of line) g += `<circle class="rpt" cx="${X(q.m_corr)}" cy="${Y(q.pi_c)}" r="2.5"/>`;
+  g += `</g>`;
+  if (pinned && pinned.m_corr !== undefined) g += `<circle class="pinpt" cx="${X(pinned.m_corr)}" cy="${Y(pinned.settings.pi_c)}" r="6"/>`;
+  g += `<circle class="now" cx="${X(last.m_corr)}" cy="${Y(last.settings.pi_c)}" r="6"/>`;
+  svg.innerHTML = g;
 }
 
 // ---------------------------------------------------------------- rendering
@@ -396,9 +588,9 @@ const PERF = [
   ["Specific thrust (per kg/s of air)", r => r.specific_thrust, "N·s/kg", true],
   ["Fuel flow", r => r.fuel_flow, "kg/s", false],
   ["Fuel per thrust (TSFC)", r => r.tsfc * 1e6, "g/(kN·s)", false],
-  ["Overall efficiency", r => r.eta_overall * 100, "%", true],
-  ["Thermal efficiency (jet energy per fuel energy)", r => r.eta_thermal * 100, "%", true],
-  ["Propulsive efficiency", r => r.eta_propulsive * 100, "%", true],
+  ["Overall efficiency (thrust power per fuel power)", r => r.eta_overall * 100, "%", true],
+  ["Thermal efficiency (jet speed energy per fuel energy)", r => r.eta_thermal * 100, "%", true],
+  ["Propulsive efficiency (from jet speed alone: passes 100 % when the jet leaves above the outside pressure)", r => r.eta_propulsive * 100, "%", true],
   ["Brayton ideal 1 − Tt2/Tt3", r => r.eta_brayton * 100, "%", true],
   ["Flight speed", r => r.V0, "m/s"],
   ["Jet speed", r => r.V9, "m/s"],
@@ -407,12 +599,38 @@ const PERF = [
   ["Jet pressure (static)", r => r.p9 / 1e3, "kPa"],
   ["Inlet recovery applied", r => r.pi_d, ""],
 ];
+// Fly it: the operating point's own numbers (a design result lacks them, and shows "–").
+const smv = (r, k) => (r.stall && r.stall.kind === "margin" && typeof r.stall[k] === "number" ? r.stall[k] * 100 : NaN);
+const PERF_FLY = [
+  ["Shaft speed", r => r.nu * 100, "% of design", true],
+  ["Corrected speed (design = 1)", r => r.n_corr, ""],
+  ["Air mass flow", r => r.mdot_air, "kg/s", true],
+  ["Air flow, % of design", r => r.mdot_ratio * 100, "%", true],
+  ["Compressor pressure ratio", r => r.settings.pi_c, "", true],
+  ["Compressor efficiency here (from the map)", r => r.eta_c_op * 100, "%", true],
+  ["Turbine efficiency here (from the map)", r => r.eta_t_op * 100, "%", true],
+  ["Flow coefficient (design = 1)", r => r.phi, ""],
+  ["Stall line you set (flow coefficient)", r => r.phi_surge, ""],
+  ["Stall margin at constant speed (trend only)", r => smv(r, "sm_n"), "%", true],
+  ["Stall margin at constant flow (a weak sign check only)", r => smv(r, "sm_flow"), "%", true],
+];
 
 function render() {
   const r = last, p = pinned;
   const tile = (id, f, up) => { $("v-" + id).textContent = fmt(f(r)); $("d-" + id).textContent = p ? delta(f(r), f(p), up)[0] : ""; };
   tile("thrust", x => x.thrust / 1e3, true); tile("st", x => x.specific_thrust, true);
   tile("tsfc", x => x.tsfc * 1e6, false); tile("eo", x => x.eta_overall * 100, true);
+  if (r.nu !== undefined) {
+    tile("nu", x => x.nu * 100, true); tile("pic", x => x.settings.pi_c, true); tile("mdot", x => x.mdot_air, true);
+    const sm = r.stall.kind === "margin";
+    $("v-sm").textContent = sm ? fmt(r.stall.sm_n * 100, 3)
+      : { unchoked: "not modelled", past_stall_line: "past the stall line", off_map: "off the map" }[r.stall.kind];
+    $("u-sm").hidden = !sm; $("v-sm-box").classList.toggle("text", !sm);
+    $("d-sm").textContent = sm
+      ? (p && p.stall && p.stall.kind === "margin" ? delta(r.stall.sm_n * 100, p.stall.sm_n * 100, true)[0] : "at constant speed")
+      : { unchoked: "the nozzle is unchoked here", past_stall_line: "the line you set is beyond this point",
+          off_map: "the stall line misses the map" }[r.stall.kind];
+  }
 
   const tb = $("stations").tBodies[0]; tb.innerHTML = "";
   $("st-dh").textContent = p ? "Tt vs pinned (K)" : "";
@@ -428,7 +646,7 @@ function render() {
   }
   const pb = $("perf").tBodies[0]; pb.innerHTML = "";
   $("perf-pin").textContent = p ? "Pinned" : ""; $("perf-delta").textContent = p ? "Change" : "";
-  for (const [name, f, unit, up] of PERF) {
+  for (const [name, f, unit, up] of (r.nu !== undefined ? PERF_FLY.concat(PERF) : PERF)) {
     const tr = pb.insertRow();
     tr.insertCell().textContent = name + (unit ? " (" + unit + ")" : "");
     tr.insertCell().textContent = fmt(f(r), 5);
@@ -437,6 +655,7 @@ function render() {
     if (p) { const [t, cls] = delta(f(r), f(p), up); c.textContent = t; c.className = "delta " + cls; }
   }
   drawTs();
+  if (r.nu !== undefined) drawMap();
 }
 
 function drawTs() {
@@ -470,15 +689,28 @@ function drawTs() {
 
 // ---------------------------------------------------------------- wiring
 function wire() {
-  for (const k of NUM) {
-    const n = $(k), r = $(k + "-r");
-    n.addEventListener("input", () => { const v = parseFloat(n.value); if (isFinite(v)) { S[k] = v; if (r) r.value = v; change(); } });
-    if (r) r.addEventListener("input", () => { S[k] = parseFloat(r.value); n.value = r.value; change(); });
-  }
+  // A knob writes its setting; the run follows at once, or -- on the slow gas in fly mode -- when the
+  // slider is let go / the number is committed ("change"), so a drag does not queue a solve per step.
+  const knob = (n, r, put) => {
+    n.addEventListener("input", () => { const v = parseFloat(n.value); if (isFinite(v)) { put(v); if (r) r.value = v; if (!slow()) change(); } });
+    n.addEventListener("change", () => { if (slow()) change(); });
+    if (r) {
+      r.addEventListener("input", () => { put(parseFloat(r.value)); n.value = r.value; if (!slow()) change(); });
+      r.addEventListener("change", () => { if (slow()) change(); });
+    }
+  };
+  for (const k of NUM) knob($(k), $(k + "-r"), v => { if (FLIGHT.includes(k)) target()[k] = v; else S[k] = v; });
+  for (const [id, k] of Object.entries(FLY_NUM)) knob($(id), $(id + "-r"), v => { F[k] = v; });
   for (const k of ["altitude", "delta_t"]) {
-    $(k).addEventListener("input", () => { if (isFinite(parseFloat($(k).value))) { $(k + "-r").value = $(k).value; fromAltitude(); } });
-    $(k + "-r").addEventListener("input", () => { $(k).value = $(k + "-r").value; fromAltitude(); });
+    $(k).addEventListener("input", () => { if (isFinite(parseFloat($(k).value))) { $(k + "-r").value = $(k).value; fromAltitude(!slow()); } });
+    $(k).addEventListener("change", () => { if (slow()) change(); });
+    $(k + "-r").addEventListener("input", () => { $(k).value = $(k + "-r").value; fromAltitude(!slow()); });
+    $(k + "-r").addEventListener("change", () => { if (slow()) fromAltitude(true); });
   }
+  $("mode-design").addEventListener("click", leaveFly);
+  $("mode-fly").addEventListener("click", enterFly);
+  $("fly-gas").addEventListener("change", () => { F.gas = $("fly-gas").value; change(); });
+  $("fly-map").addEventListener("change", () => { F.map = $("fly-map").value; change(); });
   $("nozzle").addEventListener("change", () => { S.nozzle = $("nozzle").value; showSettings(); change(); });
   $("gas").addEventListener("change", () => { S.gas = $("gas").value; change(); });
   for (const [id, key, v] of [["ceff-isen", "compressor_eff", "isentropic"], ["ceff-poly", "compressor_eff", "polytropic"],
@@ -487,13 +719,20 @@ function wire() {
   }
   $("pin").addEventListener("click", () => { if (!last) return; pinned = last; $("unpin").hidden = false; $("pin-legend").hidden = false; render(); });
   $("unpin").addEventListener("click", () => { pinned = null; $("unpin").hidden = true; $("pin-legend").hidden = true; render(); });
-  $("reset").addEventListener("click", () => { S = { ...DEFAULTS }; showSettings(); change(); });
+  $("reset").addEventListener("click", () => {
+    if (mode === "fly") F = { ...FLY_DEFAULTS, design: F.design, Tt4: F.design.Tt4, T0: F.design.T0, p0: F.design.p0, M0: F.design.M0 };
+    else S = { ...DEFAULTS };
+    showSettings(); change();
+  });
 }
 
 // A handle for the page's own browser test (rust/sandbox-wasm/browser.mjs): set knobs, read the result.
 window.sandbox = {
-  state: "loading", last: null, trap: null, mode: null,
+  state: "loading", last: null, trap: null, mode: null, line: 0,
   set: async patch => { Object.assign(S, patch); showSettings(); await runNow(); return window.sandbox.state; },
+  fly: async patch => { if (mode !== "fly") enterFly(); Object.assign(F, patch); showSettings(); await runNow(); return window.sandbox.state; },
+  design: async () => { leaveFly(); await runNow(); return window.sandbox.state; },
+  view: () => mode,
 };
 
 (async () => {
@@ -501,6 +740,7 @@ window.sandbox = {
     model = await makeModel();
     window.sandbox.mode = model.mode;
     DEFAULTS = (await model.ask(JSON.stringify({ op: "defaults" }))).reply;
+    FLY_DEFAULTS = (await model.ask(JSON.stringify({ op: "fly_defaults" }))).reply;
     S = { ...DEFAULTS };
     showSettings(); wire();
     await runNow();

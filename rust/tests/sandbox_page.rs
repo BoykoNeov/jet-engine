@@ -5,7 +5,8 @@
 //! (`rust/test-all.ps1`): it rebuilds the build and compares it with the committed page, checks the
 //! build against the native model on a grid, and drives the page in a headless Chrome.
 
-use turbojet::sandbox::{base64, call, splice_page, unbase64, GasModel, NozzleMode, Settings, WASM_PLACEHOLDER};
+use turbojet::sandbox::{base64, call, splice_page, unbase64, FlySettings, GasModel, MapShape, NozzleMode, Settings,
+                        WASM_PLACEHOLDER};
 use turbojet::visuals::Json;
 
 fn repo(rel: &str) -> std::path::PathBuf {
@@ -78,8 +79,16 @@ fn every_element_the_script_looks_up_is_declared() {
     let num = num_list(&t);
     looked_up.extend(num.iter().cloned());
     looked_up.extend(["altitude", "delta_t", "altitude-r", "delta_t-r"].map(String::from));
-    // `$("v-" + id)` / `$("d-" + id)` for the four tiles.
-    for tile in ["thrust", "st", "tsfc", "eo"] {
+    // `$(id)` / `$(id + "-r")` over the FLY_NUM map: the fly view's own knobs and sliders.
+    for id in fly_num(&t).into_iter().map(|(id, _)| id) {
+        looked_up.push(format!("{id}-r"));
+        looked_up.push(id);
+    }
+    // `$(id)` over the id arrays the script hides, shows and greys out as a group.
+    looked_up.extend(["cycle-set", "components-set", "nozzle-set", "fly-set", "fly-tiles", "map-card",
+                      "out", "ts", "stations", "perf", "map"].map(String::from));
+    // `$("v-" + id)` / `$("d-" + id)` for the tiles (the fly view's three computed ones included).
+    for tile in ["thrust", "st", "tsfc", "eo", "nu", "pic", "mdot"] {
         looked_up.push(format!("v-{tile}"));
         looked_up.push(format!("d-{tile}"));
     }
@@ -87,6 +96,39 @@ fn every_element_the_script_looks_up_is_declared() {
     for id in looked_up {
         assert!(declared.contains(&id.as_str()), "the script looks up #{id}, which the template never declares");
     }
+}
+
+/// The fly view's knob map, `const FLY_NUM = { "id": "setting", … };`, as (id, setting) pairs.
+fn fly_num(t: &str) -> Vec<(String, String)> {
+    let body = spans(t, "const FLY_NUM = {", "};");
+    assert_eq!(body.len(), 1);
+    let q: Vec<&str> = spans(body[0], "\"", "\"");
+    assert!(q.len() % 2 == 0 && !q.is_empty(), "FLY_NUM: {q:?}");
+    q.chunks(2).map(|c| (c[0].to_string(), c[1].to_string())).collect()
+}
+
+/// The shared flight knobs, `const FLIGHT = [ … ];`.
+fn flight_list(t: &str) -> Vec<String> {
+    let body = spans(t, "const FLIGHT = [", "];");
+    assert_eq!(body.len(), 1);
+    spans(body[0], "\"", "\"").into_iter().map(String::from).collect()
+}
+
+#[test]
+fn every_fly_knob_is_a_fly_setting_and_every_numeric_fly_setting_has_a_knob() {
+    let t = read(TEMPLATE);
+    // The fly view's numbers: its own knobs, plus the flight knobs it shares with the design.
+    let mut knobs: Vec<String> = fly_num(&t).into_iter().map(|(_, k)| k).chain(flight_list(&t)).collect();
+    knobs.sort();
+    let mut numeric: Vec<String> = match FlySettings::defaults().to_json() {
+        Json::Obj(kv) => kv.into_iter().filter(|(_, v)| matches!(v, Json::Float(_))).map(|(k, _)| k).collect(),
+        _ => unreachable!(),
+    };
+    numeric.sort();
+    assert_eq!(knobs, numeric);
+    // ...and every shared flight knob is a design knob too (one input, two owners).
+    let num = num_list(&t);
+    for k in flight_list(&t) { assert!(num.contains(&k), "flight knob {k} is not a design knob"); }
 }
 
 fn num_list(t: &str) -> Vec<String> {
@@ -123,7 +165,11 @@ fn the_selects_offer_exactly_the_models_choices() {
     let mut nozzles: Vec<String> = NozzleMode::ALL.iter().map(|n| n.key().to_string()).collect();
     nozzles.sort();
     assert_eq!(options("gas"), gases);
+    assert_eq!(options("fly-gas"), gases);
     assert_eq!(options("nozzle"), nozzles);
+    let mut maps: Vec<String> = MapShape::ALL.iter().map(|m| m.key().to_string()).collect();
+    maps.sort();
+    assert_eq!(options("fly-map"), maps);
 }
 
 #[test]

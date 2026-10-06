@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: fc49c174-1ea6-4775-96a6-b721880afed4
-  modified: 2026-10-06T15:26:55.322Z
+  modified: 2026-10-06T21:55:30.488Z
 ---
 
 **Decision (user, 2026-10-06):** "generally i want more of a sandbox, not just lessons. sandbox,
@@ -36,3 +36,6 @@ model is forced to round or quantise (whole blade rows), ask what a real designe
 leftover and offer that as a knob, rather than letting one quantity jump. See [[rung85-blade-speed]].
 CLAUDE.md carries a one-line "Direction" note under its intro. See
 [[visuals-artifact]], [[cutaway-artifact]].
+**Slice 3 "Fly it" (off-design) SHIPPED 2026-10-07** — [[sandbox-slice3]]; the user chose: opens on
+the thermally perfect gas (live), equilibrium on release; stall line as a knob + map shape, labelled
+"trend only"; the memo-cache speed-up shipped first. Next: slice 2 (rung 85 blade speeds).

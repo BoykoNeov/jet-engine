@@ -18,9 +18,12 @@
 
 use crate::atmosphere::{self, Ambient};
 use crate::components::{ram_recovery, Component};
-use crate::engine::{build_turbojet, EngineResult, FlightCondition, Losses};
+use crate::engine::{build_turbojet, score, EngineResult, FlightCondition, Losses};
 use crate::gas::{FlowState, Gas};
 use crate::jobj;
+use crate::map::ComponentMap;
+use crate::matcher::{Branch, Rebuilt};
+use crate::spool::SpoolTransient;
 use crate::panels::{flight, real_losses, PI_C, TT4};
 use crate::visuals::Json;
 
@@ -418,6 +421,49 @@ pub fn explain(message: &str) -> String {
     })
 }
 
+/// Plain words for a message the model panicked with WHILE FLYING (slice 3). The fly solve's own
+/// failure is rung 34's "equilibrium does not bracket": no shaft speed balances turbine against
+/// compressor. Its message carries the ends of the speed search — `Phi[Some(ν)]=Some(Φ)` or
+/// `Phi[None]=None` — and the plain words read them, because the same message means opposite things:
+/// a 27 610-point sweep (2026-10-07, plan § 10.4) found the shaft slowing at every workable speed
+/// (below idle), speeding up all the way to the search's top (overspeed), and speeding up where only
+/// the SLOWEST speeds were workable — fast flight, low throttle, the compressor heating the air past
+/// the throttle setting above them. Each branch is driven by a test (`tests/sandbox_fly.rs`).
+/// Anything else falls back to [`explain`].
+pub fn explain_fly(message: &str) -> String {
+    if !message.contains("equilibrium does not bracket") {
+        return explain(message);
+    }
+    // Each end of the search: `None` (no workable speed found from that side) or `(ν, Φ)`.
+    let ends: Vec<Option<(f64, f64)>> = message.split("Phi[").skip(1).map(|part| {
+        let inner = |s: &str| s.strip_prefix("Some(").and_then(|r| r.split(')').next()).and_then(|v| v.parse::<f64>().ok());
+        let nu = inner(part);
+        let phi = part.split("]=").nth(1).and_then(inner);
+        nu.zip(phi)
+    }).collect();
+    const SPOOL_DOWN: &str =
+        "At this throttle and flight the turbine cannot keep the compressor turning at any shaft speed: the \
+         engine would spool down. This is below idle. Raise the throttle (the turbine-inlet temperature).";
+    const OVERSPEED: &str =
+        "At this throttle the turbine gives more power than the compressor can absorb at every shaft speed up \
+         to 160 % of design: the shaft would overspeed. Lower the throttle.";
+    const HOT_AIR: &str =
+        "Only the slowest shaft speeds can be worked out here, and at each the turbine still out-pulls the \
+         compressor. At any higher speed the compressor heats the air past the turbine-inlet temperature you \
+         set, so the burner would have to cool it. This happens at a low throttle in fast flight, where the \
+         air arrives already hot. Raise the throttle.";
+    const NO_SPEED: &str =
+        "No shaft speed gives a workable operating point at this throttle and flight: at every speed the \
+         model tries, the burner, the turbine or the nozzle leaves its range. Usually the throttle is too low \
+         for the flight; try raising it.";
+    match ends.as_slice() {
+        [Some((_, a)), Some((_, b))] if *a < 0.0 && *b < 0.0 => SPOOL_DOWN,
+        [Some((_, a)), Some((nu_hi, b))] if *a > 0.0 && *b > 0.0 && *nu_hi >= SPEED_LINE_MAX - 0.05 => OVERSPEED,
+        [Some((_, a)), Some((_, b))] if *a > 0.0 && *b > 0.0 => HOT_AIR,
+        _ => NO_SPEED,
+    }.to_string()
+}
+
 fn finite(x: f64, what: &str) -> Result<f64, DoesNotRun> {
     if x.is_finite() { Ok(x) } else { Err(DoesNotRun(format!("The model gave a non-finite {what}."))) }
 }
@@ -492,8 +538,16 @@ fn refusal(reason: &str) -> Json {
 ///   that into a message; see `explain`).
 /// - `{"op":"atmosphere","altitude":…,"delta_t":…}` → `T0`/`p0` for those knobs;
 ///   `{"op":"atmosphere","T0":…,"p0":…}` → the altitude and deviation they read as.
-/// - `{"op":"explain","message":…}` → [`explain`]'s plain words.
+/// - `{"op":"explain","message":…}` → [`explain`]'s plain words; with `"view":"fly"`, [`explain_fly`]'s.
 /// - `{"op":"range"}` → the atmosphere's altitude range, for the page's slider.
+///
+/// Slice 3, flying the design's frozen hardware (`fly` settings: [`FlySettings::from_json`]):
+/// - `{"op":"fly_defaults"}` → the opening fly settings.
+/// - `{"op":"fly","fly":{…}}` → one operating point ([`fly_json`]), or a plain-words refusal.
+/// - `{"op":"running_point","fly":{…}}` → the spool equilibrium alone at the fly throttle (no
+///   station table) — the page streams the running line point by point with it.
+/// - `{"op":"running_grid","fly":{…}}` → the throttle grid of the running line.
+/// - `{"op":"map_lines","fly":{…}}` → the compressor map's speed lines and stall line.
 pub fn call(request: &str) -> String {
     let req = Json::parse(request);
     let op = match req.get("op") { Some(Json::Str(s)) => s.as_str(), _ => "" };
@@ -530,13 +584,419 @@ pub fn call(request: &str) -> String {
             _ => refusal("atmosphere needs altitude + delta_t, or T0 + p0"),
         },
         "explain" => match req.get("message") {
+            Some(Json::Str(m)) if matches!(req.get("view"), Some(Json::Str(v)) if v == "fly") => jobj! { "plain" => explain_fly(m) },
             Some(Json::Str(m)) => jobj! { "plain" => explain(m) },
             _ => refusal("explain needs a message"),
         },
         "range" => jobj! { "z_min" => atmosphere::Z_MIN, "z_max" => atmosphere::Z_MAX },
+        "fly_defaults" => FlySettings::defaults().to_json(),
+        "fly" | "running_point" | "running_grid" | "map_lines" => {
+            let empty = Json::Obj(Vec::new());
+            match FlySettings::from_json(req.get("fly").unwrap_or(&empty)) {
+                Err(e) => refusal(&e),
+                Ok(s) => match fly_precheck(&s) {
+                    Err(DoesNotRun(m)) => refusal(&m),
+                    Ok(()) => match op {
+                        "fly" => match fly(&s).and_then(|o| fly_json(&o)) {
+                            Ok(j) => j,
+                            Err(DoesNotRun(m)) => refusal(&m),
+                        },
+                        "running_point" => running_point_json(&s),
+                        "running_grid" => Json::List(running_line_grid(&s).into_iter().map(Json::Float).collect()),
+                        _ => map_lines(&s),
+                    },
+                },
+            }
+        }
         other => refusal(&format!("unknown op {other:?}")),
     };
     out.dump_compact()
+}
+
+// ---------------------------------------------------------------------------------------------
+// Slice 3 — FLY THE ENGINE YOU DESIGNED (`docs/plans/sandbox-plan.md` § 10).
+//
+// The design's hardware is frozen — the turbine and nozzle throat areas, the design flow and speed
+// references — and the throttle and the flight move. The engine finds its own operating point.
+// ONE solver, chosen by measurement (§ 10.1): rung 34's spool equilibrium on a rung-32 map, with
+// rung 36's stall margin read off the solved point. It handles both nozzle branches; rung 32's map
+// matcher does not, and stays off the page.
+
+/// The compressor maps the fly view offers: rung 34's three surge-realistic shapes, as equals. The
+/// model has no measured map; each is a representative shape, disclosed as such on the page.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MapShape {
+    /// Curvature concentrated in flow (`ComponentMap::surge_flow`).
+    Flow,
+    /// Curvature concentrated in pressure (`ComponentMap::surge_pressure`).
+    Pressure,
+    /// A tilted efficiency island (`ComponentMap::surge_tilted`).
+    Tilted,
+}
+
+impl MapShape {
+    pub const ALL: [MapShape; 3] = [MapShape::Flow, MapShape::Pressure, MapShape::Tilted];
+
+    pub fn key(self) -> &'static str {
+        match self { MapShape::Flow => "flow", MapShape::Pressure => "pressure", MapShape::Tilted => "tilted" }
+    }
+
+    fn from_key(k: &str) -> Result<Self, String> {
+        MapShape::ALL.into_iter().find(|m| m.key() == k).ok_or_else(|| format!("unknown map shape {k:?}"))
+    }
+
+    pub fn map(self) -> ComponentMap {
+        match self {
+            MapShape::Flow => ComponentMap::surge_flow(),
+            MapShape::Pressure => ComponentMap::surge_pressure(),
+            MapShape::Tilted => ComponentMap::surge_tilted(),
+        }
+    }
+}
+
+/// Every knob of the fly view: the design whose hardware is frozen, then what moves.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct FlySettings {
+    /// The design (slice 1's knobs). Its nozzle and gas are overridden when the hardware is
+    /// captured — see [`FlySettings::capture`].
+    pub design: Settings,
+    /// The gas the engine is flown on. Opens on the thermally-perfect gas (user decision,
+    /// plan § 10.7: live at 10–45 ms a point, where equilibrium takes 0.5–2.5 s).
+    pub gas: GasModel,
+    /// The throttle: turbine-inlet temperature, K.
+    pub tt4: f64,
+    /// The flight: ambient static temperature (K), pressure (Pa), Mach number.
+    pub t0: f64,
+    pub p0: f64,
+    pub m0: f64,
+    pub map: MapShape,
+    /// The stall line's flow coefficient — rung 36's ONE chosen constant, a knob here because the
+    /// model has no data for it (user decision, plan § 10.7). Only the margin's TREND is load-bearing.
+    pub phi_surge: f64,
+}
+
+/// Where the page's stall-line knob opens: rung 36's own panel value.
+pub const PHI_SURGE_DEFAULT: f64 = 0.65;
+
+impl FlySettings {
+    /// Flying the opening design at its own design point.
+    pub fn defaults() -> Self {
+        Self::at_design(Settings::defaults())
+    }
+
+    /// Flying `design` at its own design point (the reduce: shaft speed 1, `π_c` = design).
+    pub fn at_design(design: Settings) -> Self {
+        FlySettings { design, gas: GasModel::ThermallyPerfect, tt4: design.tt4, t0: design.t0,
+                      p0: design.p0, m0: design.m0, map: MapShape::Flow, phi_surge: PHI_SURGE_DEFAULT }
+    }
+
+    /// The design the hardware is captured from: the user's, on the fly gas, with a FIXED
+    /// CONVERGENT nozzle — capturing hardware needs a throat area (rung 30/31), so the design
+    /// numbers here can differ from slice 1's "fully expanded" default. The page shows both.
+    pub fn capture(&self) -> Settings {
+        Settings { gas: self.gas, nozzle: NozzleMode::Convergent, ..self.design }
+    }
+
+    pub fn flight(&self) -> FlightCondition { FlightCondition::new(self.t0, self.p0, self.m0) }
+
+    pub fn to_json(&self) -> Json {
+        jobj! {
+            "design" => self.design.to_json(), "gas" => self.gas.key(), "Tt4" => self.tt4,
+            "T0" => self.t0, "p0" => self.p0, "M0" => self.m0, "map" => self.map.key(),
+            "phi_surge" => self.phi_surge,
+        }
+    }
+
+    /// Read fly settings; a missing key keeps its default. A missing `design` is the opening
+    /// design, and a missing flight/throttle is that design's own point.
+    pub fn from_json(j: &Json) -> Result<Self, String> {
+        let design = match j.get("design") { Some(d) => Settings::from_json(d)?, None => Settings::defaults() };
+        let mut s = FlySettings::at_design(design);
+        let num = |k: &str, into: &mut f64| -> Result<(), String> {
+            match j.get(k) {
+                None => Ok(()),
+                Some(Json::Float(x)) => { *into = *x; Ok(()) }
+                Some(Json::Int(n)) => { *into = *n as f64; Ok(()) }
+                Some(other) => Err(format!("setting {k:?} must be a number, got {other:?}")),
+            }
+        };
+        num("Tt4", &mut s.tt4)?;
+        num("T0", &mut s.t0)?;
+        num("p0", &mut s.p0)?;
+        num("M0", &mut s.m0)?;
+        num("phi_surge", &mut s.phi_surge)?;
+        match j.get("gas") {
+            None => {}
+            Some(Json::Str(g)) => s.gas = GasModel::from_key(g)?,
+            Some(o) => return Err(format!("setting \"gas\" must be text, got {o:?}")),
+        }
+        match j.get("map") {
+            None => {}
+            Some(Json::Str(m)) => s.map = MapShape::from_key(m)?,
+            Some(o) => return Err(format!("setting \"map\" must be text, got {o:?}")),
+        }
+        Ok(s)
+    }
+}
+
+/// The checks made before the fly solve. The design itself must run (slice 1's [`precheck`], on
+/// the captured design), and the off-design solver's own limits are named in plain words.
+pub fn fly_precheck(s: &FlySettings) -> Result<(), DoesNotRun> {
+    let no = |m: &str| Err(DoesNotRun(m.to_string()));
+    if s.design.compressor_polytropic || s.design.turbine_polytropic {
+        return no("Flying the engine uses the isentropic efficiencies: the off-design solver reads the \
+                   compressor and turbine through them. Switch both efficiency knobs to isentropic.");
+    }
+    precheck(&s.capture()).map_err(|DoesNotRun(m)| DoesNotRun(format!("The design does not run: {m}")))?;
+    let named = [("Tt4", s.tt4), ("T0", s.t0), ("p0", s.p0), ("M0", s.m0), ("phi_surge", s.phi_surge)];
+    if let Some((k, _)) = named.iter().find(|(_, v)| !v.is_finite()) {
+        return Err(DoesNotRun(format!("Setting {k} is not a number.")));
+    }
+    if s.t0 <= 0.0 || s.p0 <= 0.0 {
+        return no("Ambient temperature and pressure must be above zero.");
+    }
+    if s.m0 <= 0.0 {
+        return no("Flight Mach number must be above zero. The model scores efficiency per unit of \
+                   flight speed, so a standing engine (Mach 0) is not supported yet.");
+    }
+    if s.tt4 <= 0.0 {
+        return no("The throttle (turbine-inlet temperature) must be above zero.");
+    }
+    if !(s.phi_surge > 0.0 && s.phi_surge < 1.0) {
+        return no("The stall line must sit between 0 and 1 in flow coefficient: below the design \
+                   flow (1), above no flow (0).");
+    }
+    // The throttle must at least beat the air's own temperature at the compressor face: below it no
+    // shaft speed can work, and the solver could only say "no workable speed" (measured, plan § 10.4).
+    let d = s.capture();
+    let (st0, _) = build_turbojet(d.gas.gas(), d.pi_c, d.tt4, d.p0, d.losses()).try_freestream(&s.flight(), d.mdot)
+        .map_err(|e| DoesNotRun(format!("The freestream could not be formed: {}", e.0)))?;
+    if s.tt4 <= st0.tt {
+        return Err(DoesNotRun(format!(
+            "The throttle ({:.0} K) is not above the temperature the air already has entering the compressor \
+             ({:.0} K, heated by the flight speed), so the burner would have to cool it before it is even \
+             compressed. Raise the throttle.", s.tt4, st0.tt)));
+    }
+    Ok(())
+}
+
+/// The stall margin at a fly point — or why there is none.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Stall {
+    /// Rung 36's two definitions: the pressure-ratio headroom at constant SPEED and at constant FLOW.
+    /// The constant-flow one reads a DIFFERENT speed line, `n·φ_op/φ_surge` — with a low stall line,
+    /// a compressor spun at several times design, whose exit the gas tables may refuse. Then it is
+    /// `None`: a reading the model cannot make, not a crash.
+    Margin { sm_n: f64, sm_flow: Option<f64> },
+    /// The nozzle is unchoked: rung 36's surge margin is a choked-branch reading only.
+    Unchoked,
+    /// The stall line the user set is at or beyond this operating point's flow coefficient.
+    PastStallLine,
+    /// The stall line sits where the map's speed line does no work (rung 36's `tau_c <= 1` edge).
+    OffMap,
+}
+
+/// One fly run.
+pub struct FlyOutcome {
+    pub settings: FlySettings,
+    /// The captured design's own run (convergent nozzle, fly gas) — the "before" the page compares.
+    pub design: EngineResult,
+    /// The operating point, rebuilt forward through the real components.
+    pub result: EngineResult,
+    /// The spool equilibrium it was rebuilt from.
+    pub point: SpoolPoint,
+    pub stall: Stall,
+    pub ts: Vec<(&'static str, f64, f64)>,
+    pub curves: [Vec<(f64, f64)>; 2],
+}
+
+/// The fields of rung 34's equilibrium the page reads.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct SpoolPoint {
+    /// Shaft speed over design.
+    pub nu: f64,
+    /// Corrected speed and corrected-flow ratio (design = 1), and the flow coefficient `m/n`.
+    pub n: f64,
+    pub m: f64,
+    pub phi: f64,
+    pub pi_c: f64,
+    pub eta_c: f64,
+    pub eta_t: f64,
+    pub mdot_air: f64,
+    pub thrust: f64,
+    pub choked: bool,
+}
+
+/// Capture the hardware and build the solver for this flight. A FRESH solver every call: the
+/// reacting/equilibrium gases memoise per fuel-air ratio and never forget, so a long-lived solver
+/// carries a growing memo (plan § 10.5); a capture costs ~1.5 ms.
+///
+/// **The nozzle's back-pressure is set to THIS flight's ambient pressure.** The matcher keeps the
+/// design run's ambient as `p_ambient` and uses it ONLY as the nozzle's back-pressure (every use
+/// in `matcher.rs` / `spool.rs`), while the thrust's pressure term reads the flight's `p0`. Every
+/// shipped caller flies off design at the design `p0`, where the two agree; the sandbox is the
+/// first to change altitude with the hardware frozen. At the design `p0` this is the shipped solver
+/// exactly (`tests/sandbox.rs` pins both facts).
+pub fn fly_solver(s: &FlySettings) -> SpoolTransient {
+    let d = s.capture();
+    let engine = build_turbojet(d.gas.gas(), d.pi_c, d.tt4, d.p0, d.losses());
+    let mut st = SpoolTransient::new(engine, d.flight(), d.mdot, s.map.map());
+    st.inner.inner.p_ambient = s.p0;
+    st
+}
+
+/// The top of rung 34's shaft-speed search (`SpoolTransient::find_equilibrium_nu` marches 0.30–1.60
+/// of design) — where [`explain_fly`] tells overspeed from a search cut short.
+pub const SPEED_LINE_MAX: f64 = 1.6;
+
+/// `SpoolTransient::pi_c_map`, COPIED with the gas tables' fallible inverse: the original panics when
+/// a far speed line's exit leaves the tables, and a panic in the browser kills the whole fly point
+/// for one secondary reading. Same arithmetic, same order — `tests/sandbox_fly.rs` holds it equal to
+/// the original bit for bit wherever the original answers.
+pub fn try_pi_c_map(st: &SpoolTransient, cmap: &ComponentMap, n: f64, phi: f64, tt2: f64) -> Option<f64> {
+    let mm = &st.inner.inner;
+    let gas = mm.gas();
+    let tau_c = 1.0 + (st.inner.tau_c_d - 1.0) * cmap.psi(phi) * n * n;
+    if !(tau_c > 1.0) {
+        return None;
+    }
+    let tt3 = tt2 * tau_c;
+    let eta_c = cmap.eta_c_at(mm.eta_c, phi, n);
+    let (h2, h3) = (gas.h_c(tt2), gas.h_c(tt3));
+    let tt3s = gas.try_t_from_h_c(h2 + eta_c * (h3 - h2)).ok()?;
+    Some(gas.pr_c(tt3s) / gas.pr_c(tt2))
+}
+
+/// Rung 36's margin read off an ALREADY-SOLVED equilibrium — `SpoolTransient::surge_margin`'s own
+/// arithmetic without its second equilibrium solve (which doubled the cost), and with its two
+/// asserts returned as readings. `tests/sandbox.rs` holds it equal to `surge_margin`.
+pub fn stall_reading(st: &SpoolTransient, eq: &crate::spool::Instant, cmap: &ComponentMap) -> Stall {
+    if eq.branch != Branch::Choked {
+        return Stall::Unchoked;
+    }
+    let phi_s = cmap.phi_surge;
+    if !(phi_s < eq.flowcoef) {
+        return Stall::PastStallLine;
+    }
+    let n_s = eq.flowcoef * eq.n / phi_s;
+    let Ok(pn) = st.pi_c_map(cmap, eq.n, phi_s, eq.tt2) else { return Stall::OffMap };
+    let sm_flow = try_pi_c_map(st, cmap, n_s, phi_s, eq.tt2).map(|pf| pf / eq.pi_c - 1.0);
+    Stall::Margin { sm_n: pn / eq.pi_c - 1.0, sm_flow }
+}
+
+/// Fly the design's hardware at `s`'s throttle and flight.
+pub fn fly(s: &FlySettings) -> Result<FlyOutcome, DoesNotRun> {
+    fly_precheck(s)?;
+    let st = fly_solver(s);
+    let design = st.inner.inner.reference.clone();
+    let fl = s.flight();
+    let cmap = s.map.map().with_phi_surge(s.phi_surge);
+    let eq = st.equilibrium(&fl, s.tt4, Some(&cmap));
+    let stall = stall_reading(&st, &eq, &cmap);
+    // The station table: the forward rebuild every matcher ends with, at the equilibrium's
+    // (pi_c, mdot, eta_c, eta_t) — it fires every conservation assert on the operating point.
+    let m = &st.inner.inner;
+    let pi_d = m.pi_d_max * ram_recovery(fl.m0);
+    let Rebuilt { state0, v0, s2, s3, s4, s5, exit, gas } =
+        m.rebuild(&fl, pi_d, eq.pi_c, s.tt4, eq.mdot_air, eq.eta_c, eq.eta_t);
+    let stations = vec![("0", state0), ("2", s2), ("3", s3), ("4", s4), ("5", s5), ("9", exit.state)];
+    let performance = score(&gas, &stations, v0, exit.t9, exit.v9, exit.p9, fl.p0, gas.hpr());
+    let result = EngineResult { stations, performance, v0, v9: exit.v9, m9: exit.m9, t9: exit.t9, p9: exit.p9 };
+    let ts = ts_points(&gas, &result, &fl);
+    let curves = ts_curves(&gas, &result, &ts);
+    let point = SpoolPoint {
+        nu: eq.nu, n: eq.n, m: eq.m, phi: eq.flowcoef, pi_c: eq.pi_c, eta_c: eq.eta_c, eta_t: eq.eta_t,
+        mdot_air: eq.mdot_air, thrust: eq.thrust, choked: eq.branch == Branch::Choked,
+    };
+    Ok(FlyOutcome { settings: *s, design, result, point, stall, ts, curves })
+}
+
+/// The page's view of a fly run, FULL precision. The operating point carries slice 1's keys (so
+/// the page's station table, T–s diagram and pin & compare read it unchanged) plus the spool's.
+pub fn fly_json(o: &FlyOutcome) -> Result<Json, DoesNotRun> {
+    let s = &o.settings;
+    let p = &o.point;
+    // Reuse slice 1's view: an Outcome carrying the operating point, with the air mass flow the
+    // ENGINE chose (an output here) in place of the design's.
+    let op = Outcome {
+        settings: Settings { t0: s.t0, p0: s.p0, m0: s.m0, tt4: s.tt4, pi_c: p.pi_c, mdot: p.mdot_air,
+                             gas: s.gas, nozzle: NozzleMode::Convergent, ..s.design },
+        result: o.result.clone(), ts: o.ts.clone(), curves: o.curves.clone(),
+    };
+    let mut j = outcome_json(&op)?;
+    let d = &o.design;
+    let stall = match o.stall {
+        Stall::Margin { sm_n, sm_flow } => jobj! { "kind" => "margin", "sm_n" => sm_n,
+                                                    "sm_flow" => sm_flow.map(Json::Float).unwrap_or(Json::Null) },
+        Stall::Unchoked => jobj! { "kind" => "unchoked" },
+        Stall::PastStallLine => jobj! { "kind" => "past_stall_line" },
+        Stall::OffMap => jobj! { "kind" => "off_map" },
+    };
+    let extra = jobj! {
+        "fly" => s.to_json(),
+        "nu" => finite(p.nu, "shaft speed")?, "n_corr" => p.n, "m_corr" => p.m, "phi" => p.phi,
+        "phi_surge" => s.phi_surge, "eta_c_op" => p.eta_c, "eta_t_op" => p.eta_t,
+        "mdot_air" => p.mdot_air, "mdot_ratio" => p.mdot_air / s.design.mdot,
+        "spool_thrust" => p.thrust, "choked" => Json::Int(p.choked as i64),
+        "stall" => stall,
+        "design_point" => jobj! {
+            "pi_c" => s.design.pi_c, "Tt4" => s.design.tt4, "mdot" => s.design.mdot,
+            "thrust" => d.performance.specific_thrust * s.design.mdot,
+            "tsfc" => d.performance.tsfc, "M9" => d.m9,
+        },
+    };
+    if let (Json::Obj(a), Json::Obj(b)) = (&mut j, extra) { a.extend(b); }
+    Ok(j)
+}
+
+/// One running-line point: the spool equilibrium at the fly throttle, without the forward rebuild.
+/// A throttle where the engine does not run panics, as `fly` does — the page reads that as "the
+/// running line ends here", not as a broken page.
+pub fn running_point_json(s: &FlySettings) -> Json {
+    let st = fly_solver(s);
+    let cmap = s.map.map().with_phi_surge(s.phi_surge);
+    let eq = st.equilibrium(&s.flight(), s.tt4, Some(&cmap));
+    let sm = match stall_reading(&st, &eq, &cmap) { Stall::Margin { sm_n, .. } => Json::Float(sm_n), _ => Json::Null };
+    jobj! {
+        "ok" => Json::Int(1), "Tt4" => s.tt4, "m_corr" => eq.m, "pi_c" => eq.pi_c, "nu" => eq.nu,
+        "phi" => eq.flowcoef, "thrust" => eq.thrust, "choked" => Json::Int((eq.branch == Branch::Choked) as i64),
+        "sm_n" => sm,
+    }
+}
+
+/// The throttle grid the running line is drawn on — from well below idle to well above design,
+/// so the chart shows where the engine stops running at each flight.
+pub fn running_line_grid(s: &FlySettings) -> Vec<f64> {
+    let hi = s.design.tt4.max(1000.0) * 1.2;
+    (0..=RUNNING_LINE_POINTS).map(|i| 600.0 + (hi - 600.0) * i as f64 / RUNNING_LINE_POINTS as f64).collect()
+}
+
+/// Intervals on the running-line grid (so `RUNNING_LINE_POINTS + 1` points).
+pub const RUNNING_LINE_POINTS: usize = 16;
+
+/// The compressor map for the chart: speed lines `(n, [(m, π_c)])` and the stall line `[(m, π_c)]`,
+/// read through the SAME map arithmetic the operating point uses (`pi_c_map`), at the design inlet.
+pub fn map_lines(s: &FlySettings) -> Json {
+    let st = fly_solver(s);
+    let cmap = s.map.map().with_phi_surge(s.phi_surge);
+    let tt2 = st.inner.tt2_d;
+    let mut speed = Vec::new();
+    let mut stall = Vec::new();
+    for k in 0..=7 {
+        let n = 0.5 + 0.1 * k as f64;
+        let mut line = Vec::new();
+        for i in 0..=24 {
+            let phi = 0.4 + 1.0 * i as f64 / 24.0;
+            if let Some(pc) = try_pi_c_map(&st, &cmap, n, phi, tt2).filter(|pc| pc.is_finite()) {
+                line.push(Json::List(vec![Json::Float(phi * n), Json::Float(pc)]));
+            }
+        }
+        speed.push(jobj! { "n" => n, "points" => Json::List(line) });
+        if let Some(pc) = try_pi_c_map(&st, &cmap, n, s.phi_surge, tt2).filter(|pc| pc.is_finite()) {
+            stall.push(Json::List(vec![Json::Float(s.phi_surge * n), Json::Float(pc)]));
+        }
+    }
+    jobj! { "speed_lines" => Json::List(speed), "stall_line" => Json::List(stall) }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -605,10 +1065,34 @@ pub fn check_grid() -> Vec<Settings> {
     out
 }
 
+/// The fly points the browser check runs natively AND in the browser build: every gas, three flights
+/// (the design's own, cruise at 11 km, supersonic at 11 km), the three map shapes in turn. Every one
+/// runs (a native panic would stop the check's native side).
+pub fn check_fly_grid() -> Vec<FlySettings> {
+    let mut out = Vec::new();
+    for g in GasModel::ALL {
+        for (i, &(tt4, m0, t0, p0)) in [(1500.0, 0.85, 250.0, 50_000.0), (1200.0, 0.85, 216.65, 22_632.1),
+                                        (1700.0, 1.6, 216.65, 22_632.1)].iter().enumerate() {
+            out.push(FlySettings { gas: g, tt4, m0, t0, p0, map: MapShape::ALL[(out.len() + i) % 3], ..FlySettings::defaults() });
+        }
+    }
+    out
+}
+
 /// One request line per grid design, as the page sends it — led by the page's opening request
-/// (empty settings = the defaults), which the browser test also reads back off the page.
+/// (empty settings = the defaults), which the browser test also reads back off the page — then the
+/// fly grid, its map lines, and two running-line points.
 pub fn check_requests() -> Vec<String> {
     let mut out = vec![r#"{"op":"run","settings":{}}"#.to_string()];
     out.extend(check_grid().iter().map(|s| jobj! { "op" => "run", "settings" => s.to_json() }.dump_compact()));
+    out.push(r#"{"op":"fly","fly":{}}"#.to_string());       // the page's opening fly point
+    let fly = check_fly_grid();
+    out.extend(fly.iter().map(|s| jobj! { "op" => "fly", "fly" => s.to_json() }.dump_compact()));
+    for m in MapShape::ALL {
+        out.push(jobj! { "op" => "map_lines", "fly" => FlySettings { map: m, ..FlySettings::defaults() }.to_json() }.dump_compact());
+    }
+    for tt4 in [900.0, 1300.0] {
+        out.push(jobj! { "op" => "running_point", "fly" => FlySettings { tt4, ..FlySettings::defaults() }.to_json() }.dump_compact());
+    }
     out
 }

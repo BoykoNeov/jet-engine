@@ -10,6 +10,7 @@
 import { spawn, execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, mkdirSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
+import { join } from 'node:path';
 
 const [page, nativeTxt] = process.argv.slice(2);
 const CHROME = process.env.SANDBOX_CHROME || [
@@ -119,7 +120,75 @@ try {
   const cmp = await ev(`[document.getElementById('perf-delta').textContent, document.getElementById('d-thrust').textContent, document.getElementById('pin-legend').hidden]`);
   check('pin_and_compare_shows_the_change', cmp[0] === 'Change' && /^\+/.test(cmp[1]) && cmp[2] === false, JSON.stringify(cmp));
 
-  // 8. Nothing threw on the page along the way.
+  // 8. FLY IT (slice 3). Back to the opening design, then freeze it: the first fly point is the
+  // design flown at its own point -- the native `{"op":"fly","fly":{}}` -- and lands on 100 % speed.
+  await ev(`document.getElementById('reset').click()`);
+  await waitFor(`window.sandbox.state === 'ran' && window.sandbox.last.nu === undefined`);
+  await ev(`document.getElementById('mode-fly').click()`);
+  const flew = await waitFor(`window.sandbox.view() === 'fly' && window.sandbox.state === 'ran' && window.sandbox.last && window.sandbox.last.nu !== undefined`);
+  const fly0 = await ev('window.sandbox.last');
+  const nativeFly = JSON.parse(readFileSync(nativeTxt, 'utf8').split(/\r?\n/).find(l => l.startsWith('{"op":"fly","fly":{}}')).split('\t')[1]);
+  const e8 = fly0 ? close(fly0, nativeFly) : 'no fly result';
+  check('fly_it_opens_on_the_design_point_and_matches_native', flew && !e8 && Math.abs(fly0.nu - 1) < 1e-9, e8 || `nu ${fly0 && fly0.nu}`);
+  const vis = await ev(`['fly-set','fly-tiles','map-card','cycle-set'].map(i => document.getElementById(i).hidden)`);
+  check('fly_mode_shows_its_knobs_and_hides_the_design', JSON.stringify(vis) === '[false,false,false,true]', JSON.stringify(vis));
+
+  // 9. Throttle back: the shaft slows, and the running line streams onto the map.
+  await ev(`(() => { const a = document.getElementById('fly-Tt4'); a.value = '1200'; a.dispatchEvent(new Event('input')); })()`);
+  const slowed = await waitFor(`window.sandbox.last && window.sandbox.last.fly && window.sandbox.last.fly.Tt4 === 1200`);
+  const nu12 = await ev('window.sandbox.last.nu');
+  const lined = await waitFor(`window.sandbox.line > 8`, 30000);
+  const drawn = await ev(`document.querySelectorAll('#map .rline, #map .stall, #map .speed, #map .now').length`);
+  check('throttle_back_slows_the_shaft_and_draws_the_running_line', slowed && nu12 < 0.95 && lined && drawn >= 8, `nu ${nu12}, line ${await ev('window.sandbox.line')}, drawn ${drawn}`);
+
+  // 10. Below idle: the fly view's own plain words, then recovery.
+  const idle = await ev(`window.sandbox.fly({Tt4: 400})`);
+  const idleText = await ev(`[document.getElementById('bad-title').textContent, document.getElementById('bad-plain').textContent]`);
+  check('below_idle_says_so_in_the_fly_views_words', idle === 'does-not-run' && /does not run here/.test(idleText[0]) && /idle|shaft speed|throttle|Raise Tt4/.test(idleText[1]), JSON.stringify([idle, idleText]));
+  const back = await ev(`window.sandbox.fly({Tt4: 1300})`);
+  check('the_fly_view_recovers_after_a_failure', back === 'ran' && !(await ev(`document.getElementById('bad').classList.contains('show')`)), back);
+
+  // 11. In fly mode the flight knobs move the FLIGHT, never the frozen design.
+  const designBefore = await ev('JSON.stringify(window.sandbox.last.design_point)');
+  await ev(`(() => { const a = document.getElementById('altitude'); a.value = '11000'; a.dispatchEvent(new Event('input')); })()`);
+  // (11 km on the design flight's day, ~2 K below standard: the pressure is not the standard 22 632 Pa,
+  // so read the altitude the result reports, as step 6 does.)
+  const climbed = await waitFor(`window.sandbox.last && window.sandbox.last.fly && Math.abs(window.sandbox.last.ambient.altitude - 11000) < 0.01 && window.sandbox.last.fly.p0 < 23000`);
+  const designAfter = await ev('JSON.stringify(window.sandbox.last.design_point)');
+  const where = await ev(`JSON.stringify([window.sandbox.state, window.sandbox.last.fly, document.getElementById('altitude').value, document.getElementById('bad-plain').textContent])`);
+  check('fly_altitude_moves_the_flight_not_the_design', climbed && designBefore === designAfter, `${climbed} ${where}`);
+
+  if (process.env.SANDBOX_SHOTS) {
+    const { writeFileSync } = await import('node:fs');
+    mkdirSync(process.env.SANDBOX_SHOTS, { recursive: true });
+    const shot = async (name, width, dark) => {
+      await s.send('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 1, mobile: width < 500 });
+      await s.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: dark ? 'dark' : 'light' }] });
+      await sleep(400);
+      const r = await s.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true });
+      writeFileSync(join(process.env.SANDBOX_SHOTS, `${name}.png`), Buffer.from(r.result.data, 'base64'));
+    };
+    await shot('fly-light', 1280, false); await shot('fly-dark', 1280, true); await shot('fly-phone', 390, false);
+    await s.send('Emulation.clearDeviceMetricsOverride'); await s.send('Emulation.setEmulatedMedia', { features: [] });
+  }
+
+  // 12. The slow gas runs when the knob is let go, not per step of a drag.
+  await ev(`(() => { const g = document.getElementById('fly-gas'); g.value = 'equilibrium'; g.dispatchEvent(new Event('change')); })()`);
+  const eq = await waitFor(`window.sandbox.last && window.sandbox.last.fly && window.sandbox.last.fly.gas === 'equilibrium' && window.sandbox.state === 'ran'`, 20000);
+  const n0 = await ev('window.sandbox.last.fly.Tt4');
+  await ev(`(() => { const r = document.getElementById('fly-Tt4-r'); r.value = '1250'; r.dispatchEvent(new Event('input')); })()`);
+  await sleep(1500);
+  const held = await ev('window.sandbox.last.fly.Tt4');
+  await ev(`document.getElementById('fly-Tt4-r').dispatchEvent(new Event('change'))`);
+  const released = await waitFor(`window.sandbox.last.fly.Tt4 === 1250 && window.sandbox.state === 'ran'`, 20000);
+  check('the_slow_gas_runs_on_release', eq && held === n0 && released, `eq ${eq}, held ${held} (was ${n0}), released ${released}`);
+
+  // 13. Back to design: the design result is the opening one exactly -- the fly session changed no design knob.
+  await ev(`document.getElementById('mode-design').click()`);
+  const home = await waitFor(`window.sandbox.view() === 'design' && window.sandbox.state === 'ran' && window.sandbox.last.nu === undefined`, 20000);
+  check('back_to_design_is_the_opening_design', home && JSON.stringify(await ev('window.sandbox.last')) === JSON.stringify(first), 'differs');
+
+  // 14. Nothing threw on the page along the way.
   const thrown = s.events.filter(e => e.method === 'Runtime.exceptionThrown').map(e => e.params.exceptionDetails?.exception?.description || e.params.exceptionDetails?.text);
   check('no_uncaught_errors_on_the_page', thrown.length === 0, thrown.join(' | ').slice(0, 400));
 
