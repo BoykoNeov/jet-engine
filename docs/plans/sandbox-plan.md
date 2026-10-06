@@ -161,6 +161,21 @@ entropy across it mixes heat addition with a change of reference mixture.
 
 ## 9. Decisions for the user
 
+**ANSWERED (user, 2026-10-06):**
+1. **Both, connected to one another.** Built as the aviation convention: *altitude* + *deviation
+   from the standard day*, wired both ways to raw `T0`/`p0` — move altitude and `T0`/`p0` follow
+   the standard atmosphere (plus the deviation); type `p0` and altitude becomes its PRESSURE
+   altitude; type `T0` and the deviation becomes `T0 − T_std(alt)`. The page opens on the panels'
+   design point (250 K, 50 kPa ⇒ ≈5.6 km, ≈−2 K off standard). The standard atmosphere is
+   anchored to the published 1976 table (`docs/plans/sandbox-anchor-atmosphere.md`).
+2. **Realistic** — the page opens on the equilibrium gas.
+3. **Local file only** — no claude.ai publish. § 7's hosting check narrows to `file://`.
+4. **OK** — browser numbers may drift in the last digits; the Node check uses a measured tolerance.
+5. **Include it** — the wasm build + Node check join `rust/test-all.ps1`.
+6. **Doesn't matter, both** — slices 2 (blade speeds) and 3 (off-design) both follow, either order.
+
+The original questions, as asked:
+
 1. **Slice 1's knobs** — is § 4 the right first set? In particular: flight as raw ambient
    temperature + pressure, or a single **altitude** knob (standard atmosphere)? *Recommended:
    altitude, with T0/p0 shown as readouts and an "override" switch.* **Cost:** a standard

@@ -135,6 +135,7 @@
 
 pub mod anti_windup;
 pub mod applied_reference;
+pub mod atmosphere;
 pub mod authority_clock;
 pub mod blade_speed;
 pub mod bleed;
@@ -159,6 +160,7 @@ pub mod panels;
 pub mod pyfmt;
 pub mod reference_split;
 pub mod residual_gauge;
+pub mod sandbox;
 pub mod sensed_cap;
 pub mod shared_actuator;
 pub mod split_wall;
