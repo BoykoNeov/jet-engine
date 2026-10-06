@@ -306,3 +306,4 @@ measured UNUSED, and removed — an unused license is a hole.
 **Printed output unchanged**: `cli_golden` passes — rung 33's 440 / 420 K rows still print
 `SUB-IDLE` (they now fail at the inverse, not the Newton; the label's honesty item in
 `todo-rust-port.md` stays open), and its 480 K row is unchanged. `fingerprint` passes.
+*2026-10-06:* the label item is CLOSED — see `docs/rung33-spec.md` § The SUB-IDLE label.

@@ -167,6 +167,7 @@ Never re-open one, and never re-enumerate them here.
 - **Detailed Fenimore** (`CH+N₂→HCN`) and **super-eq-O radical decay** — need new species / a relaxing pocket.
 - **Reacting-gas fuel control** (35/43 defer — the forward burner asserts against an equilibrium gas).
 - **The subsonic / unchoked LP branch** in the two-spool solves (38 flags, unsolved) and its **transient**.
+- **Rung 33's dispatch floor**: below ~455 K its choked trial leaves the gas tables, ABOVE idle — `docs/rung33-spec.md`.
 - An **ANCHOR for the blading**: a stress / tip-Mach limit pinning `U` externally, or an annulus law `Vx(k)`.
 - **Fuel + bleed + STATOR** on one plant (rung 63's seam, untouched by 64/65).
 - **Rungs 69–84's seams — in each rung's spec, not here.** `n`=4 needs a 4th non-fuel lever or a non-`min` composition; every route TRIED (72–76, 80) is CLOSED.

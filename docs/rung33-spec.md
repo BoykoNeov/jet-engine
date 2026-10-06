@@ -100,7 +100,26 @@ The subsonic branch is a genuine operating regime with **two** boundaries:
   drag (it would windmill, not thrust) — a physical sub-idle limit. The matcher reports SUB-IDLE
   there rather than quoting a negative-thrust point (and rather than tripping the shared `_score`
   efficiency cascade, which degenerates at zero net thrust). At the design flight this is
-  `Tt4 ≈ 440`.
+  `Tt4 ≈ 440` (measured on the reacting gas: +3.8 N·s/kg at 450 K, ≤ 0 at 440 K).
+
+### The SUB-IDLE label — the AUTO-DISPATCH's floor is NOT idle (2026-10-06)
+
+The bounds above are the **subsonic solve's**. The auto-dispatch (`match_point`) runs the
+**choked** solve first and dispatches on its result — and on the production reacting gas that
+choked trial **cannot run below ~455 K**: its turbine bracket starts at `π_t = 0.02`, which asks
+the gas tables for an isentropic `Tt5s` below their 150 K floor (measured on the first pass:
+149.9 / 146.4 / 139.4 K at 450 / 440 / 420 K; at 455 K a later pass, at the converging lean
+`f`, fails instead). So from ~455 K down `match_point` aborts with `inverse: root not
+bracketed` **before reaching the subsonic branch or its thrust guard** — above true idle: the
+450 K point exists (`match_subsonic` gives +3.8 N·s/kg) but the dispatch cannot return it.
+
+`main.py` printed SUB-IDLE for ANY abort, so its 440 / 420 K rows were right by coincidence,
+not by measurement. The Rust panel now labels a row by the GUARD that fired, and on the
+dispatch's table-floor abort it runs `match_subsonic` directly — whose thrust guard does fire
+at 440 / 420 K, so the rows' text is unchanged and a three-line note says how they were
+reached (`tests/cli_golden.rs`'s second re-cut). **The dispatch itself is untouched**: making
+it fall through to the subsonic branch on that abort changes which cells return numbers in the
+oracle gates, so it is booked OPEN, not folded into a label fix.
 
 The window widens at low ram (near-static): lower `pt` unchokes the nozzle at a higher `Tt4`, so
 the whole idle-descent / ground-idle regime lives on this branch — which is exactly where a real

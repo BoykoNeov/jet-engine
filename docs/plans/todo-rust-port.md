@@ -27629,6 +27629,11 @@ construction = `..ComponentMap::default()`, `MapMatcher`'s default map = `flat()
   *2026-10-05:* with the Newton's floor lowered, those rows no longer fail at the equilibrium
   Newton — they fail one step later at `inverse: root not bracketed` (still not a thrust check),
   so the printed text is unchanged and the label item stays OPEN.
+  *2026-10-06 — CLOSED:* the user chose to relabel. The inverse is the dispatch's CHOKED trial
+  leaving the gas tables (150 K floor) from ~455 K down — ABOVE idle (450 K has +3.8 N·s/kg on the
+  subsonic solve). The panel now labels a row by the guard that fired and, on that abort, runs
+  `match_subsonic` directly, whose thrust guard fires at 440 / 420 K; `cli_golden`'s second re-cut
+  adds a three-line note. The dispatch's own floor is booked OPEN in `CLAUDE.md` (`docs/rung33-spec.md`).
 * **Rung 34 calls `ramp_excursion(…, r=5)` twice** (the table row, then the summary line). The
   port reuses the loop's value — the same deterministic call on the same inputs, so the bytes
   cannot differ; it saves one RK4 march. And Python builds an `OffDesignMatcher` `base` in

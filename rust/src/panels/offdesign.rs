@@ -12,7 +12,7 @@ use crate::combustor::{CombustorTransient, Theta0};
 use crate::engine::build_turbojet;
 use crate::gas::{Gas, GasSpec};
 use crate::map::{ComponentMap, MapMatcher};
-use crate::matcher::{OffDesignMatcher, OffDesignResult};
+use crate::matcher::OffDesignMatcher;
 use crate::spool::SpoolTransient;
 use crate::pyf;
 use crate::pyfmt::Printer;
@@ -134,17 +134,39 @@ pub fn subsonic_matching_table(p: &mut Printer, d: &Design) {
     p.print(pyf!("\n  Running line across the boundary (M0={}); branch is auto-dispatched:", flight.m0));
     p.print(pyf!("  {:>7} {:>9} {:>7} {:>9} {:>7} {:>8} {:>7}", "Tt4 [K]", "branch", "pi_c", "tau_t", "M9", "F/mdot", "pt9/p0"));
     p.print(format!("  {}", dashes(60)));
+    let mut ran_direct = false;
     for tt4 in [700.0, 600.0, 560.0, 520.0, 480.0, 440.0, 420.0] {
-        // Python's `try: … except AssertionError` — the sub-idle `assert!` unwinds here, as in
+        // Python's `try: … except AssertionError` — the abort `assert!`s unwind here, as in
         // `anti_windup::try_windup_march` (the panic hook is left alone: stderr noise only).
-        let od: Option<OffDesignResult> =
-            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| m.match_point(flight, tt4))).ok();
+        //
+        // THE LABEL IS READ OFF THE GUARD THAT FIRED, NOT OFF "IT PANICKED". Python printed
+        // SUB-IDLE for any abort, and at 440 / 420 K the abort is not a thrust check at all: the
+        // dispatch's CHOKED trial runs first, and its turbine bracket (pi_t from 0.02) asks the
+        // gas tables for a temperature below their 150 K floor — measured 146 / 139 K — so the
+        // subsonic branch, and its thrust guard, are never reached. On that one failure the
+        // subsonic solve is run DIRECTLY, and its own guard decides the row.
+        let od = match catch_abort(|| m.match_point(flight, tt4)) {
+            Err(e) if e.contains("inverse: root not bracketed") => {
+                ran_direct = true;
+                catch_abort(|| m.match_subsonic(flight, tt4))
+            }
+            r => r,
+        };
         match od {
-            Some(od) => p.print(pyf!("  {:>7.0f} {:>9} {:>7.3f} {:>9.6f} {:>7.4f} {:>8.1f} {:>7.3f}",
-                                     tt4, od.branch.label(), od.pi_c, od.tau_t, od.m9,
-                                     od.performance.specific_thrust, od.station("9").pt / flight.p0)),
-            None => p.print(pyf!("  {:>7.0f} {:>9}  (net thrust <= 0: below thrust-neutral idle)", tt4, "SUB-IDLE")),
+            Ok(od) => p.print(pyf!("  {:>7.0f} {:>9} {:>7.3f} {:>9.6f} {:>7.4f} {:>8.1f} {:>7.3f}",
+                                   tt4, od.branch.label(), od.pi_c, od.tau_t, od.m9,
+                                   od.performance.specific_thrust, od.station("9").pt / flight.p0)),
+            Err(e) if e.contains("has net thrust <= 0") =>
+                p.print(pyf!("  {:>7.0f} {:>9}  (net thrust <= 0: below thrust-neutral idle)", tt4, "SUB-IDLE")),
+            Err(e) if e.contains("does not bracket") =>
+                p.print(pyf!("  {:>7.0f} {:>9}  (no self-sustaining subsonic operating point)", tt4, "NO MATCH")),
+            Err(e) => p.print(pyf!("  {:>7.0f} {:>9}  ({})", tt4, "NO MATCH", e)),
         }
+    }
+    if ran_direct {
+        p.print("  (The 440/420 rows ran the subsonic solve DIRECTLY: from ~455 K down, the auto-dispatch's");
+        p.print("  choked trial asks the gas tables for T < 150 K and aborts BEFORE any thrust check — so");
+        p.print("  SUB-IDLE above is the subsonic branch's own thrust guard, not the dispatch's abort.)");
     }
 
     let (g, cp) = (1.3, 1239.0);
@@ -161,6 +183,17 @@ pub fn subsonic_matching_table(p: &mut Printer, d: &Design) {
     p.print("  drove rung 31's 2nd-order drift. So it SURVIVES CPG: the exact inversion of rung 31.");
     p.print("  (Coupling is to pi_c via pt9/p0, NOT ambient p0 — the cycle is pressure-homogeneous.)");
     p.print("  Envelope: bounded ABOVE by nozzle-unchoke, BELOW by thrust-neutral idle. Cycle: rung-6 exact.");
+}
+
+/// Run `f`, turning an abort `assert!` into its message (the first line only — the guards'
+/// messages are one sentence each).
+fn catch_abort<T>(f: impl FnOnce() -> T) -> Result<T, String> {
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)).map_err(|e| {
+        let s = e.downcast_ref::<String>().cloned()
+            .or_else(|| e.downcast_ref::<&str>().map(|s| s.to_string()))
+            .unwrap_or_default();
+        s.lines().next().unwrap_or("").to_string()
+    })
 }
 
 /// `SpoolTransient(build_turbojet(Gas.thermally_perfect(), PI_C, TT4, flight.p0,

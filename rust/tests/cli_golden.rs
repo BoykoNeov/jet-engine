@@ -27,17 +27,37 @@ const SEGMENTS: &str = include_str!("../oracle/main_segments.tsv");
 /// rungs 78–84 — every `print_*` panel; 86 after AR: `plot_ts_diagram`'s line, RE-CUT below).
 const PORTED: usize = 86;
 
-/// **The one segment the port changes ON PURPOSE** (slice AR, `docs/plans/todo-rust-port.md`
-/// § 8.9). `main.py` drew `ts_diagram.png` and said so; the Rust CLI computes the chart's DATA and
-/// writes `ts_diagram.json`, and `plot_ts_diagram.py` draws the PNG (byte-identical to the one
-/// `main.py` drew — checked when AR shipped). Printing the old line would name a file this binary
-/// never writes. The golden is NOT edited (it stays the PyPy capture, fingerprint and all): the
-/// gate holds the golden's segment to the OLD text exactly, and the panel to the NEW one.
-const RECUT: (&str, &str, &str) = (
-    "plot_ts_diagram",
-    "\nT–s diagram (ideal vs real) written to ts_diagram.png\n",
-    "\nT–s diagram data (ideal vs real) written to ts_diagram.json; draw it with: python plot_ts_diagram.py\n",
-);
+/// **The segments the port changes ON PURPOSE.** The golden is NOT edited (it stays the PyPy
+/// capture, fingerprint and all): each entry names a segment, a piece of its OLD text that must
+/// occur in it EXACTLY ONCE, and the NEW text the panel prints in its place — every other byte of
+/// the segment is still held to the golden.
+///
+/// * Slice AR (`docs/plans/todo-rust-port.md` § 8.9) — `main.py` drew `ts_diagram.png` and said
+///   so; the Rust CLI computes the chart's DATA and writes `ts_diagram.json`, and
+///   `plot_ts_diagram.py` draws the PNG (byte-identical to the one `main.py` drew — checked when AR
+///   shipped). Printing the old line would name a file this binary never writes.
+/// * Rung 33's table (2026-10-06, `docs/rung33-spec.md` § The SUB-IDLE label) — Python printed
+///   SUB-IDLE on ANY abort, and its 440 / 420 K rows aborted in the dispatch's choked trial (the
+///   gas tables' 150 K floor), before any thrust check. The panel now runs the subsonic solve
+///   directly there and labels the row by the guard that fired; the rows' text is unchanged (the
+///   thrust guard DOES fire), and a three-line note says how they were reached.
+const RECUTS: &[(&str, &str, &str)] = &[
+    (
+        "plot_ts_diagram",
+        "\nT–s diagram (ideal vs real) written to ts_diagram.png\n",
+        "\nT–s diagram data (ideal vs real) written to ts_diagram.json; draw it with: python plot_ts_diagram.py\n",
+    ),
+    (
+        "print_subsonic_matching_table",
+        "      420  SUB-IDLE  (net thrust <= 0: below thrust-neutral idle)\n",
+        concat!(
+            "      420  SUB-IDLE  (net thrust <= 0: below thrust-neutral idle)\n",
+            "  (The 440/420 rows ran the subsonic solve DIRECTLY: from ~455 K down, the auto-dispatch's\n",
+            "  choked trial asks the gas tables for T < 150 K and aborts BEFORE any thrust check — so\n",
+            "  SUB-IDLE above is the subsonic branch's own thrust guard, not the dispatch's abort.)\n",
+        ),
+    ),
+];
 
 struct Segment {
     name: String,
@@ -90,16 +110,20 @@ fn the_segments_tile_the_golden_in_main_order() {
 fn every_ported_panel_reproduces_its_segment_exactly() {
     let segs = segments();
     assert_eq!(PANELS.len(), PORTED, "a panel was ported or dropped without moving the pin");
+    for (name, _, _) in RECUTS {
+        assert!(segs.iter().any(|s| s.name == *name), "the re-cut names no segment: {name}");
+    }
     let design = Design::new();
     for (i, ((name, panel), seg)) in PANELS.iter().zip(&segs).enumerate() {
         assert_eq!(*name, seg.name, "step {i}: the port's order is not main()'s");
         let mut p = Printer::new();
         panel(&mut p, &design);
-        let mut want = &GOLDEN[seg.start..seg.end];
-        if *name == RECUT.0 {
-            assert_eq!(want, RECUT.1, "the re-cut segment is no longer the line it replaces");
-            want = RECUT.2;
+        let mut want = GOLDEN[seg.start..seg.end].to_string();
+        for (_, old, new) in RECUTS.iter().filter(|r| r.0 == *name) {
+            assert_eq!(want.matches(old).count(), 1, "step {i} ({name}): the re-cut text is not in its segment exactly once");
+            want = want.replace(old, new);
         }
+        let want = want.as_str();
         let got = p.as_str();
         if got != want {
             let line = want.lines().zip(got.lines()).position(|(a, b)| a != b);
