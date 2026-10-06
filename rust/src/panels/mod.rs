@@ -77,6 +77,21 @@ impl Default for Design {
 /// One `main()` step: a `print_*` call, or a line `main()` prints itself.
 pub type Panel = fn(&mut Printer, &Design);
 
+/// **The panels BORN IN RUST** — rung 85 on. They have no segment in the Python golden, so each
+/// is held instead to its own capture in `rust/oracle/rust_owned/<name>.txt`, written ONLY by
+/// `cargo run --release -- panel <name> --write`.
+///
+/// **What that capture certifies, and what it cannot.** It was taken from the very code it
+/// checks, so a pass means "the text has not moved since the capture" — a CHANGE detector, never
+/// a correctness oracle. A panel's numbers are right only by its rung's own tests
+/// (`tests/rungN.rs`), held to values that did NOT come from this code.
+///
+/// Declared here by NAME, not inferred from "absent from the Python segments": inferring would let
+/// a mistyped Python panel name pass as a new panel against a fresh capture of itself. Each name
+/// must sit in [`PANELS`] exactly once, in the contiguous block just before the chart line, and in
+/// no Python segment (`tests/cli_golden.rs`).
+pub const RUST_OWNED: &[&str] = &[];
+
 /// `main()`'s calls, in order, each named as the golden's segment file names it (a `print_*`
 /// function's name, or `main:<what>` for text `main()` prints inline).
 pub const PANELS: &[(&str, Panel)] = &[

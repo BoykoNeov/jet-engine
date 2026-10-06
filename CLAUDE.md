@@ -220,7 +220,8 @@ tag **`python-final`** keeps it, and every `engine.py:N` / `test_rungN.py` citat
 ## Commands
 From the repo root; every `cargo` command takes `--manifest-path rust/Cargo.toml` (or run in `rust/`).
 - Run the model: `cargo run --release` (writes `ts_diagram.json` HERE) · chart: `python plot_ts_diagram.py`.
-  Chart data alone: `-- ts-diagram`; the pages: `-- visuals` / `-- splice`.
+  Chart data alone: `-- ts-diagram`; the pages: `-- visuals` / `-- splice`; one panel:
+  `-- panel NAME` (`--write` captures a Rust-owned panel's golden, `rust/oracle/rust_owned/`).
 - **The gate: `powershell -File rust\test-all.ps1`** — **EVERYTHING** (`cargo test --release`'s
   2002 tests, 192 programs) run 8 at a time, all below-normal: **~16 min**, + ~4 min rebuild after a
   `src/` change. Plain `cargo test --release` runs them one by one (80 min). Nothing is deselected.

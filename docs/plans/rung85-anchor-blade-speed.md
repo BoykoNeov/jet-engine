@@ -196,7 +196,7 @@ first decision ("both walls, whichever binds") to the DESIGN point, where it sta
 | D3 vacuity condition | **SETTLED** — registered; does not fire at `M0` = 0.85 (airflow binds the design in every cell, § 0 P-B and § 6 P-C') |
 | D4 the experiment | **SETTLED (rewritten)** — the user's roles decision above |
 | D5 | retracted |
-| D6 the panel | **OPEN** — the golden's meaning for the panel count is settled in its own commit, before the physics |
+| D6 the panel | **SETTLED 2026-10-06** — `RUST_OWNED` in `panels/mod.rs`, `rust/oracle/rust_owned/<name>.txt` via `-- panel NAME --write`; `PORTED` stays 86 (Python-backed), a second pin counts Rust-owned; a CHANGE detector only |
 
 - **D1 — integer `K`.** `K = ceil(…)` puts the design BELOW the wall by a rounding gap that jumps
   as any input moves (rung 84's staircase). Proposal: every verdict is quoted at the INTEGER `K`

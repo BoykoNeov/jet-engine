@@ -15,11 +15,15 @@
 //! * `splice [DIR]` — `build.py` + `build_cutaway.py` alone: re-splice both pages from the
 //!   committed `data.json` (a template-only edit needs no model run).
 //! * `ts-diagram` — write `ts_diagram.json` alone, without the ~10-minute panel run.
+//! * `panel NAME [--write]` — run the panel(s) named `NAME` alone and print them. With `--write`
+//!   the one panel must be [`RUST_OWNED`], and its text is written to
+//!   `rust/oracle/rust_owned/NAME.txt` — the ONLY way that capture is made (the file is written
+//!   here, byte for byte, so no shell redirect can re-encode it).
 
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use turbojet::panels::{Design, PANELS, TS_DIAGRAM_JSON};
+use turbojet::panels::{Design, PANELS, RUST_OWNED, TS_DIAGRAM_JSON};
 use turbojet::pyfmt::Printer;
 use turbojet::visuals;
 
@@ -89,8 +93,46 @@ fn main() {
             write_ts_diagram(&Design::new());
             println!("T–s diagram data (ideal vs real) written to {TS_DIAGRAM_JSON}");
         }
+        Some("panel") => {
+            let name = args.get(1).map(String::as_str).unwrap_or_else(|| {
+                eprintln!("usage: panel NAME [--write]");
+                std::process::exit(2);
+            });
+            let write_it = match args.get(2).map(String::as_str) {
+                None => false,
+                Some("--write") => true,
+                Some(other) => {
+                    eprintln!("unknown option {other:?}; expected `--write`");
+                    std::process::exit(2);
+                }
+            };
+            let hits: Vec<_> = PANELS.iter().filter(|(n, _)| *n == name).collect();
+            if hits.is_empty() {
+                eprintln!("no panel named {name:?}");
+                std::process::exit(2);
+            }
+            if write_it && !RUST_OWNED.contains(&name) {
+                eprintln!("{name:?} is not a Rust-owned panel; only those have a capture to write");
+                std::process::exit(2);
+            }
+            let design = Design::new();
+            let mut printer = Printer::new();
+            for (_, panel) in hits {
+                panel(&mut printer, &design);
+            }
+            let text = printer.take();
+            if write_it {
+                let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("oracle").join("rust_owned");
+                std::fs::create_dir_all(&dir).unwrap_or_else(|e| panic!("cannot create {}: {e}", dir.display()));
+                let path = dir.join(format!("{name}.txt"));
+                write(&path, &text);
+                println!("{} bytes -> {}", text.len(), path.display());
+            } else {
+                std::io::stdout().write_all(text.as_bytes()).expect("stdout closed");
+            }
+        }
         Some(other) => {
-            eprintln!("unknown subcommand {other:?}; expected none, `visuals [DIR]`, `splice [DIR]` or `ts-diagram`");
+            eprintln!("unknown subcommand {other:?}; expected none, `visuals [DIR]`, `splice [DIR]`, `ts-diagram` or `panel NAME [--write]`");
             std::process::exit(2);
         }
     }
