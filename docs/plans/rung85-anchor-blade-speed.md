@@ -380,16 +380,40 @@ who rounds `K` up keeps the blades near their limit and loads each row LIGHTER i
   ```
       ψ(φ, v_d + v')/r  =  1 − (σ/r)·u² − l'·u − v'(1+l')·φ,      1 + l' = (1+l)/r
   ```
-  — exactly the shipped form with `σ' = σ/r`, `l' = (1+l)/r − 1`. **So no map, stage or matcher
-  code changes:** rung 85 hands the shipped plants a reshaped `ComponentMap`, and every lever's `v`
-  is the travel FROM design (`v_max` stays travel). The η island reads `(φ, n)` only — untouched.
+  — exactly the shipped form with `σ' = σ/r`, `l' = (1+l)/r − 1`. (`σ' = σ/r` assumes the non-Euler
+  curvature is fixed in ABSOLUTE work units, so renormalising on the lighter design work scales it
+  — disclosed.) **So no SOLVER code changes** — rung 85 hands the shipped plants a reshaped
+  `ComponentMap`, and every lever's `v` is the travel FROM design (`v_max` stays travel). The η
+  island reads `(φ, n)` only — untouched. **But the map's `vsv` field now means TRAVEL, and every
+  reader that treats it as a PHYSICAL angle is named here (searched, 2026-10-06):** (i) the
+  incidence margins `tan_beta1 = 1/φ − v` against `T_c = 1/φ_surge` (`map.rs:376–388`; rungs 53/55)
+  are CONSISTENT in travel — blade-relative stall, below; (ii) rung 54's throat law
+  `throat_ratio = 1/sqrt(1+v²)` (`map.rs:451`, `stator.rs` `throat_margin`, `stage.rs`
+  `stage_throat_margin`) is WRONG at `v_d ≠ 0` (and already at `Φ_d ≠ 1`, § 6) — **rung 85 never
+  calls it**: no capacity plant is run (rung 56's was never scored, § 4); rung 85 computes its own
+  DESIGN capacity from the absolute front-row Mach, `C = MFP(M_abs)/MFP(1)`,
+  `M_abs = sqrt(Vx² + Vθ²)/a` (the turned throat passes `|V|`, and `o/s = cos α` cancels against
+  `|V| = Vx/cos α`); a design with `M_abs ≥ 1` is REPORTED as unbuildable (a `Result`), never a
+  panic; (iii) the tip-Mach reading (A11) and any printed incidence are rung-85 code and take
+  `v_d + v'` explicitly, physical tangent `(v_d + v')/Φ_d`; (iv) the incidence-referenced transient
+  loops (`stator_transient.rs:279`, `reference_split.rs`) are not run by rung 85.
   The surge line `φ_surge` is untouched IF stall sits at a fixed incidence increment above the
   blade's own design incidence (the blade is designed for its design inlet angle): then
   `1/φ_s = 1 + Δ·Φ_d` for any `v_d`, and every incidence margin in `v'` is the `v_d = 0` one.
   Disclosed, not derived. `Φ_d` still enters nothing but sizing/readouts (A2 survives).
-* **A10 — reduce.** `λ = 0` ⇒ `r = 1` ⇒ the SHIPPED map object, not a recomputed `(1+l)/1 − 1`
-  (which is not bit-safe for every `l`): the code branches on `λ == 0`. Every § 4.1 bar is read
-  at `λ = 0` and is unmoved by this amendment.
+* **A10 — reduce.** `r == 1.0` ⇒ the SHIPPED map object, not a recomputed `(1+l)/1 − 1`
+  (which is not bit-safe for every `l`): the code branches on `r == 1.0`, which covers `λ = 0` AND
+  an exactly-integer `K*`. Every § 4.1 bar is read at `λ = 0` and is unmoved by this amendment.
+* **A12 — one knob PER SPOOL, `(λ_L, λ_H)`.** Each spool's sizing is its own; the pair matters
+  through rung 39's HP→LP arrow. The Q-bars below set both equal.
+* **A13 — `K = 1` takes no floor.** There `r = K*` (when `K* < 1`) is unbounded below and `l'`
+  grows without limit. **Probed pre-code** (scratch crate outside the repo, 2026-10-06; it read
+  ONLY converged/aborted and `phi_max`, no lever, no schedule, no Q quantity): bare lumped
+  (rung 53 core) and stack matches (rung 55, `K` = (1,1) and (2,4)) CONVERGE at all four
+  `Tt4` ∈ {1500, 1300, 1100, 1000} for `r` = 0.695/0.760 (the worst default cell) and for
+  `r` ∈ {0.8 … 0.1} (`l'` up to 16/19; `phi_max` stays > 1.04). So the solvers need no limit on
+  `λ`; `r` and the design pre-swirl angle are READOUTS, and a single row doing a tenth of the
+  unswirled work is shown, not refused. A lever schedule the steep map cannot reach falls to V1.
 * **A11 — the design-point readings with pre-swirl.** Uniform absolute inlet angle across the
   span (`Vθ = Vx·tan α₁ = U_m·v_d` at every radius — disclosed); static `T = Tt − (Vx² + Vθ²)/2cp`;
   relative tangential at the tip `U_tip − Vθ`. So at `λ > 0` the design relative tip Mach sits
@@ -402,14 +426,19 @@ who rounds `K` up keeps the blades near their limit and loads each row LIGHTER i
 | # | prediction | bar |
 |---|---|---|
 | **Q0** | *no credit — identity:* at `λ = 1` the redline is § 6.2's **`R` at `K*`** column (the blades sit at the wall tip speed) | the 12 default-shape cells equal § 6.2's printed `R at K*` digits to the print's 3 decimals — the printed digits typed into the test, never recomputed |
-| **Q1** | the redline falls **monotonically** in `λ` and is **smooth in `M_rel,lim` at `λ = 1`** — the staircase moves into `K` (and `r`) only | `R(λ)` strictly decreasing over `λ ∈ {0, 0.5, 1}` in every cell with `K > K*`; at `λ = 1` the three LP `h` = 0.7 cells give three DIFFERENT `R` (1.830 / 1.707 / 1.601), where `λ = 0` gave one |
-| **Q2** | the lumped stator's speed bill **RISES** with `λ` — the reshaped map is steeper (`l' > l`), and rung 55 measured a steeper `l` (`tilted`) costing more (+88.79 % vs +66.73 %) | LP lumped schedule at `Tt4` = 1000, default shape: `N_L/N_L,d` strictly increasing over `λ ∈ {0, 0.5, 1}` in every LP cell where all three are reached |
-| **Q3** | **the two effects compound into a crossing on the default shape**: lower redline (Q1) and bigger bill (Q2) | at `λ = 1`, `Tt4` = 1000, the LP lumped schedule crosses the tightest LP cell (`h` = 0.5, `M_rel,lim` = 1.5, `R` = **1.286**), which at `λ = 0` it does not (1.260 < 1.395) |
+| **Q1** | *no credit — by construction:* `U_λ` is linear in `λ` and `R ∝ 1/U_tip,λ`, so `R` falls strictly in `λ` wherever `K > K*`, and at `λ = 1` it is smooth in `M_rel,lim` (Q0's digits) | gated as a regression only |
+| **Q2** | the lumped stator's speed bill **RISES** with `λ` — the reshaped map is steeper (`l' > l`), and rung 55 measured a steeper `l` (`tilted`) costing more (+88.79 % vs +66.73 %) | LP lumped schedule at `Tt4` = 1000, default shape: `N_L/N_L,d` strictly increasing over `λ ∈ {0, 0.5, 1}` in every LP cell. **VOID unless all six LP cells are reached at all three `λ`** (a steep map leaving none reached must not pass by checking nothing) |
+| **Q3** | **the far cell**: the LP lumped bill at the steepest default cell (`h` = 0.7, `M_rel,lim` = 1.5: `r` = 1.39/2 = 0.695, `l'` = 1.446) against its own `λ = 1` redline **1.601** | at `λ = 1`, `Tt4` = 1000: `N_L/N_L,d` ∈ **[1.60, 2.60]**, point **2.09** — rung 55's two published shapes extrapolated LINEARLY in `l` (`0.7557 × (1.6673 + 0.746 × 1.4707)`), five times further out than the span they were measured over. Both outcomes named, as P1: above 1.601 the far cell crosses; below, the steep map saturates the lever's bill |
+
+**Moved to no-credit before any code (advisor, 2026-10-06):** the draft Q3 — *"at `λ = 1` the LP
+lumped schedule crosses the `h` = 0.5, `M_rel,lim` = 1.5 cell (`R` 1.286)"*. That cell has
+`r` = 1.70/2 = 0.85, so `l'` = **1.0** (the draft cited the OTHER cell's 1.45); rung 55's `tilted`
+already runs `l` = 0.85 at bill ≈ 0.7557 × 1.8879 ≈ **1.43** > 1.286 (A4's own estimate), so a
+crossing there follows from published numbers plus monotonicity in `l` — settled, not predicted.
 
 V1 applies to Q2/Q3 unchanged (a schedule the steeper map cannot reach is read along its scan).
-Q3 is the riskiest: § 4.0's 1.260 sits only 2 % under 1.286, but rung 55's `l`-dependence was
-measured at ONE other slope, and `l'` here reaches ~1.45 (cell `h` = 0.7, `M_rel,lim` = 1.5:
-`r` = 1.39/2) — far outside it.
+Q3 is the riskiest: its point is an extrapolation in `l` from a 0.15-wide span to 0.75 beyond it,
+across a `σ` that also moves (0.1 → 0.144).
 
 ## 6. THE USER'S DECISION ON P-C, AND THE DERIVATION IT NEEDS (2026-10-06)
 
