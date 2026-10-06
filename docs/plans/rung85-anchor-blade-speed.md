@@ -18,7 +18,10 @@ was found already decided by published numbers, the other way, and moved to § 4
 **Amended the same day, still pre-code (§ 4.4):** the user's SANDBOX decision retires the
 ship-or-NEGATIVE gate — rung 85 ships as knobs, all five shapes equal — and five bar defects the
 advisor found are fixed (P0 by path, P3's grid, P7 on each shape's own redlines in § 6.3, P8's
-identity, the bare-speed note). Next: D6 (the Rust-owned golden, its own commit), then code.
+identity, the bare-speed note). **§ 4.5 (same day, pre-code):** the user's ROUNDING knob `λ` —
+the D1 gap absorbed by blade speed (`λ` = 0, § 4.1's machine) or by lighter row loading (`λ` = 1),
+derived as a reshaped map of the shipped family; Q0–Q3 registered. Next: D6 (the Rust-owned
+golden, its own commit), then code.
 Probes: plain arithmetic on the shipped design numbers (rung 56's CPG rig, `cp` = 1004 exactly, so
 `Δh = cp·ΔT` IS the model's own enthalpy there; default shape `flow/press`, `l` = 0.7 LP / 1.0 HP).
 
@@ -353,6 +356,60 @@ where an item here supersedes it.
 * **A7 — the table's record.** § 6.2/§ 6.3 were computed by a throwaway script outside the repo
   (the repo carries no Python model). **The conventions paragraph is the record**; the rung's Rust
   code recomputes the table, and a test pins its 12 default-shape cells to the printed digits.
+
+### 4.5 AMENDMENT — 2026-10-06, after commit `4d4244b`, BEFORE ANY CODE: the ROUNDING knob `λ`
+
+**The user's decision:** *"make it closer to reality, maybe don't round so much"* — then, offered
+four routes, a KNOB choosing how the rounding gap of D1 is absorbed. `K` stays an integer (a real
+machine has whole rows); what was unrealistic is that the ONLY absorber was blade SPEED. A designer
+who rounds `K` up keeps the blades near their limit and loads each row LIGHTER instead.
+
+* **A8 — the knob `λ ∈ [0, 1]`.** `K = ceil(K*)` exactly as § 6.2 (from the zero-swirl wall, so `K`
+  does not depend on `λ`). Then the design mean speed is moved `λ` of the way from the speed-absorb
+  value to the wall:
+  ```
+      U_0 = sqrt(Δh(1+l)/K)            (§ 6.2's U_d — λ = 0, today's machine)
+      U_λ = U_0 + λ·(U_wall − U_0)     (λ = 1: the blades AT the zero-swirl wall speed)
+      r   = (U_0/U_λ)²  ∈ ((K−1)/K, 1]   the row's design work, relative to the unswirled row
+  ```
+  and the leftover is taken by a DESIGN pre-swirl on every row, `v_d = (1 − r)/(1+l)` (map units;
+  physical angle `atan(v_d/Φ_d)` — a readout).
+* **A9 — the derivation: a design pre-swirl IS a reshaped map of the SAME family.** Write the lever
+  as travel from the new design setting, `v = v_d + v'`, and renormalise on the new design work
+  `ψ(1, v_d) = r`. From the shipped `ψ = 1 − σu² − l·u − v(1+l)φ` (`u = φ − 1`):
+  ```
+      ψ(φ, v_d + v')/r  =  1 − (σ/r)·u² − l'·u − v'(1+l')·φ,      1 + l' = (1+l)/r
+  ```
+  — exactly the shipped form with `σ' = σ/r`, `l' = (1+l)/r − 1`. **So no map, stage or matcher
+  code changes:** rung 85 hands the shipped plants a reshaped `ComponentMap`, and every lever's `v`
+  is the travel FROM design (`v_max` stays travel). The η island reads `(φ, n)` only — untouched.
+  The surge line `φ_surge` is untouched IF stall sits at a fixed incidence increment above the
+  blade's own design incidence (the blade is designed for its design inlet angle): then
+  `1/φ_s = 1 + Δ·Φ_d` for any `v_d`, and every incidence margin in `v'` is the `v_d = 0` one.
+  Disclosed, not derived. `Φ_d` still enters nothing but sizing/readouts (A2 survives).
+* **A10 — reduce.** `λ = 0` ⇒ `r = 1` ⇒ the SHIPPED map object, not a recomputed `(1+l)/1 − 1`
+  (which is not bit-safe for every `l`): the code branches on `λ == 0`. Every § 4.1 bar is read
+  at `λ = 0` and is unmoved by this amendment.
+* **A11 — the design-point readings with pre-swirl.** Uniform absolute inlet angle across the
+  span (`Vθ = Vx·tan α₁ = U_m·v_d` at every radius — disclosed); static `T = Tt − (Vx² + Vθ²)/2cp`;
+  relative tangential at the tip `U_tip − Vθ`. So at `λ > 0` the design relative tip Mach sits
+  BELOW `M_rel,lim` — a reading. **Concession:** a real designer would spend that margin on still
+  more speed; this model holds the blades at the ZERO-swirl wall (conservative on the redline).
+  Lighter loading changes no efficiency here (η reads `(φ, n)` only) — also a concession.
+
+**Predictions for `λ` (registered now; scored in the spec beside § 4.1):**
+
+| # | prediction | bar |
+|---|---|---|
+| **Q0** | *no credit — identity:* at `λ = 1` the redline is § 6.2's **`R` at `K*`** column (the blades sit at the wall tip speed) | the 12 default-shape cells equal § 6.2's printed `R at K*` digits to the print's 3 decimals — the printed digits typed into the test, never recomputed |
+| **Q1** | the redline falls **monotonically** in `λ` and is **smooth in `M_rel,lim` at `λ = 1`** — the staircase moves into `K` (and `r`) only | `R(λ)` strictly decreasing over `λ ∈ {0, 0.5, 1}` in every cell with `K > K*`; at `λ = 1` the three LP `h` = 0.7 cells give three DIFFERENT `R` (1.830 / 1.707 / 1.601), where `λ = 0` gave one |
+| **Q2** | the lumped stator's speed bill **RISES** with `λ` — the reshaped map is steeper (`l' > l`), and rung 55 measured a steeper `l` (`tilted`) costing more (+88.79 % vs +66.73 %) | LP lumped schedule at `Tt4` = 1000, default shape: `N_L/N_L,d` strictly increasing over `λ ∈ {0, 0.5, 1}` in every LP cell where all three are reached |
+| **Q3** | **the two effects compound into a crossing on the default shape**: lower redline (Q1) and bigger bill (Q2) | at `λ = 1`, `Tt4` = 1000, the LP lumped schedule crosses the tightest LP cell (`h` = 0.5, `M_rel,lim` = 1.5, `R` = **1.286**), which at `λ = 0` it does not (1.260 < 1.395) |
+
+V1 applies to Q2/Q3 unchanged (a schedule the steeper map cannot reach is read along its scan).
+Q3 is the riskiest: § 4.0's 1.260 sits only 2 % under 1.286, but rung 55's `l`-dependence was
+measured at ONE other slope, and `l'` here reaches ~1.45 (cell `h` = 0.7, `M_rel,lim` = 1.5:
+`r` = 1.39/2) — far outside it.
 
 ## 6. THE USER'S DECISION ON P-C, AND THE DERIVATION IT NEEDS (2026-10-06)
 
