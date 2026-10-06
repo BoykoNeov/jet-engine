@@ -43,6 +43,11 @@ powershell -File rust\sandbox-wasm\build.ps1
 
 then commit the page. The gate fails while it is stale.
 
+**Expected red, not a broken model:** the "page is current" check compares the browser build's
+BYTES, and those carry the compiler version and the source files' absolute paths (in the model's
+crash messages). After a `rustup update`, or with the repo checked out somewhere else, the gate goes
+red until the page is rebuilt and committed — the numbers have not changed.
+
 ## What binds the page to the model
 
 - `tests/sandbox.rs` — the sandbox reproduces the CLI's design runs **bit for bit**; its T–s points

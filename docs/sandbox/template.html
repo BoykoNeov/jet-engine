@@ -264,6 +264,13 @@ async function ask(text) {
   }
 }
 async function start(b) { bytes = b; await fresh(); }
+// ONE REQUEST AT A TIME, in order. After a trap, ask() awaits fresh(); without this chain a request
+// already queued would run during that await on the trapped instance (ex not yet replaced) -- e.g. a
+// slider dragged into a failing design and straight back out. A trapped instance often still answers
+// correctly, so no test is expected to catch the race: the order has to be structural.
+let chain = Promise.resolve();
+function inOrder(job) { const p = chain.then(job); chain = p.catch(() => {}); return p; }
+const askInOrder = text => inOrder(() => ask(text));
 `;
 
 function wasmBytes() {
@@ -278,11 +285,11 @@ async function makeModel() {
   const bytes = wasmBytes();
   try {
     const src = RUNNER + `
-onmessage = async (ev) => {
+onmessage = (ev) => inOrder(async () => {
   const { id, text, bytes: b } = ev.data;
   if (b) { try { await start(b); postMessage({ id, ready: true }); } catch (e) { postMessage({ id, failed: String(e) }); } return; }
   postMessage({ id, ...(await ask(text)) });
-};`;
+});`;
     const w = new Worker(URL.createObjectURL(new Blob([src], { type: "text/javascript" })));
     let next = 0; const waiting = new Map();
     w.onmessage = ev => { const f = waiting.get(ev.data.id); if (f) { waiting.delete(ev.data.id); f(ev.data); } };
@@ -291,9 +298,9 @@ onmessage = async (ev) => {
     if (!ok.ready) throw new Error(ok.failed);
     return { mode: "worker", ask: text => send({ text }) };
   } catch (e) {
-    const local = new Function(RUNNER + "; return { start, ask };")();
+    const local = new Function(RUNNER + "; return { start, askInOrder };")();
     await local.start(bytes);
-    return { mode: "page (" + e.message + ")", ask: text => local.ask(text) };
+    return { mode: "page (" + e.message + ")", ask: text => local.askInOrder(text) };
   }
 }
 

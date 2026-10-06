@@ -53,6 +53,7 @@ function close(a, b, path = '') {
   return a === b ? null : `${path}: ${JSON.stringify(a)} vs ${JSON.stringify(b)}`;
 }
 
+let version = null;     // read as soon as the port is up, so the finally below can always close
 try {
   let port = null;
   for (let i = 0; i < 100 && !port; i++) {
@@ -60,7 +61,7 @@ try {
   }
   if (!port) throw new Error('Chrome never opened its debugging port');
   const get = async (path, method = 'GET') => (await fetch(`http://127.0.0.1:${port}${path}`, { method })).json();
-  const version = await get('/json/version');
+  version = await get('/json/version');
   const tab = await get('/json/new?about:blank', 'PUT');
   const s = session(tab.webSocketDebuggerUrl); await s.opened;
   await s.send('Runtime.enable');
@@ -123,14 +124,29 @@ try {
   check('no_uncaught_errors_on_the_page', thrown.length === 0, thrown.join(' | ').slice(0, 400));
 
   s.ws.close();
-  const b = session(version.webSocketDebuggerUrl); await b.opened; b.send('Browser.close');
 } catch (e) {
   check('browser_session', false, e.message);
+} finally {
+  // Close through its OWN port, on success AND failure.
+  if (version) {
+    try { const b = session(version.webSocketDebuggerUrl); await b.opened; b.send('Browser.close'); } catch {}
+  }
 }
 for (let i = 0; i < 30 && chrome.exitCode === null; i++) await sleep(100);
 if (chrome.exitCode === null) {
   console.log(`Chrome survived Browser.close; taskkill by its PID ${chrome.pid}`);
   try { execFileSync('taskkill', ['/F', '/PID', String(chrome.pid), '/T']); } catch {}
 }
+// The launcher PID can exit while the browser it started lives on (seen 2026-10-06), so the exit
+// code alone proves nothing. Look for any process still carrying THIS run's unique profile path.
+// It is never killed here: it is reported, loudly, for a person to close by its PID.
+await sleep(500);
+let leftovers = '';
+try {
+  leftovers = execFileSync('powershell', ['-NoProfile', '-Command',
+    `Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" | Where-Object { $_.CommandLine -like '*${PROFILE.split('\\').pop()}*' } | ForEach-Object { $_.ProcessId }`],
+    { encoding: 'utf8' }).trim();
+} catch (e) { leftovers = 'could not list processes: ' + e.message; }
+check('chrome_left_nothing_running', leftovers === '', `still running with this run's profile, PIDs: ${leftovers.replace(/\s+/g, ' ')}`);
 console.log(`test result: ${failed ? 'FAILED' : 'ok'}. ${passed} passed; ${failed} failed; 0 ignored`);
 process.exit(failed ? 1 : 0);
