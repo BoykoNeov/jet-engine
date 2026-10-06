@@ -316,7 +316,9 @@ pub enum Verdict {
     Crosses,
     /// Under the redline at the reached target — one-sided: the strength wall is optimistic (§ 5).
     Under,
-    /// Never reached and never above the redline along the scan: no verdict (V1).
+    /// The MOVED spool's schedule never reached its target and never passed the redline along
+    /// its scan: no verdict (V1). The unmoved spool is never `Void` — its speed is a valid
+    /// reading at whatever setting the scan stopped on.
     Void,
 }
 
@@ -328,7 +330,7 @@ impl LeverRead {
         };
         if n > r {
             Verdict::Crosses
-        } else if self.reached {
+        } else if self.reached || spool != self.spool {
             Verdict::Under
         } else {
             Verdict::Void

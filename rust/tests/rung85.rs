@@ -10,15 +10,20 @@
 //!   2. Q0 — at `λ = 1` the redline is § 6.2's `R at K*` column (no credit: an identity; the typed
 //!      digits are what make it a check).
 //!   3. REDUCE — `λ = 0` hands the plants the SHIPPED map objects, bit for bit (§ 4.5 A10).
-//!   4. P8's identity — the tip-Mach reading at design equals the sizing's `M_rel,d` (V3).
-//!   5. NO PANIC BEHIND A KNOB — out-of-range knobs and a choking design are `Err`, not a crash.
-//!   6. THE EXPERIMENT — § 4.1 / § 4.5's grid, measured (`score_*`).
+//!   4. P8's identity — the PLANT's design point read through the tip-Mach reading equals the
+//!      sizing's `M_rel,d` (V3).
+//!   5. NO PANIC BEHIND A KNOB — out-of-range knobs and a choking design are `Err`, not a crash;
+//!      the strength-bound branch.
+//!   6. THE EXPERIMENT — § 4.1 / § 4.5's grid, measured and PINNED, each gate naming its
+//!      HIT/MISS; plus the finding (the slope cancels on the lumped plant) and rung 53's
+//!      published schedule reproduced (the independent check on the lumped route).
 
 use turbojet::blade_speed::{build, reshape, size, BladeKnobs, Binding, Lever, Machine, SizingError,
                             SpoolDuty, Verdict};
 use turbojet::engine::FlightCondition;
 use turbojet::gas::{Gas, GasSpec};
 use turbojet::map::ComponentMap;
+use turbojet::stage::{StageStackCore, StageStackCoreSpec};
 use turbojet::two_spool::{build_two_spool_turbojet, Spool, TwoSpoolEngine, TwoSpoolLosses};
 
 const FLOOR: f64 = 0.55;
@@ -197,16 +202,26 @@ fn the_reshaped_map_is_the_preswirled_map_renormalised() {
 }
 
 // ==========================================================================================
-// GATE 4 — P8's IDENTITY (V3)
+// GATE 4 — P8's IDENTITY (V3), on the PLANT
 // ==========================================================================================
 
+/// V3, as A5 registered it: the PLANT's own design point — matched at `Tt4` = 1500 with the lever
+/// at design — read through the tip-Mach reading, equals the sizing's `M_rel,d` to `1e-12`. That
+/// is what guards the matcher's `n`/`φ` being normalised the way the reading assumes; feeding the
+/// reading `(1, 1)` by hand would compare `front_row_mach` with itself. Measured 2026-10-06: every
+/// residual ≤ 1.4e-14, lumped and stacked, both spools, `λ` ∈ {0, 1}.
 #[test]
-fn the_tip_mach_reading_at_design_is_the_sizing_level() {
+fn the_plants_design_point_reads_the_sizing_tip_mach() {
     for &(h, m) in &CELLS {
-        for lambda in [0.0, 0.5, 1.0] {
+        for lambda in [0.0, 1.0] {
             let z = machine("flow/press", h, m, lambda);
+            for lever in [Lever::Lumped, Lever::AllRows] {
+                let o = z.plant(lever, Spool::Lp).match_point(&flight(), 1500.0);
+                let dl = z.lp.tip_rel_mach(o.n_lp, o.phi_lp, 0.0) - z.lp.m_rel_d;
+                let dh = z.hp.tip_rel_mach(o.n_hp, o.phi_hp, 0.0) - z.hp.m_rel_d;
+                assert!(dl.abs() <= 1e-12 && dh.abs() <= 1e-12, "h={h} M={m} λ={lambda} {lever:?}: {dl:e} {dh:e}");
+            }
             for s in [&z.lp, &z.hp] {
-                assert!((s.tip_rel_mach(1.0, 1.0, 0.0) - s.m_rel_d).abs() <= 1e-12);
                 if lambda == 0.0 {
                     assert!(s.m_rel_d <= m + 1e-12, "λ = 0 sits at or below the level (rounding slows the blade)");
                 } else {
@@ -218,7 +233,7 @@ fn the_tip_mach_reading_at_design_is_the_sizing_level() {
 }
 
 // ==========================================================================================
-// GATE 5 — NO PANIC BEHIND A KNOB
+// GATE 5 — NO PANIC BEHIND A KNOB; the strength-bound branch
 // ==========================================================================================
 
 #[test]
@@ -232,103 +247,209 @@ fn a_bad_knob_is_an_error_not_a_crash() {
     ] {
         assert!(matches!(size(duty, k), Err(SizingError::Knob(n, _)) if n == name), "{name}");
     }
-    // Φ_d = 1 at a high level with the blades at the wall: the front row's axial flow goes
-    // sonic — reported, not a panic (P-C's regime).
+    // Φ_d = 1.2 at a high level: the front row's axial flow goes sonic — reported, not a panic.
     let hot = BladeKnobs { phi_d: 1.2, m_rel_lim: 1.6, lambda: 1.0, ..BladeKnobs::default() };
     assert!(matches!(size(duty, hot), Err(SizingError::Chokes { .. })));
 }
 
+/// D3's vacuity condition, reachable from the material knob: a weak enough material makes
+/// STRENGTH set the design, and with the blades at the wall (`λ` = 1) the design sits exactly AT
+/// its own redline — every overspeed crosses by construction.
+#[test]
+fn a_weak_material_makes_strength_set_the_design() {
+    let duty = SpoolDuty { tt: 286.125, dh: 117_700.0, l: 0.7, gamma: 1.4, cp: 1004.0 };
+    let weak = BladeKnobs { sigma_over_rho: 3.0e4, ..BladeKnobs::default() };
+    let z0 = size(duty, weak).unwrap();
+    let z1 = size(duty, BladeKnobs { lambda: 1.0, ..weak }).unwrap();
+    assert_eq!(z0.binding, Binding::Strength);
+    assert!((z1.redline - 1.0).abs() <= 1e-12, "λ = 1 on the strength wall: R = 1, got {}", z1.redline);
+    assert!(z0.redline >= 1.0, "rounding K up can only slow the blade below the wall");
+    assert_eq!(size(duty, BladeKnobs::default()).unwrap().binding, Binding::Airflow);
+}
+
 // ==========================================================================================
-// GATE 6 — THE EXPERIMENT (measured; scored in docs/rung85-spec.md)
+// GATE 6 — THE EXPERIMENT, measured and pinned (scored in docs/rung85-spec.md)
 // ==========================================================================================
 
-fn show(tag: &str, z: &Machine, reads: &[turbojet::blade_speed::LeverRead]) {
-    for r in reads {
-        println!("{tag:<34} Tt4={:6.0} {:?} reached={:<5} v*={:.4}  N_L={:.4} (R {:.3}, {:?})  N_H={:.4} (R {:.3}, {:?})  bareN_L={:.4} bareN_H={:.4}  Mtip_L={:.3} Mtip_H={:.3}",
-                 r.tt4, r.spool, r.reached, r.vsv_star, r.n_lp, z.lp.redline, r.verdict(z, Spool::Lp),
-                 r.n_hp, z.hp.redline, r.verdict(z, Spool::Hp), r.n_lp_bare, r.n_hp_bare,
-                 r.tip_mach_lp, r.tip_mach_hp);
+const THROTTLE: [f64; 4] = [1500.0, 1300.0, 1100.0, 1000.0];
+
+/// Rung 53's and rung 55's PUBLISHED schedule numbers, through the one-row stack (`Lever::Lumped`)
+/// at `λ` = 0. These came from outside this code — rung 55's spec, "Shape robustness" table, and
+/// § 4.0's `N_L(v*)` = 1.26006 — so this is the independent check that the lumped route IS rung
+/// 53's plant (scan-bracketed rather than rung 53's doubling ladder: same root, to `INC_TOL`).
+#[test]
+fn the_lumped_route_reproduces_rung_53s_published_schedule() {
+    let z = machine("flow/press", 0.5, 1.4, 0.0);
+    let r = z.schedule(Lever::Lumped, Spool::Lp, &[1000.0])[0];
+    assert!(r.reached);
+    near(r.vsv_star, 1.2436, 0.00005, "v* flow/press");
+    near(r.n_lp, 1.26006, 0.000005, "N_L(v*) flow/press");
+    for (shape, v) in [("press/flow", 1.0499), ("tilted", 1.4883), ("flat-eta", 0.9620)] {
+        let z = machine(shape, 0.5, 1.4, 0.0);
+        near(z.schedule(Lever::Lumped, Spool::Lp, &[1000.0])[0].vsv_star, v, 0.00005, &format!("v* {shape}"));
     }
 }
 
+/// THE SLOPE CANCELS (a finding, scoped to the LUMPED plant). Holding the design incidence pins
+/// `1/φ − v = 1`, and then `ψ = 1 − σu² − l·u − v(1+l)φ` collapses to `1 + u − σu²`: the held
+/// machine's work, hence its speed and setting, carry NO `l`. Only the BARE speed does — so a
+/// bill quoted against bare is `l`-dependent through its denominator alone. On a stack only stage
+/// 0 is held and the rows behind keep their `l`, so nothing here claims it there. Measured
+/// 2026-10-06: `|ΔN|` ≤ 1.2e-11 (the incidence bisection's `INC_TOL` = 1e-12, propagated).
 #[test]
-#[ignore = "the scoring run — slow; run with --ignored --nocapture"]
-fn score_the_grid() {
-    let grid = [1500.0, 1300.0, 1100.0, 1000.0];
-    let _ = Verdict::Void;
-    // λ = 0, default shape: the three distinct (K_L, K_H) machines (§ 6.2's staircase) and the
-    // lumped plant (identical in every cell — the maps do not move at λ = 0).
+fn holding_design_incidence_cancels_the_map_slope_on_the_lumped_plant() {
+    let f = ComponentMap::flat();
+    let (_, mh) = maps("flow/press");
+    for tt4 in [1300.0, 1100.0, 1000.0] {
+        let reads: Vec<_> = [0.3, 0.7, 1.0, 1.446, 2.0].iter().map(|&l| {
+            let ml = ComponentMap { a: 0.20, b: 0.05, sigma: 0.1, l, ..f }.with_phi_surge(FLOOR);
+            let z = build(&design(), flight(), ml, mh, knobs(0.5, 1.4, 0.0), knobs(0.5, 1.4, 0.0)).unwrap();
+            z.schedule(Lever::Lumped, Spool::Lp, &[tt4])[0]
+        }).collect();
+        for r in &reads {
+            assert!(r.reached);
+            assert!((r.n_lp - reads[1].n_lp).abs() <= 1e-10, "Tt4={tt4}: the held speed moved with l");
+            assert!((r.vsv_star - reads[1].vsv_star).abs() <= 1e-9, "Tt4={tt4}: the held setting moved with l");
+        }
+        // Not vacuous: the BARE speed does move with l.
+        assert!(reads[0].n_lp_bare - reads[4].n_lp_bare > 0.04, "Tt4={tt4}: bare must depend on l");
+    }
+}
+
+/// P4 — HIT. The HP lumped schedule: max physical `N_H/N_H,d` over the grid ≤ 1.10, point ≈ 1.0.
+/// P6 — HIT. The HP front-row schedule: max ≤ 1.00. (Both maxima sit at `Tt4` = 1500, `v*` = 0.)
+#[test]
+fn p4_p6_the_hp_lumped_and_front_row_levers_stay_at_or_below_design_speed() {
+    let z = machine("flow/press", 0.5, 1.5, 0.0);
+    let lumped = z.schedule(Lever::Lumped, Spool::Hp, &THROTTLE);
+    let front = z.schedule(Lever::FrontRow, Spool::Hp, &THROTTLE);
+    for (name, reads, bar) in [("P4 lumped", &lumped, 1.10), ("P6 front", &front, 1.00)] {
+        let max = reads.iter().map(|r| r.n_hp).fold(f64::MIN, f64::max);
+        assert!(reads.iter().all(|r| r.reached), "{name}: every point reached");
+        assert!(max <= bar + 1e-12, "{name}: max N_H {max} over {bar}");
+        assert!(reads.iter().all(|r| r.verdict(&z, Spool::Hp) == Verdict::Under), "{name}: no crossing");
+    }
+    near(lumped[3].n_hp, 0.8848, 0.00005, "P4 lumped N_H at 1000");
+}
+
+/// P5 — MISS (by 1.6 %). The HP ALL-ROWS schedule at the walls' `K_H` = 4 reaches `N_H/N_H,d` =
+/// 1.1073 at `Tt4` = 1000 — UNDER the tightest HP cell's 1.125, so "crosses the tightest cell" is
+/// refuted; "under the `h` = 0.7 cells' 1.546" holds. At `K_H` = 5 (cells `h` = 0.5, 1.3/1.4)
+/// it reaches 1.1442 against 1.258: under. No HP cell crosses on the default shape at `λ` = 0.
+#[test]
+fn p5_the_hp_all_rows_schedule_stays_just_under_the_tightest_hp_redline() {
+    let z4 = machine("flow/press", 0.5, 1.5, 0.0);
+    let z5 = machine("flow/press", 0.5, 1.4, 0.0);
+    assert_eq!((z4.hp.k, z5.hp.k), (4, 5));
+    let r4 = z4.schedule(Lever::AllRows, Spool::Hp, &[1000.0])[0];
+    let r5 = z5.schedule(Lever::AllRows, Spool::Hp, &[1000.0])[0];
+    assert!(r4.reached && r5.reached);
+    near(r4.n_hp, 1.1073, 0.00005, "P5 K_H=4");
+    near(r5.n_hp, 1.1442, 0.00005, "K_H=5");
+    assert!(r4.n_hp < z4.hp.redline && z4.hp.redline < 1.126, "the miss: under the tightest 1.125");
+    assert!(r5.n_hp < z5.hp.redline);
+}
+
+/// P1/P2 — MISS on existence; "crosses before target" under V1. The LP ALL-ROWS schedule reaches
+/// its target at 1500/1300 only (P1/P2 said all four, at `K` = 2 and 3): at 1100/1000 the scan
+/// runs to the map edge (`v` 2.1/2.4) without the incidence coming down, and passes the redline
+/// on the way (at travel ≈ 1.2–1.4) — so every LP cell CROSSES BEFORE TARGET there. Both bands
+/// (P1 [1.30, 1.60], P2 [1.35, 1.70]) were for a reached `v*` and have nothing to score.
+#[test]
+fn p1_p2_the_lp_all_rows_schedule_ends_unreached_and_crosses_before_target() {
     for &(h, m) in &[(0.5, 1.3), (0.5, 1.4), (0.5, 1.5)] {
         let z = machine("flow/press", h, m, 0.0);
-        let tag = format!("K=({},{}) h={h} M={m}", z.lp.k, z.hp.k);
-        show(&format!("{tag} ALL LP"), &z, &z.schedule(Lever::AllRows, Spool::Lp, &grid));
-        show(&format!("{tag} ALL HP"), &z, &z.schedule(Lever::AllRows, Spool::Hp, &grid));
-        show(&format!("{tag} FRONT LP"), &z, &z.schedule(Lever::FrontRow, Spool::Lp, &grid));
-        show(&format!("{tag} FRONT HP"), &z, &z.schedule(Lever::FrontRow, Spool::Hp, &grid));
-    }
-    let z = machine("flow/press", 0.5, 1.4, 0.0);
-    show("lumped LP", &z, &z.schedule(Lever::Lumped, Spool::Lp, &grid));
-    show("lumped HP", &z, &z.schedule(Lever::Lumped, Spool::Hp, &grid));
-    // P3's K = 1 leg: the LP lumped, HP at 5 (the pair (1,5)).
-    // (Lever::Lumped is (1,1); P3 needs the LP alone at 1 — read through AllRows on a K_L = 1 cell
-    // is not producible by the walls, so P3's K = 1 point is the lumped LP schedule above.)
-    // P7 — the other shapes, LP lumped at λ = 0 against each shape's own redlines.
-    for shape in ["press/flow", "tilted", "flat-eta"] {
-        for &(h, m) in &[(0.5, 1.5), (0.7, 1.5)] {
-            let z = machine(shape, h, m, 0.0);
-            show(&format!("{shape} h={h} M={m} lumped LP"), &z, &z.schedule(Lever::Lumped, Spool::Lp, &[1000.0]));
+        let reads = z.schedule(Lever::AllRows, Spool::Lp, &THROTTLE);
+        assert!(reads[0].reached && reads[1].reached, "K_L={}: reached at 1500/1300", z.lp.k);
+        for r in &reads[2..] {
+            assert!(!r.reached, "K_L={} Tt4={}: unreached", z.lp.k, r.tt4);
+            assert_eq!(r.verdict(&z, Spool::Lp), Verdict::Crosses, "V1: crosses before target");
+            assert_eq!(r.verdict(&z, Spool::Hp), Verdict::Under, "the unmoved spool is a reading, never Void");
         }
+        assert!(reads[1].n_lp < z.lp.redline, "reached at 1300: under");
     }
-    // Q2/Q3 — λ ∈ {0.5, 1}, every LP cell, LP lumped at 1000.
-    for lambda in [0.5, 1.0] {
+}
+
+/// P3 — HIT at its one scorable point. Built so ONLY `K_L` moves — `(1, 5)`, `(2, 5)`, `(3, 5)` —
+/// against the anchor's wording; `K_L` = 1 is not a wall-produced machine (V4), disclosed. At
+/// `Tt4` = 1300 all three reach and `N(1) < N(2) < N(3)`; at 1100/1000 `K_L` = 2, 3 are unreached
+/// (P1/P2), so nothing more is scorable.
+#[test]
+fn p3_the_all_rows_bill_rises_with_the_lp_row_count() {
+    let z = machine("flow/press", 0.5, 1.4, 0.0);
+    let n_at = |k_lp: usize| {
+        let p = StageStackCore::new(StageStackCoreSpec {
+            k_lp, k_hp: 5, ..StageStackCoreSpec::new(design(), flight(), 1.0, z.map_lp, z.map_hp)
+        });
+        let r = p.stage_incidence_schedule(&flight(), &[1300.0], Spool::Lp, 0, 4.0)[0];
+        assert!(r.reached, "K_L={k_lp} at 1300");
+        p.at_setting(r.vsv_star, 0.0).match_point(&flight(), 1300.0).n_lp_ratio
+    };
+    let (n1, n2, n3) = (n_at(1), n_at(2), n_at(3));
+    assert!(n1 < n2 && n2 < n3, "{n1} {n2} {n3}");
+}
+
+/// P7 — HIT, all four clauses. LP lumped at 1000, each shape against ITS OWN redlines (§ 6.3):
+/// `tilted` crosses its tightest LP cell (1.337) and not its `h` = 0.7 cells; `press/flow` and
+/// `flat-eta` cross none. (Estimates were 1.43 / 1.22 / 1.16; measured 1.4123 / 1.1948 / 1.1648.)
+#[test]
+fn p7_shape_decides_the_lp_lumped_verdict() {
+    for (shape, crosses_tight, n) in [("tilted", true, 1.4123), ("press/flow", false, 1.1948), ("flat-eta", false, 1.1648)] {
         for &(h, m) in &CELLS {
-            let z = machine("flow/press", h, m, lambda);
-            let tag = format!("λ={lambda} h={h} M={m} r=({:.3},{:.3})", z.lp.r, z.hp.r);
-            show(&format!("{tag} lumped LP"), &z, &z.schedule(Lever::Lumped, Spool::Lp, &[1000.0]));
+            let z = machine(shape, h, m, 0.0);
+            let r = z.schedule(Lever::Lumped, Spool::Lp, &[1000.0])[0];
+            assert!(r.reached);
+            near(r.n_lp, n, 0.00005, shape);
+            let tight = (h, m) == (0.5, 1.5);
+            let want = if crosses_tight && tight { Verdict::Crosses } else { Verdict::Under };
+            assert_eq!(r.verdict(&z, Spool::Lp), want, "{shape} h={h} M={m} R={}", z.lp.redline);
         }
     }
 }
 
+/// P8 — HIT. The front-row LP lever vs bare, at the walls' `K`, `Tt4` ∈ {1300, 1100, 1000}: the
+/// front row's relative tip Mach FALLS (by 13–16 % at 1000, bar ≥ 3 %) in every cell while the
+/// physical `N_L` RISES.
 #[test]
-#[ignore = "diagnostic run — P8 in every cell, and the σ-vs-l split behind Q3; --ignored --nocapture"]
-fn score_p8_and_the_q3_split() {
+fn p8_the_front_row_lever_lowers_tip_mach_while_raising_shaft_speed() {
     for &(h, m) in &CELLS {
         let z = machine("flow/press", h, m, 0.0);
         for r in z.schedule(Lever::FrontRow, Spool::Lp, &[1300.0, 1100.0, 1000.0]) {
-            println!("P8 h={h} M={m} K=({},{}) Tt4={:.0} reached={} N_L {:.4} -> {:.4}  Mtip_L {:.4} -> {:.4} ({:+.2} %)",
-                     z.lp.k, z.hp.k, r.tt4, r.reached, r.n_lp_bare, r.n_lp, r.tip_mach_lp_bare, r.tip_mach_lp,
-                     100.0 * (r.tip_mach_lp / r.tip_mach_lp_bare - 1.0));
-        }
-    }
-    // Q3's split: the LP lumped bill at 1000 over (σ, l) on two η islands, the shipped λ = 0
-    // path (maps passed as given; r = 1).
-    let f = ComponentMap::flat();
-    for (isl, base) in [("flow/press η", ComponentMap { a: 0.20, b: 0.05, ..f }),
-                        ("tilted η", ComponentMap { a: 0.14, b: 0.10, c: 0.06, ..f })] {
-        for (sigma, l) in [(0.1, 0.7), (0.1, 0.85), (0.2, 0.7), (0.2, 0.85), (0.1435, 1.446), (0.1, 1.446), (0.1435, 0.7)] {
-            let ml = ComponentMap { sigma, l, ..base }.with_phi_surge(FLOOR);
-            let (_, mh) = maps("flow/press");
-            let z = build(&design(), flight(), ml, mh, knobs(0.5, 1.4, 0.0), knobs(0.5, 1.4, 0.0)).unwrap();
-            let r = z.schedule(Lever::Lumped, Spool::Lp, &[1000.0])[0];
-            println!("Q3 split {isl:<13} σ={sigma:<6} l={l:<6} reached={} v*={:.4} N_L={:.4} bare={:.4} bill={:+.2} %",
-                     r.reached, r.vsv_star, r.n_lp, r.n_lp_bare, 100.0 * (r.n_lp / r.n_lp_bare - 1.0));
+            assert!(r.reached);
+            assert!(r.n_lp > r.n_lp_bare, "h={h} M={m} Tt4={}: N_L must rise", r.tt4);
+            assert!(r.tip_mach_lp < r.tip_mach_lp_bare, "h={h} M={m} Tt4={}: tip Mach must fall", r.tt4);
+            if r.tt4 == 1000.0 {
+                assert!(r.tip_mach_lp <= 0.97 * r.tip_mach_lp_bare, "h={h} M={m}: by at least 3 %");
+            }
         }
     }
 }
 
+/// Q2 — HIT, for a reason NOT the one registered. The LP lumped bill rises strictly over
+/// `λ` ∈ {0, 0.5, 1} in all six cells, every point reached (the void count is met). But the
+/// registered mechanism — "the reshaped map is steeper" — is REFUTED by the slope cancellation:
+/// the held point carries no `l`. The rise is the CURVATURE `σ' = σ/r`, i.e. A9's disclosed
+/// "curvature fixed in absolute work units". Fixed relative to design work instead, `λ` would
+/// leave every scheduled speed unchanged.
+/// Q3 — MISS. The far cell (`h` = 0.7, `M_rel,lim` = 1.5) at `λ` = 1: `N_L` = 1.3392, far below
+/// the band [1.60, 2.60] and under its 1.601 — the extrapolation was in `l`, which does not enter.
+/// Old-Q3 (no credit): the `h` = 0.5, 1.5 cell at `λ` = 1 does cross its redline — by 0.09 %.
 #[test]
-#[ignore = "diagnostic — where along its scan the unreached LP all-rows schedule passes the redline; --ignored --nocapture"]
-fn where_the_unreached_all_rows_schedule_crosses() {
-    for &(h, m) in &[(0.5, 1.3), (0.5, 1.4)] {
-        let z = machine("flow/press", h, m, 0.0);
-        let plant = z.plant(Lever::AllRows, Spool::Lp);
-        for tt4 in [1100.0, 1000.0] {
-            let mut line = format!("K=({},{}) R={:.3} Tt4={tt4:.0}:", z.lp.k, z.hp.k, z.lp.redline);
-            for v in [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0] {
-                let o = plant.at_setting(v, 0.0).match_point(&flight(), tt4);
-                line += &format!("  v={v}: N_L={:.3} φ={:.3}", o.n_lp_ratio, o.phi_lp);
-            }
-            println!("{line}");
+fn q2_q3_the_rounding_knob_raises_the_lumped_bill_through_curvature() {
+    let base = machine("flow/press", 0.5, 1.4, 0.0).schedule(Lever::Lumped, Spool::Lp, &[1000.0])[0];
+    for &(h, m) in &CELLS {
+        let half = machine("flow/press", h, m, 0.5).schedule(Lever::Lumped, Spool::Lp, &[1000.0])[0];
+        let z1 = machine("flow/press", h, m, 1.0);
+        let one = z1.schedule(Lever::Lumped, Spool::Lp, &[1000.0])[0];
+        assert!(base.reached && half.reached && one.reached, "Q2's void count: all reached");
+        assert!(base.n_lp < half.n_lp && half.n_lp < one.n_lp, "h={h} M={m}: strictly rising in λ");
+        if (h, m) == (0.7, 1.5) {
+            near(one.n_lp, 1.3392, 0.00005, "Q3 far cell");
+            assert!(one.n_lp < 1.60 && one.n_lp < z1.lp.redline, "Q3: outside its band, under 1.601");
+        }
+        if (h, m) == (0.5, 1.5) {
+            let margin = one.n_lp / z1.lp.redline - 1.0;
+            assert!(margin > 0.0 && margin < 0.002, "old-Q3: crosses, by {margin:e}");
         }
     }
 }
