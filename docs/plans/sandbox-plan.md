@@ -1,7 +1,8 @@
 # The web sandbox — plan
 
 **Status: SLICE 1 BUILT 2026-10-06** — `docs/sandbox/` (what shipped, and how it is gated: its
-README). Slices 2 and 3 not started. Drafted 2026-10-06, after rung 85 shipped. Direction (user,
+README). **Slice 3 (off-design) PLANNED 2026-10-06 — § 10**, its questions in § 10.7. Slice 2 not
+started. Drafted 2026-10-06, after rung 85 shipped. Direction (user,
 2026-10-06): the project becomes a **sandbox** — change the engine's components and design numbers
 and watch it respond — delivered as an **interactive web page running the Rust model live**, beside
 the charts page and the cutaway (`docs/visuals/`).
@@ -194,3 +195,119 @@ The original questions, as asked:
 5. **Node check in the full gate** (`test-all.ps1`, adds a ~1 min wasm build) or only in
    `build.ps1`? *Recommended: in the gate, so a model change that breaks the page is caught.*
 6. **Slice order after slice 1** — blade speeds (2) or off-design (3) first?
+
+## 10. Slice 3 — off-design ("fly the engine you designed")
+
+Planned 2026-10-06. The user designs an engine on slice 1's knobs, then **freezes its hardware** and
+moves the throttle and the flight condition. The engine finds its own operating point: pressure
+ratio, airflow, shaft speed, thrust, fuel burn, stall margin. Slice 1 *redesigns* the engine at every
+knob move; slice 3 *flies* one engine.
+
+### 10.1 Which solver — one, measured
+
+Three off-design solvers exist. Run over 4 gases × 3 flights × 12 throttles (2026-10-06, scratch
+crates `W:\temp\claude\jet-offdesign-timing`, `…-wasm`, not in the repo):
+
+| Solver | Gives | Verdict |
+|---|---|---|
+| rung 31/33 `OffDesignMatcher` | `π_c`, airflow, thrust; both nozzle branches | no shaft speed, no map, no stall margin |
+| rung 32 `MapMatcher` | + shaft speed, map efficiencies | **does not dispatch to the unchoked nozzle** (`map.rs` module note 3): at 11 km, Mach 0.85, `Tt4` 700–1000 it returned points flagged unchoked but solved on the two-choked-throat pin — numbers its own flag voids. **Kept off the page.** |
+| rung 34 `SpoolTransient::equilibrium` + rung 36 `surge_margin` | shaft speed, map, both nozzle branches, stall margin (choked branch) | **the one the page uses** |
+
+### 10.2 Speed — what decides the page's shape
+
+Rung 34 + 36, a **fresh solver per point** (see 10.5), per operating point:
+
+| Gas | native | browser build (Node) |
+|---|---|---|
+| perfect | < 1 ms | < 1 ms |
+| thermally perfect | 4–13 ms | **10–45 ms** — follows a slider |
+| reacting / Fork B | 30–470 ms | 40–360 ms |
+| equilibrium (the production gas) | 0.4–1.4 s | **0.5–2.5 s** (median 0.75 s) |
+
+Native ms are thread CPU cycles over a calibrated clock (the calibration itself moved 2.7–4.2 GHz
+between runs, so compare solvers, not absolute times); browser ms are wall clock under Node 24.
+Rung 31 alone, for reference: ~24 ms median on equilibrium, but up to 1.6 s where its joint
+`(f, pt4)` loop runs all 200 passes (the documented unmeetable stopping rule, `matcher.rs` header
+note 3 — not to be "fixed").
+
+**The equilibrium cost is the chemistry, not bookkeeping.** A behaviour-identical change to the gas
+memo caches (a hash lookup instead of a linear scan, `gas.rs` `ReactingSection` /
+`EquilibriumSection`) made reacting and Fork B ~10× faster — down to thermally-perfect speed — and
+left equilibrium unchanged (measured on a scratch copy, against the thermally-perfect rows it does
+not touch). It is a model-code change, so it ships only with the full gate proving every output
+bit-identical; offered separately (§ 10.7 Q3).
+
+### 10.3 Knobs and readouts
+
+**Mode switch:** *Design* (slice 1) ↔ *Fly it*. Entering *Fly it* captures the current design as
+hardware (turbine and nozzle throat areas, design flow and speed references).
+
+**Fly-it knobs:** throttle (`Tt4`); the flight knobs (altitude, deviation, Mach — the same linked set);
+the compressor map shape (the three surge-realistic shapes `surge_flow` / `surge_pressure` /
+`surge_tilted`, shown as equals, as rung 85's shapes are); the **stall-line position** `φ_surge`.
+
+**Readouts — every result, no verdicts:** thrust, TSFC, fuel flow; compressor pressure ratio; airflow
+and its lapse from design; shaft speed (% of design) and corrected speed; nozzle choked / unchoked;
+stall margin (two definitions, constant speed and constant flow) **beside the operating and stall
+flow coefficients**; the station table; the T–s diagram (slice 1's `ts_points` on the rebuilt run);
+pin & compare across throttle/flight moves; and a **compressor-map chart** — pressure ratio vs
+corrected flow, the running line swept over the throttle range, the stall line, the current point.
+
+**The stall margin is labelled for what it is** (user's forwarded note, 2026-10-06; rung 36's own
+disclaimer): the model has no measured compressor map, the stall line is one chosen number, and only
+its TREND (thin at low power) is load-bearing. Measured on the default shape at `φ_surge` = 0.65 the
+margin reads 7 % at idle and 66–110 % at full power — no reader would believe the second. Hence a
+knob, the map shape beside it, and the plain-words label: *"depends on the stall line you set and
+the map shape you pick — read the trend, not the size."*
+
+### 10.4 What the solver refuses, turned into plain words
+
+Each is a pre-check (before the solve) or an `explain()` entry driven by a test, as slice 1's:
+- **Fixed convergent nozzle only** — capturing hardware needs a throat. *Fly it* re-runs the design
+  with a convergent nozzle, so its design numbers differ from slice 1's default "fully expanded"
+  design; the page says so and shows both.
+- **Isentropic efficiencies only** — the matcher asserts on polytropic. Pre-check with plain words.
+- **Stall margin on the choked branch only** — it asserts elsewhere, i.e. exactly where the margin is
+  thinnest. Shown as "not modelled while the nozzle is unchoked", never a blank.
+- **Stall line past the operating point** (`φ_surge ≥ φ_op`, an assert) — a new trap the knob
+  creates; pre-checked: "the stall line you set is at or beyond this operating point".
+- **Below idle** is a physical result: two distinct messages (rung 33's subsonic "does not bracket",
+  rung 34's "equilibrium does not bracket") — both into `explain()` with driving tests. At cruise
+  (11 km, Mach 0.85) `Tt4` ≤ 800 K is below idle on every gas; the throttle slider's range comes
+  from a measured envelope, not a guess.
+- **Mach 0** stays refused, as in slice 1 (the efficiency bookkeeping divides by flight speed).
+
+### 10.5 Model side (`sandbox.rs`, no model code edited)
+
+- New op `{"op":"fly", "design":{…}, "throttle":…, "flight":{…}, "map":…, "phi_surge":…}`.
+- Builds a **fresh** `SpoolTransient` per request: the reacting/equilibrium memo caches never
+  shrink, so a long-lived solver slows as it runs (measured: the same kind of point 3 ms early,
+  300 ms+ later, in cycles). Capture costs ~1.5 ms — cheaper than any cache policy.
+- The station table comes from `OffDesignMatcher::rebuild` at the equilibrium's `(π_c, ṁ, η_c, η_t)`
+  — the same forward rebuild every matcher ends with (crate-visible; `sandbox.rs` is in the crate).
+- The running line: `op:"running_line"` sweeps the throttle grid; on the slow gases the page streams
+  it point by point with progress, and drops a stale sweep when the hardware or flight changes.
+
+### 10.6 Gates
+
+- **Reduce to the design point:** flying at the design flight and design `Tt4` returns shaft speed 1,
+  `π_c` = design, airflow = design — the project's reduce-to-prior spine, in the sandbox.
+- **Bit-equal to the direct call:** `op:"fly"` ≡ `SpoolTransient::equilibrium` + `surge_margin`, and
+  the rebuilt station table's thrust ≡ the equilibrium's `thrust` (a joint between two code paths).
+- Each pre-check fires on its case and only it; each new `explain()` entry driven by a design that
+  raises it.
+- The browser grid (`check.mjs`) gains fly requests (bar per slice 1's mechanism, re-measured on the
+  real grid); the headless-browser drive gains a mode switch, a throttle move, a below-idle
+  throttle, and screenshots (light / dark / 390 px) — slice 1's lesson.
+
+### 10.7 Questions for the user
+
+1. **Speed on the realistic gas.** Equilibrium off-design takes 0.5–2.5 s per point in the browser;
+   thermally perfect 10–45 ms. (a) *Fly it* opens on the thermally-perfect gas (live dragging), the
+   equilibrium gas one click away and computed when the slider is released, with a progress mark —
+   *recommended*; (b) equilibrium default, computed on release; (c) offer only the fast gases.
+2. **Stall margin** — a knob for the stall line + a map-shape choice, labelled as above
+   (*recommended*); or show only the trend (an arrow, no percentage); or leave it off.
+3. **The memo-cache speed-up** (§ 10.2) — ship it now as its own change (full gate must stay
+   bit-identical; reacting/Fork B ~10× faster everywhere, not only the page), or leave it.
