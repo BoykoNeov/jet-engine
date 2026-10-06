@@ -1,4 +1,4 @@
-# Rung 85 anchor — THE BLADE-SPEED WALLS (DRAFT — pre-registration not yet closed)
+# Rung 85 anchor — THE BLADE-SPEED WALLS (pre-registered 2026-10-06 — § 4; no code yet)
 
 **Seam:** `docs/per-row-blading-negative.md` § 5 — *"an anchor supplied by physics rather than by
 choice … a row-level stress or tip-Mach limit that pins `U` from outside the stack"*; carried in
@@ -11,7 +11,11 @@ a STRENGTH wall (centrifugal blade-root stress) — with whichever binds winning
 § 3 (open design decisions) and § 4 (predictions) were revised after the FIRST advisor check-in
 (2026-10-06); § 0 P-C BLOCKED the design; the user chose `Φ_d` as a design input — see § 6. No code has been written.
 2026-10-06 later: § 6.1 (incidence loops invariant), § 1 sourced first-hand, and the user's ROLES
-decision (§ 3: airflow SIZES, strength is the only off-design wall). Next: register § 4.
+decision (§ 3: airflow SIZES, strength is the only off-design wall).
+**2026-10-06, step 3: § 4 REGISTERED** (P0–P8, voids, the NEGATIVE rule), against § 6.2's
+per-cell redline table — written BEFORE any code. The draft Q4 ("the lumped stator crosses")
+was found already decided by published numbers, the other way, and moved to § 4.0 (no credit).
+Next: D6 (the Rust-owned golden, its own commit), then code.
 Probes: plain arithmetic on the shipped design numbers (rung 56's CPG rig, `cp` = 1004 exactly, so
 `Δh = cp·ΔT` IS the model's own enthalpy there; default shape `flow/press`, `l` = 0.7 LP / 1.0 HP).
 
@@ -212,24 +216,94 @@ first decision ("both walls, whichever binds") to the DESIGN point, where it sta
 - **D6 — the panel.** Rung 85 is the first rung with no Python segment in `cli_golden`. It needs a
   Rust-owned golden and a stated meaning for the panel count. Its own commit, before the physics.
 
-## 4. PREDICTIONS (DRAFT — not registered until P-C is resolved)
+## 4. THE PRE-REGISTERED PREDICTIONS (2026-10-06 — written before any code)
 
-- **Q4 (re-posed)** — a LEVEL against a LEVEL, not a cost against a level. On the machine the walls
-  produce (its own `K`, re-measured — NOT rung 53/55's published `+66.7 %` / `+2.3 %`, which are
-  part-power CHANGES at `K` = 8, and rung 55's cost scales ~`1/K`, so ~2.7× larger at LP `K` ≈ 3):
-  read `N_L/N_L,d` WITH the lever at each cell, against `N_red/N_d`. Prediction: the lumped stator
-  crosses the strength redline somewhere in the shipped throttle range; the front-row stator
-  does not.
-- **Q5 (a READING, not a wall — per D4's rewrite)** — the stator's setting `v` adds face pre-swirl,
-  `tan β₁ = (1/φ − v)/Φ_d`, which LOWERS the rotor's relative inlet Mach (the purpose of a real
-  IGV). So under a stator lever physical `N` can rise while `M_rel,tip` FALLS. The off-design tip
-  Mach is computed from `(φ, v, n)` through the stack's own `β₁` and REPORTED; exceeding the design
-  level is not a verdict (the model has no loss for it). The registered prediction is only the
-  SIGN of `ΔM_rel,tip` under the lever, written once that function exists and its design value is
-  checked to equal the design level.
-- **NEGATIVE decision rule (fixed now):** if the walls re-derive `K` and `C` but NO verdict of rungs
-  53–61 changes, and strength never binds inside the shipped envelope, this is a NEGATIVE
-  (`docs/…-negative.md`), not a rung.
+Scored in `docs/rung85-spec.md`, refuted or confirmed. Every bar is read against § 6.2's per-cell
+redline `R = N_red/N_d` at the **INTEGER** `K` (the machine, D1); the continuous-`K*` column is
+reported beside it, never scored.
+
+**The reads.** Strength reads PHYSICAL speed against design: LP `N_L/N_L,d = n_L` (flight fixed,
+`Tt2 = Tt2,d`); HP `N_H/N_H,d = n_H·sqrt(Tt25/Tt25,d)` — `Tt25` falls with throttle, so at part
+power the HP's physical speed sits BELOW its corrected one. A **crossing** is `N/N_d > R` for that
+(spool, `h`, `M_rel,lim`) cell. Each cell runs BOTH stacks at that cell's own pair of `K`s (§ 6.2
+row pair — e.g. `h` = 0.5, `M_rel,lim` = 1.4 is LP 2 / HP 5), because the HP reaches the LP
+(rung 39's one arrow).
+
+**The plants and the grid — named, not "somewhere".** Rung 53's lumped steady matcher and rung 55's
+stage stack (ALL-ROWS and FRONT-ROW levers), both spools; `Tt4` ∈ {1500, 1300, 1100, 1000} (rung
+55's P3 grid); rung 53's constant-incidence schedule (target = the face's / stage 0's design
+incidence, read off the matcher, zero new constants); default shape `flow/press`. Scored on the
+default shape; the four other disclosed shapes are robustness, P7 excepted. **Not scored:** rung
+56's capacity plant (its `C` is now an OUTPUT, 0.649–0.785, and its throat law reads `v/Φ_d`, § 6
+— its numbers move by construction; reported as a reading), the transient plants 57+ (`v_max` =
+0.20 in map units, every accel ending at `n` = 1), and `Tt4` = 800 (not on rung 53/55's schedule
+grid).
+
+### 4.0 Settled by published numbers — NO CREDIT (the draft Q4, retired)
+
+Converted to the strength wall's reference — design speed, not bare-at-throttle (rung 55's
+"one currency reconciliation": a referenced excursion reads back its own denominator) — default
+shape:
+
+| lever (source) | `N_L/N_L,d` | smallest LP `R` | verdict |
+|---|---|---|---|
+| rung 53 lumped schedule, `Tt4` = 1000 (rung 55 spec: `N_L(v*)` = 1.26006 against design) | **1.260** | 1.395 | under, by 10.7 % |
+| rung 61 stator alone / compensated, `Tt4` = 1500, `v` ≤ 0.30 | ≤ **1.2025** | 1.395 | under |
+| rung 55 front row, `K` = 2 (bare 0.7557 × 1.1238) | **0.849** | 1.395 | far under |
+
+So the draft Q4 — *"the lumped stator crosses the strength redline somewhere in the shipped
+throttle range"* — is **contradicted** on the LP spool before any code, and *"the front-row stator
+does not"* is arithmetic. Both stand only if P0 holds. Also pre-check, not scored: Q5's
+design-point SIGN — rung 53's exact `dφ/dv = −(1+l)/(2+l)` with `tan β₁ = (1/φ − v)/Φ_d` — the
+relative inlet angle falls while `n` rises; and on rung 53's lumped schedule at `Tt4` = 1000
+(its published `φ` = 0.4457, `n_L` = 1.260, `v*` = 1.2436; bare `φ` = 0.708 from its `M_φ`) the
+tip relative velocity, lever vs bare, is **−2 %** (`h` = 0.5) / **−10 %** (`h` = 0.7).
+
+### 4.1 The predictions
+
+| # | prediction | bar |
+|---|---|---|
+| **P0** | **`Φ_d` cannot reach the speed bills** — the map family and `ψ` are `Φ_d`-free (§ 6), and the schedule's target and its read both scale by `1/Φ_d` | rung 53's schedule (`v*`, `n_L`, `n_H`, `φ`) and rung 55's stack schedule at `Φ_d` = 0.537 are **bit-identical (`==`)** to `Φ_d` = 1 at every grid point, both spools |
+| **P1** | the LP ALL-ROWS schedule at the walls' **`K` = 2** (5 of the 6 LP cells) **exists**, and lands in a band the 1.395 redline cuts | reaches its target at all four `Tt4` (rung 55's `K` = 8 did not, below 1300); at `Tt4` = 1000, `N_L/N_L,d` ∈ **[1.30, 1.60]** (point estimate **1.40**: log-`K` interpolation between `K` = 1's 1.667× and `K` = 8's > 2.28× of bare 0.7557) |
+| **P2** | at **`K` = 3** (cell `h` = 0.5, `M_rel,lim` = 1.3, `R` = 1.708) the same schedule exists and stays **under** its own redline | reaches its target at all four `Tt4`; at 1000, `N_L/N_L,d` ∈ **[1.35, 1.70]** (point **1.49**). One-sided (§ 5): "under" does not survive the optimistic wall |
+| **P3** | the all-rows bill is **monotone in `K`** | at every `Tt4` where all three are reached: `N(K=1) < N(K=2) < N(K=3)`, strict |
+| **P4** | the HP LUMPED schedule (`vsv_hp`) crosses **no** HP cell | max over the grid of `N_H/N_H,d` (physical) ≤ **1.10** (point ≈ 1.0) < the smallest HP `R`, 1.125. Reason registered: the HP's `φ` droops less with throttle (rung 41: the exposure sits on the LP), and `Tt25` falls |
+| **P5** | the HP ALL-ROWS schedule at the walls' `K` (4 or 5) **crosses the tightest HP cell and not the `h` = 0.7 cells** | at `Tt4` = 1000: `N_H/N_H,d` > **1.125** (cell `h` = 0.5, `M_rel,lim` = 1.5, `K` = 4) and < **1.546** (all three `h` = 0.7 cells, `K` = 4) |
+| **P6** | the HP FRONT-ROW schedule is far under | max over the grid of `N_H/N_H,d` ≤ **1.00** |
+| **P7** | **shape decides the LP lumped verdict** — the one place § 4.0 does not reach | on `tilted` (rung 55: lumped lever +88.79 % vs bare, against `flow/press`'s +66.73 %) the LP lumped schedule at `Tt4` = 1000 **crosses** the 1.395 cells; on `flow/press`, `press/flow` and `flat-eta` it does **not** (`steep` has no rung-53 schedule — inherited). Scored on its own row; never the rung's crossing (§ 4.3) |
+| **P8** | **Q5 — the two readings move OPPOSITE under the front-row lever** | design-point identity first: `M_rel,tip(φ=1, n=1, v=0)` equals § 6.2's `M_rel,d` to `1e-12`. Then on the stack at the walls' `K`, front-row lever vs bare at the same `Tt4` ∈ {1300, 1100, 1000}: the front-row relative TIP Mach **falls** (by ≥ 3 % at 1000) in every `h` cell, while physical `N_L` **rises** |
+
+**P1 is registered as a BAND on purpose, not a direction.** Its point estimate (1.40) sits on the
+1.395 redline, so "crosses" vs "does not" is not a forecast this anchor can make — naming one
+would be a coin-flip dressed as a prediction (rung 83's two void bars died of naming a direction
+rather than a point). Both outcomes are named now. **Above 1.395:** the walls turn rung 55's
+all-rows verdict from "unreachable at `K` = 8" into "reachable, and over the redline, at the
+machine's own `K`" — a changed verdict, and the rung's LP result. **Below:** the LP spool has no
+crossing on the default shape, and the rung rests on P5.
+
+**P5 is the riskiest bar, written to lose either way.** No published number gives an HP lever's
+speed against design. If `N_H` stays under 1.125 the HP has no crossing; if it passes 1.546,
+every HP cell crosses and "the tightest cell only" is refuted.
+
+### 4.2 The voids — a row that trips one is not reported, it is voided
+
+* **V1 an unreachable schedule has no `v*`.** Its redline verdict is read along the SCAN in `v`
+  (rung 55's schedule hit its scan edge before its target): `N/N_d > R` at any valid scan point ⇒
+  scored "crosses before target"; otherwise the cell is **VOID**, never "under".
+* **V2 HP physical speed reads `Tt25` at THAT point.** A verdict read off corrected `n_H` is void.
+* **V3 P8's design-point identity must hold**, else every Q5 row is void.
+* **V4 `K` comes from § 6.2, per cell, as a PAIR.** A run at a `K` the walls did not produce
+  scores nothing.
+* **V5 P0 failing voids P1–P6** until the `Φ_d` channel it exposes is named.
+
+### 4.3 The NEGATIVE rule — restated against these bars, fixed now
+
+The rung ships as a RUNG iff, **on the default shape**, at least one LP cell (P1/P2) or HP cell
+(P4–P6) **crosses** its redline at a reached point or under V1. If none crosses, this is a NEGATIVE
+— `docs/blade-speed-walls-negative.md` — whose content is the walls' re-derived `K`, `C` and
+redline. A crossing **only** on a non-default shape (P7) is that negative's boundary and does
+**not** rescue the rung. Every "crosses" survives § 5's optimistic wall; every "under" is worded
+one-sided.
 
 ## 6. THE USER'S DECISION ON P-C, AND THE DERIVATION IT NEEDS (2026-10-06)
 
@@ -311,8 +385,34 @@ raised by the advisor):
 `m_lim`, `M_i`, a cross-gain per unit incidence — is in NORMALISED (map) units; rung 85 states
 this once in its spec, and quotes a physical incidence only as `M_i/Φ_d`.
 
-**Still open:** re-running P-C's capacity table at `Φ_d` = 0.54 (§ 6's P-C' gives the summary
-band; the full per-cell table is not yet written).
+### 6.2 THE PER-CELL TABLE (P-C' in full) — what § 4 is scored against (2026-10-06)
+
+Conventions (plain arithmetic; reproduces § 6's P-C' summary exactly): `γ` = 1.4, `cp` = 1004;
+arithmetic mean radius, `U_tip = U_m·2/(1+h)`; uniform `Vx = Φ_d·U_m`, zero inlet swirl; static
+`T = Tt − Vx²/2cp`; the airflow wall solves `M_rel,tip = M_rel,lim` for `U_m`; `K* = Δh(1+l)/U_m²`,
+`K = ceil(K*)`, `U_d = sqrt(Δh(1+l)/K)`; `U_cap = sqrt(2(σ_y/ρ)/(1−h²))`, `R = U_cap/(1.2·U_d,tip)`.
+`Φ_d` = 0.537, `σ_y/ρ` = 1.8681e5 m²/s², faces at `Tt2` = 286.125 K / `Tt25` = 403.354 K.
+
+| spool | `h` | `M_rel,lim` | `K*` | `K` | `U_tip` wall | `U_tip,d` | `C` at `K` | `M_rel,d` | **`R` at `K`** | `R` at `K*` |
+|---|---|---|---|---|---|---|---|---|---|---|
+| LP | 0.5 | 1.3 | 2.23 | 3 | 399.5 | 344.3 | 0.649 | 1.114 | **1.708** | 1.472 |
+| LP | 0.5 | 1.4 | 1.94 | 2 | 428.6 | 421.7 | 0.761 | 1.376 | **1.395** | 1.372 |
+| LP | 0.5 | 1.5 | 1.70 | 2 | 457.5 | 421.7 | 0.761 | 1.376 | **1.395** | 1.286 |
+| LP | 0.7 | 1.3 | 1.82 | 2 | 389.7 | 372.1 | 0.761 | 1.238 | **1.917** | 1.830 |
+| LP | 0.7 | 1.4 | 1.59 | 2 | 417.8 | 372.1 | 0.761 | 1.238 | **1.917** | 1.707 |
+| LP | 0.7 | 1.5 | 1.39 | 2 | 445.6 | 372.1 | 0.761 | 1.238 | **1.917** | 1.601 |
+| HP | 0.5 | 1.3 | 4.86 | 5 | 474.3 | 467.7 | 0.723 | 1.281 | **1.258** | 1.240 |
+| HP | 0.5 | 1.4 | 4.22 | 5 | 508.9 | 467.7 | 0.723 | 1.281 | **1.258** | 1.156 |
+| HP | 0.5 | 1.5 | 3.71 | 4 | 543.2 | 522.9 | 0.785 | 1.441 | **1.125** | 1.083 |
+| HP | 0.7 | 1.3 | 3.98 | 4 | 462.7 | 461.4 | 0.785 | 1.296 | **1.546** | 1.542 |
+| HP | 0.7 | 1.4 | 3.46 | 4 | 496.1 | 461.4 | 0.785 | 1.296 | **1.546** | 1.438 |
+| HP | 0.7 | 1.5 | 3.04 | 4 | 529.1 | 461.4 | 0.785 | 1.296 | **1.546** | 1.348 |
+
+(speeds m/s.) **The staircase in one look (D1):** all three LP `h` = 0.7 levels build ONE machine
+(`K` = 2), as do all three HP `h` = 0.7 levels (`K` = 4); the LP `h` = 0.5, 1.3 cell's rounding
+to `K` = 3 drops its design tip Mach to 1.114, far below the level it was sized on. The 12
+spool-cells collapse to **6 distinct spool machines** (3 per spool), and the 6 (`h`, `M_rel,lim`)
+cells to **4 distinct LP/HP pairs**: integer `K`, not the wall level, sets the redline.
 
 ## 5. Concessions already known
 
