@@ -280,7 +280,7 @@ footer code { font-size: 12px; }
 </nav>
 
 <header class="hero wrap" id="engine">
-  <p class="eyebrow">A station-by-station Brayton-cycle model &middot; 28 cumulative rungs</p>
+  <p class="eyebrow">A station-by-station Brayton-cycle model &middot; 84 cumulative rungs, the first 29 shown here</p>
   <h1>The model, made visible</h1>
   <p class="sub">One single-spool turbojet, built one physical effect at a time — from the ideal
   cycle to dissociation equilibrium, Zeldovich NOx kinetics, a resolved dilution cross-plane, and
@@ -484,7 +484,7 @@ footer code { font-size: 12px; }
 <section class="wrap" id="rungs">
   <div class="section-head">
     <p class="eyebrow">The full ladder</p>
-    <h2>29 rungs, one physical effect each</h2>
+    <h2>The first 29 rungs, one physical effect each</h2>
     <p class="lede">Each rung is cumulative, anchored to a published case, and reduces bit-for-bit
     to the rung below when its knob is off. Click a rung to expand.</p>
   </div>
@@ -494,11 +494,11 @@ footer code { font-size: 12px; }
 <footer>
   <div class="wrap">
     <p>Every curve on this page was computed by the model in this repository —
-    <code>extract_data.py</code> runs the actual <code>turbojet</code> package (CPG cycle,
+    <code>cargo run --release -- visuals</code> runs the actual Rust model in <code>rust/</code> (CPG cycle,
     equilibrium gas, Zeldovich integrator, quench, β-PDF and spatial closures) at the rung-1
     design point (<span id="footer-design"></span>). Sweep grids are
     reduced vs the production defaults for speed; the verification gates live in
-    <code>tests/</code>, not here.</p>
+    <code>rust/tests/</code>, not here.</p>
   </div>
 </footer>
 
@@ -519,7 +519,7 @@ const fmt = (v, sig = 3) => {
 /* Which engine this page shows is the MODEL'S statement, not typed markup: every
    place the design point is named renders from DATA.design. A constant typed into
    the prose would land in the built page too, so the splice test cannot see it —
-   tests/test_visuals_data.py gates this separately. */
+   rust/tests/visuals.rs gates this separately. */
 function paintDesignPoint() {
   const g = DATA.design;
   const dp = `M<sub>0</sub>=${(+g.M0).toFixed(2)}, π<sub>c</sub>=${(+g.pi_c).toFixed(0)}, `
