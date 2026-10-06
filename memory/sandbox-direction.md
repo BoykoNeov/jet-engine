@@ -1,0 +1,29 @@
+---
+name: sandbox-direction
+description: "User decision 2026-10-06: the project's direction is a SANDBOX (change components/designs, watch the engine respond), not separate pass/fail lessons; new effects ship as knobs, no NEGATIVE gates; planned form is an interactive web page running the Rust model live"
+metadata:
+  node_type: memory
+  type: project
+  originSessionId: fc49c174-1ea6-4775-96a6-b721880afed4
+  modified: 2026-10-06T06:31:40.803Z
+---
+
+**Decision (user, 2026-10-06):** "generally i want more of a sandbox, not just lessons. sandbox,
+where the user can change components and designs and see how parameters of the engine change …
+this will also diminish the number of 'rejected' parts."
+
+Answers to the follow-up: (1) rung 85 is reframed NOW as knobs — blade `h`, tip-Mach level,
+material, overspeed factor, `Φ_d`, map shape — every result shown, its ship-or-NEGATIVE gate and
+"default shape only" rule retired, all five shapes equal (anchor § 4.4 A1); the sandbox TOOL comes
+after rung 85. (2) Form: an **interactive web page**, the Rust model running live in the page
+(compiled for the browser — the crate stays dependency-free), beside the charts/cutaway pages.
+
+**Why:** the user wants to explore designs hands-on; pass/fail rungs turned honest misses into
+"rejected" work (the eight NEGATIVE docs).
+
+**How to apply:** design new rungs as knobs + readouts. A prediction still gets registered and
+scored HIT/MISS, but a miss is a finding, never a reason to withhold the knob or to write a
+negative instead of shipping. Don't start the web sandbox until rung 85 is done, unless the user
+says so; when it starts, plan it first (which knobs, how the model reaches the browser).
+CLAUDE.md carries a one-line "Direction" note under its intro. See [[rung85-blade-speed-in-progress]],
+[[visuals-artifact]], [[cutaway-artifact]].

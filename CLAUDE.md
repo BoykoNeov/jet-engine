@@ -7,6 +7,9 @@ thrust, the efficiencies, and a T–s diagram.
 **The deliverable is understanding, not the tool.** The code is the medium that
 forces every thermodynamic assumption into the open. Optimize the work for
 teaching, not for features or polish.
+**Direction (user, 2026-10-06): a SANDBOX** — the user changes components and designs and watches
+the engine respond. A new effect ships as KNOBS with every result shown, not a pass/fail verdict;
+planned: an interactive web page running the Rust model live.
 
 > **⚠ This file is a REFERENCE / index — not a handout.** Keep it compact.
 > The rung table is **one line per rung**; each rung's derivation, assumptions,

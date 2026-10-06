@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: edd8c029-bea9-4b2c-99e0-c4ce222591f5
-  modified: 2026-10-06T06:27:02.842Z
+  modified: 2026-10-06T06:31:44.008Z
 ---
 
 **State (2026-10-06):** design only; nothing in `rust/` touched. The anchor doc
@@ -32,6 +32,11 @@ P0 (`Φ_d` can't reach the speed bills, `==`), P1/P2 LP all-rows at the walls' K
 P3 monotone in K, P4–P6 HP levers (P5 the riskiest), P7 shape (`tilted`), P8 tip Mach falls
 while N rises; voids V1–V5; NEGATIVE rule: no default-shape crossing ⇒ a negative doc. § 6.2
 is the per-cell redline table every bar reads (12 cells → 4 distinct LP/HP machine pairs).
+**Amended same day, pre-code (§ 4.4):** the user's SANDBOX decision ([[sandbox-direction]])
+retires the NEGATIVE gate — rung 85 ships as KNOBS, all five shapes equal; advisor fixes: P0 is
+settled by PATH (`Φ_d` never enters the schedule residual; V5 retired), P3 off the 1500 point,
+P7 on each shape's own redlines (§ 6.3 — `tilted` is `l` = 0.85, tightest LP `R` 1.337), P8
+against the formula, A6 bare-speed note, A7 the conventions paragraph is the table's record.
 
 **Next:** D6 — a Rust-owned CLI golden, its own commit (first rung with no Python segment); then
 code; then score § 4 in `docs/rung85-spec.md`.

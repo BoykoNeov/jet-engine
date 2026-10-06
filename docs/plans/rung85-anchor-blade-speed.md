@@ -15,7 +15,10 @@ decision (§ 3: airflow SIZES, strength is the only off-design wall).
 **2026-10-06, step 3: § 4 REGISTERED** (P0–P8, voids, the NEGATIVE rule), against § 6.2's
 per-cell redline table — written BEFORE any code. The draft Q4 ("the lumped stator crosses")
 was found already decided by published numbers, the other way, and moved to § 4.0 (no credit).
-Next: D6 (the Rust-owned golden, its own commit), then code.
+**Amended the same day, still pre-code (§ 4.4):** the user's SANDBOX decision retires the
+ship-or-NEGATIVE gate — rung 85 ships as knobs, all five shapes equal — and five bar defects the
+advisor found are fixed (P0 by path, P3's grid, P7 on each shape's own redlines in § 6.3, P8's
+identity, the bare-speed note). Next: D6 (the Rust-owned golden, its own commit), then code.
 Probes: plain arithmetic on the shipped design numbers (rung 56's CPG rig, `cp` = 1004 exactly, so
 `Δh = cp·ΔT` IS the model's own enthalpy there; default shape `flow/press`, `l` = 0.7 LP / 1.0 HP).
 
@@ -296,7 +299,7 @@ every HP cell crosses and "the tightest cell only" is refuted.
   scores nothing.
 * **V5 P0 failing voids P1–P6** until the `Φ_d` channel it exposes is named.
 
-### 4.3 The NEGATIVE rule — restated against these bars, fixed now
+### 4.3 ~~The NEGATIVE rule~~ — RETIRED by § 4.4 A1 (the user's sandbox decision, pre-code)
 
 The rung ships as a RUNG iff, **on the default shape**, at least one LP cell (P1/P2) or HP cell
 (P4–P6) **crosses** its redline at a reached point or under V1. If none crosses, this is a NEGATIVE
@@ -304,6 +307,52 @@ The rung ships as a RUNG iff, **on the default shape**, at least one LP cell (P1
 redline. A crossing **only** on a non-default shape (P7) is that negative's boundary and does
 **not** rescue the rung. Every "crosses" survives § 5's optimistic wall; every "under" is worded
 one-sided.
+
+### 4.4 AMENDMENT — 2026-10-06, after commit `7b1d552`, BEFORE ANY CODE
+
+Made after the second advisor check-in and the user's direction change, with no code written and no
+run made, so no bar below was moved toward a result. The P-table of § 4.1 stands as written except
+where an item here supersedes it.
+
+* **A1 — THE SANDBOX DECISION (user, 2026-10-06).** The project's direction is a SANDBOX — the user
+  changes components and designs and watches the engine respond — not a sequence of pass/fail
+  lessons. So rung 85 ships as **KNOBS**: blade hub-to-tip `h`, the tip-Mach design level
+  `M_rel,lim`, the material `σ_y/ρ`, the overspeed factor, the design flow coefficient `Φ_d` and the
+  map shape, with `K`, `C`, `U_d`, the redline and every lever's `N/N_d`-vs-`R` reported for
+  whatever is chosen. **§ 4.3's ship-or-NEGATIVE gate is retired, and so is its "default shape
+  only" clause: all five disclosed shapes are equal.** The predictions stay and are scored HIT/MISS
+  in the spec as recorded expectations; a miss is a finding, never a reason to withhold the knob.
+* **A2 — P0 declared by PATH (fixes a bar that could not work either way).** The code takes the
+  MAP-UNITS route: `Φ_d` enters ONLY the new sizing / readout code (the walls, `C`, the tip Mach,
+  rung 54's throat law `1/sqrt(1+(v/Φ_d)²)`), never rung 53's or rung 55's schedule residual, which
+  stays in map units — § 6.1's homogeneity says the solved `v` is identical, so there is nothing
+  to recompute. **P0 is therefore SETTLED BY CONSTRUCTION, no credit.** It is replaced by a
+  STRUCTURAL gate — the schedule functions take no `Φ_d` and read no struct that carries it
+  (checked by the compiler, not by a name grep) — with the `==` comparison kept as a regression
+  test only. Had the physical residual `(1/φ − v)/Φ_d` been used, `INC_TOL` would have stopped the
+  bisection at a different point and a last-digit miss would have voided the rung via V5. **V5 is
+  retired.**
+* **A3 — P3 restricted to `Tt4` ∈ {1300, 1100, 1000}.** At 1500 `v*` = 0 and every `K` gives
+  `N` = 1 exactly, so a strict `<` fails for a reason with no physics in it.
+* **A4 — P7 re-read against EACH SHAPE'S OWN redlines (§ 6.3).** `K`, `U_d` and `R` all depend on
+  the map slope `l`; `tilted` is `l` = 0.85 on both spools (`rust/tests/rung55.rs` `maps`), not the
+  default 0.7 / 1.0, so § 6.2's 1.395 was the wrong machine's limit. **New P7 bar:** at
+  `Tt4` = 1000 the LP lumped schedule on `tilted` crosses ITS tightest LP cell (`h` = 0.5,
+  `M_rel,lim` = 1.5, `K` = 2, `R` = **1.337**) and NOT its `h` = 0.7 cells (`R` = **1.837**); on
+  `press/flow` (smallest LP `R` **1.286**) and `flat-eta` (same `l` as default, **1.395**) it
+  crosses no LP cell. Estimates assume each shape's bare `N_L` ≈ 0.7557 (not published per shape —
+  which is why this is a prediction): `tilted` ≈ 1.43, `press/flow` ≈ 1.22 (**within 6 % of its
+  bar, flagged**), `flat-eta` ≈ 1.16.
+* **A5 — P8's identity is against the FORMULA, not the print.** § 6.2 prints `M_rel,d` to three
+  decimals; the `1e-12` check compares the plant's design-point tip Mach with § 6.2's conventions
+  recomputed in code.
+* **A6 — the bare speed under P1 and § 4.0's front-row row is the LUMPED one** (0.7557, rung 53's
+  plant). The stack enters the solver (rung 55), so its bare `N_L` may differ with `K`; P1's band
+  absorbs a difference of that size and the front-row verdict (0.849 vs ≥ 1.286 on any shape)
+  survives it. No bar changes.
+* **A7 — the table's record.** § 6.2/§ 6.3 were computed by a throwaway script outside the repo
+  (the repo carries no Python model). **The conventions paragraph is the record**; the rung's Rust
+  code recomputes the table, and a test pins its 12 default-shape cells to the printed digits.
 
 ## 6. THE USER'S DECISION ON P-C, AND THE DERIVATION IT NEEDS (2026-10-06)
 
@@ -413,6 +462,23 @@ arithmetic mean radius, `U_tip = U_m·2/(1+h)`; uniform `Vx = Φ_d·U_m`, zero i
 to `K` = 3 drops its design tip Mach to 1.114, far below the level it was sized on. The 12
 spool-cells collapse to **6 distinct spool machines** (3 per spool), and the 6 (`h`, `M_rel,lim`)
 cells to **4 distinct LP/HP pairs**: integer `K`, not the wall level, sets the redline.
+
+### 6.3 THE PER-SHAPE TABLE (§ 4.4 A4) — `K` and `R` at integer `K`, by map slope
+
+§ 6.2's conventions with each shape's own `l` (`rust/tests/rung55.rs` `maps`); the design `Δh` is
+shape-free. `flat-eta` has the default slopes, so it IS § 6.2. Cells in (`h`, `M_rel,lim`) order
+(0.5, 1.3) (0.5, 1.4) (0.5, 1.5) (0.7, 1.3) (0.7, 1.4) (0.7, 1.5); each entry `K` / `R`.
+
+| shape (`l` LP / HP) | LP | HP |
+|---|---|---|
+| `flow/press`, `flat-eta` (0.7 / 1.0) | 3/1.708 · 2/1.395 · 2/1.395 · 2/1.917 · 2/1.917 · 2/1.917 | 5/1.258 · 5/1.258 · 4/1.125 · 4/1.546 · 4/1.546 · 4/1.546 |
+| `press/flow` (1.0 / 0.7) | 3/1.575 · 3/1.575 · 2/1.286 · 3/2.164 · 2/1.767 · 2/1.767 | 5/1.364 · 4/1.220 · 4/1.220 · 4/1.677 · 3/1.452 · 3/1.452 |
+| `tilted` (0.85 / 0.85) | 3/1.637 · 3/1.637 · 2/1.337 · 2/1.837 · 2/1.837 · 2/1.837 | 5/1.308 · 4/1.169 · 4/1.169 · 4/1.607 · 4/1.607 · 3/1.392 |
+| `steep` (1.2 / 1.2) | 3/1.502 · 3/1.502 · 3/1.502 · 3/2.064 · 3/2.064 · 2/1.685 | 6/1.313 · 5/1.199 · 5/1.199 · 5/1.648 · 4/1.474 · 4/1.474 |
+
+A steeper loading slope `l` lowers the per-row work coefficient `1/(1+l)`, so it needs MORE rows
+at the same wall — and the integer staircase then moves `R` in both directions. The tightest cell
+anywhere is still the default HP's 1.125.
 
 ## 5. Concessions already known
 
