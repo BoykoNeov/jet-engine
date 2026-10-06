@@ -134,6 +134,7 @@ new slices and step links go THERE, not here.
 - [Rung 82 threshold law](rung82-threshold-law.md) — two bars VOID for comparing a physical quantity to a loop count
 - [Rung 83 corrector law](rung83-corrector-law.md) — an identity round-trip sold as verification
 - [Rung 84 staircase law](rung84-staircase-law.md) — a small integer COUNT cannot carry a RATE
+- [Rung 85 blade speed — IN DESIGN](rung85-blade-speed-in-progress.md) — convert every input to the quantity a new wall reads BEFORE adding the wall
 
 ## Margin sweeps — confirmations, not rungs
 - Margin sweeps — [72–77 march audit](rungs72-77-march-audit.md), [74 arrest interval](rung74-arrest-interval.md), [79 gap](rung79-gap-margin.md), [29 π_c](rung29-pi-c-margin.md), [29 M0](rung29-M0-margin.md), [28 β](rung28-beta-margin-hardened.md) — a liveness counter on a FROZEN plant reports FULL activity (one lesson per file)
