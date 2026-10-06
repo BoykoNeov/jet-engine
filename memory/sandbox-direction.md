@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: fc49c174-1ea6-4775-96a6-b721880afed4
-  modified: 2026-10-06T06:31:40.803Z
+  modified: 2026-10-06T15:26:55.322Z
 ---
 
 **Decision (user, 2026-10-06):** "generally i want more of a sandbox, not just lessons. sandbox,
@@ -26,6 +26,9 @@ scored HIT/MISS, but a miss is a finding, never a reason to withhold the knob or
 negative instead of shipping. Don't start the web sandbox until rung 85 is done, unless the user
 says so; when it starts, plan it first (which knobs, how the model reaches the browser).
 **Rung 85 SHIPPED 2026-10-06** — the web sandbox is now the next work; plan it first.
+**Plan written + pushed 2026-10-06: `docs/plans/sandbox-plan.md`** (a Node spike proved the crate
+runs as wasm with no deps; ~2 ms/equilibrium run; one last-place drift vs native). Its § 9 holds six
+user decisions — get answers before building slice 1.
 **User, 2026-10-06, on rung 85:** "make it closer to reality, maybe don't round so much" — when a
 model is forced to round or quantise (whole blade rows), ask what a real designer lets ABSORB the
 leftover and offer that as a knob, rather than letting one quantity jump. See [[rung85-blade-speed]].

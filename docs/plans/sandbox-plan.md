@@ -28,7 +28,12 @@ beside the same calls compiled natively.
 - **No wasm-bindgen** (the crate's no-dependency rule). Plain `#[no_mangle] extern "C"` exports, an
   `alloc`/`free` pair for passing text, and a hand-written JS loader (~50 lines).
 - **Settings in, results out, as JSON text.** The crate already parses and prints JSON
-  (`visuals::Json`), so the bridge needs no new serialisation code.
+  (`visuals::Json`), so the bridge needs no new serialisation code. **The result carries FULL
+  precision** — never `r6`/`cycle_blocks`, whose 6-figure rounding would make the Node check (§ 6)
+  compare two rounded strings and "measure" a zero drift. Checked: `Json` writes a float with
+  `repr_f64` (shortest round-trip) and reads it with Rust's correctly-rounded `parse`, so a float
+  survives print→parse exactly — `tests/sandbox.rs` pins that, so the bit-for-bit gate tests the
+  model and not the printer.
 - **Where the code lives — split in two:**
   1. `rust/src/sandbox.rs` — a **pure** module in the main crate: `run_json(settings: &str) -> String`
      (parse settings, build the engine, run it, print the result). Ordinary Rust, so it is tested
@@ -78,9 +83,19 @@ The conservation asserts stay (working contract) — and a slider will trip them
 
 **Readouts — every result, no verdicts.** The full station table (Tt, pt, f at 0/2/3/4/5/9);
 performance (specific thrust, thrust, TSFC, Brayton / thermal / propulsive / overall efficiency,
-`V9`, `M9`, `T9`, `p9`); the T–s diagram (from `visuals::cycle_points`, already a function of one
-result); and a **pin & compare** button — freeze the current design and show every number's change
+`V9`, `M9`, `T9`, `p9`); the T–s diagram; and a **pin & compare** button — freeze the current design and show every number's change
 against it, which is the sandbox's main way of "seeing what a part does".
+
+**The T–s diagram needs new code.** `visuals::cycle_points` (`src/visuals.rs:355`) cannot be
+reused: it computes entropy with `Gas::default()` (the perfect gas) and from `panels::flight()`'s
+fixed datum, whatever engine it is handed — so it is right only for the perfect gas at the panels'
+flight point. Slice 1 adds `sandbox::ts_points(gas, result, flight)`: entropy on the run's OWN gas
+(the closed form on the perfect gas; the NASA `φ(T)` integral, cold section for stations 0–3 and
+the hot section at the run's `f` for 4–9) from the run's OWN ambient datum. Gates: it reduces to
+`cycle_points` bit-for-bit on the perfect gas at the panels' flight; an ideal (isentropic)
+compressor and turbine give zero entropy change on the thermally-perfect gas. **Honest
+concession to state on the page:** the burner changes the gas's composition, so the jump in
+entropy across it mixes heat addition with a change of reference mixture.
 
 **Not in slice 1:** off-design, two spools, blade speeds, NOx, transients.
 
@@ -110,14 +125,25 @@ against it, which is the sandbox's main way of "seeing what a part does".
   `run_json` natively. The bar is **measured, not typed** — § 1 found last-place differences, so the
   bar is a relative tolerance set from the measured worst case on that grid (with headroom stated),
   not bit equality. Whether this step joins `rust/test-all.ps1` is § 9.
+- **The page in a real browser** — the one layer nothing above reaches (the loader, the Worker, the
+  "does not run" panel, the DOM). The project's pages once had no test and *looked* fine
+  (`memory/visuals-model-binding.md`). A script serves `docs/sandbox/` on a local port (the
+  browser tooling refuses `file://`), drives a headless Chrome with its OWN profile folder under
+  `W:\temp\claude` and its OWN debugging port, PID recorded at launch: load the page, read the
+  design-point thrust off the DOM and compare with `run_json`; set an impossible design and check
+  the "does not run" panel shows and the next good design recovers. Shut down through its own port,
+  then by that PID only — never by name.
 - **Unchanged by construction:** `cli_golden`, `visuals`, every oracle — the sandbox adds files and
-  one module, and edits none of the model.
+  one module, and edits none of the model. Checked 2026-10-06: no test in `rust/tests/` lists
+  `src/`'s modules (no `read_dir`, no module census), so a non-rung `sandbox.rs` trips no guard.
 
 ## 7. Risks still open
 
-- **Hosting as a claude.ai artifact.** Whether the artifact page's security policy lets
-  WebAssembly compile is **unmeasured**. Check with a tiny private test page before slice 1's
-  publish; the local file works regardless.
+- **Hosting, and the two browser features the page leans on.** Whether a page's security policy
+  lets (a) WebAssembly compile and (b) a Worker start from a `blob:` URL is **unmeasured** — for
+  the claude.ai artifact host AND for a double-clicked `file://` page (browsers treat `file://`
+  origins strictly). Check both, in both places, with a tiny test page before slice 1's template is
+  written. Fallback if (b) is refused: run the model on the main thread (fine at ≤3 ms per run).
 - **Equilibrium near its edges** (very lean / very hot) may be slower or fail more than the
   three spike points show — the Worker and the trap path absorb it, but time a grid, not three.
 - **Ranges.** Slider limits decide how often a user lands on a non-running design; set them from
@@ -125,19 +151,25 @@ against it, which is the sandbox's main way of "seeing what a part does".
 
 ## 8. Order of work for slice 1
 
-1. `sandbox.rs` + `tests/sandbox.rs` (settings → result, pre-checks, inlet law).
+0. The hosting / `file://` / `blob:`-Worker check (§ 7) — it decides the page's shape.
+1. `sandbox.rs` + `tests/sandbox.rs` (settings → result at full precision, pre-checks, inlet law,
+   the gas-aware `ts_points`).
 2. `rust/sandbox-wasm/` shell + Node check; measure the bar.
 3. `docs/sandbox/template.html` — knobs, readouts, T–s, pin & compare, the "does not run" panel.
-4. Joint tests; `build.ps1`; README beside the page.
-5. The hosting check (§ 7), then publish if the user wants it published (§ 9).
+4. Joint tests; the headless-browser test; `build.ps1`; README beside the page.
+5. Publish if the user wants it published (§ 9).
 
 ## 9. Decisions for the user
 
 1. **Slice 1's knobs** — is § 4 the right first set? In particular: flight as raw ambient
    temperature + pressure, or a single **altitude** knob (standard atmosphere)? *Recommended:
-   altitude, with T0/p0 shown as readouts and an "override" switch.*
+   altitude, with T0/p0 shown as readouts and an "override" switch.* **Cost:** a standard
+   atmosphere is NEW PHYSICS, not wiring — under the working contract it needs a cited source
+   (the 1976 US Standard Atmosphere), a written derivation, and a test against the published
+   table. Raw `T0`/`p0` costs nothing new.
 2. **Default gas model** when the page opens. *Recommended: equilibrium (the real production
-   cycle, ~2 ms per run), with perfect gas one click away for the textbook numbers.*
+   cycle, ~2 ms per run), with perfect gas one click away for the textbook numbers.* This rests on
+   § 4's gas-aware T–s diagram, which slice 1 builds anyway (every non-perfect gas needs it).
 3. **Local file only, or also a published (private) claude.ai page** like the charts and cutaway?
    *Recommended: both, once § 7's hosting check passes.*
 4. **Browser numbers may differ from the CLI's in the last digit or so** (§ 1). Acceptable, with
