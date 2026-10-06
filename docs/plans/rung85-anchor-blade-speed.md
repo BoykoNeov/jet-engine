@@ -9,7 +9,7 @@ a STRENGTH wall (centrifugal blade-root stress) — with whichever binds winning
 
 **Status:** § 0 (pre-check probes) and § 1 (sources) are DONE. § 2 (the knob table) is written.
 § 3 (open design decisions) and § 4 (predictions) were revised after the FIRST advisor check-in
-(2026-10-06); **§ 0 P-C BLOCKS the rung's design and is with the user.** No code has been written.
+(2026-10-06); § 0 P-C BLOCKED the design; the user chose `Φ_d` as a design input — see § 6. No code has been written.
 Probes: plain arithmetic on the shipped design numbers (rung 56's CPG rig, `cp` = 1004 exactly, so
 `Δh = cp·ΔT` IS the model's own enthalpy there; default shape `flow/press`, `l` = 0.7 LP / 1.0 HP).
 
@@ -93,6 +93,15 @@ host a physical blade speed).** Taken to the user.
   **eight-stage 20:1 core compressor, constant meanline diameter, inlet hub-tip 0.7, inlet
   rotor-tip speed 455 m/s** — explicitly "considerably higher than state-of-the-art" (1980).
   *Supplies:* an UPPER, aggressive example of both the tip Mach and `h`. *Does not supply:* a limit.
+- **NASA TP 1659, Table I and Table II(a) — READ FIRST-HAND, and they supply `Φ_d`.** Table I
+  (stage 37 design overall parameters): **flow coefficient 0.453** (eq. B23: `(Vz/U_t)` at the
+  rotor leading edge, i.e. TIP-referenced), tip speed **454.136 m/s**, hub-tip **0.70**, rotor head
+  rise coefficient 0.333, 17 188.7 rpm, airflow 20.188 kg/s. Table II(a) (rotor 37 blade
+  elements): at **50 % span** wheel speed 391.7 m/s and meridional inlet velocity 210.2 m/s ⇒
+  **mean-line `Φ_d` = 0.537**; absolute (≈ axial — zero inlet swirl) inlet Mach **0.573 (tip) …
+  0.661**; relative inlet Mach **1.493 tip … 1.125 hub**. The design work coefficient on the
+  mean wheel speed is `cp·ΔT/U_m²` = 1004 × 288.2 × 0.270 / 391.7² ≈ **0.51**, against this
+  model's `1/(1+l)` = 0.588 (`l` = 0.7) / 0.500 (`l` = 1.0) — same band.
 - **NASA TP 1337** (Reid & Moore, 1978) — the four inlet stages' design report; Rotor 37's design
   (`U_tip` 454 m/s, `h` 0.70, `M_rel,tip` 1.48) as quoted by secondary sources. Not yet read
   first-hand.
@@ -171,6 +180,56 @@ host a physical blade speed).** Taken to the user.
 - **NEGATIVE decision rule (fixed now):** if the walls re-derive `K` and `C` but NO verdict of rungs
   53–61 changes, and strength never binds inside the shipped envelope, this is a NEGATIVE
   (`docs/…-negative.md`), not a rung.
+
+## 6. THE USER'S DECISION ON P-C, AND THE DERIVATION IT NEEDS (2026-10-06)
+
+**Decision:** the design flow coefficient `Φ_d` becomes a DESIGN INPUT (sourced: Rotor 37's
+mean-line 0.537, § 1); `Φ_d` = 1 is the reduce to rungs 55/56, bit-for-bit.
+
+**Derivation — the map family does NOT change.** The map's `φ` is NORMALISED (`φ = Φ/Φ_d`,
+`ψ(1)` = 1). Euler with inlet swirl `v_p = tan α₁` (physical):
+
+```
+    ψ_E = U²·[1 − Φ_d·φ·(t₂ + v_p)]
+    normalise on design work, match dψ/dφ|₁ = −l    ⇒    Φ_d·t₂ = l/(1+l)        (pinned PRODUCT)
+    ⇒   ψ(φ) = [1 − l·(φ − 1)] − v_p·Φ_d·(1+l)·φ      (σ term unchanged, non-Euler)
+    ⇒   design work per row   Δh_row = U²·(1 − Φ_d·t₂) = U²/(1+l)        Φ_d-FREE
+```
+
+So (i) the shipped `psi` is EXACTLY right with its stator field read as `v = Φ_d·tan α₁` — no
+map code changes; (ii) eq. (1)'s `(1 − t₂)` is really `1/(1+l)`, so § 0's `K`-implied speeds
+STAND; (iii) the relative inlet angle is `tan β₁ = (1/φ − v)/Φ_d`, so every incidence quantity
+`T_c − tan β₁` scales by `1/Φ_d` — RATIOS and zero-crossings invariant, absolute differences not.
+
+**Where `Φ_d` reaches shipped code — found by search, not assumed** (`atan|tan_beta|alpha_1` over
+`stator.rs`, `stage.rs`, `map.rs`, `stator_transient.rs`, `stator_bleed.rs`):
+- **rung 54's stator-throat law** `A_th(v)/A_th(0) = cos α₁ = 1/sqrt(1+v²)` reads `v` as the
+  PHYSICAL tangent. With `Φ_d` ≠ 1 it must read `1/sqrt(1+(v/Φ_d)²)`. **Moves rung 54/56's
+  capacity numbers.**
+- **the incidence margin** `M_i = T_c − tan β₁` (rungs 53, 55, 56) and the INCIDENCE-referenced
+  loops (`stator_transient.rs:279`, rungs 60/69–71): the error scales by `1/Φ_d`. Margins quoted
+  as ratios/percent are invariant; a loop's effective GAIN on that error is not.
+- **capacity** `C`: the front-row axial Mach is now `Φ_d·U/a`, which is the point of the change.
+
+**P-C' — P-C re-run at `Φ_d` = 0.537 (same arithmetic; walls at `v` = 0, `h` ∈ {0.5, 0.7},
+`M_rel,lim` ∈ {1.3, 1.4, 1.5}; strength redline = Ti-6Al-4V yield / 1.2):**
+
+```
+    capacity C at the integer K :  LP 0.649 … 0.761    HP 0.723 … 0.785      (was 0.908 … 0.9975)
+    K                           :  LP 2 – 3            HP 4 – 5
+    design U_tip                :  LP 344 … 422 m/s    HP 461 … 523 m/s      (Rotor 37: 454)
+    redline headroom N_red/N_d−1:  LP +39 … +92 %      HP +12 … +55 %
+    binding wall at design      :  AIRFLOW in every cell
+```
+
+So `Φ_d` dissolves P-C (`C` back below rung 56's 0.90 with real margin) and brings the strength
+wall CLOSE on the HP spool (+12 % at `h` = 0.5, `M_rel,lim` = 1.5). **The staircase is already
+visible:** several `M_rel,lim` cells share one `K` and hence one `U_d` — integer `K`, not the wall
+level, sets the machine across most of the band (D1).
+
+**Still to settle at the next advisor check-in:** whether the incidence-referenced loops'
+`1/Φ_d` gain change is IN scope (it moves rungs 69–71's dynamics) or the rung keeps those loops
+at `Φ_d` = 1 and says so; and re-running P-C's capacity table at `Φ_d` = 0.54.
 
 ## 5. Concessions already known
 
