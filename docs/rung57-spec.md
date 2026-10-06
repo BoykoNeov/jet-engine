@@ -73,7 +73,7 @@ the credit:
 
 **Erosion is 0.63–0.66 everywhere** — across both shapes, all five ramp rates, and (on rung
 53's steady matcher, at the same throttles) 0.652 at `Tt4` = 1000 rising to 0.675 at 1500. A
-20° stator rotation buys about a **third** of its nominal incidence, and what sets the fraction
+stator setting `v` = 0.20 (`tan α₁`, i.e. ~11° of pre-swirl) buys about a **third** of its nominal incidence, and what sets the fraction
 is nothing but the map's loading slope `l`.
 
 This is why the headline is a *map* statement rather than a *dynamics* statement: both channels

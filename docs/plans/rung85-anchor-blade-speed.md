@@ -208,7 +208,8 @@ STAND; (iii) the relative inlet angle is `tan β₁ = (1/φ − v)/Φ_d`, so eve
   capacity numbers.**
 - **the incidence margin** `M_i = T_c − tan β₁` (rungs 53, 55, 56) and the INCIDENCE-referenced
   loops (`stator_transient.rs:279`, rungs 60/69–71): the error scales by `1/Φ_d`. Margins quoted
-  as ratios/percent are invariant; a loop's effective GAIN on that error is not.
+  as ratios/percent are invariant. ~~a loop's effective GAIN on that error is not~~ — **CORRECTED
+  below (§ 6.1): those loops have no gain on the error, and their behaviour is invariant.**
 - **capacity** `C`: the front-row axial Mach is now `Φ_d·U/a`, which is the point of the change.
 
 **P-C' — P-C re-run at `Φ_d` = 0.537 (same arithmetic; walls at `v` = 0, `h` ∈ {0.5, 0.7},
@@ -227,9 +228,41 @@ wall CLOSE on the HP spool (+12 % at `h` = 0.5, `M_rel,lim` = 1.5). **The stairc
 visible:** several `M_rel,lim` cells share one `K` and hence one `U_d` — integer `K`, not the wall
 level, sets the machine across most of the band (D1).
 
-**Still to settle at the next advisor check-in:** whether the incidence-referenced loops'
-`1/Φ_d` gain change is IN scope (it moves rungs 69–71's dynamics) or the rung keeps those loops
-at `Φ_d` = 1 and says so; and re-running P-C's capacity table at `Φ_d` = 0.54.
+### 6.1 SETTLED — the incidence loops are OUT of scope because `Φ_d` cannot reach them (2026-10-06)
+
+The question was whether the incidence-referenced loops' "`1/Φ_d` gain change" is in scope. It
+dissolves: **there is no gain.** Rungs 60 and 69–71 are FLOOR loops — each solves for the smallest
+`v` holding `M_i ≥ m_lim` (`reference_split.rs:623`, `stator_transient.rs:279`), it does not
+multiply the error. Both sides of that inequality come from the ONE normalised map:
+`T_c = 1/φ_surge` (`map.rs:376`, zero constants) and `m_lim = T_c − 1/φ_lim`
+(`reference_split.rs:213`, built from a `φ` floor). Under `Φ_d` the physical incidence is
+`M_i/Φ_d` and the physical floor `m_lim/Φ_d`, so the `1/Φ_d` cancels and the solved `v` is
+identical. Hence the trajectory, the Jacobian, rank, zero count and ring are identical too.
+**Rungs 60/69–71 are untouched, by homogeneity, not by fiat.**
+
+The two routes by which a PHYSICAL constant could break the homogeneity were checked (both
+raised by the advisor):
+
+- **The stator travel `v_max` = 0.20** (rungs 57/58's, inherited by 64–71). If it were a physical
+  vane angle, `Φ_d` = 0.537 would grant ~1.9× the physical tangent and, per rung 64 (the ceiling
+  IS the authority), move 64–71's protection numbers. **It is not:** every spec and anchor states
+  it as IMPOSED and inherited, in map units (`rung68-anchor` l. 128, `rung69-anchor` § 0.2,
+  `rung70/71-anchor`). The ONE prose tie to degrees, `rung57-spec.md` l. 76's "20° stator
+  rotation", was a slip — `v = tan α₁ = 0.20` is 11.3° at `Φ_d` = 1 — and is corrected there. So
+  rung 85 states: **`v_max` is in map units (`v = Φ_d·tan α₁`); its physical travel is
+  `atan(v_max/Φ_d)`, which `Φ_d` changes, and no shipped verdict reads it.**
+- **Rung 54's stator-throat law** (the one law that reads `v` as a physical tangent) lives on the
+  STEADY stator core only (`stator.rs` `throat_margin`/`ThroatRead`, a read-only margin). The
+  transient plant the incidence loops run on never builds it (no throat term in
+  `stator_transient.rs` or `reference_split.rs`). It moves rung 54/56's capacity numbers, as § 6
+  already says, and nothing downstream.
+
+**Units labelling (a documentation job, not scope):** any number quoted in incidence units —
+`m_lim`, `M_i`, a cross-gain per unit incidence — is in NORMALISED (map) units; rung 85 states
+this once in its spec, and quotes a physical incidence only as `M_i/Φ_d`.
+
+**Still open:** re-running P-C's capacity table at `Φ_d` = 0.54 (§ 6's P-C' gives the summary
+band; the full per-cell table is not yet written).
 
 ## 5. Concessions already known
 
