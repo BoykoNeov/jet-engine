@@ -10,6 +10,8 @@ a STRENGTH wall (centrifugal blade-root stress) — with whichever binds winning
 **Status:** § 0 (pre-check probes) and § 1 (sources) are DONE. § 2 (the knob table) is written.
 § 3 (open design decisions) and § 4 (predictions) were revised after the FIRST advisor check-in
 (2026-10-06); § 0 P-C BLOCKED the design; the user chose `Φ_d` as a design input — see § 6. No code has been written.
+2026-10-06 later: § 6.1 (incidence loops invariant), § 1 sourced first-hand, and the user's ROLES
+decision (§ 3: airflow SIZES, strength is the only off-design wall). Next: register § 4.
 Probes: plain arithmetic on the shipped design numbers (rung 56's CPG rig, `cp` = 1004 exactly, so
 `Δh = cp·ΔT` IS the model's own enthalpy there; default shape `flow/press`, `l` = 0.7 LP / 1.0 HP).
 
@@ -168,7 +170,23 @@ host a physical blade speed).** Taken to the user.
 
 **Reduce:** walls `None` ⇒ `K`, `C` as supplied ⇒ the rung-56 code path, bit-for-bit.
 
-## 3. OPEN DESIGN DECISIONS (to settle at the advisor check-in)
+## 3. DESIGN DECISIONS — status as of 2026-10-06
+
+**The user's decision on the walls' ROLES (2026-10-06):** the airflow level is an EFFICIENCY
+TARGET (§ 1, Biollo & Benini: limited "to maintain high efficiencies"), not a hard wall, and the
+model attaches no loss to exceeding it. So **the airflow level SIZES the design** (`U_d`, `K`, `C`)
+and **the strength redline is the ONLY off-design wall.** Off design the front-row relative tip
+Mach is REPORTED as a reading; exceeding the design level is not a "crossing". This narrows the
+first decision ("both walls, whichever binds") to the DESIGN point, where it stands unchanged.
+
+| | status |
+|---|---|
+| D1 integer `K` | **SETTLED** — adopted as proposed |
+| D2 rung 55's "resolution" | **SETTLED** — adopted as proposed (BOUNDS, not corrects) |
+| D3 vacuity condition | **SETTLED** — registered; does not fire at `M0` = 0.85 (airflow binds the design in every cell, § 0 P-B and § 6 P-C') |
+| D4 the experiment | **SETTLED (rewritten)** — the user's roles decision above |
+| D5 | retracted |
+| D6 the panel | **OPEN** — the golden's meaning for the panel count is settled in its own commit, before the physics |
 
 - **D1 — integer `K`.** `K = ceil(…)` puts the design BELOW the wall by a rounding gap that jumps
   as any input moves (rung 84's staircase). Proposal: every verdict is quoted at the INTEGER `K`
@@ -182,12 +200,14 @@ host a physical blade speed).** Taken to the user.
   the rung must instead size `U_d = U_cap/1.2`, whereupon EVERY overspeed crosses the wall by
   construction.* At `M0` = 0.85, § 0 P-B says the design is airflow-bound, so the headroom is a
   derived number; the vacuity condition is exactly "strength binds at design".
-- **D4 — which experiment shows the crossover.** "Which wall SETS the design" is a DESIGN-SPACE
-  question (engines designed at different flight `M0`); "which wall does an OVERSPEED hit first" is
-  an OFF-DESIGN question on one engine. Proposal: the off-design one is the rung (it is where
-  rungs 53–61's speed bills live); the design-space crossover is reported as § 0's probe only.
-  Off design, the airflow wall reads CORRECTED speed/flow (`n`, `m`) and the strength wall reads
-  PHYSICAL speed `N/N_d = n·sqrt(θ₂/θ₂,d)` — each spool its own pair.
+- **D4 — which experiment (REWRITTEN 2026-10-06, the user's roles decision).** "Which wall SETS
+  the design" is a DESIGN-SPACE question (engines designed at different flight `M0`), answered by
+  § 0's probe only: the airflow level, in every cell at `M0` = 0.85. ~~"Which wall does an
+  OVERSPEED hit first"~~ — withdrawn: it compared a soft efficiency target with a certification
+  failure as if they were one kind of limit. **The rung's off-design question is: does a lever's
+  speed bill (rungs 53–61) cross the STRENGTH redline**, which reads PHYSICAL speed
+  `N/N_d = n·sqrt(θ₂/θ₂,d)`, each spool its own. The front-row relative tip Mach, which reads
+  corrected speed/flow and the stator setting, is reported beside it as a reading, never a verdict.
 - **D5** — retracted; see § 0 (true by construction).
 - **D6 — the panel.** Rung 85 is the first rung with no Python segment in `cli_golden`. It needs a
   Rust-owned golden and a stated meaning for the panel count. Its own commit, before the physics.
@@ -200,11 +220,13 @@ host a physical blade speed).** Taken to the user.
   read `N_L/N_L,d` WITH the lever at each cell, against `N_red/N_d`. Prediction: the lumped stator
   crosses the strength redline somewhere in the shipped throttle range; the front-row stator
   does not.
-- **Q5 (re-posed, two-sided)** — the stator's setting `v` adds face pre-swirl, `tan β₁ = 1/φ − v`,
-  which LOWERS the rotor's relative inlet Mach (the purpose of a real IGV). So under a stator lever
-  physical `N` can rise while `M_rel,tip` FALLS. The off-design tip Mach is computed from
-  `(φ, v, n)` through the stack's own `β₁`. Prediction to be written only after that function
-  exists and its design value is checked to equal the wall level.
+- **Q5 (a READING, not a wall — per D4's rewrite)** — the stator's setting `v` adds face pre-swirl,
+  `tan β₁ = (1/φ − v)/Φ_d`, which LOWERS the rotor's relative inlet Mach (the purpose of a real
+  IGV). So under a stator lever physical `N` can rise while `M_rel,tip` FALLS. The off-design tip
+  Mach is computed from `(φ, v, n)` through the stack's own `β₁` and REPORTED; exceeding the design
+  level is not a verdict (the model has no loss for it). The registered prediction is only the
+  SIGN of `ΔM_rel,tip` under the lever, written once that function exists and its design value is
+  checked to equal the design level.
 - **NEGATIVE decision rule (fixed now):** if the walls re-derive `K` and `C` but NO verdict of rungs
   53–61 changes, and strength never binds inside the shipped envelope, this is a NEGATIVE
   (`docs/…-negative.md`), not a rung.
