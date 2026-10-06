@@ -173,7 +173,7 @@ Never re-open one, and never re-enumerate them here.
 - **The subsonic / unchoked LP branch** in the two-spool solves (38 flags, unsolved) and its **transient**.
 - **Rung 33's dispatch floor**: below ~455 K its choked trial leaves the gas tables, ABOVE idle — `docs/rung33-spec.md`.
 - **Fuel + bleed + STATOR** on one plant (rung 63's seam, untouched by 64/65).
-- **Rungs 69–84's seams — in each rung's spec, not here.** `n`=4 needs a 4th non-fuel lever or a non-`min` composition; every route TRIED (72–76, 80) is CLOSED.
+- **Rungs 69–85's seams — in each rung's spec, not here.** `n`=4 needs a 4th non-fuel lever or a non-`min` composition; every route TRIED (72–76, 80) is CLOSED.
 - **Rung 37's internal clocks on two shafts** + the combined 3-state; **customer/cooling bleed** at station 3.
 - **Afterburner**; a **real hardware/CFD map + surge line** (32's concession, doubled on two spools).
 - **Feeding a shifted/marched state into the production cycle** — a re-foundation, not a rung.

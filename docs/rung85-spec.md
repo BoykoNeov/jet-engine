@@ -53,7 +53,7 @@ script before the code existed), typed into the test, all 12 cells × 8 columns 
 
 | # | verdict | measured |
 |---|---|---|
-| P0 | settled by construction (A2), no credit | `Φ_d` enters no schedule residual |
+| P0 | settled by construction (A2), no credit — **at `λ` = 0 only** | at `λ` = 0 `Φ_d` enters no schedule residual. At `λ` > 0 it DOES reach the plants: it sets the airflow wall speed, hence `r = (u0/u_λ)²`, hence the reshaped `l'` (and `σ'` on switch A) — see the A9 correction below. A2's `==` regression test was NOT built: at `λ` = 0 it cannot fail (both runs get the same map object) and at `λ` > 0 it must fail by design |
 | P1 | **MISS** (existence) | LP all-rows at `K` = 2 reaches at 1500/1300 only; at 1100/1000 the scan hits the map edge (`v` 2.1/2.4) unreached — **crosses before target** under V1 (passes 1.395 at travel ≈ 1.2–1.4) |
 | P2 | **MISS** | same at `K` = 3: unreached, crosses 1.708 before target |
 | P3 | **HIT** at its one scorable point | `(1,5) < (2,5) < (3,5)` at 1300; built so only `K_L` moves; `K_L` = 1 is not wall-produced (V4) — disclosed |
@@ -66,6 +66,10 @@ script before the code existed), typed into the test, all 12 cells × 8 columns 
 | Q2 | **HIT — for an unregistered reason** | the LP lumped bill rises strictly in `λ` in all six cells (all reached); the registered mechanism ("steeper map") is REFUTED — see § 4 |
 | Q3 | **MISS** | far cell at `λ` = 1: 1.3392, far below the band [1.60, 2.60], under 1.601 |
 | old-Q3 | no credit; crosses by **0.09 %** | 1.2872 vs 1.286 — and its reasoning's 1.43 was wrong, by § 4's mechanism |
+
+**Correction to anchor § 4.5 A9's "A2 survives" (post-scoring, no bar moved):** true at `λ` = 0
+only. The rounding knob opens a path `Φ_d` → wall speed → `r` → map; every § 4.1 bar was read at
+`λ` = 0, so no verdict changes.
 
 **Where the rung's crossings are, on the default shape.** At `λ` = 0: only the LP all-rows lever,
 and only before a target it never reaches (V1) — at a vane travel ≈ 66–69° physical. At `λ` = 1
@@ -117,6 +121,9 @@ arrow: the HP map's `l'` still moves the HP running point). Both are gated.
   design incidence — disclosed, not derived.
 - The V1 crossings sit at vane travels (≈ 66–69° physical at `Φ_d` 0.537) no real stator reaches;
   rung 53's own lumped schedule was already at 1.24 (66°).
+- V1 reads an unreached schedule at the LAST setting its scan reached, which is right only if
+  shaft speed keeps rising with vane travel — measured on the shipped grid, UNCHECKED at other knob
+  settings (a mid-scan peak would be reported as void, not as a crossing).
 - Rung 54/56's throat law is never called (it reads `vsv` as a physical tangent at `Φ_d` = 1); the
   rung reports its own design capacity `C = MFP(M_abs)/MFP(1)` and refuses a design with
   `M_abs ≥ 1` as an error.

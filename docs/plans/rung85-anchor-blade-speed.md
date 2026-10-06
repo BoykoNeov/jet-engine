@@ -406,6 +406,8 @@ who rounds `K` up keeps the blades near their limit and loads each row LIGHTER i
   blade's own design incidence (the blade is designed for its design inlet angle): then
   `1/φ_s = 1 + Δ·Φ_d` for any `v_d`, and every incidence margin in `v'` is the `v_d = 0` one.
   Disclosed, not derived. `Φ_d` still enters nothing but sizing/readouts (A2 survives).
+  **[Correction, post-scoring — text kept, no bar moved:]** "A2 survives" holds at `λ` = 0
+  only; at `λ` > 0 `Φ_d` sets the wall speed, hence `r`, hence the map (`docs/rung85-spec.md` § 3).
 * **A10 — reduce.** `r == 1.0` ⇒ the SHIPPED map object, not a recomputed `(1+l)/1 − 1`
   (which is not bit-safe for every `l`): the code branches on `r == 1.0`, which covers `λ = 0` AND
   an exactly-integer `K*`. Every § 4.1 bar is read at `λ = 0` and is unmoved by this amendment.
