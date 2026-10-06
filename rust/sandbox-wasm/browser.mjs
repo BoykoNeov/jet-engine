@@ -140,13 +140,19 @@ if (chrome.exitCode === null) {
 // The launcher PID can exit while the browser it started lives on (seen 2026-10-06), so the exit
 // code alone proves nothing. Look for any process still carrying THIS run's unique profile path.
 // It is never killed here: it is reported, loudly, for a person to close by its PID.
-await sleep(500);
+// Chrome's helpers drain AFTER the browser process exits, and under the full gate's load that
+// took longer than a fixed 0.5 s (2026-10-07: eleven helpers listed, all gone a minute later). So
+// look until the list is empty, and fail only if it is still not empty after 15 s.
 let leftovers = '';
-try {
-  leftovers = execFileSync('powershell', ['-NoProfile', '-Command',
-    `Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" | Where-Object { $_.CommandLine -like '*${PROFILE.split('\\').pop()}*' } | ForEach-Object { $_.ProcessId }`],
-    { encoding: 'utf8' }).trim();
-} catch (e) { leftovers = 'could not list processes: ' + e.message; }
+for (let t = 0; t < 15000; t += 500) {
+  await sleep(500);
+  try {
+    leftovers = execFileSync('powershell', ['-NoProfile', '-Command',
+      `Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" | Where-Object { $_.CommandLine -like '*${PROFILE.split('\\').pop()}*' } | ForEach-Object { $_.ProcessId }`],
+      { encoding: 'utf8' }).trim();
+  } catch (e) { leftovers = 'could not list processes: ' + e.message; }
+  if (leftovers === '') break;
+}
 check('chrome_left_nothing_running', leftovers === '', `still running with this run's profile, PIDs: ${leftovers.replace(/\s+/g, ' ')}`);
 console.log(`test result: ${failed ? 'FAILED' : 'ok'}. ${passed} passed; ${failed} failed; 0 ignored`);
 process.exit(failed ? 1 : 0);
