@@ -113,11 +113,37 @@ host a physical blade speed).** Taken to the user.
   the worst single-failure overspeed). *Supplies:* the gap between the strength capability and
   the REDLINE (`N_red = N_cap/1.2`). *Does NOT supply:* the gap between DESIGN speed and redline —
   that is the model's OUTPUT here (§ 3 D3).
-- **Ti-6Al-4V, mill-annealed:** minimum specified yield **827 MPa** (120 ksi), ultimate 896 MPa
-  (130 ksi) — quoted from AMS-spec minima in secondary sources; density 4430 kg/m³ (standard).
-  **Still owed:** a first-hand datasheet or handbook read (ASM/MMPDS) before any number ships.
-- **Still owed:** a TEXTBOOK range for the relative-tip-Mach wall (Mattingly / Cumpsty /
-  Saravanamuttoo / Dixon). Two NASA research rotors are design examples, not a limit.
+- **Ti-6Al-4V, annealed — READ FIRST-HAND (2026-10-06):** Rolled Alloys, *Data Sheet — 6Al-4V
+  Titanium*, Bulletin No. 1052USe 09/16 (rolledalloys.com/wp-content/uploads/6AL4V_Data-sheet.pdf),
+  table "Mechanical Properties Specified, AMS 4911, annealed sheet & plate", thickness
+  > 0.1874 … ≤ 4.000 in: **0.2 % yield 120 ksi = 827.4 MPa, tensile 130 ksi = 896.3 MPa
+  (MINIMA)**; thinner gauges 126/134 ksi. Physical properties: **density 0.160 lb/in³ =
+  4429 kg/m³**. The sheet lists "turbine blades, discs and rings" among applications and "high
+  strength to 600 °F". *Supplies:* `σ_y/ρ` = 827.4e6/4429 = **1.868e5 m²/s²** (the § 0 P-B
+  probe's 827 MPa / 4430 kg/m³ stand, Δ < 0.03 %). *Does NOT supply:* (i) the FORGING minima —
+  blades are forged from bar (AMS 4928, listed on the sheet but its minima are not tabulated
+  there); AMS 4911 is plate, used as the disclosed stand-in; (ii) any temperature derating (§ 5);
+  (iii) typical values — the sheet's "typical range" bar data (yield 128–147 ksi) are NOT used,
+  the wall takes the specified MINIMUM.
+- **The airflow-wall LEVEL — a peer-reviewed review chapter, READ FIRST-HAND (2026-10-06):**
+  Biollo & Benini, *State-of-Art of Transonic Axial Compressors*, ch. 2 of *Advances in Gas
+  Turbine Technology* (ed. E. Benini, InTech, 2011), p. 25: *"especially in civil aircraft
+  engines, the relative flow tip Mach number of the rotor is limited to maintain high
+  efficiencies. A typical value for the rotor inlet relative flow at the tip is Mach ≈ 1.3"*;
+  p. 26–27: above ~1.3 the design intent becomes reducing the pre-shock Mach number *"due to the
+  strongly rising pressure losses with increasing pre-shock Mach number"* and shock/boundary-layer
+  interaction. Same chapter: today's high-efficiency transonic stages run *"tip speed in the order
+  of 500 m/s"*. *Supplies:* the LOW end of the swept band, **`M_rel,lim` = 1.3, as the typical
+  CIVIL level**, and the mechanism (shock loss ⇒ efficiency, not a hard wall). With TP 1659's
+  Rotor 37 (1.49, a research rotor its own report calls beyond state of the art) as the HIGH end,
+  the shipped sweep **{1.3, 1.4, 1.5}** is sourced at both ends — and remains a disclosed LEVEL,
+  verdicts as thresholds on it (CR-797's framing, rung 54's pattern).
+- **NOT read first-hand, NOT cited as a source:** a standard TEXTBOOK statement (Mattingly /
+  Cumpsty / Saravanamuttoo / Dixon). A search-engine summary attributes to Dixon & Hall *"rotor
+  inlet relative Mach numbers of up to 1.7 are now used"*; the excerpt page (ScienceDirect) and an
+  MIT open-access paper (*Performance Limits of Axial Compressor Stages*) both refused the fetch.
+  If a textbook is wanted on top of the review chapter, it needs a library read; nothing in the
+  band depends on it (1.7 would only widen the sweep's high end, past Rotor 37).
 
 ## 2. THE KNOB TABLE — inputs and outputs, per spool
 
@@ -128,7 +154,7 @@ host a physical blade speed).** Taken to the user.
 | design sizing `φ_d` = 1 | input | unchanged (disclosed: it forces `Vx = U`) |
 | hub-to-tip `h` (front row) | absent | **NEW, disclosed** — ONE shared constant, both walls |
 | airflow wall `M_rel,lim` | absent | **NEW, disclosed level**, verdicts as thresholds |
-| strength `σ_y/ρ` | absent | **NEW, sourced** (Ti-6Al-4V min spec) |
+| strength `σ_y/ρ` | absent | **NEW, sourced first-hand** (AMS 4911 min, 827.4 MPa / 4429 kg/m³) |
 | overspeed factor 1.2 | absent | **NEW, sourced** (14 CFR 33.27) |
 | design speed `U_d` | implied twice, inconsistent (§ 0) | **OUTPUT** — `min(airflow wall, strength wall)`, then the rounding of (1) |
 | stage count `K` | input ("a resolution") | **OUTPUT** — `ceil(Δh/(U_wall²(1−t₂)))` |
