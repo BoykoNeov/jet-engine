@@ -76,12 +76,29 @@ pub struct BladeKnobs {
     pub phi_d: f64,
     /// The rounding knob, `0` = blades slow down, `1` = blades at the wall, rows load lighter.
     pub lambda: f64,
+    /// How the map's non-Euler DROOP (its curvature `σ`) scales when `λ` lightens the rows — the
+    /// user's switch (§ 4.5, after scoring). It is the WHOLE of `λ`'s effect on a held schedule's
+    /// speed, because holding design incidence cancels the slope `l` (`tests/rung85.rs`).
+    pub droop: Droop,
+}
+
+/// The two readings of A9's disclosed assumption, as a knob.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum Droop {
+    /// The droop is fixed in ABSOLUTE work units — a loss that scales with blade speed squared,
+    /// which `λ` keeps high — so on the lighter design work it grows: `σ' = σ/r`. The default.
+    #[default]
+    WithBladeSpeed,
+    /// The droop shrinks in step with the row's design work: `σ' = σ`. Then `λ` moves the
+    /// redline and the slope only.
+    WithRowWork,
 }
 
 impl Default for BladeKnobs {
     fn default() -> Self {
         BladeKnobs { h: 0.5, m_rel_lim: 1.4, sigma_over_rho: TI64_YIELD / TI64_DENSITY,
-                     overspeed: OVERSPEED_33_27, phi_d: PHI_D_ROTOR37, lambda: 0.0 }
+                     overspeed: OVERSPEED_33_27, phi_d: PHI_D_ROTOR37, lambda: 0.0,
+                     droop: Droop::WithBladeSpeed }
     }
 }
 
@@ -232,14 +249,18 @@ impl Sizing {
     }
 }
 
-/// The shipped map family with a design pre-swirl folded in (§ 4.5 A9): `σ' = σ/r`,
-/// `l' = (1+l)/r − 1`. At `r == 1.0` it returns the map UNTOUCHED — the bit-for-bit reduce
-/// (A10); `(1+l)/1 − 1` is not `l` in the last bit for every `l`.
-pub fn reshape(map: ComponentMap, r: f64) -> ComponentMap {
+/// The shipped map family with a design pre-swirl folded in (§ 4.5 A9): `l' = (1+l)/r − 1`, and
+/// `σ' = σ/r` or `σ` by the [`Droop`] switch. At `r == 1.0` it returns the map UNTOUCHED — the
+/// bit-for-bit reduce (A10); `(1+l)/1 − 1` is not `l` in the last bit for every `l`.
+pub fn reshape(map: ComponentMap, r: f64, droop: Droop) -> ComponentMap {
     if r == 1.0 {
         return map;
     }
-    ComponentMap { sigma: map.sigma / r, l: (1.0 + map.l) / r - 1.0, ..map }
+    let sigma = match droop {
+        Droop::WithBladeSpeed => map.sigma / r,
+        Droop::WithRowWork => map.sigma,
+    };
+    ComponentMap { sigma, l: (1.0 + map.l) / r - 1.0, ..map }
 }
 
 /// Both spools sized on one design engine and map pair.
@@ -270,8 +291,8 @@ pub fn build(
     let duty_hp = SpoolDuty { tt: c.tt25_d, dh: gas.h_c(tt3) - gas.h_c(c.tt25_d), l: map_hp.l, gamma, cp };
     let lp = size(duty_lp, knobs_lp)?;
     let hp = size(duty_hp, knobs_hp)?;
-    Ok(Machine { design: design.clone(), flight, map_lp: reshape(map_lp, lp.r),
-                 map_hp: reshape(map_hp, hp.r), lp, hp })
+    Ok(Machine { design: design.clone(), flight, map_lp: reshape(map_lp, lp.r, knobs_lp.droop),
+                 map_hp: reshape(map_hp, hp.r, knobs_hp.droop), lp, hp })
 }
 
 /// Which stator lever moves, and over which rows.

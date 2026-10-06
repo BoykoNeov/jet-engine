@@ -18,8 +18,8 @@
 //!      HIT/MISS; plus the finding (the slope cancels on the lumped plant) and rung 53's
 //!      published schedule reproduced (the independent check on the lumped route).
 
-use turbojet::blade_speed::{build, reshape, size, BladeKnobs, Binding, Lever, Machine, SizingError,
-                            SpoolDuty, Verdict};
+use turbojet::blade_speed::{build, reshape, size, BladeKnobs, Binding, Droop, Lever, Machine,
+                            SizingError, SpoolDuty, Verdict};
 use turbojet::engine::FlightCondition;
 use turbojet::gas::{Gas, GasSpec};
 use turbojet::map::ComponentMap;
@@ -181,7 +181,7 @@ fn lambda_zero_hands_the_plants_the_shipped_maps() {
     // …and `reshape` itself is the identity at r = 1 for a slope where (1+l)/1 − 1 would not be.
     let odd = ComponentMap { l: 0.1, ..ComponentMap::flat() };
     assert_ne!(((1.0 + odd.l) / 1.0 - 1.0).to_bits(), odd.l.to_bits(), "pick an l the formula moves");
-    assert_eq!(map_bits(&reshape(odd, 1.0)), map_bits(&odd));
+    assert_eq!(map_bits(&reshape(odd, 1.0, Droop::WithBladeSpeed)), map_bits(&odd));
 }
 
 /// The reshaped map IS the shipped one with a design pre-swirl (A9): at every `(φ, v')`,
@@ -193,7 +193,7 @@ fn the_reshaped_map_is_the_preswirled_map_renormalised() {
         let v_d = (1.0 - r) / (1.0 + ml.l);
         for phi in [0.6, 0.8, 1.0, 1.2] {
             for v in [-0.1, 0.0, 0.1, 0.3] {
-                let got = reshape(ml, r).with_vsv(v).psi(phi);
+                let got = reshape(ml, r, Droop::WithBladeSpeed).with_vsv(v).psi(phi);
                 let want = ml.with_vsv(v_d + v).psi(phi) / r;
                 assert!((got - want).abs() <= 1e-12, "r={r} φ={phi} v={v}: {got} vs {want}");
             }
@@ -451,5 +451,26 @@ fn q2_q3_the_rounding_knob_raises_the_lumped_bill_through_curvature() {
             let margin = one.n_lp / z1.lp.redline - 1.0;
             assert!(margin > 0.0 && margin < 0.002, "old-Q3: crosses, by {margin:e}");
         }
+    }
+}
+
+/// THE DROOP SWITCH (the user's, after scoring). `WithRowWork` keeps `σ' = σ`, so `λ` reaches a
+/// held LP schedule only through the HP map's slope — rung 39's one arrow HP→LP — and the LP's
+/// own `l'` cancels. Measured, not assumed: the residual is pinned here, small but not zero.
+#[test]
+fn the_droop_switch_decides_whether_lambda_reaches_the_schedule_speed() {
+    let base = machine("flow/press", 0.5, 1.4, 0.0).schedule(Lever::Lumped, Spool::Lp, &[1000.0])[0];
+    let (ml, mh) = maps("flow/press");
+    for &(h, m) in &CELLS {
+        let k = BladeKnobs { droop: Droop::WithRowWork, ..knobs(h, m, 1.0) };
+        let z = build(&design(), flight(), ml, mh, k, k).unwrap();
+        assert_eq!(z.map_lp.sigma.to_bits(), ml.sigma.to_bits(), "WithRowWork keeps σ");
+        assert!(z.lp.r < 1.0, "the cell must actually be reshaped");
+        let r = z.schedule(Lever::Lumped, Spool::Lp, &[1000.0])[0];
+        let a = machine("flow/press", h, m, 1.0).schedule(Lever::Lumped, Spool::Lp, &[1000.0])[0];
+        assert!(r.reached);
+        assert!((r.n_lp - base.n_lp).abs() < 0.25 * (a.n_lp - base.n_lp), "B must remove most of A's rise");
+        // Measured 2026-10-06: B leaves ≤ +0.0011 (0.09 %), all of it through the HP arrow.
+        assert!((r.n_lp - base.n_lp).abs() < 0.0015, "B's residual is the HP arrow only: {}", r.n_lp - base.n_lp);
     }
 }
