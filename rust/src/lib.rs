@@ -136,6 +136,7 @@
 pub mod anti_windup;
 pub mod applied_reference;
 pub mod authority_clock;
+pub mod blade_speed;
 pub mod bleed;
 pub mod bleed_transient;
 pub mod combustor;
