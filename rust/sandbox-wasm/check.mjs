@@ -91,7 +91,8 @@ for (const [i, line] of lines.entries()) {
   try { browser = JSON.parse(call(req)); }
   catch (e) { fails.push('the browser build trapped: ' + e); ex = (await WebAssembly.instantiate(bytes, {})).instance.exports; ex.init(); }
   const r = JSON.parse(req), gas = r.settings ? r.settings.gas : r.fly ? (r.fly.gas ?? 'thermally_perfect')
-    : r.blades ? (r.blades.gas ?? 'perfect') : undefined;
+    : r.blades ? (r.blades.gas ?? 'perfect')
+    : r.slam ? ((r.slam.fly && r.slam.fly.gas) ?? 'thermally_perfect') : undefined;
   const kind = gas === 'perfect' ? 'perfect' : 'table';
   if (browser !== undefined) compare(browser, JSON.parse(native), `#${i}`, fails, kind);
   if (fails.length) { failed++; console.log(`test grid #${i} ... FAILED\n  ${fails.slice(0, 5).join('\n  ')}`); }

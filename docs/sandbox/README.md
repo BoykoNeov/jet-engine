@@ -86,12 +86,40 @@ temperature (before, the gas's scalar 1.4); the perfect gas keeps its path bit f
 outside pressure, a turbine past the gas tables — all at low throttle) is refused in plain words
 BEFORE the schedule runs, through the matcher's own non-crashing twin.
 
+## Slice 4 (A) — slam the throttle (shipped 2026-10-07)
+
+Inside **Fly it**: move the throttle from a starting setting to the fly throttle and watch the engine
+take its time (`sandbox_transient.rs`, plan § 12). The shaft speed is a state that lags (rung 34).
+Two ways to move the throttle, side by side: **temperature commanded** (rung 34 — the turbine-inlet
+temperature follows the move by fiat) and **fuel metered** (rung 35 — the fuel follows it, the
+temperature is an output and overshoots on a slam).
+
+**Knobs:** the starting throttle, how long the move takes and how long the run continues afterwards
+(in τ, the shaft's own response time — the model has no rotor inertia, so no seconds), which mode(s).
+The move must last a whole number of the march's 0.02 τ steps (measured: one ending between steps, or
+an instant step, moves the peak temperature by 20–70 K with the step size).
+
+**Readouts:** turbine temperature, shaft speed, thrust, fuel flow, pressure ratio and flow coefficient
+against the stall line, against time, with the steady points before and after; a table (peak
+temperature and overshoot, highest pressure ratio, lowest flow coefficient, time to 90 % of the speed
+change, the end state); both runs' paths on the compressor map. Each run is computed on its own Worker,
+killed when a knob moves. Pin & compare overlays a pinned run.
+
+**A run that stops early is a result.** The model's marcher stops and drops its error; the sandbox
+replays the failed step through the same public calls (bit-equal to the march, `tests/sandbox_transient.rs`)
+and says why, by kind: the fuel-air ratio passing 0.05, the fuel-metered solver's search edge (the
+overshoot outran the model); the unchoked-nozzle solve's known gap; on a commanded power cut, the
+airflow search's first trial asking the burner to cool the air (a solver artefact — the fuel-metered cut
+runs through); a time step too coarse for a very fast shaft (Mach 3.3). A crash in a steady solve names
+the throttle it happened at. The equilibrium gas is refused: the model cannot meter fuel on it.
+
 ## How it is built
 
 | Piece | What it is |
 |---|---|
 | `rust/src/sandbox.rs` | The whole bridge, ordinary Rust: settings JSON in → `build_turbojet(…).run(…)` → full-precision JSON out. Tested natively (`tests/sandbox.rs`). |
 | `rust/src/sandbox_blades.rs` | Slice 2's ops (`blade_*`), reached through `sandbox::call` (`tests/sandbox_blades.rs`). |
+| `rust/src/sandbox_transient.rs` | Slice 4's ops (`slam_defaults`, `slam`), reached through `sandbox::call` (`tests/sandbox_transient.rs`). |
 | `rust/src/atmosphere.rs` | The 1976 standard atmosphere (`tests/atmosphere.rs`, held to the published table). |
 | `rust/sandbox-wasm/` | A tiny separate crate: only the browser exports around `sandbox::call`, and the panic hook that keeps a crash's message readable. Not built by `cargo test`. |
 | `template.html` | The page; `/*__SANDBOX_WASM_B64__*/` receives the build as base64. |
@@ -123,6 +151,10 @@ red until the page is rebuilt and committed — the numbers have not changed.
 - `tests/sandbox_blades.rs` — slice 2: at its defaults the view IS rung 85's default cell, and each
   lever request IS `Machine::schedule`, bit for bit, against a rig built in the test (never the
   module's own copy) and against rung 85's published rows; each refusal driven by its case.
+- `tests/sandbox_transient.rs` — slice 4: the slam IS rung 34's `integrate` and rung 35's
+  `integrate_fuel`, bit for bit; both steady ends are slice 3's fly points; a held throttle holds and
+  a settling run approaches its end (measured bars); the stop replay reproduces the march step for step;
+  every kind of early stop the crash map found is driven by a request that raises it.
 - `tests/sandbox_page.rs` — the joints: the page is its template + its build; every element the
   script looks up exists; every knob (design and fly) is a setting and back; the dropdowns offer the
   model's choices; every export and op the page uses exists.
@@ -132,7 +164,9 @@ red until the page is rebuilt and committed — the numbers have not changed.
   (`browser.mjs`: Worker, panels, linked knobs, pin & compare, and fly it — the design point, the
   running line, below idle, the flight knobs moving the flight, the slow gas running on release; and size
   the blades — the default cell, the streamed lever, unreached and unmodelled throttles, blades that cannot
-  be built, a slow sweep stopped by a knob move).
+  be built, a slow sweep stopped by a knob move; and the slam — the opening run against native, the
+  fuel overshoot, an early stop in words, a below-idle start naming its throttle, a run stopped by a knob
+  move, the refusal on the equilibrium gas).
   Needs Node ≥ 22 and Chrome. `SANDBOX_SHOTS=<folder>` also saves light, dark and phone screenshots
   of the fly view — look at them: a layout bug passes every behaviour check.
 
@@ -144,4 +178,5 @@ The user accepted this difference (plan § 9.4); bit-exactness stays the CLI's j
 
 ## Next slices
 
-The transient (slice 4) and the combustor (slice 5) — plan § 5.
+Slice 4 (B): the two-shaft *Controls* view — the fuel limiters and one airflow lever as switches
+(plan § 12). Then the combustor (slice 5) — plan § 5.

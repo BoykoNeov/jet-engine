@@ -551,6 +551,8 @@ fn refusal(reason: &str) -> Json {
 /// - `blade_defaults`, `blade_size`, `blade_grid`, `blade_lever` (each with `"blades":{…}`; the last
 ///   also `"Tt4"`) → slice 2's blade view, [`crate::sandbox_blades::call_op`]. `explain` with
 ///   `"view":"blades"` → [`crate::sandbox_blades::explain_blades`].
+/// - `slam_defaults`, `slam` (with `"slam":{…}`) → slice 4's throttle slam,
+///   [`crate::sandbox_transient::call_op`].
 pub fn call(request: &str) -> String {
     let req = Json::parse(request);
     let op = match req.get("op") { Some(Json::Str(s)) => s.as_str(), _ => "" };
@@ -615,7 +617,9 @@ pub fn call(request: &str) -> String {
                 },
             }
         }
-        other => crate::sandbox_blades::call_op(other, &req).unwrap_or_else(|| refusal(&format!("unknown op {other:?}"))),
+        other => crate::sandbox_blades::call_op(other, &req)
+            .or_else(|| crate::sandbox_transient::call_op(other, &req))
+            .unwrap_or_else(|| refusal(&format!("unknown op {other:?}"))),
     };
     out.dump_compact()
 }
@@ -1102,5 +1106,6 @@ pub fn check_requests() -> Vec<String> {
         out.push(jobj! { "op" => "running_point", "fly" => FlySettings { tt4, ..FlySettings::defaults() }.to_json() }.dump_compact());
     }
     out.extend(crate::sandbox_blades::check_requests());
+    out.extend(crate::sandbox_transient::check_requests());
     out
 }

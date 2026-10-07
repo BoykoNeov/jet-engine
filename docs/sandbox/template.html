@@ -110,6 +110,18 @@ legend { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-sp
 .sw.bare { border-top-style: dashed; border-top-width: 1px; }
 .sw.red { border-top: 2px dashed var(--s-red); }
 .sw.r0 { border-top: 2px solid var(--muted); } .sw.r1 { border-top: 2px dashed var(--muted); }
+.chart .tcmd { fill: none; stroke: var(--s-blue); stroke-width: 2.2; }
+.chart .tfuel { fill: none; stroke: var(--s-aqua); stroke-width: 2.2; }
+.chart .tpin { fill: none; stroke: var(--pin); stroke-width: 1.4; stroke-dasharray: 2 3; }
+.chart .steady { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 5 4; }
+.chart .ramp { fill: var(--glow); }
+.chart .stopx { fill: var(--s-red); font-size: 16px; font-weight: 700; }
+.sw.tcmd { border-top-color: var(--s-blue); } .sw.tfuel { border-top-color: var(--s-aqua); }
+.sw.steady { border-top: 1px dashed var(--muted); }
+.toggle.q button { flex: 0 1 auto; }
+.toggle.q { flex-wrap: wrap; }
+.stopnote { font-size: 13px; margin: 6px 0; padding: 6px 10px; border-left: 3px solid var(--s-red); background: var(--bad-bg); }
+.stopnote code { font-size: 11px; color: var(--ink-2); white-space: pre-wrap; word-break: break-word; display: block; margin-top: 2px; }
 .preset { font: inherit; font-size: 12px; padding: 1px 6px; border-radius: 5px; cursor: pointer; grid-column: 1 / -1;
   justify-self: start; border: 1px solid var(--border); background: var(--bg); color: var(--ink-2); }
 .preset:hover { border-color: var(--accent); }
@@ -172,6 +184,21 @@ footer p { max-width: 90ch; }
       <div class="knob"><label for="phi_surge">Stall line <small>flow coefficient</small></label><input type="number" id="phi_surge" step="0.01">
         <input type="range" id="phi_surge-r" min="0.3" max="0.95" step="0.01" aria-label="Stall line slider">
         <div class="derived">A number you choose, not data. The stall margin depends on it and on the map: read its trend, not its size.</div></div>
+    </fieldset>
+    <fieldset id="slam-set" hidden>
+      <legend>Slam the throttle</legend>
+      <p class="note" style="margin-top:0">Move the throttle from a starting setting to the one above, and watch the engine take its time to follow.</p>
+      <div class="knob"><label for="slam-from">Start from <small>K</small></label><input type="number" id="slam-from" step="5">
+        <input type="range" id="slam-from-r" min="600" max="2400" step="5" aria-label="Starting throttle slider"></div>
+      <div class="knob"><label for="slam-ramp">The move takes <small>τ</small></label><input type="number" id="slam-ramp" step="0.02">
+        <input type="range" id="slam-ramp-r" min="0.02" max="5" step="0.02" aria-label="Move length slider"></div>
+      <div class="knob"><label for="slam-settle">Then keep running for <small>τ</small></label><input type="number" id="slam-settle" step="0.5">
+        <input type="range" id="slam-settle-r" min="0.5" max="10" step="0.5" aria-label="Settling time slider">
+        <div class="derived">τ is the shaft's own response time. The model has no rotor weight, so it cannot give seconds; what matters is how long the move takes compared with τ.</div></div>
+      <div class="toggle" role="group" aria-label="How the throttle moves">
+        <button type="button" id="slam-both" aria-pressed="true">Both</button>
+        <button type="button" id="slam-temperature" aria-pressed="false">Temperature commanded</button>
+        <button type="button" id="slam-fuel" aria-pressed="false">Fuel metered</button></div>
     </fieldset>
     <fieldset id="blades-set" hidden>
       <legend>The two-spool engine</legend>
@@ -380,10 +407,31 @@ footer p { max-width: 90ch; }
         weakening, yield rather than breaking strength), so "crosses" is robust and "under" is one-sided. On the thermally
         perfect gas, the row-by-row levers still split the pressure rise between rows with a fixed γ of 1.4.</p>
     </div>
+    <div class="card chart" id="slam-card" hidden>
+      <h2 class="sec">Slam the throttle</h2>
+      <div class="toggle q" role="group" aria-label="Which quantity the chart shows">
+        <button type="button" id="q-Tt4" aria-pressed="true">Turbine temperature</button>
+        <button type="button" id="q-nu" aria-pressed="false">Shaft speed</button>
+        <button type="button" id="q-thrust" aria-pressed="false">Thrust</button>
+        <button type="button" id="q-fuel" aria-pressed="false">Fuel flow</button>
+        <button type="button" id="q-pi_c" aria-pressed="false">Pressure ratio</button>
+        <button type="button" id="q-phi" aria-pressed="false">Flow vs stall line</button></div>
+      <svg id="slam-chart" viewBox="0 0 640 340" role="img" aria-label="The chosen quantity against time during the throttle move, for each way of moving the throttle"></svg>
+      <div class="legend"><span><span class="sw tcmd"></span>temperature commanded</span><span><span class="sw tfuel"></span>fuel metered</span>
+        <span><span class="sw steady"></span>steady before / after</span><span id="slam-pin-legend" hidden><span class="sw pin"></span>pinned</span>
+        <span>shaded: the move</span><span>×: the run stopped</span><span id="slam-progress"></span></div>
+      <div id="slam-stops"></div>
+      <div class="scroll"><table id="slam-table"><thead><tr><th>Quantity</th><th>Temperature commanded</th><th>Fuel metered</th></tr></thead><tbody></tbody></table></div>
+      <p class="note"><b>Temperature commanded</b> makes the turbine-inlet temperature follow the move exactly, as textbooks do.
+        <b>Fuel metered</b> moves the fuel flow instead, between the two steady fuel flows; the temperature is then whatever the
+        burner gives. On a slam the shaft cannot yet pump the extra air, so the temperature overshoots. A real engine meters fuel.
+        The map below shows each run's path; on a slam it swings toward the stall line.</p>
+    </div>
     <div class="card chart" id="map-card" hidden>
       <h2 class="sec">Compressor map</h2>
       <svg id="map" viewBox="0 0 640 360" role="img" aria-label="Compressor pressure ratio against corrected air flow: speed lines, the stall line, the running line and this operating point"></svg>
       <div class="legend"><span><span class="sw"></span>running line (every throttle at this flight)</span><span><span class="sw stall"></span>stall line you set</span>
+        <span><span class="sw tcmd"></span><span class="sw tfuel"></span>the slam's paths</span>
         <span><span class="sw grey"></span>speed lines (labelled % corrected speed)</span><span id="map-progress"></span></div>
       <p class="note">The big dot is this operating point. The map is a representative shape, not measured data, and the stall line is the number you chose.</p>
     </div>
@@ -426,6 +474,14 @@ footer p { max-width: 90ch; }
   pushes against the air pressure of the flight you set. The stall margin is rung 36's: it rests on a stall line
   you choose and a map shape you pick, so only its trend (thinner at low power) is meaningful. It is not
   modelled while the nozzle is unchoked.</p>
+  <p><b>Slam the throttle.</b> The project's rungs 34 and 35: the shaft speed becomes something that changes in time,
+  driven by the gap between the turbine's power and the compressor's, and the engine is stepped forward in small
+  time steps. Time is counted in the shaft's own response time τ (its rotor inertia times the design speed squared,
+  over the design shaft power); the model has no rotor inertia, so it cannot give seconds, and its findings are about
+  how long the move takes compared with τ. A move must last a whole number of the model's 0.02 τ steps: one that ends
+  between steps makes the peak temperature depend on the step size. When a run cannot continue, the page shows the
+  points it has and why it stopped (some stops are limits of the model, said as such). The equilibrium gas is not
+  offered here: the model cannot meter fuel on it.</p>
   <p><b>Size the blades.</b> Rung 85 on its own two-spool engine (a separate engine from <b>Design</b>'s, which has one
   compressor). Each compressor's front row is sized from two limits, how fast the air may meet the blade tips (an
   efficiency target) and the blade material's strength at the root, and the stage count, blade speeds and the
@@ -476,7 +532,7 @@ async function ask(text) {
     let view = "design";
     try {
       const op = String(JSON.parse(text).op);
-      if (["fly", "running_point"].includes(op)) view = "fly";
+      if (["fly", "running_point", "slam"].includes(op)) view = "fly";
       else if (op === "blade_lever") view = "blades_lever";   // a THROTTLE's failure, not the design's
       else if (op.startsWith("blade_")) view = "blades";
     } catch (_) {}
@@ -546,6 +602,11 @@ const NUM = ["T0", "p0", "M0", "pi_c", "Tt4", "mdot", "pi_d_max", "eta_c", "e_c"
 let mode = "design", F = null, FLY_DEFAULTS = null, designAsSet = null;
 const FLY_NUM = { "fly-Tt4": "Tt4", "phi_surge": "phi_surge" };
 const FLIGHT = ["T0", "p0", "M0"];
+// Slam the throttle (slice 4 A, turbojet::sandbox_transient): SL holds the slam's own knobs; the move
+// ends at the fly throttle F.Tt4. Each run is computed on its OWN worker, killed when a knob moves, so a
+// slow run (seconds on the table gases) never holds up the fly point.
+let SL = null, SLAM_DEFAULTS = null, slamRuns = { temperature: null, fuel: null }, slamPinned = null, slamQ = "Tt4";
+const SLAM_NUM = { "slam-from": "from", "slam-ramp": "ramp", "slam-settle": "settle" };
 const SLOW = ["equilibrium"];                 // ~1 s a point: run when a slider is let go
 const GAS_WORDS = { perfect: "perfect gas", thermally_perfect: "thermally perfect gas", reacting: "reacting-products gas",
                     fork_b: "reacting gas with formation enthalpies", equilibrium: "equilibrium-chemistry gas" };
@@ -586,10 +647,18 @@ function showSettings() {
     }
     $("fly-gas").value = F.gas; $("fly-map").value = F.map;
   }
+  if (SL) {
+    for (const [id, k] of Object.entries(SLAM_NUM)) {
+      if (document.activeElement !== $(id)) $(id).value = +SL[k].toPrecision(8);
+      $(id + "-r").value = SL[k];
+    }
+    for (const m of ["both", "temperature", "fuel"]) $("slam-" + m).setAttribute("aria-pressed", String(SL.mode === m));
+    for (const q of Object.keys(SLAM_Q)) $("q-" + q).setAttribute("aria-pressed", String(slamQ === q));
+  }
   const fly = mode === "fly", blades = mode === "blades";
   for (const [id, m] of [["mode-design", "design"], ["mode-fly", "fly"], ["mode-blades", "blades"]]) $(id).setAttribute("aria-pressed", String(mode === m));
   for (const id of ["cycle-set", "components-set", "nozzle-set"]) $(id).hidden = mode !== "design";
-  for (const id of ["fly-set", "fly-tiles", "map-card"]) $(id).hidden = !fly;
+  for (const id of ["fly-set", "fly-tiles", "map-card", "slam-set", "slam-card"]) $(id).hidden = !fly;
   for (const id of BLADE_VIEW) $(id).hidden = !blades;
   for (const id of ["flight-set", "out", "ts-card", "stations-card", "perf-card"]) $(id).hidden = blades;
   $("mode-note").innerHTML = fly
@@ -652,6 +721,7 @@ async function runNow() {
     $("status").textContent = fly ? "The engine does not run at this throttle and flight." : "This design does not run.";
     window.sandbox.state = "does-not-run";
     window.sandbox.trap = t.trap || { plain };
+    if (fly) scheduleSlam();
     return;
   }
   last = t.reply;
@@ -662,7 +732,7 @@ async function runNow() {
     : "Running: " + $("gas").selectedOptions[0].textContent + ".";
   showAmbient(last.ambient);
   render();
-  if (fly) { showFrozen(); refreshMap(); }
+  if (fly) { showFrozen(); refreshMap(); scheduleSlam(); }
   window.sandbox.last = last; window.sandbox.state = "ran"; window.sandbox.trap = null;
 }
 
@@ -693,12 +763,14 @@ async function enterFly() {
   if (mode === "fly") return;
   // Freeze THIS design; fly it at its own point first (the reduce: shaft speed 100 %).
   F = { ...FLY_DEFAULTS, design: { ...S }, Tt4: S.Tt4, T0: S.T0, p0: S.p0, M0: S.M0 };
+  SL = { ...SLAM_DEFAULTS, from: Math.max(600, Math.round(S.Tt4 - 400)) }; slamPinned = null; slamKey = null;
   mode = "fly"; mapKey = null; lineKey = null; pinned = null; $("unpin").hidden = true; $("pin-legend").hidden = true;
   showSettings(); change();
 }
 function leaveFly() {
   if (mode === "design") return;
   if (mode === "blades") stopLever();
+  stopSlam();
   mode = "design"; lineGen++; pinned = null; $("unpin").hidden = true; $("pin-legend").hidden = true;
   showSettings(); change();
 }
@@ -753,6 +825,9 @@ function drawMap() {
   const pts = [[last.m_corr, last.settings.pi_c]].concat(line.map(q => [q.m_corr, q.pi_c]));
   if (mapLines) for (const q of mapLines.stall_line) pts.push(q);
   if (pinned && pinned.m_corr !== undefined) pts.push([pinned.m_corr, pinned.settings.pi_c]);
+  const paths = [["temperature", "tcmd"], ["fuel", "tfuel"]].filter(([m]) => ran(slamRuns[m]))
+    .map(([m, cls]) => [cls, slamRuns[m].m_corr.map((x, i) => [x, slamRuns[m].pi_c[i]])]);
+  for (const [, q] of paths) for (const p of q) pts.push(p);
   let x0 = Math.min(...pts.map(q => q[0])), x1 = Math.max(...pts.map(q => q[0]));
   let y0 = Math.min(...pts.map(q => q[1])), y1 = Math.max(...pts.map(q => q[1]));
   const px = (x1 - x0) * 0.12 || 0.1, py = (y1 - y0) * 0.12 || 1;
@@ -780,10 +855,139 @@ function drawMap() {
   }
   if (line.length > 1) g += `<path class="rline" d="${path(line.map(q => [q.m_corr, q.pi_c]))}"/>`;
   for (const q of line) g += `<circle class="rpt" cx="${X(q.m_corr)}" cy="${Y(q.pi_c)}" r="2.5"/>`;
+  for (const [cls, q] of paths) if (q.length > 1) g += `<path class="${cls}" d="${path(q)}"/>`;
   g += `</g>`;
   if (pinned && pinned.m_corr !== undefined) g += `<circle class="pinpt" cx="${X(pinned.m_corr)}" cy="${Y(pinned.settings.pi_c)}" r="6"/>`;
   g += `<circle class="now" cx="${X(last.m_corr)}" cy="${Y(last.settings.pi_c)}" r="6"/>`;
   svg.innerHTML = g;
+}
+
+// ---------------------------------------------------------------- slam the throttle (slice 4 A)
+let slamW = null, slamBusy = 0, slamGen = 0, slamTimer = null, slamKey = null;
+async function slamAsk(text) {
+  if (!model.kill) return model.ask(text);          // no Worker in this browser: a run can only be ignored
+  if (!slamW) slamW = await spawnWorker();
+  slamBusy++;
+  try { return await slamW.ask(text); } finally { slamBusy--; }
+}
+function stopSlam() {
+  slamGen++; clearTimeout(slamTimer); slamKey = null;
+  if (slamW && slamBusy) { slamW.kill(); slamW = null; slamBusy = 0; window.sandbox.kills++; }
+}
+function scheduleSlam() { clearTimeout(slamTimer); slamTimer = setTimeout(runSlam, 250); }
+const MODE_WORDS = { temperature: "temperature-commanded", fuel: "fuel-metered" };
+// A run that traps failed in a steady solve at one of its two throttles, or during the run: ask each
+// throttle's steady point to say which (a few ms to ~1 s), so the words name the right one.
+async function whereTrapped(trap, req) {
+  for (const [name, tt4] of [["starting", req.from], ["final", req.to]]) {
+    const t = await slamAsk(JSON.stringify({ op: "running_point", fly: { ...F, Tt4: tt4 } }));
+    if (t.killed) return trap;
+    if (t.trap) return { ...trap, plain: `At the ${name} throttle (${Math.round(tt4)} K): ${t.trap.plain}` };
+  }
+  return { ...trap, plain: "During the run: " + trap.plain };
+}
+async function runSlam() {
+  if (mode !== "fly" || !SL) return;
+  const req = { fly: F, from: SL.from, to: F.Tt4, ramp: SL.ramp, settle: SL.settle };
+  const key = JSON.stringify([req, SL.mode]);
+  if (key === slamKey) return;
+  stopSlam(); slamKey = key;
+  const my = slamGen;
+  const modes = SL.mode === "both" ? ["temperature", "fuel"] : [SL.mode];
+  slamRuns = { temperature: null, fuel: null };
+  window.sandbox.slamState = "running";
+  drawSlam();
+  const took = [];
+  for (const m of modes) {
+    $("slam-progress").textContent = `computing the ${MODE_WORDS[m]} run…`;
+    const t = await slamAsk(JSON.stringify({ op: "slam", slam: { ...req, mode: m } }));
+    if (my !== slamGen || t.killed) return;
+    slamRuns[m] = t.trap ? { ok: 0, trap: await whereTrapped(t.trap, req) } : t.reply;
+    if (my !== slamGen) return;
+    took.push(t.ms);
+    drawSlam(); drawMap();
+  }
+  $("slam-progress").textContent = `${took.map(x => (x < 1000 ? x.toFixed(0) + " ms" : (x / 1000).toFixed(1) + " s")).join(" + ")} in the ${model.mode}`;
+  window.sandbox.slamState = "done";
+}
+
+const SLAM_Q = {
+  Tt4: { label: "turbine inlet temperature, K", f: v => v, col: "Tt4", st: "Tt4" },
+  nu: { label: "shaft speed, % of design", f: v => v * 100, col: "nu", st: "nu" },
+  thrust: { label: "thrust, kN", f: v => v / 1e3, col: "thrust", st: "thrust" },
+  fuel: { label: "fuel flow, kg/s", f: v => v, col: "fuel", st: "fuel" },
+  pi_c: { label: "compressor pressure ratio", f: v => v, col: "pi_c", st: "pi_c" },
+  phi: { label: "flow coefficient (design = 1)", f: v => v, col: "phi", st: "phi" },
+};
+const ran = r => r && r.ok === 1;
+function drawSlam() {
+  const svg = $("slam-chart"), q = SLAM_Q[slamQ];
+  const runs = [["temperature", "tcmd"], ["fuel", "tfuel"]].filter(([m]) => ran(slamRuns[m]));
+  const pins = slamPinned ? ["temperature", "fuel"].filter(m => ran(slamPinned[m])) : [];
+  $("slam-pin-legend").hidden = !pins.length;
+  const any = runs.length ? slamRuns[runs[0][0]] : null;
+  const series = r => r.s.map((x, i) => [x, q.f(r[q.col][i])]);
+  const xs = [0, SL ? SL.ramp + SL.settle : 1], ys = [];
+  for (const [m] of runs) for (const p of series(slamRuns[m])) ys.push(p[1]);
+  for (const m of pins) for (const p of series(slamPinned[m])) { ys.push(p[1]); xs.push(p[0]); }
+  if (any) { ys.push(q.f(any.start[q.st]), q.f(any.end[q.st])); if (slamQ === "phi") ys.push(any.phi_surge); }
+  if (!ys.length) { svg.innerHTML = ""; slamTable(); return; }
+  const x0 = 0, x1 = Math.max(...xs);
+  let y0 = Math.min(...ys), y1 = Math.max(...ys); const py = (y1 - y0) * 0.1 || Math.abs(y1) * 0.05 || 1; y0 -= py; y1 += py;
+  const { X, Y, g: g0 } = frame(x0, x1, y0, y1, { L: 62, R: 16, T: 14, B: 54, W: 640, H: 340 }, "time, in shaft response times τ", q.label);
+  let g = `<rect class="ramp" x="${X(0)}" y="14" width="${Math.max(1, X(SL.ramp) - X(0))}" height="${340 - 54 - 14}"/>` + g0;
+  if (any) {
+    for (const v of [any.start[q.st], any.end[q.st]]) g += `<line class="steady" x1="62" x2="624" y1="${Y(q.f(v))}" y2="${Y(q.f(v))}"/>`;
+    if (slamQ === "phi") g += `<line class="stall" x1="62" x2="624" y1="${Y(any.phi_surge)}" y2="${Y(any.phi_surge)}"/><text class="redl" x="620" y="${Y(any.phi_surge) - 4}" text-anchor="end">stall line you set</text>`;
+  }
+  for (const m of pins) g += `<path class="tpin" d="${pathOf(series(slamPinned[m]), X, Y)}"/>`;
+  for (const [m, cls] of runs) {
+    const r = slamRuns[m], pts = series(r);
+    g += `<path class="${cls}" d="${pathOf(pts, X, Y)}"/>`;
+    if (r.stop && pts.length) { const l = pts[pts.length - 1]; g += `<text class="stopx" x="${X(l[0])}" y="${Y(l[1]) + 5}" text-anchor="middle">×<title>the ${MODE_WORDS[m]} run stopped here</title></text>`; }
+  }
+  svg.innerHTML = g;
+  slamTable();
+}
+
+function slamTable() {
+  const notes = $("slam-stops"); notes.innerHTML = "";
+  // Plain words first, the model's own message beneath (as the "does not run" panel does).
+  const note = (text, raw) => {
+    const d = document.createElement("div"); d.className = "stopnote"; d.textContent = text;
+    if (raw) { const c = document.createElement("code"); c.textContent = "Model message: " + raw; d.appendChild(c); }
+    notes.appendChild(d);
+  };
+  const refusals = new Set();
+  for (const m of ["temperature", "fuel"]) {
+    const r = slamRuns[m]; if (!r) continue;
+    if (r.ok === 0 && r.reason) { if (!refusals.has(r.reason)) { refusals.add(r.reason); note(r.reason); } continue; }
+    if (r.ok === 0 && r.trap) { note(`The ${MODE_WORDS[m]} run does not run. ${r.trap.plain}`, r.trap.message); continue; }
+    if (r.stop) {
+      const at = r.stop.s === null ? "" : ` at ${fmt(r.stop.s, 3)} τ`;
+      note(`The ${MODE_WORDS[m]} run stopped${at}, after ${r.s.length} of ${r.expected_points} points. ${r.stop.words}`, r.stop.message);
+    }
+  }
+  const rows = [
+    ["Peak turbine inlet temperature (K)", r => Math.max(...r.Tt4), 5],
+    ["Overshoot above the final setting (K)", r => Math.max(...r.Tt4) - r.end.Tt4, 3],
+    ["Highest compressor pressure ratio", r => Math.max(...r.pi_c), 4],
+    ["Lowest flow coefficient (the stall line you set is on the chart)", r => Math.min(...r.phi), 4],
+    ["Time to 90 % of the shaft-speed change (τ)", r => {
+      const d = r.end.nu - r.start.nu; if (Math.abs(d) < 1e-9) return NaN;
+      const i = r.nu.findIndex(v => (v - r.start.nu) / d >= 0.9); return i < 0 ? NaN : r.s[i]; }, 3],
+    ["Shaft speed at the end (% of design)", r => r.nu[r.nu.length - 1] * 100, 4],
+    ["Thrust at the end (kN)", r => r.thrust[r.thrust.length - 1] / 1e3, 4],
+    ["Points computed", r => `${r.s.length} of ${r.expected_points}`],
+  ];
+  const tb = $("slam-table").tBodies[0]; tb.innerHTML = "";
+  for (const [name, f, sig] of rows) {
+    const tr = tb.insertRow(); tr.insertCell().textContent = name;
+    for (const m of ["temperature", "fuel"]) {
+      const r = slamRuns[m]; const v = ran(r) && r.s.length ? f(r) : null;
+      tr.insertCell().textContent = v === null ? "–" : typeof v === "string" ? v : fmt(v, sig);
+    }
+  }
 }
 
 // ---------------------------------------------------------------- size the blades (slice 2)
@@ -793,6 +997,7 @@ function drawMap() {
 // take seconds (plan § 11.2).
 function enterBlades() {
   if (mode === "blades") return;
+  stopSlam();
   mode = "blades"; lineGen++; pinned = null; $("unpin").hidden = !bpinned; $("pin-legend").hidden = true;
   showSettings(); change();
 }
@@ -1149,6 +1354,13 @@ function wire() {
   click("bl-spool-lp", () => { B.spool = "lp"; });
   click("bl-spool-hp", () => { B.spool = "hp"; });
   for (const sp of ["lp", "hp"]) $("st-" + sp).addEventListener("click", () => { stairSpool = sp; showSettings(); drawStair(); });
+  for (const [id, k] of Object.entries(SLAM_NUM)) {
+    const put = v => { if (isFinite(v)) { SL[k] = v; scheduleSlam(); } };
+    $(id).addEventListener("input", () => { const v = parseFloat($(id).value); put(v); if (isFinite(v)) $(id + "-r").value = v; });
+    $(id + "-r").addEventListener("input", () => { $(id).value = $(id + "-r").value; put(parseFloat($(id + "-r").value)); });
+  }
+  for (const m of ["both", "temperature", "fuel"]) $("slam-" + m).addEventListener("click", () => { SL.mode = m; showSettings(); scheduleSlam(); });
+  for (const q of Object.keys(SLAM_Q)) $("q-" + q).addEventListener("click", () => { slamQ = q; showSettings(); drawSlam(); });
   $("fly-gas").addEventListener("change", () => { F.gas = $("fly-gas").value; change(); });
   $("fly-map").addEventListener("change", () => { F.map = $("fly-map").value; change(); });
   $("nozzle").addEventListener("change", () => { S.nozzle = $("nozzle").value; showSettings(); change(); });
@@ -1159,14 +1371,20 @@ function wire() {
   }
   $("pin").addEventListener("click", () => {
     if (mode === "blades") { if (!blast) return; bpinned = blast; bpinnedLever = leverPts.slice(); $("unpin").hidden = false; renderBlades(); return; }
-    if (!last) return; pinned = last; $("unpin").hidden = false; $("pin-legend").hidden = false; render();
+    if (!last) return; pinned = last; $("unpin").hidden = false; $("pin-legend").hidden = false;
+    if (mode === "fly") { slamPinned = clone(slamRuns); drawSlam(); }
+    render();
   });
   $("unpin").addEventListener("click", () => {
     if (mode === "blades") { bpinned = null; bpinnedLever = null; $("unpin").hidden = true; if (blast) renderBlades(); return; }
-    pinned = null; $("unpin").hidden = true; $("pin-legend").hidden = true; render();
+    pinned = null; slamPinned = null; $("unpin").hidden = true; $("pin-legend").hidden = true; render();
+    if (mode === "fly") drawSlam();
   });
   $("reset").addEventListener("click", () => {
-    if (mode === "fly") F = { ...FLY_DEFAULTS, design: F.design, Tt4: F.design.Tt4, T0: F.design.T0, p0: F.design.p0, M0: F.design.M0 };
+    if (mode === "fly") {
+      F = { ...FLY_DEFAULTS, design: F.design, Tt4: F.design.Tt4, T0: F.design.T0, p0: F.design.p0, M0: F.design.M0 };
+      SL = { ...SLAM_DEFAULTS, from: Math.max(600, Math.round(F.design.Tt4 - 400)) };
+    }
     else if (mode === "blades") { B = clone(B_DEFAULTS); linked = true; editSpool = "lp"; }
     else S = { ...DEFAULTS };
     showSettings(); change();
@@ -1185,6 +1403,13 @@ window.sandbox = {
     for (const [k, v] of Object.entries(patch || {})) { if (k === "lp" || k === "hp") Object.assign(B[k], v); else B[k] = v; }
     showSettings(); await runNow(); return window.sandbox.state;
   },
+  // The slam (slice 4 A): `patch` sets slam knobs (from, ramp, settle, mode); resolves when every run is in.
+  slam: async patch => {
+    if (mode !== "fly") await enterFly();
+    Object.assign(SL, patch || {}); showSettings(); clearTimeout(slamTimer); slamKey = null;
+    await runSlam(); return slamRuns;
+  },
+  slamRuns: () => slamRuns, slamState: null,
   lever: 0, kills: 0,
   points: () => leverPts,
   view: () => mode,
@@ -1196,6 +1421,8 @@ window.sandbox = {
     window.sandbox.mode = model.mode;
     DEFAULTS = (await model.ask(JSON.stringify({ op: "defaults" }))).reply;
     FLY_DEFAULTS = (await model.ask(JSON.stringify({ op: "fly_defaults" }))).reply;
+    const sd = (await model.ask(JSON.stringify({ op: "slam_defaults" }))).reply.slam;
+    SLAM_DEFAULTS = { from: sd.from, ramp: sd.ramp, settle: sd.settle, mode: "both" };
     const bd = (await model.ask(JSON.stringify({ op: "blade_defaults" }))).reply;
     B_DEFAULTS = bd.blades; TI64 = bd.ti64; B = clone(B_DEFAULTS);
     S = { ...DEFAULTS };

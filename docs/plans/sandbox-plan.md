@@ -3,7 +3,8 @@
 **Status: SLICE 1 BUILT 2026-10-06** — `docs/sandbox/` (what shipped, and how it is gated: its
 README). **Slice 3 (off-design, "Fly it") BUILT 2026-10-07 — § 10**; what the build found beyond
 the plan is § 10.8. **Slice 2 (blade speeds, "Size the blades") BUILT 2026-10-07 — § 11**; what the build found
-beyond the plan is § 11.8. **Slice 4 (the transient) PLANNED 2026-10-07 — § 12, answered (§ 12.8).** Drafted 2026-10-06, after rung 85 shipped. Direction (user,
+beyond the plan is § 11.8. **Slice 4 (the transient) PLANNED 2026-10-07 — § 12, answered (§ 12.8); part (A), the slam, BUILT
+2026-10-07 — what the build found is § 12.9; part (B) next.** Drafted 2026-10-06, after rung 85 shipped. Direction (user,
 2026-10-06): the project becomes a **sandbox** — change the engine's components and design numbers
 and watch it respond — delivered as an **interactive web page running the Rust model live**, beside
 the charts page and the cutaway (`docs/visuals/`).
@@ -720,3 +721,29 @@ time constants, no seconds knob.
 4. **Time axis.** (a) In spool time constants, said why (the model has no rotor inertia) —
    *recommended*; (b) also a "spool time constant, seconds" knob that only rescales the axis, labelled as
    a guess.
+
+### 12.9 What the build of (A) found beyond the plan (2026-10-07)
+
+- **The commanded-temperature power cut stops on the SOLVER, not the engine.** Rung 34's closure tries
+  its LOWEST airflow first (`try_close_compressor`'s literal wall, 0.02); on a fast cut the still-fast
+  compressor would heat that trial's air to ~760 K, above a commanded 640–700 K (or within a few kelvin
+  of it — a near-zero rise the burner's `f` solve cannot close either), so the trial fails and the
+  closure gives up, while the real operating point (compressor exit ~550 K) is fine. The fuel-metered cut
+  runs through. Classified by replaying that first trial exactly (`low_wall_trial_fails`, a copy of
+  `eval_m`'s opening lines held to the closure's own outcome). A model-side fix (march the low wall in)
+  would be bit-identical wherever the closure succeeds today — a candidate seam, not done here.
+- **A time step can be too coarse.** At Mach 3.3 the shaft responds far faster than its design τ: the
+  march overshoots its end speed and an RK stage lands below zero speed (`Overstep`). Rare (1 in ~150
+  thermally-perfect requests); said as a limit of the stepping.
+- **The ramp knob is quantised by the step**: whole numbers of 0.02 τ, at least one (§ 12.5's study:
+  converged to 0.1 K at half and a quarter of the step; between steps 20–70 K off).
+- **Crash map** (through `sandbox::call`, 3 000 perfect-gas + 500 per table gas, fresh seeds after each
+  change): every early stop is one of five measured kinds, none unclassified; the panics are slice 3's
+  steady-solve classes, at an endpoint (the page asks each throttle's steady point to name which) or in
+  the design capture. Native median per run 5 ms (perfect), 0.19–0.32 s (table gases), worst 2.3 s.
+- **The fuel-metered run settles FASTER** than the commanded one (the overshoot spins the shaft up):
+  90 % of the speed change at 1.28 τ against 2.24 τ on the opening slam.
+- **Browser ≡ native on the slam requests** within slice 1's bars (worst overall unchanged: perfect
+  9.2e-15, table 9.4e-11).
+- **Screenshots** came out right first time; a `SANDBOX_SHOTS=1` run wrote them into a folder named `1`
+  in the repo (the variable is a PATH) — moved out, not committed.

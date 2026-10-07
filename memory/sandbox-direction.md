@@ -40,3 +40,7 @@ CLAUDE.md carries a one-line "Direction" note under its intro. See
 the thermally perfect gas (live), equilibrium on release; stall line as a knob + map shape, labelled
 "trend only"; the memo-cache speed-up shipped first. Next: slice 2 (rung 85 blade speeds).
 **Slice 2 "Size the blades" SHIPPED 2026-10-07** — [[sandbox-slice2]]; slices 1–3 all built. Next per plan § 5: slice 4 (transient), slice 5 (combustor).
+**Slice 4 (transient) PLANNED + ANSWERED 2026-10-07** — plan § 12; user: all four as recommended —
+(A) a throttle slam on the Fly-it engine FIRST (temperature-commanded vs fuel-metered, equilibrium gas
+refused), then (B) a two-shaft *Controls* view on the Blades rig, perfect gas only, the limiter set +
+ONE airflow lever; time in spool time constants. **(A) the slam SHIPPED 2026-10-07** — [[sandbox-slice4a]]; next: (B) Controls.

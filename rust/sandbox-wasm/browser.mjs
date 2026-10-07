@@ -143,8 +143,8 @@ try {
   const nativeFly = JSON.parse(readFileSync(nativeTxt, 'utf8').split(/\r?\n/).find(l => l.startsWith('{"op":"fly","fly":{}}')).split('\t')[1]);
   const e8 = fly0 ? close(fly0, nativeFly) : 'no fly result';
   check('fly_it_opens_on_the_design_point_and_matches_native', flew && !e8 && Math.abs(fly0.nu - 1) < 1e-9, e8 || `nu ${fly0 && fly0.nu}`);
-  const vis = await ev(`['fly-set','fly-tiles','map-card','cycle-set'].map(i => document.getElementById(i).hidden)`);
-  check('fly_mode_shows_its_knobs_and_hides_the_design', JSON.stringify(vis) === '[false,false,false,true]', JSON.stringify(vis));
+  const vis = await ev(`['fly-set','fly-tiles','map-card','slam-set','slam-card','cycle-set'].map(i => document.getElementById(i).hidden)`);
+  check('fly_mode_shows_its_knobs_and_hides_the_design', JSON.stringify(vis) === '[false,false,false,false,false,true]', JSON.stringify(vis));
   // The frozen line shows BOTH: the design as set (slice 1's own run) and the convergent re-run.
   const frozen = await ev(`document.getElementById('frozen').textContent`);
   const kn = (frozen.match(/[\d,.]+ kN/g) || []).map(t => parseFloat(t.replace(/,/g, '')));
@@ -184,6 +184,43 @@ try {
     await ev(`window.sandbox.fly({Tt4: 1300})`);
   }
 
+  // 11b. SLAM THE THROTTLE (slice 4 A). Back at the design flight and throttle, the page's opening slam
+  // (temperature commanded) is the native `{"op":"slam","slam":{}}`; the fuel-metered run overshoots; both
+  // paths reach the time chart and the map.
+  await ev(`window.sandbox.fly({T0: 250, p0: 50000, M0: 0.85, Tt4: 1500})`);
+  const sl = await ev(`window.sandbox.slam({from: 1100, ramp: 0.5, settle: 3, mode: 'both'}).then(r => r)`);
+  const nativeSlam = JSON.parse(readFileSync(nativeTxt, 'utf8').split(/\r?\n/).find(l => l.startsWith('{"op":"slam","slam":{}}\t')).split('\t')[1]);
+  const es = sl && sl.temperature ? close(sl.temperature, nativeSlam) : 'no slam result';
+  const over = sl && sl.fuel && sl.fuel.ok ? Math.max(...sl.fuel.Tt4) - sl.fuel.end.Tt4 : NaN;
+  const drawnS = await ev(`[document.querySelectorAll('#slam-chart .tcmd, #slam-chart .tfuel').length, document.querySelectorAll('#map .tcmd, #map .tfuel').length, document.getElementById('slam-table').tBodies[0].rows.length, document.getElementById('slam-card').hidden]`);
+  check('the_slam_matches_native_and_the_fuel_run_overshoots', !es && over > 100 && drawnS[0] === 2 && drawnS[1] === 2 && drawnS[2] === 8 && drawnS[3] === false,
+        (es || '') + ` overshoot ${over} K, drawn ${JSON.stringify(drawnS)}`);
+  // A fuel slam that outruns the model's fuel range: the points it has, and why it stopped, in words.
+  const st = await ev(`window.sandbox.slam({from: 1000, ramp: 0.1, settle: 3, mode: 'fuel'}).then(r => r)`);
+  const stopText = await ev(`document.getElementById('slam-stops').textContent`);
+  check('a_stopped_run_shows_its_points_and_says_why', st && st.fuel && st.fuel.ok === 1 && st.fuel.stop && st.fuel.stop.kind === 'fuel_cap'
+        && st.fuel.s.length === 5 && /stopped at .* after 5 of \d+ points/.test(stopText) && /fuel arrived faster/.test(stopText) && /Model message/.test(stopText),
+        JSON.stringify([st && st.fuel && st.fuel.stop, stopText.slice(0, 200)]));
+  // A starting throttle below idle: the run traps in its steady solve, and the words name WHICH throttle.
+  await ev(`window.sandbox.slam({from: 400, ramp: 0.5, settle: 1, mode: 'temperature'})`);
+  const idleSlam = await ev(`document.getElementById('slam-stops').textContent`);
+  check('a_slam_from_below_idle_names_the_starting_throttle', /does not run\. At the starting throttle \(400 K\)/.test(idleSlam), idleSlam.slice(0, 200));
+  // A knob moved during a slow run stops it (its worker is killed), and the new run finishes.
+  const k0 = await ev('window.sandbox.kills');
+  await ev(`window.sandbox.slam({from: 1100, settle: 10, mode: 'both'}); null`);
+  await waitFor(`window.sandbox.slamState === 'running'`, 5000);
+  await ev(`(() => { const a = document.getElementById('slam-ramp'); a.value = '0.3'; a.dispatchEvent(new Event('input')); })()`);
+  const fin = await waitFor(`window.sandbox.slamState === 'done' && window.sandbox.slamRuns().fuel && window.sandbox.slamRuns().fuel.slam && window.sandbox.slamRuns().fuel.slam.ramp === 0.3`, 60000);
+  check('a_knob_move_stops_a_running_slam_and_the_new_one_finishes', fin && (await ev('window.sandbox.kills')) > k0, `finished ${fin}, kills ${k0} -> ${await ev('window.sandbox.kills')}`);
+  await ev(`window.sandbox.slam({from: 1100, ramp: 0.5, settle: 3, mode: 'both'})`);
+  if (process.env.SANDBOX_SHOTS) {
+    await shot('slam-light'); await shot('slam-dark', 1280, true); await shot('slam-phone', 390);
+    await ev(`document.getElementById('q-phi').click()`); await shot('slam-phi');
+    await ev(`window.sandbox.slam({from: 1000, ramp: 0.1, settle: 3, mode: 'fuel'})`); await shot('slam-stopped');
+    await ev(`document.getElementById('q-Tt4').click()`);
+    await ev(`window.sandbox.slam({from: 1100, ramp: 0.5, settle: 3, mode: 'both'})`);
+  }
+
   // 12. The slow gas runs when the knob is let go, not per step of a drag.
   await ev(`(() => { const g = document.getElementById('fly-gas'); g.value = 'equilibrium'; g.dispatchEvent(new Event('change')); })()`);
   const eq = await waitFor(`window.sandbox.last && window.sandbox.last.fly && window.sandbox.last.fly.gas === 'equilibrium' && window.sandbox.state === 'ran'`, 20000);
@@ -194,6 +231,9 @@ try {
   await ev(`document.getElementById('fly-Tt4-r').dispatchEvent(new Event('change'))`);
   const released = await waitFor(`window.sandbox.last.fly.Tt4 === 1250 && window.sandbox.state === 'ran'`, 20000);
   check('the_slow_gas_runs_on_release', eq && held === n0 && released, `eq ${eq}, held ${held} (was ${n0}), released ${released}`);
+  // ...and on the equilibrium gas the slam is refused, in words.
+  const eqSlam = await waitFor(`window.sandbox.slamState !== 'running' && /does not run on the equilibrium gas/.test(document.getElementById('slam-stops').textContent)`, 20000);
+  check('the_slam_is_refused_on_the_equilibrium_gas_in_words', eqSlam, await ev(`document.getElementById('slam-stops').textContent`));
 
   // 13. SIZE THE BLADES (slice 2). The opening sizing is the native `blade_size` of the defaults (rung
   // 85's default cell), and the lever sweep streams in on its own worker.
