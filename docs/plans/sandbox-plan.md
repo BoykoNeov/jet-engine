@@ -3,8 +3,7 @@
 **Status: SLICE 1 BUILT 2026-10-06** — `docs/sandbox/` (what shipped, and how it is gated: its
 README). **Slice 3 (off-design, "Fly it") BUILT 2026-10-07 — § 10**; what the build found beyond
 the plan is § 10.8. **Slice 2 (blade speeds, "Size the blades") BUILT 2026-10-07 — § 11**; what the build found
-beyond the plan is § 11.8. **Slice 4 (the transient) PLANNED 2026-10-07 — § 12, questions open
-(§ 12.8).** Drafted 2026-10-06, after rung 85 shipped. Direction (user,
+beyond the plan is § 11.8. **Slice 4 (the transient) PLANNED 2026-10-07 — § 12, answered (§ 12.8).** Drafted 2026-10-06, after rung 85 shipped. Direction (user,
 2026-10-06): the project becomes a **sandbox** — change the engine's components and design numbers
 and watch it respond — delivered as an **interactive web page running the Rust model live**, beside
 the charts page and the cutaway (`docs/visuals/`).
@@ -701,6 +700,12 @@ seconds. The ramp knob is in the same unit; the page says why. (B)'s unit is the
 (A) and (B) are separable — (A) can ship first.
 
 ### 12.8 Questions for the user
+
+**ANSWERED (user, 2026-10-07): all four as recommended** — (1) a: both engines, the slam on the
+user's *Fly it* engine FIRST, then the two-shaft *Controls* view; (2) a: the slam offers perfect /
+thermally perfect / reacting / Fork B and refuses equilibrium with its two reasons, *Controls* is
+perfect-gas-only; (3) a: the § 12.3 switch set, no forced-release experiments; (4) a: time in spool
+time constants, no seconds knob.
 
 1. **Which engines.** (a) Both — the throttle slam on your own *Fly it* engine, AND a separate two-shaft
    *Controls* view (the *Blades* rig) for the switches, built (A) first — *recommended*; (b) only the
