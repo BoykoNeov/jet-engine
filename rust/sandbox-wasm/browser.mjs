@@ -192,8 +192,9 @@ try {
   const nativeSlam = JSON.parse(readFileSync(nativeTxt, 'utf8').split(/\r?\n/).find(l => l.startsWith('{"op":"slam","slam":{}}\t')).split('\t')[1]);
   const es = sl && sl.temperature ? close(sl.temperature, nativeSlam) : 'no slam result';
   const over = sl && sl.fuel && sl.fuel.ok ? Math.max(...sl.fuel.Tt4) - sl.fuel.end.Tt4 : NaN;
+  // Each run draws two paths: the whole run thin and dashed, its choked stretches full width on top.
   const drawnS = await ev(`[document.querySelectorAll('#slam-chart .tcmd, #slam-chart .tfuel').length, document.querySelectorAll('#map .tcmd, #map .tfuel').length, document.getElementById('slam-table').tBodies[0].rows.length, document.getElementById('slam-card').hidden]`);
-  check('the_slam_matches_native_and_the_fuel_run_overshoots', !es && over > 100 && drawnS[0] === 2 && drawnS[1] === 2 && drawnS[2] === 8 && drawnS[3] === false,
+  check('the_slam_matches_native_and_the_fuel_run_overshoots', !es && over > 100 && drawnS[0] === 4 && drawnS[1] === 2 && drawnS[2] === 8 && drawnS[3] === false,
         (es || '') + ` overshoot ${over} K, drawn ${JSON.stringify(drawnS)}`);
   // A fuel slam that outruns the model's fuel range: the points it has, and why it stopped, in words.
   const st = await ev(`window.sandbox.slam({from: 1000, ramp: 0.1, settle: 3, mode: 'fuel'}).then(r => r)`);

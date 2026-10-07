@@ -730,15 +730,26 @@ time constants, no seconds knob.
   of it — a near-zero rise the burner's `f` solve cannot close either), so the trial fails and the
   closure gives up, while the real operating point (compressor exit ~550 K) is fine. The fuel-metered cut
   runs through. Classified by replaying that first trial exactly (`low_wall_trial_fails`, a copy of
-  `eval_m`'s opening lines held to the closure's own outcome). A model-side fix (march the low wall in)
-  would be bit-identical wherever the closure succeeds today — a candidate seam, not done here.
+  `eval_m`'s opening lines held to the closure's own outcome). That a root EXISTS past the failing trial is
+  shown at the measured state (the residual changes sign where the compressor exit, ~536 K, is below the
+  commanded 640 K — a pinned test), not over the whole box. HYPOTHESIS, unverified: a model-side fix
+  (march the low wall in) would be bit-identical wherever the closure succeeds today — a candidate seam.
 - **A time step can be too coarse.** At Mach 3.3 the shaft responds far faster than its design τ: the
   march overshoots its end speed and an RK stage lands below zero speed (`Overstep`). Rare (1 in ~150
   thermally-perfect requests); said as a limit of the stepping.
 - **The ramp knob is quantised by the step**: whole numbers of 0.02 τ, at least one (§ 12.5's study:
   converged to 0.1 K at half and a quarter of the step; between steps 20–70 K off).
+- **A fuel-cap stop has two causes, needing opposite advice** (advisor, checked): the transient
+  overshoot (slow the move down) and an ENDPOINT whose own steady fuel-air ratio is above 0.05 (no ramp
+  reaches it — the reacting gas at 2250 K needs 0.051). The closure's low wall IS f = 0.05 at the metered
+  fuel, so the second is exactly unreachable: refused before the march (`fuel_reach_check`), naming the
+  throttle; the stop words now cover only the first.
+- **Flow against the stall line, unchoked:** slice 3's tile reads rung 36's STEADY margin, choked only;
+  the slam shows the flow coefficient at every instant, and draws the unchoked stretches thin and dashed.
 - **Crash map** (through `sandbox::call`, 3 000 perfect-gas + 500 per table gas, fresh seeds after each
-  change): every early stop is one of five measured kinds, none unclassified; the panics are slice 3's
+  change): every early stop is one of FOUR measured kinds (fuel limit, nozzle gap, first-trial artefact,
+  step too coarse) — none unclassified; the "burner" and "other" kinds have words but no measured case
+  (fallbacks); the panics are slice 3's
   steady-solve classes, at an endpoint (the page asks each throttle's steady point to name which) or in
   the design capture. Native median per run 5 ms (perfect), 0.19–0.32 s (table gases), worst 2.3 s.
 - **The fuel-metered run settles FASTER** than the commanded one (the overshoot spins the shaft up):

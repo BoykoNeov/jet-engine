@@ -13,7 +13,7 @@
 
 use turbojet::sandbox::{call, fly, fly_solver, FlySettings, GasModel};
 use turbojet::sandbox_transient::{low_wall_trial_fails, replay_step, slam, slam_precheck, stop_reason, SlamSettings,
-                                  SlamSolver, StopKind, ThrottleMode, DS, MAX_RUN};
+                                  SlamSolver, StopKind, ThrottleMode, DS, FUEL_CAP, LOW_FLOW_WALL, MAX_RUN};
 use turbojet::components::ram_recovery;
 use turbojet::visuals::Json;
 
@@ -288,4 +288,64 @@ fn every_trajectory_column_has_one_value_per_point() {
         let Some(Json::List(l)) = j.get(k) else { panic!("no column {k}") };
         assert_eq!(l.len(), o.points.len(), "column {k}");
     }
+}
+
+#[test]
+fn fuel_metering_refuses_an_endpoint_past_its_fuel_range_and_only_that() {
+    // The reacting gas needs f = 0.051 to hold 2250 K steady (measured): fuel metering cannot reach it from
+    // either side, whatever the ramp — refused, naming which throttle. Temperature commanded still runs.
+    let up = slam_on(GasModel::Reacting, ThrottleMode::Fuel, 1100.0, 2250.0, 3.0, 1.0);
+    let m = slam(&up).err().expect("refused").0;
+    assert!(m.contains("cannot reach the final throttle (2250 K)") && m.contains("0.05"), "{m}");
+    let down = SlamSettings { from: 2250.0, to: 1100.0, ..up };
+    assert!(slam(&down).err().expect("refused").0.contains("starting throttle (2250 K)"));
+    assert!(slam(&SlamSettings { mode: ThrottleMode::Temperature, ..up }).is_ok(), "the commanded run is not refused");
+    // ...and the copied cap is the closure's: at the end throttle's own steady state, the fuel closure fails;
+    // at a throttle whose steady f is under the cap, it closes.
+    for (tt4, reachable) in [(2250.0, false), (2100.0, true)] {
+        let s = SlamSettings { to: tt4, mode: ThrottleMode::Temperature, ..up };
+        let sv = SlamSolver::new(&s);
+        assert_eq!(sv.end.far < FUEL_CAP, reachable, "f = {} at {tt4} K", sv.end.far);
+        let r = sv.st.try_instant_fuel(&s.fly.flight(), sv.end.nu, sv.end.fuel, Some(&sv.cmap));
+        assert_eq!(r.is_ok(), reachable, "fuel closure at {tt4} K: {:?}", r.err().map(|e| e.0));
+    }
+}
+
+#[test]
+fn past_the_failing_first_trial_the_commanded_cut_has_a_real_operating_point() {
+    // The words for a LowFlowTrial stop say the operating point itself is fine. Show it at the measured
+    // failing state (1500 → 640 K over 0.06, perfect gas): scan the closure's residual m - m_imp(m) along
+    // the speed line from its low wall, with `eval_m`'s own arithmetic; the burner fails at the low flows
+    // and the residual then changes sign where the compressor exit is BELOW the commanded temperature.
+    let s = slam_on(GasModel::Perfect, ThrottleMode::Temperature, 1500.0, 640.0, 0.06, 3.0);
+    let o = slam(&s).unwrap();
+    let stop = o.stop.unwrap();
+    assert_eq!(stop.kind, StopKind::LowFlowTrial);
+    let sv = SlamSolver::new(&s);
+    let tt4 = (sv.schedule)(stop.failure.s);
+    let mm = &sv.st.inner;
+    let m = &mm.inner;
+    let gas = m.gas();
+    let n = stop.failure.nu * (mm.tt2_d / sv.tt2).sqrt();
+    let hi = 2.5f64.min(sv.cmap.phi_max(0.1) * n);
+    let (mut burner_failed_low, mut prev, mut root_tt3) = (false, None::<f64>, None::<f64>);
+    for k in 0..=240 {
+        let mc = LOW_FLOW_WALL + (hi - LOW_FLOW_WALL) * k as f64 / 240.0;
+        let tt3 = sv.tt2 * sv.st.tau_c_forward(&sv.cmap, n, mc);
+        let eta_c = sv.cmap.eta_c_at(m.eta_c, mc / n, n);
+        let (h2, h3) = (gas.h_c(sv.tt2), gas.h_c(tt3));
+        let tt3s = gas.t_from_h_c(h2 + eta_c * (h3 - h2));
+        let pt4 = m.pi_b * gas.pr_c(tt3s) / gas.pr_c(sv.tt2) * sv.pt2;
+        let Ok(f) = m.try_solve_f(tt3, pt4, tt4) else {
+            if k == 0 { burner_failed_low = true; }
+            continue;
+        };
+        let mdot4 = m.a4 * pt4 * turbojet::components::try_choked_mfp(gas, tt4, f).unwrap() / tt4.sqrt();
+        let g = mc - (mdot4 / (1.0 + f) * sv.tt2.sqrt() / sv.pt2) / mm.mdot_corr_d;
+        if let Some(p) = prev { if p < 0.0 && g >= 0.0 && root_tt3.is_none() { root_tt3 = Some(tt3); } }
+        prev = Some(g);
+    }
+    assert!(burner_failed_low, "the low wall's burner solve fails");
+    let r = root_tt3.expect("the residual changes sign past the failing trial");
+    assert!(r < tt4, "at the root the compressor exit ({r} K) is below the commanded {tt4} K");
 }

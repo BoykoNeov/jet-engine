@@ -176,18 +176,20 @@ pub struct Steady {
     pub phi: f64,
     pub thrust: f64,
     pub fuel: f64,
+    /// The fuel-air ratio there.
+    pub far: f64,
     pub choked: bool,
 }
 
 impl Steady {
     fn of(eq: &Instant) -> Self {
         Steady { tt4: eq.tt4, nu: eq.nu, pi_c: eq.pi_c, m_corr: eq.m, phi: eq.flowcoef, thrust: eq.thrust,
-                 fuel: eq.f * eq.mdot_air, choked: eq.branch == Branch::Choked }
+                 fuel: eq.f * eq.mdot_air, far: eq.f, choked: eq.branch == Branch::Choked }
     }
 
     fn to_json(self) -> Json {
         jobj! { "Tt4" => self.tt4, "nu" => self.nu, "pi_c" => self.pi_c, "m_corr" => self.m_corr,
-                "phi" => self.phi, "thrust" => self.thrust, "fuel" => self.fuel,
+                "phi" => self.phi, "thrust" => self.thrust, "fuel" => self.fuel, "far" => self.far,
                 "choked" => Json::Int(self.choked as i64) }
     }
 }
@@ -352,7 +354,7 @@ impl StopKind {
             StopKind::SubsonicGap =>
                 "The nozzle is close to the point where it stops being choked (the jet just under the speed of                  sound), and the model's solver for that case has a known gap there: it cannot find the turbine's                  operating point. This is a limit of the model, not of the engine.",
             StopKind::LowFlowTrial =>
-                "This stop is the model's, not the engine's. To find the airflow, the solver first tries a very                  low airflow; there the compressor, still spinning near its old speed, would heat the air above the                  temperature you are commanding, so that first try asks the burner to cool the air and the solver                  gives up. The operating point itself is fine. Meter the fuel instead (what a real engine does), or                  cut the throttle more slowly.",
+                "This stop is the model's, not the engine's. To find the airflow, the solver first tries a very                  low airflow; there the compressor, still spinning near its old speed, would heat the air above the                  temperature you are commanding, so that first try asks the burner to cool the air and the solver                  gives up. Where this was checked, a working operating point exists a little further along; the                  model just cannot reach it. Meter the fuel instead (what a real engine does), or cut the throttle                  more slowly.",
             StopKind::Overstep =>
                 "The shaft's speed was changing so fast here that one of the model's fixed time steps carried it                  past zero. The time step (0.02 τ) is too coarse for this engine at this flight, so the last points                  before the stop are not to be trusted either. This is a limit of the model's stepping, not of the                  engine.",
             StopKind::Burner =>
@@ -421,10 +423,33 @@ pub fn stop_reason(sv: &SlamSolver, points: &[TransientPoint]) -> Option<Stop> {
     Some(Stop { failure, kind })
 }
 
+/// The highest fuel-air ratio rung 35's fuel-metered closure searches — `f_cap` in
+/// `SpoolTransient::try_close_compressor_fuel`, copied (the model spells it inline). The closure's low
+/// flow wall IS this ratio at the metered fuel, so a point needing more is unreachable on that path;
+/// `tests/sandbox_transient.rs` pins it against the closure.
+pub const FUEL_CAP: f64 = 0.05;
+
+/// Fuel metered: a steady endpoint whose own fuel-air ratio is above [`FUEL_CAP`] cannot be reached
+/// by ANY ramp — refused in words, because the overshoot's words ("make the move slower") would be wrong
+/// there (plan § 12.9: the crash map's fuel-cap stops include starts that never record a point).
+pub fn fuel_reach_check(sv: &SlamSolver) -> Result<(), DoesNotRun> {
+    if sv.settings.mode != ThrottleMode::Fuel {
+        return Ok(());
+    }
+    for (which, e) in [("starting", sv.start), ("final", sv.end)] {
+        if e.far > FUEL_CAP {
+            return Err(DoesNotRun(format!(
+                "Metering the fuel cannot reach the {which} throttle ({:.0} K): holding it steady takes {:.4} kg of fuel                  per kg of air, above the 0.05 the model's fuel-metered solver searches. Command the temperature                  instead, or pick a cooler throttle.", e.tt4, e.far)));
+        }
+    }
+    Ok(())
+}
+
 /// Run one slam.
 pub fn slam(s: &SlamSettings) -> Result<SlamOutcome, DoesNotRun> {
     slam_precheck(s)?;
     let sv = SlamSolver::new(s);
+    fuel_reach_check(&sv)?;
     let points = sv.march();
     let stop = stop_reason(&sv, &points);
     let m = &sv.st.inner;

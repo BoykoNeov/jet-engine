@@ -171,6 +171,7 @@ Never re-open one, and never re-enumerate them here.
 - **Detailed Fenimore** (`CH+N₂→HCN`) and **super-eq-O radical decay** — need new species / a relaxing pocket.
 - **Reacting-gas fuel control** (35/43 defer — the forward burner asserts against an equilibrium gas).
 - **The subsonic / unchoked LP branch** in the two-spool solves (38 flags, unsolved) and its **transient**.
+- **Rung 34's commanded-`Tt4` closure** starts its airflow search at a FIXED low wall: on a fast commanded cut that trial asks the burner to cool and the march stops though a root exists — `docs/plans/sandbox-plan.md` § 12.9.
 - **Rung 33's dispatch floor**: below ~455 K its choked trial leaves the gas tables, ABOVE idle — `docs/rung33-spec.md`.
 - **Fuel + bleed + STATOR** on one plant (rung 63's seam, untouched by 64/65).
 - **Off-design at a new ALTITUDE**: every matcher (1- and 2-spool, bleed) keeps the DESIGN ambient as nozzle back-pressure (`p_ambient`); shipped callers hold `p0` fixed. Sandbox overrides per flight — `docs/plans/sandbox-plan.md` § 10.8.
@@ -226,7 +227,7 @@ From the repo root; every `cargo` command takes `--manifest-path rust/Cargo.toml
   Chart data alone: `-- ts-diagram`; the pages: `-- visuals` / `-- splice`; one panel:
   `-- panel NAME` (`--write` captures a Rust-owned panel's golden, `rust/oracle/rust_owned/`).
 - **The gate: `powershell -File rust\test-all.ps1`** — **EVERYTHING** (`cargo test --release`'s
-  2278 tests, 200 programs incl. the sandbox browser check) run 8 at a time, below-normal: **~11 min**, + ~4 min rebuild after a
+  2280 tests, 200 programs incl. the sandbox browser check) run 8 at a time, below-normal: **~11 min**, + ~4 min rebuild after a
   `src/` change. Plain `cargo test --release` runs them one by one (80 min). Nothing is deselected.
 - **Iterate: `cargo test --release --test rungN`** — one binary. Run what a change can reach.
 - **WHEN to run the gate:** at session end (unless run shortly before), and after a code change.
