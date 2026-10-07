@@ -186,7 +186,7 @@ footer p { max-width: 90ch; }
       <div class="knob"><label for="bl-gas">Gas model</label>
         <select id="bl-gas" style="grid-column: 1 / -1">
           <option value="perfect">Perfect gas (rung 85's own; fast)</option>
-          <option value="thermally_perfect">Thermally perfect (slow: ~0.4 s a throttle)</option>
+          <option value="thermally_perfect">Thermally perfect (slow: ~1 s a throttle)</option>
         </select></div>
       <div class="knob"><label for="bl-shape">Compressor map shape</label>
         <select id="bl-shape" style="grid-column: 1 / -1">
@@ -477,6 +477,7 @@ async function ask(text) {
     try {
       const op = String(JSON.parse(text).op);
       if (["fly", "running_point"].includes(op)) view = "fly";
+      else if (op === "blade_lever") view = "blades_lever";   // a THROTTLE's failure, not the design's
       else if (op.startsWith("blade_")) view = "blades";
     } catch (_) {}
     const plain = JSON.parse(raw(JSON.stringify({ op: "explain", message, view }))).plain;

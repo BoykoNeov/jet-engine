@@ -389,8 +389,9 @@ Native, thread cycles over a calibrated clock (4.17 GHz):
 requests, over the whole knob box** (3 000 random designs, perfect gas; 300, thermally perfect —
 `W:\temp\claude\jet-blade-crashmap`): one-block lever median 7.5 ms (max 18), row-by-row levers
 median ~90 ms (max 0.6 s) on the perfect gas; on the thermally perfect gas **median 0.32–0.45 s and
-worst 10–22 s for ONE point**, native. The browser-build times are to be re-measured before any
-speed label is written (slice 3's lesson).
+worst 10–22 s for ONE point**, native. **In the browser build** (Node 24, the default design's 9-throttle
+grid): perfect gas 10–80 ms a point (sweep 0.1–0.5 s); thermally perfect ~0.8 s a point, max ~1 s,
+sweep ~6 s — ~2.5× native. The page's labels quote these.
 
 **Gas** (corrected 2026-10-07 — the user chose BOTH, § 11.7 Q2). Before the fix, the table gases ran
 but `size` read the scalar `gamma_c` (the table gas's spec default 1.4) and a `cp` derived from it for
@@ -504,6 +505,12 @@ plant not changed (not part of the agreed change).
   Worker rather than a per-point budget. Default design's 9-throttle sweep: 2.5 s native.
 - **The CLI panel's gas is not the rig's** (cold R 286.9 vs 286.857): at λ = 1 it moves ONE printed
   digit (h 0.7 / M 1.5 / switch A: v* 1.40238 vs 1.40228). Pinned with that cause, one unit of slack.
+- **The slider box was wider than the first sweeps.** Re-swept through the page's requests over the
+  sliders' own ranges (45 000 sizings, 1 650 lever points): no new failure kind, but the DESIGN run
+  itself fails at an overall pressure ratio ≳ 49 with a low design `Tt4` — the jet below outside pressure
+  (thermally perfect, 1.7 %) and the efficiency-bookkeeping check (0.4–1.3 %). Kept reachable (a
+  physical result), each explained and driven by a sweep design; a lever request's crash now gets the
+  throttle's words (`explain` view `blades_lever`), a sizing crash the design's.
 - **Browser ≡ native on the blade requests to 9.2e-15** (perfect gas): the lever search's 1e-12
   residual stop landed on the same travel in both builds; slice 1's bars stand (`check.mjs`).
 - **Screenshots found** a clipped gas option, mixed "1,200" / "960.0" throttles, a wide "never

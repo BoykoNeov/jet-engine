@@ -590,6 +590,8 @@ pub fn call(request: &str) -> String {
             Some(Json::Str(m)) if matches!(req.get("view"), Some(Json::Str(v)) if v == "fly") => jobj! { "plain" => explain_fly(m) },
             Some(Json::Str(m)) if matches!(req.get("view"), Some(Json::Str(v)) if v == "blades") =>
                 jobj! { "plain" => crate::sandbox_blades::explain_blades(m) },
+            Some(Json::Str(m)) if matches!(req.get("view"), Some(Json::Str(v)) if v == "blades_lever") =>
+                jobj! { "plain" => crate::sandbox_blades::lever_words(m) },
             Some(Json::Str(m)) => jobj! { "plain" => explain(m) },
             _ => refusal("explain needs a message"),
         },

@@ -226,7 +226,7 @@ From the repo root; every `cargo` command takes `--manifest-path rust/Cargo.toml
   Chart data alone: `-- ts-diagram`; the pages: `-- visuals` / `-- splice`; one panel:
   `-- panel NAME` (`--write` captures a Rust-owned panel's golden, `rust/oracle/rust_owned/`).
 - **The gate: `powershell -File rust\test-all.ps1`** — **EVERYTHING** (`cargo test --release`'s
-  2240 tests, 199 programs incl. the sandbox browser check) run 8 at a time, below-normal: **~11 min**, + ~4 min rebuild after a
+  2241 tests, 199 programs incl. the sandbox browser check) run 8 at a time, below-normal: **~11 min**, + ~4 min rebuild after a
   `src/` change. Plain `cargo test --release` runs them one by one (80 min). Nothing is deselected.
 - **Iterate: `cargo test --release --test rungN`** — one binary. Run what a change can reach.
 - **WHEN to run the gate:** at session end (unless run shortly before), and after a code change.

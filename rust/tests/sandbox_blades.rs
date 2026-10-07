@@ -308,3 +308,28 @@ fn the_plain_words_have_no_broken_line_continuations() {
         }
     }
 }
+
+/// The DESIGN run's own failures over the page's slider box — each on a design the 45 000-design
+/// sizing sweep found (plan § 11.8), sent as the page sends it. Both panic (the page's trap path) and
+/// both are explained for the design, not a throttle.
+#[test]
+fn the_design_runs_own_failures_are_explained_for_the_design() {
+    for (b, raised, words) in [
+        (r#"{"gas":"thermally_perfect","pi_lpc":7.130227229794251,"pi_hpc":19.513006508914355,"Tt4":1262.8379023643258}"#,
+         "nozzle back-pressure", "The design engine does not run"),
+        (r#"{"gas":"perfect","pi_lpc":7.2017658288606246,"pi_hpc":9.89234815788539,"Tt4":1090.1246049557567}"#,
+         "efficiency cascade", "very low thrust"),
+    ] {
+        let e = quiet(|| call(&format!(r#"{{"op":"blade_size","blades":{b}}}"#))).expect_err(b);
+        assert!(e.contains(raised), "{b}: {e}");
+        assert!(explain_blades(&e).contains(words), "{b}: {}", explain_blades(&e));
+        // The page asks for the words through the `explain` op, view by request kind.
+        let via = |view: &str| s(&ask(&jobj_text(view, &e)), "plain");
+        assert_eq!(via("blades"), explain_blades(&e));
+        assert_eq!(via("blades_lever"), lever_words(&e));
+    }
+}
+
+fn jobj_text(view: &str, message: &str) -> String {
+    turbojet::jobj! { "op" => "explain", "view" => view, "message" => message }.dump_compact()
+}

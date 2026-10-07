@@ -17,7 +17,8 @@
 //! scalar `γ` (rung 55, `stage.rs`); the page says so.
 //!
 //! **Requests.** `blade_size` sizes both spools (microseconds) and sweeps the airflow level for the
-//! staircase chart; `blade_lever` reads ONE throttle of one lever's schedule (5–600 ms), so the page
+//! staircase chart; `blade_lever` reads ONE throttle of one lever's schedule (milliseconds on the perfect gas, ~1 s in the browser
+//! on the thermally perfect one), so the page
 //! streams a grid ([`lever_grid`]) as slice 3 streams its running line. A lever point whose
 //! lever-at-design match fails (the nozzle unchokes — the two-spool model's open seam) is refused in
 //! plain words BEFORE the schedule runs, through the matcher's own fallible twin; anything else
@@ -380,10 +381,13 @@ pub fn lever_words(message: &str) -> String {
     explain_blades(message)
 }
 
-/// Plain words for a message the model raised in the blade view. The two-spool matchers' own
-/// failure is the UNCHOKED nozzle — rung 38's scope: their LP-turbine pin holds only while the
-/// nozzle is choked, and the unchoked branch is an open seam (CLAUDE.md). Anything else falls back
-/// to slice 1's [`explain`]. Each entry is driven by a test (`tests/sandbox_blades.rs`).
+/// Plain words for a message the model raised while SIZING (`blade_size` — a trap in a lever
+/// request gets [`lever_words`], through the `explain` op's `"blades_lever"` view). The design run
+/// itself fails two ways over the page's slider box (sweep 2026-10-07, 45 000 designs, plan § 11.8),
+/// both only at an overall pressure ratio ≳ 49 with a low design `Tt4`: the jet below outside
+/// pressure (thermally perfect, 1.7 %) and slice 1's efficiency-bookkeeping check ([`explain`]'s
+/// words). The two-spool matchers' own failure, the UNCHOKED nozzle (rung 38's scope, an open seam),
+/// is kept for completeness. Each entry is driven by a test (`tests/sandbox_blades.rs`).
 pub fn explain_blades(message: &str) -> String {
     if message.contains("nozzle UNCHOKED") {
         return "At this throttle the nozzle unchokes: the jet no longer reaches the speed of sound. The \
