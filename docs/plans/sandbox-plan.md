@@ -578,21 +578,29 @@ line does: a killable Worker and a spinner (slice 2's precedent), the newest req
 **What the grid found — each a result the page has to word, not a crash:**
 - **A fuel slam can outrun the model.** (A), fuel metered, `1000 → 1500 K` in 0.1 spool times, thermally
   perfect / reacting / Fork B: the march stops after **5 points** on two map shapes of three. The
-  temperature overshoots — 1955 K at 0.08 spool times against a 1500 K target, fuel-air ratio 0.044 and
-  climbing — and the next RK stage leaves what the model can represent (the burner's fuel-air cap / the
-  gas tables). The perfect gas has no table edge and runs on. This IS rung 35's overshoot, at its most
-  violent; the page says so and shows the points it has.
+  temperature overshoots — 1955 K at 0.08 spool times against a 1500 K target — and the step's FOURTH
+  RK stage (replayed in full: `k1`–`k3` succeed at ~2070 K) fails with rung 35's *"fuel compressor
+  closure does not bracket"*: the burner would need a fuel-air ratio above **0.05**, the edge of rung
+  35's closure search (`f_cap`, `spool.rs` `try_close_compressor_fuel`; stoichiometric is ~0.068). The
+  perfect gas runs on (156 points, peak 2238 K) because its constant `cp` reaches that temperature on
+  LESS fuel (peak `f` 0.043) — the cap applies on every gas. This IS rung 35's overshoot at its most
+  violent; the page shows the points it has and says why it stopped.
 - **A stall floor set above the starting point shuts the fuel off.** (B), the `φ` floor at 0.75 on the
-  LP spool: where the engine STARTS below 0.75 (the flat-LP map: 0.727; any map with the stator
-  schedule on: 0.729), the floor's own solve cuts the applied fuel to 11–13 % of scheduled, `Tt4` falls to
-  ~600 K, the spools wind down and the march stops (16–79 points of 126). A pre-check in words: "the
-  floor you set is above where the compressor already runs at the start".
-- **The stator schedule moves the `φ` wall** — rung 58's finding, now visible: with the stator on, the
-  same `φ` floor that is dormant on the bare machine bites from `s = 0`. Rung 60's INCIDENCE floor is the
+  LP spool, where the engine STARTS below 0.75 (the flat-LP map bare: 0.727; the press/flow LP map with
+  the stator schedule on: 0.729): the floor's own solve cuts the applied fuel to 11–13 % of scheduled,
+  `Tt4` falls to ~600 K, the spools wind down and the march stops (16–79 points of 126). **Shown, not
+  refused** — the limiter starving the engine is what a sandbox should show, and the last point carries
+  both fuels: "the floor cut the fuel to 11 % of schedule, because it sits above where the compressor
+  already runs at the start" comes straight off the trajectory.
+- **The stator schedule moves the starting point across the floor** — rung 58's finding, made visible.
+  On the bare machine (press/flow LP map) the same 0.75 floor is NOT dormant: the run's lowest LP flow
+  coefficient is 0.7355, so it binds during the ramp and the run completes — rung 49 working. The stator
+  moves the start (0.773 → 0.729) below it, so it bites from `s = 0`. Rung 60's INCIDENCE floor is the
   re-referenced version; offered in place of the `φ` floor when the stator is on (§ 12.3).
 - **Two-shaft + thermally perfect + stator schedule fails before the march starts** (`fuel_for_tt4`:
-  "inverse: root not bracketed", every limiter set, 7–89 ms) — rungs 57–60 were built and gated on the
-  perfect gas only. With the 2–46 s cost, the (B) view is perfect-gas-only (§ 12.8 Q2).
+  "inverse: root not bracketed", every limiter set, 7–89 ms) — the rung 57–63 suites run their
+  two-shaft machines on the perfect gas only (their one other gas is a single-spool equilibrium build).
+  With the 2–46 s cost, the (B) view is perfect-gas-only (§ 12.8 Q2).
 - **No chop stopped early on (A)** (18 per gas per mode). On (B) one chop did (flat-LP map, stator, all
   three legs: 117 of 126) — to be classified in § 12.5's crash map.
 
@@ -633,9 +641,9 @@ seconds. The ramp knob is in the same unit; the page says why. (B)'s unit is the
 ### 12.4 Refusals, in plain words (pre-checks unless marked)
 
 - **(A) equilibrium gas**: fuel metering does not exist on it (the forward burner asserts — rung 35's
-  open seam, CLAUDE.md "reacting-gas fuel control"); temperature-commanded runs (9 s native, ~20 s in the
-  browser) but would hide the overshoot that is the panel's point. Refused with that reason; the panel
-  offers the other four gases.
+  open seam, CLAUDE.md "reacting-gas fuel control"), so the side-by-side the panel exists for cannot be
+  drawn; the temperature-commanded march alone runs, but at 9 s native (~20 s in the browser) for one
+  ramp. Refused with those two reasons; the panel offers the other four gases.
 - **(A)** both throttles must be above the compressor-face temperature (slice 3's pre-check); both
   endpoints must run steady (a below-idle endpoint is slice 3's `explain_fly` wording).
 - **(B) thermally perfect**: not offered (§ 12.2).
@@ -643,14 +651,17 @@ seconds. The ramp knob is in the same unit; the page says why. (B)'s unit is the
   realistic-release lag needs a floor or schedule to lag; it cannot run with the temperature limiter's
   lag (a two-lag cascade, rung 66 — not this slice); the limiter's lag needs a redline; `φ` floor and
   incidence floor share one slot; stator AND bleed with fuel limiters is OPEN.
-- **(B) a floor above the start point** (§ 12.2) — pre-checked against the start equilibrium.
+- **(B) a floor above the start point** (§ 12.2) is NOT refused — it is shown, and worded from the
+  trajectory's own applied-vs-scheduled fuel.
 - **A run that stops early is a RESULT**: the page shows the points it has and why it stopped. The
-  marchers `break` and drop the error, so the reason must be recovered — **(A)**: re-run the failed RK
-  step from the last point through the PUBLIC `try_instant` / `try_instant_fuel` (the same calls the
-  march made, so the same arithmetic; the first `Err` is the reason); **(B)**: the limiter-armed
+  marchers `break` and drop the error, so the reason must be recovered — **(A)**: replay the WHOLE
+  failed step from the last recorded point through the PUBLIC `try_instant` / `try_instant_fuel` — `k1`
+  to `k4`, then the new state's `k1` (the next step's opening call, at a state the trajectory never
+  records) — the same calls in the same order as `spool.rs` `march`, so the same arithmetic; the first
+  `Err` is the reason (demonstrated on § 12.2's fuel slam: `k4` fails). **(B)**: the limiter-armed
   derivative is private to the marchers, so the sandbox reports where it stopped and classifies the
-  known causes (the pre-checks above, the overshoot past the tables) by re-running the instant at the
-  last state — no copy of a 250-line marcher.
+  known causes from the trajectory (the floor's applied-vs-scheduled fuel; the overshoot) — no copy of a
+  250-line marcher.
 
 ### 12.5 Model side (`sandbox_transient.rs`; no model code edited)
 
@@ -661,12 +672,19 @@ seconds. The ramp knob is in the same unit; the page says why. (B)'s unit is the
   accel table from `accel_schedule` when armed, `integrate_fuel` with a `FuelLimiters`.
 - **The crash map before the slider ranges** (slice 2's § 11.5 method): every knob over its box, every
   failure classified by what its message says, each class an `explain` entry with a test that drives it.
+  **The step size is checked against two knobs first**: `ρ` divides the LP rate (all of § 12.2 ran at
+  `ρ` = 1), so at the small end of its box `ds` 0.02 is compared with 0.01 before any failure there is
+  read as physics (rung 65's lesson: a "physical" pre-check that was RK4 instability); and a ramp of 0.1
+  spool times is only 5 steps, so the ramp knob's floor comes from `ds` too. (A)'s speed labels are
+  re-measured over the crash map's design and flight box (§ 12.2 timed the default design only).
 
 ### 12.6 Gates
 
 - **Reduce:** `op:"slam"` ≡ a direct `integrate` / `integrate_fuel` call, bit for bit; a ramp whose
   start and end are the same throttle stays on its equilibrium (`ν` constant to the solver's tolerance);
-  the temperature-commanded march's end point ≡ slice 3's `fly` at the end throttle (`ν`, `π_c`).
+  the temperature-commanded march APPROACHES slice 3's `fly` at the end throttle — after 3 spool times
+  it is at `ν` 0.996 of 1.0 (§ 12.2), so the gate is convergence: the gap to `fly`'s `ν` and `π_c`
+  shrinks as the settling time grows, with a bar measured from that data, never typed.
 - `op:"controls"` ≡ a direct `integrate_fuel` on the same machine, bit for bit; **a dormant limiter ≡
   the bare run** (rung 46's gate 1, through the op: a redline above the bare peak).
 - The stop-reason re-run on (A) reproduces the march's own trajectory up to the stop (bit for bit) —
