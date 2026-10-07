@@ -3,7 +3,8 @@
 **Status: SLICE 1 BUILT 2026-10-06** — `docs/sandbox/` (what shipped, and how it is gated: its
 README). **Slice 3 (off-design, "Fly it") BUILT 2026-10-07 — § 10**; what the build found beyond
 the plan is § 10.8. **Slice 2 (blade speeds, "Size the blades") BUILT 2026-10-07 — § 11**; what the build found
-beyond the plan is § 11.8. Drafted 2026-10-06, after rung 85 shipped. Direction (user,
+beyond the plan is § 11.8. **Slice 4 (the transient) PLANNED 2026-10-07 — § 12, questions open
+(§ 12.8).** Drafted 2026-10-06, after rung 85 shipped. Direction (user,
 2026-10-06): the project becomes a **sandbox** — change the engine's components and design numbers
 and watch it respond — delivered as an **interactive web page running the Rust model live**, beside
 the charts page and the cutaway (`docs/visuals/`).
@@ -518,3 +519,181 @@ plant not changed (not part of the agreed change).
   leaking into the table (the table sits in a chart card). Two test races found in the browser drive:
   a stale "9 points done" count read before the next sweep began, and a blade result taken for a
   design result (neither has a shaft speed).
+
+## 12. Slice 4 — the transient ("slam the throttle")
+
+Planned 2026-10-07. Slices 1–3 show STEADY points: the engine has already settled. Slice 4 moves the
+throttle and lets the engine take its time — the shaft speeds are STATES that lag the fuel — and shows
+the result as a plot against time: shaft speeds, turbine-inlet temperature (which can OVERSHOOT), thrust,
+and the compressor's path toward its stall line. Then the control switches — the fuel limiters and the
+airflow levers the ladder built (rungs 34–63) — change what that path does.
+
+### 12.1 Which engine — two, and the split is the model's, not a choice of convenience
+
+Every fuel limiter (rungs 46–52) and every airflow lever on the transient (57–63) is **two-shaft by
+assertion**: each `lp_disabled` path refuses it with the reason that its finding is a split BETWEEN
+spools (`fuel_transient.rs` `integrate_fuel_lp_disabled`, seven refusals). On a ONE-shaft engine the
+model has rungs 34–36 only. So:
+
+- **(A) "Slam the throttle" — on the user's own engine** (the *Fly it* hardware, single spool, slice 3's
+  `fly_solver`, its flight and map shape and stall line). Two ways to move the throttle: **command the
+  turbine-inlet temperature** (rung 34 — the textbook idealisation) or **meter the fuel** (rung 35 — what
+  a real engine does, where the temperature becomes an OUTPUT and overshoots). Shown side by side on the
+  same ramp, because the difference IS rung 35's finding. Up or down (a chop as well as a slam).
+- **(B) "Controls" — a second, two-shaft engine**: rung 43's rig, which is the *Blades* view's rig (the
+  same `π_LPC` 3 × `π_HPC` 6, `Tt4` 1500, convergent nozzle, two-spool losses, flight 250 K / 50 kPa /
+  Mach 0.85, the perfect gas), on rungs 43/45's fuel-metered march, with the switches of § 12.3. Said
+  plainly on the page: not the *Design* engine, not the *Fly it* engine.
+
+**Not in slice 4:** rung 37's combustor clocks (plenum fill, metal heat-soak) — its three marches run
+their step count unconditionally and panic where rung 34's stops cleanly (`combustor.rs` header), so
+they need their own refusal map; rungs 64–84 (the bleed LIMITER, the lagged valve, the cascades and the
+reference/rank rungs) — each has its own constructor and its subject is loop structure, not a visible
+behaviour; a flight knob on the two-shaft view — every two-spool solver keeps the DESIGN ambient
+pressure as the nozzle's back-pressure (CLAUDE.md, OPEN), and `fly_solver`'s override (§ 10.8) is
+single-spool.
+
+### 12.2 Measured (2026-10-07, scratch crates `W:\temp\claude\jet-transient-timing` and
+`…\jet-transient-wasm`, not in the repo)
+
+One march = the start equilibrium + a ramp + a settling tail, `ds` 0.02 (the rungs' own grid), settle
+3 (A) / 2 (B) spool times. Grid: (A) 4 gases × both throttle modes × 3 map shapes × 6 ramps (3 slams
+`1000/1100/1200 → 1500 K` at ramp 0.1/0.5/2 spool times, 3 chops `1500 → 1000/1100/900`); (B) 4 map
+shapes × {none, LP stator schedule, bleed schedule} × 7 limiter sets × {slam 0.5, slam 0.1, chop}.
+Wall clock, native at below-normal priority / browser build under Node 24:
+
+| | native | browser (median / worst) | page use |
+|---|---|---|---|
+| (A) perfect gas | 2–4 ms | **5–11 / 38 ms** | follows a slider |
+| (A) thermally perfect | 70–280 ms | **0.5 / 1.3 s** | on release, spinner |
+| (A) reacting, Fork B | 150–390 ms | **0.6 / 2.3 s** | on release, spinner |
+| (A) equilibrium, temperature commanded | **9.2 s** (one ramp) | ~20 s (not run) | refused — § 12.4 |
+| (B) perfect gas, no limiter | 12–18 ms | **25–75 ms** | follows a slider |
+| (B) perfect gas, limiters armed | 25–210 ms | **0.1 / 0.8 s** | on release, spinner |
+| (B) thermally perfect | 0.7–12.8 s | **2.3–46 s** | refused — § 12.4 |
+
+Each march is ONE call into the browser build, so it cannot stream point by point as slice 3's running
+line does: a killable Worker and a spinner (slice 2's precedent), the newest request winning.
+
+**What the grid found — each a result the page has to word, not a crash:**
+- **A fuel slam can outrun the model.** (A), fuel metered, `1000 → 1500 K` in 0.1 spool times, thermally
+  perfect / reacting / Fork B: the march stops after **5 points** on two map shapes of three. The
+  temperature overshoots — 1955 K at 0.08 spool times against a 1500 K target, fuel-air ratio 0.044 and
+  climbing — and the next RK stage leaves what the model can represent (the burner's fuel-air cap / the
+  gas tables). The perfect gas has no table edge and runs on. This IS rung 35's overshoot, at its most
+  violent; the page says so and shows the points it has.
+- **A stall floor set above the starting point shuts the fuel off.** (B), the `φ` floor at 0.75 on the
+  LP spool: where the engine STARTS below 0.75 (the flat-LP map: 0.727; any map with the stator
+  schedule on: 0.729), the floor's own solve cuts the applied fuel to 11–13 % of scheduled, `Tt4` falls to
+  ~600 K, the spools wind down and the march stops (16–79 points of 126). A pre-check in words: "the
+  floor you set is above where the compressor already runs at the start".
+- **The stator schedule moves the `φ` wall** — rung 58's finding, now visible: with the stator on, the
+  same `φ` floor that is dormant on the bare machine bites from `s = 0`. Rung 60's INCIDENCE floor is the
+  re-referenced version; offered in place of the `φ` floor when the stator is on (§ 12.3).
+- **Two-shaft + thermally perfect + stator schedule fails before the march starts** (`fuel_for_tt4`:
+  "inverse: root not bracketed", every limiter set, 7–89 ms) — rungs 57–60 were built and gated on the
+  perfect gas only. With the 2–46 s cost, the (B) view is perfect-gas-only (§ 12.8 Q2).
+- **No chop stopped early on (A)** (18 per gas per mode). On (B) one chop did (flat-LP map, stator, all
+  three legs: 117 of 126) — to be classified in § 12.5's crash map.
+
+### 12.3 Knobs and readouts
+
+**(A) Slam the throttle** — a panel inside *Fly it* (its hardware, flight, map shape and stall line
+unchanged): start throttle, end throttle (temperature, K, as *Fly it*'s slider), ramp length, and the
+mode: *temperature commanded* / *fuel metered* / *both, overlaid*. Readouts against time: shaft speed;
+turbine-inlet temperature (commanded and actual — the overshoot is the gap); thrust; fuel flow;
+compressor pressure ratio. A **map chart**: slice 3's compressor map with the steady running line, the
+stall line, and the transient's path across it — the path leaves the running line toward stall on a
+slam and away from it on a chop (rung 34's excursion). The stall margin along the path, labelled as
+slice 3 labels it ("read the trend, not the size").
+
+**(B) Controls** — engine knobs: map shape (rung 43's four), `ρ` (how much slower the LP shaft responds
+than the HP: the ratio of their time constants); the ramp (start, end, length). **Switches**, each with
+its one number:
+- *Temperature limiter* (rung 46) — the redline `Tt4_max`; + *its response lag* (rung 47).
+- *Acceleration schedule* (rung 48) — its margin above the steady fuel/pressure line.
+- *Stall floor* (rung 49) — which spool and the floor's level; with the stator schedule on, the
+  incidence floor (rung 60) instead — one slot, one or the other, as the model has it.
+- *Realistic release* (rung 52) — the asymmetric fast-attack / slow-release lag on the floor or schedule.
+- **ONE airflow lever at a time**: *stator schedule* (rung 57, LP or HP, max setting and the speed it
+  opens from) or *bleed schedule* (rung 62, max bleed and opening speed). Stator + bleed + a fuel limiter
+  together is OPEN physics (CLAUDE.md: "Fuel + bleed + STATOR on one plant") — refused in words.
+- Left out: rung 50/51's forced release (`s_off`, `τ_rel`) — an instrument the rungs used to ISOLATE the
+  release edge, not hardware a controller has (§ 12.8 Q3).
+
+Readouts: both shaft speeds; `Tt4` against the redline; scheduled vs applied fuel (the gap is the
+limiter acting, and WHICH leg holds it); both compressors' flow coefficients against their stall walls
+(the moved wall when the stator is on); thrust. Pin & compare overlays a second run, so "switch on the
+schedule" reads as two curves.
+
+**Time on every axis is in SPOOL TIME CONSTANTS** (`τ_spool = I·ω_d²/P_ref`, rung 34) — the model has no
+rotor inertia (it is disclaimed), and rung 34's finding is the RATIO of the ramp to that time, not
+seconds. The ramp knob is in the same unit; the page says why. (B)'s unit is the HP spool's.
+
+### 12.4 Refusals, in plain words (pre-checks unless marked)
+
+- **(A) equilibrium gas**: fuel metering does not exist on it (the forward burner asserts — rung 35's
+  open seam, CLAUDE.md "reacting-gas fuel control"); temperature-commanded runs (9 s native, ~20 s in the
+  browser) but would hide the overshoot that is the panel's point. Refused with that reason; the panel
+  offers the other four gases.
+- **(A)** both throttles must be above the compressor-face temperature (slice 3's pre-check); both
+  endpoints must run steady (a below-idle endpoint is slice 3's `explain_fly` wording).
+- **(B) thermally perfect**: not offered (§ 12.2).
+- **(B) switch combinations the model refuses** (`r43_integrate_fuel`'s asserts, each a pre-check): the
+  realistic-release lag needs a floor or schedule to lag; it cannot run with the temperature limiter's
+  lag (a two-lag cascade, rung 66 — not this slice); the limiter's lag needs a redline; `φ` floor and
+  incidence floor share one slot; stator AND bleed with fuel limiters is OPEN.
+- **(B) a floor above the start point** (§ 12.2) — pre-checked against the start equilibrium.
+- **A run that stops early is a RESULT**: the page shows the points it has and why it stopped. The
+  marchers `break` and drop the error, so the reason must be recovered — **(A)**: re-run the failed RK
+  step from the last point through the PUBLIC `try_instant` / `try_instant_fuel` (the same calls the
+  march made, so the same arithmetic; the first `Err` is the reason); **(B)**: the limiter-armed
+  derivative is private to the marchers, so the sandbox reports where it stopped and classifies the
+  known causes (the pre-checks above, the overshoot past the tables) by re-running the instant at the
+  last state — no copy of a 250-line marcher.
+
+### 12.5 Model side (`sandbox_transient.rs`; no model code edited)
+
+- `op:"slam"` → (A): `fly_solver` (fresh per request, slice 3's reason), the start equilibrium, then
+  `integrate` and/or `integrate_fuel` with the ramp schedule — rung 35's own `ramp_excursion_fuel`
+  shape, inlined so the page gets the points.
+- `op:"controls"` → (B): `build_scheduled_bleed` with one `LeverArm`, `fuel_for_tt4` at both ends, the
+  accel table from `accel_schedule` when armed, `integrate_fuel` with a `FuelLimiters`.
+- **The crash map before the slider ranges** (slice 2's § 11.5 method): every knob over its box, every
+  failure classified by what its message says, each class an `explain` entry with a test that drives it.
+
+### 12.6 Gates
+
+- **Reduce:** `op:"slam"` ≡ a direct `integrate` / `integrate_fuel` call, bit for bit; a ramp whose
+  start and end are the same throttle stays on its equilibrium (`ν` constant to the solver's tolerance);
+  the temperature-commanded march's end point ≡ slice 3's `fly` at the end throttle (`ν`, `π_c`).
+- `op:"controls"` ≡ a direct `integrate_fuel` on the same machine, bit for bit; **a dormant limiter ≡
+  the bare run** (rung 46's gate 1, through the op: a redline above the bare peak).
+- The stop-reason re-run on (A) reproduces the march's own trajectory up to the stop (bit for bit) —
+  so the reason it reports belongs to the step that actually failed.
+- Each pre-check fires on its case and only it; each `explain` entry driven by a request that raises it.
+- `check.mjs` gains slam / controls requests (bar per slice 1's mechanism, re-measured); the browser
+  drive gains both panels, a slam, a chop, a switch, a refused combination, an early stop, and
+  screenshots (light / dark / 390 px).
+
+### 12.7 Order of work
+
+1. The crash map over both knob boxes; slider ranges from it. 2. `sandbox_transient.rs` + its tests.
+3. The page: (A) inside *Fly it*, (B) as a view. 4. `check.mjs`, the browser drive, screenshots.
+(A) and (B) are separable — (A) can ship first.
+
+### 12.8 Questions for the user
+
+1. **Which engines.** (a) Both — the throttle slam on your own *Fly it* engine, AND a separate two-shaft
+   *Controls* view (the *Blades* rig) for the switches, built (A) first — *recommended*; (b) only the
+   slam on your engine (no limiters — the model has none for one shaft); (c) only the two-shaft view.
+2. **Gases.** (a) Slam: perfect live, thermally perfect / reacting / Fork B on release (0.5–2.3 s),
+   equilibrium refused with the reason; *Controls*: perfect gas only — *recommended*; (b) as (a) but the
+   equilibrium gas allowed on the slam in temperature-commanded mode only (~20 s, overshoot hidden).
+3. **Which switches on *Controls*.** (a) The § 12.3 set: temperature limiter + its lag, acceleration
+   schedule, stall floor (incidence version with the stator), realistic release lag, and ONE airflow
+   lever (stator or bleed schedule) — *recommended*; (b) also the forced-release "experiment" knobs
+   (rungs 50/51), labelled as instruments; (c) a smaller first set — limiters only, levers later.
+4. **Time axis.** (a) In spool time constants, said why (the model has no rotor inertia) —
+   *recommended*; (b) also a "spool time constant, seconds" knob that only rescales the axis, labelled as
+   a guess.
