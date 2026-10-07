@@ -2,7 +2,8 @@
 
 **Status: SLICE 1 BUILT 2026-10-06** — `docs/sandbox/` (what shipped, and how it is gated: its
 README). **Slice 3 (off-design, "Fly it") BUILT 2026-10-07 — § 10**; what the build found beyond
-the plan is § 10.8. Slice 2 not started. Drafted 2026-10-06, after rung 85 shipped. Direction (user,
+the plan is § 10.8. **Slice 2 (blade speeds) PLANNED 2026-10-07 — § 11**, its questions open
+(§ 11.7). Drafted 2026-10-06, after rung 85 shipped. Direction (user,
 2026-10-06): the project becomes a **sandbox** — change the engine's components and design numbers
 and watch it respond — delivered as an **interactive web page running the Rust model live**, beside
 the charts page and the cutaway (`docs/visuals/`).
@@ -353,3 +354,116 @@ as its own commit, proven bit-identical by the full gate.
   the reacting gases now run live; only equilibrium runs on release.
 - **Measured browser-vs-native drift with the fly requests:** perfect 6.8e-15, table 9.4e-11 (worst
   at the constant-flow stall margin). Slice 1's bars stand.
+
+## 11. Slice 2 — the blade speeds ("size the blades")
+
+Planned 2026-10-07. Rung 85 as a page: the user picks how the compressor blades are designed (hub
+size, how fast the air may meet the blade tips, the material, the overspeed rule, the design flow
+coefficient, who absorbs the whole-row rounding) and watches the stage counts, blade speeds and the
+REDLINE come out — then moves a stator lever and sees whether the shaft passes its redline.
+
+### 11.1 Which engine — a second one, said plainly
+
+`blade_speed::build` takes a `TwoSpoolEngine`; the page's *Design* engine is single-spool. So slice 2
+adds a **separate view, *Blades*, with its own two-spool engine** — rung 85's rig (rung 55's): the
+perfect gas (cold 1.4 / 1004, hot 1.3 / 1239, `r_c = 0.4/1.4·1004` — the `tests/rung85.rs` rig, not
+the panel's `cpg13`, whose `r_c` is 286.9), `π_LPC` 3 × `π_HPC` 6, `Tt4` 1500, convergent nozzle,
+the panels' losses, flight 250 K / 50 kPa / Mach 0.85. The page says in words that this is not the
+*Design* engine. The design knobs worth offering (the probe below): the two pressure ratios — they
+move `K` and `R` hard (`π` 1.5/15 ⇒ `K` 1/8, `R` 1.71/1.34) — and the design `Tt4`.
+
+### 11.2 Measured (2026-10-07, scratch crate `W:\temp\claude\jet-blade-timing`, not in the repo)
+
+Native, thread cycles over a calibrated clock (4.17 GHz):
+
+| Call | Cost | Page use |
+|---|---|---|
+| `build` (both spools sized) | **~5 µs** | follows every slider |
+| one lever reading, one-block (`Lumped`) lever | 5–8 ms | |
+| one lever reading, row-by-row (`AllRows` / `FrontRow`) | 11–82 ms (steep shape worst) | |
+| one lumped reading, thermally perfect gas | 273 ms | — |
+| one lumped reading, reacting gas | 421 ms | — |
+| one lumped reading, **equilibrium** gas | **13 s** | — |
+
+(The 1500 K readings cost 0 ms only because they ARE the design point.) Every probe point ran;
+the probe did NOT sweep the knob box, so the crash map is still to do (§ 11.5). The browser-build
+times are to be re-measured before any speed label is written (slice 3's lesson).
+
+**Gas: the perfect gas only (recommended).** The table gases run, but not correctly: `size` reads
+the scalar `gamma_c` and a `cp` derived from it for the Mach numbers while the work comes from the
+enthalpy tables — thermally perfect moved `R` 1.395 → 1.394, an artefact. Rung 85's anchor, tests
+and every scored verdict are perfect-gas. Making `size` read `γ, cp` at the face temperature is a
+model change (with a reduce-to-perfect-gas test) — offered, not assumed (§ 11.7).
+
+### 11.3 Knobs and readouts
+
+**Engine knobs:** `π_LPC`, `π_HPC`, design `Tt4`; the map shape — rung 55's five (`flow/press`,
+`press/flow`, `tilted`, `steep`, `flat-eta`), equals, as rung 85 ships them.
+**Blade knobs, per spool** (rung 85 takes them per spool; a "same for both" link, on by default):
+hub-to-tip `h`; the airflow level `M_rel,lim`; the material `σ_y/ρ`; the overspeed factor; `Φ_d`;
+the rounding knob `λ`; the droop switch (A / B).
+**Lever knobs:** which lever (one block / every row / front row only), which spool; computed over a
+throttle grid when a slider is released, streamed point by point as slice 3's running line.
+
+**Readouts — every result, no verdicts.** Per spool: which wall binds (airflow / strength), both
+wall speeds, `K*` beside `K`, mean and tip blade speed, `r`, the design pre-swirl (map units and
+degrees), the design absolute and relative tip Mach, the capacity `C`, the strength capability tip
+speed, the redline `R`. A **staircase chart** — `K` and `R` against the airflow level (a sizing sweep,
+instant), showing the steps at `λ` 0 and the smooth `R` at `λ` 1. A **lever chart** — physical
+`N/N_d` of both spools against `Tt4`, each redline drawn as a line, bare (lever at design) beside
+scheduled, the front-row tip Mach as a reading. Pin & compare, as the other views.
+
+**Honesty lines on the page:** "never reached its target" said plainly (rung 85's V1, read at the
+last setting the scan reached); the vane angle in DEGREES beside its travel — the crossings sit at
+≈ 66–69°, which no real stator reaches; the strength wall is OPTIMISTIC (untapered blade, no disc, no
+temperature derating, yield not ultimate), so "crosses" survives the model's error and "under" is
+one-sided; the maps are invented; holding design incidence cancels the map slope (rung 85 § 4), so
+`λ` reaches a held schedule only through the droop switch.
+
+### 11.4 Model side (`sandbox.rs`, no model code edited — unless § 11.7 Q2 says so)
+
+- The five map shapes move from `tests/rung55.rs` / `tests/rung85.rs` into `src` (a `pub fn` the
+  sandbox and both tests can share, or a copy pinned to them). Pinned against rung 85's PUBLISHED
+  numbers — each shape's `v*` (press/flow 1.0499, tilted 1.4883, flat-eta 0.9620) and § 6.3's `K/R`
+  table — never against itself.
+- New ops: `blade_defaults`; `blade_size` (the sizing of both spools + the staircase sweep);
+  `blade_lever` (one `Tt4` of one lever's schedule, so the page streams the grid).
+- Plain words for every refusal: `SizingError` already reports a bad knob and a choking front row
+  without panicking; the schedule path does NOT (its bare read and `match_point` are the
+  non-fallible versions), so a lever failure goes through the trap path + `explain()`.
+
+### 11.5 What must be measured before the sliders get their ranges
+
+The crash map over the WHOLE knob box — `h`, `M_rel,lim`, `σ_y/ρ`, overspeed, `Φ_d`, `λ`, droop × 5
+shapes × the pressure split × design `Tt4` × every lever on both spools × the throttle grid. Each
+failure classified by what its message says (slice 3's lesson: one message can mean opposite
+things), each class an `explain()` entry with a test that drives it; slider ranges from the measured
+safe region. And the rung's own disclosed unchecked assumption — V1 reads an unreached schedule at
+its LAST scan point, right only if shaft speed keeps rising with vane travel — checked across the
+box: a mid-scan speed peak is shown as such, not silently as "void".
+
+### 11.6 Gates
+
+- **Reduce to the rung:** `blade_size` at the defaults ≡ `blade_speed::build` on the rung-85 rig, bit
+  for bit, and reproduces the anchor's § 6.2 row for that cell; `blade_lever` ≡ `Machine::schedule`
+  bit for bit; the rung-85 panel's lever rows reproduced through the op.
+- The shape copies pinned to rung 85's published numbers (§ 11.4).
+- Each refusal fires on its case and only it; each new `explain()` entry driven by a test.
+- `check.mjs` gains blade requests (bar per slice 1's mechanism, re-measured); the browser drive
+  gains the *Blades* view, a knob move, a lever sweep, a refused design, and screenshots
+  (light / dark / 390 px).
+
+### 11.7 Questions for the user
+
+1. **Which engine.** (a) A separate *Blades* view on rung 85's two-spool rig, with its own pressure
+   ratios and `Tt4` — *recommended*; (b) the same, but its flight and `Tt4` start from the *Design*
+   view's; (c) also size the *Design* view's single compressor (sizing only — no levers, they need
+   two spools).
+2. **Gas.** (a) Perfect gas only, said on the page — *recommended*; (b) also thermally perfect, after
+   the model change that makes the sizing read `γ, cp` at the face temperature (lever readings
+   ~0.3 s per point there); equilibrium is out either way (13 s per point).
+3. **Material.** (a) `σ_y/ρ` as a raw number, Ti-6Al-4V as the one cited preset — *recommended*;
+   (b) also cite one or two more from first-hand data sheets (a nickel alloy, a steel), as rung 85
+   cited titanium.
+4. **Per-spool knobs.** (a) One set, with an "unlink the spools" switch — *recommended*; (b) always
+   two sets.
