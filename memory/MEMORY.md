@@ -19,6 +19,7 @@ new slices and step links go THERE, not here.
 - [Sandbox direction](sandbox-direction.md) — user 2026-10-06: a SANDBOX, not pass/fail lessons; ship knobs, prefer realistic absorbers; web page slice 1 BUILT
 - [Sandbox slice 1](sandbox-slice1.md) — screenshots found what 122 green checks missed; a bar measured on a toy spike was 4 decades too tight
 - [Sandbox slice 3](sandbox-slice3.md) — a first new caller exposed a constant no test varied (design back-pressure); time solves as the product runs them
+- [Sandbox slice 2](sandbox-slice2.md) — 'it runs' hid a scalar gamma; classify failures through the product's own path; a browser wait met by the PREVIOUS run
 - [Session-end routine](session-end-routine.md) — at session end: update memory + docs, commit, push
 - [Git remote setup](git-remote-setup.md) — github.com/BoykoNeov/jet-engine, branch main, origin over SSH
 - [Always commit and push](always-commit-and-push.md) — auto-commit + push green work; gate is `rust/test-all.ps1`: cargo tests run in parallel, below-normal (pytest until 2026-10-05)

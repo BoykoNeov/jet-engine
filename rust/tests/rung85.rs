@@ -474,3 +474,70 @@ fn the_droop_switch_decides_whether_lambda_reaches_the_schedule_speed() {
         assert!((r.n_lp - base.n_lp).abs() < 0.0015, "B's residual is the HP arrow only: {}", r.n_lp - base.n_lp);
     }
 }
+
+// ==========================================================================================
+// THE TABLE GAS (web sandbox slice 2, user 2026-10-07) — the sizing reads the gas it runs on
+// ==========================================================================================
+
+/// On a calorically-perfect cold section the sizing keeps its scalar `(γ, R·γ/(γ−1))` — the path
+/// every number above was computed on. On the thermally-perfect gas it reads `γ` and `cp` at each
+/// face's total temperature, held here to PUBLISHED air properties (Çengel & Boles, Table A-2b,
+/// air as an ideal gas: γ 1.400 / cp 1.005 kJ/kg·K at 300 K, γ 1.395 / cp 1.013 at 400 K) — not
+/// to the gas tables the code reads, so this is not the function compared with itself. Before
+/// the change both spools read the table gas's spec default γ = 1.4, whatever the temperature.
+#[test]
+fn the_sizing_reads_the_table_gas_at_each_face_temperature() {
+    let z = machine("flow/press", 0.5, 1.4, 0.0);
+    let d = design();
+    let g = &d.gas;
+    for s in [&z.lp, &z.hp] {
+        assert_eq!(s.duty.gamma.to_bits(), g.gamma_c().to_bits(), "CPG: the scalar γ, bit for bit");
+        let cp = g.r_c() * g.gamma_c() / (g.gamma_c() - 1.0);
+        assert_eq!(s.duty.cp.to_bits(), cp.to_bits(), "CPG: R·γ/(γ−1), bit for bit");
+    }
+    let losses = TwoSpoolLosses {
+        pi_d: 0.97, eta_lpc: 0.90, eta_hpc: 0.88, eta_b: 0.99, pi_b: 0.96,
+        eta_hpt: 0.92, eta_lpt: 0.90, eta_m: 0.99, pi_n: 0.98,
+        p_exit: None, nozzle_convergent: true,
+    };
+    let tpg = build_two_spool_turbojet(Gas::thermally_perfect(), 3.0, 6.0, 1500.0, 50_000.0, losses);
+    let (ml, mh) = maps("flow/press");
+    let k = knobs(0.5, 1.4, 0.0);
+    let t = build(&tpg, flight(), ml, mh, k, k).unwrap();
+    // The faces: LP ≈ 286 K (ram air at 250 K, Mach 0.85), HP ≈ 400–420 K (after π_LPC = 3).
+    assert!((t.lp.duty.tt - 286.1).abs() < 1.0 && (t.hp.duty.tt - 410.0).abs() < 20.0,
+            "face temperatures {} / {}", t.lp.duty.tt, t.hp.duty.tt);
+    // Table A-2b rows (T K, cp kJ/kg·K, γ), linearly interpolated at each face. The bars are set
+    // by rung 3's NASA air, not by this change: it sits up to 0.45 % off this table (998.7 vs 1003
+    // at 250 K, 1031.0 vs 1029 at 500 K, probed 2026-10-07). They still DISCRIMINATE: the old
+    // scalar path reads γ 1.4 and cp = R·3.5 ≈ 1004.9 at the HP face, 0.007 and ≈ 13 J/kg·K off.
+    const A2B: [(f64, f64, f64); 6] = [(250.0, 1.003, 1.401), (300.0, 1.005, 1.400), (350.0, 1.008, 1.398),
+                                       (400.0, 1.013, 1.395), (450.0, 1.020, 1.391), (500.0, 1.029, 1.387)];
+    let published = |tt: f64| {
+        let i = A2B.windows(2).position(|w| w[0].0 <= tt && tt <= w[1].0).expect("face inside the table");
+        let (lo, hi) = (A2B[i], A2B[i + 1]);
+        let x = (tt - lo.0) / (hi.0 - lo.0);
+        (1000.0 * (lo.1 + x * (hi.1 - lo.1)), lo.2 + x * (hi.2 - lo.2))
+    };
+    for (s, name) in [(&t.lp, "LP"), (&t.hp, "HP")] {
+        let (cp, gamma) = published(s.duty.tt);
+        assert!((s.duty.cp - cp).abs() < 5.0, "{name} cp {} vs published {cp} at {} K", s.duty.cp, s.duty.tt);
+        assert!((s.duty.gamma - gamma).abs() < 0.002, "{name} γ {} vs published {gamma}", s.duty.gamma);
+    }
+    // The HP face is hotter, so its γ is lower — the scalar path could not show that.
+    assert!(t.hp.duty.gamma < t.lp.duty.gamma - 0.003);
+}
+
+/// The web sandbox's copy of the five shapes (`blade_speed::shape_maps`) IS this file's `maps`,
+/// bit for bit (all eight fields, stall floor included) — so every published number this file pins with `maps` pins the sandbox's too.
+#[test]
+fn the_shipped_shapes_are_this_files_shapes() {
+    use turbojet::blade_speed::{shape_maps, SHAPES};
+    for shape in SHAPES {
+        let (ml, mh) = maps(shape);
+        let (sl, sh) = shape_maps(shape).expect("every listed shape builds");
+        assert_eq!(map_bits(&sl), map_bits(&ml), "{shape} LP");
+        assert_eq!(map_bits(&sh), map_bits(&mh), "{shape} HP");
+    }
+    assert!(shape_maps("nope").is_none());
+}

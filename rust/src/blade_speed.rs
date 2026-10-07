@@ -178,8 +178,9 @@ impl std::fmt::Display for SizingError {
 
 /// Mean blade speed at which the front row's relative tip Mach equals `m` with NO inlet swirl —
 /// § 6.2's airflow wall, in closed form. With `Vx = Φ_d·U`, `U_tip = k·U`, `k = 2/(1+h)`,
-/// `T = Tt − Vx²/2cp`: `(Φ_d² + k²)·U² = m²·γR·(Tt − Φ_d²U²/2cp)`.
-fn airflow_wall(duty: &SpoolDuty, kn: &BladeKnobs) -> f64 {
+/// `T = Tt − Vx²/2cp`: `(Φ_d² + k²)·U² = m²·γR·(Tt − Φ_d²U²/2cp)`. Public so the web sandbox can show
+/// both walls' speeds side by side, whichever binds.
+pub fn airflow_wall(duty: &SpoolDuty, kn: &BladeKnobs) -> f64 {
     let rg = duty.cp * (duty.gamma - 1.0) / duty.gamma;
     let kt = 2.0 / (1.0 + kn.h);
     let a2 = kn.m_rel_lim * kn.m_rel_lim * duty.gamma * rg;
@@ -263,6 +264,31 @@ pub fn reshape(map: ComponentMap, r: f64, droop: Droop) -> ComponentMap {
     ComponentMap { sigma, l: (1.0 + map.l) / r - 1.0, ..map }
 }
 
+/// Rung 55's five disclosed map shapes, shipped by this rung as EQUALS (§ 4.4 A1), in rung 55's
+/// order. `flow/press` is the default.
+pub const SHAPES: [&str; 5] = ["flow/press", "press/flow", "tilted", "steep", "flat-eta"];
+
+/// The `(LP, HP)` maps of one of [`SHAPES`], at rung 41's stall floor 0.55 — `tests/rung55.rs`'s
+/// `maps`, moved here for the web sandbox. Held to that copy bit for bit and to the PUBLISHED
+/// schedules it produced (`tests/rung85.rs`).
+pub fn shape_maps(name: &str) -> Option<(ComponentMap, ComponentMap)> {
+    let f = ComponentMap::flat();
+    let (l, h) = match name {
+        "flow/press" => (ComponentMap { a: 0.20, b: 0.05, sigma: 0.1, l: 0.7, ..f },
+                         ComponentMap { a: 0.08, b: 0.15, sigma: 0.1, l: 1.0, ..f }),
+        "press/flow" => (ComponentMap { a: 0.05, b: 0.20, sigma: 0.1, l: 1.0, ..f },
+                         ComponentMap { a: 0.20, b: 0.05, sigma: 0.1, l: 0.7, ..f }),
+        "tilted"     => (ComponentMap { a: 0.14, b: 0.10, c: 0.06, sigma: 0.2, l: 0.85, ..f },
+                         ComponentMap { a: 0.14, b: 0.10, c: 0.06, sigma: 0.2, l: 0.85, ..f }),
+        "steep"      => (ComponentMap { a: 0.25, b: 0.12, sigma: 0.3, l: 1.2, ..f },
+                         ComponentMap { a: 0.25, b: 0.12, sigma: 0.3, l: 1.2, ..f }),
+        "flat-eta"   => (ComponentMap { sigma: 0.1, l: 0.7, ..f },
+                         ComponentMap { sigma: 0.1, l: 1.0, ..f }),
+        _ => return None,
+    };
+    Some((l.with_phi_surge(0.55), h.with_phi_surge(0.55)))
+}
+
 /// Both spools sized on one design engine and map pair.
 #[derive(Clone)]
 pub struct Machine {
@@ -275,6 +301,24 @@ pub struct Machine {
     pub hp: Sizing,
 }
 
+/// The `(γ, cp)` a spool's Mach numbers are read with, at its face total temperature `tt`.
+///
+/// On a calorically-perfect cold section: the scalar `γ` and the `cp` it implies with `R` — the
+/// path every shipped number was computed on, kept bit for bit. On a table gas (the web
+/// sandbox's thermally-perfect option): the gas's own `γ(Tt)` and `cp(Tt)`, so the walls read the
+/// same gas the work `Δh` comes from (the scalar `gamma_c` of a table gas is only its spec default,
+/// 1.4, whatever the temperature). Disclosed: read at the face TOTAL temperature, not at the row's
+/// static one (up to ~80 K colder on the LP face) — on air near 200–450 K `γ` moves by a few parts
+/// in a thousand across that gap.
+fn face_props(gas: &crate::gas::Gas, tt: f64) -> (f64, f64) {
+    if gas.cold_is_cpg() {
+        let gamma = gas.gamma_c();
+        (gamma, gas.r_c() * gamma / (gamma - 1.0))
+    } else {
+        (gas.gamma_c_at(tt), gas.cp_c_at(tt))
+    }
+}
+
 /// Size both spools on `design` (its design run supplies each face's `Tt` and work), with each
 /// spool's own knobs (§ 4.5 A12), and reshape the two maps.
 pub fn build(
@@ -284,10 +328,10 @@ pub fn build(
     let core = VariableStatorCore::new(design.clone(), flight, 1.0, map_lp, map_hp, 0.0, 0.0);
     let c = &core.core;
     let gas = c.gas();
-    let gamma = gas.gamma_c();
-    let cp = gas.r_c() * gamma / (gamma - 1.0);
     let tt3 = c.tt25_d * c.tau_hpc_d;
+    let (gamma, cp) = face_props(gas, c.tt2_d);
     let duty_lp = SpoolDuty { tt: c.tt2_d, dh: gas.h_c(c.tt25_d) - gas.h_c(c.tt2_d), l: map_lp.l, gamma, cp };
+    let (gamma, cp) = face_props(gas, c.tt25_d);
     let duty_hp = SpoolDuty { tt: c.tt25_d, dh: gas.h_c(tt3) - gas.h_c(c.tt25_d), l: map_hp.l, gamma, cp };
     let lp = size(duty_lp, knobs_lp)?;
     let hp = size(duty_hp, knobs_hp)?;

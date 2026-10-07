@@ -9,7 +9,7 @@ forces every thermodynamic assumption into the open. Optimize the work for
 teaching, not for features or polish.
 **Direction (user, 2026-10-06): a SANDBOX** — the user changes components and designs and watches
 the engine respond. A new effect ships as KNOBS with every result shown, not a pass/fail verdict;
-the web page running the Rust model live is `docs/sandbox/` (slices 1 + 3 "Fly it" built; plan `docs/plans/sandbox-plan.md`).
+the web page running the Rust model live is `docs/sandbox/` (slices 1–3 built; plan `docs/plans/sandbox-plan.md`).
 
 > **⚠ This file is a REFERENCE / index — not a handout.** Keep it compact.
 > The rung table is **one line per rung**; each rung's derivation, assumptions,
@@ -215,7 +215,7 @@ tag **`python-final`** keeps it, and every `engine.py:N` / `test_rungN.py` citat
 - `docs/visuals/` — two **BUILT** pages (charts, cutaway): `cargo run --release -- visuals` writes
   `data.json` and splices both (`-- splice` re-splices only). Cycle change ⇒ rebuild **and
   republish**; `tests/visuals.rs` gates the joints.
-- `docs/sandbox/` — the SANDBOX page (not a rung): `src/sandbox.rs` + `src/atmosphere.rs`, browser shell
+- `docs/sandbox/` — the SANDBOX page (not a rung): `src/sandbox.rs` (+ `sandbox_blades.rs`) + `src/atmosphere.rs`, browser shell
   `rust/sandbox-wasm/`. Cycle/template change ⇒ `rust/sandbox-wasm/build.ps1` + commit (gated). See its README.
 - `docs/rungN-spec.md` (contents: see the banner); `docs/plans/rungN-anchor-*.md` — that rung's
   verified anchor data. `docs/plans/` holds the plan/tasks.
@@ -226,7 +226,7 @@ From the repo root; every `cargo` command takes `--manifest-path rust/Cargo.toml
   Chart data alone: `-- ts-diagram`; the pages: `-- visuals` / `-- splice`; one panel:
   `-- panel NAME` (`--write` captures a Rust-owned panel's golden, `rust/oracle/rust_owned/`).
 - **The gate: `powershell -File rust\test-all.ps1`** — **EVERYTHING** (`cargo test --release`'s
-  2194 tests, 198 programs incl. the sandbox browser check) run 8 at a time, below-normal: **~11 min**, + ~4 min rebuild after a
+  2240 tests, 199 programs incl. the sandbox browser check) run 8 at a time, below-normal: **~11 min**, + ~4 min rebuild after a
   `src/` change. Plain `cargo test --release` runs them one by one (80 min). Nothing is deselected.
 - **Iterate: `cargo test --release --test rungN`** — one binary. Run what a change can reach.
 - **WHEN to run the gate:** at session end (unless run shortly before), and after a code change.

@@ -91,6 +91,29 @@ legend { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-sp
 .chart .pinpt { fill: none; stroke: var(--pin); stroke-width: 2; }
 .sw.stall { border-top: 2px dashed var(--s-red); }
 .sw.grey { border-top: 1px solid var(--axis); }
+.chart .lp { fill: none; stroke: var(--s-blue); stroke-width: 2.2; }
+.chart .hp { fill: none; stroke: var(--s-aqua); stroke-width: 2.2; }
+.chart .lp.bare, .chart .hp.bare { stroke-width: 1.2; stroke-dasharray: 3 3; }
+.chart .pinl { fill: none; stroke: var(--pin); stroke-width: 1.4; stroke-dasharray: 2 3; }
+.chart .redline { fill: none; stroke: var(--s-red); stroke-width: 1.4; stroke-dasharray: 7 4; }
+.chart .redl { fill: var(--s-red); font-size: 10px; }
+.chart .dot-lp { fill: var(--s-blue); } .chart .dot-hp { fill: var(--s-aqua); }
+.chart .open { fill: var(--surface); stroke-width: 1.8; }
+.chart .open.dot-lp { stroke: var(--s-blue); } .chart .open.dot-hp { stroke: var(--s-aqua); }
+.chart text.nomod { fill: var(--muted); font-size: 15px; font-weight: 600; }
+.chart .steps { fill: none; stroke: var(--ink-2); stroke-width: 1.8; }
+.chart .r0 { fill: none; stroke: var(--muted); stroke-width: 1.4; }
+.chart .r1 { fill: none; stroke: var(--muted); stroke-width: 1.4; stroke-dasharray: 5 3; }
+.chart .rnow { fill: none; stroke: var(--accent); stroke-width: 2.2; }
+.chart .here { stroke: var(--accent); stroke-width: 1; stroke-dasharray: 2 3; }
+.sw.lp { border-top-color: var(--s-blue); } .sw.hp { border-top-color: var(--s-aqua); }
+.sw.bare { border-top-style: dashed; border-top-width: 1px; }
+.sw.red { border-top: 2px dashed var(--s-red); }
+.sw.r0 { border-top: 2px solid var(--muted); } .sw.r1 { border-top: 2px dashed var(--muted); }
+.preset { font: inherit; font-size: 12px; padding: 1px 6px; border-radius: 5px; cursor: pointer; grid-column: 1 / -1;
+  justify-self: start; border: 1px solid var(--border); background: var(--bg); color: var(--ink-2); }
+.preset:hover { border-color: var(--accent); }
+td.nomod { white-space: normal; color: var(--muted); text-align: left; }
 h2.sec { font-size: 14px; margin: 0 0 8px; }
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 13px; }
 th, td { text-align: right; padding: 4px 6px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
@@ -123,7 +146,8 @@ footer p { max-width: 90ch; }
   <section class="card knobs" aria-label="Design knobs">
     <div class="toggle mode" role="group" aria-label="Design the engine, or fly it">
       <button type="button" id="mode-design" aria-pressed="true">Design the engine</button>
-      <button type="button" id="mode-fly" aria-pressed="false">Fly it</button></div>
+      <button type="button" id="mode-fly" aria-pressed="false">Fly it</button>
+      <button type="button" id="mode-blades" aria-pressed="false">Size the blades</button></div>
     <p class="note" id="mode-note">Every change redesigns the engine. Press <b>Fly it</b> to freeze this design's hardware and move the throttle instead.</p>
     <fieldset id="fly-set" hidden>
       <legend>Fly it</legend>
@@ -149,7 +173,76 @@ footer p { max-width: 90ch; }
         <input type="range" id="phi_surge-r" min="0.3" max="0.95" step="0.01" aria-label="Stall line slider">
         <div class="derived">A number you choose, not data. The stall margin depends on it and on the map: read its trend, not its size.</div></div>
     </fieldset>
-    <fieldset>
+    <fieldset id="blades-set" hidden>
+      <legend>The two-spool engine</legend>
+      <p class="frozen" id="blades-engine">A separate engine, not the one in <b>Design</b>: two compressors on two
+        shafts (low- and high-pressure), sized at 250 K, 50 kPa, Mach 0.85, the engine rung 85 was built on.</p>
+      <div class="knob"><label for="bl-pi_lpc">Low-pressure compressor ratio</label><input type="number" id="bl-pi_lpc" step="0.05">
+        <input type="range" id="bl-pi_lpc-r" min="1.2" max="8" step="0.05" aria-label="Low-pressure ratio slider"></div>
+      <div class="knob"><label for="bl-pi_hpc">High-pressure compressor ratio</label><input type="number" id="bl-pi_hpc" step="0.05">
+        <input type="range" id="bl-pi_hpc-r" min="1.5" max="20" step="0.05" aria-label="High-pressure ratio slider"></div>
+      <div class="knob"><label for="bl-Tt4">Design turbine inlet temperature <small>K</small></label><input type="number" id="bl-Tt4" step="5">
+        <input type="range" id="bl-Tt4-r" min="1000" max="2000" step="5" aria-label="Design turbine temperature slider"></div>
+      <div class="knob"><label for="bl-gas">Gas model</label>
+        <select id="bl-gas" style="grid-column: 1 / -1">
+          <option value="perfect">Perfect gas (rung 85's own; fast)</option>
+          <option value="thermally_perfect">Thermally perfect (slow: ~0.4 s a throttle)</option>
+        </select></div>
+      <div class="knob"><label for="bl-shape">Compressor map shape</label>
+        <select id="bl-shape" style="grid-column: 1 / -1">
+          <option value="flow/press">LP curved along flow, HP along pressure</option>
+          <option value="press/flow">LP curved along pressure, HP along flow</option>
+          <option value="tilted">Tilted efficiency island, both spools</option>
+          <option value="steep">Steep speed lines, both spools</option>
+          <option value="flat-eta">Flat efficiency (no island), both spools</option>
+        </select>
+        <div class="derived">Invented, representative maps (rung 55's five), offered as equals.</div></div>
+    </fieldset>
+    <fieldset id="bk-set" hidden>
+      <legend>The blades</legend>
+      <div class="toggle" role="group" aria-label="One set of blade knobs for both spools, or one each">
+        <button type="button" id="bk-linked" aria-pressed="true">Same for both spools</button>
+        <button type="button" id="bk-split" aria-pressed="false">Each spool its own</button></div>
+      <div class="toggle" id="bk-which" role="group" aria-label="Which spool the knobs below edit" hidden>
+        <button type="button" id="bk-lp" aria-pressed="true">Editing: low-pressure</button>
+        <button type="button" id="bk-hp" aria-pressed="false">high-pressure</button></div>
+      <div class="knob"><label for="bk-h">Hub-to-tip ratio <small>front row</small></label><input type="number" id="bk-h" step="0.01">
+        <input type="range" id="bk-h-r" min="0.3" max="0.9" step="0.01" aria-label="Hub-to-tip slider"></div>
+      <div class="knob"><label for="bk-m_rel_lim">Airflow level <small>design tip Mach</small></label><input type="number" id="bk-m_rel_lim" step="0.01">
+        <input type="range" id="bk-m_rel_lim-r" min="0.9" max="1.7" step="0.01" aria-label="Airflow level slider">
+        <div class="derived">How fast the air may meet the blade tips at design, relative to the blade: an efficiency target (about 1.3 is typical of airliner engines).</div></div>
+      <div class="knob"><label for="bk-sigma_over_rho">Material strength ÷ density <small>m²/s²</small></label><input type="number" id="bk-sigma_over_rho" step="1000">
+        <input type="range" id="bk-sigma_over_rho-r" min="30000" max="400000" step="1000" aria-label="Material slider">
+        <button type="button" class="preset" id="bk-ti64">Titanium Ti-6Al-4V (AMS 4911 minimum yield)</button></div>
+      <div class="knob"><label for="bk-overspeed">Overspeed factor <small>proof ÷ redline</small></label><input type="number" id="bk-overspeed" step="0.01">
+        <input type="range" id="bk-overspeed-r" min="1" max="1.5" step="0.01" aria-label="Overspeed slider">
+        <div class="derived">1.2 is the certification rule (14 CFR 33.27): a rotor must survive 120 % of its redline.</div></div>
+      <div class="knob"><label for="bk-phi_d">Design flow coefficient <small>axial ÷ blade speed</small></label><input type="number" id="bk-phi_d" step="0.01">
+        <input type="range" id="bk-phi_d-r" min="0.3" max="1" step="0.01" aria-label="Flow coefficient slider"></div>
+      <div class="knob"><label for="bk-lambda">Rounding knob λ</label><input type="number" id="bk-lambda" step="0.01">
+        <input type="range" id="bk-lambda-r" min="0" max="1" step="0.01" aria-label="Rounding knob slider">
+        <div class="derived">Stages come in whole numbers, so the design falls short of its limit. 0: the blades slow down to
+          close the gap. 1: they stay at the limit and every row does lighter work.</div></div>
+      <div class="toggle" role="group" aria-label="How the map's droop scales when rows load lighter">
+        <button type="button" id="bk-droop-a" aria-pressed="true">Droop grows with blade speed</button>
+        <button type="button" id="bk-droop-b" aria-pressed="false">shrinks with row work</button></div>
+      <p class="note">Linking the spools copies the low-pressure knobs to both.</p>
+    </fieldset>
+    <fieldset id="lever-set" hidden>
+      <legend>A stator lever</legend>
+      <div class="knob"><label for="bl-lever">Which vanes turn</label>
+        <select id="bl-lever" style="grid-column: 1 / -1">
+          <option value="lumped">The compressor as one block (rung 53)</option>
+          <option value="all_rows">Every row's vanes (rung 55, at the sized stage count)</option>
+          <option value="front_row">The front row's vanes only</option>
+        </select></div>
+      <div class="toggle" role="group" aria-label="Which spool's vanes turn">
+        <button type="button" id="bl-spool-lp" aria-pressed="true">Low-pressure spool</button>
+        <button type="button" id="bl-spool-hp" aria-pressed="false">High-pressure spool</button></div>
+      <p class="note">At each throttle the vanes turn until the front row meets its air at the design angle again;
+        the chart shows what that does to both shafts' speeds.</p>
+    </fieldset>
+    <fieldset id="flight-set">
       <legend>Flight</legend>
       <div class="knob"><label for="altitude">Altitude <small>m</small></label><input type="number" id="altitude" step="50">
         <input type="range" id="altitude-r" min="0" max="20000" step="50" aria-label="Altitude slider"></div>
@@ -231,6 +324,14 @@ footer p { max-width: 90ch; }
       <p><code id="bad-raw"></code></p>
       <p style="font-size:12px;color:var(--muted)">The numbers below are the last design that ran.</p>
     </div>
+    <div id="blades-out" hidden>
+      <div class="tiles">
+        <div class="tile"><div class="k">Low-pressure stages</div><div class="v"><span id="v-klp">–</span></div><div class="d" id="d-klp"></div></div>
+        <div class="tile"><div class="k">High-pressure stages</div><div class="v"><span id="v-khp">–</span></div><div class="d" id="d-khp"></div></div>
+        <div class="tile"><div class="k">Low-pressure redline</div><div class="v"><span id="v-rlp">–</span> <span class="u">% of design speed</span></div><div class="d" id="d-rlp"></div></div>
+        <div class="tile"><div class="k">High-pressure redline</div><div class="v"><span id="v-rhp">–</span> <span class="u">% of design speed</span></div><div class="d" id="d-rhp"></div></div>
+      </div>
+    </div>
     <div id="out">
       <div class="tiles">
         <div class="tile"><div class="k">Thrust</div><div class="v"><span id="v-thrust">–</span> <span class="u">kN</span></div><div class="d" id="d-thrust"></div></div>
@@ -245,6 +346,40 @@ footer p { max-width: 90ch; }
         <div class="tile"><div class="k">Stall margin <small>(trend only)</small></div><div class="v" id="v-sm-box"><span id="v-sm">–</span> <span class="u" id="u-sm">%</span></div><div class="d" id="d-sm"></div></div>
       </div>
     </div>
+    <div class="card" id="bl-machine-card" hidden>
+      <h2 class="sec">The sized blades</h2>
+      <div class="scroll"><table id="bl-table"><thead><tr><th>Quantity</th><th>Low-pressure</th><th>High-pressure</th><th id="bl-pin-lp"></th><th id="bl-pin-hp"></th></tr></thead><tbody></tbody></table></div>
+      <p class="note">Two limits set each spool's design blade speed: the airflow level (an efficiency target) and the blade
+        material (the root of an untapered blade at its yield strength, brought down by the overspeed factor). The slower
+        one wins. The stage count follows from the work the spool must do at that speed, rounded up to whole rows. The
+        redline is the speed at which the blade root reaches its strength limit, divided by the overspeed factor.</p>
+    </div>
+    <div class="card chart" id="bl-stair-card" hidden>
+      <h2 class="sec">Stage count and redline against the airflow level</h2>
+      <div class="toggle" role="group" aria-label="Which spool the chart shows" style="max-width: 360px">
+        <button type="button" id="st-lp" aria-pressed="true">Low-pressure</button>
+        <button type="button" id="st-hp" aria-pressed="false">High-pressure</button></div>
+      <svg id="bl-stair" viewBox="0 0 640 380" role="img" aria-label="Stage count and redline against the design airflow level"></svg>
+      <div class="legend"><span><span class="sw grey" style="border-top-width:2px"></span>stages (top)</span><span><span class="sw r0"></span>redline, λ = 0</span>
+        <span><span class="sw r1"></span>redline, λ = 1</span><span><span class="sw"></span>redline at your λ</span><span>dotted: your airflow level</span></div>
+      <p class="note">At λ = 0 several airflow levels build the same machine (same stages, same redline): the steps. At λ = 1
+        the redline moves smoothly and only the stage count steps.</p>
+    </div>
+    <div class="card chart" id="bl-lever-card" hidden>
+      <h2 class="sec">The lever against the redlines</h2>
+      <svg id="bl-lever-chart" viewBox="0 0 640 360" role="img" aria-label="Both shafts' physical speed against throttle, with and without the stator lever, and each redline"></svg>
+      <div class="legend"><span><span class="sw lp"></span>low-pressure shaft, lever moved</span><span><span class="sw hp"></span>high-pressure shaft</span>
+        <span><span class="sw lp bare"></span><span class="sw hp bare"></span>vanes left at design</span><span><span class="sw red"></span>redlines</span>
+        <span>hollow dot: target never reached</span><span>×: not modelled (hover for why)</span><span id="bl-progress"></span></div>
+      <div class="scroll"><table id="bl-lever-table"><thead><tr><th>Turbine inlet (K)</th><th>Target reached</th><th>Vane travel</th>
+        <th>Vane angle (°)</th><th>LP speed (%)</th><th>HP speed (%)</th><th>LP vs redline</th><th>HP vs redline</th><th>Front-row tip Mach</th></tr></thead><tbody></tbody></table></div>
+      <p class="note">Speeds are physical shaft speeds against design. The vane angle includes the design pre-swirl; rung 85's
+        crossings sit near 66–69°, further than real vanes turn. "Never reached" rows are read at the last setting the
+        search reached; along the way the other shaft can run faster than at that end (it did, mid-way, in a third of
+        such cases sampled, never above its redline). The strength limit is optimistic (no taper, no disc, no hot-metal
+        weakening, yield rather than breaking strength), so "crosses" is robust and "under" is one-sided. On the thermally
+        perfect gas, the row-by-row levers still split the pressure rise between rows with a fixed γ of 1.4.</p>
+    </div>
     <div class="card chart" id="map-card" hidden>
       <h2 class="sec">Compressor map</h2>
       <svg id="map" viewBox="0 0 640 360" role="img" aria-label="Compressor pressure ratio against corrected air flow: speed lines, the stall line, the running line and this operating point"></svg>
@@ -252,17 +387,17 @@ footer p { max-width: 90ch; }
         <span><span class="sw grey"></span>speed lines (labelled % corrected speed)</span><span id="map-progress"></span></div>
       <p class="note">The big dot is this operating point. The map is a representative shape, not measured data, and the stall line is the number you chose.</p>
     </div>
-    <div class="card chart">
+    <div class="card chart" id="ts-card">
       <h2 class="sec">Temperature–entropy diagram</h2>
       <svg id="ts" viewBox="0 0 640 360" role="img" aria-label="Temperature against entropy for the engine's stations"></svg>
       <div class="legend"><span><span class="sw"></span>this design</span><span id="pin-legend" hidden><span class="sw pin"></span>pinned design</span>
         <span>dashed: the exhaust cooling back to the air outside (not part of the engine)</span></div>
     </div>
-    <div class="card">
+    <div class="card" id="stations-card">
       <h2 class="sec">Stations</h2>
       <div class="scroll"><table id="stations"><thead><tr><th>Station</th><th>Total temperature (K)</th><th>Total pressure (kPa)</th><th>Fuel/air ratio</th><th id="st-dh"></th></tr></thead><tbody></tbody></table></div>
     </div>
-    <div class="card">
+    <div class="card" id="perf-card">
       <h2 class="sec">Performance</h2>
       <div class="scroll"><table id="perf"><thead><tr><th>Quantity</th><th>Value</th><th id="perf-pin"></th><th id="perf-delta"></th></tr></thead><tbody></tbody></table></div>
     </div>
@@ -291,6 +426,12 @@ footer p { max-width: 90ch; }
   pushes against the air pressure of the flight you set. The stall margin is rung 36's: it rests on a stall line
   you choose and a map shape you pick, so only its trend (thinner at low power) is meaningful. It is not
   modelled while the nozzle is unchoked.</p>
+  <p><b>Size the blades.</b> Rung 85 on its own two-spool engine (a separate engine from <b>Design</b>'s, which has one
+  compressor). Each compressor's front row is sized from two limits, how fast the air may meet the blade tips (an
+  efficiency target) and the blade material's strength at the root, and the stage count, blade speeds and the
+  redline come out. A stator lever then holds the front row's design angle as the throttle comes back, and the chart
+  shows whether either shaft passes its redline. The two-spool model only handles a choked nozzle; throttles where it
+  unchokes are listed as not modelled.</p>
   <p><b>Efficiencies.</b> Overall efficiency is thrust power per fuel power. The model splits it into a thermal and a
   propulsive part using the jet's speed alone. When the jet leaves the nozzle above the outside pressure (a fixed
   convergent nozzle, especially high up), part of the thrust is that pressure push, which the speed-based split
@@ -313,7 +454,9 @@ const $ = id => document.getElementById(id);
 const RUNNER = `
 let ex = null, bytes = null;
 const enc = new TextEncoder(), dec = new TextDecoder();
-async function fresh() { ex = (await WebAssembly.instantiate(bytes, {})).instance.exports; ex.init(); }
+// bytes: the build's bytes, or the page's already-compiled WebAssembly.Module (instantiate then
+// returns the Instance itself, not { instance }).
+async function fresh() { const r = await WebAssembly.instantiate(bytes, {}); ex = (r.instance || r).exports; ex.init(); }
 function raw(text) {
   const b = enc.encode(text), p = ex.alloc(b.length);
   new Uint8Array(ex.memory.buffer, p, b.length).set(b);
@@ -328,9 +471,14 @@ async function ask(text) {
     let message = String(err);
     try { message = dec.decode(new Uint8Array(ex.memory.buffer, ex.panic_ptr(), ex.panic_len())) || message; } catch (_) {}
     await fresh();
-    // The fly view's failures get its own plain words (turbojet::sandbox::explain_fly).
+    // The fly and blade views' failures get their own plain words (turbojet::sandbox::explain_fly,
+    // turbojet::sandbox_blades::explain_blades).
     let view = "design";
-    try { if (["fly", "running_point"].includes(JSON.parse(text).op)) view = "fly"; } catch (_) {}
+    try {
+      const op = String(JSON.parse(text).op);
+      if (["fly", "running_point"].includes(op)) view = "fly";
+      else if (op.startsWith("blade_")) view = "blades";
+    } catch (_) {}
     const plain = JSON.parse(raw(JSON.stringify({ op: "explain", message, view }))).plain;
     return { trap: { message, plain }, ms: performance.now() - t0 };
   }
@@ -351,27 +499,39 @@ function wasmBytes() {
   return b;
 }
 
-// A Worker made from a blob: URL keeps a slow solve off the page; if the browser refuses one, the
-// same runner runs on the page itself (a run is a few milliseconds).
-async function makeModel() {
-  const bytes = wasmBytes();
-  try {
-    const src = RUNNER + `
+// The build is compiled ONCE; each Worker is handed the compiled module (or, if the browser will not
+// post one, the bytes), so starting a fresh Worker costs an instantiation, not a compile.
+let WASM_MODULE = null;
+async function wasmModule() { if (!WASM_MODULE) WASM_MODULE = await WebAssembly.compile(wasmBytes()); return WASM_MODULE; }
+
+// A Worker made from a blob: URL keeps a slow solve off the page. kill() stops it mid-solve -- the
+// blade view's lever sweep needs that: one point on the thermally perfect gas can take seconds.
+async function spawnWorker() {
+  const src = RUNNER + `
 onmessage = (ev) => inOrder(async () => {
   const { id, text, bytes: b } = ev.data;
   if (b) { try { await start(b); postMessage({ id, ready: true }); } catch (e) { postMessage({ id, failed: String(e) }); } return; }
   postMessage({ id, ...(await ask(text)) });
 });`;
-    const w = new Worker(URL.createObjectURL(new Blob([src], { type: "text/javascript" })));
-    let next = 0; const waiting = new Map();
-    w.onmessage = ev => { const f = waiting.get(ev.data.id); if (f) { waiting.delete(ev.data.id); f(ev.data); } };
-    const send = msg => new Promise(res => { const id = ++next; waiting.set(id, res); w.postMessage({ id, ...msg }); });
-    const ok = await Promise.race([send({ bytes }), new Promise(r => setTimeout(() => r({ failed: "timeout" }), 8000))]);
-    if (!ok.ready) throw new Error(ok.failed);
-    return { mode: "worker", ask: text => send({ text }) };
-  } catch (e) {
+  const w = new Worker(URL.createObjectURL(new Blob([src], { type: "text/javascript" })));
+  let next = 0; const waiting = new Map();
+  w.onmessage = ev => { const f = waiting.get(ev.data.id); if (f) { waiting.delete(ev.data.id); f(ev.data); } };
+  const send = msg => new Promise(res => { const id = ++next; waiting.set(id, res); w.postMessage({ id, ...msg }); });
+  const within = p => Promise.race([p, new Promise(r => setTimeout(() => r({ failed: "timeout" }), 8000))]);
+  let ok;
+  try { ok = await within(send({ bytes: await wasmModule() })); } catch (e) { ok = { failed: String(e) }; }
+  if (!ok.ready) ok = await within(send({ bytes: wasmBytes() }));
+  if (!ok.ready) { w.terminate(); throw new Error(ok.failed); }
+  return { mode: "worker", ask: text => send({ text }),
+           kill: () => { w.terminate(); for (const f of waiting.values()) f({ killed: true }); waiting.clear(); } };
+}
+
+// If the browser refuses a Worker, the same runner runs on the page itself (a run is a few milliseconds).
+async function makeModel() {
+  try { return await spawnWorker(); }
+  catch (e) {
     const local = new Function(RUNNER + "; return { start, askInOrder };")();
-    await local.start(bytes);
+    await local.start(wasmBytes());
     return { mode: "page (" + e.message + ")", ask: text => local.askInOrder(text) };
   }
 }
@@ -390,6 +550,17 @@ const GAS_WORDS = { perfect: "perfect gas", thermally_perfect: "thermally perfec
                     fork_b: "reacting gas with formation enthalpies", equilibrium: "equilibrium-chemistry gas" };
 const target = () => (mode === "fly" ? F : S);
 const slow = () => mode === "fly" && SLOW.includes(F.gas);
+// Size the blades (slice 2): B is the blade settings (turbojet::sandbox_blades::BladeSettings) on its
+// own two-spool engine. BLADE_NUM maps an engine knob's id to its setting; BLADE_KNOB a blade knob's
+// id to its field in B.lp / B.hp -- both spools at once while they are linked.
+let B = null, B_DEFAULTS = null, TI64 = null, blast = null, bpinned = null, bpinnedLever = null;
+let linked = true, editSpool = "lp", stairSpool = "lp";
+const BLADE_NUM = { "bl-pi_lpc": "pi_lpc", "bl-pi_hpc": "pi_hpc", "bl-Tt4": "Tt4" };
+const BLADE_KNOB = { "bk-h": "h", "bk-m_rel_lim": "m_rel_lim", "bk-sigma_over_rho": "sigma_over_rho",
+                     "bk-overspeed": "overspeed", "bk-phi_d": "phi_d", "bk-lambda": "lambda" };
+const BLADE_VIEW = ["blades-set", "bk-set", "lever-set", "blades-out", "bl-machine-card", "bl-stair-card", "bl-lever-card"];
+const clone = o => JSON.parse(JSON.stringify(o));
+function setKnob(k, v) { if (linked) { B.lp[k] = v; B.hp[k] = v; } else B[editSpool][k] = v; }
 const STATION = { "0": "0 · outside air", "2": "2 · compressor face", "3": "3 · compressor exit",
                   "4": "4 · turbine inlet", "5": "5 · turbine exit", "9": "9 · nozzle exit" };
 
@@ -414,14 +585,36 @@ function showSettings() {
     }
     $("fly-gas").value = F.gas; $("fly-map").value = F.map;
   }
-  const fly = mode === "fly";
-  $("mode-design").setAttribute("aria-pressed", String(!fly)); $("mode-fly").setAttribute("aria-pressed", String(fly));
-  for (const id of ["cycle-set", "components-set", "nozzle-set"]) $(id).hidden = fly;
+  const fly = mode === "fly", blades = mode === "blades";
+  for (const [id, m] of [["mode-design", "design"], ["mode-fly", "fly"], ["mode-blades", "blades"]]) $(id).setAttribute("aria-pressed", String(mode === m));
+  for (const id of ["cycle-set", "components-set", "nozzle-set"]) $(id).hidden = mode !== "design";
   for (const id of ["fly-set", "fly-tiles", "map-card"]) $(id).hidden = !fly;
+  for (const id of BLADE_VIEW) $(id).hidden = !blades;
+  for (const id of ["flight-set", "out", "ts-card", "stations-card", "perf-card"]) $(id).hidden = blades;
   $("mode-note").innerHTML = fly
     ? "The hardware is frozen. Move the throttle or the flight; press <b>Design the engine</b> to change the design."
+    : blades
+    ? "Size the compressor blades of a separate two-spool engine, then see what a stator lever does to its shafts."
     : "Every change redesigns the engine. Press <b>Fly it</b> to freeze this design's hardware and move the throttle instead.";
-  $("pin").textContent = fly ? "Pin this point" : "Pin this design";
+  $("pin").textContent = fly ? "Pin this point" : blades ? "Pin these blades" : "Pin this design";
+  if (B) {
+    for (const [id, k] of Object.entries(BLADE_NUM)) {
+      if (document.activeElement !== $(id)) $(id).value = +B[k].toPrecision(8);
+      $(id + "-r").value = B[k];
+    }
+    const kn = B[linked ? "lp" : editSpool];
+    for (const [id, k] of Object.entries(BLADE_KNOB)) {
+      if (document.activeElement !== $(id)) $(id).value = +kn[k].toPrecision(8);
+      $(id + "-r").value = kn[k];
+    }
+    $("bl-gas").value = B.gas; $("bl-shape").value = B.shape; $("bl-lever").value = B.lever;
+    const press = (id, on) => $(id).setAttribute("aria-pressed", String(on));
+    press("bk-linked", linked); press("bk-split", !linked); $("bk-which").hidden = linked;
+    press("bk-lp", editSpool === "lp"); press("bk-hp", editSpool === "hp");
+    press("bk-droop-a", kn.droop === "blade_speed"); press("bk-droop-b", kn.droop === "row_work");
+    press("bl-spool-lp", B.spool === "lp"); press("bl-spool-hp", B.spool === "hp");
+    press("st-lp", stairSpool === "lp"); press("st-hp", stairSpool === "hp");
+  }
   $("nozzle").value = S.nozzle; $("gas").value = S.gas;
   $("p_exit-row").hidden = S.nozzle !== "exit_pressure";
   const cp = S.compressor_eff === "polytropic", tp = S.turbine_eff === "polytropic";
@@ -441,6 +634,7 @@ function showAmbient(a) {
 
 // ---------------------------------------------------------------- running
 async function runNow() {
+  if (mode === "blades") return runBlades();
   const my = ++gen;
   const fly = mode === "fly";
   if (fly && slow()) $("status").textContent = "Computing on the equilibrium gas (about half a second)…";
@@ -489,6 +683,7 @@ async function fromAltitude(run = true) {
 // ---------------------------------------------------------------- fly it
 async function enterFly() {
   if (mode === "fly") return;
+  if (mode === "blades") stopLever();
   // The design as the user set it (its own nozzle and gas), to show beside the frozen re-run. Asked
   // for afresh: the last result on screen can be an OLDER design whose run arrived before the
   // newest one (a click on Fly it right after a change -- the browser test caught it).
@@ -502,6 +697,7 @@ async function enterFly() {
 }
 function leaveFly() {
   if (mode === "design") return;
+  if (mode === "blades") stopLever();
   mode = "design"; lineGen++; pinned = null; $("unpin").hidden = true; $("pin-legend").hidden = true;
   showSettings(); change();
 }
@@ -587,6 +783,216 @@ function drawMap() {
   if (pinned && pinned.m_corr !== undefined) g += `<circle class="pinpt" cx="${X(pinned.m_corr)}" cy="${Y(pinned.settings.pi_c)}" r="6"/>`;
   g += `<circle class="now" cx="${X(last.m_corr)}" cy="${Y(last.settings.pi_c)}" r="6"/>`;
   svg.innerHTML = g;
+}
+
+// ---------------------------------------------------------------- size the blades (slice 2)
+// Sizing is microseconds, so every knob move re-sizes at once (op blade_size). The lever is read one
+// throttle at a time (op blade_lever) on its OWN worker, a moment after the knobs settle; a change
+// stops a sweep mid-point by killing that worker, because one point on the thermally perfect gas can
+// take seconds (plan § 11.2).
+function enterBlades() {
+  if (mode === "blades") return;
+  mode = "blades"; lineGen++; pinned = null; $("unpin").hidden = !bpinned; $("pin-legend").hidden = true;
+  showSettings(); change();
+}
+
+async function runBlades() {
+  const my = ++gen;
+  const t = await model.ask(JSON.stringify({ op: "blade_size", blades: B }));
+  if (my !== gen) return;
+  $("timing").textContent = `${t.ms.toFixed(1)} ms in the ${model.mode}`;
+  $("bad-title").textContent = "These blades cannot be built";
+  const stale = ["blades-out", "bl-machine-card", "bl-stair-card", "bl-lever-card"];
+  if (t.trap || !t.reply.ok) {
+    $("bad-plain").textContent = t.trap ? t.trap.plain : t.reply.reason;
+    $("bad-raw").textContent = t.trap ? "Model message: " + t.trap.message : "";
+    $("bad").classList.add("show");
+    for (const id of stale) $(id).classList.add("stale");
+    $("status").textContent = "These blades cannot be built.";
+    stopLever();
+    window.sandbox.state = "does-not-run"; window.sandbox.trap = t.trap || { plain: t.reply.reason };
+    return;
+  }
+  blast = t.reply;
+  $("bad").classList.remove("show");
+  for (const id of stale) $(id).classList.remove("stale");
+  const w = z => `${z.k} stage${z.k === 1 ? "" : "s"}, set by the ${z.binding === "airflow" ? "airflow level" : "material"}`;
+  $("status").textContent = `Sized on the ${GAS_WORDS[B.gas]}. Low-pressure: ${w(blast.lp)}; high-pressure: ${w(blast.hp)}.`;
+  renderBlades();
+  scheduleLever();
+  window.sandbox.last = blast; window.sandbox.state = "ran"; window.sandbox.trap = null;
+}
+
+let leverW = null, leverBusy = 0, leverGen = 0, leverPts = [], leverGrid = [], leverTimer = null, leverKey = null;
+async function leverAsk(text) {
+  if (!model.kill) return model.ask(text);        // no Worker in this browser: a sweep can only be ignored
+  if (!leverW) leverW = await spawnWorker();
+  leverBusy++;
+  try { return await leverW.ask(text); } finally { leverBusy--; }
+}
+function stopLever() {
+  leverGen++; clearTimeout(leverTimer); leverKey = null;
+  if (leverW && leverBusy) { leverW.kill(); leverW = null; leverBusy = 0; window.sandbox.kills++; }
+}
+function scheduleLever() { clearTimeout(leverTimer); leverTimer = setTimeout(leverSweep, 200); }
+async function leverSweep() {
+  const text = JSON.stringify(B);
+  if (text === leverKey) return;
+  stopLever(); leverKey = text;
+  const my = leverGen, b = JSON.parse(text);
+  leverPts = []; window.sandbox.lever = 0; drawLever();
+  const g = (await model.ask(JSON.stringify({ op: "blade_grid", blades: b }))).reply;
+  if (my !== leverGen || !Array.isArray(g)) return;
+  leverGrid = g;
+  for (let i = 0; i < g.length; i++) {
+    $("bl-progress").textContent = `computing throttle ${i + 1} of ${g.length}…`;
+    const t = await leverAsk(JSON.stringify({ op: "blade_lever", blades: b, Tt4: g[i] }));
+    if (my !== leverGen || t.killed) return;
+    leverPts.push(t.trap ? { ok: 0, Tt4: g[i], reason: t.trap.plain, message: t.trap.message } : { ...t.reply, Tt4: g[i] });
+    drawLever();
+  }
+  $("bl-progress").textContent = `${leverPts.filter(p => p.ok).length} of ${g.length} throttles modelled`;
+  window.sandbox.lever = leverPts.length;
+}
+
+const BL_ROWS = [
+  ["Which limit sets the blade speed", z => (z.binding === "airflow" ? "airflow level" : "material strength")],
+  ["Air temperature at the compressor face (K)", z => z.Tt_face, 5],
+  ["Work per kg of air (kJ/kg)", z => z.work / 1e3, 4],
+  ["Heat-capacity ratio γ at the face", z => z.gamma, 5],
+  ["Mean blade speed the airflow level allows (m/s)", z => z.u_airflow, 4],
+  ["Mean blade speed the material allows (m/s)", z => z.u_strength, 4],
+  ["Stages needed at the limiting speed (continuous)", z => z.k_star, 3],
+  ["Stages (whole rows)", z => z.k, 0],
+  ["Design mean blade speed (m/s)", z => z.u_mean, 4],
+  ["Design tip speed (m/s)", z => z.u_tip, 4],
+  ["Each row's work against an unswirled row", z => z.r, 4],
+  ["Design pre-swirl (°)", z => z.preswirl_deg, 3],
+  ["Front-row tip Mach at design (relative to the blade)", z => z.m_rel_tip, 4],
+  ["Front-row Mach at design (absolute)", z => z.m_abs, 4],
+  ["Front-row flow capacity (choked = 1)", z => z.capacity, 4],
+  ["Tip speed the material survives (m/s)", z => z.u_cap_tip, 4],
+  ["Redline tip speed (m/s)", z => z.u_redline_tip, 4],
+  ["Redline (% of design shaft speed)", z => z.redline * 100, 4],
+];
+const cell = (v, sig) => (typeof v === "string" ? v : sig === 0 ? String(v) : fmt(v, sig));
+
+function renderBlades() {
+  const z = blast, p = bpinned;
+  const tile = (id, f, sig) => {
+    $("v-" + id).textContent = cell(f(z), sig);
+    $("d-" + id).textContent = p ? delta(f(z), f(p))[0] : "";
+  };
+  tile("klp", r => r.lp.k, 0); tile("khp", r => r.hp.k, 0);
+  tile("rlp", r => r.lp.redline * 100, 4); tile("rhp", r => r.hp.redline * 100, 4);
+  if (!p) {
+    $("d-klp").textContent = `continuous ${fmt(z.lp.k_star, 3)}; ${z.lp.binding === "airflow" ? "airflow" : "material"} limit`;
+    $("d-khp").textContent = `continuous ${fmt(z.hp.k_star, 3)}; ${z.hp.binding === "airflow" ? "airflow" : "material"} limit`;
+    $("d-rlp").textContent = `redline tip speed ${fmt(z.lp.u_redline_tip)} m/s`;
+    $("d-rhp").textContent = `redline tip speed ${fmt(z.hp.u_redline_tip)} m/s`;
+  }
+  $("bl-pin-lp").textContent = p ? "Pinned LP" : ""; $("bl-pin-hp").textContent = p ? "Pinned HP" : "";
+  const tb = $("bl-table").tBodies[0]; tb.innerHTML = "";
+  for (const [name, f, sig] of BL_ROWS) {
+    const tr = tb.insertRow();
+    tr.insertCell().textContent = name;
+    for (const v of [f(z.lp), f(z.hp)].concat(p ? [f(p.lp), f(p.hp)] : ["", ""])) tr.insertCell().textContent = v === "" ? "" : cell(v, sig);
+  }
+  drawStair(); drawLever();
+}
+
+// Shared chart frame: axes, grid, labels. Returns the coordinate maps.
+function frame(x0, x1, y0, y1, box, xlab, ylab) {
+  const { L, R, T, B: Bm, W, H } = box;
+  const X = x => L + (x - x0) / (x1 - x0) * (W - L - R), Y = y => H - Bm - (y - y0) / (y1 - y0) * (H - T - Bm);
+  const ticks = (a, b, n) => { const st = Math.pow(10, Math.floor(Math.log10((b - a) / n))); const m = [1, 2, 5, 10].find(k => (b - a) / (st * k) <= n) * st; const out = []; for (let v = Math.ceil(a / m) * m; v <= b + 1e-12; v += m) out.push(+v.toPrecision(6)); return out; };
+  let g = "";
+  for (const v of ticks(y0, y1, box.ny || 6)) g += `<line class="gridl" x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end">${v}</text>`;
+  if (xlab !== null) for (const v of ticks(x0, x1, 7)) g += `<line class="gridl" y1="${T}" y2="${H - Bm}" x1="${X(v)}" x2="${X(v)}"/><text x="${X(v)}" y="${H - Bm + 16}" text-anchor="middle">${v}</text>`;
+  g += `<line class="axis" x1="${L}" x2="${W - R}" y1="${H - Bm}" y2="${H - Bm}"/><line class="axis" x1="${L}" x2="${L}" y1="${T}" y2="${H - Bm}"/>`;
+  if (xlab) g += `<text x="${(L + W - R) / 2}" y="${H - Bm + 34}" text-anchor="middle">${xlab}</text>`;
+  g += `<text transform="translate(14 ${(T + H - Bm) / 2}) rotate(-90)" text-anchor="middle">${ylab}</text>`;
+  return { X, Y, g };
+}
+const pathOf = (pts, X, Y) => {
+  let d = "", pen = false;
+  for (const p of pts) { if (p === null) { pen = false; continue; } d += (pen ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1); pen = true; }
+  return d;
+};
+
+function drawStair() {
+  const svg = $("bl-stair");
+  if (!blast) { svg.innerHTML = ""; return; }
+  const lv = blast.levels, st = blast["stair_" + stairSpool], here = B[stairSpool].m_rel_lim;
+  const x0 = lv[0], x1 = lv[lv.length - 1];
+  const ks = st[0].k.filter(k => k !== null), rs = st.flatMap(s => s.redline).filter(r => r !== null).map(r => r * 100);
+  if (!ks.length) { svg.innerHTML = ""; return; }
+  const k0 = Math.min(...ks) - 0.5, k1 = Math.max(...ks) + 0.5;
+  let r0 = Math.min(...rs), r1 = Math.max(...rs); const pr = (r1 - r0) * 0.1 || 5; r0 -= pr; r1 += pr;
+  const top = frame(x0, x1, k0, k1, { L: 58, R: 16, T: 12, B: 262, W: 640, H: 380, ny: 4 }, null, "stages");
+  const bot = frame(x0, x1, r0, r1, { L: 58, R: 16, T: 140, B: 40, W: 640, H: 380, ny: 5 }, "", "redline, %");
+  let g = top.g + bot.g;
+  g += `<text x="${(58 + 624) / 2}" y="376" text-anchor="middle">airflow level: design front-row tip Mach</text>`;
+  // The stage count is a staircase: hold each value until the next level.
+  const steps = []; st[0].k.forEach((k, i) => {
+    if (k === null) { steps.push(null); return; }
+    if (i && st[0].k[i - 1] !== null && st[0].k[i - 1] !== k) steps.push([lv[i], st[0].k[i - 1]]);
+    steps.push([lv[i], k]);
+  });
+  g += `<path class="steps" d="${pathOf(steps, top.X, top.Y)}"/>`;
+  const line = s => s.redline.map((r, i) => (r === null ? null : [lv[i], r * 100]));
+  g += `<path class="r0" d="${pathOf(line(st[0]), bot.X, bot.Y)}"/><path class="r1" d="${pathOf(line(st[1]), bot.X, bot.Y)}"/>`;
+  g += `<path class="rnow" d="${pathOf(line(st[2]), bot.X, bot.Y)}"/>`;
+  if (here >= x0 && here <= x1) g += `<line class="here" x1="${top.X(here)}" x2="${top.X(here)}" y1="12" y2="340"/>`;
+  svg.innerHTML = g;
+}
+
+const VERDICT = { crosses: "passes it", under: "under", void: "no verdict" };
+function drawLever() {
+  const svg = $("bl-lever-chart"), tb = $("bl-lever-table").tBodies[0];
+  tb.innerHTML = "";
+  if (!blast) { svg.innerHTML = ""; return; }
+  const ok = leverPts.filter(p => p.ok).sort((a, b) => a.Tt4 - b.Tt4);
+  const pin = (bpinnedLever || []).filter(p => p.ok).sort((a, b) => a.Tt4 - b.Tt4);
+  const xs = leverGrid.length ? leverGrid : [B.Tt4 * 0.6, B.Tt4];
+  const x0 = Math.min(...xs), x1 = Math.max(...xs);
+  const ys = [blast.lp.redline, blast.hp.redline].concat(ok.flatMap(p => [p.n_lp, p.n_hp, p.n_lp_bare, p.n_hp_bare]),
+                                                       pin.flatMap(p => [p.n_lp, p.n_hp])).map(v => v * 100);
+  let y0 = Math.min(...ys), y1 = Math.max(...ys); const py = (y1 - y0) * 0.1 || 5; y0 -= py; y1 += py;
+  const { X, Y, g: g0 } = frame(x0, x1, y0, y1, { L: 58, R: 16, T: 14, B: 54, W: 640, H: 360 }, "throttle: turbine inlet temperature, K", "shaft speed, % of design");
+  let g = g0;
+  for (const [r, cls, name] of [[blast.lp.redline, "lp", "LP"], [blast.hp.redline, "hp", "HP"]]) {
+    g += `<line class="redline" x1="58" x2="624" y1="${Y(r * 100)}" y2="${Y(r * 100)}"/><text class="redl" x="620" y="${Y(r * 100) - 4}" text-anchor="end">${name} redline ${fmt(r * 100)} %</text>`;
+  }
+  const series = (pts, k) => pts.map(p => [p.Tt4, p[k] * 100]);
+  for (const k of ["n_lp", "n_hp"]) if (pin.length > 1) g += `<path class="pinl" d="${pathOf(series(pin, k), X, Y)}"/>`;
+  for (const [k, cls] of [["n_lp_bare", "lp bare"], ["n_hp_bare", "hp bare"], ["n_lp", "lp"], ["n_hp", "hp"]]) {
+    if (ok.length > 1) g += `<path class="${cls}" d="${pathOf(series(ok, k), X, Y)}"/>`;
+  }
+  for (const p of ok) for (const [k, c] of [["n_lp", "dot-lp"], ["n_hp", "dot-hp"]]) {
+    g += `<circle class="${p.reached ? c : "open " + c}" cx="${X(p.Tt4)}" cy="${Y(p[k] * 100)}" r="${p.reached ? 3 : 4}"/>`;
+  }
+  for (const p of leverPts.filter(q => !q.ok)) g += `<text class="nomod" x="${X(p.Tt4)}" y="${360 - 54 - 6}" text-anchor="middle">×<title>${Math.round(p.Tt4)} K: not modelled</title></text>`;
+  svg.innerHTML = g;
+  const moved = B.spool;
+  for (const p of leverPts.slice().sort((a, b) => b.Tt4 - a.Tt4)) {
+    const tr = tb.insertRow();
+    tr.insertCell().textContent = String(Math.round(p.Tt4));
+    if (!p.ok) {
+      // Its first clause names it; the whole reason (and the model's message) in the tooltip.
+      const c = tr.insertCell(); c.colSpan = 8; c.className = "nomod";
+      c.textContent = "Not modelled: " + p.reason.split(/[:.] /)[0]; c.title = p.reason + (p.message ? " Model message: " + p.message : "");
+      continue;
+    }
+    tr.insertCell().textContent = p.reached ? "yes" : "no (last setting)";
+    tr.insertCell().textContent = fmt(p.travel, 4);
+    tr.insertCell().textContent = fmt(p.vane_deg, 3);
+    tr.insertCell().textContent = fmt(p.n_lp * 100, 4);
+    tr.insertCell().textContent = fmt(p.n_hp * 100, 4);
+    tr.insertCell().textContent = VERDICT[p.verdict_lp];
+    tr.insertCell().textContent = VERDICT[p.verdict_hp];
+    tr.insertCell().textContent = `${fmt(p["tip_mach_" + moved + "_bare"], 3)} → ${fmt(p["tip_mach_" + moved], 3)}`;
+  }
 }
 
 // ---------------------------------------------------------------- rendering
@@ -724,6 +1130,24 @@ function wire() {
   }
   $("mode-design").addEventListener("click", leaveFly);
   $("mode-fly").addEventListener("click", enterFly);
+  $("mode-blades").addEventListener("click", enterBlades);
+  // The blade view: engine knobs write B; blade knobs write B.lp and/or B.hp (setKnob).
+  for (const [id, k] of Object.entries(BLADE_NUM)) knob($(id), $(id + "-r"), v => { B[k] = v; });
+  for (const [id, k] of Object.entries(BLADE_KNOB)) knob($(id), $(id + "-r"), v => setKnob(k, v));
+  for (const [id, k] of [["bl-gas", "gas"], ["bl-shape", "shape"], ["bl-lever", "lever"]]) {
+    $(id).addEventListener("change", () => { B[k] = $(id).value; change(); });
+  }
+  const click = (id, f) => $(id).addEventListener("click", () => { f(); showSettings(); change(); });
+  click("bk-linked", () => { linked = true; editSpool = "lp"; B.hp = clone(B.lp); });
+  click("bk-split", () => { linked = false; });
+  click("bk-lp", () => { editSpool = "lp"; });
+  click("bk-hp", () => { editSpool = "hp"; });
+  click("bk-droop-a", () => setKnob("droop", "blade_speed"));
+  click("bk-droop-b", () => setKnob("droop", "row_work"));
+  click("bk-ti64", () => setKnob("sigma_over_rho", TI64));
+  click("bl-spool-lp", () => { B.spool = "lp"; });
+  click("bl-spool-hp", () => { B.spool = "hp"; });
+  for (const sp of ["lp", "hp"]) $("st-" + sp).addEventListener("click", () => { stairSpool = sp; showSettings(); drawStair(); });
   $("fly-gas").addEventListener("change", () => { F.gas = $("fly-gas").value; change(); });
   $("fly-map").addEventListener("change", () => { F.map = $("fly-map").value; change(); });
   $("nozzle").addEventListener("change", () => { S.nozzle = $("nozzle").value; showSettings(); change(); });
@@ -732,10 +1156,17 @@ function wire() {
                               ["teff-isen", "turbine_eff", "isentropic"], ["teff-poly", "turbine_eff", "polytropic"]]) {
     $(id).addEventListener("click", () => { S[key] = v; showSettings(); change(); });
   }
-  $("pin").addEventListener("click", () => { if (!last) return; pinned = last; $("unpin").hidden = false; $("pin-legend").hidden = false; render(); });
-  $("unpin").addEventListener("click", () => { pinned = null; $("unpin").hidden = true; $("pin-legend").hidden = true; render(); });
+  $("pin").addEventListener("click", () => {
+    if (mode === "blades") { if (!blast) return; bpinned = blast; bpinnedLever = leverPts.slice(); $("unpin").hidden = false; renderBlades(); return; }
+    if (!last) return; pinned = last; $("unpin").hidden = false; $("pin-legend").hidden = false; render();
+  });
+  $("unpin").addEventListener("click", () => {
+    if (mode === "blades") { bpinned = null; bpinnedLever = null; $("unpin").hidden = true; if (blast) renderBlades(); return; }
+    pinned = null; $("unpin").hidden = true; $("pin-legend").hidden = true; render();
+  });
   $("reset").addEventListener("click", () => {
     if (mode === "fly") F = { ...FLY_DEFAULTS, design: F.design, Tt4: F.design.Tt4, T0: F.design.T0, p0: F.design.p0, M0: F.design.M0 };
+    else if (mode === "blades") { B = clone(B_DEFAULTS); linked = true; editSpool = "lp"; }
     else S = { ...DEFAULTS };
     showSettings(); change();
   });
@@ -747,6 +1178,14 @@ window.sandbox = {
   set: async patch => { Object.assign(S, patch); showSettings(); await runNow(); return window.sandbox.state; },
   fly: async patch => { if (mode !== "fly") await enterFly(); Object.assign(F, patch); showSettings(); await runNow(); return window.sandbox.state; },
   design: async () => { leaveFly(); await runNow(); return window.sandbox.state; },
+  // The blade view: `patch` sets engine knobs, and `lp` / `hp` objects merge into each spool's knobs.
+  blades: async patch => {
+    if (mode !== "blades") enterBlades();
+    for (const [k, v] of Object.entries(patch || {})) { if (k === "lp" || k === "hp") Object.assign(B[k], v); else B[k] = v; }
+    showSettings(); await runNow(); return window.sandbox.state;
+  },
+  lever: 0, kills: 0,
+  points: () => leverPts,
   view: () => mode,
 };
 
@@ -756,6 +1195,8 @@ window.sandbox = {
     window.sandbox.mode = model.mode;
     DEFAULTS = (await model.ask(JSON.stringify({ op: "defaults" }))).reply;
     FLY_DEFAULTS = (await model.ask(JSON.stringify({ op: "fly_defaults" }))).reply;
+    const bd = (await model.ask(JSON.stringify({ op: "blade_defaults" }))).reply;
+    B_DEFAULTS = bd.blades; TI64 = bd.ti64; B = clone(B_DEFAULTS);
     S = { ...DEFAULTS };
     showSettings(); wire();
     await runNow();

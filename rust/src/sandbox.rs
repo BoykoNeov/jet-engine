@@ -548,6 +548,9 @@ fn refusal(reason: &str) -> Json {
 ///   station table) — the page streams the running line point by point with it.
 /// - `{"op":"running_grid","fly":{…}}` → the throttle grid of the running line.
 /// - `{"op":"map_lines","fly":{…}}` → the compressor map's speed lines and stall line.
+/// - `blade_defaults`, `blade_size`, `blade_grid`, `blade_lever` (each with `"blades":{…}`; the last
+///   also `"Tt4"`) → slice 2's blade view, [`crate::sandbox_blades::call_op`]. `explain` with
+///   `"view":"blades"` → [`crate::sandbox_blades::explain_blades`].
 pub fn call(request: &str) -> String {
     let req = Json::parse(request);
     let op = match req.get("op") { Some(Json::Str(s)) => s.as_str(), _ => "" };
@@ -585,6 +588,8 @@ pub fn call(request: &str) -> String {
         },
         "explain" => match req.get("message") {
             Some(Json::Str(m)) if matches!(req.get("view"), Some(Json::Str(v)) if v == "fly") => jobj! { "plain" => explain_fly(m) },
+            Some(Json::Str(m)) if matches!(req.get("view"), Some(Json::Str(v)) if v == "blades") =>
+                jobj! { "plain" => crate::sandbox_blades::explain_blades(m) },
             Some(Json::Str(m)) => jobj! { "plain" => explain(m) },
             _ => refusal("explain needs a message"),
         },
@@ -608,7 +613,7 @@ pub fn call(request: &str) -> String {
                 },
             }
         }
-        other => refusal(&format!("unknown op {other:?}")),
+        other => crate::sandbox_blades::call_op(other, &req).unwrap_or_else(|| refusal(&format!("unknown op {other:?}"))),
     };
     out.dump_compact()
 }
@@ -1094,5 +1099,6 @@ pub fn check_requests() -> Vec<String> {
     for tt4 in [900.0, 1300.0] {
         out.push(jobj! { "op" => "running_point", "fly" => FlySettings { tt4, ..FlySettings::defaults() }.to_json() }.dump_compact());
     }
+    out.extend(crate::sandbox_blades::check_requests());
     out
 }

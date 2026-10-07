@@ -39,3 +39,4 @@ CLAUDE.md carries a one-line "Direction" note under its intro. See
 **Slice 3 "Fly it" (off-design) SHIPPED 2026-10-07** — [[sandbox-slice3]]; the user chose: opens on
 the thermally perfect gas (live), equilibrium on release; stall line as a knob + map shape, labelled
 "trend only"; the memo-cache speed-up shipped first. Next: slice 2 (rung 85 blade speeds).
+**Slice 2 "Size the blades" SHIPPED 2026-10-07** — [[sandbox-slice2]]; slices 1–3 all built. Next per plan § 5: slice 4 (transient), slice 5 (combustor).

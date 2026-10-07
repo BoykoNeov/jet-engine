@@ -161,6 +161,7 @@ pub mod pyfmt;
 pub mod reference_split;
 pub mod residual_gauge;
 pub mod sandbox;
+pub mod sandbox_blades;
 pub mod sensed_cap;
 pub mod shared_actuator;
 pub mod split_wall;

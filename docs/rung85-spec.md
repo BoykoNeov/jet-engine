@@ -114,6 +114,9 @@ arrow: the HP map's `l'` still moves the HP running point). Both are gated.
 - Strength: untapered blade-root pull, no disc, no temperature derating, yield not ultimate — an
   OPTIMISTIC wall, so "crosses" survives the model's error and "under" is one-sided.
 - Strength and airflow are applied at the cold front row only.
+- On a TABLE gas (the web sandbox's thermally-perfect option, 2026-10-07) the sizing reads `γ, cp` at
+  each face's total temperature, not the row's static one; the perfect gas keeps its scalar path bit
+  for bit. The row-by-row stack (rung 55) still splits the pressure rise with the scalar `γ`.
 - `λ > 0` holds the blades at the ZERO-swirl wall; the pre-swirl's lower tip Mach would let a
   real designer spin faster still (conservative on the redline). Lighter loading changes no
   efficiency (the η island reads `(φ, n)` only).

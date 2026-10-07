@@ -61,11 +61,37 @@ well above the outside pressure; and near zero thrust (idle) the fuel's own mass
 accelerated, dominates both the thrust and the jet's energy gain (135 % measured at an unchoked idle
 point with the jet at outside pressure). Overall efficiency is unaffected.
 
+## Slice 2 — size the blades (shipped 2026-10-07)
+
+Press **Size the blades**: rung 85 as knobs, on its OWN two-spool engine (two compressors on two
+shafts — not the *Design* engine, which has one), at 250 K / 50 kPa / Mach 0.85
+(`sandbox_blades.rs`, plan § 11).
+
+**Knobs:** the two compressor pressure ratios and the design turbine-inlet temperature; the gas
+(rung 85's perfect gas, or thermally perfect); the map shape (rung 55's five, as equals); the blade
+knobs — hub-to-tip ratio, airflow level (design tip Mach), material strength ÷ density (titanium
+Ti-6Al-4V the one cited preset), overspeed factor, design flow coefficient, the rounding knob λ, the
+droop switch — one set for both spools or one each; the stator lever (one block / every row / front
+row) and its spool.
+
+**Readouts:** per spool, which limit binds, both limits' blade speeds, stage counts (continuous and
+whole), blade and tip speeds, pre-swirl, design Mach numbers, capacity, the redline; a staircase
+chart (stages and redline against the airflow level at λ 0, 1 and yours); and the lever against both
+redlines over a throttle grid, streamed one throttle at a time on its own Worker — which a knob move
+KILLS mid-point, because one thermally-perfect point can take seconds.
+
+**What it adds to the model:** on a table gas, rung 85's sizing now reads γ and cp at each face's
+temperature (before, the gas's scalar 1.4); the perfect gas keeps its path bit for bit
+(`tests/rung85.rs`). A lever throttle where the two-spool match fails (nozzle unchoked, the jet below
+outside pressure, a turbine past the gas tables — all at low throttle) is refused in plain words
+BEFORE the schedule runs, through the matcher's own non-crashing twin.
+
 ## How it is built
 
 | Piece | What it is |
 |---|---|
 | `rust/src/sandbox.rs` | The whole bridge, ordinary Rust: settings JSON in → `build_turbojet(…).run(…)` → full-precision JSON out. Tested natively (`tests/sandbox.rs`). |
+| `rust/src/sandbox_blades.rs` | Slice 2's ops (`blade_*`), reached through `sandbox::call` (`tests/sandbox_blades.rs`). |
 | `rust/src/atmosphere.rs` | The 1976 standard atmosphere (`tests/atmosphere.rs`, held to the published table). |
 | `rust/sandbox-wasm/` | A tiny separate crate: only the browser exports around `sandbox::call`, and the panic hook that keeps a crash's message readable. Not built by `cargo test`. |
 | `template.html` | The page; `/*__SANDBOX_WASM_B64__*/` receives the build as base64. |
@@ -94,6 +120,9 @@ red until the page is rebuilt and committed — the numbers have not changed.
   back-pressure follows the flight (a pressure-homogeneity check, and proof the shipped back-pressure
   fails there); the stall reading IS rung 36's margin; each fly pre-check and plain-words branch is
   driven by its case.
+- `tests/sandbox_blades.rs` — slice 2: at its defaults the view IS rung 85's default cell, and each
+  lever request IS `Machine::schedule`, bit for bit, against a rig built in the test (never the
+  module's own copy) and against rung 85's published rows; each refusal driven by its case.
 - `tests/sandbox_page.rs` — the joints: the page is its template + its build; every element the
   script looks up exists; every knob (design and fly) is a setting and back; the dropdowns offer the
   model's choices; every export and op the page uses exists.
@@ -101,7 +130,9 @@ red until the page is rebuilt and committed — the numbers have not changed.
   compares it with the committed one; runs the page's build against the native model over a grid
   (`check.mjs`, design and fly requests); and drives the real page in a headless Chrome
   (`browser.mjs`: Worker, panels, linked knobs, pin & compare, and fly it — the design point, the
-  running line, below idle, the flight knobs moving the flight, the slow gas running on release).
+  running line, below idle, the flight knobs moving the flight, the slow gas running on release; and size
+  the blades — the default cell, the streamed lever, unreached and unmodelled throttles, blades that cannot
+  be built, a slow sweep stopped by a knob move).
   Needs Node ≥ 22 and Chrome. `SANDBOX_SHOTS=<folder>` also saves light, dark and phone screenshots
   of the fly view — look at them: a layout bug passes every behaviour check.
 
@@ -113,4 +144,4 @@ The user accepted this difference (plan § 9.4); bit-exactness stays the CLI's j
 
 ## Next slices
 
-Blade speeds (rung 85's knobs, slice 2) — planned (plan § 5).
+The transient (slice 4) and the combustor (slice 5) — plan § 5.

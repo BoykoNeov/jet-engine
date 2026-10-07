@@ -2,8 +2,8 @@
 
 **Status: SLICE 1 BUILT 2026-10-06** — `docs/sandbox/` (what shipped, and how it is gated: its
 README). **Slice 3 (off-design, "Fly it") BUILT 2026-10-07 — § 10**; what the build found beyond
-the plan is § 10.8. **Slice 2 (blade speeds) PLANNED 2026-10-07 — § 11**, its questions open
-(§ 11.7). Drafted 2026-10-06, after rung 85 shipped. Direction (user,
+the plan is § 10.8. **Slice 2 (blade speeds, "Size the blades") BUILT 2026-10-07 — § 11**; what the build found
+beyond the plan is § 11.8. Drafted 2026-10-06, after rung 85 shipped. Direction (user,
 2026-10-06): the project becomes a **sandbox** — change the engine's components and design numbers
 and watch it respond — delivered as an **interactive web page running the Rust model live**, beside
 the charts page and the cutaway (`docs/visuals/`).
@@ -385,15 +385,20 @@ Native, thread cycles over a calibrated clock (4.17 GHz):
 | one lumped reading, reacting gas | 421 ms | — |
 | one lumped reading, **equilibrium** gas | **13 s** | — |
 
-(The 1500 K readings cost 0 ms only because they ARE the design point.) Every probe point ran;
-the probe did NOT sweep the knob box, so the crash map is still to do (§ 11.5). The browser-build
-times are to be re-measured before any speed label is written (slice 3's lesson).
+(The 1500 K readings cost 0 ms only because they ARE the design point.) **Through the page's own
+requests, over the whole knob box** (3 000 random designs, perfect gas; 300, thermally perfect —
+`W:\temp\claude\jet-blade-crashmap`): one-block lever median 7.5 ms (max 18), row-by-row levers
+median ~90 ms (max 0.6 s) on the perfect gas; on the thermally perfect gas **median 0.32–0.45 s and
+worst 10–22 s for ONE point**, native. The browser-build times are to be re-measured before any
+speed label is written (slice 3's lesson).
 
-**Gas: the perfect gas only (recommended).** The table gases run, but not correctly: `size` reads
-the scalar `gamma_c` and a `cp` derived from it for the Mach numbers while the work comes from the
-enthalpy tables — thermally perfect moved `R` 1.395 → 1.394, an artefact. Rung 85's anchor, tests
-and every scored verdict are perfect-gas. Making `size` read `γ, cp` at the face temperature is a
-model change (with a reduce-to-perfect-gas test) — offered, not assumed (§ 11.7).
+**Gas** (corrected 2026-10-07 — the user chose BOTH, § 11.7 Q2). Before the fix, the table gases ran
+but `size` read the scalar `gamma_c` (the table gas's spec default 1.4) and a `cp` derived from it for
+the Mach numbers, while the work came from the enthalpy tables. Fixed in `blade_speed::build`
+(`face_props`: `γ, cp` at each face's total temperature on a table gas; the perfect gas's scalar path
+kept bit for bit), pinned to published air properties in `tests/rung85.rs`. An earlier draft of this
+section called the thermally-perfect gas's moved redline "an artefact"; only part of it was — the
+design's work and face temperatures come from the tables too, so the redline moves for real.
 
 ### 11.3 Knobs and readouts
 
@@ -420,7 +425,7 @@ temperature derating, yield not ultimate), so "crosses" survives the model's err
 one-sided; the maps are invented; holding design incidence cancels the map slope (rung 85 § 4), so
 `λ` reaches a held schedule only through the droop switch.
 
-### 11.4 Model side (`sandbox.rs`, no model code edited — unless § 11.7 Q2 says so)
+### 11.4 Model side (`sandbox_blades.rs`; model code edited only for Q2's fix)
 
 - The five map shapes move from `tests/rung55.rs` / `tests/rung85.rs` into `src` (a `pub fn` the
   sandbox and both tests can share, or a copy pinned to them). Pinned against rung 85's PUBLISHED
@@ -442,6 +447,18 @@ safe region. And the rung's own disclosed unchecked assumption — V1 reads an u
 its LAST scan point, right only if shaft speed keeps rising with vane travel — checked across the
 box: a mid-scan speed peak is shown as such, not silently as "void".
 
+**Measured (2026-10-07).** Through the page's requests, the sweep's failures are all refusals in
+plain words except ONE rare crash (the efficiency-bookkeeping check, 1 in 3 000, a near-zero-thrust
+design — slice 1's words). Refusals: the unchoked nozzle at a low throttle (5 %, both gases); the
+front row choking (0.7 %); the nozzle's gas below outside pressure at a low throttle (1 %, perfect
+gas); a turbine past the bottom of the gas tables at a low throttle (3 %, thermally perfect — the only
+fallible inverse inside the two-spool match is the turbines' `try_tau_of`). The three low-throttle
+ones are caught BEFORE the schedule by the matcher's own `try_match_point` at the lever's design
+setting, so they never reach the browser's crash path. **V1, audited** on 120 unreached schedules: the
+MOVED spool's speed rose monotonically in every complete scan; the OTHER spool's speed peaks
+mid-travel in 42 of 120 but never above its redline where the end reading was under (0 hidden
+crossings); in 2 a finer scan found a gap where the matcher fails BETWEEN the coarse scan's points.
+
 ### 11.6 Gates
 
 - **Reduce to the rung:** `blade_size` at the defaults ≡ `blade_speed::build` on the rung-85 rig, bit
@@ -455,6 +472,15 @@ box: a mid-scan speed peak is shown as such, not silently as "void".
 
 ### 11.7 Questions for the user
 
+**ANSWERED (user, 2026-10-07):** (1) a — a separate *Blades* view on rung 85's two-spool rig;
+(2) **b — also the thermally perfect gas**, after the sizing fix (`build` reads `γ, cp` at each face's
+total temperature on a table gas; the perfect gas keeps its scalar path bit for bit); (3) a — `σ_y/ρ`
+as a number, Ti-6Al-4V the one preset; (4) a — one knob set + an "unlink the spools" switch.
+**Found after the answers:** the row-by-row stack (rung 55, `stage.rs` `kc = γ/(γ−1)` off the scalar
+`gamma_c`) splits the pressure rise between rows with the FIXED γ on every gas — 1.4 on the
+thermally perfect one. The one-block lever never builds a stack. Labelled on the page, rung 55's
+plant not changed (not part of the agreed change).
+
 1. **Which engine.** (a) A separate *Blades* view on rung 85's two-spool rig, with its own pressure
    ratios and `Tt4` — *recommended*; (b) the same, but its flight and `Tt4` start from the *Design*
    view's; (c) also size the *Design* view's single compressor (sizing only — no levers, they need
@@ -467,3 +493,21 @@ box: a mid-scan speed peak is shown as such, not silently as "void".
    cited titanium.
 4. **Per-spool knobs.** (a) One set, with an "unlink the spools" switch — *recommended*; (b) always
    two sets.
+
+### 11.8 What the build found beyond the plan (2026-10-07)
+
+- **The low-throttle failures are the lever's, not the design's.** Through the page's requests, every
+  "jet below outside pressure" case was a lever throttle (the design had sized fine), so it got its own
+  throttle wording; slice 1's words for it name a nozzle-exit-pressure knob this view does not have.
+- **The thermally-perfect slow tail is not the unreached schedules** (median 0.40 s reached vs 0.38 s
+  unreached, worst 16 vs 17 s, native): it belongs to particular designs. Hence the killable lever
+  Worker rather than a per-point budget. Default design's 9-throttle sweep: 2.5 s native.
+- **The CLI panel's gas is not the rig's** (cold R 286.9 vs 286.857): at λ = 1 it moves ONE printed
+  digit (h 0.7 / M 1.5 / switch A: v* 1.40238 vs 1.40228). Pinned with that cause, one unit of slack.
+- **Browser ≡ native on the blade requests to 9.2e-15** (perfect gas): the lever search's 1e-12
+  residual stop landed on the same travel in both builds; slice 1's bars stand (`check.mjs`).
+- **Screenshots found** a clipped gas option, mixed "1,200" / "960.0" throttles, a wide "never
+  reached" label, unmodelled-throttle reasons running off the table, and the chart marker's style
+  leaking into the table (the table sits in a chart card). Two test races found in the browser drive:
+  a stale "9 points done" count read before the next sweep began, and a blade result taken for a
+  design result (neither has a shaft speed).

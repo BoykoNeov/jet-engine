@@ -5,8 +5,10 @@
 //! (`rust/test-all.ps1`): it rebuilds the build and compares it with the committed page, checks the
 //! build against the native model on a grid, and drives the page in a headless Chrome.
 
+use turbojet::blade_speed::SHAPES;
 use turbojet::sandbox::{base64, call, splice_page, unbase64, FlySettings, GasModel, MapShape, NozzleMode, Settings,
                         WASM_PLACEHOLDER};
+use turbojet::sandbox_blades::{lever_key, BladeGas, BladeSettings};
 use turbojet::visuals::Json;
 
 fn repo(rel: &str) -> std::path::PathBuf {
@@ -84,11 +86,26 @@ fn every_element_the_script_looks_up_is_declared() {
         looked_up.push(format!("{id}-r"));
         looked_up.push(id);
     }
+    // `$(id)` / `$(id + "-r")` over the blade view's two knob maps.
+    for (id, _) in js_map(&t, "BLADE_NUM").into_iter().chain(js_map(&t, "BLADE_KNOB")) {
+        looked_up.push(format!("{id}-r"));
+        looked_up.push(id);
+    }
     // `$(id)` over the id arrays the script hides, shows and greys out as a group.
     looked_up.extend(["cycle-set", "components-set", "nozzle-set", "fly-set", "fly-tiles", "map-card",
-                      "out", "ts", "stations", "perf", "map"].map(String::from));
+                      "out", "ts", "stations", "perf", "map", "flight-set", "ts-card", "stations-card", "perf-card",
+                      "blades-out", "bl-machine-card", "bl-stair-card", "bl-lever-card", "st-lp", "st-hp"].map(String::from));
+    let view = spans(&t, "const BLADE_VIEW = [", "];");
+    assert_eq!(view.len(), 1);
+    looked_up.extend(spans(view[0], "\"", "\"").into_iter().map(String::from));
+    // The blade view's helpers take the id as their first argument: `click("id", …)`, `press("id", …)`.
+    for helper in ["click(\"", "press(\""] {
+        let ids: Vec<&str> = spans(&t, helper, "\"");
+        assert!(ids.len() >= 6, "{helper}: {ids:?}");
+        looked_up.extend(ids.into_iter().map(String::from));
+    }
     // `$("v-" + id)` / `$("d-" + id)` for the tiles (the fly view's three computed ones included).
-    for tile in ["thrust", "st", "tsfc", "eo", "nu", "pic", "mdot"] {
+    for tile in ["thrust", "st", "tsfc", "eo", "nu", "pic", "mdot", "klp", "khp", "rlp", "rhp"] {
         looked_up.push(format!("v-{tile}"));
         looked_up.push(format!("d-{tile}"));
     }
@@ -98,13 +115,38 @@ fn every_element_the_script_looks_up_is_declared() {
     }
 }
 
-/// The fly view's knob map, `const FLY_NUM = { "id": "setting", … };`, as (id, setting) pairs.
-fn fly_num(t: &str) -> Vec<(String, String)> {
-    let body = spans(t, "const FLY_NUM = {", "};");
-    assert_eq!(body.len(), 1);
+/// A knob map of the script, `const NAME = { "id": "setting", … };`, as (id, setting) pairs.
+fn js_map(t: &str, name: &str) -> Vec<(String, String)> {
+    let body = spans(t, &format!("const {name} = {{"), "};");
+    assert_eq!(body.len(), 1, "{name}");
     let q: Vec<&str> = spans(body[0], "\"", "\"");
-    assert!(q.len() % 2 == 0 && !q.is_empty(), "FLY_NUM: {q:?}");
+    assert!(q.len() % 2 == 0 && !q.is_empty(), "{name}: {q:?}");
     q.chunks(2).map(|c| (c[0].to_string(), c[1].to_string())).collect()
+}
+
+/// The fly view's knob map, `FLY_NUM`.
+fn fly_num(t: &str) -> Vec<(String, String)> { js_map(t, "FLY_NUM") }
+
+fn numeric_keys(j: &Json) -> Vec<String> {
+    let mut v: Vec<String> = match j {
+        Json::Obj(kv) => kv.iter().filter(|(_, v)| matches!(v, Json::Float(_))).map(|(k, _)| k.clone()).collect(),
+        _ => unreachable!(),
+    };
+    v.sort();
+    v
+}
+
+#[test]
+fn every_blade_knob_is_a_blade_setting_and_every_numeric_one_has_a_knob() {
+    let t = read(TEMPLATE);
+    let d = BladeSettings::defaults().to_json();
+    let mut engine: Vec<String> = js_map(&t, "BLADE_NUM").into_iter().map(|(_, k)| k).collect();
+    engine.sort();
+    assert_eq!(engine, numeric_keys(&d), "the engine knobs");
+    let mut blade: Vec<String> = js_map(&t, "BLADE_KNOB").into_iter().map(|(_, k)| k).collect();
+    blade.sort();
+    assert_eq!(blade, numeric_keys(d.get("lp").unwrap()), "the blade knobs (each spool's)");
+    assert_eq!(numeric_keys(d.get("lp").unwrap()), numeric_keys(d.get("hp").unwrap()));
 }
 
 /// The shared flight knobs, `const FLIGHT = [ … ];`.
@@ -170,6 +212,16 @@ fn the_selects_offer_exactly_the_models_choices() {
     let mut maps: Vec<String> = MapShape::ALL.iter().map(|m| m.key().to_string()).collect();
     maps.sort();
     assert_eq!(options("fly-map"), maps);
+    let mut bg: Vec<String> = BladeGas::ALL.iter().map(|g| g.key().to_string()).collect();
+    bg.sort();
+    assert_eq!(options("bl-gas"), bg);
+    let mut sh: Vec<String> = SHAPES.iter().map(|s| s.to_string()).collect();
+    sh.sort();
+    assert_eq!(options("bl-shape"), sh);
+    let mut lv: Vec<String> = [turbojet::blade_speed::Lever::Lumped, turbojet::blade_speed::Lever::AllRows,
+                               turbojet::blade_speed::Lever::FrontRow].iter().map(|l| lever_key(*l).to_string()).collect();
+    lv.sort();
+    assert_eq!(options("bl-lever"), lv);
 }
 
 #[test]

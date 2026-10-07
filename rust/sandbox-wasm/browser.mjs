@@ -195,12 +195,63 @@ try {
   const released = await waitFor(`window.sandbox.last.fly.Tt4 === 1250 && window.sandbox.state === 'ran'`, 20000);
   check('the_slow_gas_runs_on_release', eq && held === n0 && released, `eq ${eq}, held ${held} (was ${n0}), released ${released}`);
 
-  // 13. Back to design: the design result is the opening one exactly -- the fly session changed no design knob.
+  // 13. SIZE THE BLADES (slice 2). The opening sizing is the native `blade_size` of the defaults (rung
+  // 85's default cell), and the lever sweep streams in on its own worker.
+  const nativeOf = req => JSON.parse(readFileSync(nativeTxt, 'utf8').split(/\r?\n/).find(l => l.startsWith(req + '\t')).split('\t')[1]);
+  await ev(`document.getElementById('mode-blades').click()`);
+  const sized = await waitFor(`window.sandbox.view() === 'blades' && window.sandbox.state === 'ran' && window.sandbox.last && window.sandbox.last.lp !== undefined`);
+  const b0 = await ev('window.sandbox.last');
+  const eb = b0 ? close(b0, nativeOf('{"op":"blade_size","blades":{}}')) : 'no sizing';
+  const tiles = await ev(`['v-klp','v-khp'].map(i => document.getElementById(i).textContent)`);
+  check('blades_open_on_rung_85s_default_cell_and_match_native', sized && !eb && tiles.join() === '2,5', eb || JSON.stringify(tiles));
+  const bvis = await ev(`['blades-set','bk-set','lever-set','bl-machine-card','bl-lever-card','flight-set','ts-card','out'].map(i => document.getElementById(i).hidden)`);
+  check('blades_view_shows_its_cards_and_hides_the_rest', JSON.stringify(bvis) === '[false,false,false,false,false,true,true,true]', JSON.stringify(bvis));
+  const swept = await waitFor(`window.sandbox.lever === 9`, 30000);
+  const p0 = await ev('window.sandbox.points()[0]');
+  // The native grid's design-point lever request (the defaults at 1500 K), found by its fields: JS and
+  // Rust spell 1500.0 differently, so request text cannot be matched.
+  const nativeLever = JSON.parse(readFileSync(nativeTxt, 'utf8').split(/\r?\n/).filter(Boolean).map(l => l.split('\t'))
+    .find(([q]) => { const r = JSON.parse(q); return r.op === 'blade_lever' && r.Tt4 === 1500 && JSON.stringify(r.blades) === JSON.stringify(b0.blades); })?.[1] ?? 'null');
+  const e13 = !p0 ? 'no point' : !nativeLever ? 'no native design-point lever line' : close(p0, nativeLever);
+  const drawn13 = await ev(`[document.querySelectorAll('#bl-lever-chart .lp, #bl-lever-chart .hp, #bl-lever-chart .redline').length, document.getElementById('bl-lever-table').tBodies[0].rows.length, document.querySelectorAll('#bl-stair .steps, #bl-stair .rnow').length]`);
+  check('the_lever_sweep_streams_and_its_design_point_matches_native', swept && !e13 && drawn13[0] >= 6 && drawn13[1] === 9 && drawn13[2] === 2, (e13 || '') + ' ' + JSON.stringify(drawn13));
+
+  // 14. A design whose low throttles never reach the target or are not modelled: both shown in words.
+  await ev(`window.sandbox.blades({pi_lpc: 4, pi_hpc: 10, Tt4: 1200})`);
+  // The PREVIOUS sweep's count still reads 9 until this design's sweep starts (200 ms later): wait for
+  // THIS design's grid, which starts at its own 1200 K.
+  await waitFor(`window.sandbox.lever === 9 && window.sandbox.points()[0].Tt4 === 1200`, 30000);
+  const rows = await ev(`[...document.getElementById('bl-lever-table').tBodies[0].rows].map(r => r.textContent)`);
+  check('unreached_and_not_modelled_throttles_are_said_in_words', rows.length === 9 && rows.filter(r => /no \(last setting\)/.test(r)).length >= 1
+        && rows.filter(r => /Not modelled: .*nozzle unchokes/.test(r)).length === 2, JSON.stringify(rows.slice(-3)));
+  if (process.env.SANDBOX_SHOTS) { await shot('blades-light'); await shot('blades-dark', 1280, true); await shot('blades-phone', 390); }
+
+  // 15. Blades that cannot be built: the panel in plain words, then recovery.
+  const badB = await ev(`window.sandbox.blades({hp: {h: 1.0}})`);
+  const badText = await ev(`[document.getElementById('bad-title').textContent, document.getElementById('bad-plain').textContent]`);
+  check('blades_that_cannot_be_built_say_why', badB === 'does-not-run' && /cannot be built/.test(badText[0]) && /high-pressure spool's hub-to-tip/.test(badText[1]), JSON.stringify([badB, badText]));
+  if (process.env.SANDBOX_SHOTS) await shot('blades-failed');
+  await ev(`document.getElementById('reset').click()`);
+  const rebuilt = await waitFor(`window.sandbox.state === 'ran' && window.sandbox.last.lp && window.sandbox.last.blades.pi_lpc === 3`);
+  check('the_blades_view_recovers_on_reset', rebuilt && JSON.stringify(await ev('window.sandbox.last')) === JSON.stringify(b0), 'differs after reset');
+
+  // 16. On the slow gas a knob move STOPS the running sweep (its worker is killed) and a new one finishes.
+  const killsBefore = await ev('window.sandbox.kills');
+  await ev(`window.sandbox.blades({gas: 'thermally_perfect'})`);
+  const busy = await waitFor(`/computing throttle [2-9]/.test(document.getElementById('bl-progress').textContent)`, 30000);
+  await ev(`(() => { const a = document.getElementById('bk-h'); a.value = '0.55'; a.dispatchEvent(new Event('input')); })()`);
+  const done16 = await waitFor(`window.sandbox.lever === 9 && window.sandbox.last.blades.lp.h === 0.55 && window.sandbox.last.blades.hp.h === 0.55`, 120000);
+  const kills = await ev('window.sandbox.kills');
+  check('a_knob_move_stops_a_slow_sweep_and_the_new_one_finishes', busy && done16 && kills > killsBefore, `busy ${busy}, done ${done16}, kills ${killsBefore} -> ${kills}`);
+
+  // 17. Back to design: the design result is the opening one exactly -- the fly and blade sessions changed no design knob.
   await ev(`document.getElementById('mode-design').click()`);
-  const home = await waitFor(`window.sandbox.view() === 'design' && window.sandbox.state === 'ran' && window.sandbox.last.nu === undefined`, 20000);
+  // A DESIGN result: it has a thrust and no shaft speed (a blade result has neither, so `nu === undefined`
+  // alone would pass on the blade view's last result before the design run arrives).
+  const home = await waitFor(`window.sandbox.view() === 'design' && window.sandbox.state === 'ran' && window.sandbox.last.nu === undefined && window.sandbox.last.thrust !== undefined`, 20000);
   check('back_to_design_is_the_opening_design', home && JSON.stringify(await ev('window.sandbox.last')) === JSON.stringify(first), 'differs');
 
-  // 14. Nothing threw on the page along the way.
+  // 18. Nothing threw on the page along the way.
   const thrown = s.events.filter(e => e.method === 'Runtime.exceptionThrown').map(e => e.params.exceptionDetails?.exception?.description || e.params.exceptionDetails?.text);
   check('no_uncaught_errors_on_the_page', thrown.length === 0, thrown.join(' | ').slice(0, 400));
 
