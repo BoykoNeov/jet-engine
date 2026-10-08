@@ -1,0 +1,633 @@
+---
+name: rust-port-status
+description: "Where the Rust port stands — phases done, the slice currently in flight, and the numbers each closed slice landed on"
+metadata: 
+  node_type: memory
+  type: project
+  originSessionId: 57f6e146-1b56-46c8-a924-d490be2f24f2
+  modified: 2026-09-29T09:26:44.926Z
+---
+
+The living status line for the Rust port. **This file is the only place the running tally lives**;
+`MEMORY.md` carries a one-line pointer to it, because the tally grows every step and an index line
+that grows is not an index line. Update THIS file at each step, not the index.
+
+**Decided 2026-08-12.** Plan: `docs/plans/todo-rust-port.md`. A new PHASE needs authorisation;
+slices inside an authorised phase are free. See [[rust-port-decided]].
+
+## Phases
+
+* **0–5 DONE.**
+* **PHASE 6** authorised 2026-08-17, **COMPLETE 2026-08-20** with slice U's five steps.
+* **PHASE 7** authorised 2026-08-20, **COMPLETE 2026-10-01** with slice AJ (fifteen slices V…AJ; one item forward, C6). **PHASE 8 needs its own authorisation**; its one blocker, the `sonic_throat` divergence, was **CLOSED 2026-10-01** as a pre-repair (plan § 8.0: fallible twins + the turbine-solve hook, 11 compiler-listed holdouts with no Python `except` above them; `rung46.rs` gate replaced, `tests/sonic_abort.rs` added). See [[census-by-compiler-not-by-name]]. **Slice AF COMPLETE 2026-09-06** (six steps + its debt, § 5.30.1-5.30.7). **SLICE AG COMPLETE 2026-09-06** (seven steps). **SLICE AH COMPLETE 2026-09-26** (seven steps, oracle as 6b: 29 288 keys bit-identical to PyPy AND CPython, zero exemption; dispatch 8 gates). **SLICE AI PRE-FLIGHTED 2026-09-26** (rungs 79/80, § 5.33, eleven probes, 0 ADD, 6 swaps). See [[rust-port-slice-ai-preflight]]. **STEP 1 DONE 2026-09-26** (§ 5.33.1) — `state_coordinate.rs` + `split_wall.rs`, carriers `phi_ref`/`sm_air`, SIX re-aims, 0 new `TripleHooks` fields, `slice_ai_cells.rs` 10 gates; step boundary RE-CUT (rung 79's plant moved into step 1; **next: step 2 = `_coord_at`/`coord_scan`/`coord_census`**). Leading finding: the borrowed test state never reached rung 79's code — the valve holds `phi` at exactly the phi leg's wall. Sweep 8 injections, 6 killed, 1 misprediction. See [[rust-port-slice-ai-step1]]. **STEP 2 DONE 2026-09-26** (§ 5.33.2) — `coord_at`/`coord_scan`/`coord_census`, `slice_ai_scan.rs` 3 gates, bit for bit vs a Python probe, green first run; Leading finding: the scan's counters read `[0,0,30,30,30,30]` — every incidence solve fell back to `_surge_fuel`, so D3's "exactly zero" and `d_set = 0` are the fallback compared with itself (rung 79 § 5.1's mechanism at § 1's table; spec NOT edited in the port commit). Sweep 12 injections, 12 of 12 predicted, 2 caught by counters only. See [[rust-port-slice-ai-step2]]. **STEP 3 DONE 2026-09-28** (§ 5.33.3) — `with_probe`/`coord_march`/`forced_cap`/`coord_forced`, `slice_ai_march.rs` 4 gates, bit for bit incl. an FNV digest of the 1 366-row probe log, green first run; **next: step 4 = rung 80 whole** (not started — user wrapped up 2026-09-28; ask before starting, the box was loaded). **D3 row REWORDED 2026-09-28** at the user's word (docs-only commit, separate from the port): `docs/rung79-spec.md` § 1's D3 now says the `0.000e+00` is the fallback compared with itself; `main.py`'s rung-79 panel prints the same overclaim and was OFFERED, not edited. **STEP 4 DONE 2026-09-28** (§ 5.33.4) — rung 80 whole (`AirScope`, `split_march`, `split_row`, four readers), `slice_ai_split.rs` 7 gates bit for bit, green first run; rung 79's counters read ZERO on every rung-80 reader, so the rig READBACK is the instrument. Sweep 16 injections, 16/16 verdicts, 2 mechanisms wrong. See [[rust-port-slice-ai-step4]]. **STEP 5 DONE 2026-09-28** (§ 5.33.5) — `rung79.rs` 28 gates (25 + 3 declared) and `rung80.rs` 16 (12 + 4 declared), green first run, zero warnings; all SEVEN refusals gated, P5's ulp band HOLDS (`+1`/`+2` refuse, `+3` builds at PyPy's bits), J6 discharged by a slack-SUCCESS gate pinned to Python's bits. Sweep 8 injections, 8/8 verdicts, 1 detail wrong (N1: the freeze is invisible at `margin = 0`). See [[rust-port-slice-ai-step5]]. **STEP 6 DONE 2026-09-29** (§ 5.33.6) — the oracle, 37 945 keys, both stator arms on every reader: Rust ≡ PyPy on every key first run; CPython 227 differ, all on the 340 keys of the two census-found `sum()` paths (P-predicted as a path predicate); P2a/P2b CONFIRMED, P3 CONFIRMED on two threads at once. Item L's survivor moves 0 keys (counters included) — only `slice_ai_cells.rs`'s readback catches it; the incidence arm never reaches `walls_of`'s round trip (injected 999.0: 0 keys). **STEP 7 DONE — SLICE AI COMPLETE 2026-09-29** (§ 5.33.7) — `slice_ai_dispatch.rs`, 9 gates, 32 s, rows on parallel threads with NO lock (thread-local counters); every verdict row as pre-registered. Rung 79's three table swaps are ONE deletion to every seat; THREE kinds of silence (ran / never entered / built-but-never-dispatched); rung 80's `at_lever` invisible to every value-bearing seat, caught only structurally (source mutation: `rung80.rs` 16/16, oracle 0 keys — I predicted rung80 would fail); Python side and rungs 81–84 booked as AJ's first pre-flight probe. P1 REFUTED: 2 195 lines, per-LINE. See [[rust-port-slice-ai-step7]]. **SLICE AJ PRE-FLIGHTED 2026-09-29** (rungs 81–84, § 5.34, nine probes, 0 ADD, 0 SWAP, NO `R81`…`R84` tables — readers on an `R80` machine). Leading finding: the booked Python deletion of rung 80's `at_lever` moves 0 keys in six kernels (rebuild path ENTERED in all six) and fails no rung-81–84 test, but FAILS `test_rung80.py::test_the_knob_is_loud` by a method lookup on the rig — REFUTING AI step 7's *"faithfully blind"*: `rung80.rs` is under-ported there (step 1 adds a pointer assert). **STEP 1 PART 1 DONE 2026-09-29** (§ 5.34.1): `rung80.rs::the_knob_is_loud` asserts the built rig's `shared_rig` is `R80_TRIPLE`'s (NOT `at_lever` — the deletion re-fills `R80.at_lever` from `..R79`, so that compare would pass under the mutation it guards); the Rust deletion MEASURED at 15 passed / 1 failed on the new message; item B rewritten. **STEP 1 COMPLETE 2026-09-29** (§ 5.34.1 cont.): four header-only modules (no tables, no builder), `py_g` on a 10 511-row PyPy=CPython oracle, `riding4_idx` pinned to Python's `id(p)` indices on three rung-81 marches, items C/D reworded; Rust 1 780/1 780. Finding: a `contains('.')` guard added on the advisor's warning was DEAD (deleting it moved 0 rows); the real carry defect died on 4 generated rows and no hand pin. See [[rust-port-slice-aj-step1]]. **STEP 2 COMPLETE 2026-09-29** (§ 5.34.2): rung 81's five readers in `authority_clock.rs`, `slice_aj_clock.rs` 5 readings bit for bit + key order vs a 16 119-line PyPy TSV; sweep 16 of 16 predicted. Finding: the two fuel-clock lookups are ONE function on a `demand` point (rung 74's swap is the change of variables) — both merge-injections survived by construction. See [[rust-port-slice-aj-step2]]. **STEP 3 COMPLETE 2026-09-29** (§ 5.34.3): rung 82's nine readers in `threshold_law.rs`, `slice_aj_threshold.rs` 12 readings bit for bit + key order vs a 957-line PyPy TSV; sweep 22, 21 of 22 predicted. Finding: the one miss (K16) rested on rung 82's docstring *"no four-loop point at all at r >= 1.0"*, true only at the `tau_f` its suite checks (the `0.30` end has 14 riding points); a both-ends-empty reading added. Citation guard 56/373/229. See [[rust-port-slice-aj-step3]]. **STEP 4 COMPLETE 2026-09-29** (§ 5.34.4): rungs 83 + 84's ten readers in `corrector_law.rs` + `staircase_law.rs`, `slice_aj_corrector.rs` + `slice_aj_staircase.rs` 36 readings bit for bit + key order vs a 3 387-line PyPy TSV; sweep 29, 29 of 29 predicted. Finding: the first oracle was CPython (quoted `cmd start` launch, hazard 7) and an hour of root cause ran against it; the probe now has an entry control; steps 2/3's oracles re-verified on PyPy. Citation guard 57/395/239. **GATES UNFINISHED** (user stopped them: cargo 91/177 blocks, 1 194/0; pytest not run). See [[rust-port-slice-aj-step4]]. **STEP 5 COMPLETE 2026-09-30** (§ 5.34.5): `rung81.rs`…`rung84.rs`, 55 gates (the suites' 45 + the ten voids), no `src/` change; opening gates cargo 177/1 824/0, pytest 1 386 + the census tripped by this step's own files (re-blessed 61/420/245); two reduce tests SUBSTITUTED (self-comparisons in Rust → argument-threading checks); an added arm discharges step 4's C13; sweep 15, 14 of 15 right (I14/I15 added in a follow-up on two more unlisted check orders) — I13 (`_bisect`'s check order) MISPREDICTED, killed only by step 3's both-ends-empty reading. See [[rust-port-slice-aj-step5]]. **STEP 6 COMPLETE 2026-09-30** (§ 5.34.6): `dump_slice_aj.py` + `slice_aj_oracle.rs` 5 gates, steps 2–4's converters lifted into `tests/slice_aj_flat/mod.rs`; Rust ≡ PyPy 24 323 lines first run; the incidence arm (r = 0.25) is the first gate that sees a port drop `inc` (J1–J3, 3 of 3 exact); CPython: a REVERSE run (all 27 `** 2` sites as `x*x` + naive `sum`) is byte-identical to PyPy, the plain run differs on 421 float lines, frozen. See [[rust-port-slice-aj-step6]]. **STEP 7 DONE 2026-10-01 — SLICE AJ CLOSED** (§ 5.34.7): `slice_aj_dispatch.rs` 7 gates; P4 by a two-table counter (caller 0, rig 80 = Σ n_sampled) + an `f_q` distortion (rig DIFF, caller same) — the parent swap (rung 72's body) reads `same` at `ref_law = sched`, a reduce test; P5: the Rust deletion fails `rung80.rs::the_knob_is_loud` at step 1's assert, 0 AJ tokens moved; P1 2 750, P6 18. One item forward: C6. The ladder is ported through rung 84. See [[rust-port-slice-aj-step7]]. See [[rust-port-slice-aj-preflight]]. **Next: step 7** = the dispatch gates. See [[rust-port-slice-ai-step6]]. Finding: § 5 asks the knob 3 times in 1 366 (`br_inc = 3`, `d_max = 0`); only § 5.2's `d_forced` sees the coordinate. Sweep 16 injections, 16 of 16 predicted; the first sweep was fail-fast and hid a second catcher. See [[rust-port-slice-ai-step3]]. Slice AG, as pre-flighted: — rungs 75/76, `AntiWindupTransient` + `SensedCapTransient`, § 5.31, **fourteen probes**, priced at SEVEN steps against the method-count law's six (the disagreement IS P7). **0 ADD** (the phase row right as written, first of four); AF's owed `_with_*` re-run NEGATIVE; the CPython exemption MEASURED to two named keys (`cap_bill/fuel_int/0` and `/1`, 2 of 83 273); the inherited `sensed_cap` unreachability resolved — arming the accel arm dispatches it at 1 366 of 1 366 but the min-select one level down decides whether a value moves, so the gate is three-sided and lands at step 7. Its leading finding is a shipped comment TRUE of the readers' manufactured points and FALSE of the march at the same arm and margin, naming neither — repaired ADDITIVELY. See [[rust-port-slice-ag-preflight]].
+
+**SLICE AH PRE-FLIGHTED 2026-09-07** (rungs 77/78, `StiffnessLedgerTransient` + `ResidualGaugeTransient`, § 5.32, fourteen probes, 0 ADD, priced at SEVEN steps as a DISCRIMINATING prediction; P1 moved off the Rust/Python RATIO onto the Rust LINE COUNT). See [[rust-port-slice-ah-preflight]]. **STEP 1 DONE 2026-09-08** (§ 5.32.1) — `stiffness_ledger.rs` (166) + `residual_gauge.rs` (513) = **679 module lines** against AG step 1's 658, `tests/slice_ah_cells.rs` **5 gates green on the first run**, FOUR re-aimed pointers, one new core carrier (`gauge_k`), **ZERO new `TripleHooks` fields**. LEADING FINDING: **the pre-flight's "free" repair is measured free below rung 77 and BLOCKED ANYWAY** — rungs 70–76, never measured before, return **0 nests in 5 182 138 + 4 856 210 sets** (161 tests, nine per-worker tallies, every positive control passing) and a NEW second counter finds **5 018 510 explicit-`None`-over-live events at 46 sites, every one a `finally` restore, zero guard entries** — but `slice_y_dispatch.rs` already MANUFACTURES that nest and pins the opposite policy (*"two guards, two policies — do not unify them"*), so the structural claim shrinks from SIX sites to TWO and § 5.26 (iii)'s owed message moves onto the NEW guard at step 2. **A booking no gate can CLOSE can still be BLOCKED by one.** Three instrument defects beside it: a documented manufactured `MarchedStator` nest that does not exist (third instance of the class); the gate's own header claiming the DEV profile when `[profile.test] opt-level = 2` makes it the folding-FRIENDLY one — an error with the sign that flatters the author; and the gate is **not yet shown load-bearing**, because AG's counterfeit-table demonstration needs a `pub(crate)` builder — disclosed in the header rather than left as an absence. See [[rust-port-slice-ah-step1]]. **STEP 2 DONE 2026-09-08** (§ 5.32.2) — rung 77's reader layer, six of its nine methods (`_slope_at`, `_residuals`, `_legs`, `_ledger_march`, § 1 `leg_slopes`, § 2 `set_point_gains`); `stiffness_ledger.rs` 166 → **846**, module total **1 370** of P1's 2 800–3 150; `tests/slice_ah_laws.rs` **7 gates green on the first run**; **zero new fields**, so P6's 0 ADD holds a second step. Four of the Python suite's own bars reproduced with **no golden read anywhere** — `c_err < 3e-9`, `sep > 1e-2`, `ift_err < 3e-8`, and the stable discrete ordering `accel < gov < phi` with `phi_top`. LEADING FINDING: **a doc comment's *only* is a claim about a SET while the census behind it counted a TOTAL** — `c_at`'s *“the single expression-first `1e-9` fold in the whole package”* is **FALSE AT BIRTH**: the re-run reproduces AG step 1's 103-of-268 exactly and finds **FOUR** such folds (`engine.py:19308`, `:19708`, `:20221`, `:21029` — the last booked to slice AI), and **step 1 of this same slice shipped `:20221` in the wrong spelling**. Repaired. Beside it: the gate is **proved load-bearing by BUILDING its defect** (the hoisted residual returns `G_q` exactly `0.0` and `err` exactly `1.0` against the shipped body's non-zero and `< 3e-8`) — the demonstration step 1 could not do for its own; and two sentences promising the owed RAII message *“at step 2”* are re-aimed at the BODY, `_phi_at` being a rung-78 leaf. **AND STEP 1 HAD LEFT `tests/test_rust_line_citations.py` RED** — three of its five gates failing on seventeen unblessed citations, TEN of them step 1's, because step 1 ran `cargo test` and not `pytest`. Re-blessed 31/144/95 → **33/181/112** after checking every one by hand. See [[rust-port-slice-ah-step2]]. **STEP 1 DONE 2026-09-06** (§ 5.31.1) — `anti_windup.rs` (353) + `sensed_cap.rs` (305), EIGHT re-aimed pointers across five tables at both rungs, **3 new carriers on the core and ZERO new `TripleHooks` fields**, `tests/slice_ag_cells.rs` **15 gates**. With `0 ADD` there is no width tripwire, so the instrument is FUNCTION-POINTER IDENTITY in both directions — which caught a carry that is redundant on the VALUE and load-bearing on the IDENTITY (the linker folds a pass-through body onto its parent's address). Both of the step's own gate failures were measurements: a missed re-aim is LOUD under `applied` (no plant there) and bit-for-bit SILENT under `sched`, and the positive control read an EXACT ZERO on `Tt4` because rung 75's device sits in the MASKED leg — re-aimed onto `w_fuel`/`w_gov`. LEADING FINDING: **a line citation is a claim with an expiry date** — 50 sites over 9 files in TWO forms, **18 STALE** (13 pushed `+2` by `a592a0d`, AF's own documentation-decay guard commit; 1 by `+14`; 4 invisible to a first `engine.py:`-only regex, which is my instrument repeating the pre-flight's own population lesson), one of them written by this step by quoting the comment it was correcting. All 18 repaired and `tests/test_rust_line_citations.py` + a blessed anchor file shipped (5 gates, census frozen at 9/50/38, two HISTORICAL exemptions); it detects DRIFT and says so, and says out loud that it cannot detect WRONGNESS. Also: `_with_ic_cap` has zero definitions but its line number was RIGHT; the three `1e-9f64.max` cells AF filed as UNMEASURED are DECIDED (Python's fold seeds at argument 0, so a literal there agrees with Rust on every input — all 25 crate sites matched to their Python line one at a time), and the package's ONE expression-first fold is rung 76's `_c_at`, pre-registered for step 4. Step boundary RE-CUT twice (`_windup_tau` from step 2, `_sensed_cap` from step 4, both jointly impossible with *both refusal sets at step 1*), and **P7 is ruled on now**: falsified cleanly if six lands with steps 2 and 4 still carrying ≥3 bodies, VOID if either degenerates. See [[rust-port-slice-ag-step1]]. **STEP 2 DONE 2026-09-06** (§ 5.31.2) — `anti_windup.rs` 353 → 601 (`WindupScope`, `windup_march`, `rhs_laws` with its OWN `RhsLaws` type, so a target and a rate can never be swapped at a call site), `tests/slice_ag_laws.rs` **11 gates**. Three march gates FAILED on the first run, all three inside rung 74's own joint-IC refusal, and read as a measurement they ARE the rung: `demand × applied` has NO interior equilibrium one rung down, and the tracking term is what gives the masked leg one — a 2×2 the port produced without being asked for it. LEADING FINDING: **a gate grid inherited across the boundary where its defect class is BORN** — the gate whose whole subject is *which clock does each row divide by* ran on five clocks all equal to `0.05`, so every permutation of the divisors passed it; sweep A proved that by SURVIVING `F ÷ tau_gov`, an injection aimed at exactly that gate. Harmless at rung 74 (its laws return targets — no clock in the algebra at all), fatal here, and a **precondition for step 3**: `_jac4` writes `−1/tau` on the diagonal, so on a uniform grid the detector for this rung's pre-registered trap (`tau_t` added to `taus`) COULD NOT HAVE EXISTED. Repaired to five distinct clocks on a second rig `arm_clocks()` (the march gates keep the uniform one deliberately, and the file says why), with the two SOLVED values pinned bit-for-bit against the uniform rig so a `tau` leak into `_solve_b`/`_solve_v` cannot let the new rig measure LESS while looking stronger — sweep C then **5 of 5 permutations KILLED**. SECOND FINDING: **a one-line mutation cannot score an N-site VALUE** — `_ic_cap` is written from the same source at THREE sites (`at_lever`, `_shared_rig`, `_windup_march`), so dropping the march's own line is a foregone SURVIVED in the port and in Python alike; removing all three at once kills in BOTH binaries, so the set is live and the copies are faithful, and the draft's *this line is load-bearing* was an attribution the sweep refuted. Sweep A **9 injections, 6 killed**; its one intended survivor pre-registered (`windup_tau` called directly — rung 76 does not override that cell, so no machine in the slice can tell). Gate: full crate `cargo test --release` **151 blocks / 1 565 passed / 0 failed**. See [[rust-port-slice-ag-step2]]. **STEP 3 DONE 2026-09-07** (§ 5.31.3) — rung 75's SIX readers, `anti_windup.rs` 601 -> 1 531 (`rhs_gains_at` returns SIXTEEN MEASURED entries with no `jac4` assembly step, which is the only way the device's `-1/tau_t` can appear on the diagonal at all), plus `IcCapScope` and `try_windup_march`. **NO gate file** — AF step 4's precedent: a readers step proves itself by DRIVING, and the ported gates are step 6's. **1 304 keys, `Rust == PyPy` bit for bit on the first run that compiled, both key sets equal, no port fix**; the port independently reproduces the rung (masked diagonal EXACTLY 0.0 without the device and -20/-80 with it, `zeros` 1 -> 0, `det J` 6.6e-11 -> 1.28 on `applied`; -40/-100 and never dead on `sched`; ratios 4.0 and 2.5) and the shipped `tau_t_holds = 0.0625 / breaks = 0.075`, hand-over 0.695-0.705 against the accident's 1.065. LEADING FINDING: **an enumeration of a field's READERS has an expiry date, and it expires at the rung that adds one** — I pre-registered SURVIVED for deleting `_windup_rows`'s plain `m._lag_coord = "demand"`, warranted by rung 74's own measurement that `clip` and `demand` are indistinguishable in `demand_target`; it KILLED BY PANIC, because `_windup_tau` — the cell the slice exists for — REFUSES `track` outside the demand coordinate, so the flip is the scope's admission ticket. Step 1's *a line citation has an expiry date* on a different object, and the mirror of AF step 6. SECOND: rung 74's `demand_gains` counts BOTH its drop branches into a `skipped` pair (*a dropped point is a coverage claim*) and rung 75's `_windup_rows` has the same two and counts neither, so `windup_gains` reports 7 of 56 and 49 discards are unaccounted; the drive's declared-extra section E measured the same march unfiltered at **18 of 22 rejected** in two populations, and an injection that short-circuits the regime scan is invisible to every key outside E. THIRD: **four of the six readings are EXACTLY 0.0** — widening `mask_leak` kills on 60 keys so that zero is live, but no mutation of `track_leak`'s own body can score it (all three terms identically zero), AG step 2's N-site lesson one level down. Two vacuity facts booked for step 6: `handover_monotone` is vacuous at <=1 hand-over and Python has no key for the count; `device_control`'s dormant-set asymmetry is live at `tau_t=0.05` and INERT at `0.0125`. `contraction_law`'s 185/98/54/32 derived BY HAND before any run and exact; its typed `res0=2.898e-3` is a rounded four-figure copy of `device_control`'s measured `0.0028982406470635016` on the same plant. Sweep **15 injections, 12 killed, 3 survived (2 pre-registered), 1 misprediction**. Gate: `cargo test --release` **151 blocks / 1 565 passed / 0 failed**, delta ZERO vs step 2 (no test file added, harness deleted). `cargo clippy --all-targets` does NOT pass and has not for some time -- 2 errors (`eq_op` on deliberate NaN self-comparisons) + 51 warnings, 4 of them step 2's `RhsLaws` missing the `type_complexity` allow its rung-74 twin carries; booked for step 4 rather than re-opening a gated source for an attribute. See [[rust-port-slice-ag-step3]]. **STEP 4 DONE 2026-09-07** (§ 5.31.4) — rung 76's cap, `sensed_cap.rs` 305 -> 578 (`cap_march`, `CapScope`, `accel_for`, `c_at`, plus the two carried Python defaults `ACCEL_SCHEDULE_N = 13` and `C_AT_REL = 1e-6`); `_sensed_cap`, the fifth name the step list gives this step, landed at step 1. **NO gate file** — step 3's precedent. **1 422 keys, `Rust == PyPy` bit for bit, both key sets equal, no port fix.** The step is THIN (4 methods, 53 Python lines) and was deliberately NOT merged with step 5, because merging would settle **P7** — the 7-vs-6 step-count prediction — by convenience. LEADING FINDING: **an enumeration of what a REFUSAL protects expires at the step that adds its caller.** `cap_march`'s one structural difference from rung 75's march is `accel: Some(accel)`, and its doc comment said dropping it is *silent in the worst available way* (the sensed arm returns the solve arm's floats, which IS the reduce answer). Measured: it **PANICS**, on `r76_integrate_fuel`'s third refusal — **ported at step 1, three steps before any caller could reach it with no schedule**. The claim is right about the `solve` arm and wrong about the arm the rung exists for; repaired ADDITIVELY, both domains named. The exact mirror of step 3, which found a write proved inert by the PREVIOUS rung's evidence killed by a refusal born at THIS one. SECOND: **neither wrong restore policy on `CapScope` moves a single VALUE** — restoring the constant `"solve"` moves **exactly ONE key of 1 422** (the drive's machine rests at `"solve"`, so the injected constant coincides with the displaced value at 18 of 19 sites) and restoring nothing moves 19, all of them tag reads, because every caller sets the law immediately before reading it; so a step-6 gate driving `_with_cap` through `_cap_fuel` is blind to both, and the requirement (read the field WITHOUT setting it, on a machine whose resting law is not the guard's) is written into the doc. THIRD: **the package's ONE expression-first `max` is UNDRIVABLE** — step 1 booked `_c_at`'s `max(w, 1e-9)` here by name; discharged as the explicit fold, and measured that all four sub-hinge `w` values ABORT in the plant and that `w.max(1e-9)` survives at 0 of 1 422, so no value gate can ever tell the two spellings apart. A defence with no reader, disclosed at the step that shipped it. FOURTH, a PROCESS defect: **the citation guard step 1 built against documentation decay had been RED since step 2 and neither step ran it** — nine unblessed anchors, only EIGHT of them step 4's; the ninth (`engine.py:18694`) was cited in step 2's own commit, and the census was still `9/50/38` against a live `10/59/47`. Steps 2 and 3 each ran `cargo test` alone. Re-blessed, arrears named in the file's own comment, and the standing repair is procedural: a step that writes a doc comment citing `engine.py` has changed a gated input, so its gate is `pytest`. Also measured: `accel_for`'s hook dispatch is a RULE not a difference (the direct rung-75 pointer moves 0 of 1 422, because a schedule is read off EQUILIBRIA), and so are its `tau_rel`/`tau_att`, while the identical `tau_rel` mutation inside `cap_march` kills 688; the pre-flight's published *341 of 341* against this drive's *333* is ONE measurement on TWO populations (the probe compared an eleven-key tuple; `Tt4` alone gives 333), and `max|dTt4| = 10.254967637311893` reproduces the pre-flight to every digit through a DIFFERENT entry point. Sweep **14 injections, 9 killed, 5 survived, 14 of 14 VERDICTS right and three mechanisms/counts wrong** — the verdict axis was the weak one. Step 2's four `clippy::type_complexity` warnings on `RhsLaws` CLOSED. Gates: `cargo test --release` **151 blocks / 1 565 passed / 0 failed**, delta ZERO vs step 3; `pytest` **1 373 passed, 0 failed, 15:18** (the first `pytest` of this slice since step 1, and the reason the guard's two red steps were found). See [[rust-port-slice-ag-step4]]. **STEP 5 DONE 2026-09-07** (§ 5.31.5) — rung 76's FOUR readers, `sensed_cap.rs` 578 -> 1 319 (`cap_rows`, `cap_gains`, `cap_bill`, `solve_gain`, their row/cell types, the Python-faithful folds `py_max`/`py_min`, and `REF_SCHED`). **NO gate file** — steps 3/4's precedent. **1 814 keys, `Rust == PyPy` bit for bit on the first run that ever compiled, both key sets equal, no port fix.** Sweep **16 injections, 12 killed, 4 survived, 16 of 16 VERDICTS right** — and the verdict axis is again the weak reading. LEADING FINDING: **a mutation sweep's verdict is a property of the GRID, and a grid copied from the test suite inherits the SUITE's coverage, not the CODE's.** The drive was built from `test_rung76.py`'s arguments the way steps 3 and 4 built theirs and came back exact on 1 266 keys; reading the golden for what it could SEE found two tells visible in the TSV without running anything — `n_inert` exactly 0 in all eight cells (10 of 10 rows bind, so the three-`_cap_fuel` min-select guard filters nothing) and `row_err` absent in all four live ones (every live cell is FUEL-authoritative, so its `gov`-only arm and the `sched`/`applied` split inside it never run). Adding `margin = 0.20` made both live, and **two injections flip verdict**: `accel_binds` folding `min` for `max` 0 keys -> 33, `row_err`'s targets inverted 0 -> 4. On the suite's grid alone both score SURVIVED and would have been written up beside the four genuine unreachabilities. SECOND: **step 4's refusal domain bounded on a THIRD side** — dropping the `accel` argument in the READER is SILENT (killed by value, 144 keys, no panic) where dropping it in the MARCH panicked, because a reader reaches `_cap_fuel` directly and never enters `integrate_fuel`: nothing defends the readers. THIRD: **five defences with no reader in one step**, all five pre-registered (`tau_auth`/`tau_masked` — both clocks are 0.05; the two scope orders; `masked_moved`'s conditional; `s_tail`'s `max(taus)`; `py_max`/`py_min`'s NaN faithfulness at `dS == 0` in 0 of 29 rows) — what a READERS step IS, since an aggregate's edge cases are the states a converged march does not visit. FOURTH: **identity (1) is EXACT at 8 of 10 rows at the suite's margin**, so a reader comparing the solve with ITSELF returns the same float there and the injection is caught only by the minority where the last bits differ (17 keys of 1 814) — booked as a requirement on step 6. FIFTH, and it repairs a stated limit: **the citation guard caught a citation WRONG AT BIRTH**, which its own docstring says it cannot do — `19353` was blessed-printed as `g = read("sensed")` and the sentence is about the `accel` argument one line up (`19352`); blessing PRINTS, so the drift-only limit binds only when blessing is silent. Census `10/59/47` -> `10/63/51`, **no arrears** (step 4's procedural repair held; `pytest` run BEFORE shipping). Also: `fuel_int`'s fold direction moves **exactly 4 keys**, which is P2 asked of the port; sizing **2.48x by region / 2.35x by body**, both inside P1's band against step 4's 5.09x/3.15x; and the sweep's own classifier scored two panics as compile errors because cargo prints `error: test failed` — no verdict moved, the label was wrong, recorded not quietly fixed. Gates: `cargo test --release` **151 blocks / 1 565 passed / 0 failed / CARGO_EXIT=0 off disk**, delta ZERO vs step 4; two new clippy warnings CLOSED; `pytest` **1 373 passed, 0 failed, 20:42, PYTEST_EXIT=0 OFF DISK** (step 4 could not capture that code; `Process.Start` with both streams taken as `ReadToEndAsync` BEFORE the wait does). **ADDENDUM, same step number** — the step's own lesson turned on itself: the `inc` axis was **NARROWED, not copied**. Every reader call passed `inc = false`, so none of the first 1 814 keys touched rung 69's incidence plant, while `test_rung76.py` sweeps `inc` in THREE tests, all three `solve_gain` — the reader whose gate had just been booked self-certifying. `LeverArm` already carries `stator_inc` (a drive gap, not a port width gap — checked FIRST, because the other answer would have been a step-1 finding). Re-driven and the whole sweep re-run: **2 691 keys bit-exact, verdicts UNCHANGED**, and three sharpenings — the `tau_auth` row (the claim genuinely at risk, since `cap_march` marches past the ramp end at `tau_rel = 3·tau_f` and a RELEASING point would split the clocks) survives on a SECOND plant, `n_tau_split = 0` at all four cells; the two grid-sensitive injections stay confined to (`phi`, 0.20) and the incidence arm opens NO second route even though the `accel_binds` guard is LIVE there at the suite's margin — **a branch being live is not the same claim as a mutation of it being observable**; and the identity's exact-zero count is 18 of 36 rows, 1 of 1/2/4 on the incidence arm against 8 of 10 on the suite's, so step 6's sharper population is also its thinner one. **The sweep's own attribution columns went blind on that same edit** (bucketed by `E/0.1/`, renamed to `E/i0/0.1/`), caught because two one-sided rows read zero on both sides beside a nonzero total. Seven **unspelled reader defaults** named (`CAP_GAINS_REFS`/`LAWS`, `CAP_BILL_TAU_T`/`TAIL`, `SOLVE_GAIN_REF`/`DQ`/`EVERY`) with step 4 § (f)'s PREMISE re-derived, not inherited: no crate caller relies on them, but step 6's gates are the only call sites and the suite does not write them down. Two bookkeeping corrections made in place: *16 of 16* is really **15 one-sided plus one hedged** (injection 15 could not lose), and § (a) said *four* where § (c) tabulates five. Citation census → **10/70/56**. Gates re-run: cargo **151/1 565/0**, `pytest` green. See [[rust-port-slice-ag-step5]]. **STEP 6 DONE 2026-09-07** (§ 5.31.6), in THREE commits (`0aedb9d`, `af59e3e`, `61f4dc7`) — the two ported gate files plus the oracle, the three things the slice had deferred since step 1. `rust/tests/rung75.rs` **875 lines, 17 gates, 1:1 with ZERO added**; `rust/tests/rung76.rs` **858 lines, 19 gates = 16 ported + 3 declared additions** (the cap-scope restore booked by § 5.31.4 (b), the fixed-point identity scored only where it is not already exact and COUNTED so it cannot go vacuous, and the second margin reaching the two expressions the suite's grid leaves dark) — both green on the first run. Non-vacuity MEASURED: a throwaway population probe reproduced § 5.31.5 (k)'s Python-side table from the PORT. **LEADING FINDING (the oracle): a prediction can name the right CAUSE and size it by the wrong PROPERTY.** P2, pre-registered before the CPython arm ran, said the exemption would be exactly `cap_bill`'s two `fuel_int` keys per cell — the `sum()` calls that add a **341-long** trajectory. Measured **406 of 38 100 differ**: the 8 it named all do, so the cause is right, and **398 more** do because `_charpoly4` is built on two `sum()` calls of **FOUR TERMS**. Compensated summation parts company with a naive fold as soon as the addends have MIXED MAGNITUDES; `n` was never the criterion. **And the blast radius is set by SHARING, not SIZE** — the suspected sum sits in one reader and moved 8 keys; the unsuspected one sits in a SHARED STATIC HELPER and reached every reader that reports a determinant, three sections and six readers. Section H, the one place the dumper refused to pre-exempt because AF's P2 was falsified by pre-exempting, is CLEAN. The gate is written as the CAUSAL PATH with BOTH COUNTS ASSERTED (398 and 8), never as the observed diff. **38 100 keys, `Rust == PyPy` bit for bit on all of them.** Three instrument defects the oracle found in itself: `arms()` both BUILDS a key and EMITS one, so calling it inside sections E/F/G's second loop wrote `arm_inc` per cell (three at once, all caught by the duplicate-key assert; two earlier collisions were `key/n` against readers whose own field is `n`, and `/margin` against the `margin` they return); the float census classified its own population by PATTERN-MATCHING KEY NAMES and over-counted by **173**, replaced by a measurement at the emission site; and the `neg_zero`/`nan` counters now push `-0.0` and a NaN through the real emitter every run, so a `0` means MEASURED NONE and not NEVER FIRED (proved inert — the golden is byte-identical across the change). Also: section F's two arms are NOT symmetric — `cap_bill` marches the DEMAND coordinate directly, so `("applied", "none")` is rung 74 § 4's plantless cell and both sides refused at the identical residual `2.898e-03`; **widening a grid along one axis can require ARMING A DIFFERENT ONE**. **AND THE CITATION GUARD AGAIN, A THIRD ROOT**: commit (a) widened it from one directory to two (24 of 47 sites stale in the unwatched one, against 0 of 70 in the watched); commit (c) found `rust/oracle`, whose Python dumpers cite `engine.py` too — four sites, **all four correct today**, which is exactly when a guard is worth adding. Adding the root with a `#` marker moved the census 139 → **140**, one of the four; the other three are in a module DOCSTRING no marker-based scanner reaches. **A census that grows is not evidence that coverage grew.** Census `27/129/85` → **`30/143/95`**, 4 forms, 3 roots. Commit (a) also repaired **24 stale citations across 11 files** and caught **4 of this step's own 7 new anchors typed one line low**, wrong AT BIRTH, which the guard's docstring says it cannot do — blessing PRINTS, so that limit binds only when blessing is silent. Gates: `pytest` **1 387 passed, 0 failed, 0 skipped**, exit 0 off disk — which also RECONCILES CLAUDE.md § Commands' `1387` by measurement rather than by arithmetic (step 5's 1 373 was a stale baseline, not a skip count). See [[rust-port-slice-ag-step6]]. **STEP 7 DONE 2026-09-07** (§ 5.31.7) — `rust/tests/slice_ag_dispatch.rs`, **8 gates**, and **SLICE AG IS CLOSED at SEVEN steps**. Five injections per rung (the eight swaps, each pointed at the parent it was re-aimed from) x **seven seats** — slice AG's OWN readers, not slice AF's rung-74 names — every seat run on BOTH rungs' machines. **LEADING FINDING: a “did it move?” matrix reports ONE BIT, and the missing one is cheap.** Since slice AD the rule has been *a silent row is either laundering or a path that never reaches the cell, and the OTHER SEATS IN THE ROW separate them*; a pointer that COUNTS and delegates answers *was this cell entered* per cell. Two rows are verdict-for-verdict identical and opposite: `shared_rig`→parent is `same` at all seven with tally **2,1,4,2,3,3,2** (RAN, REDUNDANT — `slice_ag_cells.rs` pre-registered it as a measured no-op, so the row is a confirmation WITH A NUMBER); `sensed_cap`→parent is `same` at four with tally **0,0,0,0**,144,1100,24 (UNREACHED). Every tally is preceded by 28 bit-identity checks proving the observer is pure. **§ 5.30.6 (v)'s obligation CLOSED, three-sided**: DISPATCHED **1 366 on BOTH cap laws** (so the reduce is a DISPATCH, not a tolerance — P3), DISCRIMINATING **(sensed−solve)/|solve| ∈ [−2.3208594004417025e−2, −2.320859400441414e−2] at 1 366 of 1 366**, PLANT-REACHABLE **333 of 341 on `Tt4` / 341 of 341 whole-point at PHI_BOTH, `max|ΔTt4| = 1.0254967637311893e1`** and **0 of 341 at PHI_JAC** — the same injection loud at one arm and exactly invisible at the other, which is slice T's *an EXACT ZERO blinds its own gate* one phase on. **P6 REFUTED at its named message**: the untagged *“the two cap laws marched different grids”* IS reachable (cap ×0.6 / ×0.4 ⇒ sensed marches 166 / 99 of 341), but both realistic slips — dropping `pt4 / pi_b`, and swapping `cap`'s two same-typed `f64` args — are KILLED by `rung76.rs` (5 and 9 gates) and the oracle (2 and 3), source SHA-256 verified pristine both times. **P6 reasoned about NEEDLES; the cell is covered by VALUES.** Residual disclosed: outside the band a defect in rung 76's cell is reported by **rung 43**. Three self-caught instrument defects: the coarse grid was typed OUTSIDE the declared RK4 region (`ds·Σ(1/τ) = 2.400 > 2`) — **AF step 6's own defect number one, one slice later** — now DERIVED from rung 75's floor; a control that read its own EXPECTED row instead of the measured one (rung 70's shape); and a whole-point comparison omitting `PointExtra`, which reproduced the `Tt4` count and called it the tuple. **P7 CONFIRMED CLEANLY** (seven steps, steps 2 and 4 still carrying three and four bodies) ⇒ **AF's method-count law fails its first two-class test; AC's class-count reading survives**. **P1 FALSIFIED a second time in the same direction**: 1 540 + 1 390 = **2 930** Rust lines against **1 073** Python = **2.73×**, outside the re-fit 2.0–2.6 band — a ratio re-fit to the last three points is an estimator with no theory in it. Citation census re-blessed **30/143/95 → 31/144/95**, and **LINES did not move** because the cited line was already covered — step 6's *a census that grows is not evidence coverage grew*, in the opposite direction. **GATES: full crate `cargo test --release` 1 613 passed / 0 failed over 155 result blocks (154 Running + 1 Doc-tests), 0 error[E, CARGO_EXIT=0 — the block AND test counts were PRE-COMMITTED before the log was opened and both landed exactly; `pytest` 1 387 passed / 0 failed, PYTEST_EXIT=0.** **SLICE AH PRE-REGISTERED 2026-09-07** — rungs 77/78, `StiffnessLedgerTransient` + `ResidualGaugeTransient`, § 5.32, **fourteen probes**, **0 ADD** (the phase row right as written, fifth running, and probe 7 makes it DURABLE past AI/AJ), priced at SEVEN steps as a **DISCRIMINATING** prediction rather than AG's replication (4 substitutable swaps against AG's 5, and rung 77's `at_lever` is the FIRST in the chain that carries NOTHING NEW, so classes⇒7 and bodies⇒6 finally separate). 1 125 Python lines / 25 methods — AG's shape to within 5 % on every axis. Two of the four items booked to AH by name are DISCHARGED here (`_legs`, BOTH halves — it is defined exactly twice in the whole ladder and no class after rung 77 names it), one is owed to step 1 (the RAII guard's panic message), one is the leading finding. **LEADING FINDING: a booking NO GATE CAN CLOSE is not a gate nobody wrote, it is a claim in the WRONG CURRENCY** — slice AC's same-field nest is CONFIRMED at **SIX sites across BOTH rungs** (not just 78), every one firing at runtime, the source handles the one hazard THREE incompatible ways inside one slice and its own docstring records that it shipped wrong once, and the Rust guard that removes it is value-identical at every reachable site — so what is owed is a STRUCTURAL claim, not a test. **SECOND FINDING, and it inverts the first four instrument defects: the nest census was SCOPED BY A PREMISE NOBODY MEASURED** — it named `_c_at` as the only freezing method where the source has **37**, and the two sites it missed are exactly the two that hand the callee a value the enclosing block never set, falsifying its own stated reason for safety (the real criterion is a DEAD WINDOW, not matching `(q,v)`). It was found by the PER-SITE RUNTIME COUNTER, not by a reading — a reading produced the false premise and a careful review repeated it. **A hand reading validates a probe's LOGIC and cannot validate its SCOPE, because a scope error deletes the evidence of itself.** Repair: DERIVE the set the census ranges over from the source instead of naming it — after which the static and runtime instruments agree site for site. Disclosed: the runtime COUNT is not reproducible (211 vs 241 nests over two identical runs, 70 % apart in wall time), so the SITE SET is reported and the count is not gated on. **P1 RE-SPECIFIED onto the RUST LINE COUNT**: measured, the Rust column varies ~10 % and the ratio ~20 %, and at AH's line count *any* Rust total in range puts the ratio back inside the band AG just retired — so scoring it would log a success for nothing. Also measured: **zero float-summation surface** in either class, and **zero refusal assertions in either suite file** against rung 78's two shipped refusals. Four of this pre-flight's own instruments returned a confident WRONG NUMBER, three caught by a hand reading of the site. See [[rust-port-slice-ah-preflight]]. See [[rust-port-slice-ag-step7]]. Slices V, W, X, Y, Z, AA, AB, AC, AD, **AE complete** (rung 73, § 5.29–5.29.5, ten probes, all five steps). **Slice AF IN FLIGHT (§ 5.30, nine probes) — rung 74, `DemandCoordinateTransient`, 4 ADD + 4 SWAPS, priced at SIX steps on AD's shape (1 059 lines, 1.55x AE). AE's owed drive test is DISCHARGED BY MEASUREMENT rather than by a gate: `_with_coord` has ONE call site whose ONE reader (`_demand_target`) is arithmetically the identity on every arm it admits, so no value gate exists here and the field is gated structurally; the value break stays AI's. **STEPS 1–4 DONE.** Step 1 (§ 5.30.1) — `demand_coordinate.rs`, `TripleHooks` 14 → 18, `tests/slice_af_cells.rs` **17 gates green**, 16 mutations **13 KILLED / 3 survived**; width toll measured, not predicted: 7 `src` literals + **4** test sites where the record said 2. Step 2 (§ 5.30.2) — the six demand laws, **all single-definer by AST census, so NO table field and NO width toll**; `demand_coordinate.rs` 685 → 977 lines, `tests/slice_af_laws.rs` **13 gates**, sweep **21/21 as predicted, 18 killed** (all 3 survivors predicted, 2 with proofs written first). Step 1's booked `min`-fold blind spot **DISCHARGED**. Step 3 (§ 5.30.3) — `_integrate_fuel_demand`, the six-state march + the joint IC + `PointExtra::Demand` (**35 keys, the widest point in the port**); `demand_coordinate.rs` 977 → 1 407 lines, `tests/slice_af_march.rs` **12 gates green first run**, and step 1's `unimplemented!` gate CONVERTED not deleted. **32 `match .extra` sites in `src` widened — 7 exhaustive (cargo named 6), 25 behind a `_ =>` wildcard — plus 5 test sites over two rounds.** The LEADING FINDING: rung 74's `g_fuel`/`required_*` are UNFLOORED projections and go NEGATIVE (21 of 341 on `demand`, 0 on `demand-latched`), so eight inherited liveness predicates get a domain no widening notices. Sweep **26 mutations, 16 killed**; 4 mispredictions — 2 gate defects repaired (a max-over-trajectory that could not isolate a derivative term; an `is_finite()` a zero fallback satisfies) and 2 per-LEG reachability facts whose twins kill. Step 4 (§ 5.30.4) — `_coord_march`, `_demand_gains_at` and all six readers (`demand_law`, `demand_gains`, `latch_discriminator`, `windup_law`, `flat_schedule_identity`, `forcing_openloop`); `demand_coordinate.rs` 1 407 → 2 657 lines and **NO gate file — the ported gates are step 5's**, so it proves itself by DRIVING every reader: **3 731 keys, `Rust == PyPy` bit for bit on the first run**, both key sets equal, and the port independently reproduces `docs/rung74-spec.md` § 3's `65.2 K` / 332-of-341 and § 4's exact `1.0`. Sweep **19 mutations, 11 killed, 19/19 as predicted** (one instrument failure, re-typed and re-run). The LEADING FINDING: **two doc comments asserting a difference was LIVE that nothing had measured, one of them FALSE**; plus a shipped refusal message **four formatting divergences wide** (`{:.3e}` vs `%e`, `{:?}` vs `!r`), found only because `windup_law` records `str(exc)[:240]` — the first time a MESSAGE's text is a compared value in the crate; 42 sibling sites BOOKED, not swept. Gate: `cargo test` **1 510 passed, 0 failed**, delta ZERO vs step 3 (the drive harness is a throwaway, deleted). **STEP 5 DONE, in TWO COMMITS under ONE step number** (marked in advance, AC's seven-step precedent having held and never been marked). **5 (a)** (§ 5.30.5 (a)) — `tests/rung74.rs` **757 lines, 17 gates green first run**: 16 ported 1:1 in order + **1 declared ADD** (`latch_discriminator`, whose bars are transcribed from `docs/rung74-spec.md` § 3's PROSE, never from step 4's drive output). `cargo` and `grep` BOTH say 17, so the four-slice grep-over-count streak did not continue. Sweep **5 injections x 4 binaries, 5/5 killed, 5/5 as predicted**, source SHA-256 verified back to pristine; step 4's booked kill-SHAPE is now data at **11 value / 3 panic**, and `rung74.rs` is the only binary besides `slice_af_laws` catching either `applied_demand` mutation (`slice_af_march` passes both). LEADING FINDING: the shipped `Usage:` block documents FOUR calls and **THREE raise `TypeError`**; swept over the whole file as a static bind — **58 classes, 34 blocks, 102 calls, 10 BIND FAILS in three causes**, where AD's pre-flight measured the loudest cause and stopped at 3. Rung 74's three fixed (10 -> 7); the seven booked. Gate **147 blocks / 1 527 passed / 0 failed**, both numbers predicted and held, `pytest` **1 364 passed**. **5 (b)** (§ 5.30.5 (b)) — `oracle/dump_slice_af.py` (A-H + Z) + two goldens at **20 643 keys each** + `tests/slice_af_oracle.rs` (**4 gates, green on the first run that ever compiled, no port fix**); `Rust == PyPy` on all 20 643, **0 read as declared inputs**. LEADING FINDING: **P2 FALSIFIED IN BOTH CLAUSES** — it named `forcing_openloop` (differs on NOTHING) and the 49 differing keys are all `demand_gains`'s charpoly readings, whose origin is rung 72's INHERITED `_charpoly4`; **two of rung 74's four `sum()` calls sum a literal `1`** and could never have drifted, so a `sum()` census is not an attribution until the summand's TYPE and CONDITIONING are in it. The exemption's own numbers settle it on the same rows: `poly_scale` drifts 1-4 ULPs, `poly_gap` up to **2.48e-4** — the same perturbation amplified **2.1e12** by a subtraction. **STEP 6 DONE — SLICE AF CLOSED, all six steps** (§ 5.30.6) — `tests/slice_af_dispatch.rs` (**8 gates**, ten injections × seven seats) plus a FOUR-LINE REPAIR in `demand_coordinate.rs`. LEADING FINDING: **four production call sites dispatched a write Python makes by PLAIN ASSIGNMENT** — `_coord_march` and `demand_gains` pinned `_lag_coord`/`_ref_law` through the cells where Python assigns. At rung 74 the two spellings are the same function, so 20 643 oracle keys and 59 gates were blind; `_with_coord` has a SECOND definer at rung 79 writing `_phi_ref`, rung 74's readers are single-definer, and `tests/test_rung80.py:110` already calls one on a rung-80 object — the port would have marched rung 73 while reporting rung 74, with that test's own `341` assertion still passing. The tell was three spellings of one construct inside the slice, one of them a step-5 fixture stating the rule the step-3/4 code broke. REACH MEASURED BEFORE THE FIX: the separate-field injection live at **6 of 7 seats → 0 of 7**; the parent's panicking slot **7 of 7 → `demand_gains` only** (Python's one call site); rung 69's setter 1 → 0. The registered prediction *the other rows are unchanged* was **FALSIFIED by `at_lever`**, and the reason sharpens it: a dispatched pin on a machine without the cell hits the parent's PANIC, so the port was turning a benign attribute assignment into a hard REFUSAL — 4 of 7 seats went BROKE → READING. NEUTRALITY proved against the **UNREGENERATED** goldens (20 643 keys, 0 failed). **P5 HELD three-sidedly** (the reader can discriminate; the plant reaches the region — 34 of 682 caps over schedule at `PHI_BOTH`, 0 of 86 at `PHI_ARREST`; and `demand_gains` bit-identical under a re-aimed setter). Census recovered from the seats: `sensed_cap` **unreachable from every rung-74 reader** (no seat arms an accel), `cap_fuel` 6 of 7, `windup_tau` 5 of 7. **P1 FALSIFIED** — 2 675 Rust lines / 1 059 Python = **2.53×** against a 1.6–1.9× band that already excluded two of the three points it cited. Step count priced on LINES, scored on **METHODS**. Three own-instrument defects, all caught before a row was believed. Gate: `cargo test` **149 blocks / 1 539 passed / 0 failed**. **AND THE DEBT IS CLOSED — SLICE AF FULLY DISCHARGED, six steps + one commit** (§ 5.30.7): the seven `Usage:` calls repaired (4 by supplying the reader's own argument, 3 RETARGETED to the renamed reader and none deleted, each settled from a source that is not the name — AD's pre-flight had guessed one that is already on its own line in the same block) plus `tests/test_usage_blocks.py`, 4 gates. LEADING FINDING: **the step-5 (a) census's SKIP category was hiding a worse defect than the fails it counted** — its *an argument list that is not Python* clause is SIX statements that do not parse (one of them also naming a parameter, `p0`, the builder does not have), and because that census parsed each block WHOLE, **0 of the six blocks parse and the 19 further calls they document went unchecked too**. Measured on both trees with ONE instrument: 167 calls / 7 skipped / **14 FAIL** → 166 / 12 / **0**. The guard freezes the uncheckable set BY IDENTITY (12 triples, all `**kwargs`) and the census SIZE (58/34/166), and proves it can SEE a break on a synthetic module — which immediately caught my own `_statements` rebuilding the same swallowing bug one layer down. CLAUDE.md paid for its new line by deleting a duplicate (21 B headroom). Gate: `pytest`.**
+
+## Phase-7 slices, as they closed
+
+| slice | rungs | landed |
+|---|---|---|
+| V–Y | 57–65 | slice Y closed 2026-08-27, all five steps |
+| Z | 66+67 | 2026-08-27 — both marches + 20 method bodies, **38 ported gates** green first run at **20.0×** PyPy, **35 335 oracle keys** bit-exact on both interpreters (CPython exempt on 8 named keys), **8 dispatch gates** closing the four measured blind spots |
+| AA | 68 | 2026-08-27 — `three_loop.rs` 2 302 lines, **47 gates**, **12 084 oracle keys** bit-exact vs PyPy (4 named CPython exemptions), full gate **124 blocks / 1 199 passed / 0 failed** |
+| AB | 69 | **2026-08-28, all five steps** — `reference_split.rs` 1 686 lines, 25 ported gates, **15 957 oracle keys** bit-exact vs PyPy (194 named CPython exemptions), and **14 dispatch gates** over TEN cells, every one observable; full gate **129 binaries / 1 258 passed / 0 failed** |
+| AH | 77+78 | **2026-09-26, seven steps** — `stiffness_ledger.rs` + `residual_gauge.rs` 2 899 lines, 31 ported gates, **29 288 oracle keys** bit-exact vs PyPy AND CPython (**zero** exemptions, a first since V), **8 dispatch gates**; full gate **164 / 1 693**, 0 failed, pytest **1 387** (measured; § 5.32.7 (h)) |
+| AI | 79+80 | **2026-09-29, seven steps** — `state_coordinate.rs` + `split_wall.rs` 2 195 lines (P1 refuted: per-LINE), 44 ported gates, **37 945 oracle keys** bit-exact vs PyPy (CPython: 227 differ, all on the two pre-predicted `sum()` paths), **9 dispatch gates**; full gate **172 blocks / 1 776 passed / 0 failed**, pytest 1 387 |
+
+## Slice AC — CLOSED, all seven steps done
+
+Rungs 70 + 71, `docs/plans/todo-rust-port.md` § 5.27. **1 605 Python lines (2.27x slice AB),
+57 collected tests (22 slow), ZERO cells added, 5 swaps over two rungs = 5 distinct function
+pointers and NO new table field, 6 reduce arms all bit-for-bit by dispatch.** Rust estimated
+3 400-3 800 lines. **SEVEN steps, pre-registered as P7** — the port and the gates each split by
+rung, because five steps on a 2.27x slice would be habit rather than a measurement. Nine
+predictions P1-P9.
+
+**The plan's own column said 1 cell (`split_gains`) and it was wrong**: rung 80's same-named
+method has an incompatible signature, so it is a NAME REUSED, not an override. The phase-wide
+sweep of all 358 override pairs found one more — `_legs` (63 -> 77), a SHIPPED slice-W cell,
+booked to slice AH. See [[rust-port-slice-ac-preflight]].
+
+## Slice AC, step by step
+
+1. **Step 1** — `src/cross_split.rs` + `src/full_split.rs`, `_gov_max`'s carrier + `GovScope`,
+   **ten** `R70*`/`R71*` tables (the pre-flight's step list said nine; its own census enumerates
+   ten), five swapped cells as named panics, `tests/slice_ac_cells.rs` — **10 gates**, nine
+   deliberate mutations all caught. `build_reference_split_cascade` split into a
+   table-parameterised body: neither rung defines `__init__`, so both inherit rung 69's eleven
+   guards. See [[rust-port-slice-ac-step1]].
+2. **Step 2** — the rung-70 bodies: `src/cross_split.rs` 290 -> **1 779 lines**, all nine remaining
+   methods + the **seven readers**, `Census70`, and five complex operations beside `C64`
+   (Smith's-algorithm division is the one that costs: 13/18 against a schoolbook spelling).
+   A step-1 gate FAILED — not the one step 1 protected, but a `pub struct` count whose own doc line
+   named a narrower property. All seven readers driven once and landing on the pre-flight's own
+   numbers, `rung67_control` reproducing Python's `n = 7, ratio = 0.921` end-to-end. Full gate
+   **130 targets / 1 268 passed / 0 failed** — unchanged from step 1, since the ported gates are
+   steps 4–5. See [[rust-port-slice-ac-step2]].
+
+3. **Step 3** — the rung-71 bodies: `src/full_split.rs` 171 -> **1 536 lines**, all ELEVEN methods
+   (five non-readers + the six readers), `Census71`, `round10`, and no swapped cell left panicking.
+   581 Python method lines -> 1 365 Rust, **2.35x**. All six readers driven at their SHIPPED
+   defaults and diffed against PyPy: **every printed value identical, digit for digit** — the
+   stator window 27 of 341 (7.92 %), the joint 7 (2.05 %), `members` 1 vs 4, matched-clock
+   `zeta = 0.588974`. **The finding was in the PROSE**: the class docstring's `0.5895 / 0.5974` is
+   not what `full_modes` returns on its own grid, and `docs/rung71-spec.md` § 5 had the right pair
+   all along — corrected in the same pass. Full gate **130 targets / 1 268 passed / 0 failed**,
+   unchanged, since the ported gates are steps 4-5. See [[rust-port-slice-ac-step3]].
+
+4. **Step 4** — the rung-70 gates: `tests/rung70.rs` **754 lines, 27 gates**, green first run in
+   5.75 s. The Python↔Rust mapping is **1:1 IN ORDER** (0 added, 0 collapsed, 1 body substituted —
+   `at_lever_returns_this_class`), reconciled by NAME after a `grep` said 28 and `cargo` ran 27
+   (the 28th sits inside a doc comment). Ten injections into `src/cross_split.rs`, **two** binaries
+   each: **8 caught, 2 missed** — and both misses are missed by **Python's own 27 gates too**
+   (27 passed under each), so they are INHERITED, not introduced. Both proven able to move: the
+   clock-grid swap shifts 25 of 38 printed lines; the widened joint window goes 61 → 341 points and
+   `joint_fraction` 0.179 → exactly 1.0. The gates survive because they pin SHAPE, not LOCATION,
+   and their bars are one-sided; both are booked to step 6's oracle as named value keys. The file
+   header's *"15 carry `slow`"* is corrected to the **measured 11** (22 of 57 over the slice). Full
+   gate **131 targets / 1 295 passed / 0 failed**, predicted before the run and held.
+   **Close-out finding:** `cargo clippy --all-targets` aborts on the lib's deliberate `eq_op`
+   error and so had **never linted any `tests/*.rs`**; with `-A clippy::eq_op` it reaches 24 test
+   targets and 48 warnings. The one in `rung70.rs` is fixed, the other 47 disclosed and booked.
+   See [[rust-port-slice-ac-step4]].
+
+5. **Step 5** — the rung-71 gates: `tests/rung71.rs` **1 016 lines, 30 gates** (11 `slow` in
+   Python, MEASURED not typed). **TWO failed on the first run and neither was a transcription
+   slip.** (i) Step 3's `assert!(p.im == 0.0)` inside rung 70's `zeta_pair` — a condition § 5.27
+   (iv) measured over the READERS (18/18) — is falsified by rung 71's own damping gate, which
+   drives a CONSTRUCTED spectrum where `p = 4462 + 4947i`; the port had already published the
+   resulting `1.279` in `zeta_ring`'s doc comment at the same step. Replaced by `csqrt`, CPython's
+   full `c_sqrt`, plus `porting_rules.rs` **RULE 4**. **And the `assert!` caught what the gate could
+   not**: the wrong value is 1.624 vs Python's 1.278 and the gate's one-sided `> 0.5` bar passes on
+   both — the mirror of step 4. (ii) My own gate asserted `Census70::triple_laws_gov > 0` on a
+   march; that cell is READER-side, so all six counters read 0. Rewritten with its own control.
+   Signed-zero census: **90 of 96** shipped `cmath.sqrt(p)` calls carry `im == -0.0` (I had it
+   backwards), `p.re < 0` on **0** of them, `sqrt` bits differ on 91, the returned value on 1.
+   Ten injections, both binaries: **7 caught, 3 missed**; every miss shown able to move something
+   except j10, whose `round10` is a **defence with no reader** (`members` identical under both
+   keys). The two analogues step 4 handed forward SPLIT: the clock reorder misses in both languages
+   at both rungs (INHERITED family property), the `joint` widening is CAUGHT at rung 71 in both
+   because its bar is two-sided where rung 70's were one-sided — partly discharging step 4's oracle
+   booking. **Instrument defect:** the sweep labelled a lock-contention failure "did not build";
+   re-run by hand, j06 compiles and is caught. Full gate **132 targets / 1 326
+   passed / 0 failed**, predicted before the run. See [[rust-port-slice-ac-step5]].
+
+6. **Step 6** — the oracle: `oracle/dump_slice_ac.py` (14 sections, **5 351 keys**) +
+   `tests/slice_ac_oracle.rs` (5 gates). **`Rust ≡ PyPy` on all 5 351 keys, green on the FIRST
+   run and with no port fix** — the first phase-7 oracle to find no defect, because steps 2/3 had
+   already driven every reader and diffed the printed values. CPython arm exempt on **234 named
+   keys, THREE causes (119 / 91 / 24)**. **Two findings, both about numbers already written
+   down.** (i) § 5.27 (ii)'s shipped row was measured at **`every = 40`** while the fixture passes
+   `every = 10`: `len(rows)` is **7**, not 2, and all five stride-dependent numbers reproduce at
+   40 — the only column that agreed with the suite (`n_riding`) is computed BEFORE the stride, so
+   it could not have disagreed. Step 2 had already published `n = 7`. (ii) **P8 is falsified from
+   both ends**: the `cross_identity` subtree contributes ZERO names, and **119 of the 234 are the
+   PLANT** — a sixteen-arm probe found the MARCH diverging on exactly three, always first in the
+   stator state `v`, by 10–11 ULPs out of a solve whose inputs are bit-identical, decaying to
+   bit-equality by the end of the ramp. P6 settled by a DECLARED EXTRA GRID, because the dump
+   measured **0 of 38** intercepted `p` complex. Step 5's booked item discharged and corrected:
+   **two**, not three, of `zeta_ring`'s quoted pairs are off the shipped grid.
+   See [[rust-port-slice-ac-step6]].
+
+7. **Step 7 — SLICE AC CLOSED** — `tests/slice_ac_dispatch.rs`, **9 gates**, five function pointers
+   over five swaps, all green first run and **6 of 6 mutations of this file's own gates killed**.
+   **Every reader rebuilds its machine through `at_lever`, so four of the five injections are
+   LAUNDERED before any value is read** — the pre-flight's "seen by 1 of 6 readers" is a Python
+   number that does not transfer, and `triple_laws` needs a DECLARED carrier (with its own control)
+   to be observable. § (ii)'s break reproduced at the fixture's own stride, **7 rows -> 0**, both
+   endpoints `assert_eq!`. And **four doc comments claimed an alias is louder than a `..` spread**:
+   measured over all five hook structs, only `TripleHooks` (5 of 5 consts) is loud. Corrected and
+   pinned by a tripwire that can fail. See [[rust-port-slice-ac-step7]].
+
+## Slice AD (rung 72, `SharedActuatorTransient`) — **CLOSED, all six steps**
+
+**Pre-flight** (§ 5.28, twelve probes): the cell column measures **3** — the first back-half row
+where the hand-written number is right. Four findings, all vacuity: **`shared_modes` does not
+exist** (3 phantom `Usage:` methods across rungs 65/66/72, none inherited by the port); the
+quartic's **three risky roots are dead** (`|a3|` wins `scale`'s max on 1068 of 1068 calls, over
+**375 distinct coefficient vectors**); **`_authority`'s 1e-12 tolerance never does any work** (0 of
+25 702 calls in the open interval); and **the floor's shipped needle discriminates nothing**
+(`"FOUR actuator states"` is in rungs 72/73/74's messages, whose conditions are identical).
+Six steps priced from sizing (1 177 source / 502 test lines). See
+[[rust-port-slice-ad-preflight]].
+
+1. **Step 1** — `src/shared_actuator.rs`, the three cells in `TripleHooks` (10 → 13) with their
+   refusals, `ShareScope`, two carriers, five `R72*` tables, and `tests/slice_ad_cells.rs`
+   (**12 gates**, green first run, **9 of 9 mutations killed**). **P1 was falsified by count and
+   confirmed in mechanism**: it predicted 5 `E0063` sites and the landed edit needed **7**, because
+   `cargo check` stops at the lib and never compiled the two test targets carrying the width
+   tripwires. The wrong number AGREED with the prediction, which is why it nearly stood. See
+   [[rust-port-slice-ad-step1]].
+
+2. **Step 2** — the six-state march, `PointExtra::Shared` (30 keys), the `Authority` label,
+   nineteen widened reader sites, and `tests/slice_ad_march.rs` (**13 gates**, **10 of 10 mutations
+   killed on the SECOND run**). **The crate's "the next variant breaks the build" convention holds
+   at 7 of 20 sites** — 13 wildcards compiled silently, 3 of them a `false` inside a FILTER, which
+   drops a rung-72 point and reports perfect tracking over an empty set. And **my own authority gate
+   compared the recorded label against the function that produced it**, so an inverted comparison
+   passed; the mutation sweep found it, not review. See [[rust-port-slice-ad-step2]].
+
+3. **Step 3** — the quartic chain (`_jac4`, `_charpoly4`, `_quartic_roots_c`, `_parent_quartic`,
+   `charpoly_selftest`), `_quad_laws`, `_quad_gains_at`, `_riding4`, `_shared_march`,
+   `_assert_fuel_boundary` and **all five public readers**; `shared_actuator.rs` 813 -> **2 659
+   lines**, four new `C64` operations and `py_max5`. No gate file — the ported gates are step 4, and
+   slice AC's steps 2/3 set the precedent that a body step proves itself by DRIVING and diffing.
+   **3 216 keys, `Rust == PyPy` bit-for-bit on the FIRST run**, at 29 s against PyPy's minutes; § 2's
+   four cells land with the predicted zero counts 2/1/1/0 and `worst_v_gap` exactly 0. **THE CELL
+   COLUMN MEASURES 4, NOT 3**: `_quad_gains_at` has two definers and an identical signature but
+   **zero call sites of any kind** — it is PASSED as a bound method at eleven lines over six rungs,
+   so the pre-flight's caller filter scored it 0 and dropped it. Booked to slice AE (measured
+   unreachable today). Also: `charpoly_selftest` splits **4 of 10** keys on CPython 3.14, and one
+   cause is a **COMPLEX** `sum()`, which five shipped comments in this repo call float-only; and a
+   doc comment written in this same step measured FALSE — deleting the guard it defended moves 0 of
+   3 216 keys. Closes with three disclosures a bit-exact dump cannot reach (`manifold=false` dead;
+   `riding4`'s foreign-point arm made a REFUSAL, matching Python's bare index; and the deferred
+   cell's MRO trap for rungs 74/80/81) and **P7, the CPython exemption PRE-REGISTERED** so step 5
+   cannot produce it post-hoc. See [[rust-port-slice-ad-step3]].
+
+4. **Step 4** — the 28 ported gates: `tests/rung72.rs` **949 lines, 28 gates**, green first run in
+   8.63 s; the Python↔Rust map 1:1 IN ORDER, **0 added / 0 collapsed / 1 body substituted / 3 split
+   by parameter**, reconciled by a machine-checked **BIJECTION** (0 unmapped, 0 extra, 0 collisions)
+   after `grep` said 30 where `cargo` ran 28 — the two extras inside this file's own sentence
+   *documenting that trap*, its third instance in the phase. Ten injections plus one declared
+   control, **three binaries each**: **7 caught, 3 missed**, and every miss re-scored BY KEY against
+   step 3's preserved 3 216-key dump rather than left as a word. **The headline is j05**: deleting
+   the `|a3|` term that wins the root finder's start scale on 1 068 of 1 068 calls moves **26 keys —
+   8 of `charpoly_selftest`'s own 10** — and **all 28 gates pass in Rust AND in Python**, so the
+   hole is INHERITED; the two unmoved keys are the only two computed from a coefficient rather than
+   a root, which turns the reading into a mechanism. j06 moves **0 of 3 216** (unobservable, margin
+   3.5e−2 against a 0.1-wide interval, 165 of 165 points strictly interior) and j09 moves **3** that
+   no gate in either language reads. j05 and j09 booked to step 5's oracle; P4's control `c11`
+   missed as pre-registered, but on the GATE seat only, so P4 is **corroborated, not settled**.
+   Full gate **137 targets / 1 393 passed / 0 failed / 0 ignored**, predicted before the run and
+   held — and the number was nearly taken off a log that was still being written (125 blocks /
+   1 335 passed, both plausible), so the bar is now structural: `Running` lines + `Doc-tests` must
+   equal the result blocks. See [[rust-port-slice-ad-step4]].
+
+5. **Step 5** - the oracle: `oracle/dump_slice_ad.py` (nine sections - A-F the five readers plus
+   `charpoly_selftest` at their OWN defaults, G/H/J three declared extra grids) + two goldens at
+   **54 116 keys each**, the phase's largest (1.5x slice Z's 35 335), and `tests/slice_ad_oracle.rs`
+   (**6 gates**). **`Rust == PyPy` on all 54 116, green on the FIRST run, no port fix**; CPython arm
+   exempt on **180 names, two causes (174 / 6)**. **THE FINDING: the two goldens differ on 5 022
+   keys and the port drifts on 180**, because section H reads its 374 coefficient vectors as INPUTS
+   - fed CPython's own coefficients the Rust reproduces CPython's roots bit-for-bit, so all 4 842
+   of the solver section's differences are UPSTREAM, in the `sum()`-built polynomial. Read off the
+   golden diff instead, the step ships a 5 022-name exemption blaming the root finder. **P7's two
+   checkable clauses CONFIRMED exactly (4 keys, by name; 0 of the three non-drifters) and its
+   headline FALSIFIED by 6** - march values at 2 points of 1 302, 1-4 ULPs, no `sum()` in reach:
+   AC step 6's plant drift, which P7's own clause (ii) predicts and its headline forbids. All three
+   bookings discharged by key: **j05 CAUGHT at 2 937** (A/D/E share = step 4's 26 exactly, the two
+   unmoved keys the same two BY NAME, and `n_complex` - a DISCRETE key - flips on 163 of 374),
+   **j09 CAUGHT at 3**, **j06 still 0** in a 17x larger space, **c11 0 => P4 SETTLED** with the
+   margin emitted (`n_open` 0 over 12 676 calls; smallest non-zero gap 2.74e-07 = **273 641x** the
+   tolerance). P3 re-measured on this grid - **417 calls / 374 vectors / 69 near-double**, not the
+   suite-wide 1 068 / 375 / 167 - with a tripwire against re-transcribing the old pair. And my own
+   sweep's per-section histogram **summed to exactly 400, its own print cap**; section H's true
+   share is 2 911. **Close-out re-measured every testable sentence in the two new headers: the
+   stride backstop's "a hidden-point defect still has to move a key" is FALSE (index 137 moves 0
+   of 54 116, control at 135 moves 10), the three-way solver claim had been two PAIRWISE runs on
+   disjoint inputs (cross-feed then run: PyPy on CPython's 374 vectors, 0 of 4 488 root keys), and
+   "1 294 emitted points" is 1 302 in six places.** Two unreported positives: section G was green
+   first run though its 21 reduce-spine-invisible fields had never been diffed, and the plant
+   carries no state between reader calls (full-trajectory equality on 4 repeated signatures).
+   See [[rust-port-slice-ad-step5]].
+
+6. **Step 6 - the 3 dispatch gates, and THE SLICE CLOSES.** `tests/slice_ad_dispatch.rs`, **three
+   injections across TEN tests**, no source file touched, all ten green first run.
+   **THE FINDING: a FIRST DEFINER still has a PARENT POINTER, because the parent slot carries a
+   REFUSAL.** The pre-flight reasoned from "rung 72 defines all three cells first" to "there is no
+   parent function to install", and concluded the gates had to be hand-written sentinels (AB's
+   declared exception). Measured: `R71_TRIPLE` holds a pointer in all three slots - the shared
+   refusal, the **same address** in `NO_TRIPLE`, `R68_TRIPLE` and `R71_TRIPLE`. So all three gates
+   are plain parent-pointer injections, i.e. **AB's RULE where the pre-flight cited AB's
+   EXCEPTION**; a counterfeit's observability is a property of the body I wrote, a shipped
+   constant's is not. **The SEAT MATRIX run whole is 3 cells x 6 seats = 18 readings, 7 panics and
+   11 silences, where § 5.28 (vii)'s table names 3** - and the eleven silences are TWO mechanisms
+   that read identically (ten laundered by the rig's `at_lever` rebuild, the eleventh a path that
+   never calls the cell), separable only by the OTHER seat. `shared_rig` scored as a **census over
+   all five readers**, not one. **And my own new header typed NINE tests above the TEN that
+   disprove it** - the same nine pre-registered as the run's count - caught by the runner, not by
+   re-reading; the count is now **read off the file's own source** and pinned. Re-measuring the
+   header's other countable claims found one more wrong (AC's laundering gate asserts a row count
+   as well as the identity). **P6 settled clause by clause (i CONFIRMED / ii FALSIFIED / iii
+   carried to AE); P5 CLOSED UNSETTLED** with reason and destination - its subjects are branches
+   inside one body, which no pointer-level instrument reaches; **the six-step count CONFIRMED**,
+   and AC's own seven-step precedent noted as having held and never been marked. Full gate
+   **139 blocks (138 Running + 1 Doc-tests) / 1 409 passed / 0 failed / 0 ignored**, every row
+   predicted before the run and held, plus a re-run of the target on the final tree after two
+   post-launch comment-level edits. See [[rust-port-slice-ad-step6]].
+
+## Slice AI (rungs 79 + 80, `StateCoordinateTransient` + `SplitWallTransient`) — CLOSED 2026-09-29, all seven steps (see the phase line above for steps 3–7)
+
+Pre-flighted 2026-09-26 off **eleven probes**, plan § 5.33. **0 ADD**; 6 swaps over 4 names, all already fields;
+`split_gains` an incompatible reuse (its booking DISCHARGED); two core carriers `phi_ref`/`sm_air`. Leading finding:
+the `_with_coord` value break booked since AE is REAL and REACHED (128 rung-79 branch entries on a rung-79 machine
+running rung 74's `demand_gains`) and MASKED twice — 0 of 196 values move — so its gate is a COUNTER + field
+readback, and rung 79's six class counters go `thread_local!`. P1 = Rust lines 2 700–3 100 (per-class) vs ~2 420
+(per-line); step count NOT scored. See [[rust-port-slice-ai-preflight]].
+
+## Slice AH (rungs 77 + 78, `StiffnessLedgerTransient` + `ResidualGaugeTransient`) — CLOSED, all seven steps (oracle as 6b)
+
+Pre-flighted 2026-09-06 off **fourteen probes**, plan § 5.32, priced at SEVEN steps as a
+DISCRIMINATING prediction (P7: classes ⇒ 7, cells and bodies ⇒ 6). **0 ADD** — `TripleHooks` stays
+at 18 fields, and probe 7 makes that durable past AI/AJ. Its leading pre-flight finding: **a booking
+NO GATE CAN CLOSE is a claim in the WRONG CURRENCY** — the `_b_state`/`_v_state` nest is confirmed at
+six sites across both rungs, every one firing at runtime, and the Rust guard that would remove it is
+value-identical everywhere. See [[rust-port-slice-ah-preflight]].
+
+### Slice AH steps 1 + 2 — SHIPPED 2026-09-08 (`7c0c978`)
+
+Step 1: `stiffness_ledger.rs` (166) + `residual_gauge.rs` (532) — **four re-aimed pointers**, one
+new core carrier (`gauge_k`), zero new hooks fields; `tests/slice_ah_cells.rs`, 5 gates. **The
+pre-flight's "free" RAII repair is BLOCKED** — `slice_y_dispatch.rs` manufactures that exact nest and
+pins the opposite policy on purpose. See [[rust-port-slice-ah-step1]].
+
+Step 2: rung 77's reader layer, six of nine methods — `stiffness_ledger.rs` 166 → **846**;
+`tests/slice_ah_laws.rs`, 329 lines, 7 gates, green first run. **Seven suite bars with no golden
+read**, including the one ABSOLUTE bar available before the oracle (the accel column's stiffness on
+rung 76 § 3's independently measured gain, hit first time). Leading finding: **a doc comment's
+"only" is a claim about a SET while the census behind it counted a TOTAL** — four expression-first
+`1e-9` folds where the sentence said one, false at birth, and step 1 had shipped one of them in the
+wrong spelling. And step 1 had left the citation guard RED (three of five gates), because it ran
+`cargo test` and the guard lives in `pytest`. See [[rust-port-slice-ah-step2]].
+
+Full Rust gate at that state: **157 blocks, 157 of 157 ok, 1 625 / 0 / 0, `CARGO_EXIT=0` off disk.**
+Full `pytest`: **1 387 passed in 19:02.**
+
+### Slice AH step 3 — SHIPPED, RUNG 77 CLOSED
+
+`singular_limit` (§ 3) and `stiffness_ledger` (§ 4): `stiffness_ledger.rs` 846 → **1 208** (+362),
+module total **1 740** of P1's 2 800–3 150. `tests/slice_ah_ledger.rs` — **428 lines, 9 gates, 7 of
+9 green on the first run.** Rung 77 is now **nine of nine methods** ported and gated; everything
+from here is rung 78. Plan § 5.32.3.
+
+**THE LEADING FINDING: `_residuals`' docstring closes with a claim its own class breaks 195 lines
+later — and § 3 does not merely violate it, it DEPENDS on violating it.** The sentence is *"so a
+residual can only ever be evaluated on the plant it was built for."* `singular_limit` builds all
+three residuals inside the frozen block, lets the block close, re-freezes the **stator only**, and
+re-evaluates the SAME closures on the valve's closed loop — and that second reading IS rung 64's
+measurement. So the split is not structural; it is per-call-site discipline, and the two call sites
+in one class want opposite things from one property. Repaired **where it stands**, in `Residuals`'
+doc comment. **Second instance in two steps, same two files** — so the rule is not *audit the
+"only" sentences*, it is that **a universally-quantified doc sentence is a claim about code that
+does not exist yet.**
+
+**MEASURED, NOT ASSERTED, AND THE MEASUREMENT IS A BIT-FOR-BIT EQUALITY.** One closure, one set
+point, three calls differing only in the two frozen-state `Cell`s: both frozen → the open slope
+(> 1); stator only → the closed slope (< 1e-6); **the valve guard RE-ARMED beside the stator's — the
+natural "tidy the two asymmetric blocks into one" edit — → the OPEN number, `to_bits`-equal.** And
+both `Cell`s are read AT the instant of the call, because a port that got the block wrong would
+still produce entirely plausible § 3 output — just the open loop's.
+
+**THE SUITE'S OWN DISCRETE COUNT PORTED AND HELD: 3 of 24 cells invert, every one at
+`margin = 0.40`** — the only absolute cross-language agreement available at a step with no oracle.
+24 live of 24 cells, 2 raw orderings, guarded orderings exactly `{[accel,gov,phi], [gov,phi]}`,
+`sep` 4.45e-2 / `ift_err` 1.89e-8 / `gov_norm` 0.706 / `c_max` 0.223, all inside their bars
+(`ift_err` with the least headroom, 1.6×).
+
+**AND TWO BARS TYPED FROM THE NARRATIVE WERE BOTH FALSE.** `order_stable` and `guarded_stable` were
+asserted true; the suite RETURNS both and GATES NEITHER, and both are false. Repaired by measuring
+the structure instead: every unstable cell sits at `margin = 0.40`, the dormancy corner § 4's own
+narrative names. See [[rust-port-slice-ah-step3]].
+
+**The citation guard ran INSIDE the step** — two new anchors (`engine.py:19944`, `:20009`), checked
+by hand, re-blessed **33/181/112 → 34/183/114, zero arrears.**
+
+**A MEASUREMENT CORRECTION to step 2's own tally:** it recorded `residual_gauge.rs` at 524 and a
+module total of 1 370; the committed file is **532** and always has been, so the step-2 total is
+**1 378**. The eight lines are **not diagnosed**; P1 is quoted on the measured basis from here.
+
+Full Rust gate at that state: **158 blocks (157 `Running` + 1 `Doc-tests`), 158 of 158 ok,
+1 634 / 0 / 0, 0 `error[E`, `CARGO_EXIT=0` off disk** — the +1 block and +9 items predicted
+before the run, matching exactly.
+
+### Slice AH step 4 — SHIPPED, RUNG 78 §§ 1–3
+
+`gauge_scan` (§ 1/§ 2), `root_census` (§ 3), `root_count`, `accel_cap_fn`, `gauge_points`:
+`residual_gauge.rs` 532 → **1 165** (+633), module total **2 373** of P1's 2 800–3 150.
+`tests/slice_ah_gauge.rs` — **526 lines, 12 gates**. Plan § 5.32.4.
+
+**THE LEADING FINDING: eleven gates, green on the first run, could not see THREE OF SIX injected
+defects — and the one that mattered was hidden by the shipped reader's own exclusion.** Reading
+the residual's slope at the SOLVED root instead of the anchor is exactly what Python's comment
+forbids, and it is invisible because the cells where the two differ are precisely the cells the
+reader drops. **The first gate written for it did not catch it either** — it demonstrated the
+physics by calling the helper directly and never went through the reader. What closes it is a
+claim about the reader's own output (`gw == 1 − k·c` at EVERY cell, dropped ones included), which
+is a sharper statement of § 3 than the suite or the spec makes. The two that stayed blind were
+recorded, not gated: a three-argument `max` that agrees with its first argument at 100 of 100
+cells, and a falsy short-circuit that is arithmetically a no-op.
+
+That gate carries § 3's headline on one cell: at riding point 2, gauge `1.1/c`, the roots are
+`1.0` and `1.613·w0`; the damped Newton converges onto the **spurious** one and **reports
+success**; the slope there is `+0.055` where the anchor's is `−0.100`.
+
+**AND THE SLICE'S LEADING HAZARD HAS A SECOND INSTANCE THE PRE-FLIGHT COULD NOT SEE.** § 5.32 (i)
+priced "one hazard, three treatments, one class" on the freeze pair; the sixth declared knob
+`_gauge_k` has the same shape one section apart (save/restore `prev` · clobber to the literal
+`1.0` · the declared helper both ignore), and the clobber is **reachable-wrong inside one call** —
+`_shared_rig` propagates the caller's gauge onto the marched machine, so at `k = 2.5` row 1 runs
+at 2.5 and rows 2–3 at 1.0. A census scoped by a variable NAME cannot see the same defect on a
+different variable.
+
+**The citation guard, run inside the step, found a blindness of its own**: sixteen references
+written as a bare `` `:20404` `` where its pattern matches `engine.py:20404` — ten of them shipped
+by step 1, in the file whose own comment is about citations nobody ran. 33/181/112 → **35/196/121**,
+zero arrears. Measured before writing: `root_count`'s walk-refusal arm fires on ~15 % of all
+79 000 points; its bisection arm fires on 0 of 34 920, so both are driven by hand-built residuals.
+Full Rust gate **159 blocks, 1 646 passed / 0 failed, `CARGO_EXIT=0`**, as predicted.
+See [[rust-port-slice-ah-step4]].
+
+### Slice AH step 5 — SHIPPED, RUNG 78 §§ 4–5, EVERY RUNG-78 BODY PORTED
+
+`gauge_vs_device` (§ 4), `phi_at` + `PhiAtFreeze`, `c_on_frozen`, `gauge_march` (§ 5):
+`residual_gauge.rs` 1 165 → **1 691** (+526), module total **2 899**, inside P1's 2 800–3 150 by
+DOC lines. `tests/slice_ah_march.rs` — **234 lines, 4 gates**. Plan § 5.32.5. **129 of 129**
+returned values bit-identical to a Python run. Injection sweep: 5 of 7 caught, the other 2
+measured exact no-ops. **LEADING FINDING: step 4 shipped the citation guard's count gate RED**
+(its commit reads 202 vs the blessed 196; it re-blessed, then added six citing doc lines) while
+§ 5.32.4 (g) said 5 of 5. Re-blessed 196 → 205 here; rule now: run it after the LAST doc edit.
+Full Rust gate: **160 blocks, 1 650 passed, 0 failed** (as predicted). Full Python gate: **1 387 passed, 0 failed**.
+Owed: ported suite, oracle, dispatch steps. See [[rust-port-slice-ah-step5]].
+
+### Slice AH step 6 — SHIPPED 2026-09-24, BOTH SUITES PORTED
+
+`rust/tests/rung77.rs` (621 lines, 17 gates, 1:1) + `rust/tests/rung78.rs` (541, 12 ported + 2
+declared refusal gates). No module line changed (P1 2 899, P6 0 ADD). Plan § 5.32.6. Both green on
+the first run; a 3-defect injection sweep caught all 3, each by its intended gate.
+
+**P5 HOLDS, and how is the finding:** rung 78's two refusals surface through one march entry in
+OPPOSITE ways — `sensed × gauge` fires at the initial solve and RAISES; the anchored-root refusal
+fires inside the loop's `try/except: break` and becomes a SILENT SHORT trajectory (27/18/45 of 341
+at 1.1/1.05/1.2 × 1/c0; 341 at 0.9) — identical in PyPy and Rust, hit counts too.
+**And a ported `isinstance` compared against the very table the defect rewrites** — vacuous under
+I3 until the negative half (`!= R76.at_lever`) was added; I3 then failed only those two, all 15
+value gates green (P2's shape). Citation guard 35/205/121 → **37/219/129**. Full Rust gate **162 blocks / 1 681 passed** (as predicted); `pytest` **1 387 passed** (21:30). Both verdicts read from the LOG, not the exit capture.
+See [[rust-port-slice-ah-step6]].
+
+### Slice AH step 6 (b) — THE ORACLE, SHIPPED 2026-09-26
+
+`rust/oracle/dump_slice_ah.py` + `rust/tests/slice_ah_oracle.rs`, **29 288 keys**, nine readers on
+both arms + two plants (CLIP ledger march, gauged DEMAND march). **Bit-identical to PyPy AND to
+CPython — zero exemption**, pre-registered from a RUNTIME `sum()` census (one model site, an int
+count) rather than from § 5.32 (iv). **P3 CONFIRMED** on a drive measured to visit all five nest
+sites (110 nests / 811 465 sets; `gauge_vs_device`→`_phi_at` 12); K1 (`PhiAtFreeze` → Python's
+restore-`None`) moves 0 keys. AG's `differ > 0` provenance gate is unsatisfiable by a correct zero
+→ replaced by an `_interp/sum_probe` sentinel. Injection K5 (gauge dropped from P) moved 0 keys →
+`gauged_hits` added; now fails 2. Citation guard 38/220/130. Full Rust gate **163 / 1 685**
+(as predicted); `pytest` **1 387**. Plan § 5.32.6 (i)/(j). **Owed: step 7, dispatch.**
+See [[rust-port-slice-ah-step6b-oracle]].
+
+### Slice AH step 7 — SHIPPED 2026-09-26, SLICE AH CLOSED
+
+`rust/tests/slice_ah_dispatch.rs`, **8 gates**: four swaps x eight seats x both rungs, counters on
+rung 77's `at_lever` and rung 78's `shared_rig`/`cap_fuel`, a per-seat `GAUGE_HITS` tally, and a
+proof that the rebuild helper IS the shipped constructor (seven knobs incl. `gauge_k`). Rows as
+predicted (77 `at_lever` silent x8; 78 `at_lever` and `cap_fuel` move `gauge_march` alone, and
+identically; `shared_rig` silent). Tallies: `at_lever`/`shared_rig` 2,2,2,4,2,2,2,11 (redundancy);
+**`cap_fuel` 0 x7, 6 830 (UNREACHABILITY: only the DEMAND march calls it; predicted everywhere)**.
+First run raced: 838+528 = 1 366 gauged hits on a rung-77 baseline from another gate's march;
+one `Mutex`. P2 by source mutation (delete `at_lever: r77_at_lever,`): 13 failures, all pointer
+comparisons, oracle 29 288 unmoved, a dead_code warning as a free tripwire; "no ported gate"
+clause refuted. **P1 2 899 HELD (per-class); P3/P4/P5 held; P6 0 ADD at 18; P7 NOT MEASURED.**
+Citation guard 39/221/131. Plan § 5.32.7. See [[rust-port-slice-ah-step7]].
+
+## Slice AE (rung 73, `AppliedReferenceTransient`) — IN FLIGHT, steps 1–4 of 5 done
+
+§ 5.29, ten probes. **684 source / 518 test lines, 27 collected (13 slow), 12 methods** — AB's
+shape (706/582), so **FIVE steps predicted**, with the step table emitted and checked to be a
+PARTITION (12 of 12 placed, 0 missing / extra / duplicated).
+
+**The cell column says 0 and measures 1 ADD + 6 SWAPS.** `_with_ref` (69→73) is a **NAME REUSED**,
+not an override — identical arity, disjoint fields (`_ref` / `_ref_law`), and rung 69's inherited
+`reference_bill` **raises** on a rung-73 machine (with a passing control). **§ 5.27 (x) saw the
+pair and cleared it as a harmless RENAME**; the same sentence clears `_with_coord` (74→79), now
+booked to **AF (install) and AI (observe)**, its behavioural verdict left UNDRIVEN because my own
+probe was measured blind. The shipped port is NOT broken — it already dispatches the setter
+through the cell for this exact reason — so what AE owes is the **REFUSAL**, not the cell.
+
+**AD's two carried items both settled.** P6 (iii) **CONFIRMED**: `_reference`'s three paths are
+all live over 260 190 intercepted calls — 41 346 / 109 537 / **109 307 (42.01 %) on the value
+break**, none of which return `req` bitwise; absolute gap median 8.7e−03, and 6 380 calls have
+`req == 0.0` exactly, where a relative spread is undefined (my first headline was a `1e-300`
+guard artifact and is recorded as such). `_quad_gains_at`'s **"unreachable today" booking REFUTED
+BY VALUE**: machine held fixed, pointer swapped — **32 keys move and 70 vanish**, `F_r` going
+−1.000000000002735 → 0.0.
+
+Eight predictions P1–P8, including the CPython exemption pre-registered as a named set with a
+falsifier — and **P1/P7 were jointly impossible as first written** (one claimed a new hook
+field, the other that re-aiming the existing one is the defect, but that slot ships since AB).
+Settled by measurement: **0 reads of `_ref` on a rung-73 machine** against a liveness
+control at 1, so the re-aim is RIGHT, `TripleHooks` stays at **13**, and the shippable
+defect is the
+**missing refusal**. P7 stands FALSIFIED before step 1 rather than quietly rewritten. See [[rust-port-slice-ae-preflight]].
+
+### Slice AE step 1 — SHIPPED 2026-09-01
+
+`rust/src/applied_reference.rs` (five `R73*` tables, **six re-aimed pointers, ZERO new table
+fields**) + `rust/tests/slice_ae_cells.rs`, **15 gates green first run**; **15 mutations, 14 killed,
+1 predicted survivor.** Plan § 5.29.1.
+
+**THE FINDING: my own exact-bits gate was VACUOUS on the branch it existed for.** P5's injection
+(fold `_reference`'s float-identity branch away) **passed** a `to_bits` gate driven at the probe's
+tuple, because `(2.0 + 3.5) - 2.0` is `3.5` exactly. Re-driven at `(0.3, 0.1, 0.1, 0.05)`:
+`0.3` against `0.30000000000000004`, gap `1.85e-16`. Caught only by mutating the step's own source.
+
+**A SECOND SILENT FAILURE THE PRE-FLIGHT DID NOT HAVE**, found by the advisor and measured
+(probe L1): the core's ctor writes `ref_law = "sched"` for the whole family, so a rung-73 machine
+that kept it **passes rung 73's own refusal**, marches rung 72 and reports rung 73 — and the reduce
+arm keeps passing, because the reduce IS that identity.
+
+**P7 holds for step 1's six pointers and is already known false for the seventh** —
+`_quad_gains_at` has no field in any of the five table types, so step 2 takes `TripleHooks` 13 → 14.
+Pre-registered. **`_shared_rig`'s carry is a MEASURED no-op** (`at_lever` already carries the law;
+mutation M11 survives all 15 gates) and is pre-registered as having no value break for step 5.
+See [[rust-port-slice-ae-step1]].
+
+### Slice AE step 2 — SHIPPED 2026-09-01
+
+The gains chain and **all five public readers**: `rust/src/applied_reference.rs` **401 → 1 663
+lines**, `TripleHooks` **13 → 14** (`quad_gains_at`, the slice's one ADD, with the shared refusal in
+every table below rung 72). **`Rust == PyPy` on all 5 066 keys, bit for bit** — 0 differing,
+0 missing, 0 extra. No gate file (the ported gates are step 3). Full gate **140 blocks (139
+Running + 1 Doc-tests) / 1 424 passed / 0 failed / 0 ignored**, every row predicted before the run
+and held. Plan § 5.29.2.
+
+**TWO DEFECTS, BOTH FROM ONE TOOL THAT OUTLIVED ITS SESSION.** The previous session's mutation
+sweep was **still running** — it deleted the dump this session had just driven, left the source
+mutated at rest, and the backup taken against exactly that was itself mutated **at byte-identical
+size** (its mutation was length-preserving). Recovered from **two independently mutated snapshots
+reverted by their own anchors, byte-identical afterwards**. The same tool also rewrote every line
+ending LF→CRLF in six files: a **3-line diff that changed 1 569 lines**, invisible to `git diff`
+under `text=auto`, which failed the one gate in the crate that reads raw source bytes (1 of 6
+`include_str!` sites is ending-dependent — measured).
+
+**NINE MUTATIONS ON TWO SEATS** (does it move a value / would a gate catch it): six move a value,
+**one** moves a gate — the step's shape, not a hole, since the only gates present are step 1's
+plumbing gates. M11 re-run rather than cited: **0 keys and 0 gates alone, 122 keys and 1 gate when
+BOTH law-carries go**, so the shipped docstring is true of the pair and false of the member.
+M17–M21 pre-registered for step 3; M22's zero measured (**101 `-0.0` keys exist**, none in the four
+sets it re-keys) and booked to step 4. See [[rust-port-slice-ae-step2]].
+
+### Slice AE step 3 — SHIPPED
+
+`rust/tests/rung73.rs` — **1 073 lines, 27 ported gates**, 1:1 in order (0 added / 0 collapsed /
+4 split by parameter), **26 of 27 green on the first run**. Plan § 5.29.3.
+
+**THE FINDING: I made the source-count NEEDLE two-sided and left its own CONTROL a bare `== 0`** —
+on a file whose comments warn against that exact string, with the second occurrence already in a
+`grep` output I had read and labelled DOC. It read **2** (both prose: `:309` explains the pin,
+`:324` forbids the rewrite). The two-sided repair is strictly stronger than the `== 0`: the CODE
+count says it is not written, the PROSE count says the counter can SEE.
+
+**TWO PRE-REGISTERED PREDICTIONS MOVED, BOTH BY MEASURING PYTHON AS WELL.**
+**P5 FALSIFIED at 6 of 27 against a predicted 0** — its premise (invisible to every RELATIVE bar)
+is true, but four ported bars are EXACT EQUALITIES and the Python file's own docstring says why.
+The minimal fold is caught by **the same 6 in both languages, name for name** — a bijection between
+the catch sets. **P1's CONCLUSION FALSIFIED at 2 of 27 (and the same 2 in Python) with its REASON
+untouched**: gates 18/19 drive the asserts directly, so blanket deletion is a different injection
+from the unreachable-rung-69-reader one P1 names, which stays step 5's.
+
+**Seats: value discharged by GIT IDENTITY** (the step's whole diff is one new test file), gate seat
+15 → 42. **All five of step 2's value-only rows now CAUGHT (6/2/1/1/2 of 27) — ZERO misses**, so the
+"re-score a miss against Python's own 27" clause has no subject among them and is recorded
+inapplicable with the reason. Declared control fires 13 of 27. `grep` said 28 `#[test]` where
+`cargo` ran 27 — third instance, **first one the file's own header predicted in advance**.
+See [[rust-port-slice-ae-step3]].
+
+### Slice AE step 4 — SHIPPED
+
+`rust/oracle/dump_slice_ae.py` (766 lines, 13 sections) + `rust/tests/slice_ae_oracle.rs` —
+**76 770 keys per arm**, of which **71 044 COMPARED and 5 726 read as declared inputs**. Plan
+§ 5.29.4. **`Rust ≡ PyPy` on every compared key with ZERO port fixes**, on the first run that ever
+compiled — every defect this step found was in the instrument.
+
+**THE FINDING: the one aggregate detector that fired, I tried to EXEMPT with a structural argument
+that cancels arithmetically.** `M/n_pos_zero` read 8 164 against CPython's 8 166 and I argued a
+census mixing port-computed and golden-read values "cannot equal either pure number". **The read
+half contributes the same term to both sides and cancels**, so the residue is the self-computed
+half alone: a deficit of exactly 2, resolving by name to `E/row/6/pole_72` and `F/row/15/pole_72`
+(`1.776e-16` here vs an exact `0.0`) — both already in the drift list I had not yet read, because
+the flips assert aborts before drifts print. **An aggregate is a detector; admit it to an exemption
+only after naming what it aggregates.**
+
+**P9 CONFIRMED WHOLE** — 683 names, the composition (450 self-computed + 233 `L/cp4/*/out` + **0**
+from `L/qr/*/out`) and all seven section counts. Its sharpest clause carried the most: 698 golden
+differences under `L/qr/*/out` reach the port on **zero** keys, because those coefficients are
+declared inputs — fed CPython's own, the port reproduces CPython's roots, so **the quartic root
+finder is MEASURED interpreter-portable** and `_charpoly4`'s `sum()` is the sole origin from a
+second direction. Golden-vs-golden was **891 names wider in L alone** (1 574 vs 683).
+
+**Two more measured:** the success line had been calling 5 726 golden READS "values compared";
+and **63 keys flip `+0.0`-ness between the goldens** — the 2 `*/pole_72` plus **61 imaginary parts
+of quartic roots**, so a marginal root's real/complex classification is interpreter-dependent,
+driven wholly by the coefficients. The oracle had been committed **never having been compiled**:
+five errors, four loud, **the fifth silent** (a gas missing `r_c`/`r_t`, which `GasSpec::default()`
+supplies) and it would have presented as a total port failure.
+
+**The full Rust gate: 141 `Running` + 1 `Doc-tests` = 142 blocks, 142 of 142 ok, 1 458 / 0 / 0, 0 `error[E`** - six of six countable predictions hit, so 1 458 = 1 451 + 7 and step 3's enumeration is confirmed to have excluded this binary. **The SEVENTH row could not be read**: the launch was rebuilt so `$p.ExitCode` would be cargo's own and not `echo`'s, then nothing wrote it to a file and the shell exited - a status is measured when it is ON DISK.
+See [[rust-port-slice-ae-step4]].
+
+### Slice AE step 5 — SHIPPED, SLICE CLOSED
+
+`rust/tests/slice_ae_dispatch.rs` — **1 144 lines, 10 gates**, green. Plan § 5.29.5. Closes the
+three things the slice deferred: P1's **manufactured pairing**, P4's **`_quad_gains_at` seat**, and
+the oracle header's *`at_lever` is the LAUNDERER … that is step 5's subject*.
+
+**THE FINDING: `ptr::eq` on a `const` table is not a table-identity test, and where it PASSED it
+was worse than where it failed.** Every hook table here is a `pub const`, so `&R72_TRIPLE` is a
+fresh promotion per use site; it failed on the one row where the crate's builder supplies the
+pointer, and passed elsewhere only because the machine held the pointer **my own fixture had
+handed the builder three lines earlier** — the agrees-with-itself pattern inside an *install
+proof*. Replaced by 14 `fn_addr_eq`s under an exhaustive destructuring.
+
+**Two gates failed on the first run, both typed from the narrative with the counterexample already
+in my own measurement file** (*the largest move is a cross term* — it is a tie to 1e-15, so not a
+pinnable property; *every injection is live somewhere* — false for two of seven). **And a silent
+panic hook is process-wide**: six gates expect panics, so both real failures printed `FAILED` with
+no message at all. Now one `Once`-installed hook consulting a thread-local.
+
+**MEASURED.** The pairing refuses (`rung-73` … `got "inc"`, in order); **delete the refusal and
+the reader returns the same number twice** — both ledger arms identical, a comparison instrument
+reporting perfect agreement having compared one thing with itself. With rung 69's setter installed,
+`reference_bill` reproduces a real rung-69 machine's reading **byte for byte, all 6 033 chars** —
+but my draft's next sentence (*such a port would ship green*) was **falsified by my own sweep: 24
+of 59 gates fire**, and that injection is not P1 option (1) but option (1) minus the replacement
+setter.
+
+**P4 CONFIRMED, and a THIRD of the break is a SIGN BIT**: 3 keys vanish and 3 move at every one of
+70 / 31 points, and `pair_fr` is `-0.0` under rung 73 against `+0.0` under rung 72, so `==` scores
+140/62 where `to_bits` scores 210/93. That is the **mechanism** under step 2's M22 and step 4's
+P11, which both measured that all 101 `-0.0` oracle keys are `pair_FR` and neither said why. The
+port's discrete set is **3 where Python's is 5** (`f_f`/`r_r` are `f64` fields written `0.0`).
+
+**The seat matrix, 7 pointers x 7 seats**, rediscovers the source's call-site census
+(`quad_gains_at` loud at `applied_gains`, moving `applied_cells`/`ref_discriminator`, invisible at
+`handover_law`/`applied_bill`/a bare march). **Two pointers are silent at all seven seats**, so
+AD's behavioural control is unavailable for them and the live set is a measured partition.
+
+**The sweep, six mutations x four binaries** (baseline 10/15/27/7 = 59 gates green):
+**j5 is caught by this file alone — 3/10 against 0/15, 0/27, 0/7**, pre-registered as such, and it
+is the ABSENT-vs-ZERO distinction `shared_actuator.rs`'s own doc comment claims is load-bearing.
+**j4 is missed by this file, 0/10**, because `injection!`'s `at_lever` re-implements the very carry
+the mutation deletes — a second fixture vacuity, disclosed in the header along with the matrix's
+baseline-relative blindness.
+**The full Rust gate: 142 `Running` + 1 `Doc-tests` = 143 blocks, 143 of 143 ok, 1 468 / 0 / 0, 0 `error[E`, and `CARGO_EXIT=0` READ OFF DISK** — **seven of seven**, and the seventh is the row § 5.29.3 (j) left empty and § 5.29.4 (g) could only derive. The rule those two wrote was followed literally: the redirect that captures stdout captures the code beside it in the same command.
+See [[rust-port-slice-ae-step5]].
+
+## Slice AB, step by step
+
+1. **Step 1** — `src/reference_split.rs` 519 lines, 13 cell gates; nine swapped bodies panic.
+2. **Step 2** — the nine bodies + six readers, 1 641 Rust lines from 713 Python (2.30×).
+3. **Step 3** — the **25 ported gates** of `tests/rung69.rs` (851 lines, green first run); full gate
+   **127 binaries / 1 241 passed / 0 failed**. A ten-injection sweep caught 9; the one hole, the
+   root finder's Newton budget, was settleable only by step 4's oracle.
+4. **Step 4** — the oracle: `dump_slice_ab.py` + `slice_ab_oracle.rs`, **15 957 keys per arm**,
+   `Rust ≡ PyPy` on all of them after ONE fix (`py_half` — Python's `0.5 * z` is a complex product,
+   not a scaling). CPython arm exempt on **194 named keys, two causes**. See
+   [[rust-port-slice-ab-step4]].
+5. **Step 5** — `tests/slice_ab_dispatch.rs`, **725 lines, 14 gates**: each of the ten cells swapped
+   for its PARENT's function pointer (P2's letter), plus one declared counterfeit for `with_ref`.
+   All ten observable, the count EMITTED. **Two of the pre-flight's four "breaks by PANIC" break by
+   VALUE** — `triple_rig` and `manifold_v`, because rung 68's bodies for those two read no field at
+   all. See [[rust-port-slice-ab-step5]].

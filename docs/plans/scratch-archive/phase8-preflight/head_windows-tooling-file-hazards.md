@@ -1,0 +1,134 @@
+---
+name: windows-tooling-file-hazards
+description: "The running catalogue of silent file-tooling hazards on this box — each one corrupts output or misreports a status while reporting success. PyPy unflushed writes, PowerShell UTF-8 double-encoding, backticks in a -m message, a status read off the runner, a log still being written, and a text-mode rewrite that flips every line ending behind git's normalisation — plus `cmd`'s parse-time `%ERRORLEVEL%`, which can only ever report success, and `start` eating the first quoted argument as a window title"
+metadata: 
+  node_type: memory
+  type: feedback
+  originSessionId: 454e5108-5b41-4abd-b607-eac9932757b5
+  modified: 2026-08-12T06:22:47.728Z
+---
+
+Two file-writing hazards hit in one session on this box, both silent.
+
+**1. PyPy does not refcount.** `open(p, "w").write(s)` leaves the handle unflushed, so the file
+is **truncated at a buffer boundary** — a small file lands at 0 bytes while a large one looks
+plausible. CPython closes it immediately, so the same script is correct there and broken under
+the repo venv. Always `with open(p, "w") as fh:`.
+
+**2. PowerShell 5.1 `Get-Content -Raw` + `Set-Content -Encoding utf8` destroys UTF-8.** It reads
+as the system ANSI codepage and writes back as UTF-8, so every non-ASCII character is
+double-encoded (`∫` → `âˆ«`, `§` → `Â§`) and a BOM is prepended. The build still succeeds, so
+nothing fails — the damage is only visible by reading the file. Recovery is a byte round-trip:
+strip `﻿`, `UTF8.GetString` the bytes, re-encode with codepage 1252, write raw bytes.
+
+**3. BACKTICKS IN A DOUBLE-QUOTED `git commit -m` ARE COMMAND SUBSTITUTION.** Writing
+`-m "the algebra is sound (\`with_vsv\` sets only \`vsv\`)"` makes bash run `with_vsv` as a
+command and splice its (empty) output in, so the message ships with **every backtick-quoted
+identifier silently deleted** — `bash: with_vsv: command not found` scrolls past on stderr while
+the commit succeeds. This project's messages are dense with `code_names`, so the loss is
+invariably load-bearing. **Always `git commit -F -` with a quoted heredoc** (`<<'EOF'`), which is
+what the long messages already use — the hazard is only in the short `-m` path, which is exactly
+where it feels safe to skip the heredoc.
+
+**And the same class, twice, in the same session:** `cargo test | tail -45` reports **tail's**
+exit status, and `cmd; echo "X=$?" >> log` makes the *echo* the last command, so the harness
+reports the echo's success. **A status read off the runner is not the command's status — write it
+into the artefact and read it back.**
+
+**5. AND A LOG THAT IS STILL BEING WRITTEN IS A VALID PREFIX OF A GOOD ONE.** On 2026-09-01 the
+full Rust gate's log held 125 `test result: ok` blocks summing to 1 335 passed, 0 failed — both
+numbers plausible, both within a couple of targets of the real answer, and **no line anywhere
+saying it was incomplete**. The run had not finished; twelve minutes later it exited 0 at
+**137 blocks / 1 393 passed**. Read at the wrong minute the gate row would have said *down two
+targets and thirty tests*, which reads as a regression and sends you chasing nothing. A truncated
+`cargo test` or `pytest` log carries no error text, because every line in it is true. **Never sum a
+log you did not watch exit.** The check is structural, not a sum: a sum over result blocks cannot
+detect a *missing* result block, so count the lines that ANNOUNCE a target (`     Running `, plus
+`Doc-tests`) and require them to equal the result blocks — and take the exit status from the
+process object, not from a tail.
+
+**6. AND A PYTHON TEXT-MODE REWRITE FLIPS EVERY LINE ENDING, WHICH `git diff` THEN HIDES.**
+`io.open(p, encoding=...).read()` collapses CRLF to LF and `io.open(p, "w", encoding=...).write(s)`
+translates every LF back to `os.linesep`, so on Windows a file that was LF comes back **CRLF in
+full**. With git's `text=auto` the endings are normalised on read, so `git diff`, the diffstat and
+`git show` all report only the lines you meant to change — on 2026-09-01 a **3-line** diff had
+rewritten **1 569** line endings and nothing in the review path could see it. It surfaced only in a
+gate that reads raw source bytes at compile time (`include_str!`) and scopes its search with a
+newline-brace-newline pattern: that separator does not exist in a CRLF file, so the scope ran to
+the end of the file and the gate fired. **Read AND write with `newline=""`**, and have any
+script that restores a file assert the restore is **byte for byte**, not merely that the file is
+back. When a gate over raw source fails on a step that added three lines, suspect the ENCODING
+before the lines. **AND IT WAS COMMITTED ONCE MORE IN THE SAME SESSION, BY ME.**
+The insertion that added this very paragraph used a bare newline against a CRLF file, leaving
+**three memory files MIXED** (1, 25 and 13 bare LFs). The plan insertion in the same session did
+NOT, because it matched the target file's ending first — so the guard existed and was applied at
+one of four sites. Caught by measuring the endings after committing, not before. **Any script
+that inserts text into a file must take the ending FROM THAT FILE**, at every site, and the check
+is one line: bare LFs (`LF count - CRLF count`) must be 0 or the whole count.
+
+**AND `cmd /c "cargo test > LOG 2>&1 & echo CARGO_EXIT=%ERRORLEVEL%"` WRITES THE ERRORLEVEL FROM
+BEFORE THE COMMAND.** `cmd` expands `%VAR%` when it PARSES the line, so the status is baked in at
+parse time and the log says `CARGO_EXIT=0` whatever happened. Caught on 2026-09-08 only because a
+build with three `error[E0271]`s still wrote `CARGO_EXIT=0` beside them. **A status facet that
+cannot report anything but success is a decoration**, and this is the same class as the `tail`
+and trailing-`echo` cases above — third instance. Use `cmd /v:on /c "... & echo X=!ERRORLEVEL!"`,
+or better the POSIX subshell the plan already mandates:
+`( cargo test > FILE 2>&1; echo "CARGO_EXIT=$?" >> FILE )`.
+
+**AND THE `$p.ExitCode` HAZARD BELOW WAS HIT AGAIN IN THE SAME SESSION THAT WROTE THE LINE ABOVE**,
+three times, each time producing a bare `EXIT=`. It is recorded here and it still did not reach the
+hand writing the command. **A hazard file only works if it is read before the command, not after
+the surprise** — so the two fixes are stated once more, together: `$p.Refresh()` before reading
+`ExitCode`, or `(Start-Process ... -Wait -PassThru).ExitCode`.
+
+**AND THE CHECK FOR HAZARD 6 WAS ITSELF ONE.** On 2026-09-08 the line-ending audit was
+`grep -c $'\r' FILE`. In this shell the `$'...'` escape was NOT interpreted, so grep searched for
+the LETTER `r` and reported every file — prose, JSON, Rust — as pure CRLF at exactly its own line
+count. The conclusion drawn from it, *no flips*, was stated to the user and was wrong: measured
+properly over raw bytes, one `.rs` file HAD been flipped to CRLF by a text-mode repair script and
+one memory file had been left MIXED. **The instrument for a hazard in this file was an instance of
+the hazard class in this file**, and its failure mode was the flattering one — a uniform,
+plausible, wrong answer with no error in it. **Measure line endings in Python over `open(p,"rb")`
+bytes** — count `\r\n`, count `\n` minus that, and require one of the two to be zero — never with a
+shell escape whose interpretation you have not checked on a file you know the answer for.
+
+**7. `cmd //c start //belownormal //b //wait "<python.exe path>" script.py` DOES NOT RUN THAT PYTHON.**
+`start` takes its FIRST QUOTED ARGUMENT as the WINDOW TITLE. The quoted interpreter path became the title, so
+`script.py` was launched through the `.py` file association (`C:\WINDOWS\py.exe`, system CPython, not the
+PyPy venv), and a `-m pytest` launch never started at all: it sat on a hidden error with `/wait` holding
+the shell until it was killed by its captured PID. Hit 2026-09-26 in the slice AI pre-flight. Nothing
+errors. The output looks right, because the wrong interpreter also runs the script. **Always
+`start "" //belownormal //b //wait "<exe>" args`.** Then confirm the child's interpreter and priority
+(Win32_Process CommandLine + Priority 6) before trusting what it prints. **HIT AGAIN 2026-09-29** (slice AJ step 4): a whole `*_pypy.tsv` oracle written by CPython 3.14, because [[run-tests-below-normal]]'s recipe did not carry this warning — now it does. Prefer PowerShell `Start-Process -FilePath`, and make the script print `sys.version`.
+
+**Why:** all of these corrupt output while reporting success, and this project's deliverable is prose —
+20,000+ lines of derivation comments full of `∫`, `§`, `Δ`, `φ`, `≈`. A mangling that survives
+a green build is exactly the kind of damage that gets committed.
+
+**How to apply:** use the **Edit/Write tools** for source files, never PowerShell text
+round-trips. Reserve PowerShell for running commands. If a bulk edit really needs scripting,
+operate on bytes, or verify afterwards by grepping for `âˆ|Â§|Ã|ï»¿`. Related:
+[[rust-port-decided]], [[pypy-switch-shipped]].
+
+**`Start-Process -PassThru -NoNewWindow` leaves `$p.ExitCode` EMPTY after `WaitForExit()`.** Slice
+AG step 4 launched the `pytest` gate that way to get BelowNormal priority, and the status file on
+disk read `PYTEST_EXIT=` — the run's verdict had to rest on the summary line instead. This is the
+other half of *a status is measured when it is ON DISK*: there, the number was on disk and the
+status was not written; here, the write happened and the value was empty. **The fix is
+`$p.Refresh()` before reading `ExitCode`, or `(Start-Process ... -Wait -PassThru).ExitCode`.** Use
+one of them whenever a run's exit code is going to be quoted, and never re-run a 15-minute suite
+just to recover a status you can capture correctly the first time.
+
+**`cmd /c start /b /wait x.cmd` runs the batch under `cmd /K` — the shell NEVER EXITS.** Slice AI
+steps 2–3 (2026-09-28) launched their gates that way for below-normal priority. The batch finished,
+but its `cmd /K` window stayed open: the background task never reported done and stale windows
+piled up. **It cost no time** — a marker file the batch writes still fires; the slow session was the
+gates themselves (cargo 47 min, pytest 28 min) on a box loaded by other work. **The fix is an `exit` as the batch's LAST
+line** (or `start ... cmd /c x.cmd`). Check with `Get-CimInstance Win32_Process` for a leftover
+`cmd.exe /K <your batch>`, and close it by that PID.
+
+**The venv's `pytest.exe` launcher exits 1 with NO output, even run directly** (slice AI step 7,
+2026-09-29: `pytest.exe --version` → exit 1, empty stdout/stderr). A background gate launched through
+it "completed" in seconds with `PYTEST_EXIT=1` and a 0-byte log — only the exit file and the
+implausible duration said so. Not diagnosed (likely a stale launcher path). **Launch the gate as
+`.venv\Scripts\python.exe -m pytest`**, which works, and treat a gate that ends in seconds as not run.
