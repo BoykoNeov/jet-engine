@@ -4,7 +4,7 @@
 README). **Slice 3 (off-design, "Fly it") BUILT 2026-10-07 — § 10**; what the build found beyond
 the plan is § 10.8. **Slice 2 (blade speeds, "Size the blades") BUILT 2026-10-07 — § 11**; what the build found
 beyond the plan is § 11.8. **Slice 4 (the transient) PLANNED 2026-10-07 — § 12, answered (§ 12.8); part (A), the slam, BUILT
-2026-10-07 — what the build found is § 12.9; part (B) next.** Drafted 2026-10-06, after rung 85 shipped. Direction (user,
+2026-10-07 — what the build found is § 12.9; part (B), the Controls view, BUILT 2026-10-08 — § 12.10.** Drafted 2026-10-06, after rung 85 shipped. Direction (user,
 2026-10-06): the project becomes a **sandbox** — change the engine's components and design numbers
 and watch it respond — delivered as an **interactive web page running the Rust model live**, beside
 the charts page and the cutaway (`docs/visuals/`).
@@ -758,3 +758,49 @@ time constants, no seconds knob.
   9.2e-15, table 9.4e-11).
 - **Screenshots** came out right first time; a `SANDBOX_SHOTS=1` run wrote them into a folder named `1`
   in the repo (the variable is a PATH) — moved out, not committed.
+
+### 12.10 What the build of (B) found beyond the plan (2026-10-08)
+
+Built as `src/sandbox_controls.rs` (its own module, not inside `sandbox_transient.rs`: the two views share
+no engine). Measured in a scratch crate (`W:\temp\claude\jet-controls-map`, not in the repo): a 2 000-request
+sweep over a wide box, then 3 000 over the slider box, every stop's REAL message read first.
+
+- **The § 12.2 "floor above the start" stop has two messages, both seen**: rung 49's *"floor … UNREACHABLE"*
+  (no fuel cut restores the flow coefficient) and rung 43's *"fuel closure does not bracket"*. They split by
+  WHICH call failed, not by cause guessed from the trajectory: § 12.4's "classify from the trajectory" was
+  replaced by a RE-RUN of the failed step through the public pieces (`try_instant_fuel` and the three legs'
+  set-point solves), held bit-equal to every recorded step on the plain route and on rung 52's lagged route
+  (which records its third state). Rung 47's lagged governor does NOT record its state: a stop there is
+  said as "cause not known", never guessed (2.2 % of the box).
+- **A stop the plan did not foresee — the model's every-step check**: the plain march first works the engine
+  out at the FULL SCHEDULED fuel (to see whether a limiter is needed); when a limiter holds the fuel far below
+  the schedule, that check has no answer at the slowed shafts and the run dies, though the burning fuel is
+  fine. Identified by asking the model (advisor, checked): at the failing state the closure is re-run at the
+  CUT fuel (the last point's fraction of the scheduled one); the stop is the method's only if that solves.
+  89 of 90 such stops in the slider box did; the one that did not (a 4 % cut on a fast slam) is classed rich.
+  Said as the method's limit; on CLAUDE.md's open list beside rung 34's low wall.
+- **Without a limiter cutting, a failed closure sits at one of rung 43's two fuel-air walls**: fast cuts at
+  0.71–1.05 × `F_FLOOR` (0.004), fast slams at ~1.03 × `F_CAP` (0.065) — so "lean" / "rich" are read off
+  the failing call's mixture (its fuel over the last point's face flow) against the walls' geometric middle,
+  with a test holding each example within 2× of its wall.
+- **Four crashes, all the acceleration schedule's own steady rows** between two working endpoints, all with
+  a lever schedule doing its travel just below design speed. The table is now built through the fallible
+  equilibrium (the model's arithmetic line for line, held bit-equal to `accel_schedule`) and a gap is refused
+  in words. The lever sliders stop at 0.8 of design speed and 0.3 travel; the endpoint failures left are
+  low throttles on the flat-LP map (below 690–890 K), refused in words.
+- **Step 0.02 kept**: at ρ 0.2 / 1 / 5 the trajectory agrees with step 0.005 to ~1e-4 in flow coefficient,
+  but a sharp temperature spike can fall between points (10.7 K low with the floor on) — said on the page.
+  An attack time of a quarter step lost accuracy (2.5 K), so both lags start at one step. Runs are capped at
+  10 τ (slowest requests 1–3.7 s native, all long and limiter-armed); the two time sliders can add past it,
+  which is refused in words. (A)'s whole-step ramp rule re-measured here: the bare slam's peak moves 7.5 K
+  with the step at a ramp of 0.51, 0.0 K at 0.5.
+- **A floor far out of reach stops at the very first step** (42 of the wide sweep's floor stops): no points,
+  the first evaluation re-made, the page shows the words over empty charts.
+- **"Which limiter holds" is exact only for a limiter acting WITHOUT a lag on its route**: on the lagged
+  routes a lagged cut converges onto its set point, and the first bar (1e-7) separated the classes by a hair.
+  Counting only unlagged legs: holding ≤ 4.8e-15, not holding ≥ 3.2e-6; bar 1e-10.
+- **Browser ≠ native beyond slice 1's perfect-gas bar**: the Controls numbers come out of iterated solves
+  (closure 1e-12, legs 1e-13), so they get their own bar (1e-11; worst 2.1e-13), and the "settled" gap — a
+  difference of two speeds — is compared absolutely.
+- **The phone screenshot squeezed the table** (a sentence-long cell that would not wrap) — fixed; light, dark,
+  stopped and fuel views looked right.

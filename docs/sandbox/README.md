@@ -113,6 +113,30 @@ airflow search's first trial asking the burner to cool the air (a solver artefac
 runs through); a time step too coarse for a very fast shaft (Mach 3.3). A crash in a steady solve names
 the throttle it happened at. The equilibrium gas is refused: the model cannot meter fuel on it.
 
+## Slice 4 (B) — Controls (shipped 2026-10-08)
+
+Press **Controls**: a throttle slam on a SEPARATE two-shaft engine (the *Size the blades* engine at its
+opening settings, perfect gas), with the fuel controls and one airflow lever as switches
+(`sandbox_controls.rs`, plan § 12, what the build found § 12.10). Both shaft speeds lag; the fuel is metered
+and the turbine temperature overshoots.
+
+**Knobs:** map shape (four), the LP shaft's response time against the HP's, the two throttles, how long the
+fuel move takes and the run continues. **Switches**, each with its number: turbine temperature limiter and its
+lag (rungs 46/47), acceleration schedule (48), stall floor on either compressor, watching the flow coefficient
+or — with the stators moving — blade incidence (49/60), realistic fast-in slow-out release (52); one lever:
+stators or bleed valve, scheduled on speed (57/62).
+
+**Readouts:** turbine temperature against the redline, both shaft speeds, burnt vs scheduled fuel, each
+compressor's flow coefficient against its (moving) stall line and the floor, thrust (the bleed's dumped air
+pays its ram drag), the lever's setting; a strip showing which control holds the fuel at each moment; tiles
+and a table, with pin & compare. Each run on its own Worker, killed by a knob move.
+
+**A run that stops early is a result**, by kind, re-run step for step through the model's public calls: the
+floor could no longer be held; the model's every-step check at the full scheduled fuel had no answer while a
+limiter held the fuel below it (the method's limit); the mixture left the fuel solver's range, lean or rich.
+With the temperature limiter's lag on, the march does not record its state, and the stop is said without a
+cause.
+
 ## How it is built
 
 | Piece | What it is |
@@ -120,6 +144,7 @@ the throttle it happened at. The equilibrium gas is refused: the model cannot me
 | `rust/src/sandbox.rs` | The whole bridge, ordinary Rust: settings JSON in → `build_turbojet(…).run(…)` → full-precision JSON out. Tested natively (`tests/sandbox.rs`). |
 | `rust/src/sandbox_blades.rs` | Slice 2's ops (`blade_*`), reached through `sandbox::call` (`tests/sandbox_blades.rs`). |
 | `rust/src/sandbox_transient.rs` | Slice 4's ops (`slam_defaults`, `slam`), reached through `sandbox::call` (`tests/sandbox_transient.rs`). |
+| `rust/src/sandbox_controls.rs` | Slice 4 (B)'s ops (`controls_defaults`, `controls`), reached through `sandbox::call` (`tests/sandbox_controls.rs`). |
 | `rust/src/atmosphere.rs` | The 1976 standard atmosphere (`tests/atmosphere.rs`, held to the published table). |
 | `rust/sandbox-wasm/` | A tiny separate crate: only the browser exports around `sandbox::call`, and the panic hook that keeps a crash's message readable. Not built by `cargo test`. |
 | `template.html` | The page; `/*__SANDBOX_WASM_B64__*/` receives the build as base64. |
@@ -155,6 +180,10 @@ red until the page is rebuilt and committed — the numbers have not changed.
   `integrate_fuel`, bit for bit; both steady ends are slice 3's fly points; a held throttle holds and
   a settling run approaches its end (measured bars); the stop replay reproduces the march step for step;
   every kind of early stop the crash map found is driven by a request that raises it.
+- `tests/sandbox_controls.rs` — slice 4 (B): every run IS rung 43's `integrate_fuel` on rung 62's machine,
+  built in the test from literal numbers; every switch is checked where it binds and the holder names it; a
+  dormant redline is the bare run; the acceleration table is `accel_schedule`'s, bit for bit; the re-read and
+  the stop re-run reproduce the march point for point; each stop kind, refusal and precheck driven by its case.
 - `tests/sandbox_page.rs` — the joints: the page is its template + its build; every element the
   script looks up exists; every knob (design and fly) is a setting and back; the dropdowns offer the
   model's choices; every export and op the page uses exists.
@@ -166,7 +195,9 @@ red until the page is rebuilt and committed — the numbers have not changed.
   the blades — the default cell, the streamed lever, unreached and unmodelled throttles, blades that cannot
   be built, a slow sweep stopped by a knob move; and the slam — the opening run against native, the
   fuel overshoot, an early stop in words, a below-idle start naming its throttle, a run stopped by a knob
-  move, the refusal on the equilibrium gas).
+  move, the refusal on the equilibrium gas; and Controls — the opening run against native, the temperature
+  limiter switched on, pin & compare, a refused combination, an early stop in words, the incidence floor, a run
+  stopped by a knob move).
   Needs Node ≥ 22 and Chrome. `SANDBOX_SHOTS=<folder>` also saves light, dark and phone screenshots
   of the fly view — look at them: a layout bug passes every behaviour check.
 
@@ -174,9 +205,9 @@ red until the page is rebuilt and committed — the numbers have not changed.
 maths library, Windows its own. On the perfect gas they agree to ~1e-14; on every table gas the
 temperature solver (`gas::SOLVE_TOL` = 1e-11) stops at a different iterate inside its tolerance, so
 they agree to ~1e-10 (worst at the constant-flow stall margin, a ratio minus 1). `check.mjs` holds them to 1e-13 / 1e-9 (entropy absolutely: 1e-10 / 1e-6 J/(kg·K)).
-The user accepted this difference (plan § 9.4); bit-exactness stays the CLI's job.
+The user accepted this difference (plan § 9.4); bit-exactness stays the CLI's job. The Controls runs, though on
+the perfect gas, come out of iterated solves (stopping at 1e-12), so they get their own bar: 1e-11 (worst 2.1e-13).
 
 ## Next slices
 
-Slice 4 (B): the two-shaft *Controls* view — the fuel limiters and one airflow lever as switches
-(plan § 12). Then the combustor (slice 5) — plan § 5.
+The combustor (slice 5) — plan § 5.

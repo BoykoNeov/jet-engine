@@ -31,13 +31,22 @@ import { readFileSync } from 'node:fs';
 // same travel; the integer and yes/no outputs (stage counts, `reached`) compare exactly under these
 // bars, and the zeros (design pre-swirl at lambda 0, travel at the design point) came out exactly 0
 // in both. The bars stand.
+// SLICE 4 (B)'s Controls requests get their OWN bar, measured 2026-10-08 (15 requests, 170 in all, 80082
+// numbers): perfect gas, but every point comes out of iterated solves -- the fuel closure stops at 1e-12
+// (`FuelTransientCore::CLOSE_TOL`), the limiters' set points at 1e-13 -- so, like the table gases, the two
+// builds stop at different iterates inside those tolerances, and a march carries that along. Worst seen
+// 2.13e-13 relative (the stator setting late in the hardest run: the incidence floor on the
+// stator-scheduled flat-LP map). Bar 1e-11 = 10x the closure's tolerance, ~50x the worst. `settled_lp` /
+// `settled_hp` are the gap between two nearly equal speeds, so they are compared ABSOLUTELY, as entropy
+// is: worst seen 8.4e-15, bar 1e-11.
 // Entropy lives in the station points (`.s`) and as the first element of each curve pair
 // (`ts_burner.N.0`, `ts_reject.N.0`) -- where it can be exactly 0 (the cooling curve ends ON the
 // ambient datum), so only an absolute bar means anything.
-const ENTROPY = /\.s$|\.ts_(burner|reject)\.\d+\.0$/;
+const ENTROPY = /\.s$|\.ts_(burner|reject)\.\d+\.0$|\.settled_(lp|hp)$/;
 const BARS = {
   perfect: { rel: 1e-13, s_abs: 1e-10 },
   table: { rel: 1e-9, s_abs: 1e-6 },
+  march: { rel: 1e-11, s_abs: 1e-11 },
 };
 
 const [page, nativeTxt] = process.argv.slice(2);
@@ -65,7 +74,7 @@ function compare(a, b, path, fails, kind) {
     const isS = ENTROPY.test(path);
     const d = isS ? Math.abs(a - b) : Math.abs(a - b) / Math.max(Math.abs(a), Math.abs(b));
     const bar = isS ? BARS[kind].s_abs : BARS[kind].rel;
-    const key = kind + (isS ? ' entropy (abs)' : ' relative');
+    const key = kind + (isS ? (kind === 'march' ? ' settled gap (abs)' : ' entropy (abs)') : ' relative');
     if (!worst[key] || d > worst[key].d) worst[key] = { d, where: path };
     if (!(d <= bar)) fails.push(`${path}: browser ${a} vs native ${b} (${isS ? 'abs' : 'rel'} ${d.toExponential(2)} > ${bar})`);
     return;
@@ -92,8 +101,9 @@ for (const [i, line] of lines.entries()) {
   catch (e) { fails.push('the browser build trapped: ' + e); ex = (await WebAssembly.instantiate(bytes, {})).instance.exports; ex.init(); }
   const r = JSON.parse(req), gas = r.settings ? r.settings.gas : r.fly ? (r.fly.gas ?? 'thermally_perfect')
     : r.blades ? (r.blades.gas ?? 'perfect')
-    : r.slam ? ((r.slam.fly && r.slam.fly.gas) ?? 'thermally_perfect') : undefined;
-  const kind = gas === 'perfect' ? 'perfect' : 'table';
+    : r.slam ? ((r.slam.fly && r.slam.fly.gas) ?? 'thermally_perfect')
+    : undefined;
+  const kind = r.op && r.op.startsWith('controls') ? 'march' : gas === 'perfect' ? 'perfect' : 'table';
   if (browser !== undefined) compare(browser, JSON.parse(native), `#${i}`, fails, kind);
   if (fails.length) { failed++; console.log(`test grid #${i} ... FAILED\n  ${fails.slice(0, 5).join('\n  ')}`); }
   else passed++;

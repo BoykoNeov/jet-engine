@@ -9,7 +9,7 @@ forces every thermodynamic assumption into the open. Optimize the work for
 teaching, not for features or polish.
 **Direction (user, 2026-10-06): a SANDBOX** — the user changes components and designs and watches
 the engine respond. A new effect ships as KNOBS with every result shown, not a pass/fail verdict;
-the web page running the Rust model live is `docs/sandbox/` (slices 1–3 + 4A built; plan `docs/plans/sandbox-plan.md`).
+the web page running the Rust model live is `docs/sandbox/` (slices 1–4 built; plan `docs/plans/sandbox-plan.md`).
 
 > **⚠ This file is a REFERENCE / index — not a handout.** Keep it compact.
 > The rung table is **one line per rung**; each rung's derivation, assumptions,
@@ -171,7 +171,8 @@ Never re-open one, and never re-enumerate them here.
 - **Detailed Fenimore** (`CH+N₂→HCN`) and **super-eq-O radical decay** — need new species / a relaxing pocket.
 - **Reacting-gas fuel control** (35/43 defer — the forward burner asserts against an equilibrium gas).
 - **The subsonic / unchoked LP branch** in the two-spool solves (38 flags, unsolved) and its **transient**.
-- **Rung 34's commanded-`Tt4` closure** starts its airflow search at a FIXED low wall: on a fast commanded cut that trial asks the burner to cool and the march stops though a root exists — `docs/plans/sandbox-plan.md` § 12.9.
+- **Rung 34's commanded-`Tt4` closure** starts at a FIXED low airflow wall: a fast cut stops though a root exists — sandbox § 12.9.
+- **Rung 43's min-select march** solves the FULL scheduled fuel each step: a deep limiter cut stops it though the cut fuel solves — § 12.10.
 - **Rung 33's dispatch floor**: below ~455 K its choked trial leaves the gas tables, ABOVE idle — `docs/rung33-spec.md`.
 - **Fuel + bleed + STATOR** on one plant (rung 63's seam, untouched by 64/65).
 - **Off-design at a new ALTITUDE**: every matcher (1- and 2-spool, bleed) keeps the DESIGN ambient as nozzle back-pressure (`p_ambient`); shipped callers hold `p0` fixed. Sandbox overrides per flight — `docs/plans/sandbox-plan.md` § 10.8.
@@ -216,7 +217,7 @@ tag **`python-final`** keeps it, and every `engine.py:N` / `test_rungN.py` citat
 - `docs/visuals/` — two **BUILT** pages (charts, cutaway): `cargo run --release -- visuals` writes
   `data.json` and splices both (`-- splice` re-splices only). Cycle change ⇒ rebuild **and
   republish**; `tests/visuals.rs` gates the joints.
-- `docs/sandbox/` — the SANDBOX page (not a rung): `src/sandbox.rs` (+ `sandbox_blades.rs`, `sandbox_transient.rs`) + `src/atmosphere.rs`, browser shell
+- `docs/sandbox/` — the SANDBOX page (not a rung): `src/sandbox.rs` (+ `sandbox_blades.rs`, `sandbox_transient.rs`, `sandbox_controls.rs`) + `src/atmosphere.rs`, browser shell
   `rust/sandbox-wasm/`. Cycle/template change ⇒ `rust/sandbox-wasm/build.ps1` + commit (gated). See its README.
 - `docs/rungN-spec.md` (contents: see the banner); `docs/plans/rungN-anchor-*.md` — that rung's
   verified anchor data. `docs/plans/` holds the plan/tasks.

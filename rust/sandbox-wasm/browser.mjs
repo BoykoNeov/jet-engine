@@ -285,11 +285,60 @@ try {
   const kills = await ev('window.sandbox.kills');
   check('a_knob_move_stops_a_slow_sweep_and_the_new_one_finishes', busy && done16 && kills > killsBefore, `busy ${busy}, done ${done16}, kills ${killsBefore} -> ${kills}`);
 
+  // 16b. CONTROLS (slice 4 B). The opening run is the native `{"op":"controls","controls":{}}`, and the view
+  // shows its own knobs and cards.
+  await ev(`document.getElementById('mode-controls').click()`);
+  const cOpen = await waitFor(`window.sandbox.view() === 'controls' && window.sandbox.ctlState === 'done' && window.sandbox.last && window.sandbox.last.controls !== undefined`, 30000);
+  const c0 = await ev('window.sandbox.last');
+  const ec = c0 ? close(c0, nativeOf('{"op":"controls","controls":{}}')) : 'no run';
+  const cvis = await ev(`['ctl-set','ctl-sw-set','ctl-lever-set','ctl-out','ctl-card','flight-set','ts-card','blades-set'].map(i => document.getElementById(i).hidden)`);
+  check('controls_open_on_the_bare_run_and_match_native', cOpen && !ec && JSON.stringify(cvis) === '[false,false,false,false,false,true,true,true]', (ec || '') + JSON.stringify(cvis));
+  // A switch: the temperature limiter, through its checkbox, cuts the fuel and holds the redline.
+  await ev(`(() => { const c = document.getElementById('ctl-redline_on'); c.checked = true; c.dispatchEvent(new Event('change')); })()`);
+  const capped = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.redline_on === 1`, 30000);
+  const rl = await ev(`[Math.max(...window.sandbox.last.Tt4), window.sandbox.last.holder.filter(h => h === 'redline').length, document.querySelectorAll('#ctl-chart .hold-redline').length, document.getElementById('v-cpk').textContent]`);
+  check('the_temperature_limiter_switch_holds_the_redline', capped && Math.abs(rl[0] - 1480) < 1e-6 && rl[1] > 10 && rl[2] === rl[1] && /^1,480/.test(rl[3]), JSON.stringify(rl));
+  // Pin & compare: pin the limited run, switch it off, and the pinned column and line appear.
+  await ev(`document.getElementById('pin').click()`);
+  await ev(`window.sandbox.controls({redline_on: 0})`);
+  const pc = await ev(`[document.getElementById('ctl-pin-head').textContent, document.querySelectorAll('#ctl-chart .tpin').length, document.getElementById('d-cpk').textContent]`);
+  check('pin_and_compare_overlays_the_pinned_run', pc[0] === 'Pinned run' && pc[1] === 1 && /^\+/.test(pc[2]), JSON.stringify(pc));
+  // A combination the model refuses, in words: a release lag with nothing to lag.
+  const rf = await ev(`window.sandbox.controls({release_on: 1}).then(r => r.state)`);
+  const rfText = await ev(`[document.getElementById('bad-title').textContent, document.getElementById('bad-plain').textContent]`);
+  check('a_refused_combination_says_why', rf === 'does-not-run' && /does not start/.test(rfText[0]) && /switch one of them on/.test(rfText[1]), JSON.stringify([rf, rfText]));
+  // An early stop: the floor above where the stator-scheduled LP compressor runs starves the engine.
+  const fs = await ev(`window.sandbox.controls({release_on: 0, floor_on: 1, lever: 'stator'}).then(r => r.run)`);
+  const fsText = await ev(`document.getElementById('ctl-stops').textContent`);
+  check('an_early_stop_shows_its_points_and_says_why', fs && fs.stop && fs.stop.kind === 'floor_unreachable' && fs.s.length < fs.expected_points
+        && /stall floor could no longer be held/.test(fsText) && /cut to .* % of the schedule/.test(fsText) && /Model message/.test(fsText)
+        && !(await ev(`document.getElementById('bad').classList.contains('show')`)), JSON.stringify([fs && fs.stop, fsText.slice(0, 200)]));
+  if (process.env.SANDBOX_SHOTS) { await ev(`document.getElementById('ctlq-phi_lp').click()`); await shot('controls-stopped'); await ev(`document.getElementById('ctlq-Tt4').click()`); }
+  // ...the incidence floor moves with the stators and lets the same run complete.
+  const inc = await ev(`window.sandbox.controls({floor_ref: 'incidence'}).then(r => r.run)`);
+  check('the_incidence_floor_lets_the_run_complete', inc && !inc.stop && inc.s.length === inc.expected_points, JSON.stringify(inc && inc.stop));
+  // A knob moved during a run stops it (its worker is killed), and the new run finishes.
+  const ck0 = await ev('window.sandbox.kills');
+  await ev(`window.sandbox.controls({lever: 'none', floor_ref: 'phi', floor_on: 1, redline_on: 1, accel_on: 1, settle: 8}); null`);
+  await waitFor(`window.sandbox.ctlState === 'running'`, 5000);
+  await ev(`(() => { const a = document.getElementById('ctl-ramp'); a.value = '0.3'; a.dispatchEvent(new Event('input')); })()`);
+  const cfin = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.ramp === 0.3`, 60000);
+  check('a_knob_move_stops_a_running_controls_run_and_the_new_one_finishes', cfin && (await ev('window.sandbox.kills')) > ck0,
+        `finished ${cfin}, kills ${ck0} -> ${await ev('window.sandbox.kills')}`);
+  if (process.env.SANDBOX_SHOTS) {
+    await ev(`window.sandbox.controls({settle: 2, ramp: 0.5, lever: 'bleed'})`);
+    await shot('controls-light'); await shot('controls-dark', 1280, true); await shot('controls-phone', 390);
+    await ev(`document.getElementById('ctlq-fuel').click()`); await shot('controls-fuel');
+    await ev(`document.getElementById('ctlq-Tt4').click()`);
+  }
+  await ev(`document.getElementById('unpin').click()`);
+
   // 17. Back to design: the design result is the opening one exactly -- the fly and blade sessions changed no design knob.
   await ev(`document.getElementById('mode-design').click()`);
   // A DESIGN result: it has a thrust and no shaft speed (a blade result has neither, so `nu === undefined`
   // alone would pass on the blade view's last result before the design run arrives).
-  const home = await waitFor(`window.sandbox.view() === 'design' && window.sandbox.state === 'ran' && window.sandbox.last.nu === undefined && window.sandbox.last.thrust !== undefined`, 20000);
+  // (A Controls result has a thrust too -- a LIST -- so the design's station table is what identifies it.)
+  const home = await waitFor(`window.sandbox.view() === 'design' && window.sandbox.state === 'ran' && window.sandbox.last.nu === undefined && Array.isArray(window.sandbox.last.stations)`, 20000);
   check('back_to_design_is_the_opening_design', home && JSON.stringify(await ev('window.sandbox.last')) === JSON.stringify(first), 'differs');
 
   // 18. Nothing threw on the page along the way.

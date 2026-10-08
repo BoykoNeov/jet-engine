@@ -86,11 +86,19 @@ fn every_element_the_script_looks_up_is_declared() {
         looked_up.push(format!("{id}-r"));
         looked_up.push(id);
     }
-    // `$(id)` / `$(id + "-r")` over the blade view's two knob maps.
-    for (id, _) in js_map(&t, "BLADE_NUM").into_iter().chain(js_map(&t, "BLADE_KNOB")) {
+    // `$(id)` / `$(id + "-r")` over the blade view's two knob maps, the slam's and the Controls view's.
+    for (id, _) in js_map(&t, "BLADE_NUM").into_iter().chain(js_map(&t, "BLADE_KNOB"))
+                   .chain(js_map(&t, "SLAM_NUM")).chain(js_map(&t, "CTL_NUM")) {
         looked_up.push(format!("{id}-r"));
         looked_up.push(id);
     }
+    // `$("ctl-" + k)` over the Controls switches, `$("ctlq-" + q)` over its chart quantities, and
+    // `$("v-" + id)` / `$("d-" + id)` over its tiles.
+    looked_up.extend(js_list(&t, "CTL_SW").into_iter().map(|k| format!("ctl-{k}")));
+    looked_up.extend(["Tt4", "speed", "fuel", "phi_lp", "phi_hp", "thrust", "lever"].map(|q| format!("ctlq-{q}")));
+    let view = spans(&t, "const CTL_VIEW = [", "];");
+    assert_eq!(view.len(), 1);
+    looked_up.extend(spans(view[0], "\"", "\"").into_iter().map(String::from));
     // `$(id)` over the id arrays the script hides, shows and greys out as a group.
     looked_up.extend(["cycle-set", "components-set", "nozzle-set", "fly-set", "fly-tiles", "map-card",
                       "out", "ts", "stations", "perf", "map", "flight-set", "ts-card", "stations-card", "perf-card",
@@ -105,7 +113,7 @@ fn every_element_the_script_looks_up_is_declared() {
         looked_up.extend(ids.into_iter().map(String::from));
     }
     // `$("v-" + id)` / `$("d-" + id)` for the tiles (the fly view's three computed ones included).
-    for tile in ["thrust", "st", "tsfc", "eo", "nu", "pic", "mdot", "klp", "khp", "rlp", "rhp"] {
+    for tile in ["thrust", "st", "tsfc", "eo", "nu", "pic", "mdot", "klp", "khp", "rlp", "rhp", "cpk", "cslp", "cshp", "ccut"] {
         looked_up.push(format!("v-{tile}"));
         looked_up.push(format!("d-{tile}"));
     }
@@ -122,6 +130,31 @@ fn js_map(t: &str, name: &str) -> Vec<(String, String)> {
     let q: Vec<&str> = spans(body[0], "\"", "\"");
     assert!(q.len() % 2 == 0 && !q.is_empty(), "{name}: {q:?}");
     q.chunks(2).map(|c| (c[0].to_string(), c[1].to_string())).collect()
+}
+
+/// A list of the script, `const NAME = [ "a", … ];`.
+fn js_list(t: &str, name: &str) -> Vec<String> {
+    let body = spans(t, &format!("const {name} = ["), "];");
+    assert_eq!(body.len(), 1, "{name}");
+    spans(body[0], "\"", "\"").into_iter().map(String::from).collect()
+}
+
+#[test]
+fn every_controls_knob_and_switch_is_a_setting_and_every_one_has_its_knob() {
+    let t = read(TEMPLATE);
+    let d = turbojet::sandbox_controls::ControlsSettings::defaults().to_json();
+    let mut knobs: Vec<String> = js_map(&t, "CTL_NUM").into_iter().map(|(_, k)| k).collect();
+    knobs.sort();
+    assert_eq!(knobs, numeric_keys(&d), "the Controls number knobs");
+    // The switches: every 0/1 setting, and nothing else.
+    let mut flags: Vec<String> = match &d {
+        Json::Obj(kv) => kv.iter().filter(|(_, v)| matches!(v, Json::Int(_))).map(|(k, _)| k.clone()).collect(),
+        _ => unreachable!(),
+    };
+    flags.sort();
+    let mut sw = js_list(&t, "CTL_SW");
+    sw.sort();
+    assert_eq!(sw, flags, "the Controls switches");
 }
 
 /// The fly view's knob map, `FLY_NUM`.
@@ -222,6 +255,12 @@ fn the_selects_offer_exactly_the_models_choices() {
                                turbojet::blade_speed::Lever::FrontRow].iter().map(|l| lever_key(*l).to_string()).collect();
     lv.sort();
     assert_eq!(options("bl-lever"), lv);
+    let mut cs: Vec<String> = turbojet::sandbox_controls::CONTROL_SHAPES.iter().map(|s| s.to_string()).collect();
+    cs.sort();
+    assert_eq!(options("ctl-shape"), cs);
+    let mut cl: Vec<String> = turbojet::sandbox_controls::LeverChoice::ALL.iter().map(|l| l.key().to_string()).collect();
+    cl.sort();
+    assert_eq!(options("ctl-lever"), cl);
 }
 
 #[test]

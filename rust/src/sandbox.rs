@@ -553,6 +553,9 @@ fn refusal(reason: &str) -> Json {
 ///   `"view":"blades"` → [`crate::sandbox_blades::explain_blades`].
 /// - `slam_defaults`, `slam` (with `"slam":{…}`) → slice 4's throttle slam,
 ///   [`crate::sandbox_transient::call_op`].
+/// - `controls_defaults`, `controls` (with `"controls":{…}`) → slice 4 (B)'s two-shaft *Controls*
+///   view, [`crate::sandbox_controls::call_op`]. `explain` with `"view":"controls"` →
+///   [`crate::sandbox_controls::explain_controls`].
 pub fn call(request: &str) -> String {
     let req = Json::parse(request);
     let op = match req.get("op") { Some(Json::Str(s)) => s.as_str(), _ => "" };
@@ -594,6 +597,8 @@ pub fn call(request: &str) -> String {
                 jobj! { "plain" => crate::sandbox_blades::explain_blades(m) },
             Some(Json::Str(m)) if matches!(req.get("view"), Some(Json::Str(v)) if v == "blades_lever") =>
                 jobj! { "plain" => crate::sandbox_blades::lever_words(m) },
+            Some(Json::Str(m)) if matches!(req.get("view"), Some(Json::Str(v)) if v == "controls") =>
+                jobj! { "plain" => crate::sandbox_controls::explain_controls(m) },
             Some(Json::Str(m)) => jobj! { "plain" => explain(m) },
             _ => refusal("explain needs a message"),
         },
@@ -619,6 +624,7 @@ pub fn call(request: &str) -> String {
         }
         other => crate::sandbox_blades::call_op(other, &req)
             .or_else(|| crate::sandbox_transient::call_op(other, &req))
+            .or_else(|| crate::sandbox_controls::call_op(other, &req))
             .unwrap_or_else(|| refusal(&format!("unknown op {other:?}"))),
     };
     out.dump_compact()
@@ -1107,5 +1113,6 @@ pub fn check_requests() -> Vec<String> {
     }
     out.extend(crate::sandbox_blades::check_requests());
     out.extend(crate::sandbox_transient::check_requests());
+    out.extend(crate::sandbox_controls::check_requests());
     out
 }

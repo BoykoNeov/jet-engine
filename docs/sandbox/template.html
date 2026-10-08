@@ -127,6 +127,19 @@ legend { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-sp
   justify-self: start; border: 1px solid var(--border); background: var(--bg); color: var(--ink-2); }
 .preset:hover { border-color: var(--accent); }
 td.nomod { white-space: normal; color: var(--muted); text-align: left; }
+.swrow { display: flex; gap: 6px; align-items: center; font-size: 13px; font-weight: 600; margin: 10px 0 0; cursor: pointer; }
+.swrow input { accent-color: var(--accent); margin: 0; }
+.swrow small { font-weight: 400; color: var(--muted); }
+.swbox { margin-left: 22px; }
+.chart .fsched { fill: none; stroke: var(--muted); stroke-width: 1.4; stroke-dasharray: 5 4; }
+.chart .floorl { fill: none; stroke: var(--s-red); stroke-width: 1.4; stroke-dasharray: 1 3; }
+.chart .hold-redline, .hold-redline { fill: var(--s-red); background: var(--s-red); }
+.chart .hold-accel, .hold-accel { fill: var(--accent); background: var(--accent); }
+.chart .hold-floor, .hold-floor { fill: var(--s-aqua); background: var(--s-aqua); }
+.chart .hold-lag, .hold-lag { fill: var(--muted); background: var(--muted); }
+.chip { display: inline-block; width: 12px; height: 8px; border-radius: 2px; vertical-align: middle; margin-right: 4px; }
+.sw.floorl { border-top: 2px dotted var(--s-red); } .sw.fsched { border-top: 2px dashed var(--muted); }
+#ctl-table td { white-space: normal; }   /* "who held the fuel" is a sentence: let it wrap, not squeeze the names */
 h2.sec { font-size: 14px; margin: 0 0 8px; }
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 13px; }
 th, td { text-align: right; padding: 4px 6px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
@@ -160,7 +173,8 @@ footer p { max-width: 90ch; }
     <div class="toggle mode" role="group" aria-label="Design the engine, or fly it">
       <button type="button" id="mode-design" aria-pressed="true">Design the engine</button>
       <button type="button" id="mode-fly" aria-pressed="false">Fly it</button>
-      <button type="button" id="mode-blades" aria-pressed="false">Size the blades</button></div>
+      <button type="button" id="mode-blades" aria-pressed="false">Size the blades</button>
+      <button type="button" id="mode-controls" aria-pressed="false">Controls</button></div>
     <p class="note" id="mode-note">Every change redesigns the engine. Press <b>Fly it</b> to freeze this design's hardware and move the throttle instead.</p>
     <fieldset id="fly-set" hidden>
       <legend>Fly it</legend>
@@ -270,6 +284,97 @@ footer p { max-width: 90ch; }
       <p class="note">At each throttle the vanes turn until the front row meets its air at the design angle again;
         the chart shows what that does to both shafts' speeds.</p>
     </fieldset>
+    <fieldset id="ctl-set" hidden>
+      <legend>The two-shaft engine, throttle slammed</legend>
+      <p class="frozen">A separate engine, not the one in <b>Design</b> or <b>Fly it</b>: the <b>Size the blades</b> engine at
+        its opening settings (pressure ratios 3 and 6, designed for 1500 K at the turbine inlet, flying at 250 K, 50 kPa,
+        Mach 0.85, on the perfect gas). The fuel moves from one throttle's steady fuel flow to the other's; the controls below cut it.</p>
+      <div class="knob"><label for="ctl-shape">Compressor map shape</label>
+        <select id="ctl-shape" style="grid-column: 1 / -1">
+          <option value="flow/press">LP curved along flow, HP along pressure</option>
+          <option value="press/flow">LP curved along pressure, HP along flow</option>
+          <option value="tilted">Tilted efficiency island, both spools</option>
+          <option value="flat-lp">LP map flat, HP curved along pressure</option>
+        </select>
+        <div class="derived">Invented, representative maps (rungs 43 and 49), each with its stall line at flow coefficient 0.55.</div></div>
+      <div class="knob"><label for="ctl-from">Start from <small>K</small></label><input type="number" id="ctl-from" step="10">
+        <input type="range" id="ctl-from-r" min="600" max="1700" step="10" aria-label="Starting throttle slider"></div>
+      <div class="knob"><label for="ctl-to">Move to <small>K</small></label><input type="number" id="ctl-to" step="10">
+        <input type="range" id="ctl-to-r" min="600" max="1700" step="10" aria-label="Final throttle slider">
+        <div class="derived">Each throttle is named by the turbine inlet temperature its steady point holds.</div></div>
+      <div class="knob"><label for="ctl-ramp">The fuel move takes <small>τ</small></label><input type="number" id="ctl-ramp" step="0.02">
+        <input type="range" id="ctl-ramp-r" min="0.02" max="3" step="0.02" aria-label="Move length slider"></div>
+      <div class="knob"><label for="ctl-settle">Then keep running for <small>τ</small></label><input type="number" id="ctl-settle" step="0.1">
+        <input type="range" id="ctl-settle-r" min="0.5" max="9" step="0.1" aria-label="Settling time slider">
+        <div class="derived">τ is the high-pressure shaft's own response time; the model has no rotor weight, so it cannot give seconds.</div></div>
+      <div class="knob"><label for="ctl-rho">LP shaft response time <small>× the HP's</small></label><input type="number" id="ctl-rho" step="0.1">
+        <input type="range" id="ctl-rho-r" min="0.2" max="5" step="0.1" aria-label="LP response time slider">
+        <div class="derived">Above 1 the low-pressure shaft is the slower one (a heavier fan and booster).</div></div>
+    </fieldset>
+    <fieldset id="ctl-sw-set" hidden>
+      <legend>Fuel controls</legend>
+      <label class="swrow"><input type="checkbox" id="ctl-redline_on"> Turbine temperature limiter <small>rung 46</small></label>
+      <div class="swbox" id="ctl-redline-box">
+        <div class="knob"><label for="ctl-redline">Redline <small>K</small></label><input type="number" id="ctl-redline" step="5">
+          <input type="range" id="ctl-redline-r" min="1200" max="1800" step="5" aria-label="Redline slider"></div>
+        <label class="swrow"><input type="checkbox" id="ctl-gov_lag_on"> …that reacts with a lag <small>rung 47</small></label>
+        <div class="swbox" id="ctl-gov_lag-box">
+          <div class="knob"><label for="ctl-gov_lag">Its lag <small>τ</small></label><input type="number" id="ctl-gov_lag" step="0.01">
+            <input type="range" id="ctl-gov_lag-r" min="0.02" max="1" step="0.01" aria-label="Limiter lag slider"></div></div>
+      </div>
+      <label class="swrow"><input type="checkbox" id="ctl-accel_on"> Acceleration schedule <small>rung 48</small></label>
+      <div class="swbox" id="ctl-accel-box">
+        <div class="knob"><label for="ctl-accel_margin">Allowed above the steady line</label><input type="number" id="ctl-accel_margin" step="0.01">
+          <input type="range" id="ctl-accel_margin-r" min="0" max="0.6" step="0.01" aria-label="Acceleration margin slider">
+          <div class="derived">Caps the fuel per unit of compressor-exit pressure at this fraction above what the engine burns
+            when steady (0: never above it).</div></div></div>
+      <label class="swrow"><input type="checkbox" id="ctl-floor_on"> Stall floor <small>rungs 49 and 60</small></label>
+      <div class="swbox" id="ctl-floor-box">
+        <div class="toggle" role="group" aria-label="Which compressor the floor watches">
+          <button type="button" id="ctl-floor-lp" aria-pressed="true">Low-pressure</button>
+          <button type="button" id="ctl-floor-hp" aria-pressed="false">High-pressure</button></div>
+        <div class="knob"><label for="ctl-floor_phi">Floor <small>flow coefficient</small></label><input type="number" id="ctl-floor_phi" step="0.005">
+          <input type="range" id="ctl-floor_phi-r" min="0.55" max="1" step="0.005" aria-label="Stall floor slider">
+          <div class="derived">The fuel is cut whenever it would push that compressor's flow coefficient below this (the stall line is 0.55).</div></div>
+        <div id="ctl-ref-row">
+          <div class="toggle" role="group" aria-label="What the floor watches">
+            <button type="button" id="ctl-ref-phi" aria-pressed="true">Watches the flow coefficient</button>
+            <button type="button" id="ctl-ref-inc" aria-pressed="false">Watches blade incidence</button></div>
+          <p class="note">With the stators moving, the stall line moves too. A floor on the flow coefficient stays put; one on
+            the blade incidence (the angle the air meets the blade) moves with the stall line, by the same amount at every speed.</p></div>
+      </div>
+      <label class="swrow"><input type="checkbox" id="ctl-release_on"> Realistic release <small>rung 52</small></label>
+      <div class="swbox" id="ctl-release-box">
+        <div class="knob"><label for="ctl-tau_att">Cutting in <small>τ</small></label><input type="number" id="ctl-tau_att" step="0.01">
+          <input type="range" id="ctl-tau_att-r" min="0.02" max="0.2" step="0.01" aria-label="Attack time slider"></div>
+        <div class="knob"><label for="ctl-tau_rel">Letting go <small>τ</small></label><input type="number" id="ctl-tau_rel" step="0.01">
+          <input type="range" id="ctl-tau_rel-r" min="0.02" max="1" step="0.01" aria-label="Release time slider">
+          <div class="derived">The schedule's and the floor's cut follows its target quickly going in and slowly letting go, as a real limiter does.</div></div></div>
+    </fieldset>
+    <fieldset id="ctl-lever-set" hidden>
+      <legend>One airflow lever</legend>
+      <div class="knob"><label for="ctl-lever">Lever</label>
+        <select id="ctl-lever" style="grid-column: 1 / -1">
+          <option value="none">None</option>
+          <option value="stator">Variable stators, scheduled on speed (rung 57)</option>
+          <option value="bleed">Handling bleed valve, scheduled on speed (rung 62)</option>
+        </select></div>
+      <div id="ctl-stator-box">
+        <div class="toggle" role="group" aria-label="Which compressor's stators move">
+          <button type="button" id="ctl-st-lp" aria-pressed="true">Low-pressure stators</button>
+          <button type="button" id="ctl-st-hp" aria-pressed="false">High-pressure stators</button></div>
+        <div class="knob"><label for="ctl-v_max">Furthest they close</label><input type="number" id="ctl-v_max" step="0.01">
+          <input type="range" id="ctl-v_max-r" min="0" max="0.3" step="0.01" aria-label="Stator travel slider"></div>
+        <div class="knob"><label for="ctl-v_n_lo">Fully closed below <small>× design speed</small></label><input type="number" id="ctl-v_n_lo" step="0.01">
+          <input type="range" id="ctl-v_n_lo-r" min="0.4" max="0.8" step="0.01" aria-label="Stator schedule speed slider"></div></div>
+      <div id="ctl-bleed-box">
+        <div class="knob"><label for="ctl-b_max">Most air bled</label><input type="number" id="ctl-b_max" step="0.01">
+          <input type="range" id="ctl-b_max-r" min="0" max="0.3" step="0.01" aria-label="Bleed fraction slider"></div>
+        <div class="knob"><label for="ctl-b_n_lo">Fully open below <small>× design speed</small></label><input type="number" id="ctl-b_n_lo" step="0.01">
+          <input type="range" id="ctl-b_n_lo-r" min="0.4" max="0.8" step="0.01" aria-label="Bleed schedule speed slider"></div></div>
+      <p class="note">Each lever is back at its design setting by the design speed. One lever at a time: the stators and the
+        bleed together with a fuel limiter is not modelled (an open question in the project).</p>
+    </fieldset>
     <fieldset id="flight-set">
       <legend>Flight</legend>
       <div class="knob"><label for="altitude">Altitude <small>m</small></label><input type="number" id="altitude" step="50">
@@ -359,6 +464,39 @@ footer p { max-width: 90ch; }
         <div class="tile"><div class="k">Low-pressure redline</div><div class="v"><span id="v-rlp">–</span> <span class="u">% of design speed</span></div><div class="d" id="d-rlp"></div></div>
         <div class="tile"><div class="k">High-pressure redline</div><div class="v"><span id="v-rhp">–</span> <span class="u">% of design speed</span></div><div class="d" id="d-rhp"></div></div>
       </div>
+    </div>
+    <div id="ctl-out" hidden>
+      <div class="tiles">
+        <div class="tile"><div class="k">Peak turbine temperature</div><div class="v"><span id="v-cpk">–</span> <span class="u">K</span></div><div class="d" id="d-cpk"></div></div>
+        <div class="tile"><div class="k">LP closest to stall <small>(trend only)</small></div><div class="v"><span id="v-cslp">–</span> <span class="u">% above</span></div><div class="d" id="d-cslp"></div></div>
+        <div class="tile"><div class="k">HP closest to stall <small>(trend only)</small></div><div class="v"><span id="v-cshp">–</span> <span class="u">% above</span></div><div class="d" id="d-cshp"></div></div>
+        <div class="tile"><div class="k">Deepest fuel cut</div><div class="v"><span id="v-ccut">–</span> <span class="u">% of schedule</span></div><div class="d" id="d-ccut"></div></div>
+      </div>
+    </div>
+    <div class="card chart" id="ctl-card" hidden>
+      <h2 class="sec">The run</h2>
+      <div class="toggle q" role="group" aria-label="Which quantity the chart shows">
+        <button type="button" id="ctlq-Tt4" aria-pressed="true">Turbine temperature</button>
+        <button type="button" id="ctlq-speed" aria-pressed="false">Shaft speeds</button>
+        <button type="button" id="ctlq-fuel" aria-pressed="false">Fuel</button>
+        <button type="button" id="ctlq-phi_lp" aria-pressed="false">LP flow vs stall</button>
+        <button type="button" id="ctlq-phi_hp" aria-pressed="false">HP flow vs stall</button>
+        <button type="button" id="ctlq-thrust" aria-pressed="false">Thrust</button>
+        <button type="button" id="ctlq-lever" aria-pressed="false">Lever setting</button></div>
+      <svg id="ctl-chart" viewBox="0 0 640 360" role="img" aria-label="The chosen quantity against time during the throttle move, with which fuel control holds the fuel"></svg>
+      <div class="legend"><span id="ctl-legend"></span><span id="ctl-pin-legend" hidden><span class="sw pin"></span>pinned run</span>
+        <span>shaded: the fuel move</span><span>×: the run stopped</span><span id="ctl-progress"></span></div>
+      <div class="legend"><span>Top strip, who holds the fuel:</span><span><span class="chip hold-redline"></span>temperature limiter</span>
+        <span><span class="chip hold-accel"></span>acceleration schedule</span><span><span class="chip hold-floor"></span>stall floor</span>
+        <span><span class="chip hold-lag"></span>a lag's cut</span><span>(blank: the schedule's own fuel)</span></div>
+      <div id="ctl-stops"></div>
+      <div class="scroll"><table id="ctl-table"><thead><tr><th>Quantity</th><th>This run</th><th id="ctl-pin-head"></th></tr></thead><tbody></tbody></table></div>
+      <p class="note">The fuel follows the schedule unless a control cuts it; the cut fuel is what burns. Each control acts
+        on its own measurement: the temperature limiter on the turbine inlet temperature, the acceleration schedule on fuel
+        per unit of compressor pressure, the stall floor on a compressor's flow coefficient. When several are on, the one
+        asking for the least fuel wins. Values are read at the model's points, every 0.02 τ; a sharp temperature spike can
+        peak up to about 11 K higher between two points (measured). The stall lines are imposed numbers on invented maps,
+        so read the margins' trend, not their size.</p>
     </div>
     <div id="out">
       <div class="tiles">
@@ -491,6 +629,17 @@ footer p { max-width: 90ch; }
   redline come out. A stator lever then holds the front row's design angle as the throttle comes back, and the chart
   shows whether either shaft passes its redline. The two-spool model only handles a choked nozzle; throttles where it
   unchokes are listed as not modelled.</p>
+  <p><b>Controls.</b> The project's rungs 43–62 on the two-shaft engine of <b>Size the blades</b>: both shaft speeds change
+  in time, the fuel is metered and the turbine temperature is an output (it overshoots on a slam), and the fuel controls a
+  real engine carries can be switched on, each with its one number: a turbine temperature limiter and its reaction lag, an
+  acceleration schedule read off the engine's own steady running line, a stall floor on either compressor, and a realistic
+  fast-in, slow-out lag on the schedule and the floor. One airflow lever can be added: variable stators or a bleed valve,
+  each scheduled on shaft speed. Each run is the model's own march, step for step. A run that stops early shows the
+  points it has and why, by kind: the floor could no longer be held by any fuel cut; the model's every-step check at the
+  full scheduled fuel had no answer while a limiter held the fuel far below it (a limit of the model's method); the
+  mixture became leaner or richer than the model's fuel solver searches (0.004 and 0.065 kg of fuel per kg of air). With
+  the temperature limiter's lag on, the model does not record the lag's state, so a stop there is reported without a cause.
+  Time is in the high-pressure shaft's response time τ; the bleed thrust counts the dumped air's full ram drag.</p>
   <p><b>Efficiencies.</b> Overall efficiency is thrust power per fuel power. The model splits it into a thermal and a
   propulsive part using the jet's speed alone. When the jet leaves the nozzle above the outside pressure (a fixed
   convergent nozzle, especially high up), part of the thrust is that pressure push, which the speed-based split
@@ -538,6 +687,7 @@ async function ask(text) {
       if (["fly", "running_point", "slam"].includes(op)) view = "fly";
       else if (op === "blade_lever") view = "blades_lever";   // a THROTTLE's failure, not the design's
       else if (op.startsWith("blade_")) view = "blades";
+      else if (op === "controls") view = "controls";
     } catch (_) {}
     const plain = JSON.parse(raw(JSON.stringify({ op: "explain", message, view }))).plain;
     return { trap: { message, plain }, ms: performance.now() - t0 };
@@ -624,6 +774,16 @@ const BLADE_NUM = { "bl-pi_lpc": "pi_lpc", "bl-pi_hpc": "pi_hpc", "bl-Tt4": "Tt4
 const BLADE_KNOB = { "bk-h": "h", "bk-m_rel_lim": "m_rel_lim", "bk-sigma_over_rho": "sigma_over_rho",
                      "bk-overspeed": "overspeed", "bk-phi_d": "phi_d", "bk-lambda": "lambda" };
 const BLADE_VIEW = ["blades-set", "bk-set", "lever-set", "blades-out", "bl-machine-card", "bl-stair-card", "bl-lever-card"];
+// Controls (slice 4 B, turbojet::sandbox_controls): C holds the two-shaft engine's move and its switches.
+// CTL_NUM maps a knob's id to its setting; CTL_SW lists the switches (checkbox id "ctl-" + key). Each run
+// is computed on its OWN worker, killed when a knob moves.
+let C = null, C_DEFAULTS = null, CTL_DS = 0.02, crun = null, cpinned = null, ctlQ = "Tt4";
+const CTL_NUM = { "ctl-rho": "rho", "ctl-from": "from", "ctl-to": "to", "ctl-ramp": "ramp", "ctl-settle": "settle",
+                  "ctl-redline": "redline", "ctl-gov_lag": "gov_lag", "ctl-accel_margin": "accel_margin",
+                  "ctl-floor_phi": "floor_phi", "ctl-tau_att": "tau_att", "ctl-tau_rel": "tau_rel", "ctl-v_max": "v_max",
+                  "ctl-v_n_lo": "v_n_lo", "ctl-b_max": "b_max", "ctl-b_n_lo": "b_n_lo" };
+const CTL_SW = ["redline_on", "gov_lag_on", "accel_on", "floor_on", "release_on"];
+const CTL_VIEW = ["ctl-set", "ctl-sw-set", "ctl-lever-set", "ctl-out", "ctl-card"];
 const clone = o => JSON.parse(JSON.stringify(o));
 function setKnob(k, v) { if (linked) { B.lp[k] = v; B.hp[k] = v; } else B[editSpool][k] = v; }
 const STATION = { "0": "0 · outside air", "2": "2 · compressor face", "3": "3 · compressor exit",
@@ -658,18 +818,39 @@ function showSettings() {
     for (const m of ["both", "temperature", "fuel"]) $("slam-" + m).setAttribute("aria-pressed", String(SL.mode === m));
     for (const q of Object.keys(SLAM_Q)) $("q-" + q).setAttribute("aria-pressed", String(slamQ === q));
   }
-  const fly = mode === "fly", blades = mode === "blades";
-  for (const [id, m] of [["mode-design", "design"], ["mode-fly", "fly"], ["mode-blades", "blades"]]) $(id).setAttribute("aria-pressed", String(mode === m));
+  const fly = mode === "fly", blades = mode === "blades", controls = mode === "controls";
+  for (const [id, m] of [["mode-design", "design"], ["mode-fly", "fly"], ["mode-blades", "blades"], ["mode-controls", "controls"]]) $(id).setAttribute("aria-pressed", String(mode === m));
   for (const id of ["cycle-set", "components-set", "nozzle-set"]) $(id).hidden = mode !== "design";
   for (const id of ["fly-set", "fly-tiles", "map-card", "slam-set", "slam-card"]) $(id).hidden = !fly;
   for (const id of BLADE_VIEW) $(id).hidden = !blades;
-  for (const id of ["flight-set", "out", "ts-card", "stations-card", "perf-card"]) $(id).hidden = blades;
+  for (const id of CTL_VIEW) $(id).hidden = !controls;
+  for (const id of ["flight-set", "out", "ts-card", "stations-card", "perf-card"]) $(id).hidden = blades || controls;
   $("mode-note").innerHTML = fly
     ? "The hardware is frozen. Move the throttle or the flight; press <b>Design the engine</b> to change the design."
     : blades
     ? "Size the compressor blades of a separate two-spool engine, then see what a stator lever does to its shafts."
+    : controls
+    ? "Slam the throttle of a separate two-shaft engine, and switch its fuel controls and an airflow lever on and off."
     : "Every change redesigns the engine. Press <b>Fly it</b> to freeze this design's hardware and move the throttle instead.";
-  $("pin").textContent = fly ? "Pin this point" : blades ? "Pin these blades" : "Pin this design";
+  $("pin").textContent = fly ? "Pin this point" : blades ? "Pin these blades" : controls ? "Pin this run" : "Pin this design";
+  if (C) {
+    for (const [id, k] of Object.entries(CTL_NUM)) {
+      if (document.activeElement !== $(id)) $(id).value = +C[k].toPrecision(8);
+      $(id + "-r").value = C[k];
+    }
+    for (const k of CTL_SW) $("ctl-" + k).checked = C[k] === 1;
+    $("ctl-shape").value = C.shape; $("ctl-lever").value = C.lever;
+    const press = (id, on) => $(id).setAttribute("aria-pressed", String(on));
+    press("ctl-floor-lp", C.floor_spool === "lp"); press("ctl-floor-hp", C.floor_spool === "hp");
+    press("ctl-ref-phi", C.floor_ref === "phi"); press("ctl-ref-inc", C.floor_ref === "incidence");
+    press("ctl-st-lp", C.stator_spool === "lp"); press("ctl-st-hp", C.stator_spool === "hp");
+    $("ctl-redline-box").hidden = C.redline_on !== 1; $("ctl-gov_lag-box").hidden = C.gov_lag_on !== 1;
+    $("ctl-accel-box").hidden = C.accel_on !== 1; $("ctl-floor-box").hidden = C.floor_on !== 1;
+    $("ctl-release-box").hidden = C.release_on !== 1; $("ctl-ref-row").hidden = C.lever !== "stator";
+    $("ctl-stator-box").hidden = C.lever !== "stator"; $("ctl-bleed-box").hidden = C.lever !== "bleed";
+    for (const q of Object.keys(CTL_Q)) $("ctlq-" + q).setAttribute("aria-pressed", String(ctlQ === q));
+    $("ctlq-lever").hidden = C.lever === "none";
+  }
   if (B) {
     for (const [id, k] of Object.entries(BLADE_NUM)) {
       if (document.activeElement !== $(id)) $(id).value = +B[k].toPrecision(8);
@@ -708,6 +889,7 @@ function showAmbient(a) {
 // ---------------------------------------------------------------- running
 async function runNow() {
   if (mode === "blades") return runBlades();
+  if (mode === "controls") { scheduleCtl(); return; }
   const my = ++gen;
   const fly = mode === "fly";
   if (fly && slow()) $("status").textContent = "Computing on the equilibrium gas (about half a second)…";
@@ -758,6 +940,7 @@ async function fromAltitude(run = true) {
 async function enterFly() {
   if (mode === "fly") return;
   if (mode === "blades") stopLever();
+  if (mode === "controls") stopCtl();
   // The design as the user set it (its own nozzle and gas), to show beside the frozen re-run. Asked
   // for afresh: the last result on screen can be an OLDER design whose run arrived before the
   // newest one (a click on Fly it right after a change -- the browser test caught it).
@@ -773,6 +956,7 @@ async function enterFly() {
 function leaveFly() {
   if (mode === "design") return;
   if (mode === "blades") stopLever();
+  if (mode === "controls") stopCtl();
   stopSlam();
   mode = "design"; lineGen++; pinned = null; $("unpin").hidden = true; $("pin-legend").hidden = true;
   showSettings(); change();
@@ -995,6 +1179,185 @@ function slamTable() {
   }
 }
 
+// ---------------------------------------------------------------- controls (slice 4 B)
+// One run is one request (op controls): a few tens of ms to ~1 s in the browser, so it runs a moment after
+// the knobs settle, on its OWN worker, which the next change kills.
+function enterControls() {
+  if (mode === "controls") return;
+  if (mode === "blades") stopLever();
+  stopSlam();
+  mode = "controls"; lineGen++; pinned = null; $("unpin").hidden = !cpinned; $("pin-legend").hidden = true;
+  $("bad").classList.remove("show");
+  showSettings(); ctlKey = null; scheduleCtl();
+}
+
+let ctlW = null, ctlBusy = 0, ctlGen = 0, ctlTimer = null, ctlKey = null;
+async function ctlAsk(text) {
+  if (!model.kill) return model.ask(text);          // no Worker in this browser: a run can only be ignored
+  if (!ctlW) ctlW = await spawnWorker();
+  ctlBusy++;
+  try { return await ctlW.ask(text); } finally { ctlBusy--; }
+}
+function stopCtl() {
+  ctlGen++; clearTimeout(ctlTimer); ctlKey = null;
+  if (ctlW && ctlBusy) { ctlW.kill(); ctlW = null; ctlBusy = 0; window.sandbox.kills++; }
+}
+function scheduleCtl() { clearTimeout(ctlTimer); ctlTimer = setTimeout(runCtl, 200); }
+async function runCtl() {
+  if (mode !== "controls" || !C) return;
+  const text = JSON.stringify({ op: "controls", controls: C });
+  if (text === ctlKey) return;
+  stopCtl(); ctlKey = text;
+  const my = ctlGen;
+  window.sandbox.ctlState = "running";
+  $("ctl-progress").textContent = "computing the run…";
+  for (const id of ["ctl-out", "ctl-card"]) $(id).classList.add("stale");
+  const t = await ctlAsk(text);
+  if (my !== ctlGen || t.killed) return;
+  $("ctl-progress").textContent = "";
+  $("timing").textContent = `${t.ms < 1000 ? t.ms.toFixed(0) + " ms" : (t.ms / 1000).toFixed(1) + " s"} in the ${model.mode}`;
+  $("bad-title").textContent = "This run does not start";
+  if (t.trap || !t.reply.ok) {
+    $("bad-plain").textContent = t.trap ? t.trap.plain : t.reply.reason;
+    $("bad-raw").textContent = t.trap ? "Model message: " + t.trap.message : "";
+    $("bad").classList.add("show");
+    $("status").textContent = "This run does not start.";
+    window.sandbox.state = "does-not-run"; window.sandbox.trap = t.trap || { plain: t.reply.reason };
+    window.sandbox.ctlState = "done";
+    return;
+  }
+  crun = t.reply;
+  $("bad").classList.remove("show");
+  for (const id of ["ctl-out", "ctl-card"]) $(id).classList.remove("stale");
+  $("status").textContent = crun.stopped
+    ? `The run stopped early: ${crun.s.length} of ${crun.expected_points} points (why: below the chart).`
+    : `Ran to the end: ${crun.s.length} points, every ${CTL_DS} τ.`;
+  drawCtl();
+  window.sandbox.last = crun; window.sandbox.state = "ran"; window.sandbox.trap = null; window.sandbox.ctlState = "done";
+}
+
+// Each quantity: its axis label and the lines it draws, [values, css class, legend words].
+const pct = a => a.map(v => v * 100);
+const CTL_Q = {
+  Tt4: { label: "turbine inlet temperature, K", lines: r => [[r.Tt4, "rline", "turbine inlet temperature"]],
+         steady: r => [r.start.Tt4, r.end.Tt4] },
+  speed: { label: "shaft speed, % of design", lines: r => [[pct(r.nu_lp), "lp", "low-pressure shaft"], [pct(r.nu_hp), "hp", "high-pressure shaft"]],
+           steady: r => [r.start.nu_lp * 100, r.end.nu_lp * 100, r.start.nu_hp * 100, r.end.nu_hp * 100] },
+  fuel: { label: "fuel flow, g/s per kg/s of design airflow", lines: r => [[r.fuel.map(v => v * 1e3), "rline", "fuel burnt"],
+                                                                            [r.fuel_sched.map(v => v * 1e3), "fsched", "fuel the throttle schedules"]],
+          steady: r => [r.start.fuel * 1e3, r.end.fuel * 1e3] },
+  phi_lp: { label: "LP flow coefficient", lines: r => [[r.phi_lp, "lp", "LP flow coefficient"], [r.stall_lp, "stall", "LP stall line"]]
+              .concat(C.floor_on && C.floor_spool === "lp" ? [[r.floor, "floorl", "the floor"]] : []), steady: r => [] },
+  phi_hp: { label: "HP flow coefficient", lines: r => [[r.phi_hp, "hp", "HP flow coefficient"], [r.stall_hp, "stall", "HP stall line"]]
+              .concat(C.floor_on && C.floor_spool === "hp" ? [[r.floor, "floorl", "the floor"]] : []), steady: r => [] },
+  thrust: { label: "thrust, N per kg/s of design airflow", lines: r => [[r.thrust, "rline", "thrust"]], steady: r => [r.start.thrust, r.end.thrust] },
+  lever: { label: "lever setting", lines: r => (C.lever === "bleed" ? [[pct(r.bleed), "rline", "air bled, % of the LP's flow"]]
+                                                                    : [[r.v, "rline", "stator closing (0 = design setting)"]]), steady: r => [] },
+};
+
+function drawCtl() {
+  const svg = $("ctl-chart");
+  if (!crun || !C) { svg.innerHTML = ""; ctlTable(); return; }
+  if (ctlQ === "lever" && C.lever === "none") ctlQ = "Tt4";
+  const q = CTL_Q[ctlQ], r = crun, p = cpinned;
+  const lines = q.lines(r);
+  const ys = [];
+  for (const [v] of lines) for (const y of v) if (y !== null && isFinite(y)) ys.push(y);
+  for (const y of q.steady(r)) ys.push(y);
+  const pinLine = p && p.s.length ? q.lines(p)[0][0] : null;   // a pinned run that stopped at once has no line
+  if (pinLine) for (const y of pinLine) if (y !== null && isFinite(y)) ys.push(y);
+  if (ctlQ === "Tt4" && C.redline_on) ys.push(C.redline);
+  if (!ys.length) { svg.innerHTML = ""; ctlTable(); return; }
+  const x1 = Math.max(C.ramp + C.settle, p ? p.s[p.s.length - 1] : 0, r.s.length ? r.s[r.s.length - 1] : 0);
+  let y0 = Math.min(...ys), y1 = Math.max(...ys); const py = (y1 - y0) * 0.1 || Math.abs(y1) * 0.05 || 1; y0 -= py; y1 += py;
+  const H = 360, Bm = 54, T = 24;
+  const { X, Y, g: g0 } = frame(0, x1, y0, y1, { L: 62, R: 16, T, B: Bm, W: 640, H }, "time, in the HP shaft's response times τ", q.label);
+  let g = `<rect class="ramp" x="${X(0)}" y="${T}" width="${Math.max(1, X(r.controls.ramp) - X(0))}" height="${H - Bm - T}"/>` + g0;
+  for (const v of q.steady(r)) g += `<line class="steady" x1="62" x2="624" y1="${Y(v)}" y2="${Y(v)}"/>`;
+  if (ctlQ === "Tt4" && C.redline_on) g += `<line class="redline" x1="62" x2="624" y1="${Y(C.redline)}" y2="${Y(C.redline)}"/><text class="redl" x="620" y="${Y(C.redline) - 4}" text-anchor="end">redline</text>`;
+  if (pinLine) g += `<path class="tpin" d="${pathOf(p.s.map((x, i) => (pinLine[i] === null ? null : [x, pinLine[i]])), X, Y)}"/>`;
+  for (const [v, cls] of lines) g += `<path class="${cls}" d="${pathOf(r.s.map((x, i) => (v[i] === null ? null : [x, v[i]])), X, Y)}"/>`;
+  // Who holds the fuel: a strip above the plot, one cell per point.
+  const w = Math.max(1, X(CTL_DS) - X(0));
+  r.holder.forEach((h, i) => { if (h !== "none") g += `<rect class="hold-${h}" x="${X(r.s[i]).toFixed(1)}" y="${T - 10}" width="${w.toFixed(1)}" height="6"/>`; });
+  if (r.stop && r.s.length) {
+    const v = lines[0][0], i = r.s.length - 1;
+    g += `<text class="stopx" x="${X(r.s[i])}" y="${Y(v[i]) + 5}" text-anchor="middle">×<title>the run stopped here</title></text>`;
+  }
+  svg.innerHTML = g;
+  $("ctl-legend").innerHTML = lines.map(([, cls, words]) => `<span><span class="sw ${cls === "rline" ? "" : cls}"></span>${words}</span>`).join(" ")
+    + (q.steady(r).length ? ` <span><span class="sw steady"></span>steady before / after</span>` : "");
+  $("ctl-pin-legend").hidden = !pinLine;
+  ctlTable();
+}
+
+// The closest a compressor comes to its stall line: its flow coefficient over the line, minus 1, %.
+const closest = (r, sp) => Math.min(...r["phi_" + sp].map((v, i) => (v / r["stall_" + sp][i] - 1) * 100));
+const HOLD_WORDS = { redline: "temperature limiter", accel: "acceleration schedule", floor: "stall floor", lag: "a lag's cut" };
+function heldFor(r) {
+  const n = {}; for (const h of r.holder) if (h !== "none") n[h] = (n[h] || 0) + 1;
+  const e = Object.entries(n).sort((a, b) => b[1] - a[1]);
+  return e.length ? e.map(([h, k]) => `${HOLD_WORDS[h]} ${fmt(k * CTL_DS, 2)} τ`).join(", ") : "none held it";
+}
+function to90(r, k) {
+  const d = r.end[k] - r.start[k]; if (Math.abs(d) < 1e-9) return NaN;
+  const i = r[k].findIndex(v => (v - r.start[k]) / d >= 0.9); return i < 0 ? NaN : r.s[i];
+}
+const CTL_ROWS = [
+  ["Peak turbine inlet temperature (K)", r => Math.max(...r.Tt4), 5],
+  ["Above the final steady temperature (K)", r => Math.max(...r.Tt4) - r.end.Tt4, 3],
+  ["Lowest LP flow coefficient", r => Math.min(...r.phi_lp), 4],
+  ["LP closest to its stall line (% above it; trend only)", r => closest(r, "lp"), 3],
+  ["Lowest HP flow coefficient", r => Math.min(...r.phi_hp), 4],
+  ["HP closest to its stall line (% above it; trend only)", r => closest(r, "hp"), 3],
+  ["Deepest fuel cut (% of the schedule)", r => Math.min(...r.fuel.map((v, i) => v / r.fuel_sched[i] * 100)), 4],
+  ["Who held the fuel, and for how long", r => heldFor(r)],
+  ["Time to 90 % of the LP speed change (τ)", r => to90(r, "nu_lp"), 3],
+  ["Time to 90 % of the HP speed change (τ)", r => to90(r, "nu_hp"), 3],
+  ["Shaft speeds at the end, LP / HP (% of design)", r => `${fmt(r.nu_lp[r.nu_lp.length - 1] * 100, 4)} / ${fmt(r.nu_hp[r.nu_hp.length - 1] * 100, 4)}`],
+  ["Still short of the final steady speeds, LP / HP (%)", r => `${fmt(r.settled_lp * 100, 2)} / ${fmt(r.settled_hp * 100, 2)}`],
+  ["Thrust at the end (N per kg/s of design airflow)", r => r.thrust[r.thrust.length - 1], 4],
+  ["Points computed", r => `${r.s.length} of ${r.expected_points}`],
+];
+function ctlTable() {
+  const notes = $("ctl-stops"); notes.innerHTML = "";
+  const r = crun, p = cpinned;
+  if (r && r.stop) {
+    const d = document.createElement("div"); d.className = "stopnote";
+    const where = r.s.length ? `after ${r.s.length} of ${r.expected_points} points (the last at ${fmt(r.stop.s_last, 3)} τ)`
+                             : "at its very first step";
+    let facts = "";
+    if ((r.stop.kind === "lean" || r.stop.kind === "rich") && r.stop.mixture !== null)
+      facts = ` The step asked for about ${fmt(r.stop.mixture, 2)} kg of fuel per kg of air.`;
+    if ((r.stop.kind === "floor_unreachable" || r.stop.kind === "schedule_check") && r.stop.min_fuel_fraction !== null && r.s.length)
+      facts = ` By then the fuel had been cut to ${fmt(r.stop.min_fuel_fraction * 100, 3)} % of the schedule.`;
+    d.textContent = `The run stopped ${where}. ${r.stop.words}${facts}`;
+    if (r.stop.message) { const c = document.createElement("code"); c.textContent = "Model message: " + r.stop.message; d.appendChild(c); }
+    notes.appendChild(d);
+  }
+  if (r && r.s.length && Math.max(r.settled_lp, r.settled_hp) > 0.005 && !r.stop) {
+    const d = document.createElement("div"); d.className = "note";
+    d.textContent = `The run ends before the shafts settle (still ${fmt(Math.max(r.settled_lp, r.settled_hp) * 100, 2)} % short of a final steady speed). A slow LP shaft (response time ${fmt(C.rho, 2)} × the HP's) needs a longer run.`;
+    notes.appendChild(d);
+  }
+  $("ctl-pin-head").textContent = p ? "Pinned run" : "";
+  const tb = $("ctl-table").tBodies[0]; tb.innerHTML = "";
+  const val = (x, f, sig) => { if (!x || !x.s.length) return "–"; const v = f(x); return typeof v === "string" ? v : fmt(v, sig); };
+  for (const [name, f, sig] of CTL_ROWS) {
+    const tr = tb.insertRow(); tr.insertCell().textContent = name;
+    tr.insertCell().textContent = val(r, f, sig);
+    tr.insertCell().textContent = p ? val(p, f, sig) : "";
+  }
+  const tile = (id, f, up) => {
+    $("v-" + id).textContent = r && r.s.length ? fmt(f(r), 4) : "–";
+    $("d-" + id).textContent = p && p.s.length && r && r.s.length ? delta(f(r), f(p), up)[0] : "";
+  };
+  tile("cpk", x => Math.max(...x.Tt4), false);
+  tile("cslp", x => closest(x, "lp"), true);
+  tile("cshp", x => closest(x, "hp"), true);
+  tile("ccut", x => Math.min(...x.fuel.map((v, i) => v / x.fuel_sched[i] * 100)), true);
+}
+
 // ---------------------------------------------------------------- size the blades (slice 2)
 // Sizing is microseconds, so every knob move re-sizes at once (op blade_size). The lever is read one
 // throttle at a time (op blade_lever) on its OWN worker, a moment after the knobs settle; a change
@@ -1003,6 +1366,7 @@ function slamTable() {
 function enterBlades() {
   if (mode === "blades") return;
   stopSlam();
+  if (mode === "controls") stopCtl();
   mode = "blades"; lineGen++; pinned = null; $("unpin").hidden = !bpinned; $("pin-legend").hidden = true;
   showSettings(); change();
 }
@@ -1374,13 +1738,34 @@ function wire() {
                               ["teff-isen", "turbine_eff", "isentropic"], ["teff-poly", "turbine_eff", "polytropic"]]) {
     $(id).addEventListener("click", () => { S[key] = v; showSettings(); change(); });
   }
+  for (const [id, k] of Object.entries(CTL_NUM)) {
+    const put = v => { if (isFinite(v)) { C[k] = v; scheduleCtl(); } };
+    $(id).addEventListener("input", () => { const v = parseFloat($(id).value); put(v); if (isFinite(v)) $(id + "-r").value = v; });
+    $(id + "-r").addEventListener("input", () => { $(id).value = $(id + "-r").value; put(parseFloat($(id + "-r").value)); });
+  }
+  for (const k of CTL_SW) $("ctl-" + k).addEventListener("change", () => {
+    C[k] = $("ctl-" + k).checked ? 1 : 0;
+    if (k === "redline_on" && !C.redline_on) C.gov_lag_on = 0;   // the lag belongs to the limiter
+    showSettings(); scheduleCtl();
+  });
+  for (const [id, k] of [["ctl-shape", "shape"], ["ctl-lever", "lever"]]) {
+    $(id).addEventListener("change", () => { C[k] = $(id).value; showSettings(); scheduleCtl(); });
+  }
+  const cclick = (id, f) => $(id).addEventListener("click", () => { f(); showSettings(); scheduleCtl(); });
+  cclick("ctl-floor-lp", () => { C.floor_spool = "lp"; }); cclick("ctl-floor-hp", () => { C.floor_spool = "hp"; });
+  cclick("ctl-ref-phi", () => { C.floor_ref = "phi"; }); cclick("ctl-ref-inc", () => { C.floor_ref = "incidence"; });
+  cclick("ctl-st-lp", () => { C.stator_spool = "lp"; }); cclick("ctl-st-hp", () => { C.stator_spool = "hp"; });
+  for (const q of Object.keys(CTL_Q)) $("ctlq-" + q).addEventListener("click", () => { ctlQ = q; showSettings(); drawCtl(); });
+  $("mode-controls").addEventListener("click", enterControls);
   $("pin").addEventListener("click", () => {
+    if (mode === "controls") { if (!crun) return; cpinned = crun; $("unpin").hidden = false; drawCtl(); return; }
     if (mode === "blades") { if (!blast) return; bpinned = blast; bpinnedLever = leverPts.slice(); $("unpin").hidden = false; renderBlades(); return; }
     if (!last) return; pinned = last; $("unpin").hidden = false; $("pin-legend").hidden = false;
     if (mode === "fly") { slamPinned = clone(slamRuns); drawSlam(); }
     render();
   });
   $("unpin").addEventListener("click", () => {
+    if (mode === "controls") { cpinned = null; $("unpin").hidden = true; drawCtl(); return; }
     if (mode === "blades") { bpinned = null; bpinnedLever = null; $("unpin").hidden = true; if (blast) renderBlades(); return; }
     pinned = null; slamPinned = null; $("unpin").hidden = true; $("pin-legend").hidden = true; render();
     if (mode === "fly") drawSlam();
@@ -1391,6 +1776,7 @@ function wire() {
       SL = { ...SLAM_DEFAULTS, from: Math.max(600, Math.round(F.design.Tt4 - 400)) };
     }
     else if (mode === "blades") { B = clone(B_DEFAULTS); linked = true; editSpool = "lp"; }
+    else if (mode === "controls") C = clone(C_DEFAULTS);
     else S = { ...DEFAULTS };
     showSettings(); change();
   });
@@ -1415,6 +1801,13 @@ window.sandbox = {
     await runSlam(); return slamRuns;
   },
   slamRuns: () => slamRuns, slamState: null,
+  // Controls (slice 4 B): `patch` sets Controls settings; resolves with the run once it is in.
+  controls: async patch => {
+    if (mode !== "controls") enterControls();
+    Object.assign(C, patch || {}); showSettings(); clearTimeout(ctlTimer); ctlKey = null;
+    await runCtl(); return { state: window.sandbox.state, run: crun };
+  },
+  ctlState: null,
   lever: 0, kills: 0,
   points: () => leverPts,
   view: () => mode,
@@ -1430,6 +1823,8 @@ window.sandbox = {
     SLAM_DEFAULTS = { from: sd.from, ramp: sd.ramp, settle: sd.settle, mode: "both" };
     const bd = (await model.ask(JSON.stringify({ op: "blade_defaults" }))).reply;
     B_DEFAULTS = bd.blades; TI64 = bd.ti64; B = clone(B_DEFAULTS);
+    const cd = (await model.ask(JSON.stringify({ op: "controls_defaults" }))).reply;
+    C_DEFAULTS = cd.controls; CTL_DS = cd.ds; C = clone(C_DEFAULTS);
     S = { ...DEFAULTS };
     showSettings(); wire();
     await runNow();
