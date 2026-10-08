@@ -846,27 +846,34 @@ make by hand); the OPEN seams (a pocket clamp that fires at the burner, detailed
 The Design default (`π_c` 10, `Tt4` 1500 K, 250 K / 50 kPa / Mach 0.85): `Tt3` 583.5 K, `pt4` 747 kPa,
 overall `φ` 0.40. Front zone at `φ_p` 1.5 (rich, as rungs 12–24 ran), jets at `J` 25. Three grid levels:
 **L0** = the model's own defaults (4000 Zeldovich steps, a 240-point quench, 200-point curves, 48 × 48
-planes); **L1** = the charts page's grids (`visuals.rs`: quench 60 points / 400 steps, curves 80 (40 per
-pocket), quadrature 160, planes 32 × 32, 24 time slices); **L2** = coarser still. Native wall clock at
+planes); **L1** = Zeldovich 4000 steps, quench 60 points / 400 steps, curves 80 points (40 on the
+per-pocket models 16/23/24), quadrature 160, planes 32 × 32, 24 time slices — the charts page's grids
+(`visuals.rs`) except that the charts run quadrature 120 on their pocket and dwell blocks; **L2** = quench
+32 / 200, Zeldovich 1000, curves 40 (20), quadrature 80, planes 24 × 24, 16 slices. Native wall clock at
 below-normal priority, on a machine also running the other measurements (so ±2×); browser = the same calls
 under Node 24.
 
 | Front-zone + mixing model (rung) | one point at L1, native / browser | a sweep at L1, native | page use |
 |---|---|---|---|
 | two zones, instant quench (8, 9), ± fast O atoms + prompt NO (19) | **4 ms / 4 ms** | richness bell, 17 points: **0.07–0.4 s** | follows a slider |
-| a set quench time (10), jets (11), two-stream (12) | 0.1–0.2 s / 0.1 s | 14-point `J` sweep 0.9 s; richness bell 1.5 s | point follows a slider; sweeps stream |
+| a set quench time (10), jets (11), two-stream (12) | 0.1–0.2 s / 0.1 s | 14-point `J` sweep 0.9 s; richness bell 1.5 s | on release (slice 4 put 0.1 s there); sweeps stream |
 | on a precomputed curve: β-PDF (13), through the quench (15), transported (18), cross-plane (22) | 0.3–1.8 s / 0.3–0.6 s | `J` sweep 4–18 s | on release; sweeps stream |
 | per pocket: through the quench per pocket (16), the plane in time (23), local rate (24) | 3.7–5.7 s / 6–10 s | `J` sweep 51–270 s (L0: 31–84 s per POINT) | § 13.8 Q2 |
 
-- **The precomputed-curve models can be made cheap.** Rungs 13/15/18/22 rebuild the same "ideal bell" (EI
-  against local mixture, `n_bell` flame solves) on every call, though it depends only on `Tt3`, pressure, the
-  residence time and the O-atom switch — not on the jets. `pdf_mean_ei` is literally `bell_interpolator`
-  then the fold `pdf_mean_ei_on_bell` does, so a bell built once and kept (slice 3's memo precedent) gives
-  the SAME number, bit for bit — a testable claim. The bell is also rungs 8/9's richness bell drawn over
-  local mixture, so the page's first chart comes from it for free.
-- **Browser ≡ native to ~1e-15** (worst 4e-15 relative, 61 values over every model at L2) — tighter than
-  any earlier slice: these diagnostics are fixed-step integrators and bisections, not the cycle's
-  equilibrium-temperature solver whose stopping tolerance made slices 1–3 differ at 1e-10.
+- **The precomputed-curve models rebuild one curve on every call — and the model gives no way to hand it
+  one.** Rungs 13/15/18/22 build the same "ideal bell" (EI against local mixture, `n_bell` flame solves)
+  inside `zoned_nox` → `pdf_mean_ei` each time, though it depends only on `Tt3`, pressure, the residence
+  time and the O-atom switch — not on the jets. Outside `g = 0`, `pdf_mean_ei` IS `bell_interpolator` then
+  the fold `pdf_mean_ei_on_bell` does, so a kept bell would give the same number bit for bit; AT `g ≤ 1e-9`
+  (exactly `J_opt`, the notch below) `pdf_mean_ei` returns the EXACT flame solve and `pdf_mean_ei_on_bell`
+  the interpolant — different numbers. But `zoned_nox` takes no bell, so a cache means either a model change
+  or a copy of those closure branches in the sandbox — § 13.8 Q4. Without one, those sweeps cost 4–18 s,
+  streamed. (The richness chart needs no cache: the instant-quench bell is 17 cheap points.)
+- **Browser ≡ native to ~1e-15**: worst 1.7e-15 relative over 56 values at L1 on four designs (`π_c`/`Tt4`
+  10/1500, 4/1000, 20/1900, 40/1600; every model but the per-pocket three), 4e-15 over 61 at L2. The four
+  equilibrium burner inlets came out bit-identical — but slices 1–3 saw the cycle's equilibrium-temperature
+  solver differ at ~1e-10 on other designs, which would carry into every EI, so the page's bar is set at the
+  cycle's, re-measured over the build's request grid.
 - **Grid: L1 keeps every shape, L2 does not.** Against L0, L1 is within ~0.6 % at every `J` (jets 0.4 %,
   two-stream 0.4 %, β-PDF 0.6 %, through-the-quench 0.5 %, transported 0.1 %, cross-plane 0.1 %) with every
   minimum at the same `J`. L2 moves the through-the-quench model's far-side minimum (`J` 100 instead of 144)
@@ -935,15 +942,16 @@ second run, as everywhere. *Optional* (§ 13.8 Q3): the nozzle-exit readout of �
   `build_turbojet` + `run`) and ONE `zoned_nox` at the knobs, returning its whole state; `op:"burner_sweep"`
   → one point of a richness or `J` sweep, so the page streams a sweep point by point with progress and drops
   a stale one (slice 3's running line).
-- The bell memo: the last `bell_interpolator` result kept, keyed on everything it reads; the precomputed-
-  curve models go through `pdf_mean_ei_on_bell` only where § 13.6's bit-equality holds.
+- No cache unless § 13.8 Q4 says otherwise (then: its option's route, gated as § 13.6 says).
 - `explain` entries from the crash map; the L1 grids as fixed constants, cited to § 13.2.
 
 ### 13.6 Gates
 
 - `op:"burner"` ≡ a direct `zoned_nox` on a fixture built in the test from literal numbers, bit for bit, for
   every quench mode and every closure; the inlet ≡ slice 1's equilibrium design run.
-- The bell-memo route ≡ `pdf_mean_ei`, bit for bit, on every closure that uses it; a stale key rebuilds.
+- If a cache ships (Q4 b or c): the cached route ≡ `zoned_nox` bit for bit for `g > 1e-9`, and AT `J_opt`
+  (`g = 0`) it must take `pdf_mean_ei`'s exact branch — a test at `J_opt` on every closure it touches; a
+  stale key rebuilds. Option (b) is a model change: the full gate, every output bit-identical.
 - The fixed L1 grid against the model's defaults, at a few `J` per closure: same minimum, within a bar
   measured from § 13.2's data, never typed.
 - Each pre-check fires on its case and only it; each `explain` entry driven by a request that raises it.
@@ -964,8 +972,16 @@ second run, as everywhere. *Optional* (§ 13.8 Q3): the nozzle-exit readout of �
    lost); (c) the burner view gets its own pressure-ratio / temperature / flight sliders.
 2. **The three per-pocket mixing models** (rungs 16, 23, 24 — 4–10 s a point in the browser, a `J` sweep
    1–4 minutes). (a) Offered as a single point that runs on release with a spinner; their `J` sweep a button
-   that streams with progress and can be stopped — *recommended*; (b) a point only, no sweep; (c) left out
-   (the five faster closures only).
+   that streams with progress and can be stopped — *recommended*, and a DEPARTURE from slice 4, which refused
+   2–46 s runs outright (§ 12.4); the difference is that here a sweep streams and can be stopped, and a
+   single point is at most ~10 s; (b) a point only, no sweep; (c) left out (the five faster closures only),
+   as slice 4 would have done.
 3. **The nozzle-exit readout** (rung 14, ~10 ms: does the exhaust NO survive the nozzle; frozen vs
    equilibrium exit temperature). (a) Included under the burner readouts — *recommended*; (b) left out;
    (c) also rung 17's full three-model ladder (21 s).
+4. **Speeding up the four precomputed-curve models' sweeps** (§ 13.2: 4–18 s native per `J` sweep; with a
+   kept curve ESTIMATED 1–3 s, not measured). (a) No cache — the sweeps stream at their real cost and no model code changes —
+   *recommended*; (b) a small model change so `zoned_nox` can take a curve built outside it, shipped on its
+   own behind the full gate (slice 3's memo speed-up precedent); (c) the sandbox repeats those four branches
+   itself around a kept curve, held equal to `zoned_nox` by a test — a copy of model code, which slice 4
+   refused for its marcher.
