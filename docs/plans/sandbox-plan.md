@@ -879,8 +879,10 @@ under Node 24.
   minimum at the same `J`. L2 moves the through-the-quench model's far-side minimum (`J` 100 instead of 144)
   — and **crashes** the cross-plane models (22, 23, 24) at `J` 6 and 36 on the model's own β-PDF check
   (*"quadrature drifted the mean … raise n_quad: the bar needs ≥ 112"*). So the page runs L1, a fixed
-  setting, never a knob. (The per-pocket models were checked L2 against L1 only — L0 is 7–20 min a sweep;
-  the build compares a few points at L0.)
+  setting, never a knob. Per pocket (rung 16) at L0 — an 8.3-minute sweep — L1 is within 0.4 % at every `J`,
+  minimum at the same `J` (225); the set-time quench's richness bell, within 0.4 %. (The plane-in-time and
+  local-rate models, 23/24, were compared L2 against L1 only — L0 is 20 min a sweep; the build checks a few
+  of their points at L0.)
 - **The optimum is a notch, not a valley.** At the default jet spacing `J` 16 puts the jets exactly on the
   Holdeman optimum (`C = (S/H)·√J` = 2.5): the segregation width is zero, so the β-PDF model drops to the
   perfectly-mixed value (0.000 g/kg — the lean overall mixture makes no NO) and the models with a dwell
