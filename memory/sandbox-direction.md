@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: fc49c174-1ea6-4775-96a6-b721880afed4
-  modified: 2026-10-06T21:55:30.488Z
+  modified: 2026-10-08T05:36:47.423Z
 ---
 
 **Decision (user, 2026-10-06):** "generally i want more of a sandbox, not just lessons. sandbox,
@@ -40,6 +40,8 @@ CLAUDE.md carries a one-line "Direction" note under its intro. See
 the thermally perfect gas (live), equilibrium on release; stall line as a knob + map shape, labelled
 "trend only"; the memo-cache speed-up shipped first. Next: slice 2 (rung 85 blade speeds).
 **Slice 2 "Size the blades" SHIPPED 2026-10-07** — [[sandbox-slice2]]; slices 1–3 all built. **Slice 4 (transient) SHIPPED 2026-10-07/08** — (A) [[sandbox-slice4a]], (B) Controls [[sandbox-slice4b]]. Next per plan § 5: slice 5 (combustor).
+**Slice 5 (combustor, NOx rungs 7–24) PLANNED 2026-10-08 — plan § 13**; three questions in § 13.8 (which burner,
+the slow per-pocket models, the nozzle readout) WAIT for the user — do not build before they answer.
 **Slice 4 (transient) PLANNED + ANSWERED 2026-10-07** — plan § 12; user: all four as recommended —
 (A) a throttle slam on the Fly-it engine FIRST (temperature-commanded vs fuel-metered, equilibrium gas
 refused), then (B) a two-shaft *Controls* view on the Blades rig, perfect gas only, the limiter set +

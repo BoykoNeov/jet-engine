@@ -210,4 +210,4 @@ the perfect gas, come out of iterated solves (stopping at 1e-12), so they get th
 
 ## Next slices
 
-The combustor (slice 5) — plan § 5.
+The combustor (slice 5) — planned 2026-10-08, plan § 13; waiting on the user's answers (§ 13.8).

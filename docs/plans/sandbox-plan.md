@@ -4,7 +4,8 @@
 README). **Slice 3 (off-design, "Fly it") BUILT 2026-10-07 — § 10**; what the build found beyond
 the plan is § 10.8. **Slice 2 (blade speeds, "Size the blades") BUILT 2026-10-07 — § 11**; what the build found
 beyond the plan is § 11.8. **Slice 4 (the transient) PLANNED 2026-10-07 — § 12, answered (§ 12.8); part (A), the slam, BUILT
-2026-10-07 — what the build found is § 12.9; part (B), the Controls view, BUILT 2026-10-08 — § 12.10.** Drafted 2026-10-06, after rung 85 shipped. Direction (user,
+2026-10-07 — what the build found is § 12.9; part (B), the Controls view, BUILT 2026-10-08 — § 12.10.**
+**Slice 5 (the combustor) PLANNED 2026-10-08 — § 13; its questions (§ 13.8) await the user.** Drafted 2026-10-06, after rung 85 shipped. Direction (user,
 2026-10-06): the project becomes a **sandbox** — change the engine's components and design numbers
 and watch it respond — delivered as an **interactive web page running the Rust model live**, beside
 the charts page and the cutaway (`docs/visuals/`).
@@ -115,7 +116,7 @@ entropy across it mixes heat addition with a change of reference mixture.
   Matchers nest solves; time them before promising live dragging.
 - **Slice 4 — the transient:** throttle steps with the fuel limiters and stator/bleed levers
   (rungs 34–68) as switches — a time plot rather than a point.
-- **Slice 5 — the combustor:** the NOx diagnostics (rungs 7–24) as knobs on the burner zoning.
+- **Slice 5 — the combustor:** the NOx diagnostics (rungs 7–24) as knobs on the burner zoning. PLANNED — § 13.
 
 ## 6. Gates
 
@@ -804,3 +805,167 @@ sweep over a wide box, then 3 000 over the slider box, every stop's REAL message
   difference of two speeds — is compared absolutely.
 - **The phone screenshot squeezed the table** (a sentence-long cell that would not wrap) — fixed; light, dark,
   stopped and fuel views looked right.
+
+## 13. Slice 5 — the combustor ("light the burner")
+
+Planned 2026-10-08. Slices 1–4 treat the burner as a box that turns `Tt3` into `Tt4`. Slice 5 opens it: the
+NOx diagnostics of rungs 7–24 as knobs — how rich the front (primary) zone burns, how long the gas stays
+there, how fast and how evenly the dilution air mixes in — with every result shown: the emission index
+(g of NO per kg of fuel), the front zone's flame temperature, the quench path's peak, the mixing numbers.
+Every rung from 7 up is a diagnostic BESIDE the cycle, so nothing here changes a cycle number.
+
+### 13.1 Which burner — the user's design, read on the equilibrium gas
+
+The diagnostics take four numbers off a design run — `Tt3`, `Tt4`, the overall fuel-air ratio `f`, the
+burner pressure `pt4` — and then do their OWN equilibrium chemistry (`equilibrium_composition`,
+`primary_aft`), whatever gas the cycle ran on. They check themselves: the diluted mixture's equilibrium
+temperature must come back within 5 % of `Tt4` (`nox.rs` `zoned_nox`, the mix-out gate). Measured on the
+Design view's default design and eight more (`π_c` 4–40, `Tt4` 1000–2200 K), each on all five gases
+(scratch crate `W:\temp\claude\jet-combustor-timing`, not in the repo):
+
+- **Perfect gas: wrong `f`.** Its constant `cp` needs less fuel for the same `Tt4`, so the mix-out lands
+  8–14 % LOW and the gate trips (7 of 9 designs); the other two pass at 0.96 — wrong, and silent.
+- **Thermally perfect, reacting, Fork B, equilibrium: within 2.5 %** (0.979–1.024; on the equilibrium gas
+  itself +0.65 to +1.3 % — consistent with the 0.99 combustion efficiency, which the mix-out does not
+  model, but NOT checked).
+- **The basic two-zone EI does not depend on the gas at all** — it is set in the front zone by `Tt3`,
+  pressure and the front-zone richness; `f` and `Tt4` enter only through how much air the front zone gets
+  and the dilution. The four table gases share the air tables, so the same `Tt3`, so the same EI to every
+  printed digit.
+
+So the burner reads the **Design view's current design, run on the equilibrium gas** — the CLI's production
+gas, what rungs 7–24 ran on — at ~2 ms, re-run only when the design changes (§ 13.8 Q1). On another gas the
+page says why the burner shows the equilibrium run's inlet numbers.
+
+**Not in slice 5:** rungs 25–30 (the nozzle and turbine marches); rung 17's three-model exhaust ladder as
+a whole (21 s native — and the comparison it makes is the one the model selector of § 13.3 lets the user
+make by hand); the OPEN seams (a pocket clamp that fires at the burner, detailed Fenimore chemistry).
+
+### 13.2 Measured (2026-10-08)
+
+The Design default (`π_c` 10, `Tt4` 1500 K, 250 K / 50 kPa / Mach 0.85): `Tt3` 583.5 K, `pt4` 747 kPa,
+overall `φ` 0.40. Front zone at `φ_p` 1.5 (rich, as rungs 12–24 ran), jets at `J` 25. Three grid levels:
+**L0** = the model's own defaults (4000 Zeldovich steps, a 240-point quench, 200-point curves, 48 × 48
+planes); **L1** = the charts page's grids (`visuals.rs`: quench 60 points / 400 steps, curves 80 (40 per
+pocket), quadrature 160, planes 32 × 32, 24 time slices); **L2** = coarser still. Native wall clock at
+below-normal priority, on a machine also running the other measurements (so ±2×); browser = the same calls
+under Node 24.
+
+| Front-zone + mixing model (rung) | one point at L1, native / browser | a sweep at L1, native | page use |
+|---|---|---|---|
+| two zones, instant quench (8, 9), ± fast O atoms + prompt NO (19) | **4 ms / 4 ms** | richness bell, 17 points: **0.07–0.4 s** | follows a slider |
+| a set quench time (10), jets (11), two-stream (12) | 0.1–0.2 s / 0.1 s | 14-point `J` sweep 0.9 s; richness bell 1.5 s | point follows a slider; sweeps stream |
+| on a precomputed curve: β-PDF (13), through the quench (15), transported (18), cross-plane (22) | 0.3–1.8 s / 0.3–0.6 s | `J` sweep 4–18 s | on release; sweeps stream |
+| per pocket: through the quench per pocket (16), the plane in time (23), local rate (24) | 3.7–5.7 s / 6–10 s | `J` sweep 51–270 s (L0: 31–84 s per POINT) | § 13.8 Q2 |
+
+- **The precomputed-curve models can be made cheap.** Rungs 13/15/18/22 rebuild the same "ideal bell" (EI
+  against local mixture, `n_bell` flame solves) on every call, though it depends only on `Tt3`, pressure, the
+  residence time and the O-atom switch — not on the jets. `pdf_mean_ei` is literally `bell_interpolator`
+  then the fold `pdf_mean_ei_on_bell` does, so a bell built once and kept (slice 3's memo precedent) gives
+  the SAME number, bit for bit — a testable claim. The bell is also rungs 8/9's richness bell drawn over
+  local mixture, so the page's first chart comes from it for free.
+- **Browser ≡ native to ~1e-15** (worst 4e-15 relative, 61 values over every model at L2) — tighter than
+  any earlier slice: these diagnostics are fixed-step integrators and bisections, not the cycle's
+  equilibrium-temperature solver whose stopping tolerance made slices 1–3 differ at 1e-10.
+- **Grid: L1 keeps every shape, L2 does not.** Against L0, L1 is within ~0.6 % at every `J` (jets 0.4 %,
+  two-stream 0.4 %, β-PDF 0.6 %, through-the-quench 0.5 %, transported 0.1 %, cross-plane 0.1 %) with every
+  minimum at the same `J`. L2 moves the through-the-quench model's far-side minimum (`J` 100 instead of 144)
+  — and **crashes** the cross-plane models (22, 23, 24) at `J` 6 and 36 on the model's own β-PDF check
+  (*"quadrature drifted the mean … raise n_quad: the bar needs ≥ 112"*). So the page runs L1, a fixed
+  setting, never a knob. (The per-pocket models were checked L2 against L1 only — L0 is 7–20 min a sweep;
+  the build compares a few points at L0.)
+- **The optimum is a notch, not a valley.** At the default jet spacing `J` 16 puts the jets exactly on the
+  Holdeman optimum (`C = (S/H)·√J` = 2.5): the segregation width is zero, so the β-PDF model drops to the
+  perfectly-mixed value (0.000 g/kg — the lean overall mixture makes no NO) and the models with a dwell
+  term drop to the mean-field floor. That is rungs 12/13's kink, by design. A sweep that steps over `J_opt`
+  misses it, so the `J` grid always includes `J_opt` for the current spacing.
+- **The exhaust-nozzle readout is cheap** (`Gas::nozzle_flow`, rung 14): frozen vs equilibrium exit
+  temperature and velocity, and how far above its own equilibrium the exhaust NO sits at the nozzle exit —
+  7–10 ms. At the default, a stoichiometric front zone leaves the exhaust NO ~250× above its exit
+  equilibrium (frozen, as rung 27 earned); a rich one, 0.016×.
+
+### 13.3 Knobs and readouts
+
+**The burner inlet** (read-only, from the Design view): `Tt3`, pressure, `Tt4`, overall richness, fuel flow
+— with a line saying that the compressor sets the front zone's starting temperature (`π_c` up ⇒ `Tt3` up ⇒
+NO up: a stoichiometric front zone makes 5 → 21 → 53 → 88 g/kg as `π_c` goes 4 → 10 → 20 → 40, § 13.1's
+grid at varied `Tt4`).
+
+**Knobs.**
+- *Front zone*: richness `φ_p` (from the overall richness up to 2, the soot limit) and residence time `τ`.
+- *Chemistry*: faster-than-equilibrium O atoms (rungs 19–21, a switch); prompt NO (rung 19, a switch + its
+  imposed reference level — "the one number nobody can derive").
+- *Quench* — one of: **instant** (rungs 8/9) · **a set time** `τ_q` (rung 10) · **dilution jets** (rung 11:
+  jet strength `J`, duct height `H`, crossflow speed, entrainment constant, schedule shape).
+- *Mixing model* (jets only) — none (mean-field, rung 11) or ONE of the eight closures the model allows
+  (12, 13, 15, 16, 18, 22, 23, 24 — `zoned_nox` asserts at most one), each with its own few knobs (jet
+  spacing `S`; the imposed optimum `C_opt` where the model imposes it, rungs 12–18; the plume spread `k_p`
+  where it is DERIVED, rungs 22–24 — `C_opt` then shown as an output). Each named in plain words with its
+  rung and its finding in one line — rung 18's said plainly: it cannot find the optimum.
+- Every guessed constant is labelled as slice 3 labelled the stall line, *"read the trend, not the size"*
+  (`τ`, `H`, crossflow speed, entrainment, `S`, the core knobs, `k_p`, the prompt level — the code's own
+  docs call each order-of-magnitude). Rung 8's ICAO-band claim is the one absolute anchor.
+
+**Readouts** — every one the model returns, no verdicts: EI (thermal, prompt, total) and exhaust ppm; NOx
+flow (EI × fuel flow, g/s); front-zone flame temperature and air share; the diluted temperature; on a finite
+quench the quench time, the peak temperature on the way through stoichiometric, and how far the NO came
+toward its equilibrium; with jets, `C` against `C_opt`, the segregation width against its ceiling, the core
+share and dwell; on rungs 23/24 the correlation ratio. Beside them, rung 7's "if the burner were perfectly
+mixed" number — NO at `Tt4` — which is ~0: the reason zoning exists. **Charts:** EI against front-zone
+richness (the bell), EI against jet strength (when jets are on), the quench path (temperature against
+mixing progress, `quench_trajectory`), each with the current setting marked; pin & compare overlays a
+second run, as everywhere. *Optional* (§ 13.8 Q3): the nozzle-exit readout of § 13.2.
+
+### 13.4 Refusals, in plain words (pre-checks unless marked)
+
+- **A front zone leaner than the whole burner** (`φ_p` below the overall richness — the model's *"primary
+  air fraction α > 1"*; met in § 13.1's grid at `Tt4` 2100–2200 K with `φ_p` 0.6): "all the fuel burns in
+  the front zone, so it cannot be leaner than the burner overall"; the slider's floor follows the design.
+- **The design does not run on the equilibrium gas** (Fork B's balance at `Tt4` 2200 K is one seen; any
+  design slice 1 already refuses): the Design view's own words.
+- **Model combinations** are structural, not refusals: a mixing model only with jets, one at a time.
+- **Everything else is found, not guessed** (slice 2's method): a crash map over the design box × the burner
+  knobs × every model, every failure read by its message. Candidates from the source: the mix-out gate, the
+  O-atom multiplier's flame band `[1, 2]` at a cool lean front zone, the trace guard (NO < 2 %), the β-PDF
+  checks, the prompt model's validity. Each class an `explain` entry with a test that drives it.
+
+### 13.5 Model side (`sandbox_burner.rs`; no model code edited)
+
+- `op:"burner_defaults"`; `op:"burner"` → the inlet (the design on the equilibrium gas — slice 1's
+  `build_turbojet` + `run`) and ONE `zoned_nox` at the knobs, returning its whole state; `op:"burner_sweep"`
+  → one point of a richness or `J` sweep, so the page streams a sweep point by point with progress and drops
+  a stale one (slice 3's running line).
+- The bell memo: the last `bell_interpolator` result kept, keyed on everything it reads; the precomputed-
+  curve models go through `pdf_mean_ei_on_bell` only where § 13.6's bit-equality holds.
+- `explain` entries from the crash map; the L1 grids as fixed constants, cited to § 13.2.
+
+### 13.6 Gates
+
+- `op:"burner"` ≡ a direct `zoned_nox` on a fixture built in the test from literal numbers, bit for bit, for
+  every quench mode and every closure; the inlet ≡ slice 1's equilibrium design run.
+- The bell-memo route ≡ `pdf_mean_ei`, bit for bit, on every closure that uses it; a stale key rebuilds.
+- The fixed L1 grid against the model's defaults, at a few `J` per closure: same minimum, within a bar
+  measured from § 13.2's data, never typed.
+- Each pre-check fires on its case and only it; each `explain` entry driven by a request that raises it.
+- `check.mjs` gains burner requests (bar re-measured: ~1e-15 seen); the browser drive gains the view — the
+  opening run against native, a richness sweep, jets on, a closure, the notch at `J_opt`, the lean refusal,
+  a sweep stopped by a knob move — and light / dark / 390 px screenshots, looked at.
+
+### 13.7 Order of work
+
+1. The crash map; slider ranges from it. 2. `sandbox_burner.rs` + its tests. 3. The page (a *Burner* view).
+4. `check.mjs`, the browser drive, screenshots.
+
+### 13.8 Questions for the user
+
+1. **Which burner.** (a) The Design view's design, its burner always read off an equilibrium-gas run of it
+   (~2 ms extra when the Design view is on another gas; said on the page) — *recommended*; (b) a fixed burner
+   at the CLI's design point, the one rungs 7–24 ran on (simplest, but the compressor's effect on NO is
+   lost); (c) the burner view gets its own pressure-ratio / temperature / flight sliders.
+2. **The three per-pocket mixing models** (rungs 16, 23, 24 — 4–10 s a point in the browser, a `J` sweep
+   1–4 minutes). (a) Offered as a single point that runs on release with a spinner; their `J` sweep a button
+   that streams with progress and can be stopped — *recommended*; (b) a point only, no sweep; (c) left out
+   (the five faster closures only).
+3. **The nozzle-exit readout** (rung 14, ~10 ms: does the exhaust NO survive the nozzle; frozen vs
+   equilibrium exit temperature). (a) Included under the burner readouts — *recommended*; (b) left out;
+   (c) also rung 17's full three-model ladder (21 s).
