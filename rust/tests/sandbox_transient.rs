@@ -12,8 +12,8 @@
 //!   raises it.
 
 use turbojet::sandbox::{call, fly, fly_solver, FlySettings, GasModel};
-use turbojet::sandbox_transient::{low_wall_trial_fails, replay_step, slam, slam_precheck, stop_reason, SlamSettings,
-                                  SlamSolver, StopKind, ThrottleMode, DS, FUEL_CAP, LOW_FLOW_WALL, MAX_RUN};
+use turbojet::sandbox_transient::{replay_step, slam, slam_precheck, stop_reason, SlamSettings, SlamSolver, StopKind,
+                                  ThrottleMode, DS, FUEL_CAP, MAX_RUN};
 use turbojet::components::ram_recovery;
 use turbojet::visuals::Json;
 
@@ -157,41 +157,80 @@ fn a_fuel_slam_that_outruns_the_fuel_solvers_range_stops_and_says_so() {
     assert!(o.stop.is_none(), "the perfect gas does not reach the cap");
 }
 
-#[test]
-fn a_fast_commanded_cut_stops_on_the_airflow_searchs_first_trial_not_on_the_engine() {
-    let s = slam_on(GasModel::Perfect, ThrottleMode::Temperature, 1500.0, 640.0, 0.06, 3.0);
-    let (_, stop) = stop_of(&s);
-    assert_eq!(stop.kind, StopKind::LowFlowTrial, "{stop:?}");
-    // Metering the fuel through the same cut runs to the end.
-    let o = slam(&SlamSettings { mode: ThrottleMode::Fuel, ..s }).unwrap();
-    assert!(o.stop.is_none(), "the fuel-metered cut runs through: {:?}", o.stop);
+/// The fast commanded chop the crash map found stopping on the airflow search's first trial (plan § 12.9).
+fn fast_chop() -> SlamSettings {
+    slam_on(GasModel::Perfect, ThrottleMode::Temperature, 1500.0, 640.0, 0.06, 3.0)
 }
 
 #[test]
-fn the_first_trial_copy_answers_as_the_models_closure_does() {
-    // `low_wall_trial_fails` copies `eval_m`'s opening lines. The closure evaluates its low wall FIRST,
-    // so wherever the copy says that trial fails, the closure must fail with the burner's message; and
-    // the grid must hold both answers, or the check is vacuous.
-    let s = slam_on(GasModel::Perfect, ThrottleMode::Temperature, 1500.0, 640.0, 0.06, 3.0);
+fn a_fast_commanded_cut_runs_through_on_the_marched_low_wall() {
+    // Until 2026-10-10 this cut stopped: the closure's 0.02 trial made the still-fast compressor heat the
+    // air past the commanded temperature. Rung 34's march now walks that wall in. It runs to the end —
+    // and NOT vacuously: on its own trajectory the literal closure still fails at some points (the ones
+    // the old march died on) and runs at others, where the marched one must be the same arithmetic.
+    let s = fast_chop();
+    let o = slam(&s).unwrap();
+    assert!(o.stop.is_none(), "the chop runs through: {:?}", o.stop);
+    assert_eq!(o.points.len(), s.expected_points());
     let sv = SlamSolver::new(&s);
-    let (mut fails, mut passes) = (0, 0);
+    let fl = s.fly.flight();
+    let (mut walked, mut same) = (0, 0);
+    for p in &o.points {
+        let marched = sv.st.try_instant_marched(&fl, p.nu, p.tt4, Some(&sv.cmap)).unwrap();
+        assert_eq!(marched.phi.to_bits(), p.phi.to_bits(), "the march recorded the marched instant at s={}", p.s);
+        match sv.st.try_instant(&fl, p.nu, p.tt4, Some(&sv.cmap)) {
+            Ok(lit) => {
+                same += 1;
+                assert_eq!(lit.phi.to_bits(), marched.phi.to_bits(), "s={}: where the wall runs, nothing moves", p.s);
+                assert_eq!(lit.mdot_air.to_bits(), marched.mdot_air.to_bits(), "s={}", p.s);
+            }
+            Err(e) => {
+                walked += 1;
+                assert!(e.0.contains("burner f did not converge"), "s={}: {}", p.s, e.0);
+                assert!(marched.tt4 > sv.tt2 * marched.tau_c, "s={}: the root's compressor exit is below Tt4", p.s);
+            }
+        }
+    }
+    assert!(walked > 0 && same > 0, "both kinds of point occur: {walked} walked, {same} literal");
+    // Metering the fuel through the same cut ran through before and still does.
+    let f = slam(&SlamSettings { mode: ThrottleMode::Fuel, ..s }).unwrap();
+    assert!(f.stop.is_none(), "the fuel-metered cut runs through: {:?}", f.stop);
+}
+
+#[test]
+fn the_marched_closure_is_the_literal_one_wherever_the_wall_runs() {
+    // The reduce, on a grid wide enough to hold both answers: where the 0.02 trial runs, the marched
+    // closure is the literal one bit for bit; where it fails in the burner, the marched one either closes
+    // with the compressor exit below the commanded temperature or refuses.
+    let sv = SlamSolver::new(&fast_chop());
+    let (mut fails, mut passes, mut rescued) = (0, 0, 0);
     for nu in [0.6, 0.75, 0.9, 0.99, 1.05] {
         let n = nu * (sv.st.inner.tt2_d / sv.tt2).sqrt();
         for k in 0..40 {
             let tt4 = 600.0 + 25.0 * k as f64;
-            let trial_fails = low_wall_trial_fails(&sv, nu, tt4);
-            let closure = sv.st.try_close_compressor(tt4, sv.tt2, sv.pt2, &sv.cmap, n);
-            if trial_fails {
-                fails += 1;
-                let e = closure.err().unwrap_or_else(|| panic!("ν {nu}, Tt4 {tt4}: the trial fails, the closure must"));
-                assert!(e.0.contains("burner f did not converge"), "ν {nu}, Tt4 {tt4}: {}", e.0);
-            } else {
-                passes += 1;
+            let lit = sv.st.try_close_compressor(tt4, sv.tt2, sv.pt2, &sv.cmap, n);
+            let mar = sv.st.try_close_compressor_marched(tt4, sv.tt2, sv.pt2, &sv.cmap, n);
+            match lit {
+                Ok(a) => {
+                    passes += 1;
+                    let b = mar.unwrap_or_else(|e| panic!("ν {nu}, Tt4 {tt4}: {}", e.0));
+                    assert_eq!((a.m.to_bits(), a.f.to_bits(), a.tt3.to_bits()),
+                               (b.m.to_bits(), b.f.to_bits(), b.tt3.to_bits()), "ν {nu}, Tt4 {tt4}");
+                }
+                Err(e) if e.0.contains("burner f did not converge") => {
+                    fails += 1;
+                    if let Ok(b) = mar {
+                        rescued += 1;
+                        assert!(b.tt3 < tt4, "ν {nu}, Tt4 {tt4}: compressor exit {} K", b.tt3);
+                    }
+                }
+                Err(_) => {}
             }
         }
     }
-    assert!(fails > 10 && passes > 10, "both answers occur on the grid: {fails} fail, {passes} pass");
-    let fl = s.fly.flight();
+    assert!(fails > 10 && passes > 10 && rescued > 0,
+            "both answers occur on the grid: {fails} fail ({rescued} rescued), {passes} pass");
+    let fl = fast_chop().fly.flight();
     let m = &sv.st.inner;
     let (state0, _) = m.inner.freestream_for(&fl);
     assert_eq!(sv.pt2.to_bits(), (m.inner.pi_d_max * ram_recovery(fl.m0) * state0.pt).to_bits(), "the face pt2");
@@ -201,6 +240,9 @@ fn the_first_trial_copy_answers_as_the_models_closure_does() {
 const OVERSTEP: &str = r#"{"fly":{"design":{"T0":179.83035775122025,"p0":7015.72788156156,"M0":0.49568124765800964,"pi_c":6.749947111280228,"Tt4":2129.086868262755,"mdot":20,"pi_d_max":0.8553298006523951,"eta_c":0.9570307054379572,"eta_t":0.8299470940189144,"eta_b":0.8584619937542682,"pi_b":0.9431982978091931,"eta_m":0.9939251957629011,"pi_n":0.9146797784013064},"gas":"thermally_perfect","T0":231.6452487978928,"p0":56531.55736567894,"M0":3.3410278015071855,"map":"flow","phi_surge":0.769877944437319},"from":894.7030724503919,"to":1911.5827315541858,"ramp":0.04,"settle":1.9360429653964255,"mode":"temperature"}"#;
 const NEAR_TRIAL: &str = r#"{"fly":{"design":{"T0":209.46272959759045,"p0":13494.957106117761,"M0":1.8718761910190036,"pi_c":30.890532406087356,"Tt4":1608.4097019804246,"mdot":20,"pi_d_max":0.8957317868718092,"eta_c":0.9277174597708263,"eta_t":0.6811395022994852,"eta_b":0.960501966483168,"pi_b":0.8785438012665661,"eta_m":0.9962522593911114,"pi_n":0.9600968634264808},"gas":"reacting","T0":209.46272959759045,"p0":13494.957106117761,"M0":1.8718761910190036,"map":"pressure","phi_surge":0.8226903597558186},"from":1330.821662275258,"to":940.9335757310362,"ramp":1.18,"settle":0.9883696747717574,"mode":"temperature"}"#;
 const SUBSONIC: &str = r#"{"fly":{"design":{"T0":256.53008876148436,"p0":6214.567360155657,"M0":0.9869783017310311,"pi_c":13.69074829711004,"Tt4":1864.0962008362205,"mdot":20,"pi_d_max":0.9623333196765937,"eta_c":0.6943844443713654,"eta_t":0.7469895362320241,"eta_b":0.9897266891367041,"pi_b":0.8904359211792187,"eta_m":0.9811987899393365,"pi_n":0.9012489691697223},"gas":"perfect","T0":248.8469369923376,"p0":93544.98757257541,"M0":0.9533722500537335,"map":"flow","phi_surge":0.4767475411185223},"from":1014.2493929207014,"to":1119.2189463533623,"ramp":0.04,"settle":3.2837958021209492,"mode":"fuel"}"#;
+/// A fast commanded cut (2026-10-10 crash map, fork B gas) that falls to the compressor's own exit
+/// temperature: once the march walks the closure's low wall in, the burner closes only on f ~ 2e-6.
+const FLAME_OUT: &str = r#"{"fly":{"design":{"T0":223.00297488710027,"p0":7120.190306784365,"M0":0.9515166064059939,"pi_c":29.215489416575778,"Tt4":1448.5665254994133,"mdot":20,"pi_d_max":0.9213442645359807,"eta_c":0.709944086105803,"eta_t":0.807183053069216,"eta_b":0.9191422883354251,"pi_b":0.9499029160494501,"eta_m":0.991207197525883,"pi_n":0.9161594274848941},"gas":"fork_b","T0":269.0584724269396,"p0":66629.8751229321,"M0":1.8769970570459698,"map":"pressure","phi_surge":0.8328807403924867},"from":1759.4064889766644,"to":950.6952807316507,"ramp":0.06,"settle":2.794610869266557,"mode":"temperature"}"#;
 
 #[test]
 fn every_kind_of_stop_the_crash_map_found_is_driven_and_worded() {
@@ -209,15 +251,37 @@ fn every_kind_of_stop_the_crash_map_found_is_driven_and_worded() {
     let (_, stop) = stop_of(&of(OVERSTEP));
     assert_eq!(stop.kind, StopKind::Overstep, "{stop:?}");
     assert!(stop.failure.nu <= 0.0);
-    // A slow commanded cut whose temperature comes within a few kelvin of the first trial's: the burner
-    // solve fails on a near-zero rise there, and that is still the search's artefact.
-    let (_, stop) = stop_of(&of(NEAR_TRIAL));
-    assert_eq!(stop.kind, StopKind::LowFlowTrial, "{stop:?}");
+    // A slow commanded cut whose temperature came within a few kelvin of the first trial's (a near-zero
+    // rise the burner solve cannot close): it stopped until the march walked the wall in; now it runs.
+    let near = of(NEAR_TRIAL);
+    let o = slam(&near).unwrap();
+    assert!(o.stop.is_none(), "{:?}", o.stop);
+    assert_eq!(o.points.len(), near.expected_points());
+    // A commanded temperature at the compressor's exit: the burner would need negative fuel.
+    let fo = of(FLAME_OUT);
+    let (_, stop) = stop_of(&fo);
+    assert_eq!(stop.kind, StopKind::FlameOut, "{stop:?}");
+    // ...and it IS that: at the failing state the first flow the burner closes needs almost no fuel.
+    let sv = SlamSolver::new(&fo);
+    let tt4 = (sv.schedule)(stop.failure.s);
+    let n = stop.failure.nu * (sv.st.inner.tt2_d / sv.tt2).sqrt();
+    let m = &sv.st.inner.inner;
+    let gas = m.gas();
+    let hi = 2.5f64.min(sv.cmap.phi_max(0.1) * n);
+    let f_first = (0..=400).find_map(|k| {
+        let mc = 0.02 + (hi - 0.02) * k as f64 / 400.0;
+        let tt3 = sv.tt2 * sv.st.tau_c_forward(&sv.cmap, n, mc);
+        let eta_c = sv.cmap.eta_c_at(m.eta_c, mc / n, n);
+        let (h2, h3) = (gas.h_c(sv.tt2), gas.h_c(tt3));
+        let tt3s = gas.try_t_from_h_c(h2 + eta_c * (h3 - h2)).ok()?;
+        m.try_solve_f(tt3, m.pi_b * gas.pr_c(tt3s) / gas.pr_c(sv.tt2) * sv.pt2, tt4).ok()
+    }).expect("the burner closes somewhere on the speed line");
+    assert!(f_first < 1e-4, "the first closable trial burns next to nothing: f = {f_first}");
     // The unchoked-nozzle solve's own gap.
     let (_, stop) = stop_of(&of(SUBSONIC));
     assert_eq!(stop.kind, StopKind::SubsonicGap, "{stop:?}");
     // Every kind has its words, and they reach the page.
-    for k in [StopKind::FuelCap, StopKind::SubsonicGap, StopKind::LowFlowTrial, StopKind::Overstep, StopKind::Burner,
+    for k in [StopKind::FuelCap, StopKind::SubsonicGap, StopKind::FlameOut, StopKind::Overstep, StopKind::Burner,
               StopKind::Other] {
         assert!(k.words().len() > 40, "{k:?} has plain words");
     }
@@ -312,25 +376,27 @@ fn fuel_metering_refuses_an_endpoint_past_its_fuel_range_and_only_that() {
 }
 
 #[test]
-fn past_the_failing_first_trial_the_commanded_cut_has_a_real_operating_point() {
-    // The words for a LowFlowTrial stop say the operating point itself is fine. Show it at the measured
-    // failing state (1500 → 640 K over 0.06, perfect gas): scan the closure's residual m - m_imp(m) along
-    // the speed line from its low wall, with `eval_m`'s own arithmetic; the burner fails at the low flows
-    // and the residual then changes sign where the compressor exit is BELOW the commanded temperature.
-    let s = slam_on(GasModel::Perfect, ThrottleMode::Temperature, 1500.0, 640.0, 0.06, 3.0);
+fn past_the_failing_first_trial_the_marched_closure_lands_on_the_real_operating_point() {
+    // Independent of the model's closure: at a recorded state of the fast chop where the literal closure
+    // fails, scan the residual m - m_imp(m) along the speed line from the old 0.02 wall with `eval_m`'s own
+    // arithmetic. The burner fails at the low flows; the residual then changes sign where the compressor
+    // exit is BELOW the commanded temperature — and the marched closure's root sits in that very cell.
+    let s = fast_chop();
     let o = slam(&s).unwrap();
-    let stop = o.stop.unwrap();
-    assert_eq!(stop.kind, StopKind::LowFlowTrial);
     let sv = SlamSolver::new(&s);
-    let tt4 = (sv.schedule)(stop.failure.s);
+    let fl = s.fly.flight();
+    let p = o.points.iter()
+        .find(|p| sv.st.try_instant(&fl, p.nu, p.tt4, Some(&sv.cmap)).is_err())
+        .expect("a point the literal closure fails at");
+    let tt4 = p.tt4;
     let mm = &sv.st.inner;
     let m = &mm.inner;
     let gas = m.gas();
-    let n = stop.failure.nu * (mm.tt2_d / sv.tt2).sqrt();
-    let hi = 2.5f64.min(sv.cmap.phi_max(0.1) * n);
-    let (mut burner_failed_low, mut prev, mut root_tt3) = (false, None::<f64>, None::<f64>);
+    let n = p.nu * (mm.tt2_d / sv.tt2).sqrt();
+    let (lo, hi) = (0.02, 2.5f64.min(sv.cmap.phi_max(0.1) * n));
+    let (mut burner_failed_low, mut prev, mut cell) = (false, None::<(f64, f64)>, None::<(f64, f64, f64)>);
     for k in 0..=240 {
-        let mc = LOW_FLOW_WALL + (hi - LOW_FLOW_WALL) * k as f64 / 240.0;
+        let mc = lo + (hi - lo) * k as f64 / 240.0;
         let tt3 = sv.tt2 * sv.st.tau_c_forward(&sv.cmap, n, mc);
         let eta_c = sv.cmap.eta_c_at(m.eta_c, mc / n, n);
         let (h2, h3) = (gas.h_c(sv.tt2), gas.h_c(tt3));
@@ -342,10 +408,12 @@ fn past_the_failing_first_trial_the_commanded_cut_has_a_real_operating_point() {
         };
         let mdot4 = m.a4 * pt4 * turbojet::components::try_choked_mfp(gas, tt4, f).unwrap() / tt4.sqrt();
         let g = mc - (mdot4 / (1.0 + f) * sv.tt2.sqrt() / sv.pt2) / mm.mdot_corr_d;
-        if let Some(p) = prev { if p < 0.0 && g >= 0.0 && root_tt3.is_none() { root_tt3 = Some(tt3); } }
-        prev = Some(g);
+        if let Some((pm, pg)) = prev { if pg < 0.0 && g >= 0.0 && cell.is_none() { cell = Some((pm, mc, tt3)); } }
+        prev = Some((mc, g));
     }
-    assert!(burner_failed_low, "the low wall's burner solve fails");
-    let r = root_tt3.expect("the residual changes sign past the failing trial");
-    assert!(r < tt4, "at the root the compressor exit ({r} K) is below the commanded {tt4} K");
+    assert!(burner_failed_low, "the old wall's burner solve fails");
+    let (a, b, tt3) = cell.expect("the residual changes sign past the failing trial");
+    assert!(tt3 < tt4, "at the root the compressor exit ({tt3} K) is below the commanded {tt4} K");
+    let root = sv.st.try_close_compressor_marched(tt4, sv.tt2, sv.pt2, &sv.cmap, n).unwrap();
+    assert!(a <= root.m && root.m <= b, "the marched root {} lies in the scan's cell [{a}, {b}]", root.m);
 }

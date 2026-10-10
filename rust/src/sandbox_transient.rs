@@ -220,7 +220,7 @@ fn instant_at(st: &SlamSolver, nu: f64, s: f64) -> Result<Instant, String> {
     let fl = st.settings.fly.flight();
     let cmap = st.cmap;
     match st.settings.mode {
-        ThrottleMode::Temperature => st.st.try_instant(&fl, nu, (st.schedule)(s), Some(&cmap)),
+        ThrottleMode::Temperature => st.st.try_instant_marched(&fl, nu, (st.schedule)(s), Some(&cmap)),
         ThrottleMode::Fuel => st.st.try_instant_fuel(&fl, nu, (st.schedule)(s), Some(&cmap)),
     }.map_err(|e| e.0)
 }
@@ -296,31 +296,6 @@ pub fn replay_step(sv: &SlamSolver, nu: f64, s: f64) -> Result<f64, Failure> {
     Ok(0.2f64.max(nu + DS / 6.0 * (k1 + 2.0 * k2 + 2.0 * k3 + k4)))
 }
 
-/// The lowest corrected flow rung 34's temperature-commanded closure tries — the literal low wall of
-/// `SpoolTransient::try_close_compressor`'s bracket. Copied, not imported (the model spells it inline);
-/// `tests/sandbox_transient.rs` pins that the classification it feeds matches the model's behaviour.
-pub const LOW_FLOW_WALL: f64 = 0.02;
-
-/// Does the closure's FIRST trial — the low flow wall — fail in the burner at this state? `spool.rs`
-/// `eval_m`'s opening lines, copied in the same order (forward speed line, map efficiency, the
-/// enthalpy/`pr` inverse, `pt4`, then the burner's `try_solve_f`), so the answer is the model's own;
-/// `tests/sandbox_transient.rs` holds it to `try_close_compressor`'s outcome. A burner failure there is
-/// the search's artefact whether the trial is hotter than the commanded temperature or only just below
-/// it (a near-zero temperature rise the burner solve cannot close either — both measured, plan § 12.9).
-pub fn low_wall_trial_fails(sv: &SlamSolver, nu: f64, tt4: f64) -> bool {
-    let m = &sv.st.inner.inner;
-    let gas = m.gas();
-    let n = nu * powp(sv.st.inner.tt2_d / sv.tt2, 0.5);
-    let tau_c = sv.st.tau_c_forward(&sv.cmap, n, LOW_FLOW_WALL);
-    let tt3 = sv.tt2 * tau_c;
-    let eta_c = sv.cmap.eta_c_at(m.eta_c, LOW_FLOW_WALL / n, n);
-    let (h2, h3) = (gas.h_c(sv.tt2), gas.h_c(tt3));
-    let Ok(tt3s) = gas.try_t_from_h_c(h2 + eta_c * (h3 - h2)) else { return false };
-    let pi_c = gas.pr_c(tt3s) / gas.pr_c(sv.tt2);
-    let pt4 = m.pi_b * pi_c * sv.pt2;
-    m.try_solve_f(tt3, pt4, tt4).is_err()
-}
-
 /// What stopped a march, read off the failure (plan § 12.2, § 12.9 — each kind measured in the crash
 /// map and driven by a test).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -331,10 +306,11 @@ pub enum StopKind {
     /// The nozzle is near unchoking and the model's unchoked-nozzle turbine solve has a gap there
     /// (rung 34's own "a real subsonic-solve gap" escalation).
     SubsonicGap,
-    /// Temperature commanded, on a power cut: the airflow search's first trial (its lowest flow) makes the
-    /// still-fast compressor heat the air to (or past) the commanded temperature, so that trial's burner
-    /// solve fails and the search gives up — a solver artefact; the operating point itself is fine.
-    LowFlowTrial,
+    /// Temperature commanded, on a fast power cut: the commanded temperature fell to (or below) the
+    /// air the still-fast compressor delivers, so the burner would need zero or negative fuel — the
+    /// engine would flame out. Rung 34's marched closure says so (`spool.rs`); until 2026-10-10 these
+    /// stops were mislabelled as the airflow search's first-trial artefact (plan § 12.9).
+    FlameOut,
     /// The shaft speed changed so fast that an RK stage carried it to zero or below: the fixed step is too
     /// coarse for this engine at this flight (measured at Mach 3.3, where the shaft's own response is far
     /// faster than its design time constant).
@@ -353,8 +329,8 @@ impl StopKind {
                 "The fuel arrived faster than the shaft could bring in air to burn it, so the turbine-inlet                  temperature shot past its target. The next step would need more than 0.05 kg of fuel per kg of air,                  the most the model's fuel-metered solver searches (burning every bit of the oxygen takes about                  0.068). A real engine's fuel control exists to prevent exactly this. Make the move slower, or start                  from a higher throttle.",
             StopKind::SubsonicGap =>
                 "The nozzle is close to the point where it stops being choked (the jet just under the speed of                  sound), and the model's solver for that case has a known gap there: it cannot find the turbine's                  operating point. This is a limit of the model, not of the engine.",
-            StopKind::LowFlowTrial =>
-                "This stop is the model's, not the engine's. To find the airflow, the solver first tries a very                  low airflow; there the compressor, still spinning near its old speed, would heat the air above the                  temperature you are commanding, so that first try asks the burner to cool the air and the solver                  gives up. Where this was checked, a working operating point exists a little further along; the                  model just cannot reach it. Meter the fuel instead (what a real engine does), or cut the throttle                  more slowly.",
+            StopKind::FlameOut =>
+                "The temperature you are commanding has fallen to the temperature of the air already leaving the                  compressor, which is still spinning fast: to hold it the burner would have to burn no fuel at                  all, or less than none. A real engine would flame out here. Cut the throttle more slowly or not                  so far, or meter the fuel instead (what a real engine does).",
             StopKind::Overstep =>
                 "The shaft's speed was changing so fast here that one of the model's fixed time steps carried it                  past zero. The time step (0.02 τ) is too coarse for this engine at this flight, so the last points                  before the stop are not to be trusted either. This is a limit of the model's stepping, not of the                  engine.",
             StopKind::Burner =>
@@ -368,7 +344,7 @@ impl StopKind {
         match self {
             StopKind::FuelCap => "fuel_cap",
             StopKind::SubsonicGap => "subsonic_gap",
-            StopKind::LowFlowTrial => "low_flow_trial",
+            StopKind::FlameOut => "flame_out",
             StopKind::Overstep => "overstep",
             StopKind::Burner => "burner",
             StopKind::Other => "other",
@@ -383,9 +359,12 @@ pub struct Stop {
     pub kind: StopKind,
 }
 
-/// Classify a failure by where it happened (a stage at zero speed or below) and by its message — and,
-/// for the burner, by whether the airflow search's own first trial fails at the failing state.
-pub fn classify(sv: &SlamSolver, f: &Failure) -> StopKind {
+/// Classify a failure by where it happened (a stage at zero speed or below) and by its message.
+///
+/// A fourth kind lived here until 2026-10-10: a commanded power cut stopped when the airflow search's
+/// FIRST trial (its lowest flow) asked the burner to cool the air. Rung 34's march now walks that wall
+/// in (`SpoolTransient::try_close_compressor_marched`), so the cut runs through (plan § 12.9).
+pub fn classify(_sv: &SlamSolver, f: &Failure) -> StopKind {
     let m = &f.message;
     if f.nu <= 0.0 {
         StopKind::Overstep
@@ -393,12 +372,10 @@ pub fn classify(sv: &SlamSolver, f: &Failure) -> StopKind {
         StopKind::FuelCap
     } else if m.contains("subsonic turbine failed to bracket AWAY") {
         StopKind::SubsonicGap
+    } else if m.contains("the burner would need negative fuel") {
+        StopKind::FlameOut
     } else if m.contains("burner f did not converge") {
-        if sv.settings.mode == ThrottleMode::Temperature && low_wall_trial_fails(sv, f.nu, (sv.schedule)(f.s)) {
-            StopKind::LowFlowTrial
-        } else {
-            StopKind::Burner
-        }
+        StopKind::Burner
     } else {
         StopKind::Other
     }
@@ -505,9 +482,10 @@ pub fn call_op(op: &str, req: &Json) -> Option<Json> {
 }
 
 /// The slam requests the browser check (`rust/sandbox-wasm/check.mjs`) compares with the native model:
-/// the page's opening slam, then every offered gas in both modes on a slam and a chop, and the two
-/// measured early stops (the fuel cap on the thermally perfect gas, the airflow search's first trial on
-/// the perfect gas) — so a stop's position and words are compared too.
+/// the page's opening slam, then every offered gas in both modes on a slam and a chop, the measured
+/// early stop (the fuel cap on the thermally perfect gas — so a stop's position and words are compared
+/// too), and the fast commanded chop that stopped on the airflow search's first trial until rung 34's
+/// march walked that wall in (it now runs through the marched closure).
 pub fn check_requests() -> Vec<String> {
     let mut out = vec![r#"{"op":"slam","slam":{}}"#.to_string()];
     let d = SlamSettings::defaults();

@@ -542,13 +542,62 @@ impl SpoolTransient {
     pub fn try_close_compressor(
         &self, tt4: f64, tt2: f64, pt2: f64, cmap: &ComponentMap, n: f64,
     ) -> Result<CompState, Abort> {
+        self.try_close_compressor_walled(tt4, tt2, pt2, cmap, n, false)
+    }
+
+    /// [`try_close_compressor`](Self::try_close_compressor) with its LOW WALL MARCHED IN where
+    /// the wall's own trial fails — the closure [`integrate`](Self::integrate) steps with.
+    ///
+    /// **Why the march, and why only here.** At a low flow the forward map loads the compressor
+    /// hardest, so on a fast power cut the still-fast compressor heats the 0.02 trial's air to
+    /// (or within a few kelvin of) the commanded `Tt4`; the burner's `f` solve refuses it and
+    /// the literal closure gives up, though the root — at a higher flow and a cooler `Tt3` — is
+    /// fine (sandbox plan § 12.9). In a time march that refusal ENDS the run. In
+    /// [`find_equilibrium_nu`](Self::find_equilibrium_nu)'s bracket march it is control flow:
+    /// that march walks its low end in past failing speeds, so a closure that now succeeds
+    /// there moves the bracket and the converged root by ~1e-11 on cells that never failed —
+    /// measured: 1 416 of `combustor_oracle`'s 2 066 keys. The steady searches therefore keep
+    /// the literal closure; a step of the march either ran before (same arithmetic, bit for
+    /// bit — the loop below never iterates) or stopped the run.
+    pub fn try_close_compressor_marched(
+        &self, tt4: f64, tt2: f64, pt2: f64, cmap: &ComponentMap, n: f64,
+    ) -> Result<CompState, Abort> {
+        self.try_close_compressor_walled(tt4, tt2, pt2, cmap, n, true)
+    }
+
+    fn try_close_compressor_walled(
+        &self, tt4: f64, tt2: f64, pt2: f64, cmap: &ComponentMap, n: f64, march_wall: bool,
+    ) -> Result<CompState, Abort> {
         // g(m) = m - m_imp(m) is monotone-increasing (higher m -> lower psi -> lower pi_c ->
         // lower pt4 -> lower m_imp), so it brackets and bisects cleanly.
         let g = |m: f64| -> Result<f64, Abort> {
             Ok(m - self.eval_m(tt4, tt2, pt2, cmap, n, m)?.m_imp)
         };
-        let (lo, hi) = (0.02, 2.5f64.min(cmap.phi_max(0.1) * n));
-        let (glo, ghi) = (g(lo)?, g(hi)?);
+        let (mut lo, hi) = (0.02, 2.5f64.min(cmap.phi_max(0.1) * n));
+        // The marched wall (see `try_close_compressor_marched`): `g` is monotone, so the first
+        // flow whose trial runs is a valid wall.
+        let step = (hi - lo) / 64.0;
+        let mut walked = false;
+        let glo = loop {
+            match g(lo) {
+                Ok(v) => break v,
+                Err(e) if !march_wall || lo + step >= hi => return Err(e),
+                Err(_) => {
+                    lo += step;
+                    walked = true;
+                }
+            }
+        };
+        let ghi = g(hi)?;
+        if walked && glo >= 0.0 {
+            // The root lies BELOW the first flow the burner can close: there the still-fast
+            // compressor delivers air at (or above) the commanded `Tt4`, so the burner would
+            // need zero or negative fuel — a flame-out, not a solver gap. Measured on the
+            // sandbox's crash map: at the walked wall the burner closes on `f` ~ 1e-6–2e-5.
+            return Err(Abort(format!(
+                "rung-34 compressor closure: the commanded tt4={tt4:.0} is at or below the                  compressor exit at n={n:.4} — the burner would need negative fuel (low wall                  marched to m={lo:.3}, g={glo:.3e})."
+            )));
+        }
         if !(glo < 0.0 && 0.0 < ghi) {
             return Err(Abort(format!(
                 "rung-34 compressor closure does not bracket at n={n:.4}, tt4={tt4:.0} \
@@ -646,13 +695,29 @@ impl SpoolTransient {
     pub fn try_instant(
         &self, flight: &FlightCondition, nu: f64, tt4: f64, cmap: Option<&ComponentMap>,
     ) -> Result<Instant, Abort> {
+        self.try_instant_walled(flight, nu, tt4, cmap, false)
+    }
+
+    /// [`try_instant`](Self::try_instant) through
+    /// [`try_close_compressor_marched`](Self::try_close_compressor_marched) — the instant a time
+    /// march steps with.
+    pub fn try_instant_marched(
+        &self, flight: &FlightCondition, nu: f64, tt4: f64, cmap: Option<&ComponentMap>,
+    ) -> Result<Instant, Abort> {
+        self.try_instant_walled(flight, nu, tt4, cmap, true)
+    }
+
+    fn try_instant_walled(
+        &self, flight: &FlightCondition, nu: f64, tt4: f64, cmap: Option<&ComponentMap>,
+        march_wall: bool,
+    ) -> Result<Instant, Abort> {
         let cmap = self.cmap(cmap);
         let mm = self.m();
         let pi_d = mm.pi_d_max * ram_recovery(flight.m0);
         let (state0, v0) = mm.freestream_for(flight);
         let (tt2, pt2) = (state0.tt, pi_d * state0.pt);
         let n = nu * powp(self.inner.tt2_d / tt2, 0.5); // corrected speed at this nu
-        let comp = self.try_close_compressor(tt4, tt2, pt2, &cmap, n)?;
+        let comp = self.try_close_compressor_walled(tt4, tt2, pt2, &cmap, n, march_wall)?;
         self.try_instant_tail(flight, nu, tt4, &comp, n, tt2, pt2, v0, &cmap)
     }
 
@@ -866,7 +931,7 @@ impl SpoolTransient {
         S: Fn(f64) -> f64,
     {
         self.march(nu0, s_end, ds, |nu, s| {
-            self.try_instant(flight, nu, schedule(s), cmap)
+            self.try_instant_marched(flight, nu, schedule(s), cmap)
         })
     }
 
