@@ -121,6 +121,15 @@ reached (`tests/cli_golden.rs`'s second re-cut). **The dispatch itself is untouc
 it fall through to the subsonic branch on that abort changes which cells return numbers in the
 oracle gates, so it is booked OPEN, not folded into a label fix.
 
+**REPAIRED 2026-10-10** (`docs/plans/sandbox-plan.md` § 14.2) — not by a fall-through but at the
+cause: rung 31's choke solve steps its 0.02 `π_t` wall in while `Tt5s` is below the tables. Where
+the 0.02 wall is in the tables nothing changes. The dispatch now reaches the subsonic branch: 450 K
+returns its point (`tests/rung33.rs` gate 5b, bit-equal to `match_subsonic`), 440 / 420 K are
+refused by the thrust guard, the panel's detour and note are gone and the segment is the Python
+golden's bytes again. In `offdesign_oracle` exactly the 12 cells at 400 K whose 0.02 trial is below
+the tables moved — each to a later named guard — licensed as a rule in
+`tests/common/turbine_wall.rs`.
+
 The window widens at low ram (near-static): lower `pt` unchokes the nozzle at a higher `Tt4`, so
 the whole idle-descent / ground-idle regime lives on this branch — which is exactly where a real
 engine spends its subsonic-nozzle time.

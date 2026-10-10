@@ -76,26 +76,18 @@ fn compare(label: &str, want: &str, got: &str) -> Result<(), String> {
 ///   so; the Rust CLI computes the chart's DATA and writes `ts_diagram.json`, and
 ///   `plot_ts_diagram.py` draws the PNG (byte-identical to the one `main.py` drew — checked when AR
 ///   shipped). Printing the old line would name a file this binary never writes.
-/// * Rung 33's table (2026-10-06, `docs/rung33-spec.md` § The SUB-IDLE label) — Python printed
-///   SUB-IDLE on ANY abort, and its 440 / 420 K rows aborted in the dispatch's choked trial (the
-///   gas tables' 150 K floor), before any thrust check. The panel now runs the subsonic solve
-///   directly there and labels the row by the guard that fired; the rows' text is unchanged (the
-///   thrust guard DOES fire), and a three-line note says how they were reached.
+///
+/// Rung 33's table had a second entry from 2026-10-06 to 2026-10-10: its 440 / 420 K rows had
+/// aborted in the dispatch's choked trial (the gas tables' 150 K floor), so the panel ran the
+/// subsonic solve directly and printed a three-line note saying so. Rung 31's turbine wall is now
+/// marched in, the dispatch reaches the subsonic thrust guard itself, and the segment is the
+/// golden's own bytes again — Python's SUB-IDLE text, now reached by measurement rather than by
+/// coincidence (`docs/rung33-spec.md` § The SUB-IDLE label).
 const RECUTS: &[(&str, &str, &str)] = &[
     (
         "plot_ts_diagram",
         "\nT–s diagram (ideal vs real) written to ts_diagram.png\n",
         "\nT–s diagram data (ideal vs real) written to ts_diagram.json; draw it with: python plot_ts_diagram.py\n",
-    ),
-    (
-        "print_subsonic_matching_table",
-        "      420  SUB-IDLE  (net thrust <= 0: below thrust-neutral idle)\n",
-        concat!(
-            "      420  SUB-IDLE  (net thrust <= 0: below thrust-neutral idle)\n",
-            "  (The 440/420 rows ran the subsonic solve DIRECTLY: from ~455 K down, the auto-dispatch's\n",
-            "  choked trial asks the gas tables for T < 150 K and aborts BEFORE any thrust check — so\n",
-            "  SUB-IDLE above is the subsonic branch's own thrust guard, not the dispatch's abort.)\n",
-        ),
     ),
 ];
 

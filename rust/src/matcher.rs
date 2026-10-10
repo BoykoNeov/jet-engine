@@ -849,6 +849,18 @@ pub fn try_r31_solve_turbine(
     };
 
     let (mut lo, mut hi) = (0.02f64, 0.999f64);
+    // THE LOW WALL IS MARCHED IN WHERE THE GAS TABLES CANNOT HOLD IT (2026-10-10). On a cold cell
+    // the 0.02 expansion asks `t_from_pr_t` for an isentropic `Tt5s` below the tables' 150 K
+    // floor — from ~455 K `Tt4` down on the reacting gas — and the PANIC aborted `match_point`
+    // before rung 33's dispatch could reach the subsonic branch that holds the real point
+    // (`docs/rung33-spec.md` § SUB-IDLE). The (★) root sits far above that floor, so the wall
+    // steps in by 0.01 until `Tt5s` is in the tables. Where the 0.02 wall is in the tables the
+    // loop never iterates, `tau_t_of_pi_t` is not called, and the bisection — its 47 evaluations
+    // included — is the same arithmetic, bit for bit.
+    let pr4 = gas.pr_t(tt4, f);
+    while gas.try_t_from_pr_t(pr4 * lo, f).is_err() && lo + 0.01 < hi {
+        lo += 0.01;
+    }
     let (mut flo, fhi) = (resid(lo)?, resid(hi)?);
     assert!(flo < 0.0 && 0.0 < fhi, "turbine choke-match bracket does not straddle the root");
     for _ in 0..OffDesignMatcher::MAX {

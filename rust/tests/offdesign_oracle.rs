@@ -44,6 +44,8 @@ use turbojet::matcher::{try_r31_solve_turbine, Branch, MatcherHooks, OffDesignMa
 // The 2026-10-05 equilibrium-floor divergence — one rule, shared by the three oracle gates.
 #[path = "common/eq_floor.rs"]
 mod eq_floor;
+#[path = "common/turbine_wall.rs"]
+mod turbine_wall;
 
 const ORACLE_CPYTHON: &str = include_str!("../oracle/offdesign_cpython.tsv");
 const ORACLE_PYPY: &str = include_str!("../oracle/offdesign_pypy.tsv");
@@ -462,8 +464,34 @@ fn bar_for(quant: &str, strict: bool) -> f64 {
     }
 }
 
+/// The TURBINE-WALL cells (`common/turbine_wall.rs`), named PHYSICALLY: on the cell's first pass
+/// (the design mixture, `match_point`'s seed), rung 31's old 0.02 wall asks the gas tables for an
+/// isentropic `Tt5s` they do not hold.
+fn wall_cells() -> HashSet<String> {
+    let mut out = HashSet::new();
+    for &g in GASES {
+        let m = matcher_for(g);
+        for &m0 in M0S {
+            let flight = FlightCondition::new(250.0, 50_000.0, m0);
+            let (state0, _) = m.freestream_for(&flight);
+            let pt2 = m.pi_d_max * ram_recovery(m0) * state0.pt;
+            for &tt4 in TT4S {
+                let f = m.f_design;
+                let Ok(owned) = m.try_working_gas(f, tt4, m.pi_b * m.pi_c_design * pt2) else { continue };
+                let wgas = owned.as_ref().unwrap_or(m.gas());
+                if wgas.try_t_from_pr_t(wgas.pr_t(tt4, f) * 0.02, f).is_err() {
+                    out.insert(format!("{g}/{m0:.2}/{tt4:.0}"));
+                }
+            }
+        }
+    }
+    out
+}
+
 fn compare_against(oracle_text: &str, label: &str, require_bit_exact: bool) {
-    let (ours, oracle) = eq_floor::reconcile(rust_values(), load_oracle(oracle_text));
+    let wall = wall_cells();
+    let (ours, oracle) = turbine_wall::reconcile(rust_values(), load_oracle(oracle_text), &wall);
+    let (ours, oracle) = eq_floor::reconcile_with(ours, oracle, &wall);
     println!("\n=== Rust vs {label} ===");
     assert_eq!(ours.len(), oracle.len(),
                "key COUNT differs: rust {} vs oracle {} — the dump and the gate have drifted \

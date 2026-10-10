@@ -287,6 +287,40 @@ fn gate5_subidle_is_reported_not_force_fit() {
     let _ = m.match_point(&flight(), 400.0);
 }
 
+/// GATE 5b (2026-10-10) — the AUTO-DISPATCH reaches the subsonic branch below ~455 K.
+///
+/// Rung 31's choke solve bisected from `pi_t = 0.02`, and on the reacting gas below ~455 K that
+/// trial asks the gas tables for an isentropic `Tt5s` under their 150 K floor: `match_point`
+/// panicked before its dispatch, though the 450 K point exists (`docs/rung33-spec.md` § SUB-IDLE).
+/// The wall is now marched in. Non-vacuous: the 0.02 trial IS below the tables here; the point
+/// `match_point` returns IS `match_subsonic`'s, bit for bit; and at 440 K the abort is now the
+/// thrust guard's, not the tables'.
+#[test]
+fn gate5b_the_dispatch_reaches_the_subsonic_branch_below_the_table_floor() {
+    let m = reacting_matcher();
+    let fl = flight();
+    let (state0, _) = m.freestream_for(&fl);
+    let pt2 = m.pi_d_max * turbojet::components::ram_recovery(fl.m0) * state0.pt;
+    let f = m.f_design;
+    let owned = m.working_gas(f, 450.0, m.pi_b * m.pi_c_design * pt2);
+    let wgas = owned.as_ref().unwrap_or(m.gas());
+    assert!(wgas.try_t_from_pr_t(wgas.pr_t(450.0, f) * 0.02, f).is_err(),
+            "the old 0.02 wall is below the gas tables at 450 K — else this gate is vacuous");
+
+    let od = m.match_point(&fl, 450.0);
+    assert_eq!(od.branch, Branch::Subsonic);
+    assert!(od.performance.specific_thrust > 0.0, "450 K is above thrust-neutral idle");
+    let direct = m.match_subsonic(&fl, 450.0);
+    for (a, b) in [(od.pi_c, direct.pi_c), (od.pi_t, direct.pi_t), (od.mdot_air, direct.mdot_air),
+                   (od.performance.specific_thrust, direct.performance.specific_thrust)] {
+        assert_eq!(a.to_bits(), b.to_bits(), "the dispatch returns the subsonic solve's own point");
+    }
+
+    let msg = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| m.match_point(&fl, 440.0))).err()
+        .and_then(|e| e.downcast_ref::<String>().cloned()).expect("440 K aborts with a message");
+    assert!(msg.contains("SUB-IDLE"), "440 K is refused by the thrust guard, not the tables: {msg}");
+}
+
 // --------------------------------------------------------------------- gate 6 (framing)
 /// GATE 6 — the coupling is to `pi_c` via `pt9/p0`, NOT to ambient `p0`: scale `p0`, and the
 /// ratios are invariant.

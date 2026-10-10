@@ -32,9 +32,26 @@ pub const INVERSE: f64 = 3.0;
 /// `"rung-6 equilibrium burner balance"` — the burner's `f >= 0` refusal, new with the fix.
 pub const BALANCE: f64 = 15.0;
 
+/// The guards a TURBINE-WALL cell (`turbine_wall.rs`, 2026-10-10) may reach past rung 31's
+/// marched choke-solve wall: SUB-IDLE (1), the off-design burner (5), the nozzle back-pressure
+/// check in the choked rebuild (6), the equilibrium burner balance ([`BALANCE`]). Held here, not
+/// there, because three oracles include this file and only one includes that.
+pub const WALL_LATER: [f64; 4] = [1.0, 5.0, 6.0, BALANCE];
+
 /// Filter both sides down to the keys the bit-gate still owns, asserting the rule as it goes.
+/// (`offdesign_oracle` calls [`reconcile_with`] instead, so this is unused there.)
+#[allow(dead_code)]
 pub fn reconcile<'a>(
     ours: Vec<(String, f64)>, oracle: HashMap<&'a str, f64>,
+) -> (Vec<(String, f64)>, HashMap<&'a str, f64>) {
+    reconcile_with(ours, oracle, &HashSet::new())
+}
+
+/// [`reconcile`], with the TURBINE-WALL cells (`super::turbine_wall`, 2026-10-10) licensed one
+/// step further: a Newton cell the 0.02 turbine wall had stopped at code 3 may now end at that
+/// rule's later guards instead. `wall` holds cell tags (`"{gas}/{M0}/{Tt4}"`).
+pub fn reconcile_with<'a>(
+    ours: Vec<(String, f64)>, oracle: HashMap<&'a str, f64>, wall: &HashSet<String>,
 ) -> (Vec<(String, f64)>, HashMap<&'a str, f64>) {
     let mine: HashMap<&str, f64> = ours.iter().map(|(k, v)| (k.as_str(), *v)).collect();
     let mut exempt: HashSet<String> = HashSet::new();
@@ -49,7 +66,9 @@ pub fn reconcile<'a>(
         if !k.ends_with("/abort") || oracle.get(k) != Some(&NEWTON) {
             continue;
         }
-        assert!(v == INVERSE || v == BALANCE,
+        let tag = &k["cell/".len().min(k.len())..k.len() - "/abort".len()];
+        let walled = wall.contains(tag) && WALL_LATER.contains(&v);
+        assert!(v == INVERSE || v == BALANCE || walled,
                 "{k}: Python aborted in the equilibrium Newton, Rust now gives code {v} — only \
                  {INVERSE} (inverse) or {BALANCE} (burner balance) is licensed; a MATCH here is \
                  a new finding, not a re-classification");

@@ -134,24 +134,16 @@ pub fn subsonic_matching_table(p: &mut Printer, d: &Design) {
     p.print(pyf!("\n  Running line across the boundary (M0={}); branch is auto-dispatched:", flight.m0));
     p.print(pyf!("  {:>7} {:>9} {:>7} {:>9} {:>7} {:>8} {:>7}", "Tt4 [K]", "branch", "pi_c", "tau_t", "M9", "F/mdot", "pt9/p0"));
     p.print(format!("  {}", dashes(60)));
-    let mut ran_direct = false;
     for tt4 in [700.0, 600.0, 560.0, 520.0, 480.0, 440.0, 420.0] {
         // Python's `try: … except AssertionError` — the abort `assert!`s unwind here, as in
         // `anti_windup::try_windup_march` (the panic hook is left alone: stderr noise only).
         //
         // THE LABEL IS READ OFF THE GUARD THAT FIRED, NOT OFF "IT PANICKED". Python printed
-        // SUB-IDLE for any abort, and at 440 / 420 K the abort is not a thrust check at all: the
-        // dispatch's CHOKED trial runs first, and its turbine bracket (pi_t from 0.02) asks the
-        // gas tables for a temperature below their 150 K floor — measured 146 / 139 K — so the
-        // subsonic branch, and its thrust guard, are never reached. On that one failure the
-        // subsonic solve is run DIRECTLY, and its own guard decides the row.
-        let od = match catch_abort(|| m.match_point(flight, tt4)) {
-            Err(e) if e.contains("inverse: root not bracketed") => {
-                ran_direct = true;
-                catch_abort(|| m.match_subsonic(flight, tt4))
-            }
-            r => r,
-        };
+        // SUB-IDLE for any abort, and at 440 / 420 K its abort was not a thrust check at all: the
+        // dispatch's CHOKED trial asked the gas tables for a temperature below their 150 K floor.
+        // Since 2026-10-10 that trial's turbine wall is marched in (`try_r31_solve_turbine`), so
+        // the dispatch reaches the subsonic branch and its thrust guard fires — the same text.
+        let od = catch_abort(|| m.match_point(flight, tt4));
         match od {
             Ok(od) => p.print(pyf!("  {:>7.0f} {:>9} {:>7.3f} {:>9.6f} {:>7.4f} {:>8.1f} {:>7.3f}",
                                    tt4, od.branch.label(), od.pi_c, od.tau_t, od.m9,
@@ -162,11 +154,6 @@ pub fn subsonic_matching_table(p: &mut Printer, d: &Design) {
                 p.print(pyf!("  {:>7.0f} {:>9}  (no self-sustaining subsonic operating point)", tt4, "NO MATCH")),
             Err(e) => p.print(pyf!("  {:>7.0f} {:>9}  ({})", tt4, "NO MATCH", e)),
         }
-    }
-    if ran_direct {
-        p.print("  (The 440/420 rows ran the subsonic solve DIRECTLY: from ~455 K down, the auto-dispatch's");
-        p.print("  choked trial asks the gas tables for T < 150 K and aborts BEFORE any thrust check — so");
-        p.print("  SUB-IDLE above is the subsonic branch's own thrust guard, not the dispatch's abort.)");
     }
 
     let (g, cp) = (1.3, 1239.0);
