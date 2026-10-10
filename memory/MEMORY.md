@@ -23,6 +23,7 @@ new slices and step links go THERE, not here.
 - [Sandbox slice 4A](sandbox-slice4a.md) — a cause written before its message was seen; a proxy classifier hid a case; SANDBOX_SHOTS is a path
 - [Sandbox slice 4B](sandbox-slice4b.md) — my own plan's trajectory classifier was a proxy; a hair-thin tolerance gap meant a mixed class
 - [Sandbox slice 5](sandbox-slice5.md) — the error path had its own error (non-ASCII message hung the page since slice 1); every await on an external process needs a ceiling
+- [Solver walls repair](solver-walls-repair.md) — a fix to failing cases moved 1 416 oracle keys (failure was control flow); a continuation crashed a diagnostic, so it ships default-OFF
 - [Session-end routine](session-end-routine.md) — at session end: update memory + docs, commit, push
 - [Git remote setup](git-remote-setup.md) — github.com/BoykoNeov/jet-engine, branch main, origin over SSH
 - [Always commit and push](always-commit-and-push.md) — auto-commit + push green work; gate is `rust/test-all.ps1`: cargo tests run in parallel, below-normal (pytest until 2026-10-05)

@@ -108,9 +108,11 @@ killed when a knob moves. Pin & compare overlays a pinned run.
 **A run that stops early is a result.** The model's marcher stops and drops its error; the sandbox
 replays the failed step through the same public calls (bit-equal to the march, `tests/sandbox_transient.rs`)
 and says why, by kind: the fuel-air ratio passing 0.05, the fuel-metered solver's search edge (the
-overshoot outran the model); the unchoked-nozzle solve's known gap; on a commanded power cut, the
-airflow search's first trial asking the burner to cool the air (a solver artefact — the fuel-metered cut
-runs through); a time step too coarse for a very fast shaft (Mach 3.3). A crash in a steady solve names
+overshoot outran the model); the unchoked-nozzle solve's known gap; on a fast commanded power cut, a
+commanded temperature that has fallen to the compressor's own exit temperature (the burner would need
+no fuel or less — a flame-out); a time step too coarse for a very fast shaft (Mach 3.3). Until
+2026-10-10 a commanded cut also stopped when the airflow search's FIRST trial asked the burner to cool
+the air; rung 34's march now walks that trial in (plan § 14), and the cuts it stopped run through. A crash in a steady solve names
 the throttle it happened at. The equilibrium gas is refused: the model cannot meter fuel on it.
 
 ## Slice 4 (B) — Controls (shipped 2026-10-08)
@@ -132,8 +134,10 @@ pays its ram drag), the lever's setting; a strip showing which control holds the
 and a table, with pin & compare. Each run on its own Worker, killed by a knob move.
 
 **A run that stops early is a result**, by kind, re-run step for step through the model's public calls: the
-floor could no longer be held; the model's every-step check at the full scheduled fuel had no answer while a
-limiter held the fuel below it (the method's limit); the mixture left the fuel solver's range, lean or rich.
+floor could no longer be held; the mixture left the fuel solver's range, lean or rich. Until 2026-10-10 a run
+also stopped when the model's every-step check at the full scheduled fuel had no answer while a limiter held
+the fuel below it; the view now switches on the model's `below_ceiling`, which decides the limiters from the
+most fuel that solves (plan § 14), and those runs go on.
 With the temperature limiter's lag on, the march does not record its state, and the stop is said without a
 cause.
 

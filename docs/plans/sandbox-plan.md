@@ -735,6 +735,8 @@ time constants, no seconds knob.
   shown at the measured state (the residual changes sign where the compressor exit, ~536 K, is below the
   commanded 640 K — a pinned test), not over the whole box. HYPOTHESIS, unverified: a model-side fix
   (march the low wall in) would be bit-identical wherever the closure succeeds today — a candidate seam.
+  **REPAIRED 2026-10-10 (§ 14.1)** — true for the time march only; and some of these stops were real
+  flame-outs, not artefacts.
 - **A time step can be too coarse.** At Mach 3.3 the shaft responds far faster than its design τ: the
   march overshoots its end speed and an RK stage lands below zero speed (`Overstep`). Rare (1 in ~150
   thermally-perfect requests); said as a limit of the stepping.
@@ -779,7 +781,8 @@ sweep over a wide box, then 3 000 over the slider box, every stop's REAL message
   fine. Identified by asking the model (advisor, checked): at the failing state the closure is re-run at the
   CUT fuel (the last point's fraction of the scheduled one); the stop is the method's only if that solves.
   89 of 90 such stops in the slider box did; the one that did not (a 4 % cut on a fast slam) is classed rich.
-  Said as the method's limit; on CLAUDE.md's open list beside rung 34's low wall.
+  Said as the method's limit; on CLAUDE.md's open list beside rung 34's low wall. **REPAIRED 2026-10-10
+  (§ 14.3)**, behind a switch the Controls view turns on.
 - **Without a limiter cutting, a failed closure sits at one of rung 43's two fuel-air walls**: fast cuts at
   0.71–1.05 × `F_FLOOR` (0.004), fast slams at ~1.03 × `F_CAP` (0.065) — so "lean" / "rich" are read off
   the failing call's mixture (its fuel over the last point's face flow) against the walls' geometric middle,
@@ -1046,3 +1049,56 @@ by its message.
 - **At the notch the richness chart is flat** — on the β-PDF model at `J_opt` the spread is zero, so the burner
   is perfectly mixed and the front zone's richness drops out. Correct, and the reason the jet chart, not the
   richness chart, is the one to read there.
+
+## 14. Three solver walls repaired (2026-10-10) — not a slice, not a rung
+
+The page met three places where the MODEL gave up though an answer existed (CLAUDE.md's open list).
+Each is now repaired in the model; the rule for each was the project's spine — **where the old
+code ran, the new code is the same arithmetic, bit for bit**, and a frozen record that moved was
+listed key by key before anything was licensed.
+
+### 14.1 Rung 34's low flow wall (§ 12.9's first finding)
+
+- **Fix:** `SpoolTransient::try_close_compressor_marched` walks the closure's 0.02 low wall in, in
+  1/64 steps of the bracket, until the trial's burner solve runs; `integrate` (the time march)
+  steps with it. Only there: in `find_equilibrium_nu`'s bracket march a failing trial is CONTROL
+  FLOW, and letting it succeed moved the converged speed by ~1e-11 on cells that never failed —
+  measured, 1 416 of `combustor_oracle`'s 2 066 keys. So the steady searches keep the literal wall,
+  and every oracle stays bit-exact.
+- **Found:** the old stop kind "first-trial artefact" was WRONG for some of its own cases. A
+  random sweep (600 commanded slams, wider than the sliders) left 8 stops where the walked wall's
+  first runnable trial needs `f` ≈ 1e-6–2e-5 and the root lies below it: the commanded temperature
+  has fallen to the compressor's own exit temperature, so the burner would need zero or negative
+  fuel. That is a real flame-out, not a solver gap. The model now says so ("the burner would need
+  negative fuel"), and the page has a FLAME-OUT stop kind, driven by one of those requests.
+- The § 12.9 chop (1500 → 640 K over 0.06 τ) and its near-zero-rise twin now run to the end; the
+  page's `low_wall_trial_fails` copy and its stop kind are retired.
+
+### 14.2 Rung 31's turbine wall — rung 33's dispatch floor (`docs/rung33-spec.md` § SUB-IDLE)
+
+- **Fix:** `try_r31_solve_turbine` steps its 0.02 `π_t` wall in by 0.01 while the isentropic
+  `Tt5s` there is below the gas tables' 150 K floor. The (★) root is far above it.
+- **Moved, and licensed as a rule** (`tests/common/turbine_wall.rs`, beside `eq_floor.rs`): exactly
+  the 12 `offdesign_oracle` cells at 400 K whose 0.02 trial is below the tables — the rule NAMES
+  them by that physical test, and the named set equals the moved set. Each now ends at a later,
+  named guard (SUB-IDLE, the burner, the choked rebuild's nozzle check) instead of the table floor.
+  Nothing else moved (checked against the unchanged code, key by key).
+- The CLI's rung-33 panel no longer needs its direct-subsonic detour: the dispatch reaches the
+  subsonic thrust guard itself, and the segment is the Python golden's own bytes again.
+
+### 14.3 Rung 43's every-step schedule check (§ 12.10's "a stop the plan did not foresee")
+
+- **The law (user decision, 2026-10-10):** applied fuel = min(schedule, limiter cuts), unchanged.
+  Where the scheduled fuel has no operating point, each limiter is solved from the most fuel that
+  does solve (the CEILING, `try_solvable_ceiling`) — a limiter's cut is a root, so it is the same
+  cut. If any limiter cuts below the ceiling, the min is decided; if none does, the step fails as
+  before. `r43_cut_below_ceiling` (plain route), and the same through `try_leg_below` on the rung
+  47 and rung 52 routes.
+- **A SWITCH, off by default** (`FuelLimiters::below_ceiling`). Switched on for every march, it
+  crashed a shipped CLI panel: rung 58's floor dichotomy (rung 63's table) marches a floor whose
+  run STOPS on this check, and its diagnostics read the scheduled instant at every recorded point.
+  So the shipped rungs keep their march bit for bit, and the Controls view switches it on.
+- **Measured** on 1 000 random Controls requests over the slider box, the same requests before and
+  after: schedule-check stops 24 → 0; complete runs 564 → 587; real floor-unreachable stops
+  64 → 68 (runs that went on and met the engine's own limit); one rich and two cause-unknown stops
+  also ran on. The page's schedule-check stop kind is retired.
