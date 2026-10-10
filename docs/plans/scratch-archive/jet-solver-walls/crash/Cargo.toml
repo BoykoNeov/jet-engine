@@ -1,0 +1,11 @@
+[package]
+default-run = "jet-wall-crash"
+name = "jet-wall-crash"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+turbojet = { path = "W:/Claude_projects/jet engine/rust" }
+
+[profile.release]
+opt-level = 3

@@ -578,7 +578,7 @@ impl SpoolTransient {
         // flow whose trial runs is a valid wall.
         let step = (hi - lo) / 64.0;
         let mut walked = false;
-        let glo = loop {
+        let mut glo = loop {
             match g(lo) {
                 Ok(v) => break v,
                 Err(e) if !march_wall || lo + step >= hi => return Err(e),
@@ -588,14 +588,34 @@ impl SpoolTransient {
                 }
             }
         };
+        if walked {
+            // The 1/64 step only FINDS the region the burner closes in; its edge is bisected
+            // against the last failing trial, or a root inside the step is skipped — measured:
+            // 3 of 8 sweep stops had one (sandbox plan § 14.1).
+            let mut bad = lo - step;
+            for _ in 0..60 {
+                if lo - bad <= 1e-12 * lo {
+                    break;
+                }
+                let mid = 0.5 * (bad + lo);
+                match g(mid) {
+                    Ok(v) => {
+                        lo = mid;
+                        glo = v;
+                    }
+                    Err(_) => bad = mid,
+                }
+            }
+        }
         let ghi = g(hi)?;
         if walked && glo >= 0.0 {
-            // The root lies BELOW the first flow the burner can close: there the still-fast
-            // compressor delivers air at (or above) the commanded `Tt4`, so the burner would
-            // need zero or negative fuel — a flame-out, not a solver gap. Measured on the
-            // sandbox's crash map: at the walked wall the burner closes on `f` ~ 1e-6–2e-5.
+            // The root lies BELOW the edge of the flows the burner can close: at that edge the
+            // still-fast compressor already delivers air at the commanded `Tt4` (the burner
+            // closes on `f` ~ 1e-6 there), and below it the burner's solve fails — zero or
+            // almost zero fuel, a flame-out rather than a solver gap. Not shown NEGATIVE: the
+            // burner solve also refuses a tiny positive rise.
             return Err(Abort(format!(
-                "rung-34 compressor closure: the commanded tt4={tt4:.0} is at or below the                  compressor exit at n={n:.4} — the burner would need negative fuel (low wall                  marched to m={lo:.3}, g={glo:.3e})."
+                "rung-34 compressor closure: the commanded tt4={tt4:.0} is at the compressor                  exit at n={n:.4} — the burner would need zero or almost zero fuel (low wall                  marched to m={lo:.4}, g={glo:.3e})."
             )));
         }
         if !(glo < 0.0 && 0.0 < ghi) {

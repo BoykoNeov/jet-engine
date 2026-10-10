@@ -1066,11 +1066,13 @@ listed key by key before anything was licensed.
   measured, 1 416 of `combustor_oracle`'s 2 066 keys. So the steady searches keep the literal wall,
   and every oracle stays bit-exact.
 - **Found:** the old stop kind "first-trial artefact" was WRONG for some of its own cases. A
-  random sweep (600 commanded slams, wider than the sliders) left 8 stops where the walked wall's
-  first runnable trial needs `f` ≈ 1e-6–2e-5 and the root lies below it: the commanded temperature
-  has fallen to the compressor's own exit temperature, so the burner would need zero or negative
-  fuel. That is a real flame-out, not a solver gap. The model now says so ("the burner would need
-  negative fuel"), and the page has a FLAME-OUT stop kind, driven by one of those requests.
+  random sweep (600 commanded slams, wider than the sliders) left 8 stops past the walked wall. The
+  first cut of the repair stepped the wall by 1/64 and claimed "negative fuel" — and the advisor's
+  check found 3 of the 8 had a solvable root INSIDE the skipped step. The walked wall's edge is now
+  bisected against the last failing trial. Where the root still lies below that edge, the burner
+  closes on `f` ≈ 1e-6 there: the commanded temperature has fallen to the compressor's own exit
+  temperature, zero or ALMOST zero fuel (not shown negative — the burner solve also refuses a tiny
+  positive rise). The model says so, and the page has a FLAME-OUT stop kind, driven by one of them.
 - The § 12.9 chop (1500 → 640 K over 0.06 τ) and its near-zero-rise twin now run to the end; the
   page's `low_wall_trial_fails` copy and its stop kind are retired.
 
@@ -1097,7 +1099,9 @@ listed key by key before anything was licensed.
 - **A SWITCH, off by default** (`FuelLimiters::below_ceiling`). Switched on for every march, it
   crashed a shipped CLI panel: rung 58's floor dichotomy (rung 63's table) marches a floor whose
   run STOPS on this check, and its diagnostics read the scheduled instant at every recorded point.
-  So the shipped rungs keep their march bit for bit, and the Controls view switches it on.
+  So the shipped rungs keep their march bit for bit, and the Controls view switches it on. **For the
+  shipped march the seam stays OPEN** (CLAUDE.md), and so does a second one this found: rung 58's
+  floor dichotomy is PUBLISHED from a run that stops on this solver check.
 - **Measured** on 1 000 random Controls requests over the slider box, the same requests before and
   after: schedule-check stops 24 → 0; complete runs 564 → 587; real floor-unreachable stops
   64 → 68 (runs that went on and met the engine's own limit); one rich and two cause-unknown stops

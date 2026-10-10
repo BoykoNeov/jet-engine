@@ -1,0 +1,6 @@
+  587  complete
+  313  refused
+   68  stop floor_unreachable
+   20  stop lean
+    3  stop rich
+    9  stop unknown

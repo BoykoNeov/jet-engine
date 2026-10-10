@@ -306,9 +306,9 @@ pub enum StopKind {
     /// The nozzle is near unchoking and the model's unchoked-nozzle turbine solve has a gap there
     /// (rung 34's own "a real subsonic-solve gap" escalation).
     SubsonicGap,
-    /// Temperature commanded, on a fast power cut: the commanded temperature fell to (or below) the
-    /// air the still-fast compressor delivers, so the burner would need zero or negative fuel — the
-    /// engine would flame out. Rung 34's marched closure says so (`spool.rs`); until 2026-10-10 these
+    /// Temperature commanded, on a fast power cut: the commanded temperature fell to the air the
+    /// still-fast compressor delivers, so the burner would need zero or almost zero fuel — the engine
+    /// would flame out. Rung 34's marched closure says so (`spool.rs`); until 2026-10-10 these
     /// stops were mislabelled as the airflow search's first-trial artefact (plan § 12.9).
     FlameOut,
     /// The shaft speed changed so fast that an RK stage carried it to zero or below: the fixed step is too
@@ -330,7 +330,7 @@ impl StopKind {
             StopKind::SubsonicGap =>
                 "The nozzle is close to the point where it stops being choked (the jet just under the speed of                  sound), and the model's solver for that case has a known gap there: it cannot find the turbine's                  operating point. This is a limit of the model, not of the engine.",
             StopKind::FlameOut =>
-                "The temperature you are commanding has fallen to the temperature of the air already leaving the                  compressor, which is still spinning fast: to hold it the burner would have to burn no fuel at                  all, or less than none. A real engine would flame out here. Cut the throttle more slowly or not                  so far, or meter the fuel instead (what a real engine does).",
+                "The temperature you are commanding has fallen to the temperature of the air already leaving the                  compressor, which is still spinning fast: to hold it the burner would have to burn next to no                  fuel at all. A real engine would flame out here. Cut the throttle more slowly or not                  so far, or meter the fuel instead (what a real engine does).",
             StopKind::Overstep =>
                 "The shaft's speed was changing so fast here that one of the model's fixed time steps carried it                  past zero. The time step (0.02 τ) is too coarse for this engine at this flight, so the last points                  before the stop are not to be trusted either. This is a limit of the model's stepping, not of the                  engine.",
             StopKind::Burner =>
@@ -372,7 +372,7 @@ pub fn classify(_sv: &SlamSolver, f: &Failure) -> StopKind {
         StopKind::FuelCap
     } else if m.contains("subsonic turbine failed to bracket AWAY") {
         StopKind::SubsonicGap
-    } else if m.contains("the burner would need negative fuel") {
+    } else if m.contains("the burner would need zero or almost zero fuel") {
         StopKind::FlameOut
     } else if m.contains("burner f did not converge") {
         StopKind::Burner

@@ -1,0 +1,11 @@
+[package]
+default-run = "jet-wall-crash-head"
+name = "jet-wall-crash-head"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+turbojet = { path = "W:/temp/claude/jet-solver-walls/head/rust" }
+
+[profile.release]
+opt-level = 3

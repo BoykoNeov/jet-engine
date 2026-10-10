@@ -27,3 +27,10 @@ outputs (14 MB) were not kept.
 
 Scripts here ran against the model **as it was** on their date (many drive the Python at tag
 `python-final`). Nothing in this folder is built, run or tested by the crate.
+
+**Added 2026-10-10 — the solver-wall repairs** (`jet-solver-walls`, plan § 14). `crash/` is the scratch
+crate: `src/main.rs` the 600-request commanded-slam sweep (§ 14.1), `src/bin/other.rs` the gap check on
+its flame-out stops, `src/bin/controls.rs` the 1 000-request Controls sweep (§ 14.3). `crash_head/` is
+the same sources built against the UNCHANGED code (a git worktree at `aa585fa`, not kept): only its
+`Cargo.toml` differs. `other_reqs.txt` holds the 8 stop requests; `ctl_crash_head.txt` / `ctl_crash.txt`
+are the Controls sweep's before/after tallies § 14.3 quotes.

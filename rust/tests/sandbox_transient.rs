@@ -241,7 +241,7 @@ const OVERSTEP: &str = r#"{"fly":{"design":{"T0":179.83035775122025,"p0":7015.72
 const NEAR_TRIAL: &str = r#"{"fly":{"design":{"T0":209.46272959759045,"p0":13494.957106117761,"M0":1.8718761910190036,"pi_c":30.890532406087356,"Tt4":1608.4097019804246,"mdot":20,"pi_d_max":0.8957317868718092,"eta_c":0.9277174597708263,"eta_t":0.6811395022994852,"eta_b":0.960501966483168,"pi_b":0.8785438012665661,"eta_m":0.9962522593911114,"pi_n":0.9600968634264808},"gas":"reacting","T0":209.46272959759045,"p0":13494.957106117761,"M0":1.8718761910190036,"map":"pressure","phi_surge":0.8226903597558186},"from":1330.821662275258,"to":940.9335757310362,"ramp":1.18,"settle":0.9883696747717574,"mode":"temperature"}"#;
 const SUBSONIC: &str = r#"{"fly":{"design":{"T0":256.53008876148436,"p0":6214.567360155657,"M0":0.9869783017310311,"pi_c":13.69074829711004,"Tt4":1864.0962008362205,"mdot":20,"pi_d_max":0.9623333196765937,"eta_c":0.6943844443713654,"eta_t":0.7469895362320241,"eta_b":0.9897266891367041,"pi_b":0.8904359211792187,"eta_m":0.9811987899393365,"pi_n":0.9012489691697223},"gas":"perfect","T0":248.8469369923376,"p0":93544.98757257541,"M0":0.9533722500537335,"map":"flow","phi_surge":0.4767475411185223},"from":1014.2493929207014,"to":1119.2189463533623,"ramp":0.04,"settle":3.2837958021209492,"mode":"fuel"}"#;
 /// A fast commanded cut (2026-10-10 crash map, fork B gas) that falls to the compressor's own exit
-/// temperature: once the march walks the closure's low wall in, the burner closes only on f ~ 2e-6.
+/// temperature: once the march walks the closure's low wall in, at the bisected edge of the flows the burner closes, it closes on f ~ 1e-6.
 const FLAME_OUT: &str = r#"{"fly":{"design":{"T0":223.00297488710027,"p0":7120.190306784365,"M0":0.9515166064059939,"pi_c":29.215489416575778,"Tt4":1448.5665254994133,"mdot":20,"pi_d_max":0.9213442645359807,"eta_c":0.709944086105803,"eta_t":0.807183053069216,"eta_b":0.9191422883354251,"pi_b":0.9499029160494501,"eta_m":0.991207197525883,"pi_n":0.9161594274848941},"gas":"fork_b","T0":269.0584724269396,"p0":66629.8751229321,"M0":1.8769970570459698,"map":"pressure","phi_surge":0.8328807403924867},"from":1759.4064889766644,"to":950.6952807316507,"ramp":0.06,"settle":2.794610869266557,"mode":"temperature"}"#;
 
 #[test]
@@ -257,7 +257,7 @@ fn every_kind_of_stop_the_crash_map_found_is_driven_and_worded() {
     let o = slam(&near).unwrap();
     assert!(o.stop.is_none(), "{:?}", o.stop);
     assert_eq!(o.points.len(), near.expected_points());
-    // A commanded temperature at the compressor's exit: the burner would need negative fuel.
+    // A commanded temperature at the compressor's exit: the burner would need zero or almost zero fuel.
     let fo = of(FLAME_OUT);
     let (_, stop) = stop_of(&fo);
     assert_eq!(stop.kind, StopKind::FlameOut, "{stop:?}");
