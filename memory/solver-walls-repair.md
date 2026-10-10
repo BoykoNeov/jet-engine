@@ -15,9 +15,12 @@ Repaired 2026-10-10 (sandbox plan § 14; CLAUDE.md's three OPEN lines → one RE
   speed search walks its bracket in past FAILING trials, so a trial that now succeeds moves the
   bracket and the converged root. Scope such a fix to where a failure ENDS a run (the time march).
   The advisor predicted this before any code; check every caller that treats Err as a signal.
-- **A "solver artefact" stop label can hide real physics.** Once the artefact was removed, 8 of
-  the remaining stops were genuine flame-outs (commanded Tt4 ≤ compressor exit, f ≈ 1e-6). Measure
-  what is LEFT after a repair, then name it.
+- **A "solver artefact" stop label can hide real physics — and my replacement label was a proxy
+  too.** After the repair, 8 stops remained; I called them "negative fuel" flame-outs from a COARSE
+  1/64-step wall. The advisor had me check the skipped step: 3 of 8 had a solvable root inside it.
+  A marched wall must be BISECTED to its edge before anything is claimed about the far side; and
+  "the burner solve fails" ≠ "negative fuel" (it also refuses a tiny positive rise) — say
+  "zero or almost zero". Measure what is LEFT after a repair, at the resolution the claim needs.
 - **A continuation switched on globally crashed a shipped diagnostic.** Rung 58's leg_residual
   reads the scheduled-fuel instant at every recorded point, so it assumed the march STOPPED where
   that instant fails. Ship such a fix as a default-OFF knob (the reduce spine) and let the sandbox
