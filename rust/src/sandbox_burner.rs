@@ -138,7 +138,7 @@ impl Closure {
 
     /// How long one point takes (plan § 13.2): `"fast"` (tenths of a second), `"curve"` (a
     /// precomputed curve each call, up to ~2 s) or `"pocket"` (each pocket its own quench: 4–10 s
-    /// a point at the opening design in the browser, up to ~2 min native at the box's edges, § 13.9).
+    /// a point at the opening design in the browser, up to ~20 s at the box's edges, § 13.9).
     pub fn cost(self) -> &'static str {
         match self {
             Closure::None | Closure::TwoStream => "fast",

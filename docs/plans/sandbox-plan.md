@@ -1025,10 +1025,13 @@ by its message.
   0.3); a cross-plane field that cannot hold its mean (narrow plumes); and a cross-plane model with a front
   zone no richer than the burner. The nozzle readout's two (exit colder than its 500 K search floor — the
   commonest readout failure, 431 of ~3 470 instant-dilution requests; an equilibrium solve that does not settle) leave the burner's numbers standing.
-- **The per-pocket models are slower off the opening design than § 13.2 said.** § 13.2's 4–10 s per point
-  was the opening design. Over the crash-map box, native, rung 16 took a median of 4 s, rungs 23 and 24
-  16–24 s, and the slowest points about 2 minutes (the browser is slower still). The point stays stoppable (any
-  knob move kills its worker), and the page now says "seconds, up to a few minutes".
+- **The per-pocket models: up to ~20 s a point at the box's edges — and the crash map's own timings are NOT
+  per-point times.** The crash map logged medians of 4–24 s and a worst of ~2 minutes, but it ran 8 worker
+  threads on 16 logical cores beside other measurements. Its nine slowest points (three per model), re-timed one
+  at a time in the browser build under Node at below-normal priority (2026-10-10): 2.8–8.1 s, one 20.7 s
+  (rung 23) — the crash map's 55–121 s were 8–36× inflated, and the slowest one itself read 9.7 s then 3.3 s on
+  two runs (machine load). § 13.2's 4–10 s at the opening design stands; the page says "seconds, up to about
+  half a minute", and the point stays stoppable (any knob move kills its worker).
 - **A hang, latent since slice 1, in the page's shared worker code.** The model's JSON reader takes ASCII only
   (its writer escapes the rest); `JSON.stringify` does not escape. When a failure's message carried a
   non-ASCII character (β, ξ, Σ, —), the follow-up request for its plain words trapped INSIDE the trap handler,

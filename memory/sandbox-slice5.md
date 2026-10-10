@@ -1,11 +1,11 @@
 ---
 name: sandbox-slice5
-description: "Slice 5 burner view built 2026-10-08..10 — process lessons: the error path had its own error (non-ASCII panic message → explain request trapped inside the trap handler → page hung, latent since slice 1); a hang left Chrome running; a plan's timing measured at ONE design"
+description: "Slice 5 burner view built 2026-10-08..10 — process lessons: the error path had its own error (non-ASCII panic message → explain request trapped inside the trap handler → page hung, latent since slice 1); a hang left Chrome running; a timing from a PARALLEL sweep quoted as a per-point time (8–36× inflated)"
 metadata:
   node_type: memory
   type: project
   originSessionId: 7c463cda-f4fc-42dd-ab88-2a1d5d79ee23
-  modified: 2026-10-10T07:08:42.946Z
+  modified: 2026-10-10T07:45:50.091Z
 ---
 
 Slice 5 — the *Burner* view (NOx rungs 7–24 as knobs; `rust/src/sandbox_burner.rs`, plan § 13, what
@@ -27,9 +27,11 @@ Process lessons:
 - **Diagnose a hang by peeking, not waiting**: Chrome's `DevToolsActivePort` file in the run's
   profile gives the port; one `Runtime.evaluate` read the page's state (`bnBusy 1`), and replaying the
   request against the `.wasm` in Node separated "model loops" from "page never hears back" in seconds.
-- **A plan's timing taken at ONE design is not a bound.** § 13.2 told the user "at most ~10 s a point"
-  for the per-pocket models; over the crash-map box they took a median of 4–24 s and up to ~2 min. Say
-  where a timing was measured, or measure it over the box the sliders reach.
+- **A timing logged by a PARALLEL sweep is not a per-point time.** The crash map (8 threads on 16
+  logical cores, plus other load) logged per-pocket points at up to ~2 min; I wrote "up to a few
+  minutes" into the plan, the page and a message to the user before the advisor asked how the number
+  was taken. Re-timed one at a time: 3–8 s, worst 21 s (8–36× inflation). Before quoting a time, ask
+  what else was running; re-time the extremes alone, in the build the user runs.
 - **Coarse grids picked for speed must survive the crash map**: two L1 choices (quench 400 RK4 steps →
   NaN; quadrature 160 → the model's own mean check fails) went back to the model's defaults.
 - Bash heredocs on this machine collapse `\\` → `\`: write JS with escapes via the Write tool. A

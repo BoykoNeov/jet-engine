@@ -158,8 +158,8 @@ includes the model's best jet, where some models drop to a sharp notch — and t
 dilution; the nozzle readout (rung 14: does the exhaust NO survive the nozzle). Pin & compare as everywhere.
 
 **Speed:** the instant and set-time routes follow a slider; the curve models (13, 15, 18, 22) run when a slider
-is let go and their sweeps stream; the three per-pocket models (16, 23, 24) take seconds a point — up to a few
-minutes on some designs — and their sweeps wait for a button. Any knob move stops a run in progress.
+is let go and their sweeps stream; the three per-pocket models (16, 23, 24) take seconds a point — up to about
+20 s on some designs — and their sweeps wait for a button. Any knob move stops a run in progress.
 
 **A burner that does not run** says why: a front zone leaner than the burner is refused before the model runs;
 the model's own failures (NO no longer a trace, a flame outside the model's range, a mixing spread too wide, …)

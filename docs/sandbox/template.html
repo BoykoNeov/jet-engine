@@ -1518,7 +1518,7 @@ function ctlTable() {
 
 // ---------------------------------------------------------------- the burner (slice 5)
 // The Design engine (S), run on the equilibrium gas, then ONE zoned_nox (op burner). The fast routes follow
-// a slider; the curve and per-pocket mixing models (seconds a point; the per-pocket ones up to minutes, plan § 13.9) run when it is let go. The
+// a slider; the curve and per-pocket mixing models (seconds a point; the per-pocket ones up to ~20 s, plan § 13.9) run when it is let go. The
 // burner, its quench path and its nozzle readout run on the burner's OWN worker; the two sweeps on another,
 // each a point at a time; any change kills both.
 const BN_KNOB = {   // a mixing model's knob: [label, unit, min, max, display scale, note]
@@ -1543,11 +1543,11 @@ const BN_MODEL_WORDS = {
   two_stream: "A bulk and an unmixed core that lingers. Past the best jet (where it is told to put it) NO turns back up.",
   pdf: "A spread of mixtures around the mean, with no lingering: the best jet is a sharp notch, and far past it NO falls again.",
   pdf_quench: "The spread carried through the quench: a floor that never reaches zero, and NO rising again past the best jet.",
-  pocket: "Each rich pocket through its own quench. A lingering pocket cools, so far past the best jet NO rises less. Slow: seconds a point, up to a few minutes on some designs.",
+  pocket: "Each rich pocket through its own quench. A lingering pocket cools, so far past the best jet NO rises less. Slow: seconds a point, up to about half a minute.",
   transported: "The spread from a decay equation. It cannot find the best jet by itself; its coverage is imposed (rung 18's finding).",
   spatial: "The jets resolved across the duct: the best jet comes OUT of the plume geometry, C_opt = 1/(4 k_p²).",
-  spatial_dwell: "That cross-section developed in time: the richest pockets linger longest, which adds NO. Slow: seconds a point, up to a few minutes on some designs.",
-  spatial_local: "Each cell mixes at its own rate: the dwell has a best jet, yet NO keeps falling with jet strength. Slow: seconds a point, up to a few minutes on some designs.",
+  spatial_dwell: "That cross-section developed in time: the richest pockets linger longest, which adds NO. Slow: seconds a point, up to about half a minute.",
+  spatial_local: "Each cell mixes at its own rate: the dwell has a best jet, yet NO keeps falling with jet strength. Slow: seconds a point, up to about half a minute.",
 };
 const bnCost = () => (BK.quench === "jets" && BN_MODELS[BK.closure] ? BN_MODELS[BK.closure].cost : "fast");
 const bnSlow = () => bnCost() !== "fast";
@@ -1657,7 +1657,7 @@ async function runBurner() {
   if (ti.trap || !ti.reply.ok) { bnBad(ti, "This design does not run on the equilibrium gas"); return; }
   bnInlet = ti.reply; showBurnerSettings();
   $("status").textContent = !bnSlow() ? "Computing the burner…" : bnCost() === "pocket"
-    ? "Computing this mixing model (seconds, up to a few minutes on some designs)…" : "Computing this mixing model (seconds)…";
+    ? "Computing this mixing model (seconds, up to about half a minute)…" : "Computing this mixing model (seconds)…";
   const t = await bnAsk(text);
   if (my !== bnGen || t.killed) return;
   $("timing").textContent = `${t.ms < 1000 ? t.ms.toFixed(0) + " ms" : (t.ms / 1000).toFixed(1) + " s"} in the ${model.mode}`;
@@ -1700,7 +1700,7 @@ function scheduleSweep() {
   $("bn-sweep-row").hidden = !slowSweep;
   if (slowSweep) {
     bnSweep = { phi: [], J: [] }; drawSweeps();
-    $("bn-sweep-note").textContent = "This mixing model takes seconds a point, up to a few minutes on some designs; the sweeps (about 36 points) take many minutes. Any change stops them.";
+    $("bn-sweep-note").textContent = "This mixing model takes seconds a point, up to about half a minute; the sweeps (about 36 points) take minutes. Any change stops them.";
     $("bn-sweep-progress").textContent = "";
     return;
   }
