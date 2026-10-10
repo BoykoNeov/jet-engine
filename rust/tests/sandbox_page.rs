@@ -112,8 +112,21 @@ fn every_element_the_script_looks_up_is_declared() {
         assert!(ids.len() >= 6, "{helper}: {ids:?}");
         looked_up.extend(ids.into_iter().map(String::from));
     }
+    // The burner (slice 5): `$(id)` / `$(id + "-r")` over BN_NUM, `$("bn-" + k)` over its switches, its view
+    // group, and `$("bn-q-" + q)` over the dilution toggle. (Its mixing-model knobs are BUILT by the script,
+    // `bn-k-…`, so they are created, never looked up undeclared.)
+    let bn = spans(&t, "const BN_NUM = {", "};");
+    assert_eq!(bn.len(), 1);
+    for id in spans(bn[0], "\"", "\"").into_iter().filter(|s| s.starts_with("bn-")) {
+        looked_up.push(format!("{id}-r"));
+        looked_up.push(id.to_string());
+    }
+    looked_up.extend(js_list(&t, "BN_SW").into_iter().map(|k| format!("bn-{k}")));
+    looked_up.extend(js_list(&t, "BN_VIEW"));
+    looked_up.extend(["instant", "time", "jets"].map(|q| format!("bn-q-{q}")));
     // `$("v-" + id)` / `$("d-" + id)` for the tiles (the fly view's three computed ones included).
-    for tile in ["thrust", "st", "tsfc", "eo", "nu", "pic", "mdot", "klp", "khp", "rlp", "rhp", "cpk", "cslp", "cshp", "ccut"] {
+    for tile in ["thrust", "st", "tsfc", "eo", "nu", "pic", "mdot", "klp", "khp", "rlp", "rhp", "cpk", "cslp", "cshp", "ccut",
+                 "bei", "bflow", "btp", "bmix"] {
         looked_up.push(format!("v-{tile}"));
         looked_up.push(format!("d-{tile}"));
     }
@@ -261,6 +274,39 @@ fn the_selects_offer_exactly_the_models_choices() {
     let mut cl: Vec<String> = turbojet::sandbox_controls::LeverChoice::ALL.iter().map(|l| l.key().to_string()).collect();
     cl.sort();
     assert_eq!(options("ctl-lever"), cl);
+    let mut bm: Vec<String> = turbojet::sandbox_burner::Closure::ALL.iter().map(|c| c.key().to_string()).collect();
+    bm.sort();
+    assert_eq!(options("bn-closure"), bm);
+}
+
+#[test]
+fn every_burner_knob_is_a_burner_setting_and_every_mixing_models_knob_has_words() {
+    use turbojet::sandbox_burner::{BurnerSettings, Closure};
+    let t = read(TEMPLATE);
+    let d = BurnerSettings::defaults().to_json();
+    // BN_NUM's entries are `"id": ["setting", scale, "kind"]`: the setting is the string after `["`.
+    let bn = spans(&t, "const BN_NUM = {", "};");
+    let mut knobs: Vec<String> = spans(bn[0], "[\"", "\"").into_iter().map(String::from).collect();
+    knobs.sort();
+    assert_eq!(knobs, numeric_keys(&d), "the burner's number knobs");
+    let mut flags: Vec<String> = match &d {
+        Json::Obj(kv) => kv.iter().filter(|(_, v)| matches!(v, Json::Int(_))).map(|(k, _)| k.clone()).collect(),
+        _ => unreachable!(),
+    };
+    flags.sort();
+    let mut sw = js_list(&t, "BN_SW");
+    sw.sort();
+    assert_eq!(sw, flags, "the burner's switches");
+    // Every mixing model's knob has its row in BN_KNOB, and every model its one line in BN_MODEL_WORDS.
+    let knob_table = spans(&t, "const BN_KNOB = {", "};");
+    let words = spans(&t, "const BN_MODEL_WORDS = {", "};");
+    assert_eq!((knob_table.len(), words.len()), (1, 1));
+    for c in Closure::ALL {
+        assert!(words[0].contains(&format!("  {}: \"", c.key())), "no words for mixing model {}", c.key());
+        for (k, _) in c.knob_defaults() {
+            assert!(knob_table[0].contains(&format!("  {k}: [")), "mixing model {}'s knob {k} has no row", c.key());
+        }
+    }
 }
 
 #[test]

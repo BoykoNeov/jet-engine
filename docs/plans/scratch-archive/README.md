@@ -19,5 +19,11 @@ The citations themselves were left as written.
   `solver_audit\rust\src` and `fixcheck\`. Use git history and the `python-final` tag.
 - build output (`target\`), browser profiles, and folders that were never cited.
 
+**Added 2026-10-10 — slice 5's burner probes** (`jet-combustor-timing`, plan § 13.2; `jet-burner-map`, the
+crash map and grid check, § 13.9). These two also keep their small summary `.txt` files (`fast/curve/pocket.txt`
+= the crash map's outcome classes and timings, `grid2.txt` = the fixed grid against the model's defaults;
+`gas/ref/shape/time.txt` = § 13.2's measurements), because § 13.9 quotes numbers from them. The raw `.tsv`
+outputs (14 MB) were not kept.
+
 Scripts here ran against the model **as it was** on their date (many drive the Python at tag
 `python-final`). Nothing in this folder is built, run or tested by the crate.

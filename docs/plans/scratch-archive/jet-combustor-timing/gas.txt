@@ -1,0 +1,54 @@
+pi_c 10 Tt4 1500
+  perfect      Tt3   588.7 far 0.02239 phi_ov 0.331 | phi0.6: X[mix-out T 1374.9 K did not return to Tt4=1500 K (re-equilibration gate)] | phi1: X[mix-out T 1374.9 K did not return to Tt4=1500 K (re-equilibration gate)] | phi1.5: X[mix-out T 1374.9 K did not return to Tt4=1500 K (re-equilibration gate)] | phi2: X[mix-out T 1374.9 K did not return to Tt4=1500 K (re-equilibration gate)] |
+  therm_perf   Tt3   583.5 far 0.02727 phi_ov 0.403 | phi0.6: EI    0.049 Tmix/Tt4 1.0130 | phi1: EI   20.743 Tmix/Tt4 1.0130 | phi1.5: EI    0.001 Tmix/Tt4 1.0130 | phi2: EI    0.000 Tmix/Tt4 1.0130 |
+  reacting     Tt3   583.5 far 0.02717 phi_ov 0.402 | phi0.6: EI    0.049 Tmix/Tt4 1.0112 | phi1: EI   20.743 Tmix/Tt4 1.0112 | phi1.5: EI    0.001 Tmix/Tt4 1.0112 | phi2: EI    0.000 Tmix/Tt4 1.0112 |
+  fork_b       Tt3   583.5 far 0.02717 phi_ov 0.402 | phi0.6: EI    0.049 Tmix/Tt4 1.0112 | phi1: EI   20.743 Tmix/Tt4 1.0112 | phi1.5: EI    0.001 Tmix/Tt4 1.0112 | phi2: EI    0.000 Tmix/Tt4 1.0112 |
+  equilibrium  Tt3   583.5 far 0.02718 phi_ov 0.402 | phi0.6: EI    0.049 Tmix/Tt4 1.0113 | phi1: EI   20.743 Tmix/Tt4 1.0113 | phi1.5: EI    0.001 Tmix/Tt4 1.0113 | phi2: EI    0.000 Tmix/Tt4 1.0113 |
+pi_c 4 Tt4 1000
+  perfect      Tt3   444.1 far 0.01349 phi_ov 0.199 | phi0.6: EI    0.004 Tmix/Tt4 0.9599 | phi1: EI    5.087 Tmix/Tt4 0.9599 | phi1.5: EI    0.000 Tmix/Tt4 0.9599 | phi2: EI    0.000 Tmix/Tt4 0.9599 |
+  therm_perf   Tt3   443.5 far 0.01533 phi_ov 0.227 | phi0.6: EI    0.004 Tmix/Tt4 1.0230 | phi1: EI    5.069 Tmix/Tt4 1.0230 | phi1.5: EI    0.000 Tmix/Tt4 1.0230 | phi2: EI    0.000 Tmix/Tt4 1.0230 |
+  reacting     Tt3   443.5 far 0.01496 phi_ov 0.221 | phi0.6: EI    0.004 Tmix/Tt4 1.0103 | phi1: EI    5.069 Tmix/Tt4 1.0103 | phi1.5: EI    0.000 Tmix/Tt4 1.0103 | phi2: EI    0.000 Tmix/Tt4 1.0103 |
+  fork_b       Tt3   443.5 far 0.01496 phi_ov 0.221 | phi0.6: EI    0.004 Tmix/Tt4 1.0103 | phi1: EI    5.069 Tmix/Tt4 1.0103 | phi1.5: EI    0.000 Tmix/Tt4 1.0103 | phi2: EI    0.000 Tmix/Tt4 1.0103 |
+  equilibrium  Tt3   443.5 far 0.01496 phi_ov 0.221 | phi0.6: EI    0.004 Tmix/Tt4 1.0103 | phi1: EI    5.069 Tmix/Tt4 1.0103 | phi1.5: EI    0.000 Tmix/Tt4 1.0103 | phi2: EI    0.000 Tmix/Tt4 1.0103 |
+pi_c 4 Tt4 1600
+  perfect      Tt3   444.1 far 0.02847 phi_ov 0.421 | phi0.6: X[mix-out T 1445.7 K did not return to Tt4=1600 K (re-equilibration gate)] | phi1: X[mix-out T 1445.7 K did not return to Tt4=1600 K (re-equilibration gate)] | phi1.5: X[mix-out T 1445.7 K did not return to Tt4=1600 K (re-equilibration gate)] | phi2: X[mix-out T 1445.7 K did not return to Tt4=1600 K (re-equilibration gate)] |
+  therm_perf   Tt3   443.5 far 0.03409 phi_ov 0.504 | phi0.6: EI    0.004 Tmix/Tt4 1.0068 | phi1: EI    5.069 Tmix/Tt4 1.0068 | phi1.5: EI    0.000 Tmix/Tt4 1.0068 | phi2: EI    0.000 Tmix/Tt4 1.0068 |
+  reacting     Tt3   443.5 far 0.03442 phi_ov 0.509 | phi0.6: EI    0.004 Tmix/Tt4 1.0127 | phi1: EI    5.069 Tmix/Tt4 1.0127 | phi1.5: EI    0.000 Tmix/Tt4 1.0127 | phi2: EI    0.000 Tmix/Tt4 1.0127 |
+  fork_b       Tt3   443.5 far 0.03442 phi_ov 0.509 | phi0.6: EI    0.004 Tmix/Tt4 1.0127 | phi1: EI    5.069 Tmix/Tt4 1.0127 | phi1.5: EI    0.000 Tmix/Tt4 1.0127 | phi2: EI    0.000 Tmix/Tt4 1.0127 |
+  equilibrium  Tt3   443.5 far 0.03444 phi_ov 0.509 | phi0.6: EI    0.004 Tmix/Tt4 1.0130 | phi1: EI    5.069 Tmix/Tt4 1.0130 | phi1.5: EI    0.000 Tmix/Tt4 1.0130 | phi2: EI    0.000 Tmix/Tt4 1.0130 |
+pi_c 20 Tt4 1300
+  perfect      Tt3   726.2 far 0.01403 phi_ov 0.207 | phi0.6: X[mix-out T 1224.3 K did not return to Tt4=1300 K (re-equilibration gate)] | phi1: X[mix-out T 1224.3 K did not return to Tt4=1300 K (re-equilibration gate)] | phi1.5: X[mix-out T 1224.3 K did not return to Tt4=1300 K (re-equilibration gate)] | phi2: X[mix-out T 1224.3 K did not return to Tt4=1300 K (re-equilibration gate)] |
+  therm_perf   Tt3   712.3 far 0.01758 phi_ov 0.260 | phi0.6: EI    0.381 Tmix/Tt4 1.0208 | phi1: EI   52.968 Tmix/Tt4 1.0208 | phi1.5: EI    0.008 Tmix/Tt4 1.0208 | phi2: EI    0.000 Tmix/Tt4 1.0208 |
+  reacting     Tt3   712.3 far 0.01708 phi_ov 0.252 | phi0.6: EI    0.381 Tmix/Tt4 1.0086 | phi1: EI   52.968 Tmix/Tt4 1.0086 | phi1.5: EI    0.008 Tmix/Tt4 1.0086 | phi2: EI    0.000 Tmix/Tt4 1.0086 |
+  fork_b       Tt3   712.3 far 0.01708 phi_ov 0.252 | phi0.6: EI    0.381 Tmix/Tt4 1.0086 | phi1: EI   52.968 Tmix/Tt4 1.0086 | phi1.5: EI    0.008 Tmix/Tt4 1.0086 | phi2: EI    0.000 Tmix/Tt4 1.0086 |
+  equilibrium  Tt3   712.3 far 0.01708 phi_ov 0.252 | phi0.6: EI    0.381 Tmix/Tt4 1.0086 | phi1: EI   52.968 Tmix/Tt4 1.0086 | phi1.5: EI    0.008 Tmix/Tt4 1.0086 | phi2: EI    0.000 Tmix/Tt4 1.0086 |
+pi_c 20 Tt4 1900
+  perfect      Tt3   726.2 far 0.02912 phi_ov 0.430 | phi0.6: X[mix-out T 1688.2 K did not return to Tt4=1900 K (re-equilibration gate)] | phi1: X[mix-out T 1688.2 K did not return to Tt4=1900 K (re-equilibration gate)] | phi1.5: X[mix-out T 1688.2 K did not return to Tt4=1900 K (re-equilibration gate)] | phi2: X[mix-out T 1688.2 K did not return to Tt4=1900 K (re-equilibration gate)] |
+  therm_perf   Tt3   712.3 far 0.03717 phi_ov 0.549 | phi0.6: EI    0.381 Tmix/Tt4 1.0004 | phi1: EI   52.968 Tmix/Tt4 1.0004 | phi1.5: EI    0.008 Tmix/Tt4 1.0004 | phi2: EI    0.000 Tmix/Tt4 1.0004 |
+  reacting     Tt3   712.3 far 0.03787 phi_ov 0.560 | phi0.6: EI    0.381 Tmix/Tt4 1.0103 | phi1: EI   52.968 Tmix/Tt4 1.0103 | phi1.5: EI    0.008 Tmix/Tt4 1.0103 | phi2: EI    0.000 Tmix/Tt4 1.0103 |
+  fork_b       Tt3   712.3 far 0.03787 phi_ov 0.560 | phi0.6: EI    0.381 Tmix/Tt4 1.0103 | phi1: EI   52.968 Tmix/Tt4 1.0103 | phi1.5: EI    0.008 Tmix/Tt4 1.0103 | phi2: EI    0.000 Tmix/Tt4 1.0103 |
+  equilibrium  Tt3   712.3 far 0.03796 phi_ov 0.561 | phi0.6: EI    0.381 Tmix/Tt4 1.0116 | phi1: EI   52.968 Tmix/Tt4 1.0116 | phi1.5: EI    0.008 Tmix/Tt4 1.0116 | phi2: EI    0.000 Tmix/Tt4 1.0116 |
+pi_c 40 Tt4 1600
+  perfect      Tt3   893.8 far 0.01739 phi_ov 0.257 | phi0.6: X[mix-out T 1479.3 K did not return to Tt4=1600 K (re-equilibration gate)] | phi1: X[mix-out T 1479.3 K did not return to Tt4=1600 K (re-equilibration gate)] | phi1.5: X[mix-out T 1479.3 K did not return to Tt4=1600 K (re-equilibration gate)] | phi2: X[mix-out T 1479.3 K did not return to Tt4=1600 K (re-equilibration gate)] |
+  therm_perf   Tt3   862.7 far 0.02309 phi_ov 0.341 | phi0.6: EI    3.336 Tmix/Tt4 1.0156 | phi1: EI   88.330 Tmix/Tt4 1.0156 | phi1.5: EI    0.051 Tmix/Tt4 1.0156 | phi2: EI    0.000 Tmix/Tt4 1.0156 |
+  reacting     Tt3   862.7 far 0.02272 phi_ov 0.336 | phi0.6: EI    3.336 Tmix/Tt4 1.0087 | phi1: EI   88.330 Tmix/Tt4 1.0087 | phi1.5: EI    0.051 Tmix/Tt4 1.0087 | phi2: EI    0.000 Tmix/Tt4 1.0087 |
+  fork_b       Tt3   862.7 far 0.02272 phi_ov 0.336 | phi0.6: EI    3.336 Tmix/Tt4 1.0087 | phi1: EI   88.330 Tmix/Tt4 1.0087 | phi1.5: EI    0.051 Tmix/Tt4 1.0087 | phi2: EI    0.000 Tmix/Tt4 1.0087 |
+  equilibrium  Tt3   862.7 far 0.02273 phi_ov 0.336 | phi0.6: EI    3.336 Tmix/Tt4 1.0089 | phi1: EI   88.330 Tmix/Tt4 1.0089 | phi1.5: EI    0.051 Tmix/Tt4 1.0089 | phi2: EI    0.000 Tmix/Tt4 1.0089 |
+pi_c 40 Tt4 2100
+  perfect      Tt3   893.8 far 0.03008 phi_ov 0.444 | phi0.6: X[mix-out T 1851.3 K did not return to Tt4=2100 K (re-equilibration gate)] | phi1: X[mix-out T 1851.3 K did not return to Tt4=2100 K (re-equilibration gate)] | phi1.5: X[mix-out T 1851.3 K did not return to Tt4=2100 K (re-equilibration gate)] | phi2: X[mix-out T 1851.3 K did not return to Tt4=2100 K (re-equilibration gate)] |
+  therm_perf   Tt3   862.7 far 0.03994 phi_ov 0.590 | phi0.6: EI    3.336 Tmix/Tt4 0.9947 | phi1: EI   88.330 Tmix/Tt4 0.9947 | phi1.5: EI    0.051 Tmix/Tt4 0.9947 | phi2: EI    0.000 Tmix/Tt4 0.9947 |
+  reacting     Tt3   862.7 far 0.04106 phi_ov 0.607 | phi0.6: X[primary air fraction α=1.0113 > 1 — overall mixture leaner than the primary] | phi1: EI   88.330 Tmix/Tt4 1.0082 | phi1.5: EI    0.051 Tmix/Tt4 1.0082 | phi2: EI    0.000 Tmix/Tt4 1.0082 |
+  fork_b       Tt3   862.7 far 0.04106 phi_ov 0.607 | phi0.6: X[primary air fraction α=1.0113 > 1 — overall mixture leaner than the primary] | phi1: EI   88.330 Tmix/Tt4 1.0082 | phi1.5: EI    0.051 Tmix/Tt4 1.0082 | phi2: EI    0.000 Tmix/Tt4 1.0082 |
+  equilibrium  Tt3   862.7 far 0.04130 phi_ov 0.610 | phi0.6: X[primary air fraction α=1.0170 > 1 — overall mixture leaner than the primary] | phi1: EI   88.330 Tmix/Tt4 1.0110 | phi1.5: EI    0.051 Tmix/Tt4 1.0110 | phi2: EI    0.000 Tmix/Tt4 1.0110 |
+pi_c 10 Tt4 2200
+  perfect      Tt3   588.7 far 0.04028 phi_ov 0.595 | phi0.6: X[mix-out T 1890.6 K did not return to Tt4=2200 K (re-equilibration gate)] | phi1: X[mix-out T 1890.6 K did not return to Tt4=2200 K (re-equilibration gate)] | phi1.5: X[mix-out T 1890.6 K did not return to Tt4=2200 K (re-equilibration gate)] | phi2: X[mix-out T 1890.6 K did not return to Tt4=2200 K (re-equilibration gate)] |
+  therm_perf   Tt3   583.5 far 0.05102 phi_ov 0.754 | phi0.6: X[primary air fraction α=1.2564 > 1 — overall mixture leaner than the primary] | phi1: EI   20.743 Tmix/Tt4 0.9794 | phi1.5: EI    0.001 Tmix/Tt4 0.9794 | phi2: EI    0.000 Tmix/Tt4 0.9794 |
+  reacting     Tt3   583.5 far 0.05346 phi_ov 0.790 | phi0.6: X[primary air fraction α=1.3166 > 1 — overall mixture leaner than the primary] | phi1: EI   20.743 Tmix/Tt4 1.0044 | phi1.5: EI    0.001 Tmix/Tt4 1.0044 | phi2: EI    0.000 Tmix/Tt4 1.0044 |
+  fork_b       design fails: Fork B absolute-enthalpy balance: Σ N h̄ react != Σ N h̄ prod + loss
+  equilibrium  Tt3   583.5 far 0.05426 phi_ov 0.802 | phi0.6: X[primary air fraction α=1.3363 > 1 — overall mixture leaner than the primary] | phi1: EI   20.743 Tmix/Tt4 1.0123 | phi1.5: EI    0.001 Tmix/Tt4 1.0123 | phi2: EI    0.000 Tmix/Tt4 1.0123 |
+pi_c 30 Tt4 1200
+  perfect      Tt3   820.2 far 0.00926 phi_ov 0.137 | phi0.6: EI    1.752 Tmix/Tt4 0.9583 | phi1: EI   80.225 Tmix/Tt4 0.9583 | phi1.5: EI    0.030 Tmix/Tt4 0.9583 | phi2: EI    0.000 Tmix/Tt4 0.9583 |
+  therm_perf   Tt3   797.5 far 0.01224 phi_ov 0.181 | phi0.6: EI    1.340 Tmix/Tt4 1.0240 | phi1: EI   75.973 Tmix/Tt4 1.0240 | phi1.5: EI    0.023 Tmix/Tt4 1.0240 | phi2: EI    0.000 Tmix/Tt4 1.0240 |
+  reacting     Tt3   797.5 far 0.01160 phi_ov 0.171 | phi0.6: EI    1.340 Tmix/Tt4 1.0065 | phi1: EI   75.973 Tmix/Tt4 1.0065 | phi1.5: EI    0.023 Tmix/Tt4 1.0065 | phi2: EI    0.000 Tmix/Tt4 1.0065 |
+  fork_b       Tt3   797.5 far 0.01160 phi_ov 0.171 | phi0.6: EI    1.340 Tmix/Tt4 1.0065 | phi1: EI   75.973 Tmix/Tt4 1.0065 | phi1.5: EI    0.023 Tmix/Tt4 1.0065 | phi2: EI    0.000 Tmix/Tt4 1.0065 |
+  equilibrium  Tt3   797.5 far 0.01160 phi_ov 0.171 | phi0.6: EI    1.340 Tmix/Tt4 1.0065 | phi1: EI   75.973 Tmix/Tt4 1.0065 | phi1.5: EI    0.023 Tmix/Tt4 1.0065 | phi2: EI    0.000 Tmix/Tt4 1.0065 |

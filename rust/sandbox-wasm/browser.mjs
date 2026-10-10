@@ -66,8 +66,14 @@ try {
   const tab = await get('/json/new?about:blank', 'PUT');
   const s = session(tab.webSocketDebuggerUrl); await s.opened;
   await s.send('Runtime.enable');
-  const ev = async (expression) => {
-    const r = await s.send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true });
+  // A ceiling, so a page that never answers FAILS the drive (and the finally closes Chrome) instead of
+  // leaving Node to drop out on an unsettled await with Chrome still running -- slice 5's hang did that
+  // twice. The slowest single call is one per-pocket burner point, ~10 s.
+  const ev = async (expression, ms = 300000) => {
+    let timer;
+    const late = new Promise((_, no) => { timer = setTimeout(() => no(new Error(`no answer in ${ms / 1000} s: ${expression.slice(0, 160)}`)), ms); });
+    const r = await Promise.race([s.send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true }), late])
+      .finally(() => clearTimeout(timer));
     if (r.result?.exceptionDetails) throw new Error(JSON.stringify(r.result.exceptionDetails).slice(0, 300));
     return r.result?.result?.value;
   };
@@ -105,6 +111,12 @@ try {
   const trapState = await ev(`window.sandbox.set({gas:'reacting', pi_c:1.02, Tt4:2300, M0:0.05, eta_c:0.6, eta_t:0.6, T0:216.65, p0:5529.3})`);
   const bad = await ev(`[document.getElementById('bad').classList.contains('show'), document.getElementById('bad-plain').textContent, document.getElementById('bad-raw').textContent]`);
   check('a_model_failure_shows_the_does_not_run_panel', trapState === 'does-not-run' && bad[0] && /rich/.test(bad[1]) && /rich mixture/.test(bad[2]), JSON.stringify([trapState, bad]));
+  // A failure whose message is NOT ASCII (`Σ`): the words request must be escaped for the model's JSON
+  // reader, or it traps inside the trap handler and the page never answers (latent from slice 1 until slice 5).
+  const sigState = await ev(`window.sandbox.set({gas:'equilibrium', pi_c:3.62, Tt4:2344.7, M0:0.85, eta_c:0.88, eta_t:0.9, T0:216.65, p0:22632})`, 30000);
+  const sig = await ev(`[document.getElementById('bad-plain').textContent, document.getElementById('bad-raw').textContent]`);
+  check('a_failure_message_that_is_not_ascii_gets_its_plain_words', sigState === 'does-not-run' && /Σ/.test(sig[1]) && !/Σ/.test(sig[0]) && sig[0].length > 40,
+        JSON.stringify([sigState, sig]));
 
   // 4. ...and the model recovers: a precheck refusal next, on the re-created instance.
   const preState = await ev(`window.sandbox.set({gas:'equilibrium', pi_c:10, Tt4:400, M0:0.85, eta_c:0.88, eta_t:0.9, T0:250, p0:50000})`);
@@ -331,6 +343,57 @@ try {
     await ev(`document.getElementById('ctlq-fuel').click()`); await shot('controls-fuel');
     await ev(`document.getElementById('ctlq-Tt4').click()`);
   }
+  await ev(`document.getElementById('unpin').click()`);
+
+  // 16c. THE BURNER (slice 5). The opening burner is the native `{"op":"burner","settings":{},"burner":{}}`
+  // (the Design engine's defaults, read on the equilibrium gas); a burner result is the one with `ei_thermal`.
+  await ev(`document.getElementById('mode-burner').click()`);
+  const bOpen = await waitFor(`window.sandbox.view() === 'burner' && window.sandbox.bnState === 'done' && window.sandbox.bnLast && window.sandbox.bnLast.ei_thermal !== undefined`, 30000);
+  const bn0 = await ev('window.sandbox.bnLast');
+  const ebn = bn0 ? close(bn0, nativeOf('{"op":"burner","settings":{},"burner":{}}')) : 'no burner';
+  const bnvis = await ev(`['bn-set','bn-quench-set','bn-out','bn-card','bn-bell-card','bn-path-card','bn-nozzle-card','cycle-set','bn-jet-card','out','ts-card','components-set'].map(i => document.getElementById(i).hidden)`);
+  check('the_burner_opens_on_the_native_burner_and_shows_its_view', bOpen && !ebn && JSON.stringify(bnvis) === '[false,false,false,false,false,false,false,false,true,true,true,true]',
+        (ebn || '') + JSON.stringify(bnvis));
+  // The richness sweep streams onto the bell chart; the path and the nozzle readout are drawn.
+  const bell = await waitFor(`window.sandbox.sweepState === 'done' && window.sandbox.sweepPoints().phi.length === 21`, 60000);
+  const bnDrawn = await ev(`[document.querySelectorAll('#bn-bell .rline, #bn-bell .now').length, document.querySelectorAll('#bn-path .rline').length, document.getElementById('bn-nozzle').tBodies[0].rows.length, document.getElementById('v-bei').textContent]`);
+  check('the_richness_sweep_streams_and_the_path_and_nozzle_are_drawn', bell && bnDrawn[0] === 2 && bnDrawn[1] === 1 && bnDrawn[2] === 7 && bnDrawn[3] !== '–', JSON.stringify(bnDrawn));
+  if (process.env.SANDBOX_SHOTS) { await shot('burner-light'); await shot('burner-dark', 1280, true); await shot('burner-phone', 390); }
+  // Jets with the β-PDF model AT its best jet (J 16 at the default spacing): the notch, matching native; then
+  // the jet-strength sweep holds the notch with both neighbours above it.
+  const notch = await ev(`window.sandbox.burner({quench: 'jets', closure: 'pdf', phi_p: 1.5, J: 16}).then(r => r.run)`);
+  const enotch = notch ? close(notch, nativeOf('{"op":"burner","settings":{},"burner":{"phi_p":1.5,"quench":"jets","closure":"pdf","J":16}}')) : 'no run';
+  const jsw = await waitFor(`window.sandbox.sweepState === 'done' && window.sandbox.sweepPoints().J.length === 15 && window.sandbox.sweepPoints().phi.length === 21`, 180000);
+  const jpts = await ev('window.sandbox.sweepPoints().J');
+  const at = jpts ? jpts.findIndex(p => p.x === 16) : -1;
+  check('the_jet_sweep_holds_the_pdf_models_notch', !enotch && notch.ei_thermal < 1e-3 && jsw && at > 0 && jpts[at].ei < jpts[at - 1].ei && jpts[at].ei < jpts[at + 1].ei
+        && !(await ev(`document.getElementById('bn-jet-card').hidden`)), (enotch || '') + ` at ${at} ${JSON.stringify(jpts && jpts.slice(Math.max(0, at - 1), at + 2))}`);
+  if (process.env.SANDBOX_SHOTS) { await shot('burner-jets'); await shot('burner-jets-dark', 1280, true); }
+  // The lean floor, refused in words before the model runs; and a model failure, in the burner's own words.
+  const lean = await ev(`window.sandbox.burner({quench: 'instant', closure: 'none', phi_p: 0.3}).then(r => r.state)`);
+  const leanText = await ev(`document.getElementById('bad-plain').textContent`);
+  check('a_front_zone_leaner_than_the_burner_is_refused_in_words', lean === 'does-not-run' && /cannot be leaner than the burner as a whole/.test(leanText), JSON.stringify([lean, leanText]));
+  const wide = await ev(`window.sandbox.burner({quench: 'jets', closure: 'pdf', phi_p: 1.5, J: 62, knobs: {k_g: 0.8, g_max: 0.8}}).then(r => r.state)`);
+  const wideText = await ev(`[document.getElementById('bad-plain').textContent, document.getElementById('bad-raw').textContent]`);
+  check('a_model_failure_in_the_burner_says_why', wide === 'does-not-run' && /spread is too wide/.test(wideText[0]) && /β-PDF shape/.test(wideText[1]), JSON.stringify([wide, wideText]));
+  if (process.env.SANDBOX_SHOTS) await shot('burner-failed');
+  // A slow (per-pocket) model: one point, computed; its sweeps wait for the button; a knob move while they
+  // run stops them (the worker is killed) and the new point finishes.
+  const pk = await ev(`window.sandbox.burner({closure: 'pocket', phi_p: 1.5, J: 25}).then(r => r.run)`);
+  const waiting = await ev(`[document.getElementById('bn-sweep-row').hidden, window.sandbox.sweepState]`);
+  check('a_per_pocket_point_runs_and_its_sweep_waits_for_the_button', pk && pk.state && pk.state.ei_no_pocket_quench > 0 && waiting[0] === false, JSON.stringify(waiting));
+  const bk0 = await ev('window.sandbox.kills');
+  await ev(`document.getElementById('bn-sweep').click()`);
+  const going = await waitFor(`window.sandbox.sweepState === 'running' && /point [1-9]/.test(document.getElementById('bn-sweep-progress').textContent)`, 20000);
+  await ev(`(() => { const a = document.getElementById('bn-tau'); a.value = '2'; a.dispatchEvent(new Event('input')); a.dispatchEvent(new Event('change')); })()`);
+  const bnew = await waitFor(`window.sandbox.bnState === 'done' && window.sandbox.bnLast && window.sandbox.bnLast.burner.tau === 0.002 && window.sandbox.bnLast.burner.closure === 'pocket'`, 180000);
+  check('a_knob_move_stops_a_slow_sweep_and_the_new_point_finishes', going && bnew && (await ev('window.sandbox.kills')) > bk0, `going ${going}, new ${bnew}, kills ${bk0} -> ${await ev('window.sandbox.kills')}`);
+  // Pin & compare: pin the instant burner, make the front zone richer, and the pinned column and deltas appear.
+  await ev(`window.sandbox.burner({closure: 'none', quench: 'instant', phi_p: 1.0, tau: 0.003})`);
+  await ev(`document.getElementById('pin').click()`);
+  await ev(`window.sandbox.burner({phi_p: 1.3})`);
+  const bpc = await ev(`[document.getElementById('bn-pin-head').textContent, document.getElementById('d-bei').textContent]`);
+  check('pin_and_compare_shows_the_burners_change', bpc[0] === 'Pinned' && /^[−+]/.test(bpc[1]), JSON.stringify(bpc));
   await ev(`document.getElementById('unpin').click()`);
 
   // 17. Back to design: the design result is the opening one exactly -- the fly and blade sessions changed no design knob.

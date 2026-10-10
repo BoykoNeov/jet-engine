@@ -137,6 +137,34 @@ limiter held the fuel below it (the method's limit); the mixture left the fuel s
 With the temperature limiter's lag on, the march does not record its state, and the stop is said without a
 cause.
 
+## Slice 5 — the burner (shipped 2026-10-10)
+
+Press **Burner**: the burner of the *Design* engine opened up — the NOx models of rungs 7–24 as knobs
+(`sandbox_burner.rs`, plan § 13, what the build found § 13.9). The burner is always read off the design run
+on the equilibrium gas (the NOx models need its chemistry), whatever gas the Design view shows. Nothing here
+changes the engine's thrust or fuel: NO is a trace.
+
+**Knobs:** the front zone's richness (from the burner's own up to 2, the soot limit) and residence time; fast
+oxygen atoms (rungs 19–21) and prompt NO (rung 19, its size imposed); how the dilution air mixes in —
+instantly (rungs 8/9), over a set time (10), or through dilution jets (11: jet strength, duct height,
+crossflow speed, entrainment, schedule shape) with none or ONE of eight mixing models (12, 13, 15, 16, 18,
+22, 23, 24), each with its own few knobs. Guessed constants are marked "read the trend, not the size".
+
+**Readouts:** NO made (thermal, prompt, total) per kg of fuel and as a flow; the front zone's flame
+temperature, air share and how near its NO came to equilibrium; on a finite dilution the hottest point on the
+way and the quench time; with jets the mixing numbers against the model's best; rung 7's "if perfectly mixed"
+number beside them; charts of NO against richness and (with jets) against jet strength — the jet sweep always
+includes the model's best jet, where some models drop to a sharp notch — and the temperature along the
+dilution; the nozzle readout (rung 14: does the exhaust NO survive the nozzle). Pin & compare as everywhere.
+
+**Speed:** the instant and set-time routes follow a slider; the curve models (13, 15, 18, 22) run when a slider
+is let go and their sweeps stream; the three per-pocket models (16, 23, 24) take seconds a point — up to a few
+minutes on some designs — and their sweeps wait for a button. Any knob move stops a run in progress.
+
+**A burner that does not run** says why: a front zone leaner than the burner is refused before the model runs;
+the model's own failures (NO no longer a trace, a flame outside the model's range, a mixing spread too wide, …)
+each have plain words, found by a crash map and driven by a test.
+
 ## How it is built
 
 | Piece | What it is |
@@ -145,6 +173,7 @@ cause.
 | `rust/src/sandbox_blades.rs` | Slice 2's ops (`blade_*`), reached through `sandbox::call` (`tests/sandbox_blades.rs`). |
 | `rust/src/sandbox_transient.rs` | Slice 4's ops (`slam_defaults`, `slam`), reached through `sandbox::call` (`tests/sandbox_transient.rs`). |
 | `rust/src/sandbox_controls.rs` | Slice 4 (B)'s ops (`controls_defaults`, `controls`), reached through `sandbox::call` (`tests/sandbox_controls.rs`). |
+| `rust/src/sandbox_burner.rs` | Slice 5's ops (`burner_*`), reached through `sandbox::call` (`tests/sandbox_burner.rs`). |
 | `rust/src/atmosphere.rs` | The 1976 standard atmosphere (`tests/atmosphere.rs`, held to the published table). |
 | `rust/sandbox-wasm/` | A tiny separate crate: only the browser exports around `sandbox::call`, and the panic hook that keeps a crash's message readable. Not built by `cargo test`. |
 | `template.html` | The page; `/*__SANDBOX_WASM_B64__*/` receives the build as base64. |
@@ -184,6 +213,11 @@ red until the page is rebuilt and committed — the numbers have not changed.
   built in the test from literal numbers; every switch is checked where it binds and the holder names it; a
   dormant redline is the bare run; the acceleration table is `accel_schedule`'s, bit for bit; the re-read and
   the stop re-run reproduce the march point for point; each stop kind, refusal and precheck driven by its case.
+- `tests/sandbox_burner.rs` — slice 5: every dilution route and every mixing model IS `zoned_nox`, bit for
+  bit, on a burner built in the test from literal numbers; the inlet is slice 1's equilibrium design run; the
+  page's fixed grids stay within 1 % of the model's own and keep its best jet; the sweeps hold the notch; the
+  nozzle readout and dilution path are rungs 14's and 10's calls; each refusal and plain-words entry driven by
+  its case.
 - `tests/sandbox_page.rs` — the joints: the page is its template + its build; every element the
   script looks up exists; every knob (design and fly) is a setting and back; the dropdowns offer the
   model's choices; every export and op the page uses exists.
@@ -197,9 +231,16 @@ red until the page is rebuilt and committed — the numbers have not changed.
   fuel overshoot, an early stop in words, a below-idle start naming its throttle, a run stopped by a knob
   move, the refusal on the equilibrium gas; and Controls — the opening run against native, the temperature
   limiter switched on, pin & compare, a refused combination, an early stop in words, the incidence floor, a run
-  stopped by a knob move).
-  Needs Node ≥ 22 and Chrome. `SANDBOX_SHOTS=<folder>` also saves light, dark and phone screenshots
-  of the fly view — look at them: a layout bug passes every behaviour check.
+  stopped by a knob move; and the burner — the opening burner against native, the richness sweep, the jet
+  sweep's notch, the lean refusal, a model failure in words, a per-pocket point and its sweep stopped by a
+  knob move, pin & compare; and a failure whose message is not ASCII getting its words).
+  Needs Node ≥ 22 and Chrome. Each page call has a 300 s ceiling, so a page that never answers fails
+  the check (and its Chrome is closed) instead of hanging. `SANDBOX_SHOTS=<folder>` also saves light, dark
+  and phone screenshots of each view — look at them: a layout bug passes every behaviour check.
+
+**The model reads ASCII JSON only.** The page's worker escapes every request (`\uXXXX`); the model's failure
+messages carry β, Σ, — and, unescaped, the request for their plain words failed inside the failure handler
+and the page waited forever (latent from slice 1, found in slice 5).
 
 **Browser vs native numbers.** Not bit-identical, by measurement: the browser uses Rust's bundled
 maths library, Windows its own. On the perfect gas they agree to ~1e-14; on every table gas the
@@ -210,4 +251,4 @@ the perfect gas, come out of iterated solves (stopping at 1e-12), so they get th
 
 ## Next slices
 
-The combustor (slice 5) — planned 2026-10-08, plan § 13; waiting on the user's answers (§ 13.8).
+None planned. Slices 1–5 cover plan § 5's list; what comes next is the user's choice (plan § 5).

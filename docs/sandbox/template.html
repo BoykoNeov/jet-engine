@@ -158,6 +158,13 @@ td.delta.up { color: var(--s-aqua); } td.delta.down { color: var(--s-red); }
 .legend { font-size: 12px; color: var(--ink-2); display: flex; gap: 14px; flex-wrap: wrap; margin-top: 4px; }
 .sw { display: inline-block; width: 18px; height: 0; border-top: 2px solid var(--accent); vertical-align: middle; margin-right: 4px; }
 .sw.pin { border-top: 2px dashed var(--pin); }
+.chart .jopt { stroke: var(--s-aqua); stroke-width: 1.4; stroke-dasharray: 5 3; }
+.sw.jopt { border-top: 2px dashed var(--s-aqua); }
+.chart .fail { fill: var(--s-red); font-size: 13px; font-weight: 700; }
+.chart .stoich { stroke: var(--axis); stroke-width: 1; stroke-dasharray: 2 3; }
+.chart .mix { stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 5 4; }
+.chart .cross { fill: var(--s-red); }
+#bn-knobs .knob .derived { font-size: 11px; }
 footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 32px; color: var(--ink-2); font-size: 12px; }
 footer p { max-width: 90ch; }
 </style>
@@ -174,7 +181,8 @@ footer p { max-width: 90ch; }
       <button type="button" id="mode-design" aria-pressed="true">Design the engine</button>
       <button type="button" id="mode-fly" aria-pressed="false">Fly it</button>
       <button type="button" id="mode-blades" aria-pressed="false">Size the blades</button>
-      <button type="button" id="mode-controls" aria-pressed="false">Controls</button></div>
+      <button type="button" id="mode-controls" aria-pressed="false">Controls</button>
+      <button type="button" id="mode-burner" aria-pressed="false">Burner</button></div>
     <p class="note" id="mode-note">Every change redesigns the engine. Press <b>Fly it</b> to freeze this design's hardware and move the throttle instead.</p>
     <fieldset id="fly-set" hidden>
       <legend>Fly it</legend>
@@ -375,6 +383,66 @@ footer p { max-width: 90ch; }
       <p class="note">Each lever is back at its design setting by the design speed. One lever at a time: the stators and the
         bleed together with a fuel limiter is not modelled (an open question in the project).</p>
     </fieldset>
+    <fieldset id="bn-set" hidden>
+      <legend>The burner</legend>
+      <p class="frozen">The burner of the engine you design in <b>Design the engine</b> (its flight and cycle knobs are
+        below), always read on the equilibrium gas: the NO models need its chemistry. Nothing here changes the engine's
+        thrust or fuel; NO is a trace.</p>
+      <div class="knob"><label for="bn-phi_p">Front-zone richness <small>1 = stoichiometric</small></label><input type="number" id="bn-phi_p" step="0.01">
+        <input type="range" id="bn-phi_p-r" min="0.3" max="2" step="any" aria-label="Front-zone richness slider">
+        <div class="derived" id="bn-phi-note"></div></div>
+      <div class="knob"><label for="bn-tau">Time in the front zone <small>ms</small></label><input type="number" id="bn-tau" step="0.1">
+        <input type="range" id="bn-tau-r" min="-1" max="1.301" step="any" aria-label="Front-zone time slider (logarithmic)">
+        <div class="derived">A guessed number (about 3 ms is typical): read the trend, not the size.</div></div>
+      <label class="swrow"><input type="checkbox" id="bn-super_eq_o"> Fast oxygen atoms <small>rungs 19–21</small></label>
+      <p class="note swbox">A flame carries more O atoms than equilibrium says; this lifts them by a fitted factor, valid in
+        flames hotter than about 1500 K.</p>
+      <label class="swrow"><input type="checkbox" id="bn-prompt"> Prompt NO <small>rung 19</small></label>
+      <div class="swbox" id="bn-prompt-box">
+        <div class="knob"><label for="bn-prompt_peak">Its size <small>g/kg at φ 1.24, 2400 K</small></label><input type="number" id="bn-prompt_peak" step="0.1">
+          <input type="range" id="bn-prompt_peak-r" min="0.5" max="10" step="any" aria-label="Prompt NO size slider">
+          <div class="derived">The one number nobody can derive: the model fixes prompt NO's size here and works out only how it
+            changes with richness and temperature.</div></div></div>
+    </fieldset>
+    <fieldset id="bn-quench-set" hidden>
+      <legend>Dilution</legend>
+      <div class="toggle" role="group" aria-label="How the dilution air mixes in">
+        <button type="button" id="bn-q-instant" aria-pressed="true">Instantly</button>
+        <button type="button" id="bn-q-time" aria-pressed="false">Over a set time</button>
+        <button type="button" id="bn-q-jets" aria-pressed="false">Through jets</button></div>
+      <p class="note" id="bn-q-note"></p>
+      <div id="bn-time-box">
+        <div class="knob"><label for="bn-tau_q">Quench time <small>ms</small></label><input type="number" id="bn-tau_q" step="0.01">
+          <input type="range" id="bn-tau_q-r" min="-2" max="1" step="any" aria-label="Quench time slider (logarithmic)"></div></div>
+      <div id="bn-jets-box">
+        <div class="knob"><label for="bn-J">Jet strength J <small>momentum ratio</small></label><input type="number" id="bn-J" step="1">
+          <input type="range" id="bn-J-r" min="0" max="2.778" step="any" aria-label="Jet strength slider (logarithmic)">
+          <div class="derived" id="bn-J-note"></div></div>
+        <div class="knob"><label for="bn-H">Duct height H <small>m</small></label><input type="number" id="bn-H" step="0.005">
+          <input type="range" id="bn-H-r" min="0.02" max="0.3" step="any" aria-label="Duct height slider"></div>
+        <div class="knob"><label for="bn-U_c">Crossflow speed <small>m/s</small></label><input type="number" id="bn-U_c" step="1">
+          <input type="range" id="bn-U_c-r" min="20" max="150" step="any" aria-label="Crossflow speed slider"></div>
+        <div class="knob"><label for="bn-C_e">Entrainment constant</label><input type="number" id="bn-C_e" step="0.005">
+          <input type="range" id="bn-C_e-r" min="0.05" max="0.5" step="any" aria-label="Entrainment constant slider"></div>
+        <div class="knob"><label for="bn-shape_n">Mixing schedule shape <small>1 = steady</small></label><input type="number" id="bn-shape_n" step="0.05">
+          <input type="range" id="bn-shape_n-r" min="1" max="4" step="any" aria-label="Schedule shape slider">
+          <div class="derived">These four are the model's own order-of-magnitude guesses: read the trend, not the size.</div></div>
+        <div class="knob"><label for="bn-closure">Mixing model</label>
+          <select id="bn-closure" style="grid-column: 1 / -1">
+            <option value="none">One well-mixed stream (rung 11)</option>
+            <option value="two_stream">Bulk + an unmixed core (rung 12)</option>
+            <option value="pdf">A spread of mixtures (rung 13; ~1 s a point)</option>
+            <option value="pdf_quench">The spread through the quench (rung 15; ~1 s)</option>
+            <option value="pocket">Each pocket its own quench (rung 16; slow)</option>
+            <option value="transported">The spread from a decay equation (rung 18; ~1 s)</option>
+            <option value="spatial">The jets across the duct (rung 22; ~1 s)</option>
+            <option value="spatial_dwell">…and in time (rung 23; slow)</option>
+            <option value="spatial_local">…each cell its own rate (rung 24; slow)</option>
+          </select>
+          <div class="derived" id="bn-closure-note"></div></div>
+        <div id="bn-knobs"></div>
+      </div>
+    </fieldset>
     <fieldset id="flight-set">
       <legend>Flight</legend>
       <div class="knob"><label for="altitude">Altitude <small>m</small></label><input type="number" id="altitude" step="50">
@@ -497,6 +565,58 @@ footer p { max-width: 90ch; }
         asking for the least fuel wins. Values are read at the model's points, every 0.02 τ; a sharp temperature spike can
         peak up to about 11 K higher between two points (measured). The stall lines are imposed numbers on invented maps,
         so read the margins' trend, not their size.</p>
+    </div>
+    <div id="bn-out" hidden>
+      <div class="tiles">
+        <div class="tile"><div class="k">NO made <small>g per kg of fuel</small></div><div class="v"><span id="v-bei">–</span></div><div class="d" id="d-bei"></div></div>
+        <div class="tile"><div class="k">NOx flow</div><div class="v"><span id="v-bflow">–</span> <span class="u">g/s</span></div><div class="d" id="d-bflow"></div></div>
+        <div class="tile"><div class="k">Front-zone flame</div><div class="v"><span id="v-btp">–</span> <span class="u">K</span></div><div class="d" id="d-btp"></div></div>
+        <div class="tile"><div class="k">If perfectly mixed <small>g/kg</small></div><div class="v"><span id="v-bmix">–</span></div><div class="d" id="d-bmix"></div></div>
+      </div>
+    </div>
+    <div class="card" id="bn-card" hidden>
+      <h2 class="sec">The burner</h2>
+      <p class="note" id="bn-inlet" style="margin-top:0"></p>
+      <div class="scroll"><table id="bn-table"><thead><tr><th>Quantity</th><th>This burner</th><th id="bn-pin-head"></th></tr></thead><tbody></tbody></table></div>
+      <p class="note">All the fuel burns in the front zone with part of the air; the rest of the air then dilutes it down to the
+        turbine inlet temperature. NO forms in the hot front zone and is frozen through the dilution, so the emission index
+        (per kilogram of fuel) is set there. "If perfectly mixed" is the same chemistry at the turbine inlet temperature: almost
+        no NO, which is why the front zone is where it all happens. The model's anchor is the stoichiometric front zone's
+        emission index, inside the band airliner engines certify at; every other number rests on guessed constants (marked),
+        so read their trends.</p>
+    </div>
+    <div class="card chart" id="bn-bell-card" hidden>
+      <h2 class="sec">NO against the front zone's richness</h2>
+      <svg id="bn-bell" viewBox="0 0 640 340" role="img" aria-label="NO emission index against front-zone richness, with this burner marked"></svg>
+      <div class="legend"><span><span class="sw"></span>this burner's setting, swept</span><span id="bn-bell-pin" hidden><span class="sw pin"></span>pinned</span>
+        <span>big dot: this burner</span><span>×: does not run there</span><span id="bn-sweep-progress"></span></div>
+      <div class="actions" id="bn-sweep-row" hidden><button type="button" id="bn-sweep">Run both sweeps</button>
+        <span class="note" id="bn-sweep-note" style="align-self:center"></span></div>
+      <p class="note">Richer than 1 the front zone runs out of oxygen: its flame cools and its O atoms vanish, so NO collapses.
+        That is why low-NO burners burn rich first (rich-quench-lean). But the rich gas must then pass stoichiometric on its way
+        down to the turbine inlet temperature; a slow quench makes NO again on that crossing (try "Over a set time").</p>
+    </div>
+    <div class="card chart" id="bn-jet-card" hidden>
+      <h2 class="sec">NO against jet strength</h2>
+      <svg id="bn-jet" viewBox="0 0 640 340" role="img" aria-label="NO emission index against dilution-jet strength, with this burner and the mixing model's best jet marked"></svg>
+      <div class="legend"><span><span class="sw"></span>this burner, jet strength swept</span><span id="bn-jet-pin" hidden><span class="sw pin"></span>pinned</span>
+        <span id="bn-jopt-legend"><span class="sw jopt"></span>the mixing model's best jet</span><span>×: does not run there</span></div>
+      <p class="note">A stronger jet mixes faster. With one well-mixed stream (rung 11) that only ever helps. The mixing models add
+        unevenness across the duct: past the best jet the air overshoots and leaves rich, hot pockets, and NO can turn back up.</p>
+    </div>
+    <div class="card chart" id="bn-path-card" hidden>
+      <h2 class="sec">The way through the dilution</h2>
+      <svg id="bn-path" viewBox="0 0 640 320" role="img" aria-label="Gas temperature against the share of dilution air mixed in, from the front zone to the turbine inlet"></svg>
+      <div class="legend"><span><span class="sw"></span>temperature as the dilution air mixes in</span><span id="bn-path-pin" hidden><span class="sw pin"></span>pinned</span>
+        <span>dot: stoichiometric, the hottest mixture</span></div>
+      <p class="note" id="bn-path-note"></p>
+    </div>
+    <div class="card" id="bn-nozzle-card" hidden>
+      <h2 class="sec">Through the nozzle <small>(rung 14)</small></h2>
+      <div class="scroll"><table id="bn-nozzle"><thead><tr><th>Quantity</th><th>This burner</th><th id="bn-nz-pin-head"></th></tr></thead><tbody></tbody></table></div>
+      <p class="note" id="bn-nozzle-note">The jet expanded twice from the same turbine exit: with its gas frozen (what the engine model
+        assumes) and re-reacting as it cools. NO is carried frozen; above 1 in the last row, the exhaust holds more NO than
+        equilibrium would allow at the exit, and stays that way (rung 27 showed the freeze is earned).</p>
     </div>
     <div id="out">
       <div class="tiles">
@@ -640,6 +760,15 @@ footer p { max-width: 90ch; }
   mixture became leaner or richer than the model's fuel solver searches (0.004 and 0.065 kg of fuel per kg of air). With
   the temperature limiter's lag on, the model does not record the lag's state, so a stop there is reported without a cause.
   Time is in the high-pressure shaft's response time τ; the bleed thrust counts the dumped air's full ram drag.</p>
+  <p><b>Burner.</b> The project's rungs 7–24, beside the cycle: they never change a cycle number. They read four numbers off
+  the <b>Design</b> engine run on the equilibrium gas (compressor exit temperature, turbine inlet temperature, fuel-air ratio,
+  burner pressure) and do their own chemistry: an equilibrium flame in the front zone, the extended Zeldovich reactions for
+  NO over the time the gas stays there, and the dilution down to the turbine inlet temperature, instantly, over a set time,
+  or through jets with one of the eight mixing models. The grids the models integrate on are fixed, coarser than the
+  command line's (within about 1 % of it, every best jet in place; measured). Most constants are the model's own guesses and are
+  marked so: read trends, not sizes. The anchor is rung 8's: a stoichiometric front zone at this design gives an emission
+  index inside the band airliner engines certify at. The nozzle readout is rung 14's frozen-against-re-reacting expansion,
+  carrying the burner's NO; with a mixing model that NO is converted from its emission index the way rung 17 does.</p>
   <p><b>Efficiencies.</b> Overall efficiency is thrust power per fuel power. The model splits it into a thermal and a
   propulsive part using the jet's speed alone. When the jet leaves the nozzle above the outside pressure (a fixed
   convergent nozzle, especially high up), part of the thrust is that pressure push, which the speed-based split
@@ -665,8 +794,12 @@ const enc = new TextEncoder(), dec = new TextDecoder();
 // bytes: the build's bytes, or the page's already-compiled WebAssembly.Module (instantiate then
 // returns the Instance itself, not { instance }).
 async function fresh() { const r = await WebAssembly.instantiate(bytes, {}); ex = (r.instance || r).exports; ex.init(); }
+// The model's JSON reader takes ASCII only (its writer escapes the rest), and JSON.stringify leaves
+// non-ASCII raw: every request is escaped here, \\u by UTF-16 unit. A failure message carries β, Σ, —
+// (slice 5 found it: the explain request trapped INSIDE the trap handler and the page waited forever).
+const ascii = text => text.replace(/[\\u0080-\\uffff]/g, c => "\\\\u" + c.charCodeAt(0).toString(16).padStart(4, "0"));
 function raw(text) {
-  const b = enc.encode(text), p = ex.alloc(b.length);
+  const b = enc.encode(ascii(text)), p = ex.alloc(b.length);
   new Uint8Array(ex.memory.buffer, p, b.length).set(b);
   ex.call(p, b.length);
   ex.free(p, b.length);
@@ -688,8 +821,13 @@ async function ask(text) {
       else if (op === "blade_lever") view = "blades_lever";   // a THROTTLE's failure, not the design's
       else if (op.startsWith("blade_")) view = "blades";
       else if (op === "controls") view = "controls";
+      else if (op.startsWith("burner")) view = "burner";
     } catch (_) {}
-    const plain = JSON.parse(raw(JSON.stringify({ op: "explain", message, view }))).plain;
+    // The words are a second call on the fresh instance; if THAT traps, the reply still goes out (with the
+    // model's own message as the words) -- a worker that never answers leaves the page waiting forever.
+    let plain = message;
+    try { plain = JSON.parse(raw(JSON.stringify({ op: "explain", message, view }))).plain; }
+    catch (_) { await fresh(); }
     return { trap: { message, plain }, ms: performance.now() - t0 };
   }
 }
@@ -784,6 +922,14 @@ const CTL_NUM = { "ctl-rho": "rho", "ctl-from": "from", "ctl-to": "to", "ctl-ram
                   "ctl-v_n_lo": "v_n_lo", "ctl-b_max": "b_max", "ctl-b_n_lo": "b_n_lo" };
 const CTL_SW = ["redline_on", "gov_lag_on", "accel_on", "floor_on", "release_on"];
 const CTL_VIEW = ["ctl-set", "ctl-sw-set", "ctl-lever-set", "ctl-out", "ctl-card"];
+// The burner (slice 5, turbojet::sandbox_burner): BK holds its knobs; it reads the Design engine S. BN_NUM maps
+// a knob's id to [setting, display scale, slider kind] ("log": the slider moves log10 of the displayed value).
+let BK = null, BK_DEFAULTS = null, BN_MODELS = {}, bnRun = null, bnPinned = null, bnInlet = null, bnPath = null, bnNozzle = null;
+const BN_NUM = { "bn-phi_p": ["phi_p", 1, "lin"], "bn-tau": ["tau", 1e3, "log"], "bn-prompt_peak": ["prompt_peak", 1, "lin"],
+                 "bn-tau_q": ["tau_q", 1e3, "log"], "bn-J": ["J", 1, "log"], "bn-H": ["H", 1, "lin"], "bn-U_c": ["U_c", 1, "lin"],
+                 "bn-C_e": ["C_e", 1, "lin"], "bn-shape_n": ["shape_n", 1, "lin"] };
+const BN_SW = ["super_eq_o", "prompt"];
+const BN_VIEW = ["bn-set", "bn-quench-set", "bn-out", "bn-card", "bn-bell-card", "bn-path-card", "bn-nozzle-card"];
 const clone = o => JSON.parse(JSON.stringify(o));
 function setKnob(k, v) { if (linked) { B.lp[k] = v; B.hp[k] = v; } else B[editSpool][k] = v; }
 const STATION = { "0": "0 · outside air", "2": "2 · compressor face", "3": "3 · compressor exit",
@@ -818,21 +964,29 @@ function showSettings() {
     for (const m of ["both", "temperature", "fuel"]) $("slam-" + m).setAttribute("aria-pressed", String(SL.mode === m));
     for (const q of Object.keys(SLAM_Q)) $("q-" + q).setAttribute("aria-pressed", String(slamQ === q));
   }
-  const fly = mode === "fly", blades = mode === "blades", controls = mode === "controls";
-  for (const [id, m] of [["mode-design", "design"], ["mode-fly", "fly"], ["mode-blades", "blades"], ["mode-controls", "controls"]]) $(id).setAttribute("aria-pressed", String(mode === m));
-  for (const id of ["cycle-set", "components-set", "nozzle-set"]) $(id).hidden = mode !== "design";
+  const fly = mode === "fly", blades = mode === "blades", controls = mode === "controls", burner = mode === "burner";
+  for (const [id, m] of [["mode-design", "design"], ["mode-fly", "fly"], ["mode-blades", "blades"], ["mode-controls", "controls"],
+                         ["mode-burner", "burner"]]) $(id).setAttribute("aria-pressed", String(mode === m));
+  $("cycle-set").hidden = mode !== "design" && !burner;
+  for (const id of ["components-set", "nozzle-set"]) $(id).hidden = mode !== "design";
   for (const id of ["fly-set", "fly-tiles", "map-card", "slam-set", "slam-card"]) $(id).hidden = !fly;
   for (const id of BLADE_VIEW) $(id).hidden = !blades;
   for (const id of CTL_VIEW) $(id).hidden = !controls;
-  for (const id of ["flight-set", "out", "ts-card", "stations-card", "perf-card"]) $(id).hidden = blades || controls;
+  for (const id of BN_VIEW) $(id).hidden = !burner;
+  $("bn-jet-card").hidden = !burner || !BK || BK.quench !== "jets";
+  $("flight-set").hidden = blades || controls;
+  for (const id of ["out", "ts-card", "stations-card", "perf-card"]) $(id).hidden = blades || controls || burner;
   $("mode-note").innerHTML = fly
     ? "The hardware is frozen. Move the throttle or the flight; press <b>Design the engine</b> to change the design."
     : blades
     ? "Size the compressor blades of a separate two-spool engine, then see what a stator lever does to its shafts."
     : controls
     ? "Slam the throttle of a separate two-shaft engine, and switch its fuel controls and an airflow lever on and off."
+    : burner
+    ? "Open the burner of the engine you design: how rich it burns first, and how the dilution air mixes in, decide the NO it makes."
     : "Every change redesigns the engine. Press <b>Fly it</b> to freeze this design's hardware and move the throttle instead.";
-  $("pin").textContent = fly ? "Pin this point" : blades ? "Pin these blades" : controls ? "Pin this run" : "Pin this design";
+  $("pin").textContent = fly ? "Pin this point" : blades ? "Pin these blades" : controls ? "Pin this run" : burner ? "Pin this burner" : "Pin this design";
+  if (BK) showBurnerSettings();
   if (C) {
     for (const [id, k] of Object.entries(CTL_NUM)) {
       if (document.activeElement !== $(id)) $(id).value = +C[k].toPrecision(8);
@@ -890,6 +1044,7 @@ function showAmbient(a) {
 async function runNow() {
   if (mode === "blades") return runBlades();
   if (mode === "controls") { scheduleCtl(); return; }
+  if (mode === "burner") return bnChanged(true);
   const my = ++gen;
   const fly = mode === "fly";
   if (fly && slow()) $("status").textContent = "Computing on the equilibrium gas (about half a second)…";
@@ -941,6 +1096,7 @@ async function enterFly() {
   if (mode === "fly") return;
   if (mode === "blades") stopLever();
   if (mode === "controls") stopCtl();
+  if (mode === "burner") stopBurner();
   // The design as the user set it (its own nozzle and gas), to show beside the frozen re-run. Asked
   // for afresh: the last result on screen can be an OLDER design whose run arrived before the
   // newest one (a click on Fly it right after a change -- the browser test caught it).
@@ -957,6 +1113,7 @@ function leaveFly() {
   if (mode === "design") return;
   if (mode === "blades") stopLever();
   if (mode === "controls") stopCtl();
+  if (mode === "burner") stopBurner();
   stopSlam();
   mode = "design"; lineGen++; pinned = null; $("unpin").hidden = true; $("pin-legend").hidden = true;
   showSettings(); change();
@@ -1185,6 +1342,7 @@ function slamTable() {
 function enterControls() {
   if (mode === "controls") return;
   if (mode === "blades") stopLever();
+  if (mode === "burner") stopBurner();
   stopSlam();
   mode = "controls"; lineGen++; pinned = null; $("unpin").hidden = !cpinned; $("pin-legend").hidden = true;
   $("bad").classList.remove("show");
@@ -1358,6 +1516,394 @@ function ctlTable() {
   tile("ccut", x => Math.min(...x.fuel.map((v, i) => v / x.fuel_sched[i] * 100)), true);
 }
 
+// ---------------------------------------------------------------- the burner (slice 5)
+// The Design engine (S), run on the equilibrium gas, then ONE zoned_nox (op burner). The fast routes follow
+// a slider; the curve and per-pocket mixing models (seconds a point; the per-pocket ones up to minutes, plan § 13.9) run when it is let go. The
+// burner, its quench path and its nozzle readout run on the burner's OWN worker; the two sweeps on another,
+// each a point at a time; any change kills both.
+const BN_KNOB = {   // a mixing model's knob: [label, unit, min, max, display scale, note]
+  s: ["Jet spacing S", "m", 0.02, 0.2, 1, ""],
+  c_opt: ["Best mixing C_opt", "given", 1, 5, 1, "This model is told where the best mixing is (Holdeman's 2.5)."],
+  k_p: ["Jet penetration constant k_p", "", 0.15, 0.6, 1, ""],
+  k_y: ["Plume spread across the duct", "× H", 0.1, 0.5, 1, ""],
+  k_z: ["Plume spread along the row", "× S", 0.1, 0.5, 1, ""],
+  tau_res: ["Unmixed gas's dwell at the best mixing", "ms", 0.5, 10, 1e3, ""],
+  k_u: ["Unmixed share's growth off the best", "", 0, 5, 1, ""],
+  b_u: ["Dwell's growth off the best", "", 0, 6, 1, ""],
+  w_max: ["Largest unmixed share", "", 0.1, 1, 1, ""],
+  k_g: ["Spread's growth off the best", "", 0, 1, 1, ""],
+  g_max: ["Spread cap", "", 0.05, 0.3, 1, "Wider caps break the model's own sums at a lean burner; 0.3 is its default."],
+  c_phi: ["Mixing-rate constant", "", 0.5, 4, 1, ""],
+  da_opt: ["Mixing at the best jet", "e-folds", 0.5, 5, 1, ""],
+  w_cov: ["Coverage width", "", 0.3, 3, 1, ""],
+  tau_mix: ["Mixing time of the decay", "ms", 0.5, 10, 1e3, ""],
+};
+const BN_MODEL_WORDS = {
+  none: "One well-mixed stream: a stronger jet only ever makes less NO. It has no best jet.",
+  two_stream: "A bulk and an unmixed core that lingers. Past the best jet (where it is told to put it) NO turns back up.",
+  pdf: "A spread of mixtures around the mean, with no lingering: the best jet is a sharp notch, and far past it NO falls again.",
+  pdf_quench: "The spread carried through the quench: a floor that never reaches zero, and NO rising again past the best jet.",
+  pocket: "Each rich pocket through its own quench. A lingering pocket cools, so far past the best jet NO rises less. Slow: seconds a point, up to a few minutes on some designs.",
+  transported: "The spread from a decay equation. It cannot find the best jet by itself; its coverage is imposed (rung 18's finding).",
+  spatial: "The jets resolved across the duct: the best jet comes OUT of the plume geometry, C_opt = 1/(4 k_p²).",
+  spatial_dwell: "That cross-section developed in time: the richest pockets linger longest, which adds NO. Slow: seconds a point, up to a few minutes on some designs.",
+  spatial_local: "Each cell mixes at its own rate: the dwell has a best jet, yet NO keeps falling with jet strength. Slow: seconds a point, up to a few minutes on some designs.",
+};
+const bnCost = () => (BK.quench === "jets" && BN_MODELS[BK.closure] ? BN_MODELS[BK.closure].cost : "fast");
+const bnSlow = () => bnCost() !== "fast";
+const toSlider = (v, kind) => (kind === "log" ? Math.log10(v) : v);
+const fromSlider = (x, kind) => (kind === "log" ? Math.pow(10, x) : x);
+
+function enterBurner() {
+  if (mode === "burner") return;
+  if (mode === "blades") stopLever();
+  if (mode === "controls") stopCtl();
+  stopSlam();
+  mode = "burner"; lineGen++; pinned = null; $("unpin").hidden = !bnPinned; $("pin-legend").hidden = true;
+  $("bad").classList.remove("show");
+  buildModelKnobs(); showSettings(); bnKey = null; bnChanged(true);
+}
+
+function showBurnerSettings() {
+  for (const [id, [k, sc, kind]] of Object.entries(BN_NUM)) {
+    const v = BK[k] * sc;
+    if (document.activeElement !== $(id)) $(id).value = +v.toPrecision(5);
+    $(id + "-r").value = toSlider(v, kind);
+  }
+  for (const k of BN_SW) $("bn-" + k).checked = BK[k] === 1;
+  $("bn-prompt-box").hidden = BK.prompt !== 1;
+  for (const q of ["instant", "time", "jets"]) $("bn-q-" + q).setAttribute("aria-pressed", String(BK.quench === q));
+  $("bn-time-box").hidden = BK.quench !== "time"; $("bn-jets-box").hidden = BK.quench !== "jets";
+  $("bn-q-note").textContent = { instant: "The front zone's gas is frozen as it is and diluted at once (rungs 8 and 9).",
+    time: "The dilution air mixes in at a steady rate over this time (rung 10). A rich front zone passes stoichiometric on the way.",
+    jets: "Dilution jets set the time and the pace (rung 11): a stronger jet (J) mixes faster." }[BK.quench];
+  $("bn-closure").value = BK.closure;
+  $("bn-closure-note").textContent = BN_MODEL_WORDS[BK.closure];
+  for (const [k, v] of Object.entries(BK.knobs)) {
+    const sc = BN_KNOB[k][4], n = $("bn-k-" + k);
+    if (!n) continue;
+    if (document.activeElement !== n) n.value = +(v * sc).toPrecision(5);
+    $("bn-k-" + k + "-r").value = v * sc;
+  }
+  if (bnInlet) {
+    $("bn-phi_p-r").min = bnInlet.phi;
+    $("bn-phi-note").textContent = `The burner as a whole is at ${fmt(bnInlet.phi, 3)}: the front zone can be no leaner (it gets at most all the air). Above 2 a real flame makes soot.`;
+  }
+  const jo = bnRun && bnRun.j_opt;
+  $("bn-J-note").textContent = `Quench time from the jets: ${fmt(tauQ() * 1e3, 3)} ms.` + (jo ? ` This model's best jet: J ≈ ${fmt(jo, 3)}.` : "");
+}
+const tauQ = () => BK.H / (BK.C_e * Math.sqrt(BK.J) * BK.U_c);   // rung 11's τ_q = H/(C_e·√J·U_c), shown only
+
+// The mixing model's own knobs, built for the model chosen (each model has its own few).
+function buildModelKnobs() {
+  const box = $("bn-knobs"); box.innerHTML = "";
+  for (const k of Object.keys(BK.knobs)) {
+    const [label, unit, lo, hi, sc, note] = BN_KNOB[k];
+    const d = document.createElement("div"); d.className = "knob";
+    d.innerHTML = `<label for="bn-k-${k}">${label} ${unit ? `<small>${unit}</small>` : ""}</label><input type="number" id="bn-k-${k}" step="any">` +
+      `<input type="range" id="bn-k-${k}-r" min="${lo}" max="${hi}" step="any" aria-label="${label} slider">` +
+      `<div class="derived">${note ? note + " " : ""}A guessed constant: read the trend, not the size.</div>`;
+    box.appendChild(d);
+    const n = d.querySelector("input[type=number]"), r = d.querySelector("input[type=range]");
+    n.addEventListener("input", () => { const v = parseFloat(n.value); if (isFinite(v)) { BK.knobs[k] = v / sc; r.value = v; bnChanged(false); } });
+    n.addEventListener("change", () => bnChanged(true));
+    r.addEventListener("input", () => { const v = parseFloat(r.value); BK.knobs[k] = v / sc; n.value = +v.toPrecision(5); bnChanged(false); });
+    r.addEventListener("change", () => bnChanged(true));
+  }
+}
+
+let bnW = null, bnBusy = 0, bnGen = 0, bnKey = null;
+async function bnAsk(text) {
+  if (!model.kill) return model.ask(text);          // no Worker in this browser: a run can only be ignored
+  if (!bnW) bnW = await spawnWorker();
+  bnBusy++;
+  try { return await bnW.ask(text); } finally { bnBusy--; }
+}
+function stopBurner() {
+  bnGen++; bnKey = null;
+  if (bnW && bnBusy) { bnW.kill(); bnW = null; bnBusy = 0; window.sandbox.kills++; }
+  stopSweep();
+}
+// A knob moved. Fast routes run now; a slow mixing model only when the slider is let go (a drag stops the
+// point in progress and greys the numbers until then).
+function bnChanged(released) {
+  if (mode !== "burner" || !BK) return;
+  showBurnerSettings();
+  if (released || !bnSlow()) { runBurner(); return; }
+  stopBurner();
+  for (const id of ["bn-out", "bn-card", "bn-bell-card", "bn-jet-card", "bn-path-card", "bn-nozzle-card"]) $(id).classList.add("stale");
+  $("status").textContent = "Let go of the slider to compute this mixing model.";
+}
+function bnBad(t, title) {
+  $("bad-title").textContent = title;
+  $("bad-plain").textContent = t.trap ? t.trap.plain : t.reply.reason;
+  $("bad-raw").textContent = t.trap ? "Model message: " + t.trap.message : "";
+  $("bad").classList.add("show");
+  $("status").textContent = title + ".";
+  window.sandbox.state = "does-not-run"; window.sandbox.trap = t.trap || { plain: t.reply.reason }; window.sandbox.bnState = "done";
+}
+async function runBurner() {
+  if (mode !== "burner" || !BK) return;
+  const text = JSON.stringify({ op: "burner", settings: S, burner: BK });
+  if (text === bnKey) return;
+  stopBurner(); bnKey = text;
+  const my = bnGen;
+  window.sandbox.bnState = "running";
+  const stale = ["bn-out", "bn-card", "bn-bell-card", "bn-jet-card", "bn-path-card", "bn-nozzle-card"];
+  for (const id of stale) $(id).classList.add("stale");
+  // The inlet first (one design run, ~2 ms): it sets the richness floor, and says whether the design runs at all.
+  const ti = await model.ask(JSON.stringify({ op: "burner_inlet", settings: S }));
+  if (my !== bnGen) return;
+  if (ti.trap || !ti.reply.ok) { bnBad(ti, "This design does not run on the equilibrium gas"); return; }
+  bnInlet = ti.reply; showBurnerSettings();
+  $("status").textContent = !bnSlow() ? "Computing the burner…" : bnCost() === "pocket"
+    ? "Computing this mixing model (seconds, up to a few minutes on some designs)…" : "Computing this mixing model (seconds)…";
+  const t = await bnAsk(text);
+  if (my !== bnGen || t.killed) return;
+  $("timing").textContent = `${t.ms < 1000 ? t.ms.toFixed(0) + " ms" : (t.ms / 1000).toFixed(1) + " s"} in the ${model.mode}`;
+  if (t.trap || !t.reply.ok) { bnBad(t, "This burner does not run"); return; }
+  bnRun = t.reply;
+  $("bad").classList.remove("show");
+  for (const id of ["bn-out", "bn-card", "bn-bell-card", "bn-jet-card"]) $(id).classList.remove("stale");
+  $("status").textContent = `Burner of the Design engine, on the equilibrium gas: ${{ instant: "instant dilution", time: "dilution over a set time",
+    jets: "dilution jets" }[BK.quench]}${BK.quench === "jets" && BK.closure !== "none" ? ", mixing model: " + $("bn-closure").selectedOptions[0].textContent.toLowerCase() : ""}.`;
+  showBurnerSettings(); renderBurner();
+  window.sandbox.bnLast = bnRun; window.sandbox.state = "ran"; window.sandbox.trap = null;
+  // The quench path and the nozzle, after, on the same worker: a failure in either leaves the burner standing.
+  const tp = await bnAsk(JSON.stringify({ op: "burner_path", settings: S, burner: BK }));
+  if (my !== bnGen || tp.killed) return;
+  bnPath = (!tp.trap && tp.reply.ok) ? tp.reply : { ok: 0, reason: tp.trap ? tp.trap.plain : tp.reply.reason, message: tp.trap ? tp.trap.message : "" };
+  $("bn-path-card").classList.remove("stale"); drawPath();
+  const tn = await bnAsk(JSON.stringify({ op: "burner_nozzle", settings: S, burner: BK }));
+  if (my !== bnGen || tn.killed) return;
+  bnNozzle = (!tn.trap && tn.reply.ok) ? tn.reply : { ok: 0, reason: tn.trap ? tn.trap.plain : tn.reply.reason, message: tn.trap ? tn.trap.message : "" };
+  $("bn-nozzle-card").classList.remove("stale"); renderNozzle();
+  window.sandbox.bnState = "done";
+  scheduleSweep();
+}
+
+// The sweeps: front-zone richness, and (with jets) jet strength — each the burner itself at every point.
+let swW = null, swBusy = 0, swGen = 0, swTimer = null, swKey = null, bnSweep = { phi: [], J: [] }, bnPinnedSweep = null;
+async function swAsk(text) {
+  if (!model.kill) return model.ask(text);
+  if (!swW) swW = await spawnWorker();
+  swBusy++;
+  try { return await swW.ask(text); } finally { swBusy--; }
+}
+function stopSweep() {
+  swGen++; clearTimeout(swTimer); swKey = null;
+  if (swW && swBusy) { swW.kill(); swW = null; swBusy = 0; window.sandbox.kills++; }
+}
+// Slow mixing models wait for the button (a sweep is minutes); the rest stream at once.
+function scheduleSweep() {
+  const slowSweep = bnCost() === "pocket";
+  $("bn-sweep-row").hidden = !slowSweep;
+  if (slowSweep) {
+    bnSweep = { phi: [], J: [] }; drawSweeps();
+    $("bn-sweep-note").textContent = "This mixing model takes seconds a point, up to a few minutes on some designs; the sweeps (about 36 points) take many minutes. Any change stops them.";
+    $("bn-sweep-progress").textContent = "";
+    return;
+  }
+  clearTimeout(swTimer); swTimer = setTimeout(runSweep, 250);
+}
+async function runSweep() {
+  if (mode !== "burner" || !bnRun) return;
+  const key = JSON.stringify({ settings: S, burner: BK });
+  if (key === swKey) return;
+  stopSweep(); swKey = key;
+  const my = swGen, b0 = clone(BK), s0 = clone(S);
+  bnSweep = { phi: [], J: [] }; drawSweeps();
+  window.sandbox.sweepState = "running";
+  for (const axis of (b0.quench === "jets" ? ["J", "phi"] : ["phi"])) {
+    const tg = await model.ask(JSON.stringify({ op: "burner_grid", axis, settings: s0, burner: b0 }));
+    if (my !== swGen) return;
+    const g = tg.reply;
+    if (!Array.isArray(g)) { $("bn-sweep-progress").textContent = "the sweep could not start"; return; }
+    for (let i = 0; i < g.length; i++) {
+      $("bn-sweep-progress").textContent = `${axis === "J" ? "jet strength" : "richness"}: point ${i + 1} of ${g.length}…`;
+      const b = { ...b0, [axis === "J" ? "J" : "phi_p"]: g[i] };
+      const t = await swAsk(JSON.stringify({ op: "burner", settings: s0, burner: b }));
+      if (my !== swGen || t.killed) return;
+      bnSweep[axis].push(t.trap || !t.reply.ok ? { x: g[i], ok: 0, why: t.trap ? t.trap.plain : t.reply.reason }
+                                                : { x: g[i], ok: 1, ei: t.reply.ei_total });
+      drawSweeps();
+    }
+  }
+  $("bn-sweep-progress").textContent = "";
+  window.sandbox.sweepState = "done";
+}
+
+// Each row: [name, value of a result (null: not this route), significant figures].
+const st = (k, f = 1) => r => (r.state[k] === null ? null : r.state[k] * f);
+const BN_ROWS = [
+  ["NO made, total (g per kg of fuel)", r => r.ei_total, 4],
+  ["…of which thermal (the Zeldovich reactions)", r => r.ei_thermal, 4],
+  ["…of which prompt (its size imposed)", r => (r.burner.prompt ? r.ei_prompt : null), 4],
+  ["NOx flow (g/s)", r => r.nox_flow, 4],
+  ["If the burner were perfectly mixed, rung 7 (g/kg)", r => r.ei_mixed, 3],
+  ["Air into the burner: temperature (K)", r => r.inlet.Tt3, 5],
+  ["Air into the burner: pressure (kPa)", r => r.inlet.pt4 / 1e3, 4],
+  ["Burner as a whole: richness", r => r.inlet.phi, 4],
+  ["Fuel flow (kg/s)", r => r.inlet.fuel_flow, 4],
+  ["Front zone: share of the air (%)", st("alpha", 100), 4],
+  ["Front zone: flame temperature (K)", st("t_primary"), 5],
+  ["Front zone: NO, % of its equilibrium", st("fraction_of_equil", 100), 3],
+  ["Front zone: O-atom lift (1 = equilibrium)", st("o_multiplier"), 4],
+  ["After dilution: temperature (K)", st("t_mix"), 5],
+  ["Quench time (ms)", st("tau_q", 1e3), 3],
+  ["Hottest point on the way through the dilution (K)", st("t_peak"), 5],
+  ["Closest NO came to its equilibrium on the way (× equilibrium)", st("max_a_quench"), 3],
+  ["NO from the well-mixed bulk alone (g/kg)", r => (r.burner.quench === "jets" && r.burner.closure !== "none" ? r.state.ei_no_quenched : null), 4],
+  ["Jet mixing group C = (S/H)·√J", st("c_holdeman"), 4],
+  ["This model's best jet strength J", r => r.j_opt, 4],
+  ["Unmixed core's share of the gas", st("w_core"), 3],
+  ["Unmixed core's NO (g/kg)", st("ei_no_core"), 4],
+  ["Spread of mixtures (0 = perfectly mixed)", st("g_seg"), 3],
+  ["…the most it could be (two unmixed streams)", st("g_ceiling"), 3],
+  ["Extra NO from the spread (g/kg)", r => ["ei_no_pdf_excess", "ei_no_pocket_excess", "ei_no_spatial_dwell_excess", "ei_no_spatial_local_excess"]
+     .map(k => r.state[k]).find(v => v !== null) ?? null, 4],
+  ["Rich pockets' mean dwell (ms)", r => { const v = r.state.tau_mean_dwell ?? r.state.tau_mean_local; return v === null || v === undefined ? null : v * 1e3; }, 3],
+  ["…the same NO with every pocket at the mean dwell (g/kg)", r => r.state.ei_no_spatial_dwell_meanfield ?? r.state.ei_no_spatial_local_meanfield ?? null, 4],
+  ["Rich pockets lingering longest: extra-NO ratio (above 1 adds NO)", r => r.state.corr_ratio ?? r.state.corr_ratio_local ?? null, 4],
+  ["Dwell shape factor F (its minimum is the best jet)", st("f_shape"), 4],
+];
+function renderBurner() {
+  const r = bnRun, p = bnPinned;
+  if (!r) return;
+  const tile = (id, f, up) => { $("v-" + id).textContent = fmt(f(r), 4); $("d-" + id).textContent = p ? delta(f(r), f(p), up)[0] : ""; };
+  tile("bei", x => x.ei_total, false); tile("bflow", x => x.nox_flow, false);
+  tile("btp", x => x.state.t_primary, false); tile("bmix", x => x.ei_mixed, false);
+  if (!p) {
+    $("d-bei").textContent = r.burner.prompt ? `thermal ${fmt(r.ei_thermal, 3)} + prompt ${fmt(r.ei_prompt, 3)}` : "thermal NO";
+    $("d-btp").textContent = `front zone at richness ${fmt(r.state.phi_primary, 3)}`;
+    $("d-bmix").textContent = "the same chemistry at the turbine inlet";
+  }
+  const i = r.inlet;
+  $("bn-inlet").textContent = `Read off the Design engine on the equilibrium gas: air arrives at ${fmt(i.Tt3, 4)} K and ${fmt(i.pt4 / 1e3, 4)} kPa, ` +
+    `leaves at ${fmt(i.Tt4, 4)} K, burning ${fmt(i.fuel_flow * 1e3, 4)} g/s of fuel (richness ${fmt(i.phi, 3)} overall). ` +
+    `A higher pressure ratio sends hotter air in, and the front zone burns hotter: try it with the cycle knobs.`;
+  $("bn-pin-head").textContent = p ? "Pinned" : "";
+  const tb = $("bn-table").tBodies[0]; tb.innerHTML = "";
+  for (const [name, f, sig] of BN_ROWS) {
+    const a = f(r), b = p ? f(p) : null;
+    if ((a === null || a === undefined) && (b === null || b === undefined)) continue;
+    const tr = tb.insertRow(); tr.insertCell().textContent = name;
+    tr.insertCell().textContent = a === null || a === undefined ? "–" : fmt(a, sig);
+    tr.insertCell().textContent = p ? (b === null || b === undefined ? "–" : fmt(b, sig)) : "";
+  }
+  drawSweeps();
+}
+
+const NZ_ROWS = [
+  ["NO carried into the nozzle (ppm)", z => z.x_no_exhaust * 1e6, 4],
+  ["Jet temperature: frozen gas / re-reacting (K)", z => `${fmt(z.t9_frozen, 5)} / ${fmt(z.t9_equilibrium, 5)}`],
+  ["Jet speed: frozen gas / re-reacting (m/s)", z => `${fmt(z.v9_frozen, 5)} / ${fmt(z.v9_equilibrium, 5)}`],
+  ["Speed gained by re-reacting (%)", z => z.dv9_frac * 100, 3],
+  ["CO's share of the carbon entering the nozzle (%)", z => z.co_fraction_entry * 100, 3],
+  ["Equilibrium NO: nozzle entry / exit (ppm)", z => `${fmt(z.x_no_e_entry * 1e6, 4)} / ${fmt(z.x_no_e_exit * 1e6, 4)}`],
+  ["Exhaust NO over its equilibrium at the exit (×)", z => z.max_a, 3],
+];
+function renderNozzle() {
+  const z = bnNozzle, p = bnPinned && bnPinned.nozzle;
+  const tb = $("bn-nozzle").tBodies[0]; tb.innerHTML = "";
+  $("bn-nz-pin-head").textContent = p ? "Pinned" : "";
+  if (!z) return;
+  if (!z.ok) {
+    const tr = tb.insertRow(), c = tr.insertCell(); c.colSpan = 3; c.className = "nomod";
+    c.textContent = z.reason; if (z.message) c.title = "Model message: " + z.message;
+    return;
+  }
+  const val = (x, f, sig) => { if (!x || !x.ok) return "–"; const v = f(x); return typeof v === "string" ? v : fmt(v, sig); };
+  for (const [name, f, sig] of NZ_ROWS) {
+    const tr = tb.insertRow(); tr.insertCell().textContent = name;
+    tr.insertCell().textContent = val(z, f, sig); tr.insertCell().textContent = p ? val(p, f, sig) : "";
+  }
+}
+
+// Log-scale x ticks for the jet-strength chart.
+function logTicks(X, H, Bm, a, b) {
+  let g = "";
+  for (const v of [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000]) {
+    if (v < a || v > b) continue;
+    g += `<line class="gridl" y1="14" y2="${H - Bm}" x1="${X(Math.log10(v))}" x2="${X(Math.log10(v))}"/><text x="${X(Math.log10(v))}" y="${H - Bm + 16}" text-anchor="middle">${v}</text>`;
+  }
+  return g;
+}
+function drawSweeps() { drawBell(); drawJet(); }
+function sweepFrame(svg, pts, pin, here, xs, xlog, xlab, extra) {
+  const ok = pts.filter(p => p.ok), pok = (pin || []).filter(p => p.ok);
+  const ys = ok.map(p => p.ei).concat(pok.map(p => p.ei), here ? [here[1]] : []);
+  if (!ys.length) { svg.innerHTML = ""; return; }
+  const tx = x => (xlog ? Math.log10(x) : x);
+  const x0 = tx(xs[0]), x1 = tx(xs[1]);
+  let y1 = Math.max(...ys); y1 = y1 > 0 ? y1 * 1.1 : 1;
+  const H = 340, Bm = 54;
+  const { X, Y, g: g0 } = frame(x0, x1, 0, y1, { L: 62, R: 16, T: 14, B: Bm, W: 640, H }, xlog ? null : xlab, "NO, g per kg of fuel");
+  let g = g0;
+  if (xlog) g += logTicks(X, H, Bm, xs[0], xs[1]) + `<text x="${(62 + 624) / 2}" y="${H - Bm + 34}" text-anchor="middle">${xlab}</text>`;
+  g += extra ? extra(X, Y, tx) : "";
+  if (pok.length > 1) g += `<path class="pinl" d="${pathOf(pok.map(p => [tx(p.x), p.ei]), X, Y)}"/>`;
+  if (ok.length > 1) g += `<path class="rline" d="${pathOf(ok.map(p => [tx(p.x), p.ei]), X, Y)}"/>`;
+  for (const p of ok) g += `<circle class="rpt" cx="${X(tx(p.x))}" cy="${Y(p.ei)}" r="2.5"/>`;
+  for (const p of pts.filter(q => !q.ok)) g += `<text class="fail" x="${X(tx(p.x))}" y="${H - Bm - 6}" text-anchor="middle">×<title>${p.why}</title></text>`;
+  if (here && here[0] >= xs[0] && here[0] <= xs[1]) {
+    g += `<line class="here" x1="${X(tx(here[0]))}" x2="${X(tx(here[0]))}" y1="14" y2="${H - Bm}"/>`;
+    g += `<circle class="now" cx="${X(tx(here[0]))}" cy="${Y(here[1])}" r="5"/>`;
+  }
+  svg.innerHTML = g;
+}
+function drawBell() {
+  const svg = $("bn-bell");
+  if (!bnRun || !bnInlet) { svg.innerHTML = ""; return; }
+  const pin = bnPinnedSweep && bnPinnedSweep.phi;
+  sweepFrame(svg, bnSweep.phi, pin, [BK.phi_p, bnRun.ei_total], [bnInlet.phi, 2], false, "front-zone richness (1 = stoichiometric)",
+             (X, Y) => `<line class="stoich" x1="${X(1)}" x2="${X(1)}" y1="14" y2="286"/>`);
+  $("bn-bell-pin").hidden = !(pin && pin.length);
+}
+function drawJet() {
+  const svg = $("bn-jet");
+  if (!bnRun || BK.quench !== "jets") { svg.innerHTML = ""; return; }
+  const pin = bnPinnedSweep && bnPinnedSweep.J, jo = bnRun.j_opt;
+  sweepFrame(svg, bnSweep.J, pin, [BK.J, bnRun.ei_total], [1, 600], true, "jet strength J (momentum ratio), log scale",
+             (X, Y, tx) => (jo && jo > 1 && jo < 600 ? `<line class="jopt" x1="${X(tx(jo))}" x2="${X(tx(jo))}" y1="14" y2="286"/>` : ""));
+  $("bn-jet-pin").hidden = !(pin && pin.length);
+  $("bn-jopt-legend").hidden = !jo;
+}
+function drawPath() {
+  const svg = $("bn-path");
+  if (!bnPath || !bnPath.ok) {
+    svg.innerHTML = "";
+    $("bn-path-note").textContent = bnPath ? "The way through the dilution cannot be traced here: " + bnPath.reason : "";
+    return;
+  }
+  const pts = bnPath.path, pp = bnPinned && bnPinned.path && bnPinned.path.ok ? bnPinned.path.path : null;
+  const ys = pts.map(p => p[1]).concat(pp ? pp.map(p => p[1]) : []);
+  let y0 = Math.min(...ys), y1 = Math.max(...ys); const py = (y1 - y0) * 0.1 || 50; y0 -= py; y1 += py;
+  const H = 320, Bm = 54;
+  const { X, Y, g: g0 } = frame(0, 100, y0, y1, { L: 62, R: 16, T: 14, B: Bm, W: 640, H }, "share of the dilution air mixed in, %", "gas temperature, K");
+  let g = g0;
+  g += `<line class="mix" x1="62" x2="624" y1="${Y(bnPath.t_mix)}" y2="${Y(bnPath.t_mix)}"/><text class="redl" style="fill:var(--muted)" x="620" y="${Y(bnPath.t_mix) - 4}" text-anchor="end">after dilution</text>`;
+  if (pp) g += `<path class="pinl" d="${pathOf(pp.map(p => [p[0] * 100, p[1]]), X, Y)}"/>`;
+  g += `<path class="rline" d="${pathOf(pts.map(p => [p[0] * 100, p[1]]), X, Y)}"/>`;
+  // Where the local mixture passes stoichiometric (richness 1), if it does.
+  // Only a RICH front zone crosses it on the way down; one at exactly 1 starts there.
+  let cross = null;
+  if (pts[0][2] > 1 + 1e-9) for (let i = 1; i < pts.length; i++) if ((pts[i - 1][2] - 1) * (pts[i][2] - 1) <= 0 && pts[i - 1][2] !== pts[i][2]) {
+    const w = (pts[i - 1][2] - 1) / (pts[i - 1][2] - pts[i][2]);
+    cross = [100 * (pts[i - 1][0] + w * (pts[i][0] - pts[i - 1][0])), pts[i - 1][1] + w * (pts[i][1] - pts[i - 1][1])]; break;
+  }
+  if (cross) g += `<circle class="cross" cx="${X(cross[0])}" cy="${Y(cross[1])}" r="4.5"><title>stoichiometric</title></circle>`;
+  svg.innerHTML = g;
+  $("bn-path-pin").hidden = !pp;
+  const tmax = Math.max(...pts.map(p => p[1]));
+  $("bn-path-note").textContent = (cross
+    ? `This rich front zone passes stoichiometric on its way down, at about ${fmt(cross[1], 4)} K (hottest ${fmt(tmax, 4)} K). `
+    : "This front zone is not rich, so the dilution only cools it. ") +
+    { instant: "With an instant dilution the gas skips this path: NO stays as the front zone made it.",
+      time: "Over a set time the gas walks this path, and makes NO again near the top.",
+      jets: "The jets walk the gas along this path, fast at first, then slower." }[BK.quench];
+}
+
 // ---------------------------------------------------------------- size the blades (slice 2)
 // Sizing is microseconds, so every knob move re-sizes at once (op blade_size). The lever is read one
 // throttle at a time (op blade_lever) on its OWN worker, a moment after the knobs settle; a change
@@ -1367,6 +1913,7 @@ function enterBlades() {
   if (mode === "blades") return;
   stopSlam();
   if (mode === "controls") stopCtl();
+  if (mode === "burner") stopBurner();
   mode = "blades"; lineGen++; pinned = null; $("unpin").hidden = !bpinned; $("pin-legend").hidden = true;
   showSettings(); change();
 }
@@ -1757,8 +2304,29 @@ function wire() {
   cclick("ctl-st-lp", () => { C.stator_spool = "lp"; }); cclick("ctl-st-hp", () => { C.stator_spool = "hp"; });
   for (const q of Object.keys(CTL_Q)) $("ctlq-" + q).addEventListener("click", () => { ctlQ = q; showSettings(); drawCtl(); });
   $("mode-controls").addEventListener("click", enterControls);
+  // The burner: its own knobs write BK; slow mixing models compute when a slider is let go (bnChanged).
+  $("mode-burner").addEventListener("click", enterBurner);
+  for (const [id, [k, sc, kind]] of Object.entries(BN_NUM)) {
+    const n = $(id), r = $(id + "-r");
+    n.addEventListener("input", () => { const v = parseFloat(n.value); if (isFinite(v) && v > 0) { BK[k] = v / sc; r.value = toSlider(v, kind); bnChanged(false); } });
+    n.addEventListener("change", () => bnChanged(true));
+    r.addEventListener("input", () => { const v = fromSlider(parseFloat(r.value), kind); BK[k] = v / sc; n.value = +v.toPrecision(4); bnChanged(false); });
+    r.addEventListener("change", () => bnChanged(true));
+  }
+  for (const k of BN_SW) $("bn-" + k).addEventListener("change", () => { BK[k] = $("bn-" + k).checked ? 1 : 0; bnChanged(true); });
+  for (const q of ["instant", "time", "jets"]) $("bn-q-" + q).addEventListener("click", () => { BK.quench = q; showSettings(); bnChanged(true); });
+  $("bn-closure").addEventListener("change", () => {
+    BK.closure = $("bn-closure").value; BK.knobs = clone(BN_MODELS[BK.closure].knobs);
+    buildModelKnobs(); showSettings(); bnChanged(true);
+  });
+  $("bn-sweep").addEventListener("click", () => { swKey = null; runSweep(); });
   $("pin").addEventListener("click", () => {
     if (mode === "controls") { if (!crun) return; cpinned = crun; $("unpin").hidden = false; drawCtl(); return; }
+    if (mode === "burner") {
+      if (!bnRun) return;
+      bnPinned = { ...bnRun, path: bnPath, nozzle: bnNozzle }; bnPinnedSweep = clone(bnSweep);
+      $("unpin").hidden = false; renderBurner(); renderNozzle(); drawPath(); return;
+    }
     if (mode === "blades") { if (!blast) return; bpinned = blast; bpinnedLever = leverPts.slice(); $("unpin").hidden = false; renderBlades(); return; }
     if (!last) return; pinned = last; $("unpin").hidden = false; $("pin-legend").hidden = false;
     if (mode === "fly") { slamPinned = clone(slamRuns); drawSlam(); }
@@ -1766,6 +2334,7 @@ function wire() {
   });
   $("unpin").addEventListener("click", () => {
     if (mode === "controls") { cpinned = null; $("unpin").hidden = true; drawCtl(); return; }
+    if (mode === "burner") { bnPinned = null; bnPinnedSweep = null; $("unpin").hidden = true; renderBurner(); renderNozzle(); drawPath(); return; }
     if (mode === "blades") { bpinned = null; bpinnedLever = null; $("unpin").hidden = true; if (blast) renderBlades(); return; }
     pinned = null; slamPinned = null; $("unpin").hidden = true; $("pin-legend").hidden = true; render();
     if (mode === "fly") drawSlam();
@@ -1777,6 +2346,7 @@ function wire() {
     }
     else if (mode === "blades") { B = clone(B_DEFAULTS); linked = true; editSpool = "lp"; }
     else if (mode === "controls") C = clone(C_DEFAULTS);
+    else if (mode === "burner") { BK = clone(BK_DEFAULTS); buildModelKnobs(); }
     else S = { ...DEFAULTS };
     showSettings(); change();
   });
@@ -1808,6 +2378,23 @@ window.sandbox = {
     await runCtl(); return { state: window.sandbox.state, run: crun };
   },
   ctlState: null,
+  // The burner (slice 5): `patch` sets burner knobs (a `knobs` object merges into the mixing model's, a
+  // `design` object into the Design engine's); resolves once the burner, its path and its nozzle are in.
+  burner: async patch => {
+    if (mode !== "burner") enterBurner();
+    const p = { ...(patch || {}) };
+    if (p.design) { Object.assign(S, p.design); delete p.design; }
+    if (p.closure && p.closure !== BK.closure) { BK.closure = p.closure; BK.knobs = clone(BN_MODELS[p.closure].knobs); buildModelKnobs(); }
+    delete p.closure;
+    if (p.knobs) { Object.assign(BK.knobs, p.knobs); delete p.knobs; }
+    Object.assign(BK, p); showSettings(); bnKey = null;
+    await runBurner(); return { state: window.sandbox.state, run: bnRun, path: bnPath, nozzle: bnNozzle };
+  },
+  // Run (or re-run) the sweeps now and resolve when both are in.
+  sweep: async () => { swKey = null; await runSweep(); return bnSweep; },
+  sweepNow: () => { swKey = null; runSweep(); },
+  sweepPoints: () => bnSweep,
+  bnState: null, bnLast: null, sweepState: null,
   lever: 0, kills: 0,
   points: () => leverPts,
   view: () => mode,
@@ -1825,6 +2412,9 @@ window.sandbox = {
     B_DEFAULTS = bd.blades; TI64 = bd.ti64; B = clone(B_DEFAULTS);
     const cd = (await model.ask(JSON.stringify({ op: "controls_defaults" }))).reply;
     C_DEFAULTS = cd.controls; CTL_DS = cd.ds; C = clone(C_DEFAULTS);
+    const bd5 = (await model.ask(JSON.stringify({ op: "burner_defaults" }))).reply;
+    BK_DEFAULTS = bd5.burner; BK = clone(BK_DEFAULTS);
+    for (const m of bd5.models) BN_MODELS[m.key] = m;
     S = { ...DEFAULTS };
     showSettings(); wire();
     await runNow();

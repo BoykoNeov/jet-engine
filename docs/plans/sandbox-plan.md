@@ -5,7 +5,7 @@ README). **Slice 3 (off-design, "Fly it") BUILT 2026-10-07 — § 10**; what the
 the plan is § 10.8. **Slice 2 (blade speeds, "Size the blades") BUILT 2026-10-07 — § 11**; what the build found
 beyond the plan is § 11.8. **Slice 4 (the transient) PLANNED 2026-10-07 — § 12, answered (§ 12.8); part (A), the slam, BUILT
 2026-10-07 — what the build found is § 12.9; part (B), the Controls view, BUILT 2026-10-08 — § 12.10.**
-**Slice 5 (the combustor) PLANNED 2026-10-08 — § 13; its questions (§ 13.8) await the user.** Drafted 2026-10-06, after rung 85 shipped. Direction (user,
+**Slice 5 (the combustor) PLANNED + ANSWERED 2026-10-08 — § 13; BUILT 2026-10-10 — what the build found is § 13.9.** Drafted 2026-10-06, after rung 85 shipped. Direction (user,
 2026-10-06): the project becomes a **sandbox** — change the engine's components and design numbers
 and watch it respond — delivered as an **interactive web page running the Rust model live**, beside
 the charts page and the cutaway (`docs/visuals/`).
@@ -116,7 +116,7 @@ entropy across it mixes heat addition with a change of reference mixture.
   Matchers nest solves; time them before promising live dragging.
 - **Slice 4 — the transient:** throttle steps with the fuel limiters and stator/bleed levers
   (rungs 34–68) as switches — a time plot rather than a point.
-- **Slice 5 — the combustor:** the NOx diagnostics (rungs 7–24) as knobs on the burner zoning. PLANNED — § 13.
+- **Slice 5 — the combustor:** the NOx diagnostics (rungs 7–24) as knobs on the burner zoning. BUILT 2026-10-10 — § 13.
 
 ## 6. Gates
 
@@ -968,6 +968,13 @@ second run, as everywhere. *Optional* (§ 13.8 Q3): the nozzle-exit readout of �
 
 ### 13.8 Questions for the user
 
+**Answered 2026-10-08 (user: "Go", on being offered the recommendations): all four as recommended** — 1 (a) the
+Design view's design read on the equilibrium gas; 2 (a) the per-pocket models as a point on release + a
+stoppable streamed `J` sweep; 3 (a) the nozzle-exit readout included; 4 (a) no cache, no model change.
+Found before the build: § 13.2 was measured with the jets at `C_e` 0.20 (the charts page's and rung 11's CLI
+panel's value), but the model's own default — and rung 12's spec's stated default (`docs/rung12-spec.md`) —
+is 0.15. The page opens on the model's default; the grid's L1-vs-L0 check is re-measured there.
+
 1. **Which burner.** (a) The Design view's design, its burner always read off an equilibrium-gas run of it
    (~2 ms extra when the Design view is on another gas; said on the page) — *recommended*; (b) a fixed burner
    at the CLI's design point, the one rungs 7–24 ran on (simplest, but the compressor's effect on NO is
@@ -987,3 +994,52 @@ second run, as everywhere. *Optional* (§ 13.8 Q3): the nozzle-exit readout of �
    own behind the full gate (slice 3's memo speed-up precedent); (c) the sandbox repeats those four branches
    itself around a kept curve, held equal to `zoned_nox` by a test — a copy of model code, which slice 4
    refused for its marcher.
+
+### 13.9 What the build found beyond the plan (2026-10-08 – 10)
+
+Built as `src/sandbox_burner.rs` (its own module; the inlet is slice 1's `build_turbojet(…).run(…)` on the
+equilibrium gas). Crash map in a scratch crate (`W:\temp\claude\jet-burner-map`, archived as
+`docs/plans/scratch-archive/jet-burner-map/`): random requests through `sandbox::call` over `π_c` 2–40,
+`Tt4` 900–2400 K, five ambients × Mach 0.1–2.5, front-zone richness 0.3–2, and every knob of every dilution
+route and mixing model over ranges wider than the sliders — about 3 500 instant-dilution requests, ~700 each
+for the set-time and mean-field jets, 150–220 per curve model, ~40 per per-pocket model. Every failure was read
+by its message.
+
+- **Two of § 13.2's L1 grid choices failed the crash map and went back to the model's defaults.** The quench's
+  400 RK4 steps (the charts page's) went UNSTABLE on rung 12's core at a long core dwell and high pressure — NaN
+  where 2 000, 8 000 and 32 000 steps agree to 1e-9 — so the steps stay at 2 000 (they cost little beside the
+  path's equilibrium solves). The β-PDF quadrature at 160 failed the model's own mean check on 6 cases its
+  default 200 passes, so quadrature stays at each model's default. What is left fixed (60 path points, an
+  80-point bell — 40 on the per-pocket models — a 32 × 32 plane, 24 time slices) is within **0.35 %** of the
+  model's defaults at every `J` of the sweep at the opening design, every minimum at the same `J`, on all nine
+  routes (the per-pocket three at 5 `J` each). That is re-measured at the jets' default `C_e` 0.15 (§ 13.8);
+  the mean-field jets alone show the same 0.35 %, so it is the path's 60 points, not a mixing model. Gated at
+  1 %, around the notch, on the four curve models.
+- **Most failures are the DESIGN, not the burner**: the equilibrium burner balance at extreme `Tt4`, the
+  efficiency cascade, the nozzle back-pressure — said in the Design view's own words, prefixed "this design does
+  not run on the equilibrium gas". The burner's own classes, each an `explain` entry with a test that drives it:
+  NO stops being a trace gas (in the front zone, with prompt NO summed in, or on the dilution path); the fast-O
+  correction outside its flame band (a cool lean front zone); the front-zone flame outside 800–3200 K; the
+  dilution path past 3200 K (rich gas crossing stoichiometric with hot air); a mixing spread too wide for the
+  β-PDF sums at a lean burner (44 of 220 β-PDF requests — so the spread-cap slider stops at the model's default
+  0.3); a cross-plane field that cannot hold its mean (narrow plumes); and a cross-plane model with a front
+  zone no richer than the burner. The nozzle readout's two (exit colder than its 500 K search floor — the
+  commonest readout failure, 431 of ~3 470 instant-dilution requests; an equilibrium solve that does not settle) leave the burner's numbers standing.
+- **The per-pocket models are slower off the opening design than § 13.2 said.** § 13.2's 4–10 s per point
+  was the opening design. Over the crash-map box, native, rung 16 took a median of 4 s, rungs 23 and 24
+  16–24 s, and the slowest points about 2 minutes (the browser is slower still). The point stays stoppable (any
+  knob move kills its worker), and the page now says "seconds, up to a few minutes".
+- **A hang, latent since slice 1, in the page's shared worker code.** The model's JSON reader takes ASCII only
+  (its writer escapes the rest); `JSON.stringify` does not escape. When a failure's message carried a
+  non-ASCII character (β, ξ, Σ, —), the follow-up request for its plain words trapped INSIDE the trap handler,
+  the worker never answered, and the page waited forever. The burner's messages are full of them; the Design
+  view had one too (the equilibrium burner balance's `Σ`), unseen because slices 1–4's browser checks drove only
+  ASCII messages. Fixed in the runner: every request is escaped, and if the plain-words call fails the worker
+  still answers, with the model's message. The browser drive gained a per-call ceiling (300 s — a hang now
+  FAILS and closes its Chrome; twice it had left Node dropping out with Chrome still running) and a `Σ` check.
+- **Browser ≡ native under the table-gas bar**: 55 burner requests, 2 667 numbers, 2 398 bit-identical, worst
+  1.5e-15 relative — save the nozzle readout's jet-speed gain (a difference of two nearly equal speeds),
+  3.2e-12. The β-PDF model at its notch (EI ~1e-5) came out bit-identical.
+- **At the notch the richness chart is flat** — on the β-PDF model at `J_opt` the spread is zero, so the burner
+  is perfectly mixed and the front zone's richness drops out. Correct, and the reason the jet chart, not the
+  richness chart, is the one to read there.

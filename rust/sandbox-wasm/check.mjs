@@ -39,6 +39,11 @@ import { readFileSync } from 'node:fs';
 // stator-scheduled flat-LP map). Bar 1e-11 = 10x the closure's tolerance, ~50x the worst. `settled_lp` /
 // `settled_hp` are the gap between two nearly equal speeds, so they are compared ABSOLUTELY, as entropy
 // is: worst seen 8.4e-15, bar 1e-11.
+// SLICE 5's burner requests (55 of 225, 2667 numbers, 2398 bit-identical; measured 2026-10-08) fall under the
+// TABLE bar: their inlet is an equilibrium-gas design run. Worst seen 1.5e-15 relative, save the nozzle
+// readout's jet-speed gain `dv9`/`dv9_frac` -- a difference of two nearly equal jet speeds, 3.2e-12 relative
+// (2.3e-13 m/s). The β-PDF model at its notch (EI ~1e-5) came out bit-identical. A burner value moved 1e-8
+// relative turned the check red (tampered once). The bar stands.
 // Entropy lives in the station points (`.s`) and as the first element of each curve pair
 // (`ts_burner.N.0`, `ts_reject.N.0`) -- where it can be exactly 0 (the cooling curve ends ON the
 // ambient datum), so only an absolute bar means anything.

@@ -162,6 +162,7 @@ pub mod reference_split;
 pub mod residual_gauge;
 pub mod sandbox;
 pub mod sandbox_blades;
+pub mod sandbox_burner;
 pub mod sandbox_controls;
 pub mod sandbox_transient;
 pub mod sensed_cap;

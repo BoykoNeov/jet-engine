@@ -1,0 +1,37 @@
+inlet (583.5049266125288, 1500.0, 0.02717919071928212, 747441.4730230813)
+L2 ideal              point       5.3 ms  EI 20.743172
+L2 ideal+O+prompt     point       3.7 ms  EI 25.123065
+L2 tau_q 1ms          point      92.8 ms  EI 1.078426
+L2 jet(11)            point      92.6 ms  EI 0.818505
+L2 two-stream(12)     point      78.1 ms  EI 1.404596
+L2 pdf(13)            point     471.4 ms  EI 0.856899
+L2 pdf_quench(15)     point     359.2 ms  EI 2.010617
+L2 pocket(16)         point     932.1 ms  EI 2.102005
+L2 transported(18)    point     215.9 ms  EI 0.934135
+L2 spatial(22)        point     226.3 ms  EI 1.175981
+L2 spatial_dwell(23)  point    2990.3 ms  EI 2.103338
+L2 spatial_local(24)  point    3016.6 ms  EI 2.071561
+L1 ideal              point       4.2 ms  EI 20.743172
+L1 ideal+O+prompt     point       4.3 ms  EI 25.123065
+L1 tau_q 1ms          point     125.3 ms  EI 1.089008
+L1 jet(11)            point     122.5 ms  EI 0.826438
+L1 two-stream(12)     point     175.3 ms  EI 1.418165
+L1 pdf(13)            point    1845.4 ms  EI 0.854217
+L1 pdf_quench(15)     point     585.7 ms  EI 2.014818
+L1 pocket(16)         point    3673.6 ms  EI 2.137211
+L1 transported(18)    point     386.6 ms  EI 0.930746
+L1 spatial(22)        point     437.2 ms  EI 1.185098
+L1 spatial_dwell(23)  point    5660.5 ms  EI 2.102269
+L1 spatial_local(24)  point    5289.6 ms  EI 2.070557
+L0 ideal              point       3.8 ms  EI 20.743172
+L0 ideal+O+prompt     point       3.9 ms  EI 25.123065
+L0 tau_q 1ms          point     336.7 ms  EI 1.092843
+L0 jet(11)            point     349.3 ms  EI 0.829316
+L0 two-stream(12)     point     362.4 ms  EI 1.423087
+L0 pdf(13)            point     937.1 ms  EI 0.854446
+L0 pdf_quench(15)     point     920.7 ms  EI 2.018014
+L0 pocket(16)         point   31511.5 ms  EI 2.142927
+L0 transported(18)    point     910.0 ms  EI 0.930034
+L0 spatial(22)        point     959.0 ms  EI 1.184585
+L0 spatial_dwell(23)  point   83498.6 ms  EI 2.105611
+L0 spatial_local(24)  point   71476.2 ms  EI 2.073709

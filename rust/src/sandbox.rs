@@ -556,6 +556,10 @@ fn refusal(reason: &str) -> Json {
 /// - `controls_defaults`, `controls` (with `"controls":{…}`) → slice 4 (B)'s two-shaft *Controls*
 ///   view, [`crate::sandbox_controls::call_op`]. `explain` with `"view":"controls"` →
 ///   [`crate::sandbox_controls::explain_controls`].
+/// - `burner_defaults`, `burner_inlet`, `burner`, `burner_path`, `burner_nozzle`, `burner_grid` (with
+///   `"settings":{…}` — the design — and `"burner":{…}`) → slice 5's burner view,
+///   [`crate::sandbox_burner::call_op`]. `explain` with `"view":"burner"` →
+///   [`crate::sandbox_burner::explain_burner`].
 pub fn call(request: &str) -> String {
     let req = Json::parse(request);
     let op = match req.get("op") { Some(Json::Str(s)) => s.as_str(), _ => "" };
@@ -599,6 +603,8 @@ pub fn call(request: &str) -> String {
                 jobj! { "plain" => crate::sandbox_blades::lever_words(m) },
             Some(Json::Str(m)) if matches!(req.get("view"), Some(Json::Str(v)) if v == "controls") =>
                 jobj! { "plain" => crate::sandbox_controls::explain_controls(m) },
+            Some(Json::Str(m)) if matches!(req.get("view"), Some(Json::Str(v)) if v == "burner") =>
+                jobj! { "plain" => crate::sandbox_burner::explain_burner(m) },
             Some(Json::Str(m)) => jobj! { "plain" => explain(m) },
             _ => refusal("explain needs a message"),
         },
@@ -625,6 +631,7 @@ pub fn call(request: &str) -> String {
         other => crate::sandbox_blades::call_op(other, &req)
             .or_else(|| crate::sandbox_transient::call_op(other, &req))
             .or_else(|| crate::sandbox_controls::call_op(other, &req))
+            .or_else(|| crate::sandbox_burner::call_op(other, &req))
             .unwrap_or_else(|| refusal(&format!("unknown op {other:?}"))),
     };
     out.dump_compact()
@@ -1114,5 +1121,6 @@ pub fn check_requests() -> Vec<String> {
     out.extend(crate::sandbox_blades::check_requests());
     out.extend(crate::sandbox_transient::check_requests());
     out.extend(crate::sandbox_controls::check_requests());
+    out.extend(crate::sandbox_burner::check_requests());
     out
 }
