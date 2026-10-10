@@ -8,7 +8,7 @@ metadata:
   modified: 2026-10-10T10:39:17.971Z
 ---
 
-Repaired 2026-10-10 (sandbox plan § 14; CLAUDE.md's three OPEN lines → one REPAIRED line). Lessons:
+Repaired 2026-10-10 (sandbox plan § 14): rung 34's march low wall and rung 31's turbine wall; rung 43's schedule check only behind a default-OFF switch (still OPEN in CLAUDE.md, with rung 58's dichotomy). Lessons:
 
 - **"Only failing cases change" is false when the failure is CONTROL FLOW.** Marching rung 34's
   closure wall in everywhere moved 1 416 of combustor_oracle's 2 066 keys by ~1e-11: the steady
