@@ -1487,7 +1487,7 @@ function ctlTable() {
     let facts = "";
     if ((r.stop.kind === "lean" || r.stop.kind === "rich") && r.stop.mixture !== null)
       facts = ` The step asked for about ${fmt(r.stop.mixture, 2)} kg of fuel per kg of air.`;
-    if ((r.stop.kind === "floor_unreachable" || r.stop.kind === "schedule_check") && r.stop.min_fuel_fraction !== null && r.s.length)
+    if (r.stop.kind === "floor_unreachable" && r.stop.min_fuel_fraction !== null && r.s.length)
       facts = ` By then the fuel had been cut to ${fmt(r.stop.min_fuel_fraction * 100, 3)} % of the schedule.`;
     d.textContent = `The run stopped ${where}. ${r.stop.words}${facts}`;
     if (r.stop.message) { const c = document.createElement("code"); c.textContent = "Model message: " + r.stop.message; d.appendChild(c); }

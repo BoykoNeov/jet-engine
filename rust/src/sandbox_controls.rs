@@ -28,7 +28,7 @@
 use crate::bleed_transient::{build_scheduled_bleed, BleedSchedule, LeverArm};
 use crate::blade_speed::shape_maps;
 use crate::engine::FlightCondition;
-use crate::fuel_transient::{release_weight, AccelSchedule, AsymmetricLag, FuelInstant, FuelLimiters,
+use crate::fuel_transient::{r43_cut_below_ceiling, release_weight, AccelSchedule, AsymmetricLag, FuelInstant, FuelLimiters,
                             FuelPoint, FuelTransientCore, PointExtra, SurgeLimiter};
 use crate::gas::Abort;
 use crate::jobj;
@@ -445,6 +445,9 @@ impl ControlsSolver {
             s_off: None,
             tau_rel: None,
             lag: s.release_on.then(|| AsymmetricLag::new(s.tau_att, s.tau_rel)),
+            // Where the scheduled fuel has no operating point, decide the limiters from the most
+            // fuel that has one, instead of stopping (2026-10-10; the shipped rungs keep `false`).
+            below_ceiling: true,
         }
     }
 
@@ -518,7 +521,16 @@ fn der_plain(sv: &ControlsSolver, a: f64, b: f64, mf_in: f64, s: f64) -> Result<
     let lim = sv.limiters();
     let floor = lim.floor();
     let mut mf = mf_in;
-    let mut i = ft.try_instant_fuel(fl, a, b, mf).map_err(fail(Call::AtSchedule, mf))?;
+    let mut i = match ft.try_instant_fuel(fl, a, b, mf) {
+        Ok(i) => i,
+        // No operating point at the schedule: the model decides the min-select from the solvable
+        // ceiling below it (2026-10-10) — called, not copied, so the replay is the march's own.
+        Err(e) => {
+            let (_, i) = r43_cut_below_ceiling(ft, fl, a, b, mf, s, &lim, floor.as_ref(), e)
+                .map_err(fail(Call::AtSchedule, mf))?;
+            return Ok((i.base.phi_lp_dot / ft.rho(), i.base.phi_hp_dot));
+        }
+    };
     let mut caps: Vec<f64> = Vec::new();
     let w = release_weight(s, lim.s_off, lim.tau_rel);
     let faded = |c: f64| if w >= 1.0 { c } else { mf + w * (c - mf) };
@@ -574,12 +586,28 @@ fn der_release(sv: &ControlsSolver, a: f64, b: f64, g: f64, s: f64) -> Result<(f
         }
     }
     let i = ft.try_instant_fuel(fl, a, b, mf).map_err(fail(Call::AtApplied, mf))?;
+    // Each leg off the schedule, or off the solvable ceiling where the schedule has no operating
+    // point — `integrate_fuel_asym`'s `required`, through the same model helper (2026-10-10).
+    let top = std::cell::OnceCell::new();
+    let mut undecided = false;
     let mut caps: Vec<f64> = Vec::new();
     if let Some(accel) = lim.accel {
-        caps.push(ft.try_sched_fuel(fl, a, b, mf_sched, accel).map_err(fail(Call::Accel, mf_sched))?);
+        let solve = |x: f64| ft.try_sched_fuel(fl, a, b, x, accel);
+        match ft.try_leg_below(fl, a, b, mf_sched, &top, &solve).map_err(fail(Call::Accel, mf_sched))? {
+            Some(c) => caps.push(c),
+            None => undecided = true,
+        }
     }
     if let Some(surge) = floor.as_ref() {
-        caps.push(ft.try_surge_fuel(fl, a, b, mf_sched, surge).map_err(fail(Call::Floor, mf_sched))?);
+        let solve = |x: f64| ft.try_surge_fuel(fl, a, b, x, surge);
+        match ft.try_leg_below(fl, a, b, mf_sched, &top, &solve).map_err(fail(Call::Floor, mf_sched))? {
+            Some(c) => caps.push(c),
+            None => undecided = true,
+        }
+    }
+    if undecided && caps.is_empty() {
+        let e = ft.try_instant_fuel(fl, a, b, mf_sched).err().expect("an undecided leg means the scheduled instant failed");
+        return Err(fail(Call::AtSchedule, mf_sched)(e));
     }
     let req = if caps.is_empty() {
         0.0
@@ -683,10 +711,6 @@ pub fn lean_rich_split() -> f64 { (FuelTransientCore::F_FLOOR * FuelTransientCor
 pub enum StopKind {
     /// Rung 49's own refusal: no fuel cut restores the flow coefficient to the floor.
     FloorUnreachable,
-    /// A limiter held the fuel below the schedule, and the march's check AT THE SCHEDULED FUEL (made
-    /// every step, to see whether a limiter is needed) has no solution at these shaft speeds, while the
-    /// cut fuel does ([`classify`] asks the model) — the method's limit, not the engine's.
-    ScheduleCheck,
     /// The run's own fuel left the fuel-metered solver's range on the lean side (a fast power cut).
     Lean,
     /// ...on the rich side (a fast slam: the fuel outran the air).
@@ -702,7 +726,6 @@ impl StopKind {
     pub fn key(self) -> &'static str {
         match self {
             StopKind::FloorUnreachable => "floor_unreachable",
-            StopKind::ScheduleCheck => "schedule_check",
             StopKind::Lean => "lean",
             StopKind::Rich => "rich",
             StopKind::Unknown => "unknown",
@@ -719,12 +742,6 @@ impl StopKind {
                  model stops. This happens when the floor sits above where the compressor runs: the floor starves \
                  the engine, the shafts slow, and the flow coefficient falls further. Lower the floor (with the \
                  stator schedule on, try the floor that watches blade incidence).",
-            StopKind::ScheduleCheck =>
-                "This stop is the model's, not the engine's. A limiter is holding the fuel below the schedule. At \
-                 every step the model first works the engine out at the FULL scheduled fuel, to see whether a \
-                 limiter is needed at all; at these shaft speeds it finds no operating point for that much fuel, \
-                 so the run stops, although the engine does solve at the fuel actually burning (checked at the \
-                 failing state). Shorten the gap: move the throttle less, or loosen the limiter that is holding.",
             StopKind::Lean =>
                 "The fuel fell faster than the air: on this power cut the mixture got leaner than 0.004 kg of fuel \
                  per kg of air, the leanest the model's fuel-metered solver searches, so the run stops. (A real \
@@ -752,19 +769,15 @@ pub fn trial_mixture(f: &Failure, last: Option<&FuelPoint>) -> Option<f64> {
     (f.mf.is_finite() && l.mf > 0.0).then(|| f.mf * l.f / l.mf)
 }
 
-/// The fuel actually burning at a failing state, estimated: the scheduled fuel the failing call was
-/// handed, cut by the fraction the limiters held at the last recorded point. `None` unless a limiter was
-/// cutting there and the failing call was one made at the scheduled fuel.
-pub fn cut_fuel(f: &Failure, last: Option<&FuelPoint>) -> Option<f64> {
-    let l = last?;
-    (l.mf < l.mf_sched && f.call != Call::AtApplied).then(|| f.mf * (l.mf / l.mf_sched))
-}
-
-/// Classify a re-run failure by its message, by WHICH call failed, and — for the every-step check —
-/// by asking the model itself: a stop is the METHOD's only if the engine DOES solve at the cut fuel at
-/// the failing state while it fails at the scheduled one (plan § 12.10: 89 of 90 such stops in the
-/// slider box; the one that did not, a 4 % cut on a fast slam, is a rich stop and is classed so).
-pub fn classify(sv: &ControlsSolver, stop: &Stop, last: Option<&FuelPoint>) -> StopKind {
+/// Classify a re-run failure by its message and, for a failed fuel closure, by its mixture.
+///
+/// A fifth kind lived here until 2026-10-10: the plain march's every-step check AT THE SCHEDULED FUEL
+/// stopped a run whose cut fuel solved (plan § 12.10). The Controls view now switches on
+/// `FuelLimiters::below_ceiling`, which decides the limiters from the most fuel that solves. On a
+/// 1 000-request sweep of the slider box (2026-10-10, same requests before and after) the 24 such stops
+/// went to none; overall 23 more runs completed and 4 more ended at a real floor-unreachable stop (one
+/// rich stop and two cause-unknown stops on the governor-lag route also ran on).
+pub fn classify(_sv: &ControlsSolver, stop: &Stop, last: Option<&FuelPoint>) -> StopKind {
     let Some(f) = &stop.failure else { return StopKind::Unknown };
     let m = &f.message;
     if m.contains("UNREACHABLE") {
@@ -772,11 +785,6 @@ pub fn classify(sv: &ControlsSolver, stop: &Stop, last: Option<&FuelPoint>) -> S
     }
     if !m.contains("fuel closure does not bracket") {
         return StopKind::Other;
-    }
-    if let Some(w) = cut_fuel(f, last) {
-        if sv.core.fuel.try_instant_fuel(&sv.flight, f.nu_lp, f.nu_hp, w).is_ok() {
-            return StopKind::ScheduleCheck;
-        }
     }
     match trial_mixture(f, last) {
         Some(x) if x < lean_rich_split() => StopKind::Lean,

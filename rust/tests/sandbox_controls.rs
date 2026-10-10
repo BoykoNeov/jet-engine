@@ -254,20 +254,44 @@ fn a_floor_out_of_reach_from_the_start_stops_at_the_first_step_and_says_so() {
 }
 
 #[test]
-fn every_kind_of_stop_the_crash_map_found_is_driven_and_worded() {
+fn a_deep_cut_that_stopped_on_the_schedule_check_now_runs_on_the_limiters_own_cut() {
+    // Plan § 12.10: a floor holding the fuel far below the schedule while the shafts slow — the march
+    // worked the engine out at the FULL scheduled fuel every step, found no operating point there, and
+    // stopped. With `below_ceiling` the min-select is decided from the most fuel that DOES solve.
     let (sv, o) = run(SCHEDULE_CHECK);
-    assert_eq!(stop_kind(&sv, &o), StopKind::ScheduleCheck, "{:?}", o.stop);
-    assert!(o.points.last().is_some_and(|l| l.mf < l.mf_sched), "a limiter is cutting when it stops");
-    // The words say the engine solves at the fuel actually burning: at the failing state it does, and it
-    // fails at the scheduled fuel.
-    let f = o.stop.as_ref().unwrap().failure.as_ref().unwrap();
-    let w = cut_fuel(f, o.points.last()).expect("a cut, at a call made at the scheduled fuel");
-    assert!(sv.core.fuel.try_instant_fuel(&sv.flight, f.nu_lp, f.nu_hp, f.mf).is_err(), "the scheduled fuel fails");
-    assert!(sv.core.fuel.try_instant_fuel(&sv.flight, f.nu_lp, f.nu_hp, w).is_ok(), "the cut fuel solves");
-    // ...and where the cut fuel does NOT solve (a 4 % cut on a fast slam, plan § 12.10) the stop is rich.
+    let lim = sv.limiters();
+    assert!(lim.below_ceiling, "the page switches the ceiling on");
+    let shipped = sv.core.fuel.integrate_fuel(&sv.flight, sv.settings.schedule(sv.mf_lo, sv.mf_hi),
+                                              (sv.start.nu_lp, sv.start.nu_hp), sv.settings.s_end(), DS,
+                                              &FuelLimiters { below_ceiling: false, ..lim.clone() });
+    assert!(shipped.len() < sv.settings.expected_points(), "the shipped march stops ({} points)", shipped.len());
+    assert!(o.points.len() > shipped.len(), "the page's march runs on: {} > {}", o.points.len(), shipped.len());
+    // The reduce: up to the old stop the two marches are one, bit for bit.
+    for (a, b) in shipped.iter().zip(&o.points) {
+        assert_eq!((a.nu_lp.to_bits(), a.nu_hp.to_bits(), a.mf.to_bits()), (b.nu_lp.to_bits(), b.nu_hp.to_bits(), b.mf.to_bits()),
+                   "s = {}", a.s);
+    }
+    // Non-vacuous: past the old stop the scheduled fuel really has no operating point at some point, and
+    // there the applied fuel is a limiter meeting its OWN equation (the plain route's floor or schedule).
+    let fl = &sv.flight;
+    let (mut walked, mut held) = (0, 0);
+    for p in &o.points[shipped.len()..] {
+        if sv.core.fuel.try_instant_fuel(fl, p.nu_lp, p.nu_hp, p.mf_sched).is_err() {
+            walked += 1;
+            let r = sv.read(p).unwrap();
+            if matches!(r.holder, Holder::Floor | Holder::Accel | Holder::Redline) {
+                held += 1;
+            }
+        }
+    }
+    assert!(walked > 0, "some point past the old stop has no operating point at the scheduled fuel");
+    assert_eq!(held, walked, "at every such point a limiter holds its own equation");
+}
+
+#[test]
+fn every_kind_of_stop_the_crash_map_found_is_driven_and_worded() {
+    // A 4 % cut on a fast slam (plan § 12.10) whose cut fuel does NOT solve either: still a rich stop.
     let (sv, o) = run(NOT_THE_CHECK);
-    let f = o.stop.as_ref().unwrap().failure.as_ref().unwrap();
-    assert!(cut_fuel(f, o.points.last()).is_some(), "a limiter was cutting at a scheduled-fuel call");
     assert_eq!(stop_kind(&sv, &o), StopKind::Rich, "{:?}", o.stop);
     for (j, want, wall) in [(LEAN, StopKind::Lean, FuelTransientCore::F_FLOOR), (RICH, StopKind::Rich, FuelTransientCore::F_CAP)] {
         let (sv, o) = run(j);
@@ -280,7 +304,7 @@ fn every_kind_of_stop_the_crash_map_found_is_driven_and_worded() {
     assert_eq!(sv.route(), Route::GovLag);
     assert_eq!(stop_kind(&sv, &o), StopKind::Unknown);
     // Every kind has words, and a stop's words reach the page.
-    for k in [StopKind::FloorUnreachable, StopKind::ScheduleCheck, StopKind::Lean, StopKind::Rich, StopKind::Unknown,
+    for k in [StopKind::FloorUnreachable, StopKind::Lean, StopKind::Rich, StopKind::Unknown,
               StopKind::Other] {
         assert!(k.words().len() > 40, "{k:?}");
     }

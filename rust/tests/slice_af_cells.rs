@@ -225,6 +225,7 @@ fn forced_release_drive(m: &ScheduledStatorCore) {
     let lim = FuelLimiters {
         freeze: None, tt4_max: Some(TT4_MAX), tau_gov: Some(TAU_GOV), accel: None,
         surge: Some(surge()), incidence: None, s_off: Some(0.3), tau_rel: None, lag: Some(lag()),
+        below_ceiling: false,
     };
     (m.fuel.hooks.integrate_fuel)(&m.fuel, &flight(), &|_s: f64| 1.0, (1.0, 1.0), 0.1, DS, &lim);
 }

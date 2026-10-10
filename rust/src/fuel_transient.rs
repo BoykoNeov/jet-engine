@@ -1489,6 +1489,13 @@ pub struct FuelLimiters<'a> {
     /// RUNG 52. The realisable asymmetric lag — dispatches to
     /// [`integrate_fuel_asym`](FuelTransientCore::integrate_fuel_asym).
     pub lag: Option<AsymmetricLag>,
+    /// NOT A RUNG (2026-10-10). Where the SCHEDULED fuel has no operating point, decide the
+    /// min-select from the solvable ceiling below it ([`r43_cut_below_ceiling`]) instead of
+    /// stopping the march. `false` is the shipped march, bit for bit — and it must stay the
+    /// default: rung 58's floor dichotomy (rung 63's table) marches a floor whose run STOPS on this
+    /// very check, and its diagnostics read the scheduled instant at every recorded point. The
+    /// sandbox's Controls view switches it on.
+    pub below_ceiling: bool,
 }
 
 impl FuelLimiters<'_> {
@@ -2093,6 +2100,111 @@ impl FuelTransientCore {
         (self.hooks.try_surge_fuel)(self, flight, nu_lp, nu_hp, mf_sched, surge)
     }
 
+    // --- the schedule check with no answer (2026-10-10) ---------------------------------------
+
+    /// The largest fuel below `mf` at which the instant solves — `None` if none is found.
+    ///
+    /// **Why it exists.** Every min-select leg is solved off the SCHEDULED fuel: its dormant test
+    /// and its upper bracket are the instant there. On a deep cut the shafts slow while a limiter
+    /// holds the burning fuel far below the schedule, and the scheduled fuel stops having an
+    /// operating point (the closure's rich wall) though the cut fuel has one; the march died there
+    /// (sandbox plan § 12.10). A leg is a ROOT, so it can be bracketed from any solvable fuel above
+    /// it: [`try_leg_below`](Self::try_leg_below) brackets from this one instead. Called only where
+    /// the scheduled instant has already failed — a march that ran before never reaches it.
+    ///
+    /// Marched down in 2 % steps from `mf` to the first solvable fuel, then bisected against the
+    /// last failing one to `1e-12` relative.
+    pub fn try_solvable_ceiling(
+        &self, flight: &FlightCondition, nu_lp: f64, nu_hp: f64, mf: f64,
+    ) -> Option<f64> {
+        let (mut bad, mut ok) = (mf, None);
+        for _ in 0..200 {
+            let w = 0.98 * bad;
+            if self.try_instant_fuel(flight, nu_lp, nu_hp, w).is_ok() {
+                ok = Some(w);
+                break;
+            }
+            bad = w;
+        }
+        let mut ok = ok?;
+        for _ in 0..60 {
+            if bad - ok <= 1e-12 * bad {
+                break;
+            }
+            let mid = 0.5 * (ok + bad);
+            if self.try_instant_fuel(flight, nu_lp, nu_hp, mid).is_ok() {
+                ok = mid;
+            } else {
+                bad = mid;
+            }
+        }
+        Some(ok)
+    }
+
+    /// A min-select leg solved off the schedule `mf_sched` — or, where the scheduled fuel has NO
+    /// operating point, off the solvable ceiling below it (`top`, computed once per evaluation and
+    /// shared by its legs).
+    ///
+    /// `Ok(Some(cap))` is the leg's own answer: its value at `mf_sched` exactly as before, or a cut
+    /// below the ceiling — the same root the schedule's bracket would have found, since a leg is a
+    /// root and not a function of its bracket. `Ok(None)`: the scheduled fuel fails and the leg
+    /// does not cut below the ceiling, so its cap is known only to sit at or above it. The caller
+    /// decides from that whether the min-select is still decided (it is, whenever something else
+    /// cuts below the ceiling). A leg that fails while the scheduled instant solves is the leg's
+    /// own failure, returned unchanged.
+    pub fn try_leg_below(
+        &self, flight: &FlightCondition, nu_lp: f64, nu_hp: f64, mf_sched: f64,
+        top: &std::cell::OnceCell<Option<f64>>, solve: &dyn Fn(f64) -> Result<f64, Abort>,
+    ) -> Result<Option<f64>, Abort> {
+        let e = match solve(mf_sched) {
+            Ok(c) => return Ok(Some(c)),
+            Err(e) => e,
+        };
+        if self.try_instant_fuel(flight, nu_lp, nu_hp, mf_sched).is_ok() {
+            return Err(e);
+        }
+        let Some(c) = *top.get_or_init(|| self.try_solvable_ceiling(flight, nu_lp, nu_hp, mf_sched))
+        else {
+            return Err(e);
+        };
+        let cap = solve(c)?;
+        Ok((cap < c).then_some(cap))
+    }
+
+    /// [`try_leg_below`](Self::try_leg_below) behind [`FuelLimiters::below_ceiling`]: switched
+    /// off, the leg solved off the schedule with its error unchanged — the shipped call, bit for bit.
+    #[allow(clippy::too_many_arguments)]
+    fn try_leg_gated(
+        &self, flight: &FlightCondition, nu_lp: f64, nu_hp: f64, mf_sched: f64,
+        top: &std::cell::OnceCell<Option<f64>>, solve: &dyn Fn(f64) -> Result<f64, Abort>,
+        below_ceiling: bool,
+    ) -> Result<Option<f64>, Abort> {
+        if below_ceiling {
+            self.try_leg_below(flight, nu_lp, nu_hp, mf_sched, top, solve)
+        } else {
+            solve(mf_sched).map(Some)
+        }
+    }
+
+    /// The redline leg's ceiling form, for a route whose TRIGGER is read at the scheduled fuel
+    /// (`Tt4 > Tt4_max` there): where that instant has no answer, the trigger is read at the
+    /// ceiling, and the leg cuts below it only if `Tt4` is over the redline there. Same answers
+    /// as [`try_leg_below`](Self::try_leg_below).
+    pub fn try_topping_below(
+        &self, flight: &FlightCondition, nu_lp: f64, nu_hp: f64, tt4_max: f64, mf_sched: f64,
+        top: &std::cell::OnceCell<Option<f64>>,
+    ) -> Result<Option<f64>, Abort> {
+        let Some(c) = *top.get_or_init(|| self.try_solvable_ceiling(flight, nu_lp, nu_hp, mf_sched))
+        else {
+            return Ok(None);
+        };
+        if self.try_instant_fuel(flight, nu_lp, nu_hp, c)?.base.tt4 > tt4_max {
+            let cap = self.try_topping_fuel(flight, nu_lp, nu_hp, tt4_max, c)?;
+            return Ok((cap < c).then_some(cap));
+        }
+        Ok(None)
+    }
+
     // --- the equilibrium: a 2-D root at fixed FUEL --------------------------------------------
 
     /// Solve `Phi_L = Phi_H = 0` in `(nu_L, nu_H)` at fixed FUEL.
@@ -2246,14 +2358,26 @@ impl FuelTransientCore {
     pub fn integrate_fuel_lagged<S>(
         &self, flight: &FlightCondition, fuel_schedule: S, nu0: (f64, f64), s_end: f64, ds: f64,
         freeze: Option<Spool>, tt4_max: f64, tau_gov: f64, accel: Option<&AccelSchedule>,
-        surge: Option<&Floor>, s_off: Option<f64>, tau_rel: Option<f64>,
+        surge: Option<&Floor>, s_off: Option<f64>, tau_rel: Option<f64>, below_ceiling: bool,
     ) -> Vec<FuelPoint>
     where
         S: Fn(f64) -> f64,
     {
         bump(&MARCH_CALLS);
         let required = |a: f64, b: f64, mf_sched: f64| -> Result<f64, Abort> {
-            let i = self.try_instant_fuel(flight, a, b, mf_sched)?;
+            let i = match self.try_instant_fuel(flight, a, b, mf_sched) {
+                Ok(i) => i,
+                Err(e) if !below_ceiling => return Err(e),
+                // No operating point at the schedule: the redline's cut, if it cuts below the
+                // solvable ceiling, is the same root (2026-10-10, `r43_cut_below_ceiling`).
+                Err(e) => {
+                    let top = std::cell::OnceCell::new();
+                    return match self.try_topping_below(flight, a, b, tt4_max, mf_sched, &top)? {
+                        Some(c) => Ok(mf_sched - c),
+                        None => Err(e),
+                    };
+                }
+            };
             if i.base.tt4 > tt4_max {
                 return Ok(mf_sched - self.try_topping_fuel(flight, a, b, tt4_max, mf_sched)?);
             }
@@ -2272,21 +2396,43 @@ impl FuelTransientCore {
             // RUNG 51, float-identical at w == 1.0 -- and referencing `mf_sched`, NOT `mf`.
             let faded = |c: f64| if w >= 1.0 { c } else { mf_sched + w * (c - mf_sched) };
 
+            // Each leg through `try_leg_below`: its value off the schedule exactly as before, or —
+            // where the schedule has no operating point — off the solvable ceiling (2026-10-10,
+            // `r43_cut_below_ceiling`). A leg that does not cut below the ceiling leaves the min
+            // decided only if something else already sits below it.
+            let top = std::cell::OnceCell::new();
+            let mut undecided = false;
             if let Some(accel) = accel {
                 if w > 0.0 {
-                    let c = faded(self.try_sched_fuel(flight, a, b, mf_sched, accel)?);
-                    if c < mf {
-                        mf = c;
+                    let solve = |x: f64| self.try_sched_fuel(flight, a, b, x, accel);
+                    match self.try_leg_gated(flight, a, b, mf_sched, &top, &solve, below_ceiling)? {
+                        Some(c) => {
+                            let c = faded(c);
+                            if c < mf {
+                                mf = c;
+                            }
+                        }
+                        None => undecided = true,
                     }
                 }
             }
             if let Some(surge) = surge {
                 if w > 0.0 {
-                    let c = faded(self.try_surge_fuel(flight, a, b, mf_sched, surge)?);
-                    if c < mf {
-                        mf = c;
+                    let solve = |x: f64| self.try_surge_fuel(flight, a, b, x, surge);
+                    match self.try_leg_gated(flight, a, b, mf_sched, &top, &solve, below_ceiling)? {
+                        Some(c) => {
+                            let c = faded(c);
+                            if c < mf {
+                                mf = c;
+                            }
+                        }
+                        None => undecided = true,
                     }
                 }
+            }
+            if undecided && !top.get().copied().flatten().is_some_and(|c| mf < c) {
+                return Err(self.try_instant_fuel(flight, a, b, mf_sched).err()
+                    .expect("an undecided leg means the scheduled instant failed"));
             }
             let i = self.try_instant_fuel(flight, a, b, mf)?;
             let da = if freeze == Some(Spool::Lp) { 0.0 } else { i.base.phi_lp_dot / self.rho() };
@@ -2346,19 +2492,35 @@ impl FuelTransientCore {
     pub fn integrate_fuel_asym<S>(
         &self, flight: &FlightCondition, fuel_schedule: S, nu0: (f64, f64), s_end: f64, ds: f64,
         freeze: Option<Spool>, tt4_max: Option<f64>, accel: Option<&AccelSchedule>,
-        surge: Option<&Floor>, lag: &AsymmetricLag,
+        surge: Option<&Floor>, lag: &AsymmetricLag, below_ceiling: bool,
     ) -> Vec<FuelPoint>
     where
         S: Fn(f64) -> f64,
     {
         bump(&MARCH_CALLS);
         let required = |a: f64, b: f64, mf_sched: f64| -> Result<f64, Abort> {
+            // Each leg through `try_leg_below` (2026-10-10, `r43_cut_below_ceiling`): exactly as
+            // before where the schedule solves; off the solvable ceiling where it does not.
+            let top = std::cell::OnceCell::new();
+            let mut undecided = false;
             let mut caps: Vec<f64> = Vec::new();
             if let Some(accel) = accel {
-                caps.push(self.try_sched_fuel(flight, a, b, mf_sched, accel)?);
+                let solve = |x: f64| self.try_sched_fuel(flight, a, b, x, accel);
+                match self.try_leg_gated(flight, a, b, mf_sched, &top, &solve, below_ceiling)? {
+                    Some(c) => caps.push(c),
+                    None => undecided = true,
+                }
             }
             if let Some(surge) = surge {
-                caps.push(self.try_surge_fuel(flight, a, b, mf_sched, surge)?);
+                let solve = |x: f64| self.try_surge_fuel(flight, a, b, x, surge);
+                match self.try_leg_gated(flight, a, b, mf_sched, &top, &solve, below_ceiling)? {
+                    Some(c) => caps.push(c),
+                    None => undecided = true,
+                }
+            }
+            if undecided && caps.is_empty() {
+                return Err(self.try_instant_fuel(flight, a, b, mf_sched).err()
+                    .expect("an undecided leg means the scheduled instant failed"));
             }
             if caps.is_empty() {
                 return Ok(0.0);
@@ -3577,12 +3739,12 @@ pub fn r43_integrate_fuel(
     if let Some(lag) = lim.lag {
         return ft.integrate_fuel_asym(
             flight, fuel_schedule, nu0, s_end, ds, lim.freeze, lim.tt4_max, lim.accel,
-            floor.as_ref(), &lag);
+            floor.as_ref(), &lag, lim.below_ceiling);
     }
     if let (Some(tt4_max), Some(tau_gov)) = (lim.tt4_max, lim.tau_gov) {
         return ft.integrate_fuel_lagged(
             flight, fuel_schedule, nu0, s_end, ds, lim.freeze, tt4_max, tau_gov, lim.accel,
-            floor.as_ref(), lim.s_off, lim.tau_rel);
+            floor.as_ref(), lim.s_off, lim.tau_rel, lim.below_ceiling);
     }
 
     bump(&MARCH_CALLS);
@@ -3593,7 +3755,18 @@ pub fn r43_integrate_fuel(
      -> Result<(f64, f64, f64, FuelInstant), Abort> {
         bump(&DER_CALLS);
         let mut mf = mf_in;
-        let mut i = ft.try_instant_fuel(flight, a, b, mf)?;
+        let mut i = match ft.try_instant_fuel(flight, a, b, mf) {
+            Ok(i) => i,
+            Err(e) if !lim.below_ceiling => return Err(e),
+            Err(e) => {
+                // The scheduled fuel has no operating point: the legs are bracketed from the
+                // solvable ceiling below it instead (2026-10-10, [`r43_cut_below_ceiling`]).
+                let (mf, i) = r43_cut_below_ceiling(ft, flight, a, b, mf, s, lim, floor.as_ref(), e)?;
+                let da = if lim.freeze == Some(Spool::Lp) { 0.0 } else { i.base.phi_lp_dot / ft.rho() };
+                let db = if lim.freeze == Some(Spool::Hp) { 0.0 } else { i.base.phi_hp_dot };
+                return Ok((da, db, mf, i));
+            }
+        };
         let mut caps: Vec<f64> = Vec::new();
         // RUNG 50/51: the leg's AUTHORITY `w` is a pure function of s. `s_off = None`
         // short-circuits to 1.0 and a falsy `tau_rel` makes it the rung-50 step, so rungs
@@ -3686,6 +3859,58 @@ pub fn r43_integrate_fuel(
         s += ds;
     }
     pts
+}
+
+/// THE SCHEDULE CHECK WITH NO ANSWER (2026-10-10) — rung 43's min-select, decided from below.
+///
+/// The plain march reads the instant at the SCHEDULED fuel first: its `Tt4` arms the redline, and
+/// every leg is bracketed from it. On a deep cut a limiter holds the burning fuel far below the
+/// schedule while the shafts slow, and the scheduled fuel stops having an operating point (the
+/// closure's rich wall) though the cut fuel has one — the march died there, on the method, not
+/// the engine (sandbox plan § 12.10: 89 of 90 such stops in the slider box).
+///
+/// **The law is unchanged:** applied = min(schedule, caps). Each leg is a ROOT, so it is the same
+/// root bracketed from the largest solvable fuel below the schedule (the CEILING); a leg that does
+/// not cut below the ceiling has its cap at or above it. So wherever ANY leg cuts below the
+/// ceiling, the min is decided — and it is that cut. Where none does, the applied fuel would sit
+/// in the fuel the plant cannot run, and the step fails with the scheduled instant's own error, as
+/// before. A march that ran before never reaches this function.
+#[allow(clippy::too_many_arguments)]
+pub fn r43_cut_below_ceiling(
+    ft: &FuelTransientCore, flight: &FlightCondition, a: f64, b: f64, mf: f64, s: f64,
+    lim: &FuelLimiters<'_>, floor: Option<&Floor>, e: Abort,
+) -> Result<(f64, FuelInstant), Abort> {
+    let w = release_weight(s, lim.s_off, lim.tau_rel);
+    // The bare marcher's fade, toward the applied `mf` — here the schedule, as on the plain path.
+    let faded = |c: f64| if w >= 1.0 { c } else { mf + w * (c - mf) };
+    let top = std::cell::OnceCell::new();
+    let mut caps: Vec<f64> = Vec::new();
+    if let Some(tt4_max) = lim.tt4_max {
+        if let Some(c) = ft.try_topping_below(flight, a, b, tt4_max, mf, &top)? {
+            caps.push(c);
+        }
+    }
+    if let Some(accel) = lim.accel {
+        if w > 0.0 {
+            let solve = |x: f64| ft.try_sched_fuel(flight, a, b, x, accel);
+            if let Some(c) = ft.try_leg_below(flight, a, b, mf, &top, &solve)? {
+                caps.push(faded(c));
+            }
+        }
+    }
+    if let Some(surge) = floor {
+        if w > 0.0 {
+            let solve = |x: f64| ft.try_surge_fuel(flight, a, b, x, surge);
+            if let Some(c) = ft.try_leg_below(flight, a, b, mf, &top, &solve)? {
+                caps.push(faded(c));
+            }
+        }
+    }
+    let Some(Some(ceiling)) = top.get().copied() else { return Err(e) };
+    caps.retain(|&c| c < ceiling);
+    let Some(m) = caps.iter().copied().reduce(f64::min) else { return Err(e) };
+    let i = ft.try_instant_fuel(flight, a, b, m)?;
+    Ok((m, i))
 }
 
 fn r43_try_close_fuel(
