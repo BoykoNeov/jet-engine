@@ -1101,7 +1101,8 @@ listed key by key before anything was licensed.
   run STOPS on this check, and its diagnostics read the scheduled instant at every recorded point.
   So the shipped rungs keep their march bit for bit, and the Controls view switches it on. **For the
   shipped march the seam stays OPEN** (CLAUDE.md), and so does a second one this found: rung 58's
-  floor dichotomy is PUBLISHED from a run that stops on this solver check.
+  floor dichotomy is PUBLISHED from a run that stops on this solver check. *(Both CLOSED since:
+  the table re-derived in § 14.4, the switch ON by default in § 14.6.)*
 - **Measured** on 1 000 random Controls requests over the slider box, the same requests before and
   after: schedule-check stops 24 → 0; complete runs 564 → 587; real floor-unreachable stops
   64 → 68 (runs that went on and met the engine's own limit); one rich and two cause-unknown stops
@@ -1124,7 +1125,7 @@ listed key by key before anything was licensed.
   few dozen keys each. Rung 63's floor table: one key in the published (bleed) table. Its oracle
   also carries stator-lever and bleed-beside-stator variants, and there 3 more `removed` keys move:
   the stator-armed floored marches stop on the check too, at 0.34 and 0.43.
-- **Decided (user, 2026-10-14):** the default stays OFF. Only rung 63's floor table is
+- **Decided (user, 2026-10-14):** the default stays OFF *(reversed later that day — § 14.6)*. Only rung 63's floor table is
   re-derived, through a core carrier (`TwoSpoolTransientCore::below_ceiling`, guard
   `BelowCeiling`) that `floor_dichotomy` alone sets. Result in `docs/rung63-spec.md` § 3: one
   `removed` moved (0.43: 1.31e−2 → 1.66e−2), the verdicts stand, and both top reference marches
@@ -1136,7 +1137,7 @@ listed key by key before anything was licensed.
 - **Prerequisite fixed:** rung 58's `leg_residual` re-read each point at the scheduled fuel with
   the panicking call, so it crashed on any march the switch carried past the check. A point with
   no answer there is now NaN, which `s_eng` can never read as a crossing.
-- **Left for the switch-over (CLAUDE.md, open):** put the ceiling into rungs 65+'s marchers so the
+- **Left for the switch-over (DONE — §§ 14.5–14.6):** put the ceiling into rungs 65+'s marchers so the
   reduce holds. Then re-derive the published numbers of rungs 64 and 66–73 (and 49's
   boundary gate), licensing each moved key by this same physical test. Other readers re-solve at
   `mf_sched` too (rungs 70–79's ledgers); the census lists the programs, not yet the readers.
