@@ -1106,3 +1106,35 @@ listed key by key before anything was licensed.
   after: schedule-check stops 24 → 0; complete runs 564 → 587; real floor-unreachable stops
   64 → 68 (runs that went on and met the engine's own limit); one rich and two cause-unknown stops
   also ran on. The page's schedule-check stop kind is retired.
+
+### 14.4 The switch's reach, measured; rung 63's table re-derived (2026-10-14)
+
+- **The census.** A throwaway worktree logged every time a shipped march met the schedule check.
+  It then ran the whole gate twice: switch off, and switch forced on everywhere. With the switch
+  off, the check fires in test programs for rungs **49, 63, 64 and 66–73**, in their oracle and
+  dispatch suites, and in the CLI (8 hits on the lagged route, 1 on the plain one). With the
+  switch on, every rung's own verdict suite still passes. What fails is 12 bit-gates (oracles,
+  smoke files, the CLI golden) and **one reduce** (`slice_z_smoke`: rungs 66/67 → 65, 76 vs 68
+  points). Rungs 65 and up have their OWN marchers, which have no ceiling, so turning the switch
+  on in rung 43's marcher splits the ladder at 65.
+- **What would move.** Rung 64's fuel bill (`removed_alone` 9.06e−3 → 1.44e−2 on the tilted map,
+  and the `below_bare` cells with it). Rungs 66–69 and 73: march lengths 216 → 231 points and a
+  few dozen keys each. Rung 63's floor table: one key in the published (bleed) table. Its oracle
+  also carries stator-lever and bleed-beside-stator variants, and there 3 more `removed` keys move:
+  the stator-armed floored marches stop on the check too, at 0.34 and 0.43.
+- **Decided (user, 2026-10-14):** the default stays OFF. Only rung 63's floor table is
+  re-derived, through a core carrier (`TwoSpoolTransientCore::below_ceiling`, guard
+  `BelowCeiling`) that `floor_dichotomy` alone sets. Result in `docs/rung63-spec.md` § 3: one
+  `removed` moved (0.43: 1.31e−2 → 1.66e−2), the verdicts stand, and both top reference marches
+  still end early on the floor's own refusal (now reported). Bit-gate licence:
+  `slice_w_oracle.rs` names the moved keys by re-running the old march's failing step
+  (`tests/common/schedule_check.rs`) and holds Python's values through the unchanged route. That
+  is 5 keys, pinned as MEASURED; the prediction was 2. Every other key, `m_i` and the credit
+  included, is still bit-exact against PyPy and CPython.
+- **Prerequisite fixed:** rung 58's `leg_residual` re-read each point at the scheduled fuel with
+  the panicking call, so it crashed on any march the switch carried past the check. A point with
+  no answer there is now NaN, which `s_eng` can never read as a crossing.
+- **Left for the switch-over (CLAUDE.md, open):** put the ceiling into rungs 65+'s marchers so the
+  reduce holds. Then re-derive the published numbers of rungs 64 and 66–73 (and 49's
+  boundary gate), licensing each moved key by this same physical test. Other readers re-solve at
+  `mf_sched` too (rungs 70–79's ledgers); the census lists the programs, not yet the readers.

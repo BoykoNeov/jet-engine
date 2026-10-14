@@ -920,6 +920,35 @@ pub struct TwoSpoolTransientCore {
     /// `Option<f64>` and not `f64`: `None` is rung 68's fuel leg, a different law, not a governor
     /// with an infinite set point.
     pub gov_max: Cell<Option<f64>>,
+    /// NOT A RUNG (2026-10-14). [`FuelLimiters::below_ceiling`] for the rung-57 stator march,
+    /// carried here because `_stator_march` builds its limiters from a [`StatorLeg`] that has no
+    /// such field. Read ONLY by `r57_stator_march`; `false` leaves every march bit for bit. Set
+    /// only by [`BelowCeiling`], and only by rung 63's `floor_dichotomy` — the one shipped reader
+    /// re-derived with the switch on (`docs/rung63-spec.md` § 3).
+    ///
+    /// [`FuelLimiters::below_ceiling`]: crate::fuel_transient::FuelLimiters
+    /// [`StatorLeg`]: crate::stator_transient::StatorLeg
+    pub below_ceiling: Cell<bool>,
+}
+
+/// [`TwoSpoolTransientCore::below_ceiling`]'s guard — restore-previous, [`LaggedFuel`]'s shape.
+pub struct BelowCeiling<'a> {
+    core: &'a TwoSpoolTransientCore,
+    prev: bool,
+}
+
+impl<'a> BelowCeiling<'a> {
+    pub fn set(core: &'a TwoSpoolTransientCore, on: bool) -> Self {
+        let prev = core.below_ceiling.get();
+        core.below_ceiling.set(on);
+        BelowCeiling { core, prev }
+    }
+}
+
+impl Drop for BelowCeiling<'_> {
+    fn drop(&mut self) {
+        self.core.below_ceiling.set(self.prev);
+    }
 }
 
 /// The RAII form of Python's `_closer`'s `try/finally` — **the restore is `Drop`, so it survives
@@ -1304,6 +1333,7 @@ impl TwoSpoolTransientCore {
             sm_air: Cell::new(None),
             ref_: Cell::new(None),
             gov_max: Cell::new(None),
+            below_ceiling: Cell::new(false),
         }
     }
 

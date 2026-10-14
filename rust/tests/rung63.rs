@@ -54,10 +54,15 @@ use turbojet::fuel_transient::{AccelSchedule, Floor, SurgeLimiter};
 use turbojet::gas::{Gas, GasSpec};
 use turbojet::map::ComponentMap;
 use turbojet::matcher::Branch;
+use turbojet::two_spool_transient::BelowCeiling;
 use turbojet::stator_transient::{
     Ramp, ScheduledStatorCore, ScheduledStatorTransient, StatorArm, StatorLeg, StatorSchedule,
 };
 use turbojet::two_spool::{build_two_spool_turbojet, Spool, TwoSpoolEngine, TwoSpoolLosses};
+
+#[path = "common/schedule_check.rs"]
+mod common_stop;
+use common_stop::Stop;
 
 // ---------------------------------------------------------------------------- the grid
 const REAL: TwoSpoolLosses = TwoSpoolLosses {
@@ -496,6 +501,67 @@ fn the_floor_is_disarmed_inside_the_band_and_tautological_above_it() {
         assert!(r.credit.abs() < 1e-12, "{r:?}");      // rung 60's tautology, exact
         assert!(!r.disarmed, "{r:?}");
     }
+}
+
+/// **THE TABLE'S RUN LENGTHS (2026-10-14).** The floor table is marched with the
+/// schedule-check repair on (`FuelLimiters::below_ceiling`). Every armed march runs to the end,
+/// and so does every reference march but the top two — 0.43, just inside the band's upper edge
+/// (0.4339), and 0.46 above it. Each of those ends on the FLOOR'S OWN refusal — the cut has slowed the engine until no fuel this side
+/// of flame-out holds the floor — read off the failing call (`common/schedule_check.rs`), not
+/// guessed. Without the repair the 0.43 one stopped EARLIER, on rung 43's every-step check; the
+/// 0.46 one is the same march either way. The re-derivation moves `removed` and nothing a verdict
+/// reads: `m_i`, `min_phi` and `credit` are the old route's, bit for bit.
+#[test]
+fn the_reference_runs_above_the_band_end_on_the_floors_own_refusal() {
+    let (fl, rp) = (flight(), ramp(0.5, DS));
+    let m = bt(&LeverArm::default());
+    let grid = [0.34, 0.36, 0.40, 0.43, 0.46];
+    let d = m.floor_dichotomy(&fl, &rp, &bled(), &grid, Spool::Lp, None);
+    let full = d.npts_full;
+    assert_eq!(full, ((rp.r + rp.s_settle) / rp.ds).round() as usize + 1);
+    let (reference, armed) = m.isolating(&bled(), None);
+    let cmap = m.arming().design_map(Spool::Lp);
+    let mut ended = Vec::new();
+    for row in &d.rows {
+        assert_eq!(row.npts_both, full, "the armed march at sm={} ran to the end", row.sm);
+        let lim = SurgeLimiter::from_margin(&cmap, Spool::Lp, row.sm);
+        let sl = StatorLeg { accel: None, surge: Some(Floor::Phi(lim)), tt4_max: None };
+        let new = {
+            let _on = BelowCeiling::set(&reference.fuel.inner, true);
+            reference.stator_march(&fl, &rp, None, &sl).0
+        };
+        let old = reference.stator_march(&fl, &rp, None, &sl).0;
+        assert_eq!(new.len(), row.npts_fuel);
+        let why_new = common_stop::stop_of(&reference, &fl, &rp, lim, true, &new, full);
+        let why_old = common_stop::stop_of(&reference, &fl, &rp, lim, false, &old, full);
+        if row.npts_fuel == full {
+            assert_eq!((why_new, why_old), (Stop::Ran, Stop::Ran), "sm={}", row.sm);
+            continue;
+        }
+        ended.push(row.sm);
+        let Stop::Other(msg) = &why_new else { panic!("sm={}: {why_new:?}", row.sm) };
+        assert!(msg.contains("UNREACHABLE"), "sm={}: {msg}", row.sm);
+        // The old route: the schedule check first where it fired, else the very same march.
+        let old_cell = reference.cell(&fl, &rp, Spool::Lp, &sl);
+        match why_old {
+            Stop::ScheduleCheck(_) => {
+                assert!(old.len() < new.len(), "sm={}: the repair carried it further", row.sm);
+                assert!(row.removed_fuel > old_cell.fuel_removed);
+            }
+            Stop::Other(m_old) => {
+                assert_eq!(&m_old, msg);
+                assert_eq!(old.len(), new.len());
+                assert_eq!(row.removed_fuel.to_bits(), old_cell.fuel_removed.to_bits());
+            }
+            Stop::Ran => panic!("sm={}: the old route ran to the end", row.sm),
+        }
+        // What the verdicts read did not move.
+        assert_eq!(row.m_i_fuel.to_bits(), old_cell.m_i.to_bits(), "sm={}", row.sm);
+        assert_eq!(row.min_phi_fuel.to_bits(), old_cell.min_phi.to_bits(), "sm={}", row.sm);
+        let old_both = armed.cell(&fl, &rp, Spool::Lp, &sl);
+        assert_eq!(row.credit.to_bits(), (old_both.m_i - old_cell.m_i).to_bits(), "sm={}", row.sm);
+    }
+    assert_eq!(ended, vec![0.43, 0.46], "exactly the top two reference marches end early");
 }
 
 /// The band exists BECAUSE the valve buys `phi`, so its width must track `b_max` — and vanish at

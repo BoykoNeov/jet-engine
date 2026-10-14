@@ -1491,10 +1491,12 @@ pub struct FuelLimiters<'a> {
     pub lag: Option<AsymmetricLag>,
     /// NOT A RUNG (2026-10-10). Where the SCHEDULED fuel has no operating point, decide the
     /// min-select from the solvable ceiling below it ([`r43_cut_below_ceiling`]) instead of
-    /// stopping the march. `false` is the shipped march, bit for bit — and it must stay the
-    /// default: rung 58's floor dichotomy (rung 63's table) marches a floor whose run STOPS on this
-    /// very check, and its diagnostics read the scheduled instant at every recorded point. The
-    /// sandbox's Controls view switches it on.
+    /// stopping the march. `false` is the shipped march, bit for bit, and it stays the default:
+    /// a census of every test program (2026-10-14, sandbox plan § 14.4) found shipped marches
+    /// stopping on this check in rungs 49, 63, 64 and 66–73. Switched on everywhere, it moves
+    /// those rungs' published numbers (rung 64's fuel bill by up to ~60 %), and it breaks the
+    /// reduce to rung 65, whose own marcher has no ceiling. ON in the sandbox's Controls view and
+    /// in rung 63's `floor_dichotomy` (through the core's carrier), the one table re-derived so far.
     pub below_ceiling: bool,
 }
 

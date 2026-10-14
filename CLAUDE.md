@@ -165,6 +165,7 @@ Never re-open one, and never re-enumerate them here.
 - "Earned at design" over `π_c` (`docs/rung29-pi-c-margin.md`, NOT protective) and `M0` (`docs/rung29-M0-margin.md`, monotone-protective).
 - `β<1` over `π_c` — `docs/rung28-beta-margin.md` (β pressure-invariant; higher `π_c` protective).
 - Two solver walls REPAIRED 2026-10-10: rung 34's march low wall, rung 31's turbine wall (an oracle RULE) — sandbox plan § 14.
+- Rung 63's floor table RE-DERIVED with `below_ceiling` on (2026-10-14) — verdicts stand; its spec § 3.
 
 **Still OPEN — the live to-build list:**
 - **The real spatial / transported-CFD PDF** — the standing mixing ceiling (22–24 are a Gaussian-plume cartoon; needs an anchored SCALE + spread law).
@@ -172,8 +173,7 @@ Never re-open one, and never re-enumerate them here.
 - **Detailed Fenimore** (`CH+N₂→HCN`) and **super-eq-O radical decay** — need new species / a relaxing pocket.
 - **Reacting-gas fuel control** (35/43 defer — the forward burner asserts against an equilibrium gas).
 - **The subsonic / unchoked LP branch** in the two-spool solves (38 flags, unsolved) and its **transient**.
-- **Rung 43's march** stops where the SCHEDULED fuel has no operating point; fixed only behind `below_ceiling` (default OFF, sandbox ON) — sandbox plan § 14.3.
-- **Rung 58's floor dichotomy** (rung 63's table) is published from a march that STOPS on that check — re-derive with it on.
+- **Rung 43's march** stops where the SCHEDULED fuel has no operating point; `below_ceiling` fixes it (default OFF; ON in sandbox + rung 63's table). ON everywhere moves 64–73: sandbox plan § 14.4.
 - **Fuel + bleed + STATOR** on one plant (rung 63's seam, untouched by 64/65).
 - **Off-design at a new ALTITUDE**: every matcher (1- and 2-spool, bleed) keeps the DESIGN ambient as nozzle back-pressure (`p_ambient`); shipped callers hold `p0` fixed. Sandbox overrides per flight — `docs/plans/sandbox-plan.md` § 10.8.
 - **Rungs 69–85's seams — in each rung's spec, not here.** `n`=4 needs a 4th non-fuel lever or a non-`min` composition; every route TRIED (72–76, 80) is CLOSED.

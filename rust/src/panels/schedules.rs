@@ -465,12 +465,22 @@ pub fn fuel_bleed_table(p: &mut Printer, d: &Design) {
                               Spool::Lp, None);
     p.print(pyf!("    band in sm = [{:.4f}, {:.4f}]   min phi: ref {:.5f}, armed {:.5f}",
                  q.band.0, q.band.1, q.min_phi_ref, q.min_phi_armed));
-    p.print(pyf!("    {:>5} {:>8} {:>14} {:>14} {:>11}", "sm", "phi_lim", "removed(fuel)",
-                 "removed(both)", "credit"));
+    p.print(pyf!("    {:>5} {:>8} {:>14} {:>14} {:>11} {:>10} {:>10}", "sm", "phi_lim",
+                 "removed(fuel)", "removed(both)", "credit", "run(fuel)", "run(both)"));
+    // Where a floored march ends (2026-10-14): `full`, or the `s` of its last point.
+    let run = |n: usize| if n == q.npts_full {
+        "full".to_string()
+    } else {
+        pyf!("ends {:.3f}", q.ds * (n - 1) as f64)
+    };
     for row in &q.rows {
-        p.print(pyf!("    {:5.2f} {:8.5f} {:14.4e} {:14.4e} {:+11.3e}",
-                     row.sm, row.phi_lim, row.removed_fuel, row.removed_both, row.credit));
+        p.print(pyf!("    {:5.2f} {:8.5f} {:14.4e} {:14.4e} {:+11.3e} {:>10} {:>10}",
+                     row.sm, row.phi_lim, row.removed_fuel, row.removed_both, row.credit,
+                     run(row.npts_fuel), run(row.npts_both)));
     }
+    p.print("    An 'ends' run stops early: the floor cuts fuel until the engine slows toward");
+    p.print("    flame-out and no fuel can hold the floor (marched with the schedule-check repair");
+    p.print("    on, 2026-10-14). removed(...) sums only the run that exists.");
     p.print("    Inside the band the valve DISARMS the floor exactly (and the armed cell is");
     p.print("    bit-for-bit its own leg-free march); above it both bind, the floor pins the");
     p.print("    currency, and the valve's credit is exactly zero -- rung 60's tautology.");

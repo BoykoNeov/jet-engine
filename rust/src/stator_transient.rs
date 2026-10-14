@@ -950,8 +950,10 @@ pub fn r57_stator_march(
             mf_lo + (mf_hi - mf_lo) * (s / r)
         }
     };
-    let traj = ft.integrate_fuel(flight, sched, nu0, ramp.r + ramp.s_settle, ramp.ds,
-                                 &leg.limiters());
+    // `below_ceiling` from the core's carrier (2026-10-14): `false` except inside rung 63's
+    // `floor_dichotomy`, so every other march is the one it was.
+    let lim = FuelLimiters { below_ceiling: ft.inner.below_ceiling.get(), ..leg.limiters() };
+    let traj = ft.integrate_fuel(flight, sched, nu0, ramp.r + ramp.s_settle, ramp.ds, &lim);
     (traj, nu0)
 }
 
@@ -2090,7 +2092,13 @@ impl ScheduledStatorCore {
         let pi_b = self.fuel.inner.inner.base.pi_b;
         let mut out = Vec::with_capacity(traj.len());
         for p in traj {
-            let i = self.fuel.instant_fuel(flight, p.nu_lp, p.nu_hp, p.mf_sched);
+            // A point the march reached past a scheduled fuel with no operating point
+            // (`FuelLimiters::below_ceiling`, 2026-10-14) has no `g`: NaN, which `s_eng`'s window
+            // test can never read as a crossing. Every march that ran before never reaches it.
+            let Ok(i) = self.fuel.try_instant_fuel(flight, p.nu_lp, p.nu_hp, p.mf_sched) else {
+                out.push((p.s, f64::NAN));
+                continue;
+            };
             let g = if let Some(accel) = leg.accel {
                 p.mf_sched - accel.cap(i.base.close.n_hp, i.base.close.pt4 / pi_b)
             } else if let Some(floor) = leg.surge.as_ref() {

@@ -83,7 +83,31 @@ fn compare(label: &str, want: &str, got: &str) -> Result<(), String> {
 /// marched in, the dispatch reaches the subsonic thrust guard itself, and the segment is the
 /// golden's own bytes again — Python's SUB-IDLE text, now reached by measurement rather than by
 /// coincidence (`docs/rung33-spec.md` § The SUB-IDLE label).
+///
+/// * 2026-10-14 — rung 63's floor table, re-derived with the schedule-check repair on
+///   (`docs/rung63-spec.md` § 3). The 0.43 reference march stopped on rung 43's every-step check at
+///   `s` = 0.955 and now runs to 1.125, so its `removed(fuel)` moves (1.3074e-02 → 1.6567e-02); the
+///   top two reference marches (0.43, 0.46) end early on the floor's own refusal, now said in two
+///   columns and three lines. Every other number in the table is Python's.
 const RECUTS: &[(&str, &str, &str)] = &[
+    (
+        "print_fuel_bleed_table",
+        "       sm  phi_lim  removed(fuel)  removed(both)      credit
+     0.36  0.74800     7.1077e-04     0.0000e+00  +6.894e-02
+     0.40  0.77000     1.1046e-02     0.0000e+00  +3.074e-02
+     0.43  0.78650     1.3074e-02     0.0000e+00  +3.497e-03
+     0.46  0.80300     8.2290e-03     8.5597e-04  -2.220e-16
+",
+        "       sm  phi_lim  removed(fuel)  removed(both)      credit  run(fuel)  run(both)
+     0.36  0.74800     7.1077e-04     0.0000e+00  +6.894e-02       full       full
+     0.40  0.77000     1.1046e-02     0.0000e+00  +3.074e-02       full       full
+     0.43  0.78650     1.6567e-02     0.0000e+00  +3.497e-03 ends 1.125       full
+     0.46  0.80300     8.2290e-03     8.5597e-04  -2.220e-16 ends 0.630       full
+    An 'ends' run stops early: the floor cuts fuel until the engine slows toward
+    flame-out and no fuel can hold the floor (marched with the schedule-check repair
+    on, 2026-10-14). removed(...) sums only the run that exists.
+",
+    ),
     (
         "plot_ts_diagram",
         "\nT–s diagram (ideal vs real) written to ts_diagram.png\n",

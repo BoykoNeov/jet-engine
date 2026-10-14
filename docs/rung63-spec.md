@@ -269,14 +269,27 @@ incidence, both exact; with `v ≡ 0` those two collapse onto each other, and th
 **two** regimes — with a boundary that is not fitted, because it is the two plants' own
 minimum `φ`:
 
-| `sm` | `φ_lim` | `removed` (fuel) | `removed` (both) | lever's credit |
-|---|---|---|---|---|
-| 0.30 | 0.71500 | 0.0 | 0.0 | *(leg dormant on both — no composite)* |
-| 0.34 | 0.73700 | 1.49e−5 | **0.0 exactly** | DISARMED |
-| 0.36 | 0.74800 | 7.11e−4 | **0.0 exactly** | DISARMED |
-| 0.40 | 0.77000 | 1.10e−2 | **0.0 exactly** | DISARMED |
-| 0.43 | 0.78650 | 1.31e−2 | **0.0 exactly** | DISARMED |
-| 0.46 | 0.80300 | 8.23e−3 | 8.56e−4 | **−1.33e−15 — the tautology** |
+| `sm` | `φ_lim` | `removed` (fuel) | `removed` (both) | lever's credit | fuel run |
+|---|---|---|---|---|---|
+| 0.30 | 0.71500 | 0.0 | 0.0 | *(leg dormant on both — no composite)* | full |
+| 0.34 | 0.73700 | 1.49e−5 | **0.0 exactly** | DISARMED | full |
+| 0.36 | 0.74800 | 7.11e−4 | **0.0 exactly** | DISARMED | full |
+| 0.40 | 0.77000 | 1.10e−2 | **0.0 exactly** | DISARMED | full |
+| 0.43 | 0.78650 | 1.66e−2 *(was 1.31e−2)* | **0.0 exactly** | DISARMED | **ends at `s` = 1.125** |
+| 0.46 | 0.80300 | 8.23e−3 | 8.56e−4 | **−1.33e−15 — the tautology** | **ends at `s` = 0.630** |
+
+Every armed ("both") march runs to the end (`s` = 1.7). **The two `fuel` marches at the top of
+the grid do not** (re-derived 2026-10-14). Both end on the floor's own refusal. To hold `φ` that
+high, the leg cuts fuel until the engine slows toward flame-out (`Tt4` ≈ 560 K), and then no fuel
+holds the floor (*"floor … UNREACHABLE"*). Until 2026-10-14 the 0.43 march stopped earlier, at
+`s` = 0.955, on rung 43's every-step schedule check: the solver's limit, not the engine's. It
+now runs on behind `FuelLimiters::below_ceiling`, which `floor_dichotomy` switches on (sandbox
+plan § 14.3), and its `removed` moved from 1.31e−2 to 1.66e−2. **So `removed` is a sum over the
+run that exists**, and the two top rows are not comparable. 0.46 removes *less* than 0.43 only
+because it stops sooner. Nothing a verdict reads moved: `m_i`, `min φ` and the credit are the
+old route's, bit for bit, and every verdict reads `removed` only as `== 0` or `> 0`. The stop
+reasons are read off the failing call, not guessed (`tests/rung63.rs`,
+`the_reference_runs_above_the_band_end_on_the_floors_own_refusal`).
 
 The disarming band is `sm` ∈ **[0.337167, 0.433944]**, whose edges are exactly
 `min φ(reference)` = 0.735442 and `min φ(armed)` = 0.788669 over `φ_surge` = 0.55. Inside it,

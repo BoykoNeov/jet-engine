@@ -66,7 +66,7 @@ use crate::stator_transient::{
 };
 use crate::two_spool::{Spool, TwoSpoolEngine};
 use crate::two_spool_transient::{
-    CloseState, Instant2, TwoSpoolTransientCore, TwoSpoolTransientHooks,
+    BelowCeiling, CloseState, Instant2, TwoSpoolTransientCore, TwoSpoolTransientHooks,
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -1663,6 +1663,11 @@ pub struct FloorRow {
     pub removed_fuel: f64,
     pub removed_both: f64,
     pub credit: f64,
+    /// How many points each floored march recorded, against [`FloorDichotomy::npts_full`]. A
+    /// march that ends early ends on a step that has no answer; `removed_*` is summed over the
+    /// run that EXISTS, so two rows' `removed` are comparable only where both ran in full.
+    pub npts_fuel: usize,
+    pub npts_both: usize,
     /// DORMANT on the armed plant means **BIT-FOR-BIT its own leg-free march** — the strongest
     /// available witness, and the one a tolerance would blur.
     pub disarmed: bool,
@@ -1678,6 +1683,8 @@ pub struct FloorDichotomy {
     pub min_phi_ref: f64,
     pub min_phi_armed: f64,
     pub band: (f64, f64),
+    /// The points a march that runs to the end records (both leg-free marches do).
+    pub npts_full: usize,
     pub rows: Vec<FloorRow>,
 }
 
@@ -1944,11 +1951,21 @@ impl ScheduledStatorCore {
     ///
     /// `s_eng` is deliberately NOT reported: a floor above the initial `phi` is violated from
     /// `s = 0`, where `s_eng` finds no upward crossing and returns NaN.
+    ///
+    /// **RE-DERIVED 2026-10-14 WITH `below_ceiling` ON** (both plants, every march here). Two of
+    /// the reference plant's floored marches stopped early: one on rung 43's every-step schedule
+    /// check (the solver's limit — it now runs on), and both then on the floor's own refusal,
+    /// where the cut has starved the engine and no fuel holds the floor. A leg-free march never
+    /// reaches the switch, and a floored one that ran before is the same march bit for bit. The
+    /// verdicts read `removed == 0` / `> 0` and survive; the run lengths are now REPORTED
+    /// (`npts_*`), since `removed` is a sum over whatever ran.
     pub fn floor_dichotomy(
         &self, flight: &FlightCondition, ramp: &Ramp, lever: &LeverArm, sm_grid: &[f64],
         spool: Spool, neighbour: Option<&LeverArm>,
     ) -> FloorDichotomy {
         let (reference, armed) = self.isolating(lever, neighbour);
+        let _on_ref = BelowCeiling::set(&reference.fuel.inner, true);
+        let _on_arm = BelowCeiling::set(&armed.fuel.inner, true);
         let cmap = self.arming().design_map(spool);
         let free = StatorLeg::default();
         let free_ref = reference.cell(flight, ramp, spool, &free);
@@ -1968,6 +1985,8 @@ impl ScheduledStatorCore {
                 removed_fuel: cf.fuel_removed,
                 removed_both: cb.fuel_removed,
                 credit: cb.m_i - cf.m_i,
+                npts_fuel: cf.npts,
+                npts_both: cb.npts,
                 disarmed: cb.fuel_removed == 0.0 && cf.fuel_removed > 0.0
                     && cb.m_i == free_arm.m_i && cb.min_phi == free_arm.min_phi,
             }
@@ -1981,6 +2000,7 @@ impl ScheduledStatorCore {
             min_phi_armed: free_arm.min_phi,
             band: (free_ref.min_phi / cmap.phi_surge - 1.0,
                    free_arm.min_phi / cmap.phi_surge - 1.0),
+            npts_full: free_ref.npts,
             rows,
         }
     }

@@ -140,8 +140,23 @@ use turbojet::stator_transient::{
 use turbojet::two_spool::{build_two_spool_turbojet, Spool, TwoSpoolEngine, TwoSpoolLosses};
 use turbojet::two_spool_transient::{CloseState, Instant2};
 
+#[path = "common/schedule_check.rs"]
+mod schedule_check;
+use schedule_check::{stop_of, Stop};
+
 const ORACLE_MAIN: &str = include_str!("../oracle/slice_w_pypy.tsv");
 const ORACLE_CPYTHON: &str = include_str!("../oracle/slice_w_cpython.tsv");
+
+/// The keys the schedule-check licence names (section E), MEASURED 2026-10-14 — not predicted:
+/// the prediction was the two `row3/removed_fuel` keys of the levers whose reference is the bare
+/// plant. The stator-armed plants' floored marches also stop on the check, at 0.34 and 0.43.
+const LICENSED: [&str; 5] = [
+    "E/fd/bled/row3/removed_fuel",
+    "E/fd/stat/row0/removed_both",
+    "E/fd/stat/row3/removed_fuel",
+    "E/fd/bled_nb_stat/row0/removed_fuel",
+    "E/fd/bled_nb_stat/row3/removed_both",
+];
 
 /// The canonical quiet NaN both sides emit — see the header.
 const NAN_BITS: u64 = 0x7FF8_0000_0000_0000;
@@ -176,12 +191,15 @@ struct Cmp {
     flips: Vec<String>,
     /// Drifts that landed inside `is_sum_exempt`. Counted so the exemption can be shown LIVE.
     exempt_hits: Vec<String>,
+    /// Keys held to Python through the UNCHANGED route under the schedule-check licence
+    /// (section E's floor table). Pinned in `finish` so the licence can neither die nor widen.
+    licensed: Vec<String>,
 }
 
 impl Cmp {
     fn new(py: BTreeMap<String, u64>) -> Self {
         Cmp { py, seen: BTreeSet::new(), bad: Vec::new(), cpython: false, drifts: Vec::new(),
-              flips: Vec::new(), exempt_hits: Vec::new() }
+              flips: Vec::new(), exempt_hits: Vec::new(), licensed: Vec::new() }
     }
 
     /// A float, as its bits — **except a NaN, which is canonicalised on both sides.** The header
@@ -232,6 +250,9 @@ impl Cmp {
     }
 
     fn finish(&self, arm: &str) {
+        // Pinned from the measurement (2026-10-14): which keys the licence names. A different set
+        // means the march family it was measured on has changed — re-measure, never re-type.
+        assert_eq!(self.licensed, LICENSED, "the schedule-check licence named a different set");
         let missed: Vec<&String> = self.py.keys().filter(|k| !self.seen.contains(*k)).collect();
         if self.cpython {
             // THE EXEMPTION IS CHECKED FROM BOTH ENDS. Its size is pinned so it cannot quietly
@@ -979,7 +1000,38 @@ fn section_e(c: &mut Cmp) {
         c.f(&format!("{p}/band_lo"), fd.band.0);
         c.f(&format!("{p}/band_hi"), fd.band.1);
         c.d(&format!("{p}/rows"), fd.rows.len() as u64);
+        // THE SCHEDULE-CHECK LICENCE (2026-10-14). `floor_dichotomy` now marches with the
+        // schedule-check repair on (`docs/rung63-spec.md` § 3), which changes a march ONLY where
+        // the old one stopped on rung 43's every-step check. Such a march is NAMED here by that
+        // physical test, re-run through `common/schedule_check.rs` on the unchanged route — and its
+        // `removed_*` key is then held to Python THROUGH that unchanged route, while the new value
+        // must have MOVED. Every other key, on every row, is the new table's own, bit-gated.
+        let (reference, armed) = m.isolating(&lever, nb.as_ref());
+        let cmap = m.arming().design_map(Spool::Lp);
+        let old_removed = |plant: &ScheduledStatorCore, sl: &StatorLeg<'_>, lim: SurgeLimiter|
+         -> Option<f64> {
+            let rp = ramp(0.5, DS_63);
+            let (traj, _) = plant.stator_march(&fl, &rp, None, sl);
+            match stop_of(plant, &fl, &rp, lim, false, &traj, fd.npts_full) {
+                Stop::ScheduleCheck(_) => Some(plant.cell(&fl, &rp, Spool::Lp, sl).fuel_removed),
+                _ => None,
+            }
+        };
         for (i, row) in fd.rows.iter().enumerate() {
+            let lim = SurgeLimiter::from_margin(&cmap, Spool::Lp, row.sm);
+            let sl = StatorLeg { accel: None, surge: Some(Floor::Phi(lim)), tt4_max: None };
+            let mut removed_fuel = row.removed_fuel;
+            let mut removed_both = row.removed_both;
+            if let Some(old) = old_removed(&reference, &sl, lim) {
+                assert!(row.removed_fuel != old, "{p}/row{i}: a named march did not move");
+                c.licensed.push(format!("{p}/row{i}/removed_fuel"));
+                removed_fuel = old;
+            }
+            if let Some(old) = old_removed(&armed, &sl, lim) {
+                assert!(row.removed_both != old, "{p}/row{i}: a named march did not move");
+                c.licensed.push(format!("{p}/row{i}/removed_both"));
+                removed_both = old;
+            }
             // THE ROWS ARE THE FLOOR-ARMED CELLS. `min_phi_ref`/`min_phi_armed` above come from
             // the leg-FREE cells and can never see a leg, and `row.sm` is the input grid echoed
             // back — a section carrying only those is structurally blind to every
@@ -988,8 +1040,8 @@ fn section_e(c: &mut Cmp) {
                            ("m_i_fuel", row.m_i_fuel), ("m_i_both", row.m_i_both),
                            ("min_phi_fuel", row.min_phi_fuel),
                            ("min_phi_both", row.min_phi_both),
-                           ("removed_fuel", row.removed_fuel),
-                           ("removed_both", row.removed_both), ("credit", row.credit)] {
+                           ("removed_fuel", removed_fuel),
+                           ("removed_both", removed_both), ("credit", row.credit)] {
                 c.f(&format!("{p}/row{i}/{k}"), v);
             }
             c.b(&format!("{p}/row{i}/disarmed"), row.disarmed);
