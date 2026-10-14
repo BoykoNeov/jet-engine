@@ -1140,3 +1140,47 @@ listed key by key before anything was licensed.
   reduce holds. Then re-derive the published numbers of rungs 64 and 66–73 (and 49's
   boundary gate), licensing each moved key by this same physical test. Other readers re-solve at
   `mf_sched` too (rungs 70–79's ledgers); the census lists the programs, not yet the readers.
+
+### 14.5 The switch-over, step A built and step B measured (2026-10-14)
+
+- **Step A (commit 6a60097):** the ceiling is in every rung-65+ marcher, each in its own shape
+  (rung 65's filter-then-fall-back via `r43_cut_below_ceiling`; the lagged fuel leg of 66/68/72
+  via `try_clip_caps`; the governor of 67/70/71/72 via `try_topping_required_below`; the demand
+  family 74–79 via `cap_free_gated` and the core's carrier, held for the march). One source per
+  march: `lagged_bleed::ceiling_on` refuses a carrier ON with the limiters OFF. Default OFF; the
+  full gate bit-exact.
+- **Step B — the census, forced ON everywhere** (throwaway worktree; every ceiling search logged
+  with its test). 24 of 2 403 tests fail. Every ceiling search found a ceiling. The demand
+  family's marches (74–79) never reach it on a shipped grid, and rungs 70/71's records do not move.
+- **THE REDUCE HOLDS.** Rungs 66/67 → 65 on the unfloored machine: 76 = 76 = 76 points, every
+  key equal. § 14.4's "breaks the reduce" was the test's PINNED length (68), not the reduce.
+- **EVERY MOVE IS A RUN THAT USED TO STOP ON THE SOLVER AND NOW RUNS ON.** At the points both
+  runs share the values are bit-identical (checked point by point for rung 64's four moved runs,
+  and key by key in every oracle). What moves is appended points and the totals / end readings
+  taken over the run. Per rung:
+  - **64** — the bare-plant floor runs (§ 3's denominators): shaped 136 → 151 points, tilted
+    145 → 197; `removed_alone` 8.94e−3 → 1.05e−2 (shaped), 9.06e−3 → 1.44e−2 (tilted); the
+    control 1.02e−2 → 1.23e−2. The armed side does not move, so § 3's contrast only widens.
+  - **65** — the `b0` continuum (§ 3). The members below `b_cmd(0)` stopped on the SCHEDULE
+    CHECK (0.5: 195 points; 0.727: 251) while the natural member ran 341, so the published
+    table (1.326e−2 … 2.070e−2, "56 % spread") and the gated ratio 1.166 compare runs of
+    different lengths — true with the switch OFF too. On a common window the ORDER INVERTS:
+    lower `b0` withholds MORE (off, first 195 points: 1.005e−2 / 1.014e−2 / 1.206e−2 / 1.326e−2
+    for 1.0 / 0.99 / 0.727 / 0.5; on, first 235: 1.284e−2 / 1.299e−2 / 1.580e−2 / 1.736e−2).
+    Switched on, the members stop on the floor's OWN refusal (rung 49: no fuel restores it).
+    The headline — the frozen valve, the continuum — holds; the materiality holds (+32–35 %);
+    the published direction and the ratio gate are artefacts.
+  - **66–69, 72, 73** — one march: rung 64's fuel-only reference cell, re-read by each rung,
+    216 → 231 points (end `s` 1.075 → 1.15). Its `removed` 1.46e−2 → 1.62e−2, its end readings
+    later in time. No ledger, rank, zero-count or armed-march key moves.
+  - **58/60** — the `phi` floor on the stator-armed plant (smoke V): 31 → 35 points, `removed`
+    2.10e−2 → 2.50e−2. Not published; the credit, interaction and pinned keys do not move.
+  - **CLI** — one panel, rung 65's, two lines (the 0.727 row and the 1.166 ratio sentence).
+- **Readers.** Every reader that re-solves at `mf_sched` (rungs 68/70's `R`, 72's `F`/`R`, both
+  boundary asserts) was logged on failure across the whole forced gate: ZERO failures (log
+  verified by a positive control). They never visit an appended point.
+- **Instrument-only failures** (would be re-scoped, not re-derived): rung 63's and slice W's
+  licence (`schedule_check.rs` re-runs the OFF route), `sandbox_controls`' on-vs-off comparison,
+  `slice_ag_dispatch`'s planted-defect reach test (the ceiling absorbs the planted early stop),
+  the stale page, and direct `integrate_fuel` callers built from `FuelLimiters::default()` while
+  the carrier is on (the guard firing as designed; a real flip changes both defaults).
