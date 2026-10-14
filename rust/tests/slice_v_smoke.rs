@@ -56,6 +56,9 @@
 //! [`R40`]: turbojet::two_spool_transient::R40
 //! [`ComponentMap`]: turbojet::map::ComponentMap
 
+#[path = "common/ceiling_rule.rs"]
+mod ceiling_rule;
+use turbojet::fuel_transient::CeilingDefault;
 use std::collections::{BTreeMap, BTreeSet};
 
 use turbojet::engine::FlightCondition;
@@ -89,6 +92,9 @@ fn load() -> BTreeMap<String, u64> {
 /// PYTHON's keys, so a field missing from the port is missing from the Rust emitter too, and a
 /// comparator that only checks the keys it is handed would pass in silence.
 struct Cmp {
+    /// Every value emitted, by key — the ON-vs-OFF licence reads it (`ceiling_rule`).
+    lenient: bool,
+    got: BTreeMap<String, u64>,
     py: BTreeMap<String, u64>,
     seen: BTreeSet<String>,
     bad: Vec<String>,
@@ -96,10 +102,14 @@ struct Cmp {
 
 impl Cmp {
     fn new() -> Self {
-        Cmp { py: load(), seen: BTreeSet::new(), bad: Vec::new() }
+        Cmp { got: BTreeMap::new(), lenient: false, py: load(), seen: BTreeSet::new(), bad: Vec::new() }
     }
     fn f(&mut self, key: &str, got: f64) {
-        let want = *self.py.get(key).unwrap_or_else(|| panic!("no golden for {key}"));
+        self.got.insert(key.to_string(), got.to_bits());
+        let Some(&want) = self.py.get(key) else {
+            assert!(self.lenient, "no golden for {key}");
+            return;
+        };
         self.seen.insert(key.to_string());
         if got.to_bits() != want {
             self.bad.push(format!(
@@ -108,7 +118,11 @@ impl Cmp {
         }
     }
     fn d(&mut self, key: &str, got: u64) {
-        let want = *self.py.get(key).unwrap_or_else(|| panic!("no golden for {key}"));
+        self.got.insert(key.to_string(), got);
+        let Some(&want) = self.py.get(key) else {
+            assert!(self.lenient, "no golden for {key}");
+            return;
+        };
         self.seen.insert(key.to_string());
         if got != want {
             self.bad.push(format!("{key}: rust {got} != py {want}"));
@@ -269,8 +283,13 @@ fn put_cell(c: &mut Cmp, p: &str, cell: &CellRead) {
 // =============================================================================================
 #[test]
 fn slice_v_smoke_is_bit_exact_against_pypy() {
+    let _off = CeilingDefault::set(false);
+    emit(Cmp::new()).finish();
+}
+
+/// The whole emitter, returning its `Cmp`.
+fn emit(mut cmp: Cmp) -> Cmp {
     scount::reset();
-    let mut cmp = Cmp::new();
     let c = &mut cmp;
 
     // --- A: the two VALUE TYPES, before any march touches them ------------------------------
@@ -714,7 +733,7 @@ fn slice_v_smoke_is_bit_exact_against_pypy() {
                    "_read's caller-supplied v_of arm is DEAD on this grid; if it fires, the                     port routed a reader through it that Python does not");
     }
 
-    cmp.finish();
+    cmp
 }
 
 /// **P1's SECOND HALF, MEASURED — AND THE `fn`-POINTER VERSION OF THIS TEST WAS VACUOUS.**
@@ -841,4 +860,17 @@ fn a_rung_43_object_never_dispatches_the_stator_table() {
                              ..Default::default() };
     let t2 = ft.integrate_fuel(&f, s, (eq.nu_lp, eq.nu_hp), r + SETTLE, DS, &lim);
     assert_eq!(t2.len(), traj.len());
+}
+
+/// **THE SHIPPED DEFAULT ONLY EXTENDS RUNS** (2026-10-14). The tests above hold the port to Python
+/// with the schedule-check switch OFF; this one runs the same emitter at the shipped default (ON)
+/// and licenses every difference by `common/ceiling_rule.rs`'s rule, against the MEASURED count.
+#[test]
+fn the_shipped_default_only_extends_runs() {
+    let off = {
+        let _off = CeilingDefault::set(false);
+        emit(Cmp::new()).got
+    };
+    let on = emit(Cmp { lenient: true, ..Cmp::new() }).got;
+    ceiling_rule::check("slice_v_smoke", &off, &on, (7, 4, 4));
 }

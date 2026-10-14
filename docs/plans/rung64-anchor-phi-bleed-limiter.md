@@ -363,6 +363,11 @@ BELOW the valve's set point, armed plant, `ds` = 0.005:
 | 0.794500 | 1.019138e−2 | **0.000000e+00** (exactly) |
 | 0.800000 (= the valve's) | 8.939858e−3 | 2.532218e−4 *(chatter)* |
 
+> 2026-10-14 — with the schedule-check switch ON (the shipped default since then) the bare
+> 0.7945 and 0.8000 rows read 1.226605e−2 and 1.051081e−2: those marches had stopped on rung 43's
+> schedule check and now run on, bit-identical where both runs reach (`docs/rung64-spec.md` § 3).
+> The 0.7725 row and the ARMED column do not move.
+
 Strictly below, the leg is exactly dormant on the armed plant while still biting hard on the
 bare one. The residual appears only at tangency. Gated as inertness + this control; the
 tangent value is asserted in neither direction.

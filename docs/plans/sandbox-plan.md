@@ -1184,3 +1184,40 @@ listed key by key before anything was licensed.
   `slice_ag_dispatch`'s planted-defect reach test (the ceiling absorbs the planted early stop),
   the stale page, and direct `integrate_fuel` callers built from `FuelLimiters::default()` while
   the carrier is on (the guard firing as designed; a real flip changes both defaults).
+
+### 14.6 The switch ON by default (2026-10-14, user decision after § 14.5)
+
+- **The flip.** `FuelLimiters::default()` and every new machine's carrier take
+  `fuel_transient::ceiling_default()` — `true` unless a `CeilingDefault::set(false)` guard is in
+  scope on this thread. The guard must enclose the machines' construction as well as their
+  marches. Rung 63's `floor_dichotomy` and the sandbox still set it ON explicitly, so the OFF
+  route is exactly the pre-flip code.
+- **Before the flip, the branches no grid reached** (the advisor's blocker). A census of the
+  forced-on gate, every ceiling search tagged with its call chain, showed shipped grids exercising
+  rungs 43, 65, 68 and 72's branches and NEVER rung 66's lagged fuel leg, rungs 67/70's governor,
+  or rung 74's demand cells (the last only inside a planted-defect test). `tests/ceiling_branches.rs`
+  builds one point each where the OFF march stops on the check (a 0.86 floor and a low valve start
+  for 66; a 1600 K schedule under a 1100/1200 K redline for 67, 70 and 74) and gates: OFF shorter,
+  shared points bit-identical, the scheduled instant unsolvable at the first ON-only point, ON to
+  the end (66: to the floor's own refusal, valve fully open).
+- **The oracles.** Each Python oracle runs its emitter with the switch OFF and is held to Python
+  exactly as before. A third test runs it at the default and licenses every difference by
+  `tests/common/ceiling_rule.rs`: no key vanishes (except a sampled trajectory's former end point,
+  superseded by a later one); a new key is a trajectory point; a changed key is a whole-run
+  reading (sum, extremum, count, end value). Counts pinned from the measured flip as (changed,
+  new, superseded): X 16/0/0, Y 6/0/0, Z 7/105/0, AA 4/68/34, AB 6/68/34, AD 6/0/0, AE 12/0/0,
+  W 0/0/0, X-smoke 8/0/0, V-smoke 7/4/4 — the census's numbers exactly. Rung 63's oracle does not
+  move at all.
+- **Published numbers that moved:** rung 64 § 3 (the bare-plant leg alone 8.94e−3 → 1.05e−2 and
+  the 0.7945 control 1.02e−2 → 1.23e−2; the 0.7725 control and every armed value unchanged) and
+  rung 65 § 3 (corrected first — its table compared unequal runs even with the switch OFF; at the
+  default the ±0.01 pair reads 1.292 over 309 points). The CLI's rung-65 panel is re-cut (two
+  entries). No verdict moved.
+- **Instruments re-scoped to the OFF route, not re-derived:** rung 63's top-two-runs test and slice
+  W's licence (their "old route" is now explicitly OFF), slice AG's planted-defect reach test, and
+  slice Z smoke's unfloored reduce grid (68 OFF, 76 at the default — the reduce holds at both).
+- **Found on the way, not traced:** one rung-70 machine REUSED for six marches in a row (switch
+  alternating OFF/ON, redline 1200 → 1100 → 1050 K) started its sixth march off-equilibrium
+  (`b` 0.036626 → 0.036640 at `s` = 0). With a fresh machine per march, OFF and ON agree bit for
+  bit at that point, in either order. Whether the reuse alone does it, without the switch, was not
+  measured. Every gate here builds a fresh machine per march.

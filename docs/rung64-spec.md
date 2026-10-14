@@ -184,6 +184,14 @@ result.** What is stable, and what the gate asserts:
   the armed plant (0.000000e+00 at both 0.7725 and 0.7945) while removing 1.87e−2 / 1.02e−2 on
   the bare one. The residual appears only at tangency.
 
+> **2026-10-14 — the schedule-check switch ON by default** (sandbox plan § 14.5–14.6). Two of
+> the BARE-plant marches in this section stopped on rung 43's every-step schedule check — the
+> solver's limit, not the engine's — and now run on: the leg alone 136 → 151 points (8.94e−3 →
+> 1.05e−2), the 0.7945 control 153 → 173 (1.02e−2 → 1.23e−2). At every point both runs reach the
+> values are bit-identical. The 0.7725 control and every ARMED number are unchanged, so the
+> contrast this section rests on — machine-zero against O(1e−2) — only widens. On the tilted map
+> the leg alone moves 9.06e−3 → 1.44e−2 (145 → 197 points) for the same reason.
+
 The degeneracy also has a cost worth recording: a single armed-plus-armed cell runs ~1e3× a
 normal one, because every one of those 60 iterations is an outer root over closures. **A
 limiter whose plant has been deleted does not fail — it grinds.**

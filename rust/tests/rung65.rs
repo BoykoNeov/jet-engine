@@ -480,7 +480,8 @@ fn the_degeneracy_is_conserved_a_marginal_mode_with_an_edge() {
     // rung 43's schedule check at 251 points against the natural member's 341, so the ratio
     // divided two different stretches, and the direction it read was the wrong one. Over the
     // first 251 points the LOWER member withholds MORE (1.243): a lower valve leaves more of the
-    // floor for the fuel leg to hold.
+    // floor for the fuel leg to hold. At the shipped default (the switch ON) the lower member
+    // runs on to 309 points, where the floor's own refusal ends it: 1.292 over those 309.
     assert_eq!(mm.common_n, mm.natural.npts.min(mm.moved_lo.npts));
     let ratio = mm.removed_common_lo / mm.removed_common_natural;
     assert!(ratio > 1.10, "{ratio}");

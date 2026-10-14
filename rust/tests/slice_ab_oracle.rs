@@ -67,6 +67,9 @@
 //! **Through a POSIX shell, not PowerShell 5.1** — it writes a UTF-8 BOM that lands in front of
 //! the `#` on line 1, so the header parses as data. [[windows-tooling-file-hazards]].
 
+#[path = "common/ceiling_rule.rs"]
+mod ceiling_rule;
+use turbojet::fuel_transient::CeilingDefault;
 use std::collections::{BTreeMap, BTreeSet};
 
 use turbojet::bleed_transient::{BleedSchedule, LeverArm};
@@ -356,6 +359,8 @@ fn load(text: &str) -> BTreeMap<String, u64> {
 /// Accumulates every disagreement so ONE run reports them all, **and reports every golden key the
 /// Rust never asked for** — a field missing from the port is invisible until that half fires.
 struct Cmp {
+    /// Every value emitted, by key — the ON-vs-OFF licence reads it (`ceiling_rule`).
+    got: BTreeMap<String, u64>,
     py: BTreeMap<String, u64>,
     seen: BTreeSet<String>,
     bad: Vec<String>,
@@ -367,7 +372,7 @@ struct Cmp {
 
 impl Cmp {
     fn new(py: BTreeMap<String, u64>, cpython: bool) -> Self {
-        Cmp { py, seen: BTreeSet::new(), bad: Vec::new(), cpython,
+        Cmp { got: BTreeMap::new(), py, seen: BTreeSet::new(), bad: Vec::new(), cpython,
               exempted: BTreeSet::new(), drifts: Vec::new(), flips: Vec::new() }
     }
 
@@ -408,6 +413,7 @@ impl Cmp {
     }
 
     fn raw(&mut self, key: &str, got: u64, discrete: bool) {
+        self.got.insert(key.to_string(), got);
         assert!(self.seen.insert(key.to_string()), "the Rust emitted {key} twice");
         match self.py.get(key) {
             None => self.bad.push(format!("{key}: NO GOLDEN (the dump never emitted it)")),
@@ -781,7 +787,12 @@ fn point_bits(p: &FuelPoint) -> Vec<u64> {
 
 // ------------------------------------------------------------------------------------ the arms
 fn run(golden: &str, arm: &str, cpython: bool) {
-    let mut c = Cmp::new(load(golden), cpython);
+    let _off = CeilingDefault::set(false);
+    emit(Cmp::new(load(golden), cpython)).finish(arm);
+}
+
+/// The whole emitter, returning its `Cmp` — `run` finishes it, the default test reads `got`.
+fn emit(mut c: Cmp) -> Cmp {
     let fl = flight();
 
     // ------------------------------------------- A -- THE REDUCE, and BOTH SIDES' ABSOLUTES
@@ -1087,7 +1098,7 @@ fn run(golden: &str, arm: &str, cpython: bool) {
     c.b("K/1/holds", kd1.holds);
     c.b("K/1/tightest?", kd1.tightest.is_some());
 
-    c.finish(arm);
+    c
 }
 
 #[test]
@@ -1125,4 +1136,17 @@ fn the_half_is_a_complex_product_and_a_signed_zero_can_tell() {
 #[test]
 fn rung69_against_cpython_with_the_declared_exemption() {
     run(ORACLE_CPYTHON, "cpython", true);
+}
+
+/// **THE SHIPPED DEFAULT ONLY EXTENDS RUNS** (2026-10-14). The tests above hold the port to Python
+/// with the schedule-check switch OFF; this one runs the same emitter at the shipped default (ON)
+/// and licenses every difference by `common/ceiling_rule.rs`'s rule, against the MEASURED count.
+#[test]
+fn the_shipped_default_only_extends_runs() {
+    let off = {
+        let _off = CeilingDefault::set(false);
+        emit(Cmp::new(load(ORACLE_PYPY), false)).got
+    };
+    let on = emit(Cmp::new(load(ORACLE_PYPY), false)).got;
+    ceiling_rule::check("slice_ab_oracle", &off, &on, (6, 68, 34));
 }

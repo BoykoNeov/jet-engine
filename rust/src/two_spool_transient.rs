@@ -922,9 +922,13 @@ pub struct TwoSpoolTransientCore {
     pub gov_max: Cell<Option<f64>>,
     /// NOT A RUNG (2026-10-14). [`FuelLimiters::below_ceiling`] for the rung-57 stator march,
     /// carried here because `_stator_march` builds its limiters from a [`StatorLeg`] that has no
-    /// such field. Read ONLY by `r57_stator_march`; `false` leaves every march bit for bit. Set
-    /// only by [`BelowCeiling`], and only by rung 63's `floor_dichotomy` — the one shipped reader
-    /// re-derived with the switch on (`docs/rung63-spec.md` § 3).
+    /// such field; also read by rung 74's demand cells, which rung 74's marcher sets from its own
+    /// limiters for the march. Built from [`ceiling_default`] (ON); `false` is the
+    /// pre-2026-10-14 march, bit for bit. Rung 63's `floor_dichotomy` still sets it ON explicitly
+    /// ([`BelowCeiling`]), so its table stays the one re-derived in `docs/rung63-spec.md` § 3 even
+    /// under a `CeilingDefault::set(false)` oracle run.
+    ///
+    /// [`ceiling_default`]: crate::fuel_transient::ceiling_default
     ///
     /// [`FuelLimiters::below_ceiling`]: crate::fuel_transient::FuelLimiters
     /// [`StatorLeg`]: crate::stator_transient::StatorLeg
@@ -1333,7 +1337,7 @@ impl TwoSpoolTransientCore {
             sm_air: Cell::new(None),
             ref_: Cell::new(None),
             gov_max: Cell::new(None),
-            below_ceiling: Cell::new(false),
+            below_ceiling: Cell::new(crate::fuel_transient::ceiling_default()),
         }
     }
 

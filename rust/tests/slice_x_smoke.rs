@@ -41,6 +41,9 @@
 //! Regenerate the golden with
 //! `.venv\Scripts\python.exe rust\oracle\dump_slice_x_smoke.py > rust\oracle\slice_x_smoke_pypy.tsv`.
 
+#[path = "common/ceiling_rule.rs"]
+mod ceiling_rule;
+use turbojet::fuel_transient::CeilingDefault;
 use std::collections::{BTreeMap, BTreeSet};
 
 use turbojet::bleed_transient::{BleedSchedule, LeverArm};
@@ -70,6 +73,9 @@ fn load() -> BTreeMap<String, u64> {
 /// golden key the Rust never asked for**, because the dump enumerates PYTHON's keys and a field
 /// missing from the port would be missing from the Rust emitter too.
 struct Cmp {
+    /// Every value emitted, by key — the ON-vs-OFF licence reads it (`ceiling_rule`).
+    lenient: bool,
+    got: BTreeMap<String, u64>,
     py: BTreeMap<String, u64>,
     seen: BTreeSet<String>,
     bad: Vec<String>,
@@ -77,10 +83,14 @@ struct Cmp {
 
 impl Cmp {
     fn new() -> Self {
-        Cmp { py: load(), seen: BTreeSet::new(), bad: Vec::new() }
+        Cmp { got: BTreeMap::new(), lenient: false, py: load(), seen: BTreeSet::new(), bad: Vec::new() }
     }
     fn f(&mut self, key: &str, got: f64) {
-        let want = *self.py.get(key).unwrap_or_else(|| panic!("no golden for {key}"));
+        self.got.insert(key.to_string(), got.to_bits());
+        let Some(&want) = self.py.get(key) else {
+            assert!(self.lenient, "no golden for {key}");
+            return;
+        };
         self.seen.insert(key.to_string());
         if got.to_bits() != want {
             self.bad.push(format!(
@@ -89,7 +99,11 @@ impl Cmp {
         }
     }
     fn d(&mut self, key: &str, got: u64) {
-        let want = *self.py.get(key).unwrap_or_else(|| panic!("no golden for {key}"));
+        self.got.insert(key.to_string(), got);
+        let Some(&want) = self.py.get(key) else {
+            assert!(self.lenient, "no golden for {key}");
+            return;
+        };
         self.seen.insert(key.to_string());
         if got != want {
             self.bad.push(format!("{key}: rust {got} != py {want}"));
@@ -212,7 +226,12 @@ fn py_bill_key(k: &str) -> &str {
 
 #[test]
 fn rung64_matches_pypy_bit_for_bit() {
-    let mut c = Cmp::new();
+    let _off = CeilingDefault::set(false);
+    emit(Cmp::new()).finish();
+}
+
+/// The whole emitter, returning its `Cmp`.
+fn emit(mut c: Cmp) -> Cmp {
     let fl = flight();
     let rp = ramp(DS);
 
@@ -414,5 +433,18 @@ fn rung64_matches_pypy_bit_for_bit() {
     c.f("I/sibling_b_int", sib.bill_cell(&fl, &rp, false).b_int);
     c.b("I/sibling_b_int_is_zero", sib.bill_cell(&fl, &rp, false).b_int == 0.0);
 
-    c.finish();
+    c
+}
+
+/// **THE SHIPPED DEFAULT ONLY EXTENDS RUNS** (2026-10-14). The tests above hold the port to Python
+/// with the schedule-check switch OFF; this one runs the same emitter at the shipped default (ON)
+/// and licenses every difference by `common/ceiling_rule.rs`'s rule, against the MEASURED count.
+#[test]
+fn the_shipped_default_only_extends_runs() {
+    let off = {
+        let _off = CeilingDefault::set(false);
+        emit(Cmp::new()).got
+    };
+    let on = emit(Cmp { lenient: true, ..Cmp::new() }).got;
+    ceiling_rule::check("slice_x_smoke", &off, &on, (8, 0, 0));
 }

@@ -43,6 +43,9 @@
 //! C:\Python314\python.exe  rust\oracle\dump_slice_x.py > rust\oracle\slice_x_cpython.tsv
 //! ```
 
+#[path = "common/ceiling_rule.rs"]
+mod ceiling_rule;
+use turbojet::fuel_transient::CeilingDefault;
 use std::collections::{BTreeMap, BTreeSet};
 
 use turbojet::bleed_transient::{BleedSchedule, LeverArm};
@@ -77,6 +80,8 @@ fn load(text: &str) -> BTreeMap<String, u64> {
 /// Accumulates every disagreement so ONE run reports them all, **and reports every golden key the
 /// Rust never asked for** — a field missing from the port is invisible until that half fires.
 struct Cmp {
+    /// Every value emitted, by key — the ON-vs-OFF licence reads it (`ceiling_rule`).
+    got: BTreeMap<String, u64>,
     py: BTreeMap<String, u64>,
     seen: BTreeSet<String>,
     bad: Vec<String>,
@@ -89,7 +94,7 @@ struct Cmp {
 
 impl Cmp {
     fn new(py: BTreeMap<String, u64>) -> Self {
-        Cmp { py, seen: BTreeSet::new(), bad: Vec::new(), cpython: false, drifts: Vec::new(),
+        Cmp { got: BTreeMap::new(), py, seen: BTreeSet::new(), bad: Vec::new(), cpython: false, drifts: Vec::new(),
               flips: Vec::new() }
     }
 
@@ -107,6 +112,7 @@ impl Cmp {
     }
 
     fn raw(&mut self, key: &str, got: u64, discrete: bool) {
+        self.got.insert(key.to_string(), got);
         assert!(self.seen.insert(key.to_string()), "the Rust emitted {key} twice");
         match self.py.get(key) {
             None => self.bad.push(format!("{key}: NO GOLDEN (the dump never emitted it)")),
@@ -425,6 +431,7 @@ fn fmt(x: f64) -> String {
 
 #[test]
 fn rung64_matches_pypy_bit_for_bit() {
+    let _off = CeilingDefault::set(false);
     let mut c = Cmp::new(load(ORACLE_PYPY));
     sweep(&mut c);
     c.finish("pypy");
@@ -434,8 +441,25 @@ fn rung64_matches_pypy_bit_for_bit() {
 /// needs none of slice W's `sum()` exemption.
 #[test]
 fn rung64_matches_cpython_bit_for_bit_too() {
+    let _off = CeilingDefault::set(false);
     let mut c = Cmp::new(load(ORACLE_CPYTHON));
     c.cpython = true;
     sweep(&mut c);
     c.finish("cpython");
+}
+
+/// **THE SHIPPED DEFAULT ONLY EXTENDS RUNS** (2026-10-14). The tests above hold the port to Python
+/// with the schedule-check switch OFF; this one runs the same emitter at the shipped default (ON)
+/// and licenses every difference by `common/ceiling_rule.rs`'s rule, against the MEASURED count.
+#[test]
+fn the_shipped_default_only_extends_runs() {
+    let off = {
+        let _off = CeilingDefault::set(false);
+        let mut c = Cmp::new(load(ORACLE_PYPY));
+        sweep(&mut c);
+        c.got
+    };
+    let mut c = Cmp::new(load(ORACLE_PYPY));
+    sweep(&mut c);
+    ceiling_rule::check("slice_x_oracle", &off, &c.got, (16, 0, 0));
 }

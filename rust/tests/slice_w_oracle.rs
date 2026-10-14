@@ -118,6 +118,9 @@
 //! [`engagement_shift`]: turbojet::stator_transient::ScheduledStatorCore::engagement_shift
 //! [`set_point_bands`]: turbojet::stator_transient::ScheduledStatorCore::set_point_bands
 
+#[path = "common/ceiling_rule.rs"]
+mod ceiling_rule;
+use turbojet::fuel_transient::CeilingDefault;
 use std::collections::{BTreeMap, BTreeSet};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
@@ -181,6 +184,8 @@ fn is_sum_exempt(key: &str) -> bool {
 /// the Rust never asked for** — a field missing from the port is invisible until that half
 /// fires, so both halves panic together.
 struct Cmp {
+    /// Every value emitted, by key — the ON-vs-OFF licence reads it (`ceiling_rule`).
+    got: BTreeMap<String, u64>,
     py: BTreeMap<String, u64>,
     seen: BTreeSet<String>,
     bad: Vec<String>,
@@ -198,7 +203,7 @@ struct Cmp {
 
 impl Cmp {
     fn new(py: BTreeMap<String, u64>) -> Self {
-        Cmp { py, seen: BTreeSet::new(), bad: Vec::new(), cpython: false, drifts: Vec::new(),
+        Cmp { got: BTreeMap::new(), py, seen: BTreeSet::new(), bad: Vec::new(), cpython: false, drifts: Vec::new(),
               flips: Vec::new(), exempt_hits: Vec::new(), licensed: Vec::new() }
     }
 
@@ -225,6 +230,7 @@ impl Cmp {
     }
 
     fn raw(&mut self, key: &str, got: u64, discrete: bool) {
+        self.got.insert(key.to_string(), got);
         assert!(self.seen.insert(key.to_string()), "the Rust emitted {key} twice");
         match self.py.get(key) {
             None => self.bad.push(format!("{key}: NO GOLDEN (the dump never emitted it)")),
@@ -1011,6 +1017,8 @@ fn section_e(c: &mut Cmp) {
         let old_removed = |plant: &ScheduledStatorCore, sl: &StatorLeg<'_>, lim: SurgeLimiter|
          -> Option<f64> {
             let rp = ramp(0.5, DS_63);
+            // The UNCHANGED route, explicitly: since 2026-10-14 the machine's carrier defaults ON.
+            let _old = turbojet::two_spool_transient::BelowCeiling::set(&plant.fuel.inner, false);
             let (traj, _) = plant.stator_march(&fl, &rp, None, sl);
             match stop_of(plant, &fl, &rp, lim, false, &traj, fd.npts_full) {
                 Stop::ScheduleCheck(_) => Some(plant.cell(&fl, &rp, Spool::Lp, sl).fuel_removed),
@@ -1488,7 +1496,14 @@ fn section_k(c: &mut Cmp) {
 
 // ------------------------------------------------------------------------------------ the arms
 fn run(py: BTreeMap<String, u64>, cpython: bool, arm: &str) {
-    let mut c = Cmp::new(py);
+    let _off = CeilingDefault::set(false);
+    let mut c = emit(Cmp::new(py), cpython);
+    let _ = &mut c;
+    c.finish(arm);
+}
+
+/// Every section, returning the `Cmp` — `run` finishes it, the default test reads `got`.
+fn emit(mut c: Cmp, cpython: bool) -> Cmp {
     c.cpython = cpython;
     section_a(&mut c);
     section_b(&mut c);
@@ -1500,7 +1515,7 @@ fn run(py: BTreeMap<String, u64>, cpython: bool, arm: &str) {
     section_h(&mut c);
     section_j(&mut c);
     section_k(&mut c);
-    c.finish(arm);
+    c
 }
 
 #[test]
@@ -1514,4 +1529,17 @@ fn slice_w_oracle_is_bit_exact_against_pypy() {
 #[test]
 fn slice_w_oracle_is_bit_exact_against_cpython() {
     run(load(ORACLE_CPYTHON), true, "cpython");
+}
+
+/// **THE SHIPPED DEFAULT ONLY EXTENDS RUNS** (2026-10-14). The tests above hold the port to Python
+/// with the schedule-check switch OFF; this one runs the same emitter at the shipped default (ON)
+/// and licenses every difference by `common/ceiling_rule.rs`'s rule, against the MEASURED count.
+#[test]
+fn the_shipped_default_only_extends_runs() {
+    let off = {
+        let _off = CeilingDefault::set(false);
+        emit(Cmp::new(load(ORACLE_MAIN)), false).got
+    };
+    let on = emit(Cmp::new(load(ORACLE_MAIN)), false).got;
+    ceiling_rule::check("slice_w_oracle", &off, &on, (0, 0, 0));
 }

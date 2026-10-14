@@ -210,8 +210,9 @@ INVERTS — the LOWER the valve, the MORE fuel withheld:
 which is what the edge argument below predicts: below `b_cmd(0)` the fuel leg takes up the
 slack the valve leaves, so a lower valve leaves it more to hold. The published row contradicted
 the rung's own mechanism. The materiality survives (+32 % across the members). The gate now
-reads the ±0.01 pair over the first 251 points both reach — measured **1.243**, asserted
-`> 1.10`, lower member over natural (`MarginalMode::removed_common_*`, Rust-only fields; the
+reads the ±0.01 pair over the stretch both reach — measured **1.243** over 251 points with the
+schedule-check switch off, **1.292** over 309 at the shipped default (ON since 2026-10-14),
+asserted `> 1.10`, lower member over natural (`MarginalMode::removed_common_*`, Rust-only fields; the
 Python-backed `removed` keys are unchanged). The magnitude is a grid measurement; the
 materiality is the claim. Run past the check (sandbox plan § 14.5), the lower members stop
 instead on the floor's own refusal — rung 49's *"no fuel restores it"* — at 235 and 309 points,

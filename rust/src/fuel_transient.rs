@@ -1461,8 +1461,9 @@ pub fn first_raw_min(traj: &[FuelPoint], key: fn(&FuelPoint) -> f64) -> (f64, f6
 /// 46 through 52, which are seven arms on ONE method and not seven classes.
 ///
 /// `Default::default()` is the BARE rung-43/45 march, and § 5.16 measured that this is the only
-/// configuration any phase-6 gate ever builds.
-#[derive(Clone, Debug, Default)]
+/// configuration any phase-6 gate ever builds — with [`below_ceiling`](Self::below_ceiling) from
+/// [`ceiling_default`], ON since 2026-10-14.
+#[derive(Clone, Debug)]
 pub struct FuelLimiters<'a> {
     /// Hold ONE spool's speed at its initial value — the CHANNEL ISOLATION behind rung 43's
     /// finding. `Lp` removes `rho` from the system entirely (it multiplies only the LP ODE): the
@@ -1491,13 +1492,57 @@ pub struct FuelLimiters<'a> {
     pub lag: Option<AsymmetricLag>,
     /// NOT A RUNG (2026-10-10). Where the SCHEDULED fuel has no operating point, decide the
     /// min-select from the solvable ceiling below it ([`r43_cut_below_ceiling`]) instead of
-    /// stopping the march. `false` is the shipped march, bit for bit, and it stays the default:
-    /// a census of every test program (2026-10-14, sandbox plan § 14.4) found shipped marches
-    /// stopping on this check in rungs 49, 63, 64 and 66–73. Switched on everywhere, it moves
-    /// those rungs' published numbers (rung 64's fuel bill by up to ~60 %), and it breaks the
-    /// reduce to rung 65, whose own marcher has no ceiling. ON in the sandbox's Controls view and
-    /// in rung 63's `floor_dichotomy` (through the core's carrier), the one table re-derived so far.
+    /// stopping the march — a stop that was the SOLVER's, not the engine's.
+    ///
+    /// **ON BY DEFAULT since 2026-10-14** ([`ceiling_default`]; sandbox plan § 14.5–14.6). Every
+    /// rung-65+ marcher carries it in its own shape, and a census of the whole gate found every
+    /// move it makes is a march that used to stop on the check and now runs on: the points both
+    /// reach are bit-identical. `false` is the pre-2026-10-14 march, bit for bit, and is what the
+    /// Python oracles are held to ([`CeilingDefault`]).
     pub below_ceiling: bool,
+}
+
+impl Default for FuelLimiters<'_> {
+    fn default() -> Self {
+        FuelLimiters {
+            freeze: None, tt4_max: None, tau_gov: None, accel: None, surge: None, incidence: None,
+            s_off: None, tau_rel: None, lag: None, below_ceiling: ceiling_default(),
+        }
+    }
+}
+
+thread_local! {
+    static CEILING_DEFAULT: Cell<bool> = const { Cell::new(true) };
+}
+
+/// The default of the schedule-check switch, for this thread: [`FuelLimiters::default`] and every
+/// new machine's carrier ([`TwoSpoolTransientCore::below_ceiling`]) read it AT CONSTRUCTION.
+/// `true` — the shipped march — unless a [`CeilingDefault`] guard says otherwise.
+///
+/// [`TwoSpoolTransientCore::below_ceiling`]: crate::two_spool_transient::TwoSpoolTransientCore
+pub fn ceiling_default() -> bool {
+    CEILING_DEFAULT.with(Cell::get)
+}
+
+/// Restore-previous guard on [`ceiling_default`]. **`CeilingDefault::set(false)` around a whole
+/// test reproduces the pre-2026-10-14 march** — how every Python oracle stays a bit-for-bit port
+/// check. It must enclose the machines' CONSTRUCTION as well as their marches (both read the
+/// default when they are built), and it covers this thread only.
+pub struct CeilingDefault {
+    prev: bool,
+}
+
+impl CeilingDefault {
+    pub fn set(on: bool) -> Self {
+        let prev = CEILING_DEFAULT.with(|c| c.replace(on));
+        CeilingDefault { prev }
+    }
+}
+
+impl Drop for CeilingDefault {
+    fn drop(&mut self) {
+        CEILING_DEFAULT.with(|c| c.set(self.prev));
+    }
 }
 
 impl FuelLimiters<'_> {

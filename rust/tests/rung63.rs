@@ -513,6 +513,9 @@ fn the_floor_is_disarmed_inside_the_band_and_tautological_above_it() {
 /// reads: `m_i`, `min_phi` and `credit` are the old route's, bit for bit.
 #[test]
 fn the_top_two_reference_runs_end_on_the_floors_own_refusal() {
+    // The machines are built with the switch OFF, so `old` below is the pre-2026-10-14 route;
+    // `floor_dichotomy` and `new` set it ON explicitly, as they always have.
+    let _off = turbojet::fuel_transient::CeilingDefault::set(false);
     let (fl, rp) = (flight(), ramp(0.5, DS));
     let m = bt(&LeverArm::default());
     let grid = [0.34, 0.36, 0.40, 0.43, 0.46];

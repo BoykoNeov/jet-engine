@@ -15,8 +15,8 @@
 //!    the march is on, not a shut-valve one);
 //! 4. ON ends either at the ramp's end or on a NAMED physical limit — never silently.
 //!
-//! Each run takes a FRESH machine: a rung-70 machine reused across marches was measured carrying
-//! state from one march into the next (independently of the switch), which would confound (2).
+//! Each run takes a FRESH machine: one rung-70 machine reused for six marches in a row started
+//! its sixth off-equilibrium (not traced; sandbox plan § 14.6), which would confound (2).
 
 use turbojet::bleed_transient::LeverArm;
 use turbojet::cross_loop::build_cross_loop_cascade;

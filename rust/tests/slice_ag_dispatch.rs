@@ -1126,6 +1126,10 @@ fn the_trajectory_moves_only_at_phi_both_and_the_injection_is_silent_at_the_othe
 /// `rung76.rs`'s own needle for that site would not have caught a parent's message in its place.
 #[test]
 fn the_untagged_message_is_reachable_and_a_prefix_check_cannot_see_it() {
+    // The planted defects stop a march PART-WAY; with the schedule-check switch ON (the default
+    // since 2026-10-14) the ceiling absorbs that early stop and the two laws march equal grids,
+    // so the reach search is run on the pre-2026-10-14 march it was written against.
+    let _off = turbojet::fuel_transient::CeilingDefault::set(false);
     let f = flight();
     // THE CONTROL, FIRST. The shipped reader must RETURN, or every needle below is being read off
     // a fixture that was already broken.

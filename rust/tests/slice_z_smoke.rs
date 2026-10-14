@@ -217,10 +217,11 @@ fn a_both_rungs_reduce_to_rung_65_on_an_unfloored_machine_too() {
     let (a, _) = t65(&bare).stator_march(&flight(), &ramp(), None, &leg);
     let (b, _) = t66(&bare).stator_march(&flight(), &ramp(), None, &leg);
     let (c, _) = t67(&bare).stator_march(&flight(), &ramp(), None, &leg);
-    // MEASURED: 68, and it differs from the floored 171 because an unfloored machine reaches
-    // the ramp end sooner. Pinned rather than bounded so that a silent change of GRID cannot
-    // be mistaken for a passing reduce.
-    assert_eq!(a.len(), 68, "the unfloored reduce grid");
+    // MEASURED: 76 at the shipped default. With the schedule-check switch OFF it is 68 — the
+    // march stopped on rung 43's every-step check, a solver limit — and since 2026-10-14 it runs
+    // on (sandbox plan § 14.5: the reduce held at both lengths). Pinned rather than bounded so
+    // that a silent change of GRID cannot be mistaken for a passing reduce.
+    assert_eq!(a.len(), 76, "the unfloored reduce grid");
     assert_eq!(keys(&a), keys(&b), "rung 66 on an unfloored machine is not rung 65");
     assert_eq!(keys(&a), keys(&c), "rung 67 on an unfloored machine is not rung 65");
 }
