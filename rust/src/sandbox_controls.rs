@@ -10,8 +10,8 @@
 //! **The switches** (plan § 12.3, the user's answers § 12.8): the turbine-temperature limiter
 //! (rung 46) and its response lag (47); the acceleration schedule (48); the stall floor (49), read
 //! as a flow coefficient or — with the stators moving — as an incidence (60); the realistic
-//! fast-attack / slow-release lag (52); and ONE airflow lever: the stator schedule (57) or the bleed
-//! schedule (62). The fuel follows a ramp between the two endpoints' steady fuel flows, exactly as
+//! fast-attack / slow-release lag (52); and the airflow levers: the stator schedule (57), the bleed
+//! schedule (62), or BOTH beside any fuel limiter (rung 86, which measured that plant). The fuel follows a ramp between the two endpoints' steady fuel flows, exactly as
 //! rung 57's own march (`r57_stator_march`) spells it, and the limiters cut it.
 //!
 //! **Time is in the HP spool's time constant** (plan § 12.8 Q4); `ρ` is how much slower the LP
@@ -78,7 +78,8 @@ pub fn control_maps(name: &str) -> Option<(ComponentMap, ComponentMap)> {
     }
 }
 
-/// The ONE airflow lever (plan § 12.3: stator + bleed + a fuel limiter on one plant is open physics).
+/// The airflow lever(s). `Both` is rung 86's plant — rung 62's machine with both schedules armed —
+/// and every fuel limiter runs beside it (plan § 15; until rung 86 it was refused as open physics).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LeverChoice {
     None,
@@ -86,12 +87,27 @@ pub enum LeverChoice {
     Stator,
     /// Rung 62: the handling-bleed valve opens at low LP corrected speed.
     Bleed,
+    /// Rung 86: the stator schedule AND the bleed schedule, each with its own numbers.
+    Both,
 }
 
 impl LeverChoice {
-    pub const ALL: [LeverChoice; 3] = [LeverChoice::None, LeverChoice::Stator, LeverChoice::Bleed];
+    pub const ALL: [LeverChoice; 4] = [LeverChoice::None, LeverChoice::Stator, LeverChoice::Bleed, LeverChoice::Both];
     pub fn key(self) -> &'static str {
-        match self { LeverChoice::None => "none", LeverChoice::Stator => "stator", LeverChoice::Bleed => "bleed" }
+        match self {
+            LeverChoice::None => "none",
+            LeverChoice::Stator => "stator",
+            LeverChoice::Bleed => "bleed",
+            LeverChoice::Both => "both",
+        }
+    }
+    /// The stators move (alone or with the bleed).
+    pub fn stator(self) -> bool {
+        matches!(self, LeverChoice::Stator | LeverChoice::Both)
+    }
+    /// The bleed valve opens (alone or with the stators).
+    pub fn bleed(self) -> bool {
+        matches!(self, LeverChoice::Bleed | LeverChoice::Both)
     }
 }
 
@@ -247,23 +263,27 @@ impl ControlsSettings {
         }
         if let Some(t) = text("lever")? {
             s.lever = LeverChoice::ALL.into_iter().find(|l| l.key() == t)
-                .ok_or_else(|| format!("unknown lever {t:?} (\"none\", \"stator\" or \"bleed\")"))?;
+                .ok_or_else(|| format!("unknown lever {t:?} (\"none\", \"stator\", \"bleed\" or \"both\")"))?;
         }
         Ok(s)
     }
 
-    /// The airflow lever as the model's constructor takes it.
+    /// The airflow lever(s) as the model's constructor takes them — for `Both`, rung 63's
+    /// `{**stator, **bleed}` merge, which is how rung 86 builds its all-on cells.
     pub fn lever_arm(&self) -> LeverArm {
+        let stator = || {
+            let sch = StatorSchedule::new(self.v_max, self.v_n_lo);
+            LeverArm::stator(match self.stator_spool {
+                Spool::Lp => StatorArm::scheduled_lp(sch),
+                Spool::Hp => StatorArm::scheduled_hp(sch),
+            })
+        };
+        let bleed = || LeverArm::scheduled(BleedSchedule::new(self.b_max, self.b_n_lo));
         match self.lever {
             LeverChoice::None => LeverArm::default(),
-            LeverChoice::Stator => {
-                let sch = StatorSchedule::new(self.v_max, self.v_n_lo);
-                LeverArm::stator(match self.stator_spool {
-                    Spool::Lp => StatorArm::scheduled_lp(sch),
-                    Spool::Hp => StatorArm::scheduled_hp(sch),
-                })
-            }
-            LeverChoice::Bleed => LeverArm::scheduled(BleedSchedule::new(self.b_max, self.b_n_lo)),
+            LeverChoice::Stator => stator(),
+            LeverChoice::Bleed => bleed(),
+            LeverChoice::Both => LeverArm::merged(&stator(), &bleed()),
         }
     }
 
@@ -335,23 +355,19 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
     if s.floor_on && s.floor_phi <= 0.0 {
         return no("The stall floor is a flow coefficient, so it must be above zero.");
     }
-    match s.lever {
-        LeverChoice::None => {}
-        LeverChoice::Stator => {
-            if !(s.v_n_lo < 1.0) {
-                return no("The stators must be back at their design setting by the design speed (1.0), so the \
-                           speed they start opening from must be below 1.");
-            }
+    // Both levers on runs BOTH lists of checks.
+    if s.lever.stator() && !(s.v_n_lo < 1.0) {
+        return no("The stators must be back at their design setting by the design speed (1.0), so the \
+                   speed they start opening from must be below 1.");
+    }
+    if s.lever.bleed() {
+        if !(s.b_n_lo < 1.0) {
+            return no("The bleed valve must be shut by the design speed (1.0), so the speed it starts closing \
+                       from must be below 1.");
         }
-        LeverChoice::Bleed => {
-            if !(s.b_n_lo < 1.0) {
-                return no("The bleed valve must be shut by the design speed (1.0), so the speed it starts closing \
-                           from must be below 1.");
-            }
-            if !(0.0..0.5).contains(&s.b_max) {
-                return no("The bleed fraction must be at least 0 and below 0.5: bleeding half the air starves the \
-                           core.");
-            }
+        if !(0.0..0.5).contains(&s.b_max) {
+            return no("The bleed fraction must be at least 0 and below 0.5: bleeding half the air starves the \
+                       core.");
         }
     }
     Ok(())
@@ -1033,6 +1049,10 @@ pub fn check_requests() -> Vec<String> {
         ControlsSettings { shape: flat, floor_on: true, floor_ref: FloorRef::Incidence, lever: LeverChoice::Stator, ..d },
         ControlsSettings { lever: LeverChoice::Stator, stator_spool: Spool::Hp, ..d },
         ControlsSettings { lever: LeverChoice::Bleed, redline_on: true, rho: 3.0, ..d },
+        ControlsSettings { lever: LeverChoice::Both, accel_on: true, ..d },                   // rung 86's plant
+        ControlsSettings { lever: LeverChoice::Both, redline_on: true, gov_lag_on: true, ..d },
+        ControlsSettings { lever: LeverChoice::Both, floor_on: true, floor_phi: 0.759, ..d },  // the bleed rescues it
+        ControlsSettings { lever: LeverChoice::Stator, floor_on: true, floor_phi: 0.825, ..d }, // starved at once
         ControlsSettings { from: 1400.0, to: 1000.0, ..d },
         ControlsSettings { release_on: true, ..d },                                  // refused: nothing to lag
         ControlsSettings { floor_on: true, lever: LeverChoice::Stator, ..d },        // stop: the floor unreachable

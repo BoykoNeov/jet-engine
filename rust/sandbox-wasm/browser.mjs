@@ -337,6 +337,21 @@ try {
   const cfin = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.ramp === 0.3`, 60000);
   check('a_knob_move_stops_a_running_controls_run_and_the_new_one_finishes', cfin && (await ev('window.sandbox.kills')) > ck0,
         `finished ${cfin}, kills ${ck0} -> ${await ev('window.sandbox.kills')}`);
+  // Rung 86: BOTH levers beside a fuel limiter, refused as open physics until then. A flow-coefficient
+  // floor at 0.759 starves the stators-alone run; with the bleed beside them it runs to the end.
+  const both = await ev(`window.sandbox.controls({lever: 'both', floor_on: 1, floor_ref: 'phi', floor_phi: 0.759,
+                         redline_on: 0, accel_on: 0, ramp: 0.5, settle: 2}).then(r => r.run)`);
+  const bothVis = await ev(`['ctl-stator-box','ctl-bleed-box','ctl-ref-row'].map(i => document.getElementById(i).hidden)`);
+  check('both_levers_run_together_and_show_both_sets_of_knobs', both && !both.stop && both.s.length === both.expected_points
+        && JSON.stringify(bothVis) === '[false,false,false]', JSON.stringify([both && both.stop, bothVis]));
+  if (process.env.SANDBOX_SHOTS) { await ev(`document.getElementById('ctlq-lever').click()`); await shot('controls-both'); await ev(`document.getElementById('ctlq-Tt4').click()`); }
+  // ...and the stators alone under a floor above the starting point: the run stops at once and says so.
+  const z = await ev(`window.sandbox.controls({lever: 'stator', floor_phi: 0.825}).then(r => r.run)`);
+  const zText = await ev(`document.getElementById('ctl-stops').textContent`);
+  check('a_run_starved_at_once_is_a_result', z && z.stop && z.s.length < 3 && zText.length > 0
+        && !(await ev(`document.getElementById('bad').classList.contains('show')`)), JSON.stringify([z && z.stop, z && z.s.length, zText.slice(0, 160)]));
+  if (process.env.SANDBOX_SHOTS) { await shot('controls-starved'); }
+  await ev(`window.sandbox.controls({lever: 'none', floor_on: 0, floor_phi: 0.75}).then(r => r.run)`);
   if (process.env.SANDBOX_SHOTS) {
     await ev(`window.sandbox.controls({settle: 2, ramp: 0.5, lever: 'bleed'})`);
     await shot('controls-light'); await shot('controls-dark', 1280, true); await shot('controls-phone', 390);

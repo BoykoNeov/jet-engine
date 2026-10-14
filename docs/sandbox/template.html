@@ -360,12 +360,13 @@ footer p { max-width: 90ch; }
           <div class="derived">The schedule's and the floor's cut follows its target quickly going in and slowly letting go, as a real limiter does.</div></div></div>
     </fieldset>
     <fieldset id="ctl-lever-set" hidden>
-      <legend>One airflow lever</legend>
+      <legend>Airflow levers</legend>
       <div class="knob"><label for="ctl-lever">Lever</label>
         <select id="ctl-lever" style="grid-column: 1 / -1">
           <option value="none">None</option>
           <option value="stator">Variable stators, scheduled on speed (rung 57)</option>
           <option value="bleed">Handling bleed valve, scheduled on speed (rung 62)</option>
+          <option value="both">Both: stators and bleed together (rung 86)</option>
         </select></div>
       <div id="ctl-stator-box">
         <div class="toggle" role="group" aria-label="Which compressor's stators move">
@@ -380,8 +381,9 @@ footer p { max-width: 90ch; }
           <input type="range" id="ctl-b_max-r" min="0" max="0.3" step="0.01" aria-label="Bleed fraction slider"></div>
         <div class="knob"><label for="ctl-b_n_lo">Fully open below <small>× design speed</small></label><input type="number" id="ctl-b_n_lo" step="0.01">
           <input type="range" id="ctl-b_n_lo-r" min="0.4" max="0.8" step="0.01" aria-label="Bleed schedule speed slider"></div></div>
-      <p class="note">Each lever is back at its design setting by the design speed. One lever at a time: the stators and the
-        bleed together with a fuel limiter is not modelled (an open question in the project).</p>
+      <p class="note">Each lever is back at its design setting by the design speed. Both together run beside any fuel
+        limiter. Watch the stall floor read as a flow coefficient: the stators lower the flow coefficient, so that floor
+        can cut the fuel from the first instant until the run stops; the bleed lifts it back.</p>
     </fieldset>
     <fieldset id="bn-set" hidden>
       <legend>The burner</legend>
@@ -749,12 +751,12 @@ footer p { max-width: 90ch; }
   redline come out. A stator lever then holds the front row's design angle as the throttle comes back, and the chart
   shows whether either shaft passes its redline. The two-spool model only handles a choked nozzle; throttles where it
   unchokes are listed as not modelled.</p>
-  <p><b>Controls.</b> The project's rungs 43–62 on the two-shaft engine of <b>Size the blades</b>: both shaft speeds change
+  <p><b>Controls.</b> The project's rungs 43–62 and 86 on the two-shaft engine of <b>Size the blades</b>: both shaft speeds change
   in time, the fuel is metered and the turbine temperature is an output (it overshoots on a slam), and the fuel controls a
   real engine carries can be switched on, each with its one number: a turbine temperature limiter and its reaction lag, an
   acceleration schedule read off the engine's own steady running line, a stall floor on either compressor, and a realistic
-  fast-in, slow-out lag on the schedule and the floor. One airflow lever can be added: variable stators or a bleed valve,
-  each scheduled on shaft speed. Each run is the model's own march, step for step. A run that stops early shows the
+  fast-in, slow-out lag on the schedule and the floor. Airflow levers can be added: variable stators, a bleed valve, or
+  both together (rung 86), each scheduled on shaft speed. Each run is the model's own march, step for step. A run that stops early shows the
   points it has and why, by kind: the floor could no longer be held by any fuel cut; the model's every-step check at the
   full scheduled fuel had no answer while a limiter held the fuel far below it (a limit of the model's method); the
   mixture became leaner or richer than the model's fuel solver searches (0.004 and 0.065 kg of fuel per kg of air). With
@@ -1000,8 +1002,8 @@ function showSettings() {
     press("ctl-st-lp", C.stator_spool === "lp"); press("ctl-st-hp", C.stator_spool === "hp");
     $("ctl-redline-box").hidden = C.redline_on !== 1; $("ctl-gov_lag-box").hidden = C.gov_lag_on !== 1;
     $("ctl-accel-box").hidden = C.accel_on !== 1; $("ctl-floor-box").hidden = C.floor_on !== 1;
-    $("ctl-release-box").hidden = C.release_on !== 1; $("ctl-ref-row").hidden = C.lever !== "stator";
-    $("ctl-stator-box").hidden = C.lever !== "stator"; $("ctl-bleed-box").hidden = C.lever !== "bleed";
+    $("ctl-release-box").hidden = C.release_on !== 1; $("ctl-ref-row").hidden = !stators(C);
+    $("ctl-stator-box").hidden = !stators(C); $("ctl-bleed-box").hidden = !bleeds(C);
     for (const q of Object.keys(CTL_Q)) $("ctlq-" + q).setAttribute("aria-pressed", String(ctlQ === q));
     $("ctlq-lever").hidden = C.lever === "none";
   }
@@ -1396,6 +1398,8 @@ async function runCtl() {
 
 // Each quantity: its axis label and the lines it draws, [values, css class, legend words].
 const pct = a => a.map(v => v * 100);
+const stators = c => c.lever === "stator" || c.lever === "both";
+const bleeds = c => c.lever === "bleed" || c.lever === "both";
 const CTL_Q = {
   Tt4: { label: "turbine inlet temperature, K", lines: r => [[r.Tt4, "rline", "turbine inlet temperature"]],
          steady: r => [r.start.Tt4, r.end.Tt4] },
@@ -1410,7 +1414,9 @@ const CTL_Q = {
               .concat(C.floor_on && C.floor_spool === "hp" ? [[r.floor, "floorl", "the floor"]] : []), steady: r => [] },
   thrust: { label: "thrust, N per kg/s of design airflow", lines: r => [[r.thrust, "rline", "thrust"]], steady: r => [r.start.thrust, r.end.thrust] },
   lever: { label: "lever setting", lines: r => (C.lever === "bleed" ? [[pct(r.bleed), "rline", "air bled, % of the LP's flow"]]
-                                                                    : [[r.v, "rline", "stator closing (0 = design setting)"]]), steady: r => [] },
+                                         : C.lever === "both" ? [[r.v, "rline", "stator closing (0 = design setting)"],
+                                                                 [r.bleed, "fsched", "air bled, fraction of the LP's flow"]]
+                                         : [[r.v, "rline", "stator closing (0 = design setting)"]]), steady: r => [] },
 };
 
 function drawCtl() {

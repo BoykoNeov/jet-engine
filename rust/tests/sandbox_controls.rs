@@ -53,13 +53,17 @@ fn maps(shape: &str) -> (ComponentMap, ComponentMap) {
 /// rung 48's `accel_schedule`, and `integrate_fuel` with the limiters spelled out.
 fn direct(s: &ControlsSettings) -> Vec<FuelPoint> {
     let (lp, hp) = maps(CONTROL_SHAPES[s.shape]);
+    let stator = || {
+        let sch = StatorSchedule::new(s.v_max, s.v_n_lo);
+        LeverArm::stator(if s.stator_spool == Spool::Lp { StatorArm::scheduled_lp(sch) } else { StatorArm::scheduled_hp(sch) })
+    };
+    let bleed = || LeverArm::scheduled(BleedSchedule::new(s.b_max, s.b_n_lo));
     let arm = match s.lever {
         LeverChoice::None => LeverArm::default(),
-        LeverChoice::Stator => {
-            let sch = StatorSchedule::new(s.v_max, s.v_n_lo);
-            LeverArm::stator(if s.stator_spool == Spool::Lp { StatorArm::scheduled_lp(sch) } else { StatorArm::scheduled_hp(sch) })
-        }
-        LeverChoice::Bleed => LeverArm::scheduled(BleedSchedule::new(s.b_max, s.b_n_lo)),
+        LeverChoice::Stator => stator(),
+        LeverChoice::Bleed => bleed(),
+        // rung 86's plant, spelled as rung 63 merges a neighbour and a lever
+        LeverChoice::Both => LeverArm::merged(&stator(), &bleed()),
     };
     let m = machine(lp, hp, s.rho, &arm);
     let fl = flight();
@@ -106,6 +110,12 @@ fn binding_cases() -> Vec<(&'static str, ControlsSettings)> {
         ("stator on HP", ControlsSettings { lever: LeverChoice::Stator, stator_spool: Spool::Hp, accel_on: true, ..d }),
         ("bleed, floor, flat LP", ControlsSettings { shape: flat, lever: LeverChoice::Bleed, floor_on: true, ..d }),
         ("bleed, redline", ControlsSettings { lever: LeverChoice::Bleed, redline_on: true, rho: 3.0, ..d }),
+        // rung 86: both levers beside a fuel limiter -- refused as open physics until then
+        ("both levers, accel", ControlsSettings { lever: LeverChoice::Both, accel_on: true, ..d }),
+        ("both levers, redline + its lag", ControlsSettings { lever: LeverChoice::Both, redline_on: true, gov_lag_on: true, ..d }),
+        ("both levers, floor + release", ControlsSettings { lever: LeverChoice::Both, floor_on: true, release_on: true, ..d }),
+        ("both levers, incidence floor, flat LP", ControlsSettings { shape: flat, lever: LeverChoice::Both, floor_on: true,
+                                                                    floor_ref: FloorRef::Incidence, ..d }),
     ]
 }
 
@@ -136,6 +146,9 @@ fn every_switch_binds_in_its_case_and_the_holder_names_it() {
             // Measured: the schedule holds early, the redline late; the 0.69 floor stays under the LP's
             // lowest flow coefficient there (0.6999), so the hand-over between two legs is what this checks.
             "all three, stator on LP" => &[Holder::Accel, Holder::Redline],
+            "both levers, accel" => &[Holder::Accel],
+            "both levers, redline + its lag" | "both levers, floor + release" => &[Holder::Lag],
+            "both levers, incidence floor, flat LP" => &[Holder::Floor],
             other => unreachable!("{other}"),
         };
         for h in want {
