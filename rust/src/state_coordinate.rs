@@ -124,7 +124,7 @@
 use std::cell::{Cell, RefCell};
 
 use crate::bleed_transient::{LeverArm, LeverHooks};
-use crate::demand_coordinate::{cap_free, CoordScope};
+use crate::demand_coordinate::{cap_free_gated, CoordScope};
 use crate::engine::FlightCondition;
 use crate::fuel_transient::{
     AccelSchedule, AsymmetricLag, Floor, FuelTransientCore, FuelTransientHooks,
@@ -427,12 +427,12 @@ pub fn phi_cap(
     surge: &Floor, coord: Option<&'static str>,
 ) -> Result<f64, Abort> {
     let is_phi = coord.unwrap_or(ft.inner.phi_ref.get()) == PHI_REF_PHI;
-    let shipped = || -> Result<f64, Abort> {
+    let shipped = |x: f64| -> Result<f64, Abort> {
         bump(if is_phi { &COORD_FB_PHI } else { &COORD_FB_INC });
-        ft.try_surge_fuel(flight, a, h, mf_sched, surge)
+        ft.try_surge_fuel(flight, a, h, x, surge)
     };
     let big_g = phi_residual(ft, flight, a, h, surge, coord);
-    let out = cap_free(&*big_g, mf_sched, &shipped)?;
+    let (out, _) = cap_free_gated(ft, flight, a, h, &*big_g, mf_sched, &shipped)?;
     bump(if is_phi { &COORD_CALLS_PHI } else { &COORD_CALLS_INC });
     Ok(out)
 }

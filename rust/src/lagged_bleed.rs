@@ -304,7 +304,21 @@ pub fn r65_integrate_fuel(
              lever over), so forcing one would measure the forcing.");
     bump(&MARCH_VALVE_LAG);
     r65_integrate_fuel_valve_lag(ft, flight, fuel_schedule, nu0, s_end, ds, lim.freeze,
-                                 lim.tt4_max, lim.accel, lim.floor().as_ref())
+                                 lim.tt4_max, lim.accel, lim.floor().as_ref(),
+                                 ceiling_on(&ft.inner, lim))
+}
+
+/// The ONE source of `below_ceiling` for a rung-65+ march: the march's own
+/// [`FuelLimiters::below_ceiling`], which the stator route copies from the core's carrier
+/// ([`TwoSpoolTransientCore::below_ceiling`](crate::two_spool_transient::TwoSpoolTransientCore))
+/// at `r57_stator_march`. A carrier ON with the limiters OFF would run a half-switched march — the
+/// march's own legs off, any cell that reads the carrier on — so it is refused, not run.
+pub fn ceiling_on(t: &crate::two_spool_transient::TwoSpoolTransientCore, lim: &FuelLimiters<'_>)
+    -> bool {
+    assert!(!t.below_ceiling.get() || lim.below_ceiling,
+            "below_ceiling: the core's carrier is ON but this march's FuelLimiters are OFF -- a \
+             half-switched march. Build the limiters from the carrier (r57_stator_march does).");
+    lim.below_ceiling
 }
 
 /// RUNG 65's MARCH — rung 47/52's third-state pattern moved from a fuel CLIP onto a valve
@@ -328,7 +342,7 @@ pub fn r65_integrate_fuel(
 pub fn r65_integrate_fuel_valve_lag(
     ft: &FuelTransientCore, flight: &FlightCondition, fuel_schedule: &dyn Fn(f64) -> f64,
     nu0: (f64, f64), s_end: f64, ds: f64, freeze: Option<Spool>, tt4_max: Option<f64>,
-    accel: Option<&AccelSchedule>, surge: Option<&Floor>,
+    accel: Option<&AccelSchedule>, surge: Option<&Floor>, below_ceiling: bool,
 ) -> Vec<FuelPoint> {
     let lim = ft.inner.lever.lim.expect("r65 march on an unfloored machine");
     let tau = lim.tau.expect("r65 march on an unlagged machine");
@@ -359,9 +373,19 @@ pub fn r65_integrate_fuel_valve_lag(
         let mf_sched = fuel_schedule(s);
         // THE MIN-SELECT, rung 48/49's discipline verbatim: every cap is solved from the
         // SCHEDULED fuel so arming one leg cannot perturb another's bracket.
-        let (mf, inst) = {
+        let (mf, inst) = 'cut: {
             let _st = MarchedBleed::set(&ft.inner, q);
-            let mut i = ft.try_instant_fuel(flight, a, h, mf_sched)?;
+            let mut i = match ft.try_instant_fuel(flight, a, h, mf_sched) {
+                Ok(i) => i,
+                Err(e) if !below_ceiling => return Err(e),
+                // No operating point at the schedule: rung 43's min-select decided from the
+                // solvable ceiling below it (2026-10-10, `r43_cut_below_ceiling`) — this cell's
+                // own shape, filter-then-fall-back, and INSIDE the live valve's scope, so the
+                // ceiling is the one of the plant this march is on.
+                Err(e) => break 'cut crate::fuel_transient::r43_cut_below_ceiling(
+                    ft, flight, a, h, mf_sched, s,
+                    &FuelLimiters { tt4_max, accel, ..FuelLimiters::default() }, surge, e)?,
+            };
             let mut caps: Vec<f64> = Vec::new();
             if let Some(t4) = tt4_max {
                 if i.base.tt4 > t4 {

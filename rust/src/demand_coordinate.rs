@@ -473,6 +473,41 @@ pub fn cap_free(
     try_illinois(|w| big_g(w), lo, hi, glo, ghi, FuelTransientCore::LEG_TOL, ILLINOIS_MAXIT)
 }
 
+/// [`cap_free`] behind the core's `below_ceiling` carrier (2026-10-14) — the demand family's form
+/// of rung 43's schedule check with no answer ([`FuelTransientCore::try_leg_below`]).
+///
+/// Returns the cap AND the fuel its solve was bracketed from: the schedule, or the solvable
+/// ceiling below it. Carrier off: [`cap_free`] with `shipped_at(mf_sched)`, the shipped call bit
+/// for bit. Carrier on and the schedule solvable: the same. Only where the scheduled instant has
+/// no operating point does it differ: then the leg is read at the ceiling `c`, and if it BINDS
+/// there (`G(c) > 0`) its cut is the same root bracketed from `c`. A leg slack at the ceiling has
+/// its unfloored cap somewhere at or above `c` — and in this coordinate the state tracks that
+/// cap itself, so the march has no value for it and stops with the scheduled instant's error, as
+/// before. The carrier is set for the march's duration by rung 74's marcher, from its own
+/// limiters ([`crate::lagged_bleed::ceiling_on`]).
+#[allow(clippy::too_many_arguments)]
+pub fn cap_free_gated(
+    ft: &FuelTransientCore, flight: &FlightCondition, a: f64, h: f64,
+    big_g: &dyn Fn(f64) -> Result<f64, Abort>, mf_sched: f64,
+    shipped_at: &dyn Fn(f64) -> Result<f64, Abort>,
+) -> Result<(f64, f64), Abort> {
+    let e = match cap_free(big_g, mf_sched, &|| shipped_at(mf_sched)) {
+        Ok(c) => return Ok((c, mf_sched)),
+        Err(e) => e,
+    };
+    if !ft.inner.below_ceiling.get() || ft.try_instant_fuel(flight, a, h, mf_sched).is_ok() {
+        return Err(e);
+    }
+    let Some(c) = ft.try_solvable_ceiling(flight, a, h, mf_sched) else { return Err(e) };
+    if big_g(c)? > 0.0 {
+        let cap = shipped_at(c)?;
+        if cap < c {
+            return Ok((cap, c));
+        }
+    }
+    Err(e)
+}
+
 /// RUNG 47's set point as a DEMAND: the fuel at which `Tt4 == Tt4_max`, computed in the slack
 /// regime too.
 ///
@@ -488,7 +523,8 @@ pub fn cap_gov(
     let big_g = |w: f64| -> Result<f64, Abort> {
         Ok(ft.try_instant_fuel(flight, a, h, w)?.base.tt4 - tt4_max)
     };
-    cap_free(&big_g, mf_sched, &|| ft.try_topping_fuel(flight, a, h, tt4_max, mf_sched))
+    cap_free_gated(ft, flight, a, h, &big_g, mf_sched,
+                   &|x| ft.try_topping_fuel(flight, a, h, tt4_max, x)).map(|(c, _)| c)
 }
 
 /// RUNG 74's `_cap_fuel` — **RUNG 52's LEG AS A DEMAND: the minimum of its (up to two) unfloored
@@ -538,9 +574,9 @@ fn r74_cap_fuel(
                     let i = ft.try_instant_fuel(flight, a, h, w)?;
                     Ok(w - accel.cap(i.base.close.n_hp, i.base.close.pt4 / pi_b))
                 };
-                caps.push(cap_free(
-                    &big_ga, mf_sched,
-                    &|| ft.try_sched_fuel(flight, a, h, mf_sched, accel))?);
+                caps.push(cap_free_gated(
+                    ft, flight, a, h, &big_ga, mf_sched,
+                    &|x| ft.try_sched_fuel(flight, a, h, x, accel))?.0);
             }
         }
     }
@@ -549,8 +585,9 @@ fn r74_cap_fuel(
         let big_gs = |w: f64| -> Result<f64, Abort> {
             Ok(phi.phi_lim - phi.read(&ft.try_instant_fuel(flight, a, h, w)?))
         };
-        caps.push(cap_free(
-            &big_gs, mf_sched, &|| ft.try_surge_fuel(flight, a, h, mf_sched, surge))?);
+        caps.push(cap_free_gated(
+            ft, flight, a, h, &big_gs, mf_sched,
+            &|x| ft.try_surge_fuel(flight, a, h, x, surge))?.0);
     }
     Ok(caps.into_iter()
         .reduce(|x, y| if y < x { y } else { x })
@@ -1035,7 +1072,8 @@ fn r74_integrate_fuel(
     r74_integrate_fuel_demand(
         ft, flight, fuel_schedule, nu0, s_end, ds, lim.freeze,
         lim.tt4_max.expect("asserted above"), tau_gov.expect("the entry test returned if None"),
-        lim.accel, lim.floor(), lag.as_ref().expect("has_fuel"))
+        lim.accel, lim.floor(), lag.as_ref().expect("has_fuel"),
+        crate::lagged_bleed::ceiling_on(&ft.inner, lim))
 }
 
 /// One RK4 stage of rung 74's march — [`SharedDer`](crate::shared_actuator) one coordinate over.
@@ -1140,7 +1178,12 @@ fn r74_integrate_fuel_demand(
     ft: &FuelTransientCore, flight: &FlightCondition, fuel_schedule: &dyn Fn(f64) -> f64,
     nu0: (f64, f64), s_end: f64, ds: f64, freeze: Option<Spool>, tt4_max: f64, tau_gov: f64,
     accel: Option<&AccelSchedule>, surge: Option<Floor>, lag: &AsymmetricLag,
+    below_ceiling: bool,
 ) -> Vec<FuelPoint> {
+    // The demand cells (`cap_fuel`, `cap_gov`) are TABLE cells with no limiters in their
+    // signature, so the switch reaches them through the core's carrier, held for this march
+    // only (2026-10-14, [`cap_free_gated`]).
+    let _bc = crate::two_spool_transient::BelowCeiling::set(&ft.inner, below_ceiling);
     let has_v = ft.inner.lagged_stator();
     let lim_s = if has_v { ft.inner.stator_leg() } else { None };
     let tau_s = lim_s.and_then(|l| l.tau);

@@ -539,7 +539,8 @@ fn r72_integrate_fuel(
     r72_integrate_fuel_shared(
         ft, flight, fuel_schedule, nu0, s_end, ds, lim.freeze,
         tt4_max.expect("asserted above"), tau_gov.expect("the entry test returned if None"),
-        lim.accel, lim.floor(), &lag.expect("has_fuel"))
+        lim.accel, lim.floor(), &lag.expect("has_fuel"),
+        crate::lagged_bleed::ceiling_on(&ft.inner, lim))
 }
 
 /// RUNG 72's MARCH — **rung 70/71's five-state integrator with rung 52's fuel clip as a SIXTH
@@ -580,7 +581,7 @@ fn r72_integrate_fuel_shared(
     fuel_schedule: &dyn Fn(f64) -> f64, nu0: (f64, f64), s_end: f64, ds: f64,
     freeze: Option<Spool>, tt4_max: f64, tau_gov: f64,
     accel: Option<&crate::fuel_transient::AccelSchedule>, surge: Option<Floor>,
-    lag: &AsymmetricLag,
+    lag: &AsymmetricLag, below_ceiling: bool,
 ) -> Vec<crate::fuel_transient::FuelPoint> {
     let has_v = ft.inner.lagged_stator();
     let lim_s = if has_v { ft.inner.stator_leg() } else { None };
@@ -620,16 +621,14 @@ fn r72_integrate_fuel_shared(
     };
 
     // RUNG 52's leg — rung 68's `required`, verbatim including its `max(0, ·)` kink.
+    // The caps through `try_clip_caps` (2026-10-14): the two shipped solves when `below_ceiling`
+    // is off; off the solvable ceiling where the schedule has no operating point when it is on.
+    // EACH lagged leg is decided on its own caps — its state integrates its own requirement, so
+    // the other leg cutting below the ceiling does not decide this one.
     let required_fuel = |a: f64, h: f64, q: f64, v: f64, mf_sched: f64| -> Result<f64, Abort> {
         let _sb = MarchedBleed::set(&ft.inner, q);
         let _sv = MarchedStator::set(&ft.inner, v);
-        let mut caps: Vec<f64> = Vec::new();
-        if let Some(acc) = accel {
-            caps.push(ft.try_sched_fuel(flight, a, h, mf_sched, acc)?);
-        }
-        if let Some(fl) = surge.as_ref() {
-            caps.push(ft.try_surge_fuel(flight, a, h, mf_sched, fl)?);
-        }
+        let caps = ft.try_clip_caps(flight, a, h, mf_sched, accel, surge.as_ref(), below_ceiling)?;
         if caps.is_empty() {
             return Ok(0.0);
         }
@@ -648,7 +647,14 @@ fn r72_integrate_fuel_shared(
     let required_gov = |a: f64, h: f64, q: f64, v: f64, mf_sched: f64| -> Result<f64, Abort> {
         let _sb = MarchedBleed::set(&ft.inner, q);
         let _sv = MarchedStator::set(&ft.inner, v);
-        let i = ft.try_instant_fuel(flight, a, h, mf_sched)?;
+        let i = match ft.try_instant_fuel(flight, a, h, mf_sched) {
+            Ok(i) => i,
+            Err(e) if !below_ceiling => return Err(e),
+            // No operating point at the schedule: the redline's cut below the solvable ceiling,
+            // rung 47's own fallback (2026-10-14).
+            Err(e) => return Ok(0.0f64.max(
+                ft.try_topping_required_below(flight, a, h, tt4_max, mf_sched, e)?)),
+        };
         if i.base.tt4 <= tt4_max {
             return Ok(0.0);
         }

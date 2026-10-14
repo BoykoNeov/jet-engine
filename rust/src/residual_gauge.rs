@@ -192,7 +192,7 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::bleed_transient::{LeverArm, LeverHooks};
-use crate::demand_coordinate::cap_free;
+use crate::demand_coordinate::{cap_free, cap_free_gated};
 use crate::engine::FlightCondition;
 use crate::fuel_transient::{
     AccelSchedule, AsymmetricLag, Floor, FuelPoint, FuelTransientCore, FuelTransientHooks,
@@ -506,10 +506,13 @@ fn gauged_accel_cap(
         Ok(accel.cap(i.base.close.n_hp, i.base.close.pt4 / pi_b))
     };
     let big_g0 = |w: f64| -> Result<f64, Abort> { Ok(w - cap(w)?) };
-    let w0 = cap_free(&big_g0, mf_sched, &|| ft.try_sched_fuel(flight, a, h, mf_sched, accel))?;
+    // `top` is the schedule, or the solvable ceiling where the schedule has no operating point
+    // (`cap_free_gated`, 2026-10-14) — the gauged solve is seeded where the shipped one was.
+    let (w0, top) = cap_free_gated(ft, flight, a, h, &big_g0, mf_sched,
+                                   &|x| ft.try_sched_fuel(flight, a, h, x, accel))?;
     let big_gk = gauge_residual(k, &cap, w0);
     let (w, ok) = gauge_root(
-        &*big_gk, mf_sched, GAUGE_ROOT_REL, GAUGE_ROOT_N, GAUGE_ROOT_TRUST);
+        &*big_gk, top, GAUGE_ROOT_REL, GAUGE_ROOT_N, GAUGE_ROOT_TRUST);
     if !(ok && (w - w0).abs() <= 1e-6 * w0.abs()) {
         return Err(Abort(format!(
             "rung-78: the GAUGED accel solve returned {w:?} at k = {k:.6} where the anchor \
@@ -546,8 +549,9 @@ fn r78_cap_fuel(
         let big_gs = |w: f64| -> Result<f64, Abort> {
             Ok(phi.phi_lim - phi.read(&ft.try_instant_fuel(flight, a, h, w)?))
         };
-        caps.push(cap_free(
-            &big_gs, mf_sched, &|| ft.try_surge_fuel(flight, a, h, mf_sched, surge))?);
+        caps.push(cap_free_gated(
+            ft, flight, a, h, &big_gs, mf_sched,
+            &|x| ft.try_surge_fuel(flight, a, h, x, surge))?.0);
     }
     if caps.is_empty() {
         return Ok(f64::INFINITY);

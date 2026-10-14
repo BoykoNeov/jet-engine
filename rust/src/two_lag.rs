@@ -261,15 +261,12 @@ pub fn r66_integrate_fuel_cascade(
     // `retain`s the caps below `mf_sched` and falls back to `mf_sched` itself, which is a
     // different branch structure at the `cap == mf_sched` boundary. Rung 52's shape is the one
     // this rung merges, so it is rung 52's that is copied.
+    // The caps through `try_clip_caps` (2026-10-14): the two shipped solves when `below_ceiling`
+    // is off; off the solvable ceiling where the schedule has no operating point when it is on.
+    let below_ceiling = crate::lagged_bleed::ceiling_on(&ft.inner, lim);
     let required = |a: f64, h: f64, q: f64, mf_sched: f64| -> Result<f64, Abort> {
         let _st = MarchedBleed::set(&ft.inner, q);
-        let mut caps: Vec<f64> = Vec::new();
-        if let Some(sch) = accel {
-            caps.push(ft.try_sched_fuel(flight, a, h, mf_sched, sch)?);
-        }
-        if let Some(fl) = &surge {
-            caps.push(ft.try_surge_fuel(flight, a, h, mf_sched, fl)?);
-        }
+        let caps = ft.try_clip_caps(flight, a, h, mf_sched, accel, surge.as_ref(), below_ceiling)?;
         if caps.is_empty() {
             return Ok(0.0);
         }

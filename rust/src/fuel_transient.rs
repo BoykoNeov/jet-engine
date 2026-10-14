@@ -2176,7 +2176,7 @@ impl FuelTransientCore {
     /// [`try_leg_below`](Self::try_leg_below) behind [`FuelLimiters::below_ceiling`]: switched
     /// off, the leg solved off the schedule with its error unchanged — the shipped call, bit for bit.
     #[allow(clippy::too_many_arguments)]
-    fn try_leg_gated(
+    pub fn try_leg_gated(
         &self, flight: &FlightCondition, nu_lp: f64, nu_hp: f64, mf_sched: f64,
         top: &std::cell::OnceCell<Option<f64>>, solve: &dyn Fn(f64) -> Result<f64, Abort>,
         below_ceiling: bool,
@@ -2205,6 +2205,57 @@ impl FuelTransientCore {
             return Ok((cap < c).then_some(cap));
         }
         Ok(None)
+    }
+
+    /// The redline leg's REQUIREMENT `mf_sched − cap` (rung 47's shape) where the scheduled
+    /// instant has already failed with `e`: [`try_topping_below`](Self::try_topping_below)'s cut
+    /// if it cuts below the solvable ceiling, else `e` itself — the step fails as it did before.
+    /// The lagged governors of rungs 47, 67, 70 and 72 read their trigger at the schedule, so they
+    /// all need this form and not [`try_leg_below`](Self::try_leg_below)'s.
+    pub fn try_topping_required_below(
+        &self, flight: &FlightCondition, nu_lp: f64, nu_hp: f64, tt4_max: f64, mf_sched: f64,
+        e: Abort,
+    ) -> Result<f64, Abort> {
+        let top = std::cell::OnceCell::new();
+        match self.try_topping_below(flight, nu_lp, nu_hp, tt4_max, mf_sched, &top)? {
+            Some(c) => Ok(mf_sched - c),
+            None => Err(e),
+        }
+    }
+
+    /// Rung 52's lagged-leg caps — the accel leg, then the floor, each solved off `mf_sched` —
+    /// in the order every merged marcher (rungs 66, 68, 72) builds them, through
+    /// [`try_leg_gated`](Self::try_leg_gated). Switched off, the two shipped calls in their
+    /// shipped order, bit for bit. Switched on, a leg that does not cut below the solvable
+    /// ceiling is left out; if every armed leg is left out, the requirement is unknown (each cap
+    /// sits somewhere at or above the ceiling) and the scheduled instant's own error is returned,
+    /// rung 52's `undecided && caps.is_empty()`. The caller folds the caps in its own shape.
+    pub fn try_clip_caps(
+        &self, flight: &FlightCondition, nu_lp: f64, nu_hp: f64, mf_sched: f64,
+        accel: Option<&AccelSchedule>, surge: Option<&Floor>, below_ceiling: bool,
+    ) -> Result<Vec<f64>, Abort> {
+        let top = std::cell::OnceCell::new();
+        let mut undecided = false;
+        let mut caps: Vec<f64> = Vec::new();
+        if let Some(accel) = accel {
+            let solve = |x: f64| self.try_sched_fuel(flight, nu_lp, nu_hp, x, accel);
+            match self.try_leg_gated(flight, nu_lp, nu_hp, mf_sched, &top, &solve, below_ceiling)? {
+                Some(c) => caps.push(c),
+                None => undecided = true,
+            }
+        }
+        if let Some(surge) = surge {
+            let solve = |x: f64| self.try_surge_fuel(flight, nu_lp, nu_hp, x, surge);
+            match self.try_leg_gated(flight, nu_lp, nu_hp, mf_sched, &top, &solve, below_ceiling)? {
+                Some(c) => caps.push(c),
+                None => undecided = true,
+            }
+        }
+        if undecided && caps.is_empty() {
+            return Err(self.try_instant_fuel(flight, nu_lp, nu_hp, mf_sched).err()
+                .expect("an undecided leg means the scheduled instant failed"));
+        }
+        Ok(caps)
     }
 
     // --- the equilibrium: a 2-D root at fixed FUEL --------------------------------------------
@@ -2373,11 +2424,7 @@ impl FuelTransientCore {
                 // No operating point at the schedule: the redline's cut, if it cuts below the
                 // solvable ceiling, is the same root (2026-10-10, `r43_cut_below_ceiling`).
                 Err(e) => {
-                    let top = std::cell::OnceCell::new();
-                    return match self.try_topping_below(flight, a, b, tt4_max, mf_sched, &top)? {
-                        Some(c) => Ok(mf_sched - c),
-                        None => Err(e),
-                    };
+                    return self.try_topping_required_below(flight, a, b, tt4_max, mf_sched, e);
                 }
             };
             if i.base.tt4 > tt4_max {

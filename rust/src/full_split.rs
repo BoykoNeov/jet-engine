@@ -333,7 +333,8 @@ fn r71_integrate_fuel(
     // integrator because a state was being ADDED; nothing is added here.
     r70_integrate_fuel_cross_triple(
         ft, flight, fuel_schedule, nu0, s_end, ds, lim.freeze,
-        tt4_max.expect("guard A just fired if this was None"), tau_gov)
+        tt4_max.expect("guard A just fired if this was None"), tau_gov,
+        crate::lagged_bleed::ceiling_on(&ft.inner, lim))
 }
 
 // ---------------------------------------------------------------------------------------------

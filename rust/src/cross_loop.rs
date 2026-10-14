@@ -239,9 +239,17 @@ pub fn r67_integrate_fuel_cross(
     // what the current clip makes it). **`R_q != 0` ONLY because of the state below** — drop it
     // and the rung silently becomes two INDEPENDENT loops with no complex branch anywhere, and
     // nothing fails.
+    let below_ceiling = crate::lagged_bleed::ceiling_on(&ft.inner, lim);
     let required = |a: f64, h: f64, q: f64, mf_sched: f64| -> Result<f64, Abort> {
         let _st = MarchedBleed::set(&ft.inner, q);
-        let i = ft.try_instant_fuel(flight, a, h, mf_sched)?;
+        let i = match ft.try_instant_fuel(flight, a, h, mf_sched) {
+            Ok(i) => i,
+            Err(e) if !below_ceiling => return Err(e),
+            // No operating point at the schedule: the redline's cut below the solvable ceiling,
+            // rung 47's own fallback (2026-10-14), on the plant as the valve actually is.
+            Err(e) => return Ok(0.0f64.max(
+                ft.try_topping_required_below(flight, a, h, tt4_max, mf_sched, e)?)),
+        };
         if i.base.tt4 <= tt4_max {
             return Ok(0.0);
         }

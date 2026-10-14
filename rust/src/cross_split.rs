@@ -421,7 +421,8 @@ pub fn r70_integrate_fuel(
     r70_integrate_fuel_cross_triple(
         ft, flight, fuel_schedule, nu0, s_end, ds, lim.freeze,
         tt4_max.expect("guard B just fired if this was None"),
-        tau_gov.expect("the reduce test above returned if this was None"))
+        tau_gov.expect("the reduce test above returned if this was None"),
+        crate::lagged_bleed::ceiling_on(&ft.inner, lim))
 }
 
 /// RUNG 70's `_rk4_floor_split` — **the floor, re-justified a THIRD time on the same constant.**
@@ -513,6 +514,7 @@ struct CrossTripleDer {
 pub fn r70_integrate_fuel_cross_triple(
     ft: &FuelTransientCore, flight: &FlightCondition, fuel_schedule: &dyn Fn(f64) -> f64,
     nu0: (f64, f64), s_end: f64, ds: f64, freeze: Option<Spool>, tt4_max: f64, tau_gov: f64,
+    below_ceiling: bool,
 ) -> Vec<FuelPoint> {
     let lim_s = ft.inner.stator_leg().expect("rung-70's march with no stator floor");
     let tau_s = lim_s.tau.expect("rung-70's march on an unlagged stator");
@@ -558,7 +560,14 @@ pub fn r70_integrate_fuel_cross_triple(
     let required = |a: f64, h: f64, q: f64, v: f64, mf_sched: f64| -> Result<f64, Abort> {
         let _sb = MarchedBleed::set(&ft.inner, q);
         let _sv = MarchedStator::set(&ft.inner, v);
-        let i = ft.try_instant_fuel(flight, a, h, mf_sched)?;
+        let i = match ft.try_instant_fuel(flight, a, h, mf_sched) {
+            Ok(i) => i,
+            Err(e) if !below_ceiling => return Err(e),
+            // No operating point at the schedule: the redline's cut below the solvable ceiling,
+            // rung 47's own fallback (2026-10-14), on the plant as BOTH actuators are.
+            Err(e) => return Ok(0.0f64.max(
+                ft.try_topping_required_below(flight, a, h, tt4_max, mf_sched, e)?)),
+        };
         if i.base.tt4 <= tt4_max {
             return Ok(0.0);
         }

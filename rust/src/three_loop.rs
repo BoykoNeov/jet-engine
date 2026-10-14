@@ -1517,19 +1517,16 @@ pub fn r68_integrate_fuel_triple(
     // THE FUEL law. It trials NEITHER other actuator, so it sees BOTH states. Solved from the
     // SCHEDULED fuel (rung 52's discipline verbatim) so arming one leg cannot perturb another's
     // bracket.
+    // The caps through `try_clip_caps` (2026-10-14): the two shipped solves when `below_ceiling`
+    // is off; off the solvable ceiling where the schedule has no operating point when it is on.
+    let below_ceiling = crate::lagged_bleed::ceiling_on(&ft.inner, lim);
     let required = |a: f64, h: f64, q: f64, v: f64, mf_sched: f64| -> Result<f64, Abort> {
         if !has_g {
             return Ok(0.0);
         }
         let _sb = MarchedBleed::set(&ft.inner, q);
         let _sv = MarchedStator::set(&ft.inner, v);
-        let mut caps: Vec<f64> = Vec::new();
-        if let Some(ac) = accel {
-            caps.push(ft.try_sched_fuel(flight, a, h, mf_sched, ac)?);
-        }
-        if let Some(su) = surge.as_ref() {
-            caps.push(ft.try_surge_fuel(flight, a, h, mf_sched, su)?);
-        }
+        let caps = ft.try_clip_caps(flight, a, h, mf_sched, accel, surge.as_ref(), below_ceiling)?;
         Ok(match caps.iter().copied().reduce(f64::min) {
             Some(m) => 0.0f64.max(mf_sched - m),
             None => 0.0,
