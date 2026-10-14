@@ -177,6 +177,7 @@ pub mod stator_bleed;
 pub mod stator_transient;
 pub mod stiffness_ledger;
 pub mod three_loop;
+pub mod three_levers;
 pub mod threshold_law;
 pub mod two_lag;
 pub mod two_spool;

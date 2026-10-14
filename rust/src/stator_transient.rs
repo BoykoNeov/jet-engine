@@ -442,7 +442,9 @@ impl StatorArming {
 /// (every `final_*` / `stale_*` reading of the map a march LEAVES, which slice V gates as Python's
 /// persistence on purpose) and no other key in the gate. At the start only, every oracle stays bit
 /// for bit: on a fresh machine this is a no-op, since the live maps ARE the as-built ones.
-fn reset_built_maps(core: &TwoSpoolTransientCore) {
+///
+/// Public for RUNG 86's march, which calls [`ramp_march`] directly and so owns the reset.
+pub fn reset_built_maps(core: &TwoSpoolTransientCore) {
     let a = &core.stator;
     core.inner.set_map_lp(a.built_map(Spool::Lp));
     core.inner.set_map_hp(a.built_map(Spool::Hp));
@@ -969,6 +971,20 @@ pub fn r57_stator_march(
     leg: &StatorLeg<'_>, _scope: &MarchScope,
 ) -> (Vec<FuelPoint>, (f64, f64)) {
     bump(&MARCH_CALLS);
+    // `below_ceiling` from the core's carrier — `ceiling_default()` (ON) since 2026-10-14, unless
+    // a `CeilingDefault`/`BelowCeiling` guard says otherwise (sandbox plan § 14.6).
+    let lim = FuelLimiters { below_ceiling: ft.inner.below_ceiling.get(), ..leg.limiters() };
+    ramp_march(ft, flight, ramp, nu0, &lim)
+}
+
+/// Rung 57's ramp march with ANY limiter set — the body [`r57_stator_march`] runs, split out so
+/// RUNG 86 can arm the two LAGGED limiters (47's governor clock, 52's attack/release), which are
+/// not [`StatorLeg`] fields. The caller owns `lim` whole, `below_ceiling` included, and the map
+/// reset ([`reset_built_maps`]) is the caller's too, as it is `stator_march_scoped`'s.
+pub fn ramp_march(
+    ft: &FuelTransientCore, flight: &FlightCondition, ramp: &Ramp, nu0: Option<(f64, f64)>,
+    lim: &FuelLimiters<'_>,
+) -> (Vec<FuelPoint>, (f64, f64)) {
     let mf_lo = ft.fuel_for_tt4(flight, ramp.tt4_lo);
     let mf_hi = ft.fuel_for_tt4(flight, ramp.tt4_hi);
     let nu0 = nu0.unwrap_or_else(|| {
@@ -985,10 +1001,7 @@ pub fn r57_stator_march(
             mf_lo + (mf_hi - mf_lo) * (s / r)
         }
     };
-    // `below_ceiling` from the core's carrier (2026-10-14): `false` except inside rung 63's
-    // `floor_dichotomy`, so every other march is the one it was.
-    let lim = FuelLimiters { below_ceiling: ft.inner.below_ceiling.get(), ..leg.limiters() };
-    let traj = ft.integrate_fuel(flight, sched, nu0, ramp.r + ramp.s_settle, ramp.ds, &lim);
+    let traj = ft.integrate_fuel(flight, sched, nu0, ramp.r + ramp.s_settle, ramp.ds, lim);
     (traj, nu0)
 }
 
@@ -2213,8 +2226,18 @@ impl ScheduledStatorCore {
         &self, flight: &FlightCondition, ramp: &Ramp, spool: Spool, leg: &StatorLeg<'_>,
     ) -> CellRead {
         let (traj, nu0) = self.stator_march(flight, ramp, None, leg);
-        let d = *self.read(&traj, None).spool(spool);
-        let (s_ref, m_i_ref, s_grid_ref, _cells, v_ref) = self.refine_min(&traj, spool);
+        self.cell_of(flight, &traj, nu0, spool, leg)
+    }
+
+    /// [`cell`](Self::cell)'s reading of a march already run — split out for RUNG 86, whose
+    /// lagged limiters march through [`ramp_march`]. `leg` is read only for `s_eng` (the
+    /// instantaneous cap's crossing on this trajectory) and for whether any leg is armed.
+    pub fn cell_of(
+        &self, flight: &FlightCondition, traj: &[FuelPoint], nu0: (f64, f64), spool: Spool,
+        leg: &StatorLeg<'_>,
+    ) -> CellRead {
+        let d = *self.read(traj, None).spool(spool);
+        let (s_ref, m_i_ref, s_grid_ref, _cells, v_ref) = self.refine_min(traj, spool);
         let armed = leg.any();
         let mut removed = 0.0;
         for i in 1..traj.len() {
@@ -2238,7 +2261,7 @@ impl ScheduledStatorCore {
             }
         }
         let s_eng = if armed {
-            Self::s_eng(&self.leg_residual(flight, &traj, leg))
+            Self::s_eng(&self.leg_residual(flight, traj, leg))
         } else {
             f64::NAN
         };
