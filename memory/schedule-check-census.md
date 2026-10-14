@@ -1,6 +1,6 @@
 ---
 name: schedule-check-census
-description: "2026-10-14: rung 63's floor table re-derived with below_ceiling on; the census showed the switch reaches rungs 49-73, so the default stays OFF (user) — process lessons"
+description: "2026-10-14: rung 63's floor table re-derived with below_ceiling on; the census of the switch's reach — process lessons (the default was later FLIPPED ON the same day: schedule-check-flip)"
 metadata:
   node_type: memory
   type: project

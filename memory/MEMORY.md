@@ -25,6 +25,7 @@ new slices and step links go THERE, not here.
 - [Sandbox slice 5](sandbox-slice5.md) — the error path had its own error (non-ASCII message hung the page since slice 1); every await on an external process needs a ceiling
 - [Solver walls repair](solver-walls-repair.md) — a fix to failing cases moved 1 416 oracle keys (failure was control flow); a continuation crashed a diagnostic, so it ships default-OFF
 - [Schedule-check census](schedule-check-census.md) — census a fix's reach by RUNNING, not by the seam's stated scope (it said 63; it was 49–73)
+- [Schedule-check flip](schedule-check-flip.md) — a total over a run compares only at equal run length (rung 65 § 3 did not)
 - [Session-end routine](session-end-routine.md) — at session end: update memory + docs, commit, push
 - [Git remote setup](git-remote-setup.md) — github.com/BoykoNeov/jet-engine, branch main, origin over SSH
 - [Always commit and push](always-commit-and-push.md) — auto-commit + push green work; gate is `rust/test-all.ps1`: cargo tests run in parallel, below-normal (pytest until 2026-10-05)
