@@ -126,7 +126,7 @@ fn a_reused_machine_marches_like_a_fresh_one() {
 }
 
 #[test]
-fn a_constant_setting_is_restored_as_built() {
+fn a_constant_setting_is_what_the_reset_restores() {
     let vsv_hp = 0.05;
     sequence(vsv_hp);
     reset_is_a_no_op_when_fresh(vsv_hp);
