@@ -175,9 +175,16 @@ pub fn lagged_valve_table(p: &mut Printer, d: &Design) {
     }
     p.print("    b is a CONSTANT OF THE MOTION -- the drift column IS the claim (b_end = b0 to");
     p.print("    ~4e-16 over a whole march), so the family is one-parameter in b0 alone,");
-    p.print(pyf!("    and its members withhold DIFFERENT fuel (ratio {:.3f} against the member",
-                 mm.natural.removed / mm.moved_lo.removed));
-    p.print("    0.01 below). The EDGE is derivable -- the valve's law is the SMALLEST position");
+    // Re-cut 2026-10-14 (`tests/cli_golden.rs` RECUTS): Python printed the FULL-RUN ratio, which
+    // compared runs of different length. The same-stretch reading is rung 65 § 3's correction.
+    p.print("    and its members withhold DIFFERENT fuel. The removed column sums each WHOLE");
+    p.print(pyf!("    run and the runs differ in length ({} / {} / {} points), so compare",
+                 mm.natural.npts, mm.moved_lo.npts, mm.moved_hi.npts));
+    p.print(pyf!("    the first {} points both runs reach: the member 0.01 below withholds",
+                 mm.common_n));
+    p.print(pyf!("    {:.3f}x the natural one -- a lower valve leaves more for the fuel leg to",
+                 mm.removed_common_lo / mm.removed_common_natural));
+    p.print("    take up. The EDGE is derivable -- the valve's law is the SMALLEST position");
     p.print("    holding the floor, so ABOVE b_cmd(0) it is doing more than its law asks and");
     p.print("    CLOSES (the third row's drift), which is why the natural march looks unique.");
     p.print("    tau multiplies a machine zero and cannot reach the mode: withheld fuel is");

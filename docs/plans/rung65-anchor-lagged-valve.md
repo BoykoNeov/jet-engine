@@ -280,6 +280,11 @@ the top one here). The spec's canonical pair is § 3's tabulated extremes, 1.326
 a 56 % spread; the gate pins neither, only a one-sided ratio on the ±0.01 pair. `τ`-invariance
 across a 20× range: 1.03e−15 relative.
 
+> **CORRECTED 2026-10-14 (`docs/rung65-spec.md` § 3).** These spreads sum WHOLE runs, and the
+> members below `b_cmd(0)` stopped early on rung 43's schedule check (a solver limit). Over the
+> stretch every member reaches the order inverts — the lower the valve, the more fuel withheld —
+> and the gate now reads the ±0.01 pair over the first 251 points both reach.
+
 **The upper edge is exactly `b_cmd(0)`, and it is derivable.** The valve's law is *the SMALLEST
 position holding the floor*. Above `b_cmd(0)` the valve is doing more than its own law asks, so
 its command sits below the live position and it closes; at or below it, the fuel leg takes up

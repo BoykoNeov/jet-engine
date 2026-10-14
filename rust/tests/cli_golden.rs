@@ -89,7 +89,23 @@ fn compare(label: &str, want: &str, got: &str) -> Result<(), String> {
 ///   `s` = 0.955 and now runs to 1.125, so its `removed(fuel)` moves (1.3074e-02 → 1.6567e-02); the
 ///   top two reference marches (0.43, 0.46) end early on the floor's own refusal, now said in two
 ///   columns and three lines. Every other number in the table is Python's.
+/// * 2026-10-14 — rung 65's continuum sentence (`docs/rung65-spec.md` § 3). Python's ratio 1.166
+///   divided the natural member's WHOLE run (341 points) by the lower member's, which the schedule
+///   check had stopped at 251 — two different stretches. The panel now compares the first 251
+///   points both reach (1.243x, the lower member withholding MORE). The table rows are Python's.
 const RECUTS: &[(&str, &str, &str)] = &[
+    (
+        "print_lagged_valve_table",
+        "    and its members withhold DIFFERENT fuel (ratio 1.166 against the member
+    0.01 below). The EDGE is derivable -- the valve's law is the SMALLEST position
+",
+        "    and its members withhold DIFFERENT fuel. The removed column sums each WHOLE
+    run and the runs differ in length (341 / 251 / 341 points), so compare
+    the first 251 points both runs reach: the member 0.01 below withholds
+    1.243x the natural one -- a lower valve leaves more for the fuel leg to
+    take up. The EDGE is derivable -- the valve's law is the SMALLEST position
+",
+    ),
     (
         "print_fuel_bleed_table",
         "       sm  phi_lim  removed(fuel)  removed(both)      credit

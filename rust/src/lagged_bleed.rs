@@ -661,6 +661,15 @@ pub struct MarginalMode {
     /// (iii) `tau` multiplies a machine zero, so it is powerless over the mode.
     pub tau_span: f64,
     pub tau_span_rel: f64,
+    /// NOT PYTHON'S (2026-10-14). The withheld fuel of the natural member and of `moved_lo` over
+    /// the first `common_n` points — the stretch BOTH runs reach. `MarginalCell::removed` sums a
+    /// WHOLE run, and the runs need not be equally long: with the schedule check stopping the
+    /// march, `moved_lo` ended at 251 points against the natural member's 341, so a full-run
+    /// ratio compared different stretches (sandbox plan § 14.5). Rust-only, so every
+    /// Python-backed key above is unchanged.
+    pub common_n: usize,
+    pub removed_common_natural: f64,
+    pub removed_common_lo: f64,
 }
 
 /// One plant's side of the discriminator — Python's `out[name]`.
@@ -894,13 +903,13 @@ impl ScheduledStatorCore {
         let m = self.at_lever(&LeverArm::floored(valve));
         let leg = StatorLeg { accel: None, surge: Some(Floor::Phi(fuel)), tt4_max: None };
 
-        let run = |mach: &ScheduledStatorCore, b0: Option<f64>| -> MarginalCell {
+        let run_t = |mach: &ScheduledStatorCore, b0: Option<f64>| -> (MarginalCell, Vec<FuelPoint>) {
             let (traj, _) = mach.stator_march_scoped(
                 flight, ramp, None, &leg, &MarchScope { b0, ..MarchScope::DEFAULT });
             let rides: Vec<&FuelPoint> = traj.iter().filter(|p| p.mf < p.mf_sched).collect();
             let tau_m = mach.fuel.inner.lever.lim.and_then(|l| l.tau).expect("lagged");
             let b_first = valve_of(&traj[0]).0;
-            MarginalCell {
+            (MarginalCell {
                 b0: b_first,
                 b_end: valve_of(&traj[traj.len() - 1]).0,
                 drift: traj.iter().map(|p| (valve_of(p).0 - b_first).abs())
@@ -921,19 +930,26 @@ impl ScheduledStatorCore {
                        < b_cap,
                 n_ride: rides.len(),
                 npts: traj.len(),
-            }
+            }, traj)
         };
+        let run = |mach: &ScheduledStatorCore, b0: Option<f64>| -> MarginalCell { run_t(mach, b0).0 };
 
-        let nat = run(&m, None);
+        let (nat, t_nat) = run_t(&m, None);
         let b_nat = nat.b0;
         let mut moved = Vec::new();
+        let mut t_lo = Vec::new();
         for (lbl, x) in [("lo", b_nat - d_b0), ("hi", b_nat + d_b0)] {
             assert!(x > 0.0 && x < b_cap,
                     "rung-65 b0 sweep leaves the valve's stops at {lbl}: {x:.6} not in \
                      (0, {b_cap}). A clamped member is not a member of the continuum.");
-            moved.push(run(&m, Some(x)));
+            let (c, t) = run_t(&m, Some(x));
+            if lbl == "lo" {
+                t_lo = t;
+            }
+            moved.push(c);
         }
         let (lo, hi) = (moved[0], moved[1]);
+        let common_n = t_nat.len().min(t_lo.len());
         // tau-INVARIANCE: the same initial condition at two bandwidths.
         let taucells: Vec<(f64, MarginalCell)> = taus.iter()
             .map(|&t| (t, run(&self.at_lever(&LeverArm::floored(valve.lagged(t))), None)))
@@ -965,6 +981,9 @@ impl ScheduledStatorCore {
             moved_hi: hi,
             taucells,
             b_natural: b_nat,
+            common_n,
+            removed_common_natural: self.removed_over(&t_nat[..common_n]),
+            removed_common_lo: self.removed_over(&t_lo[..common_n]),
         }
     }
 

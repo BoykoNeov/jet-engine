@@ -189,13 +189,33 @@ moves with `b0` while both laws stay exactly satisfied:
 | `b0` / `b_cmd(0)` | 0.500 | 0.727 | 0.990 | **1.000** | 1.010 | 1.050 | 1.200 |
 |---|---|---|---|---|---|---|---|
 | drift | 2.4e−16 | 3.3e−16 | 6.5e−16 | 6.0e−16 | 1.2e−5 | 6.1e−5 | 4.4e−2 |
-| `fuel_removed` | 1.326e−2 | 1.736e−2 | 2.070e−2 | 2.024e−2 | — | — | — |
+| `fuel_removed` (whole run — see below) | 1.326e−2 | 1.736e−2 | 2.070e−2 | 2.024e−2 | — | — | — |
+| points run | 195 | 251 | 341 | 341 | | | |
 
 Every member at or below `b_cmd(0)` is exactly frozen, holds `φ_lp = φ_lim` to 1.3e−15 with the
-valve strictly interior, and withholds a **different** amount of fuel — 1.326e−2 to 2.070e−2
-across the tabulated members, a 56 % spread. Above it, the valve closes. (The gate pins this
-as a ONE-SIDED RATIO on the ±0.01 pair — measured 1.166, asserted `> 1.10` — rather than as
-the tabulated extremes: the magnitude is a grid measurement, the materiality is the claim.)
+valve strictly interior, and withholds a **different** amount of fuel. Above it, the valve closes.
+
+**CORRECTED 2026-10-14 — the `fuel_removed` row compares runs of DIFFERENT LENGTH.** It sums
+each member's whole march, and the members below `b_cmd(0)` stopped early on rung 43's
+every-step schedule check (the scheduled fuel had no operating point; a solver limit, not the
+engine's): the 0.500 member after 195 points, the 0.727 member after 251, against 341 for the
+others. So the row's "1.326e−2 to 2.070e−2, a 56 % spread", and the ±0.01 gate's 1.166, read
+the run lengths as much as the members. Over the stretch every member reaches, the ORDER
+INVERTS — the LOWER the valve, the MORE fuel withheld:
+
+| `b0` / `b_cmd(0)` | 0.500 | 0.727 | 0.990 | **1.000** |
+|---|---|---|---|---|
+| `fuel_removed`, first 195 points | 1.326e−2 | 1.206e−2 | 1.014e−2 | 1.005e−2 |
+
+which is what the edge argument below predicts: below `b_cmd(0)` the fuel leg takes up the
+slack the valve leaves, so a lower valve leaves it more to hold. The published row contradicted
+the rung's own mechanism. The materiality survives (+32 % across the members). The gate now
+reads the ±0.01 pair over the first 251 points both reach — measured **1.243**, asserted
+`> 1.10`, lower member over natural (`MarginalMode::removed_common_*`, Rust-only fields; the
+Python-backed `removed` keys are unchanged). The magnitude is a grid measurement; the
+materiality is the claim. Run past the check (sandbox plan § 14.5), the lower members stop
+instead on the floor's own refusal — rung 49's *"no fuel restores it"* — at 235 and 309 points,
+and the order is the same (1.736e−2 / 1.580e−2 / 1.299e−2 / 1.284e−2 over the first 235).
 
 **The edge is derivable.** The valve's law is *the SMALLEST position holding the floor*. Above
 `b_cmd(0)` the valve is doing more than its own law asks, so its command sits below the live

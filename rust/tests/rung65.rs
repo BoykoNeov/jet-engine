@@ -473,8 +473,16 @@ fn the_degeneracy_is_conserved_a_marginal_mode_with_an_edge() {
     // A RATIO, not an absolute threshold: what makes the family GENUINE rather than a technicality
     // is that its members withhold MATERIALLY different fuel, and only a scale-free floor pins
     // that. ONE-SIDED on purpose — the spec disclaims the magnitude, so an upper bound would gate
-    // the grid, not the finding. Measured 1.166 between the natural member and one 0.01 below it.
-    let ratio = mm.natural.removed / mm.moved_lo.removed;
+    // the grid, not the finding.
+    //
+    // OVER THE STRETCH BOTH RUNS REACH (2026-10-14, spec § 3). This gate was `natural.removed /
+    // moved_lo.removed > 1.10`, measured 1.166 — but the lower member's march had stopped on
+    // rung 43's schedule check at 251 points against the natural member's 341, so the ratio
+    // divided two different stretches, and the direction it read was the wrong one. Over the
+    // first 251 points the LOWER member withholds MORE (1.243): a lower valve leaves more of the
+    // floor for the fuel leg to hold.
+    assert_eq!(mm.common_n, mm.natural.npts.min(mm.moved_lo.npts));
+    let ratio = mm.removed_common_lo / mm.removed_common_natural;
     assert!(ratio > 1.10, "{ratio}");
     assert!(mm.tau_span_rel < 1e-9, "{}", mm.tau_span_rel);   // tau multiplies a machine zero
 }
