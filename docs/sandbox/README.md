@@ -125,8 +125,8 @@ and the turbine temperature overshoots.
 **Knobs:** map shape (four), the LP shaft's response time against the HP's, the two throttles, how long the
 fuel move takes and the run continues. **Switches**, each with its number: turbine temperature limiter and its
 lag (rungs 46/47), acceleration schedule (48), stall floor on either compressor, watching the flow coefficient
-or — with the stators moving — blade incidence (49/60), realistic fast-in slow-out release (52); one lever:
-stators or bleed valve, scheduled on speed (57/62).
+or — with the stators moving — blade incidence (49/60), realistic fast-in slow-out release (52); the airflow
+levers: stators, bleed valve, or both together, scheduled on speed (57/62; "both" since rung 86, plan § 15).
 
 **Readouts:** turbine temperature against the redline, both shaft speeds, burnt vs scheduled fuel, each
 compressor's flow coefficient against its (moving) stall line and the floor, thrust (the bleed's dumped air

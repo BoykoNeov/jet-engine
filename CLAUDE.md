@@ -24,12 +24,12 @@ the web page running the Rust model live is `docs/sandbox/` (slices 1–5 built;
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is anchored to a
-published case. All rungs are live; the current scope is **rung 85**.
+published case. All rungs are live; the current scope is **rung 86**.
 
 **Families** (contiguous): 1–6 cycle · 7–24 NOx & mixing · 25–30 nozzle/turbine marches ·
 31–33 off-design steady · 34–37 1-spool transient · 38–45 two-spool · 46–52 fuel limiters ·
 53–56 + 61 airflow levers (steady) · 57–60, 62–63 schedules · 64–68 valve/lag/cascades ·
-69–84 reference splits & rank · 85 blade-speed walls (knobs). **Read-only diagnostics: 7–30, 36, 41, 44, 45**; all else
+69–84 reference splits & rank · 85 blade-speed walls · 86 three levers (knobs). **Read-only diagnostics: 7–30, 36, 41, 44, 45**; all else
 STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 
 | Rung | Adds (one-line hook) | Spec |
@@ -120,6 +120,7 @@ STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 | 83 | **THE CORRECTOR'S OWN BAR** — 82's seam, answered **NO**. **HEADLINE: a bracketing solve locates a SIGN CHANGE, a corrector needs a ROOT** — on a `min`-built residual those differ, and 1 of 5 ramps has NONE. **CORRECTS 82 § 6 — the SIDE is free.** | `docs/rung83-spec.md` |
 | 84 | **THE MARCHED MINIMUM'S STAIRCASE** — 83's map seam. **HEADLINE: a minimum over a MARCHED set is a reading on a MOVING GRID BOUNDARY, so the residual carries the march's own SAWTOOTH** — a missing root is a crossing landing on a step. **CORRECTS 83's reason, CONFIRMS its verdict; SCALES 82's step control.** | `docs/rung84-spec.md` |
 | 85 | **THE BLADE-SPEED WALLS** — a physical blade speed; `K`, `C`, a REDLINE become OUTPUTS; the first rung shipped as KNOBS (+ the user's rounding knob `λ`). **HEADLINE: holding design incidence CANCELS the map slope** (lumped), so `λ` reaches a schedule only via the droop. **BOUNDS 55's resolution.** | `docs/rung85-spec.md` |
+| 86 | **FUEL + BLEED + STATOR on one plant** — an eight-cell cube, every fuel limiter, shipped as KNOBS. **HEADLINE: a third lever adds no coupling, only a CLOCK** — the limiter re-reads the stator–bleed pair at a moved minimum, or pins it; a `φ` floor STARVES the statored run. **EXTENDS 58; CLOSES 63's seam.** | `docs/rung86-spec.md` |
 
 ## Working contract (from SPEC.md — these override convenience)
 - **Derive before you code.** For each station, write the governing equation and
@@ -135,7 +136,7 @@ STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 - **Every new rung reduces to its predecessor**, exactly and by test (`X=None` ⇒
   the prior code path). This is the project's spine — see any `docs/rungN-spec.md`.
 
-**Current scope (rung 85).** The **cycle solve** is a thermally-perfect, reacting,
+**Current scope (rung 86).** The **cycle solve** is a thermally-perfect, reacting,
 dissociation-equilibrium gas (`Gas.reacting_equilibrium()`) through ideal + real components
 (rungs 2/2b's knobs, mutually exclusive; specified exit pressure). The burner root-finds `f` over the scale-B
 absolute balance, then freezes the station-4 mixture through turbine + nozzle; Fork A/B and
@@ -173,9 +174,8 @@ Never re-open one, and never re-enumerate them here.
 - **Detailed Fenimore** (`CH+N₂→HCN`) and **super-eq-O radical decay** — need new species / a relaxing pocket.
 - **Reacting-gas fuel control** (35/43 defer — the forward burner asserts against an equilibrium gas).
 - **The subsonic / unchoked LP branch** in the two-spool solves (38 flags, unsolved) and its **transient**.
-- **Fuel + bleed + STATOR** on one plant (rung 63's seam, untouched by 64/65).
 - **Off-design at a new ALTITUDE**: every matcher (1- and 2-spool, bleed) keeps the DESIGN ambient as nozzle back-pressure (`p_ambient`); shipped callers hold `p0` fixed. Sandbox overrides per flight — `docs/plans/sandbox-plan.md` § 10.8.
-- **Rungs 69–85's seams — in each rung's spec, not here.** `n`=4 needs a 4th non-fuel lever or a non-`min` composition; every route TRIED (72–76, 80) is CLOSED.
+- **Rungs 69–86's seams — in each rung's spec, not here.** `n`=4 needs a 4th non-fuel lever or a non-`min` composition; every route TRIED (72–76, 80) is CLOSED.
 - **Rung 37's internal clocks on two shafts** + the combined 3-state; **customer/cooling bleed** at station 3.
 - **Afterburner**; a **real hardware/CFD map + surge line** (32's concession, doubled on two spools).
 - **Feeding a shifted/marched state into the production cycle** — a re-foundation, not a rung.
@@ -200,8 +200,8 @@ tag **`python-final`** keeps it, and every `engine.py:N` / `test_rungN.py` citat
   `two_spool_transient.rs` (40, 44) → `bleed.rs` (42) → `fuel_transient.rs` (43, 45, and the
   fuel-side limiters 46–52) → `stator.rs` (53–54) → `stage.rs` (55–56) → `stator_transient.rs`
   (57–60) → `stator_bleed.rs` (61) → `bleed_transient.rs` (62–63) → `limited_bleed.rs` (64) →
-  `lagged_bleed.rs` (65) → **exactly ONE module per rung, 66→85** (`two_lag.rs` …
-  `staircase_law.rs`, `blade_speed.rs`). A rung is a core plus a `const` table of function pointers, and reduces to
+  `lagged_bleed.rs` (65) → **exactly ONE module per rung, 66→86** (`two_lag.rs` …
+  `blade_speed.rs`, `three_levers.rs`). A rung is a core plus a `const` table of function pointers, and reduces to
   its predecessor; **each module's header names its rung, and what it adds is in its spec** — so
   this entry never grows.
 - `rust/src/main.rs` + `panels/` + `pyfmt.rs` — the CLI: the design-point tables and **one panel per

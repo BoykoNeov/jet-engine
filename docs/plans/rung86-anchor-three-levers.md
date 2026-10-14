@@ -13,7 +13,11 @@ as an incidence (60); (2) both schedules placed at `n_lo` = 0.65 (rungs 62/63's 
 (the sandbox direction): every prediction below is scored HIT/MISS, and a miss is a finding.
 
 **Status:** § 0 measured; § 1–§ 3 written BEFORE any of § 3's quantities was measured, except
-the one cell § 0 (P1) discloses. No model code exists for this rung yet.
+the one cell § 0 (P1) discloses. **SHIPPED 2026-10-14, scored in `docs/rung86-spec.md` § 3 — no
+bar here was edited after measuring.** One GATE was: B1's "an unreached cell is bit-for-bit its
+leg-free self" failed as written (the run is not — the limiter still trims later fuel; only the
+minimum's reading is), so `tests/rung86.rs` gates the reading and the spec scores the clause MISS
+as written, the narrowed form earning no credit.
 
 ---
 

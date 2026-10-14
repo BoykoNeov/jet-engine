@@ -627,6 +627,7 @@ its one number:
 - **ONE airflow lever at a time**: *stator schedule* (rung 57, LP or HP, max setting and the speed it
   opens from) or *bleed schedule* (rung 62, max bleed and opening speed). Stator + bleed + a fuel limiter
   together is OPEN physics (CLAUDE.md: "Fuel + bleed + STATOR on one plant") — refused in words.
+  *(LIFTED 2026-10-14 by rung 86 — § 15: a fourth choice, "both".)*
 - Left out: rung 50/51's forced release (`s_off`, `τ_rel`) — an instrument the rungs used to ISOLATE the
   release edge, not hardware a controller has (§ 12.8 Q3).
 
@@ -651,7 +652,7 @@ seconds. The ramp knob is in the same unit; the page says why. (B)'s unit is the
 - **(B) switch combinations the model refuses** (`r43_integrate_fuel`'s asserts, each a pre-check): the
   realistic-release lag needs a floor or schedule to lag; it cannot run with the temperature limiter's
   lag (a two-lag cascade, rung 66 — not this slice); the limiter's lag needs a redline; `φ` floor and
-  incidence floor share one slot; stator AND bleed with fuel limiters is OPEN.
+  incidence floor share one slot; stator AND bleed with fuel limiters is OPEN *(lifted by rung 86 — § 15)*.
 - **(B) a floor above the start point** (§ 12.2) is NOT refused — it is shown, and worded from the
   trajectory's own applied-vs-scheduled fuel.
 - **A run that stops early is a RESULT**: the page shows the points it has and why it stopped. The
@@ -1235,3 +1236,24 @@ listed key by key before anything was licensed.
   reading of the map a march LEAVES, which slice V gates as Python's persistence) and nothing
   else; start-only moves no key. Gate: `rust/tests/reused_machine.rs` (fails with the reset
   removed). The sandbox never builds these machines.
+
+## 15. Both airflow levers at once — rung 86 (2026-10-14) — not a slice
+
+Rung 86 (`docs/rung86-spec.md`) measured the plant § 12.3 refused — the stator schedule and the
+bleed schedule together beside any fuel limiter — and found it runs on the model as it stood (rung
+62's machine, rung 63's merge). So the refusal is lifted.
+
+- **The knob:** a fourth lever choice, *Both: stators and bleed together (rung 86)*, showing both
+  sets of numbers and the floor's incidence option. One select option rather than two switches:
+  functionally the same, and every saved `"lever"` setting stays valid. Both levers' prechecks apply.
+  The lever chart draws the stator closing and the air bled (as a fraction) together.
+- **Gates:** `tests/sandbox_controls.rs` replays four both-lever cases against the model's own march
+  bit for bit (accel; redline + its lag; floor + release; incidence floor on the flat-LP map) and
+  checks each limiter holds; `check_requests` adds four (incl. a stators-alone run starved at the
+  first step); `browser.mjs` checks the bleed rescuing a run the `φ` floor starves with the stators
+  alone, and that starved run shown as a result (0 points, plain words, no error card).
+- **Crash map** (§ 14.3's instrument, every request both levers, 1 000 requests, seed 11): no
+  panic — 613 complete, 309 refused before the run, 78 stopped with a reason (47 floor unreachable,
+  21 lean, 4 rich, 6 cause unknown — the kind earlier maps also found).
+- **What the page now shows**, rung 86's knob finding: a stall floor read as a flow coefficient
+  fights the stators and can starve the engine; the bleed lifts it back.

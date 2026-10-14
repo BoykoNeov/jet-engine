@@ -17,7 +17,10 @@
 //! (rung 82's edit pass once added 253 B of CRLF), so any scripted edit of `CLAUDE.md` must keep
 //! it LF.
 
-const MAX_BYTES: usize = 35_970;
+/// History since the port (earlier entries: the Python file at `python-final`):
+/// * 2026-10-14, rung 86: 35 970 → 36 256. The rung row (346 B) less the OPEN entry it closes,
+///   plus the scope/family/layout touches — real one-line-per-rung growth; the slack stays 20 B.
+const MAX_BYTES: usize = 36_256;
 const MAX_LINES: usize = 300;
 
 /// The file, as bytes. `include_bytes!` makes cargo rebuild this test whenever `CLAUDE.md` changes.
