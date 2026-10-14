@@ -285,11 +285,11 @@ holds the floor (*"floor … UNREACHABLE"*). Until 2026-10-14 the 0.43 march sto
 `s` = 0.955, on rung 43's every-step schedule check: the solver's limit, not the engine's. It
 now runs on behind `FuelLimiters::below_ceiling`, which `floor_dichotomy` switches on (sandbox
 plan § 14.3), and its `removed` moved from 1.31e−2 to 1.66e−2. **So `removed` is a sum over the
-run that exists**, and the two top rows are not comparable. 0.46 removes *less* than 0.43 only
-because it stops sooner. Nothing a verdict reads moved: `m_i`, `min φ` and the credit are the
+run that exists**, and the two top rows are not comparable: 0.46 removes less than 0.43, and it
+also stops sooner. Nothing a verdict reads moved: `m_i`, `min φ` and the credit are the
 old route's, bit for bit, and every verdict reads `removed` only as `== 0` or `> 0`. The stop
 reasons are read off the failing call, not guessed (`tests/rung63.rs`,
-`the_reference_runs_above_the_band_end_on_the_floors_own_refusal`).
+`the_top_two_reference_runs_end_on_the_floors_own_refusal`).
 
 The disarming band is `sm` ∈ **[0.337167, 0.433944]**, whose edges are exactly
 `min φ(reference)` = 0.735442 and `min φ(armed)` = 0.788669 over `φ_surge` = 0.55. Inside it,

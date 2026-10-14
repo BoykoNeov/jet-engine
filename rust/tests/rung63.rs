@@ -512,7 +512,7 @@ fn the_floor_is_disarmed_inside_the_band_and_tautological_above_it() {
 /// 0.46 one is the same march either way. The re-derivation moves `removed` and nothing a verdict
 /// reads: `m_i`, `min_phi` and `credit` are the old route's, bit for bit.
 #[test]
-fn the_reference_runs_above_the_band_end_on_the_floors_own_refusal() {
+fn the_top_two_reference_runs_end_on_the_floors_own_refusal() {
     let (fl, rp) = (flight(), ramp(0.5, DS));
     let m = bt(&LeverArm::default());
     let grid = [0.34, 0.36, 0.40, 0.43, 0.46];

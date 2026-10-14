@@ -1113,9 +1113,11 @@ listed key by key before anything was licensed.
   It then ran the whole gate twice: switch off, and switch forced on everywhere. With the switch
   off, the check fires in test programs for rungs **49, 63, 64 and 66–73**, in their oracle and
   dispatch suites, and in the CLI (8 hits on the lagged route, 1 on the plain one). With the
-  switch on, every rung's own verdict suite still passes. What fails is 12 bit-gates (oracles,
-  smoke files, the CLI golden) and **one reduce** (`slice_z_smoke`: rungs 66/67 → 65, 76 vs 68
-  points). Rungs 65 and up have their OWN marchers, which have no ceiling, so turning the switch
+  switch on, every rung's own verdict suite still passes. What fails is 10 bit-gate programs
+  (17 tests: the CLI golden, seven `slice_*_oracle`, `slice_x_smoke`, `slice_v_smoke`) and **one
+  reduce** (`slice_z_smoke`: rungs 66/67 → 65, 76 vs 68 points). Two more failures came from the
+  instrumented copy, not the switch: `sandbox_controls`' explicit-off test was overridden by the
+  census's forcing, and the page went stale because of the logging code. Rungs 65 and up have their OWN marchers, which have no ceiling, so turning the switch
   on in rung 43's marcher splits the ladder at 65.
 - **What would move.** Rung 64's fuel bill (`removed_alone` 9.06e−3 → 1.44e−2 on the tilted map,
   and the `below_bare` cells with it). Rungs 66–69 and 73: march lengths 216 → 231 points and a

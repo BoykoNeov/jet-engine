@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: e4d621d9-cfe0-43ec-934c-ff0a78178a12
-  modified: 2026-10-14T11:41:48.157Z
+  modified: 2026-10-14T12:07:51.311Z
 ---
 
 2026-10-14. CLAUDE.md said only "rung 58's floor dichotomy (rung 63's table)" stopped on rung 43's
@@ -24,8 +24,9 @@ rung 63's table only (sandbox plan § 14.4, rung63-spec § 3). Lessons:
 - **Parallel tests share ONE panic hook.** `slice_w_oracle`'s `refuses()` swaps it, so the real
   failure's message was silenced and an expected refusal printed instead. Re-run with
   `--test-threads=1` before diagnosing a printed panic.
-- **The Start-Process wrapper reported exit 0 on a failing cargo test.** Read the test output
-  (global rule), never the wrapper's code.
+- **The Start-Process wrapper reported exit 0 on a failing cargo test**, and it lowered the
+  priority AFTER launch (cargo's children ran at normal). For one program use the project's own
+  `powershell -File rust\test-all.ps1 -Only <name>`: below-normal from the start, real status.
 - Licence shape that worked: re-run the old march's failing step through public calls (validated
   bit-equal at every recorded point first). Hold the moved key to Python THROUGH the unchanged
   route, and assert the new value moved. `tests/common/schedule_check.rs`.
