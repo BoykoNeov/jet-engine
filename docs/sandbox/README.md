@@ -137,7 +137,8 @@ and a table, with pin & compare. Each run on its own Worker, killed by a knob mo
 floor could no longer be held; the mixture left the fuel solver's range, lean or rich. Until 2026-10-10 a run
 also stopped when the model's every-step check at the full scheduled fuel had no answer while a limiter held
 the fuel below it; the view now switches on the model's `below_ceiling`, which decides the limiters from the
-most fuel that solves (plan § 14), and those runs go on.
+most fuel that solves (plan § 14), and those runs go on. Since 2026-10-14 that is the model's own default
+(plan § 14.6).
 With the temperature limiter's lag on, the march does not record its state, and the stop is said without a
 cause.
 

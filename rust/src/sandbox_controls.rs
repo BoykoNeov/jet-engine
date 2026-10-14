@@ -446,7 +446,9 @@ impl ControlsSolver {
             tau_rel: None,
             lag: s.release_on.then(|| AsymmetricLag::new(s.tau_att, s.tau_rel)),
             // Where the scheduled fuel has no operating point, decide the limiters from the most
-            // fuel that has one, instead of stopping (2026-10-10; the shipped rungs keep `false`).
+            // fuel that has one, instead of stopping (2026-10-10). The model's default since
+            // 2026-10-14 (plan § 14.6); set explicitly so the view does not depend on a thread's
+            // `CeilingDefault`.
             below_ceiling: true,
         }
     }

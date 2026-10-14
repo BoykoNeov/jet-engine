@@ -1216,8 +1216,12 @@ listed key by key before anything was licensed.
 - **Instruments re-scoped to the OFF route, not re-derived:** rung 63's top-two-runs test and slice
   W's licence (their "old route" is now explicitly OFF), slice AG's planted-defect reach test, and
   slice Z smoke's unfloored reduce grid (68 OFF, 76 at the default — the reduce holds at both).
-- **Found on the way, not traced:** one rung-70 machine REUSED for six marches in a row (switch
-  alternating OFF/ON, redline 1200 → 1100 → 1050 K) started its sixth march off-equilibrium
-  (`b` 0.036626 → 0.036640 at `s` = 0). With a fresh machine per march, OFF and ON agree bit for
-  bit at that point, in either order. Whether the reuse alone does it, without the switch, was not
-  measured. Every gate here builds a fresh machine per march.
+- **Rung 49** was reached (21 ceiling searches in its suite) and nothing it gates moved.
+- **The census scripts** (force the switch ON in a throwaway worktree and log every ceiling search;
+  then tag each search with its call chain): `docs/plans/scratch-archive/ceiling-rollout/`
+  (`force_on.py`, then `tag.py`), run on a worktree's `rust/src`.
+- **Found on the way, NOT the switch, not traced:** one rung-70 machine REUSED for six marches in
+  a row (redline 1200, 1200, 1100, 1100, 1050, 1050 K) starts its SIXTH march off-equilibrium
+  (`nu_lp` 0.74754 → 0.74745 at `s` = 0) — with the switch OFF for all six, ON for all six, or
+  alternating alike; marches one to five equal a fresh machine's bit for bit. A pre-existing
+  carry-over between marches on one machine. Every gate here builds a fresh machine per march.
