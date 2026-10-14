@@ -1220,8 +1220,17 @@ listed key by key before anything was licensed.
 - **The census scripts** (force the switch ON in a throwaway worktree and log every ceiling search;
   then tag each search with its call chain): `docs/plans/scratch-archive/ceiling-rollout/`
   (`force_on.py`, then `tag.py`), run on a worktree's `rust/src`.
-- **Found on the way, NOT the switch, not traced:** one rung-70 machine REUSED for six marches in
-  a row (redline 1200, 1200, 1100, 1100, 1050, 1050 K) starts its SIXTH march off-equilibrium
-  (`nu_lp` 0.74754 → 0.74745 at `s` = 0) — with the switch OFF for all six, ON for all six, or
-  alternating alike; marches one to five equal a fresh machine's bit for bit. A pre-existing
-  carry-over between marches on one machine. Every gate here builds a fresh machine per march.
+- **Found on the way, NOT the switch — TRACED and FIXED the same day:** one rung-70 machine
+  REUSED for six marches in a row (redline 1200, 1200, 1100, 1100, 1050, 1050 K) started its
+  SIXTH march off-equilibrium — with the switch OFF for all six, ON for all six, or alternating
+  alike; marches one to five equal a fresh machine's bit for bit. **Cause: the live LP map.** A
+  stator march writes the live maps as the stators move and, by Python's shape, never restores
+  them; march 5 is the first to end with the stators off zero (`v` = −8.3e-4), and rung 68's
+  `_arm` returns early once the march's stator position is cleared, so march 6's `s = 0`
+  equilibrium was solved on march 5's map (re-measured on `ceiling_branches.rs`' rung-70 point:
+  `nu_lp` 0.747544 → 0.747260, `Tt4` 1000.29 K). **Fix:** `stator_march_scoped` resets both maps
+  to the AS-BUILT ones (design + any constant setting) at the START of every march; a no-op on a
+  fresh machine. **Not also at the END** — measured: that moves 19 slice-V oracle keys (every
+  reading of the map a march LEAVES, which slice V gates as Python's persistence) and nothing
+  else; start-only moves no key. Gate: `rust/tests/reused_machine.rs` (fails with the reset
+  removed). The sandbox never builds these machines.

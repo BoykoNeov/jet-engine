@@ -412,6 +412,40 @@ impl StatorArming {
             Spool::Hp => self.map_hp_design,
         }
     }
+
+    /// The live map a spool holds when the machine is BUILT — the design map, with the CONSTANT
+    /// setting applied exactly as [`ScheduledStatorCore::with_tables`] applies it (only when
+    /// non-zero, so a zero setting is the design map bit for bit, not `with_vsv(0.0)`).
+    pub fn built_map(&self, spool: Spool) -> ComponentMap {
+        let vsv = match spool {
+            Spool::Lp => self.vsv_lp,
+            Spool::Hp => self.vsv_hp,
+        };
+        if vsv != 0.0 { self.design_map(spool).with_vsv(vsv) } else { self.design_map(spool) }
+    }
+}
+
+/// NOT A RUNG (2026-10-14). Puts BOTH live maps back to the as-built ones at the START of a stator
+/// march — called by [`FuelTransientCore::stator_march_scoped`] before the table's march.
+///
+/// Within a march the live maps are written by `_arm` (rung 57's schedule, rung 68's limiter
+/// position) and deliberately never restored — Python's shape, which the march's own steps rely
+/// on. But BETWEEN marches nothing put them back: rung 68's `_arm` returns early once the march's
+/// stator position is cleared, so the next march's `s = 0` equilibrium was solved on the map the
+/// LAST march left. Measured on a rung-70 machine reused for six marches (sandbox plan § 14.6):
+/// march 5 ends with the LP stators at `v` = −8.3e-4, and march 6 started off-equilibrium
+/// (`nu_lp` 0.747544 → 0.747260, `Tt4` 1000.29 K); with this reset every march equals a fresh
+/// machine's bit for bit (`tests/reused_machine.rs`).
+///
+/// **AT THE START ONLY, NOT ALSO AT THE END — measured, not chosen for tidiness.** A reset at both
+/// ends also passes that test, but moves 19 oracle keys in `slice_v_oracle.rs` / `slice_v_smoke.rs`
+/// (every `final_*` / `stale_*` reading of the map a march LEAVES, which slice V gates as Python's
+/// persistence on purpose) and no other key in the gate. At the start only, every oracle stays bit
+/// for bit: on a fresh machine this is a no-op, since the live maps ARE the as-built ones.
+fn reset_built_maps(core: &TwoSpoolTransientCore) {
+    let a = &core.stator;
+    core.inner.set_map_lp(a.built_map(Spool::Lp));
+    core.inner.set_map_hp(a.built_map(Spool::Hp));
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -812,6 +846,7 @@ impl FuelTransientCore {
         &self, flight: &FlightCondition, ramp: &Ramp, nu0: Option<(f64, f64)>,
         leg: &StatorLeg<'_>, scope: &MarchScope,
     ) -> (Vec<FuelPoint>, (f64, f64)) {
+        reset_built_maps(&self.inner);
         (self.inner.stator_hooks.stator_march)(self, flight, ramp, nu0, leg, scope)
     }
 

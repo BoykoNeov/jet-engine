@@ -1218,6 +1218,11 @@ pub struct TwoSpoolMapCore {
     /// assign, and the value is read deep inside a marched hook chain, so it cannot become a
     /// parameter either — hence interior mutability, which is Python's shape exactly.
     ///
+    /// **Reset at the START of every stator march** (2026-10-14): both maps go back to the as-built
+    /// ones (`stator_transient::reset_built_maps`), because a reused machine otherwise started its
+    /// next march on the map the last one left (`tests/reused_machine.rs`). A march still LEAVES
+    /// its last map behind, as Python does — slice V gates that persistence.
+    ///
     /// Private on purpose: [`map_lp`](Self::map_lp) / [`set_map_lp`](Self::set_map_lp) keep ONE
     /// spelling at 40-odd call sites and make every write greppable.
     map_lp: Cell<ComponentMap>,
