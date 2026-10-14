@@ -1,0 +1,25 @@
+
+FUEL + BLEED + STATOR (rung 86): the three levers on ONE plant -- rung 62's machine with
+the LP stator schedule (0.20 below 0.65) and the bleed schedule (0.10 below 0.65), plus ONE
+fuel limiter. Eight on/off cells, each the LP incidence-margin minimum; T is the THREE-WAY
+term, what exists only with all three on: T = I_SB(limiter on) - I_SB(limiter off).
+
+  limiter (shaped maps)       r     I_SB off      I_SB on            T    T/-I  reaches       runs
+  accel                    0.25   -2.5612e-2   -2.1654e-2    3.9573e-3   0.155  none,B,S,SB   all full
+  accel                    0.50   -2.4893e-2   -2.1962e-2    2.9304e-3   0.118  none,B,S,SB   all full
+  accel                    1.00   -2.4208e-2   -2.2356e-2    1.8515e-3   0.076  B,S,SB        all full
+  accel+lag                0.50   -2.4893e-2   -2.2397e-2    2.4956e-3   0.100  none,B,S,SB   all full
+  topping                  0.25   -2.5612e-2   -2.4063e-2    1.5487e-3   0.060  none,B,S,SB   all full
+  topping                  0.50   -2.4893e-2   -2.4066e-2    8.2645e-4   0.033  B,SB          all full
+  topping                  1.00   -2.4208e-2   -2.4208e-2     0.0000e0   0.000                all full
+  topping+lag              0.50   -2.4893e-2   -2.4639e-2    2.5414e-4   0.010  B,SB          all full
+  incidence floor sm=0.42  0.50   -2.4893e-2    1.2909e-2    3.7802e-2   1.519  none,S        short S0B0F1:288
+  phi floor sm=0.38        0.50   -2.4893e-2   -9.7954e-2   -7.3061e-2  -2.935  none,S,SB     short S1B0F1:84
+
+  The acceleration schedule pulls the reading EARLIER, before the stator-bleed interaction
+  has built up: T has the opposite sign to I_SB and is a fraction of it, computable from the
+  limiter-free runs (rung 58's predictor recovers 71-93 %). The turbine limiter reaches only
+  the runs whose minimum is hotter than its redline, so T is a ledger of WHERE the pair puts
+  the minimum. The incidence floor is a ledger of its set point; the flow-coefficient floor
+  fights the stator (which lowers the flow coefficient) and can starve the run -- the bleed
+  rescues it.

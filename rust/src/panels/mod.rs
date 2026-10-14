@@ -30,6 +30,7 @@ pub mod nox;
 pub mod offdesign;
 pub mod readers;
 pub mod schedules;
+pub mod three_levers;
 pub mod twospool;
 
 /// The chart DATA the CLI writes to the working directory, as `main.py` wrote its PNG there.
@@ -91,7 +92,7 @@ pub type Panel = fn(&mut Printer, &Design);
 /// a mistyped Python panel name pass as a new panel against a fresh capture of itself. Each name
 /// must sit in [`PANELS`] exactly once, in the contiguous block just before the chart line, and in
 /// no Python segment (`tests/cli_golden.rs`).
-pub const RUST_OWNED: &[&str] = &["print_blade_speed_table"];
+pub const RUST_OWNED: &[&str] = &["print_blade_speed_table", "print_three_levers_table"];
 
 /// `main()`'s calls, in order, each named as the golden's segment file names it (a `print_*`
 /// function's name, or `main:<what>` for text `main()` prints inline).
@@ -189,6 +190,7 @@ pub const PANELS: &[(&str, Panel)] = &[
     ("print_staircase_law_table", readers::staircase_law_table),
     // ---- born in Rust: rung 85 on, each held to its own capture (RUST_OWNED)
     ("print_blade_speed_table", blade_speed::blade_speed_table),
+    ("print_three_levers_table", three_levers::three_levers_table),
     // ---- slice AR: the chart's line (the data itself is written by `src/main.rs`)
     ("plot_ts_diagram", cycle::ts_diagram_line),
 ];

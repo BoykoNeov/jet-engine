@@ -330,6 +330,11 @@ fn c1_the_incidence_floor_is_a_ledger() {
             let (led, t_led) = c.incidence_ledger().unwrap();
             for (k, (s, b)) in PAIRS.into_iter().enumerate() {
                 assert!((c.m(s, b, 1) - led[k]).abs() < 1e-6, "{shape} r={r} sm={sm} S{s}B{b}");
+                // DORMANT over the WHOLE run, not by the reading's own definition: a floor below
+                // the run's minimum never binds, so it withholds no fuel at all.
+                if c.m(s, b, 0) > c.set_point.unwrap() {
+                    assert_eq!(c.at(s, b, 1).read.fuel_removed, 0.0, "{shape} r={r} sm={sm} S{s}B{b}");
+                }
             }
             assert!((c.t - t_led).abs() < 2e-6, "{shape} r={r} sm={sm}");
         }
@@ -355,6 +360,9 @@ fn c2_the_phi_floor_holds_phi_but_not_the_incidence_minimum_with_the_stator_on()
                 }
                 let binds = free.read.min_phi < phi_lim;
                 assert_eq!(c.reached[k], binds, "{shape} r={r} sm={sm} S{s}B{b}");
+                if !binds {
+                    assert_eq!(leg.read.fuel_removed, 0.0, "dormant over the whole run: {shape} r={r} sm={sm} S{s}B{b}");
+                }
                 if binds && s == 0 {
                     assert!((leg.phi_at_min - phi_lim).abs() < 1e-6
                                 && (leg.read.m_i - (c.t_c - 1.0 / phi_lim)).abs() < 1e-6,
