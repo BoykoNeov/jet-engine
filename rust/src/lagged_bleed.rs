@@ -360,9 +360,13 @@ pub fn r65_integrate_fuel_valve_lag(
 
     // Rung 64's instantaneous root at THIS state and fuel. `r62_try_close_fuel` is Python's
     // `super(LimitedBleedTransient, self)._close_fuel` — rung 63's closure, NOT this table's.
+    // RUNG 88: solved against the valve's own target at this state — `phi_lim` itself for the `φ`
+    // valve (no `v` read: rung 65's march to the operation), `φ_lim/(1 + v·φ_lim)` for the
+    // incidence valve, `v` the LP stator setting at (a, h).
     let command = |a: f64, h: f64, mf: f64| -> Result<f64, Abort> {
         bump(&CMD_CALLS);
-        Ok(crate::limited_bleed::r64_solve_b(&lim, |b| {
+        let target = crate::limited_bleed::r87_target(&lim, &ft.inner, a, h, tt2);
+        Ok(crate::limited_bleed::r64_solve_b_at(&lim, target, |b| {
             let _g = ForcedBleed::set(&ft.inner, b);
             r62_try_close_fuel(ft, a, h, mf, tt2, pt2)
         })?.1)

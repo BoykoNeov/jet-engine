@@ -112,13 +112,11 @@ impl BleedLimiter {
 
     /// RUNG 87. The same valve watching the rotor INCIDENCE, its set point unchanged at `v = 0`.
     ///
-    /// **INSTANTANEOUS ONLY.** Rung 65's lagged valve and every reader above it (65–80) read
-    /// `phi_lim` as a flow coefficient, so a lagged incidence valve is refused rather than
-    /// silently read in the wrong coordinate.
+    /// **RUNG 88 lets it carry a lag** (rung 65's march solves its command against
+    /// [`target`](Self::target)). Every reader ABOVE rung 65 (66–80) still solves its valve through
+    /// [`r64_solve_b`], which refuses an incidence valve rather than read `phi_lim` as a flow
+    /// coefficient.
     pub fn on_incidence(self) -> Self {
-        assert!(self.tau.is_none(),
-                "rung-87's incidence valve is INSTANTANEOUS: rung 65's lagged valve and its readers \
-                 read phi_lim as a flow coefficient; got tau = {:?}", self.tau);
         BleedLimiter { reference: ValveReference::Incidence, ..self }
     }
 
@@ -156,8 +154,12 @@ impl BleedLimiter {
     /// RUNG 65. The SAME control law on a valve with finite bandwidth — the only difference
     /// between rung 64's object and rung 65's, so every comparison between them holds `phi_lim`
     /// and `b_max` fixed by construction.
+    ///
+    /// **RUNG 88: it keeps the REFERENCE.** Rebuilding through `with_tau` reset it to `φ` — a lagged
+    /// incidence valve came back a `φ` valve, silently (the sibling trap, inside the device).
     pub fn lagged(&self, tau: f64) -> Self {
-        Self::with_tau(self.phi_lim, self.b_max, Some(tau))
+        let l = Self::with_tau(self.phi_lim, self.b_max, Some(tau));
+        BleedLimiter { reference: self.reference, ..l }
     }
 }
 
@@ -487,7 +489,7 @@ pub fn r64_try_close(
 /// LP stator setting the schedule arms at THIS shaft state for the incidence valve. `v` is a
 /// function of the state alone, so it is constant across the outer solve's trial positions and
 /// rung 64's monotone bracket stands (anchor § 1).
-fn r87_target(lim: &BleedLimiter, t: &TwoSpoolTransientCore, nu_lp: f64, nu_hp: f64, tt2: f64) -> f64 {
+pub(crate) fn r87_target(lim: &BleedLimiter, t: &TwoSpoolTransientCore, nu_lp: f64, nu_hp: f64, tt2: f64) -> f64 {
     match lim.reference {
         ValveReference::Phi => lim.phi_lim,
         ValveReference::Incidence => lim.target(t.v_of(Spool::Lp, nu_lp, nu_hp, Some(tt2))),

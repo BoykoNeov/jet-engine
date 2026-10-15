@@ -154,12 +154,11 @@ fn g1_rung62s_builder_drops_the_floor_silently() {
     assert!(caught.is_err(), "sibling must refuse a builder that drops the floor");
 }
 
-/// Rung 65's lagged valve and the readers of rungs 65–80 read `phi_lim` as a flow coefficient, so
-/// a lagged incidence valve is refused, and so is an incidence valve reaching `r64_solve_b`.
+/// The readers of rungs 66–80 read `phi_lim` as a flow coefficient, so an incidence valve reaching
+/// `r64_solve_b` (the spelling they all call) is refused. (Rung 87 refused a LAGGED incidence valve
+/// outright; rung 88 builds it — rung 65's march solves against `target` — see `tests/rung88.rs`.)
 #[test]
 fn the_wrong_coordinate_routes_refuse_the_incidence_valve() {
-    assert!(std::panic::catch_unwind(|| BleedLimiter::with_tau(phi_of(0.42), B, Some(0.1)).on_incidence())
-                .is_err());
     let inc = incidence_valve(phi_of(0.42), B);
     struct S(f64);
     impl turbojet::limited_bleed::HasPhiLp for S {

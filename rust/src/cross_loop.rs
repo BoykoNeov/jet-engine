@@ -996,7 +996,7 @@ impl ScheduledStatorCore {
         let mut rows: Vec<CrossIdentityRow> = Vec::new();
         for &tg in tau_govs {
             let m = self.at_lever(&LeverArm::floored(
-                BleedLimiter::with_tau(own.phi_lim, own.b_max, Some(tau))));
+                own.lagged(tau)));
             let (traj, _) = m.stator_march_scoped(
                 flight, ramp, None, &leg,
                 &MarchScope { tau_gov: Some(tg), ..MarchScope::DEFAULT });
@@ -1101,7 +1101,7 @@ impl ScheduledStatorCore {
         let own = self.fuel.inner.lever.lim
                       .expect("rung-67's oscillation_window needs the machine's own valve");
         let m = self.at_lever(&LeverArm::floored(
-            BleedLimiter::with_tau(own.phi_lim, own.b_max, Some(tau))));
+            own.lagged(tau)));
         let leg = StatorLeg { accel: None, surge: None, tt4_max: Some(tt4_max) };
         // the window edges from the measured P at THIS anchor, taken once at the natural clocks
         let ident = self.cross_identity(flight, ramp, tt4_max, tau, &[tau], 8);
@@ -1182,7 +1182,7 @@ impl ScheduledStatorCore {
     ) -> CrossBill {
         let own = self.fuel.inner.lever.lim
                       .expect("rung-67's cross_bill needs the machine's own valve");
-        let valve = BleedLimiter::with_tau(own.phi_lim, own.b_max, Some(tau));
+        let valve = own.lagged(tau);
         let cell = |blim: Option<BleedLimiter>, tg: Option<f64>| -> CrossBillCell {
             let arm = match blim { Some(v) => LeverArm::floored(v), None => LeverArm::default() };
             let m = self.at_lever(&arm);
@@ -1265,7 +1265,7 @@ impl ScheduledStatorCore {
         let own = self.fuel.inner.lever.lim
                       .expect("rung-67's marginal_mode_cross needs the machine's own valve");
         let m = self.at_lever(&LeverArm::floored(
-            BleedLimiter::with_tau(own.phi_lim, own.b_max, Some(tau))));
+            own.lagged(tau)));
         let leg = StatorLeg { accel: None, surge: None, tt4_max: Some(tt4_max) };
 
         let run = |b0: Option<f64>| -> MarginalCrossCell {
@@ -1380,7 +1380,7 @@ impl ScheduledStatorCore {
         for &lo in tt4_los {
             for &tm in tt4_maxes {
                 let m = self.at_lever(&LeverArm::floored(
-                    BleedLimiter::with_tau(own.phi_lim, own.b_max, Some(tau))));
+                    own.lagged(tau)));
                 let corner = Ramp { tt4_lo: lo, ..*ramp };
                 let leg = StatorLeg { accel: None, surge: None, tt4_max: Some(tm) };
                 let ran = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
