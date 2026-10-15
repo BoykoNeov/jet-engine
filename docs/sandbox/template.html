@@ -333,8 +333,9 @@ footer p { max-width: 90ch; }
           <div class="derived">A cabin system asks for a fixed amount of air, so at low power it is a bigger share of a smaller
             flow. Too much, and the engine has no steady point at all.</div></div></div>
       <p class="note" id="ctl-cust-note">The aircraft's air (cabin, anti-ice) is taken where the HP compressor delivers it, and never
-        comes back. The HP turbine then drives its compressor with less gas than the compressor pumps: the HP compressor
-        moves away from its stall line at every power. The LP compressor moves TOWARD its stall line at high power and
+        comes back. The HP compressor moves away from its stall line at every power: its face now passes more air than
+        the burner does. (The work the lost air would have done pushes the other way, and loses; the generator knob below
+        is that work alone — rung 92.) The LP compressor moves TOWARD its stall line at high power and
         away from it below about 900 K, so on this slam the LP bleed valve has to open wider to hold the same margin, and a
         fixed amount costs it more than the same share (rung 90). This air costs more thrust and fuel than the LP bleed's:
         the HP compressor has already worked on it.</p>
@@ -350,6 +351,31 @@ footer p { max-width: 90ch; }
         the LP one at every power, and blade air is worse than vane air. On this slam the LP bleed valve has to bleed several
         times what it bleeds for the same customer share. The thrust cost runs the other way: the air leaves through the
         nozzle, so it costs about a third of the thrust (rung 91). The engine was sized with no cooling.</p>
+      <div class="toggle" role="group" aria-label="The aircraft's generator">
+        <button type="button" id="ctl-gen-off" aria-pressed="true">No generator load</button>
+        <button type="button" id="ctl-gen-hp" aria-pressed="false">On the HP shaft</button>
+        <button type="button" id="ctl-gen-lp" aria-pressed="false">On the LP shaft</button></div>
+      <div id="ctl-gen-box">
+        <div class="toggle" role="group" aria-label="How the generator load is set">
+          <button type="button" id="ctl-genby-power" aria-pressed="true">A fixed power</button>
+          <button type="button" id="ctl-genby-share" aria-pressed="false">A share of the turbine's work</button></div>
+        <div id="ctl-gpower-box">
+          <div class="knob"><label for="ctl-generator_power">Power <small>× the HP compressor's design power</small></label><input type="number" id="ctl-generator_power" step="0.005">
+            <input type="range" id="ctl-generator_power-r" min="0" max="0.1" step="0.005" aria-label="Generator power slider">
+            <div class="derived">The same unit on both shafts, so HP and LP compare at the same kilowatts. A generator draws what the
+              aircraft needs, so at low power it is a bigger share of a smaller turbine — too much, and the engine has no
+              steady point at all.</div></div></div>
+        <div id="ctl-gshare-box">
+          <div class="knob"><label for="ctl-generator_share">Share of that turbine's work</label><input type="number" id="ctl-generator_share" step="0.01">
+            <input type="range" id="ctl-generator_share-r" min="0" max="0.3" step="0.01" aria-label="Generator share slider"></div></div>
+      </div>
+      <p class="note" id="ctl-gen-note">The generator takes power off a shaft and no air at all: no gas path changes, only the work the
+        compressor on that shaft gets. On the HP shaft that pushes BOTH compressors toward their stall lines at every power
+        — the HP compressor's pressure ratio falls, and that starves the LP one too — and the LP bleed valve has to bleed
+        much more. On the LP shaft the same power costs the compressors almost nothing in the steady state (the LP's own
+        loss is offset by the HP's pressure rise). This is why more-electric aircraft studies take the power off the LP
+        shaft (rung 92). The engine was sized with no generator, and the burner temperature is what you set: a real control
+        would burn hotter to carry the load.</p>
     </fieldset>
     <fieldset id="ctl-sw-set" hidden>
       <legend>Fuel controls</legend>
@@ -1000,7 +1026,8 @@ const CTL_NUM = { "ctl-rho": "rho", "ctl-from": "from", "ctl-to": "to", "ctl-ram
                   "ctl-v_n_lo": "v_n_lo", "ctl-b_max": "b_max", "ctl-b_n_lo": "b_n_lo", "ctl-valve_phi": "valve_phi",
                   "ctl-valve_tau": "valve_tau", "ctl-valve_tau_close": "valve_tau_close",
                   "ctl-customer_share": "customer_share", "ctl-customer_amount": "customer_amount",
-                  "ctl-cool_vane": "cool_vane", "ctl-cool_blade": "cool_blade" };
+                  "ctl-cool_vane": "cool_vane", "ctl-cool_blade": "cool_blade",
+                  "ctl-generator_power": "generator_power", "ctl-generator_share": "generator_share" };
 const CTL_SW = ["redline_on", "gov_lag_on", "accel_on", "floor_on", "release_on"];
 const CTL_VIEW = ["ctl-set", "ctl-sw-set", "ctl-lever-set", "ctl-out", "ctl-card"];
 // The burner (slice 5, turbojet::sandbox_burner): BK holds its knobs; it reads the Design engine S. BN_NUM maps
@@ -1089,6 +1116,10 @@ function showSettings() {
     $("ctl-cshare-box").hidden = C.customer !== "share"; $("ctl-camount-box").hidden = C.customer !== "amount";
     $("ctl-cust-note").hidden = C.customer === "off";
     $("ctl-cool-note").hidden = !(C.cool_vane > 0 || C.cool_blade > 0);
+    for (const m of ["off", "hp", "lp"]) press("ctl-gen-" + m, C.generator === m);
+    for (const m of ["power", "share"]) press("ctl-genby-" + m, C.generator_by === m);
+    $("ctl-gen-box").hidden = C.generator === "off"; $("ctl-gen-note").hidden = C.generator === "off";
+    $("ctl-gpower-box").hidden = C.generator_by !== "power"; $("ctl-gshare-box").hidden = C.generator_by !== "share";
     $("ctl-bsched-box").hidden = C.bleed_mode !== "schedule"; $("ctl-valve-box").hidden = C.bleed_mode !== "valve";
     $("ctl-redline-box").hidden = C.redline_on !== 1; $("ctl-gov_lag-box").hidden = C.gov_lag_on !== 1;
     $("ctl-accel-box").hidden = C.accel_on !== 1; $("ctl-floor-box").hidden = C.floor_on !== 1;
@@ -1578,6 +1609,9 @@ const CTL_ROWS = [
   ["Turbine cooling air, vane / blade (% of the HP compressor's air)",
     r => r.controls.cool_vane > 0 || r.controls.cool_blade > 0
       ? `${fmt(r.controls.cool_vane * 100, 3)} / ${fmt(r.controls.cool_blade * 100, 3)}` : "none"],
+  ["Generator load, start / end (% of its turbine's work)", r => r.controls.generator === "off" ? "none"
+    : `${fmt((r.controls.generator === "hp" ? r.start.generator_share_hp : r.start.generator_share_lp) * 100, 3)} / ${
+        fmt((r.controls.generator === "hp" ? r.end.generator_share_hp : r.end.generator_share_lp) * 100, 3)} (${r.controls.generator.toUpperCase()} shaft)`],
   ["Points computed", r => `${r.s.length} of ${r.expected_points}`],
 ];
 function ctlTable() {
@@ -2411,6 +2445,8 @@ function wire() {
   cclick("ctl-vspd-inst", () => { C.valve_speed = "instant"; }); cclick("ctl-vspd-slow", () => { C.valve_speed = "slow"; });
   cclick("ctl-vcls-same", () => { C.valve_close = "same"; }); cclick("ctl-vcls-own", () => { C.valve_close = "own"; });
   for (const m of ["off", "share", "amount"]) cclick("ctl-cust-" + m, () => { C.customer = m; });
+  for (const m of ["off", "hp", "lp"]) cclick("ctl-gen-" + m, () => { C.generator = m; });
+  for (const m of ["power", "share"]) cclick("ctl-genby-" + m, () => { C.generator_by = m; });
   for (const q of Object.keys(CTL_Q)) $("ctlq-" + q).addEventListener("click", () => { ctlQ = q; showSettings(); drawCtl(); });
   $("mode-controls").addEventListener("click", enterControls);
   // The burner: its own knobs write BK; slow mixing models compute when a slider is let go (bnChanged).

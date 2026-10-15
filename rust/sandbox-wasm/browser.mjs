@@ -425,6 +425,22 @@ try {
         JSON.stringify([cVane, cn, noCool, vaneSum]));
   if (process.env.SANDBOX_SHOTS) { await ev(`document.getElementById('ctlq-lever').click()`); await shot('controls-cooling'); }
   await ev(`window.sandbox.controls({cool_vane: 0, cool_blade: 0}).then(r => r.run)`);
+  // Rung 92: the generator through its own buttons — its knobs and note shown, its share of the HP turbine's work
+  // read back at the start, and beside the instant valve the valve bleeding MORE with the HP-shaft load and less with
+  // the same power on the LP shaft (the scored B3/B4, on this view's engine).
+  await ev(`document.getElementById('ctl-gen-hp').click()`);
+  const gHp = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.generator === 'hp'`, 30000);
+  const hpSum = await ev(sumB);
+  const gn = await ev(`[document.getElementById('ctl-gen-note').hidden, document.getElementById('ctl-gen-box').hidden,
+                        document.getElementById('ctl-gpower-box').hidden, window.sandbox.last.start.generator_share_hp,
+                        window.sandbox.last.stop === null]`);
+  await ev(`document.getElementById('ctl-gen-lp').click()`);
+  const gLp = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.generator === 'lp'`, 30000);
+  const lpSum = await ev(sumB);
+  check('the_hp_generator_makes_the_lp_valve_bleed_more_than_the_lp_one', gHp && gLp && !gn[0] && !gn[1] && !gn[2]
+        && gn[3] > 0.02 && gn[4] && hpSum > noCool && lpSum < hpSum, JSON.stringify([gHp, gLp, gn, noCool, hpSum, lpSum]));
+  if (process.env.SANDBOX_SHOTS) { await ev(`document.getElementById('ctlq-lever').click()`); await shot('controls-generator'); }
+  await ev(`window.sandbox.controls({generator: 'off'}).then(r => r.run)`);
   await ev(`document.getElementById('ctlq-Tt4').click()`);
   await ev(`window.sandbox.controls({lever: 'none', floor_on: 0, floor_phi: 0.75, floor_ref: 'phi', bleed_mode: 'schedule',
             valve_ref: 'phi', valve_speed: 'instant', valve_close: 'same', customer: 'off'}).then(r => r.run)`);

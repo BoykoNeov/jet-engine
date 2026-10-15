@@ -33,6 +33,7 @@ use crate::limited_bleed::{build_limited_bleed, r64_solve_b_at, r87_target, Blee
 use crate::blade_speed::shape_maps;
 use crate::customer_bleed::CustomerBleed;
 use crate::turbine_cooling::TurbineCooling;
+use crate::shaft_offtake::{self, Demand, ShaftOfftake, ShaftOfftakeMatcher};
 use crate::engine::FlightCondition;
 use crate::fuel_transient::{r43_cut_below_ceiling, release_weight, AccelSchedule, AsymmetricLag, FuelInstant, FuelLimiters,
                             FuelPoint, FuelTransientCore, PointExtra, SurgeLimiter};
@@ -215,6 +216,42 @@ pub struct ControlsSettings {
     /// default) is no cooling, so every saved setting stays valid.
     pub cool_vane: f64,
     pub cool_blade: f64,
+    /// Rung 92: the aircraft's generator load — off (the default: every saved setting stays valid), on
+    /// the HP or the LP shaft, set as a SHARE of that turbine's work or a fixed POWER (× the design HP
+    /// compressor power, the same unit on both shafts, so a larger share at low power).
+    pub generator: GeneratorMode,
+    pub generator_by: GeneratorBy,
+    pub generator_share: f64,
+    pub generator_power: f64,
+}
+
+/// Rung 92's switch: which shaft the generator loads.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum GeneratorMode {
+    Off,
+    Hp,
+    Lp,
+}
+
+impl GeneratorMode {
+    pub const ALL: [GeneratorMode; 3] = [GeneratorMode::Off, GeneratorMode::Hp, GeneratorMode::Lp];
+    pub fn key(self) -> &'static str {
+        match self { GeneratorMode::Off => "off", GeneratorMode::Hp => "hp", GeneratorMode::Lp => "lp" }
+    }
+}
+
+/// Rung 92's switch: how the generator load is set.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum GeneratorBy {
+    Share,
+    Power,
+}
+
+impl GeneratorBy {
+    pub const ALL: [GeneratorBy; 2] = [GeneratorBy::Share, GeneratorBy::Power];
+    pub fn key(self) -> &'static str {
+        match self { GeneratorBy::Share => "share", GeneratorBy::Power => "power" }
+    }
 }
 
 /// Rung 90's switch: how the aircraft's customer bleed is set.
@@ -249,6 +286,8 @@ impl ControlsSettings {
             valve_lag_on: false, valve_tau: 0.05, valve_close_own: false, valve_tau_close: 0.2,
             customer: CustomerMode::Off, customer_share: 0.05, customer_amount: 0.05,
             cool_vane: 0.0, cool_blade: 0.0,
+            generator: GeneratorMode::Off, generator_by: GeneratorBy::Power, generator_share: 0.05,
+            generator_power: 0.02,
         }
     }
 
@@ -257,6 +296,19 @@ impl ControlsSettings {
     pub fn turbine_cooling(&self) -> Option<TurbineCooling> {
         (self.cool_vane != 0.0 || self.cool_blade != 0.0)
             .then(|| TurbineCooling::new(self.cool_vane, self.cool_blade))
+    }
+
+    /// Rung 92's load as the model takes it (`None` when off). Range-checked by the precheck first.
+    pub fn shaft_offtake(&self) -> Option<ShaftOfftake> {
+        let d = match self.generator_by {
+            GeneratorBy::Share => Demand::share(self.generator_share),
+            GeneratorBy::Power => Demand::power(self.generator_power),
+        };
+        match self.generator {
+            GeneratorMode::Off => None,
+            GeneratorMode::Hp => Some(ShaftOfftake::hp(d)),
+            GeneratorMode::Lp => Some(ShaftOfftake::lp(d)),
+        }
     }
 
     /// Rung 90's demand as the model takes it (`None` when off). Range-checked by the precheck first.
@@ -294,6 +346,8 @@ impl ControlsSettings {
             "customer" => self.customer.key(), "customer_share" => self.customer_share,
             "customer_amount" => self.customer_amount, "cool_vane" => self.cool_vane,
             "cool_blade" => self.cool_blade,
+            "generator" => self.generator.key(), "generator_by" => self.generator_by.key(),
+            "generator_share" => self.generator_share, "generator_power" => self.generator_power,
         }
     }
 
@@ -337,12 +391,21 @@ impl ControlsSettings {
                           ("valve_phi", &mut s.valve_phi), ("valve_tau", &mut s.valve_tau),
                           ("valve_tau_close", &mut s.valve_tau_close), ("customer_share", &mut s.customer_share),
                           ("customer_amount", &mut s.customer_amount), ("cool_vane", &mut s.cool_vane),
-                          ("cool_blade", &mut s.cool_blade)] {
+                          ("cool_blade", &mut s.cool_blade), ("generator_share", &mut s.generator_share),
+                          ("generator_power", &mut s.generator_power)] {
             num(k, into)?;
         }
         if let Some(t) = text("customer")? {
             s.customer = CustomerMode::ALL.into_iter().find(|m| m.key() == t)
                 .ok_or_else(|| format!("unknown customer bleed {t:?} (\"off\", \"share\" or \"amount\")"))?;
+        }
+        if let Some(t) = text("generator")? {
+            s.generator = GeneratorMode::ALL.into_iter().find(|m| m.key() == t)
+                .ok_or_else(|| format!("unknown generator shaft {t:?} (\"off\", \"hp\" or \"lp\")"))?;
+        }
+        if let Some(t) = text("generator_by")? {
+            s.generator_by = GeneratorBy::ALL.into_iter().find(|m| m.key() == t)
+                .ok_or_else(|| format!("unknown generator setting {t:?} (\"share\" or \"power\")"))?;
         }
         for (k, into) in [("redline_on", &mut s.redline_on), ("gov_lag_on", &mut s.gov_lag_on),
                           ("accel_on", &mut s.accel_on), ("floor_on", &mut s.floor_on),
@@ -442,9 +505,19 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
                  ("v_n_lo", s.v_n_lo), ("b_max", s.b_max), ("b_n_lo", s.b_n_lo), ("valve_phi", s.valve_phi),
                  ("valve_tau", s.valve_tau), ("valve_tau_close", s.valve_tau_close),
                  ("customer_share", s.customer_share), ("customer_amount", s.customer_amount),
-                 ("cool_vane", s.cool_vane), ("cool_blade", s.cool_blade)];
+                 ("cool_vane", s.cool_vane), ("cool_blade", s.cool_blade),
+                 ("generator_share", s.generator_share), ("generator_power", s.generator_power)];
     if let Some((k, _)) = named.iter().find(|(_, v)| !v.is_finite()) {
         return Err(DoesNotRun(format!("Setting {k} is not a number.")));
+    }
+    // Rung 92: the model's own bounds, refused in words before it asserts.
+    let gen_half = |x: f64| (0.0..Demand::SHARE_MAX).contains(&x);
+    if s.generator != GeneratorMode::Off && s.generator_by == GeneratorBy::Share && !gen_half(s.generator_share) {
+        return no("The generator's share of the turbine's work must be at least 0 and below 0.5: half or more \
+                   starves the compressor that turbine drives.");
+    }
+    if s.generator != GeneratorMode::Off && s.generator_by == GeneratorBy::Power && !gen_half(s.generator_power) {
+        return no("The generator's power must be at least 0 and below 0.5 of the HP compressor's design power.");
     }
     // Rung 91: each cooling stream below a quarter of the air, and with a customer SHARE the two
     // together below half (a customer AMOUNT is checked by the model at every point it reaches).
@@ -600,13 +673,45 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
         Some(tc) => design.with_turbine_cooling(tc),
         None => design,
     };
+    // Rung 92: and the generator load. A load the engine cannot carry slows a spool until its compressor
+    // leaves the map, and the equilibrium search then reports only the map — so when an endpoint fails with
+    // the generator on, the page asks the model two questions before naming a cause: (i) with no airflow
+    // lever the steady engine IS this machine's equilibrium (rung 92's plant gate), and its own refusal is
+    // used when it gives one; (ii) otherwise the same machine WITHOUT the generator is solved at that
+    // throttle, and only if it has a steady point is the load named as what removes it. Crash map: 76 of
+    // 129 such refusals ran with the generator off (plan § 21).
+    let unloaded = s.shaft_offtake().is_some().then(|| design.clone());
+    let design = match s.shaft_offtake() {
+        Some(so) => design.with_shaft_offtake(so),
+        None => design,
+    };
+    let gen_check = (s.shaft_offtake().is_some() && s.lever == LeverChoice::None).then(|| design.clone());
     let core = match builder(design, fl, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
         ScheduledStatorTransient::Full(c) => c,
         ScheduledStatorTransient::Degenerate(_) => unreachable!("the Controls engine has both shafts"),
     };
     let steady = |which: &str, tt4: f64| -> Result<Instant2, DoesNotRun> {
-        core.fuel.inner.try_equilibrium(&fl, tt4, None).map(|(i, _, _)| i)
-            .map_err(|e| DoesNotRun(format!("At the {which} throttle ({tt4:.0} K): {}", endpoint_words(&e.0))))
+        core.fuel.inner.try_equilibrium(&fl, tt4, None).map(|(i, _, _)| i).map_err(|e| {
+            let mut m = e.0;
+            if let Some(de) = gen_check.as_ref().filter(|_| !m.contains("rung-92:")) {
+                let st = ShaftOfftakeMatcher::new(de.clone(), fl, MDOT_DESIGN, ml, mh, 0.0);
+                if let Err(e2) = st.try_match_point(&fl, tt4) {
+                    if e2.0.contains("rung-92:") { m = e2.0; }
+                }
+            }
+            let mut words = format!("At the {which} throttle ({tt4:.0} K): {}", endpoint_words(&m));
+            if let Some(de) = unloaded.as_ref().filter(|_| !m.contains("rung-92:")) {
+                let bare = match builder(de.clone(), fl, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
+                    ScheduledStatorTransient::Full(c) => c,
+                    ScheduledStatorTransient::Degenerate(_) => unreachable!("the Controls engine has both shafts"),
+                };
+                if bare.fuel.inner.try_equilibrium(&fl, tt4, None).is_ok() {
+                    words += " With the generator off this throttle does have a steady point, so the generator's \
+                              load is what removes it: ask for less power, or raise the throttle.";
+                }
+            }
+            DoesNotRun(words)
+        })
     };
     let start = steady("starting", s.from)?;
     let end = steady("final", s.to)?;
@@ -631,6 +736,10 @@ pub fn endpoint_words(message: &str) -> String {
         "the aircraft's air and the turbine cooling together would take more than half of the HP compressor's air \
          here, which starves the burner. A fixed amount of air is a larger share at low power: raise the throttle, \
          ask for less air, or cool the turbines less"
+    } else if message.contains("rung-92:") {
+        "the aircraft's generator would take half or more of its turbine's work here, which starves the compressor \
+         that turbine drives. A fixed power is a larger share at low power, and the less work the compressor gets \
+         the less air the engine takes: raise the throttle, or ask for less power"
     } else if message.contains("did not converge") {
         "the search for the steady shaft speeds does not settle. Measured only with a lever whose schedule does \
          nearly all its travel just below the design speed; start the lever's schedule lower"
@@ -1051,6 +1160,8 @@ pub enum StopKind {
     /// Rung 90: the aircraft's fixed amount of air grew past half the HP compressor's delivery as the
     /// engine slowed.
     Customer,
+    /// Rung 92: the aircraft's generator took half or more of its turbine's work as the engine slowed.
+    Generator,
     /// Anything else the model refused at this point of the run.
     Other,
 }
@@ -1063,6 +1174,7 @@ impl StopKind {
             StopKind::Rich => "rich",
             StopKind::Unknown => "unknown",
             StopKind::Customer => "customer",
+            StopKind::Generator => "generator",
             StopKind::Other => "other",
         }
     }
@@ -1075,6 +1187,10 @@ impl StopKind {
                  air, so as the engine slowed it became a bigger and bigger share of what the HP compressor delivers; \
                  past half, the burner is starved and the model stops. Ask for less air, or do not cut the power so \
                  far.",
+            StopKind::Generator =>
+                "The aircraft asked for more power than the engine could give. A fixed generator power is a bigger \
+                 and bigger share of its turbine's work as the engine slows; past half, the compressor that turbine \
+                 drives is starved and the model stops. Ask for less power, or do not cut the power so far.",
             StopKind::FloorUnreachable =>
                 "The stall floor could no longer be held. The floor cuts the fuel to keep the compressor's flow \
                  coefficient up; here even cutting the fuel to almost nothing would not lift it to the floor, so the \
@@ -1125,6 +1241,9 @@ pub fn classify(_sv: &ControlsSolver, stop: &Stop, last: Option<&FuelPoint>) -> 
     // Rung 91's refusal names the customer and the cooling together; only the customer's amount grows.
     if m.contains("customer bleed takes") || (m.contains("turbine cooling") && m.contains("together take")) {
         return StopKind::Customer;
+    }
+    if m.contains("rung-92:") {
+        return StopKind::Generator;
     }
     if !m.contains("fuel closure does not bracket") {
         return StopKind::Other;
@@ -1318,6 +1437,9 @@ fn steady_json(sv: &ControlsSolver, i: &Instant2) -> Json {
             (Some(c), Some(face)) => c * (1.0 - i.close.bleed.unwrap_or(0.0)) * face,
             _ => 0.0,
         },
+        // Rung 92: the generator's share of each turbine's work.
+        "generator_share_hp" => shaft_offtake::shares(&sv.core.fuel.inner, i).0,
+        "generator_share_lp" => shaft_offtake::shares(&sv.core.fuel.inner, i).1,
     }
 }
 
@@ -1432,6 +1554,13 @@ pub fn check_requests() -> Vec<String> {
                            bleed_mode: BleedMode::Valve, ..d },
         ControlsSettings { cool_blade: 0.25, ..d },                                                // refused: quarter
         ControlsSettings { cool_vane: 0.2, cool_blade: 0.2, customer: CustomerMode::Share, customer_share: 0.15, ..d }, // refused
+        // rung 92: the generator on each shaft, by power and by share, beside the valve and the cooling, and
+        // refused at half
+        ControlsSettings { generator: GeneratorMode::Hp, ..d },
+        ControlsSettings { generator: GeneratorMode::Lp, lever: LeverChoice::Bleed, bleed_mode: BleedMode::Valve, ..d },
+        ControlsSettings { generator: GeneratorMode::Hp, generator_by: GeneratorBy::Share, cool_vane: 0.04,
+                           customer: CustomerMode::Share, ..d },
+        ControlsSettings { generator: GeneratorMode::Lp, generator_by: GeneratorBy::Share, generator_share: 0.5, ..d }, // refused
         ControlsSettings { from: 1400.0, to: 1000.0, ..d },
         ControlsSettings { release_on: true, ..d },                                  // refused: nothing to lag
         ControlsSettings { floor_on: true, lever: LeverChoice::Stator, ..d },        // stop: the floor unreachable

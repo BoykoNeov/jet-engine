@@ -315,12 +315,29 @@ pub struct TwoSpoolEngine {
     /// on the design engine so every sibling keeps it; every solver that cannot model it REFUSES
     /// an active one.
     pub cooling: Option<crate::turbine_cooling::TurbineCooling>,
+    /// RUNG 92's SHAFT-POWER OFFTAKE — the aircraft's generator load on the HP and/or LP shaft.
+    /// Like [`customer`](Self::customer): [`run`](Self::run) never reads it (the hardware is sized
+    /// unloaded); it lives on the design engine so every sibling keeps it; every solver that
+    /// cannot model it REFUSES an active one.
+    pub offtake: Option<crate::shaft_offtake::ShaftOfftake>,
 }
 
 impl TwoSpoolEngine {
     pub fn new(gas: Gas, components: Vec<(&'static str, Component)>, eta_m: f64) -> Self {
         let fs_engine = Engine::new(gas.clone(), Vec::new(), eta_m);
-        TwoSpoolEngine { gas, components, eta_m, fs_engine, customer: None, cooling: None }
+        TwoSpoolEngine { gas, components, eta_m, fs_engine, customer: None, cooling: None,
+                         offtake: None }
+    }
+
+    /// RUNG 92: the same engine with the aircraft drawing shaft power `so` off design. The design
+    /// run is unchanged (see [`offtake`](Self::offtake)). **The perfect gas only** — refused in
+    /// words otherwise: the steady body is a copy of rung 91's, validated on that gas alone.
+    pub fn with_shaft_offtake(mut self, so: crate::shaft_offtake::ShaftOfftake) -> Self {
+        assert!(crate::turbine_cooling::is_perfect_gas(&self.gas),
+                "rung-92 shaft-power offtake is modelled on the perfect (constant-property) gas \
+                 only: its steady body is rung 91's cooled cascade, validated on that gas alone.");
+        self.offtake = Some(so);
+        self
     }
 
     /// RUNG 90: the same engine with the aircraft drawing `cb` off station 3 when it flies off
@@ -649,11 +666,30 @@ pub struct TwoSpoolCore {
     /// [`TwoSpoolEngine::cooling`]. Read by rung 91's bodies alone; every other body refuses an
     /// ACTIVE one ([`refuse_cooling`](Self::refuse_cooling)).
     pub cooling: Option<crate::turbine_cooling::TurbineCooling>,
+    /// RUNG 92's shaft-power offtake, copied off the design engine — see
+    /// [`TwoSpoolEngine::offtake`]. Read by rung 92's bodies alone; every other body refuses an
+    /// ACTIVE one ([`refuse_offtake`](Self::refuse_offtake)).
+    pub offtake: Option<crate::shaft_offtake::ShaftOfftake>,
 }
 
 impl TwoSpoolCore {
     pub const TOL: f64 = 1e-13;
     pub const MAX: usize = 200;
+
+    /// RUNG 92: does this core carry a shaft load that takes any power? `None` and zero demands
+    /// on both shafts are INACTIVE — and an inactive one dispatches to the earlier code.
+    pub fn offtake_active(&self) -> bool {
+        self.offtake.is_some_and(|o| o.is_active())
+    }
+
+    /// RUNG 92's refusal, for every body that cannot model a shaft-power offtake (rungs 90/91's
+    /// steady bodies included).
+    pub fn refuse_offtake(&self, who: &str) {
+        assert!(!self.offtake_active(),
+                "rung-92: {who} cannot model a shaft-power offtake (the aircraft's generator \
+                 load); build the engine's solver through rung 92 (shaft_offtake.rs) or rung 62's \
+                 transient machine");
+    }
 
     /// RUNG 90: does this core carry a customer bleed that takes any air? `None`, a zero share
     /// and a zero amount are all INACTIVE — and an inactive one dispatches to the earlier code.
@@ -721,6 +757,7 @@ impl TwoSpoolCore {
         let hf_fuel_molar = design_engine.gas.spec.hf_fuel_molar;
         let customer = design_engine.customer;
         let cooling = design_engine.cooling;
+        let offtake = design_engine.offtake;
 
         let by = |label: &str| -> Component {
             design_engine.components.iter().find(|(l, _)| *l == label)
@@ -779,6 +816,7 @@ impl TwoSpoolCore {
             tau_calls: std::cell::Cell::new(0),
             customer,
             cooling,
+            offtake,
         }
     }
 
@@ -1001,6 +1039,7 @@ impl TwoSpoolCore {
     pub fn match_point(&self, flight: &FlightCondition, tt4: f64) -> TwoSpoolResult {
         self.refuse_customer("rung 38's two-spool matcher");
         self.refuse_cooling("rung 38's two-spool matcher");
+        self.refuse_offtake("rung 38's two-spool matcher");
         let pi_d = self.pi_d_max * ram_recovery(flight.m0);
         let (state0, _v0) = self.freestream_for(flight);
         let (tt2, pt2) = (state0.tt, pi_d * state0.pt);
@@ -1630,6 +1669,7 @@ fn r39_try_match_point(
 ) -> Result<TwoSpoolMapResult, Abort> {
     core.base.refuse_customer("rung 39's map matcher");
     core.base.refuse_cooling("rung 39's map matcher");
+    core.base.refuse_offtake("rung 39's map matcher");
     let b = &core.base;
     let pi_d = b.pi_d_max * ram_recovery(flight.m0);
     let (state0, _v0) = b.try_freestream_for(flight)?;

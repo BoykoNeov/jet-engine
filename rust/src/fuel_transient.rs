@@ -4064,7 +4064,7 @@ fn r43_try_close_fuel(
                 mdot4,
                 // RUNG 43's dict has NEITHER key either — see the two field notes on
                 // [`CloseState`]. `mdot_air_face` below is a DIFFERENT quantity.
-                bleed: None, mdot_face: None, customer: None, cooling: None,
+                bleed: None, mdot_face: None, customer: None, cooling: None, offtake: None,
             },
             tt4,
             mdot_air_face,

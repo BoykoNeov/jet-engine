@@ -334,6 +334,7 @@ pub fn try_match_customer(
     }
     bump(&STEADY_ACTIVE);
     core.base.refuse_cooling("rung 90's customer-bleed match");
+    core.base.refuse_offtake("rung 90's customer-bleed match");
 
     assert!(core.stack_lp.is_none() && core.stack_hp.is_none(),
             "rung-90's steady body lumps both compressors; rung 55's stage stacks are out of scope");
@@ -551,7 +552,7 @@ pub fn r90_try_close(
             m_lp, m_imp, m_hp, phi_lp, phi_hp, tt2, n_lp, n_hp, tau_lpc, tau_hpc, tt25, tt3,
             pi_lpc, pi_hpc, pt4, f, wgas, eta_lpc, eta_hpc, mdot_air: mdot_imp, mdot4,
             bleed: Some(b), mdot_face: Some(face_imp), customer: Some(share),
-            cooling: None,
+            cooling: None, offtake: None,
         })
     };
 
@@ -643,7 +644,7 @@ pub fn r90_try_close_fuel(
                 m_lp, m_imp, m_hp, phi_lp, phi_hp, tt2, n_lp, n_hp, tau_lpc, tau_hpc, tt25, tt3,
                 pi_lpc, pi_hpc, pt4, f, wgas, eta_lpc, eta_hpc, mdot_air: mdot_imp, mdot4,
                 bleed: Some(b), mdot_face: Some(face_imp), customer: Some(share),
-            cooling: None,
+            cooling: None, offtake: None,
             },
             tt4,
             mdot_air_face: mdot_face_trial,

@@ -1395,3 +1395,40 @@ engine, not a lever).
   run (80 of them an endpoint a customer amount plus the cooling starves, 5 a customer share plus cooling past
   half), 61 stopped with a reason (50 floor unreachable, 5 lean, 3 rich, 2 cause unknown on the governor-lag route,
   1 the customer amount and cooling outgrowing the engine mid-run).
+
+## 21. The aircraft's generator — rung 92 (2026-10-15) — not a slice
+
+Rung 92 (`docs/rung92-spec.md`) put the aircraft's generator load on a shaft: power, no air. The page gets it on the
+Controls view, under the turbine cooling (part of the engine, not a lever).
+
+- **The knobs:** three buttons, *No generator load* / *On the HP shaft* / *On the LP shaft* (`generator`: `off`, `hp`,
+  `lp`; default off — every saved setting stays valid), then *A fixed power* / *A share of the turbine's work*
+  (`generator_by`, default power), with *Power* (× the HP compressor's design power, the same unit on both shafts;
+  slider 0–0.1, default 0.02) or *Share of that turbine's work* (slider 0–0.3, default 0.05). A note under them says
+  what the rung found, including that the burner temperature does not rise to carry the load; the table gains
+  "Generator load, start / end (% of its turbine's work)", read by `shaft_offtake::shares` (held to the steady
+  booking on every lower path by rung 92's plant gate).
+- **Built** by putting the load on the design engine (`with_shaft_offtake`) after the cooling, so every machine and
+  sibling keeps it; rung 62's closure cells then mark their closures and the power and tail cells take the load off.
+- **Prechecks:** a share or a power in [0, 0.5), in words, only when the generator is on.
+- **An endpoint the load removes is named, not guessed.** A load the engine cannot carry slows a spool until its
+  compressor leaves the map, and the equilibrium search then reports only the map. So when an endpoint fails with the
+  generator on, the page (i) with no airflow lever asks the steady engine — rung 92's plant gate makes it the same
+  machine — and uses its own refusal ("half or more" / "no steady point") when it gives one; (ii) otherwise re-solves
+  that throttle with the generator OFF, and only if that has a steady point adds "With the generator off this throttle
+  does have a steady point, so the generator's load is what removes it". A run stopped mid-march by the load is the
+  stop kind `generator`.
+- **Gates:** `tests/sandbox_controls.rs` replays three generator cases against the model's own march bit for bit (HP
+  power alone; LP power beside the instant valve; HP share with vane cooling, a customer amount and the redline),
+  checks the load reaches and marks the closure, the share reading, the prechecks, both endpoint wordings (and that a
+  throttle with no steady point even unloaded is NOT blamed on the load), the stop classifier and the settings round
+  trip; `check_requests` adds four; `browser.mjs` presses *On the HP shaft* beside the instant valve, checks the knobs
+  and note show and the share reads above 2 %, that the valve bleeds more than with no load, and — pressing *On the
+  LP shaft* — less with the same power on the LP shaft.
+- **Crash map** (§ 14.3's instrument, every request carrying a generator — HP or LP, by power over 0–0.1 or by share
+  over 0–0.3 — a customer bleed off, share or amount, no cooling; 1 000 requests, seed 11; `scratch-archive/rung92/`):
+  no panic — 523 complete, 419 refused before the run (72 an endpoint a customer amount starves, 129 an endpoint with
+  no steady point: 79 of them named on the load — 76 that run with the generator off, 3 whose OTHER endpoint fails
+  unloaded — and 50 that fail unloaded too, not blamed on it), 58 stopped with a reason (46 floor unreachable, 5 lean,
+  4 rich, 2 other — the redline set below the run's own temperature, rung 46's refusal — 1 cause unknown on the
+  governor-lag route). No run stopped mid-march on the generator itself.

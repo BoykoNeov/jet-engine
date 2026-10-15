@@ -649,6 +649,18 @@ pub mod counters {
 pub fn r62_try_close(
     t: &TwoSpoolTransientCore, nu_lp: f64, nu_hp: f64, tt4: f64, tt2: f64, pt2: f64,
 ) -> Result<CloseState, Abort> {
+    // RUNG 92: a shaft load never changes the closure — rung 92's cell runs THIS body unchanged
+    // and only marks the result, so the power and tail cells dispatch on it.
+    if t.inner.base.offtake_active() {
+        return crate::shaft_offtake::r92_try_close(t, nu_lp, nu_hp, tt4, tt2, pt2);
+    }
+    r62_close_body(t, nu_lp, nu_hp, tt4, tt2, pt2)
+}
+
+/// RUNG 62's closure cell below rung 92's mark — every path rung 62 dispatched to before.
+pub fn r62_close_body(
+    t: &TwoSpoolTransientCore, nu_lp: f64, nu_hp: f64, tt4: f64, tt2: f64, pt2: f64,
+) -> Result<CloseState, Abort> {
     // RUNG 90: an ACTIVE customer bleed takes its own body at every `b`, 0 included — rung 57's
     // would refuse it. Inactive, nothing below this line changes.
     // RUNG 91: active turbine cooling first — its body carries the customer bleed too.
@@ -709,7 +721,7 @@ pub fn r62_try_close(
             // TRIAL. They agree only at the root, and the shadowing is Python's own.
             mdot_face: Some(mdot_imp / (1.0 - b)),
             customer: None,
-            cooling: None,
+            cooling: None, offtake: None,
         })
     };
 
@@ -761,6 +773,17 @@ pub fn r62_try_close(
 /// the LP shaft balance carrying `(1-b)` that moves `Tt25`, and `Tt25` sits upstream of both of
 /// the `Wf/pt3` leg's protections.
 pub fn r62_try_close_fuel(
+    ft: &FuelTransientCore, nu_lp: f64, nu_hp: f64, mdot_fuel: f64, tt2: f64, pt2: f64,
+) -> Result<FuelCloseState, Abort> {
+    // RUNG 92 — see `r62_try_close`.
+    if ft.inner.inner.base.offtake_active() {
+        return crate::shaft_offtake::r92_try_close_fuel(ft, nu_lp, nu_hp, mdot_fuel, tt2, pt2);
+    }
+    r62_close_fuel_body(ft, nu_lp, nu_hp, mdot_fuel, tt2, pt2)
+}
+
+/// RUNG 62's fuel-closure cell below rung 92's mark.
+pub fn r62_close_fuel_body(
     ft: &FuelTransientCore, nu_lp: f64, nu_hp: f64, mdot_fuel: f64, tt2: f64, pt2: f64,
 ) -> Result<FuelCloseState, Abort> {
     // RUNGS 91, 90 — see `r62_try_close`.
@@ -818,7 +841,7 @@ pub fn r62_try_close_fuel(
                 bleed: Some(b),
                 mdot_face: Some(mdot_imp / (1.0 - b)),
                 customer: None,
-                cooling: None,
+                cooling: None, offtake: None,
             },
             tt4,
             // Python's `mdot_air_face` key — the m_lp-derived TRIAL face flow, a DIFFERENT
@@ -907,6 +930,18 @@ fn r62_powers(
     t: &TwoSpoolTransientCore, c: &CloseState, flight: &FlightCondition, nu_lp: f64, nu_hp: f64,
     tt4: f64,
 ) -> Result<(f64, f64), Abort> {
+    // RUNG 92: a marked closure takes rung 92's cell, which wraps the body below.
+    if c.offtake.is_some() {
+        return crate::shaft_offtake::r92_powers(t, c, flight, nu_lp, nu_hp, tt4);
+    }
+    r62_powers_body(t, c, flight, nu_lp, nu_hp, tt4)
+}
+
+/// RUNG 62's power cell below rung 92's load — the UNLOADED shaft powers on every earlier path.
+pub fn r62_powers_body(
+    t: &TwoSpoolTransientCore, c: &CloseState, flight: &FlightCondition, nu_lp: f64, nu_hp: f64,
+    tt4: f64,
+) -> Result<(f64, f64), Abort> {
     // RUNGS 91, 90: dispatched on the CLOSURE's own fields, as this cell dispatches on its `bleed`.
     if c.cooling.is_some() {
         return crate::turbine_cooling::r91_powers(t, c, nu_lp, nu_hp, tt4);
@@ -948,6 +983,18 @@ fn r62_powers(
 
 /// RUNG 62's rung-40 tail cell. Same dispatch as [`r62_powers`], on the same absent key.
 fn r62_try_instant_tail(
+    t: &TwoSpoolTransientCore, flight: &FlightCondition, c: &CloseState, nu_lp: f64, nu_hp: f64,
+    tt4: f64, v0: f64,
+) -> Result<Instant2, Abort> {
+    // RUNG 92 — see `r62_powers`.
+    if c.offtake.is_some() {
+        return crate::shaft_offtake::r92_try_instant_tail(t, flight, c, nu_lp, nu_hp, tt4, v0);
+    }
+    r62_tail_body(t, flight, c, nu_lp, nu_hp, tt4, v0)
+}
+
+/// RUNG 62's tail cell below rung 92's load.
+pub fn r62_tail_body(
     t: &TwoSpoolTransientCore, flight: &FlightCondition, c: &CloseState, nu_lp: f64, nu_hp: f64,
     tt4: f64, v0: f64,
 ) -> Result<Instant2, Abort> {

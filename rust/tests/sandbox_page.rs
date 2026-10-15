@@ -116,6 +116,9 @@ fn every_element_the_script_looks_up_is_declared() {
             match id {
                 // Rung 90's customer-bleed switch: `for (const m of ["off", "share", "amount"])`.
                 "ctl-cust-" => looked_up.extend(["off", "share", "amount"].map(|m| format!("{id}{m}"))),
+                // Rung 92's generator switches: `["off", "hp", "lp"]` and `["power", "share"]`.
+                "ctl-gen-" => looked_up.extend(["off", "hp", "lp"].map(|m| format!("{id}{m}"))),
+                "ctl-genby-" => looked_up.extend(["power", "share"].map(|m| format!("{id}{m}"))),
                 _ => {
                     assert!(!id.ends_with('-'), "{helper}: the prefix #{id} has no expansion in this census");
                     looked_up.push(id.to_string());

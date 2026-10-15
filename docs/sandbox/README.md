@@ -131,7 +131,9 @@ the bleed valve can instead open on its own to hold an LP flow coefficient, watc
 blade incidence (rungs 64/87, plan § 16), instantly or slowly with its own time constant (rungs 65/88, plan
 § 17). The aircraft can take air off the HP compressor's delivery — a share, or a fixed amount that is a larger
 share at low power (rung 90, plan § 19) — and the turbines can be cooled with HP-compressor air that comes back,
-in front of the HP rotor (vane air) or behind it (blade air) (rung 91, plan § 20).
+in front of the HP rotor (vane air) or behind it (blade air) (rung 91, plan § 20). A generator can load
+either shaft — a share of that turbine's work, or a fixed power that is a larger share at low power
+(rung 92, plan § 21).
 
 **Readouts:** turbine temperature against the redline, both shaft speeds, burnt vs scheduled fuel, each
 compressor's flow coefficient against its (moving) stall line and the floor, thrust (the bleed's dumped air

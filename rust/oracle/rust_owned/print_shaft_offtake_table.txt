@@ -1,0 +1,63 @@
+
+SHAFT-POWER OFFTAKE (rung 92): the aircraft's generator load on the HP or the LP shaft - power,
+no air. Two-spool engine, pi 3 x 6, flat maps, hardware sized with no load.
+
+  1. Per unit share of that shaft's turbine work: each compressor's flow coefficient, measured
+     (extrapolated to zero load) against the anchor's model. Fixed burner-exit temperature;
+     + is away from surge.
+
+  HP       Tt4       LP    model       HP    model
+          1500  -1.3991  -1.4023  -0.9039  -0.9023
+          1200  -1.2619  -1.2633  -0.7651  -0.7633
+          1100  -1.2079  -1.2088  -0.7107  -0.7088
+          1000  -1.1489  -1.1494  -0.6512  -0.6494
+           800  -1.0128  -1.0124  -0.5143  -0.5124
+           700  -0.9337  -0.9330  -0.4349  -0.4330
+
+  LP       Tt4       LP    model       HP    model
+          1500  -0.0341  -0.0353  +0.1163  +0.1169
+          1200  +0.0178  +0.0173  +0.0640  +0.0647
+          1100  +0.0381  +0.0378  +0.0472  +0.0479
+          1000  +0.0603  +0.0602  +0.0310  +0.0318
+           800  +0.1116  +0.1117  +0.0015  +0.0022
+           700  +0.1414  +0.1417  -0.0113  -0.0106
+
+  2. A bleed is a power offtake plus air thrown away (flat maps, exact): at 1200 K, a 5 % share
+     against rung 42's interstage bleed (LP shaft) and rung 90's customer bleed (both shafts).
+     Speeds and pressure ratios agree; each face's flow coefficient differs by the dumped air.
+
+                    N_HP ratio piHPC ratio  phiL ratio  phiH ratio
+     LP vs rung 42    1.000000    1.000000    0.950000    1.000000
+   both vs rung 90    1.000000    1.000000    0.950000    0.950000
+
+  3. The SAME power on either shaft (0.05 of the HP compressor's design power): the share of
+     each turbine it is, the flow-coefficient shifts, and the thrust and fuel per unit thrust.
+
+     Tt4  shaft     share   dlnphiL   dlnphiH      dF %   dTSFC %
+    1500     HP    0.0539   -0.0763   -0.0488    -1.169    +2.634
+    1500     LP    0.1409   +0.0000   +0.0175    -1.163    +2.626
+    1200     HP    0.0966   -0.1242   -0.0736    -3.496    +6.441
+    1200     LP    0.2524   +0.0220   +0.0184    -3.476    +6.417
+    1000     HP    0.1529   -0.1803   -0.0977    -8.457   +14.251
+    1000     LP    0.3993   +0.0754   +0.0161    -8.411   +14.189
+
+  4. The throttle slam with rung 64's protection valve (LP flow-coefficient floor, b_max 0.10):
+     shaped maps, r = 0.5, Tt4 1000 -> 1400 K, 0.02 of the HP compressor's design power. Closest
+     approach to surge with the valve shut, the valve's ceiling, the air it bleeds holding two set
+     points, and when the HP speed covers 90 % of its rise.
+
+      load   minphiL   minphiH   ceiling   bleed .38   bleed .42   t90 HP
+      none   0.73544   0.86117   0.80952    9.295e-3    2.421e-2   1.1521
+    HP .02   0.68825   0.83014   0.75683    4.379e-2    5.367e-2   1.1687
+    LP .02   0.73998   0.86175   0.81786    6.676e-3    2.062e-2   1.1543
+
+  A bleed is a power offtake plus air thrown away - exactly, on these maps - so a generator is the
+  half of a bleed that never leaves. On the HP shaft it pushes BOTH compressors toward surge at every
+  power: the HP compressor gets less work, its pressure ratio falls, and that starves the LP face too.
+  That is what the customer bleed's HP relief hid: its HP spool was helped only because its air LEFT.
+  On the LP shaft the same kilowatts cost the compressors almost nothing in the steady state - the LP's
+  own loss is offset by the HP's pressure rise, and the HP sees rung 42's response exactly. The thrust
+  and fuel bill is the same on either shaft - the kilowatts cost the same fuel; only which compressor
+  pays in surge margin differs. In the slam the LP valve bleeds several times more for an HP load and
+  less for an LP one; the HP load also slows the HP spool's rise. A fixed power is a growing share as
+  the throttle falls, and past a fold the engine has no steady point at all.

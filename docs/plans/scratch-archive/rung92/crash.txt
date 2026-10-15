@@ -1,0 +1,79 @@
+  523  complete
+    2  endpoint off-map: lever none | HP power | runs with generator off: true | page names the load: true
+    6  endpoint off-map: lever none | HP share | runs with generator off: false | page names the load: false
+    3  endpoint off-map: lever none | HP share | runs with generator off: true | page names the load: true
+    1  endpoint off-map: lever none | LP power | runs with generator off: true | page names the load: true
+    1  endpoint off-map: lever none | LP share | runs with generator off: false | page names the load: false
+    2  endpoint off-map: lever none | LP share | runs with generator off: true | page names the load: true
+   10  endpoint off-map: lever on | HP power | runs with generator off: false | page names the load: false
+    1  endpoint off-map: lever on | HP power | runs with generator off: false | page names the load: true
+   29  endpoint off-map: lever on | HP power | runs with generator off: true | page names the load: true
+   11  endpoint off-map: lever on | HP share | runs with generator off: false | page names the load: false
+    7  endpoint off-map: lever on | HP share | runs with generator off: true | page names the load: true
+    8  endpoint off-map: lever on | LP power | runs with generator off: false | page names the load: false
+    2  endpoint off-map: lever on | LP power | runs with generator off: false | page names the load: true
+   26  endpoint off-map: lever on | LP power | runs with generator off: true | page names the load: true
+   14  endpoint off-map: lever on | LP share | runs with generator off: false | page names the load: false
+    6  endpoint off-map: lever on | LP share | runs with generator off: true | page names the load: true
+   13  refused: A slow valve cannot run beside the temperature limiter's lag or the realistic release: a l
+   49  refused: The realistic release lags the cut of the acceleration schedule or the stall floor, so swi
+   74  refused: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched o
+    5  refused: The valve's largest opening must be above 0 (a valve that cannot open holds nothing) and b
+   77  refused: The whole run (ramp + settling) may be at most 10 spool time constants.
+   72  refused: an endpoint starved
+   46  stop floor_unreachable
+    5  stop lean
+    2  stop other
+    4  stop rich
+    1  stop unknown
+
+endpoint off-map: lever none | HP power | runs with generator off: true | page names the load: true
+{"op":"controls","controls":{"shape":"tilted","rho":0.8,"from":710,"to":710,"ramp":0.84,"settle":2.9,"redline_on":0,"redline":1735,"gov_lag_on":0,"gov_lag":0.96,"accel_on":0,"accel_margin":0.52,"floor_on":0,"floor_spool":"hp","floor_phi":0.74,"floor_ref":"phi","release_on":0,"tau_att":0.04,"tau_rel":0.82,"lever":"none","stator_spool":"hp","v_max":0.12,"v_n_lo":0.42,"b_max":0.12,"b_n_lo":0.63,"bleed_mode":"valve","valve_phi":0.575,"valve_ref":"incidence","valve_speed":"slow","valve_tau":0.44,"customer":"amount","customer_share":0.2,"customer_amount":0.13,"cool_vane":0,"cool_blade":0,"generator":"hp","generator_by":"power","generator_power":0.03,"generator_share":0.21}}
+
+endpoint off-map: lever none | HP share | runs with generator off: false | page names the load: false
+{"op":"controls","controls":{"shape":"flat-lp","rho":2.7,"from":720,"to":910,"ramp":2.36,"settle":6.9,"redline_on":0,"redline":1715,"gov_lag_on":0,"gov_lag":0.53,"accel_on":0,"accel_margin":0.21,"floor_on":0,"floor_spool":"lp","floor_phi":0.705,"floor_ref":"phi","release_on":0,"tau_att":0.17,"tau_rel":0.34,"lever":"none","stator_spool":"hp","v_max":0.26,"v_n_lo":0.53,"b_max":0.28,"b_n_lo":0.74,"bleed_mode":"schedule","valve_phi":0.945,"valve_ref":"incidence","valve_speed":"slow","valve_tau":0.08,"customer":"off","customer_share":0.01,"customer_amount":0.18,"cool_vane":0,"cool_blade":0,"generator":"hp","generator_by":"share","generator_power":0.075,"generator_share":0.18}}
+
+endpoint off-map: lever none | HP share | runs with generator off: true | page names the load: true
+{"op":"controls","controls":{"shape":"press/flow","rho":0.3,"from":660,"to":1580,"ramp":2.38,"settle":5,"redline_on":1,"redline":1295,"gov_lag_on":0,"gov_lag":0.39,"accel_on":0,"accel_margin":0.44,"floor_on":0,"floor_spool":"hp","floor_phi":0.815,"floor_ref":"phi","release_on":0,"tau_att":0.15,"tau_rel":0.31,"lever":"none","stator_spool":"lp","v_max":0.28,"v_n_lo":0.77,"b_max":0,"b_n_lo":0.65,"bleed_mode":"schedule","valve_phi":0.935,"valve_ref":"phi","valve_speed":"instant","valve_tau":0.36,"customer":"amount","customer_share":0.11,"customer_amount":0.14,"cool_vane":0,"cool_blade":0,"generator":"hp","generator_by":"share","generator_power":0.075,"generator_share":0.28}}
+
+endpoint off-map: lever none | LP power | runs with generator off: true | page names the load: true
+{"op":"controls","controls":{"shape":"flat-lp","rho":2.5,"from":1050,"to":920,"ramp":0.64,"settle":8.4,"redline_on":0,"redline":1450,"gov_lag_on":0,"gov_lag":1,"accel_on":0,"accel_margin":0.15,"floor_on":0,"floor_spool":"lp","floor_phi":0.99,"floor_ref":"phi","release_on":0,"tau_att":0.1,"tau_rel":0.79,"lever":"none","stator_spool":"lp","v_max":0.15,"v_n_lo":0.64,"b_max":0.06,"b_n_lo":0.72,"bleed_mode":"schedule","valve_phi":0.92,"valve_ref":"phi","valve_speed":"slow","valve_tau":0.31,"customer":"off","customer_share":0.14,"customer_amount":0.02,"cool_vane":0,"cool_blade":0,"generator":"lp","generator_by":"power","generator_power":0.05,"generator_share":0.21}}
+
+endpoint off-map: lever none | LP share | runs with generator off: false | page names the load: false
+{"op":"controls","controls":{"shape":"flat-lp","rho":2.5,"from":710,"to":1610,"ramp":1.2,"settle":7.5,"redline_on":1,"redline":1380,"gov_lag_on":0,"gov_lag":0.9,"accel_on":0,"accel_margin":0.59,"floor_on":0,"floor_spool":"lp","floor_phi":0.885,"floor_ref":"phi","release_on":0,"tau_att":0.09,"tau_rel":0.82,"lever":"none","stator_spool":"hp","v_max":0.17,"v_n_lo":0.76,"b_max":0.19,"b_n_lo":0.57,"bleed_mode":"schedule","valve_phi":0.8,"valve_ref":"phi","valve_speed":"instant","valve_tau":0.12,"customer":"off","customer_share":0.18,"customer_amount":0.16,"cool_vane":0,"cool_blade":0,"generator":"lp","generator_by":"share","generator_power":0.1,"generator_share":0}}
+
+endpoint off-map: lever none | LP share | runs with generator off: true | page names the load: true
+{"op":"controls","controls":{"shape":"flat-lp","rho":4.8,"from":780,"to":1590,"ramp":1.34,"settle":5.6,"redline_on":0,"redline":1580,"gov_lag_on":0,"gov_lag":0.74,"accel_on":1,"accel_margin":0.22,"floor_on":1,"floor_spool":"lp","floor_phi":0.91,"floor_ref":"phi","release_on":0,"tau_att":0.15,"tau_rel":0.18,"lever":"none","stator_spool":"hp","v_max":0.12,"v_n_lo":0.63,"b_max":0.07,"b_n_lo":0.7,"bleed_mode":"schedule","valve_phi":0.925,"valve_ref":"phi","valve_speed":"slow","valve_tau":0.45,"customer":"off","customer_share":0.16,"customer_amount":0.14,"cool_vane":0,"cool_blade":0,"generator":"lp","generator_by":"share","generator_power":0.04,"generator_share":0.12}}
+
+endpoint off-map: lever on | HP power | runs with generator off: false | page names the load: false
+{"op":"controls","controls":{"shape":"flat-lp","rho":2.2,"from":1210,"to":680,"ramp":0.7,"settle":5,"redline_on":0,"redline":1665,"gov_lag_on":0,"gov_lag":0.41,"accel_on":0,"accel_margin":0.09,"floor_on":0,"floor_spool":"hp","floor_phi":0.915,"floor_ref":"phi","release_on":0,"tau_att":0.15,"tau_rel":0.83,"lever":"both","stator_spool":"hp","v_max":0.22,"v_n_lo":0.62,"b_max":0.18,"b_n_lo":0.6,"bleed_mode":"valve","valve_phi":0.735,"valve_ref":"phi","valve_speed":"slow","valve_tau":0.4,"customer":"off","customer_share":0.17,"customer_amount":0.09,"cool_vane":0,"cool_blade":0,"generator":"hp","generator_by":"power","generator_power":0.07,"generator_share":0.17}}
+
+endpoint off-map: lever on | HP power | runs with generator off: false | page names the load: true
+{"op":"controls","controls":{"shape":"flat-lp","rho":3.5,"from":1390,"to":690,"ramp":1.72,"settle":2.6,"redline_on":1,"redline":1380,"gov_lag_on":0,"gov_lag":0.24,"accel_on":1,"accel_margin":0.24,"floor_on":0,"floor_spool":"lp","floor_phi":0.915,"floor_ref":"incidence","release_on":0,"tau_att":0.12,"tau_rel":0.21,"lever":"both","stator_spool":"lp","v_max":0.3,"v_n_lo":0.67,"b_max":0.03,"b_n_lo":0.62,"bleed_mode":"schedule","valve_phi":0.93,"valve_ref":"incidence","valve_speed":"slow","valve_tau":0.3,"customer":"amount","customer_share":0.11,"customer_amount":0.17,"cool_vane":0,"cool_blade":0,"generator":"hp","generator_by":"power","generator_power":0.09,"generator_share":0.29}}
+
+endpoint off-map: lever on | HP power | runs with generator off: true | page names the load: true
+{"op":"controls","controls":{"shape":"tilted","rho":0.8,"from":710,"to":1340,"ramp":1.72,"settle":7,"redline_on":0,"redline":1360,"gov_lag_on":0,"gov_lag":0.16,"accel_on":1,"accel_margin":0.35,"floor_on":0,"floor_spool":"lp","floor_phi":0.665,"floor_ref":"phi","release_on":0,"tau_att":0.08,"tau_rel":0.8,"lever":"both","stator_spool":"hp","v_max":0.24,"v_n_lo":0.49,"b_max":0,"b_n_lo":0.71,"bleed_mode":"schedule","valve_phi":0.775,"valve_ref":"incidence","valve_speed":"slow","valve_tau":0.49,"customer":"off","customer_share":0.11,"customer_amount":0.15,"cool_vane":0,"cool_blade":0,"generator":"hp","generator_by":"power","generator_power":0.095,"generator_share":0.02}}
+
+endpoint off-map: lever on | HP share | runs with generator off: false | page names the load: false
+{"op":"controls","controls":{"shape":"flat-lp","rho":4.8,"from":660,"to":1200,"ramp":2.2,"settle":2.6,"redline_on":1,"redline":1570,"gov_lag_on":0,"gov_lag":0.07,"accel_on":0,"accel_margin":0.25,"floor_on":0,"floor_spool":"hp","floor_phi":0.845,"floor_ref":"phi","release_on":0,"tau_att":0.03,"tau_rel":0.67,"lever":"stator","stator_spool":"hp","v_max":0.16,"v_n_lo":0.74,"b_max":0.29,"b_n_lo":0.48,"bleed_mode":"schedule","valve_phi":0.795,"valve_ref":"incidence","valve_speed":"instant","valve_tau":0.22,"customer":"amount","customer_share":0.07,"customer_amount":0.03,"cool_vane":0,"cool_blade":0,"generator":"hp","generator_by":"share","generator_power":0,"generator_share":0.2}}
+
+endpoint off-map: lever on | HP share | runs with generator off: true | page names the load: true
+{"op":"controls","controls":{"shape":"press/flow","rho":2.4,"from":1420,"to":1700,"ramp":0.6,"settle":8.8,"redline_on":1,"redline":1625,"gov_lag_on":0,"gov_lag":0.96,"accel_on":0,"accel_margin":0.08,"floor_on":0,"floor_spool":"lp","floor_phi":0.915,"floor_ref":"phi","release_on":0,"tau_att":0.09,"tau_rel":0.34,"lever":"both","stator_spool":"hp","v_max":0.11,"v_n_lo":0.74,"b_max":0.29,"b_n_lo":0.72,"bleed_mode":"valve","valve_phi":0.63,"valve_ref":"incidence","valve_speed":"slow","valve_tau":0.41,"customer":"off","customer_share":0.1,"customer_amount":0.08,"cool_vane":0,"cool_blade":0,"generator":"hp","generator_by":"share","generator_power":0.015,"generator_share":0.27}}
+
+endpoint off-map: lever on | LP power | runs with generator off: false | page names the load: false
+{"op":"controls","controls":{"shape":"flat-lp","rho":3.6,"from":860,"to":1440,"ramp":2.66,"settle":4.2,"redline_on":0,"redline":1210,"gov_lag_on":0,"gov_lag":0.77,"accel_on":1,"accel_margin":0.56,"floor_on":0,"floor_spool":"lp","floor_phi":0.775,"floor_ref":"incidence","release_on":0,"tau_att":0.04,"tau_rel":0.62,"lever":"both","stator_spool":"lp","v_max":0.3,"v_n_lo":0.57,"b_max":0.17,"b_n_lo":0.49,"bleed_mode":"schedule","valve_phi":0.585,"valve_ref":"phi","valve_speed":"instant","valve_tau":0.13,"customer":"off","customer_share":0.02,"customer_amount":0.07,"cool_vane":0,"cool_blade":0,"generator":"lp","generator_by":"power","generator_power":0,"generator_share":0.06}}
+
+endpoint off-map: lever on | LP power | runs with generator off: false | page names the load: true
+{"op":"controls","controls":{"shape":"flat-lp","rho":2.3,"from":910,"to":750,"ramp":2.42,"settle":4.7,"redline_on":1,"redline":1615,"gov_lag_on":0,"gov_lag":0.03,"accel_on":1,"accel_margin":0.27,"floor_on":0,"floor_spool":"lp","floor_phi":0.62,"floor_ref":"incidence","release_on":0,"tau_att":0.17,"tau_rel":0.76,"lever":"both","stator_spool":"lp","v_max":0.28,"v_n_lo":0.61,"b_max":0.13,"b_n_lo":0.48,"bleed_mode":"schedule","valve_phi":0.965,"valve_ref":"incidence","valve_speed":"instant","valve_tau":0.33,"customer":"share","customer_share":0.01,"customer_amount":0.08,"cool_vane":0,"cool_blade":0,"generator":"lp","generator_by":"power","generator_power":0.05,"generator_share":0.09}}
+
+endpoint off-map: lever on | LP power | runs with generator off: true | page names the load: true
+{"op":"controls","controls":{"shape":"tilted","rho":3,"from":730,"to":810,"ramp":0.12,"settle":5,"redline_on":0,"redline":1490,"gov_lag_on":0,"gov_lag":0.91,"accel_on":1,"accel_margin":0.56,"floor_on":0,"floor_spool":"hp","floor_phi":0.605,"floor_ref":"incidence","release_on":0,"tau_att":0.12,"tau_rel":0.85,"lever":"bleed","stator_spool":"lp","v_max":0.3,"v_n_lo":0.66,"b_max":0.22,"b_n_lo":0.65,"bleed_mode":"valve","valve_phi":0.715,"valve_ref":"phi","valve_speed":"slow","valve_tau":0.43,"customer":"amount","customer_share":0.1,"customer_amount":0.1,"cool_vane":0,"cool_blade":0,"generator":"lp","generator_by":"power","generator_power":0.045,"generator_share":0.15}}
+
+endpoint off-map: lever on | LP share | runs with generator off: false | page names the load: false
+{"op":"controls","controls":{"shape":"flat-lp","rho":4.6,"from":840,"to":760,"ramp":0.92,"settle":8.4,"redline_on":0,"redline":1725,"gov_lag_on":0,"gov_lag":0.92,"accel_on":0,"accel_margin":0.17,"floor_on":1,"floor_spool":"hp","floor_phi":0.67,"floor_ref":"phi","release_on":1,"tau_att":0.08,"tau_rel":0.48,"lever":"stator","stator_spool":"lp","v_max":0.04,"v_n_lo":0.42,"b_max":0.21,"b_n_lo":0.74,"bleed_mode":"schedule","valve_phi":0.61,"valve_ref":"phi","valve_speed":"slow","valve_tau":0.47,"customer":"off","customer_share":0.18,"customer_amount":0.14,"cool_vane":0,"cool_blade":0,"generator":"lp","generator_by":"share","generator_power":0.035,"generator_share":0.12}}
+
+endpoint off-map: lever on | LP share | runs with generator off: true | page names the load: true
+{"op":"controls","controls":{"shape":"flat-lp","rho":3.2,"from":890,"to":1370,"ramp":0.8,"settle":4.3,"redline_on":1,"redline":1510,"gov_lag_on":0,"gov_lag":0.64,"accel_on":0,"accel_margin":0.4,"floor_on":0,"floor_spool":"hp","floor_phi":0.755,"floor_ref":"incidence","release_on":0,"tau_att":0.15,"tau_rel":0.43,"lever":"both","stator_spool":"lp","v_max":0.2,"v_n_lo":0.77,"b_max":0.16,"b_n_lo":0.73,"bleed_mode":"schedule","valve_phi":0.68,"valve_ref":"phi","valve_speed":"instant","valve_tau":0.33,"customer":"off","customer_share":0.05,"customer_amount":0.12,"cool_vane":0,"cool_blade":0,"generator":"lp","generator_by":"share","generator_power":0.005,"generator_share":0.3}}
+
+stop other
+{"op":"controls","controls":{"shape":"tilted","rho":2.1,"from":1500,"to":1350,"ramp":2.06,"settle":4.6,"redline_on":1,"redline":1275,"gov_lag_on":0,"gov_lag":0.54,"accel_on":1,"accel_margin":0.58,"floor_on":0,"floor_spool":"hp","floor_phi":0.745,"floor_ref":"phi","release_on":0,"tau_att":0.04,"tau_rel":0.3,"lever":"both","stator_spool":"hp","v_max":0.13,"v_n_lo":0.6,"b_max":0.07,"b_n_lo":0.63,"bleed_mode":"valve","valve_phi":0.85,"valve_ref":"phi","valve_speed":"instant","valve_tau":0.26,"customer":"off","customer_share":0.03,"customer_amount":0.12,"cool_vane":0,"cool_blade":0,"generator":"lp","generator_by":"power","generator_power":0.09,"generator_share":0.22}}

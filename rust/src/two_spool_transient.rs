@@ -286,6 +286,12 @@ pub struct CloseState {
     /// `_powers` / `_instant_tail` dispatch on the CLOSURE's own field, as on `customer`. With it
     /// set, `customer` is set too (a zero share when the engine carries no customer bleed).
     pub cooling: Option<crate::turbine_cooling::TurbineCooling>,
+    /// RUNG 92's shaft-power offtake at this closure — `None` on every body without one. The
+    /// closure itself never sees a shaft load (it reads maps and the A4 choke, no shaft balance):
+    /// rung 62's closure cells only MARK it here, so `_powers` / `_instant_tail` dispatch on the
+    /// CLOSURE's own field (rung 62 § 5.21 (v)), and rung 40's power and tail bodies can tell a
+    /// closure that came through rung 62's dispatch from one that bypassed it.
+    pub offtake: Option<crate::shaft_offtake::ShaftOfftake>,
 }
 
 impl CloseState {
@@ -1324,7 +1330,10 @@ impl TwoSpoolTransientCore {
         // readers that re-match a steady point (rungs 40/44's) see the same aircraft demand the
         // transient cells do. Without one, rung 39's table — exactly as before.
         // RUNG 91 likewise: cooling gets rung 91's table, which carries the customer bleed too.
-        let steady = if design_engine.cooling.is_some() {
+        // RUNG 92: a shaft load gets rung 92's table, which carries both of those too.
+        let steady = if design_engine.offtake.is_some() {
+            &crate::shaft_offtake::R92
+        } else if design_engine.cooling.is_some() {
             &crate::turbine_cooling::R91
         } else if design_engine.customer.is_some() {
             &crate::customer_bleed::R90
@@ -1971,7 +1980,7 @@ fn r40_try_close(
             m_lp, m_imp, m_hp, phi_lp, phi_hp, tt2, n_lp, n_hp, tau_lpc, tau_hpc, tt25, tt3,
             pi_lpc, pi_hpc, pt4, f, wgas, eta_lpc, eta_hpc, mdot_air: mdot_imp, mdot4,
             // RUNG 40's dict has NEITHER key. See the field notes.
-            bleed: None, mdot_face: None, customer: None, cooling: None,
+            bleed: None, mdot_face: None, customer: None, cooling: None, offtake: None,
         })
     };
 
@@ -2052,6 +2061,7 @@ fn r40_try_instant_tail(
 ) -> Result<Instant2, Abort> {
     t.inner.base.refuse_customer("rung 40's thrust tail");
     t.inner.base.refuse_cooling("rung 40's thrust tail");
+    if c.offtake.is_none() { t.inner.base.refuse_offtake("rung 40's thrust tail"); }
     let core = &t.inner;
     let tt2 = c.tt2;
     let (wgas, f) = (c.gas(core), c.f);
@@ -2106,6 +2116,7 @@ fn r40_powers(
     POWERS_CALLS.with(|x| x.set(x.get() + 1));
     t.inner.base.refuse_customer("rung 40's shaft powers");
     t.inner.base.refuse_cooling("rung 40's shaft powers");
+    if c.offtake.is_none() { t.inner.base.refuse_offtake("rung 40's shaft powers"); }
     let core = &t.inner;
     let (wgas, f) = (c.gas(core), c.f);
     let nu_hpt = nu_hp * powp(core.tt4_d / tt4, 0.5);

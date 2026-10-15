@@ -320,6 +320,7 @@ pub fn try_match_bleed(
 
     core.base.refuse_customer("rung 42's interstage-bleed matcher");
     core.base.refuse_cooling("rung 42's interstage-bleed matcher");
+    core.base.refuse_offtake("rung 42's interstage-bleed matcher");
     let b = core.bleed;
     let base = &core.base;
     let pi_d = base.pi_d_max * ram_recovery(flight.m0);

@@ -20,6 +20,7 @@ use turbojet::map::ComponentMap;
 use turbojet::sandbox::call;
 use turbojet::customer_bleed::CustomerBleed;
 use turbojet::turbine_cooling::TurbineCooling;
+use turbojet::shaft_offtake::{Demand, ShaftOfftake};
 use turbojet::sandbox_controls::*;
 use turbojet::stator_transient::{IncidenceLimiter, ScheduledStatorCore, ScheduledStatorTransient, StatorArm,
                                  StatorSchedule};
@@ -33,7 +34,7 @@ fn flight() -> FlightCondition { FlightCondition::new(250.0, 50_000.0, 0.85) }
 /// rung 87's G1), or rung 65's when the valve is SLOW (rung 64's refuses a lag — rung 88);
 /// otherwise rung 62's, as before.
 fn machine(lp: ComponentMap, hp: ComponentMap, rho: f64, arm: &LeverArm, cb: Option<CustomerBleed>,
-           tc: Option<TurbineCooling>)
+           tc: Option<TurbineCooling>, so: Option<ShaftOfftake>)
     -> ScheduledStatorCore {
     let (gc, cc, gt, ct) = (1.4f64, 1004.0f64, 1.3f64, 1239.0f64);
     let gas = Gas::new(GasSpec { gamma_c: gc, cp_c: cc, r_c: (gc - 1.0) / gc * cc, gamma_t: gt, cp_t: ct,
@@ -45,6 +46,8 @@ fn machine(lp: ComponentMap, hp: ComponentMap, rho: f64, arm: &LeverArm, cb: Opt
     let design = match cb { Some(c) => design.with_customer_bleed(c), None => design };
     // Rung 91: and the turbine cooling.
     let design = match tc { Some(t) => design.with_turbine_cooling(t), None => design };
+    // Rung 92: and the generator load.
+    let design = match so { Some(o) => design.with_shaft_offtake(o), None => design };
     let built = if arm.bleed_lim.is_some_and(|l| l.tau.is_some()) {
         build_lagged_bleed(design, flight(), 1.0, Some(lp), Some(hp), rho, arm)
     } else if arm.bleed_lim.is_some() {
@@ -97,7 +100,15 @@ fn direct(s: &ControlsSettings) -> Vec<FuelPoint> {
         CustomerMode::Share => Some(CustomerBleed::Share(s.customer_share)),
         CustomerMode::Amount => Some(CustomerBleed::Amount(s.customer_amount)),
     };
-    let m = machine(lp, hp, s.rho, &arm, cb, s.turbine_cooling());
+    // Rung 92: the generator load, spelled from the settings' own fields.
+    let d = if s.generator_by == GeneratorBy::Share { Demand::Share(s.generator_share) }
+            else { Demand::Power(s.generator_power) };
+    let so = match s.generator {
+        GeneratorMode::Off => None,
+        GeneratorMode::Hp => Some(ShaftOfftake { hp: Some(d), lp: None }),
+        GeneratorMode::Lp => Some(ShaftOfftake { hp: None, lp: Some(d) }),
+    };
+    let m = machine(lp, hp, s.rho, &arm, cb, s.turbine_cooling(), so);
     let fl = flight();
     let (a, b) = (m.fuel.fuel_for_tt4(&fl, s.from), m.fuel.fuel_for_tt4(&fl, s.to));
     let eq0 = m.fuel.inner.equilibrium(&fl, s.from);
@@ -200,6 +211,13 @@ fn customer_cases() -> Vec<(&'static str, ControlsSettings)> {
             customer: CustomerMode::Share, redline_on: true, ..d }),
         ("blade cooling, slow valve, stators", ControlsSettings { cool_blade: 0.04, lever: LeverChoice::Both,
             bleed_mode: BleedMode::Valve, valve_lag_on: true, ..d }),
+        // rung 92: the generator by power on each shaft, by share beside the valve, and with the cooling and
+        // a customer amount on the fuel limiters
+        ("HP generator, power", ControlsSettings { generator: GeneratorMode::Hp, ..d }),
+        ("LP generator, power, valve", ControlsSettings { generator: GeneratorMode::Lp, lever: LeverChoice::Bleed,
+            bleed_mode: BleedMode::Valve, ..d }),
+        ("HP generator, share, vane cooling, customer amount, redline", ControlsSettings { generator: GeneratorMode::Hp,
+            generator_by: GeneratorBy::Share, cool_vane: 0.04, customer: CustomerMode::Amount, redline_on: true, ..d }),
     ]
 }
 
@@ -513,7 +531,8 @@ fn settings_round_trip_and_the_entry_point_answers() {
                                bleed_mode: BleedMode::Valve, valve_phi: 0.77, valve_ref: FloorRef::Incidence,
                                valve_lag_on: true, valve_tau: 0.13, valve_close_own: true, valve_tau_close: 0.31,
                                customer: CustomerMode::Amount, customer_share: 0.07, customer_amount: 0.04,
-                               cool_vane: 0.06, cool_blade: 0.02 };
+                               cool_vane: 0.06, cool_blade: 0.02, generator: GeneratorMode::Lp,
+                               generator_by: GeneratorBy::Share, generator_share: 0.08, generator_power: 0.03 };
     let back = ControlsSettings::from_json(&Json::parse(&s.to_json().dump_compact())).unwrap();
     assert_eq!(back, s);
     let d = Json::parse(&call(r#"{"op":"controls_defaults"}"#));
@@ -712,4 +731,51 @@ fn the_turbine_cooling_reaches_the_model_and_its_refusals_are_words() {
         message: "rung-91: the aircraft (12.0 %) and turbine cooling (40.0 %) together take 52.0 % of the HP \
                   compressor's air here".into(), call: Call::AtApplied, mf: 0.01, nu_lp: 0.8, nu_hp: 0.9, s: 0.42 }) };
     assert_eq!(classify(&sv, &stop, None), StopKind::Customer);
+}
+
+/// RUNG 92 on the page: the generator load reaches the model's closure (and only when on), its ranges
+/// are checked in words, a power the engine cannot carry at an endpoint is refused in words, a mid-run
+/// refusal is classified, and the page reads the load's share of the turbine's work.
+#[test]
+fn the_generator_load_reaches_the_model_and_its_refusals_are_words() {
+    let d = ControlsSettings::defaults();
+    let (sv, _) = controls(&ControlsSettings { generator: GeneratorMode::Hp, ..d }).unwrap();
+    assert_eq!(sv.start.close.offtake, Some(ShaftOfftake::hp(Demand::power(0.02))), "the load marks the closure");
+    let (sh, sl) = turbojet::shaft_offtake::shares(&sv.core.fuel.inner, &sv.start);
+    assert!(sh > 0.02 && sl == 0.0, "an HP power load is a share of the HP turbine's work only: ({sh}, {sl})");
+    assert!(controls(&d).unwrap().0.start.close.offtake.is_none(), "off is the earlier closure");
+    for bad in [ControlsSettings { generator: GeneratorMode::Lp, generator_by: GeneratorBy::Share, generator_share: 0.5, ..d },
+                ControlsSettings { generator: GeneratorMode::Hp, generator_power: -0.01, ..d }] {
+        assert!(controls_precheck(&bad).unwrap_err().0.contains("generator's"), "{bad:?}");
+    }
+    // off, a bad generator number is ignored (it is not used)
+    assert!(controls_precheck(&ControlsSettings { generator_share: 0.7, ..d }).is_ok());
+    // an endpoint where the power cannot be carried: refused in words, before any march
+    let e = match controls(&ControlsSettings { generator: GeneratorMode::Hp, generator_power: 0.2, ..d }) {
+        Err(e) => e,
+        Ok(_) => panic!("0.2 of the HP compressor's design power has no steady point at 1000 K"),
+    };
+    assert!(e.0.contains("generator would take half or more"), "{}", e.0);
+    // with a lever on the steady engine is not this machine, so the page re-solves the throttle with the
+    // generator off, and names the load only because that has a steady point
+    let e = match controls(&ControlsSettings { generator: GeneratorMode::Hp, generator_power: 0.2,
+                                               lever: LeverChoice::Bleed, ..d }) {
+        Err(e) => e,
+        Ok(_) => panic!("0.2 of the HP compressor's design power has no steady point at 1000 K"),
+    };
+    assert!(e.0.contains("With the generator off this throttle does have a steady point"), "{}", e.0);
+    // and a throttle with no steady point even unloaded is NOT blamed on the generator
+    let e = match controls(&ControlsSettings { generator: GeneratorMode::Lp, generator_power: 0.005, from: 600.0,
+                                               shape: 3, lever: LeverChoice::Bleed, ..d }) {
+        Err(e) => e,
+        Ok(_) => panic!("600 K on the flat-LP map has no steady point even unloaded"),
+    };
+    assert!(controls(&ControlsSettings { from: 600.0, shape: 3, lever: LeverChoice::Bleed, ..d }).is_err(),
+            "the unloaded engine must fail there too, or this check is vacuous");
+    assert!(!e.0.contains("With the generator off"), "{}", e.0);
+    let stop = Stop { s_last: 0.4, failure: Some(Failure {
+        message: "rung-92: the generator takes 51.0 % of the HP turbine's work here".into(), call: Call::AtApplied,
+        mf: 0.01, nu_lp: 0.8, nu_hp: 0.9, s: 0.42 }) };
+    assert_eq!(classify(&sv, &stop, None), StopKind::Generator);
+    assert!(StopKind::Generator.words().contains("more power than the engine could give"));
 }

@@ -173,6 +173,7 @@ pub mod shared_actuator;
 pub mod split_wall;
 pub mod spool;
 pub mod stage;
+pub mod shaft_offtake;
 pub mod staircase_law;
 pub mod state_coordinate;
 pub mod stator;

@@ -426,6 +426,7 @@ fn try_score_nozzle(
 pub fn try_match_cooled(
     core: &TwoSpoolMapCore, flight: &FlightCondition, tt4: f64,
 ) -> Result<CooledResult, Abort> {
+    core.base.refuse_offtake("rung 91's turbine-cooling match");
     if !core.base.cooling_active() {
         bump(&STEADY_INACTIVE);
         let r = crate::customer_bleed::try_match_customer(core, flight, tt4)?;
@@ -657,7 +658,7 @@ pub fn r91_try_close(
             m_lp, m_imp, m_hp, phi_lp, phi_hp, tt2, n_lp, n_hp, tau_lpc, tau_hpc, tt25, tt3,
             pi_lpc, pi_hpc, pt4, f, wgas, eta_lpc, eta_hpc, mdot_air: mdot_imp, mdot4,
             bleed: Some(b), mdot_face: Some(face_imp), customer: Some(share),
-            cooling: Some(cool),
+            cooling: Some(cool), offtake: None,
         })
     };
 
@@ -754,7 +755,7 @@ pub fn r91_try_close_fuel(
                 m_lp, m_imp, m_hp, phi_lp, phi_hp, tt2, n_lp, n_hp, tau_lpc, tau_hpc, tt25, tt3,
                 pi_lpc, pi_hpc, pt4, f, wgas, eta_lpc, eta_hpc, mdot_air: mdot_imp, mdot4,
                 bleed: Some(b), mdot_face: Some(face_imp), customer: Some(share),
-                cooling: Some(cool),
+                cooling: Some(cool), offtake: None,
             },
             tt4,
             mdot_air_face: mdot_face_trial,
