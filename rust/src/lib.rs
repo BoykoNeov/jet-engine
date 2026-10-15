@@ -182,6 +182,7 @@ pub mod stiffness_ledger;
 pub mod three_loop;
 pub mod three_levers;
 pub mod threshold_law;
+pub mod turbine_cooling;
 pub mod two_lag;
 pub mod two_spool;
 pub mod two_spool_transient;

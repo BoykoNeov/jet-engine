@@ -282,6 +282,10 @@ pub struct CloseState {
     /// (rung 62 § 5.21 (v)'s rule). With it set, `mdot_air` is the BURNER air and `mdot_face`
     /// the face air; the HPC air is `(1-b)·mdot_face`.
     pub customer: Option<f64>,
+    /// RUNG 91's turbine cooling at this closure — `None` on every body without it, so rung 62's
+    /// `_powers` / `_instant_tail` dispatch on the CLOSURE's own field, as on `customer`. With it
+    /// set, `customer` is set too (a zero share when the engine carries no customer bleed).
+    pub cooling: Option<crate::turbine_cooling::TurbineCooling>,
 }
 
 impl CloseState {
@@ -1319,7 +1323,10 @@ impl TwoSpoolTransientCore {
         // RUNG 90: an engine carrying a customer bleed gets rung 90's steady table, so the
         // readers that re-match a steady point (rungs 40/44's) see the same aircraft demand the
         // transient cells do. Without one, rung 39's table — exactly as before.
-        let steady = if design_engine.customer.is_some() {
+        // RUNG 91 likewise: cooling gets rung 91's table, which carries the customer bleed too.
+        let steady = if design_engine.cooling.is_some() {
+            &crate::turbine_cooling::R91
+        } else if design_engine.customer.is_some() {
             &crate::customer_bleed::R90
         } else {
             &crate::two_spool::R39
@@ -1925,6 +1932,7 @@ fn r40_try_close(
 ) -> Result<CloseState, Abort> {
     CLOSE_CALLS.with(|x| x.set(x.get() + 1));
     t.inner.base.refuse_customer("rung 40's two-shaft closure");
+    t.inner.base.refuse_cooling("rung 40's two-shaft closure");
     let c = &t.inner;
     let gas = c.gas();
     let n_lp = nu_lp * powp(c.tt2_d / tt2, 0.5);
@@ -1963,7 +1971,7 @@ fn r40_try_close(
             m_lp, m_imp, m_hp, phi_lp, phi_hp, tt2, n_lp, n_hp, tau_lpc, tau_hpc, tt25, tt3,
             pi_lpc, pi_hpc, pt4, f, wgas, eta_lpc, eta_hpc, mdot_air: mdot_imp, mdot4,
             // RUNG 40's dict has NEITHER key. See the field notes.
-            bleed: None, mdot_face: None, customer: None,
+            bleed: None, mdot_face: None, customer: None, cooling: None,
         })
     };
 
@@ -2043,6 +2051,7 @@ fn r40_try_instant_tail(
     tt4: f64, v0: f64,
 ) -> Result<Instant2, Abort> {
     t.inner.base.refuse_customer("rung 40's thrust tail");
+    t.inner.base.refuse_cooling("rung 40's thrust tail");
     let core = &t.inner;
     let tt2 = c.tt2;
     let (wgas, f) = (c.gas(core), c.f);
@@ -2096,6 +2105,7 @@ fn r40_powers(
 ) -> Result<(f64, f64), Abort> {
     POWERS_CALLS.with(|x| x.set(x.get() + 1));
     t.inner.base.refuse_customer("rung 40's shaft powers");
+    t.inner.base.refuse_cooling("rung 40's shaft powers");
     let core = &t.inner;
     let (wgas, f) = (c.gas(core), c.f);
     let nu_hpt = nu_hp * powp(core.tt4_d / tt4, 0.5);

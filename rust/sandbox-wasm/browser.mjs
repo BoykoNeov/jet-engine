@@ -412,6 +412,19 @@ try {
   check('the_customer_bleed_makes_the_lp_valve_bleed_more', cShare && cAmt && cs[0] === 0.05 && cs[1] && !cs[2] && cs[3]
         && shareSum > offSum && amtSum > shareSum, JSON.stringify([cShare, cAmt, cs, offSum, shareSum, amtSum]));
   if (process.env.SANDBOX_SHOTS) { await ev(`document.getElementById('ctlq-lever').click()`); await shot('controls-customer'); }
+  // Rung 91: turbine cooling through its own knob — typed into the vane box, its note shown, read back on the run,
+  // and beside the instant valve the valve bleeding MORE than with no cooling (the scored B3, on this view's engine).
+  await ev(`window.sandbox.controls({customer: 'off', cool_vane: 0, cool_blade: 0}).then(r => r.run)`);
+  const noCool = await ev(sumB);
+  await ev(`(() => { const e = document.getElementById('ctl-cool_vane'); e.value = '0.05';
+            e.dispatchEvent(new Event('input', {bubbles: true})); })()`);
+  const cVane = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.cool_vane === 0.05`, 30000);
+  const vaneSum = await ev(sumB);
+  const cn = await ev(`[document.getElementById('ctl-cool-note').hidden, window.sandbox.last.stop === null]`);
+  check('turbine_cooling_makes_the_lp_valve_bleed_more', cVane && !cn[0] && cn[1] && vaneSum > noCool,
+        JSON.stringify([cVane, cn, noCool, vaneSum]));
+  if (process.env.SANDBOX_SHOTS) { await ev(`document.getElementById('ctlq-lever').click()`); await shot('controls-cooling'); }
+  await ev(`window.sandbox.controls({cool_vane: 0, cool_blade: 0}).then(r => r.run)`);
   await ev(`document.getElementById('ctlq-Tt4').click()`);
   await ev(`window.sandbox.controls({lever: 'none', floor_on: 0, floor_phi: 0.75, floor_ref: 'phi', bleed_mode: 'schedule',
             valve_ref: 'phi', valve_speed: 'instant', valve_close: 'same', customer: 'off'}).then(r => r.run)`);

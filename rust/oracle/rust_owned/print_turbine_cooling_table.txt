@@ -1,0 +1,55 @@
+
+TURBINE COOLING AIR (rung 91): HP-compressor air that rejoins the gas at the turbines - the
+VANE stream before the HP turbine rotor (it still works there), the BLADE stream after it (LP
+turbine only). Two-spool engine, pi 3 x 6, flat maps, hardware sized with cooling off.
+
+  1. Per unit cooling share: the HP turbine's expansion ratio and each compressor's flow
+     coefficient, measured (extrapolated to zero share) against the anchor's model. Fixed
+     burner-exit temperature; + is away from surge (and, for the turbine, LESS expansion).
+
+  VANE     Tt4    piHPT    model       LP    model       HP    model
+          1500  +0.7510  +0.7511  -1.0230  -1.0282  -0.2420  -0.2393
+          1200  +0.7766  +0.7766  -0.7881  -0.7903  -0.0615  -0.0586
+          1100  +0.7877  +0.7878  -0.6965  -0.6979  +0.0119  +0.0148
+          1000  +0.8009  +0.8009  -0.5972  -0.5978  +0.0934  +0.0964
+           800  +0.8360  +0.8360  -0.3721  -0.3715  +0.2857  +0.2887
+           700  +0.8605  +0.8606  -0.2451  -0.2440  +0.3992  +0.4021
+
+  BLADE    Tt4    piHPT    model       LP    model       HP    model
+          1500  +0.7914  +0.7915  -1.6028  -1.6091  -0.6277  -0.6244
+          1200  +0.8212  +0.8213  -1.3699  -1.3727  -0.4190  -0.4154
+          1100  +0.8343  +0.8343  -1.2793  -1.2811  -0.3333  -0.3295
+          1000  +0.8497  +0.8498  -1.1813  -1.1821  -0.2374  -0.2335
+           800  +0.8912  +0.8912  -0.9601  -0.9592  -0.0068  -0.0028
+           700  +0.9202  +0.9203  -0.8361  -0.8346  +0.1331  +0.1371
+
+  2. What 5 % of the HP compressor's air costs, at the same burner-exit temperature: thrust and
+     fuel per unit thrust, against rung 90's customer bleed (the same air thrown overboard),
+     and the rotor-inlet temperature Tt41 the vane air buys.
+
+     Tt4 Tt41 vane   dF vane  dF blade    dF cust dTSFC vane dTSFC cust
+    1500    1454.0    -2.904    -3.044     -8.284     -0.043     +5.485
+    1100    1068.9    -3.578    -4.093    -10.448     +0.789     +8.207
+     800     780.3    -4.501    -5.966    -15.255     +2.018    +14.690
+
+  3. The throttle slam with rung 64's protection valve (LP flow-coefficient floor, b_max 0.10):
+     shaped maps, r = 0.5, Tt4 1000 -> 1400 K. Closest approach to surge with the valve shut,
+     the valve's ceiling (fully open), and the air it bleeds holding two set points.
+
+      demand   minphiL   minphiH   ceiling   bleed .38   bleed .42
+        none   0.73544   0.86117   0.80952    9.295e-3    2.421e-2
+     vane 5%   0.71148   0.85709   0.78362    2.733e-2    4.488e-2
+    blade 5%   0.69206   0.84485   0.76299    4.346e-2    5.554e-2
+     cust 5%   0.73060   0.86979   0.80487    1.273e-2    2.868e-2
+
+  Air that comes back is CHEAP in thrust and DEAR in surge margin. It rejoins ahead of the LP
+  turbine's choked throat, so that throat must pass more gas: its back-pressure rises, the HP turbine
+  expands LESS, and the HP spool loses more work than if the air had been thrown overboard. So the
+  customer bleed's arrow REVERSES: the HP spool is pushed toward surge at high power (below ~1115 K
+  for vane air, ~795 K for blade air, it is helped), and the LP spool toward surge at EVERY power -
+  the customer bleed's low-power relief is gone. Blade air is worse than vane air on both spools: it
+  back-pressures the HP turbine as much and does no work there. In the slam the LP protection valve
+  bleeds 2-12 times (vane) and 3-29 times (blade) what it bleeds for the same customer share, its
+  ceiling falls, and a valve that held its set point without cooling can no longer hold it at the
+  highest set points. The thrust bill runs the other way: 5 % vane air costs about a third of the
+  thrust the same customer share does.

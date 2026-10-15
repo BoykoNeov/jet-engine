@@ -338,6 +338,18 @@ footer p { max-width: 90ch; }
         away from it below about 900 K, so on this slam the LP bleed valve has to open wider to hold the same margin, and a
         fixed amount costs it more than the same share (rung 90). This air costs more thrust and fuel than the LP bleed's:
         the HP compressor has already worked on it.</p>
+      <div class="knob"><label for="ctl-cool_vane">Turbine cooling, vane air <small>share of the HP compressor's air</small></label><input type="number" id="ctl-cool_vane" step="0.01">
+        <input type="range" id="ctl-cool_vane-r" min="0" max="0.2" step="0.01" aria-label="Vane cooling share slider">
+        <div class="derived">Rejoins the gas just before the HP turbine's rotor, so it still does work there.</div></div>
+      <div class="knob"><label for="ctl-cool_blade">Turbine cooling, blade air <small>share of the HP compressor's air</small></label><input type="number" id="ctl-cool_blade" step="0.01">
+        <input type="range" id="ctl-cool_blade-r" min="0" max="0.2" step="0.01" aria-label="Blade cooling share slider">
+        <div class="derived">Rejoins after the HP turbine's rotor, so only the LP turbine gets work from it.</div></div>
+      <p class="note" id="ctl-cool-note">Cooling air leaves the HP compressor and comes back at the turbines, in front of the LP
+        turbine's choked throat. That throat must then pass more gas, so the HP turbine expands less and the HP compressor
+        loses more work than if the air had been thrown away: both compressors move TOWARD their stall lines at high power,
+        the LP one at every power, and blade air is worse than vane air. On this slam the LP bleed valve has to bleed several
+        times what it bleeds for the same customer share. The thrust cost runs the other way: the air leaves through the
+        nozzle, so it costs about a third of the thrust (rung 91). The engine was sized with no cooling.</p>
     </fieldset>
     <fieldset id="ctl-sw-set" hidden>
       <legend>Fuel controls</legend>
@@ -987,7 +999,8 @@ const CTL_NUM = { "ctl-rho": "rho", "ctl-from": "from", "ctl-to": "to", "ctl-ram
                   "ctl-floor_phi": "floor_phi", "ctl-tau_att": "tau_att", "ctl-tau_rel": "tau_rel", "ctl-v_max": "v_max",
                   "ctl-v_n_lo": "v_n_lo", "ctl-b_max": "b_max", "ctl-b_n_lo": "b_n_lo", "ctl-valve_phi": "valve_phi",
                   "ctl-valve_tau": "valve_tau", "ctl-valve_tau_close": "valve_tau_close",
-                  "ctl-customer_share": "customer_share", "ctl-customer_amount": "customer_amount" };
+                  "ctl-customer_share": "customer_share", "ctl-customer_amount": "customer_amount",
+                  "ctl-cool_vane": "cool_vane", "ctl-cool_blade": "cool_blade" };
 const CTL_SW = ["redline_on", "gov_lag_on", "accel_on", "floor_on", "release_on"];
 const CTL_VIEW = ["ctl-set", "ctl-sw-set", "ctl-lever-set", "ctl-out", "ctl-card"];
 // The burner (slice 5, turbojet::sandbox_burner): BK holds its knobs; it reads the Design engine S. BN_NUM maps
@@ -1075,6 +1088,7 @@ function showSettings() {
     for (const m of ["off", "share", "amount"]) press("ctl-cust-" + m, C.customer === m);
     $("ctl-cshare-box").hidden = C.customer !== "share"; $("ctl-camount-box").hidden = C.customer !== "amount";
     $("ctl-cust-note").hidden = C.customer === "off";
+    $("ctl-cool-note").hidden = !(C.cool_vane > 0 || C.cool_blade > 0);
     $("ctl-bsched-box").hidden = C.bleed_mode !== "schedule"; $("ctl-valve-box").hidden = C.bleed_mode !== "valve";
     $("ctl-redline-box").hidden = C.redline_on !== 1; $("ctl-gov_lag-box").hidden = C.gov_lag_on !== 1;
     $("ctl-accel-box").hidden = C.accel_on !== 1; $("ctl-floor-box").hidden = C.floor_on !== 1;
@@ -1561,6 +1575,9 @@ const CTL_ROWS = [
   ["Thrust at the end (N per kg/s of design airflow)", r => r.thrust[r.thrust.length - 1], 4],
   ["Air the aircraft takes, start / end (% of the HP compressor's air)", r => r.controls.customer === "off" ? "none"
     : `${fmt(r.start.customer_share * 100, 3)} / ${fmt(r.end.customer_share * 100, 3)}`],
+  ["Turbine cooling air, vane / blade (% of the HP compressor's air)",
+    r => r.controls.cool_vane > 0 || r.controls.cool_blade > 0
+      ? `${fmt(r.controls.cool_vane * 100, 3)} / ${fmt(r.controls.cool_blade * 100, 3)}` : "none"],
   ["Points computed", r => `${r.s.length} of ${r.expected_points}`],
 ];
 function ctlTable() {
@@ -2372,7 +2389,8 @@ function wire() {
     $(id).addEventListener("click", () => { S[key] = v; showSettings(); change(); });
   }
   for (const [id, k] of Object.entries(CTL_NUM)) {
-    const put = v => { if (isFinite(v)) { C[k] = v; scheduleCtl(); } };
+    // The cooling knobs also show or hide their note (rung 91), so they refresh the view.
+    const put = v => { if (isFinite(v)) { C[k] = v; if (k.startsWith("cool_")) showSettings(); scheduleCtl(); } };
     $(id).addEventListener("input", () => { const v = parseFloat($(id).value); put(v); if (isFinite(v)) $(id + "-r").value = v; });
     $(id + "-r").addEventListener("input", () => { $(id).value = $(id + "-r").value; put(parseFloat($(id + "-r").value)); });
   }

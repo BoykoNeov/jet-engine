@@ -32,6 +32,7 @@ use crate::lagged_bleed::build_lagged_bleed;
 use crate::limited_bleed::{build_limited_bleed, r64_solve_b_at, r87_target, BleedLimiter};
 use crate::blade_speed::shape_maps;
 use crate::customer_bleed::CustomerBleed;
+use crate::turbine_cooling::TurbineCooling;
 use crate::engine::FlightCondition;
 use crate::fuel_transient::{r43_cut_below_ceiling, release_weight, AccelSchedule, AsymmetricLag, FuelInstant, FuelLimiters,
                             FuelPoint, FuelTransientCore, PointExtra, SurgeLimiter};
@@ -210,6 +211,10 @@ pub struct ControlsSettings {
     pub customer: CustomerMode,
     pub customer_share: f64,
     pub customer_amount: f64,
+    /// Rung 91: turbine cooling — the VANE and BLADE shares of the HP compressor's air. Both 0 (the
+    /// default) is no cooling, so every saved setting stays valid.
+    pub cool_vane: f64,
+    pub cool_blade: f64,
 }
 
 /// Rung 90's switch: how the aircraft's customer bleed is set.
@@ -243,7 +248,15 @@ impl ControlsSettings {
             bleed_mode: BleedMode::Schedule, valve_phi: 0.78, valve_ref: FloorRef::Phi,
             valve_lag_on: false, valve_tau: 0.05, valve_close_own: false, valve_tau_close: 0.2,
             customer: CustomerMode::Off, customer_share: 0.05, customer_amount: 0.05,
+            cool_vane: 0.0, cool_blade: 0.0,
         }
+    }
+
+    /// Rung 91's cooling as the model takes it (`None` when both shares are 0). Range-checked by the
+    /// precheck first.
+    pub fn turbine_cooling(&self) -> Option<TurbineCooling> {
+        (self.cool_vane != 0.0 || self.cool_blade != 0.0)
+            .then(|| TurbineCooling::new(self.cool_vane, self.cool_blade))
     }
 
     /// Rung 90's demand as the model takes it (`None` when off). Range-checked by the precheck first.
@@ -279,7 +292,8 @@ impl ControlsSettings {
             "valve_speed" => if self.valve_lag_on { "slow" } else { "instant" }, "valve_tau" => self.valve_tau,
             "valve_close" => if self.valve_close_own { "own" } else { "same" }, "valve_tau_close" => self.valve_tau_close,
             "customer" => self.customer.key(), "customer_share" => self.customer_share,
-            "customer_amount" => self.customer_amount,
+            "customer_amount" => self.customer_amount, "cool_vane" => self.cool_vane,
+            "cool_blade" => self.cool_blade,
         }
     }
 
@@ -322,7 +336,8 @@ impl ControlsSettings {
                           ("v_n_lo", &mut s.v_n_lo), ("b_max", &mut s.b_max), ("b_n_lo", &mut s.b_n_lo),
                           ("valve_phi", &mut s.valve_phi), ("valve_tau", &mut s.valve_tau),
                           ("valve_tau_close", &mut s.valve_tau_close), ("customer_share", &mut s.customer_share),
-                          ("customer_amount", &mut s.customer_amount)] {
+                          ("customer_amount", &mut s.customer_amount), ("cool_vane", &mut s.cool_vane),
+                          ("cool_blade", &mut s.cool_blade)] {
             num(k, into)?;
         }
         if let Some(t) = text("customer")? {
@@ -426,9 +441,20 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
                  ("floor_phi", s.floor_phi), ("tau_att", s.tau_att), ("tau_rel", s.tau_rel), ("v_max", s.v_max),
                  ("v_n_lo", s.v_n_lo), ("b_max", s.b_max), ("b_n_lo", s.b_n_lo), ("valve_phi", s.valve_phi),
                  ("valve_tau", s.valve_tau), ("valve_tau_close", s.valve_tau_close),
-                 ("customer_share", s.customer_share), ("customer_amount", s.customer_amount)];
+                 ("customer_share", s.customer_share), ("customer_amount", s.customer_amount),
+                 ("cool_vane", s.cool_vane), ("cool_blade", s.cool_blade)];
     if let Some((k, _)) = named.iter().find(|(_, v)| !v.is_finite()) {
         return Err(DoesNotRun(format!("Setting {k} is not a number.")));
+    }
+    // Rung 91: each cooling stream below a quarter of the air, and with a customer SHARE the two
+    // together below half (a customer AMOUNT is checked by the model at every point it reaches).
+    let quarter = |x: f64| (0.0..TurbineCooling::SHARE_MAX).contains(&x);
+    if !quarter(s.cool_vane) || !quarter(s.cool_blade) {
+        return no("Each turbine-cooling share must be at least 0 and below 0.25 of the HP compressor's air.");
+    }
+    if s.customer == CustomerMode::Share && !(s.customer_share + s.cool_vane + s.cool_blade < TurbineCooling::TOTAL_MAX) {
+        return no("The aircraft's share and the turbine cooling together must take less than half of the HP \
+                   compressor's air: half starves the burner.");
     }
     // Rung 90: the model's own bound, half the air (rung 42's) — refused in words before it asserts.
     let half = |x: f64| (0.0..CustomerBleed::C_MAX).contains(&x);
@@ -569,6 +595,11 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
         Some(cb) => BladeSettings::defaults().design().with_customer_bleed(cb),
         None => BladeSettings::defaults().design(),
     };
+    // Rung 91: the turbine cooling rides there too, for the same reason.
+    let design = match s.turbine_cooling() {
+        Some(tc) => design.with_turbine_cooling(tc),
+        None => design,
+    };
     let core = match builder(design, fl, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
         ScheduledStatorTransient::Full(c) => c,
         ScheduledStatorTransient::Degenerate(_) => unreachable!("the Controls engine has both shafts"),
@@ -596,6 +627,10 @@ pub fn endpoint_words(message: &str) -> String {
     let why = if message.contains("customer bleed takes") {
         "the aircraft's customer bleed would take more than half of the HP compressor's air here, which starves the \
          burner. A fixed amount of air is a larger share at low power: raise the throttle, or ask for less air"
+    } else if message.contains("turbine cooling") && message.contains("together take") {
+        "the aircraft's air and the turbine cooling together would take more than half of the HP compressor's air \
+         here, which starves the burner. A fixed amount of air is a larger share at low power: raise the throttle, \
+         ask for less air, or cool the turbines less"
     } else if message.contains("did not converge") {
         "the search for the steady shaft speeds does not settle. Measured only with a lever whose schedule does \
          nearly all its travel just below the design speed; start the lever's schedule lower"
@@ -1087,7 +1122,8 @@ pub fn classify(_sv: &ControlsSolver, stop: &Stop, last: Option<&FuelPoint>) -> 
     if m.contains("UNREACHABLE") {
         return StopKind::FloorUnreachable;
     }
-    if m.contains("customer bleed takes") {
+    // Rung 91's refusal names the customer and the cooling together; only the customer's amount grows.
+    if m.contains("customer bleed takes") || (m.contains("turbine cooling") && m.contains("together take")) {
         return StopKind::Customer;
     }
     if !m.contains("fuel closure does not bracket") {
@@ -1389,6 +1425,13 @@ pub fn check_requests() -> Vec<String> {
         ControlsSettings { customer: CustomerMode::Share, customer_share: 0.1, lever: LeverChoice::Both,
                            bleed_mode: BleedMode::Valve, valve_lag_on: true, accel_on: true, ..d },
         ControlsSettings { customer: CustomerMode::Share, customer_share: 0.5, ..d },             // refused: half
+        // rung 91: turbine cooling — vane air alone, both streams beside the valve and a customer amount,
+        // and refused past a quarter / with a customer share past half together
+        ControlsSettings { cool_vane: 0.05, ..d },
+        ControlsSettings { cool_vane: 0.04, cool_blade: 0.03, customer: CustomerMode::Amount, lever: LeverChoice::Bleed,
+                           bleed_mode: BleedMode::Valve, ..d },
+        ControlsSettings { cool_blade: 0.25, ..d },                                                // refused: quarter
+        ControlsSettings { cool_vane: 0.2, cool_blade: 0.2, customer: CustomerMode::Share, customer_share: 0.15, ..d }, // refused
         ControlsSettings { from: 1400.0, to: 1000.0, ..d },
         ControlsSettings { release_on: true, ..d },                                  // refused: nothing to lag
         ControlsSettings { floor_on: true, lever: LeverChoice::Stator, ..d },        // stop: the floor unreachable

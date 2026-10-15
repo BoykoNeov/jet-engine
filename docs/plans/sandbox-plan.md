@@ -1369,3 +1369,29 @@ gets it on the Controls view, beside the engine's own knobs (it is a load on the
   680 complete, 262 refused before the run (one of them an endpoint the demand starves, an amount of 0.2 on
   a 670 K end), 58 stopped with a reason (42 floor unreachable, 10 lean, 5 rich, 1 cause unknown on the
   governor-lag route). No run stopped mid-march on the customer bleed itself.
+
+## 20. Turbine cooling air — rung 91 (2026-10-15) — not a slice
+
+Rung 91 (`docs/rung91-spec.md`) cooled the turbines with HP-compressor air that comes back: vane air before the HP
+rotor, blade air after it. The page gets it on the Controls view, under the customer bleed (it is part of the
+engine, not a lever).
+
+- **The knobs:** *Turbine cooling, vane air* and *blade air* (`cool_vane`, `cool_blade`), shares of the HP
+  compressor's air, sliders 0–0.2, default 0 (no cooling — every saved setting stays valid). A note under them,
+  shown when either is set, says what the rung found; the table gains "Turbine cooling air, vane / blade". The
+  numeric knobs refresh the view only for these two (to show the note); the others still only schedule a run.
+- **Built** by putting the cooling on the design engine (`with_turbine_cooling`) after the customer bleed, so every
+  machine and sibling keeps it; rung 62's four cells then dispatch to rung 91's first.
+- **Prechecks:** each share in [0, 0.25), and with a customer SHARE the two together below half, in words. With a
+  customer AMOUNT the bound moves with the throttle: an endpoint it starves is refused in words (the model's
+  "together take … more than half"), and a run where it happens mid-march stops with rung 90's kind, `customer`.
+- **Gates:** `tests/sandbox_controls.rs` replays three cooling cases against the model's own march bit for bit
+  (vane alone; both streams with a customer share and the redline; blade air beside the slow valve and stators),
+  checks the cooling reaches the closure, the prechecks, the endpoint refusal and the stop classifier, and the
+  settings round trip; `check_requests` adds four; `browser.mjs` types 0.05 into the vane box beside the instant
+  valve and checks the note shows and the valve bleeds more.
+- **Crash map** (§ 14.3's instrument, every request carrying cooling — both shares over the slider box 0–0.2 — and a
+  customer bleed off, share or amount, 1 000 requests, seed 11): no panic — 512 complete, 427 refused before the
+  run (80 of them an endpoint a customer amount plus the cooling starves, 5 a customer share plus cooling past
+  half), 61 stopped with a reason (50 floor unreachable, 5 lean, 3 rich, 2 cause unknown on the governor-lag route,
+  1 the customer amount and cooling outgrowing the engine mid-run).

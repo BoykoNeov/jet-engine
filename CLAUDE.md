@@ -24,12 +24,12 @@ the web page running the Rust model live is `docs/sandbox/` (slices 1–5 built;
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is anchored to a
-published case. All rungs are live; the current scope is **rung 90**.
+published case. All rungs are live; the current scope is **rung 91**.
 
 **Families** (contiguous): 1–6 cycle · 7–24 NOx & mixing · 25–30 nozzle/turbine marches ·
 31–33 off-design steady · 34–37 1-spool transient · 38–45 two-spool · 46–52 fuel limiters ·
 53–56 + 61 airflow levers (steady) · 57–60, 62–63 schedules · 64–68 valve/lag/cascades ·
-69–84 reference splits & rank · 85 blade-speed walls · 86–89 three levers, valve reference, slow & asymmetric valve · 90 customer bleed (knobs). **Read-only diagnostics: 7–30, 36, 41, 44, 45**; all else
+69–84 reference splits & rank · 85 blade-speed walls · 86–89 three levers, valve reference, slow & asymmetric valve · 90–91 customer bleed, turbine cooling (knobs). **Read-only diagnostics: 7–30, 36, 41, 44, 45**; all else
 STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 
 | Rung | Adds (one-line hook) | Spec |
@@ -125,6 +125,7 @@ STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 | 88 | **THE SLOW VALVE on a moving target** — rung 87's incidence valve given rung 65's lag, as KNOBS. **HEADLINE: an exact law has no slack for a slow actuator** — re-tuned to one margin, the `φ` valve is dearer instant, cheaper slow enough. **BOUNDS 87's price; BOUNDS 65's "pure loss" to its own coordinate.** | `docs/rung88-spec.md` |
 | 89 | **THE ASYMMETRIC VALVE** — rung 88's slow valve opening at one speed, closing at another, as KNOBS. **HEADLINE: each valve is priced by ONE edge** — incidence by its opening, `φ` by its closing — so the closing speed moves the verdict BOTH ways. **SPLITS 88's crossover; CONFIRMS 52 on airflow.** | `docs/rung89-spec.md` |
 | 90 | **THE CUSTOMER BLEED** — air the aircraft takes off the HP delivery, as KNOBS. **HEADLINE: a different arrow** — the HP gains its own freedom (away from surge, no `π*`); the LP is pushed toward surge at high power, so the LP valve bleeds MORE. **BOUNDS 42; lowers 64's ceiling by a load.** | `docs/rung90-spec.md` |
+| 91 | **TURBINE COOLING AIR** — HPC air rejoining before (vane) or after (blade) the HP rotor, as KNOBS. **HEADLINE: air that comes back is cheap in thrust, dear in surge margin** — it back-pressures A45, so the HP arrow REVERSES at high power and the LP loses its relief. **BOUNDS 90; BOUNDS 31's pin.** | `docs/rung91-spec.md` |
 
 ## Working contract (from SPEC.md — these override convenience)
 - **Derive before you code.** For each station, write the governing equation and
@@ -140,7 +141,7 @@ STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 - **Every new rung reduces to its predecessor**, exactly and by test (`X=None` ⇒
   the prior code path). This is the project's spine — see any `docs/rungN-spec.md`.
 
-**Current scope (rung 90).** The **cycle solve** is a thermally-perfect, reacting,
+**Current scope (rung 91).** The **cycle solve** is a thermally-perfect, reacting,
 dissociation-equilibrium gas (`Gas.reacting_equilibrium()`) through ideal + real components
 (rungs 2/2b's knobs, mutually exclusive; specified exit pressure). The burner root-finds `f` over the scale-B
 absolute balance, then freezes the station-4 mixture through turbine + nozzle; Fork A/B and
@@ -179,8 +180,8 @@ Never re-open one, and never re-enumerate them here.
 - **Reacting-gas fuel control** (35/43 defer — the forward burner asserts against an equilibrium gas).
 - **The subsonic / unchoked LP branch** in the two-spool solves (38 flags, unsolved) and its **transient**.
 - **Off-design at a new ALTITUDE**: every matcher (1- and 2-spool, bleed) keeps the DESIGN ambient as nozzle back-pressure (`p_ambient`); shipped callers hold `p0` fixed. Sandbox overrides per flight — `docs/plans/sandbox-plan.md` § 10.8.
-- **Rungs 69–90's seams — in each rung's spec, not here.** `n`=4 needs a 4th non-fuel lever or a non-`min` composition; every route TRIED (72–76, 80) is CLOSED.
-- **Rung 37's internal clocks on two shafts** + the combined 3-state; **turbine cooling bleed**, **shaft-power offtake**.
+- **Rungs 69–91's seams — in each rung's spec, not here.** `n`=4 needs a 4th non-fuel lever or a non-`min` composition; every route TRIED (72–76, 80) is CLOSED.
+- **Rung 37's internal clocks on two shafts** + the combined 3-state; **shaft-power offtake**.
 - **Afterburner**; a **real hardware/CFD map + surge line** (32's concession, doubled on two spools).
 - **Feeding a shifted/marched state into the production cycle** — a re-foundation, not a rung.
 
@@ -204,8 +205,8 @@ tag **`python-final`** keeps it, and every `engine.py:N` / `test_rungN.py` citat
   `two_spool_transient.rs` (40, 44) → `bleed.rs` (42) → `fuel_transient.rs` (43, 45, and the
   fuel-side limiters 46–52) → `stator.rs` (53–54) → `stage.rs` (55–56) → `stator_transient.rs`
   (57–60) → `stator_bleed.rs` (61) → `bleed_transient.rs` (62–63) → `limited_bleed.rs` (64) →
-  `lagged_bleed.rs` (65) → **exactly ONE module per rung, 66→90** (`two_lag.rs` …
-  `three_levers.rs`, `valve_reference.rs`, `lagged_incidence.rs`, `asymmetric_valve.rs`, `customer_bleed.rs`). A rung is a core plus a `const` table of function pointers, and reduces to
+  `lagged_bleed.rs` (65) → **exactly ONE module per rung, 66→91** (`two_lag.rs` …
+  `three_levers.rs`, `valve_reference.rs`, `lagged_incidence.rs`, `asymmetric_valve.rs`, `customer_bleed.rs`, `turbine_cooling.rs`). A rung is a core plus a `const` table of function pointers, and reduces to
   its predecessor; **each module's header names its rung, and what it adds is in its spec** — so
   this entry never grows.
 - `rust/src/main.rs` + `panels/` + `pyfmt.rs` — the CLI: the design-point tables and **one panel per

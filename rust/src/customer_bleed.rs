@@ -333,6 +333,8 @@ pub fn try_match_customer(
         return Ok(CustomerBleedResult { base, booking: None });
     }
     bump(&STEADY_ACTIVE);
+    core.base.refuse_cooling("rung 90's customer-bleed match");
+
     assert!(core.stack_lp.is_none() && core.stack_hp.is_none(),
             "rung-90's steady body lumps both compressors; rung 55's stage stacks are out of scope");
     let cb = core.base.customer.expect("active");
@@ -503,6 +505,8 @@ pub fn r90_try_close(
     t: &TwoSpoolTransientCore, nu_lp: f64, nu_hp: f64, tt4: f64, tt2: f64, pt2: f64,
 ) -> Result<CloseState, Abort> {
     bump(&CLOSE_R90);
+    t.inner.base.refuse_cooling("rung 90's closure");
+
     let b = t.b_of(nu_lp, Some(tt2));
     t.arm(nu_lp, nu_hp, tt2);
     let cb = customer_of(t);
@@ -547,6 +551,7 @@ pub fn r90_try_close(
             m_lp, m_imp, m_hp, phi_lp, phi_hp, tt2, n_lp, n_hp, tau_lpc, tau_hpc, tt25, tt3,
             pi_lpc, pi_hpc, pt4, f, wgas, eta_lpc, eta_hpc, mdot_air: mdot_imp, mdot4,
             bleed: Some(b), mdot_face: Some(face_imp), customer: Some(share),
+            cooling: None,
         })
     };
 
@@ -590,6 +595,8 @@ pub fn r90_try_close_fuel(
     ft: &FuelTransientCore, nu_lp: f64, nu_hp: f64, mdot_fuel: f64, tt2: f64, pt2: f64,
 ) -> Result<FuelCloseState, Abort> {
     bump(&CLOSE_FUEL_R90);
+    ft.inner.inner.base.refuse_cooling("rung 90's fuel closure");
+
     let b = ft.inner.b_of(nu_lp, Some(tt2));
     ft.inner.arm(nu_lp, nu_hp, tt2);
     let cb = customer_of(&ft.inner);
@@ -636,6 +643,7 @@ pub fn r90_try_close_fuel(
                 m_lp, m_imp, m_hp, phi_lp, phi_hp, tt2, n_lp, n_hp, tau_lpc, tau_hpc, tt25, tt3,
                 pi_lpc, pi_hpc, pt4, f, wgas, eta_lpc, eta_hpc, mdot_air: mdot_imp, mdot4,
                 bleed: Some(b), mdot_face: Some(face_imp), customer: Some(share),
+            cooling: None,
             },
             tt4,
             mdot_air_face: mdot_face_trial,
@@ -735,6 +743,8 @@ pub fn r90_powers(
     t: &TwoSpoolTransientCore, c: &CloseState, nu_lp: f64, nu_hp: f64, tt4: f64,
 ) -> Result<(f64, f64), Abort> {
     bump(&POWERS_R90);
+    t.inner.base.refuse_cooling("rung 90's shaft powers");
+
     let wgas = c.gas(&t.inner);
     let tb = turbines(t, wgas, c.f, nu_lp, nu_hp, tt4)?;
     let (_, _, _, _, pl, ph) = shaft_powers(t, c, wgas, tb[2], tb[5], nu_lp, nu_hp, tt4);
@@ -747,6 +757,8 @@ pub fn r90_try_instant_tail(
     tt4: f64, v0: f64,
 ) -> Result<Instant2, Abort> {
     bump(&TAIL_R90);
+    t.inner.base.refuse_cooling("rung 90's thrust tail");
+
     let core = &t.inner;
     let (wgas, f) = (c.gas(core), c.f);
     let [pi_hpt, tau_hpt, tt45, pi_lpt, tau_lpt, tt5, eta_hpt, eta_lpt, nu_hpt, nu_lpt] =

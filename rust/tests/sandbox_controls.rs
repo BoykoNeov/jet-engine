@@ -19,6 +19,7 @@ use turbojet::limited_bleed::{build_limited_bleed, BleedLimiter};
 use turbojet::map::ComponentMap;
 use turbojet::sandbox::call;
 use turbojet::customer_bleed::CustomerBleed;
+use turbojet::turbine_cooling::TurbineCooling;
 use turbojet::sandbox_controls::*;
 use turbojet::stator_transient::{IncidenceLimiter, ScheduledStatorCore, ScheduledStatorTransient, StatorArm,
                                  StatorSchedule};
@@ -31,7 +32,8 @@ fn flight() -> FlightCondition { FlightCondition::new(250.0, 50_000.0, 0.85) }
 /// With a CONTROLLED valve the machine is rung 64's (rung 62's builder drops the valve silently —
 /// rung 87's G1), or rung 65's when the valve is SLOW (rung 64's refuses a lag — rung 88);
 /// otherwise rung 62's, as before.
-fn machine(lp: ComponentMap, hp: ComponentMap, rho: f64, arm: &LeverArm, cb: Option<CustomerBleed>)
+fn machine(lp: ComponentMap, hp: ComponentMap, rho: f64, arm: &LeverArm, cb: Option<CustomerBleed>,
+           tc: Option<TurbineCooling>)
     -> ScheduledStatorCore {
     let (gc, cc, gt, ct) = (1.4f64, 1004.0f64, 1.3f64, 1239.0f64);
     let gas = Gas::new(GasSpec { gamma_c: gc, cp_c: cc, r_c: (gc - 1.0) / gc * cc, gamma_t: gt, cp_t: ct,
@@ -41,6 +43,8 @@ fn machine(lp: ComponentMap, hp: ComponentMap, rho: f64, arm: &LeverArm, cb: Opt
     let design = build_two_spool_turbojet(gas, 3.0, 6.0, 1500.0, 50_000.0, losses);
     // Rung 90: the aircraft's demand rides on the design engine.
     let design = match cb { Some(c) => design.with_customer_bleed(c), None => design };
+    // Rung 91: and the turbine cooling.
+    let design = match tc { Some(t) => design.with_turbine_cooling(t), None => design };
     let built = if arm.bleed_lim.is_some_and(|l| l.tau.is_some()) {
         build_lagged_bleed(design, flight(), 1.0, Some(lp), Some(hp), rho, arm)
     } else if arm.bleed_lim.is_some() {
@@ -93,7 +97,7 @@ fn direct(s: &ControlsSettings) -> Vec<FuelPoint> {
         CustomerMode::Share => Some(CustomerBleed::Share(s.customer_share)),
         CustomerMode::Amount => Some(CustomerBleed::Amount(s.customer_amount)),
     };
-    let m = machine(lp, hp, s.rho, &arm, cb);
+    let m = machine(lp, hp, s.rho, &arm, cb, s.turbine_cooling());
     let fl = flight();
     let (a, b) = (m.fuel.fuel_for_tt4(&fl, s.from), m.fuel.fuel_for_tt4(&fl, s.to));
     let eq0 = m.fuel.inner.equilibrium(&fl, s.from);
@@ -190,6 +194,12 @@ fn customer_cases() -> Vec<(&'static str, ControlsSettings)> {
     vec![
         ("customer share", ControlsSettings { customer: CustomerMode::Share, ..d }),
         ("customer amount, redline", ControlsSettings { customer: CustomerMode::Amount, redline_on: true, ..d }),
+        // rung 91: turbine cooling alone, both streams with a customer share, both beside the slow valve
+        ("vane cooling", ControlsSettings { cool_vane: 0.05, ..d }),
+        ("both streams, customer share, redline", ControlsSettings { cool_vane: 0.04, cool_blade: 0.03,
+            customer: CustomerMode::Share, redline_on: true, ..d }),
+        ("blade cooling, slow valve, stators", ControlsSettings { cool_blade: 0.04, lever: LeverChoice::Both,
+            bleed_mode: BleedMode::Valve, valve_lag_on: true, ..d }),
     ]
 }
 
@@ -502,7 +512,8 @@ fn settings_round_trip_and_the_entry_point_answers() {
                                stator_spool: Spool::Hp, v_max: 0.12, v_n_lo: 0.55, b_max: 0.07, b_n_lo: 0.6,
                                bleed_mode: BleedMode::Valve, valve_phi: 0.77, valve_ref: FloorRef::Incidence,
                                valve_lag_on: true, valve_tau: 0.13, valve_close_own: true, valve_tau_close: 0.31,
-                               customer: CustomerMode::Amount, customer_share: 0.07, customer_amount: 0.04 };
+                               customer: CustomerMode::Amount, customer_share: 0.07, customer_amount: 0.04,
+                               cool_vane: 0.06, cool_blade: 0.02 };
     let back = ControlsSettings::from_json(&Json::parse(&s.to_json().dump_compact())).unwrap();
     assert_eq!(back, s);
     let d = Json::parse(&call(r#"{"op":"controls_defaults"}"#));
@@ -673,4 +684,32 @@ fn the_customer_bleed_reads_the_models_closure_and_its_refusals_are_words() {
         mf: 0.01, nu_lp: 0.8, nu_hp: 0.9, s: 0.42 }) };
     assert_eq!(classify(&sv, &stop, o.points.last()), StopKind::Customer);
     assert!(StopKind::Customer.words().contains("more air than the engine could give"));
+}
+
+/// RUNG 91 on the page: the cooling reaches the model's closure (and only when a share is set), its
+/// ranges are checked in words, and the customer-and-cooling bound is named in words at an endpoint
+/// and mid-run.
+#[test]
+fn the_turbine_cooling_reaches_the_model_and_its_refusals_are_words() {
+    let d = ControlsSettings::defaults();
+    let (sv, _) = controls(&ControlsSettings { cool_vane: 0.05, cool_blade: 0.02, ..d }).unwrap();
+    assert_eq!(sv.start.close.cooling, Some(TurbineCooling::new(0.05, 0.02)), "cooling reaches rung 91's closure");
+    assert!(controls(&d).unwrap().0.start.close.cooling.is_none(), "no cooling is the earlier closure");
+    for bad in [ControlsSettings { cool_vane: 0.25, ..d }, ControlsSettings { cool_blade: -0.01, ..d }] {
+        assert!(controls_precheck(&bad).unwrap_err().0.contains("turbine-cooling share"));
+    }
+    let e = controls_precheck(&ControlsSettings { cool_vane: 0.2, cool_blade: 0.2, customer: CustomerMode::Share,
+                                                  customer_share: 0.15, ..d }).unwrap_err();
+    assert!(e.0.contains("together must take less than half"), "{}", e.0);
+    // an endpoint a customer AMOUNT plus the cooling starves: refused in words, before any march
+    let e = match controls(&ControlsSettings { cool_vane: 0.2, cool_blade: 0.2, customer: CustomerMode::Amount,
+                                               customer_amount: 0.12, ..d }) {
+        Err(e) => e,
+        Ok(_) => panic!("0.4 of cooling and a 0.12 amount leave no steady point at 1000 K"),
+    };
+    assert!(e.0.contains("turbine cooling together would take more than half"), "{}", e.0);
+    let stop = Stop { s_last: 0.4, failure: Some(Failure {
+        message: "rung-91: the aircraft (12.0 %) and turbine cooling (40.0 %) together take 52.0 % of the HP \
+                  compressor's air here".into(), call: Call::AtApplied, mf: 0.01, nu_lp: 0.8, nu_hp: 0.9, s: 0.42 }) };
+    assert_eq!(classify(&sv, &stop, None), StopKind::Customer);
 }

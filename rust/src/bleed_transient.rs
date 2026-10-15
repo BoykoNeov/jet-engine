@@ -651,6 +651,10 @@ pub fn r62_try_close(
 ) -> Result<CloseState, Abort> {
     // RUNG 90: an ACTIVE customer bleed takes its own body at every `b`, 0 included — rung 57's
     // would refuse it. Inactive, nothing below this line changes.
+    // RUNG 91: active turbine cooling first — its body carries the customer bleed too.
+    if t.inner.base.cooling_active() {
+        return crate::turbine_cooling::r91_try_close(t, nu_lp, nu_hp, tt4, tt2, pt2);
+    }
     if t.inner.base.customer_active() {
         return crate::customer_bleed::r90_try_close(t, nu_lp, nu_hp, tt4, tt2, pt2);
     }
@@ -705,6 +709,7 @@ pub fn r62_try_close(
             // TRIAL. They agree only at the root, and the shadowing is Python's own.
             mdot_face: Some(mdot_imp / (1.0 - b)),
             customer: None,
+            cooling: None,
         })
     };
 
@@ -758,7 +763,10 @@ pub fn r62_try_close(
 pub fn r62_try_close_fuel(
     ft: &FuelTransientCore, nu_lp: f64, nu_hp: f64, mdot_fuel: f64, tt2: f64, pt2: f64,
 ) -> Result<FuelCloseState, Abort> {
-    // RUNG 90 — see `r62_try_close`.
+    // RUNGS 91, 90 — see `r62_try_close`.
+    if ft.inner.inner.base.cooling_active() {
+        return crate::turbine_cooling::r91_try_close_fuel(ft, nu_lp, nu_hp, mdot_fuel, tt2, pt2);
+    }
     if ft.inner.inner.base.customer_active() {
         return crate::customer_bleed::r90_try_close_fuel(ft, nu_lp, nu_hp, mdot_fuel, tt2, pt2);
     }
@@ -810,6 +818,7 @@ pub fn r62_try_close_fuel(
                 bleed: Some(b),
                 mdot_face: Some(mdot_imp / (1.0 - b)),
                 customer: None,
+                cooling: None,
             },
             tt4,
             // Python's `mdot_air_face` key — the m_lp-derived TRIAL face flow, a DIFFERENT
@@ -898,7 +907,10 @@ fn r62_powers(
     t: &TwoSpoolTransientCore, c: &CloseState, flight: &FlightCondition, nu_lp: f64, nu_hp: f64,
     tt4: f64,
 ) -> Result<(f64, f64), Abort> {
-    // RUNG 90: dispatched on the CLOSURE's own field, as this cell dispatches on its `bleed`.
+    // RUNGS 91, 90: dispatched on the CLOSURE's own fields, as this cell dispatches on its `bleed`.
+    if c.cooling.is_some() {
+        return crate::turbine_cooling::r91_powers(t, c, nu_lp, nu_hp, tt4);
+    }
     if c.customer.is_some() {
         return crate::customer_bleed::r90_powers(t, c, nu_lp, nu_hp, tt4);
     }
@@ -939,7 +951,10 @@ fn r62_try_instant_tail(
     t: &TwoSpoolTransientCore, flight: &FlightCondition, c: &CloseState, nu_lp: f64, nu_hp: f64,
     tt4: f64, v0: f64,
 ) -> Result<Instant2, Abort> {
-    // RUNG 90 — see `r62_powers`.
+    // RUNGS 91, 90 — see `r62_powers`.
+    if c.cooling.is_some() {
+        return crate::turbine_cooling::r91_try_instant_tail(t, flight, c, nu_lp, nu_hp, tt4, v0);
+    }
     if c.customer.is_some() {
         return crate::customer_bleed::r90_try_instant_tail(t, flight, c, nu_lp, nu_hp, tt4, v0);
     }

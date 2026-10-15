@@ -309,18 +309,37 @@ pub struct TwoSpoolEngine {
     /// from the design engine (rung 64's sibling trap) keeps it. Rung 38's core copies it; every
     /// solver that cannot model it REFUSES an active one rather than dropping it.
     pub customer: Option<crate::customer_bleed::CustomerBleed>,
+    /// RUNG 91's TURBINE COOLING — HPC air that rejoins the gas at the turbines (vane and blade
+    /// shares). Like [`customer`](Self::customer): [`run`](Self::run) never reads it (the hardware
+    /// is captured with cooling OFF, so the knob is cooling MODULATED on fixed hardware); it lives
+    /// on the design engine so every sibling keeps it; every solver that cannot model it REFUSES
+    /// an active one.
+    pub cooling: Option<crate::turbine_cooling::TurbineCooling>,
 }
 
 impl TwoSpoolEngine {
     pub fn new(gas: Gas, components: Vec<(&'static str, Component)>, eta_m: f64) -> Self {
         let fs_engine = Engine::new(gas.clone(), Vec::new(), eta_m);
-        TwoSpoolEngine { gas, components, eta_m, fs_engine, customer: None }
+        TwoSpoolEngine { gas, components, eta_m, fs_engine, customer: None, cooling: None }
     }
 
     /// RUNG 90: the same engine with the aircraft drawing `cb` off station 3 when it flies off
     /// design. The design run is unchanged (see [`customer`](Self::customer)).
     pub fn with_customer_bleed(mut self, cb: crate::customer_bleed::CustomerBleed) -> Self {
         self.customer = Some(cb);
+        self
+    }
+
+    /// RUNG 91: the same engine with its turbines cooled by `tc` off design. The design run is
+    /// unchanged (see [`cooling`](Self::cooling)). **The perfect gas only** — refused in words
+    /// otherwise: the mixers would have to re-react the diluted mixture.
+    pub fn with_turbine_cooling(mut self, tc: crate::turbine_cooling::TurbineCooling) -> Self {
+        assert!(crate::turbine_cooling::is_perfect_gas(&self.gas),
+                "rung-91 turbine cooling is modelled on the perfect (constant-property) gas only: \
+                 its mixers put compressor air into the hot gas at one fixed heat capacity, and a \
+                 reacting or thermally-perfect gas would have to re-mix (and re-react) the diluted \
+                 mixture.");
+        self.cooling = Some(tc);
         self
     }
 
@@ -626,6 +645,10 @@ pub struct TwoSpoolCore {
     /// [`TwoSpoolEngine::customer`]. Read by rung 90's bodies alone; every other body refuses an
     /// ACTIVE one ([`refuse_customer`](Self::refuse_customer)).
     pub customer: Option<crate::customer_bleed::CustomerBleed>,
+    /// RUNG 91's turbine cooling, copied off the design engine — see
+    /// [`TwoSpoolEngine::cooling`]. Read by rung 91's bodies alone; every other body refuses an
+    /// ACTIVE one ([`refuse_cooling`](Self::refuse_cooling)).
+    pub cooling: Option<crate::turbine_cooling::TurbineCooling>,
 }
 
 impl TwoSpoolCore {
@@ -636,6 +659,20 @@ impl TwoSpoolCore {
     /// and a zero amount are all INACTIVE — and an inactive one dispatches to the earlier code.
     pub fn customer_active(&self) -> bool {
         self.customer.is_some_and(|c| c.is_active())
+    }
+
+    /// RUNG 91: does this core carry turbine cooling that takes any air? `None` and both shares 0
+    /// are INACTIVE — and an inactive one dispatches to the earlier code.
+    pub fn cooling_active(&self) -> bool {
+        self.cooling.is_some_and(|c| c.is_active())
+    }
+
+    /// RUNG 91's refusal, for every body that cannot model turbine cooling (rung 90's included).
+    pub fn refuse_cooling(&self, who: &str) {
+        assert!(!self.cooling_active(),
+                "rung-91: {who} cannot model turbine cooling (HPC air that rejoins at the \
+                 turbines); build the engine's solver through rung 91 (turbine_cooling.rs) or \
+                 rung 62's transient machine");
     }
 
     /// RUNG 90's refusal, for every body that cannot model the customer bleed: an explicit
@@ -683,6 +720,7 @@ impl TwoSpoolCore {
         let eta_m = design_engine.eta_m;
         let hf_fuel_molar = design_engine.gas.spec.hf_fuel_molar;
         let customer = design_engine.customer;
+        let cooling = design_engine.cooling;
 
         let by = |label: &str| -> Component {
             design_engine.components.iter().find(|(l, _)| *l == label)
@@ -740,6 +778,7 @@ impl TwoSpoolCore {
             fs_engine: Engine::new(gas, Vec::new(), eta_m),
             tau_calls: std::cell::Cell::new(0),
             customer,
+            cooling,
         }
     }
 
@@ -961,6 +1000,7 @@ impl TwoSpoolCore {
     /// cells, between ~8 passes and never (§ 5.7 (c)).
     pub fn match_point(&self, flight: &FlightCondition, tt4: f64) -> TwoSpoolResult {
         self.refuse_customer("rung 38's two-spool matcher");
+        self.refuse_cooling("rung 38's two-spool matcher");
         let pi_d = self.pi_d_max * ram_recovery(flight.m0);
         let (state0, _v0) = self.freestream_for(flight);
         let (tt2, pt2) = (state0.tt, pi_d * state0.pt);
@@ -1589,6 +1629,7 @@ fn r39_try_match_point(
     core: &TwoSpoolMapCore, flight: &FlightCondition, tt4: f64,
 ) -> Result<TwoSpoolMapResult, Abort> {
     core.base.refuse_customer("rung 39's map matcher");
+    core.base.refuse_cooling("rung 39's map matcher");
     let b = &core.base;
     let pi_d = b.pi_d_max * ram_recovery(flight.m0);
     let (state0, _v0) = b.try_freestream_for(flight)?;

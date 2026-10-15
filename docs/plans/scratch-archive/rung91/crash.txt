@@ -1,0 +1,130 @@
+  512  complete
+    5  refused: A slow valve cannot run beside the temperature limiter's lag or the realistic release: a l
+    1  refused: At the final throttle (1000 K): the engine has no steady operating point: the compressors 
+    2  refused: At the final throttle (1040 K): the engine has no steady operating point: the compressors 
+    1  refused: At the final throttle (1100 K): the engine has no steady operating point: the compressors 
+    1  refused: At the final throttle (1130 K): the engine has no steady operating point: the compressors 
+    1  refused: At the final throttle (1180 K): the engine has no steady operating point: the compressors 
+    2  refused: At the final throttle (1190 K): the engine has no steady operating point: the compressors 
+    2  refused: At the final throttle (1320 K): the engine has no steady operating point: the compressors 
+    1  refused: At the final throttle (1380 K): the engine has no steady operating point: the compressors 
+    1  refused: At the final throttle (1420 K): the engine has no steady operating point: the compressors 
+    1  refused: At the final throttle (1470 K): the engine has no steady operating point: the compressors 
+    1  refused: At the final throttle (1530 K): the engine has no steady operating point: the compressors 
+    1  refused: At the final throttle (1550 K): the engine has no steady operating point: the compressors 
+    1  refused: At the final throttle (1610 K): the engine has no steady operating point: the compressors 
+    1  refused: At the final throttle (1620 K): the engine has no steady operating point: the compressors 
+    1  refused: At the final throttle (1640 K): the engine has no steady operating point: the compressors 
+    1  refused: At the final throttle (1650 K): the engine has no steady operating point: the compressors 
+    2  refused: At the final throttle (1670 K): the engine has no steady operating point: the compressors 
+    1  refused: At the final throttle (1690 K): the engine has no steady operating point: the compressors 
+    1  refused: At the final throttle (600 K): the engine has no steady operating point: the compressors w
+    1  refused: At the final throttle (610 K): the engine has no steady operating point: the compressors w
+    1  refused: At the final throttle (620 K): the engine has no steady operating point: the compressors w
+    1  refused: At the final throttle (640 K): the engine has no steady operating point: the compressors w
+    1  refused: At the final throttle (660 K): the engine has no steady operating point: the compressors w
+    1  refused: At the final throttle (680 K): the engine has no steady operating point: the compressors w
+    2  refused: At the final throttle (700 K): the engine has no steady operating point: the compressors w
+    3  refused: At the final throttle (710 K): the engine has no steady operating point: the compressors w
+    1  refused: At the final throttle (720 K): the engine has no steady operating point: the compressors w
+    1  refused: At the final throttle (730 K): the engine has no steady operating point: the compressors w
+    3  refused: At the final throttle (740 K): the engine has no steady operating point: the compressors w
+    2  refused: At the final throttle (750 K): the engine has no steady operating point: the compressors w
+    1  refused: At the final throttle (770 K): the engine has no steady operating point: the compressors w
+    2  refused: At the final throttle (780 K): the engine has no steady operating point: the compressors w
+    1  refused: At the final throttle (790 K): the engine has no steady operating point: the compressors w
+    1  refused: At the final throttle (800 K): the engine has no steady operating point: the compressors w
+    2  refused: At the final throttle (820 K): the engine has no steady operating point: the compressors w
+    2  refused: At the final throttle (830 K): the engine has no steady operating point: the compressors w
+    2  refused: At the final throttle (840 K): the engine has no steady operating point: the compressors w
+    2  refused: At the final throttle (850 K): the engine has no steady operating point: the compressors w
+    2  refused: At the final throttle (860 K): the engine has no steady operating point: the compressors w
+    1  refused: At the final throttle (870 K): the engine has no steady operating point: the compressors w
+    1  refused: At the final throttle (900 K): the engine has no steady operating point: the compressors w
+    1  refused: At the final throttle (960 K): the engine has no steady operating point: the compressors w
+    2  refused: At the final throttle (990 K): the engine has no steady operating point: the compressors w
+    1  refused: At the starting throttle (1010 K): the engine has no steady operating point: the compresso
+    2  refused: At the starting throttle (1020 K): the engine has no steady operating point: the compresso
+    1  refused: At the starting throttle (1030 K): the engine has no steady operating point: the compresso
+    1  refused: At the starting throttle (1040 K): the engine has no steady operating point: the compresso
+    3  refused: At the starting throttle (1060 K): the engine has no steady operating point: the compresso
+    1  refused: At the starting throttle (1070 K): the engine has no steady operating point: the compresso
+    1  refused: At the starting throttle (1080 K): the engine has no steady operating point: the compresso
+    1  refused: At the starting throttle (1090 K): the engine has no steady operating point: the compresso
+    1  refused: At the starting throttle (1100 K): the engine has no steady operating point: the compresso
+    2  refused: At the starting throttle (1120 K): the engine has no steady operating point: the compresso
+    2  refused: At the starting throttle (1150 K): the engine has no steady operating point: the compresso
+    3  refused: At the starting throttle (1170 K): the engine has no steady operating point: the compresso
+    1  refused: At the starting throttle (1180 K): the engine has no steady operating point: the compresso
+    1  refused: At the starting throttle (1200 K): the engine has no steady operating point: the compresso
+    1  refused: At the starting throttle (1210 K): the engine has no steady operating point: the compresso
+    2  refused: At the starting throttle (1220 K): the engine has no steady operating point: the compresso
+    1  refused: At the starting throttle (1260 K): the engine has no steady operating point: the compresso
+    1  refused: At the starting throttle (1300 K): the engine has no steady operating point: the compresso
+    1  refused: At the starting throttle (1320 K): the engine has no steady operating point: the compresso
+    1  refused: At the starting throttle (1330 K): the engine has no steady operating point: the compresso
+    1  refused: At the starting throttle (1340 K): the engine has no steady operating point: the compresso
+    1  refused: At the starting throttle (1360 K): the engine has no steady operating point: the compresso
+    2  refused: At the starting throttle (1430 K): the engine has no steady operating point: the compresso
+    1  refused: At the starting throttle (1440 K): the engine has no steady operating point: the compresso
+    2  refused: At the starting throttle (1460 K): the engine has no steady operating point: the compresso
+    1  refused: At the starting throttle (1470 K): the engine has no steady operating point: the compresso
+    1  refused: At the starting throttle (1480 K): the engine has no steady operating point: the compresso
+    1  refused: At the starting throttle (1490 K): the engine has no steady operating point: the compresso
+    2  refused: At the starting throttle (1500 K): the engine has no steady operating point: the compresso
+    2  refused: At the starting throttle (1530 K): the engine has no steady operating point: the compresso
+    1  refused: At the starting throttle (1540 K): the engine has no steady operating point: the compresso
+    1  refused: At the starting throttle (1570 K): the engine has no steady operating point: the compresso
+    1  refused: At the starting throttle (1590 K): the engine has no steady operating point: the compresso
+    1  refused: At the starting throttle (1610 K): the engine has no steady operating point: the compresso
+    1  refused: At the starting throttle (1620 K): the engine has no steady operating point: the compresso
+    2  refused: At the starting throttle (1660 K): the engine has no steady operating point: the compresso
+    1  refused: At the starting throttle (1670 K): the engine has no steady operating point: the compresso
+    2  refused: At the starting throttle (1690 K): the engine has no steady operating point: the compresso
+    1  refused: At the starting throttle (600 K): the engine has no steady operating point: the compressor
+    1  refused: At the starting throttle (610 K): the engine has no steady operating point: the compressor
+    2  refused: At the starting throttle (630 K): the engine has no steady operating point: the compressor
+    4  refused: At the starting throttle (640 K): the engine has no steady operating point: the compressor
+    3  refused: At the starting throttle (650 K): the engine has no steady operating point: the compressor
+    1  refused: At the starting throttle (660 K): the engine has no steady operating point: the compressor
+    3  refused: At the starting throttle (670 K): the engine has no steady operating point: the compressor
+    2  refused: At the starting throttle (680 K): the engine has no steady operating point: the compressor
+    2  refused: At the starting throttle (690 K): the engine has no steady operating point: the compressor
+    1  refused: At the starting throttle (700 K): the engine has no steady operating point: the compressor
+    1  refused: At the starting throttle (720 K): the engine has no steady operating point: the compressor
+    5  refused: At the starting throttle (730 K): the engine has no steady operating point: the compressor
+    2  refused: At the starting throttle (740 K): the engine has no steady operating point: the compressor
+    1  refused: At the starting throttle (760 K): the engine has no steady operating point: the compressor
+    2  refused: At the starting throttle (770 K): the engine has no steady operating point: the compressor
+    2  refused: At the starting throttle (780 K): the engine has no steady operating point: the compressor
+    1  refused: At the starting throttle (800 K): the engine has no steady operating point: the compressor
+    4  refused: At the starting throttle (810 K): the engine has no steady operating point: the compressor
+    2  refused: At the starting throttle (820 K): the engine has no steady operating point: the compressor
+    1  refused: At the starting throttle (830 K): the engine has no steady operating point: the compressor
+    2  refused: At the starting throttle (840 K): the engine has no steady operating point: the compressor
+    3  refused: At the starting throttle (850 K): the engine has no steady operating point: the compressor
+    2  refused: At the starting throttle (860 K): the engine has no steady operating point: the compressor
+    5  refused: At the starting throttle (870 K): the engine has no steady operating point: the compressor
+    2  refused: At the starting throttle (880 K): the engine has no steady operating point: the compressor
+    3  refused: At the starting throttle (890 K): the engine has no steady operating point: the compressor
+    2  refused: At the starting throttle (910 K): the engine has no steady operating point: the compressor
+    2  refused: At the starting throttle (920 K): the engine has no steady operating point: the compressor
+    1  refused: At the starting throttle (930 K): the engine has no steady operating point: the compressor
+    3  refused: At the starting throttle (950 K): the engine has no steady operating point: the compressor
+    1  refused: At the starting throttle (960 K): the engine has no steady operating point: the compressor
+    2  refused: At the starting throttle (970 K): the engine has no steady operating point: the compressor
+    2  refused: At the starting throttle (980 K): the engine has no steady operating point: the compressor
+    5  refused: The aircraft's share and the turbine cooling together must take less than half of the HP c
+   37  refused: The realistic release lags the cut of the acceleration schedule or the stall floor, so swi
+   55  refused: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched o
+    3  refused: The valve's largest opening must be above 0 (a valve that cannot open holds nothing) and b
+   59  refused: The whole run (ramp + settling) may be at most 10 spool time constants.
+   80  refused: an endpoint starved
+    1  stop customer
+   50  stop floor_unreachable
+    5  stop lean
+    3  stop rich
+    2  stop unknown
+
+stop customer
+{"op":"controls","controls":{"shape":"tilted","rho":1,"from":730,"to":1590,"ramp":0.82,"settle":6.3,"redline_on":0,"redline":1455,"gov_lag_on":0,"gov_lag":0.42,"accel_on":0,"accel_margin":0.27,"floor_on":0,"floor_spool":"lp","floor_phi":0.725,"floor_ref":"phi","release_on":0,"tau_att":0.13,"tau_rel":0.57,"lever":"both","stator_spool":"lp","v_max":0.06,"v_n_lo":0.56,"b_max":0.17,"b_n_lo":0.77,"bleed_mode":"valve","valve_phi":0.91,"valve_ref":"incidence","valve_speed":"instant","valve_tau":0.27,"customer":"amount","customer_share":0.2,"customer_amount":0.17,"cool_vane":0.01,"cool_blade":0.02}}

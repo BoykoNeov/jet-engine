@@ -4012,6 +4012,7 @@ fn r43_try_close_fuel(
 ) -> Result<FuelCloseState, Abort> {
     bump(&CLOSE_CALLS);
     ft.inner.inner.base.refuse_customer("rung 43's fuel closure");
+    ft.inner.inner.base.refuse_cooling("rung 43's fuel closure");
     let t = &ft.inner;
     let c = &t.inner;
     let gas = c.gas();
@@ -4063,7 +4064,7 @@ fn r43_try_close_fuel(
                 mdot4,
                 // RUNG 43's dict has NEITHER key either — see the two field notes on
                 // [`CloseState`]. `mdot_air_face` below is a DIFFERENT quantity.
-                bleed: None, mdot_face: None, customer: None,
+                bleed: None, mdot_face: None, customer: None, cooling: None,
             },
             tt4,
             mdot_air_face,
