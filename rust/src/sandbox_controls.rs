@@ -28,7 +28,8 @@
 //! recorded step, bit for bit.
 
 use crate::bleed_transient::{build_scheduled_bleed, BleedSchedule, LeverArm};
-use crate::limited_bleed::{build_limited_bleed, BleedLimiter};
+use crate::lagged_bleed::build_lagged_bleed;
+use crate::limited_bleed::{build_limited_bleed, r64_solve_b_at, r87_target, BleedLimiter};
 use crate::blade_speed::shape_maps;
 use crate::engine::FlightCondition;
 use crate::fuel_transient::{r43_cut_below_ceiling, release_weight, AccelSchedule, AsymmetricLag, FuelInstant, FuelLimiters,
@@ -42,7 +43,8 @@ use crate::sandbox_blades::BladeSettings;
 use crate::stator_transient::{IncidenceLimiter, ScheduledStatorCore, ScheduledStatorTransient, StatorArm,
                               StatorSchedule};
 use crate::two_spool::Spool;
-use crate::two_spool_transient::Instant2;
+use crate::bleed_transient::r62_try_close_fuel;
+use crate::two_spool_transient::{ForcedBleed, Instant2, MarchedBleed};
 use crate::visuals::Json;
 
 /// The march step, in HP spool time constants — rung 43's grid. (Rungs 57/62 ran at 0.01; the
@@ -193,6 +195,10 @@ pub struct ControlsSettings {
     pub bleed_mode: BleedMode,
     pub valve_phi: f64,
     pub valve_ref: FloorRef,
+    /// Rung 88: the valve's speed — instant (rungs 64/87), or a first-order lag of time constant
+    /// `valve_tau` (rung 65's, which rung 88 gave the incidence reference).
+    pub valve_lag_on: bool,
+    pub valve_tau: f64,
 }
 
 impl ControlsSettings {
@@ -209,6 +215,7 @@ impl ControlsSettings {
             release_on: false, tau_att: 0.02, tau_rel: 0.10,
             lever: LeverChoice::None, stator_spool: Spool::Lp, v_max: 0.20, v_n_lo: 0.65, b_max: 0.10, b_n_lo: 0.65,
             bleed_mode: BleedMode::Schedule, valve_phi: 0.78, valve_ref: FloorRef::Phi,
+            valve_lag_on: false, valve_tau: 0.05,
         }
     }
 
@@ -233,6 +240,7 @@ impl ControlsSettings {
             "lever" => self.lever.key(), "stator_spool" => spool_key(self.stator_spool),
             "v_max" => self.v_max, "v_n_lo" => self.v_n_lo, "b_max" => self.b_max, "b_n_lo" => self.b_n_lo,
             "bleed_mode" => self.bleed_mode.key(), "valve_phi" => self.valve_phi, "valve_ref" => self.valve_ref.key(),
+            "valve_speed" => if self.valve_lag_on { "slow" } else { "instant" }, "valve_tau" => self.valve_tau,
         }
     }
 
@@ -273,7 +281,7 @@ impl ControlsSettings {
                           ("accel_margin", &mut s.accel_margin), ("floor_phi", &mut s.floor_phi),
                           ("tau_att", &mut s.tau_att), ("tau_rel", &mut s.tau_rel), ("v_max", &mut s.v_max),
                           ("v_n_lo", &mut s.v_n_lo), ("b_max", &mut s.b_max), ("b_n_lo", &mut s.b_n_lo),
-                          ("valve_phi", &mut s.valve_phi)] {
+                          ("valve_phi", &mut s.valve_phi), ("valve_tau", &mut s.valve_tau)] {
             num(k, into)?;
         }
         for (k, into) in [("redline_on", &mut s.redline_on), ("gov_lag_on", &mut s.gov_lag_on),
@@ -294,6 +302,13 @@ impl ControlsSettings {
         if let Some(t) = text("valve_ref")? {
             s.valve_ref = FloorRef::ALL.into_iter().find(|r| r.key() == t)
                 .ok_or_else(|| format!("unknown valve reference {t:?} (\"phi\" or \"incidence\")"))?;
+        }
+        if let Some(t) = text("valve_speed")? {
+            s.valve_lag_on = match t.as_str() {
+                "instant" => false,
+                "slow" => true,
+                _ => return Err(format!("unknown valve speed {t:?} (\"instant\" or \"slow\")")),
+            };
         }
         if let Some(t) = text("lever")? {
             s.lever = LeverChoice::ALL.into_iter().find(|l| l.key() == t)
@@ -328,11 +343,15 @@ impl ControlsSettings {
     /// opening, watching the flow coefficient or (rung 87) the incidence.
     pub fn valve(&self) -> BleedLimiter {
         let v = BleedLimiter::new(self.valve_phi, self.b_max);
-        match self.valve_ref { FloorRef::Phi => v, FloorRef::Incidence => v.on_incidence() }
+        let v = match self.valve_ref { FloorRef::Phi => v, FloorRef::Incidence => v.on_incidence() };
+        if self.valve_lag_on { v.lagged(self.valve_tau) } else { v }
     }
 
     /// The bleed is the controlled valve (rung 64's machine is needed: rung 62's drops the valve silently).
     pub fn valve_on(&self) -> bool { self.lever.bleed() && self.bleed_mode == BleedMode::Valve }
+
+    /// The controlled valve is on and SLOW (rung 88): rung 65's machine and march.
+    pub fn valve_slow(&self) -> bool { self.valve_on() && self.valve_lag_on }
 
     /// The fuel the throttle schedules at march time `s` — rung 57's `_stator_march` ramp, spelled
     /// the same way, between the two endpoints' steady fuel flows.
@@ -349,7 +368,8 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
     let named = [("rho", s.rho), ("from", s.from), ("to", s.to), ("ramp", s.ramp), ("settle", s.settle),
                  ("redline", s.redline), ("gov_lag", s.gov_lag), ("accel_margin", s.accel_margin),
                  ("floor_phi", s.floor_phi), ("tau_att", s.tau_att), ("tau_rel", s.tau_rel), ("v_max", s.v_max),
-                 ("v_n_lo", s.v_n_lo), ("b_max", s.b_max), ("b_n_lo", s.b_n_lo), ("valve_phi", s.valve_phi)];
+                 ("v_n_lo", s.v_n_lo), ("b_max", s.b_max), ("b_n_lo", s.b_n_lo), ("valve_phi", s.valve_phi),
+                 ("valve_tau", s.valve_tau)];
     if let Some((k, _)) = named.iter().find(|(_, v)| !v.is_finite()) {
         return Err(DoesNotRun(format!("Setting {k} is not a number.")));
     }
@@ -415,6 +435,23 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
         if s.valve_phi <= 0.0 {
             return no("The valve holds a flow coefficient, so its target must be above zero.");
         }
+        if s.valve_lag_on {
+            // Rung 65's march asserts `ds/τ ≤ 2` (beyond it the explicit step is unstable and the result
+            // LOOKS physical — rung 65 § 0). Measured on this view's engine (plan § 17): at half a step the
+            // LP flow coefficient is 7e-4–1.1e-3 off a 4× finer step; at one step ≤ 9e-5 on the default move,
+            // the other routes' ~1e-4 (§ 12.10). So one step, as the view's other lags.
+            if !(s.valve_tau >= DS - 1e-12) {
+                return Err(DoesNotRun(format!(
+                    "The slow valve's time constant must be at least one march step ({DS} spool time constants): \
+                     a faster valve than that is worked out too coarsely at this step — measured, half a step moves \
+                     the flow coefficient by up to 0.001 against a finer step. Switch the valve to instant instead.")));
+            }
+            if s.gov_lag_on || s.release_on {
+                return no("A slow valve cannot run beside the temperature limiter's lag or the realistic release: a \
+                           lagging valve beside a lagging fuel cut is two lags on two levers (rung 66's two-lag \
+                           cascade), a different model from this one. Make the valve instant, or switch the lag off.");
+            }
+        }
     } else if s.lever.bleed() {
         if !(s.b_n_lo < 1.0) {
             return no("The bleed valve must be shut by the design speed (1.0), so the speed it starts closing \
@@ -449,7 +486,10 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
     controls_precheck(s)?;
     let (ml, mh) = control_maps(CONTROL_SHAPES[s.shape]).expect("CONTROL_SHAPES lists only buildable shapes");
     let fl = s.flight();
-    let builder = if s.valve_on() { build_limited_bleed } else { build_scheduled_bleed };
+    // A slow valve needs rung 65's machine (rung 64's refuses a lag); an instant one rung 64's (rung 62's
+    // drops the valve silently).
+    let builder = if s.valve_slow() { build_lagged_bleed } else if s.valve_on() { build_limited_bleed }
+                  else { build_scheduled_bleed };
     let core = match builder(BladeSettings::defaults().design(), fl, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
         ScheduledStatorTransient::Full(c) => c,
         ScheduledStatorTransient::Degenerate(_) => unreachable!("the Controls engine has both shafts"),
@@ -534,13 +574,22 @@ impl ControlsSolver {
     /// Which march the model dispatches to (`r43_integrate_fuel`'s order).
     pub fn route(&self) -> Route {
         let s = &self.settings;
-        if s.release_on { Route::Release } else if s.redline_on && s.gov_lag_on { Route::GovLag } else { Route::Plain }
+        // A slow valve's machine dispatches to rung 65's march first (its fuel table); the prechecks
+        // refuse it beside either fuel-side lag.
+        if s.valve_slow() { Route::ValveLag }
+        else if s.release_on { Route::Release } else if s.redline_on && s.gov_lag_on { Route::GovLag } else { Route::Plain }
     }
 
     /// The instant at a recorded point, re-read: the closure at the point's speeds and APPLIED fuel —
     /// the call the march's derivative made last there. `tests/sandbox_controls.rs` holds it to the
-    /// recorded point bit for bit.
+    /// recorded point bit for bit. A SLOW valve's position is a march state, so it is re-read at the
+    /// RECORDED position (rung 65: re-solving it would hand back the command, not the valve).
     pub fn reread(&self, p: &FuelPoint) -> Result<FuelInstant, Abort> {
+        let _st = match (self.route(), p.extra) {
+            (Route::ValveLag, PointExtra::Valve { b, .. }) => Some(MarchedBleed::set(&self.core.fuel.inner, b)),
+            (Route::ValveLag, _) => unreachable!("a slow valve's march records the valve at every point"),
+            _ => None,
+        };
         self.core.fuel.try_instant_fuel(&self.flight, p.nu_lp, p.nu_hp, p.mf)
     }
 }
@@ -554,6 +603,8 @@ pub enum Route {
     GovLag,
     /// Rung 52's asymmetric lag — its third state IS recorded.
     Release,
+    /// Rung 65's slow valve (rung 88 gave it the incidence reference) — its position IS recorded.
+    ValveLag,
 }
 
 /// Which call inside one derivative evaluation failed.
@@ -568,6 +619,8 @@ pub enum Call {
     Redline,
     Accel,
     Floor,
+    /// The slow valve's command: the opening the valve would hold if it were instant (rung 65).
+    Valve,
 }
 
 /// Where a re-run evaluation failed: the model's message, the call, the state and the fuel it was
@@ -697,6 +750,72 @@ fn der_release(sv: &ControlsSolver, a: f64, b: f64, g: f64, s: f64) -> Result<(f
     Ok((i.base.phi_lp_dot / ft.rho(), i.base.phi_hp_dot, dg))
 }
 
+/// One derivative evaluation of rung 65's slow-valve march — `r65_integrate_fuel_valve_lag`'s `der`,
+/// copied in its order: the min-select inside the valve's recorded position (rung 43's cut below the
+/// ceiling, then each armed leg off the SCHEDULED fuel), then — outside it — the valve's command, rung
+/// 64's root against the valve's own target (rung 88). Returns `(dν_L/ds, dν_H/ds, db/ds)`.
+fn der_valve_lag(sv: &ControlsSolver, a: f64, h: f64, q: f64, s: f64) -> Result<(f64, f64, f64), Failure> {
+    let fail = |call: Call, mf: f64| move |e: Abort| Failure { message: e.0, call, mf, nu_lp: a, nu_hp: h, s };
+    let ft = &sv.core.fuel;
+    let fl = &sv.flight;
+    let lim = sv.limiters();
+    let floor = lim.floor();
+    let tau = ft.inner.lever.lim.and_then(|l| l.tau).expect("the slow-valve route's valve has its lag");
+    let mf_sched = sv.settings.schedule(sv.mf_lo, sv.mf_hi)(s);
+    let (mf, inst) = 'cut: {
+        let _st = MarchedBleed::set(&ft.inner, q);
+        let mut i = match ft.try_instant_fuel(fl, a, h, mf_sched) {
+            Ok(i) => i,
+            Err(e) => break 'cut r43_cut_below_ceiling(
+                ft, fl, a, h, mf_sched, s,
+                &FuelLimiters { tt4_max: lim.tt4_max, accel: lim.accel, ..FuelLimiters::default() }, floor.as_ref(), e)
+                .map_err(fail(Call::AtSchedule, mf_sched))?,
+        };
+        let mut caps: Vec<f64> = Vec::new();
+        if let Some(t4) = lim.tt4_max {
+            if i.base.tt4 > t4 {
+                caps.push(ft.try_topping_fuel(fl, a, h, t4, mf_sched).map_err(fail(Call::Redline, mf_sched))?);
+            }
+        }
+        if let Some(sch) = lim.accel {
+            caps.push(ft.try_sched_fuel(fl, a, h, mf_sched, sch).map_err(fail(Call::Accel, mf_sched))?);
+        }
+        if let Some(f) = floor.as_ref() {
+            caps.push(ft.try_surge_fuel(fl, a, h, mf_sched, f).map_err(fail(Call::Floor, mf_sched))?);
+        }
+        caps.retain(|&c| c < mf_sched);
+        let mf = if caps.is_empty() {
+            mf_sched
+        } else {
+            let mut m = caps[0];
+            for &c in &caps[1..] {
+                if c < m {
+                    m = c;
+                }
+            }
+            m
+        };
+        if !caps.is_empty() {
+            i = ft.try_instant_fuel(fl, a, h, mf).map_err(fail(Call::AtApplied, mf))?;
+        }
+        (mf, i)
+    };
+    let cmd = valve_command(sv, a, h, mf).map_err(|f| Failure { s, ..f })?;
+    Ok((inst.base.phi_lp_dot / ft.rho(), inst.base.phi_hp_dot, (cmd - q) / tau))
+}
+
+/// The slow valve's command at a state and fuel — the march's own `command` (rung 64's root against the
+/// valve's target, rung 88).
+fn valve_command(sv: &ControlsSolver, a: f64, h: f64, mf: f64) -> Result<f64, Failure> {
+    let ft = &sv.core.fuel;
+    let vl = ft.inner.lever.lim.expect("the slow-valve route carries its valve");
+    let (tt2, pt2, _) = ft.inner.inlet(&sv.flight);
+    r64_solve_b_at(&vl, r87_target(&vl, &ft.inner, a, h, tt2), |b| {
+        let _g = ForcedBleed::set(&ft.inner, b);
+        r62_try_close_fuel(ft, a, h, mf, tt2, pt2)
+    }).map(|r| r.1).map_err(|e| Failure { message: e.0, call: Call::Valve, mf, nu_lp: a, nu_hp: h, s: 0.0 })
+}
+
 /// One RK4 step from a recorded point, re-run: `Ok((ν_L, ν_H, g))` after the step, or the first
 /// failure met — the marcher's order (`k1`, `k2`/`k3` at the half step, `k4` at the full one) and its
 /// arithmetic (`a + ds/2*k`, then `a += ds/6*(k1 + 2k2 + 2k3 + k4)`). `None` on the governor-lag route.
@@ -714,6 +833,21 @@ pub fn replay_step(sv: &ControlsSolver, p: &FuelPoint) -> Option<Result<(f64, f6
             let (k4a, k4b) = der_plain(sv, a + ds * k3a, b + ds * k3b, sched(s + ds), s + ds)?;
             Ok((a + ds / 6.0 * (k1a + 2.0 * k2a + 2.0 * k3a + k4a),
                 b + ds / 6.0 * (k1b + 2.0 * k2b + 2.0 * k3b + k4b), 0.0))
+        })(),
+        Route::ValveLag => (|| {
+            let PointExtra::Valve { b: q, .. } = p.extra else {
+                unreachable!("the slow-valve route records the valve");
+            };
+            let b_max = sv.core.fuel.inner.lever.lim.expect("the slow valve").b_max;
+            let (k1a, k1b, k1q) = der_valve_lag(sv, a, b, q, s)?;
+            let (k2a, k2b, k2q) = der_valve_lag(sv, a + ds / 2.0 * k1a, b + ds / 2.0 * k1b, q + ds / 2.0 * k1q, s + ds / 2.0)?;
+            let (k3a, k3b, k3q) = der_valve_lag(sv, a + ds / 2.0 * k2a, b + ds / 2.0 * k2b, q + ds / 2.0 * k2q, s + ds / 2.0)?;
+            let (k4a, k4b, k4q) = der_valve_lag(sv, a + ds * k3a, b + ds * k3b, q + ds * k3q, s + ds)?;
+            let q = q + ds / 6.0 * (k1q + 2.0 * k2q + 2.0 * k3q + k4q);
+            // the valve's stops, applied to the state as the march applies them (`min(b_max, max(0, q))`)
+            Ok((a + ds / 6.0 * (k1a + 2.0 * k2a + 2.0 * k3a + k4a),
+                b + ds / 6.0 * (k1b + 2.0 * k2b + 2.0 * k3b + k4b),
+                b_max.min(0.0f64.max(q))))
         })(),
         Route::Release => (|| {
             let PointExtra::Asym { g, .. } = p.extra else {
@@ -752,6 +886,10 @@ pub fn stop_reason(sv: &ControlsSolver, points: &[FuelPoint]) -> Option<Stop> {
             Route::GovLag => None,
             Route::Plain => der_plain(sv, a, b, sched(0.0), 0.0).err(),
             Route::Release => der_release(sv, a, b, 0.0, 0.0).err(),
+            // The march starts the valve at its command (rung 65's equilibrium start), solved before
+            // its loop — a failure THERE panics in the model, so an empty run is the first `der`'s.
+            Route::ValveLag => valve_command(sv, a, b, sched(0.0))
+                .and_then(|q| der_valve_lag(sv, a, b, q, 0.0).map(|_| ())).err(),
         };
         return Some(Stop { s_last: f64::NAN, failure });
     };
@@ -763,6 +901,7 @@ pub fn stop_reason(sv: &ControlsSolver, points: &[FuelPoint]) -> Option<Stop> {
             let sched = sv.settings.schedule(sv.mf_lo, sv.mf_hi);
             match sv.route() {
                 Route::Release => der_release(sv, a, b, g, s).err(),
+                Route::ValveLag => der_valve_lag(sv, a, b, g, s).err(),
                 _ => der_plain(sv, a, b, sched(s), s).err(),
             }.or_else(|| Some(Failure { message: "the march stopped, but re-running its last step does not fail".into(),
                                         call: Call::AtApplied, mf: f64::NAN, nu_lp: f64::NAN, nu_hp: f64::NAN,
@@ -1005,6 +1144,7 @@ impl ControlsSolver {
             Route::Plain => &[Holder::Redline, Holder::Accel, Holder::Floor],
             Route::GovLag => &[Holder::Accel, Holder::Floor],
             Route::Release => &[Holder::Redline],
+            Route::ValveLag => &[Holder::Redline, Holder::Accel, Holder::Floor],
         };
         let holder = if p.mf == p.mf_sched {
             Holder::None
@@ -1057,7 +1197,8 @@ pub fn controls_json(sv: &ControlsSolver, o: &ControlsOutcome) -> Json {
         "controls" => o.settings.to_json(),
         "start" => steady_json(sv, &sv.start), "end" => steady_json(sv, &sv.end),
         "expected_points" => Json::Int(o.settings.expected_points() as i64),
-        "route" => match sv.route() { Route::Plain => "plain", Route::GovLag => "gov_lag", Route::Release => "release" },
+        "route" => match sv.route() { Route::Plain => "plain", Route::GovLag => "gov_lag", Route::Release => "release",
+                                      Route::ValveLag => "valve_lag" },
         "settled_lp" => num_or_null(settled_lp), "settled_hp" => num_or_null(settled_hp),
         "stopped" => Json::Int(o.stop.is_some() as i64),
         "stop" => match &o.stop {
@@ -1124,6 +1265,12 @@ pub fn check_requests() -> Vec<String> {
                            floor_on: true, floor_phi: 0.78, ..d },                                  // mismatched: starves
         ControlsSettings { lever: LeverChoice::Both, bleed_mode: BleedMode::Valve, valve_ref: FloorRef::Incidence,
                            floor_on: true, floor_phi: 0.77, floor_ref: FloorRef::Incidence, ..d }, // matched, below: runs
+        // rung 88: the SLOW valve (rung 65's march), watching each wall; and refused beside a fuel-side lag
+        ControlsSettings { lever: LeverChoice::Bleed, bleed_mode: BleedMode::Valve, valve_lag_on: true, ..d },
+        ControlsSettings { lever: LeverChoice::Both, bleed_mode: BleedMode::Valve, valve_ref: FloorRef::Incidence,
+                           valve_lag_on: true, valve_tau: 0.2, accel_on: true, ..d },
+        ControlsSettings { lever: LeverChoice::Bleed, bleed_mode: BleedMode::Valve, valve_lag_on: true,
+                           floor_on: true, release_on: true, ..d },                                 // refused: two lags
         ControlsSettings { from: 1400.0, to: 1000.0, ..d },
         ControlsSettings { release_on: true, ..d },                                  // refused: nothing to lag
         ControlsSettings { floor_on: true, lever: LeverChoice::Stator, ..d },        // stop: the floor unreachable

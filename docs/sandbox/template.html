@@ -395,6 +395,19 @@ footer p { max-width: 90ch; }
           <div class="toggle" role="group" aria-label="What the valve watches">
             <button type="button" id="ctl-vref-phi" aria-pressed="true">Watches the flow coefficient</button>
             <button type="button" id="ctl-vref-inc" aria-pressed="false">Watches blade incidence</button></div>
+          <div class="toggle" role="group" aria-label="How fast the valve moves">
+            <button type="button" id="ctl-vspd-inst" aria-pressed="true">Moves instantly</button>
+            <button type="button" id="ctl-vspd-slow" aria-pressed="false">Moves slowly</button></div>
+          <div id="ctl-vtau-box">
+            <div class="knob"><label for="ctl-valve_tau">Time to move <small>spool time constants</small></label><input type="number" id="ctl-valve_tau" step="0.01">
+              <input type="range" id="ctl-valve_tau-r" min="0.02" max="0.5" step="0.01" aria-label="Valve time constant slider">
+              <div class="derived">A real valve takes time: it chases the opening it needs and closes about two-thirds of
+                the gap in this time.</div></div>
+            <p class="note">A slow valve falls behind where it has to open quickly. The valve watching blade incidence
+              waits until the margin is actually needed and then has to open fast, so a slow one loses protection there.
+              The valve watching the flow coefficient opens early, more than it needs, and that extra absorbs the delay.
+              Slow enough, and the flow-coefficient valve gives the same margin with less air: the reverse of the instant
+              valve (rung 88). A slow valve cannot run beside the temperature limiter's lag or the realistic release.</p></div>
           <p class="note">With the low-pressure stators moving, a valve watching the flow coefficient fights them: it bleeds
             air to undo the drop in flow coefficient that the stators make on purpose. A valve watching blade incidence
             lets the stators do part of its job. Pair it with a stall floor that watches the same thing: beside a floor
@@ -941,7 +954,8 @@ let C = null, C_DEFAULTS = null, CTL_DS = 0.02, crun = null, cpinned = null, ctl
 const CTL_NUM = { "ctl-rho": "rho", "ctl-from": "from", "ctl-to": "to", "ctl-ramp": "ramp", "ctl-settle": "settle",
                   "ctl-redline": "redline", "ctl-gov_lag": "gov_lag", "ctl-accel_margin": "accel_margin",
                   "ctl-floor_phi": "floor_phi", "ctl-tau_att": "tau_att", "ctl-tau_rel": "tau_rel", "ctl-v_max": "v_max",
-                  "ctl-v_n_lo": "v_n_lo", "ctl-b_max": "b_max", "ctl-b_n_lo": "b_n_lo", "ctl-valve_phi": "valve_phi" };
+                  "ctl-v_n_lo": "v_n_lo", "ctl-b_max": "b_max", "ctl-b_n_lo": "b_n_lo", "ctl-valve_phi": "valve_phi",
+                  "ctl-valve_tau": "valve_tau" };
 const CTL_SW = ["redline_on", "gov_lag_on", "accel_on", "floor_on", "release_on"];
 const CTL_VIEW = ["ctl-set", "ctl-sw-set", "ctl-lever-set", "ctl-out", "ctl-card"];
 // The burner (slice 5, turbojet::sandbox_burner): BK holds its knobs; it reads the Design engine S. BN_NUM maps
@@ -1022,6 +1036,8 @@ function showSettings() {
     press("ctl-st-lp", C.stator_spool === "lp"); press("ctl-st-hp", C.stator_spool === "hp");
     press("ctl-bmode-sched", C.bleed_mode === "schedule"); press("ctl-bmode-valve", C.bleed_mode === "valve");
     press("ctl-vref-phi", C.valve_ref === "phi"); press("ctl-vref-inc", C.valve_ref === "incidence");
+    press("ctl-vspd-inst", C.valve_speed === "instant"); press("ctl-vspd-slow", C.valve_speed === "slow");
+    $("ctl-vtau-box").hidden = C.valve_speed !== "slow";
     $("ctl-bsched-box").hidden = C.bleed_mode !== "schedule"; $("ctl-valve-box").hidden = C.bleed_mode !== "valve";
     $("ctl-redline-box").hidden = C.redline_on !== 1; $("ctl-gov_lag-box").hidden = C.gov_lag_on !== 1;
     $("ctl-accel-box").hidden = C.accel_on !== 1; $("ctl-floor-box").hidden = C.floor_on !== 1;
@@ -2335,6 +2351,7 @@ function wire() {
   cclick("ctl-st-lp", () => { C.stator_spool = "lp"; }); cclick("ctl-st-hp", () => { C.stator_spool = "hp"; });
   cclick("ctl-bmode-sched", () => { C.bleed_mode = "schedule"; }); cclick("ctl-bmode-valve", () => { C.bleed_mode = "valve"; });
   cclick("ctl-vref-phi", () => { C.valve_ref = "phi"; }); cclick("ctl-vref-inc", () => { C.valve_ref = "incidence"; });
+  cclick("ctl-vspd-inst", () => { C.valve_speed = "instant"; }); cclick("ctl-vspd-slow", () => { C.valve_speed = "slow"; });
   for (const q of Object.keys(CTL_Q)) $("ctlq-" + q).addEventListener("click", () => { ctlQ = q; showSettings(); drawCtl(); });
   $("mode-controls").addEventListener("click", enterControls);
   // The burner: its own knobs write BK; slow mixing models compute when a slider is let go (bnChanged).

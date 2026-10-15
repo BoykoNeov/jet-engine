@@ -151,6 +151,7 @@ pub mod fuel_transient;
 pub mod full_split;
 pub mod gas;
 pub mod lagged_bleed;
+pub mod lagged_incidence;
 pub mod limited_bleed;
 pub mod map;
 pub mod march;

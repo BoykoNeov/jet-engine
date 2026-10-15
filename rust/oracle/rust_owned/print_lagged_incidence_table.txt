@@ -1,0 +1,27 @@
+
+THE SLOW VALVE ON A MOVING TARGET (rung 88): rung 87's bleed valve beside the LP stator
+schedule, given rung 65's lag tau (the valve chases its instant opening). Shaped maps,
+r = 0.5, set point sm = 0.42 (the incidence margin m_lim it is asked to hold).
+
+  1. The incidence valve, made slow. Its bleed bill is tau x the opening it starts with
+     (here 0: the stators protect the start) plus a small drift; its protection falls.
+
+     tau M_i - m_lim        b(0) extra bleed       drift
+    0.01   -3.656e-3     0.000e0    9.413e-6    9.002e-6
+    0.05   -1.273e-2     0.000e0    4.335e-5    4.291e-5
+    0.20   -2.580e-2     0.000e0    1.062e-4    1.141e-4
+
+  2. Both valves re-tuned, at each speed, to hold the SAME incidence margin m_lim:
+
+     tau    inc sm   inc bleed    phi sm   phi bleed    ratio        dF
+    inst    0.4200   9.4847e-3    0.3447   2.1596e-2    2.277    -1.594
+    0.01    0.4243   1.0863e-2    0.3384   1.9071e-2    1.756    -1.064
+    0.05    0.4376   1.5544e-2    0.3205   1.1873e-2    0.764     0.374
+    0.20    0.4657   2.7880e-2    0.3355   1.9587e-2    0.703     0.871
+
+  ratio = phi valve's bleed / incidence valve's; dF = phi's thrust integral minus incidence's.
+  Instant, the incidence valve is the cheaper one (rung 87). Slow enough, the order REVERSES:
+  the incidence valve waits until the margin is needed and then must open fast, so a lag costs
+  it protection it has to buy back; the phi valve opens early -- the stators lower phi from the
+  start -- and that head start absorbs the lag. Where the crossover sits in tau is a measurement
+  on this rig's own time scale, not a statement about real valves.

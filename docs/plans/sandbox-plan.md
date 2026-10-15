@@ -1289,3 +1289,30 @@ gave it an incidence reference. The page gets it as a mode of the bleed lever.
 - **Crash map** (§ 14.3's instrument, every request the controlled valve, levers bleed / both, 1 000
   requests, seed 11): no panic — 559 complete, 345 refused before the run, 96 stopped with a reason (78
   floor unreachable, 9 lean, 9 cause unknown — the kinds earlier maps also found).
+
+## 17. The slow valve — rung 88 (2026-10-15) — not a slice
+
+Rung 88 (`docs/rung88-spec.md`) gave rung 87's controlled valve rung 65's lag, watching either wall. The
+page gets it as the valve's speed.
+
+- **The knobs:** the valve *moves instantly* (rungs 64/87, the default — every saved setting stays valid)
+  or *moves slowly*, with its time constant (`valve_speed` `instant` / `slow`, `valve_tau`, default 0.05). The lever chart
+  draws the valve's RECORDED position: a slow valve's opening is a march state, so the page re-reads each
+  point at it (`ControlsSolver::reread`) — re-solving would hand back the command, not the valve.
+- **Built through rung 65's builder whenever the valve is slow** (rung 64's refuses a lag); route
+  `valve_lag`, whose step re-run (`der_valve_lag`) copies rung 65's derivative in its order and is held to
+  the march bit for bit.
+- **Prechecks:** the time constant at least one march step (0.02). Measured on this view's engine (five
+  cases, `τ` 0.01–0.3, the page's step against a 4× finer one): at half a step (`ds/τ` = 2, rung 65's own
+  bound) the LP flow coefficient is 7e-4–1.1e-3 off; at one step ≤ 9e-5 on the default move (≤ 2.4e-4 on a
+  0.1 ramp, where the ramp itself sets the error) — the other routes' ~1e-4 (§ 12.10). And a slow valve
+  beside rung 47's lagged governor or rung 52's release is refused (rung 65's march refuses both: two lags
+  on two levers is rung 66's cascade).
+- **Gates:** `tests/sandbox_controls.rs` replays three slow-valve cases against the model's own march bit
+  for bit (and re-reads and re-steps every point, the valve state included), checks the page reads the
+  recorded position and that the valve lags its command and target; `check_requests` adds three;
+  `browser.mjs` clicks *Moves slowly* and checks the route, the knob and that the slow valve reaches its
+  widest opening later than the instant one.
+- **Crash map** (§ 14.3's instrument, every request the SLOW valve, levers bleed / both, 1 000 requests,
+  seed 11): no panic — 585 complete, 328 refused before the run, 87 stopped with a reason (78 floor
+  unreachable, 7 lean, 2 rich).

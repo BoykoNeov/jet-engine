@@ -14,6 +14,7 @@ use turbojet::bleed_transient::{build_scheduled_bleed, BleedSchedule, LeverArm};
 use turbojet::engine::FlightCondition;
 use turbojet::fuel_transient::{AsymmetricLag, FuelLimiters, FuelPoint, FuelTransientCore, PointExtra, SurgeLimiter};
 use turbojet::gas::{Gas, GasSpec};
+use turbojet::lagged_bleed::build_lagged_bleed;
 use turbojet::limited_bleed::{build_limited_bleed, BleedLimiter};
 use turbojet::map::ComponentMap;
 use turbojet::sandbox::call;
@@ -27,7 +28,8 @@ fn flight() -> FlightCondition { FlightCondition::new(250.0, 50_000.0, 0.85) }
 
 /// `tests/rung62.rs`'s rig: the perfect gas with `R` derived, `π_LPC` 3 × `π_HPC` 6, `Tt4` 1500.
 /// With a CONTROLLED valve the machine is rung 64's (rung 62's builder drops the valve silently —
-/// rung 87's G1); otherwise rung 62's, as before.
+/// rung 87's G1), or rung 65's when the valve is SLOW (rung 64's refuses a lag — rung 88);
+/// otherwise rung 62's, as before.
 fn machine(lp: ComponentMap, hp: ComponentMap, rho: f64, arm: &LeverArm) -> ScheduledStatorCore {
     let (gc, cc, gt, ct) = (1.4f64, 1004.0f64, 1.3f64, 1239.0f64);
     let gas = Gas::new(GasSpec { gamma_c: gc, cp_c: cc, r_c: (gc - 1.0) / gc * cc, gamma_t: gt, cp_t: ct,
@@ -35,7 +37,9 @@ fn machine(lp: ComponentMap, hp: ComponentMap, rho: f64, arm: &LeverArm) -> Sche
     let losses = TwoSpoolLosses { pi_d: 0.97, eta_lpc: 0.90, eta_hpc: 0.88, eta_b: 0.99, pi_b: 0.96, eta_hpt: 0.92,
                                   eta_lpt: 0.90, eta_m: 0.99, pi_n: 0.98, p_exit: None, nozzle_convergent: true };
     let design = build_two_spool_turbojet(gas, 3.0, 6.0, 1500.0, 50_000.0, losses);
-    let built = if arm.bleed_lim.is_some() {
+    let built = if arm.bleed_lim.is_some_and(|l| l.tau.is_some()) {
+        build_lagged_bleed(design, flight(), 1.0, Some(lp), Some(hp), rho, arm)
+    } else if arm.bleed_lim.is_some() {
         build_limited_bleed(design, flight(), 1.0, Some(lp), Some(hp), rho, arm)
     } else {
         build_scheduled_bleed(design, flight(), 1.0, Some(lp), Some(hp), rho, arm)
@@ -68,7 +72,7 @@ fn direct(s: &ControlsSettings) -> Vec<FuelPoint> {
     let bleed = || match s.bleed_mode {
         BleedMode::Schedule => LeverArm::scheduled(BleedSchedule::new(s.b_max, s.b_n_lo)),
         BleedMode::Valve => {
-            let v = BleedLimiter::new(s.valve_phi, s.b_max);
+            let v = BleedLimiter::with_tau(s.valve_phi, s.b_max, s.valve_lag_on.then_some(s.valve_tau));
             LeverArm::floored(if s.valve_ref == FloorRef::Incidence { v.on_incidence() } else { v })
         }
     };
@@ -146,6 +150,13 @@ fn valve_cases() -> Vec<(&'static str, ControlsSettings)> {
                                                                          floor_on: true, floor_phi: 0.77,
                                                                          floor_ref: FloorRef::Incidence, ..v }),
         ("valve, phi, accel + release", ControlsSettings { lever: LeverChoice::Bleed, accel_on: true, release_on: true, ..v }),
+        // rung 88: the SLOW valve (rung 65's march), watching each wall, beside the stators and the unlagged legs
+        ("slow valve, phi", ControlsSettings { lever: LeverChoice::Bleed, valve_lag_on: true, ..v }),
+        ("slow valve, incidence, stators", ControlsSettings { lever: LeverChoice::Both, valve_ref: FloorRef::Incidence,
+                                                              valve_lag_on: true, ..v }),
+        ("slow valve, incidence, stators, redline + accel", ControlsSettings { lever: LeverChoice::Both,
+                                                                               valve_ref: FloorRef::Incidence, valve_lag_on: true,
+                                                                               valve_tau: 0.2, redline_on: true, accel_on: true, ..v }),
     ]
 }
 
@@ -235,24 +246,27 @@ fn the_reread_reproduces_every_recorded_point() {
 fn the_stop_rerun_reproduces_the_marchs_own_steps() {
     // Every step of a complete march, re-run from its recorded point, lands on the next point bit for
     // bit — the plain route with each limiter and lever, and rung 52's lagged route with its state.
-    let mut routes = (0, 0);
+    let mut routes = (0, 0, 0);
     for (name, s) in all_cases() {
         let (sv, o) = controls(&s).unwrap();
         match sv.route() {
             Route::GovLag => { assert!(replay_step(&sv, &o.points[0]).is_none(), "{name}: no re-run on that route"); continue; }
             Route::Plain => routes.0 += 1,
             Route::Release => routes.1 += 1,
+            Route::ValveLag => routes.2 += 1,
         }
         for w in o.points.windows(2) {
             let (a, b, g) = replay_step(&sv, &w[0]).unwrap().unwrap_or_else(|f| panic!("{name}: {f:?}"));
             assert_eq!((a.to_bits(), b.to_bits()), (w[1].nu_lp.to_bits(), w[1].nu_hp.to_bits()), "{name}: step from s={}", w[0].s);
-            if let PointExtra::Asym { g: g1, .. } = w[1].extra {
-                assert_eq!(g.to_bits(), g1.to_bits(), "{name}: lag state after s={}", w[0].s);
+            match w[1].extra {
+                PointExtra::Asym { g: g1, .. } => assert_eq!(g.to_bits(), g1.to_bits(), "{name}: lag state after s={}", w[0].s),
+                PointExtra::Valve { b: b1, .. } => assert_eq!(g.to_bits(), b1.to_bits(), "{name}: valve after s={}", w[0].s),
+                _ => {}
             }
         }
         assert!(stop_reason(&sv, &o.points).is_none());
     }
-    assert!(routes.0 >= 8 && routes.1 >= 1, "both re-runnable routes covered: {routes:?}");
+    assert!(routes.0 >= 8 && routes.1 >= 1 && routes.2 >= 3, "every re-runnable route covered: {routes:?}");
 }
 
 /// One request from the crash map (plan § 12.10) by its JSON, run.
@@ -413,6 +427,16 @@ fn each_precheck_fires_on_its_case_and_only_on_it() {
     let valve = ControlsSettings { lever: LeverChoice::Bleed, bleed_mode: BleedMode::Valve, ..ok };
     refused(ControlsSettings { b_max: 0.0, ..valve }, "cannot open");
     refused(ControlsSettings { valve_phi: 0.0, ..valve }, "above zero");
+    // rung 88: the slow valve -- rung 65's step bound, and the two fuel-side lags it cannot run beside
+    let slow = ControlsSettings { valve_lag_on: true, ..valve };
+    assert!(controls_precheck(&slow).is_ok());
+    refused(ControlsSettings { valve_tau: DS - 1e-4, ..slow }, "one march step");
+    assert!(controls_precheck(&ControlsSettings { valve_tau: DS, ..slow }).is_ok(), "one step: ds/tau = 1");
+    refused(ControlsSettings { redline_on: true, gov_lag_on: true, ..slow }, "two-lag cascade");
+    refused(ControlsSettings { floor_on: true, release_on: true, ..slow }, "two-lag cascade");
+    assert!(controls_precheck(&ControlsSettings { valve_tau: 0.0, ..valve }).is_ok(), "an instant valve does not read its tau");
+    assert!(controls_precheck(&ControlsSettings { lever: LeverChoice::Bleed, valve_lag_on: true, valve_tau: 0.0, ..ok }).is_ok(),
+            "the schedule does not read the valve's speed");
     assert!(controls_precheck(&ControlsSettings { b_n_lo: 1.0, ..valve }).is_ok(), "the valve does not read the schedule");
     assert!(controls_precheck(&ControlsSettings { lever: LeverChoice::Bleed, valve_phi: 0.0, ..ok }).is_ok(),
             "the schedule does not read the valve");
@@ -435,7 +459,8 @@ fn settings_round_trip_and_the_entry_point_answers() {
                                floor_on: true, floor_spool: Spool::Hp, floor_phi: 0.81, floor_ref: FloorRef::Incidence,
                                release_on: true, tau_att: 0.03, tau_rel: 0.4, lever: LeverChoice::Bleed,
                                stator_spool: Spool::Hp, v_max: 0.12, v_n_lo: 0.55, b_max: 0.07, b_n_lo: 0.6,
-                               bleed_mode: BleedMode::Valve, valve_phi: 0.77, valve_ref: FloorRef::Incidence };
+                               bleed_mode: BleedMode::Valve, valve_phi: 0.77, valve_ref: FloorRef::Incidence,
+                               valve_lag_on: true, valve_tau: 0.13 };
     let back = ControlsSettings::from_json(&Json::parse(&s.to_json().dump_compact())).unwrap();
     assert_eq!(back, s);
     let d = Json::parse(&call(r#"{"op":"controls_defaults"}"#));
@@ -497,6 +522,12 @@ fn the_valve_holds_its_own_target_and_the_incidence_target_moves_with_the_stator
         let reads: Vec<_> = o.points.iter().map(|p| sv.read(p).unwrap()).collect();
         let riding: Vec<usize> = (0..reads.len()).filter(|&k| reads[k].bleed > 0.0 && reads[k].bleed < s.b_max).collect();
         assert!(!riding.is_empty(), "{name}: the valve opens somewhere");
+        if s.valve_lag_on {
+            // A slow valve does not hold its target: it falls behind where its command rises (rung 88's H4).
+            assert!(riding.iter().any(|&k| reads[k].valve.unwrap() - o.points[k].phi_lp > 1e-6),
+                    "{name}: a slow valve lags its target somewhere");
+            continue;
+        }
         for &k in &riding {
             let t = reads[k].valve.expect("a valve-on run reads its target");
             assert!((o.points[k].phi_lp - t).abs() < 1e-11, "{name}: holds its target at s={}", o.points[k].s);
@@ -507,6 +538,23 @@ fn the_valve_holds_its_own_target_and_the_incidence_target_moves_with_the_stator
     }
     let (_, o) = controls(&ControlsSettings::defaults()).unwrap();
     assert!(o.points.iter().all(|p| p.mf == p.mf_sched), "the schedule mode is untouched");
+}
+
+/// Rung 88 on the page: a slow valve's opening is the RECORDED march state, and the page reads it there
+/// (rung 65: re-solving it would hand back the command instead) — while its command, re-solved, differs.
+#[test]
+fn the_slow_valve_is_read_at_its_recorded_position() {
+    for (name, s) in valve_cases().into_iter().filter(|(_, s)| s.valve_lag_on) {
+        let (sv, o) = controls(&s).unwrap();
+        assert_eq!(sv.route(), Route::ValveLag, "{name}");
+        let mut lagging = 0;
+        for p in &o.points {
+            let PointExtra::Valve { b, b_cmd } = p.extra else { panic!("{name}: the slow valve's march records it") };
+            assert_eq!(sv.read(p).unwrap().bleed.to_bits(), b.to_bits(), "{name}: the page reads the recorded valve at s={}", p.s);
+            if (b - b_cmd).abs() > 1e-6 { lagging += 1; }
+        }
+        assert!(lagging > 0, "{name}: the valve lags its command somewhere");
+    }
 }
 
 /// Rung 87 § H5 on the page: the incidence valve beside a stall floor read as a FLOW COEFFICIENT, the

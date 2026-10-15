@@ -370,9 +370,21 @@ try {
   const mt = await ev(`window.sandbox.controls({floor_ref: 'incidence', floor_phi: 0.77}).then(r => r.run)`);
   check('a_valve_and_a_floor_watching_different_things_starve_the_run', mm && mm.stop && mm.stop.kind === 'floor_unreachable'
         && mt && !mt.stop && mt.s.length === mt.expected_points, JSON.stringify([mm && mm.stop, mt && mt.stop]));
+  // Rung 88: the SLOW valve, through its own button — rung 65's march (route 'valve_lag'), its time-constant knob
+  // shown, the opening drawn at its recorded position, its widest opening reached LATER than the instant valve's.
+  const inst = await ev(`window.sandbox.controls({floor_on: 0}).then(r => r.run)`);
+  await ev(`document.getElementById('ctl-vspd-slow').click()`);
+  const vSlow = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.valve_speed === 'slow'`, 30000);
+  const slv = await ev(`(() => { const r = window.sandbox.last; return [r.route, r.stop === null, r.s.length === r.expected_points,
+                        r.bleed.indexOf(Math.max(...r.bleed))]; })()`);
+  const tauVis = await ev(`document.getElementById('ctl-vtau-box').hidden`);
+  const instPeakAt = inst ? inst.bleed.indexOf(Math.max(...inst.bleed)) : NaN;
+  check('the_slow_valve_runs_on_its_own_march_and_lags_the_instant_one', vSlow && slv[0] === 'valve_lag' && slv[1] && slv[2]
+        && !tauVis && slv[3] > instPeakAt, JSON.stringify([vSlow, slv, tauVis, instPeakAt]));
+  if (process.env.SANDBOX_SHOTS) { await ev(`document.getElementById('ctlq-lever').click()`); await shot('controls-slow-valve'); }
   await ev(`document.getElementById('ctlq-Tt4').click()`);
   await ev(`window.sandbox.controls({lever: 'none', floor_on: 0, floor_phi: 0.75, floor_ref: 'phi', bleed_mode: 'schedule',
-            valve_ref: 'phi'}).then(r => r.run)`);
+            valve_ref: 'phi', valve_speed: 'instant'}).then(r => r.run)`);
   if (process.env.SANDBOX_SHOTS) {
     await ev(`window.sandbox.controls({settle: 2, ramp: 0.5, lever: 'bleed'})`);
     await shot('controls-light'); await shot('controls-dark', 1280, true); await shot('controls-phone', 390);

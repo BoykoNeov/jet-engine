@@ -24,12 +24,12 @@ the web page running the Rust model live is `docs/sandbox/` (slices 1–5 built;
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is anchored to a
-published case. All rungs are live; the current scope is **rung 87**.
+published case. All rungs are live; the current scope is **rung 88**.
 
 **Families** (contiguous): 1–6 cycle · 7–24 NOx & mixing · 25–30 nozzle/turbine marches ·
 31–33 off-design steady · 34–37 1-spool transient · 38–45 two-spool · 46–52 fuel limiters ·
 53–56 + 61 airflow levers (steady) · 57–60, 62–63 schedules · 64–68 valve/lag/cascades ·
-69–84 reference splits & rank · 85 blade-speed walls · 86–87 three levers, valve reference (knobs). **Read-only diagnostics: 7–30, 36, 41, 44, 45**; all else
+69–84 reference splits & rank · 85 blade-speed walls · 86–88 three levers, valve reference, slow valve (knobs). **Read-only diagnostics: 7–30, 36, 41, 44, 45**; all else
 STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 
 | Rung | Adds (one-line hook) | Spec |
@@ -122,6 +122,7 @@ STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 | 85 | **THE BLADE-SPEED WALLS** — a physical blade speed; `K`, `C`, a REDLINE become OUTPUTS; the first rung shipped as KNOBS (+ the user's rounding knob `λ`). **HEADLINE: holding design incidence CANCELS the map slope** (lumped), so `λ` reaches a schedule only via the droop. **BOUNDS 55's resolution.** | `docs/rung85-spec.md` |
 | 86 | **FUEL + BLEED + STATOR on one plant** — an eight-cell cube, every fuel limiter, shipped as KNOBS. **HEADLINE: a third lever adds no coupling, only a CLOCK** — the limiter re-reads the stator–bleed pair at a moved minimum, or pins it; a `φ` floor STARVES the statored run. **EXTENDS 58; CLOSES 63's seam.** | `docs/rung86-spec.md` |
 | 87 | **THE CONTROLLED VALVE beside the stator schedule** — rung 64's valve watching `φ` or INCIDENCE, as KNOBS. **HEADLINE: beside a wall-moving lever a loop must watch the WALL, or it pays to undo the lever**; valve and fuel floor on different walls STARVE the run. **BOUNDS 64's ceiling.** | `docs/rung87-spec.md` |
+| 88 | **THE SLOW VALVE on a moving target** — rung 87's incidence valve given rung 65's lag, as KNOBS. **HEADLINE: an exact law has no slack for a slow actuator** — re-tuned to one margin, the `φ` valve is dearer instant, cheaper slow enough. **BOUNDS 87's price; BOUNDS 65's "pure loss" to its own coordinate.** | `docs/rung88-spec.md` |
 
 ## Working contract (from SPEC.md — these override convenience)
 - **Derive before you code.** For each station, write the governing equation and
@@ -137,7 +138,7 @@ STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 - **Every new rung reduces to its predecessor**, exactly and by test (`X=None` ⇒
   the prior code path). This is the project's spine — see any `docs/rungN-spec.md`.
 
-**Current scope (rung 87).** The **cycle solve** is a thermally-perfect, reacting,
+**Current scope (rung 88).** The **cycle solve** is a thermally-perfect, reacting,
 dissociation-equilibrium gas (`Gas.reacting_equilibrium()`) through ideal + real components
 (rungs 2/2b's knobs, mutually exclusive; specified exit pressure). The burner root-finds `f` over the scale-B
 absolute balance, then freezes the station-4 mixture through turbine + nozzle; Fork A/B and
@@ -201,8 +202,8 @@ tag **`python-final`** keeps it, and every `engine.py:N` / `test_rungN.py` citat
   `two_spool_transient.rs` (40, 44) → `bleed.rs` (42) → `fuel_transient.rs` (43, 45, and the
   fuel-side limiters 46–52) → `stator.rs` (53–54) → `stage.rs` (55–56) → `stator_transient.rs`
   (57–60) → `stator_bleed.rs` (61) → `bleed_transient.rs` (62–63) → `limited_bleed.rs` (64) →
-  `lagged_bleed.rs` (65) → **exactly ONE module per rung, 66→87** (`two_lag.rs` …
-  `three_levers.rs`, `valve_reference.rs`). A rung is a core plus a `const` table of function pointers, and reduces to
+  `lagged_bleed.rs` (65) → **exactly ONE module per rung, 66→88** (`two_lag.rs` …
+  `three_levers.rs`, `valve_reference.rs`, `lagged_incidence.rs`). A rung is a core plus a `const` table of function pointers, and reduces to
   its predecessor; **each module's header names its rung, and what it adds is in its spec** — so
   this entry never grows.
 - `rust/src/main.rs` + `panels/` + `pyfmt.rs` — the CLI: the design-point tables and **one panel per
