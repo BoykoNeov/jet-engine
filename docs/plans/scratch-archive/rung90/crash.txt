@@ -1,0 +1,10 @@
+  680  complete
+  261  refused
+    1  refused: customer starves an endpoint
+   42  stop floor_unreachable
+   10  stop lean
+    5  stop rich
+    1  stop unknown
+
+refused: customer starves an endpoint
+{"op":"controls","controls":{"shape":"tilted","rho":3,"from":1320,"to":670,"ramp":2.92,"settle":3.6,"redline_on":0,"redline":1545,"gov_lag_on":0,"gov_lag":0.86,"accel_on":1,"accel_margin":0.53,"floor_on":0,"floor_spool":"hp","floor_phi":0.585,"floor_ref":"incidence","release_on":0,"tau_att":0.05,"tau_rel":0.32,"lever":"stator","stator_spool":"lp","v_max":0.07,"v_n_lo":0.56,"b_max":0.21,"b_n_lo":0.49,"bleed_mode":"valve","valve_phi":0.79,"valve_ref":"phi","valve_speed":"slow","valve_tau":0.11,"customer":"amount","customer_share":0.06,"customer_amount":0.2}}

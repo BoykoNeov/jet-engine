@@ -18,6 +18,7 @@ use turbojet::lagged_bleed::build_lagged_bleed;
 use turbojet::limited_bleed::{build_limited_bleed, BleedLimiter};
 use turbojet::map::ComponentMap;
 use turbojet::sandbox::call;
+use turbojet::customer_bleed::CustomerBleed;
 use turbojet::sandbox_controls::*;
 use turbojet::stator_transient::{IncidenceLimiter, ScheduledStatorCore, ScheduledStatorTransient, StatorArm,
                                  StatorSchedule};
@@ -30,13 +31,16 @@ fn flight() -> FlightCondition { FlightCondition::new(250.0, 50_000.0, 0.85) }
 /// With a CONTROLLED valve the machine is rung 64's (rung 62's builder drops the valve silently —
 /// rung 87's G1), or rung 65's when the valve is SLOW (rung 64's refuses a lag — rung 88);
 /// otherwise rung 62's, as before.
-fn machine(lp: ComponentMap, hp: ComponentMap, rho: f64, arm: &LeverArm) -> ScheduledStatorCore {
+fn machine(lp: ComponentMap, hp: ComponentMap, rho: f64, arm: &LeverArm, cb: Option<CustomerBleed>)
+    -> ScheduledStatorCore {
     let (gc, cc, gt, ct) = (1.4f64, 1004.0f64, 1.3f64, 1239.0f64);
     let gas = Gas::new(GasSpec { gamma_c: gc, cp_c: cc, r_c: (gc - 1.0) / gc * cc, gamma_t: gt, cp_t: ct,
                                  r_t: (gt - 1.0) / gt * ct, hpr: 42.8e6, ..GasSpec::default() });
     let losses = TwoSpoolLosses { pi_d: 0.97, eta_lpc: 0.90, eta_hpc: 0.88, eta_b: 0.99, pi_b: 0.96, eta_hpt: 0.92,
                                   eta_lpt: 0.90, eta_m: 0.99, pi_n: 0.98, p_exit: None, nozzle_convergent: true };
     let design = build_two_spool_turbojet(gas, 3.0, 6.0, 1500.0, 50_000.0, losses);
+    // Rung 90: the aircraft's demand rides on the design engine.
+    let design = match cb { Some(c) => design.with_customer_bleed(c), None => design };
     let built = if arm.bleed_lim.is_some_and(|l| l.tau.is_some()) {
         build_lagged_bleed(design, flight(), 1.0, Some(lp), Some(hp), rho, arm)
     } else if arm.bleed_lim.is_some() {
@@ -84,7 +88,12 @@ fn direct(s: &ControlsSettings) -> Vec<FuelPoint> {
         // rung 86's plant, spelled as rung 63 merges a neighbour and a lever
         LeverChoice::Both => LeverArm::merged(&stator(), &bleed()),
     };
-    let m = machine(lp, hp, s.rho, &arm);
+    let cb = match s.customer {
+        CustomerMode::Off => None,
+        CustomerMode::Share => Some(CustomerBleed::Share(s.customer_share)),
+        CustomerMode::Amount => Some(CustomerBleed::Amount(s.customer_amount)),
+    };
+    let m = machine(lp, hp, s.rho, &arm, cb);
     let fl = flight();
     let (a, b) = (m.fuel.fuel_for_tt4(&fl, s.from), m.fuel.fuel_for_tt4(&fl, s.to));
     let eq0 = m.fuel.inner.equilibrium(&fl, s.from);
@@ -166,11 +175,26 @@ fn valve_cases() -> Vec<(&'static str, ControlsSettings)> {
                                                                                     valve_ref: FloorRef::Incidence, valve_lag_on: true,
                                                                                     valve_tau: 0.2, valve_close_own: true,
                                                                                     valve_tau_close: 0.02, ..v }),
+        // rung 90: the aircraft's customer bleed as an amount beside the valve, and beside the slow valve,
+        // the stators and a fuel leg (alone: `customer_cases`)
+        ("customer amount, valve, phi", ControlsSettings { customer: CustomerMode::Amount, lever: LeverChoice::Bleed, ..v }),
+        ("customer share 0.1, slow valve, stators, accel", ControlsSettings { customer: CustomerMode::Share,
+                                                                              customer_share: 0.1, lever: LeverChoice::Both,
+                                                                              valve_lag_on: true, accel_on: true, ..v }),
+    ]
+}
+
+/// Rung 90: the customer bleed with no lever — it rides the replay gates only.
+fn customer_cases() -> Vec<(&'static str, ControlsSettings)> {
+    let d = ControlsSettings::defaults();
+    vec![
+        ("customer share", ControlsSettings { customer: CustomerMode::Share, ..d }),
+        ("customer amount, redline", ControlsSettings { customer: CustomerMode::Amount, redline_on: true, ..d }),
     ]
 }
 
 fn all_cases() -> Vec<(&'static str, ControlsSettings)> {
-    binding_cases().into_iter().chain(valve_cases()).collect()
+    binding_cases().into_iter().chain(valve_cases()).chain(customer_cases()).collect()
 }
 
 #[test]
@@ -477,7 +501,8 @@ fn settings_round_trip_and_the_entry_point_answers() {
                                release_on: true, tau_att: 0.03, tau_rel: 0.4, lever: LeverChoice::Bleed,
                                stator_spool: Spool::Hp, v_max: 0.12, v_n_lo: 0.55, b_max: 0.07, b_n_lo: 0.6,
                                bleed_mode: BleedMode::Valve, valve_phi: 0.77, valve_ref: FloorRef::Incidence,
-                               valve_lag_on: true, valve_tau: 0.13, valve_close_own: true, valve_tau_close: 0.31 };
+                               valve_lag_on: true, valve_tau: 0.13, valve_close_own: true, valve_tau_close: 0.31,
+                               customer: CustomerMode::Amount, customer_share: 0.07, customer_amount: 0.04 };
     let back = ControlsSettings::from_json(&Json::parse(&s.to_json().dump_compact())).unwrap();
     assert_eq!(back, s);
     let d = Json::parse(&call(r#"{"op":"controls_defaults"}"#));
@@ -604,4 +629,48 @@ fn mismatched_references_starve_the_engine_and_matched_ones_run() {
     let (_, o) = controls(&ControlsSettings { floor_ref: FloorRef::Incidence, floor_phi: 0.77, ..s }).unwrap();
     assert!(o.stop.is_none(), "the matched floor runs to the end");
     assert!(o.points.iter().all(|p| p.mf == p.mf_sched), "and, below the valve, never cuts the fuel");
+}
+
+/// RUNG 90 on the page: the customer bleed's readouts are the model's own closure, the amount mode
+/// delivers its amount at both endpoints, its range is checked in words, and the two ways the
+/// demand can outgrow the engine are told in words — at an endpoint (a steady point that does not
+/// exist: measured on this engine, a 0.3 amount takes 50.2 % of the air at 1400 K) and mid-run.
+#[test]
+fn the_customer_bleed_reads_the_models_closure_and_its_refusals_are_words() {
+    let d = ControlsSettings::defaults();
+    let s = ControlsSettings { customer: CustomerMode::Amount, customer_amount: 0.1, ..d };
+    let (sv, o) = controls(&s).unwrap();
+    for (name, i) in [("start", &sv.start), ("end", &sv.end)] {
+        let c = i.close.customer.expect("an active customer bleed reaches rung 90's closure");
+        let hpc = (1.0 - i.close.bleed.unwrap_or(0.0)) * i.close.mdot_face.unwrap();
+        assert!((c * hpc / 0.1 - 1.0).abs() < 1e-9, "{name}: the amount mode must deliver 0.1 kg/s");
+    }
+    assert!(sv.start.close.customer.unwrap() > sv.end.close.customer.unwrap(),
+            "a fixed amount is a larger share at the low throttle");
+    let j = Json::parse(&controls_json(&sv, &o).dump_compact());
+    match j.get("customer") {
+        Some(Json::List(l)) => assert_eq!(l.len(), o.points.len()),
+        other => panic!("the customer column is missing: {other:?}"),
+    }
+    let off = controls(&d).unwrap().0;
+    assert!(off.start.close.customer.is_none(), "off is rung 62's closure, not a zero share");
+    // the precheck: a share or an amount at half the air, in words; off, the same numbers are not read
+    for bad in [ControlsSettings { customer: CustomerMode::Share, customer_share: 0.5, ..d },
+                ControlsSettings { customer: CustomerMode::Amount, customer_amount: -0.01, ..d }] {
+        let e = controls_precheck(&bad).unwrap_err();
+        assert!(e.0.contains("aircraft"), "{}", e.0);
+    }
+    assert!(controls_precheck(&ControlsSettings { customer_share: 0.9, customer_amount: 0.9, ..d }).is_ok());
+    // an endpoint the demand starves: refused in words, before any march
+    let e = match controls(&ControlsSettings { customer: CustomerMode::Amount, customer_amount: 0.3, ..d }) {
+        Err(e) => e,
+        Ok(_) => panic!("a 0.3 amount has no steady point at 1000 K on this engine"),
+    };
+    assert!(e.0.contains("customer bleed would take more than half"), "{}", e.0);
+    // mid-run: the classifier names it from the model's own message
+    let stop = Stop { s_last: 0.4, failure: Some(Failure {
+        message: "rung-90 customer bleed takes 50.3 % of the compressor's air here".into(), call: Call::AtApplied,
+        mf: 0.01, nu_lp: 0.8, nu_hp: 0.9, s: 0.42 }) };
+    assert_eq!(classify(&sv, &stop, o.points.last()), StopKind::Customer);
+    assert!(StopKind::Customer.words().contains("more air than the engine could give"));
 }

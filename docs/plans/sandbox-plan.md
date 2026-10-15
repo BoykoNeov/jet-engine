@@ -1342,3 +1342,30 @@ closes at another. The page gets it as the slow valve's closing speed.
 - **Crash map** (§ 14.3's instrument, every request a slow valve closing at its own speed, levers bleed /
   both, 1 000 requests, seed 11): no panic — 578 complete, 329 refused before the run, 93 stopped with a
   reason (77 floor unreachable, 11 lean, 5 rich).
+
+## 19. The customer bleed — rung 90 (2026-10-15) — not a slice
+
+Rung 90 (`docs/rung90-spec.md`) put the aircraft's customer bleed on the HP compressor's delivery. The page
+gets it on the Controls view, beside the engine's own knobs (it is a load on the engine, not a lever).
+
+- **The knobs:** *Aircraft takes no air* (the default — every saved setting stays valid), *Takes a share*
+  (`customer` `share`, `customer_share`, default 0.05) or *Takes a fixed amount* (`amount`,
+  `customer_amount` × the design airflow, default 0.05). A note under it says what the rung found; the table
+  gains "Air the aircraft takes, start / end", and the run carries a `customer` column.
+- **Built** by putting the demand on the design engine (`with_customer_bleed`) before the usual builder, so
+  every machine the view uses (rungs 62/64/65) and every sibling it makes keep it; rung 62's four cells then
+  dispatch to rung 90's.
+- **Prechecks:** a share or an amount outside [0, 0.5), in words. An endpoint the demand starves (the model's
+  "customer bleed takes … more than half") is refused in words before any march: a fixed amount collapses the
+  operating point (taking air lowers the flow, which raises the share), so on this engine 0.3 has no steady
+  point even at 1400 K. A run where it happens mid-march stops with its own kind, `customer`.
+- **Gates:** `tests/sandbox_controls.rs` replays four customer cases against the model's own march bit for
+  bit (alone, with the redline, beside the instant valve, beside the slow valve + stators + schedule), checks
+  that the amount mode delivers its amount at both endpoints, the precheck, the endpoint refusal and the stop
+  classifier, and the settings round trip; `check_requests` adds four; `browser.mjs` clicks *Takes a share*
+  and *Takes a fixed amount* beside the instant valve and checks the valve bleeds more, and more again.
+- **Crash map** (§ 14.3's instrument, every request a customer bleed — share or amount over the slider box
+  0–0.2 — beside every lever, both bleed modes and both valve speeds, 1 000 requests, seed 11): no panic —
+  680 complete, 262 refused before the run (one of them an endpoint the demand starves, an amount of 0.2 on
+  a 670 K end), 58 stopped with a reason (42 floor unreachable, 10 lean, 5 rich, 1 cause unknown on the
+  governor-lag route). No run stopped mid-march on the customer bleed itself.

@@ -129,7 +129,8 @@ or — with the stators moving — blade incidence (49/60), realistic fast-in sl
 levers: stators, bleed valve, or both together, scheduled on speed (57/62; "both" since rung 86, plan § 15);
 the bleed valve can instead open on its own to hold an LP flow coefficient, watching the flow coefficient or
 blade incidence (rungs 64/87, plan § 16), instantly or slowly with its own time constant (rungs 65/88, plan
-§ 17).
+§ 17). The aircraft can take air off the HP compressor's delivery — a share, or a fixed amount that is a larger
+share at low power (rung 90, plan § 19).
 
 **Readouts:** turbine temperature against the redline, both shaft speeds, burnt vs scheduled fuel, each
 compressor's flow coefficient against its (moving) stall line and the floor, thrust (the bleed's dumped air
@@ -137,7 +138,8 @@ pays its ram drag), the lever's setting; a strip showing which control holds the
 and a table, with pin & compare. Each run on its own Worker, killed by a knob move.
 
 **A run that stops early is a result**, by kind, re-run step for step through the model's public calls: the
-floor could no longer be held; the mixture left the fuel solver's range, lean or rich. Until 2026-10-10 a run
+floor could no longer be held; the mixture left the fuel solver's range, lean or rich; the aircraft's fixed
+amount of air grew past half the HP compressor's as the engine slowed. Until 2026-10-10 a run
 also stopped when the model's every-step check at the full scheduled fuel had no answer while a limiter held
 the fuel below it; the view now switches on the model's `below_ceiling`, which decides the limiters from the
 most fuel that solves (plan § 14), and those runs go on. Since 2026-10-14 that is the model's own default

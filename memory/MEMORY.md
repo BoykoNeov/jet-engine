@@ -150,6 +150,7 @@ new slices and step links go THERE, not here.
 - [Rung 87 valve reference](rung87-valve-reference.md) — a prediction against a device built as the pointwise optimum is construction; equal set points are rung 66's degeneracy, not dormant
 - [Rung 88 slow valve](rung88-slow-valve.md) — the optimum's lack of slack is why a perturbation FLIPS it: predict the sign; the model's stability bound is not the product's accuracy bound
 - [Rung 89 asymmetric valve](rung89-asymmetric-valve.md) — a fixed-set-point forecast cannot bound a perturbation that can move a run into the other case
+- [Rung 90 customer bleed](rung90-customer-bleed.md) — the only miss was the one bar I guessed instead of derived; check a physical bound at the root, not at bracket trials
 
 ## Margin sweeps — confirmations, not rungs
 - Margin sweeps — [72–77 march audit](rungs72-77-march-audit.md), [74 arrest interval](rung74-arrest-interval.md), [79 gap](rung79-gap-margin.md), [29 π_c](rung29-pi-c-margin.md), [29 M0](rung29-M0-margin.md), [28 β](rung28-beta-margin-hardened.md) — a liveness counter on a FROZEN plant reports FULL activity (one lesson per file)

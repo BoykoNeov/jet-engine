@@ -1,0 +1,40 @@
+
+THE CUSTOMER BLEED (rung 90): air the aircraft takes off the HP compressor's delivery
+(station 3) for its cabin - it never comes back. Two-spool engine, pi 3 x 6, flat maps.
+
+  1. How each compressor's flow coefficient moves per unit customer share, measured against
+     the anchor's model (fixed turbine-inlet temperature; + is away from surge).
+
+     Tt4       LP    model       HP    model
+    1500  -0.4294  -0.4377  +0.2180  +0.2146
+    1200  -0.2381  -0.2461  +0.3061  +0.3013
+    1000  -0.0811  -0.0892  +0.3883  +0.3824
+     900  +0.0089  +0.0005  +0.4388  +0.4322
+     800  +0.1080  +0.0993  +0.4971  +0.4898
+     700  +0.2179  +0.2087  +0.5645  +0.5564
+
+  2. What 5 % of the air costs: the customer bleed (station 3) against rung 42's interstage
+     bleed (station 25), same turbine-inlet temperature, thrust and fuel per unit thrust.
+
+     Tt4   dF cust %      dF b %  dTSFC cust     dTSFC b
+    1500      -8.284      -7.219      +5.485      +2.912
+    1100     -10.448      -8.405      +8.207      +4.291
+     800     -15.255     -11.122     +14.690      +7.571
+
+  3. The throttle slam with rung 64's protection valve (LP flow-coefficient floor, b_max 0.10):
+     shaped maps, r = 0.5, Tt4 1000 -> 1400 K. Closest approach to surge with the valve shut,
+     the valve's ceiling (fully open), and the air it bleeds holding two set points.
+
+      demand   minphiL   minphiH   ceiling   bleed .38   bleed .42
+        none   0.73544   0.86117   0.80952    9.295e-3    2.421e-2
+    share 5%   0.73060   0.86979   0.80487    1.273e-2    2.868e-2
+   5% amount   0.72543   0.87158   0.79938    1.623e-2    3.275e-2
+
+  A different arrow from rung 42's. The HP turbine now drives its compressor with less gas than
+  the compressor pumps, so the HP spool gets a new freedom - pushed AWAY from surge at every power,
+  with no sign change. The LP spool is pushed TOWARD surge at high power (the HP's pressure-ratio
+  drop starves the LP face more than the missing air feeds it) and helped below ~910 K. The slam's
+  closest approach sits on the high-power side, so the LP protection valve must bleed MORE to hold
+  the same margin, its ceiling falls, and a fixed AMOUNT of air - a larger share at the slam's
+  low-power start - costs more than the same share. Customer air also costs more thrust and fuel
+  than interstage air: it carries the HP compressor's work as well.

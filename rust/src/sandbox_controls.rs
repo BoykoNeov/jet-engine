@@ -31,6 +31,7 @@ use crate::bleed_transient::{build_scheduled_bleed, BleedSchedule, LeverArm};
 use crate::lagged_bleed::build_lagged_bleed;
 use crate::limited_bleed::{build_limited_bleed, r64_solve_b_at, r87_target, BleedLimiter};
 use crate::blade_speed::shape_maps;
+use crate::customer_bleed::CustomerBleed;
 use crate::engine::FlightCondition;
 use crate::fuel_transient::{r43_cut_below_ceiling, release_weight, AccelSchedule, AsymmetricLag, FuelInstant, FuelLimiters,
                             FuelPoint, FuelTransientCore, PointExtra, SurgeLimiter};
@@ -203,6 +204,27 @@ pub struct ControlsSettings {
     /// opening one); off, it closes at `valve_tau` — rung 88's valve, bit for bit.
     pub valve_close_own: bool,
     pub valve_tau_close: f64,
+    /// Rung 90: the aircraft's customer bleed off station 3 — off (the default: every saved setting
+    /// stays valid), a fixed SHARE of the HP compressor's air, or a fixed AMOUNT (× the design airflow,
+    /// so a larger share at low power).
+    pub customer: CustomerMode,
+    pub customer_share: f64,
+    pub customer_amount: f64,
+}
+
+/// Rung 90's switch: how the aircraft's customer bleed is set.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CustomerMode {
+    Off,
+    Share,
+    Amount,
+}
+
+impl CustomerMode {
+    pub const ALL: [CustomerMode; 3] = [CustomerMode::Off, CustomerMode::Share, CustomerMode::Amount];
+    pub fn key(self) -> &'static str {
+        match self { CustomerMode::Off => "off", CustomerMode::Share => "share", CustomerMode::Amount => "amount" }
+    }
 }
 
 impl ControlsSettings {
@@ -220,6 +242,16 @@ impl ControlsSettings {
             lever: LeverChoice::None, stator_spool: Spool::Lp, v_max: 0.20, v_n_lo: 0.65, b_max: 0.10, b_n_lo: 0.65,
             bleed_mode: BleedMode::Schedule, valve_phi: 0.78, valve_ref: FloorRef::Phi,
             valve_lag_on: false, valve_tau: 0.05, valve_close_own: false, valve_tau_close: 0.2,
+            customer: CustomerMode::Off, customer_share: 0.05, customer_amount: 0.05,
+        }
+    }
+
+    /// Rung 90's demand as the model takes it (`None` when off). Range-checked by the precheck first.
+    pub fn customer_bleed(&self) -> Option<CustomerBleed> {
+        match self.customer {
+            CustomerMode::Off => None,
+            CustomerMode::Share => Some(CustomerBleed::share(self.customer_share)),
+            CustomerMode::Amount => Some(CustomerBleed::amount(self.customer_amount)),
         }
     }
 
@@ -246,6 +278,8 @@ impl ControlsSettings {
             "bleed_mode" => self.bleed_mode.key(), "valve_phi" => self.valve_phi, "valve_ref" => self.valve_ref.key(),
             "valve_speed" => if self.valve_lag_on { "slow" } else { "instant" }, "valve_tau" => self.valve_tau,
             "valve_close" => if self.valve_close_own { "own" } else { "same" }, "valve_tau_close" => self.valve_tau_close,
+            "customer" => self.customer.key(), "customer_share" => self.customer_share,
+            "customer_amount" => self.customer_amount,
         }
     }
 
@@ -287,8 +321,13 @@ impl ControlsSettings {
                           ("tau_att", &mut s.tau_att), ("tau_rel", &mut s.tau_rel), ("v_max", &mut s.v_max),
                           ("v_n_lo", &mut s.v_n_lo), ("b_max", &mut s.b_max), ("b_n_lo", &mut s.b_n_lo),
                           ("valve_phi", &mut s.valve_phi), ("valve_tau", &mut s.valve_tau),
-                          ("valve_tau_close", &mut s.valve_tau_close)] {
+                          ("valve_tau_close", &mut s.valve_tau_close), ("customer_share", &mut s.customer_share),
+                          ("customer_amount", &mut s.customer_amount)] {
             num(k, into)?;
+        }
+        if let Some(t) = text("customer")? {
+            s.customer = CustomerMode::ALL.into_iter().find(|m| m.key() == t)
+                .ok_or_else(|| format!("unknown customer bleed {t:?} (\"off\", \"share\" or \"amount\")"))?;
         }
         for (k, into) in [("redline_on", &mut s.redline_on), ("gov_lag_on", &mut s.gov_lag_on),
                           ("accel_on", &mut s.accel_on), ("floor_on", &mut s.floor_on),
@@ -386,9 +425,20 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
                  ("redline", s.redline), ("gov_lag", s.gov_lag), ("accel_margin", s.accel_margin),
                  ("floor_phi", s.floor_phi), ("tau_att", s.tau_att), ("tau_rel", s.tau_rel), ("v_max", s.v_max),
                  ("v_n_lo", s.v_n_lo), ("b_max", s.b_max), ("b_n_lo", s.b_n_lo), ("valve_phi", s.valve_phi),
-                 ("valve_tau", s.valve_tau), ("valve_tau_close", s.valve_tau_close)];
+                 ("valve_tau", s.valve_tau), ("valve_tau_close", s.valve_tau_close),
+                 ("customer_share", s.customer_share), ("customer_amount", s.customer_amount)];
     if let Some((k, _)) = named.iter().find(|(_, v)| !v.is_finite()) {
         return Err(DoesNotRun(format!("Setting {k} is not a number.")));
+    }
+    // Rung 90: the model's own bound, half the air (rung 42's) — refused in words before it asserts.
+    let half = |x: f64| (0.0..CustomerBleed::C_MAX).contains(&x);
+    if s.customer == CustomerMode::Share && !half(s.customer_share) {
+        return no("The aircraft's share of the compressor's air must be at least 0 and below 0.5: taking half the \
+                   air starves the burner.");
+    }
+    if s.customer == CustomerMode::Amount && !half(s.customer_amount) {
+        return no("The aircraft's amount of air must be at least 0 and below 0.5 of the design airflow: half the \
+                   design air is more than the burner can spare even at full power.");
     }
     if !(RHO_MIN..=RHO_MAX).contains(&s.rho) {
         return Err(DoesNotRun(format!(
@@ -514,7 +564,12 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
     // drops the valve silently).
     let builder = if s.valve_slow() { build_lagged_bleed } else if s.valve_on() { build_limited_bleed }
                   else { build_scheduled_bleed };
-    let core = match builder(BladeSettings::defaults().design(), fl, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
+    // Rung 90: the aircraft's demand rides on the design engine, so every sibling the model builds keeps it.
+    let design = match s.customer_bleed() {
+        Some(cb) => BladeSettings::defaults().design().with_customer_bleed(cb),
+        None => BladeSettings::defaults().design(),
+    };
+    let core = match builder(design, fl, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
         ScheduledStatorTransient::Full(c) => c,
         ScheduledStatorTransient::Degenerate(_) => unreachable!("the Controls engine has both shafts"),
     };
@@ -538,7 +593,10 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
 /// Plain words for an endpoint's failed steady solve — the four messages the crash map found
 /// (plan § 12.10), each driven by a test.
 pub fn endpoint_words(message: &str) -> String {
-    let why = if message.contains("did not converge") {
+    let why = if message.contains("customer bleed takes") {
+        "the aircraft's customer bleed would take more than half of the HP compressor's air here, which starves the \
+         burner. A fixed amount of air is a larger share at low power: raise the throttle, or ask for less air"
+    } else if message.contains("did not converge") {
         "the search for the steady shaft speeds does not settle. Measured only with a lever whose schedule does \
          nearly all its travel just below the design speed; start the lever's schedule lower"
     } else if message.contains("does not bracket") || message.contains("off-map compressor trial") {
@@ -955,6 +1013,9 @@ pub enum StopKind {
     /// The temperature limiter's lag is on: that march does not record its lag state, so the failed
     /// step cannot be re-run and the cause is not known.
     Unknown,
+    /// Rung 90: the aircraft's fixed amount of air grew past half the HP compressor's delivery as the
+    /// engine slowed.
+    Customer,
     /// Anything else the model refused at this point of the run.
     Other,
 }
@@ -966,6 +1027,7 @@ impl StopKind {
             StopKind::Lean => "lean",
             StopKind::Rich => "rich",
             StopKind::Unknown => "unknown",
+            StopKind::Customer => "customer",
             StopKind::Other => "other",
         }
     }
@@ -973,6 +1035,11 @@ impl StopKind {
     /// What the page says when a run stops this way, above the model's own message.
     pub fn words(self) -> &'static str {
         match self {
+            StopKind::Customer =>
+                "The aircraft asked for more air than the engine could give. Its customer bleed is a fixed amount of \
+                 air, so as the engine slowed it became a bigger and bigger share of what the HP compressor delivers; \
+                 past half, the burner is starved and the model stops. Ask for less air, or do not cut the power so \
+                 far.",
             StopKind::FloorUnreachable =>
                 "The stall floor could no longer be held. The floor cuts the fuel to keep the compressor's flow \
                  coefficient up; here even cutting the fuel to almost nothing would not lift it to the floor, so the \
@@ -1019,6 +1086,9 @@ pub fn classify(_sv: &ControlsSolver, stop: &Stop, last: Option<&FuelPoint>) -> 
     let m = &f.message;
     if m.contains("UNREACHABLE") {
         return StopKind::FloorUnreachable;
+    }
+    if m.contains("customer bleed takes") {
+        return StopKind::Customer;
     }
     if !m.contains("fuel closure does not bracket") {
         return StopKind::Other;
@@ -1117,6 +1187,8 @@ pub struct PointRead {
     /// moves with the LP stators), when the valve is on.
     pub valve: Option<f64>,
     pub holder: Holder,
+    /// Rung 90: the aircraft's share of the HP compressor's air here (0 with no customer bleed).
+    pub customer: f64,
     /// Each armed limiter's relative residual at the applied state (`None` = not armed).
     pub res_redline: Option<f64>,
     pub res_accel: Option<f64>,
@@ -1187,7 +1259,8 @@ impl ControlsSolver {
         Ok(PointRead {
             thrust: Self::thrust(i), stall_lp, stall_hp,
             v: match s.stator_spool { Spool::Lp => v_lp, Spool::Hp => v_hp },
-            bleed: i.close.bleed.unwrap_or(0.0), floor, valve, holder, res_redline, res_accel, res_floor,
+            bleed: i.close.bleed.unwrap_or(0.0), floor, valve, holder, customer: i.close.customer.unwrap_or(0.0),
+            res_redline, res_accel, res_floor,
         })
     }
 }
@@ -1203,6 +1276,12 @@ fn steady_json(sv: &ControlsSolver, i: &Instant2) -> Json {
         "far" => i.close.f, "thrust" => ControlsSolver::thrust(i), "phi_lp" => i.close.phi_lp, "phi_hp" => i.close.phi_hp,
         "pi_lpc" => i.close.pi_lpc, "pi_hpc" => i.close.pi_hpc, "stall_lp" => stall_lp, "stall_hp" => stall_hp,
         "choked" => Json::Int((i.branch == Branch::Choked) as i64),
+        // Rung 90: what the aircraft gets — its share of the HP compressor's air, and kg/s.
+        "customer_share" => i.close.customer.unwrap_or(0.0),
+        "customer_air" => match (i.close.customer, i.close.mdot_face) {
+            (Some(c), Some(face)) => c * (1.0 - i.close.bleed.unwrap_or(0.0)) * face,
+            _ => 0.0,
+        },
     }
 }
 
@@ -1247,7 +1326,7 @@ pub fn controls_json(sv: &ControlsSolver, o: &ControlsOutcome) -> Json {
         "pi_lpc" => col(&|x| x.pi_lpc), "pi_hpc" => col(&|x| x.pi_hpc),
         "thrust" => rcol(&|r| r.thrust), "stall_lp" => rcol(&|r| r.stall_lp), "stall_hp" => rcol(&|r| r.stall_hp),
         "v" => rcol(&|r| r.v), "bleed" => rcol(&|r| r.bleed), "floor" => rcol(&|r| r.floor.unwrap_or(f64::NAN)),
-        "valve" => rcol(&|r| r.valve.unwrap_or(f64::NAN)),
+        "valve" => rcol(&|r| r.valve.unwrap_or(f64::NAN)), "customer" => rcol(&|r| r.customer),
         "holder" => Json::List(reads.iter().map(|r| Json::from(r.as_ref().map(|r| r.holder.key()).unwrap_or("none"))).collect()),
         "choked" => Json::List(p.iter().map(|x| Json::Int((x.branch == Branch::Choked) as i64)).collect()),
     }
@@ -1303,6 +1382,13 @@ pub fn check_requests() -> Vec<String> {
                            valve_close_own: true, valve_tau_close: 0.01, ..d },                     // refused: one step
         ControlsSettings { lever: LeverChoice::Bleed, bleed_mode: BleedMode::Valve, valve_lag_on: true,
                            floor_on: true, release_on: true, ..d },                                 // refused: two lags
+        // rung 90: the aircraft's customer bleed — a share, an amount beside the valve, beside the slow
+        // valve and the schedule, and refused at half the air
+        ControlsSettings { customer: CustomerMode::Share, ..d },
+        ControlsSettings { customer: CustomerMode::Amount, lever: LeverChoice::Bleed, bleed_mode: BleedMode::Valve, ..d },
+        ControlsSettings { customer: CustomerMode::Share, customer_share: 0.1, lever: LeverChoice::Both,
+                           bleed_mode: BleedMode::Valve, valve_lag_on: true, accel_on: true, ..d },
+        ControlsSettings { customer: CustomerMode::Share, customer_share: 0.5, ..d },             // refused: half
         ControlsSettings { from: 1400.0, to: 1000.0, ..d },
         ControlsSettings { release_on: true, ..d },                                  // refused: nothing to lag
         ControlsSettings { floor_on: true, lever: LeverChoice::Stator, ..d },        // stop: the floor unreachable

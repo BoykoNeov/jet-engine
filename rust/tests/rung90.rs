@@ -259,3 +259,140 @@ fn the_dispatch_is_live_on_both_sides() {
     let c = customer_bleed::counts();
     assert!(c[2] > 0 && c[3] > 0 && c[4] > 0 && c[5] > 0, "every rung-90 cell must run: {c:?}");
 }
+
+// =============================================================================================
+// THE SCORED READINGS (anchor § 3, scored in docs/rung90-spec.md § 3) — one gate per claim, on
+// a subset of the scored grid. Bars are the ANCHOR's (504d428), not the measured values, except
+// where a gate says it was narrowed after measuring.
+// =============================================================================================
+
+fn flat() -> ComponentMap { ComponentMap::flat() }
+
+/// The anchor's linear model, on the customer-free point.
+fn model(r0: &TwoSpoolMapResult) -> (f64, f64) {
+    let s = &r0.base;
+    let a = |tau: f64, eta: f64| 3.5 * eta * (tau - 1.0) / (1.0 + eta * (tau - 1.0));
+    let (tl, th) = (s.station("25").tt / s.station("2").tt, s.station("3").tt / s.station("25").tt);
+    let (al, ah, t_l) = (a(tl, r0.eta_lpc), a(th, r0.eta_hpc), (tl - 1.0) / tl);
+    (1.5 - al - ah * (1.0 - t_l), 0.5 + (1.0 - t_l) * (1.0 - ah))
+}
+
+/// `(d ln phi_L/dc, d ln phi_H/dc)` one-sided at c = 0.02, and the c = 0 point.
+fn sens(ml: ComponentMap, mh: ComponentMap, tt4: f64) -> (f64, f64, TwoSpoolMapResult) {
+    let r0 = CustomerBleedMatcher::new(design(), flight(), 1.0, ml, mh, 0.0).match_point(&flight(), tt4).base;
+    let r2 = CustomerBleedMatcher::new(with(Some(CustomerBleed::share(0.02))), flight(), 1.0, ml, mh, 0.0)
+        .match_point(&flight(), tt4).base;
+    ((r2.phi_lp / r0.phi_lp).ln() / 0.02, (r2.phi_hp / r0.phi_hp).ln() / 0.02, r0)
+}
+
+/// A1 + A3: the model holds on the flat maps (bars 0.03 HP, 0.05 LP; measured ≤ 0.0093).
+#[test]
+fn a1_a3_the_linear_model_predicts_both_spools() {
+    for tt4 in [1500.0, 1200.0, 1000.0, 800.0, 700.0] {
+        let (dl, dh, r0) = sens(flat(), flat(), tt4);
+        let (ml, mh) = model(&r0);
+        assert!((dh - mh).abs() < 0.03, "A1 Tt4={tt4}: HP {dh} vs model {mh}");
+        assert!((dl - ml).abs() < 0.05, "A3 Tt4={tt4}: LP {dl} vs model {ml}");
+    }
+}
+
+/// A2 + A4 + A6: the HP is helped everywhere (no pi*); the LP changes sign ONCE, near 900 K.
+#[test]
+fn a2_a4_a6_the_hp_never_reverses_and_the_lp_crosses_near_900k() {
+    let mut prev: Option<(f64, f64)> = None;
+    let mut crossings = Vec::new();
+    for tt4 in [1500.0, 1300.0, 1100.0, 1000.0, 900.0, 800.0, 650.0] {
+        let (dl, dh, _) = sens(flat(), flat(), tt4);
+        assert!(dh > 0.0, "A2 Tt4={tt4}: HP {dh}");
+        if let Some((t0, l0)) = prev {
+            if (l0 < 0.0) != (dl < 0.0) { crossings.push(t0 + (tt4 - t0) * l0 / (l0 - dl)); }
+        }
+        prev = Some((tt4, dl));
+    }
+    assert!(crossings.len() == 1 && (crossings[0] - 900.0).abs() < 50.0, "A4 crossings {crossings:?}");
+    for (tt4, lp_neg) in [(1500.0, true), (650.0, false)] {
+        let (dl, dh, _) = sens(lp(), hp(), tt4);
+        assert!(dh > 0.0 && (dl < 0.0) == lp_neg, "A6 Tt4={tt4}: LP {dl} HP {dh}");
+    }
+}
+
+/// A5 — scored a MISS as written (> 1 % at every Tt4; 0.55 % at 1500 K, 0.77 % at 1400 K). This
+/// gate pins what was MEASURED, narrowed after measuring (no credit): the c = 0.05 HP point is
+/// off the c = 0 line at the same x_H by more than 0.5 % — 35× rung 42's 0.016 % — and the
+/// displacement grows as the throttle falls.
+#[test]
+fn a5_the_hp_gets_a_new_freedom_growing_as_the_throttle_falls() {
+    let m0 = CustomerBleedMatcher::new(design(), flight(), 1.0, flat(), flat(), 0.0);
+    let m5 = CustomerBleedMatcher::new(with(Some(CustomerBleed::share(0.05))), flight(), 1.0, flat(), flat(), 0.0);
+    let xh = |t: f64| { let r = m0.match_point(&flight(), t); (t / r.base.base.station("25").tt, r.base.phi_hp) };
+    let mut offs = Vec::new();
+    for tt4 in [1500.0, 1000.0, 700.0] {
+        let r5 = m5.match_point(&flight(), tt4);
+        let xt = tt4 / r5.base.base.station("25").tt;
+        let (mut lo, mut hi) = (tt4, tt4 + 400.0);
+        for _ in 0..60 { let mid = 0.5 * (lo + hi); if xh(mid).0 < xt { lo = mid } else { hi = mid } }
+        offs.push(r5.base.phi_hp / xh(0.5 * (lo + hi)).1 - 1.0);
+    }
+    assert!(offs[0] > 0.005 && offs[0] < offs[1] && offs[1] < offs[2], "A5 {offs:?}");
+}
+
+/// A7: customer air costs more thrust and more fuel per unit thrust than interstage air.
+#[test]
+fn a7_customer_air_costs_more_than_interstage_air() {
+    let m0 = CustomerBleedMatcher::new(design(), flight(), 1.0, flat(), flat(), 0.0);
+    let m5 = CustomerBleedMatcher::new(with(Some(CustomerBleed::share(0.05))), flight(), 1.0, flat(), flat(), 0.0);
+    let b5 = TwoSpoolBleedMatcher::new(design(), flight(), 1.0, flat(), flat(), 0.05);
+    for tt4 in [1500.0, 1100.0, 800.0] {
+        let p0 = m0.match_point(&flight(), tt4).base.base.performance;
+        let (k, kb) = (m5.match_point(&flight(), tt4).booking.unwrap(),
+                       b5.match_point(&flight(), tt4).booking.unwrap());
+        assert!(k.st_inlet < kb.st_inlet && kb.st_inlet < p0.specific_thrust, "A7 thrust Tt4={tt4}");
+        assert!(k.tsfc_inlet > kb.tsfc_inlet && kb.tsfc_inlet > p0.tsfc, "A7 tsfc Tt4={tt4}");
+    }
+}
+
+/// A8: the amount mode's share rises as the throttle falls, and its LP shift at 700 K is positive
+/// and larger than the share mode's. Its 650 K point is NOT scorable: the amount takes 12.8 % of
+/// the air there and the nozzle unchokes — refused, out of scope (rung 42's envelope shrinks too).
+#[test]
+fn a8_the_amount_mode_bites_harder_at_low_power_and_shrinks_the_envelope() {
+    let m0 = CustomerBleedMatcher::new(design(), flight(), 1.0, flat(), flat(), 0.0);
+    let mw = CustomerBleedMatcher::new(with(Some(CustomerBleed::amount(0.05))), flight(), 1.0, flat(), flat(), 0.0);
+    let m5 = CustomerBleedMatcher::new(with(Some(CustomerBleed::share(0.05))), flight(), 1.0, flat(), flat(), 0.0);
+    let mut prev = 0.0;
+    for tt4 in [1500.0, 1200.0, 900.0, 700.0] {
+        let c = mw.match_point(&flight(), tt4).booking.unwrap().customer;
+        assert!(c > prev, "A8 share must rise as the throttle falls: {c} at {tt4}");
+        prev = c;
+    }
+    let p0 = m0.match_point(&flight(), 700.0).base.phi_lp;
+    let (dw, dc) = ((mw.match_point(&flight(), 700.0).base.phi_lp / p0).ln(),
+                    (m5.match_point(&flight(), 700.0).base.phi_lp / p0).ln());
+    assert!(dw > dc && dc > 0.0, "A8 at 700 K: amount {dw} share {dc}");
+    let e = mw.try_match_point(&flight(), 650.0).err().expect("650 K must be refused in the amount mode");
+    assert!(e.0.contains("UNCHOKED"), "{}", e.0);
+}
+
+/// B1–B5 on one cell of rig B (shaped maps, r = 0.5, ds 0.005, rung 64's valve).
+#[test]
+fn b1_to_b5_the_protection_valve_works_around_the_customer_bleed() {
+    use turbojet::stator_transient::Ramp;
+    let rp = Ramp { tt4_lo: 1000.0, tt4_hi: 1400.0, r: 0.5, s_settle: 1.2, ds: 0.005 };
+    let read = |cb: Option<CustomerBleed>| {
+        let m = machine(cb, &LeverArm::default());
+        let shut = m.bill_cell(&flight(), &rp, false);
+        let full = m.at_lever(&LeverArm::constant(0.10)).bill_cell(&flight(), &rp, false);
+        let v = m.at_lever(&LeverArm::floored(BleedLimiter::new(1.38 * 0.55, 0.10)))
+            .bill_cell(&flight(), &rp, false);
+        assert!(v.b_int > 0.0 && v.b_peak < 0.10, "the valve must RIDE at sm 0.38");
+        (shut.min_phi_lp, shut.min_phi_hp, full.min_phi_lp, v.b_int, v.npts)
+    };
+    let (n, s, a) = (read(None), read(Some(CustomerBleed::share(0.05))),
+                     read(Some(CustomerBleed::amount(0.05))));
+    assert!(s.0 < n.0, "B1 {s:?} vs {n:?}");
+    assert!(s.1 > n.1 && (s.1 - n.1) > (n.0 - s.0), "B2 {s:?} vs {n:?}");
+    assert!(n.4 == s.4 && s.4 == a.4, "bills compared only at equal run length");
+    assert!(s.3 > n.3, "B3 {s:?} vs {n:?}");
+    assert!(s.2 < n.2, "B4 {s:?} vs {n:?}");
+    assert!(a.3 > s.3, "B5 {a:?} vs {s:?}");
+}

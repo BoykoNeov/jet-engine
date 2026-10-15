@@ -107,10 +107,21 @@ fn every_element_the_script_looks_up_is_declared() {
     assert_eq!(view.len(), 1);
     looked_up.extend(spans(view[0], "\"", "\"").into_iter().map(String::from));
     // The blade view's helpers take the id as their first argument: `click("id", …)`, `press("id", …)`.
+    // A helper id ending in `-` is a PREFIX the script completes, `press("ctl-cust-" + m, …)`: each one is
+    // expanded here by name, so a new one cannot pass unexpanded.
     for helper in ["click(\"", "press(\""] {
         let ids: Vec<&str> = spans(&t, helper, "\"");
         assert!(ids.len() >= 6, "{helper}: {ids:?}");
-        looked_up.extend(ids.into_iter().map(String::from));
+        for id in ids {
+            match id {
+                // Rung 90's customer-bleed switch: `for (const m of ["off", "share", "amount"])`.
+                "ctl-cust-" => looked_up.extend(["off", "share", "amount"].map(|m| format!("{id}{m}"))),
+                _ => {
+                    assert!(!id.ends_with('-'), "{helper}: the prefix #{id} has no expansion in this census");
+                    looked_up.push(id.to_string());
+                }
+            }
+        }
     }
     // The burner (slice 5): `$(id)` / `$(id + "-r")` over BN_NUM, `$("bn-" + k)` over its switches, its view
     // group, and `$("bn-q-" + q)` over the dilution toggle. (Its mixing-model knobs are BUILT by the script,

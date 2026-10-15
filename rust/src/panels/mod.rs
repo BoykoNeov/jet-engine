@@ -33,6 +33,7 @@ pub mod schedules;
 pub mod three_levers;
 pub mod lagged_incidence;
 pub mod asymmetric_valve;
+pub mod customer_bleed;
 pub mod valve_reference;
 pub mod twospool;
 
@@ -97,7 +98,7 @@ pub type Panel = fn(&mut Printer, &Design);
 /// no Python segment (`tests/cli_golden.rs`).
 pub const RUST_OWNED: &[&str] = &["print_blade_speed_table", "print_three_levers_table",
                                   "print_valve_reference_table", "print_lagged_incidence_table",
-                                  "print_asymmetric_valve_table"];
+                                  "print_asymmetric_valve_table", "print_customer_bleed_table"];
 
 /// `main()`'s calls, in order, each named as the golden's segment file names it (a `print_*`
 /// function's name, or `main:<what>` for text `main()` prints inline).
@@ -199,6 +200,7 @@ pub const PANELS: &[(&str, Panel)] = &[
     ("print_valve_reference_table", valve_reference::valve_reference_table),
     ("print_lagged_incidence_table", lagged_incidence::lagged_incidence_table),
     ("print_asymmetric_valve_table", asymmetric_valve::asymmetric_valve_table),
+    ("print_customer_bleed_table", customer_bleed::customer_bleed_table),
     // ---- slice AR: the chart's line (the data itself is written by `src/main.rs`)
     ("plot_ts_diagram", cycle::ts_diagram_line),
 ];

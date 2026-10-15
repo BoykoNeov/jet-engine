@@ -320,6 +320,24 @@ footer p { max-width: 90ch; }
       <div class="knob"><label for="ctl-rho">LP shaft response time <small>× the HP's</small></label><input type="number" id="ctl-rho" step="0.1">
         <input type="range" id="ctl-rho-r" min="0.2" max="5" step="0.1" aria-label="LP response time slider">
         <div class="derived">Above 1 the low-pressure shaft is the slower one (a heavier fan and booster).</div></div>
+      <div class="toggle" role="group" aria-label="Air the aircraft takes">
+        <button type="button" id="ctl-cust-off" aria-pressed="true">Aircraft takes no air</button>
+        <button type="button" id="ctl-cust-share" aria-pressed="false">Takes a share</button>
+        <button type="button" id="ctl-cust-amount" aria-pressed="false">Takes a fixed amount</button></div>
+      <div id="ctl-cshare-box">
+        <div class="knob"><label for="ctl-customer_share">Share of the HP compressor's air</label><input type="number" id="ctl-customer_share" step="0.01">
+          <input type="range" id="ctl-customer_share-r" min="0" max="0.2" step="0.01" aria-label="Customer bleed share slider"></div></div>
+      <div id="ctl-camount-box">
+        <div class="knob"><label for="ctl-customer_amount">Amount <small>× the design airflow</small></label><input type="number" id="ctl-customer_amount" step="0.01">
+          <input type="range" id="ctl-customer_amount-r" min="0" max="0.2" step="0.01" aria-label="Customer bleed amount slider">
+          <div class="derived">A cabin system asks for a fixed amount of air, so at low power it is a bigger share of a smaller
+            flow. Too much, and the engine has no steady point at all.</div></div></div>
+      <p class="note" id="ctl-cust-note">The aircraft's air (cabin, anti-ice) is taken where the HP compressor delivers it, and never
+        comes back. The HP turbine then drives its compressor with less gas than the compressor pumps: the HP compressor
+        moves away from its stall line at every power. The LP compressor moves TOWARD its stall line at high power and
+        away from it below about 900 K, so on this slam the LP bleed valve has to open wider to hold the same margin, and a
+        fixed amount costs it more than the same share (rung 90). This air costs more thrust and fuel than the LP bleed's:
+        the HP compressor has already worked on it.</p>
     </fieldset>
     <fieldset id="ctl-sw-set" hidden>
       <legend>Fuel controls</legend>
@@ -968,7 +986,8 @@ const CTL_NUM = { "ctl-rho": "rho", "ctl-from": "from", "ctl-to": "to", "ctl-ram
                   "ctl-redline": "redline", "ctl-gov_lag": "gov_lag", "ctl-accel_margin": "accel_margin",
                   "ctl-floor_phi": "floor_phi", "ctl-tau_att": "tau_att", "ctl-tau_rel": "tau_rel", "ctl-v_max": "v_max",
                   "ctl-v_n_lo": "v_n_lo", "ctl-b_max": "b_max", "ctl-b_n_lo": "b_n_lo", "ctl-valve_phi": "valve_phi",
-                  "ctl-valve_tau": "valve_tau", "ctl-valve_tau_close": "valve_tau_close" };
+                  "ctl-valve_tau": "valve_tau", "ctl-valve_tau_close": "valve_tau_close",
+                  "ctl-customer_share": "customer_share", "ctl-customer_amount": "customer_amount" };
 const CTL_SW = ["redline_on", "gov_lag_on", "accel_on", "floor_on", "release_on"];
 const CTL_VIEW = ["ctl-set", "ctl-sw-set", "ctl-lever-set", "ctl-out", "ctl-card"];
 // The burner (slice 5, turbojet::sandbox_burner): BK holds its knobs; it reads the Design engine S. BN_NUM maps
@@ -1053,6 +1072,9 @@ function showSettings() {
     $("ctl-vtau-box").hidden = C.valve_speed !== "slow";
     press("ctl-vcls-same", C.valve_close === "same"); press("ctl-vcls-own", C.valve_close === "own");
     $("ctl-vtc-box").hidden = C.valve_close !== "own";
+    for (const m of ["off", "share", "amount"]) press("ctl-cust-" + m, C.customer === m);
+    $("ctl-cshare-box").hidden = C.customer !== "share"; $("ctl-camount-box").hidden = C.customer !== "amount";
+    $("ctl-cust-note").hidden = C.customer === "off";
     $("ctl-bsched-box").hidden = C.bleed_mode !== "schedule"; $("ctl-valve-box").hidden = C.bleed_mode !== "valve";
     $("ctl-redline-box").hidden = C.redline_on !== 1; $("ctl-gov_lag-box").hidden = C.gov_lag_on !== 1;
     $("ctl-accel-box").hidden = C.accel_on !== 1; $("ctl-floor-box").hidden = C.floor_on !== 1;
@@ -1537,6 +1559,8 @@ const CTL_ROWS = [
   ["Shaft speeds at the end, LP / HP (% of design)", r => `${fmt(r.nu_lp[r.nu_lp.length - 1] * 100, 4)} / ${fmt(r.nu_hp[r.nu_hp.length - 1] * 100, 4)}`],
   ["Still short of the final steady speeds, LP / HP (%)", r => `${fmt(r.settled_lp * 100, 2)} / ${fmt(r.settled_hp * 100, 2)}`],
   ["Thrust at the end (N per kg/s of design airflow)", r => r.thrust[r.thrust.length - 1], 4],
+  ["Air the aircraft takes, start / end (% of the HP compressor's air)", r => r.controls.customer === "off" ? "none"
+    : `${fmt(r.start.customer_share * 100, 3)} / ${fmt(r.end.customer_share * 100, 3)}`],
   ["Points computed", r => `${r.s.length} of ${r.expected_points}`],
 ];
 function ctlTable() {
@@ -2368,6 +2392,7 @@ function wire() {
   cclick("ctl-vref-phi", () => { C.valve_ref = "phi"; }); cclick("ctl-vref-inc", () => { C.valve_ref = "incidence"; });
   cclick("ctl-vspd-inst", () => { C.valve_speed = "instant"; }); cclick("ctl-vspd-slow", () => { C.valve_speed = "slow"; });
   cclick("ctl-vcls-same", () => { C.valve_close = "same"; }); cclick("ctl-vcls-own", () => { C.valve_close = "own"; });
+  for (const m of ["off", "share", "amount"]) cclick("ctl-cust-" + m, () => { C.customer = m; });
   for (const q of Object.keys(CTL_Q)) $("ctlq-" + q).addEventListener("click", () => { ctlQ = q; showSettings(); drawCtl(); });
   $("mode-controls").addEventListener("click", enterControls);
   // The burner: its own knobs write BK; slow mixing models compute when a slider is let go (bnChanged).

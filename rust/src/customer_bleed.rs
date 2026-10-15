@@ -678,7 +678,7 @@ pub fn r90_try_close_fuel(
     }
     let (Some(lo), Some(hi)) = (lo, hi) else {
         return Err(Abort(format!(
-            "rung-90 fuel closure with the customer bleed does not bracket at \
+            "rung-90 bled fuel closure does not bracket (customer bleed on) at \
              nu=({nu_lp:.4},{nu_hp:.4}), mdot_fuel={mdot_fuel:.5}, b={b:.4} — off the modeled \
              speed-line region.")));
     };

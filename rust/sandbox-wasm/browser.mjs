@@ -394,9 +394,27 @@ try {
   check('the_slow_valve_closes_at_its_own_speed_and_holds_its_bleed_longer', vOwn && own[0] === 'valve_lag' && own[1] && own[2]
         && !tcVis && ownLast > symLast, JSON.stringify([vOwn, own, tcVis, symLast, ownLast]));
   if (process.env.SANDBOX_SHOTS) { await ev(`document.getElementById('ctlq-lever').click()`); await shot('controls-asym-valve'); }
+  // Rung 90: the aircraft's customer bleed, through its own buttons — its knob shown, its share read back at the
+  // start, and beside the instant flow-coefficient valve the valve bleeding MORE with it, and more again for a fixed
+  // amount (the scored B3/B5, on this view's engine).
+  await ev(`window.sandbox.controls({lever: 'bleed', bleed_mode: 'valve', valve_ref: 'phi', valve_speed: 'instant',
+            valve_close: 'same', floor_on: 0, customer: 'off'}).then(r => r.run)`);
+  const sumB = `window.sandbox.last.bleed.reduce((a, x) => a + (x || 0), 0)`;
+  const offSum = await ev(sumB);
+  await ev(`document.getElementById('ctl-cust-share').click()`);
+  const cShare = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.customer === 'share'`, 30000);
+  const shareSum = await ev(sumB);
+  const cs = await ev(`[window.sandbox.last.start.customer_share, window.sandbox.last.stop === null,
+                        document.getElementById('ctl-cshare-box').hidden, document.getElementById('ctl-camount-box').hidden]`);
+  await ev(`document.getElementById('ctl-cust-amount').click()`);
+  const cAmt = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.customer === 'amount'`, 30000);
+  const amtSum = await ev(sumB);
+  check('the_customer_bleed_makes_the_lp_valve_bleed_more', cShare && cAmt && cs[0] === 0.05 && cs[1] && !cs[2] && cs[3]
+        && shareSum > offSum && amtSum > shareSum, JSON.stringify([cShare, cAmt, cs, offSum, shareSum, amtSum]));
+  if (process.env.SANDBOX_SHOTS) { await ev(`document.getElementById('ctlq-lever').click()`); await shot('controls-customer'); }
   await ev(`document.getElementById('ctlq-Tt4').click()`);
   await ev(`window.sandbox.controls({lever: 'none', floor_on: 0, floor_phi: 0.75, floor_ref: 'phi', bleed_mode: 'schedule',
-            valve_ref: 'phi', valve_speed: 'instant', valve_close: 'same'}).then(r => r.run)`);
+            valve_ref: 'phi', valve_speed: 'instant', valve_close: 'same', customer: 'off'}).then(r => r.run)`);
   if (process.env.SANDBOX_SHOTS) {
     await ev(`window.sandbox.controls({settle: 2, ramp: 0.5, lever: 'bleed'})`);
     await shot('controls-light'); await shot('controls-dark', 1280, true); await shot('controls-phone', 390);
