@@ -22,6 +22,6 @@ r = 0.5, set point sm = 0.42 (the incidence margin m_lim it is asked to hold).
   ratio = phi valve's bleed / incidence valve's; dF = phi's thrust integral minus incidence's.
   Instant, the incidence valve is the cheaper one (rung 87). Slow enough, the order REVERSES:
   the incidence valve waits until the margin is needed and then must open fast, so a lag costs
-  it protection it has to buy back; the phi valve opens early -- the stators lower phi from the
-  start -- and that head start absorbs the lag. Where the crossover sits in tau is a measurement
+  it protection it has to buy back; the phi valve holds incidence margin it does not need, and
+  that surplus absorbs the lag. Where the crossover sits in tau is a measurement
   on this rig's own time scale, not a statement about real valves.

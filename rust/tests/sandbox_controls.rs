@@ -557,6 +557,20 @@ fn the_slow_valve_is_read_at_its_recorded_position() {
     }
 }
 
+/// Rung 88 on the page: the SLOW incidence valve beside a stall floor read as a flow coefficient starves the
+/// run as the instant one did (rung 87 § H5), and the slow route's own step re-run names the stop — the
+/// one path the completed-march replays above never reach.
+#[test]
+fn a_slow_valve_run_that_stops_is_re_run_and_named() {
+    let s = ControlsSettings { lever: LeverChoice::Both, bleed_mode: BleedMode::Valve, valve_ref: FloorRef::Incidence,
+                               valve_lag_on: true, floor_on: true, floor_phi: 0.78, ..ControlsSettings::defaults() };
+    let (sv, o) = controls(&s).unwrap();
+    assert_eq!(sv.route(), Route::ValveLag);
+    let st = o.stop.as_ref().expect("the phi floor starves the slow incidence valve's run too");
+    assert!(st.failure.is_some(), "the slow route re-runs its failed step");
+    assert_eq!(stop_kind(&sv, &o), StopKind::FloorUnreachable);
+}
+
 /// Rung 87 § H5 on the page: the incidence valve beside a stall floor read as a FLOW COEFFICIENT, the
 /// stators on — the valve lets the flow coefficient fall, the floor cuts the fuel and the run stops; the
 /// same floor reading incidence runs to the end.

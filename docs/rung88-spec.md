@@ -18,9 +18,10 @@ target — does the lag's cost depend on which wall it tracks?)"*. Rung 87 had r
 
 > **THE HEADLINE — an exact law has no slack for a slow actuator.** The incidence valve opens exactly
 > as far, and exactly as late, as the protection needs; so it must open FAST, and any lag is protection
-> lost that it has to buy back with a higher set point. The flow-coefficient valve opens EARLY (the
-> stators lower `φ` from the start) and closes late, and that surplus absorbs the lag — at a small lag
-> it even GAINS protection. Re-tuned so both hold rung 87's incidence margin exactly, the `φ` valve
+> lost that it has to buy back with a higher set point. The flow-coefficient valve holds incidence it
+> does not need (rung 87's waste): where the slow incidence valve is caught short, the `φ` valve still has
+> margin to spare (53 of 57 runs), and that surplus absorbs the lag — at a small lag it even GAINS
+> protection, closing late where its own minimum sits. Re-tuned so both hold rung 87's incidence margin exactly, the `φ` valve
 > costs 1.27–3.47× the incidence valve's air when instant, and **0.53–0.91× by `τ` = 0.1 in all 19
 > cells** (less thrust too, 18 of 19): **rung 87's saving belongs to a FAST valve.** The crossover sits
 > between `τ` 0.02 and 0.1 HP-spool time constants on this rig — a measurement on the march's own time
@@ -116,7 +117,7 @@ the requirement is held by each valve's control law in every entry.
 all 19 cells (e.g. shaped `r` 0.25 `sm` 0.34: 0.2609 instant → 0.2505 at `τ` 0.05), lowest at `τ`
 0.02–0.1 in 15 cells and still falling at 0.2 in 4; at its best lag it holds the same margin with 0.36–0.91× the instant `φ` valve's air. The
 incidence valve's set point rises monotonically with `τ` in every cell, and its slow run always costs
-more than its instant one. So rung 65's *"bandwidth is pure loss"* holds in a valve's OWN coordinate:
+more than its instant one (0.36–0.91 at the best lag, the same at both steps). So rung 65's *"bandwidth is pure loss"* holds in a valve's OWN coordinate:
 read in another wall's, a lag can be a gain.
 
 ## 5. The mechanism, measured
@@ -125,8 +126,11 @@ At each re-tuned slow run, the `M_i` minimum's place and the valve's lag there (
 - **`τ` 0.01:** the incidence valve's minimum sits on its opening edge (`b < b_cmd`); the `φ` valve's
   sits LATER in all 19 cells, where it is closing and OVER-holds (`b > b_cmd` in 19 of 19) — the credit.
 - **`τ` ≥ 0.05:** both minima move to the opening edge; the `φ` valve's is at the same point or later in
-  57 of 57 runs, already further open in 31 and lagging its command less in 36 — it started opening
-  before the margin was needed, the incidence valve only when it was.
+  57 of 57 runs. Read at the point where the slow incidence valve's margin is LOWEST, the `φ` valve still
+  has incidence to spare (`M_i > m_lim`) in **53 of 57** runs, at both steps: the surplus rung 87 priced
+  as waste is the buffer. (Two weaker readings were checked and are NOT the mechanism: the `φ` valve is
+  further open at its own minimum in only 31 of 57 and lags its command less in 36; it starts opening no
+  later in 57 of 57 but strictly earlier in only 18.)
 
 ## 6. The findings, in order of how much the construction already implied them
 
@@ -144,7 +148,9 @@ At each re-tuned slow run, the `M_i` minimum's place and the valve's lag there (
 
 * **Rung 87 — BOUNDED.** Its H1/H2 (*the `φ` valve costs 1.27–3.50× at equal protection*) hold for a
   FAST valve only: by `τ` 0.1 the order is reversed in every scored cell. Its advice *watch the wall*
-  stands for protection (H5 of rung 87, the starved run, is untouched); its PRICE does not.
+  stands for protection — its H5 survives a slow valve: the slow incidence valve beside a `φ` fuel floor
+  at the same `sm`, stators on, still starves the run at `τ` 0.05 and 0.2 in all 19 cells (measured after
+  the bars, `ds` 0.005) — its PRICE does not.
 * **Rung 65 — EXPLAINED and BOUNDED.** § 1's bill is D1 (`Δ∫b` = 3.78e-4 against `τ·b_cmd(0)` = 3.66e-4
   at `τ` 0.01 … 1.354e-2 against `τ(b0 − b_end)` at 0.4, where the valve is still open at the end).
   *"Bandwidth is pure loss"* holds in the valve's own coordinate; beside a wall-moving lever, read in

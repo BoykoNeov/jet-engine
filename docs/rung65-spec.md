@@ -89,6 +89,11 @@ The `τ → 0` arm of the reduce is measured rather than asserted: `dev` = max |
 
 Reader: `LaggedBleedTransient.bandwidth_ceiling`.
 
+> **EXPLAINED and BOUNDED 2026-10-15 by rung 88** (`docs/rung88-spec.md`): the bleed column is an identity,
+> `∫(b − b_cmd) = τ·(b(0) − b(end))` — the closing tail is `τ·b_cmd(0)` plus a small drift. And "pure loss"
+> holds in the valve's OWN coordinate: beside the stator schedule, read in incidence, a slow `φ` valve holds
+> the same margin with less air than an instant one.
+
 ---
 
 ## 2. RUNG 64 § 4's DESTROYED ARGMIN, RESTORED

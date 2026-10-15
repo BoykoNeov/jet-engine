@@ -36,6 +36,10 @@ never beside the stator SCHEDULE.
 > that opens late saturates BELOW the full-open march's ceiling. H5 is the result least implied by the
 > construction.
 
+> **BOUNDED 2026-10-15 by rung 88** (`docs/rung88-spec.md`): the PRICE comparison (H1/H2) is a property of
+> an INSTANT valve. Given rung 65's lag and re-tuned to the same margin, the `φ` valve is the cheaper one by
+> `τ` 0.1 in all 19 cells.
+
 ## 1. What it adds
 
 **The device (anchor § 1).** Rung 64's law with ONE thing changed — the wall it watches: hold

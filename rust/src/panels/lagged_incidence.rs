@@ -73,7 +73,7 @@ pub fn lagged_incidence_table(p: &mut Printer, d: &Design) {
     p.print("\n  ratio = phi valve's bleed / incidence valve's; dF = phi's thrust integral minus incidence's.");
     p.print("  Instant, the incidence valve is the cheaper one (rung 87). Slow enough, the order REVERSES:");
     p.print("  the incidence valve waits until the margin is needed and then must open fast, so a lag costs");
-    p.print("  it protection it has to buy back; the phi valve opens early -- the stators lower phi from the");
-    p.print("  start -- and that head start absorbs the lag. Where the crossover sits in tau is a measurement");
+    p.print("  it protection it has to buy back; the phi valve holds incidence margin it does not need, and");
+    p.print("  that surplus absorbs the lag. Where the crossover sits in tau is a measurement");
     p.print("  on this rig's own time scale, not a statement about real valves.");
 }
