@@ -53,6 +53,11 @@ fn main() {
             format!("endpoint off-map: lever {} | {gen} {by} | runs with generator off: {runs_off} | page names the load: {named}",
                     if lever_none { "none" } else { "on" })
         } else { key };
+        if key == "stop other" {
+            let s = turbojet::sandbox::call(&req);
+            let j = Json::parse(&s);
+            if let Some(st) = j.get("stop") { eprintln!("OTHER {}", st.get("message").map(|m| m.dump_compact()).unwrap_or_default()); }
+        }
         *tally.entry(key.clone()).or_default() += 1;
         ex.entry(key).or_insert(req);
     }

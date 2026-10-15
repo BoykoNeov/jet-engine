@@ -80,7 +80,11 @@ the fuel path); an unmarked closure carries `offtake: None`. The design run is u
 **Plant gate**: the transient equilibrium equals the steady match to 1e−9 (speeds, flow
 coefficients, pressure ratios, the HP turbine point, `Tt3`, burner and face flow, thrust, and both
 load shares) for HP and LP × share and power × every lower path (rung 57's, rung 62's bled, rung
-90's share and amount, rung 91's) at 1400 and 1000 K — 40 points. Both shaft balances close on the
+90's share and amount, rung 91's) at 1400 and 1000 K — 40 points. **The fuel-metered path** (the one
+the sandbox marches, which the plant gate's `Tt4`-pinned solve never enters) carries the load too: at the
+loaded equilibrium's speeds and fuel, rung 43's fuel closure lands at rest at 1200 K through rung 92's
+cells, for both shafts and modes on rung 57's, rung 62's bled and rung 90's paths — and the same fuel
+on the unloaded engine is visibly not at rest. Both shaft balances close on the
 rebuilt stations with the load booked; the power mode delivers `w · P_ref`. No oracle, no CLI golden
 and no earlier rung's gate moved.
 

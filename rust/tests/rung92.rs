@@ -559,3 +559,31 @@ fn b2_miss_a_fast_slam_reverses_the_lp_generators_hp_relief() {
     assert!(slow_l.1 > slow_n.1, "slow slam: the LP load raises min phi_HP ({} vs {})", slow_l.1, slow_n.1);
     assert!(fast_l.1 < fast_n.1, "fast slam: the LP load lowers min phi_HP ({} vs {})", fast_l.1, fast_n.1);
 }
+
+/// THE FUEL-METERED PATH carries the load (the path the sandbox marches): at the loaded equilibrium's
+/// own speeds and fuel, rung 43's fuel closure lands on the same state — both shaft rates ≈ 0 and the
+/// burner at 1200 K — through rung 92's cells. A dropped load would leave `Φ̇_H` ≈ 0.02, orders above
+/// the bar. HP and LP × power and share × rung 57's path and rung 62's bled path, and rung 90's.
+#[test]
+fn the_fuel_metered_path_carries_the_load() {
+    for so in [HP_POWER, LP_POWER, HP_SHARE, LP_SHARE] {
+        for (cb, b) in [(None, 0.0), (None, 0.05), (Some(CustomerBleed::amount(0.05)), 0.0)] {
+            let arm = if b == 0.0 { LeverArm::default() } else { LeverArm::constant(b) };
+            let m = machine(cb, None, Some(so), &arm);
+            let eq = m.fuel.inner.equilibrium(&flight(), 1200.0);
+            let mf = m.fuel.fuel_for_tt4(&flight(), 1200.0);
+            shaft_offtake::reset_counts();
+            let i = m.fuel.instant_fuel(&flight(), eq.nu_lp, eq.nu_hp, mf);
+            let c = shaft_offtake::counts();
+            assert!(c[3] > 0 && c[5] > 0, "{so:?} {cb:?} b={b}: the fuel path must run rung 92's cells: {c:?}");
+            assert!(i.base.close.offtake == Some(so), "{so:?}: the fuel closure is marked");
+            assert!(i.base.phi_lp_dot.abs() < 1e-7 && i.base.phi_hp_dot.abs() < 1e-7,
+                    "{so:?} {cb:?} b={b}: rates ({}, {}) at the loaded equilibrium", i.base.phi_lp_dot, i.base.phi_hp_dot);
+            assert!((i.base.tt4 / 1200.0 - 1.0).abs() < 1e-7, "{so:?} {cb:?} b={b}: Tt4 {}", i.base.tt4);
+            // and the same fuel on the UNLOADED engine is NOT at rest — the check is not vacuous
+            let bare = machine(cb, None, None, &arm).fuel.instant_fuel(&flight(), eq.nu_lp, eq.nu_hp, mf);
+            assert!(bare.base.phi_lp_dot.abs().max(bare.base.phi_hp_dot.abs()) > 1e-4,
+                    "{so:?} {cb:?} b={b}: unloaded rates ({}, {})", bare.base.phi_lp_dot, bare.base.phi_hp_dot);
+        }
+    }
+}

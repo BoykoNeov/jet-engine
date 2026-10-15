@@ -1430,5 +1430,9 @@ Controls view, under the turbine cooling (part of the engine, not a lever).
   no panic — 523 complete, 419 refused before the run (72 an endpoint a customer amount starves, 129 an endpoint with
   no steady point: 79 of them named on the load — 76 that run with the generator off, 3 whose OTHER endpoint fails
   unloaded — and 50 that fail unloaded too, not blamed on it), 58 stopped with a reason (46 floor unreachable, 5 lean,
-  4 rich, 2 other — the redline set below the run's own temperature, rung 46's refusal — 1 cause unknown on the
-  governor-lag route). No run stopped mid-march on the generator itself.
+  4 rich, 2 other — both replayed: rung 46's refusal, the redline below the lowest burner temperature the flow
+  allows at that speed — 1 cause unknown on the governor-lag route). No run stopped mid-march on the generator itself.
+- **A flaky check, not this rung's:** `browser.mjs`'s `chrome_left_nothing_running` failed in 2 of 4 runs on
+  2026-10-15 (once in the full gate, once standalone just after it): a Chrome helper of the run outlived the 15 s
+  wait, then exited on its own (none left a minute later). Its bar was NOT raised; a rerun passed. If it recurs,
+  log which helper type lingers (`--type=`) before changing the wait.
