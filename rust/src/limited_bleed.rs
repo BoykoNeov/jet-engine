@@ -70,6 +70,10 @@ pub struct BleedLimiter {
     /// **not** `Some(0.0)`; Python's own assert says so and rung 65's finding is that the
     /// difference does not vanish as `tau -> 0`.
     pub tau: Option<f64>,
+    /// RUNG 89: the CLOSING time constant, where it differs. `tau` is then the OPENING one (the
+    /// lag while the command is above the position); `None` closes at `tau` too — rung 65's
+    /// symmetric valve, bit for bit. Set only through [`closing`](Self::closing), on a lagged valve.
+    pub tau_close: Option<f64>,
     /// RUNG 87: the wall the valve watches. [`ValveReference::Phi`] IS rung 64's valve. It lives
     /// HERE, on the floor, rather than beside it, so every sibling constructor that carries the
     /// floor carries its reference too — rung 87's G1 found the sibling trap live and silent.
@@ -107,7 +111,33 @@ impl BleedLimiter {
                 "rung-65 tau is a time constant on the march coordinate; the INSTANTANEOUS valve \
                  is rung 64 (tau=None), not tau=0. The two are different objects and rung 65's \
                  finding is that the difference does not vanish as tau -> 0; got tau = {tau:?}");
-        BleedLimiter { phi_lim, b_max, tau, reference: ValveReference::Phi }
+        BleedLimiter { phi_lim, b_max, tau, tau_close: None, reference: ValveReference::Phi }
+    }
+
+    /// RUNG 89. The same lagged valve CLOSING at its own time constant; `tau` becomes the opening
+    /// one. `closing(tau)` is the symmetric valve through the switching code (a reduce gate).
+    pub fn closing(self, tau_close: f64) -> Self {
+        assert!(self.tau.is_some(),
+                "rung-89: a closing time constant needs a LAGGED valve -- the instantaneous valve \
+                 (rung 64, tau=None) has no edges to tell apart");
+        assert!(tau_close > 0.0,
+                "rung-89 tau_close is a time constant on the march coordinate; got {tau_close}");
+        BleedLimiter { tau_close: Some(tau_close), ..self }
+    }
+
+    /// RUNG 89. The lag's rate law `db/ds = (b_cmd − b)/τ`, with `τ` the OPENING constant while
+    /// the command is at or above the position and the CLOSING one below it. With `tau_close`
+    /// `None` both are `tau` — rung 65's `(cmd − q)/tau`, operation for operation. Panics on an
+    /// unlagged valve.
+    pub fn lag_rate(&self, cmd: f64, q: f64) -> f64 {
+        let tau = self.tau.expect("rung-65's rate law on an unlagged valve");
+        let t = if cmd < q { self.tau_close.unwrap_or(tau) } else { tau };
+        (cmd - q) / t
+    }
+
+    /// RUNG 89. The smaller of the two time constants — the one RK4's stability bound reads.
+    pub fn tau_min(&self) -> Option<f64> {
+        self.tau.map(|t| self.tau_close.map_or(t, |c| t.min(c)))
     }
 
     /// RUNG 87. The same valve watching the rotor INCIDENCE, its set point unchanged at `v = 0`.
@@ -157,9 +187,13 @@ impl BleedLimiter {
     ///
     /// **RUNG 88: it keeps the REFERENCE.** Rebuilding through `with_tau` reset it to `φ` — a lagged
     /// incidence valve came back a `φ` valve, silently (the sibling trap, inside the device).
+    ///
+    /// **RUNG 89: and the CLOSING constant** — re-lagging an asymmetric valve sets its opening
+    /// constant and leaves the closing one where it was, so it reaches the refusal in
+    /// [`r64_solve_b`] instead of coming back symmetric.
     pub fn lagged(&self, tau: f64) -> Self {
         let l = Self::with_tau(self.phi_lim, self.b_max, Some(tau));
-        BleedLimiter { reference: self.reference, ..l }
+        BleedLimiter { reference: self.reference, tau_close: self.tau_close, ..l }
     }
 }
 
@@ -328,6 +362,11 @@ where
     assert!(lim.reference == ValveReference::Phi,
             "rung-87: an INCIDENCE valve reached a reader that solves it as a phi valve; only \
              rung 64's own close/close_fuel/b_at_point cells take the incidence target");
+    // RUNG 89: the same readers march a SYMMETRIC lag (`/tau`), so an asymmetric valve is refused
+    // here rather than silently closed at its opening speed.
+    assert!(lim.tau_close.is_none(),
+            "rung-89: an ASYMMETRIC valve (tau_close set) reached a reader that marches one time \
+             constant; only rung 65's march reads both edges");
     r64_solve_b_at(lim, lim.phi_lim, closer)
 }
 

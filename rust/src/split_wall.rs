@@ -247,8 +247,13 @@ fn r80_shared_rig(
              floor again and this is rungs 49-79 with an extra float.");
     let cmap = core.arming().map_lp_design;
     if let Some(bl) = m.fuel.inner.lever.lim {
-        m.fuel.inner.lever.lim =
-            Some(BleedLimiter::from_margin_tau(&cmap, bl.b_max, sm_air, bl.tau));
+        // Rungs 88/89: the reference and the closing constant ride along too, so a valve rung 79's
+        // rig did not build reaches `r64_solve_b`'s refusals instead of coming back a symmetric
+        // `φ` valve (on every rig-built valve both are the defaults, so nothing moves).
+        m.fuel.inner.lever.lim = Some(BleedLimiter {
+            reference: bl.reference, tau_close: bl.tau_close,
+            ..BleedLimiter::from_margin_tau(&cmap, bl.b_max, sm_air, bl.tau)
+        });
     }
     if let Some(sl) = m.fuel.inner.stator.lim {
         m.fuel.inner.stator.lim = Some(StatorLimiter::from_margin(&cmap, sl.v_max, sm_air, sl.tau));

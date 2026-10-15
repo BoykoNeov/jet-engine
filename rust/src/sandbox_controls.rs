@@ -760,7 +760,6 @@ fn der_valve_lag(sv: &ControlsSolver, a: f64, h: f64, q: f64, s: f64) -> Result<
     let fl = &sv.flight;
     let lim = sv.limiters();
     let floor = lim.floor();
-    let tau = ft.inner.lever.lim.and_then(|l| l.tau).expect("the slow-valve route's valve has its lag");
     let mf_sched = sv.settings.schedule(sv.mf_lo, sv.mf_hi)(s);
     let (mf, inst) = 'cut: {
         let _st = MarchedBleed::set(&ft.inner, q);
@@ -801,7 +800,9 @@ fn der_valve_lag(sv: &ControlsSolver, a: f64, h: f64, q: f64, s: f64) -> Result<
         (mf, i)
     };
     let cmd = valve_command(sv, a, h, mf).map_err(|f| Failure { s, ..f })?;
-    Ok((inst.base.phi_lp_dot / ft.rho(), inst.base.phi_hp_dot, (cmd - q) / tau))
+    // Rung 89: the edge's own time constant — `(cmd - q) / tau` on a symmetric valve.
+    let vl = ft.inner.lever.lim.expect("the slow-valve route's valve has its lag");
+    Ok((inst.base.phi_lp_dot / ft.rho(), inst.base.phi_hp_dot, vl.lag_rate(cmd, q)))
 }
 
 /// The slow valve's command at a state and fuel — the march's own `command` (rung 64's root against the

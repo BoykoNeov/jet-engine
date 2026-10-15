@@ -80,6 +80,15 @@ thread_local! {
     static STATOR_B0_SET: Cell<u64> = const { Cell::new(0) };
     static CMD_CALLS: Cell<u64> = const { Cell::new(0) };
     static CLAMP_HITS: Cell<u64> = const { Cell::new(0) };
+    /// RUNG 89: the earliest march coordinate `s` at which a derivative evaluation (any RK4 stage)
+    /// found the command BELOW the position — where the closing constant is first read. `+∞` if
+    /// never. Read on a symmetric valve, it is where an asymmetric one would first depart.
+    static FIRST_CLOSE: Cell<f64> = const { Cell::new(f64::INFINITY) };
+}
+
+/// RUNG 89: [`FIRST_CLOSE`] since the last [`Census65::reset`].
+pub fn first_closing_read() -> f64 {
+    FIRST_CLOSE.with(Cell::get)
 }
 
 fn bump(c: &'static std::thread::LocalKey<Cell<u64>>) {
@@ -138,6 +147,7 @@ impl Census65 {
                   &CLAMP_HITS] {
             c.with(|x| x.set(0));
         }
+        FIRST_CLOSE.with(|x| x.set(f64::INFINITY));
     }
 }
 
@@ -345,7 +355,9 @@ pub fn r65_integrate_fuel_valve_lag(
     accel: Option<&AccelSchedule>, surge: Option<&Floor>, below_ceiling: bool,
 ) -> Vec<FuelPoint> {
     let lim = ft.inner.lever.lim.expect("r65 march on an unfloored machine");
-    let tau = lim.tau.expect("r65 march on an unlagged machine");
+    // RUNG 89: the bound reads the SMALLER of the two edges' constants (`tau` itself when the
+    // valve is symmetric, so the assert and its message are rung 65's to the bit).
+    let tau = lim.tau_min().expect("r65 march on an unlagged machine");
     // THE MODELLING FLOOR, found rather than assumed. `db/ds = (b_cmd - b)/tau` under an EXPLICIT
     // RK4 needs `z = ds/tau` inside the stability region (|z| <~ 2.78 on the negative real axis).
     // A first pre-check of this rung ran z = 5 and returned an `int b ds` 4.4x the grid-converged
@@ -421,7 +433,11 @@ pub fn r65_integrate_fuel_valve_lag(
         let cmd = command(a, h, mf)?;
         let da = if freeze == Some(Spool::Lp) { 0.0 } else { inst.base.phi_lp_dot / ft.rho() };
         let dh = if freeze == Some(Spool::Hp) { 0.0 } else { inst.base.phi_hp_dot };
-        Ok((da, dh, (cmd - q) / tau, mf, inst, cmd))
+        // RUNG 89: `lag_rate` picks the edge's constant — `(cmd - q) / tau` when symmetric.
+        if cmd < q {
+            FIRST_CLOSE.with(|x| if s < x.get() { x.set(s) });
+        }
+        Ok((da, dh, lim.lag_rate(cmd, q), mf, inst, cmd))
     };
 
     let (mut a, mut h) = nu0;

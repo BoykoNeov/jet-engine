@@ -68,7 +68,16 @@ pub struct LagRead {
     pub int_b: f64,
     pub int_b_cmd: f64,
     /// `(∫b − ∫b_cmd) − τ·(b0 − b_end)`: D1's residual — the trapezoid's error where `clamp_hits` = 0.
+    /// RUNG 89, on an asymmetric valve: `∫(b − b_cmd)·τ/τ(s) − τ·(b0 − b_end)`, `τ` the OPENING
+    /// constant and `τ(s)` the edge's own (the closing one where `b > b_cmd`) — the same identity,
+    /// `∫(b − b_cmd)/τ(s) = b0 − b_end`, in the same units; on a symmetric valve `τ/τ(s)` is `1.0`
+    /// and the residual is rung 88's to the bit.
     pub identity_residual: f64,
+    /// RUNG 89: the recorded position's total OPENING travel `U` (the sum of its rises) and total
+    /// CLOSING travel `D` (of its falls), so `b_end − b0 = U − D`. Integrating the rate law edge by
+    /// edge, `∫(b − b_cmd) = τ_close·D − τ_open·U` (continuous; the clamp breaks it).
+    pub rise: f64,
+    pub fall: f64,
     /// Times the position clamp bit during the march (D1's precondition: zero).
     pub clamp_hits: u64,
     /// Whether the command was RISING across the grid-min `M_i` point (H4): `b_cmd` at its later
@@ -79,37 +88,57 @@ pub struct LagRead {
 /// March a LAGGED machine and read it. Panics if the machine's valve has no lag.
 pub fn run_lagged(m: &ScheduledStatorCore, flight: &FlightCondition, ramp: &Ramp)
     -> (Vec<FuelPoint>, LagRead) {
-    let tau = m.fuel.inner.lever.lim.and_then(|l| l.tau)
-        .expect("rung-88 run_lagged needs a machine carrying a LAGGED valve");
+    assert!(m.fuel.inner.lever.lim.is_some_and(|l| l.tau.is_some()),
+            "rung-88 run_lagged needs a machine carrying a LAGGED valve");
     Census65::reset();
     let (traj, _) = march(m, flight, ramp, None);
     let clamp_hits = Census65::take().clamp_hits;
-    let r = lag_read(m, flight, &traj, tau, clamp_hits);
+    let r = lag_read(m, flight, &traj, clamp_hits);
     (traj, r)
 }
 
-/// Read a lagged march already made (`clamp_hits` as counted around it).
-pub fn lag_read(m: &ScheduledStatorCore, flight: &FlightCondition, traj: &[FuelPoint], tau: f64,
+/// Read a lagged march already made (`clamp_hits` as counted around it). The time constants are the
+/// machine's own valve's (rung 89: both edges').
+pub fn lag_read(m: &ScheduledStatorCore, flight: &FlightCondition, traj: &[FuelPoint],
                 clamp_hits: u64) -> LagRead {
+    let lim = m.fuel.inner.lever.lim.expect("rung-88 lag_read needs a machine carrying a valve");
+    let tau = lim.tau.expect("rung-88 lag_read needs a LAGGED valve");
+    let tau_close = lim.tau_close.unwrap_or(tau);
     let run = read(m, flight, traj);
     let nan = f64::NAN;
     if traj.is_empty() {
         return LagRead { run, b0: nan, b_end: nan, int_b: nan, int_b_cmd: nan,
-                         identity_residual: nan, clamp_hits, cmd_rising_at_m_i: None };
+                         identity_residual: nan, rise: nan, fall: nan, clamp_hits,
+                         cmd_rising_at_m_i: None };
     }
     let n = traj.len();
     let (b0, _) = valve_at(&traj[0]);
     let (b_end, _) = valve_at(&traj[n - 1]);
     let int_b = trapz(traj, n, |p| valve_at(p).0);
     let int_b_cmd = trapz(traj, n, |p| valve_at(p).1);
+    // `τ/τ(s)`: exactly 1.0 on a symmetric valve (and on the opening edge), so rung 88's bits.
+    let int_lag = trapz(traj, n, |p| {
+        let (b, c) = valve_at(p);
+        let w = if c < b { tau / tau_close } else { 1.0 };
+        (b - c) * w
+    });
+    let (mut rise, mut fall) = (0.0, 0.0);
+    for w in traj.windows(2) {
+        let d = valve_at(&w[1]).0 - valve_at(&w[0]).0;
+        if d > 0.0 { rise += d } else { fall -= d }
+    }
     let j = traj.iter().position(|p| p.s == run.s_at_m_i).expect("the M_i point is a march point");
     let cmd_rising_at_m_i = if j > 0 && j + 1 < n {
         Some(valve_at(&traj[j + 1]).1 > valve_at(&traj[j - 1]).1)
     } else {
         None
     };
-    LagRead { run, b0, b_end, int_b, int_b_cmd,
-              identity_residual: (int_b - int_b_cmd) - tau * (b0 - b_end), clamp_hits,
+    let identity_residual = if lim.tau_close.is_none() {
+        (int_b - int_b_cmd) - tau * (b0 - b_end)
+    } else {
+        int_lag - tau * (b0 - b_end)
+    };
+    LagRead { run, b0, b_end, int_b, int_b_cmd, identity_residual, rise, fall, clamp_hits,
               cmd_rising_at_m_i }
 }
 
@@ -138,6 +167,16 @@ pub fn matched_lagged(
         let v = BleedLimiter::with_tau(phi_lim, b_max, tau);
         match reference { ValveReference::Phi => v, ValveReference::Incidence => v.on_incidence() }
     };
+    matched_with(bare, flight, ramp, stator, valve, m_target, tol_phi)
+}
+
+/// [`matched_lagged`]'s solve for ANY valve family `valve(φ_lim)` — rung 89 passes one with its own
+/// closing constant. Illinois over `φ_lim` between the shut run's `min φ` and 1.5 until the run-minimum
+/// `M_i` equals `m_target`; `None` where those do not bracket.
+pub fn matched_with(
+    bare: &ScheduledStatorCore, flight: &FlightCondition, ramp: &Ramp, stator: Option<&LeverArm>,
+    valve: impl Fn(f64) -> BleedLimiter, m_target: f64, tol_phi: f64,
+) -> Option<(f64, Vec<FuelPoint>, ValveRun)> {
     let mk = |phi_lim: f64| sibling(bare, stator, Some(valve(phi_lim)));
     let at = |phi_lim: f64| -> (Vec<FuelPoint>, ValveRun) {
         let m = mk(phi_lim);
