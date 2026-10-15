@@ -351,7 +351,28 @@ try {
   check('a_run_starved_at_once_is_a_result', z && z.stop && z.s.length < 3 && zText.length > 0
         && !(await ev(`document.getElementById('bad').classList.contains('show')`)), JSON.stringify([z && z.stop, z && z.s.length, zText.slice(0, 160)]));
   if (process.env.SANDBOX_SHOTS) { await shot('controls-starved'); }
-  await ev(`window.sandbox.controls({lever: 'none', floor_on: 0, floor_phi: 0.75}).then(r => r.run)`);
+  // Rung 87: the CONTROLLED valve, through its own buttons. Beside the stators, watching blade incidence, it
+  // opens on its own and holds a target that moves with them (drawn on the LP flow-coefficient chart); beside
+  // a stall floor watching the flow coefficient the run starves, and matched to an incidence floor it runs on.
+  await ev(`window.sandbox.controls({lever: 'both', floor_on: 0, floor_phi: 0.78}).then(r => r.run)`);
+  await ev(`document.getElementById('ctl-bmode-valve').click()`);
+  const vOn = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.bleed_mode === 'valve'`, 30000);
+  await ev(`document.getElementById('ctl-vref-inc').click()`);
+  const vInc = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.valve_ref === 'incidence'`, 30000);
+  const vr = await ev(`(() => { const r = window.sandbox.last; return [Math.max(...r.bleed), Math.min(...r.valve), r.controls.valve_phi, r.stop === null]; })()`);
+  const vVis = await ev(`['ctl-valve-box','ctl-bsched-box'].map(i => document.getElementById(i).hidden)`);
+  await ev(`document.getElementById('ctlq-phi_lp').click()`);
+  const vLine = await ev(`document.querySelectorAll('#ctl-chart .valvel').length`);
+  check('the_controlled_valve_opens_on_its_own_and_its_incidence_target_moves', vOn && vInc && vr[0] > 0 && vr[1] < vr[2] && vr[3]
+        && JSON.stringify(vVis) === '[false,true]' && vLine > 0, JSON.stringify([vOn, vInc, vr, vVis, vLine]));
+  if (process.env.SANDBOX_SHOTS) { await shot('controls-valve'); }
+  const mm = await ev(`window.sandbox.controls({floor_on: 1, floor_ref: 'phi'}).then(r => r.run)`);
+  const mt = await ev(`window.sandbox.controls({floor_ref: 'incidence', floor_phi: 0.77}).then(r => r.run)`);
+  check('a_valve_and_a_floor_watching_different_things_starve_the_run', mm && mm.stop && mm.stop.kind === 'floor_unreachable'
+        && mt && !mt.stop && mt.s.length === mt.expected_points, JSON.stringify([mm && mm.stop, mt && mt.stop]));
+  await ev(`document.getElementById('ctlq-Tt4').click()`);
+  await ev(`window.sandbox.controls({lever: 'none', floor_on: 0, floor_phi: 0.75, floor_ref: 'phi', bleed_mode: 'schedule',
+            valve_ref: 'phi'}).then(r => r.run)`);
   if (process.env.SANDBOX_SHOTS) {
     await ev(`window.sandbox.controls({settle: 2, ramp: 0.5, lever: 'bleed'})`);
     await shot('controls-light'); await shot('controls-dark', 1280, true); await shot('controls-phone', 390);

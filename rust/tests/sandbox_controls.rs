@@ -14,6 +14,7 @@ use turbojet::bleed_transient::{build_scheduled_bleed, BleedSchedule, LeverArm};
 use turbojet::engine::FlightCondition;
 use turbojet::fuel_transient::{AsymmetricLag, FuelLimiters, FuelPoint, FuelTransientCore, PointExtra, SurgeLimiter};
 use turbojet::gas::{Gas, GasSpec};
+use turbojet::limited_bleed::{build_limited_bleed, BleedLimiter};
 use turbojet::map::ComponentMap;
 use turbojet::sandbox::call;
 use turbojet::sandbox_controls::*;
@@ -25,6 +26,8 @@ use turbojet::visuals::Json;
 fn flight() -> FlightCondition { FlightCondition::new(250.0, 50_000.0, 0.85) }
 
 /// `tests/rung62.rs`'s rig: the perfect gas with `R` derived, `π_LPC` 3 × `π_HPC` 6, `Tt4` 1500.
+/// With a CONTROLLED valve the machine is rung 64's (rung 62's builder drops the valve silently —
+/// rung 87's G1); otherwise rung 62's, as before.
 fn machine(lp: ComponentMap, hp: ComponentMap, rho: f64, arm: &LeverArm) -> ScheduledStatorCore {
     let (gc, cc, gt, ct) = (1.4f64, 1004.0f64, 1.3f64, 1239.0f64);
     let gas = Gas::new(GasSpec { gamma_c: gc, cp_c: cc, r_c: (gc - 1.0) / gc * cc, gamma_t: gt, cp_t: ct,
@@ -32,7 +35,12 @@ fn machine(lp: ComponentMap, hp: ComponentMap, rho: f64, arm: &LeverArm) -> Sche
     let losses = TwoSpoolLosses { pi_d: 0.97, eta_lpc: 0.90, eta_hpc: 0.88, eta_b: 0.99, pi_b: 0.96, eta_hpt: 0.92,
                                   eta_lpt: 0.90, eta_m: 0.99, pi_n: 0.98, p_exit: None, nozzle_convergent: true };
     let design = build_two_spool_turbojet(gas, 3.0, 6.0, 1500.0, 50_000.0, losses);
-    match build_scheduled_bleed(design, flight(), 1.0, Some(lp), Some(hp), rho, arm) {
+    let built = if arm.bleed_lim.is_some() {
+        build_limited_bleed(design, flight(), 1.0, Some(lp), Some(hp), rho, arm)
+    } else {
+        build_scheduled_bleed(design, flight(), 1.0, Some(lp), Some(hp), rho, arm)
+    };
+    match built {
         ScheduledStatorTransient::Full(c) => c,
         ScheduledStatorTransient::Degenerate(_) => unreachable!(),
     }
@@ -57,7 +65,13 @@ fn direct(s: &ControlsSettings) -> Vec<FuelPoint> {
         let sch = StatorSchedule::new(s.v_max, s.v_n_lo);
         LeverArm::stator(if s.stator_spool == Spool::Lp { StatorArm::scheduled_lp(sch) } else { StatorArm::scheduled_hp(sch) })
     };
-    let bleed = || LeverArm::scheduled(BleedSchedule::new(s.b_max, s.b_n_lo));
+    let bleed = || match s.bleed_mode {
+        BleedMode::Schedule => LeverArm::scheduled(BleedSchedule::new(s.b_max, s.b_n_lo)),
+        BleedMode::Valve => {
+            let v = BleedLimiter::new(s.valve_phi, s.b_max);
+            LeverArm::floored(if s.valve_ref == FloorRef::Incidence { v.on_incidence() } else { v })
+        }
+    };
     let arm = match s.lever {
         LeverChoice::None => LeverArm::default(),
         LeverChoice::Stator => stator(),
@@ -119,9 +133,29 @@ fn binding_cases() -> Vec<(&'static str, ControlsSettings)> {
     ]
 }
 
+/// Rung 87: the controlled valve (rung 64's), on its own or with the stators, watching either wall —
+/// cases that need not cut the fuel, so they ride every replay gate but not the binding one.
+fn valve_cases() -> Vec<(&'static str, ControlsSettings)> {
+    let d = ControlsSettings::defaults();
+    let v = ControlsSettings { bleed_mode: BleedMode::Valve, ..d };
+    vec![
+        ("valve, phi", ControlsSettings { lever: LeverChoice::Bleed, ..v }),
+        ("valve, phi, stators", ControlsSettings { lever: LeverChoice::Both, ..v }),
+        ("valve, incidence, stators", ControlsSettings { lever: LeverChoice::Both, valve_ref: FloorRef::Incidence, ..v }),
+        ("valve, incidence, stators, incidence floor", ControlsSettings { lever: LeverChoice::Both, valve_ref: FloorRef::Incidence,
+                                                                         floor_on: true, floor_phi: 0.77,
+                                                                         floor_ref: FloorRef::Incidence, ..v }),
+        ("valve, phi, accel + release", ControlsSettings { lever: LeverChoice::Bleed, accel_on: true, release_on: true, ..v }),
+    ]
+}
+
+fn all_cases() -> Vec<(&'static str, ControlsSettings)> {
+    binding_cases().into_iter().chain(valve_cases()).collect()
+}
+
 #[test]
 fn every_run_is_the_models_own_march_bit_for_bit() {
-    for (name, s) in binding_cases() {
+    for (name, s) in all_cases() {
         let (_, o) = controls(&s).unwrap_or_else(|e| panic!("{name}: {}", e.0));
         let d = direct(&s);
         assert_eq!(o.points.len(), d.len(), "{name}: trajectory length");
@@ -186,7 +220,7 @@ fn the_accel_table_is_the_models_accel_schedule_bit_for_bit() {
 
 #[test]
 fn the_reread_reproduces_every_recorded_point() {
-    for (name, s) in binding_cases() {
+    for (name, s) in all_cases() {
         let (sv, o) = controls(&s).unwrap();
         for p in &o.points {
             let i = sv.reread(p).unwrap();
@@ -202,7 +236,7 @@ fn the_stop_rerun_reproduces_the_marchs_own_steps() {
     // Every step of a complete march, re-run from its recorded point, lands on the next point bit for
     // bit — the plain route with each limiter and lever, and rung 52's lagged route with its state.
     let mut routes = (0, 0);
-    for (name, s) in binding_cases() {
+    for (name, s) in all_cases() {
         let (sv, o) = controls(&s).unwrap();
         match sv.route() {
             Route::GovLag => { assert!(replay_step(&sv, &o.points[0]).is_none(), "{name}: no re-run on that route"); continue; }
@@ -376,6 +410,12 @@ fn each_precheck_fires_on_its_case_and_only_on_it() {
     refused(ControlsSettings { lever: LeverChoice::Stator, v_n_lo: 1.0, ..ok }, "below 1");
     refused(ControlsSettings { lever: LeverChoice::Bleed, b_n_lo: 1.0, ..ok }, "below 1");
     refused(ControlsSettings { lever: LeverChoice::Bleed, b_max: 0.5, ..ok }, "starves the core");
+    let valve = ControlsSettings { lever: LeverChoice::Bleed, bleed_mode: BleedMode::Valve, ..ok };
+    refused(ControlsSettings { b_max: 0.0, ..valve }, "cannot open");
+    refused(ControlsSettings { valve_phi: 0.0, ..valve }, "above zero");
+    assert!(controls_precheck(&ControlsSettings { b_n_lo: 1.0, ..valve }).is_ok(), "the valve does not read the schedule");
+    assert!(controls_precheck(&ControlsSettings { lever: LeverChoice::Bleed, valve_phi: 0.0, ..ok }).is_ok(),
+            "the schedule does not read the valve");
     // ...and each only on its case: switched OFF, the same numbers pass; the slider box passes.
     assert!(controls_precheck(&ControlsSettings { gov_lag: 0.01, tau_att: 0.005, accel_margin: -0.1, floor_phi: 0.0,
                                                   v_n_lo: 1.0, b_max: 0.5, ..ok }).is_ok(), "off switches are not read");
@@ -394,7 +434,8 @@ fn settings_round_trip_and_the_entry_point_answers() {
                                redline: 1456.5, gov_lag_on: true, gov_lag: 0.3, accel_on: true, accel_margin: 0.31,
                                floor_on: true, floor_spool: Spool::Hp, floor_phi: 0.81, floor_ref: FloorRef::Incidence,
                                release_on: true, tau_att: 0.03, tau_rel: 0.4, lever: LeverChoice::Bleed,
-                               stator_spool: Spool::Hp, v_max: 0.12, v_n_lo: 0.55, b_max: 0.07, b_n_lo: 0.6 };
+                               stator_spool: Spool::Hp, v_max: 0.12, v_n_lo: 0.55, b_max: 0.07, b_n_lo: 0.6,
+                               bleed_mode: BleedMode::Valve, valve_phi: 0.77, valve_ref: FloorRef::Incidence };
     let back = ControlsSettings::from_json(&Json::parse(&s.to_json().dump_compact())).unwrap();
     assert_eq!(back, s);
     let d = Json::parse(&call(r#"{"op":"controls_defaults"}"#));
@@ -415,7 +456,7 @@ fn every_column_has_one_value_per_point_at_full_precision() {
     let (sv, o) = controls(&s).unwrap();
     let j = Json::parse(&controls_json(&sv, &o).dump_compact());
     for k in ["s", "nu_lp", "nu_hp", "Tt4", "fuel", "fuel_sched", "far", "phi_lp", "phi_hp", "pi_lpc", "pi_hpc", "thrust",
-              "stall_lp", "stall_hp", "v", "bleed", "floor", "holder", "choked"] {
+              "stall_lp", "stall_hp", "v", "bleed", "floor", "valve", "holder", "choked"] {
         let Some(Json::List(l)) = j.get(k) else { panic!("no column {k}") };
         assert_eq!(l.len(), o.points.len(), "column {k}");
     }
@@ -445,4 +486,43 @@ fn the_stall_line_moves_with_the_stators_and_the_bleed_is_read_per_point() {
     assert!(r0.bleed > 0.0);
     let core_thrust = o.points[0].sp_thrust * o.points[0].mdot_air;
     assert!(r0.thrust < core_thrust, "the dumped air pays its ram drag: {} vs {core_thrust}", r0.thrust);
+}
+
+/// Rung 87 on the page: the valve opens, holds its own target exactly while it rides, and the incidence
+/// valve's target falls below its named flow coefficient wherever the LP stators are closed.
+#[test]
+fn the_valve_holds_its_own_target_and_the_incidence_target_moves_with_the_stators() {
+    for (name, s) in valve_cases() {
+        let (sv, o) = controls(&s).unwrap();
+        let reads: Vec<_> = o.points.iter().map(|p| sv.read(p).unwrap()).collect();
+        let riding: Vec<usize> = (0..reads.len()).filter(|&k| reads[k].bleed > 0.0 && reads[k].bleed < s.b_max).collect();
+        assert!(!riding.is_empty(), "{name}: the valve opens somewhere");
+        for &k in &riding {
+            let t = reads[k].valve.expect("a valve-on run reads its target");
+            assert!((o.points[k].phi_lp - t).abs() < 1e-11, "{name}: holds its target at s={}", o.points[k].s);
+        }
+        let closed = reads.iter().any(|r| r.v > 0.0);
+        let below = reads.iter().any(|r| r.valve.unwrap() < s.valve_phi);
+        assert_eq!(below, s.valve_ref == FloorRef::Incidence && s.lever.stator() && closed, "{name}");
+    }
+    let (_, o) = controls(&ControlsSettings::defaults()).unwrap();
+    assert!(o.points.iter().all(|p| p.mf == p.mf_sched), "the schedule mode is untouched");
+}
+
+/// Rung 87 § H5 on the page: the incidence valve beside a stall floor read as a FLOW COEFFICIENT, the
+/// stators on — the valve lets the flow coefficient fall, the floor cuts the fuel and the run stops; the
+/// same floor reading incidence runs to the end.
+#[test]
+fn mismatched_references_starve_the_engine_and_matched_ones_run() {
+    let s = ControlsSettings { lever: LeverChoice::Both, bleed_mode: BleedMode::Valve, valve_ref: FloorRef::Incidence,
+                               floor_on: true, floor_phi: 0.78, ..ControlsSettings::defaults() };
+    let (sv, o) = controls(&s).unwrap();
+    assert!(o.stop.is_some(), "the phi floor starves the incidence valve's run");
+    assert_eq!(stop_kind(&sv, &o), StopKind::FloorUnreachable);
+    // Matched, and set just BELOW the valve: the floor never acts (rung 87 D4). At the SAME set point the
+    // two would share one pin in a split decided by rounding (rung 66) — the browser build and the native
+    // one were measured 1e-4 apart there.
+    let (_, o) = controls(&ControlsSettings { floor_ref: FloorRef::Incidence, floor_phi: 0.77, ..s }).unwrap();
+    assert!(o.stop.is_none(), "the matched floor runs to the end");
+    assert!(o.points.iter().all(|p| p.mf == p.mf_sched), "and, below the valve, never cuts the fuel");
 }

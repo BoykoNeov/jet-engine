@@ -11,7 +11,9 @@
 //! (rung 46) and its response lag (47); the acceleration schedule (48); the stall floor (49), read
 //! as a flow coefficient or — with the stators moving — as an incidence (60); the realistic
 //! fast-attack / slow-release lag (52); and the airflow levers: the stator schedule (57), the bleed
-//! schedule (62), or BOTH beside any fuel limiter (rung 86, which measured that plant). The fuel follows a ramp between the two endpoints' steady fuel flows, exactly as
+//! schedule (62), or BOTH beside any fuel limiter (rung 86, which measured that plant); and the bleed valve
+//! either on its schedule or opening on its own to hold a stall margin read as a flow coefficient or as an
+//! incidence (rungs 64 and 87). The fuel follows a ramp between the two endpoints' steady fuel flows, exactly as
 //! rung 57's own march (`r57_stator_march`) spells it, and the limiters cut it.
 //!
 //! **Time is in the HP spool's time constant** (plan § 12.8 Q4); `ρ` is how much slower the LP
@@ -26,6 +28,7 @@
 //! recorded step, bit for bit.
 
 use crate::bleed_transient::{build_scheduled_bleed, BleedSchedule, LeverArm};
+use crate::limited_bleed::{build_limited_bleed, BleedLimiter};
 use crate::blade_speed::shape_maps;
 use crate::engine::FlightCondition;
 use crate::fuel_transient::{r43_cut_below_ceiling, release_weight, AccelSchedule, AsymmetricLag, FuelInstant, FuelLimiters,
@@ -126,6 +129,21 @@ impl FloorRef {
     }
 }
 
+/// How the bleed valve moves: on its speed schedule (rung 62), or on its own, opening just enough to hold
+/// a stall margin on the LP compressor (rung 64's valve; rung 87 gave it the incidence reference).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum BleedMode {
+    Schedule,
+    Valve,
+}
+
+impl BleedMode {
+    pub const ALL: [BleedMode; 2] = [BleedMode::Schedule, BleedMode::Valve];
+    pub fn key(self) -> &'static str {
+        match self { BleedMode::Schedule => "schedule", BleedMode::Valve => "valve" }
+    }
+}
+
 fn spool_key(s: Spool) -> &'static str {
     match s { Spool::Lp => "lp", Spool::Hp => "hp" }
 }
@@ -170,13 +188,18 @@ pub struct ControlsSettings {
     pub v_n_lo: f64,
     pub b_max: f64,
     pub b_n_lo: f64,
+    /// Rungs 64/87: the bleed valve on its schedule or holding a margin; the LP flow coefficient it holds
+    /// (at the design stator setting, as the floor's), and what it watches. `b_max` is its largest opening.
+    pub bleed_mode: BleedMode,
+    pub valve_phi: f64,
+    pub valve_ref: FloorRef,
 }
 
 impl ControlsSettings {
     /// Rung 48/49's ramp — 1000 → 1400 K over half a spool time — every switch off, the numbers each
     /// rung used when it was switched on: redline 1480 K (rungs 46–49), lag 0.2 τ (47), margin 0.25
     /// (48), LP floor 0.75 (49), attack/release 0.02/0.10 τ (52), stator 0.20 below 0.65 and bleed
-    /// 0.10 below 0.65 (62).
+    /// 0.10 below 0.65 (62); the valve, when chosen, holds 0.78 (rung 87's middle set point, `sm` ≈ 0.42).
     pub fn defaults() -> Self {
         ControlsSettings {
             shape: 0, rho: 1.0, from: 1000.0, to: 1400.0, ramp: 0.5, settle: 2.0,
@@ -185,6 +208,7 @@ impl ControlsSettings {
             floor_on: false, floor_spool: Spool::Lp, floor_phi: 0.75, floor_ref: FloorRef::Phi,
             release_on: false, tau_att: 0.02, tau_rel: 0.10,
             lever: LeverChoice::None, stator_spool: Spool::Lp, v_max: 0.20, v_n_lo: 0.65, b_max: 0.10, b_n_lo: 0.65,
+            bleed_mode: BleedMode::Schedule, valve_phi: 0.78, valve_ref: FloorRef::Phi,
         }
     }
 
@@ -208,6 +232,7 @@ impl ControlsSettings {
             "release_on" => b(self.release_on), "tau_att" => self.tau_att, "tau_rel" => self.tau_rel,
             "lever" => self.lever.key(), "stator_spool" => spool_key(self.stator_spool),
             "v_max" => self.v_max, "v_n_lo" => self.v_n_lo, "b_max" => self.b_max, "b_n_lo" => self.b_n_lo,
+            "bleed_mode" => self.bleed_mode.key(), "valve_phi" => self.valve_phi, "valve_ref" => self.valve_ref.key(),
         }
     }
 
@@ -247,7 +272,8 @@ impl ControlsSettings {
                           ("settle", &mut s.settle), ("redline", &mut s.redline), ("gov_lag", &mut s.gov_lag),
                           ("accel_margin", &mut s.accel_margin), ("floor_phi", &mut s.floor_phi),
                           ("tau_att", &mut s.tau_att), ("tau_rel", &mut s.tau_rel), ("v_max", &mut s.v_max),
-                          ("v_n_lo", &mut s.v_n_lo), ("b_max", &mut s.b_max), ("b_n_lo", &mut s.b_n_lo)] {
+                          ("v_n_lo", &mut s.v_n_lo), ("b_max", &mut s.b_max), ("b_n_lo", &mut s.b_n_lo),
+                          ("valve_phi", &mut s.valve_phi)] {
             num(k, into)?;
         }
         for (k, into) in [("redline_on", &mut s.redline_on), ("gov_lag_on", &mut s.gov_lag_on),
@@ -260,6 +286,14 @@ impl ControlsSettings {
         if let Some(t) = text("floor_ref")? {
             s.floor_ref = FloorRef::ALL.into_iter().find(|r| r.key() == t)
                 .ok_or_else(|| format!("unknown floor reference {t:?} (\"phi\" or \"incidence\")"))?;
+        }
+        if let Some(t) = text("bleed_mode")? {
+            s.bleed_mode = BleedMode::ALL.into_iter().find(|m| m.key() == t)
+                .ok_or_else(|| format!("unknown bleed mode {t:?} (\"schedule\" or \"valve\")"))?;
+        }
+        if let Some(t) = text("valve_ref")? {
+            s.valve_ref = FloorRef::ALL.into_iter().find(|r| r.key() == t)
+                .ok_or_else(|| format!("unknown valve reference {t:?} (\"phi\" or \"incidence\")"))?;
         }
         if let Some(t) = text("lever")? {
             s.lever = LeverChoice::ALL.into_iter().find(|l| l.key() == t)
@@ -278,7 +312,10 @@ impl ControlsSettings {
                 Spool::Hp => StatorArm::scheduled_hp(sch),
             })
         };
-        let bleed = || LeverArm::scheduled(BleedSchedule::new(self.b_max, self.b_n_lo));
+        let bleed = || match self.bleed_mode {
+            BleedMode::Schedule => LeverArm::scheduled(BleedSchedule::new(self.b_max, self.b_n_lo)),
+            BleedMode::Valve => LeverArm::floored(self.valve()),
+        };
         match self.lever {
             LeverChoice::None => LeverArm::default(),
             LeverChoice::Stator => stator(),
@@ -286,6 +323,16 @@ impl ControlsSettings {
             LeverChoice::Both => LeverArm::merged(&stator(), &bleed()),
         }
     }
+
+    /// Rung 64's valve as the settings name it: `valve_phi` at the design stator setting, `b_max` its largest
+    /// opening, watching the flow coefficient or (rung 87) the incidence.
+    pub fn valve(&self) -> BleedLimiter {
+        let v = BleedLimiter::new(self.valve_phi, self.b_max);
+        match self.valve_ref { FloorRef::Phi => v, FloorRef::Incidence => v.on_incidence() }
+    }
+
+    /// The bleed is the controlled valve (rung 64's machine is needed: rung 62's drops the valve silently).
+    pub fn valve_on(&self) -> bool { self.lever.bleed() && self.bleed_mode == BleedMode::Valve }
 
     /// The fuel the throttle schedules at march time `s` — rung 57's `_stator_march` ramp, spelled
     /// the same way, between the two endpoints' steady fuel flows.
@@ -302,7 +349,7 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
     let named = [("rho", s.rho), ("from", s.from), ("to", s.to), ("ramp", s.ramp), ("settle", s.settle),
                  ("redline", s.redline), ("gov_lag", s.gov_lag), ("accel_margin", s.accel_margin),
                  ("floor_phi", s.floor_phi), ("tau_att", s.tau_att), ("tau_rel", s.tau_rel), ("v_max", s.v_max),
-                 ("v_n_lo", s.v_n_lo), ("b_max", s.b_max), ("b_n_lo", s.b_n_lo)];
+                 ("v_n_lo", s.v_n_lo), ("b_max", s.b_max), ("b_n_lo", s.b_n_lo), ("valve_phi", s.valve_phi)];
     if let Some((k, _)) = named.iter().find(|(_, v)| !v.is_finite()) {
         return Err(DoesNotRun(format!("Setting {k} is not a number.")));
     }
@@ -360,7 +407,15 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
         return no("The stators must be back at their design setting by the design speed (1.0), so the \
                    speed they start opening from must be below 1.");
     }
-    if s.lever.bleed() {
+    if s.valve_on() {
+        if !(s.b_max > 0.0 && s.b_max < 0.5) {
+            return no("The valve's largest opening must be above 0 (a valve that cannot open holds nothing) and below \
+                       0.5 (bleeding half the air starves the core).");
+        }
+        if s.valve_phi <= 0.0 {
+            return no("The valve holds a flow coefficient, so its target must be above zero.");
+        }
+    } else if s.lever.bleed() {
         if !(s.b_n_lo < 1.0) {
             return no("The bleed valve must be shut by the design speed (1.0), so the speed it starts closing \
                        from must be below 1.");
@@ -394,8 +449,8 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
     controls_precheck(s)?;
     let (ml, mh) = control_maps(CONTROL_SHAPES[s.shape]).expect("CONTROL_SHAPES lists only buildable shapes");
     let fl = s.flight();
-    let core = match build_scheduled_bleed(BladeSettings::defaults().design(), fl, MDOT_DESIGN, Some(ml), Some(mh),
-                                           s.rho, &s.lever_arm()) {
+    let builder = if s.valve_on() { build_limited_bleed } else { build_scheduled_bleed };
+    let core = match builder(BladeSettings::defaults().design(), fl, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
         ScheduledStatorTransient::Full(c) => c,
         ScheduledStatorTransient::Degenerate(_) => unreachable!("the Controls engine has both shafts"),
     };
@@ -894,6 +949,9 @@ pub struct PointRead {
     pub bleed: f64,
     /// The floor's flow coefficient at this point (an incidence floor moves with the stators).
     pub floor: Option<f64>,
+    /// The LP flow coefficient the controlled valve holds at this point (rung 87: an incidence valve's
+    /// moves with the LP stators), when the valve is on.
+    pub valve: Option<f64>,
     pub holder: Holder,
     /// Each armed limiter's relative residual at the applied state (`None` = not armed).
     pub res_redline: Option<f64>,
@@ -927,6 +985,11 @@ impl ControlsSolver {
             None => None,
             Some(fl) => Some(self.core.fuel.resolve_floor(&fl, p.nu_lp, p.nu_hp)?.phi_lim),
         };
+        // The valve's target at the LP stator setting the model's own valve solve reads (at the run's inlet Tt2).
+        let valve = self.core.fuel.inner.lever.lim.map(|l| {
+            let (tt2, _, _) = self.core.fuel.inner.inlet(&self.flight);
+            l.target(self.core.v_of(Spool::Lp, p.nu_lp, p.nu_hp, Some(tt2)))
+        });
         let res_redline = s.redline_on.then(|| (i.tt4 - s.redline).abs() / s.redline);
         let res_accel = self.accel.as_ref().map(|a| {
             let cap = a.cap(i.close.n_hp, i.close.pt4 / self.core.fuel.inner.inner.base.pi_b);
@@ -959,7 +1022,7 @@ impl ControlsSolver {
         Ok(PointRead {
             thrust: Self::thrust(i), stall_lp, stall_hp,
             v: match s.stator_spool { Spool::Lp => v_lp, Spool::Hp => v_hp },
-            bleed: i.close.bleed.unwrap_or(0.0), floor, holder, res_redline, res_accel, res_floor,
+            bleed: i.close.bleed.unwrap_or(0.0), floor, valve, holder, res_redline, res_accel, res_floor,
         })
     }
 }
@@ -1018,6 +1081,7 @@ pub fn controls_json(sv: &ControlsSolver, o: &ControlsOutcome) -> Json {
         "pi_lpc" => col(&|x| x.pi_lpc), "pi_hpc" => col(&|x| x.pi_hpc),
         "thrust" => rcol(&|r| r.thrust), "stall_lp" => rcol(&|r| r.stall_lp), "stall_hp" => rcol(&|r| r.stall_hp),
         "v" => rcol(&|r| r.v), "bleed" => rcol(&|r| r.bleed), "floor" => rcol(&|r| r.floor.unwrap_or(f64::NAN)),
+        "valve" => rcol(&|r| r.valve.unwrap_or(f64::NAN)),
         "holder" => Json::List(reads.iter().map(|r| Json::from(r.as_ref().map(|r| r.holder.key()).unwrap_or("none"))).collect()),
         "choked" => Json::List(p.iter().map(|x| Json::Int((x.branch == Branch::Choked) as i64)).collect()),
     }
@@ -1053,6 +1117,13 @@ pub fn check_requests() -> Vec<String> {
         ControlsSettings { lever: LeverChoice::Both, redline_on: true, gov_lag_on: true, ..d },
         ControlsSettings { lever: LeverChoice::Both, floor_on: true, floor_phi: 0.759, ..d },  // the bleed rescues it
         ControlsSettings { lever: LeverChoice::Stator, floor_on: true, floor_phi: 0.825, ..d }, // starved at once
+        // rung 87: the controlled valve, watching each wall, with the stators and beside a floor
+        ControlsSettings { lever: LeverChoice::Bleed, bleed_mode: BleedMode::Valve, ..d },
+        ControlsSettings { lever: LeverChoice::Both, bleed_mode: BleedMode::Valve, valve_ref: FloorRef::Incidence, ..d },
+        ControlsSettings { lever: LeverChoice::Both, bleed_mode: BleedMode::Valve, valve_ref: FloorRef::Incidence,
+                           floor_on: true, floor_phi: 0.78, ..d },                                  // mismatched: starves
+        ControlsSettings { lever: LeverChoice::Both, bleed_mode: BleedMode::Valve, valve_ref: FloorRef::Incidence,
+                           floor_on: true, floor_phi: 0.77, floor_ref: FloorRef::Incidence, ..d }, // matched, below: runs
         ControlsSettings { from: 1400.0, to: 1000.0, ..d },
         ControlsSettings { release_on: true, ..d },                                  // refused: nothing to lag
         ControlsSettings { floor_on: true, lever: LeverChoice::Stator, ..d },        // stop: the floor unreachable
