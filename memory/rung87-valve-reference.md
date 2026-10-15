@@ -33,6 +33,11 @@ user picked rung 86's named seam.
   it ([[instrument-fed-by-what-it-certifies]]'s family: a gate would have compared valve-less runs).
 - **Keep test cells inside the scored set.** My first H1 gate used a cell inside the unscored band
   (ratio 6.55), and its doc line claimed it was the table's widest; fixed to scored cells.
+- **A new Rust-owned panel moves `RUST_OWNED_PANELS` in `tests/cli_golden.rs`** — missed here,
+  caught by the gate. And a gate launched after `/clear` overlapped one still running from before
+  it: the doubled load flaked the browser's slow-sweep kill race (blades view, untouched). **How to
+  apply:** before launching the gate, check no earlier run is live; rerun a failure alone
+  (`test-all.ps1 -Only NAME`) before reading it as real.
 - Heredocs with Python in the Bash tool broke twice on quoting; writing the script with Write and
   running it is reliable ([[windows-tooling-file-hazards]]).
 
